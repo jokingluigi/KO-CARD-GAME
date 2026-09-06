@@ -42,6 +42,7 @@ export function startGame(state: GameState): GameState {
     ...state,
     turn: 1,
     activePlayerId: firstPlayer.id,
+    status: 'IN_PROGRESS',
     players: state.players.map((player) =>
       player.id === firstPlayer.id ? beginPlayerTurn(player) : player,
     ),

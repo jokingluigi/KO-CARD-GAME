@@ -28,5 +28,8 @@ export interface GameState {
   gameId: string;
   turn: number;
   activePlayerId: string | null;
+  status: 'NOT_STARTED' | 'IN_PROGRESS' | 'FINISHED';
+  winnerId: string | null;
+  loserId: string | null;
   players: PlayerState[];
 }

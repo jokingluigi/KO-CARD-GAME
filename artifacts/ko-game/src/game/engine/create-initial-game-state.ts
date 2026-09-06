@@ -23,6 +23,9 @@ export function createInitialGameState(): GameState {
     gameId: 'local-prototype',
     turn: 0,
     activePlayerId: null,
+    status: 'NOT_STARTED',
+    winnerId: null,
+    loserId: null,
     players: [createEmptyPlayer('player-1'), createEmptyPlayer('player-2')],
   };
 }
