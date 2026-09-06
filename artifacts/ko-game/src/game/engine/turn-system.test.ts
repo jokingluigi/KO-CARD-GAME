@@ -19,6 +19,30 @@ function getPlayerGold(
   return player.currentGold;
 }
 
+function startPlayerOnePersonalTurn(
+  personalTurn: number,
+  nextTurnGoldBonus = 0,
+  currentGold = 0,
+) {
+  const started = startGame(createInitialGameState());
+  const prepared = {
+    ...started,
+    activePlayerId: 'player-2',
+    players: started.players.map((player) =>
+      player.id === 'player-1'
+        ? {
+            ...player,
+            personalTurn: personalTurn - 1,
+            nextTurnGoldBonus,
+            currentGold,
+          }
+        : player,
+    ),
+  };
+
+  return successState(endTurn(prepared, 'player-2'));
+}
+
 test('P1 첫 턴은 1G로 시작한다', () => {
   const state = startGame(createInitialGameState());
 
@@ -41,6 +65,39 @@ test('P1 두 번째 턴은 2G로 시작한다', () => {
 
   assert.equal(state.activePlayerId, 'player-1');
   assert.equal(getPlayerGold(state, 'player-1'), 2);
+});
+
+test('기본 턴 골드는 개인 6번째 턴부터 6G로 유지된다', () => {
+  for (const [personalTurn, expectedGold] of [
+    [5, 5],
+    [6, 6],
+    [7, 6],
+    [10, 6],
+  ] as const) {
+    const state = startPlayerOnePersonalTurn(personalTurn);
+
+    assert.equal(getPlayerGold(state, 'player-1'), expectedGold);
+  }
+});
+
+test('기본 골드가 6G여도 다음 턴 보너스는 제한 없이 더해진다', () => {
+  assert.equal(getPlayerGold(startPlayerOnePersonalTurn(7, 1), 'player-1'), 7);
+  assert.equal(getPlayerGold(startPlayerOnePersonalTurn(7, 3), 'player-1'), 9);
+});
+
+test('6G를 초과한 보너스 골드도 적용 후 0으로 초기화된다', () => {
+  const state = startPlayerOnePersonalTurn(7, 3);
+  const playerOne = state.players.find((player) => player.id === 'player-1');
+
+  assert.ok(playerOne);
+  assert.equal(playerOne.currentGold, 9);
+  assert.equal(playerOne.nextTurnGoldBonus, 0);
+});
+
+test('6번째 턴 이후에도 남은 골드는 다음 개인 턴에 이월되지 않는다', () => {
+  const state = startPlayerOnePersonalTurn(7, 0, 3);
+
+  assert.equal(getPlayerGold(state, 'player-1'), 6);
 });
 
 test('남은 골드는 다음 개인 턴으로 이월되지 않는다', () => {

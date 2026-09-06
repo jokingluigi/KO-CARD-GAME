@@ -14,8 +14,8 @@ function beginPlayerTurn(state: GameState, playerId: string): GameState {
   }
 
   const personalTurn = player.personalTurn + 1;
-
-  const currentGold = personalTurn + player.nextTurnGoldBonus;
+  const baseTurnGold = Math.min(personalTurn, 6);
+  const currentGold = baseTurnGold + player.nextTurnGoldBonus;
   const turnStartedState: GameState = {
     ...state,
     players: state.players.map((candidate) =>
