@@ -10,6 +10,8 @@ import {
   useChampionAbility,
   type BoardSlot,
   type GameState,
+  fetchPublishedWrestlerCards,
+  setRuntimeCardDefinitions,
 } from '@/game';
 import { GameStatePreview } from '@/components/game-state-preview';
 
@@ -30,6 +32,24 @@ export default function Home() {
   const turnKey = `${gameState.turn}:${gameState.activePlayerId ?? 'none'}`;
   const turnStartedAtRef = useRef(Date.now());
   const timeoutHandledTurnRef = useRef<string | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    fetchPublishedWrestlerCards()
+      .then((definitions) => {
+        if (cancelled || definitions.length === 0) return;
+        setRuntimeCardDefinitions(definitions);
+        setGameState(startGame(createInitialGameState(undefined, definitions)));
+        setSelectedCardId(null);
+        setSelectedAttackerId(null);
+      })
+      .catch(() => {
+        // 공개 카드 조회 실패 시 기존 테스트 덱을 유지한다.
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   useEffect(() => {
     if (!playError) return;

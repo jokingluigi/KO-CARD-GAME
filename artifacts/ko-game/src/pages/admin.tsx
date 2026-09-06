@@ -1,5 +1,6 @@
 import { FormEvent, useEffect, useState } from "react";
 import { LockKeyhole, LogOut, ShieldCheck, Spade } from "lucide-react";
+import { AdminCardManager } from "@/components/admin-card-manager";
 
 type AdminStatus = "checking" | "login" | "authenticated";
 
@@ -25,9 +26,10 @@ export default function Admin() {
     let cancelled = false;
 
     fetch(`${adminApiBase}/session`, { credentials: "include" })
-      .then((response) => {
+      .then(async (response) => {
+        const body = (await response.json()) as { authenticated?: boolean };
         if (!cancelled) {
-          setStatus(response.ok ? "authenticated" : "login");
+          setStatus(response.ok && body.authenticated ? "authenticated" : "login");
         }
       })
       .catch(() => {
@@ -188,24 +190,7 @@ export default function Admin() {
         </nav>
 
         <section className="min-w-0 flex-1">
-          <div className="mb-6">
-            <div className="text-[10px] font-bold tracking-[0.2em] text-neutral-600">
-              CONTENT MANAGEMENT
-            </div>
-            <h2 className="mt-1 text-xl font-black">카드 관리</h2>
-          </div>
-          <div className="rounded-xl border border-dashed border-neutral-700 bg-neutral-900/40 p-8">
-            <div className="flex h-12 w-12 items-center justify-center rounded-lg border border-primary/40 bg-primary/10 text-primary">
-              <Spade className="h-6 w-6" />
-            </div>
-            <h3 className="mt-5 text-lg font-black">카드 데이터 관리</h3>
-            <p className="mt-2 max-w-lg text-sm leading-relaxed text-neutral-500">
-              카드 추가·수정·삭제 기능을 연결할 관리자 작업 공간입니다. 현재 단계에서는 관리자 인증과 메뉴 구조만 제공합니다.
-            </p>
-            <div className="mt-6 inline-flex rounded border border-neutral-800 bg-black/40 px-3 py-2 text-xs font-bold text-neutral-500">
-              카드 CRUD · 다음 단계
-            </div>
-          </div>
+          <AdminCardManager onUnauthorized={() => setStatus("login")} />
         </section>
       </div>
     </main>

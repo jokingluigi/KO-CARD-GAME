@@ -1,4 +1,6 @@
-import { createHmac, timingSafeEqual } from "node:crypto";
+import { createHmac, randomUUID, timingSafeEqual } from "node:crypto";
+import { and, asc, eq, ilike, sql } from "drizzle-orm";
+import { cardsTable, db } from "@workspace/db";
 import { Router, type IRouter, type Request, type Response } from "express";
 
 const router: IRouter = Router();
@@ -10,6 +12,30 @@ type AdminSessionPayload = {
   subject: "admin";
   username: string;
   expiresAt: number;
+};
+
+const CARD_TYPES = ["WRESTLER", "TECHNIQUE"] as const;
+const CARD_STATUSES = ["DRAFT", "PUBLISHED", "DISABLED"] as const;
+const CARD_KEYWORDS = [
+  "RUSH",
+  "SURPRISE",
+  "TAUNT",
+  "DODGE",
+  "MULTI_STRIKE",
+] as const;
+
+type CardInput = {
+  name: string;
+  cardType: (typeof CARD_TYPES)[number];
+  cost: number;
+  attack: number;
+  health: number;
+  text: string;
+  keywords: (typeof CARD_KEYWORDS)[number][];
+  isToken: boolean;
+  isChampionToken: boolean;
+  effectId: string | null;
+  effectConfig: Record<string, unknown>;
 };
 
 router.use((request, response, next) => {
@@ -132,6 +158,64 @@ function requireAdmin(request: Request, response: Response): boolean {
   return false;
 }
 
+function parseCardInput(value: unknown): CardInput | null {
+  if (!value || typeof value !== "object" || Array.isArray(value)) {
+    return null;
+  }
+
+  const input = value as Record<string, unknown>;
+  const name = typeof input.name === "string" ? input.name.trim() : "";
+  const text = typeof input.text === "string" ? input.text.trim() : "";
+  const effectId =
+    typeof input.effectId === "string" && input.effectId.trim()
+      ? input.effectId.trim()
+      : null;
+  const validInteger = (candidate: unknown) =>
+    typeof candidate === "number" &&
+    Number.isInteger(candidate) &&
+    candidate >= 0 &&
+    candidate <= 999;
+
+  if (
+    !name ||
+    name.length > 120 ||
+    !CARD_TYPES.includes(input.cardType as (typeof CARD_TYPES)[number]) ||
+    !validInteger(input.cost) ||
+    !validInteger(input.attack) ||
+    !validInteger(input.health) ||
+    typeof input.isToken !== "boolean" ||
+    typeof input.isChampionToken !== "boolean" ||
+    (input.isChampionToken && !input.isToken) ||
+    !Array.isArray(input.keywords) ||
+    !input.keywords.every((keyword) =>
+      CARD_KEYWORDS.includes(keyword as (typeof CARD_KEYWORDS)[number]),
+    ) ||
+    !input.effectConfig ||
+    typeof input.effectConfig !== "object" ||
+    Array.isArray(input.effectConfig)
+  ) {
+    return null;
+  }
+
+  return {
+    name,
+    cardType: input.cardType as CardInput["cardType"],
+    cost: input.cost as number,
+    attack: input.attack as number,
+    health: input.health as number,
+    text,
+    keywords: [...new Set(input.keywords)] as CardInput["keywords"],
+    isToken: input.isToken,
+    isChampionToken: input.isChampionToken,
+    effectId,
+    effectConfig: input.effectConfig as Record<string, unknown>,
+  };
+}
+
+function firstParam(value: unknown): string | undefined {
+  return typeof value === "string" ? value : undefined;
+}
+
 router.post("/login", (request, response) => {
   const configuredUsername = process.env["ADMIN_USERNAME"];
   const configuredPassword = process.env["ADMIN_PASSWORD"];
@@ -181,6 +265,158 @@ router.get("/session", (request, response) => {
 router.post("/logout", (_request, response) => {
   clearSessionCookie(response);
   response.json({ authenticated: false });
+});
+
+router.get("/cards", async (request, response): Promise<void> => {
+  if (!requireAdmin(request, response)) return;
+
+  const search = firstParam(request.query.search)?.trim();
+  const cardType = firstParam(request.query.cardType);
+  const status = firstParam(request.query.status);
+  const tokenKind = firstParam(request.query.tokenKind);
+  const filters = [];
+
+  if (search) filters.push(ilike(cardsTable.name, `%${search}%`));
+  if (CARD_TYPES.includes(cardType as (typeof CARD_TYPES)[number])) {
+    filters.push(eq(cardsTable.cardType, cardType as string));
+  }
+  if (CARD_STATUSES.includes(status as (typeof CARD_STATUSES)[number])) {
+    filters.push(eq(cardsTable.status, status as string));
+  }
+  if (tokenKind === "TOKEN") {
+    filters.push(eq(cardsTable.isToken, true));
+  } else if (tokenKind === "CHAMPION_TOKEN") {
+    filters.push(eq(cardsTable.isChampionToken, true));
+  } else if (tokenKind === "STANDARD") {
+    filters.push(eq(cardsTable.isToken, false));
+  }
+
+  const cards = await db
+    .select()
+    .from(cardsTable)
+    .where(filters.length ? and(...filters) : undefined)
+    .orderBy(asc(cardsTable.name));
+
+  response.json({ cards });
+});
+
+router.post("/cards", async (request, response): Promise<void> => {
+  if (!requireAdmin(request, response)) return;
+
+  const input = parseCardInput(request.body);
+  if (!input) {
+    response.status(400).json({ message: "카드 입력값을 확인해 주세요." });
+    return;
+  }
+
+  const [card] = await db
+    .insert(cardsTable)
+    .values({
+      id: randomUUID(),
+      ...input,
+      status: "DRAFT",
+      version: 1,
+    })
+    .returning();
+
+  response.status(201).json({ card });
+});
+
+router.patch("/cards/:id", async (request, response): Promise<void> => {
+  if (!requireAdmin(request, response)) return;
+
+  const input = parseCardInput(request.body);
+  const id = firstParam(request.params.id);
+  if (!id || !input) {
+    response.status(400).json({ message: "카드 입력값을 확인해 주세요." });
+    return;
+  }
+
+  const [card] = await db
+    .update(cardsTable)
+    .set({
+      ...input,
+      version: sql`${cardsTable.version} + 1`,
+      updatedAt: new Date(),
+    })
+    .where(eq(cardsTable.id, id))
+    .returning();
+
+  if (!card) {
+    response.status(404).json({ message: "카드를 찾을 수 없습니다." });
+    return;
+  }
+
+  response.json({ card });
+});
+
+router.post("/cards/:id/duplicate", async (request, response): Promise<void> => {
+  if (!requireAdmin(request, response)) return;
+
+  const id = firstParam(request.params.id);
+  if (!id) {
+    response.status(400).json({ message: "카드 ID가 올바르지 않습니다." });
+    return;
+  }
+
+  const [source] = await db
+    .select()
+    .from(cardsTable)
+    .where(eq(cardsTable.id, id))
+    .limit(1);
+  if (!source) {
+    response.status(404).json({ message: "카드를 찾을 수 없습니다." });
+    return;
+  }
+
+  const [card] = await db
+    .insert(cardsTable)
+    .values({
+      ...source,
+      id: randomUUID(),
+      name: `${source.name} Copy`,
+      status: "DRAFT",
+      version: 1,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    })
+    .returning();
+
+  response.status(201).json({ card });
+});
+
+router.post("/cards/:id/status", async (request, response): Promise<void> => {
+  if (!requireAdmin(request, response)) return;
+
+  const id = firstParam(request.params.id);
+  const status =
+    request.body && typeof request.body === "object"
+      ? (request.body as Record<string, unknown>).status
+      : null;
+  if (
+    !id ||
+    !CARD_STATUSES.includes(status as (typeof CARD_STATUSES)[number])
+  ) {
+    response.status(400).json({ message: "카드 상태가 올바르지 않습니다." });
+    return;
+  }
+
+  const [card] = await db
+    .update(cardsTable)
+    .set({
+      status: status as (typeof CARD_STATUSES)[number],
+      version: sql`${cardsTable.version} + 1`,
+      updatedAt: new Date(),
+    })
+    .where(eq(cardsTable.id, id))
+    .returning();
+
+  if (!card) {
+    response.status(404).json({ message: "카드를 찾을 수 없습니다." });
+    return;
+  }
+
+  response.json({ card });
 });
 
 router.get("/", (request, response) => {

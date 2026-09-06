@@ -70,19 +70,35 @@ export const TEST_CHAMPION_TOKEN_DEFINITION: CardDefinition = {
   abilities: [],
 };
 
+let runtimeCardDefinitions: CardDefinition[] = [];
+
+export function setRuntimeCardDefinitions(
+  definitions: CardDefinition[],
+): void {
+  runtimeCardDefinitions = definitions;
+}
+
 export function getCardDefinition(
   definitionId: string,
 ): CardDefinition | undefined {
   return [
+    ...runtimeCardDefinitions,
     ...TEST_CARD_DEFINITIONS,
     ...KEYWORD_TEST_CARD_DEFINITIONS,
     TEST_CHAMPION_TOKEN_DEFINITION,
   ].find((card) => card.id === definitionId);
 }
 
-export function createTestDeck(playerId: string): CardInstance[] {
+export function createTestDeck(
+  playerId: string,
+  definitions: readonly CardDefinition[] = TEST_CARD_DEFINITIONS,
+): CardInstance[] {
+  const deckDefinitions = definitions.length
+    ? definitions
+    : TEST_CARD_DEFINITIONS;
+
   return Array.from({ length: 20 }, (_, index) => {
-    const definition = TEST_CARD_DEFINITIONS[index % TEST_CARD_DEFINITIONS.length];
+    const definition = deckDefinitions[index % deckDefinitions.length];
 
     return {
       instanceId: `${playerId}-card-${index + 1}`,

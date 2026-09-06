@@ -6,6 +6,7 @@ export type CardInstanceId = string;
 export interface CardDefinition {
   id: CardDefinitionId;
   name: string;
+  cardType?: 'WRESTLER' | 'TECHNIQUE';
   cost: number;
   attack: number;
   health: number;
@@ -14,6 +15,12 @@ export interface CardDefinition {
   isChampionToken: boolean;
   keywords: CardKeyword[];
   abilities: CardAbility[];
+  status?: 'DRAFT' | 'PUBLISHED' | 'DISABLED';
+  version?: number;
+  effectId?: string | null;
+  effectConfig?: Record<string, unknown>;
+  createdAt?: string;
+  updatedAt?: string;
 }
 
 export interface CardInstance {
