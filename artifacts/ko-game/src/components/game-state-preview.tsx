@@ -111,10 +111,10 @@ export function GameStatePreview({
             </div>
 
             {/* Mirrored opponent HUD */}
-            <div className="ml-auto flex w-24 flex-col items-end gap-1 md:w-48 md:gap-2">
-              <div className="flex flex-row-reverse items-start gap-2 md:gap-3">
+            <div className="ml-auto flex w-[180px] flex-col items-end gap-1 md:w-48 md:gap-2">
+                <div className="flex items-start gap-2 md:gap-3">
                 <div
-                  className={`group relative flex h-14 w-14 flex-col items-center justify-center rounded-sm border-2 bg-neutral-900 md:h-20 md:w-20 ${
+                    className={`group relative flex h-20 w-20 flex-col items-center justify-center rounded-sm border-2 bg-neutral-900 md:h-28 md:w-28 ${
                     selectedAttackerId ? 'cursor-crosshair border-red-500 shadow-[0_0_15px_rgba(239,68,68,0.4)]' : 'border-red-900'
                   }`}
                   onClick={selectedAttackerId ? onAttackPlayer : undefined}
@@ -126,12 +126,12 @@ export function GameStatePreview({
                     <div className="pointer-events-none absolute inset-0 z-10 bg-red-500/15" />
                   )}
                 </div>
-                <div className="flex flex-col items-end gap-1">
-                  <div className="rounded border border-neutral-700 bg-neutral-900/80 px-2 py-1 text-right md:px-3">
+                <div className="flex w-[76px] shrink-0 flex-col items-start gap-1">
+                  <div className="w-full rounded border border-neutral-700 bg-neutral-900/80 px-2 py-1 text-right md:px-3">
                     <div className="text-[8px] font-bold text-neutral-500 md:text-[10px]">골드</div>
                     <div className="font-display text-sm font-black text-primary md:text-xl">{opp.currentGold}</div>
                   </div>
-                  <div className="rounded border border-red-800 bg-red-950/80 px-2 py-1 text-right">
+                  <div className="w-full rounded border border-red-800 bg-red-950/80 px-2 py-1 text-right">
                     <div className="text-[7px] font-bold text-red-300 md:text-[9px]">챔피언 체력</div>
                     <div className="font-display text-sm font-black text-white md:text-lg">
                       {opponentSurvivalHealth} / {opp.champion?.maxHealth ?? 20}
@@ -152,8 +152,9 @@ export function GameStatePreview({
          {/* BOARDS AREA */}
          <div className="relative flex min-h-0 flex-1 flex-col items-center justify-center gap-4 py-2 md:gap-6 md:py-4">
             
-            {/* Opponent Board */}
-            <div className="flex w-full justify-center gap-2 md:gap-4">
+             {/* Opponent Board + Zones */}
+             <div className="flex w-full items-center justify-center gap-2 md:gap-4">
+                <div className="flex gap-2 md:gap-4">
                {opp.board.map((card, i) => (
                  <BoardSlot 
                    key={`opp-board-${i}`}
@@ -167,10 +168,13 @@ export function GameStatePreview({
                    onClick={(id) => onAttackWrestler(id as string)}
                  />
                ))}
+                </div>
+                <ZoneStack deckCount={opp.deck.length} graveyardCount={opp.graveyard.length} isOpponent />
             </div>
 
-            {/* My Board */}
-            <div className="flex w-full justify-center gap-2 md:gap-4">
+             {/* My Board + Zones */}
+             <div className="flex w-full items-center justify-center gap-2 md:gap-4">
+                <div className="flex gap-2 md:gap-4">
                {me.board.map((card, i) => (
                  <BoardSlot 
                    key={`me-board-${i}`}
@@ -187,6 +191,8 @@ export function GameStatePreview({
                    }}
                  />
                ))}
+                </div>
+                <ZoneStack deckCount={me.deck.length} graveyardCount={me.graveyard.length} />
             </div>
          </div>
 
@@ -230,24 +236,27 @@ export function GameStatePreview({
          <div className="relative z-[90] flex min-h-[160px] shrink-0 items-end justify-between px-2 pb-2 md:min-h-[220px] md:px-4 md:pb-4">
             
             {/* Player Stats & Champion */}
-            <div className="z-[95] flex w-24 shrink-0 flex-col gap-1 md:w-48 md:gap-2">
-               <div className="mb-1 flex flex-col rounded-r border-l-4 border-primary bg-neutral-900/60 px-2 py-1 shadow-sm md:py-2">
-                  <span className="text-[8px] font-bold text-neutral-400 md:text-[10px]">골드</span>
-                 <span className="font-display text-lg font-bold leading-none text-primary md:text-3xl">{me.currentGold}</span>
-               </div>
-
-               <div className="relative flex h-16 w-16 flex-col items-center justify-center rounded-sm border-2 border-blue-600 bg-neutral-900 shadow-[0_0_15px_rgba(37,99,235,0.2)] md:h-24 md:w-24">
+            <div className="z-[95] flex w-[180px] shrink-0 flex-col gap-1 md:w-48 md:gap-2">
+              <div className="flex items-start gap-2 md:gap-3">
+               <div className="relative flex h-20 w-20 shrink-0 flex-col items-center justify-center rounded-sm border-2 border-blue-600 bg-neutral-900 shadow-[0_0_15px_rgba(37,99,235,0.2)] md:h-28 md:w-28">
                   <span className="px-1 text-center text-[9px] font-black leading-tight text-blue-400 md:text-[12px]">
                     {me.champion?.name || '내 챔피언'}
                   </span>
                </div>
 
-               <div className="rounded border border-blue-800 bg-blue-950/80 px-2 py-1">
+               <div className="flex min-w-0 flex-col gap-1">
+                <div className="rounded border border-neutral-700 bg-neutral-900/80 px-2 py-1">
+                  <div className="text-[7px] font-bold text-neutral-400 md:text-[9px]">골드</div>
+                  <div className="font-display text-sm font-black text-primary md:text-xl">{me.currentGold}</div>
+                </div>
+                <div className="rounded border border-blue-800 bg-blue-950/80 px-2 py-1">
                  <div className="text-[7px] font-bold text-blue-300 md:text-[9px]">챔피언 체력</div>
                  <div className="font-display text-sm font-black text-white md:text-xl">
                    {mySurvivalHealth} / {me.champion?.maxHealth ?? 20}
                  </div>
+                </div>
                </div>
+              </div>
 
                {me.champion?.quest && (
                  <Inspectable content={<ChampionQuestInspectContent champion={me.champion} />}>
@@ -283,8 +292,8 @@ export function GameStatePreview({
             </div>
 
             {/* Player Hand */}
-             <div className="relative z-[100] flex h-full min-w-0 flex-1 items-end overflow-x-auto">
-               <div className="relative z-[100] flex w-max justify-start gap-2 px-4 pb-3 md:mx-auto md:justify-center md:gap-0 md:-space-x-12">
+             <div className="relative z-[100] flex h-full min-w-0 flex-1 items-end overflow-x-auto scrollbar-none pt-12 md:pt-16">
+               <div className="relative z-[100] flex w-max justify-start gap-2 px-4 pb-3 md:mx-auto md:justify-center md:gap-3">
                  {me.hand.length === 0 ? (
                     <span className="py-4 text-xs font-bold text-neutral-600">손패 없음</span>
                  ) : (
@@ -482,5 +491,33 @@ function BoardSlot({
        </div>
     </div>
     </Inspectable>
+  );
+}
+
+function ZoneStack({
+  deckCount,
+  graveyardCount,
+  isOpponent = false,
+}: {
+  deckCount: number;
+  graveyardCount: number;
+  isOpponent?: boolean;
+}) {
+  return (
+    <div className="flex shrink-0 flex-col gap-2 md:gap-3">
+      <div className="relative flex h-12 w-10 flex-col items-center justify-end overflow-hidden rounded border-2 border-neutral-600 bg-neutral-800 shadow md:h-16 md:w-14">
+        <div className="absolute inset-1 border border-neutral-700/60" />
+        <div className="h-4 w-4 rotate-45 border border-neutral-700/60 md:h-6 md:w-6" />
+        <span className="relative z-10 mt-auto w-full bg-black/70 py-0.5 text-center text-[7px] font-bold text-neutral-300 md:text-[9px]">
+          {deckCount}
+        </span>
+      </div>
+      <div className={`flex h-12 w-10 flex-col items-center justify-end overflow-hidden rounded border-2 bg-neutral-900 md:h-16 md:w-14 ${
+        isOpponent ? 'border-red-900' : 'border-blue-900'
+      }`}>
+        <span className="text-[7px] font-bold text-neutral-500 md:text-[9px]">무덤</span>
+        <span className="font-display text-sm font-black text-neutral-200 md:text-lg">{graveyardCount}</span>
+      </div>
+    </div>
   );
 }
