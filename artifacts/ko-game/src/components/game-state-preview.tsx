@@ -167,6 +167,9 @@ export function GameStatePreview({
                    selected={false}
                    attackReady={false}
                    targetable={!!selectedAttackerId && !!card}
+                    activeReady={false}
+                    activeUsable={false}
+                    onUseActive={() => undefined}
                    onClick={(id) => onAttackWrestler(id as string)}
                  />
                ))}
