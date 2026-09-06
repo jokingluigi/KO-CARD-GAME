@@ -1,6 +1,7 @@
 import { useState } from 'react';
 
 import {
+  attack,
   createInitialGameState,
   endTurn,
   playWrestlerFromHand,
@@ -15,6 +16,9 @@ export default function Home() {
     startGame(createInitialGameState()),
   );
   const [selectedCardId, setSelectedCardId] = useState<string | null>(null);
+  const [selectedAttackerId, setSelectedAttackerId] = useState<string | null>(
+    null,
+  );
   const [playError, setPlayError] = useState<string | null>(null);
 
   function handleEndTurn() {
@@ -26,14 +30,79 @@ export default function Home() {
       endTurn(currentState, currentState.activePlayerId!),
     );
     setSelectedCardId(null);
+    setSelectedAttackerId(null);
     setPlayError(null);
   }
 
   function handleSelectCard(cardInstanceId: string) {
+    setSelectedAttackerId(null);
     setSelectedCardId((current) =>
       current === cardInstanceId ? null : cardInstanceId,
     );
     setPlayError(null);
+  }
+
+  function handleSelectAttacker(cardInstanceId: string) {
+    setSelectedCardId(null);
+    setSelectedAttackerId((current) =>
+      current === cardInstanceId ? null : cardInstanceId,
+    );
+    setPlayError(null);
+  }
+
+  function handleAttackWrestler(targetCardInstanceId: string) {
+    if (!selectedAttackerId) {
+      setPlayError('먼저 공격할 선수를 선택하세요.');
+      return;
+    }
+
+    try {
+      setGameState((currentState) =>
+        attack(
+          currentState,
+          currentState.players[0].id,
+          selectedAttackerId,
+          {
+            type: 'WRESTLER',
+            playerId: currentState.players[1].id,
+            cardInstanceId: targetCardInstanceId,
+          },
+        ),
+      );
+      setSelectedAttackerId(null);
+      setPlayError(null);
+    } catch (error) {
+      setPlayError(
+        error instanceof Error ? error.message : '공격할 수 없습니다.',
+      );
+    }
+  }
+
+  function handleAttackPlayer() {
+    if (!selectedAttackerId) {
+      setPlayError('먼저 공격할 선수를 선택하세요.');
+      return;
+    }
+
+    try {
+      setGameState((currentState) =>
+        attack(
+          currentState,
+          currentState.players[0].id,
+          selectedAttackerId,
+          {
+            type: 'PLAYER',
+            playerId: currentState.players[1].id,
+          },
+        ),
+      );
+      setSelectedAttackerId(null);
+      setPlayError(null);
+    } catch (error) {
+      setPlayError(
+        error instanceof Error ? error.message : '공격할 수 없습니다.',
+      );
+    }
   }
 
   function handleSelectSlot(slot: BoardSlot) {
@@ -64,10 +133,14 @@ export default function Home() {
     <GameStatePreview
       state={gameState}
       selectedCardId={selectedCardId}
+      selectedAttackerId={selectedAttackerId}
       playError={playError}
       onEndTurn={handleEndTurn}
       onSelectCard={handleSelectCard}
       onSelectSlot={handleSelectSlot}
+      onSelectAttacker={handleSelectAttacker}
+      onAttackWrestler={handleAttackWrestler}
+      onAttackPlayer={handleAttackPlayer}
     />
   );
 }

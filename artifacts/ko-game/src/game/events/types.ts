@@ -19,3 +19,17 @@ export interface CardLeftPlayEvent extends GameEvent {
   cardInstanceId: CardInstanceId;
   leaveReason: LeaveReason;
 }
+
+export interface RetireEvent extends GameEvent {
+  type: 'RETIRE';
+  playerId: string;
+  cardInstanceId: CardInstanceId;
+  boardSlot: 0 | 1 | 2 | 3;
+}
+
+export interface DestroyEvent extends GameEvent {
+  type: 'DESTROY';
+  playerId: string;
+  cardInstanceId: CardInstanceId;
+  boardSlot: 0 | 1 | 2 | 3;
+}

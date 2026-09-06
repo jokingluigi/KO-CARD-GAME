@@ -8,10 +8,14 @@ import {
 interface GameStatePreviewProps {
   state: GameState;
   selectedCardId: string | null;
+  selectedAttackerId: string | null;
   playError: string | null;
   onEndTurn: () => void;
   onSelectCard: (cardInstanceId: string) => void;
   onSelectSlot: (slot: BoardSlotIndex) => void;
+  onSelectAttacker: (cardInstanceId: string) => void;
+  onAttackWrestler: (cardInstanceId: string) => void;
+  onAttackPlayer: () => void;
 }
 
 function getPlayerDisplayName(playerId: string): string {
@@ -22,10 +26,14 @@ function getPlayerDisplayName(playerId: string): string {
 export function GameStatePreview({
   state,
   selectedCardId,
+  selectedAttackerId,
   playError,
   onEndTurn,
   onSelectCard,
   onSelectSlot,
+  onSelectAttacker,
+  onAttackWrestler,
+  onAttackPlayer,
 }: GameStatePreviewProps) {
   // Safe destructure to prevent crashes if game is uninitialized
   if (!state || !state.players || state.players.length < 2) {
@@ -92,17 +100,24 @@ export function GameStatePreview({
             </div>
 
             {/* Opponent Champion */}
-            <div className="flex flex-col items-center justify-start relative group mt-2 md:mt-6">
+             <button
+               type="button"
+               disabled={selectedAttackerId === null}
+               onClick={onAttackPlayer}
+               className={`flex flex-col items-center justify-start relative group mt-2 md:mt-6 ${
+                 selectedAttackerId ? 'cursor-crosshair' : 'cursor-default'
+               }`}
+             >
               {isOppTurn && (
                 <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[150%] h-[150%] bg-red-500/15 blur-2xl rounded-full pointer-events-none"></div>
               )}
               <div className="w-20 h-20 md:w-28 md:h-28 rounded-full border-4 border-red-900 bg-red-950/60 flex items-center justify-center overflow-hidden shadow-[0_0_20px_rgba(220,38,38,0.2)] relative z-10 backdrop-blur-md">
                  <span className="text-red-500/50 text-[10px] md:text-xs font-black italic tracking-tighter">상대</span>
-              </div>
+               </div>
               <div className="absolute -bottom-3 bg-black border-[3px] border-red-800 text-white px-4 md:px-5 py-0.5 md:py-1 rounded-full font-black text-base md:text-xl shadow-[0_5px_15px_rgba(0,0,0,0.8)] flex items-center gap-1.5 z-20">
                   <span className="text-red-500 text-[10px] md:text-xs">체력</span> {opp.health}
               </div>
-            </div>
+             </button>
 
             {/* Opponent Gold (Right side) */}
             <div className="flex flex-col items-end gap-1 mt-4 w-32 md:w-48">
@@ -139,7 +154,13 @@ export function GameStatePreview({
                {/* Opponent Field */}
                <div className="flex justify-center gap-3 md:gap-6 w-full relative z-10 mb-2 md:mb-4">
                   {Array.from({ length: 4 }).map((_, i) => (
-                    <BoardSlot key={`opp-slot-${i}`} slot={opp.board && opp.board[i]} isOpponent={true} />
+                     <BoardSlot
+                       key={`opp-slot-${i}`}
+                       slot={opp.board[i]}
+                       isOpponent={true}
+                       targetable={selectedAttackerId !== null}
+                       onAttack={onAttackWrestler}
+                     />
                   ))}
                </div>
 
@@ -155,7 +176,9 @@ export function GameStatePreview({
                        isOpponent={false}
                        slotIndex={i as BoardSlotIndex}
                        selectable={selectedCardId !== null}
+                       selected={me.board[i]?.instanceId === selectedAttackerId}
                        onSelect={onSelectSlot}
+                       onSelectAttacker={onSelectAttacker}
                      />
                   ))}
                </div>
@@ -341,13 +364,21 @@ function BoardSlot({
   isOpponent,
   slotIndex,
   selectable = false,
+  selected = false,
+  targetable = false,
   onSelect,
+  onSelectAttacker,
+  onAttack,
 }: {
   slot: CardInstance | null;
   isOpponent: boolean;
   slotIndex?: BoardSlotIndex;
   selectable?: boolean;
+  selected?: boolean;
+  targetable?: boolean;
   onSelect?: (slot: BoardSlotIndex) => void;
+  onSelectAttacker?: (cardInstanceId: string) => void;
+  onAttack?: (cardInstanceId: string) => void;
 }) {
   if (!slot) {
     return (
@@ -374,8 +405,27 @@ function BoardSlot({
   const health = slot.currentHealth;
   const name = definition?.name ?? '선수';
 
+  const handleClick = () => {
+    if (isOpponent && targetable) {
+      onAttack?.(slot.instanceId);
+    } else if (!isOpponent) {
+      onSelectAttacker?.(slot.instanceId);
+    }
+  };
+
   return (
-    <div className="w-[80px] h-[110px] md:w-[110px] md:h-[150px] bg-[#121212] border-[2px] border-zinc-600 rounded-lg relative flex flex-col shadow-[0_5px_15px_rgba(0,0,0,0.6)] group hover:border-primary transition-colors cursor-pointer hover:-translate-y-1">
+    <button
+      type="button"
+      onClick={handleClick}
+      disabled={isOpponent && !targetable}
+      className={`w-[80px] h-[110px] md:w-[110px] md:h-[150px] bg-[#121212] border-[2px] rounded-lg relative flex flex-col shadow-[0_5px_15px_rgba(0,0,0,0.6)] group transition-all ${
+        selected
+          ? 'border-primary -translate-y-2 shadow-[0_0_20px_rgba(234,179,8,0.7)]'
+          : targetable && isOpponent
+            ? 'border-red-500 cursor-crosshair hover:-translate-y-1'
+            : 'border-zinc-600 hover:border-primary cursor-pointer hover:-translate-y-1'
+      }`}
+    >
        
        {/* Highlight Overlay */}
        <div className="absolute inset-0 opacity-0 group-hover:opacity-100 bg-white/5 transition-opacity pointer-events-none z-30 rounded-lg"></div>
@@ -398,6 +448,6 @@ function BoardSlot({
        <div className="absolute -bottom-2 -right-2 bg-red-700 border border-red-900 w-7 h-7 md:w-8 md:h-8 rounded flex items-center justify-center text-xs md:text-sm font-black text-white shadow-[0_3px_6px_rgba(0,0,0,0.8)] z-30">
          {health}
        </div>
-    </div>
+    </button>
   );
 }

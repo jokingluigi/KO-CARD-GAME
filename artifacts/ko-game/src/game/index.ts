@@ -5,6 +5,7 @@ export * from './champions/types';
 export * from './effects/types';
 export * from './engine/create-initial-game-state';
 export * from './engine/board-position';
+export * from './engine/combat';
 export * from './engine/draw-card';
 export * from './engine/enter-field';
 export * from './engine/play-wrestler';
