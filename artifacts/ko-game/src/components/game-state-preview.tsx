@@ -49,6 +49,8 @@ export function GameStatePreview({
   onUseActive,
   onUseChampionAbility,
 }: GameStatePreviewProps) {
+  const [openGraveyardPlayerId, setOpenGraveyardPlayerId] = React.useState<string | null>(null);
+
   if (!state || !state.players || state.players.length < 2) {
     return <div className="flex h-screen items-center justify-center bg-black font-sans text-white">게임을 초기화하는 중입니다...</div>;
   }
@@ -114,7 +116,7 @@ export function GameStatePreview({
             <div className="ml-auto flex w-[180px] flex-col items-end gap-1 md:w-48 md:gap-2">
                 <div className="flex items-start gap-2 md:gap-3">
                 <div
-                    className={`group relative flex h-20 w-20 flex-col items-center justify-center rounded-sm border-2 bg-neutral-900 md:h-28 md:w-28 ${
+                    className={`group relative flex h-28 w-20 flex-col items-center justify-center rounded-sm border-2 bg-neutral-900 md:h-40 md:w-28 ${
                     selectedAttackerId ? 'cursor-crosshair border-red-500 shadow-[0_0_15px_rgba(239,68,68,0.4)]' : 'border-red-900'
                   }`}
                   onClick={selectedAttackerId ? onAttackPlayer : undefined}
@@ -169,7 +171,12 @@ export function GameStatePreview({
                  />
                ))}
                 </div>
-                <ZoneStack deckCount={opp.deck.length} graveyardCount={opp.graveyard.length} isOpponent />
+                 <ZoneStack
+                   deckCount={opp.deck.length}
+                   graveyardCount={opp.graveyard.length}
+                   isOpponent
+                   onGraveyardClick={() => setOpenGraveyardPlayerId(opp.id)}
+                 />
             </div>
 
              {/* My Board + Zones */}
@@ -192,7 +199,11 @@ export function GameStatePreview({
                  />
                ))}
                 </div>
-                <ZoneStack deckCount={me.deck.length} graveyardCount={me.graveyard.length} />
+                 <ZoneStack
+                   deckCount={me.deck.length}
+                   graveyardCount={me.graveyard.length}
+                   onGraveyardClick={() => setOpenGraveyardPlayerId(me.id)}
+                 />
             </div>
          </div>
 
@@ -232,13 +243,20 @@ export function GameStatePreview({
             )}
           </aside>
 
+          {openGraveyardPlayerId && (
+            <GraveyardModal
+              player={state.players.find((player) => player.id === openGraveyardPlayerId)!}
+              onClose={() => setOpenGraveyardPlayerId(null)}
+            />
+          )}
+
          {/* BOTTOM BAR: Player info & Hand */}
          <div className="relative z-[90] flex min-h-[160px] shrink-0 items-end justify-between px-2 pb-2 md:min-h-[220px] md:px-4 md:pb-4">
             
             {/* Player Stats & Champion */}
             <div className="z-[95] flex w-[180px] shrink-0 flex-col gap-1 md:w-48 md:gap-2">
               <div className="flex items-start gap-2 md:gap-3">
-               <div className="relative flex h-20 w-20 shrink-0 flex-col items-center justify-center rounded-sm border-2 border-blue-600 bg-neutral-900 shadow-[0_0_15px_rgba(37,99,235,0.2)] md:h-28 md:w-28">
+               <div className="relative flex h-28 w-20 shrink-0 flex-col items-center justify-center rounded-sm border-2 border-blue-600 bg-neutral-900 shadow-[0_0_15px_rgba(37,99,235,0.2)] md:h-40 md:w-28">
                   <span className="px-1 text-center text-[9px] font-black leading-tight text-blue-400 md:text-[12px]">
                     {me.champion?.name || '내 챔피언'}
                   </span>
@@ -498,10 +516,12 @@ function ZoneStack({
   deckCount,
   graveyardCount,
   isOpponent = false,
+  onGraveyardClick,
 }: {
   deckCount: number;
   graveyardCount: number;
   isOpponent?: boolean;
+  onGraveyardClick: () => void;
 }) {
   return (
     <div className="flex shrink-0 flex-col gap-2 md:gap-3">
@@ -512,11 +532,80 @@ function ZoneStack({
           {deckCount}
         </span>
       </div>
-      <div className={`flex h-12 w-10 flex-col items-center justify-end overflow-hidden rounded border-2 bg-neutral-900 md:h-16 md:w-14 ${
-        isOpponent ? 'border-red-900' : 'border-blue-900'
-      }`}>
+      <button
+        type="button"
+        onClick={onGraveyardClick}
+        aria-label={`무덤 열기, ${graveyardCount}장`}
+        className={`flex h-12 w-10 flex-col items-center justify-end overflow-hidden rounded border-2 bg-neutral-900 transition-colors hover:bg-neutral-800 md:h-16 md:w-14 ${
+          isOpponent ? 'border-red-900' : 'border-blue-900'
+        }`}
+      >
         <span className="text-[7px] font-bold text-neutral-500 md:text-[9px]">무덤</span>
         <span className="font-display text-sm font-black text-neutral-200 md:text-lg">{graveyardCount}</span>
+      </button>
+    </div>
+  );
+}
+
+function GraveyardModal({
+  player,
+  onClose,
+}: {
+  player: GameState['players'][number];
+  onClose: () => void;
+}) {
+  return (
+    <div className="fixed inset-0 z-[180] flex items-center justify-center bg-black/60 p-4">
+      <div
+        role="dialog"
+        aria-modal="true"
+        aria-label={`${player.id === 'player-1' ? '내' : '상대'} 무덤`}
+        className="max-h-[80dvh] w-full max-w-2xl overflow-hidden rounded-lg border border-neutral-700 bg-neutral-950 p-4 shadow-2xl"
+      >
+        <div className="mb-4 flex items-center justify-between border-b border-neutral-800 pb-3">
+          <div>
+            <div className="text-[10px] font-bold tracking-widest text-neutral-500">
+              {player.id === 'player-1' ? '내 무덤' : '상대 무덤'}
+            </div>
+            <h2 className="text-lg font-black text-white">묘지 카드 {player.graveyard.length}장</h2>
+          </div>
+          <button
+            type="button"
+            onClick={onClose}
+            className="rounded border border-neutral-700 px-3 py-1.5 text-xs font-bold text-neutral-300 hover:bg-neutral-800"
+          >
+            닫기
+          </button>
+        </div>
+        {player.graveyard.length === 0 ? (
+          <div className="py-12 text-center text-sm text-neutral-500">무덤이 비어 있습니다.</div>
+        ) : (
+          <div className="grid max-h-[62dvh] grid-cols-2 gap-3 overflow-y-auto pr-1 sm:grid-cols-3 md:grid-cols-4">
+            {player.graveyard
+              .slice()
+              .reverse()
+              .map((card) => {
+                const definition = getCardDefinition(card.definitionId);
+                return (
+                  <Inspectable key={card.instanceId} content={<CardInspectContent card={card} />}>
+                    <div
+                      tabIndex={0}
+                      className="flex min-h-28 cursor-help flex-col justify-between rounded border border-neutral-700 bg-neutral-900 p-2 text-left transition-colors hover:border-primary"
+                    >
+                      <div className="text-[9px] text-neutral-500">리타이어/파괴 카드</div>
+                      <div className="text-xs font-black text-neutral-100">
+                        {definition?.name ?? '알 수 없는 카드'}
+                      </div>
+                      <div className="flex justify-between font-display text-xs">
+                        <span className="text-primary">{card.currentAttack}</span>
+                        <span className="text-red-300">{card.currentHealth}</span>
+                      </div>
+                    </div>
+                  </Inspectable>
+                );
+              })}
+          </div>
+        )}
       </div>
     </div>
   );
