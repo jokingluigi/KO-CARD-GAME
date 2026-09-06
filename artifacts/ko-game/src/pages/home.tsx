@@ -79,6 +79,12 @@ export default function Home() {
       return;
     }
 
+    if (!isTimeout) {
+      // 수동 종료 직후 타이머 interval이 한 번 더 실행되어
+      // 타임아웃 알림을 덮어쓰지 않도록 현재 턴을 처리 완료로 표시한다.
+      timeoutHandledTurnRef.current = turnKey;
+    }
+
     setGameState(opponentTurnResult.state);
     setSelectedCardId(null);
     setSelectedAttackerId(null);
