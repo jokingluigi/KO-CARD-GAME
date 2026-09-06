@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 
 import {
   attack,
@@ -13,6 +13,8 @@ import {
 } from '@/game';
 import { GameStatePreview } from '@/components/game-state-preview';
 
+const TURN_TIME_LIMIT_SECONDS = 90;
+
 export default function Home() {
   const [gameState, setGameState] = useState<GameState>(() =>
     startGame(createInitialGameState()),
@@ -22,6 +24,12 @@ export default function Home() {
     null,
   );
   const [playError, setPlayError] = useState<string | null>(null);
+  const [turnSecondsRemaining, setTurnSecondsRemaining] = useState(
+    TURN_TIME_LIMIT_SECONDS,
+  );
+  const turnKey = `${gameState.turn}:${gameState.activePlayerId ?? 'none'}`;
+  const turnStartedAtRef = useRef(Date.now());
+  const timeoutHandledTurnRef = useRef<string | null>(null);
 
   useEffect(() => {
     if (!playError) return;
@@ -29,7 +37,34 @@ export default function Home() {
     return () => window.clearTimeout(timeoutId);
   }, [playError]);
 
-  function handleEndTurn() {
+  useEffect(() => {
+    turnStartedAtRef.current = Date.now();
+    timeoutHandledTurnRef.current = null;
+    setTurnSecondsRemaining(TURN_TIME_LIMIT_SECONDS);
+
+    const intervalId = window.setInterval(() => {
+      const elapsedSeconds = Math.floor(
+        (Date.now() - turnStartedAtRef.current) / 1000,
+      );
+      const secondsRemaining = Math.max(
+        0,
+        TURN_TIME_LIMIT_SECONDS - elapsedSeconds,
+      );
+      setTurnSecondsRemaining(secondsRemaining);
+
+      if (
+        secondsRemaining === 0 &&
+        timeoutHandledTurnRef.current !== turnKey
+      ) {
+        timeoutHandledTurnRef.current = turnKey;
+        handleEndTurn(true);
+      }
+    }, 250);
+
+    return () => window.clearInterval(intervalId);
+  }, [turnKey]);
+
+  function handleEndTurn(isTimeout = false) {
     const result = endTurn(gameState, gameState.players[0].id);
     if (!result.success) {
       setPlayError(result.message);
@@ -47,7 +82,9 @@ export default function Home() {
     setGameState(opponentTurnResult.state);
     setSelectedCardId(null);
     setSelectedAttackerId(null);
-    setPlayError(null);
+    setPlayError(
+      isTimeout ? '시간 초과로 턴이 자동 종료되었습니다.' : null,
+    );
   }
 
   function handleSelectCard(cardInstanceId: string) {
@@ -170,6 +207,7 @@ export default function Home() {
       selectedCardId={selectedCardId}
       selectedAttackerId={selectedAttackerId}
       playError={playError}
+      turnSecondsRemaining={turnSecondsRemaining}
       onEndTurn={handleEndTurn}
       onSelectCard={handleSelectCard}
       onSelectSlot={handleSelectSlot}

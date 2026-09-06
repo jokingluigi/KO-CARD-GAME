@@ -25,6 +25,7 @@ interface GameStatePreviewProps {
   selectedCardId: string | null;
   selectedAttackerId: string | null;
   playError: string | null;
+  turnSecondsRemaining: number;
   onEndTurn: () => void;
   onSelectCard: (cardInstanceId: string) => void;
   onSelectSlot: (slot: BoardSlotIndex) => void;
@@ -40,6 +41,7 @@ export function GameStatePreview({
   selectedCardId,
   selectedAttackerId,
   playError,
+  turnSecondsRemaining,
   onEndTurn,
   onSelectCard,
   onSelectSlot,
@@ -78,6 +80,8 @@ export function GameStatePreview({
   const canUseChampion = canUseChampionAbility(state, me.id);
   const mySurvivalHealth = getPlayerSurvivalHealth(state, me.id);
   const opponentSurvivalHealth = getPlayerSurvivalHealth(state, opp.id);
+  const myMaxGold = Math.min(Math.max(me.personalTurn, 1), 6);
+  const opponentMaxGold = Math.min(Math.max(opp.personalTurn, 1), 6);
   const championUnavailableReason = !isMyTurn
     ? '내 턴에만 사용할 수 있습니다.'
     : me.champion && me.currentGold < me.champion.abilityCost
@@ -131,7 +135,9 @@ export function GameStatePreview({
                 <div className="flex w-[76px] shrink-0 flex-col items-start gap-1">
                   <div className="w-full rounded border border-neutral-700 bg-neutral-900/80 px-2 py-1 text-right md:px-3">
                     <div className="text-[8px] font-bold text-neutral-500 md:text-[10px]">골드</div>
-                    <div className="font-display text-sm font-black text-primary md:text-xl">{opp.currentGold}</div>
+                    <div className="font-display text-sm font-black text-primary md:text-xl">
+                      {opp.currentGold} / {opponentMaxGold}
+                    </div>
                   </div>
                   <div className="w-full rounded border border-red-800 bg-red-950/80 px-2 py-1 text-right">
                     <div className="text-[7px] font-bold text-red-300 md:text-[9px]">챔피언 체력</div>
@@ -214,10 +220,23 @@ export function GameStatePreview({
          </div>
 
           <aside className="absolute right-2 top-36 z-40 flex w-24 flex-col items-stretch gap-2 rounded border border-neutral-800 bg-black/85 p-2 shadow-2xl backdrop-blur-md md:fixed md:right-4 md:top-1/2 md:w-32 md:-translate-y-1/2 md:p-3">
-            <div className="border-b border-neutral-800 pb-2 text-right">
-              <div className="text-[9px] font-bold text-neutral-500 md:text-[10px]">현재 턴 {state.turn}</div>
-              <div className={`text-xs font-black md:text-base ${isMyTurn ? 'text-primary' : 'text-red-400'}`}>
-                {isMyTurn ? '내 턴' : '상대 턴'}
+             <div className="flex items-center justify-between gap-2 border-b border-neutral-800 pb-2">
+               <div className="text-right">
+                 <div className="text-[9px] font-bold text-neutral-500 md:text-[10px]">현재 턴 {state.turn}</div>
+                 <div className={`text-xs font-black md:text-base ${isMyTurn ? 'text-primary' : 'text-red-400'}`}>
+                   {isMyTurn ? '내 턴' : '상대 턴'}
+                 </div>
+               </div>
+               <div
+                 className={`rounded border px-2 py-1 text-center font-display text-sm font-black md:text-lg ${
+                   turnSecondsRemaining <= 10
+                     ? 'border-red-500 bg-red-950/80 text-red-300'
+                     : 'border-neutral-700 bg-neutral-900/90 text-primary'
+                 }`}
+                 aria-label={`남은 턴 시간 ${Math.floor(turnSecondsRemaining / 60)}분 ${turnSecondsRemaining % 60}초`}
+               >
+                 {String(Math.floor(turnSecondsRemaining / 60)).padStart(2, '0')}:
+                 {String(turnSecondsRemaining % 60).padStart(2, '0')}
               </div>
             </div>
             <button
@@ -261,7 +280,9 @@ export function GameStatePreview({
                <div className="flex min-w-0 flex-col gap-1">
                 <div className="rounded border border-neutral-700 bg-neutral-900/80 px-2 py-1">
                   <div className="text-[7px] font-bold text-neutral-400 md:text-[9px]">골드</div>
-                  <div className="font-display text-sm font-black text-primary md:text-xl">{me.currentGold}</div>
+                   <div className="font-display text-sm font-black text-primary md:text-xl">
+                     {me.currentGold} / {myMaxGold}
+                   </div>
                 </div>
                 <div className="rounded border border-blue-800 bg-blue-950/80 px-2 py-1">
                  <div className="text-[7px] font-bold text-blue-300 md:text-[9px]">챔피언 체력</div>

@@ -180,7 +180,7 @@ export function ActionHistory({ state }: { state: GameState }) {
     <>
       <aside className="fixed left-3 top-1/2 z-50 hidden w-44 -translate-y-1/2 rounded border border-neutral-800 bg-black/85 p-1.5 shadow-2xl backdrop-blur-md md:block">
         <div className="mb-1 border-b border-neutral-800 pb-1.5 text-[10px] font-black tracking-[0.18em] text-neutral-300">
-          플레이 기록
+          로그
         </div>
         <HistoryList state={state} />
       </aside>
@@ -192,7 +192,7 @@ export function ActionHistory({ state }: { state: GameState }) {
           onClick={() => setIsMobileOpen((open) => !open)}
           className="rounded border border-neutral-700 bg-black/90 px-3 py-2 text-[10px] font-black text-neutral-200 shadow-xl"
         >
-          플레이 기록
+          로그
         </button>
         {isMobileOpen && (
           <div className="mt-1 w-48 rounded border border-neutral-800 bg-black/95 p-1.5 shadow-2xl">
