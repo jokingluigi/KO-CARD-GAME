@@ -7,6 +7,7 @@ import {
   playWrestlerFromHand,
   startGame,
   useActiveAbility,
+  useChampionAbility,
   type BoardSlot,
   type GameState,
 } from '@/game';
@@ -153,6 +154,16 @@ export default function Home() {
     setPlayError(null);
   }
 
+  function handleUseChampionAbility() {
+    const result = useChampionAbility(gameState, gameState.players[0].id);
+    if (!result.success) {
+      setPlayError(result.message);
+      return;
+    }
+    setGameState(result.state);
+    setPlayError(null);
+  }
+
   return (
     <GameStatePreview
       state={gameState}
@@ -166,6 +177,7 @@ export default function Home() {
       onAttackWrestler={handleAttackWrestler}
       onAttackPlayer={handleAttackPlayer}
       onUseActive={handleUseActive}
+      onUseChampionAbility={handleUseChampionAbility}
     />
   );
 }

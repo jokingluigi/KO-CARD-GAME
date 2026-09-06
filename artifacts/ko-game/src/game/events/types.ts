@@ -14,17 +14,22 @@ export type GameEventType =
   | 'CARD_REMOVED'
   | 'DAMAGE_DEALT'
   | 'ATTACK_DECLARED'
-  | 'GOLD_CHANGED';
+  | 'GOLD_CHANGED'
+  | 'CHAMPION_ABILITY_USED'
+  | 'CHAMPION_QUEST_PROGRESS'
+  | 'CHAMPION_QUEST_COMPLETED';
 
 export type EventSubject =
   | { type: 'PLAYER'; playerId: string }
   | { type: 'CARD'; cardInstanceId: CardInstanceId }
+  | { type: 'CHAMPION'; championId: string }
   | { type: 'SYSTEM' };
 
 export interface GameEvent {
   type: GameEventType;
   playerId?: string;
   cardInstanceId?: CardInstanceId;
+  championId?: string;
   source?: EventSubject;
   target?: EventSubject;
   reason?: string;

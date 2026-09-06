@@ -42,6 +42,7 @@ export function generateCardInstance(
     dodgeAvailable: definition.keywords.includes('DODGE'),
     isStunned: false,
     activeUsedThisTurn: false,
+    isDirectDeployedChampion: false,
   };
 }
 

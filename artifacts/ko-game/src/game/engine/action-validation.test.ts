@@ -31,6 +31,7 @@ function readyWrestler(id: string): CardInstance {
     dodgeAvailable: false,
     isStunned: false,
     activeUsedThisTurn: false,
+    isDirectDeployedChampion: false,
   };
 }
 

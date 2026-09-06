@@ -40,6 +40,7 @@ function wrestler(
     dodgeAvailable: false,
     isStunned: false,
     activeUsedThisTurn: false,
+    isDirectDeployedChampion: false,
   };
 }
 

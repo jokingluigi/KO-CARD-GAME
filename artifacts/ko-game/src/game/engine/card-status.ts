@@ -4,6 +4,7 @@ import type { CardInstanceId } from '../cards/types';
 import { getActiveAbility, resolveActiveAbility } from '../effects/effect-engine';
 import type { GameState } from '../types/game-state';
 import { validateCurrentPlayer } from './turn-system';
+import { processChampionQuestEvents } from '../champions/quests';
 
 function updateBoardCard(
   state: GameState,
@@ -27,7 +28,7 @@ export function silenceCard(
   cardInstanceId: CardInstanceId,
 ): GameState {
   return updateBoardCard(state, cardInstanceId, (card) =>
-    card.isSilenceImmune
+    card.isDirectDeployedChampion || card.isSilenceImmune
       ? card
       : {
           ...card,
@@ -81,10 +82,13 @@ export function useActiveAbility(
 
   const resolved = resolveActiveAbility(state, playerId, card);
   return actionSuccess(
-    updateBoardCard(resolved, cardInstanceId, (candidate) => ({
-      ...candidate,
-      activeUsedThisTurn: true,
-    })),
+    processChampionQuestEvents(
+      state,
+      updateBoardCard(resolved, cardInstanceId, (candidate) => ({
+        ...candidate,
+        activeUsedThisTurn: true,
+      })),
+    ),
   );
 }
 

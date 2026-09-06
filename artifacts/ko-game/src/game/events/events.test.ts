@@ -48,8 +48,13 @@ test('카드 사용은 CARD_PLAYED, GOLD_CHANGED, ENTER_FIELD를 기록한다', 
     0,
   );
   assert.equal(result.success, true);
-  const types = result.state.events.slice(-3).map((event) => event.type);
-  assert.deepEqual(types, ['CARD_PLAYED', 'GOLD_CHANGED', 'ENTER_FIELD']);
+  const types = result.state.events.slice(-4).map((event) => event.type);
+  assert.deepEqual(types, [
+    'CARD_PLAYED',
+    'GOLD_CHANGED',
+    'ENTER_FIELD',
+    'CHAMPION_QUEST_PROGRESS',
+  ]);
 });
 
 test('기본 공격은 선언과 피해 이벤트에 source와 target을 기록한다', () => {

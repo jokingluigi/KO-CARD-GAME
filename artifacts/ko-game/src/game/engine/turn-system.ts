@@ -5,6 +5,7 @@ import type { RandomSource } from '../random/random';
 import { MAX_DECK_SIZE, MIN_DECK_SIZE } from '../rules/constants';
 import { drawCard } from './draw-card';
 import { shuffle } from '../random/random';
+import { processChampionQuestEvents } from '../champions/quests';
 
 function beginPlayerTurn(state: GameState, playerId: string): GameState {
   const player = state.players.find((candidate) => candidate.id === playerId);
@@ -144,7 +145,10 @@ export function startGame(
     status: 'IN_PROGRESS',
   };
 
-  return beginPlayerTurn(startedState, firstPlayer.id);
+  return processChampionQuestEvents(
+    startedState,
+    beginPlayerTurn(startedState, firstPlayer.id),
+  );
 }
 
 export function endTurn(
@@ -193,5 +197,10 @@ export function endTurn(
     ],
   };
 
-  return actionSuccess(beginPlayerTurn(turnedState, nextPlayer.id));
+  return actionSuccess(
+    processChampionQuestEvents(
+      state,
+      beginPlayerTurn(turnedState, nextPlayer.id),
+    ),
+  );
 }

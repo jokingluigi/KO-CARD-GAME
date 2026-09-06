@@ -57,10 +57,27 @@ export const KEYWORD_TEST_CARD_DEFINITIONS: CardDefinition[] = [
   },
 ];
 
+export const TEST_CHAMPION_TOKEN_DEFINITION: CardDefinition = {
+  id: 'test-champion-token',
+  name: '테스트 챔피언 토큰',
+  cost: 0,
+  attack: 2,
+  health: 20,
+  rulesText: '챔피언 직접 출전 테스트 토큰',
+  isToken: true,
+  isChampionToken: true,
+  keywords: [],
+  abilities: [],
+};
+
 export function getCardDefinition(
   definitionId: string,
 ): CardDefinition | undefined {
-  return TEST_CARD_DEFINITIONS.find((card) => card.id === definitionId);
+  return [
+    ...TEST_CARD_DEFINITIONS,
+    ...KEYWORD_TEST_CARD_DEFINITIONS,
+    TEST_CHAMPION_TOKEN_DEFINITION,
+  ].find((card) => card.id === definitionId);
 }
 
 export function createTestDeck(playerId: string): CardInstance[] {
@@ -87,6 +104,7 @@ export function createTestDeck(playerId: string): CardInstance[] {
       dodgeAvailable: definition.keywords.includes('DODGE'),
       isStunned: false,
       activeUsedThisTurn: false,
+      isDirectDeployedChampion: false,
     };
   });
 }

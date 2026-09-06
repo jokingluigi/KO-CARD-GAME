@@ -1,5 +1,6 @@
 import type { GameState, PlayerState } from '../types/game-state';
 import { MAX_HAND_SIZE } from '../rules/constants';
+import { findDirectDeployedChampion } from './direct-champion';
 
 function finishGameFromFatigue(
   state: GameState,
@@ -28,11 +29,80 @@ export function drawCard(state: GameState, playerId: string): GameState {
 
   if (drawingPlayer.deck.length === 0) {
     const fatigueCount = drawingPlayer.fatigueCount + 1;
+    const directChampion = findDirectDeployedChampion(state, playerId);
+    if (directChampion) {
+      const currentHealth = directChampion.currentHealth - fatigueCount;
+      const defeated = currentHealth <= 0;
+      return {
+        ...state,
+        ...(defeated
+          ? finishGameFromFatigue(state, drawingPlayer)
+          : {}),
+        players: state.players.map((player) => {
+          if (player.id !== playerId) return player;
+          const board = player.board.map((card) =>
+            card?.instanceId === directChampion.instanceId
+              ? defeated
+                ? null
+                : { ...card, currentHealth }
+              : card,
+          ) as typeof player.board;
+          return {
+            ...player,
+            fatigueCount,
+            board,
+            graveyard: defeated
+              ? [
+                  ...player.graveyard,
+                  {
+                    ...directChampion,
+                    currentHealth,
+                    boardSlot: null,
+                  },
+                ]
+              : player.graveyard,
+          };
+        }),
+        events: [
+          ...state.events,
+          {
+            type: 'DAMAGE_DEALT',
+            playerId,
+            source: { type: 'SYSTEM' },
+            target: {
+              type: 'CARD',
+              cardInstanceId: directChampion.instanceId,
+            },
+            reason: 'FATIGUE',
+            amount: fatigueCount,
+          },
+          ...(defeated
+            ? [
+                {
+                  type: 'CARD_RETIRED' as const,
+                  playerId,
+                  cardInstanceId: directChampion.instanceId,
+                  source: { type: 'SYSTEM' as const },
+                  target: {
+                    type: 'CARD' as const,
+                    cardInstanceId: directChampion.instanceId,
+                  },
+                  reason: 'RETIRE',
+                  boardSlot: directChampion.boardSlot!,
+                },
+              ]
+            : []),
+        ],
+      };
+    }
     const health = drawingPlayer.health - fatigueCount;
     const fatiguedPlayer = {
       ...drawingPlayer,
       health,
       fatigueCount,
+      champion: drawingPlayer.champion
+        ? { ...drawingPlayer.champion, health }
+        : null,
     };
 
     return {

@@ -26,6 +26,7 @@ function card(index: number): CardInstance {
     dodgeAvailable: false,
     isStunned: false,
     activeUsedThisTurn: false,
+    isDirectDeployedChampion: false,
   };
 }
 

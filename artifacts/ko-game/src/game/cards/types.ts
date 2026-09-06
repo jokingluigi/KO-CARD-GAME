@@ -36,4 +36,5 @@ export interface CardInstance {
   dodgeAvailable: boolean;
   isStunned: boolean;
   activeUsedThisTurn: boolean;
+  isDirectDeployedChampion: boolean;
 }

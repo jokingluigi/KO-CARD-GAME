@@ -6,6 +6,7 @@ import type { BoardSlot } from './board-position';
 import { isBoardFull } from './board-position';
 import { enterField } from './enter-field';
 import { validateCurrentPlayer } from './turn-system';
+import { processChampionQuestEvents } from '../champions/quests';
 
 export function playWrestlerFromHand(
   state: GameState,
@@ -87,9 +88,12 @@ export function playWrestlerFromHand(
   };
 
   return actionSuccess(
-    enterField(paidState, playerId, card, boardSlot, {
+    processChampionQuestEvents(
+      state,
+      enterField(paidState, playerId, card, boardSlot, {
       type: 'PLAYER',
       playerId,
-    }),
+      }),
+    ),
   );
 }

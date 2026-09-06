@@ -9,6 +9,8 @@ import {
   hasKeyword,
   resolveTriggeredAbilities,
 } from '../effects/effect-engine';
+import { processChampionQuestEvents } from '../champions/quests';
+import { findDirectDeployedChampion } from './direct-champion';
 
 export type AttackTarget =
   | {
@@ -95,10 +97,24 @@ function retireDefeatedWrestlers(state: GameState): GameState {
     };
   });
 
+  const directChampionLoser = retired.find(
+    (entry) => entry.card.isDirectDeployedChampion,
+  )?.playerId;
   const retiredState: GameState = {
     ...state,
     players,
     events: [...state.events, ...retireEvents],
+    ...(directChampionLoser
+      ? {
+          status: 'FINISHED' as const,
+          activePlayerId: null,
+          winnerId:
+            state.players.find(
+              (player) => player.id !== directChampionLoser,
+            )?.id ?? null,
+          loserId: directChampionLoser,
+        }
+      : {}),
   };
 
   return retired.reduce(
@@ -225,7 +241,16 @@ export function attack(
       );
     }
 
-    const remainingHealth = defendingPlayer.health - attacker.currentAttack;
+    const directChampion = findDirectDeployedChampion(
+      state,
+      target.playerId,
+    );
+    const damagedDirectChampion = directChampion
+      ? receiveDamage(directChampion, attacker.currentAttack)
+      : null;
+    const remainingHealth = damagedDirectChampion
+      ? damagedDirectChampion.currentHealth
+      : defendingPlayer.health - attacker.currentAttack;
     const attackedState: GameState = {
       ...state,
       players: state.players.map((player) => {
@@ -244,7 +269,23 @@ export function attack(
         }
 
         return player.id === target.playerId
-          ? { ...player, health: remainingHealth }
+          ? {
+              ...player,
+              ...(damagedDirectChampion
+                ? {
+                    board: player.board.map((card) =>
+                      card?.instanceId === damagedDirectChampion.instanceId
+                        ? damagedDirectChampion
+                        : card,
+                    ) as typeof player.board,
+                  }
+                : {
+                    health: remainingHealth,
+                    champion: player.champion
+                      ? { ...player.champion, health: remainingHealth }
+                      : null,
+                  }),
+            }
           : player;
       }),
       events: [
@@ -254,7 +295,12 @@ export function attack(
           playerId: attackingPlayerId,
           cardInstanceId: attackerInstanceId,
           source: { type: 'CARD', cardInstanceId: attackerInstanceId },
-          target: { type: 'PLAYER', playerId: target.playerId },
+          target: damagedDirectChampion
+            ? {
+                type: 'CARD',
+                cardInstanceId: damagedDirectChampion.instanceId,
+              }
+            : { type: 'PLAYER', playerId: target.playerId },
           reason: 'BASIC_ATTACK',
         },
         {
@@ -262,24 +308,42 @@ export function attack(
           playerId: attackingPlayerId,
           cardInstanceId: attackerInstanceId,
           source: { type: 'CARD', cardInstanceId: attackerInstanceId },
-          target: { type: 'PLAYER', playerId: target.playerId },
+          target: damagedDirectChampion
+            ? {
+                type: 'CARD',
+                cardInstanceId: damagedDirectChampion.instanceId,
+              }
+            : { type: 'PLAYER', playerId: target.playerId },
           reason: 'BASIC_ATTACK',
           amount: attacker.currentAttack,
         },
       ],
     };
 
-    if (remainingHealth > 0) {
-      return actionSuccess(attackedState);
+    if (directChampion) {
+      return actionSuccess(
+        processChampionQuestEvents(
+          state,
+          retireDefeatedWrestlers(attackedState),
+        ),
+      );
     }
 
-    return actionSuccess({
-      ...attackedState,
-      status: 'FINISHED',
-      activePlayerId: null,
-      winnerId: attackingPlayerId,
-      loserId: target.playerId,
-    });
+    if (remainingHealth > 0) {
+      return actionSuccess(
+        processChampionQuestEvents(state, attackedState),
+      );
+    }
+
+    return actionSuccess(
+      processChampionQuestEvents(state, {
+        ...attackedState,
+        status: 'FINISHED',
+        activePlayerId: null,
+        winnerId: attackingPlayerId,
+        loserId: target.playerId,
+      }),
+    );
   }
 
   const defenderEntry = findBoardCard(
@@ -356,5 +420,10 @@ export function attack(
     ],
   };
 
-  return actionSuccess(retireDefeatedWrestlers(damagedState));
+  return actionSuccess(
+    processChampionQuestEvents(
+      state,
+      retireDefeatedWrestlers(damagedState),
+    ),
+  );
 }

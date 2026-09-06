@@ -62,6 +62,7 @@ test('일반 토큰과 챔피언 토큰을 따로 관리한다', () => {
   assert.equal(token.isChampionToken, false);
   assert.equal(championToken.isToken, true);
   assert.equal(championToken.isChampionToken, true);
+  assert.equal(championToken.isDirectDeployedChampion, false);
 });
 
 test('생성 출처만으로 챔피언 토큰이 되지 않는다', () => {
@@ -71,6 +72,7 @@ test('생성 출처만으로 챔피언 토큰이 되지 않는다', () => {
 
   assert.equal(card.isGenerated, true);
   assert.equal(card.isChampionToken, false);
+  assert.equal(card.isDirectDeployedChampion, false);
 });
 
 test('무작위 카드 생성 후보에서 챔피언 토큰을 항상 제외한다', () => {

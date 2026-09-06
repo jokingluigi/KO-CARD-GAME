@@ -51,7 +51,9 @@ test('필드 진입은 ENTER_FIELD 이벤트를 발생시킨다', () => {
     playWrestlerFromHand(initial, 'player-1', card.instanceId, 0),
   );
 
-  assert.deepEqual(state.events.at(-1), {
+  assert.deepEqual(
+    state.events.find((event) => event.type === 'ENTER_FIELD'),
+    {
     type: 'ENTER_FIELD',
     playerId: 'player-1',
     cardInstanceId: card.instanceId,
@@ -59,7 +61,9 @@ test('필드 진입은 ENTER_FIELD 이벤트를 발생시킨다', () => {
     source: { type: 'PLAYER', playerId: 'player-1' },
     target: { type: 'CARD', cardInstanceId: card.instanceId },
     reason: 'ENTER_FIELD',
-  });
+    },
+  );
+  assert.equal(state.players[0].champion?.questProgress, 1);
 });
 
 test('골드가 부족하면 선수를 낼 수 없다', () => {
