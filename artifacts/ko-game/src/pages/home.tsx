@@ -35,7 +35,15 @@ export default function Home() {
       return;
     }
 
-    setGameState(result.state);
+    // 테스트 중에는 상대 턴을 즉시 종료해 플레이어 1의 다음 턴으로 돌아온다.
+    const opponentId = gameState.players[1].id;
+    const opponentTurnResult = endTurn(result.state, opponentId);
+    if (!opponentTurnResult.success) {
+      setPlayError(opponentTurnResult.message);
+      return;
+    }
+
+    setGameState(opponentTurnResult.state);
     setSelectedCardId(null);
     setSelectedAttackerId(null);
     setPlayError(null);
