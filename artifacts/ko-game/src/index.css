@@ -45,45 +45,46 @@
 }
 
 :root {
-  /* Competitive card game identity - Void Blue & Cyan (Dark Mode Default) */
-  --background: 230 45% 6%;
-  --foreground: 210 40% 98%;
+  /* Modern PPV Arena Theme */
+  --background: 240 10% 5%;
+  --foreground: 0 0% 100%;
 
-  --card: 230 40% 10%;
-  --card-foreground: 210 40% 98%;
-  --card-border: 230 45% 15%;
+  --card: 240 10% 8%;
+  --card-foreground: 0 0% 100%;
+  --card-border: 240 10% 15%;
 
-  --popover: 230 40% 10%;
-  --popover-foreground: 210 40% 98%;
-  --popover-border: 230 45% 15%;
+  --popover: 240 10% 8%;
+  --popover-foreground: 0 0% 100%;
+  --popover-border: 240 10% 15%;
 
-  /* Neon Cyan */
-  --primary: 180 100% 50%;
-  --primary-foreground: 230 45% 6%;
+  /* Championship Gold */
+  --primary: 45 100% 50%;
+  --primary-foreground: 240 10% 5%;
 
-  /* Subtle Amethyst */
-  --secondary: 270 70% 60%;
-  --secondary-foreground: 210 40% 98%;
+  /* Laser Blue / Cyan */
+  --secondary: 190 100% 50%;
+  --secondary-foreground: 240 10% 5%;
 
-  /* Desaturated Slate */
-  --muted: 230 30% 15%;
-  --muted-foreground: 230 20% 65%;
+  /* Dark Arena Slate */
+  --muted: 240 10% 15%;
+  --muted-foreground: 240 5% 65%;
 
-  --accent: 230 40% 20%;
-  --accent-foreground: 210 40% 98%;
+  /* Neon Red */
+  --accent: 350 100% 50%;
+  --accent-foreground: 0 0% 100%;
 
-  --destructive: 0 84% 60%;
-  --destructive-foreground: 210 40% 98%;
+  --destructive: 0 100% 50%;
+  --destructive-foreground: 0 0% 100%;
 
-  --border: 230 45% 18%;
-  --input: 230 45% 15%;
-  --ring: 180 100% 50%;
+  --border: 240 10% 20%;
+  --input: 240 10% 15%;
+  --ring: 45 100% 50%;
 
   --app-font-sans: 'Inter', system-ui, sans-serif;
   --app-font-serif: Georgia, serif;
   --app-font-mono: 'JetBrains Mono', 'Fira Code', Menlo, monospace;
   
-  --radius: 0.25rem;
+  --radius: 0.5rem;
 }
 
 @layer base {

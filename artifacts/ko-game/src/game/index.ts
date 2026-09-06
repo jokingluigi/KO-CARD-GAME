@@ -3,6 +3,7 @@ export * from './cards/types';
 export * from './champions/types';
 export * from './effects/types';
 export * from './engine/create-initial-game-state';
+export * from './engine/turn-system';
 export * from './events/types';
 export * from './rules/constants';
 export * from './types/game-state';
