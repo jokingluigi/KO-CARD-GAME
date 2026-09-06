@@ -12,6 +12,13 @@ import {
   type GameState,
 } from '@/game';
 import { ActionHistory } from './action-history';
+import {
+  AltInspectProvider,
+  CardInspectContent,
+  ChampionAbilityInspectContent,
+  ChampionQuestInspectContent,
+  Inspectable,
+} from './alt-inspector';
 
 interface GameStatePreviewProps {
   state: GameState;
@@ -69,57 +76,28 @@ export function GameStatePreview({
   const canUseChampion = canUseChampionAbility(state, me.id);
   const mySurvivalHealth = getPlayerSurvivalHealth(state, me.id);
   const opponentSurvivalHealth = getPlayerSurvivalHealth(state, opp.id);
+  const championUnavailableReason = !isMyTurn
+    ? '내 턴에만 사용할 수 있습니다.'
+    : me.champion && me.currentGold < me.champion.abilityCost
+      ? '현재 골드가 부족합니다.'
+      : '현재 사용할 수 없습니다.';
   
   return (
+    <AltInspectProvider>
     <div className="flex min-h-[100dvh] w-full flex-col overflow-x-hidden overflow-y-auto bg-neutral-950 font-sans text-neutral-100 selection:bg-primary selection:text-black md:overflow-hidden">
       <ActionHistory state={state} />
       
       {/* Background Ambience */}
       <div className="pointer-events-none absolute inset-0 z-0">
         <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,_#1a1a24_0%,_#050505_100%)]"></div>
-        {/* Ring ropes/canvas aesthetic overlay */}
-        <div className="absolute left-0 right-0 top-1/2 h-px bg-white/5 shadow-[0_0_10px_rgba(255,255,255,0.2)]"></div>
-        <div className="absolute left-0 right-0 top-1/2 -translate-y-[20px] h-px bg-red-500/10"></div>
-        <div className="absolute left-0 right-0 top-1/2 translate-y-[20px] h-px bg-blue-500/10"></div>
       </div>
 
-      <div className="relative z-10 mx-auto flex min-h-[100dvh] w-full max-w-5xl flex-1 flex-col justify-between pb-0 pt-2 md:h-[100dvh] md:min-h-0 md:pt-4">
+      <div className="relative mx-auto flex min-h-[100dvh] w-full max-w-5xl flex-1 flex-col justify-between pb-0 pt-2 md:h-[100dvh] md:min-h-0 md:pt-4">
          
          {/* TOP BAR: Opponent Info */}
-         <div className="flex h-20 shrink-0 items-start justify-between px-2 md:h-28 md:px-4">
-            <div className="flex items-center gap-3 md:gap-6">
-               {/* Opponent Champion */}
-               <div 
-                 className={`group relative flex h-14 w-14 flex-col items-center justify-center rounded-sm border-2 bg-neutral-900 md:h-20 md:w-20 ${
-                   selectedAttackerId ? 'cursor-crosshair border-red-500 shadow-[0_0_15px_rgba(239,68,68,0.4)]' : 'border-neutral-700'
-                 }`}
-                 onClick={selectedAttackerId ? onAttackPlayer : undefined}
-               >
-                   <span className="px-1 text-center text-[9px] font-black leading-tight text-red-300 md:text-[11px]">
-                     {opp.champion?.name || '상대 챔피언'}
-                   </span>
-                  <div className="absolute -bottom-2 -right-2 z-20 rounded border border-red-800 bg-red-600 px-2 py-0.5 font-display text-xs text-white shadow transition-transform group-hover:scale-110 md:text-base">
-                    {opponentSurvivalHealth}
-                  </div>
-                  {selectedAttackerId && (
-                    <div className="pointer-events-none absolute inset-0 z-10 flex items-center justify-center bg-red-500/10 transition-opacity group-hover:bg-red-500/20">
-                      <div className="flex h-8 w-8 items-center justify-center rounded-full border-2 border-red-500/50 opacity-0 transition-opacity group-hover:opacity-100">
-                        <div className="absolute h-full w-1 bg-red-500/50"></div>
-                        <div className="absolute h-1 w-full bg-red-500/50"></div>
-                      </div>
-                    </div>
-                  )}
-               </div>
-               
-               {/* Opponent Gold */}
-               <div className="flex flex-col items-center rounded border border-neutral-700 bg-neutral-900/60 px-2 py-1 md:px-4">
-                  <span className="text-[8px] font-bold text-neutral-400 md:text-[10px]">골드</span>
-                 <span className="font-display text-sm font-bold leading-none text-primary md:text-xl">{opp.currentGold}</span>
-               </div>
-            </div>
-
-            {/* Opponent Hand */}
-            <div className="flex items-center -space-x-2 md:-space-x-4">
+         <div className="relative z-[90] h-24 shrink-0 px-2 md:h-32 md:px-4">
+            {/* Opponent Hand: centered like the player's hand */}
+            <div className="absolute left-1/2 top-0 z-[100] flex -translate-x-1/2 items-start -space-x-2 md:-space-x-4">
                {opp.hand.length === 0 ? (
                  <span className="text-xs font-bold text-neutral-600">손패 없음</span>
                ) : (
@@ -130,6 +108,44 @@ export function GameStatePreview({
                    </div>
                  ))
                )}
+            </div>
+
+            {/* Mirrored opponent HUD */}
+            <div className="ml-auto flex w-24 flex-col items-end gap-1 md:w-48 md:gap-2">
+              <div className="flex flex-row-reverse items-start gap-2 md:gap-3">
+                <div
+                  className={`group relative flex h-14 w-14 flex-col items-center justify-center rounded-sm border-2 bg-neutral-900 md:h-20 md:w-20 ${
+                    selectedAttackerId ? 'cursor-crosshair border-red-500 shadow-[0_0_15px_rgba(239,68,68,0.4)]' : 'border-red-900'
+                  }`}
+                  onClick={selectedAttackerId ? onAttackPlayer : undefined}
+                >
+                  <span className="px-1 text-center text-[9px] font-black leading-tight text-red-300 md:text-[11px]">
+                    {opp.champion?.name || '상대 챔피언'}
+                  </span>
+                  {selectedAttackerId && (
+                    <div className="pointer-events-none absolute inset-0 z-10 bg-red-500/15" />
+                  )}
+                </div>
+                <div className="flex flex-col items-end gap-1">
+                  <div className="rounded border border-neutral-700 bg-neutral-900/80 px-2 py-1 text-right md:px-3">
+                    <div className="text-[8px] font-bold text-neutral-500 md:text-[10px]">골드</div>
+                    <div className="font-display text-sm font-black text-primary md:text-xl">{opp.currentGold}</div>
+                  </div>
+                  <div className="rounded border border-red-800 bg-red-950/80 px-2 py-1 text-right">
+                    <div className="text-[7px] font-bold text-red-300 md:text-[9px]">챔피언 체력</div>
+                    <div className="font-display text-sm font-black text-white md:text-lg">
+                      {opponentSurvivalHealth} / {opp.champion?.maxHealth ?? 20}
+                    </div>
+                  </div>
+                </div>
+              </div>
+              {opp.champion?.quest && (
+                <Inspectable content={<ChampionQuestInspectContent champion={opp.champion} />}>
+                  <div tabIndex={0} className="rounded border border-purple-900 bg-purple-950/70 px-2 py-1 text-[8px] font-bold text-purple-200 md:text-[10px]">
+                    퀘스트 {opp.champion.questCompleted ? '완료' : `${opp.champion.questProgress}/${opp.champion.quest.requiredProgress}`}
+                  </div>
+                </Inspectable>
+              )}
             </div>
          </div>
 
@@ -174,7 +190,7 @@ export function GameStatePreview({
             </div>
          </div>
 
-          <aside className="absolute right-2 top-24 z-40 flex w-24 flex-col items-stretch gap-2 rounded border border-neutral-800 bg-black/85 p-2 shadow-2xl backdrop-blur-md md:fixed md:right-4 md:top-1/2 md:w-32 md:-translate-y-1/2 md:p-3">
+          <aside className="absolute right-2 top-36 z-40 flex w-24 flex-col items-stretch gap-2 rounded border border-neutral-800 bg-black/85 p-2 shadow-2xl backdrop-blur-md md:fixed md:right-4 md:top-1/2 md:w-32 md:-translate-y-1/2 md:p-3">
             <div className="border-b border-neutral-800 pb-2 text-right">
               <div className="text-[9px] font-bold text-neutral-500 md:text-[10px]">현재 턴 {state.turn}</div>
               <div className={`text-xs font-black md:text-base ${isMyTurn ? 'text-primary' : 'text-red-400'}`}>
@@ -211,10 +227,10 @@ export function GameStatePreview({
           </aside>
 
          {/* BOTTOM BAR: Player info & Hand */}
-         <div className="relative z-30 flex min-h-[160px] shrink-0 items-end justify-between px-2 pb-2 md:min-h-[220px] md:px-4 md:pb-4">
+         <div className="relative z-[90] flex min-h-[160px] shrink-0 items-end justify-between px-2 pb-2 md:min-h-[220px] md:px-4 md:pb-4">
             
             {/* Player Stats & Champion */}
-            <div className="z-30 flex w-24 shrink-0 flex-col gap-2 md:w-48">
+            <div className="z-[95] flex w-24 shrink-0 flex-col gap-1 md:w-48 md:gap-2">
                <div className="mb-1 flex flex-col rounded-r border-l-4 border-primary bg-neutral-900/60 px-2 py-1 shadow-sm md:py-2">
                   <span className="text-[8px] font-bold text-neutral-400 md:text-[10px]">골드</span>
                  <span className="font-display text-lg font-bold leading-none text-primary md:text-3xl">{me.currentGold}</span>
@@ -224,27 +240,51 @@ export function GameStatePreview({
                   <span className="px-1 text-center text-[9px] font-black leading-tight text-blue-400 md:text-[12px]">
                     {me.champion?.name || '내 챔피언'}
                   </span>
-                  <div className="absolute -right-2 -top-2 rounded border border-blue-800 bg-blue-600 px-2 py-0.5 font-display text-xs text-white shadow md:text-lg">
-                    {mySurvivalHealth}
-                  </div>
                </div>
 
-               <button
-                 disabled={!canUseChampion}
-                 onClick={onUseChampionAbility}
-                 className={`w-full rounded border py-1.5 text-[9px] font-bold uppercase tracking-wider transition-all md:py-2 md:text-[11px] ${
-                   canUseChampion
-                   ? 'cursor-pointer border-blue-500 bg-blue-900/50 text-blue-200 shadow-[0_0_10px_rgba(59,130,246,0.3)] hover:bg-blue-800 hover:text-white'
-                   : 'cursor-not-allowed border-neutral-800 bg-neutral-900 text-neutral-600'
-                 }`}
-               >
-                 챔피언 능력 ({me.champion?.abilityCost || 0}G)
-               </button>
+               <div className="rounded border border-blue-800 bg-blue-950/80 px-2 py-1">
+                 <div className="text-[7px] font-bold text-blue-300 md:text-[9px]">챔피언 체력</div>
+                 <div className="font-display text-sm font-black text-white md:text-xl">
+                   {mySurvivalHealth} / {me.champion?.maxHealth ?? 20}
+                 </div>
+               </div>
+
+               {me.champion?.quest && (
+                 <Inspectable content={<ChampionQuestInspectContent champion={me.champion} />}>
+                   <div tabIndex={0} className="rounded border border-purple-900 bg-purple-950/70 px-2 py-1 text-[8px] font-bold text-purple-200 md:text-[10px]">
+                     퀘스트 {me.champion.questCompleted ? '완료' : `${me.champion.questProgress}/${me.champion.quest.requiredProgress}`}
+                   </div>
+                 </Inspectable>
+               )}
+
+               {me.champion && (
+                 <Inspectable
+                   content={
+                     <ChampionAbilityInspectContent
+                       champion={me.champion}
+                       available={canUseChampion}
+                       unavailableReason={championUnavailableReason}
+                     />
+                   }
+                 >
+                   <button
+                     disabled={!canUseChampion}
+                     onClick={onUseChampionAbility}
+                     className={`w-full rounded border py-1.5 text-[9px] font-bold uppercase tracking-wider transition-all md:py-2 md:text-[11px] ${
+                       canUseChampion
+                       ? 'cursor-pointer border-blue-500 bg-blue-900/50 text-blue-200 shadow-[0_0_10px_rgba(59,130,246,0.3)] hover:bg-blue-800 hover:text-white'
+                       : 'cursor-not-allowed border-neutral-800 bg-neutral-900 text-neutral-600'
+                     }`}
+                   >
+                     챔피언 능력 ({me.champion.abilityCost}G)
+                   </button>
+                 </Inspectable>
+               )}
             </div>
 
             {/* Player Hand */}
-             <div className="z-20 flex h-full min-w-0 flex-1 items-end overflow-x-auto">
-               <div className="flex w-max justify-start gap-2 px-4 pb-3 md:mx-auto md:justify-center md:gap-0 md:-space-x-12">
+             <div className="relative z-[100] flex h-full min-w-0 flex-1 items-end overflow-x-auto">
+               <div className="relative z-[100] flex w-max justify-start gap-2 px-4 pb-3 md:mx-auto md:justify-center md:gap-0 md:-space-x-12">
                  {me.hand.length === 0 ? (
                     <span className="py-4 text-xs font-bold text-neutral-600">손패 없음</span>
                  ) : (
@@ -272,6 +312,7 @@ export function GameStatePreview({
          </div>
       </div>
     </div>
+    </AltInspectProvider>
   );
 }
 
@@ -301,7 +342,8 @@ function HandCard({
   }
 
   return (
-    <div className={containerClass} onClick={onClick} style={style}>
+    <Inspectable content={<CardInspectContent card={card} />} className="relative shrink-0">
+    <div className={containerClass} onClick={onClick} style={style} tabIndex={0}>
        <div className="absolute -left-2 -top-2 z-20 flex h-6 w-6 items-center justify-center rounded-full border-2 border-blue-900 bg-blue-700 font-display text-xs font-bold text-white shadow md:-left-3 md:-top-3 md:h-8 md:w-8 md:text-sm">
          {card.currentCost}
        </div>
@@ -330,6 +372,7 @@ function HandCard({
          </div>
        )}
     </div>
+    </Inspectable>
   );
 }
 
@@ -388,7 +431,8 @@ function BoardSlot({
   const isDead = card.currentHealth <= 0;
 
   return (
-    <div className={containerClass} onClick={() => onClick(card.instanceId)}>
+    <Inspectable content={<CardInspectContent card={card} />} className="relative shrink-0">
+    <div className={containerClass} onClick={() => onClick(card.instanceId)} tabIndex={0}>
        <div className="absolute -left-2 -top-2 z-30 flex h-6 w-6 items-center justify-center rounded-full border-2 border-blue-900 bg-blue-700 font-display text-[10px] font-bold text-white shadow-md md:-left-3 md:-top-3 md:h-8 md:w-8 md:text-sm">
          {card.currentCost}
        </div>
@@ -437,5 +481,6 @@ function BoardSlot({
          {card.currentHealth}
        </div>
     </div>
+    </Inspectable>
   );
 }

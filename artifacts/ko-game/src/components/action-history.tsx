@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { getCardDefinition, type CardInstance, type GameEvent, type GameState } from '@/game';
+import { CardInspectContent, Inspectable } from './alt-inspector';
 
 const VISIBLE_EVENT_TYPES = new Set<GameEvent['type']>([
   'CARD_PLAYED',
@@ -98,7 +99,6 @@ function CardMiniature({
   state: GameState;
   cardInstanceId?: string;
 }) {
-  const [isDetailOpen, setIsDetailOpen] = useState(false);
   const card = findCard(state, cardInstanceId);
   if (!card) {
     return (
@@ -110,15 +110,14 @@ function CardMiniature({
   const definition = getCardDefinition(card.definitionId);
 
   return (
-    <div
+    <Inspectable
+      content={<CardInspectContent card={card} />}
       className="relative shrink-0"
-      tabIndex={0}
-      onMouseEnter={() => setIsDetailOpen(true)}
-      onMouseLeave={() => setIsDetailOpen(false)}
-      onFocus={() => setIsDetailOpen(true)}
-      onBlur={() => setIsDetailOpen(false)}
     >
-      <div className="flex h-12 w-9 flex-col overflow-hidden rounded border border-neutral-600 bg-neutral-900 shadow">
+      <div
+        className="flex h-12 w-9 flex-col overflow-hidden rounded border border-neutral-600 bg-neutral-900 shadow"
+        tabIndex={0}
+      >
         <div className="flex flex-1 items-center justify-center bg-neutral-950 text-[6px] text-neutral-600">
           이미지 없음
         </div>
@@ -126,20 +125,7 @@ function CardMiniature({
           {definition?.name ?? '카드'}
         </div>
       </div>
-      {isDetailOpen && (
-        <div className="pointer-events-none absolute left-full top-0 z-[70] ml-2 w-44 rounded border border-neutral-700 bg-neutral-950 p-3 text-left shadow-2xl">
-          <div className="mb-2 font-bold text-white">{definition?.name ?? '알 수 없는 카드'}</div>
-          <div className="mb-2 flex gap-3 font-mono text-xs">
-            <span className="text-blue-300">{card.currentCost}G</span>
-            <span className="text-amber-300">공격 {card.currentAttack}</span>
-            <span className="text-red-300">체력 {card.currentHealth}</span>
-          </div>
-          <p className="text-[11px] leading-relaxed text-neutral-400">
-            {definition?.rulesText || '효과 없음'}
-          </p>
-        </div>
-      )}
-    </div>
+    </Inspectable>
   );
 }
 
