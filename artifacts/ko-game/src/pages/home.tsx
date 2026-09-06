@@ -6,10 +6,10 @@ export default function Home() {
     <div className="min-h-screen w-full flex flex-col p-6 md:p-12 gap-8 max-w-7xl mx-auto">
       <header className="flex flex-col gap-2">
         <h1 className="text-3xl md:text-4xl font-bold tracking-tight text-primary uppercase font-mono shadow-primary/20 drop-shadow-md">
-          KO Prototype Ready
+          KO 프로토타입 준비 완료
         </h1>
         <p className="text-muted-foreground font-mono text-sm max-w-2xl">
-          Engine initialized. Local game state is mounted and ready for development.
+          게임 엔진이 초기화되었습니다. 개발을 위한 로컬 게임 상태가 준비되었습니다.
         </p>
       </header>
 
