@@ -88,7 +88,7 @@ function historyEvents(state: GameState): GameEvent[] {
         !event.cardInstanceId ||
         !playedCardIds.has(event.cardInstanceId),
     )
-    .slice(-10)
+    .slice(-6)
     .reverse();
 }
 
@@ -102,7 +102,7 @@ function CardMiniature({
   const card = findCard(state, cardInstanceId);
   if (!card) {
     return (
-      <div className="flex h-12 w-9 shrink-0 items-center justify-center rounded border border-neutral-700 bg-neutral-900 text-[7px] text-neutral-500">
+      <div className="flex h-10 w-8 shrink-0 items-center justify-center rounded border border-neutral-700 bg-neutral-900 text-[6px] text-neutral-500">
         기록
       </div>
     );
@@ -115,13 +115,13 @@ function CardMiniature({
       className="relative shrink-0"
     >
       <div
-        className="flex h-12 w-9 flex-col overflow-hidden rounded border border-neutral-600 bg-neutral-900 shadow"
+        className="flex h-10 w-8 flex-col overflow-hidden rounded border border-neutral-600 bg-neutral-900 shadow"
         tabIndex={0}
       >
-        <div className="flex flex-1 items-center justify-center bg-neutral-950 text-[6px] text-neutral-600">
+        <div className="flex flex-1 items-center justify-center bg-neutral-950 text-[5px] text-neutral-600">
           이미지 없음
         </div>
-        <div className="truncate border-t border-neutral-800 px-0.5 py-0.5 text-center text-[6px] font-bold text-neutral-300">
+        <div className="truncate border-t border-neutral-800 px-0.5 py-0.5 text-center text-[5px] font-bold text-neutral-300">
           {definition?.name ?? '카드'}
         </div>
       </div>
@@ -132,14 +132,14 @@ function CardMiniature({
 function HistoryList({ state }: { state: GameState }) {
   const events = historyEvents(state);
   return (
-    <div className="max-h-[62dvh] space-y-1 overflow-y-auto pr-1 md:max-h-none md:overflow-visible">
+    <div className="max-h-[52dvh] space-y-0.5 overflow-y-auto pr-1 md:max-h-none md:overflow-visible">
       {events.length === 0 ? (
-        <div className="py-6 text-center text-[10px] text-neutral-600">아직 기록이 없습니다</div>
+        <div className="py-4 text-center text-[9px] text-neutral-600">아직 기록이 없습니다</div>
       ) : (
         events.map((event, index) => (
           <div
             key={`${state.events.length - index}-${event.type}-${event.cardInstanceId ?? ''}`}
-            className={`flex items-center gap-2 rounded border-l-2 bg-neutral-950/90 p-1.5 shadow animate-in fade-in slide-in-from-left-1 duration-200 ${
+            className={`flex items-center gap-1.5 rounded border-l-2 bg-neutral-950/90 p-1 shadow animate-in fade-in slide-in-from-left-1 duration-200 ${
               event.playerId === state.players[0].id
                 ? 'border-l-blue-500'
                 : 'border-l-red-500'
@@ -162,7 +162,7 @@ function HistoryList({ state }: { state: GameState }) {
               >
                 {playerLabel(state, event.playerId)}
               </div>
-              <div className="line-clamp-2 text-[10px] font-bold leading-tight text-neutral-200">
+                <div className="line-clamp-1 text-[9px] font-bold leading-tight text-neutral-200">
                 {eventTitle(state, event)}
               </div>
             </div>
@@ -178,8 +178,8 @@ export function ActionHistory({ state }: { state: GameState }) {
 
   return (
     <>
-      <aside className="fixed left-3 top-1/2 z-50 hidden w-44 -translate-y-1/2 rounded border border-neutral-800 bg-black/85 p-2 shadow-2xl backdrop-blur-md md:block">
-        <div className="mb-2 border-b border-neutral-800 pb-2 text-[11px] font-black tracking-[0.18em] text-neutral-300">
+      <aside className="fixed left-3 top-1/2 z-50 hidden w-44 -translate-y-1/2 rounded border border-neutral-800 bg-black/85 p-1.5 shadow-2xl backdrop-blur-md md:block">
+        <div className="mb-1 border-b border-neutral-800 pb-1.5 text-[10px] font-black tracking-[0.18em] text-neutral-300">
           플레이 기록
         </div>
         <HistoryList state={state} />
@@ -195,7 +195,7 @@ export function ActionHistory({ state }: { state: GameState }) {
           플레이 기록
         </button>
         {isMobileOpen && (
-          <div className="mt-1 w-48 rounded border border-neutral-800 bg-black/95 p-2 shadow-2xl">
+          <div className="mt-1 w-48 rounded border border-neutral-800 bg-black/95 p-1.5 shadow-2xl">
             <HistoryList state={state} />
           </div>
         )}

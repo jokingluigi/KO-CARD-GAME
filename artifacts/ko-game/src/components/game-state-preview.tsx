@@ -247,7 +247,7 @@ export function GameStatePreview({
           )}
 
          {/* BOTTOM BAR: Player info & Hand */}
-         <div className="relative z-[90] flex min-h-[160px] shrink-0 items-end justify-between px-2 pb-2 md:min-h-[220px] md:px-4 md:pb-4">
+          <div className="relative z-[90] flex min-h-[160px] shrink-0 items-end justify-start px-2 pb-2 md:min-h-[220px] md:px-4 md:pb-4">
             
             {/* Player Stats & Champion */}
             <div className="z-[95] flex w-[180px] shrink-0 flex-col gap-1 md:w-48 md:gap-2">
@@ -307,7 +307,7 @@ export function GameStatePreview({
 
             {/* Player Hand */}
              <div className="relative z-[100] flex h-full min-w-0 flex-1 items-end overflow-x-auto scrollbar-none pt-12 md:pt-16">
-               <div className="relative z-[100] flex w-max justify-start gap-2 px-4 pb-3 md:mx-auto md:justify-center md:gap-3">
+               <div className="relative z-[100] flex w-max justify-start gap-2 px-4 pb-3 md:mx-0 md:px-0 md:justify-start md:gap-3">
                  {me.hand.length === 0 ? (
                     <span className="py-4 text-xs font-bold text-neutral-600">손패 없음</span>
                  ) : (
@@ -331,9 +331,6 @@ export function GameStatePreview({
                  )}
                </div>
             </div>
-
-            {/* Spacer for symmetry */}
-            <div className="hidden w-0 shrink-0 md:block md:w-48"></div>
 
          </div>
       </div>
