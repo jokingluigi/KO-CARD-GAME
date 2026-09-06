@@ -1,0 +1,28 @@
+kind = "web"
+previewPath = "/"
+title = "KO"
+description = "온라인 대전으로 확장 가능한 엔진 구조를 갖춘 React + TypeScript 브라우저 카드게임 프로토타입입니다."
+version = "1.0.0"
+id = "artifacts/ko-game"
+router = "path"
+
+[[services]]
+name = "web"
+paths = [ "/" ]
+localPort = 24268
+
+[services.development]
+run = "pnpm --filter @workspace/ko-game run dev"
+
+[services.production]
+build = [ "pnpm", "--filter", "@workspace/ko-game", "run", "build" ]
+serve = "static"
+publicDir = "artifacts/ko-game/dist/public"
+
+[[services.production.rewrites]]
+from = "/*"
+to = "/index.html"
+
+[services.env]
+PORT = "24268"
+BASE_PATH = "/"
