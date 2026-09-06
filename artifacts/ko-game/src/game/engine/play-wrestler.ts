@@ -65,7 +65,31 @@ export function playWrestlerFromHand(
           }
         : candidate,
     ),
+    events: [
+      ...state.events,
+      {
+        type: 'CARD_PLAYED',
+        playerId,
+        cardInstanceId,
+        source: { type: 'PLAYER', playerId },
+        target: { type: 'CARD', cardInstanceId },
+        reason: 'PLAY_FROM_HAND',
+      },
+      {
+        type: 'GOLD_CHANGED',
+        playerId,
+        source: { type: 'CARD', cardInstanceId },
+        target: { type: 'PLAYER', playerId },
+        reason: 'CARD_COST',
+        amount: -card.currentCost,
+      },
+    ],
   };
 
-  return actionSuccess(enterField(paidState, playerId, card, boardSlot));
+  return actionSuccess(
+    enterField(paidState, playerId, card, boardSlot, {
+      type: 'PLAYER',
+      playerId,
+    }),
+  );
 }

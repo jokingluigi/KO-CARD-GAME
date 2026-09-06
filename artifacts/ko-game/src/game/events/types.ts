@@ -2,8 +2,34 @@ import type { CardInstanceId } from '../cards/types';
 
 export type LeaveReason = 'RETIRE' | 'DESTROY' | 'REMOVE_FROM_GAME';
 
+export type GameEventType =
+  | 'TURN_STARTED'
+  | 'TURN_ENDED'
+  | 'CARD_DRAWN'
+  | 'CARD_PLAYED'
+  | 'ENTER_FIELD'
+  | 'CARD_GENERATED'
+  | 'CARD_DESTROYED'
+  | 'CARD_RETIRED'
+  | 'CARD_REMOVED'
+  | 'DAMAGE_DEALT'
+  | 'ATTACK_DECLARED'
+  | 'GOLD_CHANGED';
+
+export type EventSubject =
+  | { type: 'PLAYER'; playerId: string }
+  | { type: 'CARD'; cardInstanceId: CardInstanceId }
+  | { type: 'SYSTEM' };
+
 export interface GameEvent {
-  type: string;
+  type: GameEventType;
+  playerId?: string;
+  cardInstanceId?: CardInstanceId;
+  source?: EventSubject;
+  target?: EventSubject;
+  reason?: string;
+  amount?: number;
+  boardSlot?: 0 | 1 | 2 | 3;
 }
 
 export interface EnterFieldEvent extends GameEvent {
@@ -13,23 +39,18 @@ export interface EnterFieldEvent extends GameEvent {
   boardSlot: 0 | 1 | 2 | 3;
 }
 
-export interface CardLeftPlayEvent extends GameEvent {
-  type: 'CARD_LEFT_PLAY';
-  playerId: string;
-  cardInstanceId: CardInstanceId;
-  leaveReason: LeaveReason;
-}
-
 export interface RetireEvent extends GameEvent {
-  type: 'RETIRE';
+  type: 'CARD_RETIRED';
   playerId: string;
   cardInstanceId: CardInstanceId;
   boardSlot: 0 | 1 | 2 | 3;
+  reason: 'RETIRE';
 }
 
 export interface DestroyEvent extends GameEvent {
-  type: 'DESTROY';
+  type: 'CARD_DESTROYED';
   playerId: string;
   cardInstanceId: CardInstanceId;
   boardSlot: 0 | 1 | 2 | 3;
+  reason: 'DESTROY';
 }

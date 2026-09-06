@@ -43,6 +43,17 @@ export function drawCard(state: GameState, playerId: string): GameState {
       players: state.players.map((player) =>
         player.id === playerId ? fatiguedPlayer : player,
       ),
+      events: [
+        ...state.events,
+        {
+          type: 'DAMAGE_DEALT',
+          playerId,
+          source: { type: 'SYSTEM' },
+          target: { type: 'PLAYER', playerId },
+          reason: 'FATIGUE',
+          amount: fatigueCount,
+        },
+      ],
     };
   }
 
@@ -65,5 +76,31 @@ export function drawCard(state: GameState, playerId: string): GameState {
     players: state.players.map((player) =>
       player.id === playerId ? updatedPlayer : player,
     ),
+    events: [
+      ...state.events,
+      drawingPlayer.hand.length >= MAX_HAND_SIZE
+        ? {
+            type: 'CARD_REMOVED',
+            playerId,
+            cardInstanceId: drawnCard.instanceId,
+            source: { type: 'SYSTEM' },
+            target: {
+              type: 'CARD',
+              cardInstanceId: drawnCard.instanceId,
+            },
+            reason: 'OVERDRAW',
+          }
+        : {
+            type: 'CARD_DRAWN',
+            playerId,
+            cardInstanceId: drawnCard.instanceId,
+            source: { type: 'SYSTEM' },
+            target: {
+              type: 'CARD',
+              cardInstanceId: drawnCard.instanceId,
+            },
+            reason: 'DRAW',
+          },
+    ],
   };
 }

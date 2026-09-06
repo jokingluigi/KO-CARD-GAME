@@ -30,6 +30,9 @@ function wrestler(
     boardSlot: null,
     enteredThisTurn,
     attacksUsedThisTurn: 0,
+    isGenerated: false,
+    isToken: false,
+    isChampionToken: false,
   };
 }
 
@@ -156,8 +159,11 @@ test('체력이 0 이하인 선수는 RETIRE되고 묘지로 이동한다', () =
   assert.equal(state.players[1].board[0], null);
   assert.equal(state.players[0].graveyard[0].instanceId, 'attacker');
   assert.equal(state.players[1].graveyard[0].instanceId, 'defender');
-  assert.equal(state.events.at(-1)?.type, 'RETIRE');
-  assert.equal(state.events.some((event) => event.type === 'DESTROY'), false);
+  assert.equal(state.events.at(-1)?.type, 'CARD_RETIRED');
+  assert.equal(
+    state.events.some((event) => event.type === 'CARD_DESTROYED'),
+    false,
+  );
 });
 
 test('선수는 상대 플레이어 본체를 공격할 수 있다', () => {

@@ -56,6 +56,9 @@ test('필드 진입은 ENTER_FIELD 이벤트를 발생시킨다', () => {
     playerId: 'player-1',
     cardInstanceId: card.instanceId,
     boardSlot: 0,
+    source: { type: 'PLAYER', playerId: 'player-1' },
+    target: { type: 'CARD', cardInstanceId: card.instanceId },
+    reason: 'ENTER_FIELD',
   });
 });
 

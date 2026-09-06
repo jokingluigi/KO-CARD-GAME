@@ -15,14 +15,15 @@ function beginPlayerTurn(state: GameState, playerId: string): GameState {
 
   const personalTurn = player.personalTurn + 1;
 
-  return drawCard({
+  const currentGold = personalTurn + player.nextTurnGoldBonus;
+  const turnStartedState: GameState = {
     ...state,
     players: state.players.map((candidate) =>
       candidate.id === playerId
         ? {
             ...candidate,
             personalTurn,
-            currentGold: personalTurn + candidate.nextTurnGoldBonus,
+            currentGold,
             nextTurnGoldBonus: 0,
             board: candidate.board.map((card) =>
               card
@@ -36,7 +37,27 @@ function beginPlayerTurn(state: GameState, playerId: string): GameState {
           }
         : candidate,
     ),
-  }, playerId);
+    events: [
+      ...state.events,
+      {
+        type: 'TURN_STARTED',
+        playerId,
+        source: { type: 'SYSTEM' },
+        target: { type: 'PLAYER', playerId },
+        reason: 'TURN_START',
+      },
+      {
+        type: 'GOLD_CHANGED',
+        playerId,
+        source: { type: 'SYSTEM' },
+        target: { type: 'PLAYER', playerId },
+        reason: 'TURN_REFRESH',
+        amount: currentGold - player.currentGold,
+      },
+    ],
+  };
+
+  return drawCard(turnStartedState, playerId);
 }
 
 function drawOpeningHand(
@@ -151,6 +172,24 @@ export function endTurn(
 
       return player;
     }),
+    events: [
+      ...state.events,
+      {
+        type: 'TURN_ENDED',
+        playerId: actingPlayerId,
+        source: { type: 'PLAYER', playerId: actingPlayerId },
+        target: { type: 'PLAYER', playerId: actingPlayerId },
+        reason: 'END_TURN',
+      },
+      {
+        type: 'GOLD_CHANGED',
+        playerId: actingPlayerId,
+        source: { type: 'SYSTEM' },
+        target: { type: 'PLAYER', playerId: actingPlayerId },
+        reason: 'TURN_ENDED',
+        amount: -state.players[currentPlayerIndex].currentGold,
+      },
+    ],
   };
 
   return actionSuccess(beginPlayerTurn(turnedState, nextPlayer.id));

@@ -16,6 +16,9 @@ function card(index: number): CardInstance {
     boardSlot: null,
     enteredThisTurn: false,
     attacksUsedThisTurn: 0,
+    isGenerated: false,
+    isToken: false,
+    isChampionToken: false,
   };
 }
 

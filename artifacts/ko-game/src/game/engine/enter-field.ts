@@ -1,5 +1,5 @@
 import type { CardInstance } from '../cards/types';
-import type { EnterFieldEvent } from '../events/types';
+import type { EnterFieldEvent, EventSubject } from '../events/types';
 import type { GameState } from '../types/game-state';
 import type { BoardSlot } from './board-position';
 
@@ -8,6 +8,10 @@ export function enterField(
   playerId: string,
   card: CardInstance,
   boardSlot: BoardSlot,
+  source: EventSubject = {
+    type: 'CARD',
+    cardInstanceId: card.instanceId,
+  },
 ): GameState {
   const player = state.players.find((candidate) => candidate.id === playerId);
 
@@ -30,6 +34,9 @@ export function enterField(
     playerId,
     cardInstanceId: card.instanceId,
     boardSlot,
+    source,
+    target: { type: 'CARD', cardInstanceId: card.instanceId },
+    reason: 'ENTER_FIELD',
   };
 
   return {

@@ -43,10 +43,13 @@ function retireDefeatedWrestlers(state: GameState): GameState {
       if (card && card.currentHealth <= 0) {
         retiredCards.push({ ...card, boardSlot: null });
         retireEvents.push({
-          type: 'RETIRE',
+          type: 'CARD_RETIRED',
           playerId: player.id,
           cardInstanceId: card.instanceId,
           boardSlot: index as BoardSlot,
+          source: { type: 'SYSTEM' },
+          target: { type: 'CARD', cardInstanceId: card.instanceId },
+          reason: 'RETIRE',
         });
         board[index] = null;
       }
@@ -158,6 +161,26 @@ export function attack(
           ? { ...player, health: remainingHealth }
           : player;
       }),
+      events: [
+        ...state.events,
+        {
+          type: 'ATTACK_DECLARED',
+          playerId: attackingPlayerId,
+          cardInstanceId: attackerInstanceId,
+          source: { type: 'CARD', cardInstanceId: attackerInstanceId },
+          target: { type: 'PLAYER', playerId: target.playerId },
+          reason: 'BASIC_ATTACK',
+        },
+        {
+          type: 'DAMAGE_DEALT',
+          playerId: attackingPlayerId,
+          cardInstanceId: attackerInstanceId,
+          source: { type: 'CARD', cardInstanceId: attackerInstanceId },
+          target: { type: 'PLAYER', playerId: target.playerId },
+          reason: 'BASIC_ATTACK',
+          amount: attacker.currentAttack,
+        },
+      ],
     };
 
     if (remainingHealth > 0) {
@@ -210,6 +233,41 @@ export function attack(
         return card;
       }) as typeof player.board,
     })),
+    events: [
+      ...state.events,
+      {
+        type: 'ATTACK_DECLARED',
+        playerId: attackingPlayerId,
+        cardInstanceId: attackerInstanceId,
+        source: { type: 'CARD', cardInstanceId: attackerInstanceId },
+        target: {
+          type: 'CARD',
+          cardInstanceId: defender.instanceId,
+        },
+        reason: 'BASIC_ATTACK',
+      },
+      {
+        type: 'DAMAGE_DEALT',
+        playerId: target.playerId,
+        cardInstanceId: defender.instanceId,
+        source: { type: 'CARD', cardInstanceId: attackerInstanceId },
+        target: {
+          type: 'CARD',
+          cardInstanceId: defender.instanceId,
+        },
+        reason: 'COMBAT',
+        amount: attacker.currentAttack,
+      },
+      {
+        type: 'DAMAGE_DEALT',
+        playerId: attackingPlayerId,
+        cardInstanceId: attackerInstanceId,
+        source: { type: 'CARD', cardInstanceId: defender.instanceId },
+        target: { type: 'CARD', cardInstanceId: attackerInstanceId },
+        reason: 'COMBAT',
+        amount: defender.currentAttack,
+      },
+    ],
   };
 
   return actionSuccess(retireDefeatedWrestlers(damagedState));

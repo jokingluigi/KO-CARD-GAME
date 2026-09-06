@@ -21,6 +21,9 @@ function readyWrestler(id: string): CardInstance {
     boardSlot: 0,
     enteredThisTurn: false,
     attacksUsedThisTurn: 0,
+    isGenerated: false,
+    isToken: false,
+    isChampionToken: false,
   };
 }
 

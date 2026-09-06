@@ -8,6 +8,8 @@ export interface CardDefinition {
   attack: number;
   health: number;
   rulesText: string;
+  isToken: boolean;
+  isChampionToken: boolean;
 }
 
 export interface CardInstance {
@@ -20,4 +22,7 @@ export interface CardInstance {
   boardSlot: 0 | 1 | 2 | 3 | null;
   enteredThisTurn: boolean;
   attacksUsedThisTurn: number;
+  isGenerated: boolean;
+  isToken: boolean;
+  isChampionToken: boolean;
 }
