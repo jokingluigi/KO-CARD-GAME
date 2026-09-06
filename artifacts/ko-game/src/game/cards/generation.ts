@@ -35,6 +35,13 @@ export function generateCardInstance(
     isToken: options.isToken ?? definition.isToken,
     isChampionToken:
       options.isChampionToken ?? definition.isChampionToken,
+    keywords: [...definition.keywords],
+    abilities: [...definition.abilities],
+    isSilenced: false,
+    isSilenceImmune: false,
+    dodgeAvailable: definition.keywords.includes('DODGE'),
+    isStunned: false,
+    activeUsedThisTurn: false,
   };
 }
 

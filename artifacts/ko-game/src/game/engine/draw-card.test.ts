@@ -19,6 +19,13 @@ function card(index: number): CardInstance {
     isGenerated: false,
     isToken: false,
     isChampionToken: false,
+    keywords: [],
+    abilities: [],
+    isSilenced: false,
+    isSilenceImmune: false,
+    dodgeAvailable: false,
+    isStunned: false,
+    activeUsedThisTurn: false,
   };
 }
 

@@ -2,6 +2,7 @@ import type { CardInstance } from '../cards/types';
 import type { EnterFieldEvent, EventSubject } from '../events/types';
 import type { GameState } from '../types/game-state';
 import type { BoardSlot } from './board-position';
+import { resolveTriggeredAbilities } from '../effects/effect-engine';
 
 export function enterField(
   state: GameState,
@@ -39,7 +40,7 @@ export function enterField(
     reason: 'ENTER_FIELD',
   };
 
-  return {
+  const enteredState: GameState = {
     ...state,
     players: state.players.map((candidate) => {
       if (candidate.id !== playerId) {
@@ -56,4 +57,19 @@ export function enterField(
     }),
     events: [...state.events, event],
   };
+
+  const afterEnter = resolveTriggeredAbilities(
+    enteredState,
+    playerId,
+    enteredCard,
+    'ENTER_FIELD',
+    { boardSlot },
+  );
+  return resolveTriggeredAbilities(
+    afterEnter,
+    playerId,
+    enteredCard,
+    'POSITION',
+    { boardSlot },
+  );
 }

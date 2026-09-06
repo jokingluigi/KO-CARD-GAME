@@ -14,7 +14,11 @@ export type ActionErrorCode =
   | 'SUMMONED_THIS_TURN'
   | 'ATTACK_ALREADY_USED'
   | 'INVALID_ATTACK_TARGET'
-  | 'GAME_NOT_IN_PROGRESS';
+  | 'GAME_NOT_IN_PROGRESS'
+  | 'CARD_STUNNED'
+  | 'TAUNT_TARGET_REQUIRED'
+  | 'ACTIVE_NOT_AVAILABLE'
+  | 'ACTIVE_ALREADY_USED';
 
 export type ActionResult =
   | {

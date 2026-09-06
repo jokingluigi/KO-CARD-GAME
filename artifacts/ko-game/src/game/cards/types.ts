@@ -1,3 +1,5 @@
+import type { CardAbility, CardKeyword } from '../effects/types';
+
 export type CardDefinitionId = string;
 export type CardInstanceId = string;
 
@@ -10,6 +12,8 @@ export interface CardDefinition {
   rulesText: string;
   isToken: boolean;
   isChampionToken: boolean;
+  keywords: CardKeyword[];
+  abilities: CardAbility[];
 }
 
 export interface CardInstance {
@@ -25,4 +29,11 @@ export interface CardInstance {
   isGenerated: boolean;
   isToken: boolean;
   isChampionToken: boolean;
+  keywords: CardKeyword[];
+  abilities: CardAbility[];
+  isSilenced: boolean;
+  isSilenceImmune: boolean;
+  dodgeAvailable: boolean;
+  isStunned: boolean;
+  activeUsedThisTurn: boolean;
 }

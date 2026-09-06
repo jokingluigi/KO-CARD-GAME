@@ -6,6 +6,7 @@ import {
   endTurn,
   playWrestlerFromHand,
   startGame,
+  useActiveAbility,
   type BoardSlot,
   type GameState,
 } from '@/game';
@@ -28,11 +29,7 @@ export default function Home() {
   }, [playError]);
 
   function handleEndTurn() {
-    if (!gameState.activePlayerId) {
-      return;
-    }
-
-    const result = endTurn(gameState, gameState.activePlayerId);
+    const result = endTurn(gameState, gameState.players[0].id);
     if (!result.success) {
       setPlayError(result.message);
       return;
@@ -133,6 +130,21 @@ export default function Home() {
     setPlayError(null);
   }
 
+  function handleUseActive() {
+    if (!selectedAttackerId) return;
+    const result = useActiveAbility(
+      gameState,
+      gameState.players[0].id,
+      selectedAttackerId,
+    );
+    if (!result.success) {
+      setPlayError(result.message);
+      return;
+    }
+    setGameState(result.state);
+    setPlayError(null);
+  }
+
   return (
     <GameStatePreview
       state={gameState}
@@ -145,6 +157,7 @@ export default function Home() {
       onSelectAttacker={handleSelectAttacker}
       onAttackWrestler={handleAttackWrestler}
       onAttackPlayer={handleAttackPlayer}
+      onUseActive={handleUseActive}
     />
   );
 }

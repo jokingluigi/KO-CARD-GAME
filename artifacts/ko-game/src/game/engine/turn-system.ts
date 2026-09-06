@@ -31,6 +31,7 @@ function beginPlayerTurn(state: GameState, playerId: string): GameState {
                     ...card,
                     enteredThisTurn: false,
                     attacksUsedThisTurn: 0,
+                     activeUsedThisTurn: false,
                   }
                 : null,
             ) as typeof candidate.board,

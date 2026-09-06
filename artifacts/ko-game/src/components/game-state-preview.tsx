@@ -1,5 +1,9 @@
 import {
   getCardDefinition,
+  getActiveAbility,
+  canSelectAsAttacker,
+  canUseActiveAbility,
+  isCurrentPlayer,
   type BoardSlot as BoardSlotIndex,
   type CardInstance,
   type GameState,
@@ -16,6 +20,7 @@ interface GameStatePreviewProps {
   onSelectAttacker: (cardInstanceId: string) => void;
   onAttackWrestler: (cardInstanceId: string) => void;
   onAttackPlayer: () => void;
+  onUseActive: () => void;
 }
 
 function getPlayerDisplayName(playerId: string): string {
@@ -34,6 +39,7 @@ export function GameStatePreview({
   onSelectAttacker,
   onAttackWrestler,
   onAttackPlayer,
+  onUseActive,
 }: GameStatePreviewProps) {
   // Safe destructure to prevent crashes if game is uninitialized
   if (!state || !state.players || state.players.length < 2) {
@@ -46,6 +52,18 @@ export function GameStatePreview({
   
   const isMyTurn = state.activePlayerId === me.id;
   const isOppTurn = state.activePlayerId === opp.id;
+  const selectedBoardCard = me.board.find(
+    (card) => card?.instanceId === selectedAttackerId,
+  );
+  const canShowActive =
+    selectedBoardCard !== undefined &&
+    selectedBoardCard !== null &&
+    getActiveAbility(selectedBoardCard) !== undefined;
+  const canUseActive =
+    selectedBoardCard !== undefined &&
+    selectedBoardCard !== null &&
+    canUseActiveAbility(state, me.id, selectedBoardCard.instanceId);
+  const canEndTurn = isCurrentPlayer(state, me.id);
   
   return (
     <div className="w-full h-full min-h-[100dvh] bg-background text-foreground overflow-hidden flex flex-col relative font-sans selection:bg-primary selection:text-black">
@@ -178,9 +196,12 @@ export function GameStatePreview({
                        selectable={selectedCardId !== null}
                        selected={me.board[i]?.instanceId === selectedAttackerId}
                         attackReady={
-                          isMyTurn &&
-                          me.board[i]?.enteredThisTurn === false &&
-                          me.board[i]?.attacksUsedThisTurn === 0
+                          me.board[i] !== null &&
+                          canSelectAsAttacker(
+                            state,
+                            me.id,
+                            me.board[i].instanceId,
+                          )
                         }
                        onSelect={onSelectSlot}
                        onSelectAttacker={onSelectAttacker}
@@ -191,11 +212,21 @@ export function GameStatePreview({
 
             {/* End Turn Button - Right aligned, vertically centered */}
             <div className="absolute right-0 md:-right-12 lg:-right-24 top-1/2 -translate-y-1/2 z-30 flex justify-end">
+              {canShowActive && (
+                <button
+                  type="button"
+                  onClick={onUseActive}
+                  disabled={!canUseActive}
+                  className="absolute bottom-full mb-4 w-24 rounded-lg border-2 border-blue-500 bg-blue-950/90 px-3 py-2 font-black text-blue-200 shadow-[0_0_18px_rgba(59,130,246,0.4)] hover:bg-blue-900 disabled:cursor-not-allowed disabled:opacity-50"
+                >
+                  액티브
+                </button>
+              )}
               <button 
-                disabled={!state.activePlayerId}
+                disabled={!canEndTurn}
                 onClick={onEndTurn}
                 className={`w-24 h-24 md:w-32 md:h-32 rounded-full border-[4px] flex items-center justify-center transform -skew-x-6 transition-all duration-300 font-black text-sm md:text-xl shadow-[0_10px_30px_rgba(0,0,0,0.8)] backdrop-blur-md uppercase tracking-wider
-                  ${state.activePlayerId
+                  ${canEndTurn
                     ? 'border-primary bg-primary/10 text-primary hover:bg-primary/20 hover:scale-110 shadow-[0_0_30px_rgba(234,179,8,0.3)] cursor-pointer' 
                     : 'border-zinc-800 bg-black/60 text-zinc-600 cursor-not-allowed opacity-80'
                   }

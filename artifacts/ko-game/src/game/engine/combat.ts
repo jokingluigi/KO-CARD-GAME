@@ -5,6 +5,10 @@ import type { RetireEvent } from '../events/types';
 import type { GameState } from '../types/game-state';
 import type { BoardSlot } from './board-position';
 import { validateCurrentPlayer } from './turn-system';
+import {
+  hasKeyword,
+  resolveTriggeredAbilities,
+} from '../effects/effect-engine';
 
 export type AttackTarget =
   | {
@@ -30,8 +34,36 @@ function findBoardCard(
   return player && card ? { player, card } : null;
 }
 
+export function canSelectAsAttacker(
+  state: GameState,
+  playerId: string,
+  cardInstanceId: CardInstanceId,
+): boolean {
+  if (
+    state.status !== 'IN_PROGRESS' ||
+    state.activePlayerId !== playerId
+  ) {
+    return false;
+  }
+  const entry = findBoardCard(state, playerId, cardInstanceId);
+  if (!entry || entry.card.isStunned) return false;
+
+  const maximumAttacks = hasKeyword(entry.card, 'MULTI_STRIKE') ? 2 : 1;
+  if (entry.card.attacksUsedThisTurn >= maximumAttacks) return false;
+
+  return (
+    !entry.card.enteredThisTurn ||
+    hasKeyword(entry.card, 'RUSH') ||
+    hasKeyword(entry.card, 'SURPRISE')
+  );
+}
+
 function retireDefeatedWrestlers(state: GameState): GameState {
   const retireEvents: RetireEvent[] = [];
+  const retired: Array<{
+    playerId: string;
+    card: NonNullable<GameState['players'][number]['board'][number]>;
+  }> = [];
 
   const players = state.players.map((player) => {
     const board = [...player.board];
@@ -41,6 +73,7 @@ function retireDefeatedWrestlers(state: GameState): GameState {
       const card = board[index];
 
       if (card && card.currentHealth <= 0) {
+        retired.push({ playerId: player.id, card });
         retiredCards.push({ ...card, boardSlot: null });
         retireEvents.push({
           type: 'CARD_RETIRED',
@@ -62,11 +95,38 @@ function retireDefeatedWrestlers(state: GameState): GameState {
     };
   });
 
-  return {
+  const retiredState: GameState = {
     ...state,
     players,
     events: [...state.events, ...retireEvents],
   };
+
+  return retired.reduce(
+    (nextState, entry) =>
+      resolveTriggeredAbilities(
+        nextState,
+        entry.playerId,
+        entry.card,
+        'LEAVE_FIELD',
+        { leaveReason: 'RETIRE' },
+      ),
+    retiredState,
+  );
+}
+
+function receiveDamage(
+  card: NonNullable<GameState['players'][number]['board'][number]>,
+  amount: number,
+) {
+  if (
+    amount > 0 &&
+    card.dodgeAvailable &&
+    hasKeyword(card, 'DODGE')
+  ) {
+    return { ...card, dodgeAvailable: false };
+  }
+
+  return { ...card, currentHealth: card.currentHealth - amount };
 }
 
 export function attack(
@@ -110,7 +170,14 @@ export function attack(
   }
   const { card: attacker } = attackerEntry;
 
-  if (attacker.enteredThisTurn) {
+  if (attacker.isStunned) {
+    return actionFailure(state, 'CARD_STUNNED', '기절한 선수는 공격할 수 없습니다.');
+  }
+
+  const canAttackOnEntry =
+    hasKeyword(attacker, 'RUSH') ||
+    (hasKeyword(attacker, 'SURPRISE') && target.type === 'WRESTLER');
+  if (attacker.enteredThisTurn && !canAttackOnEntry) {
     return actionFailure(
       state,
       'SUMMONED_THIS_TURN',
@@ -118,7 +185,8 @@ export function attack(
     );
   }
 
-  if (attacker.attacksUsedThisTurn >= 1) {
+  const maximumAttacks = hasKeyword(attacker, 'MULTI_STRIKE') ? 2 : 1;
+  if (attacker.attacksUsedThisTurn >= maximumAttacks) {
     return actionFailure(
       state,
       'ATTACK_ALREADY_USED',
@@ -126,11 +194,29 @@ export function attack(
     );
   }
 
-  if (target.type === 'PLAYER') {
-    const defendingPlayer = state.players.find(
-      (player) => player.id === target.playerId,
+  const defendingPlayer = state.players.find(
+    (player) => player.id === target.playerId,
+  );
+  const tauntCards =
+    defendingPlayer?.board.filter(
+      (card): card is NonNullable<typeof card> =>
+        card !== null && hasKeyword(card, 'TAUNT'),
+    ) ?? [];
+  if (
+    tauntCards.length > 0 &&
+    (target.type !== 'WRESTLER' ||
+      !tauntCards.some(
+        (card) => card.instanceId === target.cardInstanceId,
+      ))
+  ) {
+    return actionFailure(
+      state,
+      'TAUNT_TARGET_REQUIRED',
+      '도발 선수를 먼저 공격해야 합니다.',
     );
+  }
 
+  if (target.type === 'PLAYER') {
     if (!defendingPlayer) {
       return actionFailure(
         state,
@@ -209,6 +295,10 @@ export function attack(
     );
   }
   const { card: defender } = defenderEntry;
+  const attackerDodges =
+    attacker.dodgeAvailable && hasKeyword(attacker, 'DODGE');
+  const defenderDodges =
+    defender.dodgeAvailable && hasKeyword(defender, 'DODGE');
 
   const damagedState: GameState = {
     ...state,
@@ -217,17 +307,13 @@ export function attack(
       board: player.board.map((card) => {
         if (card?.instanceId === attackerInstanceId) {
           return {
-            ...card,
-            currentHealth: card.currentHealth - defender.currentAttack,
+            ...receiveDamage(card, defender.currentAttack),
             attacksUsedThisTurn: card.attacksUsedThisTurn + 1,
           };
         }
 
         if (card?.instanceId === defender.instanceId) {
-          return {
-            ...card,
-            currentHealth: card.currentHealth - attacker.currentAttack,
-          };
+          return receiveDamage(card, attacker.currentAttack);
         }
 
         return card;
@@ -256,7 +342,7 @@ export function attack(
           cardInstanceId: defender.instanceId,
         },
         reason: 'COMBAT',
-        amount: attacker.currentAttack,
+        amount: defenderDodges ? 0 : attacker.currentAttack,
       },
       {
         type: 'DAMAGE_DEALT',
@@ -265,7 +351,7 @@ export function attack(
         source: { type: 'CARD', cardInstanceId: defender.instanceId },
         target: { type: 'CARD', cardInstanceId: attackerInstanceId },
         reason: 'COMBAT',
-        amount: defender.currentAttack,
+        amount: attackerDodges ? 0 : defender.currentAttack,
       },
     ],
   };

@@ -23,6 +23,8 @@ function definition(
     rulesText: '',
     isToken,
     isChampionToken,
+    keywords: [],
+    abilities: [],
   };
 }
 

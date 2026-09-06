@@ -24,6 +24,13 @@ function readyWrestler(id: string): CardInstance {
     isGenerated: false,
     isToken: false,
     isChampionToken: false,
+    keywords: [],
+    abilities: [],
+    isSilenced: false,
+    isSilenceImmune: false,
+    dodgeAvailable: false,
+    isStunned: false,
+    activeUsedThisTurn: false,
   };
 }
 
