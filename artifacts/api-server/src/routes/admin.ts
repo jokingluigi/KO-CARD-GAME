@@ -8,8 +8,18 @@ const ADMIN_SESSION_TTL_SECONDS = 8 * 60 * 60;
 
 type AdminSessionPayload = {
   subject: "admin";
+  username: string;
   expiresAt: number;
 };
+
+router.use((request, response, next) => {
+  delete request.headers["if-none-match"];
+  delete request.headers["if-modified-since"];
+  response.setHeader("Cache-Control", "no-store, max-age=0");
+  response.setHeader("Pragma", "no-cache");
+  response.setHeader("Expires", "0");
+  next();
+});
 
 function configuredSecret(): string | null {
   return process.env["SESSION_SECRET"] ?? null;
@@ -30,7 +40,7 @@ function sign(payload: string, secret: string): string {
   return createHmac("sha256", secret).update(payload).digest("base64url");
 }
 
-function createSessionToken(): string | null {
+function createSessionToken(username: string): string | null {
   const secret = configuredSecret();
   if (!secret) {
     return null;
@@ -38,6 +48,7 @@ function createSessionToken(): string | null {
 
   const payload: AdminSessionPayload = {
     subject: "admin",
+    username,
     expiresAt: Math.floor(Date.now() / 1000) + ADMIN_SESSION_TTL_SECONDS,
   };
   const encodedPayload = Buffer.from(JSON.stringify(payload)).toString(
@@ -63,8 +74,10 @@ function cookieValue(request: Request): string | null {
 
 function isValidSession(request: Request): boolean {
   const secret = configuredSecret();
+  const configuredUsername = process.env["ADMIN_USERNAME"];
+  const configuredPassword = process.env["ADMIN_PASSWORD"];
   const token = cookieValue(request);
-  if (!secret || !token) {
+  if (!secret || !configuredUsername || !configuredPassword || !token) {
     return false;
   }
 
@@ -85,6 +98,8 @@ function isValidSession(request: Request): boolean {
 
     return (
       payload.subject === "admin" &&
+      typeof payload.username === "string" &&
+      safeEqual(payload.username, configuredUsername) &&
       typeof payload.expiresAt === "number" &&
       payload.expiresAt > Math.floor(Date.now() / 1000)
     );
@@ -118,15 +133,21 @@ function requireAdmin(request: Request, response: Response): boolean {
 }
 
 router.post("/login", (request, response) => {
-  const configuredUsername = process.env["ADMIN_USERNAME"] ?? "admin";
+  const configuredUsername = process.env["ADMIN_USERNAME"];
   const configuredPassword = process.env["ADMIN_PASSWORD"];
   const { username, password } = request.body as {
     username?: unknown;
     password?: unknown;
   };
 
+  if (!configuredUsername || !configuredPassword || !configuredSecret()) {
+    response
+      .status(503)
+      .json({ message: "관리자 인증 서버 설정이 완료되지 않았습니다." });
+    return;
+  }
+
   if (
-    !configuredPassword ||
     typeof username !== "string" ||
     typeof password !== "string" ||
     !safeEqual(username, configuredUsername) ||
@@ -136,7 +157,7 @@ router.post("/login", (request, response) => {
     return;
   }
 
-  const token = createSessionToken();
+  const token = createSessionToken(configuredUsername);
   if (!token) {
     response
       .status(503)
@@ -150,7 +171,7 @@ router.post("/login", (request, response) => {
 
 router.get("/session", (request, response) => {
   if (!isValidSession(request)) {
-    response.status(401).json({ authenticated: false });
+    response.json({ authenticated: false });
     return;
   }
 
