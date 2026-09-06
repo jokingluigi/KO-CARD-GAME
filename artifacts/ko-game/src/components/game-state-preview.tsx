@@ -242,7 +242,7 @@ export function GameStatePreview({
             <button
               type="button"
               disabled={!canEndTurn}
-              onClick={onEndTurn}
+              onClick={() => onEndTurn()}
               className={`rounded px-2 py-2 text-[10px] font-black transition-all md:py-3 md:text-sm ${
                 canEndTurn
                   ? 'bg-primary text-black shadow-[0_0_12px_rgba(234,179,8,0.3)] hover:bg-yellow-400'
