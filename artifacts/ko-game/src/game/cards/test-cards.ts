@@ -22,6 +22,13 @@ export function createTestDeck(playerId: string): CardInstance[] {
     return {
       instanceId: `${playerId}-card-${index + 1}`,
       definitionId: definition.id,
+      currentCost: definition.cost,
+      currentAttack: definition.attack,
+      currentHealth: definition.health,
+      maxHealth: definition.health,
+      boardSlot: null,
+      enteredThisTurn: false,
+      attacksUsedThisTurn: 0,
     };
   });
 }

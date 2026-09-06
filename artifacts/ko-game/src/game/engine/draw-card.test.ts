@@ -9,6 +9,13 @@ function card(index: number): CardInstance {
   return {
     instanceId: `card-${index}`,
     definitionId: `definition-${index}`,
+    currentCost: index + 1,
+    currentAttack: index + 1,
+    currentHealth: index + 2,
+    maxHealth: index + 2,
+    boardSlot: null,
+    enteredThisTurn: false,
+    attacksUsedThisTurn: 0,
   };
 }
 

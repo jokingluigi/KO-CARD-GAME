@@ -1,5 +1,6 @@
 import type { CardInstance } from '../cards/types';
 import type { ChampionState } from '../champions/types';
+import type { GameEvent } from '../events/types';
 
 export type Board = [
   CardInstance | null,
@@ -32,4 +33,5 @@ export interface GameState {
   winnerId: string | null;
   loserId: string | null;
   players: PlayerState[];
+  events: GameEvent[];
 }

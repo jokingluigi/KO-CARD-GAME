@@ -1,8 +1,17 @@
-import { getCardDefinition, type CardInstance, type GameState } from '@/game';
+import {
+  getCardDefinition,
+  type BoardSlot as BoardSlotIndex,
+  type CardInstance,
+  type GameState,
+} from '@/game';
 
 interface GameStatePreviewProps {
   state: GameState;
+  selectedCardId: string | null;
+  playError: string | null;
   onEndTurn: () => void;
+  onSelectCard: (cardInstanceId: string) => void;
+  onSelectSlot: (slot: BoardSlotIndex) => void;
 }
 
 function getPlayerDisplayName(playerId: string): string {
@@ -12,7 +21,11 @@ function getPlayerDisplayName(playerId: string): string {
 
 export function GameStatePreview({
   state,
+  selectedCardId,
+  playError,
   onEndTurn,
+  onSelectCard,
+  onSelectSlot,
 }: GameStatePreviewProps) {
   // Safe destructure to prevent crashes if game is uninitialized
   if (!state || !state.players || state.players.length < 2) {
@@ -136,7 +149,14 @@ export function GameStatePreview({
                {/* Player Field */}
                <div className="flex justify-center gap-3 md:gap-6 w-full relative z-10 mt-2 md:mt-4">
                   {Array.from({ length: 4 }).map((_, i) => (
-                    <BoardSlot key={`my-slot-${i}`} slot={me.board && me.board[i]} isOpponent={false} />
+                     <BoardSlot
+                       key={`my-slot-${i}`}
+                       slot={me.board[i]}
+                       isOpponent={false}
+                       slotIndex={i as BoardSlotIndex}
+                       selectable={selectedCardId !== null}
+                       onSelect={onSelectSlot}
+                     />
                   ))}
                </div>
             </div>
@@ -193,18 +213,24 @@ export function GameStatePreview({
                      const translateX = (i - centerIdx) * 50; // overlap amount
                      
                      return (
-                       <div 
+                        <button
                          key={`my-hand-${i}`} 
-                         className="absolute bottom-0 origin-bottom transition-all duration-300 hover:z-50 group cursor-pointer"
+                          type="button"
+                          onClick={() => onSelectCard(card.instanceId)}
+                          className={`absolute bottom-0 origin-bottom transition-all duration-300 hover:z-50 group cursor-pointer ${
+                            selectedCardId === card.instanceId
+                              ? 'z-50 drop-shadow-[0_0_18px_rgba(234,179,8,0.9)]'
+                              : ''
+                          }`}
                          style={{
                            transform: `translateX(${translateX}px) translateY(${translateY}px) rotate(${rotate}deg)`,
                            zIndex: i,
                          }}
-                       >
+                        >
                          <div className="transition-transform duration-200 group-hover:-translate-y-24 group-hover:scale-[1.25] group-hover:rotate-0 drop-shadow-2xl">
                            <HandCard card={card} />
-                         </div>
-                       </div>
+                          </div>
+                        </button>
                      );
                    })
                  ) : (
@@ -213,6 +239,11 @@ export function GameStatePreview({
                    </div>
                  )}
                </div>
+                {playError && (
+                  <div className="absolute bottom-1 left-1/2 -translate-x-1/2 z-[60] bg-red-950/95 border border-red-600 text-red-100 px-3 py-1 rounded text-xs font-bold whitespace-nowrap">
+                    {playError}
+                  </div>
+                )}
             </div>
 
             {/* Player Champion & Gold (Right side) */}
@@ -305,21 +336,43 @@ function HandCard({ card }: { card: CardInstance }) {
   );
 }
 
-function BoardSlot({ slot, isOpponent }: { slot: any; isOpponent: boolean }) {
+function BoardSlot({
+  slot,
+  isOpponent,
+  slotIndex,
+  selectable = false,
+  onSelect,
+}: {
+  slot: CardInstance | null;
+  isOpponent: boolean;
+  slotIndex?: BoardSlotIndex;
+  selectable?: boolean;
+  onSelect?: (slot: BoardSlotIndex) => void;
+}) {
   if (!slot) {
     return (
-      <div className="w-[80px] h-[110px] md:w-[110px] md:h-[150px] border-[2px] border-dashed border-zinc-700/40 rounded-lg bg-black/20 flex items-center justify-center transition-colors hover:border-zinc-500/50 group cursor-pointer relative overflow-hidden">
+      <button
+        type="button"
+        disabled={isOpponent || !selectable || slotIndex === undefined}
+        onClick={() => slotIndex !== undefined && onSelect?.(slotIndex)}
+        className={`w-[80px] h-[110px] md:w-[110px] md:h-[150px] border-[2px] border-dashed rounded-lg bg-black/20 flex items-center justify-center transition-colors group relative overflow-hidden ${
+          selectable && !isOpponent
+            ? 'border-primary/80 hover:bg-primary/10 cursor-pointer'
+            : 'border-zinc-700/40 cursor-default'
+        }`}
+      >
         <div className="absolute inset-0 bg-white/0 group-hover:bg-white/5 transition-colors"></div>
         <span className="text-zinc-800 text-[9px] md:text-[10px] font-mono group-hover:text-zinc-600 transition-colors uppercase tracking-[0.2em]">
           빈 슬롯
         </span>
-      </div>
+      </button>
     );
   }
 
-  const attack = slot.attack ?? 0;
-  const health = slot.health ?? 0;
-  const name = slot.name ?? '선수';
+  const definition = getCardDefinition(slot.definitionId);
+  const attack = slot.currentAttack;
+  const health = slot.currentHealth;
+  const name = definition?.name ?? '선수';
 
   return (
     <div className="w-[80px] h-[110px] md:w-[110px] md:h-[150px] bg-[#121212] border-[2px] border-zinc-600 rounded-lg relative flex flex-col shadow-[0_5px_15px_rgba(0,0,0,0.6)] group hover:border-primary transition-colors cursor-pointer hover:-translate-y-1">

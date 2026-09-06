@@ -22,6 +22,15 @@ function beginPlayerTurn(state: GameState, playerId: string): GameState {
             personalTurn,
             currentGold: personalTurn + candidate.nextTurnGoldBonus,
             nextTurnGoldBonus: 0,
+            board: candidate.board.map((card) =>
+              card
+                ? {
+                    ...card,
+                    enteredThisTurn: false,
+                    attacksUsedThisTurn: 0,
+                  }
+                : null,
+            ) as typeof candidate.board,
           }
         : candidate,
     ),

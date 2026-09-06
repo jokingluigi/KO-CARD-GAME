@@ -28,6 +28,7 @@ export function createInitialGameState(): GameState {
     winnerId: null,
     loserId: null,
     players: [createEmptyPlayer('player-1'), createEmptyPlayer('player-2')],
+    events: [],
   };
 }
 

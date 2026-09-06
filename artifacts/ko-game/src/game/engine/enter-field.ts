@@ -1,0 +1,52 @@
+import type { CardInstance } from '../cards/types';
+import type { EnterFieldEvent } from '../events/types';
+import type { GameState } from '../types/game-state';
+import type { BoardSlot } from './board-position';
+
+export function enterField(
+  state: GameState,
+  playerId: string,
+  card: CardInstance,
+  boardSlot: BoardSlot,
+): GameState {
+  const player = state.players.find((candidate) => candidate.id === playerId);
+
+  if (!player) {
+    throw new Error(`플레이어를 찾을 수 없습니다: ${playerId}`);
+  }
+
+  if (player.board[boardSlot] !== null) {
+    throw new Error(`이미 사용 중인 보드 슬롯입니다: ${boardSlot}`);
+  }
+
+  const enteredCard: CardInstance = {
+    ...card,
+    boardSlot,
+    enteredThisTurn: true,
+    attacksUsedThisTurn: 0,
+  };
+  const event: EnterFieldEvent = {
+    type: 'ENTER_FIELD',
+    playerId,
+    cardInstanceId: card.instanceId,
+    boardSlot,
+  };
+
+  return {
+    ...state,
+    players: state.players.map((candidate) => {
+      if (candidate.id !== playerId) {
+        return candidate;
+      }
+
+      const board = [...candidate.board];
+      board[boardSlot] = enteredCard;
+
+      return {
+        ...candidate,
+        board: board as typeof candidate.board,
+      };
+    }),
+    events: [...state.events, event],
+  };
+}
