@@ -11,6 +11,7 @@ import {
   type CardInstance,
   type GameState,
 } from '@/game';
+import { ActionHistory } from './action-history';
 
 interface GameStatePreviewProps {
   state: GameState;
@@ -26,24 +27,6 @@ interface GameStatePreviewProps {
   onUseActive: () => void;
   onUseChampionAbility: () => void;
 }
-
-const EVENT_LABELS: Record<GameState['events'][number]['type'], string> = {
-  TURN_STARTED: '턴 시작',
-  TURN_ENDED: '턴 종료',
-  CARD_DRAWN: '카드 드로우',
-  CARD_PLAYED: '카드 사용',
-  ENTER_FIELD: '필드 출전',
-  CARD_GENERATED: '카드 생성',
-  CARD_DESTROYED: '카드 파괴',
-  CARD_RETIRED: '선수 리타이어',
-  CARD_REMOVED: '게임에서 제외',
-  DAMAGE_DEALT: '피해',
-  ATTACK_DECLARED: '공격 선언',
-  GOLD_CHANGED: '골드 변경',
-  CHAMPION_ABILITY_USED: '챔피언 능력',
-  CHAMPION_QUEST_PROGRESS: '퀘스트 진행',
-  CHAMPION_QUEST_COMPLETED: '퀘스트 완료',
-};
 
 export function GameStatePreview({
   state,
@@ -86,10 +69,10 @@ export function GameStatePreview({
   const canUseChampion = canUseChampionAbility(state, me.id);
   const mySurvivalHealth = getPlayerSurvivalHealth(state, me.id);
   const opponentSurvivalHealth = getPlayerSurvivalHealth(state, opp.id);
-  const recentEvents = state.events.slice(-3).reverse();
   
   return (
     <div className="flex min-h-[100dvh] w-full flex-col overflow-x-hidden overflow-y-auto bg-neutral-950 font-sans text-neutral-100 selection:bg-primary selection:text-black md:overflow-hidden">
+      <ActionHistory state={state} />
       
       {/* Background Ambience */}
       <div className="pointer-events-none absolute inset-0 z-0">
@@ -170,80 +153,6 @@ export function GameStatePreview({
                ))}
             </div>
 
-            {/* CENTER ACTION LOG & TURN */}
-             <div className="z-20 flex w-full max-w-3xl shrink-0 flex-col border-y-2 border-neutral-700/80 bg-neutral-900/90 shadow-xl backdrop-blur-md">
-               <div className="flex w-full items-center justify-between px-3 py-2 md:px-6">
-               <div className="flex w-[60px] shrink-0 flex-col md:w-[100px]">
-                  <span className="text-[9px] font-bold text-neutral-400 md:text-xs">턴 {state.turn}</span>
-                 <span className={`whitespace-nowrap text-[11px] font-black uppercase md:text-sm ${isMyTurn ? 'text-primary drop-shadow-[0_0_5px_rgba(234,179,8,0.5)]' : 'text-red-500'}`}>
-                   {isMyTurn ? '내 턴' : '상대 턴'}
-                 </span>
-               </div>
-
-               <div className="flex min-w-0 flex-1 justify-center px-2">
-                 {playError ? (
-                    <div className="w-full animate-pulse truncate overflow-hidden whitespace-nowrap rounded border border-red-500 bg-red-950/80 px-3 py-1 text-center text-[10px] font-bold text-red-400 md:text-xs">
-                      {playError}
-                    </div>
-                 ) : (
-                    <div className="whitespace-nowrap text-[10px] font-bold uppercase tracking-widest text-neutral-500 md:text-xs">
-                      {isMyTurn ? '행동을 선택하세요' : '대기 중...'}
-                    </div>
-                 )}
-               </div>
-
-               <div className="flex w-[110px] shrink-0 justify-end gap-2 md:w-[160px]">
-                 {canShowActive && (
-                   <button
-                     disabled={!canUseActive}
-                     onClick={onUseActive}
-                     className="whitespace-nowrap rounded bg-blue-600 px-2 py-1 text-[9px] font-bold text-white transition-colors hover:bg-blue-500 disabled:bg-neutral-800 disabled:text-neutral-600 md:px-4 md:py-2 md:text-xs"
-                   >
-                     액티브
-                   </button>
-                 )}
-                 <button
-                   disabled={!canEndTurn}
-                   onClick={onEndTurn}
-                   className={`whitespace-nowrap rounded px-3 py-1.5 text-[10px] font-black uppercase transition-all md:px-6 md:py-2 md:text-xs ${
-                     canEndTurn 
-                     ? 'bg-primary text-black shadow-[0_0_10px_rgba(234,179,8,0.3)] hover:scale-105 hover:bg-yellow-400' 
-                     : 'cursor-not-allowed bg-neutral-800 text-neutral-600'
-                   }`}
-                 >
-                   턴 종료
-                 </button>
-               </div>
-               </div>
-               <div className="grid w-full grid-cols-1 gap-px border-t border-neutral-800 bg-neutral-800 sm:grid-cols-3">
-                 {recentEvents.length > 0 ? (
-                   recentEvents.map((event, index) => (
-                     <div
-                       key={`${state.events.length - index}-${event.type}`}
-                       className="flex min-w-0 items-center justify-between gap-2 bg-neutral-950/90 px-3 py-1.5"
-                     >
-                       <span className="truncate text-[9px] font-bold text-neutral-300 md:text-[10px]">
-                         {EVENT_LABELS[event.type]}
-                       </span>
-                       <span className="shrink-0 font-mono text-[8px] text-neutral-500 md:text-[9px]">
-                         {event.amount !== undefined
-                           ? `${event.amount > 0 ? '+' : ''}${event.amount}`
-                           : event.playerId === me.id
-                             ? '나'
-                             : event.playerId === opp.id
-                               ? '상대'
-                               : ''}
-                       </span>
-                     </div>
-                   ))
-                 ) : (
-                   <div className="bg-neutral-950/90 px-3 py-1.5 text-center text-[9px] text-neutral-600 sm:col-span-3">
-                     기록된 이벤트가 없습니다
-                   </div>
-                 )}
-               </div>
-            </div>
-
             {/* My Board */}
             <div className="flex w-full justify-center gap-2 md:gap-4">
                {me.board.map((card, i) => (
@@ -264,6 +173,42 @@ export function GameStatePreview({
                ))}
             </div>
          </div>
+
+          <aside className="absolute right-2 top-24 z-40 flex w-24 flex-col items-stretch gap-2 rounded border border-neutral-800 bg-black/85 p-2 shadow-2xl backdrop-blur-md md:fixed md:right-4 md:top-1/2 md:w-32 md:-translate-y-1/2 md:p-3">
+            <div className="border-b border-neutral-800 pb-2 text-right">
+              <div className="text-[9px] font-bold text-neutral-500 md:text-[10px]">현재 턴 {state.turn}</div>
+              <div className={`text-xs font-black md:text-base ${isMyTurn ? 'text-primary' : 'text-red-400'}`}>
+                {isMyTurn ? '내 턴' : '상대 턴'}
+              </div>
+            </div>
+            {canShowActive && (
+              <button
+                type="button"
+                disabled={!canUseActive}
+                onClick={onUseActive}
+                className="rounded border border-blue-600 bg-blue-900/70 px-2 py-2 text-[9px] font-bold text-blue-100 transition-colors hover:bg-blue-800 disabled:cursor-not-allowed disabled:border-neutral-800 disabled:bg-neutral-900 disabled:text-neutral-600 md:text-xs"
+              >
+                액티브
+              </button>
+            )}
+            <button
+              type="button"
+              disabled={!canEndTurn}
+              onClick={onEndTurn}
+              className={`rounded px-2 py-2 text-[10px] font-black transition-all md:py-3 md:text-sm ${
+                canEndTurn
+                  ? 'bg-primary text-black shadow-[0_0_12px_rgba(234,179,8,0.3)] hover:bg-yellow-400'
+                  : 'cursor-not-allowed bg-neutral-800 text-neutral-600'
+              }`}
+            >
+              턴 종료
+            </button>
+            {playError && (
+              <div className="absolute right-0 top-full mt-2 w-44 rounded border border-red-500 bg-red-950/95 px-3 py-2 text-[10px] font-bold text-red-200 shadow-xl">
+                {playError}
+              </div>
+            )}
+          </aside>
 
          {/* BOTTOM BAR: Player info & Hand */}
          <div className="relative z-30 flex min-h-[160px] shrink-0 items-end justify-between px-2 pb-2 md:min-h-[220px] md:px-4 md:pb-4">
