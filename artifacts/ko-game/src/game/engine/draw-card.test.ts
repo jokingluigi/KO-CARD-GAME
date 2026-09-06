@@ -65,6 +65,23 @@ test('손패가 7장일 때 드로우한 카드는 removedFromGame으로 이동�
   assert.equal(player.deck.length, 0);
   assert.equal(player.removedFromGame.length, 1);
   assert.equal(player.removedFromGame[0].instanceId, 'card-7');
+  assert.deepEqual(state.events.at(-1), {
+    type: 'CARD_REMOVED',
+    playerId: 'player-1',
+    cardInstanceId: 'card-7',
+    source: { type: 'SYSTEM' },
+    target: { type: 'CARD', cardInstanceId: 'card-7' },
+    reason: 'OVERDRAW',
+  });
+  assert.equal(
+    state.events.some(
+      (event) =>
+        event.cardInstanceId === 'card-7' &&
+        (event.type === 'CARD_RETIRED' ||
+          event.type === 'CARD_DESTROYED'),
+    ),
+    false,
+  );
 });
 
 test('오버드로우된 카드는 묘지에 들어가지 않는다', () => {
