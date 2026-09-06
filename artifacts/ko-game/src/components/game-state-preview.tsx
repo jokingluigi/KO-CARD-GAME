@@ -192,6 +192,9 @@ export function GameStatePreview({
                    selected={card?.instanceId === selectedAttackerId}
                    attackReady={!!card && canSelectAsAttacker(state, me.id, card.instanceId)}
                    targetable={false}
+                    activeReady={card?.instanceId === selectedAttackerId && canShowActive}
+                    activeUsable={canUseActive}
+                    onUseActive={onUseActive}
                    onClick={(idOrIdx) => {
                      if (typeof idOrIdx === 'string') onSelectAttacker(idOrIdx);
                      else onSelectSlot(idOrIdx as BoardSlotIndex);
@@ -214,16 +217,6 @@ export function GameStatePreview({
                 {isMyTurn ? '내 턴' : '상대 턴'}
               </div>
             </div>
-            {canShowActive && (
-              <button
-                type="button"
-                disabled={!canUseActive}
-                onClick={onUseActive}
-                className="rounded border border-blue-600 bg-blue-900/70 px-2 py-2 text-[9px] font-bold text-blue-100 transition-colors hover:bg-blue-800 disabled:cursor-not-allowed disabled:border-neutral-800 disabled:bg-neutral-900 disabled:text-neutral-600 md:text-xs"
-              >
-                액티브
-              </button>
-            )}
             <button
               type="button"
               disabled={!canEndTurn}
@@ -318,13 +311,16 @@ export function GameStatePreview({
                     me.hand.map((card, i) => {
                       const isSelected = selectedCardId === card.instanceId;
                       const canAfford = isMyTurn && me.currentGold >= card.currentCost;
-                      return (
+                     const density =
+                       me.hand.length >= 7 ? 'small' : me.hand.length >= 5 ? 'medium' : 'regular';
+                     return (
                         <HandCard
                           key={`hand-${card.instanceId}-${i}`}
                           card={card}
                           isSelected={isSelected}
                           canAfford={canAfford}
                           onClick={() => onSelectCard(card.instanceId)}
+                           density={density}
                           style={{ zIndex: isSelected ? 50 : i }}
                         />
                       );
@@ -348,17 +344,25 @@ function HandCard({
   isSelected,
   canAfford,
   onClick,
+  density,
   style,
 }: {
   card: CardInstance;
   isSelected: boolean;
   canAfford: boolean;
   onClick: () => void;
+  density: 'small' | 'medium' | 'regular';
   style?: React.CSSProperties;
 }) {
   const def = getCardDefinition(card.definitionId);
   
-  let containerClass = "w-[75px] h-[105px] md:w-[130px] md:h-[180px] rounded flex flex-col relative transition-all duration-200 select-none bg-neutral-800 border-2 hover:z-40 group overflow-visible origin-bottom ";
+  const sizeClass =
+    density === 'small'
+      ? 'w-[58px] h-[82px] md:w-[84px] md:h-[128px]'
+      : density === 'medium'
+        ? 'w-[66px] h-[92px] md:w-[100px] md:h-[148px]'
+        : 'w-[75px] h-[105px] md:w-[130px] md:h-[180px]';
+  let containerClass = `${sizeClass} rounded flex flex-col relative transition-all duration-200 select-none bg-neutral-800 border-2 hover:z-40 group overflow-visible origin-bottom `;
   
   if (isSelected) {
     containerClass += "border-primary -translate-y-8 md:-translate-y-12 shadow-[0_15px_30px_rgba(234,179,8,0.4)] z-50 cursor-pointer";
@@ -411,6 +415,9 @@ function BoardSlot({
   selected,
   attackReady,
   targetable,
+  activeReady,
+  activeUsable,
+  onUseActive,
   onClick,
 }: {
   card: CardInstance | null;
@@ -420,6 +427,9 @@ function BoardSlot({
   selected: boolean;
   attackReady: boolean;
   targetable: boolean;
+  activeReady: boolean;
+  activeUsable: boolean;
+  onUseActive: () => void;
   onClick: (idOrIdx: string | BoardSlotIndex) => void;
 }) {
   const isEmpty = !card;
@@ -459,7 +469,21 @@ function BoardSlot({
 
   return (
     <Inspectable content={<CardInspectContent card={card} />} className="relative shrink-0">
-    <div className={containerClass} onClick={() => onClick(card.instanceId)} tabIndex={0}>
+    <div className="relative">
+      {activeReady && (
+        <button
+          type="button"
+          disabled={!activeUsable}
+          onClick={(event) => {
+            event.stopPropagation();
+            onUseActive();
+          }}
+          className="absolute -top-10 left-1/2 z-[120] -translate-x-1/2 whitespace-nowrap rounded border border-blue-500 bg-blue-900/95 px-3 py-1.5 text-[10px] font-bold text-blue-100 shadow-lg transition-colors hover:bg-blue-700 disabled:cursor-not-allowed disabled:border-neutral-700 disabled:bg-neutral-900 disabled:text-neutral-500 md:-top-12 md:px-4 md:py-2 md:text-xs"
+        >
+          액티브
+        </button>
+      )}
+      <div className={containerClass} onClick={() => onClick(card.instanceId)} tabIndex={0}>
        <div className="absolute -left-2 -top-2 z-30 flex h-6 w-6 items-center justify-center rounded-full border-2 border-blue-900 bg-blue-700 font-display text-[10px] font-bold text-white shadow-md md:-left-3 md:-top-3 md:h-8 md:w-8 md:text-sm">
          {card.currentCost}
        </div>
@@ -507,6 +531,7 @@ function BoardSlot({
        <div className="absolute -bottom-2 -right-2 z-20 flex h-6 w-6 items-center justify-center rounded-sm border-2 border-red-900 bg-red-600 font-display text-[10px] font-bold text-white shadow-md transition-transform group-hover:scale-110 md:-bottom-3 md:-right-3 md:h-8 md:w-8 md:text-sm">
          {card.currentHealth}
        </div>
+      </div>
     </div>
     </Inspectable>
   );
