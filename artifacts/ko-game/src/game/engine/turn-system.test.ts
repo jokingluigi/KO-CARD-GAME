@@ -3,6 +3,12 @@ import test from 'node:test';
 
 import { createInitialGameState } from './create-initial-game-state';
 import { endTurn, startGame } from './turn-system';
+import type { ActionResult } from '../actions/types';
+
+function successState(result: ActionResult) {
+  assert.equal(result.success, true);
+  return result.state;
+}
 
 function getPlayerGold(
   state: ReturnType<typeof createInitialGameState>,
@@ -22,7 +28,7 @@ test('P1 첫 턴은 1G로 시작한다', () => {
 
 test('P2 첫 턴은 1G로 시작한다', () => {
   const started = startGame(createInitialGameState());
-  const state = endTurn(started, 'player-1');
+  const state = successState(endTurn(started, 'player-1'));
 
   assert.equal(state.activePlayerId, 'player-2');
   assert.equal(getPlayerGold(state, 'player-2'), 1);
@@ -30,8 +36,8 @@ test('P2 첫 턴은 1G로 시작한다', () => {
 
 test('P1 두 번째 턴은 2G로 시작한다', () => {
   const started = startGame(createInitialGameState());
-  const playerTwoTurn = endTurn(started, 'player-1');
-  const state = endTurn(playerTwoTurn, 'player-2');
+  const playerTwoTurn = successState(endTurn(started, 'player-1'));
+  const state = successState(endTurn(playerTwoTurn, 'player-2'));
 
   assert.equal(state.activePlayerId, 'player-1');
   assert.equal(getPlayerGold(state, 'player-1'), 2);
@@ -45,8 +51,8 @@ test('남은 골드는 다음 개인 턴으로 이월되지 않는다', () => {
       player.id === 'player-1' ? { ...player, currentGold: 7 } : player,
     ),
   };
-  const playerTwoTurn = endTurn(withUnspentGold, 'player-1');
-  const state = endTurn(playerTwoTurn, 'player-2');
+  const playerTwoTurn = successState(endTurn(withUnspentGold, 'player-1'));
+  const state = successState(endTurn(playerTwoTurn, 'player-2'));
 
   assert.equal(getPlayerGold(state, 'player-1'), 2);
 });
@@ -61,7 +67,7 @@ test('nextTurnGoldBonus는 적용된 직후 0으로 초기화된다', () => {
         : player,
     ),
   };
-  const state = endTurn(withBonus, 'player-1');
+  const state = successState(endTurn(withBonus, 'player-1'));
   const playerTwo = state.players.find(
     (player) => player.id === 'player-2',
   );

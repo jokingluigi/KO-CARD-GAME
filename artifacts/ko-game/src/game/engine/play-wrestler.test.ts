@@ -5,6 +5,12 @@ import { createInitialGameState } from './create-initial-game-state';
 import { getAdjacentSlots, getLeftAdjacentSlot, getRightAdjacentSlot } from './board-position';
 import { playWrestlerFromHand } from './play-wrestler';
 import { startGame } from './turn-system';
+import type { ActionResult } from '../actions/types';
+
+function successState(result: ActionResult) {
+  assert.equal(result.success, true);
+  return result.state;
+}
 
 const fixedRandom = () => 0.5;
 
@@ -25,11 +31,8 @@ function playableState() {
 test('손패의 선수를 고정 슬롯에 내고 비용을 지불한다', () => {
   const initial = playableState();
   const card = initial.players[0].hand[0];
-  const state = playWrestlerFromHand(
-    initial,
-    'player-1',
-    card.instanceId,
-    2,
+  const state = successState(
+    playWrestlerFromHand(initial, 'player-1', card.instanceId, 2),
   );
   const player = state.players[0];
 
@@ -44,7 +47,9 @@ test('손패의 선수를 고정 슬롯에 내고 비용을 지불한다', () =>
 test('필드 진입은 ENTER_FIELD 이벤트를 발생시킨다', () => {
   const initial = playableState();
   const card = initial.players[0].hand[0];
-  const state = playWrestlerFromHand(initial, 'player-1', card.instanceId, 0);
+  const state = successState(
+    playWrestlerFromHand(initial, 'player-1', card.instanceId, 0),
+  );
 
   assert.deepEqual(state.events.at(-1), {
     type: 'ENTER_FIELD',
@@ -64,10 +69,16 @@ test('골드가 부족하면 선수를 낼 수 없다', () => {
     ),
   };
 
-  assert.throws(
-    () => playWrestlerFromHand(noGold, 'player-1', card.instanceId, 0),
-    /골드가 부족합니다/,
+  const result = playWrestlerFromHand(
+    noGold,
+    'player-1',
+    card.instanceId,
+    0,
   );
+
+  assert.equal(result.success, false);
+  assert.equal(result.state, noGold);
+  if (!result.success) assert.equal(result.message, '골드가 부족합니다.');
 });
 
 test('보드가 가득 차면 선수를 낼 수 없다', () => {
@@ -83,10 +94,16 @@ test('보드가 가득 차면 선수를 낼 수 없다', () => {
     ),
   };
 
-  assert.throws(
-    () => playWrestlerFromHand(fullBoard, player.id, card.instanceId, 0),
-    /보드가 가득 차/,
+  const result = playWrestlerFromHand(
+    fullBoard,
+    player.id,
+    card.instanceId,
+    0,
   );
+
+  assert.equal(result.success, false);
+  assert.equal(result.state, fullBoard);
+  assert.equal(result.state.players[0].hand, fullBoard.players[0].hand);
 });
 
 test('보드 인접 위치 helper가 경계를 지킨다', () => {

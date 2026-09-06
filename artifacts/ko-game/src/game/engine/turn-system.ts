@@ -1,4 +1,6 @@
 import type { GameState, PlayerState } from '../types/game-state';
+import type { ActionResult } from '../actions/types';
+import { actionFailure, actionSuccess } from '../actions/types';
 import type { RandomSource } from '../random/random';
 import { MAX_DECK_SIZE, MIN_DECK_SIZE } from '../rules/constants';
 import { drawCard } from './draw-card';
@@ -89,13 +91,13 @@ export function isCurrentPlayer(
   return state.activePlayerId === playerId;
 }
 
-export function assertCurrentPlayer(
+export function validateCurrentPlayer(
   state: GameState,
   playerId: string,
-): void {
-  if (!isCurrentPlayer(state, playerId)) {
-    throw new Error(`현재 턴의 플레이어가 아닙니다: ${playerId}`);
-  }
+): ActionResult | null {
+  return isCurrentPlayer(state, playerId)
+    ? null
+    : actionFailure(state, 'NOT_YOUR_TURN', '상대의 턴입니다.');
 }
 
 export function startGame(
@@ -126,8 +128,11 @@ export function startGame(
 export function endTurn(
   state: GameState,
   actingPlayerId: string,
-): GameState {
-  assertCurrentPlayer(state, actingPlayerId);
+): ActionResult {
+  const turnFailure = validateCurrentPlayer(state, actingPlayerId);
+  if (turnFailure) {
+    return turnFailure;
+  }
 
   const currentPlayerIndex = state.players.findIndex(
     (player) => player.id === actingPlayerId,
@@ -148,5 +153,5 @@ export function endTurn(
     }),
   };
 
-  return beginPlayerTurn(turnedState, nextPlayer.id);
+  return actionSuccess(beginPlayerTurn(turnedState, nextPlayer.id));
 }

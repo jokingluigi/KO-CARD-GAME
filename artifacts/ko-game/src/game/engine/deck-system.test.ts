@@ -8,6 +8,12 @@ import {
   prepareDecks,
   startGame,
 } from './turn-system';
+import type { ActionResult } from '../actions/types';
+
+function successState(result: ActionResult) {
+  assert.equal(result.success, true);
+  return result.state;
+}
 
 const fixedRandom = () => 0.5;
 
@@ -45,7 +51,7 @@ test('선공은 첫 자기 턴 시작에도 1장을 드로우한다', () => {
 
 test('후공 턴 시작 시 1장을 드로우하고 덱이 1장 감소한다', () => {
   const started = startGame(createInitialGameState(), fixedRandom);
-  const state = endTurn(started, 'player-1');
+  const state = successState(endTurn(started, 'player-1'));
 
   assert.equal(getPlayer(state, 'player-2').hand.length, 5);
   assert.equal(getPlayer(state, 'player-2').deck.length, 15);
@@ -65,7 +71,7 @@ test('턴 시작 드로우로 손패는 7장을 넘지 않는다', () => {
         : player,
     ),
   };
-  const state = endTurn(fullHandState, 'player-1');
+  const state = successState(endTurn(fullHandState, 'player-1'));
 
   assert.equal(getPlayer(state, 'player-2').hand.length, 7);
   assert.equal(getPlayer(state, 'player-2').removedFromGame.length, 1);

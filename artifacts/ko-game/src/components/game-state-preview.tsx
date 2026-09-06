@@ -177,6 +177,11 @@ export function GameStatePreview({
                        slotIndex={i as BoardSlotIndex}
                        selectable={selectedCardId !== null}
                        selected={me.board[i]?.instanceId === selectedAttackerId}
+                        attackReady={
+                          isMyTurn &&
+                          me.board[i]?.enteredThisTurn === false &&
+                          me.board[i]?.attacksUsedThisTurn === 0
+                        }
                        onSelect={onSelectSlot}
                        onSelectAttacker={onSelectAttacker}
                      />
@@ -221,6 +226,8 @@ export function GameStatePreview({
                  {me.hand && me.hand.length > 0 ? (
                    me.hand.map((card, i) => {
                      const total = me.hand.length;
+                      const canAfford =
+                        isMyTurn && me.currentGold >= card.currentCost;
                      // Wider arc calculation
                      const arcSpread = Math.min(80, total * 10); 
                      const startAngle = -(arcSpread / 2);
@@ -243,7 +250,9 @@ export function GameStatePreview({
                           className={`absolute bottom-0 origin-bottom transition-all duration-300 hover:z-50 group cursor-pointer ${
                             selectedCardId === card.instanceId
                               ? 'z-50 drop-shadow-[0_0_18px_rgba(234,179,8,0.9)]'
-                              : ''
+                              : canAfford
+                                ? ''
+                                : 'brightness-50'
                           }`}
                          style={{
                            transform: `translateX(${translateX}px) translateY(${translateY}px) rotate(${rotate}deg)`,
@@ -366,6 +375,7 @@ function BoardSlot({
   selectable = false,
   selected = false,
   targetable = false,
+  attackReady = false,
   onSelect,
   onSelectAttacker,
   onAttack,
@@ -376,6 +386,7 @@ function BoardSlot({
   selectable?: boolean;
   selected?: boolean;
   targetable?: boolean;
+  attackReady?: boolean;
   onSelect?: (slot: BoardSlotIndex) => void;
   onSelectAttacker?: (cardInstanceId: string) => void;
   onAttack?: (cardInstanceId: string) => void;
@@ -423,7 +434,9 @@ function BoardSlot({
           ? 'border-primary -translate-y-2 shadow-[0_0_20px_rgba(234,179,8,0.7)]'
           : targetable && isOpponent
             ? 'border-red-500 cursor-crosshair hover:-translate-y-1'
-            : 'border-zinc-600 hover:border-primary cursor-pointer hover:-translate-y-1'
+            : attackReady
+              ? 'border-blue-500 hover:border-primary cursor-pointer hover:-translate-y-1'
+              : 'border-zinc-700 opacity-60 cursor-pointer'
       }`}
     >
        

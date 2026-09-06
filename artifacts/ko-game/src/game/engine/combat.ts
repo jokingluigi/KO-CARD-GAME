@@ -1,8 +1,10 @@
 import type { CardInstanceId } from '../cards/types';
+import type { ActionResult } from '../actions/types';
+import { actionFailure, actionSuccess } from '../actions/types';
 import type { RetireEvent } from '../events/types';
 import type { GameState } from '../types/game-state';
 import type { BoardSlot } from './board-position';
-import { assertCurrentPlayer } from './turn-system';
+import { validateCurrentPlayer } from './turn-system';
 
 export type AttackTarget =
   | {
@@ -25,11 +27,7 @@ function findBoardCard(
     (candidate) => candidate?.instanceId === cardInstanceId,
   );
 
-  if (!player || !card) {
-    throw new Error('필드에서 선수를 찾을 수 없습니다.');
-  }
-
-  return { player, card };
+  return player && card ? { player, card } : null;
 }
 
 function retireDefeatedWrestlers(state: GameState): GameState {
@@ -73,29 +71,56 @@ export function attack(
   attackingPlayerId: string,
   attackerInstanceId: CardInstanceId,
   target: AttackTarget,
-): GameState {
-  assertCurrentPlayer(state, attackingPlayerId);
+): ActionResult {
+  const turnFailure = validateCurrentPlayer(state, attackingPlayerId);
+  if (turnFailure) {
+    return turnFailure;
+  }
 
   if (state.status !== 'IN_PROGRESS') {
-    throw new Error('진행 중인 게임에서만 공격할 수 있습니다.');
+    return actionFailure(
+      state,
+      'GAME_NOT_IN_PROGRESS',
+      '진행 중인 게임에서만 공격할 수 있습니다.',
+    );
   }
 
   if (target.playerId === attackingPlayerId) {
-    throw new Error('자신의 선수나 본체는 공격할 수 없습니다.');
+    return actionFailure(
+      state,
+      'INVALID_ATTACK_TARGET',
+      '해당 대상을 공격할 수 없습니다.',
+    );
   }
 
-  const { card: attacker } = findBoardCard(
+  const attackerEntry = findBoardCard(
     state,
     attackingPlayerId,
     attackerInstanceId,
   );
+  if (!attackerEntry) {
+    return actionFailure(
+      state,
+      'INVALID_ATTACK_TARGET',
+      '공격할 수 없는 선수입니다.',
+    );
+  }
+  const { card: attacker } = attackerEntry;
 
   if (attacker.enteredThisTurn) {
-    throw new Error('이번 턴에 등장한 선수는 공격할 수 없습니다.');
+    return actionFailure(
+      state,
+      'SUMMONED_THIS_TURN',
+      '이 선수는 이번 턴에 공격할 수 없습니다.',
+    );
   }
 
   if (attacker.attacksUsedThisTurn >= 1) {
-    throw new Error('이 선수는 이번 턴에 이미 공격했습니다.');
+    return actionFailure(
+      state,
+      'ATTACK_ALREADY_USED',
+      '이 선수는 이번 턴에 더 이상 공격할 수 없습니다.',
+    );
   }
 
   if (target.type === 'PLAYER') {
@@ -104,7 +129,11 @@ export function attack(
     );
 
     if (!defendingPlayer) {
-      throw new Error(`플레이어를 찾을 수 없습니다: ${target.playerId}`);
+      return actionFailure(
+        state,
+        'INVALID_ATTACK_TARGET',
+        '해당 대상을 공격할 수 없습니다.',
+      );
     }
 
     const remainingHealth = defendingPlayer.health - attacker.currentAttack;
@@ -132,23 +161,31 @@ export function attack(
     };
 
     if (remainingHealth > 0) {
-      return attackedState;
+      return actionSuccess(attackedState);
     }
 
-    return {
+    return actionSuccess({
       ...attackedState,
       status: 'FINISHED',
       activePlayerId: null,
       winnerId: attackingPlayerId,
       loserId: target.playerId,
-    };
+    });
   }
 
-  const { card: defender } = findBoardCard(
+  const defenderEntry = findBoardCard(
     state,
     target.playerId,
     target.cardInstanceId,
   );
+  if (!defenderEntry) {
+    return actionFailure(
+      state,
+      'INVALID_ATTACK_TARGET',
+      '해당 대상을 공격할 수 없습니다.',
+    );
+  }
+  const { card: defender } = defenderEntry;
 
   const damagedState: GameState = {
     ...state,
@@ -175,5 +212,5 @@ export function attack(
     })),
   };
 
-  return retireDefeatedWrestlers(damagedState);
+  return actionSuccess(retireDefeatedWrestlers(damagedState));
 }

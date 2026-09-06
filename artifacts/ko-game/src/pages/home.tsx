@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 
 import {
   attack,
@@ -21,14 +21,24 @@ export default function Home() {
   );
   const [playError, setPlayError] = useState<string | null>(null);
 
+  useEffect(() => {
+    if (!playError) return;
+    const timeoutId = window.setTimeout(() => setPlayError(null), 2500);
+    return () => window.clearTimeout(timeoutId);
+  }, [playError]);
+
   function handleEndTurn() {
     if (!gameState.activePlayerId) {
       return;
     }
 
-    setGameState((currentState) =>
-      endTurn(currentState, currentState.activePlayerId!),
-    );
+    const result = endTurn(gameState, gameState.activePlayerId);
+    if (!result.success) {
+      setPlayError(result.message);
+      return;
+    }
+
+    setGameState(result.state);
     setSelectedCardId(null);
     setSelectedAttackerId(null);
     setPlayError(null);
@@ -56,26 +66,24 @@ export default function Home() {
       return;
     }
 
-    try {
-      setGameState((currentState) =>
-        attack(
-          currentState,
-          currentState.players[0].id,
-          selectedAttackerId,
-          {
-            type: 'WRESTLER',
-            playerId: currentState.players[1].id,
-            cardInstanceId: targetCardInstanceId,
-          },
-        ),
-      );
-      setSelectedAttackerId(null);
-      setPlayError(null);
-    } catch (error) {
-      setPlayError(
-        error instanceof Error ? error.message : '공격할 수 없습니다.',
-      );
+    const result = attack(
+      gameState,
+      gameState.players[0].id,
+      selectedAttackerId,
+      {
+        type: 'WRESTLER',
+        playerId: gameState.players[1].id,
+        cardInstanceId: targetCardInstanceId,
+      },
+    );
+    if (!result.success) {
+      setPlayError(result.message);
+      return;
     }
+
+    setGameState(result.state);
+    setSelectedAttackerId(null);
+    setPlayError(null);
   }
 
   function handleAttackPlayer() {
@@ -84,25 +92,23 @@ export default function Home() {
       return;
     }
 
-    try {
-      setGameState((currentState) =>
-        attack(
-          currentState,
-          currentState.players[0].id,
-          selectedAttackerId,
-          {
-            type: 'PLAYER',
-            playerId: currentState.players[1].id,
-          },
-        ),
-      );
-      setSelectedAttackerId(null);
-      setPlayError(null);
-    } catch (error) {
-      setPlayError(
-        error instanceof Error ? error.message : '공격할 수 없습니다.',
-      );
+    const result = attack(
+      gameState,
+      gameState.players[0].id,
+      selectedAttackerId,
+      {
+        type: 'PLAYER',
+        playerId: gameState.players[1].id,
+      },
+    );
+    if (!result.success) {
+      setPlayError(result.message);
+      return;
     }
+
+    setGameState(result.state);
+    setSelectedAttackerId(null);
+    setPlayError(null);
   }
 
   function handleSelectSlot(slot: BoardSlot) {
@@ -111,22 +117,20 @@ export default function Home() {
       return;
     }
 
-    try {
-      setGameState((currentState) =>
-        playWrestlerFromHand(
-          currentState,
-          currentState.players[0].id,
-          selectedCardId,
-          slot,
-        ),
-      );
-      setSelectedCardId(null);
-      setPlayError(null);
-    } catch (error) {
-      setPlayError(
-        error instanceof Error ? error.message : '선수를 낼 수 없습니다.',
-      );
+    const result = playWrestlerFromHand(
+      gameState,
+      gameState.players[0].id,
+      selectedCardId,
+      slot,
+    );
+    if (!result.success) {
+      setPlayError(result.message);
+      return;
     }
+
+    setGameState(result.state);
+    setSelectedCardId(null);
+    setPlayError(null);
   }
 
   return (
