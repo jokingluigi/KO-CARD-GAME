@@ -1,14 +1,76 @@
 import type { GameState, PlayerState } from '../types/game-state';
+import type { RandomSource } from '../random/random';
+import { MAX_DECK_SIZE, MIN_DECK_SIZE } from '../rules/constants';
+import { drawCard } from './draw-card';
+import { shuffle } from '../random/random';
 
-function beginPlayerTurn(player: PlayerState): PlayerState {
+function beginPlayerTurn(state: GameState, playerId: string): GameState {
+  const player = state.players.find((candidate) => candidate.id === playerId);
+
+  if (!player) {
+    throw new Error(`플레이어를 찾을 수 없습니다: ${playerId}`);
+  }
+
   const personalTurn = player.personalTurn + 1;
 
+  return drawCard({
+    ...state,
+    players: state.players.map((candidate) =>
+      candidate.id === playerId
+        ? {
+            ...candidate,
+            personalTurn,
+            currentGold: personalTurn + candidate.nextTurnGoldBonus,
+            nextTurnGoldBonus: 0,
+          }
+        : candidate,
+    ),
+  }, playerId);
+}
+
+function drawOpeningHand(
+  state: GameState,
+  playerId: string,
+  cardCount: number,
+): GameState {
+  let nextState = state;
+
+  for (let count = 0; count < cardCount; count += 1) {
+    nextState = drawCard(nextState, playerId);
+  }
+
+  return nextState;
+}
+
+export function prepareDecks(
+  state: GameState,
+  random?: RandomSource,
+): GameState {
+  for (const player of state.players) {
+    if (
+      player.deck.length < MIN_DECK_SIZE ||
+      player.deck.length > MAX_DECK_SIZE
+    ) {
+      throw new Error(
+        `덱은 ${MIN_DECK_SIZE}장 이상 ${MAX_DECK_SIZE}장 이하여야 합니다: ${player.id}`,
+      );
+    }
+  }
+
   return {
-    ...player,
-    personalTurn,
-    currentGold: personalTurn + player.nextTurnGoldBonus,
-    nextTurnGoldBonus: 0,
+    ...state,
+    players: state.players.map((player) => ({
+      ...player,
+      deck: shuffle(player.deck, random),
+    })),
   };
+}
+
+export function dealOpeningHands(state: GameState): GameState {
+  const firstPlayer = state.players[0];
+  const secondPlayer = state.players[1];
+  const firstPlayerDealt = drawOpeningHand(state, firstPlayer.id, 3);
+  return drawOpeningHand(firstPlayerDealt, secondPlayer.id, 4);
 }
 
 export function isCurrentPlayer(
@@ -27,7 +89,10 @@ export function assertCurrentPlayer(
   }
 }
 
-export function startGame(state: GameState): GameState {
+export function startGame(
+  state: GameState,
+  random?: RandomSource,
+): GameState {
   if (state.players.length !== 2) {
     throw new Error('게임을 시작하려면 플레이어가 정확히 2명이어야 합니다.');
   }
@@ -36,17 +101,17 @@ export function startGame(state: GameState): GameState {
     throw new Error('이미 시작된 게임입니다.');
   }
 
-  const firstPlayer = state.players[0];
+  const preparedState = dealOpeningHands(prepareDecks(state, random));
+  const firstPlayer = preparedState.players[0];
 
-  return {
-    ...state,
+  const startedState: GameState = {
+    ...preparedState,
     turn: 1,
     activePlayerId: firstPlayer.id,
     status: 'IN_PROGRESS',
-    players: state.players.map((player) =>
-      player.id === firstPlayer.id ? beginPlayerTurn(player) : player,
-    ),
   };
+
+  return beginPlayerTurn(startedState, firstPlayer.id);
 }
 
 export function endTurn(
@@ -61,7 +126,7 @@ export function endTurn(
   const nextPlayerIndex = (currentPlayerIndex + 1) % state.players.length;
   const nextPlayer = state.players[nextPlayerIndex];
 
-  return {
+  const turnedState: GameState = {
     ...state,
     turn: state.turn + 1,
     activePlayerId: nextPlayer.id,
@@ -70,7 +135,9 @@ export function endTurn(
         return { ...player, currentGold: 0 };
       }
 
-      return player.id === nextPlayer.id ? beginPlayerTurn(player) : player;
+      return player;
     }),
   };
+
+  return beginPlayerTurn(turnedState, nextPlayer.id);
 }

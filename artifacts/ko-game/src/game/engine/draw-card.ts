@@ -1,6 +1,5 @@
 import type { GameState, PlayerState } from '../types/game-state';
-
-const MAX_HAND_SIZE = 7;
+import { MAX_HAND_SIZE } from '../rules/constants';
 
 function finishGameFromFatigue(
   state: GameState,

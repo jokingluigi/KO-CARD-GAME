@@ -1,4 +1,4 @@
-import type { GameState } from '@/game';
+import { getCardDefinition, type CardInstance, type GameState } from '@/game';
 
 interface GameStatePreviewProps {
   state: GameState;
@@ -254,14 +254,15 @@ export function GameStatePreview({
   );
 }
 
-function HandCard({ card }: { card: any }) {
-  const cost = card?.cost ?? 3;
-  const attack = card?.attack;
-  const health = card?.health;
-  const name = card?.name ?? '카드 이름';
+function HandCard({ card }: { card: CardInstance }) {
+  const definition = getCardDefinition(card.definitionId);
+  const cost = definition?.cost ?? 0;
+  const attack = definition?.attack;
+  const health = definition?.health;
+  const name = definition?.name ?? '알 수 없는 카드';
   const isWrestler = attack !== undefined && health !== undefined;
-  const type = isWrestler ? '선수' : '기술';
-  const desc = card?.description ?? '카드 효과가 여기에 표시됩니다. 이 효과는 게임 진행에 영향을 줍니다.';
+  const type = '선수';
+  const desc = definition?.rulesText || '효과 없음';
 
   return (
     <div className="w-[130px] h-[180px] md:w-[160px] md:h-[220px] bg-[#0c0c0c] border-[2px] border-zinc-700 rounded-lg overflow-hidden flex flex-col shadow-[0_15px_30px_rgba(0,0,0,0.9)] relative transition-all group-hover:border-primary">

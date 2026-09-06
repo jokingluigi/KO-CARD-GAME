@@ -1,4 +1,5 @@
 import type { GameState, PlayerState } from '../types/game-state';
+import { createTestDeck } from '../cards/test-cards';
 
 function createEmptyPlayer(id: string): PlayerState {
   return {
@@ -8,7 +9,7 @@ function createEmptyPlayer(id: string): PlayerState {
     currentGold: 0,
     personalTurn: 0,
     nextTurnGoldBonus: 0,
-    deck: [],
+    deck: createTestDeck(id),
     hand: [],
     board: [null, null, null, null],
     graveyard: [],
