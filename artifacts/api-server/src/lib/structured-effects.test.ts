@@ -48,6 +48,12 @@ test("필수 카드 문장을 안전한 구조화 효과로 분석한다", () =>
       values: { amount: 2 },
     },
     {
+      text: "등장: 선택한 적 캐릭터에게 데미지 1을 줍니다.",
+      actions: ["DAMAGE"],
+      target: { zone: "CHARACTER", owner: "ENEMY", selection: "PLAYER_CHOICE", count: 1 },
+      values: { amount: 1 },
+    },
+    {
       text: "등장: 아군 캐릭터 하나를 2 회복합니다.",
       actions: ["HEAL"],
       target: { zone: "CHARACTER", owner: "SELF", selection: "PLAYER_CHOICE", count: 1 },
