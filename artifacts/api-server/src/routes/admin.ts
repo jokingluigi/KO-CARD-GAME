@@ -338,7 +338,7 @@ router.post("/login", (request, response) => {
   if (
     typeof username !== "string" ||
     typeof password !== "string" ||
-    !safeEqual(username, configuredUsername) ||
+    !safeEqual(username.trim().toUpperCase(), configuredUsername.trim().toUpperCase()) ||
     !safeEqual(password, configuredPassword)
   ) {
     response.status(401).json({ message: "관리자 계정 정보가 올바르지 않습니다." });
