@@ -255,10 +255,12 @@ function parseCardInput(value: unknown): CardInput | null {
   const input = value as Record<string, unknown>;
   const name = typeof input.name === "string" ? input.name.trim() : "";
   const text = typeof input.text === "string" ? input.text.trim() : "";
-  const effectId =
+  const explicitEffectId =
     typeof input.effectId === "string" && input.effectId.trim()
       ? input.effectId.trim()
       : null;
+  const inferredEffect = inferEffectFromText(text);
+  const effectId = explicitEffectId ?? inferredEffect.effectId;
   const imageAssetId =
     typeof input.imageAssetId === "string" && input.imageAssetId
       ? input.imageAssetId
@@ -309,7 +311,10 @@ function parseCardInput(value: unknown): CardInput | null {
     isToken: input.isToken,
     isChampionToken: input.isChampionToken,
     effectId,
-    effectConfig: input.effectConfig as Record<string, unknown>,
+    effectConfig:
+      explicitEffectId || Object.keys(input.effectConfig as object).length > 0
+        ? (input.effectConfig as Record<string, unknown>)
+        : inferredEffect.effectConfig,
     imageAssetId,
     imageUrl: imageAssetId ? imageUrlFor(imageAssetId) : null,
     imageUploadToken,
@@ -318,6 +323,24 @@ function parseCardInput(value: unknown): CardInput | null {
 
 function firstParam(value: unknown): string | undefined {
   return typeof value === "string" ? value : undefined;
+}
+
+function inferEffectFromText(text: string): {
+  effectId: string | null;
+  effectConfig: Record<string, unknown>;
+} {
+  const amountMatch = text.match(/(\d+)\s*(?:골드|공격력?|만큼)/);
+  const amount = amountMatch ? Number(amountMatch[1]) : 1;
+  if (/액티브|활성화/.test(text) && /골드/.test(text)) {
+    return { effectId: "ACTIVE_GAIN_GOLD", effectConfig: { amount } };
+  }
+  if (/(?:등장|출전|필드에 들어오)/.test(text) && /골드/.test(text)) {
+    return { effectId: "ENTER_FIELD_GAIN_GOLD", effectConfig: { amount } };
+  }
+  if (/액티브|활성화/.test(text) && /공격/.test(text)) {
+    return { effectId: "ACTIVE_MODIFY_SELF_ATTACK", effectConfig: { amount } };
+  }
+  return { effectId: null, effectConfig: {} };
 }
 
 router.post("/login", (request, response) => {

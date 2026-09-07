@@ -81,6 +81,14 @@ const KEYWORDS: CardKeyword[] = [
   "MULTI_STRIKE",
 ];
 
+const KEYWORD_LABELS: Record<CardKeyword, string> = {
+  RUSH: "러쉬",
+  SURPRISE: "기습",
+  TAUNT: "도발",
+  DODGE: "회피",
+  MULTI_STRIKE: "연타",
+};
+
 function statusLabel(status: CardStatus) {
   if (status === "PUBLISHED") return "공개";
   if (status === "DISABLED") return "비활성";
@@ -537,8 +545,8 @@ export function AdminCardManager({
               <div className="grid grid-cols-3 gap-2">
                 {(["cost", "attack", "health"] as const).map((field) => <label key={field} className="space-y-1.5"><span className="text-xs font-bold text-neutral-400">{{ cost: "비용", attack: "공격력", health: "체력" }[field]}</span><input type="number" min={0} max={999} {...form.register(field, { required: true, valueAsNumber: true })} data-testid={`input-card-${field}`} className="w-full rounded border border-neutral-700 bg-neutral-900 px-2 py-2 outline-none focus:border-primary" /></label>)}
               </div>
-              <label className="space-y-1.5 md:col-span-2"><span className="text-xs font-bold text-neutral-400">카드 텍스트</span><textarea {...form.register("text")} rows={3} data-testid="input-card-text" className="w-full rounded border border-neutral-700 bg-neutral-900 px-3 py-2 outline-none focus:border-primary" /></label>
-              <fieldset className="space-y-2 md:col-span-2"><legend className="text-xs font-bold text-neutral-400">키워드</legend><div className="flex flex-wrap gap-2">{KEYWORDS.map((keyword) => <label key={keyword} className="flex items-center gap-2 rounded border border-neutral-800 bg-neutral-900 px-3 py-2 text-xs"><input type="checkbox" value={keyword} {...form.register("keywords")} data-testid={`input-keyword-${keyword}`} />{keyword}</label>)}</div></fieldset>
+               <label className="space-y-1.5 md:col-span-2"><span className="text-xs font-bold text-neutral-400">카드 텍스트</span><textarea {...form.register("text", { onChange: () => { form.setValue("effectId", ""); form.setValue("effectConfig", "{}"); } })} rows={3} data-testid="input-card-text" className="w-full rounded border border-neutral-700 bg-neutral-900 px-3 py-2 outline-none focus:border-primary" /></label>
+               <fieldset className="space-y-2 md:col-span-2"><legend className="text-xs font-bold text-neutral-400">키워드</legend><div className="flex flex-wrap gap-2">{KEYWORDS.map((keyword) => <label key={keyword} className="flex items-center gap-2 rounded border border-neutral-800 bg-neutral-900 px-3 py-2 text-xs"><input type="checkbox" value={keyword} {...form.register("keywords")} data-testid={`input-keyword-${keyword}`} />{KEYWORD_LABELS[keyword]}</label>)}</div></fieldset>
               <label className="flex items-center gap-2 rounded border border-neutral-800 bg-neutral-900 p-3 text-sm"><input type="checkbox" {...form.register("isToken")} data-testid="input-card-token" /> 토큰 카드</label>
               <label className="flex items-center gap-2 rounded border border-neutral-800 bg-neutral-900 p-3 text-sm"><input type="checkbox" {...form.register("isChampionToken")} data-testid="input-card-champion-token" /> 챔피언 토큰</label>
                <div className="space-y-2 md:col-span-2">
