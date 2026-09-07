@@ -11,6 +11,10 @@ export type CardEffect =
       amount: number;
     }
   | {
+      type: 'DAMAGE_OPPONENT_CHAMPION';
+      amount: number;
+    }
+  | {
       type: 'MODIFY_SELF_ATTACK';
       amount: number;
     };

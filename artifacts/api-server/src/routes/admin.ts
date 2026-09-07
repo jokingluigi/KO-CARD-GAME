@@ -329,8 +329,18 @@ function inferEffectFromText(text: string): {
   effectId: string | null;
   effectConfig: Record<string, unknown>;
 } {
-  const amountMatch = text.match(/(\d+)\s*(?:골드|공격력?|만큼)/);
+  const amountMatch = text.match(/(\d+)\s*(?:골드|공격력?|데미지|피해|만큼)/);
   const amount = amountMatch ? Number(amountMatch[1]) : 1;
+  if (
+    /(?:등장\s*:|등장|출전|필드에 들어오)/.test(text) &&
+    /(?:상대 챔피언|상대 플레이어)/.test(text) &&
+    /(?:데미지|피해)/.test(text)
+  ) {
+    return {
+      effectId: "ENTER_FIELD_DAMAGE_OPPONENT_CHAMPION",
+      effectConfig: { amount },
+    };
+  }
   if (/액티브|활성화/.test(text) && /골드/.test(text)) {
     return { effectId: "ACTIVE_GAIN_GOLD", effectConfig: { amount } };
   }

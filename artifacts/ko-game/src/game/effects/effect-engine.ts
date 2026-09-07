@@ -53,6 +53,94 @@ function applyEffect(
     };
   }
 
+  if (effect.type === 'DAMAGE_OPPONENT_CHAMPION') {
+    const opponent = state.players.find((player) => player.id !== playerId);
+    if (!opponent) return state;
+
+    const directChampion =
+      opponent.board.find((card) => card?.isDirectDeployedChampion) ?? null;
+    const remainingHealth = directChampion
+      ? directChampion.currentHealth - effect.amount
+      : opponent.health - effect.amount;
+    const defeated = remainingHealth <= 0;
+
+    return {
+      ...state,
+      status: defeated ? 'FINISHED' : state.status,
+      activePlayerId: defeated ? null : state.activePlayerId,
+      winnerId: defeated ? playerId : state.winnerId,
+      loserId: defeated ? opponent.id : state.loserId,
+      players: state.players.map((player) => {
+        if (player.id !== opponent.id) return player;
+
+        if (directChampion) {
+          const damagedChampion = {
+            ...directChampion,
+            currentHealth: remainingHealth,
+            boardSlot: defeated ? null : directChampion.boardSlot,
+          };
+          return {
+            ...player,
+            board: player.board.map((card) =>
+              card?.instanceId === directChampion.instanceId
+                ? defeated
+                  ? null
+                  : damagedChampion
+                : card,
+            ) as typeof player.board,
+            graveyard: defeated
+              ? [...player.graveyard, damagedChampion]
+              : player.graveyard,
+          };
+        }
+
+        return {
+          ...player,
+          health: remainingHealth,
+          champion: player.champion
+            ? { ...player.champion, health: remainingHealth }
+            : null,
+        };
+      }),
+      events: [
+        ...state.events,
+        {
+          type: 'DAMAGE_DEALT',
+          playerId,
+          cardInstanceId: sourceCard.instanceId,
+          source: {
+            type: 'CARD',
+            cardInstanceId: sourceCard.instanceId,
+          },
+          target: directChampion
+            ? { type: 'CARD', cardInstanceId: directChampion.instanceId }
+            : { type: 'PLAYER', playerId: opponent.id },
+          reason: 'CARD_EFFECT',
+          amount: effect.amount,
+        },
+        ...(defeated && directChampion
+          ? [
+              {
+                type: 'CARD_RETIRED' as const,
+                playerId: opponent.id,
+                cardInstanceId: directChampion.instanceId,
+                boardSlot: directChampion.boardSlot!,
+                source: {
+                  type: 'CARD' as const,
+                  cardInstanceId: sourceCard.instanceId,
+                },
+                target: {
+                  type: 'CARD' as const,
+                  cardInstanceId: directChampion.instanceId,
+                },
+                reason: 'RETIRE',
+              },
+            ]
+          : []),
+      ],
+    };
+  }
+
   return {
     ...state,
     players: state.players.map((player) => ({

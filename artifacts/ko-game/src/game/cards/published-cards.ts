@@ -37,6 +37,12 @@ function abilitiesFor(
   if (effectId === "ENTER_FIELD_GAIN_GOLD") {
     return [{ trigger: "ENTER_FIELD", effects: [{ type: "GAIN_GOLD", amount: amount(config) }] }];
   }
+  if (effectId === "ENTER_FIELD_DAMAGE_OPPONENT_CHAMPION") {
+    return [{
+      trigger: "ENTER_FIELD",
+      effects: [{ type: "DAMAGE_OPPONENT_CHAMPION", amount: amount(config) }],
+    }];
+  }
   if (effectId === "LEAVE_FIELD_GAIN_GOLD") {
     return [{
       trigger: "LEAVE_FIELD",
