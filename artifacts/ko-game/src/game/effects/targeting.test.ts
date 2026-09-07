@@ -116,6 +116,64 @@ test('CHARACTER targeting offers the owner id and wrestlers, then applies player
   assert.equal(wrestlerHealed.players[0].board[1]?.currentHealth, 2);
 });
 
+test('ALL CHARACTER resolves both champions and every eligible wrestler without targeting', () => {
+  const allDamage: CardEffect = {
+    type: 'STRUCTURED', action: 'DAMAGE',
+    target: { zone: 'CHARACTER', owner: 'ALL', selection: 'ALL', count: 20 },
+    values: { amount: 1 },
+  };
+  const allHeal: CardEffect = {
+    type: 'STRUCTURED', action: 'HEAL',
+    target: { zone: 'CHARACTER', owner: 'ALL', selection: 'ALL', count: 20 },
+    values: { amount: 1 },
+  };
+  const source = card('source', [allDamage]);
+  const ally = { ...card('ally'), boardSlot: 1 as const, currentHealth: 1 };
+  const enemy = { ...card('enemy'), boardSlot: 0 as const, currentHealth: 1 };
+  const state = createInitialGameState();
+  state.players[0].health = 19;
+  state.players[0].champion = { ...state.players[0].champion!, health: 19 };
+  state.players[1].health = 19;
+  state.players[1].champion = { ...state.players[1].champion!, health: 19 };
+  state.players[0].board[1] = ally; state.players[1].board[0] = enemy;
+  assert.deepEqual(getValidTargets(state, 'player-1', source, allDamage).sort(), ['ally', 'enemy', 'player-1', 'player-2'].sort());
+  const damaged = enterField(state, 'player-1', source, 0);
+  assert.equal(damaged.targetingState, undefined);
+  assert.equal(damaged.players[0].health, 18);
+  assert.equal(damaged.players[1].health, 18);
+  assert.equal(damaged.players[0].board[0]?.currentHealth, 1);
+  assert.equal(damaged.players[0].board[1], null);
+  assert.equal(damaged.players[1].board[0], null);
+
+  const healer = card('healer', [allHeal]);
+  const healed = enterField(state, 'player-1', healer, 0);
+  assert.equal(healed.targetingState, undefined);
+  assert.equal(healed.players[0].health, 20);
+  assert.equal(healed.players[1].health, 20);
+  assert.equal(healed.players[0].board[0]?.currentHealth, 2);
+  assert.equal(healed.players[0].board[1]?.currentHealth, 2);
+  assert.equal(healed.players[1].board[0]?.currentHealth, 2);
+});
+
+test('ALL CHARACTER card-only actions affect wrestlers but never player ids', () => {
+  const silenceAll: CardEffect = {
+    type: 'STRUCTURED', action: 'SILENCE',
+    target: { zone: 'CHARACTER', owner: 'ALL', selection: 'ALL', count: 20 },
+  };
+  const source = card('source', [silenceAll]);
+  const enemy = { ...card('enemy'), boardSlot: 0 as const };
+  const championToken = { ...card('champion'), boardSlot: 1 as const, isDirectDeployedChampion: true };
+  const state = createInitialGameState();
+  state.players[1].board[0] = enemy; state.players[1].board[1] = championToken;
+  assert.deepEqual(getValidTargets(state, 'player-1', source, silenceAll), ['enemy']);
+  const resolved = enterField(state, 'player-1', source, 0);
+  assert.equal(resolved.players[0].health, state.players[0].health);
+  assert.equal(resolved.players[1].health, state.players[1].health);
+  assert.equal(resolved.players[0].board[0]?.isSilenced, true);
+  assert.equal(resolved.players[1].board[0]?.isSilenced, true);
+  assert.equal(resolved.players[1].board[1]?.isSilenced, false);
+});
+
 test('pending targeting blocks end turn with the exact warning', () => {
   const state = createInitialGameState();
   state.status = 'IN_PROGRESS'; state.activePlayerId = 'player-1';

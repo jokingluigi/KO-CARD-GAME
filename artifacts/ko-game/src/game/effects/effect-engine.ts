@@ -16,24 +16,29 @@ export function getValidTargets(
   if (effect.type !== 'STRUCTURED' || !effect.target) return [];
   const target = effect.target;
   if (target.zone === 'PLAYER') {
+    if (target.owner === 'ALL') return [];
     const owner = target.owner === 'SELF' ? playerId : state.players.find((p) => p.id !== playerId)?.id;
     return owner ? [owner] : [];
   }
-  const owner = target.owner === 'SELF' ? playerId : state.players.find((p) => p.id !== playerId)?.id;
-  const player = owner && state.players.find((p) => p.id === owner);
-  if (!player) return [];
-  const cards = target.zone === 'HAND' ? player.hand : player.board.filter((c): c is CardInstance => c !== null);
-  const cardIds = cards.filter((card) => {
-    if (target.zone === 'CHARACTER' && card.cardType !== 'WRESTLER') return false;
-    if (target.cardType && card.cardType !== target.cardType) return false;
-    if (target.selection === 'SELF' && card.instanceId !== sourceCard.instanceId) return false;
-    // Directly deployed champion tokens remain damageable, but not silence/destroy targets.
-    if (card.isDirectDeployedChampion && (effect.action === 'SILENCE' || effect.action === 'DESTROY')) return false;
-    return true;
-  }).map((card) => card.instanceId);
-  const canTargetPlayer = effect.action === 'DAMAGE' ||
-    (effect.action === 'HEAL' && target.owner === 'SELF');
-  return target.zone === 'CHARACTER' && canTargetPlayer ? [owner, ...cardIds] : cardIds;
+  const owners = target.owner === 'ALL'
+    ? state.players.map((player) => player.id)
+    : [target.owner === 'SELF' ? playerId : state.players.find((p) => p.id !== playerId)?.id].filter((id): id is string => Boolean(id));
+  const canTargetPlayer = target.zone === 'CHARACTER' &&
+    (effect.action === 'DAMAGE' || (effect.action === 'HEAL' && target.owner !== 'ENEMY'));
+  return owners.flatMap((owner) => {
+    const player = state.players.find((candidate) => candidate.id === owner);
+    if (!player) return [];
+    const cards = target.zone === 'HAND' ? player.hand : player.board.filter((c): c is CardInstance => c !== null);
+    const cardIds = cards.filter((card) => {
+      if (target.zone === 'CHARACTER' && card.cardType !== 'WRESTLER') return false;
+      if (target.cardType && card.cardType !== target.cardType) return false;
+      if (target.selection === 'SELF' && card.instanceId !== sourceCard.instanceId) return false;
+      // Directly deployed champion tokens remain damageable, but not silence/destroy targets.
+      if (card.isDirectDeployedChampion && (effect.action === 'SILENCE' || effect.action === 'DESTROY')) return false;
+      return true;
+    }).map((card) => card.instanceId);
+    return canTargetPlayer ? [owner, ...cardIds] : cardIds;
+  });
 }
 
 export function validateEffectTargets(
@@ -192,29 +197,41 @@ function applyEffect(
     }
     if (!effect.target) return state;
     const target = effect.target;
+    // Costs belong to cards in hand, never to a character (which can include a
+    // champion/player id). Keep malformed legacy payloads from changing board
+    // cards through this broader target zone.
+    if (target.zone === 'CHARACTER' &&
+      (effect.action === 'REDUCE_COST' || effect.action === 'INCREASE_COST')) return state;
     const targetOwner = target.owner === 'SELF' ? playerId : state.players.find((player) => player.id !== playerId)?.id;
     if (!targetOwner) return state;
     const candidatePlayer = state.players.find((player) => player.id === targetOwner);
     if (!candidatePlayer) return state;
     if (target.zone === 'CHARACTER') {
       const validIds = getValidTargets(state, playerId, sourceCard, effect);
-      const selectedIds = chosenTargetInstanceIds?.filter((id) => validIds.includes(id)) ?? [];
-      const canTargetPlayer = effect.action === 'DAMAGE' ||
-        (effect.action === 'HEAL' && target.owner === 'SELF');
-      const playerSelected = canTargetPlayer && selectedIds.includes(targetOwner);
-      const cardIds = selectedIds.filter((id) => id !== targetOwner);
-      const afterPlayer = playerSelected
-        ? applyEffect(state, playerId, sourceCard, {
-            ...effect,
-            target: { ...target, zone: 'PLAYER', selection: 'SELF', count: 1 },
-          })
-        : state;
-      return cardIds.length
-        ? applyEffect(afterPlayer, playerId, sourceCard, {
-            ...effect,
-            target: { ...target, zone: 'BOARD', cardType: 'WRESTLER' },
-          }, cardIds)
-        : afterPlayer;
+      const selectedIds = target.selection === 'ALL'
+        ? validIds
+        : chosenTargetInstanceIds?.filter((id) => validIds.includes(id)) ?? [];
+      const playerIds = selectedIds.filter((id) => state.players.some((player) => player.id === id));
+      const cardIds = selectedIds.filter((id) => !playerIds.includes(id));
+      const afterPlayers = playerIds.reduce((nextState, owner) =>
+        applyEffect(nextState, playerId, sourceCard, {
+          ...effect,
+          target: { ...target, zone: 'PLAYER', owner: owner === playerId ? 'SELF' : 'ENEMY', selection: 'SELF', count: 1 },
+        }), state);
+      return cardIds.reduce((nextState, cardId) => {
+        const owner = nextState.players.find((player) =>
+          player.board.some((card) => card?.instanceId === cardId))?.id;
+        if (!owner) return nextState;
+        // A deployed champion is represented by its player id as well as a board
+        // token; resolving both must not damage or heal it twice.
+        const current = nextState.players.find((player) => player.id === owner)?.board
+          .find((card) => card?.instanceId === cardId);
+        if (current?.isDirectDeployedChampion && playerIds.includes(owner)) return nextState;
+        return applyEffect(nextState, playerId, sourceCard, {
+          ...effect,
+          target: { ...target, zone: 'BOARD', owner: owner === playerId ? 'SELF' : 'ENEMY', cardType: 'WRESTLER', selection: 'PLAYER_CHOICE', count: 1 },
+        }, [cardId]);
+      }, afterPlayers);
     }
     if (target.zone === 'PLAYER' && effect.action === 'HEAL') {
       const directChampion = candidatePlayer.board.find((card) => card?.isDirectDeployedChampion);
