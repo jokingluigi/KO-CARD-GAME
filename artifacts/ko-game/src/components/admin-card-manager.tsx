@@ -551,7 +551,7 @@ export function AdminCardManager({
               <label className="flex items-center gap-2 rounded border border-neutral-800 bg-neutral-900 p-3 text-sm"><input type="checkbox" {...form.register("isChampionToken")} data-testid="input-card-champion-token" /> 챔피언 토큰</label>
                <div className="space-y-2 md:col-span-2">
                  <div className="rounded border border-blue-900/50 bg-blue-950/20 px-3 py-2 text-xs leading-relaxed text-blue-200">
-                   카드 텍스트만 입력하면 효과를 자동으로 적용합니다. 예: <strong>“액티브: 골드를 2 얻습니다.”</strong>, <strong>“등장 시 골드를 1 얻습니다.”</strong>, <strong>“액티브: 공격력을 2 올립니다.”</strong>
+                   카드 텍스트만 입력하면 효과를 자동으로 적용합니다. 필드에 소환될 때 발동하는 효과는 <strong>“등장: 골드를 2 얻습니다.”</strong>처럼 입력하세요. 그 외 예: <strong>“액티브: 골드를 2 얻습니다.”</strong>, <strong>“액티브: 공격력을 2 올립니다.”</strong>
                  </div>
                  <details className="rounded border border-neutral-800 bg-neutral-900/50 p-3">
                    <summary className="cursor-pointer text-xs font-bold text-neutral-500">고급 효과 설정 (선택 사항)</summary>

@@ -334,7 +334,7 @@ function inferEffectFromText(text: string): {
   if (/액티브|활성화/.test(text) && /골드/.test(text)) {
     return { effectId: "ACTIVE_GAIN_GOLD", effectConfig: { amount } };
   }
-  if (/(?:등장|출전|필드에 들어오)/.test(text) && /골드/.test(text)) {
+  if (/(?:등장\s*:|등장|출전|필드에 들어오)/.test(text) && /골드/.test(text)) {
     return { effectId: "ENTER_FIELD_GAIN_GOLD", effectConfig: { amount } };
   }
   if (/액티브|활성화/.test(text) && /공격/.test(text)) {
