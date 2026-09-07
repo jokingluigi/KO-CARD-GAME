@@ -1,161 +1,150 @@
-export type StructuredEffect = {
-  trigger: "ENTER_FIELD" | "LEAVE_FIELD" | "ACTIVE";
-  action: "BUFF" | "DAMAGE" | "SILENCE" | "DESTROY" | "ADD_GOLD";
-  target: {
-    zone: "BOARD" | "HAND" | "PLAYER";
-    owner: "SELF" | "ENEMY";
-    cardType?: "WRESTLER";
-    selection: "SELF" | "PLAYER_CHOICE" | "RANDOM";
-    count: number;
-  };
-  values?: { attack?: number; health?: number; amount?: number };
+export const TRIGGERS = ["ENTER_FIELD", "LEAVE_FIELD", "ACTIVE"] as const;
+export const ACTIONS = ["BUFF", "DAMAGE", "HEAL", "SILENCE", "DESTROY", "ADD_GOLD", "ADD_NEXT_TURN_GOLD", "DRAW", "REDUCE_COST", "INCREASE_COST", "STUN", "ADD_KEYWORD", "REMOVE_KEYWORD"] as const;
+export const KEYWORDS = ["RUSH", "SURPRISE", "TAUNT", "DODGE", "MULTI_STRIKE"] as const;
+export type Trigger = typeof TRIGGERS[number];
+export type Action = typeof ACTIONS[number];
+export type Keyword = typeof KEYWORDS[number];
+export type Target = { zone: "BOARD" | "HAND" | "PLAYER"; owner: "SELF" | "ENEMY"; cardType?: "WRESTLER"; selection: "SELF" | "PLAYER_CHOICE" | "RANDOM" | "SAME_TARGET"; count: number };
+export type StructuredEffect = { trigger: Trigger; action: Action; target?: Target; values?: { attack?: number; health?: number; amount?: number; keyword?: Keyword } };
+export type Analysis = { status: "success" | "partial" | "failure"; effects: StructuredEffect[]; keywords: Keyword[]; unsupportedSegments: string[]; summaries: string[] };
+
+const aliases = {
+  trigger: [
+    ["ENTER_FIELD", /^(?:필드에\s*)?(?:등장(?:할\s*때|하면)?|필드에\s*나올\s*때|소환될\s*때)\s*[:：]?/],
+    ["LEAVE_FIELD", /^(?:필드에서\s*)?퇴장(?:할\s*때|하면)?\s*[:：]?/],
+    ["ACTIVE", /^액티브(?:\s*사용)?(?:하면)?\s*[:：]?/],
+  ] as const,
+  keyword: [
+    ["RUSH", /러쉬/], ["SURPRISE", /기습/], ["TAUNT", /도발/],
+    ["DODGE", /회피/], ["MULTI_STRIKE", /연타/],
+  ] as const,
+} as const;
+
+const schemas: Record<Action, { target: boolean; amount?: boolean; stats?: boolean; keyword?: boolean }> = {
+  ADD_GOLD: { target: false, amount: true }, ADD_NEXT_TURN_GOLD: { target: false, amount: true }, DRAW: { target: false, amount: true },
+  DAMAGE: { target: true, amount: true }, BUFF: { target: true, stats: true },
+  HEAL: { target: true, amount: true }, REDUCE_COST: { target: true, amount: true }, INCREASE_COST: { target: true, amount: true }, STUN: { target: true },
+  SILENCE: { target: true }, DESTROY: { target: true },
+  ADD_KEYWORD: { target: true, keyword: true }, REMOVE_KEYWORD: { target: true, keyword: true },
 };
 
-export type Analysis = {
-  status: "success" | "partial" | "failure";
-  effects: StructuredEffect[];
-  unsupportedSegments: string[];
-  summaries: string[];
-};
-
-const triggerFor = (text: string): StructuredEffect["trigger"] | null =>
-  /등장\s*:|등장할 때|필드에 나올 때/.test(text) ? "ENTER_FIELD"
-    : /퇴장\s*:|퇴장할 때/.test(text) ? "LEAVE_FIELD"
-    : /액티브\s*:|활성화/.test(text) ? "ACTIVE" : null;
-
-function unsupportedRemainder(body: string): string {
-  return body
-    .replace(/상대\s*(?:챔피언|플레이어)(?:에게|를|을)?/g, "")
-    .replace(/(?:적|상대)\s*선수\s*(?:하나|한\s*장)?(?:에게|를|을)?/g, "")
-    .replace(/손패의\s*(?:무작위\s*)?선수\s*카드\s*(?:\d+\s*장|한\s*장)?(?:에게|를|을)?/g, "")
-    .replace(/(?:자신|이\s*카드)(?:에게|를|을)?/g, "")
-    .replace(/[+-]?\d+\s*\/\s*[+-]?\d+\s*(?:을|를)?\s*(?:부여합니다|부여한다|증가시킵니다|올립니다)/g, "")
-    .replace(/피해\s*\d+\s*(?:을|를)?\s*(?:줍니다|준다|주고|줌)/g, "")
-    .replace(/\d+\s*(?:피해|데미지)\s*(?:을|를)?\s*(?:줍니다|준다|주고|줌)/g, "")
-    .replace(/침묵시킵니다|침묵시킨다|침묵시키고/g, "")
-    .replace(/파괴합니다|파괴한다|파괴하고/g, "")
-    .replace(/골드\s*(?:을|를)?\s*\d+\s*얻습니다/g, "")
-    .replace(/\d+\s*골드\s*(?:를|을)?\s*얻습니다/g, "")
-    .replace(/(?:그리고|및|그\s*후|후에)/g, "")
-    .replace(/[.,!?·\s]/g, "");
+function normalize(input: string) {
+  return input.normalize("NFC").replace(/[：:]/g, ":").replace(/[.。!！?？]/g, " ").replace(/\s+/g, " ").trim()
+    .replace(/(시킵니다|합니다|습니다|한다|해요|하세요|하기|얻기|줍니다|준다)$/g, "").trim();
+}
+function numberFrom(text: string, fallback = 1) {
+  const match = text.match(/([+-]?\d+)\s*(?:장|개|g|골드|데미지|피해)?/i);
+  return match ? Math.abs(Number(match[1])) : /(한\s*장|하나)/.test(text) ? 1 : fallback;
+}
+function targetCountFrom(text: string) {
+  const numeric = text.match(/(\d+)\s*장(?=\s*(?:에게|을|를)?)/);
+  if (numeric) return Number(numeric[1]);
+  if (/(두|둘)\s*장/.test(text)) return 2;
+  if (/(세|셋)\s*장/.test(text)) return 3;
+  if (/(모든|전부)/.test(text)) return 20;
+  return 1;
+}
+function targetFor(text: string): Target {
+  if (/(상대|적)\s*(챔피언|플레이어)/.test(text)) return { zone: "PLAYER", owner: "ENEMY", selection: "SELF", count: 1 };
+  if (/(?:내|자신의)\s*챔피언/.test(text)) return { zone: "PLAYER", owner: "SELF", selection: "SELF", count: 1 };
+  if (/(자신|이\s*카드)/.test(text)) return { zone: "BOARD", owner: "SELF", selection: "SELF", count: 1 };
+  const hand = /손패/.test(text), enemy = /(적|상대)\s*선수/.test(text);
+  const random = /(무작위|랜덤)/.test(text), all = /(모든|전부)/.test(text);
+  return { zone: hand ? "HAND" : "BOARD", owner: enemy ? "ENEMY" : "SELF", cardType: "WRESTLER", selection: random ? "RANDOM" : all ? "RANDOM" : "PLAYER_CHOICE", count: targetCountFrom(text) };
+}
+function keywordFor(text: string): Keyword | undefined {
+  return aliases.keyword.find(([, pattern]) => pattern.test(text))?.[0];
+}
+function effect(trigger: Trigger, action: Action, body: string, index: number, priorTarget?: Target): StructuredEffect | null {
+  const schema = schemas[action], values: StructuredEffect["values"] = {};
+  if (schema.amount) {
+    const amountText = action === "DAMAGE"
+      ? (body.match(/피해\s*(\d+)|(\d+)\s*(?:피해|데미지)/)?.[1] ?? body.match(/피해\s*(\d+)|(\d+)\s*(?:피해|데미지)/)?.[2])
+      : action === "DRAW"
+        ? (body.match(/(?:카드\s*)?(\d+)\s*장|(\d+)\s*드로우/)?.[1] ?? body.match(/(?:카드\s*)?(\d+)\s*장|(\d+)\s*드로우/)?.[2])
+        : ["REDUCE_COST", "INCREASE_COST"].includes(action)
+          ? body.match(/(?:비용|코스트)(?:을|를)?\s*(?:[+-]?(\d+)|(\d+)\s*(?:감소|증가|낮))/)?.[1] ?? body.match(/(?:비용|코스트)(?:을|를)?\s*(?:[+-]?(\d+)|(\d+)\s*(?:감소|증가|낮))/)?.[2]
+          : undefined;
+    values.amount = amountText ? Number(amountText) : numberFrom(body);
+  }
+  if (schema.stats) {
+    const pair = body.match(/([+-]\d+)\s*\/\s*([+-]\d+)/);
+    if (!pair) return null;
+    values.attack = Number(pair[1]); values.health = Number(pair[2]);
+  }
+  if (schema.keyword) { const keyword = keywordFor(body); if (!keyword) return null; values.keyword = keyword; }
+  const explicitTarget = /(자신|이\s*카드|(?:적|상대)\s*(?:선수|챔피언|플레이어)|손패)/.test(body);
+  return { trigger, action, ...(schema.target ? { target: !explicitTarget && priorTarget ? { ...priorTarget, selection: "SAME_TARGET" } : targetFor(body) } : {}), ...(Object.keys(values).length ? { values } : {}) };
 }
 
 export function analyzeEffectText(input: string): Analysis {
-  const text = input.trim();
-  const trigger = triggerFor(text);
-  if (!text || !trigger) return { status: "failure", effects: [], unsupportedSegments: [text || "효과 문장"], summaries: ["지원하는 발동 조건(등장, 퇴장, 액티브)을 찾지 못했습니다."] };
-  const body = text.replace(/^.*?(?:등장\s*:|등장할 때|필드에 나올 때|퇴장\s*:|퇴장할 때|액티브\s*:|활성화)\s*/, "");
-  const effects: StructuredEffect[] = [];
-  const unsupportedSegments: string[] = [];
-  const target = (): StructuredEffect["target"] => {
-    if (/상대\s*(?:챔피언|플레이어)/.test(body)) return { zone: "PLAYER", owner: "ENEMY", selection: "SELF", count: 1 };
-    if (/자신|이 카드/.test(body)) return { zone: "BOARD", owner: "SELF", selection: "SELF", count: 1 };
-    const enemy = /적\s*선수|상대\s*선수/.test(body);
-    const hand = /손패/.test(body);
-    const random = /무작위/.test(body);
-    return { zone: hand ? "HAND" : "BOARD", owner: enemy ? "ENEMY" : "SELF", cardType: "WRESTLER", selection: random ? "RANDOM" : "PLAYER_CHOICE", count: Number(body.match(/(\d+)\s*장/)?.[1] ?? (/(한 장|하나)/.test(body) ? 1 : 1)) };
-  };
-  const stat = body.match(/([+-]?\d+)\s*\/\s*([+-]?\d+)/);
-  if (stat && /부여|증가|올립/.test(body)) effects.push({ trigger, action: "BUFF", target: target(), values: { attack: Number(stat[1]), health: Number(stat[2]) } });
-  const damage = body.match(/피해\s*(\d+)|(\d+)\s*(?:피해|데미지)/);
-  if (damage && /주|줍/.test(body)) effects.push({ trigger, action: "DAMAGE", target: target(), values: { amount: Number(damage[1] ?? damage[2]) } });
-  if (/침묵/.test(body)) effects.push({ trigger, action: "SILENCE", target: target() });
-  if (/파괴/.test(body)) effects.push({ trigger, action: "DESTROY", target: target() });
-  const gold = body.match(/골드(?:를|을)?\s*(\d+)|(\d+)\s*골드/);
-  if (gold && /얻/.test(body)) effects.push({ trigger, action: "ADD_GOLD", target: { zone: "BOARD", owner: "SELF", selection: "SELF", count: 1 }, values: { amount: Number(gold[1] ?? gold[2]) } });
-  const remainder = unsupportedRemainder(body);
-  if (!effects.length || remainder) unsupportedSegments.push(remainder || body);
-  if (
-    trigger === "ACTIVE" &&
-    effects.some((effect) => effect.target.selection === "PLAYER_CHOICE")
-  ) {
-    unsupportedSegments.push("액티브 효과의 직접 대상 선택은 아직 지원하지 않습니다.");
+  const text = normalize(input);
+  if (!text) return { status: "failure", effects: [], keywords: [], unsupportedSegments: ["효과 문장"], summaries: ["효과 문장을 입력해 주세요."] };
+  const triggerEntry = aliases.trigger.find(([, pattern]) => pattern.test(text));
+  if (!triggerEntry) {
+    const keyword = keywordFor(text);
+    if (keyword && /^(러쉬|기습|도발|회피|연타)$/.test(text)) return { status: "success", effects: [], keywords: [keyword], unsupportedSegments: [], summaries: [`기본 키워드 · ${keyword}`] };
+    return { status: "failure", effects: [], keywords: [], unsupportedSegments: [text], summaries: ["지원하는 Trigger Registry 항목을 찾지 못했습니다."] };
   }
-  const status = unsupportedSegments.length ? (effects.length ? "partial" : "failure") : "success";
-  return {
-    status, effects, unsupportedSegments,
-    summaries: effects.map((effect) => `${effect.trigger === "ENTER_FIELD" ? "등장" : effect.trigger} · ${effect.action} · ${effect.target.owner === "ENEMY" ? "적" : "내"} ${effect.target.zone === "HAND" ? "손패" : "필드"} ${effect.target.selection}${effect.target.count > 1 ? ` ${effect.target.count}장` : ""}`),
-  };
+  const trigger = triggerEntry[0] as Trigger;
+  const body = text.replace(triggerEntry[1], "").trim();
+  const recognized: Array<[Action, RegExp]> = [
+    ["ADD_NEXT_TURN_GOLD", /다음(?:\s*내)?\s*턴(?:에)?\s*(?:추가\s*)?(?:골드\s*[+]?\d+|\d+\s*g|골드\s*\d+\s*추가)/i],
+    ["ADD_GOLD", /(?:현재\s*)?(?:\d+\s*(?:g|골드)|골드(?:를|을)?\s*[+]?\d+|현재\s*골드\s*[+]\d+)\s*(?:획득|얻(?:음|습니다)?|추가)?/i],
+    ["DRAW", /(?:(?:카드)?\s*(?:\d+\s*장|한\s*장|\d+)\s*(?:드로우|뽑(?:기|습니다|는다|음)?))/],
+    ["BUFF", /[+-]\d+\s*\/\s*[+-]\d+/],
+    ["DAMAGE", /(?:피해\s*\d+|\d+\s*(?:피해|데미지))/],
+    ["HEAL", /(?:체력(?:을|를)?\s*[+]?\d+\s*(?:회복|치유)|\d+(?:만큼)?\s*(?:회복|치유))/],
+    ["REDUCE_COST", /(?:비용|코스트)(?:을|를)?\s*(?:-\d+|\d+\s*(?:감소|낮))/],
+    ["INCREASE_COST", /(?:비용|코스트)(?:을|를)?\s*(?:[+]\d+|\d+\s*증가)/],
+    ["STUN", /기절(?:시키)?/],
+    ["SILENCE", /침묵(?:시키(?:고|니다)?|)/], ["DESTROY", /파괴/],
+    ["REMOVE_KEYWORD", /(?:러쉬|기습|도발|회피|연타)(?:를|을)?\s*(?:제거|잃)/],
+    ["ADD_KEYWORD", /(?:러쉬|기습|도발|회피|연타)(?:를|을)?\s*(?:부여|얻)/],
+  ];
+  const effects: StructuredEffect[] = [];
+  let remainder = "";
+  let priorTarget: Target | undefined;
+  const clauses = body.split(/\s*(?:그리고|그\s*후|이후|(?:시키)?고|한\s*뒤|한\s*후)\s*/);
+  for (const clause of clauses) {
+    let clauseRemainder = clause;
+    for (const [action, matcher] of recognized) {
+      const match = matcher.exec(clause);
+      if (!match) continue;
+      const parsed = effect(trigger, action, clause, effects.length, priorTarget);
+      if (parsed) {
+        effects.push(parsed);
+        if (parsed.target && parsed.target.selection !== "SAME_TARGET") priorTarget = parsed.target;
+      }
+      clauseRemainder = clauseRemainder.replace(matcher, " ");
+    }
+    remainder += ` ${clauseRemainder}`;
+  }
+  remainder = remainder.replace(/(?:적|상대)\s*선수(?:\s*(?:\d+\s*장|하나|한\s*장))?(?:에게|을|를)?|(?:적|상대)\s*(?:챔피언|플레이어)(?:에게|을|를)?|손패의\s*(?:무작위\s*)?선수(?:\s*카드)?(?:\s*(?:\d+\s*장|하나|한\s*장))?(?:에게|을|를|의)?|(?:자신|이\s*카드)(?:에게|을|를)?|(?:카드\s*)?(?:\d+\s*장|한\s*장)|\d+\s*턴\s*동안|(?:에게|을|를|의|에)|(?:그리고|그\s*후|이후|하고|한\s*뒤|한\s*후|주고)|\s+/g, "");
+  // Action endings remain after matcher only for Korean conjugations.
+  remainder = remainder.replace(/(합니다|시키고|시킵니다|부여|획득|얻음|얻습니다|줍니다|준다|드로우|뽑습니다|뽑기)/g, "");
+  const unsupportedSegments = remainder ? [remainder] : [];
+  if (trigger === "ACTIVE" && effects.some((item) => item.target?.selection === "PLAYER_CHOICE")) unsupportedSegments.push("ACTIVE Trigger Registry는 직접 대상 선택을 아직 지원하지 않습니다.");
+  const status = unsupportedSegments.length ? effects.length ? "partial" : "failure" : "success";
+  return { status, effects, keywords: [], unsupportedSegments, summaries: effects.map((item) => `${item.trigger === "ENTER_FIELD" ? "등장" : item.trigger} · ${item.action}${item.values?.amount !== undefined ? ` · ${item.values.amount}` : ""}${item.values?.keyword ? ` · ${item.values.keyword}` : ""}`) };
 }
 
 export function isStructuredEffects(value: unknown): value is { effects: StructuredEffect[] } {
   if (!value || typeof value !== "object" || Array.isArray(value)) return false;
-  const effects = (value as Record<string, unknown>).effects;
-  if (!Array.isArray(effects) || effects.length === 0 || effects.length > 10) {
-    return false;
-  }
-
-  return effects.every((rawEffect) => {
-    if (!rawEffect || typeof rawEffect !== "object" || Array.isArray(rawEffect)) {
-      return false;
-    }
-    const effect = rawEffect as Record<string, unknown>;
-    const target = effect.target;
-    const values = effect.values;
-    if (
-      !["ENTER_FIELD", "LEAVE_FIELD", "ACTIVE"].includes(effect.trigger as string) ||
-      !["BUFF", "DAMAGE", "SILENCE", "DESTROY", "ADD_GOLD"].includes(effect.action as string) ||
-      !target ||
-      typeof target !== "object" ||
-      Array.isArray(target)
-    ) {
-      return false;
-    }
-
-    const typedTarget = target as Record<string, unknown>;
-    if (
-      !["BOARD", "HAND", "PLAYER"].includes(typedTarget.zone as string) ||
-      !["SELF", "ENEMY"].includes(typedTarget.owner as string) ||
-      !["SELF", "PLAYER_CHOICE", "RANDOM"].includes(typedTarget.selection as string) ||
-      !Number.isInteger(typedTarget.count) ||
-      (typedTarget.count as number) < 1 ||
-      (typedTarget.count as number) > 20 ||
-      (typedTarget.selection === "PLAYER_CHOICE" && typedTarget.count !== 1) ||
-      (typedTarget.cardType !== undefined && typedTarget.cardType !== "WRESTLER")
-    ) {
-      return false;
-    }
-
-    if (values !== undefined) {
-      if (!values || typeof values !== "object" || Array.isArray(values)) return false;
-      const typedValues = values as Record<string, unknown>;
-      if (
-        !["attack", "health", "amount"].every((key) => {
-          const number = typedValues[key];
-          return number === undefined ||
-            (typeof number === "number" && Number.isFinite(number) && Math.abs(number) <= 999);
-        })
-      ) {
-        return false;
-      }
-    }
-
-    const action = effect.action as StructuredEffect["action"];
-    const zone = typedTarget.zone as StructuredEffect["target"]["zone"];
-    if (
-      effect.trigger === "ACTIVE" &&
-      typedTarget.selection === "PLAYER_CHOICE"
-    ) {
-      return false;
-    }
-    if (zone === "PLAYER") {
-      return (
-        action === "DAMAGE" &&
-        typedTarget.owner === "ENEMY" &&
-        typedTarget.selection === "SELF" &&
-        typedTarget.count === 1
-      );
-    }
-    if (action === "ADD_GOLD") {
-      return (
-        typedTarget.owner === "SELF" &&
-        typedTarget.selection === "SELF" &&
-        typeof (values as Record<string, unknown> | undefined)?.amount === "number"
-      );
-    }
-    if (action === "DAMAGE") return zone === "BOARD";
-    if (action === "SILENCE" || action === "DESTROY") return zone === "BOARD";
-    if (action === "BUFF") return zone === "BOARD" || zone === "HAND";
-    return false;
+  const effects = (value as { effects?: unknown }).effects;
+  if (!Array.isArray(effects) || effects.length < 1 || effects.length > 10) return false;
+  return effects.every((raw) => {
+    if (!raw || typeof raw !== "object" || Array.isArray(raw)) return false;
+    const item = raw as StructuredEffect;
+    if (!TRIGGERS.includes(item.trigger) || !ACTIONS.includes(item.action)) return false;
+    const schema = schemas[item.action], target = item.target, values = item.values;
+    if (schema.target) {
+      if (!target || !["BOARD", "HAND", "PLAYER"].includes(target.zone) || !["SELF", "ENEMY"].includes(target.owner) || !["SELF", "PLAYER_CHOICE", "RANDOM", "SAME_TARGET"].includes(target.selection) || !Number.isInteger(target.count) || target.count < 1 || target.count > 20 || (target.selection === "PLAYER_CHOICE" && target.count !== 1)) return false;
+      if (item.trigger === "ACTIVE" && target.selection === "PLAYER_CHOICE") return false;
+      if (target.zone === "PLAYER" && !((item.action === "DAMAGE" && target.owner === "ENEMY" && target.selection === "SELF") || (item.action === "HEAL" && target.owner === "SELF" && target.selection === "SELF"))) return false;
+    } else if (target !== undefined) return false;
+    if (schema.amount && !(typeof values?.amount === "number" && Number.isFinite(values.amount) && values.amount >= 0 && values.amount <= 999)) return false;
+    if (schema.stats && !(typeof values?.attack === "number" && typeof values.health === "number" && Math.abs(values.attack) <= 999 && Math.abs(values.health) <= 999)) return false;
+    return !schema.keyword || KEYWORDS.includes(values?.keyword as Keyword);
   });
 }

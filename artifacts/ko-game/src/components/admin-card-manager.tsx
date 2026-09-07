@@ -60,7 +60,8 @@ type CardFormValues = {
 };
 type EffectAnalysis = {
   status: "success" | "partial" | "failure";
-  effects: Array<{ trigger: string; action: string; target: { zone: string; owner: string; selection: string; count: number }; values?: { attack?: number; health?: number; amount?: number } }>;
+  effects: Array<{ trigger: string; action: string; target?: { zone: string; owner: string; selection: string; count: number }; values?: { attack?: number; health?: number; amount?: number; keyword?: CardKeyword } }>;
+  keywords: CardKeyword[];
   unsupportedSegments: string[];
   summaries: string[];
 };
@@ -283,8 +284,13 @@ export function AdminCardManager({
 
   function applyAnalysis() {
     if (!analysis || analysis.status !== "success") return;
-    form.setValue("effectId", "STRUCTURED_EFFECTS_V1", { shouldDirty: true });
-    form.setValue("effectConfig", JSON.stringify({ effects: analysis.effects }, null, 2), { shouldDirty: true });
+    if (analysis.keywords.length) {
+      form.setValue("keywords", [...new Set([...form.getValues("keywords"), ...analysis.keywords])], { shouldDirty: true });
+    }
+    if (analysis.effects.length) {
+      form.setValue("effectId", "STRUCTURED_EFFECTS_V1", { shouldDirty: true });
+      form.setValue("effectConfig", JSON.stringify({ effects: analysis.effects }, null, 2), { shouldDirty: true });
+    }
     setMessage("분석 결과를 적용했습니다. 카드 저장을 눌러 DRAFT에 저장하세요.");
   }
 
@@ -582,18 +588,20 @@ export function AdminCardManager({
                   {analysis && <div className={`rounded border p-3 text-xs ${analysis.status === "success" ? "border-emerald-800 bg-emerald-950/30" : "border-amber-800 bg-amber-950/30"}`} data-testid="effect-analysis-result">
                     <strong>{analysis.status === "success" ? "✓ 분석 성공" : analysis.status === "partial" ? "⚠ 부분 분석 — 적용할 수 없습니다." : "✗ 분석 실패 — 적용할 수 없습니다."}</strong>
                     {analysis.effects.map((effect, index) => {
-                      const update = (patch: Partial<typeof effect>, targetPatch?: Partial<typeof effect.target>, valuesPatch?: Partial<NonNullable<typeof effect.values>>) => setAnalysis((current) => current ? { ...current, effects: current.effects.map((item, itemIndex) => itemIndex === index ? { ...item, ...patch, target: { ...item.target, ...targetPatch }, values: { ...item.values, ...valuesPatch } } : item) } : current);
+                       const update = (patch: Partial<typeof effect>, targetPatch?: Partial<NonNullable<typeof effect.target>>, valuesPatch?: Partial<NonNullable<typeof effect.values>>) => setAnalysis((current) => current ? { ...current, effects: current.effects.map((item, itemIndex) => itemIndex === index ? { ...item, ...patch, ...(item.target ? { target: { ...item.target, ...targetPatch } } : {}), values: { ...item.values, ...valuesPatch } } : item) } : current);
                       return <div key={index} className="mt-2 rounded bg-black/30 p-2">발동: {effect.trigger} · 행동: {effect.action}
-                        <div className="mt-2 grid gap-2 sm:grid-cols-4">
+                         {effect.target && <div className="mt-2 grid gap-2 sm:grid-cols-4">
                           <label>소유자<select value={effect.target.owner} onChange={(e) => update({}, { owner: e.target.value })} className="ml-1 bg-neutral-900"><option value="SELF">내</option><option value="ENEMY">적</option></select></label>
                           <label>영역<select value={effect.target.zone} onChange={(e) => update({}, { zone: e.target.value })} className="ml-1 bg-neutral-900"><option value="BOARD">필드</option><option value="HAND">손패</option><option value="PLAYER">플레이어</option></select></label>
                           <label>선택<select value={effect.target.selection} onChange={(e) => update({}, { selection: e.target.value })} className="ml-1 bg-neutral-900"><option value="SELF">자신</option><option value="PLAYER_CHOICE">직접 선택</option><option value="RANDOM">무작위</option></select></label>
                           <label>수<input type="number" min="1" value={effect.target.count} onChange={(e) => update({}, { count: Math.max(1, Number(e.target.value) || 1) })} className="ml-1 w-12 bg-neutral-900" /></label>
                           {(["attack", "health", "amount"] as const).map((key) => <label key={key}>{key}<input type="number" value={effect.values?.[key] ?? 0} onChange={(e) => update({}, undefined, { [key]: Number(e.target.value) || 0 })} className="ml-1 w-12 bg-neutral-900" /></label>)}
-                        </div>
+                         </div>}
+                         {effect.values?.keyword && <div className="mt-2 text-primary">키워드: {KEYWORD_LABELS[effect.values.keyword]}</div>}
                       </div>;
                     })}
-                    {analysis.unsupportedSegments.map((segment) => <div key={segment} className="mt-2 text-amber-300">지원하지 않음: {segment}</div>)}
+                     {analysis.keywords.map((keyword) => <div key={keyword} className="mt-2 text-emerald-300">기본 키워드: {KEYWORD_LABELS[keyword]}</div>)}
+                     {analysis.unsupportedSegments.map((segment) => <div key={segment} className="mt-2 text-amber-300">지원하지 않음: {segment}</div>)}
                     <div className="mt-3 flex gap-2"><button type="button" disabled={analysis.status !== "success"} onClick={applyAnalysis} data-testid="button-apply-analysis" className="rounded bg-primary px-3 py-1.5 font-bold text-black disabled:opacity-40">분석 결과 적용</button><button type="button" onClick={() => void analyzeEffects()} className="rounded border border-neutral-600 px-3 py-1.5">다시 분석</button><button type="button" onClick={() => setAnalysis(null)} className="rounded border border-neutral-600 px-3 py-1.5">취소</button></div>
                     <details className="mt-2"><summary>고급 JSON 보기</summary><pre className="mt-1 overflow-auto text-[10px]">{JSON.stringify(analysis.effects, null, 2)}</pre></details>
                   </div>}

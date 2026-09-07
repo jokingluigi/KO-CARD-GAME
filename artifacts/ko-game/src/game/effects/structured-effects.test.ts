@@ -170,3 +170,54 @@ test('선택한 적 선수를 침묵시킨 뒤 같은 대상을 파괴한다', (
   assert.equal(result.players[1].graveyard.at(-1)?.isSilenced, true);
   assert.ok(result.events.some((event) => event.type === 'CARD_DESTROYED'));
 });
+
+test('구조화 DRAW는 기존 drawCard 규칙과 이벤트를 사용한다', () => {
+  const source = instance('draw-source', [
+    structured('DRAW', undefined, { amount: 1 }),
+  ]);
+  const drawTarget = instance('deck-card');
+  const state = createInitialGameState();
+  state.players[0].deck = [drawTarget];
+  const result = enterField(state, 'player-1', source, 0);
+  assert.equal(result.players[0].hand.some((card) => card.instanceId === drawTarget.instanceId), true);
+  assert.ok(result.events.some((event) => event.type === 'CARD_DRAWN'));
+});
+
+test('구조화 키워드 부여는 카드 키워드만 안전하게 변경한다', () => {
+  const source = instance('keyword-source', [
+    structured('ADD_KEYWORD', { zone: 'BOARD', owner: 'SELF', selection: 'SELF', count: 1 }, { keyword: 'RUSH' }),
+  ]);
+  const result = enterField(createInitialGameState(), 'player-1', source, 0);
+  assert.ok(result.players[0].board[0]?.keywords.includes('RUSH'));
+});
+
+test('구조화 회피 부여는 첫 효과 피해를 무효화하고 소모한다', () => {
+  const source = instance('dodge-source', [
+    structured('ADD_KEYWORD', { zone: 'BOARD', owner: 'SELF', selection: 'SELF', count: 1 }, { keyword: 'DODGE' }),
+    structured('DAMAGE', { zone: 'BOARD', owner: 'ENEMY', selection: 'PLAYER_CHOICE', count: 1 }, { amount: 1 }),
+  ]);
+  const target = instance('dodge-target');
+  const state = createInitialGameState();
+  state.players[1].board[0] = { ...target, boardSlot: 0, keywords: ['DODGE'], dodgeAvailable: true };
+  const result = enterField(state, 'player-1', source, 0, undefined, [target.instanceId]);
+  assert.equal(result.players[1].board[0]?.currentHealth, 1);
+  assert.equal(result.players[1].board[0]?.dodgeAvailable, false);
+  assert.equal(result.events.at(-1)?.type, 'DAMAGE_DEALT');
+});
+
+test('다음 턴 골드, 비용과 기절 구조화 효과를 적용한다', () => {
+  const source = instance('status-source', [
+    structured('ADD_NEXT_TURN_GOLD', undefined, { amount: 2 }),
+    structured('REDUCE_COST', { zone: 'HAND', owner: 'SELF', selection: 'PLAYER_CHOICE', count: 1 }, { amount: 4 }),
+    structured('STUN', { zone: 'BOARD', owner: 'ENEMY', selection: 'PLAYER_CHOICE', count: 1 }),
+  ]);
+  const hand = instance('cost-target');
+  const enemy = instance('stun-target');
+  const state = createInitialGameState();
+  state.players[0].hand = [hand];
+  state.players[1].board[0] = { ...enemy, boardSlot: 0 };
+  const result = enterField(state, 'player-1', source, 0, undefined, [hand.instanceId, enemy.instanceId]);
+  assert.equal(result.players[0].nextTurnGoldBonus, 2);
+  assert.equal(result.players[0].hand[0]?.currentCost, 0);
+  assert.equal(result.players[1].board[0]?.isStunned, true);
+});

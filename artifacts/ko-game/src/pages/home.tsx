@@ -35,7 +35,7 @@ export default function Home() {
     .find(
       (effect) =>
         effect.type === "STRUCTURED" &&
-        effect.target.selection === "PLAYER_CHOICE",
+        effect.target?.selection === "PLAYER_CHOICE",
     );
   const needsChoice = choiceEffect?.type === "STRUCTURED";
   const [playError, setPlayError] = useState<string | null>(null);
@@ -151,8 +151,8 @@ export default function Home() {
   function handleSelectCard(cardInstanceId: string) {
     const isValidHandTarget =
       choiceEffect?.type === "STRUCTURED" &&
-      choiceEffect.target.zone === "HAND" &&
-      choiceEffect.target.owner === "SELF" &&
+      choiceEffect.target?.zone === "HAND" &&
+      choiceEffect.target?.owner === "SELF" &&
       cardInstanceId !== selectedCardId;
     if (isValidHandTarget) {
       setSelectedEffectTargetId(cardInstanceId);
@@ -170,8 +170,8 @@ export default function Home() {
   function handleSelectAttacker(cardInstanceId: string) {
     if (
       choiceEffect?.type === "STRUCTURED" &&
-      choiceEffect.target.zone === "BOARD" &&
-      choiceEffect.target.owner === "SELF"
+      choiceEffect.target?.zone === "BOARD" &&
+      choiceEffect.target?.owner === "SELF"
     ) {
       setSelectedEffectTargetId(cardInstanceId);
       setPlayError(null);
@@ -213,8 +213,8 @@ export default function Home() {
   function handleSelectEffectTarget(targetCardInstanceId: string) {
     if (
       choiceEffect?.type === "STRUCTURED" &&
-      choiceEffect.target.zone === "BOARD" &&
-      choiceEffect.target.owner === "ENEMY"
+      choiceEffect.target?.zone === "BOARD" &&
+      choiceEffect.target?.owner === "ENEMY"
     ) {
       setSelectedEffectTargetId(targetCardInstanceId);
       setPlayError(null);

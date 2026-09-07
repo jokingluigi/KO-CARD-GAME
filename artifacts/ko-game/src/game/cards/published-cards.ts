@@ -40,10 +40,10 @@ function abilitiesFor(
       const action = effect.action;
       const target = effect.target;
       if (!["ENTER_FIELD", "LEAVE_FIELD", "ACTIVE"].includes(trigger as string) ||
-          !["BUFF", "DAMAGE", "SILENCE", "DESTROY", "ADD_GOLD"].includes(action as string) ||
-          !target || typeof target !== "object") continue;
+           !["BUFF", "DAMAGE", "HEAL", "SILENCE", "DESTROY", "ADD_GOLD", "ADD_NEXT_TURN_GOLD", "DRAW", "REDUCE_COST", "INCREASE_COST", "STUN", "ADD_KEYWORD", "REMOVE_KEYWORD"].includes(action as string) ||
+           (target !== undefined && (!target || typeof target !== "object"))) continue;
       const list = byTrigger.get(trigger as string) ?? [];
-      list.push({ type: "STRUCTURED", action: action as "BUFF" | "DAMAGE" | "SILENCE" | "DESTROY" | "ADD_GOLD", target: target as Extract<typeof list[number], { type: "STRUCTURED" }>["target"], values: effect.values as { attack?: number; health?: number; amount?: number } | undefined });
+       list.push({ type: "STRUCTURED", action: action as Extract<typeof list[number], { type: "STRUCTURED" }>["action"], target: target as Extract<typeof list[number], { type: "STRUCTURED" }>["target"], values: effect.values as Extract<typeof list[number], { type: "STRUCTURED" }>["values"] });
       byTrigger.set(trigger as string, list);
     }
     return [...byTrigger.entries()].map(([trigger, effects]) =>

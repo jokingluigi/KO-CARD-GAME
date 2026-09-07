@@ -20,15 +20,15 @@ export type CardEffect =
     }
   | {
       type: 'STRUCTURED';
-      action: 'BUFF' | 'DAMAGE' | 'SILENCE' | 'DESTROY' | 'ADD_GOLD';
-      target: {
+      action: 'BUFF' | 'DAMAGE' | 'HEAL' | 'SILENCE' | 'DESTROY' | 'ADD_GOLD' | 'ADD_NEXT_TURN_GOLD' | 'DRAW' | 'REDUCE_COST' | 'INCREASE_COST' | 'STUN' | 'ADD_KEYWORD' | 'REMOVE_KEYWORD';
+      target?: {
         zone: 'BOARD' | 'HAND' | 'PLAYER';
         owner: 'SELF' | 'ENEMY';
         cardType?: 'WRESTLER';
-        selection: 'SELF' | 'PLAYER_CHOICE' | 'RANDOM';
+        selection: 'SELF' | 'PLAYER_CHOICE' | 'RANDOM' | 'SAME_TARGET';
         count: number;
       };
-      values?: { attack?: number; health?: number; amount?: number };
+      values?: { attack?: number; health?: number; amount?: number; keyword?: CardKeyword };
     };
 
 export type CardAbility =

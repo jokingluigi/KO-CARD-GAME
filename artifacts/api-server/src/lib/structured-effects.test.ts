@@ -115,3 +115,49 @@ test("잘못 조합된 구조화 JSON을 거부한다", () => {
     false,
   );
 });
+
+test("별칭, 드로우와 기본 키워드를 Registry로 분석한다", () => {
+  const actionCases = [
+    ["등장 : 골드 1 얻음", "ADD_GOLD"],
+    ["등장: 1G 획득", "ADD_GOLD"],
+    ["등장: 현재 골드 +1", "ADD_GOLD"],
+    ["등장: 적 선수 하나에게 2 데미지", "DAMAGE"],
+    ["등장: 카드 2장 뽑습니다.", "DRAW"],
+    ["등장: 자신에게 러쉬를 부여합니다.", "ADD_KEYWORD"],
+  ] as const;
+  for (const [text, action] of actionCases) {
+    const result = analyzeEffectText(text);
+    assert.equal(result.status, "success", text);
+    assert.equal(result.effects[0]?.action, action, text);
+    assert.equal(isStructuredEffects({ effects: result.effects }), true, text);
+  }
+  assert.deepEqual(analyzeEffectText("도발").keywords, ["TAUNT"]);
+  assert.deepEqual(analyzeEffectText("회피").keywords, ["DODGE"]);
+});
+
+test("액션별 Schema는 target 없는 드로우와 잘못된 값을 구분한다", () => {
+  assert.equal(isStructuredEffects({ effects: [{ trigger: "ENTER_FIELD", action: "DRAW", values: { amount: 1 } }] }), true);
+  assert.equal(isStructuredEffects({ effects: [{ trigger: "ENTER_FIELD", action: "DRAW", target: { zone: "BOARD", owner: "SELF", selection: "SELF", count: 1 }, values: { amount: 1 } }] }), false);
+  assert.equal(isStructuredEffects({ effects: [{ trigger: "ENTER_FIELD", action: "ADD_KEYWORD", target: { zone: "BOARD", owner: "SELF", selection: "SELF", count: 1 } }] }), false);
+});
+
+test("연결된 절은 각 절의 숫자만 해당 액션에 바인딩한다", () => {
+  const result = analyzeEffectText("등장: 적 선수 2장에게 피해 1 그리고 카드 1장 뽑기");
+  assert.equal(result.status, "success");
+  assert.deepEqual(result.effects.map((effect) => [effect.action, effect.target?.count, effect.values?.amount]), [
+    ["DAMAGE", 2, 1],
+    ["DRAW", undefined, 1],
+  ]);
+});
+
+test("문서의 다음 턴 골드, 비용, 기절 문장을 분석한다", () => {
+  for (const [text, action] of [
+    ["등장: 다음 내 턴 골드 +1", "ADD_NEXT_TURN_GOLD"],
+    ["등장: 손패의 선수 하나의 비용을 1 감소시킵니다.", "REDUCE_COST"],
+    ["등장: 적 선수 하나를 1턴 동안 기절시킵니다.", "STUN"],
+  ] as const) {
+    const result = analyzeEffectText(text);
+    assert.equal(result.status, "success", text);
+    assert.equal(result.effects[0]?.action, action, text);
+  }
+});
