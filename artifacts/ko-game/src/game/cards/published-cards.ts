@@ -37,6 +37,13 @@ function abilitiesFor(
   if (effectId === "ENTER_FIELD_GAIN_GOLD") {
     return [{ trigger: "ENTER_FIELD", effects: [{ type: "GAIN_GOLD", amount: amount(config) }] }];
   }
+  if (effectId === "LEAVE_FIELD_GAIN_GOLD") {
+    return [{
+      trigger: "LEAVE_FIELD",
+      reasons: ["RETIRE"],
+      effects: [{ type: "GAIN_GOLD", amount: amount(config) }],
+    }];
+  }
   if (effectId === "ACTIVE_MODIFY_SELF_ATTACK") {
     return [{ trigger: "ACTIVE", effects: [{ type: "MODIFY_SELF_ATTACK", amount: amount(config) }] }];
   }
