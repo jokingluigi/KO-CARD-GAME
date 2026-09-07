@@ -41,6 +41,18 @@ test("필수 카드 문장을 안전한 구조화 효과로 분석한다", () =>
       target: { zone: "PLAYER", owner: "ENEMY", selection: "SELF", count: 1 },
       values: { amount: 5 },
     },
+    {
+      text: "등장: 적 캐릭터 하나에게 피해 2를 줍니다.",
+      actions: ["DAMAGE"],
+      target: { zone: "CHARACTER", owner: "ENEMY", selection: "PLAYER_CHOICE", count: 1 },
+      values: { amount: 2 },
+    },
+    {
+      text: "등장: 아군 캐릭터 하나를 2 회복합니다.",
+      actions: ["HEAL"],
+      target: { zone: "CHARACTER", owner: "SELF", selection: "PLAYER_CHOICE", count: 1 },
+      values: { amount: 2 },
+    },
   ] as const;
 
   for (const example of cases) {
@@ -113,6 +125,21 @@ test("잘못 조합된 구조화 JSON을 거부한다", () => {
       }],
     }),
     false,
+  );
+  assert.equal(
+    isStructuredEffects({
+      effects: [{
+        trigger: "ENTER_FIELD",
+        action: "SILENCE",
+        target: {
+          zone: "CHARACTER",
+          owner: "ENEMY",
+          selection: "PLAYER_CHOICE",
+          count: 1,
+        },
+      }],
+    }),
+    true,
   );
 });
 

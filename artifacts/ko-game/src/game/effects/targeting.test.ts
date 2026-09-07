@@ -75,6 +75,47 @@ test('resolver covers board, hand/player ids, multiselect duplicates and champio
   assert.equal(multiDone.targetingState, undefined);
 });
 
+test('CHARACTER targeting offers the owner id and wrestlers, then applies player and card damage/healing separately', () => {
+  const damageCharacter: CardEffect = {
+    type: 'STRUCTURED', action: 'DAMAGE',
+    target: { zone: 'CHARACTER', owner: 'ENEMY', selection: 'PLAYER_CHOICE', count: 1 },
+    values: { amount: 1 },
+  };
+  const healCharacter: CardEffect = {
+    type: 'STRUCTURED', action: 'HEAL',
+    target: { zone: 'CHARACTER', owner: 'SELF', selection: 'PLAYER_CHOICE', count: 1 },
+    values: { amount: 1 },
+  };
+  const silenceCharacter: CardEffect = {
+    type: 'STRUCTURED', action: 'SILENCE',
+    target: { zone: 'CHARACTER', owner: 'ENEMY', selection: 'PLAYER_CHOICE', count: 1 },
+  };
+  const source = card('source', [damageCharacter]);
+  const enemy = { ...card('enemy'), boardSlot: 0 as const };
+  const state = createInitialGameState();
+  state.players[1].board[0] = enemy;
+  assert.deepEqual(getValidTargets(state, 'player-1', source, damageCharacter), ['player-2', 'enemy']);
+  assert.deepEqual(getValidTargets(state, 'player-1', source, silenceCharacter), ['enemy']);
+
+  const championBefore = state.players[1].health;
+  const championDamaged = selectEffectTarget(enterField(state, 'player-1', source, 0), 'player-2');
+  assert.equal(championDamaged.players[1].health, championBefore - 1);
+  const wrestlerDamaged = selectEffectTarget(enterField(state, 'player-1', source, 1), 'enemy');
+  assert.equal(wrestlerDamaged.players[1].board[0]?.currentHealth, 1);
+
+  const healer = card('healer', [healCharacter]);
+  const ally = { ...card('ally'), boardSlot: 1 as const, currentHealth: 1 };
+  const healingState = createInitialGameState();
+  healingState.players[0].health = 19;
+  healingState.players[0].champion = { ...healingState.players[0].champion!, health: 19 };
+  healingState.players[0].board[1] = ally;
+  assert.deepEqual(getValidTargets(healingState, 'player-1', healer, healCharacter), ['player-1', 'ally']);
+  const championHealed = selectEffectTarget(enterField(healingState, 'player-1', healer, 0), 'player-1');
+  assert.equal(championHealed.players[0].health, 20);
+  const wrestlerHealed = selectEffectTarget(enterField(healingState, 'player-1', healer, 2), 'ally');
+  assert.equal(wrestlerHealed.players[0].board[1]?.currentHealth, 2);
+});
+
 test('pending targeting blocks end turn with the exact warning', () => {
   const state = createInitialGameState();
   state.status = 'IN_PROGRESS'; state.activePlayerId = 'player-1';

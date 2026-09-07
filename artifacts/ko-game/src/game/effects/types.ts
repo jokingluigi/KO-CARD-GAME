@@ -22,7 +22,7 @@ export type CardEffect =
       type: 'STRUCTURED';
       action: 'BUFF' | 'DAMAGE' | 'HEAL' | 'SILENCE' | 'DESTROY' | 'ADD_GOLD' | 'ADD_NEXT_TURN_GOLD' | 'DRAW' | 'REDUCE_COST' | 'INCREASE_COST' | 'STUN' | 'ADD_KEYWORD' | 'REMOVE_KEYWORD';
       target?: {
-        zone: 'BOARD' | 'HAND' | 'PLAYER';
+        zone: 'BOARD' | 'HAND' | 'PLAYER' | 'CHARACTER';
         owner: 'SELF' | 'ENEMY';
         cardType?: 'WRESTLER';
         selection: 'SELF' | 'PLAYER_CHOICE' | 'RANDOM' | 'SAME_TARGET' | 'ALL';

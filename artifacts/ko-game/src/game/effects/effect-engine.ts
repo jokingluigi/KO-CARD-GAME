@@ -23,13 +23,17 @@ export function getValidTargets(
   const player = owner && state.players.find((p) => p.id === owner);
   if (!player) return [];
   const cards = target.zone === 'HAND' ? player.hand : player.board.filter((c): c is CardInstance => c !== null);
-  return cards.filter((card) => {
+  const cardIds = cards.filter((card) => {
+    if (target.zone === 'CHARACTER' && card.cardType !== 'WRESTLER') return false;
     if (target.cardType && card.cardType !== target.cardType) return false;
     if (target.selection === 'SELF' && card.instanceId !== sourceCard.instanceId) return false;
     // Directly deployed champion tokens remain damageable, but not silence/destroy targets.
     if (card.isDirectDeployedChampion && (effect.action === 'SILENCE' || effect.action === 'DESTROY')) return false;
     return true;
   }).map((card) => card.instanceId);
+  const canTargetPlayer = effect.action === 'DAMAGE' ||
+    (effect.action === 'HEAL' && target.owner === 'SELF');
+  return target.zone === 'CHARACTER' && canTargetPlayer ? [owner, ...cardIds] : cardIds;
 }
 
 export function validateEffectTargets(
@@ -192,18 +196,74 @@ function applyEffect(
     if (!targetOwner) return state;
     const candidatePlayer = state.players.find((player) => player.id === targetOwner);
     if (!candidatePlayer) return state;
+    if (target.zone === 'CHARACTER') {
+      const validIds = getValidTargets(state, playerId, sourceCard, effect);
+      const selectedIds = chosenTargetInstanceIds?.filter((id) => validIds.includes(id)) ?? [];
+      const canTargetPlayer = effect.action === 'DAMAGE' ||
+        (effect.action === 'HEAL' && target.owner === 'SELF');
+      const playerSelected = canTargetPlayer && selectedIds.includes(targetOwner);
+      const cardIds = selectedIds.filter((id) => id !== targetOwner);
+      const afterPlayer = playerSelected
+        ? applyEffect(state, playerId, sourceCard, {
+            ...effect,
+            target: { ...target, zone: 'PLAYER', selection: 'SELF', count: 1 },
+          })
+        : state;
+      return cardIds.length
+        ? applyEffect(afterPlayer, playerId, sourceCard, {
+            ...effect,
+            target: { ...target, zone: 'BOARD', cardType: 'WRESTLER' },
+          }, cardIds)
+        : afterPlayer;
+    }
     if (target.zone === 'PLAYER' && effect.action === 'HEAL') {
+      const directChampion = candidatePlayer.board.find((card) => card?.isDirectDeployedChampion);
       return {
         ...state,
-        players: state.players.map((player) => player.id !== playerId ? player : {
-          ...player,
-          health: Math.min(player.maxHealth, player.health + amount),
-          champion: player.champion ? { ...player.champion, health: Math.min(player.maxHealth, player.health + amount) } : null,
-        }),
+        players: state.players.map((player) => player.id !== targetOwner ? player : directChampion
+          ? {
+              ...player,
+              board: player.board.map((card) => card?.instanceId === directChampion.instanceId
+                ? { ...card, currentHealth: Math.min(card.maxHealth, card.currentHealth + amount) }
+                : card) as typeof player.board,
+            }
+          : {
+              ...player,
+              health: Math.min(player.maxHealth, player.health + amount),
+              champion: player.champion ? { ...player.champion, health: Math.min(player.maxHealth, player.health + amount) } : null,
+            }),
       };
     }
     if (target.zone === 'PLAYER') {
       if (target.owner === 'SELF' && effect.action === 'HEAL') return state;
+      if (target.owner === 'SELF' && effect.action === 'DAMAGE') {
+        const directChampion = candidatePlayer.board.find((card) => card?.isDirectDeployedChampion);
+        const health = directChampion
+          ? directChampion.currentHealth - amount
+          : candidatePlayer.health - amount;
+        const defeated = health <= 0;
+        const winner = state.players.find((player) => player.id !== targetOwner);
+        return {
+          ...state,
+          status: defeated ? 'FINISHED' : state.status,
+          activePlayerId: defeated ? null : state.activePlayerId,
+          winnerId: defeated ? winner?.id ?? null : state.winnerId,
+          loserId: defeated ? targetOwner : state.loserId,
+          players: state.players.map((player) => player.id !== targetOwner ? player : directChampion
+            ? {
+                ...player,
+                board: player.board.map((card) => card?.instanceId === directChampion.instanceId
+                  ? defeated ? null : { ...card, currentHealth: health }
+                  : card) as typeof player.board,
+                graveyard: defeated ? [...player.graveyard, { ...directChampion, currentHealth: health, boardSlot: null }] : player.graveyard,
+              }
+            : {
+                ...player,
+                health,
+                champion: player.champion ? { ...player.champion, health } : null,
+              }),
+        };
+      }
       return target.owner === 'ENEMY'
         ? applyEffect(state, playerId, sourceCard, { type: 'DAMAGE_OPPONENT_CHAMPION', amount })
         : state;
