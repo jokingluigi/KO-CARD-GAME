@@ -454,8 +454,8 @@ export function AdminCardManager({
           </thead>
           <tbody className="divide-y divide-neutral-800">
             {cards.map((card) => (
-              <tr key={card.id} data-testid={`row-card-${card.id}`} className="bg-neutral-950 hover:bg-neutral-900/60">
-                <td className="px-3 py-3">
+             <tr key={card.id} data-testid={`row-card-${card.id}`} onClick={() => openEdit(card)} onKeyDown={(event) => { if (event.key === "Enter" || event.key === " ") openEdit(card); }} tabIndex={0} className="cursor-pointer bg-neutral-950 hover:bg-neutral-900/60 focus:bg-neutral-900 focus:outline-none">
+                 <td className="px-3 py-3">
                   <div className="font-bold text-neutral-100">{card.name}</div>
                   {(card.isToken || card.isChampionToken) && <div className="mt-1 text-[10px] text-primary">{card.isChampionToken ? "챔피언 토큰" : "토큰"}</div>}
                 </td>
@@ -466,7 +466,7 @@ export function AdminCardManager({
                 <td className="px-3 py-3"><span className={`rounded border px-2 py-1 text-[10px] font-black ${statusClass(card.status)}`}>{statusLabel(card.status)}</span></td>
                 <td className="px-3 py-3">v{card.version}</td>
                 <td className="px-3 py-3 text-neutral-500">{new Date(card.updatedAt).toLocaleString("ko-KR")}</td>
-                <td className="px-3 py-3">
+                 <td className="px-3 py-3" onClick={(event) => event.stopPropagation()}>
                   <div className="flex flex-wrap gap-1.5">
                     <button type="button" onClick={() => openEdit(card)} data-testid={`button-edit-card-${card.id}`} className="flex items-center gap-1 rounded border border-neutral-700 px-2 py-1.5 font-bold hover:border-primary hover:text-primary"><FilePenLine className="h-3 w-3" /> 수정</button>
                     <button type="button" disabled={busyId === card.id} onClick={() => mutateCard(`/cards/${card.id}/duplicate`, `${card.name} Copy를 생성했습니다.`, card.id)} data-testid={`button-duplicate-card-${card.id}`} className="flex items-center gap-1 rounded border border-neutral-700 px-2 py-1.5 font-bold hover:border-primary hover:text-primary disabled:opacity-40"><Copy className="h-3 w-3" /> 복제</button>
@@ -541,8 +541,18 @@ export function AdminCardManager({
               <fieldset className="space-y-2 md:col-span-2"><legend className="text-xs font-bold text-neutral-400">키워드</legend><div className="flex flex-wrap gap-2">{KEYWORDS.map((keyword) => <label key={keyword} className="flex items-center gap-2 rounded border border-neutral-800 bg-neutral-900 px-3 py-2 text-xs"><input type="checkbox" value={keyword} {...form.register("keywords")} data-testid={`input-keyword-${keyword}`} />{keyword}</label>)}</div></fieldset>
               <label className="flex items-center gap-2 rounded border border-neutral-800 bg-neutral-900 p-3 text-sm"><input type="checkbox" {...form.register("isToken")} data-testid="input-card-token" /> 토큰 카드</label>
               <label className="flex items-center gap-2 rounded border border-neutral-800 bg-neutral-900 p-3 text-sm"><input type="checkbox" {...form.register("isChampionToken")} data-testid="input-card-champion-token" /> 챔피언 토큰</label>
-              <label className="space-y-1.5"><span className="text-xs font-bold text-neutral-400">효과 ID</span><input {...form.register("effectId")} placeholder="예: ACTIVE_GAIN_GOLD" data-testid="input-card-effect-id" className="w-full rounded border border-neutral-700 bg-neutral-900 px-3 py-2 outline-none focus:border-primary" /></label>
-              <label className="space-y-1.5"><span className="text-xs font-bold text-neutral-400">효과 설정 JSON</span><textarea {...form.register("effectConfig")} rows={4} data-testid="input-card-effect-config" className="w-full rounded border border-neutral-700 bg-neutral-900 px-3 py-2 font-mono text-xs outline-none focus:border-primary" /></label>
+               <div className="space-y-2 md:col-span-2">
+                 <div className="rounded border border-blue-900/50 bg-blue-950/20 px-3 py-2 text-xs leading-relaxed text-blue-200">
+                   카드 텍스트만 입력하면 효과를 자동으로 적용합니다. 예: <strong>“액티브: 골드를 2 얻습니다.”</strong>, <strong>“등장 시 골드를 1 얻습니다.”</strong>, <strong>“액티브: 공격력을 2 올립니다.”</strong>
+                 </div>
+                 <details className="rounded border border-neutral-800 bg-neutral-900/50 p-3">
+                   <summary className="cursor-pointer text-xs font-bold text-neutral-500">고급 효과 설정 (선택 사항)</summary>
+                   <div className="mt-3 grid gap-3 md:grid-cols-2">
+                     <label className="space-y-1.5"><span className="text-xs font-bold text-neutral-400">효과 ID</span><input {...form.register("effectId")} placeholder="자동 적용을 권장합니다" data-testid="input-card-effect-id" className="w-full rounded border border-neutral-700 bg-neutral-900 px-3 py-2 outline-none focus:border-primary" /></label>
+                     <label className="space-y-1.5"><span className="text-xs font-bold text-neutral-400">효과 설정 JSON</span><textarea {...form.register("effectConfig")} rows={3} data-testid="input-card-effect-config" className="w-full rounded border border-neutral-700 bg-neutral-900 px-3 py-2 font-mono text-xs outline-none focus:border-primary" /></label>
+                   </div>
+                 </details>
+               </div>
               {error && <p role="alert" className="md:col-span-2 rounded border border-red-900 bg-red-950/50 px-3 py-2 text-xs font-bold text-red-300">{error}</p>}
               <div className="flex justify-end gap-2 border-t border-neutral-800 pt-4 md:col-span-2">
                  <button type="button" onClick={closeForm} className="rounded border border-neutral-700 px-4 py-2 text-sm font-bold" data-testid="button-cancel-card">취소</button>
