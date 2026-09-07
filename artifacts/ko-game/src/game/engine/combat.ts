@@ -151,6 +151,9 @@ export function attack(
   attackerInstanceId: CardInstanceId,
   target: AttackTarget,
 ): ActionResult {
+  if (state.targetingState?.active) {
+    return actionFailure(state, 'TARGET_SELECTION_PENDING', '먼저 대상을 선택하세요.');
+  }
   const turnFailure = validateCurrentPlayer(state, attackingPlayerId);
   if (turnFailure) {
     return turnFailure;

@@ -6,6 +6,147 @@ import { shuffle } from '../random/random';
 import { destroyCard } from '../engine/destroy-card';
 import { drawCard } from '../engine/draw-card';
 
+/** The single authoritative target resolver.  UI must only display these ids. */
+export function getValidTargets(
+  state: GameState,
+  playerId: string,
+  sourceCard: CardInstance,
+  effect: CardEffect,
+): string[] {
+  if (effect.type !== 'STRUCTURED' || !effect.target) return [];
+  const target = effect.target;
+  if (target.zone === 'PLAYER') {
+    const owner = target.owner === 'SELF' ? playerId : state.players.find((p) => p.id !== playerId)?.id;
+    return owner ? [owner] : [];
+  }
+  const owner = target.owner === 'SELF' ? playerId : state.players.find((p) => p.id !== playerId)?.id;
+  const player = owner && state.players.find((p) => p.id === owner);
+  if (!player) return [];
+  const cards = target.zone === 'HAND' ? player.hand : player.board.filter((c): c is CardInstance => c !== null);
+  return cards.filter((card) => {
+    if (target.cardType && card.cardType !== target.cardType) return false;
+    if (target.selection === 'SELF' && card.instanceId !== sourceCard.instanceId) return false;
+    // Directly deployed champion tokens remain damageable, but not silence/destroy targets.
+    if (card.isDirectDeployedChampion && (effect.action === 'SILENCE' || effect.action === 'DESTROY')) return false;
+    return true;
+  }).map((card) => card.instanceId);
+}
+
+export function validateEffectTargets(
+  state: GameState, playerId: string, sourceCard: CardInstance, effect: CardEffect, ids: string[],
+): boolean {
+  if (effect.type !== 'STRUCTURED' || !effect.target) return ids.length === 0;
+  const min = effect.target.minTargets ?? effect.target.count;
+  const max = effect.target.maxTargets ?? effect.target.count;
+  return ids.length >= min && ids.length <= max && new Set(ids).size === ids.length &&
+    ids.every((id) => getValidTargets(state, playerId, sourceCard, effect).includes(id));
+}
+
+function sourceInState(state: GameState, id: string): CardInstance | undefined {
+  return state.players.flatMap((player) => [...player.board.filter((c): c is CardInstance => c !== null), ...player.hand])
+    .find((card) => card.instanceId === id);
+}
+
+function beginResolution(state: GameState, frame: NonNullable<GameState['targetingState']>): GameState {
+  return resolvePendingEffects({
+    ...state,
+    targetingState: {
+      ...frame,
+      continuation: state.targetingState?.active ? state.targetingState : frame.continuation,
+    },
+  });
+}
+
+/** Append work after the current unresolved chain (rather than treating it as
+ * a child trigger). Used for POSITION, which follows ENTER_FIELD. */
+export function appendEffectContinuation(
+  state: GameState,
+  frame: NonNullable<GameState['targetingState']>,
+): GameState {
+  const append = (current: NonNullable<GameState['targetingState']>): NonNullable<GameState['targetingState']> => ({
+    ...current,
+    continuation: current.continuation ? append(current.continuation) : frame,
+  });
+  return state.targetingState ? { ...state, targetingState: append(state.targetingState) } : beginResolution(state, frame);
+}
+
+export function resolvePendingEffects(state: GameState): GameState {
+  const pending = state.targetingState;
+  if (!pending) return state;
+  // Keep this frame visible while automatic effects execute: a lethal/destroy
+  // trigger can then install itself as a child continuation.
+  let next: GameState = { ...state, targetingState: pending };
+  let last = pending.lastTargetIds;
+  for (let index = pending.effectIndex; index < pending.effects.length; index += 1) {
+    const effect = pending.effects[index];
+    const source = pending.sourceCard ?? sourceInState(next, pending.sourceInstanceId);
+    if (!source) return next;
+    if (effect.type === 'STRUCTURED' && effect.target?.selection === 'PLAYER_CHOICE') {
+      const validTargetIds = getValidTargets(next, pending.playerId, source, effect);
+      const minTargets = effect.target.minTargets ?? effect.target.count;
+      const maxTargets = effect.target.maxTargets ?? effect.target.count;
+      return { ...next, targetingState: { ...pending, effectIndex: index, selectedTargetIds: [], lastTargetIds: last, validTargetIds, minTargets, maxTargets, mandatory: !effect.target.optionalTarget, cancelable: Boolean(effect.target.optionalTarget) } };
+    }
+    const ids = effect.type === 'STRUCTURED' && effect.target?.selection === 'SAME_TARGET' ? last : undefined;
+    next = applyEffect(next, pending.playerId, source, effect, ids);
+    if (next.targetingState?.continuation === pending) return next;
+    if (ids?.length) last = ids;
+  }
+  if (pending.markActiveUsed) {
+    next = {
+      ...next,
+      players: next.players.map((player) => ({
+        ...player,
+        board: player.board.map((card) => card?.instanceId === pending.sourceInstanceId
+          ? { ...card, activeUsedThisTurn: true }
+          : card) as typeof player.board,
+      })),
+    };
+  }
+  return pending.continuation
+    ? resolvePendingEffects({ ...next, targetingState: pending.continuation })
+    : { ...next, targetingState: undefined };
+}
+
+export function selectEffectTarget(state: GameState, targetId: string): GameState {
+  const pending = state.targetingState;
+  if (!pending) return state;
+  const effect = pending.effects[pending.effectIndex];
+  const source = pending.sourceCard ?? sourceInState(state, pending.sourceInstanceId);
+  if (!source || !effect || !pending.validTargetIds.includes(targetId) || pending.selectedTargetIds.includes(targetId)) return state;
+  const selected = [...pending.selectedTargetIds, targetId];
+  if (selected.length < pending.minTargets) return { ...state, targetingState: { ...pending, selectedTargetIds: selected } };
+  const parentAfter: NonNullable<GameState['targetingState']> = {
+    ...pending, effectIndex: pending.effectIndex + 1, selectedTargetIds: [],
+    lastTargetIds: selected, validTargetIds: [], minTargets: 0, maxTargets: 0,
+  };
+  let next: GameState = { ...state, targetingState: parentAfter };
+  if (!validateEffectTargets(state, pending.playerId, source, effect, selected)) return state;
+  next = applyEffect(next, pending.playerId, source, effect, selected);
+  if (next.targetingState?.continuation === parentAfter) return next;
+  return resolvePendingEffects(next);
+}
+
+/** Cancellation is intentionally limited to explicitly optional target effects. */
+export function cancelEffectTargeting(state: GameState): GameState {
+  const pending = state.targetingState;
+  if (!pending || !pending.cancelable || pending.selectedTargetIds.length > 0) return state;
+  return resolvePendingEffects({
+    ...state,
+    targetingState: {
+      ...pending,
+      effectIndex: pending.effectIndex + 1,
+      selectedTargetIds: [],
+      validTargetIds: [],
+    },
+  });
+}
+
+export function hasMandatoryPlayerChoice(state: GameState, playerId: string, source: CardInstance, effects: CardEffect[]): boolean {
+  return effects.some((effect) => effect.type === 'STRUCTURED' && effect.target?.selection === 'PLAYER_CHOICE' &&
+    !effect.target.optionalTarget && getValidTargets(state, playerId, source, effect).length < (effect.target.minTargets ?? effect.target.count));
+}
+
 export function hasKeyword(
   card: CardInstance,
   keyword: CardKeyword,
@@ -62,13 +203,16 @@ function applyEffect(
       };
     }
     if (target.zone === 'PLAYER') {
-      return applyEffect(state, playerId, sourceCard, { type: 'DAMAGE_OPPONENT_CHAMPION', amount });
+      if (target.owner === 'SELF' && effect.action === 'HEAL') return state;
+      return target.owner === 'ENEMY'
+        ? applyEffect(state, playerId, sourceCard, { type: 'DAMAGE_OPPONENT_CHAMPION', amount })
+        : state;
     }
     const candidates = target.zone === 'HAND'
       ? candidatePlayer.hand
       : candidatePlayer.board.filter((card): card is CardInstance => Boolean(card));
     const eligibleCandidates = candidates.filter((card) => {
-      if (card.isDirectDeployedChampion) return false;
+      if (card.isDirectDeployedChampion && (effect.action === 'SILENCE' || effect.action === 'DESTROY')) return false;
       if (!target.cardType) return true;
       return card.cardType === target.cardType;
     });
@@ -78,7 +222,9 @@ function applyEffect(
         ? eligibleCandidates.filter((card) => chosenTargetInstanceIds?.includes(card.instanceId)).slice(0, Math.max(0, target.count))
         : target.selection === 'SAME_TARGET'
           ? eligibleCandidates.filter((card) => chosenTargetInstanceIds?.includes(card.instanceId)).slice(0, Math.max(0, target.count))
-        : shuffle(eligibleCandidates).slice(0, Math.max(0, target.count));
+        : target.selection === 'ALL'
+          ? eligibleCandidates
+          : shuffle(eligibleCandidates).slice(0, Math.max(0, target.count));
     if (!targets.length) return state;
     const ids = new Set(targets.map((card) => card.instanceId));
     if (effect.action === 'DESTROY') {
@@ -320,15 +466,13 @@ export function resolveTriggeredAbilities(
     return true;
   });
 
-  return abilities.reduce(
-    (nextState, ability) =>
-      ability.effects.reduce(
-        (effectState, effect) =>
-            applyEffect(effectState, playerId, card, effect, options.chosenTargetInstanceIds),
-        nextState,
-      ),
-    state,
-  );
+  const effects = abilities.flatMap((ability) => ability.effects);
+  if (!effects.length) return state;
+  return beginResolution(state, {
+    active: true, playerId, sourceInstanceId: card.instanceId, sourceCard: card, effects,
+    effectIndex: 0, selectedTargetIds: [], lastTargetIds: options.chosenTargetInstanceIds ?? [],
+    validTargetIds: [], minTargets: 0, maxTargets: 0, mandatory: true, cancelable: false,
+  });
 }
 
 export function resolveActiveAbility(
@@ -339,8 +483,8 @@ export function resolveActiveAbility(
   const active = getActiveAbility(card);
   if (!active) return state;
 
-  return active.effects.reduce(
-    (nextState, effect) => applyEffect(nextState, playerId, card, effect),
-    state,
-  );
+  return beginResolution(state, {
+    active: true, playerId, sourceInstanceId: card.instanceId, effects: active.effects, effectIndex: 0,
+    selectedTargetIds: [], lastTargetIds: [], validTargetIds: [], minTargets: 0, maxTargets: 0, mandatory: true, cancelable: false, markActiveUsed: true,
+  });
 }

@@ -12,6 +12,7 @@ import { generateCard } from '../cards/generation';
 import { getCardDefinition } from '../cards/test-cards';
 import type { CardInstance } from '../cards/types';
 import { enterField } from './enter-field';
+import { hasMandatoryPlayerChoice, resolvePendingEffects } from '../effects/effect-engine';
 
 function directDeployChampionToken(
   state: GameState,
@@ -65,6 +66,7 @@ function applyChampionEffect(
   championId: string,
   effect: ChampionEffect,
 ): GameState {
+  if (effect.type === 'STRUCTURED') return state;
   if (effect.type === 'DIRECT_DEPLOY_CHAMPION_TOKEN') {
     return directDeployChampionToken(
       state,
@@ -143,6 +145,9 @@ export function useChampionAbility(
   state: GameState,
   playerId: string,
 ): ActionResult {
+  if (state.targetingState?.active) {
+    return actionFailure(state, 'TARGET_SELECTION_PENDING', '먼저 대상을 선택하세요.');
+  }
   const turnFailure = validateCurrentPlayer(state, playerId);
   if (turnFailure) return turnFailure;
   const player = state.players.find((candidate) => candidate.id === playerId);
@@ -163,6 +168,21 @@ export function useChampionAbility(
   }
   if (player.currentGold < player.champion.abilityCost) {
     return actionFailure(state, 'NOT_ENOUGH_GOLD', '골드가 부족합니다.');
+  }
+  const effectSource: CardInstance = {
+    instanceId: `champion-${player.champion.id}`,
+    definitionId: `champion-${player.champion.id}`,
+    cardType: 'WRESTLER', currentCost: 0, currentAttack: 0, currentHealth: 1,
+    maxHealth: 1, keywords: [], abilities: [], boardSlot: null, enteredThisTurn: false,
+    attacksUsedThisTurn: 0, activeUsedThisTurn: false, isSilenced: false,
+    isStunned: false, dodgeAvailable: false, isChampionToken: false,
+    isDirectDeployedChampion: false, isSilenceImmune: false, isGenerated: true, isToken: false,
+  };
+  const structuredEffects = ability.effects.filter(
+    (effect): effect is Extract<ChampionEffect, { type: 'STRUCTURED' }> => effect.type === 'STRUCTURED',
+  );
+  if (hasMandatoryPlayerChoice(state, playerId, effectSource, structuredEffects)) {
+    return actionFailure(state, 'NO_VALID_TARGET', '선택 가능한 대상이 없습니다.');
   }
   const directDeployEffect = ability.effects.find(
     (effect) => effect.type === 'DIRECT_DEPLOY_CHAMPION_TOKEN',
@@ -223,5 +243,12 @@ export function useChampionAbility(
       ),
     paidState,
   );
-  return actionSuccess(processChampionQuestEvents(state, resolved));
+  const afterNonStructured = structuredEffects.length
+    ? resolvePendingEffects({ ...resolved, targetingState: {
+      active: true, playerId, sourceInstanceId: effectSource.instanceId, sourceCard: effectSource,
+      effects: structuredEffects, effectIndex: 0, selectedTargetIds: [], lastTargetIds: [],
+      validTargetIds: [], minTargets: 0, maxTargets: 0, mandatory: true, cancelable: false,
+    } })
+    : resolved;
+  return actionSuccess(processChampionQuestEvents(state, afterNonStructured));
 }

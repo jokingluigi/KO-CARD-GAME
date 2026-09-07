@@ -5,6 +5,7 @@ import { generateCard } from '../cards/generation';
 import type { CardDefinition, CardInstance } from '../cards/types';
 import { createInitialGameState } from '../engine/create-initial-game-state';
 import { enterField } from '../engine/enter-field';
+import { selectEffectTarget } from './effect-engine';
 import type { CardEffect } from './types';
 
 function definition(id: string, effects: CardEffect[]): CardDefinition {
@@ -72,14 +73,10 @@ test('선택한 손패 선수 한 장에게 +1/+1을 부여한다', () => {
   const state = createInitialGameState();
   state.players[0].hand = [target];
 
-  const result = enterField(
-    state,
-    'player-1',
-    source,
-    0,
-    undefined,
-    [target.instanceId],
-  );
+  const pending = enterField(state, 'player-1', source, 0);
+  assert.deepEqual(pending.targetingState?.validTargetIds, [target.instanceId]);
+  assert.equal(pending.players[0].hand[0]?.currentAttack, 1);
+  const result = selectEffectTarget(pending, target.instanceId);
   assert.equal(result.players[0].hand[0]?.currentAttack, 2);
   assert.equal(result.players[0].hand[0]?.currentHealth, 2);
 });
@@ -102,14 +99,9 @@ test('선택한 적 선수에게 피해를 주고 체력이 소진되면 리타�
   const state = createInitialGameState();
   state.players[1].board[0] = { ...target, boardSlot: 0 };
 
-  const result = enterField(
-    state,
-    'player-1',
-    source,
-    0,
-    undefined,
-    [target.instanceId],
-  );
+  const pending = enterField(state, 'player-1', source, 0);
+  assert.equal(pending.players[1].board[0]?.currentHealth, 1);
+  const result = selectEffectTarget(pending, target.instanceId);
   assert.equal(result.players[1].board[0], null);
   assert.equal(result.players[1].graveyard.at(-1)?.instanceId, target.instanceId);
   assert.ok(result.events.some((event) => event.type === 'DAMAGE_DEALT'));
@@ -152,20 +144,15 @@ test('선택한 적 선수를 침묵시킨 뒤 같은 대상을 파괴한다', (
   };
   const source = instance('silence-destroy-source', [
     structured('SILENCE', targetConfig),
-    structured('DESTROY', targetConfig),
+    structured('DESTROY', { ...targetConfig, selection: 'SAME_TARGET' }),
   ]);
   const target = instance('silence-destroy-target');
   const state = createInitialGameState();
   state.players[1].board[0] = { ...target, boardSlot: 0 };
 
-  const result = enterField(
-    state,
-    'player-1',
-    source,
-    0,
-    undefined,
-    [target.instanceId],
-  );
+  const pending = enterField(state, 'player-1', source, 0);
+  assert.ok(pending.targetingState);
+  const result = selectEffectTarget(pending, target.instanceId);
   assert.equal(result.players[1].board[0], null);
   assert.equal(result.players[1].graveyard.at(-1)?.isSilenced, true);
   assert.ok(result.events.some((event) => event.type === 'CARD_DESTROYED'));
@@ -199,7 +186,8 @@ test('구조화 회피 부여는 첫 효과 피해를 무효화하고 소모한�
   const target = instance('dodge-target');
   const state = createInitialGameState();
   state.players[1].board[0] = { ...target, boardSlot: 0, keywords: ['DODGE'], dodgeAvailable: true };
-  const result = enterField(state, 'player-1', source, 0, undefined, [target.instanceId]);
+  const pending = enterField(state, 'player-1', source, 0);
+  const result = selectEffectTarget(pending, target.instanceId);
   assert.equal(result.players[1].board[0]?.currentHealth, 1);
   assert.equal(result.players[1].board[0]?.dodgeAvailable, false);
   assert.equal(result.events.at(-1)?.type, 'DAMAGE_DEALT');
@@ -216,7 +204,9 @@ test('다음 턴 골드, 비용과 기절 구조화 효과를 적용한다', () 
   const state = createInitialGameState();
   state.players[0].hand = [hand];
   state.players[1].board[0] = { ...enemy, boardSlot: 0 };
-  const result = enterField(state, 'player-1', source, 0, undefined, [hand.instanceId, enemy.instanceId]);
+  const pending = enterField(state, 'player-1', source, 0);
+  const afterHand = selectEffectTarget(pending, hand.instanceId);
+  const result = selectEffectTarget(afterHand, enemy.instanceId);
   assert.equal(result.players[0].nextTurnGoldBonus, 2);
   assert.equal(result.players[0].hand[0]?.currentCost, 0);
   assert.equal(result.players[1].board[0]?.isStunned, true);

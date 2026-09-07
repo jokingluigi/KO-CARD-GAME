@@ -1,7 +1,7 @@
 import type { ActionResult } from '../actions/types';
 import { actionFailure, actionSuccess } from '../actions/types';
 import type { CardInstanceId } from '../cards/types';
-import { getActiveAbility, resolveActiveAbility } from '../effects/effect-engine';
+import { getActiveAbility, hasMandatoryPlayerChoice, resolveActiveAbility } from '../effects/effect-engine';
 import type { GameState } from '../types/game-state';
 import { validateCurrentPlayer } from './turn-system';
 import { processChampionQuestEvents } from '../champions/quests';
@@ -54,6 +54,7 @@ export function useActiveAbility(
   playerId: string,
   cardInstanceId: CardInstanceId,
 ): ActionResult {
+  if (state.targetingState?.active) return actionFailure(state, 'TARGET_SELECTION_PENDING', '먼저 대상을 선택하세요.');
   const turnFailure = validateCurrentPlayer(state, playerId);
   if (turnFailure) return turnFailure;
 
@@ -80,14 +81,15 @@ export function useActiveAbility(
     );
   }
 
+  const active = getActiveAbility(card)!;
+  if (hasMandatoryPlayerChoice(state, playerId, card, active.effects)) {
+    return actionFailure(state, 'NO_VALID_TARGET', '선택 가능한 대상이 없습니다.');
+  }
   const resolved = resolveActiveAbility(state, playerId, card);
   return actionSuccess(
     processChampionQuestEvents(
       state,
-      updateBoardCard(resolved, cardInstanceId, (candidate) => ({
-        ...candidate,
-        activeUsedThisTurn: true,
-      })),
+      resolved,
     ),
   );
 }

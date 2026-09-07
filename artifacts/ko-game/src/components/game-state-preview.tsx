@@ -24,7 +24,6 @@ import {
 interface GameStatePreviewProps {
   state: GameState;
   selectedCardId: string | null;
-  selectedEffectTargetId?: string | null;
   selectedAttackerId: string | null;
   playError: string | null;
   turnSecondsRemaining: number;
@@ -36,12 +35,13 @@ interface GameStatePreviewProps {
   onAttackPlayer: () => void;
   onUseActive: () => void;
   onUseChampionAbility: () => void;
+  onCancelEffectTargeting: () => void;
+  onEffectTarget: (targetId: string) => void;
 }
 
 export function GameStatePreview({
   state,
   selectedCardId,
-  selectedEffectTargetId,
   selectedAttackerId,
   playError,
   turnSecondsRemaining,
@@ -53,6 +53,8 @@ export function GameStatePreview({
   onAttackPlayer,
   onUseActive,
   onUseChampionAbility,
+  onCancelEffectTargeting,
+  onEffectTarget,
 }: GameStatePreviewProps) {
   const [openGraveyardPlayerId, setOpenGraveyardPlayerId] = React.useState<string | null>(null);
 
@@ -62,6 +64,9 @@ export function GameStatePreview({
 
   const me = state.players[0];
   const opp = state.players[1];
+  const effectTargeting = state.targetingState?.active;
+  const validEffectTargetIds = new Set(state.targetingState?.validTargetIds ?? []);
+  const selectedEffectTargetIds = new Set(state.targetingState?.selectedTargetIds ?? []);
   
   const isMyTurn = state.activePlayerId === me.id;
   
@@ -124,9 +129,9 @@ export function GameStatePreview({
                 <div className="flex items-start gap-2 md:gap-3">
                 <div
                     className={`group relative flex h-28 w-20 flex-col items-center justify-center rounded-sm border-2 bg-neutral-900 md:h-40 md:w-28 ${
-                    selectedAttackerId ? 'cursor-crosshair border-red-500 shadow-[0_0_15px_rgba(239,68,68,0.4)]' : 'border-red-900'
+                    (effectTargeting && validEffectTargetIds.has(opp.id)) || selectedAttackerId ? 'cursor-crosshair border-red-500 shadow-[0_0_15px_rgba(239,68,68,0.4)]' : 'border-red-900'
                   }`}
-                  onClick={selectedAttackerId ? onAttackPlayer : undefined}
+                   onClick={effectTargeting && validEffectTargetIds.has(opp.id) ? () => onEffectTarget(opp.id) : selectedAttackerId ? onAttackPlayer : undefined}
                 >
                   <span className="px-1 text-center text-[9px] font-black leading-tight text-red-300 md:text-[11px]">
                     {opp.champion?.name || '상대 챔피언'}
@@ -175,7 +180,7 @@ export function GameStatePreview({
                    selectable={false}
                    selected={false}
                    attackReady={false}
-                    targetable={(!!selectedAttackerId || !!selectedCardId) && !!card}
+                     targetable={!!card && (effectTargeting ? validEffectTargetIds.has(card.instanceId) : !!selectedAttackerId)}
                     activeReady={false}
                     activeUsable={false}
                     onUseActive={() => undefined}
@@ -201,9 +206,9 @@ export function GameStatePreview({
                    isOpponent={false}
                    slotIndex={i as BoardSlotIndex}
                    selectable={!!selectedCardId && !card}
-                    selected={card?.instanceId === selectedAttackerId || card?.instanceId === selectedEffectTargetId}
+                     selected={card?.instanceId === selectedAttackerId || !!card && selectedEffectTargetIds.has(card.instanceId)}
                    attackReady={!!card && canSelectAsAttacker(state, me.id, card.instanceId)}
-                   targetable={false}
+                    targetable={!!card && !!effectTargeting && validEffectTargetIds.has(card.instanceId)}
                     activeReady={card?.instanceId === selectedAttackerId && canShowActive}
                     activeUsable={canUseActive}
                     onUseActive={onUseActive}
@@ -223,6 +228,14 @@ export function GameStatePreview({
          </div>
 
           <aside className="absolute right-2 top-36 z-40 flex w-24 flex-col items-stretch gap-2 rounded border border-neutral-800 bg-black/85 p-2 shadow-2xl backdrop-blur-md md:fixed md:right-4 md:top-1/2 md:w-32 md:-translate-y-1/2 md:p-3">
+             {effectTargeting && (
+               <div className="rounded border border-amber-500 bg-amber-950/90 px-2 py-2 text-center text-[10px] font-bold text-amber-100">
+                 대상을 선택하세요 ({state.targetingState!.selectedTargetIds.length}/{state.targetingState!.minTargets})
+                 {state.targetingState!.cancelable && (
+                   <button type="button" onClick={onCancelEffectTargeting} className="mt-1 block w-full rounded border border-amber-600 px-1 py-0.5 text-[9px]">취소</button>
+                 )}
+               </div>
+             )}
              <div className="flex items-center justify-between gap-2 border-b border-neutral-800 pb-2">
                <div className="text-right">
                  <div className="text-[9px] font-bold text-neutral-500 md:text-[10px]">현재 턴 {state.turn}</div>
@@ -274,7 +287,7 @@ export function GameStatePreview({
             {/* Player Stats & Champion */}
             <div className="z-[95] flex w-[180px] shrink-0 flex-col gap-1 md:w-48 md:gap-2">
               <div className="flex items-start gap-2 md:gap-3">
-               <div className="relative flex h-28 w-20 shrink-0 flex-col items-center justify-center rounded-sm border-2 border-blue-600 bg-neutral-900 shadow-[0_0_15px_rgba(37,99,235,0.2)] md:h-40 md:w-28">
+                <div onClick={effectTargeting && validEffectTargetIds.has(me.id) ? () => onEffectTarget(me.id) : undefined} className={`relative flex h-28 w-20 shrink-0 flex-col items-center justify-center rounded-sm border-2 bg-neutral-900 md:h-40 md:w-28 ${effectTargeting && validEffectTargetIds.has(me.id) ? 'cursor-crosshair border-amber-400 shadow-[0_0_15px_rgba(251,191,36,0.5)]' : 'border-blue-600 shadow-[0_0_15px_rgba(37,99,235,0.2)]'}`}>
                   <span className="px-1 text-center text-[9px] font-black leading-tight text-blue-400 md:text-[12px]">
                     {me.champion?.name || '내 챔피언'}
                   </span>
@@ -346,6 +359,7 @@ export function GameStatePreview({
                           card={card}
                           isSelected={isSelected}
                           canAfford={canAfford}
+                           targetable={!!effectTargeting && validEffectTargetIds.has(card.instanceId)}
                           onClick={() => onSelectCard(card.instanceId)}
                            density={density}
                           style={{ zIndex: isSelected ? 50 : i }}
@@ -367,6 +381,7 @@ function HandCard({
   card,
   isSelected,
   canAfford,
+  targetable,
   onClick,
   density,
   style,
@@ -374,6 +389,7 @@ function HandCard({
   card: CardInstance;
   isSelected: boolean;
   canAfford: boolean;
+  targetable: boolean;
   onClick: () => void;
   density: 'small' | 'medium' | 'regular';
   style?: React.CSSProperties;
@@ -390,6 +406,8 @@ function HandCard({
   
   if (isSelected) {
     containerClass += "border-primary -translate-y-8 md:-translate-y-12 shadow-[0_15px_30px_rgba(234,179,8,0.4)] z-50 cursor-pointer";
+  } else if (targetable) {
+    containerClass += "border-amber-400 shadow-[0_0_15px_rgba(251,191,36,0.5)] cursor-crosshair";
   } else if (!canAfford) {
     containerClass += "border-neutral-800 opacity-40 grayscale cursor-not-allowed";
   } else {

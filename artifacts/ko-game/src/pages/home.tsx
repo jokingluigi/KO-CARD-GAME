@@ -8,6 +8,8 @@ import {
   startGame,
   useActiveAbility,
   useChampionAbility,
+  selectEffectTarget,
+  cancelEffectTargeting,
   type BoardSlot,
   type GameState,
   fetchPublishedWrestlerCards,
@@ -28,16 +30,6 @@ export default function Home() {
   const [selectedAttackerId, setSelectedAttackerId] = useState<string | null>(
     null,
   );
-  const [selectedEffectTargetId, setSelectedEffectTargetId] = useState<string | null>(null);
-  const selectedHandCard = gameState.players[0].hand.find((card) => card.instanceId === selectedCardId);
-  const choiceEffect = selectedHandCard?.abilities
-    .flatMap((ability) => ability.effects)
-    .find(
-      (effect) =>
-        effect.type === "STRUCTURED" &&
-        effect.target?.selection === "PLAYER_CHOICE",
-    );
-  const needsChoice = choiceEffect?.type === "STRUCTURED";
   const [playError, setPlayError] = useState<string | null>(null);
   const [turnSecondsRemaining, setTurnSecondsRemaining] = useState(
     TURN_TIME_LIMIT_SECONDS,
@@ -149,18 +141,12 @@ export default function Home() {
   }
 
   function handleSelectCard(cardInstanceId: string) {
-    const isValidHandTarget =
-      choiceEffect?.type === "STRUCTURED" &&
-      choiceEffect.target?.zone === "HAND" &&
-      choiceEffect.target?.owner === "SELF" &&
-      cardInstanceId !== selectedCardId;
-    if (isValidHandTarget) {
-      setSelectedEffectTargetId(cardInstanceId);
+    if (gameState.targetingState?.active) {
+      handleEffectTarget(cardInstanceId);
       setPlayError(null);
       return;
     }
     setSelectedAttackerId(null);
-    setSelectedEffectTargetId(null);
     setSelectedCardId((current) =>
       current === cardInstanceId ? null : cardInstanceId,
     );
@@ -168,17 +154,8 @@ export default function Home() {
   }
 
   function handleSelectAttacker(cardInstanceId: string) {
-    if (
-      choiceEffect?.type === "STRUCTURED" &&
-      choiceEffect.target?.zone === "BOARD" &&
-      choiceEffect.target?.owner === "SELF"
-    ) {
-      setSelectedEffectTargetId(cardInstanceId);
-      setPlayError(null);
-      return;
-    }
+    if (gameState.targetingState?.active) return handleEffectTarget(cardInstanceId);
     setSelectedCardId(null);
-    setSelectedEffectTargetId(null);
     setSelectedAttackerId((current) =>
       current === cardInstanceId ? null : cardInstanceId,
     );
@@ -211,19 +188,31 @@ export default function Home() {
     setPlayError(null);
   }
   function handleSelectEffectTarget(targetCardInstanceId: string) {
-    if (
-      choiceEffect?.type === "STRUCTURED" &&
-      choiceEffect.target?.zone === "BOARD" &&
-      choiceEffect.target?.owner === "ENEMY"
-    ) {
-      setSelectedEffectTargetId(targetCardInstanceId);
-      setPlayError(null);
+    if (gameState.targetingState?.active) return handleEffectTarget(targetCardInstanceId);
+    handleAttackWrestler(targetCardInstanceId);
+  }
+  function handleEffectTarget(targetId: string) {
+    const before = gameState;
+    const next = selectEffectTarget(before, targetId);
+    if (next === before) {
+      setPlayError('이 효과의 대상으로 선택할 수 없습니다.');
       return;
     }
-    handleAttackWrestler(targetCardInstanceId);
+    setGameState(next);
+    setPlayError(null);
+  }
+  function handleCancelEffectTargeting() {
+    const next = cancelEffectTargeting(gameState);
+    if (next === gameState) return;
+    setGameState(next);
+    setPlayError(null);
   }
 
   function handleAttackPlayer() {
+    if (gameState.targetingState?.active) {
+      handleEffectTarget(gameState.players[1].id);
+      return;
+    }
     if (!selectedAttackerId) {
       setPlayError('먼저 공격할 선수를 선택하세요.');
       return;
@@ -253,17 +242,11 @@ export default function Home() {
       setPlayError('먼저 손패에서 선수를 선택하세요.');
       return;
     }
-    if (needsChoice && !selectedEffectTargetId) {
-      setPlayError("카드 효과의 대상을 선택하세요.");
-      return;
-    }
-
     const result = playWrestlerFromHand(
       gameState,
       gameState.players[0].id,
       selectedCardId,
       slot,
-      selectedEffectTargetId ? [selectedEffectTargetId] : undefined,
     );
     if (!result.success) {
       setPlayError(result.message);
@@ -272,7 +255,6 @@ export default function Home() {
 
     setGameState(result.state);
     setSelectedCardId(null);
-    setSelectedEffectTargetId(null);
     setPlayError(null);
   }
 
@@ -307,7 +289,6 @@ export default function Home() {
     <GameStatePreview
       state={gameState}
       selectedCardId={selectedCardId}
-      selectedEffectTargetId={selectedEffectTargetId}
       selectedAttackerId={selectedAttackerId}
       playError={playError}
       turnSecondsRemaining={turnSecondsRemaining}
@@ -319,6 +300,8 @@ export default function Home() {
       onAttackPlayer={handleAttackPlayer}
       onUseActive={handleUseActive}
       onUseChampionAbility={handleUseChampionAbility}
+      onCancelEffectTargeting={handleCancelEffectTargeting}
+      onEffectTarget={handleEffectTarget}
     />
     </>
   );

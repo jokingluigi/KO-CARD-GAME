@@ -1,0 +1,129 @@
+import assert from 'node:assert/strict';
+import test from 'node:test';
+
+import { generateCard } from '../cards/generation';
+import type { CardDefinition, CardInstance } from '../cards/types';
+import { createInitialGameState } from '../engine/create-initial-game-state';
+import { enterField } from '../engine/enter-field';
+import { playWrestlerFromHand } from '../engine/play-wrestler';
+import { useActiveAbility } from '../engine/card-status';
+import { useChampionAbility } from '../engine/champion-system';
+import { endTurn } from '../engine/turn-system';
+import { getValidTargets, selectEffectTarget } from './effect-engine';
+import type { CardEffect } from './types';
+
+const targeted = (action: Extract<CardEffect, { type: 'STRUCTURED' }>['action'], owner: 'SELF' | 'ENEMY' = 'ENEMY', selection: 'PLAYER_CHOICE' | 'SELF' | 'RANDOM' | 'ALL' | 'SAME_TARGET' = 'PLAYER_CHOICE', count = 1): CardEffect =>
+  ({ type: 'STRUCTURED', action, target: { zone: 'BOARD', owner, cardType: 'WRESTLER', selection, count }, values: { amount: 1 } });
+
+function card(id: string, effects: CardEffect[] = []): CardInstance {
+  const definition: CardDefinition = { id, name: id, cardType: 'WRESTLER', cost: 1, attack: 1, health: 2, rulesText: '', isToken: false, isChampionToken: false, keywords: [], abilities: [{ trigger: 'ENTER_FIELD', effects }] };
+  return generateCard(definition, { instanceId: id, playerId: 'player-1', source: { type: 'PLAYER', playerId: 'player-1' }, reason: 'TEST' }).card;
+}
+
+test('PLAYER_CHOICE pauses post-enter damage, validates stale/invalid clicks, then resolves', () => {
+  const source = card('source', [targeted('DAMAGE')]);
+  const enemy = { ...card('enemy'), boardSlot: 0 as const };
+  const state = createInitialGameState();
+  state.players[1].board[0] = enemy;
+  const pending = enterField(state, 'player-1', source, 0);
+  assert.deepEqual(pending.targetingState?.validTargetIds, ['enemy']);
+  assert.equal(pending.players[1].board[0]?.currentHealth, 2);
+  assert.equal(selectEffectTarget(pending, 'not-a-target'), pending);
+  const stale = { ...pending, players: pending.players.map((p, i) => i === 1 ? { ...p, board: [null, null, null, null] as typeof p.board } : p) };
+  assert.equal(selectEffectTarget(stale, 'enemy'), stale);
+  const resolved = selectEffectTarget(pending, 'enemy');
+  assert.equal(resolved.targetingState, undefined);
+  assert.equal(resolved.players[1].board[0]?.currentHealth, 1);
+});
+
+test('SAME_TARGET uses one click; SELF, RANDOM and ALL never open targeting', () => {
+  const enemyA = { ...card('a'), boardSlot: 0 as const };
+  const enemyB = { ...card('b'), boardSlot: 1 as const };
+  const state = createInitialGameState();
+  state.players[1].board[0] = enemyA; state.players[1].board[1] = enemyB;
+  const combo = card('combo', [targeted('SILENCE'), targeted('DESTROY', 'ENEMY', 'SAME_TARGET')]);
+  const done = selectEffectTarget(enterField(state, 'player-1', combo, 0), 'a');
+  assert.equal(done.players[1].board[0], null);
+  assert.equal(done.players[1].graveyard.at(-1)?.isSilenced, true);
+  assert.equal(enterField(createInitialGameState(), 'player-1', card('self', [targeted('BUFF', 'SELF', 'SELF')]), 0).targetingState, undefined);
+  assert.equal(enterField(state, 'player-1', card('random', [targeted('DAMAGE', 'ENEMY', 'RANDOM')]), 2).targetingState, undefined);
+  const all = enterField(state, 'player-1', card('all', [targeted('DAMAGE', 'ENEMY', 'ALL')]), 2);
+  assert.equal(all.targetingState, undefined);
+  assert.equal(all.players[1].board.filter(Boolean).every((c) => c!.currentHealth === 1), true);
+});
+
+test('resolver covers board, hand/player ids, multiselect duplicates and champion token protection', () => {
+  const source = card('source');
+  const one = { ...card('one'), boardSlot: 0 as const };
+  const two = { ...card('two'), boardSlot: 1 as const };
+  const state = createInitialGameState();
+  state.players[0].board[0] = one; state.players[1].board[0] = two;
+  state.players[0].hand = [card('hand')];
+  assert.deepEqual(getValidTargets(state, 'player-1', source, targeted('BUFF', 'SELF')), ['one']);
+  assert.deepEqual(getValidTargets(state, 'player-1', source, { ...targeted('REDUCE_COST', 'SELF'), target: { zone: 'HAND', owner: 'SELF', cardType: 'WRESTLER', selection: 'PLAYER_CHOICE', count: 1 } }), ['hand']);
+  assert.deepEqual(getValidTargets(state, 'player-1', source, { ...targeted('DAMAGE'), target: { zone: 'PLAYER', owner: 'ENEMY', selection: 'PLAYER_CHOICE', count: 1 } }), ['player-2']);
+  state.players[1].board[1] = { ...card('token'), boardSlot: 1, isDirectDeployedChampion: true, isSilenceImmune: true };
+  assert.deepEqual(getValidTargets(state, 'player-1', source, targeted('DESTROY')), ['two']);
+  assert.deepEqual(getValidTargets(state, 'player-1', source, targeted('DAMAGE')).sort(), ['token', 'two']);
+
+  const multi = card('multi', [{ ...targeted('STUN'), target: { zone: 'BOARD', owner: 'ENEMY', cardType: 'WRESTLER', selection: 'PLAYER_CHOICE', count: 2, minTargets: 2, maxTargets: 2 } }]);
+  const multiPending = enterField(state, 'player-1', multi, 2);
+  const first = selectEffectTarget(multiPending, 'two');
+  assert.deepEqual(first.targetingState?.selectedTargetIds, ['two']);
+  assert.equal(selectEffectTarget(first, 'two'), first);
+  const multiDone = selectEffectTarget(first, 'token');
+  assert.equal(multiDone.targetingState, undefined);
+});
+
+test('pending targeting blocks end turn with the exact warning', () => {
+  const state = createInitialGameState();
+  state.status = 'IN_PROGRESS'; state.activePlayerId = 'player-1';
+  state.players[1].board[0] = { ...card('enemy'), boardSlot: 0 };
+  const pending = enterField(state, 'player-1', card('source', [targeted('DAMAGE')]), 0);
+  const result = endTurn(pending, 'player-1');
+  assert.equal(result.success, false);
+  if (!result.success) assert.equal(result.message, '먼저 대상을 선택하세요.');
+});
+
+test('mandatory no-target play preserves hand, gold and board', () => {
+  const state = createInitialGameState();
+  state.status = 'IN_PROGRESS'; state.activePlayerId = 'player-1';
+  state.players[0].currentGold = 5;
+  const source = card('no-target', [targeted('DESTROY')]);
+  state.players[0].hand = [source];
+  const result = playWrestlerFromHand(state, 'player-1', source.instanceId, 0);
+  assert.equal(result.success, false);
+  if (!result.success) assert.equal(result.message, '선택 가능한 대상이 없습니다.');
+  assert.equal(state.players[0].currentGold, 5);
+  assert.equal(state.players[0].hand[0], source);
+  assert.equal(state.players[0].board[0], null);
+});
+
+test('active and champion abilities use pending effects once, with payment/use timing', () => {
+  const state = createInitialGameState();
+  state.status = 'IN_PROGRESS'; state.activePlayerId = 'player-1';
+  const enemy = { ...card('enemy'), boardSlot: 0 as const };
+  const active = { ...card('active'), boardSlot: 0 as const, abilities: [{ trigger: 'ACTIVE' as const, effects: [targeted('DAMAGE')] }] };
+  state.players[0].board[0] = active; state.players[1].board[0] = enemy;
+  const activeStart = useActiveAbility(state, 'player-1', 'active');
+  assert.equal(activeStart.success, true);
+  if (!activeStart.success) return;
+  assert.ok(activeStart.state.targetingState);
+  assert.equal(activeStart.state.players[0].board[0]?.activeUsedThisTurn, false);
+  const activeDone = selectEffectTarget(activeStart.state, 'enemy');
+  assert.equal(activeDone.players[0].board[0]?.activeUsedThisTurn, true);
+
+  const championState = createInitialGameState();
+  championState.status = 'IN_PROGRESS'; championState.activePlayerId = 'player-1';
+  championState.players[0].currentGold = 5;
+  championState.players[1].board[0] = { ...card('champion-enemy'), boardSlot: 0 };
+  const champion = championState.players[0].champion!;
+  championState.players[0].champion = { ...champion, abilityCost: 2, ability: { ...champion.ability, effects: [targeted('DAMAGE')] } };
+  const championStart = useChampionAbility(championState, 'player-1');
+  assert.equal(championStart.success, true);
+  if (!championStart.success) return;
+  assert.equal(championStart.state.players[0].currentGold, 3);
+  const championDone = selectEffectTarget(championStart.state, 'champion-enemy');
+  assert.equal(championDone.players[0].currentGold, 3);
+  assert.equal(championDone.players[1].board[0]?.currentHealth, 1);
+});

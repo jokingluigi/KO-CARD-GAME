@@ -7,14 +7,17 @@ import { isBoardFull } from './board-position';
 import { enterField } from './enter-field';
 import { validateCurrentPlayer } from './turn-system';
 import { processChampionQuestEvents } from '../champions/quests';
+import { hasMandatoryPlayerChoice } from '../effects/effect-engine';
 
 export function playWrestlerFromHand(
   state: GameState,
   playerId: string,
   cardInstanceId: CardInstanceId,
   boardSlot: BoardSlot,
-  chosenTargetInstanceIds?: CardInstanceId[],
 ): ActionResult {
+  if (state.targetingState?.active) {
+    return actionFailure(state, 'TARGET_SELECTION_PENDING', '먼저 대상을 선택하세요.');
+  }
   const turnFailure = validateCurrentPlayer(state, playerId);
   if (turnFailure) {
     return turnFailure;
@@ -52,6 +55,21 @@ export function playWrestlerFromHand(
 
   if (player.currentGold < card.currentCost) {
     return actionFailure(state, 'NOT_ENOUGH_GOLD', '골드가 부족합니다.');
+  }
+  // Preflight against the post-entry board so SELF/other-ally effects see the
+  // wrestler being played, while leaving hand, gold and board untouched on failure.
+  const stagedCard = { ...card, boardSlot, enteredThisTurn: true, attacksUsedThisTurn: 0 };
+  const stagedState: GameState = {
+    ...state,
+    players: state.players.map((candidate) => candidate.id === playerId
+      ? { ...candidate, board: candidate.board.map((entry, index) => index === boardSlot ? stagedCard : entry) as typeof candidate.board }
+      : candidate),
+  };
+  const enteringEffects = card.abilities
+    .filter((ability) => ability.trigger === 'ENTER_FIELD')
+    .flatMap((ability) => ability.effects);
+  if (hasMandatoryPlayerChoice(stagedState, playerId, stagedCard, enteringEffects)) {
+    return actionFailure(state, 'NO_VALID_TARGET', '선택 가능한 대상이 없습니다.');
   }
 
   const paidState: GameState = {
@@ -94,7 +112,7 @@ export function playWrestlerFromHand(
       enterField(paidState, playerId, card, boardSlot, {
       type: 'PLAYER',
       playerId,
-      }, chosenTargetInstanceIds),
+      }),
     ),
   );
 }

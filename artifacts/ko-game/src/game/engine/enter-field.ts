@@ -2,7 +2,7 @@ import type { CardInstance } from '../cards/types';
 import type { EnterFieldEvent, EventSubject } from '../events/types';
 import type { GameState } from '../types/game-state';
 import type { BoardSlot } from './board-position';
-import { resolveTriggeredAbilities } from '../effects/effect-engine';
+import { appendEffectContinuation, resolveTriggeredAbilities } from '../effects/effect-engine';
 
 export function enterField(
   state: GameState,
@@ -66,6 +66,18 @@ export function enterField(
     'ENTER_FIELD',
     { boardSlot, chosenTargetInstanceIds },
   );
+  // POSITION is deferred after ENTER_FIELD rather than installed as a child.
+  if (afterEnter.targetingState?.active) {
+    const positionEffects = enteredCard.abilities
+      .filter((ability) => ability.trigger === 'POSITION' && ability.boardSlots.includes(boardSlot))
+      .flatMap((ability) => ability.effects);
+    if (!positionEffects.length) return afterEnter;
+    return appendEffectContinuation(afterEnter, {
+      active: true, playerId, sourceInstanceId: enteredCard.instanceId, sourceCard: enteredCard,
+      effects: positionEffects, effectIndex: 0, selectedTargetIds: [], lastTargetIds: [],
+      validTargetIds: [], minTargets: 0, maxTargets: 0, mandatory: true, cancelable: false,
+    });
+  }
   return resolveTriggeredAbilities(
     afterEnter,
     playerId,

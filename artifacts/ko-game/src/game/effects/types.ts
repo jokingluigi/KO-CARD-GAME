@@ -25,8 +25,11 @@ export type CardEffect =
         zone: 'BOARD' | 'HAND' | 'PLAYER';
         owner: 'SELF' | 'ENEMY';
         cardType?: 'WRESTLER';
-        selection: 'SELF' | 'PLAYER_CHOICE' | 'RANDOM' | 'SAME_TARGET';
+        selection: 'SELF' | 'PLAYER_CHOICE' | 'RANDOM' | 'SAME_TARGET' | 'ALL';
         count: number;
+        minTargets?: number;
+        maxTargets?: number;
+        optionalTarget?: boolean;
       };
       values?: { attack?: number; health?: number; amount?: number; keyword?: CardKeyword };
     };

@@ -1,8 +1,10 @@
 import type { GameEventType } from '../events/types';
+import type { CardEffect } from '../effects/types';
 
 export type ChampionEffect =
   | { type: 'GAIN_GOLD'; amount: number }
   | { type: 'HEAL_CHAMPION'; amount: number }
+  | Extract<CardEffect, { type: 'STRUCTURED' }>
   | {
       type: 'DIRECT_DEPLOY_CHAMPION_TOKEN';
       cardDefinitionId: string;
