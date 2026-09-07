@@ -13,6 +13,7 @@ export function playWrestlerFromHand(
   playerId: string,
   cardInstanceId: CardInstanceId,
   boardSlot: BoardSlot,
+  chosenTargetInstanceIds?: CardInstanceId[],
 ): ActionResult {
   const turnFailure = validateCurrentPlayer(state, playerId);
   if (turnFailure) {
@@ -93,7 +94,7 @@ export function playWrestlerFromHand(
       enterField(paidState, playerId, card, boardSlot, {
       type: 'PLAYER',
       playerId,
-      }),
+      }, chosenTargetInstanceIds),
     ),
   );
 }

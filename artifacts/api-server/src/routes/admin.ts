@@ -3,6 +3,7 @@ import { and, asc, eq, ilike, sql } from "drizzle-orm";
 import { cardsTable, db } from "@workspace/db";
 import { Router, type IRouter, type Request, type Response } from "express";
 import { CardImageStorage } from "../lib/object-storage";
+import { analyzeEffectText, isStructuredEffects } from "../lib/structured-effects";
 
 const router: IRouter = Router();
 const cardImageStorage = new CardImageStorage();
@@ -259,8 +260,7 @@ function parseCardInput(value: unknown): CardInput | null {
     typeof input.effectId === "string" && input.effectId.trim()
       ? input.effectId.trim()
       : null;
-  const inferredEffect = inferEffectFromText(text);
-  const effectId = explicitEffectId ?? inferredEffect.effectId;
+  const effectId = explicitEffectId;
   const imageAssetId =
     typeof input.imageAssetId === "string" && input.imageAssetId
       ? input.imageAssetId
@@ -292,6 +292,7 @@ function parseCardInput(value: unknown): CardInput | null {
     !input.effectConfig ||
     typeof input.effectConfig !== "object" ||
     Array.isArray(input.effectConfig)
+    || (effectId === "STRUCTURED_EFFECTS_V1" && !isStructuredEffects(input.effectConfig))
     || (imageAssetId === null) !== (imageUrl === null)
     || (imageAssetId !== null &&
       !imageAssetId.startsWith("/objects/uploads/card-images/"))
@@ -311,10 +312,7 @@ function parseCardInput(value: unknown): CardInput | null {
     isToken: input.isToken,
     isChampionToken: input.isChampionToken,
     effectId,
-    effectConfig:
-      explicitEffectId || Object.keys(input.effectConfig as object).length > 0
-        ? (input.effectConfig as Record<string, unknown>)
-        : inferredEffect.effectConfig,
+    effectConfig: input.effectConfig as Record<string, unknown>,
     imageAssetId,
     imageUrl: imageAssetId ? imageUrlFor(imageAssetId) : null,
     imageUploadToken,
@@ -325,36 +323,14 @@ function firstParam(value: unknown): string | undefined {
   return typeof value === "string" ? value : undefined;
 }
 
-function inferEffectFromText(text: string): {
-  effectId: string | null;
-  effectConfig: Record<string, unknown>;
-} {
-  const amountMatch = text.match(/(\d+)\s*(?:골드|공격력?|데미지|피해|만큼)/);
-  const amount = amountMatch ? Number(amountMatch[1]) : 1;
-  if (
-    /(?:등장\s*:|등장|출전|필드에 들어오)/.test(text) &&
-    /(?:상대 챔피언|상대 플레이어)/.test(text) &&
-    /(?:데미지|피해)/.test(text)
-  ) {
-    return {
-      effectId: "ENTER_FIELD_DAMAGE_OPPONENT_CHAMPION",
-      effectConfig: { amount },
-    };
+router.post("/effects/analyze", (request, response) => {
+  if (!requireAdmin(request, response)) return;
+  const text = request.body && typeof request.body === "object" ? (request.body as Record<string, unknown>).text : null;
+  if (typeof text !== "string" || text.length > 2000) {
+    response.status(400).json({ message: "효과 텍스트를 확인해 주세요." }); return;
   }
-  if (/액티브|활성화/.test(text) && /골드/.test(text)) {
-    return { effectId: "ACTIVE_GAIN_GOLD", effectConfig: { amount } };
-  }
-  if (/(?:등장\s*:|등장|출전|필드에 들어오)/.test(text) && /골드/.test(text)) {
-    return { effectId: "ENTER_FIELD_GAIN_GOLD", effectConfig: { amount } };
-  }
-  if (/퇴장\s*:|퇴장/.test(text) && /골드/.test(text)) {
-    return { effectId: "LEAVE_FIELD_GAIN_GOLD", effectConfig: { amount } };
-  }
-  if (/액티브|활성화/.test(text) && /공격/.test(text)) {
-    return { effectId: "ACTIVE_MODIFY_SELF_ATTACK", effectConfig: { amount } };
-  }
-  return { effectId: null, effectConfig: {} };
-}
+  response.json(analyzeEffectText(text));
+});
 
 router.post("/login", (request, response) => {
   const configuredUsername = process.env["ADMIN_USERNAME"];
@@ -541,6 +517,21 @@ router.get("/cards", async (request, response): Promise<void> => {
     .orderBy(asc(cardsTable.name));
 
   response.json({ cards });
+});
+
+router.get("/cards/:id/test", async (request, response): Promise<void> => {
+  if (!requireAdmin(request, response)) return;
+  const id = firstParam(request.params.id);
+  if (!id) {
+    response.status(400).json({ message: "카드 ID가 올바르지 않습니다." });
+    return;
+  }
+  const [card] = await db.select().from(cardsTable).where(eq(cardsTable.id, id)).limit(1);
+  if (!card || card.status === "DISABLED" || card.cardType !== "WRESTLER") {
+    response.status(404).json({ message: "테스트할 수 있는 선수를 찾을 수 없습니다." });
+    return;
+  }
+  response.json({ card });
 });
 
 router.post("/cards", async (request, response): Promise<void> => {

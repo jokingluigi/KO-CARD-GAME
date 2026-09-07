@@ -28,6 +28,7 @@ export interface CardDefinition {
 export interface CardInstance {
   instanceId: CardInstanceId;
   definitionId: CardDefinitionId;
+  cardType?: 'WRESTLER' | 'TECHNIQUE';
   currentCost: number;
   currentAttack: number;
   currentHealth: number;

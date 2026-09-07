@@ -1,7 +1,7 @@
 import type { CardAbility } from "../effects/types";
 import type { CardDefinition } from "./types";
 
-type PublishedCardRecord = {
+export type PublishedCardRecord = {
   id: string;
   name: string;
   cardType: "WRESTLER" | "TECHNIQUE";
@@ -14,7 +14,7 @@ type PublishedCardRecord = {
   isChampionToken: boolean;
   effectId: string | null;
   effectConfig: Record<string, unknown>;
-  status: "PUBLISHED";
+  status: "PUBLISHED" | "DRAFT";
   version: number;
   createdAt: string;
   updatedAt: string;
@@ -31,6 +31,27 @@ function abilitiesFor(
   effectId: string | null,
   config: Record<string, unknown>,
 ): CardAbility[] {
+  if (effectId === "STRUCTURED_EFFECTS_V1" && Array.isArray(config.effects)) {
+    const byTrigger = new Map<string, Extract<CardAbility, { trigger: "ENTER_FIELD" | "LEAVE_FIELD" | "ACTIVE" }>["effects"]>();
+    for (const raw of config.effects) {
+      if (!raw || typeof raw !== "object") continue;
+      const effect = raw as Record<string, unknown>;
+      const trigger = effect.trigger;
+      const action = effect.action;
+      const target = effect.target;
+      if (!["ENTER_FIELD", "LEAVE_FIELD", "ACTIVE"].includes(trigger as string) ||
+          !["BUFF", "DAMAGE", "SILENCE", "DESTROY", "ADD_GOLD"].includes(action as string) ||
+          !target || typeof target !== "object") continue;
+      const list = byTrigger.get(trigger as string) ?? [];
+      list.push({ type: "STRUCTURED", action: action as "BUFF" | "DAMAGE" | "SILENCE" | "DESTROY" | "ADD_GOLD", target: target as Extract<typeof list[number], { type: "STRUCTURED" }>["target"], values: effect.values as { attack?: number; health?: number; amount?: number } | undefined });
+      byTrigger.set(trigger as string, list);
+    }
+    return [...byTrigger.entries()].map(([trigger, effects]) =>
+      trigger === "LEAVE_FIELD"
+        ? { trigger: "LEAVE_FIELD" as const, reasons: ["RETIRE" as const], effects }
+        : { trigger: trigger as "ENTER_FIELD" | "ACTIVE", effects },
+    );
+  }
   if (effectId === "ACTIVE_GAIN_GOLD") {
     return [{ trigger: "ACTIVE", effects: [{ type: "GAIN_GOLD", amount: amount(config) }] }];
   }
@@ -70,7 +91,11 @@ export async function fetchPublishedWrestlerCards(): Promise<CardDefinition[]> {
         !card.isToken &&
         !card.isChampionToken,
     )
-    .map((card) => ({
+    .map(cardRecordToDefinition);
+}
+
+export function cardRecordToDefinition(card: PublishedCardRecord): CardDefinition {
+  return {
       id: card.id,
       name: card.name,
       cardType: card.cardType,
@@ -90,5 +115,5 @@ export async function fetchPublishedWrestlerCards(): Promise<CardDefinition[]> {
       effectConfig: card.effectConfig,
       createdAt: card.createdAt,
       updatedAt: card.updatedAt,
-    }));
+  };
 }

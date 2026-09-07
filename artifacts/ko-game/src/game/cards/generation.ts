@@ -24,6 +24,7 @@ export function generateCardInstance(
   return {
     instanceId: options.instanceId,
     definitionId: definition.id,
+    cardType: definition.cardType ?? 'WRESTLER',
     currentCost: definition.cost,
     currentAttack: definition.attack,
     currentHealth: definition.health,

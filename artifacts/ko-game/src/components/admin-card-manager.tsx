@@ -58,6 +58,12 @@ type CardFormValues = {
   effectId: string;
   effectConfig: string;
 };
+type EffectAnalysis = {
+  status: "success" | "partial" | "failure";
+  effects: Array<{ trigger: string; action: string; target: { zone: string; owner: string; selection: string; count: number }; values?: { attack?: number; health?: number; amount?: number } }>;
+  unsupportedSegments: string[];
+  summaries: string[];
+};
 
 const EMPTY_CARD: CardFormValues = {
   name: "",
@@ -131,6 +137,8 @@ export function AdminCardManager({
   const [imageUploadToken, setImageUploadToken] = useState<string | null>(null);
   const [localPreviewUrl, setLocalPreviewUrl] = useState<string | null>(null);
   const [isUploadingImage, setIsUploadingImage] = useState(false);
+  const [analysis, setAnalysis] = useState<EffectAnalysis | null>(null);
+  const [isAnalyzing, setIsAnalyzing] = useState(false);
   const imageInputRef = useRef<HTMLInputElement>(null);
   const form = useForm<CardFormValues>({ defaultValues: EMPTY_CARD });
   const preview = form.watch();
@@ -138,6 +146,7 @@ export function AdminCardManager({
   const loadCards = useCallback(async () => {
     setIsLoading(true);
     setError("");
+    setAnalysis(null);
     const params = new URLSearchParams();
     if (search.trim()) params.set("search", search.trim());
     if (cardType) params.set("cardType", cardType);
@@ -175,6 +184,7 @@ export function AdminCardManager({
     setImageUploadToken(null);
     setLocalPreviewUrl(null);
     setError("");
+    setAnalysis(null);
     setIsFormOpen(true);
   }
 
@@ -255,6 +265,27 @@ export function AdminCardManager({
     } finally {
       setBusyId(null);
     }
+  }
+
+  async function analyzeEffects() {
+    const text = form.getValues("text").trim();
+    if (!text) { setError("분석할 카드 효과 텍스트를 입력해 주세요."); return; }
+    setError(""); setIsAnalyzing(true);
+    try {
+      const response = await fetch(`${adminApiBase}/effects/analyze`, { method: "POST", credentials: "include", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ text }) });
+      if (response.status === 401) { onUnauthorized(); return; }
+      if (!response.ok) throw new Error(await responseMessage(response));
+      setAnalysis(await response.json() as EffectAnalysis);
+    } catch (analysisError) {
+      setError(analysisError instanceof Error ? analysisError.message : "효과를 분석하지 못했습니다.");
+    } finally { setIsAnalyzing(false); }
+  }
+
+  function applyAnalysis() {
+    if (!analysis || analysis.status !== "success") return;
+    form.setValue("effectId", "STRUCTURED_EFFECTS_V1", { shouldDirty: true });
+    form.setValue("effectConfig", JSON.stringify({ effects: analysis.effects }, null, 2), { shouldDirty: true });
+    setMessage("분석 결과를 적용했습니다. 카드 저장을 눌러 DRAFT에 저장하세요.");
   }
 
   function clearLocalPreview() {
@@ -545,13 +576,34 @@ export function AdminCardManager({
               <div className="grid grid-cols-3 gap-2">
                 {(["cost", "attack", "health"] as const).map((field) => <label key={field} className="space-y-1.5"><span className="text-xs font-bold text-neutral-400">{{ cost: "비용", attack: "공격력", health: "체력" }[field]}</span><input type="number" min={0} max={999} {...form.register(field, { required: true, valueAsNumber: true })} data-testid={`input-card-${field}`} className="w-full rounded border border-neutral-700 bg-neutral-900 px-2 py-2 outline-none focus:border-primary" /></label>)}
               </div>
-               <label className="space-y-1.5 md:col-span-2"><span className="text-xs font-bold text-neutral-400">카드 텍스트</span><textarea {...form.register("text", { onChange: () => { form.setValue("effectId", ""); form.setValue("effectConfig", "{}"); } })} rows={3} data-testid="input-card-text" className="w-full rounded border border-neutral-700 bg-neutral-900 px-3 py-2 outline-none focus:border-primary" /></label>
+                <label className="space-y-1.5 md:col-span-2"><span className="text-xs font-bold text-neutral-400">카드 효과 설명</span><textarea {...form.register("text", { onChange: () => { setAnalysis(null); form.setValue("effectId", ""); form.setValue("effectConfig", "{}"); } })} rows={3} data-testid="input-card-text" className="w-full rounded border border-neutral-700 bg-neutral-900 px-3 py-2 outline-none focus:border-primary" /></label>
+                <div className="space-y-3 md:col-span-2">
+                  <button type="button" onClick={() => void analyzeEffects()} disabled={isAnalyzing} data-testid="button-analyze-effects" className="rounded border border-primary px-4 py-2 text-sm font-bold text-primary disabled:opacity-40">{isAnalyzing ? "분석 중..." : "효과 분석"}</button>
+                  {analysis && <div className={`rounded border p-3 text-xs ${analysis.status === "success" ? "border-emerald-800 bg-emerald-950/30" : "border-amber-800 bg-amber-950/30"}`} data-testid="effect-analysis-result">
+                    <strong>{analysis.status === "success" ? "✓ 분석 성공" : analysis.status === "partial" ? "⚠ 부분 분석 — 적용할 수 없습니다." : "✗ 분석 실패 — 적용할 수 없습니다."}</strong>
+                    {analysis.effects.map((effect, index) => {
+                      const update = (patch: Partial<typeof effect>, targetPatch?: Partial<typeof effect.target>, valuesPatch?: Partial<NonNullable<typeof effect.values>>) => setAnalysis((current) => current ? { ...current, effects: current.effects.map((item, itemIndex) => itemIndex === index ? { ...item, ...patch, target: { ...item.target, ...targetPatch }, values: { ...item.values, ...valuesPatch } } : item) } : current);
+                      return <div key={index} className="mt-2 rounded bg-black/30 p-2">발동: {effect.trigger} · 행동: {effect.action}
+                        <div className="mt-2 grid gap-2 sm:grid-cols-4">
+                          <label>소유자<select value={effect.target.owner} onChange={(e) => update({}, { owner: e.target.value })} className="ml-1 bg-neutral-900"><option value="SELF">내</option><option value="ENEMY">적</option></select></label>
+                          <label>영역<select value={effect.target.zone} onChange={(e) => update({}, { zone: e.target.value })} className="ml-1 bg-neutral-900"><option value="BOARD">필드</option><option value="HAND">손패</option><option value="PLAYER">플레이어</option></select></label>
+                          <label>선택<select value={effect.target.selection} onChange={(e) => update({}, { selection: e.target.value })} className="ml-1 bg-neutral-900"><option value="SELF">자신</option><option value="PLAYER_CHOICE">직접 선택</option><option value="RANDOM">무작위</option></select></label>
+                          <label>수<input type="number" min="1" value={effect.target.count} onChange={(e) => update({}, { count: Math.max(1, Number(e.target.value) || 1) })} className="ml-1 w-12 bg-neutral-900" /></label>
+                          {(["attack", "health", "amount"] as const).map((key) => <label key={key}>{key}<input type="number" value={effect.values?.[key] ?? 0} onChange={(e) => update({}, undefined, { [key]: Number(e.target.value) || 0 })} className="ml-1 w-12 bg-neutral-900" /></label>)}
+                        </div>
+                      </div>;
+                    })}
+                    {analysis.unsupportedSegments.map((segment) => <div key={segment} className="mt-2 text-amber-300">지원하지 않음: {segment}</div>)}
+                    <div className="mt-3 flex gap-2"><button type="button" disabled={analysis.status !== "success"} onClick={applyAnalysis} data-testid="button-apply-analysis" className="rounded bg-primary px-3 py-1.5 font-bold text-black disabled:opacity-40">분석 결과 적용</button><button type="button" onClick={() => void analyzeEffects()} className="rounded border border-neutral-600 px-3 py-1.5">다시 분석</button><button type="button" onClick={() => setAnalysis(null)} className="rounded border border-neutral-600 px-3 py-1.5">취소</button></div>
+                    <details className="mt-2"><summary>고급 JSON 보기</summary><pre className="mt-1 overflow-auto text-[10px]">{JSON.stringify(analysis.effects, null, 2)}</pre></details>
+                  </div>}
+                </div>
                <fieldset className="space-y-2 md:col-span-2"><legend className="text-xs font-bold text-neutral-400">키워드</legend><div className="flex flex-wrap gap-2">{KEYWORDS.map((keyword) => <label key={keyword} className="flex items-center gap-2 rounded border border-neutral-800 bg-neutral-900 px-3 py-2 text-xs"><input type="checkbox" value={keyword} {...form.register("keywords")} data-testid={`input-keyword-${keyword}`} />{KEYWORD_LABELS[keyword]}</label>)}</div></fieldset>
               <label className="flex items-center gap-2 rounded border border-neutral-800 bg-neutral-900 p-3 text-sm"><input type="checkbox" {...form.register("isToken")} data-testid="input-card-token" /> 토큰 카드</label>
               <label className="flex items-center gap-2 rounded border border-neutral-800 bg-neutral-900 p-3 text-sm"><input type="checkbox" {...form.register("isChampionToken")} data-testid="input-card-champion-token" /> 챔피언 토큰</label>
                <div className="space-y-2 md:col-span-2">
                  <div className="rounded border border-blue-900/50 bg-blue-950/20 px-3 py-2 text-xs leading-relaxed text-blue-200">
-                   카드 텍스트만 입력하면 효과를 자동으로 적용합니다. 필드에 소환될 때는 <strong>“등장: 골드를 2 얻습니다.”</strong>, 체력이 다해 묘지로 갈 때는 <strong>“퇴장: 골드를 2 얻습니다.”</strong>처럼 입력하세요. 그 외 예: <strong>“액티브: 골드를 2 얻습니다.”</strong>, <strong>“액티브: 공격력을 2 올립니다.”</strong>
+                    효과 텍스트를 입력한 뒤 <strong>효과 분석</strong>을 누르고 결과를 확인해 적용하세요. 지원하지 않는 문장은 저장용 효과로 적용할 수 없습니다.
                  </div>
                  <details className="rounded border border-neutral-800 bg-neutral-900/50 p-3">
                    <summary className="cursor-pointer text-xs font-bold text-neutral-500">고급 효과 설정 (선택 사항)</summary>
@@ -563,6 +615,7 @@ export function AdminCardManager({
                </div>
               {error && <p role="alert" className="md:col-span-2 rounded border border-red-900 bg-red-950/50 px-3 py-2 text-xs font-bold text-red-300">{error}</p>}
               <div className="flex justify-end gap-2 border-t border-neutral-800 pt-4 md:col-span-2">
+                  {editingCard && editingCard.cardType === "WRESTLER" && editingCard.status !== "DISABLED" && <button type="button" onClick={() => { window.location.href = `${import.meta.env.BASE_URL}?testCardId=${encodeURIComponent(editingCard.id)}`; }} className="rounded border border-sky-700 px-4 py-2 text-sm font-bold text-sky-300" data-testid="button-test-card">테스트 게임에서 확인</button>}
                  <button type="button" onClick={closeForm} className="rounded border border-neutral-700 px-4 py-2 text-sm font-bold" data-testid="button-cancel-card">취소</button>
                  <button type="submit" disabled={busyId !== null || isUploadingImage} className="rounded bg-primary px-5 py-2 text-sm font-black text-black disabled:opacity-40" data-testid="button-save-card">{editingCard ? "수정 저장" : "DRAFT로 생성"}</button>
               </div>

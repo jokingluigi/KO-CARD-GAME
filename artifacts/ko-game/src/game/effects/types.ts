@@ -17,6 +17,18 @@ export type CardEffect =
   | {
       type: 'MODIFY_SELF_ATTACK';
       amount: number;
+    }
+  | {
+      type: 'STRUCTURED';
+      action: 'BUFF' | 'DAMAGE' | 'SILENCE' | 'DESTROY' | 'ADD_GOLD';
+      target: {
+        zone: 'BOARD' | 'HAND' | 'PLAYER';
+        owner: 'SELF' | 'ENEMY';
+        cardType?: 'WRESTLER';
+        selection: 'SELF' | 'PLAYER_CHOICE' | 'RANDOM';
+        count: number;
+      };
+      values?: { attack?: number; health?: number; amount?: number };
     };
 
 export type CardAbility =

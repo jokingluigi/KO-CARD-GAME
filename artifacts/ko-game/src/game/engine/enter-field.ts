@@ -13,6 +13,7 @@ export function enterField(
     type: 'CARD',
     cardInstanceId: card.instanceId,
   },
+  chosenTargetInstanceIds?: string[],
 ): GameState {
   const player = state.players.find((candidate) => candidate.id === playerId);
 
@@ -63,7 +64,7 @@ export function enterField(
     playerId,
     enteredCard,
     'ENTER_FIELD',
-    { boardSlot },
+    { boardSlot, chosenTargetInstanceIds },
   );
   return resolveTriggeredAbilities(
     afterEnter,

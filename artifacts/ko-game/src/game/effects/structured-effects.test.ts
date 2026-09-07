@@ -1,0 +1,172 @@
+import assert from 'node:assert/strict';
+import test from 'node:test';
+
+import { generateCard } from '../cards/generation';
+import type { CardDefinition, CardInstance } from '../cards/types';
+import { createInitialGameState } from '../engine/create-initial-game-state';
+import { enterField } from '../engine/enter-field';
+import type { CardEffect } from './types';
+
+function definition(id: string, effects: CardEffect[]): CardDefinition {
+  return {
+    id,
+    name: id,
+    cardType: 'WRESTLER',
+    cost: 1,
+    attack: 1,
+    health: 1,
+    rulesText: '',
+    isToken: false,
+    isChampionToken: false,
+    keywords: [],
+    abilities: [{ trigger: 'ENTER_FIELD', effects }],
+  };
+}
+
+function instance(id: string, effects: CardEffect[] = []): CardInstance {
+  return generateCard(definition(id, effects), {
+    instanceId: `${id}-instance`,
+    playerId: 'player-1',
+    source: { type: 'PLAYER', playerId: 'player-1' },
+    reason: 'TEST',
+  }).card;
+}
+
+function structured(
+  action: Extract<CardEffect, { type: 'STRUCTURED' }>['action'],
+  target: Extract<CardEffect, { type: 'STRUCTURED' }>['target'],
+  values?: Extract<CardEffect, { type: 'STRUCTURED' }>['values'],
+): CardEffect {
+  return { type: 'STRUCTURED', action, target, values };
+}
+
+test('등장 시 자신에게 +2/+2를 부여한다', () => {
+  const source = instance('self-buff', [
+    structured(
+      'BUFF',
+      { zone: 'BOARD', owner: 'SELF', selection: 'SELF', count: 1 },
+      { attack: 2, health: 2 },
+    ),
+  ]);
+  const result = enterField(createInitialGameState(), 'player-1', source, 0);
+  assert.equal(result.players[0].board[0]?.currentAttack, 3);
+  assert.equal(result.players[0].board[0]?.currentHealth, 3);
+  assert.equal(result.players[0].board[0]?.maxHealth, 3);
+});
+
+test('선택한 손패 선수 한 장에게 +1/+1을 부여한다', () => {
+  const source = instance('hand-choice-source', [
+    structured(
+      'BUFF',
+      {
+        zone: 'HAND',
+        owner: 'SELF',
+        cardType: 'WRESTLER',
+        selection: 'PLAYER_CHOICE',
+        count: 1,
+      },
+      { attack: 1, health: 1 },
+    ),
+  ]);
+  const target = instance('hand-choice-target');
+  const state = createInitialGameState();
+  state.players[0].hand = [target];
+
+  const result = enterField(
+    state,
+    'player-1',
+    source,
+    0,
+    undefined,
+    [target.instanceId],
+  );
+  assert.equal(result.players[0].hand[0]?.currentAttack, 2);
+  assert.equal(result.players[0].hand[0]?.currentHealth, 2);
+});
+
+test('선택한 적 선수에게 피해를 주고 체력이 소진되면 리타이어시킨다', () => {
+  const source = instance('damage-source', [
+    structured(
+      'DAMAGE',
+      {
+        zone: 'BOARD',
+        owner: 'ENEMY',
+        cardType: 'WRESTLER',
+        selection: 'PLAYER_CHOICE',
+        count: 1,
+      },
+      { amount: 2 },
+    ),
+  ]);
+  const target = instance('damage-target');
+  const state = createInitialGameState();
+  state.players[1].board[0] = { ...target, boardSlot: 0 };
+
+  const result = enterField(
+    state,
+    'player-1',
+    source,
+    0,
+    undefined,
+    [target.instanceId],
+  );
+  assert.equal(result.players[1].board[0], null);
+  assert.equal(result.players[1].graveyard.at(-1)?.instanceId, target.instanceId);
+  assert.ok(result.events.some((event) => event.type === 'DAMAGE_DEALT'));
+  assert.ok(result.events.some((event) => event.type === 'CARD_RETIRED'));
+});
+
+test('손패의 무작위 선수 카드 중 최대 3장에게 +1/+1을 부여한다', () => {
+  const source = instance('random-hand-source', [
+    structured(
+      'BUFF',
+      {
+        zone: 'HAND',
+        owner: 'SELF',
+        cardType: 'WRESTLER',
+        selection: 'RANDOM',
+        count: 3,
+      },
+      { attack: 1, health: 1 },
+    ),
+  ]);
+  const state = createInitialGameState();
+  state.players[0].hand = [0, 1, 2, 3].map((index) =>
+    instance(`random-target-${index}`),
+  );
+
+  const result = enterField(state, 'player-1', source, 0);
+  assert.equal(
+    result.players[0].hand.filter((card) => card.currentAttack === 2).length,
+    3,
+  );
+});
+
+test('선택한 적 선수를 침묵시킨 뒤 같은 대상을 파괴한다', () => {
+  const targetConfig = {
+    zone: 'BOARD' as const,
+    owner: 'ENEMY' as const,
+    cardType: 'WRESTLER' as const,
+    selection: 'PLAYER_CHOICE' as const,
+    count: 1,
+  };
+  const source = instance('silence-destroy-source', [
+    structured('SILENCE', targetConfig),
+    structured('DESTROY', targetConfig),
+  ]);
+  const target = instance('silence-destroy-target');
+  const state = createInitialGameState();
+  state.players[1].board[0] = { ...target, boardSlot: 0 };
+
+  const result = enterField(
+    state,
+    'player-1',
+    source,
+    0,
+    undefined,
+    [target.instanceId],
+  );
+  assert.equal(result.players[1].board[0], null);
+  assert.equal(result.players[1].graveyard.at(-1)?.isSilenced, true);
+  assert.ok(result.events.some((event) => event.type === 'CARD_DESTROYED'));
+});

@@ -24,6 +24,7 @@ import {
 interface GameStatePreviewProps {
   state: GameState;
   selectedCardId: string | null;
+  selectedEffectTargetId?: string | null;
   selectedAttackerId: string | null;
   playError: string | null;
   turnSecondsRemaining: number;
@@ -40,6 +41,7 @@ interface GameStatePreviewProps {
 export function GameStatePreview({
   state,
   selectedCardId,
+  selectedEffectTargetId,
   selectedAttackerId,
   playError,
   turnSecondsRemaining,
@@ -173,11 +175,11 @@ export function GameStatePreview({
                    selectable={false}
                    selected={false}
                    attackReady={false}
-                   targetable={!!selectedAttackerId && !!card}
+                    targetable={(!!selectedAttackerId || !!selectedCardId) && !!card}
                     activeReady={false}
                     activeUsable={false}
                     onUseActive={() => undefined}
-                   onClick={(id) => onAttackWrestler(id as string)}
+                    onClick={(id) => onAttackWrestler(id as string)}
                  />
                ))}
                 </div>
@@ -199,7 +201,7 @@ export function GameStatePreview({
                    isOpponent={false}
                    slotIndex={i as BoardSlotIndex}
                    selectable={!!selectedCardId && !card}
-                   selected={card?.instanceId === selectedAttackerId}
+                    selected={card?.instanceId === selectedAttackerId || card?.instanceId === selectedEffectTargetId}
                    attackReady={!!card && canSelectAsAttacker(state, me.id, card.instanceId)}
                    targetable={false}
                     activeReady={card?.instanceId === selectedAttackerId && canShowActive}

@@ -11,6 +11,7 @@ import {
   type BoardSlot,
   type GameState,
   fetchPublishedWrestlerCards,
+  cardRecordToDefinition,
   setRuntimeCardDefinitions,
 } from '@/game';
 import { GameStatePreview } from '@/components/game-state-preview';
@@ -18,6 +19,8 @@ import { GameStatePreview } from '@/components/game-state-preview';
 const TURN_TIME_LIMIT_SECONDS = 90;
 
 export default function Home() {
+  const testCardId = new URLSearchParams(window.location.search).get('testCardId');
+  const [isAdminTestMatch, setIsAdminTestMatch] = useState(false);
   const [gameState, setGameState] = useState<GameState>(() =>
     startGame(createInitialGameState()),
   );
@@ -25,6 +28,16 @@ export default function Home() {
   const [selectedAttackerId, setSelectedAttackerId] = useState<string | null>(
     null,
   );
+  const [selectedEffectTargetId, setSelectedEffectTargetId] = useState<string | null>(null);
+  const selectedHandCard = gameState.players[0].hand.find((card) => card.instanceId === selectedCardId);
+  const choiceEffect = selectedHandCard?.abilities
+    .flatMap((ability) => ability.effects)
+    .find(
+      (effect) =>
+        effect.type === "STRUCTURED" &&
+        effect.target.selection === "PLAYER_CHOICE",
+    );
+  const needsChoice = choiceEffect?.type === "STRUCTURED";
   const [playError, setPlayError] = useState<string | null>(null);
   const [turnSecondsRemaining, setTurnSecondsRemaining] = useState(
     TURN_TIME_LIMIT_SECONDS,
@@ -35,6 +48,28 @@ export default function Home() {
 
   useEffect(() => {
     let cancelled = false;
+    if (testCardId) {
+      fetch(`${import.meta.env.BASE_URL.replace(/\/$/, '')}/api/admin/cards/${encodeURIComponent(testCardId)}/test`, {
+        credentials: 'include',
+      })
+        .then(async (response) => {
+          if (!response.ok) throw new Error('관리자 테스트 카드를 불러오지 못했습니다.');
+          return (await response.json()) as { card: Parameters<typeof cardRecordToDefinition>[0] };
+        })
+        .then(({ card }) => {
+          if (cancelled) return;
+          const definition = cardRecordToDefinition(card);
+          setRuntimeCardDefinitions([definition]);
+          setGameState(startGame(createInitialGameState(undefined, [definition])));
+          setIsAdminTestMatch(true);
+          setSelectedCardId(null);
+          setSelectedAttackerId(null);
+        })
+        .catch(() => {
+          if (!cancelled) setPlayError('관리자 테스트 카드를 불러오지 못했습니다.');
+        });
+      return () => { cancelled = true; };
+    }
     fetchPublishedWrestlerCards()
       .then((definitions) => {
         if (cancelled || definitions.length === 0) return;
@@ -49,7 +84,7 @@ export default function Home() {
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [testCardId]);
 
   useEffect(() => {
     if (!playError) return;
@@ -114,7 +149,18 @@ export default function Home() {
   }
 
   function handleSelectCard(cardInstanceId: string) {
+    const isValidHandTarget =
+      choiceEffect?.type === "STRUCTURED" &&
+      choiceEffect.target.zone === "HAND" &&
+      choiceEffect.target.owner === "SELF" &&
+      cardInstanceId !== selectedCardId;
+    if (isValidHandTarget) {
+      setSelectedEffectTargetId(cardInstanceId);
+      setPlayError(null);
+      return;
+    }
     setSelectedAttackerId(null);
+    setSelectedEffectTargetId(null);
     setSelectedCardId((current) =>
       current === cardInstanceId ? null : cardInstanceId,
     );
@@ -122,7 +168,17 @@ export default function Home() {
   }
 
   function handleSelectAttacker(cardInstanceId: string) {
+    if (
+      choiceEffect?.type === "STRUCTURED" &&
+      choiceEffect.target.zone === "BOARD" &&
+      choiceEffect.target.owner === "SELF"
+    ) {
+      setSelectedEffectTargetId(cardInstanceId);
+      setPlayError(null);
+      return;
+    }
     setSelectedCardId(null);
+    setSelectedEffectTargetId(null);
     setSelectedAttackerId((current) =>
       current === cardInstanceId ? null : cardInstanceId,
     );
@@ -153,6 +209,18 @@ export default function Home() {
     setGameState(result.state);
     setSelectedAttackerId(null);
     setPlayError(null);
+  }
+  function handleSelectEffectTarget(targetCardInstanceId: string) {
+    if (
+      choiceEffect?.type === "STRUCTURED" &&
+      choiceEffect.target.zone === "BOARD" &&
+      choiceEffect.target.owner === "ENEMY"
+    ) {
+      setSelectedEffectTargetId(targetCardInstanceId);
+      setPlayError(null);
+      return;
+    }
+    handleAttackWrestler(targetCardInstanceId);
   }
 
   function handleAttackPlayer() {
@@ -185,12 +253,17 @@ export default function Home() {
       setPlayError('먼저 손패에서 선수를 선택하세요.');
       return;
     }
+    if (needsChoice && !selectedEffectTargetId) {
+      setPlayError("카드 효과의 대상을 선택하세요.");
+      return;
+    }
 
     const result = playWrestlerFromHand(
       gameState,
       gameState.players[0].id,
       selectedCardId,
       slot,
+      selectedEffectTargetId ? [selectedEffectTargetId] : undefined,
     );
     if (!result.success) {
       setPlayError(result.message);
@@ -199,6 +272,7 @@ export default function Home() {
 
     setGameState(result.state);
     setSelectedCardId(null);
+    setSelectedEffectTargetId(null);
     setPlayError(null);
   }
 
@@ -228,9 +302,12 @@ export default function Home() {
   }
 
   return (
+    <>
+      {isAdminTestMatch && <div className="fixed left-1/2 top-2 z-[100] -translate-x-1/2 rounded border border-amber-600 bg-amber-950 px-3 py-1 text-xs font-bold text-amber-200">관리자 DRAFT 테스트 게임 · 공개 카드에는 영향을 주지 않습니다.</div>}
     <GameStatePreview
       state={gameState}
       selectedCardId={selectedCardId}
+      selectedEffectTargetId={selectedEffectTargetId}
       selectedAttackerId={selectedAttackerId}
       playError={playError}
       turnSecondsRemaining={turnSecondsRemaining}
@@ -238,10 +315,11 @@ export default function Home() {
       onSelectCard={handleSelectCard}
       onSelectSlot={handleSelectSlot}
       onSelectAttacker={handleSelectAttacker}
-      onAttackWrestler={handleAttackWrestler}
+      onAttackWrestler={handleSelectEffectTarget}
       onAttackPlayer={handleAttackPlayer}
       onUseActive={handleUseActive}
       onUseChampionAbility={handleUseChampionAbility}
     />
+    </>
   );
 }

@@ -1,1 +1,2 @@
 - [TypeScript engine tests](typescript-engine-tests.md) — bundle focused KO tests with existing esbuild before running Node’s test runner.
+- [Structured card effects](structured-card-effects.md) — new admin effects are validated data; partial parses never apply and gameplay never reparses display text.

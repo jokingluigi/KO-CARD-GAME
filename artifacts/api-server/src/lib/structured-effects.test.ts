@@ -1,0 +1,117 @@
+import assert from "node:assert/strict";
+import test from "node:test";
+
+import { analyzeEffectText, isStructuredEffects } from "./structured-effects";
+
+test("필수 카드 문장을 안전한 구조화 효과로 분석한다", () => {
+  const cases = [
+    {
+      text: "등장: 자신에게 +2/+2를 부여합니다.",
+      actions: ["BUFF"],
+      target: { zone: "BOARD", owner: "SELF", selection: "SELF", count: 1 },
+      values: { attack: 2, health: 2 },
+    },
+    {
+      text: "등장: 손패의 선수 카드 한 장에게 +1/+1을 부여합니다.",
+      actions: ["BUFF"],
+      target: { zone: "HAND", owner: "SELF", cardType: "WRESTLER", selection: "PLAYER_CHOICE", count: 1 },
+      values: { attack: 1, health: 1 },
+    },
+    {
+      text: "등장: 적 선수 하나에게 피해 2를 줍니다.",
+      actions: ["DAMAGE"],
+      target: { zone: "BOARD", owner: "ENEMY", cardType: "WRESTLER", selection: "PLAYER_CHOICE", count: 1 },
+      values: { amount: 2 },
+    },
+    {
+      text: "등장: 손패의 무작위 선수 카드 3장에게 +1/+1을 부여합니다.",
+      actions: ["BUFF"],
+      target: { zone: "HAND", owner: "SELF", cardType: "WRESTLER", selection: "RANDOM", count: 3 },
+      values: { attack: 1, health: 1 },
+    },
+    {
+      text: "등장: 적 선수 하나를 침묵시키고 파괴합니다.",
+      actions: ["SILENCE", "DESTROY"],
+      target: { zone: "BOARD", owner: "ENEMY", cardType: "WRESTLER", selection: "PLAYER_CHOICE", count: 1 },
+      values: undefined,
+    },
+    {
+      text: "등장: 상대 챔피언에게 5 데미지를 줍니다.",
+      actions: ["DAMAGE"],
+      target: { zone: "PLAYER", owner: "ENEMY", selection: "SELF", count: 1 },
+      values: { amount: 5 },
+    },
+  ] as const;
+
+  for (const example of cases) {
+    const analysis = analyzeEffectText(example.text);
+    assert.equal(analysis.status, "success", example.text);
+    assert.deepEqual(
+      analysis.effects.map((effect) => effect.action),
+      example.actions,
+      example.text,
+    );
+    assert.deepEqual(analysis.effects[0]?.target, example.target, example.text);
+    assert.deepEqual(analysis.effects[0]?.values, example.values, example.text);
+    assert.equal(
+      isStructuredEffects({ effects: analysis.effects }),
+      true,
+      example.text,
+    );
+  }
+});
+
+test("지원하지 않는 문장은 적용 가능한 효과로 만들지 않는다", () => {
+  const failure = analyzeEffectText(
+    "등장: 상대 선수를 3턴 전 상태로 되돌립니다.",
+  );
+  assert.equal(failure.status, "failure");
+  assert.equal(failure.effects.length, 0);
+  assert.ok(failure.unsupportedSegments.length > 0);
+});
+
+test("지원 액션과 미지원 문장이 섞이면 부분 분석으로 표시한다", () => {
+  const partial = analyzeEffectText(
+    "등장: 적 선수 하나에게 피해 2를 주고 시간을 멈춥니다.",
+  );
+  assert.equal(partial.status, "partial");
+  assert.deepEqual(partial.effects.map((effect) => effect.action), ["DAMAGE"]);
+  assert.ok(partial.unsupportedSegments.length > 0);
+});
+
+test("알 수 없는 추가 문장을 성공으로 숨기지 않는다", () => {
+  const partial = analyzeEffectText(
+    "등장: 적 선수 하나에게 피해 2를 주고 노래를 부릅니다.",
+  );
+  assert.equal(partial.status, "partial");
+  assert.ok(partial.unsupportedSegments.some((segment) => segment.includes("노래")));
+});
+
+test("아직 실행할 수 없는 액티브 직접 선택은 적용을 차단한다", () => {
+  const partial = analyzeEffectText(
+    "액티브: 적 선수 하나에게 피해 2를 줍니다.",
+  );
+  assert.equal(partial.status, "partial");
+  assert.equal(
+    isStructuredEffects({ effects: partial.effects }),
+    false,
+  );
+});
+
+test("잘못 조합된 구조화 JSON을 거부한다", () => {
+  assert.equal(
+    isStructuredEffects({
+      effects: [{
+        trigger: "ENTER_FIELD",
+        action: "DESTROY",
+        target: {
+          zone: "PLAYER",
+          owner: "ENEMY",
+          selection: "SELF",
+          count: 1,
+        },
+      }],
+    }),
+    false,
+  );
+});
