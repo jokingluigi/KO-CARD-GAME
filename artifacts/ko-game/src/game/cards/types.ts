@@ -11,6 +11,8 @@ export interface CardDefinition {
   attack: number;
   health: number;
   rulesText: string;
+  imageAssetId?: string | null;
+  imageUrl?: string | null;
   isToken: boolean;
   isChampionToken: boolean;
   keywords: CardKeyword[];

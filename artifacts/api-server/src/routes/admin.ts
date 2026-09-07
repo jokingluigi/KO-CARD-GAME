@@ -2,8 +2,10 @@ import { createHmac, randomUUID, timingSafeEqual } from "node:crypto";
 import { and, asc, eq, ilike, sql } from "drizzle-orm";
 import { cardsTable, db } from "@workspace/db";
 import { Router, type IRouter, type Request, type Response } from "express";
+import { CardImageStorage } from "../lib/object-storage";
 
 const router: IRouter = Router();
+const cardImageStorage = new CardImageStorage();
 
 const ADMIN_SESSION_COOKIE = "ko_admin_session";
 const ADMIN_SESSION_TTL_SECONDS = 8 * 60 * 60;
@@ -36,7 +38,94 @@ type CardInput = {
   isChampionToken: boolean;
   effectId: string | null;
   effectConfig: Record<string, unknown>;
+  imageAssetId: string | null;
+  imageUrl: string | null;
+  imageUploadToken: string | null;
 };
+
+const CARD_IMAGE_TYPES = {
+  "image/png": ["png"],
+  "image/jpeg": ["jpg", "jpeg"],
+  "image/webp": ["webp"],
+} as const;
+const configuredMaxCardImageSize = Number(
+  process.env["MAX_CARD_IMAGE_SIZE"] ?? 5 * 1024 * 1024,
+);
+const MAX_CARD_IMAGE_SIZE =
+  Number.isFinite(configuredMaxCardImageSize) &&
+  configuredMaxCardImageSize > 0
+    ? Math.floor(configuredMaxCardImageSize)
+    : 5 * 1024 * 1024;
+
+function imageUrlFor(assetId: string) {
+  return `/api/storage${assetId}`;
+}
+
+const PENDING_IMAGE_TTL_MS = 2 * 60 * 60 * 1000;
+
+function signImageAsset(assetId: string, expiresAt: number) {
+  const secret = configuredSecret();
+  if (!secret) throw new Error("SESSION_SECRET is not configured");
+  const signature = createHmac("sha256", secret)
+    .update(`card-image:${assetId}:${expiresAt}`)
+    .digest("base64url");
+  return `${expiresAt}.${signature}`;
+}
+
+function validImageAssetToken(assetId: string, token: string | null) {
+  if (!token) return false;
+  const separator = token.indexOf(".");
+  const expiresAt = Number(token.slice(0, separator));
+  const signature = token.slice(separator + 1);
+  if (
+    separator < 1 ||
+    !Number.isSafeInteger(expiresAt) ||
+    expiresAt <= Date.now()
+  ) {
+    return false;
+  }
+  const expected = Buffer.from(signImageAsset(assetId, expiresAt).slice(separator + 1));
+  const actual = Buffer.from(signature);
+  return expected.length === actual.length && timingSafeEqual(expected, actual);
+}
+
+function imageContentType(assetId: string) {
+  const extension = assetId.toLowerCase().split(".").pop();
+  if (extension === "png") return "image/png";
+  if (extension === "jpg" || extension === "jpeg") return "image/jpeg";
+  if (extension === "webp") return "image/webp";
+  return null;
+}
+
+async function validNewImageAsset(assetId: string, token: string | null) {
+  const contentType = imageContentType(assetId);
+  return Boolean(
+    contentType &&
+      validImageAssetToken(assetId, token) &&
+      (await cardImageStorage.verifyImage(
+        assetId,
+        contentType,
+        MAX_CARD_IMAGE_SIZE,
+      )),
+  );
+}
+
+async function removeImageIfUnreferenced(assetId: string) {
+  const [reference] = await db
+    .select({ count: sql<number>`count(*)::int` })
+    .from(cardsTable)
+    .where(eq(cardsTable.imageAssetId, assetId));
+  if ((reference?.count ?? 0) === 0) {
+    await cardImageStorage.remove(assetId);
+  }
+}
+
+async function cleanupAbandonedImages() {
+  const stale = await cardImageStorage.staleUploads(
+    new Date(Date.now() - PENDING_IMAGE_TTL_MS),
+  );
+  await Promise.all(stale.map(removeImageIfUnreferenced));
+}
 
 router.use((request, response, next) => {
   delete request.headers["if-none-match"];
@@ -149,7 +238,7 @@ function clearSessionCookie(response: Response): void {
   );
 }
 
-function requireAdmin(request: Request, response: Response): boolean {
+export function requireAdmin(request: Request, response: Response): boolean {
   if (isValidSession(request)) {
     return true;
   }
@@ -170,6 +259,14 @@ function parseCardInput(value: unknown): CardInput | null {
     typeof input.effectId === "string" && input.effectId.trim()
       ? input.effectId.trim()
       : null;
+  const imageAssetId =
+    typeof input.imageAssetId === "string" && input.imageAssetId
+      ? input.imageAssetId
+      : null;
+  const imageUrl =
+    typeof input.imageUrl === "string" && input.imageUrl ? input.imageUrl : null;
+  const imageUploadToken =
+    typeof input.imageUploadToken === "string" ? input.imageUploadToken : null;
   const validInteger = (candidate: unknown) =>
     typeof candidate === "number" &&
     Number.isInteger(candidate) &&
@@ -193,6 +290,10 @@ function parseCardInput(value: unknown): CardInput | null {
     !input.effectConfig ||
     typeof input.effectConfig !== "object" ||
     Array.isArray(input.effectConfig)
+    || (imageAssetId === null) !== (imageUrl === null)
+    || (imageAssetId !== null &&
+      !imageAssetId.startsWith("/objects/uploads/card-images/"))
+    || (imageUrl !== null && !imageUrl.startsWith("/api/storage/objects/"))
   ) {
     return null;
   }
@@ -209,6 +310,9 @@ function parseCardInput(value: unknown): CardInput | null {
     isChampionToken: input.isChampionToken,
     effectId,
     effectConfig: input.effectConfig as Record<string, unknown>,
+    imageAssetId,
+    imageUrl: imageAssetId ? imageUrlFor(imageAssetId) : null,
+    imageUploadToken,
   };
 }
 
@@ -267,6 +371,109 @@ router.post("/logout", (_request, response) => {
   response.json({ authenticated: false });
 });
 
+router.post(
+  "/cards/images/upload-url",
+  async (request, response): Promise<void> => {
+    if (!requireAdmin(request, response)) return;
+    void cleanupAbandonedImages().catch((error) => {
+      request.log.warn({ err: error }, "Failed to clean abandoned card images");
+    });
+    const body =
+      request.body && typeof request.body === "object"
+        ? (request.body as Record<string, unknown>)
+        : {};
+    const name = typeof body.name === "string" ? body.name : "";
+    const contentType =
+      typeof body.contentType === "string" ? body.contentType : "";
+    const size = typeof body.size === "number" ? body.size : 0;
+    const extension = name.toLowerCase().split(".").pop() ?? "";
+    const validExtensions =
+      CARD_IMAGE_TYPES[contentType as keyof typeof CARD_IMAGE_TYPES];
+    if (
+      !validExtensions ||
+      !(validExtensions as readonly string[]).includes(extension) ||
+      !Number.isInteger(size) ||
+      size <= 0 ||
+      size > MAX_CARD_IMAGE_SIZE
+    ) {
+      response.status(400).json({
+        message: `PNG, JPG, JPEG, WEBP 파일만 업로드할 수 있으며 최대 크기는 ${Math.floor(MAX_CARD_IMAGE_SIZE / 1024 / 1024)}MB입니다.`,
+      });
+      return;
+    }
+    const upload = await cardImageStorage.createUpload(extension);
+    response.json({
+      ...upload,
+      maxSize: MAX_CARD_IMAGE_SIZE,
+      contentType,
+    });
+  },
+);
+
+router.post(
+  "/cards/images/complete",
+  async (request, response): Promise<void> => {
+    if (!requireAdmin(request, response)) return;
+    const body =
+      request.body && typeof request.body === "object"
+        ? (request.body as Record<string, unknown>)
+        : {};
+    const objectPath =
+      typeof body.objectPath === "string" ? body.objectPath : "";
+    const contentType =
+      typeof body.contentType === "string" ? body.contentType : "";
+    if (
+      !objectPath.startsWith("/objects/uploads/card-images/") ||
+      !(contentType in CARD_IMAGE_TYPES)
+    ) {
+      response.status(400).json({ message: "이미지 정보가 올바르지 않습니다." });
+      return;
+    }
+    const valid = await cardImageStorage.verifyImage(
+      objectPath,
+      contentType,
+      MAX_CARD_IMAGE_SIZE,
+    );
+    if (!valid) {
+      await cardImageStorage.remove(objectPath);
+      response.status(400).json({ message: "이미지 파일 형식을 확인할 수 없습니다." });
+      return;
+    }
+    response.json({
+      imageAssetId: objectPath,
+      imageUrl: `/api/storage${objectPath}`,
+      imageUploadToken: signImageAsset(
+        objectPath,
+        Date.now() + PENDING_IMAGE_TTL_MS,
+      ),
+    });
+  },
+);
+
+router.post(
+  "/cards/images/discard",
+  async (request, response): Promise<void> => {
+    if (!requireAdmin(request, response)) return;
+    const body =
+      request.body && typeof request.body === "object"
+        ? (request.body as Record<string, unknown>)
+        : {};
+    const imageAssetId =
+      typeof body.imageAssetId === "string" ? body.imageAssetId : "";
+    const imageUploadToken =
+      typeof body.imageUploadToken === "string" ? body.imageUploadToken : null;
+    if (
+      !imageAssetId.startsWith("/objects/uploads/card-images/") ||
+      !validImageAssetToken(imageAssetId, imageUploadToken)
+    ) {
+      response.status(400).json({ message: "이미지 정보가 올바르지 않습니다." });
+      return;
+    }
+    await removeImageIfUnreferenced(imageAssetId);
+    response.status(204).end();
+  },
+);
+
 router.get("/cards", async (request, response): Promise<void> => {
   if (!requireAdmin(request, response)) return;
 
@@ -308,12 +515,20 @@ router.post("/cards", async (request, response): Promise<void> => {
     response.status(400).json({ message: "카드 입력값을 확인해 주세요." });
     return;
   }
+  if (
+    input.imageAssetId &&
+    !(await validNewImageAsset(input.imageAssetId, input.imageUploadToken))
+  ) {
+    response.status(400).json({ message: "검증된 이미지 업로드 정보가 필요합니다." });
+    return;
+  }
+  const { imageUploadToken: _imageUploadToken, ...cardValues } = input;
 
   const [card] = await db
     .insert(cardsTable)
     .values({
       id: randomUUID(),
-      ...input,
+      ...cardValues,
       status: "DRAFT",
       version: 1,
     })
@@ -332,19 +547,37 @@ router.patch("/cards/:id", async (request, response): Promise<void> => {
     return;
   }
 
+  const [existing] = await db
+    .select()
+    .from(cardsTable)
+    .where(eq(cardsTable.id, id))
+    .limit(1);
+  if (!existing) {
+    response.status(404).json({ message: "카드를 찾을 수 없습니다." });
+    return;
+  }
+  if (
+    input.imageAssetId &&
+    input.imageAssetId !== existing.imageAssetId &&
+    !(await validNewImageAsset(input.imageAssetId, input.imageUploadToken))
+  ) {
+    response.status(400).json({ message: "검증된 이미지 업로드 정보가 필요합니다." });
+    return;
+  }
+  const { imageUploadToken: _imageUploadToken, ...cardValues } = input;
+
   const [card] = await db
     .update(cardsTable)
     .set({
-      ...input,
+      ...cardValues,
       version: sql`${cardsTable.version} + 1`,
       updatedAt: new Date(),
     })
     .where(eq(cardsTable.id, id))
     .returning();
 
-  if (!card) {
-    response.status(404).json({ message: "카드를 찾을 수 없습니다." });
-    return;
+  if (existing.imageAssetId && existing.imageAssetId !== input.imageAssetId) {
+    await removeImageIfUnreferenced(existing.imageAssetId);
   }
 
   response.json({ card });

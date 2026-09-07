@@ -27,6 +27,8 @@ export const cardsTable = pgTable("cards", {
     .$type<Record<string, unknown>>()
     .notNull()
     .default(sql`'{}'::jsonb`),
+  imageAssetId: text("image_asset_id"),
+  imageUrl: text("image_url"),
   status: text("status").notNull().default("DRAFT"),
   version: integer("version").notNull().default(1),
   createdAt: timestamp("created_at", { withTimezone: true })

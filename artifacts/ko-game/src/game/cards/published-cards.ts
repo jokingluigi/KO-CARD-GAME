@@ -18,6 +18,8 @@ type PublishedCardRecord = {
   version: number;
   createdAt: string;
   updatedAt: string;
+  imageAssetId: string | null;
+  imageUrl: string | null;
 };
 
 function amount(config: Record<string, unknown>): number {
@@ -63,6 +65,8 @@ export async function fetchPublishedWrestlerCards(): Promise<CardDefinition[]> {
       attack: card.attack,
       health: card.health,
       rulesText: card.text,
+      imageAssetId: card.imageAssetId,
+      imageUrl: card.imageUrl,
       isToken: card.isToken,
       isChampionToken: card.isChampionToken,
       keywords: card.keywords,

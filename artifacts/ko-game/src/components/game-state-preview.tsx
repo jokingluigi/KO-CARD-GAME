@@ -1,4 +1,5 @@
 import React from 'react';
+import { CardArtwork } from './card-artwork';
 import {
   getCardDefinition,
   getActiveAbility,
@@ -405,9 +406,11 @@ function HandCard({
        </div>
        
        <div className="flex flex-1 flex-col justify-between overflow-hidden bg-neutral-950">
-         <div className="flex flex-1 items-center justify-center opacity-30">
-            <span className="transform -rotate-12 font-display text-[8px] tracking-wider text-neutral-500 md:text-[10px]">이미지 없음</span>
-         </div>
+          <CardArtwork
+            src={def?.imageUrl}
+            alt={def?.name ?? '카드 이미지'}
+            className="min-h-0 w-full flex-1"
+          />
          <div className="h-10 border-t border-neutral-800 bg-neutral-900/80 p-1 text-[7px] leading-tight text-neutral-300 md:h-16 md:p-1.5 md:text-[9px]">
            <span className="line-clamp-3">{def?.rulesText || '효과 없음'}</span>
          </div>
@@ -514,12 +517,14 @@ function BoardSlot({
        
        <div className="relative flex w-full flex-1 items-center justify-center overflow-hidden rounded-b-sm bg-neutral-950">
          <div className="absolute inset-0 bg-gradient-to-t from-black/80 to-transparent"></div>
-          <div className="flex h-full w-full flex-col items-center justify-center gap-1 px-1">
-            <span className="rotate-[-10deg] font-display text-[9px] font-bold text-neutral-800 md:text-xs">선수</span>
-            <span className="line-clamp-3 text-center text-[7px] leading-tight text-neutral-500 md:text-[9px]">
-              {def?.rulesText || '효과 없음'}
-            </span>
-          </div>
+          <CardArtwork
+            src={def?.imageUrl}
+            alt={def?.name ?? '카드 이미지'}
+            className="h-full w-full"
+          />
+          <span className="absolute bottom-1 left-1 right-1 line-clamp-3 text-center text-[7px] leading-tight text-neutral-300 md:text-[9px]">
+            {def?.rulesText || '효과 없음'}
+          </span>
          
          {isDead && (
            <div className="absolute inset-0 z-10 flex items-center justify-center bg-red-950/80">
