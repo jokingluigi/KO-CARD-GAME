@@ -401,16 +401,40 @@ export function AdminCardManager({
     setError("");
     setIsGeneratingPrompt(true);
     try {
-      const mechanicRequest = createdMechanicRequest ?? await createMechanicRequest();
-      if (!mechanicRequest) return;
-      const response = await fetch(`${adminApiBase}/mechanic-requests/${mechanicRequest.id}/replit-prompt`, {
-        method: "POST", credentials: "include",
-      });
-      if (response.status === 401) { onUnauthorized(); return; }
-      if (!response.ok) throw new Error(await responseMessage(response));
-      const body = await response.json() as { prompt: string; analysis: EffectAnalysis };
-      setAnalysis(body.analysis);
-      setReplitPrompt(body.prompt);
+      const originalCardText = form.getValues("text").trim();
+      const supportedEffects = analysis.effects.length
+        ? analysis.effects.map((effect, index) => `${index + 1}. ${JSON.stringify(effect)}`).join("\n")
+        : "- 없음";
+      const supportedSummary = analysis.summaries.length
+        ? analysis.summaries.map((summary) => `- ${summary}`).join("\n")
+        : "- 없음";
+      const unsupportedParts = analysis.unsupportedSegments.length
+        ? analysis.unsupportedSegments.map((part) => `- ${part}`).join("\n")
+        : "- 없음";
+      const prompt = `# KO 카드 효과 메커니즘 수정 요청
+
+## 원본 카드 효과
+${originalCardText}
+
+## 이미 지원되는 Effect
+${supportedSummary}
+
+구조화된 지원 효과:
+${supportedEffects}
+
+## 지원되지 않는 부분
+${unsupportedParts}
+
+## 구현 지침
+- 먼저 현재 KO Effect Registry와 기존 Effect Library를 조사하고, 이미 지원되는 Trigger/Action/Target/Condition을 재사용하세요.
+- 기존 조합으로 표현할 수 없는 부족한 기능만 다른 카드에도 재사용 가능한 범용 Effect로 구현하세요.
+- 특정 카드 이름이나 이 카드 문장만을 위한 하드코딩 분기를 추가하지 마세요.
+- 카드 관리자, Structured Effect Analyzer, Effect Registry의 관련 파일만 최소한으로 수정하세요.
+- 게임 엔진의 기존 규칙, 카드 저장 흐름, Champion, 전투, 턴 시스템은 변경하지 마세요.
+- TypeScript 검사와 관련 테스트를 실행하고 기존 테스트가 계속 통과하는지 확인하세요.
+- 부분적으로만 해석된 효과를 자동 적용하지 말고, 구조화된 데이터로 안전하게 검증하세요.
+`;
+      setReplitPrompt(prompt);
       setMessage("Replit Agent에 붙여넣을 수정 프롬프트를 만들었습니다.");
     } catch (promptError) {
       setError(promptError instanceof Error ? promptError.message : "수정 프롬프트를 만들지 못했습니다.");
@@ -446,14 +470,29 @@ export function AdminCardManager({
   async function reanalyzeMechanicCompletion() {
     setError(""); setIsCompleting(true);
     try {
-      const mechanicRequest = createdMechanicRequest ?? await createMechanicRequest();
-      if (!mechanicRequest) return;
-      const response = await fetch(`${adminApiBase}/mechanic-requests/${mechanicRequest.id}/reanalyze`, { method: "POST", credentials: "include" });
+      const text = form.getValues("text").trim();
+      if (!text) {
+        setError("다시 분석할 카드 효과 텍스트를 입력해 주세요.");
+        return;
+      }
+      const response = await fetch(`${adminApiBase}/effects/analyze`, {
+        method: "POST",
+        credentials: "include",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ text }),
+      });
       if (response.status === 401) { onUnauthorized(); return; }
       if (!response.ok) throw new Error(await responseMessage(response));
-      const body = await response.json() as { validation: CompletionValidation };
-      setCompletion(body.validation); setAnalysis(body.validation.analysis);
-      if (body.validation.status !== "recognized") setReplitPrompt("");
+      const nextAnalysis = await response.json() as EffectAnalysis;
+      setAnalysis(nextAnalysis);
+      setCompletion(null);
+      if (nextAnalysis.outcome === "supported") {
+        setReplitPrompt("");
+        setMessage("✓ 효과 구현 가능. 최신 Effect Library 기준으로 다시 분석했습니다.");
+      } else {
+        setReplitPrompt("");
+        setMessage("아직 지원되지 않는 부분이 있어 새 분석 결과를 표시했습니다.");
+      }
     } catch (completionError) {
       setError(completionError instanceof Error ? completionError.message : "완료 검증을 수행하지 못했습니다.");
     } finally { setIsCompleting(false); }

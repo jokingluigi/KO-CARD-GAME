@@ -105,6 +105,17 @@ export function analyzeEffectText(input: string): Analysis {
   }
   const unsupportedMechanic = /(서로\s*)?(무작위로\s*)?(섞|재배치|교환)|시간을?\s*멈(?:추|춥)|전\s*상태로\s*되돌/;
   const mechanicMatch = text.match(unsupportedMechanic);
+  const semanticUnsupported =
+    /(무작위|랜덤|서로|섞|재배치|교환|값을?\s*(?:섞|바꾸)|복사|변환)/.test(text);
+  const mechanicRequired = Boolean(mechanicMatch || semanticUnsupported);
+  const unsupportedDescription =
+    /손패/.test(text) && /공격력/.test(text) && /(섞|무작위|랜덤)/.test(text)
+      ? "손패 여러 카드의 공격력 값을 서로 섞는 기능"
+      : /시간을?\s*멈/.test(text)
+        ? "게임 시간이나 턴 진행을 멈추는 기능"
+        : /전\s*상태로\s*되돌/.test(text)
+          ? "게임 상태를 이전 상태로 되돌리는 기능"
+          : mechanicMatch?.[0] ?? "현재 Effect Library에 없는 동작";
   const needMatch = text.match(/^(?:조건|NEED)\s*:\s*(.+?)\s+(?=(?:등장|MAGIC)\s*[:：])/i);
   const analyzableText = needMatch ? text.replace(/^(?:조건|NEED)\s*:\s*.+?\s+(?=(?:등장|MAGIC)\s*[:：])/i, "") : text;
   const triggerEntry = aliases.trigger.find(([trigger, pattern]) =>
@@ -160,10 +171,33 @@ export function analyzeEffectText(input: string): Analysis {
   remainder = remainder.replace(/선택한|모든\s*캐릭터(?:에게|을|를)?|(?:적|상대)\s*(?:챔피언|플레이어)(?:에게|을|를)?|(?:내|자신의)\s*챔피언(?:에게|을|를)?|(?:적|상대)\s*선수(?:\s*(?:\d+\s*장|하나|한\s*장))?(?:에게|을|를)?|(?:아군|내)\s*선수(?:\s*(?:\d+\s*장|하나|한\s*장))?(?:에게|을|를)?|(?:적|상대)\s*캐릭터(?:\s*(?:\d+\s*장|하나|한\s*장))?(?:에게|을|를)?|(?:아군|내)\s*캐릭터(?:\s*(?:\d+\s*장|하나|한\s*장))?(?:에게|을|를)?|손패의\s*(?:무작위\s*)?선수(?:\s*카드)?(?:\s*(?:\d+\s*장|하나|한\s*장))?(?:에게|을|를|의)?|(?:자신|이\s*카드)(?:에게|을|를)?|(?:카드\s*)?(?:\d+\s*장|한\s*장)|선수(?:\s*카드)?(?:을|를)?|\d+\s*턴\s*동안|(?:에게|을|를|의|에)|(?:그리고|그\s*후|이후|하고|한\s*뒤|한\s*후|주고)|\s+/g, "");
   // Action endings remain after matcher only for Korean conjugations.
    remainder = remainder.replace(/(합니다|시키고|시킵니다|부여|획득|얻음|얻습니다|줍니다|준다|주|드로우|뽑습니다|뽑기|포획|제거|소환|생성|해방)/g, "");
-  const unsupportedSegments = [...(mechanicMatch ? [mechanicMatch[0]] : []), ...(remainder.replace(unsupportedMechanic, "").trim() ? [remainder.replace(unsupportedMechanic, "").trim()] : [])];
+  const remainderUnsupported = remainder.replace(unsupportedMechanic, "").trim();
+  const unsupportedSegments = [
+    ...(mechanicRequired ? [unsupportedDescription] : []),
+    ...(!mechanicRequired && remainderUnsupported ? [remainderUnsupported] : []),
+  ];
   if (trigger === "ACTIVE" && effects.some((item) => item.target?.selection === "PLAYER_CHOICE")) unsupportedSegments.push("ACTIVE Trigger Registry는 직접 대상 선택을 아직 지원하지 않습니다.");
-  const status = mechanicMatch || unsupportedSegments.length ? effects.length || mechanicMatch ? "partial" : "failure" : "success";
-  return { status, outcome: mechanicMatch ? "mechanism_required" : status === "success" ? "supported" : "analysis_failure", effects, keywords: [], unsupportedSegments, summaries: [...effects.map((item) => `${item.trigger === "ENTER_FIELD" ? "등장" : item.trigger} · ${item.action}${item.values?.amount !== undefined ? ` · ${item.values.amount}` : ""}${item.values?.keyword ? ` · ${item.values.keyword}` : ""}`), ...(mechanicMatch ? ["새 메커니즘 필요 · 기존 Effect Library에 해당 동작이 없습니다."] : [])], ...(status === "success" ? {} : { reason: mechanicMatch ? "인식된 대상/의도는 있지만 값을 서로 섞거나 게임 시간을 멈추거나 되돌리는 범용 Effect는 현재 지원되지 않습니다. 부분 효과는 적용되지 않습니다." : "문장의 일부를 효과로 해석하지 못했습니다. 표현을 더 구체적으로 입력해 주세요." }) };
+  const status = mechanicRequired || unsupportedSegments.length
+    ? effects.length || mechanicRequired ? "partial" : "failure"
+    : "success";
+  return {
+    status,
+    outcome: mechanicRequired ? "mechanism_required" : status === "success" ? "supported" : "analysis_failure",
+    effects,
+    keywords: [],
+    unsupportedSegments,
+    summaries: [
+      ...effects.map((item) => `${item.trigger === "ENTER_FIELD" ? "등장" : item.trigger} · ${item.action}${item.values?.amount !== undefined ? ` · ${item.values.amount}` : ""}${item.values?.keyword ? ` · ${item.values.keyword}` : ""}`),
+      ...(mechanicRequired ? ["새 메커니즘 필요 · 기존 Effect Library에 해당 동작이 없습니다."] : []),
+    ],
+    ...(status === "success"
+      ? {}
+      : {
+          reason: mechanicRequired
+            ? "인식된 대상/의도는 있지만 현재 Effect Library에 해당 범용 동작이 없습니다. 특정 카드 전용 구현 대신 재사용 가능한 메커니즘이 필요합니다."
+            : "문장의 일부를 효과로 해석하지 못했습니다. 표현을 더 구체적으로 입력해 주세요.",
+        }),
+  };
 }
 
 export function isStructuredEffects(value: unknown): value is { effects: StructuredEffect[] } {
