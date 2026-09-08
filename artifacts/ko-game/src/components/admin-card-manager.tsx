@@ -12,6 +12,7 @@ import {
   X,
 } from "lucide-react";
 import { CardArtwork } from "./card-artwork";
+import { useToast } from "../hooks/use-toast";
 
 const adminApiBase = `${import.meta.env.BASE_URL.replace(/\/$/, "")}/api/admin`;
 
@@ -137,6 +138,7 @@ export function AdminCardManager({
 }: {
   onUnauthorized: () => void;
 }) {
+  const { toast } = useToast();
   const [cards, setCards] = useState<CardRecord[]>([]);
   const [search, setSearch] = useState("");
   const [cardType, setCardType] = useState("");
@@ -160,6 +162,8 @@ export function AdminCardManager({
   const [mechanicRequests, setMechanicRequests] = useState<MechanicRequest[]>([]);
   const [createdMechanicRequest, setCreatedMechanicRequest] = useState<MechanicRequest | null>(null);
   const [isCreatingMechanicRequest, setIsCreatingMechanicRequest] = useState(false);
+  const [replitPrompt, setReplitPrompt] = useState("");
+  const [isGeneratingPrompt, setIsGeneratingPrompt] = useState(false);
   const imageInputRef = useRef<HTMLInputElement>(null);
   const form = useForm<CardFormValues>({ defaultValues: EMPTY_CARD });
   const preview = form.watch();
@@ -238,6 +242,7 @@ export function AdminCardManager({
     setError("");
     setAnalysis(null);
     setCreatedMechanicRequest(null);
+    setReplitPrompt("");
     setIsFormOpen(true);
   }
 
@@ -262,6 +267,7 @@ export function AdminCardManager({
     setLocalPreviewUrl(null);
     setError("");
     setCreatedMechanicRequest(null);
+    setReplitPrompt("");
     setIsFormOpen(true);
   }
 
@@ -335,11 +341,11 @@ export function AdminCardManager({
     } finally { setIsAnalyzing(false); }
   }
 
-  async function createMechanicRequest() {
+  async function createMechanicRequest(): Promise<MechanicRequest | null> {
     const originalCardText = form.getValues("text").trim();
     if (!analysis || analysis.outcome !== "mechanism_required" || !originalCardText) {
       setError("새 메커니즘이 필요한 분석 결과가 있어야 합니다.");
-      return;
+      return null;
     }
     setError("");
     setIsCreatingMechanicRequest(true);
@@ -350,16 +356,54 @@ export function AdminCardManager({
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ originalCardText }),
       });
-      if (response.status === 401) { onUnauthorized(); return; }
-      if (!response.ok) throw new Error(await responseMessage(response));
-      const body = await response.json() as { mechanicRequest: MechanicRequest };
-      setCreatedMechanicRequest(body.mechanicRequest);
-      setMechanicRequests((current) => [body.mechanicRequest, ...current]);
-      setMessage("새 메커니즘 요청을 PENDING 상태로 만들었습니다. 아직 코드 생성은 실행되지 않습니다.");
+      if (response.status === 401) { onUnauthorized(); return null; }
+      if (!response.ok && response.status !== 409) throw new Error(await responseMessage(response));
+      const body = await response.json() as { mechanicRequest?: MechanicRequest; message?: string };
+      const mechanicRequest = body.mechanicRequest;
+      if (!mechanicRequest) throw new Error(body.message ?? "메커니즘 요청을 만들지 못했습니다.");
+      setCreatedMechanicRequest(mechanicRequest);
+      setMechanicRequests((current) => current.some((item) => item.id === mechanicRequest.id) ? current : [mechanicRequest, ...current]);
+      return mechanicRequest;
     } catch (requestError) {
       setError(requestError instanceof Error ? requestError.message : "메커니즘 요청을 만들지 못했습니다.");
+      return null;
     } finally {
       setIsCreatingMechanicRequest(false);
+    }
+  }
+
+  async function generateReplitPrompt() {
+    if (!analysis || analysis.outcome !== "mechanism_required") return;
+    setError("");
+    setIsGeneratingPrompt(true);
+    try {
+      const mechanicRequest = createdMechanicRequest ?? await createMechanicRequest();
+      if (!mechanicRequest) return;
+      const response = await fetch(`${adminApiBase}/mechanic-requests/${mechanicRequest.id}/replit-prompt`, {
+        method: "POST", credentials: "include",
+      });
+      if (response.status === 401) { onUnauthorized(); return; }
+      if (!response.ok) throw new Error(await responseMessage(response));
+      const body = await response.json() as { prompt: string; analysis: EffectAnalysis };
+      setAnalysis(body.analysis);
+      setReplitPrompt(body.prompt);
+      setMessage("Replit Agent에 붙여넣을 수정 프롬프트를 만들었습니다.");
+    } catch (promptError) {
+      setError(promptError instanceof Error ? promptError.message : "수정 프롬프트를 만들지 못했습니다.");
+    } finally {
+      setIsGeneratingPrompt(false);
+    }
+  }
+
+  async function copyReplitPrompt() {
+    try {
+      await navigator.clipboard.writeText(replitPrompt);
+      toast({ title: "Replit Agent용 프롬프트를 복사했습니다." });
+    } catch {
+      toast({
+        variant: "destructive",
+        title: "프롬프트를 복사하지 못했습니다.",
+      });
     }
   }
 
@@ -690,7 +734,7 @@ export function AdminCardManager({
               <div className="grid grid-cols-3 gap-2">
                 {(["cost", "attack", "health"] as const).map((field) => <label key={field} className="space-y-1.5"><span className="text-xs font-bold text-neutral-400">{{ cost: "비용", attack: "공격력", health: "체력" }[field]}</span><input type="number" min={0} max={999} {...form.register(field, { required: true, valueAsNumber: true })} data-testid={`input-card-${field}`} className="w-full rounded border border-neutral-700 bg-neutral-900 px-2 py-2 outline-none focus:border-primary" /></label>)}
               </div>
-                <label className="space-y-1.5 md:col-span-2"><span className="text-xs font-bold text-neutral-400">카드 효과 설명</span><textarea {...form.register("text", { onChange: () => { setAnalysis(null); setCreatedMechanicRequest(null); form.setValue("effectId", ""); form.setValue("effectConfig", "{}"); } })} rows={3} data-testid="input-card-text" className="w-full rounded border border-neutral-700 bg-neutral-900 px-3 py-2 outline-none focus:border-primary" /></label>
+                <label className="space-y-1.5 md:col-span-2"><span className="text-xs font-bold text-neutral-400">카드 효과 설명</span><textarea {...form.register("text", { onChange: () => { setAnalysis(null); setCreatedMechanicRequest(null); setReplitPrompt(""); form.setValue("effectId", ""); form.setValue("effectConfig", "{}"); } })} rows={3} data-testid="input-card-text" className="w-full rounded border border-neutral-700 bg-neutral-900 px-3 py-2 outline-none focus:border-primary" /></label>
                 <div className="space-y-3 md:col-span-2">
                   <button type="button" onClick={() => void analyzeEffects()} disabled={isAnalyzing} data-testid="button-analyze-effects" className="rounded border border-primary px-4 py-2 text-sm font-bold text-primary disabled:opacity-40">{isAnalyzing ? "분석 중..." : "효과 분석"}</button>
                    {analysis && <div className={`rounded border p-3 text-xs ${analysis.outcome === "supported" ? "border-emerald-800 bg-emerald-950/30" : analysis.outcome === "mechanism_required" ? "border-amber-800 bg-amber-950/30" : "border-red-800 bg-red-950/30"}`} data-testid="effect-analysis-result">
@@ -711,8 +755,13 @@ export function AdminCardManager({
                     })}
                      {analysis.keywords.map((keyword) => <div key={keyword} className="mt-2 text-emerald-300">기본 키워드: {KEYWORD_LABELS[keyword]}</div>)}
                      {analysis.unsupportedSegments.map((segment) => <div key={segment} className="mt-2 text-amber-300">지원하지 않음: {segment}</div>)}
-                      <div className="mt-3 flex flex-wrap gap-2"><button type="button" disabled={analysis.outcome !== "supported"} onClick={applyAnalysis} data-testid="button-apply-analysis" className="rounded bg-primary px-3 py-1.5 font-bold text-black disabled:opacity-40">분석 결과 적용</button>{analysis.outcome === "mechanism_required" && <button type="button" disabled={isCreatingMechanicRequest || createdMechanicRequest !== null} onClick={() => void createMechanicRequest()} data-testid="button-generate-mechanism" className="rounded border border-amber-700 px-3 py-1.5 font-bold text-amber-300 disabled:opacity-40">{isCreatingMechanicRequest ? "요청 생성 중..." : "AI로 새 메커니즘 만들기"}</button>}<button type="button" onClick={() => void analyzeEffects()} data-testid="button-reanalyze-effects" className="rounded border border-neutral-600 px-3 py-1.5">다시 분석</button><button type="button" onClick={() => setAnalysis(null)} data-testid="button-cancel-analysis" className="rounded border border-neutral-600 px-3 py-1.5">취소</button></div>
+                       <div className="mt-3 flex flex-wrap gap-2"><button type="button" disabled={analysis.outcome !== "supported"} onClick={applyAnalysis} data-testid="button-apply-analysis" className="rounded bg-primary px-3 py-1.5 font-bold text-black disabled:opacity-40">분석 결과 적용</button>{analysis.outcome === "mechanism_required" && <><button type="button" disabled={isGeneratingPrompt || isCreatingMechanicRequest} onClick={() => void generateReplitPrompt()} data-testid="button-create-replit-prompt" className="rounded border border-amber-700 px-3 py-1.5 font-bold text-amber-300 disabled:opacity-40">{isGeneratingPrompt ? "프롬프트 생성 중..." : "Replit 수정 프롬프트 만들기"}</button><button type="button" onClick={() => void analyzeEffects()} data-testid="button-mechanism-complete-reanalyze" className="rounded border border-emerald-700 px-3 py-1.5 font-bold text-emerald-300">메커니즘 구현 완료 - 다시 분석</button></>}<button type="button" onClick={() => void analyzeEffects()} data-testid="button-reanalyze-effects" className="rounded border border-neutral-600 px-3 py-1.5">다시 분석</button><button type="button" onClick={() => setAnalysis(null)} data-testid="button-cancel-analysis" className="rounded border border-neutral-600 px-3 py-1.5">취소</button></div>
                       {createdMechanicRequest && <div data-testid="mechanic-request-created" className="mt-3 rounded border border-amber-800 bg-amber-950/30 p-2 text-xs"><strong>요청 ID: {createdMechanicRequest.id}</strong><p className="mt-1">원본 효과: {createdMechanicRequest.originalCardText}</p><p>현재 상태: {createdMechanicRequest.status}</p><p>지원하지 않음: {createdMechanicRequest.unsupportedParts.join(", ")}</p></div>}
+                      {replitPrompt && <section className="mt-3 rounded border border-amber-800 bg-black/30 p-3" data-testid="replit-agent-prompt">
+                        <h4 className="text-sm font-black text-amber-200">Replit Agent 수정 프롬프트</h4>
+                        <textarea readOnly value={replitPrompt} rows={16} data-testid="textarea-replit-agent-prompt" className="mt-2 w-full rounded border border-neutral-700 bg-neutral-950 p-3 font-mono text-xs leading-relaxed" />
+                        <div className="mt-2 flex gap-2"><button type="button" onClick={() => void copyReplitPrompt()} data-testid="button-copy-replit-prompt" className="rounded bg-primary px-3 py-1.5 text-xs font-bold text-black">프롬프트 복사</button><button type="button" onClick={() => void generateReplitPrompt()} data-testid="button-regenerate-replit-prompt" className="rounded border border-amber-700 px-3 py-1.5 text-xs font-bold text-amber-300">다시 생성</button></div>
+                      </section>}
                     <details className="mt-2"><summary>고급 JSON 보기</summary><pre className="mt-1 overflow-auto text-[10px]">{JSON.stringify(analysis.effects, null, 2)}</pre></details>
                   </div>}
                 </div>

@@ -7,6 +7,7 @@ import {
   isPendingMechanicRequestConflict,
   prepareMechanicRequest,
 } from "../lib/mechanic-request-service";
+import { prepareReplitAgentPrompt } from "../lib/replit-agent-prompt";
 import { analyzeEffectText, effectLibrary, isStructuredEffects } from "../lib/structured-effects";
 
 const router: IRouter = Router();
@@ -444,6 +445,64 @@ router.get("/mechanic-requests/:id", async (request, response): Promise<void> =>
     return;
   }
   response.json({ mechanicRequest });
+});
+
+router.post("/mechanic-requests/:id/replit-prompt", async (request, response): Promise<void> => {
+  if (!requireAdmin(request, response)) return;
+  const id = firstParam(request.params.id);
+  if (!id) {
+    response.status(400).json({ message: "요청 ID가 올바르지 않습니다." });
+    return;
+  }
+  const [mechanicRequest] = await db.select().from(mechanicRequestsTable)
+    .where(eq(mechanicRequestsTable.id, id)).limit(1);
+  if (!mechanicRequest) {
+    response.status(404).json({ message: "메커니즘 요청을 찾을 수 없습니다." });
+    return;
+  }
+  // Persisted text is the only input; all interpretation and library data are live.
+  const analysis = analyzeEffectText(mechanicRequest.originalCardText);
+  const promptDecision = prepareReplitAgentPrompt(mechanicRequest.originalCardText, analysis, effectLibrary());
+  if (promptDecision.kind === "supported") {
+    response.status(409).json({ message: "이제 현재 Effect Library로 구현할 수 있습니다.", analysis });
+    return;
+  }
+  if (promptDecision.kind === "analysis_failure") {
+    response.status(422).json({ message: "효과 의도를 충분히 분석하지 못했습니다.", analysis });
+    return;
+  }
+  response.json({ mechanicRequestId: mechanicRequest.id, analysis, prompt: promptDecision.prompt });
+});
+
+router.post("/mechanic-requests/replit-prompt", async (request, response): Promise<void> => {
+  if (!requireAdmin(request, response)) return;
+  const body = request.body && typeof request.body === "object"
+    ? request.body as Record<string, unknown> : {};
+  const originalCardText = typeof body.originalCardText === "string"
+    ? body.originalCardText.trim() : "";
+  if (!originalCardText || originalCardText.length > 2000) {
+    response.status(400).json({ message: "효과 텍스트를 확인해 주세요." });
+    return;
+  }
+  const requests = await db.select().from(mechanicRequestsTable)
+    .where(eq(mechanicRequestsTable.originalCardText, originalCardText))
+    .orderBy(asc(mechanicRequestsTable.createdAt));
+  const mechanicRequest = requests.at(-1);
+  if (!mechanicRequest) {
+    response.status(404).json({ message: "먼저 메커니즘 요청을 만들어 주세요." });
+    return;
+  }
+  const analysis = analyzeEffectText(mechanicRequest.originalCardText);
+  const promptDecision = prepareReplitAgentPrompt(mechanicRequest.originalCardText, analysis, effectLibrary());
+  if (promptDecision.kind === "supported") {
+    response.status(409).json({ message: "이제 현재 Effect Library로 구현할 수 있습니다.", analysis });
+    return;
+  }
+  if (promptDecision.kind === "analysis_failure") {
+    response.status(422).json({ message: "효과 의도를 충분히 분석하지 못했습니다.", analysis });
+    return;
+  }
+  response.json({ mechanicRequestId: mechanicRequest.id, analysis, prompt: promptDecision.prompt });
 });
 
 router.post("/login", (request, response) => {
