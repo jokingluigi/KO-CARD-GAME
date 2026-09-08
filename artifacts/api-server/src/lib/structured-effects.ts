@@ -1,5 +1,5 @@
 import {
-  ACTION_SCHEMAS, ACTIONS, EFFECT_LIBRARY, KEYWORDS, TARGET_OWNERS,
+  ACTION_SCHEMAS, ACTIONS, EFFECT_CAPABILITIES, EFFECT_LIBRARY, KEYWORDS, TARGET_OWNERS,
   TARGET_SELECTIONS, TARGET_ZONES, TRIGGERS,
   type Action, type Keyword, type TargetOwner, type TargetSelection,
   type TargetZone, type Trigger,
@@ -26,6 +26,9 @@ const aliases = {
 
 export function effectLibrary() {
   return EFFECT_LIBRARY;
+}
+function isActiveAction(action: Action) {
+  return EFFECT_CAPABILITIES[action].status === "ACTIVE";
 }
 
 function normalize(input: string) {
@@ -85,7 +88,9 @@ export function analyzeEffectText(input: string): Analysis {
   if (!text) return { status: "failure", outcome: "analysis_failure", effects: [], keywords: [], unsupportedSegments: ["효과 문장"], summaries: ["효과 문장을 입력해 주세요."] };
   const unsupportedMechanic = /(서로\s*)?(무작위로\s*)?(섞|재배치|교환)|시간을?\s*멈(?:추|춥)|전\s*상태로\s*되돌/;
   const mechanicMatch = text.match(unsupportedMechanic);
-  const triggerEntry = aliases.trigger.find(([, pattern]) => pattern.test(text));
+  const triggerEntry = aliases.trigger.find(([trigger, pattern]) =>
+    pattern.test(text) && EFFECT_LIBRARY.triggers.some((entry) => entry.name === trigger && entry.status === "ACTIVE"),
+  );
   if (!triggerEntry) {
     const keyword = keywordFor(text);
     if (keyword && /^(러쉬|기습|도발|회피|연타)$/.test(text)) return { status: "success", outcome: "supported", effects: [], keywords: [keyword], unsupportedSegments: [], summaries: [`기본 키워드 · ${keyword}`] };
@@ -114,6 +119,7 @@ export function analyzeEffectText(input: string): Analysis {
   for (const clause of clauses) {
     let clauseRemainder = clause;
     for (const [action, matcher] of recognized) {
+      if (!isActiveAction(action)) continue;
       const match = matcher.exec(clause);
       if (!match) continue;
       const parsed = effect(trigger, action, clause, effects.length, priorTarget);
@@ -141,7 +147,7 @@ export function isStructuredEffects(value: unknown): value is { effects: Structu
   return effects.every((raw) => {
     if (!raw || typeof raw !== "object" || Array.isArray(raw)) return false;
     const item = raw as StructuredEffect;
-    if (!TRIGGERS.includes(item.trigger) || !ACTIONS.includes(item.action)) return false;
+    if (!TRIGGERS.includes(item.trigger) || !ACTIONS.includes(item.action) || !isActiveAction(item.action)) return false;
     const schema = ACTION_SCHEMAS[item.action], target = item.target, values = item.values;
     if (schema.target) {
       if (!target || !TARGET_ZONES.includes(target.zone) || !TARGET_OWNERS.includes(target.owner) || !TARGET_SELECTIONS.includes(target.selection) || !Number.isInteger(target.count) || target.count < 1 || target.count > 20 || (target.selection === "PLAYER_CHOICE" && target.count !== 1)) return false;

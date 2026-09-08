@@ -19,9 +19,15 @@ CREATE TABLE IF NOT EXISTS "mechanic_requests" (
   "affected_systems" text[],
   "generated_patch_summary" text,
   "test_result" text,
+  "resolved_effect_ids" text[],
+  "resolved_at" timestamp with time zone,
   "created_at" timestamp with time zone DEFAULT now() NOT NULL,
   "updated_at" timestamp with time zone DEFAULT now() NOT NULL
 );
+
+ALTER TABLE "mechanic_requests"
+  ADD COLUMN IF NOT EXISTS "resolved_effect_ids" text[],
+  ADD COLUMN IF NOT EXISTS "resolved_at" timestamp with time zone;
 
 CREATE UNIQUE INDEX IF NOT EXISTS "mechanic_requests_pending_original_card_text_unique"
   ON "mechanic_requests" ("original_card_text")

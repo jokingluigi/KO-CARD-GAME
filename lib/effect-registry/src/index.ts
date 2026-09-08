@@ -12,6 +12,7 @@ export type TargetZone = typeof TARGET_ZONES[number];
 export type TargetOwner = typeof TARGET_OWNERS[number];
 export type TargetSelection = typeof TARGET_SELECTIONS[number];
 export type EffectActionSchema = { target: boolean; amount?: boolean; stats?: boolean; keyword?: boolean };
+export type RegistryStatus = "ACTIVE" | "DISABLED";
 
 export const ACTION_SCHEMAS: Record<Action, EffectActionSchema> = {
   ADD_GOLD: { target: false, amount: true }, ADD_NEXT_TURN_GOLD: { target: false, amount: true }, DRAW: { target: false, amount: true },
@@ -29,9 +30,23 @@ const ACTION_DESCRIPTIONS: Record<Action, string> = {
   STUN: "대상을 기절시킵니다.", ADD_KEYWORD: "대상에게 키워드를 부여합니다.", REMOVE_KEYWORD: "대상의 키워드를 제거합니다.",
 };
 
+/** This is the single registration contract consumed by both admin validation
+ * and the game runtime.  An action is not available unless it is ACTIVE and
+ * declares its runtime handler registration here. */
+export const EFFECT_CAPABILITIES: Record<Action, {
+  description: string; status: RegistryStatus; version: number; runtimeHandler: true;
+}> = Object.fromEntries(ACTIONS.map((name) => [name, {
+  description: ACTION_DESCRIPTIONS[name], status: "ACTIVE", version: 1, runtimeHandler: true,
+}])) as Record<Action, { description: string; status: RegistryStatus; version: number; runtimeHandler: true }>;
+// The currently advertised actions all have handlers. Keeping this tuple tied
+// directly to ACTIONS preserves downstream exhaustiveness checks without a
+// second hand-maintained action list.
+export const RUNTIME_HANDLER_ACTIONS = ACTIONS;
+
 export const EFFECT_LIBRARY = {
   actions: ACTIONS.map((name) => ({
-    name, description: ACTION_DESCRIPTIONS[name], status: "ACTIVE" as const,
+    name, description: EFFECT_CAPABILITIES[name].description, status: EFFECT_CAPABILITIES[name].status,
+    version: EFFECT_CAPABILITIES[name].version,
     requiredConfig: {
       target: ACTION_SCHEMAS[name].target,
       ...(ACTION_SCHEMAS[name].amount ? { values: { amount: "number (0..999)" } } : {}),
@@ -42,12 +57,12 @@ export const EFFECT_LIBRARY = {
   triggers: TRIGGERS.map((name) => ({
     name,
     description: ({ ENTER_FIELD: "카드가 필드에 등장할 때 발동합니다.", LEAVE_FIELD: "카드가 필드를 떠날 때 발동합니다.", ACTIVE: "액티브 능력을 사용할 때 발동합니다." } as Record<Trigger, string>)[name],
-    status: "ACTIVE" as const,
+    status: "ACTIVE" as const, version: 1,
   })),
-  targetResolvers: [{ name: "ZONE_OWNER_SELECTION", description: "영역, 소유자, 카드 유형, 선택 방식 및 수로 대상을 해석합니다.", config: { zone: [...TARGET_ZONES], owner: [...TARGET_OWNERS], selection: [...TARGET_SELECTIONS], count: "integer (1..20)" }, status: "ACTIVE" as const }],
+  targetResolvers: [{ name: "ZONE_OWNER_SELECTION", description: "영역, 소유자, 카드 유형, 선택 방식 및 수로 대상을 해석합니다.", config: { zone: [...TARGET_ZONES], owner: [...TARGET_OWNERS], selection: [...TARGET_SELECTIONS], count: "integer (1..20)" }, status: "ACTIVE" as const, version: 1 }],
   valueResolvers: [
-    { name: "AMOUNT", description: "골드, 피해, 회복, 드로우 및 비용 수치를 해석합니다.", status: "ACTIVE" as const },
-    { name: "STAT_PAIR", description: "+공격력/+체력 수치를 해석합니다.", status: "ACTIVE" as const },
-    { name: "KEYWORD", description: "지원 키워드를 해석합니다.", values: [...KEYWORDS], status: "ACTIVE" as const },
+    { name: "AMOUNT", description: "골드, 피해, 회복, 드로우 및 비용 수치를 해석합니다.", status: "ACTIVE" as const, version: 1 },
+    { name: "STAT_PAIR", description: "+공격력/+체력 수치를 해석합니다.", status: "ACTIVE" as const, version: 1 },
+    { name: "KEYWORD", description: "지원 키워드를 해석합니다.", values: [...KEYWORDS], status: "ACTIVE" as const, version: 1 },
   ],
 } as const;

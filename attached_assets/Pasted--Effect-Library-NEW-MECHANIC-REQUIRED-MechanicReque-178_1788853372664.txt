@@ -1,0 +1,414 @@
+현재 구현된 다음 시스템을 그대로 유지해줘.
+
+* Effect Library
+* 자연어 카드 효과 분석
+* NEW_MECHANIC_REQUIRED 판정
+* MechanicRequest
+* Replit Agent용 수정 프롬프트 생성
+* [메커니즘 구현 완료 - 다시 분석] 흐름
+
+이번 단계에서는 Replit Agent가 새로운 메커니즘 코드를 실제 프로젝트에 구현한 이후,
+그 기능이 정상적으로 게임 엔진에 등록되었는지 관리자에서 검증하고
+원래 카드 효과에 연결하는 마무리 흐름을 구현해줘.
+
+외부 Cursor / Devin / OpenHands / 별도 AI API는 사용하지 않는다.
+
+==================================================
+
+1. 구현 완료 후 검증
+   ==================================================
+
+관리자가 Replit Agent에서 새 메커니즘 구현을 완료한 뒤:
+
+[메커니즘 구현 완료 - 다시 분석]
+
+버튼을 누르면 다음 순서로 검사한다.
+
+1. 현재 최신 Effect Registry 다시 읽기
+2. 현재 최신 Trigger Registry 확인
+3. Target Resolver 확인
+4. Value Resolver 확인
+5. Condition / Listener 확인
+6. Analyzer mapping 확인
+7. 원래 카드 효과 다시 분석
+
+이전 분석 결과를 캐시해서 그대로 사용하지 말고
+현재 최신 Registry 기준으로 다시 분석한다.
+
+==================================================
+2. 새 기능 발견
+==========
+
+Replit Agent가 새로운 범용 Effect를 구현했다면
+Effect Library가 이를 자동으로 인식할 수 있게 한다.
+
+예:
+
+새로 추가된:
+
+WHILE_IN_HAND_EVENT
+SHUFFLE_STAT_VALUES
+COPY_ATTACK_FROM_LAST_DESTROYED
+
+등이 Registry에 등록되어 있다면
+관리자 Effect Library에도 자동 반영한다.
+
+별도의 Effect 목록을 중복 하드코딩하지 않는다.
+
+게임 엔진의 실제 Registry를 source of truth로 사용한다.
+
+==================================================
+3. 검증 결과
+========
+
+다시 분석한 결과를 세 가지 상태로 보여준다.
+
+A.
+
+✓ 새 메커니즘이 정상적으로 인식되었습니다.
+
+→ Structured Effect 표시
+→ [카드 효과 적용]
+
+B.
+
+⚠ 일부 기능은 추가되었지만 아직 효과 전체를 구현할 수 없습니다.
+
+→ 남은 unsupportedParts 표시
+→ [새 Replit 수정 프롬프트 만들기]
+
+C.
+
+✗ 새 메커니즘을 Effect Library에서 찾을 수 없습니다.
+
+→ Registry 등록 누락
+→ Analyzer mapping 누락
+→ Schema 누락
+
+등 가능한 원인을 보여준다.
+
+페이지 reload나 게임 초기화는 하지 않는다.
+
+==================================================
+4. Effect 검증
+============
+
+새 Effect가 발견되었다고 바로 정상으로 판단하지 않는다.
+
+최소 다음을 확인한다.
+
+* Effect Registry 등록 여부
+* Effect Schema 존재 여부
+* Handler 존재 여부
+* 필요한 Resolver 존재 여부
+* Analyzer가 해당 Effect를 생성 가능한지
+* Structured Effect validation 통과 여부
+
+가능하다면 현재 프로젝트에 이미 존재하는 관련 테스트 결과도 확인한다.
+
+==================================================
+5. Effect Library 메타데이터
+=======================
+
+새 Effect를 Effect Library에서 볼 수 있게 한다.
+
+표시 정보:
+
+* Effect 이름
+* 설명
+* 지원하는 설정
+* 상태
+* 버전
+* 사용 중인 카드 수
+
+상태:
+
+ACTIVE
+DISABLED
+
+를 최소 지원한다.
+
+기존에 DRAFT 상태 구조가 이미 구현되어 있고 정상 작동한다면 유지해도 된다.
+
+단순히 이 관리자 화면을 위해 게임 엔진을 대규모 수정하지 않는다.
+
+==================================================
+6. 카드 효과 적용
+===========
+
+재분석 성공 후:
+
+[카드 효과 적용]
+
+버튼을 누르면
+분석된 Structured Effect를 현재 DRAFT 카드에 저장한다.
+
+원본 자연어 effect text도 그대로 보존한다.
+
+예:
+
+effectText:
+"이 카드가 손패에 있을 때 아군 선수가 리타이어할 때마다 비용이 1 감소한다."
+
+structuredEffects:
+[...]
+
+둘을 함께 보존한다.
+
+==================================================
+7. 자동 Publish 금지
+================
+
+새 메커니즘이 구현됐다고 해서
+해당 카드를 자동 PUBLISHED 처리하지 않는다.
+
+기존 카드 관리 정책을 유지한다.
+
+DRAFT
+→ 테스트
+→ PUBLISHED
+
+순서로 진행한다.
+
+==================================================
+8. MechanicRequest 완료 처리
+========================
+
+원래 NEW_MECHANIC_REQUIRED였던 효과가
+새 Effect를 이용해 정상적으로 Structured Effect로 변환되고
+카드에 적용되면 해당 MechanicRequest를:
+
+RESOLVED
+
+또는 기존 구조에서 이에 해당하는 완료 상태로 변경한다.
+
+가능하면 다음 정보도 기록한다.
+
+resolvedEffectIds
+resolvedAt
+
+예:
+
+resolvedEffectIds:
+["WHILE_IN_HAND_EVENT", "REDUCE_COST"]
+
+==================================================
+9. 중복 요청 방지
+===========
+
+한 번 구현된 새 메커니즘은 앞으로 다시 Replit Agent 수정 요청을 만들지 않아야 한다.
+
+예:
+
+첫 카드:
+
+"손패에 있을 때 아군 선수가 리타이어하면 비용 -1"
+
+처음:
+NEW_MECHANIC_REQUIRED
+
+Replit Agent가 WHILE_IN_HAND_EVENT를 구현
+
+이후 다른 카드:
+
+"이 카드가 손패에 있을 때 아군 선수가 공격하면 공격력 +1"
+
+이라면 WHILE_IN_HAND_EVENT가 이미 있으므로
+그 부분은 기존 기능으로 재사용한다.
+
+부족한 부분만 NEW_MECHANIC_REQUIRED로 판단한다.
+
+==================================================
+10. 부분 지원 분석
+============
+
+효과 전체를 하나의 성공/실패로만 보지 않는다.
+
+예:
+
+"손패에 있을 때 아군 선수가 리타이어하면 비용 -1"
+
+현재:
+
+ALLY_WRESTLER_RETIRED = 지원
+REDUCE_COST = 지원
+WHILE_IN_HAND_EVENT = 미지원
+
+이라면 결과를:
+
+지원:
+
+* ALLY_WRESTLER_RETIRED
+* REDUCE_COST
+
+미지원:
+
+* WHILE_IN_HAND_EVENT
+
+처럼 보여준다.
+
+그리고 Replit Agent용 프롬프트도
+미지원 기능만 구현하도록 생성한다.
+
+이렇게 해서 Agent의 수정 범위와 크레딧 사용을 최소화한다.
+
+==================================================
+11. 새 메커니즘 테스트용 흐름
+==================
+
+기존 Effect Library에서 아직 지원하지 않는 효과 하나를 테스트한다.
+
+예:
+
+"등장: 내 손패의 모든 선수 카드의 공격력을 서로 무작위로 섞습니다."
+
+처음:
+
+NEW_MECHANIC_REQUIRED
+
+↓
+
+Replit Agent용 수정 프롬프트 생성
+
+↓
+
+Replit Agent가 범용 Effect 구현
+
+예:
+SHUFFLE_STAT_VALUES
+
+↓
+
+관리자에서
+[메커니즘 구현 완료 - 다시 분석]
+
+↓
+
+최신 Registry 재검사
+
+↓
+
+SHUFFLE_STAT_VALUES 발견
+
+↓
+
+원래 문장 재분석
+
+↓
+
+예:
+
+Trigger:
+ENTER_FIELD
+
+Action:
+SHUFFLE_STAT_VALUES
+
+Zone:
+HAND
+
+Owner:
+SELF
+
+CardType:
+WRESTLER
+
+Stat:
+ATTACK
+
+↓
+
+Structured Effect validation 성공
+
+↓
+
+[카드 효과 적용]
+
+까지 정상 작동하는지 확인한다.
+
+==================================================
+12. 기존 게임 보호
+============
+
+이번 단계에서 다음 시스템을 다시 작성하지 않는다.
+
+* 전투
+* 턴
+* Gold
+* 공격
+* Board
+* Champion
+* Champion Token
+* Target Selection
+* Graveyard
+* Generated
+* Match Snapshot
+
+이번 작업은:
+
+"새 Effect 구현 이후 검증 → Library 인식 → 재분석 → 카드 적용"
+
+흐름에만 집중한다.
+
+==================================================
+13. 최종 사용자 흐름
+=============
+
+최종적으로 관리자는:
+
+카드 효과 작성
+
+↓
+
+[분석]
+
+↓
+
+기존 기능이면 바로 적용
+
+또는
+
+새 기능 필요
+
+↓
+
+[Replit 수정 프롬프트 만들기]
+
+↓
+
+[복사]
+
+↓
+
+Replit Agent에 붙여넣기
+
+↓
+
+Agent가 구현
+
+↓
+
+관리자로 돌아오기
+
+↓
+
+[메커니즘 구현 완료 - 다시 분석]
+
+↓
+
+새 Effect 자동 인식
+
+↓
+
+Structured Effect 생성
+
+↓
+
+[카드 효과 적용]
+
+이 흐름만 사용하면 되게 한다.
+
+외부 프로그램 설치나 외부 AI API 연결을 요구하지 않는다.
+
+기존 정상 코드를 불필요하게 대규모 리팩터링하지 말고,
+이 기능까지 완성한 뒤 임의의 추가 기능은 만들지 말고 종료해줘.

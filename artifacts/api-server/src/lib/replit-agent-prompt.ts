@@ -1,6 +1,6 @@
 import { effectLibrary, type Analysis } from "./structured-effects";
 
-type LibraryEntry = { name: string; description: string; status: "ACTIVE" };
+type LibraryEntry = { name: string; description: string; status: "ACTIVE" | "DISABLED" };
 type LiveLibrary = ReturnType<typeof effectLibrary>;
 
 type MechanicFamily = "permutation" | "time_stop" | "rewind";

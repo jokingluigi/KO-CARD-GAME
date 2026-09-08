@@ -1,10 +1,10 @@
 import {
   jsonb,
-  index,
   pgEnum,
   pgTable,
   text,
   timestamp,
+  uniqueIndex,
 } from "drizzle-orm/pg-core";
 import { sql } from "drizzle-orm";
 import { createInsertSchema } from "drizzle-zod";
@@ -36,6 +36,8 @@ export const mechanicRequestsTable = pgTable("mechanic_requests", {
   affectedSystems: text("affected_systems").array(),
   generatedPatchSummary: text("generated_patch_summary"),
   testResult: text("test_result"),
+  resolvedEffectIds: text("resolved_effect_ids").array(),
+  resolvedAt: timestamp("resolved_at", { withTimezone: true }),
   createdAt: timestamp("created_at", { withTimezone: true })
     .notNull()
     .defaultNow(),
@@ -44,7 +46,7 @@ export const mechanicRequestsTable = pgTable("mechanic_requests", {
     .defaultNow()
     .$onUpdate(() => new Date()),
 }, (table) => [
-  index("mechanic_requests_pending_original_card_text_unique")
+  uniqueIndex("mechanic_requests_pending_original_card_text_unique")
     .on(table.originalCardText)
     .where(sql`${table.status} = 'PENDING'`),
 ]);

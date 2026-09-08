@@ -9,6 +9,11 @@ import {
 } from "../lib/mechanic-request-service";
 import { prepareReplitAgentPrompt } from "../lib/replit-agent-prompt";
 import { analyzeEffectText, effectLibrary, isStructuredEffects } from "../lib/structured-effects";
+import {
+  countStructuredEffectUsage,
+  prepareCompletionApply,
+  validateMechanicCompletion,
+} from "../lib/mechanic-completion-service";
 
 const router: IRouter = Router();
 const cardImageStorage = new CardImageStorage();
@@ -352,9 +357,12 @@ router.post("/effects/analyze", (request, response) => {
   response.json(analyzeEffectText(text));
 });
 
-router.get("/effects/library", (request, response) => {
+router.get("/effects/library", async (request, response): Promise<void> => {
   if (!requireAdmin(request, response)) return;
-  response.json(effectLibrary());
+  const cards = await db.select({ effectId: cardsTable.effectId, effectConfig: cardsTable.effectConfig }).from(cardsTable);
+  const usage = countStructuredEffectUsage(cards);
+  const library = effectLibrary();
+  response.json({ ...library, actions: library.actions.map((action) => ({ ...action, usageCount: usage.get(action.name) ?? 0 })) });
 });
 
 router.post("/mechanic-requests", async (request, response): Promise<void> => {
@@ -445,6 +453,16 @@ router.get("/mechanic-requests/:id", async (request, response): Promise<void> =>
     return;
   }
   response.json({ mechanicRequest });
+});
+
+router.post("/mechanic-requests/:id/reanalyze", async (request, response): Promise<void> => {
+  if (!requireAdmin(request, response)) return;
+  const id = firstParam(request.params.id);
+  if (!id) { response.status(400).json({ message: "요청 ID가 올바르지 않습니다." }); return; }
+  const [mechanicRequest] = await db.select().from(mechanicRequestsTable).where(eq(mechanicRequestsTable.id, id)).limit(1);
+  if (!mechanicRequest) { response.status(404).json({ message: "메커니즘 요청을 찾을 수 없습니다." }); return; }
+  // The persisted source is intentionally the only input: this always rereads live registry data.
+  response.json({ mechanicRequestId: id, validation: validateMechanicCompletion(mechanicRequest.originalCardText) });
 });
 
 router.post("/mechanic-requests/:id/replit-prompt", async (request, response): Promise<void> => {
@@ -781,6 +799,51 @@ router.patch("/cards/:id", async (request, response): Promise<void> => {
   }
 
   response.json({ card });
+});
+
+router.post("/cards/:id/apply-mechanic-request", async (request, response): Promise<void> => {
+  if (!requireAdmin(request, response)) return;
+  const id = firstParam(request.params.id);
+  const mechanicRequestId = request.body && typeof request.body === "object"
+    ? (request.body as Record<string, unknown>).mechanicRequestId : null;
+  if (!id || typeof mechanicRequestId !== "string") {
+    response.status(400).json({ message: "카드와 메커니즘 요청 정보가 필요합니다." }); return;
+  }
+  try {
+    const result = await db.transaction(async (tx) => {
+      const [card] = await tx.select().from(cardsTable).where(eq(cardsTable.id, id)).limit(1);
+      if (!card) throw new Error("CARD_NOT_FOUND");
+      const [mechanicRequest] = await tx.select().from(mechanicRequestsTable).where(eq(mechanicRequestsTable.id, mechanicRequestId)).limit(1);
+      if (!mechanicRequest) throw new Error("REQUEST_NOT_FOUND");
+      const validation = validateMechanicCompletion(mechanicRequest.originalCardText);
+      const decision = prepareCompletionApply(card, mechanicRequest.originalCardText, validation);
+      if (!decision.ok) throw new Error(decision.reason);
+      const [updatedCard] = await tx.update(cardsTable).set({
+        text: decision.values.text,
+        effectId: decision.values.effectId,
+        effectConfig: decision.values.effectConfig,
+        version: sql`${cardsTable.version} + 1`,
+        updatedAt: new Date(),
+      }).where(eq(cardsTable.id, id)).returning();
+      const [updatedRequest] = await tx.update(mechanicRequestsTable).set({
+        status: decision.values.status,
+        resolvedEffectIds: decision.values.resolvedEffectIds,
+        resolvedAt: new Date(),
+        updatedAt: new Date(),
+      }).where(eq(mechanicRequestsTable.id, mechanicRequestId)).returning();
+      return { card: updatedCard, mechanicRequest: updatedRequest };
+    });
+    response.json(result);
+  } catch (error) {
+    const code = error instanceof Error ? error.message : "";
+    const messages: Record<string, string> = {
+      CARD_NOT_FOUND: "카드를 찾을 수 없습니다.", CARD_NOT_DRAFT: "DRAFT 카드에만 효과를 적용할 수 있습니다.",
+      REQUEST_NOT_FOUND: "메커니즘 요청을 찾을 수 없습니다.", REVALIDATION_FAILED: "최신 검증을 통과하지 못해 효과를 적용하지 않았습니다.",
+      SOURCE_TEXT_CHANGED: "카드 효과 문장이 요청 당시와 달라 최신 요청을 다시 분석해 주세요.",
+    };
+    if (messages[code]) { response.status(code === "CARD_NOT_FOUND" || code === "REQUEST_NOT_FOUND" ? 404 : 422).json({ message: messages[code] }); return; }
+    throw error;
+  }
 });
 
 router.post("/cards/:id/duplicate", async (request, response): Promise<void> => {
