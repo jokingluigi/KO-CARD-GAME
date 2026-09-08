@@ -37,6 +37,7 @@ const CARD_KEYWORDS = [
   "DODGE",
   "MULTI_STRIKE",
 ] as const;
+const IMAGE_DISPLAY_MODES = ["COVER", "CONTAIN", "CUSTOM"] as const;
 
 type CardInput = {
   name: string;
@@ -52,6 +53,10 @@ type CardInput = {
   effectConfig: Record<string, unknown>;
   imageAssetId: string | null;
   imageUrl: string | null;
+  imageDisplayMode: (typeof IMAGE_DISPLAY_MODES)[number];
+  imageScale: number;
+  imagePositionX: number;
+  imagePositionY: number;
   imageUploadToken: string | null;
 };
 
@@ -367,6 +372,16 @@ function parseCardInput(value: unknown): CardInput | null {
     typeof input.imageUrl === "string" && input.imageUrl ? input.imageUrl : null;
   const imageUploadToken =
     typeof input.imageUploadToken === "string" ? input.imageUploadToken : null;
+  const imageDisplayMode = IMAGE_DISPLAY_MODES.includes(input.imageDisplayMode as (typeof IMAGE_DISPLAY_MODES)[number])
+    ? input.imageDisplayMode as (typeof IMAGE_DISPLAY_MODES)[number]
+    : "COVER";
+  const boundedNumber = (candidate: unknown, fallback: number, min: number, max: number) =>
+    typeof candidate === "number" && Number.isFinite(candidate)
+      ? Math.min(max, Math.max(min, candidate))
+      : fallback;
+  const imageScale = boundedNumber(input.imageScale, 1, 0.5, 2);
+  const imagePositionX = boundedNumber(input.imagePositionX, 50, 0, 100);
+  const imagePositionY = boundedNumber(input.imagePositionY, 50, 0, 100);
   const validInteger = (candidate: unknown) =>
     typeof candidate === "number" &&
     Number.isInteger(candidate) &&
@@ -413,6 +428,10 @@ function parseCardInput(value: unknown): CardInput | null {
     effectConfig: input.effectConfig as Record<string, unknown>,
     imageAssetId,
     imageUrl: imageAssetId ? imageUrlFor(imageAssetId) : null,
+    imageDisplayMode,
+    imageScale,
+    imagePositionX,
+    imagePositionY,
     imageUploadToken,
   };
 }

@@ -12,6 +12,7 @@ import {
   type CardInstance,
   type ChampionState,
 } from '@/game';
+import { CardArtwork } from './card-artwork';
 
 interface InspectTarget {
   content: ReactNode;
@@ -152,6 +153,15 @@ export function CardInspectContent({ card }: { card: CardInstance }) {
       <h3 className="mb-3 text-lg font-black text-white">
         {definition?.name ?? '알 수 없는 카드'}
       </h3>
+      <CardArtwork
+        src={definition?.imageUrl}
+        alt={definition?.name ?? '카드 이미지'}
+        className="mb-3 h-32 w-full rounded border border-neutral-800"
+        imageDisplayMode={definition?.imageDisplayMode}
+        imageScale={definition?.imageScale}
+        imagePositionX={definition?.imagePositionX}
+        imagePositionY={definition?.imagePositionY}
+      />
       <div className="mb-3 grid grid-cols-3 gap-2 text-center">
         <Stat label="비용" value={`${card.currentCost}G`} changed={card.currentCost !== definition?.cost} />
         <Stat label="공격" value={card.currentAttack} changed={card.currentAttack !== definition?.attack} />

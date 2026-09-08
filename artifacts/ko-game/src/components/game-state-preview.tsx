@@ -430,6 +430,10 @@ function HandCard({
             src={def?.imageUrl}
             alt={def?.name ?? '카드 이미지'}
             className="min-h-0 w-full flex-1"
+             imageDisplayMode={def?.imageDisplayMode}
+             imageScale={def?.imageScale}
+             imagePositionX={def?.imagePositionX}
+             imagePositionY={def?.imagePositionY}
           />
          <div className="h-10 border-t border-neutral-800 bg-neutral-900/80 p-1 text-[7px] leading-tight text-neutral-300 md:h-16 md:p-1.5 md:text-[9px]">
            <span className="line-clamp-3">{def?.rulesText || '효과 없음'}</span>
@@ -541,6 +545,10 @@ function BoardSlot({
             src={def?.imageUrl}
             alt={def?.name ?? '카드 이미지'}
             className="h-full w-full"
+             imageDisplayMode={def?.imageDisplayMode}
+             imageScale={def?.imageScale}
+             imagePositionX={def?.imagePositionX}
+             imagePositionY={def?.imagePositionY}
           />
           <span className="absolute bottom-1 left-1 right-1 line-clamp-3 text-center text-[7px] leading-tight text-neutral-300 md:text-[9px]">
             {def?.rulesText || '효과 없음'}

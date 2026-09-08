@@ -3,6 +3,7 @@ import {
   integer,
   jsonb,
   pgTable,
+  real,
   text,
   timestamp,
 } from "drizzle-orm/pg-core";
@@ -29,6 +30,10 @@ export const cardsTable = pgTable("cards", {
     .default(sql`'{}'::jsonb`),
   imageAssetId: text("image_asset_id"),
   imageUrl: text("image_url"),
+  imageDisplayMode: text("image_display_mode").notNull().default("COVER"),
+  imageScale: real("image_scale").notNull().default(1),
+  imagePositionX: integer("image_position_x").notNull().default(50),
+  imagePositionY: integer("image_position_y").notNull().default(50),
   status: text("status").notNull().default("DRAFT"),
   version: integer("version").notNull().default(1),
   createdAt: timestamp("created_at", { withTimezone: true })

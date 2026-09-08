@@ -6,13 +6,21 @@ import {
   Copy,
   FilePenLine,
   ImagePlus,
+  Maximize2,
   Plus,
+  RotateCcw,
   Search,
   Trash2,
   X,
 } from "lucide-react";
 import { CardArtwork } from "./card-artwork";
 import { useToast } from "../hooks/use-toast";
+import {
+  DEFAULT_IMAGE_DISPLAY_SETTINGS,
+  normalizeImageDisplaySettings,
+  type ImageDisplayMode,
+  type ImageDisplaySettings,
+} from "../game/cards/types";
 
 const adminApiBase = `${import.meta.env.BASE_URL.replace(/\/$/, "")}/api/admin`;
 
@@ -44,6 +52,10 @@ type CardRecord = {
   updatedAt: string;
   imageAssetId: string | null;
   imageUrl: string | null;
+  imageDisplayMode?: ImageDisplayMode;
+  imageScale?: number;
+  imagePositionX?: number;
+  imagePositionY?: number;
 };
 
 type CardFormValues = {
@@ -155,6 +167,9 @@ export function AdminCardManager({
   const [imageUrl, setImageUrl] = useState<string | null>(null);
   const [imageUploadToken, setImageUploadToken] = useState<string | null>(null);
   const [localPreviewUrl, setLocalPreviewUrl] = useState<string | null>(null);
+  const [imageDisplaySettings, setImageDisplaySettings] = useState<ImageDisplaySettings>({
+    ...DEFAULT_IMAGE_DISPLAY_SETTINGS,
+  });
   const [isUploadingImage, setIsUploadingImage] = useState(false);
   const [analysis, setAnalysis] = useState<EffectAnalysis | null>(null);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
@@ -242,6 +257,7 @@ export function AdminCardManager({
     setImageUrl(null);
     setImageUploadToken(null);
     setLocalPreviewUrl(null);
+    setImageDisplaySettings({ ...DEFAULT_IMAGE_DISPLAY_SETTINGS });
     setError("");
     setAnalysis(null);
     setCreatedMechanicRequest(null);
@@ -269,6 +285,7 @@ export function AdminCardManager({
     setImageUrl(card.imageUrl);
     setImageUploadToken(null);
     setLocalPreviewUrl(null);
+    setImageDisplaySettings(normalizeImageDisplaySettings(card));
     setError("");
     setAnalysis(null);
     setCreatedMechanicRequest(null);
@@ -302,6 +319,7 @@ export function AdminCardManager({
       imageAssetId,
       imageUrl,
       imageUploadToken,
+      ...imageDisplaySettings,
     };
 
     setBusyId(editingCard?.id ?? "create");
@@ -767,6 +785,83 @@ export function AdminCardManager({
                    )}
                  </div>
                  <p className="text-[10px] text-neutral-600">PNG, JPG, JPEG, WEBP · 서버 설정 크기 제한 적용</p>
+                  <div className="mt-3 space-y-3 border-t border-neutral-800 pt-3">
+                    <div className="text-xs font-bold text-neutral-400">이미지 표시 설정</div>
+                    <div className="grid grid-cols-3 gap-2">
+                      {([
+                        ["COVER", "채우기"],
+                        ["CONTAIN", "전체 보기"],
+                        ["CUSTOM", "수동 조절"],
+                      ] as const).map(([mode, label]) => (
+                        <button
+                          key={mode}
+                          type="button"
+                          onClick={() => setImageDisplaySettings((current) => ({ ...current, imageDisplayMode: mode }))}
+                          className={`rounded border px-2 py-2 text-xs font-bold ${
+                            imageDisplaySettings.imageDisplayMode === mode
+                              ? "border-primary bg-primary/15 text-primary"
+                              : "border-neutral-700 text-neutral-400 hover:border-neutral-500"
+                          }`}
+                          data-testid={`button-image-mode-${mode.toLowerCase()}`}
+                        >
+                          {label}
+                        </button>
+                      ))}
+                    </div>
+                    <ImageDisplaySlider
+                      label="확대/축소"
+                      value={imageDisplaySettings.imageScale}
+                      min={0.5}
+                      max={2}
+                      step={0.01}
+                      displayValue={`${Math.round(imageDisplaySettings.imageScale * 100)}%`}
+                      onChange={(value) => setImageDisplaySettings((current) => ({ ...current, imageScale: value }))}
+                      testId="input-image-scale"
+                    />
+                    <ImageDisplaySlider
+                      label="좌우 위치"
+                      value={imageDisplaySettings.imagePositionX}
+                      min={0}
+                      max={100}
+                      step={1}
+                      displayValue={`${Math.round(imageDisplaySettings.imagePositionX)}`}
+                      onChange={(value) => setImageDisplaySettings((current) => ({ ...current, imagePositionX: value }))}
+                      testId="input-image-position-x"
+                    />
+                    <ImageDisplaySlider
+                      label="상하 위치"
+                      value={imageDisplaySettings.imagePositionY}
+                      min={0}
+                      max={100}
+                      step={1}
+                      displayValue={`${Math.round(imageDisplaySettings.imagePositionY)}`}
+                      onChange={(value) => setImageDisplaySettings((current) => ({ ...current, imagePositionY: value }))}
+                      testId="input-image-position-y"
+                    />
+                    <div className="flex flex-wrap gap-2">
+                      <button
+                        type="button"
+                        onClick={() => setImageDisplaySettings({ ...DEFAULT_IMAGE_DISPLAY_SETTINGS })}
+                        className="flex items-center gap-1.5 rounded border border-neutral-700 px-2.5 py-1.5 text-xs font-bold text-neutral-300 hover:border-primary hover:text-primary"
+                        data-testid="button-reset-image-position"
+                      >
+                        <RotateCcw className="h-3.5 w-3.5" /> 이미지 위치 초기화
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setImageDisplaySettings({
+                          imageDisplayMode: "CONTAIN",
+                          imageScale: 1,
+                          imagePositionX: 50,
+                          imagePositionY: 50,
+                        })}
+                        className="flex items-center gap-1.5 rounded border border-neutral-700 px-2.5 py-1.5 text-xs font-bold text-neutral-300 hover:border-primary hover:text-primary"
+                        data-testid="button-fit-image"
+                      >
+                        <Maximize2 className="h-3.5 w-3.5" /> 이미지 전체 보기
+                      </button>
+                    </div>
+                  </div>
                </div>
               <label className="space-y-1.5"><span className="text-xs font-bold text-neutral-400">카드 종류</span><select {...form.register("cardType")} data-testid="input-card-card-type" className="w-full rounded border border-neutral-700 bg-neutral-900 px-3 py-2"><option value="WRESTLER">선수</option><option value="TECHNIQUE">기술</option></select></label>
               <div className="grid grid-cols-3 gap-2">
@@ -835,6 +930,8 @@ export function AdminCardManager({
                  health={Number(preview.health) || 0}
                  text={preview.text}
                  imageUrl={localPreviewUrl ?? imageUrl}
+                  imageDisplaySettings={imageDisplaySettings}
+                  onImagePositionChange={(position) => setImageDisplaySettings((current) => ({ ...current, ...position }))}
                />
                <p className="mt-4 text-center text-[10px] leading-relaxed text-neutral-600">미리보기 전용 카드입니다.<br />게임 액션은 실행되지 않습니다.</p>
              </aside>
@@ -868,6 +965,45 @@ function LibraryGroup({
   );
 }
 
+function ImageDisplaySlider({
+  label,
+  value,
+  min,
+  max,
+  step,
+  displayValue,
+  onChange,
+  testId,
+}: {
+  label: string;
+  value: number;
+  min: number;
+  max: number;
+  step: number;
+  displayValue: string;
+  onChange: (value: number) => void;
+  testId: string;
+}) {
+  return (
+    <label className="block space-y-1">
+      <span className="flex items-center justify-between text-[11px] font-bold text-neutral-400">
+        <span>{label}</span>
+        <span className="text-primary">{displayValue}</span>
+      </span>
+      <input
+        type="range"
+        min={min}
+        max={max}
+        step={step}
+        value={value}
+        onChange={(event) => onChange(Number(event.target.value))}
+        className="w-full accent-primary"
+        data-testid={testId}
+      />
+    </label>
+  );
+}
+
 function AdminCardPreview({
   name,
   cost,
@@ -875,6 +1011,8 @@ function AdminCardPreview({
   health,
   text,
   imageUrl,
+  imageDisplaySettings,
+  onImagePositionChange,
 }: {
   name: string;
   cost: number;
@@ -882,6 +1020,10 @@ function AdminCardPreview({
   health: number;
   text: string;
   imageUrl: string | null;
+  imageDisplaySettings: ImageDisplaySettings;
+  onImagePositionChange: (
+    position: Pick<ImageDisplaySettings, "imagePositionX" | "imagePositionY">,
+  ) => void;
 }) {
   return (
     <div data-testid="card-live-preview" className="relative mx-auto flex h-[360px] w-[240px] select-none flex-col rounded-lg border-2 border-blue-600/70 bg-neutral-800 shadow-[0_15px_40px_rgba(0,0,0,0.7)]">
@@ -891,7 +1033,15 @@ function AdminCardPreview({
       <div className="flex h-12 items-center justify-center overflow-hidden rounded-t-md border-b border-neutral-700 bg-neutral-800 px-5">
         <span className="truncate text-sm font-black text-white">{name || "카드 이름"}</span>
       </div>
-      <CardArtwork src={imageUrl} alt={name || "카드 미리보기"} className="min-h-0 w-full flex-1" />
+      <CardArtwork
+        src={imageUrl}
+        alt={name || "카드 미리보기"}
+        className="min-h-0 w-full flex-1"
+        {...imageDisplaySettings}
+        interactive
+        showHint={Boolean(imageUrl)}
+        onPositionChange={onImagePositionChange}
+      />
       <div className="h-24 border-t border-neutral-800 bg-neutral-900/95 p-3 text-xs leading-relaxed text-neutral-300">
         <span className="line-clamp-4">{text || "효과 없음"}</span>
       </div>

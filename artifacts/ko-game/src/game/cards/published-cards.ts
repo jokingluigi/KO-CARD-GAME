@@ -20,6 +20,10 @@ export type PublishedCardRecord = {
   updatedAt: string;
   imageAssetId: string | null;
   imageUrl: string | null;
+  imageDisplayMode?: "COVER" | "CONTAIN" | "CUSTOM";
+  imageScale?: number;
+  imagePositionX?: number;
+  imagePositionY?: number;
 };
 
 function amount(config: Record<string, unknown>): number {
@@ -105,6 +109,10 @@ export function cardRecordToDefinition(card: PublishedCardRecord): CardDefinitio
       rulesText: card.text,
       imageAssetId: card.imageAssetId,
       imageUrl: card.imageUrl,
+       imageDisplayMode: card.imageDisplayMode,
+       imageScale: card.imageScale,
+       imagePositionX: card.imagePositionX,
+       imagePositionY: card.imagePositionY,
       isToken: card.isToken,
       isChampionToken: card.isChampionToken,
       keywords: card.keywords,
