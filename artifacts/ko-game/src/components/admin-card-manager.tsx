@@ -73,6 +73,13 @@ type EffectLibrary = {
   targetResolvers: Array<{ name: string; description: string; config: Record<string, unknown>; status: "ACTIVE" }>;
   valueResolvers: Array<{ name: string; description: string; values?: string[]; status: "ACTIVE" }>;
 };
+type MechanicRequest = {
+  id: string;
+  status: "PENDING" | "ANALYZING" | "READY_TO_GENERATE" | "GENERATING" | "TESTING" | "READY_FOR_REVIEW" | "APPROVED" | "REJECTED" | "FAILED";
+  originalCardText: string;
+  unsupportedParts: string[];
+  createdAt: string;
+};
 
 const EMPTY_CARD: CardFormValues = {
   name: "",
@@ -150,6 +157,9 @@ export function AdminCardManager({
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [effectLibrary, setEffectLibrary] = useState<EffectLibrary | null>(null);
   const [isLibraryOpen, setIsLibraryOpen] = useState(false);
+  const [mechanicRequests, setMechanicRequests] = useState<MechanicRequest[]>([]);
+  const [createdMechanicRequest, setCreatedMechanicRequest] = useState<MechanicRequest | null>(null);
+  const [isCreatingMechanicRequest, setIsCreatingMechanicRequest] = useState(false);
   const imageInputRef = useRef<HTMLInputElement>(null);
   const form = useForm<CardFormValues>({ defaultValues: EMPTY_CARD });
   const preview = form.watch();
@@ -201,6 +211,23 @@ export function AdminCardManager({
     void loadEffectLibrary();
   }, [onUnauthorized]);
 
+  useEffect(() => {
+    async function loadMechanicRequests() {
+      try {
+        const response = await fetch(`${adminApiBase}/mechanic-requests`, {
+          credentials: "include",
+        });
+        if (response.status === 401) { onUnauthorized(); return; }
+        if (!response.ok) throw new Error(await responseMessage(response));
+        const body = await response.json() as { mechanicRequests: MechanicRequest[] };
+        setMechanicRequests(body.mechanicRequests);
+      } catch (requestError) {
+        setError(requestError instanceof Error ? requestError.message : "메커니즘 요청 목록을 불러오지 못했습니다.");
+      }
+    }
+    void loadMechanicRequests();
+  }, [onUnauthorized]);
+
   function openCreate() {
     setEditingCard(null);
     form.reset(EMPTY_CARD);
@@ -210,6 +237,7 @@ export function AdminCardManager({
     setLocalPreviewUrl(null);
     setError("");
     setAnalysis(null);
+    setCreatedMechanicRequest(null);
     setIsFormOpen(true);
   }
 
@@ -233,6 +261,7 @@ export function AdminCardManager({
     setImageUploadToken(null);
     setLocalPreviewUrl(null);
     setError("");
+    setCreatedMechanicRequest(null);
     setIsFormOpen(true);
   }
 
@@ -304,6 +333,34 @@ export function AdminCardManager({
     } catch (analysisError) {
       setError(analysisError instanceof Error ? analysisError.message : "효과를 분석하지 못했습니다.");
     } finally { setIsAnalyzing(false); }
+  }
+
+  async function createMechanicRequest() {
+    const originalCardText = form.getValues("text").trim();
+    if (!analysis || analysis.outcome !== "mechanism_required" || !originalCardText) {
+      setError("새 메커니즘이 필요한 분석 결과가 있어야 합니다.");
+      return;
+    }
+    setError("");
+    setIsCreatingMechanicRequest(true);
+    try {
+      const response = await fetch(`${adminApiBase}/mechanic-requests`, {
+        method: "POST",
+        credentials: "include",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ originalCardText }),
+      });
+      if (response.status === 401) { onUnauthorized(); return; }
+      if (!response.ok) throw new Error(await responseMessage(response));
+      const body = await response.json() as { mechanicRequest: MechanicRequest };
+      setCreatedMechanicRequest(body.mechanicRequest);
+      setMechanicRequests((current) => [body.mechanicRequest, ...current]);
+      setMessage("새 메커니즘 요청을 PENDING 상태로 만들었습니다. 아직 코드 생성은 실행되지 않습니다.");
+    } catch (requestError) {
+      setError(requestError instanceof Error ? requestError.message : "메커니즘 요청을 만들지 못했습니다.");
+    } finally {
+      setIsCreatingMechanicRequest(false);
+    }
   }
 
   function applyAnalysis() {
@@ -483,6 +540,23 @@ export function AdminCardManager({
               <LibraryGroup title="Value resolvers" items={effectLibrary.valueResolvers.map((item) => ({ ...item, detail: `${item.description}${item.values ? ` · ${item.values.join(", ")}` : ""}` }))} />
             </div>
           )}
+           <div className="mt-5 border-t border-neutral-800 pt-4">
+             <h3 className="text-sm font-black">새 메커니즘 요청 기록</h3>
+             <p className="mt-1 text-xs text-neutral-500">요청 생성만 기록합니다. 이 단계에서는 코드 생성 또는 변경이 실행되지 않습니다.</p>
+             {mechanicRequests.length === 0 ? (
+               <p className="mt-3 text-xs text-neutral-600">생성된 요청이 없습니다.</p>
+             ) : (
+               <ul className="mt-3 space-y-2">
+                 {mechanicRequests.map((item) => (
+                   <li key={item.id} className="rounded border border-neutral-800 bg-black/30 p-2 text-xs">
+                     <div className="flex flex-wrap items-center gap-2"><strong>{item.id}</strong><span className="rounded border border-amber-800 px-1.5 py-0.5 text-[10px] font-bold text-amber-300">{item.status}</span></div>
+                     <p className="mt-1 text-neutral-400">{item.originalCardText}</p>
+                     <p className="mt-1 text-amber-300">지원하지 않음: {item.unsupportedParts.join(", ")}</p>
+                   </li>
+                 ))}
+               </ul>
+             )}
+           </div>
         </section>
       )}
 
@@ -616,7 +690,7 @@ export function AdminCardManager({
               <div className="grid grid-cols-3 gap-2">
                 {(["cost", "attack", "health"] as const).map((field) => <label key={field} className="space-y-1.5"><span className="text-xs font-bold text-neutral-400">{{ cost: "비용", attack: "공격력", health: "체력" }[field]}</span><input type="number" min={0} max={999} {...form.register(field, { required: true, valueAsNumber: true })} data-testid={`input-card-${field}`} className="w-full rounded border border-neutral-700 bg-neutral-900 px-2 py-2 outline-none focus:border-primary" /></label>)}
               </div>
-                <label className="space-y-1.5 md:col-span-2"><span className="text-xs font-bold text-neutral-400">카드 효과 설명</span><textarea {...form.register("text", { onChange: () => { setAnalysis(null); form.setValue("effectId", ""); form.setValue("effectConfig", "{}"); } })} rows={3} data-testid="input-card-text" className="w-full rounded border border-neutral-700 bg-neutral-900 px-3 py-2 outline-none focus:border-primary" /></label>
+                <label className="space-y-1.5 md:col-span-2"><span className="text-xs font-bold text-neutral-400">카드 효과 설명</span><textarea {...form.register("text", { onChange: () => { setAnalysis(null); setCreatedMechanicRequest(null); form.setValue("effectId", ""); form.setValue("effectConfig", "{}"); } })} rows={3} data-testid="input-card-text" className="w-full rounded border border-neutral-700 bg-neutral-900 px-3 py-2 outline-none focus:border-primary" /></label>
                 <div className="space-y-3 md:col-span-2">
                   <button type="button" onClick={() => void analyzeEffects()} disabled={isAnalyzing} data-testid="button-analyze-effects" className="rounded border border-primary px-4 py-2 text-sm font-bold text-primary disabled:opacity-40">{isAnalyzing ? "분석 중..." : "효과 분석"}</button>
                    {analysis && <div className={`rounded border p-3 text-xs ${analysis.outcome === "supported" ? "border-emerald-800 bg-emerald-950/30" : analysis.outcome === "mechanism_required" ? "border-amber-800 bg-amber-950/30" : "border-red-800 bg-red-950/30"}`} data-testid="effect-analysis-result">
@@ -637,7 +711,8 @@ export function AdminCardManager({
                     })}
                      {analysis.keywords.map((keyword) => <div key={keyword} className="mt-2 text-emerald-300">기본 키워드: {KEYWORD_LABELS[keyword]}</div>)}
                      {analysis.unsupportedSegments.map((segment) => <div key={segment} className="mt-2 text-amber-300">지원하지 않음: {segment}</div>)}
-                     <div className="mt-3 flex flex-wrap gap-2"><button type="button" disabled={analysis.outcome !== "supported"} onClick={applyAnalysis} data-testid="button-apply-analysis" className="rounded bg-primary px-3 py-1.5 font-bold text-black disabled:opacity-40">분석 결과 적용</button>{analysis.outcome === "mechanism_required" && <button type="button" disabled data-testid="button-generate-mechanism" title="Phase 1에서는 새 메커니즘을 생성하지 않습니다." className="rounded border border-amber-700 px-3 py-1.5 font-bold text-amber-300 disabled:opacity-40">메커니즘 생성 (준비 중)</button>}<button type="button" onClick={() => void analyzeEffects()} data-testid="button-reanalyze-effects" className="rounded border border-neutral-600 px-3 py-1.5">다시 분석</button><button type="button" onClick={() => setAnalysis(null)} data-testid="button-cancel-analysis" className="rounded border border-neutral-600 px-3 py-1.5">취소</button></div>
+                      <div className="mt-3 flex flex-wrap gap-2"><button type="button" disabled={analysis.outcome !== "supported"} onClick={applyAnalysis} data-testid="button-apply-analysis" className="rounded bg-primary px-3 py-1.5 font-bold text-black disabled:opacity-40">분석 결과 적용</button>{analysis.outcome === "mechanism_required" && <button type="button" disabled={isCreatingMechanicRequest || createdMechanicRequest !== null} onClick={() => void createMechanicRequest()} data-testid="button-generate-mechanism" className="rounded border border-amber-700 px-3 py-1.5 font-bold text-amber-300 disabled:opacity-40">{isCreatingMechanicRequest ? "요청 생성 중..." : "AI로 새 메커니즘 만들기"}</button>}<button type="button" onClick={() => void analyzeEffects()} data-testid="button-reanalyze-effects" className="rounded border border-neutral-600 px-3 py-1.5">다시 분석</button><button type="button" onClick={() => setAnalysis(null)} data-testid="button-cancel-analysis" className="rounded border border-neutral-600 px-3 py-1.5">취소</button></div>
+                      {createdMechanicRequest && <div data-testid="mechanic-request-created" className="mt-3 rounded border border-amber-800 bg-amber-950/30 p-2 text-xs"><strong>요청 ID: {createdMechanicRequest.id}</strong><p className="mt-1">원본 효과: {createdMechanicRequest.originalCardText}</p><p>현재 상태: {createdMechanicRequest.status}</p><p>지원하지 않음: {createdMechanicRequest.unsupportedParts.join(", ")}</p></div>}
                     <details className="mt-2"><summary>고급 JSON 보기</summary><pre className="mt-1 overflow-auto text-[10px]">{JSON.stringify(analysis.effects, null, 2)}</pre></details>
                   </div>}
                 </div>

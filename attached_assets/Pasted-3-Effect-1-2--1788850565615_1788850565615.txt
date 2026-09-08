@@ -1,0 +1,208 @@
+3단계 — 관리자 승인 → 실제 Effect 등록 → 원래 카드 자동 재분석
+
+1단계와 2단계에서 만든 시스템을 유지하면서
+마지막 승인/등록 흐름을 추가해줘.
+
+목표:
+
+코딩 에이전트가 생성하고 모든 테스트를 통과한 새 메커니즘을
+관리자가 직접 검토한 뒤 승인해야 실제 Effect Library에 등록되게 한다.
+
+READY_FOR_REVIEW 상태에서 다음을 표시한다.
+
+Effect 이름
+
+설명
+
+지원 설정값
+
+새 Trigger/Resolver가 있다면 설명
+
+어떤 파일/영역이 변경되는지
+
+신규 테스트 결과
+
+기존 테스트 결과
+
+원본 카드 효과
+
+이 Effect를 앞으로 어떤 카드들이 재사용할 수 있는지
+
+버튼:
+
+[승인 및 활성화]
+
+[거부]
+
+다음이 모두 성공해야만 [승인 및 활성화] 버튼 활성화:
+
+TypeScript compile 성공
+
+신규 Effect 테스트 성공
+
+기존 핵심 게임 테스트 성공
+
+Effect Schema validation 성공
+
+관리자가 승인하면:
+
+신규 Effect Module을 정식 등록
+Effect Registry에 ACTIVE 상태로 등록
+Analyzer mapping 활성화
+Effect Library에서 검색 가능하게 함
+처음 이 메커니즘을 요청했던 카드 효과 문장을 자동으로 다시 분석
+새 Effect를 이용한 Structured Effect 생성
+관리자에게 최종 분석 결과 표시
+관리자가 [카드 효과 적용]을 누르면 카드에 저장
+
+카드를 자동으로 PUBLISHED 상태로 만들지는 마.
+
+카드는 기존대로 DRAFT → 테스트 → PUBLISHED 흐름을 사용한다.
+
+새 Effect는 최소:
+
+DRAFT
+ACTIVE
+DISABLED
+
+상태를 지원한다.
+
+version도 관리한다.
+
+예:
+
+SHUFFLE_STAT_VALUES v1
+
+관리자 페이지에 Effect Library 목록을 보여준다.
+
+각 Effect에서:
+
+이름
+설명
+버전
+상태
+사용 카드 수
+
+를 확인 가능하게 한다.
+
+일반 관리자 화면에서 Effect 소스코드를 직접 수정하게 하지는 않는다.
+
+한 번 승인된 Effect와 유사한 카드 효과가 나중에 입력되면
+다시 코딩 에이전트를 호출하지 않는다.
+
+기존 ACTIVE Effect를 우선 재사용한다.
+
+예:
+
+처음:
+
+"내 손패 선수들의 공격력을 서로 무작위로 섞습니다."
+
+→ 새 SHUFFLE_STAT_VALUES 생성
+
+나중:
+
+"상대 필드 선수들의 체력을 서로 무작위로 섞습니다."
+
+→ 기존 SHUFFLE_STAT_VALUES 사용
+→ stat = HEALTH
+→ target = ENEMY_BOARD
+
+활성화 이후 문제가 발견될 경우 관리자에게:
+
+[Effect 비활성화]
+
+기능을 제공한다.
+
+DISABLED Effect는 신규 카드 생성/분석에서 사용하지 않는다.
+
+이미 진행 중인 매치는 기존 Match Snapshot 정책을 유지한다.
+
+관리자가 자연어 카드 효과 입력
+
+↓
+
+기존 Effect Library 검색
+
+↓
+
+가능
+→ Structured Effect 생성
+
+불가능
+→ NEW_MECHANIC_REQUIRED
+
+↓
+
+[AI로 새 메커니즘 만들기]
+
+↓
+
+MechanicRequest 생성
+
+↓
+
+코딩 에이전트가 기존 코드 분석
+
+↓
+
+기존 기능 재사용 시도
+
+↓
+
+정말 필요하면 새 범용 Effect 코드 생성
+
+↓
+
+TypeScript compile
+
+↓
+
+자동 테스트
+
+↓
+
+READY_FOR_REVIEW
+
+↓
+
+관리자 검토
+
+↓
+
+[승인 및 활성화]
+
+↓
+
+Effect Library ACTIVE 등록
+
+↓
+
+원래 카드 효과 자동 재분석
+
+↓
+
+Structured Effect 생성
+
+↓
+
+[카드 효과 적용]
+
+↓
+
+DRAFT 카드 테스트
+
+↓
+
+PUBLISHED
+
+이 흐름이 실제로 작동해야 한다.
+
+"새 메커니즘 자동 생성"이라고 표시만 하고 실제 소스코드 수정이 발생하지 않는 가짜 기능을 만들지 마.
+
+실제 코딩 에이전트 연동이 환경상 불가능하다면
+가능한 척 구현하지 말고 정확히 어떤 API/연결/권한이 부족한지 알려줘.
+
+기존 정상 게임 엔진 전체를 불필요하게 새로 작성하지 마.
+
+이 단계가 끝나면 추가 기능을 임의로 만들지 말고 종료해줘

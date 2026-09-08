@@ -1,8 +1,12 @@
 import { createHmac, randomUUID, timingSafeEqual } from "node:crypto";
 import { and, asc, eq, ilike, sql } from "drizzle-orm";
-import { cardsTable, db } from "@workspace/db";
+import { cardsTable, db, mechanicRequestsTable } from "@workspace/db";
 import { Router, type IRouter, type Request, type Response } from "express";
 import { CardImageStorage } from "../lib/object-storage";
+import {
+  isPendingMechanicRequestConflict,
+  prepareMechanicRequest,
+} from "../lib/mechanic-request-service";
 import { analyzeEffectText, effectLibrary, isStructuredEffects } from "../lib/structured-effects";
 
 const router: IRouter = Router();
@@ -224,6 +228,21 @@ function isValidSession(request: Request): boolean {
   }
 }
 
+function adminSessionUsername(request: Request): string | null {
+  if (!isValidSession(request)) return null;
+  const token = cookieValue(request);
+  if (!token) return null;
+  try {
+    const [encodedPayload] = token.split(".");
+    const payload = JSON.parse(
+      Buffer.from(encodedPayload ?? "", "base64url").toString("utf8"),
+    ) as Partial<AdminSessionPayload>;
+    return typeof payload.username === "string" ? payload.username : null;
+  } catch {
+    return null;
+  }
+}
+
 function setSessionCookie(response: Response, token: string): void {
   const secure = process.env["NODE_ENV"] === "production" ? "; Secure" : "";
   response.setHeader(
@@ -335,6 +354,96 @@ router.post("/effects/analyze", (request, response) => {
 router.get("/effects/library", (request, response) => {
   if (!requireAdmin(request, response)) return;
   response.json(effectLibrary());
+});
+
+router.post("/mechanic-requests", async (request, response): Promise<void> => {
+  if (!requireAdmin(request, response)) return;
+  const body =
+    request.body && typeof request.body === "object"
+      ? (request.body as Record<string, unknown>)
+      : {};
+  const originalCardText =
+    typeof body.originalCardText === "string" ? body.originalCardText.trim() : "";
+  const requestedBy = adminSessionUsername(request);
+  if (!originalCardText || originalCardText.length > 2000 || !requestedBy) {
+    response.status(400).json({ message: "효과 텍스트를 확인해 주세요." });
+    return;
+  }
+
+  // Client analysis is UX-only. Re-run the current analyzer/library on server.
+  const prepared = prepareMechanicRequest(
+    originalCardText,
+    requestedBy,
+    randomUUID(),
+  );
+  if (prepared.kind === "supported") {
+    response.status(409).json({
+      message: "현재 Effect Library로 구현할 수 있습니다. 다시 분석한 뒤 Structured Effect를 사용해 주세요.",
+      analysis: prepared.analysis,
+    });
+    return;
+  }
+  if (prepared.kind === "analysis_failure") {
+    response.status(422).json({
+      message: "효과 의도를 충분히 분석하지 못해 새 메커니즘 요청을 만들 수 없습니다.",
+      analysis: prepared.analysis,
+    });
+    return;
+  }
+
+  try {
+    const [mechanicRequest] = await db
+      .insert(mechanicRequestsTable)
+      .values(prepared.values)
+      .returning();
+    response.status(201).json({ mechanicRequest });
+  } catch (error) {
+    if (!isPendingMechanicRequestConflict(error)) throw error;
+
+    const [duplicate] = await db
+      .select()
+      .from(mechanicRequestsTable)
+      .where(
+        and(
+          eq(mechanicRequestsTable.originalCardText, originalCardText),
+          eq(mechanicRequestsTable.status, "PENDING"),
+        ),
+      )
+      .limit(1);
+    if (!duplicate) throw error;
+    response.status(409).json({
+      message: "같은 효과의 대기 중인 요청이 이미 있습니다.",
+      mechanicRequest: duplicate,
+    });
+  }
+});
+
+router.get("/mechanic-requests", async (request, response): Promise<void> => {
+  if (!requireAdmin(request, response)) return;
+  const mechanicRequests = await db
+    .select()
+    .from(mechanicRequestsTable)
+    .orderBy(asc(mechanicRequestsTable.createdAt));
+  response.json({ mechanicRequests });
+});
+
+router.get("/mechanic-requests/:id", async (request, response): Promise<void> => {
+  if (!requireAdmin(request, response)) return;
+  const id = firstParam(request.params.id);
+  if (!id) {
+    response.status(400).json({ message: "요청 ID가 올바르지 않습니다." });
+    return;
+  }
+  const [mechanicRequest] = await db
+    .select()
+    .from(mechanicRequestsTable)
+    .where(eq(mechanicRequestsTable.id, id))
+    .limit(1);
+  if (!mechanicRequest) {
+    response.status(404).json({ message: "메커니즘 요청을 찾을 수 없습니다." });
+    return;
+  }
+  response.json({ mechanicRequest });
 });
 
 router.post("/login", (request, response) => {
