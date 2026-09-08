@@ -1,0 +1,967 @@
+현재 구현된 카드 관리 시스템, Effect Library, 자연어 효과 분석기, Structured Effect, NEW_MECHANIC_REQUIRED, Replit Agent 수정 프롬프트 생성 시스템을 그대로 유지하면서
+
+이번에는 관리자 페이지에 "챔피언 관리" 기능을 추가해줘.
+
+중요:
+
+KO에서 기존 직업(Class/Job) 시스템은 폐기되었다.
+
+현재는 "챔피언(Champion)" 시스템만 사용한다.
+
+절대로 예전 Class / Job 시스템을 다시 만들거나 복구하지 마.
+
+챔피언의 고유 능력, 퀘스트, 퀘스트 보상 역시 카드 효과와 동일한 Effect Library / DSL / Analyzer를 사용해야 한다.
+
+별도의 챔피언 전용 효과 엔진을 새로 만들지 않는다.
+
+==================================================
+
+1. 관리자 메뉴
+   ==================================================
+
+/admin 에 다음 메뉴를 추가한다.
+
+[카드 관리]
+[챔피언 관리]
+[Effect Library]
+
+챔피언 관리 화면에서는:
+
+* 챔피언 목록
+* 검색
+* 생성
+* 수정
+* 복제
+* 비활성화
+* 미리보기
+
+를 지원한다.
+
+기존 카드 관리 UI와 최대한 동일한 UX를 재사용한다.
+
+==================================================
+2. ChampionDefinition
+=====================
+
+챔피언은 DB 기반 ChampionDefinition으로 관리한다.
+
+최소 필드:
+
+id
+
+name
+
+description
+
+imageAssetId / imageUrl
+
+maxHealth
+
+abilityName
+
+abilityCost
+
+abilityText
+
+abilityEffects
+
+hasQuest
+
+questName
+
+questText
+
+questCondition
+
+questProgressRequired
+
+questRewardText
+
+questRewardEffects
+
+upgradedAbilityName
+
+upgradedAbilityCost
+
+upgradedAbilityText
+
+upgradedAbilityEffects
+
+championTokenDefinitionId
+
+status
+
+version
+
+createdAt
+
+updatedAt
+
+status:
+
+DRAFT
+PUBLISHED
+DISABLED
+
+기존 카드 시스템에서 공통으로 사용할 수 있는 필드/구조가 있다면 재사용한다.
+
+==================================================
+3. 기본 체력
+========
+
+현재 KO 기본 Champion 최대 체력은:
+
+20
+
+이다.
+
+새 챔피언 생성 시 기본값을 20으로 한다.
+
+관리자가 필요하면 데이터상 변경할 수 있도록 만들 수 있지만,
+게임 규칙의 기본값은 20을 유지한다.
+
+==================================================
+4. 챔피언 고유 능력 입력
+===============
+
+챔피언 관리 화면에서 관리자가 자연어로 고유 능력을 입력할 수 있게 한다.
+
+예:
+
+고유 능력 비용:
+2G
+
+효과:
+
+"손패의 무작위 선수 카드 하나에게 공격력 +1, 체력 +1을 부여합니다."
+
+[효과 분석]
+
+버튼을 누르면 기존 카드 효과 Analyzer와 Effect Library를 사용해서 Structured Effect로 변환한다.
+
+예:
+
+Trigger:
+CHAMPION_ABILITY_USED
+
+Target:
+ALLY_HAND_WRESTLER
+
+Selection:
+RANDOM
+
+Count:
+1
+
+Action:
+BUFF
+
+Attack:
+1
+
+Health:
+1
+
+==================================================
+5. 챔피언 효과도 기존 Effect 시스템 공유
+===========================
+
+Champion Ability용 별도 하드코딩 엔진을 만들지 않는다.
+
+기존:
+
+Trigger
+Action
+Target
+Value Resolver
+Condition
+Sequence
+Listener
+Duration
+Effect Executor
+
+를 그대로 사용한다.
+
+필요한 Champion 관련 범용 Trigger가 없다면:
+
+CHAMPION_ABILITY_USED
+
+등 최소한의 범용 Trigger만 추가한다.
+
+특정 챔피언 이름 기반 코드는 금지한다.
+
+예:
+
+금지:
+
+if (champion.name === "여울")
+
+if (champion.id === "pandora")
+
+대신 모든 챔피언은 데이터 + Structured Effect로 동작한다.
+
+==================================================
+6. 효과 분석 결과
+===========
+
+카드 관리와 동일하게 세 가지 결과를 사용한다.
+
+A.
+
+✓ 기존 Effect 사용 가능
+
+→ Structured Effect 미리보기
+→ [효과 적용]
+
+B.
+
+⚠ 새 메커니즘이 필요합니다.
+
+→ unsupportedParts 표시
+→ [Replit 수정 프롬프트 만들기]
+
+C.
+
+✗ 효과 의도를 충분히 이해하지 못했습니다.
+
+→ 이해하지 못한 부분 표시
+
+카드 관리에서 이미 구현한 UI/로직을 최대한 공통 컴포넌트로 재사용한다.
+
+==================================================
+7. 새로운 챔피언 메커니즘도 동일한 흐름
+=======================
+
+챔피언 효과에서 기존 Effect Library에 없는 기능이 나오더라도
+카드와 완전히 동일한 방식으로 처리한다.
+
+예:
+
+챔피언 능력:
+
+"이번 턴에 세 번째로 선수를 소환하면 그 선수의 공격력과 체력을 두 배로 합니다."
+
+현재 시스템에서 지원할 수 없다면:
+
+NEW_MECHANIC_REQUIRED
+
+↓
+
+[Replit 수정 프롬프트 만들기]
+
+↓
+
+현재 Effect Library에서 부족한 부분만 분석
+
+↓
+
+Replit Agent용 구현 프롬프트 생성
+
+↓
+
+사용자가 Replit Agent에 붙여넣기
+
+↓
+
+새 범용 Effect 구현
+
+↓
+
+[메커니즘 구현 완료 - 다시 분석]
+
+↓
+
+최신 Effect Library 기준으로 재분석
+
+↓
+
+Structured Effect 생성
+
+이 기존 시스템을 그대로 사용한다.
+
+==================================================
+8. Quest 관리
+===========
+
+챔피언은 Quest를 가질 수도 있고 가지지 않을 수도 있다.
+
+관리 화면에:
+
+[퀘스트 있음]
+
+Toggle을 제공한다.
+
+OFF:
+
+Quest 관련 입력 UI 숨김.
+
+ON:
+
+다음 항목 표시:
+
+퀘스트 이름
+
+퀘스트 설명
+
+퀘스트 조건
+
+필요 진행도
+
+완료 보상
+
+==================================================
+9. Quest 조건도 자연어 분석
+===================
+
+퀘스트 조건도 관리자가 한국어로 작성한다.
+
+예:
+
+"선수 카드를 7회 생성합니다."
+
+[퀘스트 조건 분석]
+
+↓
+
+Structured Quest Condition:
+
+Event:
+CARD_GENERATED
+
+CardType:
+WRESTLER
+
+Progress:
++1
+
+Required:
+7
+
+처럼 변환한다.
+
+또 다른 예:
+
+"이 챔피언의 고유 능력으로 선수 카드 5장을 리타이어시킵니다."
+
+이라면:
+
+Event:
+WRESTLER_RETIRED
+
+Condition:
+CAUSED_BY_CHAMPION_ABILITY
+
+Progress:
++1
+
+Required:
+5
+
+형태로 표현할 수 있게 한다.
+
+기존 Event Log / Event 시스템을 최대한 사용한다.
+
+==================================================
+10. Quest도 새 메커니즘 감지
+====================
+
+퀘스트 조건을 기존 시스템이 표현하지 못하면
+억지로 저장하지 않는다.
+
+NEW_MECHANIC_REQUIRED로 표시한다.
+
+그리고 카드/챔피언 능력과 동일하게:
+
+[Replit 수정 프롬프트 만들기]
+
+를 사용할 수 있게 한다.
+
+프롬프트에는:
+
+"이 기능은 특정 챔피언 전용이 아니라 범용 Quest Condition / Event Filter로 구현하세요."
+
+라는 규칙을 포함한다.
+
+==================================================
+11. Quest 진행도
+=============
+
+진행도는 매치 GameState에 저장한다.
+
+예:
+
+championQuest: {
+questId,
+currentProgress,
+requiredProgress,
+completed
+}
+
+온라인 멀티플레이를 고려해 직렬화 가능한 데이터만 사용한다.
+
+브라우저 객체나 임의 함수 저장 금지.
+
+==================================================
+12. Quest 완료
+============
+
+currentProgress >= requiredProgress
+
+가 되면 Quest를 1회 완료 처리한다.
+
+완료 이벤트:
+
+QUEST_COMPLETED
+
+를 발생시킬 수 있게 한다.
+
+중복 완료/중복 보상은 발생하지 않는다.
+
+==================================================
+13. Quest 보상도 자연어 효과
+====================
+
+Quest Reward 역시 자연어로 입력한다.
+
+예:
+
+"챔피언 고유 능력을 강화합니다."
+
+또는:
+
+"고유 능력을 강화하고 챔피언 판도라(폭주)를 직접 필드에 소환합니다."
+
+[보상 효과 분석]
+
+↓
+
+Structured Effect로 저장한다.
+
+필요하다면:
+
+UPGRADE_CHAMPION_ABILITY
+
+DIRECT_DEPLOY_CHAMPION_TOKEN
+
+같은 범용 Action을 Effect Library에 등록한다.
+
+단, 기존 기능으로 표현 가능하면 새 Effect를 만들지 않는다.
+
+==================================================
+14. 강화 고유 능력
+============
+
+Quest 완료 후 능력이 강화되는 챔피언을 지원한다.
+
+관리 화면:
+
+## 기본 고유 능력
+
+이름
+Gold 비용
+자연어 효과
+
+## 강화 고유 능력
+
+이름
+Gold 비용
+자연어 효과
+
+를 각각 편집할 수 있게 한다.
+
+Quest가 완료되면 Champion state가:
+
+abilityLevel:
+BASE
+
+에서
+
+abilityLevel:
+UPGRADED
+
+로 변경되게 한다.
+
+실제 효과는 각 Structured Effect를 사용한다.
+
+==================================================
+15. Champion Token
+==================
+
+챔피언이 특정 Champion Token을 사용할 수 있게 한다.
+
+ChampionDefinition:
+
+championTokenDefinitionId
+
+를 통해 연결한다.
+
+Champion Token 자체는 기존 CardDefinition / Wrestler 시스템을 최대한 재사용한다.
+
+즉 Champion Token이라는 별도 완전히 다른 카드 엔진을 만들지 않는다.
+
+CardDefinition에:
+
+isChampionToken = true
+
+로 명시된 카드만 Champion Token이다.
+
+Champion이 생성했다고 해서 자동으로 Champion Token으로 판단하면 안 된다.
+
+==================================================
+16. Champion Token 전역 규칙
+========================
+
+현재 KO 규칙을 유지한다.
+
+명시적인 Champion Token은 모든 일반 무작위 생성 Pool에서 제외한다.
+
+isChampionToken = true
+
+인 카드는 명시적 예외가 없는 이상:
+
+RANDOM GENERATE
+RANDOM SUMMON
+RANDOM CARD CREATION
+
+대상에서 제외한다.
+
+==================================================
+17. Champion Token 직접 전개
+========================
+
+Champion 자신의 효과로 자신의 Champion Token이 "직접 전개"되는 경우 기존 KO 특수 규칙을 유지한다.
+
+DIRECT_DEPLOY_CHAMPION_TOKEN 방식으로 들어온 경우:
+
+* 해당 Champion의 필드상 대표가 된다.
+* 어떠한 방법으로도 Silence 불가.
+* 효과로 Destroy 불가.
+* 일반 Damage는 받을 수 있다.
+* Champion/Player 생존 HP를 Token의 Health가 대신한다.
+* Token이 RETIRE하면 즉시 해당 플레이어 패배.
+* 이 보호는 Champion 자신의 직접 전개 효과를 통해 들어온 경우에만 적용한다.
+
+Champion Token이라는 이유만으로 모든 소환 방식에서 자동 적용하지 않는다.
+
+==================================================
+18. 챔피언 이미지 관리
+==============
+
+카드 이미지 관리 기능을 재사용해서 챔피언 초상화를 업로드할 수 있게 한다.
+
+지원:
+
+PNG
+JPG/JPEG
+WEBP
+
+DB에 Base64 저장 금지.
+
+기존 Asset Storage를 재사용한다.
+
+Champion portrait preview도 제공한다.
+
+==================================================
+19. 챔피언 능력 사운드
+==============
+
+기존 카드 AudioManager가 재사용 가능하다면
+챔피언 고유 능력 발동 사운드도 관리할 수 있게 한다.
+
+예:
+
+abilityAudioAssetId
+
+abilityAudioUrl
+
+abilityAudioVolume
+
+Trigger:
+
+CHAMPION_ABILITY_USED
+
+별도의 Audio 엔진을 만들지 않는다.
+
+기존 중앙 AudioManager를 재사용한다.
+
+사운드 실패가 게임을 crash/reset시키면 안 된다.
+
+==================================================
+20. 챔피언 미리보기
+============
+
+관리 화면 오른쪽에 Champion Preview를 제공한다.
+
+표시:
+
+챔피언 이름
+
+초상화
+
+HP
+
+고유 능력 이름
+
+고유 능력 Gold 비용
+
+고유 능력 설명
+
+Quest가 있으면:
+
+Quest 이름
+Quest 조건
+0 / 목표 진행도
+보상 설명
+
+강화 능력이 있으면:
+
+완료 후 능력 설명
+
+Champion Token이 있으면:
+
+연결된 Token 정보
+
+==================================================
+21. 테스트 모드
+==========
+
+DRAFT Champion도 개발자 테스트 게임에서 사용할 수 있게 한다.
+
+일반 게임에서는:
+
+PUBLISHED Champion만 선택 가능.
+
+현재 게임 시작 시 ChampionDefinition Snapshot을 만들어
+게임 도중 관리자에서 챔피언을 수정해도
+이미 진행 중인 게임에는 영향을 주지 않는다.
+
+새로운 게임부터 최신 Published version을 사용한다.
+
+기존 Card Snapshot 정책과 동일한 원칙이다.
+
+==================================================
+22. 현재 Champion 4개로 검증
+======================
+
+현재 KO의 초기 Champion은 다음 4개다.
+
+1. 챔피언 피 스타 세븐
+
+고유 능력:
+2G
+
+"손패의 무작위 선수 카드 하나에게 공격력 +1, 체력 +1을 부여합니다."
+
+Quest 없음.
+
+2. 챔피언 여울
+
+고유 능력:
+2G
+
+"다음 내 턴에 추가 골드 +1을 얻습니다."
+
+Quest 없음.
+
+3. 챔피언 예거
+
+기본 고유 능력:
+1G
+
+"용병을 1명 소환합니다."
+
+용병:
+0G / 1/1 / 기습
+Champion Token 아님.
+
+Quest:
+
+"선수 카드를 7회 생성합니다."
+
+보상:
+
+고유 능력을 강화합니다.
+
+강화 고유 능력:
+1G
+
+"강화 용병을 1명 소환합니다."
+
+강화 용병:
+0G / 2/2 / 러쉬
+Champion Token 아님.
+
+4. 챔피언 판도라
+
+기본 고유 능력:
+2G
+
+"선수 카드 하나에게 피해 1을 줍니다."
+
+Quest:
+
+"판도라의 고유 능력으로 선수 카드 5장을 리타이어시킵니다."
+
+보상:
+
+"고유 능력을 강화하고 챔피언 판도라(폭주)를 직접 전개합니다."
+
+강화 고유 능력:
+1G
+
+"선택한 대상 하나에게 피해 1을 줍니다."
+
+Champion Token:
+
+챔피언 판도라(폭주)
+
+6 Attack
+10 Health
+isChampionToken = true
+
+등장 효과 및 세부 효과는 기존 Effect 시스템을 사용해 데이터로 관리할 수 있어야 한다.
+
+현재 판도라 Token의 기존 특수 규칙을 임의로 변경하지 않는다.
+
+이 4개 챔피언을 코드에 이름별로 하드코딩하라는 뜻이 아니다.
+
+관리자 시스템이 이 정도의 구조를 데이터 기반으로 표현할 수 있는지 검증하기 위한 테스트 케이스다.
+
+==================================================
+23. 동일 Analyzer UI 재사용
+======================
+
+가능하면 공통 컴포넌트를 만든다.
+
+예:
+
+NaturalEffectEditor
+
+를 카드 관리와 Champion 관리가 공유한다.
+
+사용처:
+
+Card Effect
+Champion Ability
+Champion Quest Condition
+Champion Quest Reward
+Champion Upgraded Ability
+Champion Token Effect
+
+각각 완전히 다른 Analyzer UI를 복사해서 만들지 않는다.
+
+==================================================
+24. 새로운 메커니즘 프롬프트 시스템 공유
+========================
+
+Champion 관리에서도 기존:
+
+[Replit 수정 프롬프트 만들기]
+
+[프롬프트 복사]
+
+[메커니즘 구현 완료 - 다시 분석]
+
+기능을 그대로 사용할 수 있게 한다.
+
+프롬프트 생성 시 context를 구분한다.
+
+예:
+
+contextType:
+
+CARD_EFFECT
+CHAMPION_ABILITY
+CHAMPION_QUEST
+CHAMPION_QUEST_REWARD
+CHAMPION_UPGRADED_ABILITY
+CHAMPION_TOKEN_EFFECT
+
+이렇게 하면 Replit Agent가 어떤 시스템을 구현해야 하는지 이해할 수 있다.
+
+==================================================
+25. Effect Library는 하나
+======================
+
+가장 중요하다.
+
+Card Effect Library와 Champion Effect Library를 따로 만들지 마.
+
+하나의 공통 Effect Library를 사용한다.
+
+예:
+
+DAMAGE
+BUFF
+SUMMON
+GENERATE
+ADD_NEXT_TURN_GOLD
+SILENCE
+DESTROY
+REGISTER_LISTENER
+
+등은 카드와 Champion 모두 재사용한다.
+
+Champion만 필요한 기능도 범용 Effect Module 형태로 같은 Library에 등록한다.
+
+==================================================
+26. Invalid Action
+==================
+
+Champion Ability 사용 시에도 Engine validation을 반드시 수행한다.
+
+예:
+
+Gold 부족
+
+이미 이번 턴에 사용해서 재사용 불가능
+
+유효 대상 없음
+
+잘못된 대상
+
+Quest 조건 미충족
+
+등은 정상적인 gameplay failure다.
+
+절대로:
+
+throw로 앱 전체 오류
+페이지 reload
+게임 reset
+
+하지 않는다.
+
+GameState를 변경하지 않고 Toast를 보여준다.
+
+==================================================
+27. 기존 게임 보호
+============
+
+이번 작업 때문에:
+
+전투 시스템
+
+4슬롯 Board
+
+Gold 규칙
+
+Draw
+
+Retire
+
+Destroy
+
+Remove From Game
+
+Generated
+
+Target Selection
+
+Attack
+
+기존 Card Admin
+
+기존 Effect Library
+
+를 다시 만들거나 대규모 변경하지 않는다.
+
+Champion 관리 기능을 기존 구조 위에 확장한다.
+
+==================================================
+28. 작업량 최소화
+===========
+
+Replit Agent 사용량을 줄이기 위해:
+
+* 프로젝트 전체 리팩터링 금지
+* 카드 관리자 UI를 최대한 재사용
+* Effect Analyzer 재사용
+* Media uploader 재사용
+* AudioManager 재사용
+* Effect Library 재사용
+* 기존 DB 구조 재사용 가능 여부 먼저 확인
+
+필요한 파일만 최소 수정한다.
+
+기능이 완성되면 추가 기능을 임의로 만들지 말고 종료한다.
+
+==================================================
+최종 목표
+=====
+
+관리자가 챔피언을 만들 때:
+
+챔피언 이름 작성
+
+↓
+
+초상화 업로드
+
+↓
+
+HP 설정
+
+↓
+
+고유 능력 비용 설정
+
+↓
+
+한국어로 능력 효과 작성
+
+↓
+
+[효과 분석]
+
+↓
+
+기존 Effect로 가능하면 자동 Structured Effect 생성
+
+↓
+
+Quest가 있다면 한국어로 조건 작성
+
+↓
+
+[퀘스트 분석]
+
+↓
+
+Quest 보상도 한국어로 작성
+
+↓
+
+필요하면 강화 능력 작성
+
+↓
+
+기존에 없는 메커니즘이면
+
+[Replit 수정 프롬프트 만들기]
+
+↓
+
+Replit Agent에서 구현
+
+↓
+
+[메커니즘 구현 완료 - 다시 분석]
+
+↓
+
+정상 인식
+
+↓
+
+DRAFT Champion 저장
+
+↓
+
+테스트
+
+↓
+
+PUBLISHED
+
+가 가능하도록 구현해줘.

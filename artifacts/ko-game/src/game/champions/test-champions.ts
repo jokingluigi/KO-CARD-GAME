@@ -67,8 +67,9 @@ export const TEST_CHAMPIONS: ChampionDefinition[] = [
 
 export function createChampionState(
   championId: string,
+  definitions: readonly ChampionDefinition[] = TEST_CHAMPIONS,
 ): ChampionState {
-  const definition = TEST_CHAMPIONS.find(
+  const definition = definitions.find(
     (candidate) => candidate.id === championId,
   );
   if (!definition) {

@@ -1,6 +1,6 @@
 import { createHmac, randomUUID, timingSafeEqual } from "node:crypto";
 import { and, asc, eq, ilike, sql } from "drizzle-orm";
-import { cardsTable, db, mechanicRequestsTable } from "@workspace/db";
+import { cardsTable, championsTable, db, mechanicRequestsTable } from "@workspace/db";
 import { Router, type IRouter, type Request, type Response } from "express";
 import { CardImageStorage } from "../lib/object-storage";
 import {
@@ -29,6 +29,7 @@ type AdminSessionPayload = {
 
 const CARD_TYPES = ["WRESTLER", "TECHNIQUE"] as const;
 const CARD_STATUSES = ["DRAFT", "PUBLISHED", "DISABLED"] as const;
+const CHAMPION_STATUSES = ["DRAFT", "PUBLISHED", "DISABLED"] as const;
 const CARD_KEYWORDS = [
   "RUSH",
   "SURPRISE",
@@ -53,6 +54,70 @@ type CardInput = {
   imageUrl: string | null;
   imageUploadToken: string | null;
 };
+
+type ChampionInput = {
+  name: string; description: string; imageAssetId: string | null; imageUrl: string | null;
+  maxHealth: number; abilityName: string; abilityCost: number; abilityText: string;
+  abilityEffects: Record<string, unknown>; hasQuest: boolean; questName: string | null;
+  questText: string | null; questCondition: Record<string, unknown> | null;
+  questProgressRequired: number | null; questRewardText: string | null;
+  questRewardEffects: Record<string, unknown> | null; upgradedAbilityName: string | null;
+  upgradedAbilityCost: number | null; upgradedAbilityText: string | null;
+  upgradedAbilityEffects: Record<string, unknown> | null; championTokenDefinitionId: string | null;
+  abilityAudioAssetId: string | null; abilityAudioUrl: string | null; abilityAudioVolume: number;
+};
+
+function parseChampionInput(value: unknown): ChampionInput | null {
+  if (!value || typeof value !== "object" || Array.isArray(value)) return null;
+  const input = value as Record<string, unknown>;
+  const text = (key: string, required = false) => {
+    const result = typeof input[key] === "string" ? input[key].trim() : "";
+    return required || result ? result : null;
+  };
+  const integer = (key: string, min: number, max: number, nullable = false) => {
+    const value = input[key];
+    if (nullable && (value === null || value === "" || value === undefined)) return null;
+    return typeof value === "number" && Number.isInteger(value) && value >= min && value <= max ? value : undefined;
+  };
+  const object = (key: string, nullable = false) => {
+    const value = input[key];
+    if (nullable && (value === null || value === undefined)) return null;
+    return value && typeof value === "object" && !Array.isArray(value) ? value as Record<string, unknown> : undefined;
+  };
+  const name = text("name", true);
+  const abilityName = text("abilityName", true);
+  const maxHealth = integer("maxHealth", 1, 999);
+  const abilityCost = integer("abilityCost", 0, 999);
+  const abilityAudioVolume = integer("abilityAudioVolume", 0, 100);
+  const abilityEffects = object("abilityEffects");
+  const hasQuest = input.hasQuest === true;
+  const questProgressRequired = integer("questProgressRequired", 1, 999, true);
+  const upgradedAbilityCost = integer("upgradedAbilityCost", 0, 999, true);
+  if (!name || name.length > 120 || !abilityName || abilityName.length > 120 ||
+      maxHealth == null || abilityCost == null || abilityAudioVolume == null ||
+      !abilityEffects || typeof input.hasQuest !== "boolean" ||
+      questProgressRequired === undefined || upgradedAbilityCost === undefined) return null;
+  if (hasQuest && (!text("questName", true) || !text("questText", true) ||
+      !object("questCondition", true) || questProgressRequired === null ||
+      !text("questRewardText", true) || !object("questRewardEffects", true))) return null;
+  return {
+    name, description: text("description") ?? "", imageAssetId: text("imageAssetId"),
+    imageUrl: text("imageUrl"), maxHealth, abilityName, abilityCost,
+    abilityText: text("abilityText") ?? "", abilityEffects, hasQuest,
+    questName: hasQuest ? text("questName", true) : null,
+    questText: hasQuest ? text("questText", true) : null,
+    questCondition: hasQuest ? object("questCondition", true)! : null,
+    questProgressRequired: hasQuest ? questProgressRequired : null,
+    questRewardText: hasQuest ? text("questRewardText", true) : null,
+    questRewardEffects: hasQuest ? object("questRewardEffects", true)! : null,
+    upgradedAbilityName: text("upgradedAbilityName"),
+    upgradedAbilityCost, upgradedAbilityText: text("upgradedAbilityText"),
+    upgradedAbilityEffects: object("upgradedAbilityEffects", true) ?? null,
+    championTokenDefinitionId: text("championTokenDefinitionId"),
+    abilityAudioAssetId: text("abilityAudioAssetId"), abilityAudioUrl: text("abilityAudioUrl"),
+    abilityAudioVolume,
+  };
+}
 
 const CARD_IMAGE_TYPES = {
   "image/png": ["png"],
@@ -122,11 +187,15 @@ async function validNewImageAsset(assetId: string, token: string | null) {
 }
 
 async function removeImageIfUnreferenced(assetId: string) {
-  const [reference] = await db
+  const [cardReference] = await db
     .select({ count: sql<number>`count(*)::int` })
     .from(cardsTable)
     .where(eq(cardsTable.imageAssetId, assetId));
-  if ((reference?.count ?? 0) === 0) {
+  const [championReference] = await db
+    .select({ count: sql<number>`count(*)::int` })
+    .from(championsTable)
+    .where(eq(championsTable.imageAssetId, assetId));
+  if ((cardReference?.count ?? 0) === 0 && (championReference?.count ?? 0) === 0) {
     await cardImageStorage.remove(assetId);
   }
 }
@@ -355,6 +424,96 @@ router.post("/effects/analyze", (request, response) => {
     response.status(400).json({ message: "효과 텍스트를 확인해 주세요." }); return;
   }
   response.json(analyzeEffectText(text));
+});
+
+router.post("/quests/analyze", (request, response) => {
+  if (!requireAdmin(request, response)) return;
+  const text = request.body && typeof request.body === "object"
+    ? (request.body as Record<string, unknown>).text : null;
+  if (typeof text !== "string" || !text.trim() || text.length > 2000) {
+    response.status(400).json({ message: "퀘스트 조건을 확인해 주세요." }); return;
+  }
+  const required = Number(text.match(/(\d+)\s*(?:회|장|명)/)?.[1]);
+  if (!Number.isInteger(required) || required < 1) {
+    response.status(422).json({ outcome: "analysis_failure", unsupportedParts: [text] }); return;
+  }
+  if (/선수\s*카드.*생성/.test(text)) {
+    response.json({ outcome: "supported", condition: {
+      event: "CARD_GENERATED", cardType: "WRESTLER", progress: 1, required,
+    }}); return;
+  }
+  if (/고유\s*능력.*선수\s*카드.*(?:리타이어|퇴장)/.test(text)) {
+    response.json({ outcome: "supported", condition: {
+      event: "WRESTLER_RETIRED", cardType: "WRESTLER",
+      filter: "CAUSED_BY_CHAMPION_ABILITY", progress: 1, required,
+    }}); return;
+  }
+  response.status(422).json({ outcome: "mechanism_required", unsupportedParts: [text] });
+});
+
+router.get("/champions", async (request, response): Promise<void> => {
+  if (!requireAdmin(request, response)) return;
+  const search = firstParam(request.query.search)?.trim();
+  const status = firstParam(request.query.status);
+  const filters = [];
+  if (search) filters.push(ilike(championsTable.name, `%${search}%`));
+  if (CHAMPION_STATUSES.includes(status as (typeof CHAMPION_STATUSES)[number])) {
+    filters.push(eq(championsTable.status, status as string));
+  }
+  const champions = await db.select().from(championsTable)
+    .where(filters.length ? and(...filters) : undefined)
+    .orderBy(asc(championsTable.name));
+  response.json({ champions });
+});
+
+router.post("/champions", async (request, response): Promise<void> => {
+  if (!requireAdmin(request, response)) return;
+  const input = parseChampionInput(request.body);
+  if (!input) { response.status(400).json({ message: "챔피언 입력값을 확인해 주세요." }); return; }
+  const [champion] = await db.insert(championsTable).values({
+    id: randomUUID(), ...input, status: "DRAFT", version: 1,
+  }).returning();
+  response.status(201).json({ champion });
+});
+
+router.patch("/champions/:id", async (request, response): Promise<void> => {
+  if (!requireAdmin(request, response)) return;
+  const id = firstParam(request.params.id);
+  const input = parseChampionInput(request.body);
+  if (!id || !input) { response.status(400).json({ message: "챔피언 입력값을 확인해 주세요." }); return; }
+  const [champion] = await db.update(championsTable).set({
+    ...input, version: sql`${championsTable.version} + 1`, updatedAt: new Date(),
+  }).where(eq(championsTable.id, id)).returning();
+  if (!champion) { response.status(404).json({ message: "챔피언을 찾을 수 없습니다." }); return; }
+  response.json({ champion });
+});
+
+router.post("/champions/:id/duplicate", async (request, response): Promise<void> => {
+  if (!requireAdmin(request, response)) return;
+  const id = firstParam(request.params.id);
+  if (!id) { response.status(400).json({ message: "챔피언 ID가 올바르지 않습니다." }); return; }
+  const [source] = await db.select().from(championsTable).where(eq(championsTable.id, id)).limit(1);
+  if (!source) { response.status(404).json({ message: "챔피언을 찾을 수 없습니다." }); return; }
+  const { id: _id, createdAt: _createdAt, updatedAt: _updatedAt, ...copy } = source;
+  const [champion] = await db.insert(championsTable).values({
+    ...copy, id: randomUUID(), name: `${source.name} Copy`, status: "DRAFT", version: 1,
+  }).returning();
+  response.status(201).json({ champion });
+});
+
+router.post("/champions/:id/status", async (request, response): Promise<void> => {
+  if (!requireAdmin(request, response)) return;
+  const id = firstParam(request.params.id);
+  const status = request.body && typeof request.body === "object"
+    ? (request.body as Record<string, unknown>).status : null;
+  if (!id || !CHAMPION_STATUSES.includes(status as (typeof CHAMPION_STATUSES)[number])) {
+    response.status(400).json({ message: "챔피언 상태를 확인해 주세요." }); return;
+  }
+  const [champion] = await db.update(championsTable).set({
+    status: status as string, version: sql`${championsTable.version} + 1`, updatedAt: new Date(),
+  }).where(eq(championsTable.id, id)).returning();
+  if (!champion) { response.status(404).json({ message: "챔피언을 찾을 수 없습니다." }); return; }
+  response.json({ champion });
 });
 
 router.get("/effects/library", async (request, response): Promise<void> => {

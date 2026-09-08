@@ -14,6 +14,7 @@ export interface ChampionAbility {
   id: string;
   name: string;
   description: string;
+  cost?: number;
   effects: ChampionEffect[];
 }
 
@@ -33,11 +34,17 @@ export interface ChampionQuest {
 export interface ChampionDefinition {
   id: string;
   name: string;
+  description?: string;
+  imageAssetId?: string | null;
+  imageUrl?: string | null;
   maxHealth: number;
   abilityCost: number;
   ability: ChampionAbility;
   quest: ChampionQuest | null;
   upgradedAbility: ChampionAbility | null;
+  championTokenDefinitionId?: string | null;
+  status?: 'DRAFT' | 'PUBLISHED' | 'DISABLED';
+  version?: number;
 }
 
 export interface ChampionState {

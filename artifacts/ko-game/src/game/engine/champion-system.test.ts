@@ -113,6 +113,29 @@ test('퀘스트 완료 후 강화된 챔피언 능력을 사용한다', () => {
   );
 });
 
+test('DB 기반 강화 능력은 기본 능력과 다른 비용을 사용할 수 있다', () => {
+  const started = startGame(createInitialGameState(), fixedRandom);
+  const completed = {
+    ...started,
+    players: started.players.map((player) =>
+      player.id === 'player-1' && player.champion?.upgradedAbility
+        ? {
+            ...player,
+            currentGold: 1,
+            champion: {
+              ...player.champion,
+              questCompleted: true,
+              upgradedAbility: { ...player.champion.upgradedAbility, cost: 1 },
+            },
+          }
+        : player,
+    ),
+  };
+  const result = useChampionAbility(completed, 'player-1');
+  assert.equal(result.success, true);
+  assert.equal(result.state.players[0].currentGold, 2);
+});
+
 test('퀘스트 완료 보상으로 특별 보상을 지급할 수 있다', () => {
   const started = startGame(createInitialGameState(), fixedRandom);
   const rewardState = {

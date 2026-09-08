@@ -128,16 +128,25 @@ function currentAbility(
     : champion.ability;
 }
 
+function currentAbilityCost(state: GameState, playerId: string): number | null {
+  const player = state.players.find((candidate) => candidate.id === playerId);
+  const ability = currentAbility(state, playerId);
+  if (!player?.champion || !ability) return null;
+  return ability.cost ?? player.champion.abilityCost;
+}
+
 export function canUseChampionAbility(
   state: GameState,
   playerId: string,
 ): boolean {
   const player = state.players.find((candidate) => candidate.id === playerId);
+  const cost = currentAbilityCost(state, playerId);
   return Boolean(
     state.status === 'IN_PROGRESS' &&
       state.activePlayerId === playerId &&
       player?.champion &&
-      player.currentGold >= player.champion.abilityCost,
+      cost !== null &&
+      player.currentGold >= cost,
   );
 }
 
@@ -166,7 +175,8 @@ export function useChampionAbility(
       '사용할 수 있는 챔피언 능력이 없습니다.',
     );
   }
-  if (player.currentGold < player.champion.abilityCost) {
+  const abilityCost = ability.cost ?? player.champion.abilityCost;
+  if (player.currentGold < abilityCost) {
     return actionFailure(state, 'NOT_ENOUGH_GOLD', '골드가 부족합니다.');
   }
   const effectSource: CardInstance = {
@@ -207,7 +217,7 @@ export function useChampionAbility(
         ? {
             ...candidate,
             currentGold:
-              candidate.currentGold - player.champion!.abilityCost,
+              candidate.currentGold - abilityCost,
           }
         : candidate,
     ),
@@ -220,7 +230,7 @@ export function useChampionAbility(
         source: { type: 'PLAYER', playerId },
         target: { type: 'CHAMPION', championId: player.champion.id },
         reason: 'CHAMPION_ABILITY_COST',
-        amount: -player.champion.abilityCost,
+          amount: -abilityCost,
       },
       {
         type: 'CHAMPION_ABILITY_USED',

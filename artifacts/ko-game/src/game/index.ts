@@ -5,6 +5,7 @@ export * from './cards/generation';
 export * from './cards/published-cards';
 export * from './champions/types';
 export * from './champions/test-champions';
+export * from './champions/published-champions';
 export * from './champions/quests';
 export * from './effects/types';
 export * from './effects/effect-engine';

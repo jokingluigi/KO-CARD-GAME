@@ -1,0 +1,36 @@
+import { boolean, integer, jsonb, pgTable, text, timestamp } from "drizzle-orm/pg-core";
+
+export const championsTable = pgTable("champions", {
+  id: text("id").primaryKey(),
+  name: text("name").notNull(),
+  description: text("description").notNull().default(""),
+  imageAssetId: text("image_asset_id"),
+  imageUrl: text("image_url"),
+  maxHealth: integer("max_health").notNull().default(20),
+  abilityName: text("ability_name").notNull(),
+  abilityCost: integer("ability_cost").notNull().default(0),
+  abilityText: text("ability_text").notNull().default(""),
+  abilityEffects: jsonb("ability_effects").$type<Record<string, unknown>>().notNull(),
+  hasQuest: boolean("has_quest").notNull().default(false),
+  questName: text("quest_name"),
+  questText: text("quest_text"),
+  questCondition: jsonb("quest_condition").$type<Record<string, unknown> | null>(),
+  questProgressRequired: integer("quest_progress_required"),
+  questRewardText: text("quest_reward_text"),
+  questRewardEffects: jsonb("quest_reward_effects").$type<Record<string, unknown> | null>(),
+  upgradedAbilityName: text("upgraded_ability_name"),
+  upgradedAbilityCost: integer("upgraded_ability_cost"),
+  upgradedAbilityText: text("upgraded_ability_text"),
+  upgradedAbilityEffects: jsonb("upgraded_ability_effects").$type<Record<string, unknown> | null>(),
+  championTokenDefinitionId: text("champion_token_definition_id"),
+  abilityAudioAssetId: text("ability_audio_asset_id"),
+  abilityAudioUrl: text("ability_audio_url"),
+  abilityAudioVolume: integer("ability_audio_volume").notNull().default(100),
+  status: text("status").notNull().default("DRAFT"),
+  version: integer("version").notNull().default(1),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+});
+
+export type ChampionRecord = typeof championsTable.$inferSelect;
+export type NewChampionRecord = typeof championsTable.$inferInsert;

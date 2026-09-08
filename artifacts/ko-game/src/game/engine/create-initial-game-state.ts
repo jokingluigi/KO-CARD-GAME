@@ -2,11 +2,13 @@ import type { GameState, PlayerState } from '../types/game-state';
 import type { CardDefinition } from '../cards/types';
 import { createTestDeck } from '../cards/test-cards';
 import { createChampionState } from '../champions/test-champions';
+import type { ChampionDefinition } from '../champions/types';
 
 function createEmptyPlayer(
   id: string,
   championId: string,
   cardDefinitions?: readonly CardDefinition[],
+  championDefinitions?: readonly ChampionDefinition[],
 ): PlayerState {
   return {
     id,
@@ -21,7 +23,7 @@ function createEmptyPlayer(
     graveyard: [],
     removedFromGame: [],
     fatigueCount: 0,
-    champion: createChampionState(championId),
+    champion: createChampionState(championId, championDefinitions),
   };
 }
 
@@ -31,6 +33,7 @@ export function createInitialGameState(
     'test-champion-no-quest',
   ],
   cardDefinitions?: readonly CardDefinition[],
+  championDefinitions?: readonly ChampionDefinition[],
 ): GameState {
   return {
     gameId: 'local-prototype',
@@ -40,8 +43,8 @@ export function createInitialGameState(
     winnerId: null,
     loserId: null,
     players: [
-      createEmptyPlayer('player-1', championIds[0], cardDefinitions),
-      createEmptyPlayer('player-2', championIds[1], cardDefinitions),
+      createEmptyPlayer('player-1', championIds[0], cardDefinitions, championDefinitions),
+      createEmptyPlayer('player-2', championIds[1], cardDefinitions, championDefinitions),
     ],
     events: [],
   };

@@ -15,6 +15,7 @@ import {
   fetchPublishedWrestlerCards,
   cardRecordToDefinition,
   setRuntimeCardDefinitions,
+  fetchPublishedChampions,
 } from '@/game';
 import { GameStatePreview } from '@/components/game-state-preview';
 
@@ -62,11 +63,15 @@ export default function Home() {
         });
       return () => { cancelled = true; };
     }
-    fetchPublishedWrestlerCards()
-      .then((definitions) => {
+    Promise.all([fetchPublishedWrestlerCards(), fetchPublishedChampions()])
+      .then(([definitions, champions]) => {
         if (cancelled || definitions.length === 0) return;
         setRuntimeCardDefinitions(definitions);
-        setGameState(startGame(createInitialGameState(undefined, definitions)));
+        const selected = champions.length >= 2
+          ? [champions[0]!.id, champions[1]!.id] as [string, string]
+          : undefined;
+        setGameState(startGame(createInitialGameState(selected, definitions,
+          selected ? champions : undefined)));
         setSelectedCardId(null);
         setSelectedAttackerId(null);
       })

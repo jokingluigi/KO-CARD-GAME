@@ -1,5 +1,5 @@
 import { asc, eq } from "drizzle-orm";
-import { db, cardsTable } from "@workspace/db";
+import { db, cardsTable, championsTable } from "@workspace/db";
 import { Router, type IRouter } from "express";
 
 const router: IRouter = Router();
@@ -13,6 +13,14 @@ router.get("/cards", async (_request, response): Promise<void> => {
 
   response.setHeader("Cache-Control", "no-store");
   response.json({ cards });
+});
+
+router.get("/champions", async (_request, response): Promise<void> => {
+  const champions = await db.select().from(championsTable)
+    .where(eq(championsTable.status, "PUBLISHED"))
+    .orderBy(asc(championsTable.name));
+  response.setHeader("Cache-Control", "no-store");
+  response.json({ champions });
 });
 
 export default router;
