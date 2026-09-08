@@ -119,6 +119,13 @@ test("인식 가능한 신규 메커니즘은 부분 적용 없이 필요 상태
   assert.ok(result.unsupportedSegments.some((segment) => segment.includes("섞")));
 });
 
+test("손패 공격력 재배열은 분석 실패가 아닌 구체적인 메커니즘 요청으로 안내한다", () => {
+  const result = analyzeEffectText("등장: 내 손패 모든 선수의 공격력을 서로 무작위로 섞습니다.");
+  assert.equal(result.outcome, "mechanism_required");
+  assert.equal(result.status, "partial");
+  assert.ok(result.unsupportedSegments.includes("손패 여러 카드의 공격력 값을 서로 섞는 기능"));
+});
+
 test("지원 효과와 알려진 신규 메커니즘이 섞여도 미리보기만 제공한다", () => {
   const result = analyzeEffectText("등장: 적 선수 하나에게 피해 2를 주고 시간을 멈춥니다.");
   assert.equal(result.outcome, "mechanism_required");

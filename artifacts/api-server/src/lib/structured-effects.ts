@@ -106,7 +106,8 @@ export function analyzeEffectText(input: string): Analysis {
   const unsupportedMechanic = /(서로\s*)?(무작위로\s*)?(섞|재배치|교환)|시간을?\s*멈(?:추|춥)|전\s*상태로\s*되돌/;
   const mechanicMatch = text.match(unsupportedMechanic);
   const semanticUnsupported =
-    /(무작위|랜덤|서로|섞|재배치|교환|값을?\s*(?:섞|바꾸)|복사|변환)/.test(text);
+    /(섞|재배치|교환|복사|변환)/.test(text) ||
+    (/(공격력|체력|비용|값|순서|위치)/.test(text) && /(무작위|랜덤|서로)/.test(text));
   const mechanicRequired = Boolean(mechanicMatch || semanticUnsupported);
   const unsupportedDescription =
     /손패/.test(text) && /공격력/.test(text) && /(섞|무작위|랜덤)/.test(text)
