@@ -52,6 +52,15 @@ export interface GameState {
     mandatory: boolean;
     cancelable: boolean;
     markActiveUsed?: boolean;
+    /** Trigger context is carried in state so chained resolutions remain deterministic. */
+    triggerContext?: {
+      playedFromHand?: boolean;
+      baseCost?: number;
+      attackerInstanceId?: string;
+      damagedTargetInstanceId?: string;
+      healthBefore?: number;
+      healthAfter?: number;
+    };
     /** Parent resolution frame. A child trigger always resolves before this. */
     continuation?: GameState['targetingState'];
   };

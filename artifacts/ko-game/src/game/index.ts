@@ -19,6 +19,7 @@ export * from './engine/destroy-card';
 export * from './engine/draw-card';
 export * from './engine/enter-field';
 export * from './engine/play-wrestler';
+export * from './engine/play-technique';
 export * from './engine/turn-system';
 export * from './events/types';
 export * from './random/random';

@@ -13,6 +13,9 @@ import type { LeaveReason } from '../events/types';
 import { shuffle } from '../random/random';
 import { destroyCard } from '../engine/destroy-card';
 import { drawCard } from '../engine/draw-card';
+import { silenceCard } from '../engine/card-status';
+import { enterField } from '../engine/enter-field';
+import { generateCardInstance } from '../cards/generation';
 
 /** The single authoritative target resolver.  UI must only display these ids. */
 export function getValidTargets(
@@ -69,7 +72,12 @@ function beginResolution(state: GameState, frame: NonNullable<GameState['targeti
     ...state,
     targetingState: {
       ...frame,
-      continuation: state.targetingState?.active ? state.targetingState : frame.continuation,
+      // The parent has just executed the effect that caused this trigger.
+      // Resume at the following effect after the child resolves, preventing
+      // summon/enter chains from replaying the parent effect.
+      continuation: state.targetingState?.active
+        ? { ...state.targetingState, effectIndex: state.targetingState.effectIndex + 1 }
+        : frame.continuation,
     },
   });
 }
@@ -106,7 +114,9 @@ export function resolvePendingEffects(state: GameState): GameState {
     }
     const ids = effect.type === 'STRUCTURED' && effect.target?.selection === 'SAME_TARGET' ? last : undefined;
     next = applyEffect(next, pending.playerId, source, effect, ids);
-    if (next.targetingState?.continuation === pending) return next;
+    if (next.targetingState?.continuation &&
+      next.targetingState.continuation.sourceInstanceId === pending.sourceInstanceId &&
+      next.targetingState.continuation.effectIndex > pending.effectIndex) return next;
     if (ids?.length) last = ids;
   }
   if (pending.markActiveUsed) {
@@ -191,6 +201,40 @@ function applyEffect(
 ): GameState {
   if (effect.type === 'STRUCTURED') {
     const amount = effect.values?.amount ?? 0;
+    const definition = effect.values?.definition;
+    const validDefinition = definition &&
+      typeof definition.id === 'string' && typeof definition.cost === 'number' &&
+      typeof definition.attack === 'number' && typeof definition.health === 'number' &&
+      Array.isArray(definition.keywords) && Array.isArray(definition.abilities);
+    if (effect.action === 'SUMMON' || effect.action === 'GENERATE') {
+      // These actions require a data-only definition; an absent/malformed
+      // reference is a rejected effect, never an advertised silent no-op.
+      if (!validDefinition) throw new Error(`${effect.action} requires a serializable card definition.`);
+      const owner = state.players.find((player) => player.id === playerId);
+      if (!owner) return state;
+      const generated = generateCardInstance(definition, {
+        instanceId: `${sourceCard.instanceId}:${effect.action}:${state.events.length}`,
+      });
+      if (effect.action === 'GENERATE') {
+        return {
+          ...state,
+          players: state.players.map((player) => player.id === playerId
+            ? { ...player, hand: [...player.hand, generated] } : player),
+          events: [...state.events, { type: 'CARD_GENERATED', playerId, cardInstanceId: generated.instanceId,
+            source: { type: 'CARD', cardInstanceId: sourceCard.instanceId },
+            target: { type: 'CARD', cardInstanceId: generated.instanceId }, reason: 'GENERATE' }],
+        };
+      }
+      const slot = owner.board.findIndex((card) => card === null);
+      return slot < 0 ? state : enterField(state, playerId, generated, slot as 0 | 1 | 2 | 3,
+        { type: 'CARD', cardInstanceId: sourceCard.instanceId });
+    }
+    if (effect.action === 'SWITCH_EFFECT_BRANCH') {
+      const branch = sourceCard.boardSlot !== null && sourceCard.boardSlot <= 1
+        ? effect.values?.leftEffects : effect.values?.rightEffects;
+      if (!branch || !Array.isArray(branch)) throw new Error('SWITCH_EFFECT_BRANCH requires leftEffects and rightEffects.');
+      return branch.reduce((next, child) => applyEffect(next, playerId, sourceCard, child), state);
+    }
     if (effect.action === 'ADD_GOLD') {
       return applyEffect(state, playerId, sourceCard, { type: 'GAIN_GOLD', amount });
     }
@@ -202,6 +246,29 @@ function applyEffect(
         (nextState) => nextState.status === 'FINISHED' ? nextState : drawCard(nextState, playerId),
         state,
       );
+    }
+    if (effect.action === 'RELEASE_CAPTURED') {
+      const owner = state.players.find((player) => player.id === playerId);
+      const captured = sourceCard.capturedCards?.[0];
+      const slot = owner?.board.findIndex((card) => card === null) ?? -1;
+      if (!owner || !captured || slot < 0) return state;
+      const released: CardInstance = {
+        ...captured.baseSnapshot,
+        instanceId: `${sourceCard.instanceId}:captured:${state.events.length}`,
+        boardSlot: null, enteredThisTurn: false, attacksUsedThisTurn: 0,
+        isSilenced: false, isSilenceImmune: false, dodgeAvailable: (captured.baseSnapshot.dodgeCharges ?? 0) > 0,
+        dodgeCharges: captured.baseSnapshot.dodgeCharges ?? (captured.baseSnapshot.keywords.includes('DODGE') ? 1 : 0),
+        isStunned: false, activeUsedThisTurn: false, isDirectDeployedChampion: false, capturedCards: [],
+      };
+      const withoutCaptured = {
+        ...state,
+        players: state.players.map((player) => player.id !== playerId ? player : {
+          ...player,
+          board: player.board.map((card) => card?.instanceId === sourceCard.instanceId
+            ? { ...card, capturedCards: card.capturedCards?.slice(1) ?? [] } : card) as typeof player.board,
+        }),
+      };
+      return enterField(withoutCaptured, playerId, released, slot as 0 | 1 | 2 | 3, { type: 'CARD', cardInstanceId: sourceCard.instanceId });
     }
     if (!effect.target) return state;
     const target = effect.target;
@@ -318,6 +385,50 @@ function applyEffect(
         return result.success ? result.state : nextState;
       }, state);
     }
+    if (effect.action === 'REMOVE_FROM_GAME') {
+      return targets.reduce((nextState, target) => {
+        const owner = nextState.players.find((player) => player.id === targetOwner);
+        const current = owner?.board.find((card) => card?.instanceId === target.instanceId);
+        if (!owner || !current || current.isDirectDeployedChampion) return nextState;
+        return {
+          ...nextState,
+          players: nextState.players.map((player) => player.id !== targetOwner ? player : {
+            ...player,
+            board: player.board.map((card) => card?.instanceId === current.instanceId ? null : card) as typeof player.board,
+            removedFromGame: [...player.removedFromGame, { ...current, boardSlot: null }],
+          }),
+          events: [...nextState.events, {
+            type: 'CARD_REMOVED', playerId: targetOwner, cardInstanceId: current.instanceId,
+            source: { type: 'CARD', cardInstanceId: sourceCard.instanceId },
+            target: { type: 'CARD', cardInstanceId: current.instanceId }, reason: 'REMOVE_FROM_GAME',
+          }],
+        };
+      }, state);
+    }
+    if (effect.action === 'CAPTURE') {
+      return targets.reduce((nextState, target) => {
+        const owner = nextState.players.find((player) => player.id === targetOwner);
+        const current = owner?.board.find((card) => card?.instanceId === target.instanceId);
+        if (!owner || !current || current.isDirectDeployedChampion) return nextState;
+        const snapshot = {
+          definitionId: current.definitionId, cardType: current.cardType,
+          currentCost: current.baseCost ?? current.currentCost,
+          currentAttack: current.baseAttack ?? current.currentAttack,
+          currentHealth: current.baseHealth ?? current.maxHealth,
+          maxHealth: current.baseHealth ?? current.maxHealth,
+          isGenerated: current.isGenerated, isToken: current.isToken, isChampionToken: current.isChampionToken,
+          keywords: [...current.keywords], abilities: [...current.abilities], tags: current.tags ? [...current.tags] : [],
+        };
+        return {
+          ...nextState,
+          players: nextState.players.map((player) => {
+            if (player.id === targetOwner) return { ...player, board: player.board.map((card) => card?.instanceId === current.instanceId ? null : card) as typeof player.board };
+            if (player.id === playerId) return { ...player, board: player.board.map((card) => card?.instanceId === sourceCard.instanceId ? { ...card, capturedCards: [...(card.capturedCards ?? []), { definitionId: current.definitionId, baseSnapshot: snapshot }] } : card) as typeof player.board };
+            return player;
+          }),
+        };
+      }, state);
+    }
     if (effect.action === 'DAMAGE') {
       return targets.reduce((nextState, target) => {
         const owner = nextState.players.find((player) => player.id === targetOwner);
@@ -329,12 +440,19 @@ function applyEffect(
             amount,
           });
         }
-        const dodged = amount > 0 && current.dodgeAvailable && hasKeyword(current, 'DODGE');
+        // Legacy snapshots may carry dodgeAvailable=true with a missing or
+        // zero-initialized charge count. The boolean remains authoritative for
+        // that compatibility case; newly created cards keep both fields aligned.
+        const dodgeCharges = Math.max(
+          current.dodgeCharges ?? 0,
+          current.dodgeAvailable ? 1 : 0,
+        );
+        const dodged = amount > 0 && dodgeCharges > 0 && hasKeyword(current, 'DODGE');
         if (dodged) {
           return {
             ...nextState,
             players: nextState.players.map((player) => player.id === targetOwner
-              ? { ...player, board: player.board.map((card) => card?.instanceId === current.instanceId ? { ...card, dodgeAvailable: false } : card) as typeof player.board }
+              ? { ...player, board: player.board.map((card) => card?.instanceId === current.instanceId ? { ...card, dodgeAvailable: dodgeCharges > 1, dodgeCharges: dodgeCharges - 1 } : card) as typeof player.board }
               : player),
             events: [...nextState.events, { type: 'DAMAGE_DEALT', playerId, cardInstanceId: sourceCard.instanceId, source: { type: 'CARD', cardInstanceId: sourceCard.instanceId }, target: { type: 'CARD', cardInstanceId: current.instanceId }, reason: 'CARD_EFFECT', amount: 0 }],
           };
@@ -360,17 +478,25 @@ function applyEffect(
             { type: 'CARD_RETIRED', playerId: targetOwner, cardInstanceId: current.instanceId, boardSlot: current.boardSlot!, source: { type: 'CARD', cardInstanceId: sourceCard.instanceId }, target: { type: 'CARD', cardInstanceId: current.instanceId }, reason: 'RETIRE' },
           ],
         };
-        return resolveTriggeredAbilities(retiredState, targetOwner, current, 'LEAVE_FIELD', { leaveReason: 'RETIRE' });
+        const exactZeroState = health === 0
+          ? resolveTriggeredAbilities(retiredState, playerId, sourceCard, 'EXACT_ZERO_DAMAGE', {
+            damagedTargetInstanceId: current.instanceId, healthBefore: current.currentHealth, healthAfter: health,
+          })
+          : retiredState;
+        return resolveTriggeredAbilities(exactZeroState, targetOwner, current, 'LEAVE_FIELD', { leaveReason: 'RETIRE' });
       }, state);
+    }
+    if (effect.action === 'SILENCE') {
+      return [...ids].reduce((nextState, id) => silenceCard(nextState, id), state);
     }
     return {
       ...state,
       players: state.players.map((player) => {
         const update = (card: CardInstance): CardInstance | null => {
           if (!ids.has(card.instanceId)) return card;
-          if (effect.action === 'SILENCE') return { ...card, isSilenced: true };
-           if (effect.action === 'ADD_KEYWORD' && effect.values?.keyword && !card.keywords.includes(effect.values.keyword)) return { ...card, keywords: [...card.keywords, effect.values.keyword], dodgeAvailable: effect.values.keyword === 'DODGE' ? true : card.dodgeAvailable };
-           if (effect.action === 'REMOVE_KEYWORD' && effect.values?.keyword) return { ...card, keywords: card.keywords.filter((keyword) => keyword !== effect.values?.keyword), dodgeAvailable: effect.values.keyword === 'DODGE' ? false : card.dodgeAvailable };
+           if (effect.action === 'SILENCE') return card; // resolved centrally below
+            if (effect.action === 'ADD_KEYWORD' && effect.values?.keyword && !card.keywords.includes(effect.values.keyword)) return { ...card, keywords: [...card.keywords, effect.values.keyword], dodgeAvailable: effect.values.keyword === 'DODGE' ? true : card.dodgeAvailable, dodgeCharges: effect.values.keyword === 'DODGE' ? Math.max(1, card.dodgeCharges ?? 0) : card.dodgeCharges };
+            if (effect.action === 'REMOVE_KEYWORD' && effect.values?.keyword) return { ...card, keywords: card.keywords.filter((keyword) => keyword !== effect.values?.keyword), dodgeAvailable: effect.values.keyword === 'DODGE' ? false : card.dodgeAvailable, dodgeCharges: effect.values.keyword === 'DODGE' ? 0 : card.dodgeCharges };
            if (effect.action === 'STUN') return { ...card, isStunned: true };
            if (effect.action === 'REDUCE_COST') return { ...card, currentCost: Math.max(0, card.currentCost - amount) };
            if (effect.action === 'INCREASE_COST') return { ...card, currentCost: card.currentCost + amount };
@@ -522,17 +648,44 @@ export function resolveTriggeredAbilities(
   state: GameState,
   playerId: string,
   card: CardInstance,
-  trigger: 'ENTER_FIELD' | 'LEAVE_FIELD' | 'POSITION',
+  trigger: 'ENTER_FIELD' | 'LEAVE_FIELD' | 'POSITION' | 'ACTIVE' | 'CARD_DRAWN' | 'OTHER_ALLY_ATTACK' | 'TECHNIQUE_CAST' | 'EXACT_ZERO_DAMAGE' | 'TURN_START' | 'TURN_END',
   options: {
     boardSlot?: 0 | 1 | 2 | 3;
     leaveReason?: LeaveReason;
     chosenTargetInstanceIds?: string[];
+    playedFromHand?: boolean;
+    baseCost?: number;
+    attackerInstanceId?: string;
+    damagedTargetInstanceId?: string;
+    healthBefore?: number;
+    healthAfter?: number;
   } = {},
 ): GameState {
   if (card.isSilenced) return state;
 
+  const compare = (actual: number, condition: 'GTE' | 'LTE' | 'EQ', expected: number) =>
+    condition === 'GTE' ? actual >= expected : condition === 'LTE' ? actual <= expected : actual === expected;
   const abilities = card.abilities.filter((ability) => {
     if (ability.trigger !== trigger) return false;
+    const condition = 'condition' in ability ? ability.condition : undefined;
+    if (condition) {
+      const owner = state.players.find((player) => player.id === playerId);
+      if (!owner) return false;
+      if (condition.type === 'HAND_COUNT' && !compare(owner.hand.length, condition.compare, condition.amount)) return false;
+      if (condition.type === 'BOARD_COUNT' && !compare(owner.board.filter(Boolean).length, condition.compare, condition.amount)) return false;
+      if (condition.type === 'HAS_TAG' && !owner.hand.some((entry) => entry.tags?.includes(condition.tag))) return false;
+      if (condition.type === 'SOURCE_ON_LEFT_SIDE' && (card.boardSlot === null || card.boardSlot > 1)) return false;
+      if (condition.type === 'SOURCE_ON_RIGHT_SIDE' && (card.boardSlot === null || card.boardSlot < 2)) return false;
+      if (condition.type === 'BASE_COST_GTE' && (options.baseCost ?? 0) < condition.amount) return false;
+      if (condition.type === 'HAS_MATCHING_TAG_PLAYED_THIS_TURN') {
+        const tags = card.tags ?? [];
+        const lastTurnStart = state.events.map((event, index) => ({ event, index }))
+          .filter(({ event }) => event.type === 'TURN_STARTED' && event.playerId === playerId).at(-1)?.index ?? -1;
+        const played = state.events.slice(lastTurnStart + 1)
+          .filter((event) => event.type === 'CARD_PLAYED' && event.playerId === playerId && event.cardInstanceId !== card.instanceId);
+        if (!played.some((event) => event.tags?.some((tag) => tags.includes(tag)))) return false;
+      }
+    }
     if (
       ability.trigger === 'POSITION' &&
       (options.boardSlot === undefined ||
@@ -557,6 +710,7 @@ export function resolveTriggeredAbilities(
     active: true, playerId, sourceInstanceId: card.instanceId, sourceCard: card, effects,
     effectIndex: 0, selectedTargetIds: [], lastTargetIds: options.chosenTargetInstanceIds ?? [],
     validTargetIds: [], minTargets: 0, maxTargets: 0, mandatory: true, cancelable: false,
+    triggerContext: { playedFromHand: options.playedFromHand, baseCost: options.baseCost, attackerInstanceId: options.attackerInstanceId, damagedTargetInstanceId: options.damagedTargetInstanceId, healthBefore: options.healthBefore, healthAfter: options.healthAfter },
   });
 }
 
@@ -572,4 +726,18 @@ export function resolveActiveAbility(
     active: true, playerId, sourceInstanceId: card.instanceId, effects: active.effects, effectIndex: 0,
     selectedTargetIds: [], lastTargetIds: [], validTargetIds: [], minTargets: 0, maxTargets: 0, mandatory: true, cancelable: false, markActiveUsed: true,
   });
+}
+
+/** Dispatch a board-wide listener event without making card-specific branches. */
+export function resolveBoardListeners(
+  state: GameState,
+  playerId: string,
+  trigger: 'OTHER_ALLY_ATTACK',
+  options: Parameters<typeof resolveTriggeredAbilities>[4] = {},
+): GameState {
+  const player = state.players.find((candidate) => candidate.id === playerId);
+  if (!player) return state;
+  return player.board.filter((card): card is CardInstance => Boolean(card))
+    .filter((card) => card.instanceId !== options.attackerInstanceId)
+    .reduce((next, card) => resolveTriggeredAbilities(next, playerId, card, trigger, options), state);
 }

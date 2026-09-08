@@ -84,6 +84,23 @@ test('손패가 7장일 때 드로우한 카드는 removedFromGame으로 이동�
   );
 });
 
+test('오버드로우 카드의 준비(CARD_DRAWN)는 제거 전에 처리된다', () => {
+  const initial = withPlayerOneCards(7, 1);
+  const prepared = {
+    ...initial,
+    players: initial.players.map((player) => player.id !== 'player-1' ? player : {
+      ...player,
+      deck: [{ ...player.deck[0], abilities: [{ trigger: 'CARD_DRAWN', effects: [{ type: 'GAIN_GOLD', amount: 2 }] }] }],
+    }),
+  };
+  const result = drawCard(prepared, 'player-1');
+  const player = playerOne(result);
+  assert.equal(player.currentGold, 2);
+  assert.equal(player.hand.length, 7);
+  assert.equal(player.removedFromGame[0].instanceId, 'card-7');
+  assert.equal(result.events.some((event) => event.type === 'CARD_DRAWN'), true);
+});
+
 test('오버드로우된 카드는 묘지에 들어가지 않는다', () => {
   const state = drawCard(withPlayerOneCards(7, 1), 'player-1');
 

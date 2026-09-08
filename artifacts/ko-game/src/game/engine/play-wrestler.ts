@@ -94,6 +94,7 @@ export function playWrestlerFromHand(
         source: { type: 'PLAYER', playerId },
         target: { type: 'CARD', cardInstanceId },
         reason: 'PLAY_FROM_HAND',
+        tags: card.tags ? [...card.tags] : [],
       },
       {
         type: 'GOLD_CHANGED',

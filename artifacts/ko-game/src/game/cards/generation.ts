@@ -26,6 +26,9 @@ export function generateCardInstance(
     definitionId: definition.id,
     cardType: definition.cardType ?? 'WRESTLER',
     currentCost: definition.cost,
+    baseCost: definition.cost,
+    baseAttack: definition.attack,
+    baseHealth: definition.health,
     currentAttack: definition.attack,
     currentHealth: definition.health,
     maxHealth: definition.health,
@@ -37,13 +40,16 @@ export function generateCardInstance(
     isChampionToken:
       options.isChampionToken ?? definition.isChampionToken,
     keywords: [...definition.keywords],
+    tags: definition.tags ? [...definition.tags] : [],
     abilities: [...definition.abilities],
     isSilenced: false,
     isSilenceImmune: false,
     dodgeAvailable: definition.keywords.includes('DODGE'),
+    dodgeCharges: definition.keywords.includes('DODGE') ? 1 : 0,
     isStunned: false,
     activeUsedThisTurn: false,
     isDirectDeployedChampion: false,
+    capturedCards: [],
   };
 }
 

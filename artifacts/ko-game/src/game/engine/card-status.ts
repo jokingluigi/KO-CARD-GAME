@@ -33,7 +33,12 @@ export function silenceCard(
       : {
           ...card,
           isSilenced: true,
+          currentAttack: card.baseAttack ?? card.currentAttack,
+          maxHealth: card.baseHealth ?? card.maxHealth,
+          currentHealth: Math.min(card.currentHealth, card.baseHealth ?? card.maxHealth),
+          keywords: [],
           dodgeAvailable: false,
+          dodgeCharges: 0,
         },
   );
 }
@@ -69,9 +74,6 @@ export function useActiveAbility(
       'ACTIVE_NOT_AVAILABLE',
       '사용할 수 있는 액티브 능력이 없습니다.',
     );
-  }
-  if (card.isStunned) {
-    return actionFailure(state, 'CARD_STUNNED', '기절한 선수입니다.');
   }
   if (card.activeUsedThisTurn) {
     return actionFailure(
@@ -111,7 +113,6 @@ export function canUseActiveAbility(
   );
   return Boolean(
     card &&
-      !card.isStunned &&
       !card.activeUsedThisTurn &&
       getActiveAbility(card),
   );

@@ -35,6 +35,7 @@ export interface GameEvent {
   reason?: string;
   amount?: number;
   boardSlot?: 0 | 1 | 2 | 3;
+  tags?: string[];
 }
 
 export interface EnterFieldEvent extends GameEvent {

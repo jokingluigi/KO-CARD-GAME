@@ -69,8 +69,8 @@ type EffectAnalysis = {
   reason?: string;
 };
 type EffectLibrary = {
-  actions: Array<{ name: string; description: string; status: "ACTIVE" | "DISABLED"; version: number; usageCount: number; requiredConfig: Record<string, unknown> }>;
-  triggers: Array<{ name: string; description: string; status: "ACTIVE" | "DISABLED"; version: number }>;
+  actions: Array<{ name: string; label?: string; description: string; status: "ACTIVE" | "DISABLED"; version: number; usageCount: number; requiredConfig: Record<string, unknown> }>;
+  triggers: Array<{ name: string; label?: string; description: string; status: "ACTIVE" | "DISABLED"; version: number }>;
   targetResolvers: Array<{ name: string; description: string; config: Record<string, unknown>; status: "ACTIVE" | "DISABLED"; version: number }>;
   valueResolvers: Array<{ name: string; description: string; values?: string[]; status: "ACTIVE" | "DISABLED"; version: number }>;
 };
@@ -616,8 +616,8 @@ export function AdminCardManager({
           <p className="mt-1 text-xs text-neutral-500">현재 엔진에서 지원하고 즉시 사용할 수 있는 Registry 항목입니다.</p>
           {!effectLibrary ? <p data-testid="status-loading-effect-library" className="mt-3 text-xs text-neutral-500">라이브러리를 불러오는 중...</p> : (
             <div className="mt-4 grid gap-4 lg:grid-cols-2">
-              <LibraryGroup title="Actions / Effects" items={effectLibrary.actions.map((item) => ({ ...item, detail: `${item.description} · 설정: ${JSON.stringify(item.requiredConfig)} · v${item.version} · 사용 카드 ${item.usageCount}` }))} />
-              <LibraryGroup title="Triggers" items={effectLibrary.triggers.map((item) => ({ ...item, detail: item.description }))} />
+              <LibraryGroup title="Actions / Effects" items={effectLibrary.actions.map((item) => ({ ...item, name: item.label ? `${item.label} (${item.name})` : item.name, detail: `${item.description} · 설정: ${JSON.stringify(item.requiredConfig)} · v${item.version} · 사용 카드 ${item.usageCount}` }))} />
+              <LibraryGroup title="Triggers" items={effectLibrary.triggers.map((item) => ({ ...item, name: item.label ? `${item.label} (${item.name})` : item.name, detail: item.description }))} />
               <LibraryGroup title="Target resolvers" items={effectLibrary.targetResolvers.map((item) => ({ ...item, detail: `${item.description} · ${JSON.stringify(item.config)}` }))} />
               <LibraryGroup title="Value resolvers" items={effectLibrary.valueResolvers.map((item) => ({ ...item, detail: `${item.description}${item.values ? ` · ${item.values.join(", ")}` : ""}` }))} />
             </div>

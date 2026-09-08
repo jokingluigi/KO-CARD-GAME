@@ -1,6 +1,7 @@
 import type { GameState, PlayerState } from '../types/game-state';
 import { MAX_HAND_SIZE } from '../rules/constants';
 import { findDirectDeployedChampion } from './direct-champion';
+import { resolveTriggeredAbilities } from '../effects/effect-engine';
 
 function finishGameFromFatigue(
   state: GameState,
@@ -128,49 +129,30 @@ export function drawCard(state: GameState, playerId: string): GameState {
   }
 
   const [drawnCard, ...remainingDeck] = drawingPlayer.deck;
-  const updatedPlayer =
-    drawingPlayer.hand.length >= MAX_HAND_SIZE
-      ? {
-          ...drawingPlayer,
-          deck: remainingDeck,
-          removedFromGame: [...drawingPlayer.removedFromGame, drawnCard],
-        }
-      : {
-          ...drawingPlayer,
-          deck: remainingDeck,
-          hand: [...drawingPlayer.hand, drawnCard],
-        };
-
-  return {
+  // CARD_DRAWN is deliberately resolved while the card is temporarily in hand,
+  // including an overdraw. This gives prepare effects a deterministic window
+  // before the normal remove-from-game consequence.
+  const drawState: GameState = {
     ...state,
     players: state.players.map((player) =>
-      player.id === playerId ? updatedPlayer : player,
+      player.id === playerId ? { ...player, deck: remainingDeck, hand: [...player.hand, drawnCard] } : player,
     ),
     events: [
       ...state.events,
-      drawingPlayer.hand.length >= MAX_HAND_SIZE
-        ? {
-            type: 'CARD_REMOVED',
-            playerId,
-            cardInstanceId: drawnCard.instanceId,
-            source: { type: 'SYSTEM' },
-            target: {
-              type: 'CARD',
-              cardInstanceId: drawnCard.instanceId,
-            },
-            reason: 'OVERDRAW',
-          }
-        : {
-            type: 'CARD_DRAWN',
-            playerId,
-            cardInstanceId: drawnCard.instanceId,
-            source: { type: 'SYSTEM' },
-            target: {
-              type: 'CARD',
-              cardInstanceId: drawnCard.instanceId,
-            },
-            reason: 'DRAW',
-          },
+      { type: 'CARD_DRAWN', playerId, cardInstanceId: drawnCard.instanceId, source: { type: 'SYSTEM' },
+        target: { type: 'CARD', cardInstanceId: drawnCard.instanceId }, reason: 'DRAW' },
     ],
+  };
+  const prepared = resolveTriggeredAbilities(drawState, playerId, drawnCard, 'CARD_DRAWN');
+  if (drawingPlayer.hand.length < MAX_HAND_SIZE) return prepared;
+  return {
+    ...prepared,
+    players: prepared.players.map((player) => player.id !== playerId ? player : {
+      ...player,
+      hand: player.hand.filter((card) => card.instanceId !== drawnCard.instanceId),
+      removedFromGame: [...player.removedFromGame, drawnCard],
+    }),
+    events: [...prepared.events, { type: 'CARD_REMOVED', playerId, cardInstanceId: drawnCard.instanceId,
+      source: { type: 'SYSTEM' }, target: { type: 'CARD', cardInstanceId: drawnCard.instanceId }, reason: 'OVERDRAW' }],
   };
 }

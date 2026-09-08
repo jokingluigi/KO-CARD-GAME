@@ -175,7 +175,13 @@ export function endTurn(
     activePlayerId: nextPlayer.id,
     players: state.players.map((player) => {
       if (player.id === actingPlayerId) {
-        return { ...player, currentGold: 0 };
+        return {
+          ...player,
+          currentGold: 0,
+          board: player.board.map((card) =>
+            card ? { ...card, isStunned: false } : null,
+          ) as typeof player.board,
+        };
       }
 
       return player;

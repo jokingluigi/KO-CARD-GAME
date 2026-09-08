@@ -7,6 +7,7 @@ import type { BoardSlot } from './board-position';
 import { validateCurrentPlayer } from './turn-system';
 import {
   hasKeyword,
+  resolveBoardListeners,
   resolveTriggeredAbilities,
 } from '../effects/effect-engine';
 import { processChampionQuestEvents } from '../champions/quests';
@@ -134,12 +135,20 @@ function receiveDamage(
   card: NonNullable<GameState['players'][number]['board'][number]>,
   amount: number,
 ) {
+  const dodgeCharges = Math.max(
+    card.dodgeCharges ?? 0,
+    card.dodgeAvailable ? 1 : 0,
+  );
   if (
     amount > 0 &&
-    card.dodgeAvailable &&
+    dodgeCharges > 0 &&
     hasKeyword(card, 'DODGE')
   ) {
-    return { ...card, dodgeAvailable: false };
+    return {
+      ...card,
+      dodgeAvailable: dodgeCharges > 1,
+      dodgeCharges: dodgeCharges - 1,
+    };
   }
 
   return { ...card, currentHealth: card.currentHealth - amount };
@@ -323,24 +332,27 @@ export function attack(
       ],
     };
 
+    const listenersResolved = resolveBoardListeners(
+      attackedState, attackingPlayerId, 'OTHER_ALLY_ATTACK', { attackerInstanceId },
+    );
     if (directChampion) {
       return actionSuccess(
         processChampionQuestEvents(
           state,
-          retireDefeatedWrestlers(attackedState),
+          retireDefeatedWrestlers(listenersResolved),
         ),
       );
     }
 
     if (remainingHealth > 0) {
       return actionSuccess(
-        processChampionQuestEvents(state, attackedState),
+        processChampionQuestEvents(state, listenersResolved),
       );
     }
 
     return actionSuccess(
       processChampionQuestEvents(state, {
-        ...attackedState,
+        ...listenersResolved,
         status: 'FINISHED',
         activePlayerId: null,
         winnerId: attackingPlayerId,
@@ -423,10 +435,18 @@ export function attack(
     ],
   };
 
+  const exactZeroResolved = defenderDodges || defender.currentHealth - attacker.currentAttack !== 0
+    ? damagedState
+    : resolveTriggeredAbilities(damagedState, attackingPlayerId, attacker, 'EXACT_ZERO_DAMAGE', {
+      damagedTargetInstanceId: defender.instanceId, healthBefore: defender.currentHealth, healthAfter: 0,
+    });
+  const listenersResolved = resolveBoardListeners(
+    exactZeroResolved, attackingPlayerId, 'OTHER_ALLY_ATTACK', { attackerInstanceId },
+  );
   return actionSuccess(
     processChampionQuestEvents(
       state,
-      retireDefeatedWrestlers(damagedState),
+      retireDefeatedWrestlers(listenersResolved),
     ),
   );
 }

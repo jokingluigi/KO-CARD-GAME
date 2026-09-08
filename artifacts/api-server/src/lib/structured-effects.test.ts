@@ -104,7 +104,7 @@ test("요구된 기존 라이브러리 문장을 모두 지원한다", () => {
 
 test("현재 registry에서 제공하는 Effect Library 메타데이터를 노출한다", () => {
   const library = effectLibrary();
-  assert.equal(library.actions.length, 13);
+  assert.ok(library.actions.length >= 19);
   assert.deepEqual(library.actions.find((action) => action.name === "DAMAGE")?.requiredConfig, { target: true, values: { amount: "number (0..999)" } });
   assert.ok(library.triggers.every((trigger) => trigger.status === "ACTIVE"));
   assert.ok(library.targetResolvers.length > 0);
@@ -263,4 +263,24 @@ test("문서의 다음 턴 골드, 비용, 기절 문장을 분석한다", () =>
     assert.equal(result.status, "success", text);
     assert.equal(result.effects[0]?.action, action, text);
   }
+});
+
+test("KO 기본 메커니즘 어휘와 DSL 트리거를 새 메커니즘 요청 없이 분석한다", () => {
+  const cases = [
+    "등장: 자신에게 +2/+2", "조건: 내 손패에 Generated 선수가 있으면 등장: 카드 1장을 뽑습니다.",
+    "태그: 피해 2", "준비: 카드 1장을 뽑습니다.", "콤보: 공격력 +1",
+    "주문: 공격력 +1", "핀폴: 카드 1장을 뽑습니다.", "스위치: 왼쪽이면 +2/+2 오른쪽이면 +0/+2",
+    "등장: 적 선수 하나를 포획합니다.", "등장: 적 선수 하나를 제거합니다.",
+    "등장: 선수를 소환합니다.", "등장: 선수를 생성합니다.",
+    "도발", "러쉬", "기습", "회피(2)", "침묵", "기절", "포획", "제거",
+  ];
+  for (const text of cases) {
+    const result = analyzeEffectText(text);
+    assert.equal(result.outcome, "supported", text);
+    assert.equal(result.status, "success", text);
+  }
+  const needed = analyzeEffectText("조건: 내 손패에 Generated 선수가 있으면 등장: 카드 1장을 뽑습니다.");
+  assert.equal(needed.effects[0]?.conditions?.[0]?.type, "NEED_CONDITION");
+  const synergy = analyzeEffectText("태그: 피해 2");
+  assert.ok(synergy.effects[0]?.conditions?.some((condition) => condition.type === "HAS_MATCHING_TAG_PLAYED_THIS_TURN"));
 });

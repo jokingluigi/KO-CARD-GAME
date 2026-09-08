@@ -93,10 +93,14 @@ function parseChampionInput(value: unknown): ChampionInput | null {
   const hasQuest = input.hasQuest === true;
   const questProgressRequired = integer("questProgressRequired", 1, 999, true);
   const upgradedAbilityCost = integer("upgradedAbilityCost", 0, 999, true);
+  const validEffects = (effects: Record<string, unknown> | null | undefined) =>
+    effects === null || effects === undefined || !("effects" in effects) || isStructuredEffects(effects);
   if (!name || name.length > 120 || !abilityName || abilityName.length > 120 ||
       maxHealth == null || abilityCost == null || abilityAudioVolume == null ||
       !abilityEffects || typeof input.hasQuest !== "boolean" ||
-      questProgressRequired === undefined || upgradedAbilityCost === undefined) return null;
+      questProgressRequired === undefined || upgradedAbilityCost === undefined ||
+      !validEffects(abilityEffects) || !validEffects(object("questRewardEffects", true)) ||
+      !validEffects(object("upgradedAbilityEffects", true))) return null;
   if (hasQuest && (!text("questName", true) || !text("questText", true) ||
       !object("questCondition", true) || questProgressRequired === null ||
       !text("questRewardText", true) || !object("questRewardEffects", true))) return null;
