@@ -1,5 +1,17 @@
 import type { CardInstance } from '../cards/types';
 import type { CardAbility, CardEffect, CardKeyword } from './types';
+import type { Action } from "@workspace/effect-registry";
+
+// The executor supports exactly the action IDs advertised by the shared library.
+// Adding an advertised action requires this assertion (and the executor) to be updated.
+const RUNTIME_STRUCTURED_ACTIONS = [
+  "BUFF", "DAMAGE", "HEAL", "SILENCE", "DESTROY", "ADD_GOLD",
+  "ADD_NEXT_TURN_GOLD", "DRAW", "REDUCE_COST", "INCREASE_COST", "STUN",
+  "ADD_KEYWORD", "REMOVE_KEYWORD",
+] as const satisfies readonly Action[];
+type UnimplementedStructuredAction = Exclude<Action, typeof RUNTIME_STRUCTURED_ACTIONS[number]>;
+const runtimeStructuredActionsAreExhaustive: UnimplementedStructuredAction extends never ? true : never = true;
+void runtimeStructuredActionsAreExhaustive;
 import type { GameState } from '../types/game-state';
 import type { LeaveReason } from '../events/types';
 import { shuffle } from '../random/random';

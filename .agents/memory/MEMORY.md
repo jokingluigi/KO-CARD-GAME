@@ -1,3 +1,4 @@
 - [TypeScript engine tests](typescript-engine-tests.md) — bundle focused KO tests with existing esbuild before running Node’s test runner.
 - [Structured card effects](structured-card-effects.md) — new admin effects are validated data; partial parses never apply and gameplay never reparses display text.
 - [Effect targeting continuations](effect-targeting-continuations.md) — PLAYER_CHOICE pauses use an engine-owned stack so nested triggers resume in order.
+- [Effect registry source](effect-registry-source.md) — analyzer, Effect Library, and runtime types derive identifiers from one shared registry.

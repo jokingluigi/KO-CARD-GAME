@@ -3,7 +3,7 @@ import { and, asc, eq, ilike, sql } from "drizzle-orm";
 import { cardsTable, db } from "@workspace/db";
 import { Router, type IRouter, type Request, type Response } from "express";
 import { CardImageStorage } from "../lib/object-storage";
-import { analyzeEffectText, isStructuredEffects } from "../lib/structured-effects";
+import { analyzeEffectText, effectLibrary, isStructuredEffects } from "../lib/structured-effects";
 
 const router: IRouter = Router();
 const cardImageStorage = new CardImageStorage();
@@ -330,6 +330,11 @@ router.post("/effects/analyze", (request, response) => {
     response.status(400).json({ message: "효과 텍스트를 확인해 주세요." }); return;
   }
   response.json(analyzeEffectText(text));
+});
+
+router.get("/effects/library", (request, response) => {
+  if (!requireAdmin(request, response)) return;
+  response.json(effectLibrary());
 });
 
 router.post("/login", (request, response) => {

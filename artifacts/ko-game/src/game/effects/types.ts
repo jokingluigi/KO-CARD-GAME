@@ -1,9 +1,8 @@
-export type CardKeyword =
-  | 'RUSH'
-  | 'SURPRISE'
-  | 'TAUNT'
-  | 'DODGE'
-  | 'MULTI_STRIKE';
+import type {
+  Action, Keyword, TargetOwner, TargetSelection, TargetZone,
+} from "@workspace/effect-registry";
+
+export type CardKeyword = Keyword;
 
 export type CardEffect =
   | {
@@ -20,12 +19,12 @@ export type CardEffect =
     }
   | {
       type: 'STRUCTURED';
-      action: 'BUFF' | 'DAMAGE' | 'HEAL' | 'SILENCE' | 'DESTROY' | 'ADD_GOLD' | 'ADD_NEXT_TURN_GOLD' | 'DRAW' | 'REDUCE_COST' | 'INCREASE_COST' | 'STUN' | 'ADD_KEYWORD' | 'REMOVE_KEYWORD';
+      action: Action;
       target?: {
-        zone: 'BOARD' | 'HAND' | 'PLAYER' | 'CHARACTER';
-        owner: 'SELF' | 'ENEMY' | 'ALL';
+        zone: TargetZone;
+        owner: TargetOwner;
         cardType?: 'WRESTLER';
-        selection: 'SELF' | 'PLAYER_CHOICE' | 'RANDOM' | 'SAME_TARGET' | 'ALL';
+        selection: TargetSelection;
         count: number;
         minTargets?: number;
         maxTargets?: number;

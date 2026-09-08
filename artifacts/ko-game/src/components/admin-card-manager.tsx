@@ -60,10 +60,18 @@ type CardFormValues = {
 };
 type EffectAnalysis = {
   status: "success" | "partial" | "failure";
+  outcome: "supported" | "mechanism_required" | "analysis_failure";
   effects: Array<{ trigger: string; action: string; target?: { zone: string; owner: string; selection: string; count: number }; values?: { attack?: number; health?: number; amount?: number; keyword?: CardKeyword } }>;
   keywords: CardKeyword[];
   unsupportedSegments: string[];
   summaries: string[];
+  reason?: string;
+};
+type EffectLibrary = {
+  actions: Array<{ name: string; description: string; status: "ACTIVE"; requiredConfig: Record<string, unknown> }>;
+  triggers: Array<{ name: string; description: string; status: "ACTIVE" }>;
+  targetResolvers: Array<{ name: string; description: string; config: Record<string, unknown>; status: "ACTIVE" }>;
+  valueResolvers: Array<{ name: string; description: string; values?: string[]; status: "ACTIVE" }>;
 };
 
 const EMPTY_CARD: CardFormValues = {
@@ -140,6 +148,8 @@ export function AdminCardManager({
   const [isUploadingImage, setIsUploadingImage] = useState(false);
   const [analysis, setAnalysis] = useState<EffectAnalysis | null>(null);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
+  const [effectLibrary, setEffectLibrary] = useState<EffectLibrary | null>(null);
+  const [isLibraryOpen, setIsLibraryOpen] = useState(false);
   const imageInputRef = useRef<HTMLInputElement>(null);
   const form = useForm<CardFormValues>({ defaultValues: EMPTY_CARD });
   const preview = form.watch();
@@ -176,6 +186,20 @@ export function AdminCardManager({
     const timer = window.setTimeout(loadCards, 200);
     return () => window.clearTimeout(timer);
   }, [loadCards]);
+
+  useEffect(() => {
+    async function loadEffectLibrary() {
+      try {
+        const response = await fetch(`${adminApiBase}/effects/library`, { credentials: "include" });
+        if (response.status === 401) { onUnauthorized(); return; }
+        if (!response.ok) throw new Error(await responseMessage(response));
+        setEffectLibrary(await response.json() as EffectLibrary);
+      } catch (libraryError) {
+        setError(libraryError instanceof Error ? libraryError.message : "Effect Library를 불러오지 못했습니다.");
+      }
+    }
+    void loadEffectLibrary();
+  }, [onUnauthorized]);
 
   function openCreate() {
     setEditingCard(null);
@@ -442,15 +466,25 @@ export function AdminCardManager({
           <h2 className="mt-1 text-xl font-black">카드 관리</h2>
           <p className="mt-1 text-xs text-neutral-500">새 카드는 DRAFT로 저장되며 PUBLISHED 카드만 신규 게임에 반영됩니다.</p>
         </div>
-        <button
-          type="button"
-          onClick={openCreate}
-          data-testid="button-create-card"
-          className="flex items-center justify-center gap-2 rounded bg-primary px-4 py-2.5 text-sm font-black text-black hover:bg-yellow-400"
-        >
-          <Plus className="h-4 w-4" /> 새 카드 추가
-        </button>
+        <div className="flex gap-2">
+          <button type="button" onClick={() => setIsLibraryOpen((open) => !open)} data-testid="button-toggle-effect-library" className="rounded border border-primary px-4 py-2.5 text-sm font-black text-primary hover:bg-primary/10">Effect Library</button>
+          <button type="button" onClick={openCreate} data-testid="button-create-card" className="flex items-center justify-center gap-2 rounded bg-primary px-4 py-2.5 text-sm font-black text-black hover:bg-yellow-400"><Plus className="h-4 w-4" /> 새 카드 추가</button>
+        </div>
       </div>
+      {isLibraryOpen && (
+        <section data-testid="effect-library" className="mb-4 rounded-lg border border-neutral-800 bg-neutral-950 p-4">
+          <h3 className="text-sm font-black">Effect Library</h3>
+          <p className="mt-1 text-xs text-neutral-500">현재 엔진에서 지원하고 즉시 사용할 수 있는 Registry 항목입니다.</p>
+          {!effectLibrary ? <p data-testid="status-loading-effect-library" className="mt-3 text-xs text-neutral-500">라이브러리를 불러오는 중...</p> : (
+            <div className="mt-4 grid gap-4 lg:grid-cols-2">
+              <LibraryGroup title="Actions / Effects" items={effectLibrary.actions.map((item) => ({ ...item, detail: `${item.description} · 설정: ${JSON.stringify(item.requiredConfig)}` }))} />
+              <LibraryGroup title="Triggers" items={effectLibrary.triggers.map((item) => ({ ...item, detail: item.description }))} />
+              <LibraryGroup title="Target resolvers" items={effectLibrary.targetResolvers.map((item) => ({ ...item, detail: `${item.description} · ${JSON.stringify(item.config)}` }))} />
+              <LibraryGroup title="Value resolvers" items={effectLibrary.valueResolvers.map((item) => ({ ...item, detail: `${item.description}${item.values ? ` · ${item.values.join(", ")}` : ""}` }))} />
+            </div>
+          )}
+        </section>
+      )}
 
       <div className="mb-4 grid gap-2 rounded-lg border border-neutral-800 bg-black/40 p-3 md:grid-cols-[minmax(180px,1fr)_repeat(3,minmax(120px,auto))]">
         <label className="relative">
@@ -585,8 +619,9 @@ export function AdminCardManager({
                 <label className="space-y-1.5 md:col-span-2"><span className="text-xs font-bold text-neutral-400">카드 효과 설명</span><textarea {...form.register("text", { onChange: () => { setAnalysis(null); form.setValue("effectId", ""); form.setValue("effectConfig", "{}"); } })} rows={3} data-testid="input-card-text" className="w-full rounded border border-neutral-700 bg-neutral-900 px-3 py-2 outline-none focus:border-primary" /></label>
                 <div className="space-y-3 md:col-span-2">
                   <button type="button" onClick={() => void analyzeEffects()} disabled={isAnalyzing} data-testid="button-analyze-effects" className="rounded border border-primary px-4 py-2 text-sm font-bold text-primary disabled:opacity-40">{isAnalyzing ? "분석 중..." : "효과 분석"}</button>
-                  {analysis && <div className={`rounded border p-3 text-xs ${analysis.status === "success" ? "border-emerald-800 bg-emerald-950/30" : "border-amber-800 bg-amber-950/30"}`} data-testid="effect-analysis-result">
-                    <strong>{analysis.status === "success" ? "✓ 분석 성공" : analysis.status === "partial" ? "⚠ 부분 분석 — 적용할 수 없습니다." : "✗ 분석 실패 — 적용할 수 없습니다."}</strong>
+                   {analysis && <div className={`rounded border p-3 text-xs ${analysis.outcome === "supported" ? "border-emerald-800 bg-emerald-950/30" : analysis.outcome === "mechanism_required" ? "border-amber-800 bg-amber-950/30" : "border-red-800 bg-red-950/30"}`} data-testid="effect-analysis-result">
+                     <strong>{analysis.outcome === "supported" ? "✓ 기존 Effect 사용 가능" : analysis.outcome === "mechanism_required" ? "⚠ 새 메커니즘이 필요합니다." : "✗ 효과 의도를 충분히 이해하지 못했습니다."}</strong>
+                     {analysis.reason && <p data-testid="text-analysis-reason" className="mt-2 text-neutral-300">{analysis.reason}</p>}
                     {analysis.effects.map((effect, index) => {
                        const update = (patch: Partial<typeof effect>, targetPatch?: Partial<NonNullable<typeof effect.target>>, valuesPatch?: Partial<NonNullable<typeof effect.values>>) => setAnalysis((current) => current ? { ...current, effects: current.effects.map((item, itemIndex) => itemIndex === index ? { ...item, ...patch, ...(item.target ? { target: { ...item.target, ...targetPatch } } : {}), values: { ...item.values, ...valuesPatch } } : item) } : current);
                       return <div key={index} className="mt-2 rounded bg-black/30 p-2">발동: {effect.trigger} · 행동: {effect.action}
@@ -602,7 +637,7 @@ export function AdminCardManager({
                     })}
                      {analysis.keywords.map((keyword) => <div key={keyword} className="mt-2 text-emerald-300">기본 키워드: {KEYWORD_LABELS[keyword]}</div>)}
                      {analysis.unsupportedSegments.map((segment) => <div key={segment} className="mt-2 text-amber-300">지원하지 않음: {segment}</div>)}
-                    <div className="mt-3 flex gap-2"><button type="button" disabled={analysis.status !== "success"} onClick={applyAnalysis} data-testid="button-apply-analysis" className="rounded bg-primary px-3 py-1.5 font-bold text-black disabled:opacity-40">분석 결과 적용</button><button type="button" onClick={() => void analyzeEffects()} className="rounded border border-neutral-600 px-3 py-1.5">다시 분석</button><button type="button" onClick={() => setAnalysis(null)} className="rounded border border-neutral-600 px-3 py-1.5">취소</button></div>
+                     <div className="mt-3 flex flex-wrap gap-2"><button type="button" disabled={analysis.outcome !== "supported"} onClick={applyAnalysis} data-testid="button-apply-analysis" className="rounded bg-primary px-3 py-1.5 font-bold text-black disabled:opacity-40">분석 결과 적용</button>{analysis.outcome === "mechanism_required" && <button type="button" disabled data-testid="button-generate-mechanism" title="Phase 1에서는 새 메커니즘을 생성하지 않습니다." className="rounded border border-amber-700 px-3 py-1.5 font-bold text-amber-300 disabled:opacity-40">메커니즘 생성 (준비 중)</button>}<button type="button" onClick={() => void analyzeEffects()} data-testid="button-reanalyze-effects" className="rounded border border-neutral-600 px-3 py-1.5">다시 분석</button><button type="button" onClick={() => setAnalysis(null)} data-testid="button-cancel-analysis" className="rounded border border-neutral-600 px-3 py-1.5">취소</button></div>
                     <details className="mt-2"><summary>고급 JSON 보기</summary><pre className="mt-1 overflow-auto text-[10px]">{JSON.stringify(analysis.effects, null, 2)}</pre></details>
                   </div>}
                 </div>
@@ -644,6 +679,28 @@ export function AdminCardManager({
           </div>
         </div>
       )}
+    </div>
+  );
+}
+
+function LibraryGroup({
+  title,
+  items,
+}: {
+  title: string;
+  items: Array<{ name: string; detail: string; status: "ACTIVE" }>;
+}) {
+  return (
+    <div className="rounded border border-neutral-800">
+      <h4 className="border-b border-neutral-800 bg-neutral-900 px-3 py-2 text-xs font-black">{title}</h4>
+      <ul className="divide-y divide-neutral-800">
+        {items.map((item) => (
+          <li key={item.name} data-testid={`effect-library-item-${item.name}`} className="px-3 py-2 text-xs">
+            <div className="flex items-center justify-between gap-2"><strong>{item.name}</strong><span className="rounded border border-emerald-800 bg-emerald-950 px-1.5 py-0.5 text-[10px] font-bold text-emerald-300">{item.status}</span></div>
+            <p className="mt-1 break-words text-[11px] leading-relaxed text-neutral-500">{item.detail}</p>
+          </li>
+        ))}
+      </ul>
     </div>
   );
 }

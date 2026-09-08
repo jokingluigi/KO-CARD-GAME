@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 
-import { analyzeEffectText, isStructuredEffects } from "./structured-effects";
+import { analyzeEffectText, effectLibrary, isStructuredEffects } from "./structured-effects";
 
 test("필수 카드 문장을 안전한 구조화 효과로 분석한다", () => {
   const cases = [
@@ -91,11 +91,47 @@ test("필수 카드 문장을 안전한 구조화 효과로 분석한다", () =>
   }
 });
 
-test("지원하지 않는 문장은 적용 가능한 효과로 만들지 않는다", () => {
+test("요구된 기존 라이브러리 문장을 모두 지원한다", () => {
+  for (const text of [
+    "등장: 골드 1 획득", "등장: 카드 1장 드로우", "등장: 자신에게 +1/+1",
+    "등장: 적 선수 하나에게 피해 2", "등장: 적 선수 하나를 침묵시키고 파괴", "도발", "회피",
+  ]) {
+    const result = analyzeEffectText(text);
+    assert.equal(result.outcome, "supported", text);
+    assert.equal(result.status, "success", text);
+  }
+});
+
+test("현재 registry에서 제공하는 Effect Library 메타데이터를 노출한다", () => {
+  const library = effectLibrary();
+  assert.equal(library.actions.length, 13);
+  assert.deepEqual(library.actions.find((action) => action.name === "DAMAGE")?.requiredConfig, { target: true, values: { amount: "number (0..999)" } });
+  assert.ok(library.triggers.every((trigger) => trigger.status === "ACTIVE"));
+  assert.ok(library.targetResolvers.length > 0);
+  assert.ok(library.valueResolvers.length > 0);
+});
+
+test("인식 가능한 신규 메커니즘은 부분 적용 없이 필요 상태로 분류한다", () => {
+  const result = analyzeEffectText("등장: 내 손패의 모든 선수 카드의 공격력을 서로 무작위로 섞습니다.");
+  assert.equal(result.outcome, "mechanism_required");
+  assert.equal(result.status, "partial");
+  assert.equal(result.effects.length, 0);
+  assert.ok(result.unsupportedSegments.some((segment) => segment.includes("섞")));
+});
+
+test("지원 효과와 알려진 신규 메커니즘이 섞여도 미리보기만 제공한다", () => {
+  const result = analyzeEffectText("등장: 적 선수 하나에게 피해 2를 주고 시간을 멈춥니다.");
+  assert.equal(result.outcome, "mechanism_required");
+  assert.equal(result.status, "partial");
+  assert.deepEqual(result.effects.map((effect) => effect.action), ["DAMAGE"]);
+  assert.ok(result.unsupportedSegments.some((segment) => segment.includes("시간")));
+});
+
+test("인식 가능한 미지원 메커니즘은 적용 가능한 효과로 만들지 않는다", () => {
   const failure = analyzeEffectText(
     "등장: 상대 선수를 3턴 전 상태로 되돌립니다.",
   );
-  assert.equal(failure.status, "failure");
+  assert.equal(failure.outcome, "mechanism_required");
   assert.equal(failure.effects.length, 0);
   assert.ok(failure.unsupportedSegments.length > 0);
 });
