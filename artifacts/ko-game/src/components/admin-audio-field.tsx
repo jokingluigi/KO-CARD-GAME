@@ -157,12 +157,23 @@ export function AdminAudioField({ title, value, onChange, onUnauthorized, onErro
         accept={audioAccept}
         className="hidden"
         onChange={(event) => {
+          event.preventDefault();
+          event.stopPropagation();
           const file = event.target.files?.[0];
           if (file) void upload(file);
         }}
       />
       <div className="flex flex-wrap gap-2">
-        <button type="button" disabled={uploading} onClick={() => inputRef.current?.click()} className="flex items-center gap-2 rounded border border-neutral-700 px-3 py-2 text-xs font-bold hover:border-primary hover:text-primary disabled:opacity-40">
+        <button
+          type="button"
+          disabled={uploading}
+          onClick={(event) => {
+            event.preventDefault();
+            event.stopPropagation();
+            inputRef.current?.click();
+          }}
+          className="flex items-center gap-2 rounded border border-neutral-700 px-3 py-2 text-xs font-bold hover:border-primary hover:text-primary disabled:opacity-40"
+        >
           <Upload className="h-4 w-4" /> {uploading ? "업로드 중..." : previewUrl ? "음악 변경" : "음악 파일 업로드"}
         </button>
         {previewUrl && <button type="button" disabled={uploading} onClick={() => audioManager.preview(previewUrl, value.volume)} className="flex items-center gap-2 rounded border border-emerald-800 px-3 py-2 text-xs font-bold text-emerald-300 disabled:opacity-40"><Music2 className="h-4 w-4" /> 미리듣기</button>}
