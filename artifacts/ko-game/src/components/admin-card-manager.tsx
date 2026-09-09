@@ -80,7 +80,7 @@ type CardFormValues = {
 type EffectAnalysis = {
   status: "success" | "partial" | "failure";
   outcome: "supported" | "mechanism_required" | "analysis_failure";
-  effects: Array<{ trigger: string; action: string; target?: { zone: string; owner: string; selection: string; count: number }; values?: { attack?: number; health?: number; amount?: number; keyword?: CardKeyword } }>;
+  effects: Array<{ trigger: string; action: string; target?: { zone: string; owner: string; selection: string; count: number }; conditions?: Array<{ type: string; expression?: string }>; values?: { attack?: number; health?: number; amount?: number; keyword?: CardKeyword } }>;
   keywords: CardKeyword[];
   unsupportedSegments: string[];
   summaries: string[];
@@ -89,6 +89,7 @@ type EffectAnalysis = {
 type EffectLibrary = {
   actions: Array<{ name: string; label?: string; description: string; status: "ACTIVE" | "DISABLED"; version: number; usageCount: number; requiredConfig: Record<string, unknown> }>;
   triggers: Array<{ name: string; label?: string; description: string; status: "ACTIVE" | "DISABLED"; version: number }>;
+  conditions?: Array<{ name: string; label?: string; description: string; status: "ACTIVE" | "DISABLED"; version: number }>;
   targetResolvers: Array<{ name: string; description: string; config: Record<string, unknown>; status: "ACTIVE" | "DISABLED"; version: number }>;
   valueResolvers: Array<{ name: string; description: string; values?: string[]; status: "ACTIVE" | "DISABLED"; version: number }>;
 };
@@ -152,6 +153,96 @@ async function responseMessage(response: Response) {
   }
 }
 
+function formatActiveLibraryEntries(
+  label: string,
+  entries: Array<{ name: string; description: string; status: "ACTIVE" | "DISABLED" }>,
+) {
+  const activeEntries = entries.filter((entry) => entry.status === "ACTIVE");
+  return `${label}: ${activeEntries.length
+    ? activeEntries.map((entry) => `${entry.name} (${entry.description})`).join(", ")
+    : "관련 ACTIVE 항목 없음"}`;
+}
+
+function buildLocalReplitPrompt(
+  originalCardText: string,
+  analysis: EffectAnalysis,
+  library: EffectLibrary,
+) {
+  const activeActions = library.actions.filter((entry) => entry.status === "ACTIVE");
+  const activeTriggers = library.triggers.filter((entry) => entry.status === "ACTIVE");
+  const activeConditions = (library.conditions ?? []).filter((entry) => entry.status === "ACTIVE");
+  const activeTargetResolvers = library.targetResolvers.filter((entry) => entry.status === "ACTIVE");
+  const activeValueResolvers = library.valueResolvers.filter((entry) => entry.status === "ACTIVE");
+  const hasStats = /공격력|체력|스탯/.test(originalCardText);
+  const hasAmount = /\d+\s*(?:피해|데미지|장|골드|G|회복|치유)/i.test(originalCardText);
+  const hasKeyword = analysis.keywords.length > 0 || /러쉬|기습|도발|회피|연타/.test(originalCardText);
+  const hasTarget = analysis.effects.some((effect) => effect.target) || /손패|필드|선수|캐릭터|카드|대상/.test(originalCardText);
+  const hasCondition = analysis.effects.some((effect) => effect.conditions?.length) || /^조건\s*:|^NEED\s*:/i.test(originalCardText);
+
+  const relevantActions = activeActions.filter((entry) =>
+    analysis.effects.some((effect) => effect.action === entry.name) ||
+    (hasStats && /공격력|체력|스탯|변경/.test(`${entry.label ?? ""} ${entry.description}`)) ||
+    (hasAmount && /피해|회복|드로우|골드|비용|수치/.test(`${entry.label ?? ""} ${entry.description}`)) ||
+    (hasKeyword && /키워드/.test(`${entry.label ?? ""} ${entry.description}`)),
+  );
+  const relevantTriggers = activeTriggers.filter((entry) =>
+    analysis.effects.some((effect) => effect.trigger === entry.name) ||
+    (/등장|필드에 들어|퇴장|액티브|턴 시작|턴 종료/.test(`${entry.label ?? ""} ${entry.description}`) &&
+      /등장|퇴장|액티브|턴/.test(originalCardText)),
+  );
+  const relevantValues = activeValueResolvers.filter((entry) =>
+    (hasStats && /공격력|체력|스탯/.test(`${entry.name} ${entry.description}`)) ||
+    (hasAmount && /수치|골드|피해|회복|드로우|비용/.test(`${entry.name} ${entry.description}`)) ||
+    (hasKeyword && /키워드/.test(`${entry.name} ${entry.description}`)),
+  );
+  const relevantConditions = hasCondition ? activeConditions : [];
+  const supportedEffects = analysis.effects.length
+    ? analysis.effects.map((effect, index) => `${index + 1}. ${JSON.stringify(effect)}`).join("\n")
+    : "- 없음";
+  const supportedSummary = analysis.summaries.length
+    ? analysis.summaries.map((summary) => `- ${summary}`).join("\n")
+    : "- 없음";
+  const unsupportedParts = analysis.unsupportedSegments.length
+    ? analysis.unsupportedSegments.map((part) => `- ${part}`).join("\n")
+    : "- 없음";
+
+  return `# KO 카드 효과 메커니즘 수정 요청
+
+이 문서는 외부 AI/API를 호출하거나 코드를 자동 실행하기 위한 것이 아닙니다. 관리자가 현재 Replit Agent 채팅에 그대로 붙여넣는 개발 프롬프트입니다.
+
+## 원본 카드 효과
+${originalCardText}
+
+## 현재 Analyzer가 인식한 기능
+${supportedSummary}
+
+구조화된 지원 효과:
+${supportedEffects}
+
+## 지원되지 않는 부분
+${unsupportedParts}
+
+## 현재 실제 ACTIVE Effect Library에서 관련성이 높은 항목
+${formatActiveLibraryEntries("Trigger", relevantTriggers)}
+${formatActiveLibraryEntries("Effect / Action", relevantActions)}
+${formatActiveLibraryEntries("Target Resolver", hasTarget ? activeTargetResolvers : [])}
+${formatActiveLibraryEntries("Value Resolver", relevantValues)}
+${formatActiveLibraryEntries("Condition", relevantConditions)}
+Listener: 현재 ACTIVE Effect Library에 등록된 Listener 항목만 확인하고, 목록에 없는 Listener를 존재한다고 가정하지 마세요.
+
+## 구현 지침
+- 먼저 위의 현재 ACTIVE Effect Library와 프로젝트의 Effect Registry를 다시 확인하고, 이미 존재하는 Effect, Trigger, Target Resolver, Value Resolver, Condition, Listener를 최대한 재사용하세요.
+- 기존 기능 조합으로 표현할 수 없는 부족한 부분일 때만 다른 카드에도 재사용 가능한 범용 Effect/Trigger/Resolver/Condition/Listener를 추가하세요.
+- 특정 카드 이름, 카드 ID, 또는 이 카드의 문장만을 위한 하드코딩 분기를 추가하지 마세요.
+- 필요한 관련 파일만 최소 수정하세요. 프로젝트 전체 재탐색, 대규모 리팩터링, 정상 기능 삭제는 하지 마세요.
+- 기존 게임 규칙, 저장 흐름, 전투, Champion, Gold, 턴 시스템 및 기존 Effect 동작을 변경하지 마세요.
+- 자연어 문장이나 DB 문자열을 코드로 실행하지 말고, 정식 TypeScript와 Registry/Schema/Handler를 사용하세요.
+- TypeScript 검사와 필요한 관련 테스트를 실행하고 기존 테스트도 통과시키세요.
+- 부분적으로만 이해된 효과를 자동 적용하지 말고, 구조화된 데이터로 안전하게 검증하세요.
+- 기능이 완료되면 추가 작업이나 임의의 기능을 만들지 말고 종료하세요. 수정 파일과 실행한 검사 결과만 간단히 보고하세요.
+`;
+}
+
 export function AdminCardManager({
   onUnauthorized,
 }: {
@@ -195,7 +286,6 @@ export function AdminCardManager({
   const [replitPrompt, setReplitPrompt] = useState("");
   const [completion, setCompletion] = useState<CompletionValidation | null>(null);
   const [isCompleting, setIsCompleting] = useState(false);
-  const [isGeneratingPrompt, setIsGeneratingPrompt] = useState(false);
   const imageInputRef = useRef<HTMLInputElement>(null);
   const form = useForm<CardFormValues>({ defaultValues: EMPTY_CARD });
   const preview = form.watch();
@@ -424,50 +514,19 @@ export function AdminCardManager({
     }
   }
 
-  async function generateReplitPrompt() {
+  function generateReplitPrompt() {
     if (!analysis || analysis.outcome !== "mechanism_required") return;
+    if (!effectLibrary) {
+      setError("최신 Effect Library를 불러온 뒤 프롬프트를 만들어 주세요.");
+      return;
+    }
     setError("");
-    setIsGeneratingPrompt(true);
     try {
       const originalCardText = form.getValues("text").trim();
-      const supportedEffects = analysis.effects.length
-        ? analysis.effects.map((effect, index) => `${index + 1}. ${JSON.stringify(effect)}`).join("\n")
-        : "- 없음";
-      const supportedSummary = analysis.summaries.length
-        ? analysis.summaries.map((summary) => `- ${summary}`).join("\n")
-        : "- 없음";
-      const unsupportedParts = analysis.unsupportedSegments.length
-        ? analysis.unsupportedSegments.map((part) => `- ${part}`).join("\n")
-        : "- 없음";
-      const prompt = `# KO 카드 효과 메커니즘 수정 요청
-
-## 원본 카드 효과
-${originalCardText}
-
-## 이미 지원되는 Effect
-${supportedSummary}
-
-구조화된 지원 효과:
-${supportedEffects}
-
-## 지원되지 않는 부분
-${unsupportedParts}
-
-## 구현 지침
-- 먼저 현재 KO Effect Registry와 기존 Effect Library를 조사하고, 이미 지원되는 Trigger/Action/Target/Condition을 재사용하세요.
-- 기존 조합으로 표현할 수 없는 부족한 기능만 다른 카드에도 재사용 가능한 범용 Effect로 구현하세요.
-- 특정 카드 이름이나 이 카드 문장만을 위한 하드코딩 분기를 추가하지 마세요.
-- 카드 관리자, Structured Effect Analyzer, Effect Registry의 관련 파일만 최소한으로 수정하세요.
-- 게임 엔진의 기존 규칙, 카드 저장 흐름, Champion, 전투, 턴 시스템은 변경하지 마세요.
-- TypeScript 검사와 관련 테스트를 실행하고 기존 테스트가 계속 통과하는지 확인하세요.
-- 부분적으로만 해석된 효과를 자동 적용하지 말고, 구조화된 데이터로 안전하게 검증하세요.
-`;
-      setReplitPrompt(prompt);
+      setReplitPrompt(buildLocalReplitPrompt(originalCardText, analysis, effectLibrary));
       setMessage("Replit Agent에 붙여넣을 수정 프롬프트를 만들었습니다.");
     } catch (promptError) {
       setError(promptError instanceof Error ? promptError.message : "수정 프롬프트를 만들지 못했습니다.");
-    } finally {
-      setIsGeneratingPrompt(false);
     }
   }
 
@@ -1005,7 +1064,7 @@ ${unsupportedParts}
                       {analysis.outcome === "mechanism_required" && <div className="mt-3 rounded border border-amber-900/70 bg-amber-950/20 p-2"><div className="font-bold text-amber-300">지원되지 않는 부분:</div>{analysis.unsupportedSegments.map((segment) => <div key={segment} className="mt-1 text-amber-200">- {segment}</div>)}</div>}
                       {analysis.outcome !== "mechanism_required" && analysis.unsupportedSegments.map((segment) => <div key={segment} className="mt-2 text-amber-300">지원하지 않음: {segment}</div>)}
                       {analysis.outcome === "supported" && analysis.effects.length > 0 && <div className="mt-3 rounded border border-emerald-900/70 bg-emerald-950/20 p-2"><div className="font-bold text-emerald-300">Structured Effect 미리보기</div><pre className="mt-2 max-h-48 overflow-auto text-[10px] leading-relaxed">{JSON.stringify({ effects: analysis.effects }, null, 2)}</pre></div>}
-                        <div className="mt-3 flex flex-wrap gap-2"><button type="button" disabled={analysis.outcome !== "supported"} onClick={applyAnalysis} data-testid="button-apply-analysis" className="rounded bg-primary px-3 py-1.5 font-bold text-black disabled:opacity-40">효과 적용</button>{analysis.outcome === "mechanism_required" && <><button type="button" disabled={isGeneratingPrompt} onClick={() => void generateReplitPrompt()} data-testid="button-create-replit-prompt" className="rounded border border-amber-700 px-3 py-1.5 font-bold text-amber-300 disabled:opacity-40">{isGeneratingPrompt ? "생성 중..." : "Replit 수정 프롬프트 만들기"}</button><button type="button" disabled={isCompleting} onClick={() => void reanalyzeMechanicCompletion()} data-testid="button-mechanism-complete-reanalyze" className="rounded border border-emerald-700 px-3 py-1.5 font-bold text-emerald-300 disabled:opacity-40">{isCompleting ? "다시 분석 중..." : "메커니즘 구현 완료 - 다시 분석"}</button></>}<button type="button" onClick={() => void analyzeEffects()} data-testid="button-reanalyze-effects" className="rounded border border-neutral-600 px-3 py-1.5">다시 분석</button><button type="button" onClick={() => setAnalysis(null)} data-testid="button-cancel-analysis" className="rounded border border-neutral-600 px-3 py-1.5">취소</button></div>
+                        <div className="mt-3 flex flex-wrap gap-2"><button type="button" disabled={analysis.outcome !== "supported"} onClick={applyAnalysis} data-testid="button-apply-analysis" className="rounded bg-primary px-3 py-1.5 font-bold text-black disabled:opacity-40">효과 적용</button>{analysis.outcome === "mechanism_required" && <><button type="button" disabled={!effectLibrary} onClick={generateReplitPrompt} data-testid="button-create-replit-prompt" className="rounded border border-amber-700 px-3 py-1.5 font-bold text-amber-300 disabled:opacity-40">Replit 수정 프롬프트 만들기</button><button type="button" disabled={isCompleting} onClick={() => void reanalyzeMechanicCompletion()} data-testid="button-mechanism-complete-reanalyze" className="rounded border border-emerald-700 px-3 py-1.5 font-bold text-emerald-300 disabled:opacity-40">{isCompleting ? "다시 분석 중..." : "메커니즘 구현 완료 - 다시 분석"}</button></>}<button type="button" onClick={() => void analyzeEffects()} data-testid="button-reanalyze-effects" className="rounded border border-neutral-600 px-3 py-1.5">다시 분석</button><button type="button" onClick={() => setAnalysis(null)} data-testid="button-cancel-analysis" className="rounded border border-neutral-600 px-3 py-1.5">취소</button></div>
                        {completion && <div data-testid="mechanic-completion-result" className="mt-3 rounded border border-neutral-700 p-3"><strong>{completion.message}</strong><p className="mt-2">지원: {completion.supportedCapabilities.join(", ") || "없음"}</p>{completion.unsupportedParts.length > 0 && <p className="mt-1 text-amber-300">미지원: {completion.unsupportedParts.join(", ")}</p>}<ul className="mt-2 space-y-1">{completion.checks.map((check) => <li key={check.id} className={check.passed ? "text-emerald-300" : "text-amber-300"}>{check.passed ? "✓" : "○"} {check.reason}</li>)}</ul>{completion.status === "recognized" && completion.structuredEffect && <><pre className="mt-2 overflow-auto text-[10px]">{JSON.stringify(completion.structuredEffect, null, 2)}</pre><button type="button" disabled={!editingCard || editingCard.status !== "DRAFT" || busyId === editingCard.id} onClick={() => void applyCompletedMechanic()} data-testid="button-apply-completed-mechanic" className="mt-2 rounded bg-primary px-3 py-1.5 font-bold text-black disabled:opacity-40">카드 효과 적용</button></>}</div>}
                       {createdMechanicRequest && <div data-testid="mechanic-request-created" className="mt-3 rounded border border-amber-800 bg-amber-950/30 p-2 text-xs"><strong>요청 ID: {createdMechanicRequest.id}</strong><p className="mt-1">원본 효과: {createdMechanicRequest.originalCardText}</p><p>현재 상태: {createdMechanicRequest.status}</p><p>지원하지 않음: {createdMechanicRequest.unsupportedParts.join(", ")}</p></div>}
                       {replitPrompt && <section className="mt-3 rounded border border-amber-800 bg-black/30 p-3" data-testid="replit-agent-prompt">
