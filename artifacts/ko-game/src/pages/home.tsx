@@ -18,6 +18,7 @@ import {
   fetchPublishedChampions,
 } from '@/game';
 import { GameStatePreview } from '@/components/game-state-preview';
+import { audioManager } from '@/audio/audio-manager';
 
 const TURN_TIME_LIMIT_SECONDS = 90;
 
@@ -38,6 +39,8 @@ export default function Home() {
   const turnKey = `${gameState.turn}:${gameState.activePlayerId ?? 'none'}`;
   const turnStartedAtRef = useRef(Date.now());
   const timeoutHandledTurnRef = useRef<string | null>(null);
+  const processedAudioEventsRef = useRef(new Set<string>());
+  const lastAudioEventCountRef = useRef<number | null>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -82,6 +85,49 @@ export default function Home() {
       cancelled = true;
     };
   }, [testCardId]);
+
+  useEffect(() => {
+    if (lastAudioEventCountRef.current === null) {
+      lastAudioEventCountRef.current = gameState.events.length;
+      return;
+    }
+    if (gameState.events.length < lastAudioEventCountRef.current) {
+      processedAudioEventsRef.current.clear();
+    }
+    const startIndex = gameState.events.length < lastAudioEventCountRef.current
+      ? 0
+      : lastAudioEventCountRef.current;
+    gameState.events.slice(startIndex).forEach((event, offset) => {
+      const eventIndex = startIndex + offset;
+      const eventKey = `${eventIndex}:${event.type}:${event.cardInstanceId ?? ""}:${event.championId ?? ""}`;
+      if (processedAudioEventsRef.current.has(eventKey)) return;
+      processedAudioEventsRef.current.add(eventKey);
+      if (event.type === "ENTER_FIELD" && event.cardInstanceId) {
+        const card = gameState.players.flatMap((player) => [
+          ...player.deck,
+          ...player.hand,
+          ...player.board.filter((entry): entry is NonNullable<typeof entry> => entry !== null),
+          ...player.graveyard,
+          ...player.removedFromGame,
+        ]).find((entry) => entry.instanceId === event.cardInstanceId);
+        if (card?.entranceAudioEnabled && card.entranceAudioUrl) {
+          audioManager.playCardEntrance(card.entranceAudioUrl, card.entranceAudioVolume ?? 100);
+        }
+      }
+      if (event.type === "CHAMPION_QUEST_COMPLETED" && event.championId) {
+        const champion = gameState.players
+          .map((player) => player.champion)
+          .find((entry) => entry?.id === event.championId);
+        if (champion?.questCompleteAudioEnabled && champion.questCompleteAudioUrl) {
+          audioManager.playQuestComplete(
+            champion.questCompleteAudioUrl,
+            champion.questCompleteAudioVolume ?? 100,
+          );
+        }
+      }
+    });
+    lastAudioEventCountRef.current = gameState.events.length;
+  }, [gameState.events]);
 
   useEffect(() => {
     if (!playError) return;

@@ -37,6 +37,10 @@ export interface ChampionDefinition {
   description?: string;
   imageAssetId?: string | null;
   imageUrl?: string | null;
+  questCompleteAudioAssetId?: string | null;
+  questCompleteAudioUrl?: string | null;
+  questCompleteAudioVolume?: number;
+  questCompleteAudioEnabled?: boolean;
   maxHealth: number;
   abilityCost: number;
   ability: ChampionAbility;
@@ -57,5 +61,9 @@ export interface ChampionState {
   quest: ChampionQuest | null;
   questProgress: number;
   questCompleted: boolean;
+  questCompleteAudioAssetId?: string | null;
+  questCompleteAudioUrl?: string | null;
+  questCompleteAudioVolume?: number;
+  questCompleteAudioEnabled?: boolean;
   upgradedAbility: ChampionAbility | null;
 }

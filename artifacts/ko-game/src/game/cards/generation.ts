@@ -39,6 +39,10 @@ export function generateCardInstance(
     isToken: options.isToken ?? definition.isToken,
     isChampionToken:
       options.isChampionToken ?? definition.isChampionToken,
+    entranceAudioAssetId: definition.entranceAudioAssetId,
+    entranceAudioUrl: definition.entranceAudioUrl,
+    entranceAudioVolume: definition.entranceAudioVolume,
+    entranceAudioEnabled: definition.entranceAudioEnabled,
     keywords: [...definition.keywords],
     tags: definition.tags ? [...definition.tags] : [],
     abilities: [...definition.abilities],

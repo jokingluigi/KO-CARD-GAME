@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
 import { Ban, CheckCircle2, Copy, FilePenLine, Plus, Search, X } from "lucide-react";
+import { AdminAudioField } from "./admin-audio-field";
 
 const adminApiBase = `${import.meta.env.BASE_URL.replace(/\/$/, "")}/api/admin`;
 type Status = "DRAFT" | "PUBLISHED" | "DISABLED";
@@ -13,6 +14,9 @@ type Champion = {
   upgradedAbilityCost: number | null; upgradedAbilityText: string | null;
   upgradedAbilityEffects: Record<string, unknown> | null; championTokenDefinitionId: string | null;
   abilityAudioAssetId: string | null; abilityAudioUrl: string | null; abilityAudioVolume: number;
+  questCompleteAudioAssetId: string | null; questCompleteAudioUrl: string | null;
+  questCompleteAudioVolume: number; questCompleteAudioEnabled: boolean;
+  questCompleteAudioUploadToken: string | null;
   status: Status; version: number;
 };
 type Form = Omit<Champion, "id" | "status" | "version">;
@@ -24,6 +28,9 @@ const empty: Form = {
   upgradedAbilityName: null, upgradedAbilityCost: null, upgradedAbilityText: null,
   upgradedAbilityEffects: null, championTokenDefinitionId: null,
   abilityAudioAssetId: null, abilityAudioUrl: null, abilityAudioVolume: 100,
+  questCompleteAudioAssetId: null, questCompleteAudioUrl: null,
+  questCompleteAudioVolume: 100, questCompleteAudioEnabled: false,
+  questCompleteAudioUploadToken: null,
 };
 
 async function message(response: Response) {
@@ -39,6 +46,7 @@ export function AdminChampionManager({ onUnauthorized }: { onUnauthorized: () =>
   const [form, setForm] = useState<Form>(empty);
   const [open, setOpen] = useState(false);
   const [error, setError] = useState("");
+  const [messageText, setMessageText] = useState("");
   const [busy, setBusy] = useState(false);
   const load = useCallback(async () => {
     const query = new URLSearchParams();
@@ -122,6 +130,11 @@ export function AdminChampionManager({ onUnauthorized }: { onUnauthorized: () =>
       upgradedAbilityText: champion.upgradedAbilityText, upgradedAbilityEffects: champion.upgradedAbilityEffects,
       championTokenDefinitionId: champion.championTokenDefinitionId, abilityAudioAssetId: champion.abilityAudioAssetId,
       abilityAudioUrl: champion.abilityAudioUrl, abilityAudioVolume: champion.abilityAudioVolume,
+      questCompleteAudioAssetId: champion.questCompleteAudioAssetId,
+      questCompleteAudioUrl: champion.questCompleteAudioUrl,
+      questCompleteAudioVolume: champion.questCompleteAudioVolume ?? 100,
+      questCompleteAudioEnabled: champion.questCompleteAudioEnabled ?? false,
+      questCompleteAudioUploadToken: null,
     } : empty); setOpen(true); setError("");
   }
   const input = "w-full rounded border border-neutral-700 bg-neutral-900 px-3 py-2 text-sm";
@@ -133,6 +146,7 @@ export function AdminChampionManager({ onUnauthorized }: { onUnauthorized: () =>
       <button onClick={() => editor()} className="flex gap-2 rounded bg-primary px-4 py-2.5 text-sm font-black text-black"><Plus className="h-4 w-4"/> 새 챔피언</button>
     </div>
     {error && <div className="mb-4 rounded border border-red-900 bg-red-950/40 p-3 text-sm text-red-300">{error}</div>}
+    {messageText && <div className="mb-4 rounded border border-emerald-900 bg-emerald-950/30 p-3 text-sm text-emerald-300">{messageText}</div>}
     <div className="mb-4 flex gap-2"><label className="flex flex-1 items-center gap-2 rounded border border-neutral-800 px-3"><Search className="h-4 w-4"/><input value={search} onChange={(e)=>setSearch(e.target.value)} className="w-full bg-transparent py-2 outline-none" placeholder="챔피언 검색"/></label>
       <select value={status} onChange={(e)=>setStatus(e.target.value)} className={input}><option value="">모든 상태</option><option>DRAFT</option><option>PUBLISHED</option><option>DISABLED</option></select></div>
     <div className="grid gap-3 md:grid-cols-2">{champions.map((champion)=><article key={champion.id} className="rounded-lg border border-neutral-800 bg-neutral-950 p-4">
@@ -156,7 +170,30 @@ export function AdminChampionManager({ onUnauthorized }: { onUnauthorized: () =>
         <label>강화 능력 이름<input className={input} value={form.upgradedAbilityName??""} onChange={e=>update("upgradedAbilityName",e.target.value||null)}/></label>
         <label>강화 능력 비용<input type="number" className={input} value={form.upgradedAbilityCost??""} onChange={e=>update("upgradedAbilityCost",e.target.value===""?null:Number(e.target.value))}/></label>
         <EffectField title="강화 고유 능력" value={form.upgradedAbilityText??""} onChange={v=>update("upgradedAbilityText",v)} onAnalyze={()=>void analyze("upgradedAbilityText","upgradedAbilityEffects")} />
-        <label>Champion Token 카드 ID<input className={input} value={form.championTokenDefinitionId??""} onChange={e=>update("championTokenDefinitionId",e.target.value||null)}/></label>
+         <label>Champion Token 카드 ID<input className={input} value={form.championTokenDefinitionId??""} onChange={e=>update("championTokenDefinitionId",e.target.value||null)}/></label>
+         <AdminAudioField
+           title="챔피언 퀘스트 완료 음악"
+           value={{
+             assetId: form.questCompleteAudioAssetId,
+             url: form.questCompleteAudioUrl,
+             volume: form.questCompleteAudioVolume,
+             enabled: form.questCompleteAudioEnabled,
+             uploadToken: form.questCompleteAudioUploadToken,
+           }}
+           onChange={(value) => {
+             update("questCompleteAudioAssetId", value.assetId);
+             update("questCompleteAudioUrl", value.url);
+             update("questCompleteAudioVolume", value.volume);
+             update("questCompleteAudioEnabled", value.enabled);
+             update("questCompleteAudioUploadToken", value.uploadToken);
+           }}
+           onUnauthorized={onUnauthorized}
+           onError={setError}
+           onMessage={(messageText) => {
+             setError("");
+             setMessageText(messageText);
+           }}
+         />
       </div><div className="mt-5 flex justify-end"><button disabled={busy} onClick={()=>void save()} className="rounded bg-primary px-5 py-2.5 font-black text-black">DRAFT 저장</button></div>
     </div></div>}
   </div>;

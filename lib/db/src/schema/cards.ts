@@ -34,6 +34,10 @@ export const cardsTable = pgTable("cards", {
   imageScale: real("image_scale").notNull().default(1),
   imagePositionX: integer("image_position_x").notNull().default(50),
   imagePositionY: integer("image_position_y").notNull().default(50),
+  entranceAudioAssetId: text("entrance_audio_asset_id"),
+  entranceAudioUrl: text("entrance_audio_url"),
+  entranceAudioVolume: integer("entrance_audio_volume").notNull().default(100),
+  entranceAudioEnabled: boolean("entrance_audio_enabled").notNull().default(false),
   status: text("status").notNull().default("DRAFT"),
   version: integer("version").notNull().default(1),
   createdAt: timestamp("created_at", { withTimezone: true })

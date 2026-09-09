@@ -24,6 +24,10 @@ export type PublishedCardRecord = {
   imageScale?: number;
   imagePositionX?: number;
   imagePositionY?: number;
+  entranceAudioAssetId?: string | null;
+  entranceAudioUrl?: string | null;
+  entranceAudioVolume?: number;
+  entranceAudioEnabled?: boolean;
 };
 
 function amount(config: Record<string, unknown>): number {
@@ -113,6 +117,10 @@ export function cardRecordToDefinition(card: PublishedCardRecord): CardDefinitio
        imageScale: card.imageScale,
        imagePositionX: card.imagePositionX,
        imagePositionY: card.imagePositionY,
+       entranceAudioAssetId: card.entranceAudioAssetId,
+       entranceAudioUrl: card.entranceAudioUrl,
+       entranceAudioVolume: card.entranceAudioVolume,
+       entranceAudioEnabled: card.entranceAudioEnabled,
       isToken: card.isToken,
       isChampionToken: card.isChampionToken,
       keywords: card.keywords,

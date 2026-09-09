@@ -58,6 +58,10 @@ export interface CardDefinition {
   imageScale?: number;
   imagePositionX?: number;
   imagePositionY?: number;
+  entranceAudioAssetId?: string | null;
+  entranceAudioUrl?: string | null;
+  entranceAudioVolume?: number;
+  entranceAudioEnabled?: boolean;
   isToken: boolean;
   isChampionToken: boolean;
   keywords: CardKeyword[];
@@ -90,6 +94,10 @@ export interface CardInstance {
   isGenerated: boolean;
   isToken: boolean;
   isChampionToken: boolean;
+  entranceAudioAssetId?: string | null;
+  entranceAudioUrl?: string | null;
+  entranceAudioVolume?: number;
+  entranceAudioEnabled?: boolean;
   keywords: CardKeyword[];
   abilities: CardAbility[];
   isSilenced: boolean;

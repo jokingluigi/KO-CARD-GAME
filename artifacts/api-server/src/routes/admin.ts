@@ -2,7 +2,7 @@ import { createHmac, randomUUID, timingSafeEqual } from "node:crypto";
 import { and, asc, eq, ilike, sql } from "drizzle-orm";
 import { cardsTable, championsTable, db, mechanicRequestsTable } from "@workspace/db";
 import { Router, type IRouter, type Request, type Response } from "express";
-import { CardImageStorage } from "../lib/object-storage";
+import { AudioStorage, CardImageStorage } from "../lib/object-storage";
 import {
   isPendingMechanicRequestConflict,
   prepareMechanicRequest,
@@ -17,6 +17,7 @@ import {
 
 const router: IRouter = Router();
 const cardImageStorage = new CardImageStorage();
+const audioStorage = new AudioStorage();
 
 const ADMIN_SESSION_COOKIE = "ko_admin_session";
 const ADMIN_SESSION_TTL_SECONDS = 8 * 60 * 60;
@@ -58,6 +59,11 @@ type CardInput = {
   imagePositionX: number;
   imagePositionY: number;
   imageUploadToken: string | null;
+  entranceAudioAssetId: string | null;
+  entranceAudioUrl: string | null;
+  entranceAudioVolume: number;
+  entranceAudioEnabled: boolean;
+  entranceAudioUploadToken: string | null;
 };
 
 type ChampionInput = {
@@ -70,6 +76,9 @@ type ChampionInput = {
   upgradedAbilityCost: number | null; upgradedAbilityText: string | null;
   upgradedAbilityEffects: Record<string, unknown> | null; championTokenDefinitionId: string | null;
   abilityAudioAssetId: string | null; abilityAudioUrl: string | null; abilityAudioVolume: number;
+  questCompleteAudioAssetId: string | null; questCompleteAudioUrl: string | null;
+  questCompleteAudioVolume: number; questCompleteAudioEnabled: boolean;
+  questCompleteAudioUploadToken: string | null;
 };
 
 function parseChampionInput(value: unknown): ChampionInput | null {
@@ -94,6 +103,12 @@ function parseChampionInput(value: unknown): ChampionInput | null {
   const maxHealth = integer("maxHealth", 1, 999);
   const abilityCost = integer("abilityCost", 0, 999);
   const abilityAudioVolume = integer("abilityAudioVolume", 0, 100);
+  const questCompleteAudioVolume = integer("questCompleteAudioVolume", 0, 100) ?? 100;
+  const questCompleteAudioAssetId = text("questCompleteAudioAssetId");
+  const questCompleteAudioUrl = text("questCompleteAudioUrl");
+  const questCompleteAudioEnabled = input.questCompleteAudioEnabled === true;
+  const questCompleteAudioUploadToken = typeof input.questCompleteAudioUploadToken === "string"
+    ? input.questCompleteAudioUploadToken : null;
   const abilityEffects = object("abilityEffects");
   const hasQuest = input.hasQuest === true;
   const questProgressRequired = integer("questProgressRequired", 1, 999, true);
@@ -102,10 +117,18 @@ function parseChampionInput(value: unknown): ChampionInput | null {
     effects === null || effects === undefined || !("effects" in effects) || isStructuredEffects(effects);
   if (!name || name.length > 120 || !abilityName || abilityName.length > 120 ||
       maxHealth == null || abilityCost == null || abilityAudioVolume == null ||
+      questCompleteAudioVolume == null ||
       !abilityEffects || typeof input.hasQuest !== "boolean" ||
       questProgressRequired === undefined || upgradedAbilityCost === undefined ||
       !validEffects(abilityEffects) || !validEffects(object("questRewardEffects", true)) ||
       !validEffects(object("upgradedAbilityEffects", true))) return null;
+  if (
+    (questCompleteAudioAssetId === null) !== (questCompleteAudioUrl === null) ||
+    (questCompleteAudioAssetId !== null &&
+      !questCompleteAudioAssetId.startsWith("/objects/uploads/audio/")) ||
+    (questCompleteAudioUrl !== null &&
+      !questCompleteAudioUrl.startsWith("/api/storage/objects/"))
+  ) return null;
   if (hasQuest && (!text("questName", true) || !text("questText", true) ||
       !object("questCondition", true) || questProgressRequired === null ||
       !text("questRewardText", true) || !object("questRewardEffects", true))) return null;
@@ -124,7 +147,8 @@ function parseChampionInput(value: unknown): ChampionInput | null {
     upgradedAbilityEffects: object("upgradedAbilityEffects", true) ?? null,
     championTokenDefinitionId: text("championTokenDefinitionId"),
     abilityAudioAssetId: text("abilityAudioAssetId"), abilityAudioUrl: text("abilityAudioUrl"),
-    abilityAudioVolume,
+    abilityAudioVolume, questCompleteAudioAssetId, questCompleteAudioUrl,
+    questCompleteAudioVolume, questCompleteAudioEnabled, questCompleteAudioUploadToken,
   };
 }
 
@@ -133,6 +157,13 @@ const CARD_IMAGE_TYPES = {
   "image/jpeg": ["jpg", "jpeg"],
   "image/webp": ["webp"],
 } as const;
+const AUDIO_TYPES = {
+  "audio/mpeg": ["mp3"],
+  "audio/ogg": ["ogg"],
+  "audio/wav": ["wav"],
+  "audio/x-wav": ["wav"],
+} as const;
+const MAX_AUDIO_SIZE = 20 * 1024 * 1024;
 const configuredMaxCardImageSize = Number(
   process.env["MAX_CARD_IMAGE_SIZE"] ?? 5 * 1024 * 1024,
 );
@@ -157,6 +188,15 @@ function signImageAsset(assetId: string, expiresAt: number) {
   return `${expiresAt}.${signature}`;
 }
 
+function signAudioAsset(assetId: string, expiresAt: number) {
+  const secret = configuredSecret();
+  if (!secret) throw new Error("SESSION_SECRET is not configured");
+  const signature = createHmac("sha256", secret)
+    .update(`card-audio:${assetId}:${expiresAt}`)
+    .digest("base64url");
+  return `${expiresAt}.${signature}`;
+}
+
 function validImageAssetToken(assetId: string, token: string | null) {
   if (!token) return false;
   const separator = token.indexOf(".");
@@ -170,6 +210,19 @@ function validImageAssetToken(assetId: string, token: string | null) {
     return false;
   }
   const expected = Buffer.from(signImageAsset(assetId, expiresAt).slice(separator + 1));
+  const actual = Buffer.from(signature);
+  return expected.length === actual.length && timingSafeEqual(expected, actual);
+}
+
+function validAudioAssetToken(assetId: string, token: string | null) {
+  if (!token) return false;
+  const separator = token.indexOf(".");
+  const expiresAt = Number(token.slice(0, separator));
+  const signature = token.slice(separator + 1);
+  if (separator < 1 || !Number.isSafeInteger(expiresAt) || expiresAt <= Date.now()) {
+    return false;
+  }
+  const expected = Buffer.from(signAudioAsset(assetId, expiresAt).slice(separator + 1));
   const actual = Buffer.from(signature);
   return expected.length === actual.length && timingSafeEqual(expected, actual);
 }
@@ -195,6 +248,17 @@ async function validNewImageAsset(assetId: string, token: string | null) {
   );
 }
 
+async function validNewAudioAsset(assetId: string, token: string | null) {
+  const extension = assetId.toLowerCase().split(".").pop() ?? "";
+  if (!Object.values(AUDIO_TYPES).some((extensions) => extensions.some((item) => item === extension)) ||
+      !validAudioAssetToken(assetId, token)) return false;
+  return (await Promise.all(
+    Object.entries(AUDIO_TYPES)
+      .filter(([, extensions]) => extensions.some((item) => item === extension))
+      .map(([contentType]) => audioStorage.verifyAudio(assetId, contentType, MAX_AUDIO_SIZE)),
+  )).some(Boolean);
+}
+
 async function removeImageIfUnreferenced(assetId: string) {
   const [cardReference] = await db
     .select({ count: sql<number>`count(*)::int` })
@@ -206,6 +270,28 @@ async function removeImageIfUnreferenced(assetId: string) {
     .where(eq(championsTable.imageAssetId, assetId));
   if ((cardReference?.count ?? 0) === 0 && (championReference?.count ?? 0) === 0) {
     await cardImageStorage.remove(assetId);
+  }
+}
+
+async function removeAudioIfUnreferenced(assetId: string) {
+  const [cardReference] = await db
+    .select({ count: sql<number>`count(*)::int` })
+    .from(cardsTable)
+    .where(eq(cardsTable.entranceAudioAssetId, assetId));
+  const [questReference] = await db
+    .select({ count: sql<number>`count(*)::int` })
+    .from(championsTable)
+    .where(eq(championsTable.questCompleteAudioAssetId, assetId));
+  const [abilityReference] = await db
+    .select({ count: sql<number>`count(*)::int` })
+    .from(championsTable)
+    .where(eq(championsTable.abilityAudioAssetId, assetId));
+  if (
+    (cardReference?.count ?? 0) === 0 &&
+    (questReference?.count ?? 0) === 0 &&
+    (abilityReference?.count ?? 0) === 0
+  ) {
+    await audioStorage.remove(assetId);
   }
 }
 
@@ -372,13 +458,23 @@ function parseCardInput(value: unknown): CardInput | null {
     typeof input.imageUrl === "string" && input.imageUrl ? input.imageUrl : null;
   const imageUploadToken =
     typeof input.imageUploadToken === "string" ? input.imageUploadToken : null;
-  const imageDisplayMode = IMAGE_DISPLAY_MODES.includes(input.imageDisplayMode as (typeof IMAGE_DISPLAY_MODES)[number])
-    ? input.imageDisplayMode as (typeof IMAGE_DISPLAY_MODES)[number]
-    : "COVER";
   const boundedNumber = (candidate: unknown, fallback: number, min: number, max: number) =>
     typeof candidate === "number" && Number.isFinite(candidate)
       ? Math.min(max, Math.max(min, candidate))
       : fallback;
+  const entranceAudioAssetId =
+    typeof input.entranceAudioAssetId === "string" && input.entranceAudioAssetId
+      ? input.entranceAudioAssetId : null;
+  const entranceAudioUrl =
+    typeof input.entranceAudioUrl === "string" && input.entranceAudioUrl
+      ? input.entranceAudioUrl : null;
+  const entranceAudioVolume = boundedNumber(input.entranceAudioVolume, 100, 0, 100);
+  const entranceAudioEnabled = input.entranceAudioEnabled === true;
+  const entranceAudioUploadToken =
+    typeof input.entranceAudioUploadToken === "string" ? input.entranceAudioUploadToken : null;
+  const imageDisplayMode = IMAGE_DISPLAY_MODES.includes(input.imageDisplayMode as (typeof IMAGE_DISPLAY_MODES)[number])
+    ? input.imageDisplayMode as (typeof IMAGE_DISPLAY_MODES)[number]
+    : "COVER";
   const imageScale = boundedNumber(input.imageScale, 1, 0.5, 2);
   const imagePositionX = boundedNumber(input.imagePositionX, 50, 0, 100);
   const imagePositionY = boundedNumber(input.imagePositionY, 50, 0, 100);
@@ -410,6 +506,11 @@ function parseCardInput(value: unknown): CardInput | null {
     || (imageAssetId !== null &&
       !imageAssetId.startsWith("/objects/uploads/card-images/"))
     || (imageUrl !== null && !imageUrl.startsWith("/api/storage/objects/"))
+    || (entranceAudioAssetId === null) !== (entranceAudioUrl === null)
+    || (entranceAudioAssetId !== null &&
+      !entranceAudioAssetId.startsWith("/objects/uploads/audio/"))
+    || (entranceAudioUrl !== null &&
+      !entranceAudioUrl.startsWith("/api/storage/objects/"))
   ) {
     return null;
   }
@@ -433,6 +534,11 @@ function parseCardInput(value: unknown): CardInput | null {
     imagePositionX,
     imagePositionY,
     imageUploadToken,
+    entranceAudioAssetId,
+    entranceAudioUrl: entranceAudioAssetId ? `/api/storage${entranceAudioAssetId}` : null,
+    entranceAudioVolume,
+    entranceAudioEnabled,
+    entranceAudioUploadToken,
   };
 }
 
@@ -493,8 +599,19 @@ router.post("/champions", async (request, response): Promise<void> => {
   if (!requireAdmin(request, response)) return;
   const input = parseChampionInput(request.body);
   if (!input) { response.status(400).json({ message: "챔피언 입력값을 확인해 주세요." }); return; }
+  if (
+    input.questCompleteAudioAssetId &&
+    !(await validNewAudioAsset(input.questCompleteAudioAssetId, input.questCompleteAudioUploadToken))
+  ) {
+    response.status(400).json({ message: "검증된 퀘스트 완료 음악 업로드 정보가 필요합니다." });
+    return;
+  }
+  const {
+    questCompleteAudioUploadToken: _questCompleteAudioUploadToken,
+    ...championValues
+  } = input;
   const [champion] = await db.insert(championsTable).values({
-    id: randomUUID(), ...input, status: "DRAFT", version: 1,
+    id: randomUUID(), ...championValues, status: "DRAFT", version: 1,
   }).returning();
   response.status(201).json({ champion });
 });
@@ -504,10 +621,29 @@ router.patch("/champions/:id", async (request, response): Promise<void> => {
   const id = firstParam(request.params.id);
   const input = parseChampionInput(request.body);
   if (!id || !input) { response.status(400).json({ message: "챔피언 입력값을 확인해 주세요." }); return; }
+  const [existing] = await db.select().from(championsTable).where(eq(championsTable.id, id)).limit(1);
+  if (!existing) { response.status(404).json({ message: "챔피언을 찾을 수 없습니다." }); return; }
+  if (
+    input.questCompleteAudioAssetId &&
+    input.questCompleteAudioAssetId !== existing.questCompleteAudioAssetId &&
+    !(await validNewAudioAsset(input.questCompleteAudioAssetId, input.questCompleteAudioUploadToken))
+  ) {
+    response.status(400).json({ message: "검증된 퀘스트 완료 음악 업로드 정보가 필요합니다." });
+    return;
+  }
+  const {
+    questCompleteAudioUploadToken: _questCompleteAudioUploadToken,
+    ...championValues
+  } = input;
   const [champion] = await db.update(championsTable).set({
-    ...input, version: sql`${championsTable.version} + 1`, updatedAt: new Date(),
+    ...championValues, version: sql`${championsTable.version} + 1`, updatedAt: new Date(),
   }).where(eq(championsTable.id, id)).returning();
-  if (!champion) { response.status(404).json({ message: "챔피언을 찾을 수 없습니다." }); return; }
+  if (
+    existing.questCompleteAudioAssetId &&
+    existing.questCompleteAudioAssetId !== input.questCompleteAudioAssetId
+  ) {
+    await removeAudioIfUnreferenced(existing.questCompleteAudioAssetId);
+  }
   response.json({ champion });
 });
 
@@ -859,6 +995,64 @@ router.post(
   },
 );
 
+router.post("/audio/upload-url", async (request, response): Promise<void> => {
+  if (!requireAdmin(request, response)) return;
+  const body = request.body && typeof request.body === "object"
+    ? request.body as Record<string, unknown> : {};
+  const name = typeof body.name === "string" ? body.name : "";
+  const contentType = typeof body.contentType === "string" ? body.contentType : "";
+  const size = typeof body.size === "number" ? body.size : 0;
+  const extension = name.toLowerCase().split(".").pop() ?? "";
+  const validExtensions = AUDIO_TYPES[contentType as keyof typeof AUDIO_TYPES];
+  if (!validExtensions || !validExtensions.some((item) => item === extension) ||
+      !Number.isInteger(size) || size <= 0 || size > MAX_AUDIO_SIZE) {
+    response.status(400).json({
+      message: "MP3, OGG, WAV 오디오 파일만 업로드할 수 있으며 최대 크기는 20MB입니다.",
+    });
+    return;
+  }
+  const upload = await audioStorage.createUpload(extension);
+  response.json({ ...upload, maxSize: MAX_AUDIO_SIZE, contentType });
+});
+
+router.post("/audio/complete", async (request, response): Promise<void> => {
+  if (!requireAdmin(request, response)) return;
+  const body = request.body && typeof request.body === "object"
+    ? request.body as Record<string, unknown> : {};
+  const objectPath = typeof body.objectPath === "string" ? body.objectPath : "";
+  const contentType = typeof body.contentType === "string" ? body.contentType : "";
+  const extensions = AUDIO_TYPES[contentType as keyof typeof AUDIO_TYPES];
+  const extension = objectPath.toLowerCase().split(".").pop() ?? "";
+  if (!objectPath.startsWith("/objects/uploads/audio/") ||
+      !extensions || !extensions.some((item) => item === extension) ||
+      !(await audioStorage.verifyAudio(objectPath, contentType, MAX_AUDIO_SIZE))) {
+    if (objectPath.startsWith("/objects/uploads/audio/")) await audioStorage.remove(objectPath);
+    response.status(400).json({ message: "오디오 파일 정보를 확인할 수 없습니다." });
+    return;
+  }
+  response.json({
+    audioAssetId: objectPath,
+    audioUrl: `/api/storage${objectPath}`,
+    audioUploadToken: signAudioAsset(objectPath, Date.now() + PENDING_IMAGE_TTL_MS),
+  });
+});
+
+router.post("/audio/discard", async (request, response): Promise<void> => {
+  if (!requireAdmin(request, response)) return;
+  const body = request.body && typeof request.body === "object"
+    ? request.body as Record<string, unknown> : {};
+  const audioAssetId = typeof body.audioAssetId === "string" ? body.audioAssetId : "";
+  const audioUploadToken = typeof body.audioUploadToken === "string"
+    ? body.audioUploadToken : null;
+  if (!audioAssetId.startsWith("/objects/uploads/audio/") ||
+      !validAudioAssetToken(audioAssetId, audioUploadToken)) {
+    response.status(400).json({ message: "오디오 정보가 올바르지 않습니다." });
+    return;
+  }
+  await removeAudioIfUnreferenced(audioAssetId);
+  response.status(204).end();
+});
+
 router.get("/cards", async (request, response): Promise<void> => {
   if (!requireAdmin(request, response)) return;
 
@@ -922,7 +1116,18 @@ router.post("/cards", async (request, response): Promise<void> => {
     response.status(400).json({ message: "검증된 이미지 업로드 정보가 필요합니다." });
     return;
   }
-  const { imageUploadToken: _imageUploadToken, ...cardValues } = input;
+  if (
+    input.entranceAudioAssetId &&
+    !(await validNewAudioAsset(input.entranceAudioAssetId, input.entranceAudioUploadToken))
+  ) {
+    response.status(400).json({ message: "검증된 등장 음악 업로드 정보가 필요합니다." });
+    return;
+  }
+  const {
+    imageUploadToken: _imageUploadToken,
+    entranceAudioUploadToken: _entranceAudioUploadToken,
+    ...cardValues
+  } = input;
 
   const [card] = await db
     .insert(cardsTable)
@@ -964,7 +1169,19 @@ router.patch("/cards/:id", async (request, response): Promise<void> => {
     response.status(400).json({ message: "검증된 이미지 업로드 정보가 필요합니다." });
     return;
   }
-  const { imageUploadToken: _imageUploadToken, ...cardValues } = input;
+  if (
+    input.entranceAudioAssetId &&
+    input.entranceAudioAssetId !== existing.entranceAudioAssetId &&
+    !(await validNewAudioAsset(input.entranceAudioAssetId, input.entranceAudioUploadToken))
+  ) {
+    response.status(400).json({ message: "검증된 등장 음악 업로드 정보가 필요합니다." });
+    return;
+  }
+  const {
+    imageUploadToken: _imageUploadToken,
+    entranceAudioUploadToken: _entranceAudioUploadToken,
+    ...cardValues
+  } = input;
 
   const [card] = await db
     .update(cardsTable)
@@ -978,6 +1195,12 @@ router.patch("/cards/:id", async (request, response): Promise<void> => {
 
   if (existing.imageAssetId && existing.imageAssetId !== input.imageAssetId) {
     await removeImageIfUnreferenced(existing.imageAssetId);
+  }
+  if (
+    existing.entranceAudioAssetId &&
+    existing.entranceAudioAssetId !== input.entranceAudioAssetId
+  ) {
+    await removeAudioIfUnreferenced(existing.entranceAudioAssetId);
   }
 
   response.json({ card });

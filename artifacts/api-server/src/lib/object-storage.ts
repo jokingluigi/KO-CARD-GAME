@@ -164,3 +164,63 @@ export class CardImageStorage {
     return true;
   }
 }
+
+export class AudioStorage {
+  async createUpload(extension: string) {
+    const assetId = randomUUID();
+    const relativePath = `uploads/audio/${assetId}.${extension}`;
+    const { bucketName, objectName } = parseStoragePath(
+      `${privateObjectDir()}/${relativePath}`,
+    );
+    return {
+      assetId,
+      objectPath: `/objects/${relativePath}`,
+      uploadURL: await signedPutUrl(bucketName, objectName),
+    };
+  }
+
+  file(objectPath: string): File {
+    if (!objectPath.startsWith("/objects/uploads/audio/")) {
+      throw new Error("Invalid audio path");
+    }
+    const relativePath = objectPath.slice("/objects/".length);
+    const { bucketName, objectName } = parseStoragePath(
+      `${privateObjectDir()}/${relativePath}`,
+    );
+    return storage.bucket(bucketName).file(objectName);
+  }
+
+  async verifyAudio(
+    objectPath: string,
+    expectedContentType: string,
+    maxBytes: number,
+  ): Promise<boolean> {
+    const file = this.file(objectPath);
+    const [exists] = await file.exists();
+    if (!exists) return false;
+    const [metadata] = await file.getMetadata();
+    const size = Number(metadata.size ?? 0);
+    return size > 0 &&
+      size <= maxBytes &&
+      metadata.contentType === expectedContentType;
+  }
+
+  async remove(objectPath: string): Promise<void> {
+    await this.file(objectPath).delete({ ignoreNotFound: true });
+  }
+
+  async stream(objectPath: string, response: import("express").Response) {
+    const file = this.file(objectPath);
+    const [exists] = await file.exists();
+    if (!exists) return false;
+    const [metadata] = await file.getMetadata();
+    response.setHeader(
+      "Content-Type",
+      String(metadata.contentType ?? "application/octet-stream"),
+    );
+    response.setHeader("Cache-Control", "public, max-age=3600");
+    if (metadata.size) response.setHeader("Content-Length", String(metadata.size));
+    file.createReadStream().pipe(response);
+    return true;
+  }
+}

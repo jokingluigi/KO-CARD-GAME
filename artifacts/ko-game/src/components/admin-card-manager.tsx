@@ -14,6 +14,7 @@ import {
   X,
 } from "lucide-react";
 import { CardArtwork } from "./card-artwork";
+import { AdminAudioField } from "./admin-audio-field";
 import { useToast } from "../hooks/use-toast";
 import {
   DEFAULT_IMAGE_DISPLAY_SETTINGS,
@@ -56,6 +57,10 @@ type CardRecord = {
   imageScale?: number;
   imagePositionX?: number;
   imagePositionY?: number;
+  entranceAudioAssetId: string | null;
+  entranceAudioUrl: string | null;
+  entranceAudioVolume: number;
+  entranceAudioEnabled: boolean;
 };
 
 type CardFormValues = {
@@ -171,6 +176,13 @@ export function AdminCardManager({
     ...DEFAULT_IMAGE_DISPLAY_SETTINGS,
   });
   const [isUploadingImage, setIsUploadingImage] = useState(false);
+  const [entranceAudio, setEntranceAudio] = useState({
+    assetId: null as string | null,
+    url: null as string | null,
+    volume: 100,
+    enabled: false,
+    uploadToken: null as string | null,
+  });
   const [analysis, setAnalysis] = useState<EffectAnalysis | null>(null);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [effectLibrary, setEffectLibrary] = useState<EffectLibrary | null>(null);
@@ -258,6 +270,7 @@ export function AdminCardManager({
     setImageUploadToken(null);
     setLocalPreviewUrl(null);
     setImageDisplaySettings({ ...DEFAULT_IMAGE_DISPLAY_SETTINGS });
+    setEntranceAudio({ assetId: null, url: null, volume: 100, enabled: false, uploadToken: null });
     setError("");
     setAnalysis(null);
     setCreatedMechanicRequest(null);
@@ -286,6 +299,13 @@ export function AdminCardManager({
     setImageUploadToken(null);
     setLocalPreviewUrl(null);
     setImageDisplaySettings(normalizeImageDisplaySettings(card));
+    setEntranceAudio({
+      assetId: card.entranceAudioAssetId,
+      url: card.entranceAudioUrl,
+      volume: card.entranceAudioVolume ?? 100,
+      enabled: card.entranceAudioEnabled ?? false,
+      uploadToken: null,
+    });
     setError("");
     setAnalysis(null);
     setCreatedMechanicRequest(null);
@@ -320,6 +340,11 @@ export function AdminCardManager({
       imageUrl,
       imageUploadToken,
       ...imageDisplaySettings,
+      entranceAudioAssetId: entranceAudio.assetId,
+      entranceAudioUrl: entranceAudio.url,
+      entranceAudioVolume: entranceAudio.volume,
+      entranceAudioEnabled: entranceAudio.enabled,
+      entranceAudioUploadToken: entranceAudio.uploadToken,
     };
 
     setBusyId(editingCard?.id ?? "create");
@@ -786,7 +811,15 @@ ${unsupportedParts}
             </div>
              <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_260px]">
              <form onSubmit={form.handleSubmit(submitCard)} className="grid gap-4 md:grid-cols-2">
-              <label className="space-y-1.5 md:col-span-2"><span className="text-xs font-bold text-neutral-400">이름</span><input {...form.register("name", { required: true })} data-testid="input-card-name" className="w-full rounded border border-neutral-700 bg-neutral-900 px-3 py-2 outline-none focus:border-primary" /></label>
+               <label className="space-y-1.5 md:col-span-2"><span className="text-xs font-bold text-neutral-400">이름</span><input {...form.register("name", { required: true })} data-testid="input-card-name" className="w-full rounded border border-neutral-700 bg-neutral-900 px-3 py-2 outline-none focus:border-primary" /></label>
+               <AdminAudioField
+                 title="고유 등장 음악"
+                 value={entranceAudio}
+                 onChange={setEntranceAudio}
+                 onUnauthorized={onUnauthorized}
+                 onError={setError}
+                 onMessage={setMessage}
+               />
                <div className="space-y-2 rounded border border-neutral-800 bg-neutral-900/50 p-3 md:col-span-2">
                  <div className="text-xs font-bold text-neutral-400">카드 이미지</div>
                  <input

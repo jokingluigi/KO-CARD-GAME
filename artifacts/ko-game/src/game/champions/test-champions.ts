@@ -81,5 +81,9 @@ export function createChampionState(
     health: definition.maxHealth,
     questProgress: 0,
     questCompleted: false,
+      questCompleteAudioAssetId: definition.questCompleteAudioAssetId,
+      questCompleteAudioUrl: definition.questCompleteAudioUrl,
+      questCompleteAudioVolume: definition.questCompleteAudioVolume,
+      questCompleteAudioEnabled: definition.questCompleteAudioEnabled,
   };
 }

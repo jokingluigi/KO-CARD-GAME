@@ -11,6 +11,10 @@ export type PublishedChampionRecord = {
   upgradedAbilityName: string | null; upgradedAbilityCost: number | null;
   upgradedAbilityText: string | null; upgradedAbilityEffects: Structured | null;
   championTokenDefinitionId: string | null; status: "PUBLISHED"; version: number;
+  questCompleteAudioAssetId?: string | null;
+  questCompleteAudioUrl?: string | null;
+  questCompleteAudioVolume?: number;
+  questCompleteAudioEnabled?: boolean;
 };
 
 function effects(config: Structured | null, tokenId?: string | null): ChampionEffect[] {
@@ -62,6 +66,10 @@ export function championRecordToDefinition(record: PublishedChampionRecord): Cha
           record.championTokenDefinitionId)
       : null,
     championTokenDefinitionId: record.championTokenDefinitionId,
+    questCompleteAudioAssetId: record.questCompleteAudioAssetId,
+    questCompleteAudioUrl: record.questCompleteAudioUrl,
+    questCompleteAudioVolume: record.questCompleteAudioVolume,
+    questCompleteAudioEnabled: record.questCompleteAudioEnabled,
     status: record.status, version: record.version,
   };
 }
