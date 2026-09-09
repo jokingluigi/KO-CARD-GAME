@@ -116,6 +116,7 @@ export function AdminAudioField({ title, value, onChange, onError, onMessage }: 
     if (localUrl?.startsWith("blob:")) URL.revokeObjectURL(localUrl);
     setLocalUrl(null);
     onChange({ assetId: null, url: null, volume: value.volume, enabled: false, uploadToken: null, fileName: null });
+    onMessage(`${title}을 제거했습니다. 저장하면 적용됩니다.`);
     if (inputRef.current) inputRef.current.value = "";
   }
 
@@ -157,7 +158,7 @@ export function AdminAudioField({ title, value, onChange, onError, onMessage }: 
         </button>
         {previewUrl && <button type="button" disabled={uploading} onClick={() => audioManager.preview(previewUrl, value.volume)} className="flex items-center gap-2 rounded border border-emerald-800 px-3 py-2 text-xs font-bold text-emerald-300 disabled:opacity-40"><Music2 className="h-4 w-4" /> 미리듣기</button>}
         {previewUrl && <button type="button" onClick={() => audioManager.stop()} className="flex items-center gap-2 rounded border border-neutral-700 px-3 py-2 text-xs font-bold"><Square className="h-3.5 w-3.5" /> 정지</button>}
-        {previewUrl && <button type="button" disabled={uploading} onClick={remove} className="flex items-center gap-2 rounded border border-red-900 px-3 py-2 text-xs font-bold text-red-400 disabled:opacity-40"><Trash2 className="h-4 w-4" /> 음악 제거</button>}
+        {previewUrl && <button type="button" disabled={uploading} onClick={remove} data-testid="button-remove-audio" className="flex items-center gap-2 rounded border border-red-900 px-3 py-2 text-xs font-bold text-red-400 disabled:opacity-40"><Trash2 className="h-4 w-4" /> 음악 제거</button>}
       </div>
       {displayName && <div className="truncate text-xs text-neutral-400" title={displayName}>파일: {displayName}</div>}
       <label className="block text-xs text-neutral-400">
