@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
-import { Ban, CheckCircle2, Copy, FilePenLine, Plus, Search, X } from "lucide-react";
+import { Ban, CheckCircle2, Copy, FilePenLine, Plus, Search, Trash2, X } from "lucide-react";
 import { AdminAudioField } from "./admin-audio-field";
 import { useToast } from "../hooks/use-toast";
 
@@ -122,6 +122,26 @@ export function AdminChampionManager({ onUnauthorized }: { onUnauthorized: () =>
     if (!response.ok) { setError(await message(response)); return; }
     await load();
   }
+  async function deleteChampion(champion: Champion) {
+    if (!window.confirm(`"${champion.name}" 챔피언을 삭제하시겠습니까?\n삭제한 챔피언은 복구할 수 없습니다.`)) return;
+    setBusy(true);
+    setError("");
+    try {
+      const response = await fetch(`${adminApiBase}/champions/${champion.id}`, {
+        method: "DELETE",
+        credentials: "include",
+      });
+      if (response.status === 401) { onUnauthorized(); return; }
+      if (!response.ok) throw new Error(await message(response));
+      setMessageText(`"${champion.name}" 챔피언을 삭제했습니다.`);
+      if (editing?.id === champion.id) setOpen(false);
+      await load();
+    } catch (reason) {
+      setError(reason instanceof Error ? reason.message : "챔피언을 삭제하지 못했습니다.");
+    } finally {
+      setBusy(false);
+    }
+  }
   function editor(champion?: Champion) {
     setEditing(champion ?? null); setForm(champion ? {
       name: champion.name, description: champion.description, imageUrl: champion.imageUrl,
@@ -154,10 +174,10 @@ export function AdminChampionManager({ onUnauthorized }: { onUnauthorized: () =>
     {messageText && <div className="mb-4 rounded border border-emerald-900 bg-emerald-950/30 p-3 text-sm text-emerald-300">{messageText}</div>}
     <div className="mb-4 flex gap-2"><label className="flex flex-1 items-center gap-2 rounded border border-neutral-800 px-3"><Search className="h-4 w-4"/><input value={search} onChange={(e)=>setSearch(e.target.value)} className="w-full bg-transparent py-2 outline-none" placeholder="챔피언 검색"/></label>
       <select value={status} onChange={(e)=>setStatus(e.target.value)} className={input}><option value="">모든 상태</option><option>DRAFT</option><option>PUBLISHED</option><option>DISABLED</option></select></div>
-    <div className="grid gap-3 md:grid-cols-2">{champions.map((champion)=><article key={champion.id} className="rounded-lg border border-neutral-800 bg-neutral-950 p-4">
+     <div className="grid gap-3 md:grid-cols-2">{champions.map((champion)=><article key={champion.id} className="rounded-lg border border-neutral-800 bg-neutral-950 p-4">
       <div className="flex gap-4">{champion.imageUrl ? <img src={champion.imageUrl} alt="" className="h-24 w-20 rounded object-cover"/> : <div className="h-24 w-20 rounded bg-neutral-900"/>}
         <div><div className="text-xs text-primary">{champion.status} · v{champion.version}</div><h3 className="text-lg font-black">{champion.name}</h3><p className="text-xs text-neutral-400">HP {champion.maxHealth} · {champion.abilityCost}G</p><p className="mt-1 text-sm">{champion.abilityName}</p>{champion.hasQuest && <p className="mt-1 text-xs text-amber-300">Quest: {champion.questName} (0/{champion.questProgressRequired})</p>}</div></div>
-      <div className="mt-3 flex flex-wrap gap-2 text-xs"><button onClick={()=>editor(champion)} className="rounded border px-2 py-1"><FilePenLine className="mr-1 inline h-3 w-3"/>수정</button><button onClick={()=>void mutate(champion.id,"duplicate")} className="rounded border px-2 py-1"><Copy className="mr-1 inline h-3 w-3"/>복제</button>{champion.status!=="PUBLISHED"&&<button onClick={()=>void mutate(champion.id,"status",{status:"PUBLISHED"})} className="rounded border border-emerald-800 px-2 py-1 text-emerald-400"><CheckCircle2 className="mr-1 inline h-3 w-3"/>공개</button>}{champion.status!=="DISABLED"&&<button onClick={()=>void mutate(champion.id,"status",{status:"DISABLED"})} className="rounded border border-red-900 px-2 py-1 text-red-400"><Ban className="mr-1 inline h-3 w-3"/>비활성화</button>}</div>
+       <div className="mt-3 flex flex-wrap gap-2 text-xs"><button type="button" onClick={()=>editor(champion)} className="rounded border px-2 py-1"><FilePenLine className="mr-1 inline h-3 w-3"/>수정</button><button type="button" onClick={()=>void mutate(champion.id,"duplicate")} className="rounded border px-2 py-1"><Copy className="mr-1 inline h-3 w-3"/>복제</button><button type="button" disabled={busy} onClick={()=>void deleteChampion(champion)} data-testid={`button-delete-champion-${champion.id}`} className="rounded border border-red-900 px-2 py-1 text-red-400 disabled:opacity-40"><Trash2 className="mr-1 inline h-3 w-3"/>삭제</button>{champion.status!=="PUBLISHED"&&<button type="button" onClick={()=>void mutate(champion.id,"status",{status:"PUBLISHED"})} className="rounded border border-emerald-800 px-2 py-1 text-emerald-400"><CheckCircle2 className="mr-1 inline h-3 w-3"/>공개</button>}{champion.status!=="DISABLED"&&<button type="button" onClick={()=>void mutate(champion.id,"status",{status:"DISABLED"})} className="rounded border border-red-900 px-2 py-1 text-red-400"><Ban className="mr-1 inline h-3 w-3"/>비활성화</button>}</div>
     </article>)}</div>
     {open && <div className="fixed inset-0 z-50 overflow-y-auto bg-black/80 p-5"><div className="mx-auto max-w-4xl rounded-lg border border-neutral-700 bg-neutral-950 p-5">
       <div className="mb-4 flex justify-between"><h3 className="text-xl font-black">{editing?"챔피언 수정":"새 챔피언"}</h3><button onClick={()=>setOpen(false)}><X/></button></div>

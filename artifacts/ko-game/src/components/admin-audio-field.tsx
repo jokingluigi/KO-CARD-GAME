@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import { Music2, Square, Trash2, Upload } from "lucide-react";
 import { audioManager } from "../audio/audio-manager";
 
@@ -77,7 +78,8 @@ export function AdminAudioField({ title, value, onChange, onError, onMessage }: 
     audioManager.stop();
     await discardPending();
     if (localUrl?.startsWith("blob:")) URL.revokeObjectURL(localUrl);
-    setLocalUrl(URL.createObjectURL(file));
+    const nextLocalUrl = URL.createObjectURL(file);
+    setLocalUrl(nextLocalUrl);
     setUploading(true);
     onError("");
     try {
@@ -102,7 +104,7 @@ export function AdminAudioField({ title, value, onChange, onError, onMessage }: 
       });
       onMessage(`${title}을 업로드했습니다. 저장하면 적용됩니다.`);
     } catch (reason) {
-      if (localUrl?.startsWith("blob:")) URL.revokeObjectURL(localUrl);
+      URL.revokeObjectURL(nextLocalUrl);
       setLocalUrl(null);
       onError(reason instanceof Error ? reason.message : `${title}을 업로드하지 못했습니다.`);
     } finally {
@@ -131,18 +133,6 @@ export function AdminAudioField({ title, value, onChange, onError, onMessage }: 
           사용
         </label>
       </div>
-      <input
-        ref={inputRef}
-        type="file"
-        accept={audioAccept}
-        className="hidden"
-        onChange={(event) => {
-          event.preventDefault();
-          event.stopPropagation();
-          const file = event.target.files?.[0];
-          if (file) void upload(file);
-        }}
-      />
       <div className="flex flex-wrap gap-2">
         <button
           type="button"
@@ -165,6 +155,24 @@ export function AdminAudioField({ title, value, onChange, onError, onMessage }: 
         볼륨 <strong className="ml-2 text-neutral-200">{value.volume}%</strong>
         <input type="range" min="0" max="100" value={value.volume} onChange={(event) => onChange({ ...value, volume: Number(event.target.value) })} className="mt-2 w-full accent-primary" />
       </label>
+      {createPortal(
+        <input
+          ref={inputRef}
+          type="file"
+          accept={audioAccept}
+          className="hidden"
+          onClick={(event) => {
+            event.stopPropagation();
+          }}
+          onChange={(event) => {
+            event.preventDefault();
+            event.stopPropagation();
+            const file = event.target.files?.[0];
+            if (file) void upload(file);
+          }}
+        />,
+        document.body,
+      )}
     </div>
   );
 }

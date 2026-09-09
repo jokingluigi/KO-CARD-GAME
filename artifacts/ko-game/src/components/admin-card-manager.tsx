@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import { useForm } from "react-hook-form";
 import {
   Ban,
@@ -681,6 +682,32 @@ ${unsupportedParts}
     }
   }
 
+  async function deleteCard(card: CardRecord) {
+    if (!window.confirm(`"${card.name}" 카드를 삭제하시겠습니까?\n삭제한 카드는 복구할 수 없습니다.`)) return;
+    setBusyId(card.id);
+    setError("");
+    try {
+      const response = await fetch(`${adminApiBase}/cards/${card.id}`, {
+        method: "DELETE",
+        credentials: "include",
+      });
+      if (response.status === 401) {
+        onUnauthorized();
+        return;
+      }
+      if (!response.ok) throw new Error(await responseMessage(response));
+      setMessage(`"${card.name}" 카드를 삭제했습니다.`);
+      if (editingCard?.id === card.id) {
+        closeForm();
+      }
+      await loadCards();
+    } catch (deleteError) {
+      setError(deleteError instanceof Error ? deleteError.message : "카드를 삭제하지 못했습니다.");
+    } finally {
+      setBusyId(null);
+    }
+  }
+
   return (
     <div>
       <div className="mb-5 flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between">
@@ -762,7 +789,24 @@ ${unsupportedParts}
         </div>
       )}
 
-      <div className="overflow-x-auto rounded-lg border border-neutral-800">
+       {createPortal(
+         <input
+           ref={imageInputRef}
+           type="file"
+           accept=".png,.jpg,.jpeg,.webp,image/png,image/jpeg,image/webp"
+           className="hidden"
+           data-testid="input-card-image"
+           onClick={(event) => event.stopPropagation()}
+           onChange={(event) => {
+             event.preventDefault();
+             event.stopPropagation();
+             const file = event.target.files?.[0];
+             if (file) void uploadImage(file);
+           }}
+         />,
+         document.body,
+       )}
+       <div className="overflow-x-auto rounded-lg border border-neutral-800">
         <table className="w-full min-w-[920px] text-left text-xs">
           <thead className="bg-neutral-900 text-neutral-500">
             <tr>
@@ -789,6 +833,7 @@ ${unsupportedParts}
                   <div className="flex flex-wrap gap-1.5">
                     <button type="button" onClick={() => openEdit(card)} data-testid={`button-edit-card-${card.id}`} className="flex items-center gap-1 rounded border border-neutral-700 px-2 py-1.5 font-bold hover:border-primary hover:text-primary"><FilePenLine className="h-3 w-3" /> 수정</button>
                     <button type="button" disabled={busyId === card.id} onClick={() => mutateCard(`/cards/${card.id}/duplicate`, `${card.name} Copy를 생성했습니다.`, card.id)} data-testid={`button-duplicate-card-${card.id}`} className="flex items-center gap-1 rounded border border-neutral-700 px-2 py-1.5 font-bold hover:border-primary hover:text-primary disabled:opacity-40"><Copy className="h-3 w-3" /> 복제</button>
+                     <button type="button" disabled={busyId === card.id} onClick={() => void deleteCard(card)} data-testid={`button-delete-card-${card.id}`} className="flex items-center gap-1 rounded border border-red-900 px-2 py-1.5 font-bold text-red-400 hover:bg-red-950 disabled:opacity-40"><Trash2 className="h-3 w-3" /> 삭제</button>
                     {card.status !== "PUBLISHED" && <button type="button" disabled={busyId === card.id} onClick={() => mutateCard(`/cards/${card.id}/status`, "카드를 공개했습니다.", card.id, { status: "PUBLISHED" })} data-testid={`button-publish-card-${card.id}`} className="flex items-center gap-1 rounded border border-emerald-800 px-2 py-1.5 font-bold text-emerald-400 hover:bg-emerald-950 disabled:opacity-40"><CheckCircle2 className="h-3 w-3" /> 공개</button>}
                     {card.status !== "DISABLED" && <button type="button" disabled={busyId === card.id} onClick={() => mutateCard(`/cards/${card.id}/status`, "카드를 비활성화했습니다.", card.id, { status: "DISABLED" })} data-testid={`button-disable-card-${card.id}`} className="flex items-center gap-1 rounded border border-red-900 px-2 py-1.5 font-bold text-red-400 hover:bg-red-950 disabled:opacity-40"><Ban className="h-3 w-3" /> 비활성화</button>}
                   </div>
@@ -826,22 +871,15 @@ ${unsupportedParts}
                />
                <div className="space-y-2 rounded border border-neutral-800 bg-neutral-900/50 p-3 md:col-span-2">
                  <div className="text-xs font-bold text-neutral-400">카드 이미지</div>
-                 <input
-                   ref={imageInputRef}
-                   type="file"
-                   accept=".png,.jpg,.jpeg,.webp,image/png,image/jpeg,image/webp"
-                   className="hidden"
-                   data-testid="input-card-image"
-                   onChange={(event) => {
-                     const file = event.target.files?.[0];
-                     if (file) void uploadImage(file);
-                   }}
-                 />
                  <div className="flex flex-wrap gap-2">
                    <button
                      type="button"
                      disabled={isUploadingImage}
-                     onClick={() => imageInputRef.current?.click()}
+                      onClick={(event) => {
+                        event.preventDefault();
+                        event.stopPropagation();
+                        imageInputRef.current?.click();
+                      }}
                      data-testid={imageUrl || localPreviewUrl ? "button-change-card-image" : "button-select-card-image"}
                      className="flex items-center gap-2 rounded border border-neutral-700 px-3 py-2 text-xs font-bold hover:border-primary hover:text-primary disabled:opacity-40"
                    >

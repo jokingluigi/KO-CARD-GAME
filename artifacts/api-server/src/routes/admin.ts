@@ -647,6 +647,23 @@ router.patch("/champions/:id", async (request, response): Promise<void> => {
   response.json({ champion });
 });
 
+router.delete("/champions/:id", async (request, response): Promise<void> => {
+  if (!requireAdmin(request, response)) return;
+  const id = firstParam(request.params.id);
+  if (!id) { response.status(400).json({ message: "챔피언 ID가 올바르지 않습니다." }); return; }
+  const [existing] = await db.select().from(championsTable).where(eq(championsTable.id, id)).limit(1);
+  if (!existing) { response.status(404).json({ message: "챔피언을 찾을 수 없습니다." }); return; }
+  const [deleted] = await db.delete(championsTable).where(eq(championsTable.id, id)).returning();
+  if (!deleted) { response.status(404).json({ message: "챔피언을 찾을 수 없습니다." }); return; }
+  const assets = [existing.imageAssetId, existing.questCompleteAudioAssetId, existing.abilityAudioAssetId]
+    .filter((assetId): assetId is string => Boolean(assetId));
+  await Promise.all([
+    ...assets.filter((assetId) => assetId.startsWith("/objects/uploads/card-images/")).map(removeImageIfUnreferenced),
+    ...assets.filter((assetId) => assetId.startsWith("/objects/uploads/audio/")).map(removeAudioIfUnreferenced),
+  ]);
+  response.status(204).end();
+});
+
 router.post("/champions/:id/duplicate", async (request, response): Promise<void> => {
   if (!requireAdmin(request, response)) return;
   const id = firstParam(request.params.id);
@@ -1260,6 +1277,19 @@ router.patch("/cards/:id", async (request, response): Promise<void> => {
   }
 
   response.json({ card });
+});
+
+router.delete("/cards/:id", async (request, response): Promise<void> => {
+  if (!requireAdmin(request, response)) return;
+  const id = firstParam(request.params.id);
+  if (!id) { response.status(400).json({ message: "카드 ID가 올바르지 않습니다." }); return; }
+  const [existing] = await db.select().from(cardsTable).where(eq(cardsTable.id, id)).limit(1);
+  if (!existing) { response.status(404).json({ message: "카드를 찾을 수 없습니다." }); return; }
+  const [deleted] = await db.delete(cardsTable).where(eq(cardsTable.id, id)).returning();
+  if (!deleted) { response.status(404).json({ message: "카드를 찾을 수 없습니다." }); return; }
+  if (existing.imageAssetId) await removeImageIfUnreferenced(existing.imageAssetId);
+  if (existing.entranceAudioAssetId) await removeAudioIfUnreferenced(existing.entranceAudioAssetId);
+  response.status(204).end();
 });
 
 router.post("/cards/:id/apply-mechanic-request", async (request, response): Promise<void> => {
