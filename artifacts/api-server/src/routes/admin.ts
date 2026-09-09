@@ -1,7 +1,7 @@
 import { createHmac, randomUUID, timingSafeEqual } from "node:crypto";
 import { and, asc, eq, ilike, sql } from "drizzle-orm";
 import { cardsTable, championsTable, db, mechanicRequestsTable } from "@workspace/db";
-import { Router, type IRouter, type Request, type Response } from "express";
+import express, { Router, type IRouter, type Request, type Response } from "express";
 import { AudioStorage, CardImageStorage } from "../lib/object-storage";
 import {
   isPendingMechanicRequestConflict,
@@ -1014,6 +1014,62 @@ router.post("/audio/upload-url", async (request, response): Promise<void> => {
   const upload = await audioStorage.createUpload(extension);
   response.json({ ...upload, maxSize: MAX_AUDIO_SIZE, contentType });
 });
+
+function parseAudioMultipart(request: Request) {
+  const contentType = request.headers["content-type"] ?? "";
+  const boundaryMatch = contentType.match(/boundary="?([^";]+)"?/i);
+  if (!boundaryMatch || !Buffer.isBuffer(request.body)) return null;
+  const boundary = Buffer.from(`--${boundaryMatch[1]}`);
+  const body = request.body as Buffer;
+  const start = body.indexOf(boundary);
+  if (start < 0) return null;
+  const headerStart = start + boundary.length + 2;
+  const headerEnd = body.indexOf(Buffer.from("\r\n\r\n"), headerStart);
+  if (headerEnd < 0) return null;
+  const headers = body.subarray(headerStart, headerEnd).toString("utf8");
+  const disposition = headers.match(/content-disposition:[^\r\n]*name="file"[^\r\n]*filename="([^"]*)"/i);
+  const partContentType = headers.match(/content-type:\s*([^\r\n]+)/i)?.[1]?.trim().toLowerCase();
+  if (!disposition || !partContentType) return null;
+  const fileStart = headerEnd + 4;
+  const nextBoundary = body.indexOf(boundary, fileStart);
+  if (nextBoundary < 0) return null;
+  const fileEnd = nextBoundary - 2;
+  return {
+    fileName: disposition[1],
+    contentType: partContentType,
+    buffer: body.subarray(fileStart, fileEnd),
+  };
+}
+
+router.post(
+  "/audio/upload",
+  express.raw({ type: "multipart/form-data", limit: `${MAX_AUDIO_SIZE + 1024 * 1024}b` }),
+  async (request, response): Promise<void> => {
+    if (!requireAdmin(request, response)) return;
+    const audio = parseAudioMultipart(request);
+    const extension = audio?.fileName.toLowerCase().split(".").pop() ?? "";
+    const validExtensions = audio
+      ? Object.entries(AUDIO_TYPES).find(([contentType]) => contentType === audio.contentType)?.[1]
+      : undefined;
+    if (
+      !audio ||
+      !validExtensions?.some((item) => item === extension) ||
+      audio.buffer.length <= 0 ||
+      audio.buffer.length > MAX_AUDIO_SIZE
+    ) {
+      response.status(400).json({ message: "MP3, OGG, WAV 오디오 파일만 업로드할 수 있으며 최대 크기는 20MB입니다." });
+      return;
+    }
+    const objectPath = `/objects/uploads/audio/${randomUUID()}.${extension}`;
+    await audioStorage.save(objectPath, audio.buffer, audio.contentType);
+    response.json({
+      audioAssetId: objectPath,
+      audioUrl: `/api/storage${objectPath}`,
+      audioFileName: audio.fileName,
+      audioUploadToken: signAudioAsset(objectPath, Date.now() + PENDING_IMAGE_TTL_MS),
+    });
+  },
+);
 
 router.post("/audio/complete", async (request, response): Promise<void> => {
   if (!requireAdmin(request, response)) return;

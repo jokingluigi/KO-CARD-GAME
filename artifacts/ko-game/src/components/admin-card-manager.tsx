@@ -182,6 +182,7 @@ export function AdminCardManager({
     volume: 100,
     enabled: false,
     uploadToken: null as string | null,
+    fileName: null as string | null,
   });
   const [analysis, setAnalysis] = useState<EffectAnalysis | null>(null);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
@@ -270,7 +271,7 @@ export function AdminCardManager({
     setImageUploadToken(null);
     setLocalPreviewUrl(null);
     setImageDisplaySettings({ ...DEFAULT_IMAGE_DISPLAY_SETTINGS });
-    setEntranceAudio({ assetId: null, url: null, volume: 100, enabled: false, uploadToken: null });
+    setEntranceAudio({ assetId: null, url: null, volume: 100, enabled: false, uploadToken: null, fileName: null });
     setError("");
     setAnalysis(null);
     setCreatedMechanicRequest(null);
@@ -305,6 +306,7 @@ export function AdminCardManager({
       volume: card.entranceAudioVolume ?? 100,
       enabled: card.entranceAudioEnabled ?? false,
       uploadToken: null,
+      fileName: null,
     });
     setError("");
     setAnalysis(null);
@@ -810,22 +812,16 @@ ${unsupportedParts}
                <button type="button" onClick={closeForm} data-testid="button-close-card-form" className="rounded p-2 text-neutral-500 hover:bg-neutral-800 hover:text-white"><X className="h-5 w-5" /></button>
             </div>
              <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_260px]">
-             <form
-               onSubmit={form.handleSubmit(submitCard)}
-               onKeyDown={(event) => {
-                 if (isUploadingImage || entranceAudio.uploadToken && event.key === "Enter") {
-                   event.preventDefault();
-                 }
-               }}
-               className="grid gap-4 md:grid-cols-2"
-             >
+             <form onSubmit={form.handleSubmit(submitCard)} className="grid gap-4 md:grid-cols-2">
                <label className="space-y-1.5 md:col-span-2"><span className="text-xs font-bold text-neutral-400">이름</span><input {...form.register("name", { required: true })} data-testid="input-card-name" className="w-full rounded border border-neutral-700 bg-neutral-900 px-3 py-2 outline-none focus:border-primary" /></label>
                <AdminAudioField
                  title="고유 등장 음악"
                  value={entranceAudio}
                  onChange={setEntranceAudio}
-                 onUnauthorized={onUnauthorized}
-                 onError={setError}
+                 onError={(messageText) => {
+                   setError(messageText);
+                   if (messageText) toast({ title: "음악 업로드 실패", description: messageText, variant: "destructive" });
+                 }}
                  onMessage={setMessage}
                />
                <div className="space-y-2 rounded border border-neutral-800 bg-neutral-900/50 p-3 md:col-span-2">

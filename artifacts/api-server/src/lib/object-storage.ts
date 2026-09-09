@@ -209,6 +209,14 @@ export class AudioStorage {
     await this.file(objectPath).delete({ ignoreNotFound: true });
   }
 
+  async save(objectPath: string, buffer: Buffer, contentType: string): Promise<void> {
+    const file = this.file(objectPath);
+    await file.save(buffer, {
+      resumable: false,
+      metadata: { contentType },
+    });
+  }
+
   async stream(objectPath: string, response: import("express").Response) {
     const file = this.file(objectPath);
     const [exists] = await file.exists();

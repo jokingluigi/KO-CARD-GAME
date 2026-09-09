@@ -8,13 +8,13 @@ type AudioValue = {
   volume: number;
   enabled: boolean;
   uploadToken: string | null;
+  fileName: string | null;
 };
 
 type Props = {
   title: string;
   value: AudioValue;
   onChange: (value: AudioValue) => void;
-  onUnauthorized: () => void;
   onError: (message: string) => void;
   onMessage: (message: string) => void;
 };
@@ -35,14 +35,7 @@ function isSupportedAudio(file: File) {
   return extension === "mp3" || extension === "ogg" || extension === "wav";
 }
 
-function audioContentType(file: File) {
-  const extension = file.name.toLowerCase().split(".").pop();
-  if (extension === "mp3") return "audio/mpeg";
-  if (extension === "ogg") return "audio/ogg";
-  return "audio/wav";
-}
-
-export function AdminAudioField({ title, value, onChange, onUnauthorized, onError, onMessage }: Props) {
+export function AdminAudioField({ title, value, onChange, onError, onMessage }: Props) {
   const inputRef = useRef<HTMLInputElement>(null);
   const valueRef = useRef(value);
   const [localUrl, setLocalUrl] = useState<string | null>(null);
@@ -82,44 +75,29 @@ export function AdminAudioField({ title, value, onChange, onUnauthorized, onErro
       return;
     }
     audioManager.stop();
-    const contentType = audioContentType(file);
     await discardPending();
     if (localUrl?.startsWith("blob:")) URL.revokeObjectURL(localUrl);
     setLocalUrl(URL.createObjectURL(file));
     setUploading(true);
     onError("");
     try {
-      const requestResponse = await fetch(`${apiBase}/audio/upload-url`, {
+      const formData = new FormData();
+      formData.append("file", file, file.name);
+      const requestResponse = await fetch(`${apiBase}/audio/upload`, {
         method: "POST",
         credentials: "include",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name: file.name, size: file.size, contentType }),
+        body: formData,
       });
-      if (requestResponse.status === 401) { onUnauthorized(); return; }
       if (!requestResponse.ok) throw new Error(await readMessage(requestResponse));
-      const uploadInfo = await requestResponse.json() as { uploadURL: string; objectPath: string; contentType: string };
-      const uploadResponse = await fetch(uploadInfo.uploadURL, {
-        method: "PUT",
-        headers: { "Content-Type": contentType },
-        body: file,
-      });
-      if (!uploadResponse.ok) throw new Error("오디오 파일 업로드에 실패했습니다.");
-      const completeResponse = await fetch(`${apiBase}/audio/complete`, {
-        method: "POST",
-        credentials: "include",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ objectPath: uploadInfo.objectPath, contentType }),
-      });
-      if (completeResponse.status === 401) { onUnauthorized(); return; }
-      if (!completeResponse.ok) throw new Error(await readMessage(completeResponse));
-      const asset = await completeResponse.json() as {
-        audioAssetId: string; audioUrl: string; audioUploadToken: string;
+      const asset = await requestResponse.json() as {
+        audioAssetId: string; audioUrl: string; audioUploadToken: string; audioFileName: string;
       };
       onChange({
         ...value,
         assetId: asset.audioAssetId,
         url: asset.audioUrl,
         uploadToken: asset.audioUploadToken,
+        fileName: asset.audioFileName,
         enabled: true,
       });
       onMessage(`${title}을 업로드했습니다. 저장하면 적용됩니다.`);
@@ -137,11 +115,12 @@ export function AdminAudioField({ title, value, onChange, onUnauthorized, onErro
     void discardPending();
     if (localUrl?.startsWith("blob:")) URL.revokeObjectURL(localUrl);
     setLocalUrl(null);
-    onChange({ assetId: null, url: null, volume: value.volume, enabled: false, uploadToken: null });
+    onChange({ assetId: null, url: null, volume: value.volume, enabled: false, uploadToken: null, fileName: null });
     if (inputRef.current) inputRef.current.value = "";
   }
 
   const previewUrl = localUrl ?? value.url;
+  const displayName = value.fileName ?? (value.url ? value.url.split("/").pop() : null);
   return (
     <div className="space-y-3 rounded border border-neutral-800 bg-neutral-900/50 p-3 md:col-span-2">
       <div className="flex items-center justify-between gap-3">
@@ -180,6 +159,7 @@ export function AdminAudioField({ title, value, onChange, onUnauthorized, onErro
         {previewUrl && <button type="button" onClick={() => audioManager.stop()} className="flex items-center gap-2 rounded border border-neutral-700 px-3 py-2 text-xs font-bold"><Square className="h-3.5 w-3.5" /> 정지</button>}
         {previewUrl && <button type="button" disabled={uploading} onClick={remove} className="flex items-center gap-2 rounded border border-red-900 px-3 py-2 text-xs font-bold text-red-400 disabled:opacity-40"><Trash2 className="h-4 w-4" /> 음악 제거</button>}
       </div>
+      {displayName && <div className="truncate text-xs text-neutral-400" title={displayName}>파일: {displayName}</div>}
       <label className="block text-xs text-neutral-400">
         볼륨 <strong className="ml-2 text-neutral-200">{value.volume}%</strong>
         <input type="range" min="0" max="100" value={value.volume} onChange={(event) => onChange({ ...value, volume: Number(event.target.value) })} className="mt-2 w-full accent-primary" />

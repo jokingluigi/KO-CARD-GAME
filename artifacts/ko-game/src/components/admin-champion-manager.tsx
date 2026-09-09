@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { Ban, CheckCircle2, Copy, FilePenLine, Plus, Search, X } from "lucide-react";
 import { AdminAudioField } from "./admin-audio-field";
+import { useToast } from "../hooks/use-toast";
 
 const adminApiBase = `${import.meta.env.BASE_URL.replace(/\/$/, "")}/api/admin`;
 type Status = "DRAFT" | "PUBLISHED" | "DISABLED";
@@ -17,6 +18,7 @@ type Champion = {
   questCompleteAudioAssetId: string | null; questCompleteAudioUrl: string | null;
   questCompleteAudioVolume: number; questCompleteAudioEnabled: boolean;
   questCompleteAudioUploadToken: string | null;
+  questCompleteAudioFileName: string | null;
   status: Status; version: number;
 };
 type Form = Omit<Champion, "id" | "status" | "version">;
@@ -31,6 +33,7 @@ const empty: Form = {
   questCompleteAudioAssetId: null, questCompleteAudioUrl: null,
   questCompleteAudioVolume: 100, questCompleteAudioEnabled: false,
   questCompleteAudioUploadToken: null,
+  questCompleteAudioFileName: null,
 };
 
 async function message(response: Response) {
@@ -39,6 +42,7 @@ async function message(response: Response) {
 }
 
 export function AdminChampionManager({ onUnauthorized }: { onUnauthorized: () => void }) {
+  const { toast } = useToast();
   const [champions, setChampions] = useState<Champion[]>([]);
   const [search, setSearch] = useState("");
   const [status, setStatus] = useState("");
@@ -135,6 +139,7 @@ export function AdminChampionManager({ onUnauthorized }: { onUnauthorized: () =>
       questCompleteAudioVolume: champion.questCompleteAudioVolume ?? 100,
       questCompleteAudioEnabled: champion.questCompleteAudioEnabled ?? false,
       questCompleteAudioUploadToken: null,
+      questCompleteAudioFileName: null,
     } : empty); setOpen(true); setError("");
   }
   const input = "w-full rounded border border-neutral-700 bg-neutral-900 px-3 py-2 text-sm";
@@ -179,6 +184,7 @@ export function AdminChampionManager({ onUnauthorized }: { onUnauthorized: () =>
              volume: form.questCompleteAudioVolume,
              enabled: form.questCompleteAudioEnabled,
              uploadToken: form.questCompleteAudioUploadToken,
+             fileName: form.questCompleteAudioFileName,
            }}
            onChange={(value) => {
              update("questCompleteAudioAssetId", value.assetId);
@@ -186,9 +192,12 @@ export function AdminChampionManager({ onUnauthorized }: { onUnauthorized: () =>
              update("questCompleteAudioVolume", value.volume);
              update("questCompleteAudioEnabled", value.enabled);
              update("questCompleteAudioUploadToken", value.uploadToken);
+             update("questCompleteAudioFileName", value.fileName);
            }}
-           onUnauthorized={onUnauthorized}
-           onError={setError}
+           onError={(messageText) => {
+             setError(messageText);
+             if (messageText) toast({ title: "음악 업로드 실패", description: messageText, variant: "destructive" });
+           }}
            onMessage={(messageText) => {
              setError("");
              setMessageText(messageText);
