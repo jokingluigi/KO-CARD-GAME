@@ -3,3 +3,4 @@
 - [Effect targeting continuations](effect-targeting-continuations.md) — PLAYER_CHOICE pauses use an engine-owned stack so nested triggers resume in order.
 - [Effect registry source](effect-registry-source.md) — analyzer, Effect Library, and runtime types derive identifiers from one shared registry.
 - [Mechanic request boundary](mechanic-request-boundary.md) — intake records server-verified gaps only; creation never invokes agents or changes game code.
+- [Admin upload controls](admin-upload-controls.md) — file pickers embedded in admin forms must block browser default submission and event propagation.
