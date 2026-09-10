@@ -1,10 +1,11 @@
 import type { GameState, PlayerState } from '../types/game-state';
+import type { GameMediaCatalog } from '../media';
 import type { ActionResult } from '../actions/types';
 import { actionFailure, actionSuccess } from '../actions/types';
 import type { RandomSource } from '../random/random';
 import { MAX_DECK_SIZE, MIN_DECK_SIZE } from '../rules/constants';
 import { drawCard } from './draw-card';
-import { shuffle } from '../random/random';
+import { defaultRandom, shuffle } from '../random/random';
 import { processChampionQuestEvents } from '../champions/quests';
 
 function beginPlayerTurn(state: GameState, playerId: string): GameState {
@@ -126,6 +127,7 @@ export function validateCurrentPlayer(
 export function startGame(
   state: GameState,
   random?: RandomSource,
+  mediaCatalog?: GameMediaCatalog,
 ): GameState {
   if (state.players.length !== 2) {
     throw new Error('게임을 시작하려면 플레이어가 정확히 2명이어야 합니다.');
@@ -137,9 +139,18 @@ export function startGame(
 
   const preparedState = dealOpeningHands(prepareDecks(state, random));
   const firstPlayer = preparedState.players[0];
+  const mediaRandom = random ?? defaultRandom;
+  const backgroundId = mediaCatalog?.backgrounds.length
+    ? mediaCatalog.backgrounds[Math.floor(mediaRandom() * mediaCatalog.backgrounds.length)]!.id
+    : null;
+  const bgmId = mediaCatalog?.bgms.length
+    ? mediaCatalog.bgms[Math.floor(mediaRandom() * mediaCatalog.bgms.length)]!.id
+    : null;
 
   const startedState: GameState = {
     ...preparedState,
+    backgroundId,
+    bgmId,
     turn: 1,
     activePlayerId: firstPlayer.id,
     status: 'IN_PROGRESS',

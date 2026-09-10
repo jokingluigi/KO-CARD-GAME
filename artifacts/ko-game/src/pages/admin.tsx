@@ -1,7 +1,8 @@
 import { FormEvent, useEffect, useState } from "react";
-import { LockKeyhole, LogOut, ShieldCheck, Spade } from "lucide-react";
+import { Image, LockKeyhole, LogOut, Music2, ShieldCheck, Spade } from "lucide-react";
 import { AdminCardManager } from "@/components/admin-card-manager";
 import { AdminChampionManager } from "@/components/admin-champion-manager";
+import { AdminGameMediaManager } from "@/components/admin-game-media-manager";
 
 type AdminStatus = "checking" | "login" | "authenticated";
 
@@ -18,7 +19,7 @@ async function readMessage(response: Response): Promise<string> {
 
 export default function Admin() {
   const [status, setStatus] = useState<AdminStatus>("checking");
-  const [section, setSection] = useState<"cards" | "champions">("cards");
+  const [section, setSection] = useState<"cards" | "champions" | "media">("cards");
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [errorMessage, setErrorMessage] = useState("");
@@ -198,12 +199,25 @@ export default function Admin() {
             <ShieldCheck className="h-4 w-4" />
             챔피언 관리
           </button>
+          <button
+            type="button"
+            onClick={() => setSection("media")}
+            className={`mt-2 flex w-full items-center gap-3 rounded border px-3 py-3 text-left text-sm font-black ${section === "media" ? "border-primary/60 bg-primary/10 text-primary" : "border-transparent text-neutral-400"}`}
+          >
+            <span className="flex items-center gap-1">
+              <Image className="h-4 w-4" />
+              <Music2 className="h-3.5 w-3.5" />
+            </span>
+            백그라운드 관리
+          </button>
         </nav>
 
         <section className="min-w-0 flex-1">
           {section === "cards"
             ? <AdminCardManager onUnauthorized={() => setStatus("login")} />
-            : <AdminChampionManager onUnauthorized={() => setStatus("login")} />}
+             : section === "champions"
+               ? <AdminChampionManager onUnauthorized={() => setStatus("login")} />
+               : <AdminGameMediaManager onUnauthorized={() => setStatus("login")} />}
         </section>
       </div>
     </main>

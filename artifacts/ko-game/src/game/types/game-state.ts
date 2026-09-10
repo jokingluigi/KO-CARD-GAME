@@ -28,6 +28,8 @@ export interface PlayerState {
 
 export interface GameState {
   gameId: string;
+  backgroundId: string | null;
+  bgmId: string | null;
   turn: number;
   activePlayerId: string | null;
   status: 'NOT_STARTED' | 'IN_PROGRESS' | 'FINISHED';

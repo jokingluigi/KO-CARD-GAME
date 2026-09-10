@@ -16,6 +16,9 @@ import {
   cardRecordToDefinition,
   setRuntimeCardDefinitions,
   fetchPublishedChampions,
+  fetchGameMedia,
+  emptyGameMediaCatalog,
+  type GameMediaCatalog,
 } from '@/game';
 import { GameStatePreview } from '@/components/game-state-preview';
 import { audioManager } from '@/audio/audio-manager';
@@ -25,6 +28,7 @@ const TURN_TIME_LIMIT_SECONDS = 90;
 export default function Home() {
   const testCardId = new URLSearchParams(window.location.search).get('testCardId');
   const [isAdminTestMatch, setIsAdminTestMatch] = useState(false);
+  const [mediaCatalog, setMediaCatalog] = useState<GameMediaCatalog>(emptyGameMediaCatalog);
   const [gameState, setGameState] = useState<GameState>(() =>
     startGame(createInitialGameState()),
   );
@@ -45,18 +49,20 @@ export default function Home() {
   useEffect(() => {
     let cancelled = false;
     if (testCardId) {
-      fetch(`${import.meta.env.BASE_URL.replace(/\/$/, '')}/api/admin/cards/${encodeURIComponent(testCardId)}/test`, {
-        credentials: 'include',
-      })
-        .then(async (response) => {
+      Promise.all([
+        fetch(`${import.meta.env.BASE_URL.replace(/\/$/, '')}/api/admin/cards/${encodeURIComponent(testCardId)}/test`, {
+          credentials: 'include',
+        }).then(async (response) => {
           if (!response.ok) throw new Error('관리자 테스트 카드를 불러오지 못했습니다.');
           return (await response.json()) as { card: Parameters<typeof cardRecordToDefinition>[0] };
-        })
-        .then(({ card }) => {
+        }),
+        fetchGameMedia(),
+      ]).then(([{ card }, media]) => {
           if (cancelled) return;
           const definition = cardRecordToDefinition(card);
+          setMediaCatalog(media);
           setRuntimeCardDefinitions([definition]);
-          setGameState(startGame(createInitialGameState(undefined, [definition])));
+          setGameState(startGame(createInitialGameState(undefined, [definition]), undefined, media));
           setIsAdminTestMatch(true);
           setSelectedCardId(null);
           setSelectedAttackerId(null);
@@ -66,15 +72,16 @@ export default function Home() {
         });
       return () => { cancelled = true; };
     }
-    Promise.all([fetchPublishedWrestlerCards(), fetchPublishedChampions()])
-      .then(([definitions, champions]) => {
+    Promise.all([fetchPublishedWrestlerCards(), fetchPublishedChampions(), fetchGameMedia()])
+      .then(([definitions, champions, media]) => {
         if (cancelled || definitions.length === 0) return;
+        setMediaCatalog(media);
         setRuntimeCardDefinitions(definitions);
         const selected = champions.length >= 2
           ? [champions[0]!.id, champions[1]!.id] as [string, string]
           : undefined;
         setGameState(startGame(createInitialGameState(selected, definitions,
-          selected ? champions : undefined)));
+          selected ? champions : undefined), undefined, media));
         setSelectedCardId(null);
         setSelectedAttackerId(null);
       })
@@ -85,6 +92,19 @@ export default function Home() {
       cancelled = true;
     };
   }, [testCardId]);
+
+  useEffect(() => {
+    const bgm = mediaCatalog.bgms.find((item) => item.id === gameState.bgmId);
+    if (bgm) {
+      audioManager.playBgm(bgm.assetUrl, bgm.volume);
+    } else {
+      audioManager.stopBgm();
+    }
+  }, [gameState.bgmId, mediaCatalog.bgms]);
+
+  useEffect(() => () => {
+    audioManager.stopBgm();
+  }, []);
 
   useEffect(() => {
     if (lastAudioEventCountRef.current === null) {
@@ -341,6 +361,7 @@ export default function Home() {
       state={gameState}
       selectedCardId={selectedCardId}
       selectedAttackerId={selectedAttackerId}
+      mediaCatalog={mediaCatalog}
       playError={playError}
       turnSecondsRemaining={turnSecondsRemaining}
       onEndTurn={handleEndTurn}

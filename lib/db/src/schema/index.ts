@@ -20,3 +20,4 @@
 export * from "./cards";
 export * from "./champions";
 export * from "./mechanic-requests";
+export * from "./game-media";

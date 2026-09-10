@@ -1,8 +1,19 @@
 import { createHmac, randomUUID, timingSafeEqual } from "node:crypto";
-import { and, asc, eq, ilike, sql } from "drizzle-orm";
-import { cardsTable, championsTable, db, mechanicRequestsTable } from "@workspace/db";
+import { and, asc, desc, eq, ilike, sql } from "drizzle-orm";
+import {
+  cardsTable,
+  championsTable,
+  db,
+  gameMediaTable,
+  mechanicRequestsTable,
+} from "@workspace/db";
 import express, { Router, type IRouter, type Request, type Response } from "express";
-import { AudioStorage, CardImageStorage } from "../lib/object-storage";
+import {
+  AudioStorage,
+  BackgroundImageStorage,
+  CardImageStorage,
+  GameBgmStorage,
+} from "../lib/object-storage";
 import {
   isPendingMechanicRequestConflict,
   prepareMechanicRequest,
@@ -17,7 +28,9 @@ import {
 
 const router: IRouter = Router();
 const cardImageStorage = new CardImageStorage();
+const backgroundImageStorage = new BackgroundImageStorage();
 const audioStorage = new AudioStorage();
+const gameBgmStorage = new GameBgmStorage();
 
 const ADMIN_SESSION_COOKIE = "ko_admin_session";
 const ADMIN_SESSION_TTL_SECONDS = 8 * 60 * 60;
@@ -40,6 +53,7 @@ const CARD_KEYWORDS = [
   "MULTI_STRIKE",
 ] as const;
 const IMAGE_DISPLAY_MODES = ["COVER", "CONTAIN", "CUSTOM"] as const;
+const GAME_MEDIA_TYPES = ["BACKGROUND", "BGM"] as const;
 
 type CardInput = {
   name: string;
@@ -166,6 +180,12 @@ const AUDIO_TYPES = {
   "audio/x-wav": ["wav"],
 } as const;
 const MAX_AUDIO_SIZE = 20 * 1024 * 1024;
+const GAME_BACKGROUND_TYPES = {
+  "image/png": ["png"],
+  "image/jpeg": ["jpg", "jpeg"],
+  "image/webp": ["webp"],
+} as const;
+const GAME_BGM_TYPES = AUDIO_TYPES;
 const configuredMaxCardImageSize = Number(
   process.env["MAX_CARD_IMAGE_SIZE"] ?? 5 * 1024 * 1024,
 );
@@ -199,6 +219,15 @@ function signAudioAsset(assetId: string, expiresAt: number) {
   return `${expiresAt}.${signature}`;
 }
 
+function signGameMediaAsset(mediaType: (typeof GAME_MEDIA_TYPES)[number], assetId: string, expiresAt: number) {
+  const secret = configuredSecret();
+  if (!secret) throw new Error("SESSION_SECRET is not configured");
+  const signature = createHmac("sha256", secret)
+    .update(`game-media:${mediaType}:${assetId}:${expiresAt}`)
+    .digest("base64url");
+  return `${expiresAt}.${signature}`;
+}
+
 function validImageAssetToken(assetId: string, token: string | null) {
   if (!token) return false;
   const separator = token.indexOf(".");
@@ -225,6 +254,23 @@ function validAudioAssetToken(assetId: string, token: string | null) {
     return false;
   }
   const expected = Buffer.from(signAudioAsset(assetId, expiresAt).slice(separator + 1));
+  const actual = Buffer.from(signature);
+  return expected.length === actual.length && timingSafeEqual(expected, actual);
+}
+
+function validGameMediaAssetToken(
+  mediaType: (typeof GAME_MEDIA_TYPES)[number],
+  assetId: string,
+  token: string | null,
+) {
+  if (!token) return false;
+  const separator = token.indexOf(".");
+  const expiresAt = Number(token.slice(0, separator));
+  const signature = token.slice(separator + 1);
+  if (separator < 1 || !Number.isSafeInteger(expiresAt) || expiresAt <= Date.now()) {
+    return false;
+  }
+  const expected = Buffer.from(signGameMediaAsset(mediaType, assetId, expiresAt).slice(separator + 1));
   const actual = Buffer.from(signature);
   return expected.length === actual.length && timingSafeEqual(expected, actual);
 }
@@ -1130,6 +1176,207 @@ router.post("/audio/discard", async (request, response): Promise<void> => {
     return;
   }
   await removeAudioIfUnreferenced(audioAssetId);
+  response.status(204).end();
+});
+
+function isGameMediaType(value: unknown): value is (typeof GAME_MEDIA_TYPES)[number] {
+  return typeof value === "string" && GAME_MEDIA_TYPES.includes(value as (typeof GAME_MEDIA_TYPES)[number]);
+}
+
+function gameMediaConfig(mediaType: (typeof GAME_MEDIA_TYPES)[number]) {
+  return mediaType === "BACKGROUND"
+    ? {
+        prefix: "/objects/uploads/game-backgrounds/",
+        storage: backgroundImageStorage,
+        types: GAME_BACKGROUND_TYPES,
+        maxSize: MAX_CARD_IMAGE_SIZE,
+      }
+    : {
+        prefix: "/objects/uploads/game-bgm/",
+        storage: gameBgmStorage,
+        types: GAME_BGM_TYPES,
+        maxSize: MAX_AUDIO_SIZE,
+      };
+}
+
+function gameMediaExtensions(
+  mediaType: (typeof GAME_MEDIA_TYPES)[number],
+  contentType: string,
+) {
+  return mediaType === "BACKGROUND"
+    ? GAME_BACKGROUND_TYPES[contentType as keyof typeof GAME_BACKGROUND_TYPES]
+    : GAME_BGM_TYPES[contentType as keyof typeof GAME_BGM_TYPES];
+}
+
+router.get("/game-media", async (request, response): Promise<void> => {
+  if (!requireAdmin(request, response)) return;
+  const media = await db.select().from(gameMediaTable).orderBy(desc(gameMediaTable.createdAt));
+  response.json({ media });
+});
+
+router.post("/game-media/uploads/request-url", async (request, response): Promise<void> => {
+  if (!requireAdmin(request, response)) return;
+  const body = request.body && typeof request.body === "object"
+    ? request.body as Record<string, unknown> : {};
+  const mediaType = body.mediaType;
+  const name = typeof body.name === "string" ? body.name : "";
+  const contentType = typeof body.contentType === "string" ? body.contentType : "";
+  const size = typeof body.size === "number" ? body.size : 0;
+  if (!isGameMediaType(mediaType)) {
+    response.status(400).json({ message: "미디어 종류가 올바르지 않습니다." });
+    return;
+  }
+  const config = gameMediaConfig(mediaType);
+  const extension = name.toLowerCase().split(".").pop() ?? "";
+  const validExtensions = gameMediaExtensions(mediaType, contentType);
+  if (!validExtensions || !validExtensions.some((item) => item === extension) ||
+      !Number.isInteger(size) || size <= 0 || size > config.maxSize) {
+    response.status(400).json({
+      message: mediaType === "BACKGROUND"
+        ? `PNG, JPG, JPEG, WEBP 파일만 업로드할 수 있으며 최대 크기는 ${Math.floor(config.maxSize / 1024 / 1024)}MB입니다.`
+        : "MP3, OGG, WAV 오디오 파일만 업로드할 수 있으며 최대 크기는 20MB입니다.",
+    });
+    return;
+  }
+  const upload = await config.storage.createUpload(extension);
+  response.json({ ...upload, mediaType, maxSize: config.maxSize, contentType });
+});
+
+router.post("/game-media/uploads/complete", async (request, response): Promise<void> => {
+  if (!requireAdmin(request, response)) return;
+  const body = request.body && typeof request.body === "object"
+    ? request.body as Record<string, unknown> : {};
+  const mediaType = body.mediaType;
+  const objectPath = typeof body.objectPath === "string" ? body.objectPath : "";
+  const contentType = typeof body.contentType === "string" ? body.contentType : "";
+  if (!isGameMediaType(mediaType)) {
+    response.status(400).json({ message: "미디어 종류가 올바르지 않습니다." });
+    return;
+  }
+  const config = gameMediaConfig(mediaType);
+  const extension = objectPath.toLowerCase().split(".").pop() ?? "";
+  const validExtensions = gameMediaExtensions(mediaType, contentType);
+  const validPath = objectPath.startsWith(config.prefix);
+  const valid = mediaType === "BACKGROUND"
+    ? validPath && Boolean(validExtensions?.some((item) => item === extension)) &&
+      await backgroundImageStorage.verifyImage(objectPath, contentType, config.maxSize)
+    : validPath && Boolean(validExtensions?.some((item) => item === extension)) &&
+      await gameBgmStorage.verifyAudio(objectPath, contentType, config.maxSize);
+  if (!valid) {
+    if (validPath) await config.storage.remove(objectPath);
+    response.status(400).json({ message: "업로드한 파일 정보를 확인할 수 없습니다." });
+    return;
+  }
+  const uploadToken = signGameMediaAsset(mediaType, objectPath, Date.now() + PENDING_IMAGE_TTL_MS);
+  response.json({
+    mediaType,
+    assetId: objectPath,
+    assetUrl: `/api/storage${objectPath}`,
+    uploadToken,
+  });
+});
+
+router.post("/game-media/uploads/discard", async (request, response): Promise<void> => {
+  if (!requireAdmin(request, response)) return;
+  const body = request.body && typeof request.body === "object"
+    ? request.body as Record<string, unknown> : {};
+  const mediaType = body.mediaType;
+  const assetId = typeof body.assetId === "string" ? body.assetId : "";
+  const uploadToken = typeof body.uploadToken === "string" ? body.uploadToken : null;
+  if (!isGameMediaType(mediaType) || !validGameMediaAssetToken(mediaType, assetId, uploadToken)) {
+    response.status(400).json({ message: "업로드 파일 정보가 올바르지 않습니다." });
+    return;
+  }
+  const config = gameMediaConfig(mediaType);
+  if (assetId.startsWith(config.prefix)) await config.storage.remove(assetId);
+  response.status(204).end();
+});
+
+router.post("/game-media", async (request, response): Promise<void> => {
+  if (!requireAdmin(request, response)) return;
+  const body = request.body && typeof request.body === "object"
+    ? request.body as Record<string, unknown> : {};
+  const mediaType = body.mediaType;
+  const name = typeof body.name === "string" ? body.name.trim() : "";
+  const assetId = typeof body.assetId === "string" ? body.assetId : "";
+  const assetUrl = typeof body.assetUrl === "string" ? body.assetUrl : "";
+  const fileName = typeof body.fileName === "string" ? body.fileName : "";
+  const contentType = typeof body.contentType === "string" ? body.contentType : "";
+  const uploadToken = typeof body.uploadToken === "string" ? body.uploadToken : null;
+  const width = typeof body.width === "number" ? body.width : null;
+  const height = typeof body.height === "number" ? body.height : null;
+  const volume = typeof body.volume === "number" ? body.volume : 100;
+  const enabled = body.enabled === undefined ? true : body.enabled;
+  const validDimensions = mediaType !== "BACKGROUND" ||
+    (width !== null && height !== null &&
+      Number.isInteger(width) && Number.isInteger(height) && width > 0 && height > 0);
+  if (!isGameMediaType(mediaType) || !name || name.length > 120 ||
+      !assetUrl || !fileName || !contentType || !validGameMediaAssetToken(mediaType, assetId, uploadToken) ||
+      !validDimensions ||
+      (mediaType === "BGM" && (!Number.isInteger(volume) || volume < 0 || volume > 100)) ||
+      typeof enabled !== "boolean") {
+    response.status(400).json({ message: "게임 미디어 정보가 올바르지 않습니다." });
+    return;
+  }
+  const config = gameMediaConfig(mediaType);
+  if (!assetId.startsWith(config.prefix) || assetUrl !== `/api/storage${assetId}`) {
+    response.status(400).json({ message: "저장된 파일 경로가 올바르지 않습니다." });
+    return;
+  }
+  const [media] = await db.insert(gameMediaTable).values({
+    id: randomUUID(),
+    mediaType,
+    name,
+    assetId,
+    assetUrl,
+    fileName,
+    contentType,
+    width: mediaType === "BACKGROUND" ? width as number : null,
+    height: mediaType === "BACKGROUND" ? height as number : null,
+    volume: mediaType === "BGM" ? volume as number : 100,
+    enabled,
+  }).returning();
+  response.status(201).json({ media });
+});
+
+router.patch("/game-media/:id", async (request, response): Promise<void> => {
+  if (!requireAdmin(request, response)) return;
+  const id = request.params.id;
+  const [existing] = await db.select().from(gameMediaTable).where(eq(gameMediaTable.id, id)).limit(1);
+  if (!existing) {
+    response.status(404).json({ message: "게임 미디어를 찾을 수 없습니다." });
+    return;
+  }
+  const body = request.body && typeof request.body === "object"
+    ? request.body as Record<string, unknown> : {};
+  const name = body.name === undefined ? existing.name : typeof body.name === "string" ? body.name.trim() : "";
+  const enabled = body.enabled === undefined ? existing.enabled : body.enabled;
+  const volume = typeof body.volume === "number" ? body.volume : existing.volume;
+  if (!name || name.length > 120 || typeof enabled !== "boolean" ||
+      !Number.isInteger(volume) || volume < 0 || volume > 100) {
+    response.status(400).json({ message: "게임 미디어 설정이 올바르지 않습니다." });
+    return;
+  }
+  const [media] = await db.update(gameMediaTable).set({
+    name,
+    enabled,
+    volume: existing.mediaType === "BGM" ? volume : existing.volume,
+    updatedAt: new Date(),
+  }).where(eq(gameMediaTable.id, id)).returning();
+  response.json({ media });
+});
+
+router.delete("/game-media/:id", async (request, response): Promise<void> => {
+  if (!requireAdmin(request, response)) return;
+  const id = request.params.id;
+  const [existing] = await db.select().from(gameMediaTable).where(eq(gameMediaTable.id, id)).limit(1);
+  if (!existing) {
+    response.status(404).json({ message: "게임 미디어를 찾을 수 없습니다." });
+    return;
+  }
+  await db.delete(gameMediaTable).where(eq(gameMediaTable.id, id));
+  const config = gameMediaConfig(existing.mediaType as (typeof GAME_MEDIA_TYPES)[number]);
+  await config.storage.remove(existing.assetId);
   response.status(204).end();
 });
 

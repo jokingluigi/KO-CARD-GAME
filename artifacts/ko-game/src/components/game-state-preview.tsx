@@ -11,6 +11,7 @@ import {
   type BoardSlot as BoardSlotIndex,
   type CardInstance,
   type GameState,
+  type GameMediaCatalog,
 } from '@/game';
 import { ActionHistory } from './action-history';
 import {
@@ -23,6 +24,7 @@ import {
 
 interface GameStatePreviewProps {
   state: GameState;
+  mediaCatalog: GameMediaCatalog;
   selectedCardId: string | null;
   selectedAttackerId: string | null;
   playError: string | null;
@@ -41,6 +43,7 @@ interface GameStatePreviewProps {
 
 export function GameStatePreview({
   state,
+  mediaCatalog,
   selectedCardId,
   selectedAttackerId,
   playError,
@@ -95,6 +98,9 @@ export function GameStatePreview({
     : me.champion && me.currentGold < me.champion.abilityCost
       ? '현재 골드가 부족합니다.'
       : '현재 사용할 수 없습니다.';
+  const selectedBackground = mediaCatalog.backgrounds.find(
+    (item) => item.id === state.backgroundId,
+  );
   
   return (
     <AltInspectProvider>
@@ -102,8 +108,14 @@ export function GameStatePreview({
       <ActionHistory state={state} />
       
       {/* Background Ambience */}
-      <div className="pointer-events-none absolute inset-0 z-0">
-        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,_#1a1a24_0%,_#050505_100%)]"></div>
+      <div className="pointer-events-none absolute inset-0 z-0 bg-neutral-950">
+        {selectedBackground && (
+          <div
+            className="absolute inset-0 bg-cover bg-center bg-no-repeat"
+            style={{ backgroundImage: `url("${selectedBackground.assetUrl}")` }}
+          />
+        )}
+        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,_rgba(26,26,36,0.72)_0%,_rgba(5,5,5,0.92)_100%)]" />
       </div>
 
       <div className="relative mx-auto flex min-h-[100dvh] w-full max-w-5xl flex-1 flex-col justify-between pb-0 pt-2 md:h-[100dvh] md:min-h-0 md:pt-4">

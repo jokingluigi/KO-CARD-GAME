@@ -23,6 +23,7 @@ export * from './engine/play-technique';
 export * from './engine/turn-system';
 export * from './events/types';
 export * from './random/random';
+export * from './media';
 export * from './rules/constants';
 export * from './types/game-state';
 export * from './types/json';

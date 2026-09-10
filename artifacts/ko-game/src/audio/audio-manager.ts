@@ -23,6 +23,7 @@ class AudioManager {
     timeoutId: number;
   } | null = null;
   private queue: AudioRequest[] = [];
+  private bgm: { audio: HTMLAudioElement; url: string } | null = null;
 
   playCardEntrance(url: string, volume: number) {
     this.enqueue({ url, volume, priority: 0, kind: "CARD_ENTRANCE" });
@@ -35,6 +36,42 @@ class AudioManager {
   preview(url: string, volume: number) {
     this.stop();
     this.start({ url, volume, priority: 100, kind: "CARD_ENTRANCE" });
+  }
+
+  playBgm(url: string, volume: number) {
+    if (typeof window === "undefined" || !url) return;
+    if (this.bgm?.url === url) {
+      this.bgm.audio.volume = safeVolume(volume);
+      return;
+    }
+    this.stopBgm();
+    try {
+      const audio = new Audio(url);
+      audio.preload = "auto";
+      audio.loop = true;
+      audio.volume = safeVolume(volume);
+      this.bgm = { audio, url };
+      audio.play().catch(() => {
+        if (this.bgm?.audio === audio) this.stopBgm();
+      });
+    } catch {
+      this.stopBgm();
+    }
+  }
+
+  previewBgm(url: string, volume: number) {
+    this.playBgm(url, volume);
+  }
+
+  setBgmVolume(volume: number) {
+    if (this.bgm) this.bgm.audio.volume = safeVolume(volume);
+  }
+
+  stopBgm() {
+    if (!this.bgm) return;
+    this.bgm.audio.pause();
+    this.bgm.audio.currentTime = 0;
+    this.bgm = null;
   }
 
   stop() {

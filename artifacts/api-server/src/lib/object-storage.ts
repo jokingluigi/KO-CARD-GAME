@@ -54,10 +54,12 @@ async function signedPutUrl(bucketName: string, objectName: string) {
   return body.signed_url;
 }
 
-export class CardImageStorage {
+class ImageAssetStorage {
+  constructor(private readonly folder: string) {}
+
   async createUpload(extension: string) {
     const assetId = randomUUID();
-    const relativePath = `uploads/card-images/${assetId}.${extension}`;
+    const relativePath = `uploads/${this.folder}/${assetId}.${extension}`;
     const { bucketName, objectName } = parseStoragePath(
       `${privateObjectDir()}/${relativePath}`,
     );
@@ -69,8 +71,8 @@ export class CardImageStorage {
   }
 
   file(objectPath: string): File {
-    if (!objectPath.startsWith("/objects/uploads/card-images/")) {
-      throw new Error("Invalid card image path");
+    if (!objectPath.startsWith(`/objects/uploads/${this.folder}/`)) {
+      throw new Error("Invalid image path");
     }
     const relativePath = objectPath.slice("/objects/".length);
     const { bucketName, objectName } = parseStoragePath(
@@ -127,7 +129,7 @@ export class CardImageStorage {
 
   async staleUploads(olderThan: Date): Promise<string[]> {
     const { bucketName, objectName } = parseStoragePath(
-      `${privateObjectDir()}/uploads/card-images`,
+      `${privateObjectDir()}/uploads/${this.folder}`,
     );
     const [files] = await storage
       .bucket(bucketName)
@@ -165,10 +167,24 @@ export class CardImageStorage {
   }
 }
 
-export class AudioStorage {
+export class CardImageStorage extends ImageAssetStorage {
+  constructor() {
+    super("card-images");
+  }
+}
+
+export class BackgroundImageStorage extends ImageAssetStorage {
+  constructor() {
+    super("game-backgrounds");
+  }
+}
+
+class AudioAssetStorage {
+  constructor(private readonly folder: string) {}
+
   async createUpload(extension: string) {
     const assetId = randomUUID();
-    const relativePath = `uploads/audio/${assetId}.${extension}`;
+    const relativePath = `uploads/${this.folder}/${assetId}.${extension}`;
     const { bucketName, objectName } = parseStoragePath(
       `${privateObjectDir()}/${relativePath}`,
     );
@@ -180,7 +196,7 @@ export class AudioStorage {
   }
 
   file(objectPath: string): File {
-    if (!objectPath.startsWith("/objects/uploads/audio/")) {
+    if (!objectPath.startsWith(`/objects/uploads/${this.folder}/`)) {
       throw new Error("Invalid audio path");
     }
     const relativePath = objectPath.slice("/objects/".length);
@@ -230,5 +246,17 @@ export class AudioStorage {
     if (metadata.size) response.setHeader("Content-Length", String(metadata.size));
     file.createReadStream().pipe(response);
     return true;
+  }
+}
+
+export class AudioStorage extends AudioAssetStorage {
+  constructor() {
+    super("audio");
+  }
+}
+
+export class GameBgmStorage extends AudioAssetStorage {
+  constructor() {
+    super("game-bgm");
   }
 }

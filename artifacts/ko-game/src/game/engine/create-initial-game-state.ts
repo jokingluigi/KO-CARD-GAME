@@ -37,6 +37,8 @@ export function createInitialGameState(
 ): GameState {
   return {
     gameId: 'local-prototype',
+    backgroundId: null,
+    bgmId: null,
     turn: 0,
     activePlayerId: null,
     status: 'NOT_STARTED',
