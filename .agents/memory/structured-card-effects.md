@@ -14,3 +14,9 @@ Numeric values must be resolved from the matched action clause, never from the f
 **Why:** Target counts and earlier effects can otherwise be silently reused as the amount of a later damage, draw, gold, or cost action.
 
 **How to apply:** Keep target-count parsing separate from action-value parsing and add a multi-clause regression case whenever a new numeric action is registered.
+
+When a newly supported semantic pattern overlaps with the analyzer's broad unsupported-mechanic detectors, explicitly exempt the supported pattern from those fallback checks.
+
+**Why:** Broad detectors such as “교환”, “서로”, or “변환” can otherwise downgrade a correctly parsed structured effect to `mechanism_required`.
+
+**How to apply:** Reuse the same canonical pattern for action recognition and unsupported-mechanic exclusion, then test both the production wording and a close paraphrase.

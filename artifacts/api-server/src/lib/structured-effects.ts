@@ -40,7 +40,7 @@ const aliases = {
 } as const;
 
 const STAT_MULTIPLIER_PATTERN = /(?:자신(?:의|에게)?\s*)?(?:현재\s*)?(?:공격(?:력)?\s*(?:과|\/|및)\s*체력|체력\s*(?:과|\/|및)\s*공격(?:력)?)(?:의\s*)?(?:(?:수치(?:를|가)?)|(?:을|를))?\s*(\d+(?:\.\d+)?)\s*배(?:로)?(?:\s*(?:만들|변경|합니다|한다))?/i;
-const STAT_SWAP_PATTERN = /(?:자신(?:의|에게)?\s*)?(?:현재\s*)?(?:공격(?:력)?\s*(?:과|\/|및)\s*체력|체력\s*(?:과|\/|및)\s*공격(?:력)?)(?:을|를|의)?\s*(?:의\s*)?(?:수치(?:를|가)?)?\s*서로\s*(?:교환|바꾸)/i;
+const STAT_SWAP_PATTERN = /(?:자신(?:의|에게)?\s*)?(?:현재\s*)?(?:공격(?:력)?\s*(?:과|\/|및)\s*체력|체력\s*(?:과|\/|및)\s*공격(?:력)?)[^.!?]{0,30}?(?:서로\s*)?(?:교환|바꾸|바꿉니다)/i;
 const ACTIVE_CARD_SCOPE_PATTERN = /(?:어디에\s*(?:있든|있는)|모든\s*위치의|손패\s*[,，]\s*덱\s*[,，]\s*(?:필드|보드)|손패\s*(?:및|와|과)\s*덱\s*(?:및|와|과)\s*(?:필드|보드))/;
 const GENERATED_FILTER_PATTERN = /(?:생성된|생성\s*카드|GENERATED)/i;
 
@@ -177,7 +177,7 @@ export function analyzeEffectText(input: string): Analysis {
   const mechanicMatch = text.match(unsupportedMechanic);
   const semanticUnsupported =
     (/(섞|재배치|교환|복사|변환)/.test(text) && !STAT_SWAP_PATTERN.test(text)) ||
-    (/(공격력|체력|비용|값|순서|위치)/.test(text) && /(무작위|랜덤|서로)/.test(text));
+    (/(공격력|체력|비용|값|순서|위치)/.test(text) && /(무작위|랜덤|서로)/.test(text) && !STAT_SWAP_PATTERN.test(text));
   const mechanicRequired = Boolean((mechanicMatch && !STAT_SWAP_PATTERN.test(text)) || semanticUnsupported);
   const unsupportedDescription =
     /손패/.test(text) && /공격력/.test(text) && /(섞|무작위|랜덤)/.test(text)
