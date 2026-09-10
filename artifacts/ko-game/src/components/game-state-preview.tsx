@@ -386,7 +386,8 @@ export function GameStatePreview({
                     animating={
                       (playAnimation?.kind === "WRESTLER" &&
                         playAnimation.card.instanceId === card?.instanceId) ||
-                        generatedPlayAnimations.some((animation) => animation.card.instanceId === card?.instanceId)
+                        generatedPlayAnimations.some((animation) => animation.card.instanceId === card?.instanceId) ||
+                        attackAnimation?.attacker.instanceId === card?.instanceId
                     }
                      selected={card?.instanceId === selectedAttackerId || !!card && selectedEffectTargetIds.has(card.instanceId)}
                    attackReady={!!card && canSelectAsAttacker(state, me.id, card.instanceId)}
