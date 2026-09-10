@@ -158,8 +158,17 @@ test('필드에 있는 카드가 생성 카드의 전투 피해를 보정하고 
     cardInstanceId: defender.instanceId,
   });
   assert.equal(attacked.state.players[1].board[0]?.currentHealth, 2);
-  assert.equal(attacked.state.events.at(-1)?.type, 'DAMAGE_DEALT');
-  assert.equal((attacked.state.events.at(-1) as { amount?: number }).amount, 3);
+  const defenderDamage = attacked.state.events
+    .filter((event) =>
+      event.type === 'DAMAGE_DEALT' &&
+      event.source?.type === 'CARD' &&
+      event.source.cardInstanceId === generatedAttacker.instanceId &&
+      event.target?.type === 'CARD' &&
+      event.target.cardInstanceId === defender.instanceId,
+    )
+    .at(-1);
+  assert.equal(defenderDamage?.type, 'DAMAGE_DEALT');
+  assert.equal((defenderDamage as { amount?: number }).amount, 3);
 
   const removed = destroyCard(withAura, 'player-1', aura.instanceId);
   assert.equal(removed.success, true);

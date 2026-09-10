@@ -20,3 +20,9 @@ When a newly supported semantic pattern overlaps with the analyzer's broad unsup
 **Why:** Broad detectors such as “교환”, “서로”, or “변환” can otherwise downgrade a correctly parsed structured effect to `mechanism_required`.
 
 **How to apply:** Reuse the same canonical pattern for action recognition and unsupported-mechanic exclusion, then test both the production wording and a close paraphrase.
+
+For multi-effect sentences, preserve action order by sorting recognized clauses by their position in the source text, and scope target filters to the clause that describes the target action. Do not let a later `생성된 카드` damage clause turn an earlier random summon into a Generated-only pool.
+
+**Why:** Analyzer-wide text scans can bind a later effect's filter or numeric value to the wrong action, changing both the preview and runtime behavior.
+
+**How to apply:** Extract action values from the matched action phrase, and for special target shapes such as adjacent random summons, derive filters from the target clause before the summon verb. Cover exact production wording and a multi-effect regression.

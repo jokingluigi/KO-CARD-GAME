@@ -42,6 +42,12 @@ test("필수 카드 문장을 안전한 구조화 효과로 분석한다", () =>
       values: { attack: 1, health: 1 },
     },
     {
+      text: "등장: 어디에 있든 모든 생성된 아군 선수 카드에게 체력과 공격을 1씩 증가시킵니다.",
+      actions: ["BUFF"],
+      target: { zones: ["HAND", "DECK", "BOARD"], owner: "SELF", cardType: "WRESTLER", filter: { isGenerated: true }, selection: "ALL", count: 20 },
+      values: { attack: 1, health: 1 },
+    },
+    {
       text: "등장: 적 선수 하나를 침묵시키고 파괴합니다.",
       actions: ["SILENCE", "DESTROY"],
       target: { zone: "BOARD", owner: "ENEMY", cardType: "WRESTLER", selection: "PLAYER_CHOICE", count: 1 },
@@ -193,8 +199,28 @@ test("현재 registry에서 제공하는 Effect Library 메타데이터를 노�
     { attackMultiplier: "number (0..10)", healthMultiplier: "number (0..10)" },
   );
   assert.deepEqual(library.targetResolvers[0]?.config.defaultCardScope, ["HAND", "DECK", "BOARD"]);
-  assert.deepEqual(library.targetResolvers[0]?.config.filters, ["GENERATED"]);
+  assert.deepEqual(library.targetResolvers[0]?.config.filters, ["GENERATED", "MIN_COST"]);
   assert.deepEqual(library.targetResolvers[0]?.config.randomScope, ["STANDARD", "FULL"]);
+});
+
+test("생성된 아군 선수의 공격력과 체력을 함께 증가시키는 유사 표현도 분석한다", () => {
+  const result = analyzeEffectText("등장: 모든 위치의 생성된 내 선수 카드의 공격력과 체력을 1씩 올립니다.");
+
+  assert.equal(result.status, "success");
+  assert.equal(result.outcome, "supported");
+  assert.deepEqual(result.effects[0], {
+    trigger: "ENTER_FIELD",
+    action: "BUFF",
+    target: {
+      zones: ["HAND", "DECK", "BOARD"],
+      owner: "SELF",
+      cardType: "WRESTLER",
+      filter: { isGenerated: true },
+      selection: "ALL",
+      count: 20,
+    },
+    values: { attack: 1, health: 1 },
+  });
 });
 
 test("어디에 있든 생성된 선수는 HAND·DECK·BOARD와 Generated 필터로 분석한다", () => {
