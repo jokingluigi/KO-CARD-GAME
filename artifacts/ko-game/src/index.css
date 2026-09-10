@@ -248,3 +248,136 @@
     animation-timing-function: linear;
   }
 }
+
+@keyframes ko-attack-card {
+  0% { opacity: 0; transform: translate3d(0, 0, 0) scale(.98); }
+  10% { opacity: 1; transform: translate3d(0, 0, 0) scale(1); }
+  20% { transform: translate3d(calc(var(--attack-dx) * -.035), calc(var(--attack-dy) * -.035), 0) scale(1.02); }
+  56% { opacity: 1; transform: translate3d(var(--attack-dx), var(--attack-dy), 0) scale(1.06); }
+  65% { opacity: 1; transform: translate3d(var(--attack-dx), var(--attack-dy), 0) scale(1.02); }
+  100% { opacity: 0; transform: translate3d(0, 0, 0) scale(1); }
+}
+
+@keyframes ko-attack-target {
+  0%, 54% { opacity: .12; transform: scale(.98); }
+  58% { opacity: .9; transform: scale(1.04); }
+  76% { opacity: .34; transform: scale(1); }
+  100% { opacity: 0; transform: scale(.98); }
+}
+
+@keyframes ko-attack-flash {
+  0%, 52% { opacity: 0; transform: translate(-50%, -50%) scale(.65); }
+  60% { opacity: .95; transform: translate(-50%, -50%) scale(1); }
+  100% { opacity: 0; transform: translate(-50%, -50%) scale(1.5); }
+}
+
+@keyframes ko-attack-shockwave {
+  0%, 52% { opacity: 0; transform: translate(-50%, -50%) scale(.4); }
+  64% { opacity: .8; transform: translate(-50%, -50%) scale(1); }
+  100% { opacity: 0; transform: translate(-50%, -50%) scale(1.45); }
+}
+
+@keyframes ko-attack-shake-light {
+  0%, 100% { transform: translateX(0); }
+  35% { transform: translateX(-2px); }
+  70% { transform: translateX(2px); }
+}
+
+@keyframes ko-attack-shake-normal {
+  0%, 100% { transform: translateX(0); }
+  25% { transform: translateX(-4px); }
+  50% { transform: translateX(4px); }
+  75% { transform: translateX(-2px); }
+}
+
+@keyframes ko-attack-shake-heavy {
+  0%, 100% { transform: translate(0); }
+  20% { transform: translate(-6px, 1px); }
+  40% { transform: translate(6px, -1px); }
+  60% { transform: translate(-4px, 0); }
+  80% { transform: translate(3px, 0); }
+}
+
+@keyframes ko-attack-screen-shake {
+  0%, 100% { transform: translate(0); }
+  25% { transform: translate(-2px, 1px); }
+  50% { transform: translate(2px, -1px); }
+  75% { transform: translate(-1px, 0); }
+}
+
+.attack-animation {
+  position: fixed;
+  inset: 0;
+  z-index: 220;
+  pointer-events: none;
+}
+
+.attack-animation__attacker,
+.attack-animation__target {
+  position: fixed;
+  left: var(--attack-source-x);
+  top: var(--attack-source-y);
+  width: var(--attack-source-width);
+  height: var(--attack-source-height);
+  transform-origin: center;
+}
+
+.attack-animation__attacker {
+  animation: ko-attack-card var(--attack-duration) cubic-bezier(.2, .75, .25, 1) both;
+}
+
+.attack-animation__target {
+  left: var(--attack-target-x);
+  top: var(--attack-target-y);
+  width: var(--attack-target-width);
+  height: var(--attack-target-height);
+  opacity: 0;
+  animation: ko-attack-target var(--attack-duration) ease-out both;
+}
+
+.attack-animation__impact-flash,
+.attack-animation__shockwave {
+  position: fixed;
+  left: calc(var(--attack-target-x) + var(--attack-target-width) / 2);
+  top: calc(var(--attack-target-y) + var(--attack-target-height) / 2);
+  width: calc(var(--attack-target-width) * 1.2);
+  height: calc(var(--attack-target-height) * 1.2);
+  border-radius: 999px;
+  pointer-events: none;
+  opacity: 0;
+}
+
+.attack-animation__impact-flash {
+  background: radial-gradient(circle, rgba(255,255,255,.85), rgba(248,113,113,.28) 45%, transparent 72%);
+  animation: ko-attack-flash var(--attack-duration) ease-out both;
+}
+
+.attack-animation__shockwave {
+  border: 3px solid rgba(251, 146, 60, .9);
+  box-shadow: 0 0 22px rgba(239, 68, 68, .55);
+  animation: ko-attack-shockwave var(--attack-duration) ease-out both;
+}
+
+.attack-target-hit--light { animation: ko-attack-shake-light 180ms ease-out; }
+.attack-target-hit--normal { animation: ko-attack-shake-normal 220ms ease-out; }
+.attack-target-hit--heavy { animation: ko-attack-shake-heavy 260ms ease-out; }
+.attack-target-hit--very_heavy { animation: ko-attack-shake-heavy 320ms ease-out; }
+.attack-screen-shake--heavy,
+.attack-screen-shake--very_heavy { animation: ko-attack-screen-shake 180ms ease-out; }
+
+@media (prefers-reduced-motion: reduce) {
+  .attack-animation__attacker,
+  .attack-animation__target,
+  .attack-animation__impact-flash,
+  .attack-animation__shockwave {
+    animation-duration: 1ms;
+  }
+  .attack-target-hit--light,
+  .attack-target-hit--normal,
+  .attack-target-hit--heavy,
+  .attack-target-hit--very_heavy,
+  .attack-screen-shake--heavy,
+  .attack-screen-shake--very_heavy {
+    animation: none;
+  }
+}

@@ -260,3 +260,9 @@ export class GameBgmStorage extends AudioAssetStorage {
     super("game-bgm");
   }
 }
+
+export class GameAttackStorage extends AudioAssetStorage {
+  constructor() {
+    super("game-attack");
+  }
+}

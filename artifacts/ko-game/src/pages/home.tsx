@@ -26,6 +26,8 @@ import { GameStatePreview } from '@/components/game-state-preview';
 import { audioManager } from '@/audio/audio-manager';
 import type { CardPlayAnimationState, CardPlayGeometry } from '@/components/card-play-animation-utils';
 import { landingImpactLevel } from '@/components/card-play-animation-utils';
+import type { AttackAnimationState } from '@/components/attack-animation-utils';
+import { attackImpactLevel, attackSoundPitch } from '@/components/attack-animation-utils';
 
 const TURN_TIME_LIMIT_SECONDS = 90;
 const BGM_MUTE_STORAGE_KEY = 'ko-game-bgm-muted';
@@ -55,12 +57,15 @@ export default function Home() {
   );
   const [bgmMuted, setBgmMuted] = useState(readStoredBgmMute);
   const [playAnimation, setPlayAnimation] = useState<CardPlayAnimationState | null>(null);
+  const [attackAnimation, setAttackAnimation] = useState<AttackAnimationState | null>(null);
+  const [attackImpactTriggered, setAttackImpactTriggered] = useState(false);
   const turnKey = `${gameState.turn}:${gameState.activePlayerId ?? 'none'}`;
   const turnStartedAtRef = useRef(Date.now());
   const timeoutHandledTurnRef = useRef<string | null>(null);
   const processedAudioEventsRef = useRef(new Set<string>());
   const lastAudioEventCountRef = useRef<number | null>(null);
   const pendingEntranceAudioRef = useRef<{ url: string; volume: number } | null>(null);
+  const processedAttackSoundsRef = useRef(new Set<string>());
 
   useEffect(() => {
     let cancelled = false;
@@ -230,6 +235,7 @@ export default function Home() {
   }, [turnKey, gameState.status]);
 
   function handleEndTurn(isTimeout = false) {
+    if (attackAnimation) return;
     const result = endTurn(gameState, gameState.players[0].id);
     if (!result.success) {
       setPlayError(result.message);
@@ -272,7 +278,7 @@ export default function Home() {
   }
 
   function handleSelectCard(cardInstanceId: string) {
-    if (playAnimation) return;
+    if (playAnimation || attackAnimation) return;
     if (gameState.targetingState?.active) {
       handleEffectTarget(cardInstanceId);
       setPlayError(null);
@@ -286,7 +292,7 @@ export default function Home() {
   }
 
   function handleSelectAttacker(cardInstanceId: string) {
-    if (playAnimation) return;
+    if (playAnimation || attackAnimation) return;
     if (gameState.targetingState?.active) return handleEffectTarget(cardInstanceId);
     setSelectedCardId(null);
     setSelectedAttackerId((current) =>
@@ -295,7 +301,34 @@ export default function Home() {
     setPlayError(null);
   }
 
-  function handleAttackWrestler(targetCardInstanceId: string) {
+  function playAttackSound(animation: Pick<AttackAnimationState, "currentAttack" | "impactLevel" | "soundKey">) {
+    if (processedAttackSoundsRef.current.has(animation.soundKey)) return;
+    processedAttackSoundsRef.current.add(animation.soundKey);
+    const sound = mediaCatalog.attackSounds[animation.impactLevel === "LIGHT"
+      ? "LIGHT_ATTACK"
+      : animation.impactLevel === "NORMAL"
+        ? "NORMAL_ATTACK"
+        : animation.impactLevel === "HEAVY"
+          ? "HEAVY_ATTACK"
+          : "VERY_HEAVY_ATTACK"];
+    if (sound) {
+      audioManager.playAttack(
+        sound.assetUrl,
+        sound.volume,
+        attackSoundPitch(animation.currentAttack),
+      );
+    }
+  }
+
+  function handleAttackWrestler(
+    targetCardInstanceId: string,
+    geometry?: AttackAnimationState["geometry"],
+  ) {
+    if (playAnimation || attackAnimation) return;
+    if (gameState.targetingState?.active) {
+      handleEffectTarget(targetCardInstanceId);
+      return;
+    }
     if (!selectedAttackerId) {
       setPlayError('먼저 공격할 선수를 선택하세요.');
       return;
@@ -316,13 +349,42 @@ export default function Home() {
       return;
     }
 
+    const attacker = gameState.players[0].board.find(
+      (card) => card?.instanceId === selectedAttackerId,
+    );
+    const target = gameState.players[1].board.find(
+      (card) => card?.instanceId === targetCardInstanceId,
+    );
+    const attackEventIndex = result.state.events.findIndex(
+      (event, index) =>
+        index >= gameState.events.length &&
+        event.type === "ATTACK_DECLARED" &&
+        event.cardInstanceId === selectedAttackerId,
+    );
+    const currentAttack = attacker?.currentAttack ?? 0;
+    const animation: AttackAnimationState | null = attacker && geometry
+      ? {
+          attacker,
+          target: target ?? null,
+          targetKind: "CARD",
+          geometry,
+          currentAttack,
+          impactLevel: attackImpactLevel(currentAttack),
+          soundKey: `${attackEventIndex}:${selectedAttackerId}:${targetCardInstanceId}`,
+        }
+      : null;
     setGameState(result.state);
+    setAttackImpactTriggered(false);
+    setAttackAnimation(animation);
+    if (!animation) {
+      playAttackSound({
+        currentAttack,
+        impactLevel: attackImpactLevel(currentAttack),
+        soundKey: `${attackEventIndex}:${selectedAttackerId}:${targetCardInstanceId}`,
+      });
+    }
     setSelectedAttackerId(null);
     setPlayError(null);
-  }
-  function handleSelectEffectTarget(targetCardInstanceId: string) {
-    if (gameState.targetingState?.active) return handleEffectTarget(targetCardInstanceId);
-    handleAttackWrestler(targetCardInstanceId);
   }
   function handleEffectTarget(targetId: string) {
     const before = gameState;
@@ -341,7 +403,8 @@ export default function Home() {
     setPlayError(null);
   }
 
-  function handleAttackPlayer() {
+  function handleAttackPlayer(geometry?: AttackAnimationState["geometry"]) {
+    if (playAnimation || attackAnimation) return;
     if (gameState.targetingState?.active) {
       handleEffectTarget(gameState.players[1].id);
       return;
@@ -365,13 +428,54 @@ export default function Home() {
       return;
     }
 
+    const attacker = gameState.players[0].board.find(
+      (card) => card?.instanceId === selectedAttackerId,
+    );
+    const attackEventIndex = result.state.events.findIndex(
+      (event, index) =>
+        index >= gameState.events.length &&
+        event.type === "ATTACK_DECLARED" &&
+        event.cardInstanceId === selectedAttackerId,
+    );
+    const currentAttack = attacker?.currentAttack ?? 0;
+    const animation: AttackAnimationState | null = attacker && geometry
+      ? {
+          attacker,
+          target: null,
+          targetKind: "CHAMPION",
+          geometry,
+          currentAttack,
+          impactLevel: attackImpactLevel(currentAttack),
+          soundKey: `${attackEventIndex}:${selectedAttackerId}:${gameState.players[1].id}`,
+        }
+      : null;
     setGameState(result.state);
+    setAttackImpactTriggered(false);
+    setAttackAnimation(animation);
+    if (!animation) {
+      playAttackSound({
+        currentAttack,
+        impactLevel: attackImpactLevel(currentAttack),
+        soundKey: `${attackEventIndex}:${selectedAttackerId}:${gameState.players[1].id}`,
+      });
+    }
     setSelectedAttackerId(null);
     setPlayError(null);
   }
 
+  function handleAttackImpact() {
+    if (!attackAnimation) return;
+    setAttackImpactTriggered(true);
+    playAttackSound(attackAnimation);
+  }
+
+  function handleAttackAnimationComplete() {
+    setAttackAnimation(null);
+    setAttackImpactTriggered(false);
+  }
+
   function handleSelectSlot(slot: BoardSlot, geometry?: CardPlayGeometry) {
-    if (playAnimation) return;
+    if (playAnimation || attackAnimation) return;
     if (!selectedCardId) {
       setPlayError('먼저 손패에서 선수를 선택하세요.');
       return;
@@ -402,7 +506,7 @@ export default function Home() {
   }
 
   function handleUseTechnique(cardInstanceId: string, source: CardPlayGeometry["source"]) {
-    if (playAnimation) return;
+    if (playAnimation || attackAnimation) return;
     const card = gameState.players[0].hand.find((entry) => entry.instanceId === cardInstanceId);
     if (!card) return;
     const result = playTechniqueFromHand(
@@ -425,7 +529,7 @@ export default function Home() {
   }
 
   function handleUseActive() {
-    if (!selectedAttackerId) return;
+    if (!selectedAttackerId || playAnimation || attackAnimation) return;
     const result = useActiveAbility(
       gameState,
       gameState.players[0].id,
@@ -440,6 +544,7 @@ export default function Home() {
   }
 
   function handleUseChampionAbility() {
+    if (playAnimation || attackAnimation) return;
     const result = useChampionAbility(gameState, gameState.players[0].id);
     if (!result.success) {
       setPlayError(result.message);
@@ -468,8 +573,12 @@ export default function Home() {
       onUseTechnique={handleUseTechnique}
       playAnimation={playAnimation}
       onPlayAnimationComplete={handlePlayAnimationComplete}
+      attackAnimation={attackAnimation}
+      attackImpactTriggered={attackImpactTriggered}
+      onAttackImpact={handleAttackImpact}
+      onAttackAnimationComplete={handleAttackAnimationComplete}
       onSelectAttacker={handleSelectAttacker}
-      onAttackWrestler={handleSelectEffectTarget}
+      onAttackWrestler={handleAttackWrestler}
       onAttackPlayer={handleAttackPlayer}
       onUseActive={handleUseActive}
       onUseChampionAbility={handleUseChampionAbility}

@@ -3,6 +3,7 @@ import {
   AudioStorage,
   BackgroundImageStorage,
   CardImageStorage,
+  GameAttackStorage,
   GameBgmStorage,
 } from "../lib/object-storage";
 
@@ -11,6 +12,7 @@ const imageStorage = new CardImageStorage();
 const backgroundStorage = new BackgroundImageStorage();
 const audioStorage = new AudioStorage();
 const bgmStorage = new GameBgmStorage();
+const attackStorage = new GameAttackStorage();
 
 router.get(
   "/storage/objects/*path",
@@ -19,15 +21,18 @@ router.get(
     const path = Array.isArray(rawPath) ? rawPath.join("/") : rawPath;
     const isAudio = path.startsWith("uploads/audio/");
     const isBgm = path.startsWith("uploads/game-bgm/");
+    const isAttack = path.startsWith("uploads/game-attack/");
     const isBackground = path.startsWith("uploads/game-backgrounds/");
     const storage = isAudio
       ? audioStorage
       : isBgm
         ? bgmStorage
+        : isAttack
+          ? attackStorage
         : isBackground
           ? backgroundStorage
           : imageStorage;
-    const assetLabel = isAudio || isBgm ? "오디오" : "이미지";
+    const assetLabel = isAudio || isBgm || isAttack ? "오디오" : "이미지";
     try {
       const found = await storage.stream(`/objects/${path}`, response);
       if (!found) response.status(404).json({ message: `${assetLabel}를 찾을 수 없습니다.` });

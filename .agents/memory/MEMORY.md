@@ -10,3 +10,4 @@
 - [Card play presentation](card-play-animations.md) — keep play motion client-side; derive impact from base cost and keep rarity emphasis separate from landing weight.
 - [Generated card scope](generated-card-scope.md) — creation APIs opt into Generated; the reusable “anywhere” scope is HAND + DECK + BOARD only.
 - [In-game settings boundary](in-game-settings-boundary.md) — BGM mute changes only the AudioManager BGM channel; surrender records a terminal GameState result.
+- [Game attack media](game-attack-media.md) — attack SFX types use the shared media CRUD flow but need their own object-storage folder and playback channel.

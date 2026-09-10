@@ -12,6 +12,7 @@ import {
   AudioStorage,
   BackgroundImageStorage,
   CardImageStorage,
+  GameAttackStorage,
   GameBgmStorage,
 } from "../lib/object-storage";
 import {
@@ -31,6 +32,7 @@ const cardImageStorage = new CardImageStorage();
 const backgroundImageStorage = new BackgroundImageStorage();
 const audioStorage = new AudioStorage();
 const gameBgmStorage = new GameBgmStorage();
+const gameAttackStorage = new GameAttackStorage();
 
 const ADMIN_SESSION_COOKIE = "ko_admin_session";
 const ADMIN_SESSION_TTL_SECONDS = 8 * 60 * 60;
@@ -53,7 +55,14 @@ const CARD_KEYWORDS = [
   "MULTI_STRIKE",
 ] as const;
 const IMAGE_DISPLAY_MODES = ["COVER", "CONTAIN", "CUSTOM"] as const;
-const GAME_MEDIA_TYPES = ["BACKGROUND", "BGM"] as const;
+const GAME_MEDIA_TYPES = [
+  "BACKGROUND",
+  "BGM",
+  "LIGHT_ATTACK",
+  "NORMAL_ATTACK",
+  "HEAVY_ATTACK",
+  "VERY_HEAVY_ATTACK",
+] as const;
 
 type CardInput = {
   name: string;
@@ -1191,12 +1200,19 @@ function gameMediaConfig(mediaType: (typeof GAME_MEDIA_TYPES)[number]) {
         types: GAME_BACKGROUND_TYPES,
         maxSize: MAX_CARD_IMAGE_SIZE,
       }
-    : {
-        prefix: "/objects/uploads/game-bgm/",
-        storage: gameBgmStorage,
-        types: GAME_BGM_TYPES,
-        maxSize: MAX_AUDIO_SIZE,
-      };
+    : mediaType === "BGM"
+      ? {
+          prefix: "/objects/uploads/game-bgm/",
+          storage: gameBgmStorage,
+          types: GAME_BGM_TYPES,
+          maxSize: MAX_AUDIO_SIZE,
+        }
+      : {
+          prefix: "/objects/uploads/game-attack/",
+          storage: gameAttackStorage,
+          types: GAME_BGM_TYPES,
+          maxSize: MAX_AUDIO_SIZE,
+        };
 }
 
 function gameMediaExtensions(
@@ -1313,7 +1329,7 @@ router.post("/game-media", async (request, response): Promise<void> => {
   if (!isGameMediaType(mediaType) || !name || name.length > 120 ||
       !assetUrl || !fileName || !contentType || !validGameMediaAssetToken(mediaType, assetId, uploadToken) ||
       !validDimensions ||
-      (mediaType === "BGM" && (!Number.isInteger(volume) || volume < 0 || volume > 100)) ||
+       (mediaType !== "BACKGROUND" && (!Number.isInteger(volume) || volume < 0 || volume > 100)) ||
       typeof enabled !== "boolean") {
     response.status(400).json({ message: "게임 미디어 정보가 올바르지 않습니다." });
     return;
@@ -1333,7 +1349,7 @@ router.post("/game-media", async (request, response): Promise<void> => {
     contentType,
     width: mediaType === "BACKGROUND" ? width as number : null,
     height: mediaType === "BACKGROUND" ? height as number : null,
-    volume: mediaType === "BGM" ? volume as number : 100,
+     volume: mediaType !== "BACKGROUND" ? volume as number : 100,
     enabled,
   }).returning();
   response.status(201).json({ media });
@@ -1360,7 +1376,7 @@ router.patch("/game-media/:id", async (request, response): Promise<void> => {
   const [media] = await db.update(gameMediaTable).set({
     name,
     enabled,
-    volume: existing.mediaType === "BGM" ? volume : existing.volume,
+     volume: existing.mediaType !== "BACKGROUND" ? volume : existing.volume,
     updatedAt: new Date(),
   }).where(eq(gameMediaTable.id, id)).returning();
   response.json({ media });

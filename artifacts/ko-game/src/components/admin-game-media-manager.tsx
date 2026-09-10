@@ -2,7 +2,21 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { Image as ImageIcon, Music2, Play, Power, Square, Trash2, Upload } from "lucide-react";
 import { audioManager } from "../audio/audio-manager";
 
-type MediaType = "BACKGROUND" | "BGM";
+type MediaType =
+  | "BACKGROUND"
+  | "BGM"
+  | "LIGHT_ATTACK"
+  | "NORMAL_ATTACK"
+  | "HEAVY_ATTACK"
+  | "VERY_HEAVY_ATTACK";
+type AttackMediaType = Exclude<MediaType, "BACKGROUND" | "BGM">;
+
+const attackSoundConfig: Array<{ type: AttackMediaType; title: string }> = [
+  { type: "LIGHT_ATTACK", title: "약한 공격음 (0~1)" },
+  { type: "NORMAL_ATTACK", title: "일반 공격음 (2~3)" },
+  { type: "HEAVY_ATTACK", title: "강한 공격음 (4~5)" },
+  { type: "VERY_HEAVY_ATTACK", title: "매우 강한 공격음 (6 이상)" },
+];
 
 type MediaRecord = {
   id: string;
@@ -63,12 +77,16 @@ export function AdminGameMediaManager({ onUnauthorized }: Props) {
   const [media, setMedia] = useState<MediaRecord[]>([]);
   const [backgroundName, setBackgroundName] = useState("");
   const [bgmName, setBgmName] = useState("");
+  const [attackNames, setAttackNames] = useState<Record<AttackMediaType, string>>({
+    LIGHT_ATTACK: "",
+    NORMAL_ATTACK: "",
+    HEAVY_ATTACK: "",
+    VERY_HEAVY_ATTACK: "",
+  });
   const [loading, setLoading] = useState(true);
   const [uploading, setUploading] = useState<MediaType | null>(null);
   const [errorMessage, setErrorMessage] = useState("");
   const [message, setMessage] = useState("");
-  const backgroundInputRef = useRef<HTMLInputElement>(null);
-  const bgmInputRef = useRef<HTMLInputElement>(null);
   const viewport = useViewportInfo();
 
   const backgrounds = media.filter((item) => item.mediaType === "BACKGROUND");
@@ -89,7 +107,10 @@ export function AdminGameMediaManager({ onUnauthorized }: Props) {
 
   useEffect(() => {
     void loadMedia();
-    return () => audioManager.stopBgm();
+    return () => {
+      audioManager.stopBgm();
+      audioManager.stopAttack();
+    };
   }, []);
 
   async function loadMedia() {
@@ -189,7 +210,13 @@ export function AdminGameMediaManager({ onUnauthorized }: Props) {
       };
       pending = completed;
 
-      const name = (mediaType === "BACKGROUND" ? backgroundName : bgmName).trim() || file.name;
+      const name = (
+        mediaType === "BACKGROUND"
+          ? backgroundName
+          : mediaType === "BGM"
+            ? bgmName
+            : attackNames[mediaType]
+      ).trim() || file.name;
       const saveResponse = await fetch(`${apiBase}/game-media`, {
         method: "POST",
         credentials: "include",
@@ -210,8 +237,9 @@ export function AdminGameMediaManager({ onUnauthorized }: Props) {
       });
       if (!saveResponse.ok) throw new Error(await readMessage(saveResponse));
       if (mediaType === "BACKGROUND") setBackgroundName("");
-      else setBgmName("");
-      setMessage(`${mediaType === "BACKGROUND" ? "배경 이미지" : "BGM"}을 등록했습니다.`);
+      else if (mediaType === "BGM") setBgmName("");
+      else setAttackNames((current) => ({ ...current, [mediaType]: "" }));
+      setMessage(`${mediaType === "BACKGROUND" ? "배경 이미지" : mediaType === "BGM" ? "BGM" : attackSoundConfig.find((entry) => entry.type === mediaType)?.title ?? "공격음"}을 등록했습니다.`);
       await loadMedia();
       pending = null;
     } catch (reason) {
@@ -249,7 +277,8 @@ export function AdminGameMediaManager({ onUnauthorized }: Props) {
   }
 
   async function deleteItem(item: MediaRecord) {
-    audioManager.stopBgm();
+    if (item.mediaType === "BGM") audioManager.stopBgm();
+    else if (item.mediaType !== "BACKGROUND") audioManager.stopAttack();
     const response = await fetch(`${apiBase}/game-media/${encodeURIComponent(item.id)}`, {
       method: "DELETE",
       credentials: "include",
@@ -263,7 +292,7 @@ export function AdminGameMediaManager({ onUnauthorized }: Props) {
       return;
     }
     setMedia((current) => current.filter((entry) => entry.id !== item.id));
-    setMessage(`${item.mediaType === "BACKGROUND" ? "배경 이미지" : "BGM"}을 삭제했습니다.`);
+    setMessage(`${item.mediaType === "BACKGROUND" ? "배경 이미지" : item.mediaType === "BGM" ? "BGM" : "공격음"}을 삭제했습니다.`);
   }
 
   const ratioWarning = (item: MediaRecord) => {
@@ -308,7 +337,6 @@ export function AdminGameMediaManager({ onUnauthorized }: Props) {
         setName={setBackgroundName}
         accept={imageAccept}
         uploading={uploading === "BACKGROUND"}
-        inputRef={backgroundInputRef}
         onUpload={(file) => void upload(file, "BACKGROUND")}
         onPatch={patchItem}
         onDelete={deleteItem}
@@ -325,13 +353,39 @@ export function AdminGameMediaManager({ onUnauthorized }: Props) {
         setName={setBgmName}
         accept={audioAccept}
         uploading={uploading === "BGM"}
-        inputRef={bgmInputRef}
         onUpload={(file) => void upload(file, "BGM")}
         onPatch={patchItem}
         onDelete={deleteItem}
         ratioWarning={() => null}
         viewportRatio={viewportRatio}
       />
+
+      <section className="space-y-4 rounded-lg border border-red-950/70 bg-red-950/10 p-4">
+        <div>
+          <h3 className="text-lg font-black text-red-200">공격 타격음</h3>
+          <p className="mt-1 text-xs text-neutral-500">
+            공격 성공 시 현재 공격력 구간에 맞는 효과음을 재생합니다. MP3 / OGG / WAV · 최대 20MB
+          </p>
+        </div>
+        {attackSoundConfig.map(({ type, title }) => (
+          <MediaSection
+            key={type}
+            title={title}
+            description="공격 충돌 순간에 재생되는 효과음입니다."
+            icon={<Music2 className="h-5 w-5" />}
+            items={media.filter((item) => item.mediaType === type)}
+            name={attackNames[type]}
+            setName={(value) => setAttackNames((current) => ({ ...current, [type]: value }))}
+            accept={audioAccept}
+            uploading={uploading === type}
+            onUpload={(file) => void upload(file, type)}
+            onPatch={patchItem}
+            onDelete={deleteItem}
+            ratioWarning={() => null}
+            viewportRatio={viewportRatio}
+          />
+        ))}
+      </section>
 
       {loading && <p className="text-xs text-neutral-500">게임 미디어를 불러오는 중...</p>}
     </div>
@@ -347,7 +401,6 @@ function MediaSection({
   setName,
   accept,
   uploading,
-  inputRef,
   onUpload,
   onPatch,
   onDelete,
@@ -362,13 +415,14 @@ function MediaSection({
   setName: (value: string) => void;
   accept: string;
   uploading: boolean;
-  inputRef: React.RefObject<HTMLInputElement | null>;
   onUpload: (file: File) => void;
   onPatch: (item: MediaRecord, patch: Partial<Pick<MediaRecord, "name" | "enabled" | "volume">>) => Promise<void>;
   onDelete: (item: MediaRecord) => Promise<void>;
   ratioWarning: (item: MediaRecord) => boolean | null;
   viewportRatio: number;
 }) {
+  const inputRef = useRef<HTMLInputElement>(null);
+
   return (
     <section className="rounded-lg border border-neutral-800 bg-black/20 p-4">
       <div className="flex items-start gap-3">
@@ -459,12 +513,24 @@ function MediaSection({
                       {warning ? ` · 현재 viewport ${viewportRatio.toFixed(2)}:1과 달라 cover crop 경고` : " · 현재 viewport 비율과 유사"}
                     </p>
                   )}
-                  {item.mediaType === "BGM" && (
+                  {item.mediaType !== "BACKGROUND" && (
                     <div className="flex flex-wrap items-center gap-2">
-                      <button type="button" onClick={() => audioManager.previewBgm(item.assetUrl, item.volume)} className="flex items-center gap-1.5 rounded border border-emerald-800 px-2.5 py-1.5 text-[11px] font-bold text-emerald-300">
+                      <button
+                        type="button"
+                        onClick={() => item.mediaType === "BGM"
+                          ? audioManager.previewBgm(item.assetUrl, item.volume)
+                          : audioManager.previewAttack(item.assetUrl, item.volume)}
+                        className="flex items-center gap-1.5 rounded border border-emerald-800 px-2.5 py-1.5 text-[11px] font-bold text-emerald-300"
+                      >
                         <Play className="h-3.5 w-3.5" /> 미리듣기
                       </button>
-                      <button type="button" onClick={() => audioManager.stopBgm()} className="flex items-center gap-1.5 rounded border border-neutral-700 px-2.5 py-1.5 text-[11px] font-bold text-neutral-300">
+                      <button
+                        type="button"
+                        onClick={() => item.mediaType === "BGM"
+                          ? audioManager.stopBgm()
+                          : audioManager.stopAttack()}
+                        className="flex items-center gap-1.5 rounded border border-neutral-700 px-2.5 py-1.5 text-[11px] font-bold text-neutral-300"
+                      >
                         <Square className="h-3.5 w-3.5" /> 정지
                       </button>
                       <label className="flex min-w-[180px] flex-1 items-center gap-2 text-[11px] text-neutral-400">

@@ -17,7 +17,9 @@ import { ActionHistory } from './action-history';
 import {
   CardPlayAnimation,
 } from './card-play-animation';
+import { AttackAnimation } from './attack-animation';
 import { rectSnapshot, type CardAnimationRect, type CardPlayAnimationState } from './card-play-animation-utils';
+import type { AttackAnimationState } from './attack-animation-utils';
 import {
   AltInspectProvider,
   CardInspectContent,
@@ -42,9 +44,13 @@ interface GameStatePreviewProps {
   onUseTechnique: (cardInstanceId: string, source: CardAnimationRect) => void;
   playAnimation: CardPlayAnimationState | null;
   onPlayAnimationComplete: () => void;
+  attackAnimation: AttackAnimationState | null;
+  attackImpactTriggered: boolean;
+  onAttackImpact: () => void;
+  onAttackAnimationComplete: () => void;
   onSelectAttacker: (cardInstanceId: string) => void;
-  onAttackWrestler: (cardInstanceId: string) => void;
-  onAttackPlayer: () => void;
+  onAttackWrestler: (cardInstanceId: string, geometry?: AttackAnimationState["geometry"]) => void;
+  onAttackPlayer: (geometry?: AttackAnimationState["geometry"]) => void;
   onUseActive: () => void;
   onUseChampionAbility: () => void;
   onCancelEffectTargeting: () => void;
@@ -67,6 +73,10 @@ export function GameStatePreview({
   onUseTechnique,
   playAnimation,
   onPlayAnimationComplete,
+  attackAnimation,
+  attackImpactTriggered,
+  onAttackImpact,
+  onAttackAnimationComplete,
   onSelectAttacker,
   onAttackWrestler,
   onAttackPlayer,
@@ -80,6 +90,8 @@ export function GameStatePreview({
   const [surrenderConfirming, setSurrenderConfirming] = React.useState(false);
   const handCardRefs = React.useRef(new Map<string, HTMLDivElement>());
   const boardSlotRefs = React.useRef(new Map<number, HTMLDivElement>());
+  const boardCardRefs = React.useRef(new Map<string, HTMLDivElement>());
+  const championRef = React.useRef<HTMLDivElement | null>(null);
 
   if (!state || !state.players || state.players.length < 2) {
     return <div className="flex h-screen items-center justify-center bg-black font-sans text-white">게임을 초기화하는 중입니다...</div>;
@@ -138,6 +150,30 @@ export function GameStatePreview({
     else boardSlotRefs.current.delete(slot);
   }
 
+  function setBoardCardRef(cardId: string, element: HTMLDivElement | null) {
+    if (element) boardCardRefs.current.set(cardId, element);
+    else boardCardRefs.current.delete(cardId);
+  }
+
+  function attackGeometry(targetElement: HTMLDivElement | null) {
+    const attackerElement = selectedAttackerId
+      ? boardCardRefs.current.get(selectedAttackerId)
+      : undefined;
+    if (!attackerElement || !targetElement) return undefined;
+    return {
+      source: rectSnapshot(attackerElement.getBoundingClientRect()),
+      target: rectSnapshot(targetElement.getBoundingClientRect()),
+    };
+  }
+
+  function handleAttackCardTarget(cardId: string) {
+    onAttackWrestler(cardId, attackGeometry(boardCardRefs.current.get(cardId) ?? null));
+  }
+
+  function handleAttackChampion() {
+    onAttackPlayer(attackGeometry(championRef.current));
+  }
+
   function handlePlaySlot(slot: BoardSlotIndex) {
     if (!selectedCardId) {
       onSelectSlot(slot);
@@ -161,7 +197,11 @@ export function GameStatePreview({
   
   return (
     <AltInspectProvider>
-    <div className="flex min-h-[100dvh] w-full flex-col overflow-x-hidden overflow-y-auto bg-neutral-950 font-sans text-neutral-100 selection:bg-primary selection:text-black md:overflow-hidden">
+    <div className={`flex min-h-[100dvh] w-full flex-col overflow-x-hidden overflow-y-auto bg-neutral-950 font-sans text-neutral-100 selection:bg-primary selection:text-black md:overflow-hidden ${
+      attackImpactTriggered && attackAnimation && attackAnimation.currentAttack >= 4
+        ? `attack-screen-shake--${attackAnimation.impactLevel.toLowerCase()}`
+        : ""
+    }`}>
       <ActionHistory state={state} />
       
       {/* Background Ambience */}
@@ -196,12 +236,19 @@ export function GameStatePreview({
             {/* Mirrored opponent HUD */}
             <div className="ml-auto flex w-[180px] flex-col items-end gap-1 md:w-48 md:gap-2">
                 <div className="flex items-start gap-2 md:gap-3">
-                <div
+                 <div
+                    ref={championRef}
                     className={`group relative flex h-28 w-20 flex-col items-center justify-center rounded-sm border-2 bg-neutral-900 md:h-40 md:w-28 ${
-                    (effectTargeting && validEffectTargetIds.has(opp.id)) || selectedAttackerId ? 'cursor-crosshair border-red-500 shadow-[0_0_15px_rgba(239,68,68,0.4)]' : 'border-red-900'
-                  }`}
-                   onClick={effectTargeting && validEffectTargetIds.has(opp.id) ? () => onEffectTarget(opp.id) : selectedAttackerId ? onAttackPlayer : undefined}
-                >
+                      attackImpactTriggered && attackAnimation?.targetKind === "CHAMPION"
+                        ? `attack-target-hit--${attackAnimation.impactLevel.toLowerCase()}`
+                        : ""
+                    } ${
+                      (effectTargeting && validEffectTargetIds.has(opp.id)) || selectedAttackerId
+                        ? 'cursor-crosshair border-red-500 shadow-[0_0_15px_rgba(239,68,68,0.4)]'
+                        : 'border-red-900'
+                    }`}
+                    onClick={effectTargeting && validEffectTargetIds.has(opp.id) ? () => onEffectTarget(opp.id) : selectedAttackerId ? handleAttackChampion : undefined}
+                 >
                   <span className="px-1 text-center text-[9px] font-black leading-tight text-red-300 md:text-[11px]">
                     {opp.champion?.name || '상대 챔피언'}
                   </span>
@@ -253,7 +300,13 @@ export function GameStatePreview({
                     activeReady={false}
                     activeUsable={false}
                     onUseActive={() => undefined}
-                    onClick={(id) => onAttackWrestler(id as string)}
+                     cardRef={card ? (element) => setBoardCardRef(card.instanceId, element) : undefined}
+                     hit={Boolean(
+                       attackImpactTriggered &&
+                       attackAnimation?.targetKind === "CARD" &&
+                       attackAnimation.target?.instanceId === card?.instanceId,
+                     )}
+                     onClick={(id) => handleAttackCardTarget(id as string)}
                  />
                ))}
                 </div>
@@ -276,6 +329,12 @@ export function GameStatePreview({
                    slotIndex={i as BoardSlotIndex}
                     selectable={!!selectedHandCard && selectedHandCard.cardType !== "TECHNIQUE" && !card}
                     slotRef={(element) => setBoardSlotRef(i, element)}
+                     cardRef={card ? (element) => setBoardCardRef(card.instanceId, element) : undefined}
+                     hit={Boolean(
+                       attackImpactTriggered &&
+                       attackAnimation?.targetKind === "CARD" &&
+                       attackAnimation.target?.instanceId === card?.instanceId,
+                     )}
                     animating={playAnimation?.kind === "WRESTLER" && playAnimation.card.instanceId === card?.instanceId}
                      selected={card?.instanceId === selectedAttackerId || !!card && selectedEffectTargetIds.has(card.instanceId)}
                    attackReady={!!card && canSelectAsAttacker(state, me.id, card.instanceId)}
@@ -546,6 +605,13 @@ export function GameStatePreview({
           onComplete={onPlayAnimationComplete}
         />
       )}
+      {attackAnimation && (
+        <AttackAnimation
+          animation={attackAnimation}
+          onImpact={onAttackImpact}
+          onComplete={onAttackAnimationComplete}
+        />
+      )}
     </div>
     </AltInspectProvider>
   );
@@ -641,6 +707,8 @@ function BoardSlot({
   onUseActive,
   onClick,
   slotRef,
+  cardRef,
+  hit = false,
   animating = false,
 }: {
   card: CardInstance | null;
@@ -655,6 +723,8 @@ function BoardSlot({
   onUseActive: () => void;
   onClick: (idOrIdx: string | BoardSlotIndex) => void;
   slotRef?: (element: HTMLDivElement | null) => void;
+  cardRef?: (element: HTMLDivElement | null) => void;
+  hit?: boolean;
   animating?: boolean;
 }) {
   const isEmpty = !card;
@@ -717,9 +787,10 @@ function BoardSlot({
          imageUrl={def?.imageUrl}
          rarity={def?.rarity}
          size="board"
-          className={`${containerClass}${animating ? " opacity-0" : ""}`}
+           className={`${containerClass}${animating ? " opacity-0" : ""}${hit ? ` attack-target-hit--${card.currentAttack <= 1 ? "light" : card.currentAttack <= 3 ? "normal" : card.currentAttack <= 5 ? "heavy" : "very-heavy"}` : ""}`}
          imageDisplaySettings={def}
          highlight={selected ? "selected" : targetable ? "target" : attackReady ? "attack" : undefined}
+          containerRef={cardRef}
          onClick={() => onClick(card.instanceId)}
          tabIndex={0}
          overlay={

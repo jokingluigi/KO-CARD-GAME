@@ -25,6 +25,7 @@ class AudioManager {
   private queue: AudioRequest[] = [];
   private bgm: { audio: HTMLAudioElement; url: string; volume: number } | null = null;
   private bgmMuted = false;
+  private attackAudio: HTMLAudioElement | null = null;
 
   playCardEntrance(url: string, volume: number) {
     this.enqueue({ url, volume, priority: 0, kind: "CARD_ENTRANCE" });
@@ -63,6 +64,37 @@ class AudioManager {
 
   previewBgm(url: string, volume: number) {
     this.playBgm(url, volume);
+  }
+
+  playAttack(url: string, volume: number, pitch = 1) {
+    if (typeof window === "undefined" || !url) return;
+    this.stopAttack();
+    try {
+      const audio = new Audio(url);
+      audio.preload = "auto";
+      audio.volume = safeVolume(volume);
+      audio.playbackRate = Math.max(0.8, Math.min(1.25, pitch));
+      this.attackAudio = audio;
+      audio.addEventListener("ended", () => {
+        if (this.attackAudio === audio) this.attackAudio = null;
+      }, { once: true });
+      audio.play().catch(() => {
+        if (this.attackAudio === audio) this.attackAudio = null;
+      });
+    } catch {
+      this.attackAudio = null;
+    }
+  }
+
+  previewAttack(url: string, volume: number) {
+    this.playAttack(url, volume);
+  }
+
+  stopAttack() {
+    if (!this.attackAudio) return;
+    this.attackAudio.pause();
+    this.attackAudio.currentTime = 0;
+    this.attackAudio = null;
   }
 
   setBgmVolume(volume: number) {
