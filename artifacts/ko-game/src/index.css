@@ -255,7 +255,7 @@
   20% { transform: translate3d(calc(var(--attack-dx) * -.035), calc(var(--attack-dy) * -.035), 0) scale(1.02); }
   56% { opacity: 1; transform: translate3d(var(--attack-dx), var(--attack-dy), 0) scale(1.06); }
   65% { opacity: 1; transform: translate3d(var(--attack-dx), var(--attack-dy), 0) scale(1.02); }
-  100% { opacity: 0; transform: translate3d(0, 0, 0) scale(1); }
+  100% { opacity: 1; transform: translate3d(0, 0, 0) scale(1); }
 }
 
 @keyframes ko-attack-target {
