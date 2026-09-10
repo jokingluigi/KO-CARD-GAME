@@ -54,7 +54,7 @@ interface GameStatePreviewProps {
   onSelectAttacker: (cardInstanceId: string) => void;
   onAttackWrestler: (cardInstanceId: string, geometry?: AttackAnimationState["geometry"]) => void;
   onAttackPlayer: (geometry?: AttackAnimationState["geometry"]) => void;
-  onUseActive: () => void;
+  onUseActive: (cardInstanceId: string) => void;
   onUseChampionAbility: () => void;
   onCancelEffectTargeting: () => void;
   onEffectTarget: (targetId: string) => void;
@@ -108,20 +108,7 @@ export function GameStatePreview({
   
   const isMyTurn = state.activePlayerId === me.id;
   
-  const selectedBoardCard = me.board.find(
-    (card) => card?.instanceId === selectedAttackerId,
-  );
   const selectedHandCard = me.hand.find((card) => card.instanceId === selectedCardId);
-  
-  const canShowActive =
-    selectedBoardCard !== undefined &&
-    selectedBoardCard !== null &&
-    getActiveAbility(selectedBoardCard) !== undefined;
-    
-  const canUseActive =
-    selectedBoardCard !== undefined &&
-    selectedBoardCard !== null &&
-    canUseActiveAbility(state, me.id, selectedBoardCard.instanceId);
     
   const canEndTurn = isCurrentPlayer(state, me.id);
   const canUseChampion = canUseChampionAbility(state, me.id);
@@ -356,9 +343,9 @@ export function GameStatePreview({
                      selected={card?.instanceId === selectedAttackerId || !!card && selectedEffectTargetIds.has(card.instanceId)}
                    attackReady={!!card && canSelectAsAttacker(state, me.id, card.instanceId)}
                     targetable={!!card && !!effectTargeting && validEffectTargetIds.has(card.instanceId)}
-                    activeReady={card?.instanceId === selectedAttackerId && canShowActive}
-                    activeUsable={canUseActive}
-                    onUseActive={onUseActive}
+                     activeReady={!!card && getActiveAbility(card) !== undefined}
+                     activeUsable={!!card && canUseActiveAbility(state, me.id, card.instanceId)}
+                     onUseActive={() => onUseActive(card!.instanceId)}
                    onClick={(idOrIdx) => {
                      if (typeof idOrIdx === 'string') onSelectAttacker(idOrIdx);
                       else handlePlaySlot(idOrIdx as BoardSlotIndex);

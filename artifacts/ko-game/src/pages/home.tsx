@@ -608,12 +608,14 @@ export default function Home() {
     setPlayError(null);
   }
 
-  function handleUseActive() {
-    if (!selectedAttackerId || playAnimation || attackAnimation) return;
+  function handleUseActive(cardInstanceId?: string) {
+    if (playAnimation || attackAnimation) return;
+    const targetCardInstanceId = cardInstanceId ?? selectedAttackerId;
+    if (!targetCardInstanceId) return;
     const result = useActiveAbility(
       gameState,
       gameState.players[0].id,
-      selectedAttackerId,
+      targetCardInstanceId,
     );
     if (!result.success) {
       setPlayError(result.message);
