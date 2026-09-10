@@ -647,10 +647,10 @@ function HandCard({
   
   const sizeClass =
     density === 'small'
-      ? 'w-[58px] h-[81px] md:w-[84px] md:h-[118px]'
+      ? 'ko-hand-card--small w-[58px] h-[81px] md:w-[84px] md:h-[118px]'
       : density === 'medium'
-        ? 'w-[66px] h-[92px] md:w-[100px] md:h-[140px]'
-        : 'w-[75px] h-[105px] md:w-[130px] md:h-[182px]';
+        ? 'ko-hand-card--medium w-[66px] h-[92px] md:w-[100px] md:h-[140px]'
+        : 'ko-hand-card--regular w-[75px] h-[105px] md:w-[130px] md:h-[182px]';
   let containerClass = `${sizeClass} relative flex flex-col transition-all duration-200 select-none hover:z-40 group overflow-visible origin-bottom `;
   
   if (isSelected) {
