@@ -217,14 +217,18 @@ export function AdminChampionManager({ onUnauthorized }: { onUnauthorized: () =>
         <label className="md:col-span-2">설명<textarea className={input} value={form.description} onChange={e=>update("description",e.target.value)}/></label>
         <label>고유 능력 이름<input className={input} value={form.abilityName} onChange={e=>update("abilityName",e.target.value)}/></label>
         <label>Gold 비용<input type="number" className={input} value={form.abilityCost} onChange={e=>update("abilityCost",Number(e.target.value))}/></label>
-        <EffectField title="고유 능력 효과" value={form.abilityText} onChange={v=>update("abilityText",v)} onAnalyze={()=>void analyze("abilityText","abilityEffects")} />
-        <label className="flex items-center gap-2"><input type="checkbox" checked={form.hasQuest} onChange={e=>update("hasQuest",e.target.checked)}/> 퀘스트 있음</label>
+         <EffectField title="고유 능력 효과" value={form.abilityText} onChange={v=>update("abilityText",v)} onAnalyze={()=>void analyze("abilityText","abilityEffects")} analysis={analysisResults.abilityText} analyzing={analyzingKey === "abilityText"} />
+         <label className="flex items-center gap-2"><input type="checkbox" checked={form.hasQuest} onChange={e=>setForm((current) => ({
+           ...current,
+           hasQuest: e.target.checked,
+           questProgressRequired: e.target.checked ? (current.questProgressRequired ?? 1) : null,
+         }))}/> 퀘스트 있음</label>
         {form.hasQuest && <><label>퀘스트 이름<input className={input} value={form.questName??""} onChange={e=>update("questName",e.target.value)}/></label><label>필요 진행도<input type="number" className={input} value={form.questProgressRequired??1} onChange={e=>update("questProgressRequired",Number(e.target.value))}/></label>
           <label className="md:col-span-2">퀘스트 조건<textarea className={input} value={form.questText??""} onChange={e=>update("questText",e.target.value)}/><button type="button" onClick={()=>void analyzeQuest()} className="mt-2 rounded border border-primary px-3 py-1.5 text-xs font-bold text-primary">퀘스트 조건 분석</button></label>
-          <EffectField title="퀘스트 보상" value={form.questRewardText??""} onChange={v=>update("questRewardText",v)} onAnalyze={()=>void analyze("questRewardText","questRewardEffects")} /></>}
+           <EffectField title="퀘스트 보상" value={form.questRewardText??""} onChange={v=>update("questRewardText",v)} onAnalyze={()=>void analyze("questRewardText","questRewardEffects")} analysis={analysisResults.questRewardText} analyzing={analyzingKey === "questRewardText"} /></>}
         <label>강화 능력 이름<input className={input} value={form.upgradedAbilityName??""} onChange={e=>update("upgradedAbilityName",e.target.value||null)}/></label>
         <label>강화 능력 비용<input type="number" className={input} value={form.upgradedAbilityCost??""} onChange={e=>update("upgradedAbilityCost",e.target.value===""?null:Number(e.target.value))}/></label>
-        <EffectField title="강화 고유 능력" value={form.upgradedAbilityText??""} onChange={v=>update("upgradedAbilityText",v)} onAnalyze={()=>void analyze("upgradedAbilityText","upgradedAbilityEffects")} />
+         <EffectField title="강화 고유 능력" value={form.upgradedAbilityText??""} onChange={v=>update("upgradedAbilityText",v)} onAnalyze={()=>void analyze("upgradedAbilityText","upgradedAbilityEffects")} analysis={analysisResults.upgradedAbilityText} analyzing={analyzingKey === "upgradedAbilityText"} />
          <label>Champion Token 카드 ID<input className={input} value={form.championTokenDefinitionId??""} onChange={e=>update("championTokenDefinitionId",e.target.value||null)}/></label>
          <AdminAudioField
            title="챔피언 퀘스트 완료 음악"
@@ -258,6 +262,25 @@ export function AdminChampionManager({ onUnauthorized }: { onUnauthorized: () =>
   </div>;
 }
 
-function EffectField({ title, value, onChange, onAnalyze }: { title:string; value:string; onChange:(v:string)=>void; onAnalyze:()=>void }) {
-  return <label className="md:col-span-2">{title}<textarea className="w-full rounded border border-neutral-700 bg-neutral-900 px-3 py-2 text-sm" value={value} onChange={e=>onChange(e.target.value)}/><button type="button" onClick={onAnalyze} className="mt-2 rounded border border-primary px-3 py-1.5 text-xs font-bold text-primary">효과 분석</button></label>;
+function EffectField({ title, value, onChange, onAnalyze, analysis, analyzing }: {
+  title: string;
+  value: string;
+  onChange: (value: string) => void;
+  onAnalyze: () => void;
+  analysis?: EffectAnalysis;
+  analyzing?: boolean;
+}) {
+  return <label className="md:col-span-2">
+    {title}
+    <textarea className="w-full rounded border border-neutral-700 bg-neutral-900 px-3 py-2 text-sm" value={value} onChange={e=>onChange(e.target.value)}/>
+    <button type="button" onClick={onAnalyze} disabled={analyzing} className="mt-2 rounded border border-primary px-3 py-1.5 text-xs font-bold text-primary disabled:opacity-50">
+      {analyzing ? "분석 중..." : "효과 분석"}
+    </button>
+    {analysis && <div className={`mt-2 rounded border p-3 text-xs ${analysis.outcome === "supported" ? "border-emerald-800 bg-emerald-950/30" : "border-amber-800 bg-amber-950/30"}`}>
+      <strong>{analysis.outcome === "supported" ? "✓ 효과 분석 완료" : "⚠ 효과를 완전히 해석하지 못했습니다."}</strong>
+      {analysis.reason && <p className="mt-1 text-neutral-300">{analysis.reason}</p>}
+      {analysis.unsupportedSegments && analysis.unsupportedSegments.length > 0 && <p className="mt-1 text-amber-200">지원되지 않는 부분: {analysis.unsupportedSegments.join(", ")}</p>}
+      {analysis.outcome === "supported" && <pre className="mt-2 max-h-40 overflow-auto text-[10px] leading-relaxed">{JSON.stringify({ effects: analysis.effects ?? [] }, null, 2)}</pre>}
+    </div>}
+  </label>;
 }
