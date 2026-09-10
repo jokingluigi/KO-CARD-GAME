@@ -33,7 +33,7 @@ export type CardEffect =
         zones?: TargetZone[];
         owner: TargetOwner;
         cardType?: 'WRESTLER' | 'TECHNIQUE';
-        filter?: { isGenerated?: boolean };
+         filter?: { isGenerated?: boolean; minCost?: number };
         selection: TargetSelection;
         count: number;
         randomScope?: RandomScope;

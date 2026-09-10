@@ -46,6 +46,7 @@ export function getValidTargets(
       if (zones.length === 1 && zones[0] === 'CHARACTER' && card.cardType !== 'WRESTLER') return false;
       if (target.cardType && card.cardType !== target.cardType) return false;
       if (target.filter?.isGenerated !== undefined && card.isGenerated !== target.filter.isGenerated) return false;
+      if (target.filter?.minCost !== undefined && (card.baseCost ?? card.currentCost) < target.filter.minCost) return false;
       if (target.selection === 'RANDOM' && !isEligibleForRandomPool(card, target.randomScope)) return false;
       if (target.selection === 'SELF' && card.instanceId !== sourceCard.instanceId) return false;
       // Directly deployed champion tokens remain damageable, but not silence/destroy targets.
@@ -539,6 +540,7 @@ function applyEffect(
       if (card.isDirectDeployedChampion && (effect.action === 'SILENCE' || effect.action === 'DESTROY')) return false;
       if (target.cardType && card.cardType !== target.cardType) return false;
       if (target.filter?.isGenerated !== undefined && card.isGenerated !== target.filter.isGenerated) return false;
+      if (target.filter?.minCost !== undefined && (card.baseCost ?? card.currentCost) < target.filter.minCost) return false;
       return true;
     });
     const randomCandidates = eligibleCandidates.filter((card) =>

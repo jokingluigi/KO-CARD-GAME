@@ -123,3 +123,13 @@ test('무작위 생성 Pool은 카드 타입 필터와 randomScope를 함께 적
     ['technique', 'technique-token'],
   );
 });
+
+test('무작위 생성 Pool은 최소 코스트 필터를 적용한다', () => {
+  assert.deepEqual(
+    getRandomCardGenerationCandidates(
+      [definition('low-cost'), { ...definition('high-cost'), cost: 3 }],
+      { filter: { minCost: 3 } },
+    ).map((card) => card.id),
+    ['high-cost'],
+  );
+});

@@ -12,7 +12,7 @@ export type Target = {
   zones?: TargetZone[];
   owner: TargetOwner;
   cardType?: "WRESTLER" | "TECHNIQUE";
-  filter?: { isGenerated?: boolean };
+  filter?: { isGenerated?: boolean; minCost?: number };
   selection: TargetSelection;
   count: number;
   randomScope?: RandomScope;
@@ -43,6 +43,7 @@ const STAT_MULTIPLIER_PATTERN = /(?:자신(?:의|에게)?\s*)?(?:현재\s*)?(?:�
 const STAT_SWAP_PATTERN = /(?:자신(?:의|에게)?\s*)?(?:현재\s*)?(?:공격(?:력)?\s*(?:과|\/|및)\s*체력|체력\s*(?:과|\/|및)\s*공격(?:력)?)[^.!?]{0,30}?(?:서로\s*)?(?:교환|바꾸|바꿉니다)/i;
 const ACTIVE_CARD_SCOPE_PATTERN = /(?:어디에\s*(?:있든|있는)|모든\s*위치의|손패\s*[,，]\s*덱\s*[,，]\s*(?:필드|보드)|손패\s*(?:및|와|과)\s*덱\s*(?:및|와|과)\s*(?:필드|보드))/;
 const GENERATED_FILTER_PATTERN = /(?:생성된|생성\s*카드|GENERATED)/i;
+const MIN_COST_PATTERN = /(\d+)\s*(?:코스트|비용)\s*이상/;
 
 export function effectLibrary() {
   return EFFECT_LIBRARY;
@@ -67,13 +68,22 @@ function targetCountFrom(text: string) {
   if (/(모든|전부)/.test(text)) return 20;
   return 1;
 }
+function targetFilterFor(text: string): Target["filter"] | undefined {
+  const generated = GENERATED_FILTER_PATTERN.test(text);
+  const minCost = Number(text.match(MIN_COST_PATTERN)?.[1]);
+  const filter = {
+    ...(generated ? { isGenerated: true } : {}),
+    ...(Number.isInteger(minCost) ? { minCost } : {}),
+  };
+  return Object.keys(filter).length ? filter : undefined;
+}
 function targetFor(text: string, randomPool = false): Target {
   if (/모든\s*캐릭터/.test(text)) return { zone: "CHARACTER", owner: "ALL", selection: "ALL", count: targetCountFrom(text) };
   if (/(상대|적)\s*캐릭터/.test(text)) return { zone: "CHARACTER", owner: "ENEMY", selection: "PLAYER_CHOICE", count: targetCountFrom(text) };
   if (/(아군|내)\s*캐릭터/.test(text)) return { zone: "CHARACTER", owner: "SELF", selection: "PLAYER_CHOICE", count: targetCountFrom(text) };
   if (/(상대|적)\s*(챔피언|플레이어)/.test(text)) return { zone: "PLAYER", owner: "ENEMY", selection: "SELF", count: 1 };
   if (/(?:내|자신의)\s*챔피언/.test(text)) return { zone: "PLAYER", owner: "SELF", selection: "SELF", count: 1 };
-  const generated = GENERATED_FILTER_PATTERN.test(text);
+  const filter = targetFilterFor(text);
   const activeCardScope = ACTIVE_CARD_SCOPE_PATTERN.test(text);
   const hand = /손패/.test(text), deck = /덱/.test(text), enemy = /(적|상대)\s*선수/.test(text);
   const random = /(무작위|랜덤)/.test(text), all = /(모든|전부)/.test(text);
@@ -103,7 +113,7 @@ function targetFor(text: string, randomPool = false): Target {
       zones: [...DEFAULT_CARD_TARGET_SCOPE],
       owner: enemy ? "ENEMY" : "SELF",
       ...(cardType ? { cardType } : {}),
-      ...(generated ? { filter: { isGenerated: true } } : {}),
+       ...(filter ? { filter } : {}),
       selection: "ALL",
       count: 20,
     };
@@ -113,7 +123,7 @@ function targetFor(text: string, randomPool = false): Target {
       zones: [...DEFAULT_CARD_TARGET_SCOPE],
       owner: "SELF",
       ...(cardType ? { cardType } : {}),
-      ...(generated ? { filter: { isGenerated: true } } : {}),
+       ...(filter ? { filter } : {}),
       selection: "RANDOM",
       count: targetCountFrom(text),
       randomScope,
@@ -123,7 +133,7 @@ function targetFor(text: string, randomPool = false): Target {
     zone: deck ? "DECK" : hand ? "HAND" : "BOARD",
     owner: enemy ? "ENEMY" : "SELF",
     ...(cardType ? { cardType } : {}),
-    ...(generated ? { filter: { isGenerated: true } } : {}),
+    ...(filter ? { filter } : {}),
     selection: random ? "RANDOM" : all ? "ALL" : "PLAYER_CHOICE",
     count: all ? 20 : targetCountFrom(text),
     ...(randomTarget ? { randomScope } : {}),
@@ -255,7 +265,7 @@ export function analyzeEffectText(input: string): Analysis {
     }
     remainder += ` ${clauseRemainder}`;
   }
-    remainder = remainder.replace(/자신의\s*양\s*옆\s*(?:빈\s*)?슬롯(?:에)?|양\s*옆\s*(?:빈\s*)?슬롯(?:에)?|각각|이\s*카드가\s*필드에\s*있는\s*동안/g, "");
+    remainder = remainder.replace(/자신의\s*양\s*옆\s*(?:빈\s*)?슬롯(?:에)?|양\s*옆\s*(?:빈\s*)?슬롯(?:에)?|각각|이\s*카드가\s*필드에\s*있는\s*동안|\d+\s*(?:코스트|비용)\s*이상/g, "");
     remainder = remainder.replace(/(?:완전(?:히)?\s*)?(?:무작위|랜덤)(?:로)?\s*(?:선수|기술)?\s*(?:카드)?\s*(?:\d+\s*장|하나|한\s*장)?(?:에게|을|를|의)?|선택한|어디에\s*(?:있든|있는)|모든\s*위치의|손패\s*[,，]\s*덱\s*[,，]\s*(?:필드|보드)|손패\s*(?:및|와|과)\s*덱\s*(?:및|와|과)\s*(?:필드|보드)|생성된(?:\s*카드)?|모든\s*캐릭터(?:에게|을|를)?|모든\s*(?:선수|카드)(?:에게|을|를|의)?|(?:적|상대)\s*(?:챔피언|플레이어)(?:에게|을|를)?|(?:내|자신의)\s*챔피언(?:에게|을|를)?|(?:적|상대)\s*선수(?:\s*(?:\d+\s*장|하나|한\s*장))?(?:에게|을|를)?|(?:아군|내)\s*선수(?:\s*(?:\d+\s*장|하나|한\s*장))?(?:에게|을|를)?|(?:적|상대)\s*캐릭터(?:\s*(?:\d+\s*장|하나|한\s*장))?(?:에게|을|를)?|(?:아군|내)\s*캐릭터(?:\s*(?:\d+\s*장|하나|한\s*장))?(?:에게|을|를)?|(?:손패|덱|필드|보드)(?!의?\s*(?:무작위\s*)?(?:선수|카드))(?:의)?|손패의\s*(?:무작위\s*)?선수(?:\s*카드)?(?:\s*(?:\d+\s*장|하나|한\s*장))?(?:에게|을|를|의)?|덱의\s*(?:무작위\s*)?(?:선수|카드)(?:\s*카드)?(?:\s*(?:\d+\s*장|하나|한\s*장))?(?:에게|을|를|의)?|필드의\s*(?:무작위\s*)?(?:선수|카드)(?:\s*카드)?(?:\s*(?:\d+\s*장|하나|한\s*장))?(?:에게|을|를|의)?|(?:자신|이\s*카드)(?:에게|을|를)?|(?:카드\s*)?(?:\d+\s*장|한\s*장)|선수(?:\s*카드)?(?:을|를)?|\d+\s*턴\s*동안|(?:에게|을|를|의|에)|(?:그리고|그\s*후|이후|하고|한\s*뒤|한\s*후|주고)|\s+/g, "");
   // Action endings remain after matcher only for Korean conjugations.
    remainder = remainder.replace(/(합니다|시키고|시킵니다|부여|획득|얻음|얻습니다|줍니다|준다|주|드로우|뽑습니다|뽑기|포획|제거|소환|생성|해방|감소|증가)/g, "");
@@ -308,7 +318,12 @@ export function isStructuredEffects(value: unknown): value is { effects: Structu
       if (target.selection === "ALL" && target.count < 1) return false;
       if (zones.some((zone) => zone === "CHARACTER") && ["REDUCE_COST", "INCREASE_COST"].includes(item.action)) return false;
       if (zones.some((zone) => zone === "PLAYER") && !(zones.length === 1 && ((item.action === "DAMAGE" && target.owner === "ENEMY" && target.selection === "SELF") || (item.action === "HEAL" && target.owner === "SELF" && target.selection === "SELF")))) return false;
-      if (target.filter && (typeof target.filter !== "object" || target.filter === null || target.filter.isGenerated !== undefined && typeof target.filter.isGenerated !== "boolean")) return false;
+       if (target.filter && (
+         typeof target.filter !== "object" ||
+         target.filter === null ||
+         target.filter.isGenerated !== undefined && typeof target.filter.isGenerated !== "boolean" ||
+         target.filter.minCost !== undefined && (!Number.isInteger(target.filter.minCost) || target.filter.minCost < 0 || target.filter.minCost > 999)
+       )) return false;
       if (target.randomScope !== undefined && (!RANDOM_SCOPES.includes(target.randomScope) || !["RANDOM", "ADJACENT_EMPTY_SLOTS"].includes(target.selection))) return false;
     } else if (target !== undefined && !(["SUMMON", "GENERATE"].includes(item.action) && ["RANDOM", "ADJACENT_EMPTY_SLOTS"].includes(target.selection))) return false;
     if (schema.amount && !(typeof values?.amount === "number" && Number.isFinite(values.amount) && values.amount >= 0 && values.amount <= 999)) return false;

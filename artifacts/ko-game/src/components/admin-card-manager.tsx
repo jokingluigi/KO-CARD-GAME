@@ -85,7 +85,7 @@ type CardFormValues = {
 type EffectAnalysis = {
   status: "success" | "partial" | "failure";
   outcome: "supported" | "mechanism_required" | "analysis_failure";
-  effects: Array<{ trigger: string; action: string; target?: { zone?: string; zones?: string[]; owner: string; filter?: { isGenerated?: boolean }; selection: string; count: number }; conditions?: Array<{ type: string; expression?: string }>; values?: { attack?: number; health?: number; amount?: number; keyword?: CardKeyword } }>;
+  effects: Array<{ trigger: string; action: string; target?: { zone?: string; zones?: string[]; owner: string; filter?: { isGenerated?: boolean; minCost?: number }; selection: string; count: number }; conditions?: Array<{ type: string; expression?: string }>; values?: { attack?: number; health?: number; amount?: number; keyword?: CardKeyword } }>;
   keywords: CardKeyword[];
   unsupportedSegments: string[];
   summaries: string[];

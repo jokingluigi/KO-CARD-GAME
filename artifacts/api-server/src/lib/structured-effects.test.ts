@@ -123,7 +123,7 @@ test("현재 공격력과 체력 교환의 유사 표현도 범용 SWAP_STATS로
 
 test("양옆 무작위 소환과 생성 카드 피해 보정을 각각 구조화한다", () => {
   const result = analyzeEffectText(
-    "등장: 자신의 양 옆 빈 슬롯에 무작위 선수 카드를 각각 소환합니다. 이 카드가 필드에 있는 동안 생성된 카드가 주는 데미지가 2 증가합니다.",
+    "등장: 자신의 양옆 빈 슬롯에 3 코스트 이상의 무작위 선수 카드를 각각 소환합니다. 이 카드가 필드에 있을때 생성된 카드들이 1 추가 데미지를 줍니다.",
   );
 
   assert.equal(result.status, "success");
@@ -131,6 +131,7 @@ test("양옆 무작위 소환과 생성 카드 피해 보정을 각각 구조화
     zone: "BOARD",
     owner: "SELF",
     cardType: "WRESTLER",
+    filter: { minCost: 3 },
     selection: "ADJACENT_EMPTY_SLOTS",
     count: 2,
     randomScope: "STANDARD",
@@ -138,7 +139,7 @@ test("양옆 무작위 소환과 생성 카드 피해 보정을 각각 구조화
   assert.deepEqual(result.effects[1], {
     trigger: "ENTER_FIELD",
     action: "ADD_DAMAGE_MODIFIER",
-    values: { amount: 2, damageSource: "GENERATED" },
+    values: { amount: 1, damageSource: "GENERATED" },
   });
 });
 

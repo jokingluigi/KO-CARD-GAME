@@ -8,7 +8,7 @@ export const KEYWORDS = ["RUSH", "SURPRISE", "TAUNT", "DODGE", "MULTI_STRIKE"] a
 export const TARGET_ZONES = ["BOARD", "HAND", "DECK", "PLAYER", "CHARACTER"] as const;
 /** The default card scope for Korean phrases such as "어디에 있든". */
 export const DEFAULT_CARD_TARGET_SCOPE = ["HAND", "DECK", "BOARD"] as const;
-export const TARGET_FILTERS = ["GENERATED"] as const;
+export const TARGET_FILTERS = ["GENERATED", "MIN_COST"] as const;
 export const TARGET_OWNERS = ["SELF", "ENEMY", "ALL"] as const;
 export const TARGET_SELECTIONS = ["SELF", "PLAYER_CHOICE", "RANDOM", "ADJACENT_EMPTY_SLOTS", "SAME_TARGET", "ALL"] as const;
 export const RANDOM_SCOPES = ["STANDARD", "FULL"] as const;

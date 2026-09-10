@@ -11,12 +11,12 @@ import { attack } from '../engine/combat';
 import { getDamageModifierBonus, resolveActiveAbility, selectEffectTarget } from './effect-engine';
 import type { CardEffect } from './types';
 
-function definition(id: string, effects: CardEffect[]): CardDefinition {
+function definition(id: string, effects: CardEffect[], cost = 1): CardDefinition {
   return {
     id,
     name: id,
     cardType: 'WRESTLER',
-    cost: 1,
+    cost,
     attack: 1,
     health: 1,
     rulesText: '',
@@ -119,21 +119,28 @@ test('등장 시 자신의 양옆 빈 슬롯에 표준 무작위 선수를 각�
       selection: 'ADJACENT_EMPTY_SLOTS',
       count: 2,
       randomScope: 'STANDARD',
+      filter: { minCost: 3 },
     }),
   ]);
   const state = createInitialGameState();
   state.randomSeed = 11;
-  state.cardPool = [definition('adjacent-a', []), definition('adjacent-b', [])];
+  state.cardPool = [
+    definition('adjacent-low', [], 2),
+    definition('adjacent-a', [], 3),
+    definition('adjacent-b', [], 4),
+  ];
 
   const result = enterField(state, 'player-1', source, 1);
   assert.equal(result.players[0].board[0]?.isGenerated, true);
   assert.equal(result.players[0].board[2]?.isGenerated, true);
+  assert.ok((result.players[0].board[0]?.baseCost ?? 0) >= 3);
+  assert.ok((result.players[0].board[2]?.baseCost ?? 0) >= 3);
   assert.equal(result.players[0].board[3], null);
 });
 
 test('필드에 있는 카드가 생성 카드의 전투 피해를 보정하고 퇴장하면 만료된다', () => {
   const aura = instance('generated-damage-aura', [
-    structured('ADD_DAMAGE_MODIFIER', undefined, { amount: 2, damageSource: 'GENERATED' }),
+    structured('ADD_DAMAGE_MODIFIER', undefined, { amount: 1, damageSource: 'GENERATED' }),
   ]);
   const generatedAttacker = { ...instance('generated-attacker'), isGenerated: true, currentAttack: 2, enteredThisTurn: false };
   const defender = { ...instance('damage-defender'), currentHealth: 5, maxHealth: 5, boardSlot: 0 as const };
@@ -144,15 +151,15 @@ test('필드에 있는 카드가 생성 카드의 전투 피해를 보정하고 
   withAura.players[0].board[0] = { ...generatedAttacker, boardSlot: 0 };
   withAura.players[1].board[0] = defender;
 
-  assert.equal(getDamageModifierBonus(withAura, 'player-1', generatedAttacker), 2);
+  assert.equal(getDamageModifierBonus(withAura, 'player-1', generatedAttacker), 1);
   const attacked = attack(withAura, 'player-1', generatedAttacker.instanceId, {
     type: 'WRESTLER',
     playerId: 'player-2',
     cardInstanceId: defender.instanceId,
   });
-  assert.equal(attacked.state.players[1].board[0]?.currentHealth, 1);
+  assert.equal(attacked.state.players[1].board[0]?.currentHealth, 2);
   assert.equal(attacked.state.events.at(-1)?.type, 'DAMAGE_DEALT');
-  assert.equal((attacked.state.events.at(-1) as { amount?: number }).amount, 4);
+  assert.equal((attacked.state.events.at(-1) as { amount?: number }).amount, 3);
 
   const removed = destroyCard(withAura, 'player-1', aura.instanceId);
   assert.equal(removed.success, true);
