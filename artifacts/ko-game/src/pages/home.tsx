@@ -145,12 +145,14 @@ export default function Home() {
           setIsAdminTestMatch(true);
           setSelectedCardId(null);
           setSelectedAttackerId(null);
+           setPlayError(null);
            setMatchReady(true);
         })
         .catch(() => {
           if (!cancelled) {
             setPlayError('관리자 테스트 카드를 불러오지 못했습니다.');
-            setMatchReady(true);
+             setRuntimeCardDefinitions([]);
+             setMatchReady(false);
           }
         });
       return () => { cancelled = true; };
@@ -159,7 +161,9 @@ export default function Home() {
       .then(([definitions, champions, media]) => {
         if (cancelled) return;
         if (definitions.length === 0) {
-          setMatchReady(true);
+          setPlayError('공개된 카드가 없어 게임을 시작할 수 없습니다.');
+          setRuntimeCardDefinitions([]);
+          setMatchReady(false);
           return;
         }
         setMediaCatalog(media);
@@ -171,12 +175,14 @@ export default function Home() {
           selected ? champions : undefined), undefined, media));
         setSelectedCardId(null);
         setSelectedAttackerId(null);
+        setPlayError(null);
         setMatchReady(true);
       })
       .catch(() => {
         if (!cancelled) {
-          // 공개 카드 조회 실패 시 기존 테스트 덱을 유지한다.
-          setMatchReady(true);
+          setPlayError('공개 카드와 게임 데이터를 불러오지 못했습니다. 다시 시도해 주세요.');
+          setRuntimeCardDefinitions([]);
+          setMatchReady(false);
         }
       });
     return () => {
