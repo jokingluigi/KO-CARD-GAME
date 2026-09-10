@@ -116,6 +116,7 @@ export default function Home() {
   const [playAnimation, setPlayAnimation] = useState<CardPlayAnimationState | null>(null);
   const [attackAnimation, setAttackAnimation] = useState<AttackAnimationState | null>(null);
   const [attackImpactTriggered, setAttackImpactTriggered] = useState(false);
+  const [matchReady, setMatchReady] = useState(false);
   const turnKey = `${gameState.turn}:${gameState.activePlayerId ?? 'none'}`;
   const turnStartedAtRef = useRef(Date.now());
   const timeoutHandledTurnRef = useRef<string | null>(null);
@@ -123,7 +124,6 @@ export default function Home() {
   const lastAudioEventCountRef = useRef<number | null>(null);
   const pendingEntranceAudioRef = useRef<{ url: string; volume: number } | null>(null);
   const processedAttackSoundsRef = useRef(new Set<string>());
-  const pendingStateAfterPlayAnimationRef = useRef<GameState | null>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -145,15 +145,23 @@ export default function Home() {
           setIsAdminTestMatch(true);
           setSelectedCardId(null);
           setSelectedAttackerId(null);
+           setMatchReady(true);
         })
         .catch(() => {
-          if (!cancelled) setPlayError('관리자 테스트 카드를 불러오지 못했습니다.');
+          if (!cancelled) {
+            setPlayError('관리자 테스트 카드를 불러오지 못했습니다.');
+            setMatchReady(true);
+          }
         });
       return () => { cancelled = true; };
     }
     Promise.all([fetchPublishedWrestlerCards(), fetchPublishedChampions(), fetchGameMedia()])
       .then(([definitions, champions, media]) => {
-        if (cancelled || definitions.length === 0) return;
+        if (cancelled) return;
+        if (definitions.length === 0) {
+          setMatchReady(true);
+          return;
+        }
         setMediaCatalog(media);
         setRuntimeCardDefinitions(definitions);
         const selected = champions.length >= 2
@@ -163,9 +171,13 @@ export default function Home() {
           selected ? champions : undefined), undefined, media));
         setSelectedCardId(null);
         setSelectedAttackerId(null);
+        setMatchReady(true);
       })
       .catch(() => {
-        // 공개 카드 조회 실패 시 기존 테스트 덱을 유지한다.
+        if (!cancelled) {
+          // 공개 카드 조회 실패 시 기존 테스트 덱을 유지한다.
+          setMatchReady(true);
+        }
       });
     return () => {
       cancelled = true;
@@ -246,21 +258,12 @@ export default function Home() {
   }, [gameState.events, playAnimation]);
 
   function handlePlayAnimationComplete() {
-    const pendingState = pendingStateAfterPlayAnimationRef.current;
-    pendingStateAfterPlayAnimationRef.current = null;
-    if (pendingState) {
-      window.setTimeout(() => {
-        setGameState(pendingState);
-        setPlayAnimation(null);
-      }, ENTRANCE_EFFECT_DELAY_MS);
-      return;
-    }
     const pendingAudio = pendingEntranceAudioRef.current;
     if (pendingAudio) {
       audioManager.playCardEntrance(pendingAudio.url, pendingAudio.volume);
       pendingEntranceAudioRef.current = null;
     }
-    setPlayAnimation(null);
+    window.setTimeout(() => setPlayAnimation(null), ENTRANCE_EFFECT_DELAY_MS);
   }
 
   useEffect(() => {
@@ -299,10 +302,10 @@ export default function Home() {
     }, 250);
 
     return () => window.clearInterval(intervalId);
-  }, [turnKey, gameState.status]);
+  }, [turnKey, gameState.status, matchReady]);
 
   function handleEndTurn(isTimeout = false) {
-    if (attackAnimation) return;
+    if (!matchReady || playAnimation || attackAnimation) return;
     const result = endTurn(gameState, gameState.players[0].id);
     if (!result.success) {
       setPlayError(result.message);
@@ -332,6 +335,7 @@ export default function Home() {
   }
 
   function handleSurrender() {
+    if (!matchReady || playAnimation || attackAnimation) return;
     const result = surrender(gameState, gameState.players[0].id);
     if (!result.success) {
       setPlayError(result.message);
@@ -345,7 +349,7 @@ export default function Home() {
   }
 
   function handleSelectCard(cardInstanceId: string) {
-    if (playAnimation || attackAnimation) return;
+    if (!matchReady || playAnimation || attackAnimation) return;
     if (gameState.targetingState?.active) {
       handleEffectTarget(cardInstanceId);
       setPlayError(null);
@@ -359,7 +363,7 @@ export default function Home() {
   }
 
   function handleSelectAttacker(cardInstanceId: string) {
-    if (playAnimation || attackAnimation) return;
+    if (!matchReady || playAnimation || attackAnimation) return;
     if (gameState.targetingState?.active) return handleEffectTarget(cardInstanceId);
     setSelectedCardId(null);
     setSelectedAttackerId((current) =>
@@ -391,7 +395,7 @@ export default function Home() {
     targetCardInstanceId: string,
     geometry?: AttackAnimationState["geometry"],
   ) {
-    if (playAnimation || attackAnimation) return;
+    if (!matchReady || playAnimation || attackAnimation) return;
     if (gameState.targetingState?.active) {
       handleEffectTarget(targetCardInstanceId);
       return;
@@ -485,7 +489,7 @@ export default function Home() {
   }
 
   function handleAttackPlayer(geometry?: AttackAnimationState["geometry"]) {
-    if (playAnimation || attackAnimation) return;
+    if (!matchReady || playAnimation || attackAnimation) return;
     if (gameState.targetingState?.active) {
       handleEffectTarget(gameState.players[1].id);
       return;
@@ -566,7 +570,7 @@ export default function Home() {
   }
 
   function handleSelectSlot(slot: BoardSlot, geometry?: CardPlayGeometry) {
-    if (playAnimation || attackAnimation) return;
+    if (!matchReady || playAnimation || attackAnimation) return;
     if (!selectedCardId) {
       setPlayError('먼저 손패에서 선수를 선택하세요.');
       return;
@@ -584,7 +588,7 @@ export default function Home() {
 
     const card = gameState.players[0].hand.find((entry) => entry.instanceId === selectedCardId);
     if (card && geometry) {
-      pendingStateAfterPlayAnimationRef.current = result.state;
+      setGameState(result.state);
       setPlayAnimation({
         kind: "WRESTLER",
         card,
@@ -599,7 +603,7 @@ export default function Home() {
   }
 
   function handleUseTechnique(cardInstanceId: string, source: CardPlayGeometry["source"]) {
-    if (playAnimation || attackAnimation) return;
+    if (!matchReady || playAnimation || attackAnimation) return;
     const card = gameState.players[0].hand.find((entry) => entry.instanceId === cardInstanceId);
     if (!card) return;
     const result = playTechniqueFromHand(
@@ -622,7 +626,7 @@ export default function Home() {
   }
 
   function handleUseActive(cardInstanceId?: string) {
-    if (playAnimation || attackAnimation) return;
+    if (!matchReady || playAnimation || attackAnimation) return;
     const targetCardInstanceId = cardInstanceId ?? selectedAttackerId;
     if (!targetCardInstanceId) return;
     const result = useActiveAbility(
@@ -639,7 +643,7 @@ export default function Home() {
   }
 
   function handleUseChampionAbility() {
-    if (playAnimation || attackAnimation) return;
+    if (!matchReady || playAnimation || attackAnimation) return;
     const result = useChampionAbility(gameState, gameState.players[0].id);
     if (!result.success) {
       setPlayError(result.message);
