@@ -13,6 +13,7 @@ import {
   selectEffectTarget,
   cancelEffectTargeting,
   type BoardSlot,
+  type AttackTarget,
   type GameState,
   fetchPublishedWrestlerCards,
   cardRecordToDefinition,
@@ -27,10 +28,65 @@ import { audioManager } from '@/audio/audio-manager';
 import type { CardPlayAnimationState, CardPlayGeometry } from '@/components/card-play-animation-utils';
 import { landingImpactLevel } from '@/components/card-play-animation-utils';
 import type { AttackAnimationState } from '@/components/attack-animation-utils';
-import { attackImpactLevel, attackSoundPitch } from '@/components/attack-animation-utils';
+import {
+  attackDamageImpactLevel,
+  attackImpactLevel,
+  attackSoundPitch,
+} from '@/components/attack-animation-utils';
 
 const TURN_TIME_LIMIT_SECONDS = 90;
 const BGM_MUTE_STORAGE_KEY = 'ko-game-bgm-muted';
+
+function actualAttackDamage(
+  before: GameState,
+  after: GameState,
+  attackingPlayerId: string,
+  attackerInstanceId: string,
+  target: AttackTarget,
+) {
+  const defendingPlayerBefore = before.players.find((player) => player.id === target.playerId);
+  const directChampionBefore = defendingPlayerBefore?.board.find(
+    (card) => card?.isDirectDeployedChampion,
+  );
+  const damageEvent = after.events
+    .slice(before.events.length)
+    .find((event) => {
+      if (
+        event.type !== 'DAMAGE_DEALT' ||
+        event.source?.type !== 'CARD' ||
+        event.source.cardInstanceId !== attackerInstanceId
+      ) {
+        return false;
+      }
+
+      if (target.type === 'WRESTLER') {
+        return (
+          event.reason === 'COMBAT' &&
+          event.target?.type === 'CARD' &&
+          event.target.cardInstanceId === target.cardInstanceId
+        );
+      }
+
+      return directChampionBefore
+        ? event.target?.type === 'CARD' &&
+            event.target.cardInstanceId === directChampionBefore.instanceId
+        : event.target?.type === 'PLAYER' &&
+            event.target.playerId === target.playerId;
+    });
+
+  if (
+    directChampionBefore &&
+    directChampionBefore.keywords.includes('DODGE') &&
+    Math.max(
+      directChampionBefore.dodgeCharges ?? 0,
+      directChampionBefore.dodgeAvailable ? 1 : 0,
+    ) > 0
+  ) {
+    return 0;
+  }
+
+  return Math.max(0, damageEvent?.amount ?? 0);
+}
 
 function readStoredBgmMute() {
   try {
@@ -355,6 +411,11 @@ export default function Home() {
     const target = gameState.players[1].board.find(
       (card) => card?.instanceId === targetCardInstanceId,
     );
+    const attackTarget: AttackTarget = {
+      type: 'WRESTLER',
+      playerId: gameState.players[1].id,
+      cardInstanceId: targetCardInstanceId,
+    };
     const attackEventIndex = result.state.events.findIndex(
       (event, index) =>
         index >= gameState.events.length &&
@@ -362,6 +423,13 @@ export default function Home() {
         event.cardInstanceId === selectedAttackerId,
     );
     const currentAttack = attacker?.currentAttack ?? 0;
+    const damage = actualAttackDamage(
+      gameState,
+      result.state,
+      gameState.players[0].id,
+      selectedAttackerId,
+      attackTarget,
+    );
     const animation: AttackAnimationState | null = attacker && geometry
       ? {
           attacker,
@@ -370,6 +438,8 @@ export default function Home() {
           geometry,
           currentAttack,
           impactLevel: attackImpactLevel(currentAttack),
+          damage,
+          damageImpactLevel: attackDamageImpactLevel(damage),
           soundKey: `${attackEventIndex}:${selectedAttackerId}:${targetCardInstanceId}`,
         }
       : null;
@@ -414,14 +484,15 @@ export default function Home() {
       return;
     }
 
+    const attackTarget: AttackTarget = {
+      type: 'PLAYER',
+      playerId: gameState.players[1].id,
+    };
     const result = attack(
       gameState,
       gameState.players[0].id,
       selectedAttackerId,
-      {
-        type: 'PLAYER',
-        playerId: gameState.players[1].id,
-      },
+      attackTarget,
     );
     if (!result.success) {
       setPlayError(result.message);
@@ -438,6 +509,13 @@ export default function Home() {
         event.cardInstanceId === selectedAttackerId,
     );
     const currentAttack = attacker?.currentAttack ?? 0;
+    const damage = actualAttackDamage(
+      gameState,
+      result.state,
+      gameState.players[0].id,
+      selectedAttackerId,
+      attackTarget,
+    );
     const animation: AttackAnimationState | null = attacker && geometry
       ? {
           attacker,
@@ -446,6 +524,8 @@ export default function Home() {
           geometry,
           currentAttack,
           impactLevel: attackImpactLevel(currentAttack),
+          damage,
+          damageImpactLevel: attackDamageImpactLevel(damage),
           soundKey: `${attackEventIndex}:${selectedAttackerId}:${gameState.players[1].id}`,
         }
       : null;

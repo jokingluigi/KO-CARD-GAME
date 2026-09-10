@@ -19,7 +19,10 @@ import {
 } from './card-play-animation';
 import { AttackAnimation } from './attack-animation';
 import { rectSnapshot, type CardAnimationRect, type CardPlayAnimationState } from './card-play-animation-utils';
-import type { AttackAnimationState } from './attack-animation-utils';
+import type {
+  AttackAnimationState,
+  AttackDamageImpactLevel,
+} from './attack-animation-utils';
 import {
   AltInspectProvider,
   CardInspectContent,
@@ -198,8 +201,8 @@ export function GameStatePreview({
   return (
     <AltInspectProvider>
     <div className={`ko-game-shell flex min-h-[100dvh] w-full flex-col overflow-x-hidden overflow-y-auto bg-neutral-950 font-sans text-neutral-100 selection:bg-primary selection:text-black md:overflow-hidden ${
-      attackImpactTriggered && attackAnimation && attackAnimation.currentAttack >= 4
-        ? `attack-screen-shake--${attackAnimation.impactLevel.toLowerCase()}`
+      attackImpactTriggered && attackAnimation && attackAnimation.damage > 0
+        ? `attack-screen-shake--${attackAnimation.damageImpactLevel.toLowerCase()}`
         : ""
     }`}>
       <ActionHistory state={state} />
@@ -239,8 +242,10 @@ export function GameStatePreview({
                  <div
                     ref={championRef}
                     className={`ko-opponent-champion group relative flex h-28 w-20 flex-col items-center justify-center rounded-sm border-2 bg-neutral-900 md:h-40 md:w-28 ${
-                      attackImpactTriggered && attackAnimation?.targetKind === "CHAMPION"
-                        ? `attack-target-hit--${attackAnimation.impactLevel.toLowerCase()}`
+                      attackImpactTriggered &&
+                      attackAnimation?.targetKind === "CHAMPION" &&
+                      attackAnimation.damage > 0
+                        ? `attack-target-hit--${attackAnimation.damageImpactLevel.toLowerCase()}`
                         : ""
                     } ${
                       (effectTargeting && validEffectTargetIds.has(opp.id)) || selectedAttackerId
@@ -306,9 +311,11 @@ export function GameStatePreview({
                      cardRef={card ? (element) => setBoardCardRef(card.instanceId, element) : undefined}
                      hit={Boolean(
                        attackImpactTriggered &&
+                       attackAnimation && attackAnimation.damage > 0 &&
                        attackAnimation?.targetKind === "CARD" &&
                        attackAnimation.target?.instanceId === card?.instanceId,
                      )}
+                     hitImpactLevel={attackAnimation?.damageImpactLevel}
                      onClick={(id) => handleAttackCardTarget(id as string)}
                  />
                ))}
@@ -336,10 +343,16 @@ export function GameStatePreview({
                      cardRef={card ? (element) => setBoardCardRef(card.instanceId, element) : undefined}
                      hit={Boolean(
                        attackImpactTriggered &&
+                       attackAnimation && attackAnimation.damage > 0 &&
                        attackAnimation?.targetKind === "CARD" &&
                        attackAnimation.target?.instanceId === card?.instanceId,
                      )}
-                    animating={playAnimation?.kind === "WRESTLER" && playAnimation.card.instanceId === card?.instanceId}
+                    hitImpactLevel={attackAnimation?.damageImpactLevel}
+                    animating={
+                      (playAnimation?.kind === "WRESTLER" &&
+                        playAnimation.card.instanceId === card?.instanceId) ||
+                      attackAnimation?.attacker.instanceId === card?.instanceId
+                    }
                      selected={card?.instanceId === selectedAttackerId || !!card && selectedEffectTargetIds.has(card.instanceId)}
                    attackReady={!!card && canSelectAsAttacker(state, me.id, card.instanceId)}
                     targetable={!!card && !!effectTargeting && validEffectTargetIds.has(card.instanceId)}
@@ -714,6 +727,7 @@ function BoardSlot({
   slotRef,
   cardRef,
   hit = false,
+  hitImpactLevel,
   animating = false,
 }: {
   card: CardInstance | null;
@@ -730,6 +744,7 @@ function BoardSlot({
   slotRef?: (element: HTMLDivElement | null) => void;
   cardRef?: (element: HTMLDivElement | null) => void;
   hit?: boolean;
+  hitImpactLevel?: AttackDamageImpactLevel;
   animating?: boolean;
 }) {
   const isEmpty = !card;
@@ -792,7 +807,7 @@ function BoardSlot({
          imageUrl={def?.imageUrl}
          rarity={def?.rarity}
          size="board"
-           className={`${containerClass}${animating ? " opacity-0" : ""}${hit ? ` attack-target-hit--${card.currentAttack <= 1 ? "light" : card.currentAttack <= 3 ? "normal" : card.currentAttack <= 5 ? "heavy" : "very-heavy"}` : ""}`}
+           className={`${containerClass}${animating ? " opacity-0 pointer-events-none" : ""}${hit ? ` attack-target-hit--${hitImpactLevel?.toLowerCase() ?? "light"}` : ""}`}
          imageDisplaySettings={def}
          highlight={selected ? "selected" : targetable ? "target" : attackReady ? "attack" : undefined}
           containerRef={cardRef}

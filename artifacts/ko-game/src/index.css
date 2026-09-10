@@ -277,13 +277,19 @@
   100% { opacity: 0; transform: translate(-50%, -50%) scale(1.45); }
 }
 
+@keyframes ko-attack-shake-very-light {
+  0%, 100% { transform: translateX(0); }
+  40% { transform: translateX(-1px); }
+  80% { transform: translateX(1px); }
+}
+
 @keyframes ko-attack-shake-light {
   0%, 100% { transform: translateX(0); }
   35% { transform: translateX(-2px); }
   70% { transform: translateX(2px); }
 }
 
-@keyframes ko-attack-shake-normal {
+@keyframes ko-attack-shake-medium {
   0%, 100% { transform: translateX(0); }
   25% { transform: translateX(-4px); }
   50% { transform: translateX(4px); }
@@ -296,6 +302,15 @@
   40% { transform: translate(6px, -1px); }
   60% { transform: translate(-4px, 0); }
   80% { transform: translate(3px, 0); }
+}
+
+@keyframes ko-attack-shake-very-heavy {
+  0%, 100% { transform: translate(0); }
+  16% { transform: translate(-8px, 1px); }
+  32% { transform: translate(8px, -1px); }
+  48% { transform: translate(-6px, 1px); }
+  64% { transform: translate(5px, 0); }
+  80% { transform: translate(-3px, 0); }
 }
 
 @keyframes ko-attack-screen-shake {
@@ -358,12 +373,52 @@
   animation: ko-attack-shockwave var(--attack-duration) ease-out both;
 }
 
-.attack-target-hit--light { animation: ko-attack-shake-light 180ms ease-out; }
-.attack-target-hit--normal { animation: ko-attack-shake-normal 220ms ease-out; }
+@keyframes ko-attack-screen-shake-very-light {
+  0%, 100% { transform: translate(0); }
+  45% { transform: translate(-1px, 0); }
+  80% { transform: translate(1px, 0); }
+}
+
+@keyframes ko-attack-screen-shake-light {
+  0%, 100% { transform: translate(0); }
+  35% { transform: translate(-2px, 1px); }
+  70% { transform: translate(2px, -1px); }
+}
+
+@keyframes ko-attack-screen-shake-medium {
+  0%, 100% { transform: translate(0); }
+  25% { transform: translate(-3px, 1px); }
+  50% { transform: translate(3px, -1px); }
+  75% { transform: translate(-2px, 0); }
+}
+
+@keyframes ko-attack-screen-shake-heavy {
+  0%, 100% { transform: translate(0); }
+  20% { transform: translate(-4px, 1px); }
+  40% { transform: translate(4px, -1px); }
+  60% { transform: translate(-3px, 0); }
+  80% { transform: translate(2px, 0); }
+}
+
+@keyframes ko-attack-screen-shake-very-heavy {
+  0%, 100% { transform: translate(0); }
+  16% { transform: translate(-6px, 1px); }
+  32% { transform: translate(6px, -1px); }
+  48% { transform: translate(-5px, 1px); }
+  64% { transform: translate(4px, 0); }
+  80% { transform: translate(-2px, 0); }
+}
+
+.attack-target-hit--very_light { animation: ko-attack-shake-very-light 110ms ease-out; }
+.attack-target-hit--light { animation: ko-attack-shake-light 160ms ease-out; }
+.attack-target-hit--medium { animation: ko-attack-shake-medium 210ms ease-out; }
 .attack-target-hit--heavy { animation: ko-attack-shake-heavy 260ms ease-out; }
-.attack-target-hit--very_heavy { animation: ko-attack-shake-heavy 320ms ease-out; }
-.attack-screen-shake--heavy,
-.attack-screen-shake--very_heavy { animation: ko-attack-screen-shake 180ms ease-out; }
+.attack-target-hit--very_heavy { animation: ko-attack-shake-very-heavy 320ms ease-out; }
+.attack-screen-shake--very_light { animation: ko-attack-screen-shake-very-light 100ms ease-out; }
+.attack-screen-shake--light { animation: ko-attack-screen-shake-light 125ms ease-out; }
+.attack-screen-shake--medium { animation: ko-attack-screen-shake-medium 145ms ease-out; }
+.attack-screen-shake--heavy { animation: ko-attack-screen-shake-heavy 165ms ease-out; }
+.attack-screen-shake--very_heavy { animation: ko-attack-screen-shake-very-heavy 185ms ease-out; }
 
 .ko-touch-inspector {
   box-sizing: border-box;
@@ -378,9 +433,13 @@
     animation-duration: 1ms;
   }
   .attack-target-hit--light,
-  .attack-target-hit--normal,
+  .attack-target-hit--very_light,
+  .attack-target-hit--medium,
   .attack-target-hit--heavy,
   .attack-target-hit--very_heavy,
+  .attack-screen-shake--very_light,
+  .attack-screen-shake--light,
+  .attack-screen-shake--medium,
   .attack-screen-shake--heavy,
   .attack-screen-shake--very_heavy {
     animation: none;

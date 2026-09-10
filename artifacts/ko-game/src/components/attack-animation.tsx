@@ -103,7 +103,7 @@ export function AttackAnimation({
           className="h-full w-full"
         />
       </div>
-      {animation.currentAttack >= 8 && <div className="attack-animation__shockwave" />}
+      {animation.damage >= 8 && <div className="attack-animation__shockwave" />}
       <div className="attack-animation__impact-flash" />
     </div>
   );
