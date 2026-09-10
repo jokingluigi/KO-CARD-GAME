@@ -503,7 +503,14 @@ function applyEffect(
            if (effect.action === 'HEAL') return { ...card, currentHealth: Math.min(card.maxHealth, card.currentHealth + amount) };
           if (effect.action === 'BUFF') {
             const health = effect.values?.health ?? 0;
-            return { ...card, currentAttack: card.currentAttack + (effect.values?.attack ?? 0), maxHealth: card.maxHealth + health, currentHealth: card.currentHealth + health };
+             const attackMultiplier = effect.values?.attackMultiplier ?? 1;
+             const healthMultiplier = effect.values?.healthMultiplier ?? 1;
+             return {
+               ...card,
+               currentAttack: card.currentAttack * attackMultiplier + (effect.values?.attack ?? 0),
+               maxHealth: card.maxHealth * healthMultiplier + health,
+               currentHealth: card.currentHealth * healthMultiplier + health,
+             };
           }
           return card;
         };

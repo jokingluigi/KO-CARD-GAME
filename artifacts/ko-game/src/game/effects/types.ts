@@ -37,7 +37,7 @@ export type CardEffect =
         optionalTarget?: boolean;
       };
       values?: {
-        attack?: number; health?: number; amount?: number; keyword?: CardKeyword;
+        attack?: number; health?: number; attackMultiplier?: number; healthMultiplier?: number; amount?: number; keyword?: CardKeyword;
         /** Serializable card definition supplied by the structured DSL. */
         definition?: CardDefinition;
         leftEffects?: CardEffect[];

@@ -9,7 +9,7 @@ export { ACTIONS, KEYWORDS, TRIGGERS };
 export type { Action, Keyword, Trigger };
 export type Target = { zone: TargetZone; owner: TargetOwner; cardType?: "WRESTLER"; selection: TargetSelection; count: number };
 export type EffectCondition = { type: Condition; expression?: string };
-export type StructuredEffect = { trigger: Trigger; action: Action; target?: Target; conditions?: EffectCondition[]; values?: { attack?: number; health?: number; amount?: number; keyword?: Keyword; leftEffects?: StructuredEffect[]; rightEffects?: StructuredEffect[] } };
+export type StructuredEffect = { trigger: Trigger; action: Action; target?: Target; conditions?: EffectCondition[]; values?: { attack?: number; health?: number; attackMultiplier?: number; healthMultiplier?: number; amount?: number; keyword?: Keyword; leftEffects?: StructuredEffect[]; rightEffects?: StructuredEffect[] } };
 export type AnalysisOutcome = "supported" | "mechanism_required" | "analysis_failure";
 export type Analysis = { status: "success" | "partial" | "failure"; outcome: AnalysisOutcome; effects: StructuredEffect[]; keywords: Keyword[]; unsupportedSegments: string[]; summaries: string[]; reason?: string };
 
@@ -29,6 +29,8 @@ const aliases = {
     ["DODGE", /(?:회피(?:\(\d+\))?|DODGE)/i], ["MULTI_STRIKE", /연타/],
   ] as const,
 } as const;
+
+const STAT_MULTIPLIER_PATTERN = /(?:자신(?:의|에게)?\s*)?(?:현재\s*)?(?:공격(?:력)?\s*(?:과|\/|및)\s*체력|체력\s*(?:과|\/|및)\s*공격(?:력)?)(?:의\s*)?(?:수치(?:를|가)?\s*)?(\d+(?:\.\d+)?)\s*배(?:로)?(?:\s*(?:만들|변경|합니다|한다))?/i;
 
 export function effectLibrary() {
   return EFFECT_LIBRARY;
@@ -69,6 +71,13 @@ function keywordFor(text: string): Keyword | undefined {
 }
 function effect(trigger: Trigger, action: Action, body: string, index: number, priorTarget?: Target, conditions?: EffectCondition[]): StructuredEffect | null {
   const schema = ACTION_SCHEMAS[action], values: StructuredEffect["values"] = {};
+  const statMultiplier = schema.statMultiplier ? body.match(STAT_MULTIPLIER_PATTERN) : null;
+  if (schema.statMultiplier && statMultiplier) {
+    const multiplier = Number(statMultiplier[1]);
+    if (!Number.isFinite(multiplier)) return null;
+    values.attackMultiplier = multiplier;
+    values.healthMultiplier = multiplier;
+  }
   if (schema.amount) {
     const amountText = action === "DAMAGE"
       ? (body.match(/(?:피해|데미지)\s*(\d+)|(\d+)\s*(?:피해|데미지)/)?.[1] ?? body.match(/(?:피해|데미지)\s*(\d+)|(\d+)\s*(?:피해|데미지)/)?.[2])
@@ -79,7 +88,7 @@ function effect(trigger: Trigger, action: Action, body: string, index: number, p
           : undefined;
     values.amount = amountText ? Number(amountText) : numberFrom(body);
   }
-  if (schema.stats) {
+  if (schema.stats && !statMultiplier) {
     const pair = body.match(/([+-]\d+)\s*\/\s*([+-]\d+)/);
     const singleStat = body.match(/(공격력|체력)\s*([+-]\d+)/);
     if (!pair && !singleStat) return null;
@@ -138,7 +147,7 @@ export function analyzeEffectText(input: string): Analysis {
     ["ADD_NEXT_TURN_GOLD", /다음(?:\s*내)?\s*턴(?:에)?\s*(?:추가\s*)?(?:골드\s*[+]?\d+|\d+\s*g|골드\s*\d+\s*추가)/i],
     ["ADD_GOLD", /(?:현재\s*)?(?:\d+\s*(?:g|골드)|골드(?:를|을)?\s*[+]?\d+|현재\s*골드\s*[+]\d+)\s*(?:획득|얻(?:음|습니다)?|추가)?/i],
     ["DRAW", /(?:(?:카드)?\s*(?:\d+\s*장|한\s*장|\d+)(?:을|를)?\s*(?:드로우|뽑(?:기|습니다|는다|음)?))/],
-    ["BUFF", /(?:[+-]\d+\s*\/\s*[+-]\d+|(?:공격력|체력)\s*[+-]\d+)/],
+    ["BUFF", /(?:[+-]\d+\s*\/\s*[+-]\d+|(?:공격력|체력)\s*[+-]\d+|(?:자신(?:의|에게)?\s*)?(?:현재\s*)?(?:공격(?:력)?\s*(?:과|\/|및)\s*체력|체력\s*(?:과|\/|및)\s*공격(?:력)?)(?:의\s*)?(?:수치(?:를|가)?\s*)?\d+(?:\.\d+)?\s*배(?:로)?)/],
     ["DAMAGE", /(?:(?:피해|데미지)\s*\d+|\d+\s*(?:피해|데미지))/],
     ["HEAL", /(?:체력(?:을|를)?\s*[+]?\d+\s*(?:회복|치유)|\d+(?:만큼)?\s*(?:회복|치유))/],
     ["REDUCE_COST", /(?:비용|코스트)(?:을|를)?\s*(?:-\d+|\d+\s*(?:감소|낮))/],
@@ -219,7 +228,17 @@ export function isStructuredEffects(value: unknown): value is { effects: Structu
       if (target.zone === "PLAYER" && !((item.action === "DAMAGE" && target.owner === "ENEMY" && target.selection === "SELF") || (item.action === "HEAL" && target.owner === "SELF" && target.selection === "SELF"))) return false;
     } else if (target !== undefined) return false;
     if (schema.amount && !(typeof values?.amount === "number" && Number.isFinite(values.amount) && values.amount >= 0 && values.amount <= 999)) return false;
-    if (schema.stats && !(typeof values?.attack === "number" && typeof values.health === "number" && Math.abs(values.attack) <= 999 && Math.abs(values.health) <= 999)) return false;
+    if (schema.stats || schema.statMultiplier) {
+      const validStats = schema.stats &&
+        typeof values?.attack === "number" && typeof values.health === "number" &&
+        Math.abs(values.attack) <= 999 && Math.abs(values.health) <= 999;
+      const validMultiplier = schema.statMultiplier &&
+        typeof values?.attackMultiplier === "number" && typeof values.healthMultiplier === "number" &&
+        Number.isFinite(values.attackMultiplier) && Number.isFinite(values.healthMultiplier) &&
+        values.attackMultiplier >= 0 && values.attackMultiplier <= 10 &&
+        values.healthMultiplier >= 0 && values.healthMultiplier <= 10;
+      if (!validStats && !validMultiplier) return false;
+    }
     if (schema.keyword && !KEYWORDS.includes(values?.keyword as Keyword)) return false;
     if (schema.branches && (!Array.isArray(values?.leftEffects) || !Array.isArray(values?.rightEffects))) return false;
     return !item.conditions || item.conditions.every((condition) => CONDITIONS.includes(condition.type));
