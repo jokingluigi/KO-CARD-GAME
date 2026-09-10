@@ -688,7 +688,7 @@ function HandCard({
       imageUrl={def?.imageUrl}
       rarity={def?.rarity}
       size="hand"
-       className={`ko-hand-card ${containerClass}`}
+       className={`ko-hand-card ${isSelected ? "ko-hand-card--selected " : ""}${containerClass}`}
       imageDisplaySettings={def}
        highlight={isSelected ? "selected" : targetable ? "target" : undefined}
       onClick={onClick}

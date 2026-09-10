@@ -471,8 +471,8 @@
     display: grid;
     grid-template-columns: minmax(0, 1fr) auto;
     align-items: start;
-    height: auto;
-    min-height: 82px;
+    height: 64px;
+    min-height: 64px;
     padding: 0;
   }
 
@@ -488,18 +488,18 @@
   }
 
   .ko-opponent-hand > div {
-    width: 35px;
-    height: 49px;
+    width: 30px;
+    height: 42px;
     flex-shrink: 0;
   }
 
   .ko-opponent-hand > div > div:last-child {
-    width: 20px;
-    height: 20px;
+    width: 17px;
+    height: 17px;
   }
 
   .ko-opponent-hud {
-    width: 164px;
+    width: 126px;
     margin-left: 0;
     gap: 3px;
   }
@@ -510,12 +510,12 @@
 
   .ko-opponent-champion,
   .ko-player-champion {
-    width: 56px;
-    height: 78px;
+    width: 48px;
+    height: 66px;
   }
 
   .ko-opponent-stats {
-    width: 94px;
+    width: 72px;
     gap: 2px;
   }
 
@@ -532,7 +532,7 @@
 
   .ko-opponent-quest {
     align-self: end;
-    max-width: 112px;
+    max-width: 84px;
     overflow: hidden;
   }
 
@@ -541,7 +541,7 @@
     width: 100%;
     overflow: hidden;
     justify-content: center;
-    gap: 10px;
+    gap: 2px;
     padding: 0;
   }
 
@@ -550,7 +550,7 @@
     flex-direction: column;
     width: 100%;
     min-width: 0;
-    gap: 3px;
+    gap: 1px;
   }
 
   .ko-board-cards {
@@ -559,12 +559,20 @@
     width: 100%;
     flex: 0 0 auto;
     min-width: 0;
-    gap: 3px;
+    gap: 0;
   }
 
   .ko-board-slot-wrapper {
     min-width: 0;
     width: 100%;
+    overflow: visible;
+    z-index: 1;
+  }
+
+  .ko-board-slot-wrapper .ko-board-slot {
+    transform: scale(1.22);
+    transform-origin: center;
+    z-index: 2;
   }
 
   .ko-board-slot {
@@ -600,23 +608,29 @@
   }
 
   .ko-game-controls {
-    position: absolute;
-    top: 50%;
-    right: auto;
-    left: 50%;
-    width: 112px;
+    position: fixed;
+    top: auto;
+    right: 8px;
+    bottom: calc(172px + env(safe-area-inset-bottom));
+    left: auto;
+    width: 94px;
     gap: 4px;
     padding: 5px;
-    transform: translate(-50%, -50%);
+    transform: none;
+    z-index: 140;
   }
 
   .ko-game-controls > button {
-    min-height: 34px;
-    padding: 6px 5px;
+    min-height: 40px;
+    padding: 7px 4px;
   }
 
   .ko-game-controls > div {
     padding: 4px;
+  }
+
+  .ko-game-controls > .flex {
+    white-space: nowrap;
   }
 
   .ko-settings-dialog {
@@ -653,45 +667,51 @@
 
   .ko-player-footer {
     display: grid;
-    grid-template-columns: 92px minmax(0, 1fr);
+    grid-template-columns: 68px minmax(0, 1fr);
     align-items: end;
     gap: 4px;
-    min-height: 174px;
+    min-height: 190px;
     padding: 0 2px max(4px, env(safe-area-inset-bottom));
   }
 
   .ko-player-info {
-    width: 92px;
-    gap: 3px;
+    width: 64px;
+    gap: 2px;
   }
 
   .ko-player-info > div:first-child {
-    gap: 3px;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 2px;
   }
 
   .ko-player-champion {
-    width: 58px;
-    height: 82px;
+    width: 54px;
+    height: 74px;
   }
 
   .ko-player-stats {
     gap: 2px;
+    width: 58px;
   }
 
   .ko-player-hand {
     width: 100%;
     min-width: 0;
-    padding-top: 24px;
+    padding-top: 34px;
+    overflow-x: hidden;
   }
 
   .ko-hand-cards {
     gap: 0;
-    padding: 0 10px 4px;
+    width: max-content;
+    max-width: none;
+    padding: 0 4px 4px;
   }
 
   .ko-hand-card {
     flex-shrink: 0;
-    margin-left: -30px;
+    margin-left: -58px;
     z-index: 1;
   }
 
@@ -700,17 +720,35 @@
   }
 
   .ko-hand-card--small {
-    width: 68px;
-    height: 95px;
+    width: 94px;
+    height: 132px;
   }
 
   .ko-hand-card--medium {
-    width: 76px;
-    height: 106px;
+    width: 104px;
+    height: 146px;
   }
 
   .ko-hand-card--regular {
-    width: 84px;
-    height: 118px;
+    width: 114px;
+    height: 160px;
+  }
+
+  .ko-hand-card--selected {
+    transform: translateY(-32px) scale(1.1);
+    transform-origin: bottom center;
+    z-index: 50;
+  }
+
+  .ko-hand-card .font-display {
+    font-size: 0.72rem;
+  }
+
+  .ko-hand-card > div > div:nth-child(3) span {
+    font-size: 0.42rem;
+  }
+
+  .ko-hand-card > div > div:nth-child(4) span {
+    font-size: 0.42rem;
   }
 }
