@@ -13,3 +13,4 @@
 - [Game attack media](game-attack-media.md) — attack SFX types use the shared media CRUD flow but need their own object-storage folder and playback channel.
 - [Portrait mobile boundary](portrait-mobile-boundary.md) — KO mobile layout changes stay inside the narrow portrait breakpoint; desktop and landscape keep their existing geometry.
 - [Inspector viewport placement](inspector-viewport-placement.md) — shared card details measure the anchor and panel, choose the roomier side, then clamp inside the viewport.
+- [Mobile board density](mobile-board-density.md) — portrait board rows use the full four-slot width while deck/grave controls move into compact row controls; hand cards overlap without shrinking away readability.
