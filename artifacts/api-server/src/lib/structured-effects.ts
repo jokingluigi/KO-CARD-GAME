@@ -70,6 +70,7 @@ const aliases = {
     ["LEAVE_FIELD", /^(?:필드에서\s*)?퇴장(?:할\s*때|하면)?\s*[:：]?/],
     ["ACTIVE", /^액티브(?:\s*사용)?(?:하면)?\s*[:：]?/],
     ["CARD_DRAWN", /^(?:준비|TURBO)\s*[:：]?/i],
+    ["SELF_ATTACK", /^(?:(?:이\s*카드가|자신이)\s*공격할\s*때마다|SELF_ATTACK)\s*[:：]?/i],
     ["OTHER_ALLY_ATTACK", /^(?:콤보|SUPPORT)\s*[:：]?/i],
     ["TECHNIQUE_CAST", /^(?:주문|SHOCK)\s*[:：]?/i],
     ["CARD_PLAYED_THIS_TURN", /^(?:태그|SYNERGY)\s*[:：]?/i],
@@ -287,7 +288,7 @@ function effect(trigger: Trigger, action: Action, body: string, index: number, p
 export function analyzeEffectText(input: string): Analysis {
   const text = normalize(input);
   if (!text) return { status: "failure", outcome: "analysis_failure", effects: [], keywords: [], unsupportedSegments: ["효과 문장"], summaries: ["효과 문장을 입력해 주세요."] };
-  const triggerMarkers = [...text.matchAll(/(?:^|\s)(?=(?:필드에\s*)?(?:등장|퇴장|액티브|준비|콤보|주문|태그|핀폴|턴\s*시작|턴\s*종료|MAGIC|TURBO|SUPPORT|SHOCK|SYNERGY|BULLSEYE)\s*[:：])/gi)]
+  const triggerMarkers = [...text.matchAll(/(?:^|\s)(?=(?:필드에\s*)?(?:등장|퇴장|액티브|준비|콤보|주문|태그|핀폴|턴\s*시작|턴\s*종료|(?:이\s*카드가|자신이)\s*공격할\s*때마다|MAGIC|TURBO|SELF_ATTACK|SUPPORT|SHOCK|SYNERGY|BULLSEYE)\s*[:：])/gi)]
     .map((match) => (match.index ?? 0) + (match[0].startsWith(" ") ? 1 : 0));
   if (triggerMarkers.length > 1) {
     const analyses = triggerMarkers.map((start, index) =>
@@ -348,7 +349,7 @@ export function analyzeEffectText(input: string): Analysis {
     ...(trigger === "CARD_PLAYED_THIS_TURN" ? [{ type: "HAS_MATCHING_TAG_PLAYED_THIS_TURN" as const }] : []),
   ];
   const recognized: Array<[Action, RegExp]> = [
-    ["ADD_NEXT_TURN_GOLD", /다음(?:\s*내)?\s*턴(?:에)?\s*(?:추가\s*)?(?:골드\s*[+]?\d+|\d+\s*g|골드\s*\d+\s*추가)/i],
+    ["ADD_NEXT_TURN_GOLD", /다음(?:\s*내)?\s*턴(?:에)?\s*(?:추가\s*)?(?:골드(?:를|을)?\s*(?:추가로?\s*)?[+]?\d+\s*(?:g|골드)?|\d+\s*g|골드\s*\d+\s*추가)(?:\s*받(?:습니다|는다|음)?)?/i],
     ["ADD_GOLD", /(?:현재\s*)?(?:\d+\s*(?:g|골드)|골드(?:를|을)?\s*[+]?\d+|현재\s*골드\s*[+]\d+)\s*(?:획득|얻(?:음|습니다)?|추가)?/i],
     ["DRAW", /(?:(?:카드)?\s*(?:\d+\s*장|한\s*장|\d+)(?:을|를)?\s*(?:드로우|뽑(?:기|습니다|는다|음)?))/],
      ["SWAP_STATS", STAT_SWAP_PATTERN],
@@ -373,8 +374,10 @@ export function analyzeEffectText(input: string): Analysis {
   const clauses = body.split(/\s*(?:그리고|그\s*후|이후|(?:시키)?고|한\s*뒤|한\s*후)\s*/);
   for (const clause of clauses) {
     let clauseRemainder = clause;
-    const matches = recognized.flatMap(([action, matcher]) => {
+      const deferredGoldClause = /다음(?:\s*내)?\s*턴(?:에)?[^.!?]*(?:골드\s*(?:를|을)?\s*(?:추가로?\s*)?[+]?\d+\s*(?:g|골드)?|\d+\s*g)/i.test(clause);
+      const matches = recognized.flatMap(([action, matcher]) => {
       if (!isActiveAction(action)) return [];
+       if (action === "ADD_GOLD" && deferredGoldClause) return [];
       const match = matcher.exec(clause);
       return match ? [{ action, matcher, index: match.index }] : [];
     }).sort((left, right) => left.index - right.index);

@@ -118,6 +118,119 @@ test('콤보는 마지막으로 공격한 아군의 공격력을 자기 공격�
   assert.equal(ended.state.players[0].board[1]?.currentAttack, 0);
 });
 
+test('자신 공격 Trigger는 공격할 때마다 다음 턴 골드 보너스를 누적한다', () => {
+  const attacker = {
+    ...instance('boardba', [
+      structured('ADD_NEXT_TURN_GOLD', undefined, { amount: 1 }),
+    ]),
+    boardSlot: 0 as const,
+    enteredThisTurn: false,
+    currentHealth: 3,
+    maxHealth: 3,
+    keywords: ['MULTI_STRIKE'] as const,
+    abilities: [{
+      trigger: 'SELF_ATTACK' as const,
+      effects: [structured('ADD_NEXT_TURN_GOLD', undefined, { amount: 1 })],
+    }],
+  };
+  const defender = {
+    ...instance('boardba-target'),
+    boardSlot: 0 as const,
+    currentHealth: 10,
+    maxHealth: 10,
+  };
+  const initial = createInitialGameState();
+  initial.status = 'IN_PROGRESS';
+  initial.activePlayerId = 'player-1';
+  initial.players[0].board = [attacker, null, null, null];
+  initial.players[1].board = [defender, null, null, null];
+
+  const first = attack(initial, 'player-1', attacker.instanceId, {
+    type: 'WRESTLER',
+    playerId: 'player-2',
+    cardInstanceId: defender.instanceId,
+  });
+  assert.equal(first.success, true);
+  assert.equal(first.state.players[0].nextTurnGoldBonus, 1);
+
+  const second = attack(first.state, 'player-1', attacker.instanceId, {
+    type: 'WRESTLER',
+    playerId: 'player-2',
+    cardInstanceId: defender.instanceId,
+  });
+  assert.equal(second.success, true);
+  assert.equal(second.state.players[0].nextTurnGoldBonus, 2);
+
+  const opponentTurn = endTurn(second.state, 'player-1');
+  assert.equal(opponentTurn.success, true);
+  assert.equal(opponentTurn.state.players[0].nextTurnGoldBonus, 2);
+  const nextOwnTurn = endTurn(opponentTurn.state, 'player-2');
+  assert.equal(nextOwnTurn.success, true);
+  assert.equal(nextOwnTurn.state.players[0].currentGold, 3);
+  assert.equal(nextOwnTurn.state.players[0].nextTurnGoldBonus, 0);
+});
+
+test('자신 공격 Trigger는 다른 아군이나 상대 카드의 공격에는 발동하지 않는다', () => {
+  const boardba = {
+    ...instance('boardba-listener'),
+    boardSlot: 1 as const,
+    enteredThisTurn: false,
+    currentHealth: 3,
+    maxHealth: 3,
+    abilities: [{
+      trigger: 'SELF_ATTACK' as const,
+      effects: [structured('ADD_NEXT_TURN_GOLD', undefined, { amount: 1 })],
+    }],
+  };
+  const ally = {
+    ...instance('other-ally'),
+    boardSlot: 0 as const,
+    enteredThisTurn: false,
+    currentHealth: 3,
+    maxHealth: 3,
+  };
+  const enemy = {
+    ...instance('enemy-attacker'),
+    playerId: 'player-2',
+    boardSlot: 0 as const,
+    enteredThisTurn: false,
+    currentHealth: 3,
+    maxHealth: 3,
+  };
+
+  const allyState = createInitialGameState();
+  allyState.status = 'IN_PROGRESS';
+  allyState.activePlayerId = 'player-1';
+  allyState.players[0].board = [ally, boardba, null, null];
+  allyState.players[1].board[0] = {
+    ...instance('ally-target'),
+    playerId: 'player-2',
+    boardSlot: 0,
+    currentHealth: 10,
+    maxHealth: 10,
+  };
+  const allyAttack = attack(allyState, 'player-1', ally.instanceId, {
+    type: 'WRESTLER',
+    playerId: 'player-2',
+    cardInstanceId: allyState.players[1].board[0]!.instanceId,
+  });
+  assert.equal(allyAttack.success, true);
+  assert.equal(allyAttack.state.players[0].nextTurnGoldBonus, 0);
+
+  const enemyState = createInitialGameState();
+  enemyState.status = 'IN_PROGRESS';
+  enemyState.activePlayerId = 'player-2';
+  enemyState.players[0].board[1] = boardba;
+  enemyState.players[1].board[0] = enemy;
+  const enemyAttack = attack(enemyState, 'player-2', enemy.instanceId, {
+    type: 'WRESTLER',
+    playerId: 'player-1',
+    cardInstanceId: boardba.instanceId,
+  });
+  assert.equal(enemyAttack.success, true);
+  assert.equal(enemyAttack.state.players[0].nextTurnGoldBonus, 0);
+});
+
 test('예약된 체력 강화는 턴이 넘어가도 다음 손패 선수에게 한 번만 적용된다', () => {
   const source = instance('cleanup-source', [
     structured('QUEUE_EFFECT', undefined, {

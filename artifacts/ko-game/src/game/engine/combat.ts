@@ -155,6 +155,19 @@ function receiveDamage(
   return { ...card, currentHealth: card.currentHealth - amount };
 }
 
+function resolveSelfAttackTrigger(
+  state: GameState,
+  playerId: string,
+  attackerInstanceId: CardInstanceId,
+): GameState {
+  const attacker = findBoardCard(state, playerId, attackerInstanceId)?.card;
+  return attacker
+    ? resolveTriggeredAbilities(state, playerId, attacker, 'SELF_ATTACK', {
+        attackerInstanceId,
+      })
+    : state;
+}
+
 export function attack(
   state: GameState,
   attackingPlayerId: string,
@@ -335,8 +348,11 @@ export function attack(
       ],
     };
 
+    const selfAttackResolved = resolveSelfAttackTrigger(
+      attackedState, attackingPlayerId, attackerInstanceId,
+    );
     const listenersResolved = resolveBoardListeners(
-      attackedState, attackingPlayerId, 'OTHER_ALLY_ATTACK', { attackerInstanceId },
+      selfAttackResolved, attackingPlayerId, 'OTHER_ALLY_ATTACK', { attackerInstanceId },
     );
     if (directChampion) {
       return actionSuccess(
@@ -447,8 +463,11 @@ export function attack(
     : resolveTriggeredAbilities(damagedState, attackingPlayerId, attacker, 'EXACT_ZERO_DAMAGE', {
       damagedTargetInstanceId: defender.instanceId, healthBefore: defender.currentHealth, healthAfter: 0,
     });
+  const selfAttackResolved = resolveSelfAttackTrigger(
+    exactZeroResolved, attackingPlayerId, attackerInstanceId,
+  );
   const listenersResolved = resolveBoardListeners(
-    exactZeroResolved, attackingPlayerId, 'OTHER_ALLY_ATTACK', { attackerInstanceId },
+    selfAttackResolved, attackingPlayerId, 'OTHER_ALLY_ATTACK', { attackerInstanceId },
   );
   return actionSuccess(
     processChampionQuestEvents(

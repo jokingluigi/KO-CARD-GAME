@@ -230,6 +230,29 @@ test("나토마토의 콤보 참조와 턴 종료 초기화를 각각 구조화�
   assert.equal(isStructuredEffects({ effects: result.effects }), true);
 });
 
+test("보드바의 자신 공격 Trigger와 다음 턴 골드 효과를 구조화한다", () => {
+  const result = analyzeEffectText("이 카드가 공격할 때마다 다음 내 턴에 골드를 추가로 +1G 받습니다.");
+
+  assert.equal(result.status, "success");
+  assert.equal(result.outcome, "supported");
+  assert.deepEqual(result.effects, [
+    {
+      trigger: "SELF_ATTACK",
+      action: "ADD_NEXT_TURN_GOLD",
+      values: { amount: 1 },
+    },
+  ]);
+  assert.equal(isStructuredEffects({ effects: result.effects }), true);
+
+  const paraphrase = analyzeEffectText("자신이 공격할 때마다 다음 내 턴 골드 +1");
+  assert.equal(paraphrase.status, "success");
+  assert.deepEqual(paraphrase.effects[0], {
+    trigger: "SELF_ATTACK",
+    action: "ADD_NEXT_TURN_GOLD",
+    values: { amount: 1 },
+  });
+});
+
 test("뒷정리맨의 다음 아군 선수 체력 예약을 구조화하고 지속 문장을 무시한다", () => {
   const result = analyzeEffectText("등장: 다음에 내가 내는 아군 선수 카드 1장이 체력이 2 증가합니다. 사용될 때까지 턴을 넘어도 유지합니다.");
 
