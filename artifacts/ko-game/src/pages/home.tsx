@@ -166,6 +166,12 @@ export default function Home() {
           setMatchReady(false);
           return;
         }
+        if (champions.length < 2) {
+          setPlayError('공개된 챔피언이 2명 이상 필요해 게임을 시작할 수 없습니다.');
+          setRuntimeCardDefinitions([]);
+          setMatchReady(false);
+          return;
+        }
         setMediaCatalog(media);
         setRuntimeCardDefinitions(definitions);
         const selected = champions.length >= 2
@@ -657,6 +663,29 @@ export default function Home() {
     }
     setGameState(result.state);
     setPlayError(null);
+  }
+
+  if (!matchReady) {
+    return (
+      <main className="flex min-h-screen items-center justify-center bg-[#080808] px-6 text-white">
+        <section className="w-full max-w-md rounded-xl border border-neutral-800 bg-neutral-950/95 p-8 text-center shadow-2xl">
+          <p className="mb-3 text-xs font-bold uppercase tracking-[0.3em] text-amber-400">KO</p>
+          <h1 className="text-xl font-black">게임을 준비하는 중입니다</h1>
+          <p className="mt-3 text-sm leading-6 text-neutral-400">
+            {playError ?? '공개 카드와 게임 데이터를 불러오고 있습니다.'}
+          </p>
+          {playError && (
+            <button
+              type="button"
+              onClick={() => window.location.reload()}
+              className="mt-6 rounded-lg bg-amber-400 px-5 py-3 text-sm font-black text-black transition hover:bg-amber-300"
+            >
+              다시 시도
+            </button>
+          )}
+        </section>
+      </main>
+    );
   }
 
   return (
