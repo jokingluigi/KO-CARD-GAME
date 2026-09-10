@@ -76,40 +76,58 @@ export function AdminChampionManager({ onUnauthorized }: { onUnauthorized: () =>
 
   const update = <K extends keyof Form>(key: K, value: Form[K]) =>
     setForm((current) => ({ ...current, [key]: value }));
-  async function analyze(textKey: "abilityText" | "questRewardText" | "upgradedAbilityText",
+  async function analyze(textKey: EffectAnalysisKey,
     effectsKey: "abilityEffects" | "questRewardEffects" | "upgradedAbilityEffects") {
     const text = form[textKey]?.trim();
     if (!text) { setError("분석할 자연어 효과를 입력해 주세요."); return; }
-    const response = await fetch(`${adminApiBase}/effects/analyze`, {
-      method: "POST", credentials: "include", headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ text }),
-    });
-    if (response.status === 401) { onUnauthorized(); return; }
-    const result = await response.json() as { outcome?: string; effects?: unknown[]; unsupportedSegments?: string[]; message?: string };
-    if (!response.ok || result.outcome !== "supported") {
-      setError(result.outcome === "mechanism_required"
-        ? `새 메커니즘이 필요합니다: ${(result.unsupportedSegments ?? []).join(", ")}`
-        : result.message ?? "효과 의도를 충분히 이해하지 못했습니다.");
-      return;
-    }
-    update(effectsKey, { effects: result.effects ?? [] } as Form[typeof effectsKey]);
     setError("");
+    setAnalyzingKey(textKey);
+    try {
+      const response = await fetch(`${adminApiBase}/effects/analyze`, {
+        method: "POST", credentials: "include", cache: "no-store",
+        headers: { "Content-Type": "application/json" }, body: JSON.stringify({ text }),
+      });
+      if (response.status === 401) { onUnauthorized(); return; }
+      const result = await response.json() as EffectAnalysis;
+      setAnalysisResults((current) => ({ ...current, [textKey]: result }));
+      if (!response.ok || result.outcome !== "supported") {
+        setError(result.outcome === "mechanism_required"
+          ? `새 메커니즘이 필요합니다: ${(result.unsupportedSegments ?? []).join(", ")}`
+          : result.message ?? result.reason ?? "효과 의도를 충분히 이해하지 못했습니다.");
+        return;
+      }
+      update(effectsKey, { effects: result.effects ?? [] } as Form[typeof effectsKey]);
+      setMessageText("효과 분석이 완료되어 구조화 효과를 적용했습니다.");
+    } catch (reason) {
+      setError(reason instanceof Error ? reason.message : "효과를 분석하지 못했습니다.");
+    } finally {
+      setAnalyzingKey(null);
+    }
   }
   async function analyzeQuest() {
     const text = form.questText?.trim();
     if (!text) { setError("분석할 퀘스트 조건을 입력해 주세요."); return; }
-    const response = await fetch(`${adminApiBase}/quests/analyze`, {
-      method: "POST", credentials: "include", headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ text }),
-    });
-    if (response.status === 401) { onUnauthorized(); return; }
-    const result = await response.json() as { outcome?: string; condition?: Record<string, unknown>; unsupportedParts?: string[] };
-    if (!response.ok || result.outcome !== "supported" || !result.condition) {
-      setError(`새 메커니즘이 필요합니다: ${(result.unsupportedParts ?? [text]).join(", ")}`); return;
+    try {
+      const response = await fetch(`${adminApiBase}/quests/analyze`, {
+        method: "POST", credentials: "include", cache: "no-store",
+        headers: { "Content-Type": "application/json" }, body: JSON.stringify({ text }),
+      });
+      if (response.status === 401) { onUnauthorized(); return; }
+      const result = await response.json() as {
+        outcome?: string; condition?: Record<string, unknown>; unsupportedParts?: string[];
+        message?: string;
+      };
+      if (!response.ok || result.outcome !== "supported" || !result.condition) {
+        setError(result.message ?? `새 메커니즘이 필요합니다: ${(result.unsupportedParts ?? [text]).join(", ")}`);
+        return;
+      }
+      update("questCondition", result.condition);
+      if (typeof result.condition.required === "number") update("questProgressRequired", result.condition.required);
+      setMessageText("퀘스트 조건 분석이 완료되었습니다.");
+      setError("");
+    } catch (reason) {
+      setError(reason instanceof Error ? reason.message : "퀘스트 조건을 분석하지 못했습니다.");
     }
-    update("questCondition", result.condition);
-    if (typeof result.condition.required === "number") update("questProgressRequired", result.condition.required);
-    setError("");
   }
   async function save() {
     setBusy(true); setError("");
@@ -119,7 +137,8 @@ export function AdminChampionManager({ onUnauthorized }: { onUnauthorized: () =>
         headers: { "Content-Type": "application/json" }, body: JSON.stringify(form),
       });
       if (response.status === 401) { onUnauthorized(); return; }
-      if (!response.ok) throw new Error(await message(response));
+       if (!response.ok) throw new Error(await message(response));
+       setMessageText(editing ? "챔피언을 수정했습니다." : "새 챔피언을 DRAFT로 저장했습니다.");
       setOpen(false); await load();
     } catch (reason) { setError(reason instanceof Error ? reason.message : "챔피언을 저장하지 못했습니다."); }
     finally { setBusy(false); }

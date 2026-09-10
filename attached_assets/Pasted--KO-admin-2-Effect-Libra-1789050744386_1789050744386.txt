@@ -1,0 +1,277 @@
+현재 KO 카드게임의 /admin 챔피언 관리 화면에서 발생하는 아래 2개 버그만 수정해줘.
+
+중요:
+대규모 리팩터링 금지.
+기존 카드 관리자, 게임 엔진, Effect Library 구조는 최대한 그대로 유지하고
+챔피언 관리자 관련 저장/분석 문제만 원인 추적 후 최소 수정해.
+
+================================
+버그 1
+챔피언에 Quest를 설정하면 저장이 안 됨
+================================
+
+현재 Champion 편집 화면에서:
+
+- hasQuest 활성화
+- Quest 이름/설명
+- Quest 조건
+- 목표 진행량
+- 완료 보상
+- 강화 능력 등
+
+Quest 관련 값을 입력한 뒤 저장하면
+저장이 실패하거나 값이 정상적으로 유지되지 않는다.
+
+원인을 실제 코드에서 추적해.
+
+다음 항목을 모두 확인:
+
+1. React form state
+2. Save 버튼 submit handler
+3. API request payload
+4. ChampionDefinition TypeScript type
+5. request validation schema
+6. server API handler
+7. database schema
+8. ORM insert/update
+9. DB에서 다시 읽어오는 serialization
+10. edit 화면 초기값 hydration
+
+특히 확인할 것:
+
+- hasQuest=false일 때와 true일 때 payload 차이
+- quest 관련 필드가 undefined/null 때문에 validation 실패하는지
+- quest object 구조가 frontend/backend에서 서로 다른지
+- questProgressTarget 등이 string으로 들어가는데 number를 요구하는지
+- 빈 optional field 때문에 저장 전체가 실패하는지
+- questReward / upgradedAbility / championTokenDefinitionId 같은 nested field가 schema에서 누락됐는지
+- 저장 성공 후 refetch가 이전 데이터로 form을 덮어쓰는지
+
+저장 실패 시 조용히 실패하지 말고
+실제 validation/API error를 개발 중 확인할 수 있게 해.
+
+단 사용자 화면에서는 앱 전체 에러나 reset이 발생하면 안 된다.
+
+================================
+Champion Quest 저장 구조
+================================
+
+현재 프로젝트 구조를 먼저 확인하고
+기존 ChampionDefinition을 최대한 재사용해.
+
+필요하다면 다음과 같은 데이터를 안정적으로 저장 가능하게 해:
+
+hasQuest
+
+quest:
+- name
+- description
+- conditionText
+- structuredCondition
+- targetProgress
+- rewardText
+- structuredReward
+
+upgradedAbility:
+- name
+- cost
+- text
+- effects
+
+championTokenDefinitionId
+
+기존 실제 필드명이 다르면
+현재 프로젝트 필드명을 유지해.
+불필요하게 DB 구조를 새로 만들지 마.
+
+hasQuest=false라면
+Quest optional field 때문에 저장 validation이 실패하지 않게 해.
+
+hasQuest=true라면
+입력한 Quest 데이터가 저장 후 다시 편집 화면을 열어도 그대로 보여야 한다.
+
+================================
+버그 2
+챔피언 설정 화면 Effect 분석이 작동하지 않음
+================================
+
+현재 Card Admin에는 자연어 효과 분석 기능이 존재한다.
+
+Champion Admin의:
+
+- 기본 고유 능력
+- Quest 조건
+- Quest 완료 보상
+- 강화 고유 능력
+- Champion Token 효과
+
+에서도 같은 Effect Library / Analyzer를 사용해야 한다.
+
+현재 챔피언 화면의 분석 버튼이:
+
+- 아무 반응이 없거나
+- 요청이 발생하지 않거나
+- 결과가 표시되지 않거나
+- 카드 전용 코드 때문에 실패
+
+하는 원인을 찾아 수정해.
+
+================================
+중요: 별도 Champion Effect Engine 만들지 말 것
+================================
+
+Card Admin에서 사용하는 기존:
+
+Natural Language Analyzer
+→ Structured Effect
+→ validation
+→ Effect Library
+
+파이프라인을 Champion Admin에서도 재사용해.
+
+챔피언 전용으로 Effect Engine을 새로 복제하지 마.
+
+가능하면 공통 함수/컴포넌트를 재사용해.
+
+================================
+분석 대상 구분
+================================
+
+Champion Admin에서는 분석 버튼이
+현재 어떤 필드를 분석하는지 명확히 전달해야 한다.
+
+예:
+
+ABILITY
+QUEST_CONDITION
+QUEST_REWARD
+UPGRADED_ABILITY
+CHAMPION_TOKEN_EFFECT
+
+각 textarea의 원본 text를 정확히 Analyzer로 전달해.
+
+분석 결과도 해당 필드에만 저장하고
+다른 능력/Quest 데이터를 덮어쓰면 안 된다.
+
+================================
+NEW_MECHANIC_REQUIRED도 정상 작동
+================================
+
+챔피언 효과가 현재 Effect Library로 구현 가능하면:
+
+→ Structured Effect 표시
+→ [효과 적용]
+
+현재 엔진에 없는 메커니즘이면:
+
+→ NEW_MECHANIC_REQUIRED
+→ unsupportedParts 표시
+→ [Replit 구현 프롬프트 생성]
+
+문장을 이해할 수 없으면:
+
+→ ANALYSIS_FAILED
+
+기존 카드 관리자에서 사용하는
+Replit 구현 프롬프트 생성 흐름도
+Champion Admin에서 동일하게 사용할 수 있게 해.
+
+단 카드 이름 하드코딩 방식은 금지.
+
+================================
+Analyzer 상태 버그 확인
+================================
+
+특히 다음 문제를 확인해:
+
+- onClick이 form submit으로 처리되는 문제
+- button에 type="button" 누락
+- 분석 클릭 시 Champion form 전체가 reset되는 문제
+- stale state를 Analyzer에 보내는 문제
+- Card 전용 API endpoint를 Champion에서 잘못 호출하는 문제
+- response를 받아도 UI state에 저장하지 않는 문제
+- field id/key 충돌
+- Quest 토글 시 컴포넌트 remount
+- useEffect가 analyzer 결과를 초기화하는 문제
+
+분석 버튼은 저장 버튼과 완전히 독립적으로 동작해야 한다.
+
+효과 분석을 눌러도
+현재 입력 중인 Champion form 내용은 절대로 사라지면 안 된다.
+
+================================
+필수 테스트
+================================
+
+아래를 실제로 테스트해.
+
+1.
+퀘스트 없는 Champion 생성
+→ 저장 성공
+
+2.
+퀘스트 있는 Champion 생성
+→ 저장 성공
+
+3.
+기존 Champion에 Quest 추가
+→ 저장 성공
+
+4.
+Quest 설정 후 페이지 재진입
+→ 입력 데이터 유지
+
+5.
+기본 고유 능력 효과 분석
+→ 정상 결과
+
+6.
+Quest 조건 분석
+→ 정상 결과
+
+7.
+Quest 보상 분석
+→ 정상 결과
+
+8.
+강화 고유 능력 분석
+→ 정상 결과
+
+9.
+Champion Token 효과 분석
+→ 정상 결과
+
+10.
+지원되지 않는 효과 입력
+→ NEW_MECHANIC_REQUIRED
+→ Replit 구현 프롬프트 생성 가능
+
+11.
+분석 버튼 클릭
+→ Champion form 내용 유지
+→ 저장 데이터 손실 없음
+
+================================
+수정 금지
+================================
+
+이번 작업에서 다음은 변경하지 마:
+
+- 실제 게임 Champion 규칙
+- Card Admin의 정상 동작
+- Effect Executor 동작
+- 전투 시스템
+- Gold/Turn 시스템
+- 기존 카드 데이터
+- UI 전체 디자인
+
+챔피언 관리자 화면의
+Quest 저장 버그와 Effect 분석 버그만 수정해.
+
+완료 후:
+- 실제 원인이 무엇이었는지
+- 어떤 파일을 수정했는지
+- Quest 저장이 어떻게 해결됐는지
+- Champion Analyzer가 어떤 공통 시스템을 재사용하게 됐는지
+
+짧게 정리하고 종료해줘.
