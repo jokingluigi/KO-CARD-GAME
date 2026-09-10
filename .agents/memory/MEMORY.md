@@ -7,3 +7,4 @@
 - [Champion card presentation](champion-card-presentation.md) — CHAMPION rarity represents champion token cards and uses the dedicated red-gold card frame.
 - [Match media selection](game-media-selection.md) — choose enabled background and BGM once at match start, then keep only their IDs in game state.
 - [Reusable card effect workflow](reusable-effect-workflow.md) — inspect and reuse active mechanics first; add generic registry-backed effects, analyzer mappings, and tests only when needed.
+- [Card play presentation](card-play-animations.md) — keep play motion client-side; derive impact from base cost and keep rarity emphasis separate from landing weight.

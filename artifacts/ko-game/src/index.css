@@ -105,3 +105,146 @@
     display: none;
   }
 }
+
+@keyframes ko-card-play-wrestler {
+  0% {
+    opacity: 0.96;
+    transform: translate(var(--play-from-x), var(--play-from-y)) scale(1);
+  }
+  16% {
+    opacity: 1;
+    transform: translate(var(--play-from-x), var(--play-from-y)) scale(1.1);
+  }
+  70% {
+    transform: translate(var(--play-target-x), var(--play-target-y))
+      scale(calc(var(--play-target-scale) * 1.12));
+  }
+  83% {
+    transform: translate(var(--play-target-x), var(--play-target-y))
+      scale(calc(var(--play-target-scale) * 0.96));
+  }
+  100% {
+    opacity: 1;
+    transform: translate(var(--play-target-x), var(--play-target-y))
+      scale(var(--play-target-scale));
+  }
+}
+
+@keyframes ko-card-play-technique {
+  0% {
+    opacity: 0;
+    transform: translate(var(--play-from-x), var(--play-from-y)) scale(0.84);
+  }
+  18% {
+    opacity: 1;
+    transform: translate(var(--play-from-x), var(--play-from-y)) scale(1.08);
+  }
+  52% {
+    opacity: 1;
+    transform: translate(var(--play-target-x), var(--play-target-y)) scale(1.2);
+  }
+  78% {
+    opacity: 1;
+    transform: translate(var(--play-target-x), var(--play-target-y)) scale(1.08);
+  }
+  100% {
+    opacity: 0;
+    transform: translate(var(--play-target-x), var(--play-target-y)) scale(0.92);
+  }
+}
+
+@keyframes ko-card-play-flash {
+  0%, 56% { opacity: 0; transform: scale(0.9); }
+  68% { opacity: 0.9; transform: scale(1.08); }
+  82%, 100% { opacity: 0; transform: scale(1.2); }
+}
+
+@keyframes ko-card-play-shockwave {
+  0%, 62% { opacity: 0; transform: scale(0.7); }
+  75% { opacity: 0.55; }
+  100% { opacity: 0; transform: scale(1.35); }
+}
+
+.card-play-animation {
+  position: fixed;
+  inset: 0;
+  z-index: 300;
+  pointer-events: none;
+}
+
+.card-play-animation__card {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: var(--play-source-width);
+  height: var(--play-source-height);
+  transform-origin: top left;
+  filter: drop-shadow(0 10px 18px rgba(0, 0, 0, 0.45));
+}
+
+.card-play-animation--wrestler .card-play-animation__card {
+  animation: ko-card-play-wrestler 480ms cubic-bezier(0.22, 0.8, 0.28, 1) both;
+}
+
+.card-play-animation--light .card-play-animation__card {
+  animation-duration: 420ms;
+}
+
+.card-play-animation--heavy .card-play-animation__card {
+  animation-duration: 540ms;
+}
+
+.card-play-animation--very_heavy .card-play-animation__card {
+  animation-duration: 580ms;
+  animation-timing-function: cubic-bezier(0.18, 0.86, 0.24, 1);
+}
+
+.card-play-animation--technique .card-play-animation__card {
+  animation: ko-card-play-technique 420ms cubic-bezier(0.2, 0.75, 0.25, 1) both;
+}
+
+.card-play-animation__flash,
+.card-play-animation__shockwave {
+  position: absolute;
+  left: var(--play-target-x);
+  top: var(--play-target-y);
+  width: calc(var(--play-source-width) * var(--play-target-scale));
+  height: calc(var(--play-source-height) * var(--play-target-scale));
+  border-radius: 14%;
+  pointer-events: none;
+  transform-origin: center;
+}
+
+.card-play-animation__flash {
+  animation: ko-card-play-flash 480ms ease-out both;
+  box-shadow: 0 0 12px 3px rgba(226, 232, 240, 0.6),
+    0 0 28px 8px rgba(234, 179, 8, 0.36);
+}
+
+.card-play-animation--rarity-legendary .card-play-animation__flash {
+  box-shadow: 0 0 16px 4px rgba(253, 224, 71, 0.85),
+    0 0 36px 10px rgba(245, 158, 11, 0.48);
+}
+
+.card-play-animation--rarity-champion .card-play-animation__flash {
+  box-shadow: 0 0 18px 4px rgba(254, 240, 138, 0.92),
+    0 0 42px 12px rgba(220, 38, 38, 0.58);
+}
+
+.card-play-animation__shockwave {
+  animation: ko-card-play-shockwave 540ms ease-out both;
+  border: 2px solid rgba(226, 232, 240, 0.48);
+  box-shadow: 0 0 18px rgba(148, 163, 184, 0.4);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .card-play-animation--wrestler,
+  .card-play-animation--technique,
+  .card-play-animation--wrestler .card-play-animation__card,
+  .card-play-animation--technique .card-play-animation__card,
+  .card-play-animation__flash,
+  .card-play-animation__shockwave {
+    animation-duration: 180ms;
+    animation-timing-function: linear;
+  }
+}

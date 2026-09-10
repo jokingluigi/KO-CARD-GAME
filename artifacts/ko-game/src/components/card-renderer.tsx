@@ -1,4 +1,4 @@
-import type { CSSProperties, KeyboardEvent, ReactNode } from "react";
+import type { CSSProperties, KeyboardEvent, ReactNode, Ref } from "react";
 import { CardArtwork } from "./card-artwork";
 import {
   normalizeCardRarity,
@@ -121,6 +121,7 @@ export function CardRenderer({
   onClick,
   onKeyDown,
   tabIndex,
+  containerRef,
 }: {
   name: string;
   cost: number;
@@ -146,6 +147,7 @@ export function CardRenderer({
   onClick?: () => void;
   onKeyDown?: (event: KeyboardEvent<HTMLDivElement>) => void;
   tabIndex?: number;
+  containerRef?: Ref<HTMLDivElement>;
 }) {
   const normalizedRarity = normalizeCardRarity(rarity);
   const frameLayout = frameLayouts[normalizedRarity];
@@ -197,6 +199,7 @@ export function CardRenderer({
     <div
       className={`relative aspect-[1060/1484] overflow-visible select-none ${className}`}
       style={style}
+      ref={containerRef}
       onClick={onClick}
       onKeyDown={handleKeyDown}
       tabIndex={tabIndex}

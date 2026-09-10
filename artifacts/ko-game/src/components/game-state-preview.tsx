@@ -15,6 +15,10 @@ import {
 } from '@/game';
 import { ActionHistory } from './action-history';
 import {
+  CardPlayAnimation,
+} from './card-play-animation';
+import { rectSnapshot, type CardAnimationRect, type CardPlayAnimationState } from './card-play-animation-utils';
+import {
   AltInspectProvider,
   CardInspectContent,
   ChampionAbilityInspectContent,
@@ -31,7 +35,10 @@ interface GameStatePreviewProps {
   turnSecondsRemaining: number;
   onEndTurn: () => void;
   onSelectCard: (cardInstanceId: string) => void;
-  onSelectSlot: (slot: BoardSlotIndex) => void;
+  onSelectSlot: (slot: BoardSlotIndex, geometry?: { source: CardAnimationRect; target: CardAnimationRect }) => void;
+  onUseTechnique: (cardInstanceId: string, source: CardAnimationRect) => void;
+  playAnimation: CardPlayAnimationState | null;
+  onPlayAnimationComplete: () => void;
   onSelectAttacker: (cardInstanceId: string) => void;
   onAttackWrestler: (cardInstanceId: string) => void;
   onAttackPlayer: () => void;
@@ -51,6 +58,9 @@ export function GameStatePreview({
   onEndTurn,
   onSelectCard,
   onSelectSlot,
+  onUseTechnique,
+  playAnimation,
+  onPlayAnimationComplete,
   onSelectAttacker,
   onAttackWrestler,
   onAttackPlayer,
@@ -60,6 +70,8 @@ export function GameStatePreview({
   onEffectTarget,
 }: GameStatePreviewProps) {
   const [openGraveyardPlayerId, setOpenGraveyardPlayerId] = React.useState<string | null>(null);
+  const handCardRefs = React.useRef(new Map<string, HTMLDivElement>());
+  const boardSlotRefs = React.useRef(new Map<number, HTMLDivElement>());
 
   if (!state || !state.players || state.players.length < 2) {
     return <div className="flex h-screen items-center justify-center bg-black font-sans text-white">게임을 초기화하는 중입니다...</div>;
@@ -76,6 +88,7 @@ export function GameStatePreview({
   const selectedBoardCard = me.board.find(
     (card) => card?.instanceId === selectedAttackerId,
   );
+  const selectedHandCard = me.hand.find((card) => card.instanceId === selectedCardId);
   
   const canShowActive =
     selectedBoardCard !== undefined &&
@@ -101,6 +114,37 @@ export function GameStatePreview({
   const selectedBackground = mediaCatalog.backgrounds.find(
     (item) => item.id === state.backgroundId,
   );
+
+  function setHandCardRef(cardId: string, element: HTMLDivElement | null) {
+    if (element) handCardRefs.current.set(cardId, element);
+    else handCardRefs.current.delete(cardId);
+  }
+
+  function setBoardSlotRef(slot: number, element: HTMLDivElement | null) {
+    if (element) boardSlotRefs.current.set(slot, element);
+    else boardSlotRefs.current.delete(slot);
+  }
+
+  function handlePlaySlot(slot: BoardSlotIndex) {
+    if (!selectedCardId) {
+      onSelectSlot(slot);
+      return;
+    }
+    const sourceElement = handCardRefs.current.get(selectedCardId);
+    const targetElement = boardSlotRefs.current.get(slot);
+    const source = sourceElement ? rectSnapshot(sourceElement.getBoundingClientRect()) : undefined;
+    const target = targetElement ? rectSnapshot(targetElement.getBoundingClientRect()) : undefined;
+    onSelectSlot(
+      slot,
+      source && target ? { source, target } : undefined,
+    );
+  }
+
+  function handleUseTechnique(cardInstanceId: string) {
+    const sourceElement = handCardRefs.current.get(cardInstanceId);
+    if (!sourceElement) return;
+    onUseTechnique(cardInstanceId, rectSnapshot(sourceElement.getBoundingClientRect()));
+  }
   
   return (
     <AltInspectProvider>
@@ -217,7 +261,9 @@ export function GameStatePreview({
                    card={card}
                    isOpponent={false}
                    slotIndex={i as BoardSlotIndex}
-                   selectable={!!selectedCardId && !card}
+                    selectable={!!selectedHandCard && selectedHandCard.cardType !== "TECHNIQUE" && !card}
+                    slotRef={(element) => setBoardSlotRef(i, element)}
+                    animating={playAnimation?.kind === "WRESTLER" && playAnimation.card.instanceId === card?.instanceId}
                      selected={card?.instanceId === selectedAttackerId || !!card && selectedEffectTargetIds.has(card.instanceId)}
                    attackReady={!!card && canSelectAsAttacker(state, me.id, card.instanceId)}
                     targetable={!!card && !!effectTargeting && validEffectTargetIds.has(card.instanceId)}
@@ -226,7 +272,7 @@ export function GameStatePreview({
                     onUseActive={onUseActive}
                    onClick={(idOrIdx) => {
                      if (typeof idOrIdx === 'string') onSelectAttacker(idOrIdx);
-                     else onSelectSlot(idOrIdx as BoardSlotIndex);
+                      else handlePlaySlot(idOrIdx as BoardSlotIndex);
                    }}
                  />
                ))}
@@ -373,6 +419,8 @@ export function GameStatePreview({
                           canAfford={canAfford}
                            targetable={!!effectTargeting && validEffectTargetIds.has(card.instanceId)}
                           onClick={() => onSelectCard(card.instanceId)}
+                           onUseTechnique={() => handleUseTechnique(card.instanceId)}
+                           cardRef={(element) => setHandCardRef(card.instanceId, element)}
                            density={density}
                           style={{ zIndex: isSelected ? 50 : i }}
                         />
@@ -384,6 +432,12 @@ export function GameStatePreview({
 
          </div>
       </div>
+      {playAnimation && (
+        <CardPlayAnimation
+          animation={playAnimation}
+          onComplete={onPlayAnimationComplete}
+        />
+      )}
     </div>
     </AltInspectProvider>
   );
@@ -397,12 +451,16 @@ function HandCard({
   onClick,
   density,
   style,
+  onUseTechnique,
+  cardRef,
 }: {
   card: CardInstance;
   isSelected: boolean;
   canAfford: boolean;
   targetable: boolean;
   onClick: () => void;
+  onUseTechnique: () => void;
+  cardRef: (element: HTMLDivElement | null) => void;
   density: 'small' | 'medium' | 'regular';
   style?: React.CSSProperties;
 }) {
@@ -428,6 +486,7 @@ function HandCard({
 
   return (
     <Inspectable content={<CardInspectContent card={card} />} className="relative shrink-0">
+    <div className="relative">
     <CardRenderer
       name={def?.name ?? '알 수 없는 카드'}
       cost={card.currentCost}
@@ -442,7 +501,21 @@ function HandCard({
        highlight={isSelected ? "selected" : targetable ? "target" : undefined}
       onClick={onClick}
       tabIndex={0}
+      containerRef={cardRef}
     />
+    {card.cardType === "TECHNIQUE" && isSelected && (
+      <button
+        type="button"
+        className="absolute -top-9 left-1/2 z-[130] -translate-x-1/2 rounded border border-primary bg-primary px-3 py-1 text-[10px] font-black text-black shadow-[0_0_14px_rgba(234,179,8,0.5)] hover:bg-yellow-300 md:-top-11 md:px-4 md:py-1.5 md:text-xs"
+        onClick={(event) => {
+          event.stopPropagation();
+          onUseTechnique();
+        }}
+      >
+        사용
+      </button>
+    )}
+    </div>
     </Inspectable>
   );
 }
@@ -459,6 +532,8 @@ function BoardSlot({
   activeUsable,
   onUseActive,
   onClick,
+  slotRef,
+  animating = false,
 }: {
   card: CardInstance | null;
   isOpponent: boolean;
@@ -471,6 +546,8 @@ function BoardSlot({
   activeUsable: boolean;
   onUseActive: () => void;
   onClick: (idOrIdx: string | BoardSlotIndex) => void;
+  slotRef?: (element: HTMLDivElement | null) => void;
+  animating?: boolean;
 }) {
   const isEmpty = !card;
   
@@ -498,7 +575,7 @@ function BoardSlot({
 
   if (isEmpty) {
     return (
-      <div className={containerClass} onClick={selectable ? () => onClick(slotIndex) : undefined}>
+      <div ref={slotRef} className={containerClass} onClick={selectable ? () => onClick(slotIndex) : undefined}>
          <span className="text-[9px] font-bold tracking-widest text-neutral-600 md:text-[11px]">{slotIndex + 1}구역</span>
       </div>
     );
@@ -532,7 +609,7 @@ function BoardSlot({
          imageUrl={def?.imageUrl}
          rarity={def?.rarity}
          size="board"
-         className={containerClass}
+          className={`${containerClass}${animating ? " opacity-0" : ""}`}
          imageDisplaySettings={def}
          highlight={selected ? "selected" : targetable ? "target" : attackReady ? "attack" : undefined}
          onClick={() => onClick(card.instanceId)}

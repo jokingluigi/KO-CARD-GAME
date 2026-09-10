@@ -5,6 +5,7 @@ import {
   createInitialGameState,
   endTurn,
   playWrestlerFromHand,
+  playTechniqueFromHand,
   startGame,
   useActiveAbility,
   useChampionAbility,
@@ -22,6 +23,8 @@ import {
 } from '@/game';
 import { GameStatePreview } from '@/components/game-state-preview';
 import { audioManager } from '@/audio/audio-manager';
+import type { CardPlayAnimationState, CardPlayGeometry } from '@/components/card-play-animation-utils';
+import { landingImpactLevel } from '@/components/card-play-animation-utils';
 
 const TURN_TIME_LIMIT_SECONDS = 90;
 
@@ -40,11 +43,13 @@ export default function Home() {
   const [turnSecondsRemaining, setTurnSecondsRemaining] = useState(
     TURN_TIME_LIMIT_SECONDS,
   );
+  const [playAnimation, setPlayAnimation] = useState<CardPlayAnimationState | null>(null);
   const turnKey = `${gameState.turn}:${gameState.activePlayerId ?? 'none'}`;
   const turnStartedAtRef = useRef(Date.now());
   const timeoutHandledTurnRef = useRef<string | null>(null);
   const processedAudioEventsRef = useRef(new Set<string>());
   const lastAudioEventCountRef = useRef<number | null>(null);
+  const pendingEntranceAudioRef = useRef<{ url: string; volume: number } | null>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -131,7 +136,15 @@ export default function Home() {
           ...player.removedFromGame,
         ]).find((entry) => entry.instanceId === event.cardInstanceId);
         if (card?.entranceAudioEnabled && card.entranceAudioUrl) {
-          audioManager.playCardEntrance(card.entranceAudioUrl, card.entranceAudioVolume ?? 100);
+          const entranceAudio = {
+            url: card.entranceAudioUrl,
+            volume: card.entranceAudioVolume ?? 100,
+          };
+          if (playAnimation?.kind === "WRESTLER" && playAnimation.card.instanceId === event.cardInstanceId) {
+            pendingEntranceAudioRef.current = entranceAudio;
+          } else {
+            audioManager.playCardEntrance(entranceAudio.url, entranceAudio.volume);
+          }
         }
       }
       if (event.type === "CHAMPION_QUEST_COMPLETED" && event.championId) {
@@ -147,7 +160,16 @@ export default function Home() {
       }
     });
     lastAudioEventCountRef.current = gameState.events.length;
-  }, [gameState.events]);
+  }, [gameState.events, playAnimation]);
+
+  function handlePlayAnimationComplete() {
+    const pendingAudio = pendingEntranceAudioRef.current;
+    if (pendingAudio) {
+      audioManager.playCardEntrance(pendingAudio.url, pendingAudio.volume);
+      pendingEntranceAudioRef.current = null;
+    }
+    setPlayAnimation(null);
+  }
 
   useEffect(() => {
     if (!playError) return;
@@ -212,6 +234,7 @@ export default function Home() {
   }
 
   function handleSelectCard(cardInstanceId: string) {
+    if (playAnimation) return;
     if (gameState.targetingState?.active) {
       handleEffectTarget(cardInstanceId);
       setPlayError(null);
@@ -225,6 +248,7 @@ export default function Home() {
   }
 
   function handleSelectAttacker(cardInstanceId: string) {
+    if (playAnimation) return;
     if (gameState.targetingState?.active) return handleEffectTarget(cardInstanceId);
     setSelectedCardId(null);
     setSelectedAttackerId((current) =>
@@ -308,7 +332,8 @@ export default function Home() {
     setPlayError(null);
   }
 
-  function handleSelectSlot(slot: BoardSlot) {
+  function handleSelectSlot(slot: BoardSlot, geometry?: CardPlayGeometry) {
+    if (playAnimation) return;
     if (!selectedCardId) {
       setPlayError('먼저 손패에서 선수를 선택하세요.');
       return;
@@ -324,7 +349,39 @@ export default function Home() {
       return;
     }
 
+    const card = gameState.players[0].hand.find((entry) => entry.instanceId === selectedCardId);
     setGameState(result.state);
+    if (card && geometry) {
+      setPlayAnimation({
+        kind: "WRESTLER",
+        card,
+        geometry: { source: geometry.source, target: geometry.target! },
+        impactLevel: landingImpactLevel(card.baseCost, card.currentCost),
+      });
+    }
+    setSelectedCardId(null);
+    setPlayError(null);
+  }
+
+  function handleUseTechnique(cardInstanceId: string, source: CardPlayGeometry["source"]) {
+    if (playAnimation) return;
+    const card = gameState.players[0].hand.find((entry) => entry.instanceId === cardInstanceId);
+    if (!card) return;
+    const result = playTechniqueFromHand(
+      gameState,
+      gameState.players[0].id,
+      cardInstanceId,
+    );
+    if (!result.success) {
+      setPlayError(result.message);
+      return;
+    }
+    setGameState(result.state);
+    setPlayAnimation({
+      kind: "TECHNIQUE",
+      card,
+      geometry: { source },
+    });
     setSelectedCardId(null);
     setPlayError(null);
   }
@@ -367,6 +424,9 @@ export default function Home() {
       onEndTurn={handleEndTurn}
       onSelectCard={handleSelectCard}
       onSelectSlot={handleSelectSlot}
+      onUseTechnique={handleUseTechnique}
+      playAnimation={playAnimation}
+      onPlayAnimationComplete={handlePlayAnimationComplete}
       onSelectAttacker={handleSelectAttacker}
       onAttackWrestler={handleSelectEffectTarget}
       onAttackPlayer={handleAttackPlayer}
