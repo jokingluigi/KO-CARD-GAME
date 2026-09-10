@@ -115,7 +115,7 @@ export function GameStatePreview({
             style={{ backgroundImage: `url("${selectedBackground.assetUrl}")` }}
           />
         )}
-        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,_rgba(26,26,36,0.72)_0%,_rgba(5,5,5,0.92)_100%)]" />
+        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,_rgba(26,26,36,0.08)_0%,_rgba(5,5,5,0.18)_100%)]" />
       </div>
 
       <div className="relative mx-auto flex min-h-[100dvh] w-full max-w-5xl flex-1 flex-col justify-between pb-0 pt-2 md:h-[100dvh] md:min-h-0 md:pt-4">
