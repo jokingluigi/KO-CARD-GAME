@@ -9,4 +9,4 @@ Creating a MechanicRequest only records a server-verified unsupported mechanic i
 
 The chosen handoff is a deterministic prompt assembled locally from the latest active Effect Library and copied manually by an administrator; external coding-agent services are not required.
 
-**How to apply:** Re-run the current analyzer on the server, reject supported or unrecognized text, derive the requester from the admin session, and generate prompts from the live Effect Library without invoking an agent or handling provider credentials.
+**How to apply:** Re-run the current analyzer on the server; reject only supported text from intake, while preserving mechanism-required and analysis-failure results as pending prompt requests. Derive the requester from the admin session and generate prompts from the live Effect Library without invoking an agent or handling provider credentials.

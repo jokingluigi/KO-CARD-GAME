@@ -7,8 +7,7 @@ import {
 
 export type MechanicRequestPreparation =
   | { kind: "ready"; values: NewMechanicRequest; analysis: Analysis }
-  | { kind: "supported"; analysis: Analysis }
-  | { kind: "analysis_failure"; analysis: Analysis };
+  | { kind: "supported"; analysis: Analysis };
 
 export function isPendingMechanicRequestConflict(error: unknown): boolean {
   return (
@@ -29,9 +28,6 @@ export function prepareMechanicRequest(
   void effectLibrary();
   const analysis = analyze(originalCardText);
   if (analysis.outcome === "supported") return { kind: "supported", analysis };
-  if (analysis.outcome === "analysis_failure") {
-    return { kind: "analysis_failure", analysis };
-  }
   return {
     kind: "ready",
     analysis,

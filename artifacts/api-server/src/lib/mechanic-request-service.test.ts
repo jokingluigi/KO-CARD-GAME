@@ -16,9 +16,12 @@ test("mechanism requests rerun analysis and refuse supported effects", () => {
   assert.equal(result.kind, "supported");
 });
 
-test("mechanism requests refuse analysis failures", () => {
+test("mechanism requests preserve analysis failures for prompt-driven implementation", () => {
   const result = prepareMechanicRequest("대단한 일을 합니다.", "admin", "request-1");
-  assert.equal(result.kind, "analysis_failure");
+  assert.equal(result.kind, "ready");
+  if (result.kind !== "ready") return;
+  assert.equal(result.values.status, "PENDING");
+  assert.deepEqual(result.values.unsupportedParts, result.analysis.unsupportedSegments);
 });
 
 test("mechanism request starts pending with server analysis details", () => {

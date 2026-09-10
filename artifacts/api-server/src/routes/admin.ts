@@ -789,14 +789,6 @@ router.post("/mechanic-requests", async (request, response): Promise<void> => {
     });
     return;
   }
-  if (prepared.kind === "analysis_failure") {
-    response.status(422).json({
-      message: "효과 의도를 충분히 분석하지 못해 새 메커니즘 요청을 만들 수 없습니다.",
-      analysis: prepared.analysis,
-    });
-    return;
-  }
-
   try {
     const [mechanicRequest] = await db
       .insert(mechanicRequestsTable)
@@ -876,14 +868,14 @@ router.post("/mechanic-requests/:id/replit-prompt", async (request, response): P
     return;
   }
   // Persisted text is the only input; all interpretation and library data are live.
+  const body = request.body && typeof request.body === "object"
+    ? request.body as Record<string, unknown> : {};
+  const cardName = typeof body.cardName === "string" && body.cardName.trim()
+    ? body.cardName.trim().slice(0, 120) : undefined;
   const analysis = analyzeEffectText(mechanicRequest.originalCardText);
-  const promptDecision = prepareReplitAgentPrompt(mechanicRequest.originalCardText, analysis, effectLibrary());
+  const promptDecision = prepareReplitAgentPrompt(mechanicRequest.originalCardText, analysis, effectLibrary(), cardName);
   if (promptDecision.kind === "supported") {
     response.status(409).json({ message: "이제 현재 Effect Library로 구현할 수 있습니다.", analysis });
-    return;
-  }
-  if (promptDecision.kind === "analysis_failure") {
-    response.status(422).json({ message: "효과 의도를 충분히 분석하지 못했습니다.", analysis });
     return;
   }
   response.json({ mechanicRequestId: mechanicRequest.id, analysis, prompt: promptDecision.prompt });
@@ -895,6 +887,8 @@ router.post("/mechanic-requests/replit-prompt", async (request, response): Promi
     ? request.body as Record<string, unknown> : {};
   const originalCardText = typeof body.originalCardText === "string"
     ? body.originalCardText.trim() : "";
+  const cardName = typeof body.cardName === "string" && body.cardName.trim()
+    ? body.cardName.trim().slice(0, 120) : undefined;
   if (!originalCardText || originalCardText.length > 2000) {
     response.status(400).json({ message: "효과 텍스트를 확인해 주세요." });
     return;
@@ -908,13 +902,9 @@ router.post("/mechanic-requests/replit-prompt", async (request, response): Promi
     return;
   }
   const analysis = analyzeEffectText(mechanicRequest.originalCardText);
-  const promptDecision = prepareReplitAgentPrompt(mechanicRequest.originalCardText, analysis, effectLibrary());
+  const promptDecision = prepareReplitAgentPrompt(mechanicRequest.originalCardText, analysis, effectLibrary(), cardName);
   if (promptDecision.kind === "supported") {
     response.status(409).json({ message: "이제 현재 Effect Library로 구현할 수 있습니다.", analysis });
-    return;
-  }
-  if (promptDecision.kind === "analysis_failure") {
-    response.status(422).json({ message: "효과 의도를 충분히 분석하지 못했습니다.", analysis });
     return;
   }
   response.json({ mechanicRequestId: mechanicRequest.id, analysis, prompt: promptDecision.prompt });

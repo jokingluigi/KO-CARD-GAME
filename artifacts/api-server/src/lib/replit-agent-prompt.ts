@@ -86,6 +86,7 @@ export function createReplitAgentPrompt(
   originalCardText: string,
   analysis: Analysis,
   library: LiveLibrary = effectLibrary(),
+  cardName = "이름 미입력",
 ): string {
   const estimate = estimates(originalCardText);
   const unsupported = analysis.unsupportedSegments.length
@@ -95,51 +96,60 @@ export function createReplitAgentPrompt(
     ? analysis.summaries.map((summary) => `- ${summary}`).join("\n")
     : "- 요약 없음";
 
-  return `KO 카드게임에 아래 효과를 지원하기 위한 최소한의 TypeScript 수정을 해주세요. 이 문서는 자동 실행 명령이 아니라 관리자가 Replit Agent에 붙여넣는 개발 지시문입니다.
+  return `이 카드 효과가 실제 게임에서 동작하도록 구현하세요. KO 카드게임에 적용하는 최소한의 TypeScript 수정을 제안하세요. 이 문서는 자동 실행 명령이 아니라 관리자가 Replit Agent에 붙여넣는 개발 지시문입니다.
 
-1. 원본 카드 효과
-"${originalCardText}"
+1. 카드 정보
+카드 이름: ${cardName}
+원본 카드 효과: "${originalCardText}"
 
-2. 현재 분석 결과 (최신 서버 Analyzer)
+2. 현재 Analyzer가 이해한 내용
 판정: ${analysis.outcome} / ${analysis.status}
 ${analysisSummary}
 ${analysis.reason ? `사유: ${analysis.reason}` : ""}
 
-3. 현재 지원되지 않는 부분
+3. 현재 지원되는 부분
+${analysis.effects.length
+    ? analysis.effects.map((effect, index) => `- ${index + 1}. ${JSON.stringify(effect)}`).join("\n")
+    : analysis.keywords.length
+      ? analysis.keywords.map((keyword) => `- 기본 키워드: ${keyword}`).join("\n")
+      : "- 없음"}
+
+4. 현재 지원되지 않는 부분
 ${unsupported}
 
-4. 필요한 Trigger (추정)
+5. 필요한 Trigger (추정)
 ${estimate.trigger}
 
-5. 필요한 Action (추정)
+6. 필요한 Action (추정)
 ${estimate.action}
 
-6. 필요한 Target (추정)
+7. 필요한 Target (추정)
 ${estimate.target}
 
-7. 필요한 Value Resolver (추정)
+8. 필요한 Value Resolver (추정)
 ${estimate.value}
 
-8. 필요한 Condition / Listener / Duration (추정)
+9. 필요한 Condition / Listener / Duration / Sequence (추정)
 ${estimate.supporting}
+추정 Sequence: 여러 효과의 순서, 중첩 트리거 재개 순서, 실패 시 중단/계속 정책을 문장 의미에 맞게 명시하세요.
 현재 공유 Effect Library 메타데이터에는 ACTIVE Condition Registry, Listener Registry, Duration Registry가 등록되어 있지 않습니다. 비어 있는 registry를 존재하는 것처럼 가정하지 마세요.
 
-9. 현재 재사용 가능한 ACTIVE Effect Library 기능 (실시간 메타데이터에서 결정적으로 선별)
+10. 현재 재사용 가능한 ACTIVE Effect Library 기능 (실시간 메타데이터에서 결정적으로 선별)
 ${reusableLibraryLines(originalCardText, analysis, library)}
 
-10. 새로 구현할 가능성이 높은 범용 기능 (추정)
+11. 새로 구현할 가능성이 높은 범용 기능 (추정)
 ${genericCapability(originalCardText, analysis.unsupportedSegments)}
 위 후보는 추정입니다. unsupportedParts를 카드 한 장 전용으로 처리하지 말고, 실제 registry 조합으로 표현되지 않을 때에만 다른 카드에도 재사용 가능한 Trigger/Action/Target/Value Resolver/Condition/Listener/Duration 모듈을 제안하고 구현하세요.
 
-11. 관련 게임 규칙
+12. 관련 KO 게임 규칙
 턴 시스템, Gold 규칙, 4-slot Board 규칙, 공격 규칙, Champion 시스템, Champion Token 보호 규칙 및 targeting 시스템을 변경하거나 재작성하지 마세요. Match Snapshot 정책, snapshot 가능한 직렬화 GameState 구조, deterministic RNG를 유지하세요. Math.random을 직접 사용하지 마세요. invalid action은 reset/reload/exception을 일으키지 않고 안전하게 거절되어야 합니다.
 
-12. 구현 안전 규칙과 최소 수정 순서
+13. 구현 안전 규칙과 최소 수정 순서
 먼저 현재 Effect Library, Trigger Registry, Target Resolver, Value Resolver, Condition, Listener를 확인하세요. 기존 기능 조합으로 구현 가능하면 새 메커니즘을 만들지 마세요. 확인 순서는 현재 registry 확인 → 기존 조합 → 작은 범용 확장 → 새 재사용 모듈의 마지막 수단입니다.
-프로젝트 전체를 다시 분석하거나 대규모 리팩터링하지 마세요. 정상 작동 중인 Effect를 삭제하지 말고 관련 파일만 최소 수정하세요. 필요한 경우에만 Effect Registry, Effect Schema, Effect Handler, Trigger, Target Resolver, Value Resolver, Condition, Listener, Duration, Analyzer mapping, TypeScript type, Tests 순으로 수정하세요.
+프로젝트 전체를 다시 분석하거나 대규모 리팩터링하지 마세요. 정상 작동 중인 Effect를 삭제하지 말고 관련 파일만 최소 수정하세요. 필요한 경우에만 Effect Registry, Effect Schema, Effect Handler, Trigger, Target Resolver, Value Resolver, Condition, Listener, Duration, Sequence, Analyzer mapping, TypeScript type, Tests 순으로 수정하세요. 새 메커니즘을 구현하면 반드시 Effect Registry, Schema, Handler, Analyzer mapping 및 필요한 Resolver/Trigger/Condition/Listener와 테스트에 등록하세요.
 특정 카드 이름 또는 id 기반 분기(예: card.name/card.id 비교)를 금지합니다. eval(), new Function(), DB의 JavaScript 문자열 실행, 자연어를 런타임 코드로 실행, 브라우저에서 임의 코드 실행을 금지합니다. 새 메커니즘은 정식 TypeScript source와 registry에 등록하세요.
 
-13. 테스트 요구사항
+14. 테스트 요구사항
 신규/확장 메커니즘에 정상 실행, 대상 없음, 잘못된 대상, 조건 불충족, 값 계산, GameState 무결성, 기존 Effect 호환성 테스트를 작성하세요. 랜덤이면 같은 seed에서 같은 결과를 검증하세요. Duration/Listener가 있으면 올바른 Zone에서만 발동, source 제거 시 필요한 listener cleanup, 턴 경과 후 GameState 직렬화/복원을 검증하세요. 기존 핵심 테스트와 TypeScript compile도 통과시키세요.
 
 요구한 기능이 정상 작동하면 임의의 추가 기능을 만들지 말고 종료하세요. 완료 시 수정한 파일 목록과 실행한 테스트/결과만 간결하게 보고하세요.`;
@@ -149,11 +159,10 @@ export function prepareReplitAgentPrompt(
   originalCardText: string,
   analysis: Analysis,
   library: LiveLibrary = effectLibrary(),
+  cardName = "이름 미입력",
 ):
   | { kind: "ready"; prompt: string }
-  | { kind: "supported" }
-  | { kind: "analysis_failure" } {
+  | { kind: "supported" } {
   if (analysis.outcome === "supported") return { kind: "supported" };
-  if (analysis.outcome === "analysis_failure") return { kind: "analysis_failure" };
-  return { kind: "ready", prompt: createReplitAgentPrompt(originalCardText, analysis, library) };
+  return { kind: "ready", prompt: createReplitAgentPrompt(originalCardText, analysis, library, cardName) };
 }

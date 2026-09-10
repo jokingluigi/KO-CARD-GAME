@@ -170,6 +170,7 @@ function formatActiveLibraryEntries(
 }
 
 function buildLocalReplitPrompt(
+  cardName: string,
   originalCardText: string,
   analysis: EffectAnalysis,
   library: EffectLibrary,
@@ -212,14 +213,37 @@ function buildLocalReplitPrompt(
     ? analysis.unsupportedSegments.map((part) => `- ${part}`).join("\n")
     : "- 없음";
 
+  const inferredTrigger = analysis.effects.map((effect) => effect.trigger).join(", ") ||
+    (/^등장|MAGIC/i.test(originalCardText) ? "ENTER_FIELD" : "현재 문장에서 발동 시점을 확인해 범용 Trigger로 매핑");
+  const inferredAction = analysis.effects.map((effect) => effect.action).join(", ") ||
+    "현재 미지원 동작을 기존 Action 조합으로 표현할 수 있는지 확인한 뒤 필요한 범용 Action만 추가";
+  const inferredTarget = analysis.effects.filter((effect) => effect.target).map((effect) => JSON.stringify(effect.target)).join("\n") ||
+    (hasTarget ? "문장에 나타난 Zone/owner/filter/selection을 보존하는 Target Resolver" : "문장에서 대상 범위를 확인하고 필요하면 범용 Target Resolver 추가");
+  const inferredValue = relevantValues.map((entry) => `${entry.name} (${entry.description})`).join(", ") ||
+    (hasAmount ? "문장별 숫자를 분리해 해석하는 Value Resolver" : "고정값, 현재값, 계산값 중 문장 의미에 맞는 Value Resolver");
+  const inferredCondition = hasCondition ? "현재 분석된 조건 표현과 조건 불충족 시 동작을 보존하는 Condition" : "조건이 있는지 확인하고 필요할 때만 범용 Condition";
+  const inferredListener = /때마다|동안|손패|덱|필드/.test(originalCardText)
+    ? "Zone/이벤트를 감시하고 source 제거 시 정리되는 Listener"
+    : "필요 여부를 확인한 뒤 필요할 때만 범용 Listener";
+  const inferredDuration = /턴\s*동안|동안|다음\s*턴/.test(originalCardText)
+    ? "문장에 명시된 지속 시간과 만료 시점"
+    : "지속 시간이 없으면 Duration을 추가하지 않음";
+  const inferredSequence = analysis.effects.length > 1
+    ? `현재 순서: ${analysis.effects.map((effect) => effect.action).join(" → ")}`
+    : "단일 효과인지, 중첩 트리거가 있는지 확인하고 기존 continuation/sequence 규칙을 재사용";
+
   return `# KO 카드 효과 메커니즘 수정 요청
 
 이 문서는 외부 AI/API를 호출하거나 코드를 자동 실행하기 위한 것이 아닙니다. 관리자가 현재 Replit Agent 채팅에 그대로 붙여넣는 개발 프롬프트입니다.
 
-## 원본 카드 효과
+## 카드 정보
+카드 이름: ${cardName || "이름 미입력"}
+원본 카드 효과: ${originalCardText}
+
+## 현재 Analyzer가 이해한 내용
 ${originalCardText}
 
-## 현재 Analyzer가 인식한 기능
+## 현재 지원되는 부분
 ${supportedSummary}
 
 구조화된 지원 효과:
@@ -227,6 +251,16 @@ ${supportedEffects}
 
 ## 지원되지 않는 부분
 ${unsupportedParts}
+
+## 필요한 범용 구성요소 추정
+- Trigger: ${inferredTrigger}
+- Action: ${inferredAction}
+- Target: ${inferredTarget}
+- Value Resolver: ${inferredValue}
+- Condition: ${inferredCondition}
+- Listener: ${inferredListener}
+- Duration: ${inferredDuration}
+- Sequence: ${inferredSequence}
 
 ## 현재 실제 ACTIVE Effect Library에서 관련성이 높은 항목
 ${formatActiveLibraryEntries("Trigger", relevantTriggers)}
@@ -239,12 +273,14 @@ Listener: 현재 ACTIVE Effect Library에 등록된 Listener 항목만 확인하
 ## 구현 지침
 - 먼저 위의 현재 ACTIVE Effect Library와 프로젝트의 Effect Registry를 다시 확인하고, 이미 존재하는 Effect, Trigger, Target Resolver, Value Resolver, Condition, Listener를 최대한 재사용하세요.
 - 기존 기능 조합으로 표현할 수 없는 부족한 부분일 때만 다른 카드에도 재사용 가능한 범용 Effect/Trigger/Resolver/Condition/Listener를 추가하세요.
+- 새 메커니즘을 구현하면 Effect Registry, Schema, Handler, Analyzer mapping, 필요한 Resolver/Trigger/Condition/Listener/Duration/Sequence와 테스트까지 등록하세요. 다음 유사 효과가 새 코딩 없이 같은 Effect를 재사용할 수 있어야 합니다.
 - 특정 카드 이름, 카드 ID, 또는 이 카드의 문장만을 위한 하드코딩 분기를 추가하지 마세요.
 - 필요한 관련 파일만 최소 수정하세요. 프로젝트 전체 재탐색, 대규모 리팩터링, 정상 기능 삭제는 하지 마세요.
 - 기존 게임 규칙, 저장 흐름, 전투, Champion, Gold, 턴 시스템 및 기존 Effect 동작을 변경하지 마세요.
 - 자연어 문장이나 DB 문자열을 코드로 실행하지 말고, 정식 TypeScript와 Registry/Schema/Handler를 사용하세요.
 - TypeScript 검사와 필요한 관련 테스트를 실행하고 기존 테스트도 통과시키세요.
 - 부분적으로만 이해된 효과를 자동 적용하지 말고, 구조화된 데이터로 안전하게 검증하세요.
+- 이 카드 효과가 실제 게임에서 동작하도록 구현하세요.
 - 기능이 완료되면 추가 작업이나 임의의 기능을 만들지 말고 종료하세요. 수정 파일과 실행한 검사 결과만 간단히 보고하세요.
 `;
 }
@@ -481,7 +517,7 @@ export function AdminCardManager({
     if (!text) { setError("분석할 카드 효과 텍스트를 입력해 주세요."); return; }
     setError(""); setIsAnalyzing(true);
     try {
-      const response = await fetch(`${adminApiBase}/effects/analyze`, { method: "POST", credentials: "include", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ text }) });
+      const response = await fetch(`${adminApiBase}/effects/analyze`, { method: "POST", credentials: "include", cache: "no-store", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ text }) });
       if (response.status === 401) { onUnauthorized(); return; }
       if (!response.ok) throw new Error(await responseMessage(response));
       setAnalysis(await response.json() as EffectAnalysis);
@@ -492,8 +528,8 @@ export function AdminCardManager({
 
   async function createMechanicRequest(): Promise<MechanicRequest | null> {
     const originalCardText = form.getValues("text").trim();
-    if (!analysis || analysis.outcome !== "mechanism_required" || !originalCardText) {
-      setError("새 메커니즘이 필요한 분석 결과가 있어야 합니다.");
+    if (!analysis || analysis.outcome === "supported" || !originalCardText) {
+      setError("현재 엔진에서 완전히 구현할 수 없는 분석 결과가 있어야 합니다.");
       return null;
     }
     setError("");
@@ -522,7 +558,7 @@ export function AdminCardManager({
   }
 
   function generateReplitPrompt() {
-    if (!analysis || analysis.outcome !== "mechanism_required") return;
+    if (!analysis || analysis.outcome === "supported") return;
     if (!effectLibrary) {
       setError("최신 Effect Library를 불러온 뒤 프롬프트를 만들어 주세요.");
       return;
@@ -530,7 +566,8 @@ export function AdminCardManager({
     setError("");
     try {
       const originalCardText = form.getValues("text").trim();
-      setReplitPrompt(buildLocalReplitPrompt(originalCardText, analysis, effectLibrary));
+      const cardName = form.getValues("name").trim();
+      setReplitPrompt(buildLocalReplitPrompt(cardName, originalCardText, analysis, effectLibrary));
       setMessage("Replit Agent에 붙여넣을 수정 프롬프트를 만들었습니다.");
     } catch (promptError) {
       setError(promptError instanceof Error ? promptError.message : "수정 프롬프트를 만들지 못했습니다.");
@@ -572,6 +609,7 @@ export function AdminCardManager({
       const response = await fetch(`${adminApiBase}/effects/analyze`, {
         method: "POST",
         credentials: "include",
+        cache: "no-store",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ text }),
       });
@@ -1053,9 +1091,9 @@ export function AdminCardManager({
                 <div className="space-y-3 md:col-span-2">
                   <button type="button" onClick={() => void analyzeEffects()} disabled={isAnalyzing} data-testid="button-analyze-effects" className="rounded border border-primary px-4 py-2 text-sm font-bold text-primary disabled:opacity-40">{isAnalyzing ? "분석 중..." : "효과 분석"}</button>
                    {analysis && <div className={`rounded border p-3 text-xs ${analysis.outcome === "supported" ? "border-emerald-800 bg-emerald-950/30" : analysis.outcome === "mechanism_required" ? "border-amber-800 bg-amber-950/30" : "border-red-800 bg-red-950/30"}`} data-testid="effect-analysis-result">
-                      <strong>{analysis.outcome === "supported" ? "✓ 효과 구현 가능" : analysis.outcome === "mechanism_required" ? "⚠ 새 메커니즘이 필요합니다." : "✗ 효과 의도를 충분히 이해하지 못했습니다."}</strong>
+                      <strong>{analysis.outcome === "supported" ? "✓ 효과 구현 가능" : "⚠ 현재 엔진에서 이 효과를 완전히 구현할 수 없습니다."}</strong>
                      {analysis.reason && <p data-testid="text-analysis-reason" className="mt-2 text-neutral-300">{analysis.reason}</p>}
-                     {analysis.effects.length > 0 && <div className="mt-3 font-bold text-emerald-300">지원되는 부분:</div>}
+                      <div className="mt-3 font-bold text-emerald-300">지원되는 부분:</div>
                      {analysis.effects.map((effect, index) => {
                        const update = (patch: Partial<typeof effect>, targetPatch?: Partial<NonNullable<typeof effect.target>>, valuesPatch?: Partial<NonNullable<typeof effect.values>>) => setAnalysis((current) => current ? { ...current, effects: current.effects.map((item, itemIndex) => itemIndex === index ? { ...item, ...patch, ...(item.target ? { target: { ...item.target, ...targetPatch } } : {}), values: { ...item.values, ...valuesPatch } } : item) } : current);
                       return <div key={index} className="mt-2 rounded bg-black/30 p-2">발동: {effect.trigger} · 행동: {effect.action}
@@ -1071,14 +1109,14 @@ export function AdminCardManager({
                       </div>;
                     })}
                      {analysis.keywords.map((keyword) => <div key={keyword} className="mt-2 text-emerald-300">기본 키워드: {KEYWORD_LABELS[keyword]}</div>)}
-                      {analysis.outcome === "mechanism_required" && <div className="mt-3 rounded border border-amber-900/70 bg-amber-950/20 p-2"><div className="font-bold text-amber-300">지원되지 않는 부분:</div>{analysis.unsupportedSegments.map((segment) => <div key={segment} className="mt-1 text-amber-200">- {segment}</div>)}</div>}
-                      {analysis.outcome !== "mechanism_required" && analysis.unsupportedSegments.map((segment) => <div key={segment} className="mt-2 text-amber-300">지원하지 않음: {segment}</div>)}
+                       {analysis.effects.length === 0 && analysis.keywords.length === 0 && <div className="mt-1 text-neutral-400">- 현재 이해한 지원 가능 부분 없음</div>}
+                       {analysis.outcome !== "supported" && <div className="mt-3 rounded border border-amber-900/70 bg-amber-950/20 p-2"><div className="font-bold text-amber-300">지원되지 않는 부분:</div>{analysis.unsupportedSegments.length > 0 ? analysis.unsupportedSegments.map((segment) => <div key={segment} className="mt-1 text-amber-200">- {segment}</div>) : <div className="mt-1 text-amber-200">- 분석이 충분하지 않아 원문을 다시 확인해야 합니다.</div>}</div>}
                       {analysis.outcome === "supported" && analysis.effects.length > 0 && <div className="mt-3 rounded border border-emerald-900/70 bg-emerald-950/20 p-2"><div className="font-bold text-emerald-300">Structured Effect 미리보기</div><pre className="mt-2 max-h-48 overflow-auto text-[10px] leading-relaxed">{JSON.stringify({ effects: analysis.effects }, null, 2)}</pre></div>}
-                        <div className="mt-3 flex flex-wrap gap-2"><button type="button" disabled={analysis.outcome !== "supported"} onClick={applyAnalysis} data-testid="button-apply-analysis" className="rounded bg-primary px-3 py-1.5 font-bold text-black disabled:opacity-40">효과 적용</button>{analysis.outcome === "mechanism_required" && <><button type="button" disabled={!effectLibrary} onClick={generateReplitPrompt} data-testid="button-create-replit-prompt" className="rounded border border-amber-700 px-3 py-1.5 font-bold text-amber-300 disabled:opacity-40">Replit 수정 프롬프트 만들기</button><button type="button" disabled={isCompleting} onClick={() => void reanalyzeMechanicCompletion()} data-testid="button-mechanism-complete-reanalyze" className="rounded border border-emerald-700 px-3 py-1.5 font-bold text-emerald-300 disabled:opacity-40">{isCompleting ? "다시 분석 중..." : "메커니즘 구현 완료 - 다시 분석"}</button></>}<button type="button" onClick={() => void analyzeEffects()} data-testid="button-reanalyze-effects" className="rounded border border-neutral-600 px-3 py-1.5">다시 분석</button><button type="button" onClick={() => setAnalysis(null)} data-testid="button-cancel-analysis" className="rounded border border-neutral-600 px-3 py-1.5">취소</button></div>
+                         <div className="mt-3 flex flex-wrap gap-2"><button type="button" disabled={analysis.outcome !== "supported"} onClick={applyAnalysis} data-testid="button-apply-analysis" className="rounded bg-primary px-3 py-1.5 font-bold text-black disabled:opacity-40">효과 적용</button>{analysis.outcome !== "supported" && <><button type="button" disabled={!effectLibrary} onClick={generateReplitPrompt} data-testid="button-create-replit-prompt" className="rounded border border-amber-700 px-3 py-1.5 font-bold text-amber-300 disabled:opacity-40">Replit 구현 프롬프트 생성</button><button type="button" disabled={isCompleting} onClick={() => void reanalyzeMechanicCompletion()} data-testid="button-mechanism-complete-reanalyze" className="rounded border border-emerald-700 px-3 py-1.5 font-bold text-emerald-300 disabled:opacity-40">{isCompleting ? "다시 분석 중..." : "구현 완료 - 다시 분석"}</button></>}<button type="button" onClick={() => void analyzeEffects()} data-testid="button-reanalyze-effects" className="rounded border border-neutral-600 px-3 py-1.5">다시 분석</button><button type="button" onClick={() => setAnalysis(null)} data-testid="button-cancel-analysis" className="rounded border border-neutral-600 px-3 py-1.5">취소</button></div>
                        {completion && <div data-testid="mechanic-completion-result" className="mt-3 rounded border border-neutral-700 p-3"><strong>{completion.message}</strong><p className="mt-2">지원: {completion.supportedCapabilities.join(", ") || "없음"}</p>{completion.unsupportedParts.length > 0 && <p className="mt-1 text-amber-300">미지원: {completion.unsupportedParts.join(", ")}</p>}<ul className="mt-2 space-y-1">{completion.checks.map((check) => <li key={check.id} className={check.passed ? "text-emerald-300" : "text-amber-300"}>{check.passed ? "✓" : "○"} {check.reason}</li>)}</ul>{completion.status === "recognized" && completion.structuredEffect && <><pre className="mt-2 overflow-auto text-[10px]">{JSON.stringify(completion.structuredEffect, null, 2)}</pre><button type="button" disabled={!editingCard || editingCard.status !== "DRAFT" || busyId === editingCard.id} onClick={() => void applyCompletedMechanic()} data-testid="button-apply-completed-mechanic" className="mt-2 rounded bg-primary px-3 py-1.5 font-bold text-black disabled:opacity-40">카드 효과 적용</button></>}</div>}
                       {createdMechanicRequest && <div data-testid="mechanic-request-created" className="mt-3 rounded border border-amber-800 bg-amber-950/30 p-2 text-xs"><strong>요청 ID: {createdMechanicRequest.id}</strong><p className="mt-1">원본 효과: {createdMechanicRequest.originalCardText}</p><p>현재 상태: {createdMechanicRequest.status}</p><p>지원하지 않음: {createdMechanicRequest.unsupportedParts.join(", ")}</p></div>}
                       {replitPrompt && <section className="mt-3 rounded border border-amber-800 bg-black/30 p-3" data-testid="replit-agent-prompt">
-                        <h4 className="text-sm font-black text-amber-200">Replit Agent 수정 프롬프트</h4>
+                         <h4 className="text-sm font-black text-amber-200">Replit 구현 프롬프트</h4>
                         <textarea readOnly value={replitPrompt} rows={16} data-testid="textarea-replit-agent-prompt" className="mt-2 w-full rounded border border-neutral-700 bg-neutral-950 p-3 font-mono text-xs leading-relaxed" />
                         <div className="mt-2 flex gap-2"><button type="button" onClick={() => void copyReplitPrompt()} data-testid="button-copy-replit-prompt" className="rounded bg-primary px-3 py-1.5 text-xs font-bold text-black">프롬프트 복사</button><button type="button" onClick={() => void generateReplitPrompt()} data-testid="button-regenerate-replit-prompt" className="rounded border border-amber-700 px-3 py-1.5 text-xs font-bold text-amber-300">다시 생성</button></div>
                       </section>}

@@ -7,7 +7,7 @@ test("Replit prompt is complete, safe, generic and deterministic", () => {
   const analysis = analyzeEffectText("등장: 모든 카드를 무작위로 섞습니다.");
   const first = createReplitAgentPrompt("등장: 모든 카드를 무작위로 섞습니다.", analysis);
   assert.equal(first, createReplitAgentPrompt("등장: 모든 카드를 무작위로 섞습니다.", analysis));
-  for (const text of ["원본 카드 효과", "현재 분석 결과", "지원되지 않는", "Trigger", "Action", "Target", "Value Resolver", "Condition / Listener / Duration", "관련 게임 규칙", "테스트 요구사항", "eval()", "new Function()", "카드 이름 또는 id 기반 분기"]) assert.ok(first.includes(text));
+  for (const text of ["카드 이름", "원본 카드 효과", "현재 Analyzer가 이해한 내용", "현재 지원되는 부분", "지원되지 않는", "Trigger", "Action", "Target", "Value Resolver", "Condition", "Listener", "Duration", "Sequence", "관련 KO 게임 규칙", "Effect Registry", "Effect Schema", "Effect Handler", "Analyzer mapping", "테스트 요구사항", "eval()", "new Function()", "카드 이름 또는 id 기반 분기"]) assert.ok(first.includes(text));
 });
 
 test("Replit prompt derives reusable entries from the passed live library", () => {
@@ -55,7 +55,14 @@ test("time stop and rewind do not receive unrelated action fallbacks", () => {
   }
 });
 
-test("prompt decision rejects non-mechanism outcomes using latest inputs", () => {
+test("prompt decision keeps supported effects separate from unsupported outcomes", () => {
   assert.equal(prepareReplitAgentPrompt("등장: 카드 1장 드로우", analyzeEffectText("등장: 카드 1장 드로우")).kind, "supported");
-  assert.equal(prepareReplitAgentPrompt("대단한 일을 합니다.", analyzeEffectText("대단한 일을 합니다.")).kind, "analysis_failure");
+  const result = prepareReplitAgentPrompt("대단한 일을 합니다.", analyzeEffectText("대단한 일을 합니다."), effectLibrary(), "불명확한 카드");
+  assert.equal(result.kind, "ready");
+  if (result.kind === "ready") {
+    assert.ok(result.prompt.includes("카드 이름: 불명확한 카드"));
+    assert.ok(result.prompt.includes("현재 지원되는 부분"));
+    assert.ok(result.prompt.includes("지원되지 않는 부분"));
+    assert.ok(result.prompt.includes("이 카드 효과가 실제 게임에서 동작하도록 구현하세요."));
+  }
 });
