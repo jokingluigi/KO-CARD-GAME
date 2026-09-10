@@ -831,7 +831,7 @@ function BoardSlot({
 
   return (
     <Inspectable content={<CardInspectContent card={card} />} className="ko-board-slot-wrapper relative shrink-0">
-    <div className="relative">
+    <div ref={slotRef} className="relative">
       {activeReady && (
         <button
           type="button"
