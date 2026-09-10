@@ -7,6 +7,7 @@ import { MAX_DECK_SIZE, MIN_DECK_SIZE } from '../rules/constants';
 import { drawCard } from './draw-card';
 import { defaultRandom, shuffle } from '../random/random';
 import { processChampionQuestEvents } from '../champions/quests';
+import { resolvePendingEffects, resolveTriggeredAbilities } from '../effects/effect-engine';
 
 function beginPlayerTurn(state: GameState, playerId: string): GameState {
   const player = state.players.find((candidate) => candidate.id === playerId);
@@ -217,10 +218,23 @@ export function endTurn(
     ],
   };
 
+  const afterTurnEnd = state.players
+    .find((player) => player.id === actingPlayerId)
+    ?.board
+    .filter((card): card is NonNullable<typeof card> => Boolean(card))
+    .reduce((nextState, card) => {
+      const currentCard = nextState.players
+        .find((player) => player.id === actingPlayerId)
+        ?.board.find((candidate) => candidate?.instanceId === card.instanceId);
+      if (!currentCard) return nextState;
+      const triggered = resolveTriggeredAbilities(nextState, actingPlayerId, currentCard, 'TURN_END');
+      return triggered.targetingState?.active ? resolvePendingEffects(triggered) : triggered;
+    }, turnedState) ?? turnedState;
+
   return actionSuccess(
     processChampionQuestEvents(
-      state,
-      beginPlayerTurn(turnedState, nextPlayer.id),
+      afterTurnEnd,
+      beginPlayerTurn(afterTurnEnd, nextPlayer.id),
     ),
   );
 }

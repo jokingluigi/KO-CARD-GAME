@@ -8,6 +8,7 @@ import { drawCard } from '../engine/draw-card';
 import { destroyCard } from '../engine/destroy-card';
 import { enterField } from '../engine/enter-field';
 import { attack } from '../engine/combat';
+import { endTurn } from '../engine/turn-system';
 import { getDamageModifierBonus, resolveActiveAbility, selectEffectTarget } from './effect-engine';
 import type { CardEffect } from './types';
 
@@ -72,6 +73,48 @@ test('등장 시 자신에게 +2/+2를 부여한다', () => {
   assert.equal(result.players[0].board[0]?.currentAttack, 3);
   assert.equal(result.players[0].board[0]?.currentHealth, 3);
   assert.equal(result.players[0].board[0]?.maxHealth, 3);
+});
+
+test('콤보는 마지막으로 공격한 아군의 공격력을 자기 공격력에 더하고 턴 종료에 0으로 설정한다', () => {
+  const selfTarget = { zone: 'BOARD' as const, owner: 'SELF' as const, selection: 'SELF' as const, count: 1 };
+  const attacker = { ...instance('combo-attacker'), boardSlot: 0 as const, enteredThisTurn: false, currentAttack: 4 };
+  const natomato = {
+    ...instance('natomato', [
+      structured('BUFF', selfTarget, { reference: 'LAST_ATTACKER', referenceStat: 'CURRENT_ATTACK' }),
+      structured('SET_STATS', selfTarget, { attack: 0 }),
+    ]),
+    boardSlot: 1 as const,
+    enteredThisTurn: false,
+    currentAttack: 1,
+    abilities: [
+      {
+        trigger: 'OTHER_ALLY_ATTACK' as const,
+        effects: [structured('BUFF', selfTarget, { reference: 'LAST_ATTACKER', referenceStat: 'CURRENT_ATTACK' })],
+      },
+      {
+        trigger: 'TURN_END' as const,
+        effects: [structured('SET_STATS', selfTarget, { attack: 0 })],
+      },
+    ],
+  };
+  const defender = { ...instance('combo-defender'), boardSlot: 0 as const, currentAttack: 0, currentHealth: 10, maxHealth: 10 };
+  const state = createInitialGameState();
+  state.status = 'IN_PROGRESS';
+  state.activePlayerId = 'player-1';
+  state.players[0].board = [attacker, natomato, null, null];
+  state.players[1].board = [defender, null, null, null];
+
+  const attacked = attack(state, 'player-1', attacker.instanceId, {
+    type: 'WRESTLER',
+    playerId: 'player-2',
+    cardInstanceId: defender.instanceId,
+  });
+  assert.equal(attacked.success, true);
+  assert.equal(attacked.state.players[0].board[1]?.currentAttack, 5);
+
+  const ended = endTurn(attacked.state, 'player-1');
+  assert.equal(ended.success, true);
+  assert.equal(ended.state.players[0].board[1]?.currentAttack, 0);
 });
 
 test('기본 1/1 카드의 현재 공격과 체력을 2배로 변경한다', () => {

@@ -1,7 +1,7 @@
 import {
-  ACTION_SCHEMAS, ACTIONS, CONDITIONS, DAMAGE_SOURCES, DEFAULT_CARD_TARGET_SCOPE, EFFECT_CAPABILITIES, EFFECT_LIBRARY, KEYWORDS, TARGET_OWNERS,
+  ACTION_SCHEMAS, ACTIONS, CONDITIONS, DAMAGE_SOURCES, DEFAULT_CARD_TARGET_SCOPE, EFFECT_CAPABILITIES, EFFECT_LIBRARY, KEYWORDS, REFERENCES, TARGET_OWNERS,
   RANDOM_SCOPES, TARGET_SELECTIONS, TARGET_ZONES, TRIGGERS,
-  type Action, type Condition, type Keyword, type TargetOwner, type TargetSelection,
+  type Action, type Condition, type Keyword, type Reference, type TargetOwner, type TargetSelection,
   type DamageSource, type RandomScope, type TargetZone, type Trigger,
 } from "@workspace/effect-registry";
 
@@ -18,7 +18,7 @@ export type Target = {
   randomScope?: RandomScope;
 };
 export type EffectCondition = { type: Condition; expression?: string };
-export type StructuredEffect = { trigger: Trigger; action: Action; target?: Target; conditions?: EffectCondition[]; values?: { attack?: number; health?: number; attackMultiplier?: number; healthMultiplier?: number; amount?: number; keyword?: Keyword; damageSource?: DamageSource; leftEffects?: StructuredEffect[]; rightEffects?: StructuredEffect[] } };
+export type StructuredEffect = { trigger: Trigger; action: Action; target?: Target; conditions?: EffectCondition[]; values?: { attack?: number; health?: number; attackMultiplier?: number; healthMultiplier?: number; amount?: number; keyword?: Keyword; damageSource?: DamageSource; reference?: Reference; referenceStat?: "CURRENT_ATTACK" | "CURRENT_HEALTH"; leftEffects?: StructuredEffect[]; rightEffects?: StructuredEffect[] } };
 export type AnalysisOutcome = "supported" | "mechanism_required" | "analysis_failure";
 export type Analysis = { status: "success" | "partial" | "failure"; outcome: AnalysisOutcome; effects: StructuredEffect[]; keywords: Keyword[]; unsupportedSegments: string[]; summaries: string[]; reason?: string };
 
@@ -32,6 +32,7 @@ const aliases = {
     ["TECHNIQUE_CAST", /^(?:주문|SHOCK)\s*[:：]?/i],
     ["CARD_PLAYED_THIS_TURN", /^(?:태그|SYNERGY)\s*[:：]?/i],
     ["EXACT_ZERO_DAMAGE", /^(?:핀폴|BULLSEYE)\s*[:：]?/i],
+    ["TURN_END", /^턴\s*종료(?:할\s*때|하면)?\s*[:：]?/i],
   ] as const,
   keyword: [
     ["RUSH", /(?:러쉬|RUSH|CHARGE)/i], ["SURPRISE", /(?:기습|HASTE)/i], ["TAUNT", /(?:도발|TAUNT)/i],
@@ -41,6 +42,8 @@ const aliases = {
 
 const STAT_MULTIPLIER_PATTERN = /(?:자신(?:의|에게)?\s*)?(?:현재\s*)?(?:공격(?:력)?\s*(?:과|\/|및)\s*체력|체력\s*(?:과|\/|및)\s*공격(?:력)?)(?:의\s*)?(?:(?:수치(?:를|가)?)|(?:을|를))?\s*(\d+(?:\.\d+)?)\s*배(?:로)?(?:\s*(?:만들|변경|합니다|한다))?/i;
 const STAT_PAIR_INCREMENT_PATTERN = /(?:공격(?:력)?\s*(?:과|\/|및)\s*체력|체력\s*(?:과|\/|및)\s*공격(?:력)?)(?:의\s*)?(?:(?:수치(?:를|가)?)|(?:을|를))?\s*(\d+(?:\.\d+)?)\s*(?:씩\s*)?(?:증가|올려|올립(?:니다|다)?|상승|강화)(?:시킵니다|합니다|한다)?/i;
+const REFERENCE_ATTACK_INCREMENT_PATTERN = /공격한\s*(?:아군\s*)?선수의\s*공격력\s*만큼\s*(?:자신의\s*)?공격력(?:을|이)?\s*(?:증가|올려|상승|강화)/i;
+const SET_ATTACK_ZERO_PATTERN = /(?:자신의\s*)?공격력을\s*0\s*으로(?:\s*(?:만들|설정|변경))?/i;
 const STAT_SWAP_PATTERN = /(?:자신(?:의|에게)?\s*)?(?:현재\s*)?(?:공격(?:력)?\s*(?:과|\/|및)\s*체력|체력\s*(?:과|\/|및)\s*공격(?:력)?)[^.!?]{0,30}?(?:서로\s*)?(?:교환|바꾸|바꿉니다)/i;
 const ACTIVE_CARD_SCOPE_PATTERN = /(?:어디에\s*(?:있든|있는)|모든\s*위치의|손패\s*[,，]\s*덱\s*[,，]\s*(?:필드|보드)|손패\s*(?:및|와|과)\s*덱\s*(?:및|와|과)\s*(?:필드|보드))/;
 const GENERATED_FILTER_PATTERN = /(?:생성된|생성\s*카드|GENERATED)/i;
@@ -150,11 +153,16 @@ function effect(trigger: Trigger, action: Action, body: string, index: number, p
   const schema = ACTION_SCHEMAS[action], values: StructuredEffect["values"] = {};
   const statMultiplier = schema.statMultiplier ? body.match(STAT_MULTIPLIER_PATTERN) : null;
   const statPairIncrement = schema.stats ? body.match(STAT_PAIR_INCREMENT_PATTERN) : null;
+  const referenceStat = schema.referenceStat ? body.match(REFERENCE_ATTACK_INCREMENT_PATTERN) : null;
   if (schema.statMultiplier && statMultiplier) {
     const multiplier = Number(statMultiplier[1]);
     if (!Number.isFinite(multiplier)) return null;
     values.attackMultiplier = multiplier;
     values.healthMultiplier = multiplier;
+  }
+  if (referenceStat) {
+    values.reference = "LAST_ATTACKER";
+    values.referenceStat = "CURRENT_ATTACK";
   }
   if (schema.amount) {
     const amountText = (action === "DAMAGE" || action === "ADD_DAMAGE_MODIFIER")
@@ -169,7 +177,17 @@ function effect(trigger: Trigger, action: Action, body: string, index: number, p
   if (action === "ADD_DAMAGE_MODIFIER") {
     values.damageSource = /생성된/.test(body) ? "GENERATED" : "ALL";
   }
-  if (schema.stats && !statMultiplier) {
+  if (schema.stats && !statMultiplier && !referenceStat) {
+    if (action === "SET_STATS" && SET_ATTACK_ZERO_PATTERN.test(body)) {
+      values.attack = 0;
+      return {
+        trigger,
+        action,
+        target: targetFor(body),
+        ...(conditions?.length ? { conditions } : {}),
+        values,
+      };
+    }
     const pair = body.match(/([+-]\d+)\s*\/\s*([+-]\d+)/);
     const singleStat = body.match(/(공격력|체력)\s*([+-]\d+)/);
     if (!pair && !singleStat && !statPairIncrement) return null;
@@ -201,6 +219,26 @@ function effect(trigger: Trigger, action: Action, body: string, index: number, p
 export function analyzeEffectText(input: string): Analysis {
   const text = normalize(input);
   if (!text) return { status: "failure", outcome: "analysis_failure", effects: [], keywords: [], unsupportedSegments: ["효과 문장"], summaries: ["효과 문장을 입력해 주세요."] };
+  const triggerMarkers = [...text.matchAll(/(?:^|\s)(?=(?:필드에\s*)?(?:등장|퇴장|액티브|준비|콤보|주문|태그|핀폴|턴\s*시작|턴\s*종료|MAGIC|TURBO|SUPPORT|SHOCK|SYNERGY|BULLSEYE)\s*[:：])/gi)]
+    .map((match) => (match.index ?? 0) + (match[0].startsWith(" ") ? 1 : 0));
+  if (triggerMarkers.length > 1) {
+    const analyses = triggerMarkers.map((start, index) =>
+      analyzeEffectText(text.slice(start, triggerMarkers[index + 1])),
+    );
+    const effects = analyses.flatMap((analysis) => analysis.effects);
+    const keywords = analyses.flatMap((analysis) => analysis.keywords);
+    const unsupportedSegments = analyses.flatMap((analysis) => analysis.unsupportedSegments);
+    const success = analyses.every((analysis) => analysis.status === "success");
+    return {
+      status: success ? "success" : effects.length ? "partial" : "failure",
+      outcome: success ? "supported" : analyses.some((analysis) => analysis.outcome === "mechanism_required") ? "mechanism_required" : "analysis_failure",
+      effects,
+      keywords,
+      unsupportedSegments,
+      summaries: analyses.flatMap((analysis) => analysis.summaries),
+      ...(success ? {} : { reason: "문장의 일부를 효과로 해석하지 못했습니다. 표현을 더 구체적으로 입력해 주세요." }),
+    };
+  }
   if (/^(?:스위치|SWITCH)\s*:/i.test(text)) {
     const [leftText = "", rightText = ""] = text.replace(/^(?:스위치|SWITCH)\s*:\s*/i, "").split(/오른쪽(?:이면)?/);
     const parseBranch = (branch: string) => {
@@ -247,7 +285,8 @@ export function analyzeEffectText(input: string): Analysis {
     ["DRAW", /(?:(?:카드)?\s*(?:\d+\s*장|한\s*장|\d+)(?:을|를)?\s*(?:드로우|뽑(?:기|습니다|는다|음)?))/],
     ["SWAP_STATS", STAT_SWAP_PATTERN],
     ["ADD_DAMAGE_MODIFIER", /생성된\s*(?:카드|선수)?(?:들)?(?:이|가)?\s*(?:주는\s*)?(?:(?:데미지|피해)(?:가|를)?\s*(?:\d+\s*(?:증가|추가)|(?:증가|추가)\s*\d+)|\d+\s*추가\s*(?:데미지|피해))/],
-    ["BUFF", /(?:[+-]\d+\s*\/\s*[+-]\d+|(?:공격력|체력)\s*[+-]\d+|(?:자신(?:의|에게)?\s*)?(?:현재\s*)?(?:공격(?:력)?\s*(?:과|\/|및)\s*체력|체력\s*(?:과|\/|및)\s*공격(?:력)?)(?:의\s*)?(?:(?:수치(?:를|가)?)|(?:을|를))?\s*\d+(?:\.\d+)?\s*배(?:로)?|(?:공격(?:력)?\s*(?:과|\/|및)\s*체력|체력\s*(?:과|\/|및)\s*공격(?:력)?)(?:의\s*)?(?:(?:수치(?:를|가)?)|(?:을|를))?\s*\d+(?:\.\d+)?\s*(?:씩\s*)?(?:증가|올려|올립(?:니다|다)?|상승|강화))/],
+    ["BUFF", /(?:[+-]\d+\s*\/\s*[+-]\d+|(?:공격력|체력)\s*[+-]\d+|(?:자신(?:의|에게)?\s*)?(?:현재\s*)?(?:공격(?:력)?\s*(?:과|\/|및)\s*체력|체력\s*(?:과|\/|및)\s*공격(?:력)?)(?:의\s*)?(?:(?:수치(?:를|가)?)|(?:을|를))?\s*\d+(?:\.\d+)?\s*배(?:로)?|(?:공격(?:력)?\s*(?:과|\/|및)\s*체력|체력\s*(?:과|\/|및)\s*공격(?:력)?)(?:의\s*)?(?:(?:수치(?:를|가)?)|(?:을|를))?\s*\d+(?:\.\d+)?\s*(?:씩\s*)?(?:증가|올려|올립(?:니다|다)?|상승|강화)|공격한\s*(?:아군\s*)?선수의\s*공격력\s*만큼\s*(?:자신의\s*)?공격력(?:을|이)?\s*(?:증가|올려|상승|강화))/],
+    ["SET_STATS", /(?:자신의\s*)?공격력을\s*0\s*으로(?:\s*(?:만들|설정|변경))?/],
     ["DAMAGE", /(?:(?:피해|데미지)\s*\d+|\d+\s*(?:피해|데미지))/],
     ["HEAL", /(?:체력(?:을|를)?\s*[+]?\d+\s*(?:회복|치유)|\d+(?:만큼)?\s*(?:회복|치유))/],
     ["REDUCE_COST", /(?:비용|코스트)(?:을|를)?\s*(?:-\d+|\d+\s*(?:감소|낮))/],
@@ -344,15 +383,21 @@ export function isStructuredEffects(value: unknown): value is { effects: Structu
     } else if (target !== undefined && !(["SUMMON", "GENERATE"].includes(item.action) && ["RANDOM", "ADJACENT_EMPTY_SLOTS"].includes(target.selection))) return false;
     if (schema.amount && !(typeof values?.amount === "number" && Number.isFinite(values.amount) && values.amount >= 0 && values.amount <= 999)) return false;
     if (schema.stats || schema.statMultiplier) {
-      const validStats = schema.stats &&
-        typeof values?.attack === "number" && typeof values.health === "number" &&
-        Math.abs(values.attack) <= 999 && Math.abs(values.health) <= 999;
+       const validStats = schema.stats && (item.action === "SET_STATS"
+         ? (values?.attack !== undefined || values?.health !== undefined) &&
+           (values?.attack === undefined || (typeof values.attack === "number" && Math.abs(values.attack) <= 999)) &&
+           (values?.health === undefined || (typeof values.health === "number" && Math.abs(values.health) <= 999))
+         : typeof values?.attack === "number" && typeof values.health === "number" &&
+           Math.abs(values.attack) <= 999 && Math.abs(values.health) <= 999);
       const validMultiplier = schema.statMultiplier &&
         typeof values?.attackMultiplier === "number" && typeof values.healthMultiplier === "number" &&
         Number.isFinite(values.attackMultiplier) && Number.isFinite(values.healthMultiplier) &&
         values.attackMultiplier >= 0 && values.attackMultiplier <= 10 &&
         values.healthMultiplier >= 0 && values.healthMultiplier <= 10;
-      if (!validStats && !validMultiplier) return false;
+       const validReference = schema.referenceStat &&
+         REFERENCES.includes(values?.reference as Reference) &&
+         ["CURRENT_ATTACK", "CURRENT_HEALTH"].includes(values?.referenceStat as string);
+       if (!validStats && !validMultiplier && !validReference) return false;
     }
     if (schema.keyword && !KEYWORDS.includes(values?.keyword as Keyword)) return false;
     if (schema.damageSource && !DAMAGE_SOURCES.includes(values?.damageSource as DamageSource)) return false;

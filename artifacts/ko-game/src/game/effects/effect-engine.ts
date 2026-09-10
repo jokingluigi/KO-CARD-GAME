@@ -107,6 +107,21 @@ function sourceInState(state: GameState, id: string): CardInstance | undefined {
     .find((card) => card.instanceId === id);
 }
 
+type TriggerContext = NonNullable<GameState['targetingState']>['triggerContext'];
+
+function referenceStatValue(
+  state: GameState,
+  context: TriggerContext | undefined,
+  reference: NonNullable<Extract<CardEffect, { type: 'STRUCTURED' }>['values']>['reference'],
+  stat: NonNullable<Extract<CardEffect, { type: 'STRUCTURED' }>['values']>['referenceStat'],
+): number {
+  const referencedId = reference === 'LAST_ATTACKER' ? context?.attackerInstanceId : undefined;
+  if (!referencedId) return 0;
+  const referencedCard = sourceInState(state, referencedId);
+  if (!referencedCard) return 0;
+  return stat === 'CURRENT_HEALTH' ? referencedCard.currentHealth : referencedCard.currentAttack;
+}
+
 function randomForEffect(
   state: GameState,
   sourceCard: CardInstance,
@@ -277,7 +292,7 @@ export function resolvePendingEffects(state: GameState): GameState {
       return { ...next, targetingState: { ...pending, effectIndex: index, selectedTargetIds: [], lastTargetIds: last, validTargetIds, minTargets, maxTargets, mandatory: !effect.target.optionalTarget, cancelable: Boolean(effect.target.optionalTarget) } };
     }
     const ids = effect.type === 'STRUCTURED' && effect.target?.selection === 'SAME_TARGET' ? last : undefined;
-    next = applyEffect(next, pending.playerId, source, effect, ids);
+     next = applyEffect(next, pending.playerId, source, effect, ids, pending.triggerContext);
     if (next.targetingState?.continuation &&
       next.targetingState.continuation.sourceInstanceId === pending.sourceInstanceId &&
       next.targetingState.continuation.effectIndex > pending.effectIndex) return next;
@@ -313,7 +328,7 @@ export function selectEffectTarget(state: GameState, targetId: string): GameStat
   };
   let next: GameState = { ...state, targetingState: parentAfter };
   if (!validateEffectTargets(state, pending.playerId, source, effect, selected)) return state;
-  next = applyEffect(next, pending.playerId, source, effect, selected);
+   next = applyEffect(next, pending.playerId, source, effect, selected, pending.triggerContext);
   if (next.targetingState?.continuation === parentAfter) return next;
   return resolvePendingEffects(next);
 }
@@ -362,6 +377,7 @@ function applyEffect(
   sourceCard: CardInstance,
   effect: CardEffect,
   chosenTargetInstanceIds?: string[],
+  triggerContext?: TriggerContext,
 ): GameState {
   if (effect.type === 'STRUCTURED') {
     if (effect.action === 'SUMMON' && effect.target?.selection === 'ADJACENT_EMPTY_SLOTS') {
@@ -371,6 +387,9 @@ function applyEffect(
       return applyRandomCardCreation(state, playerId, sourceCard, effect);
     }
     const amount = effect.values?.amount ?? 0;
+    const referenceAmount = effect.action === 'BUFF' && effect.values?.reference && effect.values.referenceStat
+      ? referenceStatValue(state, triggerContext, effect.values.reference, effect.values.referenceStat)
+      : 0;
     const damageAmount = effect.action === 'DAMAGE'
       ? amount + getDamageModifierBonus(state, playerId, sourceCard)
       : amount;
@@ -407,7 +426,7 @@ function applyEffect(
       const branch = sourceCard.boardSlot !== null && sourceCard.boardSlot <= 1
         ? effect.values?.leftEffects : effect.values?.rightEffects;
       if (!branch || !Array.isArray(branch)) throw new Error('SWITCH_EFFECT_BRANCH requires leftEffects and rightEffects.');
-      return branch.reduce((next, child) => applyEffect(next, playerId, sourceCard, child), state);
+       return branch.reduce((next, child) => applyEffect(next, playerId, sourceCard, child, undefined, triggerContext), state);
     }
     if (effect.action === 'ADD_GOLD') {
       return applyEffect(state, playerId, sourceCard, { type: 'GAIN_GOLD', amount });
@@ -682,17 +701,27 @@ function applyEffect(
            if (effect.action === 'REDUCE_COST') return { ...card, currentCost: Math.max(0, card.currentCost - amount) };
            if (effect.action === 'INCREASE_COST') return { ...card, currentCost: card.currentCost + amount };
            if (effect.action === 'HEAL') return { ...card, currentHealth: Math.min(card.maxHealth, card.currentHealth + amount) };
-          if (effect.action === 'BUFF') {
+           if (effect.action === 'BUFF') {
             const health = effect.values?.health ?? 0;
              const attackMultiplier = effect.values?.attackMultiplier ?? 1;
              const healthMultiplier = effect.values?.healthMultiplier ?? 1;
              return {
                ...card,
-               currentAttack: card.currentAttack * attackMultiplier + (effect.values?.attack ?? 0),
+                currentAttack: card.currentAttack * attackMultiplier + (effect.values?.attack ?? 0) + referenceAmount,
                maxHealth: card.maxHealth * healthMultiplier + health,
                currentHealth: card.currentHealth * healthMultiplier + health,
              };
           }
+           if (effect.action === 'SET_STATS') {
+             return {
+               ...card,
+               ...(effect.values?.attack !== undefined ? { currentAttack: effect.values.attack } : {}),
+               ...(effect.values?.health !== undefined ? {
+                 currentHealth: effect.values.health,
+                 maxHealth: Math.max(card.maxHealth, effect.values.health),
+               } : {}),
+             };
+           }
            if (effect.action === 'SWAP_STATS') {
              return {
                ...card,

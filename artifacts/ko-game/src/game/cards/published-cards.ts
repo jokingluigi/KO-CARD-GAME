@@ -1,5 +1,7 @@
-import type { CardAbility } from "../effects/types";
+import type { CardAbility, CardEffect } from "../effects/types";
 import type { CardDefinition, CardRarity } from "./types";
+
+type StructuredCardEffect = Extract<CardEffect, { type: "STRUCTURED" }>;
 
 export type PublishedCardRecord = {
   id: string;
@@ -41,24 +43,24 @@ function abilitiesFor(
   config: Record<string, unknown>,
 ): CardAbility[] {
   if (effectId === "STRUCTURED_EFFECTS_V1" && Array.isArray(config.effects)) {
-    const byTrigger = new Map<string, Extract<CardAbility, { trigger: "ENTER_FIELD" | "LEAVE_FIELD" | "ACTIVE" }>["effects"]>();
+    const byTrigger = new Map<string, CardEffect[]>();
     for (const raw of config.effects) {
       if (!raw || typeof raw !== "object") continue;
       const effect = raw as Record<string, unknown>;
       const trigger = effect.trigger;
       const action = effect.action;
       const target = effect.target;
-      if (!["ENTER_FIELD", "LEAVE_FIELD", "ACTIVE"].includes(trigger as string) ||
-           !["BUFF", "DAMAGE", "HEAL", "SILENCE", "DESTROY", "ADD_GOLD", "ADD_NEXT_TURN_GOLD", "DRAW", "REDUCE_COST", "INCREASE_COST", "STUN", "ADD_KEYWORD", "REMOVE_KEYWORD", "SWAP_STATS", "ADD_DAMAGE_MODIFIER", "SUMMON", "GENERATE"].includes(action as string) ||
+       if (!["ENTER_FIELD", "LEAVE_FIELD", "ACTIVE", "OTHER_ALLY_ATTACK", "TURN_END"].includes(trigger as string) ||
+           !["BUFF", "SET_STATS", "DAMAGE", "HEAL", "SILENCE", "DESTROY", "ADD_GOLD", "ADD_NEXT_TURN_GOLD", "DRAW", "REDUCE_COST", "INCREASE_COST", "STUN", "ADD_KEYWORD", "REMOVE_KEYWORD", "SWAP_STATS", "ADD_DAMAGE_MODIFIER", "SUMMON", "GENERATE"].includes(action as string) ||
            (target !== undefined && (!target || typeof target !== "object"))) continue;
       const list = byTrigger.get(trigger as string) ?? [];
-       list.push({ type: "STRUCTURED", action: action as Extract<typeof list[number], { type: "STRUCTURED" }>["action"], target: target as Extract<typeof list[number], { type: "STRUCTURED" }>["target"], values: effect.values as Extract<typeof list[number], { type: "STRUCTURED" }>["values"] });
+       list.push({ type: "STRUCTURED", action: action as StructuredCardEffect["action"], target: target as StructuredCardEffect["target"], values: effect.values as StructuredCardEffect["values"] });
       byTrigger.set(trigger as string, list);
     }
     return [...byTrigger.entries()].map(([trigger, effects]) =>
       trigger === "LEAVE_FIELD"
         ? { trigger: "LEAVE_FIELD" as const, reasons: ["RETIRE" as const], effects }
-        : { trigger: trigger as "ENTER_FIELD" | "ACTIVE", effects },
+        : { trigger: trigger as Exclude<CardAbility["trigger"], "LEAVE_FIELD" | "POSITION">, effects },
     );
   }
   if (effectId === "ACTIVE_GAIN_GOLD") {

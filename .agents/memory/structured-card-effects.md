@@ -26,3 +26,9 @@ For multi-effect sentences, preserve action order by sorting recognized clauses 
 **Why:** Analyzer-wide text scans can bind a later effect's filter or numeric value to the wrong action, changing both the preview and runtime behavior.
 
 **How to apply:** Extract action values from the matched action phrase, and for special target shapes such as adjacent random summons, derive filters from the target clause before the summon verb. Cover exact production wording and a multi-effect regression.
+
+Dynamic stat effects must carry their trigger context through the engine's pending-effect frame; `LAST_ATTACKER` is resolved from that context rather than from display text or card identity. End-of-turn abilities also need an explicit board-wide dispatch before the next turn starts.
+
+**Why:** Attack-triggered values are only available at resolution time, and omitting TURN_END dispatch makes valid structured effects silently inert.
+
+**How to apply:** Add the reference to the shared value resolver, preserve it through continuations, and test both the event-triggered stat change and the turn-end reset.

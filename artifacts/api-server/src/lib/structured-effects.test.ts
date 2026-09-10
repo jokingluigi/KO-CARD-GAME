@@ -201,6 +201,33 @@ test("현재 registry에서 제공하는 Effect Library 메타데이터를 노�
   assert.deepEqual(library.targetResolvers[0]?.config.defaultCardScope, ["HAND", "DECK", "BOARD"]);
   assert.deepEqual(library.targetResolvers[0]?.config.filters, ["GENERATED", "MIN_COST"]);
   assert.deepEqual(library.targetResolvers[0]?.config.randomScope, ["STANDARD", "FULL"]);
+  assert.ok(library.actions.some((action) => action.name === "SET_STATS"));
+  assert.deepEqual(
+    library.valueResolvers.find((resolver) => resolver.name === "REFERENCE_STAT")?.config,
+    { reference: ["SOURCE", "LAST_TARGET", "LAST_DRAWN_CARD", "LAST_ATTACKER", "LAST_DAMAGED_TARGET", "CAPTURED_CARD", "CURRENT_SLOT"], referenceStat: ["CURRENT_ATTACK", "CURRENT_HEALTH"] },
+  );
+});
+
+test("나토마토의 콤보 참조와 턴 종료 초기화를 각각 구조화한다", () => {
+  const result = analyzeEffectText("콤보:공격한 아군 선수의 공격력만큼 자신의 공격력을 증가시킵니다. 턴종료:자신의 공격력을 0으로 만듭니다.");
+
+  assert.equal(result.status, "success");
+  assert.equal(result.outcome, "supported");
+  assert.deepEqual(result.effects, [
+    {
+      trigger: "OTHER_ALLY_ATTACK",
+      action: "BUFF",
+      target: { zone: "BOARD", owner: "SELF", selection: "SELF", count: 1 },
+      values: { reference: "LAST_ATTACKER", referenceStat: "CURRENT_ATTACK" },
+    },
+    {
+      trigger: "TURN_END",
+      action: "SET_STATS",
+      target: { zone: "BOARD", owner: "SELF", selection: "SELF", count: 1 },
+      values: { attack: 0 },
+    },
+  ]);
+  assert.equal(isStructuredEffects({ effects: result.effects }), true);
 });
 
 test("생성된 아군 선수의 공격력과 체력을 함께 증가시키는 유사 표현도 분석한다", () => {
