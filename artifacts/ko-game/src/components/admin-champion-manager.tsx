@@ -172,8 +172,10 @@ export function AdminChampionManager({ onUnauthorized }: { onUnauthorized: () =>
       setBusy(false);
     }
   }
-  function editor(champion?: Champion) {
-    setEditing(champion ?? null); setForm(champion ? {
+   function editor(champion?: Champion) {
+     setAnalysisResults({});
+     setAnalyzingKey(null);
+     setEditing(champion ?? null); setForm(champion ? {
       name: champion.name, description: champion.description, imageUrl: champion.imageUrl,
       imageAssetId: champion.imageAssetId, maxHealth: champion.maxHealth, abilityName: champion.abilityName,
       abilityCost: champion.abilityCost, abilityText: champion.abilityText, abilityEffects: champion.abilityEffects,

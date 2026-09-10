@@ -169,7 +169,7 @@ function parseChampionInput(value: unknown): ChampionInput | null {
     abilityText: text("abilityText") ?? "", abilityEffects, hasQuest,
     questName: hasQuest ? text("questName", true) : null,
     questText: hasQuest ? text("questText", true) : null,
-     questCondition: hasQuest ? rawQuestCondition : null,
+     questCondition: hasQuest ? (rawQuestCondition ?? null) : null,
     questProgressRequired: hasQuest ? questProgressRequired : null,
     questRewardText: hasQuest ? text("questRewardText", true) : null,
     questRewardEffects: hasQuest ? object("questRewardEffects", true)! : null,
