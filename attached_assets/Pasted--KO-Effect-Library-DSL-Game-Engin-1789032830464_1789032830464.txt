@@ -1,0 +1,179 @@
+현재 KO 카드 관리의 "효과 설명" 자연어 분석 기능을 수정해줘.
+
+목표:
+관리자가 카드 효과 설명을 입력했는데 현재 Effect Library / DSL / Game Engine으로 구현할 수 없는 경우,
+절대로 단순 "분석 실패"로 끝내지 말고 반드시
+"이 효과를 실제 게임에 구현하기 위한 Replit Agent용 개발 프롬프트"를 자동 생성하게 해줘.
+
+1. 분석 결과 분류
+
+효과 입력 후:
+
+A. 현재 Effect Library로 구현 가능
+→ Structured Effect 생성
+→ [효과 적용]
+
+B. 문장 의미는 이해했지만 현재 엔진 기능이 부족함
+→ 반드시 NEW_MECHANIC_REQUIRED
+→ [Replit 구현 프롬프트 생성]
+
+C. 문장이 애매하거나 완전히 이해할 수 없음
+→ 가능하면 이해한 부분을 표시하고
+→ 그래도 [Replit 구현 프롬프트 생성] 버튼은 제공
+
+즉 카드 효과를 입력했는데 구현되지 않는 경우
+프롬프트 생성 기능이 사라지는 상황이 없어야 한다.
+
+2. Replit 구현 프롬프트 자동 생성
+
+생성되는 프롬프트에는 반드시 포함:
+
+- 카드 이름
+- 원본 효과 설명
+- 현재 Analyzer가 이해한 내용
+- 현재 지원되는 부분
+- 현재 지원되지 않는 부분
+- 필요한 것으로 추정되는 Trigger
+- Action
+- Target
+- Value Resolver
+- Condition
+- Listener / Duration / Sequence 등
+- 관련 KO 게임 규칙
+
+그리고 Replit Agent에게 다음을 명령:
+
+"이 카드 효과가 실제 게임에서 동작하도록 구현하세요."
+
+3. 기존 메커니즘 우선 재사용
+
+생성 프롬프트에 반드시:
+
+- 현재 Effect Library 먼저 확인
+- 기존 Trigger / Action / Target / Value Resolver / Condition / Listener 재사용
+- 기존 기능 조합으로 가능하면 새 Effect 생성 금지
+- 부족한 기능만 새 범용 메커니즘으로 추가
+
+를 포함해.
+
+4. 새 기능이 필요할 경우
+
+새 메커니즘은 특정 카드 전용 코드로 만들지 않는다.
+
+금지:
+if (card.name === "카드명")
+CARDNAME_EFFECT
+
+대신 향후 다른 카드에도 재사용 가능한 범용 기능으로 만든다.
+
+예:
+OTHER_ALLY_ATTACK
+WHILE_IN_HAND_EVENT
+SHUFFLE_STAT_VALUES
+COPY_CURRENT_STATS
+NEXT_MATCHING_EVENT
+
+5. Effect Library에 반드시 등록
+
+Replit Agent가 새 메커니즘을 구현하면:
+
+- Effect Registry
+- Schema
+- Handler
+- Analyzer mapping
+- 필요한 Resolver / Trigger / Condition
+- 테스트
+
+까지 등록하도록 생성 프롬프트에 포함해.
+
+그래야 다음에 비슷한 효과를 입력하면
+새로 코딩하지 않고 자동으로 기존 Effect를 재사용할 수 있어야 한다.
+
+6. 자연어 Analyzer도 함께 확장
+
+새 메커니즘 구현 시
+원본 문장 하나만 하드코딩하지 말고
+동일 의미의 자연어 표현들도 같은 Effect로 인식 가능하게 해.
+
+숫자/대상/Zone 등은 파라미터화해.
+
+예:
+
+"적 선수에게 피해 2"
+"적 선수에게 피해 5"
+
+를 서로 다른 효과로 만들지 말고
+
+DAMAGE {
+ target,
+ amount
+}
+
+형태로 재사용.
+
+7. 생성 UI
+
+구현 불가능한 카드에서는 반드시 표시:
+
+⚠ 현재 엔진에서 이 효과를 완전히 구현할 수 없습니다.
+
+지원되는 부분:
+[...]
+
+지원되지 않는 부분:
+[...]
+
+[Replit 구현 프롬프트 생성]
+
+버튼 클릭 후:
+
+[Replit Agent 구현 프롬프트]
+
+큰 텍스트 영역
+
+[프롬프트 복사]
+
+버튼 제공.
+
+8. 구현 후 재분석
+
+같은 화면에:
+
+[구현 완료 - 다시 분석]
+
+버튼도 제공.
+
+사용자가 생성된 프롬프트를 Replit Agent에 붙여넣어 구현한 뒤 이 버튼을 누르면
+이전 캐시를 사용하지 말고 최신 Effect Registry 기준으로 원래 효과를 다시 분석해.
+
+성공:
+✓ 이제 효과 구현 가능
+→ Structured Effect
+→ [효과 적용]
+
+아직 부족:
+→ 남은 unsupportedParts 표시
+→ 새로운 구현 프롬프트 다시 생성 가능
+
+9. 가장 중요한 규칙
+
+카드 효과를 구현할 수 없다고 해서:
+
+- 그냥 분석 실패로 종료
+- 효과를 무시하고 저장
+- 임의로 비슷한 다른 효과로 대체
+
+하지 마.
+
+현재 엔진으로 정확히 구현할 수 없다면
+반드시 "그 효과를 구현하기 위한 Replit Agent 프롬프트"를 생성할 수 있어야 한다.
+
+10. 안전/비용
+
+- 외부 Cursor / Devin / OpenHands / 별도 AI API 사용 금지
+- 프로젝트 전체 리팩터링 금지
+- 관련 Effect / Analyzer / Registry / Test만 최소 수정
+- 기존 게임 규칙 변경 금지
+- 특정 카드 이름 하드코딩 금지
+
+이 기능만 수정하고 완료 후 추가 작업하지 마.

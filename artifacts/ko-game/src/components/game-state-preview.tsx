@@ -197,7 +197,7 @@ export function GameStatePreview({
   
   return (
     <AltInspectProvider>
-    <div className={`flex min-h-[100dvh] w-full flex-col overflow-x-hidden overflow-y-auto bg-neutral-950 font-sans text-neutral-100 selection:bg-primary selection:text-black md:overflow-hidden ${
+    <div className={`ko-game-shell flex min-h-[100dvh] w-full flex-col overflow-x-hidden overflow-y-auto bg-neutral-950 font-sans text-neutral-100 selection:bg-primary selection:text-black md:overflow-hidden ${
       attackImpactTriggered && attackAnimation && attackAnimation.currentAttack >= 4
         ? `attack-screen-shake--${attackAnimation.impactLevel.toLowerCase()}`
         : ""
@@ -215,12 +215,12 @@ export function GameStatePreview({
         <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,_rgba(26,26,36,0.08)_0%,_rgba(5,5,5,0.18)_100%)]" />
       </div>
 
-      <div className="relative mx-auto flex min-h-[100dvh] w-full max-w-5xl flex-1 flex-col justify-between pb-0 pt-2 md:h-[100dvh] md:min-h-0 md:pt-4">
+      <div className="ko-game-stage relative mx-auto flex min-h-[100dvh] w-full max-w-5xl flex-1 flex-col justify-between pb-0 pt-2 md:h-[100dvh] md:min-h-0 md:pt-4">
          
          {/* TOP BAR: Opponent Info */}
-         <div className="relative z-[90] h-24 shrink-0 px-2 md:h-32 md:px-4">
+         <div className="ko-opponent-header relative z-[90] h-24 shrink-0 px-2 md:h-32 md:px-4">
             {/* Opponent Hand: centered like the player's hand */}
-            <div className="absolute left-1/2 top-0 z-[100] flex -translate-x-1/2 items-start -space-x-2 md:-space-x-4">
+             <div className="ko-opponent-hand absolute left-1/2 top-0 z-[100] flex -translate-x-1/2 items-start -space-x-2 md:-space-x-4">
                {opp.hand.length === 0 ? (
                  <span className="text-xs font-bold text-neutral-600">손패 없음</span>
                ) : (
@@ -234,7 +234,7 @@ export function GameStatePreview({
             </div>
 
             {/* Mirrored opponent HUD */}
-            <div className="ml-auto flex w-[180px] flex-col items-end gap-1 md:w-48 md:gap-2">
+            <div className="ko-opponent-hud ml-auto flex w-[180px] flex-col items-end gap-1 md:w-48 md:gap-2">
                 <div className="flex items-start gap-2 md:gap-3">
                  <div
                     ref={championRef}
@@ -282,11 +282,11 @@ export function GameStatePreview({
          </div>
 
          {/* BOARDS AREA */}
-         <div className="relative flex min-h-0 flex-1 flex-col items-center justify-center gap-4 py-2 md:gap-6 md:py-4">
+          <div className="ko-board-area relative flex min-h-0 flex-1 flex-col items-center justify-center gap-4 py-2 md:gap-6 md:py-4">
             
              {/* Opponent Board + Zones */}
-             <div className="flex w-full items-center justify-center gap-2 md:gap-4">
-                <div className="flex gap-2 md:gap-4">
+              <div className="ko-opponent-board-row flex w-full items-center justify-center gap-2 md:gap-4">
+                 <div className="ko-board-cards flex gap-2 md:gap-4">
                {opp.board.map((card, i) => (
                  <BoardSlot 
                    key={`opp-board-${i}`}
@@ -310,7 +310,8 @@ export function GameStatePreview({
                  />
                ))}
                 </div>
-                 <ZoneStack
+                  <ZoneStack
+                    className="ko-opponent-zones"
                    deckCount={opp.deck.length}
                    graveyardCount={opp.graveyard.length}
                    isOpponent
@@ -319,8 +320,8 @@ export function GameStatePreview({
             </div>
 
              {/* My Board + Zones */}
-             <div className="flex w-full items-center justify-center gap-2 md:gap-4">
-                <div className="flex gap-2 md:gap-4">
+              <div className="ko-player-board-row flex w-full items-center justify-center gap-2 md:gap-4">
+                 <div className="ko-board-cards flex gap-2 md:gap-4">
                {me.board.map((card, i) => (
                  <BoardSlot 
                    key={`me-board-${i}`}
@@ -349,7 +350,8 @@ export function GameStatePreview({
                  />
                ))}
                 </div>
-                 <ZoneStack
+                  <ZoneStack
+                    className="ko-player-zones"
                    deckCount={me.deck.length}
                    graveyardCount={me.graveyard.length}
                    onGraveyardClick={() => setOpenGraveyardPlayerId(me.id)}
@@ -357,7 +359,7 @@ export function GameStatePreview({
             </div>
          </div>
 
-           <aside className="absolute right-2 top-36 z-40 flex w-24 flex-col items-stretch gap-2 rounded border border-neutral-800 bg-black/85 p-2 shadow-2xl backdrop-blur-md md:fixed md:right-4 md:top-1/2 md:w-32 md:-translate-y-1/2 md:p-3">
+           <aside className="ko-game-controls absolute right-2 top-36 z-40 flex w-24 flex-col items-stretch gap-2 rounded border border-neutral-800 bg-black/85 p-2 shadow-2xl backdrop-blur-md md:fixed md:right-4 md:top-1/2 md:w-32 md:-translate-y-1/2 md:p-3">
               <button
                 type="button"
                 aria-label="설정 열기"
@@ -427,7 +429,7 @@ export function GameStatePreview({
                  role="dialog"
                  aria-modal="true"
                  aria-label="게임 설정"
-                 className="fixed right-2 top-36 z-[151] w-56 rounded-lg border border-neutral-700 bg-neutral-950 p-4 shadow-2xl md:right-40 md:top-1/2 md:-translate-y-1/2"
+                  className="ko-settings-dialog fixed right-2 top-36 z-[151] w-56 rounded-lg border border-neutral-700 bg-neutral-950 p-4 shadow-2xl md:right-40 md:top-1/2 md:-translate-y-1/2"
                  onClick={(event) => event.stopPropagation()}
                >
                  <div className="mb-3 flex items-center justify-between border-b border-neutral-800 pb-2">
@@ -507,10 +509,10 @@ export function GameStatePreview({
           )}
 
          {/* BOTTOM BAR: Player info & Hand */}
-          <div className="relative z-[90] flex min-h-[160px] shrink-0 items-end justify-start px-2 pb-2 md:min-h-[220px] md:px-4 md:pb-4">
+           <div className="ko-player-footer relative z-[90] flex min-h-[160px] shrink-0 items-end justify-start px-2 pb-2 md:min-h-[220px] md:px-4 md:pb-4">
             
             {/* Player Stats & Champion */}
-            <div className="z-[95] flex w-[180px] shrink-0 flex-col gap-1 md:w-48 md:gap-2">
+             <div className="ko-player-info z-[95] flex w-[180px] shrink-0 flex-col gap-1 md:w-48 md:gap-2">
               <div className="flex items-start gap-2 md:gap-3">
                 <div onClick={effectTargeting && validEffectTargetIds.has(me.id) ? () => onEffectTarget(me.id) : undefined} className={`relative flex h-28 w-20 shrink-0 flex-col items-center justify-center rounded-sm border-2 bg-neutral-900 md:h-40 md:w-28 ${effectTargeting && validEffectTargetIds.has(me.id) ? 'cursor-crosshair border-amber-400 shadow-[0_0_15px_rgba(251,191,36,0.5)]' : 'border-blue-600 shadow-[0_0_15px_rgba(37,99,235,0.2)]'}`}>
                   <span className="px-1 text-center text-[9px] font-black leading-tight text-blue-400 md:text-[12px]">
@@ -568,8 +570,8 @@ export function GameStatePreview({
             </div>
 
             {/* Player Hand */}
-             <div className="relative z-[100] flex h-full min-w-0 flex-1 items-end overflow-x-auto scrollbar-none pt-12 md:pt-16">
-               <div className="relative z-[100] flex w-max justify-start gap-2 px-4 pb-3 md:mx-0 md:px-0 md:justify-start md:gap-3">
+             <div className="ko-player-hand relative z-[100] flex h-full min-w-0 flex-1 items-end overflow-x-auto scrollbar-none pt-12 md:pt-16">
+                <div className="ko-hand-cards relative z-[100] flex w-max justify-start gap-2 px-4 pb-3 md:mx-0 md:px-0 md:justify-start md:gap-3">
                  {me.hand.length === 0 ? (
                     <span className="py-4 text-xs font-bold text-neutral-600">손패 없음</span>
                  ) : (
@@ -729,7 +731,7 @@ function BoardSlot({
 }) {
   const isEmpty = !card;
   
-  let containerClass = "w-[70px] h-[98px] md:w-[110px] md:h-[154px] relative flex flex-col transition-all duration-200 select-none overflow-visible ";
+  let containerClass = "ko-board-slot w-[70px] h-[98px] md:w-[110px] md:h-[154px] relative flex flex-col transition-all duration-200 select-none overflow-visible ";
   
   if (isEmpty) {
     containerClass += "border-2 border-dashed bg-neutral-900/30 items-center justify-center ";
@@ -763,7 +765,7 @@ function BoardSlot({
   const isDead = card.currentHealth <= 0;
 
   return (
-    <Inspectable content={<CardInspectContent card={card} />} className="relative shrink-0">
+    <Inspectable content={<CardInspectContent card={card} />} className="ko-board-slot-wrapper relative shrink-0">
     <div className="relative">
       {activeReady && (
         <button
@@ -814,14 +816,16 @@ function ZoneStack({
   graveyardCount,
   isOpponent = false,
   onGraveyardClick,
+  className = "",
 }: {
   deckCount: number;
   graveyardCount: number;
   isOpponent?: boolean;
   onGraveyardClick: () => void;
+  className?: string;
 }) {
   return (
-    <div className="flex shrink-0 flex-col gap-2 md:gap-3">
+    <div className={`ko-zone-stack flex shrink-0 flex-col gap-2 md:gap-3 ${className}`}>
       <div className="relative flex h-12 w-10 flex-col items-center justify-end overflow-hidden rounded border-2 border-neutral-600 bg-neutral-800 shadow md:h-16 md:w-14">
         <div className="absolute inset-1 border border-neutral-700/60" />
         <div className="h-4 w-4 rotate-45 border border-neutral-700/60 md:h-6 md:w-6" />
