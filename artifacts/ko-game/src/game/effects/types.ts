@@ -42,6 +42,17 @@ export type QueuedStructuredEffect = {
   };
 };
 
+export type AggregatedStatsResolver = {
+  source: 'LAST_DESTROYED_TARGETS';
+  attack: 'CURRENT_ATTACK_SUM';
+  health: 'CURRENT_HEALTH_SUM';
+};
+
+export type CardDefinitionReference = {
+  id?: string;
+  name?: string;
+};
+
 export type CardEffect =
   | {
       type: 'GAIN_GOLD';
@@ -65,6 +76,9 @@ export type CardEffect =
          queuedEffect?: QueuedStructuredEffect;
         /** Serializable card definition supplied by the structured DSL. */
         definition?: CardDefinition;
+         /** Optional data reference resolved from the runtime card pool. */
+         definitionRef?: CardDefinitionReference;
+         aggregateStats?: AggregatedStatsResolver;
         leftEffects?: CardEffect[];
         rightEffects?: CardEffect[];
       };

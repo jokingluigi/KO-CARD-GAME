@@ -61,6 +61,11 @@ export interface GameState {
     effectIndex: number;
     selectedTargetIds: string[];
     lastTargetIds: string[];
+     /** Values produced by a previous structured effect in this resolution frame. */
+     lastAggregatedStats?: {
+       attack: number;
+       health: number;
+     };
     validTargetIds: string[];
     minTargets: number;
     maxTargets: number;

@@ -107,6 +107,34 @@ function sourceInState(state: GameState, id: string): CardInstance | undefined {
     .find((card) => card.instanceId === id);
 }
 
+function withLastAggregatedStats(
+  state: GameState,
+  stats: { attack: number; health: number },
+): GameState {
+  return state.targetingState
+    ? { ...state, targetingState: { ...state.targetingState, lastAggregatedStats: stats } }
+    : state;
+}
+
+function clearLastAggregatedStats(state: GameState): GameState {
+  if (!state.targetingState?.lastAggregatedStats) return state;
+  const { lastAggregatedStats: _unused, ...targetingState } = state.targetingState;
+  return { ...state, targetingState };
+}
+
+function resolveCardDefinition(
+  state: GameState,
+  definition: CardDefinition | undefined,
+  reference: { id?: string; name?: string } | undefined,
+): CardDefinition | undefined {
+  if (definition) return definition;
+  if (!reference) return undefined;
+  return state.cardPool?.find((candidate) =>
+    (reference.id !== undefined && candidate.id === reference.id) ||
+    (reference.name !== undefined && candidate.name === reference.name),
+  );
+}
+
 type TriggerContext = NonNullable<GameState['targetingState']>['triggerContext'];
 
 function referenceStatValue(
@@ -297,6 +325,9 @@ export function resolvePendingEffects(state: GameState): GameState {
       next.targetingState.continuation.sourceInstanceId === pending.sourceInstanceId &&
       next.targetingState.continuation.effectIndex > pending.effectIndex) return next;
     if (ids?.length) last = ids;
+     if (next.targetingState?.sourceInstanceId === pending.sourceInstanceId) {
+       last = next.targetingState.lastTargetIds;
+     }
   }
   if (pending.markActiveUsed) {
     next = {
@@ -393,7 +424,7 @@ function applyEffect(
     const damageAmount = effect.action === 'DAMAGE'
       ? amount + getDamageModifierBonus(state, playerId, sourceCard)
       : amount;
-    const definition = effect.values?.definition;
+    const definition = resolveCardDefinition(state, effect.values?.definition, effect.values?.definitionRef);
     const validDefinition = definition &&
       typeof definition.id === 'string' && typeof definition.cost === 'number' &&
       typeof definition.attack === 'number' && typeof definition.health === 'number' &&
@@ -404,10 +435,21 @@ function applyEffect(
       if (!validDefinition) throw new Error(`${effect.action} requires a serializable card definition.`);
       const owner = state.players.find((player) => player.id === playerId);
       if (!owner) return state;
-      const generated = generateCardInstance(definition, {
+      const generatedBase = generateCardInstance(definition, {
         instanceId: `${sourceCard.instanceId}:${effect.action}:${state.events.length}`,
         isGenerated: true,
       });
+      const aggregate = effect.action === 'SUMMON' && effect.values?.aggregateStats?.source === 'LAST_DESTROYED_TARGETS'
+        ? state.targetingState?.lastAggregatedStats
+        : undefined;
+      const generated = aggregate
+        ? {
+            ...generatedBase,
+            currentAttack: aggregate.attack,
+            currentHealth: aggregate.health,
+            maxHealth: aggregate.health,
+          }
+        : generatedBase;
       if (effect.action === 'GENERATE') {
         return {
           ...state,
@@ -419,7 +461,14 @@ function applyEffect(
         };
       }
       const slot = owner.board.findIndex((card) => card === null);
-      return slot < 0 ? state : enterField(state, playerId, generated, slot as 0 | 1 | 2 | 3,
+      if (slot < 0) return state;
+      const summonState = clearLastAggregatedStats({
+        ...state,
+        targetingState: state.targetingState
+          ? { ...state.targetingState, lastTargetIds: [generated.instanceId] }
+          : state.targetingState,
+      });
+      return enterField(summonState, playerId, generated, slot as 0 | 1 | 2 | 3,
         { type: 'CARD', cardInstanceId: sourceCard.instanceId });
     }
     if (effect.action === 'SWITCH_EFFECT_BRANCH') {
@@ -595,13 +644,25 @@ function applyEffect(
               randomCandidates,
               randomForEffect(state, sourceCard, effect),
             ).slice(0, Math.max(0, target.count));
-    if (!targets.length) return state;
+    if (!targets.length) {
+      return effect.action === 'DESTROY'
+        ? withLastAggregatedStats(state, { attack: 0, health: 0 })
+        : state;
+    }
     const ids = new Set(targets.map((card) => card.instanceId));
     if (effect.action === 'DESTROY') {
-      return targets.reduce((nextState, target) => {
+      const aggregatedStats = targets.reduce(
+        (stats, target) => ({
+          attack: stats.attack + target.currentAttack,
+          health: stats.health + target.currentHealth,
+        }),
+        { attack: 0, health: 0 },
+      );
+      const destroyedState = targets.reduce((nextState, target) => {
         const result = destroyCard(nextState, targetOwner, target.instanceId);
         return result.success ? result.state : nextState;
       }, state);
+      return withLastAggregatedStats(destroyedState, aggregatedStats);
     }
     if (effect.action === 'REMOVE_FROM_GAME') {
       return targets.reduce((nextState, target) => {
@@ -989,7 +1050,8 @@ export function resolveTriggeredAbilities(
     active: true, playerId, sourceInstanceId: card.instanceId, sourceCard: card, effects,
     effectIndex: 0, selectedTargetIds: [], lastTargetIds: options.chosenTargetInstanceIds ?? [],
     validTargetIds: [], minTargets: 0, maxTargets: 0, mandatory: true, cancelable: false,
-    triggerContext: { playedFromHand: options.playedFromHand, baseCost: options.baseCost, attackerInstanceId: options.attackerInstanceId, damagedTargetInstanceId: options.damagedTargetInstanceId, healthBefore: options.healthBefore, healthAfter: options.healthAfter },
+     triggerContext: { playedFromHand: options.playedFromHand, baseCost: options.baseCost, attackerInstanceId: options.attackerInstanceId, damagedTargetInstanceId: options.damagedTargetInstanceId, healthBefore: options.healthBefore, healthAfter: options.healthAfter },
+     lastAggregatedStats: state.targetingState?.lastAggregatedStats,
   });
 }
 
@@ -1004,6 +1066,7 @@ export function resolveActiveAbility(
   return beginResolution(state, {
     active: true, playerId, sourceInstanceId: card.instanceId, effects: active.effects, effectIndex: 0,
     selectedTargetIds: [], lastTargetIds: [], validTargetIds: [], minTargets: 0, maxTargets: 0, mandatory: true, cancelable: false, markActiveUsed: true,
+    lastAggregatedStats: state.targetingState?.lastAggregatedStats,
   });
 }
 

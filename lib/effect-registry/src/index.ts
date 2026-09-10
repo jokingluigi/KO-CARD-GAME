@@ -25,7 +25,7 @@ export type TargetOwner = typeof TARGET_OWNERS[number];
 export type TargetSelection = typeof TARGET_SELECTIONS[number];
 export type RandomScope = typeof RANDOM_SCOPES[number];
 export type DamageSource = typeof DAMAGE_SOURCES[number];
-export type EffectActionSchema = { target: boolean; amount?: boolean; stats?: boolean; statMultiplier?: boolean; referenceStat?: boolean; keyword?: boolean; damageSource?: boolean; branches?: boolean; queuedEffect?: boolean };
+export type EffectActionSchema = { target: boolean; amount?: boolean; stats?: boolean; statMultiplier?: boolean; referenceStat?: boolean; keyword?: boolean; damageSource?: boolean; branches?: boolean; queuedEffect?: boolean; cardDefinition?: boolean; aggregateStats?: boolean };
 export type RegistryStatus = "ACTIVE" | "DISABLED";
 
 export const DISPLAY_LABELS = {
@@ -47,7 +47,7 @@ export const ACTION_SCHEMAS: Record<Action, EffectActionSchema> = {
   DAMAGE: { target: true, amount: true }, BUFF: { target: true, stats: true, statMultiplier: true, referenceStat: true }, SET_STATS: { target: true, stats: true }, HEAL: { target: true, amount: true },
   REDUCE_COST: { target: true, amount: true }, INCREASE_COST: { target: true, amount: true }, STUN: { target: true },
   SILENCE: { target: true }, DESTROY: { target: true }, ADD_KEYWORD: { target: true, keyword: true }, REMOVE_KEYWORD: { target: true, keyword: true },
-  SWAP_STATS: { target: true }, ADD_DAMAGE_MODIFIER: { target: false, amount: true, damageSource: true }, SUMMON: { target: false }, GENERATE: { target: false }, CAPTURE: { target: true }, RELEASE_CAPTURED: { target: false },
+  SWAP_STATS: { target: true }, ADD_DAMAGE_MODIFIER: { target: false, amount: true, damageSource: true }, SUMMON: { target: false, cardDefinition: true, aggregateStats: true }, GENERATE: { target: false, cardDefinition: true }, CAPTURE: { target: true }, RELEASE_CAPTURED: { target: false },
   REMOVE_FROM_GAME: { target: true }, SWITCH_EFFECT_BRANCH: { target: false, branches: true }, QUEUE_EFFECT: { target: false, queuedEffect: true },
 };
 
@@ -85,6 +85,8 @@ export const EFFECT_LIBRARY = {
       ...(schema.damageSource ? { damageSource: [...DAMAGE_SOURCES] } : {}),
        ...(schema.branches ? { leftEffects: "Effect[]", rightEffects: "Effect[]" } : {}),
        ...(schema.queuedEffect ? { queueTrigger: ["NEXT_ALLY_WRESTLER_PLAYED"], queuedEffect: "Effect" } : {}),
+       ...(schema.cardDefinition ? { definition: "CardDefinition", definitionRef: "{ id?: string, name?: string }" } : {}),
+       ...(schema.aggregateStats ? { aggregateStats: "{ source: LAST_DESTROYED_TARGETS, attack: CURRENT_ATTACK_SUM, health: CURRENT_HEALTH_SUM }" } : {}),
     };
     return {
       name,

@@ -540,6 +540,21 @@ test("문서의 다음 턴 골드, 비용, 기절 문장을 분석한다", () =>
   }
 });
 
+test("발단 문장은 파괴 대상 합산, 정의 참조, 소환 대상 연계를 구조화한다", () => {
+  const result = analyzeEffectText("등장:내 필드에 있는 모든 생성된 카드를 파괴시킵니다. 그 카드들의 현재 공격과 체력의 수치를 합산한 수치를 가진 '좀비'를 1장 소환합니다. 소환한 '좀비'에게 도발을 부여합니다");
+  assert.equal(result.status, "success");
+  assert.equal(result.outcome, "supported");
+  assert.deepEqual(result.effects.map((effect) => effect.action), ["DESTROY", "SUMMON", "ADD_KEYWORD"]);
+  assert.deepEqual(result.effects[1]?.values?.aggregateStats, {
+    source: "LAST_DESTROYED_TARGETS",
+    attack: "CURRENT_ATTACK_SUM",
+    health: "CURRENT_HEALTH_SUM",
+  });
+  assert.deepEqual(result.effects[1]?.values?.definitionRef, { name: "좀비" });
+  assert.deepEqual(result.effects[2]?.target, { zone: "BOARD", owner: "SELF", selection: "SAME_TARGET", count: 1 });
+  assert.equal(isStructuredEffects({ effects: result.effects }), true);
+});
+
 test("KO 기본 메커니즘 어휘와 DSL 트리거를 새 메커니즘 요청 없이 분석한다", () => {
   const cases = [
     "등장: 자신에게 +2/+2", "조건: 내 손패에 Generated 선수가 있으면 등장: 카드 1장을 뽑습니다.",

@@ -16,3 +16,4 @@
 - [Inspector viewport placement](inspector-viewport-placement.md) — shared card details measure the anchor and panel, choose the roomier side, then clamp inside the viewport.
 - [Mobile board density](mobile-board-density.md) — portrait board rows use the full four-slot width while deck/grave controls move into compact row controls; hand cards overlap without shrinking away readability.
 - [Generated damage modifiers](damage-modifier-source.md) — field auras use explicit source scopes and are evaluated for both card effects and combat damage.
+- [Aggregated summon stats](aggregated-summon-stats.md) — sequential destroy effects can expose current-stat sums to a later summon without card-specific runtime branches.

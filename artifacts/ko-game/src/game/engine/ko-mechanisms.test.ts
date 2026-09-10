@@ -61,6 +61,95 @@ test('KO mechanisms: SUMMON/GENERATE require serializable definitions and switch
   assert.equal(player(switched).currentGold, 2);
 });
 
+test('KO mechanisms: 발단 destroys generated board cards, sums current stats, and taunts the summoned zombie', () => {
+  const zombieDefinition = {
+    id: 'zombie-token',
+    name: '좀비',
+    cardType: 'WRESTLER' as const,
+    cost: 0,
+    attack: 1,
+    health: 1,
+    rulesText: '으에에엙',
+    isToken: true,
+    isChampionToken: false,
+    keywords: [] as const,
+    abilities: [],
+  };
+  const source = card('발단', {
+    abilities: [{
+      trigger: 'ENTER_FIELD',
+      effects: [
+        {
+          type: 'STRUCTURED',
+          action: 'DESTROY',
+          target: { zone: 'BOARD', owner: 'SELF', selection: 'ALL', count: 20, filter: { isGenerated: true } },
+        },
+        {
+          type: 'STRUCTURED',
+          action: 'SUMMON',
+          values: {
+            definition: zombieDefinition,
+            aggregateStats: {
+              source: 'LAST_DESTROYED_TARGETS',
+              attack: 'CURRENT_ATTACK_SUM',
+              health: 'CURRENT_HEALTH_SUM',
+            },
+          },
+        },
+        {
+          type: 'STRUCTURED',
+          action: 'ADD_KEYWORD',
+          target: { zone: 'BOARD', owner: 'SELF', selection: 'SAME_TARGET', count: 1 },
+          values: { keyword: 'TAUNT' },
+        },
+      ],
+    }],
+  });
+  const generatedA = card('generated-a', { isGenerated: true, currentAttack: 2, currentHealth: 4, maxHealth: 6 });
+  const generatedB = card('generated-b', { isGenerated: true, currentAttack: 5, currentHealth: 3, maxHealth: 3 });
+  const directChampion = card('direct-champion', { isGenerated: true, isDirectDeployedChampion: true, currentAttack: 99, currentHealth: 99 });
+  let initial = state();
+  initial = enterField(initial, 'player-1', generatedA, 0);
+  initial = enterField(initial, 'player-1', generatedB, 1);
+  initial = enterField(initial, 'player-1', directChampion, 3);
+  const result = enterField(initial, 'player-1', source, 2);
+  const owner = player(result);
+  const zombie = owner.board.find((entry) => entry?.definitionId === 'zombie-token');
+  assert.equal(owner.graveyard.some((entry) => entry.instanceId === generatedA.instanceId), true);
+  assert.equal(owner.graveyard.some((entry) => entry.instanceId === generatedB.instanceId), true);
+  assert.equal(owner.board[3]?.instanceId, directChampion.instanceId);
+  assert.equal(zombie?.currentAttack, 7);
+  assert.equal(zombie?.currentHealth, 7);
+  assert.deepEqual(zombie?.keywords, ['TAUNT']);
+});
+
+test('KO mechanisms: an aggregate summon uses zero stats when no generated board cards exist', () => {
+  const source = card('empty-발단', {
+    abilities: [{
+      trigger: 'ENTER_FIELD',
+      effects: [
+        {
+          type: 'STRUCTURED',
+          action: 'DESTROY',
+          target: { zone: 'BOARD', owner: 'SELF', selection: 'ALL', count: 20, filter: { isGenerated: true } },
+        },
+        {
+          type: 'STRUCTURED',
+          action: 'SUMMON',
+          values: {
+            definition: { id: 'empty-zombie', name: '좀비', cardType: 'WRESTLER', cost: 0, attack: 1, health: 1, rulesText: '', isToken: true, isChampionToken: false, keywords: [], abilities: [] },
+            aggregateStats: { source: 'LAST_DESTROYED_TARGETS', attack: 'CURRENT_ATTACK_SUM', health: 'CURRENT_HEALTH_SUM' },
+          },
+        },
+      ],
+    }],
+  });
+  const result = enterField(state(), 'player-1', source, 0);
+  const zombie = player(result).board.find((entry) => entry?.definitionId === 'empty-zombie');
+  assert.equal(zombie?.currentAttack, 0);
+  assert.equal(zombie?.currentHealth, 0);
+});
+
 test('KO mechanisms: silence resets base state and dodge charges are represented compatibly', () => {
   const target = card('target', { currentAttack: 9, currentHealth: 9, maxHealth: 9, dodgeAvailable: true, dodgeCharges: 2 });
   const s = state();
