@@ -1,8 +1,8 @@
 import {
-  ACTION_SCHEMAS, ACTIONS, CONDITIONS, DEFAULT_CARD_TARGET_SCOPE, EFFECT_CAPABILITIES, EFFECT_LIBRARY, KEYWORDS, TARGET_OWNERS,
+  ACTION_SCHEMAS, ACTIONS, CONDITIONS, DAMAGE_SOURCES, DEFAULT_CARD_TARGET_SCOPE, EFFECT_CAPABILITIES, EFFECT_LIBRARY, KEYWORDS, TARGET_OWNERS,
   RANDOM_SCOPES, TARGET_SELECTIONS, TARGET_ZONES, TRIGGERS,
   type Action, type Condition, type Keyword, type TargetOwner, type TargetSelection,
-  type RandomScope, type TargetZone, type Trigger,
+  type DamageSource, type RandomScope, type TargetZone, type Trigger,
 } from "@workspace/effect-registry";
 
 export { ACTIONS, KEYWORDS, TRIGGERS };
@@ -18,7 +18,7 @@ export type Target = {
   randomScope?: RandomScope;
 };
 export type EffectCondition = { type: Condition; expression?: string };
-export type StructuredEffect = { trigger: Trigger; action: Action; target?: Target; conditions?: EffectCondition[]; values?: { attack?: number; health?: number; attackMultiplier?: number; healthMultiplier?: number; amount?: number; keyword?: Keyword; leftEffects?: StructuredEffect[]; rightEffects?: StructuredEffect[] } };
+export type StructuredEffect = { trigger: Trigger; action: Action; target?: Target; conditions?: EffectCondition[]; values?: { attack?: number; health?: number; attackMultiplier?: number; healthMultiplier?: number; amount?: number; keyword?: Keyword; damageSource?: DamageSource; leftEffects?: StructuredEffect[]; rightEffects?: StructuredEffect[] } };
 export type AnalysisOutcome = "supported" | "mechanism_required" | "analysis_failure";
 export type Analysis = { status: "success" | "partial" | "failure"; outcome: AnalysisOutcome; effects: StructuredEffect[]; keywords: Keyword[]; unsupportedSegments: string[]; summaries: string[]; reason?: string };
 
@@ -75,7 +75,6 @@ function targetFor(text: string, randomPool = false): Target {
   if (/(?:내|자신의)\s*챔피언/.test(text)) return { zone: "PLAYER", owner: "SELF", selection: "SELF", count: 1 };
   const generated = GENERATED_FILTER_PATTERN.test(text);
   const activeCardScope = ACTIVE_CARD_SCOPE_PATTERN.test(text);
-  if (/(자신|이\s*카드)/.test(text)) return { zone: "BOARD", owner: "SELF", selection: "SELF", count: 1 };
   const hand = /손패/.test(text), deck = /덱/.test(text), enemy = /(적|상대)\s*선수/.test(text);
   const random = /(무작위|랜덤)/.test(text), all = /(모든|전부)/.test(text);
   const cardType = /선수/.test(text)
@@ -87,6 +86,18 @@ function targetFor(text: string, randomPool = false): Target {
     ? "FULL" as const
     : "STANDARD" as const;
   const randomTarget = random && !all;
+  const adjacentEmptySlots = /양\s*옆\s*(?:의\s*)?빈\s*슬롯/.test(text);
+  if (randomPool && adjacentEmptySlots && randomTarget) {
+    return {
+      zone: "BOARD",
+      owner: "SELF",
+      ...(cardType ? { cardType } : {}),
+      selection: "ADJACENT_EMPTY_SLOTS",
+      count: 2,
+      randomScope,
+    };
+  }
+  if (/(자신|이\s*카드)/.test(text)) return { zone: "BOARD", owner: "SELF", selection: "SELF", count: 1 };
   if (activeCardScope) {
     return {
       zones: [...DEFAULT_CARD_TARGET_SCOPE],
@@ -139,6 +150,9 @@ function effect(trigger: Trigger, action: Action, body: string, index: number, p
           ? body.match(/(?:비용|코스트)(?:을|를)?\s*(?:[+-]?(\d+)|(\d+)\s*(?:감소|증가|낮))/)?.[1] ?? body.match(/(?:비용|코스트)(?:을|를)?\s*(?:[+-]?(\d+)|(\d+)\s*(?:감소|증가|낮))/)?.[2]
           : undefined;
     values.amount = amountText ? Number(amountText) : numberFrom(body);
+  }
+  if (action === "ADD_DAMAGE_MODIFIER") {
+    values.damageSource = /생성된/.test(body) ? "GENERATED" : "ALL";
   }
   if (schema.stats && !statMultiplier) {
     const pair = body.match(/([+-]\d+)\s*\/\s*([+-]\d+)/);
@@ -209,6 +223,7 @@ export function analyzeEffectText(input: string): Analysis {
     ["ADD_GOLD", /(?:현재\s*)?(?:\d+\s*(?:g|골드)|골드(?:를|을)?\s*[+]?\d+|현재\s*골드\s*[+]\d+)\s*(?:획득|얻(?:음|습니다)?|추가)?/i],
     ["DRAW", /(?:(?:카드)?\s*(?:\d+\s*장|한\s*장|\d+)(?:을|를)?\s*(?:드로우|뽑(?:기|습니다|는다|음)?))/],
     ["SWAP_STATS", STAT_SWAP_PATTERN],
+    ["ADD_DAMAGE_MODIFIER", /생성된\s*(?:카드|선수)?\s*(?:가|이)?\s*(?:주는\s*)?(?:데미지|피해)(?:가|를)?\s*(?:\d+\s*(?:증가|추가)|(?:증가|추가)\s*\d+)/],
     ["BUFF", /(?:[+-]\d+\s*\/\s*[+-]\d+|(?:공격력|체력)\s*[+-]\d+|(?:자신(?:의|에게)?\s*)?(?:현재\s*)?(?:공격(?:력)?\s*(?:과|\/|및)\s*체력|체력\s*(?:과|\/|및)\s*공격(?:력)?)(?:의\s*)?(?:(?:수치(?:를|가)?)|(?:을|를))?\s*\d+(?:\.\d+)?\s*배(?:로)?)/],
     ["DAMAGE", /(?:(?:피해|데미지)\s*\d+|\d+\s*(?:피해|데미지))/],
     ["HEAL", /(?:체력(?:을|를)?\s*[+]?\d+\s*(?:회복|치유)|\d+(?:만큼)?\s*(?:회복|치유))/],
@@ -240,6 +255,7 @@ export function analyzeEffectText(input: string): Analysis {
     }
     remainder += ` ${clauseRemainder}`;
   }
+    remainder = remainder.replace(/자신의\s*양\s*옆\s*(?:빈\s*)?슬롯(?:에)?|양\s*옆\s*(?:빈\s*)?슬롯(?:에)?|각각|이\s*카드가\s*필드에\s*있는\s*동안/g, "");
     remainder = remainder.replace(/(?:완전(?:히)?\s*)?(?:무작위|랜덤)(?:로)?\s*(?:선수|기술)?\s*(?:카드)?\s*(?:\d+\s*장|하나|한\s*장)?(?:에게|을|를|의)?|선택한|어디에\s*(?:있든|있는)|모든\s*위치의|손패\s*[,，]\s*덱\s*[,，]\s*(?:필드|보드)|손패\s*(?:및|와|과)\s*덱\s*(?:및|와|과)\s*(?:필드|보드)|생성된(?:\s*카드)?|모든\s*캐릭터(?:에게|을|를)?|모든\s*(?:선수|카드)(?:에게|을|를|의)?|(?:적|상대)\s*(?:챔피언|플레이어)(?:에게|을|를)?|(?:내|자신의)\s*챔피언(?:에게|을|를)?|(?:적|상대)\s*선수(?:\s*(?:\d+\s*장|하나|한\s*장))?(?:에게|을|를)?|(?:아군|내)\s*선수(?:\s*(?:\d+\s*장|하나|한\s*장))?(?:에게|을|를)?|(?:적|상대)\s*캐릭터(?:\s*(?:\d+\s*장|하나|한\s*장))?(?:에게|을|를)?|(?:아군|내)\s*캐릭터(?:\s*(?:\d+\s*장|하나|한\s*장))?(?:에게|을|를)?|(?:손패|덱|필드|보드)(?!의?\s*(?:무작위\s*)?(?:선수|카드))(?:의)?|손패의\s*(?:무작위\s*)?선수(?:\s*카드)?(?:\s*(?:\d+\s*장|하나|한\s*장))?(?:에게|을|를|의)?|덱의\s*(?:무작위\s*)?(?:선수|카드)(?:\s*카드)?(?:\s*(?:\d+\s*장|하나|한\s*장))?(?:에게|을|를|의)?|필드의\s*(?:무작위\s*)?(?:선수|카드)(?:\s*카드)?(?:\s*(?:\d+\s*장|하나|한\s*장))?(?:에게|을|를|의)?|(?:자신|이\s*카드)(?:에게|을|를)?|(?:카드\s*)?(?:\d+\s*장|한\s*장)|선수(?:\s*카드)?(?:을|를)?|\d+\s*턴\s*동안|(?:에게|을|를|의|에)|(?:그리고|그\s*후|이후|하고|한\s*뒤|한\s*후|주고)|\s+/g, "");
   // Action endings remain after matcher only for Korean conjugations.
    remainder = remainder.replace(/(합니다|시키고|시킵니다|부여|획득|얻음|얻습니다|줍니다|준다|주|드로우|뽑습니다|뽑기|포획|제거|소환|생성|해방|감소|증가)/g, "");
@@ -293,8 +309,8 @@ export function isStructuredEffects(value: unknown): value is { effects: Structu
       if (zones.some((zone) => zone === "CHARACTER") && ["REDUCE_COST", "INCREASE_COST"].includes(item.action)) return false;
       if (zones.some((zone) => zone === "PLAYER") && !(zones.length === 1 && ((item.action === "DAMAGE" && target.owner === "ENEMY" && target.selection === "SELF") || (item.action === "HEAL" && target.owner === "SELF" && target.selection === "SELF")))) return false;
       if (target.filter && (typeof target.filter !== "object" || target.filter === null || target.filter.isGenerated !== undefined && typeof target.filter.isGenerated !== "boolean")) return false;
-      if (target.randomScope !== undefined && (!RANDOM_SCOPES.includes(target.randomScope) || target.selection !== "RANDOM")) return false;
-    } else if (target !== undefined && !(["SUMMON", "GENERATE"].includes(item.action) && target.selection === "RANDOM")) return false;
+      if (target.randomScope !== undefined && (!RANDOM_SCOPES.includes(target.randomScope) || !["RANDOM", "ADJACENT_EMPTY_SLOTS"].includes(target.selection))) return false;
+    } else if (target !== undefined && !(["SUMMON", "GENERATE"].includes(item.action) && ["RANDOM", "ADJACENT_EMPTY_SLOTS"].includes(target.selection))) return false;
     if (schema.amount && !(typeof values?.amount === "number" && Number.isFinite(values.amount) && values.amount >= 0 && values.amount <= 999)) return false;
     if (schema.stats || schema.statMultiplier) {
       const validStats = schema.stats &&
@@ -308,6 +324,7 @@ export function isStructuredEffects(value: unknown): value is { effects: Structu
       if (!validStats && !validMultiplier) return false;
     }
     if (schema.keyword && !KEYWORDS.includes(values?.keyword as Keyword)) return false;
+    if (schema.damageSource && !DAMAGE_SOURCES.includes(values?.damageSource as DamageSource)) return false;
     if (schema.branches && (!Array.isArray(values?.leftEffects) || !Array.isArray(values?.rightEffects))) return false;
     return !item.conditions || item.conditions.every((condition) => CONDITIONS.includes(condition.type));
   });

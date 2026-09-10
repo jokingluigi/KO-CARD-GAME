@@ -7,7 +7,8 @@ import { createInitialGameState } from '../engine/create-initial-game-state';
 import { drawCard } from '../engine/draw-card';
 import { destroyCard } from '../engine/destroy-card';
 import { enterField } from '../engine/enter-field';
-import { resolveActiveAbility, selectEffectTarget } from './effect-engine';
+import { attack } from '../engine/combat';
+import { getDamageModifierBonus, resolveActiveAbility, selectEffectTarget } from './effect-engine';
 import type { CardEffect } from './types';
 
 function definition(id: string, effects: CardEffect[]): CardDefinition {
@@ -107,6 +108,55 @@ test('액티브로 현재 공격력과 체력을 서로 교환한다', () => {
   assert.equal(result.players[0].board[0]?.currentAttack, 7);
   assert.equal(result.players[0].board[0]?.currentHealth, 3);
   assert.equal(result.players[0].board[0]?.maxHealth, 9);
+});
+
+test('등장 시 자신의 양옆 빈 슬롯에 표준 무작위 선수를 각각 소환한다', () => {
+  const source = instance('adjacent-summon-source', [
+    structured('SUMMON', {
+      zone: 'BOARD',
+      owner: 'SELF',
+      cardType: 'WRESTLER',
+      selection: 'ADJACENT_EMPTY_SLOTS',
+      count: 2,
+      randomScope: 'STANDARD',
+    }),
+  ]);
+  const state = createInitialGameState();
+  state.randomSeed = 11;
+  state.cardPool = [definition('adjacent-a', []), definition('adjacent-b', [])];
+
+  const result = enterField(state, 'player-1', source, 1);
+  assert.equal(result.players[0].board[0]?.isGenerated, true);
+  assert.equal(result.players[0].board[2]?.isGenerated, true);
+  assert.equal(result.players[0].board[3], null);
+});
+
+test('필드에 있는 카드가 생성 카드의 전투 피해를 보정하고 퇴장하면 만료된다', () => {
+  const aura = instance('generated-damage-aura', [
+    structured('ADD_DAMAGE_MODIFIER', undefined, { amount: 2, damageSource: 'GENERATED' }),
+  ]);
+  const generatedAttacker = { ...instance('generated-attacker'), isGenerated: true, currentAttack: 2, enteredThisTurn: false };
+  const defender = { ...instance('damage-defender'), currentHealth: 5, maxHealth: 5, boardSlot: 0 as const };
+  const state = createInitialGameState();
+  state.status = 'IN_PROGRESS';
+  state.activePlayerId = 'player-1';
+  const withAura = enterField(state, 'player-1', aura, 1);
+  withAura.players[0].board[0] = { ...generatedAttacker, boardSlot: 0 };
+  withAura.players[1].board[0] = defender;
+
+  assert.equal(getDamageModifierBonus(withAura, 'player-1', generatedAttacker), 2);
+  const attacked = attack(withAura, 'player-1', generatedAttacker.instanceId, {
+    type: 'WRESTLER',
+    playerId: 'player-2',
+    cardInstanceId: defender.instanceId,
+  });
+  assert.equal(attacked.state.players[1].board[0]?.currentHealth, 1);
+  assert.equal(attacked.state.events.at(-1)?.type, 'DAMAGE_DEALT');
+  assert.equal((attacked.state.events.at(-1) as { amount?: number }).amount, 4);
+
+  const removed = destroyCard(withAura, 'player-1', aura.instanceId);
+  assert.equal(removed.success, true);
+  assert.equal(getDamageModifierBonus(removed.state, 'player-1', generatedAttacker), 0);
 });
 
 test('이미 3/4인 카드의 현재 공격과 체력을 2배로 변경한다', () => {

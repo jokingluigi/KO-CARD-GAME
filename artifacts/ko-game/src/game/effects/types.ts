@@ -1,5 +1,5 @@
 import type {
-  Action, Keyword, RandomScope, TargetOwner, TargetSelection, TargetZone,
+  Action, DamageSource, Keyword, RandomScope, TargetOwner, TargetSelection, TargetZone,
 } from "@workspace/effect-registry";
 import type { CardDefinition } from '../cards/types';
 
@@ -42,7 +42,7 @@ export type CardEffect =
         optionalTarget?: boolean;
       };
       values?: {
-        attack?: number; health?: number; attackMultiplier?: number; healthMultiplier?: number; amount?: number; keyword?: CardKeyword;
+         attack?: number; health?: number; attackMultiplier?: number; healthMultiplier?: number; amount?: number; keyword?: CardKeyword; damageSource?: DamageSource;
         /** Serializable card definition supplied by the structured DSL. */
         definition?: CardDefinition;
         leftEffects?: CardEffect[];

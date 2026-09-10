@@ -83,6 +83,12 @@ test("필수 카드 문장을 안전한 구조화 효과로 분석한다", () =>
       target: { zone: "CHARACTER", owner: "ALL", selection: "ALL", count: 20 },
       values: { amount: 2 },
     },
+    {
+      text: "등장: 자신의 양 옆 빈 슬롯에 무작위 선수 카드를 각각 소환합니다. 이 카드가 필드에 있는 동안 생성된 카드가 주는 데미지가 2 증가합니다.",
+      actions: ["SUMMON", "ADD_DAMAGE_MODIFIER"],
+      target: { zone: "BOARD", owner: "SELF", cardType: "WRESTLER", selection: "ADJACENT_EMPTY_SLOTS", count: 2, randomScope: "STANDARD" },
+      values: undefined,
+    },
   ] as const;
 
   for (const example of cases) {
@@ -112,6 +118,27 @@ test("현재 공격력과 체력 교환의 유사 표현도 범용 SWAP_STATS로
     trigger: "ACTIVE",
     action: "SWAP_STATS",
     target: { zone: "BOARD", owner: "SELF", selection: "SELF", count: 1 },
+  });
+});
+
+test("양옆 무작위 소환과 생성 카드 피해 보정을 각각 구조화한다", () => {
+  const result = analyzeEffectText(
+    "등장: 자신의 양 옆 빈 슬롯에 무작위 선수 카드를 각각 소환합니다. 이 카드가 필드에 있는 동안 생성된 카드가 주는 데미지가 2 증가합니다.",
+  );
+
+  assert.equal(result.status, "success");
+  assert.deepEqual(result.effects[0]?.target, {
+    zone: "BOARD",
+    owner: "SELF",
+    cardType: "WRESTLER",
+    selection: "ADJACENT_EMPTY_SLOTS",
+    count: 2,
+    randomScope: "STANDARD",
+  });
+  assert.deepEqual(result.effects[1], {
+    trigger: "ENTER_FIELD",
+    action: "ADD_DAMAGE_MODIFIER",
+    values: { amount: 2, damageSource: "GENERATED" },
   });
 });
 

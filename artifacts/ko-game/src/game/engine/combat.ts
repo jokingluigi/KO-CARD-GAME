@@ -6,6 +6,7 @@ import type { GameState } from '../types/game-state';
 import type { BoardSlot } from './board-position';
 import { validateCurrentPlayer } from './turn-system';
 import {
+  getDamageModifierBonus,
   hasKeyword,
   resolveBoardListeners,
   resolveTriggeredAbilities,
@@ -257,12 +258,14 @@ export function attack(
       state,
       target.playerId,
     );
+    const attackerDamage = attacker.currentAttack +
+      getDamageModifierBonus(state, attackingPlayerId, attacker);
     const damagedDirectChampion = directChampion
-      ? receiveDamage(directChampion, attacker.currentAttack)
+      ? receiveDamage(directChampion, attackerDamage)
       : null;
     const remainingHealth = damagedDirectChampion
       ? damagedDirectChampion.currentHealth
-      : defendingPlayer.health - attacker.currentAttack;
+      : defendingPlayer.health - attackerDamage;
     const attackedState: GameState = {
       ...state,
       players: state.players.map((player) => {
@@ -327,7 +330,7 @@ export function attack(
               }
             : { type: 'PLAYER', playerId: target.playerId },
           reason: 'BASIC_ATTACK',
-          amount: attacker.currentAttack,
+          amount: attackerDamage,
         },
       ],
     };
@@ -379,6 +382,10 @@ export function attack(
   const defenderDodges =
     defender.dodgeAvailable && hasKeyword(defender, 'DODGE');
 
+  const attackerDamage = attacker.currentAttack +
+    getDamageModifierBonus(state, attackingPlayerId, attacker);
+  const defenderDamage = defender.currentAttack +
+    getDamageModifierBonus(state, target.playerId, defender);
   const damagedState: GameState = {
     ...state,
     players: state.players.map((player) => ({
@@ -386,13 +393,13 @@ export function attack(
       board: player.board.map((card) => {
         if (card?.instanceId === attackerInstanceId) {
           return {
-            ...receiveDamage(card, defender.currentAttack),
+            ...receiveDamage(card, defenderDamage),
             attacksUsedThisTurn: card.attacksUsedThisTurn + 1,
           };
         }
 
         if (card?.instanceId === defender.instanceId) {
-          return receiveDamage(card, attacker.currentAttack);
+          return receiveDamage(card, attackerDamage);
         }
 
         return card;
@@ -421,7 +428,7 @@ export function attack(
           cardInstanceId: defender.instanceId,
         },
         reason: 'COMBAT',
-        amount: defenderDodges ? 0 : attacker.currentAttack,
+          amount: defenderDodges ? 0 : attackerDamage,
       },
       {
         type: 'DAMAGE_DEALT',
@@ -430,12 +437,12 @@ export function attack(
         source: { type: 'CARD', cardInstanceId: defender.instanceId },
         target: { type: 'CARD', cardInstanceId: attackerInstanceId },
         reason: 'COMBAT',
-        amount: attackerDodges ? 0 : defender.currentAttack,
+          amount: attackerDodges ? 0 : defenderDamage,
       },
     ],
   };
 
-  const exactZeroResolved = defenderDodges || defender.currentHealth - attacker.currentAttack !== 0
+  const exactZeroResolved = defenderDodges || defender.currentHealth - attackerDamage !== 0
     ? damagedState
     : resolveTriggeredAbilities(damagedState, attackingPlayerId, attacker, 'EXACT_ZERO_DAMAGE', {
       damagedTargetInstanceId: defender.instanceId, healthBefore: defender.currentHealth, healthAfter: 0,

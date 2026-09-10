@@ -16,6 +16,7 @@ import { drawCard } from '../engine/draw-card';
 import { silenceCard } from '../engine/card-status';
 import { enterField } from '../engine/enter-field';
 import { generateCard, generateCardInstance, getRandomCardGenerationCandidates, isEligibleForRandomPool } from '../cards/generation';
+import { getAdjacentSlots } from '../engine/board-position';
 
 /** The single authoritative target resolver.  UI must only display these ids. */
 export function getValidTargets(
@@ -66,6 +67,28 @@ function cardsInZones(
     return [];
   });
   return [...new Map(cards.map((card) => [card.instanceId, card])).values()];
+}
+
+export function getDamageModifierBonus(
+  state: GameState,
+  playerId: string,
+  sourceCard: CardInstance,
+): number {
+  const owner = state.players.find((player) => player.id === playerId);
+  if (!owner) return 0;
+
+  return owner.board.reduce((bonus, card) => {
+    if (!card || card.isSilenced) return bonus;
+    const aura = card.abilities
+      .flatMap((ability) => ability.effects)
+      .filter((effect): effect is Extract<CardEffect, { type: 'STRUCTURED' }> =>
+        effect.type === 'STRUCTURED' && effect.action === 'ADD_DAMAGE_MODIFIER',
+      )
+      .filter((effect) => effect.values?.damageSource === 'ALL' ||
+        (effect.values?.damageSource === 'GENERATED' && sourceCard.isGenerated))
+      .reduce((sum, effect) => sum + (effect.values?.amount ?? 0), 0);
+    return bonus + aura;
+  }, 0);
 }
 
 export function validateEffectTargets(
@@ -168,6 +191,42 @@ function applyRandomCardCreation(
         type: 'CARD',
         cardInstanceId: sourceCard.instanceId,
       });
+  }, state);
+}
+
+function applyAdjacentRandomCardCreation(
+  state: GameState,
+  playerId: string,
+  sourceCard: CardInstance,
+  effect: Extract<CardEffect, { type: 'STRUCTURED' }>,
+): GameState {
+  const target = effect.target;
+  const owner = state.players.find((player) => player.id === playerId);
+  if (!target || target.selection !== 'ADJACENT_EMPTY_SLOTS' || !owner || sourceCard.boardSlot === null) return state;
+  const slots = getAdjacentSlots(sourceCard.boardSlot)
+    .filter((slot) => owner.board[slot] === null)
+    .slice(0, Math.max(0, target.count));
+  const definitions = getRandomCardGenerationCandidates(state.cardPool ?? definitionsFromState(state), {
+    randomScope: target.randomScope,
+    cardType: target.cardType,
+    filter: target.filter,
+  });
+  const selected = shuffle(definitions, randomForEffect(state, sourceCard, effect)).slice(0, slots.length);
+
+  return selected.reduce((nextState, definition, index) => {
+    const generated = generateCard(definition, {
+      instanceId: `${sourceCard.instanceId}:${effect.action}:${nextState.events.length + index}`,
+      playerId,
+      source: { type: 'CARD', cardInstanceId: sourceCard.instanceId },
+      reason: effect.action,
+    });
+    return enterField(
+      nextState,
+      playerId,
+      generated.card,
+      slots[index]!,
+      { type: 'CARD', cardInstanceId: sourceCard.instanceId },
+    );
   }, state);
 }
 
@@ -304,10 +363,16 @@ function applyEffect(
   chosenTargetInstanceIds?: string[],
 ): GameState {
   if (effect.type === 'STRUCTURED') {
+    if (effect.action === 'SUMMON' && effect.target?.selection === 'ADJACENT_EMPTY_SLOTS') {
+      return applyAdjacentRandomCardCreation(state, playerId, sourceCard, effect);
+    }
     if ((effect.action === 'SUMMON' || effect.action === 'GENERATE') && effect.target?.selection === 'RANDOM') {
       return applyRandomCardCreation(state, playerId, sourceCard, effect);
     }
     const amount = effect.values?.amount ?? 0;
+    const damageAmount = effect.action === 'DAMAGE'
+      ? amount + getDamageModifierBonus(state, playerId, sourceCard)
+      : amount;
     const definition = effect.values?.definition;
     const validDefinition = definition &&
       typeof definition.id === 'string' && typeof definition.cost === 'number' &&
@@ -466,7 +531,7 @@ function applyEffect(
         };
       }
       return target.owner === 'ENEMY'
-        ? applyEffect(state, playerId, sourceCard, { type: 'DAMAGE_OPPONENT_CHAMPION', amount })
+        ? applyEffect(state, playerId, sourceCard, { type: 'DAMAGE_OPPONENT_CHAMPION', amount: damageAmount })
         : state;
     }
     const candidates = cardsInZones(candidatePlayer, zones);
@@ -551,7 +616,7 @@ function applyEffect(
         if (current.isDirectDeployedChampion) {
           return applyEffect(nextState, playerId, sourceCard, {
             type: 'DAMAGE_OPPONENT_CHAMPION',
-            amount,
+            amount: damageAmount,
           });
         }
         // Legacy snapshots may carry dodgeAvailable=true with a missing or
@@ -561,7 +626,7 @@ function applyEffect(
           current.dodgeCharges ?? 0,
           current.dodgeAvailable ? 1 : 0,
         );
-        const dodged = amount > 0 && dodgeCharges > 0 && hasKeyword(current, 'DODGE');
+        const dodged = damageAmount > 0 && dodgeCharges > 0 && hasKeyword(current, 'DODGE');
         if (dodged) {
           return {
             ...nextState,
@@ -571,14 +636,14 @@ function applyEffect(
             events: [...nextState.events, { type: 'DAMAGE_DEALT', playerId, cardInstanceId: sourceCard.instanceId, source: { type: 'CARD', cardInstanceId: sourceCard.instanceId }, target: { type: 'CARD', cardInstanceId: current.instanceId }, reason: 'CARD_EFFECT', amount: 0 }],
           };
         }
-        const health = current.currentHealth - amount;
+        const health = current.currentHealth - damageAmount;
         if (health > 0) {
           return {
             ...nextState,
             players: nextState.players.map((player) => player.id === targetOwner
               ? { ...player, board: player.board.map((card) => card?.instanceId === current.instanceId ? { ...card, currentHealth: health } : card) as typeof player.board }
               : player),
-            events: [...nextState.events, { type: 'DAMAGE_DEALT', playerId, cardInstanceId: sourceCard.instanceId, source: { type: 'CARD', cardInstanceId: sourceCard.instanceId }, target: { type: 'CARD', cardInstanceId: current.instanceId }, reason: 'CARD_EFFECT', amount }],
+            events: [...nextState.events, { type: 'DAMAGE_DEALT', playerId, cardInstanceId: sourceCard.instanceId, source: { type: 'CARD', cardInstanceId: sourceCard.instanceId }, target: { type: 'CARD', cardInstanceId: current.instanceId }, reason: 'CARD_EFFECT', amount: damageAmount }],
           };
         }
         const retired: CardInstance = { ...current, currentHealth: health, boardSlot: null };
@@ -588,7 +653,7 @@ function applyEffect(
             ? { ...player, board: player.board.map((card) => card?.instanceId === current.instanceId ? null : card) as typeof player.board, graveyard: [...player.graveyard, retired] }
             : player),
           events: [...nextState.events,
-            { type: 'DAMAGE_DEALT', playerId, cardInstanceId: sourceCard.instanceId, source: { type: 'CARD', cardInstanceId: sourceCard.instanceId }, target: { type: 'CARD', cardInstanceId: current.instanceId }, reason: 'CARD_EFFECT', amount },
+            { type: 'DAMAGE_DEALT', playerId, cardInstanceId: sourceCard.instanceId, source: { type: 'CARD', cardInstanceId: sourceCard.instanceId }, target: { type: 'CARD', cardInstanceId: current.instanceId }, reason: 'CARD_EFFECT', amount: damageAmount },
             { type: 'CARD_RETIRED', playerId: targetOwner, cardInstanceId: current.instanceId, boardSlot: current.boardSlot!, source: { type: 'CARD', cardInstanceId: sourceCard.instanceId }, target: { type: 'CARD', cardInstanceId: current.instanceId }, reason: 'RETIRE' },
           ],
         };
