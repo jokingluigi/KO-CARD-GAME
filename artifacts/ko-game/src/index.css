@@ -365,6 +365,11 @@
 .attack-screen-shake--heavy,
 .attack-screen-shake--very_heavy { animation: ko-attack-screen-shake 180ms ease-out; }
 
+.ko-touch-inspector {
+  box-sizing: border-box;
+  max-width: calc(100vw - 16px);
+}
+
 @media (prefers-reduced-motion: reduce) {
   .attack-animation__attacker,
   .attack-animation__target,
@@ -551,11 +556,7 @@
   }
 
   .ko-touch-inspector {
-    top: auto !important;
-    right: 8px !important;
-    bottom: max(8px, env(safe-area-inset-bottom));
-    left: 8px !important;
-    width: auto;
+    width: min(280px, calc(100vw - 16px));
     max-height: min(68dvh, 520px) !important;
     overflow-y: auto;
     pointer-events: auto;

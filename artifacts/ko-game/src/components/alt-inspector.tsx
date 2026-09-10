@@ -4,7 +4,9 @@ import {
   useCallback,
   useContext,
   useEffect,
+  useLayoutEffect,
   useMemo,
+  useRef,
   useState,
 } from 'react';
 import {
@@ -16,6 +18,7 @@ import { CardRenderer } from './card-renderer';
 
 interface InspectTarget {
   content: ReactNode;
+  anchor: HTMLElement;
   rect: DOMRect;
   showOnHover: boolean;
   showOnTouch: boolean;
@@ -50,10 +53,41 @@ const KEYWORD_LABELS: Record<string, string> = {
   SILENCE: '침묵',
 };
 
+export function calculateInspectorPosition(
+  anchorRect: Pick<DOMRect, 'left' | 'right' | 'top' | 'bottom'>,
+  panelRect: Pick<DOMRect, 'width' | 'height'>,
+  viewportWidth: number,
+  viewportHeight: number,
+): { left: number; top: number } {
+  const margin = 12;
+  const gap = 10;
+  const panelWidth = Math.min(panelRect.width, viewportWidth - margin * 2);
+  const panelHeight = Math.min(panelRect.height, viewportHeight - margin * 2);
+  const roomBelow = viewportHeight - anchorRect.bottom - gap;
+  const roomAbove = anchorRect.top - gap;
+  const preferredTop =
+    roomBelow >= panelHeight || roomBelow >= roomAbove
+      ? anchorRect.bottom + gap
+      : anchorRect.top - panelHeight - gap;
+  const preferredLeft =
+    anchorRect.right + gap + panelWidth <= viewportWidth - margin
+      ? anchorRect.right + gap
+      : anchorRect.left - panelWidth - gap;
+  const maxTop = Math.max(margin, viewportHeight - panelHeight - margin);
+  const maxLeft = Math.max(margin, viewportWidth - panelWidth - margin);
+
+  return {
+    left: Math.min(Math.max(margin, preferredLeft), maxLeft),
+    top: Math.min(Math.max(margin, preferredTop), maxTop),
+  };
+}
+
 export function AltInspectProvider({ children }: { children: ReactNode }) {
   const [isAltPressed, setIsAltPressed] = useState(false);
   const [target, setTarget] = useState<InspectTarget | null>(null);
   const [isTouchInspecting, setIsTouchInspecting] = useState(false);
+  const panelRef = useRef<HTMLElement>(null);
+  const [panelPosition, setPanelPosition] = useState({ left: 8, top: 8 });
 
   useEffect(() => {
     const releaseAlt = () => setIsAltPressed(false);
@@ -95,17 +129,41 @@ export function AltInspectProvider({ children }: { children: ReactNode }) {
     () => ({ isAltPressed, inspect, inspectTouch, clear }),
     [clear, inspect, inspectTouch, isAltPressed],
   );
-  const isVisible =
-    target && (isAltPressed || target.showOnHover || (target.showOnTouch && isTouchInspecting));
-  const panelWidth = 280;
-  const left = target
-    ? target.rect.right + panelWidth + 16 <= window.innerWidth
-      ? target.rect.right + 10
-      : Math.max(10, target.rect.left - panelWidth - 10)
-    : 0;
-  const top = target
-    ? Math.min(Math.max(10, target.rect.top), Math.max(10, window.innerHeight - 360))
-    : 0;
+  const isVisible = Boolean(
+    target && (isAltPressed || target.showOnHover || (target.showOnTouch && isTouchInspecting)),
+  );
+
+  const updatePanelPosition = useCallback(() => {
+    if (!target || !panelRef.current) return;
+
+    const anchorRect = target.anchor.getBoundingClientRect();
+    const panelRect = panelRef.current.getBoundingClientRect();
+    setPanelPosition(
+      calculateInspectorPosition(
+        anchorRect,
+        panelRect,
+        window.innerWidth,
+        window.innerHeight,
+      ),
+    );
+  }, [target]);
+
+  useLayoutEffect(() => {
+    if (!isVisible) return;
+
+    const frame = window.requestAnimationFrame(updatePanelPosition);
+    const handleViewportChange = () => {
+      window.requestAnimationFrame(updatePanelPosition);
+    };
+
+    window.addEventListener('resize', handleViewportChange);
+    window.addEventListener('scroll', handleViewportChange, true);
+    return () => {
+      window.cancelAnimationFrame(frame);
+      window.removeEventListener('resize', handleViewportChange);
+      window.removeEventListener('scroll', handleViewportChange, true);
+    };
+  }, [isVisible, updatePanelPosition]);
 
   return (
     <AltInspectContext.Provider value={value}>
@@ -114,7 +172,13 @@ export function AltInspectProvider({ children }: { children: ReactNode }) {
         <aside
           aria-label="상세정보"
           className="ko-touch-inspector pointer-events-none fixed z-[200] w-[280px] rounded-md border border-neutral-600 bg-neutral-950/95 p-4 text-neutral-100 shadow-2xl backdrop-blur-md"
-          style={{ left, top, maxHeight: 'calc(100dvh - 20px)', overflowY: 'auto' }}
+          ref={panelRef}
+          style={{
+            left: panelPosition.left,
+            top: panelPosition.top,
+            maxHeight: 'calc(100dvh - 24px)',
+            overflowY: 'auto',
+          }}
         >
           <button
             type="button"
@@ -124,7 +188,7 @@ export function AltInspectProvider({ children }: { children: ReactNode }) {
           >
             닫기
           </button>
-          {target.content}
+          {target?.content}
         </aside>
       )}
     </AltInspectContext.Provider>
@@ -148,6 +212,7 @@ export function Inspectable({
   const inspect = (element: HTMLElement) =>
     context.inspect({
       content,
+      anchor: element,
       rect: element.getBoundingClientRect(),
       showOnHover,
       showOnTouch: false,
@@ -155,6 +220,7 @@ export function Inspectable({
   const inspectTouch = (element: HTMLElement) =>
     context.inspectTouch({
       content,
+      anchor: element,
       rect: element.getBoundingClientRect(),
       showOnHover,
       showOnTouch: true,
