@@ -96,6 +96,7 @@ function scaleSize(value: number, scale: number): number {
 }
 
 export type CardRendererSize = "hand" | "board" | "detail" | "admin";
+export type CardHighlight = "selected" | "target" | "attack";
 
 export function CardRenderer({
   name,
@@ -116,6 +117,7 @@ export function CardRenderer({
   showArtworkHint = false,
   onImagePositionChange,
   overlay,
+  highlight,
   onClick,
   onKeyDown,
   tabIndex,
@@ -140,6 +142,7 @@ export function CardRenderer({
     position: Pick<ImageDisplaySettings, "imagePositionX" | "imagePositionY">,
   ) => void;
   overlay?: ReactNode;
+  highlight?: CardHighlight;
   onClick?: () => void;
   onKeyDown?: (event: KeyboardEvent<HTMLDivElement>) => void;
   tabIndex?: number;
@@ -149,13 +152,21 @@ export function CardRenderer({
   const frameScale = frameLayout.scale;
   const frameUrl = frameAssetUrl(normalizedRarity);
   const nameClass =
-    size === "admin"
-      ? "text-xs"
+    name.length > 22
+      ? size === "admin"
+        ? "text-[9px]"
+        : "text-[5px] md:text-[6px]"
+      : name.length > 14
+        ? size === "admin"
+          ? "text-[10px]"
+          : "text-[6px] md:text-[7px]"
+        : size === "admin"
+          ? "text-[11px]"
       : size === "detail"
-        ? "text-[10px]"
+          ? "text-[9px]"
         : size === "board"
-          ? "text-[7px] md:text-[9px]"
-          : "text-[7px] md:text-[9px]";
+            ? "text-[6px] md:text-[8px]"
+            : "text-[6px] md:text-[8px]";
   const rulesClass =
     size === "admin"
       ? "text-[10px] leading-tight"
@@ -184,13 +195,13 @@ export function CardRenderer({
 
   return (
     <div
-      className={`relative aspect-[1060/1484] select-none ${className}`}
+      className={`relative aspect-[1060/1484] overflow-visible select-none ${className}`}
       style={style}
       onClick={onClick}
       onKeyDown={handleKeyDown}
       tabIndex={tabIndex}
     >
-      <div className="absolute inset-0 overflow-hidden rounded-[4%] bg-neutral-950">
+      <div className="absolute inset-0 overflow-visible">
         <CardArtwork
           src={imageUrl}
           alt={name || "카드 이미지"}
@@ -202,7 +213,7 @@ export function CardRenderer({
         />
 
         {!frameUrl && (
-          <div className="pointer-events-none absolute inset-0 z-10 rounded-[4%] border-2 border-blue-600/70" />
+          <div className="pointer-events-none absolute inset-0 z-10" />
         )}
         {frameUrl && (
           <img
@@ -213,6 +224,14 @@ export function CardRenderer({
             style={{
               transform: `scale(${frameScale})`,
               transformOrigin: "center",
+              filter:
+                highlight === "selected"
+                  ? "drop-shadow(0 0 5px rgba(250, 204, 21, 0.95)) drop-shadow(0 0 12px rgba(250, 204, 21, 0.65))"
+                  : highlight === "target"
+                    ? "drop-shadow(0 0 5px rgba(248, 113, 113, 0.95)) drop-shadow(0 0 12px rgba(239, 68, 68, 0.7))"
+                    : highlight === "attack"
+                      ? "drop-shadow(0 0 5px rgba(96, 165, 250, 0.95)) drop-shadow(0 0 12px rgba(59, 130, 246, 0.65))"
+                      : undefined,
             }}
             draggable={false}
           />

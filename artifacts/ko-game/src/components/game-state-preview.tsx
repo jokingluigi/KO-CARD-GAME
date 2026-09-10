@@ -402,16 +402,16 @@ function HandCard({
       : density === 'medium'
         ? 'w-[66px] h-[92px] md:w-[100px] md:h-[140px]'
         : 'w-[75px] h-[105px] md:w-[130px] md:h-[182px]';
-  let containerClass = `${sizeClass} rounded flex flex-col relative transition-all duration-200 select-none bg-neutral-800 border-2 hover:z-40 group overflow-visible origin-bottom `;
+  let containerClass = `${sizeClass} relative flex flex-col transition-all duration-200 select-none hover:z-40 group overflow-visible origin-bottom `;
   
   if (isSelected) {
-    containerClass += "border-primary -translate-y-8 md:-translate-y-12 shadow-[0_15px_30px_rgba(234,179,8,0.4)] z-50 cursor-pointer";
+    containerClass += "-translate-y-8 md:-translate-y-12 z-50 cursor-pointer";
   } else if (targetable) {
-    containerClass += "border-amber-400 shadow-[0_0_15px_rgba(251,191,36,0.5)] cursor-crosshair";
+    containerClass += "cursor-crosshair";
   } else if (!canAfford) {
-    containerClass += "border-neutral-800 opacity-40 grayscale cursor-not-allowed";
+    containerClass += "opacity-40 grayscale cursor-not-allowed";
   } else {
-    containerClass += "border-blue-600/60 hover:border-blue-400 hover:-translate-y-4 shadow-[0_5px_15px_rgba(0,0,0,0.6)] hover:shadow-[0_10px_20px_rgba(59,130,246,0.3)] cursor-pointer";
+    containerClass += "hover:-translate-y-4 cursor-pointer";
   }
 
   return (
@@ -427,6 +427,7 @@ function HandCard({
       size="hand"
       className={containerClass}
       imageDisplaySettings={def}
+       highlight={isSelected ? "selected" : targetable ? "target" : undefined}
       onClick={onClick}
       tabIndex={0}
     />
@@ -461,7 +462,7 @@ function BoardSlot({
 }) {
   const isEmpty = !card;
   
-  let containerClass = "w-[70px] h-[98px] md:w-[110px] md:h-[154px] rounded flex flex-col relative transition-all duration-200 select-none ";
+  let containerClass = "w-[70px] h-[98px] md:w-[110px] md:h-[154px] relative flex flex-col transition-all duration-200 select-none overflow-visible ";
   
   if (isEmpty) {
     containerClass += "border-2 border-dashed bg-neutral-900/30 items-center justify-center ";
@@ -471,15 +472,15 @@ function BoardSlot({
       containerClass += "border-neutral-800";
     }
   } else {
-    containerClass += "bg-neutral-800 border-2 shadow-[0_5px_15px_rgba(0,0,0,0.5)] overflow-visible group ";
+    containerClass += "group ";
     if (selected) {
-      containerClass += "border-primary -translate-y-2 md:-translate-y-4 shadow-[0_10px_20px_rgba(234,179,8,0.4)] z-20 cursor-pointer";
+      containerClass += "-translate-y-2 md:-translate-y-4 z-20 cursor-pointer";
     } else if (targetable) {
-      containerClass += "border-red-500 hover:border-red-400 hover:shadow-[0_0_15px_rgba(239,68,68,0.6)] hover:-translate-y-1 cursor-crosshair z-10";
+      containerClass += "hover:-translate-y-1 cursor-crosshair z-10";
     } else if (attackReady) {
-      containerClass += "border-blue-500 hover:border-blue-400 hover:-translate-y-1 hover:shadow-[0_5px_15px_rgba(59,130,246,0.4)] cursor-pointer z-10";
+      containerClass += "hover:-translate-y-1 cursor-pointer z-10";
     } else {
-      containerClass += "border-neutral-700 hover:border-neutral-500 " + (isOpponent ? "" : "cursor-pointer");
+      containerClass += isOpponent ? "" : "cursor-pointer";
     }
   }
 
@@ -521,6 +522,7 @@ function BoardSlot({
          size="board"
          className={containerClass}
          imageDisplaySettings={def}
+         highlight={selected ? "selected" : targetable ? "target" : attackReady ? "attack" : undefined}
          onClick={() => onClick(card.instanceId)}
          tabIndex={0}
          overlay={
@@ -531,18 +533,6 @@ function BoardSlot({
                  <span className="rotate-12 font-display text-2xl font-black text-red-500 drop-shadow-md md:text-3xl">KO</span>
                </div>
              )}
-             {targetable && !isDead && (
-               <div className="absolute inset-0 flex items-center justify-center bg-red-500/10 transition-colors group-hover:bg-red-500/20">
-                 <div className="relative flex h-8 w-8 items-center justify-center rounded-full border-2 border-red-500/50 opacity-0 transition-opacity group-hover:opacity-100">
-                   <div className="absolute h-full w-1 bg-red-500/50" />
-                   <div className="absolute h-1 w-full bg-red-500/50" />
-                 </div>
-               </div>
-             )}
-             {attackReady && !selected && !isDead && (
-               <div className="absolute inset-0 animate-[pulse_2s_ease-in-out_infinite] bg-blue-500/10 group-hover:bg-blue-500/20" />
-             )}
-             {selected && !isDead && <div className="absolute inset-0 bg-primary/20" />}
            </>
          }
        />
