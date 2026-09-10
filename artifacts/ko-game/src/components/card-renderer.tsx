@@ -13,6 +13,7 @@ const frameAssetNames: Partial<Record<CardRarity, string>> = {
 };
 
 type FrameLayout = {
+  scale: number;
   name: {
     left: number;
     right: number;
@@ -47,6 +48,7 @@ type FrameLayout = {
 // the card's rendered pixel size.
 const frameLayouts: Record<CardRarity, FrameLayout> = {
   NORMAL: {
+    scale: 1.1,
     name: { left: 20, right: 7, top: 5.5, height: 7.8 },
     cost: { centerX: 13.68, centerY: 10.04, size: 14 },
     rules: { left: 12, right: 12, top: 68.5, bottom: 10.5 },
@@ -54,6 +56,7 @@ const frameLayouts: Record<CardRarity, FrameLayout> = {
     health: { centerX: 87.66, centerY: 86.52, size: 14 },
   },
   LEGENDARY: {
+    scale: 1.1,
     name: { left: 18.5, right: 7.5, top: 5.5, height: 8.2 },
     cost: { centerX: 12.74, centerY: 10.85, size: 14 },
     rules: { left: 11, right: 11, top: 59, bottom: 13.5 },
@@ -64,6 +67,7 @@ const frameLayouts: Record<CardRarity, FrameLayout> = {
   // frame. It keeps its own entry so it can be tuned without touching card
   // data or the renderer call sites.
   CHAMPION: {
+    scale: 1.1,
     name: { left: 18.5, right: 7.5, top: 5.5, height: 8.2 },
     cost: { centerX: 12.74, centerY: 10.85, size: 14 },
     rules: { left: 11, right: 11, top: 59, bottom: 13.5 },
@@ -77,6 +81,18 @@ function frameAssetUrl(rarity: CardRarity) {
   return fileName
     ? `${import.meta.env.BASE_URL.replace(/\/$/, "")}/assets/${fileName}`
     : null;
+}
+
+function scalePercent(value: number, scale: number): number {
+  return 50 + (value - 50) * scale;
+}
+
+function scaleInset(value: number, scale: number): number {
+  return 100 - scalePercent(100 - value, scale);
+}
+
+function scaleSize(value: number, scale: number): number {
+  return value * scale;
 }
 
 export type CardRendererSize = "hand" | "board" | "detail" | "admin";
@@ -130,29 +146,30 @@ export function CardRenderer({
 }) {
   const normalizedRarity = normalizeCardRarity(rarity);
   const frameLayout = frameLayouts[normalizedRarity];
+  const frameScale = frameLayout.scale;
   const frameUrl = frameAssetUrl(normalizedRarity);
   const nameClass =
     size === "admin"
-      ? "text-sm"
+      ? "text-xs"
       : size === "detail"
-        ? "text-xs"
+        ? "text-[10px]"
         : size === "board"
-          ? "text-[8px] md:text-[10px]"
-          : "text-[8px] md:text-[11px]";
+          ? "text-[7px] md:text-[9px]"
+          : "text-[7px] md:text-[9px]";
   const rulesClass =
     size === "admin"
-      ? "text-xs leading-relaxed"
+      ? "text-[10px] leading-tight"
       : size === "detail"
-        ? "text-[9px] leading-tight"
+        ? "text-[8px] leading-tight"
         : size === "board"
-          ? "text-[7px] leading-tight md:text-[9px]"
-          : "text-[7px] leading-tight md:text-[9px]";
+          ? "text-[6px] leading-tight md:text-[8px]"
+          : "text-[6px] leading-tight md:text-[8px]";
   const statClass =
     size === "admin"
-      ? "text-lg"
+      ? "text-base"
       : size === "detail"
-        ? "text-sm"
-        : "text-[10px] md:text-sm";
+        ? "text-xs"
+        : "text-[9px] md:text-xs";
   const style: CSSProperties = {
     aspectRatio: "1060 / 1484",
   };
@@ -193,6 +210,10 @@ export function CardRenderer({
             alt=""
             aria-hidden="true"
             className="pointer-events-none absolute inset-0 z-10 h-full w-full"
+            style={{
+              transform: `scale(${frameScale})`,
+              transformOrigin: "center",
+            }}
             draggable={false}
           />
         )}
@@ -202,12 +223,12 @@ export function CardRenderer({
             className="pointer-events-none absolute z-20 flex items-center justify-center overflow-hidden px-[2%] text-center"
             style={{
               left: `${frameLayout.name.left}%`,
-              right: `${frameLayout.name.right}%`,
-              top: `${frameLayout.name.top}%`,
-              height: `${frameLayout.name.height}%`,
+              right: `${scaleInset(frameLayout.name.right, frameScale)}%`,
+              top: `${scaleInset(frameLayout.name.top, frameScale)}%`,
+              height: `${scaleSize(frameLayout.name.height, frameScale)}%`,
             }}
           >
-            <span className={`w-full truncate font-black text-white drop-shadow-[0_1px_2px_rgba(0,0,0,0.95)] ${nameClass}`}>
+            <span className={`line-clamp-2 w-full break-words font-black leading-tight text-white drop-shadow-[0_1px_2px_rgba(0,0,0,0.95)] ${nameClass}`}>
               {name || "카드 이름"}
             </span>
           </div>
@@ -217,9 +238,9 @@ export function CardRenderer({
           <div
             className="pointer-events-none absolute z-20 flex aspect-square -translate-x-1/2 -translate-y-1/2 items-center justify-center font-display font-black text-white drop-shadow-[0_1px_2px_rgba(0,0,0,0.95)]"
             style={{
-              left: `${frameLayout.cost.centerX}%`,
-              top: `${frameLayout.cost.centerY}%`,
-              width: `${frameLayout.cost.size}%`,
+              left: `${scalePercent(frameLayout.cost.centerX, frameScale)}%`,
+              top: `${scalePercent(frameLayout.cost.centerY, frameScale)}%`,
+              width: `${scaleSize(frameLayout.cost.size, frameScale)}%`,
             }}
           >
             <span className={statClass}>{cost}</span>
@@ -230,10 +251,10 @@ export function CardRenderer({
           <div
             className="pointer-events-none absolute z-20 flex items-center justify-center overflow-hidden px-[5%] py-[3%] text-center text-neutral-100"
             style={{
-              left: `${frameLayout.rules.left}%`,
-              right: `${frameLayout.rules.right}%`,
-              top: `${frameLayout.rules.top}%`,
-              bottom: `${frameLayout.rules.bottom}%`,
+              left: `${scaleInset(frameLayout.rules.left, frameScale)}%`,
+              right: `${scaleInset(frameLayout.rules.right, frameScale)}%`,
+              top: `${scaleInset(frameLayout.rules.top, frameScale)}%`,
+              bottom: `${scaleInset(frameLayout.rules.bottom, frameScale)}%`,
             }}
           >
             <span className={`line-clamp-6 w-full font-bold drop-shadow-[0_1px_2px_rgba(0,0,0,0.95)] ${rulesClass}`}>
@@ -247,9 +268,9 @@ export function CardRenderer({
             <div
               className="pointer-events-none absolute z-20 flex aspect-square -translate-x-1/2 -translate-y-1/2 items-center justify-center font-display font-black text-white drop-shadow-[0_1px_2px_rgba(0,0,0,0.95)]"
               style={{
-                left: `${frameLayout.attack.centerX}%`,
-                top: `${frameLayout.attack.centerY}%`,
-                width: `${frameLayout.attack.size}%`,
+                left: `${scalePercent(frameLayout.attack.centerX, frameScale)}%`,
+                top: `${scalePercent(frameLayout.attack.centerY, frameScale)}%`,
+                width: `${scaleSize(frameLayout.attack.size, frameScale)}%`,
               }}
             >
               <span className={statClass}>{attack}</span>
@@ -257,9 +278,9 @@ export function CardRenderer({
             <div
               className="pointer-events-none absolute z-20 flex aspect-square -translate-x-1/2 -translate-y-1/2 items-center justify-center font-display font-black text-white drop-shadow-[0_1px_2px_rgba(0,0,0,0.95)]"
               style={{
-                left: `${frameLayout.health.centerX}%`,
-                top: `${frameLayout.health.centerY}%`,
-                width: `${frameLayout.health.size}%`,
+                left: `${scalePercent(frameLayout.health.centerX, frameScale)}%`,
+                top: `${scalePercent(frameLayout.health.centerY, frameScale)}%`,
+                width: `${scaleSize(frameLayout.health.size, frameScale)}%`,
               }}
             >
               <span className={statClass}>{health}</span>
