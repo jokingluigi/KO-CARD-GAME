@@ -8,6 +8,7 @@ import { drawCard } from '../engine/draw-card';
 import { destroyCard } from '../engine/destroy-card';
 import { enterField } from '../engine/enter-field';
 import { attack } from '../engine/combat';
+import { playWrestlerFromHand } from '../engine/play-wrestler';
 import { endTurn } from '../engine/turn-system';
 import { getDamageModifierBonus, resolveActiveAbility, selectEffectTarget } from './effect-engine';
 import type { CardEffect } from './types';
@@ -115,6 +116,48 @@ test('콤보는 마지막으로 공격한 아군의 공격력을 자기 공격�
   const ended = endTurn(attacked.state, 'player-1');
   assert.equal(ended.success, true);
   assert.equal(ended.state.players[0].board[1]?.currentAttack, 0);
+});
+
+test('예약된 체력 강화는 턴이 넘어가도 다음 손패 선수에게 한 번만 적용된다', () => {
+  const source = instance('cleanup-source', [
+    structured('QUEUE_EFFECT', undefined, {
+      queuedTrigger: 'NEXT_ALLY_WRESTLER_PLAYED',
+      queuedEffect: {
+        action: 'BUFF',
+        target: { zone: 'BOARD', owner: 'SELF', selection: 'SELF', count: 1 },
+        values: { attack: 0, health: 2 },
+      },
+    }),
+  ]);
+  const nextCard = { ...instance('cleanup-target'), currentCost: 0 };
+  const initial = createInitialGameState();
+  initial.status = 'IN_PROGRESS';
+  initial.activePlayerId = 'player-1';
+  initial.players[0].currentGold = 1;
+
+  const queued = enterField(initial, 'player-1', source, 0);
+  assert.equal(queued.pendingCardEffects.length, 1);
+
+  const nextTurn = endTurn(queued, 'player-1');
+  assert.equal(nextTurn.success, true);
+  assert.equal(nextTurn.state.pendingCardEffects.length, 1);
+  const samePlayerTurn = endTurn(nextTurn.state, 'player-2');
+  assert.equal(samePlayerTurn.success, true);
+  assert.equal(samePlayerTurn.state.activePlayerId, 'player-1');
+
+  const withHand = {
+    ...samePlayerTurn.state,
+    players: samePlayerTurn.state.players.map((player) =>
+      player.id === 'player-1'
+        ? { ...player, currentGold: 1, hand: [nextCard] }
+        : player,
+    ),
+  };
+  const played = playWrestlerFromHand(withHand, 'player-1', nextCard.instanceId, 1);
+  assert.equal(played.success, true);
+  assert.equal(played.state.players[0].board[1]?.currentHealth, 3);
+  assert.equal(played.state.players[0].board[1]?.maxHealth, 3);
+  assert.equal(played.state.pendingCardEffects.length, 0);
 });
 
 test('기본 1/1 카드의 현재 공격과 체력을 2배로 변경한다', () => {

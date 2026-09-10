@@ -32,3 +32,9 @@ Dynamic stat effects must carry their trigger context through the engine's pendi
 **Why:** Attack-triggered values are only available at resolution time, and omitting TURN_END dispatch makes valid structured effects silently inert.
 
 **How to apply:** Add the reference to the shared value resolver, preserve it through continuations, and test both the event-triggered stat change and the turn-end reset.
+
+Deferred one-shot effects should be represented as validated queued structured effects in game state, then consumed when the matching normal play action succeeds; they must not be inferred from turn boundaries or card names.
+
+**Why:** “Next card” effects can survive multiple turns and need exact once-only consumption without changing unrelated turn, combat, or generated-card rules.
+
+**How to apply:** Register the queue action and its trigger/value schema, enqueue on the source trigger, consume only for the matching hand-play path, and cover persistence plus one-time application in runtime tests.

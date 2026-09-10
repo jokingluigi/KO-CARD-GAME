@@ -50,6 +50,7 @@ export function createInitialGameState(
       createEmptyPlayer('player-2', championIds[1], cardDefinitions, championDefinitions),
     ],
     events: [],
+    pendingCardEffects: [],
   };
 }
 

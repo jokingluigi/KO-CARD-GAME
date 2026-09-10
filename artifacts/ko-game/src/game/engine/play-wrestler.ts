@@ -7,7 +7,7 @@ import { isBoardFull } from './board-position';
 import { enterField } from './enter-field';
 import { validateCurrentPlayer } from './turn-system';
 import { processChampionQuestEvents } from '../champions/quests';
-import { hasMandatoryPlayerChoice } from '../effects/effect-engine';
+import { hasMandatoryPlayerChoice, resolveQueuedEffectsForPlayedWrestler } from '../effects/effect-engine';
 
 export function playWrestlerFromHand(
   state: GameState,
@@ -107,13 +107,10 @@ export function playWrestlerFromHand(
     ],
   };
 
-  return actionSuccess(
-    processChampionQuestEvents(
-      state,
-      enterField(paidState, playerId, card, boardSlot, {
+  const enteredState = enterField(paidState, playerId, card, boardSlot, {
       type: 'PLAYER',
       playerId,
-      }),
-    ),
-  );
+    });
+  const resolvedState = resolveQueuedEffectsForPlayedWrestler(enteredState, playerId, cardInstanceId);
+  return actionSuccess(processChampionQuestEvents(state, resolvedState));
 }

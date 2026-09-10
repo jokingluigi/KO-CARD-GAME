@@ -10,6 +10,38 @@ export type RuntimeTrigger =
   | 'CARD_DRAWN' | 'OTHER_ALLY_ATTACK' | 'TECHNIQUE_CAST' | 'EXACT_ZERO_DAMAGE'
   | 'TURN_START' | 'TURN_END';
 
+export type StructuredTarget = {
+  /** Legacy single-zone shape retained for stored effects. */
+  zone?: TargetZone;
+  /** Multi-zone card scope, e.g. HAND + DECK + BOARD. */
+  zones?: TargetZone[];
+  owner: TargetOwner;
+  cardType?: 'WRESTLER' | 'TECHNIQUE';
+  filter?: { isGenerated?: boolean; minCost?: number };
+  selection: TargetSelection;
+  count: number;
+  randomScope?: RandomScope;
+  minTargets?: number;
+  maxTargets?: number;
+  optionalTarget?: boolean;
+};
+
+export type QueuedStructuredEffect = {
+  action: RuntimeAction;
+  target?: StructuredTarget;
+  values?: {
+    attack?: number;
+    health?: number;
+    attackMultiplier?: number;
+    healthMultiplier?: number;
+    amount?: number;
+    keyword?: CardKeyword;
+    damageSource?: DamageSource;
+    reference?: Reference;
+    referenceStat?: 'CURRENT_ATTACK' | 'CURRENT_HEALTH';
+  };
+};
+
 export type CardEffect =
   | {
       type: 'GAIN_GOLD';
@@ -26,23 +58,11 @@ export type CardEffect =
   | {
       type: 'STRUCTURED';
       action: RuntimeAction;
-      target?: {
-        /** Legacy single-zone shape retained for stored effects. */
-        zone?: TargetZone;
-        /** Multi-zone card scope, e.g. HAND + DECK + BOARD. */
-        zones?: TargetZone[];
-        owner: TargetOwner;
-        cardType?: 'WRESTLER' | 'TECHNIQUE';
-         filter?: { isGenerated?: boolean; minCost?: number };
-        selection: TargetSelection;
-        count: number;
-        randomScope?: RandomScope;
-        minTargets?: number;
-        maxTargets?: number;
-        optionalTarget?: boolean;
-      };
+      target?: StructuredTarget;
       values?: {
-         attack?: number; health?: number; attackMultiplier?: number; healthMultiplier?: number; amount?: number; keyword?: CardKeyword; damageSource?: DamageSource; reference?: Reference; referenceStat?: 'CURRENT_ATTACK' | 'CURRENT_HEALTH';
+          attack?: number; health?: number; attackMultiplier?: number; healthMultiplier?: number; amount?: number; keyword?: CardKeyword; damageSource?: DamageSource; reference?: Reference; referenceStat?: 'CURRENT_ATTACK' | 'CURRENT_HEALTH';
+         queuedTrigger?: 'NEXT_ALLY_WRESTLER_PLAYED';
+         queuedEffect?: QueuedStructuredEffect;
         /** Serializable card definition supplied by the structured DSL. */
         definition?: CardDefinition;
         leftEffects?: CardEffect[];

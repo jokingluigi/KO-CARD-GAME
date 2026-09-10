@@ -2,7 +2,7 @@ import type { CardInstance } from '../cards/types';
 import type { CardDefinition } from '../cards/types';
 import type { ChampionState } from '../champions/types';
 import type { GameEvent } from '../events/types';
-import type { CardEffect } from '../effects/types';
+import type { CardEffect, QueuedStructuredEffect } from '../effects/types';
 
 export type Board = [
   CardInstance | null,
@@ -10,6 +10,13 @@ export type Board = [
   CardInstance | null,
   CardInstance | null,
 ];
+
+export interface PendingCardEffect {
+  playerId: string;
+  sourceInstanceId: string;
+  trigger: 'NEXT_ALLY_WRESTLER_PLAYED';
+  effect: QueuedStructuredEffect;
+}
 
 export interface PlayerState {
   id: string;
@@ -42,6 +49,7 @@ export interface GameState {
   loserId: string | null;
   players: PlayerState[];
   events: GameEvent[];
+  pendingCardEffects: PendingCardEffect[];
   /** Effect resolution is deliberately part of game state, not UI state. */
   targetingState?: {
     active: true;

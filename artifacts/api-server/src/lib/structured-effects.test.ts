@@ -230,6 +230,28 @@ test("나토마토의 콤보 참조와 턴 종료 초기화를 각각 구조화�
   assert.equal(isStructuredEffects({ effects: result.effects }), true);
 });
 
+test("뒷정리맨의 다음 아군 선수 체력 예약을 구조화하고 지속 문장을 무시한다", () => {
+  const result = analyzeEffectText("등장: 다음에 내가 내는 아군 선수 카드 1장이 체력이 2 증가합니다. 사용될 때까지 턴을 넘어도 유지합니다.");
+
+  assert.equal(result.status, "success");
+  assert.equal(result.outcome, "supported");
+  assert.deepEqual(result.effects, [
+    {
+      trigger: "ENTER_FIELD",
+      action: "QUEUE_EFFECT",
+      values: {
+        queuedTrigger: "NEXT_ALLY_WRESTLER_PLAYED",
+        queuedEffect: {
+          action: "BUFF",
+          target: { zone: "BOARD", owner: "SELF", selection: "SELF", count: 1 },
+          values: { attack: 0, health: 2 },
+        },
+      },
+    },
+  ]);
+  assert.equal(isStructuredEffects({ effects: result.effects }), true);
+});
+
 test("생성된 아군 선수의 공격력과 체력을 함께 증가시키는 유사 표현도 분석한다", () => {
   const result = analyzeEffectText("등장: 모든 위치의 생성된 내 선수 카드의 공격력과 체력을 1씩 올립니다.");
 

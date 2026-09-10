@@ -51,7 +51,7 @@ function abilitiesFor(
       const action = effect.action;
       const target = effect.target;
        if (!["ENTER_FIELD", "LEAVE_FIELD", "ACTIVE", "OTHER_ALLY_ATTACK", "TURN_END"].includes(trigger as string) ||
-           !["BUFF", "SET_STATS", "DAMAGE", "HEAL", "SILENCE", "DESTROY", "ADD_GOLD", "ADD_NEXT_TURN_GOLD", "DRAW", "REDUCE_COST", "INCREASE_COST", "STUN", "ADD_KEYWORD", "REMOVE_KEYWORD", "SWAP_STATS", "ADD_DAMAGE_MODIFIER", "SUMMON", "GENERATE"].includes(action as string) ||
+           !["BUFF", "SET_STATS", "DAMAGE", "HEAL", "SILENCE", "DESTROY", "ADD_GOLD", "ADD_NEXT_TURN_GOLD", "DRAW", "REDUCE_COST", "INCREASE_COST", "STUN", "ADD_KEYWORD", "REMOVE_KEYWORD", "SWAP_STATS", "ADD_DAMAGE_MODIFIER", "SUMMON", "GENERATE", "QUEUE_EFFECT"].includes(action as string) ||
            (target !== undefined && (!target || typeof target !== "object"))) continue;
       const list = byTrigger.get(trigger as string) ?? [];
        list.push({ type: "STRUCTURED", action: action as StructuredCardEffect["action"], target: target as StructuredCardEffect["target"], values: effect.values as StructuredCardEffect["values"] });

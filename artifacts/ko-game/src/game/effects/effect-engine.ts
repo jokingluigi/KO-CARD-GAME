@@ -434,6 +434,24 @@ function applyEffect(
     if (effect.action === 'ADD_NEXT_TURN_GOLD') {
       return { ...state, players: state.players.map((player) => player.id === playerId ? { ...player, nextTurnGoldBonus: player.nextTurnGoldBonus + amount } : player) };
     }
+    if (effect.action === 'QUEUE_EFFECT') {
+      const queuedEffect = effect.values?.queuedEffect;
+      if (effect.values?.queuedTrigger !== 'NEXT_ALLY_WRESTLER_PLAYED' || !queuedEffect) {
+        throw new Error('QUEUE_EFFECT requires a supported queue trigger and queued effect.');
+      }
+      return {
+        ...state,
+        pendingCardEffects: [
+          ...(state.pendingCardEffects ?? []),
+          {
+            playerId,
+            sourceInstanceId: sourceCard.instanceId,
+            trigger: effect.values.queuedTrigger,
+            effect: queuedEffect,
+          },
+        ],
+      };
+    }
     if (effect.action === 'DRAW') {
       return Array.from({ length: amount }).reduce<GameState>(
         (nextState) => nextState.status === 'FINISHED' ? nextState : drawCard(nextState, playerId),
@@ -869,6 +887,40 @@ function applyEffect(
       ) as typeof player.board,
     })),
   };
+}
+
+export function resolveQueuedEffectsForPlayedWrestler(
+  state: GameState,
+  playerId: string,
+  cardInstanceId: string,
+): GameState {
+  const queued = (state.pendingCardEffects ?? []).filter(
+    (pending) => pending.playerId === playerId && pending.trigger === 'NEXT_ALLY_WRESTLER_PLAYED',
+  );
+  if (!queued.length) return state;
+
+  let next = {
+    ...state,
+    pendingCardEffects: (state.pendingCardEffects ?? []).filter(
+      (pending) => !(pending.playerId === playerId && pending.trigger === 'NEXT_ALLY_WRESTLER_PLAYED'),
+    ),
+  };
+  for (const pending of queued) {
+    const sourceCard = sourceInState(next, cardInstanceId);
+    if (!sourceCard) continue;
+    next = applyEffect(
+      next,
+      playerId,
+      sourceCard,
+      {
+        type: 'STRUCTURED',
+        action: pending.effect.action,
+        target: pending.effect.target ?? { zone: 'BOARD', owner: 'SELF', selection: 'SELF', count: 1 },
+        values: pending.effect.values,
+      },
+    );
+  }
+  return next;
 }
 
 export function resolveTriggeredAbilities(

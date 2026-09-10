@@ -18,7 +18,42 @@ export type Target = {
   randomScope?: RandomScope;
 };
 export type EffectCondition = { type: Condition; expression?: string };
-export type StructuredEffect = { trigger: Trigger; action: Action; target?: Target; conditions?: EffectCondition[]; values?: { attack?: number; health?: number; attackMultiplier?: number; healthMultiplier?: number; amount?: number; keyword?: Keyword; damageSource?: DamageSource; reference?: Reference; referenceStat?: "CURRENT_ATTACK" | "CURRENT_HEALTH"; leftEffects?: StructuredEffect[]; rightEffects?: StructuredEffect[] } };
+export type QueuedStructuredEffect = {
+  action: Action;
+  target?: Target;
+  values?: {
+    attack?: number;
+    health?: number;
+    attackMultiplier?: number;
+    healthMultiplier?: number;
+    amount?: number;
+    keyword?: Keyword;
+    damageSource?: DamageSource;
+    reference?: Reference;
+    referenceStat?: "CURRENT_ATTACK" | "CURRENT_HEALTH";
+  };
+};
+export type StructuredEffect = {
+  trigger: Trigger;
+  action: Action;
+  target?: Target;
+  conditions?: EffectCondition[];
+  values?: {
+    attack?: number;
+    health?: number;
+    attackMultiplier?: number;
+    healthMultiplier?: number;
+    amount?: number;
+    keyword?: Keyword;
+    damageSource?: DamageSource;
+    reference?: Reference;
+    referenceStat?: "CURRENT_ATTACK" | "CURRENT_HEALTH";
+    queuedTrigger?: "NEXT_ALLY_WRESTLER_PLAYED";
+    queuedEffect?: QueuedStructuredEffect;
+    leftEffects?: StructuredEffect[];
+    rightEffects?: StructuredEffect[];
+  };
+};
 export type AnalysisOutcome = "supported" | "mechanism_required" | "analysis_failure";
 export type Analysis = { status: "success" | "partial" | "failure"; outcome: AnalysisOutcome; effects: StructuredEffect[]; keywords: Keyword[]; unsupportedSegments: string[]; summaries: string[]; reason?: string };
 
@@ -44,6 +79,7 @@ const STAT_MULTIPLIER_PATTERN = /(?:자신(?:의|에게)?\s*)?(?:현재\s*)?(?:�
 const STAT_PAIR_INCREMENT_PATTERN = /(?:공격(?:력)?\s*(?:과|\/|및)\s*체력|체력\s*(?:과|\/|및)\s*공격(?:력)?)(?:의\s*)?(?:(?:수치(?:를|가)?)|(?:을|를))?\s*(\d+(?:\.\d+)?)\s*(?:씩\s*)?(?:증가|올려|올립(?:니다|다)?|상승|강화)(?:시킵니다|합니다|한다)?/i;
 const REFERENCE_ATTACK_INCREMENT_PATTERN = /공격한\s*(?:아군\s*)?선수의\s*공격력\s*만큼\s*(?:자신의\s*)?공격력(?:을|이)?\s*(?:증가|올려|상승|강화)/i;
 const SET_ATTACK_ZERO_PATTERN = /(?:자신의\s*)?공격력을\s*0\s*으로(?:\s*(?:만들|설정|변경))?/i;
+const NEXT_PLAY_HEALTH_BUFF_PATTERN = /다음(?:에)?\s*(?:(?:내가|제가)\s*)?내는\s*(?:아군\s*)?선수\s*카드\s*(?:1장|한\s*장)(?:(?:이|을|의)\s*)?(?:체력(?:이|을)?\s*)?(\d+)\s*(?:증가|늘어|올라|올라갑니다?|올립니다?)/i;
 const STAT_SWAP_PATTERN = /(?:자신(?:의|에게)?\s*)?(?:현재\s*)?(?:공격(?:력)?\s*(?:과|\/|및)\s*체력|체력\s*(?:과|\/|및)\s*공격(?:력)?)[^.!?]{0,30}?(?:서로\s*)?(?:교환|바꾸|바꿉니다)/i;
 const ACTIVE_CARD_SCOPE_PATTERN = /(?:어디에\s*(?:있든|있는)|모든\s*위치의|손패\s*[,，]\s*덱\s*[,，]\s*(?:필드|보드)|손패\s*(?:및|와|과)\s*덱\s*(?:및|와|과)\s*(?:필드|보드))/;
 const GENERATED_FILTER_PATTERN = /(?:생성된|생성\s*카드|GENERATED)/i;
@@ -151,6 +187,17 @@ function keywordFor(text: string): Keyword | undefined {
 }
 function effect(trigger: Trigger, action: Action, body: string, index: number, priorTarget?: Target, conditions?: EffectCondition[]): StructuredEffect | null {
   const schema = ACTION_SCHEMAS[action], values: StructuredEffect["values"] = {};
+  if (action === "QUEUE_EFFECT") {
+    const match = body.match(NEXT_PLAY_HEALTH_BUFF_PATTERN);
+    if (!match) return null;
+    values.queuedTrigger = "NEXT_ALLY_WRESTLER_PLAYED";
+    values.queuedEffect = {
+      action: "BUFF",
+      target: { zone: "BOARD", owner: "SELF", selection: "SELF", count: 1 },
+      values: { attack: 0, health: Number(match[1]) },
+    };
+    return { trigger, action, ...(conditions?.length ? { conditions } : {}), values };
+  }
   const statMultiplier = schema.statMultiplier ? body.match(STAT_MULTIPLIER_PATTERN) : null;
   const statPairIncrement = schema.stats ? body.match(STAT_PAIR_INCREMENT_PATTERN) : null;
   const referenceStat = schema.referenceStat ? body.match(REFERENCE_ATTACK_INCREMENT_PATTERN) : null;
@@ -283,7 +330,8 @@ export function analyzeEffectText(input: string): Analysis {
     ["ADD_NEXT_TURN_GOLD", /다음(?:\s*내)?\s*턴(?:에)?\s*(?:추가\s*)?(?:골드\s*[+]?\d+|\d+\s*g|골드\s*\d+\s*추가)/i],
     ["ADD_GOLD", /(?:현재\s*)?(?:\d+\s*(?:g|골드)|골드(?:를|을)?\s*[+]?\d+|현재\s*골드\s*[+]\d+)\s*(?:획득|얻(?:음|습니다)?|추가)?/i],
     ["DRAW", /(?:(?:카드)?\s*(?:\d+\s*장|한\s*장|\d+)(?:을|를)?\s*(?:드로우|뽑(?:기|습니다|는다|음)?))/],
-    ["SWAP_STATS", STAT_SWAP_PATTERN],
+     ["SWAP_STATS", STAT_SWAP_PATTERN],
+     ["QUEUE_EFFECT", NEXT_PLAY_HEALTH_BUFF_PATTERN],
     ["ADD_DAMAGE_MODIFIER", /생성된\s*(?:카드|선수)?(?:들)?(?:이|가)?\s*(?:주는\s*)?(?:(?:데미지|피해)(?:가|를)?\s*(?:\d+\s*(?:증가|추가)|(?:증가|추가)\s*\d+)|\d+\s*추가\s*(?:데미지|피해))/],
     ["BUFF", /(?:[+-]\d+\s*\/\s*[+-]\d+|(?:공격력|체력)\s*[+-]\d+|(?:자신(?:의|에게)?\s*)?(?:현재\s*)?(?:공격(?:력)?\s*(?:과|\/|및)\s*체력|체력\s*(?:과|\/|및)\s*공격(?:력)?)(?:의\s*)?(?:(?:수치(?:를|가)?)|(?:을|를))?\s*\d+(?:\.\d+)?\s*배(?:로)?|(?:공격(?:력)?\s*(?:과|\/|및)\s*체력|체력\s*(?:과|\/|및)\s*공격(?:력)?)(?:의\s*)?(?:(?:수치(?:를|가)?)|(?:을|를))?\s*\d+(?:\.\d+)?\s*(?:씩\s*)?(?:증가|올려|올립(?:니다|다)?|상승|강화)|공격한\s*(?:아군\s*)?선수의\s*공격력\s*만큼\s*(?:자신의\s*)?공격력(?:을|이)?\s*(?:증가|올려|상승|강화))/],
     ["SET_STATS", /(?:자신의\s*)?공격력을\s*0\s*으로(?:\s*(?:만들|설정|변경))?/],
@@ -319,9 +367,12 @@ export function analyzeEffectText(input: string): Analysis {
     }
     remainder += ` ${clauseRemainder}`;
   }
+     remainder = remainder.replace(/사용될\s*때까지(?:\s*\S+){0,5}\s*유지(?:합니다)?|다음\s*턴에도(?:\s*\S+){0,2}\s*유지(?:합니다)?/g, "");
      remainder = remainder.replace(/자신의\s*양\s*옆\s*(?:빈\s*)?슬롯(?:에)?|양\s*옆\s*(?:빈\s*)?슬롯(?:에)?|각각|이\s*카드가\s*필드에\s*있(?:는\s*동안|을\s*때)|\d+\s*(?:코스트|비용)\s*이상/g, "");
-     remainder = remainder.replace(/(?:모든\s*)?(?:생성된\s*)?(?:아군|내)\s*선수(?:\s*카드)?(?:에게|을|를|의)?/g, "");
-    remainder = remainder.replace(/(?:완전(?:히)?\s*)?(?:무작위|랜덤)(?:로)?\s*(?:선수|기술)?\s*(?:카드)?\s*(?:\d+\s*장|하나|한\s*장)?(?:에게|을|를|의)?|선택한|어디에\s*(?:있든|있는)|모든\s*위치의|손패\s*[,，]\s*덱\s*[,，]\s*(?:필드|보드)|손패\s*(?:및|와|과)\s*덱\s*(?:및|와|과)\s*(?:필드|보드)|생성된(?:\s*카드)?|모든\s*캐릭터(?:에게|을|를)?|모든\s*(?:선수|카드)(?:에게|을|를|의)?|(?:적|상대)\s*(?:챔피언|플레이어)(?:에게|을|를)?|(?:내|자신의)\s*챔피언(?:에게|을|를)?|(?:적|상대)\s*선수(?:\s*(?:\d+\s*장|하나|한\s*장))?(?:에게|을|를)?|(?:아군|내)\s*선수(?:\s*(?:\d+\s*장|하나|한\s*장))?(?:에게|을|를)?|(?:적|상대)\s*캐릭터(?:\s*(?:\d+\s*장|하나|한\s*장))?(?:에게|을|를)?|(?:아군|내)\s*캐릭터(?:\s*(?:\d+\s*장|하나|한\s*장))?(?:에게|을|를)?|(?:손패|덱|필드|보드)(?!의?\s*(?:무작위\s*)?(?:선수|카드))(?:의)?|손패의\s*(?:무작위\s*)?선수(?:\s*카드)?(?:\s*(?:\d+\s*장|하나|한\s*장))?(?:에게|을|를|의)?|덱의\s*(?:무작위\s*)?(?:선수|카드)(?:\s*카드)?(?:\s*(?:\d+\s*장|하나|한\s*장))?(?:에게|을|를|의)?|필드의\s*(?:무작위\s*)?(?:선수|카드)(?:\s*카드)?(?:\s*(?:\d+\s*장|하나|한\s*장))?(?:에게|을|를|의)?|(?:자신|이\s*카드)(?:에게|을|를)?|(?:카드\s*)?(?:\d+\s*장|한\s*장)|선수(?:\s*카드)?(?:을|를)?|\d+\s*턴\s*동안|(?:에게|을|를|의|에)|(?:그리고|그\s*후|이후|하고|한\s*뒤|한\s*후|주고)|\s+/g, "");
+      remainder = remainder.replace(/(?:모든\s*)?(?:생성된\s*)?(?:아군|내)\s*선수(?:\s*카드)?(?:에게|을|를|의)?/g, "");
+      remainder = remainder.replace(/(?:완전(?:히)?\s*)?(?:무작위|랜덤)(?:로)?\s*(?:선수|기술)?\s*(?:카드)?\s*(?:\d+\s*장|하나|한\s*장)?(?:에게|을|를|의)?|선택한|어디에\s*(?:있든|있는)|모든\s*위치의|손패\s*[,，]\s*덱\s*[,，]\s*(?:필드|보드)|손패\s*(?:및|와|과)\s*덱\s*(?:및|와|과)\s*(?:필드|보드)|생성된(?:\s*카드)?|모든\s*캐릭터(?:에게|을|를)?|모든\s*(?:선수|카드)(?:에게|을|를|의)?|(?:적|상대)\s*(?:챔피언|플레이어)(?:에게|을|를)?|(?:내|자신의)\s*챔피언(?:에게|을|를)?|(?:적|상대)\s*선수(?:\s*(?:\d+\s*장|하나|한\s*장))?(?:에게|을|를)?|(?:아군|내)\s*선수(?:\s*(?:\d+\s*장|하나|한\s*장))?(?:에게|을|를)?|(?:적|상대)\s*캐릭터(?:\s*(?:\d+\s*장|하나|한\s*장))?(?:에게|을|를)?|(?:아군|내)\s*캐릭터(?:\s*(?:\d+\s*장|하나|한\s*장))?(?:에게|을|를)?|(?:손패|덱|필드|보드)(?!의?\s*(?:무작위\s*)?(?:선수|카드))(?:의)?|손패의\s*(?:무작위\s*)?선수(?:\s*카드)?(?:\s*(?:\d+\s*장|하나|한\s*장))?(?:에게|을|를|의)?|덱의\s*(?:무작위\s*)?(?:선수|카드)(?:\s*카드)?(?:\s*(?:\d+\s*장|하나|한\s*장))?(?:에게|을|를|의)?|필드의\s*(?:무작위\s*)?(?:선수|카드)(?:\s*카드)?(?:\s*(?:\d+\s*장|하나|한\s*장))?(?:에게|을|를|의)?|(?:자신|이\s*카드)(?:에게|을|를)?|(?:카드\s*)?(?:\d+\s*장|한\s*장)|선수(?:\s*카드)?(?:을|를)?|\d+\s*턴\s*동안|(?:에게|을|를|의|에)|(?:그리고|그\s*후|이후|하고|한\s*뒤|한\s*후|주고)|\s+/g, "");
+      remainder = remainder.replace(/사용될\s*때까지\s*(?:턴을\s*)?(?:넘어도\s*)?유지(?:합니다)?|다음\s*턴에도\s*유지(?:합니다)?/g, "");
+      remainder = remainder.replace(/(?:완전(?:히)?\s*)?(?:무작위|랜덤)(?:로)?\s*(?:선수|기술)?\s*(?:카드)?\s*(?:\d+\s*장|하나|한\s*장)?(?:에게|을|를|의)?|선택한|어디에\s*(?:있든|있는)|모든\s*위치의|손패\s*[,，]\s*덱\s*[,，]\s*(?:필드|보드)|손패\s*(?:및|와|과)\s*덱\s*(?:및|와|과)\s*(?:필드|보드)|생성된(?:\s*카드)?|모든\s*캐릭터(?:에게|을|를)?|모든\s*(?:선수|카드)(?:에게|을|를|의)?|(?:적|상대)\s*(?:챔피언|플레이어)(?:에게|을|를)?|(?:내|자신의)\s*챔피언(?:에게|을|를)?|(?:적|상대)\s*선수(?:\s*(?:\d+\s*장|하나|한\s*장))?(?:에게|을|를)?|(?:아군|내)\s*선수(?:\s*(?:\d+\s*장|하나|한\s*장))?(?:에게|을|를)?|(?:적|상대)\s*캐릭터(?:\s*(?:\d+\s*장|하나|한\s*장))?(?:에게|을|를)?|(?:아군|내)\s*캐릭터(?:\s*(?:\d+\s*장|하나|한\s*장))?(?:에게|을|를)?|(?:손패|덱|필드|보드)(?!의?\s*(?:무작위\s*)?(?:선수|카드))(?:의)?|손패의\s*(?:무작위\s*)?선수(?:\s*카드)?(?:\s*(?:\d+\s*장|하나|한\s*장))?(?:에게|을|를|의)?|덱의\s*(?:무작위\s*)?(?:선수|카드)(?:\s*카드)?(?:\s*(?:\d+\s*장|하나|한\s*장))?(?:에게|을|를|의)?|필드의\s*(?:무작위\s*)?(?:선수|카드)(?:\s*카드)?(?:\s*(?:\d+\s*장|하나|한\s*장))?(?:에게|을|를|의)?|(?:자신|이\s*카드)(?:에게|을|를)?|(?:카드\s*)?(?:\d+\s*장|한\s*장)|선수(?:\s*카드)?(?:을|를)?|\d+\s*턴\s*동안|(?:에게|을|를|의|에)|(?:그리고|그\s*후|이후|하고|한\s*뒤|한\s*후|주고)|\s+/g, "");
   // Action endings remain after matcher only for Korean conjugations.
    remainder = remainder.replace(/(합니다|시키고|시킵니다|부여|획득|얻음|얻습니다|줍니다|준다|주|드로우|뽑습니다|뽑기|포획|제거|소환|생성|해방|감소|증가)/g, "");
   const remainderUnsupported = remainder.replace(unsupportedMechanic, "").trim();
@@ -402,6 +453,31 @@ export function isStructuredEffects(value: unknown): value is { effects: Structu
     if (schema.keyword && !KEYWORDS.includes(values?.keyword as Keyword)) return false;
     if (schema.damageSource && !DAMAGE_SOURCES.includes(values?.damageSource as DamageSource)) return false;
     if (schema.branches && (!Array.isArray(values?.leftEffects) || !Array.isArray(values?.rightEffects))) return false;
+     if (schema.queuedEffect) {
+       const queued = values?.queuedEffect;
+       const queuedValues = queued?.values;
+       const queuedTarget = queued?.target;
+       const queuedZones = queuedTarget?.zones ?? (queuedTarget?.zone ? [queuedTarget.zone] : []);
+       const validQueuedTarget = Boolean(queuedTarget) &&
+         queuedZones.length === 1 &&
+         queuedZones[0] === "BOARD" &&
+         queuedTarget?.owner === "SELF" &&
+         queuedTarget.selection === "SELF" &&
+         queuedTarget.count === 1;
+       const validQueuedBuff = queued?.action === "BUFF" &&
+         typeof queuedValues?.attack === "number" &&
+         typeof queuedValues.health === "number" &&
+         Math.abs(queuedValues.attack) <= 999 &&
+         Math.abs(queuedValues.health) <= 999;
+       if (
+         values?.queuedTrigger !== "NEXT_ALLY_WRESTLER_PLAYED" ||
+         !queued ||
+         !ACTIONS.includes(queued.action) ||
+         queued.action === "QUEUE_EFFECT" ||
+         !validQueuedTarget ||
+         !validQueuedBuff
+       ) return false;
+     }
     return !item.conditions || item.conditions.every((condition) => CONDITIONS.includes(condition.type));
   });
 }
