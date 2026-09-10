@@ -29,6 +29,7 @@ type AdminSessionPayload = {
 };
 
 const CARD_TYPES = ["WRESTLER", "TECHNIQUE"] as const;
+const CARD_RARITIES = ["NORMAL", "LEGENDARY", "CHAMPION"] as const;
 const CARD_STATUSES = ["DRAFT", "PUBLISHED", "DISABLED"] as const;
 const CHAMPION_STATUSES = ["DRAFT", "PUBLISHED", "DISABLED"] as const;
 const CARD_KEYWORDS = [
@@ -43,6 +44,7 @@ const IMAGE_DISPLAY_MODES = ["COVER", "CONTAIN", "CUSTOM"] as const;
 type CardInput = {
   name: string;
   cardType: (typeof CARD_TYPES)[number];
+  rarity: (typeof CARD_RARITIES)[number];
   cost: number;
   attack: number;
   health: number;
@@ -445,6 +447,9 @@ function parseCardInput(value: unknown): CardInput | null {
   const input = value as Record<string, unknown>;
   const name = typeof input.name === "string" ? input.name.trim() : "";
   const text = typeof input.text === "string" ? input.text.trim() : "";
+  const rarity = CARD_RARITIES.includes(input.rarity as (typeof CARD_RARITIES)[number])
+    ? input.rarity as (typeof CARD_RARITIES)[number]
+    : "NORMAL";
   const explicitEffectId =
     typeof input.effectId === "string" && input.effectId.trim()
       ? input.effectId.trim()
@@ -488,6 +493,7 @@ function parseCardInput(value: unknown): CardInput | null {
     !name ||
     name.length > 120 ||
     !CARD_TYPES.includes(input.cardType as (typeof CARD_TYPES)[number]) ||
+    (input.rarity !== undefined && !CARD_RARITIES.includes(input.rarity as (typeof CARD_RARITIES)[number])) ||
     !validInteger(input.cost) ||
     !validInteger(input.attack) ||
     !validInteger(input.health) ||
@@ -518,6 +524,7 @@ function parseCardInput(value: unknown): CardInput | null {
   return {
     name,
     cardType: input.cardType as CardInput["cardType"],
+    rarity,
     cost: input.cost as number,
     attack: input.attack as number,
     health: input.health as number,

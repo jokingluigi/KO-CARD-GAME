@@ -1,5 +1,5 @@
 import React from 'react';
-import { CardArtwork } from './card-artwork';
+import { CardRenderer } from './card-renderer';
 import {
   getCardDefinition,
   getActiveAbility,
@@ -398,10 +398,10 @@ function HandCard({
   
   const sizeClass =
     density === 'small'
-      ? 'w-[58px] h-[82px] md:w-[84px] md:h-[128px]'
+      ? 'w-[58px] h-[81px] md:w-[84px] md:h-[118px]'
       : density === 'medium'
-        ? 'w-[66px] h-[92px] md:w-[100px] md:h-[148px]'
-        : 'w-[75px] h-[105px] md:w-[130px] md:h-[180px]';
+        ? 'w-[66px] h-[92px] md:w-[100px] md:h-[140px]'
+        : 'w-[75px] h-[105px] md:w-[130px] md:h-[182px]';
   let containerClass = `${sizeClass} rounded flex flex-col relative transition-all duration-200 select-none bg-neutral-800 border-2 hover:z-40 group overflow-visible origin-bottom `;
   
   if (isSelected) {
@@ -416,41 +416,20 @@ function HandCard({
 
   return (
     <Inspectable content={<CardInspectContent card={card} />} className="relative shrink-0">
-    <div className={containerClass} onClick={onClick} style={style} tabIndex={0}>
-       <div className="absolute -left-2 -top-2 z-20 flex h-6 w-6 items-center justify-center rounded-full border-2 border-blue-900 bg-blue-700 font-display text-xs font-bold text-white shadow md:-left-3 md:-top-3 md:h-8 md:w-8 md:text-sm">
-         {card.currentCost}
-       </div>
-       
-       <div className="flex h-6 flex-col justify-center rounded-t-sm border-b border-neutral-700 bg-neutral-800 px-1 py-1 text-center md:h-8">
-         <div className="w-full truncate text-[8px] font-bold text-white md:text-[11px]">{def?.name}</div>
-       </div>
-       
-       <div className="flex flex-1 flex-col justify-between overflow-hidden bg-neutral-950">
-          <CardArtwork
-            src={def?.imageUrl}
-            alt={def?.name ?? '카드 이미지'}
-            className="min-h-0 w-full flex-1"
-             imageDisplayMode={def?.imageDisplayMode}
-             imageScale={def?.imageScale}
-             imagePositionX={def?.imagePositionX}
-             imagePositionY={def?.imagePositionY}
-          />
-         <div className="h-10 border-t border-neutral-800 bg-neutral-900/80 p-1 text-[7px] leading-tight text-neutral-300 md:h-16 md:p-1.5 md:text-[9px]">
-           <span className="line-clamp-3">{def?.rulesText || '효과 없음'}</span>
-         </div>
-       </div>
-
-       {def?.attack !== undefined && def?.health !== undefined && (
-         <div className="absolute -bottom-2 -left-1 right-[-4px] z-20 flex justify-between">
-            <div className="flex h-5 w-5 items-center justify-center rounded-sm border-2 border-yellow-700 bg-primary font-display text-[10px] font-bold text-black shadow-md md:h-7 md:w-7 md:text-sm">
-               {card.currentAttack}
-            </div>
-            <div className="flex h-5 w-5 items-center justify-center rounded-sm border-2 border-red-800 bg-red-600 font-display text-[10px] font-bold text-white shadow-md md:h-7 md:w-7 md:text-sm">
-               {card.currentHealth}
-            </div>
-         </div>
-       )}
-    </div>
+    <CardRenderer
+      name={def?.name ?? '알 수 없는 카드'}
+      cost={card.currentCost}
+      attack={card.currentAttack}
+      health={card.currentHealth}
+      rulesText={def?.rulesText ?? '효과 없음'}
+      imageUrl={def?.imageUrl}
+      rarity={def?.rarity}
+      size="hand"
+      className={containerClass}
+      imageDisplaySettings={def}
+      onClick={onClick}
+      tabIndex={0}
+    />
     </Inspectable>
   );
 }
@@ -482,7 +461,7 @@ function BoardSlot({
 }) {
   const isEmpty = !card;
   
-  let containerClass = "w-[70px] h-[108px] md:w-[110px] md:h-[164px] rounded flex flex-col relative transition-all duration-200 select-none ";
+  let containerClass = "w-[70px] h-[98px] md:w-[110px] md:h-[154px] rounded flex flex-col relative transition-all duration-200 select-none ";
   
   if (isEmpty) {
     containerClass += "border-2 border-dashed bg-neutral-900/30 items-center justify-center ";
@@ -531,61 +510,42 @@ function BoardSlot({
           액티브
         </button>
       )}
-      <div className={containerClass} onClick={() => onClick(card.instanceId)} tabIndex={0}>
-       <div className="absolute -left-2 -top-2 z-30 flex h-6 w-6 items-center justify-center rounded-full border-2 border-blue-900 bg-blue-700 font-display text-[10px] font-bold text-white shadow-md md:-left-3 md:-top-3 md:h-8 md:w-8 md:text-sm">
-         {card.currentCost}
-       </div>
-       <div className="flex h-5 w-full items-center justify-center overflow-hidden rounded-t-sm border-b border-neutral-700 bg-neutral-900 px-1 md:h-7">
-         <span className="block w-full truncate text-center text-[8px] font-bold text-neutral-200 transition-colors group-hover:text-white md:text-[10px]">{def?.name}</span>
-       </div>
-       
-       <div className="relative flex w-full flex-1 items-center justify-center overflow-hidden rounded-b-sm bg-neutral-950">
-         <div className="absolute inset-0 bg-gradient-to-t from-black/80 to-transparent"></div>
-          <CardArtwork
-            src={def?.imageUrl}
-            alt={def?.name ?? '카드 이미지'}
-            className="h-full w-full"
-             imageDisplayMode={def?.imageDisplayMode}
-             imageScale={def?.imageScale}
-             imagePositionX={def?.imagePositionX}
-             imagePositionY={def?.imagePositionY}
-          />
-          <span className="absolute bottom-1 left-1 right-1 line-clamp-3 text-center text-[7px] leading-tight text-neutral-300 md:text-[9px]">
-            {def?.rulesText || '효과 없음'}
-          </span>
-         
-         {isDead && (
-           <div className="absolute inset-0 z-10 flex items-center justify-center bg-red-950/80">
-             <span className="rotate-12 font-display text-2xl font-black text-red-500 drop-shadow-md md:text-3xl">KO</span>
-           </div>
-         )}
-
-         {targetable && !isDead && (
-           <div className="pointer-events-none absolute inset-0 z-30 flex items-center justify-center bg-red-500/10 transition-colors group-hover:bg-red-500/20">
-             <div className="relative flex h-8 w-8 items-center justify-center rounded-full border-2 border-red-500/50 opacity-0 transition-opacity group-hover:opacity-100">
-               <div className="absolute h-full w-1 bg-red-500/50"></div>
-               <div className="absolute h-1 w-full bg-red-500/50"></div>
-             </div>
-           </div>
-         )}
-         
-         {attackReady && !selected && !isDead && (
-           <div className="pointer-events-none absolute inset-0 z-30 animate-[pulse_2s_ease-in-out_infinite] bg-blue-500/10 group-hover:bg-blue-500/20"></div>
-         )}
-         
-         {selected && !isDead && (
-           <div className="pointer-events-none absolute inset-0 z-30 bg-primary/20"></div>
-         )}
-       </div>
-
-       {/* Stats Flags */}
-       <div className="absolute -bottom-2 -left-2 z-20 flex h-6 w-6 items-center justify-center rounded-sm border-2 border-yellow-800 bg-primary font-display text-[10px] font-bold text-black shadow-md transition-transform group-hover:scale-110 md:-bottom-3 md:-left-3 md:h-8 md:w-8 md:text-sm">
-         {card.currentAttack}
-       </div>
-       <div className="absolute -bottom-2 -right-2 z-20 flex h-6 w-6 items-center justify-center rounded-sm border-2 border-red-900 bg-red-600 font-display text-[10px] font-bold text-white shadow-md transition-transform group-hover:scale-110 md:-bottom-3 md:-right-3 md:h-8 md:w-8 md:text-sm">
-         {card.currentHealth}
-       </div>
-      </div>
+       <CardRenderer
+         name={def?.name ?? '알 수 없는 카드'}
+         cost={card.currentCost}
+         attack={card.currentAttack}
+         health={card.currentHealth}
+         rulesText={def?.rulesText ?? '효과 없음'}
+         imageUrl={def?.imageUrl}
+         rarity={def?.rarity}
+         size="board"
+         className={containerClass}
+         imageDisplaySettings={def}
+         onClick={() => onClick(card.instanceId)}
+         tabIndex={0}
+         overlay={
+           <>
+             <div className="absolute inset-0 bg-gradient-to-t from-black/55 to-transparent" />
+             {isDead && (
+               <div className="absolute inset-0 flex items-center justify-center bg-red-950/80">
+                 <span className="rotate-12 font-display text-2xl font-black text-red-500 drop-shadow-md md:text-3xl">KO</span>
+               </div>
+             )}
+             {targetable && !isDead && (
+               <div className="absolute inset-0 flex items-center justify-center bg-red-500/10 transition-colors group-hover:bg-red-500/20">
+                 <div className="relative flex h-8 w-8 items-center justify-center rounded-full border-2 border-red-500/50 opacity-0 transition-opacity group-hover:opacity-100">
+                   <div className="absolute h-full w-1 bg-red-500/50" />
+                   <div className="absolute h-1 w-full bg-red-500/50" />
+                 </div>
+               </div>
+             )}
+             {attackReady && !selected && !isDead && (
+               <div className="absolute inset-0 animate-[pulse_2s_ease-in-out_infinite] bg-blue-500/10 group-hover:bg-blue-500/20" />
+             )}
+             {selected && !isDead && <div className="absolute inset-0 bg-primary/20" />}
+           </>
+         }
+       />
     </div>
     </Inspectable>
   );

@@ -14,12 +14,15 @@ import {
   Trash2,
   X,
 } from "lucide-react";
-import { CardArtwork } from "./card-artwork";
+import { CardRenderer } from "./card-renderer";
 import { AdminAudioField } from "./admin-audio-field";
 import { useToast } from "../hooks/use-toast";
 import {
+  CARD_RARITY_LABELS,
   DEFAULT_IMAGE_DISPLAY_SETTINGS,
   normalizeImageDisplaySettings,
+  normalizeCardRarity,
+  type CardRarity,
   type ImageDisplayMode,
   type ImageDisplaySettings,
 } from "../game/cards/types";
@@ -39,6 +42,7 @@ type CardRecord = {
   id: string;
   name: string;
   cardType: CardType;
+  rarity?: CardRarity;
   cost: number;
   attack: number;
   health: number;
@@ -67,6 +71,7 @@ type CardRecord = {
 type CardFormValues = {
   name: string;
   cardType: CardType;
+  rarity: CardRarity;
   cost: number;
   attack: number;
   health: number;
@@ -105,6 +110,7 @@ type MechanicRequest = {
 const EMPTY_CARD: CardFormValues = {
   name: "",
   cardType: "WRESTLER",
+  rarity: "NORMAL",
   cost: 0,
   attack: 0,
   health: 1,
@@ -376,6 +382,7 @@ export function AdminCardManager({
     form.reset({
       name: card.name,
       cardType: card.cardType,
+      rarity: normalizeCardRarity(card.rarity),
       cost: card.cost,
       attack: card.attack,
       health: card.health,
@@ -868,8 +875,8 @@ export function AdminCardManager({
        <div className="overflow-x-auto rounded-lg border border-neutral-800">
         <table className="w-full min-w-[920px] text-left text-xs">
           <thead className="bg-neutral-900 text-neutral-500">
-            <tr>
-              {["이름", "종류", "비용", "공격력", "체력", "상태", "버전", "수정일", "작업"].map((label) => (
+             <tr>
+               {["이름", "종류", "등급", "비용", "공격력", "체력", "상태", "버전", "수정일", "작업"].map((label) => (
                 <th key={label} className="px-3 py-3 font-bold">{label}</th>
               ))}
             </tr>
@@ -882,6 +889,7 @@ export function AdminCardManager({
                   {(card.isToken || card.isChampionToken) && <div className="mt-1 text-[10px] text-primary">{card.isChampionToken ? "챔피언 토큰" : "토큰"}</div>}
                 </td>
                 <td className="px-3 py-3 text-neutral-400">{card.cardType === "WRESTLER" ? "선수" : "기술"}</td>
+                 <td className="px-3 py-3 font-bold text-amber-300">{CARD_RARITY_LABELS[normalizeCardRarity(card.rarity)]}</td>
                 <td className="px-3 py-3">{card.cost}</td>
                 <td className="px-3 py-3">{card.attack}</td>
                 <td className="px-3 py-3">{card.health}</td>
@@ -1036,7 +1044,8 @@ export function AdminCardManager({
                     </div>
                   </div>
                </div>
-              <label className="space-y-1.5"><span className="text-xs font-bold text-neutral-400">카드 종류</span><select {...form.register("cardType")} data-testid="input-card-card-type" className="w-full rounded border border-neutral-700 bg-neutral-900 px-3 py-2"><option value="WRESTLER">선수</option><option value="TECHNIQUE">기술</option></select></label>
+               <label className="space-y-1.5"><span className="text-xs font-bold text-neutral-400">카드 종류</span><select {...form.register("cardType")} data-testid="input-card-card-type" className="w-full rounded border border-neutral-700 bg-neutral-900 px-3 py-2"><option value="WRESTLER">선수</option><option value="TECHNIQUE">기술</option></select></label>
+               <label className="space-y-1.5"><span className="text-xs font-bold text-neutral-400">카드 등급</span><select {...form.register("rarity")} data-testid="input-card-rarity" className="w-full rounded border border-neutral-700 bg-neutral-900 px-3 py-2">{(["NORMAL", "LEGENDARY", "CHAMPION"] as const).map((rarity) => <option key={rarity} value={rarity}>{CARD_RARITY_LABELS[rarity]}</option>)}</select></label>
               <div className="grid grid-cols-3 gap-2">
                 {(["cost", "attack", "health"] as const).map((field) => <label key={field} className="space-y-1.5"><span className="text-xs font-bold text-neutral-400">{{ cost: "비용", attack: "공격력", health: "체력" }[field]}</span><input type="number" min={0} max={999} {...form.register(field, { required: true, valueAsNumber: true })} data-testid={`input-card-${field}`} className="w-full rounded border border-neutral-700 bg-neutral-900 px-2 py-2 outline-none focus:border-primary" /></label>)}
               </div>
@@ -1105,6 +1114,7 @@ export function AdminCardManager({
                  attack={Number(preview.attack) || 0}
                  health={Number(preview.health) || 0}
                  text={preview.text}
+                  rarity={preview.rarity}
                  imageUrl={localPreviewUrl ?? imageUrl}
                   imageDisplaySettings={imageDisplaySettings}
                   onImagePositionChange={(position) => setImageDisplaySettings((current) => ({ ...current, ...position }))}
@@ -1187,6 +1197,7 @@ function AdminCardPreview({
   health,
   text,
   imageUrl,
+  rarity,
   imageDisplaySettings,
   onImagePositionChange,
 }: {
@@ -1196,37 +1207,27 @@ function AdminCardPreview({
   health: number;
   text: string;
   imageUrl: string | null;
+  rarity?: CardRarity;
   imageDisplaySettings: ImageDisplaySettings;
   onImagePositionChange: (
     position: Pick<ImageDisplaySettings, "imagePositionX" | "imagePositionY">,
   ) => void;
 }) {
   return (
-    <div data-testid="card-live-preview" className="relative mx-auto flex h-[360px] w-[240px] select-none flex-col rounded-lg border-2 border-blue-600/70 bg-neutral-800 shadow-[0_15px_40px_rgba(0,0,0,0.7)]">
-      <div className="absolute -left-3 -top-3 z-20 flex h-10 w-10 items-center justify-center rounded-full border-2 border-blue-900 bg-blue-700 font-display text-lg font-black text-white shadow">
-        {cost}
-      </div>
-      <div className="flex h-12 items-center justify-center overflow-hidden rounded-t-md border-b border-neutral-700 bg-neutral-800 px-5">
-        <span className="truncate text-sm font-black text-white">{name || "카드 이름"}</span>
-      </div>
-      <CardArtwork
-        src={imageUrl}
-        alt={name || "카드 미리보기"}
-        className="min-h-0 w-full flex-1"
-        {...imageDisplaySettings}
-        interactive
-        showHint={Boolean(imageUrl)}
-        onPositionChange={onImagePositionChange}
-      />
-      <div className="h-24 border-t border-neutral-800 bg-neutral-900/95 p-3 text-xs leading-relaxed text-neutral-300">
-        <span className="line-clamp-4">{text || "효과 없음"}</span>
-      </div>
-      <div className="absolute -bottom-3 -left-3 flex h-10 w-10 items-center justify-center rounded border-2 border-yellow-700 bg-primary font-display text-lg font-black text-black shadow">
-        {attack}
-      </div>
-      <div className="absolute -bottom-3 -right-3 flex h-10 w-10 items-center justify-center rounded border-2 border-red-800 bg-red-600 font-display text-lg font-black text-white shadow">
-        {health}
-      </div>
-    </div>
+    <CardRenderer
+      name={name || "카드 이름"}
+      cost={cost}
+      attack={attack}
+      health={health}
+      rulesText={text || "효과 없음"}
+      imageUrl={imageUrl}
+      rarity={rarity}
+      size="admin"
+      className="mx-auto h-[336px] w-[240px] shadow-[0_15px_40px_rgba(0,0,0,0.7)]"
+      imageDisplaySettings={imageDisplaySettings}
+      interactiveArtwork
+      showArtworkHint={Boolean(imageUrl)}
+      onImagePositionChange={onImagePositionChange}
+    />
   );
 }

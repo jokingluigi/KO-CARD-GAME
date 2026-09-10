@@ -12,7 +12,7 @@ import {
   type CardInstance,
   type ChampionState,
 } from '@/game';
-import { CardArtwork } from './card-artwork';
+import { CardRenderer } from './card-renderer';
 
 interface InspectTarget {
   content: ReactNode;
@@ -153,20 +153,18 @@ export function CardInspectContent({ card }: { card: CardInstance }) {
       <h3 className="mb-3 text-lg font-black text-white">
         {definition?.name ?? '알 수 없는 카드'}
       </h3>
-      <CardArtwork
-        src={definition?.imageUrl}
-        alt={definition?.name ?? '카드 이미지'}
-        className="mb-3 h-32 w-full rounded border border-neutral-800"
-        imageDisplayMode={definition?.imageDisplayMode}
-        imageScale={definition?.imageScale}
-        imagePositionX={definition?.imagePositionX}
-        imagePositionY={definition?.imagePositionY}
+      <CardRenderer
+        name={definition?.name ?? '알 수 없는 카드'}
+        cost={card.currentCost}
+        attack={card.currentAttack}
+        health={card.currentHealth}
+        rulesText={definition?.rulesText ?? '효과 없음'}
+        imageUrl={definition?.imageUrl}
+        rarity={definition?.rarity}
+        size="detail"
+        className="mb-3 w-full"
+        imageDisplaySettings={definition}
       />
-      <div className="mb-3 grid grid-cols-3 gap-2 text-center">
-        <Stat label="비용" value={`${card.currentCost}G`} changed={card.currentCost !== definition?.cost} />
-        <Stat label="공격" value={card.currentAttack} changed={card.currentAttack !== definition?.attack} />
-        <Stat label="체력" value={card.currentHealth} changed={card.currentHealth !== definition?.health} />
-      </div>
       {(card.currentCost !== definition?.cost ||
         card.currentAttack !== definition?.attack ||
         card.currentHealth !== definition?.health) && (
@@ -174,9 +172,6 @@ export function CardInspectContent({ card }: { card: CardInstance }) {
           기본 수치: {definition?.cost ?? 0}G / 공격 {definition?.attack ?? 0} / 체력 {definition?.health ?? 0}
         </div>
       )}
-      <div className="mb-3 rounded border border-neutral-800 bg-black/40 p-2 text-xs leading-relaxed text-neutral-300">
-        {definition?.rulesText || '효과 없음'}
-      </div>
       {keywords.length > 0 && (
         <div className="space-y-2">
           {keywords.map((keyword) => (
@@ -193,23 +188,6 @@ export function CardInspectContent({ card }: { card: CardInstance }) {
       )}
       {card.isSilenced && <div className="mt-3 text-xs font-bold text-purple-300">침묵 상태</div>}
       {card.isStunned && <div className="mt-1 text-xs font-bold text-yellow-300">기절 상태</div>}
-    </div>
-  );
-}
-
-function Stat({
-  label,
-  value,
-  changed,
-}: {
-  label: string;
-  value: string | number;
-  changed: boolean;
-}) {
-  return (
-    <div className={`rounded border p-2 ${changed ? 'border-primary bg-primary/10' : 'border-neutral-800 bg-neutral-900'}`}>
-      <div className="text-[9px] text-neutral-500">{label}</div>
-      <div className="font-display text-base font-black">{value}</div>
     </div>
   );
 }

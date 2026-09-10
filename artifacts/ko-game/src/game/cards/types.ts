@@ -2,6 +2,17 @@ import type { CardAbility, CardKeyword } from '../effects/types';
 
 export type CardDefinitionId = string;
 export type CardInstanceId = string;
+export type CardRarity = 'NORMAL' | 'LEGENDARY' | 'CHAMPION';
+
+export const CARD_RARITY_LABELS: Record<CardRarity, string> = {
+  NORMAL: '일반',
+  LEGENDARY: '레전더리',
+  CHAMPION: '챔피언',
+};
+
+export function normalizeCardRarity(value?: unknown): CardRarity {
+  return value === 'LEGENDARY' || value === 'CHAMPION' ? value : 'NORMAL';
+}
 
 export type ImageDisplayMode = 'COVER' | 'CONTAIN' | 'CUSTOM';
 
@@ -52,6 +63,7 @@ export interface CardDefinition {
   attack: number;
   health: number;
   rulesText: string;
+  rarity?: CardRarity;
   imageAssetId?: string | null;
   imageUrl?: string | null;
   imageDisplayMode?: ImageDisplayMode;

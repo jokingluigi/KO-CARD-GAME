@@ -1,10 +1,11 @@
 import type { CardAbility } from "../effects/types";
-import type { CardDefinition } from "./types";
+import type { CardDefinition, CardRarity } from "./types";
 
 export type PublishedCardRecord = {
   id: string;
   name: string;
   cardType: "WRESTLER" | "TECHNIQUE";
+  rarity?: CardRarity;
   cost: number;
   attack: number;
   health: number;
@@ -107,6 +108,7 @@ export function cardRecordToDefinition(card: PublishedCardRecord): CardDefinitio
       id: card.id,
       name: card.name,
       cardType: card.cardType,
+       rarity: card.rarity,
       cost: card.cost,
       attack: card.attack,
       health: card.health,

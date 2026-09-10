@@ -17,6 +17,7 @@ export const cardsTable = pgTable("cards", {
   attack: integer("attack").notNull(),
   health: integer("health").notNull(),
   text: text("text").notNull(),
+  rarity: text("rarity").notNull().default("NORMAL"),
   keywords: text("keywords")
     .array()
     .notNull()
