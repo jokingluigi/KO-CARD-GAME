@@ -222,7 +222,7 @@ export function CardRenderer({
           <div
             className="pointer-events-none absolute z-20 flex items-center justify-center overflow-hidden px-[2%] text-center"
             style={{
-              left: `${frameLayout.name.left}%`,
+              left: `${scaleInset(frameLayout.name.left, frameScale)}%`,
               right: `${scaleInset(frameLayout.name.right, frameScale)}%`,
               top: `${scaleInset(frameLayout.name.top, frameScale)}%`,
               height: `${scaleSize(frameLayout.name.height, frameScale)}%`,
