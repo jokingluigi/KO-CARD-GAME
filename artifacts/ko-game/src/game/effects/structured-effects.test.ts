@@ -7,7 +7,7 @@ import { createInitialGameState } from '../engine/create-initial-game-state';
 import { drawCard } from '../engine/draw-card';
 import { destroyCard } from '../engine/destroy-card';
 import { enterField } from '../engine/enter-field';
-import { selectEffectTarget } from './effect-engine';
+import { resolveActiveAbility, selectEffectTarget } from './effect-engine';
 import type { CardEffect } from './types';
 
 function definition(id: string, effects: CardEffect[]): CardDefinition {
@@ -85,6 +85,28 @@ test('기본 1/1 카드의 현재 공격과 체력을 2배로 변경한다', () 
   assert.equal(result.players[0].board[0]?.currentAttack, 2);
   assert.equal(result.players[0].board[0]?.currentHealth, 2);
   assert.equal(result.players[0].board[0]?.maxHealth, 2);
+});
+
+test('액티브로 현재 공격력과 체력을 서로 교환한다', () => {
+  const source = {
+    ...instance('active-stat-swap', [
+      structured(
+        'SWAP_STATS',
+        { zone: 'BOARD', owner: 'SELF', selection: 'SELF', count: 1 },
+      ),
+    ]),
+    currentAttack: 3,
+    currentHealth: 7,
+    maxHealth: 9,
+  };
+  const entered = enterField(createInitialGameState(), 'player-1', source, 0);
+  const boardCard = entered.players[0].board[0];
+  assert.ok(boardCard);
+
+  const result = resolveActiveAbility(entered, 'player-1', boardCard);
+  assert.equal(result.players[0].board[0]?.currentAttack, 7);
+  assert.equal(result.players[0].board[0]?.currentHealth, 3);
+  assert.equal(result.players[0].board[0]?.maxHealth, 9);
 });
 
 test('이미 3/4인 카드의 현재 공격과 체력을 2배로 변경한다', () => {

@@ -18,6 +18,12 @@ test("필수 카드 문장을 안전한 구조화 효과로 분석한다", () =>
       values: { attackMultiplier: 2, healthMultiplier: 2 },
     },
     {
+      text: "액티브:자신의 현재 공격과 체력을의 수치 서로 교환합니다.",
+      actions: ["SWAP_STATS"],
+      target: { zone: "BOARD", owner: "SELF", selection: "SELF", count: 1 },
+      values: undefined,
+    },
+    {
       text: "등장: 손패의 선수 카드 한 장에게 +1/+1을 부여합니다.",
       actions: ["BUFF"],
       target: { zone: "HAND", owner: "SELF", cardType: "WRESTLER", selection: "PLAYER_CHOICE", count: 1 },
@@ -95,6 +101,18 @@ test("필수 카드 문장을 안전한 구조화 효과로 분석한다", () =>
       example.text,
     );
   }
+});
+
+test("현재 공격력과 체력 교환의 유사 표현도 범용 SWAP_STATS로 분석한다", () => {
+  const result = analyzeEffectText("액티브: 자신의 현재 공격력과 체력을 서로 바꿉니다.");
+
+  assert.equal(result.status, "success");
+  assert.equal(result.outcome, "supported");
+  assert.deepEqual(result.effects[0], {
+    trigger: "ACTIVE",
+    action: "SWAP_STATS",
+    target: { zone: "BOARD", owner: "SELF", selection: "SELF", count: 1 },
+  });
 });
 
 test("요구된 기존 라이브러리 문장을 모두 지원한다", () => {

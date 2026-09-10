@@ -626,6 +626,13 @@ function applyEffect(
                currentHealth: card.currentHealth * healthMultiplier + health,
              };
           }
+           if (effect.action === 'SWAP_STATS') {
+             return {
+               ...card,
+               currentAttack: card.currentHealth,
+               currentHealth: card.currentAttack,
+             };
+           }
           return card;
         };
         if (player.id !== targetOwner) return player;
