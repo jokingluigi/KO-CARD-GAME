@@ -12,6 +12,12 @@ test("필수 카드 문장을 안전한 구조화 효과로 분석한다", () =>
       values: { attack: 2, health: 2 },
     },
     {
+      text: "등장: 자신의 현재 공격과 체력의 수치를 2배로 만듭니다.",
+      actions: ["BUFF"],
+      target: { zone: "BOARD", owner: "SELF", selection: "SELF", count: 1 },
+      values: { attackMultiplier: 2, healthMultiplier: 2 },
+    },
+    {
       text: "등장: 손패의 선수 카드 한 장에게 +1/+1을 부여합니다.",
       actions: ["BUFF"],
       target: { zone: "HAND", owner: "SELF", cardType: "WRESTLER", selection: "PLAYER_CHOICE", count: 1 },
@@ -109,6 +115,10 @@ test("현재 registry에서 제공하는 Effect Library 메타데이터를 노�
   assert.ok(library.triggers.every((trigger) => trigger.status === "ACTIVE"));
   assert.ok(library.targetResolvers.length > 0);
   assert.ok(library.valueResolvers.length > 0);
+  assert.deepEqual(
+    library.valueResolvers.find((resolver) => resolver.name === "STAT_MULTIPLIER")?.config,
+    { attackMultiplier: "number (0..10)", healthMultiplier: "number (0..10)" },
+  );
 });
 
 test("인식 가능한 신규 메커니즘은 부분 적용 없이 필요 상태로 분류한다", () => {
@@ -224,6 +234,28 @@ test("잘못 조합된 구조화 JSON을 거부한다", () => {
     }),
     false,
   );
+  assert.equal(
+    isStructuredEffects({
+      effects: [{
+        trigger: "ENTER_FIELD",
+        action: "BUFF",
+        target: { zone: "BOARD", owner: "SELF", selection: "SELF", count: 1 },
+        values: { attackMultiplier: 11, healthMultiplier: 2 },
+      }],
+    }),
+    false,
+  );
+  assert.equal(
+    isStructuredEffects({
+      effects: [{
+        trigger: "ENTER_FIELD",
+        action: "BUFF",
+        target: { zone: "BOARD", owner: "SELF", selection: "SELF", count: 1 },
+        values: { attackMultiplier: 2 },
+      }],
+    }),
+    false,
+  );
 });
 
 test("별칭, 드로우와 기본 키워드를 Registry로 분석한다", () => {
@@ -243,6 +275,19 @@ test("별칭, 드로우와 기본 키워드를 Registry로 분석한다", () => 
   }
   assert.deepEqual(analyzeEffectText("도발").keywords, ["TAUNT"]);
   assert.deepEqual(analyzeEffectText("회피").keywords, ["DODGE"]);
+});
+
+test("현재 공격/체력 배수 표현은 같은 범용 BUFF Resolver로 분석한다", () => {
+  for (const text of [
+    "등장: 자신의 현재 공격과 체력의 수치를 2배로 만듭니다.",
+    "등장: 자신에게 공격력과 체력을 2배로 합니다.",
+  ]) {
+    const result = analyzeEffectText(text);
+    assert.equal(result.status, "success", text);
+    assert.equal(result.effects[0]?.action, "BUFF", text);
+    assert.deepEqual(result.effects[0]?.values, { attackMultiplier: 2, healthMultiplier: 2 }, text);
+    assert.equal(isStructuredEffects({ effects: result.effects }), true, text);
+  }
 });
 
 test("액션별 Schema는 target 없는 드로우와 잘못된 값을 구분한다", () => {

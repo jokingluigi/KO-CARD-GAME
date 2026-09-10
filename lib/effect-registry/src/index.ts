@@ -66,7 +66,6 @@ const triggerDescriptions: Record<Trigger, string> = {
 };
 
 export const EFFECT_LIBRARY = {
-  actions: ACTIONS.map((name) => ({ name, label: DISPLAY_LABELS[name as keyof typeof DISPLAY_LABELS] ?? name, description: EFFECT_CAPABILITIES[name].description, status: EFFECT_CAPABILITIES[name].status, version: EFFECT_CAPABILITIES[name].version, requiredConfig: { target: ACTION_SCHEMAS[name].target, ...(ACTION_SCHEMAS[name].amount ? { values: { amount: "number (0..999)" } } : {}), ...(ACTION_SCHEMAS[name].stats ? { values: { attack: "number (-999..999)", health: "number (-999..999)" } } : {}), ...(ACTION_SCHEMAS[name].keyword ? { values: { keyword: [...KEYWORDS] } } : {}), ...(ACTION_SCHEMAS[name].branches ? { values: { leftEffects: "Effect[]", rightEffects: "Effect[]" } } : {}) } })),
   actions: ACTIONS.map((name) => {
     const schema = ACTION_SCHEMAS[name];
     const values = {

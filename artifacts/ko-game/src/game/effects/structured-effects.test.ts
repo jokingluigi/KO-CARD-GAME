@@ -55,6 +55,39 @@ test('등장 시 자신에게 +2/+2를 부여한다', () => {
   assert.equal(result.players[0].board[0]?.maxHealth, 3);
 });
 
+test('기본 1/1 카드의 현재 공격과 체력을 2배로 변경한다', () => {
+  const source = instance('self-multiplier-basic', [
+    structured(
+      'BUFF',
+      { zone: 'BOARD', owner: 'SELF', selection: 'SELF', count: 1 },
+      { attackMultiplier: 2, healthMultiplier: 2 },
+    ),
+  ]);
+  const result = enterField(createInitialGameState(), 'player-1', source, 0);
+  assert.equal(result.players[0].board[0]?.currentAttack, 2);
+  assert.equal(result.players[0].board[0]?.currentHealth, 2);
+  assert.equal(result.players[0].board[0]?.maxHealth, 2);
+});
+
+test('이미 3/4인 카드의 현재 공격과 체력을 2배로 변경한다', () => {
+  const source = {
+    ...instance('self-multiplier-buffed', [
+      structured(
+        'BUFF',
+        { zone: 'BOARD', owner: 'SELF', selection: 'SELF', count: 1 },
+        { attackMultiplier: 2, healthMultiplier: 2 },
+      ),
+    ]),
+    currentAttack: 3,
+    currentHealth: 4,
+    maxHealth: 4,
+  };
+  const result = enterField(createInitialGameState(), 'player-1', source, 0);
+  assert.equal(result.players[0].board[0]?.currentAttack, 6);
+  assert.equal(result.players[0].board[0]?.currentHealth, 8);
+  assert.equal(result.players[0].board[0]?.maxHealth, 8);
+});
+
 test('선택한 손패 선수 한 장에게 +1/+1을 부여한다', () => {
   const source = instance('hand-choice-source', [
     structured(
