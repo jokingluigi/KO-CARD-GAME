@@ -22,6 +22,15 @@ type Champion = {
   status: Status; version: number;
 };
 type Form = Omit<Champion, "id" | "status" | "version">;
+type EffectAnalysisKey = "abilityText" | "questRewardText" | "upgradedAbilityText";
+type EffectAnalysis = {
+  status?: "success" | "partial" | "failure";
+  outcome?: "supported" | "mechanism_required" | "analysis_failure";
+  effects?: unknown[];
+  unsupportedSegments?: string[];
+  reason?: string;
+  message?: string;
+};
 const empty: Form = {
   name: "", description: "", imageUrl: null, imageAssetId: null, maxHealth: 20,
   abilityName: "", abilityCost: 0, abilityText: "", abilityEffects: {},
@@ -52,6 +61,8 @@ export function AdminChampionManager({ onUnauthorized }: { onUnauthorized: () =>
   const [error, setError] = useState("");
   const [messageText, setMessageText] = useState("");
   const [busy, setBusy] = useState(false);
+  const [analyzingKey, setAnalyzingKey] = useState<EffectAnalysisKey | null>(null);
+  const [analysisResults, setAnalysisResults] = useState<Partial<Record<EffectAnalysisKey, EffectAnalysis>>>({});
   const load = useCallback(async () => {
     const query = new URLSearchParams();
     if (search.trim()) query.set("search", search.trim());
