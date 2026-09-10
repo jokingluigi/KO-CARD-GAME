@@ -20,6 +20,7 @@ import {
   prepareMechanicRequest,
 } from "../lib/mechanic-request-service";
 import { prepareReplitAgentPrompt } from "../lib/replit-agent-prompt";
+import { analyzeChampionQuestText } from "../lib/champion-quest-analysis";
 import { analyzeEffectText, effectLibrary, isStructuredEffects } from "../lib/structured-effects";
 import {
   countStructuredEffectUsage,
@@ -136,7 +137,12 @@ function parseChampionInput(value: unknown): ChampionInput | null {
     ? input.questCompleteAudioUploadToken : null;
   const abilityEffects = object("abilityEffects");
   const hasQuest = input.hasQuest === true;
-  const questProgressRequired = integer("questProgressRequired", 1, 999, true);
+  const rawQuestCondition = object("questCondition", true);
+  const questProgressInput = integer("questProgressRequired", 1, 999, true);
+  const conditionRequired = rawQuestCondition && typeof rawQuestCondition.required === "number" &&
+    Number.isInteger(rawQuestCondition.required) && rawQuestCondition.required >= 1 &&
+    rawQuestCondition.required <= 999 ? rawQuestCondition.required : null;
+  const questProgressRequired = questProgressInput ?? conditionRequired;
   const upgradedAbilityCost = integer("upgradedAbilityCost", 0, 999, true);
   const validEffects = (effects: Record<string, unknown> | null | undefined) =>
     effects === null || effects === undefined || !("effects" in effects) || isStructuredEffects(effects);
@@ -155,7 +161,7 @@ function parseChampionInput(value: unknown): ChampionInput | null {
       !questCompleteAudioUrl.startsWith("/api/storage/objects/"))
   ) return null;
   if (hasQuest && (!text("questName", true) || !text("questText", true) ||
-      !object("questCondition", true) || questProgressRequired === null ||
+       !rawQuestCondition || questProgressRequired === null ||
       !text("questRewardText", true) || !object("questRewardEffects", true))) return null;
   return {
     name, description: text("description") ?? "", imageAssetId: text("imageAssetId"),
@@ -163,7 +169,7 @@ function parseChampionInput(value: unknown): ChampionInput | null {
     abilityText: text("abilityText") ?? "", abilityEffects, hasQuest,
     questName: hasQuest ? text("questName", true) : null,
     questText: hasQuest ? text("questText", true) : null,
-    questCondition: hasQuest ? object("questCondition", true)! : null,
+     questCondition: hasQuest ? rawQuestCondition : null,
     questProgressRequired: hasQuest ? questProgressRequired : null,
     questRewardText: hasQuest ? text("questRewardText", true) : null,
     questRewardEffects: hasQuest ? object("questRewardEffects", true)! : null,
@@ -624,22 +630,11 @@ router.post("/quests/analyze", (request, response) => {
   if (typeof text !== "string" || !text.trim() || text.length > 2000) {
     response.status(400).json({ message: "퀘스트 조건을 확인해 주세요." }); return;
   }
-  const required = Number(text.match(/(\d+)\s*(?:회|장|명)/)?.[1]);
-  if (!Number.isInteger(required) || required < 1) {
-    response.status(422).json({ outcome: "analysis_failure", unsupportedParts: [text] }); return;
+  const analysis = analyzeChampionQuestText(text);
+  if (analysis.outcome === "supported") {
+    response.json(analysis); return;
   }
-  if (/선수\s*카드.*생성/.test(text)) {
-    response.json({ outcome: "supported", condition: {
-      event: "CARD_GENERATED", cardType: "WRESTLER", progress: 1, required,
-    }}); return;
-  }
-  if (/고유\s*능력.*선수\s*카드.*(?:리타이어|퇴장)/.test(text)) {
-    response.json({ outcome: "supported", condition: {
-      event: "WRESTLER_RETIRED", cardType: "WRESTLER",
-      filter: "CAUSED_BY_CHAMPION_ABILITY", progress: 1, required,
-    }}); return;
-  }
-  response.status(422).json({ outcome: "mechanism_required", unsupportedParts: [text] });
+  response.status(422).json(analysis);
 });
 
 router.get("/champions", async (request, response): Promise<void> => {
