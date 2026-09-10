@@ -34,6 +34,9 @@ interface GameStatePreviewProps {
   playError: string | null;
   turnSecondsRemaining: number;
   onEndTurn: () => void;
+  bgmMuted: boolean;
+  onBgmMutedChange: (muted: boolean) => void;
+  onSurrender: () => void;
   onSelectCard: (cardInstanceId: string) => void;
   onSelectSlot: (slot: BoardSlotIndex, geometry?: { source: CardAnimationRect; target: CardAnimationRect }) => void;
   onUseTechnique: (cardInstanceId: string, source: CardAnimationRect) => void;
@@ -56,6 +59,9 @@ export function GameStatePreview({
   playError,
   turnSecondsRemaining,
   onEndTurn,
+  bgmMuted,
+  onBgmMutedChange,
+  onSurrender,
   onSelectCard,
   onSelectSlot,
   onUseTechnique,
@@ -70,6 +76,8 @@ export function GameStatePreview({
   onEffectTarget,
 }: GameStatePreviewProps) {
   const [openGraveyardPlayerId, setOpenGraveyardPlayerId] = React.useState<string | null>(null);
+  const [settingsOpen, setSettingsOpen] = React.useState(false);
+  const [surrenderConfirming, setSurrenderConfirming] = React.useState(false);
   const handCardRefs = React.useRef(new Map<string, HTMLDivElement>());
   const boardSlotRefs = React.useRef(new Map<number, HTMLDivElement>());
 
@@ -114,6 +122,11 @@ export function GameStatePreview({
   const selectedBackground = mediaCatalog.backgrounds.find(
     (item) => item.id === state.backgroundId,
   );
+
+  function closeSettings() {
+    setSettingsOpen(false);
+    setSurrenderConfirming(false);
+  }
 
   function setHandCardRef(cardId: string, element: HTMLDivElement | null) {
     if (element) handCardRefs.current.set(cardId, element);
@@ -285,7 +298,19 @@ export function GameStatePreview({
             </div>
          </div>
 
-          <aside className="absolute right-2 top-36 z-40 flex w-24 flex-col items-stretch gap-2 rounded border border-neutral-800 bg-black/85 p-2 shadow-2xl backdrop-blur-md md:fixed md:right-4 md:top-1/2 md:w-32 md:-translate-y-1/2 md:p-3">
+           <aside className="absolute right-2 top-36 z-40 flex w-24 flex-col items-stretch gap-2 rounded border border-neutral-800 bg-black/85 p-2 shadow-2xl backdrop-blur-md md:fixed md:right-4 md:top-1/2 md:w-32 md:-translate-y-1/2 md:p-3">
+              <button
+                type="button"
+                aria-label="설정 열기"
+                aria-expanded={settingsOpen}
+                onClick={() => {
+                  setSettingsOpen((open) => !open);
+                  setSurrenderConfirming(false);
+                }}
+                className="rounded border border-neutral-700 bg-neutral-900 px-2 py-1.5 text-[10px] font-bold text-neutral-300 transition-colors hover:border-primary hover:text-primary md:text-xs"
+              >
+                ⚙ 설정
+              </button>
              {effectTargeting && (
                <div className="rounded border border-amber-500 bg-amber-950/90 px-2 py-2 text-center text-[10px] font-bold text-amber-100">
                  대상을 선택하세요 ({state.targetingState!.selectedTargetIds.length}/{state.targetingState!.minTargets})
@@ -331,6 +356,89 @@ export function GameStatePreview({
               </div>
             )}
           </aside>
+
+           {settingsOpen && (
+             <>
+               <div
+                 className="fixed inset-0 z-[150]"
+                 aria-hidden="true"
+                 onClick={closeSettings}
+               />
+               <div
+                 role="dialog"
+                 aria-modal="true"
+                 aria-label="게임 설정"
+                 className="fixed right-2 top-36 z-[151] w-56 rounded-lg border border-neutral-700 bg-neutral-950 p-4 shadow-2xl md:right-40 md:top-1/2 md:-translate-y-1/2"
+                 onClick={(event) => event.stopPropagation()}
+               >
+                 <div className="mb-3 flex items-center justify-between border-b border-neutral-800 pb-2">
+                   <h2 className="text-sm font-black text-white">설정</h2>
+                   <button
+                     type="button"
+                     aria-label="설정 닫기"
+                     onClick={closeSettings}
+                     className="rounded px-2 py-1 text-neutral-400 hover:bg-neutral-800 hover:text-white"
+                   >
+                     ×
+                   </button>
+                 </div>
+                 {!surrenderConfirming ? (
+                   <div className="space-y-3">
+                     <label className="flex items-center justify-between gap-3 text-xs font-bold text-neutral-300">
+                       <span>배경 음악 음소거</span>
+                       <button
+                         type="button"
+                         role="switch"
+                         aria-checked={bgmMuted}
+                         onClick={() => onBgmMutedChange(!bgmMuted)}
+                         className={`rounded-full border px-3 py-1 text-[10px] font-black transition-colors ${
+                           bgmMuted
+                             ? 'border-neutral-700 bg-neutral-800 text-neutral-400'
+                             : 'border-primary bg-primary text-black'
+                         }`}
+                       >
+                         {bgmMuted ? 'ON' : 'OFF'}
+                       </button>
+                     </label>
+                     <button
+                       type="button"
+                       disabled={state.status === 'FINISHED'}
+                       onClick={() => setSurrenderConfirming(true)}
+                       className="w-full rounded border border-red-900 bg-red-950/50 px-3 py-2 text-xs font-black text-red-300 transition-colors hover:bg-red-900/70 disabled:cursor-not-allowed disabled:opacity-40"
+                     >
+                       항복
+                     </button>
+                   </div>
+                 ) : (
+                   <div className="space-y-3">
+                     <p className="text-xs font-bold leading-5 text-neutral-200">
+                       정말 항복하시겠습니까?<br />
+                       항복하면 이번 게임에서 패배합니다.
+                     </p>
+                     <div className="flex gap-2">
+                       <button
+                         type="button"
+                         onClick={() => {
+                           closeSettings();
+                           onSurrender();
+                         }}
+                         className="flex-1 rounded bg-red-700 px-2 py-2 text-[11px] font-black text-white hover:bg-red-600"
+                       >
+                         항복하기
+                       </button>
+                       <button
+                         type="button"
+                         onClick={() => setSurrenderConfirming(false)}
+                         className="flex-1 rounded border border-neutral-700 px-2 py-2 text-[11px] font-bold text-neutral-300 hover:bg-neutral-800"
+                       >
+                         취소
+                       </button>
+                     </div>
+                   </div>
+                 )}
+               </div>
+             </>
+           )}
 
           {openGraveyardPlayerId && (
             <GraveyardModal

@@ -9,3 +9,4 @@
 - [Reusable card effect workflow](reusable-effect-workflow.md) — inspect and reuse active mechanics first; add generic registry-backed effects, analyzer mappings, and tests only when needed.
 - [Card play presentation](card-play-animations.md) — keep play motion client-side; derive impact from base cost and keep rarity emphasis separate from landing weight.
 - [Generated card scope](generated-card-scope.md) — creation APIs opt into Generated; the reusable “anywhere” scope is HAND + DECK + BOARD only.
+- [In-game settings boundary](in-game-settings-boundary.md) — BGM mute changes only the AudioManager BGM channel; surrender records a terminal GameState result.
