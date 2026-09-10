@@ -1,4 +1,4 @@
-export const AUDIO_STINGER_DURATION = 5;
+export const AUDIO_STINGER_DURATION = 10;
 export const AUDIO_FADE_IN_DURATION = 0.4;
 export const AUDIO_FADE_OUT_DURATION = 0.8;
 
