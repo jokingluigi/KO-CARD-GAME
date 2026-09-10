@@ -35,6 +35,7 @@ import {
 } from '@/components/attack-animation-utils';
 
 const TURN_TIME_LIMIT_SECONDS = 90;
+const ENTRANCE_EFFECT_DELAY_MS = 180;
 const BGM_MUTE_STORAGE_KEY = 'ko-game-bgm-muted';
 
 function actualAttackDamage(
@@ -122,6 +123,7 @@ export default function Home() {
   const lastAudioEventCountRef = useRef<number | null>(null);
   const pendingEntranceAudioRef = useRef<{ url: string; volume: number } | null>(null);
   const processedAttackSoundsRef = useRef(new Set<string>());
+  const pendingStateAfterPlayAnimationRef = useRef<GameState | null>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -244,6 +246,15 @@ export default function Home() {
   }, [gameState.events, playAnimation]);
 
   function handlePlayAnimationComplete() {
+    const pendingState = pendingStateAfterPlayAnimationRef.current;
+    pendingStateAfterPlayAnimationRef.current = null;
+    if (pendingState) {
+      window.setTimeout(() => {
+        setGameState(pendingState);
+        setPlayAnimation(null);
+      }, ENTRANCE_EFFECT_DELAY_MS);
+      return;
+    }
     const pendingAudio = pendingEntranceAudioRef.current;
     if (pendingAudio) {
       audioManager.playCardEntrance(pendingAudio.url, pendingAudio.volume);
@@ -572,14 +583,16 @@ export default function Home() {
     }
 
     const card = gameState.players[0].hand.find((entry) => entry.instanceId === selectedCardId);
-    setGameState(result.state);
     if (card && geometry) {
+      pendingStateAfterPlayAnimationRef.current = result.state;
       setPlayAnimation({
         kind: "WRESTLER",
         card,
         geometry: { source: geometry.source, target: geometry.target! },
         impactLevel: landingImpactLevel(card.baseCost, card.currentCost),
       });
+    } else {
+      setGameState(result.state);
     }
     setSelectedCardId(null);
     setPlayError(null);

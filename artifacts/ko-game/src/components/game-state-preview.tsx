@@ -18,7 +18,7 @@ import {
   CardPlayAnimation,
 } from './card-play-animation';
 import { AttackAnimation } from './attack-animation';
-import { rectSnapshot, type CardAnimationRect, type CardPlayAnimationState } from './card-play-animation-utils';
+import { landingImpactLevel, rectSnapshot, type CardAnimationRect, type CardPlayAnimationState } from './card-play-animation-utils';
 import type {
   AttackAnimationState,
   AttackDamageImpactLevel,
@@ -95,6 +95,54 @@ export function GameStatePreview({
   const boardSlotRefs = React.useRef(new Map<number, HTMLDivElement>());
   const boardCardRefs = React.useRef(new Map<string, HTMLDivElement>());
   const championRef = React.useRef<HTMLDivElement | null>(null);
+  const [generatedPlayAnimations, setGeneratedPlayAnimations] = React.useState<CardPlayAnimationState[]>([]);
+  const processedEventCountRef = React.useRef<number | null>(null);
+
+  React.useEffect(() => {
+    if (processedEventCountRef.current === null || state.events.length < processedEventCountRef.current) {
+      processedEventCountRef.current = state.events.length;
+      return;
+    }
+
+    const startIndex = processedEventCountRef.current;
+    const newEvents = state.events.slice(startIndex);
+    processedEventCountRef.current = state.events.length;
+    const animations: CardPlayAnimationState[] = [];
+
+    for (const event of newEvents) {
+      if (event.type !== 'ENTER_FIELD' || !event.source || event.source.type !== 'CARD' || event.boardSlot === undefined) continue;
+      const enteredCard = state.players
+        .flatMap((player) => player.board)
+        .find((card): card is CardInstance => card?.instanceId === event.cardInstanceId);
+      if (!enteredCard?.isGenerated) continue;
+
+      const targetElement = boardSlotRefs.current.get(event.boardSlot);
+      if (!targetElement) continue;
+      const target = rectSnapshot(targetElement.getBoundingClientRect());
+      const sourceElement =
+        boardCardRefs.current.get(event.source.cardInstanceId) ??
+        handCardRefs.current.get(event.source.cardInstanceId);
+      const source = sourceElement
+        ? rectSnapshot(sourceElement.getBoundingClientRect())
+        : {
+            left: target.left,
+            top: target.top - target.height * 1.35,
+            width: target.width,
+            height: target.height,
+          };
+
+      animations.push({
+        kind: 'WRESTLER',
+        card: enteredCard,
+        geometry: { source, target },
+        impactLevel: landingImpactLevel(enteredCard.baseCost, enteredCard.currentCost),
+      });
+    }
+
+    if (animations.length) {
+      setGeneratedPlayAnimations((current) => [...current, ...animations]);
+    }
+  }, [state.events, state.players]);
 
   if (!state || !state.players || state.players.length < 2) {
     return <div className="flex h-screen items-center justify-center bg-black font-sans text-white">게임을 초기화하는 중입니다...</div>;
@@ -338,6 +386,7 @@ export function GameStatePreview({
                     animating={
                       (playAnimation?.kind === "WRESTLER" &&
                         playAnimation.card.instanceId === card?.instanceId) ||
+                       generatedPlayAnimations.some((animation) => animation.card.instanceId === card?.instanceId) ||
                       attackAnimation?.attacker.instanceId === card?.instanceId
                     }
                      selected={card?.instanceId === selectedAttackerId || !!card && selectedEffectTargetIds.has(card.instanceId)}
@@ -610,6 +659,17 @@ export function GameStatePreview({
           onComplete={onPlayAnimationComplete}
         />
       )}
+      {generatedPlayAnimations.map((animation) => (
+        <CardPlayAnimation
+          key={`generated-play-${animation.card.instanceId}`}
+          animation={animation}
+          onComplete={() => {
+            setGeneratedPlayAnimations((current) =>
+              current.filter((entry) => entry.card.instanceId !== animation.card.instanceId),
+            );
+          }}
+        />
+      ))}
       {attackAnimation && (
         <AttackAnimation
           animation={attackAnimation}
