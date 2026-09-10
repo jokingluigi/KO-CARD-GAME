@@ -9,6 +9,7 @@ import {
 const frameAssetNames: Partial<Record<CardRarity, string>> = {
   NORMAL: "card-frame-normal.png",
   LEGENDARY: "card-frame-legendary.png",
+  CHAMPION: "card-frame-champion.png",
 };
 
 function frameAssetUrl(rarity: CardRarity) {

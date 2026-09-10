@@ -4,3 +4,4 @@
 - [Effect registry source](effect-registry-source.md) — analyzer, Effect Library, and runtime types derive identifiers from one shared registry.
 - [Mechanic request boundary](mechanic-request-boundary.md) — intake records server-verified gaps only; creation never invokes agents or changes game code.
 - [Admin upload controls](admin-upload-controls.md) — file pickers embedded in admin forms must block browser default submission and event propagation.
+- [Champion card presentation](champion-card-presentation.md) — CHAMPION rarity represents champion token cards and uses the dedicated red-gold card frame.
