@@ -796,7 +796,7 @@ function BoardSlot({
 }) {
   const isEmpty = !card;
   
-  let containerClass = "ko-board-slot w-[70px] h-[98px] md:w-[110px] md:h-[154px] relative flex flex-col transition-all duration-200 select-none overflow-visible ";
+  let containerClass = "ko-board-slot w-[70px] h-[98px] md:w-[110px] md:h-[154px] relative flex flex-col transition-transform duration-200 select-none overflow-visible ";
   
   if (isEmpty) {
     containerClass += "border-2 border-dashed bg-neutral-900/30 items-center justify-center ";
