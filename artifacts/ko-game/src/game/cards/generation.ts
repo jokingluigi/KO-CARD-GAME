@@ -7,6 +7,8 @@ import type { EventSubject, GameEvent } from '../events/types';
 
 export interface GenerateCardOptions {
   instanceId: CardInstanceId;
+  /** Existing deck/hand instances are not generated; creation effects opt in. */
+  isGenerated?: boolean;
   isToken?: boolean;
   isChampionToken?: boolean;
 }
@@ -35,7 +37,7 @@ export function generateCardInstance(
     boardSlot: null,
     enteredThisTurn: false,
     attacksUsedThisTurn: 0,
-    isGenerated: true,
+    isGenerated: options.isGenerated ?? false,
     isToken: options.isToken ?? definition.isToken,
     isChampionToken:
       options.isChampionToken ?? definition.isChampionToken,
@@ -61,7 +63,7 @@ export function generateCard(
   definition: CardDefinition,
   options: GenerateCardWithEventOptions,
 ): { card: CardInstance; event: GameEvent } {
-  const card = generateCardInstance(definition, options);
+  const card = generateCardInstance(definition, { ...options, isGenerated: true });
 
   return {
     card,

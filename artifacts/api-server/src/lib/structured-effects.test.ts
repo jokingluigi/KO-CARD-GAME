@@ -119,6 +119,46 @@ test("현재 registry에서 제공하는 Effect Library 메타데이터를 노�
     library.valueResolvers.find((resolver) => resolver.name === "STAT_MULTIPLIER")?.config,
     { attackMultiplier: "number (0..10)", healthMultiplier: "number (0..10)" },
   );
+  assert.deepEqual(library.targetResolvers[0]?.config.defaultCardScope, ["HAND", "DECK", "BOARD"]);
+  assert.deepEqual(library.targetResolvers[0]?.config.filters, ["GENERATED"]);
+});
+
+test("어디에 있든 생성된 선수는 HAND·DECK·BOARD와 Generated 필터로 분석한다", () => {
+  for (const wording of ["어디에 있든", "어디에 있는", "모든 위치의"]) {
+    const result = analyzeEffectText(`등장: ${wording} 생성된 선수 카드에게 +1/+1을 부여합니다.`);
+    assert.equal(result.status, "success", wording);
+    assert.equal(result.outcome, "supported", wording);
+    assert.deepEqual(result.effects[0]?.target, {
+      zones: ["HAND", "DECK", "BOARD"],
+      owner: "SELF",
+      cardType: "WRESTLER",
+      filter: { isGenerated: true },
+      selection: "ALL",
+      count: 20,
+    }, wording);
+    assert.equal(isStructuredEffects({ effects: result.effects }), true, wording);
+  }
+});
+
+test("덱 단일 영역의 생성 카드 비용 효과도 Generated 필터로 분석한다", () => {
+  const result = analyzeEffectText("등장: 덱의 생성된 카드 비용을 -1 감소시킵니다.");
+  assert.equal(result.status, "success");
+  assert.deepEqual(result.effects[0]?.target, {
+    zone: "DECK",
+    owner: "SELF",
+    filter: { isGenerated: true },
+    selection: "PLAYER_CHOICE",
+    count: 1,
+  });
+  assert.equal(result.effects[0]?.action, "REDUCE_COST");
+  assert.equal(isStructuredEffects({ effects: result.effects }), true);
+});
+
+test("손패·덱·필드 표현은 공통 세 Zone 범위로 분석한다", () => {
+  const result = analyzeEffectText("등장: 손패, 덱, 필드의 생성된 선수에게 +1/+1을 줍니다.");
+  assert.equal(result.status, "success");
+  assert.deepEqual(result.effects[0]?.target?.zones, ["HAND", "DECK", "BOARD"]);
+  assert.equal(result.effects[0]?.target?.filter?.isGenerated, true);
 });
 
 test("인식 가능한 신규 메커니즘은 부분 적용 없이 필요 상태로 분류한다", () => {
@@ -252,6 +292,40 @@ test("잘못 조합된 구조화 JSON을 거부한다", () => {
         action: "BUFF",
         target: { zone: "BOARD", owner: "SELF", selection: "SELF", count: 1 },
         values: { attackMultiplier: 2 },
+      }],
+    }),
+    false,
+  );
+  assert.equal(
+    isStructuredEffects({
+      effects: [{
+        trigger: "ENTER_FIELD",
+        action: "BUFF",
+        target: {
+          zones: ["HAND", "DECK", "BOARD"],
+          owner: "SELF",
+          selection: "ALL",
+          count: 20,
+          filter: { isGenerated: true },
+        },
+        values: { attack: 1, health: 1 },
+      }],
+    }),
+    true,
+  );
+  assert.equal(
+    isStructuredEffects({
+      effects: [{
+        trigger: "ENTER_FIELD",
+        action: "BUFF",
+        target: {
+          zone: "GRAVEYARD",
+          owner: "SELF",
+          selection: "ALL",
+          count: 20,
+          filter: { isGenerated: true },
+        },
+        values: { attack: 1, health: 1 },
       }],
     }),
     false,

@@ -17,7 +17,8 @@ export type GameEventType =
   | 'GOLD_CHANGED'
   | 'CHAMPION_ABILITY_USED'
   | 'CHAMPION_QUEST_PROGRESS'
-  | 'CHAMPION_QUEST_COMPLETED';
+  | 'CHAMPION_QUEST_COMPLETED'
+  | 'SURRENDER';
 
 export type EventSubject =
   | { type: 'PLAYER'; playerId: string }

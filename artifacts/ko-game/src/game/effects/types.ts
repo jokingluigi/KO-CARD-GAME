@@ -27,9 +27,13 @@ export type CardEffect =
       type: 'STRUCTURED';
       action: RuntimeAction;
       target?: {
-        zone: TargetZone;
+        /** Legacy single-zone shape retained for stored effects. */
+        zone?: TargetZone;
+        /** Multi-zone card scope, e.g. HAND + DECK + BOARD. */
+        zones?: TargetZone[];
         owner: TargetOwner;
         cardType?: 'WRESTLER';
+        filter?: { isGenerated?: boolean };
         selection: TargetSelection;
         count: number;
         minTargets?: number;

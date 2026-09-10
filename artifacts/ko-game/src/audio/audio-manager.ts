@@ -23,7 +23,8 @@ class AudioManager {
     timeoutId: number;
   } | null = null;
   private queue: AudioRequest[] = [];
-  private bgm: { audio: HTMLAudioElement; url: string } | null = null;
+  private bgm: { audio: HTMLAudioElement; url: string; volume: number } | null = null;
+  private bgmMuted = false;
 
   playCardEntrance(url: string, volume: number) {
     this.enqueue({ url, volume, priority: 0, kind: "CARD_ENTRANCE" });
@@ -41,7 +42,8 @@ class AudioManager {
   playBgm(url: string, volume: number) {
     if (typeof window === "undefined" || !url) return;
     if (this.bgm?.url === url) {
-      this.bgm.audio.volume = safeVolume(volume);
+      this.bgm.volume = volume;
+      this.bgm.audio.volume = this.bgmMuted ? 0 : safeVolume(volume);
       return;
     }
     this.stopBgm();
@@ -49,8 +51,8 @@ class AudioManager {
       const audio = new Audio(url);
       audio.preload = "auto";
       audio.loop = true;
-      audio.volume = safeVolume(volume);
-      this.bgm = { audio, url };
+      audio.volume = this.bgmMuted ? 0 : safeVolume(volume);
+      this.bgm = { audio, url, volume };
       audio.play().catch(() => {
         if (this.bgm?.audio === audio) this.stopBgm();
       });
@@ -64,7 +66,21 @@ class AudioManager {
   }
 
   setBgmVolume(volume: number) {
-    if (this.bgm) this.bgm.audio.volume = safeVolume(volume);
+    if (this.bgm) {
+      this.bgm.volume = volume;
+      this.bgm.audio.volume = this.bgmMuted ? 0 : safeVolume(volume);
+    }
+  }
+
+  setBgmMuted(muted: boolean) {
+    this.bgmMuted = muted;
+    if (this.bgm) {
+      this.bgm.audio.volume = muted ? 0 : safeVolume(this.bgm.volume);
+    }
+  }
+
+  isBgmMuted() {
+    return this.bgmMuted;
   }
 
   stopBgm() {

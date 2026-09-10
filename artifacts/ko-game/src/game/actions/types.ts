@@ -24,7 +24,8 @@ export type ActionErrorCode =
   | 'DIRECT_CHAMPION_ALREADY_DEPLOYED'
   | 'DIRECT_CHAMPION_CANNOT_BE_DESTROYED'
   | 'TARGET_SELECTION_PENDING'
-  | 'NO_VALID_TARGET';
+  | 'NO_VALID_TARGET'
+  | 'INVALID_PLAYER';
 
 export type ActionResult =
   | {

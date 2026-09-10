@@ -4,6 +4,8 @@ import test from 'node:test';
 import { generateCard } from '../cards/generation';
 import type { CardDefinition, CardInstance } from '../cards/types';
 import { createInitialGameState } from '../engine/create-initial-game-state';
+import { drawCard } from '../engine/draw-card';
+import { destroyCard } from '../engine/destroy-card';
 import { enterField } from '../engine/enter-field';
 import { selectEffectTarget } from './effect-engine';
 import type { CardEffect } from './types';
@@ -243,4 +245,68 @@ test('다음 턴 골드, 비용과 기절 구조화 효과를 적용한다', () 
   assert.equal(result.players[0].nextTurnGoldBonus, 2);
   assert.equal(result.players[0].hand[0]?.currentCost, 0);
   assert.equal(result.players[1].board[0]?.isStunned, true);
+});
+
+test('생성된 카드만 손패·덱·필드의 공통 범위에서 필터링한다', () => {
+  const source = instance('generated-filter-source', [
+    structured(
+      'BUFF',
+      {
+        zones: ['HAND', 'DECK', 'BOARD'],
+        owner: 'SELF',
+        cardType: 'WRESTLER',
+        filter: { isGenerated: true },
+        selection: 'ALL',
+        count: 20,
+      },
+      { attack: 1, health: 1 },
+    ),
+  ]);
+  const generatedDeck = instance('generated-deck-target');
+  const regularDeck = { ...instance('regular-deck-target'), isGenerated: false };
+  const generatedHand = instance('generated-hand-target');
+  const regularHand = { ...instance('regular-hand-target'), isGenerated: false };
+  const generatedBoard = { ...instance('generated-board-target'), boardSlot: 1 as const };
+  const regularBoard = { ...instance('regular-board-target'), boardSlot: 2 as const, isGenerated: false };
+  const state = createInitialGameState();
+  state.players[0].deck = [generatedDeck, regularDeck];
+  state.players[0].hand = [generatedHand, regularHand];
+  state.players[0].board[1] = generatedBoard;
+  state.players[0].board[2] = regularBoard;
+
+  const result = enterField(state, 'player-1', source, 0);
+  assert.equal(result.players[0].deck[0]?.currentAttack, 2);
+  assert.equal(result.players[0].deck[1]?.currentAttack, 1);
+  assert.equal(result.players[0].hand[0]?.currentHealth, 2);
+  assert.equal(result.players[0].hand[1]?.currentHealth, 1);
+  assert.equal(result.players[0].board[1]?.currentAttack, 2);
+  assert.equal(result.players[0].board[2]?.currentAttack, 1);
+});
+
+test('생성 상태는 덱에서 손패와 필드로 이동해도 유지한다', () => {
+  const generated = instance('generated-move-target');
+  const state = createInitialGameState();
+  state.players[0].deck = [generated];
+  const drawn = drawCard(state, 'player-1');
+  assert.equal(drawn.players[0].hand[0]?.isGenerated, true);
+
+  const entered = enterField(drawn, 'player-1', drawn.players[0].hand[0]!, 0);
+  assert.equal(entered.players[0].board[0]?.isGenerated, true);
+});
+
+test('생성 상태는 필드에서 묘지로 이동해도 유지한다', () => {
+  const generated = { ...instance('generated-graveyard-target'), boardSlot: 0 as const };
+  const state = createInitialGameState();
+  state.players[0].board[0] = generated;
+
+  const result = destroyCard(state, 'player-1', generated.instanceId);
+  assert.equal(result.success, true);
+  assert.equal(result.state.players[0].board[0], null);
+  assert.equal(result.state.players[0].graveyard.at(-1)?.isGenerated, true);
+});
+
+test('기존 덱 인스턴스와 새 생성 인스턴스를 구분한다', () => {
+  const state = createInitialGameState();
+  assert.equal(state.players[0].deck.every((card) => !card.isGenerated), true);
+  assert.equal(instance('new-generated').isGenerated, true);
 });

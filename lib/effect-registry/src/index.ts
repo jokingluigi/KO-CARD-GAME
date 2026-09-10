@@ -5,7 +5,10 @@ export const CONDITIONS = ["NEED_CONDITION", "HAS_MATCHING_TAG_PLAYED_THIS_TURN"
 export const REFERENCES = ["SOURCE", "LAST_TARGET", "LAST_DRAWN_CARD", "LAST_ATTACKER", "LAST_DAMAGED_TARGET", "CAPTURED_CARD", "CURRENT_SLOT"] as const;
 export const ACTIONS = ["BUFF", "DAMAGE", "HEAL", "SILENCE", "DESTROY", "ADD_GOLD", "ADD_NEXT_TURN_GOLD", "DRAW", "REDUCE_COST", "INCREASE_COST", "STUN", "ADD_KEYWORD", "REMOVE_KEYWORD", "SUMMON", "GENERATE", "CAPTURE", "RELEASE_CAPTURED", "REMOVE_FROM_GAME", "SWITCH_EFFECT_BRANCH"] as const;
 export const KEYWORDS = ["RUSH", "SURPRISE", "TAUNT", "DODGE", "MULTI_STRIKE"] as const;
-export const TARGET_ZONES = ["BOARD", "HAND", "PLAYER", "CHARACTER"] as const;
+export const TARGET_ZONES = ["BOARD", "HAND", "DECK", "PLAYER", "CHARACTER"] as const;
+/** The default card scope for Korean phrases such as "어디에 있든". */
+export const DEFAULT_CARD_TARGET_SCOPE = ["HAND", "DECK", "BOARD"] as const;
+export const TARGET_FILTERS = ["GENERATED"] as const;
 export const TARGET_OWNERS = ["SELF", "ENEMY", "ALL"] as const;
 export const TARGET_SELECTIONS = ["SELF", "PLAYER_CHOICE", "RANDOM", "SAME_TARGET", "ALL"] as const;
 
@@ -15,6 +18,7 @@ export type Reference = typeof REFERENCES[number];
 export type Action = typeof ACTIONS[number];
 export type Keyword = typeof KEYWORDS[number];
 export type TargetZone = typeof TARGET_ZONES[number];
+export type TargetFilter = typeof TARGET_FILTERS[number];
 export type TargetOwner = typeof TARGET_OWNERS[number];
 export type TargetSelection = typeof TARGET_SELECTIONS[number];
 export type EffectActionSchema = { target: boolean; amount?: boolean; stats?: boolean; statMultiplier?: boolean; keyword?: boolean; branches?: boolean };
@@ -86,6 +90,6 @@ export const EFFECT_LIBRARY = {
   }),
   triggers: TRIGGERS.map((name) => ({ name, label: DISPLAY_LABELS[name as keyof typeof DISPLAY_LABELS] ?? name, description: triggerDescriptions[name], status: "ACTIVE" as const, version: 1 })),
   conditions: CONDITIONS.map((name) => ({ name, label: DISPLAY_LABELS[name as keyof typeof DISPLAY_LABELS] ?? name, description: name === "HAS_MATCHING_TAG_PLAYED_THIS_TURN" ? "이번 턴 먼저 플레이한 아군과 태그가 하나 이상 일치합니다." : "구조화된 조건을 확인합니다.", status: "ACTIVE" as const, version: 1 })),
-  targetResolvers: [{ name: "ZONE_OWNER_SELECTION", description: "영역, 소유자, 카드 유형, 선택 방식 및 수로 대상을 해석합니다.", config: { zone: [...TARGET_ZONES], owner: [...TARGET_OWNERS], selection: [...TARGET_SELECTIONS], count: "integer (1..20)" }, status: "ACTIVE" as const, version: 1 }],
+  targetResolvers: [{ name: "ZONE_OWNER_SELECTION", description: "영역(여러 영역 포함), 소유자, 카드 유형, 필터, 선택 방식 및 수로 대상을 해석합니다.", config: { zone: [...TARGET_ZONES], zones: "TargetZone[]", defaultCardScope: [...DEFAULT_CARD_TARGET_SCOPE], owner: [...TARGET_OWNERS], filters: [...TARGET_FILTERS], selection: [...TARGET_SELECTIONS], count: "integer (1..20)" }, status: "ACTIVE" as const, version: 1 }],
   valueResolvers: [{ name: "AMOUNT", description: "골드, 피해, 회복, 드로우 및 비용 수치를 해석합니다.", status: "ACTIVE" as const, version: 1 }, { name: "STAT_PAIR", description: "+공격력/+체력 수치를 해석합니다.", status: "ACTIVE" as const, version: 1 }, { name: "STAT_MULTIPLIER", description: "대상의 현재 공격력과 체력을 배수로 변경합니다.", config: { attackMultiplier: "number (0..10)", healthMultiplier: "number (0..10)" }, status: "ACTIVE" as const, version: 1 }, { name: "KEYWORD", description: "지원 키워드를 해석합니다.", values: [...KEYWORDS], status: "ACTIVE" as const, version: 1 }],
 } as const;

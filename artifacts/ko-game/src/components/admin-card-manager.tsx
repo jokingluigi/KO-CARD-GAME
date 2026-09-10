@@ -85,7 +85,7 @@ type CardFormValues = {
 type EffectAnalysis = {
   status: "success" | "partial" | "failure";
   outcome: "supported" | "mechanism_required" | "analysis_failure";
-  effects: Array<{ trigger: string; action: string; target?: { zone: string; owner: string; selection: string; count: number }; conditions?: Array<{ type: string; expression?: string }>; values?: { attack?: number; health?: number; amount?: number; keyword?: CardKeyword } }>;
+  effects: Array<{ trigger: string; action: string; target?: { zone?: string; zones?: string[]; owner: string; filter?: { isGenerated?: boolean }; selection: string; count: number }; conditions?: Array<{ type: string; expression?: string }>; values?: { attack?: number; health?: number; amount?: number; keyword?: CardKeyword } }>;
   keywords: CardKeyword[];
   unsupportedSegments: string[];
   summaries: string[];
@@ -1061,9 +1061,10 @@ export function AdminCardManager({
                       return <div key={index} className="mt-2 rounded bg-black/30 p-2">발동: {effect.trigger} · 행동: {effect.action}
                          {effect.target && <div className="mt-2 grid gap-2 sm:grid-cols-4">
                            <label>소유자<select value={effect.target.owner} onChange={(e) => update({}, { owner: e.target.value })} className="ml-1 bg-neutral-900"><option value="SELF">내</option><option value="ENEMY">적</option><option value="ALL">모두</option></select></label>
-                           <label>영역<select value={effect.target.zone} onChange={(e) => update({}, { zone: e.target.value })} className="ml-1 bg-neutral-900"><option value="BOARD">필드</option><option value="HAND">손패</option><option value="PLAYER">플레이어</option><option value="CHARACTER">캐릭터</option></select></label>
+                            <label>영역{effect.target.zones ? <span className="ml-1 text-primary">{effect.target.zones.join(" + ")}</span> : <select value={effect.target.zone ?? "BOARD"} onChange={(e) => update({}, { zone: e.target.value })} className="ml-1 bg-neutral-900"><option value="BOARD">필드</option><option value="HAND">손패</option><option value="DECK">덱</option><option value="PLAYER">플레이어</option><option value="CHARACTER">캐릭터</option></select>}</label>
                            <label>선택<select value={effect.target.selection} onChange={(e) => update({}, { selection: e.target.value })} className="ml-1 bg-neutral-900"><option value="SELF">자신</option><option value="PLAYER_CHOICE">직접 선택</option><option value="RANDOM">무작위</option><option value="ALL">모든 대상</option></select></label>
                           <label>수<input type="number" min="1" value={effect.target.count} onChange={(e) => update({}, { count: Math.max(1, Number(e.target.value) || 1) })} className="ml-1 w-12 bg-neutral-900" /></label>
+                           {effect.target.filter?.isGenerated && <span className="text-emerald-300">Generated</span>}
                           {(["attack", "health", "amount"] as const).map((key) => <label key={key}>{key}<input type="number" value={effect.values?.[key] ?? 0} onChange={(e) => update({}, undefined, { [key]: Number(e.target.value) || 0 })} className="ml-1 w-12 bg-neutral-900" /></label>)}
                          </div>}
                          {effect.values?.keyword && <div className="mt-2 text-primary">키워드: {KEYWORD_LABELS[effect.values.keyword]}</div>}

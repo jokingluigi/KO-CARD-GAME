@@ -1,5 +1,5 @@
 import {
-  ACTION_SCHEMAS, ACTIONS, CONDITIONS, EFFECT_CAPABILITIES, EFFECT_LIBRARY, KEYWORDS, TARGET_OWNERS,
+  ACTION_SCHEMAS, ACTIONS, CONDITIONS, DEFAULT_CARD_TARGET_SCOPE, EFFECT_CAPABILITIES, EFFECT_LIBRARY, KEYWORDS, TARGET_OWNERS,
   TARGET_SELECTIONS, TARGET_ZONES, TRIGGERS,
   type Action, type Condition, type Keyword, type TargetOwner, type TargetSelection,
   type TargetZone, type Trigger,
@@ -7,7 +7,15 @@ import {
 
 export { ACTIONS, KEYWORDS, TRIGGERS };
 export type { Action, Keyword, Trigger };
-export type Target = { zone: TargetZone; owner: TargetOwner; cardType?: "WRESTLER"; selection: TargetSelection; count: number };
+export type Target = {
+  zone?: TargetZone;
+  zones?: TargetZone[];
+  owner: TargetOwner;
+  cardType?: "WRESTLER";
+  filter?: { isGenerated?: boolean };
+  selection: TargetSelection;
+  count: number;
+};
 export type EffectCondition = { type: Condition; expression?: string };
 export type StructuredEffect = { trigger: Trigger; action: Action; target?: Target; conditions?: EffectCondition[]; values?: { attack?: number; health?: number; attackMultiplier?: number; healthMultiplier?: number; amount?: number; keyword?: Keyword; leftEffects?: StructuredEffect[]; rightEffects?: StructuredEffect[] } };
 export type AnalysisOutcome = "supported" | "mechanism_required" | "analysis_failure";
@@ -31,6 +39,8 @@ const aliases = {
 } as const;
 
 const STAT_MULTIPLIER_PATTERN = /(?:자신(?:의|에게)?\s*)?(?:현재\s*)?(?:공격(?:력)?\s*(?:과|\/|및)\s*체력|체력\s*(?:과|\/|및)\s*공격(?:력)?)(?:의\s*)?(?:(?:수치(?:를|가)?)|(?:을|를))?\s*(\d+(?:\.\d+)?)\s*배(?:로)?(?:\s*(?:만들|변경|합니다|한다))?/i;
+const ACTIVE_CARD_SCOPE_PATTERN = /(?:어디에\s*(?:있든|있는)|모든\s*위치의|손패\s*[,，]\s*덱\s*[,，]\s*(?:필드|보드)|손패\s*(?:및|와|과)\s*덱\s*(?:및|와|과)\s*(?:필드|보드))/;
+const GENERATED_FILTER_PATTERN = /(?:생성된|생성\s*카드|GENERATED)/i;
 
 export function effectLibrary() {
   return EFFECT_LIBRARY;
@@ -61,10 +71,30 @@ function targetFor(text: string): Target {
   if (/(아군|내)\s*캐릭터/.test(text)) return { zone: "CHARACTER", owner: "SELF", selection: "PLAYER_CHOICE", count: targetCountFrom(text) };
   if (/(상대|적)\s*(챔피언|플레이어)/.test(text)) return { zone: "PLAYER", owner: "ENEMY", selection: "SELF", count: 1 };
   if (/(?:내|자신의)\s*챔피언/.test(text)) return { zone: "PLAYER", owner: "SELF", selection: "SELF", count: 1 };
+  const generated = GENERATED_FILTER_PATTERN.test(text);
+  const activeCardScope = ACTIVE_CARD_SCOPE_PATTERN.test(text);
   if (/(자신|이\s*카드)/.test(text)) return { zone: "BOARD", owner: "SELF", selection: "SELF", count: 1 };
-  const hand = /손패/.test(text), enemy = /(적|상대)\s*선수/.test(text);
+  const hand = /손패/.test(text), deck = /덱/.test(text), enemy = /(적|상대)\s*선수/.test(text);
   const random = /(무작위|랜덤)/.test(text), all = /(모든|전부)/.test(text);
-  return { zone: hand ? "HAND" : "BOARD", owner: enemy ? "ENEMY" : "SELF", cardType: "WRESTLER", selection: random ? "RANDOM" : all ? "RANDOM" : "PLAYER_CHOICE", count: targetCountFrom(text) };
+  const cardType = /선수/.test(text) ? "WRESTLER" as const : undefined;
+  if (activeCardScope) {
+    return {
+      zones: [...DEFAULT_CARD_TARGET_SCOPE],
+      owner: enemy ? "ENEMY" : "SELF",
+      ...(cardType ? { cardType } : {}),
+      ...(generated ? { filter: { isGenerated: true } } : {}),
+      selection: "ALL",
+      count: 20,
+    };
+  }
+  return {
+    zone: deck ? "DECK" : hand ? "HAND" : "BOARD",
+    owner: enemy ? "ENEMY" : "SELF",
+    ...(cardType ? { cardType } : {}),
+    ...(generated ? { filter: { isGenerated: true } } : {}),
+    selection: random ? "RANDOM" : all ? "ALL" : "PLAYER_CHOICE",
+    count: all ? 20 : targetCountFrom(text),
+  };
 }
 function keywordFor(text: string): Keyword | undefined {
   return aliases.keyword.find(([, pattern]) => pattern.test(text))?.[0];
@@ -96,7 +126,7 @@ function effect(trigger: Trigger, action: Action, body: string, index: number, p
     values.health = pair ? Number(pair[2]) : singleStat?.[1] === "체력" ? Number(singleStat[2]) : 0;
   }
   if (schema.keyword) { const keyword = keywordFor(body); if (!keyword) return null; values.keyword = keyword; }
-  const explicitTarget = /(자신|이\s*카드|모든\s*캐릭터|(?:적|상대)\s*(?:선수|챔피언|플레이어|캐릭터)|(?:아군|내)\s*캐릭터|손패)/.test(body);
+  const explicitTarget = /(자신|이\s*카드|모든\s*캐릭터|모든\s*(?:생성된\s*)?선수|(?:적|상대)\s*(?:선수|챔피언|플레이어|캐릭터)|(?:아군|내)\s*캐릭터|손패|생성된|어디에\s*(?:있든|있는)|모든\s*위치의|손패\s*[,，]\s*덱\s*[,，]\s*(?:필드|보드))/.test(body);
   return { trigger, action, ...(schema.target ? { target: !explicitTarget && priorTarget ? { ...priorTarget, selection: "SAME_TARGET" } : targetFor(body) } : {}), ...(conditions?.length ? { conditions } : {}), ...(Object.keys(values).length ? { values } : {}) };
 }
 
@@ -155,7 +185,7 @@ export function analyzeEffectText(input: string): Analysis {
     ["STUN", /(?:기절|PARALYZE)(?:시키)?/i],
     ["SILENCE", /침묵(?:시키(?:고|니다)?|)/], ["DESTROY", /파괴/],
     ["RELEASE_CAPTURED", /(?:포획.*(?:해방|풀)|해방.*포획)/], ["CAPTURE", /포획/],
-    ["REMOVE_FROM_GAME", /(?:제거|ERASE)/i], ["SUMMON", /(?:소환|SUMMON)/i], ["GENERATE", /(?:생성|GENERATE)/i],
+    ["REMOVE_FROM_GAME", /(?:제거|ERASE)/i], ["SUMMON", /(?:소환|SUMMON)/i], ["GENERATE", /(?:생성(?!된)|GENERATE)/i],
     ["REMOVE_KEYWORD", /(?:러쉬|기습|도발|회피|연타)(?:를|을)?\s*(?:제거|잃)/],
     ["ADD_KEYWORD", /(?:러쉬|기습|도발|회피|연타)(?:를|을)?\s*(?:부여|얻)/],
   ];
@@ -178,9 +208,9 @@ export function analyzeEffectText(input: string): Analysis {
     }
     remainder += ` ${clauseRemainder}`;
   }
-  remainder = remainder.replace(/선택한|모든\s*캐릭터(?:에게|을|를)?|(?:적|상대)\s*(?:챔피언|플레이어)(?:에게|을|를)?|(?:내|자신의)\s*챔피언(?:에게|을|를)?|(?:적|상대)\s*선수(?:\s*(?:\d+\s*장|하나|한\s*장))?(?:에게|을|를)?|(?:아군|내)\s*선수(?:\s*(?:\d+\s*장|하나|한\s*장))?(?:에게|을|를)?|(?:적|상대)\s*캐릭터(?:\s*(?:\d+\s*장|하나|한\s*장))?(?:에게|을|를)?|(?:아군|내)\s*캐릭터(?:\s*(?:\d+\s*장|하나|한\s*장))?(?:에게|을|를)?|손패의\s*(?:무작위\s*)?선수(?:\s*카드)?(?:\s*(?:\d+\s*장|하나|한\s*장))?(?:에게|을|를|의)?|(?:자신|이\s*카드)(?:에게|을|를)?|(?:카드\s*)?(?:\d+\s*장|한\s*장)|선수(?:\s*카드)?(?:을|를)?|\d+\s*턴\s*동안|(?:에게|을|를|의|에)|(?:그리고|그\s*후|이후|하고|한\s*뒤|한\s*후|주고)|\s+/g, "");
+  remainder = remainder.replace(/선택한|어디에\s*(?:있든|있는)|모든\s*위치의|손패\s*[,，]\s*덱\s*[,，]\s*(?:필드|보드)|손패\s*(?:및|와|과)\s*덱\s*(?:및|와|과)\s*(?:필드|보드)|생성된(?:\s*카드)?|모든\s*캐릭터(?:에게|을|를)?|모든\s*(?:선수|카드)(?:에게|을|를|의)?|(?:적|상대)\s*(?:챔피언|플레이어)(?:에게|을|를)?|(?:내|자신의)\s*챔피언(?:에게|을|를)?|(?:적|상대)\s*선수(?:\s*(?:\d+\s*장|하나|한\s*장))?(?:에게|을|를)?|(?:아군|내)\s*선수(?:\s*(?:\d+\s*장|하나|한\s*장))?(?:에게|을|를)?|(?:적|상대)\s*캐릭터(?:\s*(?:\d+\s*장|하나|한\s*장))?(?:에게|을|를)?|(?:아군|내)\s*캐릭터(?:\s*(?:\d+\s*장|하나|한\s*장))?(?:에게|을|를)?|(?:손패|덱|필드|보드)(?!의?\s*(?:무작위\s*)?(?:선수|카드))(?:의)?|손패의\s*(?:무작위\s*)?선수(?:\s*카드)?(?:\s*(?:\d+\s*장|하나|한\s*장))?(?:에게|을|를|의)?|덱의\s*(?:무작위\s*)?(?:선수|카드)(?:\s*(?:\d+\s*장|하나|한\s*장))?(?:에게|을|를|의)?|필드의\s*(?:무작위\s*)?(?:선수|카드)(?:\s*(?:\d+\s*장|하나|한\s*장))?(?:에게|을|를|의)?|(?:자신|이\s*카드)(?:에게|을|를)?|(?:카드\s*)?(?:\d+\s*장|한\s*장)|선수(?:\s*카드)?(?:을|를)?|\d+\s*턴\s*동안|(?:에게|을|를|의|에)|(?:그리고|그\s*후|이후|하고|한\s*뒤|한\s*후|주고)|\s+/g, "");
   // Action endings remain after matcher only for Korean conjugations.
-   remainder = remainder.replace(/(합니다|시키고|시킵니다|부여|획득|얻음|얻습니다|줍니다|준다|주|드로우|뽑습니다|뽑기|포획|제거|소환|생성|해방)/g, "");
+   remainder = remainder.replace(/(합니다|시키고|시킵니다|부여|획득|얻음|얻습니다|줍니다|준다|주|드로우|뽑습니다|뽑기|포획|제거|소환|생성|해방|감소|증가)/g, "");
   const remainderUnsupported = remainder.replace(unsupportedMechanic, "").trim();
   const unsupportedSegments = [
     ...(mechanicRequired ? [unsupportedDescription] : []),
@@ -220,12 +250,17 @@ export function isStructuredEffects(value: unknown): value is { effects: Structu
     if (!TRIGGERS.includes(item.trigger) || !ACTIONS.includes(item.action) || !isActiveAction(item.action)) return false;
     const schema = ACTION_SCHEMAS[item.action], target = item.target, values = item.values;
     if (schema.target) {
-      if (!target || !TARGET_ZONES.includes(target.zone) || !TARGET_OWNERS.includes(target.owner) || !TARGET_SELECTIONS.includes(target.selection) || !Number.isInteger(target.count) || target.count < 1 || target.count > 20 || (target.selection === "PLAYER_CHOICE" && target.count !== 1)) return false;
+      const zones = target?.zones ?? (target?.zone ? [target.zone] : []);
+      const hasValidZones = Boolean(target) && zones.length > 0 && zones.length <= TARGET_ZONES.length &&
+        new Set(zones).size === zones.length && zones.every((zone) => TARGET_ZONES.includes(zone));
+      if (!hasValidZones || !target || !TARGET_OWNERS.includes(target.owner) || !TARGET_SELECTIONS.includes(target.selection) || !Number.isInteger(target.count) || target.count < 1 || target.count > 20 || (target.selection === "PLAYER_CHOICE" && target.count !== 1)) return false;
+      if (target.zone && target.zones) return false;
       if (item.trigger === "ACTIVE" && target.selection === "PLAYER_CHOICE") return false;
-      if (target.owner === "ALL" && (target.zone !== "CHARACTER" || target.selection !== "ALL")) return false;
-      if (target.selection === "ALL" && target.owner !== "ALL") return false;
-      if (target.zone === "CHARACTER" && ["REDUCE_COST", "INCREASE_COST"].includes(item.action)) return false;
-      if (target.zone === "PLAYER" && !((item.action === "DAMAGE" && target.owner === "ENEMY" && target.selection === "SELF") || (item.action === "HEAL" && target.owner === "SELF" && target.selection === "SELF"))) return false;
+      if (target.owner === "ALL" && (zones.length !== 1 || zones[0] !== "CHARACTER" || target.selection !== "ALL")) return false;
+      if (target.selection === "ALL" && target.count < 1) return false;
+      if (zones.some((zone) => zone === "CHARACTER") && ["REDUCE_COST", "INCREASE_COST"].includes(item.action)) return false;
+      if (zones.some((zone) => zone === "PLAYER") && !(zones.length === 1 && ((item.action === "DAMAGE" && target.owner === "ENEMY" && target.selection === "SELF") || (item.action === "HEAL" && target.owner === "SELF" && target.selection === "SELF")))) return false;
+      if (target.filter && (typeof target.filter !== "object" || target.filter === null || target.filter.isGenerated !== undefined && typeof target.filter.isGenerated !== "boolean")) return false;
     } else if (target !== undefined) return false;
     if (schema.amount && !(typeof values?.amount === "number" && Number.isFinite(values.amount) && values.amount >= 0 && values.amount <= 999)) return false;
     if (schema.stats || schema.statMultiplier) {

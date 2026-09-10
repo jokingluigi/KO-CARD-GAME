@@ -1,6 +1,6 @@
 import type { CardInstance } from '../cards/types';
 import type { CardAbility, CardEffect, CardKeyword } from './types';
-import { RUNTIME_HANDLER_ACTIONS, type Action } from "@workspace/effect-registry";
+import { RUNTIME_HANDLER_ACTIONS, type Action, type TargetZone } from "@workspace/effect-registry";
 
 // The executor supports exactly the action IDs advertised by the shared library.
 // Adding an advertised action requires this assertion (and the executor) to be updated.
@@ -26,7 +26,8 @@ export function getValidTargets(
 ): string[] {
   if (effect.type !== 'STRUCTURED' || !effect.target) return [];
   const target = effect.target;
-  if (target.zone === 'PLAYER') {
+  const zones = target.zones ?? (target.zone ? [target.zone] : []);
+  if (zones.length === 1 && zones[0] === 'PLAYER') {
     if (target.owner === 'ALL') return [];
     const owner = target.owner === 'SELF' ? playerId : state.players.find((p) => p.id !== playerId)?.id;
     return owner ? [owner] : [];
@@ -34,15 +35,16 @@ export function getValidTargets(
   const owners = target.owner === 'ALL'
     ? state.players.map((player) => player.id)
     : [target.owner === 'SELF' ? playerId : state.players.find((p) => p.id !== playerId)?.id].filter((id): id is string => Boolean(id));
-  const canTargetPlayer = target.zone === 'CHARACTER' &&
+  const canTargetPlayer = zones.length === 1 && zones[0] === 'CHARACTER' &&
     (effect.action === 'DAMAGE' || (effect.action === 'HEAL' && target.owner !== 'ENEMY'));
   return owners.flatMap((owner) => {
     const player = state.players.find((candidate) => candidate.id === owner);
     if (!player) return [];
-    const cards = target.zone === 'HAND' ? player.hand : player.board.filter((c): c is CardInstance => c !== null);
+    const cards = cardsInZones(player, zones);
     const cardIds = cards.filter((card) => {
-      if (target.zone === 'CHARACTER' && card.cardType !== 'WRESTLER') return false;
+      if (zones.length === 1 && zones[0] === 'CHARACTER' && card.cardType !== 'WRESTLER') return false;
       if (target.cardType && card.cardType !== target.cardType) return false;
+      if (target.filter?.isGenerated !== undefined && card.isGenerated !== target.filter.isGenerated) return false;
       if (target.selection === 'SELF' && card.instanceId !== sourceCard.instanceId) return false;
       // Directly deployed champion tokens remain damageable, but not silence/destroy targets.
       if (card.isDirectDeployedChampion && (effect.action === 'SILENCE' || effect.action === 'DESTROY')) return false;
@@ -50,6 +52,19 @@ export function getValidTargets(
     }).map((card) => card.instanceId);
     return canTargetPlayer ? [owner, ...cardIds] : cardIds;
   });
+}
+
+function cardsInZones(
+  player: GameState['players'][number],
+  zones: readonly TargetZone[],
+): CardInstance[] {
+  const cards = zones.flatMap((zone) => {
+    if (zone === 'DECK') return player.deck;
+    if (zone === 'HAND') return player.hand;
+    if (zone === 'BOARD') return player.board.filter((card): card is CardInstance => card !== null);
+    return [];
+  });
+  return [...new Map(cards.map((card) => [card.instanceId, card])).values()];
 }
 
 export function validateEffectTargets(
@@ -63,7 +78,7 @@ export function validateEffectTargets(
 }
 
 function sourceInState(state: GameState, id: string): CardInstance | undefined {
-  return state.players.flatMap((player) => [...player.board.filter((c): c is CardInstance => c !== null), ...player.hand])
+  return state.players.flatMap((player) => [...player.deck, ...player.hand, ...player.board.filter((c): c is CardInstance => c !== null)])
     .find((card) => card.instanceId === id);
 }
 
@@ -214,6 +229,7 @@ function applyEffect(
       if (!owner) return state;
       const generated = generateCardInstance(definition, {
         instanceId: `${sourceCard.instanceId}:${effect.action}:${state.events.length}`,
+        isGenerated: true,
       });
       if (effect.action === 'GENERATE') {
         return {
@@ -275,13 +291,14 @@ function applyEffect(
     // Costs belong to cards in hand, never to a character (which can include a
     // champion/player id). Keep malformed legacy payloads from changing board
     // cards through this broader target zone.
-    if (target.zone === 'CHARACTER' &&
+    const zones = target.zones ?? (target.zone ? [target.zone] : []);
+    if (zones.length === 1 && zones[0] === 'CHARACTER' &&
       (effect.action === 'REDUCE_COST' || effect.action === 'INCREASE_COST')) return state;
     const targetOwner = target.owner === 'SELF' ? playerId : state.players.find((player) => player.id !== playerId)?.id;
     if (!targetOwner) return state;
     const candidatePlayer = state.players.find((player) => player.id === targetOwner);
     if (!candidatePlayer) return state;
-    if (target.zone === 'CHARACTER') {
+    if (zones.length === 1 && zones[0] === 'CHARACTER') {
       const validIds = getValidTargets(state, playerId, sourceCard, effect);
       const selectedIds = target.selection === 'ALL'
         ? validIds
@@ -291,7 +308,7 @@ function applyEffect(
       const afterPlayers = playerIds.reduce((nextState, owner) =>
         applyEffect(nextState, playerId, sourceCard, {
           ...effect,
-          target: { ...target, zone: 'PLAYER', owner: owner === playerId ? 'SELF' : 'ENEMY', selection: 'SELF', count: 1 },
+          target: { ...target, zone: 'PLAYER', zones: undefined, owner: owner === playerId ? 'SELF' : 'ENEMY', selection: 'SELF', count: 1 },
         }), state);
       return cardIds.reduce((nextState, cardId) => {
         const owner = nextState.players.find((player) =>
@@ -304,11 +321,11 @@ function applyEffect(
         if (current?.isDirectDeployedChampion && playerIds.includes(owner)) return nextState;
         return applyEffect(nextState, playerId, sourceCard, {
           ...effect,
-          target: { ...target, zone: 'BOARD', owner: owner === playerId ? 'SELF' : 'ENEMY', cardType: 'WRESTLER', selection: 'PLAYER_CHOICE', count: 1 },
+          target: { ...target, zone: 'BOARD', zones: undefined, owner: owner === playerId ? 'SELF' : 'ENEMY', cardType: 'WRESTLER', selection: 'PLAYER_CHOICE', count: 1 },
         }, [cardId]);
       }, afterPlayers);
     }
-    if (target.zone === 'PLAYER' && effect.action === 'HEAL') {
+    if (zones.length === 1 && zones[0] === 'PLAYER' && effect.action === 'HEAL') {
       const directChampion = candidatePlayer.board.find((card) => card?.isDirectDeployedChampion);
       return {
         ...state,
@@ -326,7 +343,7 @@ function applyEffect(
             }),
       };
     }
-    if (target.zone === 'PLAYER') {
+    if (zones.length === 1 && zones[0] === 'PLAYER') {
       if (target.owner === 'SELF' && effect.action === 'HEAL') return state;
       if (target.owner === 'SELF' && effect.action === 'DAMAGE') {
         const directChampion = candidatePlayer.board.find((card) => card?.isDirectDeployedChampion);
@@ -360,13 +377,11 @@ function applyEffect(
         ? applyEffect(state, playerId, sourceCard, { type: 'DAMAGE_OPPONENT_CHAMPION', amount })
         : state;
     }
-    const candidates = target.zone === 'HAND'
-      ? candidatePlayer.hand
-      : candidatePlayer.board.filter((card): card is CardInstance => Boolean(card));
+    const candidates = cardsInZones(candidatePlayer, zones);
     const eligibleCandidates = candidates.filter((card) => {
       if (card.isDirectDeployedChampion && (effect.action === 'SILENCE' || effect.action === 'DESTROY')) return false;
-      if (!target.cardType) return true;
-      return card.cardType === target.cardType;
+      if (target.cardType && card.cardType !== target.cardType) return false;
+      return target.filter?.isGenerated === undefined || card.isGenerated === target.filter.isGenerated;
     });
     const targets = target.selection === 'SELF'
       ? eligibleCandidates.filter((card) => card.instanceId === sourceCard.instanceId)
@@ -492,7 +507,7 @@ function applyEffect(
     return {
       ...state,
       players: state.players.map((player) => {
-        const update = (card: CardInstance): CardInstance | null => {
+         const update = (card: CardInstance): CardInstance => {
           if (!ids.has(card.instanceId)) return card;
            if (effect.action === 'SILENCE') return card; // resolved centrally below
             if (effect.action === 'ADD_KEYWORD' && effect.values?.keyword && !card.keywords.includes(effect.values.keyword)) return { ...card, keywords: [...card.keywords, effect.values.keyword], dodgeAvailable: effect.values.keyword === 'DODGE' ? true : card.dodgeAvailable, dodgeCharges: effect.values.keyword === 'DODGE' ? Math.max(1, card.dodgeCharges ?? 0) : card.dodgeCharges };
@@ -515,9 +530,12 @@ function applyEffect(
           return card;
         };
         if (player.id !== targetOwner) return player;
-         if (target.zone === 'HAND') return { ...player, hand: player.hand.map(update).filter((card): card is CardInstance => Boolean(card)) };
-        const retired = player.board.filter((card): card is CardInstance => Boolean(card && ids.has(card.instanceId) && effect.action === 'DAMAGE' && card.currentHealth - amount <= 0 && !card.isDirectDeployedChampion));
-        return { ...player, board: player.board.map((card) => card ? update(card) : null) as typeof player.board, graveyard: [...player.graveyard, ...retired] };
+         const updatedDeck = zones.includes('DECK') ? player.deck.map(update) : player.deck;
+         const updatedHand = zones.includes('HAND') ? player.hand.map(update) : player.hand;
+         const updatedBoard = zones.includes('BOARD')
+           ? player.board.map((card) => card ? update(card) : null) as typeof player.board
+           : player.board;
+         return { ...player, deck: updatedDeck, hand: updatedHand, board: updatedBoard };
       }),
     };
   }
