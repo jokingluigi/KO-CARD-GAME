@@ -381,3 +381,239 @@
     animation: none;
   }
 }
+
+/* The game keeps its existing layout everywhere except narrow portrait phones. */
+@media (max-width: 768px) and (orientation: portrait) {
+  .ko-game-shell {
+    height: 100dvh;
+    min-height: 100dvh;
+    overflow: hidden;
+    padding-top: env(safe-area-inset-top);
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+
+  .ko-game-stage {
+    height: 100%;
+    min-height: 0;
+    max-width: none;
+    overflow: hidden;
+    display: grid;
+    grid-template-rows: auto minmax(0, 1fr) auto;
+    gap: 4px;
+    padding: 8px 6px 4px;
+  }
+
+  .ko-opponent-header {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: start;
+    height: auto;
+    min-height: 82px;
+    padding: 0;
+  }
+
+  .ko-opponent-hand {
+    position: relative;
+    inset: auto;
+    width: 100%;
+    min-width: 0;
+    justify-content: center;
+    overflow: hidden;
+    padding: 0 6px;
+    transform: none;
+  }
+
+  .ko-opponent-hand > div {
+    width: 35px;
+    height: 49px;
+    flex-shrink: 0;
+  }
+
+  .ko-opponent-hand > div > div:last-child {
+    width: 20px;
+    height: 20px;
+  }
+
+  .ko-opponent-hud {
+    width: 164px;
+    margin-left: 0;
+    gap: 3px;
+  }
+
+  .ko-opponent-hud > div:first-child {
+    gap: 4px;
+  }
+
+  .ko-opponent-champion,
+  .ko-player-champion {
+    width: 56px;
+    height: 78px;
+  }
+
+  .ko-opponent-stats {
+    width: 94px;
+    gap: 2px;
+  }
+
+  .ko-opponent-stats > div,
+  .ko-player-stats > div {
+    padding: 3px 5px;
+  }
+
+  .ko-opponent-stats .font-display,
+  .ko-player-stats .font-display {
+    font-size: 0.78rem;
+    line-height: 1rem;
+  }
+
+  .ko-opponent-quest {
+    align-self: end;
+    max-width: 112px;
+    overflow: hidden;
+  }
+
+  .ko-board-area {
+    min-height: 0;
+    width: 100%;
+    overflow: hidden;
+    justify-content: center;
+    gap: 10px;
+    padding: 0;
+  }
+
+  .ko-opponent-board-row,
+  .ko-player-board-row {
+    width: 100%;
+    min-width: 0;
+    gap: 4px;
+  }
+
+  .ko-board-cards {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    flex: 1 1 auto;
+    min-width: 0;
+    gap: 4px;
+  }
+
+  .ko-board-slot-wrapper {
+    min-width: 0;
+    width: 100%;
+  }
+
+  .ko-board-slot {
+    width: 100% !important;
+    height: auto !important;
+    min-width: 0;
+    aspect-ratio: 70 / 98;
+  }
+
+  .ko-zone-stack {
+    width: 34px;
+    gap: 4px;
+  }
+
+  .ko-zone-stack > div,
+  .ko-zone-stack > button {
+    width: 34px;
+    height: 44px;
+  }
+
+  .ko-game-controls {
+    position: absolute;
+    top: 50%;
+    right: auto;
+    left: 50%;
+    width: 112px;
+    gap: 4px;
+    padding: 5px;
+    transform: translate(-50%, -50%);
+  }
+
+  .ko-game-controls > button {
+    min-height: 34px;
+    padding: 6px 5px;
+  }
+
+  .ko-game-controls > div {
+    padding: 4px;
+  }
+
+  .ko-settings-dialog {
+    top: 50%;
+    right: 8px;
+    left: 8px;
+    width: auto;
+    max-width: none;
+    max-height: calc(100dvh - 32px);
+    overflow-y: auto;
+    transform: translateY(-50%);
+  }
+
+  .ko-touch-inspector {
+    top: auto !important;
+    right: 8px !important;
+    bottom: max(8px, env(safe-area-inset-bottom));
+    left: 8px !important;
+    width: auto;
+    max-height: min(68dvh, 520px) !important;
+    overflow-y: auto;
+    pointer-events: auto;
+    padding: 12px;
+  }
+
+  .ko-touch-inspector-close {
+    display: block;
+    margin: 0 0 8px auto;
+    min-height: 32px;
+    border: 1px solid rgb(82 82 91);
+    border-radius: 4px;
+    background: rgb(24 24 27);
+    padding: 5px 10px;
+    color: rgb(212 212 216);
+    font-size: 11px;
+    font-weight: 800;
+  }
+
+  .ko-player-footer {
+    display: grid;
+    grid-template-columns: 92px minmax(0, 1fr);
+    align-items: end;
+    gap: 4px;
+    min-height: 174px;
+    padding: 0 2px max(4px, env(safe-area-inset-bottom));
+  }
+
+  .ko-player-info {
+    width: 92px;
+    gap: 3px;
+  }
+
+  .ko-player-info > div:first-child {
+    gap: 3px;
+  }
+
+  .ko-player-champion {
+    width: 58px;
+    height: 82px;
+  }
+
+  .ko-player-stats {
+    gap: 2px;
+  }
+
+  .ko-player-hand {
+    width: 100%;
+    min-width: 0;
+    padding-top: 24px;
+  }
+
+  .ko-hand-cards {
+    gap: 4px;
+    padding: 0 4px 4px;
+  }
+
+  .ko-hand-card {
+    flex-shrink: 0;
+  }
+}

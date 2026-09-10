@@ -11,3 +11,4 @@
 - [Generated card scope](generated-card-scope.md) — creation APIs opt into Generated; the reusable “anywhere” scope is HAND + DECK + BOARD only.
 - [In-game settings boundary](in-game-settings-boundary.md) — BGM mute changes only the AudioManager BGM channel; surrender records a terminal GameState result.
 - [Game attack media](game-attack-media.md) — attack SFX types use the shared media CRUD flow but need their own object-storage folder and playback channel.
+- [Portrait mobile boundary](portrait-mobile-boundary.md) — KO mobile layout changes stay inside the narrow portrait breakpoint; desktop and landscape keep their existing geometry.

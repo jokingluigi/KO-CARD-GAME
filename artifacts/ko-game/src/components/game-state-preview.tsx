@@ -238,7 +238,7 @@ export function GameStatePreview({
                 <div className="flex items-start gap-2 md:gap-3">
                  <div
                     ref={championRef}
-                    className={`group relative flex h-28 w-20 flex-col items-center justify-center rounded-sm border-2 bg-neutral-900 md:h-40 md:w-28 ${
+                    className={`ko-opponent-champion group relative flex h-28 w-20 flex-col items-center justify-center rounded-sm border-2 bg-neutral-900 md:h-40 md:w-28 ${
                       attackImpactTriggered && attackAnimation?.targetKind === "CHAMPION"
                         ? `attack-target-hit--${attackAnimation.impactLevel.toLowerCase()}`
                         : ""
@@ -256,7 +256,7 @@ export function GameStatePreview({
                     <div className="pointer-events-none absolute inset-0 z-10 bg-red-500/15" />
                   )}
                 </div>
-                <div className="flex w-[76px] shrink-0 flex-col items-start gap-1">
+                <div className="ko-opponent-stats flex w-[76px] shrink-0 flex-col items-start gap-1">
                   <div className="w-full rounded border border-neutral-700 bg-neutral-900/80 px-2 py-1 text-right md:px-3">
                     <div className="text-[8px] font-bold text-neutral-500 md:text-[10px]">골드</div>
                     <div className="font-display text-sm font-black text-primary md:text-xl">
@@ -272,7 +272,10 @@ export function GameStatePreview({
                 </div>
               </div>
               {opp.champion?.quest && (
-                <Inspectable content={<ChampionQuestInspectContent champion={opp.champion} />}>
+                <Inspectable
+                  content={<ChampionQuestInspectContent champion={opp.champion} />}
+                  className="ko-opponent-quest"
+                >
                   <div tabIndex={0} className="rounded border border-purple-900 bg-purple-950/70 px-2 py-1 text-[8px] font-bold text-purple-200 md:text-[10px]">
                     퀘스트 {opp.champion.questCompleted ? '완료' : `${opp.champion.questProgress}/${opp.champion.quest.requiredProgress}`}
                   </div>
@@ -514,13 +517,13 @@ export function GameStatePreview({
             {/* Player Stats & Champion */}
              <div className="ko-player-info z-[95] flex w-[180px] shrink-0 flex-col gap-1 md:w-48 md:gap-2">
               <div className="flex items-start gap-2 md:gap-3">
-                <div onClick={effectTargeting && validEffectTargetIds.has(me.id) ? () => onEffectTarget(me.id) : undefined} className={`relative flex h-28 w-20 shrink-0 flex-col items-center justify-center rounded-sm border-2 bg-neutral-900 md:h-40 md:w-28 ${effectTargeting && validEffectTargetIds.has(me.id) ? 'cursor-crosshair border-amber-400 shadow-[0_0_15px_rgba(251,191,36,0.5)]' : 'border-blue-600 shadow-[0_0_15px_rgba(37,99,235,0.2)]'}`}>
+                <div onClick={effectTargeting && validEffectTargetIds.has(me.id) ? () => onEffectTarget(me.id) : undefined} className={`ko-player-champion relative flex h-28 w-20 shrink-0 flex-col items-center justify-center rounded-sm border-2 bg-neutral-900 md:h-40 md:w-28 ${effectTargeting && validEffectTargetIds.has(me.id) ? 'cursor-crosshair border-amber-400 shadow-[0_0_15px_rgba(251,191,36,0.5)]' : 'border-blue-600 shadow-[0_0_15px_rgba(37,99,235,0.2)]'}`}>
                   <span className="px-1 text-center text-[9px] font-black leading-tight text-blue-400 md:text-[12px]">
                     {me.champion?.name || '내 챔피언'}
                   </span>
                </div>
 
-               <div className="flex min-w-0 flex-col gap-1">
+                <div className="ko-player-stats flex min-w-0 flex-col gap-1">
                 <div className="rounded border border-neutral-700 bg-neutral-900/80 px-2 py-1">
                   <div className="text-[7px] font-bold text-neutral-400 md:text-[9px]">골드</div>
                    <div className="font-display text-sm font-black text-primary md:text-xl">
@@ -663,7 +666,7 @@ function HandCard({
   return (
     <Inspectable content={<CardInspectContent card={card} />} className="relative shrink-0">
     <div className="relative">
-    <CardRenderer
+      <CardRenderer
       name={def?.name ?? '알 수 없는 카드'}
       cost={card.currentCost}
       attack={card.currentAttack}
@@ -672,7 +675,7 @@ function HandCard({
       imageUrl={def?.imageUrl}
       rarity={def?.rarity}
       size="hand"
-      className={containerClass}
+       className={`ko-hand-card ${containerClass}`}
       imageDisplaySettings={def}
        highlight={isSelected ? "selected" : targetable ? "target" : undefined}
       onClick={onClick}

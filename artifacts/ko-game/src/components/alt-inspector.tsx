@@ -18,11 +18,13 @@ interface InspectTarget {
   content: ReactNode;
   rect: DOMRect;
   showOnHover: boolean;
+  showOnTouch: boolean;
 }
 
 interface AltInspectContextValue {
   isAltPressed: boolean;
   inspect: (target: InspectTarget) => void;
+  inspectTouch: (target: InspectTarget) => void;
   clear: () => void;
 }
 
@@ -51,6 +53,7 @@ const KEYWORD_LABELS: Record<string, string> = {
 export function AltInspectProvider({ children }: { children: ReactNode }) {
   const [isAltPressed, setIsAltPressed] = useState(false);
   const [target, setTarget] = useState<InspectTarget | null>(null);
+  const [isTouchInspecting, setIsTouchInspecting] = useState(false);
 
   useEffect(() => {
     const releaseAlt = () => setIsAltPressed(false);
@@ -76,12 +79,24 @@ export function AltInspectProvider({ children }: { children: ReactNode }) {
     };
   }, []);
 
-  const clear = useCallback(() => setTarget(null), []);
+  const clear = useCallback(() => {
+    setTarget(null);
+    setIsTouchInspecting(false);
+  }, []);
+  const inspect = useCallback((nextTarget: InspectTarget) => {
+    setTarget(nextTarget);
+    setIsTouchInspecting(false);
+  }, []);
+  const inspectTouch = useCallback((nextTarget: InspectTarget) => {
+    setTarget(nextTarget);
+    setIsTouchInspecting(true);
+  }, []);
   const value = useMemo(
-    () => ({ isAltPressed, inspect: setTarget, clear }),
-    [clear, isAltPressed],
+    () => ({ isAltPressed, inspect, inspectTouch, clear }),
+    [clear, inspect, inspectTouch, isAltPressed],
   );
-  const isVisible = target && (isAltPressed || target.showOnHover);
+  const isVisible =
+    target && (isAltPressed || target.showOnHover || (target.showOnTouch && isTouchInspecting));
   const panelWidth = 280;
   const left = target
     ? target.rect.right + panelWidth + 16 <= window.innerWidth
@@ -98,9 +113,17 @@ export function AltInspectProvider({ children }: { children: ReactNode }) {
       {isVisible && (
         <aside
           aria-label="상세정보"
-          className="pointer-events-none fixed z-[200] w-[280px] rounded-md border border-neutral-600 bg-neutral-950/95 p-4 text-neutral-100 shadow-2xl backdrop-blur-md"
+          className="ko-touch-inspector pointer-events-none fixed z-[200] w-[280px] rounded-md border border-neutral-600 bg-neutral-950/95 p-4 text-neutral-100 shadow-2xl backdrop-blur-md"
           style={{ left, top, maxHeight: 'calc(100dvh - 20px)', overflowY: 'auto' }}
         >
+          <button
+            type="button"
+            className="ko-touch-inspector-close hidden"
+            onClick={clear}
+            aria-label="상세정보 닫기"
+          >
+            닫기
+          </button>
           {target.content}
         </aside>
       )}
@@ -127,6 +150,14 @@ export function Inspectable({
       content,
       rect: element.getBoundingClientRect(),
       showOnHover,
+      showOnTouch: false,
+    });
+  const inspectTouch = (element: HTMLElement) =>
+    context.inspectTouch({
+      content,
+      rect: element.getBoundingClientRect(),
+      showOnHover,
+      showOnTouch: true,
     });
 
   return (
@@ -136,6 +167,9 @@ export function Inspectable({
       onMouseLeave={context.clear}
       onFocus={(event) => inspect(event.currentTarget)}
       onBlur={context.clear}
+      onPointerUp={(event) => {
+        if (event.pointerType === 'touch') inspectTouch(event.currentTarget);
+      }}
     >
       {children}
     </div>
