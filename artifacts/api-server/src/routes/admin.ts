@@ -115,9 +115,12 @@ function parseChampionInput(value: unknown): ChampionInput | null {
     return required || result ? result : null;
   };
   const integer = (key: string, min: number, max: number, nullable = false) => {
-    const value = input[key];
-    if (nullable && (value === null || value === "" || value === undefined)) return null;
-    return typeof value === "number" && Number.isInteger(value) && value >= min && value <= max ? value : undefined;
+    const rawValue = input[key];
+    if (nullable && (rawValue === null || rawValue === "" || rawValue === undefined)) return null;
+    const value = typeof rawValue === "number"
+      ? rawValue
+      : typeof rawValue === "string" && rawValue.trim() ? Number(rawValue) : Number.NaN;
+    return Number.isInteger(value) && value >= min && value <= max ? value : undefined;
   };
   const object = (key: string, nullable = false) => {
     const value = input[key];
@@ -162,7 +165,7 @@ function parseChampionInput(value: unknown): ChampionInput | null {
   ) return null;
   if (hasQuest && (!text("questName", true) || !text("questText", true) ||
        !rawQuestCondition || questProgressRequired === null ||
-      !text("questRewardText", true) || !object("questRewardEffects", true))) return null;
+       !text("questRewardText", true))) return null;
   return {
     name, description: text("description") ?? "", imageAssetId: text("imageAssetId"),
     imageUrl: text("imageUrl"), maxHealth, abilityName, abilityCost,
