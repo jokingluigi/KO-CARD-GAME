@@ -1,4 +1,4 @@
-import type { CardInstance } from '../cards/types';
+import type { CardDefinition, CardInstance } from '../cards/types';
 import type { CardAbility, CardEffect, CardKeyword } from './types';
 import { RUNTIME_HANDLER_ACTIONS, type Action, type TargetZone } from "@workspace/effect-registry";
 
@@ -10,12 +10,12 @@ const runtimeStructuredActionsAreExhaustive: UnimplementedStructuredAction exten
 void runtimeStructuredActionsAreExhaustive;
 import type { GameState } from '../types/game-state';
 import type { LeaveReason } from '../events/types';
-import { shuffle } from '../random/random';
+import { createDeterministicRandom, shuffle } from '../random/random';
 import { destroyCard } from '../engine/destroy-card';
 import { drawCard } from '../engine/draw-card';
 import { silenceCard } from '../engine/card-status';
 import { enterField } from '../engine/enter-field';
-import { generateCardInstance } from '../cards/generation';
+import { generateCard, generateCardInstance, getRandomCardGenerationCandidates, isEligibleForRandomPool } from '../cards/generation';
 
 /** The single authoritative target resolver.  UI must only display these ids. */
 export function getValidTargets(
@@ -45,6 +45,7 @@ export function getValidTargets(
       if (zones.length === 1 && zones[0] === 'CHARACTER' && card.cardType !== 'WRESTLER') return false;
       if (target.cardType && card.cardType !== target.cardType) return false;
       if (target.filter?.isGenerated !== undefined && card.isGenerated !== target.filter.isGenerated) return false;
+      if (target.selection === 'RANDOM' && !isEligibleForRandomPool(card, target.randomScope)) return false;
       if (target.selection === 'SELF' && card.instanceId !== sourceCard.instanceId) return false;
       // Directly deployed champion tokens remain damageable, but not silence/destroy targets.
       if (card.isDirectDeployedChampion && (effect.action === 'SILENCE' || effect.action === 'DESTROY')) return false;
@@ -80,6 +81,94 @@ export function validateEffectTargets(
 function sourceInState(state: GameState, id: string): CardInstance | undefined {
   return state.players.flatMap((player) => [...player.deck, ...player.hand, ...player.board.filter((c): c is CardInstance => c !== null)])
     .find((card) => card.instanceId === id);
+}
+
+function randomForEffect(
+  state: GameState,
+  sourceCard: CardInstance,
+  effect: CardEffect,
+): ReturnType<typeof createDeterministicRandom> {
+  return createDeterministicRandom(JSON.stringify({
+    seed: state.randomSeed ?? 0,
+    events: state.events.length,
+    source: sourceCard.instanceId,
+    action: effect.type === 'STRUCTURED' ? effect.action : effect.type,
+    target: effect.type === 'STRUCTURED' ? effect.target : undefined,
+  }));
+}
+
+function definitionsFromState(state: GameState): CardDefinition[] {
+  const byDefinition = new Map<string, CardDefinition>();
+  for (const card of state.players.flatMap((player) => [
+    ...player.deck,
+    ...player.hand,
+    ...player.board.filter((item): item is CardInstance => item !== null),
+    ...player.graveyard,
+    ...player.removedFromGame,
+  ])) {
+    if (byDefinition.has(card.definitionId)) continue;
+    byDefinition.set(card.definitionId, {
+      id: card.definitionId,
+      name: card.definitionId,
+      cardType: card.cardType,
+      cost: card.baseCost ?? card.currentCost,
+      attack: card.baseAttack ?? card.currentAttack,
+      health: card.baseHealth ?? card.maxHealth,
+      rulesText: '',
+      isToken: card.isToken,
+      isChampionToken: card.isChampionToken,
+      keywords: [...card.keywords],
+      abilities: [...card.abilities],
+      tags: card.tags ? [...card.tags] : [],
+    });
+  }
+  return [...byDefinition.values()];
+}
+
+function applyRandomCardCreation(
+  state: GameState,
+  playerId: string,
+  sourceCard: CardInstance,
+  effect: Extract<CardEffect, { type: 'STRUCTURED' }>,
+): GameState {
+  const target = effect.target;
+  if (!target || target.selection !== 'RANDOM') return state;
+  const definitions = getRandomCardGenerationCandidates(
+    state.cardPool ?? definitionsFromState(state),
+    {
+      randomScope: target.randomScope,
+      cardType: target.cardType,
+      filter: target.filter,
+    },
+  );
+  const selected = shuffle(definitions, randomForEffect(state, sourceCard, effect))
+    .slice(0, Math.max(0, target.count));
+
+  return selected.reduce((nextState, definition, index) => {
+    const generated = generateCard(definition, {
+      instanceId: `${sourceCard.instanceId}:${effect.action}:${nextState.events.length + index}`,
+      playerId,
+      source: { type: 'CARD', cardInstanceId: sourceCard.instanceId },
+      reason: effect.action,
+    });
+    if (effect.action === 'GENERATE') {
+      return {
+        ...nextState,
+        players: nextState.players.map((player) => player.id === playerId
+          ? { ...player, hand: [...player.hand, generated.card] }
+          : player),
+        events: [...nextState.events, generated.event],
+      };
+    }
+    const owner = nextState.players.find((player) => player.id === playerId);
+    const slot = owner?.board.findIndex((card) => card === null) ?? -1;
+    return slot < 0
+      ? nextState
+      : enterField(nextState, playerId, generated.card, slot as 0 | 1 | 2 | 3, {
+        type: 'CARD',
+        cardInstanceId: sourceCard.instanceId,
+      });
+  }, state);
 }
 
 function beginResolution(state: GameState, frame: NonNullable<GameState['targetingState']>): GameState {
@@ -215,6 +304,9 @@ function applyEffect(
   chosenTargetInstanceIds?: string[],
 ): GameState {
   if (effect.type === 'STRUCTURED') {
+    if ((effect.action === 'SUMMON' || effect.action === 'GENERATE') && effect.target?.selection === 'RANDOM') {
+      return applyRandomCardCreation(state, playerId, sourceCard, effect);
+    }
     const amount = effect.values?.amount ?? 0;
     const definition = effect.values?.definition;
     const validDefinition = definition &&
@@ -381,8 +473,12 @@ function applyEffect(
     const eligibleCandidates = candidates.filter((card) => {
       if (card.isDirectDeployedChampion && (effect.action === 'SILENCE' || effect.action === 'DESTROY')) return false;
       if (target.cardType && card.cardType !== target.cardType) return false;
-      return target.filter?.isGenerated === undefined || card.isGenerated === target.filter.isGenerated;
+      if (target.filter?.isGenerated !== undefined && card.isGenerated !== target.filter.isGenerated) return false;
+      return true;
     });
+    const randomCandidates = eligibleCandidates.filter((card) =>
+      target.selection !== 'RANDOM' || isEligibleForRandomPool(card, target.randomScope),
+    );
     const targets = target.selection === 'SELF'
       ? eligibleCandidates.filter((card) => card.instanceId === sourceCard.instanceId)
       : target.selection === 'PLAYER_CHOICE'
@@ -391,7 +487,10 @@ function applyEffect(
           ? eligibleCandidates.filter((card) => chosenTargetInstanceIds?.includes(card.instanceId)).slice(0, Math.max(0, target.count))
         : target.selection === 'ALL'
           ? eligibleCandidates
-          : shuffle(eligibleCandidates).slice(0, Math.max(0, target.count));
+          : shuffle(
+              randomCandidates,
+              randomForEffect(state, sourceCard, effect),
+            ).slice(0, Math.max(0, target.count));
     if (!targets.length) return state;
     const ids = new Set(targets.map((card) => card.instanceId));
     if (effect.action === 'DESTROY') {

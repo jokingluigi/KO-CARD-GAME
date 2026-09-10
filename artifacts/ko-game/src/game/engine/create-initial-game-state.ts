@@ -37,6 +37,7 @@ export function createInitialGameState(
 ): GameState {
   return {
     gameId: 'local-prototype',
+    cardPool: cardDefinitions ? [...cardDefinitions] : undefined,
     backgroundId: null,
     bgmId: null,
     turn: 0,

@@ -32,7 +32,7 @@ test("필수 카드 문장을 안전한 구조화 효과로 분석한다", () =>
     {
       text: "등장: 손패의 무작위 선수 카드 3장에게 +1/+1을 부여합니다.",
       actions: ["BUFF"],
-      target: { zone: "HAND", owner: "SELF", cardType: "WRESTLER", selection: "RANDOM", count: 3 },
+      target: { zone: "HAND", owner: "SELF", cardType: "WRESTLER", selection: "RANDOM", count: 3, randomScope: "STANDARD" },
       values: { attack: 1, health: 1 },
     },
     {
@@ -108,6 +108,33 @@ test("요구된 기존 라이브러리 문장을 모두 지원한다", () => {
   }
 });
 
+test("무작위와 완전히 무작위를 서로 다른 Random Scope로 분석한다", () => {
+  const standard = analyzeEffectText("등장: 무작위 선수 카드 1장을 생성합니다.");
+  assert.equal(standard.outcome, "supported");
+  assert.deepEqual(standard.effects[0]?.target, {
+    zones: ["HAND", "DECK", "BOARD"],
+    owner: "SELF",
+    cardType: "WRESTLER",
+    selection: "RANDOM",
+    count: 1,
+    randomScope: "STANDARD",
+  });
+  assert.equal(isStructuredEffects({ effects: standard.effects }), true);
+
+  for (const wording of ["완전히 무작위", "완전 무작위", "완전 랜덤"]) {
+    const full = analyzeEffectText(`등장: ${wording} 선수 카드 1장을 생성합니다.`);
+    assert.equal(full.outcome, "supported", wording);
+    assert.equal(full.effects[0]?.target?.randomScope, "FULL", wording);
+    assert.equal(full.effects[0]?.target?.cardType, "WRESTLER", wording);
+    assert.equal(full.effects[0]?.target?.selection, "RANDOM", wording);
+    assert.equal(isStructuredEffects({ effects: full.effects }), true, wording);
+  }
+
+  const technique = analyzeEffectText("등장: 완전히 무작위 기술 카드 1장을 생성합니다.");
+  assert.equal(technique.effects[0]?.target?.cardType, "TECHNIQUE");
+  assert.equal(technique.effects[0]?.target?.randomScope, "FULL");
+});
+
 test("현재 registry에서 제공하는 Effect Library 메타데이터를 노출한다", () => {
   const library = effectLibrary();
   assert.ok(library.actions.length >= 19);
@@ -121,6 +148,7 @@ test("현재 registry에서 제공하는 Effect Library 메타데이터를 노�
   );
   assert.deepEqual(library.targetResolvers[0]?.config.defaultCardScope, ["HAND", "DECK", "BOARD"]);
   assert.deepEqual(library.targetResolvers[0]?.config.filters, ["GENERATED"]);
+  assert.deepEqual(library.targetResolvers[0]?.config.randomScope, ["STANDARD", "FULL"]);
 });
 
 test("어디에 있든 생성된 선수는 HAND·DECK·BOARD와 Generated 필터로 분석한다", () => {

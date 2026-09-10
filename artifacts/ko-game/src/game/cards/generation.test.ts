@@ -65,17 +65,17 @@ test('일반 토큰과 챔피언 토큰을 따로 관리한다', () => {
   assert.equal(championToken.isDirectDeployedChampion, false);
 });
 
-test('생성 출처만으로 챔피언 토큰이 되지 않는다', () => {
+test('일반 인스턴스 생성은 기본적으로 기존 카드 인스턴스로 남는다', () => {
   const card = generateCardInstance(definition('normal'), {
     instanceId: 'champion-ability-generated',
   });
 
-  assert.equal(card.isGenerated, true);
+  assert.equal(card.isGenerated, false);
   assert.equal(card.isChampionToken, false);
   assert.equal(card.isDirectDeployedChampion, false);
 });
 
-test('무작위 카드 생성 후보에서 챔피언 토큰을 항상 제외한다', () => {
+test('표준 무작위 카드 생성 후보에서는 일반 토큰과 챔피언 토큰을 제외한다', () => {
   const normal = definition('normal');
   const token = definition('token', true, false);
   const championToken = definition('champion-token', true, true);
@@ -87,6 +87,39 @@ test('무작위 카드 생성 후보에서 챔피언 토큰을 항상 제외한�
 
   assert.deepEqual(
     candidates.map((card) => card.id),
-    ['normal', 'token'],
+    ['normal'],
+  );
+});
+
+test('완전히 무작위 카드 생성 후보에서는 토큰과 챔피언 토큰을 허용한다', () => {
+  const candidates = getRandomCardGenerationCandidates([
+    definition('normal'),
+    definition('token', true, false),
+    definition('champion-token', true, true),
+  ], { randomScope: 'FULL' });
+
+  assert.deepEqual(
+    candidates.map((card) => card.id),
+    ['normal', 'token', 'champion-token'],
+  );
+});
+
+test('무작위 생성 Pool은 카드 타입 필터와 randomScope를 함께 적용한다', () => {
+  const technique = { ...definition('technique'), cardType: 'TECHNIQUE' as const };
+  const techniqueToken = { ...technique, id: 'technique-token', isToken: true };
+
+  assert.deepEqual(
+    getRandomCardGenerationCandidates(
+      [definition('wrestler'), technique, techniqueToken],
+      { cardType: 'TECHNIQUE', randomScope: 'STANDARD' },
+    ).map((card) => card.id),
+    ['technique'],
+  );
+  assert.deepEqual(
+    getRandomCardGenerationCandidates(
+      [definition('wrestler'), technique, techniqueToken],
+      { cardType: 'TECHNIQUE', randomScope: 'FULL' },
+    ).map((card) => card.id),
+    ['technique', 'technique-token'],
   );
 });

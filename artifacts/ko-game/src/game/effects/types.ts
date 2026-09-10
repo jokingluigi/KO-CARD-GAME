@@ -1,5 +1,5 @@
 import type {
-  Action, Keyword, TargetOwner, TargetSelection, TargetZone,
+  Action, Keyword, RandomScope, TargetOwner, TargetSelection, TargetZone,
 } from "@workspace/effect-registry";
 import type { CardDefinition } from '../cards/types';
 
@@ -32,10 +32,11 @@ export type CardEffect =
         /** Multi-zone card scope, e.g. HAND + DECK + BOARD. */
         zones?: TargetZone[];
         owner: TargetOwner;
-        cardType?: 'WRESTLER';
+        cardType?: 'WRESTLER' | 'TECHNIQUE';
         filter?: { isGenerated?: boolean };
         selection: TargetSelection;
         count: number;
+        randomScope?: RandomScope;
         minTargets?: number;
         maxTargets?: number;
         optionalTarget?: boolean;

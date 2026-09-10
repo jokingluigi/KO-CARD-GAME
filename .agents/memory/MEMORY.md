@@ -2,6 +2,7 @@
 - [Structured card effects](structured-card-effects.md) — new admin effects are validated data; partial parses never apply and gameplay never reparses display text.
 - [Effect targeting continuations](effect-targeting-continuations.md) — PLAYER_CHOICE pauses use an engine-owned stack so nested triggers resume in order.
 - [Effect registry source](effect-registry-source.md) — analyzer, Effect Library, and runtime types derive identifiers from one shared registry.
+- [Effect registry declaration refresh](effect-registry-declaration-refresh.md) — force-build the shared registry before dependent typechecks after changing exported DSL symbols.
 - [Mechanic request boundary](mechanic-request-boundary.md) — intake records server-verified gaps only; creation never invokes agents or changes game code.
 - [Admin upload controls](admin-upload-controls.md) — file pickers embedded in admin forms must block browser default submission and event propagation.
 - [Champion card presentation](champion-card-presentation.md) — CHAMPION rarity represents champion token cards and uses the dedicated red-gold card frame.

@@ -3,6 +3,7 @@ import type {
   CardInstance,
   CardInstanceId,
 } from './types';
+import type { RandomScope } from '@workspace/effect-registry';
 import type { EventSubject, GameEvent } from '../events/types';
 
 export interface GenerateCardOptions {
@@ -17,6 +18,22 @@ export interface GenerateCardWithEventOptions extends GenerateCardOptions {
   playerId: string;
   source?: EventSubject;
   reason?: string;
+}
+
+export interface RandomCardPoolOptions {
+  randomScope?: RandomScope;
+  cardType?: CardDefinition['cardType'];
+  filter?: {
+    isGenerated?: boolean;
+    tags?: string[];
+  };
+}
+
+export function isEligibleForRandomPool(
+  card: Pick<CardDefinition, 'isToken' | 'isChampionToken'> | Pick<CardInstance, 'isToken' | 'isChampionToken'>,
+  randomScope: RandomScope = 'STANDARD',
+): boolean {
+  return randomScope === 'FULL' || (!card.isToken && !card.isChampionToken);
 }
 
 export function generateCardInstance(
@@ -80,6 +97,17 @@ export function generateCard(
 
 export function getRandomCardGenerationCandidates(
   definitions: readonly CardDefinition[],
+  options: RandomCardPoolOptions = {},
 ): CardDefinition[] {
-  return definitions.filter((definition) => !definition.isChampionToken);
+  const randomScope = options.randomScope ?? 'STANDARD';
+  return definitions.filter((definition) => {
+    if (options.cardType && definition.cardType !== options.cardType) return false;
+    if (options.filter?.isGenerated !== undefined && options.filter.isGenerated !== false) {
+      // Definitions are not instances. Generated is a runtime property, so a
+      // generated-only pool cannot be built from card definitions.
+      return false;
+    }
+    if (options.filter?.tags?.some((tag) => !(definition.tags ?? []).includes(tag))) return false;
+    return isEligibleForRandomPool(definition, randomScope);
+  });
 }

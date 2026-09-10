@@ -1,4 +1,5 @@
 import type { CardInstance } from '../cards/types';
+import type { CardDefinition } from '../cards/types';
 import type { ChampionState } from '../champions/types';
 import type { GameEvent } from '../events/types';
 import type { CardEffect } from '../effects/types';
@@ -28,6 +29,10 @@ export interface PlayerState {
 
 export interface GameState {
   gameId: string;
+  /** Seed used by deterministic random effect resolution. */
+  randomSeed?: number;
+  /** Published definitions available to random generation effects. */
+  cardPool?: CardDefinition[];
   backgroundId: string | null;
   bgmId: string | null;
   turn: number;

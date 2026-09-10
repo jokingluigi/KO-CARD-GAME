@@ -26,6 +26,22 @@ function definition(id: string, effects: CardEffect[]): CardDefinition {
   };
 }
 
+function poolCard(
+  id: string,
+  flags: { isToken?: boolean; isChampionToken?: boolean } = {},
+): CardInstance {
+  return generateCard({
+    ...definition(id, []),
+    isToken: flags.isToken ?? false,
+    isChampionToken: flags.isChampionToken ?? false,
+  }, {
+    instanceId: id,
+    playerId: 'player-1',
+    source: { type: 'PLAYER', playerId: 'player-1' },
+    reason: 'TEST_RANDOM_POOL',
+  }).card;
+}
+
 function instance(id: string, effects: CardEffect[] = []): CardInstance {
   return generateCard(definition(id, effects), {
     instanceId: `${id}-instance`,
@@ -167,6 +183,110 @@ test('손패의 무작위 선수 카드 중 최대 3장에게 +1/+1을 부여한
     result.players[0].hand.filter((card) => card.currentAttack === 2).length,
     3,
   );
+});
+
+test('표준 RANDOM은 일반 카드만 선택하고 Token과 Champion Token을 제외한다', () => {
+  const source = instance('standard-random-source', [
+    structured('BUFF', {
+      zone: 'HAND',
+      owner: 'SELF',
+      cardType: 'WRESTLER',
+      selection: 'RANDOM',
+      count: 3,
+      randomScope: 'STANDARD',
+    }, { attack: 1, health: 1 }),
+  ]);
+  const state = createInitialGameState();
+  state.randomSeed = 17;
+  state.players[0].hand = [
+    poolCard('standard-normal'),
+    poolCard('standard-token', { isToken: true }),
+    poolCard('standard-champion-token', { isToken: true, isChampionToken: true }),
+  ];
+
+  const result = enterField(state, 'player-1', source, 0);
+  assert.equal(result.players[0].hand[0]?.currentAttack, 2);
+  assert.equal(result.players[0].hand[1]?.currentAttack, 1);
+  assert.equal(result.players[0].hand[2]?.currentAttack, 1);
+});
+
+test('FULL_RANDOM은 일반 카드, Token, Champion Token을 모두 선택 후보로 허용한다', () => {
+  const source = instance('full-random-source', [
+    structured('BUFF', {
+      zone: 'HAND',
+      owner: 'SELF',
+      cardType: 'WRESTLER',
+      selection: 'RANDOM',
+      count: 3,
+      randomScope: 'FULL',
+    }, { attack: 1, health: 1 }),
+  ]);
+  const state = createInitialGameState();
+  state.randomSeed = 17;
+  state.players[0].hand = [
+    poolCard('full-normal'),
+    poolCard('full-token', { isToken: true }),
+    poolCard('full-champion-token', { isToken: true, isChampionToken: true }),
+  ];
+
+  const result = enterField(state, 'player-1', source, 0);
+  assert.equal(result.players[0].hand.every((card) => card.currentAttack === 2), true);
+  const championToken = result.players[0].hand.find((card) => card.isChampionToken);
+  assert.equal(championToken?.isDirectDeployedChampion, false);
+  assert.equal(championToken?.isSilenceImmune, false);
+});
+
+test('FULL_RANDOM GENERATE로 나온 Champion Token은 직접 전개 보호를 얻지 않는다', () => {
+  const source = instance('full-random-generate-source', [
+    structured('GENERATE', {
+      zones: ['HAND', 'DECK', 'BOARD'],
+      owner: 'SELF',
+      cardType: 'WRESTLER',
+      selection: 'RANDOM',
+      count: 3,
+      randomScope: 'FULL',
+    }),
+  ]);
+  const state = createInitialGameState();
+  state.randomSeed = 29;
+  state.cardPool = [
+    definition('generated-normal', []),
+    { ...definition('generated-token', []), isToken: true },
+    { ...definition('generated-champion-token', []), isToken: true, isChampionToken: true },
+  ];
+
+  const result = enterField(state, 'player-1', source, 0);
+  assert.equal(result.players[0].hand.length, 3);
+  const championToken = result.players[0].hand.find((card) => card.isChampionToken);
+  assert.ok(championToken);
+  assert.equal(championToken.isDirectDeployedChampion, false);
+  assert.equal(championToken.isSilenceImmune, false);
+});
+
+test('같은 GameState와 Action, Seed의 RANDOM 결과는 deterministic하다', () => {
+  const resolve = () => {
+    const source = instance('seeded-random-source', [
+      structured('BUFF', {
+        zone: 'HAND',
+        owner: 'SELF',
+        cardType: 'WRESTLER',
+        selection: 'RANDOM',
+        count: 1,
+        randomScope: 'FULL',
+      }, { attack: 1, health: 1 }),
+    ]);
+    const state = createInitialGameState();
+    state.randomSeed = 12345;
+    state.players[0].hand = [
+      poolCard('seed-a'),
+      poolCard('seed-b', { isToken: true }),
+      poolCard('seed-c', { isToken: true, isChampionToken: true }),
+    ];
+    return enterField(state, 'player-1', source, 0).players[0].hand
+      .map((card) => [card.instanceId, card.currentAttack]);
+  };
+
+  assert.deepEqual(resolve(), resolve());
 });
 
 test('선택한 적 선수를 침묵시킨 뒤 같은 대상을 파괴한다', () => {

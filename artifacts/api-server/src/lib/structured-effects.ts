@@ -1,8 +1,8 @@
 import {
   ACTION_SCHEMAS, ACTIONS, CONDITIONS, DEFAULT_CARD_TARGET_SCOPE, EFFECT_CAPABILITIES, EFFECT_LIBRARY, KEYWORDS, TARGET_OWNERS,
-  TARGET_SELECTIONS, TARGET_ZONES, TRIGGERS,
+  RANDOM_SCOPES, TARGET_SELECTIONS, TARGET_ZONES, TRIGGERS,
   type Action, type Condition, type Keyword, type TargetOwner, type TargetSelection,
-  type TargetZone, type Trigger,
+  type RandomScope, type TargetZone, type Trigger,
 } from "@workspace/effect-registry";
 
 export { ACTIONS, KEYWORDS, TRIGGERS };
@@ -11,10 +11,11 @@ export type Target = {
   zone?: TargetZone;
   zones?: TargetZone[];
   owner: TargetOwner;
-  cardType?: "WRESTLER";
+  cardType?: "WRESTLER" | "TECHNIQUE";
   filter?: { isGenerated?: boolean };
   selection: TargetSelection;
   count: number;
+  randomScope?: RandomScope;
 };
 export type EffectCondition = { type: Condition; expression?: string };
 export type StructuredEffect = { trigger: Trigger; action: Action; target?: Target; conditions?: EffectCondition[]; values?: { attack?: number; health?: number; attackMultiplier?: number; healthMultiplier?: number; amount?: number; keyword?: Keyword; leftEffects?: StructuredEffect[]; rightEffects?: StructuredEffect[] } };
@@ -65,7 +66,7 @@ function targetCountFrom(text: string) {
   if (/(모든|전부)/.test(text)) return 20;
   return 1;
 }
-function targetFor(text: string): Target {
+function targetFor(text: string, randomPool = false): Target {
   if (/모든\s*캐릭터/.test(text)) return { zone: "CHARACTER", owner: "ALL", selection: "ALL", count: targetCountFrom(text) };
   if (/(상대|적)\s*캐릭터/.test(text)) return { zone: "CHARACTER", owner: "ENEMY", selection: "PLAYER_CHOICE", count: targetCountFrom(text) };
   if (/(아군|내)\s*캐릭터/.test(text)) return { zone: "CHARACTER", owner: "SELF", selection: "PLAYER_CHOICE", count: targetCountFrom(text) };
@@ -76,7 +77,15 @@ function targetFor(text: string): Target {
   if (/(자신|이\s*카드)/.test(text)) return { zone: "BOARD", owner: "SELF", selection: "SELF", count: 1 };
   const hand = /손패/.test(text), deck = /덱/.test(text), enemy = /(적|상대)\s*선수/.test(text);
   const random = /(무작위|랜덤)/.test(text), all = /(모든|전부)/.test(text);
-  const cardType = /선수/.test(text) ? "WRESTLER" as const : undefined;
+  const cardType = /선수/.test(text)
+    ? "WRESTLER" as const
+    : /기술/.test(text)
+      ? "TECHNIQUE" as const
+      : undefined;
+  const randomScope = /완전히\s*(?:무작위|랜덤)|완전\s*(?:무작위|랜덤)/.test(text)
+    ? "FULL" as const
+    : "STANDARD" as const;
+  const randomTarget = random && !all;
   if (activeCardScope) {
     return {
       zones: [...DEFAULT_CARD_TARGET_SCOPE],
@@ -87,6 +96,17 @@ function targetFor(text: string): Target {
       count: 20,
     };
   }
+  if (randomPool && randomTarget) {
+    return {
+      zones: [...DEFAULT_CARD_TARGET_SCOPE],
+      owner: "SELF",
+      ...(cardType ? { cardType } : {}),
+      ...(generated ? { filter: { isGenerated: true } } : {}),
+      selection: "RANDOM",
+      count: targetCountFrom(text),
+      randomScope,
+    };
+  }
   return {
     zone: deck ? "DECK" : hand ? "HAND" : "BOARD",
     owner: enemy ? "ENEMY" : "SELF",
@@ -94,6 +114,7 @@ function targetFor(text: string): Target {
     ...(generated ? { filter: { isGenerated: true } } : {}),
     selection: random ? "RANDOM" : all ? "ALL" : "PLAYER_CHOICE",
     count: all ? 20 : targetCountFrom(text),
+    ...(randomTarget ? { randomScope } : {}),
   };
 }
 function keywordFor(text: string): Keyword | undefined {
@@ -127,7 +148,16 @@ function effect(trigger: Trigger, action: Action, body: string, index: number, p
   }
   if (schema.keyword) { const keyword = keywordFor(body); if (!keyword) return null; values.keyword = keyword; }
   const explicitTarget = /(자신|이\s*카드|모든\s*캐릭터|모든\s*(?:생성된\s*)?선수|(?:적|상대)\s*(?:선수|챔피언|플레이어|캐릭터)|(?:아군|내)\s*캐릭터|손패|생성된|어디에\s*(?:있든|있는)|모든\s*위치의|손패\s*[,，]\s*덱\s*[,，]\s*(?:필드|보드))/.test(body);
-  return { trigger, action, ...(schema.target ? { target: !explicitTarget && priorTarget ? { ...priorTarget, selection: "SAME_TARGET" } : targetFor(body) } : {}), ...(conditions?.length ? { conditions } : {}), ...(Object.keys(values).length ? { values } : {}) };
+  const randomPoolAction = action === "SUMMON" || action === "GENERATE";
+  return {
+    trigger,
+    action,
+    ...((schema.target || (randomPoolAction && /(무작위|랜덤)/.test(body)))
+      ? { target: !explicitTarget && priorTarget ? { ...priorTarget, selection: "SAME_TARGET" } : targetFor(body, randomPoolAction) }
+      : {}),
+    ...(conditions?.length ? { conditions } : {}),
+    ...(Object.keys(values).length ? { values } : {}),
+  };
 }
 
 export function analyzeEffectText(input: string): Analysis {
@@ -208,7 +238,7 @@ export function analyzeEffectText(input: string): Analysis {
     }
     remainder += ` ${clauseRemainder}`;
   }
-  remainder = remainder.replace(/선택한|어디에\s*(?:있든|있는)|모든\s*위치의|손패\s*[,，]\s*덱\s*[,，]\s*(?:필드|보드)|손패\s*(?:및|와|과)\s*덱\s*(?:및|와|과)\s*(?:필드|보드)|생성된(?:\s*카드)?|모든\s*캐릭터(?:에게|을|를)?|모든\s*(?:선수|카드)(?:에게|을|를|의)?|(?:적|상대)\s*(?:챔피언|플레이어)(?:에게|을|를)?|(?:내|자신의)\s*챔피언(?:에게|을|를)?|(?:적|상대)\s*선수(?:\s*(?:\d+\s*장|하나|한\s*장))?(?:에게|을|를)?|(?:아군|내)\s*선수(?:\s*(?:\d+\s*장|하나|한\s*장))?(?:에게|을|를)?|(?:적|상대)\s*캐릭터(?:\s*(?:\d+\s*장|하나|한\s*장))?(?:에게|을|를)?|(?:아군|내)\s*캐릭터(?:\s*(?:\d+\s*장|하나|한\s*장))?(?:에게|을|를)?|(?:손패|덱|필드|보드)(?!의?\s*(?:무작위\s*)?(?:선수|카드))(?:의)?|손패의\s*(?:무작위\s*)?선수(?:\s*카드)?(?:\s*(?:\d+\s*장|하나|한\s*장))?(?:에게|을|를|의)?|덱의\s*(?:무작위\s*)?(?:선수|카드)(?:\s*(?:\d+\s*장|하나|한\s*장))?(?:에게|을|를|의)?|필드의\s*(?:무작위\s*)?(?:선수|카드)(?:\s*(?:\d+\s*장|하나|한\s*장))?(?:에게|을|를|의)?|(?:자신|이\s*카드)(?:에게|을|를)?|(?:카드\s*)?(?:\d+\s*장|한\s*장)|선수(?:\s*카드)?(?:을|를)?|\d+\s*턴\s*동안|(?:에게|을|를|의|에)|(?:그리고|그\s*후|이후|하고|한\s*뒤|한\s*후|주고)|\s+/g, "");
+    remainder = remainder.replace(/(?:완전(?:히)?\s*)?(?:무작위|랜덤)(?:로)?\s*(?:선수|기술)?\s*(?:카드)?\s*(?:\d+\s*장|하나|한\s*장)?(?:에게|을|를|의)?|선택한|어디에\s*(?:있든|있는)|모든\s*위치의|손패\s*[,，]\s*덱\s*[,，]\s*(?:필드|보드)|손패\s*(?:및|와|과)\s*덱\s*(?:및|와|과)\s*(?:필드|보드)|생성된(?:\s*카드)?|모든\s*캐릭터(?:에게|을|를)?|모든\s*(?:선수|카드)(?:에게|을|를|의)?|(?:적|상대)\s*(?:챔피언|플레이어)(?:에게|을|를)?|(?:내|자신의)\s*챔피언(?:에게|을|를)?|(?:적|상대)\s*선수(?:\s*(?:\d+\s*장|하나|한\s*장))?(?:에게|을|를)?|(?:아군|내)\s*선수(?:\s*(?:\d+\s*장|하나|한\s*장))?(?:에게|을|를)?|(?:적|상대)\s*캐릭터(?:\s*(?:\d+\s*장|하나|한\s*장))?(?:에게|을|를)?|(?:아군|내)\s*캐릭터(?:\s*(?:\d+\s*장|하나|한\s*장))?(?:에게|을|를)?|(?:손패|덱|필드|보드)(?!의?\s*(?:무작위\s*)?(?:선수|카드))(?:의)?|손패의\s*(?:무작위\s*)?선수(?:\s*카드)?(?:\s*(?:\d+\s*장|하나|한\s*장))?(?:에게|을|를|의)?|덱의\s*(?:무작위\s*)?(?:선수|카드)(?:\s*카드)?(?:\s*(?:\d+\s*장|하나|한\s*장))?(?:에게|을|를|의)?|필드의\s*(?:무작위\s*)?(?:선수|카드)(?:\s*카드)?(?:\s*(?:\d+\s*장|하나|한\s*장))?(?:에게|을|를|의)?|(?:자신|이\s*카드)(?:에게|을|를)?|(?:카드\s*)?(?:\d+\s*장|한\s*장)|선수(?:\s*카드)?(?:을|를)?|\d+\s*턴\s*동안|(?:에게|을|를|의|에)|(?:그리고|그\s*후|이후|하고|한\s*뒤|한\s*후|주고)|\s+/g, "");
   // Action endings remain after matcher only for Korean conjugations.
    remainder = remainder.replace(/(합니다|시키고|시킵니다|부여|획득|얻음|얻습니다|줍니다|준다|주|드로우|뽑습니다|뽑기|포획|제거|소환|생성|해방|감소|증가)/g, "");
   const remainderUnsupported = remainder.replace(unsupportedMechanic, "").trim();
@@ -261,7 +291,8 @@ export function isStructuredEffects(value: unknown): value is { effects: Structu
       if (zones.some((zone) => zone === "CHARACTER") && ["REDUCE_COST", "INCREASE_COST"].includes(item.action)) return false;
       if (zones.some((zone) => zone === "PLAYER") && !(zones.length === 1 && ((item.action === "DAMAGE" && target.owner === "ENEMY" && target.selection === "SELF") || (item.action === "HEAL" && target.owner === "SELF" && target.selection === "SELF")))) return false;
       if (target.filter && (typeof target.filter !== "object" || target.filter === null || target.filter.isGenerated !== undefined && typeof target.filter.isGenerated !== "boolean")) return false;
-    } else if (target !== undefined) return false;
+      if (target.randomScope !== undefined && (!RANDOM_SCOPES.includes(target.randomScope) || target.selection !== "RANDOM")) return false;
+    } else if (target !== undefined && !(["SUMMON", "GENERATE"].includes(item.action) && target.selection === "RANDOM")) return false;
     if (schema.amount && !(typeof values?.amount === "number" && Number.isFinite(values.amount) && values.amount >= 0 && values.amount <= 999)) return false;
     if (schema.stats || schema.statMultiplier) {
       const validStats = schema.stats &&
