@@ -38,3 +38,9 @@ Deferred one-shot effects should be represented as validated queued structured e
 **Why:** “Next card” effects can survive multiple turns and need exact once-only consumption without changing unrelated turn, combat, or generated-card rules.
 
 **How to apply:** Register the queue action and its trigger/value schema, enqueue on the source trigger, consume only for the matching hand-play path, and cover persistence plus one-time application in runtime tests.
+
+Champion admin effect fields may omit an explicit natural-language Trigger, but the API should inject a default Trigger only for an explicit Champion effect context; Card Admin input remains strict.
+
+**Why:** Champion effects are invoked by the champion ability or quest flow rather than by their display prefix, while silently relaxing all effect inputs would make card analysis and validation ambiguous.
+
+**How to apply:** Send `sourceType` and `effectSlot` from Champion fields, analyze the bare body through the shared parser, and keep the resulting structured effect subject to the same server validator.

@@ -523,6 +523,27 @@ test("별칭, 드로우와 기본 키워드를 Registry로 분석한다", () => 
   assert.deepEqual(analyzeEffectText("회피").keywords, ["DODGE"]);
 });
 
+test("Champion effect context는 Trigger 없는 효과 본문을 공용 DSL로 분석한다", () => {
+  const damage = analyzeEffectText("적 선수 카드 1장에게 피해 1", { defaultTrigger: "ENTER_FIELD" });
+  assert.equal(damage.outcome, "supported");
+  assert.deepEqual(damage.effects[0], {
+    trigger: "ENTER_FIELD",
+    action: "DAMAGE",
+    target: { zone: "BOARD", owner: "ENEMY", cardType: "WRESTLER", selection: "PLAYER_CHOICE", count: 1 },
+    values: { amount: 1 },
+  });
+
+  const buff = analyzeEffectText("내 손의 선수 카드 1장에게 +1/+1", { defaultTrigger: "ENTER_FIELD" });
+  assert.equal(buff.outcome, "supported");
+  assert.deepEqual(buff.effects[0], {
+    trigger: "ENTER_FIELD",
+    action: "BUFF",
+    target: { zone: "HAND", owner: "SELF", cardType: "WRESTLER", selection: "PLAYER_CHOICE", count: 1 },
+    values: { attack: 1, health: 1 },
+  });
+  assert.equal(isStructuredEffects({ effects: buff.effects }), true);
+});
+
 test("현재 공격/체력 배수 표현은 같은 범용 BUFF Resolver로 분석한다", () => {
   for (const text of [
     "등장: 자신의 현재 공격과 체력의 수치를 2배로 만듭니다.",

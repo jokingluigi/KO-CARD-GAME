@@ -21,7 +21,7 @@ import {
 } from "../lib/mechanic-request-service";
 import { prepareReplitAgentPrompt } from "../lib/replit-agent-prompt";
 import { analyzeChampionQuestText } from "../lib/champion-quest-analysis";
-import { analyzeEffectText, effectLibrary, isStructuredEffects } from "../lib/structured-effects";
+import { analyzeEffectText, effectLibrary, isStructuredEffects, type Trigger } from "../lib/structured-effects";
 import {
   countStructuredEffectUsage,
   prepareCompletionApply,
@@ -619,11 +619,15 @@ function firstParam(value: unknown): string | undefined {
 
 router.post("/effects/analyze", (request, response) => {
   if (!requireAdmin(request, response)) return;
-  const text = request.body && typeof request.body === "object" ? (request.body as Record<string, unknown>).text : null;
+  const body = request.body && typeof request.body === "object" ? request.body as Record<string, unknown> : {};
+  const text = body.text;
   if (typeof text !== "string" || text.length > 2000) {
     response.status(400).json({ message: "효과 텍스트를 확인해 주세요." }); return;
   }
-  response.json(analyzeEffectText(text));
+  const championSlots = ["ABILITY", "QUEST_REWARD", "UPGRADED_ABILITY", "CHAMPION_TOKEN_EFFECT"] as const;
+  const isChampionContext = body.sourceType === "CHAMPION" &&
+    championSlots.includes(body.effectSlot as (typeof championSlots)[number]);
+  response.json(analyzeEffectText(text, isChampionContext ? { defaultTrigger: "ENTER_FIELD" as Trigger } : undefined));
 });
 
 router.post("/quests/analyze", (request, response) => {
