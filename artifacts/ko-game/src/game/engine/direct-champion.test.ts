@@ -13,6 +13,7 @@ import {
 import { useChampionAbility } from './champion-system';
 import { startGame } from './turn-system';
 import type { GameState } from '../types/game-state';
+import { TEST_CHAMPION_TOKEN_DEFINITION } from '../cards/test-cards';
 
 const fixedRandom = () => 0.5;
 
@@ -21,7 +22,7 @@ function deployDirectChampion(): GameState {
     createInitialGameState([
       'test-champion-direct-deploy',
       'test-champion-no-quest',
-    ]),
+    ], [TEST_CHAMPION_TOKEN_DEFINITION]),
     fixedRandom,
   );
   const result = useChampionAbility(started, 'player-1');
@@ -68,7 +69,7 @@ test('직접 출전 카드 체력이 기존 플레이어 체력을 이어받는�
     createInitialGameState([
       'test-champion-direct-deploy',
       'test-champion-no-quest',
-    ]),
+    ], [TEST_CHAMPION_TOKEN_DEFINITION]),
     fixedRandom,
   );
   const damaged = {

@@ -8,6 +8,7 @@ import {
   useChampionAbility,
 } from './champion-system';
 import { startGame } from './turn-system';
+import { setRuntimeCardDefinitions, TEST_CHAMPION_TOKEN_DEFINITION } from '../cards/test-cards';
 
 const fixedRandom = () => 0.5;
 
@@ -167,4 +168,49 @@ test('퀘스트 완료 보상으로 특별 보상을 지급할 수 있다', () =
 
   assert.equal(completed.players[0].currentGold, 4);
   assert.equal(completed.players[0].champion?.questCompleted, true);
+});
+
+test('퀘스트 완료 시 연결된 Champion Token을 직접 전개하고 ENTER_FIELD를 실행한다', () => {
+  setRuntimeCardDefinitions([{
+    ...TEST_CHAMPION_TOKEN_DEFINITION,
+    abilities: [{ trigger: 'ENTER_FIELD', effects: [{ type: 'GAIN_GOLD', amount: 1 }] }],
+  }]);
+  const started = startGame(createInitialGameState(
+    undefined,
+    [{
+      ...TEST_CHAMPION_TOKEN_DEFINITION,
+      abilities: [{ trigger: 'ENTER_FIELD', effects: [{ type: 'GAIN_GOLD', amount: 1 }] }],
+    }],
+  ), fixedRandom);
+  const rewardState = {
+    ...started,
+    players: started.players.map((player) =>
+      player.id === 'player-1' && player.champion?.quest
+        ? {
+            ...player,
+            champion: {
+              ...player.champion,
+              questProgress: player.champion.quest.requiredProgress - 1,
+              quest: {
+                ...player.champion.quest,
+                reward: {
+                  type: 'DIRECT_DEPLOY_CHAMPION_TOKEN' as const,
+                  cardDefinitionId: TEST_CHAMPION_TOKEN_DEFINITION.id,
+                },
+              },
+            },
+          }
+        : player,
+    ),
+  };
+  const completed = processChampionQuestEvents(rewardState, {
+    ...rewardState,
+    events: [...rewardState.events, { type: 'CARD_PLAYED' as const, playerId: 'player-1' }],
+  });
+  const token = completed.players[0].board.find((card) => card?.isChampionToken);
+
+  assert.equal(token?.definitionId, TEST_CHAMPION_TOKEN_DEFINITION.id);
+  assert.equal(token?.isDirectDeployedChampion, true);
+  assert.equal(completed.players[0].currentGold, 2);
+  assert.ok(completed.events.some((event) => event.reason === 'CHAMPION_QUEST_REWARD'));
 });

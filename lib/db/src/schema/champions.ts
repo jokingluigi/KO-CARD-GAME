@@ -23,6 +23,7 @@ export const championsTable = pgTable("champions", {
   upgradedAbilityText: text("upgraded_ability_text"),
   upgradedAbilityEffects: jsonb("upgraded_ability_effects").$type<Record<string, unknown> | null>(),
   championTokenDefinitionId: text("champion_token_definition_id"),
+  /** Legacy columns retained for non-destructive database compatibility; app writes no longer use them. */
   championTokenEffectText: text("champion_token_effect_text"),
   championTokenEffectEffects: jsonb("champion_token_effect_effects").$type<Record<string, unknown> | null>(),
   abilityAudioAssetId: text("ability_audio_asset_id"),

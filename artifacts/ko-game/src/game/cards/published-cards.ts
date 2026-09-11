@@ -88,20 +88,24 @@ function abilitiesFor(
   return [];
 }
 
-export async function fetchPublishedWrestlerCards(): Promise<CardDefinition[]> {
+async function fetchPublishedCardRecords(): Promise<PublishedCardRecord[]> {
   const apiBase = `${import.meta.env.BASE_URL.replace(/\/$/, "")}/api`;
   const response = await fetch(`${apiBase}/cards`);
   if (!response.ok) return [];
 
   const body = (await response.json()) as { cards?: PublishedCardRecord[] };
-  return (body.cards ?? [])
-    .filter(
-      (card) =>
-        card.status === "PUBLISHED" &&
-        card.cardType === "WRESTLER" &&
-        !card.isToken &&
-        !card.isChampionToken,
-    )
+  return (body.cards ?? []).filter((card) => card.status === "PUBLISHED");
+}
+
+export async function fetchPublishedWrestlerCards(): Promise<CardDefinition[]> {
+  return (await fetchPublishedCardRecords())
+    .filter((card) => card.cardType === "WRESTLER" && !card.isToken && !card.isChampionToken)
+    .map(cardRecordToDefinition);
+}
+
+export async function fetchPublishedChampionTokenCards(): Promise<CardDefinition[]> {
+  return (await fetchPublishedCardRecords())
+    .filter((card) => card.isChampionToken)
     .map(cardRecordToDefinition);
 }
 

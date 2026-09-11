@@ -1,0 +1,387 @@
+현재 KO 카드게임에 Hearthstone 스타일의
+"플레이어 직접 대상 선택" 시스템을 구현/보완해줘.
+
+목표:
+카드 효과나 Champion Ability가
+특정 대상을 플레이어가 직접 선택해야 하는 경우,
+
+효과를 즉시 실행하지 말고
+게임을 Target Selection 상태로 전환한 뒤
+유저가 실제 카드/Champion을 클릭해서 선택하게 해.
+
+================================
+1. PLAYER_CHOICE
+================================
+
+Effect DSL에서:
+
+selection = PLAYER_CHOICE
+
+인 Target은 자동으로 선택하지 마.
+
+예:
+
+Target {
+  owner: ENEMY,
+  type: WRESTLER,
+  selection: PLAYER_CHOICE
+}
+
+이면
+효과 실행을 잠시 중단하고
+유저가 적 선수 카드 중 하나를 클릭하게 해.
+
+================================
+2. Pending Target Selection
+================================
+
+PLAYER_CHOICE가 발생하면
+serializable한 pending state를 만들어.
+
+예:
+
+pendingSelection: {
+  sourceInstanceId,
+  effectId,
+  actingPlayerId,
+  validTargetIds,
+  targetType,
+  minTargets,
+  maxTargets,
+  remainingTargets,
+  resolutionContext
+}
+
+실제 프로젝트 구조에 맞는 형태를 사용해.
+
+중요:
+React UI 내부에만 임시 상태로 두지 말고
+GameState 또는 기존 serializable pending action 구조에 저장해.
+
+나중에 multiplayer에서도 그대로 사용할 수 있어야 한다.
+
+================================
+3. 게임 진행 일시 정지
+================================
+
+대상 선택 중에는 해당 효과 resolution을 잠시 멈춰.
+
+예:
+
+카드 플레이
+→ 카드 필드 진입
+→ ENTER_FIELD
+→ PLAYER_CHOICE 필요
+→ pendingSelection 생성
+→ resolution 일시 정지
+→ 유저가 대상 클릭
+→ TARGET_SELECTED action
+→ engine 재검증
+→ 효과 계속 실행
+
+다른 일반 게임 행동은 선택 완료 전까지 막아.
+
+단 앱 전체를 freeze하거나 modal로 막는 식이 아니라
+"현재 선택 가능한 대상만 클릭 가능"한 targeting mode로 만들어.
+
+================================
+4. 유효 대상 하이라이트
+================================
+
+Target Selection 상태에서는
+선택 가능한 카드/Champion만 시각적으로 강조해.
+
+예:
+
+- 카드 테두리 glow
+- 살짝 밝게
+- hover/tap pulse
+- 선택 가능 cursor
+
+선택 불가능한 대상은:
+
+- 어둡게
+또는
+- 클릭 불가능
+
+하게 표시.
+
+단 기존 카드 프레임 자체를 바꾸지 말고
+overlay / drop-shadow 같은 방식으로 표시해.
+
+================================
+5. 타겟 선택 UI
+================================
+
+Desktop:
+
+PLAYER_CHOICE 발생
+→ validTargets 강조
+→ 마우스로 대상 클릭
+→ 선택
+
+Mobile:
+
+PLAYER_CHOICE 발생
+→ validTargets 강조
+→ 카드 탭
+→ 선택
+
+Hover는 필수가 아니게 해.
+
+================================
+6. 엔진에서 반드시 재검증
+================================
+
+UI에 보이는 validTarget만 믿지 마.
+
+유저가 targetInstanceId를 선택하면
+engine에서 다시:
+
+isValidTarget(
+  gameState,
+  pendingSelection,
+  targetInstanceId
+)
+
+검증해.
+
+유효하지 않으면:
+
+- GameState 변경 없음
+- effect 실행 안 함
+- Toast 표시
+- targeting mode 유지
+
+invalid target은 정상 실패이며 exception으로 처리하지 마.
+
+================================
+7. 선택 완료 후 Resolution 계속
+================================
+
+정상 대상 선택:
+
+TARGET_SELECTED
+→ target validation
+→ pending effect 이어서 실행
+→ effect resolution 완료
+→ pendingSelection 제거
+→ 일반 플레이 상태 복귀
+
+예:
+
+SILENCE
+→ PLAYER_CHOICE
+→ 유저가 카드 선택
+→ SILENCE 실행
+→ 같은 target에 DESTROY 실행
+
+같은 effect sequence에서는
+선택한 target reference를 계속 유지할 수 있게 해.
+
+================================
+8. Sequential Effect
+================================
+
+한 번 선택한 대상을
+같은 Sequence에서 다시 사용할 수 있어야 한다.
+
+예:
+
+"선수 카드 1장을 선택한다.
+그 카드를 침묵시키고 파괴한다."
+
+구조:
+
+SELECT TARGET
+→ store target reference
+→ SILENCE selectedTarget
+→ DESTROY selectedTarget
+
+SILENCE 후 다시 타겟을 고르게 하면 안 된다.
+
+================================
+9. 여러 대상 선택
+================================
+
+향후:
+
+"선수 카드 2장을 선택"
+
+같은 효과도 지원 가능하게 만들어.
+
+예:
+
+minTargets = 2
+maxTargets = 2
+
+선택한 대상은 selectedTargetIds에 저장.
+
+같은 카드를 중복 선택할 수 있는지는
+target config로 제어 가능하게 해.
+
+기본은 중복 선택 금지.
+
+================================
+10. 취소
+================================
+
+카드를 아직 최종 사용 확정하기 전 단계에서
+취소 가능한 구조라면 Cancel을 지원해.
+
+하지만 이미:
+
+- Gold 지불
+- 카드 사용 확정
+- ENTER_FIELD 실행
+
+후 발생한 필수 target selection이라면
+임의 취소로 효과를 무효화시키지 마.
+
+현재 게임의 action commit 구조에 맞게 처리해.
+
+================================
+11. Natural Language Analyzer
+================================
+
+다음 표현을 PLAYER_CHOICE로 인식해:
+
+"선택한 선수"
+"선수 하나를 선택"
+"대상 하나를 선택"
+"적 선수 하나를 선택"
+"아군 선수 하나를 선택"
+"카드 1장을 선택"
+"원하는 대상"
+"선택한 대상"
+
+예:
+
+"적 선수 하나를 선택하여 피해 2"
+
+→ target.owner = ENEMY
+→ target.type = WRESTLER
+→ selection = PLAYER_CHOICE
+→ DAMAGE 2
+
+"아군 선수 하나를 선택해 +2/+2"
+
+→ owner = ALLY
+→ type = WRESTLER
+→ PLAYER_CHOICE
+→ BUFF +2/+2
+
+================================
+12. RANDOM / ALL과 구분
+================================
+
+PLAYER_CHOICE:
+→ 유저가 직접 클릭
+
+RANDOM:
+→ deterministic RNG
+
+FULL_RANDOM:
+→ deterministic RNG + token/champion token 포함 규칙
+
+ALL:
+→ 모든 valid target
+
+SELF:
+→ source 자동 선택
+
+서로 혼동하지 마.
+
+================================
+13. Champion Ability에도 공통 사용
+================================
+
+이 targeting 시스템은 카드 효과 전용으로 만들지 마.
+
+다음 모두 같은 시스템을 사용:
+
+- Wrestler 효과
+- Technique 효과
+- Active
+- Champion Ability
+- Quest Reward
+- Champion Token 효과
+
+공통 Target Selection 시스템으로 구현해.
+
+================================
+14. 공격 타겟팅과 구분
+================================
+
+일반 공격의 공격 대상 선택은
+기존 ATTACK action 시스템을 유지해.
+
+Effect의 PLAYER_CHOICE와
+Attack Target Selection을 같은 action으로 섞지 마.
+
+UI highlighting 로직은 공유 가능하지만
+engine action은 별도로 유지해.
+
+================================
+15. 예시 테스트
+================================
+
+TEST 1
+
+"등장: 아군 선수 하나를 선택해 +2/+2"
+
+→ 카드 등장
+→ 아군 valid target highlight
+→ 카드 클릭
+→ 선택 카드 +2/+2
+
+
+TEST 2
+
+"적 선수 하나를 선택해 피해 3"
+
+→ 적 선수만 highlight
+→ Champion 클릭 불가
+→ 선택된 선수 damage 3
+
+
+TEST 3
+
+"아무 대상 하나를 선택해 피해 1"
+
+→ 규칙상 허용된 Wrestler + Champion highlight
+→ 선택 후 damage
+
+
+TEST 4
+
+"선수 하나를 선택해 침묵시키고 파괴"
+
+→ target 1번만 선택
+→ 같은 target SILENCE
+→ 같은 target DESTROY
+
+
+TEST 5
+
+선택 도중 target이 더 이상 유효하지 않음
+
+→ engine validation 실패
+→ GameState 변경 없음
+→ 새 valid target 선택 가능
+
+================================
+16. 하지 말 것
+================================
+
+- 카드 이름별 targeting 코드 금지
+- UI에서만 target validation 금지
+- Math.random 사용 금지
+- selection 필요 효과를 자동 random target으로 대체 금지
+- targeting 중 page reload/reset 금지
+- effect마다 별도 target modal 만들지 마
+
+기존 Effect DSL / GameState / Action 시스템을 최대한 재사용하고
+공통 PLAYER_CHOICE Target Selection만 구현해.
+
+완료 후 추가 기능 만들지 말고 종료해줘.

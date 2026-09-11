@@ -42,14 +42,19 @@ function ability(id: string, name: string, cost: number, description: string, co
 
 export function championRecordToDefinition(record: PublishedChampionRecord): ChampionDefinition {
   const rewardActions = record.questRewardEffects?.effects ?? [];
+  const tokenId = record.championTokenDefinitionId;
+  const directTokenReward = typeof tokenId === "string" &&
+    rewardActions.some((item) => item.action === "DIRECT_DEPLOY_CHAMPION_TOKEN");
   const quest: ChampionQuest | null = record.hasQuest && record.questCondition?.event &&
     record.questName && record.questProgressRequired
     ? {
         id: `${record.id}-quest`, name: record.questName, description: record.questText ?? "",
         trackedEvent: record.questCondition.event as ChampionQuest["trackedEvent"],
         requiredProgress: record.questProgressRequired,
-        reward: rewardActions.some((item) => item.action === "UPGRADE_CHAMPION_ABILITY")
-          ? { type: "UPGRADE_ABILITY" } : { type: "GAIN_GOLD", amount: 0 },
+         reward: directTokenReward
+           ? { type: "DIRECT_DEPLOY_CHAMPION_TOKEN", cardDefinitionId: tokenId }
+           : rewardActions.some((item) => item.action === "UPGRADE_CHAMPION_ABILITY")
+             ? { type: "UPGRADE_ABILITY" } : { type: "GAIN_GOLD", amount: 0 },
       }
     : null;
   return {

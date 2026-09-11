@@ -41,3 +41,22 @@ test("직접 전개는 연결된 명시적 Champion Token ID만 사용한다", (
     type: "DIRECT_DEPLOY_CHAMPION_TOKEN", cardDefinitionId: "explicit-token",
   }]);
 });
+
+test("Quest 보상도 연결된 Champion Token ID를 직접 전개 보상으로 보존한다", () => {
+  const definition = championRecordToDefinition({
+    id: "champion-quest-token", name: "토큰 퀘스트", description: "", imageAssetId: null, imageUrl: null,
+    maxHealth: 20, abilityName: "능력", abilityCost: 1, abilityText: "",
+    abilityEffects: { effects: [] }, hasQuest: true, questName: "전개", questText: "완료",
+    questCondition: { event: "CARD_PLAYED", required: 1 }, questProgressRequired: 1,
+    questRewardText: "Champion Token을 직접 전개합니다.",
+    questRewardEffects: { effects: [{ action: "DIRECT_DEPLOY_CHAMPION_TOKEN" }] },
+    upgradedAbilityName: null, upgradedAbilityCost: null, upgradedAbilityText: null,
+    upgradedAbilityEffects: null, championTokenDefinitionId: "linked-token",
+    status: "PUBLISHED", version: 1,
+  });
+
+  assert.deepEqual(definition.quest?.reward, {
+    type: "DIRECT_DEPLOY_CHAMPION_TOKEN",
+    cardDefinitionId: "linked-token",
+  });
+});

@@ -64,7 +64,9 @@ function cardsInZones(
   const cards = zones.flatMap((zone) => {
     if (zone === 'DECK') return player.deck;
     if (zone === 'HAND') return player.hand;
-    if (zone === 'BOARD') return player.board.filter((card): card is CardInstance => card !== null);
+    if (zone === 'BOARD' || zone === 'CHARACTER') {
+      return player.board.filter((card): card is CardInstance => card !== null);
+    }
     return [];
   });
   return [...new Map(cards.map((card) => [card.instanceId, card])).values()];

@@ -1,5 +1,6 @@
 import type { GameEvent } from '../events/types';
 import type { GameState } from '../types/game-state';
+import { tryDirectDeployChampionToken } from '../engine/champion-token';
 
 export function processChampionQuestEvents(
   previousState: GameState,
@@ -79,6 +80,15 @@ export function processChampionQuestEvents(
       ),
       events: [...resolvedState.events, ...questEvents],
     };
+    if (questCompleted && quest.reward.type === 'DIRECT_DEPLOY_CHAMPION_TOKEN') {
+      resolvedState = tryDirectDeployChampionToken(
+        resolvedState,
+        originalPlayer.id,
+        champion.id,
+        quest.reward.cardDefinitionId,
+        'CHAMPION_QUEST_REWARD',
+      );
+    }
   }
 
   return resolvedState;

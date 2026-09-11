@@ -16,6 +16,7 @@ import {
   type AttackTarget,
   type GameState,
   fetchPublishedWrestlerCards,
+  fetchPublishedChampionTokenCards,
   cardRecordToDefinition,
   setRuntimeCardDefinitions,
   fetchPublishedChampions,
@@ -157,8 +158,13 @@ export default function Home() {
         });
       return () => { cancelled = true; };
     }
-    Promise.all([fetchPublishedWrestlerCards(), fetchPublishedChampions(), fetchGameMedia()])
-      .then(([definitions, champions, media]) => {
+    Promise.all([
+      fetchPublishedWrestlerCards(),
+      fetchPublishedChampionTokenCards(),
+      fetchPublishedChampions(),
+      fetchGameMedia(),
+    ])
+      .then(([definitions, championTokenDefinitions, champions, media]) => {
         if (cancelled) return;
         if (definitions.length === 0) {
           setPlayError('공개된 카드가 없어 게임을 시작할 수 없습니다.');
@@ -173,11 +179,12 @@ export default function Home() {
           return;
         }
         setMediaCatalog(media);
-        setRuntimeCardDefinitions(definitions);
+        const runtimeDefinitions = [...definitions, ...championTokenDefinitions];
+        setRuntimeCardDefinitions(runtimeDefinitions);
         const selected = champions.length >= 2
           ? [champions[0]!.id, champions[1]!.id] as [string, string]
           : undefined;
-        setGameState(startGame(createInitialGameState(selected, definitions,
+        setGameState(startGame(createInitialGameState(selected, runtimeDefinitions,
           selected ? champions : undefined), undefined, media));
         setSelectedCardId(null);
         setSelectedAttackerId(null);

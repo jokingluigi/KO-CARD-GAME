@@ -297,7 +297,9 @@ function rewardText(champion: ChampionState): string {
   if (!reward) return '보상 없음';
   return reward.type === 'UPGRADE_ABILITY'
     ? '챔피언 고유 능력을 강화합니다.'
-    : `다음 턴 골드 ${reward.amount}를 얻습니다.`;
+    : reward.type === 'GAIN_GOLD'
+      ? `다음 턴 골드 ${reward.amount}를 얻습니다.`
+      : '연결된 Champion Token을 직접 전개합니다.';
 }
 
 export function ChampionAbilityInspectContent({

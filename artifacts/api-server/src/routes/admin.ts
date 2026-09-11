@@ -101,7 +101,6 @@ type ChampionInput = {
   questRewardEffects: Record<string, unknown> | null; upgradedAbilityName: string | null;
   upgradedAbilityCost: number | null; upgradedAbilityText: string | null;
   upgradedAbilityEffects: Record<string, unknown> | null; championTokenDefinitionId: string | null;
-  championTokenEffectText: string | null; championTokenEffectEffects: Record<string, unknown> | null;
   abilityAudioAssetId: string | null; abilityAudioUrl: string | null; abilityAudioVolume: number;
   questCompleteAudioAssetId: string | null; questCompleteAudioUrl: string | null;
   questCompleteAudioVolume: number; questCompleteAudioEnabled: boolean;
@@ -148,7 +147,6 @@ function parseChampionInput(value: unknown): ChampionInput | null {
     rawQuestCondition.required <= 999 ? rawQuestCondition.required : null;
   const questProgressRequired = questProgressInput ?? conditionRequired;
   const upgradedAbilityCost = integer("upgradedAbilityCost", 0, 999, true);
-  const championTokenEffectEffects = object("championTokenEffectEffects", true);
   const validEffects = (effects: Record<string, unknown> | null | undefined) =>
     effects === null || effects === undefined || !("effects" in effects) || isStructuredEffects(effects);
   if (!name || name.length > 120 || !abilityName || abilityName.length > 120 ||
@@ -157,8 +155,7 @@ function parseChampionInput(value: unknown): ChampionInput | null {
       !abilityEffects || typeof input.hasQuest !== "boolean" ||
       questProgressRequired === undefined || upgradedAbilityCost === undefined ||
        !validEffects(abilityEffects) || !validEffects(object("questRewardEffects", true)) ||
-       !validEffects(object("upgradedAbilityEffects", true)) ||
-       !validEffects(championTokenEffectEffects)) return null;
+        !validEffects(object("upgradedAbilityEffects", true))) return null;
   if (
     (questCompleteAudioAssetId === null) !== (questCompleteAudioUrl === null) ||
     (questCompleteAudioAssetId !== null &&
@@ -183,12 +180,49 @@ function parseChampionInput(value: unknown): ChampionInput | null {
     upgradedAbilityCost, upgradedAbilityText: text("upgradedAbilityText"),
     upgradedAbilityEffects: object("upgradedAbilityEffects", true) ?? null,
     championTokenDefinitionId: text("championTokenDefinitionId"),
-     championTokenEffectText: text("championTokenEffectText"),
-     championTokenEffectEffects: championTokenEffectEffects ?? null,
     abilityAudioAssetId: text("abilityAudioAssetId"), abilityAudioUrl: text("abilityAudioUrl"),
     abilityAudioVolume, questCompleteAudioAssetId, questCompleteAudioUrl,
     questCompleteAudioVolume, questCompleteAudioEnabled, questCompleteAudioUploadToken,
   };
+}
+
+async function validateChampionTokenReference(
+  championTokenDefinitionId: string | null,
+): Promise<{ ok: true } | { ok: false; message: string }> {
+  if (!championTokenDefinitionId) return { ok: true };
+  const [card] = await db
+    .select({
+      id: cardsTable.id,
+      isChampionToken: cardsTable.isChampionToken,
+    })
+    .from(cardsTable)
+    .where(eq(cardsTable.id, championTokenDefinitionId))
+    .limit(1);
+  if (!card) return { ok: false, message: "연결할 Champion Token 카드를 찾을 수 없습니다." };
+  if (!card.isChampionToken) return { ok: false, message: "isChampionToken 카드만 Champion Token으로 연결할 수 있습니다." };
+  return { ok: true };
+}
+
+async function validatePublishedChampionToken(
+  championTokenDefinitionId: string | null,
+): Promise<{ ok: true } | { ok: false; message: string }> {
+  if (!championTokenDefinitionId) return { ok: true };
+  const [card] = await db
+    .select({
+      id: cardsTable.id,
+      isChampionToken: cardsTable.isChampionToken,
+      status: cardsTable.status,
+    })
+    .from(cardsTable)
+    .where(eq(cardsTable.id, championTokenDefinitionId))
+    .limit(1);
+  if (!card || !card.isChampionToken) {
+    return { ok: false, message: "공개할 Champion Token 참조가 유효하지 않습니다." };
+  }
+  if (card.status === "DISABLED") {
+    return { ok: false, message: "비활성 Champion Token 카드가 연결되어 있어 공개할 수 없습니다." };
+  }
+  return { ok: true };
 }
 
 const CARD_IMAGE_TYPES = {
@@ -627,7 +661,6 @@ const CHAMPION_EFFECT_CONTEXTS = [
   "QUEST_CONDITION",
   "QUEST_REWARD",
   "UPGRADED_CHAMPION_ABILITY",
-  "CHAMPION_TOKEN_EFFECT",
 ] as const;
 type ChampionEffectContext = (typeof CHAMPION_EFFECT_CONTEXTS)[number];
 
@@ -641,7 +674,6 @@ function championEffectContext(body: Record<string, unknown>): ChampionEffectCon
   if (legacySlot === "ABILITY") return "CHAMPION_ABILITY";
   if (legacySlot === "QUEST_REWARD") return "QUEST_REWARD";
   if (legacySlot === "UPGRADED_ABILITY") return "UPGRADED_CHAMPION_ABILITY";
-  if (legacySlot === "CHAMPION_TOKEN_EFFECT") return "CHAMPION_TOKEN_EFFECT";
   return undefined;
 }
 
@@ -738,6 +770,8 @@ router.post("/champions", async (request, response): Promise<void> => {
   if (!requireAdmin(request, response)) return;
   const input = parseChampionInput(request.body);
   if (!input) { response.status(400).json({ message: "챔피언 입력값을 확인해 주세요." }); return; }
+  const tokenValidation = await validateChampionTokenReference(input.championTokenDefinitionId);
+  if (!tokenValidation.ok) { response.status(400).json({ message: tokenValidation.message }); return; }
   if (
     input.questCompleteAudioAssetId &&
     !(await validNewAudioAsset(input.questCompleteAudioAssetId, input.questCompleteAudioUploadToken))
@@ -760,6 +794,8 @@ router.patch("/champions/:id", async (request, response): Promise<void> => {
   const id = firstParam(request.params.id);
   const input = parseChampionInput(request.body);
   if (!id || !input) { response.status(400).json({ message: "챔피언 입력값을 확인해 주세요." }); return; }
+  const tokenValidation = await validateChampionTokenReference(input.championTokenDefinitionId);
+  if (!tokenValidation.ok) { response.status(400).json({ message: tokenValidation.message }); return; }
   const [existing] = await db.select().from(championsTable).where(eq(championsTable.id, id)).limit(1);
   if (!existing) { response.status(404).json({ message: "챔피언을 찾을 수 없습니다." }); return; }
   if (
@@ -823,6 +859,16 @@ router.post("/champions/:id/status", async (request, response): Promise<void> =>
     ? (request.body as Record<string, unknown>).status : null;
   if (!id || !CHAMPION_STATUSES.includes(status as (typeof CHAMPION_STATUSES)[number])) {
     response.status(400).json({ message: "챔피언 상태를 확인해 주세요." }); return;
+  }
+  if (status === "PUBLISHED") {
+    const [existing] = await db
+      .select({ championTokenDefinitionId: championsTable.championTokenDefinitionId })
+      .from(championsTable)
+      .where(eq(championsTable.id, id))
+      .limit(1);
+    if (!existing) { response.status(404).json({ message: "챔피언을 찾을 수 없습니다." }); return; }
+    const tokenValidation = await validatePublishedChampionToken(existing.championTokenDefinitionId);
+    if (!tokenValidation.ok) { response.status(422).json({ message: tokenValidation.message }); return; }
   }
   const [champion] = await db.update(championsTable).set({
     status: status as string, version: sql`${championsTable.version} + 1`, updatedAt: new Date(),

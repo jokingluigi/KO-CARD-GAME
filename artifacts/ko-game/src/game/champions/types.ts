@@ -20,7 +20,8 @@ export interface ChampionAbility {
 
 export type ChampionQuestReward =
   | { type: 'UPGRADE_ABILITY' }
-  | { type: 'GAIN_GOLD'; amount: number };
+  | { type: 'GAIN_GOLD'; amount: number }
+  | { type: 'DIRECT_DEPLOY_CHAMPION_TOKEN'; cardDefinitionId: string };
 
 export interface ChampionQuest {
   id: string;

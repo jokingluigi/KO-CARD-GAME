@@ -10,6 +10,9 @@ function createEmptyPlayer(
   cardDefinitions?: readonly CardDefinition[],
   championDefinitions?: readonly ChampionDefinition[],
 ): PlayerState {
+  const deckDefinitions = cardDefinitions?.filter(
+    (definition) => !definition.isToken && !definition.isChampionToken,
+  );
   return {
     id,
     health: 20,
@@ -17,7 +20,7 @@ function createEmptyPlayer(
     currentGold: 0,
     personalTurn: 0,
     nextTurnGoldBonus: 0,
-    deck: createTestDeck(id, cardDefinitions),
+    deck: createTestDeck(id, deckDefinitions),
     hand: [],
     board: [null, null, null, null],
     graveyard: [],

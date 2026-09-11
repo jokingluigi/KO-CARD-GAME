@@ -5,6 +5,18 @@ import { useToast } from "../hooks/use-toast";
 
 const adminApiBase = `${import.meta.env.BASE_URL.replace(/\/$/, "")}/api/admin`;
 type Status = "DRAFT" | "PUBLISHED" | "DISABLED";
+type TokenCard = {
+  id: string;
+  name: string;
+  cardType: "WRESTLER" | "TECHNIQUE";
+  cost: number;
+  attack: number;
+  health: number;
+  text: string;
+  imageUrl: string | null;
+  status: Status;
+  isChampionToken: boolean;
+};
 type Champion = {
   id: string; name: string; description: string; imageUrl: string | null; imageAssetId: string | null;
   maxHealth: number; abilityName: string; abilityCost: number; abilityText: string;
@@ -14,7 +26,6 @@ type Champion = {
   questRewardEffects: Record<string, unknown> | null; upgradedAbilityName: string | null;
   upgradedAbilityCost: number | null; upgradedAbilityText: string | null;
   upgradedAbilityEffects: Record<string, unknown> | null; championTokenDefinitionId: string | null;
-  championTokenEffectText: string | null; championTokenEffectEffects: Record<string, unknown> | null;
   abilityAudioAssetId: string | null; abilityAudioUrl: string | null; abilityAudioVolume: number;
   questCompleteAudioAssetId: string | null; questCompleteAudioUrl: string | null;
   questCompleteAudioVolume: number; questCompleteAudioEnabled: boolean;
@@ -23,8 +34,8 @@ type Champion = {
   status: Status; version: number;
 };
 type Form = Omit<Champion, "id" | "status" | "version">;
-type EffectAnalysisKey = "abilityText" | "questRewardText" | "upgradedAbilityText" | "championTokenEffectText";
-type EffectSlot = "ABILITY" | "QUEST_REWARD" | "UPGRADED_ABILITY" | "CHAMPION_TOKEN_EFFECT";
+type EffectAnalysisKey = "abilityText" | "questRewardText" | "upgradedAbilityText";
+type EffectSlot = "ABILITY" | "QUEST_REWARD" | "UPGRADED_ABILITY";
 type EffectAnalysis = {
   status?: "success" | "partial" | "failure";
   outcome?: "supported" | "mechanism_required" | "analysis_failure";
@@ -43,7 +54,6 @@ const empty: Form = {
   questProgressRequired: null, questRewardText: null, questRewardEffects: null,
   upgradedAbilityName: null, upgradedAbilityCost: null, upgradedAbilityText: null,
   upgradedAbilityEffects: null, championTokenDefinitionId: null,
-  championTokenEffectText: null, championTokenEffectEffects: null,
   abilityAudioAssetId: null, abilityAudioUrl: null, abilityAudioVolume: 100,
   questCompleteAudioAssetId: null, questCompleteAudioUrl: null,
   questCompleteAudioVolume: 100, questCompleteAudioEnabled: false,
@@ -72,6 +82,8 @@ export function AdminChampionManager({ onUnauthorized }: { onUnauthorized: () =>
   const [questAnalysis, setQuestAnalysis] = useState<EffectAnalysis | null>(null);
   const [prompts, setPrompts] = useState<Partial<Record<EffectAnalysisKey | "questText", string>>>({});
   const [promptingKey, setPromptingKey] = useState<EffectAnalysisKey | "questText" | null>(null);
+  const [tokenCards, setTokenCards] = useState<TokenCard[]>([]);
+  const [tokenSearch, setTokenSearch] = useState("");
   const load = useCallback(async () => {
     const query = new URLSearchParams();
     if (search.trim()) query.set("search", search.trim());
@@ -82,6 +94,13 @@ export function AdminChampionManager({ onUnauthorized }: { onUnauthorized: () =>
     setChampions(((await response.json()) as { champions: Champion[] }).champions);
   }, [onUnauthorized, search, status]);
   useEffect(() => { const timer = window.setTimeout(() => void load(), 200); return () => clearTimeout(timer); }, [load]);
+  const loadTokenCards = useCallback(async () => {
+    const response = await fetch(`${adminApiBase}/cards?tokenKind=CHAMPION_TOKEN`, { credentials: "include" });
+    if (response.status === 401) { onUnauthorized(); return; }
+    if (!response.ok) { setError(await message(response)); return; }
+    setTokenCards(((await response.json()) as { cards: TokenCard[] }).cards);
+  }, [onUnauthorized]);
+  useEffect(() => { void loadTokenCards(); }, [loadTokenCards]);
 
   const update = <K extends keyof Form>(key: K, value: Form[K]) =>
     setForm((current) => ({ ...current, [key]: value }));
@@ -98,9 +117,7 @@ export function AdminChampionManager({ onUnauthorized }: { onUnauthorized: () =>
            ? "CHAMPION_ABILITY"
            : effectSlot === "UPGRADED_ABILITY"
              ? "UPGRADED_CHAMPION_ABILITY"
-             : effectSlot === "QUEST_REWARD"
-               ? "QUEST_REWARD"
-               : "CHAMPION_TOKEN_EFFECT" }),
+            : "QUEST_REWARD" }),
       });
       if (response.status === 401) { onUnauthorized(); return; }
       const result = await response.json() as EffectAnalysis;
@@ -121,7 +138,7 @@ export function AdminChampionManager({ onUnauthorized }: { onUnauthorized: () =>
   }
 
   function applyEffect(textKey: EffectAnalysisKey,
-    effectsKey: "abilityEffects" | "questRewardEffects" | "upgradedAbilityEffects" | "championTokenEffectEffects") {
+    effectsKey: "abilityEffects" | "questRewardEffects" | "upgradedAbilityEffects") {
     const analysis = analysisResults[textKey];
     if (!analysis || analysis.outcome !== "supported") return;
     update(effectsKey, { effects: analysis.effects ?? [] } as Form[typeof effectsKey]);
@@ -248,12 +265,16 @@ export function AdminChampionManager({ onUnauthorized }: { onUnauthorized: () =>
       setBusy(false);
     }
   }
+  const visibleTokenCards = tokenCards.filter((card) =>
+    !tokenSearch.trim() || card.name.toLowerCase().includes(tokenSearch.trim().toLowerCase()),
+  );
+  const selectedTokenCard = tokenCards.find((card) => card.id === form.championTokenDefinitionId);
    function editor(champion?: Champion) {
      setAnalysisResults({});
       setQuestAnalysis(null);
       setPrompts({});
      setAnalyzingKey(null);
-     setEditing(champion ?? null); setForm(champion ? {
+     setEditing(champion ?? null); setTokenSearch(""); setForm(champion ? {
       name: champion.name, description: champion.description, imageUrl: champion.imageUrl,
       imageAssetId: champion.imageAssetId, maxHealth: champion.maxHealth, abilityName: champion.abilityName,
       abilityCost: champion.abilityCost, abilityText: champion.abilityText, abilityEffects: champion.abilityEffects,
@@ -263,8 +284,6 @@ export function AdminChampionManager({ onUnauthorized }: { onUnauthorized: () =>
       upgradedAbilityName: champion.upgradedAbilityName, upgradedAbilityCost: champion.upgradedAbilityCost,
       upgradedAbilityText: champion.upgradedAbilityText, upgradedAbilityEffects: champion.upgradedAbilityEffects,
        championTokenDefinitionId: champion.championTokenDefinitionId,
-       championTokenEffectText: champion.championTokenEffectText,
-       championTokenEffectEffects: champion.championTokenEffectEffects,
        abilityAudioAssetId: champion.abilityAudioAssetId,
       abilityAudioUrl: champion.abilityAudioUrl, abilityAudioVolume: champion.abilityAudioVolume,
       questCompleteAudioAssetId: champion.questCompleteAudioAssetId,
@@ -363,21 +382,53 @@ export function AdminChampionManager({ onUnauthorized }: { onUnauthorized: () =>
              analyzing={analyzingKey === "upgradedAbilityText"}
              prompting={promptingKey === "upgradedAbilityText"}
            />
-         <label>Champion Token 카드 ID<input className={input} value={form.championTokenDefinitionId??""} onChange={e=>update("championTokenDefinitionId",e.target.value||null)}/></label>
-         <EffectField
-           title="Champion Token 효과"
-           value={form.championTokenEffectText??""}
-           onChange={v=>update("championTokenEffectText",v)}
-           onAnalyze={()=>void analyze("championTokenEffectText","CHAMPION_TOKEN_EFFECT")}
-           onApply={()=>applyEffect("championTokenEffectText","championTokenEffectEffects")}
-           onPrompt={()=>void generatePrompt("championTokenEffectText","CHAMPION_TOKEN_EFFECT")}
-           onReanalyze={()=>void analyze("championTokenEffectText","CHAMPION_TOKEN_EFFECT")}
-           analysis={analysisResults.championTokenEffectText}
-           prompt={prompts.championTokenEffectText}
-           onCopyPrompt={()=>void copyPrompt("championTokenEffectText")}
-           analyzing={analyzingKey === "championTokenEffectText"}
-           prompting={promptingKey === "championTokenEffectText"}
-         />
+         <div className="md:col-span-2 rounded border border-neutral-800 bg-neutral-900/40 p-3">
+           <div className="mb-2 text-xs font-bold text-neutral-400">연결할 Champion Token</div>
+           <input
+             className={input}
+             value={tokenSearch}
+             onChange={e=>setTokenSearch(e.target.value)}
+             placeholder="Champion Token 카드 검색"
+             aria-label="Champion Token 카드 검색"
+           />
+           <select
+             className={`${input} mt-2`}
+             value={form.championTokenDefinitionId ?? ""}
+             onChange={e=>update("championTokenDefinitionId", e.target.value || null)}
+             aria-label="연결할 Champion Token"
+           >
+             <option value="">연결하지 않음</option>
+             {visibleTokenCards.map((card) => (
+               <option key={card.id} value={card.id}>
+                 {card.name} · {card.cost}G · {card.attack}/{card.health} · {card.status}
+               </option>
+             ))}
+           </select>
+           {selectedTokenCard ? (
+             <div className="mt-3 flex items-center gap-3 rounded border border-primary/30 bg-black/30 p-3">
+               {selectedTokenCard.imageUrl
+                 ? <img src={selectedTokenCard.imageUrl} alt="" className="h-16 w-12 rounded object-cover" />
+                 : <div className="h-16 w-12 rounded bg-neutral-800" />}
+               <div className="min-w-0 text-xs">
+                 <div className="font-black text-primary">{selectedTokenCard.name}</div>
+                 <div className="mt-1 text-neutral-300">{selectedTokenCard.cost}G · {selectedTokenCard.attack}/{selectedTokenCard.health}</div>
+                 <div className="mt-1 text-neutral-500">Champion Token · {selectedTokenCard.status}</div>
+                 <div className="mt-2 text-neutral-400">카드 이름·스탯·효과·이미지는 선수 카드 관리자에서 편집합니다.</div>
+               </div>
+             </div>
+           ) : form.championTokenDefinitionId ? (
+             <div className="mt-3 rounded border border-amber-800 bg-amber-950/30 p-3 text-xs text-amber-200">
+               연결된 Champion Token 카드를 찾을 수 없습니다. 삭제되었거나 Champion Token이 아닌 카드일 수 있습니다.
+             </div>
+           ) : (
+             <div className="mt-2 text-xs text-neutral-500">Card Admin에서 `챔피언 토큰`으로 만든 카드만 선택할 수 있습니다.</div>
+           )}
+           {selectedTokenCard?.status === "DISABLED" && (
+             <div className="mt-2 rounded border border-amber-800 bg-amber-950/30 p-2 text-xs text-amber-200">
+               이 카드는 비활성 상태입니다. Champion을 공개하려면 Card Admin에서 먼저 공개 가능한 상태로 바꾸세요.
+             </div>
+           )}
+         </div>
          <AdminAudioField
            title="챔피언 퀘스트 완료 음악"
            value={{

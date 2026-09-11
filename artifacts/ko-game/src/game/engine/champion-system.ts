@@ -8,57 +8,9 @@ import type { GameState } from '../types/game-state';
 import { processChampionQuestEvents } from '../champions/quests';
 import { validateCurrentPlayer } from './turn-system';
 import { findDirectDeployedChampion } from './direct-champion';
-import { generateCard } from '../cards/generation';
-import { getCardDefinition } from '../cards/test-cards';
 import type { CardInstance } from '../cards/types';
-import { enterField } from './enter-field';
 import { hasMandatoryPlayerChoice, resolvePendingEffects } from '../effects/effect-engine';
-
-function directDeployChampionToken(
-  state: GameState,
-  playerId: string,
-  championId: string,
-  cardDefinitionId: string,
-): GameState {
-  const player = state.players.find((candidate) => candidate.id === playerId);
-  const definition = getCardDefinition(cardDefinitionId);
-  if (
-    !player?.champion ||
-    player.champion.id !== championId ||
-    !definition?.isChampionToken
-  ) {
-    throw new Error('유효한 챔피언 토큰을 직접 출전시킬 수 없습니다.');
-  }
-  const boardSlot = player.board.findIndex((card) => card === null);
-  if (boardSlot < 0) {
-    throw new Error('챔피언 토큰이 출전할 빈 슬롯이 없습니다.');
-  }
-
-  const { card, event } = generateCard(definition, {
-    instanceId: `${playerId}-${championId}-direct-${state.turn}-${state.events.length}`,
-    playerId,
-    source: { type: 'CHAMPION', championId },
-    reason: 'CHAMPION_DIRECT_DEPLOY',
-  });
-  const directChampion: CardInstance = {
-    ...card,
-    currentHealth: player.health,
-    maxHealth: player.maxHealth,
-    isDirectDeployedChampion: true,
-    isSilenceImmune: true,
-  };
-  const generatedState: GameState = {
-    ...state,
-    events: [...state.events, event],
-  };
-  return enterField(
-    generatedState,
-    playerId,
-    directChampion,
-    boardSlot as 0 | 1 | 2 | 3,
-    { type: 'CHAMPION', championId },
-  );
-}
+import { directDeployChampionToken } from './champion-token';
 
 function applyChampionEffect(
   state: GameState,
