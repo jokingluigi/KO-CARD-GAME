@@ -1,0 +1,339 @@
+현재 KO 프로젝트의 Champion Token 설정 방식을 변경해줘.
+
+목표:
+Champion Token을 Champion Admin 내부에서 별도로 새로 정의하지 말고,
+이미 "선수 카드 관리자(Card/Wrestler Admin)"에서 만들어진 카드를 선택해서 연결하는 방식으로 변경한다.
+
+================================
+1. Champion Token의 source of truth
+================================
+
+Champion Token의 실제 카드 데이터는 반드시
+기존 선수 카드 관리자에서 관리한다.
+
+즉 다음 데이터는 CardDefinition 쪽에 존재해야 한다:
+
+- name
+- cost
+- attack
+- health
+- text
+- keywords
+- effects
+- image
+- audio
+- rarity/category
+- isToken
+- isChampionToken
+- 기타 기존 카드 필드
+
+Champion Admin에서 위 데이터를 중복 저장하지 마.
+
+ChampionDefinition에는 연결 정보만 저장:
+
+championTokenDefinitionId
+
+================================
+2. 선수 카드 관리자
+================================
+
+선수 카드 관리자에서
+Champion Token으로 사용할 카드를 정상적으로 만들고 편집할 수 있게 해.
+
+필요하면 선수 카드 설정에:
+
+[Champion Token 여부]
+
+토글/체크 옵션을 제공해.
+
+예:
+
+isChampionToken = true
+
+Champion Token인 카드는 일반 선수 카드처럼:
+- 이미지 설정
+- 스탯 설정
+- 효과 분석
+- 효과 적용
+- 오디오 설정
+- 프레임/미리보기
+- 저장
+
+을 모두 기존 Card Admin에서 관리하게 해.
+
+별도 Champion Token Editor를 만들지 마.
+
+================================
+3. Champion Admin
+================================
+
+Champion Admin에서는 기존 Champion Token 상세 입력 UI를 제거하거나 사용 중지하고,
+대신:
+
+[연결할 Champion Token]
+
+selector/dropdown/search UI를 제공해.
+
+목록에는 선수 카드 관리자에서 만들어진 카드 중:
+
+isChampionToken = true
+
+인 카드만 표시해.
+
+가능하면 다음 정보도 함께 보여줘:
+
+- 카드 이미지 thumbnail
+- 이름
+- Cost
+- Attack / Health
+- 상태(PUBLISHED/DRAFT 등)
+
+================================
+4. 연결 데이터
+================================
+
+Champion 저장 시:
+
+championTokenDefinitionId
+
+에 선택한 CardDefinition.id를 저장해.
+
+Champion Token의:
+
+- 스탯
+- 효과
+- 이름
+- 이미지
+
+등을 ChampionDefinition에 복사하지 마.
+
+게임 시작 시 Champion snapshot을 만들 때
+championTokenDefinitionId를 통해 해당 CardDefinition을 resolve/snapshot해서 사용해.
+
+================================
+5. 판도라 예시
+================================
+
+예:
+
+Card Admin에서:
+
+챔피언 판도라(폭주)
+
+CardDefinition:
+- isChampionToken = true
+- Attack 6
+- Health 10
+- 기타 효과 설정
+
+을 만든다.
+
+그 다음 Champion Admin의
+"챔피언 판도라" 설정에서:
+
+Champion Token:
+[챔피언 판도라(폭주)]
+
+를 선택한다.
+
+ChampionDefinition에는:
+
+championTokenDefinitionId = 해당 카드 ID
+
+만 저장한다.
+
+================================
+6. Champion Token 효과 분석
+================================
+
+Champion Token의 카드 효과는
+Champion Admin에서 분석/편집하지 않는다.
+
+반드시 선수 카드 관리자에서
+기존 Wrestler/Card 효과 분석 기능을 사용해서 설정한다.
+
+즉 Champion Admin의:
+
+- Champion Token effect textarea
+- Champion Token effect analyzer
+- Champion Token structured effect editor
+
+같은 중복 UI가 있다면 제거하거나 사용하지 않게 해.
+
+Champion Admin은 연결만 담당한다.
+
+================================
+7. Champion Quest Reward
+================================
+
+Quest 완료 보상에서 Champion Token을 직접 전개해야 하는 경우에도
+새 토큰 정의를 생성하지 말고:
+
+championTokenDefinitionId
+
+로 연결된 기존 CardDefinition을 사용해.
+
+예:
+
+QUEST_COMPLETED
+→ resolve championTokenDefinitionId
+→ 해당 CardDefinition으로 card instance 생성
+→ DIRECT_DEPLOY_CHAMPION_TOKEN
+
+================================
+8. 기존 Champion Token 특수 규칙 유지
+================================
+
+기존 규칙은 그대로 유지:
+
+Champion 자신의 고유 효과/Quest 보상으로
+직접 전개된 Champion Token만:
+
+- Silence 면역
+- Effect Destroy 면역
+- Champion HP 대표
+- 해당 Token RETIRE 시 패배
+
+등 기존 DIRECT_DEPLOY_CHAMPION_TOKEN 규칙을 적용.
+
+단 이 특수 보호 여부는
+CardDefinition 자체만 보고 판단하지 마.
+
+즉:
+
+isChampionToken = true
+
+와
+
+directDeployByOwnChampion = true
+
+는 서로 다른 개념이다.
+
+FULL_RANDOM 등 다른 경로로 나온 Champion Token은
+자동으로 Champion 보호 상태를 얻으면 안 된다.
+
+================================
+9. 삭제/비활성 카드 처리
+================================
+
+Champion에 연결된 Champion Token 카드가:
+
+- DISABLED
+- 삭제됨
+- 존재하지 않음
+
+상태가 되면 Champion Admin에서 경고를 표시해.
+
+잘못된 참조 때문에 앱이 crash하면 안 된다.
+
+가능하면 Champion publish/save validation 시
+유효한 championTokenDefinitionId인지 확인해.
+
+================================
+10. 기존 데이터 마이그레이션
+================================
+
+현재 ChampionDefinition에
+Champion Token의 이름/스탯/효과 등이 직접 저장되어 있다면
+기존 데이터를 바로 삭제하지 말고 먼저 확인해.
+
+가능하면:
+
+기존 Champion Token data
+→ CardDefinition 생성/연결
+→ championTokenDefinitionId 저장
+
+방식으로 안전하게 마이그레이션해.
+
+기존 판도라 데이터가 유실되면 안 된다.
+
+================================
+11. Admin UI
+================================
+
+Champion Token selector는 가능하면:
+
+검색
++ dropdown
++ thumbnail preview
+
+방식으로 만들어.
+
+선택 후 아래 정도만 read-only preview:
+
+챔피언 판도라(폭주)
+6 / 10
+Champion Token
+
+[선수 카드 관리자에서 편집]
+
+같은 구조면 충분하다.
+
+Champion Admin 안에서 직접 스탯/효과 수정은 하지 마.
+
+================================
+12. 테스트
+================================
+
+반드시 확인:
+
+1.
+Card Admin에서 isChampionToken=true 카드 생성
+
+2.
+Champion Admin selector에 해당 카드 표시
+
+3.
+Champion에 연결 후 저장
+
+4.
+새로고침 후 연결 유지
+
+5.
+Champion Token CardDefinition 수정
+→ 이후 새 match에서는 변경된 snapshot 사용
+
+6.
+Quest 완료
+→ 연결된 Champion Token 정상 직접 전개
+
+7.
+Champion Token의 ENTER_FIELD 효과 정상 실행
+
+8.
+다른 Champion Token으로 selector 변경
+→ 정상 저장
+
+9.
+삭제/비활성 카드 참조
+→ 안전한 경고
+
+10.
+FULL_RANDOM으로 동일 Champion Token이 생성되어도
+DIRECT_DEPLOY 보호를 자동 획득하지 않음
+
+================================
+13. 하지 말 것
+================================
+
+- Champion Admin에 별도 Token CardDefinition 만들지 마
+- Token 데이터를 ChampionDefinition에 복제 저장하지 마
+- 특정 Champion 이름 하드코딩 금지
+- 판도라 전용 코드 금지
+- Card Admin 효과 분석을 복제하지 마
+- 게임 엔진 전체 리팩터링 금지
+
+관련 Champion/Card Admin 및 token resolve 로직만 최소 수정해.
+
+최종 구조:
+
+CARD ADMIN
+→ Champion Token 카드 자체를 생성/편집
+
+CHAMPION ADMIN
+→ 해당 카드의 ID만 연결
+
+GAME
+→ championTokenDefinitionId를 resolve해서 사용
+
+이 구조로 완료해.
