@@ -25,3 +25,4 @@
 - [CardDefinition references](card-definition-references.md) — admin text resolves named creation targets to stable IDs; runtime resolves only from the match snapshot.
 - [Active Champion Token boundary](active-champion-token-boundary.md) — only linked Champion Token deployment grants Champion protection and defeat coupling; generic Token generation stays normal.
 - [Champion full implementation prompt](champion-full-prompt.md) — aggregate unsaved Champion form data, freshly analyze live registry entries, and resolve linked Token data from Card Admin.
+- [Champion portrait uploads](champion-portrait-upload.md) — base and quest-complete portraits upload independently; missing completion art falls back to the base portrait.

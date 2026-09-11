@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState, type Dispatch, type SetStateAction } from "react";
 import { Ban, CheckCircle2, Copy, FilePenLine, ImagePlus, Plus, Search, Trash2, X } from "lucide-react";
 import { AdminAudioField } from "./admin-audio-field";
 import { useToast } from "../hooks/use-toast";
@@ -352,9 +352,9 @@ export function AdminChampionManager({ onUnauthorized }: { onUnauthorized: () =>
       setFullAnalysis(null);
       setFullPrompt("");
      setAnalyzingKey(null);
-     setEditing(champion ?? null); setTokenSearch(""); setPortraitLocalUrl(null); setForm(champion ? {
-      name: champion.name, description: champion.description, imageUrl: champion.imageUrl,
-      imageAssetId: champion.imageAssetId, maxHealth: champion.maxHealth, abilityName: champion.abilityName,
+      setEditing(champion ?? null); setTokenSearch(""); setBasicPortraitLocalUrl(null); setPortraitLocalUrl(null); setForm(champion ? {
+       name: champion.name, description: champion.description, imageUrl: champion.imageUrl,
+       imageAssetId: champion.imageAssetId, imageUploadToken: null, imageFileName: null, maxHealth: champion.maxHealth, abilityName: champion.abilityName,
        questCompletedPortraitEnabled: champion.questCompletedPortraitEnabled ?? false,
        questCompletedPortraitAssetId: champion.questCompletedPortraitAssetId ?? null,
        questCompletedPortraitUrl: champion.questCompletedPortraitUrl ?? null,
@@ -378,84 +378,129 @@ export function AdminChampionManager({ onUnauthorized }: { onUnauthorized: () =>
     } : empty); setOpen(true); setError("");
   }
 
-   async function discardPendingPortrait() {
-     if (!form.questCompletedPortraitAssetId || !form.questCompletedPortraitUploadToken) return;
+    async function discardPendingImage(imageAssetId: string | null, imageUploadToken: string | null) {
+      if (!imageAssetId || !imageUploadToken) return;
      await fetch(`${adminApiBase}/cards/images/discard`, {
        method: "POST", credentials: "include", headers: { "Content-Type": "application/json" },
        body: JSON.stringify({
-         imageAssetId: form.questCompletedPortraitAssetId,
-         imageUploadToken: form.questCompletedPortraitUploadToken,
+          imageAssetId,
+          imageUploadToken,
        }),
      });
    }
 
-   function clearPortraitLocalUrl() {
-     setPortraitLocalUrl((current) => {
-       if (current?.startsWith("blob:")) URL.revokeObjectURL(current);
-       return null;
-     });
-   }
+    async function discardPendingBasicPortrait() {
+      await discardPendingImage(form.imageAssetId, form.imageUploadToken);
+    }
 
-   function removePortrait() {
-     void discardPendingPortrait();
-     clearPortraitLocalUrl();
-     update("questCompletedPortraitAssetId", null);
-     update("questCompletedPortraitUrl", null);
-     update("questCompletedPortraitUploadToken", null);
-     if (portraitInputRef.current) portraitInputRef.current.value = "";
-   }
+    async function discardPendingCompletedPortrait() {
+      await discardPendingImage(form.questCompletedPortraitAssetId, form.questCompletedPortraitUploadToken);
+    }
 
-   async function uploadPortrait(file: File) {
-     const extension = file.name.toLowerCase().split(".").pop() ?? "";
-     const allowed = (file.type === "image/png" && extension === "png") ||
-       (file.type === "image/jpeg" && ["jpg", "jpeg"].includes(extension)) ||
-       (file.type === "image/webp" && extension === "webp");
-     if (!allowed) { setError("PNG, JPG, JPEG, WEBP 이미지 파일만 선택할 수 있습니다."); return; }
-     await discardPendingPortrait();
-     clearPortraitLocalUrl();
-     const localUrl = URL.createObjectURL(file);
-     setPortraitLocalUrl(localUrl);
-     setPortraitUploading(true);
-     setError("");
-     try {
-       const requestResponse = await fetch(`${adminApiBase}/cards/images/upload-url`, {
-         method: "POST", credentials: "include", headers: { "Content-Type": "application/json" },
-         body: JSON.stringify({ name: file.name, size: file.size, contentType: file.type }),
-       });
-       if (requestResponse.status === 401) { onUnauthorized(); return; }
-       if (!requestResponse.ok) throw new Error(await message(requestResponse));
-       const upload = await requestResponse.json() as { uploadURL: string; objectPath: string };
-       const uploadResponse = await fetch(upload.uploadURL, {
-         method: "PUT", headers: { "Content-Type": file.type }, body: file,
-       });
-       if (!uploadResponse.ok) throw new Error("초상화 파일 업로드에 실패했습니다.");
-       const completeResponse = await fetch(`${adminApiBase}/cards/images/complete`, {
-         method: "POST", credentials: "include", headers: { "Content-Type": "application/json" },
-         body: JSON.stringify({ objectPath: upload.objectPath, contentType: file.type }),
-       });
-       if (completeResponse.status === 401) { onUnauthorized(); return; }
-       if (!completeResponse.ok) throw new Error(await message(completeResponse));
-       const asset = await completeResponse.json() as {
-         imageAssetId: string; imageUrl: string; imageUploadToken: string;
-       };
-       update("questCompletedPortraitAssetId", asset.imageAssetId);
-       update("questCompletedPortraitUrl", asset.imageUrl);
-       update("questCompletedPortraitUploadToken", asset.imageUploadToken);
-       update("questCompletedPortraitEnabled", true);
-       setMessageText("퀘스트 완료 초상화를 업로드했습니다. 저장하면 적용됩니다.");
-     } catch (reason) {
-       clearPortraitLocalUrl();
-       setError(reason instanceof Error ? reason.message : "초상화를 업로드하지 못했습니다.");
-     } finally {
-       setPortraitUploading(false);
-     }
-   }
+    function clearLocalUrl(setter: Dispatch<SetStateAction<string | null>>) {
+      setter((current) => {
+        if (current?.startsWith("blob:")) URL.revokeObjectURL(current);
+        return null;
+      });
+    }
 
-   function closeEditor() {
-     void discardPendingPortrait();
-     clearPortraitLocalUrl();
-     setOpen(false);
-   }
+    function clearPortraitLocalUrl() {
+      clearLocalUrl(setPortraitLocalUrl);
+    }
+
+    function clearBasicPortraitLocalUrl() {
+      clearLocalUrl(setBasicPortraitLocalUrl);
+    }
+
+    function removeBasicPortrait() {
+      void discardPendingBasicPortrait();
+      clearBasicPortraitLocalUrl();
+      update("imageAssetId", null);
+      update("imageUrl", null);
+      update("imageUploadToken", null);
+      update("imageFileName", null);
+      if (basicPortraitInputRef.current) basicPortraitInputRef.current.value = "";
+    }
+
+    function removePortrait() {
+      void discardPendingCompletedPortrait();
+      clearPortraitLocalUrl();
+      update("questCompletedPortraitAssetId", null);
+      update("questCompletedPortraitUrl", null);
+      update("questCompletedPortraitUploadToken", null);
+      update("questCompletedPortraitFileName", null);
+      if (portraitInputRef.current) portraitInputRef.current.value = "";
+    }
+
+    async function uploadPortrait(file: File, kind: "basic" | "completed") {
+      const extension = file.name.toLowerCase().split(".").pop() ?? "";
+      const allowed = (file.type === "image/png" && extension === "png") ||
+        (file.type === "image/jpeg" && ["jpg", "jpeg"].includes(extension)) ||
+        (file.type === "image/webp" && extension === "webp");
+      if (!allowed) {
+        setError("PNG, JPG, JPEG, WEBP 이미지 파일만 선택할 수 있습니다.");
+        return;
+      }
+      const setLocalUrl = kind === "basic" ? setBasicPortraitLocalUrl : setPortraitLocalUrl;
+      const setUploading = kind === "basic" ? setBasicPortraitUploading : setPortraitUploading;
+      const discardPending = kind === "basic" ? discardPendingBasicPortrait : discardPendingCompletedPortrait;
+      await discardPending();
+      clearLocalUrl(setLocalUrl);
+      const localUrl = URL.createObjectURL(file);
+      setLocalUrl(localUrl);
+      setUploading(true);
+      setError("");
+      try {
+        const requestResponse = await fetch(`${adminApiBase}/cards/images/upload-url`, {
+          method: "POST", credentials: "include", headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ name: file.name, size: file.size, contentType: file.type }),
+        });
+        if (requestResponse.status === 401) { onUnauthorized(); return; }
+        if (!requestResponse.ok) throw new Error(await message(requestResponse));
+        const upload = await requestResponse.json() as { uploadURL: string; objectPath: string };
+        const uploadResponse = await fetch(upload.uploadURL, {
+          method: "PUT", headers: { "Content-Type": file.type }, body: file,
+        });
+        if (!uploadResponse.ok) throw new Error("초상화 파일 업로드에 실패했습니다.");
+        const completeResponse = await fetch(`${adminApiBase}/cards/images/complete`, {
+          method: "POST", credentials: "include", headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ objectPath: upload.objectPath, contentType: file.type }),
+        });
+        if (completeResponse.status === 401) { onUnauthorized(); return; }
+        if (!completeResponse.ok) throw new Error(await message(completeResponse));
+        const asset = await completeResponse.json() as {
+          imageAssetId: string; imageUrl: string; imageUploadToken: string;
+        };
+        if (kind === "basic") {
+          update("imageAssetId", asset.imageAssetId);
+          update("imageUrl", asset.imageUrl);
+          update("imageUploadToken", asset.imageUploadToken);
+          update("imageFileName", file.name);
+          setMessageText("기본 초상화를 업로드했습니다. 저장하면 적용됩니다.");
+        } else {
+          update("questCompletedPortraitAssetId", asset.imageAssetId);
+          update("questCompletedPortraitUrl", asset.imageUrl);
+          update("questCompletedPortraitUploadToken", asset.imageUploadToken);
+          update("questCompletedPortraitFileName", file.name);
+          update("questCompletedPortraitEnabled", true);
+          setMessageText("퀘스트 완료 초상화를 업로드했습니다. 저장하면 적용됩니다.");
+        }
+      } catch (reason) {
+        clearLocalUrl(setLocalUrl);
+        setError(reason instanceof Error ? reason.message : "초상화를 업로드하지 못했습니다.");
+      } finally {
+        setUploading(false);
+      }
+    }
+
+    function closeEditor() {
+      void discardPendingBasicPortrait();
+      void discardPendingCompletedPortrait();
+      clearBasicPortraitLocalUrl();
+      clearPortraitLocalUrl();
+      setOpen(false);
+    }
+
   const input = "w-full rounded border border-neutral-700 bg-neutral-900 px-3 py-2 text-sm";
   return <div>
     <div className="mb-5 flex items-end justify-between">
@@ -488,74 +533,106 @@ export function AdminChampionManager({ onUnauthorized }: { onUnauthorized: () =>
         <label>이름<input className={input} value={form.name} onChange={e=>update("name",e.target.value)}/></label>
         <label>최대 HP<input type="number" className={input} value={form.maxHealth} onChange={e=>update("maxHealth",Number(e.target.value))}/></label>
         <label className="md:col-span-2">설명<textarea className={input} value={form.description} onChange={e=>update("description",e.target.value)}/></label>
-         <div className="md:col-span-2 rounded border border-neutral-800 bg-neutral-900/40 p-3">
-           <div className="flex flex-wrap items-center justify-between gap-2">
-             <div>
-               <div className="text-xs font-bold text-neutral-300">퀘스트 완료 초상화</div>
-               <p className="mt-1 text-[10px] text-neutral-500">퀘스트를 완료한 뒤 양쪽 챔피언 HUD에 표시할 이미지를 선택합니다.</p>
-             </div>
-             <label className="flex items-center gap-2 text-xs text-neutral-400">
-               <input
-                 type="checkbox"
-                 checked={form.questCompletedPortraitEnabled}
-                 onChange={(event) => update("questCompletedPortraitEnabled", event.target.checked)}
-               />
-               사용
-             </label>
-           </div>
-           <div className="mt-3 flex flex-wrap items-center gap-3">
-             {(portraitLocalUrl || form.questCompletedPortraitUrl) ? (
-               <img
-                 src={portraitLocalUrl ?? form.questCompletedPortraitUrl ?? undefined}
-                 alt=""
-                 className="h-24 w-20 rounded border border-neutral-700 object-cover"
-               />
-             ) : (
-               <div className="flex h-24 w-20 items-center justify-center rounded border border-dashed border-neutral-700 text-[10px] text-neutral-600">
-                 이미지 없음
-               </div>
-             )}
-             <div className="flex flex-wrap gap-2">
-               <button
-                 type="button"
-                 disabled={portraitUploading}
-                 onClick={(event) => {
-                   event.preventDefault();
-                   event.stopPropagation();
-                   portraitInputRef.current?.click();
-                 }}
-                 className="flex items-center gap-2 rounded border border-neutral-700 px-3 py-2 text-xs font-bold hover:border-primary hover:text-primary disabled:opacity-40"
-               >
-                 <ImagePlus className="h-4 w-4" />
-                 {portraitUploading ? "업로드 중..." : portraitLocalUrl || form.questCompletedPortraitUrl ? "이미지 변경" : "이미지 파일 선택"}
-               </button>
-               {(portraitLocalUrl || form.questCompletedPortraitUrl) && (
-                 <button
-                   type="button"
-                   disabled={portraitUploading}
-                   onClick={removePortrait}
-                   className="flex items-center gap-2 rounded border border-red-900 px-3 py-2 text-xs font-bold text-red-400 hover:bg-red-950 disabled:opacity-40"
-                 >
-                   <Trash2 className="h-4 w-4" /> 이미지 제거
-                 </button>
-               )}
-             </div>
-           </div>
-           <p className="mt-2 text-[10px] text-neutral-600">PNG, JPG, JPEG, WEBP · 저장 전 미리보기</p>
-           <input
-             ref={portraitInputRef}
-             type="file"
-             accept=".png,.jpg,.jpeg,.webp,image/png,image/jpeg,image/webp"
-             className="hidden"
-             onClick={(event) => event.stopPropagation()}
-             onChange={(event) => {
-               event.preventDefault();
-               event.stopPropagation();
-               const file = event.target.files?.[0];
-               if (file) void uploadPortrait(file);
-             }}
-           />
-         </div>
+          <div className="md:col-span-2 grid gap-3 md:grid-cols-2">
+            <div className="rounded border border-neutral-800 bg-neutral-900/40 p-3">
+              <div className="text-xs font-bold text-neutral-300">기본 초상화</div>
+              <p className="mt-1 text-[10px] text-neutral-500">게임 시작부터 표시됩니다. 퀘스트 완료 초상화가 없으면 이 이미지를 계속 사용합니다.</p>
+              <div className="mt-3 flex flex-wrap items-center gap-3">
+                {basicPortraitLocalUrl || form.imageUrl ? (
+                  <img src={basicPortraitLocalUrl ?? form.imageUrl ?? undefined} alt="" className="h-24 w-20 rounded border border-neutral-700 object-cover" />
+                ) : (
+                  <div className="flex h-24 w-20 items-center justify-center rounded border border-dashed border-neutral-700 text-[10px] text-neutral-600">이미지 없음</div>
+                )}
+                <div className="flex flex-wrap gap-2">
+                  <button
+                    type="button"
+                    disabled={basicPortraitUploading}
+                    onClick={(event) => {
+                      event.preventDefault();
+                      event.stopPropagation();
+                      basicPortraitInputRef.current?.click();
+                    }}
+                    className="flex items-center gap-2 rounded border border-neutral-700 px-3 py-2 text-xs font-bold hover:border-primary hover:text-primary disabled:opacity-40"
+                  >
+                    <ImagePlus className="h-4 w-4" />
+                    {basicPortraitUploading ? "업로드 중..." : basicPortraitLocalUrl || form.imageUrl ? "이미지 변경" : "이미지 파일 선택"}
+                  </button>
+                  {(basicPortraitLocalUrl || form.imageUrl) && (
+                    <button type="button" disabled={basicPortraitUploading} onClick={removeBasicPortrait} className="flex items-center gap-2 rounded border border-red-900 px-3 py-2 text-xs font-bold text-red-400 hover:bg-red-950 disabled:opacity-40">
+                      <Trash2 className="h-4 w-4" /> 이미지 제거
+                    </button>
+                  )}
+                </div>
+              </div>
+              <p className="mt-2 text-[10px] text-neutral-600">PNG, JPG, JPEG, WEBP · 저장 전 미리보기</p>
+              <input
+                ref={basicPortraitInputRef}
+                type="file"
+                accept=".png,.jpg,.jpeg,.webp,image/png,image/jpeg,image/webp"
+                className="hidden"
+                onClick={(event) => event.stopPropagation()}
+                onChange={(event) => {
+                  event.preventDefault();
+                  event.stopPropagation();
+                  const file = event.target.files?.[0];
+                  if (file) void uploadPortrait(file, "basic");
+                }}
+              />
+            </div>
+            <div className="rounded border border-neutral-800 bg-neutral-900/40 p-3">
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <div>
+                  <div className="text-xs font-bold text-neutral-300">퀘스트 완료 후 초상화</div>
+                  <p className="mt-1 text-[10px] text-neutral-500">퀘스트 완료 후 표시할 이미지입니다. 업로드하지 않으면 기본 초상화가 표시됩니다.</p>
+                </div>
+                <label className="flex items-center gap-2 text-xs text-neutral-400">
+                  <input type="checkbox" checked={form.questCompletedPortraitEnabled} onChange={(event) => update("questCompletedPortraitEnabled", event.target.checked)} />
+                  사용
+                </label>
+              </div>
+              <div className="mt-3 flex flex-wrap items-center gap-3">
+                {portraitLocalUrl || form.questCompletedPortraitUrl ? (
+                  <img src={portraitLocalUrl ?? form.questCompletedPortraitUrl ?? undefined} alt="" className="h-24 w-20 rounded border border-neutral-700 object-cover" />
+                ) : (
+                  <div className="flex h-24 w-20 items-center justify-center rounded border border-dashed border-neutral-700 text-[10px] text-neutral-600">이미지 없음</div>
+                )}
+                <div className="flex flex-wrap gap-2">
+                  <button
+                    type="button"
+                    disabled={portraitUploading}
+                    onClick={(event) => {
+                      event.preventDefault();
+                      event.stopPropagation();
+                      portraitInputRef.current?.click();
+                    }}
+                    className="flex items-center gap-2 rounded border border-neutral-700 px-3 py-2 text-xs font-bold hover:border-primary hover:text-primary disabled:opacity-40"
+                  >
+                    <ImagePlus className="h-4 w-4" />
+                    {portraitUploading ? "업로드 중..." : portraitLocalUrl || form.questCompletedPortraitUrl ? "이미지 변경" : "이미지 파일 선택"}
+                  </button>
+                  {(portraitLocalUrl || form.questCompletedPortraitUrl) && (
+                    <button type="button" disabled={portraitUploading} onClick={removePortrait} className="flex items-center gap-2 rounded border border-red-900 px-3 py-2 text-xs font-bold text-red-400 hover:bg-red-950 disabled:opacity-40">
+                      <Trash2 className="h-4 w-4" /> 이미지 제거
+                    </button>
+                  )}
+                </div>
+              </div>
+              <p className="mt-2 text-[10px] text-neutral-600">PNG, JPG, JPEG, WEBP · 저장 전 미리보기</p>
+              <input
+                ref={portraitInputRef}
+                type="file"
+                accept=".png,.jpg,.jpeg,.webp,image/png,image/jpeg,image/webp"
+                className="hidden"
+                onClick={(event) => event.stopPropagation()}
+                onChange={(event) => {
+                  event.preventDefault();
+                  event.stopPropagation();
+                  const file = event.target.files?.[0];
+                  if (file) void uploadPortrait(file, "completed");
+                }}
+              />
+            </div>
+          </div>
         <label>고유 능력 이름<input className={input} value={form.abilityName} onChange={e=>update("abilityName",e.target.value)}/></label>
         <label>Gold 비용<input type="number" className={input} value={form.abilityCost} onChange={e=>update("abilityCost",Number(e.target.value))}/></label>
           <EffectField
