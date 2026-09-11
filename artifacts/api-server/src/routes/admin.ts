@@ -102,6 +102,7 @@ type CardInput = {
 
 type ChampionInput = {
   name: string; description: string; imageAssetId: string | null; imageUrl: string | null;
+  imageUploadToken: string | null;
   questCompletedPortraitEnabled: boolean;
   questCompletedPortraitAssetId: string | null; questCompletedPortraitUrl: string | null;
   questCompletedPortraitUploadToken: string | null;
@@ -159,6 +160,9 @@ function parseChampionInput(value: unknown): ChampionInput | null {
   const questProgressRequired = questProgressInput ?? conditionRequired;
   const upgradedAbilityCost = integer("upgradedAbilityCost", 0, 999, true);
   const questCompletedPortraitEnabled = input.questCompletedPortraitEnabled === true;
+  const imageAssetId = text("imageAssetId");
+  const imageUrl = text("imageUrl");
+  const imageUploadToken = text("imageUploadToken");
   const questCompletedPortraitAssetId = text("questCompletedPortraitAssetId");
   const questCompletedPortraitUrl = text("questCompletedPortraitUrl");
   const questCompletedPortraitUploadToken = text("questCompletedPortraitUploadToken");
@@ -172,6 +176,11 @@ function parseChampionInput(value: unknown): ChampionInput | null {
        !validEffects(abilityEffects) || !validEffects(object("questRewardEffects", true)) ||
         !validEffects(object("upgradedAbilityEffects", true))) return null;
   if (
+    (imageAssetId === null) !== (imageUrl === null) ||
+    (imageAssetId !== null &&
+      !imageAssetId.startsWith("/objects/uploads/card-images/")) ||
+    (imageUrl !== null &&
+      !imageUrl.startsWith("/api/storage/objects/")) ||
     (questCompletedPortraitAssetId === null) !== (questCompletedPortraitUrl === null) ||
     (questCompletedPortraitAssetId !== null &&
       !questCompletedPortraitAssetId.startsWith("/objects/uploads/card-images/")) ||
@@ -187,8 +196,8 @@ function parseChampionInput(value: unknown): ChampionInput | null {
        !rawQuestCondition || questProgressRequired === null ||
        !text("questRewardText", true))) return null;
   return {
-    name, description: text("description") ?? "", imageAssetId: text("imageAssetId"),
-     imageUrl: text("imageUrl"), questCompletedPortraitEnabled,
+    name, description: text("description") ?? "", imageAssetId, imageUrl, imageUploadToken,
+     questCompletedPortraitEnabled,
      questCompletedPortraitAssetId, questCompletedPortraitUrl,
      questCompletedPortraitUploadToken, maxHealth, abilityName, abilityCost,
     abilityText: text("abilityText") ?? "", abilityEffects, hasQuest,
@@ -1138,6 +1147,13 @@ router.post("/champions", async (request, response): Promise<void> => {
   const tokenValidation = await validateChampionTokenReference(input.championTokenDefinitionId);
   if (!tokenValidation.ok) { response.status(400).json({ message: tokenValidation.message }); return; }
   if (
+    input.imageAssetId &&
+    !(await validNewImageAsset(input.imageAssetId, input.imageUploadToken))
+  ) {
+    response.status(400).json({ message: "검증된 기본 초상화 업로드 정보가 필요합니다." });
+    return;
+  }
+  if (
     input.questCompleteAudioAssetId &&
     !(await validNewAudioAsset(input.questCompleteAudioAssetId, input.questCompleteAudioUploadToken))
   ) {
@@ -1155,6 +1171,7 @@ router.post("/champions", async (request, response): Promise<void> => {
     return;
   }
   const {
+    imageUploadToken: _imageUploadToken,
     questCompleteAudioUploadToken: _questCompleteAudioUploadToken,
     questCompletedPortraitUploadToken: _questCompletedPortraitUploadToken,
     ...championValues
@@ -1175,6 +1192,14 @@ router.patch("/champions/:id", async (request, response): Promise<void> => {
   const [existing] = await db.select().from(championsTable).where(eq(championsTable.id, id)).limit(1);
   if (!existing) { response.status(404).json({ message: "챔피언을 찾을 수 없습니다." }); return; }
   if (
+    input.imageAssetId &&
+    input.imageAssetId !== existing.imageAssetId &&
+    !(await validNewImageAsset(input.imageAssetId, input.imageUploadToken))
+  ) {
+    response.status(400).json({ message: "검증된 기본 초상화 업로드 정보가 필요합니다." });
+    return;
+  }
+  if (
     input.questCompleteAudioAssetId &&
     input.questCompleteAudioAssetId !== existing.questCompleteAudioAssetId &&
     !(await validNewAudioAsset(input.questCompleteAudioAssetId, input.questCompleteAudioUploadToken))
@@ -1194,6 +1219,7 @@ router.patch("/champions/:id", async (request, response): Promise<void> => {
     return;
   }
   const {
+    imageUploadToken: _imageUploadToken,
     questCompleteAudioUploadToken: _questCompleteAudioUploadToken,
     questCompletedPortraitUploadToken: _questCompletedPortraitUploadToken,
     ...championValues

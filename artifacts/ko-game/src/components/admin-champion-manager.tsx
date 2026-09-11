@@ -19,6 +19,8 @@ type TokenCard = {
 };
 type Champion = {
   id: string; name: string; description: string; imageUrl: string | null; imageAssetId: string | null;
+  imageUploadToken: string | null;
+  imageFileName: string | null;
   questCompletedPortraitEnabled: boolean;
   questCompletedPortraitAssetId: string | null; questCompletedPortraitUrl: string | null;
   questCompletedPortraitUploadToken: string | null;
@@ -67,7 +69,7 @@ type FullAnalysis = {
   tokenReferenceError?: string;
 };
 const empty: Form = {
-  name: "", description: "", imageUrl: null, imageAssetId: null, maxHealth: 20,
+  name: "", description: "", imageUrl: null, imageAssetId: null, imageUploadToken: null, imageFileName: null, maxHealth: 20,
   questCompletedPortraitEnabled: false, questCompletedPortraitAssetId: null, questCompletedPortraitUrl: null,
   questCompletedPortraitUploadToken: null, questCompletedPortraitFileName: null,
   abilityName: "", abilityCost: 0, abilityText: "", abilityEffects: {},
@@ -109,8 +111,11 @@ export function AdminChampionManager({ onUnauthorized }: { onUnauthorized: () =>
   const [fullAnalyzing, setFullAnalyzing] = useState(false);
   const [tokenCards, setTokenCards] = useState<TokenCard[]>([]);
   const [tokenSearch, setTokenSearch] = useState("");
+  const basicPortraitInputRef = useRef<HTMLInputElement>(null);
   const portraitInputRef = useRef<HTMLInputElement>(null);
+  const [basicPortraitLocalUrl, setBasicPortraitLocalUrl] = useState<string | null>(null);
   const [portraitLocalUrl, setPortraitLocalUrl] = useState<string | null>(null);
+  const [basicPortraitUploading, setBasicPortraitUploading] = useState(false);
   const [portraitUploading, setPortraitUploading] = useState(false);
   const load = useCallback(async () => {
     const query = new URLSearchParams();
