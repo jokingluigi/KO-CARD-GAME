@@ -81,6 +81,9 @@ export function processChampionQuestEvents(
           : player,
       ),
       events: [...resolvedState.events, ...questEvents],
+      latestQuestCompletedChampionId: questCompleted
+        ? champion.id
+        : resolvedState.latestQuestCompletedChampionId,
     };
     if (questCompleted && quest.reward.type === 'DIRECT_DEPLOY_CHAMPION_TOKEN') {
       resolvedState = tryDirectDeployChampionToken(

@@ -5,6 +5,8 @@ import { ACTIONS } from "@workspace/effect-registry";
 type Structured = { effects?: Array<{ action?: string; target?: unknown; values?: unknown }> };
 export type PublishedChampionRecord = {
   id: string; name: string; description: string; imageAssetId: string | null; imageUrl: string | null;
+  questCompletedPortraitEnabled?: boolean;
+  questCompletedPortraitAssetId?: string | null; questCompletedPortraitUrl?: string | null;
   maxHealth: number; abilityName: string; abilityCost: number; abilityText: string; abilityEffects: Structured;
   hasQuest: boolean; questName: string | null; questText: string | null;
   questCondition: { event?: string; required?: number } | null; questProgressRequired: number | null;
@@ -66,6 +68,9 @@ export function championRecordToDefinition(record: PublishedChampionRecord): Cha
   return {
     id: record.id, name: record.name, description: record.description,
     imageAssetId: record.imageAssetId, imageUrl: record.imageUrl, maxHealth: record.maxHealth,
+    questCompletedPortraitEnabled: record.questCompletedPortraitEnabled,
+    questCompletedPortraitAssetId: record.questCompletedPortraitAssetId,
+    questCompletedPortraitUrl: record.questCompletedPortraitUrl,
     abilityCost: record.abilityCost,
     ability: ability(`${record.id}-ability`, record.abilityName, record.abilityCost, record.abilityText,
       record.abilityEffects, record.championTokenDefinitionId),

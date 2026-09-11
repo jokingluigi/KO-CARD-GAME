@@ -42,6 +42,9 @@ export interface ChampionDefinition {
   description?: string;
   imageAssetId?: string | null;
   imageUrl?: string | null;
+  questCompletedPortraitEnabled?: boolean;
+  questCompletedPortraitAssetId?: string | null;
+  questCompletedPortraitUrl?: string | null;
   questCompleteAudioAssetId?: string | null;
   questCompleteAudioUrl?: string | null;
   questCompleteAudioVolume?: number;
@@ -66,6 +69,10 @@ export interface ChampionState {
   quest: ChampionQuest | null;
   questProgress: number;
   questCompleted: boolean;
+  imageUrl?: string | null;
+  questCompletedPortraitEnabled?: boolean;
+  questCompletedPortraitAssetId?: string | null;
+  questCompletedPortraitUrl?: string | null;
   questCompleteAudioAssetId?: string | null;
   questCompleteAudioUrl?: string | null;
   questCompleteAudioVolume?: number;

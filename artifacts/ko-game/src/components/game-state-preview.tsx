@@ -173,6 +173,16 @@ export function GameStatePreview({
   const selectedBackground = mediaCatalog.backgrounds.find(
     (item) => item.id === state.backgroundId,
   );
+  const opponentChampionPortrait = opp.champion?.questCompleted &&
+    opp.champion.questCompletedPortraitEnabled &&
+    opp.champion.questCompletedPortraitUrl
+    ? opp.champion.questCompletedPortraitUrl
+    : opp.champion?.imageUrl;
+  const playerChampionPortrait = me.champion?.questCompleted &&
+    me.champion.questCompletedPortraitEnabled &&
+    me.champion.questCompletedPortraitUrl
+    ? me.champion.questCompletedPortraitUrl
+    : me.champion?.imageUrl;
 
   function closeSettings() {
     setSettingsOpen(false);
@@ -290,6 +300,10 @@ export function GameStatePreview({
                     }`}
                      onClick={effectTargeting && validEffectTargetIds.has(opp.id) ? () => onEffectTarget(opp.id) : selectedAttackerId && !opponentChampionProtected ? handleAttackChampion : undefined}
                  >
+                   {opponentChampionPortrait && (
+                     <img src={opponentChampionPortrait} alt="" className="absolute inset-0 h-full w-full object-cover" />
+                   )}
+                   <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-black/20" />
                   <span className="px-1 text-center text-[9px] font-black leading-tight text-red-300 md:text-[11px]">
                     {opp.champion?.name || '상대 챔피언'}
                   </span>
@@ -567,7 +581,11 @@ export function GameStatePreview({
             {/* Player Stats & Champion */}
              <div className="ko-player-info z-[95] flex w-[180px] shrink-0 flex-col gap-1 md:w-48 md:gap-2">
               <div className="flex items-start gap-2 md:gap-3">
-                <div onClick={effectTargeting && validEffectTargetIds.has(me.id) ? () => onEffectTarget(me.id) : undefined} className={`ko-player-champion relative flex h-28 w-20 shrink-0 flex-col items-center justify-center rounded-sm border-2 bg-neutral-900 md:h-40 md:w-28 ${effectTargeting && validEffectTargetIds.has(me.id) ? 'cursor-crosshair border-amber-400 shadow-[0_0_15px_rgba(251,191,36,0.5)]' : 'border-blue-600 shadow-[0_0_15px_rgba(37,99,235,0.2)]'}`}>
+                 <div onClick={effectTargeting && validEffectTargetIds.has(me.id) ? () => onEffectTarget(me.id) : undefined} className={`ko-player-champion relative flex h-28 w-20 shrink-0 flex-col items-center justify-center overflow-hidden rounded-sm border-2 bg-neutral-900 md:h-40 md:w-28 ${effectTargeting && validEffectTargetIds.has(me.id) ? 'cursor-crosshair border-amber-400 shadow-[0_0_15px_rgba(251,191,36,0.5)]' : 'border-blue-600 shadow-[0_0_15px_rgba(37,99,235,0.2)]'}`}>
+                   {playerChampionPortrait && (
+                     <img src={playerChampionPortrait} alt="" className="absolute inset-0 h-full w-full object-cover" />
+                   )}
+                   <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-black/20" />
                   <span className="px-1 text-center text-[9px] font-black leading-tight text-blue-400 md:text-[12px]">
                     {me.champion?.name || '내 챔피언'}
                   </span>

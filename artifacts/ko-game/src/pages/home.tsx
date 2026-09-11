@@ -213,6 +213,18 @@ export default function Home() {
   }, [gameState.bgmId, mediaCatalog.bgms]);
 
   useEffect(() => {
+    const latestChampion = gameState.players
+      .map((player) => player.champion)
+      .find((champion) => champion?.id === gameState.latestQuestCompletedChampionId);
+    if (latestChampion?.questCompleteAudioEnabled && latestChampion.questCompleteAudioUrl) {
+      audioManager.playQuestComplete(
+        latestChampion.questCompleteAudioUrl,
+        latestChampion.questCompleteAudioVolume ?? 100,
+      );
+    }
+  }, [gameState.latestQuestCompletedChampionId, gameState.players]);
+
+  useEffect(() => {
     audioManager.setBgmMuted(bgmMuted);
     try {
       window.localStorage.setItem(BGM_MUTE_STORAGE_KEY, String(bgmMuted));
@@ -224,6 +236,12 @@ export default function Home() {
   useEffect(() => () => {
     audioManager.stopBgm();
   }, []);
+
+  useEffect(() => {
+    if (gameState.status === "FINISHED") {
+      audioManager.stopBgm();
+    }
+  }, [gameState.status]);
 
   useEffect(() => {
     if (lastAudioEventCountRef.current === null) {
@@ -259,17 +277,6 @@ export default function Home() {
           } else {
             audioManager.playCardEntrance(entranceAudio.url, entranceAudio.volume);
           }
-        }
-      }
-      if (event.type === "CHAMPION_QUEST_COMPLETED" && event.championId) {
-        const champion = gameState.players
-          .map((player) => player.champion)
-          .find((entry) => entry?.id === event.championId);
-        if (champion?.questCompleteAudioEnabled && champion.questCompleteAudioUrl) {
-          audioManager.playQuestComplete(
-            champion.questCompleteAudioUrl,
-            champion.questCompleteAudioVolume ?? 100,
-          );
         }
       }
     });

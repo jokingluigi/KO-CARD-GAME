@@ -1,5 +1,5 @@
-import { useCallback, useEffect, useState } from "react";
-import { Ban, CheckCircle2, Copy, FilePenLine, Plus, Search, Trash2, X } from "lucide-react";
+import { useCallback, useEffect, useRef, useState } from "react";
+import { Ban, CheckCircle2, Copy, FilePenLine, ImagePlus, Plus, Search, Trash2, X } from "lucide-react";
 import { AdminAudioField } from "./admin-audio-field";
 import { useToast } from "../hooks/use-toast";
 
@@ -19,6 +19,10 @@ type TokenCard = {
 };
 type Champion = {
   id: string; name: string; description: string; imageUrl: string | null; imageAssetId: string | null;
+  questCompletedPortraitEnabled: boolean;
+  questCompletedPortraitAssetId: string | null; questCompletedPortraitUrl: string | null;
+  questCompletedPortraitUploadToken: string | null;
+  questCompletedPortraitFileName: string | null;
   maxHealth: number; abilityName: string; abilityCost: number; abilityText: string;
   abilityEffects: Record<string, unknown>; hasQuest: boolean; questName: string | null;
   questText: string | null; questCondition: Record<string, unknown> | null;
@@ -64,6 +68,8 @@ type FullAnalysis = {
 };
 const empty: Form = {
   name: "", description: "", imageUrl: null, imageAssetId: null, maxHealth: 20,
+  questCompletedPortraitEnabled: false, questCompletedPortraitAssetId: null, questCompletedPortraitUrl: null,
+  questCompletedPortraitUploadToken: null, questCompletedPortraitFileName: null,
   abilityName: "", abilityCost: 0, abilityText: "", abilityEffects: {},
   hasQuest: false, questName: null, questText: null, questCondition: null,
   questProgressRequired: null, questRewardText: null, questRewardEffects: null,
@@ -103,6 +109,9 @@ export function AdminChampionManager({ onUnauthorized }: { onUnauthorized: () =>
   const [fullAnalyzing, setFullAnalyzing] = useState(false);
   const [tokenCards, setTokenCards] = useState<TokenCard[]>([]);
   const [tokenSearch, setTokenSearch] = useState("");
+  const portraitInputRef = useRef<HTMLInputElement>(null);
+  const [portraitLocalUrl, setPortraitLocalUrl] = useState<string | null>(null);
+  const [portraitUploading, setPortraitUploading] = useState(false);
   const load = useCallback(async () => {
     const query = new URLSearchParams();
     if (search.trim()) query.set("search", search.trim());
@@ -338,9 +347,14 @@ export function AdminChampionManager({ onUnauthorized }: { onUnauthorized: () =>
       setFullAnalysis(null);
       setFullPrompt("");
      setAnalyzingKey(null);
-     setEditing(champion ?? null); setTokenSearch(""); setForm(champion ? {
+     setEditing(champion ?? null); setTokenSearch(""); setPortraitLocalUrl(null); setForm(champion ? {
       name: champion.name, description: champion.description, imageUrl: champion.imageUrl,
       imageAssetId: champion.imageAssetId, maxHealth: champion.maxHealth, abilityName: champion.abilityName,
+       questCompletedPortraitEnabled: champion.questCompletedPortraitEnabled ?? false,
+       questCompletedPortraitAssetId: champion.questCompletedPortraitAssetId ?? null,
+       questCompletedPortraitUrl: champion.questCompletedPortraitUrl ?? null,
+       questCompletedPortraitUploadToken: null,
+       questCompletedPortraitFileName: null,
       abilityCost: champion.abilityCost, abilityText: champion.abilityText, abilityEffects: champion.abilityEffects,
       hasQuest: champion.hasQuest, questName: champion.questName, questText: champion.questText,
       questCondition: champion.questCondition, questProgressRequired: champion.questProgressRequired,
@@ -358,6 +372,85 @@ export function AdminChampionManager({ onUnauthorized }: { onUnauthorized: () =>
       questCompleteAudioFileName: null,
     } : empty); setOpen(true); setError("");
   }
+
+   async function discardPendingPortrait() {
+     if (!form.questCompletedPortraitAssetId || !form.questCompletedPortraitUploadToken) return;
+     await fetch(`${adminApiBase}/cards/images/discard`, {
+       method: "POST", credentials: "include", headers: { "Content-Type": "application/json" },
+       body: JSON.stringify({
+         imageAssetId: form.questCompletedPortraitAssetId,
+         imageUploadToken: form.questCompletedPortraitUploadToken,
+       }),
+     });
+   }
+
+   function clearPortraitLocalUrl() {
+     setPortraitLocalUrl((current) => {
+       if (current?.startsWith("blob:")) URL.revokeObjectURL(current);
+       return null;
+     });
+   }
+
+   function removePortrait() {
+     void discardPendingPortrait();
+     clearPortraitLocalUrl();
+     update("questCompletedPortraitAssetId", null);
+     update("questCompletedPortraitUrl", null);
+     update("questCompletedPortraitUploadToken", null);
+     if (portraitInputRef.current) portraitInputRef.current.value = "";
+   }
+
+   async function uploadPortrait(file: File) {
+     const extension = file.name.toLowerCase().split(".").pop() ?? "";
+     const allowed = (file.type === "image/png" && extension === "png") ||
+       (file.type === "image/jpeg" && ["jpg", "jpeg"].includes(extension)) ||
+       (file.type === "image/webp" && extension === "webp");
+     if (!allowed) { setError("PNG, JPG, JPEG, WEBP 이미지 파일만 선택할 수 있습니다."); return; }
+     await discardPendingPortrait();
+     clearPortraitLocalUrl();
+     const localUrl = URL.createObjectURL(file);
+     setPortraitLocalUrl(localUrl);
+     setPortraitUploading(true);
+     setError("");
+     try {
+       const requestResponse = await fetch(`${adminApiBase}/cards/images/upload-url`, {
+         method: "POST", credentials: "include", headers: { "Content-Type": "application/json" },
+         body: JSON.stringify({ name: file.name, size: file.size, contentType: file.type }),
+       });
+       if (requestResponse.status === 401) { onUnauthorized(); return; }
+       if (!requestResponse.ok) throw new Error(await message(requestResponse));
+       const upload = await requestResponse.json() as { uploadURL: string; objectPath: string };
+       const uploadResponse = await fetch(upload.uploadURL, {
+         method: "PUT", headers: { "Content-Type": file.type }, body: file,
+       });
+       if (!uploadResponse.ok) throw new Error("초상화 파일 업로드에 실패했습니다.");
+       const completeResponse = await fetch(`${adminApiBase}/cards/images/complete`, {
+         method: "POST", credentials: "include", headers: { "Content-Type": "application/json" },
+         body: JSON.stringify({ objectPath: upload.objectPath, contentType: file.type }),
+       });
+       if (completeResponse.status === 401) { onUnauthorized(); return; }
+       if (!completeResponse.ok) throw new Error(await message(completeResponse));
+       const asset = await completeResponse.json() as {
+         imageAssetId: string; imageUrl: string; imageUploadToken: string;
+       };
+       update("questCompletedPortraitAssetId", asset.imageAssetId);
+       update("questCompletedPortraitUrl", asset.imageUrl);
+       update("questCompletedPortraitUploadToken", asset.imageUploadToken);
+       update("questCompletedPortraitEnabled", true);
+       setMessageText("퀘스트 완료 초상화를 업로드했습니다. 저장하면 적용됩니다.");
+     } catch (reason) {
+       clearPortraitLocalUrl();
+       setError(reason instanceof Error ? reason.message : "초상화를 업로드하지 못했습니다.");
+     } finally {
+       setPortraitUploading(false);
+     }
+   }
+
+   function closeEditor() {
+     void discardPendingPortrait();
+     clearPortraitLocalUrl();
+     setOpen(false);
+   }
   const input = "w-full rounded border border-neutral-700 bg-neutral-900 px-3 py-2 text-sm";
   return <div>
     <div className="mb-5 flex items-end justify-between">
@@ -376,7 +469,7 @@ export function AdminChampionManager({ onUnauthorized }: { onUnauthorized: () =>
        <div className="mt-3 flex flex-wrap gap-2 text-xs"><button type="button" onClick={()=>editor(champion)} className="rounded border px-2 py-1"><FilePenLine className="mr-1 inline h-3 w-3"/>수정</button><button type="button" onClick={()=>void mutate(champion.id,"duplicate")} className="rounded border px-2 py-1"><Copy className="mr-1 inline h-3 w-3"/>복제</button><button type="button" disabled={busy} onClick={()=>void deleteChampion(champion)} data-testid={`button-delete-champion-${champion.id}`} className="rounded border border-red-900 px-2 py-1 text-red-400 disabled:opacity-40"><Trash2 className="mr-1 inline h-3 w-3"/>삭제</button>{champion.status!=="PUBLISHED"&&<button type="button" onClick={()=>void mutate(champion.id,"status",{status:"PUBLISHED"})} className="rounded border border-emerald-800 px-2 py-1 text-emerald-400"><CheckCircle2 className="mr-1 inline h-3 w-3"/>공개</button>}{champion.status!=="DISABLED"&&<button type="button" onClick={()=>void mutate(champion.id,"status",{status:"DISABLED"})} className="rounded border border-red-900 px-2 py-1 text-red-400"><Ban className="mr-1 inline h-3 w-3"/>비활성화</button>}</div>
     </article>)}</div>
     {open && <div className="fixed inset-0 z-50 overflow-y-auto bg-black/80 p-5"><div className="mx-auto max-w-4xl rounded-lg border border-neutral-700 bg-neutral-950 p-5">
-       <div className="mb-4 flex items-start justify-between gap-3"><div><h3 className="text-xl font-black">{editing?"챔피언 수정":"새 챔피언"}</h3><p className="mt-1 text-xs text-neutral-500">분석과 프롬프트 생성은 현재 입력값을 별도 상태로 처리하며 폼을 초기화하지 않습니다.</p></div><button onClick={()=>setOpen(false)}><X/></button></div>
+        <div className="mb-4 flex items-start justify-between gap-3"><div><h3 className="text-xl font-black">{editing?"챔피언 수정":"새 챔피언"}</h3><p className="mt-1 text-xs text-neutral-500">분석과 프롬프트 생성은 현재 입력값을 별도 상태로 처리하며 폼을 초기화하지 않습니다.</p></div><button type="button" onClick={closeEditor}><X/></button></div>
        <div className="mb-4 flex flex-wrap gap-2 rounded border border-neutral-800 bg-neutral-900/40 p-3">
          <button type="button" disabled={fullPrompting} onClick={()=>void runFullChampionAnalysis(true)} className="rounded bg-primary px-3 py-2 text-xs font-black text-black disabled:opacity-50">
            {fullPrompting ? "전체 프롬프트 생성 중..." : "챔피언 전체 구현 프롬프트 생성"}
@@ -390,6 +483,74 @@ export function AdminChampionManager({ onUnauthorized }: { onUnauthorized: () =>
         <label>이름<input className={input} value={form.name} onChange={e=>update("name",e.target.value)}/></label>
         <label>최대 HP<input type="number" className={input} value={form.maxHealth} onChange={e=>update("maxHealth",Number(e.target.value))}/></label>
         <label className="md:col-span-2">설명<textarea className={input} value={form.description} onChange={e=>update("description",e.target.value)}/></label>
+         <div className="md:col-span-2 rounded border border-neutral-800 bg-neutral-900/40 p-3">
+           <div className="flex flex-wrap items-center justify-between gap-2">
+             <div>
+               <div className="text-xs font-bold text-neutral-300">퀘스트 완료 초상화</div>
+               <p className="mt-1 text-[10px] text-neutral-500">퀘스트를 완료한 뒤 양쪽 챔피언 HUD에 표시할 이미지를 선택합니다.</p>
+             </div>
+             <label className="flex items-center gap-2 text-xs text-neutral-400">
+               <input
+                 type="checkbox"
+                 checked={form.questCompletedPortraitEnabled}
+                 onChange={(event) => update("questCompletedPortraitEnabled", event.target.checked)}
+               />
+               사용
+             </label>
+           </div>
+           <div className="mt-3 flex flex-wrap items-center gap-3">
+             {(portraitLocalUrl || form.questCompletedPortraitUrl) ? (
+               <img
+                 src={portraitLocalUrl ?? form.questCompletedPortraitUrl ?? undefined}
+                 alt=""
+                 className="h-24 w-20 rounded border border-neutral-700 object-cover"
+               />
+             ) : (
+               <div className="flex h-24 w-20 items-center justify-center rounded border border-dashed border-neutral-700 text-[10px] text-neutral-600">
+                 이미지 없음
+               </div>
+             )}
+             <div className="flex flex-wrap gap-2">
+               <button
+                 type="button"
+                 disabled={portraitUploading}
+                 onClick={(event) => {
+                   event.preventDefault();
+                   event.stopPropagation();
+                   portraitInputRef.current?.click();
+                 }}
+                 className="flex items-center gap-2 rounded border border-neutral-700 px-3 py-2 text-xs font-bold hover:border-primary hover:text-primary disabled:opacity-40"
+               >
+                 <ImagePlus className="h-4 w-4" />
+                 {portraitUploading ? "업로드 중..." : portraitLocalUrl || form.questCompletedPortraitUrl ? "이미지 변경" : "이미지 파일 선택"}
+               </button>
+               {(portraitLocalUrl || form.questCompletedPortraitUrl) && (
+                 <button
+                   type="button"
+                   disabled={portraitUploading}
+                   onClick={removePortrait}
+                   className="flex items-center gap-2 rounded border border-red-900 px-3 py-2 text-xs font-bold text-red-400 hover:bg-red-950 disabled:opacity-40"
+                 >
+                   <Trash2 className="h-4 w-4" /> 이미지 제거
+                 </button>
+               )}
+             </div>
+           </div>
+           <p className="mt-2 text-[10px] text-neutral-600">PNG, JPG, JPEG, WEBP · 저장 전 미리보기</p>
+           <input
+             ref={portraitInputRef}
+             type="file"
+             accept=".png,.jpg,.jpeg,.webp,image/png,image/jpeg,image/webp"
+             className="hidden"
+             onClick={(event) => event.stopPropagation()}
+             onChange={(event) => {
+               event.preventDefault();
+               event.stopPropagation();
+               const file = event.target.files?.[0];
+               if (file) void uploadPortrait(file);
+             }}
+           />
+         </div>
         <label>고유 능력 이름<input className={input} value={form.abilityName} onChange={e=>update("abilityName",e.target.value)}/></label>
         <label>Gold 비용<input type="number" className={input} value={form.abilityCost} onChange={e=>update("abilityCost",Number(e.target.value))}/></label>
           <EffectField

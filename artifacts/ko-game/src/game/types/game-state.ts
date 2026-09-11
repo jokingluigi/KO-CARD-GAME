@@ -42,6 +42,8 @@ export interface GameState {
   cardPool?: CardDefinition[];
   backgroundId: string | null;
   bgmId: string | null;
+  /** The most recent completed champion controls the persistent quest music base. */
+  latestQuestCompletedChampionId: string | null;
   turn: number;
   activePlayerId: string | null;
   status: 'NOT_STARTED' | 'IN_PROGRESS' | 'FINISHED';

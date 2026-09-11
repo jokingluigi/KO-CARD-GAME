@@ -1,5 +1,5 @@
 import { createHmac, randomUUID, timingSafeEqual } from "node:crypto";
-import { and, asc, desc, eq, ilike, sql } from "drizzle-orm";
+import { and, asc, desc, eq, ilike, or, sql } from "drizzle-orm";
 import {
   cardsTable,
   championsTable,
@@ -102,6 +102,9 @@ type CardInput = {
 
 type ChampionInput = {
   name: string; description: string; imageAssetId: string | null; imageUrl: string | null;
+  questCompletedPortraitEnabled: boolean;
+  questCompletedPortraitAssetId: string | null; questCompletedPortraitUrl: string | null;
+  questCompletedPortraitUploadToken: string | null;
   maxHealth: number; abilityName: string; abilityCost: number; abilityText: string;
   abilityEffects: Record<string, unknown>; hasQuest: boolean; questName: string | null;
   questText: string | null; questCondition: Record<string, unknown> | null;
@@ -155,6 +158,10 @@ function parseChampionInput(value: unknown): ChampionInput | null {
     rawQuestCondition.required <= 999 ? rawQuestCondition.required : null;
   const questProgressRequired = questProgressInput ?? conditionRequired;
   const upgradedAbilityCost = integer("upgradedAbilityCost", 0, 999, true);
+  const questCompletedPortraitEnabled = input.questCompletedPortraitEnabled === true;
+  const questCompletedPortraitAssetId = text("questCompletedPortraitAssetId");
+  const questCompletedPortraitUrl = text("questCompletedPortraitUrl");
+  const questCompletedPortraitUploadToken = text("questCompletedPortraitUploadToken");
   const validEffects = (effects: Record<string, unknown> | null | undefined) =>
     effects === null || effects === undefined || !("effects" in effects) || isStructuredEffects(effects);
   if (!name || name.length > 120 || !abilityName || abilityName.length > 120 ||
@@ -165,6 +172,11 @@ function parseChampionInput(value: unknown): ChampionInput | null {
        !validEffects(abilityEffects) || !validEffects(object("questRewardEffects", true)) ||
         !validEffects(object("upgradedAbilityEffects", true))) return null;
   if (
+    (questCompletedPortraitAssetId === null) !== (questCompletedPortraitUrl === null) ||
+    (questCompletedPortraitAssetId !== null &&
+      !questCompletedPortraitAssetId.startsWith("/objects/uploads/card-images/")) ||
+    (questCompletedPortraitUrl !== null &&
+      !questCompletedPortraitUrl.startsWith("/api/storage/objects/")) ||
     (questCompleteAudioAssetId === null) !== (questCompleteAudioUrl === null) ||
     (questCompleteAudioAssetId !== null &&
       !questCompleteAudioAssetId.startsWith("/objects/uploads/audio/")) ||
@@ -176,7 +188,9 @@ function parseChampionInput(value: unknown): ChampionInput | null {
        !text("questRewardText", true))) return null;
   return {
     name, description: text("description") ?? "", imageAssetId: text("imageAssetId"),
-    imageUrl: text("imageUrl"), maxHealth, abilityName, abilityCost,
+     imageUrl: text("imageUrl"), questCompletedPortraitEnabled,
+     questCompletedPortraitAssetId, questCompletedPortraitUrl,
+     questCompletedPortraitUploadToken, maxHealth, abilityName, abilityCost,
     abilityText: text("abilityText") ?? "", abilityEffects, hasQuest,
     questName: hasQuest ? text("questName", true) : null,
     questText: hasQuest ? text("questText", true) : null,
@@ -407,7 +421,10 @@ async function removeImageIfUnreferenced(assetId: string) {
   const [championReference] = await db
     .select({ count: sql<number>`count(*)::int` })
     .from(championsTable)
-    .where(eq(championsTable.imageAssetId, assetId));
+    .where(or(
+      eq(championsTable.imageAssetId, assetId),
+      eq(championsTable.questCompletedPortraitAssetId, assetId),
+    ));
   if ((cardReference?.count ?? 0) === 0 && (championReference?.count ?? 0) === 0) {
     await cardImageStorage.remove(assetId);
   }
@@ -1127,8 +1144,19 @@ router.post("/champions", async (request, response): Promise<void> => {
     response.status(400).json({ message: "검증된 퀘스트 완료 음악 업로드 정보가 필요합니다." });
     return;
   }
+  if (
+    input.questCompletedPortraitAssetId &&
+    !(await validNewImageAsset(
+      input.questCompletedPortraitAssetId,
+      input.questCompletedPortraitUploadToken,
+    ))
+  ) {
+    response.status(400).json({ message: "검증된 퀘스트 완료 초상화 업로드 정보가 필요합니다." });
+    return;
+  }
   const {
     questCompleteAudioUploadToken: _questCompleteAudioUploadToken,
+    questCompletedPortraitUploadToken: _questCompletedPortraitUploadToken,
     ...championValues
   } = input;
   const [champion] = await db.insert(championsTable).values({
@@ -1154,8 +1182,20 @@ router.patch("/champions/:id", async (request, response): Promise<void> => {
     response.status(400).json({ message: "검증된 퀘스트 완료 음악 업로드 정보가 필요합니다." });
     return;
   }
+  if (
+    input.questCompletedPortraitAssetId &&
+    input.questCompletedPortraitAssetId !== existing.questCompletedPortraitAssetId &&
+    !(await validNewImageAsset(
+      input.questCompletedPortraitAssetId,
+      input.questCompletedPortraitUploadToken,
+    ))
+  ) {
+    response.status(400).json({ message: "검증된 퀘스트 완료 초상화 업로드 정보가 필요합니다." });
+    return;
+  }
   const {
     questCompleteAudioUploadToken: _questCompleteAudioUploadToken,
+    questCompletedPortraitUploadToken: _questCompletedPortraitUploadToken,
     ...championValues
   } = input;
   const [champion] = await db.update(championsTable).set({
@@ -1166,6 +1206,12 @@ router.patch("/champions/:id", async (request, response): Promise<void> => {
     existing.questCompleteAudioAssetId !== input.questCompleteAudioAssetId
   ) {
     await removeAudioIfUnreferenced(existing.questCompleteAudioAssetId);
+  }
+  if (
+    existing.questCompletedPortraitAssetId &&
+    existing.questCompletedPortraitAssetId !== input.questCompletedPortraitAssetId
+  ) {
+    await removeImageIfUnreferenced(existing.questCompletedPortraitAssetId);
   }
   response.json({ champion });
 });
@@ -1178,7 +1224,12 @@ router.delete("/champions/:id", async (request, response): Promise<void> => {
   if (!existing) { response.status(404).json({ message: "챔피언을 찾을 수 없습니다." }); return; }
   const [deleted] = await db.delete(championsTable).where(eq(championsTable.id, id)).returning();
   if (!deleted) { response.status(404).json({ message: "챔피언을 찾을 수 없습니다." }); return; }
-  const assets = [existing.imageAssetId, existing.questCompleteAudioAssetId, existing.abilityAudioAssetId]
+  const assets = [
+    existing.imageAssetId,
+    existing.questCompletedPortraitAssetId,
+    existing.questCompleteAudioAssetId,
+    existing.abilityAudioAssetId,
+  ]
     .filter((assetId): assetId is string => Boolean(assetId));
   await Promise.all([
     ...assets.filter((assetId) => assetId.startsWith("/objects/uploads/card-images/")).map(removeImageIfUnreferenced),

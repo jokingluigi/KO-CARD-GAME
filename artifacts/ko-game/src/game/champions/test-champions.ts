@@ -85,5 +85,8 @@ export function createChampionState(
       questCompleteAudioUrl: definition.questCompleteAudioUrl,
       questCompleteAudioVolume: definition.questCompleteAudioVolume,
       questCompleteAudioEnabled: definition.questCompleteAudioEnabled,
+      questCompletedPortraitEnabled: definition.questCompletedPortraitEnabled,
+      questCompletedPortraitAssetId: definition.questCompletedPortraitAssetId,
+      questCompletedPortraitUrl: definition.questCompletedPortraitUrl,
   };
 }

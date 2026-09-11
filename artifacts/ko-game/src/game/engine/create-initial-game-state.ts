@@ -43,6 +43,7 @@ export function createInitialGameState(
     cardPool: cardDefinitions ? [...cardDefinitions] : undefined,
     backgroundId: null,
     bgmId: null,
+    latestQuestCompletedChampionId: null,
     turn: 0,
     activePlayerId: null,
     status: 'NOT_STARTED',

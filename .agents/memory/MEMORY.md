@@ -7,6 +7,7 @@
 - [Admin upload controls](admin-upload-controls.md) — file pickers embedded in admin forms must block browser default submission and event propagation.
 - [Champion card presentation](champion-card-presentation.md) — CHAMPION rarity represents champion token cards and uses the dedicated red-gold card frame.
 - [Match media selection](game-media-selection.md) — choose enabled background and BGM once at match start, then keep only their IDs in game state.
+- [Audio transition policy](audio-transition-policy.md) — persistent quest music is the base; temporary entrance tracks fade it down and resume the newest base.
 - [Reusable card effect workflow](reusable-effect-workflow.md) — inspect and reuse active mechanics first; add generic registry-backed effects, analyzer mappings, and tests only when needed.
 - [Card play presentation](card-play-animations.md) — keep play motion client-side; derive impact from base cost and keep rarity emphasis separate from landing weight.
 - [Generated card scope](generated-card-scope.md) — creation APIs opt into Generated; the reusable “anywhere” scope is HAND + DECK + BOARD only.

@@ -1,65 +1,64 @@
 export const AUDIO_STINGER_DURATION = 10;
-export const AUDIO_FADE_IN_DURATION = 0.4;
+export const AUDIO_FADE_IN_DURATION = 0.5;
 export const AUDIO_FADE_OUT_DURATION = 0.8;
 
-type AudioPriority = "CARD_ENTRANCE" | "QUEST_COMPLETE";
-
+type TemporaryAudioKind = "CARD_ENTRANCE" | "PREVIEW";
 type AudioRequest = {
   url: string;
   volume: number;
-  priority: number;
-  kind: AudioPriority;
+  kind: TemporaryAudioKind;
+};
+
+type MusicAudio = {
+  audio: HTMLAudioElement;
+  url: string;
+  volume: number;
+  fadeTimerId: number | null;
 };
 
 function safeVolume(volume: number) {
   return Math.min(1, Math.max(0, volume / 100));
 }
 
+function hasBrowserAudio() {
+  return typeof window !== "undefined" && typeof Audio !== "undefined";
+}
+
 class AudioManager {
   private current: {
     audio: HTMLAudioElement;
     request: AudioRequest;
-    intervalId: number;
+    fadeTimerId: number | null;
     timeoutId: number;
   } | null = null;
   private queue: AudioRequest[] = [];
-  private bgm: { audio: HTMLAudioElement; url: string; volume: number } | null = null;
+  /**
+   * `bgm` is the current persistent base music. It is intentionally kept as
+   * this name because the mute and media preview APIs are BGM-compatible even
+   * when the base is a completed Champion's music.
+   */
+  private bgm: MusicAudio | null = null;
+  private pendingBaseMusic: { url: string; volume: number } | null = null;
+  private baseTransitionId = 0;
   private bgmMuted = false;
   private attackAudio: HTMLAudioElement | null = null;
 
   playCardEntrance(url: string, volume: number) {
-    this.enqueue({ url, volume, priority: 0, kind: "CARD_ENTRANCE" });
+    this.enqueue({ url, volume, kind: "CARD_ENTRANCE" });
   }
 
+  /** Replaces the persistent base without interrupting a card entrance. */
   playQuestComplete(url: string, volume: number) {
-    this.enqueue({ url, volume, priority: 10, kind: "QUEST_COMPLETE" });
+    this.setBaseMusic(url, volume);
   }
 
   preview(url: string, volume: number) {
     this.stop();
-    this.start({ url, volume, priority: 100, kind: "CARD_ENTRANCE" });
+    this.startTemporary({ url, volume, kind: "PREVIEW" });
   }
 
   playBgm(url: string, volume: number) {
-    if (typeof window === "undefined" || !url) return;
-    if (this.bgm?.url === url) {
-      this.bgm.volume = volume;
-      this.bgm.audio.volume = this.bgmMuted ? 0 : safeVolume(volume);
-      return;
-    }
-    this.stopBgm();
-    try {
-      const audio = new Audio(url);
-      audio.preload = "auto";
-      audio.loop = true;
-      audio.volume = this.bgmMuted ? 0 : safeVolume(volume);
-      this.bgm = { audio, url, volume };
-      audio.play().catch(() => {
-        if (this.bgm?.audio === audio) this.stopBgm();
-      });
-    } catch {
-      this.stopBgm();
-    }
+    this.setBaseMusic(url, volume);
   }
 
   previewBgm(url: string, volume: number) {
@@ -67,7 +66,7 @@ class AudioManager {
   }
 
   playAttack(url: string, volume: number, pitch = 1) {
-    if (typeof window === "undefined" || !url) return;
+    if (!hasBrowserAudio() || !url) return;
     this.stopAttack();
     try {
       const audio = new Audio(url);
@@ -98,10 +97,9 @@ class AudioManager {
   }
 
   setBgmVolume(volume: number) {
-    if (this.bgm) {
-      this.bgm.volume = volume;
-      this.bgm.audio.volume = this.bgmMuted ? 0 : safeVolume(volume);
-    }
+    if (!this.bgm) return;
+    this.bgm.volume = volume;
+    this.bgm.audio.volume = this.bgmMuted ? 0 : safeVolume(volume);
   }
 
   setBgmMuted(muted: boolean) {
@@ -115,78 +113,212 @@ class AudioManager {
     return this.bgmMuted;
   }
 
+  /** Stops both the persistent base and any temporary entrance music. */
   stopBgm() {
+    this.stopTemporary(false);
+    this.queue = [];
+    this.stopBaseMusic();
+  }
+
+  stop() {
+    this.stopTemporary(false);
+    this.queue = [];
+  }
+
+  private setBaseMusic(url: string, volume: number) {
+    if (!hasBrowserAudio() || !url) return;
+    if (this.bgm?.url === url) {
+      this.bgm.volume = volume;
+      if (!this.bgmMuted && !this.current) {
+        this.bgm.audio.volume = safeVolume(volume);
+      }
+      return;
+    }
+
+    const previous = this.bgm;
+    this.pendingBaseMusic = { url, volume };
+    const transitionId = ++this.baseTransitionId;
+    if (!previous) {
+      this.commitPendingBaseMusic(transitionId);
+      return;
+    }
+
+    if (previous.fadeTimerId !== null) window.clearInterval(previous.fadeTimerId);
+    if (this.bgmMuted || previous.audio.paused || previous.audio.volume <= 0) {
+      previous.audio.pause();
+      previous.audio.currentTime = 0;
+      this.bgm = null;
+      this.commitPendingBaseMusic(transitionId);
+      return;
+    }
+
+    const startedAt = Date.now();
+    const startVolume = previous.audio.volume;
+    previous.fadeTimerId = window.setInterval(() => {
+      if (this.bgm !== previous || transitionId !== this.baseTransitionId) {
+        window.clearInterval(previous.fadeTimerId!);
+        return;
+      }
+      const progress = Math.min(1, (Date.now() - startedAt) / (AUDIO_FADE_OUT_DURATION * 1000));
+      previous.audio.volume = startVolume * (1 - progress);
+      if (progress >= 1) {
+        window.clearInterval(previous.fadeTimerId!);
+        previous.fadeTimerId = null;
+        previous.audio.pause();
+        previous.audio.currentTime = 0;
+        this.bgm = null;
+        this.commitPendingBaseMusic(transitionId);
+      }
+    }, 40);
+  }
+
+  private commitPendingBaseMusic(transitionId: number) {
+    if (transitionId !== this.baseTransitionId || !this.pendingBaseMusic) return;
+    const request = this.pendingBaseMusic;
+    this.pendingBaseMusic = null;
+    try {
+      const audio = new Audio(request.url);
+      audio.preload = "auto";
+      audio.loop = true;
+      audio.volume = 0;
+      this.bgm = { audio, url: request.url, volume: request.volume, fadeTimerId: null };
+      if (!this.current) {
+        this.startMusicFadeIn(this.bgm);
+      }
+    } catch {
+      this.stopBaseMusic();
+    }
+  }
+
+  private enqueue(request: AudioRequest) {
+    if (!hasBrowserAudio() || !request.url) return;
+    if (this.current?.request.url === request.url) return;
+    if (!this.current) {
+      this.startTemporary(request);
+      return;
+    }
+    this.queue.push(request);
+  }
+
+  private startTemporary(request: AudioRequest) {
+    this.stopTemporary(false);
+    this.fadeBaseOut();
+    try {
+      const audio = new Audio(request.url);
+      audio.preload = "auto";
+      audio.volume = 0;
+      const timeoutId = window.setTimeout(
+        () => this.finishTemporary(true),
+        AUDIO_STINGER_DURATION * 1000 + 100,
+      );
+      this.current = { audio, request, fadeTimerId: null, timeoutId };
+      this.startFade(audio, safeVolume(request.volume), (timerId) => {
+        if (this.current?.audio === audio) this.current.fadeTimerId = timerId;
+      });
+      audio.addEventListener("ended", () => this.finishTemporary(true), { once: true });
+      audio.play().catch(() => this.finishTemporary(false));
+    } catch {
+      this.finishTemporary(false);
+    }
+  }
+
+  private finishTemporary(playNext: boolean) {
+    const current = this.current;
+    if (!current) return;
+    this.current = null;
+    if (current.fadeTimerId !== null) window.clearInterval(current.fadeTimerId);
+    window.clearTimeout(current.timeoutId);
+    current.audio.pause();
+    current.audio.currentTime = 0;
+
+    if (playNext) {
+      const next = this.queue.shift();
+      if (next) {
+        this.startTemporary(next);
+        return;
+      }
+    }
+    this.resumeBaseMusic();
+  }
+
+  private stopTemporary(resumeBase: boolean) {
+    const current = this.current;
+    if (!current) {
+      if (resumeBase) this.resumeBaseMusic();
+      return;
+    }
+    this.current = null;
+    if (current.fadeTimerId !== null) window.clearInterval(current.fadeTimerId);
+    window.clearTimeout(current.timeoutId);
+    current.audio.pause();
+    current.audio.currentTime = 0;
+    if (resumeBase) this.resumeBaseMusic();
+  }
+
+  private stopBaseMusic() {
+    this.baseTransitionId += 1;
+    this.pendingBaseMusic = null;
     if (!this.bgm) return;
+    if (this.bgm.fadeTimerId !== null) window.clearInterval(this.bgm.fadeTimerId);
     this.bgm.audio.pause();
     this.bgm.audio.currentTime = 0;
     this.bgm = null;
   }
 
-  stop() {
-    this.finishCurrent(false);
-    this.queue = [];
-  }
-
-  private enqueue(request: AudioRequest) {
-    if (typeof window === "undefined" || !request.url) return;
-    if (this.current?.request.kind === request.kind && this.current.request.url === request.url) {
+  private fadeBaseOut() {
+    if (!this.bgm || this.bgmMuted) {
+      this.bgm?.audio.pause();
       return;
     }
-    if (this.current && request.priority > this.current.request.priority) {
-      this.finishCurrent(false);
-      this.start(request);
-      return;
-    }
-    if (!this.current) {
-      this.start(request);
-      return;
-    }
-    this.queue.push(request);
-    this.queue.sort((left, right) => right.priority - left.priority);
+    if (this.bgm.fadeTimerId !== null) window.clearInterval(this.bgm.fadeTimerId);
+    const audio = this.bgm.audio;
+    const start = audio.volume;
+    const startedAt = Date.now();
+    this.bgm.fadeTimerId = window.setInterval(() => {
+      if (!this.bgm || this.bgm.audio !== audio) return;
+      const progress = Math.min(1, (Date.now() - startedAt) / (AUDIO_FADE_OUT_DURATION * 1000));
+      audio.volume = start * (1 - progress);
+      if (progress >= 1) {
+        if (this.bgm?.audio === audio) {
+          window.clearInterval(this.bgm.fadeTimerId!);
+          this.bgm.fadeTimerId = null;
+          audio.pause();
+        }
+      }
+    }, 40);
   }
 
-  private start(request: AudioRequest) {
-    try {
-      const audio = new Audio(request.url);
-      audio.preload = "auto";
-      audio.volume = 0;
-      const intervalId = window.setInterval(() => this.update(audio, request), 40);
-      const timeoutId = window.setTimeout(() => this.finishCurrent(true), AUDIO_STINGER_DURATION * 1000 + 100);
-      this.current = { audio, request, intervalId, timeoutId };
-      audio.addEventListener("ended", () => this.finishCurrent(true), { once: true });
-      audio.play().catch(() => this.finishCurrent(false));
-    } catch {
-      this.finishCurrent(false);
-    }
+  private resumeBaseMusic() {
+    if (!this.bgm || this.bgmMuted) return;
+    this.startMusicFadeIn(this.bgm);
   }
 
-  private update(audio: HTMLAudioElement, request: AudioRequest) {
-    if (!this.current || this.current.audio !== audio) return;
-    const duration = Number.isFinite(audio.duration) && audio.duration > 0
-      ? Math.min(AUDIO_STINGER_DURATION, audio.duration)
-      : AUDIO_STINGER_DURATION;
-    const currentTime = Math.min(duration, audio.currentTime);
-    const fadeIn = Math.min(1, currentTime / Math.min(AUDIO_FADE_IN_DURATION, duration));
-    const fadeOutStart = Math.max(0, duration - AUDIO_FADE_OUT_DURATION);
-    const fadeOut = currentTime <= fadeOutStart
-      ? 1
-      : Math.max(0, (duration - currentTime) / Math.min(AUDIO_FADE_OUT_DURATION, duration));
-    audio.volume = safeVolume(request.volume) * Math.min(fadeIn, fadeOut);
-    if (currentTime >= duration) this.finishCurrent(true);
+  private startMusicFadeIn(music: MusicAudio) {
+    if (!this.bgm || this.bgm.audio !== music.audio) return;
+    if (music.fadeTimerId !== null) window.clearInterval(music.fadeTimerId);
+    music.audio.volume = 0;
+    music.audio.play().catch(() => {
+      if (this.bgm?.audio === music.audio) this.stopBaseMusic();
+    });
+    this.startFade(music.audio, safeVolume(music.volume), (timerId) => {
+      if (this.bgm?.audio === music.audio) music.fadeTimerId = timerId;
+    });
   }
 
-  private finishCurrent(playNext: boolean) {
-    const current = this.current;
-    if (!current) return;
-    this.current = null;
-    window.clearInterval(current.intervalId);
-    window.clearTimeout(current.timeoutId);
-    current.audio.pause();
-    current.audio.currentTime = 0;
-    if (playNext) {
-      const next = this.queue.shift();
-      if (next) this.start(next);
-    }
+  private startFade(
+    audio: HTMLAudioElement,
+    targetVolume: number,
+    onTimer: (timerId: number) => void,
+  ) {
+    const startedAt = Date.now();
+    const timerId = window.setInterval(() => {
+      const progress = Math.min(1, (Date.now() - startedAt) / (AUDIO_FADE_IN_DURATION * 1000));
+      audio.volume = targetVolume * progress;
+      if (progress >= 1) {
+        window.clearInterval(timerId);
+      }
+    }, 40);
+    onTimer(timerId);
   }
 }
 
