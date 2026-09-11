@@ -47,6 +47,21 @@ type EffectAnalysis = {
   reason?: string;
   message?: string;
 };
+type FullSection = {
+  key: string;
+  label: string;
+  status: "SUPPORTED" | "NEW_MECHANIC_REQUIRED" | "ANALYSIS_FAILED";
+  sourceText?: string;
+  analysis?: EffectAnalysis;
+  note?: string;
+};
+type FullAnalysis = {
+  sections: FullSection[];
+  unsupportedParts: string[];
+  fullySupported: boolean;
+  token?: { id: string; name: string; attack: number; health: number; text: string; status: Status };
+  tokenReferenceError?: string;
+};
 const empty: Form = {
   name: "", description: "", imageUrl: null, imageAssetId: null, maxHealth: 20,
   abilityName: "", abilityCost: 0, abilityText: "", abilityEffects: {},
@@ -82,6 +97,10 @@ export function AdminChampionManager({ onUnauthorized }: { onUnauthorized: () =>
   const [questAnalysis, setQuestAnalysis] = useState<EffectAnalysis | null>(null);
   const [prompts, setPrompts] = useState<Partial<Record<EffectAnalysisKey | "questText", string>>>({});
   const [promptingKey, setPromptingKey] = useState<EffectAnalysisKey | "questText" | null>(null);
+  const [fullAnalysis, setFullAnalysis] = useState<FullAnalysis | null>(null);
+  const [fullPrompt, setFullPrompt] = useState("");
+  const [fullPrompting, setFullPrompting] = useState(false);
+  const [fullAnalyzing, setFullAnalyzing] = useState(false);
   const [tokenCards, setTokenCards] = useState<TokenCard[]>([]);
   const [tokenSearch, setTokenSearch] = useState("");
   const load = useCallback(async () => {
@@ -184,6 +203,49 @@ export function AdminChampionManager({ onUnauthorized }: { onUnauthorized: () =>
     }
   }
 
+  async function runFullChampionAnalysis(withPrompt: boolean) {
+    setError("");
+    if (withPrompt) setFullPrompting(true);
+    else setFullAnalyzing(true);
+    try {
+      const response = await fetch(`${adminApiBase}/champions/${withPrompt ? "full-prompt" : "full-analyze"}`, {
+        method: "POST",
+        credentials: "include",
+        cache: "no-store",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(form),
+      });
+      if (response.status === 401) { onUnauthorized(); return; }
+      const body = await response.json() as { analysis?: FullAnalysis; prompt?: string; message?: string };
+      if (!response.ok || !body.analysis) throw new Error(body.message ?? "Champion 전체 분석에 실패했습니다.");
+      setFullAnalysis(body.analysis);
+      if (withPrompt) {
+        setFullPrompt(body.prompt ?? "");
+        setMessageText("Champion 전체 구현 프롬프트를 생성했습니다.");
+      } else {
+        setFullPrompt("");
+        setMessageText(body.analysis.fullySupported
+          ? "CHAMPION FULLY SUPPORTED: 최신 Registry 기준으로 모든 영역이 지원됩니다."
+          : "최신 Effect Registry 기준으로 Champion 전체를 다시 분석했습니다.");
+      }
+    } catch (reason) {
+      setError(reason instanceof Error ? reason.message : "Champion 전체 분석에 실패했습니다.");
+    } finally {
+      if (withPrompt) setFullPrompting(false);
+      else setFullAnalyzing(false);
+    }
+  }
+
+  async function copyFullPrompt() {
+    if (!fullPrompt) return;
+    try {
+      await navigator.clipboard.writeText(fullPrompt);
+      toast({ title: "Champion 전체 구현 프롬프트를 복사했습니다." });
+    } catch {
+      toast({ title: "Champion 전체 프롬프트를 복사하지 못했습니다.", variant: "destructive" });
+    }
+  }
+
   async function analyzeQuest() {
     const text = form.questText?.trim();
     if (!text) { setError("분석할 퀘스트 조건을 입력해 주세요."); return; }
@@ -273,6 +335,8 @@ export function AdminChampionManager({ onUnauthorized }: { onUnauthorized: () =>
      setAnalysisResults({});
       setQuestAnalysis(null);
       setPrompts({});
+      setFullAnalysis(null);
+      setFullPrompt("");
      setAnalyzingKey(null);
      setEditing(champion ?? null); setTokenSearch(""); setForm(champion ? {
       name: champion.name, description: champion.description, imageUrl: champion.imageUrl,
@@ -312,7 +376,16 @@ export function AdminChampionManager({ onUnauthorized }: { onUnauthorized: () =>
        <div className="mt-3 flex flex-wrap gap-2 text-xs"><button type="button" onClick={()=>editor(champion)} className="rounded border px-2 py-1"><FilePenLine className="mr-1 inline h-3 w-3"/>수정</button><button type="button" onClick={()=>void mutate(champion.id,"duplicate")} className="rounded border px-2 py-1"><Copy className="mr-1 inline h-3 w-3"/>복제</button><button type="button" disabled={busy} onClick={()=>void deleteChampion(champion)} data-testid={`button-delete-champion-${champion.id}`} className="rounded border border-red-900 px-2 py-1 text-red-400 disabled:opacity-40"><Trash2 className="mr-1 inline h-3 w-3"/>삭제</button>{champion.status!=="PUBLISHED"&&<button type="button" onClick={()=>void mutate(champion.id,"status",{status:"PUBLISHED"})} className="rounded border border-emerald-800 px-2 py-1 text-emerald-400"><CheckCircle2 className="mr-1 inline h-3 w-3"/>공개</button>}{champion.status!=="DISABLED"&&<button type="button" onClick={()=>void mutate(champion.id,"status",{status:"DISABLED"})} className="rounded border border-red-900 px-2 py-1 text-red-400"><Ban className="mr-1 inline h-3 w-3"/>비활성화</button>}</div>
     </article>)}</div>
     {open && <div className="fixed inset-0 z-50 overflow-y-auto bg-black/80 p-5"><div className="mx-auto max-w-4xl rounded-lg border border-neutral-700 bg-neutral-950 p-5">
-      <div className="mb-4 flex justify-between"><h3 className="text-xl font-black">{editing?"챔피언 수정":"새 챔피언"}</h3><button onClick={()=>setOpen(false)}><X/></button></div>
+       <div className="mb-4 flex items-start justify-between gap-3"><div><h3 className="text-xl font-black">{editing?"챔피언 수정":"새 챔피언"}</h3><p className="mt-1 text-xs text-neutral-500">분석과 프롬프트 생성은 현재 입력값을 별도 상태로 처리하며 폼을 초기화하지 않습니다.</p></div><button onClick={()=>setOpen(false)}><X/></button></div>
+       <div className="mb-4 flex flex-wrap gap-2 rounded border border-neutral-800 bg-neutral-900/40 p-3">
+         <button type="button" disabled={fullPrompting} onClick={()=>void runFullChampionAnalysis(true)} className="rounded bg-primary px-3 py-2 text-xs font-black text-black disabled:opacity-50">
+           {fullPrompting ? "전체 프롬프트 생성 중..." : "챔피언 전체 구현 프롬프트 생성"}
+         </button>
+         <button type="button" disabled={fullAnalyzing} onClick={()=>void runFullChampionAnalysis(false)} className="rounded border border-emerald-700 px-3 py-2 text-xs font-bold text-emerald-300 disabled:opacity-50">
+           {fullAnalyzing ? "전체 다시 분석 중..." : "전체 구현 완료 - 다시 분석"}
+         </button>
+       </div>
+       <FullAnalysisPanel analysis={fullAnalysis} prompt={fullPrompt} onCopyPrompt={()=>void copyFullPrompt()} />
       <div className="grid gap-4 md:grid-cols-2">
         <label>이름<input className={input} value={form.name} onChange={e=>update("name",e.target.value)}/></label>
         <label>최대 HP<input type="number" className={input} value={form.maxHealth} onChange={e=>update("maxHealth",Number(e.target.value))}/></label>
@@ -458,6 +531,54 @@ export function AdminChampionManager({ onUnauthorized }: { onUnauthorized: () =>
          />
       </div><div className="mt-5 flex justify-end"><button disabled={busy} onClick={()=>void save()} className="rounded bg-primary px-5 py-2.5 font-black text-black">DRAFT 저장</button></div>
     </div></div>}
+  </div>;
+}
+
+function FullAnalysisPanel({
+  analysis,
+  prompt,
+  onCopyPrompt,
+}: {
+  analysis: FullAnalysis | null;
+  prompt: string;
+  onCopyPrompt: () => void;
+}) {
+  if (!analysis && !prompt) return null;
+  return <div className="mb-4 rounded border border-neutral-700 bg-neutral-950 p-3 text-xs">
+    {analysis && <div>
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <strong className={analysis.fullySupported ? "text-emerald-300" : "text-amber-300"}>
+          {analysis.fullySupported ? "CHAMPION FULLY SUPPORTED" : "CHAMPION IMPLEMENTATION REVIEW"}
+        </strong>
+        {analysis.token && <span className="text-neutral-400">
+          Linked Token: {analysis.token.name} · {analysis.token.attack}/{analysis.token.health} · {analysis.token.status}
+        </span>}
+      </div>
+      {analysis.tokenReferenceError && <p className="mt-2 text-red-300">Champion Token: {analysis.tokenReferenceError}</p>}
+      <div className="mt-3 grid gap-2 md:grid-cols-2">
+        {analysis.sections.map((section) => {
+          const supported = section.status === "SUPPORTED";
+          const failed = section.status === "ANALYSIS_FAILED";
+          return <div key={section.key} className={`rounded border p-2 ${supported ? "border-emerald-900 bg-emerald-950/20" : failed ? "border-red-900 bg-red-950/20" : "border-amber-900 bg-amber-950/20"}`}>
+            <div className="font-bold">{section.label}</div>
+            <div className={`mt-1 ${supported ? "text-emerald-300" : failed ? "text-red-300" : "text-amber-300"}`}>
+              {supported ? "SUPPORTED" : failed ? "ANALYSIS_FAILED" : "NEW_MECHANIC_REQUIRED"}
+            </div>
+            {section.analysis?.summaries?.length ? <ul className="mt-1 list-disc pl-4 text-neutral-300">{section.analysis.summaries.map((summary) => <li key={summary}>{summary}</li>)}</ul> : null}
+            {section.analysis?.reason && <p className="mt-1 text-neutral-300">{section.analysis.reason}</p>}
+          </div>;
+        })}
+      </div>
+      {analysis.unsupportedParts.length > 0 && <div className="mt-3 rounded border border-amber-900 bg-amber-950/20 p-2">
+        <div className="font-bold text-amber-300">중복 제거된 unsupported mechanics</div>
+        <ul className="mt-1 list-disc pl-4 text-amber-100">{analysis.unsupportedParts.map((part) => <li key={part}>{part}</li>)}</ul>
+      </div>}
+    </div>}
+    {prompt && <div className="mt-3">
+      <div className="mb-1 font-bold text-neutral-300">Champion 전체 구현 프롬프트</div>
+      <textarea readOnly value={prompt} className="min-h-72 w-full rounded border border-neutral-700 bg-neutral-900 p-2 text-[10px] leading-relaxed"/>
+      <button type="button" onClick={onCopyPrompt} className="mt-2 rounded border border-neutral-600 px-3 py-1.5">전체 프롬프트 복사</button>
+    </div>}
   </div>;
 }
 

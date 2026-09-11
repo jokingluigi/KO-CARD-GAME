@@ -23,3 +23,4 @@
 - [Admin preview route](admin-browser-preview-route.md) — the proxied KO admin page is reached at `/admin`; nested artifact prefixes can render the app’s not-found route.
 - [CardDefinition references](card-definition-references.md) — admin text resolves named creation targets to stable IDs; runtime resolves only from the match snapshot.
 - [Active Champion Token boundary](active-champion-token-boundary.md) — only linked Champion Token deployment grants Champion protection and defeat coupling; generic Token generation stays normal.
+- [Champion full implementation prompt](champion-full-prompt.md) — aggregate unsaved Champion form data, freshly analyze live registry entries, and resolve linked Token data from Card Admin.

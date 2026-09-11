@@ -43,6 +43,10 @@ export type ChampionFullPromptData = {
   };
 };
 
+export function dedupeUnsupportedMechanics(parts: readonly string[]): string[] {
+  return [...new Set(parts.map((part) => part.trim()).filter(Boolean))];
+}
+
 function json(value: unknown): string {
   return JSON.stringify(value, null, 2);
 }
@@ -70,11 +74,11 @@ function libraryLines(data: ChampionFullPromptData["library"]): string {
   const render = (label: string, entries: Array<Record<string, unknown>>) =>
     `${label}:\n${entries.length ? entries.map((entry) => `- ${String(entry.name ?? "UNKNOWN")} · ${String(entry.status ?? "UNKNOWN")} · ${String(entry.description ?? "")}`).join("\n") : "- 없음"}`;
   return [
-    render("Actions", data.library.actions),
-    render("Triggers", data.library.triggers),
-    render("Conditions", data.library.conditions),
-    render("Target Resolvers", data.library.targetResolvers),
-    render("Value Resolvers", data.library.valueResolvers),
+    render("Actions", data.actions),
+    render("Triggers", data.triggers),
+    render("Conditions", data.conditions),
+    render("Target Resolvers", data.targetResolvers),
+    render("Value Resolvers", data.valueResolvers),
   ].join("\n");
 }
 

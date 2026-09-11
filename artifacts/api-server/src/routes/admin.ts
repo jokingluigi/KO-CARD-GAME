@@ -20,6 +20,14 @@ import {
   prepareMechanicRequest,
 } from "../lib/mechanic-request-service";
 import { prepareReplitAgentPrompt } from "../lib/replit-agent-prompt";
+import {
+  createChampionFullPrompt,
+  dedupeUnsupportedMechanics,
+  type ChampionFullPromptData,
+  type ChampionFullSection,
+  type ChampionFullSectionStatus,
+  type ChampionFullToken,
+} from "../lib/champion-full-prompt";
 import { analyzeChampionQuestText } from "../lib/champion-quest-analysis";
 import { analyzeEffectText, effectLibrary, isStructuredEffects, type Analysis, type CardReferenceCandidate, type Trigger } from "../lib/structured-effects";
 import {
@@ -778,7 +786,7 @@ async function publishedCardDependents(targetId: string): Promise<string[]> {
     .map((card) => `${card.name} (${card.id})`);
 }
 
-function analyzeForContext(
+export function analyzeForContext(
   text: string,
   context?: ChampionEffectContext,
   catalog?: readonly CardReferenceCandidate[],
@@ -804,6 +812,205 @@ function analyzeForContext(
     ...(context ? { defaultTrigger: "ENTER_FIELD" as Trigger } : {}),
     ...(catalog ? { cardCatalog: catalog } : {}),
   });
+}
+
+function fullPromptText(value: unknown): string {
+  return typeof value === "string" ? value.trim().slice(0, 2000) : "";
+}
+
+function fullPromptObject(value: unknown): Record<string, unknown> | undefined {
+  return value && typeof value === "object" && !Array.isArray(value)
+    ? value as Record<string, unknown>
+    : undefined;
+}
+
+function hasStructuredPayload(value: unknown): boolean {
+  const object = fullPromptObject(value);
+  return Boolean(object && Object.keys(object).length);
+}
+
+function fullSectionStatus(analysis: Analysis): ChampionFullSectionStatus {
+  return analysis.outcome === "supported"
+    ? "SUPPORTED"
+    : analysis.outcome === "mechanism_required"
+      ? "NEW_MECHANIC_REQUIRED"
+      : "ANALYSIS_FAILED";
+}
+
+type FullPromptInput = {
+  name: string;
+  description: string;
+  maxHealth: unknown;
+  abilityName: string;
+  abilityCost: unknown;
+  abilityText: string;
+  abilityEffects?: Record<string, unknown>;
+  hasQuest: boolean;
+  questName: string;
+  questText: string;
+  questCondition?: Record<string, unknown>;
+  questProgressRequired: unknown;
+  questRewardText: string;
+  questRewardEffects?: Record<string, unknown>;
+  upgradedAbilityName: string;
+  upgradedAbilityCost: unknown;
+  upgradedAbilityText: string;
+  upgradedAbilityEffects?: Record<string, unknown>;
+  championTokenDefinitionId: string;
+};
+
+function fullPromptInput(value: unknown): FullPromptInput | null {
+  const input = value && typeof value === "object" && !Array.isArray(value)
+    ? value as Record<string, unknown>
+    : null;
+  if (!input) return null;
+  const stringValue = (key: string) => fullPromptText(input[key]);
+  const tokenId = stringValue("championTokenDefinitionId");
+  return {
+    name: stringValue("name"),
+    description: stringValue("description"),
+    maxHealth: input.maxHealth,
+    abilityName: stringValue("abilityName"),
+    abilityCost: input.abilityCost,
+    abilityText: stringValue("abilityText"),
+    abilityEffects: fullPromptObject(input.abilityEffects),
+    hasQuest: input.hasQuest === true,
+    questName: stringValue("questName"),
+    questText: stringValue("questText"),
+    questCondition: fullPromptObject(input.questCondition),
+    questProgressRequired: input.questProgressRequired,
+    questRewardText: stringValue("questRewardText"),
+    questRewardEffects: fullPromptObject(input.questRewardEffects),
+    upgradedAbilityName: stringValue("upgradedAbilityName"),
+    upgradedAbilityCost: input.upgradedAbilityCost,
+    upgradedAbilityText: stringValue("upgradedAbilityText"),
+    upgradedAbilityEffects: fullPromptObject(input.upgradedAbilityEffects),
+    championTokenDefinitionId: tokenId,
+  };
+}
+
+async function buildChampionFullPromptData(input: FullPromptInput): Promise<ChampionFullPromptData> {
+  const catalog = await cardReferenceCatalog();
+  const sections: ChampionFullSection[] = [];
+  const unsupportedParts: string[] = [];
+  const addSection = (
+    key: string,
+    label: string,
+    sourceText: string,
+    structuredEffect: unknown,
+    context?: ChampionEffectContext,
+  ) => {
+    if (!sourceText && !hasStructuredPayload(structuredEffect)) return;
+    const analysis = sourceText
+      ? analyzeForContext(sourceText, context, catalog)
+      : undefined;
+    const status = analysis ? fullSectionStatus(analysis) : "SUPPORTED";
+    const section: ChampionFullSection = {
+      key,
+      label,
+      status,
+      ...(sourceText ? { sourceText } : {}),
+      ...(hasStructuredPayload(structuredEffect) ? { structuredEffect } : {}),
+      ...(analysis ? { analysis } : {}),
+    };
+    sections.push(section);
+    if (analysis && analysis.outcome !== "supported") {
+      const parts = analysis.unsupportedSegments.length
+        ? analysis.unsupportedSegments
+        : [analysis.reason ?? `${label} 분석 실패`];
+      unsupportedParts.push(...parts);
+    }
+  };
+
+  addSection("CHAMPION_ABILITY", "기본 Champion Ability", input.abilityText, input.abilityEffects, "CHAMPION_ABILITY");
+  if (input.hasQuest) {
+    addSection("QUEST_CONDITION", "Quest Condition", input.questText, input.questCondition, "QUEST_CONDITION");
+    addSection("QUEST_REWARD", "Quest Reward", input.questRewardText, input.questRewardEffects, "QUEST_REWARD");
+  }
+  addSection(
+    "UPGRADED_CHAMPION_ABILITY",
+    "강화 Champion Ability",
+    input.upgradedAbilityText,
+    input.upgradedAbilityEffects,
+    "UPGRADED_CHAMPION_ABILITY",
+  );
+
+  let token: ChampionFullToken | undefined;
+  let tokenReferenceError: string | undefined;
+  if (input.championTokenDefinitionId) {
+    const [card] = await db.select({
+      id: cardsTable.id,
+      name: cardsTable.name,
+      cardType: cardsTable.cardType,
+      cost: cardsTable.cost,
+      attack: cardsTable.attack,
+      health: cardsTable.health,
+      text: cardsTable.text,
+      keywords: cardsTable.keywords,
+      effectId: cardsTable.effectId,
+      effectConfig: cardsTable.effectConfig,
+      isToken: cardsTable.isToken,
+      isChampionToken: cardsTable.isChampionToken,
+      status: cardsTable.status,
+    }).from(cardsTable).where(eq(cardsTable.id, input.championTokenDefinitionId)).limit(1);
+    if (!card) {
+      tokenReferenceError = `CardDefinition을 찾을 수 없습니다: ${input.championTokenDefinitionId}`;
+    } else {
+      token = card;
+      if (!card.isChampionToken) tokenReferenceError = "연결된 CardDefinition이 Champion Token이 아닙니다.";
+      addSection("CHAMPION_TOKEN_EFFECT", "연결된 Champion Token 효과", card.text, card.effectConfig, undefined);
+    }
+  }
+  if (tokenReferenceError) unsupportedParts.push(`Champion Token: ${tokenReferenceError}`);
+
+  const library = effectLibrary();
+  const analysis = {
+    sections,
+    unsupportedParts: dedupeUnsupportedMechanics(unsupportedParts),
+    fullySupported: unsupportedParts.length === 0 && !tokenReferenceError,
+    ...(token ? { token } : {}),
+    ...(tokenReferenceError ? { tokenReferenceError } : {}),
+  };
+  return {
+    champion: {
+      name: input.name,
+      description: input.description,
+      maxHealth: input.maxHealth,
+      abilityName: input.abilityName,
+      abilityCost: input.abilityCost,
+      abilityText: input.abilityText,
+      abilityEffects: input.abilityEffects ?? {},
+      hasQuest: input.hasQuest,
+      ...(input.hasQuest ? {
+        questName: input.questName,
+        questText: input.questText,
+        questCondition: input.questCondition ?? null,
+        questProgressRequired: input.questProgressRequired,
+        questRewardText: input.questRewardText,
+        questRewardEffects: input.questRewardEffects ?? null,
+      } : {}),
+      ...(input.upgradedAbilityName || input.upgradedAbilityText || input.upgradedAbilityEffects ? {
+        upgradedAbilityName: input.upgradedAbilityName,
+        upgradedAbilityCost: input.upgradedAbilityCost,
+        upgradedAbilityText: input.upgradedAbilityText,
+        upgradedAbilityEffects: input.upgradedAbilityEffects ?? null,
+      } : {}),
+      ...(input.championTokenDefinitionId ? {
+        championTokenDefinitionId: input.championTokenDefinitionId,
+      } : {}),
+    },
+    sections,
+    unsupportedParts: analysis.unsupportedParts,
+    ...(token ? { token } : {}),
+    ...(tokenReferenceError ? { tokenReferenceError } : {}),
+    library: {
+      actions: library.actions.map((entry) => ({ ...entry })),
+      triggers: library.triggers.map((entry) => ({ ...entry })),
+      conditions: (library.conditions ?? []).map((entry) => ({ ...entry })),
+      targetResolvers: library.targetResolvers.map((entry) => ({ ...entry })),
+      valueResolvers: library.valueResolvers.map((entry) => ({ ...entry })),
+    },
+  };
 }
 
 router.post("/effects/analyze", async (request, response): Promise<void> => {
@@ -857,6 +1064,39 @@ router.post("/effects/replit-prompt", async (request, response): Promise<void> =
     return;
   }
   response.json({ analysis, prompt: promptDecision.prompt });
+});
+
+async function fullChampionPromptRequest(
+  request: Request,
+  response: Response,
+  includePrompt: boolean,
+): Promise<void> {
+  if (!requireAdmin(request, response)) return;
+  const input = fullPromptInput(request.body);
+  if (!input) {
+    response.status(400).json({ message: "Champion 전체 분석에 필요한 현재 폼 데이터를 확인해 주세요." });
+    return;
+  }
+  const data = await buildChampionFullPromptData(input);
+  const analysis = {
+    sections: data.sections,
+    unsupportedParts: data.unsupportedParts,
+    fullySupported: data.unsupportedParts.length === 0 && !data.tokenReferenceError,
+    ...(data.token ? { token: data.token } : {}),
+    ...(data.tokenReferenceError ? { tokenReferenceError: data.tokenReferenceError } : {}),
+  };
+  response.json({
+    analysis,
+    ...(includePrompt ? { prompt: createChampionFullPrompt(data) } : {}),
+  });
+}
+
+router.post("/champions/full-analyze", async (request, response): Promise<void> => {
+  await fullChampionPromptRequest(request, response, false);
+});
+
+router.post("/champions/full-prompt", async (request, response): Promise<void> => {
+  await fullChampionPromptRequest(request, response, true);
 });
 
 router.get("/champions", async (request, response): Promise<void> => {
