@@ -16,7 +16,7 @@ import {
   type AttackTarget,
   type GameState,
   fetchPublishedWrestlerCards,
-  fetchPublishedChampionTokenCards,
+  fetchPublishedCardDefinitions,
   cardRecordToDefinition,
   setRuntimeCardDefinitions,
   fetchPublishedChampions,
@@ -160,11 +160,11 @@ export default function Home() {
     }
     Promise.all([
       fetchPublishedWrestlerCards(),
-      fetchPublishedChampionTokenCards(),
+      fetchPublishedCardDefinitions(),
       fetchPublishedChampions(),
       fetchGameMedia(),
     ])
-      .then(([definitions, championTokenDefinitions, champions, media]) => {
+      .then(([definitions, publishedDefinitions, champions, media]) => {
         if (cancelled) return;
         if (definitions.length === 0) {
           setPlayError('공개된 카드가 없어 게임을 시작할 수 없습니다.');
@@ -179,7 +179,7 @@ export default function Home() {
           return;
         }
         setMediaCatalog(media);
-        const runtimeDefinitions = [...definitions, ...championTokenDefinitions];
+        const runtimeDefinitions = publishedDefinitions;
         setRuntimeCardDefinitions(runtimeDefinitions);
         const selected = champions.length >= 2
           ? [champions[0]!.id, champions[1]!.id] as [string, string]

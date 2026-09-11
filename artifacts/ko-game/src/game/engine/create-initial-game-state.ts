@@ -11,7 +11,7 @@ function createEmptyPlayer(
   championDefinitions?: readonly ChampionDefinition[],
 ): PlayerState {
   const deckDefinitions = cardDefinitions?.filter(
-    (definition) => !definition.isToken && !definition.isChampionToken,
+    (definition) => definition.cardType === 'WRESTLER' && !definition.isToken && !definition.isChampionToken,
   );
   return {
     id,

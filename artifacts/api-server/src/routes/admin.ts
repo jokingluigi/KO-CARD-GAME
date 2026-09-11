@@ -21,7 +21,7 @@ import {
 } from "../lib/mechanic-request-service";
 import { prepareReplitAgentPrompt } from "../lib/replit-agent-prompt";
 import { analyzeChampionQuestText } from "../lib/champion-quest-analysis";
-import { analyzeEffectText, effectLibrary, isStructuredEffects, type Analysis, type Trigger } from "../lib/structured-effects";
+import { analyzeEffectText, effectLibrary, isStructuredEffects, type Analysis, type CardReferenceCandidate, type Trigger } from "../lib/structured-effects";
 import {
   countStructuredEffectUsage,
   prepareCompletionApply,
@@ -677,7 +677,85 @@ function championEffectContext(body: Record<string, unknown>): ChampionEffectCon
   return undefined;
 }
 
-function analyzeForContext(text: string, context?: ChampionEffectContext): Analysis {
+async function cardReferenceCatalog(): Promise<CardReferenceCandidate[]> {
+  const cards = await db.select({
+    id: cardsTable.id,
+    name: cardsTable.name,
+    cardType: cardsTable.cardType,
+    isToken: cardsTable.isToken,
+    isChampionToken: cardsTable.isChampionToken,
+  }).from(cardsTable);
+  return cards.map((card) => ({
+    id: card.id,
+    name: card.name,
+    cardType: card.cardType === "TECHNIQUE" ? "TECHNIQUE" : "WRESTLER",
+    isToken: card.isToken,
+    isChampionToken: card.isChampionToken,
+  }));
+}
+
+function collectCardDefinitionReferenceIds(value: unknown, ids = new Set<string>()): Set<string> {
+  if (Array.isArray(value)) {
+    for (const item of value) collectCardDefinitionReferenceIds(item, ids);
+    return ids;
+  }
+  if (!value || typeof value !== "object") return ids;
+  const record = value as Record<string, unknown>;
+  const definitionRef = record.definitionRef;
+  if (definitionRef && typeof definitionRef === "object" && !Array.isArray(definitionRef)) {
+    const id = (definitionRef as Record<string, unknown>).id;
+    if (typeof id === "string" && id.trim()) ids.add(id);
+  }
+  for (const child of Object.values(record)) collectCardDefinitionReferenceIds(child, ids);
+  return ids;
+}
+
+async function validatePublishedCardReferences(rootId: string): Promise<string[]> {
+  const cards = await db.select({
+    id: cardsTable.id,
+    name: cardsTable.name,
+    status: cardsTable.status,
+    effectConfig: cardsTable.effectConfig,
+  }).from(cardsTable);
+  const byId = new Map(cards.map((card) => [card.id, card]));
+  const visited = new Set<string>();
+  const errors: string[] = [];
+  const visit = (id: string) => {
+    if (visited.has(id)) return;
+    visited.add(id);
+    const card = byId.get(id);
+    if (!card) {
+      errors.push(`없는 참조 카드 ID: ${id}`);
+      return;
+    }
+    if (card.status !== "PUBLISHED" && id !== rootId) {
+      errors.push(`공개되지 않은 참조 카드: ${card.name} (${id})`);
+      return;
+    }
+    for (const referencedId of collectCardDefinitionReferenceIds(card.effectConfig)) visit(referencedId);
+  };
+  visit(rootId);
+  return [...new Set(errors)];
+}
+
+async function publishedCardDependents(targetId: string): Promise<string[]> {
+  const cards = await db.select({
+    id: cardsTable.id,
+    name: cardsTable.name,
+    status: cardsTable.status,
+    effectConfig: cardsTable.effectConfig,
+  }).from(cardsTable);
+  return cards
+    .filter((card) => card.status === "PUBLISHED" && card.id !== targetId)
+    .filter((card) => collectCardDefinitionReferenceIds(card.effectConfig).has(targetId))
+    .map((card) => `${card.name} (${card.id})`);
+}
+
+function analyzeForContext(
+  text: string,
+  context?: ChampionEffectContext,
+  catalog?: readonly CardReferenceCandidate[],
+): Analysis {
   if (context === "QUEST_CONDITION") {
     const quest = analyzeChampionQuestText(text);
     const condition = "condition" in quest ? quest.condition : undefined;
@@ -695,10 +773,13 @@ function analyzeForContext(text: string, context?: ChampionEffectContext): Analy
         : {}),
     };
   }
-  return analyzeEffectText(text, context ? { defaultTrigger: "ENTER_FIELD" as Trigger } : undefined);
+  return analyzeEffectText(text, {
+    ...(context ? { defaultTrigger: "ENTER_FIELD" as Trigger } : {}),
+    ...(catalog ? { cardCatalog: catalog } : {}),
+  });
 }
 
-router.post("/effects/analyze", (request, response) => {
+router.post("/effects/analyze", async (request, response): Promise<void> => {
   if (!requireAdmin(request, response)) return;
   const body = request.body && typeof request.body === "object" ? request.body as Record<string, unknown> : {};
   const text = body.text;
@@ -706,7 +787,7 @@ router.post("/effects/analyze", (request, response) => {
     response.status(400).json({ message: "효과 텍스트를 확인해 주세요." }); return;
   }
   const context = championEffectContext(body);
-  const analysis = analyzeForContext(text, context);
+  const analysis = analyzeForContext(text, context, await cardReferenceCatalog());
   response.json(context ? { ...analysis, unsupportedParts: analysis.unsupportedSegments } : analysis);
 });
 
@@ -724,7 +805,7 @@ router.post("/quests/analyze", (request, response) => {
   response.status(422).json(analysis);
 });
 
-router.post("/effects/replit-prompt", (request, response) => {
+router.post("/effects/replit-prompt", async (request, response): Promise<void> => {
   if (!requireAdmin(request, response)) return;
   const body = request.body && typeof request.body === "object"
     ? request.body as Record<string, unknown> : {};
@@ -736,7 +817,7 @@ router.post("/effects/replit-prompt", (request, response) => {
     response.status(400).json({ message: "효과와 Champion 효과 영역을 확인해 주세요." });
     return;
   }
-  const analysis = analyzeForContext(text, context);
+   const analysis = analyzeForContext(text, context, await cardReferenceCatalog());
   const promptDecision = prepareReplitAgentPrompt(
     text,
     analysis,
@@ -995,7 +1076,7 @@ router.post("/mechanic-requests/:id/replit-prompt", async (request, response): P
     ? request.body as Record<string, unknown> : {};
   const cardName = typeof body.cardName === "string" && body.cardName.trim()
     ? body.cardName.trim().slice(0, 120) : undefined;
-  const analysis = analyzeEffectText(mechanicRequest.originalCardText);
+   const analysis = analyzeEffectText(mechanicRequest.originalCardText, { cardCatalog: await cardReferenceCatalog() });
   const promptDecision = prepareReplitAgentPrompt(mechanicRequest.originalCardText, analysis, effectLibrary(), cardName);
   if (promptDecision.kind === "supported") {
     response.status(409).json({ message: "이제 현재 Effect Library로 구현할 수 있습니다.", analysis });
@@ -1024,7 +1105,7 @@ router.post("/mechanic-requests/replit-prompt", async (request, response): Promi
     response.status(404).json({ message: "먼저 메커니즘 요청을 만들어 주세요." });
     return;
   }
-  const analysis = analyzeEffectText(mechanicRequest.originalCardText);
+   const analysis = analyzeEffectText(mechanicRequest.originalCardText, { cardCatalog: await cardReferenceCatalog() });
   const promptDecision = prepareReplitAgentPrompt(mechanicRequest.originalCardText, analysis, effectLibrary(), cardName);
   if (promptDecision.kind === "supported") {
     response.status(409).json({ message: "이제 현재 Effect Library로 구현할 수 있습니다.", analysis });
@@ -1668,6 +1749,14 @@ router.delete("/cards/:id", async (request, response): Promise<void> => {
   if (!id) { response.status(400).json({ message: "카드 ID가 올바르지 않습니다." }); return; }
   const [existing] = await db.select().from(cardsTable).where(eq(cardsTable.id, id)).limit(1);
   if (!existing) { response.status(404).json({ message: "카드를 찾을 수 없습니다." }); return; }
+  const dependents = await publishedCardDependents(id);
+  if (dependents.length) {
+    response.status(422).json({
+      message: "공개 카드가 참조 중인 카드는 삭제할 수 없습니다.",
+      dependents,
+    });
+    return;
+  }
   const [deleted] = await db.delete(cardsTable).where(eq(cardsTable.id, id)).returning();
   if (!deleted) { response.status(404).json({ message: "카드를 찾을 수 없습니다." }); return; }
   if (existing.imageAssetId) await removeImageIfUnreferenced(existing.imageAssetId);
@@ -1771,6 +1860,36 @@ router.post("/cards/:id/status", async (request, response): Promise<void> => {
     return;
   }
 
+  const [existing] = await db
+    .select()
+    .from(cardsTable)
+    .where(eq(cardsTable.id, id))
+    .limit(1);
+  if (!existing) {
+    response.status(404).json({ message: "카드를 찾을 수 없습니다." });
+    return;
+  }
+  if (status === "PUBLISHED") {
+    const referenceErrors = await validatePublishedCardReferences(id);
+    if (referenceErrors.length) {
+      response.status(422).json({
+        message: "공개하려면 참조 카드도 먼저 공개해야 합니다.",
+        referenceErrors,
+      });
+      return;
+    }
+  }
+  if (status !== "PUBLISHED") {
+    const dependents = await publishedCardDependents(id);
+    if (dependents.length) {
+      response.status(422).json({
+        message: "공개 카드가 참조 중인 카드는 비공개 또는 비활성화할 수 없습니다.",
+        dependents,
+      });
+      return;
+    }
+  }
+
   const [card] = await db
     .update(cardsTable)
     .set({
@@ -1780,11 +1899,6 @@ router.post("/cards/:id/status", async (request, response): Promise<void> => {
     })
     .where(eq(cardsTable.id, id))
     .returning();
-
-  if (!card) {
-    response.status(404).json({ message: "카드를 찾을 수 없습니다." });
-    return;
-  }
 
   response.json({ card });
 });

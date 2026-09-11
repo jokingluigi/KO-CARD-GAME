@@ -52,6 +52,8 @@ export type StructuredEffect = {
     queuedEffect?: QueuedStructuredEffect;
     definition?: Record<string, unknown>;
     definitionRef?: { id?: string; name?: string };
+    count?: number;
+    destination?: "HAND" | "DECK";
     aggregateStats?: {
       source: "LAST_DESTROYED_TARGETS";
       attack: "CURRENT_ATTACK_SUM";
@@ -62,8 +64,32 @@ export type StructuredEffect = {
   };
 };
 export type AnalysisOutcome = "supported" | "mechanism_required" | "analysis_failure";
-export type Analysis = { status: "success" | "partial" | "failure"; outcome: AnalysisOutcome; effects: StructuredEffect[]; keywords: Keyword[]; unsupportedSegments: string[]; summaries: string[]; reason?: string; condition?: Record<string, unknown> };
-export type EffectAnalysisOptions = { defaultTrigger?: Trigger };
+export type ReferencedCard = {
+  id: string;
+  name: string;
+  cardType: "WRESTLER" | "TECHNIQUE";
+  isToken: boolean;
+  isChampionToken: boolean;
+};
+export type CardReferenceCandidate = ReferencedCard;
+export type CardReferenceError = {
+  code: "CARD_REFERENCE_NOT_FOUND" | "CARD_REFERENCE_AMBIGUOUS";
+  name: string;
+  candidateIds?: string[];
+};
+export type Analysis = {
+  status: "success" | "partial" | "failure";
+  outcome: AnalysisOutcome;
+  effects: StructuredEffect[];
+  keywords: Keyword[];
+  unsupportedSegments: string[];
+  summaries: string[];
+  reason?: string;
+  condition?: Record<string, unknown>;
+  referencedCards?: ReferencedCard[];
+  referenceErrors?: CardReferenceError[];
+};
+export type EffectAnalysisOptions = { defaultTrigger?: Trigger; cardCatalog?: readonly CardReferenceCandidate[] };
 
 const aliases = {
   trigger: [
@@ -195,7 +221,59 @@ function targetFor(text: string, randomPool = false): Target {
 function keywordFor(text: string): Keyword | undefined {
   return aliases.keyword.find(([, pattern]) => pattern.test(text))?.[0];
 }
-function effect(trigger: Trigger, action: Action, body: string, index: number, priorTarget?: Target, conditions?: EffectCondition[]): StructuredEffect | null {
+const GENERIC_CARD_REFERENCE_WORDS = new Set([
+  "카드", "선수", "선수카드", "기술", "기술카드", "캐릭터", "무작위", "랜덤", "무작위선수", "랜덤선수",
+]);
+
+function explicitCardReference(
+  body: string,
+  action: Action,
+  catalog: readonly CardReferenceCandidate[] | undefined,
+): { card?: ReferencedCard; name?: string; error?: CardReferenceError } {
+  if (!catalog && action !== "SUMMON") return {};
+  const verb = action === "SUMMON" ? /(?:소환|SUMMON)/i : /(?:생성(?!된)|GENERATE)/i;
+  const verbMatch = verb.exec(body);
+  if (!verbMatch || verbMatch.index === undefined) return {};
+  const beforeVerb = body.slice(0, verbMatch.index);
+  const quoted = beforeVerb.match(/['‘’“”「」]([^'‘’“”「」]+)['‘’“”「」]/);
+  const unquoted = beforeVerb
+    .replace(/.*(?:그리고|그\s*후|이후|한\s*뒤)\s*/g, "")
+    .replace(/(?:내|아군|상대|적|필드|보드|손패|손|덱)\s*(?:의|에|에 있는|에 있는)?\s*/g, "")
+    .replace(/(?:완전히\s*)?(?:무작위|랜덤)(?:한|로)?\s*/g, "")
+    .replace(/\d+\s*장\s*$/, "")
+    .replace(/\s*(?:복사본|사본)\s*$/, "")
+    .replace(/\s*(?:카드|선수|기술|캐릭터)\s*$/, "")
+    .replace(/\s*[을를이가은는의]\s*$/, "")
+    .trim();
+  const requestedName = (quoted?.[1] ?? unquoted).trim();
+  const known = catalog
+    ?.filter((candidate) => candidate.name === requestedName)
+    .filter((candidate, index, all) => all.findIndex((item) => item.id === candidate.id) === index) ?? [];
+  if (known.length > 1) {
+    return {
+      name: requestedName || known[0]!.name,
+      error: { code: "CARD_REFERENCE_AMBIGUOUS", name: requestedName || known[0]!.name, candidateIds: known.map((candidate) => candidate.id) },
+    };
+  }
+  if (known.length === 1) return { card: known[0] };
+  if (!catalog) return quoted?.[1]?.trim() ? { name: quoted[1].trim() } : {};
+
+  const name = requestedName;
+  if (!name || GENERIC_CARD_REFERENCE_WORDS.has(name.replace(/\s+/g, ""))) return {};
+  return { name, error: { code: "CARD_REFERENCE_NOT_FOUND", name } };
+}
+
+function effect(
+  trigger: Trigger,
+  action: Action,
+  body: string,
+  index: number,
+  priorTarget?: Target,
+  conditions?: EffectCondition[],
+  options: EffectAnalysisOptions = {},
+  referencedCards: ReferencedCard[] = [],
+  referenceErrors: CardReferenceError[] = [],
+): StructuredEffect | null {
   const schema = ACTION_SCHEMAS[action], values: StructuredEffect["values"] = {};
   if (action === "QUEUE_EFFECT") {
     const match = body.match(NEXT_PLAY_HEALTH_BUFF_PATTERN);
@@ -208,6 +286,18 @@ function effect(trigger: Trigger, action: Action, body: string, index: number, p
     };
     return { trigger, action, ...(conditions?.length ? { conditions } : {}), values };
   }
+  const cardReference = action === "SUMMON" || action === "GENERATE"
+    ? explicitCardReference(body, action, options.cardCatalog)
+    : {};
+  if (cardReference.card) {
+    values.definitionRef = { id: cardReference.card.id };
+    if (!referencedCards.some((candidate) => candidate.id === cardReference.card!.id)) referencedCards.push(cardReference.card);
+  } else if (cardReference.error) {
+    referenceErrors.push(cardReference.error);
+    return null;
+  } else if (cardReference.name && !options.cardCatalog) {
+    values.definitionRef = { name: cardReference.name };
+  }
   if (action === "SUMMON" && AGGREGATED_STATS_PATTERN.test(body)) {
     values.aggregateStats = {
       source: "LAST_DESTROYED_TARGETS",
@@ -215,8 +305,10 @@ function effect(trigger: Trigger, action: Action, body: string, index: number, p
       health: "CURRENT_HEALTH_SUM",
     };
     const definitionName = body.match(/['‘’“”]([^'‘’“”]+)['‘’“”]/)?.[1]?.trim();
-    if (definitionName) values.definitionRef = { name: definitionName };
+    if (definitionName && !values.definitionRef && !options.cardCatalog) values.definitionRef = { name: definitionName };
   }
+  if (action === "GENERATE") values.destination = /덱/.test(body) ? "DECK" : "HAND";
+  if ((action === "SUMMON" || action === "GENERATE") && cardReference.card) values.count = targetCountFrom(body);
   const statMultiplier = schema.statMultiplier ? body.match(STAT_MULTIPLIER_PATTERN) : null;
   const statPairIncrement = schema.stats ? body.match(STAT_PAIR_INCREMENT_PATTERN) : null;
   const referenceStat = schema.referenceStat ? body.match(REFERENCE_ATTACK_INCREMENT_PATTERN) : null;
@@ -298,14 +390,18 @@ export function analyzeEffectText(input: string, options: EffectAnalysisOptions 
     const effects = analyses.flatMap((analysis) => analysis.effects);
     const keywords = analyses.flatMap((analysis) => analysis.keywords);
     const unsupportedSegments = analyses.flatMap((analysis) => analysis.unsupportedSegments);
+    const referencedCards = analyses.flatMap((analysis) => analysis.referencedCards ?? []);
+    const referenceErrors = analyses.flatMap((analysis) => analysis.referenceErrors ?? []);
     const success = analyses.every((analysis) => analysis.status === "success");
     return {
-      status: success ? "success" : effects.length ? "partial" : "failure",
-      outcome: success ? "supported" : analyses.some((analysis) => analysis.outcome === "mechanism_required") ? "mechanism_required" : "analysis_failure",
+      status: success && referenceErrors.length === 0 ? "success" : effects.length ? "partial" : "failure",
+      outcome: success && referenceErrors.length === 0 ? "supported" : analyses.some((analysis) => analysis.outcome === "mechanism_required") ? "mechanism_required" : "analysis_failure",
       effects,
       keywords,
       unsupportedSegments,
       summaries: analyses.flatMap((analysis) => analysis.summaries),
+      ...(referencedCards.length ? { referencedCards } : {}),
+      ...(referenceErrors.length ? { referenceErrors } : {}),
       ...(success ? {} : { reason: "문장의 일부를 효과로 해석하지 못했습니다. 표현을 더 구체적으로 입력해 주세요." }),
     };
   }
@@ -374,6 +470,8 @@ export function analyzeEffectText(input: string, options: EffectAnalysisOptions 
     ["ADD_KEYWORD", /(?:러쉬|기습|도발|회피|연타)(?:를|을)?\s*(?:부여|얻)/],
   ];
   const effects: StructuredEffect[] = [];
+  const referencedCards: ReferencedCard[] = [];
+  const referenceErrors: CardReferenceError[] = [];
   let remainder = "";
   let priorTarget: Target | undefined;
   const clauses = body.split(/\s*(?:그리고|그\s*후|이후|(?:시키)?고|한\s*뒤|한\s*후)\s*/);
@@ -387,7 +485,7 @@ export function analyzeEffectText(input: string, options: EffectAnalysisOptions 
       return match ? [{ action, matcher, index: match.index }] : [];
     }).sort((left, right) => left.index - right.index);
     for (const { action, matcher } of matches) {
-       const parsed = effect(trigger, action, clause, effects.length, priorTarget, conditions);
+       const parsed = effect(trigger, action, clause, effects.length, priorTarget, conditions, options, referencedCards, referenceErrors);
       if (parsed) {
         effects.push(parsed);
         if (parsed.target && parsed.target.selection !== "SAME_TARGET") priorTarget = parsed.target;
@@ -398,9 +496,12 @@ export function analyzeEffectText(input: string, options: EffectAnalysisOptions 
   }
      remainder = remainder.replace(/사용될\s*때까지(?:\s*\S+){0,5}\s*유지(?:합니다)?|다음\s*턴에도(?:\s*\S+){0,2}\s*유지(?:합니다)?/g, "");
      remainder = remainder.replace(/자신의\s*양\s*옆\s*(?:빈\s*)?슬롯(?:에)?|양\s*옆\s*(?:빈\s*)?슬롯(?:에)?|각각|이\s*카드가\s*필드에\s*있(?:는\s*동안|을\s*때)|\d+\s*(?:코스트|비용)\s*이상/g, "");
-    remainder = remainder.replace(/(?:모든\s*)?(?:생성된\s*)?(?:아군|내)\s*선수(?:\s*카드)?(?:에게|을|를|의)?/g, "");
+      remainder = remainder.replace(/(?:모든\s*)?(?:생성된\s*)?(?:아군|내)\s*선수(?:\s*카드)?(?:에게|을|를|의)?/g, "");
     remainder = remainder.replace(/(?:내\s*)손(?!패)(?:의)?/g, "");
-      remainder = remainder.replace(/(?:완전(?:히)?\s*)?(?:무작위|랜덤)(?:로)?\s*(?:선수|기술)?\s*(?:카드)?\s*(?:\d+\s*장|하나|한\s*장)?(?:에게|을|를|의)?|선택한|어디에\s*(?:있든|있는)|모든\s*위치의|손패\s*[,，]\s*덱\s*[,，]\s*(?:필드|보드)|손패\s*(?:및|와|과)\s*덱\s*(?:및|와|과)\s*(?:필드|보드)|생성된(?:\s*카드)?|모든\s*캐릭터(?:에게|을|를)?|모든\s*(?:선수|카드)(?:에게|을|를|의)?|(?:적|상대)\s*(?:챔피언|플레이어)(?:에게|을|를)?|(?:내|자신의)\s*챔피언(?:에게|을|를)?|(?:적|상대)\s*선수(?:\s*(?:\d+\s*장|하나|한\s*장))?(?:에게|을|를)?|(?:아군|내)\s*선수(?:\s*(?:\d+\s*장|하나|한\s*장))?(?:에게|을|를)?|(?:적|상대)\s*캐릭터(?:\s*(?:\d+\s*장|하나|한\s*장))?(?:에게|을|를)?|(?:아군|내)\s*캐릭터(?:\s*(?:\d+\s*장|하나|한\s*장))?(?:에게|을|를)?|(?:손패|덱|필드|보드)(?!의?\s*(?:무작위\s*)?(?:선수|카드))(?:의)?|손패의\s*(?:무작위\s*)?선수(?:\s*카드)?(?:\s*(?:\d+\s*장|하나|한\s*장))?(?:에게|을|를|의)?|덱의\s*(?:무작위\s*)?(?:선수|카드)(?:\s*카드)?(?:\s*(?:\d+\s*장|하나|한\s*장))?(?:에게|을|를|의)?|필드의\s*(?:무작위\s*)?(?:선수|카드)(?:\s*카드)?(?:\s*(?:\d+\s*장|하나|한\s*장))?(?:에게|을|를|의)?|(?:자신|이\s*카드)(?:에게|을|를)?|(?:카드\s*)?(?:\d+\s*장|한\s*장)|선수(?:\s*카드)?(?:을|를)?|\d+\s*턴\s*동안|(?:에게|을|를|의|에)|(?:그리고|그\s*후|이후|하고|한\s*뒤|한\s*후|주고)|\s+/g, "");
+      for (const referencedCard of referencedCards) {
+        remainder = remainder.replace(new RegExp(referencedCard.name.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"), "g"), "");
+      }
+       remainder = remainder.replace(/(?:완전(?:히)?\s*)?(?:무작위|랜덤)(?:로)?\s*(?:선수|기술)?\s*(?:카드)?\s*(?:\d+\s*장|하나|한\s*장)?(?:에게|을|를|의)?|선택한|어디에\s*(?:있든|있는)|모든\s*위치의|손패\s*[,，]\s*덱\s*[,，]\s*(?:필드|보드)|손패\s*(?:및|와|과)\s*덱\s*(?:및|와|과)\s*(?:필드|보드)|생성된(?:\s*카드)?|모든\s*캐릭터(?:에게|을|를)?|모든\s*(?:선수|카드)(?:에게|을|를|의)?|(?:적|상대)\s*(?:챔피언|플레이어)(?:에게|을|를)?|(?:내|자신의)\s*챔피언(?:에게|을|를)?|(?:적|상대)\s*선수(?:\s*(?:\d+\s*장|하나|한\s*장))?(?:에게|을|를)?|(?:아군|내)\s*선수(?:\s*(?:\d+\s*장|하나|한\s*장))?(?:에게|을|를)?|(?:적|상대)\s*캐릭터(?:\s*(?:\d+\s*장|하나|한\s*장))?(?:에게|을|를)?|(?:아군|내)\s*캐릭터(?:\s*(?:\d+\s*장|하나|한\s*장))?(?:에게|을|를)?|(?:손패|손에|덱|필드|보드)(?!의?\s*(?:무작위\s*)?(?:선수|카드))(?:의)?|손패의\s*(?:무작위\s*)?선수(?:\s*카드)?(?:\s*(?:\d+\s*장|하나|한\s*장))?(?:에게|을|를|의)?|덱의\s*(?:무작위\s*)?(?:선수|카드)(?:\s*카드)?(?:\s*(?:\d+\s*장|하나|한\s*장))?(?:에게|을|를|의)?|필드의\s*(?:무작위\s*)?(?:선수|카드)(?:\s*카드)?(?:\s*(?:\d+\s*장|하나|한\s*장))?(?:에게|을|를|의)?|(?:자신|이\s*카드)(?:에게|을|를)?|(?:카드\s*)?(?:\d+\s*장|한\s*장)|선수(?:\s*카드)?(?:을|를)?|\d+\s*턴\s*동안|(?:에게|을|를|의|에)|(?:그리고|그\s*후|이후|하고|한\s*뒤|한\s*후|주고)|\s+/g, "");
       remainder = remainder.replace(/사용될\s*때까지\s*(?:턴을\s*)?(?:넘어도\s*)?유지(?:합니다)?|다음\s*턴에도\s*유지(?:합니다)?/g, "");
       remainder = remainder.replace(/(?:완전(?:히)?\s*)?(?:무작위|랜덤)(?:로)?\s*(?:선수|기술)?\s*(?:카드)?\s*(?:\d+\s*장|하나|한\s*장)?(?:에게|을|를|의)?|선택한|어디에\s*(?:있든|있는)|모든\s*위치의|손패\s*[,，]\s*덱\s*[,，]\s*(?:필드|보드)|손패\s*(?:및|와|과)\s*덱\s*(?:및|와|과)\s*(?:필드|보드)|생성된(?:\s*카드)?|모든\s*캐릭터(?:에게|을|를)?|모든\s*(?:선수|카드)(?:에게|을|를|의)?|(?:적|상대)\s*(?:챔피언|플레이어)(?:에게|을|를)?|(?:내|자신의)\s*챔피언(?:에게|을|를)?|(?:적|상대)\s*선수(?:\s*(?:\d+\s*장|하나|한\s*장))?(?:에게|을|를)?|(?:아군|내)\s*선수(?:\s*(?:\d+\s*장|하나|한\s*장))?(?:에게|을|를)?|(?:적|상대)\s*캐릭터(?:\s*(?:\d+\s*장|하나|한\s*장))?(?:에게|을|를)?|(?:아군|내)\s*캐릭터(?:\s*(?:\d+\s*장|하나|한\s*장))?(?:에게|을|를)?|(?:손패|덱|필드|보드)(?!의?\s*(?:무작위\s*)?(?:선수|카드))(?:의)?|손패의\s*(?:무작위\s*)?선수(?:\s*카드)?(?:\s*(?:\d+\s*장|하나|한\s*장))?(?:에게|을|를|의)?|덱의\s*(?:무작위\s*)?(?:선수|카드)(?:\s*카드)?(?:\s*(?:\d+\s*장|하나|한\s*장))?(?:에게|을|를|의)?|필드의\s*(?:무작위\s*)?(?:선수|카드)(?:\s*카드)?(?:\s*(?:\d+\s*장|하나|한\s*장))?(?:에게|을|를|의)?|(?:자신|이\s*카드)(?:에게|을|를)?|(?:카드\s*)?(?:\d+\s*장|한\s*장)|선수(?:\s*카드)?(?:을|를)?|\d+\s*턴\s*동안|(?:에게|을|를|의|에)|(?:그리고|그\s*후|이후|하고|한\s*뒤|한\s*후|주고)|\s+/g, "");
    if (effects.some((item) => item.action === "SUMMON" && item.values?.aggregateStats)) {
@@ -414,12 +515,15 @@ export function analyzeEffectText(input: string, options: EffectAnalysisOptions 
    // Action endings remain after matcher only for Korean conjugations.
    remainder = remainder.replace(/(합니다|시키고|시킵니다|부여|획득|얻음|얻습니다|줍니다|준다|주|드로우|뽑습니다|뽑기|포획|제거|소환|생성|해방|감소|증가)/g, "");
   const remainderUnsupported = remainder.replace(unsupportedMechanic, "").trim();
-  const unsupportedSegments = [
+   const unsupportedSegments = [
     ...(mechanicRequired && !STAT_SWAP_PATTERN.test(text) ? [unsupportedDescription] : []),
     ...(!mechanicRequired && remainderUnsupported ? [remainderUnsupported] : []),
+     ...referenceErrors.map((error) => error.code === "CARD_REFERENCE_AMBIGUOUS"
+       ? `카드 참조가 모호합니다: ${error.name}`
+       : `카드 참조를 찾을 수 없습니다: ${error.name}`),
   ];
   if (trigger === "ACTIVE" && effects.some((item) => item.target?.selection === "PLAYER_CHOICE")) unsupportedSegments.push("ACTIVE Trigger Registry는 직접 대상 선택을 아직 지원하지 않습니다.");
-  const status = mechanicRequired || unsupportedSegments.length
+   const status = mechanicRequired || unsupportedSegments.length
     ? effects.length || mechanicRequired ? "partial" : "failure"
     : "success";
   return {
@@ -432,6 +536,8 @@ export function analyzeEffectText(input: string, options: EffectAnalysisOptions 
       ...effects.map((item) => `${item.trigger === "ENTER_FIELD" ? "등장" : item.trigger} · ${item.action}${item.values?.amount !== undefined ? ` · ${item.values.amount}` : ""}${item.values?.keyword ? ` · ${item.values.keyword}` : ""}`),
       ...(mechanicRequired ? ["새 메커니즘 필요 · 기존 Effect Library에 해당 동작이 없습니다."] : []),
     ],
+     ...(referencedCards.length ? { referencedCards } : {}),
+     ...(referenceErrors.length ? { referenceErrors } : {}),
     ...(status === "success"
       ? {}
       : {
@@ -527,6 +633,9 @@ export function isStructuredEffects(value: unknown): value is { effects: Structu
        const allowsRandomPoolDefinition = item.target?.selection === "RANDOM" || item.target?.selection === "ADJACENT_EMPTY_SLOTS";
        if (!validDefinition && !validReference && !allowsRandomPoolDefinition) return false;
      }
+      if (item.action === "GENERATE" && values?.destination !== undefined && values.destination !== "HAND" && values.destination !== "DECK") return false;
+      if ((item.action === "SUMMON" || item.action === "GENERATE") && values?.count !== undefined &&
+        (!Number.isInteger(values.count) || values.count < 1 || values.count > 20)) return false;
      if (values?.aggregateStats !== undefined) {
        const aggregate = values.aggregateStats;
        if (item.action !== "SUMMON" ||

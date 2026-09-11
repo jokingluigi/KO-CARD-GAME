@@ -109,6 +109,12 @@ export async function fetchPublishedChampionTokenCards(): Promise<CardDefinition
     .map(cardRecordToDefinition);
 }
 
+/** All published definitions are kept in the match snapshot so explicit
+ * structured references can resolve by stable ID, including cards outside a deck. */
+export async function fetchPublishedCardDefinitions(): Promise<CardDefinition[]> {
+  return (await fetchPublishedCardRecords()).map(cardRecordToDefinition);
+}
+
 export function cardRecordToDefinition(card: PublishedCardRecord): CardDefinition {
   return {
       id: card.id,

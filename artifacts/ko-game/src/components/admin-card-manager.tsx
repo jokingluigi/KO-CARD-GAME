@@ -85,11 +85,13 @@ type CardFormValues = {
 type EffectAnalysis = {
   status: "success" | "partial" | "failure";
   outcome: "supported" | "mechanism_required" | "analysis_failure";
-  effects: Array<{ trigger: string; action: string; target?: { zone?: string; zones?: string[]; owner: string; filter?: { isGenerated?: boolean; minCost?: number }; selection: string; count: number }; conditions?: Array<{ type: string; expression?: string }>; values?: { attack?: number; health?: number; amount?: number; keyword?: CardKeyword } }>;
+  effects: Array<{ trigger: string; action: string; target?: { zone?: string; zones?: string[]; owner: string; filter?: { isGenerated?: boolean; minCost?: number }; selection: string; count: number }; conditions?: Array<{ type: string; expression?: string }>; values?: { attack?: number; health?: number; amount?: number; keyword?: CardKeyword; destination?: "HAND" | "DECK"; definitionRef?: { id?: string; name?: string } } }>;
   keywords: CardKeyword[];
   unsupportedSegments: string[];
   summaries: string[];
   reason?: string;
+  referencedCards?: Array<{ id: string; name: string; cardType: "WRESTLER" | "TECHNIQUE"; isToken: boolean; isChampionToken: boolean }>;
+  referenceErrors?: Array<{ code: string; name: string; candidateIds?: string[] }>;
 };
 type EffectLibrary = {
   actions: Array<{ name: string; label?: string; description: string; status: "ACTIVE" | "DISABLED"; version: number; usageCount: number; requiredConfig: Record<string, unknown> }>;
@@ -212,6 +214,9 @@ function buildLocalReplitPrompt(
   const unsupportedParts = analysis.unsupportedSegments.length
     ? analysis.unsupportedSegments.map((part) => `- ${part}`).join("\n")
     : "- 없음";
+  const referencedCards = analysis.referencedCards?.length
+    ? analysis.referencedCards.map((card) => `- ${card.name} · id=${card.id} · type=${card.cardType} · token=${card.isToken ? "yes" : "no"} · championToken=${card.isChampionToken ? "yes" : "no"}`).join("\n")
+    : "- 없음";
 
   const inferredTrigger = analysis.effects.map((effect) => effect.trigger).join(", ") ||
     (/^등장|MAGIC/i.test(originalCardText) ? "ENTER_FIELD" : "현재 문장에서 발동 시점을 확인해 범용 Trigger로 매핑");
@@ -251,6 +256,10 @@ ${supportedEffects}
 
 ## 지원되지 않는 부분
 ${unsupportedParts}
+
+## 참조 카드 (CardDefinition ID 기준)
+${referencedCards}
+생성/소환 효과는 문자열 이름이 아니라 definitionRef.id를 사용하세요. 카드 이름이 변경되어도 ID 연결을 유지하고, 미존재·동명이인 카드를 임의 선택하지 마세요.
 
 ## 필요한 범용 구성요소 추정
 - Trigger: ${inferredTrigger}
@@ -1093,6 +1102,14 @@ export function AdminCardManager({
                    {analysis && <div className={`rounded border p-3 text-xs ${analysis.outcome === "supported" ? "border-emerald-800 bg-emerald-950/30" : analysis.outcome === "mechanism_required" ? "border-amber-800 bg-amber-950/30" : "border-red-800 bg-red-950/30"}`} data-testid="effect-analysis-result">
                       <strong>{analysis.outcome === "supported" ? "✓ 효과 구현 가능" : "⚠ 현재 엔진에서 이 효과를 완전히 구현할 수 없습니다."}</strong>
                      {analysis.reason && <p data-testid="text-analysis-reason" className="mt-2 text-neutral-300">{analysis.reason}</p>}
+                      {analysis.referencedCards?.length ? <div className="mt-3 rounded border border-blue-900/70 bg-blue-950/20 p-2 text-blue-200" data-testid="referenced-cards">
+                        <div className="font-bold text-blue-300">참조 카드</div>
+                        {analysis.referencedCards.map((card) => <div key={card.id} className="mt-1">{card.name} · <code>{card.id}</code> · {card.cardType}{card.isChampionToken ? " · Champion Token" : card.isToken ? " · Token" : ""}</div>)}
+                      </div> : null}
+                      {analysis.referenceErrors?.length ? <div className="mt-3 rounded border border-red-900/70 bg-red-950/20 p-2 text-red-200" data-testid="card-reference-errors">
+                        <div className="font-bold text-red-300">카드 참조 오류</div>
+                        {analysis.referenceErrors.map((error) => <div key={`${error.code}:${error.name}`} className="mt-1">{error.code}: {error.name}{error.candidateIds?.length ? ` (${error.candidateIds.join(", ")})` : ""}</div>)}
+                      </div> : null}
                       <div className="mt-3 font-bold text-emerald-300">지원되는 부분:</div>
                      {analysis.effects.map((effect, index) => {
                        const update = (patch: Partial<typeof effect>, targetPatch?: Partial<NonNullable<typeof effect.target>>, valuesPatch?: Partial<NonNullable<typeof effect.values>>) => setAnalysis((current) => current ? { ...current, effects: current.effects.map((item, itemIndex) => itemIndex === index ? { ...item, ...patch, ...(item.target ? { target: { ...item.target, ...targetPatch } } : {}), values: { ...item.values, ...valuesPatch } } : item) } : current);

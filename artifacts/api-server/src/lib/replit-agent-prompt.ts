@@ -96,6 +96,16 @@ export function createReplitAgentPrompt(
   const analysisSummary = analysis.summaries.length
     ? analysis.summaries.map((summary) => `- ${summary}`).join("\n")
     : "- 요약 없음";
+  const referencedCards = analysis.referencedCards?.length
+    ? analysis.referencedCards.map((card) =>
+      `- ${card.name} · id=${card.id} · type=${card.cardType} · token=${card.isToken ? "yes" : "no"} · championToken=${card.isChampionToken ? "yes" : "no"}`,
+    ).join("\n")
+    : "- 없음";
+  const referenceErrors = analysis.referenceErrors?.length
+    ? analysis.referenceErrors.map((error) =>
+      `- ${error.code}: ${error.name}${error.candidateIds?.length ? ` (${error.candidateIds.join(", ")})` : ""}`,
+    ).join("\n")
+    : "- 없음";
 
   return `이 카드 효과가 실제 게임에서 동작하도록 구현하세요. KO 카드게임에 적용하는 최소한의 TypeScript 수정을 제안하세요. 이 문서는 자동 실행 명령이 아니라 관리자가 Replit Agent에 붙여넣는 개발 지시문입니다.
 
@@ -115,6 +125,12 @@ ${analysis.effects.length
     : analysis.keywords.length
       ? analysis.keywords.map((keyword) => `- 기본 키워드: ${keyword}`).join("\n")
       : "- 없음"}
+
+## 참조 카드 (CardDefinition ID 기준)
+${referencedCards}
+참조 오류:
+${referenceErrors}
+카드 생성/소환은 문자열 이름을 런타임 식별자로 저장하지 말고, 위 CardDefinition ID를 structured effect의 definitionRef에 저장하세요. 이름이 변경되어도 ID 연결은 유지되어야 합니다. 이름 미존재 또는 동명이인 참조를 임의의 카드로 선택하지 마세요.
 
 4. 현재 지원되지 않는 부분
 ${unsupported}

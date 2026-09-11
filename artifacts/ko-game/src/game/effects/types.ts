@@ -78,6 +78,8 @@ export type CardEffect =
         definition?: CardDefinition;
          /** Optional data reference resolved from the runtime card pool. */
          definitionRef?: CardDefinitionReference;
+          count?: number;
+          destination?: 'HAND' | 'DECK';
          aggregateStats?: AggregatedStatsResolver;
         leftEffects?: CardEffect[];
         rightEffects?: CardEffect[];

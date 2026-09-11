@@ -85,3 +85,19 @@ test("prompt keeps Champion effect context without creating a second generator",
     assert.ok(result.prompt.includes("Action"));
   }
 });
+
+test("prompt lists referenced CardDefinition metadata and ID-only runtime rule", () => {
+  const analysis = analyzeEffectText("등장: 잔상을 소환합니다.", {
+    cardCatalog: [{
+      id: "champion-token-id",
+      name: "잔상",
+      cardType: "WRESTLER",
+      isToken: true,
+      isChampionToken: true,
+    }],
+  });
+  const result = createReplitAgentPrompt("등장: 잔상을 소환합니다.", analysis);
+  assert.ok(result.includes("잔상 · id=champion-token-id"));
+  assert.ok(result.includes("championToken=yes"));
+  assert.ok(result.includes("문자열 이름을 런타임 식별자로 저장하지 말고"));
+});

@@ -599,6 +599,52 @@ test("발단 문장은 파괴 대상 합산, 정의 참조, 소환 대상 연계
   assert.equal(isStructuredEffects({ effects: result.effects }), true);
 });
 
+test("명시한 카드명은 CardDefinition ID로 연결되고 이름 변경에도 ID가 유지된다", () => {
+  const catalog = [
+    { id: "token-old-id", name: "잔상", cardType: "WRESTLER" as const, isToken: true, isChampionToken: false },
+  ];
+  const result = analyzeEffectText("등장: 잔상을 2장 소환합니다.", { cardCatalog: catalog });
+  assert.equal(result.outcome, "supported");
+  assert.deepEqual(result.effects[0]?.values?.definitionRef, { id: "token-old-id" });
+  assert.equal(result.effects[0]?.values?.count, 2);
+  assert.deepEqual(result.referencedCards, [catalog[0]]);
+
+  const renamed = analyzeEffectText("등장: 잔상+", { cardCatalog: [{ ...catalog[0], name: "잔상+" }] });
+  assert.equal(renamed.outcome, "analysis_failure");
+  const renamedReference = analyzeEffectText("등장: 잔상+을 소환합니다.", { cardCatalog: [{ ...catalog[0], name: "잔상+" }] });
+  assert.deepEqual(renamedReference.effects[0]?.values?.definitionRef, { id: "token-old-id" });
+});
+
+test("명시 카드가 없거나 동명이인이면 임의 카드를 고르지 않는다", () => {
+  const notFound = analyzeEffectText("등장: 없는 잔상을 소환합니다.", {
+    cardCatalog: [{ id: "known", name: "잔상", cardType: "WRESTLER", isToken: true, isChampionToken: false }],
+  });
+  assert.equal(notFound.outcome, "analysis_failure");
+  assert.equal(notFound.referenceErrors?.[0]?.code, "CARD_REFERENCE_NOT_FOUND");
+
+  const ambiguous = analyzeEffectText("등장: 잔상을 소환합니다.", {
+    cardCatalog: [
+      { id: "one", name: "잔상", cardType: "WRESTLER", isToken: true, isChampionToken: false },
+      { id: "two", name: "잔상", cardType: "WRESTLER", isToken: true, isChampionToken: false },
+    ],
+  });
+  assert.equal(ambiguous.outcome, "analysis_failure");
+  assert.equal(ambiguous.referenceErrors?.[0]?.code, "CARD_REFERENCE_AMBIGUOUS");
+  assert.equal(ambiguous.effects.length, 0);
+});
+
+test("명시 카드 생성은 손패와 덱 destination을 보존한다", () => {
+  const catalog = [{ id: "named-card", name: "지원 카드", cardType: "TECHNIQUE" as const, isToken: false, isChampionToken: false }];
+  const hand = analyzeEffectText("등장: 지원 카드를 손에 생성합니다.", { cardCatalog: catalog });
+  const deck = analyzeEffectText("등장: 지원 카드를 덱에 생성합니다.", { cardCatalog: catalog });
+  assert.equal(hand.outcome, "supported");
+  assert.equal(hand.effects[0]?.action, "GENERATE");
+  assert.equal(hand.effects[0]?.values?.destination, "HAND");
+  assert.deepEqual(hand.effects[0]?.values?.definitionRef, { id: "named-card" });
+  assert.equal(deck.effects[0]?.values?.destination, "DECK");
+  assert.deepEqual(deck.effects[0]?.values?.definitionRef, { id: "named-card" });
+});
+
 test("KO 기본 메커니즘 어휘와 DSL 트리거를 새 메커니즘 요청 없이 분석한다", () => {
   const cases = [
     "등장: 자신에게 +2/+2", "조건: 내 손패에 Generated 선수가 있으면 등장: 카드 1장을 뽑습니다.",

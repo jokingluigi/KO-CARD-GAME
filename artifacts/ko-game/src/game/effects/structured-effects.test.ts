@@ -550,6 +550,47 @@ test('FULL_RANDOM GENERATE로 나온 Champion Token은 직접 전개 보호를 �
   assert.equal(championToken.isSilenceImmune, false);
 });
 
+test('명시적 CardDefinition ID SUMMON/GENERATE는 cardPool에서만 resolve하고 직접 전개 보호를 주지 않는다', () => {
+  const championToken = {
+    ...definition('champion-token-id', []),
+    name: 'Champion Token',
+    isToken: true,
+    isChampionToken: true,
+  };
+  const summonSource = instance('explicit-summon-source', [
+    structured('SUMMON', undefined, { definitionRef: { id: championToken.id }, count: 2 }),
+  ]);
+  const summoned = enterField(
+    { ...createInitialGameState(), cardPool: [championToken] },
+    'player-1',
+    summonSource,
+    0,
+  );
+  const summonedCards = summoned.players[0].board.filter((card) => card?.definitionId === championToken.id);
+  assert.equal(summonedCards.length, 2);
+  assert.equal(summonedCards.every((card) => !card?.isDirectDeployedChampion && !card?.isSilenceImmune), true);
+
+  const generateSource = instance('explicit-generate-source', [
+    structured('GENERATE', undefined, { definitionRef: { id: championToken.id }, destination: 'DECK', count: 2 }),
+  ]);
+  const generated = enterField(
+    { ...createInitialGameState(), cardPool: [championToken] },
+    'player-1',
+    generateSource,
+    0,
+  );
+  assert.equal(generated.players[0].deck.filter((card) => card.definitionId === championToken.id).length, 2);
+  assert.equal(generated.players[0].hand.some((card) => card.definitionId === championToken.id), false);
+  assert.equal(generated.players[0].deck.find((card) => card.definitionId === championToken.id)?.isDirectDeployedChampion, false);
+
+  assert.throws(() => enterField(
+    { ...createInitialGameState(), cardPool: [championToken] },
+    'player-1',
+    instance('legacy-name-source', [structured('SUMMON', undefined, { definitionRef: { name: championToken.name } })]),
+    0,
+  ));
+});
+
 test('같은 GameState와 Action, Seed의 RANDOM 결과는 deterministic하다', () => {
   const resolve = () => {
     const source = instance('seeded-random-source', [

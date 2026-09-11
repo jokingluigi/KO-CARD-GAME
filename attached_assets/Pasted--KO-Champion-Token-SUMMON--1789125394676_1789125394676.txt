@@ -1,0 +1,617 @@
+현재 KO 카드게임에 특별한 Champion Token 전개 효과를 추가해줘.
+
+자연어 효과:
+
+"챔피언을 소환합니다."
+
+는 일반적인 특정 카드 SUMMON이 아니다.
+
+이 문구는 반드시:
+
+"현재 플레이어의 Champion에 연결되어 있는 Champion Token CardDefinition을
+특별한 Champion Deploy 방식으로 전개한다."
+
+라는 의미로 처리해.
+
+================================
+1. Champion Token 연결 방식
+================================
+
+Champion Token 자체는 Champion Admin에서 새로 정의하지 않는다.
+
+기존 구조대로:
+
+ChampionDefinition
+→ championTokenDefinitionId
+
+를 통해
+Card/Wrestler Admin에서 만들어진 CardDefinition을 참조한다.
+
+"챔피언을 소환합니다."
+
+효과가 실행되면:
+
+현재 Champion의
+championTokenDefinitionId
+
+를 resolve해서
+해당 CardDefinition으로 새로운 카드 인스턴스를 생성한다.
+
+카드 이름을 하드코딩하지 마.
+
+================================
+2. Natural Language Analyzer
+================================
+
+다음 문구:
+
+"챔피언을 소환합니다."
+"챔피언을 소환한다."
+"내 챔피언을 소환합니다."
+
+등을 특별한 Champion Deploy 효과로 분석해.
+
+일반:
+
+SUMMON_CARD
+
+와 구분되는 범용 Action을 사용해.
+
+예:
+
+DEPLOY_CHAMPION_TOKEN
+
+또는 현재 Effect DSL에 맞는 명칭.
+
+Structured Effect 예:
+
+{
+  action: "DEPLOY_CHAMPION_TOKEN",
+  source: "CURRENT_CHAMPION"
+}
+
+특정 Champion 이름별 Effect를 만들지 마.
+
+================================
+3. Champion Token 생성
+================================
+
+DEPLOY_CHAMPION_TOKEN 실행 시:
+
+1. 현재 Player의 Champion 조회
+2. championTokenDefinitionId 조회
+3. 연결된 CardDefinition resolve
+4. 새로운 CardInstance 생성
+5. 특별 Champion Token deployment flag 부여
+6. Field에 전개
+
+CardDefinition의:
+
+- 이름
+- Attack
+- Health
+- Keywords
+- Effects
+- Image
+- Audio
+
+등은 기존 카드 정의를 그대로 사용해.
+
+================================
+4. 현재 Champion 체력을 Token 최대 체력에 추가
+================================
+
+Champion Token이 전개되는 순간의:
+
+currentChampionHealth
+
+를 저장해.
+
+그리고 Champion Token의 기본 최대 체력에
+그 값을 추가해.
+
+예:
+
+Champion Token 기본:
+
+6 Attack
+10 Max Health
+
+현재 Champion:
+
+13 HP
+
+라면 전개되는 Token은:
+
+6 Attack
+23 Max Health
+
+가 된다.
+
+계산:
+
+token.maxHealth =
+baseToken.maxHealth + champion.currentHealth
+
+그리고 이 특별 전개 시
+token.currentHealth도 새 maxHealth와 동일하게 시작하게 해.
+
+즉 위 예시는:
+
+23 / 23
+
+으로 등장.
+
+중요:
+현재 Champion의 MAX HP가 아니라
+전개 순간의 CURRENT HP를 사용한다.
+
+예:
+
+Champion Max HP 20
+현재 HP 7
+
+Token 기본 HP 10
+
+→ Token = 17 / 17
+
+================================
+5. 계산은 전개 순간 한 번만
+================================
+
+Champion HP 추가 계산은
+Champion Token이 전개되는 그 순간 정확히 한 번만 한다.
+
+이후 Champion의 상태가 변해도
+Token 최대 체력을 계속 재계산하지 마.
+
+Token에 저장된 current/max health는
+일반 카드 인스턴스처럼 이후 독립적으로 관리한다.
+
+================================
+6. Champion 본체는 무적 상태로 전환
+================================
+
+DEPLOY_CHAMPION_TOKEN이 성공하면
+기존 Champion 본체는:
+
+CHAMPION_PROTECTED_BY_TOKEN
+
+또는 현재 구조에 맞는 상태로 전환해.
+
+이 상태에서는 Champion 본체가:
+
+- DAMAGE 면역
+- 공격 대상으로 지정 불가
+- 카드 효과 대상으로 지정 불가
+- 기술 카드 대상으로 지정 불가
+- Champion Ability의 대상으로 지정 불가
+
+가 되어야 한다.
+
+즉 Champion 본체를 직접 죽이는 것이 불가능해진다.
+
+================================
+7. Target Resolver에서 제외
+================================
+
+Champion이 Champion Token에 의해 보호 중이면
+모든 일반 target resolver에서 Champion을 valid target으로 반환하지 마.
+
+예:
+
+"아무 대상에게 피해 2"
+
+평소:
+- Wrestler
+- Champion
+
+가능
+
+Champion Token 전개 후:
+- Wrestler
+- Champion Token
+- 기타 정상 대상
+
+가능
+
+보호받는 Champion 본체:
+→ validTargets에서 제외
+
+UI에서도 선택 가능 highlight가 나오면 안 된다.
+
+================================
+8. 일반 공격도 Champion 본체 공격 불가
+================================
+
+Champion Token이 활성화되어 있는 동안
+적 선수의 일반 공격으로도 Champion 본체를 공격할 수 없다.
+
+즉 ATTACK target validation에서도
+보호 상태의 Champion 본체를 제외해.
+
+Champion Token 자체는
+일반 Field Wrestler처럼 정상적으로 공격받을 수 있다.
+
+도발 등 기존 Field targeting 규칙은 그대로 적용.
+
+================================
+9. Damage 이중 안전장치
+================================
+
+UI/Target Resolver뿐 아니라
+실제 Damage Engine에서도 다시 확인해.
+
+보호 상태 Champion에 DAMAGE가 들어오려고 하면:
+
+damageApplied = 0
+
+GameState Champion HP 변경 없음.
+
+잘못된 effect나 stale client 요청이 들어와도
+Champion에게 피해가 들어가면 안 된다.
+
+단 exception/crash는 발생시키지 마.
+
+================================
+10. Champion Ability는 계속 사용 가능
+================================
+
+Champion이 보호 상태라고 해서
+Champion 자체의 고유 능력까지 비활성화하지 마.
+
+기존 Champion Ability는 정상적으로 사용할 수 있다.
+
+무적/타겟 불가는:
+
+- 피해 받기
+- 대상으로 선택되기
+
+에 대한 보호다.
+
+Champion의 고유 능력 사용 기능 자체는 유지한다.
+
+================================
+11. Champion Token RETIRE = 즉시 패배
+================================
+
+가장 중요:
+
+이 DEPLOY_CHAMPION_TOKEN 효과로 특별 전개된
+Champion Token 인스턴스가 RETIRE하면
+
+그 Token의 소유 플레이어는 즉시 패배한다.
+
+흐름:
+
+Champion Token currentHealth <= 0
+→ RETIRE
+→ 해당 Token이 active Champion-linked Token인지 확인
+→ owner loses immediately
+→ opponent wins
+
+기존 정상 Match Result 흐름을 사용해.
+
+별도의 페이지 reload/reset 방식으로 처리하지 마.
+
+================================
+12. RETIRE 판정만 정확히 연결
+================================
+
+패배 조건은:
+
+"이 특별 전개 효과로 활성화된 Champion Token이 RETIRE"
+
+했을 때다.
+
+단순히:
+
+isChampionToken = true
+
+라는 이유만으로 모든 Champion Token의 RETIRE가
+패배를 발생시키면 안 된다.
+
+반드시 instance-level state를 사용해.
+
+예:
+
+isChampionToken = true
+
+와 별도로:
+
+isActiveChampionToken = true
+
+또는:
+
+championDeploymentContext = {
+  ownerChampionId,
+  defeatOnRetire: true
+}
+
+같은 명시적인 상태를 사용해.
+
+================================
+13. Random으로 나온 Champion Token과 구분
+================================
+
+예를 들어:
+
+FULL_RANDOM
+
+효과를 통해 동일한 Champion Token 카드가 우연히 등장했다고 하자.
+
+이 경우에는:
+
+isChampionToken = true
+
+일 수 있지만
+
+isActiveChampionToken = false
+
+다.
+
+따라서:
+
+- Champion 본체 무적 없음
+- Champion 본체 타겟 불가 없음
+- Token RETIRE 시 패배 없음
+
+이어야 한다.
+
+오직:
+
+DEPLOY_CHAMPION_TOKEN
+
+경로로 전개된 인스턴스만 특별 규칙 적용.
+
+================================
+14. 기존 Champion Token 효과 정상 발동
+================================
+
+Champion Token은 Field에 실제 등장하기 때문에
+기존 ENTER_FIELD 규칙을 정상 적용해.
+
+즉:
+
+DEPLOY_CHAMPION_TOKEN
+→ CardInstance 생성
+→ Field 입장
+→ ENTER_FIELD
+→ 해당 카드의 "등장" 효과 발동
+
+순서가 정상적으로 이어져야 한다.
+
+ENTER_FIELD를 건너뛰면 안 된다.
+
+================================
+15. Generated 여부
+================================
+
+이 효과로 새로운 CardInstance가 만들어지므로
+기존 KO Generated 규칙과 일관되게 처리해.
+
+단 Champion Token의 특별 deployment 상태와
+Generated 여부는 서로 다른 개념으로 유지해.
+
+================================
+16. 연결된 Champion Token이 없을 경우
+================================
+
+ChampionDefinition에:
+
+championTokenDefinitionId
+
+가 없는데
+
+"챔피언을 소환합니다."
+
+효과가 실행되면
+앱을 crash시키지 마.
+
+Effect validation 단계에서 명확히 실패시켜.
+
+예:
+
+CHAMPION_TOKEN_NOT_CONFIGURED
+
+Admin/개발 환경에서는:
+
+"이 챔피언에 연결된 챔피언 토큰 카드가 없습니다."
+
+라고 확인 가능하게 해.
+
+임의의 Champion Token을 선택하면 안 된다.
+
+================================
+17. 연결 카드가 잘못된 경우
+================================
+
+championTokenDefinitionId가 존재하지만:
+
+- CardDefinition 없음
+- 삭제됨
+- 잘못된 reference
+
+등이면 안전하게 effect resolution 실패.
+
+다른 카드를 대신 소환하지 마.
+
+================================
+18. Board 배치
+================================
+
+Champion Token도 선수 카드이므로
+기존 Field/Board 시스템을 사용해.
+
+현재 프로젝트에 이미
+Champion Token 직접 전개용 slot 처리 규칙이 있다면 그대로 재사용해.
+
+이번 작업에서 4-slot Board 규칙 자체는 변경하지 마.
+
+================================
+19. UI 표현
+================================
+
+Champion Token이 활성화된 동안
+기존 Champion UI에 작은 상태 표시를 추가해도 된다.
+
+예:
+
+"챔피언 전개 중"
+또는 Shield/Protected 표시
+
+단 핵심은 시각효과가 아니라
+실제 engine target/damage protection이다.
+
+Champion 본체는 target highlight가 절대 나타나지 않아야 한다.
+
+================================
+20. SFX / Animation
+================================
+
+Champion Token 전개도 실제 Field Entry이므로
+기존:
+
+- 카드 등장 애니메이션
+- ENTER SFX
+- 카드 Entrance Music
+
+등이 있다면 정상적으로 재사용해.
+
+오디오 때문에 게임 로직을 따로 만들지 마.
+
+================================
+21. 테스트
+================================
+
+반드시 아래 테스트해.
+
+TEST 1
+
+Champion current HP = 20
+Token base HP = 10
+
+"챔피언을 소환합니다."
+
+→ Token 30/30
+
+
+TEST 2
+
+Champion current HP = 7
+Token base HP = 10
+
+→ Token 17/17
+
+
+TEST 3
+
+Champion Token 활성화 후
+적 선수가 Champion 본체 직접 공격 시도
+
+→ invalid target
+
+
+TEST 4
+
+기술 카드로 Champion 본체 피해 시도
+
+→ target으로 선택 불가
+
+
+TEST 5
+
+stale/강제 DAMAGE 요청이 Champion에게 전달
+
+→ damageApplied = 0
+
+
+TEST 6
+
+Champion Token은 정상적으로 공격 가능
+
+
+TEST 7
+
+Champion Token이 피해를 받아 HP 0
+→ RETIRE
+→ Owner 즉시 패배
+
+
+TEST 8
+
+FULL_RANDOM으로 같은 Champion Token 등장
+
+→ Champion 본체 무적 없음
+→ Token RETIRE해도 패배 없음
+
+
+TEST 9
+
+Champion Token ENTER_FIELD 효과
+→ 정상 발동
+
+
+TEST 10
+
+Champion에 championTokenDefinitionId 없음
+
+→ 안전하게 실패
+→ crash 없음
+
+================================
+22. 중요한 구조
+================================
+
+최종적으로:
+
+"챔피언을 소환합니다."
+
+↓
+DEPLOY_CHAMPION_TOKEN
+
+↓
+current Champion의 championTokenDefinitionId resolve
+
+↓
+CardDefinition으로 Token Instance 생성
+
+↓
+Token Max HP += Champion CURRENT HP
+
+↓
+Token current HP = 새 Max HP
+
+↓
+Field 전개 + ENTER_FIELD
+
+↓
+Champion 본체:
+DAMAGE IMMUNE
+UNTARGETABLE
+
+↓
+특별 전개 Token RETIRE
+
+↓
+즉시 패배
+
+이 구조로 만들어.
+
+================================
+23. 절대 하지 말 것
+================================
+
+- 특정 Champion 이름 하드코딩 금지
+- 판도라 전용 코드 금지
+- Token 이름으로 lookup 금지
+- 모든 isChampionToken에 패배 규칙 적용 금지
+- FULL_RANDOM Champion Token에 보호 적용 금지
+- Champion HP를 Token HP와 매번 동기화 금지
+- Champion 본체 삭제 금지
+- 기존 전투/RETIRE 규칙 대규모 변경 금지
+
+현재 ChampionDefinition / CardDefinition /
+Effect DSL / Target Resolver / Damage / RETIRE 시스템을 재사용하고
+
+DEPLOY_CHAMPION_TOKEN에 필요한 범용 메커니즘만 최소 추가해.

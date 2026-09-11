@@ -130,11 +130,8 @@ function resolveCardDefinition(
   reference: { id?: string; name?: string } | undefined,
 ): CardDefinition | undefined {
   if (definition) return definition;
-  if (!reference) return undefined;
-  return state.cardPool?.find((candidate) =>
-    (reference.id !== undefined && candidate.id === reference.id) ||
-    (reference.name !== undefined && candidate.name === reference.name),
-  );
+  if (!reference?.id) return undefined;
+  return state.cardPool?.find((candidate) => candidate.id === reference.id);
 }
 
 type TriggerContext = NonNullable<GameState['targetingState']>['triggerContext'];
@@ -437,41 +434,54 @@ function applyEffect(
       if (!validDefinition) throw new Error(`${effect.action} requires a serializable card definition.`);
       const owner = state.players.find((player) => player.id === playerId);
       if (!owner) return state;
-      const generatedBase = generateCardInstance(definition, {
-        instanceId: `${sourceCard.instanceId}:${effect.action}:${state.events.length}`,
-        isGenerated: true,
-      });
       const aggregate = effect.action === 'SUMMON' && effect.values?.aggregateStats?.source === 'LAST_DESTROYED_TARGETS'
         ? state.targetingState?.lastAggregatedStats
         : undefined;
-      const generated = aggregate
-        ? {
-            ...generatedBase,
-            currentAttack: aggregate.attack,
-            currentHealth: aggregate.health,
-            maxHealth: aggregate.health,
-          }
-        : generatedBase;
+      const generationCount = Math.max(1, Math.min(20, effect.values?.count ?? 1));
+      const generatedCards = Array.from({ length: generationCount }, (_, index) => {
+        const generatedBase = generateCardInstance(definition, {
+          instanceId: `${sourceCard.instanceId}:${effect.action}:${state.events.length}:${index}`,
+          isGenerated: true,
+        });
+        return aggregate
+          ? {
+              ...generatedBase,
+              currentAttack: aggregate.attack,
+              currentHealth: aggregate.health,
+              maxHealth: aggregate.health,
+            }
+          : generatedBase;
+      });
       if (effect.action === 'GENERATE') {
         return {
           ...state,
           players: state.players.map((player) => player.id === playerId
-            ? { ...player, hand: [...player.hand, generated] } : player),
-          events: [...state.events, { type: 'CARD_GENERATED', playerId, cardInstanceId: generated.instanceId,
-            source: { type: 'CARD', cardInstanceId: sourceCard.instanceId },
-            target: { type: 'CARD', cardInstanceId: generated.instanceId }, reason: 'GENERATE' }],
+            ? effect.values?.destination === 'DECK'
+              ? { ...player, deck: [...player.deck, ...generatedCards] }
+              : { ...player, hand: [...player.hand, ...generatedCards] }
+            : player),
+          events: [...state.events, ...generatedCards.map((generated) => ({
+            type: 'CARD_GENERATED' as const, playerId, cardInstanceId: generated.instanceId,
+            source: { type: 'CARD' as const, cardInstanceId: sourceCard.instanceId },
+            target: { type: 'CARD' as const, cardInstanceId: generated.instanceId }, reason: 'GENERATE' as const,
+          }))],
         };
       }
-      const slot = owner.board.findIndex((card) => card === null);
-      if (slot < 0) return state;
-      const summonState = clearLastAggregatedStats({
-        ...state,
-        targetingState: state.targetingState
-          ? { ...state.targetingState, lastTargetIds: [generated.instanceId] }
-          : state.targetingState,
-      });
-      return enterField(summonState, playerId, generated, slot as 0 | 1 | 2 | 3,
-        { type: 'CARD', cardInstanceId: sourceCard.instanceId });
+      let summonState = clearLastAggregatedStats(state);
+      for (const generated of generatedCards) {
+        const currentOwner = summonState.players.find((player) => player.id === playerId);
+        const slot = currentOwner?.board.findIndex((card) => card === null) ?? -1;
+        if (slot < 0) break;
+        summonState = {
+          ...summonState,
+          targetingState: summonState.targetingState
+            ? { ...summonState.targetingState, lastTargetIds: [generated.instanceId] }
+            : summonState.targetingState,
+        };
+        summonState = enterField(summonState, playerId, generated, slot as 0 | 1 | 2 | 3,
+          { type: 'CARD', cardInstanceId: sourceCard.instanceId });
+      }
+      return summonState;
     }
     if (effect.action === 'SWITCH_EFFECT_BRANCH') {
       const branch = sourceCard.boardSlot !== null && sourceCard.boardSlot <= 1
