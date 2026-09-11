@@ -1,0 +1,436 @@
+현재 KO 프로젝트의 Champion Admin에
+"챔피언 전체 구현 프롬프트 생성" 기능을 추가해줘.
+
+목표:
+챔피언은 선수 카드보다 구현해야 할 효과 영역이 많기 때문에,
+각 효과마다 따로 Replit 구현 프롬프트를 생성하지 않고
+
+현재 Champion에 설정된 모든 효과/퀘스트/강화 능력/특수 메커니즘을 분석해서
+한 번에 구현할 수 있는 Replit Agent용 종합 프롬프트를 생성할 수 있게 한다.
+
+================================
+1. 새 버튼 추가
+================================
+
+Champion Admin 편집 화면에:
+
+[챔피언 전체 구현 프롬프트 생성]
+
+버튼을 추가해.
+
+이 버튼은 개별 효과 분석 버튼과 별개다.
+
+버튼을 누르면 현재 Champion에 설정된 모든 관련 데이터를 수집해서
+하나의 종합 Replit 구현 프롬프트를 생성한다.
+
+================================
+2. 수집 대상
+================================
+
+현재 Champion에서 존재하는 항목을 모두 포함해.
+
+- Champion 이름
+- 기본 Champion Ability
+- Ability cost
+- Ability effect text
+- Ability structured effect
+- Quest 존재 여부
+- Quest 이름
+- Quest 설명
+- Quest 조건
+- Quest 목표 수치
+- Quest reward
+- Quest structured condition
+- Quest structured reward
+- 강화된 Champion Ability
+- 강화 Ability cost
+- 강화 Ability effect text
+- 강화 structured effect
+- 연결된 championTokenDefinitionId
+- 연결된 Champion Token 카드 정보
+- 현재 Analyzer 결과
+- unsupportedParts
+- NEW_MECHANIC_REQUIRED 항목
+- 관련 Effect Library 상태
+
+존재하지 않는 항목은 생략해.
+
+================================
+3. 연결된 Champion Token 정보
+================================
+
+Champion Token은 Champion Admin에서 따로 정의하지 않고
+Card Admin의 CardDefinition을 연결해서 사용한다.
+
+따라서 championTokenDefinitionId가 있다면
+해당 CardDefinition을 resolve해서
+종합 프롬프트에 필요한 정보를 포함해.
+
+예:
+
+Champion Token:
+- Name
+- CardDefinition ID
+- Attack
+- Health
+- Keywords
+- Effect text
+- Structured effects
+- isChampionToken
+
+단 Champion Token 자체 카드 효과는
+Card Admin이 source of truth라는 사실을 명시해.
+
+Champion Token 효과를 ChampionDefinition에 복제 저장하지 마.
+
+================================
+4. 모든 효과를 먼저 분석
+================================
+
+종합 프롬프트를 만들기 전에
+현재 Champion의 각 효과 영역을 최신 Effect Registry 기준으로 분석해.
+
+분석 대상:
+
+CHAMPION_ABILITY
+QUEST_CONDITION
+QUEST_REWARD
+UPGRADED_CHAMPION_ABILITY
+
+필요하면 연결된 Champion Token의 effect도
+CardDefinition에 저장된 structured effect를 참조해.
+
+각 항목마다:
+
+SUPPORTED
+NEW_MECHANIC_REQUIRED
+ANALYSIS_FAILED
+
+상태를 수집해.
+
+stale analyzer cache를 사용하지 마.
+
+================================
+5. 종합 unsupportedParts 생성
+================================
+
+각 효과에서 필요한데 아직 구현되지 않은 메커니즘을 하나로 모아.
+
+예:
+
+Basic Ability:
+- supported
+- DAMAGE
+- PLAYER_CHOICE
+
+Quest Condition:
+- missing CARD_GENERATED progress tracker
+
+Quest Reward:
+- missing DEPLOY_CHAMPION_TOKEN
+
+Upgraded Ability:
+- supported
+
+처럼 정리.
+
+같은 unsupported mechanic이 여러 곳에서 반복되면
+종합 프롬프트에서는 중복 구현하지 않도록 하나로 합쳐.
+
+================================
+6. 생성되는 Replit Prompt의 핵심 목표
+================================
+
+생성되는 프롬프트는 Replit Agent에게:
+
+"이 Champion이 현재 작성된 설계 그대로 실제 게임에서 완전히 동작하도록,
+필요한 모든 미지원 메커니즘을 한 번에 구현하세요."
+
+라고 명확히 지시해야 한다.
+
+단 특정 Champion 전용 하드코딩은 금지.
+
+================================
+7. 기존 시스템 우선 재사용
+================================
+
+종합 프롬프트에는 반드시 다음 규칙 포함:
+
+- 현재 Effect Library 먼저 확인
+- 기존 Trigger 재사용
+- 기존 Action 재사용
+- 기존 Target Resolver 재사용
+- 기존 Value Resolver 재사용
+- 기존 Condition 재사용
+- 기존 Listener / Duration / Sequence 재사용
+- 기존 Quest system 재사용
+- 기존 Champion system 재사용
+- 기존 CardDefinition/Card Registry 재사용
+
+현재 기능 조합으로 가능한 것은 새로 만들지 마.
+
+부족한 부분만 범용 메커니즘으로 추가.
+
+================================
+8. 특정 Champion 하드코딩 금지
+================================
+
+생성 프롬프트에는 반드시:
+
+금지:
+if (champion.name === "판도라")
+if (champion.name === "예거")
+
+같은 코드는 작성하지 말 것.
+
+새 기능은 모두 향후 다른 Champion에서도 재사용 가능한
+generic mechanic으로 구현할 것.
+
+예:
+
+QUEST_PROGRESS_EVENT
+UPGRADE_CHAMPION_ABILITY
+DEPLOY_CHAMPION_TOKEN
+NEXT_TURN_GOLD_BONUS
+GENERATED_CARD_PROGRESS
+
+등 현재 실제로 필요한 범용 구조로 구현.
+
+================================
+9. Champion 전체 구현 순서
+================================
+
+생성 프롬프트에는 가능하면 다음 순서를 포함해.
+
+1. 현재 ChampionDefinition 확인
+2. Effect Registry 확인
+3. 각 Champion effect 분석
+4. 기존 effect 조합으로 가능한 부분 연결
+5. missing mechanic 목록 생성
+6. missing mechanic만 범용으로 구현
+7. Analyzer mapping 추가
+8. Schema/Registry 등록
+9. Executor 연결
+10. Quest progress 연결
+11. Champion upgrade/reward 연결
+12. Targeting 연결
+13. Champion Token reference 연결
+14. 테스트
+15. 현재 Champion 전체 기능 검증
+
+================================
+10. Replit Prompt 화면
+================================
+
+버튼 클릭 후:
+
+[챔피언 전체 구현 프롬프트]
+
+큰 textarea
+
+[프롬프트 복사]
+
+버튼 제공.
+
+가능하면 같이 표시:
+
+분석 요약
+
+✓ 구현 가능:
+[...]
+
+⚠ 새 메커니즘 필요:
+[...]
+
+❌ 분석 실패:
+[...]
+
+================================
+11. ANALYSIS_FAILED가 있어도 버튼은 동작
+================================
+
+일부 효과가 ANALYSIS_FAILED여도
+종합 Prompt 생성 자체를 막지 마.
+
+이 경우 Prompt에:
+
+"이 효과 문장은 현재 Analyzer가 완전히 이해하지 못했으므로
+원본 텍스트를 기준으로 현재 DSL과 비교해 구현/Analyzer 확장을 수행하세요."
+
+라고 포함해.
+
+즉 버튼은 항상 사용할 수 있어야 한다.
+
+================================
+12. 구현 완료 후 전체 다시 분석
+================================
+
+같은 화면에:
+
+[전체 구현 완료 - 다시 분석]
+
+버튼도 추가해.
+
+버튼 클릭 시:
+
+- 최신 Effect Registry 다시 읽기
+- 최신 Analyzer 사용
+- 기본 능력 다시 분석
+- Quest 다시 분석
+- Reward 다시 분석
+- 강화 능력 다시 분석
+
+그리고 전체 상태를 다시 표시.
+
+모두 지원되면:
+
+✓ CHAMPION FULLY SUPPORTED
+
+상태 표시.
+
+일부가 아직 미지원이면:
+남은 unsupportedParts만으로
+새 종합 Prompt를 다시 생성할 수 있게 해.
+
+================================
+13. 선수 카드의 개별 Prompt 기능은 유지
+================================
+
+기존:
+
+선수 카드 효과
+→ Replit 구현 프롬프트 생성
+
+기능은 삭제하지 마.
+
+Champion에만 추가로
+"전체 구현 프롬프트" 기능을 제공하는 것이다.
+
+================================
+14. Champion 저장 상태 보호
+================================
+
+전체 Prompt 생성,
+전체 다시 분석을 눌러도
+
+현재 입력 중인 Champion form 데이터가 초기화되면 안 된다.
+
+금지:
+
+form.reset()
+페이지 reload
+refetch 후 old Champion으로 overwrite
+
+분석 결과와 Prompt 결과만 별도 state에 저장해.
+
+================================
+15. 외부 AI 사용 금지
+================================
+
+Prompt 생성은 프로젝트 내부 템플릿 기반으로 수행해.
+
+외부:
+- OpenAI API
+- Cursor API
+- Devin
+- OpenHands
+
+등을 호출하지 마.
+
+현재 Card Prompt Generator가 있다면
+그 구조를 재사용/확장해.
+
+================================
+16. 테스트
+================================
+
+아래 유형의 Champion으로 실제 테스트해.
+
+TEST A
+Quest 없는 단순 Champion
+
+- 기본 Ability만 존재
+
+→ 전체 Prompt 생성 정상
+
+
+TEST B
+Quest Champion
+
+- 기본 Ability
+- Quest Condition
+- Quest Reward
+- Upgraded Ability
+
+→ 모두 종합 Prompt에 포함
+
+
+TEST C
+Champion Token 연결 Champion
+
+→ championTokenDefinitionId와 연결 카드 정보 포함
+
+
+TEST D
+여러 unsupported mechanic 존재
+
+→ 중복 제거된 missing mechanic 목록 생성
+
+
+TEST E
+한 항목 ANALYSIS_FAILED
+
+→ Prompt 생성 자체는 정상
+
+
+TEST F
+구현 후 전체 다시 분석
+
+→ 최신 Registry 기준으로 재분석
+
+================================
+17. 최종 사용자 흐름
+================================
+
+Champion Admin
+
+Champion 설정
+↓
+각 효과 입력
+↓
+필요하면 개별 효과 분석
+↓
+[챔피언 전체 구현 프롬프트 생성]
+↓
+하나의 Replit Agent Prompt 생성
+↓
+복사
+↓
+Replit Agent 실행
+↓
+범용 메커니즘 한꺼번에 구현
+↓
+[전체 구현 완료 - 다시 분석]
+↓
+모든 효과 지원 여부 확인
+
+이 흐름으로 만들어.
+
+================================
+18. 완료 조건
+================================
+
+Champion이 여러 효과를 가지고 있어도
+사용자가 효과마다 일일이 Prompt를 여러 개 만들 필요 없이
+
+한 번의:
+
+[챔피언 전체 구현 프롬프트 생성]
+
+으로 현재 Champion 구현에 필요한 작업을
+하나의 Replit Prompt로 받을 수 있어야 한다.
+
+관련 Champion Admin / Analyzer / Prompt Generator만 최소 수정하고
+게임 엔진 전체 리팩터링은 하지 마.
+
+완료 후 추가 기능은 만들지 말고 종료해줘.

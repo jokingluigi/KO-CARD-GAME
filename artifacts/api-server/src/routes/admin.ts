@@ -225,6 +225,33 @@ async function validatePublishedChampionToken(
   return { ok: true };
 }
 
+function containsStructuredAction(value: unknown, action: string): boolean {
+  if (Array.isArray(value)) return value.some((item) => containsStructuredAction(item, action));
+  if (!value || typeof value !== "object") return false;
+  const record = value as Record<string, unknown>;
+  return record.action === action ||
+    Object.values(record).some((item) => containsStructuredAction(item, action));
+}
+
+async function validatePublishedChampionEffects(
+  champion: {
+    championTokenDefinitionId: string | null;
+    abilityEffects: unknown;
+    questRewardEffects: unknown;
+    upgradedAbilityEffects: unknown;
+  },
+): Promise<{ ok: true } | { ok: false; message: string }> {
+  const requiresChampionToken = [
+    champion.abilityEffects,
+    champion.questRewardEffects,
+    champion.upgradedAbilityEffects,
+  ].some((config) => containsStructuredAction(config, "DEPLOY_CHAMPION_TOKEN"));
+  if (requiresChampionToken && !champion.championTokenDefinitionId) {
+    return { ok: false, message: "챔피언 토큰 전개 효과에는 연결된 Champion Token 카드가 필요합니다." };
+  }
+  return validatePublishedChampionToken(champion.championTokenDefinitionId);
+}
+
 const CARD_IMAGE_TYPES = {
   "image/png": ["png"],
   "image/jpeg": ["jpg", "jpeg"],
@@ -948,7 +975,19 @@ router.post("/champions/:id/status", async (request, response): Promise<void> =>
       .where(eq(championsTable.id, id))
       .limit(1);
     if (!existing) { response.status(404).json({ message: "챔피언을 찾을 수 없습니다." }); return; }
-    const tokenValidation = await validatePublishedChampionToken(existing.championTokenDefinitionId);
+    const [champion] = await db
+      .select({
+        championTokenDefinitionId: championsTable.championTokenDefinitionId,
+        abilityEffects: championsTable.abilityEffects,
+        questRewardEffects: championsTable.questRewardEffects,
+        upgradedAbilityEffects: championsTable.upgradedAbilityEffects,
+      })
+      .from(championsTable)
+      .where(eq(championsTable.id, id))
+      .limit(1);
+    const tokenValidation = champion
+      ? await validatePublishedChampionEffects(champion)
+      : { ok: false as const, message: "챔피언을 찾을 수 없습니다." };
     if (!tokenValidation.ok) { response.status(422).json({ message: tokenValidation.message }); return; }
   }
   const [champion] = await db.update(championsTable).set({

@@ -275,6 +275,9 @@ function effect(
   referenceErrors: CardReferenceError[] = [],
 ): StructuredEffect | null {
   const schema = ACTION_SCHEMAS[action], values: StructuredEffect["values"] = {};
+  if (action === "DEPLOY_CHAMPION_TOKEN") {
+    return { trigger, action, ...(conditions?.length ? { conditions } : {}) };
+  }
   if (action === "QUEUE_EFFECT") {
     const match = body.match(NEXT_PLAY_HEALTH_BUFF_PATTERN);
     if (!match) return null;
@@ -465,7 +468,9 @@ export function analyzeEffectText(input: string, options: EffectAnalysisOptions 
     ["STUN", /(?:기절|PARALYZE)(?:시키)?/i],
     ["SILENCE", /침묵(?:시키(?:고|니다)?|)/], ["DESTROY", /파괴/],
     ["RELEASE_CAPTURED", /(?:포획.*(?:해방|풀)|해방.*포획)/], ["CAPTURE", /포획/],
-    ["REMOVE_FROM_GAME", /(?:제거|ERASE)/i], ["SUMMON", /(?:소환|SUMMON)/i], ["GENERATE", /(?:생성(?!된)|GENERATE)/i],
+     ["REMOVE_FROM_GAME", /(?:제거|ERASE)/i],
+     ["DEPLOY_CHAMPION_TOKEN", /(?:내\s*)?챔피언(?:을|를)?\s*소환(?:합니다|한다|해요|하세요)?/i],
+     ["SUMMON", /(?:소환|SUMMON)/i], ["GENERATE", /(?:생성(?!된)|GENERATE)/i],
     ["REMOVE_KEYWORD", /(?:러쉬|기습|도발|회피|연타)(?:를|을)?\s*(?:제거|잃)/],
     ["ADD_KEYWORD", /(?:러쉬|기습|도발|회피|연타)(?:를|을)?\s*(?:부여|얻)/],
   ];
@@ -481,6 +486,7 @@ export function analyzeEffectText(input: string, options: EffectAnalysisOptions 
       const matches = recognized.flatMap(([action, matcher]) => {
       if (!isActiveAction(action)) return [];
        if (action === "ADD_GOLD" && deferredGoldClause) return [];
+       if (action === "SUMMON" && /(?:내\s*)?챔피언(?:을|를)?\s*소환/i.test(clause)) return [];
       const match = matcher.exec(clause);
       return match ? [{ action, matcher, index: match.index }] : [];
     }).sort((left, right) => left.index - right.index);

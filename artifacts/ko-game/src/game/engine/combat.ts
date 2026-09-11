@@ -12,7 +12,7 @@ import {
   resolveTriggeredAbilities,
 } from '../effects/effect-engine';
 import { processChampionQuestEvents } from '../champions/quests';
-import { findDirectDeployedChampion } from './direct-champion';
+import { findDirectDeployedChampion, isChampionProtectedByToken } from './direct-champion';
 
 export type AttackTarget =
   | {
@@ -264,6 +264,13 @@ export function attack(
         state,
         'INVALID_ATTACK_TARGET',
         '해당 대상을 공격할 수 없습니다.',
+      );
+    }
+    if (isChampionProtectedByToken(state, target.playerId)) {
+      return actionFailure(
+        state,
+        'INVALID_ATTACK_TARGET',
+        '챔피언 토큰이 활성화된 동안 챔피언 본체를 공격할 수 없습니다.',
       );
     }
 

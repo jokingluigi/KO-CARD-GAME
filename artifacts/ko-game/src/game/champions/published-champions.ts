@@ -1,5 +1,6 @@
 import type { ChampionAbility, ChampionDefinition, ChampionEffect, ChampionQuest } from "./types";
 import type { CardEffect } from "../effects/types";
+import { ACTIONS } from "@workspace/effect-registry";
 
 type Structured = { effects?: Array<{ action?: string; target?: unknown; values?: unknown }> };
 export type PublishedChampionRecord = {
@@ -45,6 +46,9 @@ export function championRecordToDefinition(record: PublishedChampionRecord): Cha
   const tokenId = record.championTokenDefinitionId;
   const directTokenReward = typeof tokenId === "string" &&
     rewardActions.some((item) => item.action === "DIRECT_DEPLOY_CHAMPION_TOKEN");
+  const structuredRewardEffects = effects(record.questRewardEffects, tokenId)
+    .filter((item): item is Extract<ChampionEffect, { type: "STRUCTURED" }> =>
+      item.type === "STRUCTURED" && (ACTIONS as readonly string[]).includes(item.action));
   const quest: ChampionQuest | null = record.hasQuest && record.questCondition?.event &&
     record.questName && record.questProgressRequired
     ? {
@@ -53,6 +57,8 @@ export function championRecordToDefinition(record: PublishedChampionRecord): Cha
         requiredProgress: record.questProgressRequired,
          reward: directTokenReward
            ? { type: "DIRECT_DEPLOY_CHAMPION_TOKEN", cardDefinitionId: tokenId }
+           : structuredRewardEffects.length
+             ? { type: "STRUCTURED", effects: structuredRewardEffects }
            : rewardActions.some((item) => item.action === "UPGRADE_CHAMPION_ABILITY")
              ? { type: "UPGRADE_ABILITY" } : { type: "GAIN_GOLD", amount: 0 },
       }

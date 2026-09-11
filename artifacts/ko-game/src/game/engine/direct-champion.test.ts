@@ -14,6 +14,8 @@ import { useChampionAbility } from './champion-system';
 import { startGame } from './turn-system';
 import type { GameState } from '../types/game-state';
 import { TEST_CHAMPION_TOKEN_DEFINITION } from '../cards/test-cards';
+import { TEST_CHAMPIONS } from '../champions/test-champions';
+import type { ChampionDefinition } from '../champions/types';
 
 const fixedRandom = () => 0.5;
 
@@ -53,6 +55,23 @@ function givePlayerTwoAttacker(state: GameState): GameState {
   };
 }
 
+function linkedChampion(overrides: Partial<ChampionDefinition> = {}): ChampionDefinition {
+  const base = TEST_CHAMPIONS.find((champion) => champion.id === 'test-champion-no-quest')!;
+  return {
+    ...base,
+    id: 'test-linked-champion',
+    championTokenDefinitionId: TEST_CHAMPION_TOKEN_DEFINITION.id,
+    ability: {
+      ...base.ability,
+      effects: [{
+        type: 'STRUCTURED',
+        action: 'DEPLOY_CHAMPION_TOKEN',
+      }],
+    },
+    ...overrides,
+  };
+}
+
 test('챔피언 자신의 효과로만 직접 출전 상태를 만든다', () => {
   const state = deployDirectChampion();
   const card = findDirectDeployedChampion(state, 'player-1');
@@ -64,7 +83,7 @@ test('챔피언 자신의 효과로만 직접 출전 상태를 만든다', () =>
   assert.equal(card.isGenerated, true);
 });
 
-test('직접 출전 카드 체력이 기존 플레이어 체력을 이어받는다', () => {
+test('직접 출전 토큰은 전개 순간 Champion 현재 체력을 기본 최대 체력에 더한다', () => {
   const started = startGame(
     createInitialGameState([
       'test-champion-direct-deploy',
@@ -87,11 +106,9 @@ test('직접 출전 카드 체력이 기존 플레이어 체력을 이어받는�
   const result = useChampionAbility(damaged, 'player-1');
 
   assert.equal(result.success, true);
-  assert.equal(
-    findDirectDeployedChampion(result.state, 'player-1')?.currentHealth,
-    7,
-  );
-  assert.equal(getPlayerSurvivalHealth(result.state, 'player-1'), 7);
+  assert.equal(findDirectDeployedChampion(result.state, 'player-1')?.currentHealth, 27);
+  assert.equal(findDirectDeployedChampion(result.state, 'player-1')?.maxHealth, 27);
+  assert.equal(getPlayerSurvivalHealth(result.state, 'player-1'), 27);
 });
 
 test('직접 출전 챔피언은 침묵되지 않는다', () => {
@@ -117,15 +134,22 @@ test('직접 출전 챔피언은 효과로 DESTROY할 수 없다', () => {
   assert.equal(result.state, state);
 });
 
-test('플레이어 직접 피해는 직접 출전 카드 체력에 적용된다', () => {
+test('직접 출전 토큰은 필드 선수로 공격할 수 있고 Champion 본체는 공격할 수 없다', () => {
   const deployed = deployDirectChampion();
   const directChampion = findDirectDeployedChampion(deployed, 'player-1');
   assert.ok(directChampion);
   const ready = givePlayerTwoAttacker(deployed);
   const attacker = ready.players[1].board[0]!;
-  const result = attack(ready, 'player-2', attacker.instanceId, {
+  const blocked = attack(ready, 'player-2', attacker.instanceId, {
     type: 'PLAYER',
     playerId: 'player-1',
+  });
+  assert.equal(blocked.success, false);
+
+  const result = attack(ready, 'player-2', attacker.instanceId, {
+    type: 'WRESTLER',
+    playerId: 'player-1',
+    cardInstanceId: directChampion.instanceId,
   });
 
   assert.equal(result.success, true);
@@ -136,11 +160,70 @@ test('플레이어 직접 피해는 직접 출전 카드 체력에 적용된다'
   );
   const damageEvent = [...result.state.events]
     .reverse()
-    .find((event) => event.type === 'DAMAGE_DEALT');
+    .find((event) =>
+      event.type === 'DAMAGE_DEALT' &&
+      event.target.type === 'CARD' &&
+      event.target.cardInstanceId === directChampion.instanceId,
+    );
   assert.deepEqual(damageEvent?.target, {
     type: 'CARD',
     cardInstanceId: directChampion.instanceId,
   });
+});
+
+test('구조화 DEPLOY_CHAMPION_TOKEN은 현재 챔피언 연결을 사용하고 등장 효과를 실행한다', () => {
+  const champion = linkedChampion({
+    ability: {
+      id: 'linked-deploy',
+      name: '연결 토큰 전개',
+      description: '챔피언을 소환합니다.',
+      effects: [{
+        type: 'STRUCTURED',
+        action: 'DEPLOY_CHAMPION_TOKEN',
+      }],
+    },
+  });
+  const state = startGame(
+    createInitialGameState(
+      ['test-linked-champion', 'test-champion-no-quest'],
+      [TEST_CHAMPION_TOKEN_DEFINITION],
+      [champion, TEST_CHAMPIONS[1]!],
+    ),
+    fixedRandom,
+  );
+  const damaged = {
+    ...state,
+    players: state.players.map((player) =>
+      player.id === 'player-1' && player.champion
+        ? { ...player, health: 13, champion: { ...player.champion, health: 13 } }
+        : player,
+    ),
+  };
+  const result = useChampionAbility(damaged, 'player-1');
+  assert.equal(result.success, true);
+  const token = findDirectDeployedChampion(result.state, 'player-1');
+  assert.ok(token);
+  assert.equal(token.currentHealth, 33);
+  assert.equal(token.maxHealth, 33);
+});
+
+test('구조화 Champion Token 전개는 연결이 없거나 잘못되면 비용을 지불하지 않고 실패한다', () => {
+  const champion = linkedChampion({
+    championTokenDefinitionId: null,
+  });
+  const state = startGame(
+    createInitialGameState(
+      ['test-linked-champion', 'test-champion-no-quest'],
+      [TEST_CHAMPION_TOKEN_DEFINITION],
+      [champion, TEST_CHAMPIONS[1]!],
+    ),
+    fixedRandom,
+  );
+  const result = useChampionAbility(state, 'player-1');
+  assert.equal(result.success, false);
+  if (!result.success) assert.equal(result.errorCode, 'CHAMPION_TOKEN_NOT_CONFIGURED');
+  assert.equal(result.state.players[0].currentGold, 1);
+  assert.equal(findDirectDeployedChampion(result.state, 'player-1'), null);
 });
 
 test('일반 피해로 직접 출전 카드가 RETIRE되면 즉시 패배한다', () => {

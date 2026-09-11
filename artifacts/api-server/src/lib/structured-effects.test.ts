@@ -544,6 +544,18 @@ test("Champion effect context는 Trigger 없는 효과 본문을 공용 DSL로 �
   assert.equal(isStructuredEffects({ effects: buff.effects }), true);
 });
 
+test("챔피언 소환 문구는 일반 SUMMON과 분리된 DEPLOY_CHAMPION_TOKEN으로 분석한다", () => {
+  for (const text of ["챔피언을 소환합니다.", "챔피언을 소환한다.", "내 챔피언을 소환합니다."]) {
+    const result = analyzeEffectText(text, { defaultTrigger: "ENTER_FIELD" });
+    assert.equal(result.outcome, "supported", text);
+    assert.equal(result.effects.length, 1, text);
+    assert.deepEqual(result.effects[0], {
+      trigger: "ENTER_FIELD",
+      action: "DEPLOY_CHAMPION_TOKEN",
+    }, text);
+  }
+});
+
 test("현재 공격/체력 배수 표현은 같은 범용 BUFF Resolver로 분석한다", () => {
   for (const text of [
     "등장: 자신의 현재 공격과 체력의 수치를 2배로 만듭니다.",

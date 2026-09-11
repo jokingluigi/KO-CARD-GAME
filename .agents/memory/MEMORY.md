@@ -22,3 +22,4 @@
 - [Champion admin form contract](champion-admin-form-contract.md) — quest toggles need a numeric progress default, and analyzer responses must be visible and scoped to their source field.
 - [Admin preview route](admin-browser-preview-route.md) — the proxied KO admin page is reached at `/admin`; nested artifact prefixes can render the app’s not-found route.
 - [CardDefinition references](card-definition-references.md) — admin text resolves named creation targets to stable IDs; runtime resolves only from the match snapshot.
+- [Active Champion Token boundary](active-champion-token-boundary.md) — only linked Champion Token deployment grants Champion protection and defeat coupling; generic Token generation stays normal.

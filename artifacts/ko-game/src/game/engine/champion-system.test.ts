@@ -214,3 +214,46 @@ test('퀘스트 완료 시 연결된 Champion Token을 직접 전개하고 ENTER
   assert.equal(completed.players[0].currentGold, 2);
   assert.ok(completed.events.some((event) => event.reason === 'CHAMPION_QUEST_REWARD'));
 });
+
+test('구조화 퀘스트 보상도 연결된 Champion Token을 전개하고 등장 효과를 실행한다', () => {
+  const started = startGame(createInitialGameState(
+    undefined,
+    [{
+      ...TEST_CHAMPION_TOKEN_DEFINITION,
+      abilities: [{ trigger: 'ENTER_FIELD', effects: [{ type: 'GAIN_GOLD', amount: 2 }] }],
+    }],
+  ), fixedRandom);
+  const rewardState = {
+    ...started,
+    players: started.players.map((player) =>
+      player.id === 'player-1' && player.champion?.quest
+        ? {
+            ...player,
+            champion: {
+              ...player.champion,
+              championTokenDefinitionId: TEST_CHAMPION_TOKEN_DEFINITION.id,
+              questProgress: player.champion.quest.requiredProgress - 1,
+              quest: {
+                ...player.champion.quest,
+                reward: {
+                  type: 'STRUCTURED' as const,
+                  effects: [{
+                    type: 'STRUCTURED' as const,
+                    action: 'DEPLOY_CHAMPION_TOKEN' as const,
+                  }],
+                },
+              },
+            },
+          }
+        : player,
+    ),
+  };
+  const completed = processChampionQuestEvents(rewardState, {
+    ...rewardState,
+    events: [...rewardState.events, { type: 'CARD_PLAYED' as const, playerId: 'player-1' }],
+  });
+  const token = completed.players[0].board.find((card) => card?.isChampionToken);
+
+  assert.equal(token?.isDirectDeployedChampion, true);
+  assert.equal(completed.players[0].currentGold, 3);
+});

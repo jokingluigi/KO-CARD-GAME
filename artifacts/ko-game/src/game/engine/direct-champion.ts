@@ -11,6 +11,13 @@ export function findDirectDeployedChampion(
   );
 }
 
+export function isChampionProtectedByToken(
+  state: GameState,
+  playerId: string,
+): boolean {
+  return Boolean(findDirectDeployedChampion(state, playerId));
+}
+
 export function getPlayerSurvivalHealth(
   state: GameState,
   playerId: string,

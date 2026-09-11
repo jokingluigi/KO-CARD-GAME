@@ -10,7 +10,7 @@ import { validateCurrentPlayer } from './turn-system';
 import { findDirectDeployedChampion } from './direct-champion';
 import type { CardInstance } from '../cards/types';
 import { hasMandatoryPlayerChoice, resolvePendingEffects } from '../effects/effect-engine';
-import { directDeployChampionToken } from './champion-token';
+import { directDeployChampionToken, validateLinkedChampionToken } from './champion-token';
 
 function applyChampionEffect(
   state: GameState,
@@ -149,6 +149,15 @@ export function useChampionAbility(
   const directDeployEffect = ability.effects.find(
     (effect) => effect.type === 'DIRECT_DEPLOY_CHAMPION_TOKEN',
   );
+  const linkedDeployEffect = ability.effects.find(
+    (effect) => effect.type === 'STRUCTURED' && effect.action === 'DEPLOY_CHAMPION_TOKEN',
+  );
+  if (linkedDeployEffect) {
+    const tokenValidation = validateLinkedChampionToken(state, playerId);
+    if (!tokenValidation.ok) {
+      return actionFailure(state, tokenValidation.errorCode, tokenValidation.message);
+    }
+  }
   if (directDeployEffect) {
     if (findDirectDeployedChampion(state, playerId)) {
       return actionFailure(

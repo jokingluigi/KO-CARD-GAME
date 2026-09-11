@@ -17,6 +17,8 @@ import { silenceCard } from '../engine/card-status';
 import { enterField } from '../engine/enter-field';
 import { generateCard, generateCardInstance, getRandomCardGenerationCandidates, isEligibleForRandomPool } from '../cards/generation';
 import { getAdjacentSlots } from '../engine/board-position';
+import { deployLinkedChampionToken } from '../engine/champion-token';
+import { isChampionProtectedByToken } from '../engine/direct-champion';
 
 /** The single authoritative target resolver.  UI must only display these ids. */
 export function getValidTargets(
@@ -31,7 +33,7 @@ export function getValidTargets(
   if (zones.length === 1 && zones[0] === 'PLAYER') {
     if (target.owner === 'ALL') return [];
     const owner = target.owner === 'SELF' ? playerId : state.players.find((p) => p.id !== playerId)?.id;
-    return owner ? [owner] : [];
+    return owner && !isChampionProtectedByToken(state, owner) ? [owner] : [];
   }
   const owners = target.owner === 'ALL'
     ? state.players.map((player) => player.id)
@@ -53,7 +55,7 @@ export function getValidTargets(
       if (card.isDirectDeployedChampion && (effect.action === 'SILENCE' || effect.action === 'DESTROY')) return false;
       return true;
     }).map((card) => card.instanceId);
-    return canTargetPlayer ? [owner, ...cardIds] : cardIds;
+    return canTargetPlayer && !isChampionProtectedByToken(state, owner) ? [owner, ...cardIds] : cardIds;
   });
 }
 
@@ -410,6 +412,9 @@ function applyEffect(
   triggerContext?: TriggerContext,
 ): GameState {
   if (effect.type === 'STRUCTURED') {
+    if (effect.action === 'DEPLOY_CHAMPION_TOKEN') {
+      return deployLinkedChampionToken(state, playerId);
+    }
     if (effect.action === 'SUMMON' && effect.target?.selection === 'ADJACENT_EMPTY_SLOTS') {
       return applyAdjacentRandomCardCreation(state, playerId, sourceCard, effect);
     }
@@ -600,6 +605,7 @@ function applyEffect(
       };
     }
     if (zones.length === 1 && zones[0] === 'PLAYER') {
+      if (isChampionProtectedByToken(state, targetOwner)) return state;
       if (target.owner === 'SELF' && effect.action === 'HEAL') return state;
       if (target.owner === 'SELF' && effect.action === 'DAMAGE') {
         const directChampion = candidatePlayer.board.find((card) => card?.isDirectDeployedChampion);
@@ -725,12 +731,6 @@ function applyEffect(
         const owner = nextState.players.find((player) => player.id === targetOwner);
         const current = owner?.board.find((card) => card?.instanceId === target.instanceId);
         if (!owner || !current) return nextState;
-        if (current.isDirectDeployedChampion) {
-          return applyEffect(nextState, playerId, sourceCard, {
-            type: 'DAMAGE_OPPONENT_CHAMPION',
-            amount: damageAmount,
-          });
-        }
         // Legacy snapshots may carry dodgeAvailable=true with a missing or
         // zero-initialized charge count. The boolean remains authoritative for
         // that compatibility case; newly created cards keep both fields aligned.
@@ -759,8 +759,15 @@ function applyEffect(
           };
         }
         const retired: CardInstance = { ...current, currentHealth: health, boardSlot: null };
+        const tokenDefeat = current.isDirectDeployedChampion;
         const retiredState: GameState = {
           ...nextState,
+          status: tokenDefeat ? 'FINISHED' : nextState.status,
+          activePlayerId: tokenDefeat ? null : nextState.activePlayerId,
+          winnerId: tokenDefeat
+            ? nextState.players.find((player) => player.id !== targetOwner)?.id ?? null
+            : nextState.winnerId,
+          loserId: tokenDefeat ? targetOwner : nextState.loserId,
           players: nextState.players.map((player) => player.id === targetOwner
             ? { ...player, board: player.board.map((card) => card?.instanceId === current.instanceId ? null : card) as typeof player.board, graveyard: [...player.graveyard, retired] }
             : player),
@@ -861,6 +868,23 @@ function applyEffect(
   if (effect.type === 'DAMAGE_OPPONENT_CHAMPION') {
     const opponent = state.players.find((player) => player.id !== playerId);
     if (!opponent) return state;
+    if (isChampionProtectedByToken(state, opponent.id)) {
+      return {
+        ...state,
+        events: [
+          ...state.events,
+          {
+            type: 'DAMAGE_DEALT',
+            playerId,
+            cardInstanceId: sourceCard.instanceId,
+            source: { type: 'CARD', cardInstanceId: sourceCard.instanceId },
+            target: { type: 'PLAYER', playerId: opponent.id },
+            reason: 'CARD_EFFECT',
+            amount: 0,
+          },
+        ],
+      };
+    }
 
     const directChampion =
       opponent.board.find((card) => card?.isDirectDeployedChampion) ?? null;

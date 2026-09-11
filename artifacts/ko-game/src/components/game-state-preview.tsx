@@ -164,6 +164,7 @@ export function GameStatePreview({
   const opponentSurvivalHealth = getPlayerSurvivalHealth(state, opp.id);
   const myMaxGold = Math.min(Math.max(me.personalTurn, 1), 6);
   const opponentMaxGold = Math.min(Math.max(opp.personalTurn, 1), 6);
+  const opponentChampionProtected = opp.board.some((card) => card?.isDirectDeployedChampion);
   const championUnavailableReason = !isMyTurn
     ? '내 턴에만 사용할 수 있습니다.'
     : me.champion && me.currentGold < me.champion.abilityCost
@@ -283,11 +284,11 @@ export function GameStatePreview({
                         ? `attack-target-hit--${attackAnimation.damageImpactLevel.toLowerCase()}`
                         : ""
                     } ${
-                      (effectTargeting && validEffectTargetIds.has(opp.id)) || selectedAttackerId
+                       (effectTargeting && validEffectTargetIds.has(opp.id)) || (selectedAttackerId && !opponentChampionProtected)
                         ? 'cursor-crosshair border-red-500 shadow-[0_0_15px_rgba(239,68,68,0.4)]'
                         : 'border-red-900'
                     }`}
-                    onClick={effectTargeting && validEffectTargetIds.has(opp.id) ? () => onEffectTarget(opp.id) : selectedAttackerId ? handleAttackChampion : undefined}
+                     onClick={effectTargeting && validEffectTargetIds.has(opp.id) ? () => onEffectTarget(opp.id) : selectedAttackerId && !opponentChampionProtected ? handleAttackChampion : undefined}
                  >
                   <span className="px-1 text-center text-[9px] font-black leading-tight text-red-300 md:text-[11px]">
                     {opp.champion?.name || '상대 챔피언'}

@@ -21,7 +21,11 @@ export interface ChampionAbility {
 export type ChampionQuestReward =
   | { type: 'UPGRADE_ABILITY' }
   | { type: 'GAIN_GOLD'; amount: number }
-  | { type: 'DIRECT_DEPLOY_CHAMPION_TOKEN'; cardDefinitionId: string };
+  | { type: 'DIRECT_DEPLOY_CHAMPION_TOKEN'; cardDefinitionId: string }
+  | {
+      type: 'STRUCTURED';
+      effects: Array<Extract<ChampionEffect, { type: 'STRUCTURED' }>>;
+    };
 
 export interface ChampionQuest {
   id: string;
@@ -67,4 +71,5 @@ export interface ChampionState {
   questCompleteAudioVolume?: number;
   questCompleteAudioEnabled?: boolean;
   upgradedAbility: ChampionAbility | null;
+  championTokenDefinitionId?: string | null;
 }
