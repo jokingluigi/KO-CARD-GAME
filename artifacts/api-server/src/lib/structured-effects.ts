@@ -62,7 +62,7 @@ export type StructuredEffect = {
   };
 };
 export type AnalysisOutcome = "supported" | "mechanism_required" | "analysis_failure";
-export type Analysis = { status: "success" | "partial" | "failure"; outcome: AnalysisOutcome; effects: StructuredEffect[]; keywords: Keyword[]; unsupportedSegments: string[]; summaries: string[]; reason?: string };
+export type Analysis = { status: "success" | "partial" | "failure"; outcome: AnalysisOutcome; effects: StructuredEffect[]; keywords: Keyword[]; unsupportedSegments: string[]; summaries: string[]; reason?: string; condition?: Record<string, unknown> };
 export type EffectAnalysisOptions = { defaultTrigger?: Trigger };
 
 const aliases = {

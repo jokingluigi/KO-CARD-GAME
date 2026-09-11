@@ -66,3 +66,22 @@ test("prompt decision keeps supported effects separate from unsupported outcomes
     assert.ok(result.prompt.includes("이 카드 효과가 실제 게임에서 동작하도록 구현하세요."));
   }
 });
+
+test("prompt keeps Champion effect context without creating a second generator", () => {
+  const analysis = analyzeEffectText("시간을 멈춥니다.", { defaultTrigger: "ENTER_FIELD" });
+  const result = prepareReplitAgentPrompt(
+    "시간을 멈춥니다.",
+    analysis,
+    effectLibrary(),
+    "검증 챔피언",
+    "CHAMPION_ABILITY",
+  );
+  assert.equal(result.kind, "ready");
+  if (result.kind === "ready") {
+    assert.ok(result.prompt.includes("카드 이름: 검증 챔피언"));
+    assert.ok(result.prompt.includes("효과 영역: CHAMPION_ABILITY"));
+    assert.ok(result.prompt.includes("지원되지 않는 부분"));
+    assert.ok(result.prompt.includes("Trigger"));
+    assert.ok(result.prompt.includes("Action"));
+  }
+});

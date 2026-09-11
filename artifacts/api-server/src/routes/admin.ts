@@ -21,7 +21,7 @@ import {
 } from "../lib/mechanic-request-service";
 import { prepareReplitAgentPrompt } from "../lib/replit-agent-prompt";
 import { analyzeChampionQuestText } from "../lib/champion-quest-analysis";
-import { analyzeEffectText, effectLibrary, isStructuredEffects, type Trigger } from "../lib/structured-effects";
+import { analyzeEffectText, effectLibrary, isStructuredEffects, type Analysis, type Trigger } from "../lib/structured-effects";
 import {
   countStructuredEffectUsage,
   prepareCompletionApply,
@@ -101,6 +101,7 @@ type ChampionInput = {
   questRewardEffects: Record<string, unknown> | null; upgradedAbilityName: string | null;
   upgradedAbilityCost: number | null; upgradedAbilityText: string | null;
   upgradedAbilityEffects: Record<string, unknown> | null; championTokenDefinitionId: string | null;
+  championTokenEffectText: string | null; championTokenEffectEffects: Record<string, unknown> | null;
   abilityAudioAssetId: string | null; abilityAudioUrl: string | null; abilityAudioVolume: number;
   questCompleteAudioAssetId: string | null; questCompleteAudioUrl: string | null;
   questCompleteAudioVolume: number; questCompleteAudioEnabled: boolean;
@@ -147,6 +148,7 @@ function parseChampionInput(value: unknown): ChampionInput | null {
     rawQuestCondition.required <= 999 ? rawQuestCondition.required : null;
   const questProgressRequired = questProgressInput ?? conditionRequired;
   const upgradedAbilityCost = integer("upgradedAbilityCost", 0, 999, true);
+  const championTokenEffectEffects = object("championTokenEffectEffects", true);
   const validEffects = (effects: Record<string, unknown> | null | undefined) =>
     effects === null || effects === undefined || !("effects" in effects) || isStructuredEffects(effects);
   if (!name || name.length > 120 || !abilityName || abilityName.length > 120 ||
@@ -154,8 +156,9 @@ function parseChampionInput(value: unknown): ChampionInput | null {
       questCompleteAudioVolume == null ||
       !abilityEffects || typeof input.hasQuest !== "boolean" ||
       questProgressRequired === undefined || upgradedAbilityCost === undefined ||
-      !validEffects(abilityEffects) || !validEffects(object("questRewardEffects", true)) ||
-      !validEffects(object("upgradedAbilityEffects", true))) return null;
+       !validEffects(abilityEffects) || !validEffects(object("questRewardEffects", true)) ||
+       !validEffects(object("upgradedAbilityEffects", true)) ||
+       !validEffects(championTokenEffectEffects)) return null;
   if (
     (questCompleteAudioAssetId === null) !== (questCompleteAudioUrl === null) ||
     (questCompleteAudioAssetId !== null &&
@@ -180,6 +183,8 @@ function parseChampionInput(value: unknown): ChampionInput | null {
     upgradedAbilityCost, upgradedAbilityText: text("upgradedAbilityText"),
     upgradedAbilityEffects: object("upgradedAbilityEffects", true) ?? null,
     championTokenDefinitionId: text("championTokenDefinitionId"),
+     championTokenEffectText: text("championTokenEffectText"),
+     championTokenEffectEffects: championTokenEffectEffects ?? null,
     abilityAudioAssetId: text("abilityAudioAssetId"), abilityAudioUrl: text("abilityAudioUrl"),
     abilityAudioVolume, questCompleteAudioAssetId, questCompleteAudioUrl,
     questCompleteAudioVolume, questCompleteAudioEnabled, questCompleteAudioUploadToken,
@@ -617,6 +622,50 @@ function firstParam(value: unknown): string | undefined {
   return typeof value === "string" ? value : undefined;
 }
 
+const CHAMPION_EFFECT_CONTEXTS = [
+  "CHAMPION_ABILITY",
+  "QUEST_CONDITION",
+  "QUEST_REWARD",
+  "UPGRADED_CHAMPION_ABILITY",
+  "CHAMPION_TOKEN_EFFECT",
+] as const;
+type ChampionEffectContext = (typeof CHAMPION_EFFECT_CONTEXTS)[number];
+
+function championEffectContext(body: Record<string, unknown>): ChampionEffectContext | undefined {
+  if (typeof body.effectContext === "string" &&
+      CHAMPION_EFFECT_CONTEXTS.includes(body.effectContext as ChampionEffectContext)) {
+    return body.effectContext as ChampionEffectContext;
+  }
+  if (body.sourceType !== "CHAMPION") return undefined;
+  const legacySlot = body.effectSlot;
+  if (legacySlot === "ABILITY") return "CHAMPION_ABILITY";
+  if (legacySlot === "QUEST_REWARD") return "QUEST_REWARD";
+  if (legacySlot === "UPGRADED_ABILITY") return "UPGRADED_CHAMPION_ABILITY";
+  if (legacySlot === "CHAMPION_TOKEN_EFFECT") return "CHAMPION_TOKEN_EFFECT";
+  return undefined;
+}
+
+function analyzeForContext(text: string, context?: ChampionEffectContext): Analysis {
+  if (context === "QUEST_CONDITION") {
+    const quest = analyzeChampionQuestText(text);
+    const condition = "condition" in quest ? quest.condition : undefined;
+    const unsupportedParts = "unsupportedParts" in quest ? quest.unsupportedParts : [];
+    return {
+      status: quest.outcome === "supported" ? "success" : "failure",
+      outcome: quest.outcome,
+      effects: [],
+      keywords: [],
+      unsupportedSegments: unsupportedParts,
+      summaries: condition ? [JSON.stringify(condition)] : [],
+      ...(condition ? { condition } : {}),
+      ...(quest.outcome !== "supported"
+        ? { reason: "퀘스트 조건을 현재 공유 Analyzer에서 완전히 해석하지 못했습니다." }
+        : {}),
+    };
+  }
+  return analyzeEffectText(text, context ? { defaultTrigger: "ENTER_FIELD" as Trigger } : undefined);
+}
+
 router.post("/effects/analyze", (request, response) => {
   if (!requireAdmin(request, response)) return;
   const body = request.body && typeof request.body === "object" ? request.body as Record<string, unknown> : {};
@@ -624,10 +673,9 @@ router.post("/effects/analyze", (request, response) => {
   if (typeof text !== "string" || text.length > 2000) {
     response.status(400).json({ message: "효과 텍스트를 확인해 주세요." }); return;
   }
-  const championSlots = ["ABILITY", "QUEST_REWARD", "UPGRADED_ABILITY", "CHAMPION_TOKEN_EFFECT"] as const;
-  const isChampionContext = body.sourceType === "CHAMPION" &&
-    championSlots.includes(body.effectSlot as (typeof championSlots)[number]);
-  response.json(analyzeEffectText(text, isChampionContext ? { defaultTrigger: "ENTER_FIELD" as Trigger } : undefined));
+  const context = championEffectContext(body);
+  const analysis = analyzeForContext(text, context);
+  response.json(context ? { ...analysis, unsupportedParts: analysis.unsupportedSegments } : analysis);
 });
 
 router.post("/quests/analyze", (request, response) => {
@@ -642,6 +690,33 @@ router.post("/quests/analyze", (request, response) => {
     response.json(analysis); return;
   }
   response.status(422).json(analysis);
+});
+
+router.post("/effects/replit-prompt", (request, response) => {
+  if (!requireAdmin(request, response)) return;
+  const body = request.body && typeof request.body === "object"
+    ? request.body as Record<string, unknown> : {};
+  const text = typeof body.text === "string" ? body.text.trim() : "";
+  const context = championEffectContext(body);
+  const name = typeof body.championName === "string" && body.championName.trim()
+    ? body.championName.trim().slice(0, 120) : "이름 미입력";
+  if (!text || text.length > 2000 || !context) {
+    response.status(400).json({ message: "효과와 Champion 효과 영역을 확인해 주세요." });
+    return;
+  }
+  const analysis = analyzeForContext(text, context);
+  const promptDecision = prepareReplitAgentPrompt(
+    text,
+    analysis,
+    effectLibrary(),
+    name,
+    context,
+  );
+  if (promptDecision.kind === "supported") {
+    response.status(409).json({ message: "현재 Effect Library로 구현할 수 있습니다.", analysis });
+    return;
+  }
+  response.json({ analysis, prompt: promptDecision.prompt });
 });
 
 router.get("/champions", async (request, response): Promise<void> => {

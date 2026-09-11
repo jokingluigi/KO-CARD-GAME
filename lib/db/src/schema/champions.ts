@@ -23,6 +23,8 @@ export const championsTable = pgTable("champions", {
   upgradedAbilityText: text("upgraded_ability_text"),
   upgradedAbilityEffects: jsonb("upgraded_ability_effects").$type<Record<string, unknown> | null>(),
   championTokenDefinitionId: text("champion_token_definition_id"),
+  championTokenEffectText: text("champion_token_effect_text"),
+  championTokenEffectEffects: jsonb("champion_token_effect_effects").$type<Record<string, unknown> | null>(),
   abilityAudioAssetId: text("ability_audio_asset_id"),
   abilityAudioUrl: text("ability_audio_url"),
   abilityAudioVolume: integer("ability_audio_volume").notNull().default(100),

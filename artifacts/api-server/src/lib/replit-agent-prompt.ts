@@ -87,6 +87,7 @@ export function createReplitAgentPrompt(
   analysis: Analysis,
   library: LiveLibrary = effectLibrary(),
   cardName = "이름 미입력",
+  effectContext = "CARD_EFFECT",
 ): string {
   const estimate = estimates(originalCardText);
   const unsupported = analysis.unsupportedSegments.length
@@ -101,6 +102,7 @@ export function createReplitAgentPrompt(
 1. 카드 정보
 카드 이름: ${cardName}
 원본 카드 효과: "${originalCardText}"
+효과 영역: ${effectContext}
 
 2. 현재 Analyzer가 이해한 내용
 판정: ${analysis.outcome} / ${analysis.status}
@@ -160,9 +162,10 @@ export function prepareReplitAgentPrompt(
   analysis: Analysis,
   library: LiveLibrary = effectLibrary(),
   cardName = "이름 미입력",
+  effectContext = "CARD_EFFECT",
 ):
   | { kind: "ready"; prompt: string }
   | { kind: "supported" } {
   if (analysis.outcome === "supported") return { kind: "supported" };
-  return { kind: "ready", prompt: createReplitAgentPrompt(originalCardText, analysis, library, cardName) };
+  return { kind: "ready", prompt: createReplitAgentPrompt(originalCardText, analysis, library, cardName, effectContext) };
 }
