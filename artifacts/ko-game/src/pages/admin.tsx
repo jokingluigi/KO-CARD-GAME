@@ -1,44 +1,28 @@
-import { FormEvent, useEffect, useState } from "react";
-import { Gamepad2, Image, LockKeyhole, LogOut, Music2, ShieldCheck, Spade } from "lucide-react";
+import { useEffect, useState } from "react";
+import { Gamepad2, Image, LogOut, Music2, ShieldCheck, Spade } from "lucide-react";
 import { AdminCardManager } from "@/components/admin-card-manager";
 import { AdminChampionManager } from "@/components/admin-champion-manager";
 import { AdminGameMediaManager } from "@/components/admin-game-media-manager";
+import { fetchCurrentUser, logout } from "@/lib/auth-client";
 
-type AdminStatus = "checking" | "login" | "authenticated";
-
-const adminApiBase = `${import.meta.env.BASE_URL.replace(/\/$/, "")}/api/admin`;
-
-async function readMessage(response: Response): Promise<string> {
-  try {
-    const body = (await response.json()) as { message?: string };
-    return body.message ?? "요청을 처리하지 못했습니다.";
-  } catch {
-    return "요청을 처리하지 못했습니다.";
-  }
-}
+type AdminStatus = "checking" | "forbidden" | "authenticated";
 
 export default function Admin() {
   const [status, setStatus] = useState<AdminStatus>("checking");
   const [section, setSection] = useState<"cards" | "champions" | "media" | "test">("cards");
-  const [username, setUsername] = useState("");
-  const [password, setPassword] = useState("");
-  const [errorMessage, setErrorMessage] = useState("");
-  const [isSubmitting, setIsSubmitting] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
 
-    fetch(`${adminApiBase}/session`, { credentials: "include" })
-      .then(async (response) => {
-        const body = (await response.json()) as { authenticated?: boolean };
+    fetchCurrentUser()
+      .then((result) => {
         if (!cancelled) {
-          setStatus(response.ok && body.authenticated ? "authenticated" : "login");
+          setStatus(result.authenticated && result.user?.role === "ADMIN" ? "authenticated" : "forbidden");
         }
       })
       .catch(() => {
         if (!cancelled) {
-          setStatus("login");
-          setErrorMessage("관리자 서버에 연결할 수 없습니다.");
+          setStatus("forbidden");
         }
       });
 
@@ -47,42 +31,9 @@ export default function Admin() {
     };
   }, []);
 
-  async function handleLogin(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-    setErrorMessage("");
-    setIsSubmitting(true);
-
-    try {
-      const response = await fetch(`${adminApiBase}/login`, {
-        method: "POST",
-        credentials: "include",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ username, password }),
-      });
-
-      if (!response.ok) {
-        setErrorMessage(await readMessage(response));
-        return;
-      }
-
-      setPassword("");
-      setStatus("authenticated");
-    } catch {
-      setErrorMessage("관리자 서버에 연결할 수 없습니다.");
-    } finally {
-      setIsSubmitting(false);
-    }
-  }
-
   async function handleLogout() {
-    await fetch(`${adminApiBase}/logout`, {
-      method: "POST",
-      credentials: "include",
-    });
-    setStatus("login");
-    setUsername("");
-    setPassword("");
-    setErrorMessage("");
+    await logout();
+    window.location.href = import.meta.env.BASE_URL;
   }
 
   if (status === "checking") {
@@ -93,65 +44,23 @@ export default function Admin() {
     );
   }
 
-  if (status === "login") {
+  if (status === "forbidden") {
     return (
-      <main className="flex min-h-screen items-center justify-center bg-[radial-gradient(circle_at_top,_#1a1a24_0%,_#050505_58%)] px-4 text-neutral-100">
-        <section className="w-full max-w-md rounded-xl border border-neutral-800 bg-black/80 p-6 shadow-2xl backdrop-blur-md">
-          <div className="mb-8 flex items-center gap-3">
-            <div className="flex h-11 w-11 items-center justify-center rounded-lg border border-primary/50 bg-primary/10 text-primary">
-              <ShieldCheck className="h-6 w-6" />
-            </div>
-            <div>
-              <div className="font-display text-xs font-bold tracking-[0.25em] text-primary">
-                DEVELOPER CONSOLE
-              </div>
-              <h1 className="text-2xl font-black tracking-tight">KO ADMIN</h1>
-            </div>
-          </div>
-
-          <div className="mb-5 border-b border-neutral-800 pb-4">
-            <p className="text-sm font-bold text-neutral-200">관리자 로그인</p>
-            <p className="mt-1 text-xs leading-relaxed text-neutral-500">
-              개발자 전용 페이지입니다. 서버에서 관리자 권한을 확인합니다.
-            </p>
-          </div>
-
-          <form className="space-y-4" onSubmit={handleLogin}>
-            <label className="block space-y-1.5">
-              <span className="text-xs font-bold text-neutral-400">관리자 계정</span>
-              <input
-                required
-                value={username}
-                onChange={(event) => setUsername(event.target.value)}
-                autoComplete="username"
-                className="w-full rounded border border-neutral-700 bg-neutral-900 px-3 py-2.5 text-sm text-white outline-none transition-colors focus:border-primary"
-              />
-            </label>
-            <label className="block space-y-1.5">
-              <span className="text-xs font-bold text-neutral-400">비밀번호</span>
-              <input
-                required
-                type="password"
-                value={password}
-                onChange={(event) => setPassword(event.target.value)}
-                autoComplete="current-password"
-                className="w-full rounded border border-neutral-700 bg-neutral-900 px-3 py-2.5 text-sm text-white outline-none transition-colors focus:border-primary"
-              />
-            </label>
-            {errorMessage && (
-              <p role="alert" className="rounded border border-red-900 bg-red-950/60 px-3 py-2 text-xs font-bold text-red-300">
-                {errorMessage}
-              </p>
-            )}
-            <button
-              type="submit"
-              disabled={isSubmitting}
-              className="flex w-full items-center justify-center gap-2 rounded bg-primary px-4 py-3 text-sm font-black text-black transition-colors hover:bg-yellow-400 disabled:cursor-not-allowed disabled:bg-neutral-700 disabled:text-neutral-500"
-            >
-              <LockKeyhole className="h-4 w-4" />
-              {isSubmitting ? "확인 중..." : "관리자 로그인"}
-            </button>
-          </form>
+      <main className="ko-auth-screen flex min-h-screen items-center justify-center px-5 text-neutral-100">
+        <section className="w-full max-w-sm text-center">
+          <ShieldCheck className="mx-auto h-10 w-10 text-amber-400" />
+          <p className="mt-5 font-display text-xs font-bold tracking-[0.3em] text-amber-400">KO ADMIN</p>
+          <h1 className="mt-3 text-xl font-black">관리자 권한이 필요합니다</h1>
+          <p className="mt-3 text-sm leading-6 text-neutral-500">
+            관리자 계정으로 로그인했거나 관리자 이메일로 가입한 경우에만 접근할 수 있습니다.
+          </p>
+          <button
+            type="button"
+            onClick={() => { window.location.href = import.meta.env.BASE_URL; }}
+            className="mt-7 rounded bg-primary px-5 py-3 text-sm font-black text-black hover:bg-yellow-400"
+          >
+            메인 메뉴로
+          </button>
         </section>
       </main>
     );
@@ -222,11 +131,11 @@ export default function Admin() {
 
         <section className="min-w-0 flex-1">
           {section === "cards"
-            ? <AdminCardManager onUnauthorized={() => setStatus("login")} />
+            ? <AdminCardManager onUnauthorized={() => setStatus("forbidden")} />
              : section === "champions"
-               ? <AdminChampionManager onUnauthorized={() => setStatus("login")} />
+               ? <AdminChampionManager onUnauthorized={() => setStatus("forbidden")} />
                : section === "media"
-                 ? <AdminGameMediaManager onUnauthorized={() => setStatus("login")} />
+                 ? <AdminGameMediaManager onUnauthorized={() => setStatus("forbidden")} />
                  : (
                    <section className="rounded-xl border border-neutral-800 bg-black/40 p-5 sm:p-8">
                      <div className="mb-6 flex items-start gap-4">

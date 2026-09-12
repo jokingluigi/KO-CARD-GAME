@@ -27,6 +27,8 @@ import {
 } from '@/game';
 import { GameStatePreview } from '@/components/game-state-preview';
 import { MainMenu } from '@/components/main-menu';
+import { AuthLoading, AuthPage } from '@/components/auth-page';
+import { fetchCurrentUser, logout, type AuthUser } from '@/lib/auth-client';
 import { audioManager } from '@/audio/audio-manager';
 import type { CardPlayAnimationState, CardPlayGeometry } from '@/components/card-play-animation-utils';
 import { landingImpactLevel } from '@/components/card-play-animation-utils';
@@ -105,6 +107,8 @@ export default function Home() {
   const testCardId = searchParams.get('testCardId');
   const isAdminSource = searchParams.get('source') === 'admin';
   const [isAdminTestMatch, setIsAdminTestMatch] = useState(isAdminSource);
+  const [authStatus, setAuthStatus] = useState<'loading' | 'authenticated' | 'unauthenticated'>('loading');
+  const [authUser, setAuthUser] = useState<AuthUser | null>(null);
   const [mediaCatalog, setMediaCatalog] = useState<GameMediaCatalog>(emptyGameMediaCatalog);
   const [gameState, setGameState] = useState<GameState>(() =>
     startGame(createInitialGameState()),
@@ -132,6 +136,34 @@ export default function Home() {
 
   useEffect(() => {
     let cancelled = false;
+    fetchCurrentUser()
+      .then((result) => {
+        if (cancelled) return;
+        setAuthUser(result.authenticated ? result.user : null);
+        setAuthStatus(result.authenticated && result.user ? 'authenticated' : 'unauthenticated');
+      })
+      .catch(() => {
+        if (!cancelled) {
+          setAuthUser(null);
+          setAuthStatus('unauthenticated');
+        }
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  useEffect(() => {
+    let cancelled = false;
+    if (
+      authStatus !== 'authenticated' ||
+      ((testCardId || isAdminSource) && authUser?.role !== 'ADMIN')
+    ) {
+      setMatchReady(false);
+      return () => {
+        cancelled = true;
+      };
+    }
     if (!testCardId && !isAdminSource) {
       setMatchReady(false);
       return () => {
@@ -211,7 +243,7 @@ export default function Home() {
     return () => {
       cancelled = true;
     };
-  }, [isAdminSource, testCardId]);
+  }, [authStatus, authUser?.role, isAdminSource, testCardId]);
 
   useEffect(() => {
     const bgm = mediaCatalog.bgms.find((item) => item.id === gameState.bgmId);
@@ -689,8 +721,53 @@ export default function Home() {
     setPlayError(null);
   }
 
+  async function handleLogout() {
+    await logout();
+    setAuthUser(null);
+    setAuthStatus('unauthenticated');
+    setMatchReady(false);
+  }
+
+  if (authStatus === 'loading') {
+    return <AuthLoading />;
+  }
+
+  if (authStatus === 'unauthenticated') {
+    return (
+      <AuthPage
+        onAuthenticated={(user) => {
+          setAuthUser(user);
+          setAuthStatus('authenticated');
+        }}
+      />
+    );
+  }
+
+  if ((testCardId || isAdminSource) && authUser?.role !== 'ADMIN') {
+    return (
+      <main className="ko-auth-screen flex min-h-screen items-center justify-center px-5 text-white">
+        <section className="w-full max-w-sm text-center">
+          <p className="font-display text-xs font-bold tracking-[0.45em] text-amber-400">KO</p>
+          <h1 className="mt-4 text-xl font-black">관리자 권한이 필요합니다</h1>
+          <p className="mt-3 text-sm leading-6 text-neutral-500">
+            이 테스트 게임은 관리자 계정으로 로그인한 경우에만 열 수 있습니다.
+          </p>
+          <button
+            type="button"
+            onClick={() => {
+              window.location.href = import.meta.env.BASE_URL;
+            }}
+            className="mt-7 rounded bg-amber-400 px-5 py-3 text-sm font-black text-black hover:bg-amber-300"
+          >
+            메인 메뉴로
+          </button>
+        </section>
+      </main>
+    );
+  }
+
   if (!testCardId && !isAdminSource) {
-    return <MainMenu />;
+    return <MainMenu user={authUser ?? undefined} onLogout={handleLogout} />;
   }
 
   if (!matchReady) {

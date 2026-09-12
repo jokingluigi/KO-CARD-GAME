@@ -1,8 +1,11 @@
-import { Bot, Globe2, Layers3, ShoppingBag } from "lucide-react";
+import { Bot, Globe2, Layers3, LogOut, ShoppingBag } from "lucide-react";
 import { useState } from "react";
+import type { AuthUser } from "@/lib/auth-client";
 
 type MainMenuProps = {
   onComingSoon?: (label: string) => void;
+  user?: AuthUser;
+  onLogout?: () => void;
 };
 
 const menuItems = [
@@ -28,7 +31,7 @@ const menuItems = [
   },
 ] as const;
 
-export function MainMenu({ onComingSoon }: MainMenuProps) {
+export function MainMenu({ onComingSoon, user, onLogout }: MainMenuProps) {
   const [notice, setNotice] = useState("");
 
   return (
@@ -37,6 +40,15 @@ export function MainMenu({ onComingSoon }: MainMenuProps) {
         <header className="ko-main-menu__header text-center">
           <h1 className="ko-main-menu__logo font-display font-black text-white">KO</h1>
           <p className="ko-main-menu__tagline font-display font-bold text-neutral-500">CARD BATTLE</p>
+          {user && onLogout && (
+            <div className="ko-main-menu__user">
+              <span>{user.nickname}</span>
+              <button type="button" onClick={onLogout} aria-label="로그아웃">
+                <LogOut className="h-3.5 w-3.5" aria-hidden="true" />
+                로그아웃
+              </button>
+            </div>
+          )}
         </header>
 
         <section aria-label="메인 메뉴" className="ko-main-menu__grid grid gap-4 sm:grid-cols-2">

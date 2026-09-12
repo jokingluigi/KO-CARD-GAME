@@ -140,6 +140,129 @@
   stroke-width: 2.2;
 }
 
+.ko-main-menu__user {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 24px;
+  color: #a3a3a3;
+  font-size: 0.72rem;
+  font-weight: 700;
+}
+
+.ko-main-menu__user button {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  color: #a3a3a3;
+  font-size: 0.68rem;
+  font-weight: 700;
+  transition: color 160ms ease;
+}
+
+.ko-main-menu__user button:hover {
+  color: #fbbf24;
+}
+
+.ko-auth-screen {
+  background:
+    radial-gradient(ellipse at 50% 28%, rgba(255, 255, 255, 0.018), transparent 42%),
+    #080808;
+}
+
+.ko-auth-card {
+  padding: 26px 28px 30px;
+}
+
+.ko-auth-tab {
+  flex: 1;
+  border-bottom: 2px solid transparent;
+  padding: 0 8px 13px;
+  color: #737373;
+  font-size: 0.82rem;
+  font-weight: 900;
+  transition: color 160ms ease, border-color 160ms ease;
+}
+
+.ko-auth-tab:hover {
+  color: #d4d4d4;
+}
+
+.ko-auth-tab--active {
+  border-color: #fbbf24;
+  color: #fbbf24;
+}
+
+.ko-auth-field {
+  display: block;
+}
+
+.ko-auth-field > span {
+  display: block;
+  margin-bottom: 7px;
+  color: #a3a3a3;
+  font-size: 0.72rem;
+  font-weight: 800;
+}
+
+.ko-auth-field input {
+  width: 100%;
+  border: 1px solid #3f3f46;
+  border-radius: 6px;
+  background: rgba(10, 10, 10, 0.88);
+  padding: 12px 13px;
+  color: #fff;
+  font-size: 0.86rem;
+  outline: none;
+  transition: border-color 160ms ease, box-shadow 160ms ease;
+}
+
+.ko-auth-field input::placeholder {
+  color: #525252;
+}
+
+.ko-auth-field input:focus {
+  border-color: #d89e35;
+  box-shadow: 0 0 0 2px rgba(251, 191, 36, 0.12);
+}
+
+.ko-auth-error {
+  border: 1px solid rgba(127, 29, 29, 0.8);
+  border-radius: 5px;
+  background: rgba(69, 10, 10, 0.55);
+  padding: 9px 11px;
+  color: #fca5a5;
+  font-size: 0.72rem;
+  font-weight: 800;
+}
+
+.ko-auth-submit {
+  display: flex;
+  width: 100%;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  border-radius: 6px;
+  background: #fbbf24;
+  padding: 13px 16px;
+  color: #080808;
+  font-size: 0.82rem;
+  font-weight: 900;
+  transition: background 160ms ease, transform 160ms ease;
+}
+
+.ko-auth-submit:hover {
+  background: #fcd34d;
+  transform: translateY(-1px);
+}
+
+.ko-auth-submit:disabled {
+  cursor: not-allowed;
+  background: #404040;
+  color: #737373;
+  transform: none;
+}
+
 @media (max-width: 639px) {
   .ko-main-menu__content {
     min-height: calc(100vh - 5rem);
@@ -153,11 +276,18 @@
     min-height: 118px;
     padding: 22px 24px 20px;
   }
+
+  .ko-auth-card {
+    padding: 18px 0 24px;
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {
   .ko-main-menu__item,
-  .ko-main-menu__icon {
+  .ko-main-menu__icon,
+  .ko-auth-tab,
+  .ko-auth-field input,
+  .ko-auth-submit {
     transition: none;
   }
 }

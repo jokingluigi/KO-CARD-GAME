@@ -43,6 +43,7 @@ import {
   prepareCompletionApply,
   validateMechanicCompletion,
 } from "../lib/mechanic-completion-service";
+import { getAuthenticatedUser } from "../lib/auth";
 
 const router: IRouter = Router();
 const cardImageStorage = new CardImageStorage();
@@ -486,6 +487,29 @@ router.use((request, response, next) => {
   next();
 });
 
+router.use(async (request, response, next) => {
+  if (request.path === "/login" || request.path === "/session" || request.path === "/logout") {
+    next();
+    return;
+  }
+
+  try {
+    const user = await getAuthenticatedUser(request);
+    if (!user) {
+      response.status(401).json({ message: "로그인이 필요합니다." });
+      return;
+    }
+    request.authUser = user;
+    if (user.role !== "ADMIN") {
+      response.status(403).json({ message: "관리자 권한이 필요합니다." });
+      return;
+    }
+    next();
+  } catch (error) {
+    next(error);
+  }
+});
+
 function configuredSecret(): string | null {
   return process.env["SESSION_SECRET"] ?? null;
 }
@@ -604,11 +628,13 @@ function clearSessionCookie(response: Response): void {
 }
 
 export function requireAdmin(request: Request, response: Response): boolean {
-  if (isValidSession(request)) {
+  if (request.authUser?.role === "ADMIN") {
     return true;
   }
 
-  response.status(401).json({ message: "관리자 인증이 필요합니다." });
+  response.status(request.authUser ? 403 : 401).json({
+    message: request.authUser ? "관리자 권한이 필요합니다." : "로그인이 필요합니다.",
+  });
   return false;
 }
 
@@ -1536,13 +1562,13 @@ router.post("/login", (request, response) => {
   response.json({ authenticated: true });
 });
 
-router.get("/session", (request, response) => {
-  if (!isValidSession(request)) {
-    response.json({ authenticated: false });
+router.get("/session", async (request, response) => {
+  const user = await getAuthenticatedUser(request);
+  if (!user || user.role !== "ADMIN") {
+    response.json({ authenticated: false, user: null });
     return;
   }
-
-  response.json({ authenticated: true });
+  response.json({ authenticated: true, user });
 });
 
 router.post("/logout", (_request, response) => {
