@@ -483,6 +483,27 @@
   text-shadow: 0 3px 6px rgba(0, 0, 0, .95), 0 0 28px rgba(250, 204, 21, .8);
 }
 
+@keyframes ko-presentation-card-pulse {
+  0% { filter: brightness(1); }
+  35% { filter: brightness(1.35) saturate(1.25); }
+  100% { filter: brightness(1); }
+}
+
+.presentation-card-pulse {
+  animation: ko-presentation-card-pulse 320ms ease-out both;
+}
+
+@keyframes ko-stat-change {
+  0% { transform: scale(1); }
+  35% { color: #fef08a; transform: scale(1.12); }
+  100% { transform: scale(1); }
+}
+
+.presentation-stat-change {
+  display: inline-block;
+  animation: ko-stat-change 320ms ease-out;
+}
+
 @keyframes ko-card-leave-retire {
   0% { opacity: 1; transform: translateY(0) rotate(0) scale(1); filter: saturate(1); }
   35% { opacity: 1; transform: translateY(2px) rotate(-2deg) scale(1.02); filter: saturate(.8); }
@@ -525,6 +546,10 @@
 
 @media (prefers-reduced-motion: reduce) {
   .presentation-feedback {
+    animation-duration: 120ms;
+  }
+  .presentation-card-pulse,
+  .presentation-stat-change {
     animation-duration: 120ms;
   }
   .card-leave-animation {

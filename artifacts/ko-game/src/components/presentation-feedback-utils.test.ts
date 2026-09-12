@@ -33,13 +33,15 @@ test("이벤트 순서대로 피해, 퇴장, 퀘스트 완료 피드백을 만�
   );
 });
 
-test("0 피해와 알 수 없는 이벤트는 화려한 피해 피드백을 만들지 않는다", () => {
+test("0 피해는 피해 숫자 대신 회피 피드백을 사용하고 알 수 없는 이벤트는 무시한다", () => {
   const cues = presentationCueDrafts([
     { type: "DAMAGE_DEALT", amount: 0, reason: "DODGE" },
     { type: "ATTACK_DECLARED", cardInstanceId: "attacker" },
   ], 0);
 
-  assert.deepEqual(cues, []);
+  assert.equal(cues.length, 1);
+  assert.equal(cues[0]?.kind, "DODGE");
+  assert.equal(cues[0]?.label, "DODGE");
 });
 
 test("이벤트 로그 커서 이후의 항목만 큐에 추가한다", () => {

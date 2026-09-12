@@ -267,6 +267,10 @@ export function GameStatePreview({
   const myMaxGold = Math.min(Math.max(me.personalTurn, 1), 6);
   const opponentMaxGold = Math.min(Math.max(opp.personalTurn, 1), 6);
   const opponentChampionProtected = opp.board.some((card) => card?.isDirectDeployedChampion);
+  const playerChampionProtected = me.board.some((card) => card?.isDirectDeployedChampion);
+  const activePresentationCue = presentationQueue[0];
+  const activePresentationCardId = activePresentationCue?.cardInstanceId;
+  const activePresentationChampionId = activePresentationCue?.championId;
   const championUnavailableReason = !isMyTurn
     ? '내 턴에만 사용할 수 있습니다.'
     : me.champion && me.currentGold < me.champion.abilityCost
@@ -451,13 +455,18 @@ export function GameStatePreview({
                        (effectTargeting && validEffectTargetIds.has(opp.id)) || (selectedAttackerId && !opponentChampionProtected)
                         ? 'cursor-crosshair border-red-500 shadow-[0_0_15px_rgba(239,68,68,0.4)]'
                         : 'border-red-900'
-                    }`}
+                     } ${activePresentationChampionId === opp.champion?.id || activePresentationCue?.playerId === opp.id ? 'presentation-card-pulse' : ''}`}
                      onClick={effectTargeting && validEffectTargetIds.has(opp.id) ? () => onEffectTarget(opp.id) : selectedAttackerId && !opponentChampionProtected ? handleAttackChampion : undefined}
                  >
                    {opponentChampionPortrait && (
                      <img src={opponentChampionPortrait} alt="" className="absolute inset-0 h-full w-full object-cover" />
                    )}
                    <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-black/20" />
+                   {opponentChampionProtected && (
+                     <span className="pointer-events-none absolute bottom-1 left-1/2 z-20 -translate-x-1/2 rounded border border-cyan-300/70 bg-cyan-950/90 px-1.5 py-0.5 text-[7px] font-black text-cyan-200 md:text-[9px]">
+                       PROTECTED
+                     </span>
+                   )}
                   <span className="px-1 text-center text-[9px] font-black leading-tight text-red-300 md:text-[11px]">
                     {opp.champion?.name || '상대 챔피언'}
                   </span>
@@ -469,13 +478,13 @@ export function GameStatePreview({
                   <div className="w-full rounded border border-neutral-700 bg-neutral-900/80 px-2 py-1 text-right md:px-3">
                     <div className="text-[8px] font-bold text-neutral-500 md:text-[10px]">골드</div>
                     <div className="font-display text-sm font-black text-primary md:text-xl">
-                      {opp.currentGold} / {opponentMaxGold}
+                      <span key={opp.currentGold} className="presentation-stat-change">{opp.currentGold}</span> / {opponentMaxGold}
                     </div>
                   </div>
                   <div className="w-full rounded border border-red-800 bg-red-950/80 px-2 py-1 text-right">
                     <div className="text-[7px] font-bold text-red-300 md:text-[9px]">챔피언 체력</div>
                     <div className="font-display text-sm font-black text-white md:text-lg">
-                      {opponentSurvivalHealth} / {opp.champion?.maxHealth ?? 20}
+                      <span key={opponentSurvivalHealth} className="presentation-stat-change">{opponentSurvivalHealth}</span> / {opp.champion?.maxHealth ?? 20}
                     </div>
                   </div>
                 </div>
@@ -509,6 +518,7 @@ export function GameStatePreview({
                    selected={false}
                    attackReady={false}
                     targetingActive={!!effectTargeting}
+                    presentationActive={activePresentationCardId === card?.instanceId}
                      targetable={!!card && (effectTargeting ? validEffectTargetIds.has(card.instanceId) : !!selectedAttackerId)}
                     activeReady={false}
                     activeUsable={false}
@@ -562,6 +572,7 @@ export function GameStatePreview({
                      selected={card?.instanceId === selectedAttackerId || !!card && selectedEffectTargetIds.has(card.instanceId)}
                    attackReady={!!card && canSelectAsAttacker(state, me.id, card.instanceId)}
                     targetingActive={!!effectTargeting}
+                    presentationActive={activePresentationCardId === card?.instanceId}
                     targetable={!!card && !!effectTargeting && validEffectTargetIds.has(card.instanceId)}
                      activeReady={!!card && getActiveAbility(card) !== undefined}
                      activeUsable={!!card && canUseActiveAbility(state, me.id, card.instanceId)}
@@ -746,11 +757,16 @@ export function GameStatePreview({
             {/* Player Stats & Champion */}
              <div className="ko-player-info z-[95] flex w-[180px] shrink-0 flex-col gap-1 md:w-48 md:gap-2">
               <div className="flex items-start gap-2 md:gap-3">
-                 <div ref={playerChampionRef} onClick={effectTargeting && validEffectTargetIds.has(me.id) ? () => onEffectTarget(me.id) : undefined} className={`ko-player-champion relative flex h-28 w-20 shrink-0 flex-col items-center justify-center overflow-hidden rounded-sm border-2 bg-neutral-900 md:h-40 md:w-28 ${effectTargeting && validEffectTargetIds.has(me.id) ? 'cursor-crosshair border-amber-400 shadow-[0_0_15px_rgba(251,191,36,0.5)]' : 'border-blue-600 shadow-[0_0_15px_rgba(37,99,235,0.2)]'}`}>
+                  <div ref={playerChampionRef} onClick={effectTargeting && validEffectTargetIds.has(me.id) ? () => onEffectTarget(me.id) : undefined} className={`ko-player-champion relative flex h-28 w-20 shrink-0 flex-col items-center justify-center overflow-hidden rounded-sm border-2 bg-neutral-900 md:h-40 md:w-28 ${effectTargeting && validEffectTargetIds.has(me.id) ? 'cursor-crosshair border-amber-400 shadow-[0_0_15px_rgba(251,191,36,0.5)]' : 'border-blue-600 shadow-[0_0_15px_rgba(37,99,235,0.2)]'} ${activePresentationChampionId === me.champion?.id || activePresentationCue?.playerId === me.id ? 'presentation-card-pulse' : ''}`}>
                    {playerChampionPortrait && (
                      <img src={playerChampionPortrait} alt="" className="absolute inset-0 h-full w-full object-cover" />
                    )}
                    <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-black/20" />
+                   {playerChampionProtected && (
+                     <span className="pointer-events-none absolute bottom-1 left-1/2 z-20 -translate-x-1/2 rounded border border-cyan-300/70 bg-cyan-950/90 px-1.5 py-0.5 text-[7px] font-black text-cyan-200 md:text-[9px]">
+                       PROTECTED
+                     </span>
+                   )}
                   <span className="px-1 text-center text-[9px] font-black leading-tight text-blue-400 md:text-[12px]">
                     {me.champion?.name || '내 챔피언'}
                   </span>
@@ -759,14 +775,14 @@ export function GameStatePreview({
                 <div className="ko-player-stats flex min-w-0 flex-col gap-1">
                 <div className="rounded border border-neutral-700 bg-neutral-900/80 px-2 py-1">
                   <div className="text-[7px] font-bold text-neutral-400 md:text-[9px]">골드</div>
-                   <div className="font-display text-sm font-black text-primary md:text-xl">
-                     {me.currentGold} / {myMaxGold}
+                    <div className="font-display text-sm font-black text-primary md:text-xl">
+                      <span key={me.currentGold} className="presentation-stat-change">{me.currentGold}</span> / {myMaxGold}
                    </div>
                 </div>
                 <div className="rounded border border-blue-800 bg-blue-950/80 px-2 py-1">
                  <div className="text-[7px] font-bold text-blue-300 md:text-[9px]">챔피언 체력</div>
-                 <div className="font-display text-sm font-black text-white md:text-xl">
-                   {mySurvivalHealth} / {me.champion?.maxHealth ?? 20}
+                  <div className="font-display text-sm font-black text-white md:text-xl">
+                    <span key={mySurvivalHealth} className="presentation-stat-change">{mySurvivalHealth}</span> / {me.champion?.maxHealth ?? 20}
                  </div>
                 </div>
                </div>
@@ -774,7 +790,7 @@ export function GameStatePreview({
 
                {me.champion?.quest && (
                  <Inspectable content={<ChampionQuestInspectContent champion={me.champion} />}>
-                   <div tabIndex={0} className="rounded border border-purple-900 bg-purple-950/70 px-2 py-1 text-[8px] font-bold text-purple-200 md:text-[10px]">
+                  <div tabIndex={0} className={`rounded border border-purple-900 bg-purple-950/70 px-2 py-1 text-[8px] font-bold text-purple-200 md:text-[10px] ${activePresentationCue?.kind === "QUEST_PROGRESS" || activePresentationCue?.kind === "QUEST_COMPLETE" ? "presentation-card-pulse" : ""}`}>
                      퀘스트 {me.champion.questCompleted ? '완료' : `${me.champion.questProgress}/${me.champion.quest.requiredProgress}`}
                    </div>
                  </Inspectable>
@@ -823,6 +839,7 @@ export function GameStatePreview({
                           isSelected={isSelected}
                           canAfford={canAfford}
                            targetingActive={!!effectTargeting}
+                           presentationActive={activePresentationCardId === card.instanceId}
                            targetable={!!effectTargeting && validEffectTargetIds.has(card.instanceId)}
                           onClick={() => onSelectCard(card.instanceId)}
                            onUseTechnique={() => handleUseTechnique(card.instanceId)}
@@ -887,6 +904,7 @@ function HandCard({
   isSelected,
   canAfford,
   targetingActive,
+  presentationActive,
   targetable,
   onClick,
   density,
@@ -898,6 +916,7 @@ function HandCard({
   isSelected: boolean;
   canAfford: boolean;
   targetingActive: boolean;
+  presentationActive: boolean;
   targetable: boolean;
   onClick: () => void;
   onUseTechnique: () => void;
@@ -916,7 +935,7 @@ function HandCard({
   let containerClass = `${sizeClass} relative flex flex-col transition-all duration-200 select-none hover:z-40 group overflow-visible origin-bottom `;
   
   if (isSelected) {
-    containerClass += "-translate-y-8 md:-translate-y-12 z-50 cursor-pointer";
+    containerClass += "-translate-y-8 scale-[1.04] md:-translate-y-12 md:scale-[1.04] z-50 cursor-pointer";
   } else if (targetable) {
     containerClass += "cursor-crosshair";
   } else if (targetingActive) {
@@ -924,12 +943,12 @@ function HandCard({
   } else if (!canAfford) {
     containerClass += "opacity-40 grayscale cursor-not-allowed";
   } else {
-    containerClass += "hover:-translate-y-4 cursor-pointer";
+    containerClass += "hover:-translate-y-4 hover:scale-[1.04] cursor-pointer";
   }
 
   return (
     <Inspectable content={<CardInspectContent card={card} />} className="relative shrink-0">
-    <div className="relative">
+    <div className={`relative ${presentationActive ? "presentation-card-pulse" : ""}`}>
       <CardRenderer
       name={def?.name ?? '알 수 없는 카드'}
       cost={card.currentCost}
@@ -971,6 +990,7 @@ function BoardSlot({
   selected,
   attackReady,
   targetingActive,
+  presentationActive,
   targetable,
   activeReady,
   activeUsable,
@@ -989,6 +1009,7 @@ function BoardSlot({
   selected: boolean;
   attackReady: boolean;
   targetingActive: boolean;
+  presentationActive: boolean;
   targetable: boolean;
   activeReady: boolean;
   activeUsable: boolean;
@@ -1016,11 +1037,11 @@ function BoardSlot({
     if (selected) {
       containerClass += "-translate-y-2 md:-translate-y-4 z-20 cursor-pointer";
     } else if (targetable) {
-      containerClass += "hover:-translate-y-1 cursor-crosshair z-10";
+      containerClass += "hover:-translate-y-1 hover:scale-[1.03] cursor-crosshair z-10";
     } else if (targetingActive) {
       containerClass += "opacity-40 grayscale pointer-events-none";
     } else if (attackReady) {
-      containerClass += "hover:-translate-y-1 cursor-pointer z-10";
+      containerClass += "hover:-translate-y-1 hover:scale-[1.03] cursor-pointer z-10";
     } else {
       containerClass += isOpponent ? "" : "cursor-pointer";
     }
@@ -1062,7 +1083,7 @@ function BoardSlot({
          imageUrl={def?.imageUrl}
          rarity={def?.rarity}
          size="board"
-           className={`${containerClass}${animating ? " opacity-0 pointer-events-none" : ""}${hit ? ` attack-target-hit--${hitImpactLevel?.toLowerCase() ?? "light"}` : ""}`}
+         className={`${containerClass}${animating ? " opacity-0 pointer-events-none" : ""}${presentationActive ? " presentation-card-pulse" : ""}${hit ? ` attack-target-hit--${hitImpactLevel?.toLowerCase() ?? "light"}` : ""}`}
          imageDisplaySettings={def}
          highlight={selected ? "selected" : targetable ? "target" : attackReady ? "attack" : undefined}
           containerRef={cardRef}
