@@ -6,6 +6,8 @@ import { getCardDefinition } from "@/game";
 import type { CardPlayAnimationState } from "./card-play-animation-utils";
 
 function animationDuration(animation: CardPlayAnimationState) {
+  const reducedMotion = window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
+  if (reducedMotion) return 180;
   if (animation.kind === "TECHNIQUE") return 420;
   if (animation.impactLevel === "VERY_HEAVY") return 580;
   if (animation.impactLevel === "HEAVY") return 540;

@@ -30,6 +30,8 @@ import {
   ChampionQuestInspectContent,
   Inspectable,
 } from './alt-inspector';
+import { PresentationFeedback, type PresentationCue } from './presentation-feedback';
+import { presentationCueDrafts } from './presentation-feedback-utils';
 
 interface GameStatePreviewProps {
   state: GameState;
@@ -95,18 +97,40 @@ export function GameStatePreview({
   const boardSlotRefs = React.useRef(new Map<number, HTMLDivElement>());
   const boardCardRefs = React.useRef(new Map<string, HTMLDivElement>());
   const championRef = React.useRef<HTMLDivElement | null>(null);
+  const playerChampionRef = React.useRef<HTMLDivElement | null>(null);
   const [generatedPlayAnimations, setGeneratedPlayAnimations] = React.useState<CardPlayAnimationState[]>([]);
+  const [presentationQueue, setPresentationQueue] = React.useState<PresentationCue[]>([]);
   const processedEventCountRef = React.useRef<number | null>(null);
+  const lastCardPositionsRef = React.useRef(new Map<string, { left: number; top: number; width: number; height: number }>());
+  const previousCardStatsRef = React.useRef(new Map<string, { attack: number; health: number }>());
 
   React.useEffect(() => {
-    if (processedEventCountRef.current === null || state.events.length < processedEventCountRef.current) {
+    const currentCardStats = new Map<string, { attack: number; health: number }>();
+    for (const player of state.players) {
+      for (const card of [...player.hand, ...player.deck, ...player.graveyard, ...player.removedFromGame, ...player.board]) {
+        if (card) currentCardStats.set(card.instanceId, {
+          attack: card.currentAttack,
+          health: card.currentHealth,
+        });
+      }
+    }
+    const eventLogReset = processedEventCountRef.current !== null &&
+      state.events.length < processedEventCountRef.current;
+    if (processedEventCountRef.current === null || eventLogReset) {
       processedEventCountRef.current = state.events.length;
+      previousCardStatsRef.current = currentCardStats;
+      if (eventLogReset) {
+        setGeneratedPlayAnimations([]);
+        setPresentationQueue([]);
+      }
       return;
     }
 
     const startIndex = processedEventCountRef.current;
     const newEvents = state.events.slice(startIndex);
     processedEventCountRef.current = state.events.length;
+    const previousCardStats = previousCardStatsRef.current;
+    previousCardStatsRef.current = currentCardStats;
     const animations: CardPlayAnimationState[] = [];
 
     for (const event of newEvents) {
@@ -141,6 +165,45 @@ export function GameStatePreview({
 
     if (animations.length) {
       setGeneratedPlayAnimations((current) => [...current, ...animations]);
+    }
+    const cues = presentationCueDrafts(state.events, startIndex).map((draft) => ({
+      ...draft,
+      ...cuePosition(draft),
+    }));
+    const hasDamageEvent = newEvents.some((event) =>
+      event.type === "DAMAGE_DEALT" ||
+      event.type === "CARD_RETIRED" ||
+      event.type === "CARD_DESTROYED" ||
+      event.type === "CARD_REMOVED",
+    );
+    if (!hasDamageEvent) {
+      for (const [cardInstanceId, current] of currentCardStats) {
+        const previous = previousCardStats.get(cardInstanceId);
+        if (!previous) continue;
+        const attackDelta = current.attack - previous.attack;
+        const healthDelta = current.health - previous.health;
+        if (attackDelta === 0 && healthDelta === 0) continue;
+        const positive = attackDelta > 0 || healthDelta > 0;
+        const kind = positive
+          ? healthDelta > 0 && attackDelta <= 0 ? "HEAL" as const : "BUFF" as const
+          : "DEBUFF" as const;
+        const parts = [
+          attackDelta ? `${attackDelta > 0 ? "+" : ""}${attackDelta} ATK` : "",
+          healthDelta ? `${healthDelta > 0 ? "+" : ""}${healthDelta} HP` : "",
+        ].filter(Boolean);
+        const draft = {
+          id: `stats:${state.events.length}:${cardInstanceId}`,
+          kind,
+          label: parts.join(" · "),
+          value: Math.abs(attackDelta) + Math.abs(healthDelta),
+          cardInstanceId,
+          duration: 320,
+        };
+        cues.push({ ...draft, ...cuePosition(draft) });
+      }
+    }
+    if (cues.length) {
+      setPresentationQueue((current) => [...current.slice(-18), ...cues]);
     }
   }, [state.events, state.players]);
 
@@ -200,8 +263,44 @@ export function GameStatePreview({
   }
 
   function setBoardCardRef(cardId: string, element: HTMLDivElement | null) {
-    if (element) boardCardRefs.current.set(cardId, element);
-    else boardCardRefs.current.delete(cardId);
+    if (element) {
+      boardCardRefs.current.set(cardId, element);
+      const rect = element.getBoundingClientRect();
+      lastCardPositionsRef.current.set(cardId, {
+        left: rect.left,
+        top: rect.top,
+        width: rect.width,
+        height: rect.height,
+      });
+    } else boardCardRefs.current.delete(cardId);
+  }
+
+  function cuePosition(cue: { kind: string; cardInstanceId?: string; playerId?: string; championId?: string }) {
+    const cardElement = cue.cardInstanceId
+      ? boardCardRefs.current.get(cue.cardInstanceId) ?? handCardRefs.current.get(cue.cardInstanceId)
+      : undefined;
+    if (cardElement) {
+      const rect = cardElement.getBoundingClientRect();
+      if (rect.width > 0 && rect.height > 0) {
+        return { left: rect.left + rect.width / 2, top: rect.top + rect.height * 0.35 };
+      }
+    }
+    if (cue.cardInstanceId) {
+      const rect = lastCardPositionsRef.current.get(cue.cardInstanceId);
+      if (rect) return { left: rect.left + rect.width / 2, top: rect.top + rect.height * 0.35 };
+    }
+    if (cue.playerId === me.id) {
+      const rect = playerChampionRef.current?.getBoundingClientRect();
+      if (rect) return { left: rect.left + rect.width / 2, top: rect.top + rect.height * 0.35 };
+    }
+    if (cue.playerId === opp.id || cue.championId === opp.champion?.id) {
+      const rect = championRef.current?.getBoundingClientRect();
+      if (rect) return { left: rect.left + rect.width / 2, top: rect.top + rect.height * 0.35 };
+    }
+    if (cue.kind === "QUEST_COMPLETE") {
+      return { left: window.innerWidth / 2, top: window.innerHeight / 2 };
+    }
+    return { left: window.innerWidth / 2, top: window.innerHeight * 0.42 };
   }
 
   function attackGeometry(targetElement: HTMLDivElement | null) {
@@ -354,6 +453,7 @@ export function GameStatePreview({
                    selectable={false}
                    selected={false}
                    attackReady={false}
+                    targetingActive={!!effectTargeting}
                      targetable={!!card && (effectTargeting ? validEffectTargetIds.has(card.instanceId) : !!selectedAttackerId)}
                     activeReady={false}
                     activeUsable={false}
@@ -406,6 +506,7 @@ export function GameStatePreview({
                     }
                      selected={card?.instanceId === selectedAttackerId || !!card && selectedEffectTargetIds.has(card.instanceId)}
                    attackReady={!!card && canSelectAsAttacker(state, me.id, card.instanceId)}
+                    targetingActive={!!effectTargeting}
                     targetable={!!card && !!effectTargeting && validEffectTargetIds.has(card.instanceId)}
                      activeReady={!!card && getActiveAbility(card) !== undefined}
                      activeUsable={!!card && canUseActiveAbility(state, me.id, card.instanceId)}
@@ -581,7 +682,7 @@ export function GameStatePreview({
             {/* Player Stats & Champion */}
              <div className="ko-player-info z-[95] flex w-[180px] shrink-0 flex-col gap-1 md:w-48 md:gap-2">
               <div className="flex items-start gap-2 md:gap-3">
-                 <div onClick={effectTargeting && validEffectTargetIds.has(me.id) ? () => onEffectTarget(me.id) : undefined} className={`ko-player-champion relative flex h-28 w-20 shrink-0 flex-col items-center justify-center overflow-hidden rounded-sm border-2 bg-neutral-900 md:h-40 md:w-28 ${effectTargeting && validEffectTargetIds.has(me.id) ? 'cursor-crosshair border-amber-400 shadow-[0_0_15px_rgba(251,191,36,0.5)]' : 'border-blue-600 shadow-[0_0_15px_rgba(37,99,235,0.2)]'}`}>
+                 <div ref={playerChampionRef} onClick={effectTargeting && validEffectTargetIds.has(me.id) ? () => onEffectTarget(me.id) : undefined} className={`ko-player-champion relative flex h-28 w-20 shrink-0 flex-col items-center justify-center overflow-hidden rounded-sm border-2 bg-neutral-900 md:h-40 md:w-28 ${effectTargeting && validEffectTargetIds.has(me.id) ? 'cursor-crosshair border-amber-400 shadow-[0_0_15px_rgba(251,191,36,0.5)]' : 'border-blue-600 shadow-[0_0_15px_rgba(37,99,235,0.2)]'}`}>
                    {playerChampionPortrait && (
                      <img src={playerChampionPortrait} alt="" className="absolute inset-0 h-full w-full object-cover" />
                    )}
@@ -657,6 +758,7 @@ export function GameStatePreview({
                           card={card}
                           isSelected={isSelected}
                           canAfford={canAfford}
+                           targetingActive={!!effectTargeting}
                            targetable={!!effectTargeting && validEffectTargetIds.has(card.instanceId)}
                           onClick={() => onSelectCard(card.instanceId)}
                            onUseTechnique={() => handleUseTechnique(card.instanceId)}
@@ -696,6 +798,12 @@ export function GameStatePreview({
           onComplete={onAttackAnimationComplete}
         />
       )}
+      {presentationQueue[0] && (
+        <PresentationFeedback
+          cue={presentationQueue[0]}
+          onComplete={() => setPresentationQueue((current) => current.slice(1))}
+        />
+      )}
     </div>
     </AltInspectProvider>
   );
@@ -705,6 +813,7 @@ function HandCard({
   card,
   isSelected,
   canAfford,
+  targetingActive,
   targetable,
   onClick,
   density,
@@ -715,6 +824,7 @@ function HandCard({
   card: CardInstance;
   isSelected: boolean;
   canAfford: boolean;
+  targetingActive: boolean;
   targetable: boolean;
   onClick: () => void;
   onUseTechnique: () => void;
@@ -736,6 +846,8 @@ function HandCard({
     containerClass += "-translate-y-8 md:-translate-y-12 z-50 cursor-pointer";
   } else if (targetable) {
     containerClass += "cursor-crosshair";
+  } else if (targetingActive) {
+    containerClass += "opacity-40 grayscale pointer-events-none";
   } else if (!canAfford) {
     containerClass += "opacity-40 grayscale cursor-not-allowed";
   } else {
@@ -785,6 +897,7 @@ function BoardSlot({
   selectable,
   selected,
   attackReady,
+  targetingActive,
   targetable,
   activeReady,
   activeUsable,
@@ -802,6 +915,7 @@ function BoardSlot({
   selectable: boolean;
   selected: boolean;
   attackReady: boolean;
+  targetingActive: boolean;
   targetable: boolean;
   activeReady: boolean;
   activeUsable: boolean;
@@ -830,6 +944,8 @@ function BoardSlot({
       containerClass += "-translate-y-2 md:-translate-y-4 z-20 cursor-pointer";
     } else if (targetable) {
       containerClass += "hover:-translate-y-1 cursor-crosshair z-10";
+    } else if (targetingActive) {
+      containerClass += "opacity-40 grayscale pointer-events-none";
     } else if (attackReady) {
       containerClass += "hover:-translate-y-1 cursor-pointer z-10";
     } else {

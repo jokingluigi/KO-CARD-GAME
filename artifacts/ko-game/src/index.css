@@ -420,12 +420,77 @@
 .attack-screen-shake--heavy { animation: ko-attack-screen-shake-heavy 165ms ease-out; }
 .attack-screen-shake--very_heavy { animation: ko-attack-screen-shake-very-heavy 185ms ease-out; }
 
+@keyframes ko-presentation-feedback {
+  0% {
+    opacity: 0;
+    transform: translate(-50%, 10px) scale(.78);
+  }
+  18% {
+    opacity: 1;
+    transform: translate(-50%, 0) scale(1.08);
+  }
+  72% {
+    opacity: 1;
+    transform: translate(-50%, -8px) scale(1);
+  }
+  100% {
+    opacity: 0;
+    transform: translate(-50%, -26px) scale(.96);
+  }
+}
+
+.presentation-feedback {
+  position: fixed;
+  left: var(--presentation-left);
+  top: var(--presentation-top);
+  z-index: 240;
+  pointer-events: none;
+  min-width: 3.5rem;
+  text-align: center;
+  font-family: var(--font-display);
+  font-size: clamp(1rem, 2vw, 1.7rem);
+  font-weight: 900;
+  line-height: 1;
+  letter-spacing: .04em;
+  text-shadow: 0 2px 4px rgba(0, 0, 0, .9), 0 0 16px currentColor;
+  animation: ko-presentation-feedback var(--presentation-duration) cubic-bezier(.2, .75, .25, 1) both;
+}
+
+.presentation-feedback small {
+  display: block;
+  margin-top: .2rem;
+  font-family: var(--font-sans);
+  font-size: .55em;
+  letter-spacing: 0;
+}
+
+.presentation-feedback--damage { color: #fecaca; }
+.presentation-feedback--heal,
+.presentation-feedback--buff { color: #86efac; }
+.presentation-feedback--debuff { color: #fda4af; }
+.presentation-feedback--retire,
+.presentation-feedback--destroy,
+.presentation-feedback--remove { color: #fb7185; font-size: clamp(.7rem, 1.4vw, 1.1rem); }
+.presentation-feedback--draw,
+.presentation-feedback--generate { color: #93c5fd; font-size: clamp(.65rem, 1.2vw, .95rem); }
+.presentation-feedback--gold { color: #facc15; }
+.presentation-feedback--quest { color: #d8b4fe; }
+.presentation-feedback--quest-complete {
+  z-index: 260;
+  font-size: clamp(1.3rem, 4vw, 3rem);
+  color: #fef08a;
+  text-shadow: 0 3px 6px rgba(0, 0, 0, .95), 0 0 28px rgba(250, 204, 21, .8);
+}
+
 .ko-touch-inspector {
   box-sizing: border-box;
   max-width: calc(100vw - 16px);
 }
 
 @media (prefers-reduced-motion: reduce) {
+  .presentation-feedback {
+    animation-duration: 120ms;
+  }
   .attack-animation__attacker,
   .attack-animation__target,
   .attack-animation__impact-flash,

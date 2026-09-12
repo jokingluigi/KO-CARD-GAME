@@ -22,7 +22,9 @@ export function AttackAnimation({
   onCompleteRef.current = onComplete;
   const definition = getCardDefinition(animation.attacker.definitionId);
   const { source, target } = animation.geometry;
-  const duration = attackAnimationDuration(animation.currentAttack);
+  const duration = window.matchMedia?.("(prefers-reduced-motion: reduce)").matches
+    ? 140
+    : attackAnimationDuration(animation.currentAttack);
   const impactDelay = Math.round(duration * 0.56);
   const dx = target.left + target.width / 2 - (source.left + source.width / 2);
   const dy = target.top + target.height / 2 - (source.top + source.height / 2);
