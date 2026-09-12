@@ -257,3 +257,79 @@ test('구조화 퀘스트 보상도 연결된 Champion Token을 전개하고 등
   assert.equal(token?.isDirectDeployedChampion, true);
   assert.equal(completed.players[0].currentGold, 3);
 });
+
+test('강화와 Champion Token 전개를 함께 포함한 퀘스트 보상을 모두 실행한다', () => {
+  const token = {
+    ...TEST_CHAMPION_TOKEN_DEFINITION,
+    abilities: [],
+  };
+  const started = startGame(createInitialGameState(undefined, [token]), fixedRandom);
+  const rewardState = {
+    ...started,
+    players: started.players.map((player) =>
+      player.id === 'player-1' && player.champion?.quest
+        ? {
+            ...player,
+            champion: {
+              ...player.champion,
+              championTokenDefinitionId: token.id,
+              questProgress: player.champion.quest.requiredProgress - 1,
+              quest: {
+                ...player.champion.quest,
+                reward: {
+                  type: 'UPGRADE_ABILITY' as const,
+                  effects: [{
+                    type: 'STRUCTURED' as const,
+                    action: 'DEPLOY_CHAMPION_TOKEN' as const,
+                  }],
+                },
+              },
+            },
+          }
+        : player,
+    ),
+  };
+
+  const completed = processChampionQuestEvents(rewardState, {
+    ...rewardState,
+    events: [...rewardState.events, { type: 'CARD_PLAYED' as const, playerId: 'player-1' }],
+  });
+
+  assert.equal(completed.players[0].champion?.questCompleted, true);
+  assert.equal(completed.players[0].board.some((card) => card?.isDirectDeployedChampion), true);
+  const ability = useChampionAbility({
+    ...completed,
+    players: completed.players.map((player) =>
+      player.id === 'player-1' && player.champion
+        ? { ...player, currentGold: 3, champion: { ...player.champion, abilityCost: 1 } }
+        : player,
+    ),
+  }, 'player-1');
+  assert.equal(ability.success, true);
+});
+
+test('분석기의 WRESTLER_RETIRED 조건은 런타임 CARD_RETIRED 이벤트로 진행된다', () => {
+  const started = startGame(createInitialGameState(), fixedRandom);
+  const rewardState = {
+    ...started,
+    players: started.players.map((player) =>
+      player.id === 'player-1' && player.champion?.quest
+        ? {
+            ...player,
+            champion: {
+              ...player.champion,
+              questProgress: 0,
+              quest: { ...player.champion.quest, trackedEvent: 'WRESTLER_RETIRED' as const, requiredProgress: 1 },
+            },
+          }
+        : player,
+    ),
+  };
+  const completed = processChampionQuestEvents(rewardState, {
+    ...rewardState,
+    events: [...rewardState.events, { type: 'CARD_RETIRED' as const, playerId: 'player-1', cardInstanceId: 'retired', boardSlot: 0 }],
+  });
+
+  assert.equal(completed.players[0].champion?.questProgress, 1);
+  assert.equal(completed.players[0].champion?.questCompleted, true);
+});

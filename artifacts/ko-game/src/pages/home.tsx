@@ -22,6 +22,7 @@ import {
   fetchPublishedChampions,
   fetchGameMedia,
   emptyGameMediaCatalog,
+  processChampionQuestEvents,
   type GameMediaCatalog,
 } from '@/game';
 import { GameStatePreview } from '@/components/game-state-preview';
@@ -499,7 +500,7 @@ export default function Home() {
   }
   function handleEffectTarget(targetId: string) {
     const before = gameState;
-    const next = selectEffectTarget(before, targetId);
+    const next = processChampionQuestEvents(before, selectEffectTarget(before, targetId));
     if (next === before) {
       setPlayError('이 효과의 대상으로 선택할 수 없습니다.');
       return;

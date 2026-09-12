@@ -115,6 +115,52 @@ test("필수 카드 문장을 안전한 구조화 효과로 분석한다", () =>
   }
 });
 
+test("판도라식 자신이 선택한 대상은 SELF가 아니라 PLAYER_CHOICE로 분석한다", () => {
+  const result = analyzeEffectText("등장: 자신이 선택한 선수를 침묵시키고 파괴합니다.");
+
+  assert.equal(result.status, "success");
+  assert.deepEqual(result.effects.map((effect) => effect.action), ["SILENCE", "DESTROY"]);
+  assert.deepEqual(result.effects[0]?.target, {
+    zone: "BOARD",
+    owner: "SELF",
+    cardType: "WRESTLER",
+    selection: "PLAYER_CHOICE",
+    count: 1,
+  });
+  assert.deepEqual(result.effects[1]?.target, {
+    zone: "BOARD",
+    owner: "SELF",
+    cardType: "WRESTLER",
+    selection: "SAME_TARGET",
+    count: 1,
+  });
+});
+
+test("판도라의 선택 대상 파괴와 공격력 합산은 하나의 검증된 효과 목록이 된다", () => {
+  const result = analyzeEffectText(
+    "등장: 자신이 선택한 선수를 침묵시키고 파괴합니다. 이 카드는 자신이 리타이어 혹은 파괴 시킨 선수의 공격력을 자신의 공격력에 더합니다.",
+  );
+
+  assert.equal(result.status, "success");
+  assert.deepEqual(result.effects.map((effect) => effect.action), [
+    "SILENCE",
+    "DESTROY",
+    "ADD_AGGREGATED_ATTACK",
+  ]);
+  assert.deepEqual(result.effects[2]?.target, {
+    zone: "BOARD",
+    owner: "SELF",
+    selection: "SELF",
+    count: 1,
+  });
+  assert.deepEqual(result.effects[2]?.values?.aggregateStats, {
+    source: "LAST_DESTROYED_TARGETS",
+    attack: "CURRENT_ATTACK_SUM",
+    health: "CURRENT_HEALTH_SUM",
+  });
+  assert.equal(isStructuredEffects({ effects: result.effects }), true);
+});
+
 test("현재 공격력과 체력 교환의 유사 표현도 범용 SWAP_STATS로 분석한다", () => {
   const result = analyzeEffectText("액티브: 자신의 현재 공격력과 체력을 서로 바꿉니다.");
 

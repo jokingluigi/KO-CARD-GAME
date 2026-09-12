@@ -29,7 +29,15 @@ import {
   type ChampionFullToken,
 } from "../lib/champion-full-prompt";
 import { analyzeChampionQuestText } from "../lib/champion-quest-analysis";
-import { analyzeEffectText, effectLibrary, isStructuredEffects, type Analysis, type CardReferenceCandidate, type Trigger } from "../lib/structured-effects";
+import {
+  analyzeEffectText,
+  effectLibrary,
+  isChampionQuestRewardEffects,
+  isStructuredEffects,
+  type Analysis,
+  type CardReferenceCandidate,
+  type Trigger,
+} from "../lib/structured-effects";
 import {
   countStructuredEffectUsage,
   prepareCompletionApply,
@@ -166,14 +174,15 @@ function parseChampionInput(value: unknown): ChampionInput | null {
   const questCompletedPortraitAssetId = text("questCompletedPortraitAssetId");
   const questCompletedPortraitUrl = text("questCompletedPortraitUrl");
   const questCompletedPortraitUploadToken = text("questCompletedPortraitUploadToken");
-  const validEffects = (effects: Record<string, unknown> | null | undefined) =>
-    effects === null || effects === undefined || !("effects" in effects) || isStructuredEffects(effects);
+  const validEffects = (effects: Record<string, unknown> | null | undefined, championReward = false) =>
+    effects === null || effects === undefined || !("effects" in effects) ||
+    (championReward ? isChampionQuestRewardEffects(effects) : isStructuredEffects(effects));
   if (!name || name.length > 120 || !abilityName || abilityName.length > 120 ||
       maxHealth == null || abilityCost == null || abilityAudioVolume == null ||
       questCompleteAudioVolume == null ||
       !abilityEffects || typeof input.hasQuest !== "boolean" ||
       questProgressRequired === undefined || upgradedAbilityCost === undefined ||
-       !validEffects(abilityEffects) || !validEffects(object("questRewardEffects", true)) ||
+       !validEffects(abilityEffects) || !validEffects(object("questRewardEffects", true), true) ||
         !validEffects(object("upgradedAbilityEffects", true))) return null;
   if (
     (imageAssetId === null) !== (imageUrl === null) ||
@@ -834,10 +843,30 @@ export function analyzeForContext(
         : {}),
     };
   }
-  return analyzeEffectText(text, {
+  const championUpgrade = context === "QUEST_REWARD" &&
+    /고유\s*능력을?\s*강화시키고\s*,?/i.test(text);
+  const effectText = championUpgrade
+    ? text.replace(/고유\s*능력을?\s*강화시키고\s*,?/i, "").trim()
+    : text;
+  const analysis = analyzeEffectText(effectText, {
     ...(context ? { defaultTrigger: "ENTER_FIELD" as Trigger } : {}),
     ...(catalog ? { cardCatalog: catalog } : {}),
   });
+  if (!championUpgrade) return analysis;
+  const unsupportedSegments = analysis.unsupportedSegments.filter(
+    (segment) => !/능력|강화/i.test(segment),
+  );
+  return {
+    ...analysis,
+    status: unsupportedSegments.length ? "partial" : "success",
+    outcome: unsupportedSegments.length ? analysis.outcome : "supported",
+    effects: [
+      { trigger: "ENTER_FIELD", action: "UPGRADE_CHAMPION_ABILITY" } as unknown as Analysis["effects"][number],
+      ...analysis.effects,
+    ],
+    unsupportedSegments,
+    ...(unsupportedSegments.length ? {} : { reason: undefined }),
+  };
 }
 
 function fullPromptText(value: unknown): string {

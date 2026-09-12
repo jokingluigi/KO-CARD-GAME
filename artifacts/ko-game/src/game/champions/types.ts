@@ -1,6 +1,8 @@
 import type { GameEventType } from '../events/types';
 import type { CardEffect } from '../effects/types';
 
+export type ChampionTrackedEvent = GameEventType | 'WRESTLER_RETIRED';
+
 export type ChampionEffect =
   | { type: 'GAIN_GOLD'; amount: number }
   | { type: 'HEAL_CHAMPION'; amount: number }
@@ -19,7 +21,10 @@ export interface ChampionAbility {
 }
 
 export type ChampionQuestReward =
-  | { type: 'UPGRADE_ABILITY' }
+  | {
+      type: 'UPGRADE_ABILITY';
+      effects?: Array<Extract<ChampionEffect, { type: 'STRUCTURED' }>>;
+    }
   | { type: 'GAIN_GOLD'; amount: number }
   | { type: 'DIRECT_DEPLOY_CHAMPION_TOKEN'; cardDefinitionId: string }
   | {
@@ -31,7 +36,7 @@ export interface ChampionQuest {
   id: string;
   name: string;
   description: string;
-  trackedEvent: GameEventType;
+  trackedEvent: ChampionTrackedEvent;
   requiredProgress: number;
   reward: ChampionQuestReward;
 }

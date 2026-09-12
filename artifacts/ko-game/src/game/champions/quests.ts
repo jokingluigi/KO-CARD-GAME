@@ -1,8 +1,22 @@
 import type { GameEvent } from '../events/types';
 import type { GameState } from '../types/game-state';
+import type { ChampionTrackedEvent } from './types';
 import { tryDirectDeployChampionToken } from '../engine/champion-token';
 import type { CardInstance } from '../cards/types';
 import { resolvePendingEffects } from '../effects/effect-engine';
+
+function matchesQuestEvent(
+  event: GameEvent,
+  trackedEvent: ChampionTrackedEvent,
+  playerId: string,
+): boolean {
+  if (event.playerId !== playerId) return false;
+  // The analyzer keeps the human-facing WRESTLER_RETIRED condition for
+  // compatibility; the event stream uses the canonical CARD_RETIRED event.
+  return trackedEvent === 'WRESTLER_RETIRED'
+    ? event.type === 'CARD_RETIRED'
+    : event.type === trackedEvent;
+}
 
 export function processChampionQuestEvents(
   previousState: GameState,
@@ -18,8 +32,7 @@ export function processChampionQuestEvents(
 
     const progress = newEvents.filter(
       (event) =>
-        event.type === quest.trackedEvent &&
-        event.playerId === originalPlayer.id,
+        matchesQuestEvent(event, quest.trackedEvent, originalPlayer.id),
     ).length;
     if (progress === 0) continue;
 
@@ -94,7 +107,13 @@ export function processChampionQuestEvents(
         'CHAMPION_QUEST_REWARD',
       );
     }
-    if (questCompleted && quest.reward.type === 'STRUCTURED' && quest.reward.effects.length) {
+    const rewardEffects =
+      questCompleted && quest.reward.type === 'UPGRADE_ABILITY'
+        ? quest.reward.effects ?? []
+        : questCompleted && quest.reward.type === 'STRUCTURED'
+          ? quest.reward.effects
+          : [];
+    if (rewardEffects.length) {
       const sourceCard: CardInstance = {
         instanceId: `champion-${champion.id}-quest-reward`,
         definitionId: `champion-${champion.id}`,
@@ -129,7 +148,7 @@ export function processChampionQuestEvents(
           playerId: originalPlayer.id,
           sourceInstanceId: sourceCard.instanceId,
           sourceCard,
-          effects: quest.reward.effects,
+          effects: rewardEffects,
           effectIndex: 0,
           selectedTargetIds: [],
           lastTargetIds: [],

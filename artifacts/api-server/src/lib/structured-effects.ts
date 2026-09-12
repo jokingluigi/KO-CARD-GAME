@@ -63,6 +63,12 @@ export type StructuredEffect = {
     rightEffects?: StructuredEffect[];
   };
 };
+/** Champion-only reward marker. It is stored beside normal structured effects
+ * in the Champion quest reward payload, but is not a card runtime action. */
+export type ChampionUpgradeEffect = {
+  trigger: Trigger;
+  action: "UPGRADE_CHAMPION_ABILITY";
+};
 export type AnalysisOutcome = "supported" | "mechanism_required" | "analysis_failure";
 export type ReferencedCard = {
   id: string;
@@ -120,6 +126,7 @@ const ACTIVE_CARD_SCOPE_PATTERN = /(?:어디에\s*(?:있든|있는)|모든\s*위
 const GENERATED_FILTER_PATTERN = /(?:생성된|생성\s*카드|GENERATED)/i;
 const MIN_COST_PATTERN = /(\d+)\s*(?:코스트|비용)\s*이상/;
 const AGGREGATED_STATS_PATTERN = /(?:현재\s*)?(?:공격(?:력)?\s*(?:과|\/|및)\s*체력|체력\s*(?:과|\/|및)\s*공격(?:력)?)[^.!?]{0,30}?합산/;
+const AGGREGATED_ATTACK_PATTERN = /(?:리타이어|퇴장|파괴).*공격력.*(?:더|추가)|공격력.*(?:리타이어|퇴장|파괴)/;
 
 export function effectLibrary() {
   return EFFECT_LIBRARY;
@@ -159,6 +166,15 @@ function targetFor(text: string, randomPool = false): Target {
   if (/(아군|내)\s*캐릭터/.test(text)) return { zone: "CHARACTER", owner: "SELF", selection: "PLAYER_CHOICE", count: targetCountFrom(text) };
   if (/(상대|적)\s*(챔피언|플레이어)/.test(text)) return { zone: "PLAYER", owner: "ENEMY", selection: "SELF", count: 1 };
   if (/(?:내|자신의)\s*챔피언/.test(text)) return { zone: "PLAYER", owner: "SELF", selection: "SELF", count: 1 };
+  if (/선택한\s*(?:선수|대상)/.test(text)) {
+    return {
+      zone: "BOARD",
+      owner: "SELF",
+      ...( /선택한\s*선수/.test(text) ? { cardType: "WRESTLER" as const } : {}),
+      selection: "PLAYER_CHOICE",
+      count: 1,
+    };
+  }
   const activeCardScope = ACTIVE_CARD_SCOPE_PATTERN.test(text);
   const hand = /손(?:패)?/.test(text), deck = /덱/.test(text), enemy = /(적|상대)\s*선수/.test(text);
   const random = /(무작위|랜덤)/.test(text), all = /(모든|전부)/.test(text);
@@ -275,8 +291,25 @@ function effect(
   referenceErrors: CardReferenceError[] = [],
 ): StructuredEffect | null {
   const schema = ACTION_SCHEMAS[action], values: StructuredEffect["values"] = {};
+  const targetBody = action === "DESTROY"
+    ? body.split(/이\s*카드는/)[0] ?? body
+    : body;
   if (action === "DEPLOY_CHAMPION_TOKEN") {
     return { trigger, action, ...(conditions?.length ? { conditions } : {}) };
+  }
+  if (action === "ADD_AGGREGATED_ATTACK") {
+    values.aggregateStats = {
+      source: "LAST_DESTROYED_TARGETS",
+      attack: "CURRENT_ATTACK_SUM",
+      health: "CURRENT_HEALTH_SUM",
+    };
+    return {
+      trigger,
+      action,
+      target: targetFor(body),
+      ...(conditions?.length ? { conditions } : {}),
+      values,
+    };
   }
   if (action === "QUEUE_EFFECT") {
     const match = body.match(NEXT_PLAY_HEALTH_BUFF_PATTERN);
@@ -364,13 +397,13 @@ function effect(
         : Number(statPairIncrement![1]);
   }
   if (schema.keyword) { const keyword = keywordFor(body); if (!keyword) return null; values.keyword = keyword; }
-  const explicitTarget = /(자신|이\s*카드|모든\s*캐릭터|모든\s*(?:생성된\s*)?선수|(?:적|상대)\s*(?:선수|챔피언|플레이어|캐릭터)|(?:아군|내)\s*캐릭터|손(?:패)?|생성된|어디에\s*(?:있든|있는)|모든\s*위치의|손패\s*[,，]\s*덱\s*[,，]\s*(?:필드|보드))/.test(body);
+  const explicitTarget = /(선택한\s*(?:선수|대상)|자신|이\s*카드(?!는)|모든\s*캐릭터|모든\s*(?:생성된\s*)?선수|(?:적|상대)\s*(?:선수|챔피언|플레이어|캐릭터)|(?:아군|내)\s*캐릭터|손(?:패)?|생성된|어디에\s*(?:있든|있는)|모든\s*위치의|손패\s*[,，]\s*덱\s*[,，]\s*(?:필드|보드))/.test(targetBody);
   const sameSummonedTarget = action === "ADD_KEYWORD" && /소환한\s*['‘’“”]?[^'‘’“”\s]+['‘’“”]?\s*에게/.test(body);
   const randomPoolAction = action === "SUMMON" || action === "GENERATE";
   const resolvedTarget = sameSummonedTarget
     ? { zone: "BOARD" as const, owner: "SELF" as const, selection: "SAME_TARGET" as const, count: 1 }
     : (schema.target || (randomPoolAction && /(무작위|랜덤)/.test(body)))
-      ? (!explicitTarget && priorTarget ? { ...priorTarget, selection: "SAME_TARGET" as const } : targetFor(body, randomPoolAction))
+       ? (!explicitTarget && priorTarget ? { ...priorTarget, selection: "SAME_TARGET" as const } : targetFor(targetBody, randomPoolAction))
       : undefined;
   return {
     trigger,
@@ -469,6 +502,7 @@ export function analyzeEffectText(input: string, options: EffectAnalysisOptions 
     ["SILENCE", /침묵(?:시키(?:고|니다)?|)/], ["DESTROY", /파괴/],
     ["RELEASE_CAPTURED", /(?:포획.*(?:해방|풀)|해방.*포획)/], ["CAPTURE", /포획/],
      ["REMOVE_FROM_GAME", /(?:제거|ERASE)/i],
+      ["ADD_AGGREGATED_ATTACK", AGGREGATED_ATTACK_PATTERN],
      ["DEPLOY_CHAMPION_TOKEN", /(?:내\s*)?챔피언(?:을|를)?\s*소환(?:합니다|한다|해요|하세요)?/i],
      ["SUMMON", /(?:소환|SUMMON)/i], ["GENERATE", /(?:생성(?!된)|GENERATE)/i],
     ["REMOVE_KEYWORD", /(?:러쉬|기습|도발|회피|연타)(?:를|을)?\s*(?:제거|잃)/],
@@ -503,6 +537,8 @@ export function analyzeEffectText(input: string, options: EffectAnalysisOptions 
      remainder = remainder.replace(/사용될\s*때까지(?:\s*\S+){0,5}\s*유지(?:합니다)?|다음\s*턴에도(?:\s*\S+){0,2}\s*유지(?:합니다)?/g, "");
      remainder = remainder.replace(/자신의\s*양\s*옆\s*(?:빈\s*)?슬롯(?:에)?|양\s*옆\s*(?:빈\s*)?슬롯(?:에)?|각각|이\s*카드가\s*필드에\s*있(?:는\s*동안|을\s*때)|\d+\s*(?:코스트|비용)\s*이상/g, "");
       remainder = remainder.replace(/(?:모든\s*)?(?:생성된\s*)?(?:아군|내)\s*선수(?:\s*카드)?(?:에게|을|를|의)?/g, "");
+       remainder = remainder.replace(/(?:자신|이\s*카드)(?:이|가|는|에게|을|를)?/g, "");
+       remainder = remainder.replace(/(?:^|\s)이(?=\s|$)/g, " ");
     remainder = remainder.replace(/(?:내\s*)손(?!패)(?:의)?/g, "");
       for (const referencedCard of referencedCards) {
         remainder = remainder.replace(new RegExp(referencedCard.name.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"), "g"), "");
@@ -552,6 +588,20 @@ export function analyzeEffectText(input: string, options: EffectAnalysisOptions 
             : "문장의 일부를 효과로 해석하지 못했습니다. 표현을 더 구체적으로 입력해 주세요.",
         }),
   };
+}
+
+export function isChampionQuestRewardEffects(value: unknown): value is { effects: Array<StructuredEffect | ChampionUpgradeEffect> } {
+  if (!value || typeof value !== "object" || Array.isArray(value)) return false;
+  const effects = (value as { effects?: unknown }).effects;
+  if (!Array.isArray(effects) || effects.length < 1 || effects.length > 10) return false;
+  return effects.every((item) => {
+    if (!item || typeof item !== "object" || Array.isArray(item)) return false;
+    const record = item as Record<string, unknown>;
+    if (record.action === "UPGRADE_CHAMPION_ABILITY") {
+      return record.trigger === "ENTER_FIELD";
+    }
+    return isStructuredEffects({ effects: [item] });
+  });
 }
 
 export function isStructuredEffects(value: unknown): value is { effects: StructuredEffect[] } {
@@ -644,7 +694,7 @@ export function isStructuredEffects(value: unknown): value is { effects: Structu
         (!Number.isInteger(values.count) || values.count < 1 || values.count > 20)) return false;
      if (values?.aggregateStats !== undefined) {
        const aggregate = values.aggregateStats;
-       if (item.action !== "SUMMON" ||
+        if (!["SUMMON", "ADD_AGGREGATED_ATTACK"].includes(item.action) ||
          !aggregate || typeof aggregate !== "object" || Array.isArray(aggregate) ||
          aggregate.source !== "LAST_DESTROYED_TARGETS" ||
          aggregate.attack !== "CURRENT_ATTACK_SUM" ||

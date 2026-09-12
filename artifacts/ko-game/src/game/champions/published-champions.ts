@@ -59,10 +59,14 @@ export function championRecordToDefinition(record: PublishedChampionRecord): Cha
         requiredProgress: record.questProgressRequired,
          reward: directTokenReward
            ? { type: "DIRECT_DEPLOY_CHAMPION_TOKEN", cardDefinitionId: tokenId }
-           : structuredRewardEffects.length
-             ? { type: "STRUCTURED", effects: structuredRewardEffects }
            : rewardActions.some((item) => item.action === "UPGRADE_CHAMPION_ABILITY")
-             ? { type: "UPGRADE_ABILITY" } : { type: "GAIN_GOLD", amount: 0 },
+             ? {
+                 type: "UPGRADE_ABILITY",
+                 effects: structuredRewardEffects,
+               }
+             : structuredRewardEffects.length
+               ? { type: "STRUCTURED", effects: structuredRewardEffects }
+               : { type: "GAIN_GOLD", amount: 0 },
       }
     : null;
   return {

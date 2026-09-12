@@ -518,6 +518,10 @@ function applyEffect(
         ],
       };
     }
+    if (effect.action === 'ADD_AGGREGATED_ATTACK') {
+      const aggregate = state.targetingState?.lastAggregatedStats;
+      if (!aggregate || !effect.target) return clearLastAggregatedStats(state);
+    }
     if (effect.action === 'DRAW') {
       return Array.from({ length: amount }).reduce<GameState>(
         (nextState) => nextState.status === 'FINISHED' ? nextState : drawCard(nextState, playerId),
@@ -665,7 +669,9 @@ function applyEffect(
     if (!targets.length) {
       return effect.action === 'DESTROY'
         ? withLastAggregatedStats(state, { attack: 0, health: 0 })
-        : state;
+        : effect.action === 'ADD_AGGREGATED_ATTACK'
+          ? clearLastAggregatedStats(state)
+          : state;
     }
     const ids = new Set(targets.map((card) => card.instanceId));
     if (effect.action === 'DESTROY') {
@@ -776,16 +782,36 @@ function applyEffect(
             { type: 'CARD_RETIRED', playerId: targetOwner, cardInstanceId: current.instanceId, boardSlot: current.boardSlot!, source: { type: 'CARD', cardInstanceId: sourceCard.instanceId }, target: { type: 'CARD', cardInstanceId: current.instanceId }, reason: 'RETIRE' },
           ],
         };
+        const retiredWithAggregate = withLastAggregatedStats(retiredState, {
+          attack: current.currentAttack,
+          health: Math.max(0, current.currentHealth),
+        });
         const exactZeroState = health === 0
-          ? resolveTriggeredAbilities(retiredState, playerId, sourceCard, 'EXACT_ZERO_DAMAGE', {
+          ? resolveTriggeredAbilities(retiredWithAggregate, playerId, sourceCard, 'EXACT_ZERO_DAMAGE', {
             damagedTargetInstanceId: current.instanceId, healthBefore: current.currentHealth, healthAfter: health,
           })
-          : retiredState;
+          : retiredWithAggregate;
         return resolveTriggeredAbilities(exactZeroState, targetOwner, current, 'LEAVE_FIELD', { leaveReason: 'RETIRE' });
       }, state);
     }
     if (effect.action === 'SILENCE') {
       return [...ids].reduce((nextState, id) => silenceCard(nextState, id), state);
+    }
+    if (effect.action === 'ADD_AGGREGATED_ATTACK') {
+      const aggregate = state.targetingState?.lastAggregatedStats;
+      if (!aggregate) return clearLastAggregatedStats(state);
+      const withoutAggregate = clearLastAggregatedStats(state);
+      return {
+        ...withoutAggregate,
+        players: withoutAggregate.players.map((player) => player.id !== targetOwner
+          ? player
+          : {
+              ...player,
+              board: player.board.map((card) => card && ids.has(card.instanceId)
+                ? { ...card, currentAttack: card.currentAttack + aggregate.attack }
+                : card) as typeof player.board,
+            }),
+      };
     }
     return {
       ...state,

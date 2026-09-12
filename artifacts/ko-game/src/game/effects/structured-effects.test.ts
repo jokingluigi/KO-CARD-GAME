@@ -641,6 +641,79 @@ test('선택한 적 선수를 침묵시킨 뒤 같은 대상을 파괴한다', (
   assert.ok(result.events.some((event) => event.type === 'CARD_DESTROYED'));
 });
 
+test('자신이 선택해 파괴한 선수의 현재 공격력을 토큰 자신에게 더한다', () => {
+  const targetConfig = {
+    zone: 'BOARD' as const,
+    owner: 'SELF' as const,
+    cardType: 'WRESTLER' as const,
+    selection: 'PLAYER_CHOICE' as const,
+    count: 1,
+  };
+  const source = instance('aggregate-destroy-source', [
+    structured('SILENCE', targetConfig),
+    structured('DESTROY', { ...targetConfig, selection: 'SAME_TARGET' }),
+    structured('ADD_AGGREGATED_ATTACK', {
+      zone: 'BOARD',
+      owner: 'SELF',
+      selection: 'SELF',
+      count: 1,
+    }, {
+      aggregateStats: {
+        source: 'LAST_DESTROYED_TARGETS',
+        attack: 'CURRENT_ATTACK_SUM',
+        health: 'CURRENT_HEALTH_SUM',
+      },
+    }),
+  ]);
+  const target = { ...instance('aggregate-destroy-target'), currentAttack: 4, boardSlot: 1 as const };
+  const state = createInitialGameState();
+  state.players[0].board[1] = target;
+
+  const pending = enterField(state, 'player-1', source, 0);
+  const result = selectEffectTarget(pending, target.instanceId);
+
+  assert.equal(result.players[0].board[1], null);
+  // Silence resolves before destruction, so the destruction-time current
+  // attack is the card's base attack.
+  assert.equal(result.players[0].graveyard.at(-1)?.currentAttack, 1);
+  assert.equal(result.players[0].board[0]?.currentAttack, 2);
+  assert.equal(result.targetingState, undefined);
+});
+
+test('리타이어된 선수도 같은 공격력 합산 경로를 사용한다', () => {
+  const targetConfig = {
+    zone: 'BOARD' as const,
+    owner: 'SELF' as const,
+    cardType: 'WRESTLER' as const,
+    selection: 'PLAYER_CHOICE' as const,
+    count: 1,
+  };
+  const source = instance('aggregate-retire-source', [
+    structured('DAMAGE', targetConfig, { amount: 1 }),
+    structured('ADD_AGGREGATED_ATTACK', {
+      zone: 'BOARD',
+      owner: 'SELF',
+      selection: 'SELF',
+      count: 1,
+    }, {
+      aggregateStats: {
+        source: 'LAST_DESTROYED_TARGETS',
+        attack: 'CURRENT_ATTACK_SUM',
+        health: 'CURRENT_HEALTH_SUM',
+      },
+    }),
+  ]);
+  const target = { ...instance('aggregate-retire-target'), currentAttack: 3, currentHealth: 1, boardSlot: 1 as const };
+  const state = createInitialGameState();
+  state.players[0].board[1] = target;
+
+  const result = selectEffectTarget(enterField(state, 'player-1', source, 0), target.instanceId);
+
+  assert.equal(result.players[0].board[1], null);
+  assert.equal(result.players[0].board[0]?.currentAttack, 4);
+  assert.ok(result.events.some((event) => event.type === 'CARD_RETIRED'));
+});
+
 test('구조화 DRAW는 기존 drawCard 규칙과 이벤트를 사용한다', () => {
   const source = instance('draw-source', [
     structured('DRAW', undefined, { amount: 1 }),
