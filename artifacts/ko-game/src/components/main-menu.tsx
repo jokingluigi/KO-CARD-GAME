@@ -7,23 +7,23 @@ type MainMenuProps = {
 
 const menuItems = [
   {
-    label: "AI 매치",
-    description: "AI 상대와 대결",
-    icon: Bot,
-  },
-  {
     label: "온라인 매치",
-    description: "다른 플레이어와 대결",
+    description: "다른 플레이어와 대결합니다",
     icon: Globe2,
   },
   {
+    label: "AI 매치",
+    description: "AI와 연습 대전을 즐깁니다",
+    icon: Bot,
+  },
+  {
     label: "덱 편집",
-    description: "나만의 덱 구성",
+    description: "나만의 덱을 구성합니다",
     icon: Layers3,
   },
   {
     label: "상점",
-    description: "카드와 아이템 확인",
+    description: "카드와 아이템을 확인합니다",
     icon: ShoppingBag,
   },
 ] as const;
@@ -32,15 +32,14 @@ export function MainMenu({ onComingSoon }: MainMenuProps) {
   const [notice, setNotice] = useState("");
 
   return (
-    <main className="min-h-screen bg-[#080808] px-5 py-10 text-white sm:px-8 sm:py-16">
-      <div className="mx-auto flex min-h-[calc(100vh-5rem)] w-full max-w-4xl flex-col justify-center">
-        <header className="mb-10 text-center sm:mb-14">
-          <p className="font-display text-xs font-bold tracking-[0.45em] text-amber-400">KINGDOM OF</p>
-          <h1 className="mt-2 font-display text-5xl font-black tracking-[0.12em] text-white sm:text-7xl">KO</h1>
-          <p className="mt-4 text-sm font-bold tracking-[0.2em] text-neutral-500">CARD BATTLE</p>
+    <main className="ko-main-menu min-h-screen bg-[#080808] px-5 py-10 text-white sm:px-8">
+      <div className="ko-main-menu__content mx-auto flex min-h-[calc(100vh-5rem)] w-full max-w-4xl flex-col justify-center">
+        <header className="ko-main-menu__header text-center">
+          <h1 className="ko-main-menu__logo font-display font-black text-white">KO</h1>
+          <p className="ko-main-menu__tagline font-display font-bold text-neutral-500">CARD BATTLE</p>
         </header>
 
-        <section aria-label="메인 메뉴" className="grid gap-3 sm:grid-cols-2">
+        <section aria-label="메인 메뉴" className="ko-main-menu__grid grid gap-4 sm:grid-cols-2">
           {menuItems.map(({ label, description, icon: Icon }) => (
             <button
               key={label}
@@ -49,14 +48,14 @@ export function MainMenu({ onComingSoon }: MainMenuProps) {
                 setNotice(`${label}은 준비 중입니다.`);
                 onComingSoon?.(label);
               }}
-              className="group flex min-h-28 items-center gap-4 rounded-xl border border-neutral-800 bg-neutral-950/90 px-5 py-5 text-left shadow-xl transition-colors hover:border-amber-500/70 hover:bg-neutral-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-400"
+              className="ko-main-menu__item group flex min-h-28 flex-col items-start rounded-[10px] border bg-transparent text-left transition-all duration-200 hover:bg-amber-400/[0.04] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-400"
             >
-              <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-lg border border-neutral-700 bg-black text-amber-400 transition-colors group-hover:border-amber-500/70">
+              <span className="ko-main-menu__icon text-amber-400 transition-transform duration-200 group-hover:scale-105">
                 <Icon className="h-6 w-6" aria-hidden="true" />
               </span>
-              <span>
-                <span className="block text-base font-black text-white">{label}</span>
-                <span className="mt-1 block text-xs font-medium text-neutral-500">{description}</span>
+              <span className="ko-main-menu__copy">
+                <span className="block text-lg font-black leading-none text-white">{label}</span>
+                <span className="mt-2 block text-sm font-medium leading-none text-neutral-400">{description}</span>
               </span>
             </button>
           ))}
