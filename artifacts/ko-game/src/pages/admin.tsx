@@ -1,5 +1,5 @@
 import { FormEvent, useEffect, useState } from "react";
-import { Image, LockKeyhole, LogOut, Music2, ShieldCheck, Spade } from "lucide-react";
+import { Gamepad2, Image, LockKeyhole, LogOut, Music2, ShieldCheck, Spade } from "lucide-react";
 import { AdminCardManager } from "@/components/admin-card-manager";
 import { AdminChampionManager } from "@/components/admin-champion-manager";
 import { AdminGameMediaManager } from "@/components/admin-game-media-manager";
@@ -19,7 +19,7 @@ async function readMessage(response: Response): Promise<string> {
 
 export default function Admin() {
   const [status, setStatus] = useState<AdminStatus>("checking");
-  const [section, setSection] = useState<"cards" | "champions" | "media">("cards");
+  const [section, setSection] = useState<"cards" | "champions" | "media" | "test">("cards");
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [errorMessage, setErrorMessage] = useState("");
@@ -178,8 +178,8 @@ export default function Admin() {
         </div>
       </header>
 
-      <div className="mx-auto flex max-w-6xl gap-6 px-5 py-8">
-        <nav className="w-52 shrink-0">
+      <div className="mx-auto flex max-w-6xl flex-col gap-6 px-5 py-8 md:flex-row">
+        <nav className="w-full shrink-0 md:w-52">
           <div className="mb-3 text-[10px] font-bold tracking-[0.2em] text-neutral-600">
             ADMIN MENU
           </div>
@@ -210,6 +210,14 @@ export default function Admin() {
             </span>
             백그라운드 관리
           </button>
+          <button
+            type="button"
+            onClick={() => setSection("test")}
+            className={`mt-2 flex w-full items-center gap-3 rounded border px-3 py-3 text-left text-sm font-black ${section === "test" ? "border-primary/60 bg-primary/10 text-primary" : "border-transparent text-neutral-400"}`}
+          >
+            <Gamepad2 className="h-4 w-4" />
+            게임 테스트
+          </button>
         </nav>
 
         <section className="min-w-0 flex-1">
@@ -217,7 +225,32 @@ export default function Admin() {
             ? <AdminCardManager onUnauthorized={() => setStatus("login")} />
              : section === "champions"
                ? <AdminChampionManager onUnauthorized={() => setStatus("login")} />
-               : <AdminGameMediaManager onUnauthorized={() => setStatus("login")} />}
+               : section === "media"
+                 ? <AdminGameMediaManager onUnauthorized={() => setStatus("login")} />
+                 : (
+                   <section className="rounded-xl border border-neutral-800 bg-black/40 p-5 sm:p-8">
+                     <div className="mb-6 flex items-start gap-4">
+                       <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg border border-amber-700/60 bg-amber-950/40 text-amber-300">
+                         <Gamepad2 className="h-5 w-5" />
+                       </div>
+                       <div>
+                         <h2 className="text-xl font-black text-white">게임 테스트</h2>
+                         <p className="mt-1 text-sm leading-6 text-neutral-500">
+                           현재 개발 중인 기존 테스트 게임 화면으로 이동합니다.
+                         </p>
+                       </div>
+                     </div>
+                     <button
+                       type="button"
+                       onClick={() => {
+                         window.location.href = `${import.meta.env.BASE_URL}?source=admin`;
+                       }}
+                       className="w-full rounded-lg bg-primary px-4 py-3 text-sm font-black text-black transition-colors hover:bg-yellow-400 sm:w-auto"
+                     >
+                       기존 테스트 모드 열기
+                     </button>
+                   </section>
+                 )}
         </section>
       </div>
     </main>

@@ -60,6 +60,7 @@ interface GameStatePreviewProps {
   onUseChampionAbility: () => void;
   onCancelEffectTargeting: () => void;
   onEffectTarget: (targetId: string) => void;
+  onReturnToAdmin?: () => void;
 }
 
 export function GameStatePreview({
@@ -89,6 +90,7 @@ export function GameStatePreview({
   onUseChampionAbility,
   onCancelEffectTargeting,
   onEffectTarget,
+  onReturnToAdmin,
 }: GameStatePreviewProps) {
   const [openGraveyardPlayerId, setOpenGraveyardPlayerId] = React.useState<string | null>(null);
   const [settingsOpen, setSettingsOpen] = React.useState(false);
@@ -613,6 +615,15 @@ export function GameStatePreview({
                  </div>
                  {!surrenderConfirming ? (
                    <div className="space-y-3">
+                      {onReturnToAdmin && (
+                        <button
+                          type="button"
+                          onClick={onReturnToAdmin}
+                          className="w-full rounded border border-amber-700 bg-amber-950/40 px-3 py-2 text-xs font-black text-amber-200 transition-colors hover:bg-amber-900/60"
+                        >
+                          관리자로 돌아가기
+                        </button>
+                      )}
                      <label className="flex items-center justify-between gap-3 text-xs font-bold text-neutral-300">
                        <span>배경 음악 음소거</span>
                        <button

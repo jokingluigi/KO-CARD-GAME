@@ -26,6 +26,7 @@ import {
   type GameMediaCatalog,
 } from '@/game';
 import { GameStatePreview } from '@/components/game-state-preview';
+import { MainMenu } from '@/components/main-menu';
 import { audioManager } from '@/audio/audio-manager';
 import type { CardPlayAnimationState, CardPlayGeometry } from '@/components/card-play-animation-utils';
 import { landingImpactLevel } from '@/components/card-play-animation-utils';
@@ -100,8 +101,10 @@ function readStoredBgmMute() {
 }
 
 export default function Home() {
-  const testCardId = new URLSearchParams(window.location.search).get('testCardId');
-  const [isAdminTestMatch, setIsAdminTestMatch] = useState(false);
+  const searchParams = new URLSearchParams(window.location.search);
+  const testCardId = searchParams.get('testCardId');
+  const isAdminSource = searchParams.get('source') === 'admin';
+  const [isAdminTestMatch, setIsAdminTestMatch] = useState(isAdminSource);
   const [mediaCatalog, setMediaCatalog] = useState<GameMediaCatalog>(emptyGameMediaCatalog);
   const [gameState, setGameState] = useState<GameState>(() =>
     startGame(createInitialGameState()),
@@ -129,6 +132,12 @@ export default function Home() {
 
   useEffect(() => {
     let cancelled = false;
+    if (!testCardId && !isAdminSource) {
+      setMatchReady(false);
+      return () => {
+        cancelled = true;
+      };
+    }
     if (testCardId) {
       Promise.all([
         fetch(`${import.meta.env.BASE_URL.replace(/\/$/, '')}/api/admin/cards/${encodeURIComponent(testCardId)}/test`, {
@@ -202,7 +211,7 @@ export default function Home() {
     return () => {
       cancelled = true;
     };
-  }, [testCardId]);
+  }, [isAdminSource, testCardId]);
 
   useEffect(() => {
     const bgm = mediaCatalog.bgms.find((item) => item.id === gameState.bgmId);
@@ -680,6 +689,10 @@ export default function Home() {
     setPlayError(null);
   }
 
+  if (!testCardId && !isAdminSource) {
+    return <MainMenu />;
+  }
+
   if (!matchReady) {
     return (
       <main className="flex min-h-screen items-center justify-center bg-[#080808] px-6 text-white">
@@ -733,6 +746,9 @@ export default function Home() {
       onUseChampionAbility={handleUseChampionAbility}
       onCancelEffectTargeting={handleCancelEffectTargeting}
       onEffectTarget={handleEffectTarget}
+      onReturnToAdmin={isAdminTestMatch ? () => {
+        window.location.href = `${import.meta.env.BASE_URL.replace(/\/$/, '')}/admin`;
+      } : undefined}
     />
     </>
   );
