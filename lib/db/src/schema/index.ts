@@ -22,3 +22,4 @@ export * from "./champions";
 export * from "./mechanic-requests";
 export * from "./game-media";
 export * from "./users";
+export * from "./decks";

@@ -4,6 +4,7 @@ import type { AuthUser } from "@/lib/auth-client";
 
 type MainMenuProps = {
   onComingSoon?: (label: string) => void;
+  onDeckEdit?: () => void;
   user?: AuthUser;
   onLogout?: () => void;
 };
@@ -31,7 +32,7 @@ const menuItems = [
   },
 ] as const;
 
-export function MainMenu({ onComingSoon, user, onLogout }: MainMenuProps) {
+export function MainMenu({ onComingSoon, onDeckEdit, user, onLogout }: MainMenuProps) {
   const [notice, setNotice] = useState("");
 
   return (
@@ -57,6 +58,10 @@ export function MainMenu({ onComingSoon, user, onLogout }: MainMenuProps) {
               key={label}
               type="button"
               onClick={() => {
+                if (label === "덱 편집") {
+                  onDeckEdit?.();
+                  return;
+                }
                 setNotice(`${label}은 준비 중입니다.`);
                 onComingSoon?.(label);
               }}

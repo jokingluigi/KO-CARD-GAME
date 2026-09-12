@@ -1088,3 +1088,705 @@
     font-size: 0.42rem;
   }
 }
+
+/* Deck editor — a taped-up preparation room, not a back-office screen. */
+.ko-decks {
+  min-height: 100dvh;
+  background:
+    linear-gradient(90deg, rgba(255, 255, 255, 0.025) 1px, transparent 1px) 0 0 / 48px 48px,
+    radial-gradient(circle at 74% 18%, rgba(188, 38, 45, 0.16), transparent 31rem),
+    radial-gradient(circle at 12% 72%, rgba(232, 173, 52, 0.07), transparent 27rem),
+    #0b0b0c;
+  color: #f4f0e9;
+}
+
+.ko-decks__grain {
+  pointer-events: none;
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  opacity: 0.055;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 180 180' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.75' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='.5'/%3E%3C/svg%3E");
+}
+
+.ko-decks__wrap {
+  position: relative;
+  z-index: 1;
+  width: min(1480px, calc(100% - 40px));
+  margin: 0 auto;
+  padding: 28px 0 48px;
+}
+
+.ko-decks__topline {
+  display: flex;
+  align-items: end;
+  justify-content: space-between;
+  gap: 24px;
+  border-bottom: 1px solid rgba(221, 180, 101, 0.24);
+  padding-bottom: 22px;
+}
+
+.ko-decks__eyebrow {
+  color: #d8a950;
+  font-family: var(--font-display);
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.34em;
+  text-transform: uppercase;
+}
+
+.ko-decks__title {
+  margin-top: 5px;
+  color: #f3eee5;
+  font-family: var(--font-display);
+  font-size: clamp(2rem, 5vw, 4.25rem);
+  font-weight: 700;
+  letter-spacing: -0.04em;
+  line-height: 0.92;
+}
+
+.ko-decks__subtitle {
+  max-width: 31rem;
+  margin-top: 9px;
+  color: #8c8985;
+  font-size: 0.8rem;
+  line-height: 1.6;
+}
+
+.ko-decks__back {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  border: 1px solid rgba(229, 210, 174, 0.3);
+  border-radius: 3px;
+  padding: 9px 12px;
+  color: #c9c2b8;
+  font-size: 0.72rem;
+  font-weight: 900;
+  letter-spacing: 0.04em;
+  transition: background 160ms ease, border-color 160ms ease, color 160ms ease;
+}
+
+.ko-decks__back:hover {
+  border-color: rgba(238, 184, 70, 0.8);
+  background: rgba(238, 184, 70, 0.08);
+  color: #f6c957;
+}
+
+.ko-decks__columns {
+  display: grid;
+  grid-template-columns: 220px minmax(360px, 1fr) minmax(340px, 0.86fr);
+  align-items: start;
+  gap: 18px;
+  margin-top: 20px;
+}
+
+.ko-decks__rail,
+.ko-decks__library,
+.ko-decks__editor {
+  border: 1px solid rgba(212, 185, 137, 0.18);
+  background: rgba(20, 19, 19, 0.84);
+  box-shadow: 0 16px 42px rgba(0, 0, 0, 0.2);
+}
+
+.ko-decks__rail {
+  position: sticky;
+  top: 18px;
+  padding: 14px;
+}
+
+.ko-decks__section-label {
+  color: #817b72;
+  font-family: var(--font-display);
+  font-size: 0.65rem;
+  font-weight: 700;
+  letter-spacing: 0.21em;
+  text-transform: uppercase;
+}
+
+.ko-decks__deck-item {
+  display: flex;
+  width: 100%;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  border-left: 2px solid transparent;
+  margin-top: 8px;
+  padding: 11px 10px;
+  color: #a09b92;
+  text-align: left;
+  transition: background 160ms ease, border-color 160ms ease, color 160ms ease;
+}
+
+.ko-decks__deck-item:hover,
+.ko-decks__deck-item--active {
+  border-left-color: #e9b73f;
+  background: rgba(233, 183, 63, 0.09);
+  color: #f3e4b5;
+}
+
+.ko-decks__deck-item-name {
+  overflow: hidden;
+  font-size: 0.78rem;
+  font-weight: 900;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.ko-decks__deck-item-meta {
+  margin-top: 3px;
+  color: #6e6b67;
+  font-family: var(--font-display);
+  font-size: 0.62rem;
+  letter-spacing: 0.08em;
+}
+
+.ko-decks__deck-item-status {
+  display: inline-block;
+  margin-top: 6px;
+  color: #d28b7e;
+  font-family: var(--font-display);
+  font-size: 0.58rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+}
+
+.ko-decks__deck-item-status--valid {
+  color: #d8b34e;
+}
+
+.ko-decks__library {
+  min-width: 0;
+  padding: 18px;
+}
+
+.ko-decks__toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-top: 13px;
+}
+
+.ko-decks__search {
+  display: flex;
+  min-width: 0;
+  flex: 1;
+  align-items: center;
+  gap: 8px;
+  border-bottom: 1px solid #4d4942;
+  padding: 8px 2px;
+  color: #7f7a72;
+}
+
+.ko-decks__search input {
+  width: 100%;
+  min-width: 0;
+  background: transparent;
+  color: #f3eee5;
+  font-size: 0.78rem;
+  outline: none;
+}
+
+.ko-decks__search input::placeholder {
+  color: #68645e;
+}
+
+.ko-decks__filters {
+  display: flex;
+  gap: 5px;
+}
+
+.ko-decks__filter {
+  border: 1px solid #403d38;
+  border-radius: 2px;
+  padding: 7px 8px;
+  color: #8d8981;
+  font-family: var(--font-display);
+  font-size: 0.62rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  transition: background 160ms ease, border-color 160ms ease, color 160ms ease;
+}
+
+.ko-decks__filter:hover,
+.ko-decks__filter--active {
+  border-color: #d7a53b;
+  background: rgba(215, 165, 59, 0.12);
+  color: #f1c65b;
+}
+
+.ko-decks__card-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(132px, 1fr));
+  gap: 13px 10px;
+  margin-top: 18px;
+}
+
+.ko-decks__collection-card {
+  position: relative;
+  min-width: 0;
+  border: 1px solid transparent;
+  border-radius: 3px;
+  padding: 5px;
+  transition: border-color 160ms ease, background 160ms ease, transform 160ms ease;
+}
+
+.ko-decks__collection-card:hover {
+  border-color: rgba(226, 177, 62, 0.55);
+  background: rgba(225, 176, 59, 0.07);
+  transform: translateY(-2px);
+}
+
+.ko-decks__collection-card[aria-disabled="true"] {
+  cursor: not-allowed;
+  opacity: 0.42;
+  transform: none;
+}
+
+.ko-decks__card-action {
+  position: absolute;
+  right: 8px;
+  bottom: 8px;
+  display: inline-flex;
+  height: 28px;
+  width: 28px;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid rgba(246, 211, 110, 0.82);
+  border-radius: 50%;
+  background: #1b170f;
+  color: #f6ca57;
+  transition: background 160ms ease, color 160ms ease, transform 160ms ease;
+}
+
+.ko-decks__card-action:hover {
+  background: #e8b840;
+  color: #1c1609;
+  transform: scale(1.08);
+}
+
+.ko-decks__card-label {
+  overflow: hidden;
+  margin-top: 7px;
+  color: #c4beb4;
+  font-size: 0.67rem;
+  font-weight: 900;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.ko-decks__card-type {
+  margin-top: 3px;
+  color: #776f67;
+  font-family: var(--font-display);
+  font-size: 0.58rem;
+  letter-spacing: 0.12em;
+}
+
+.ko-decks__editor {
+  position: sticky;
+  top: 18px;
+  min-width: 0;
+  overflow: hidden;
+}
+
+.ko-decks__editor-head {
+  border-bottom: 1px solid rgba(212, 185, 137, 0.16);
+  padding: 17px 18px 15px;
+}
+
+.ko-decks__name-input {
+  width: 100%;
+  border: 0;
+  border-bottom: 1px solid #514940;
+  background: transparent;
+  padding: 3px 0 8px;
+  color: #f8f0e3;
+  font-family: var(--font-display);
+  font-size: 1.42rem;
+  font-weight: 700;
+  outline: none;
+}
+
+.ko-decks__name-input:focus {
+  border-color: #e5b449;
+}
+
+.ko-decks__editor-scroll {
+  max-height: min(70vh, 700px);
+  overflow: auto;
+  padding: 16px 18px 18px;
+}
+
+.ko-decks__champion-slot {
+  display: grid;
+  grid-template-columns: 80px minmax(0, 1fr);
+  align-items: center;
+  gap: 13px;
+  border: 1px dashed #51473a;
+  background: rgba(24, 20, 15, 0.64);
+  padding: 9px;
+}
+
+.ko-decks__champion-art {
+  width: 80px;
+}
+
+.ko-decks__champion-copy h3 {
+  overflow: hidden;
+  color: #ead9b4;
+  font-size: 0.83rem;
+  font-weight: 900;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.ko-decks__champion-copy p {
+  margin-top: 5px;
+  color: #8f887e;
+  font-size: 0.68rem;
+  line-height: 1.45;
+}
+
+.ko-decks__mini-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  border: 1px solid #4e463a;
+  border-radius: 2px;
+  padding: 6px 8px;
+  color: #c4ad79;
+  font-size: 0.65rem;
+  font-weight: 900;
+  transition: background 160ms ease, border-color 160ms ease;
+}
+
+.ko-decks__mini-button:hover {
+  border-color: #dcaa3a;
+  background: rgba(220, 170, 58, 0.1);
+}
+
+.ko-decks__selected-list {
+  display: grid;
+  gap: 4px;
+  margin-top: 13px;
+}
+
+.ko-decks__selected-row {
+  display: grid;
+  grid-template-columns: 34px minmax(0, 1fr) auto auto;
+  align-items: center;
+  gap: 9px;
+  border-bottom: 1px solid rgba(212, 185, 137, 0.11);
+  padding: 7px 2px;
+}
+
+.ko-decks__selected-thumb {
+  width: 34px;
+}
+
+.ko-decks__selected-name {
+  overflow: hidden;
+  color: #d5cec3;
+  font-size: 0.72rem;
+  font-weight: 800;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.ko-decks__selected-kind {
+  color: #77726a;
+  font-family: var(--font-display);
+  font-size: 0.58rem;
+  letter-spacing: 0.06em;
+}
+
+.ko-decks__count {
+  font-family: var(--font-display);
+  font-size: 1.1rem;
+  font-weight: 700;
+}
+
+.ko-decks__remove {
+  display: inline-flex;
+  height: 25px;
+  width: 25px;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid #4d3734;
+  border-radius: 50%;
+  color: #c87970;
+  transition: background 160ms ease, color 160ms ease;
+}
+
+.ko-decks__remove:hover {
+  background: rgba(189, 62, 58, 0.2);
+  color: #f1a097;
+}
+
+.ko-decks__meter {
+  margin: 16px 0 12px;
+  border-top: 1px solid rgba(212, 185, 137, 0.16);
+  padding-top: 13px;
+}
+
+.ko-decks__meter-line {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  color: #aaa29a;
+  font-size: 0.68rem;
+  font-weight: 800;
+}
+
+.ko-decks__meter-number {
+  color: #f2c34f;
+  font-family: var(--font-display);
+  font-size: 1.15rem;
+}
+
+.ko-decks__meter-track {
+  height: 4px;
+  margin-top: 8px;
+  background: #322d28;
+}
+
+.ko-decks__meter-fill {
+  height: 100%;
+  background: #d9a83c;
+  transition: width 180ms ease;
+}
+
+.ko-decks__notice {
+  display: flex;
+  align-items: flex-start;
+  gap: 7px;
+  border: 1px solid rgba(187, 74, 55, 0.42);
+  background: rgba(108, 32, 28, 0.2);
+  padding: 9px 10px;
+  color: #e4a092;
+  font-size: 0.67rem;
+  font-weight: 700;
+  line-height: 1.45;
+}
+
+.ko-decks__notice--quiet {
+  border-color: rgba(203, 158, 57, 0.32);
+  background: rgba(116, 81, 20, 0.15);
+  color: #d9bc78;
+}
+
+.ko-decks__editor-actions {
+  display: flex;
+  gap: 7px;
+  border-top: 1px solid rgba(212, 185, 137, 0.16);
+  padding: 13px 18px;
+}
+
+.ko-decks__primary-action,
+.ko-decks__secondary-action,
+.ko-decks__danger-action {
+  display: inline-flex;
+  min-height: 38px;
+  flex: 1;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  border-radius: 2px;
+  padding: 9px 10px;
+  font-size: 0.69rem;
+  font-weight: 900;
+  transition: background 160ms ease, color 160ms ease, border-color 160ms ease;
+}
+
+.ko-decks__primary-action {
+  background: #e0ae3c;
+  color: #18120a;
+}
+
+.ko-decks__primary-action:hover {
+  background: #f0c65b;
+}
+
+.ko-decks__primary-action:disabled,
+.ko-decks__secondary-action:disabled,
+.ko-decks__danger-action:disabled {
+  cursor: not-allowed;
+  opacity: 0.42;
+}
+
+.ko-decks__secondary-action {
+  border: 1px solid #585047;
+  color: #c0b7aa;
+}
+
+.ko-decks__secondary-action:hover {
+  border-color: #d7aa48;
+  background: rgba(215, 170, 72, 0.08);
+}
+
+.ko-decks__danger-action {
+  flex: 0 0 auto;
+  border: 1px solid #5e3632;
+  color: #ce8276;
+}
+
+.ko-decks__danger-action:hover {
+  border-color: #b74d45;
+  background: rgba(183, 77, 69, 0.12);
+}
+
+.ko-decks__empty {
+  border: 1px dashed #4b443b;
+  padding: 35px 20px;
+  text-align: center;
+}
+
+.ko-decks__empty h2 {
+  color: #dad0c2;
+  font-family: var(--font-display);
+  font-size: 1.15rem;
+}
+
+.ko-decks__empty p {
+  margin-top: 7px;
+  color: #817b72;
+  font-size: 0.72rem;
+  line-height: 1.6;
+}
+
+.ko-decks__error {
+  border: 1px solid rgba(180, 67, 56, 0.6);
+  background: rgba(76, 22, 19, 0.45);
+  padding: 16px;
+  color: #edaba0;
+  font-size: 0.78rem;
+  font-weight: 800;
+}
+
+.ko-decks__skeleton {
+  min-height: 160px;
+  background: linear-gradient(90deg, rgba(255, 255, 255, 0.03), rgba(255, 255, 255, 0.08), rgba(255, 255, 255, 0.03));
+  background-size: 220% 100%;
+  animation: ko-decks-skeleton 1.4s ease-in-out infinite;
+}
+
+@keyframes ko-decks-skeleton {
+  0% { background-position: 180% 0; }
+  100% { background-position: -40% 0; }
+}
+
+@media (max-width: 1100px) {
+  .ko-decks__columns {
+    grid-template-columns: 184px minmax(300px, 1fr) minmax(300px, 0.8fr);
+  }
+}
+
+@media (max-width: 820px) {
+  .ko-decks__wrap {
+    width: min(100% - 24px, 680px);
+    padding-top: 18px;
+  }
+
+  .ko-decks__topline {
+    align-items: start;
+  }
+
+  .ko-decks__columns {
+    grid-template-columns: 1fr;
+  }
+
+  .ko-decks__rail {
+    position: static;
+  }
+
+  .ko-decks__deck-list {
+    display: flex;
+    gap: 6px;
+    overflow-x: auto;
+  }
+
+  .ko-decks__deck-item {
+    min-width: 148px;
+    margin-top: 8px;
+  }
+
+  .ko-decks__editor {
+    position: sticky;
+    bottom: 0;
+    z-index: 10;
+    border-color: rgba(229, 177, 62, 0.42);
+    box-shadow: 0 -18px 40px rgba(0, 0, 0, 0.45);
+  }
+
+  .ko-decks__editor-scroll {
+    max-height: 46dvh;
+  }
+}
+
+@media (max-width: 520px) {
+  .ko-decks__wrap {
+    width: calc(100% - 20px);
+    padding-bottom: 20px;
+  }
+
+  .ko-decks__topline {
+    display: block;
+  }
+
+  .ko-decks__back {
+    margin-top: 14px;
+  }
+
+  .ko-decks__library {
+    padding: 13px;
+  }
+
+  .ko-decks__toolbar {
+    display: block;
+  }
+
+  .ko-decks__filters {
+    margin-top: 10px;
+  }
+
+  .ko-decks__filter {
+    flex: 1;
+  }
+
+  .ko-decks__card-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 12px 8px;
+  }
+
+  .ko-decks__editor-head,
+  .ko-decks__editor-scroll,
+  .ko-decks__editor-actions {
+    padding-left: 13px;
+    padding-right: 13px;
+  }
+
+  .ko-decks__editor-scroll {
+    max-height: 43dvh;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ko-decks__skeleton {
+    animation: none;
+  }
+
+  .ko-decks__deck-item,
+  .ko-decks__back,
+  .ko-decks__filter,
+  .ko-decks__collection-card,
+  .ko-decks__card-action,
+  .ko-decks__remove,
+  .ko-decks__primary-action,
+  .ko-decks__secondary-action,
+  .ko-decks__danger-action,
+  .ko-decks__meter-fill {
+    transition: none;
+  }
+}

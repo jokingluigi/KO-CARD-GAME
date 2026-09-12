@@ -767,7 +767,15 @@ export default function Home() {
   }
 
   if (!testCardId && !isAdminSource) {
-    return <MainMenu user={authUser ?? undefined} onLogout={handleLogout} />;
+    return (
+      <MainMenu
+        user={authUser ?? undefined}
+        onLogout={handleLogout}
+        onDeckEdit={() => {
+          window.location.href = `${import.meta.env.BASE_URL.replace(/\/$/, "")}/decks`;
+        }}
+      />
+    );
   }
 
   if (!matchReady) {
