@@ -465,6 +465,7 @@
 }
 
 .presentation-feedback--damage { color: #fecaca; }
+.presentation-feedback--dodge { color: #bae6fd; font-size: clamp(.75rem, 1.5vw, 1.15rem); }
 .presentation-feedback--heal,
 .presentation-feedback--buff { color: #86efac; }
 .presentation-feedback--debuff { color: #fda4af; }
@@ -482,6 +483,41 @@
   text-shadow: 0 3px 6px rgba(0, 0, 0, .95), 0 0 28px rgba(250, 204, 21, .8);
 }
 
+@keyframes ko-card-leave-retire {
+  0% { opacity: 1; transform: translateY(0) rotate(0) scale(1); filter: saturate(1); }
+  35% { opacity: 1; transform: translateY(2px) rotate(-2deg) scale(1.02); filter: saturate(.8); }
+  100% { opacity: 0; transform: translateY(18px) rotate(6deg) scale(.82); filter: saturate(.2) grayscale(.7); }
+}
+
+@keyframes ko-card-leave-destroy {
+  0% { opacity: 1; transform: scale(1); filter: saturate(1); }
+  40% { opacity: 1; transform: scale(1.04); filter: saturate(.65) contrast(1.15); }
+  100% { opacity: 0; transform: scale(.72); filter: saturate(0) grayscale(1) blur(1px); }
+}
+
+@keyframes ko-card-leave-remove {
+  0% { opacity: 1; transform: translate(0, 0) scale(1); }
+  100% { opacity: 0; transform: translate(34px, -12px) scale(.68); filter: grayscale(1) blur(1px); }
+}
+
+.card-leave-animation {
+  position: fixed;
+  left: var(--leave-left);
+  top: var(--leave-top);
+  z-index: 230;
+  width: var(--leave-width);
+  height: var(--leave-height);
+  pointer-events: none;
+  animation-delay: var(--leave-delay);
+  animation-duration: var(--leave-duration);
+  animation-fill-mode: both;
+  animation-timing-function: cubic-bezier(.2, .75, .25, 1);
+}
+
+.card-leave-animation--retire { animation-name: ko-card-leave-retire; }
+.card-leave-animation--destroy { animation-name: ko-card-leave-destroy; }
+.card-leave-animation--remove { animation-name: ko-card-leave-remove; }
+
 .ko-touch-inspector {
   box-sizing: border-box;
   max-width: calc(100vw - 16px);
@@ -490,6 +526,10 @@
 @media (prefers-reduced-motion: reduce) {
   .presentation-feedback {
     animation-duration: 120ms;
+  }
+  .card-leave-animation {
+    animation-duration: 140ms;
+    animation-delay: 0ms;
   }
   .attack-animation__attacker,
   .attack-animation__target,

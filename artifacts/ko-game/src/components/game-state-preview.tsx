@@ -18,6 +18,7 @@ import {
   CardPlayAnimation,
 } from './card-play-animation';
 import { AttackAnimation } from './attack-animation';
+import { CardLeaveAnimation, type CardLeaveAnimationState } from './card-leave-animation';
 import { landingImpactLevel, rectSnapshot, type CardAnimationRect, type CardPlayAnimationState } from './card-play-animation-utils';
 import type {
   AttackAnimationState,
@@ -101,10 +102,12 @@ export function GameStatePreview({
   const championRef = React.useRef<HTMLDivElement | null>(null);
   const playerChampionRef = React.useRef<HTMLDivElement | null>(null);
   const [generatedPlayAnimations, setGeneratedPlayAnimations] = React.useState<CardPlayAnimationState[]>([]);
+  const [cardLeaveAnimations, setCardLeaveAnimations] = React.useState<CardLeaveAnimationState[]>([]);
   const [presentationQueue, setPresentationQueue] = React.useState<PresentationCue[]>([]);
   const processedEventCountRef = React.useRef<number | null>(null);
   const lastCardPositionsRef = React.useRef(new Map<string, { left: number; top: number; width: number; height: number }>());
   const previousCardStatsRef = React.useRef(new Map<string, { attack: number; health: number }>());
+  const previousCardsRef = React.useRef(new Map<string, CardInstance>());
 
   React.useEffect(() => {
     const currentCardStats = new Map<string, { attack: number; health: number }>();
@@ -121,8 +124,10 @@ export function GameStatePreview({
     if (processedEventCountRef.current === null || eventLogReset) {
       processedEventCountRef.current = state.events.length;
       previousCardStatsRef.current = currentCardStats;
+      previousCardsRef.current = currentCards(state);
       if (eventLogReset) {
         setGeneratedPlayAnimations([]);
+        setCardLeaveAnimations([]);
         setPresentationQueue([]);
       }
       return;
@@ -132,10 +137,36 @@ export function GameStatePreview({
     const newEvents = state.events.slice(startIndex);
     processedEventCountRef.current = state.events.length;
     const previousCardStats = previousCardStatsRef.current;
+    const previousCards = previousCardsRef.current;
     previousCardStatsRef.current = currentCardStats;
+    previousCardsRef.current = currentCards(state);
     const animations: CardPlayAnimationState[] = [];
+    const leaveAnimations: CardLeaveAnimationState[] = [];
 
     for (const event of newEvents) {
+      if (
+        (event.type === "CARD_RETIRED" || event.type === "CARD_DESTROYED" || event.type === "CARD_REMOVED") &&
+        event.cardInstanceId
+      ) {
+        const card = previousCards.get(event.cardInstanceId);
+        const geometry = lastCardPositionsRef.current.get(event.cardInstanceId);
+        if (card && geometry) {
+          const precedingDamage = newEvents.some(
+            (candidate) =>
+              candidate.type === "DAMAGE_DEALT" &&
+              candidate.target?.type === "CARD" &&
+              candidate.target.cardInstanceId === event.cardInstanceId &&
+              newEvents.indexOf(candidate) < newEvents.indexOf(event),
+          );
+          leaveAnimations.push({
+            id: `leave:${state.events.length}:${event.cardInstanceId}:${event.type}`,
+            card,
+            kind: event.type === "CARD_RETIRED" ? "RETIRE" : event.type === "CARD_DESTROYED" ? "DESTROY" : "REMOVE",
+            geometry,
+            delay: precedingDamage ? 220 : 0,
+          });
+        }
+      }
       if (event.type !== 'ENTER_FIELD' || !event.source || event.source.type !== 'CARD' || event.boardSlot === undefined) continue;
       const enteredCard = state.players
         .flatMap((player) => player.board)
@@ -167,6 +198,12 @@ export function GameStatePreview({
 
     if (animations.length) {
       setGeneratedPlayAnimations((current) => [...current, ...animations]);
+    }
+    if (leaveAnimations.length) {
+      setCardLeaveAnimations((current) => [
+        ...current.filter((entry) => !leaveAnimations.some((next) => next.id === entry.id)),
+        ...leaveAnimations,
+      ]);
     }
     const cues = presentationCueDrafts(state.events, startIndex).map((draft) => ({
       ...draft,
@@ -303,6 +340,22 @@ export function GameStatePreview({
       return { left: window.innerWidth / 2, top: window.innerHeight / 2 };
     }
     return { left: window.innerWidth / 2, top: window.innerHeight * 0.42 };
+  }
+
+  function currentCards(nextState: GameState) {
+    const cards = new Map<string, CardInstance>();
+    for (const player of nextState.players) {
+      for (const card of [
+        ...player.hand,
+        ...player.deck,
+        ...player.graveyard,
+        ...player.removedFromGame,
+        ...player.board,
+      ]) {
+        if (card) cards.set(card.instanceId, card);
+      }
+    }
+    return cards;
   }
 
   function attackGeometry(targetElement: HTMLDivElement | null) {
@@ -799,6 +852,15 @@ export function GameStatePreview({
             setGeneratedPlayAnimations((current) =>
               current.filter((entry) => entry.card.instanceId !== animation.card.instanceId),
             );
+          }}
+        />
+      ))}
+      {cardLeaveAnimations.map((animation) => (
+        <CardLeaveAnimation
+          key={animation.id}
+          animation={animation}
+          onComplete={() => {
+            setCardLeaveAnimations((current) => current.filter((entry) => entry.id !== animation.id));
           }}
         />
       ))}
