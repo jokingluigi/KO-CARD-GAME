@@ -15,6 +15,8 @@ const router: IRouter = Router();
 const MIN_DECK_SIZE = 20;
 const MAX_DECK_SIZE = 30;
 const MAX_NAME_LENGTH = 30;
+const MAX_CARD_COPIES = 2;
+const MAX_LEGENDARY_CARDS = 3;
 const VALID_CARD_TYPES = new Set(["WRESTLER", "TECHNIQUE"]);
 
 type DeckPayload = {
@@ -30,6 +32,29 @@ type ResolvedDeck = DeckRecord & {
   isValid: boolean;
   invalidReasons: string[];
 };
+
+function getCardRuleReasons(cardDefinitionIds: string[], cardsById: Map<string, CardRecord>): string[] {
+  const counts = new Map<string, number>();
+  cardDefinitionIds.forEach((id) => counts.set(id, (counts.get(id) ?? 0) + 1));
+  const reasons: string[] = [];
+  let legendaryCount = 0;
+
+  counts.forEach((count, id) => {
+    const card = cardsById.get(id);
+    if (!card) return;
+    if (card.rarity === "LEGENDARY") {
+      legendaryCount += count;
+      if (count > 1) reasons.push("레전더리 카드는 같은 카드를 1장만 넣을 수 있습니다.");
+    } else if (count > MAX_CARD_COPIES) {
+      reasons.push(`같은 카드는 최대 ${MAX_CARD_COPIES}장까지 넣을 수 있습니다.`);
+    }
+  });
+
+  if (legendaryCount > MAX_LEGENDARY_CARDS) {
+    reasons.push(`레전더리 카드는 덱에 총 ${MAX_LEGENDARY_CARDS}장까지만 넣을 수 있습니다.`);
+  }
+  return [...new Set(reasons)];
+}
 
 function requireUser(request: Request, response: Response): NonNullable<Request["authUser"]> | null {
   if (request.authUser) return request.authUser;
@@ -88,6 +113,7 @@ async function resolveDeck(deck: DeckRecord): Promise<ResolvedDeck> {
   )) {
     invalidReasons.push("사용할 수 없는 카드가 포함되어 있습니다.");
   }
+  invalidReasons.push(...getCardRuleReasons(deck.cardDefinitionIds, cardById));
 
   const orderedCards = deck.cardDefinitionIds
     .map((id) => cardById.get(id))
@@ -173,6 +199,9 @@ async function validateReferences(payload: DeckPayload): Promise<string | null> 
   ) {
     return "PUBLISHED 일반 카드만 덱에 넣을 수 있습니다.";
   }
+  const cardById = new Map(cards.map((card) => [card.id, card as CardRecord]));
+  const ruleReasons = getCardRuleReasons(payload.cardDefinitionIds, cardById);
+  if (ruleReasons.length > 0) return ruleReasons.join(" ");
   return null;
 }
 
