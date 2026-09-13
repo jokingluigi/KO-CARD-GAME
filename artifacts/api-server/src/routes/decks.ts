@@ -18,6 +18,7 @@ const MAX_NAME_LENGTH = 30;
 const MAX_CARD_COPIES = 2;
 const MAX_LEGENDARY_CARDS = 3;
 const VALID_CARD_TYPES = new Set(["WRESTLER", "TECHNIQUE"]);
+type CardRuleRecord = Pick<CardRecord, "id" | "rarity">;
 
 type DeckPayload = {
   name: string;
@@ -33,7 +34,7 @@ type ResolvedDeck = DeckRecord & {
   invalidReasons: string[];
 };
 
-function getCardRuleReasons(cardDefinitionIds: string[], cardsById: Map<string, CardRecord>): string[] {
+function getCardRuleReasons(cardDefinitionIds: string[], cardsById: Map<string, CardRuleRecord>): string[] {
   const counts = new Map<string, number>();
   cardDefinitionIds.forEach((id) => counts.set(id, (counts.get(id) ?? 0) + 1));
   const reasons: string[] = [];
@@ -185,6 +186,7 @@ async function validateReferences(payload: DeckPayload): Promise<string | null> 
       isToken: cardsTable.isToken,
       isChampionToken: cardsTable.isChampionToken,
       status: cardsTable.status,
+      rarity: cardsTable.rarity,
     })
     .from(cardsTable)
     .where(inArray(cardsTable.id, uniqueCardIds));
@@ -199,7 +201,7 @@ async function validateReferences(payload: DeckPayload): Promise<string | null> 
   ) {
     return "PUBLISHED 일반 카드만 덱에 넣을 수 있습니다.";
   }
-  const cardById = new Map(cards.map((card) => [card.id, card as CardRecord]));
+  const cardById = new Map(cards.map((card) => [card.id, card]));
   const ruleReasons = getCardRuleReasons(payload.cardDefinitionIds, cardById);
   if (ruleReasons.length > 0) return ruleReasons.join(" ");
   return null;

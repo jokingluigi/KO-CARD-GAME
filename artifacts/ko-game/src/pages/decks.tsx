@@ -20,6 +20,8 @@ type AuthStatus = "checking" | "authenticated" | "unauthenticated";
 type CardFilter = "ALL" | "WRESTLER" | "TECHNIQUE";
 
 const EMPTY_DECK_NAME = "새로운 전략";
+const MAX_CARD_COPIES = 2;
+const MAX_LEGENDARY_CARDS = 3;
 
 function cardSettings(card: DeckCard) {
   return {
@@ -34,6 +36,16 @@ function unique<T>(values: T[]) {
   return Array.from(new Set(values));
 }
 
+function cardLimitReason(card: DeckCard, count: number, legendaryCount: number): string | undefined {
+  if (card.rarity === "LEGENDARY") {
+    if (count >= 1) return "레전더리 동일 카드 1장 제한";
+    if (legendaryCount >= MAX_LEGENDARY_CARDS) return "레전더리 총 3장 제한";
+  } else if (count >= MAX_CARD_COPIES) {
+    return "동일 카드 최대 2장";
+  }
+  return undefined;
+}
+
 function replaceDeck(list: Deck[], next: Deck) {
   const exists = list.some((deck) => deck.id === next.id);
   return exists ? list.map((deck) => (deck.id === next.id ? next : deck)) : [...list, next];
@@ -43,10 +55,12 @@ function DeckCardVisual({
   card,
   onAdd,
   disabled,
+  disabledReason,
 }: {
   card: DeckCard;
   onAdd: () => void;
   disabled: boolean;
+  disabledReason?: string;
 }) {
   return (
     <article className="ko-decks__collection-card" aria-disabled={disabled} data-testid={`card-collection-${card.id}`}>
@@ -118,6 +132,7 @@ function DeckCardVisual({
       <p className="ko-decks__card-type">
         {card.cardType === "WRESTLER" ? "WRESTLER" : "TECHNIQUE"} · COST {card.cost} · {card.rarity}
       </p>
+      {disabledReason && <p className="ko-decks__card-limit">{disabledReason}</p>}
     </article>
   );
 }
@@ -258,6 +273,13 @@ export default function Decks() {
     cardIds.forEach((id) => next.set(id, (next.get(id) ?? 0) + 1));
     return next;
   }, [cardIds]);
+  const legendaryCount = useMemo(
+    () =>
+      cardIds.reduce((total, id) => {
+        return total + (cardById.get(id)?.rarity === "LEGENDARY" ? 1 : 0);
+      }, 0),
+    [cardById, cardIds],
+  );
   const missingIds = useMemo(
     () => unique([...(editingDeck?.missingCardDefinitionIds ?? []), ...cardIds.filter((id) => !cardById.has(id))]),
     [cardById, cardIds, editingDeck?.missingCardDefinitionIds],
@@ -277,8 +299,20 @@ export default function Decks() {
     ) {
       reasons.push("공개된 비토큰 카드만 대표 덱에 사용할 수 있습니다.");
     }
+    counts.forEach((count, id) => {
+      const card = cardById.get(id);
+      if (!card) return;
+      if (card.rarity === "LEGENDARY" && count > 1) {
+        reasons.push("레전더리 카드는 같은 카드를 1장만 넣을 수 있습니다.");
+      } else if (card.rarity !== "LEGENDARY" && count > MAX_CARD_COPIES) {
+        reasons.push(`같은 카드는 최대 ${MAX_CARD_COPIES}장까지 넣을 수 있습니다.`);
+      }
+    });
+    if (legendaryCount > MAX_LEGENDARY_CARDS) {
+      reasons.push(`레전더리 카드는 덱에 총 ${MAX_LEGENDARY_CARDS}장까지만 넣을 수 있습니다.`);
+    }
     return reasons;
-  }, [cardById, cardIds, missingIds.length, selectedChampion]);
+  }, [cardById, cardIds, counts, legendaryCount, missingIds.length, selectedChampion]);
   const isValidForSelection = localInvalidReasons.length === 0;
   const filteredCards = useMemo(() => {
     const normalizedSearch = search.trim().toLocaleLowerCase();
@@ -309,7 +343,8 @@ export default function Decks() {
   }
 
   function addCard(card: DeckCard) {
-    if (cardIds.length >= 30 || card.status !== "PUBLISHED" || card.isToken || card.isChampionToken) return;
+    const reason = cardLimitReason(card, counts.get(card.id) ?? 0, legendaryCount);
+    if (cardIds.length >= 30 || card.status !== "PUBLISHED" || card.isToken || card.isChampionToken || reason) return;
     setCardIds((current) => [...current, card.id]);
     setStatusMessage(`${card.name} 카드를 한 장 추가했습니다.`);
   }
@@ -527,7 +562,8 @@ export default function Decks() {
                   <DeckCardVisual
                     key={card.id}
                     card={card}
-                    disabled={cardIds.length >= 30}
+                    disabled={cardIds.length >= 30 || Boolean(cardLimitReason(card, counts.get(card.id) ?? 0, legendaryCount))}
+                    disabledReason={cardLimitReason(card, counts.get(card.id) ?? 0, legendaryCount)}
                     onAdd={() => addCard(card)}
                   />
                 ))}
@@ -625,7 +661,7 @@ export default function Decks() {
 
               <div className="mt-5 flex items-center justify-between gap-3">
                 <p className="ko-decks__section-label">Cards in plan</p>
-                <span className="text-[0.62rem] font-bold text-[#706b65]">중복 허용 · 한 장씩 제거</span>
+                  <span className="text-[0.62rem] font-bold text-[#706b65]">일반 동일 카드 2장 · 레전더리 카드별 1장 / 총 3장</span>
               </div>
               {selectedRows.length === 0 ? (
                 <div className="ko-decks__empty mt-3" data-testid="empty-selected-cards">
@@ -659,7 +695,7 @@ export default function Decks() {
                       <div className="min-w-0">
                         <p className="ko-decks__selected-name">{card?.name ?? `확인할 수 없는 카드 (${id})`}</p>
                         <p className="ko-decks__selected-kind">
-                          {card ? `${card.cardType} · COST ${card.cost}` : "MISSING REFERENCE"}
+                          {card ? `${card.cardType} · COST ${card.cost} · ${card.rarity}` : "MISSING REFERENCE"}
                         </p>
                       </div>
                       <span className="ko-decks__count text-[#d9b04b]" data-testid={`text-card-count-${id}`}>×{count}</span>

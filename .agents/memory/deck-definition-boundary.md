@@ -3,8 +3,8 @@ name: KO deck definition boundary
 description: User decks store only definition references, while live published status is resolved when decks are read or selected.
 ---
 
-KO decks keep the owning user ID, Champion Definition ID, and card Definition ID array rather than copying card or Champion data. A deck is valid only when its current references are published, allowed definitions and its card count is 20–30.
+KO decks keep the owning user ID, Champion Definition ID, and card Definition ID array rather than copying card or Champion data. A deck is valid only when its current references are published, allowed definitions, its card count is 20–30, normal cards have at most two copies, and Legendary cards are unique with at most three total.
 
 **Why:** Card Admin can disable or remove definitions after a user saves a deck; silently replacing a reference would change the player's saved plan and could cross the ownership boundary.
 
-**How to apply:** Resolve references from the current database snapshot for deck UI and future match-start code, and derive the current user from the authenticated server session for every deck mutation.
+**How to apply:** Resolve references from the current database snapshot for deck UI and future match-start code, enforce copy limits at both the API boundary and editor controls, and derive the current user from the authenticated server session for every deck mutation.
