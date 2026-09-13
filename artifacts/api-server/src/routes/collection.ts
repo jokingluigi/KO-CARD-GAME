@@ -45,15 +45,24 @@ router.get("/", async (request, response): Promise<void> => {
       card: cardsTable,
     }).from(userCardCollectionsTable)
       .innerJoin(cardsTable, eq(cardsTable.id, userCardCollectionsTable.cardDefinitionId))
-      .where(eq(userCardCollectionsTable.userId, user.id))
-      .orderBy(asc(cardsTable.name)),
+      .where(and(
+        eq(userCardCollectionsTable.userId, user.id),
+        eq(cardsTable.status, "PUBLISHED"),
+        eq(cardsTable.isToken, false),
+        eq(cardsTable.isChampionToken, false),
+      ))
+      .orderBy(asc(cardsTable.cost), asc(cardsTable.name)),
     db.select({
       owned: userChampionCollectionsTable.owned,
       obtainedAt: userChampionCollectionsTable.obtainedAt,
       champion: championsTable,
     }).from(userChampionCollectionsTable)
       .innerJoin(championsTable, eq(championsTable.id, userChampionCollectionsTable.championDefinitionId))
-      .where(and(eq(userChampionCollectionsTable.userId, user.id), eq(userChampionCollectionsTable.owned, true)))
+      .where(and(
+        eq(userChampionCollectionsTable.userId, user.id),
+        eq(userChampionCollectionsTable.owned, true),
+        eq(championsTable.status, "PUBLISHED"),
+      ))
       .orderBy(asc(championsTable.name)),
   ]);
   response.json({

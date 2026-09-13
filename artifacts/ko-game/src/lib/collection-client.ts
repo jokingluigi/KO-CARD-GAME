@@ -8,6 +8,10 @@ export type CollectionCard = {
   health: number;
   cost: number;
   imageUrl: string | null;
+  imageDisplayMode: "COVER" | "CONTAIN" | "CUSTOM";
+  imageScale: number;
+  imagePositionX: number;
+  imagePositionY: number;
   quantity: number;
   status: string;
 };
@@ -17,6 +21,17 @@ export type CollectionChampion = {
   description: string;
   imageUrl: string | null;
   maxHealth: number;
+  abilityName: string;
+  abilityCost: number;
+  abilityText: string;
+  hasQuest: boolean;
+  questName: string | null;
+  questText: string | null;
+  questProgressRequired: number | null;
+  questRewardText: string | null;
+  upgradedAbilityName: string | null;
+  upgradedAbilityCost: number | null;
+  upgradedAbilityText: string | null;
   status: string;
 };
 export type Collection = { cards: CollectionCard[]; champions: CollectionChampion[] };

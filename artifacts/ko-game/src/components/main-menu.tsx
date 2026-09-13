@@ -31,8 +31,8 @@ const menuItems = [
     icon: ShoppingBag,
   },
   {
-    label: "수집품",
-    description: "카드팩을 열고 보유 카드를 확인합니다",
+    label: "컬렉션",
+    description: "보유 카드와 챔피언을 확인합니다",
     icon: Library,
   },
   {
@@ -79,6 +79,10 @@ export function MainMenu({ onComingSoon, onDeckEdit, user, onLogout }: MainMenuP
                 }
                 if (label === "상점") {
                   window.location.href = `${import.meta.env.BASE_URL.replace(/\/$/, "")}/shop`;
+                  return;
+                }
+                if (label === "컬렉션") {
+                  window.location.href = `${import.meta.env.BASE_URL.replace(/\/$/, "")}/collection`;
                   return;
                 }
                 setNotice(`${label}은 준비 중입니다.`);
