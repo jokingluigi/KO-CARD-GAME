@@ -13,6 +13,7 @@ import shopRouter from "./shop";
 import adminShopRouter from "./admin-shop";
 import prismRouter from "./prism";
 import adminPrismRouter from "./admin-prism";
+import adminCardSkinsRouter from "./admin-card-skins";
 
 const router: IRouter = Router();
 
@@ -30,5 +31,6 @@ router.use("/shop", shopRouter);
 router.use("/admin/shop", adminShopRouter);
 router.use("/prism", prismRouter);
 router.use("/admin/prism", adminPrismRouter);
+router.use("/admin/card-skins", adminCardSkinsRouter);
 
 export default router;

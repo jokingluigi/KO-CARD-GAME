@@ -1,6 +1,6 @@
 import { integer, pgTable, primaryKey, text, timestamp, boolean } from "drizzle-orm/pg-core";
 import { usersTable } from "./users";
-import { cardsTable } from "./cards";
+import { cardsTable, cardSkinDefinitionsTable } from "./cards";
 import { championsTable } from "./champions";
 import { packDefinitionsTable } from "./packs";
 
@@ -31,6 +31,15 @@ export const userChampionCollectionsTable = pgTable("user_champion_collections",
   pk: primaryKey({ columns: [table.userId, table.championDefinitionId] }),
 }));
 
+export const userCardSkinCollectionsTable = pgTable("user_card_skin_collections", {
+  userId: text("user_id").notNull().references(() => usersTable.id, { onDelete: "cascade" }),
+  skinDefinitionId: text("skin_definition_id").notNull().references(() => cardSkinDefinitionsTable.id, { onDelete: "cascade" }),
+  obtainedAt: timestamp("obtained_at", { withTimezone: true }).notNull().defaultNow(),
+}, (table) => ({
+  pk: primaryKey({ columns: [table.userId, table.skinDefinitionId] }),
+}));
+
 export type UserCardCollectionRecord = typeof userCardCollectionsTable.$inferSelect;
 export type UserChampionCollectionRecord = typeof userChampionCollectionsTable.$inferSelect;
 export type UserPackInventoryRecord = typeof userPackInventoryTable.$inferSelect;
+export type UserCardSkinCollectionRecord = typeof userCardSkinCollectionsTable.$inferSelect;

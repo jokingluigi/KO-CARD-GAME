@@ -1,6 +1,9 @@
 export const AUDIO_STINGER_DURATION = 10;
 export const AUDIO_FADE_IN_DURATION = 0.5;
 export const AUDIO_FADE_OUT_DURATION = 0.8;
+export const PACK_REVEAL_MAX_DURATION = 7000;
+export const PACK_REVEAL_FADE_IN = 600;
+export const PACK_REVEAL_FADE_OUT = 800;
 
 type TemporaryAudioKind = "CARD_ENTRANCE" | "PREVIEW";
 type AudioRequest = {
@@ -42,9 +45,54 @@ class AudioManager {
   private baseTransitionId = 0;
   private bgmMuted = false;
   private attackAudio: HTMLAudioElement | null = null;
+  private packReveal: {
+    audio: HTMLAudioElement;
+    timeoutId: number;
+    fadeTimerId: number | null;
+  } | null = null;
+  private packRevealTransitionId = 0;
 
   playCardEntrance(url: string, volume: number) {
     this.enqueue({ url, volume, kind: "CARD_ENTRANCE" });
+  }
+
+  playPackRevealMusic(
+    url: string,
+    volume: number,
+    options: { maxDuration?: number; fadeInMs?: number; fadeOutMs?: number } = {},
+  ) {
+    if (!hasBrowserAudio() || !url) return;
+    const transitionId = ++this.packRevealTransitionId;
+    this.stopTemporary(false);
+    const previous = this.packReveal;
+    const start = () => {
+      if (transitionId !== this.packRevealTransitionId) return;
+      this.startPackRevealMusic(url, volume, {
+        maxDuration: options.maxDuration ?? PACK_REVEAL_MAX_DURATION,
+        fadeInMs: options.fadeInMs ?? PACK_REVEAL_FADE_IN,
+        fadeOutMs: options.fadeOutMs ?? PACK_REVEAL_FADE_OUT,
+      }, transitionId);
+    };
+    if (!previous) {
+      start();
+      return;
+    }
+    this.fadeOutPackReveal(previous, Math.min(options.fadeOutMs ?? PACK_REVEAL_FADE_OUT, 220), start);
+  }
+
+  stopPackRevealMusic() {
+    this.packRevealTransitionId += 1;
+    const current = this.packReveal;
+    if (!current) {
+      this.resumeBaseMusic();
+      return;
+    }
+    if (current.fadeTimerId !== null) window.clearInterval(current.fadeTimerId);
+    window.clearTimeout(current.timeoutId);
+    current.audio.pause();
+    current.audio.currentTime = 0;
+    this.packReveal = null;
+    this.resumeBaseMusic();
   }
 
   /** Replaces the persistent base without interrupting a card entrance. */
@@ -115,6 +163,7 @@ class AudioManager {
 
   /** Stops both the persistent base and any temporary entrance music. */
   stopBgm() {
+    this.stopPackRevealMusic();
     this.stopTemporary(false);
     this.queue = [];
     this.stopBaseMusic();
@@ -201,6 +250,7 @@ class AudioManager {
   }
 
   private startTemporary(request: AudioRequest) {
+    this.stopPackRevealMusic();
     this.stopTemporary(false);
     this.fadeBaseOut();
     try {
@@ -319,6 +369,78 @@ class AudioManager {
       }
     }, 40);
     onTimer(timerId);
+  }
+
+  private startPackRevealMusic(
+    url: string,
+    volume: number,
+    options: { maxDuration: number; fadeInMs: number; fadeOutMs: number },
+    transitionId: number,
+  ) {
+    try {
+      const audio = new Audio(url);
+      audio.preload = "auto";
+      audio.volume = 0;
+      const reveal = { audio, timeoutId: 0, fadeTimerId: null as number | null };
+      this.packReveal = reveal;
+      this.fadeBaseOut();
+      reveal.timeoutId = window.setTimeout(
+        () => this.fadeOutPackReveal(reveal, options.fadeOutMs, () => {
+          if (transitionId === this.packRevealTransitionId) this.resumeBaseMusic();
+        }),
+        Math.max(0, options.maxDuration - options.fadeOutMs),
+      );
+      audio.addEventListener("ended", () => {
+        if (this.packReveal === reveal) {
+          this.fadeOutPackReveal(reveal, options.fadeOutMs, () => this.resumeBaseMusic());
+        }
+      }, { once: true });
+      audio.play().catch(() => {
+        if (this.packReveal === reveal) this.stopPackRevealMusic();
+      });
+      const startedAt = Date.now();
+      reveal.fadeTimerId = window.setInterval(() => {
+        if (this.packReveal !== reveal) {
+          if (reveal.fadeTimerId !== null) window.clearInterval(reveal.fadeTimerId);
+          return;
+        }
+        const progress = Math.min(1, (Date.now() - startedAt) / Math.max(1, options.fadeInMs));
+        audio.volume = safeVolume(volume) * progress;
+        if (progress >= 1 && reveal.fadeTimerId !== null) {
+          window.clearInterval(reveal.fadeTimerId);
+          reveal.fadeTimerId = null;
+        }
+      }, 40);
+    } catch {
+      if (transitionId === this.packRevealTransitionId) this.packReveal = null;
+    }
+  }
+
+  private fadeOutPackReveal(
+    reveal: { audio: HTMLAudioElement; timeoutId: number; fadeTimerId: number | null },
+    duration: number,
+    onComplete: () => void,
+  ) {
+    if (this.packReveal !== reveal) {
+      onComplete();
+      return;
+    }
+    if (reveal.fadeTimerId !== null) window.clearInterval(reveal.fadeTimerId);
+    window.clearTimeout(reveal.timeoutId);
+    const startVolume = reveal.audio.volume;
+    const startedAt = Date.now();
+    reveal.fadeTimerId = window.setInterval(() => {
+      const progress = Math.min(1, (Date.now() - startedAt) / Math.max(1, duration));
+      reveal.audio.volume = startVolume * (1 - progress);
+      if (progress >= 1) {
+        if (reveal.fadeTimerId !== null) window.clearInterval(reveal.fadeTimerId);
+        reveal.fadeTimerId = null;
+        reveal.audio.pause();
+        reveal.audio.currentTime = 0;
+        if (this.packReveal === reveal) this.packReveal = null;
+        onComplete();
+      }
+    }, 40);
   }
 }
 

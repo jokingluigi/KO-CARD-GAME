@@ -1,17 +1,16 @@
-import { and, asc, eq, inArray, sql } from "drizzle-orm";
-import { randomInt } from "node:crypto";
+import { and, asc, eq, sql } from "drizzle-orm";
 import { Router, type IRouter } from "express";
 import {
   db,
   packDefinitionsTable,
   userCardCollectionsTable,
   userChampionCollectionsTable,
+  userCardSkinCollectionsTable,
   userPackInventoryTable,
-  cardsTable,
-  championsTable,
 } from "@workspace/db";
 import { getAuthenticatedUser } from "../lib/auth";
 import { ensureStarterCollection } from "../lib/collection";
+import { rollPack } from "./collection";
 
 const router: IRouter = Router();
 
@@ -55,22 +54,6 @@ router.post("/:id/open", async (request, response): Promise<void> => {
       if (pack.normalRate + pack.legendaryRate + pack.championRate !== 100) {
         throw new Error("팩 확률 설정이 올바르지 않습니다.");
       }
-      const [normalCards, legendaryCards, champions] = await Promise.all([
-        pack.normalCardPool.length ? tx.select().from(cardsTable).where(and(
-          inArray(cardsTable.id, pack.normalCardPool), eq(cardsTable.status, "PUBLISHED"),
-          eq(cardsTable.rarity, "NORMAL"), eq(cardsTable.isToken, false), eq(cardsTable.isChampionToken, false),
-        )) : [],
-        pack.legendaryCardPool.length ? tx.select().from(cardsTable).where(and(
-          inArray(cardsTable.id, pack.legendaryCardPool), eq(cardsTable.status, "PUBLISHED"),
-          eq(cardsTable.rarity, "LEGENDARY"), eq(cardsTable.isToken, false), eq(cardsTable.isChampionToken, false),
-        )) : [],
-        pack.championPool.length ? tx.select().from(championsTable).where(and(
-          inArray(championsTable.id, pack.championPool), eq(championsTable.status, "PUBLISHED"),
-        )) : [],
-      ]);
-      if (pack.normalRate > 0 && normalCards.length === 0) throw new Error("NORMAL 카드 Pool이 비어 있습니다.");
-      if (pack.legendaryRate > 0 && legendaryCards.length === 0) throw new Error("LEGENDARY 카드 Pool이 비어 있습니다.");
-      if (pack.championRate > 0 && champions.length === 0) throw new Error("Champion Pool이 비어 있습니다.");
       const [spent] = await tx.update(userPackInventoryTable).set({
         quantity: sql`${userPackInventoryTable.quantity} - 1`,
         updatedAt: new Date(),
@@ -81,37 +64,18 @@ router.post("/:id/open", async (request, response): Promise<void> => {
       )).returning();
       if (!spent) throw new Error("보유한 팩이 없습니다.");
 
-      const nextRewards: Array<Record<string, unknown>> = [];
-      for (let slot = 0; slot < pack.cardsPerPack; slot += 1) {
-        const roll = randomInt(0, 100);
-        const rewardType = roll < pack.normalRate
-          ? "NORMAL_CARD"
-          : roll < pack.normalRate + pack.legendaryRate
-            ? "LEGENDARY_CARD"
-            : "CHAMPION_UNLOCK";
-        if (rewardType === "NORMAL_CARD") {
-          const card = normalCards[randomInt(0, normalCards.length)];
-          if (!card) throw new Error("NORMAL 카드 보상을 결정할 수 없습니다.");
-          nextRewards.push({ rewardType, cardDefinitionId: card.id, card });
+      const nextRewards = await rollPack(pack, tx);
+      for (const reward of nextRewards) {
+        if (reward.rewardType === "NORMAL_CARD" || reward.rewardType === "LEGENDARY_CARD") {
+          const card = reward.card;
           await tx.insert(userCardCollectionsTable).values({
             userId: request.authUser!.id, cardDefinitionId: card.id, quantity: 1,
           }).onConflictDoUpdate({
             target: [userCardCollectionsTable.userId, userCardCollectionsTable.cardDefinitionId],
             set: { quantity: sql`${userCardCollectionsTable.quantity} + 1`, obtainedAt: new Date() },
           });
-        } else if (rewardType === "LEGENDARY_CARD") {
-          const card = legendaryCards[randomInt(0, legendaryCards.length)];
-          if (!card) throw new Error("LEGENDARY 카드 보상을 결정할 수 없습니다.");
-          nextRewards.push({ rewardType, cardDefinitionId: card.id, card });
-          await tx.insert(userCardCollectionsTable).values({
-            userId: request.authUser!.id, cardDefinitionId: card.id, quantity: 1,
-          }).onConflictDoUpdate({
-            target: [userCardCollectionsTable.userId, userCardCollectionsTable.cardDefinitionId],
-            set: { quantity: sql`${userCardCollectionsTable.quantity} + 1`, obtainedAt: new Date() },
-          });
-        } else {
-          const champion = champions[randomInt(0, champions.length)];
-          if (!champion) throw new Error("Champion 보상을 결정할 수 없습니다.");
+        } else if (reward.rewardType === "CHAMPION_UNLOCK") {
+          const champion = reward.champion;
           const [existingChampion] = await tx.select({ owned: userChampionCollectionsTable.owned })
             .from(userChampionCollectionsTable)
             .where(and(
@@ -119,21 +83,30 @@ router.post("/:id/open", async (request, response): Promise<void> => {
               eq(userChampionCollectionsTable.championDefinitionId, champion.id),
             ))
             .limit(1);
-          nextRewards.push({
-            rewardType,
-            championDefinitionId: champion.id,
-            champion,
-            alreadyOwned: existingChampion?.owned === true,
-          });
+          reward.alreadyOwned = existingChampion?.owned === true;
           await tx.insert(userChampionCollectionsTable).values({
             userId: request.authUser!.id, championDefinitionId: champion.id, owned: true,
           }).onConflictDoUpdate({
             target: [userChampionCollectionsTable.userId, userChampionCollectionsTable.championDefinitionId],
             set: { owned: true, obtainedAt: new Date() },
           });
+        } else {
+          const [existingSkin] = await tx.select({ id: userCardSkinCollectionsTable.skinDefinitionId })
+            .from(userCardSkinCollectionsTable)
+            .where(and(
+              eq(userCardSkinCollectionsTable.userId, request.authUser!.id),
+              eq(userCardSkinCollectionsTable.skinDefinitionId, reward.skinDefinitionId),
+            )).limit(1);
+          reward.alreadyOwned = Boolean(existingSkin);
+          await tx.insert(userCardSkinCollectionsTable).values({
+            userId: request.authUser!.id,
+            skinDefinitionId: reward.skinDefinitionId,
+          }).onConflictDoNothing();
         }
       }
-      rewards = nextRewards;
+      rewards = nextRewards.map((reward) => reward.rewardType === "CHAMPION_UNLOCK"
+        ? { ...reward, alreadyOwned: reward.alreadyOwned ?? false }
+        : reward);
     });
     response.json({ rewards });
   } catch (error) {

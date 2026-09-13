@@ -121,3 +121,33 @@ test("등장 음악 뒤에는 가장 최근 Quest 음악 base로 복귀한다", 
     Object.defineProperty(globalThis, "window", { configurable: true, value: previousWindow });
   }
 });
+
+test("팩 희귀 Reveal 음악은 중앙 채널에서 시작하고 명시적으로 cleanup된다", () => {
+  const previousAudio = globalThis.Audio;
+  const previousWindow = globalThis.window;
+  Object.defineProperty(globalThis, "Audio", { configurable: true, value: FakeAudio });
+  Object.defineProperty(globalThis, "window", {
+    configurable: true,
+    value: { setInterval, clearInterval, setTimeout, clearTimeout },
+  });
+
+  try {
+    audioManager.stopBgm();
+    audioManager.playPackRevealMusic("/legendary.mp3", 90, {
+      maxDuration: 7000,
+      fadeInMs: 600,
+      fadeOutMs: 800,
+    });
+    const manager = audioManager as unknown as {
+      packReveal: { audio: FakeAudio } | null;
+    };
+    assert.equal(manager.packReveal?.audio.url, "/legendary.mp3");
+    assert.equal(manager.packReveal?.audio.volume, 0);
+    audioManager.stopPackRevealMusic();
+    assert.equal(manager.packReveal, null);
+  } finally {
+    audioManager.stopBgm();
+    Object.defineProperty(globalThis, "Audio", { configurable: true, value: previousAudio });
+    Object.defineProperty(globalThis, "window", { configurable: true, value: previousWindow });
+  }
+});

@@ -12,6 +12,9 @@ export type CollectionCard = {
   imageScale: number;
   imagePositionX: number;
   imagePositionY: number;
+  entranceAudioUrl: string | null;
+  entranceAudioVolume: number;
+  entranceAudioEnabled: boolean;
   quantity: number;
   status: string;
 };
@@ -39,6 +42,9 @@ export type CollectionChampion = {
   upgradedAbilityName: string | null;
   upgradedAbilityCost: number | null;
   upgradedAbilityText: string | null;
+  questCompleteAudioUrl: string | null;
+  questCompleteAudioVolume: number;
+  questCompleteAudioEnabled: boolean;
   status: string;
 };
 export type Collection = {
@@ -50,7 +56,7 @@ export type Collection = {
 };
 export type Pack = {
   id: string; name: string; description: string; cardsPerPack: number;
-  normalRate: number; legendaryRate: number; championRate: number;
+  normalRate: number; legendaryRate: number; championRate: number; skinChance: number;
   imageUrl: string | null; quantity: number;
 };
 const base = `${import.meta.env.BASE_URL.replace(/\/$/, "")}/api`;
@@ -75,11 +81,20 @@ export const disenchantCard = (cardDefinitionId: string) => request<{
 }>(`/prism/disenchant/${encodeURIComponent(cardDefinitionId)}`, { method: "POST" });
 export const fetchPacks = () => request<{ packs: Pack[] }>("/packs");
 export type PackReward = {
-  rewardType: "NORMAL_CARD" | "LEGENDARY_CARD" | "CHAMPION_UNLOCK";
+  rewardType: "NORMAL_CARD" | "LEGENDARY_CARD" | "CHAMPION_UNLOCK" | "SKIN";
   cardDefinitionId?: string;
   championDefinitionId?: string;
   card?: CollectionCard;
   champion?: CollectionChampion;
+  skinDefinitionId?: string;
+  skin?: {
+    id: string;
+    cardDefinitionId: string;
+    name: string;
+    description: string;
+    imageUrl: string | null;
+    status: string;
+  };
   alreadyOwned?: boolean;
 };
 export const openPack = (id: string) => request<{ rewards: PackReward[] }>(`/packs/${encodeURIComponent(id)}/open`, { method: "POST" });

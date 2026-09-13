@@ -3,12 +3,14 @@ import { and, asc, eq, inArray, sql } from "drizzle-orm";
 import { Router, type IRouter, type Request, type Response } from "express";
 import {
   cardsTable,
+  cardSkinDefinitionsTable,
   championsTable,
   db,
   packDefinitionsTable,
   prismEconomySettingsTable,
   userCardCollectionsTable,
   userChampionCollectionsTable,
+  userCardSkinCollectionsTable,
 } from "@workspace/db";
 import { ensureStarterCollection } from "../lib/collection";
 import { getAuthenticatedUser } from "../lib/auth";
@@ -95,36 +97,57 @@ router.get("/", async (request, response): Promise<void> => {
 type Reward =
   | { rewardType: "NORMAL_CARD"; cardDefinitionId: string; card: typeof cardsTable.$inferSelect }
   | { rewardType: "LEGENDARY_CARD"; cardDefinitionId: string; card: typeof cardsTable.$inferSelect }
-  | { rewardType: "CHAMPION_UNLOCK"; championDefinitionId: string; champion: typeof championsTable.$inferSelect };
+  | { rewardType: "CHAMPION_UNLOCK"; championDefinitionId: string; champion: typeof championsTable.$inferSelect; alreadyOwned?: boolean }
+  | { rewardType: "SKIN"; skinDefinitionId: string; skin: typeof cardSkinDefinitionsTable.$inferSelect; card: typeof cardsTable.$inferSelect; alreadyOwned?: boolean };
 
-async function rollPack(pack: typeof packDefinitionsTable.$inferSelect): Promise<Reward[]> {
-  const [normalCards, legendaryCards, champions] = await Promise.all([
-    pack.normalCardPool.length ? db.select().from(cardsTable).where(and(
+type QueryExecutor = { select: typeof db.select };
+
+async function rollPack(pack: typeof packDefinitionsTable.$inferSelect, executor: QueryExecutor = db): Promise<Reward[]> {
+  const [normalCards, legendaryCards, champions, skins] = await Promise.all([
+    pack.normalCardPool.length ? executor.select().from(cardsTable).where(and(
       inArray(cardsTable.id, pack.normalCardPool),
       eq(cardsTable.status, "PUBLISHED"),
       eq(cardsTable.rarity, "NORMAL"),
       eq(cardsTable.isToken, false),
       eq(cardsTable.isChampionToken, false),
     )) : [],
-    pack.legendaryCardPool.length ? db.select().from(cardsTable).where(and(
+    pack.legendaryCardPool.length ? executor.select().from(cardsTable).where(and(
       inArray(cardsTable.id, pack.legendaryCardPool),
       eq(cardsTable.status, "PUBLISHED"),
       eq(cardsTable.rarity, "LEGENDARY"),
       eq(cardsTable.isToken, false),
       eq(cardsTable.isChampionToken, false),
     )) : [],
-    pack.championPool.length ? db.select().from(championsTable).where(and(
+    pack.championPool.length ? executor.select().from(championsTable).where(and(
       inArray(championsTable.id, pack.championPool),
       eq(championsTable.status, "PUBLISHED"),
     )) : [],
+    pack.skinPool.length ? executor.select({
+      skin: cardSkinDefinitionsTable,
+      card: cardsTable,
+    }).from(cardSkinDefinitionsTable)
+      .innerJoin(cardsTable, eq(cardsTable.id, cardSkinDefinitionsTable.cardDefinitionId))
+      .where(and(
+        inArray(cardSkinDefinitionsTable.id, pack.skinPool),
+        eq(cardSkinDefinitionsTable.status, "PUBLISHED"),
+        eq(cardsTable.status, "PUBLISHED"),
+        eq(cardsTable.isToken, false),
+        eq(cardsTable.isChampionToken, false),
+      )) : [],
   ]);
   if (pack.normalRate > 0 && normalCards.length === 0) throw new Error("NORMAL 카드 풀이 비어 있어 팩을 열 수 없습니다.");
   if (pack.legendaryRate > 0 && legendaryCards.length === 0) throw new Error("LEGENDARY 카드 풀이 비어 있어 팩을 열 수 없습니다.");
   if (pack.championRate > 0 && champions.length === 0) throw new Error("Champion 풀이 비어 있어 팩을 열 수 없습니다.");
+  if (pack.skinChance > 0 && skins.length === 0) throw new Error("Skin 풀이 비어 있어 팩을 열 수 없습니다.");
 
   const rewards: Reward[] = [];
   for (let slot = 0; slot < pack.cardsPerPack; slot += 1) {
     const roll = randomInt(0, 100);
+    if (pack.skinChance > 0 && randomInt(0, 100) < pack.skinChance) {
+      const skin = skins[randomInt(0, skins.length)];
+      if (skin) rewards.push({ rewardType: "SKIN", skinDefinitionId: skin.skin.id, skin: skin.skin, card: skin.card });
+      continue;
+    }
     const category = roll < pack.normalRate
       ? "NORMAL_CARD"
       : roll < pack.normalRate + pack.legendaryRate
@@ -144,5 +167,6 @@ async function rollPack(pack: typeof packDefinitionsTable.$inferSelect): Promise
   return rewards;
 }
 
+export type { Reward as PackRewardRecord };
 export { rollPack };
 export default router;

@@ -27,6 +27,7 @@ function Router() {
         <Route path="/admin/packs" component={Admin} />
         <Route path="/admin/shop" component={Admin} />
         <Route path="/admin/prism" component={Admin} />
+        <Route path="/admin/skins" component={Admin} />
         <Route path="/decks" component={Decks} />
         <Route path="/collection" component={Collection} />
         <Route path="/packs" component={Packs} />
