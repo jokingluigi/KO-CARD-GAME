@@ -29,30 +29,76 @@ router.use(async (request, response, next) => {
 
 router.get("/", async (request, response): Promise<void> => {
   if (!requireAdmin(request, response)) return;
-  const [listings, packs, users] = await Promise.all([
+  const [listings, packs] = await Promise.all([
     db.select({ listing: shopListingsTable, pack: packDefinitionsTable })
       .from(shopListingsTable)
       .innerJoin(packDefinitionsTable, eq(packDefinitionsTable.id, shopListingsTable.packDefinitionId))
-      .where(sql`${packDefinitionsTable.deletedAt} IS NULL`)
       .orderBy(asc(shopListingsTable.displayOrder), asc(packDefinitionsTable.name)),
     db.select().from(packDefinitionsTable)
       .where(and(eq(packDefinitionsTable.status, "PUBLISHED"), sql`${packDefinitionsTable.deletedAt} IS NULL`))
       .orderBy(asc(packDefinitionsTable.name)),
-    db.select({ id: usersTable.id, email: usersTable.email, nickname: usersTable.nickname, role: usersTable.role, currency: usersTable.currency })
-      .from(usersTable).orderBy(asc(usersTable.nickname)),
   ]);
-  response.json({ listings: listings.map(({ listing, pack }) => ({ ...listing, pack })), packs, users });
+  const now = Date.now();
+  response.json({
+    listings: listings.map(({ listing, pack }) => ({
+      ...listing,
+      imageUrl: listing.imageAssetId ? `/api/storage${listing.imageAssetId}` : pack.imageUrl,
+      pack,
+      packUnavailable: pack.status !== "PUBLISHED" || Boolean(pack.deletedAt),
+      isSaleable: listing.enabled && listing.isActive === 1 && pack.status === "PUBLISHED" && !pack.deletedAt
+        && (!listing.startsAt || listing.startsAt.getTime() <= now)
+        && (!listing.endsAt || listing.endsAt.getTime() >= now),
+    })),
+    packs,
+  });
 });
 
-function parseListingInput(value: unknown): { packDefinitionId: string; price: number; isActive: number; displayOrder: number } | null {
+type ListingInput = {
+  name: string;
+  description: string;
+  imageAssetId: string | null;
+  productType: "PACK";
+  packDefinitionId: string;
+  quantity: number;
+  price: number;
+  enabled: boolean;
+  isActive: number;
+  displayOrder: number;
+  startsAt: Date | null;
+  endsAt: Date | null;
+};
+
+function parseListingInput(value: unknown): ListingInput | null {
   if (!value || typeof value !== "object" || Array.isArray(value)) return null;
   const input = value as Record<string, unknown>;
+  const name = typeof input.name === "string" ? input.name.trim() : "";
+  const description = typeof input.description === "string" ? input.description.trim() : "";
+  const imageAssetId = typeof input.imageAssetId === "string" && input.imageAssetId.trim()
+    ? input.imageAssetId.trim()
+    : null;
+  const productType = input.productType === "PACK" ? "PACK" : null;
   const packDefinitionId = typeof input.packDefinitionId === "string" ? input.packDefinitionId.trim() : "";
+  const quantity = typeof input.quantity === "number" && Number.isInteger(input.quantity) ? input.quantity : 0;
   const price = typeof input.price === "number" && Number.isInteger(input.price) ? input.price : -1;
-  const isActive = input.isActive === true || input.isActive === 1 ? 1 : 0;
+  const enabled = input.enabled === true || input.enabled === 1;
+  const isActive = enabled ? 1 : 0;
   const displayOrder = typeof input.displayOrder === "number" && Number.isInteger(input.displayOrder) ? input.displayOrder : 0;
-  if (!packDefinitionId || price < 1 || price > 2_147_483_647 || displayOrder < 0) return null;
-  return { packDefinitionId, price, isActive, displayOrder };
+  const date = (key: string) => {
+    const raw = input[key];
+    if (raw === null || raw === undefined || raw === "") return null;
+    if (typeof raw !== "string") return undefined;
+    const parsed = new Date(raw);
+    return Number.isNaN(parsed.getTime()) ? undefined : parsed;
+  };
+  const startsAt = date("startsAt");
+  const endsAt = date("endsAt");
+  if (
+    !name || name.length > 120 || description.length > 2000 || productType !== "PACK" ||
+    !packDefinitionId || quantity < 1 || quantity > 999 || price < 0 || price > 2_147_483_647 ||
+    displayOrder < 0 || (imageAssetId && !imageAssetId.startsWith("/objects/uploads/card-images/")) ||
+    startsAt === undefined || endsAt === undefined || (startsAt && endsAt && endsAt < startsAt)
+  ) return null;
+  return { name, description, imageAssetId, productType, packDefinitionId, quantity, price, enabled, isActive, displayOrder, startsAt, endsAt };
 }
 
 async function publishedPack(id: string) {
@@ -67,11 +113,8 @@ async function publishedPack(id: string) {
 router.post("/", async (request, response): Promise<void> => {
   if (!requireAdmin(request, response)) return;
   const input = parseListingInput(request.body);
-  if (!input) { response.status(400).json({ message: "상점 판매값을 확인해 주세요." }); return; }
+  if (!input) { response.status(400).json({ message: "상품명, PACK 상품, 수량, 가격, 판매 기간을 확인해 주세요." }); return; }
   if (!await publishedPack(input.packDefinitionId)) { response.status(422).json({ message: "PUBLISHED 팩만 판매할 수 있습니다." }); return; }
-  const [existing] = await db.select({ id: shopListingsTable.id }).from(shopListingsTable)
-    .where(eq(shopListingsTable.packDefinitionId, input.packDefinitionId)).limit(1);
-  if (existing) { response.status(409).json({ message: "이 팩은 이미 상점에 등록되어 있습니다." }); return; }
   const [listing] = await db.insert(shopListingsTable).values({ id: randomUUID(), ...input }).returning();
   response.status(201).json({ listing });
 });
@@ -102,16 +145,38 @@ router.post("/currency/grant", async (request, response): Promise<void> => {
 router.patch("/:id", async (request, response): Promise<void> => {
   if (!requireAdmin(request, response)) return;
   const input = parseListingInput(request.body);
-  if (!input) { response.status(400).json({ message: "상점 판매값을 확인해 주세요." }); return; }
+  if (!input) { response.status(400).json({ message: "상품명, PACK 상품, 수량, 가격, 판매 기간을 확인해 주세요." }); return; }
   if (!await publishedPack(input.packDefinitionId)) { response.status(422).json({ message: "PUBLISHED 팩만 판매할 수 있습니다." }); return; }
-  const [duplicate] = await db.select({ id: shopListingsTable.id }).from(shopListingsTable).where(and(
-    eq(shopListingsTable.packDefinitionId, input.packDefinitionId),
-    sql`${shopListingsTable.id} <> ${request.params.id}`,
-  )).limit(1);
-  if (duplicate) { response.status(409).json({ message: "이 팩은 이미 다른 판매 목록에 등록되어 있습니다." }); return; }
   const [listing] = await db.update(shopListingsTable).set({ ...input, updatedAt: new Date() })
     .where(eq(shopListingsTable.id, request.params.id)).returning();
   if (!listing) { response.status(404).json({ message: "상점 판매 목록을 찾을 수 없습니다." }); return; }
+  response.json({ listing });
+});
+
+router.post("/:id/duplicate", async (request, response): Promise<void> => {
+  if (!requireAdmin(request, response)) return;
+  const [source] = await db.select().from(shopListingsTable).where(eq(shopListingsTable.id, request.params.id)).limit(1);
+  if (!source) { response.status(404).json({ message: "상점 상품을 찾을 수 없습니다." }); return; }
+  if (!await publishedPack(source.packDefinitionId)) { response.status(422).json({ message: "PUBLISHED 팩이 연결된 상품만 복제할 수 있습니다." }); return; }
+  const { id: _id, createdAt: _createdAt, updatedAt: _updatedAt, ...copy } = source;
+  const [listing] = await db.insert(shopListingsTable).values({
+    ...copy,
+    id: randomUUID(),
+    name: `${source.name} 복사본`,
+    enabled: false,
+    isActive: 0,
+  }).returning();
+  response.status(201).json({ listing });
+});
+
+router.post("/:id/toggle", async (request, response): Promise<void> => {
+  if (!requireAdmin(request, response)) return;
+  const enabled = request.body?.enabled === true;
+  const [listing] = await db.update(shopListingsTable)
+    .set({ enabled, isActive: enabled ? 1 : 0, updatedAt: new Date() })
+    .where(eq(shopListingsTable.id, request.params.id))
+    .returning();
+  if (!listing) { response.status(404).json({ message: "상점 상품을 찾을 수 없습니다." }); return; }
   response.json({ listing });
 });
 

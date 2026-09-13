@@ -42,9 +42,12 @@ router.get("/", async (request, response): Promise<void> => {
       eq(userPackInventoryTable.userId, request.authUser!.id),
     ))
     .where(and(
+      eq(shopListingsTable.enabled, true),
       eq(shopListingsTable.isActive, 1),
       eq(packDefinitionsTable.status, "PUBLISHED"),
       sql`${packDefinitionsTable.deletedAt} IS NULL`,
+      sql`(${shopListingsTable.startsAt} IS NULL OR ${shopListingsTable.startsAt} <= now())`,
+      sql`(${shopListingsTable.endsAt} IS NULL OR ${shopListingsTable.endsAt} >= now())`,
     ))
     .orderBy(asc(shopListingsTable.displayOrder), asc(packDefinitionsTable.name));
 
@@ -71,9 +74,12 @@ router.post("/:listingId/purchase", async (request, response): Promise<void> => 
         .innerJoin(packDefinitionsTable, eq(packDefinitionsTable.id, shopListingsTable.packDefinitionId))
         .where(and(
           eq(shopListingsTable.id, request.params.listingId),
+          eq(shopListingsTable.enabled, true),
           eq(shopListingsTable.isActive, 1),
           eq(packDefinitionsTable.status, "PUBLISHED"),
           sql`${packDefinitionsTable.deletedAt} IS NULL`,
+          sql`(${shopListingsTable.startsAt} IS NULL OR ${shopListingsTable.startsAt} <= now())`,
+          sql`(${shopListingsTable.endsAt} IS NULL OR ${shopListingsTable.endsAt} >= now())`,
         ))
         .limit(1);
       if (!listing) throw new ShopError(404, "판매 중인 팩을 찾을 수 없습니다.");

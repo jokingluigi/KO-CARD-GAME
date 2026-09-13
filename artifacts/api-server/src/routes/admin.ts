@@ -6,6 +6,7 @@ import {
   db,
   gameMediaTable,
   mechanicRequestsTable,
+  shopListingsTable,
 } from "@workspace/db";
 import express, { Router, type IRouter, type Request, type Response } from "express";
 import {
@@ -448,7 +449,15 @@ async function removeImageIfUnreferenced(assetId: string) {
       eq(championsTable.imageAssetId, assetId),
       eq(championsTable.questCompletedPortraitAssetId, assetId),
     ));
-  if ((cardReference?.count ?? 0) === 0 && (championReference?.count ?? 0) === 0) {
+  const [shopReference] = await db
+    .select({ count: sql<number>`count(*)::int` })
+    .from(shopListingsTable)
+    .where(eq(shopListingsTable.imageAssetId, assetId));
+  if (
+    (cardReference?.count ?? 0) === 0 &&
+    (championReference?.count ?? 0) === 0 &&
+    (shopReference?.count ?? 0) === 0
+  ) {
     await cardImageStorage.remove(assetId);
   }
 }

@@ -1,13 +1,22 @@
-import { integer, jsonb, pgTable, text, timestamp } from "drizzle-orm/pg-core";
+import { boolean, integer, jsonb, pgTable, text, timestamp } from "drizzle-orm/pg-core";
 import { packDefinitionsTable } from "./packs";
 import { usersTable } from "./users";
 
 export const shopListingsTable = pgTable("shop_listings", {
   id: text("id").primaryKey(),
+  name: text("name").notNull().default(""),
+  description: text("description").notNull().default(""),
+  imageAssetId: text("image_asset_id"),
+  productType: text("product_type").notNull().default("PACK"),
   packDefinitionId: text("pack_definition_id").notNull().references(() => packDefinitionsTable.id, { onDelete: "cascade" }),
+  quantity: integer("quantity").notNull().default(1),
   price: integer("price").notNull(),
+  enabled: boolean("enabled").notNull().default(true),
+  // Kept for compatibility with the first user shop implementation.
   isActive: integer("is_active").notNull().default(1),
   displayOrder: integer("display_order").notNull().default(0),
+  startsAt: timestamp("starts_at", { withTimezone: true }),
+  endsAt: timestamp("ends_at", { withTimezone: true }),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
 });
