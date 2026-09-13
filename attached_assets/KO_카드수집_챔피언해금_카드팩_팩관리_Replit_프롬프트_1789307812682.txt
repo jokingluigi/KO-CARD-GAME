@@ -1,0 +1,757 @@
+현재 KO 카드게임에
+"카드 수집 / 챔피언 해금 / 카드팩 시스템 / 팩 관리자"
+1차 버전을 구현해줘.
+
+핵심 규칙:
+
+1. 기본 지급 카드/챔피언만 계정 생성 시 사용할 수 있다.
+2. 그 외 카드는 카드팩에서 획득해야 사용할 수 있다.
+3. Champion(직업)도 카드팩에서 획득해야 사용할 수 있다.
+4. 소유하지 않은 카드/Champion은 덱 편집에서 사용할 수 없다.
+5. Token / Champion Token은 팩에서도 절대 나오지 않고 덱에도 절대 넣을 수 없다.
+6. 카드팩에는 현재 PUBLISHED 상태인 콘텐츠만 등장할 수 있다.
+7. 관리자에서 PackDefinition을 자유롭게 생성/관리할 수 있어야 한다.
+
+이번 작업에서는 상점/현금결제/재화는 연결하지 마.
+
+==================================================
+1. 매우 중요한 용어 구분
+==================================================
+
+팩 확률의:
+
+NORMAL 90%
+LEGENDARY 7%
+CHAMPION 3%
+
+에서 CHAMPION은:
+
+CardDefinition rarity = CHAMPION
+
+을 의미하는 것이 아니다.
+
+반드시:
+
+ChampionDefinition
+즉 플레이어가 선택하는 "챔피언/직업 해금"
+
+을 의미한다.
+
+팩 Reward Category를 명확히 구분해.
+
+예:
+
+NORMAL_CARD
+LEGENDARY_CARD
+CHAMPION_UNLOCK
+
+Champion Token 카드와 절대로 혼동하지 마.
+
+==================================================
+2. 기본 확률
+==================================================
+
+새 Pack을 만들 때 기본 확률:
+
+NORMAL_CARD = 90%
+LEGENDARY_CARD = 7%
+CHAMPION_UNLOCK = 3%
+
+관리자는 Pack별로 이 값을 수정할 수 있다.
+
+반드시 총합 100%여야 한다.
+
+합계가 100%가 아니면
+Pack을 PUBLISH하거나 저장 완료 상태로 만들 수 없게 하고
+명확한 validation을 표시해.
+
+==================================================
+3. Pack 한 개의 카드 수
+==================================================
+
+Pack Admin에서 "한 팩에서 나오는 내용물 수"를 직접 설정 가능하게 해.
+
+예: 1 / 3 / 5 / 10
+
+필드 예:
+cardsPerPack
+
+각 슬롯마다 별도로 Reward Category를 roll한다.
+
+예:
+cardsPerPack = 5
+
+라면 5번 각각:
+90% NORMAL
+7% LEGENDARY
+3% CHAMPION
+
+확률 판정을 한다.
+
+==================================================
+4. User Collection
+==================================================
+
+계정별 카드 소유 데이터를 추가해.
+
+예:
+
+UserCardCollection {
+  userId
+  cardDefinitionId
+  quantity
+  obtainedAt
+}
+
+Champion은 별도로 관리.
+
+예:
+
+UserChampionCollection {
+  userId
+  championDefinitionId
+  owned
+  obtainedAt
+}
+
+Deck 자체가 카드 소유 정보를 저장하는 구조로 만들지 마.
+Collection과 Deck은 분리한다.
+
+==================================================
+5. 기본 지급 카드
+==================================================
+
+Card Admin에 [기본 지급 카드] 옵션을 추가해.
+
+예:
+isStarterGrant = true
+
+신규 User가 만들어지면 현재 PUBLISHED 상태의 기본 지급 카드들을
+그 User의 Collection에 지급해.
+
+중복 실행되지 않도록 idempotent하게 구현해.
+어떤 카드를 기본 지급할지는 카드 이름으로 하드코딩하지 마.
+
+==================================================
+6. 기본 Champion
+==================================================
+
+Champion Admin에도 [기본 지급 Champion] 옵션을 제공해.
+
+예:
+isStarterGrant = true
+
+신규 계정은 해당 Champion만 처음부터 사용할 수 있다.
+나머지 Champion은 Pack에서 획득해야 사용할 수 있다.
+특정 Champion 이름을 코드에 하드코딩하지 마.
+
+==================================================
+7. 덱 편집과 Collection 연결
+==================================================
+
+기존 Deck Editor를 수정해.
+
+이제 일반 사용자의 카드 Collection에는
+"내가 실제로 소유한 카드"만 표시한다.
+
+조건:
+card.status === PUBLISHED
+isToken !== true
+isChampionToken !== true
+
+즉:
+PUBLISHED
++ OWNED
++ NOT TOKEN
++ NOT CHAMPION TOKEN
+
+인 카드만 덱 편성 후보.
+
+==================================================
+8. Champion 선택도 소유 기반
+==================================================
+
+Deck Editor의 Champion 선택 화면도
+현재 User가 소유한 Champion만 표시해.
+
+조건:
+Champion PUBLISHED
++ User owns Champion
+
+소유하지 않은 Champion은 선택할 수 없다.
+
+==================================================
+9. Token 절대 금지
+==================================================
+
+CardDefinition:
+isToken === true
+또는
+isChampionToken === true
+
+이면:
+- Pack 후보 금지
+- Collection용 일반 뽑기 금지
+- Deck Editor 표시 금지
+- Deck에 직접 추가 금지
+
+서버 Deck validation에서도 다시 검사.
+클라이언트 요청을 조작해 Token ID를 Deck에 넣으려 해도 서버에서 거부해.
+
+Token은 게임 효과로만 생성/소환한다.
+
+==================================================
+10. Pack에 등장할 수 있는 일반 카드
+==================================================
+
+NORMAL_CARD 후보:
+
+- CardDefinition
+- status === PUBLISHED
+- rarity === NORMAL
+- isToken !== true
+- isChampionToken !== true
+- 해당 Pack에서 활성 후보로 지정됨
+
+==================================================
+11. Legendary 후보
+==================================================
+
+LEGENDARY_CARD 후보:
+
+- CardDefinition
+- status === PUBLISHED
+- rarity === LEGENDARY
+- isToken !== true
+- isChampionToken !== true
+- 해당 Pack에서 활성 후보로 지정됨
+
+==================================================
+12. Champion 후보
+==================================================
+
+CHAMPION_UNLOCK 후보는 CardDefinition이 아니다.
+
+ChampionDefinition을 사용한다.
+
+조건:
+- Champion status === PUBLISHED
+- 해당 Pack에서 활성 후보로 지정됨
+
+Champion에 연결된 Champion Token CardDefinition은 이 Pool에 포함시키지 않는다.
+
+팩에서 Champion이 나오면
+해당 ChampionDefinition을 UserChampionCollection에 해금한다.
+
+==================================================
+13. 공개되지 않은 콘텐츠
+==================================================
+
+Pack 설정에 과거에 포함되어 있더라도 현재:
+DRAFT
+DISABLED
+삭제됨
+미공개
+
+상태면 Pack opening 후보에서 제외한다.
+
+실제 개봉하는 서버 시점에 다시 PUBLISHED 여부를 검증해.
+
+==================================================
+14. Pack 관리자
+==================================================
+
+별도 관리자 페이지:
+예: /admin/packs
+
+Admin 메뉴에 [팩 관리] 추가.
+
+기존 Card Admin / Champion Admin과 별도의 기능으로 만든다.
+
+==================================================
+15. Pack 목록
+==================================================
+
+Pack Admin에서:
+- 새 팩 만들기
+- 편집
+- 복제
+- PUBLISH
+- DISABLE
+- 삭제/soft delete
+- Preview
+
+가능하게 해.
+
+==================================================
+16. PackDefinition
+==================================================
+
+개념적으로:
+
+PackDefinition {
+  id
+  name
+  description
+  imageAssetId
+  cardsPerPack
+  normalRate
+  legendaryRate
+  championRate
+  normalCardPool
+  legendaryCardPool
+  championPool
+  status
+  createdAt
+  updatedAt
+}
+
+각 Pool에는 Definition ID를 저장한다.
+카드 이름 문자열을 저장해서 연결하지 마.
+
+==================================================
+17. 팩 이름
+==================================================
+
+관리자가 Pack 이름을 지정 가능.
+
+예:
+KO 기본팩
+시즌 1 팩
+아로크 팩
+
+이름은 코드에 하드코딩하지 마.
+
+==================================================
+18. Pack 이미지
+==================================================
+
+필요하면 Pack 자체 이미지도 설정 가능하게 해.
+기존 Asset uploader 재사용.
+
+지원:
+PNG
+JPG
+JPEG
+WEBP
+
+DB Base64 저장 금지.
+
+==================================================
+19. 확률 편집 UI
+==================================================
+
+Pack Admin에:
+
+일반 카드: [90] %
+레전더리: [7] %
+챔피언: [3] %
+합계: 100%
+
+표시.
+
+값 변경 시 합계 즉시 계산.
+
+100%가 아니면:
+"등급별 확률 합계는 100%여야 합니다."
+
+경고 표시.
+
+==================================================
+20. Pack 카드 Pool 관리
+==================================================
+
+Pack Admin에서 어떤 카드가 해당 Pack에서 나올지 직접 선택 가능하게 해.
+
+NORMAL Pool:
+현재 PUBLISHED NORMAL 카드 목록
+
+LEGENDARY Pool:
+현재 PUBLISHED LEGENDARY 카드 목록
+
+CHAMPION Pool:
+현재 PUBLISHED ChampionDefinition 목록
+
+각각 검색 / 체크박스 / 전체 선택/해제 제공.
+
+==================================================
+21. Token은 Admin Pack 목록에서도 숨기기
+==================================================
+
+Pack content selector에서도:
+isToken = true
+isChampionToken = true
+
+CardDefinition은 후보 목록에 표시하지 마.
+
+Backend validation도 동일하게 적용.
+
+==================================================
+22. Pack validation
+==================================================
+
+Pack PUBLISH 전에 확인:
+
+- 이름 존재
+- cardsPerPack >= 1
+- 확률 합계 100
+- normalRate > 0이면 NORMAL Pool 최소 1개
+- legendaryRate > 0이면 LEGENDARY Pool 최소 1개
+- championRate > 0이면 Champion Pool 최소 1개
+- Token 없음
+- Champion Token 없음
+
+조건 실패 시 Publish 금지.
+
+==================================================
+23. 확률이 있는 Pool이 비어버린 경우
+==================================================
+
+예:
+legendaryRate = 7%
+하지만 현재 eligible Legendary = 0
+
+이면 임의로 NORMAL로 확률을 넘기지 마.
+
+Pack을 invalid/unavailable 상태로 처리하고 Admin에게 경고해.
+조용히 확률을 재정규화하지 마.
+
+==================================================
+24. Pack Opening RNG
+==================================================
+
+팩 개봉 결과는 서버에서 결정해야 한다.
+
+클라이언트 Math.random() 금지.
+
+Game Engine deterministic RNG와도 별개의 시스템이다.
+서버의 안전한 RNG를 사용해.
+
+가능하면 Node crypto 등 cryptographically secure RNG를 사용.
+
+==================================================
+25. Pack Opening 기본 흐름
+==================================================
+
+실제 개봉 시 서버에서:
+
+1. PackDefinition 조회
+2. PUBLISHED 상태 확인
+3. Pool eligibility 다시 확인
+4. cardsPerPack 횟수만큼 roll
+5. Reward Category 결정
+6. 해당 Pool에서 무작위 Definition 선택
+7. User Collection에 지급
+8. 결과를 클라이언트에 반환
+
+순서.
+
+==================================================
+26. 중복 카드
+==================================================
+
+이번 단계에서 Legendary duplicate protection / pity / 천장 / 중복 보상을 임의로 만들지 마.
+
+동일 카드를 다시 획득하면 UserCardCollection.quantity 증가.
+
+==================================================
+27. Champion 중복 처리
+==================================================
+
+이미 소유한 Champion을 다시 뽑았을 경우
+재화 보상 / 재추첨 / 다른 Champion 교체 등을 임의로 만들지 마.
+
+기존 소유권은 정상 유지.
+필요하면 duplicate 횟수만 기록 가능.
+
+==================================================
+28. 기본 지급 콘텐츠와 Pack 콘텐츠
+==================================================
+
+Starter Grant와 Pack Pool은 서로 다른 개념.
+
+기본 지급 여부:
+isStarterGrant
+
+Pack 등장 여부:
+PackDefinition Pool 포함 여부
+
+관리자가 Starter 카드를 Pack Pool에 포함할 수는 있지만
+시스템이 강제로 포함시키지는 마.
+
+==================================================
+29. 팩 소유/상점은 이번 단계에서 연결 금지
+==================================================
+
+아직 Shop은 준비 중.
+
+따라서:
+- Pack 가격
+- Gold 가격
+- 현금 가격
+- 구매
+- 결제
+
+는 만들지 마.
+
+PackDefinition / Collection / Opening Engine / Admin Manager까지만 만든다.
+
+==================================================
+30. Admin Test Opening
+==================================================
+
+Pack Admin에 개발 확인용 [테스트 개봉] 기능을 추가해도 된다.
+
+실제 설정 확률/Pool 사용.
+기본적으로 User Collection을 변경하지 않는 SIMULATION 모드.
+
+==================================================
+31. 카드 Collection UI 기반
+==================================================
+
+Deck Editor에서는 반드시 UserCardCollection 기준으로 카드 표시.
+
+예:
+소유 2장
+
+quantity 표시 가능.
+
+==================================================
+32. 신규 User 지급
+==================================================
+
+회원가입 후 starter cards / starter champions 자동 지급.
+
+반드시 서버에서 처리.
+동일 User에게 반복 지급 금지.
+
+==================================================
+33. 기존 계정 Migration
+==================================================
+
+기존 테스트 User도 깨뜨리지 마.
+
+starterGrantVersion 또는 idempotent ensureStarterCollection(userId) 같은 방식으로
+아직 기본 지급을 받지 않았다면 한 번만 지급.
+
+==================================================
+34. 기존 Deck 처리
+==================================================
+
+기존 Deck에 소유하지 않은 카드가 있어도 데이터를 임의 삭제하지 마.
+
+대신:
+"현재 소유하지 않은 카드가 포함됨"
+
+으로 INVALID 처리.
+
+Token이 들어있는 기존 Deck도 INVALID.
+
+==================================================
+35. Deck 서버 validation
+==================================================
+
+Deck 저장 시 서버에서 반드시 확인:
+
+각 Card ID:
+- User가 소유함
+- PUBLISHED
+- isToken !== true
+- isChampionToken !== true
+
+Champion:
+- User가 소유함
+- PUBLISHED
+
+하나라도 실패하면 저장/유효 덱 설정 거부.
+
+==================================================
+36. Pack Result 데이터
+==================================================
+
+개봉 결과는 명확히 타입 구분.
+
+예:
+
+{
+  rewardType: "NORMAL_CARD",
+  cardDefinitionId: ...
+}
+
+{
+  rewardType: "LEGENDARY_CARD",
+  cardDefinitionId: ...
+}
+
+{
+  rewardType: "CHAMPION_UNLOCK",
+  championDefinitionId: ...
+}
+
+CHAMPION 결과를 CardDefinitionId로 저장하지 마.
+
+==================================================
+37. 향후 Pack Opening Animation 준비
+==================================================
+
+이번 단계에서 화려한 Pack opening animation은 만들지 마.
+
+API 결과는 slot별 reward 배열로 반환해서
+나중에 한 장씩 reveal하기 쉽게 만들어.
+
+예:
+rewards: [{...}, {...}, {...}]
+
+==================================================
+38. 모바일 Admin
+==================================================
+
+기존 Mobile Portrait Admin에서도 [팩 관리] 접근 가능하게 해.
+
+Pack 편집 화면은 모바일에서 세로 1열로:
+- 확률 설정
+- Pool 관리
+- Preview
+
+가 잘리지 않게 해.
+
+==================================================
+39. 보안
+==================================================
+
+Pack 생성/수정/Publish는 ADMIN 전용.
+
+Pack opening 결과 결정은 서버 전용.
+
+클라이언트가 rarity / reward ID / probability를 조작해도 신뢰하지 마.
+
+==================================================
+40. 반드시 테스트
+==================================================
+
+TEST 1
+신규 계정 생성
+→ Starter Card 지급
+→ Starter Champion 지급
+
+TEST 2
+소유하지 않은 일반 카드
+→ Deck Editor에 표시 안 됨
+
+TEST 3
+Pack으로 일반 카드 획득
+→ Collection에 추가
+→ Deck Editor에 표시
+
+TEST 4
+Pack으로 Legendary 획득
+→ Collection 추가
+
+TEST 5
+Pack으로 Champion 획득
+→ UserChampionCollection 해금
+→ Deck Champion 선택에 표시
+
+TEST 6
+Token 카드
+→ Pack Pool selector에 표시 안 됨
+→ Pack에서 절대 등장 안 함
+→ Deck Editor에도 표시 안 됨
+
+TEST 7
+Champion Token
+→ 동일하게 Pack/Deck 모두 금지
+
+TEST 8
+DRAFT Card
+→ Pack 결과에 등장 안 함
+
+TEST 9
+DISABLED Card
+→ Pack 결과에 등장 안 함
+
+TEST 10
+DRAFT/DISABLED Champion
+→ Pack에서 등장 안 함
+
+TEST 11
+90/7/3
+→ 합계 100
+→ Publish 가능
+
+TEST 12
+90/8/3
+→ 101
+→ Publish 불가
+
+TEST 13
+cardsPerPack = 5
+→ 정확히 reward 5개 반환
+
+TEST 14
+User B가 User A Collection을 조작하려 함
+→ 서버 거부
+
+TEST 15
+기존 Deck에 Token 포함
+→ INVALID 처리
+
+==================================================
+41. 이번 작업에서 하지 말 것
+==================================================
+
+- Shop 연결 금지
+- 실제 결제 금지
+- 재화 시스템 금지
+- Pity/천장 금지
+- Legendary 보장 규칙 임의 추가 금지
+- 중복 보상 임의 추가 금지
+- AI Match 연결 금지
+- Online Match 연결 금지
+- Token Pack 등장 예외 금지
+- Champion Token Pack 등장 금지
+- 카드 이름 하드코딩 금지
+- 특정 Champion 이름 하드코딩 금지
+
+==================================================
+42. 최종 구조
+==================================================
+
+신규 계정
+↓
+Starter Card / Starter Champion 지급
+
+팩 개봉
+↓
+PackDefinition 확인
+↓
+서버 RNG
+
+90% NORMAL_CARD
+7% LEGENDARY_CARD
+3% CHAMPION_UNLOCK
+
+↓
+User Collection에 저장
+
+↓
+Deck Editor
+
+소유한
+PUBLISHED
+NON-TOKEN
+카드만 표시
+
++
+
+소유한
+PUBLISHED
+Champion만 선택 가능
+
+이 구조로 구현해.
+
+Pack 구성과 확률은
+/admin/packs에서 데이터 기반으로 관리한다.
+
+관련 Collection / Pack / Deck validation / Admin만 구현하고
+게임 엔진 전체를 리팩터링하지 마.
