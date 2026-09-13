@@ -14,6 +14,7 @@ import adminShopRouter from "./admin-shop";
 import prismRouter from "./prism";
 import adminPrismRouter from "./admin-prism";
 import adminCardSkinsRouter from "./admin-card-skins";
+import testAuthRouter from "./test-auth";
 
 const router: IRouter = Router();
 
@@ -23,6 +24,7 @@ router.use(cardsRouter);
 router.use(gameMediaRouter);
 router.use("/admin", adminRouter);
 router.use("/auth", authRouter);
+router.use("/test-auth", testAuthRouter);
 router.use("/decks", decksRouter);
 router.use("/collection", collectionRouter);
 router.use("/packs", packsRouter);

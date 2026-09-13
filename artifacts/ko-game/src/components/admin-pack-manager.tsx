@@ -51,7 +51,7 @@ export function AdminPackManager({ onUnauthorized }: { onUnauthorized: () => voi
   async function save() {
     try {
       const result = await api<{ pack: Pack; validationErrors: string[] }>(selected ? `/${selected.id}` : "", { method: selected ? "PATCH" : "POST", body: JSON.stringify(form) });
-      setStatus(result.validationErrors?.join(" ") || "저장했습니다."); setSelected(result.pack); await load();
+      setStatus(result.validationErrors?.join(" ") || "저장했습니다."); setSelected(result.pack); setForcedSlots(createForcedSlots(result.pack)); await load();
     } catch (error) { setStatus(error instanceof Error ? error.message : "저장하지 못했습니다."); }
   }
   async function action(path: string, init?: RequestInit) { try { await api(path, init); setStatus("처리했습니다."); await load(); } catch (error) { setStatus(error instanceof Error ? error.message : "처리하지 못했습니다."); } }
