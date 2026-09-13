@@ -9,6 +9,7 @@ import Home from '@/pages/home';
 import Decks from '@/pages/decks';
 import Collection from '@/pages/collection';
 import Packs from '@/pages/packs';
+import Shop from '@/pages/shop';
 import {
   Route,
   Switch,
@@ -24,9 +25,11 @@ function Router() {
       <Switch>
         <Route path="/admin" component={Admin} />
         <Route path="/admin/packs" component={Admin} />
+        <Route path="/admin/shop" component={Admin} />
         <Route path="/decks" component={Decks} />
         <Route path="/collection" component={Collection} />
         <Route path="/packs" component={Packs} />
+        <Route path="/shop" component={Shop} />
         <Route path="/" component={Home} />
         <Route component={NotFound} />
       </Switch>

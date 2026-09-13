@@ -22,6 +22,7 @@ import {
 import { ensureStarterCollection } from "../lib/collection";
 
 const router = Router();
+const STARTING_CURRENCY = Math.max(0, Number.parseInt(process.env["STARTING_CURRENCY"] ?? "1000", 10) || 1000);
 
 function readString(value: unknown): string {
   return typeof value === "string" ? value : "";
@@ -69,6 +70,7 @@ router.post("/register", async (request, response) => {
         nickname,
         passwordHash: await hashPassword(password),
         role: isConfiguredAdminEmail(email) ? "ADMIN" : "USER",
+        currency: STARTING_CURRENCY,
       })
       .returning();
     if (!user) {
@@ -78,7 +80,7 @@ router.post("/register", async (request, response) => {
     await ensureStarterCollection(user.id);
     await createAuthSession(user.id, response);
     response.status(201).json({ authenticated: true, user: {
-      id: user.id, email: user.email, nickname: user.nickname, role: user.role,
+      id: user.id, email: user.email, nickname: user.nickname, role: user.role, currency: user.currency,
     } });
   } catch (error) {
     if ((error as { code?: string }).code === "23505") {
@@ -115,7 +117,7 @@ router.post("/login", async (request, response) => {
   await ensureStarterCollection(user.id);
   await createAuthSession(user.id, response);
   response.json({ authenticated: true, user: {
-    id: user.id, email: user.email, nickname: user.nickname, role: user.role,
+    id: user.id, email: user.email, nickname: user.nickname, role: user.role, currency: user.currency,
   } });
 });
 

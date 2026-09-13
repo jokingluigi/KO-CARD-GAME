@@ -54,6 +54,7 @@ export function MainMenu({ onComingSoon, onDeckEdit, user, onLogout }: MainMenuP
           {user && onLogout && (
             <div className="ko-main-menu__user">
               <span>{user.nickname}</span>
+              <span className="text-amber-300">{user.currency.toLocaleString()} Gold</span>
               <button type="button" onClick={onLogout} aria-label="로그아웃">
                 <LogOut className="h-3.5 w-3.5" aria-hidden="true" />
                 로그아웃
@@ -74,6 +75,10 @@ export function MainMenu({ onComingSoon, onDeckEdit, user, onLogout }: MainMenuP
                 }
                 if (label === "내 팩") {
                   window.location.href = `${import.meta.env.BASE_URL.replace(/\/$/, "")}/packs`;
+                  return;
+                }
+                if (label === "상점") {
+                  window.location.href = `${import.meta.env.BASE_URL.replace(/\/$/, "")}/shop`;
                   return;
                 }
                 setNotice(`${label}은 준비 중입니다.`);

@@ -1,10 +1,11 @@
 import { useEffect, useState } from "react";
-import { Gamepad2, Image, LogOut, Music2, Package, ShieldCheck, Spade } from "lucide-react";
+import { Gamepad2, Image, LogOut, Music2, Package, ShieldCheck, ShoppingBag, Spade } from "lucide-react";
 import { useLocation } from "wouter";
 import { AdminCardManager } from "@/components/admin-card-manager";
 import { AdminChampionManager } from "@/components/admin-champion-manager";
 import { AdminGameMediaManager } from "@/components/admin-game-media-manager";
 import { AdminPackManager } from "@/components/admin-pack-manager";
+import { AdminShopManager } from "@/components/admin-shop-manager";
 import { fetchCurrentUser, logout } from "@/lib/auth-client";
 
 type AdminStatus = "checking" | "forbidden" | "authenticated";
@@ -12,7 +13,9 @@ type AdminStatus = "checking" | "forbidden" | "authenticated";
 export default function Admin() {
   const [location] = useLocation();
   const [status, setStatus] = useState<AdminStatus>("checking");
-  const [section, setSection] = useState<"cards" | "champions" | "packs" | "media" | "test">(location.endsWith("/packs") ? "packs" : "cards");
+  const [section, setSection] = useState<"cards" | "champions" | "packs" | "shop" | "media" | "test">(
+    location.endsWith("/packs") ? "packs" : location.endsWith("/shop") ? "shop" : "cards",
+  );
 
   useEffect(() => {
     let cancelled = false;
@@ -138,6 +141,14 @@ export default function Admin() {
             <Gamepad2 className="h-4 w-4" />
             게임 테스트
           </button>
+          <button
+            type="button"
+            onClick={() => setSection("shop")}
+            className={`mt-2 flex w-full items-center gap-3 rounded border px-3 py-3 text-left text-sm font-black ${section === "shop" ? "border-primary/60 bg-primary/10 text-primary" : "border-transparent text-neutral-400"}`}
+          >
+            <ShoppingBag className="h-4 w-4" />
+            상점 관리
+          </button>
         </nav>
 
         <section className="min-w-0 flex-1">
@@ -149,6 +160,8 @@ export default function Admin() {
                  ? <AdminPackManager onUnauthorized={() => setStatus("forbidden")} />
                : section === "media"
                  ? <AdminGameMediaManager onUnauthorized={() => setStatus("forbidden")} />
+                  : section === "shop"
+                    ? <AdminShopManager onUnauthorized={() => setStatus("forbidden")} />
                  : (
                    <section className="rounded-xl border border-neutral-800 bg-black/40 p-5 sm:p-8">
                      <div className="mb-6 flex items-start gap-4">

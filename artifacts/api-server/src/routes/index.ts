@@ -9,6 +9,8 @@ import decksRouter from "./decks";
 import collectionRouter from "./collection";
 import adminPacksRouter from "./admin-packs";
 import packsRouter from "./packs";
+import shopRouter from "./shop";
+import adminShopRouter from "./admin-shop";
 
 const router: IRouter = Router();
 
@@ -22,5 +24,7 @@ router.use("/decks", decksRouter);
 router.use("/collection", collectionRouter);
 router.use("/packs", packsRouter);
 router.use("/admin/packs", adminPacksRouter);
+router.use("/shop", shopRouter);
+router.use("/admin/shop", adminShopRouter);
 
 export default router;

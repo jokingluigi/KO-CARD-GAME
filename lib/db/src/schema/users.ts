@@ -1,4 +1,4 @@
-import { pgEnum, pgTable, text, timestamp } from "drizzle-orm/pg-core";
+import { integer, pgEnum, pgTable, text, timestamp } from "drizzle-orm/pg-core";
 
 export const userRoleEnum = pgEnum("ko_user_role", ["USER", "ADMIN"]);
 
@@ -8,6 +8,7 @@ export const usersTable = pgTable("users", {
   nickname: text("nickname").notNull().unique(),
   passwordHash: text("password_hash").notNull(),
   role: userRoleEnum("role").notNull().default("USER"),
+  currency: integer("currency").notNull().default(0),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
 });

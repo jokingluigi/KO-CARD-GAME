@@ -45,3 +45,23 @@ export type PackReward = {
   alreadyOwned?: boolean;
 };
 export const openPack = (id: string) => request<{ rewards: PackReward[] }>(`/packs/${encodeURIComponent(id)}/open`, { method: "POST" });
+
+export type ShopListing = {
+  id: string;
+  packDefinitionId: string;
+  price: number;
+  isActive: number;
+  displayOrder: number;
+  pack: Pack;
+  quantity: number;
+};
+export type ShopData = { currency: number; listings: ShopListing[] };
+export const fetchShop = () => request<ShopData>("/shop");
+export const purchaseShopListing = (listingId: string, quantity = 1) => request<{
+  currency: number;
+  quantity: number;
+  pack: Pack;
+}>(`/shop/${encodeURIComponent(listingId)}/purchase`, {
+  method: "POST",
+  body: JSON.stringify({ quantity }),
+});

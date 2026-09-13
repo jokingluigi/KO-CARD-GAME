@@ -3,6 +3,7 @@ export type AuthUser = {
   email: string;
   nickname: string;
   role: "USER" | "ADMIN";
+  currency: number;
 };
 
 export type AuthResponse = {

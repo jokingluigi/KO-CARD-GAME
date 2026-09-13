@@ -25,3 +25,4 @@ export * from "./users";
 export * from "./decks";
 export * from "./collections";
 export * from "./packs";
+export * from "./shop";
