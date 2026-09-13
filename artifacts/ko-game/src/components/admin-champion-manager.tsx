@@ -16,6 +16,7 @@ type TokenCard = {
   imageUrl: string | null;
   status: Status;
   isChampionToken: boolean;
+   isStarterGrant?: boolean;
 };
 type Champion = {
   id: string; name: string; description: string; imageUrl: string | null; imageAssetId: string | null;
@@ -32,6 +33,7 @@ type Champion = {
   questRewardEffects: Record<string, unknown> | null; upgradedAbilityName: string | null;
   upgradedAbilityCost: number | null; upgradedAbilityText: string | null;
   upgradedAbilityEffects: Record<string, unknown> | null; championTokenDefinitionId: string | null;
+   isStarterGrant: boolean;
   abilityAudioAssetId: string | null; abilityAudioUrl: string | null; abilityAudioVolume: number;
   questCompleteAudioAssetId: string | null; questCompleteAudioUrl: string | null;
   questCompleteAudioVolume: number; questCompleteAudioEnabled: boolean;
@@ -77,6 +79,7 @@ const empty: Form = {
   questProgressRequired: null, questRewardText: null, questRewardEffects: null,
   upgradedAbilityName: null, upgradedAbilityCost: null, upgradedAbilityText: null,
   upgradedAbilityEffects: null, championTokenDefinitionId: null,
+   isStarterGrant: false,
   abilityAudioAssetId: null, abilityAudioUrl: null, abilityAudioVolume: 100,
   questCompleteAudioAssetId: null, questCompleteAudioUrl: null,
   questCompleteAudioVolume: 100, questCompleteAudioEnabled: false,
@@ -367,6 +370,7 @@ export function AdminChampionManager({ onUnauthorized }: { onUnauthorized: () =>
       upgradedAbilityName: champion.upgradedAbilityName, upgradedAbilityCost: champion.upgradedAbilityCost,
       upgradedAbilityText: champion.upgradedAbilityText, upgradedAbilityEffects: champion.upgradedAbilityEffects,
        championTokenDefinitionId: champion.championTokenDefinitionId,
+        isStarterGrant: champion.isStarterGrant ?? false,
        abilityAudioAssetId: champion.abilityAudioAssetId,
       abilityAudioUrl: champion.abilityAudioUrl, abilityAudioVolume: champion.abilityAudioVolume,
       questCompleteAudioAssetId: champion.questCompleteAudioAssetId,
@@ -745,6 +749,10 @@ export function AdminChampionManager({ onUnauthorized }: { onUnauthorized: () =>
              </div>
            )}
          </div>
+          <label className="md:col-span-2 flex items-center gap-2 rounded border border-amber-900/60 bg-amber-950/20 p-3 text-sm">
+            <input type="checkbox" checked={form.isStarterGrant} onChange={e=>update("isStarterGrant", e.target.checked)} />
+            신규 계정 Starter Champion
+          </label>
          <AdminAudioField
            title="챔피언 퀘스트 완료 음악"
            value={{

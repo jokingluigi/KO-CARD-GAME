@@ -29,3 +29,4 @@
 - [Presentation feedback queue](presentation-feedback-queue.md) — cosmetic event feedback must consume committed state asynchronously, preserve event order, and remain reduced-motion safe.
 - [KO authentication boundary](auth-boundary.md) — account data and server-side sessions stay behind the API; roles are never client-controlled.
 - [KO deck definition boundary](deck-definition-boundary.md) — decks keep owned Definition IDs and resolve current published status at read/select time.
+- [Collection and pack boundary](collection-pack-boundary.md) — ownership controls deck eligibility, and Champion unlocks remain distinct from Champion-rarity cards.

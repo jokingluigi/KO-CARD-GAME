@@ -93,6 +93,7 @@ type CardInput = {
   keywords: (typeof CARD_KEYWORDS)[number][];
   isToken: boolean;
   isChampionToken: boolean;
+  isStarterGrant: boolean;
   effectId: string | null;
   effectConfig: Record<string, unknown>;
   imageAssetId: string | null;
@@ -122,6 +123,7 @@ type ChampionInput = {
   questRewardEffects: Record<string, unknown> | null; upgradedAbilityName: string | null;
   upgradedAbilityCost: number | null; upgradedAbilityText: string | null;
   upgradedAbilityEffects: Record<string, unknown> | null; championTokenDefinitionId: string | null;
+  isStarterGrant: boolean;
   abilityAudioAssetId: string | null; abilityAudioUrl: string | null; abilityAudioVolume: number;
   questCompleteAudioAssetId: string | null; questCompleteAudioUrl: string | null;
   questCompleteAudioVolume: number; questCompleteAudioEnabled: boolean;
@@ -175,6 +177,7 @@ function parseChampionInput(value: unknown): ChampionInput | null {
   const questCompletedPortraitAssetId = text("questCompletedPortraitAssetId");
   const questCompletedPortraitUrl = text("questCompletedPortraitUrl");
   const questCompletedPortraitUploadToken = text("questCompletedPortraitUploadToken");
+  const isStarterGrant = input.isStarterGrant === true;
   const validEffects = (effects: Record<string, unknown> | null | undefined, championReward = false) =>
     effects === null || effects === undefined || !("effects" in effects) ||
     (championReward ? isChampionQuestRewardEffects(effects) : isStructuredEffects(effects));
@@ -221,6 +224,7 @@ function parseChampionInput(value: unknown): ChampionInput | null {
     upgradedAbilityCost, upgradedAbilityText: text("upgradedAbilityText"),
     upgradedAbilityEffects: object("upgradedAbilityEffects", true) ?? null,
     championTokenDefinitionId: text("championTokenDefinitionId"),
+     isStarterGrant,
     abilityAudioAssetId: text("abilityAudioAssetId"), abilityAudioUrl: text("abilityAudioUrl"),
     abilityAudioVolume, questCompleteAudioAssetId, questCompleteAudioUrl,
     questCompleteAudioVolume, questCompleteAudioEnabled, questCompleteAudioUploadToken,
@@ -682,6 +686,7 @@ function parseCardInput(value: unknown): CardInput | null {
   const imageScale = boundedNumber(input.imageScale, 1, 0.5, 2);
   const imagePositionX = boundedNumber(input.imagePositionX, 50, 0, 100);
   const imagePositionY = boundedNumber(input.imagePositionY, 50, 0, 100);
+  const isStarterGrant = input.isStarterGrant === true;
   const validInteger = (candidate: unknown) =>
     typeof candidate === "number" &&
     Number.isInteger(candidate) &&
@@ -731,6 +736,7 @@ function parseCardInput(value: unknown): CardInput | null {
     keywords: [...new Set(input.keywords)] as CardInput["keywords"],
     isToken: input.isToken,
     isChampionToken: input.isChampionToken,
+    isStarterGrant,
     effectId,
     effectConfig: input.effectConfig as Record<string, unknown>,
     imageAssetId,

@@ -19,6 +19,7 @@ import {
   recordFailedLogin,
   verifyPassword,
 } from "../lib/auth";
+import { ensureStarterCollection } from "../lib/collection";
 
 const router = Router();
 
@@ -74,6 +75,7 @@ router.post("/register", async (request, response) => {
       response.status(500).json({ message: "계정을 만들지 못했습니다." });
       return;
     }
+    await ensureStarterCollection(user.id);
     await createAuthSession(user.id, response);
     response.status(201).json({ authenticated: true, user: {
       id: user.id, email: user.email, nickname: user.nickname, role: user.role,
@@ -110,6 +112,7 @@ router.post("/login", async (request, response) => {
   }
 
   clearLoginRateLimit(request, email);
+  await ensureStarterCollection(user.id);
   await createAuthSession(user.id, response);
   response.json({ authenticated: true, user: {
     id: user.id, email: user.email, nickname: user.nickname, role: user.role,
@@ -128,6 +131,7 @@ router.get("/me", async (request, response) => {
     response.json({ authenticated: false, user: null });
     return;
   }
+  await ensureStarterCollection(user.id);
   response.json({ authenticated: true, user });
 });
 

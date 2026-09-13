@@ -18,6 +18,7 @@ export const cardsTable = pgTable("cards", {
   health: integer("health").notNull(),
   text: text("text").notNull(),
   rarity: text("rarity").notNull().default("NORMAL"),
+  isStarterGrant: boolean("is_starter_grant").notNull().default(false),
   keywords: text("keywords")
     .array()
     .notNull()

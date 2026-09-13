@@ -1,15 +1,18 @@
 import { useEffect, useState } from "react";
-import { Gamepad2, Image, LogOut, Music2, ShieldCheck, Spade } from "lucide-react";
+import { Gamepad2, Image, LogOut, Music2, Package, ShieldCheck, Spade } from "lucide-react";
+import { useLocation } from "wouter";
 import { AdminCardManager } from "@/components/admin-card-manager";
 import { AdminChampionManager } from "@/components/admin-champion-manager";
 import { AdminGameMediaManager } from "@/components/admin-game-media-manager";
+import { AdminPackManager } from "@/components/admin-pack-manager";
 import { fetchCurrentUser, logout } from "@/lib/auth-client";
 
 type AdminStatus = "checking" | "forbidden" | "authenticated";
 
 export default function Admin() {
+  const [location] = useLocation();
   const [status, setStatus] = useState<AdminStatus>("checking");
-  const [section, setSection] = useState<"cards" | "champions" | "media" | "test">("cards");
+  const [section, setSection] = useState<"cards" | "champions" | "packs" | "media" | "test">(location.endsWith("/packs") ? "packs" : "cards");
 
   useEffect(() => {
     let cancelled = false;
@@ -121,6 +124,14 @@ export default function Admin() {
           </button>
           <button
             type="button"
+            onClick={() => setSection("packs")}
+            className={`mt-2 flex w-full items-center gap-3 rounded border px-3 py-3 text-left text-sm font-black ${section === "packs" ? "border-primary/60 bg-primary/10 text-primary" : "border-transparent text-neutral-400"}`}
+          >
+            <Package className="h-4 w-4" />
+            카드팩 관리
+          </button>
+          <button
+            type="button"
             onClick={() => setSection("test")}
             className={`mt-2 flex w-full items-center gap-3 rounded border px-3 py-3 text-left text-sm font-black ${section === "test" ? "border-primary/60 bg-primary/10 text-primary" : "border-transparent text-neutral-400"}`}
           >
@@ -134,6 +145,8 @@ export default function Admin() {
             ? <AdminCardManager onUnauthorized={() => setStatus("forbidden")} />
              : section === "champions"
                ? <AdminChampionManager onUnauthorized={() => setStatus("forbidden")} />
+               : section === "packs"
+                 ? <AdminPackManager onUnauthorized={() => setStatus("forbidden")} />
                : section === "media"
                  ? <AdminGameMediaManager onUnauthorized={() => setStatus("forbidden")} />
                  : (

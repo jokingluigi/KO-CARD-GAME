@@ -1,4 +1,4 @@
-import { Bot, Globe2, Layers3, LogOut, ShoppingBag } from "lucide-react";
+import { Bot, Globe2, Layers3, LogOut, ShoppingBag, Library } from "lucide-react";
 import { useState } from "react";
 import type { AuthUser } from "@/lib/auth-client";
 
@@ -30,6 +30,11 @@ const menuItems = [
     description: "카드와 아이템을 확인합니다",
     icon: ShoppingBag,
   },
+  {
+    label: "수집품",
+    description: "카드팩을 열고 보유 카드를 확인합니다",
+    icon: Library,
+  },
 ] as const;
 
 export function MainMenu({ onComingSoon, onDeckEdit, user, onLogout }: MainMenuProps) {
@@ -60,6 +65,10 @@ export function MainMenu({ onComingSoon, onDeckEdit, user, onLogout }: MainMenuP
               onClick={() => {
                 if (label === "덱 편집") {
                   onDeckEdit?.();
+                  return;
+                }
+                if (label === "수집품") {
+                  window.location.href = `${import.meta.env.BASE_URL.replace(/\/$/, "")}/collection`;
                   return;
                 }
                 setNotice(`${label}은 준비 중입니다.`);

@@ -50,6 +50,7 @@ type CardRecord = {
   keywords: CardKeyword[];
   isToken: boolean;
   isChampionToken: boolean;
+  isStarterGrant?: boolean;
   effectId: string | null;
   effectConfig: Record<string, unknown>;
   status: CardStatus;
@@ -79,6 +80,7 @@ type CardFormValues = {
   keywords: CardKeyword[];
   isToken: boolean;
   isChampionToken: boolean;
+  isStarterGrant: boolean;
   effectId: string;
   effectConfig: string;
 };
@@ -120,6 +122,7 @@ const EMPTY_CARD: CardFormValues = {
   keywords: [],
   isToken: false,
   isChampionToken: false,
+  isStarterGrant: false,
   effectId: "",
   effectConfig: "{}",
 };
@@ -435,6 +438,7 @@ export function AdminCardManager({
       keywords: card.keywords,
       isToken: card.isToken,
       isChampionToken: card.isChampionToken,
+      isStarterGrant: card.isStarterGrant ?? false,
       effectId: card.effectId ?? "",
       effectConfig: JSON.stringify(card.effectConfig, null, 2),
     });
@@ -1143,6 +1147,7 @@ export function AdminCardManager({
                <fieldset className="space-y-2 md:col-span-2"><legend className="text-xs font-bold text-neutral-400">키워드</legend><div className="flex flex-wrap gap-2">{KEYWORDS.map((keyword) => <label key={keyword} className="flex items-center gap-2 rounded border border-neutral-800 bg-neutral-900 px-3 py-2 text-xs"><input type="checkbox" value={keyword} {...form.register("keywords")} data-testid={`input-keyword-${keyword}`} />{KEYWORD_LABELS[keyword]}</label>)}</div></fieldset>
               <label className="flex items-center gap-2 rounded border border-neutral-800 bg-neutral-900 p-3 text-sm"><input type="checkbox" {...form.register("isToken")} data-testid="input-card-token" /> 토큰 카드</label>
               <label className="flex items-center gap-2 rounded border border-neutral-800 bg-neutral-900 p-3 text-sm"><input type="checkbox" {...form.register("isChampionToken")} data-testid="input-card-champion-token" /> 챔피언 토큰</label>
+               <label className="flex items-center gap-2 rounded border border-amber-900/60 bg-amber-950/20 p-3 text-sm"><input type="checkbox" {...form.register("isStarterGrant")} /> 신규 계정 Starter 카드</label>
                <div className="space-y-2 md:col-span-2">
                  <div className="rounded border border-blue-900/50 bg-blue-950/20 px-3 py-2 text-xs leading-relaxed text-blue-200">
                     효과 텍스트를 입력한 뒤 <strong>효과 분석</strong>을 누르고 결과를 확인해 적용하세요. 지원하지 않는 문장은 저장용 효과로 적용할 수 없습니다.

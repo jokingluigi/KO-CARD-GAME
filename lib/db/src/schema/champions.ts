@@ -37,6 +37,7 @@ export const championsTable = pgTable("champions", {
   questCompleteAudioVolume: integer("quest_complete_audio_volume").notNull().default(100),
   questCompleteAudioEnabled: boolean("quest_complete_audio_enabled").notNull().default(false),
   status: text("status").notNull().default("DRAFT"),
+  isStarterGrant: boolean("is_starter_grant").notNull().default(false),
   version: integer("version").notNull().default(1),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),

@@ -1,10 +1,12 @@
-import { and, asc, eq, inArray } from "drizzle-orm";
+import { and, asc, eq, inArray, sql } from "drizzle-orm";
 import { Router, type IRouter, type Request, type Response } from "express";
 import {
   cardsTable,
   championsTable,
   db,
   decksTable,
+  userCardCollectionsTable,
+  userChampionCollectionsTable,
   type CardRecord,
   type ChampionRecord,
   type DeckRecord,
@@ -72,7 +74,7 @@ async function loadUserDeck(userId: string, deckId: string): Promise<DeckRecord 
   return deck ?? null;
 }
 
-async function resolveDeck(deck: DeckRecord): Promise<ResolvedDeck> {
+async function resolveDeck(deck: DeckRecord, userId: string): Promise<ResolvedDeck> {
   const [champion] = deck.championDefinitionId
     ? await db
         .select()
@@ -89,6 +91,19 @@ async function resolveDeck(deck: DeckRecord): Promise<ResolvedDeck> {
         .where(inArray(cardsTable.id, uniqueCardIds))
     : [];
   const cardById = new Map(cards.map((card) => [card.id, card]));
+  const [ownedCardRows, ownedChampionRows] = await Promise.all([
+    uniqueCardIds.length
+      ? db.select({ id: userCardCollectionsTable.cardDefinitionId })
+        .from(userCardCollectionsTable)
+        .where(and(eq(userCardCollectionsTable.userId, userId), inArray(userCardCollectionsTable.cardDefinitionId, uniqueCardIds), sql`${userCardCollectionsTable.quantity} > 0`))
+      : [],
+    champion
+      ? db.select({ id: userChampionCollectionsTable.championDefinitionId })
+        .from(userChampionCollectionsTable)
+        .where(and(eq(userChampionCollectionsTable.userId, userId), eq(userChampionCollectionsTable.championDefinitionId, champion.id), eq(userChampionCollectionsTable.owned, true)))
+      : [],
+  ]);
+  const ownedCardIds = new Set(ownedCardRows.map((row) => row.id));
   const missingCardDefinitionIds = uniqueCardIds.filter((id) => !cardById.has(id));
   const invalidReasons: string[] = [];
 
@@ -96,6 +111,8 @@ async function resolveDeck(deck: DeckRecord): Promise<ResolvedDeck> {
     invalidReasons.push("사용할 수 없는 Champion이 포함되어 있습니다.");
   } else if (champion.status !== "PUBLISHED") {
     invalidReasons.push("사용할 수 없는 Champion이 포함되어 있습니다.");
+  } else if (ownedChampionRows.length === 0) {
+    invalidReasons.push("소유하지 않은 Champion이 포함되어 있습니다.");
   }
   if (deck.cardDefinitionIds.length < MIN_DECK_SIZE) {
     invalidReasons.push(`카드가 ${MIN_DECK_SIZE}장보다 적습니다.`);
@@ -115,6 +132,9 @@ async function resolveDeck(deck: DeckRecord): Promise<ResolvedDeck> {
     invalidReasons.push("사용할 수 없는 카드가 포함되어 있습니다.");
   }
   invalidReasons.push(...getCardRuleReasons(deck.cardDefinitionIds, cardById));
+  if (uniqueCardIds.some((id) => !ownedCardIds.has(id))) {
+    invalidReasons.push("소유하지 않은 카드가 포함되어 있습니다.");
+  }
 
   const orderedCards = deck.cardDefinitionIds
     .map((id) => cardById.get(id))
@@ -166,7 +186,7 @@ async function parseDeckPayload(value: unknown): Promise<
   };
 }
 
-async function validateReferences(payload: DeckPayload): Promise<string | null> {
+async function validateReferences(payload: DeckPayload, userId: string): Promise<string | null> {
   if (payload.championDefinitionId) {
     const [champion] = await db
       .select({ id: championsTable.id, status: championsTable.status })
@@ -176,6 +196,10 @@ async function validateReferences(payload: DeckPayload): Promise<string | null> 
     if (!champion || champion.status !== "PUBLISHED") {
       return "PUBLISHED 상태의 Champion만 선택할 수 있습니다.";
     }
+    const [ownedChampion] = await db.select({ id: userChampionCollectionsTable.championDefinitionId })
+      .from(userChampionCollectionsTable)
+      .where(and(eq(userChampionCollectionsTable.userId, userId), eq(userChampionCollectionsTable.championDefinitionId, champion.id), eq(userChampionCollectionsTable.owned, true)));
+    if (!ownedChampion) return "소유한 Champion만 선택할 수 있습니다.";
   }
   const uniqueCardIds = [...new Set(payload.cardDefinitionIds)];
   if (uniqueCardIds.length === 0) return null;
@@ -201,6 +225,10 @@ async function validateReferences(payload: DeckPayload): Promise<string | null> 
   ) {
     return "PUBLISHED 일반 카드만 덱에 넣을 수 있습니다.";
   }
+  const ownedCards = await db.select({ id: userCardCollectionsTable.cardDefinitionId })
+    .from(userCardCollectionsTable)
+    .where(and(eq(userCardCollectionsTable.userId, userId), inArray(userCardCollectionsTable.cardDefinitionId, uniqueCardIds), sql`${userCardCollectionsTable.quantity} > 0`));
+  if (ownedCards.length !== uniqueCardIds.length) return "소유한 카드만 덱에 넣을 수 있습니다.";
   const cardById = new Map(cards.map((card) => [card.id, card]));
   const ruleReasons = getCardRuleReasons(payload.cardDefinitionIds, cardById);
   if (ruleReasons.length > 0) return ruleReasons.join(" ");
@@ -230,7 +258,7 @@ router.get("/", async (request, response): Promise<void> => {
     .where(eq(decksTable.userId, user.id))
     .orderBy(asc(decksTable.createdAt));
   response.setHeader("Cache-Control", "no-store");
-  response.json({ decks: await Promise.all(decks.map(resolveDeck)) });
+  response.json({ decks: await Promise.all(decks.map((deck) => resolveDeck(deck, user.id))) });
 });
 
 router.get("/options", async (request, response): Promise<void> => {
@@ -252,8 +280,24 @@ router.get("/options", async (request, response): Promise<void> => {
       .where(eq(championsTable.status, "PUBLISHED"))
       .orderBy(asc(championsTable.name)),
   ]);
+  const [ownedCards, ownedChampions] = await Promise.all([
+    db.select({ id: userCardCollectionsTable.cardDefinitionId, quantity: userCardCollectionsTable.quantity })
+      .from(userCardCollectionsTable)
+      .where(and(eq(userCardCollectionsTable.userId, user.id), sql`${userCardCollectionsTable.quantity} > 0`)),
+    db.select({ id: userChampionCollectionsTable.championDefinitionId })
+      .from(userChampionCollectionsTable)
+      .where(and(eq(userChampionCollectionsTable.userId, user.id), eq(userChampionCollectionsTable.owned, true))),
+  ]);
+  const ownedCardIds = new Set(ownedCards.map((card) => card.id));
+  const ownedChampionIds = new Set(ownedChampions.map((champion) => champion.id));
   response.setHeader("Cache-Control", "no-store");
-  response.json({ cards, champions });
+  response.json({
+    cards: cards.filter((card) => ownedCardIds.has(card.id)).map((card) => ({
+      ...card,
+      quantity: ownedCards.find((owned) => owned.id === card.id)?.quantity ?? 0,
+    })),
+    champions: champions.filter((champion) => ownedChampionIds.has(champion.id)),
+  });
 });
 
 router.post("/", async (request, response): Promise<void> => {
@@ -264,7 +308,7 @@ router.post("/", async (request, response): Promise<void> => {
     response.status(400).json({ message: parsed.message });
     return;
   }
-  const referenceError = await validateReferences(parsed.payload);
+  const referenceError = await validateReferences(parsed.payload, user.id);
   if (referenceError) {
     response.status(400).json({ message: referenceError });
     return;
@@ -277,7 +321,7 @@ router.post("/", async (request, response): Promise<void> => {
       ...parsed.payload,
     })
     .returning();
-  response.status(201).json({ deck: deck ? await resolveDeck(deck) : null });
+  response.status(201).json({ deck: deck ? await resolveDeck(deck, user.id) : null });
 });
 
 router.patch("/:id", async (request, response): Promise<void> => {
@@ -293,7 +337,7 @@ router.patch("/:id", async (request, response): Promise<void> => {
     response.status(400).json({ message: parsed.message });
     return;
   }
-  const referenceError = await validateReferences(parsed.payload);
+  const referenceError = await validateReferences(parsed.payload, user.id);
   if (referenceError) {
     response.status(400).json({ message: referenceError });
     return;
@@ -303,7 +347,7 @@ router.patch("/:id", async (request, response): Promise<void> => {
     .set({ ...parsed.payload, updatedAt: new Date() })
     .where(and(eq(decksTable.id, existing.id), eq(decksTable.userId, user.id)))
     .returning();
-  response.json({ deck: deck ? await resolveDeck(deck) : null });
+  response.json({ deck: deck ? await resolveDeck(deck, user.id) : null });
 });
 
 router.post("/:id/select", async (request, response): Promise<void> => {
@@ -314,7 +358,7 @@ router.post("/:id/select", async (request, response): Promise<void> => {
     response.status(404).json({ message: "덱을 찾을 수 없습니다." });
     return;
   }
-  const resolved = await resolveDeck(existing);
+  const resolved = await resolveDeck(existing, user.id);
   if (!resolved.isValid) {
     response.status(400).json({ message: "미완성 또는 사용할 수 없는 덱은 대표 덱으로 설정할 수 없습니다." });
     return;
@@ -334,7 +378,7 @@ router.post("/:id/select", async (request, response): Promise<void> => {
     .from(decksTable)
     .where(eq(decksTable.id, existing.id))
     .limit(1);
-  response.json({ deck: deck ? await resolveDeck(deck) : null });
+  response.json({ deck: deck ? await resolveDeck(deck, user.id) : null });
 });
 
 router.delete("/:id", async (request, response): Promise<void> => {
