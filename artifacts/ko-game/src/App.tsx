@@ -8,6 +8,7 @@ import Admin from '@/pages/admin';
 import Home from '@/pages/home';
 import Decks from '@/pages/decks';
 import Collection from '@/pages/collection';
+import Packs from '@/pages/packs';
 import {
   Route,
   Switch,
@@ -25,6 +26,7 @@ function Router() {
         <Route path="/admin/packs" component={Admin} />
         <Route path="/decks" component={Decks} />
         <Route path="/collection" component={Collection} />
+        <Route path="/packs" component={Packs} />
         <Route path="/" component={Home} />
         <Route component={NotFound} />
       </Switch>

@@ -1,4 +1,4 @@
-import { Bot, Globe2, Layers3, LogOut, ShoppingBag, Library } from "lucide-react";
+import { Bot, Globe2, Gift, Layers3, LogOut, ShoppingBag, Library } from "lucide-react";
 import { useState } from "react";
 import type { AuthUser } from "@/lib/auth-client";
 
@@ -35,6 +35,11 @@ const menuItems = [
     description: "카드팩을 열고 보유 카드를 확인합니다",
     icon: Library,
   },
+  {
+    label: "내 팩",
+    description: "보유한 팩을 열어 보상을 확인합니다",
+    icon: Gift,
+  },
 ] as const;
 
 export function MainMenu({ onComingSoon, onDeckEdit, user, onLogout }: MainMenuProps) {
@@ -67,8 +72,8 @@ export function MainMenu({ onComingSoon, onDeckEdit, user, onLogout }: MainMenuP
                   onDeckEdit?.();
                   return;
                 }
-                if (label === "수집품") {
-                  window.location.href = `${import.meta.env.BASE_URL.replace(/\/$/, "")}/collection`;
+                if (label === "내 팩") {
+                  window.location.href = `${import.meta.env.BASE_URL.replace(/\/$/, "")}/packs`;
                   return;
                 }
                 setNotice(`${label}은 준비 중입니다.`);

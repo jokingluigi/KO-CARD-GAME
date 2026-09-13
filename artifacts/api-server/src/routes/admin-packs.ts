@@ -1,7 +1,14 @@
 import { and, asc, eq, inArray, sql } from "drizzle-orm";
 import { randomUUID } from "node:crypto";
 import { Router, type IRouter, type Request, type Response } from "express";
-import { cardsTable, championsTable, db, packDefinitionsTable } from "@workspace/db";
+import {
+  cardsTable,
+  championsTable,
+  db,
+  packDefinitionsTable,
+  userPackInventoryTable,
+  usersTable,
+} from "@workspace/db";
 import { getAuthenticatedUser } from "../lib/auth";
 import { rollPack } from "./collection";
 
@@ -111,7 +118,45 @@ router.get("/options", async (request, response): Promise<void> => {
     )).orderBy(asc(cardsTable.name)),
     db.select().from(championsTable).where(eq(championsTable.status, "PUBLISHED")).orderBy(asc(championsTable.name)),
   ]);
-  response.json({ cards, champions });
+  const users = await db.select({
+    id: usersTable.id,
+    email: usersTable.email,
+    nickname: usersTable.nickname,
+    role: usersTable.role,
+  }).from(usersTable).orderBy(asc(usersTable.nickname));
+  response.json({ cards, champions, users });
+});
+
+router.post("/:id/grant", async (request, response): Promise<void> => {
+  if (!requireAdmin(request, response)) return;
+  const userId = request.body && typeof request.body.userId === "string" ? request.body.userId : "";
+  const quantity = request.body && Number.isInteger(request.body.quantity) ? request.body.quantity : 0;
+  if (!userId || quantity < 1 || quantity > 999) {
+    response.status(400).json({ message: "사용자와 1~999 사이의 지급 수량을 확인해 주세요." });
+    return;
+  }
+  const [[pack], [user]] = await Promise.all([
+    db.select({ id: packDefinitionsTable.id, name: packDefinitionsTable.name })
+      .from(packDefinitionsTable)
+      .where(and(eq(packDefinitionsTable.id, request.params.id), sql`${packDefinitionsTable.deletedAt} IS NULL`))
+      .limit(1),
+    db.select({ id: usersTable.id }).from(usersTable).where(eq(usersTable.id, userId)).limit(1),
+  ]);
+  if (!pack) { response.status(404).json({ message: "팩을 찾을 수 없습니다." }); return; }
+  if (!user) { response.status(404).json({ message: "사용자를 찾을 수 없습니다." }); return; }
+  const [inventory] = await db.insert(userPackInventoryTable).values({
+    userId,
+    packDefinitionId: pack.id,
+    quantity,
+    updatedAt: new Date(),
+  }).onConflictDoUpdate({
+    target: [userPackInventoryTable.userId, userPackInventoryTable.packDefinitionId],
+    set: {
+      quantity: sql`${userPackInventoryTable.quantity} + ${quantity}`,
+      updatedAt: new Date(),
+    },
+  }).returning();
+  response.status(201).json({ inventory, pack });
 });
 
 router.post("/", async (request, response): Promise<void> => {

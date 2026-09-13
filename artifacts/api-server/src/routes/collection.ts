@@ -62,13 +62,6 @@ router.get("/", async (request, response): Promise<void> => {
   });
 });
 
-router.get("/packs", async (_request, response): Promise<void> => {
-  const packs = await db.select().from(packDefinitionsTable)
-    .where(and(eq(packDefinitionsTable.status, "PUBLISHED"), sql`${packDefinitionsTable.deletedAt} IS NULL`))
-    .orderBy(asc(packDefinitionsTable.name));
-  response.json({ packs });
-});
-
 type Reward =
   | { rewardType: "NORMAL_CARD"; cardDefinitionId: string; card: typeof cardsTable.$inferSelect }
   | { rewardType: "LEGENDARY_CARD"; cardDefinitionId: string; card: typeof cardsTable.$inferSelect }
@@ -120,54 +113,6 @@ async function rollPack(pack: typeof packDefinitionsTable.$inferSelect): Promise
   }
   return rewards;
 }
-
-router.post("/packs/:id/open", async (request, response): Promise<void> => {
-  const user = requireUser(request, response);
-  if (!user) return;
-  const [pack] = await db.select().from(packDefinitionsTable)
-    .where(and(eq(packDefinitionsTable.id, request.params.id), eq(packDefinitionsTable.status, "PUBLISHED"), sql`${packDefinitionsTable.deletedAt} IS NULL`))
-    .limit(1);
-  if (!pack) {
-    response.status(404).json({ message: "공개된 팩을 찾을 수 없습니다." });
-    return;
-  }
-  try {
-    const rewards = await rollPack(pack);
-    await db.transaction(async (tx) => {
-      for (const reward of rewards) {
-        if (reward.rewardType === "CHAMPION_UNLOCK") {
-          await tx.insert(userChampionCollectionsTable).values({
-            userId: user.id,
-            championDefinitionId: reward.championDefinitionId,
-            owned: true,
-          }).onConflictDoUpdate({
-            target: [userChampionCollectionsTable.userId, userChampionCollectionsTable.championDefinitionId],
-            set: { owned: true },
-          });
-        } else {
-          await tx.insert(userCardCollectionsTable).values({
-            userId: user.id,
-            cardDefinitionId: reward.cardDefinitionId,
-            quantity: 1,
-          }).onConflictDoUpdate({
-            target: [userCardCollectionsTable.userId, userCardCollectionsTable.cardDefinitionId],
-            set: {
-              quantity: sql`${userCardCollectionsTable.quantity} + 1`,
-              obtainedAt: new Date(),
-            },
-          });
-        }
-      }
-    });
-    response.json({
-      rewards: rewards.map((reward) => reward.rewardType === "CHAMPION_UNLOCK"
-        ? { rewardType: reward.rewardType, championDefinitionId: reward.championDefinitionId, champion: reward.champion }
-        : { rewardType: reward.rewardType, cardDefinitionId: reward.cardDefinitionId, card: reward.card }),
-    });
-  } catch (error) {
-    response.status(422).json({ message: error instanceof Error ? error.message : "현재 이 팩은 개봉할 수 없습니다." });
-  }
-});
 
 export { rollPack };
 export default router;

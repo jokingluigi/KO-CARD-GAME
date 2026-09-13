@@ -23,7 +23,7 @@ export type Collection = { cards: CollectionCard[]; champions: CollectionChampio
 export type Pack = {
   id: string; name: string; description: string; cardsPerPack: number;
   normalRate: number; legendaryRate: number; championRate: number;
-  imageUrl: string | null;
+  imageUrl: string | null; quantity: number;
 };
 const base = `${import.meta.env.BASE_URL.replace(/\/$/, "")}/api`;
 async function request<T>(path: string, init?: RequestInit): Promise<T> {
@@ -36,4 +36,12 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
 }
 export const fetchCollection = () => request<Collection>("/collection");
 export const fetchPacks = () => request<{ packs: Pack[] }>("/packs");
-export const openPack = (id: string) => request<{ rewards: Array<Record<string, unknown>> }>(`/packs/${encodeURIComponent(id)}/open`, { method: "POST" });
+export type PackReward = {
+  rewardType: "NORMAL_CARD" | "LEGENDARY_CARD" | "CHAMPION_UNLOCK";
+  cardDefinitionId?: string;
+  championDefinitionId?: string;
+  card?: CollectionCard;
+  champion?: CollectionChampion;
+  alreadyOwned?: boolean;
+};
+export const openPack = (id: string) => request<{ rewards: PackReward[] }>(`/packs/${encodeURIComponent(id)}/open`, { method: "POST" });

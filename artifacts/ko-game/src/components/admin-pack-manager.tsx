@@ -2,9 +2,10 @@ import { useEffect, useState } from "react";
 import { Copy, Package, Plus, RotateCcw, Save, Trash2 } from "lucide-react";
 
 const base = `${import.meta.env.BASE_URL.replace(/\/$/, "")}/api/admin/packs`;
-type Pack = { id: string; name: string; description: string; cardsPerPack: number; normalRate: number; legendaryRate: number; championRate: number; normalCardPool: string[]; legendaryCardPool: string[]; championPool: string[]; status: string; };
+type Pack = { id: string; name: string; description: string; imageUrl: string | null; cardsPerPack: number; normalRate: number; legendaryRate: number; championRate: number; normalCardPool: string[]; legendaryCardPool: string[]; championPool: string[]; status: string; };
 type Option = { id: string; name: string; rarity?: string };
-const blank: Omit<Pack, "id" | "status"> = { name: "", description: "", cardsPerPack: 1, normalRate: 90, legendaryRate: 7, championRate: 3, normalCardPool: [], legendaryCardPool: [], championPool: [] };
+type UserOption = { id: string; email: string; nickname: string; role: string };
+const blank: Omit<Pack, "id" | "status"> = { name: "", description: "", imageUrl: null, cardsPerPack: 1, normalRate: 90, legendaryRate: 7, championRate: 3, normalCardPool: [], legendaryCardPool: [], championPool: [] };
 async function api<T>(path = "", init?: RequestInit): Promise<T> {
   const response = await fetch(`${base}${path}`, { ...init, credentials: "include", headers: { "Content-Type": "application/json", ...init?.headers } });
   const body = await response.json().catch(() => ({}));
@@ -15,20 +16,23 @@ export function AdminPackManager({ onUnauthorized }: { onUnauthorized: () => voi
   const [packs, setPacks] = useState<Pack[]>([]);
   const [cards, setCards] = useState<Option[]>([]);
   const [champions, setChampions] = useState<Option[]>([]);
+  const [users, setUsers] = useState<UserOption[]>([]);
+  const [grantUserId, setGrantUserId] = useState("");
+  const [grantQuantity, setGrantQuantity] = useState(1);
   const [selected, setSelected] = useState<Pack | null>(null);
   const [form, setForm] = useState(blank);
   const [status, setStatus] = useState("");
   async function load() {
     try {
-      const [list, options] = await Promise.all([api<{ packs: Pack[] }>(), api<{ cards: Option[]; champions: Option[] }>("/options")]);
-      setPacks(list.packs); setCards(options.cards); setChampions(options.champions);
+      const [list, options] = await Promise.all([api<{ packs: Pack[] }>(), api<{ cards: Option[]; champions: Option[]; users: UserOption[] }>("/options")]);
+      setPacks(list.packs); setCards(options.cards); setChampions(options.champions); setUsers(options.users);
     } catch (error) {
       if (error instanceof Error && error.message.includes("권한")) onUnauthorized();
       setStatus(error instanceof Error ? error.message : "불러오지 못했습니다.");
     }
   }
   useEffect(() => { void load(); }, []);
-  function edit(pack: Pack) { setSelected(pack); setForm({ name: pack.name, description: pack.description, cardsPerPack: pack.cardsPerPack, normalRate: pack.normalRate, legendaryRate: pack.legendaryRate, championRate: pack.championRate, normalCardPool: pack.normalCardPool, legendaryCardPool: pack.legendaryCardPool, championPool: pack.championPool }); }
+  function edit(pack: Pack) { setSelected(pack); setForm({ name: pack.name, description: pack.description, imageUrl: pack.imageUrl, cardsPerPack: pack.cardsPerPack, normalRate: pack.normalRate, legendaryRate: pack.legendaryRate, championRate: pack.championRate, normalCardPool: pack.normalCardPool, legendaryCardPool: pack.legendaryCardPool, championPool: pack.championPool }); }
   async function save() {
     try {
       const result = await api<{ pack: Pack; validationErrors: string[] }>(selected ? `/${selected.id}` : "", { method: selected ? "PATCH" : "POST", body: JSON.stringify(form) });
@@ -36,6 +40,10 @@ export function AdminPackManager({ onUnauthorized }: { onUnauthorized: () => voi
     } catch (error) { setStatus(error instanceof Error ? error.message : "저장하지 못했습니다."); }
   }
   async function action(path: string, init?: RequestInit) { try { await api(path, init); setStatus("처리했습니다."); await load(); } catch (error) { setStatus(error instanceof Error ? error.message : "처리하지 못했습니다."); } }
+  async function grantPack() {
+    if (!selected || !grantUserId) { setStatus("팩과 사용자를 선택해 주세요."); return; }
+    await action(`/${selected.id}/grant`, { method: "POST", body: JSON.stringify({ userId: grantUserId, quantity: grantQuantity }) });
+  }
   const toggle = (key: "normalCardPool" | "legendaryCardPool" | "championPool", id: string) => setForm((current) => ({ ...current, [key]: current[key].includes(id) ? current[key].filter((value) => value !== id) : [...current[key], id] }));
   return <section className="grid gap-5 lg:grid-cols-[260px_1fr]">
     <div className="rounded-xl border border-neutral-800 bg-black/30 p-4">
@@ -44,6 +52,7 @@ export function AdminPackManager({ onUnauthorized }: { onUnauthorized: () => voi
     </div>
     <div className="rounded-xl border border-neutral-800 bg-black/30 p-5">
       <div className="mb-5 flex items-center gap-3"><Package className="h-5 w-5 text-primary" /><div><h2 className="font-black">{selected ? "팩 수정" : "새 팩"}</h2><p className="text-xs text-neutral-500">확률 합계와 유효 Pool이 맞아야 PUBLISH할 수 있습니다.</p></div></div>
+      {selected && <section className="mb-5 rounded-lg border border-amber-800/60 bg-amber-950/20 p-4"><h3 className="text-sm font-black text-amber-200">유저에게 팩 지급</h3><div className="mt-3 grid gap-2 sm:grid-cols-[1fr_120px_auto]"><select value={grantUserId} onChange={(event) => setGrantUserId(event.target.value)} className="rounded border border-neutral-700 bg-neutral-900 px-3 py-2 text-sm"><option value="">사용자 선택</option>{users.map((user) => <option key={user.id} value={user.id}>{user.nickname} · {user.email}</option>)}</select><input type="number" min="1" max="999" value={grantQuantity} onChange={(event) => setGrantQuantity(Math.max(1, Number(event.target.value)))} className="rounded border border-neutral-700 bg-neutral-900 px-3 py-2 text-sm" /><button type="button" onClick={() => void grantPack()} className="rounded bg-amber-400 px-4 py-2 text-sm font-black text-black">지급</button></div></section>}
       <div className="grid gap-3 sm:grid-cols-2"><label className="text-sm font-bold">이름<input value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} className="mt-1 w-full rounded border border-neutral-700 bg-neutral-900 px-3 py-2" /></label><label className="text-sm font-bold">팩당 카드 수<input type="number" min="1" value={form.cardsPerPack} onChange={(e) => setForm({ ...form, cardsPerPack: Number(e.target.value) })} className="mt-1 w-full rounded border border-neutral-700 bg-neutral-900 px-3 py-2" /></label><label className="text-sm font-bold sm:col-span-2">설명<textarea value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} className="mt-1 min-h-20 w-full rounded border border-neutral-700 bg-neutral-900 px-3 py-2" /></label></div>
       <div className="mt-4 grid grid-cols-3 gap-3">{(["normalRate", "legendaryRate", "championRate"] as const).map((key) => <label key={key} className="text-xs font-bold text-neutral-400">{key.replace("Rate", " 확률")}<input type="number" min="0" max="100" value={form[key]} onChange={(e) => setForm({ ...form, [key]: Number(e.target.value) })} className="mt-1 w-full rounded border border-neutral-700 bg-neutral-900 px-3 py-2 text-white" /></label>)}</div>
       <Pool title="NORMAL 카드 Pool" options={cards.filter((card) => card.rarity !== "LEGENDARY")} selected={form.normalCardPool} onToggle={(id) => toggle("normalCardPool", id)} />
