@@ -93,7 +93,7 @@ async function resolveDeck(deck: DeckRecord, userId: string): Promise<ResolvedDe
   const cardById = new Map(cards.map((card) => [card.id, card]));
   const [ownedCardRows, ownedChampionRows] = await Promise.all([
     uniqueCardIds.length
-      ? db.select({ id: userCardCollectionsTable.cardDefinitionId })
+      ? db.select({ id: userCardCollectionsTable.cardDefinitionId, quantity: userCardCollectionsTable.quantity })
         .from(userCardCollectionsTable)
         .where(and(eq(userCardCollectionsTable.userId, userId), inArray(userCardCollectionsTable.cardDefinitionId, uniqueCardIds), sql`${userCardCollectionsTable.quantity} > 0`))
       : [],
@@ -104,6 +104,7 @@ async function resolveDeck(deck: DeckRecord, userId: string): Promise<ResolvedDe
       : [],
   ]);
   const ownedCardIds = new Set(ownedCardRows.map((row) => row.id));
+  const ownedCardQuantities = new Map(ownedCardRows.map((row) => [row.id, row.quantity]));
   const missingCardDefinitionIds = uniqueCardIds.filter((id) => !cardById.has(id));
   const invalidReasons: string[] = [];
 
@@ -134,6 +135,11 @@ async function resolveDeck(deck: DeckRecord, userId: string): Promise<ResolvedDe
   invalidReasons.push(...getCardRuleReasons(deck.cardDefinitionIds, cardById));
   if (uniqueCardIds.some((id) => !ownedCardIds.has(id))) {
     invalidReasons.push("소유하지 않은 카드가 포함되어 있습니다.");
+  }
+  const cardCopies = new Map<string, number>();
+  deck.cardDefinitionIds.forEach((id) => cardCopies.set(id, (cardCopies.get(id) ?? 0) + 1));
+  if ([...cardCopies].some(([id, count]) => (ownedCardQuantities.get(id) ?? 0) < count)) {
+    invalidReasons.push("현재 보유 수량보다 많은 카드가 덱에 포함되어 있습니다.");
   }
 
   const orderedCards = deck.cardDefinitionIds

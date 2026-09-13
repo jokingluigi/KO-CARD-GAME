@@ -4,6 +4,7 @@ export type AuthUser = {
   nickname: string;
   role: "USER" | "ADMIN";
   currency: number;
+  prismBalance: number;
 };
 
 export type AuthResponse = {

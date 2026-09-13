@@ -31,3 +31,4 @@
 - [KO deck definition boundary](deck-definition-boundary.md) — decks keep owned Definition IDs and resolve current published status at read/select time.
 - [Collection and pack boundary](collection-pack-boundary.md) — ownership controls deck eligibility, and Champion unlocks remain distinct from Champion-rarity cards.
 - [Shop economy boundary](shop-economy-boundary.md) — purchases atomically change server currency and pack inventory, with a ledger entry for balance history.
+- [Prism economy boundary](prism-economy-boundary.md) — crafting/disenchanting uses persisted rarity settings, atomic signed ledger entries, and no fallback when settings are missing.

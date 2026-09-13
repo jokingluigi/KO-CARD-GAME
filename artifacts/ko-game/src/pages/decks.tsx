@@ -502,7 +502,7 @@ export default function Decks() {
                         {deck.champion?.name ?? "CHAMPION 없음"} · {deck.cardDefinitionIds.length} CARDS
                       </span>
                       <span className={`ko-decks__deck-item-status ${deck.isValid ? "ko-decks__deck-item-status--valid" : ""}`}>
-                        {deck.isValid ? "VALID" : "미완성"}
+                         {deck.isValid ? "VALID" : "INVALID"}
                       </span>
                     </span>
                     {deck.isSelected && <Check className="h-4 w-4 shrink-0 text-[#e7b642]" aria-label="대표 덱" />}

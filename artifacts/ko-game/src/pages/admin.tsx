@@ -1,11 +1,12 @@
 import { useEffect, useState } from "react";
-import { Gamepad2, Image, LogOut, Music2, Package, ShieldCheck, ShoppingBag, Spade } from "lucide-react";
+import { Gamepad2, Image, LogOut, Music2, Package, ShieldCheck, ShoppingBag, Sparkles, Spade } from "lucide-react";
 import { useLocation } from "wouter";
 import { AdminCardManager } from "@/components/admin-card-manager";
 import { AdminChampionManager } from "@/components/admin-champion-manager";
 import { AdminGameMediaManager } from "@/components/admin-game-media-manager";
 import { AdminPackManager } from "@/components/admin-pack-manager";
 import { AdminShopManager } from "@/components/admin-shop-manager";
+import { AdminPrismManager } from "@/components/admin-prism-manager";
 import { fetchCurrentUser, logout } from "@/lib/auth-client";
 
 type AdminStatus = "checking" | "forbidden" | "authenticated";
@@ -13,8 +14,8 @@ type AdminStatus = "checking" | "forbidden" | "authenticated";
 export default function Admin() {
   const [location] = useLocation();
   const [status, setStatus] = useState<AdminStatus>("checking");
-  const [section, setSection] = useState<"cards" | "champions" | "packs" | "shop" | "media" | "test">(
-    location.endsWith("/packs") ? "packs" : location.endsWith("/shop") ? "shop" : "cards",
+  const [section, setSection] = useState<"cards" | "champions" | "packs" | "shop" | "prism" | "media" | "test">(
+    location.endsWith("/packs") ? "packs" : location.endsWith("/shop") ? "shop" : location.endsWith("/prism") ? "prism" : "cards",
   );
 
   useEffect(() => {
@@ -149,6 +150,14 @@ export default function Admin() {
             <ShoppingBag className="h-4 w-4" />
             상점 관리
           </button>
+          <button
+            type="button"
+            onClick={() => setSection("prism")}
+            className={`mt-2 flex w-full items-center gap-3 rounded border px-3 py-3 text-left text-sm font-black ${section === "prism" ? "border-primary/60 bg-primary/10 text-primary" : "border-transparent text-neutral-400"}`}
+          >
+            <Sparkles className="h-4 w-4" />
+            카드 제작 설정
+          </button>
         </nav>
 
         <section className="min-w-0 flex-1">
@@ -162,6 +171,8 @@ export default function Admin() {
                  ? <AdminGameMediaManager onUnauthorized={() => setStatus("forbidden")} />
                   : section === "shop"
                     ? <AdminShopManager onUnauthorized={() => setStatus("forbidden")} />
+                     : section === "prism"
+                       ? <AdminPrismManager onUnauthorized={() => setStatus("forbidden")} />
                  : (
                    <section className="rounded-xl border border-neutral-800 bg-black/40 p-5 sm:p-8">
                      <div className="mb-6 flex items-start gap-4">

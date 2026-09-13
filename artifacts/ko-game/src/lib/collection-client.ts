@@ -15,6 +15,13 @@ export type CollectionCard = {
   quantity: number;
   status: string;
 };
+export type PrismRarity = "NORMAL" | "LEGENDARY";
+export type PrismSetting = {
+  rarity: PrismRarity;
+  craftCost: number | null;
+  disenchantReward: number | null;
+  configured: boolean;
+};
 export type CollectionChampion = {
   id: string;
   name: string;
@@ -34,7 +41,13 @@ export type CollectionChampion = {
   upgradedAbilityText: string | null;
   status: string;
 };
-export type Collection = { cards: CollectionCard[]; champions: CollectionChampion[] };
+export type Collection = {
+  cards: CollectionCard[];
+  craftableCards: CollectionCard[];
+  champions: CollectionChampion[];
+  prismBalance: number;
+  prismSettings: PrismSetting[];
+};
 export type Pack = {
   id: string; name: string; description: string; cardsPerPack: number;
   normalRate: number; legendaryRate: number; championRate: number;
@@ -50,6 +63,16 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
   return response.status === 204 ? undefined as T : await response.json() as T;
 }
 export const fetchCollection = () => request<Collection>("/collection");
+export const craftCard = (cardDefinitionId: string) => request<{
+  prismBalance: number;
+  quantity: number;
+  card: CollectionCard;
+}>(`/prism/craft/${encodeURIComponent(cardDefinitionId)}`, { method: "POST" });
+export const disenchantCard = (cardDefinitionId: string) => request<{
+  prismBalance: number;
+  quantity: number;
+  card: CollectionCard;
+}>(`/prism/disenchant/${encodeURIComponent(cardDefinitionId)}`, { method: "POST" });
 export const fetchPacks = () => request<{ packs: Pack[] }>("/packs");
 export type PackReward = {
   rewardType: "NORMAL_CARD" | "LEGENDARY_CARD" | "CHAMPION_UNLOCK";

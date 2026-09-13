@@ -80,7 +80,7 @@ router.post("/register", async (request, response) => {
     await ensureStarterCollection(user.id);
     await createAuthSession(user.id, response);
     response.status(201).json({ authenticated: true, user: {
-      id: user.id, email: user.email, nickname: user.nickname, role: user.role, currency: user.currency,
+      id: user.id, email: user.email, nickname: user.nickname, role: user.role, currency: user.currency, prismBalance: user.prismBalance,
     } });
   } catch (error) {
     if ((error as { code?: string }).code === "23505") {
@@ -117,7 +117,7 @@ router.post("/login", async (request, response) => {
   await ensureStarterCollection(user.id);
   await createAuthSession(user.id, response);
   response.json({ authenticated: true, user: {
-    id: user.id, email: user.email, nickname: user.nickname, role: user.role, currency: user.currency,
+    id: user.id, email: user.email, nickname: user.nickname, role: user.role, currency: user.currency, prismBalance: user.prismBalance,
   } });
 });
 

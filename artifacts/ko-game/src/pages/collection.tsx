@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState, type KeyboardEvent } from "react";
-import { ArrowLeft, BookOpen, ChevronDown, Search, Shield, Swords, X } from "lucide-react";
+import { ArrowLeft, BookOpen, ChevronDown, Hammer, Search, Shield, Sparkles, Swords, X } from "lucide-react";
 import { CardRenderer } from "@/components/card-renderer";
 import {
   Dialog,
@@ -8,9 +8,9 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { fetchCollection, type Collection, type CollectionCard, type CollectionChampion } from "@/lib/collection-client";
+import { craftCard, disenchantCard, fetchCollection, type Collection, type CollectionCard, type CollectionChampion, type PrismSetting } from "@/lib/collection-client";
 
-type CollectionTab = "cards" | "champions";
+type CollectionTab = "cards" | "crafting" | "champions";
 type CardTypeFilter = "ALL" | "WRESTLER" | "TECHNIQUE";
 type RarityFilter = "ALL" | "NORMAL" | "LEGENDARY";
 type CardSort = "COST" | "NAME" | "RARITY";
@@ -21,7 +21,7 @@ function rarityLabel(rarity: string) {
   return rarity === "LEGENDARY" ? "LEGENDARY" : "NORMAL";
 }
 
-function CardCollectionItem({ card, onOpen }: { card: CollectionCard; onOpen: () => void }) {
+function CardCollectionItem({ card, onOpen, showCraftable = false }: { card: CollectionCard; onOpen: () => void; showCraftable?: boolean }) {
   function handleKeyDown(event: KeyboardEvent<HTMLDivElement>) {
     if (event.key === "Enter" || event.key === " ") {
       event.preventDefault();
@@ -57,7 +57,7 @@ function CardCollectionItem({ card, onOpen }: { card: CollectionCard; onOpen: ()
           className="w-full"
         />
         <span className="absolute right-1 top-1 z-30 rounded-full border border-amber-300/50 bg-black/80 px-2 py-1 text-xs font-black text-amber-200">
-          ×{card.quantity}
+           {showCraftable && card.quantity === 0 ? "제작 가능" : `×${card.quantity}`}
         </span>
       </div>
       <div className="flex items-center justify-between gap-2 px-1 pb-1 pt-2">
@@ -101,6 +101,8 @@ export default function CollectionPage() {
   const [sort, setSort] = useState<CardSort>("COST");
   const [selectedCard, setSelectedCard] = useState<CollectionCard | null>(null);
   const [selectedChampion, setSelectedChampion] = useState<CollectionChampion | null>(null);
+  const [pendingAction, setPendingAction] = useState<{ type: "CRAFT" | "DISENCHANT"; card: CollectionCard } | null>(null);
+  const [isMutating, setIsMutating] = useState(false);
   const [message, setMessage] = useState("컬렉션을 불러오는 중...");
 
   useEffect(() => {
@@ -140,7 +142,49 @@ export default function CollectionPage() {
       });
   }, [cardType, collection?.cards, rarity, search, sort]);
 
+  const filteredCraftableCards = useMemo(() => {
+    const normalizedSearch = search.trim().toLocaleLowerCase();
+    return [...(collection?.craftableCards ?? [])]
+      .filter((card) => {
+        if (cardType !== "ALL" && card.cardType !== cardType) return false;
+        if (rarity !== "ALL" && card.rarity !== rarity) return false;
+        return !normalizedSearch || card.name.toLocaleLowerCase().includes(normalizedSearch);
+      })
+      .sort((left, right) => {
+        if (sort === "NAME") return left.name.localeCompare(right.name, "ko");
+        if (sort === "RARITY") return rarityLabel(left.rarity).localeCompare(rarityLabel(right.rarity)) || left.name.localeCompare(right.name, "ko");
+        return left.cost - right.cost || left.name.localeCompare(right.name, "ko");
+      });
+  }, [cardType, collection?.craftableCards, rarity, search, sort]);
+
   const champions = collection?.champions ?? [];
+  const selectedSetting = selectedCard
+    ? collection?.prismSettings.find((setting) => setting.rarity === selectedCard.rarity)
+    : undefined;
+  const prismBalance = collection?.prismBalance ?? 0;
+
+  async function executePendingAction() {
+    if (!pendingAction || isMutating) return;
+    const action = pendingAction;
+    setIsMutating(true);
+    setMessage("");
+    try {
+      if (action.type === "CRAFT") {
+        await craftCard(action.card.id);
+      } else {
+        await disenchantCard(action.card.id);
+      }
+      const nextCollection = await fetchCollection();
+      setCollection(nextCollection);
+      setSelectedCard(nextCollection.craftableCards.find((card) => card.id === action.card.id) ?? null);
+      setPendingAction(null);
+      setMessage(action.type === "CRAFT" ? "카드를 제작했습니다." : "카드를 1장 분해했습니다.");
+    } catch (error) {
+      setMessage(error instanceof Error ? error.message : "프리즘 요청을 처리하지 못했습니다.");
+    } finally {
+      setIsMutating(false);
+    }
+  }
 
   return (
     <main className="min-h-screen bg-neutral-950 px-4 py-6 text-neutral-100 sm:px-8 sm:py-8">
@@ -158,23 +202,29 @@ export default function CollectionPage() {
           <div>
             <p className="font-display text-xs font-bold tracking-[0.25em] text-primary">MY COLLECTION</p>
             <h1 className="mt-2 text-3xl font-black">내 컬렉션</h1>
-            <p className="mt-2 text-sm text-neutral-500">보유한 카드와 해금한 챔피언만 확인할 수 있습니다.</p>
+            <p className="mt-2 text-sm text-neutral-500">보유한 카드와 제작 가능한 NORMAL/LEGENDARY 카드를 확인할 수 있습니다.</p>
           </div>
-          <BookOpen className="hidden h-8 w-8 text-amber-400 sm:block" />
+           <div className="flex items-center gap-2 rounded-full border border-amber-500/40 bg-amber-950/30 px-3 py-2 text-sm font-black text-amber-200">
+             <Sparkles className="h-4 w-4 text-amber-400" />
+             ◆ {collection?.prismBalance.toLocaleString() ?? "—"} 프리즘
+           </div>
         </header>
 
         {message && <p role="status" className="mb-6 rounded border border-amber-800/50 bg-amber-950/20 px-4 py-3 text-sm text-amber-200">{message}</p>}
 
-        <div className="mb-6 grid grid-cols-2 rounded-lg border border-neutral-800 bg-black/30 p-1">
+         <div className="mb-6 grid grid-cols-3 rounded-lg border border-neutral-800 bg-black/30 p-1">
           <button type="button" onClick={() => setTab("cards")} className={`rounded px-3 py-3 text-sm font-black transition ${tab === "cards" ? "bg-amber-400 text-black" : "text-neutral-400 hover:text-white"}`}>
             카드 <span className="ml-1 text-xs opacity-70">{collection?.cards.length ?? 0}</span>
           </button>
+           <button type="button" onClick={() => setTab("crafting")} className={`rounded px-3 py-3 text-sm font-black transition ${tab === "crafting" ? "bg-amber-400 text-black" : "text-neutral-400 hover:text-white"}`}>
+             카드 제작 <span className="ml-1 text-xs opacity-70">{collection?.craftableCards.length ?? 0}</span>
+           </button>
           <button type="button" onClick={() => setTab("champions")} className={`rounded px-3 py-3 text-sm font-black transition ${tab === "champions" ? "bg-amber-400 text-black" : "text-neutral-400 hover:text-white"}`}>
             챔피언 <span className="ml-1 text-xs opacity-70">{champions.length}</span>
           </button>
         </div>
 
-        {tab === "cards" ? (
+        {tab === "cards" || tab === "crafting" ? (
           <>
             <section aria-label="카드 검색 및 필터" className="mb-5 rounded-xl border border-neutral-800 bg-black/30 p-3 sm:p-4">
               <div className="grid gap-3 sm:grid-cols-[minmax(0,1fr)_auto_auto_auto]">
@@ -187,14 +237,17 @@ export default function CollectionPage() {
                 <FilterSelect label="희귀도" value={rarity} onChange={(value) => setRarity(value as RarityFilter)} options={[["ALL", "전체 희귀도"], ["NORMAL", "NORMAL"], ["LEGENDARY", "LEGENDARY"]]} />
                 <FilterSelect label="정렬" value={sort} onChange={(value) => setSort(value as CardSort)} options={[["COST", "Cost"], ["NAME", "Name"], ["RARITY", "Rarity"]]} />
               </div>
-              <p className="mt-3 text-xs text-neutral-500"><span className="font-bold text-neutral-300">{filteredCards.length}</span>장의 카드 · 소유 카드만 표시</p>
+               <p className="mt-3 text-xs text-neutral-500">
+                 <span className="font-bold text-neutral-300">{tab === "cards" ? filteredCards.length : filteredCraftableCards.length}</span>
+                 {tab === "cards" ? "장의 카드 · 소유 카드만 표시" : "장의 카드 · PUBLISHED NORMAL/LEGENDARY만 표시"}
+               </p>
             </section>
 
-            {filteredCards.length === 0 ? (
-              <EmptyState title={collection?.cards.length ? "조건에 맞는 카드가 없습니다." : "아직 보유한 카드가 없습니다."} />
+            {(tab === "cards" ? filteredCards : filteredCraftableCards).length === 0 ? (
+              <EmptyState title={tab === "cards" ? (collection?.cards.length ? "조건에 맞는 카드가 없습니다." : "아직 보유한 카드가 없습니다.") : "제작 가능한 카드가 없습니다."} />
             ) : (
               <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 sm:gap-4 lg:grid-cols-5">
-                {filteredCards.map((card) => <CardCollectionItem key={card.id} card={card} onOpen={() => setSelectedCard(card)} />)}
+                {(tab === "cards" ? filteredCards : filteredCraftableCards).map((card) => <CardCollectionItem key={card.id} card={card} showCraftable={tab === "crafting"} onOpen={() => setSelectedCard(card)} />)}
               </div>
             )}
           </>
@@ -245,6 +298,23 @@ export default function CollectionPage() {
                     <DetailStat label="체력" value={String(selectedCard.health)} />
                   </div>
                   <div><p className="text-[10px] font-black tracking-wider text-neutral-500">카드 효과</p><p className="mt-2 leading-6 text-neutral-200">{selectedCard.text || "효과 없음"}</p></div>
+                   <div className="rounded border border-amber-800/50 bg-amber-950/20 p-3">
+                     <p className="text-xs font-black text-amber-200">프리즘 작업</p>
+                     {selectedSetting?.configured ? (
+                       <div className="mt-3 space-y-2 text-xs text-neutral-300">
+                         <p>제작 비용: <strong className="text-amber-200">{selectedSetting.craftCost!.toLocaleString()} 프리즘</strong></p>
+                         <p>분해 획득량: <strong className="text-emerald-300">{selectedSetting.disenchantReward!.toLocaleString()} 프리즘</strong></p>
+                         <div className="grid gap-2 sm:grid-cols-2">
+                           <button type="button" disabled={isMutating || prismBalance < selectedSetting.craftCost!} onClick={() => setPendingAction({ type: "CRAFT", card: selectedCard })} className="flex items-center justify-center gap-2 rounded bg-amber-400 px-3 py-2.5 font-black text-black disabled:cursor-not-allowed disabled:opacity-40"><Hammer className="h-4 w-4" /> 제작</button>
+                           <button type="button" disabled={isMutating || selectedCard.quantity < 1} onClick={() => setPendingAction({ type: "DISENCHANT", card: selectedCard })} className="rounded border border-emerald-700 px-3 py-2.5 font-black text-emerald-300 disabled:cursor-not-allowed disabled:opacity-40">1장 분해</button>
+                         </div>
+                         {prismBalance < selectedSetting.craftCost! && <p className="text-[11px] text-red-300">프리즘이 부족합니다.</p>}
+                         {selectedCard.quantity < 1 && <p className="text-[11px] text-neutral-500">소유한 카드가 있어야 분해할 수 있습니다.</p>}
+                       </div>
+                     ) : (
+                       <p className="mt-2 text-xs leading-5 text-amber-200">관리자 프리즘 설정이 없어 제작/분해를 사용할 수 없습니다.</p>
+                     )}
+                   </div>
                 </div>
               </div>
             </>
@@ -255,6 +325,27 @@ export default function CollectionPage() {
       <Dialog open={Boolean(selectedChampion)} onOpenChange={(open) => { if (!open) setSelectedChampion(null); }}>
         <DialogContent className="border-neutral-800 bg-neutral-950 text-white sm:max-w-2xl">
           {selectedChampion && <ChampionDetail champion={selectedChampion} />}
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={Boolean(pendingAction)} onOpenChange={(open) => { if (!open && !isMutating) setPendingAction(null); }}>
+        <DialogContent className="border-neutral-800 bg-neutral-950 text-white sm:max-w-md">
+          {pendingAction && (
+            <>
+              <DialogHeader>
+                <DialogTitle className="text-left text-xl font-black">{pendingAction.type === "CRAFT" ? "카드 제작 확인" : "카드 분해 확인"}</DialogTitle>
+                <DialogDescription className="whitespace-pre-line text-left text-sm leading-6 text-neutral-400">
+                  {pendingAction.type === "CRAFT"
+                    ? `${selectedSetting?.craftCost?.toLocaleString() ?? "—"} 프리즘을 사용해\n${pendingAction.card.name} 카드를 제작하시겠습니까?`
+                    : `이 카드를 1장 분해하고\n${selectedSetting?.disenchantReward?.toLocaleString() ?? "—"} 프리즘을 획득하시겠습니까?`}
+                </DialogDescription>
+              </DialogHeader>
+              <div className="flex gap-2">
+                <button type="button" disabled={isMutating} onClick={() => setPendingAction(null)} className="flex-1 rounded border border-neutral-700 px-4 py-3 text-sm font-black text-neutral-300">취소</button>
+                <button type="button" disabled={isMutating} onClick={() => void executePendingAction()} className="flex-1 rounded bg-amber-400 px-4 py-3 text-sm font-black text-black disabled:opacity-50">{isMutating ? "처리 중..." : pendingAction.type === "CRAFT" ? "제작" : "분해"}</button>
+              </div>
+            </>
+          )}
         </DialogContent>
       </Dialog>
     </main>

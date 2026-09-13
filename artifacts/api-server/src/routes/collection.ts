@@ -6,11 +6,13 @@ import {
   championsTable,
   db,
   packDefinitionsTable,
+  prismEconomySettingsTable,
   userCardCollectionsTable,
   userChampionCollectionsTable,
 } from "@workspace/db";
 import { ensureStarterCollection } from "../lib/collection";
 import { getAuthenticatedUser } from "../lib/auth";
+import { PRISM_RARITIES, toPrismSettingView } from "../lib/prism-economy";
 
 const router: IRouter = Router();
 
@@ -38,7 +40,7 @@ router.use(async (request, response, next) => {
 router.get("/", async (request, response): Promise<void> => {
   const user = requireUser(request, response);
   if (!user) return;
-  const [cardRows, championRows] = await Promise.all([
+  const [cardRows, championRows, craftableCards, prismSettings] = await Promise.all([
     db.select({
       quantity: userCardCollectionsTable.quantity,
       obtainedAt: userCardCollectionsTable.obtainedAt,
@@ -64,10 +66,29 @@ router.get("/", async (request, response): Promise<void> => {
         eq(championsTable.status, "PUBLISHED"),
       ))
       .orderBy(asc(championsTable.name)),
+    db.select().from(cardsTable)
+      .where(and(
+        eq(cardsTable.status, "PUBLISHED"),
+        inArray(cardsTable.rarity, [...PRISM_RARITIES]),
+        eq(cardsTable.isToken, false),
+        eq(cardsTable.isChampionToken, false),
+      ))
+      .orderBy(asc(cardsTable.cost), asc(cardsTable.name)),
+    db.select().from(prismEconomySettingsTable)
+      .where(inArray(prismEconomySettingsTable.rarity, [...PRISM_RARITIES])),
   ]);
   response.json({
+    prismBalance: user.prismBalance,
     cards: cardRows.map((row) => ({ ...row.card, quantity: row.quantity, obtainedAt: row.obtainedAt })),
     champions: championRows.map((row) => ({ ...row.champion, obtainedAt: row.obtainedAt })),
+    craftableCards: craftableCards.map((card) => ({
+      ...card,
+      quantity: cardRows.find((row) => row.card.id === card.id)?.quantity ?? 0,
+    })),
+    prismSettings: PRISM_RARITIES.map((rarity) => toPrismSettingView(
+      rarity,
+      prismSettings.find((setting) => setting.rarity === rarity),
+    )),
   });
 });
 

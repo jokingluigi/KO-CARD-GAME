@@ -9,7 +9,7 @@ const LOGIN_WINDOW_MS = 15 * 60 * 1000;
 const LOGIN_MAX_ATTEMPTS = 8;
 const loginAttempts = new Map<string, { count: number; resetAt: number }>();
 
-export type PublicUser = Pick<UserRecord, "id" | "email" | "nickname" | "role" | "currency">;
+export type PublicUser = Pick<UserRecord, "id" | "email" | "nickname" | "role" | "currency" | "prismBalance">;
 
 declare global {
   namespace Express {
@@ -26,6 +26,7 @@ function publicUser(user: UserRecord): PublicUser {
     nickname: user.nickname,
     role: user.role,
     currency: user.currency,
+    prismBalance: user.prismBalance,
   };
 }
 
