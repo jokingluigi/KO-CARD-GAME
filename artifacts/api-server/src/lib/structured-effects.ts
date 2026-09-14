@@ -486,7 +486,7 @@ export function analyzeEffectText(input: string, options: EffectAnalysisOptions 
     ...(trigger === "CARD_PLAYED_THIS_TURN" ? [{ type: "HAS_MATCHING_TAG_PLAYED_THIS_TURN" as const }] : []),
   ];
   const recognized: Array<[Action, RegExp]> = [
-    ["ADD_NEXT_TURN_GOLD", /다음(?:\s*내)?\s*턴(?:에)?\s*(?:추가\s*)?(?:골드(?:를|을)?\s*(?:추가로?\s*)?[+]?\d+\s*(?:g|골드)?|\d+\s*g|골드\s*\d+\s*추가)(?:\s*받(?:습니다|는다|음)?)?/i],
+    ["ADD_NEXT_TURN_GOLD", /다음(?:\s*내)?\s*턴(?:에)?\s*(?:추가\s*)?(?:골드(?:를|을)?\s*(?:추가로?\s*)?[+]?\d+\s*(?:g|골드)?|\d+\s*g|골드\s*\d+\s*추가)(?:\s*더)?(?:\s*받(?:습니다|는다|음)?)?/i],
     ["ADD_GOLD", /(?:현재\s*)?(?:\d+\s*(?:g|골드)|골드(?:를|을)?\s*[+]?\d+|현재\s*골드\s*[+]\d+)\s*(?:획득|얻(?:음|습니다)?|추가)?/i],
     ["DRAW", /(?:(?:카드)?\s*(?:\d+\s*장|한\s*장|\d+)(?:을|를)?\s*(?:드로우|뽑(?:기|습니다|는다|음)?))/],
      ["SWAP_STATS", STAT_SWAP_PATTERN],

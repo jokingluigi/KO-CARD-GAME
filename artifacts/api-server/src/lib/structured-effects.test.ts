@@ -321,6 +321,24 @@ test("뒷정리맨의 다음 아군 선수 체력 예약을 구조화하고 지�
   assert.equal(isStructuredEffects({ effects: result.effects }), true);
 });
 
+test("Champion의 자연스러운 다음 턴 골드 문장을 부분 분석 없이 구조화한다", () => {
+  const result = analyzeEffectText("다음 턴에 골드를 추가로 1 더 받습니다", {
+    defaultTrigger: "ENTER_FIELD",
+  });
+
+  assert.equal(result.status, "success");
+  assert.equal(result.outcome, "supported");
+  assert.deepEqual(result.effects, [
+    {
+      trigger: "ENTER_FIELD",
+      action: "ADD_NEXT_TURN_GOLD",
+      values: { amount: 1 },
+    },
+  ]);
+  assert.deepEqual(result.unsupportedSegments, []);
+  assert.equal(isStructuredEffects({ effects: result.effects }), true);
+});
+
 test("생성된 아군 선수의 공격력과 체력을 함께 증가시키는 유사 표현도 분석한다", () => {
   const result = analyzeEffectText("등장: 모든 위치의 생성된 내 선수 카드의 공격력과 체력을 1씩 올립니다.");
 

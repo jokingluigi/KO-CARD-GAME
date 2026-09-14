@@ -7,8 +7,9 @@ import {
   canUseChampionAbility,
   useChampionAbility,
 } from './champion-system';
-import { startGame } from './turn-system';
+import { endTurn, startGame } from './turn-system';
 import { setRuntimeCardDefinitions, TEST_CHAMPION_TOKEN_DEFINITION } from '../cards/test-cards';
+import { TEST_CHAMPIONS } from '../champions/test-champions';
 
 const fixedRandom = () => 0.5;
 
@@ -48,6 +49,35 @@ test('챔피언 능력은 비용을 지불하고 직접 사용한다', () => {
     ),
     true,
   );
+});
+
+test('퀘스트 없는 Champion의 구조화된 다음 턴 골드 능력이 다음 자기 턴에 적용된다', () => {
+  const champion = TEST_CHAMPIONS.find((definition) => definition.id === 'test-champion-next-turn-gold')!;
+  const started = startGame(createInitialGameState(
+    ['test-champion-next-turn-gold', 'test-champion-no-quest'],
+    undefined,
+    [champion, ...TEST_CHAMPIONS],
+  ), fixedRandom);
+
+  const ready = {
+    ...started,
+    players: started.players.map((player) =>
+      player.id === 'player-1' ? { ...player, currentGold: 2 } : player,
+    ),
+  };
+  const before = ready.players[0];
+  const result = useChampionAbility(ready, 'player-1');
+
+  assert.equal(result.success, true);
+  assert.equal(result.state.players[0].currentGold, before.currentGold - 2);
+  assert.equal(result.state.players[0].nextTurnGoldBonus, 1);
+
+  const opponentTurn = endTurn(result.state, 'player-1');
+  assert.equal(opponentTurn.success, true);
+  const nextOwnTurn = endTurn(opponentTurn.state, 'player-2');
+  assert.equal(nextOwnTurn.success, true);
+  assert.equal(nextOwnTurn.state.players[0].currentGold, 3);
+  assert.equal(nextOwnTurn.state.players[0].nextTurnGoldBonus, 0);
 });
 
 test('골드가 부족하면 챔피언 능력을 사용할 수 없다', () => {

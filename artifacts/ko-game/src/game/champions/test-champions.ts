@@ -45,6 +45,24 @@ export const TEST_CHAMPIONS: ChampionDefinition[] = [
     upgradedAbility: null,
   },
   {
+    id: 'test-champion-next-turn-gold',
+    name: '다음 턴 골드 테스트 챔피언',
+    maxHealth: 20,
+    abilityCost: 2,
+    ability: {
+      id: 'test-next-turn-gold',
+      name: '용돈',
+      description: '다음 턴에 골드를 추가로 1 더 받습니다.',
+      effects: [{
+        type: 'STRUCTURED',
+        action: 'ADD_NEXT_TURN_GOLD',
+        values: { amount: 1 },
+      }],
+    },
+    quest: null,
+    upgradedAbility: null,
+  },
+  {
     id: 'test-champion-direct-deploy',
     name: '직접 출전 테스트 챔피언',
     maxHealth: 20,
