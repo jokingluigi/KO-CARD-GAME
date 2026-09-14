@@ -390,6 +390,33 @@ test("덱 단일 영역의 생성 카드 비용 효과도 Generated 필터로 �
   assert.equal(isStructuredEffects({ effects: result.effects }), true);
 });
 
+test("손패의 무작위 선수 한 장에게 공격력과 체력을 함께 증가시키는 Champion 효과를 지원한다", () => {
+  const result = analyzeEffectText(
+    "손패에 있는 선수 카드 중 무작위 한장의 체력과 공격을 1씩 증가시킨다.",
+    { defaultTrigger: "ENTER_FIELD" },
+  );
+
+  assert.equal(result.status, "success");
+  assert.equal(result.outcome, "supported");
+  assert.deepEqual(result.effects, [
+    {
+      trigger: "ENTER_FIELD",
+      action: "BUFF",
+      target: {
+        zone: "HAND",
+        owner: "SELF",
+        cardType: "WRESTLER",
+        selection: "RANDOM",
+        count: 1,
+        randomScope: "STANDARD",
+      },
+      values: { attack: 1, health: 1 },
+    },
+  ]);
+  assert.deepEqual(result.unsupportedSegments, []);
+  assert.equal(isStructuredEffects({ effects: result.effects }), true);
+});
+
 test("손패·덱·필드 표현은 공통 세 Zone 범위로 분석한다", () => {
   const result = analyzeEffectText("등장: 손패, 덱, 필드의 생성된 선수에게 +1/+1을 줍니다.");
   assert.equal(result.status, "success");

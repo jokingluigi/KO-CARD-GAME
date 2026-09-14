@@ -22,6 +22,7 @@
 - [Published data boundary](published-data-boundary.md) — the playable UI must never silently fall back to test cards or champions when public data is missing.
 - [Self-attack triggers](self-attack-triggers.md) — cards that react to their own attacks use a distinct SELF_ATTACK dispatch; OTHER_ALLY_ATTACK remains for board listeners.
 - [Champion admin form contract](champion-admin-form-contract.md) — quest toggles need a numeric progress default, and analyzer responses must be visible and scoped to their source field.
+- [API workflow restart](api-workflow-restart.md) — restart the bundled API workflow before trusting proxied HTTP checks after route changes.
 - [Admin preview route](admin-browser-preview-route.md) — the proxied KO admin page is reached at `/admin`; nested artifact prefixes can render the app’s not-found route.
 - [CardDefinition references](card-definition-references.md) — admin text resolves named creation targets to stable IDs; runtime resolves only from the match snapshot.
 - [Active Champion Token boundary](active-champion-token-boundary.md) — only linked Champion Token deployment grants Champion protection and defeat coupling; generic Token generation stays normal.

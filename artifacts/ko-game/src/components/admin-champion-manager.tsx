@@ -294,12 +294,24 @@ export function AdminChampionManager({ onUnauthorized }: { onUnauthorized: () =>
 
   function applyQuestAnalysis() {
     if (!questAnalysis?.condition || questAnalysis.outcome !== "supported") return;
-    update("questCondition", questAnalysis.condition);
-    if (typeof questAnalysis.condition.required === "number") {
-      update("questProgressRequired", questAnalysis.condition.required);
-    }
+    setForm((current) => ({
+      ...current,
+      questCondition: questAnalysis.condition ?? null,
+      questProgressRequired: typeof questAnalysis.condition?.required === "number"
+        ? questAnalysis.condition.required
+        : current.questProgressRequired,
+    }));
     setMessageText("퀘스트 조건 분석 결과를 적용했습니다. 챔피언 저장을 눌러 보존하세요.");
     setError("");
+  }
+  function updateQuestProgress(value: number | null) {
+    setForm((current) => ({
+      ...current,
+      questProgressRequired: value,
+      questCondition: current.questCondition && value !== null
+        ? { ...current.questCondition, required: value }
+        : current.questCondition,
+    }));
   }
   async function save() {
     setBusy(true); setError("");
@@ -656,9 +668,18 @@ export function AdminChampionManager({ onUnauthorized }: { onUnauthorized: () =>
          <label className="flex items-center gap-2"><input type="checkbox" checked={form.hasQuest} onChange={e=>setForm((current) => ({
            ...current,
            hasQuest: e.target.checked,
-           questProgressRequired: e.target.checked ? (current.questProgressRequired ?? 1) : null,
+           questProgressRequired: e.target.checked
+             ? (current.questProgressRequired ?? (typeof current.questCondition?.required === "number" ? current.questCondition.required : 1))
+             : null,
+           questCondition: e.target.checked && current.questCondition
+             ? {
+                 ...current.questCondition,
+                 required: current.questProgressRequired
+                   ?? (typeof current.questCondition.required === "number" ? current.questCondition.required : 1),
+               }
+             : current.questCondition,
          }))}/> 퀘스트 있음</label>
-        {form.hasQuest && <><label>퀘스트 이름<input className={input} value={form.questName??""} onChange={e=>update("questName",e.target.value)}/></label><label>필요 진행도<input type="number" className={input} value={form.questProgressRequired??1} onChange={e=>update("questProgressRequired",Number(e.target.value))}/></label>
+         {form.hasQuest && <><label>퀘스트 이름<input className={input} value={form.questName??""} onChange={e=>update("questName",e.target.value)}/></label><label>필요 진행도<input type="number" className={input} value={form.questProgressRequired??1} onChange={e=>updateQuestProgress(e.target.value===""?null:Number(e.target.value))}/></label>
            <QuestConditionField
              value={form.questText??""}
              onChange={v=>update("questText",v)}

@@ -170,6 +170,9 @@ function parseChampionInput(value: unknown): ChampionInput | null {
     Number.isInteger(rawQuestCondition.required) && rawQuestCondition.required >= 1 &&
     rawQuestCondition.required <= 999 ? rawQuestCondition.required : null;
   const questProgressRequired = questProgressInput ?? conditionRequired;
+  const questCondition = hasQuest && rawQuestCondition && questProgressRequired !== null
+    ? { ...rawQuestCondition, required: questProgressRequired }
+    : hasQuest ? rawQuestCondition : null;
   const upgradedAbilityCost = integer("upgradedAbilityCost", 0, 999, true);
   const questCompletedPortraitEnabled = input.questCompletedPortraitEnabled === true;
   const imageAssetId = text("imageAssetId");
@@ -207,7 +210,8 @@ function parseChampionInput(value: unknown): ChampionInput | null {
       !questCompleteAudioUrl.startsWith("/api/storage/objects/"))
   ) return null;
   if (hasQuest && (!text("questName", true) || !text("questText", true) ||
-       !rawQuestCondition || questProgressRequired === null ||
+       !questCondition || typeof questCondition.event !== "string" || !questCondition.event.trim() ||
+       questProgressRequired === null ||
        !text("questRewardText", true))) return null;
   return {
     name, description: text("description") ?? "", imageAssetId, imageUrl, imageUploadToken,
@@ -217,7 +221,7 @@ function parseChampionInput(value: unknown): ChampionInput | null {
     abilityText: text("abilityText") ?? "", abilityEffects, hasQuest,
     questName: hasQuest ? text("questName", true) : null,
     questText: hasQuest ? text("questText", true) : null,
-     questCondition: hasQuest ? (rawQuestCondition ?? null) : null,
+      questCondition: hasQuest ? questCondition ?? null : null,
     questProgressRequired: hasQuest ? questProgressRequired : null,
     questRewardText: hasQuest ? text("questRewardText", true) : null,
     questRewardEffects: hasQuest ? object("questRewardEffects", true)! : null,

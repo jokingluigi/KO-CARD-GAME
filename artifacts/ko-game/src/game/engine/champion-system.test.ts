@@ -8,7 +8,7 @@ import {
   useChampionAbility,
 } from './champion-system';
 import { endTurn, startGame } from './turn-system';
-import { setRuntimeCardDefinitions, TEST_CHAMPION_TOKEN_DEFINITION } from '../cards/test-cards';
+import { createTestDeck, setRuntimeCardDefinitions, TEST_CHAMPION_TOKEN_DEFINITION } from '../cards/test-cards';
 import { TEST_CHAMPIONS } from '../champions/test-champions';
 
 const fixedRandom = () => 0.5;
@@ -78,6 +78,44 @@ test('퀘스트 없는 Champion의 구조화된 다음 턴 골드 능력이 다�
   assert.equal(nextOwnTurn.success, true);
   assert.equal(nextOwnTurn.state.players[0].currentGold, 3);
   assert.equal(nextOwnTurn.state.players[0].nextTurnGoldBonus, 0);
+});
+
+test('Champion의 구조화된 무작위 손패 BUFF가 선수 카드 한 장의 공격력과 체력을 함께 변경한다', () => {
+  const champion = TEST_CHAMPIONS.find((definition) => definition.id === 'test-champion-random-hand-buff')!;
+  const started = startGame(createInitialGameState(
+    ['test-champion-random-hand-buff', 'test-champion-no-quest'],
+    undefined,
+    [champion, ...TEST_CHAMPIONS],
+  ), fixedRandom);
+  const hand = createTestDeck('player-1').slice(0, 3).map((card) => ({
+    ...card,
+    cardType: 'WRESTLER' as const,
+  }));
+  const ready = {
+    ...started,
+    players: started.players.map((player) =>
+      player.id === 'player-1'
+        ? { ...player, currentGold: 2, hand }
+        : player,
+    ),
+  };
+  const beforeStats = new Map(hand.map((card) => [
+    card.instanceId,
+    { attack: card.currentAttack, health: card.currentHealth },
+  ]));
+
+  const result = useChampionAbility(ready, 'player-1');
+
+  assert.equal(result.success, true);
+  assert.equal(result.state.players[0].currentGold, 0);
+  assert.equal(result.state.players[0].hand.filter((card) => {
+    const before = beforeStats.get(card.instanceId);
+    return before && card.currentAttack === before.attack + 1 && card.currentHealth === before.health + 1;
+  }).length, 1);
+  assert.equal(result.state.players[0].hand.filter((card) => {
+    const before = beforeStats.get(card.instanceId);
+    return before && (card.currentAttack !== before.attack || card.currentHealth !== before.health);
+  }).length, 1);
 });
 
 test('골드가 부족하면 챔피언 능력을 사용할 수 없다', () => {

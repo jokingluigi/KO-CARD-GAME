@@ -454,7 +454,10 @@ export function analyzeEffectText(input: string, options: EffectAnalysisOptions 
   const mechanicMatch = text.match(unsupportedMechanic);
   const semanticUnsupported =
     (/(섞|재배치|교환|복사|변환)/.test(text) && !STAT_SWAP_PATTERN.test(text)) ||
-    (/(공격력|체력|비용|값|순서|위치)/.test(text) && /(무작위|랜덤|서로)/.test(text) && !STAT_SWAP_PATTERN.test(text));
+    (/(공격력|체력|비용|값|순서|위치)/.test(text) &&
+      /(서로)/.test(text) &&
+      /(무작위|랜덤)/.test(text) &&
+      !STAT_SWAP_PATTERN.test(text));
   const mechanicRequired = Boolean((mechanicMatch && !STAT_SWAP_PATTERN.test(text)) || semanticUnsupported);
   const unsupportedDescription =
     /손패/.test(text) && /공격력/.test(text) && /(섞|무작위|랜덤)/.test(text)
@@ -544,7 +547,14 @@ export function analyzeEffectText(input: string, options: EffectAnalysisOptions 
         remainder = remainder.replace(new RegExp(referencedCard.name.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"), "g"), "");
       }
        remainder = remainder.replace(/(?:완전(?:히)?\s*)?(?:무작위|랜덤)(?:로)?\s*(?:선수|기술)?\s*(?:카드)?\s*(?:\d+\s*장|하나|한\s*장)?(?:에게|을|를|의)?|선택한|어디에\s*(?:있든|있는)|모든\s*위치의|손패\s*[,，]\s*덱\s*[,，]\s*(?:필드|보드)|손패\s*(?:및|와|과)\s*덱\s*(?:및|와|과)\s*(?:필드|보드)|생성된(?:\s*카드)?|모든\s*캐릭터(?:에게|을|를)?|모든\s*(?:선수|카드)(?:에게|을|를|의)?|(?:적|상대)\s*(?:챔피언|플레이어)(?:에게|을|를)?|(?:내|자신의)\s*챔피언(?:에게|을|를)?|(?:적|상대)\s*선수(?:\s*(?:\d+\s*장|하나|한\s*장))?(?:에게|을|를)?|(?:아군|내)\s*선수(?:\s*(?:\d+\s*장|하나|한\s*장))?(?:에게|을|를)?|(?:적|상대)\s*캐릭터(?:\s*(?:\d+\s*장|하나|한\s*장))?(?:에게|을|를)?|(?:아군|내)\s*캐릭터(?:\s*(?:\d+\s*장|하나|한\s*장))?(?:에게|을|를)?|(?:손패|손에|덱|필드|보드)(?!의?\s*(?:무작위\s*)?(?:선수|카드))(?:의)?|손패의\s*(?:무작위\s*)?선수(?:\s*카드)?(?:\s*(?:\d+\s*장|하나|한\s*장))?(?:에게|을|를|의)?|덱의\s*(?:무작위\s*)?(?:선수|카드)(?:\s*카드)?(?:\s*(?:\d+\s*장|하나|한\s*장))?(?:에게|을|를|의)?|필드의\s*(?:무작위\s*)?(?:선수|카드)(?:\s*카드)?(?:\s*(?:\d+\s*장|하나|한\s*장))?(?:에게|을|를|의)?|(?:자신|이\s*카드)(?:에게|을|를)?|(?:카드\s*)?(?:\d+\s*장|한\s*장)|선수(?:\s*카드)?(?:을|를)?|\d+\s*턴\s*동안|(?:에게|을|를|의|에)|(?:그리고|그\s*후|이후|하고|한\s*뒤|한\s*후|주고)|\s+/g, "");
-      remainder = remainder.replace(/사용될\s*때까지\s*(?:턴을\s*)?(?:넘어도\s*)?유지(?:합니다)?|다음\s*턴에도\s*유지(?:합니다)?/g, "");
+      remainder = remainder
+        .replace(/사용될\s*때까지\s*(?:턴을\s*)?(?:넘어도\s*)?유지(?:합니다)?|다음\s*턴에도\s*유지(?:합니다)?/g, "")
+        .replace(/(?:손패|덱|필드|보드)(?:에|의)?\s*있는/g, "")
+        .replace(/있는/g, "")
+        .replace(/(?:무작위|랜덤)\s*(?:한\s*장|한장의|한장|하나)/g, "")
+        .replace(/\s*중(?=\s|$)/g, " ")
+        .replace(/(?:시킨다|증가시킨다|올린다|강화한다)/g, "")
+        .replace(/중/g, "");
       remainder = remainder.replace(/(?:완전(?:히)?\s*)?(?:무작위|랜덤)(?:로)?\s*(?:선수|기술)?\s*(?:카드)?\s*(?:\d+\s*장|하나|한\s*장)?(?:에게|을|를|의)?|선택한|어디에\s*(?:있든|있는)|모든\s*위치의|손패\s*[,，]\s*덱\s*[,，]\s*(?:필드|보드)|손패\s*(?:및|와|과)\s*덱\s*(?:및|와|과)\s*(?:필드|보드)|생성된(?:\s*카드)?|모든\s*캐릭터(?:에게|을|를)?|모든\s*(?:선수|카드)(?:에게|을|를|의)?|(?:적|상대)\s*(?:챔피언|플레이어)(?:에게|을|를)?|(?:내|자신의)\s*챔피언(?:에게|을|를)?|(?:적|상대)\s*선수(?:\s*(?:\d+\s*장|하나|한\s*장))?(?:에게|을|를)?|(?:아군|내)\s*선수(?:\s*(?:\d+\s*장|하나|한\s*장))?(?:에게|을|를)?|(?:적|상대)\s*캐릭터(?:\s*(?:\d+\s*장|하나|한\s*장))?(?:에게|을|를)?|(?:아군|내)\s*캐릭터(?:\s*(?:\d+\s*장|하나|한\s*장))?(?:에게|을|를)?|(?:손패|덱|필드|보드)(?!의?\s*(?:무작위\s*)?(?:선수|카드))(?:의)?|손패의\s*(?:무작위\s*)?선수(?:\s*카드)?(?:\s*(?:\d+\s*장|하나|한\s*장))?(?:에게|을|를|의)?|덱의\s*(?:무작위\s*)?(?:선수|카드)(?:\s*카드)?(?:\s*(?:\d+\s*장|하나|한\s*장))?(?:에게|을|를|의)?|필드의\s*(?:무작위\s*)?(?:선수|카드)(?:\s*카드)?(?:\s*(?:\d+\s*장|하나|한\s*장))?(?:에게|을|를|의)?|(?:자신|이\s*카드)(?:에게|을|를)?|(?:카드\s*)?(?:\d+\s*장|한\s*장)|선수(?:\s*카드)?(?:을|를)?|\d+\s*턴\s*동안|(?:에게|을|를|의|에)|(?:그리고|그\s*후|이후|하고|한\s*뒤|한\s*후|주고)|\s+/g, "");
    if (effects.some((item) => item.action === "SUMMON" && item.values?.aggregateStats)) {
      remainder = remainder
@@ -555,7 +565,7 @@ export function analyzeEffectText(input: string, options: EffectAnalysisOptions 
      if (/모든\s*생성된\s*카드.*합산.*소환.*도발/.test(text)) remainder = "";
    }
    // Action endings remain after matcher only for Korean conjugations.
-   remainder = remainder.replace(/(합니다|시키고|시킵니다|부여|획득|얻음|얻습니다|줍니다|준다|주|드로우|뽑습니다|뽑기|포획|제거|소환|생성|해방|감소|증가)/g, "");
+   remainder = remainder.replace(/(합니다|시키고|시킵니다|시킨다|증가시킨다|올린다|강화한다|부여|획득|얻음|얻습니다|줍니다|준다|주|드로우|뽑습니다|뽑기|포획|제거|소환|생성|해방|감소|증가)/g, "");
   const remainderUnsupported = remainder.replace(unsupportedMechanic, "").trim();
    const unsupportedSegments = [
     ...(mechanicRequired && !STAT_SWAP_PATTERN.test(text) ? [unsupportedDescription] : []),

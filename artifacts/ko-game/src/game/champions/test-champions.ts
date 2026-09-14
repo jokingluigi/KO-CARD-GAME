@@ -63,6 +63,32 @@ export const TEST_CHAMPIONS: ChampionDefinition[] = [
     upgradedAbility: null,
   },
   {
+    id: 'test-champion-random-hand-buff',
+    name: '무작위 손패 강화 테스트 챔피언',
+    maxHealth: 20,
+    abilityCost: 2,
+    ability: {
+      id: 'test-random-hand-buff',
+      name: '트레이닝',
+      description: '손패의 무작위 선수 카드 한 장의 공격력과 체력을 1씩 증가시킵니다.',
+      effects: [{
+        type: 'STRUCTURED',
+        action: 'BUFF',
+        target: {
+          zone: 'HAND',
+          owner: 'SELF',
+          cardType: 'WRESTLER',
+          selection: 'RANDOM',
+          count: 1,
+          randomScope: 'STANDARD',
+        },
+        values: { attack: 1, health: 1 },
+      }],
+    },
+    quest: null,
+    upgradedAbility: null,
+  },
+  {
     id: 'test-champion-direct-deploy',
     name: '직접 출전 테스트 챔피언',
     maxHealth: 20,
