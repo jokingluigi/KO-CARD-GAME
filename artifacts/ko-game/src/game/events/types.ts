@@ -30,6 +30,7 @@ export interface GameEvent {
   type: GameEventType;
   playerId?: string;
   cardInstanceId?: CardInstanceId;
+  cardType?: 'WRESTLER' | 'TECHNIQUE';
   championId?: string;
   source?: EventSubject;
   target?: EventSubject;

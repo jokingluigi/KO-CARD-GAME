@@ -35,3 +35,5 @@
 - [Collection and pack boundary](collection-pack-boundary.md) — ownership controls deck eligibility, and Champion unlocks remain distinct from Champion-rarity cards.
 - [Shop economy boundary](shop-economy-boundary.md) — purchases atomically change server currency and pack inventory, with a ledger entry for balance history.
 - [Prism economy boundary](prism-economy-boundary.md) — crafting/disenchanting uses persisted rarity settings, atomic signed ledger entries, and no fallback when settings are missing.
+- [Champion quest filtering](champion-quest-filtering.md) — quest progress must match structured event filters such as card type before incrementing.
+- [Champion upgrade analyzer](champion-upgrade-analyzer.md) — self-upgrade rewards normalize Korean variants and punctuation before accepting an empty effect body.

@@ -1,21 +1,22 @@
 import type { GameEvent } from '../events/types';
 import type { GameState } from '../types/game-state';
-import type { ChampionTrackedEvent } from './types';
+import type { ChampionQuest } from './types';
 import { tryDirectDeployChampionToken } from '../engine/champion-token';
 import type { CardInstance } from '../cards/types';
 import { resolvePendingEffects } from '../effects/effect-engine';
 
 function matchesQuestEvent(
   event: GameEvent,
-  trackedEvent: ChampionTrackedEvent,
+  quest: Pick<ChampionQuest, 'trackedEvent' | 'cardType'>,
   playerId: string,
 ): boolean {
   if (event.playerId !== playerId) return false;
   // The analyzer keeps the human-facing WRESTLER_RETIRED condition for
   // compatibility; the event stream uses the canonical CARD_RETIRED event.
-  return trackedEvent === 'WRESTLER_RETIRED'
+  const eventMatches = quest.trackedEvent === 'WRESTLER_RETIRED'
     ? event.type === 'CARD_RETIRED'
-    : event.type === trackedEvent;
+    : event.type === quest.trackedEvent;
+  return eventMatches && (!quest.cardType || event.cardType === quest.cardType);
 }
 
 export function processChampionQuestEvents(
@@ -32,12 +33,13 @@ export function processChampionQuestEvents(
 
     const progress = newEvents.filter(
       (event) =>
-        matchesQuestEvent(event, quest.trackedEvent, originalPlayer.id),
+        matchesQuestEvent(event, quest, originalPlayer.id),
     ).length;
     if (progress === 0) continue;
 
+    const progressAmount = progress * (quest.progressPerEvent ?? 1);
     const questProgress = Math.min(
-      champion.questProgress + progress,
+      champion.questProgress + progressAmount,
       quest.requiredProgress,
     );
     const questCompleted = questProgress >= quest.requiredProgress;
@@ -53,7 +55,7 @@ export function processChampionQuestEvents(
         source: { type: 'SYSTEM' },
         target: { type: 'CHAMPION', championId: champion.id },
         reason: quest.id,
-        amount: progress,
+        amount: progressAmount,
       },
     ];
     if (questCompleted) {

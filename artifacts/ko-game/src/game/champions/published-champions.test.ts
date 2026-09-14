@@ -10,7 +10,7 @@ test("DB 챔피언을 직렬화 가능한 매치 스냅샷 정의로 변환한�
       action: "BUFF", target: { zone: "HAND", owner: "SELF", selection: "RANDOM", count: 1 },
       values: { attack: 1, health: 1 },
     }] }, hasQuest: true, questName: "생성", questText: "선수 카드를 7회 생성합니다.",
-    questCondition: { event: "CARD_GENERATED", required: 7 }, questProgressRequired: 7,
+    questCondition: { event: "CARD_GENERATED", cardType: "WRESTLER", progress: 1, required: 7 }, questProgressRequired: 7,
     questRewardText: "능력을 강화합니다.",
     questRewardEffects: { effects: [{ action: "UPGRADE_CHAMPION_ABILITY" }] },
     upgradedAbilityName: "강화 지원", upgradedAbilityCost: 1,
@@ -21,7 +21,9 @@ test("DB 챔피언을 직렬화 가능한 매치 스냅샷 정의로 변환한�
   assert.equal(definition.version, 3);
   assert.equal(definition.ability.effects[0]?.type, "STRUCTURED");
   assert.equal(definition.quest?.trackedEvent, "CARD_GENERATED");
-  assert.deepEqual(definition.quest?.reward, { type: "UPGRADE_ABILITY" });
+  assert.equal(definition.quest?.cardType, "WRESTLER");
+  assert.equal(definition.quest?.progressPerEvent, 1);
+  assert.deepEqual(definition.quest?.reward, { type: "UPGRADE_ABILITY", effects: [] });
   assert.equal(definition.upgradedAbility?.name, "강화 지원");
   assert.equal(definition.upgradedAbility?.cost, 1);
 });

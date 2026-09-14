@@ -647,6 +647,25 @@ test("챔피언 소환 문구는 일반 SUMMON과 분리된 DEPLOY_CHAMPION_TOKE
   }
 });
 
+test("따옴표로 참조한 Champion Token 한 장 소환 문장을 완전한 SUMMON으로 분석한다", () => {
+  const catalog = [
+    { id: "mercenary", name: "용병", cardType: "WRESTLER" as const, isToken: true, isChampionToken: false },
+  ];
+  const result = analyzeEffectText("'용병'을 하나 소환한다.", {
+    defaultTrigger: "ENTER_FIELD",
+    cardCatalog: catalog,
+  });
+
+  assert.equal(result.status, "success");
+  assert.equal(result.outcome, "supported");
+  assert.deepEqual(result.effects[0], {
+    trigger: "ENTER_FIELD",
+    action: "SUMMON",
+    values: { definitionRef: { id: "mercenary" }, count: 1 },
+  });
+  assert.deepEqual(result.unsupportedSegments, []);
+});
+
 test("현재 공격/체력 배수 표현은 같은 범용 BUFF Resolver로 분석한다", () => {
   for (const text of [
     "등장: 자신의 현재 공격과 체력의 수치를 2배로 만듭니다.",

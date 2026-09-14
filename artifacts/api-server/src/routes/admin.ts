@@ -888,15 +888,26 @@ export function analyzeForContext(
         : {}),
     };
   }
+  const championUpgradePattern =
+    /고유\s*능력(?:을|이)?\s*(?:강화(?:시키고|시킨다|시킵니다|하고|한다|합니다)?|업그레이드(?:하고|한다|합니다)?)\s*,?/i;
   const championUpgrade = context === "QUEST_REWARD" &&
-    /고유\s*능력을?\s*강화시키고\s*,?/i.test(text);
+    championUpgradePattern.test(text);
   const effectText = championUpgrade
-    ? text.replace(/고유\s*능력을?\s*강화시키고\s*,?/i, "").trim()
+    ? text.replace(championUpgradePattern, "").replace(/^[,.\s]+|[,.\s]+$/g, "").trim()
     : text;
-  const analysis = analyzeEffectText(effectText, {
-    ...(context ? { defaultTrigger: "ENTER_FIELD" as Trigger } : {}),
-    ...(catalog ? { cardCatalog: catalog } : {}),
-  });
+  const analysis = effectText
+    ? analyzeEffectText(effectText, {
+        ...(context ? { defaultTrigger: "ENTER_FIELD" as Trigger } : {}),
+        ...(catalog ? { cardCatalog: catalog } : {}),
+      })
+    : {
+        status: "success" as const,
+        outcome: "supported" as const,
+        effects: [],
+        keywords: [],
+        unsupportedSegments: [],
+        summaries: [],
+      };
   if (!championUpgrade) return analysis;
   const unsupportedSegments = analysis.unsupportedSegments.filter(
     (segment) => !/능력|강화/i.test(segment),

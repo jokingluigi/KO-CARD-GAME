@@ -566,7 +566,11 @@ export function analyzeEffectText(input: string, options: EffectAnalysisOptions 
    }
    // Action endings remain after matcher only for Korean conjugations.
    remainder = remainder.replace(/(합니다|시키고|시킵니다|시킨다|증가시킨다|올린다|강화한다|부여|획득|얻음|얻습니다|줍니다|준다|주|드로우|뽑습니다|뽑기|포획|제거|소환|생성|해방|감소|증가)/g, "");
-  const remainderUnsupported = remainder.replace(unsupportedMechanic, "").trim();
+   const remainderUnsupported = remainder
+     .replace(unsupportedMechanic, "")
+     .replace(/['‘’“”「」]/g, "")
+     .replace(/(?:하나|한\s*장)/g, "")
+     .trim();
    const unsupportedSegments = [
     ...(mechanicRequired && !STAT_SWAP_PATTERN.test(text) ? [unsupportedDescription] : []),
     ...(!mechanicRequired && remainderUnsupported ? [remainderUnsupported] : []),

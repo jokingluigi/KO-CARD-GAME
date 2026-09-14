@@ -89,6 +89,7 @@ export function generateCard(
       type: 'CARD_GENERATED',
       playerId: options.playerId,
       cardInstanceId: card.instanceId,
+      cardType: card.cardType,
       source: options.source ?? { type: 'SYSTEM' },
       target: { type: 'CARD', cardInstanceId: card.instanceId },
       reason: options.reason ?? 'CARD_EFFECT',

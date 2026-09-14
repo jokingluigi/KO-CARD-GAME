@@ -2,6 +2,7 @@ import type { GameEventType } from '../events/types';
 import type { CardEffect } from '../effects/types';
 
 export type ChampionTrackedEvent = GameEventType | 'WRESTLER_RETIRED';
+export type ChampionQuestCardType = 'WRESTLER' | 'TECHNIQUE';
 
 export type ChampionEffect =
   | { type: 'GAIN_GOLD'; amount: number }
@@ -37,6 +38,8 @@ export interface ChampionQuest {
   name: string;
   description: string;
   trackedEvent: ChampionTrackedEvent;
+  cardType?: ChampionQuestCardType;
+  progressPerEvent?: number;
   requiredProgress: number;
   reward: ChampionQuestReward;
 }

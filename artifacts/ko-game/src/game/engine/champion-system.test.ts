@@ -10,6 +10,8 @@ import {
 import { endTurn, startGame } from './turn-system';
 import { createTestDeck, setRuntimeCardDefinitions, TEST_CHAMPION_TOKEN_DEFINITION } from '../cards/test-cards';
 import { TEST_CHAMPIONS } from '../champions/test-champions';
+import { championRecordToDefinition } from '../champions/published-champions';
+import type { CardDefinition } from '../cards/types';
 
 const fixedRandom = () => 0.5;
 
@@ -116,6 +118,113 @@ test('Champion의 구조화된 무작위 손패 BUFF가 선수 카드 한 장의
     const before = beforeStats.get(card.instanceId);
     return before && (card.currentAttack !== before.attack || card.currentHealth !== before.health);
   }).length, 1);
+});
+
+test('Champion의 SUMMON 능력과 카드 유형 Quest 조건 및 강화 능력이 실제 게임에서 연결된다', () => {
+  const mercenary: CardDefinition = {
+    id: 'test-mercenary',
+    name: '용병',
+    cardType: 'WRESTLER',
+    cost: 1,
+    attack: 2,
+    health: 2,
+    rulesText: '',
+    isToken: true,
+    isChampionToken: false,
+    keywords: [],
+    abilities: [],
+  };
+  const eliteMercenary: CardDefinition = {
+    ...mercenary,
+    id: 'test-elite-mercenary',
+    name: '엘리트 용병',
+    attack: 4,
+    health: 4,
+  };
+  const champion = championRecordToDefinition({
+    id: 'test-champion-summon-upgrade',
+    name: '소환 강화 테스트 챔피언',
+    description: '',
+    imageAssetId: null,
+    imageUrl: null,
+    maxHealth: 20,
+    abilityName: '고용',
+    abilityCost: 1,
+    abilityText: "'용병'을 하나 소환한다.",
+    abilityEffects: {
+      effects: [{
+        action: 'SUMMON',
+        values: { definitionRef: { id: mercenary.id }, count: 1 },
+      }],
+    },
+    hasQuest: true,
+    questName: '용병술 훈련',
+    questText: '선수 카드를 8번 생성한다.',
+    questCondition: {
+      event: 'CARD_GENERATED',
+      cardType: 'WRESTLER',
+      progress: 1,
+      required: 8,
+    },
+    questProgressRequired: 8,
+    questRewardText: '고유 능력을 강화시킨다.',
+    questRewardEffects: { effects: [{ action: 'UPGRADE_CHAMPION_ABILITY' }] },
+    upgradedAbilityName: '엘리트 고용',
+    upgradedAbilityCost: 1,
+    upgradedAbilityText: "'엘리트 용병'을 하나 소환한다.",
+    upgradedAbilityEffects: {
+      effects: [{
+        action: 'SUMMON',
+        values: { definitionRef: { id: eliteMercenary.id }, count: 1 },
+      }],
+    },
+    championTokenDefinitionId: null,
+    status: 'PUBLISHED',
+    version: 1,
+  });
+  const started = startGame(createInitialGameState(
+    ['test-champion-summon-upgrade', 'test-champion-no-quest'],
+    [mercenary, eliteMercenary],
+    [champion, ...TEST_CHAMPIONS],
+  ), fixedRandom);
+  const ready = {
+    ...started,
+    players: started.players.map((player) =>
+      player.id === 'player-1' ? { ...player, currentGold: 1 } : player,
+    ),
+  };
+
+  const basic = useChampionAbility(ready, 'player-1');
+  assert.equal(basic.success, true);
+  assert.equal(basic.state.players[0].board[0]?.definitionId, mercenary.id);
+
+  const wrongType = processChampionQuestEvents(basic.state, {
+    ...basic.state,
+    events: [
+      ...basic.state.events,
+      { type: 'CARD_GENERATED' as const, playerId: 'player-1', cardType: 'TECHNIQUE' as const },
+    ],
+  });
+  assert.equal(wrongType.players[0].champion?.questProgress, 0);
+
+  const generatedEvents = Array.from({ length: 8 }, () => ({
+    type: 'CARD_GENERATED' as const,
+    playerId: 'player-1',
+    cardType: 'WRESTLER' as const,
+  }));
+  const completed = processChampionQuestEvents(wrongType, {
+    ...wrongType,
+    events: [...wrongType.events, ...generatedEvents],
+    players: wrongType.players.map((player) =>
+      player.id === 'player-1' ? { ...player, currentGold: 1 } : player,
+    ),
+  });
+  assert.equal(completed.players[0].champion?.questProgress, 8);
+  assert.equal(completed.players[0].champion?.questCompleted, true);
+
+  const upgraded = useChampionAbility(completed, 'player-1');
+  assert.equal(upgraded.success, true);
+  assert.equal(upgraded.state.players[0].board[1]?.definitionId, eliteMercenary.id);
 });
 
 test('골드가 부족하면 챔피언 능력을 사용할 수 없다', () => {

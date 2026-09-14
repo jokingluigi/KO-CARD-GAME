@@ -467,6 +467,7 @@ function applyEffect(
             : player),
           events: [...state.events, ...generatedCards.map((generated) => ({
             type: 'CARD_GENERATED' as const, playerId, cardInstanceId: generated.instanceId,
+            cardType: generated.cardType,
             source: { type: 'CARD' as const, cardInstanceId: sourceCard.instanceId },
             target: { type: 'CARD' as const, cardInstanceId: generated.instanceId }, reason: 'GENERATE' as const,
           }))],

@@ -1,4 +1,4 @@
-import type { ChampionAbility, ChampionDefinition, ChampionEffect, ChampionQuest } from "./types";
+import type { ChampionAbility, ChampionDefinition, ChampionEffect, ChampionQuest, ChampionQuestCardType } from "./types";
 import type { CardEffect } from "../effects/types";
 import { ACTIONS } from "@workspace/effect-registry";
 
@@ -9,7 +9,7 @@ export type PublishedChampionRecord = {
   questCompletedPortraitAssetId?: string | null; questCompletedPortraitUrl?: string | null;
   maxHealth: number; abilityName: string; abilityCost: number; abilityText: string; abilityEffects: Structured;
   hasQuest: boolean; questName: string | null; questText: string | null;
-  questCondition: { event?: string; required?: number } | null; questProgressRequired: number | null;
+  questCondition: { event?: string; cardType?: ChampionQuestCardType; progress?: number; required?: number } | null; questProgressRequired: number | null;
   questRewardText: string | null; questRewardEffects: Structured | null;
   upgradedAbilityName: string | null; upgradedAbilityCost: number | null;
   upgradedAbilityText: string | null; upgradedAbilityEffects: Structured | null;
@@ -56,6 +56,8 @@ export function championRecordToDefinition(record: PublishedChampionRecord): Cha
     ? {
         id: `${record.id}-quest`, name: record.questName, description: record.questText ?? "",
         trackedEvent: record.questCondition.event as ChampionQuest["trackedEvent"],
+         ...(record.questCondition.cardType ? { cardType: record.questCondition.cardType } : {}),
+         ...(record.questCondition.progress ? { progressPerEvent: record.questCondition.progress } : {}),
         requiredProgress: record.questProgressRequired,
          reward: directTokenReward
            ? { type: "DIRECT_DEPLOY_CHAMPION_TOKEN", cardDefinitionId: tokenId }
