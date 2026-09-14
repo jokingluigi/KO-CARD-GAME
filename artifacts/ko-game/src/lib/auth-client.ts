@@ -56,3 +56,20 @@ export async function submitAuth(
   }
   return body.user;
 }
+
+export async function submitTestAuth(role: "USER" | "ADMIN"): Promise<AuthUser> {
+  const response = await fetch(`${import.meta.env.BASE_URL.replace(/\/$/, "")}/api/test-auth/login`, {
+    method: "POST",
+    credentials: "include",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ role }),
+  });
+  if (!response.ok) {
+    throw new Error(await readResponseMessage(response, "개발용 테스트 로그인을 사용할 수 없습니다."));
+  }
+  const body = (await response.json()) as AuthResponse;
+  if (!body.authenticated || !body.user) {
+    throw new Error("개발용 테스트 로그인 상태를 확인하지 못했습니다.");
+  }
+  return body.user;
+}
