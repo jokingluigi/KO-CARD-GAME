@@ -2,6 +2,7 @@ import { createHash, randomBytes, randomUUID, scrypt, timingSafeEqual } from "no
 import { and, eq, gt } from "drizzle-orm";
 import type { NextFunction, Request, Response } from "express";
 import { db, sessionsTable, usersTable, type UserRecord } from "@workspace/db";
+import { ensureStartingShopCurrency } from "./shop-currency";
 
 export const AUTH_SESSION_COOKIE = "ko_session";
 export const AUTH_SESSION_TTL_SECONDS = 30 * 24 * 60 * 60;
@@ -9,7 +10,7 @@ const LOGIN_WINDOW_MS = 15 * 60 * 1000;
 const LOGIN_MAX_ATTEMPTS = 8;
 const loginAttempts = new Map<string, { count: number; resetAt: number }>();
 
-export type PublicUser = Pick<UserRecord, "id" | "email" | "nickname" | "role" | "currency" | "prismBalance">;
+export type PublicUser = Pick<UserRecord, "id" | "email" | "nickname" | "role" | "currency" | "currencyBalance" | "prismBalance">;
 
 declare global {
   namespace Express {
@@ -19,15 +20,21 @@ declare global {
   }
 }
 
-function publicUser(user: UserRecord): PublicUser {
+function publicUser(user: UserRecord, currencyBalance = user.currencyBalance): PublicUser {
   return {
     id: user.id,
     email: user.email,
     nickname: user.nickname,
     role: user.role,
     currency: user.currency,
+    currencyBalance,
     prismBalance: user.prismBalance,
   };
+}
+
+export async function getPublicUser(user: UserRecord): Promise<PublicUser> {
+  const currencyBalance = await ensureStartingShopCurrency(user.id);
+  return publicUser(user, currencyBalance ?? user.currencyBalance);
 }
 
 function getCookie(request: Request, name: string): string | null {
@@ -160,7 +167,7 @@ export async function getAuthenticatedUser(request: Request): Promise<PublicUser
 
   if (!session) return null;
   const [user] = await db.select().from(usersTable).where(eq(usersTable.id, session.userId)).limit(1);
-  return user ? publicUser(user) : null;
+  return user ? await getPublicUser(user) : null;
 }
 
 export async function invalidateAuthSession(request: Request): Promise<void> {

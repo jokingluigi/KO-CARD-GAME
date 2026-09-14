@@ -4,8 +4,8 @@ import { Router } from "express";
 import { db, usersTable } from "@workspace/db";
 import {
   createAuthSession,
+  getPublicUser,
   hashPassword,
-  type PublicUser,
 } from "../lib/auth";
 import { ensureStarterCollection } from "../lib/collection";
 
@@ -27,17 +27,6 @@ const TEST_ACCOUNTS = {
 
 function enabled(): boolean {
   return process.env["NODE_ENV"] !== "production" && process.env["ENABLE_TEST_AUTH"] === "true";
-}
-
-function publicUser(user: typeof usersTable.$inferSelect): PublicUser {
-  return {
-    id: user.id,
-    email: user.email,
-    nickname: user.nickname,
-    role: user.role,
-    currency: user.currency,
-    prismBalance: user.prismBalance,
-  };
 }
 
 async function ensureTestAccount(role: keyof typeof TEST_ACCOUNTS) {
@@ -73,7 +62,7 @@ router.post("/login", async (request, response) => {
 
   const user = await ensureTestAccount(role);
   await createAuthSession(user.id, response);
-  response.json({ authenticated: true, user: publicUser(user) });
+  response.json({ authenticated: true, user: await getPublicUser(user) });
 });
 
 export { TEST_ACCOUNTS };

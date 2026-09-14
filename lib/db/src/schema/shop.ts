@@ -24,8 +24,10 @@ export const shopListingsTable = pgTable("shop_listings", {
 export const currencyTransactionsTable = pgTable("currency_transactions", {
   id: text("id").primaryKey(),
   userId: text("user_id").notNull().references(() => usersTable.id, { onDelete: "cascade" }),
+  relatedListingId: text("related_listing_id").references(() => shopListingsTable.id, { onDelete: "set null" }),
   amount: integer("amount").notNull(),
   balanceAfter: integer("balance_after").notNull(),
+  currencyType: text("currency_type").notNull().default("SHOP_CURRENCY"),
   type: text("type").notNull(),
   metadata: jsonb("metadata"),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),

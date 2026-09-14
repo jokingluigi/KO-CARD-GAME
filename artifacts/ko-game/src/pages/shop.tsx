@@ -1,19 +1,23 @@
 import { useEffect, useMemo, useState } from "react";
 import { ArrowLeft, Coins, Gift, ShoppingBag } from "lucide-react";
 import { fetchShop, purchaseShopListing, type ShopListing } from "@/lib/collection-client";
+import { useToast } from "@/hooks/use-toast";
 
 const basePath = import.meta.env.BASE_URL.replace(/\/$/, "");
 
 export default function ShopPage() {
   const [currency, setCurrency] = useState(0);
+  const [currencyDisplayName, setCurrencyDisplayName] = useState("크레딧");
   const [listings, setListings] = useState<ShopListing[]>([]);
   const [message, setMessage] = useState("상점을 불러오는 중...");
   const [purchasingId, setPurchasingId] = useState<string | null>(null);
   const [success, setSuccess] = useState("");
+  const { toast } = useToast();
 
   async function refresh() {
     const result = await fetchShop();
-    setCurrency(result.currency);
+    setCurrency(result.currencyBalance);
+    setCurrencyDisplayName(result.currencyDisplayName);
     setListings(result.listings);
   }
 
@@ -33,18 +37,25 @@ export default function ShopPage() {
 
   async function handlePurchase(listing: ShopListing) {
     if (purchasingId) return;
+    const confirmed = window.confirm(`${listing.name || listing.pack.name} ×${listing.packQuantity}를\n${listing.price.toLocaleString()} ${currencyDisplayName}으로 구매하시겠습니까?`);
+    if (!confirmed) return;
     setPurchasingId(listing.id);
     setSuccess("");
     setMessage("");
     try {
       const result = await purchaseShopListing(listing.id);
-      setCurrency(result.currency);
+      setCurrency(result.currencyBalance);
       setListings((current) => current.map((item) => item.id === listing.id
-        ? { ...item, quantity: result.quantity }
+        ? { ...item, ownedQuantity: result.ownedQuantity }
         : item));
-      setSuccess(`${listing.pack.name}을 구매했습니다. 내 팩에서 확인할 수 있습니다.`);
+      setSuccess(`팩 ${result.packQuantity}개를 획득했습니다.`);
+      toast({ title: "구매 완료", description: `팩 ${result.packQuantity}개를 획득했습니다.` });
     } catch (error) {
-      setMessage(error instanceof Error ? error.message : "구매에 실패했습니다.");
+      const message = error instanceof Error ? error.message : "구매에 실패했습니다.";
+      setMessage(message);
+      if (message.includes("크레딧이 부족합니다")) {
+        toast({ title: "구매 실패", description: "크레딧이 부족합니다.", variant: "destructive" });
+      }
     } finally {
       setPurchasingId(null);
     }
@@ -58,11 +69,11 @@ export default function ShopPage() {
             <ArrowLeft className="h-4 w-4" /> 메인 메뉴
           </button>
           <div className="flex items-center gap-2 rounded-full border border-amber-700/50 bg-amber-950/30 px-4 py-2 text-sm font-black text-amber-200">
-            <Coins className="h-4 w-4 text-amber-400" /> {currency.toLocaleString()} Gold
+            <Coins className="h-4 w-4 text-amber-400" /> {currency.toLocaleString()} {currencyDisplayName}
           </div>
         </div>
         <header className="mb-8 flex items-end justify-between border-b border-neutral-800 pb-6">
-          <div><p className="font-display text-xs font-bold tracking-[0.25em] text-primary">KO SHOP</p><h1 className="mt-2 text-3xl font-black">카드팩 상점</h1><p className="mt-2 text-sm text-neutral-500">게임에서 획득한 Gold로 공개된 카드팩을 구매합니다.</p></div>
+          <div><p className="font-display text-xs font-bold tracking-[0.25em] text-primary">KO SHOP</p><h1 className="mt-2 text-3xl font-black">카드팩 상점</h1><p className="mt-2 text-sm text-neutral-500">크레딧으로 공개된 카드팩을 구매합니다.</p></div>
           <ShoppingBag className="h-8 w-8 text-amber-400" />
         </header>
         {message && <p className="mb-6 rounded border border-amber-800/50 bg-amber-950/20 px-4 py-3 text-sm text-amber-200">{message}</p>}
@@ -79,12 +90,12 @@ export default function ShopPage() {
                 </div>
                 <div className="p-5">
                   <div className="flex items-start justify-between gap-3">
-                    <div><h2 className="font-black">{listing.pack.name}</h2><p className="mt-1 text-sm text-neutral-500">{listing.pack.description || "KO 카드팩"}</p></div>
-                    <span className="shrink-0 rounded bg-neutral-800 px-2 py-1 text-xs font-bold text-neutral-300">보유 ×{listing.quantity}</span>
+                    <div><h2 className="font-black">{listing.name || listing.pack.name}</h2><p className="mt-1 text-sm text-neutral-500">{listing.description || listing.pack.description || "KO 카드팩"}</p></div>
+                    <span className="shrink-0 rounded bg-neutral-800 px-2 py-1 text-xs font-bold text-neutral-300">보유 ×{listing.ownedQuantity}</span>
                   </div>
-                  <p className="mt-4 text-xs text-neutral-400">{listing.pack.cardsPerPack}장 · 일반 {listing.pack.normalRate}% · 레전더리 {listing.pack.legendaryRate}% · Champion {listing.pack.championRate}%</p>
+                  <p className="mt-4 text-xs text-neutral-400">{listing.pack.name} · 팩 {listing.packQuantity}개 · {listing.pack.cardsPerPack}장</p>
                   <button type="button" disabled={Boolean(purchasingId) || !canAfford} onClick={() => void handlePurchase(listing)} className="mt-5 flex w-full items-center justify-center gap-2 rounded bg-primary px-4 py-3 text-sm font-black text-black transition hover:bg-yellow-400 disabled:cursor-not-allowed disabled:opacity-50">
-                    <Coins className="h-4 w-4" /> {busy ? "구매 중..." : canAfford ? `${listing.price.toLocaleString()} Gold로 구매` : "재화 부족"}
+                    <Coins className="h-4 w-4" /> {busy ? "구매 중..." : canAfford ? `${listing.price.toLocaleString()} ${currencyDisplayName}로 구매` : "크레딧 부족"}
                   </button>
                 </div>
               </article>

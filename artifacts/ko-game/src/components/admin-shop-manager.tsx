@@ -33,7 +33,8 @@ type Listing = {
   isSaleable: boolean;
 };
 
-type AdminShopData = { listings: Listing[]; packs: Pack[] };
+type AdminUser = { id: string; email: string; nickname: string; currencyBalance: number };
+type AdminShopData = { listings: Listing[]; packs: Pack[]; users: AdminUser[]; currencyDisplayName: string };
 type ListingForm = {
   name: string;
   description: string;
@@ -94,6 +95,9 @@ export function AdminShopManager({ onUnauthorized }: { onUnauthorized: () => voi
   const [message, setMessage] = useState("상점 상품을 불러오는 중...");
   const [saving, setSaving] = useState(false);
   const [uploading, setUploading] = useState(false);
+  const [grantUserId, setGrantUserId] = useState("");
+  const [grantAmount, setGrantAmount] = useState("1000");
+  const [granting, setGranting] = useState(false);
 
   async function load() {
     try {
@@ -202,6 +206,29 @@ export function AdminShopManager({ onUnauthorized }: { onUnauthorized: () => voi
     }
   }
 
+  async function grantCurrency() {
+    const amount = Number(grantAmount);
+    if (!grantUserId || !Number.isInteger(amount) || amount < 1) {
+      setMessage("사용자와 1 이상 정수인 지급량을 확인해 주세요.");
+      return;
+    }
+    if (!window.confirm(`${amount.toLocaleString()} ${data?.currencyDisplayName ?? "크레딧"}을 지급할까요?`)) return;
+    setGranting(true);
+    setMessage("");
+    try {
+      await request("/currency/grant", {
+        method: "POST",
+        body: JSON.stringify({ userId: grantUserId, amount }),
+      });
+      await load();
+      setMessage("크레딧을 지급했습니다.");
+    } catch (error) {
+      setMessage(error instanceof Error ? error.message : "크레딧을 지급하지 못했습니다.");
+    } finally {
+      setGranting(false);
+    }
+  }
+
   async function discardPendingImage() {
     if (!form.imageAssetId || !form.imageUploadToken) return;
     await fetch(`${adminBase}/cards/images/discard`, {
@@ -291,7 +318,7 @@ export function AdminShopManager({ onUnauthorized }: { onUnauthorized: () => voi
       <section className="rounded-xl border border-neutral-800 bg-black/40 p-5 sm:p-7">
         <div className="mb-5 flex items-center gap-3">
           <Package className="h-5 w-5 text-primary" />
-          <div><h2 className="text-xl font-black">{selected ? "상품 편집" : "새 상품 만들기"}</h2><p className="mt-1 text-sm text-neutral-500">현재는 PACK 상품만 지원합니다. 실제 구매는 아직 연결하지 않습니다.</p></div>
+            <div><h2 className="text-xl font-black">{selected ? "상품 편집" : "새 상품 만들기"}</h2><p className="mt-1 text-sm text-neutral-500">현재는 PACK 상품만 지원합니다. 판매 중인 상품은 User Shop에서 실제 구매할 수 있습니다.</p></div>
         </div>
         <ProductForm
           data={data}
@@ -306,6 +333,22 @@ export function AdminShopManager({ onUnauthorized }: { onUnauthorized: () => voi
           onSave={() => void save()}
         />
       </section>
+
+      <section className="rounded-xl border border-neutral-800 bg-black/40 p-5 sm:p-7">
+        <div className="mb-5">
+          <p className="font-display text-xs font-bold tracking-[0.25em] text-primary">SHOP CURRENCY</p>
+          <h2 className="mt-2 text-xl font-black">유저 크레딧 지급</h2>
+          <p className="mt-2 text-sm text-neutral-500">상점 구매에만 사용하는 크레딧입니다. 전투 Gold와 Prism에는 영향을 주지 않습니다.</p>
+        </div>
+        <div className="grid gap-3 sm:grid-cols-[minmax(0,1fr)_160px_auto]">
+          <select value={grantUserId} onChange={(event) => setGrantUserId(event.target.value)} className="rounded border border-neutral-700 bg-neutral-900 px-3 py-2.5 text-sm">
+            <option value="">사용자 선택</option>
+            {data.users.map((user) => <option key={user.id} value={user.id}>{user.nickname} · {user.email} · {user.currencyBalance.toLocaleString()} {data.currencyDisplayName}</option>)}
+          </select>
+          <input type="number" min="1" max="1000000" step="1" value={grantAmount} onChange={(event) => setGrantAmount(event.target.value)} className="rounded border border-neutral-700 bg-neutral-900 px-3 py-2.5 text-sm" placeholder="지급량" />
+          <button type="button" disabled={granting} onClick={() => void grantCurrency()} className="rounded bg-amber-400 px-4 py-2.5 text-sm font-black text-black disabled:opacity-50">{granting ? "지급 중..." : "크레딧 지급"}</button>
+        </div>
+      </section>
     </div>
   );
 }
@@ -319,7 +362,7 @@ function ListingRow({ listing, selected, onEdit, onDuplicate, onToggle, onDelete
       </div>
       <div className="min-w-0">
         <div className="flex flex-wrap items-center gap-2"><h3 className="truncate font-black">{listing.name}</h3><span className={`rounded px-2 py-0.5 text-[10px] font-black ${listing.enabled ? "bg-emerald-950 text-emerald-300" : "bg-neutral-800 text-neutral-500"}`}>{listing.enabled ? "판매 ON" : "판매 OFF"}</span></div>
-        <p className="mt-1 text-xs text-neutral-400">Pack: {listing.pack.name} · {listing.quantity}개 · {listing.price.toLocaleString()} G · 순서 {listing.displayOrder}</p>
+        <p className="mt-1 text-xs text-neutral-400">Pack: {listing.pack.name} · {listing.quantity}개 · {listing.price.toLocaleString()} 크레딧 · 순서 {listing.displayOrder}</p>
         <p className="mt-1 text-[11px] text-neutral-600">{formatDate(listing.startsAt)} ~ {formatDate(listing.endsAt)}</p>
         {listing.packUnavailable && <p className="mt-2 text-xs font-bold text-amber-300">연결된 팩을 판매할 수 없습니다. ({listing.pack.status})</p>}
         {!listing.packUnavailable && listing.enabled && !listing.isSaleable && <p className="mt-2 text-xs font-bold text-amber-300">현재 판매 기간이 아닙니다.</p>}
@@ -362,7 +405,7 @@ function ProductForm({ data, form, selected, saving, uploading, onUpdate, onUplo
         <label className="text-sm font-bold sm:col-span-2">설명<textarea value={form.description} onChange={(event) => onUpdate("description", event.target.value)} placeholder="상품 설명" className="mt-1 min-h-20 w-full rounded border border-neutral-700 bg-neutral-950 px-3 py-2.5 text-sm" /></label>
         <label className="text-sm font-bold">연결 Pack<select value={form.packDefinitionId} onChange={(event) => onUpdate("packDefinitionId", event.target.value)} className="mt-1 w-full rounded border border-neutral-700 bg-neutral-950 px-3 py-2.5 text-sm"><option value="">PUBLISHED Pack 선택</option>{packOptions.map((pack) => <option key={pack.id} value={pack.id} disabled={pack.status !== "PUBLISHED"}>{pack.status === "PUBLISHED" ? "" : "[판매 불가] "}{pack.name}</option>)}</select></label>
         <label className="text-sm font-bold">지급 Pack 수량<input type="number" min="1" max="999" value={form.quantity} onChange={(event) => onUpdate("quantity", event.target.value)} className="mt-1 w-full rounded border border-neutral-700 bg-neutral-950 px-3 py-2.5 text-sm" /></label>
-        <label className="text-sm font-bold">가격 (Gold)<input type="number" min="0" value={form.price} onChange={(event) => onUpdate("price", event.target.value)} className="mt-1 w-full rounded border border-neutral-700 bg-neutral-950 px-3 py-2.5 text-sm" /></label>
+         <label className="text-sm font-bold">가격 (크레딧)<input type="number" min="0" value={form.price} onChange={(event) => onUpdate("price", event.target.value)} className="mt-1 w-full rounded border border-neutral-700 bg-neutral-950 px-3 py-2.5 text-sm" /></label>
         <label className="text-sm font-bold">표시 순서<input type="number" min="0" value={form.displayOrder} onChange={(event) => onUpdate("displayOrder", event.target.value)} className="mt-1 w-full rounded border border-neutral-700 bg-neutral-950 px-3 py-2.5 text-sm" /></label>
         <label className="text-sm font-bold">판매 시작일<input type="datetime-local" value={form.startsAt} onChange={(event) => onUpdate("startsAt", event.target.value)} className="mt-1 w-full rounded border border-neutral-700 bg-neutral-950 px-3 py-2.5 text-sm" /></label>
         <label className="text-sm font-bold">판매 종료일<input type="datetime-local" value={form.endsAt} onChange={(event) => onUpdate("endsAt", event.target.value)} className="mt-1 w-full rounded border border-neutral-700 bg-neutral-950 px-3 py-2.5 text-sm" /></label>
@@ -376,7 +419,7 @@ function ProductForm({ data, form, selected, saving, uploading, onUpdate, onUplo
           <div className="flex aspect-[16/9] items-center justify-center bg-gradient-to-br from-amber-950/60 to-neutral-950">
             {previewImage ? <img src={previewImage} alt="" className="h-full w-full object-cover" /> : <ShoppingBag className="h-12 w-12 text-amber-400/70" />}
           </div>
-          <div className="p-4"><p className="font-black">{form.name || "상품명"}</p><p className="mt-1 text-xs text-neutral-500">{form.description || "상품 설명"}</p><div className="mt-4 flex items-center justify-between gap-2"><span className="text-xs font-bold text-amber-200">팩 {Number(form.quantity) || 0}개 지급</span><span className="font-black text-amber-300">{(Number(form.price) || 0).toLocaleString()} G</span></div></div>
+           <div className="p-4"><p className="font-black">{form.name || "상품명"}</p><p className="mt-1 text-xs text-neutral-500">{form.description || "상품 설명"}</p><div className="mt-4 flex items-center justify-between gap-2"><span className="text-xs font-bold text-amber-200">팩 {Number(form.quantity) || 0}개 지급</span><span className="font-black text-amber-300">{(Number(form.price) || 0).toLocaleString()} 크레딧</span></div></div>
         </div>
         <div className="mt-4">
           <label className="flex cursor-pointer items-center justify-center gap-2 rounded border border-neutral-700 px-3 py-2.5 text-xs font-bold text-neutral-300 hover:border-amber-400"><ImagePlus className="h-4 w-4" /> {uploading ? "업로드 중..." : "상품 이미지 업로드"}<input type="file" accept=".png,.jpg,.jpeg,.webp" className="sr-only" disabled={uploading} onChange={(event) => { const file = event.target.files?.[0]; if (file) onUpload(file); event.currentTarget.value = ""; }} /></label>

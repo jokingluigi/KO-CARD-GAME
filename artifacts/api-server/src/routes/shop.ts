@@ -10,9 +10,9 @@ import {
   usersTable,
 } from "@workspace/db";
 import { getAuthenticatedUser } from "../lib/auth";
+import { SHOP_CURRENCY, SHOP_CURRENCY_DISPLAY_NAME } from "../lib/shop-currency";
 
 const router: IRouter = Router();
-const MAX_PURCHASE_QUANTITY = 10;
 
 router.use(async (request, response, next) => {
   try {
@@ -52,20 +52,19 @@ router.get("/", async (request, response): Promise<void> => {
     .orderBy(asc(shopListingsTable.displayOrder), asc(packDefinitionsTable.name));
 
   response.json({
-    currency: request.authUser!.currency,
-    listings: listings.map(({ listing, pack, quantity }) => ({ ...listing, pack, quantity })),
+    currencyBalance: request.authUser!.currencyBalance,
+    currencyDisplayName: SHOP_CURRENCY_DISPLAY_NAME,
+    listings: listings.map(({ listing, pack, quantity }) => ({
+      ...listing,
+      imageUrl: listing.imageAssetId ? `/api/storage${listing.imageAssetId}` : pack.imageUrl,
+      pack,
+      packQuantity: listing.quantity,
+      ownedQuantity: quantity,
+    })),
   });
 });
 
 router.post("/:listingId/purchase", async (request, response): Promise<void> => {
-  const quantity = request.body && typeof request.body === "object" && Number.isInteger(request.body.quantity)
-    ? request.body.quantity
-    : 0;
-  if (quantity < 1 || quantity > MAX_PURCHASE_QUANTITY) {
-    response.status(400).json({ message: `구매 수량은 1~${MAX_PURCHASE_QUANTITY}개여야 합니다.` });
-    return;
-  }
-
   try {
     const result = await db.transaction(async (tx) => {
       const [listing] = await tx
@@ -84,29 +83,29 @@ router.post("/:listingId/purchase", async (request, response): Promise<void> => 
         .limit(1);
       if (!listing) throw new ShopError(404, "판매 중인 팩을 찾을 수 없습니다.");
 
-      const total = listing.listing.price * quantity;
+      const total = listing.listing.price;
       const [updatedUser] = await tx
         .update(usersTable)
-        .set({ currency: sql`${usersTable.currency} - ${total}`, updatedAt: new Date() })
+        .set({ currencyBalance: sql`${usersTable.currencyBalance} - ${total}`, updatedAt: new Date() })
         .where(and(
           eq(usersTable.id, request.authUser!.id),
-          sql`${usersTable.currency} >= ${total}`,
+          sql`${usersTable.currencyBalance} >= ${total}`,
         ))
-        .returning({ currency: usersTable.currency });
-      if (!updatedUser) throw new ShopError(422, "재화가 부족합니다.");
+        .returning({ currencyBalance: usersTable.currencyBalance });
+      if (!updatedUser) throw new ShopError(422, "크레딧이 부족합니다.");
 
       const [inventory] = await tx
         .insert(userPackInventoryTable)
         .values({
           userId: request.authUser!.id,
           packDefinitionId: listing.pack.id,
-          quantity,
+          quantity: listing.listing.quantity,
           updatedAt: new Date(),
         })
         .onConflictDoUpdate({
           target: [userPackInventoryTable.userId, userPackInventoryTable.packDefinitionId],
           set: {
-            quantity: sql`${userPackInventoryTable.quantity} + ${quantity}`,
+            quantity: sql`${userPackInventoryTable.quantity} + ${listing.listing.quantity}`,
             updatedAt: new Date(),
           },
         })
@@ -116,12 +115,19 @@ router.post("/:listingId/purchase", async (request, response): Promise<void> => 
         id: randomUUID(),
         userId: request.authUser!.id,
         amount: -total,
-        balanceAfter: updatedUser.currency,
+        balanceAfter: updatedUser.currencyBalance,
+        relatedListingId: listing.listing.id,
+        currencyType: SHOP_CURRENCY,
         type: "SHOP_PURCHASE",
-        metadata: { listingId: listing.listing.id, packDefinitionId: listing.pack.id, quantity },
+        metadata: { listingId: listing.listing.id, packDefinitionId: listing.pack.id, packQuantity: listing.listing.quantity },
       });
 
-      return { currency: updatedUser.currency, quantity: inventory?.quantity ?? quantity, pack: listing.pack };
+      return {
+        currencyBalance: updatedUser.currencyBalance,
+        packQuantity: listing.listing.quantity,
+        ownedQuantity: inventory?.quantity ?? listing.listing.quantity,
+        pack: listing.pack,
+      };
     });
     response.json(result);
   } catch (error) {

@@ -101,20 +101,26 @@ export const openPack = (id: string) => request<{ rewards: PackReward[] }>(`/pac
 
 export type ShopListing = {
   id: string;
+  name: string;
+  description: string;
+  imageAssetId: string | null;
+  imageUrl: string | null;
   packDefinitionId: string;
   price: number;
+  packQuantity: number;
+  ownedQuantity: number;
   isActive: number;
   displayOrder: number;
   pack: Pack;
-  quantity: number;
 };
-export type ShopData = { currency: number; listings: ShopListing[] };
+export type ShopData = { currencyBalance: number; currencyDisplayName: string; listings: ShopListing[] };
 export const fetchShop = () => request<ShopData>("/shop");
 export const purchaseShopListing = (listingId: string, quantity = 1) => request<{
-  currency: number;
-  quantity: number;
+  currencyBalance: number;
+  packQuantity: number;
+  ownedQuantity: number;
   pack: Pack;
 }>(`/shop/${encodeURIComponent(listingId)}/purchase`, {
   method: "POST",
-  body: JSON.stringify({ quantity }),
+  body: JSON.stringify({}),
 });

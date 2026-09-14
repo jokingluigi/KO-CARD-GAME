@@ -54,7 +54,8 @@ export function MainMenu({ onComingSoon, onDeckEdit, user, onLogout }: MainMenuP
           {user && onLogout && (
             <div className="ko-main-menu__user">
               <span>{user.nickname}</span>
-              <span className="text-amber-300">{user.currency.toLocaleString()} Gold</span>
+              <span className="text-amber-300">크레딧 {user.currencyBalance.toLocaleString()}</span>
+              <span className="text-violet-300">프리즘 {user.prismBalance.toLocaleString()}</span>
               <button type="button" onClick={onLogout} aria-label="로그아웃">
                 <LogOut className="h-3.5 w-3.5" aria-hidden="true" />
                 로그아웃

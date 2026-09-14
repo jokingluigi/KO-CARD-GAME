@@ -9,6 +9,7 @@ import {
   usersTable,
 } from "@workspace/db";
 import { getAuthenticatedUser } from "../lib/auth";
+import { SHOP_CURRENCY, SHOP_CURRENCY_DISPLAY_NAME } from "../lib/shop-currency";
 
 const router: IRouter = Router();
 
@@ -29,7 +30,7 @@ router.use(async (request, response, next) => {
 
 router.get("/", async (request, response): Promise<void> => {
   if (!requireAdmin(request, response)) return;
-  const [listings, packs] = await Promise.all([
+  const [listings, packs, users] = await Promise.all([
     db.select({ listing: shopListingsTable, pack: packDefinitionsTable })
       .from(shopListingsTable)
       .innerJoin(packDefinitionsTable, eq(packDefinitionsTable.id, shopListingsTable.packDefinitionId))
@@ -37,6 +38,12 @@ router.get("/", async (request, response): Promise<void> => {
     db.select().from(packDefinitionsTable)
       .where(and(eq(packDefinitionsTable.status, "PUBLISHED"), sql`${packDefinitionsTable.deletedAt} IS NULL`))
       .orderBy(asc(packDefinitionsTable.name)),
+    db.select({
+      id: usersTable.id,
+      email: usersTable.email,
+      nickname: usersTable.nickname,
+      currencyBalance: usersTable.currencyBalance,
+    }).from(usersTable).orderBy(asc(usersTable.nickname)),
   ]);
   const now = Date.now();
   response.json({
@@ -50,6 +57,8 @@ router.get("/", async (request, response): Promise<void> => {
         && (!listing.endsAt || listing.endsAt.getTime() >= now),
     })),
     packs,
+    users,
+    currencyDisplayName: SHOP_CURRENCY_DISPLAY_NAME,
   });
 });
 
@@ -129,12 +138,18 @@ router.post("/currency/grant", async (request, response): Promise<void> => {
   }
   const result = await db.transaction(async (tx) => {
     const [user] = await tx.update(usersTable)
-      .set({ currency: sql`${usersTable.currency} + ${amount}`, updatedAt: new Date() })
+      .set({ currencyBalance: sql`${usersTable.currencyBalance} + ${amount}`, updatedAt: new Date() })
       .where(eq(usersTable.id, userId))
-      .returning({ id: usersTable.id, currency: usersTable.currency });
+      .returning({ id: usersTable.id, currencyBalance: usersTable.currencyBalance });
     if (!user) return null;
     await tx.insert(currencyTransactionsTable).values({
-      id: randomUUID(), userId, amount, balanceAfter: user.currency, type: "ADMIN_GRANT", metadata: { grantedBy: request.authUser!.id },
+      id: randomUUID(),
+      userId,
+      amount,
+      balanceAfter: user.currencyBalance,
+      currencyType: SHOP_CURRENCY,
+      type: "ADMIN_GRANT",
+      metadata: { grantedBy: request.authUser!.id },
     });
     return user;
   });

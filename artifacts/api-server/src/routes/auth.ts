@@ -18,6 +18,7 @@ import {
   promoteConfiguredAdmin,
   recordFailedLogin,
   verifyPassword,
+  getPublicUser,
 } from "../lib/auth";
 import { ensureStarterCollection } from "../lib/collection";
 
@@ -79,9 +80,7 @@ router.post("/register", async (request, response) => {
     }
     await ensureStarterCollection(user.id);
     await createAuthSession(user.id, response);
-    response.status(201).json({ authenticated: true, user: {
-      id: user.id, email: user.email, nickname: user.nickname, role: user.role, currency: user.currency, prismBalance: user.prismBalance,
-    } });
+    response.status(201).json({ authenticated: true, user: await getPublicUser(user) });
   } catch (error) {
     if ((error as { code?: string }).code === "23505") {
       response.status(409).json({ message: "이미 사용 중인 이메일 또는 닉네임입니다." });
@@ -116,9 +115,7 @@ router.post("/login", async (request, response) => {
   clearLoginRateLimit(request, email);
   await ensureStarterCollection(user.id);
   await createAuthSession(user.id, response);
-  response.json({ authenticated: true, user: {
-    id: user.id, email: user.email, nickname: user.nickname, role: user.role, currency: user.currency, prismBalance: user.prismBalance,
-  } });
+  response.json({ authenticated: true, user: await getPublicUser(user) });
 });
 
 router.post("/logout", async (request, response) => {
