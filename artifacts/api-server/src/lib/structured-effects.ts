@@ -118,6 +118,7 @@ const aliases = {
 
 const STAT_MULTIPLIER_PATTERN = /(?:자신(?:의|에게)?\s*)?(?:현재\s*)?(?:공격(?:력)?\s*(?:과|\/|및)\s*체력|체력\s*(?:과|\/|및)\s*공격(?:력)?)(?:의\s*)?(?:(?:수치(?:를|가)?)|(?:을|를))?\s*(\d+(?:\.\d+)?)\s*배(?:로)?(?:\s*(?:만들|변경|합니다|한다))?/i;
 const STAT_PAIR_INCREMENT_PATTERN = /(?:공격(?:력)?\s*(?:과|\/|및)\s*체력|체력\s*(?:과|\/|및)\s*공격(?:력)?)(?:의\s*)?(?:(?:수치(?:를|가)?)|(?:을|를))?\s*(\d+(?:\.\d+)?)\s*(?:씩\s*)?(?:증가|올려|올립(?:니다|다)?|상승|강화)(?:시킵니다|합니다|한다)?/i;
+const SINGLE_STAT_INCREMENT_PATTERN = /(공격력|체력)(?:을|를|이|가)?\s*([+-]?\d+)\s*(?:씩\s*)?(?:증가|올려|올립(?:니다|다)?|상승|강화)(?:시킵니다|합니다|한다)?/i;
 const REFERENCE_ATTACK_INCREMENT_PATTERN = /공격한\s*(?:아군\s*)?선수의\s*공격력\s*만큼\s*(?:자신의\s*)?공격력(?:을|이)?\s*(?:증가|올려|상승|강화)/i;
 const SET_ATTACK_ZERO_PATTERN = /(?:자신의\s*)?공격력을\s*0\s*으로(?:\s*(?:만들|설정|변경))?/i;
 const NEXT_PLAY_HEALTH_BUFF_PATTERN = /다음(?:에)?\s*(?:(?:내가|제가)\s*)?내는\s*(?:아군\s*)?선수\s*카드\s*(?:1장|한\s*장)(?:(?:이|을|의)\s*)?(?:체력(?:이|을)?\s*)?(\d+)\s*(?:증가|늘어|올라|올라갑니다?|올립니다?)/i;
@@ -163,6 +164,8 @@ function targetFilterFor(text: string): Target["filter"] | undefined {
 function targetFor(text: string, randomPool = false): Target {
   const hand = /손(?:패)?/.test(text);
   const enemyQualifier = /(?:적|상대)/.test(text);
+  const explicitSelfTarget = /(?:자신(?:의|에게|을|은)|(?:아군|내)\s*(?:선수|대상|캐릭터|챔피언)?)/.test(text);
+  const selectedOwner = enemyQualifier || !explicitSelfTarget ? "ENEMY" : "SELF";
   if (/모든\s*(?:캐릭터|대상)/.test(text)) return { zone: "CHARACTER", owner: "ALL", selection: "ALL", count: targetCountFrom(text) };
   if (/(상대|적)\s*(?:캐릭터|대상)/.test(text)) return { zone: "CHARACTER", owner: "ENEMY", selection: "PLAYER_CHOICE", count: targetCountFrom(text) };
   if (/(아군|내)\s*(?:캐릭터|대상)/.test(text)) return { zone: "CHARACTER", owner: "SELF", selection: "PLAYER_CHOICE", count: targetCountFrom(text) };
@@ -180,7 +183,7 @@ function targetFor(text: string, randomPool = false): Target {
     }
     return {
       zone: /선택한\s*선수/.test(text) ? "BOARD" : "CHARACTER",
-      owner: enemyQualifier ? "ENEMY" : "SELF",
+      owner: selectedOwner,
       ...( /선택한\s*선수/.test(text) ? { cardType: "WRESTLER" as const } : {}),
       selection: "PLAYER_CHOICE",
       count: 1,
@@ -365,7 +368,8 @@ function effect(
   if (action === "GENERATE") values.destination = /덱/.test(body) ? "DECK" : "HAND";
   if ((action === "SUMMON" || action === "GENERATE") && cardReference.card) values.count = targetCountFrom(body);
   const statMultiplier = schema.statMultiplier ? body.match(STAT_MULTIPLIER_PATTERN) : null;
-  const statPairIncrement = schema.stats ? body.match(STAT_PAIR_INCREMENT_PATTERN) : null;
+   const statPairIncrement = schema.stats ? body.match(STAT_PAIR_INCREMENT_PATTERN) : null;
+   const singleStatIncrement = schema.stats ? body.match(SINGLE_STAT_INCREMENT_PATTERN) : null;
   const referenceStat = schema.referenceStat ? body.match(REFERENCE_ATTACK_INCREMENT_PATTERN) : null;
   if (schema.statMultiplier && statMultiplier) {
     const multiplier = Number(statMultiplier[1]);
@@ -379,7 +383,7 @@ function effect(
   }
   if (schema.amount) {
     const amountText = (action === "DAMAGE" || action === "ADD_DAMAGE_MODIFIER")
-      ? (body.match(/(?:피해|데미지)\s*(\d+)|(\d+)\s*(?:추가\s*)?(?:피해|데미지)/)?.[1] ?? body.match(/(?:피해|데미지)\s*(\d+)|(\d+)\s*(?:추가\s*)?(?:피해|데미지)/)?.[2])
+      ? (body.match(/(?:피해|데미지)(?:을|를|이|가)?\s*\d+(?!\s*(?:증가|추가))/)?.[0]?.match(/\d+/)?.[0] ?? body.match(/(\d+)\s*(?:추가\s*)?(?:피해|데미지)/)?.[1])
       : action === "DRAW"
         ? (body.match(/(?:카드\s*)?(\d+)\s*장|(\d+)\s*드로우/)?.[1] ?? body.match(/(?:카드\s*)?(\d+)\s*장|(\d+)\s*드로우/)?.[2])
         : ["REDUCE_COST", "INCREASE_COST"].includes(action)
@@ -403,17 +407,25 @@ function effect(
     }
     const pair = body.match(/([+-]\d+)\s*\/\s*([+-]\d+)/);
     const singleStat = body.match(/(공격력|체력)\s*([+-]\d+)/);
-    if (!pair && !singleStat && !statPairIncrement) return null;
+     if (!pair && !singleStat && !statPairIncrement && !singleStatIncrement) return null;
     values.attack = pair
       ? Number(pair[1])
       : singleStat
         ? singleStat[1] === "공격력" ? Number(singleStat[2]) : 0
-        : Number(statPairIncrement![1]);
+         : statPairIncrement
+           ? Number(statPairIncrement[1])
+           : singleStatIncrement
+             ? singleStatIncrement[1] === "공격력" ? Number(singleStatIncrement[2]) : 0
+             : 0;
     values.health = pair
       ? Number(pair[2])
       : singleStat
         ? singleStat[1] === "체력" ? Number(singleStat[2]) : 0
-        : Number(statPairIncrement![1]);
+         : statPairIncrement
+           ? Number(statPairIncrement[1])
+           : singleStatIncrement
+             ? singleStatIncrement[1] === "체력" ? Number(singleStatIncrement[2]) : 0
+             : 0;
   }
   if (schema.keyword) { const keyword = keywordFor(body); if (!keyword) return null; values.keyword = keyword; }
   const explicitTarget = /(선택한\s*(?:선수|대상)|자신|이\s*카드(?!는)|모든\s*캐릭터|모든\s*(?:생성된\s*)?선수|(?:적|상대)\s*(?:선수|챔피언|플레이어|캐릭터)|(?:아군|내)\s*캐릭터|손(?:패)?|생성된|어디에\s*(?:있든|있는)|모든\s*위치의|손패\s*[,，]\s*덱\s*[,，]\s*(?:필드|보드))/.test(targetBody);
@@ -514,9 +526,9 @@ export function analyzeEffectText(input: string, options: EffectAnalysisOptions 
      ["SWAP_STATS", STAT_SWAP_PATTERN],
      ["QUEUE_EFFECT", NEXT_PLAY_HEALTH_BUFF_PATTERN],
     ["ADD_DAMAGE_MODIFIER", /생성된\s*(?:카드|선수)?(?:들)?(?:이|가)?\s*(?:주는\s*)?(?:(?:데미지|피해)(?:가|를)?\s*(?:\d+\s*(?:증가|추가)|(?:증가|추가)\s*\d+)|\d+\s*추가\s*(?:데미지|피해))/],
-    ["BUFF", /(?:[+-]\d+\s*\/\s*[+-]\d+|(?:공격력|체력)\s*[+-]\d+|(?:자신(?:의|에게)?\s*)?(?:현재\s*)?(?:공격(?:력)?\s*(?:과|\/|및)\s*체력|체력\s*(?:과|\/|및)\s*공격(?:력)?)(?:의\s*)?(?:(?:수치(?:를|가)?)|(?:을|를))?\s*\d+(?:\.\d+)?\s*배(?:로)?|(?:공격(?:력)?\s*(?:과|\/|및)\s*체력|체력\s*(?:과|\/|및)\s*공격(?:력)?)(?:의\s*)?(?:(?:수치(?:를|가)?)|(?:을|를))?\s*\d+(?:\.\d+)?\s*(?:씩\s*)?(?:증가|올려|올립(?:니다|다)?|상승|강화)|공격한\s*(?:아군\s*)?선수의\s*공격력\s*만큼\s*(?:자신의\s*)?공격력(?:을|이)?\s*(?:증가|올려|상승|강화))/],
+     ["BUFF", /(?:[+-]\d+\s*\/\s*[+-]\d+|(?:공격력|체력)\s*[+-]\d+|(?:공격력|체력)(?:을|를|이|가)?\s*[+-]?\d+\s*(?:씩\s*)?(?:증가|올려|올립(?:니다|다)?|상승|강화)|(?:자신(?:의|에게)?\s*)?(?:현재\s*)?(?:공격(?:력)?\s*(?:과|\/|및)\s*체력|체력\s*(?:과|\/|및)\s*공격(?:력)?)(?:의\s*)?(?:(?:수치(?:를|가)?)|(?:을|를))?\s*\d+(?:\.\d+)?\s*배(?:로)?|(?:공격(?:력)?\s*(?:과|\/|및)\s*체력|체력\s*(?:과|\/|및)\s*공격(?:력)?)(?:의\s*)?(?:(?:수치(?:를|가)?)|(?:을|를))?\s*\d+(?:\.\d+)?\s*(?:씩\s*)?(?:증가|올려|올립(?:니다|다)?|상승|강화)|공격한\s*(?:아군\s*)?선수의\s*공격력\s*만큼\s*(?:자신의\s*)?공격력(?:을|이)?\s*(?:증가|올려|상승|강화))/],
     ["SET_STATS", /(?:자신의\s*)?공격력을\s*0\s*으로(?:\s*(?:만들|설정|변경))?/],
-    ["DAMAGE", /(?:(?:피해|데미지)\s*\d+|\d+\s*(?:피해|데미지))/],
+     ["DAMAGE", /(?:(?:피해|데미지)(?:을|를|이|가)?\s*\d+(?!\s*(?:증가|추가))|\d+\s*(?:피해|데미지))/],
     ["HEAL", /(?:체력(?:을|를)?\s*[+]?\d+\s*(?:회복|치유)|\d+(?:만큼)?\s*(?:회복|치유))/],
     ["REDUCE_COST", /(?:비용|코스트)(?:을|를)?\s*(?:-\d+|\d+\s*(?:감소|낮))/],
     ["INCREASE_COST", /(?:비용|코스트)(?:을|를)?\s*(?:[+]\d+|\d+\s*증가)/],
@@ -543,6 +555,7 @@ export function analyzeEffectText(input: string, options: EffectAnalysisOptions 
       if (!isActiveAction(action)) return [];
        if (action === "ADD_GOLD" && deferredGoldClause) return [];
        if (action === "SUMMON" && /(?:내\s*)?챔피언(?:을|를)?\s*소환/i.test(clause)) return [];
+       if (action === "BUFF" && NEXT_PLAY_HEALTH_BUFF_PATTERN.test(clause)) return [];
       const match = matcher.exec(clause);
       return match ? [{ action, matcher, index: match.index }] : [];
     }).sort((left, right) => left.index - right.index);
@@ -587,7 +600,7 @@ export function analyzeEffectText(input: string, options: EffectAnalysisOptions 
      if (/모든\s*생성된\s*카드.*합산.*소환.*도발/.test(text)) remainder = "";
    }
    // Action endings remain after matcher only for Korean conjugations.
-   remainder = remainder.replace(/(합니다|시키고|시킵니다|시킨다|증가시킨다|올린다|강화한다|부여|획득|얻음|얻습니다|줍니다|준다|주|드로우|뽑습니다|뽑기|포획|제거|소환|생성|해방|감소|증가)/g, "");
+    remainder = remainder.replace(/(합니다|시키고|시킵니다|시킨다|증가시킨다|올린다|강화한다|부여|획득|얻음|얻습니다|줍니다|준다|주|드로우|뽑습니다|뽑기|포획|제거|소환|생성|해방|감소|증가|선택하여|선택해서|선택하고)/g, "");
    const remainderUnsupported = remainder
      .replace(unsupportedMechanic, "")
      .replace(/['‘’“”「」]/g, "")

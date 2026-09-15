@@ -44,3 +44,9 @@ Champion admin effect fields may omit an explicit natural-language Trigger, but 
 **Why:** Champion effects are invoked by the champion ability or quest flow rather than by their display prefix, while silently relaxing all effect inputs would make card analysis and validation ambiguous.
 
 **How to apply:** Send `sourceType` and `effectSlot` from Champion fields, analyze the bare body through the shared parser, and keep the resulting structured effect subject to the same server validator.
+
+In Korean target phrases, `자신이 선택한 선수/대상` describes the player making the choice, not a SELF-owned target. Treat it as the default opposing selectable target; reserve SELF ownership for explicit phrases such as `자신의`, `자신에게`, or `자신을`.
+
+**Why:** Confusing the chooser with the target owner makes single-target Champion abilities select the wrong side while leaving the displayed sentence unchanged.
+
+**How to apply:** Resolve owner from explicit target qualifiers and zone/card nouns, then apply `PLAYER_CHOICE`; keep hand-target phrases explicitly scoped to the owner's hand.

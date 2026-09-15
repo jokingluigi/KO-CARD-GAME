@@ -127,21 +127,21 @@ test("필수 카드 문장을 안전한 구조화 효과로 분석한다", () =>
   }
 });
 
-test("판도라식 자신이 선택한 대상은 SELF가 아니라 PLAYER_CHOICE로 분석한다", () => {
+test("판도라식 자신이 선택한 대상은 선택 주체와 대상 소유자를 혼동하지 않는다", () => {
   const result = analyzeEffectText("등장: 자신이 선택한 선수를 침묵시키고 파괴합니다.");
 
   assert.equal(result.status, "success");
   assert.deepEqual(result.effects.map((effect) => effect.action), ["SILENCE", "DESTROY"]);
   assert.deepEqual(result.effects[0]?.target, {
     zone: "BOARD",
-    owner: "SELF",
+    owner: "ENEMY",
     cardType: "WRESTLER",
     selection: "PLAYER_CHOICE",
     count: 1,
   });
   assert.deepEqual(result.effects[1]?.target, {
     zone: "BOARD",
-    owner: "SELF",
+    owner: "ENEMY",
     cardType: "WRESTLER",
     selection: "SAME_TARGET",
     count: 1,
@@ -160,6 +160,42 @@ test("손패의 선택한 선수 카드는 손패 WRESTLER 대상으로 유지�
     count: 1,
   });
   assert.equal(isStructuredEffects({ effects: result.effects }), true);
+});
+
+test("판도라의 기본 문구는 상대 선수, 강화 문구는 상대 선수와 Champion을 고른다", () => {
+  const wrestler = analyzeEffectText("자신이 선택한 선수에게 1 데미지를 줍니다.", { defaultTrigger: "ENTER_FIELD" });
+  const character = analyzeEffectText("선택한 대상에게 피해를 1 줍니다.", { defaultTrigger: "ENTER_FIELD" });
+
+  assert.deepEqual(wrestler.effects[0]?.target, {
+    zone: "BOARD",
+    owner: "ENEMY",
+    cardType: "WRESTLER",
+    selection: "PLAYER_CHOICE",
+    count: 1,
+  });
+  assert.deepEqual(character.effects[0]?.target, {
+    zone: "CHARACTER",
+    owner: "ENEMY",
+    selection: "PLAYER_CHOICE",
+    count: 1,
+  });
+});
+
+test("손에 있는 선수 카드 선택 문장은 손패 WRESTLER 단일 공격력 버프로 분석한다", () => {
+  const result = analyzeEffectText(
+    "손에 있는 선수 카드 하나를 선택하여 공격력을 2 올립니다.",
+    { defaultTrigger: "ENTER_FIELD" },
+  );
+
+  assert.equal(result.status, "success");
+  assert.deepEqual(result.effects[0]?.target, {
+    zone: "HAND",
+    owner: "SELF",
+    cardType: "WRESTLER",
+    selection: "PLAYER_CHOICE",
+    count: 1,
+  });
+  assert.deepEqual(result.effects[0]?.values, { attack: 2, health: 0 });
 });
 
 test("판도라의 선택 대상 파괴와 공격력 합산은 하나의 검증된 효과 목록이 된다", () => {

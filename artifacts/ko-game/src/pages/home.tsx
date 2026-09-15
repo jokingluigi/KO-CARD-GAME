@@ -593,7 +593,7 @@ export default function Home() {
     const before = gameState;
     const next = processChampionQuestEvents(before, selectEffectTarget(before, targetId));
     if (next === before) {
-      setPlayError('이 효과의 대상으로 선택할 수 없습니다.');
+      setPlayError('선택할 수 없는 대상입니다.');
       return;
     }
     setGameState(next);
