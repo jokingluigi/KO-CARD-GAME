@@ -39,5 +39,6 @@
 - [Champion quest filtering](champion-quest-filtering.md) — quest progress must match structured event filters such as card type before incrementing.
 - [Champion upgrade analyzer](champion-upgrade-analyzer.md) — self-upgrade rewards normalize Korean variants and punctuation before accepting an empty effect body.
 - [Champion admin test boundary](champion-admin-test-boundary.md) — test matches use saved Champion data and an admin-visible card snapshot, never unsaved form state.
+- [Artwork position precision](artwork-position-precision.md) — card artwork X/Y controls can emit fractional percentages and must remain real-valued in persistence.
 - [Champion ability turn limit](champion-ability-turn-limit.md) — enforce one Champion ability use per player turn in game state and reset at turn start.
 - [Unified effect implementation prompt](unified-effect-prompt-boundary.md) — reanalyze live cards/Champion slots against the current registry; Champion Tokens remain CardDefinition references.
