@@ -161,22 +161,41 @@ function targetFilterFor(text: string): Target["filter"] | undefined {
   return Object.keys(filter).length ? filter : undefined;
 }
 function targetFor(text: string, randomPool = false): Target {
-  if (/모든\s*캐릭터/.test(text)) return { zone: "CHARACTER", owner: "ALL", selection: "ALL", count: targetCountFrom(text) };
-  if (/(상대|적)\s*캐릭터/.test(text)) return { zone: "CHARACTER", owner: "ENEMY", selection: "PLAYER_CHOICE", count: targetCountFrom(text) };
-  if (/(아군|내)\s*캐릭터/.test(text)) return { zone: "CHARACTER", owner: "SELF", selection: "PLAYER_CHOICE", count: targetCountFrom(text) };
+  const hand = /손(?:패)?/.test(text);
+  const enemyQualifier = /(?:적|상대)/.test(text);
+  if (/모든\s*(?:캐릭터|대상)/.test(text)) return { zone: "CHARACTER", owner: "ALL", selection: "ALL", count: targetCountFrom(text) };
+  if (/(상대|적)\s*(?:캐릭터|대상)/.test(text)) return { zone: "CHARACTER", owner: "ENEMY", selection: "PLAYER_CHOICE", count: targetCountFrom(text) };
+  if (/(아군|내)\s*(?:캐릭터|대상)/.test(text)) return { zone: "CHARACTER", owner: "SELF", selection: "PLAYER_CHOICE", count: targetCountFrom(text) };
   if (/(상대|적)\s*(챔피언|플레이어)/.test(text)) return { zone: "PLAYER", owner: "ENEMY", selection: "SELF", count: 1 };
   if (/(?:내|자신의)\s*챔피언/.test(text)) return { zone: "PLAYER", owner: "SELF", selection: "SELF", count: 1 };
   if (/선택한\s*(?:선수|대상)/.test(text)) {
+    if (hand && /선택한\s*선수/.test(text)) {
+      return {
+        zone: "HAND",
+        owner: enemyQualifier ? "ENEMY" : "SELF",
+        cardType: "WRESTLER",
+        selection: "PLAYER_CHOICE",
+        count: 1,
+      };
+    }
     return {
-      zone: "BOARD",
-      owner: "SELF",
+      zone: /선택한\s*선수/.test(text) ? "BOARD" : "CHARACTER",
+      owner: enemyQualifier ? "ENEMY" : "SELF",
       ...( /선택한\s*선수/.test(text) ? { cardType: "WRESTLER" as const } : {}),
       selection: "PLAYER_CHOICE",
       count: 1,
     };
   }
+  if (/대상/.test(text)) {
+    return {
+      zone: "CHARACTER",
+      owner: enemyQualifier ? "ENEMY" : "SELF",
+      selection: "PLAYER_CHOICE",
+      count: targetCountFrom(text),
+    };
+  }
   const activeCardScope = ACTIVE_CARD_SCOPE_PATTERN.test(text);
-  const hand = /손(?:패)?/.test(text), deck = /덱/.test(text), enemy = /(적|상대)\s*선수/.test(text);
+  const deck = /덱/.test(text), enemy = /(적|상대)\s*선수/.test(text);
   const random = /(무작위|랜덤)/.test(text), all = /(모든|전부)/.test(text);
   const cardType = /선수/.test(text)
     ? "WRESTLER" as const
@@ -553,8 +572,11 @@ export function analyzeEffectText(input: string, options: EffectAnalysisOptions 
         .replace(/있는/g, "")
         .replace(/(?:무작위|랜덤)\s*(?:한\s*장|한장의|한장|하나)/g, "")
         .replace(/\s*중(?=\s|$)/g, " ")
-        .replace(/(?:시킨다|증가시킨다|올린다|강화한다)/g, "")
-        .replace(/중/g, "");
+         .replace(/(?:시킨다|증가시킨다|올린다|강화한다)/g, "")
+         .replace(/중/g, "");
+      remainder = remainder
+        .replace(/선택한\s*대상(?:\s*(?:하나|한\s*장))?(?:에게|을|를|의)?/g, "")
+        .replace(/(?:적|상대|아군|내)?\s*대상(?:\s*(?:\d+\s*장|하나|한\s*장))?(?:에게|을|를|의)?/g, "");
       remainder = remainder.replace(/(?:완전(?:히)?\s*)?(?:무작위|랜덤)(?:로)?\s*(?:선수|기술)?\s*(?:카드)?\s*(?:\d+\s*장|하나|한\s*장)?(?:에게|을|를|의)?|선택한|어디에\s*(?:있든|있는)|모든\s*위치의|손패\s*[,，]\s*덱\s*[,，]\s*(?:필드|보드)|손패\s*(?:및|와|과)\s*덱\s*(?:및|와|과)\s*(?:필드|보드)|생성된(?:\s*카드)?|모든\s*캐릭터(?:에게|을|를)?|모든\s*(?:선수|카드)(?:에게|을|를|의)?|(?:적|상대)\s*(?:챔피언|플레이어)(?:에게|을|를)?|(?:내|자신의)\s*챔피언(?:에게|을|를)?|(?:적|상대)\s*선수(?:\s*(?:\d+\s*장|하나|한\s*장))?(?:에게|을|를)?|(?:아군|내)\s*선수(?:\s*(?:\d+\s*장|하나|한\s*장))?(?:에게|을|를)?|(?:적|상대)\s*캐릭터(?:\s*(?:\d+\s*장|하나|한\s*장))?(?:에게|을|를)?|(?:아군|내)\s*캐릭터(?:\s*(?:\d+\s*장|하나|한\s*장))?(?:에게|을|를)?|(?:손패|덱|필드|보드)(?!의?\s*(?:무작위\s*)?(?:선수|카드))(?:의)?|손패의\s*(?:무작위\s*)?선수(?:\s*카드)?(?:\s*(?:\d+\s*장|하나|한\s*장))?(?:에게|을|를|의)?|덱의\s*(?:무작위\s*)?(?:선수|카드)(?:\s*카드)?(?:\s*(?:\d+\s*장|하나|한\s*장))?(?:에게|을|를|의)?|필드의\s*(?:무작위\s*)?(?:선수|카드)(?:\s*카드)?(?:\s*(?:\d+\s*장|하나|한\s*장))?(?:에게|을|를|의)?|(?:자신|이\s*카드)(?:에게|을|를)?|(?:카드\s*)?(?:\d+\s*장|한\s*장)|선수(?:\s*카드)?(?:을|를)?|\d+\s*턴\s*동안|(?:에게|을|를|의|에)|(?:그리고|그\s*후|이후|하고|한\s*뒤|한\s*후|주고)|\s+/g, "");
    if (effects.some((item) => item.action === "SUMMON" && item.values?.aggregateStats)) {
      remainder = remainder

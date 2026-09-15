@@ -39,6 +39,7 @@ export function getValidTargets(
     ? state.players.map((player) => player.id)
     : [target.owner === 'SELF' ? playerId : state.players.find((p) => p.id !== playerId)?.id].filter((id): id is string => Boolean(id));
   const canTargetPlayer = zones.length === 1 && zones[0] === 'CHARACTER' &&
+    !target.cardType &&
     (effect.action === 'DAMAGE' || (effect.action === 'HEAL' && target.owner !== 'ENEMY'));
   return owners.flatMap((owner) => {
     const player = state.players.find((candidate) => candidate.id === owner);
@@ -318,6 +319,22 @@ export function resolvePendingEffects(state: GameState): GameState {
       const validTargetIds = getValidTargets(next, pending.playerId, source, effect);
       const minTargets = effect.target.minTargets ?? effect.target.count;
       const maxTargets = effect.target.maxTargets ?? effect.target.count;
+      // A triggered effect can lose all of its candidates after the trigger
+      // starts (for example, another nested effect may retire the last card).
+      // Do not leave the match in an impossible targeting state.
+      if (validTargetIds.length < minTargets) {
+        return resolvePendingEffects({
+          ...next,
+          targetingState: {
+            ...pending,
+            effectIndex: index + 1,
+            selectedTargetIds: [],
+            validTargetIds: [],
+            minTargets: 0,
+            maxTargets: 0,
+          },
+        });
+      }
       return { ...next, targetingState: { ...pending, effectIndex: index, selectedTargetIds: [], lastTargetIds: last, validTargetIds, minTargets, maxTargets, mandatory: !effect.target.optionalTarget, cancelable: Boolean(effect.target.optionalTarget) } };
     }
     const ids = effect.type === 'STRUCTURED' && effect.target?.selection === 'SAME_TARGET' ? last : undefined;

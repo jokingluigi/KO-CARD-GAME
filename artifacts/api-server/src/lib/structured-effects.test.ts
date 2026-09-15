@@ -66,6 +66,18 @@ test("필수 카드 문장을 안전한 구조화 효과로 분석한다", () =>
       values: { amount: 2 },
     },
     {
+      text: "등장: 적 대상 하나에게 피해 2를 줍니다.",
+      actions: ["DAMAGE"],
+      target: { zone: "CHARACTER", owner: "ENEMY", selection: "PLAYER_CHOICE", count: 1 },
+      values: { amount: 2 },
+    },
+    {
+      text: "등장: 대상 하나에게 피해 2를 줍니다.",
+      actions: ["DAMAGE"],
+      target: { zone: "CHARACTER", owner: "SELF", selection: "PLAYER_CHOICE", count: 1 },
+      values: { amount: 2 },
+    },
+    {
       text: "등장: 선택한 적 캐릭터에게 데미지 1을 줍니다.",
       actions: ["DAMAGE"],
       target: { zone: "CHARACTER", owner: "ENEMY", selection: "PLAYER_CHOICE", count: 1 },
@@ -134,6 +146,20 @@ test("판도라식 자신이 선택한 대상은 SELF가 아니라 PLAYER_CHOICE
     selection: "SAME_TARGET",
     count: 1,
   });
+});
+
+test("손패의 선택한 선수 카드는 손패 WRESTLER 대상으로 유지한다", () => {
+  const result = analyzeEffectText("등장: 손패의 선택한 선수 카드 한 장에게 +1/+1을 부여합니다.");
+
+  assert.equal(result.status, "success");
+  assert.deepEqual(result.effects[0]?.target, {
+    zone: "HAND",
+    owner: "SELF",
+    cardType: "WRESTLER",
+    selection: "PLAYER_CHOICE",
+    count: 1,
+  });
+  assert.equal(isStructuredEffects({ effects: result.effects }), true);
 });
 
 test("판도라의 선택 대상 파괴와 공격력 합산은 하나의 검증된 효과 목록이 된다", () => {

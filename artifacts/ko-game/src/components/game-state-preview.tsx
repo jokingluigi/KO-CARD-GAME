@@ -458,7 +458,7 @@ export function GameStatePreview({
                         ? 'cursor-crosshair border-red-500 shadow-[0_0_15px_rgba(239,68,68,0.4)]'
                         : 'border-red-900'
                      } ${activePresentationChampionId === opp.champion?.id || activePresentationCue?.playerId === opp.id ? 'presentation-card-pulse' : ''}`}
-                     onClick={effectTargeting && validEffectTargetIds.has(opp.id) ? () => onEffectTarget(opp.id) : selectedAttackerId && !opponentChampionProtected ? handleAttackChampion : undefined}
+                      onClick={effectTargeting ? () => onEffectTarget(opp.id) : selectedAttackerId && !opponentChampionProtected ? handleAttackChampion : undefined}
                  >
                    {opponentChampionPortrait && (
                      <img src={opponentChampionPortrait} alt="" className="absolute inset-0 h-full w-full object-cover" />
@@ -759,7 +759,7 @@ export function GameStatePreview({
             {/* Player Stats & Champion */}
              <div className="ko-player-info z-[95] flex w-[180px] shrink-0 flex-col gap-1 md:w-48 md:gap-2">
               <div className="flex items-start gap-2 md:gap-3">
-                  <div ref={playerChampionRef} onClick={effectTargeting && validEffectTargetIds.has(me.id) ? () => onEffectTarget(me.id) : undefined} className={`ko-player-champion relative flex h-28 w-20 shrink-0 flex-col items-center justify-center overflow-hidden rounded-sm border-2 bg-neutral-900 md:h-40 md:w-28 ${effectTargeting && validEffectTargetIds.has(me.id) ? 'cursor-crosshair border-amber-400 shadow-[0_0_15px_rgba(251,191,36,0.5)]' : 'border-blue-600 shadow-[0_0_15px_rgba(37,99,235,0.2)]'} ${activePresentationChampionId === me.champion?.id || activePresentationCue?.playerId === me.id ? 'presentation-card-pulse' : ''}`}>
+                  <div ref={playerChampionRef} onClick={effectTargeting ? () => onEffectTarget(me.id) : undefined} className={`ko-player-champion relative flex h-28 w-20 shrink-0 flex-col items-center justify-center overflow-hidden rounded-sm border-2 bg-neutral-900 md:h-40 md:w-28 ${effectTargeting && validEffectTargetIds.has(me.id) ? 'cursor-crosshair border-amber-400 shadow-[0_0_15px_rgba(251,191,36,0.5)]' : 'border-blue-600 shadow-[0_0_15px_rgba(37,99,235,0.2)]'} ${activePresentationChampionId === me.champion?.id || activePresentationCue?.playerId === me.id ? 'presentation-card-pulse' : ''}`}>
                    {playerChampionPortrait && (
                      <img src={playerChampionPortrait} alt="" className="absolute inset-0 h-full w-full object-cover" />
                    )}
@@ -941,7 +941,7 @@ function HandCard({
   } else if (targetable) {
     containerClass += "cursor-crosshair";
   } else if (targetingActive) {
-    containerClass += "opacity-40 grayscale pointer-events-none";
+    containerClass += "opacity-40 grayscale cursor-not-allowed";
   } else if (!canAfford) {
     containerClass += "opacity-40 grayscale cursor-not-allowed";
   } else {
@@ -1041,7 +1041,7 @@ function BoardSlot({
     } else if (targetable) {
       containerClass += "hover:-translate-y-1 hover:scale-[1.03] cursor-crosshair z-10";
     } else if (targetingActive) {
-      containerClass += "opacity-40 grayscale pointer-events-none";
+      containerClass += "opacity-40 grayscale cursor-not-allowed";
     } else if (attackReady) {
       containerClass += "hover:-translate-y-1 hover:scale-[1.03] cursor-pointer z-10";
     } else {

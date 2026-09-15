@@ -471,9 +471,7 @@ export default function Home() {
   function handleSelectCard(cardInstanceId: string) {
     if (!matchReady || playAnimation || attackAnimation) return;
     if (gameState.targetingState?.active) {
-      handleEffectTarget(cardInstanceId);
-      setPlayError(null);
-      return;
+      return handleEffectTarget(cardInstanceId);
     }
     setSelectedAttackerId(null);
     setSelectedCardId((current) =>

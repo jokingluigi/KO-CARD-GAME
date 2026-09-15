@@ -116,6 +116,41 @@ test('CHARACTER targeting offers the owner id and wrestlers, then applies player
   assert.equal(wrestlerHealed.players[0].board[1]?.currentHealth, 2);
 });
 
+test('generic CHARACTER damage includes a champion and wrestlers, but protected champions are excluded', () => {
+  const genericDamage: CardEffect = {
+    type: 'STRUCTURED', action: 'DAMAGE',
+    target: { zone: 'CHARACTER', owner: 'ENEMY', selection: 'PLAYER_CHOICE', count: 1 },
+    values: { amount: 1 },
+  };
+  const source = card('generic-source');
+  const enemy = { ...card('generic-enemy'), boardSlot: 0 as const };
+  const protectedChampion = { ...card('protected-champion'), boardSlot: 1 as const, isDirectDeployedChampion: true };
+  const state = createInitialGameState();
+  state.players[1].board[0] = enemy;
+  state.players[1].board[1] = protectedChampion;
+
+  assert.deepEqual(
+    getValidTargets(state, 'player-1', source, genericDamage).sort(),
+    ['generic-enemy', 'protected-champion'].sort(),
+  );
+  assert.deepEqual(
+    getValidTargets(state, 'player-1', source, {
+      ...genericDamage,
+      target: { ...genericDamage.target!, cardType: 'WRESTLER' },
+    }),
+    ['generic-enemy', 'protected-champion'],
+  );
+});
+
+test('a triggered PLAYER_CHOICE with no candidates resolves without leaving targeting stuck', () => {
+  const source = card('no-candidate-trigger', [targeted('DESTROY')]);
+  const state = createInitialGameState();
+  const result = enterField(state, 'player-1', source, 0);
+
+  assert.equal(result.targetingState, undefined);
+  assert.equal(result.players[0].board[0]?.instanceId, source.instanceId);
+});
+
 test('ALL CHARACTER resolves both champions and every eligible wrestler without targeting', () => {
   const allDamage: CardEffect = {
     type: 'STRUCTURED', action: 'DAMAGE',
