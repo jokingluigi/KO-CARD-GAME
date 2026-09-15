@@ -27,11 +27,11 @@ For multi-effect sentences, preserve action order by sorting recognized clauses 
 
 **How to apply:** Extract action values from the matched action phrase, and for special target shapes such as adjacent random summons, derive filters from the target clause before the summon verb. Cover exact production wording and a multi-effect regression.
 
-Dynamic stat effects must carry their trigger context through the engine's pending-effect frame; `LAST_ATTACKER` is resolved from that context rather than from display text or card identity. End-of-turn abilities also need an explicit board-wide dispatch before the next turn starts.
+Dynamic stat effects must carry their trigger context through the engine's pending-effect frame; `LAST_ATTACKER` is resolved from that context rather than from display text or card identity. Turn-start and end-of-turn abilities both need explicit board-wide dispatch.
 
 **Why:** Attack-triggered values are only available at resolution time, and omitting TURN_END dispatch makes valid structured effects silently inert.
 
-**How to apply:** Add the reference to the shared value resolver, preserve it through continuations, and test both the event-triggered stat change and the turn-end reset.
+**How to apply:** Add the reference to the shared value resolver, preserve it through continuations, dispatch `TURN_START` after the new player refreshes, and test both turn-boundary triggers.
 
 Deferred one-shot effects should be represented as validated queued structured effects in game state, then consumed when the matching normal play action succeeds; they must not be inferred from turn boundaries or card names.
 

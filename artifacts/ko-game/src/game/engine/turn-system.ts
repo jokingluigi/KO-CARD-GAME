@@ -62,7 +62,19 @@ function beginPlayerTurn(state: GameState, playerId: string): GameState {
     ],
   };
 
-  return drawCard(turnStartedState, playerId);
+  const afterDraw = drawCard(turnStartedState, playerId);
+  return afterDraw.players
+    .find((candidate) => candidate.id === playerId)
+    ?.board
+    .filter((card): card is NonNullable<typeof card> => Boolean(card))
+    .reduce((nextState, card) => {
+      const currentCard = nextState.players
+        .find((player) => player.id === playerId)
+        ?.board.find((candidate) => candidate?.instanceId === card.instanceId);
+      if (!currentCard) return nextState;
+      const triggered = resolveTriggeredAbilities(nextState, playerId, currentCard, 'TURN_START');
+      return triggered.targetingState?.active ? resolvePendingEffects(triggered) : triggered;
+    }, afterDraw) ?? afterDraw;
 }
 
 function drawOpeningHand(
