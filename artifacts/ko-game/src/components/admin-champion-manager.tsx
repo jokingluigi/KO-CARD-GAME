@@ -801,7 +801,22 @@ export function AdminChampionManager({ onUnauthorized }: { onUnauthorized: () =>
              setMessageText(messageText);
            }}
          />
-      </div><div className="mt-5 flex justify-end"><button disabled={busy} onClick={()=>void save()} className="rounded bg-primary px-5 py-2.5 font-black text-black">DRAFT 저장</button></div>
+       </div>
+       <div className="mt-5 flex flex-wrap justify-end gap-2">
+         {editing && editing.status !== "DISABLED" && (
+           <button
+             type="button"
+             onClick={() => {
+               window.location.href = `${import.meta.env.BASE_URL}?source=admin&testChampionId=${encodeURIComponent(editing.id)}`;
+             }}
+             className="rounded border border-sky-700 px-4 py-2.5 font-bold text-sky-300"
+             data-testid="button-test-champion"
+           >
+             테스트 게임에서 확인
+           </button>
+         )}
+         <button disabled={busy} onClick={()=>void save()} className="rounded bg-primary px-5 py-2.5 font-black text-black">DRAFT 저장</button>
+       </div>
     </div></div>}
   </div>;
 }

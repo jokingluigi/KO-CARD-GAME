@@ -21,7 +21,6 @@ import {
   setRuntimeCardDefinitions,
   fetchPublishedChampions,
   championRecordToDefinition,
-  cardRecordToDefinition,
   fetchGameMedia,
   emptyGameMediaCatalog,
   processChampionQuestEvents,

@@ -37,3 +37,4 @@
 - [Prism economy boundary](prism-economy-boundary.md) — crafting/disenchanting uses persisted rarity settings, atomic signed ledger entries, and no fallback when settings are missing.
 - [Champion quest filtering](champion-quest-filtering.md) — quest progress must match structured event filters such as card type before incrementing.
 - [Champion upgrade analyzer](champion-upgrade-analyzer.md) — self-upgrade rewards normalize Korean variants and punctuation before accepting an empty effect body.
+- [Champion admin test boundary](champion-admin-test-boundary.md) — test matches use saved Champion data and an admin-visible card snapshot, never unsaved form state.
