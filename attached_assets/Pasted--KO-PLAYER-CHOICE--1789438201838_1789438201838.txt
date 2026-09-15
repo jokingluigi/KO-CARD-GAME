@@ -1,0 +1,624 @@
+현재 KO 카드게임에서
+"선택한 대상/선수에게 효과를 적용하는 PLAYER_CHOICE 기능"
+이 실제 게임에서 전혀 작동하지 않는다.
+
+기존 구현을 조금 수정하는 수준으로 접근하지 말고,
+PLAYER_CHOICE Targeting 시스템이 사실상 구현되어 있지 않다고 가정하고
+동작 가능한 전체 흐름을 다시 구축해줘.
+
+특정 카드 이름에 효과를 하드코딩하지 말 것.
+
+챔피언 판도라는 오직 실제 통합 테스트용으로 사용한다.
+
+==================================================
+1. 이번 작업의 핵심 목표
+==================================================
+
+다음 효과가 실제 플레이에서 반드시 작동해야 한다.
+
+예:
+
+"선택한 선수에게 피해를 1 줍니다."
+
+사용
+→ 게임이 TARGETING 상태로 들어감
+→ 선택 가능한 선수 Highlight
+→ 플레이어가 실제 카드 클릭
+→ Engine이 다시 검증
+→ 정확히 선택한 선수에게 DAMAGE 1
+→ Targeting 종료
+→ 게임 계속 진행
+
+또한:
+
+"선택한 대상에게 피해를 1 줍니다."
+
+에서 "대상"은 공식적으로:
+
+WRESTLER + CHAMPION
+
+을 의미한다.
+
+==================================================
+2. 기존 코드를 먼저 조사
+==================================================
+
+현재 프로젝트 전체에서 다음을 찾아봐.
+
+- PLAYER_CHOICE
+- pendingSelection
+- pendingTarget
+- target selection
+- SELECT_TARGET
+- CHOOSE_TARGET
+- Effect continuation
+- Champion Ability targeting
+- Card effect targeting
+- target resolver
+- validTargets
+
+중복되거나 반쯤 구현된 코드가 있다면
+왜 실제 게임에서 작동하지 않는지 확인해.
+
+하지만 기존 코드가 구조적으로 불완전하면
+그 코드를 억지로 유지하지 말고
+공통 PLAYER_CHOICE 파이프라인을 제대로 완성해.
+
+==================================================
+3. 공통 Pending Selection 상태
+==================================================
+
+GameState에 serializable한
+선택 대기 상태가 반드시 존재해야 한다.
+
+개념 예:
+
+pendingSelection {
+  id
+  playerId
+
+  sourceType
+  sourceInstanceId
+
+  effectId
+  effectStepIndex
+
+  selection: "PLAYER_CHOICE"
+
+  ownerFilter
+  zoneFilter
+  entityTypes
+  cardTypes
+
+  minTargets
+  maxTargets
+
+  validTargetIds
+}
+
+실제 타입명은 현재 프로젝트 구조에 맞춰도 된다.
+
+중요:
+
+React component local state만으로
+Targeting을 관리하지 마.
+
+GameState / Match State 기준이어야 한다.
+
+==================================================
+4. Effect 실행을 실제로 Pause
+==================================================
+
+PLAYER_CHOICE Effect를 만나면
+Effect를 그냥 끝내거나 자동 실행하면 안 된다.
+
+반드시:
+
+Effect 실행 시작
+↓
+PLAYER_CHOICE 발견
+↓
+valid targets 계산
+↓
+pendingSelection 저장
+↓
+Effect resolution PAUSE
+↓
+Player 입력 대기
+
+상태가 되어야 한다.
+
+첫 번째 대상을 자동 선택하지 마.
+RANDOM으로 바꾸지 마.
+Effect를 skip하지 마.
+
+==================================================
+5. Target 선택 Action 구현
+==================================================
+
+플레이어가 선택 가능한 Target을 클릭하면
+UI에서 직접 DAMAGE/BUFF 등을 적용하지 마.
+
+공식 Game Action을 Engine에 보내.
+
+예:
+
+SELECT_EFFECT_TARGET {
+  pendingSelectionId,
+  targetId
+}
+
+또는 프로젝트 구조에 맞는 equivalent action.
+
+Engine에서:
+
+1. pendingSelection 존재 확인
+2. 현재 Player가 선택 권한이 있는지 확인
+3. targetId가 여전히 valid한지 재검증
+4. 선택 확정
+5. 원래 멈춰 있던 Effect resolution 재개
+6. 해당 target으로 Effect 실행
+7. pendingSelection 제거
+
+순서로 처리해.
+
+==================================================
+6. Effect Continuation 구현
+==================================================
+
+현재 가장 중요한 부분이다.
+
+대상을 선택한 뒤
+원래 Effect가 어디서 멈췄는지 알 수 있어야 한다.
+
+예:
+
+SEQUENCE:
+
+1. SILENCE target
+2. DAMAGE target 2
+3. DRAW 1
+
+이라면
+
+Target 선택
+→ 같은 target 저장
+→ 1번 실행
+→ 2번 실행
+→ 3번 실행
+
+까지 이어져야 한다.
+
+대상을 선택한 순간
+Effect context가 사라지면 안 된다.
+
+필요하면 pendingSelection에
+continuation/effectStep 정보를 저장해.
+
+단 arbitrary JS function을 GameState에 저장하지 마.
+모든 상태는 serializable해야 한다.
+
+==================================================
+7. 선택한 Target을 후속 Action에 전달
+==================================================
+
+Structured Effect에서:
+
+target = PLAYER_CHOICE
+
+로 선택한 Target은
+Effect Action이 실제로 참조할 수 있어야 한다.
+
+예:
+
+DAMAGE {
+  target: SELECTED_TARGET,
+  amount: 1
+}
+
+BUFF {
+  target: SELECTED_TARGET,
+  attack: 2
+}
+
+SILENCE {
+  target: SELECTED_TARGET
+}
+
+DESTROY {
+  target: SELECTED_TARGET
+}
+
+등.
+
+"선택 UI는 떴지만 실제 Effect는 다른 대상/NULL에 적용"
+되는 문제도 없어야 한다.
+
+==================================================
+8. 공식 Target 의미
+==================================================
+
+자연어/Structured Effect에서:
+
+"대상"
+→ WRESTLER + CHAMPION
+
+"선수"
+→ WRESTLER only
+
+"챔피언"
+→ CHAMPION only
+
+"선수 카드"
+→ cardType WRESTLER
+
+로 통일.
+
+예:
+
+"선택한 대상"
+→ PLAYER_CHOICE
+→ WRESTLER + CHAMPION
+
+"선택한 선수"
+→ PLAYER_CHOICE
+→ WRESTLER only
+
+==================================================
+9. Zone도 반드시 구분
+==================================================
+
+예:
+
+"손에 있는 선수 카드 하나를 선택"
+→ HAND
+→ WRESTLER
+
+"필드의 선수 하나를 선택"
+→ BOARD
+→ WRESTLER
+
+"적 대상 하나를 선택"
+→ BOARD
+→ WRESTLER + CHAMPION
+
+Zone 정보를 무시해서
+Board selector만 뜨는 버그가 없어야 한다.
+
+==================================================
+10. Targeting UI
+==================================================
+
+pendingSelection이 존재하면
+UI가 자동으로 Targeting Mode에 들어가야 한다.
+
+BOARD 대상:
+
+선택 가능
+→ 명확한 Highlight
+
+선택 불가
+→ dim 또는 평상시 표시
+
+HAND 대상:
+
+선택 가능한 손패 카드 Highlight
+
+CHAMPION:
+
+선택 가능하면 Champion portrait/panel Highlight
+
+클릭/탭 가능한 영역도 실제 Target UI와 일치해야 한다.
+
+단순히 테두리만 빛나고 클릭 이벤트가 없는 상태 금지.
+
+==================================================
+11. 잘못된 Target
+==================================================
+
+Invalid Target 클릭:
+
+- GameState 변경 없음
+- Effect 진행 없음
+- pendingSelection 유지
+- Toast:
+
+"선택할 수 없는 대상입니다."
+
+Targeting Mode를 취소시키지 마.
+
+==================================================
+12. Target이 사라진 경우
+==================================================
+
+Targeting 도중 rerender나 다른 Effect 때문에
+후보 상태가 바뀔 가능성을 고려해.
+
+클릭 순간 Engine이 반드시 재검증.
+
+더 이상 valid하지 않으면 선택 거부.
+
+crash 금지.
+
+==================================================
+13. Champion 보호 규칙
+==================================================
+
+"대상"은 WRESTLER + CHAMPION이지만
+
+특수 배치된 Active Champion Token 때문에
+Champion이 보호 중이라면
+
+그 Champion은:
+
+validTargetIds에서 제외.
+
+UI에서도 선택 불가.
+
+Engine도 stale request를 다시 차단.
+
+기존 Champion Token 보호 규칙을 그대로 재사용해.
+
+==================================================
+14. 공격 Targeting과 분리
+==================================================
+
+Effect PLAYER_CHOICE와
+일반 ATTACK Targeting을 섞지 마.
+
+ATTACK은 기존 공격 규칙 사용.
+
+PLAYER_CHOICE는 Effect용 선택.
+
+Effect Targeting에
+도발 공격 제한을 잘못 적용하지 마.
+
+==================================================
+15. 모든 Effect Source에서 공통 사용
+==================================================
+
+이 시스템은 하나만 만들어서 다음이 전부 사용해야 한다.
+
+- Wrestler 등장
+- Technique
+- Active
+- Champion Ability
+- Quest Reward
+- 향후 Structured Effect
+
+각 기능별로 별도 Target picker를 만들지 마.
+
+==================================================
+16. 챔피언 판도라로 실제 통합 테스트
+==================================================
+
+이번 수정이 끝나면
+반드시 "챔피언 판도라"로 실제 브라우저 테스트해.
+
+판도라 전용 코드를 만들라는 뜻이 아니다.
+
+공통 PLAYER_CHOICE 기능이 실제 게임에서 작동하는지
+판도라를 Test Fixture로 사용하는 것이다.
+
+==================================================
+17. 판도라 기본 능력 테스트
+==================================================
+
+판도라의 기존 기본 능력:
+
+2G
+선택한 선수에게 피해 1
+
+을 실제 게임에서 사용해.
+
+반드시:
+
+1. 판도라 능력 버튼 클릭
+2. Gold 정상 지불
+3. 즉시 Damage가 발생하지 않음
+4. PLAYER_CHOICE 상태 진입
+5. 선택 가능한 선수 Highlight
+6. 실제 선수 카드 클릭
+7. 선택한 그 선수에게 정확히 DAMAGE 1
+8. 다른 선수에게 적용되지 않음
+9. pendingSelection 제거
+10. 게임 계속 진행
+
+까지 브라우저에서 직접 확인해.
+
+==================================================
+18. 판도라 강화 능력 테스트
+==================================================
+
+판도라 Quest 완료 후 강화된 기존 능력:
+
+1G
+선택한 대상에게 피해 1
+
+도 테스트해.
+
+"대상"이므로:
+
+- 선수
+- Champion
+
+모두 Target 후보가 되어야 한다.
+
+실제 테스트:
+
+A.
+적 선수 클릭
+→ 그 선수 DAMAGE 1
+
+B.
+적 Champion 클릭
+→ Champion DAMAGE 1
+
+C.
+Champion 보호 상태
+→ Champion Highlight 안 됨
+→ 클릭 불가
+
+==================================================
+19. 판도라 Quest 관련 회귀 방지
+==================================================
+
+이번 Targeting 수정 때문에
+판도라의 기존 Quest 진행/완료 규칙을 변경하지 마.
+
+Pandora Ability Damage가 선수를 RETIRE시켰을 때
+기존 Quest attribution이 있다면 그대로 정상 작동해야 한다.
+
+Targeting만 제대로 연결해.
+
+==================================================
+20. 손패 Target도 반드시 테스트
+==================================================
+
+판도라만 통과했다고 끝내지 마.
+
+다음 테스트 Effect도 만들어서 확인해.
+
+"손에 있는 선수 카드 하나를 선택하여 공격력을 2 올립니다."
+
+반드시:
+
+- HAND의 Wrestler만 Highlight
+- Technique 선택 불가
+- 실제 Hand Card 클릭
+- 해당 Card Instance만 +2 Attack
+- 다른 카드 변화 없음
+
+특정 실제 카드에 이 Effect를 영구 추가하지 말고
+테스트 fixture/dev effect로 확인 가능.
+
+==================================================
+21. Sequence 테스트
+==================================================
+
+다음 Effect도 테스트:
+
+"선택한 적 선수 하나를 침묵시키고 파괴합니다."
+
+선택 1회
+→ 동일 Target SILENCE
+→ 동일 Target DESTROY
+
+순서대로 동작해야 한다.
+
+두 번째 Target 선택을 또 요구하면 안 된다.
+
+==================================================
+22. 실제 브라우저 테스트 필수
+==================================================
+
+코드 컴파일만 성공했다고 완료 처리하지 마.
+
+TEST ADMIN / TEST USER Auth Helper가 있다면 사용해서
+실제 로그인된 Browser에서 테스트해.
+
+최소:
+
+- Pandora 기본 능력
+- Pandora 강화 능력 → Wrestler
+- Pandora 강화 능력 → Champion
+- Champion 보호
+- Hand Wrestler 선택
+- Invalid Target
+- Effect sequence
+- Mobile tap
+
+확인.
+
+==================================================
+23. 실패하면 원인을 끝까지 추적
+==================================================
+
+이번에는:
+
+"코드상 구현됨"
+"Analyzer는 정상"
+
+으로 끝내지 마.
+
+실제 흐름:
+
+Champion Ability click
+↓
+executeAction
+↓
+Effect Executor
+↓
+PLAYER_CHOICE 발견
+↓
+pendingSelection 생성
+↓
+GameState 반환
+↓
+React rerender
+↓
+Highlight
+↓
+Target click
+↓
+SELECT_EFFECT_TARGET
+↓
+Engine validation
+↓
+Continuation
+↓
+DAMAGE
+
+각 단계에 필요한 임시 로그를 넣어서
+어디서 끊기는지 확인해.
+
+수정 후 임시 debug log는 정리.
+
+==================================================
+24. 절대 하지 말 것
+==================================================
+
+- Pandora 이름으로 if문 작성 금지
+- 특정 Card 이름 하드코딩 금지
+- UI에서 직접 damage 적용 금지
+- 첫 valid target 자동 선택 금지
+- PLAYER_CHOICE를 RANDOM으로 대체 금지
+- GameState reset 금지
+- 공격 시스템 대규모 수정 금지
+- Effect Engine 전체 리팩터링 금지
+
+==================================================
+완료 조건
+==================================================
+
+PLAYER_CHOICE가 실제 공통 게임 기능으로 존재해야 한다.
+
+즉:
+
+Effect
+→ Targeting Mode
+→ Player가 실제 대상을 클릭
+→ Engine validation
+→ 선택한 Target에 Effect 적용
+→ Effect continuation
+→ Targeting 종료
+
+전체 흐름이 실제로 동작해야 한다.
+
+그리고 최종적으로
+챔피언 판도라의 실제 Ability를 사용해서
+브라우저에서 선택 → 피해 적용까지 성공한 것을 확인한 뒤 종료해.
+
+테스트 결과도 마지막에:
+
+PASS
+- Pandora 기본 PLAYER_CHOICE
+- Pandora 강화 Wrestler Target
+- Pandora 강화 Champion Target
+- Hand Card Target
+- Sequence Target
+
+FAIL
+- 남아 있다면 정확한 원인
+
+형태로 보고해.
