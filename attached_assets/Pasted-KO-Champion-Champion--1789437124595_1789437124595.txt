@@ -1,0 +1,182 @@
+KO Champion 전체 구현 지시문
+
+현재 Champion이 작성된 설계 그대로 실제 게임에서 완전히 동작하도록 필요한 범용 메커니즘을 한 번에 구현하세요. 이 문서는 자동 실행 명령이 아니라 관리자가 Replit Agent에 붙여넣는 개발 지시문입니다.
+
+## 1. 현재 ChampionDefinition
+{
+  "name": "챔피언 피 스타 세븐",
+  "description": "",
+  "maxHealth": 20,
+  "abilityName": "트레이닝",
+  "abilityCost": 2,
+  "abilityText": "손패에 있는 선수 카드 중 무작위 한장의 체력과 공격을 1씩 증가시킨다.",
+  "abilityEffects": {
+    "effects": [
+      {
+        "action": "BUFF",
+        "target": {
+          "zone": "HAND",
+          "count": 1,
+          "owner": "SELF",
+          "cardType": "WRESTLER",
+          "selection": "RANDOM",
+          "randomScope": "STANDARD"
+        },
+        "values": {
+          "attack": 1,
+          "health": 1
+        },
+        "trigger": "ENTER_FIELD"
+      }
+    ]
+  },
+  "hasQuest": false
+}
+
+## 2. 모든 영역의 최신 분석 결과
+### 기본 Champion Ability
+상태: SUPPORTED
+원본 텍스트: "손패에 있는 선수 카드 중 무작위 한장의 체력과 공격을 1씩 증가시킨다."
+분석 요약:
+- 등장 · BUFF
+분석된 Structured Effects:
+[
+  {
+    "trigger": "ENTER_FIELD",
+    "action": "BUFF",
+    "target": {
+      "zone": "HAND",
+      "owner": "SELF",
+      "cardType": "WRESTLER",
+      "selection": "RANDOM",
+      "count": 1,
+      "randomScope": "STANDARD"
+    },
+    "values": {
+      "attack": 1,
+      "health": 1
+    }
+  }
+]
+저장된 Structured Effect:
+{
+  "effects": [
+    {
+      "action": "BUFF",
+      "target": {
+        "zone": "HAND",
+        "count": 1,
+        "owner": "SELF",
+        "cardType": "WRESTLER",
+        "selection": "RANDOM",
+        "randomScope": "STANDARD"
+      },
+      "values": {
+        "attack": 1,
+        "health": 1
+      },
+      "trigger": "ENTER_FIELD"
+    }
+  ]
+}
+
+## 3. 종합 unsupportedParts / 새 메커니즘
+- 없음
+
+같은 unsupported mechanic은 여러 영역에서 반복 구현하지 말고 하나의 재사용 가능한 범용 메커니즘으로 통합하세요.
+
+## 4. 연결된 Champion Token
+- 연결된 Champion Token 없음
+
+## 5. 구현 규칙
+- 현재 Effect Library를 먼저 확인하세요.
+- 기존 Trigger, Action, Target Resolver, Value Resolver, Condition, Listener, Duration, Sequence를 먼저 재사용하세요.
+- 기존 Quest system, Champion system, CardDefinition/Card Registry, Match Snapshot 정책을 재사용하세요.
+- 기존 기능 조합으로 가능한 것은 새로 만들지 마세요.
+- 부족한 부분만 다른 Champion에서도 사용할 수 있는 generic mechanic으로 추가하세요.
+- 특정 Champion 이름이나 ID로 분기하지 마세요. 예: if (champion.name === "..."), if (champion.id === "...").
+- 구조화된 검증 데이터와 정식 TypeScript executor를 사용하세요. eval(), new Function(), 자연어의 런타임 코드 실행, 외부 AI API 호출을 금지합니다.
+- Card Admin에 있는 Champion Token 효과를 ChampionDefinition에 복제하지 마세요.
+- 폼의 원본 텍스트와 현재 Structured Effect를 모두 보존하고, 부분적으로 해석된 결과를 완전한 효과로 적용하지 마세요.
+
+## 6. 권장 구현 순서
+1. 현재 ChampionDefinition 확인
+2. Effect Registry 확인
+3. 각 Champion effect 분석 결과 확인
+4. 기존 effect 조합으로 가능한 부분 연결
+5. 중복 제거한 missing mechanic 목록 생성
+6. missing mechanic만 범용으로 구현
+7. Analyzer mapping 추가
+8. Schema/Registry 등록
+9. Executor 연결
+10. Quest progress 연결
+11. Champion upgrade/reward 연결
+12. Targeting 연결
+13. Champion Token reference 연결
+14. 테스트 작성
+15. 현재 Champion 전체 기능 검증
+
+## 7. Effect Library 상태
+Actions:
+- BUFF · ACTIVE · 대상의 공격력과 체력을 변경합니다.
+- SET_STATS · ACTIVE · 대상의 공격력과 체력을 지정한 값으로 설정합니다.
+- DAMAGE · ACTIVE · 대상에게 피해를 줍니다.
+- HEAL · ACTIVE · 대상의 체력을 회복합니다.
+- SILENCE · ACTIVE · 대상의 효과와 키워드를 침묵시킵니다.
+- DESTROY · ACTIVE · 대상을 파괴합니다.
+- ADD_GOLD · ACTIVE · 현재 골드를 획득합니다.
+- ADD_NEXT_TURN_GOLD · ACTIVE · 다음 내 턴의 골드를 증가시킵니다.
+- DRAW · ACTIVE · 카드를 드로우합니다.
+- REDUCE_COST · ACTIVE · 대상의 비용을 감소시킵니다.
+- INCREASE_COST · ACTIVE · 대상의 비용을 증가시킵니다.
+- STUN · ACTIVE · 대상을 기절시킵니다.
+- ADD_KEYWORD · ACTIVE · 대상에게 키워드를 부여합니다.
+- REMOVE_KEYWORD · ACTIVE · 대상의 키워드를 제거합니다.
+- SWAP_STATS · ACTIVE · 대상의 현재 공격력과 체력을 서로 교환합니다.
+- ADD_DAMAGE_MODIFIER · ACTIVE · 조건에 맞는 카드의 피해량을 변경합니다.
+- SUMMON · ACTIVE · 선수를 필드에 소환합니다.
+- GENERATE · ACTIVE · 카드를 생성합니다.
+- DEPLOY_CHAMPION_TOKEN · ACTIVE · 현재 챔피언에 연결된 Champion Token을 특별 전개합니다.
+- CAPTURE · ACTIVE · 대상을 포획합니다.
+- RELEASE_CAPTURED · ACTIVE · 포획한 카드를 필드에 해방합니다.
+- REMOVE_FROM_GAME · ACTIVE · 대상을 제거합니다.
+- SWITCH_EFFECT_BRANCH · ACTIVE · 현재 슬롯의 왼쪽/오른쪽 분기에 맞는 효과를 실행합니다.
+- QUEUE_EFFECT · ACTIVE · 다음 조건을 만족하는 카드에 효과를 예약합니다.
+- ADD_AGGREGATED_ATTACK · ACTIVE · 직전에 퇴장시킨 대상의 현재 공격력 합을 대상에게 더합니다.
+Triggers:
+- ENTER_FIELD · ACTIVE · 선수가 어떤 정상 경로로든 필드에 들어올 때 발동합니다.
+- LEAVE_FIELD · ACTIVE · 카드가 필드를 떠날 때 발동합니다.
+- ACTIVE · ACTIVE · 액티브 능력을 사용할 때 발동합니다.
+- CARD_DRAWN · ACTIVE · 카드가 덱에서 드로우될 때 발동합니다.
+- SELF_ATTACK · ACTIVE · 이 카드가 공격할 때 발동합니다.
+- OTHER_ALLY_ATTACK · ACTIVE · 다른 아군 선수가 공격할 때 발동합니다.
+- TECHNIQUE_CAST · ACTIVE · 1G 이상 기본 비용의 기술을 손에서 사용할 때 발동합니다.
+- CARD_PLAYED_THIS_TURN · ACTIVE · 이번 턴 손에서 플레이한 카드와 연계할 때 발동합니다.
+- EXACT_ZERO_DAMAGE · ACTIVE · 이 카드가 다른 선수의 체력을 정확히 0으로 만들 때 발동합니다.
+- TURN_START · ACTIVE · 턴 시작 시 발동합니다.
+- TURN_END · ACTIVE · 턴 종료 시 발동합니다.
+Conditions:
+- NEED_CONDITION · ACTIVE · 구조화된 조건을 확인합니다.
+- HAS_MATCHING_TAG_PLAYED_THIS_TURN · ACTIVE · 이번 턴 먼저 플레이한 아군과 태그가 하나 이상 일치합니다.
+- BASE_COST_GTE · ACTIVE · 구조화된 조건을 확인합니다.
+- SOURCE_ON_LEFT_SIDE · ACTIVE · 구조화된 조건을 확인합니다.
+- SOURCE_ON_RIGHT_SIDE · ACTIVE · 구조화된 조건을 확인합니다.
+Target Resolvers:
+- ZONE_OWNER_SELECTION · ACTIVE · 영역(여러 영역 포함), 소유자, 카드 유형, 필터, 선택 방식 및 수로 대상을 해석합니다.
+Value Resolvers:
+- AMOUNT · ACTIVE · 골드, 피해, 회복, 드로우 및 비용 수치를 해석합니다.
+- STAT_PAIR · ACTIVE · +공격력/+체력 수치를 해석합니다.
+- STAT_MULTIPLIER · ACTIVE · 대상의 현재 공격력과 체력을 배수로 변경합니다.
+- REFERENCE_STAT · ACTIVE · 마지막 공격자 등 참조 대상의 현재 능력치를 수치로 해석합니다.
+- KEYWORD · ACTIVE · 지원 키워드를 해석합니다.
+
+## 8. 분석 실패 처리
+ANALYSIS_FAILED 영역이 있으면 구현을 중단하지 마세요. 해당 영역의 원본 텍스트를 기준으로 현재 DSL과 비교하고, 필요한 Analyzer 확장과 범용 메커니즘을 설계하세요. 이해하지 못한 문장을 임의의 효과로 조용히 변환하지 마세요.
+
+## 9. 검증 요구사항
+- 정상 실행, 대상 없음, 잘못된 대상, 조건 불충족, 값 계산, GameState 무결성을 테스트하세요.
+- Quest, 강화 Ability, Champion Token 연결, Targeting, ENTER_FIELD 및 Token 퇴장 규칙을 검증하세요.
+- 기존 카드 효과와 다른 Champion에 대한 호환성을 확인하세요.
+- TypeScript 검사와 기존 핵심 테스트를 통과시키세요.
+
+요구한 Champion 기능이 정상 작동하면 임의의 추가 기능을 만들지 말고 종료하세요. 완료 시 수정한 파일 목록과 실행한 테스트/결과만 간결하게 보고하세요.
