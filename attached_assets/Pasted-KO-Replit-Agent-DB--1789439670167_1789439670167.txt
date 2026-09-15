@@ -1,0 +1,1199 @@
+KO 전체 카드/챔피언 통합 구현 지시문
+
+이 문서는 자동 실행 명령이 아니라 관리자가 현재 Replit Agent 채팅에 붙여넣는 개발 지시문입니다.
+서버가 실행 시점의 DB와 현재 Effect Registry를 직접 읽어 WRESTLER 카드와 Champion 슬롯을 캐시 없이 최신 재분석한 결과입니다.
+
+## 1. 분석 범위와 집계
+- 분석 대상: 모든 WRESTLER CardDefinition과 모든 ChampionDefinition
+- Champion 분석 슬롯: CHAMPION_ABILITY, QUEST_CONDITION, QUEST_REWARD, UPGRADED_CHAMPION_ABILITY
+- Champion Token 자체 효과는 Card Admin/CardDefinition이 source of truth입니다. 아래 Token은 참조 정보이며 Champion 슬롯으로 재구현하지 마세요.
+- SUPPORTED: 23개
+- NEW_MECHANIC_REQUIRED: 0개
+- ANALYSIS_FAILED: 17개
+
+## 2. 중복 제거된 미구현 메커니즘
+같은 의미의 미지원 메커니즘은 카드/Champion별로 따로 구현하지 말고 하나의 다른 콘텐츠에도 재사용 가능한 범용 메커니즘으로 통합하세요.
+1. 공격과체력둘다+1미만이면가능한카드전부
+   적용 위치: WRESTLER_CARD:여울(CARD_EFFECT)
+2. 내맨위카드하,비용/체력/공격1씩깎은맨위추가(챔피언토큰제외)(비용/체력/공격수치는최소1)
+   적용 위치: WRESTLER_CARD:아르카나 조커(CARD_EFFECT)
+3. 내위무덤으로보내,받
+   적용 위치: WRESTLER_CARD:워썬더(CARD_EFFECT)
+4. 다음내가플레이하는이
+   적용 위치: WRESTLER_CARD:뒷정리맨(CARD_EFFECT)
+5. 모든공격력2공격력이0이된는당하당
+   적용 위치: WRESTLER_CARD:퍼플레인(CARD_EFFECT)
+6. 묘지에서 선수 1장을 선택하고, 그 선수를 패로 되돌립니다
+   적용 위치: WRESTLER_CARD:오심정정(CARD_EFFECT)
+7. 비용지불하남은Gold전부소비이때소비한마다체력과공격+2씩
+   적용 위치: WRESTLER_CARD:플래티넘 구슬 마스터(CARD_EFFECT)
+8. 손패에 있을 때 아군 선수가 리타이어할 때마다 비용이 -1G 씩 감소한다 (최소 비용 1G)
+   적용 위치: WRESTLER_CARD:씨 몬스터(CARD_EFFECT)
+9. 이 카드를 처음으로 공격한 적 선수는 공격 이후 침묵됩니다 이후 이 카드의 능력을 비활성화
+   적용 위치: WRESTLER_CARD:루나(CARD_EFFECT)
+10. 자신의 무덤의 선수 카드의 수 만큼 공격력과 체력이 증가
+   적용 위치: WRESTLER_CARD:디 오리진(CARD_EFFECT)
+11. 자신이 선택한 상대 선수 1장을 리타이어
+   적용 위치: WRESTLER_CARD:저지먼트(CARD_EFFECT)
+12. 제외한나와들
+   적용 위치: WRESTLER_CARD:피 스타 세븐(CARD_EFFECT)
+13. 체력과공격1씩
+   적용 위치: WRESTLER_CARD:독세아(CARD_EFFECT)
+14. 카드 참조를 찾을 수 없습니다: 자신의 양옆 빈 슬롯에 3 코스트 이상의 선수 카드를 각각
+   적용 위치: WRESTLER_CARD:조킹루이지(CARD_EFFECT)
+15. 턴 시작:이 카드가 내 필드의 유일한 선수라면 이 턴에 추가로 +1G를 받
+   적용 위치: WRESTLER_CARD:아비터(CARD_EFFECT)
+16. 하,그카드공격/체력현재공격/체력과같은수치로맞춥니다
+   적용 위치: WRESTLER_CARD:위리놈(CARD_EFFECT)
+17. 현재내카드수만큼체력과공격+1
+   적용 위치: WRESTLER_CARD:블랙 마카롱(CARD_EFFECT)
+
+## 3. 전체 최신 분석 결과
+SUPPORTED 항목도 검토용으로 아래에 표시하지만 구현 목록에서 제외하세요.
+### [WRESTLER_CARD] RM우디르 · 선수 카드 효과
+ID: 1e0bbdb3-9304-46b0-81b8-d30bb9954fc3 · record status: PUBLISHED · version: 8
+분류: SUPPORTED
+원문: "등장:자신의 현재 공격과 체력의 수치를 2배로 만듭니다."
+Analyzer 요약:
+- 등장 · BUFF
+해석된 Structured Effects:
+[
+  {
+    "trigger": "ENTER_FIELD",
+    "action": "BUFF",
+    "target": {
+      "zone": "BOARD",
+      "owner": "SELF",
+      "selection": "SELF",
+      "count": 1
+    },
+    "values": {
+      "attackMultiplier": 2,
+      "healthMultiplier": 2
+    }
+  }
+]
+현재 저장 Structured Effect:
+{
+  "effects": [
+    {
+      "action": "BUFF",
+      "target": {
+        "zone": "BOARD",
+        "count": 1,
+        "owner": "SELF",
+        "selection": "SELF"
+      },
+      "values": {
+        "attackMultiplier": 2,
+        "healthMultiplier": 2
+      },
+      "trigger": "ENTER_FIELD"
+    }
+  ]
+}
+
+### [WRESTLER_CARD] 그레이트 챤 · 선수 카드 효과
+ID: 2519b37a-74ea-4b26-afe2-2227f40a03bc · record status: PUBLISHED · version: 3
+분류: SUPPORTED
+원문: "액티브:자신의 현재 공격과 체력을의 수치 서로 교환합니다."
+Analyzer 요약:
+- ACTIVE · SWAP_STATS
+해석된 Structured Effects:
+[
+  {
+    "trigger": "ACTIVE",
+    "action": "SWAP_STATS",
+    "target": {
+      "zone": "BOARD",
+      "owner": "SELF",
+      "selection": "SELF",
+      "count": 1
+    }
+  }
+]
+
+### [WRESTLER_CARD] 나토마토 · 선수 카드 효과
+ID: 12a86603-4412-409c-a5a2-ec361f57863c · record status: PUBLISHED · version: 5
+분류: SUPPORTED
+원문: "콤보:공격한 아군 선수의 공격력만큼 자신의 공격력을 증가시킵니다.
+턴종료:자신의 공격력을 0으로 만듭니다."
+Analyzer 요약:
+- OTHER_ALLY_ATTACK · BUFF
+- TURN_END · SET_STATS
+해석된 Structured Effects:
+[
+  {
+    "trigger": "OTHER_ALLY_ATTACK",
+    "action": "BUFF",
+    "target": {
+      "zone": "BOARD",
+      "owner": "SELF",
+      "selection": "SELF",
+      "count": 1
+    },
+    "values": {
+      "reference": "LAST_ATTACKER",
+      "referenceStat": "CURRENT_ATTACK"
+    }
+  },
+  {
+    "trigger": "TURN_END",
+    "action": "SET_STATS",
+    "target": {
+      "zone": "BOARD",
+      "owner": "SELF",
+      "selection": "SELF",
+      "count": 1
+    },
+    "values": {
+      "attack": 0
+    }
+  }
+]
+현재 저장 Structured Effect:
+{
+  "effects": [
+    {
+      "action": "BUFF",
+      "target": {
+        "zone": "BOARD",
+        "count": 1,
+        "owner": "SELF",
+        "selection": "SELF"
+      },
+      "values": {
+        "reference": "LAST_ATTACKER",
+        "referenceStat": "CURRENT_ATTACK"
+      },
+      "trigger": "OTHER_ALLY_ATTACK"
+    },
+    {
+      "action": "SET_STATS",
+      "target": {
+        "zone": "BOARD",
+        "count": 1,
+        "owner": "SELF",
+        "selection": "SELF"
+      },
+      "values": {
+        "attack": 0
+      },
+      "trigger": "TURN_END"
+    }
+  ]
+}
+
+### [WRESTLER_CARD] 독세아 · 선수 카드 효과
+ID: a68c743b-8752-4bbf-817a-397e71d41569 · record status: PUBLISHED · version: 3
+분류: ANALYSIS_FAILED
+원문: "등장:어디에 있든 모든 생성된 아군 선수 카드에게 체력과 공격을 각각 1씩 증가시킵니다."
+현재 저장 Structured Effect:
+{
+  "effects": [
+    {
+      "action": "BUFF",
+      "target": {
+        "count": 20,
+        "owner": "SELF",
+        "zones": [
+          "HAND",
+          "DECK",
+          "BOARD"
+        ],
+        "filter": {
+          "isGenerated": true
+        },
+        "cardType": "WRESTLER",
+        "selection": "ALL"
+      },
+      "values": {
+        "attack": 1,
+        "health": 1
+      },
+      "trigger": "ENTER_FIELD"
+    }
+  ]
+}
+미지원 영역:
+- 체력과공격1씩
+분석 사유: 문장의 일부를 효과로 해석하지 못했습니다. 표현을 더 구체적으로 입력해 주세요.
+
+### [WRESTLER_CARD] 뒷정리맨 · 선수 카드 효과
+ID: 855e87f9-1769-4036-ad49-491ab4b2058a · record status: PUBLISHED · version: 3
+분류: ANALYSIS_FAILED
+원문: "등장: 다음에 내가 플레이하는 아군 선수 카드 1장이 체력이 +2 증가합니다. 사용될 때까지 턴을 넘어도 유지합니다."
+Analyzer 요약:
+- 등장 · BUFF
+해석된 Structured Effects:
+[
+  {
+    "trigger": "ENTER_FIELD",
+    "action": "BUFF",
+    "target": {
+      "zone": "BOARD",
+      "owner": "SELF",
+      "cardType": "WRESTLER",
+      "selection": "PLAYER_CHOICE",
+      "count": 1
+    },
+    "values": {
+      "attack": 0,
+      "health": 2
+    }
+  }
+]
+현재 저장 Structured Effect:
+{
+  "effects": [
+    {
+      "action": "QUEUE_EFFECT",
+      "values": {
+        "queuedEffect": {
+          "action": "BUFF",
+          "target": {
+            "zone": "BOARD",
+            "count": 1,
+            "owner": "SELF",
+            "selection": "SELF"
+          },
+          "values": {
+            "attack": 0,
+            "health": 2
+          }
+        },
+        "queuedTrigger": "NEXT_ALLY_WRESTLER_PLAYED"
+      },
+      "trigger": "ENTER_FIELD"
+    }
+  ]
+}
+미지원 영역:
+- 다음내가플레이하는이
+분석 사유: 문장의 일부를 효과로 해석하지 못했습니다. 표현을 더 구체적으로 입력해 주세요.
+
+### [WRESTLER_CARD] 디 오리진 · 선수 카드 효과
+ID: 8be831d2-6e56-4f77-985e-3860d6eaa2d3 · record status: PUBLISHED · version: 2
+분류: ANALYSIS_FAILED
+원문: "자신의 무덤의 선수 카드의 수 만큼 공격력과 체력이 증가합니다."
+Analyzer 요약:
+- 지원하는 Trigger Registry 항목을 찾지 못했습니다.
+미지원 영역:
+- 자신의 무덤의 선수 카드의 수 만큼 공격력과 체력이 증가
+분석 사유: 발동 조건 또는 효과 의도를 충분히 이해하지 못했습니다.
+
+### [WRESTLER_CARD] 루나 · 선수 카드 효과
+ID: 9b7c0e52-2184-4ec1-8d68-39a4d5981d2a · record status: DRAFT · version: 1
+분류: ANALYSIS_FAILED
+원문: "이 카드를 처음으로 공격한 적 선수는 공격 이후 침묵됩니다. 이후 이 카드의 능력을 비활성화합니다."
+Analyzer 요약:
+- 지원하는 Trigger Registry 항목을 찾지 못했습니다.
+미지원 영역:
+- 이 카드를 처음으로 공격한 적 선수는 공격 이후 침묵됩니다 이후 이 카드의 능력을 비활성화
+분석 사유: 발동 조건 또는 효과 의도를 충분히 이해하지 못했습니다.
+
+### [WRESTLER_CARD] 발단 · 선수 카드 효과
+ID: 75863228-ae51-48cb-afec-43cc391672a8 · record status: PUBLISHED · version: 4
+분류: SUPPORTED
+원문: "등장:내 필드에 있는 모든 생성된 카드를 파괴시킵니다. 그 카드들의 현재 공격과 체력의 수치를 합산한 수치를 가진 '좀비'를 1장 소환합니다. 소환한 '좀비'에게 도발을 부여합니다"
+Analyzer 요약:
+- 등장 · DESTROY
+- 등장 · SUMMON
+- 등장 · ADD_KEYWORD · TAUNT
+해석된 Structured Effects:
+[
+  {
+    "trigger": "ENTER_FIELD",
+    "action": "DESTROY",
+    "target": {
+      "zone": "BOARD",
+      "owner": "SELF",
+      "filter": {
+        "isGenerated": true
+      },
+      "selection": "ALL",
+      "count": 20
+    }
+  },
+  {
+    "trigger": "ENTER_FIELD",
+    "action": "SUMMON",
+    "values": {
+      "definitionRef": {
+        "id": "66143efe-2eec-450a-8570-9a4c4d92330e"
+      },
+      "aggregateStats": {
+        "source": "LAST_DESTROYED_TARGETS",
+        "attack": "CURRENT_ATTACK_SUM",
+        "health": "CURRENT_HEALTH_SUM"
+      },
+      "count": 1
+    }
+  },
+  {
+    "trigger": "ENTER_FIELD",
+    "action": "ADD_KEYWORD",
+    "target": {
+      "zone": "BOARD",
+      "owner": "SELF",
+      "selection": "SAME_TARGET",
+      "count": 1
+    },
+    "values": {
+      "keyword": "TAUNT"
+    }
+  }
+]
+현재 저장 Structured Effect:
+{
+  "effects": [
+    {
+      "action": "DESTROY",
+      "target": {
+        "zone": "BOARD",
+        "count": 20,
+        "owner": "SELF",
+        "filter": {
+          "isGenerated": true
+        },
+        "selection": "ALL"
+      },
+      "trigger": "ENTER_FIELD"
+    },
+    {
+      "action": "SUMMON",
+      "values": {
+        "definition": {
+          "id": "66143efe-2eec-450a-8570-9a4c4d92330e",
+          "cost": 0,
+          "name": "좀비",
+          "attack": 1,
+          "health": 1,
+          "isToken": true,
+          "cardType": "WRESTLER",
+          "keywords": [],
+          "abilities": [],
+          "rulesText": "으에에엙",
+          "isChampionToken": false
+        },
+        "aggregateStats": {
+          "attack": "CURRENT_ATTACK_SUM",
+          "health": "CURRENT_HEALTH_SUM",
+          "source": "LAST_DESTROYED_TARGETS"
+        }
+      },
+      "trigger": "ENTER_FIELD"
+    },
+    {
+      "action": "ADD_KEYWORD",
+      "target": {
+        "zone": "BOARD",
+        "count": 1,
+        "owner": "SELF",
+        "selection": "SAME_TARGET"
+      },
+      "values": {
+        "keyword": "TAUNT"
+      },
+      "trigger": "ENTER_FIELD"
+    }
+  ]
+}
+
+### [WRESTLER_CARD] 보드바 · 선수 카드 효과
+ID: 888a12bd-e1e2-41b3-9f22-abbc36af8544 · record status: PUBLISHED · version: 3
+분류: SUPPORTED
+원문: "이 카드가 공격할 때마다 다음 내 턴에 골드를 추가로 +1G 받습니다."
+Analyzer 요약:
+- SELF_ATTACK · ADD_NEXT_TURN_GOLD · 1
+해석된 Structured Effects:
+[
+  {
+    "trigger": "SELF_ATTACK",
+    "action": "ADD_NEXT_TURN_GOLD",
+    "values": {
+      "amount": 1
+    }
+  }
+]
+현재 저장 Structured Effect:
+{
+  "effects": [
+    {
+      "action": "ADD_NEXT_TURN_GOLD",
+      "values": {
+        "amount": 1
+      },
+      "trigger": "SELF_ATTACK"
+    }
+  ]
+}
+
+### [WRESTLER_CARD] 블랙 마카롱 · 선수 카드 효과
+ID: 8c120069-e0c7-4461-bed3-2dc586c50f7b · record status: PUBLISHED · version: 2
+분류: ANALYSIS_FAILED
+원문: "등장:현재 내 손패에 있는 카드 수만큼 체력과 공격을 +1 증가시킵니다."
+미지원 영역:
+- 현재내카드수만큼체력과공격+1
+분석 사유: 문장의 일부를 효과로 해석하지 못했습니다. 표현을 더 구체적으로 입력해 주세요.
+
+### [WRESTLER_CARD] 씨 몬스터 · 선수 카드 효과
+ID: 6b0c3be8-6972-46de-a02b-c14019c33992 · record status: PUBLISHED · version: 2
+분류: ANALYSIS_FAILED
+원문: "손패에 있을 때 아군 선수가 리타이어할 때마다 비용이 -1G 씩 감소한다. (최소 비용 1G)"
+Analyzer 요약:
+- 지원하는 Trigger Registry 항목을 찾지 못했습니다.
+미지원 영역:
+- 손패에 있을 때 아군 선수가 리타이어할 때마다 비용이 -1G 씩 감소한다 (최소 비용 1G)
+분석 사유: 발동 조건 또는 효과 의도를 충분히 이해하지 못했습니다.
+
+### [WRESTLER_CARD] 아르카나 조커 · 선수 카드 효과
+ID: 8a09fec1-16d8-452b-85c3-a38c7a3a03f6 · record status: PUBLISHED · version: 2
+분류: ANALYSIS_FAILED
+원문: "등장:내 덱 맨 위에 있는 카드를 파괴하고, 비용/체력/공격을 1씩 깎은 무작위 카드를 덱 맨 위에 추가합니다.(챔피언 토큰 제외)(비용/체력/공격 수치는 최소 1)"
+Analyzer 요약:
+- 등장 · DESTROY
+해석된 Structured Effects:
+[
+  {
+    "trigger": "ENTER_FIELD",
+    "action": "DESTROY",
+    "target": {
+      "zone": "DECK",
+      "owner": "SELF",
+      "selection": "PLAYER_CHOICE",
+      "count": 1
+    }
+  }
+]
+미지원 영역:
+- 내맨위카드하,비용/체력/공격1씩깎은맨위추가(챔피언토큰제외)(비용/체력/공격수치는최소1)
+분석 사유: 문장의 일부를 효과로 해석하지 못했습니다. 표현을 더 구체적으로 입력해 주세요.
+
+### [WRESTLER_CARD] 아비터 · 선수 카드 효과
+ID: 7653f417-ea62-4924-8605-3d88a435d728 · record status: PUBLISHED · version: 2
+분류: ANALYSIS_FAILED
+원문: "턴 시작:이 카드가 내 필드의 유일한 선수라면 이 턴에 추가로 +1G를 받습니다."
+Analyzer 요약:
+- 지원하는 Trigger Registry 항목을 찾지 못했습니다.
+미지원 영역:
+- 턴 시작:이 카드가 내 필드의 유일한 선수라면 이 턴에 추가로 +1G를 받
+분석 사유: 발동 조건 또는 효과 의도를 충분히 이해하지 못했습니다.
+
+### [WRESTLER_CARD] 엘리트 용병 · 선수 카드 효과
+ID: f3b46674-c658-4e03-b5b4-ced71547768e · record status: PUBLISHED · version: 3
+분류: SUPPORTED
+원문: "(없음)"
+원문 효과가 없어 실행할 효과가 없습니다.
+
+### [WRESTLER_CARD] 여울 · 선수 카드 효과
+ID: a2ab5577-0072-4425-a117-fd6f7df05d00 · record status: PUBLISHED · version: 2
+분류: ANALYSIS_FAILED
+원문: "등장: 손패의 무작위 선수 카드 3장에게 공격과 체력을 둘다 +1 증가시킵니다. 3장 미만이면 가능한 카드 전부에게 줍니다."
+미지원 영역:
+- 공격과체력둘다+1미만이면가능한카드전부
+분석 사유: 문장의 일부를 효과로 해석하지 못했습니다. 표현을 더 구체적으로 입력해 주세요.
+
+### [WRESTLER_CARD] 오심정정 · 선수 카드 효과
+ID: 814781f3-2173-411a-a3f3-65042fbea140 · record status: PUBLISHED · version: 2
+분류: ANALYSIS_FAILED
+원문: "묘지에서 선수 1장을 선택하고, 그 선수를 패로 되돌립니다."
+Analyzer 요약:
+- 지원하는 Trigger Registry 항목을 찾지 못했습니다.
+미지원 영역:
+- 묘지에서 선수 1장을 선택하고, 그 선수를 패로 되돌립니다
+분석 사유: 발동 조건 또는 효과 의도를 충분히 이해하지 못했습니다.
+
+### [WRESTLER_CARD] 용병 · 선수 카드 효과
+ID: ff6f154d-a675-4a6b-bb12-50af8d227d15 · record status: PUBLISHED · version: 3
+분류: SUPPORTED
+원문: "(없음)"
+원문 효과가 없어 실행할 효과가 없습니다.
+
+### [WRESTLER_CARD] 워썬더 · 선수 카드 효과
+ID: 39dfe786-e95b-417b-94d1-edc2cdf3880e · record status: PUBLISHED · version: 2
+분류: ANALYSIS_FAILED
+원문: "등장: 내 덱 위 카드 3장을 무덤으로 보내고, 다음턴에 골드를 추가로 +1G를 받습니다."
+Analyzer 요약:
+- 등장 · ADD_NEXT_TURN_GOLD · 1
+해석된 Structured Effects:
+[
+  {
+    "trigger": "ENTER_FIELD",
+    "action": "ADD_NEXT_TURN_GOLD",
+    "values": {
+      "amount": 1
+    }
+  }
+]
+미지원 영역:
+- 내위무덤으로보내,받
+분석 사유: 문장의 일부를 효과로 해석하지 못했습니다. 표현을 더 구체적으로 입력해 주세요.
+
+### [WRESTLER_CARD] 위리녀 · 선수 카드 효과
+ID: c3825a2a-8395-4f01-b1d8-4fd80627e339 · record status: PUBLISHED · version: 3
+분류: SUPPORTED
+원문: "(없음)"
+원문 효과가 없어 실행할 효과가 없습니다.
+
+### [WRESTLER_CARD] 위리놈 · 선수 카드 효과
+ID: 5c050d4e-1e91-4d8b-9bab-8d315c4e21ab · record status: PUBLISHED · version: 3
+분류: ANALYSIS_FAILED
+원문: "등장:자신의 손패에 '위리녀'를 생성하고, 그 카드의 공격/체력을 이 카드의 현재 공격/체력과 같은 수치로 맞춥니다.
+퇴장:자신의 손패에 있는 '위리녀' 1장을 필드에 소환합니다."
+Analyzer 요약:
+- 등장 · GENERATE
+- LEAVE_FIELD · SUMMON
+해석된 Structured Effects:
+[
+  {
+    "trigger": "ENTER_FIELD",
+    "action": "GENERATE",
+    "values": {
+      "definitionRef": {
+        "id": "c3825a2a-8395-4f01-b1d8-4fd80627e339"
+      },
+      "destination": "HAND",
+      "count": 1
+    }
+  },
+  {
+    "trigger": "LEAVE_FIELD",
+    "action": "SUMMON",
+    "values": {
+      "definitionRef": {
+        "id": "c3825a2a-8395-4f01-b1d8-4fd80627e339"
+      },
+      "count": 1
+    }
+  }
+]
+미지원 영역:
+- 하,그카드공격/체력현재공격/체력과같은수치로맞춥니다
+분석 사유: 문장의 일부를 효과로 해석하지 못했습니다. 표현을 더 구체적으로 입력해 주세요.
+
+### [WRESTLER_CARD] 잔상 · 선수 카드 효과
+ID: 0c4104b5-854e-4bd5-8523-fa1cf98764f4 · record status: PUBLISHED · version: 3
+분류: SUPPORTED
+원문: "(없음)"
+원문 효과가 없어 실행할 효과가 없습니다.
+
+### [WRESTLER_CARD] 저지먼트 · 선수 카드 효과
+ID: 88e8f386-4090-4cb5-b6ae-7b0ceb1795aa · record status: PUBLISHED · version: 2
+분류: ANALYSIS_FAILED
+원문: "자신이 선택한 상대 선수 1장을 리타이어 시킵니다."
+Analyzer 요약:
+- 지원하는 Trigger Registry 항목을 찾지 못했습니다.
+미지원 영역:
+- 자신이 선택한 상대 선수 1장을 리타이어
+분석 사유: 발동 조건 또는 효과 의도를 충분히 이해하지 못했습니다.
+
+### [WRESTLER_CARD] 조킹루이지 · 선수 카드 효과
+ID: df532c95-0e4d-4b17-8200-a86e6a682341 · record status: PUBLISHED · version: 8
+분류: ANALYSIS_FAILED
+원문: "등장: 자신의 양옆 빈 슬롯에 3 코스트 이상의 무작위 선수 카드를 각각 소환합니다. 
+이 카드가 필드에 있을때 생성된 카드들이 1 추가 데미지를 줍니다."
+Analyzer 요약:
+- 등장 · ADD_DAMAGE_MODIFIER · 1
+해석된 Structured Effects:
+[
+  {
+    "trigger": "ENTER_FIELD",
+    "action": "ADD_DAMAGE_MODIFIER",
+    "values": {
+      "amount": 1,
+      "damageSource": "GENERATED"
+    }
+  }
+]
+미지원 영역:
+- 카드 참조를 찾을 수 없습니다: 자신의 양옆 빈 슬롯에 3 코스트 이상의 선수 카드를 각각
+분석 사유: 문장의 일부를 효과로 해석하지 못했습니다. 표현을 더 구체적으로 입력해 주세요.
+
+### [WRESTLER_CARD] 좀비 · 선수 카드 효과
+ID: 66143efe-2eec-450a-8570-9a4c4d92330e · record status: PUBLISHED · version: 4
+분류: SUPPORTED
+원문: "(없음)"
+원문 효과가 없어 실행할 효과가 없습니다.
+
+### [WRESTLER_CARD] 챔피언 판도라(폭주) · 선수 카드 효과
+ID: eaefcf6c-575d-4482-aaad-98b54561b49a · record status: PUBLISHED · version: 5
+분류: SUPPORTED
+원문: "등장:선택한 선수를 침묵시키고 파괴시킵니다. 
+이 카드는 자신이 리타이어 혹은 파괴 시킨 선수의 공격력을 자신의 공격력에 더합니다."
+Analyzer 요약:
+- 등장 · SILENCE
+- 등장 · DESTROY
+- 등장 · ADD_AGGREGATED_ATTACK
+해석된 Structured Effects:
+[
+  {
+    "trigger": "ENTER_FIELD",
+    "action": "SILENCE",
+    "target": {
+      "zone": "BOARD",
+      "owner": "ENEMY",
+      "cardType": "WRESTLER",
+      "selection": "PLAYER_CHOICE",
+      "count": 1
+    }
+  },
+  {
+    "trigger": "ENTER_FIELD",
+    "action": "DESTROY",
+    "target": {
+      "zone": "BOARD",
+      "owner": "ENEMY",
+      "cardType": "WRESTLER",
+      "selection": "SAME_TARGET",
+      "count": 1
+    }
+  },
+  {
+    "trigger": "ENTER_FIELD",
+    "action": "ADD_AGGREGATED_ATTACK",
+    "target": {
+      "zone": "BOARD",
+      "owner": "SELF",
+      "selection": "SELF",
+      "count": 1
+    },
+    "values": {
+      "aggregateStats": {
+        "source": "LAST_DESTROYED_TARGETS",
+        "attack": "CURRENT_ATTACK_SUM",
+        "health": "CURRENT_HEALTH_SUM"
+      }
+    }
+  }
+]
+
+### [WRESTLER_CARD] 퍼플레인 · 선수 카드 효과
+ID: 21e9e816-4d5f-461d-8cf8-b57749a33753 · record status: DRAFT · version: 1
+분류: ANALYSIS_FAILED
+원문: "등장:모든 적 선수의 공격력을 2 감소시킵니다. 이 카드가 필드에 있을때 공격력이 0이 된 적 선수는 기절당하고 침묵당합니다."
+Analyzer 요약:
+- 등장 · STUN
+- 등장 · SILENCE
+해석된 Structured Effects:
+[
+  {
+    "trigger": "ENTER_FIELD",
+    "action": "STUN",
+    "target": {
+      "zone": "BOARD",
+      "owner": "SELF",
+      "selection": "SELF",
+      "count": 1
+    }
+  },
+  {
+    "trigger": "ENTER_FIELD",
+    "action": "SILENCE",
+    "target": {
+      "zone": "BOARD",
+      "owner": "SELF",
+      "selection": "SAME_TARGET",
+      "count": 1
+    }
+  }
+]
+미지원 영역:
+- 모든공격력2공격력이0이된는당하당
+분석 사유: 문장의 일부를 효과로 해석하지 못했습니다. 표현을 더 구체적으로 입력해 주세요.
+
+### [WRESTLER_CARD] 플래티넘 구슬 마스터 · 선수 카드 효과
+ID: 683e07f7-d9f8-47f7-8142-779cab01e9b8 · record status: PUBLISHED · version: 2
+분류: ANALYSIS_FAILED
+원문: "등장:이 카드 비용을 지불하고 남은 Gold를 전부 소비합니다. 이때 소비한 1G마다 체력과 공격을 각각 +2씩 증가시킵니다"
+Analyzer 요약:
+- 등장 · ADD_GOLD · 1
+해석된 Structured Effects:
+[
+  {
+    "trigger": "ENTER_FIELD",
+    "action": "ADD_GOLD",
+    "values": {
+      "amount": 1
+    }
+  }
+]
+미지원 영역:
+- 비용지불하남은Gold전부소비이때소비한마다체력과공격+2씩
+분석 사유: 문장의 일부를 효과로 해석하지 못했습니다. 표현을 더 구체적으로 입력해 주세요.
+
+### [WRESTLER_CARD] 피 스타 세븐 · 선수 카드 효과
+ID: 5361339a-fd72-47e2-bbcb-f5a193a64ea3 · record status: PUBLISHED · version: 2
+분류: ANALYSIS_FAILED
+원문: "등장:자신을 제외한 필드에 나와있는 아군 선수들에게 공격력 +2를 부여합니다."
+Analyzer 요약:
+- 등장 · BUFF
+해석된 Structured Effects:
+[
+  {
+    "trigger": "ENTER_FIELD",
+    "action": "BUFF",
+    "target": {
+      "zone": "BOARD",
+      "owner": "SELF",
+      "selection": "SELF",
+      "count": 1
+    },
+    "values": {
+      "attack": 2,
+      "health": 0
+    }
+  }
+]
+미지원 영역:
+- 제외한나와들
+분석 사유: 문장의 일부를 효과로 해석하지 못했습니다. 표현을 더 구체적으로 입력해 주세요.
+
+### [WRESTLER_CARD] 하스이 · 선수 카드 효과
+ID: 49f79c04-41b4-4d2c-83df-10541a7eceef · record status: PUBLISHED · version: 3
+분류: SUPPORTED
+원문: "등장:'잔상'을 소환합니다."
+Analyzer 요약:
+- 등장 · SUMMON
+해석된 Structured Effects:
+[
+  {
+    "trigger": "ENTER_FIELD",
+    "action": "SUMMON",
+    "values": {
+      "definitionRef": {
+        "id": "0c4104b5-854e-4bd5-8523-fa1cf98764f4"
+      },
+      "count": 1
+    }
+  }
+]
+
+### [WRESTLER_CARD] 흑구슬 마스터 · 선수 카드 효과
+ID: b723c7e6-c668-4afb-b77d-da0d16f16c31 · record status: DRAFT · version: 1
+분류: SUPPORTED
+원문: "등장:선택한 적 선수 하나를 파괴합니다."
+Analyzer 요약:
+- 등장 · DESTROY
+해석된 Structured Effects:
+[
+  {
+    "trigger": "ENTER_FIELD",
+    "action": "DESTROY",
+    "target": {
+      "zone": "BOARD",
+      "owner": "ENEMY",
+      "cardType": "WRESTLER",
+      "selection": "PLAYER_CHOICE",
+      "count": 1
+    }
+  }
+]
+
+### [CHAMPION] 챔피언 여울 · 기본 Champion Ability
+ID: 926920a8-a3b5-4e9a-a419-6da225380036 · record status: PUBLISHED · version: 6
+분류: SUPPORTED
+원문: "다음 턴에 골드를 추가로 1 더 받습니다"
+Analyzer 요약:
+- 등장 · ADD_NEXT_TURN_GOLD · 1
+해석된 Structured Effects:
+[
+  {
+    "trigger": "ENTER_FIELD",
+    "action": "ADD_NEXT_TURN_GOLD",
+    "values": {
+      "amount": 1
+    }
+  }
+]
+현재 저장 Structured Effect:
+{
+  "effects": [
+    {
+      "action": "ADD_NEXT_TURN_GOLD",
+      "values": {
+        "amount": 1
+      }
+    }
+  ]
+}
+
+### [CHAMPION] 챔피언 예거 · 기본 Champion Ability
+ID: 3cbb09c4-f8ac-4668-9378-5c01bfa9474b · record status: PUBLISHED · version: 6
+분류: SUPPORTED
+원문: "'용병'을 하나 소환한다."
+Analyzer 요약:
+- 등장 · SUMMON
+해석된 Structured Effects:
+[
+  {
+    "trigger": "ENTER_FIELD",
+    "action": "SUMMON",
+    "values": {
+      "definitionRef": {
+        "id": "ff6f154d-a675-4a6b-bb12-50af8d227d15"
+      },
+      "count": 1
+    }
+  }
+]
+현재 저장 Structured Effect:
+{
+  "effects": [
+    {
+      "action": "SUMMON",
+      "values": {
+        "count": 1,
+        "definitionRef": {
+          "id": "ff6f154d-a675-4a6b-bb12-50af8d227d15"
+        }
+      },
+      "trigger": "ENTER_FIELD"
+    }
+  ]
+}
+
+### [CHAMPION] 챔피언 예거 · Quest Condition
+ID: 3cbb09c4-f8ac-4668-9378-5c01bfa9474b · record status: PUBLISHED · version: 6
+분류: SUPPORTED
+원문: "선수 카드를 8번 생성한다.(손패,덱,필드)"
+Analyzer 요약:
+- {"event":"CARD_GENERATED","cardType":"WRESTLER","progress":1,"required":8}
+해석된 Quest Condition:
+{
+  "event": "CARD_GENERATED",
+  "cardType": "WRESTLER",
+  "progress": 1,
+  "required": 8
+}
+현재 저장 Structured Effect:
+{
+  "event": "CARD_GENERATED",
+  "cardType": "WRESTLER",
+  "progress": 1,
+  "required": 8
+}
+
+### [CHAMPION] 챔피언 예거 · Quest Reward
+ID: 3cbb09c4-f8ac-4668-9378-5c01bfa9474b · record status: PUBLISHED · version: 6
+분류: SUPPORTED
+원문: "고유 능력을 강화시킨다."
+해석된 Structured Effects:
+[
+  {
+    "trigger": "ENTER_FIELD",
+    "action": "UPGRADE_CHAMPION_ABILITY"
+  }
+]
+현재 저장 Structured Effect:
+{
+  "effects": [
+    {
+      "action": "UPGRADE_CHAMPION_ABILITY",
+      "trigger": "ENTER_FIELD"
+    }
+  ]
+}
+
+### [CHAMPION] 챔피언 예거 · 강화 Champion Ability
+ID: 3cbb09c4-f8ac-4668-9378-5c01bfa9474b · record status: PUBLISHED · version: 6
+분류: SUPPORTED
+원문: "'엘리트 용병'을 하나 소환한다."
+Analyzer 요약:
+- 등장 · SUMMON
+해석된 Structured Effects:
+[
+  {
+    "trigger": "ENTER_FIELD",
+    "action": "SUMMON",
+    "values": {
+      "definitionRef": {
+        "id": "f3b46674-c658-4e03-b5b4-ced71547768e"
+      },
+      "count": 1
+    }
+  }
+]
+현재 저장 Structured Effect:
+{
+  "effects": [
+    {
+      "action": "SUMMON",
+      "values": {
+        "count": 1,
+        "definitionRef": {
+          "id": "f3b46674-c658-4e03-b5b4-ced71547768e"
+        }
+      },
+      "trigger": "ENTER_FIELD"
+    }
+  ]
+}
+
+### [CHAMPION] 챔피언 판도라 · 기본 Champion Ability
+ID: bcffab96-f61f-497e-b60b-de5a869837d3 · record status: PUBLISHED · version: 5
+분류: SUPPORTED
+원문: "자신이 선택한 선수에게 1 데미지를 줍니다."
+Analyzer 요약:
+- 등장 · DAMAGE · 1
+해석된 Structured Effects:
+[
+  {
+    "trigger": "ENTER_FIELD",
+    "action": "DAMAGE",
+    "target": {
+      "zone": "BOARD",
+      "owner": "ENEMY",
+      "cardType": "WRESTLER",
+      "selection": "PLAYER_CHOICE",
+      "count": 1
+    },
+    "values": {
+      "amount": 1
+    }
+  }
+]
+현재 저장 Structured Effect:
+{
+  "effects": [
+    {
+      "action": "DAMAGE",
+      "target": {
+        "zone": "BOARD",
+        "count": 1,
+        "owner": "ENEMY",
+        "cardType": "WRESTLER",
+        "selection": "PLAYER_CHOICE"
+      },
+      "values": {
+        "amount": 1
+      },
+      "trigger": "ENTER_FIELD"
+    }
+  ]
+}
+
+### [CHAMPION] 챔피언 판도라 · Quest Condition
+ID: bcffab96-f61f-497e-b60b-de5a869837d3 · record status: PUBLISHED · version: 5
+분류: SUPPORTED
+원문: "자신의 고유 능력으로 선수 카드를 5번 리타이어 시킵니다."
+Analyzer 요약:
+- {"event":"WRESTLER_RETIRED","cardType":"WRESTLER","required":5}
+해석된 Quest Condition:
+{
+  "event": "WRESTLER_RETIRED",
+  "cardType": "WRESTLER",
+  "required": 5
+}
+현재 저장 Structured Effect:
+{
+  "event": "WRESTLER_RETIRED",
+  "cardType": "WRESTLER",
+  "required": 5
+}
+
+### [CHAMPION] 챔피언 판도라 · Quest Reward
+ID: bcffab96-f61f-497e-b60b-de5a869837d3 · record status: PUBLISHED · version: 5
+분류: SUPPORTED
+원문: "고유 능력을 강화시키고, 챔피언을 소환합니다!"
+Analyzer 요약:
+- 등장 · DEPLOY_CHAMPION_TOKEN
+해석된 Structured Effects:
+[
+  {
+    "trigger": "ENTER_FIELD",
+    "action": "UPGRADE_CHAMPION_ABILITY"
+  },
+  {
+    "trigger": "ENTER_FIELD",
+    "action": "DEPLOY_CHAMPION_TOKEN"
+  }
+]
+현재 저장 Structured Effect:
+{
+  "effects": [
+    {
+      "action": "UPGRADE_CHAMPION_ABILITY",
+      "trigger": "ENTER_FIELD"
+    }
+  ]
+}
+
+### [CHAMPION] 챔피언 판도라 · 강화 Champion Ability
+ID: bcffab96-f61f-497e-b60b-de5a869837d3 · record status: PUBLISHED · version: 5
+분류: SUPPORTED
+원문: "자신이 선택한 대상에게 2 데미지를 줍니다."
+Analyzer 요약:
+- 등장 · DAMAGE · 2
+해석된 Structured Effects:
+[
+  {
+    "trigger": "ENTER_FIELD",
+    "action": "DAMAGE",
+    "target": {
+      "zone": "CHARACTER",
+      "owner": "ENEMY",
+      "selection": "PLAYER_CHOICE",
+      "count": 1
+    },
+    "values": {
+      "amount": 2
+    }
+  }
+]
+현재 저장 Structured Effect:
+{
+  "effects": [
+    {
+      "action": "DAMAGE",
+      "target": {
+        "zone": "CHARACTER",
+        "count": 1,
+        "owner": "ENEMY",
+        "selection": "PLAYER_CHOICE"
+      },
+      "values": {
+        "amount": 2
+      },
+      "trigger": "ENTER_FIELD"
+    }
+  ]
+}
+
+### [CHAMPION] 챔피언 피 스타 세븐 · 기본 Champion Ability
+ID: 0e9d8ab0-9af7-4db3-a03e-ff6ee3d5789f · record status: PUBLISHED · version: 5
+분류: SUPPORTED
+원문: "손패에 있는 선수 카드 중 무작위 한장의 체력과 공격을 1씩 증가시킨다."
+Analyzer 요약:
+- 등장 · BUFF
+해석된 Structured Effects:
+[
+  {
+    "trigger": "ENTER_FIELD",
+    "action": "BUFF",
+    "target": {
+      "zone": "HAND",
+      "owner": "SELF",
+      "cardType": "WRESTLER",
+      "selection": "RANDOM",
+      "count": 1,
+      "randomScope": "STANDARD"
+    },
+    "values": {
+      "attack": 1,
+      "health": 1
+    }
+  }
+]
+현재 저장 Structured Effect:
+{
+  "effects": [
+    {
+      "action": "BUFF",
+      "target": {
+        "zone": "HAND",
+        "count": 1,
+        "owner": "SELF",
+        "cardType": "WRESTLER",
+        "selection": "RANDOM",
+        "randomScope": "STANDARD"
+      },
+      "values": {
+        "attack": 1,
+        "health": 1
+      },
+      "trigger": "ENTER_FIELD"
+    }
+  ]
+}
+
+## 4. Champion Token 참조
+- 챔피언 판도라 · championId=bcffab96-f61f-497e-b60b-de5a869837d3 · definitionId=eaefcf6c-575d-4482-aaad-98b54561b49a · 챔피언 판도라(폭주) · status=PUBLISHED
+  원문: "등장:선택한 선수를 침묵시키고 파괴시킵니다. 
+이 카드는 자신이 리타이어 혹은 파괴 시킨 선수의 공격력을 자신의 공격력에 더합니다."
+
+## 5. 구현 규칙
+- 현재 ACTIVE Effect Library와 Effect Registry를 먼저 확인하고 기존 Action, Trigger, Target Resolver, Value Resolver, Condition, Listener, Duration, Sequence를 최대한 재사용하세요.
+- 기존 조합으로 표현할 수 없는 경우에만 위의 중복 제거 목록을 기준으로 범용 메커니즘을 추가하세요.
+- 새 메커니즘은 Effect Registry, 저장 스키마/검증, Analyzer mapping, executor, 필요한 targeting/continuation/quest event 처리와 테스트를 함께 연결하세요.
+- 카드 이름, Champion 이름, ID, 특정 원문 문장으로 분기하는 하드코딩을 추가하지 마세요.
+- 자연어/DB 문자열을 eval(), new Function() 또는 런타임 코드로 실행하지 말고 구조화된 검증 데이터와 정식 TypeScript executor를 사용하세요.
+- 부분적으로 해석된 결과를 완전한 효과로 조용히 적용하지 마세요. ANALYSIS_FAILED는 원문을 보존하고 필요한 analyzer 확장과 범용 메커니즘을 설계하세요.
+- PLAYER_CHOICE가 포함된 효과는 손패/보드/Champion의 유효 대상, 잘못된 클릭, 대상 선택 후 continuation/resume까지 실제 게임에서 검증하세요.
+- Quest Condition은 structured event/filter/progress로, Quest Reward와 강화 Ability는 기존 Champion quest/upgrade pipeline으로 연결하세요.
+- Champion Token 효과는 CardDefinition에서만 실행되며 ChampionDefinition에 복제하지 마세요.
+
+## 6. 현재 ACTIVE Effect Library
+Actions:
+- BUFF · ACTIVE · 대상의 공격력과 체력을 변경합니다.
+- SET_STATS · ACTIVE · 대상의 공격력과 체력을 지정한 값으로 설정합니다.
+- DAMAGE · ACTIVE · 대상에게 피해를 줍니다.
+- HEAL · ACTIVE · 대상의 체력을 회복합니다.
+- SILENCE · ACTIVE · 대상의 효과와 키워드를 침묵시킵니다.
+- DESTROY · ACTIVE · 대상을 파괴합니다.
+- ADD_GOLD · ACTIVE · 현재 골드를 획득합니다.
+- ADD_NEXT_TURN_GOLD · ACTIVE · 다음 내 턴의 골드를 증가시킵니다.
+- DRAW · ACTIVE · 카드를 드로우합니다.
+- REDUCE_COST · ACTIVE · 대상의 비용을 감소시킵니다.
+- INCREASE_COST · ACTIVE · 대상의 비용을 증가시킵니다.
+- STUN · ACTIVE · 대상을 기절시킵니다.
+- ADD_KEYWORD · ACTIVE · 대상에게 키워드를 부여합니다.
+- REMOVE_KEYWORD · ACTIVE · 대상의 키워드를 제거합니다.
+- SWAP_STATS · ACTIVE · 대상의 현재 공격력과 체력을 서로 교환합니다.
+- ADD_DAMAGE_MODIFIER · ACTIVE · 조건에 맞는 카드의 피해량을 변경합니다.
+- SUMMON · ACTIVE · 선수를 필드에 소환합니다.
+- GENERATE · ACTIVE · 카드를 생성합니다.
+- DEPLOY_CHAMPION_TOKEN · ACTIVE · 현재 챔피언에 연결된 Champion Token을 특별 전개합니다.
+- CAPTURE · ACTIVE · 대상을 포획합니다.
+- RELEASE_CAPTURED · ACTIVE · 포획한 카드를 필드에 해방합니다.
+- REMOVE_FROM_GAME · ACTIVE · 대상을 제거합니다.
+- SWITCH_EFFECT_BRANCH · ACTIVE · 현재 슬롯의 왼쪽/오른쪽 분기에 맞는 효과를 실행합니다.
+- QUEUE_EFFECT · ACTIVE · 다음 조건을 만족하는 카드에 효과를 예약합니다.
+- ADD_AGGREGATED_ATTACK · ACTIVE · 직전에 퇴장시킨 대상의 현재 공격력 합을 대상에게 더합니다.
+Triggers:
+- ENTER_FIELD · ACTIVE · 선수가 어떤 정상 경로로든 필드에 들어올 때 발동합니다.
+- LEAVE_FIELD · ACTIVE · 카드가 필드를 떠날 때 발동합니다.
+- ACTIVE · ACTIVE · 액티브 능력을 사용할 때 발동합니다.
+- CARD_DRAWN · ACTIVE · 카드가 덱에서 드로우될 때 발동합니다.
+- SELF_ATTACK · ACTIVE · 이 카드가 공격할 때 발동합니다.
+- OTHER_ALLY_ATTACK · ACTIVE · 다른 아군 선수가 공격할 때 발동합니다.
+- TECHNIQUE_CAST · ACTIVE · 1G 이상 기본 비용의 기술을 손에서 사용할 때 발동합니다.
+- CARD_PLAYED_THIS_TURN · ACTIVE · 이번 턴 손에서 플레이한 카드와 연계할 때 발동합니다.
+- EXACT_ZERO_DAMAGE · ACTIVE · 이 카드가 다른 선수의 체력을 정확히 0으로 만들 때 발동합니다.
+- TURN_START · ACTIVE · 턴 시작 시 발동합니다.
+- TURN_END · ACTIVE · 턴 종료 시 발동합니다.
+Conditions:
+- NEED_CONDITION · ACTIVE · 구조화된 조건을 확인합니다.
+- HAS_MATCHING_TAG_PLAYED_THIS_TURN · ACTIVE · 이번 턴 먼저 플레이한 아군과 태그가 하나 이상 일치합니다.
+- BASE_COST_GTE · ACTIVE · 구조화된 조건을 확인합니다.
+- SOURCE_ON_LEFT_SIDE · ACTIVE · 구조화된 조건을 확인합니다.
+- SOURCE_ON_RIGHT_SIDE · ACTIVE · 구조화된 조건을 확인합니다.
+Target Resolvers:
+- ZONE_OWNER_SELECTION · ACTIVE · 영역(여러 영역 포함), 소유자, 카드 유형, 필터, 선택 방식 및 수로 대상을 해석합니다.
+Value Resolvers:
+- AMOUNT · ACTIVE · 골드, 피해, 회복, 드로우 및 비용 수치를 해석합니다.
+- STAT_PAIR · ACTIVE · +공격력/+체력 수치를 해석합니다.
+- STAT_MULTIPLIER · ACTIVE · 대상의 현재 공격력과 체력을 배수로 변경합니다.
+- REFERENCE_STAT · ACTIVE · 마지막 공격자 등 참조 대상의 현재 능력치를 수치로 해석합니다.
+- KEYWORD · ACTIVE · 지원 키워드를 해석합니다.
+
+## 7. 권장 구현 순서
+1. Effect Registry와 현재 executor/targeting/quest 시스템 확인
+2. 위의 SUPPORTED 결과가 실제 저장 Structured Effect와 일치하는지 확인
+3. 중복 제거된 미구현 메커니즘마다 기존 요소 조합 가능 여부 확인
+4. 필요한 범용 registry/action/resolver/condition/listener만 추가
+5. Card와 Champion의 저장/공개/런타임 변환 연결
+6. Analyzer와 관리자 적용 흐름 연결
+7. 각 원문, 대상 선택, 조건 불충족, 수치 계산, 순서/continuation 테스트
+8. 전체 WRESTLER 카드와 Champion을 다시 분석하고 모두 실행 검증
+
+## 8. 검증 요구사항
+- 정상 실행, 대상 없음, 잘못된 대상, 조건 불충족, 값 계산, GameState 무결성을 검증하세요.
+- 카드 효과의 전투/손패/필드 범위와 Champion 능력의 턴 제한을 검증하세요.
+- Quest progress filter, Quest Reward, 강화 Ability, Champion Token 생성/퇴장 규칙을 검증하세요.
+- 기존 지원 카드와 다른 Champion에 대한 회귀 테스트를 유지하세요.
+- TypeScript 검사, API 테스트, 게임 엔진 테스트와 빌드를 실행하세요.
+
+ANALYSIS_FAILED가 있어도 전체 구현을 중단하지 말고, 해당 원문을 임의로 추측하지 않은 채 범용 확장 지점으로 처리하세요.
+
+요구한 기능이 실제 게임에서 정상 작동하면 추가 기능을 만들지 말고, 수정 파일과 실행한 검사 결과만 간단히 보고하세요.

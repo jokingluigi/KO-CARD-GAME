@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
+import { useLocation } from 'wouter';
 
 import {
   attack,
@@ -27,6 +28,7 @@ import {
   type GameMediaCatalog,
 } from '@/game';
 import { GameStatePreview } from '@/components/game-state-preview';
+import { MatchResultOverlay } from '@/components/match-result-overlay';
 import { MainMenu } from '@/components/main-menu';
 import { AuthLoading, AuthPage } from '@/components/auth-page';
 import { fetchCurrentUser, logout, type AuthUser } from '@/lib/auth-client';
@@ -42,6 +44,7 @@ import {
 
 const TURN_TIME_LIMIT_SECONDS = 90;
 const ENTRANCE_EFFECT_DELAY_MS = 180;
+const RESULT_SCREEN_SETTLE_DELAY_MS = 320;
 const BGM_MUTE_STORAGE_KEY = 'ko-game-bgm-muted';
 
 function actualAttackDamage(
@@ -104,6 +107,7 @@ function readStoredBgmMute() {
 }
 
 export default function Home() {
+  const [, navigate] = useLocation();
   const searchParams = new URLSearchParams(window.location.search);
   const testCardId = searchParams.get('testCardId');
   const testChampionId = searchParams.get('testChampionId');
@@ -128,6 +132,8 @@ export default function Home() {
   const [attackAnimation, setAttackAnimation] = useState<AttackAnimationState | null>(null);
   const [attackImpactTriggered, setAttackImpactTriggered] = useState(false);
   const [matchReady, setMatchReady] = useState(false);
+  const [presentationBusy, setPresentationBusy] = useState(false);
+  const [matchResultVisible, setMatchResultVisible] = useState(false);
   const turnKey = `${gameState.turn}:${gameState.activePlayerId ?? 'none'}`;
   const turnStartedAtRef = useRef(Date.now());
   const timeoutHandledTurnRef = useRef<string | null>(null);
@@ -135,6 +141,27 @@ export default function Home() {
   const lastAudioEventCountRef = useRef<number | null>(null);
   const pendingEntranceAudioRef = useRef<{ url: string; volume: number } | null>(null);
   const processedAttackSoundsRef = useRef(new Set<string>());
+
+  useEffect(() => {
+    if (gameState.status !== 'FINISHED') {
+      setMatchResultVisible(false);
+      return;
+    }
+    if (presentationBusy) {
+      setMatchResultVisible(false);
+      return;
+    }
+    const timeoutId = window.setTimeout(() => {
+      setMatchResultVisible(true);
+    }, RESULT_SCREEN_SETTLE_DELAY_MS);
+    return () => window.clearTimeout(timeoutId);
+  }, [gameState.events.length, gameState.status, presentationBusy]);
+
+  useEffect(() => {
+    if (!matchResultVisible) return;
+    audioManager.stopAttack();
+    audioManager.stop();
+  }, [matchResultVisible]);
 
   useEffect(() => {
     let cancelled = false;
@@ -425,7 +452,7 @@ export default function Home() {
   }, [turnKey, gameState.status, matchReady]);
 
   function handleEndTurn(isTimeout = false) {
-    if (!matchReady || playAnimation || attackAnimation) return;
+    if (!matchReady || gameState.status !== 'IN_PROGRESS' || playAnimation || attackAnimation) return;
     const result = endTurn(gameState, gameState.players[0].id);
     if (!result.success) {
       setPlayError(result.message);
@@ -455,7 +482,7 @@ export default function Home() {
   }
 
   function handleSurrender() {
-    if (!matchReady || playAnimation || attackAnimation) return;
+    if (!matchReady || gameState.status !== 'IN_PROGRESS' || playAnimation || attackAnimation) return;
     const result = surrender(gameState, gameState.players[0].id);
     if (!result.success) {
       setPlayError(result.message);
@@ -469,7 +496,7 @@ export default function Home() {
   }
 
   function handleSelectCard(cardInstanceId: string) {
-    if (!matchReady || playAnimation || attackAnimation) return;
+    if (!matchReady || gameState.status !== 'IN_PROGRESS' || playAnimation || attackAnimation) return;
     if (gameState.targetingState?.active) {
       return handleEffectTarget(cardInstanceId);
     }
@@ -481,7 +508,7 @@ export default function Home() {
   }
 
   function handleSelectAttacker(cardInstanceId: string) {
-    if (!matchReady || playAnimation || attackAnimation) return;
+    if (!matchReady || gameState.status !== 'IN_PROGRESS' || playAnimation || attackAnimation) return;
     if (gameState.targetingState?.active) return handleEffectTarget(cardInstanceId);
     setSelectedCardId(null);
     setSelectedAttackerId((current) =>
@@ -513,7 +540,7 @@ export default function Home() {
     targetCardInstanceId: string,
     geometry?: AttackAnimationState["geometry"],
   ) {
-    if (!matchReady || playAnimation || attackAnimation) return;
+    if (!matchReady || gameState.status !== 'IN_PROGRESS' || playAnimation || attackAnimation) return;
     if (gameState.targetingState?.active) {
       handleEffectTarget(targetCardInstanceId);
       return;
@@ -590,6 +617,7 @@ export default function Home() {
     setPlayError(null);
   }
   function handleEffectTarget(targetId: string) {
+    if (!matchReady || gameState.status !== 'IN_PROGRESS') return;
     const before = gameState;
     const next = processChampionQuestEvents(before, selectEffectTarget(before, targetId));
     if (next === before) {
@@ -600,6 +628,7 @@ export default function Home() {
     setPlayError(null);
   }
   function handleCancelEffectTargeting() {
+    if (gameState.status !== 'IN_PROGRESS') return;
     const next = cancelEffectTargeting(gameState);
     if (next === gameState) return;
     setGameState(next);
@@ -607,7 +636,7 @@ export default function Home() {
   }
 
   function handleAttackPlayer(geometry?: AttackAnimationState["geometry"]) {
-    if (!matchReady || playAnimation || attackAnimation) return;
+    if (!matchReady || gameState.status !== 'IN_PROGRESS' || playAnimation || attackAnimation) return;
     if (gameState.targetingState?.active) {
       handleEffectTarget(gameState.players[1].id);
       return;
@@ -688,7 +717,7 @@ export default function Home() {
   }
 
   function handleSelectSlot(slot: BoardSlot, geometry?: CardPlayGeometry) {
-    if (!matchReady || playAnimation || attackAnimation) return;
+    if (!matchReady || gameState.status !== 'IN_PROGRESS' || playAnimation || attackAnimation) return;
     if (!selectedCardId) {
       setPlayError('먼저 손패에서 선수를 선택하세요.');
       return;
@@ -721,7 +750,7 @@ export default function Home() {
   }
 
   function handleUseTechnique(cardInstanceId: string, source: CardPlayGeometry["source"]) {
-    if (!matchReady || playAnimation || attackAnimation) return;
+    if (!matchReady || gameState.status !== 'IN_PROGRESS' || playAnimation || attackAnimation) return;
     const card = gameState.players[0].hand.find((entry) => entry.instanceId === cardInstanceId);
     if (!card) return;
     const result = playTechniqueFromHand(
@@ -744,7 +773,7 @@ export default function Home() {
   }
 
   function handleUseActive(cardInstanceId?: string) {
-    if (!matchReady || playAnimation || attackAnimation) return;
+    if (!matchReady || gameState.status !== 'IN_PROGRESS' || playAnimation || attackAnimation) return;
     const targetCardInstanceId = cardInstanceId ?? selectedAttackerId;
     if (!targetCardInstanceId) return;
     const result = useActiveAbility(
@@ -761,7 +790,7 @@ export default function Home() {
   }
 
   function handleUseChampionAbility() {
-    if (!matchReady || playAnimation || attackAnimation) return;
+    if (!matchReady || gameState.status !== 'IN_PROGRESS' || playAnimation || attackAnimation) return;
     const result = useChampionAbility(gameState, gameState.players[0].id);
     if (!result.success) {
       setPlayError(result.message);
@@ -881,10 +910,17 @@ export default function Home() {
       onUseChampionAbility={handleUseChampionAbility}
       onCancelEffectTargeting={handleCancelEffectTargeting}
       onEffectTarget={handleEffectTarget}
+       onPresentationBusyChange={setPresentationBusy}
       onReturnToAdmin={isAdminTestMatch ? () => {
         window.location.href = `${import.meta.env.BASE_URL.replace(/\/$/, '')}/admin`;
       } : undefined}
     />
+     {matchResultVisible && (
+       <MatchResultOverlay
+         state={gameState}
+         onReturnToMainMenu={() => navigate('/')}
+       />
+     )}
     </>
   );
 }

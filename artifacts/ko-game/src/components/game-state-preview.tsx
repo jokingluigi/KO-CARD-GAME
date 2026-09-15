@@ -61,6 +61,7 @@ interface GameStatePreviewProps {
   onUseChampionAbility: () => void;
   onCancelEffectTargeting: () => void;
   onEffectTarget: (targetId: string) => void;
+  onPresentationBusyChange: (busy: boolean) => void;
   onReturnToAdmin?: () => void;
 }
 
@@ -91,6 +92,7 @@ export function GameStatePreview({
   onUseChampionAbility,
   onCancelEffectTargeting,
   onEffectTarget,
+  onPresentationBusyChange,
   onReturnToAdmin,
 }: GameStatePreviewProps) {
   const [openGraveyardPlayerId, setOpenGraveyardPlayerId] = React.useState<string | null>(null);
@@ -108,6 +110,23 @@ export function GameStatePreview({
   const lastCardPositionsRef = React.useRef(new Map<string, { left: number; top: number; width: number; height: number }>());
   const previousCardStatsRef = React.useRef(new Map<string, { attack: number; health: number }>());
   const previousCardsRef = React.useRef(new Map<string, CardInstance>());
+
+  React.useEffect(() => {
+    onPresentationBusyChange(Boolean(
+      playAnimation ||
+      attackAnimation ||
+      generatedPlayAnimations.length ||
+      cardLeaveAnimations.length ||
+      presentationQueue.length,
+    ));
+  }, [
+    attackAnimation,
+    cardLeaveAnimations.length,
+    generatedPlayAnimations.length,
+    onPresentationBusyChange,
+    playAnimation,
+    presentationQueue.length,
+  ]);
 
   React.useEffect(() => {
     const currentCardStats = new Map<string, { attack: number; health: number }>();
