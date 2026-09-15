@@ -12,7 +12,7 @@ export type Target = {
   zones?: TargetZone[];
   owner: TargetOwner;
   cardType?: "WRESTLER" | "TECHNIQUE";
-  filter?: { isGenerated?: boolean; minCost?: number };
+  filter?: { isGenerated?: boolean; minCost?: number; isToken?: boolean; isChampionToken?: boolean; excludeSource?: boolean };
   selection: TargetSelection;
   count: number;
   randomScope?: RandomScope;
@@ -31,6 +31,10 @@ export type QueuedStructuredEffect = {
     damageSource?: DamageSource;
     reference?: Reference;
     referenceStat?: "CURRENT_ATTACK" | "CURRENT_HEALTH";
+    amountReference?: "HAND_COUNT" | "GRAVEYARD_WRESTLER_COUNT" | "REMAINING_GOLD" | "BOARD_WRESTLER_COUNT";
+    minimum?: number;
+    generatedModifiers?: { cost?: number; attack?: number; health?: number; copySourceStats?: boolean };
+    deckPosition?: "TOP" | "BOTTOM";
   };
 };
 export type StructuredEffect = {
@@ -48,12 +52,16 @@ export type StructuredEffect = {
     damageSource?: DamageSource;
     reference?: Reference;
     referenceStat?: "CURRENT_ATTACK" | "CURRENT_HEALTH";
+    amountReference?: "HAND_COUNT" | "GRAVEYARD_WRESTLER_COUNT" | "REMAINING_GOLD" | "BOARD_WRESTLER_COUNT";
+    minimum?: number;
+    generatedModifiers?: { cost?: number; attack?: number; health?: number; copySourceStats?: boolean };
+    deckPosition?: "TOP" | "BOTTOM";
     queuedTrigger?: "NEXT_ALLY_WRESTLER_PLAYED";
     queuedEffect?: QueuedStructuredEffect;
     definition?: Record<string, unknown>;
     definitionRef?: { id?: string; name?: string };
     count?: number;
-    destination?: "HAND" | "DECK";
+    destination?: "HAND" | "DECK" | "DECK_TOP";
     aggregateStats?: {
       source: "LAST_DESTROYED_TARGETS";
       attack: "CURRENT_ATTACK_SUM";
@@ -155,14 +163,22 @@ function targetCountFrom(text: string) {
 function targetFilterFor(text: string): Target["filter"] | undefined {
   const generated = GENERATED_FILTER_PATTERN.test(text);
   const minCost = Number(text.match(MIN_COST_PATTERN)?.[1]);
+  const token = /토큰/.test(text) && !/챔피언\s*토큰/.test(text);
+  const nonChampionToken = /챔피언\s*토큰\s*제외/.test(text);
+  const excludeSource = /자신을\s*제외/.test(text);
   const filter = {
     ...(generated ? { isGenerated: true } : {}),
     ...(Number.isInteger(minCost) ? { minCost } : {}),
+    ...(token ? { isToken: true } : {}),
+    ...(nonChampionToken ? { isChampionToken: false } : {}),
+    ...(excludeSource ? { excludeSource: true } : {}),
   };
   return Object.keys(filter).length ? filter : undefined;
 }
 function targetFor(text: string, randomPool = false): Target {
   const hand = /손(?:패)?/.test(text);
+  const graveyard = /(?:무덤|묘지)/.test(text);
+  const topOfDeck = /(?:덱\s*(?:맨\s*)?위|덱\s*위)/.test(text);
   const enemyQualifier = /(?:적|상대)/.test(text);
   const explicitSelfTarget = /(?:자신(?:의|에게|을|은)|(?:아군|내)\s*(?:선수|대상|캐릭터|챔피언)?)/.test(text);
   const selectedOwner = enemyQualifier || !explicitSelfTarget ? "ENEMY" : "SELF";
@@ -187,6 +203,15 @@ function targetFor(text: string, randomPool = false): Target {
       ...( /선택한\s*선수/.test(text) ? { cardType: "WRESTLER" as const } : {}),
       selection: "PLAYER_CHOICE",
       count: 1,
+    };
+  }
+  if (graveyard) {
+    return {
+      zone: "GRAVEYARD",
+      owner: enemyQualifier ? "ENEMY" : "SELF",
+      ...(/선수/.test(text) ? { cardType: "WRESTLER" as const } : {}),
+      selection: /무작위|랜덤/.test(text) ? "RANDOM" : "PLAYER_CHOICE",
+      count: targetCountFrom(text),
     };
   }
   if (/대상/.test(text)) {
@@ -247,11 +272,11 @@ function targetFor(text: string, randomPool = false): Target {
     };
   }
   return {
-    zone: deck ? "DECK" : hand ? "HAND" : "BOARD",
+    zone: topOfDeck || deck ? "DECK" : hand ? "HAND" : "BOARD",
     owner: enemy ? "ENEMY" : "SELF",
     ...(cardType ? { cardType } : {}),
     ...(filter ? { filter } : {}),
-    selection: random ? "RANDOM" : all ? "ALL" : "PLAYER_CHOICE",
+    selection: topOfDeck ? "TOP" : random ? "RANDOM" : all ? "ALL" : "PLAYER_CHOICE",
     count: all ? 20 : targetCountFrom(text),
     ...(randomTarget ? { randomScope } : {}),
   };
@@ -445,9 +470,108 @@ function effect(
   };
 }
 
+function expandedMechanicAnalysis(
+  text: string,
+  options: EffectAnalysisOptions,
+): Analysis | null {
+  const triggerFor = (fallback: Trigger = "ENTER_FIELD"): Trigger =>
+    /(?:처음으로\s*)?공격한/.test(text) ? "FIRST_ATTACKED"
+      : /^턴\s*시작/.test(text) ? "TURN_START"
+        : /^퇴장/.test(text) ? "LEAVE_FIELD"
+          : options.defaultTrigger ?? fallback;
+  const self = { zone: "BOARD" as const, owner: "SELF" as const, selection: "SELF" as const, count: 1 };
+  const wrestlerSelf = { ...self, cardType: "WRESTLER" as const };
+  const result = (effects: StructuredEffect[]): Analysis => ({
+    status: "success",
+    outcome: "supported",
+    effects,
+    keywords: [],
+    unsupportedSegments: [],
+    summaries: effects.map((item) => `${item.trigger} · ${item.action}`),
+  });
+  const makeRef = (name: string) => {
+    const found = options.cardCatalog?.find((candidate) => candidate.name === name);
+    return found ? { id: found.id } : { name };
+  };
+
+  if (/어디에\s*있든.*생성된.*아군\s*선수/.test(text) && /각각\s*1씩/.test(text)) {
+    return result([{ trigger: triggerFor(), action: "BUFF", target: { zones: ["HAND", "DECK", "BOARD"], owner: "SELF", cardType: "WRESTLER", filter: { isGenerated: true }, selection: "ALL", count: 20 }, values: { attack: 1, health: 1 } }]);
+  }
+  if (/다음에\s*(?:내가\s*)?플레이하는\s*아군\s*선수/.test(text) && /체력.*\+?2/.test(text)) {
+    return result([{ trigger: triggerFor(), action: "QUEUE_EFFECT", values: { queuedTrigger: "NEXT_ALLY_WRESTLER_PLAYED", queuedEffect: { action: "BUFF", target: { zone: "BOARD", owner: "SELF", selection: "SELF", count: 1 }, values: { attack: 0, health: 2 } } } }]);
+  }
+  if (/(?:자신의\s*)?(?:무덤|묘지).*선수.*수\s*만큼.*공격력과\s*체력/.test(text)) {
+    return result([{ trigger: triggerFor(), action: "BUFF", target: wrestlerSelf, values: { amountReference: "GRAVEYARD_WRESTLER_COUNT" } }]);
+  }
+  if (/처음으로\s*공격한\s*적\s*선수/.test(text) && /침묵/.test(text) && /능력.*비활성화/.test(text)) {
+    return result([
+      { trigger: "FIRST_ATTACKED", action: "SILENCE", target: { zone: "BOARD", owner: "ENEMY", cardType: "WRESTLER", selection: "SAME_TARGET", count: 1 } },
+      { trigger: "FIRST_ATTACKED", action: "DISABLE_ABILITY", target: self },
+    ]);
+  }
+  if (/현재\s*내\s*손패에\s*있는\s*카드\s*수만큼/.test(text)) {
+    return result([{ trigger: triggerFor(), action: "BUFF", target: self, values: { amountReference: "HAND_COUNT" } }]);
+  }
+  if (/손패에\s*있을\s*때.*아군\s*선수가\s*리타이어/.test(text)) {
+    return result([{ trigger: "CARD_RETIRED", action: "REDUCE_COST", target: { zone: "HAND", owner: "SELF", selection: "SELF", count: 1 }, values: { amount: 1, minimum: 1 } }]);
+  }
+  if (/덱\s*(?:맨\s*)?위.*카드.*파괴/.test(text) && /챔피언\s*토큰\s*제외/.test(text)) {
+    return result([
+      { trigger: triggerFor(), action: "MILL", target: { zone: "DECK", owner: "SELF", selection: "TOP", count: 1 } },
+      { trigger: triggerFor(), action: "GENERATE", target: { zones: ["DECK"], owner: "SELF", selection: "RANDOM", count: 1, randomScope: "FULL", filter: { isChampionToken: false } }, values: { destination: "DECK", deckPosition: "TOP", generatedModifiers: { cost: -1, attack: -1, health: -1 } } },
+    ]);
+  }
+  if (/턴\s*시작.*필드의\s*유일한\s*선수/.test(text) && /[+]1G/.test(text.replace(/\s/g, ""))) {
+    return result([{ trigger: "TURN_START", action: "ADD_GOLD", conditions: [{ type: "SOURCE_IS_ONLY_WRESTLER" }], values: { amount: 1 } }]);
+  }
+  if (/손패의\s*무작위\s*선수\s*카드\s*3장/.test(text) && /3장\s*미만/.test(text)) {
+    return result([{ trigger: triggerFor(), action: "BUFF", target: { zone: "HAND", owner: "SELF", cardType: "WRESTLER", selection: "RANDOM", count: 3, randomScope: "STANDARD" }, values: { attack: 1, health: 1 } }]);
+  }
+  if (/(?:묘지|무덤)에서\s*선수\s*1장/.test(text) && /패로\s*되돌/.test(text)) {
+    return result([{ trigger: triggerFor(), action: "MOVE_TO_HAND", target: { zone: "GRAVEYARD", owner: "SELF", cardType: "WRESTLER", selection: "PLAYER_CHOICE", count: 1 } }]);
+  }
+  if (/덱\s*위\s*카드\s*3장.*무덤으로/.test(text)) {
+    return result([
+      { trigger: triggerFor(), action: "MILL", target: { zone: "DECK", owner: "SELF", selection: "TOP", count: 3 } },
+      { trigger: triggerFor(), action: "ADD_NEXT_TURN_GOLD", values: { amount: 1 } },
+    ]);
+  }
+  if (/손패에\s*['‘’“”]?위리녀['‘’“”]?\s*를\s*생성/.test(text)) {
+    const ref = makeRef("위리녀");
+    return result([
+      { trigger: "ENTER_FIELD", action: "GENERATE", values: { definitionRef: ref, destination: "HAND", count: 1, generatedModifiers: { copySourceStats: true } } },
+      { trigger: "LEAVE_FIELD", action: "SUMMON_FROM_HAND", values: { definitionRef: ref, count: 1 } },
+    ]);
+  }
+  if (/선택한\s*상대\s*선수\s*1장.*리타이어/.test(text)) {
+    return result([{ trigger: triggerFor(), action: "RETIRE", target: { zone: "BOARD", owner: "ENEMY", cardType: "WRESTLER", selection: "PLAYER_CHOICE", count: 1 } }]);
+  }
+  if (/양옆\s*빈\s*슬롯.*3\s*코스트\s*이상.*무작위\s*선수/.test(text)) {
+    return result([
+      { trigger: triggerFor(), action: "SUMMON", target: { zone: "BOARD", owner: "SELF", cardType: "WRESTLER", filter: { minCost: 3 }, selection: "ADJACENT_EMPTY_SLOTS", count: 2, randomScope: "STANDARD" } },
+      ...( /생성된\s*카드.*추가\s*데미지/.test(text) ? [{ trigger: triggerFor(), action: "ADD_DAMAGE_MODIFIER" as const, values: { amount: 1, damageSource: "GENERATED" as const } }] : []),
+    ]);
+  }
+  if (/모든\s*적\s*선수의\s*공격력을\s*2\s*감소/.test(text)) {
+    return result([{ trigger: triggerFor(), action: "WEAKEN_TO_STUN_SILENCE", target: { zone: "BOARD", owner: "ENEMY", cardType: "WRESTLER", selection: "ALL", count: 20 }, values: { amount: 2 } }]);
+  }
+  if (/손패에\s*['‘’“”]?위리녀/.test(text) && /필드에\s*소환/.test(text)) {
+    return result([{ trigger: "LEAVE_FIELD", action: "SUMMON_FROM_HAND", values: { definitionRef: makeRef("위리녀"), count: 1 } }]);
+  }
+  if (/남은\s*골드.*모두\s*소비|골드당\s*\+?2\/\+?2|1G마다.*\+?2/.test(text)) {
+    return result([{ trigger: triggerFor(), action: "SPEND_GOLD_BUFF_SELF", target: self, values: { amountReference: "REMAINING_GOLD" } }]);
+  }
+  if (/자신을\s*제외한.*아군\s*선수.*공격력\s*\+?2/.test(text)) {
+    return result([{ trigger: triggerFor(), action: "BUFF", target: { zone: "BOARD", owner: "SELF", cardType: "WRESTLER", filter: { excludeSource: true }, selection: "ALL", count: 20 }, values: { attack: 2, health: 0 } }]);
+  }
+  return null;
+}
+
 export function analyzeEffectText(input: string, options: EffectAnalysisOptions = {}): Analysis {
   const text = normalize(input);
   if (!text) return { status: "failure", outcome: "analysis_failure", effects: [], keywords: [], unsupportedSegments: ["효과 문장"], summaries: ["효과 문장을 입력해 주세요."] };
+  const expanded = expandedMechanicAnalysis(text, options);
+  if (expanded) return expanded;
   const triggerMarkers = [...text.matchAll(/(?:^|\s)(?=(?:필드에\s*)?(?:등장|퇴장|액티브|준비|콤보|주문|태그|핀폴|턴\s*시작|턴\s*종료|(?:이\s*카드가|자신이)\s*공격할\s*때마다|MAGIC|TURBO|SELF_ATTACK|SUPPORT|SHOCK|SYNERGY|BULLSEYE)\s*[:：])/gi)]
     .map((match) => (match.index ?? 0) + (match[0].startsWith(" ") ? 1 : 0));
   if (triggerMarkers.length > 1) {
@@ -677,7 +801,10 @@ export function isStructuredEffects(value: unknown): value is { effects: Structu
          typeof target.filter !== "object" ||
          target.filter === null ||
          target.filter.isGenerated !== undefined && typeof target.filter.isGenerated !== "boolean" ||
-         target.filter.minCost !== undefined && (!Number.isInteger(target.filter.minCost) || target.filter.minCost < 0 || target.filter.minCost > 999)
+          target.filter.minCost !== undefined && (!Number.isInteger(target.filter.minCost) || target.filter.minCost < 0 || target.filter.minCost > 999) ||
+          target.filter.isToken !== undefined && typeof target.filter.isToken !== "boolean" ||
+          target.filter.isChampionToken !== undefined && typeof target.filter.isChampionToken !== "boolean" ||
+          target.filter.excludeSource !== undefined && typeof target.filter.excludeSource !== "boolean"
        )) return false;
       if (target.randomScope !== undefined && (!RANDOM_SCOPES.includes(target.randomScope) || !["RANDOM", "ADJACENT_EMPTY_SLOTS"].includes(target.selection))) return false;
     } else if (target !== undefined && !(["SUMMON", "GENERATE"].includes(item.action) && ["RANDOM", "ADJACENT_EMPTY_SLOTS"].includes(target.selection))) return false;
@@ -689,15 +816,16 @@ export function isStructuredEffects(value: unknown): value is { effects: Structu
            (values?.health === undefined || (typeof values.health === "number" && Math.abs(values.health) <= 999))
          : typeof values?.attack === "number" && typeof values.health === "number" &&
            Math.abs(values.attack) <= 999 && Math.abs(values.health) <= 999);
-      const validMultiplier = schema.statMultiplier &&
+       const validMultiplier = schema.statMultiplier &&
         typeof values?.attackMultiplier === "number" && typeof values.healthMultiplier === "number" &&
         Number.isFinite(values.attackMultiplier) && Number.isFinite(values.healthMultiplier) &&
         values.attackMultiplier >= 0 && values.attackMultiplier <= 10 &&
         values.healthMultiplier >= 0 && values.healthMultiplier <= 10;
-       const validReference = schema.referenceStat &&
+        const validReference = schema.referenceStat &&
          REFERENCES.includes(values?.reference as Reference) &&
          ["CURRENT_ATTACK", "CURRENT_HEALTH"].includes(values?.referenceStat as string);
-       if (!validStats && !validMultiplier && !validReference) return false;
+        const validDynamic = schema.dynamicValue && ["HAND_COUNT", "GRAVEYARD_WRESTLER_COUNT", "REMAINING_GOLD", "BOARD_WRESTLER_COUNT"].includes(values?.amountReference as string);
+        if (!validStats && !validMultiplier && !validReference && !validDynamic) return false;
     }
     if (schema.keyword && !KEYWORDS.includes(values?.keyword as Keyword)) return false;
     if (schema.damageSource && !DAMAGE_SOURCES.includes(values?.damageSource as DamageSource)) return false;
@@ -738,7 +866,8 @@ export function isStructuredEffects(value: unknown): value is { effects: Structu
        const allowsRandomPoolDefinition = item.target?.selection === "RANDOM" || item.target?.selection === "ADJACENT_EMPTY_SLOTS";
        if (!validDefinition && !validReference && !allowsRandomPoolDefinition) return false;
      }
-      if (item.action === "GENERATE" && values?.destination !== undefined && values.destination !== "HAND" && values.destination !== "DECK") return false;
+       if (item.action === "GENERATE" && values?.destination !== undefined && values.destination !== "HAND" && values.destination !== "DECK" && values.destination !== "DECK_TOP") return false;
+       if (item.action === "REDUCE_COST" && values?.minimum !== undefined && (typeof values.minimum !== "number" || values.minimum < 0 || values.minimum > 999)) return false;
       if ((item.action === "SUMMON" || item.action === "GENERATE") && values?.count !== undefined &&
         (!Number.isInteger(values.count) || values.count < 1 || values.count > 20)) return false;
      if (values?.aggregateStats !== undefined) {

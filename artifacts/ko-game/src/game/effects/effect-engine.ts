@@ -50,6 +50,12 @@ export function getValidTargets(
       if (target.cardType && card.cardType !== target.cardType) return false;
       if (target.filter?.isGenerated !== undefined && card.isGenerated !== target.filter.isGenerated) return false;
       if (target.filter?.minCost !== undefined && (card.baseCost ?? card.currentCost) < target.filter.minCost) return false;
+      if (target.filter?.isToken !== undefined && card.isToken !== target.filter.isToken) return false;
+      if (target.filter?.isChampionToken !== undefined && card.isChampionToken !== target.filter.isChampionToken) return false;
+      if (target.filter?.excludeSource && card.instanceId === sourceCard.instanceId) return false;
+      if (target.filter?.isToken !== undefined && card.isToken !== target.filter.isToken) return false;
+      if (target.filter?.isChampionToken !== undefined && card.isChampionToken !== target.filter.isChampionToken) return false;
+      if (target.filter?.excludeSource && card.instanceId === sourceCard.instanceId) return false;
       if (target.selection === 'RANDOM' && !isEligibleForRandomPool(card, target.randomScope)) return false;
       if (target.selection === 'SELF' && card.instanceId !== sourceCard.instanceId) return false;
       // Directly deployed champion tokens remain damageable, but not silence/destroy targets.
@@ -67,6 +73,7 @@ function cardsInZones(
   const cards = zones.flatMap((zone) => {
     if (zone === 'DECK') return player.deck;
     if (zone === 'HAND') return player.hand;
+    if (zone === 'GRAVEYARD') return player.graveyard;
     if (zone === 'BOARD' || zone === 'CHARACTER') {
       return player.board.filter((card): card is CardInstance => card !== null);
     }
@@ -108,7 +115,7 @@ export function validateEffectTargets(
 }
 
 function sourceInState(state: GameState, id: string): CardInstance | undefined {
-  return state.players.flatMap((player) => [...player.deck, ...player.hand, ...player.board.filter((c): c is CardInstance => c !== null)])
+  return state.players.flatMap((player) => [...player.deck, ...player.hand, ...player.board.filter((c): c is CardInstance => c !== null), ...player.graveyard])
     .find((card) => card.instanceId === id);
 }
 
@@ -138,6 +145,19 @@ function resolveCardDefinition(
 }
 
 type TriggerContext = NonNullable<GameState['targetingState']>['triggerContext'];
+
+function dynamicValue(
+  state: GameState,
+  playerId: string,
+  reference: NonNullable<Extract<CardEffect, { type: 'STRUCTURED' }>['values']>['amountReference'],
+): number {
+  const player = state.players.find((candidate) => candidate.id === playerId);
+  if (!player || !reference) return 0;
+  if (reference === 'HAND_COUNT') return player.hand.length;
+  if (reference === 'GRAVEYARD_WRESTLER_COUNT') return player.graveyard.filter((card) => card.cardType === 'WRESTLER').length;
+  if (reference === 'BOARD_WRESTLER_COUNT') return player.board.filter((card) => card?.cardType === 'WRESTLER').length;
+  return player.currentGold;
+}
 
 function referenceStatValue(
   state: GameState,
@@ -219,12 +239,26 @@ function applyRandomCardCreation(
       playerId,
       source: { type: 'CARD', cardInstanceId: sourceCard.instanceId },
       reason: effect.action,
+      statModifiers: effect.values?.generatedModifiers
+        ? {
+            cost: effect.values.generatedModifiers.cost,
+            attack: effect.values.generatedModifiers.attack,
+            health: effect.values.generatedModifiers.health,
+            ...(effect.values.generatedModifiers.copySourceStats
+              ? { copySourceStats: { attack: sourceCard.currentAttack, health: sourceCard.currentHealth } }
+              : {}),
+          }
+        : undefined,
     });
     if (effect.action === 'GENERATE') {
       return {
         ...nextState,
         players: nextState.players.map((player) => player.id === playerId
-          ? { ...player, hand: [...player.hand, generated.card] }
+          ? effect.values?.destination === 'DECK'
+            ? effect.values.deckPosition === 'TOP'
+              ? { ...player, deck: [generated.card, ...player.deck] }
+              : { ...player, deck: [...player.deck, generated.card] }
+            : { ...player, hand: [...player.hand, generated.card] }
           : player),
         events: [...nextState.events, generated.event],
       };
@@ -412,7 +446,7 @@ export function hasKeyword(
 export function getActiveAbility(
   card: CardInstance,
 ): Extract<CardAbility, { trigger: 'ACTIVE' }> | undefined {
-  return card.isSilenced
+  return card.isSilenced || card.isAbilityDisabled
     ? undefined
     : card.abilities.find(
         (ability): ability is Extract<CardAbility, { trigger: 'ACTIVE' }> =>
@@ -438,7 +472,8 @@ function applyEffect(
     if ((effect.action === 'SUMMON' || effect.action === 'GENERATE') && effect.target?.selection === 'RANDOM') {
       return applyRandomCardCreation(state, playerId, sourceCard, effect);
     }
-    const amount = effect.values?.amount ?? 0;
+    const amount = effect.values?.amount ??
+      dynamicValue(state, playerId, effect.values?.amountReference);
     const referenceAmount = effect.action === 'BUFF' && effect.values?.reference && effect.values.referenceStat
       ? referenceStatValue(state, triggerContext, effect.values.reference, effect.values.referenceStat)
       : 0;
@@ -450,6 +485,28 @@ function applyEffect(
       typeof definition.id === 'string' && typeof definition.cost === 'number' &&
       typeof definition.attack === 'number' && typeof definition.health === 'number' &&
       Array.isArray(definition.keywords) && Array.isArray(definition.abilities);
+    if (effect.action === 'SUMMON_FROM_HAND') {
+      const owner = state.players.find((player) => player.id === playerId);
+      const handCard = owner?.hand.find((card) =>
+        effect.values?.definitionRef?.id
+          ? card.definitionId === effect.values.definitionRef.id
+          : effect.values?.definitionRef?.name
+            ? state.cardPool?.find((definition) => definition.id === card.definitionId)?.name === effect.values.definitionRef.name
+            : false,
+      );
+      const slot = owner?.board.findIndex((card) => card === null) ?? -1;
+      if (!owner || !handCard || slot < 0) return state;
+      const withoutHand = {
+        ...state,
+        players: state.players.map((player) => player.id === playerId
+          ? { ...player, hand: player.hand.filter((card) => card.instanceId !== handCard.instanceId) }
+          : player),
+      };
+      return enterField(withoutHand, playerId, handCard, slot as 0 | 1 | 2 | 3, {
+        type: 'CARD',
+        cardInstanceId: sourceCard.instanceId,
+      });
+    }
     if (effect.action === 'SUMMON' || effect.action === 'GENERATE') {
       // These actions require a data-only definition; an absent/malformed
       // reference is a rejected effect, never an advertised silent no-op.
@@ -464,6 +521,16 @@ function applyEffect(
         const generatedBase = generateCardInstance(definition, {
           instanceId: `${sourceCard.instanceId}:${effect.action}:${state.events.length}:${index}`,
           isGenerated: true,
+          statModifiers: effect.values?.generatedModifiers
+            ? {
+                cost: effect.values.generatedModifiers.cost,
+                attack: effect.values.generatedModifiers.attack,
+                health: effect.values.generatedModifiers.health,
+                ...(effect.values.generatedModifiers.copySourceStats
+                  ? { copySourceStats: { attack: sourceCard.currentAttack, health: sourceCard.currentHealth } }
+                  : {}),
+              }
+            : undefined,
         });
         return aggregate
           ? {
@@ -479,7 +546,9 @@ function applyEffect(
           ...state,
           players: state.players.map((player) => player.id === playerId
             ? effect.values?.destination === 'DECK'
-              ? { ...player, deck: [...player.deck, ...generatedCards] }
+              ? effect.values?.deckPosition === 'TOP'
+                ? { ...player, deck: [...generatedCards, ...player.deck] }
+                : { ...player, deck: [...player.deck, ...generatedCards] }
               : { ...player, hand: [...player.hand, ...generatedCards] }
             : player),
           events: [...state.events, ...generatedCards.map((generated) => ({
@@ -511,6 +580,17 @@ function applyEffect(
         ? effect.values?.leftEffects : effect.values?.rightEffects;
       if (!branch || !Array.isArray(branch)) throw new Error('SWITCH_EFFECT_BRANCH requires leftEffects and rightEffects.');
        return branch.reduce((next, child) => applyEffect(next, playerId, sourceCard, child, undefined, triggerContext), state);
+    }
+    if (effect.action === 'SPEND_GOLD_BUFF_SELF') {
+      const player = state.players.find((candidate) => candidate.id === playerId);
+      const spend = player?.currentGold ?? 0;
+      if (!spend) return state;
+      return applyEffect(
+        { ...state, players: state.players.map((candidate) => candidate.id === playerId ? { ...candidate, currentGold: 0 } : candidate) },
+        playerId,
+        sourceCard,
+        { type: 'STRUCTURED', action: 'BUFF', target: { zone: 'BOARD', owner: 'SELF', selection: 'SELF', count: 1 }, values: { attack: spend * 2, health: spend * 2 } },
+      );
     }
     if (effect.action === 'ADD_GOLD') {
       return applyEffect(state, playerId, sourceCard, { type: 'GAIN_GOLD', amount });
@@ -678,6 +758,8 @@ function applyEffect(
         ? eligibleCandidates.filter((card) => chosenTargetInstanceIds?.includes(card.instanceId)).slice(0, Math.max(0, target.count))
         : target.selection === 'SAME_TARGET'
           ? eligibleCandidates.filter((card) => chosenTargetInstanceIds?.includes(card.instanceId)).slice(0, Math.max(0, target.count))
+        : target.selection === 'TOP'
+          ? eligibleCandidates.slice(0, Math.max(0, target.count))
         : target.selection === 'ALL'
           ? eligibleCandidates
           : shuffle(
@@ -692,6 +774,51 @@ function applyEffect(
           : state;
     }
     const ids = new Set(targets.map((card) => card.instanceId));
+    if (effect.action === 'MILL') {
+      return {
+        ...state,
+        players: state.players.map((player) => player.id !== targetOwner ? player : {
+          ...player,
+          deck: player.deck.filter((card) => !ids.has(card.instanceId)),
+          graveyard: [...player.graveyard, ...player.deck.filter((card) => ids.has(card.instanceId)).map((card) => ({ ...card, boardSlot: null }))],
+        }),
+      };
+    }
+    if (effect.action === 'MOVE_TO_HAND') {
+      return {
+        ...state,
+        players: state.players.map((player) => player.id !== targetOwner ? player : {
+          ...player,
+          graveyard: player.graveyard.filter((card) => !ids.has(card.instanceId)),
+          hand: [...player.hand, ...player.graveyard.filter((card) => ids.has(card.instanceId)).map((card) => ({ ...card, boardSlot: null }))],
+        }),
+      };
+    }
+    if (effect.action === 'RETIRE') {
+      return targets.reduce((nextState, targetCard) => {
+        const owner = nextState.players.find((player) => player.id === targetOwner);
+        const current = owner?.board.find((card) => card?.instanceId === targetCard.instanceId);
+        if (!owner || !current || current.isDirectDeployedChampion) return nextState;
+        const retiredState: GameState = {
+          ...nextState,
+          players: nextState.players.map((player) => player.id !== targetOwner ? player : {
+            ...player,
+            board: player.board.map((card) => card?.instanceId === current.instanceId ? null : card) as typeof player.board,
+            graveyard: [...player.graveyard, { ...current, boardSlot: null }],
+          }),
+          events: [...nextState.events, {
+            type: 'CARD_RETIRED' as const, playerId: targetOwner, cardInstanceId: current.instanceId,
+            boardSlot: current.boardSlot!, source: { type: 'CARD' as const, cardInstanceId: sourceCard.instanceId },
+            target: { type: 'CARD' as const, cardInstanceId: current.instanceId }, reason: 'RETIRE' as const,
+          }],
+        };
+        return resolveCardRetiredListeners(
+          resolveTriggeredAbilities(retiredState, targetOwner, current, 'LEAVE_FIELD', { leaveReason: 'RETIRE' }),
+          targetOwner,
+          current,
+        );
+      }, state);
+    }
     if (effect.action === 'DESTROY') {
       const aggregatedStats = targets.reduce(
         (stats, target) => ({
@@ -809,7 +936,11 @@ function applyEffect(
             damagedTargetInstanceId: current.instanceId, healthBefore: current.currentHealth, healthAfter: health,
           })
           : retiredWithAggregate;
-        return resolveTriggeredAbilities(exactZeroState, targetOwner, current, 'LEAVE_FIELD', { leaveReason: 'RETIRE' });
+        return resolveCardRetiredListeners(
+          resolveTriggeredAbilities(exactZeroState, targetOwner, current, 'LEAVE_FIELD', { leaveReason: 'RETIRE' }),
+          targetOwner,
+          current,
+        );
       }, state);
     }
     if (effect.action === 'SILENCE') {
@@ -840,18 +971,24 @@ function applyEffect(
             if (effect.action === 'ADD_KEYWORD' && effect.values?.keyword && !card.keywords.includes(effect.values.keyword)) return { ...card, keywords: [...card.keywords, effect.values.keyword], dodgeAvailable: effect.values.keyword === 'DODGE' ? true : card.dodgeAvailable, dodgeCharges: effect.values.keyword === 'DODGE' ? Math.max(1, card.dodgeCharges ?? 0) : card.dodgeCharges };
             if (effect.action === 'REMOVE_KEYWORD' && effect.values?.keyword) return { ...card, keywords: card.keywords.filter((keyword) => keyword !== effect.values?.keyword), dodgeAvailable: effect.values.keyword === 'DODGE' ? false : card.dodgeAvailable, dodgeCharges: effect.values.keyword === 'DODGE' ? 0 : card.dodgeCharges };
            if (effect.action === 'STUN') return { ...card, isStunned: true };
-           if (effect.action === 'REDUCE_COST') return { ...card, currentCost: Math.max(0, card.currentCost - amount) };
+            if (effect.action === 'REDUCE_COST') return { ...card, currentCost: Math.max(effect.values?.minimum ?? 0, card.currentCost - amount) };
            if (effect.action === 'INCREASE_COST') return { ...card, currentCost: card.currentCost + amount };
            if (effect.action === 'HEAL') return { ...card, currentHealth: Math.min(card.maxHealth, card.currentHealth + amount) };
-           if (effect.action === 'BUFF') {
+            if (effect.action === 'DISABLE_ABILITY') return { ...card, isAbilityDisabled: true };
+            if (effect.action === 'WEAKEN_TO_STUN_SILENCE') {
+              const attack = Math.max(0, card.currentAttack - amount);
+              return attack === 0 ? { ...card, currentAttack: attack, isStunned: true, isSilenced: true } : { ...card, currentAttack: attack };
+            }
+            if (effect.action === 'BUFF') {
             const health = effect.values?.health ?? 0;
+              const dynamic = dynamicValue(state, playerId, effect.values?.amountReference);
              const attackMultiplier = effect.values?.attackMultiplier ?? 1;
              const healthMultiplier = effect.values?.healthMultiplier ?? 1;
              return {
                ...card,
-                currentAttack: card.currentAttack * attackMultiplier + (effect.values?.attack ?? 0) + referenceAmount,
-               maxHealth: card.maxHealth * healthMultiplier + health,
-               currentHealth: card.currentHealth * healthMultiplier + health,
+                currentAttack: card.currentAttack * attackMultiplier + (effect.values?.attack ?? (effect.values?.amountReference ? dynamic : 0)) + referenceAmount,
+                maxHealth: card.maxHealth * healthMultiplier + (effect.values?.health ?? (effect.values?.amountReference ? dynamic : 0)),
+                currentHealth: card.currentHealth * healthMultiplier + health + (effect.values?.health === undefined && effect.values?.amountReference ? dynamic : 0),
              };
           }
            if (effect.action === 'SET_STATS') {
@@ -1068,7 +1205,7 @@ export function resolveTriggeredAbilities(
   state: GameState,
   playerId: string,
   card: CardInstance,
-  trigger: 'ENTER_FIELD' | 'LEAVE_FIELD' | 'POSITION' | 'ACTIVE' | 'CARD_DRAWN' | 'SELF_ATTACK' | 'OTHER_ALLY_ATTACK' | 'TECHNIQUE_CAST' | 'EXACT_ZERO_DAMAGE' | 'TURN_START' | 'TURN_END',
+  trigger: 'ENTER_FIELD' | 'LEAVE_FIELD' | 'POSITION' | 'ACTIVE' | 'CARD_DRAWN' | 'CARD_RETIRED' | 'FIRST_ATTACKED' | 'SELF_ATTACK' | 'OTHER_ALLY_ATTACK' | 'TECHNIQUE_CAST' | 'EXACT_ZERO_DAMAGE' | 'TURN_START' | 'TURN_END',
   options: {
     boardSlot?: 0 | 1 | 2 | 3;
     leaveReason?: LeaveReason;
@@ -1081,7 +1218,7 @@ export function resolveTriggeredAbilities(
     healthAfter?: number;
   } = {},
 ): GameState {
-  if (card.isSilenced) return state;
+  if (card.isSilenced || card.isAbilityDisabled) return state;
 
   const compare = (actual: number, condition: 'GTE' | 'LTE' | 'EQ', expected: number) =>
     condition === 'GTE' ? actual >= expected : condition === 'LTE' ? actual <= expected : actual === expected;
@@ -1128,11 +1265,28 @@ export function resolveTriggeredAbilities(
   if (!effects.length) return state;
   return beginResolution(state, {
     active: true, playerId, sourceInstanceId: card.instanceId, sourceCard: card, effects,
-    effectIndex: 0, selectedTargetIds: [], lastTargetIds: options.chosenTargetInstanceIds ?? [],
+     effectIndex: 0, selectedTargetIds: [], lastTargetIds: options.chosenTargetInstanceIds ?? (trigger === 'FIRST_ATTACKED' && options.attackerInstanceId ? [options.attackerInstanceId] : []),
     validTargetIds: [], minTargets: 0, maxTargets: 0, mandatory: true, cancelable: false,
      triggerContext: { playedFromHand: options.playedFromHand, baseCost: options.baseCost, attackerInstanceId: options.attackerInstanceId, damagedTargetInstanceId: options.damagedTargetInstanceId, healthBefore: options.healthBefore, healthAfter: options.healthAfter },
      lastAggregatedStats: state.targetingState?.lastAggregatedStats,
   });
+}
+
+/** Dispatches retirement listeners to cards that are still in hand. */
+export function resolveCardRetiredListeners(
+  state: GameState,
+  playerId: string,
+  retiredCard: CardInstance,
+): GameState {
+  const hand = state.players.find((player) => player.id === playerId)?.hand ?? [];
+  return hand
+    .filter((card) => card.cardType === 'WRESTLER')
+    .reduce(
+      (next, card) => resolveTriggeredAbilities(next, playerId, card, 'CARD_RETIRED', {
+        chosenTargetInstanceIds: [retiredCard.instanceId],
+      }),
+      state,
+    );
 }
 
 export function resolveActiveAbility(

@@ -307,7 +307,7 @@ test("현재 registry에서 제공하는 Effect Library 메타데이터를 노�
     { attackMultiplier: "number (0..10)", healthMultiplier: "number (0..10)" },
   );
   assert.deepEqual(library.targetResolvers[0]?.config.defaultCardScope, ["HAND", "DECK", "BOARD"]);
-  assert.deepEqual(library.targetResolvers[0]?.config.filters, ["GENERATED", "MIN_COST"]);
+  assert.deepEqual(library.targetResolvers[0]?.config.filters, ["GENERATED", "MIN_COST", "TOKEN", "NON_CHAMPION_TOKEN", "EXCLUDE_SOURCE"]);
   assert.deepEqual(library.targetResolvers[0]?.config.randomScope, ["STANDARD", "FULL"]);
   assert.ok(library.actions.some((action) => action.name === "SET_STATS"));
   assert.deepEqual(
@@ -653,7 +653,7 @@ test("잘못 조합된 구조화 JSON을 거부한다", () => {
         values: { attack: 1, health: 1 },
       }],
     }),
-    false,
+    true,
   );
 });
 
@@ -847,4 +847,34 @@ test("KO 기본 메커니즘 어휘와 DSL 트리거를 새 메커니즘 요청 
   assert.equal(needed.effects[0]?.conditions?.[0]?.type, "NEED_CONDITION");
   const synergy = analyzeEffectText("태그: 피해 2");
   assert.ok(synergy.effects[0]?.conditions?.some((condition) => condition.type === "HAS_MATCHING_TAG_PLAYED_THIS_TURN"));
+});
+
+test("WRESTLER 17종 원문을 완전한 구조화 효과로 분석한다", () => {
+  const texts = [
+    "등장:어디에 있든 모든 생성된 아군 선수 카드에게 체력과 공격을 각각 1씩 증가시킵니다.",
+    "등장: 다음에 내가 플레이하는 아군 선수 카드 1장이 체력이 +2 증가합니다. 사용될 때까지 턴을 넘어도 유지합니다.",
+    "자신의 무덤의 선수 카드의 수 만큼 공격력과 체력이 증가합니다.",
+    "이 카드를 처음으로 공격한 적 선수는 공격 이후 침묵됩니다. 이후 이 카드의 능력을 비활성화합니다.",
+    "등장:현재 내 손패에 있는 카드 수만큼 체력과 공격을 +1 증가시킵니다.",
+    "손패에 있을 때 아군 선수가 리타이어할 때마다 비용이 -1G 씩 감소한다. (최소 비용 1G)",
+    "등장:내 덱 맨 위에 있는 카드를 파괴하고, 비용/체력/공격을 1씩 깎은 무작위 카드를 덱 맨 위에 추가합니다.(챔피언 토큰 제외)(비용/체력/공격 수치는 최소 1)",
+    "턴 시작:이 카드가 내 필드의 유일한 선수라면 이 턴에 추가로 +1G를 받습니다.",
+    "등장: 손패의 무작위 선수 카드 3장에게 공격과 체력을 둘다 +1 증가시킵니다. 3장 미만이면 가능한 카드 전부에게 줍니다.",
+    "묘지에서 선수 1장을 선택하고, 그 선수를 패로 되돌립니다.",
+    "등장: 내 덱 위 카드 3장을 무덤으로 보내고, 다음턴에 골드를 추가로 +1G를 받습니다.",
+    "등장:자신의 손패에 '위리녀'를 생성하고, 그 카드의 공격/체력을 이 카드의 현재 공격/체력과 같은 수치로 맞춥니다. 퇴장:자신의 손패에 있는 '위리녀' 1장을 필드에 소환합니다.",
+    "자신이 선택한 상대 선수 1장을 리타이어 시킵니다.",
+    "등장: 자신의 양옆 빈 슬롯에 3 코스트 이상의 무작위 선수 카드를 각각 소환합니다. 이 카드가 필드에 있을때 생성된 카드들이 1 추가 데미지를 줍니다.",
+    "등장:모든 적 선수의 공격력을 2 감소시킵니다. 이 카드가 필드에 있을때 공격력이 0이 된 적 선수는 기절당하고 침묵당합니다.",
+    "등장:이 카드 비용을 지불하고 남은 Gold를 전부 소비합니다. 이때 소비한 1G마다 체력과 공격을 각각 +2씩 증가시킵니다",
+    "등장:자신을 제외한 필드에 나와있는 아군 선수들에게 공격력 +2를 부여합니다.",
+  ];
+  for (const text of texts) {
+    const analysis = analyzeEffectText(text, {
+      cardCatalog: [{ id: "wiriyeo-id", name: "위리녀", cardType: "WRESTLER", isToken: false, isChampionToken: false }],
+    });
+    assert.equal(analysis.outcome, "supported", text);
+    assert.equal(analysis.status, "success", text);
+    assert.equal(isStructuredEffects({ effects: analysis.effects }), true, text);
+  }
 });

@@ -50,3 +50,9 @@ In Korean target phrases, `자신이 선택한 선수/대상` describes the play
 **Why:** Confusing the chooser with the target owner makes single-target Champion abilities select the wrong side while leaving the displayed sentence unchanged.
 
 **How to apply:** Resolve owner from explicit target qualifiers and zone/card nouns, then apply `PLAYER_CHOICE`; keep hand-target phrases explicitly scoped to the owner's hand.
+
+When a structured effect adds a new destination or random-pool filter, update both explicit-definition and random-generation paths, then reanalyze persisted card text against the live catalog.
+
+**Why:** The analyzer can produce a valid payload that still loses its destination or filter in a separate runtime branch, and persisted cards do not benefit from parser changes until they are explicitly refreshed.
+
+**How to apply:** Cover registry metadata, server validation, runtime target resolution, random generation, database reanalysis, and exact production wording in one regression set.

@@ -465,9 +465,16 @@ export function attack(
     ],
   };
 
+  const firstAttackedResolved = resolveTriggeredAbilities(
+    damagedState,
+    target.playerId,
+    defender,
+    'FIRST_ATTACKED',
+    { attackerInstanceId },
+  );
   const exactZeroResolved = defenderDodges || defender.currentHealth - attackerDamage !== 0
-    ? damagedState
-    : resolveTriggeredAbilities(damagedState, attackingPlayerId, attacker, 'EXACT_ZERO_DAMAGE', {
+    ? firstAttackedResolved
+    : resolveTriggeredAbilities(firstAttackedResolved, attackingPlayerId, attacker, 'EXACT_ZERO_DAMAGE', {
       damagedTargetInstanceId: defender.instanceId, healthBefore: defender.currentHealth, healthAfter: 0,
     });
   const selfAttackResolved = resolveSelfAttackTrigger(

@@ -113,6 +113,8 @@ export interface CardInstance {
   keywords: CardKeyword[];
   abilities: CardAbility[];
   isSilenced: boolean;
+  /** A non-silence ability lock used by one-shot defensive abilities. */
+  isAbilityDisabled?: boolean;
   isSilenceImmune: boolean;
   dodgeAvailable: boolean;
   /** Counted dodge is backward compatible with the original boolean flag. */

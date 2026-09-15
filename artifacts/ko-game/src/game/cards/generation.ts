@@ -12,6 +12,7 @@ export interface GenerateCardOptions {
   isGenerated?: boolean;
   isToken?: boolean;
   isChampionToken?: boolean;
+  statModifiers?: { cost?: number; attack?: number; health?: number; copySourceStats?: { attack: number; health: number } };
 }
 
 export interface GenerateCardWithEventOptions extends GenerateCardOptions {
@@ -27,6 +28,8 @@ export interface RandomCardPoolOptions {
     isGenerated?: boolean;
     minCost?: number;
     tags?: string[];
+    isToken?: boolean;
+    isChampionToken?: boolean;
   };
 }
 
@@ -41,17 +44,20 @@ export function generateCardInstance(
   definition: CardDefinition,
   options: GenerateCardOptions,
 ): CardInstance {
+  const copiedStats = options.statModifiers?.copySourceStats;
+  const attack = copiedStats?.attack ?? definition.attack + (options.statModifiers?.attack ?? 0);
+  const health = copiedStats?.health ?? definition.health + (options.statModifiers?.health ?? 0);
   return {
     instanceId: options.instanceId,
     definitionId: definition.id,
     cardType: definition.cardType ?? 'WRESTLER',
-    currentCost: definition.cost,
+    currentCost: Math.max(1, definition.cost + (options.statModifiers?.cost ?? 0)),
     baseCost: definition.cost,
     baseAttack: definition.attack,
     baseHealth: definition.health,
-    currentAttack: definition.attack,
-    currentHealth: definition.health,
-    maxHealth: definition.health,
+    currentAttack: Math.max(0, attack),
+    currentHealth: Math.max(1, health),
+    maxHealth: Math.max(1, health),
     boardSlot: null,
     enteredThisTurn: false,
     attacksUsedThisTurn: 0,
@@ -67,6 +73,7 @@ export function generateCardInstance(
     tags: definition.tags ? [...definition.tags] : [],
     abilities: [...definition.abilities],
     isSilenced: false,
+    isAbilityDisabled: false,
     isSilenceImmune: false,
     dodgeAvailable: definition.keywords.includes('DODGE'),
     dodgeCharges: definition.keywords.includes('DODGE') ? 1 : 0,
@@ -110,6 +117,8 @@ export function getRandomCardGenerationCandidates(
       // generated-only pool cannot be built from card definitions.
       return false;
     }
+    if (options.filter?.isToken !== undefined && definition.isToken !== options.filter.isToken) return false;
+    if (options.filter?.isChampionToken !== undefined && definition.isChampionToken !== options.filter.isChampionToken) return false;
     if (options.filter?.tags?.some((tag) => !(definition.tags ?? []).includes(tag))) return false;
     return isEligibleForRandomPool(definition, randomScope);
   });
