@@ -9,6 +9,7 @@ import {
   getDamageModifierBonus,
   hasKeyword,
   resolveBoardListeners,
+  resolveCardRetiredListeners,
   resolveTriggeredAbilities,
 } from '../effects/effect-engine';
 import { processChampionQuestEvents } from '../champions/quests';
@@ -119,17 +120,16 @@ function retireDefeatedWrestlers(state: GameState): GameState {
       : {}),
   };
 
-  return retired.reduce(
-    (nextState, entry) =>
-      resolveTriggeredAbilities(
-        nextState,
-        entry.playerId,
-        entry.card,
-        'LEAVE_FIELD',
-        { leaveReason: 'RETIRE' },
-      ),
-    retiredState,
-  );
+  return retired.reduce((nextState, entry) => {
+    const withLeaveEffect = resolveTriggeredAbilities(
+      nextState,
+      entry.playerId,
+      entry.card,
+      'LEAVE_FIELD',
+      { leaveReason: 'RETIRE' },
+    );
+    return resolveCardRetiredListeners(withLeaveEffect, entry.playerId, entry.card);
+  }, retiredState);
 }
 
 function receiveDamage(

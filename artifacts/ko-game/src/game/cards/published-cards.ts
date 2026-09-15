@@ -65,7 +65,7 @@ function abilitiesFor(
          ? { type: "BOARD_COUNT" as const, compare: "EQ" as const, amount: 1 }
          : undefined;
        return trigger === "LEAVE_FIELD"
-         ? { trigger: "LEAVE_FIELD" as const, effects, ...(condition ? { condition } : {}) }
+         ? { trigger: "LEAVE_FIELD" as const, reasons: ["RETIRE" as const], effects, ...(condition ? { condition } : {}) }
          : { trigger: trigger as Exclude<CardAbility["trigger"], "LEAVE_FIELD" | "POSITION">, effects, ...(condition ? { condition } : {}) };
      });
   }

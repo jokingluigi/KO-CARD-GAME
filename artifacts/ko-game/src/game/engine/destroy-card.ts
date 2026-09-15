@@ -1,7 +1,6 @@
 import type { ActionResult } from '../actions/types';
 import { actionFailure, actionSuccess } from '../actions/types';
 import type { CardInstanceId } from '../cards/types';
-import { resolveCardRetiredListeners, resolveTriggeredAbilities } from '../effects/effect-engine';
 import type { GameState } from '../types/game-state';
 
 export function destroyCard(
@@ -37,10 +36,6 @@ export function destroyCard(
         ? {
             ...candidate,
             board: board as typeof candidate.board,
-            graveyard: [
-              ...candidate.graveyard,
-              { ...card, boardSlot: null },
-            ],
           }
         : candidate,
     ),
@@ -58,17 +53,5 @@ export function destroyCard(
     ],
   };
 
-  return actionSuccess(
-    resolveCardRetiredListeners(
-      resolveTriggeredAbilities(
-      destroyedState,
-      playerId,
-      card,
-      'LEAVE_FIELD',
-      { leaveReason: 'DESTROY' },
-      ),
-      playerId,
-      card,
-    ),
-  );
+  return actionSuccess(destroyedState);
 }

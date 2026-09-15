@@ -637,7 +637,7 @@ test('선택한 적 선수를 침묵시킨 뒤 같은 대상을 파괴한다', (
   assert.ok(pending.targetingState);
   const result = selectEffectTarget(pending, target.instanceId);
   assert.equal(result.players[1].board[0], null);
-  assert.equal(result.players[1].graveyard.at(-1)?.isSilenced, true);
+  assert.equal(result.players[1].graveyard.some((entry) => entry.instanceId === target.instanceId), false);
   assert.ok(result.events.some((event) => event.type === 'CARD_DESTROYED'));
 });
 
@@ -673,9 +673,7 @@ test('자신이 선택해 파괴한 선수의 현재 공격력을 토큰 자신�
   const result = selectEffectTarget(pending, target.instanceId);
 
   assert.equal(result.players[0].board[1], null);
-  // Silence resolves before destruction, so the destruction-time current
-  // attack is the card's base attack.
-  assert.equal(result.players[0].graveyard.at(-1)?.currentAttack, 1);
+  assert.equal(result.players[0].graveyard.some((entry) => entry.instanceId === target.instanceId), false);
   assert.equal(result.players[0].board[0]?.currentAttack, 2);
   assert.equal(result.targetingState, undefined);
 });
@@ -815,7 +813,7 @@ test('생성 상태는 덱에서 손패와 필드로 이동해도 유지한다',
   assert.equal(entered.players[0].board[0]?.isGenerated, true);
 });
 
-test('생성 상태는 필드에서 묘지로 이동해도 유지한다', () => {
+test('생성 상태는 DESTROY되어도 묘지로 이동하지 않는다', () => {
   const generated = { ...instance('generated-graveyard-target'), boardSlot: 0 as const };
   const state = createInitialGameState();
   state.players[0].board[0] = generated;
@@ -823,7 +821,7 @@ test('생성 상태는 필드에서 묘지로 이동해도 유지한다', () => 
   const result = destroyCard(state, 'player-1', generated.instanceId);
   assert.equal(result.success, true);
   assert.equal(result.state.players[0].board[0], null);
-  assert.equal(result.state.players[0].graveyard.at(-1)?.isGenerated, true);
+  assert.equal(result.state.players[0].graveyard.some((entry) => entry.instanceId === generated.instanceId), false);
 });
 
 test('기존 덱 인스턴스와 새 생성 인스턴스를 구분한다', () => {

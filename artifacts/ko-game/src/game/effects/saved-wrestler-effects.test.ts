@@ -150,8 +150,24 @@ test('루나·씨 몬스터·아르카나 조커·워썬더의 전투/퇴장/덱
 
   const sea = { ...card(saved['씨 몬스터']!, 'sea'), currentCost: 4 };
   const victim = { ...card(saved['여울']!, 'victim'), boardSlot: 1 as const };
-  const withSea = { ...attacked.state, players: attacked.state.players.map((player) => player.id === 'player-1' ? { ...player, hand: [sea], board: [luna, victim, null, null] as typeof player.board } : player) };
-  const retired = destroyCard(withSea, 'player-1', victim.instanceId);
+  const withSea = {
+    ...attacked.state,
+    activePlayerId: 'player-2',
+    players: attacked.state.players.map((player) => player.id === 'player-1'
+      ? { ...player, hand: [sea], board: [luna, victim, null, null] as typeof player.board }
+      : player.id === 'player-2'
+        ? {
+            ...player,
+            board: [{ ...card(saved['여울']!, 'sea-attacker'), boardSlot: 0, currentAttack: 5, currentHealth: 5, maxHealth: 5 }, null, null, null] as typeof player.board,
+          }
+        : player),
+  };
+  const retired = attack(withSea, 'player-2', 'sea-attacker', {
+    type: 'WRESTLER',
+    playerId: 'player-1',
+    cardInstanceId: victim.instanceId,
+  });
+  assert.equal(retired.success, true);
   assert.equal(retired.state.players[0].hand[0]?.currentCost, 3);
 
   const arcana = card(saved['아르카나 조커']!, 'arcana');
@@ -195,8 +211,32 @@ test('뒷정리맨·오심정정·위리놈·저지먼트의 선택/continuation
   assert.equal(withWiri.players[0].hand[0]?.definitionId, 'wiriyeo-id');
   assert.equal(withWiri.players[0].hand[0]?.currentAttack, 5);
   assert.equal(withWiri.players[0].hand[0]?.currentHealth, 4);
-  const afterWiriLeave = destroyCard(withWiri, 'player-1', wiri.instanceId);
-  assert.equal(afterWiriLeave.state.players[0].board[0]?.definitionId, 'wiriyeo-id');
+  const retiredState = {
+    ...withWiri,
+    activePlayerId: 'player-2',
+    players: withWiri.players.map((player) => player.id === 'player-2'
+      ? {
+          ...player,
+          board: [{ ...card(saved['여울']!, 'wiri-attacker'), boardSlot: 0, currentAttack: 5, currentHealth: 5, maxHealth: 5 }, null, null, null] as typeof player.board,
+        }
+      : player),
+  };
+  const afterWiriRetire = attack(retiredState, 'player-2', 'wiri-attacker', {
+    type: 'WRESTLER',
+    playerId: 'player-1',
+    cardInstanceId: wiri.instanceId,
+  });
+  assert.equal(afterWiriRetire.success, true);
+  assert.equal(afterWiriRetire.state.players[0].board[0]?.definitionId, 'wiriyeo-id');
+  assert.equal(afterWiriRetire.state.players[0].graveyard.at(-1)?.instanceId, wiri.instanceId);
+
+  const destroyState = enterField(wiriState, 'player-1', card(saved['위리놈']!, 'wiri-destroy'), 0);
+  const afterWiriDestroy = destroyCard(destroyState, 'player-1', 'wiri-destroy');
+  assert.equal(afterWiriDestroy.success, true);
+  assert.equal(afterWiriDestroy.state.players[0].board[0], null);
+  assert.equal(afterWiriDestroy.state.players[0].graveyard.some((entry) => entry.instanceId === 'wiri-destroy'), false);
+  assert.equal(afterWiriDestroy.state.players[0].board.some((entry) => entry?.definitionId === 'wiriyeo-id'), false);
+  assert.equal(afterWiriDestroy.state.events.some((event) => event.type === 'CARD_RETIRED' && event.cardInstanceId === 'wiri-destroy'), false);
 
   const judgeState = stateWithPool(Object.values(saved));
   const judgePending = enterField(judgeState, 'player-1', card(saved['저지먼트']!, 'judge'), 0);

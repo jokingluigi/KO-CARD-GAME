@@ -4,7 +4,7 @@ import test from 'node:test';
 import { createInitialGameState } from './create-initial-game-state';
 import { destroyCard } from './destroy-card';
 
-test('일반 DESTROY는 카드 파괴 이벤트를 기록하고 묘지로 이동한다', () => {
+test('일반 DESTROY는 카드 파괴 이벤트만 기록하고 카드를 묘지로 보내지 않는다', () => {
   const initial = createInitialGameState();
   const card = {
     ...initial.players[0].deck[0],
@@ -30,10 +30,7 @@ test('일반 DESTROY는 카드 파괴 이벤트를 기록하고 묘지로 이동
 
   assert.equal(result.success, true);
   assert.equal(result.state.players[0].board[0], null);
-  assert.equal(
-    result.state.players[0].graveyard.at(-1)?.instanceId,
-    card.instanceId,
-  );
+  assert.equal(result.state.players[0].graveyard.some((entry) => entry.instanceId === card.instanceId), false);
   assert.deepEqual(
     result.state.events.find(
       (event) =>

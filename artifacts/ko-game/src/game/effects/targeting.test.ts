@@ -44,7 +44,23 @@ test('SAME_TARGET uses one click; SELF, RANDOM and ALL never open targeting', ()
   const combo = card('combo', [targeted('SILENCE'), targeted('DESTROY', 'ENEMY', 'SAME_TARGET')]);
   const done = selectEffectTarget(enterField(state, 'player-1', combo, 0), 'a');
   assert.equal(done.players[1].board[0], null);
-  assert.equal(done.players[1].graveyard.at(-1)?.isSilenced, true);
+  assert.equal(done.players[1].graveyard.some((entry) => entry.instanceId === 'a'), false);
+  assert.equal(
+    done.events.some(
+      (event) =>
+        event.type === 'CARD_RETIRED' &&
+        event.cardInstanceId === 'a',
+    ),
+    false,
+  );
+  assert.equal(
+    done.events.some(
+      (event) =>
+        event.type === 'CARD_DESTROYED' &&
+        event.cardInstanceId === 'a',
+    ),
+    true,
+  );
   assert.equal(enterField(createInitialGameState(), 'player-1', card('self', [targeted('BUFF', 'SELF', 'SELF')]), 0).targetingState, undefined);
   assert.equal(enterField(state, 'player-1', card('random', [targeted('DAMAGE', 'ENEMY', 'RANDOM')]), 2).targetingState, undefined);
   const all = enterField(state, 'player-1', card('all', [targeted('DAMAGE', 'ENEMY', 'ALL')]), 2);
