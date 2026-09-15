@@ -26,6 +26,7 @@ function createEmptyPlayer(
     graveyard: [],
     removedFromGame: [],
     fatigueCount: 0,
+    championAbilityUsedThisTurn: false,
     champion: createChampionState(championId, championDefinitions),
   };
 }

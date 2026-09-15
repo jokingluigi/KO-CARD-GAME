@@ -31,6 +31,8 @@ export interface PlayerState {
   graveyard: CardInstance[];
   removedFromGame: CardInstance[];
   fatigueCount: number;
+  /** Champion abilities can be used once during each player's turn. */
+  championAbilityUsedThisTurn?: boolean;
   champion: ChampionState | null;
 }
 

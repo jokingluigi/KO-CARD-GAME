@@ -89,10 +89,7 @@ test('Champion의 구조화된 무작위 손패 BUFF가 선수 카드 한 장의
     undefined,
     [champion, ...TEST_CHAMPIONS],
   ), fixedRandom);
-  const hand = createTestDeck('player-1').slice(0, 3).map((card) => ({
-    ...card,
-    cardType: 'WRESTLER' as const,
-  }));
+  const hand = createTestDeck('player-1').slice(0, 3);
   const ready = {
     ...started,
     players: started.players.map((player) =>
@@ -118,6 +115,31 @@ test('Champion의 구조화된 무작위 손패 BUFF가 선수 카드 한 장의
     const before = beforeStats.get(card.instanceId);
     return before && (card.currentAttack !== before.attack || card.currentHealth !== before.health);
   }).length, 1);
+});
+
+test('챔피언 능력은 같은 턴에 두 번 사용할 수 없고 다음 턴에 다시 사용할 수 있다', () => {
+  const started = startGame(createInitialGameState(), fixedRandom);
+  const ready = {
+    ...started,
+    players: started.players.map((player) =>
+      player.id === 'player-1' ? { ...player, currentGold: 2 } : player,
+    ),
+  };
+  const first = useChampionAbility(ready, 'player-1');
+  assert.equal(first.success, true);
+  assert.equal(first.state.players[0].championAbilityUsedThisTurn, true);
+
+  const second = useChampionAbility(first.state, 'player-1');
+  assert.equal(second.success, false);
+  assert.equal(second.errorCode, 'CHAMPION_ABILITY_ALREADY_USED');
+  assert.equal(second.state, first.state);
+
+  const opponentTurn = endTurn(first.state, 'player-1');
+  assert.equal(opponentTurn.success, true);
+  const nextOwnTurn = endTurn(opponentTurn.state, 'player-2');
+  assert.equal(nextOwnTurn.success, true);
+  assert.equal(nextOwnTurn.state.players[0].championAbilityUsedThisTurn, false);
+  assert.equal(canUseChampionAbility(nextOwnTurn.state, 'player-1'), true);
 });
 
 test('Champion의 SUMMON 능력과 카드 유형 Quest 조건 및 강화 능력이 실제 게임에서 연결된다', () => {
@@ -216,7 +238,9 @@ test('Champion의 SUMMON 능력과 카드 유형 Quest 조건 및 강화 능력�
     ...wrongType,
     events: [...wrongType.events, ...generatedEvents],
     players: wrongType.players.map((player) =>
-      player.id === 'player-1' ? { ...player, currentGold: 1 } : player,
+      player.id === 'player-1'
+        ? { ...player, currentGold: 1, championAbilityUsedThisTurn: false }
+        : player,
     ),
   });
   assert.equal(completed.players[0].champion?.questProgress, 8);

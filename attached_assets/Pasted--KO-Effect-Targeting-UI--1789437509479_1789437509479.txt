@@ -1,0 +1,403 @@
+현재 KO Effect Targeting 시스템의 의미를 정리하고,
+"선택한 선수 카드" 계열 효과에서 실제 선택 UI가 작동하지 않는 버그를 수정해줘.
+
+중요:
+특정 카드 이름으로 하드코딩하지 말고
+공통 Target / PLAYER_CHOICE 시스템을 수정해.
+
+==================================================
+1. "대상"의 공식 의미
+==================================================
+
+KO 효과 텍스트에서 앞으로:
+
+"대상"
+= WRESTLER + CHAMPION
+
+둘을 모두 포함한다.
+
+예:
+
+"선택한 적 대상 하나에게 피해를 2 줍니다."
+
+라면 선택 후보:
+
+- 적 선수
+- 적 Champion
+
+둘 다 포함.
+
+반면:
+
+"적 선수"
+→ WRESTLER만
+
+"적 챔피언"
+→ CHAMPION만
+
+으로 구분한다.
+
+==================================================
+2. Natural Language Analyzer 수정
+==================================================
+
+Analyzer가 다음 표현을 정확히 구분하게 해.
+
+"대상"
+"적 대상"
+"대상 하나"
+"선택한 대상"
+
+→ entityTypes:
+["WRESTLER", "CHAMPION"]
+
+"선수"
+"적 선수"
+"선택한 선수"
+
+→ ["WRESTLER"]
+
+"챔피언"
+"적 챔피언"
+
+→ ["CHAMPION"]
+
+"선수 카드"
+→ cardType = WRESTLER
+
+특정 카드 이름으로 예외 처리하지 마.
+
+==================================================
+3. Champion 보호 규칙 유지
+==================================================
+
+기존 특수 Champion Token이 배치되어
+Champion이 보호 중이면:
+
+generic 대상 resolver에서도
+해당 Champion을 선택 후보에서 제외해.
+
+즉:
+
+대상 = 선수 + Champion
+
+이지만
+
+isChampionProtected === true
+
+이면 Champion은 targetable=false.
+
+Champion Token 자체는
+필드 WRESTLER 대상 규칙에 따라 정상 선택 가능.
+
+==================================================
+4. "선택한 선수 카드" 버그 수정
+==================================================
+
+현재 다음과 같은 효과에서
+선택 기능이 제대로 작동하지 않는 문제가 있다.
+
+예:
+
+"손에 있는 선수 카드 하나를 선택하여 공격력을 2 올립니다."
+
+Analyzer는 의미를 이해해도
+실제 게임에서 선택 UI가 뜨지 않거나
+카드를 눌러도 Effect가 진행되지 않는 문제가 있는지 조사해.
+
+반드시 실제 원인을 찾아 수정해.
+
+==================================================
+5. PLAYER_CHOICE 공통 흐름
+==================================================
+
+선택 효과는 반드시:
+
+Effect 시작
+→ valid targets 계산
+→ pendingSelection을 GameState에 저장
+→ UI에서 valid target 강조
+→ Player가 클릭/탭
+→ Engine에서 다시 target 검증
+→ Effect 계속 실행
+→ pendingSelection 제거
+
+흐름을 사용해.
+
+선택 결과를 UI에서 직접 Effect에 적용하지 마.
+
+==================================================
+6. pendingSelection은 serializable
+==================================================
+
+pendingSelection은 GameState에 저장 가능해야 한다.
+
+예:
+
+pendingSelection {
+  effectId
+  sourceInstanceId
+  controllerId
+
+  zones
+  owner
+  cardTypes
+  entityTypes
+
+  minTargets
+  maxTargets
+
+  validTargetIds
+}
+
+현재 프로젝트 구조에 맞는 기존 타입이 있다면
+그걸 재사용해.
+
+새로운 별도 Target 시스템을 만들지 마.
+
+==================================================
+7. Zone별 선택 지원
+==================================================
+
+"선수 카드"를 선택한다고 해서
+무조건 Board로 처리하지 마.
+
+문장의 Zone을 따라야 한다.
+
+예:
+
+"손에 있는 선수 카드"
+→ HAND + WRESTLER
+
+"내 필드의 선수"
+→ BOARD + WRESTLER
+
+"덱의 선수 카드"
+→ DECK + WRESTLER
+
+"적 대상"
+→ BOARD + WRESTLER/CHAMPION
+
+Analyzer의 기존 zone parsing을 재사용해.
+
+==================================================
+8. UI 선택 표시
+==================================================
+
+PLAYER_CHOICE가 발생하면
+해당 Zone의 valid target이 눈에 띄게 표시되어야 한다.
+
+BOARD:
+→ 대상 카드/Champion highlight
+
+HAND:
+→ 선택 가능한 Hand Card highlight
+
+DECK:
+→ 현재 UI상 직접 선택이 지원되는 구조가 있다면 재사용
+→ 지원하지 않는 선택 방식이면 안전하게 unsupported 처리
+
+valid하지 않은 카드는 dim 처리 가능.
+
+==================================================
+9. 클릭 처리
+==================================================
+
+valid target 클릭:
+
+→ SELECT_TARGET 같은 기존 Action을 통해 Engine으로 전달
+→ Engine revalidate
+→ Effect 계속 실행
+
+invalid target 클릭:
+
+→ GameState 변경 없음
+→ Toast
+→ targeting mode 유지
+
+예:
+
+"선택할 수 없는 대상입니다."
+
+==================================================
+10. 선택 효과가 바로 자동 실행되면 안 됨
+==================================================
+
+selection = PLAYER_CHOICE인 Effect는
+
+첫 번째 valid target을 자동 선택하거나
+RANDOM으로 바꾸거나
+Effect를 skip하면 안 된다.
+
+반드시 Player 입력을 기다린다.
+
+==================================================
+11. 선택 대상이 없는 경우
+==================================================
+
+valid target이 0개라면
+게임이 멈추거나 crash하면 안 된다.
+
+현재 Effect Engine 정책에 맞게
+해당 Effect를 안전하게 종료하고
+Event Log / Toast에 남겨.
+
+임의 대상을 대신 선택하지 마.
+
+==================================================
+12. 여러 Effect Source에서 공통 사용
+==================================================
+
+이 수정은 다음 모두에 적용되어야 한다.
+
+- Wrestler 등장 효과
+- Technique
+- Active
+- Champion Ability
+- Quest Reward
+- 기타 Structured Effect
+
+각 시스템마다 별도 선택 UI를 만들지 마.
+
+공통 PLAYER_CHOICE 시스템 재사용.
+
+==================================================
+13. 기존 공격 타겟과 구분
+==================================================
+
+일반 ATTACK target selection과
+Effect PLAYER_CHOICE는 다른 Action이다.
+
+이번 수정 때문에 공격 시스템을 변경하지 마.
+
+Taunt는 기존 정상 공격 규칙을 유지.
+
+Effect에서 "대상"을 선택한다고 해서
+Taunt 때문에 자동으로 대상이 제한되면 안 된다.
+기존 Effect targeting 규칙을 유지해.
+
+==================================================
+14. 반드시 실제 브라우저 테스트
+==================================================
+
+TEST 1
+
+효과:
+"선택한 적 대상 하나에게 피해를 2 줍니다."
+
+→ 적 선수와 적 Champion 모두 highlight
+→ 둘 중 하나 선택 가능
+
+
+TEST 2
+
+상대 Champion이 특수 Champion Token으로 보호 중
+
+→ 적 선수는 선택 가능
+→ Champion은 선택 불가
+
+
+TEST 3
+
+효과:
+"선택한 적 선수 하나에게 피해를 줍니다."
+
+→ Champion 선택 불가
+→ 선수만 선택
+
+
+TEST 4
+
+효과:
+"손에 있는 선수 카드 하나를 선택하여 공격력을 2 올립니다."
+
+→ 내 Hand의 WRESTLER만 highlight
+→ 실제 카드 클릭 가능
+→ 선택한 카드에만 효과 적용
+
+
+TEST 5
+
+Hand에 Technique와 Wrestler가 같이 있음
+
+→ Wrestler만 선택 가능
+
+
+TEST 6
+
+invalid target 클릭
+
+→ State 변경 없음
+→ Toast
+→ targeting mode 유지
+
+
+TEST 7
+
+valid target 클릭
+
+→ Effect 정상 진행
+→ pendingSelection 제거
+
+
+TEST 8
+
+valid target 0개
+
+→ crash / stuck 없음
+
+
+TEST 9
+
+모바일에서도 Hand / Board 대상 터치 선택 정상
+
+
+TEST 10
+
+기존 RANDOM / ALL / SELF Effect는
+PLAYER_CHOICE UI가 뜨지 않고 기존대로 동작
+
+==================================================
+15. 디버깅 방식
+==================================================
+
+단순히 타입만 추가하고 끝내지 마.
+
+현재 "선택한 선수 카드" 효과를 실제로 재현해서:
+
+Natural Language
+→ Structured Effect
+→ target config
+→ pendingSelection 생성
+→ UI render
+→ click handler
+→ Action
+→ Engine continuation
+
+전체 흐름 중 어디서 끊기는지 확인해.
+
+원인을 수정한 뒤
+실제 브라우저에서 다시 테스트해.
+
+==================================================
+완료 조건
+==================================================
+
+공식 의미:
+
+대상 = 선수 + 챔피언
+선수 = 선수만
+챔피언 = 챔피언만
+
+그리고:
+
+"선택한 선수 카드"
+"선택한 적 선수"
+"선택한 대상"
+
+같은 PLAYER_CHOICE 효과가
+실제 게임에서 정상적으로 클릭/터치 선택되어야 한다.
+
+특정 카드별 하드코딩 없이
+공통 Target Resolver / Analyzer / pendingSelection /
+UI Targeting 시스템을 수정해.

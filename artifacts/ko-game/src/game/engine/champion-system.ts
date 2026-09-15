@@ -97,6 +97,7 @@ export function canUseChampionAbility(
     state.status === 'IN_PROGRESS' &&
       state.activePlayerId === playerId &&
       player?.champion &&
+      !player.championAbilityUsedThisTurn &&
       cost !== null &&
       player.currentGold >= cost,
   );
@@ -128,6 +129,13 @@ export function useChampionAbility(
     );
   }
   const abilityCost = ability.cost ?? player.champion.abilityCost;
+  if (player.championAbilityUsedThisTurn) {
+    return actionFailure(
+      state,
+      'CHAMPION_ABILITY_ALREADY_USED',
+      '챔피언 능력은 턴당 한 번만 사용할 수 있습니다.',
+    );
+  }
   if (player.currentGold < abilityCost) {
     return actionFailure(state, 'NOT_ENOUGH_GOLD', '골드가 부족합니다.');
   }
@@ -179,6 +187,7 @@ export function useChampionAbility(
             ...candidate,
             currentGold:
               candidate.currentGold - abilityCost,
+            championAbilityUsedThisTurn: true,
           }
         : candidate,
     ),

@@ -103,6 +103,7 @@ export function createTestDeck(
     return {
       instanceId: `${playerId}-card-${index + 1}`,
       definitionId: definition.id,
+      cardType: definition.cardType ?? 'WRESTLER',
       currentCost: definition.cost,
       currentAttack: definition.attack,
       currentHealth: definition.health,

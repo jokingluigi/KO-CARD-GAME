@@ -273,6 +273,8 @@ export function GameStatePreview({
   const activePresentationChampionId = activePresentationCue?.championId;
   const championUnavailableReason = !isMyTurn
     ? '내 턴에만 사용할 수 있습니다.'
+    : me.championAbilityUsedThisTurn
+      ? '이번 턴에는 이미 사용했습니다.'
     : me.champion && me.currentGold < me.champion.abilityCost
       ? '현재 골드가 부족합니다.'
       : '현재 사용할 수 없습니다.';
