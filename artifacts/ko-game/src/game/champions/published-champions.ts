@@ -13,7 +13,7 @@ export type PublishedChampionRecord = {
   questRewardText: string | null; questRewardEffects: Structured | null;
   upgradedAbilityName: string | null; upgradedAbilityCost: number | null;
   upgradedAbilityText: string | null; upgradedAbilityEffects: Structured | null;
-  championTokenDefinitionId: string | null; status: "PUBLISHED"; version: number;
+  championTokenDefinitionId: string | null; status: "DRAFT" | "PUBLISHED" | "DISABLED"; version: number;
   questCompleteAudioAssetId?: string | null;
   questCompleteAudioUrl?: string | null;
   questCompleteAudioVolume?: number;

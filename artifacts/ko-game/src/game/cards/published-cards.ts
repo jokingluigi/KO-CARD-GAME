@@ -17,7 +17,7 @@ export type PublishedCardRecord = {
   isChampionToken: boolean;
   effectId: string | null;
   effectConfig: Record<string, unknown>;
-  status: "PUBLISHED" | "DRAFT";
+  status: "PUBLISHED" | "DRAFT" | "DISABLED";
   version: number;
   createdAt: string;
   updatedAt: string;

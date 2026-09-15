@@ -20,6 +20,8 @@ import {
   cardRecordToDefinition,
   setRuntimeCardDefinitions,
   fetchPublishedChampions,
+  championRecordToDefinition,
+  cardRecordToDefinition,
   fetchGameMedia,
   emptyGameMediaCatalog,
   processChampionQuestEvents,
@@ -105,6 +107,7 @@ function readStoredBgmMute() {
 export default function Home() {
   const searchParams = new URLSearchParams(window.location.search);
   const testCardId = searchParams.get('testCardId');
+  const testChampionId = searchParams.get('testChampionId');
   const isAdminSource = searchParams.get('source') === 'admin';
   const [isAdminTestMatch, setIsAdminTestMatch] = useState(isAdminSource);
   const [authStatus, setAuthStatus] = useState<'loading' | 'authenticated' | 'unauthenticated'>('loading');
@@ -157,14 +160,14 @@ export default function Home() {
     let cancelled = false;
     if (
       authStatus !== 'authenticated' ||
-      ((testCardId || isAdminSource) && authUser?.role !== 'ADMIN')
+      ((testCardId || testChampionId || isAdminSource) && authUser?.role !== 'ADMIN')
     ) {
       setMatchReady(false);
       return () => {
         cancelled = true;
       };
     }
-    if (!testCardId && !isAdminSource) {
+    if (!testCardId && !testChampionId && !isAdminSource) {
       setMatchReady(false);
       return () => {
         cancelled = true;
@@ -198,6 +201,56 @@ export default function Home() {
              setMatchReady(false);
           }
         });
+      return () => { cancelled = true; };
+    }
+    if (testChampionId) {
+      Promise.all([
+        fetch(`${import.meta.env.BASE_URL.replace(/\/$/, '')}/api/admin/champions/${encodeURIComponent(testChampionId)}/test`, {
+          credentials: 'include',
+        }).then(async (response) => {
+          if (!response.ok) throw new Error('관리자 테스트 챔피언을 불러오지 못했습니다.');
+          return (await response.json()) as { champion: Parameters<typeof championRecordToDefinition>[0] };
+        }),
+        fetch(`${import.meta.env.BASE_URL.replace(/\/$/, '')}/api/admin/cards`, {
+          credentials: 'include',
+        }).then(async (response) => {
+          if (!response.ok) throw new Error('테스트용 카드 데이터를 불러오지 못했습니다.');
+          return (await response.json()) as { cards: Array<Parameters<typeof cardRecordToDefinition>[0]> };
+        }),
+        fetchPublishedChampions(),
+        fetchGameMedia(),
+      ]).then(([{ champion }, { cards }, publishedChampions, media]) => {
+        if (cancelled) return;
+        const testChampion = championRecordToDefinition(champion);
+        const opponent = publishedChampions.find((item) => item.id !== testChampion.id) ?? publishedChampions[0];
+        if (!opponent) throw new Error('테스트용 상대 챔피언이 없습니다.');
+        const runtimeDefinitions = cards
+          .filter((card) => card.status !== 'DISABLED')
+          .map(cardRecordToDefinition);
+        if (runtimeDefinitions.length === 0) throw new Error('테스트용 카드가 없습니다.');
+        setMediaCatalog(media);
+        setRuntimeCardDefinitions(runtimeDefinitions);
+        setGameState(startGame(
+          createInitialGameState(
+            [testChampion.id, opponent.id],
+            runtimeDefinitions,
+            [testChampion, opponent],
+          ),
+          undefined,
+          media,
+        ));
+        setIsAdminTestMatch(true);
+        setSelectedCardId(null);
+        setSelectedAttackerId(null);
+        setPlayError(null);
+        setMatchReady(true);
+      }).catch(() => {
+        if (!cancelled) {
+          setPlayError('관리자 테스트 챔피언과 게임 데이터를 불러오지 못했습니다.');
+          setRuntimeCardDefinitions([]);
+          setMatchReady(false);
+        }
+      });
       return () => { cancelled = true; };
     }
     Promise.all([
@@ -243,7 +296,7 @@ export default function Home() {
     return () => {
       cancelled = true;
     };
-  }, [authStatus, authUser?.role, isAdminSource, testCardId]);
+  }, [authStatus, authUser?.role, isAdminSource, testCardId, testChampionId]);
 
   useEffect(() => {
     const bgm = mediaCatalog.bgms.find((item) => item.id === gameState.bgmId);
@@ -743,7 +796,7 @@ export default function Home() {
     );
   }
 
-  if ((testCardId || isAdminSource) && authUser?.role !== 'ADMIN') {
+  if ((testCardId || testChampionId || isAdminSource) && authUser?.role !== 'ADMIN') {
     return (
       <main className="ko-auth-screen flex min-h-screen items-center justify-center px-5 text-white">
         <section className="w-full max-w-sm text-center">
@@ -766,7 +819,7 @@ export default function Home() {
     );
   }
 
-  if (!testCardId && !isAdminSource) {
+  if (!testCardId && !testChampionId && !isAdminSource) {
     return (
       <MainMenu
         user={authUser ?? undefined}

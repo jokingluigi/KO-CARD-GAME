@@ -1225,6 +1225,21 @@ router.get("/champions", async (request, response): Promise<void> => {
   response.json({ champions });
 });
 
+router.get("/champions/:id/test", async (request, response): Promise<void> => {
+  if (!requireAdmin(request, response)) return;
+  const id = firstParam(request.params.id);
+  if (!id) {
+    response.status(400).json({ message: "챔피언 ID가 올바르지 않습니다." });
+    return;
+  }
+  const [champion] = await db.select().from(championsTable).where(eq(championsTable.id, id)).limit(1);
+  if (!champion || champion.status === "DISABLED") {
+    response.status(404).json({ message: "테스트할 수 있는 챔피언을 찾을 수 없습니다." });
+    return;
+  }
+  response.json({ champion });
+});
+
 router.post("/champions", async (request, response): Promise<void> => {
   if (!requireAdmin(request, response)) return;
   const input = parseChampionInput(request.body);
