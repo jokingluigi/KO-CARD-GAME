@@ -29,6 +29,12 @@ import {
   type ChampionFullSectionStatus,
   type ChampionFullToken,
 } from "../lib/champion-full-prompt";
+import {
+  collectUnifiedMechanics,
+  createUnifiedEffectPrompt,
+  type UnifiedEffectPromptData,
+  type UnifiedEntry,
+} from "../lib/unified-effect-prompt";
 import { analyzeChampionQuestText } from "../lib/champion-quest-analysis";
 import {
   analyzeEffectText,
@@ -1208,6 +1214,167 @@ router.post("/champions/full-analyze", async (request, response): Promise<void> 
 
 router.post("/champions/full-prompt", async (request, response): Promise<void> => {
   await fullChampionPromptRequest(request, response, true);
+});
+
+router.post("/effects/unified-full-prompt", async (request, response): Promise<void> => {
+  if (!requireAdmin(request, response)) return;
+
+  const [cards, champions, catalog] = await Promise.all([
+    db.select().from(cardsTable).orderBy(asc(cardsTable.name)),
+    db.select().from(championsTable).orderBy(asc(championsTable.name)),
+    cardReferenceCatalog(),
+  ]);
+  const entries: UnifiedEntry[] = [];
+  const tokenReferences: UnifiedEffectPromptData["tokenReferences"] = [];
+
+  for (const card of cards) {
+    if (card.cardType !== "WRESTLER") continue;
+    const sourceText = card.text.trim();
+    const analysis = analyzeForContext(sourceText, undefined, catalog);
+    entries.push({
+      kind: "WRESTLER_CARD",
+      id: card.id,
+      name: card.name,
+      version: card.version,
+      recordStatus: card.status,
+      slot: "CARD_EFFECT",
+      label: "선수 카드 효과",
+      sourceText,
+      status: fullSectionStatus(analysis),
+      analysis,
+      ...(hasStructuredPayload(card.effectConfig) ? { storedStructuredEffect: card.effectConfig } : {}),
+      ...(!sourceText ? { note: "원문 효과가 없어 실행할 효과가 없습니다." } : {}),
+    });
+  }
+
+  const cardById = new Map(cards.map((card) => [card.id, card]));
+  const addChampionEntry = (
+    champion: typeof champions[number],
+    slot: string,
+    label: string,
+    sourceText: string | null,
+    context: ChampionEffectContext,
+    storedStructuredEffect: unknown,
+  ) => {
+    const text = (sourceText ?? "").trim();
+    const analysis = analyzeForContext(text, context, catalog);
+    entries.push({
+      kind: "CHAMPION",
+      id: champion.id,
+      name: champion.name,
+      version: champion.version,
+      recordStatus: champion.status,
+      slot,
+      label,
+      sourceText: text,
+      status: fullSectionStatus(analysis),
+      analysis,
+      ...(hasStructuredPayload(storedStructuredEffect) ? { storedStructuredEffect } : {}),
+      ...(!text ? { note: "이 슬롯에 저장된 원문이 없습니다." } : {}),
+    });
+  };
+
+  for (const champion of champions) {
+    addChampionEntry(
+      champion,
+      "CHAMPION_ABILITY",
+      "기본 Champion Ability",
+      champion.abilityText,
+      "CHAMPION_ABILITY",
+      champion.abilityEffects,
+    );
+    if (champion.hasQuest) {
+      addChampionEntry(
+        champion,
+        "QUEST_CONDITION",
+        "Quest Condition",
+        champion.questText,
+        "QUEST_CONDITION",
+        champion.questCondition,
+      );
+      addChampionEntry(
+        champion,
+        "QUEST_REWARD",
+        "Quest Reward",
+        champion.questRewardText,
+        "QUEST_REWARD",
+        champion.questRewardEffects,
+      );
+    }
+    if (champion.upgradedAbilityText?.trim() || champion.upgradedAbilityEffects) {
+      addChampionEntry(
+        champion,
+        "UPGRADED_CHAMPION_ABILITY",
+        "강화 Champion Ability",
+        champion.upgradedAbilityText,
+        "UPGRADED_CHAMPION_ABILITY",
+        champion.upgradedAbilityEffects,
+      );
+    }
+
+    if (!champion.championTokenDefinitionId) continue;
+    const token = cardById.get(champion.championTokenDefinitionId);
+    if (token) {
+      tokenReferences.push({
+        championId: champion.id,
+        championName: champion.name,
+        definitionId: token.id,
+        name: token.name,
+        text: token.text,
+        status: token.status,
+      });
+    } else {
+      entries.push({
+        kind: "CHAMPION",
+        id: champion.id,
+        name: champion.name,
+        version: champion.version,
+        recordStatus: champion.status,
+        slot: "CHAMPION_TOKEN_REFERENCE",
+        label: "Champion Token 참조",
+        sourceText: champion.championTokenDefinitionId,
+        status: "ANALYSIS_FAILED",
+        note: `연결된 CardDefinition을 찾을 수 없습니다: ${champion.championTokenDefinitionId}`,
+        analysis: {
+          status: "failure",
+          outcome: "analysis_failure",
+          effects: [],
+          keywords: [],
+          unsupportedSegments: [`Champion Token 참조 누락: ${champion.championTokenDefinitionId}`],
+          summaries: [],
+        },
+      });
+    }
+  }
+
+  const library = effectLibrary();
+  const data: UnifiedEffectPromptData = {
+    entries,
+    mechanics: collectUnifiedMechanics(entries),
+    tokenReferences,
+    library: {
+      actions: library.actions.map((entry) => ({ ...entry })),
+      triggers: library.triggers.map((entry) => ({ ...entry })),
+      conditions: (library.conditions ?? []).map((entry) => ({ ...entry })),
+      targetResolvers: library.targetResolvers.map((entry) => ({ ...entry })),
+      valueResolvers: library.valueResolvers.map((entry) => ({ ...entry })),
+    },
+  };
+  response.json({
+    analysis: {
+      entries: data.entries,
+      mechanics: data.mechanics,
+      tokenReferences: data.tokenReferences,
+      summary: {
+        total: data.entries.length,
+        supported: data.entries.filter((entry) => entry.status === "SUPPORTED").length,
+        newMechanicRequired: data.entries.filter((entry) => entry.status === "NEW_MECHANIC_REQUIRED").length,
+        analysisFailed: data.entries.filter((entry) => entry.status === "ANALYSIS_FAILED").length,
+        fullySupported: data.mechanics.length === 0,
+      },
+    },
+    prompt: createUnifiedEffectPrompt(data),
+  });
 });
 
 router.get("/champions", async (request, response): Promise<void> => {

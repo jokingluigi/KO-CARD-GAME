@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState, type Dispatch, type SetStateAction } from "react";
 import { Ban, CheckCircle2, Copy, FilePenLine, ImagePlus, Plus, Search, Trash2, X } from "lucide-react";
 import { AdminAudioField } from "./admin-audio-field";
+import { AdminUnifiedEffectPrompt } from "./admin-unified-effect-prompt";
 import { useToast } from "../hooks/use-toast";
 
 const adminApiBase = `${import.meta.env.BASE_URL.replace(/\/$/, "")}/api/admin`;
@@ -525,6 +526,7 @@ export function AdminChampionManager({ onUnauthorized }: { onUnauthorized: () =>
         <p className="mt-1 text-xs text-neutral-500">새 챔피언은 DRAFT로 저장되며 기본 최대 체력은 20입니다.</p></div>
       <button onClick={() => editor()} className="flex gap-2 rounded bg-primary px-4 py-2.5 text-sm font-black text-black"><Plus className="h-4 w-4"/> 새 챔피언</button>
     </div>
+     <AdminUnifiedEffectPrompt onUnauthorized={onUnauthorized} />
     {error && <div className="mb-4 rounded border border-red-900 bg-red-950/40 p-3 text-sm text-red-300">{error}</div>}
     {messageText && <div className="mb-4 rounded border border-emerald-900 bg-emerald-950/30 p-3 text-sm text-emerald-300">{messageText}</div>}
     <div className="mb-4 flex gap-2"><label className="flex flex-1 items-center gap-2 rounded border border-neutral-800 px-3"><Search className="h-4 w-4"/><input value={search} onChange={(e)=>setSearch(e.target.value)} className="w-full bg-transparent py-2 outline-none" placeholder="챔피언 검색"/></label>

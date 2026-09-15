@@ -16,6 +16,7 @@ import {
 } from "lucide-react";
 import { CardRenderer } from "./card-renderer";
 import { AdminAudioField } from "./admin-audio-field";
+import { AdminUnifiedEffectPrompt } from "./admin-unified-effect-prompt";
 import { useToast } from "../hooks/use-toast";
 import {
   CARD_RARITY_LABELS,
@@ -838,6 +839,7 @@ export function AdminCardManager({
           <button type="button" onClick={openCreate} data-testid="button-create-card" className="flex items-center justify-center gap-2 rounded bg-primary px-4 py-2.5 text-sm font-black text-black hover:bg-yellow-400"><Plus className="h-4 w-4" /> 새 카드 추가</button>
         </div>
       </div>
+      <AdminUnifiedEffectPrompt onUnauthorized={onUnauthorized} />
       {isLibraryOpen && (
         <section data-testid="effect-library" className="mb-4 rounded-lg border border-neutral-800 bg-neutral-950 p-4">
           <h3 className="text-sm font-black">Effect Library</h3>
