@@ -73,6 +73,7 @@ function DeckCardVisual({
             </p>
             <CardRenderer
               name={card.name}
+              cardType={card.cardType}
               cost={card.cost}
               attack={card.attack}
               health={card.health}
@@ -104,6 +105,7 @@ function DeckCardVisual({
         >
           <CardRenderer
             name={card.name}
+            cardType={card.cardType}
             cost={card.cost}
             attack={card.attack}
             health={card.health}
@@ -675,6 +677,7 @@ export default function Decks() {
                         <div className="ko-decks__selected-thumb">
                           <CardRenderer
                             name={card.name}
+                            cardType={card.cardType}
                             cost={card.cost}
                             attack={card.attack}
                             health={card.health}

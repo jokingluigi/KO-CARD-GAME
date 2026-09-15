@@ -255,6 +255,7 @@ export function CardInspectContent({ card }: { card: CardInstance }) {
       </h3>
       <CardRenderer
         name={definition?.name ?? '알 수 없는 카드'}
+        cardType={card.cardType}
         cost={card.currentCost}
         attack={card.currentAttack}
         health={card.currentHealth}

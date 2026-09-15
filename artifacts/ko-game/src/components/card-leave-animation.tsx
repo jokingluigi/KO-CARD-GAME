@@ -69,6 +69,7 @@ export function CardLeaveAnimation({
     >
       <CardRenderer
         name={definition?.name ?? "카드"}
+        cardType={animation.card.cardType === "TECHNIQUE" ? "TECHNIQUE" : "WRESTLER"}
         cost={animation.card.currentCost}
         attack={animation.card.currentAttack}
         health={animation.card.currentHealth}

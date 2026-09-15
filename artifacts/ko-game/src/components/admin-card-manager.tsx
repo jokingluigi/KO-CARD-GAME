@@ -1173,6 +1173,7 @@ export function AdminCardManager({
                <div className="mb-3 text-[10px] font-black tracking-[0.18em] text-neutral-500">실시간 미리보기</div>
                <AdminCardPreview
                  name={preview.name}
+                 cardType={preview.cardType}
                  cost={Number(preview.cost) || 0}
                  attack={Number(preview.attack) || 0}
                  health={Number(preview.health) || 0}
@@ -1255,6 +1256,7 @@ function ImageDisplaySlider({
 
 function AdminCardPreview({
   name,
+  cardType,
   cost,
   attack,
   health,
@@ -1265,6 +1267,7 @@ function AdminCardPreview({
   onImagePositionChange,
 }: {
   name: string;
+  cardType: CardType;
   cost: number;
   attack: number;
   health: number;
@@ -1279,6 +1282,7 @@ function AdminCardPreview({
   return (
     <CardRenderer
       name={name || "카드 이름"}
+      cardType={cardType}
       cost={cost}
       attack={attack}
       health={health}

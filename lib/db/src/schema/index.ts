@@ -27,3 +27,4 @@ export * from "./collections";
 export * from "./packs";
 export * from "./shop";
 export * from "./prism";
+export * from "./card-frames";

@@ -2,6 +2,7 @@ import { createHmac, randomUUID, timingSafeEqual } from "node:crypto";
 import { and, asc, desc, eq, ilike, or, sql } from "drizzle-orm";
 import {
   cardsTable,
+  cardFrameDefinitionsTable,
   championsTable,
   db,
   gameMediaTable,
@@ -88,6 +89,8 @@ const GAME_MEDIA_TYPES = [
   "HEAVY_ATTACK",
   "VERY_HEAVY_ATTACK",
 ] as const;
+const CARD_FRAME_SCALE_RANGE = { min: 0.75, max: 1.5 };
+const CARD_FRAME_OFFSET_RANGE = { min: -15, max: 15 };
 
 type CardInput = {
   name: string;
@@ -463,10 +466,15 @@ async function removeImageIfUnreferenced(assetId: string) {
     .select({ count: sql<number>`count(*)::int` })
     .from(shopListingsTable)
     .where(eq(shopListingsTable.imageAssetId, assetId));
+  const [frameReference] = await db
+    .select({ count: sql<number>`count(*)::int` })
+    .from(cardFrameDefinitionsTable)
+    .where(eq(cardFrameDefinitionsTable.frameAssetId, assetId));
   if (
     (cardReference?.count ?? 0) === 0 &&
     (championReference?.count ?? 0) === 0 &&
-    (shopReference?.count ?? 0) === 0
+    (shopReference?.count ?? 0) === 0 &&
+    (frameReference?.count ?? 0) === 0
   ) {
     await cardImageStorage.remove(assetId);
   }
@@ -2008,6 +2016,127 @@ router.post("/audio/discard", async (request, response): Promise<void> => {
 function isGameMediaType(value: unknown): value is (typeof GAME_MEDIA_TYPES)[number] {
   return typeof value === "string" && GAME_MEDIA_TYPES.includes(value as (typeof GAME_MEDIA_TYPES)[number]);
 }
+
+function isCardFrameType(value: unknown): value is (typeof CARD_TYPES)[number] {
+  return typeof value === "string" && CARD_TYPES.includes(value as (typeof CARD_TYPES)[number]);
+}
+
+function isCardFrameRarity(value: unknown): value is (typeof CARD_RARITIES)[number] {
+  return typeof value === "string" && CARD_RARITIES.includes(value as (typeof CARD_RARITIES)[number]);
+}
+
+function frameNumber(value: unknown, fallback: number, min: number, max: number) {
+  const parsed = typeof value === "number"
+    ? value
+    : typeof value === "string" && value.trim() ? Number(value) : Number.NaN;
+  return Number.isFinite(parsed) ? Math.min(max, Math.max(min, parsed)) : fallback;
+}
+
+router.get("/card-frames", async (request, response): Promise<void> => {
+  if (!requireAdmin(request, response)) return;
+  const frames = await db.select().from(cardFrameDefinitionsTable)
+    .orderBy(asc(cardFrameDefinitionsTable.cardType), asc(cardFrameDefinitionsTable.rarity));
+  response.json({ frames, cardTypes: CARD_TYPES, rarities: CARD_RARITIES });
+});
+
+router.put("/card-frames/:cardType/:rarity", async (request, response): Promise<void> => {
+  if (!requireAdmin(request, response)) return;
+  const { cardType, rarity } = request.params;
+  if (!isCardFrameType(cardType) || !isCardFrameRarity(rarity)) {
+    response.status(400).json({ message: "카드 종류 또는 희귀도가 올바르지 않습니다." });
+    return;
+  }
+
+  const existing = (await db.select().from(cardFrameDefinitionsTable)
+    .where(and(
+      eq(cardFrameDefinitionsTable.cardType, cardType),
+      eq(cardFrameDefinitionsTable.rarity, rarity),
+    ))
+    .limit(1))[0];
+  const body = request.body && typeof request.body === "object"
+    ? request.body as Record<string, unknown>
+    : {};
+  const frameAssetId = body.frameAssetId === null || body.frameAssetId === undefined || body.frameAssetId === ""
+    ? null
+    : typeof body.frameAssetId === "string" ? body.frameAssetId : "";
+  const frameUrl = frameAssetId
+    ? typeof body.frameUrl === "string" ? body.frameUrl : ""
+    : null;
+  const frameUploadToken = typeof body.frameUploadToken === "string"
+    ? body.frameUploadToken
+    : null;
+  const enabled = body.enabled === undefined ? existing?.enabled ?? true : body.enabled;
+  const frameScale = frameNumber(body.frameScale, existing?.frameScale ?? 1.1, CARD_FRAME_SCALE_RANGE.min, CARD_FRAME_SCALE_RANGE.max);
+  const frameOffsetX = frameNumber(body.frameOffsetX, existing?.frameOffsetX ?? 0, CARD_FRAME_OFFSET_RANGE.min, CARD_FRAME_OFFSET_RANGE.max);
+  const frameOffsetY = frameNumber(body.frameOffsetY, existing?.frameOffsetY ?? 0, CARD_FRAME_OFFSET_RANGE.min, CARD_FRAME_OFFSET_RANGE.max);
+  const isExistingAsset = Boolean(frameAssetId && frameAssetId === existing?.frameAssetId);
+
+  if (
+    (frameAssetId && (
+      !frameAssetId.startsWith("/objects/uploads/card-images/") ||
+      frameUrl !== imageUrlFor(frameAssetId) ||
+      (!isExistingAsset && !(await validNewImageAsset(frameAssetId, frameUploadToken)))
+    )) ||
+    typeof enabled !== "boolean"
+  ) {
+    response.status(400).json({ message: "프레임 이미지 또는 설정값이 올바르지 않습니다." });
+    return;
+  }
+
+  const [frame] = await db.insert(cardFrameDefinitionsTable)
+    .values({
+      id: existing?.id ?? randomUUID(),
+      cardType,
+      rarity,
+      frameAssetId,
+      frameUrl,
+      enabled,
+      frameScale,
+      frameOffsetX,
+      frameOffsetY,
+      updatedAt: new Date(),
+    })
+    .onConflictDoUpdate({
+      target: [cardFrameDefinitionsTable.cardType, cardFrameDefinitionsTable.rarity],
+      set: {
+        frameAssetId,
+        frameUrl,
+        enabled,
+        frameScale,
+        frameOffsetX,
+        frameOffsetY,
+        updatedAt: new Date(),
+      },
+    })
+    .returning();
+
+  if (existing?.frameAssetId && existing.frameAssetId !== frameAssetId) {
+    await removeImageIfUnreferenced(existing.frameAssetId);
+  }
+  response.json({ frame });
+});
+
+router.delete("/card-frames/:cardType/:rarity", async (request, response): Promise<void> => {
+  if (!requireAdmin(request, response)) return;
+  const { cardType, rarity } = request.params;
+  if (!isCardFrameType(cardType) || !isCardFrameRarity(rarity)) {
+    response.status(400).json({ message: "카드 종류 또는 희귀도가 올바르지 않습니다." });
+    return;
+  }
+  const existing = (await db.select().from(cardFrameDefinitionsTable)
+    .where(and(
+      eq(cardFrameDefinitionsTable.cardType, cardType),
+      eq(cardFrameDefinitionsTable.rarity, rarity),
+    ))
+    .limit(1))[0];
+  if (!existing) {
+    response.status(204).end();
+    return;
+  }
+  await db.delete(cardFrameDefinitionsTable).where(eq(cardFrameDefinitionsTable.id, existing.id));
+  if (existing.frameAssetId) await removeImageIfUnreferenced(existing.frameAssetId);
+  response.status(204).end();
+});
 
 function gameMediaConfig(mediaType: (typeof GAME_MEDIA_TYPES)[number]) {
   return mediaType === "BACKGROUND"

@@ -71,6 +71,7 @@ export function CardPlayAnimation({
       >
         <CardRenderer
           name={definition?.name ?? "카드"}
+          cardType={animation.kind}
           cost={animation.card.currentCost}
           attack={animation.card.currentAttack}
           health={animation.card.currentHealth}

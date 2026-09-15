@@ -1,5 +1,5 @@
-import { asc, eq } from "drizzle-orm";
-import { db, cardsTable, championsTable } from "@workspace/db";
+import { and, asc, eq } from "drizzle-orm";
+import { db, cardsTable, cardFrameDefinitionsTable, championsTable } from "@workspace/db";
 import { Router, type IRouter } from "express";
 
 const router: IRouter = Router();
@@ -13,6 +13,25 @@ router.get("/cards", async (_request, response): Promise<void> => {
 
   response.setHeader("Cache-Control", "no-store");
   response.json({ cards });
+});
+
+router.get("/card-frames", async (_request, response): Promise<void> => {
+  const frames = await db
+    .select({
+      cardType: cardFrameDefinitionsTable.cardType,
+      rarity: cardFrameDefinitionsTable.rarity,
+      frameUrl: cardFrameDefinitionsTable.frameUrl,
+      enabled: cardFrameDefinitionsTable.enabled,
+      frameScale: cardFrameDefinitionsTable.frameScale,
+      frameOffsetX: cardFrameDefinitionsTable.frameOffsetX,
+      frameOffsetY: cardFrameDefinitionsTable.frameOffsetY,
+    })
+    .from(cardFrameDefinitionsTable)
+    .where(and(
+      eq(cardFrameDefinitionsTable.enabled, true),
+    ));
+  response.setHeader("Cache-Control", "no-store");
+  response.json({ frames });
 });
 
 router.get("/champions", async (_request, response): Promise<void> => {

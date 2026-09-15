@@ -100,6 +100,7 @@ export function PackOpening({ packName, rewards, preview = false, onClose, onRep
                   ) : card ? (
                     <CardRenderer
                       name={isSkin ? `${card.name} · ${skin?.name ?? "스킨"}` : card.name}
+                      cardType={card.cardType as "WRESTLER" | "TECHNIQUE"}
                       cost={card.cost}
                       attack={card.attack}
                       health={card.health}

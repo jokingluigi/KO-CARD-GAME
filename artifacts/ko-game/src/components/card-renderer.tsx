@@ -1,10 +1,15 @@
-import type { CSSProperties, KeyboardEvent, ReactNode, Ref } from "react";
+import { useEffect, useState, type CSSProperties, type KeyboardEvent, type ReactNode, type Ref } from "react";
 import { CardArtwork } from "./card-artwork";
 import {
   normalizeCardRarity,
   type CardRarity,
   type ImageDisplaySettings,
 } from "../game/cards/types";
+import {
+  useCardFrameDefinition,
+  type CardFrameCardType,
+  type CardFrameDefinition,
+} from "../lib/card-frames-client";
 
 const frameAssetNames: Partial<Record<CardRarity, string>> = {
   NORMAL: "card-frame-normal.png",
@@ -83,12 +88,12 @@ function frameAssetUrl(rarity: CardRarity) {
     : null;
 }
 
-function scalePercent(value: number, scale: number): number {
-  return 50 + (value - 50) * scale;
+function scalePercent(value: number, scale: number, offset = 0): number {
+  return 50 + (value - 50) * scale + offset;
 }
 
-function scaleInset(value: number, scale: number): number {
-  return 100 - scalePercent(100 - value, scale);
+function scaleInset(value: number, scale: number, offset = 0): number {
+  return 100 - scalePercent(100 - value, scale, offset);
 }
 
 function scaleSize(value: number, scale: number): number {
@@ -100,12 +105,14 @@ export type CardHighlight = "selected" | "target" | "attack";
 
 export function CardRenderer({
   name,
+  cardType,
   cost,
   attack,
   health,
   rulesText,
   imageUrl,
   rarity,
+  frameOverride,
   imageDisplaySettings,
   size,
   className = "",
@@ -124,12 +131,14 @@ export function CardRenderer({
   containerRef,
 }: {
   name: string;
+  cardType?: CardFrameCardType;
   cost: number;
   attack: number;
   health: number;
   rulesText: string;
   imageUrl?: string | null;
   rarity?: CardRarity | null;
+  frameOverride?: Partial<CardFrameDefinition>;
   imageDisplaySettings?: Partial<ImageDisplaySettings>;
   size: CardRendererSize;
   className?: string;
@@ -150,9 +159,23 @@ export function CardRenderer({
   containerRef?: Ref<HTMLDivElement>;
 }) {
   const normalizedRarity = normalizeCardRarity(rarity);
+  const normalizedCardType = cardType ?? "WRESTLER";
+  const remoteFrame = useCardFrameDefinition(normalizedCardType, normalizedRarity);
+  const frameSettings = frameOverride?.enabled === false
+    ? null
+    : frameOverride
+      ? { ...remoteFrame, ...frameOverride }
+      : remoteFrame;
   const frameLayout = frameLayouts[normalizedRarity];
-  const frameScale = frameLayout.scale;
-  const frameUrl = frameAssetUrl(normalizedRarity);
+  const frameScale = frameSettings?.frameScale ?? frameLayout.scale;
+  const frameOffsetX = frameSettings?.frameOffsetX ?? 0;
+  const frameOffsetY = frameSettings?.frameOffsetY ?? 0;
+  const bundledFrameUrl = frameAssetUrl(normalizedRarity);
+  const [frameFailed, setFrameFailed] = useState(false);
+  useEffect(() => {
+    setFrameFailed(false);
+  }, [frameSettings?.frameUrl, normalizedCardType, normalizedRarity]);
+  const frameUrl = frameFailed ? bundledFrameUrl : frameSettings?.frameUrl ?? bundledFrameUrl;
   const nameClass =
     name.length > 22
       ? size === "admin"
@@ -200,7 +223,7 @@ export function CardRenderer({
       className={`relative aspect-[1060/1484] overflow-visible select-none ${className}`}
       style={style}
       ref={containerRef}
-      onClick={onClick}
+             onClick={onClick}
       onKeyDown={handleKeyDown}
       tabIndex={tabIndex}
     >
@@ -225,7 +248,7 @@ export function CardRenderer({
             aria-hidden="true"
             className="pointer-events-none absolute inset-0 z-10 h-full w-full"
             style={{
-              transform: `scale(${frameScale})`,
+              transform: `translate(${frameOffsetX}%, ${frameOffsetY}%) scale(${frameScale})`,
               transformOrigin: "center",
               filter:
                 highlight === "selected"
@@ -236,6 +259,7 @@ export function CardRenderer({
                       ? "drop-shadow(0 0 5px rgba(96, 165, 250, 0.95)) drop-shadow(0 0 12px rgba(59, 130, 246, 0.65))"
                       : undefined,
             }}
+            onError={() => setFrameFailed(true)}
             draggable={false}
           />
         )}
@@ -244,9 +268,9 @@ export function CardRenderer({
           <div
             className="pointer-events-none absolute z-20 flex items-center justify-center overflow-hidden px-[2%] text-center"
             style={{
-              left: `${scaleInset(frameLayout.name.left, frameScale)}%`,
-              right: `${scaleInset(frameLayout.name.right, frameScale)}%`,
-              top: `${scaleInset(frameLayout.name.top, frameScale)}%`,
+              left: `${scaleInset(frameLayout.name.left, frameScale, frameOffsetX)}%`,
+              right: `${scaleInset(frameLayout.name.right, frameScale, -frameOffsetX)}%`,
+              top: `${scaleInset(frameLayout.name.top, frameScale, frameOffsetY)}%`,
               height: `${scaleSize(frameLayout.name.height, frameScale)}%`,
             }}
           >
@@ -260,8 +284,8 @@ export function CardRenderer({
           <div
             className="pointer-events-none absolute z-20 flex aspect-square -translate-x-1/2 -translate-y-1/2 items-center justify-center font-display font-black text-white drop-shadow-[0_1px_2px_rgba(0,0,0,0.95)]"
             style={{
-              left: `${scalePercent(frameLayout.cost.centerX, frameScale)}%`,
-              top: `${scalePercent(frameLayout.cost.centerY, frameScale)}%`,
+              left: `${scalePercent(frameLayout.cost.centerX, frameScale, frameOffsetX)}%`,
+              top: `${scalePercent(frameLayout.cost.centerY, frameScale, frameOffsetY)}%`,
               width: `${scaleSize(frameLayout.cost.size, frameScale)}%`,
             }}
           >
@@ -273,10 +297,10 @@ export function CardRenderer({
           <div
             className="pointer-events-none absolute z-20 flex items-center justify-center overflow-hidden px-[5%] py-[3%] text-center text-neutral-100"
             style={{
-              left: `${scaleInset(frameLayout.rules.left, frameScale)}%`,
-              right: `${scaleInset(frameLayout.rules.right, frameScale)}%`,
-              top: `${scaleInset(frameLayout.rules.top, frameScale)}%`,
-              bottom: `${scaleInset(frameLayout.rules.bottom, frameScale)}%`,
+              left: `${scaleInset(frameLayout.rules.left, frameScale, frameOffsetX)}%`,
+              right: `${scaleInset(frameLayout.rules.right, frameScale, -frameOffsetX)}%`,
+              top: `${scaleInset(frameLayout.rules.top, frameScale, frameOffsetY)}%`,
+              bottom: `${scaleInset(frameLayout.rules.bottom, frameScale, -frameOffsetY)}%`,
             }}
           >
             <span className={`line-clamp-6 w-full font-bold drop-shadow-[0_1px_2px_rgba(0,0,0,0.95)] ${rulesClass}`}>
@@ -285,13 +309,13 @@ export function CardRenderer({
           </div>
         )}
 
-        {showStats && (
+        {showStats && normalizedCardType === "WRESTLER" && (
           <>
             <div
               className="pointer-events-none absolute z-20 flex aspect-square -translate-x-1/2 -translate-y-1/2 items-center justify-center font-display font-black text-white drop-shadow-[0_1px_2px_rgba(0,0,0,0.95)]"
               style={{
-                left: `${scalePercent(frameLayout.attack.centerX, frameScale)}%`,
-                top: `${scalePercent(frameLayout.attack.centerY, frameScale)}%`,
+                left: `${scalePercent(frameLayout.attack.centerX, frameScale, frameOffsetX)}%`,
+                top: `${scalePercent(frameLayout.attack.centerY, frameScale, frameOffsetY)}%`,
                 width: `${scaleSize(frameLayout.attack.size, frameScale)}%`,
               }}
             >
@@ -300,8 +324,8 @@ export function CardRenderer({
             <div
               className="pointer-events-none absolute z-20 flex aspect-square -translate-x-1/2 -translate-y-1/2 items-center justify-center font-display font-black text-white drop-shadow-[0_1px_2px_rgba(0,0,0,0.95)]"
               style={{
-                left: `${scalePercent(frameLayout.health.centerX, frameScale)}%`,
-                top: `${scalePercent(frameLayout.health.centerY, frameScale)}%`,
+                left: `${scalePercent(frameLayout.health.centerX, frameScale, frameOffsetX)}%`,
+                top: `${scalePercent(frameLayout.health.centerY, frameScale, frameOffsetY)}%`,
                 width: `${scaleSize(frameLayout.health.size, frameScale)}%`,
               }}
             >

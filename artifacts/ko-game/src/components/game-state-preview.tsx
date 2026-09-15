@@ -972,6 +972,7 @@ function HandCard({
     <div className={`relative ${presentationActive ? "presentation-card-pulse" : ""}`}>
       <CardRenderer
       name={def?.name ?? '알 수 없는 카드'}
+      cardType={card.cardType}
       cost={card.currentCost}
       attack={card.currentAttack}
       health={card.currentHealth}
@@ -1097,6 +1098,7 @@ function BoardSlot({
       )}
        <CardRenderer
          name={def?.name ?? '알 수 없는 카드'}
+         cardType={card.cardType}
          cost={card.currentCost}
          attack={card.currentAttack}
          health={card.currentHealth}

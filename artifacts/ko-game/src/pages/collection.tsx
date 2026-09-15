@@ -41,6 +41,7 @@ function CardCollectionItem({ card, onOpen, showCraftable = false }: { card: Col
       <div className="relative">
         <CardRenderer
           name={card.name}
+          cardType={card.cardType as "WRESTLER" | "TECHNIQUE"}
           cost={card.cost}
           attack={card.attack}
           health={card.health}
@@ -275,6 +276,7 @@ export default function CollectionPage() {
               <div className="grid gap-5 sm:grid-cols-[minmax(180px,250px)_1fr] sm:items-start">
                 <CardRenderer
                   name={selectedCard.name}
+                cardType={selectedCard.cardType as "WRESTLER" | "TECHNIQUE"}
                   cost={selectedCard.cost}
                   attack={selectedCard.attack}
                   health={selectedCard.health}

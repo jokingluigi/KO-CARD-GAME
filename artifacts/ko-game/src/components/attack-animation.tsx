@@ -75,6 +75,7 @@ export function AttackAnimation({
         {animation.targetKind === "CARD" && animation.target ? (
           <CardRenderer
             name={getCardDefinition(animation.target.definitionId)?.name ?? "대상"}
+            cardType={animation.target.cardType}
             cost={animation.target.currentCost}
             attack={animation.target.currentAttack}
             health={animation.target.currentHealth}
@@ -94,6 +95,7 @@ export function AttackAnimation({
       <div className="attack-animation__attacker">
         <CardRenderer
           name={definition?.name ?? "공격 카드"}
+          cardType={animation.attacker.cardType}
           cost={animation.attacker.currentCost}
           attack={animation.attacker.currentAttack}
           health={animation.attacker.currentHealth}
