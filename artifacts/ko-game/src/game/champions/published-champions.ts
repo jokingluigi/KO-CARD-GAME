@@ -9,7 +9,7 @@ export type PublishedChampionRecord = {
   questCompletedPortraitAssetId?: string | null; questCompletedPortraitUrl?: string | null;
   maxHealth: number; abilityName: string; abilityCost: number; abilityText: string; abilityEffects: Structured;
   hasQuest: boolean; questName: string | null; questText: string | null;
-  questCondition: { event?: string; cardType?: ChampionQuestCardType; progress?: number; required?: number } | null; questProgressRequired: number | null;
+  questCondition: { event?: string; cardType?: ChampionQuestCardType; sourceActionType?: string; progress?: number; required?: number } | null; questProgressRequired: number | null;
   questRewardText: string | null; questRewardEffects: Structured | null;
   upgradedAbilityName: string | null; upgradedAbilityCost: number | null;
   upgradedAbilityText: string | null; upgradedAbilityEffects: Structured | null;
@@ -57,6 +57,7 @@ export function championRecordToDefinition(record: PublishedChampionRecord): Cha
         id: `${record.id}-quest`, name: record.questName, description: record.questText ?? "",
         trackedEvent: record.questCondition.event as ChampionQuest["trackedEvent"],
          ...(record.questCondition.cardType ? { cardType: record.questCondition.cardType } : {}),
+         ...(record.questCondition.sourceActionType ? { sourceActionType: record.questCondition.sourceActionType } : {}),
          ...(record.questCondition.progress ? { progressPerEvent: record.questCondition.progress } : {}),
         requiredProgress: record.questProgressRequired,
          reward: directTokenReward

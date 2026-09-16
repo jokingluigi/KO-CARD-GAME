@@ -11,12 +11,14 @@ import { findDirectDeployedChampion } from './direct-champion';
 import type { CardInstance } from '../cards/types';
 import { hasMandatoryPlayerChoice, resolvePendingEffects } from '../effects/effect-engine';
 import { directDeployChampionToken, validateLinkedChampionToken } from './champion-token';
+import type { EventAttribution } from '../events/types';
 
 function applyChampionEffect(
   state: GameState,
   playerId: string,
   championId: string,
   effect: ChampionEffect,
+  sourceContext?: EventAttribution,
 ): GameState {
   if (effect.type === 'STRUCTURED') return state;
   if (effect.type === 'DIRECT_DEPLOY_CHAMPION_TOKEN') {
@@ -45,6 +47,7 @@ function applyChampionEffect(
           target: { type: 'PLAYER', playerId },
           reason: 'CHAMPION_ABILITY',
           amount: effect.amount,
+          sourceContext,
         },
       ],
     };
@@ -201,6 +204,12 @@ export function useChampionAbility(
         target: { type: 'CHAMPION', championId: player.champion.id },
         reason: 'CHAMPION_ABILITY_COST',
           amount: -abilityCost,
+          sourceContext: {
+            sourcePlayerId: playerId,
+            sourceActionType: 'USE_CHAMPION_ABILITY',
+            sourceChampionDefinitionId: player.champion.id,
+            sourceAbilityId: ability.id,
+          },
       },
       {
         type: 'CHAMPION_ABILITY_USED',
@@ -209,6 +218,12 @@ export function useChampionAbility(
         source: { type: 'CHAMPION', championId: player.champion.id },
         target: { type: 'PLAYER', playerId },
         reason: ability.id,
+          sourceContext: {
+            sourcePlayerId: playerId,
+            sourceActionType: 'USE_CHAMPION_ABILITY',
+            sourceChampionDefinitionId: player.champion.id,
+            sourceAbilityId: ability.id,
+          },
       },
     ],
   };
@@ -220,6 +235,12 @@ export function useChampionAbility(
         playerId,
         player.champion!.id,
         effect,
+          {
+            sourcePlayerId: playerId,
+            sourceActionType: 'USE_CHAMPION_ABILITY',
+            sourceChampionDefinitionId: player.champion!.id,
+            sourceAbilityId: ability.id,
+          },
       ),
     paidState,
   );
@@ -228,6 +249,14 @@ export function useChampionAbility(
       active: true, playerId, sourceInstanceId: effectSource.instanceId, sourceCard: effectSource,
       effects: structuredEffects, effectIndex: 0, selectedTargetIds: [], lastTargetIds: [],
       validTargetIds: [], minTargets: 0, maxTargets: 0, mandatory: true, cancelable: false,
+      triggerContext: {
+        sourceContext: {
+          sourcePlayerId: playerId,
+          sourceActionType: 'USE_CHAMPION_ABILITY',
+          sourceChampionDefinitionId: player.champion.id,
+          sourceAbilityId: ability.id,
+        },
+      },
     } })
     : resolved;
   return actionSuccess(processChampionQuestEvents(state, afterNonStructured));

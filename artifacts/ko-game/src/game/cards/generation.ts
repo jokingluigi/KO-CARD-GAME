@@ -4,7 +4,7 @@ import type {
   CardInstanceId,
 } from './types';
 import type { RandomScope } from '@workspace/effect-registry';
-import type { EventSubject, GameEvent } from '../events/types';
+import type { EventAttribution, EventSubject, GameEvent } from '../events/types';
 
 export interface GenerateCardOptions {
   instanceId: CardInstanceId;
@@ -19,6 +19,7 @@ export interface GenerateCardWithEventOptions extends GenerateCardOptions {
   playerId: string;
   source?: EventSubject;
   reason?: string;
+  sourceContext?: EventAttribution;
 }
 
 export interface RandomCardPoolOptions {
@@ -100,6 +101,7 @@ export function generateCard(
       source: options.source ?? { type: 'SYSTEM' },
       target: { type: 'CARD', cardInstanceId: card.instanceId },
       reason: options.reason ?? 'CARD_EFFECT',
+      sourceContext: options.sourceContext,
     },
   };
 }

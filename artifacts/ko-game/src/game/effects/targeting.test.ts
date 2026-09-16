@@ -6,6 +6,7 @@ import type { CardDefinition, CardInstance } from '../cards/types';
 import { createInitialGameState } from '../engine/create-initial-game-state';
 import { enterField } from '../engine/enter-field';
 import { playWrestlerFromHand } from '../engine/play-wrestler';
+import { playTechniqueFromHand } from '../engine/play-technique';
 import { useActiveAbility } from '../engine/card-status';
 import { useChampionAbility } from '../engine/champion-system';
 import { endTurn } from '../engine/turn-system';
@@ -34,6 +35,36 @@ test('PLAYER_CHOICE pauses post-enter damage, validates stale/invalid clicks, th
   const resolved = selectEffectTarget(pending, 'enemy');
   assert.equal(resolved.targetingState, undefined);
   assert.equal(resolved.players[1].board[0]?.currentHealth, 1);
+});
+
+test('mandatory Technique PLAYER_CHOICE preflights before payment when no target exists', () => {
+  const definition: CardDefinition = {
+    id: 'targeted-technique',
+    name: 'targeted-technique',
+    cardType: 'TECHNIQUE',
+    cost: 1,
+    attack: 0,
+    health: 0,
+    rulesText: '',
+    isToken: false,
+    isChampionToken: false,
+    keywords: [],
+    abilities: [{ trigger: 'ACTIVE', effects: [targeted('DAMAGE')] }],
+  };
+  const technique = generateCard(definition, {
+    instanceId: 'targeted-technique',
+    playerId: 'player-1',
+    source: { type: 'PLAYER', playerId: 'player-1' },
+    reason: 'TEST',
+  }).card;
+  const state = createInitialGameState();
+  state.players[0].hand = [technique];
+  state.players[0].currentGold = 3;
+  const result = playTechniqueFromHand(state, 'player-1', technique.instanceId);
+  assert.equal(result.success, false);
+  assert.equal(result.state, state);
+  assert.equal(result.state.players[0].currentGold, 3);
+  assert.equal(result.state.players[0].hand[0]?.instanceId, technique.instanceId);
 });
 
 test('SAME_TARGET uses one click; SELF, RANDOM and ALL never open targeting', () => {

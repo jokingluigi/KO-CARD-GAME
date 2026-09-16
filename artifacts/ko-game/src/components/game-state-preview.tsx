@@ -2,9 +2,8 @@ import React from 'react';
 import { CardRenderer } from './card-renderer';
 import {
   getCardDefinition,
-  getActiveAbility,
+  getLegalActions,
   canSelectAsAttacker,
-  canUseActiveAbility,
   isCurrentPlayer,
   canUseChampionAbility,
   getPlayerSurvivalHealth,
@@ -280,6 +279,12 @@ export function GameStatePreview({
   const selectedHandCard = me.hand.find((card) => card.instanceId === selectedCardId);
     
   const canEndTurn = isCurrentPlayer(state, me.id);
+  const legalActions = getLegalActions(state, me.id);
+  const legalActiveCardIds = new Set(
+    legalActions
+      .filter((action) => action.type === 'USE_ACTIVE')
+      .map((action) => action.cardInstanceId),
+  );
   const canUseChampion = canUseChampionAbility(state, me.id);
   const mySurvivalHealth = getPlayerSurvivalHealth(state, me.id);
   const opponentSurvivalHealth = getPlayerSurvivalHealth(state, opp.id);
@@ -395,10 +400,20 @@ export function GameStatePreview({
   }
 
   function handleAttackCardTarget(cardId: string) {
+    if (effectTargeting) {
+      if (validEffectTargetIds.has(cardId)) onEffectTarget(cardId);
+      return;
+    }
+    if (!selectedAttackerId) return;
     onAttackWrestler(cardId, attackGeometry(boardCardRefs.current.get(cardId) ?? null));
   }
 
   function handleAttackChampion() {
+    if (effectTargeting) {
+      if (validEffectTargetIds.has(opp.id)) onEffectTarget(opp.id);
+      return;
+    }
+    if (!selectedAttackerId || opponentChampionProtected) return;
     onAttackPlayer(attackGeometry(championRef.current));
   }
 
@@ -477,7 +492,17 @@ export function GameStatePreview({
                         ? 'cursor-crosshair border-red-500 shadow-[0_0_15px_rgba(239,68,68,0.4)]'
                         : 'border-red-900'
                      } ${activePresentationChampionId === opp.champion?.id || activePresentationCue?.playerId === opp.id ? 'presentation-card-pulse' : ''}`}
-                      onClick={effectTargeting ? () => onEffectTarget(opp.id) : selectedAttackerId && !opponentChampionProtected ? handleAttackChampion : undefined}
+                       role="button"
+                       tabIndex={0}
+                       aria-label="상대 챔피언 대상"
+                       onClick={effectTargeting
+                         ? (validEffectTargetIds.has(opp.id) ? () => onEffectTarget(opp.id) : undefined)
+                         : selectedAttackerId && !opponentChampionProtected ? handleAttackChampion : undefined}
+                       onKeyDown={(event) => {
+                         if (event.key !== 'Enter' && event.key !== ' ') return;
+                         event.preventDefault();
+                         handleAttackChampion();
+                       }}
                  >
                    {opponentChampionPortrait && (
                      <img src={opponentChampionPortrait} alt="" className="absolute inset-0 h-full w-full object-cover" />
@@ -595,11 +620,17 @@ export function GameStatePreview({
                     targetingActive={!!effectTargeting}
                     presentationActive={activePresentationCardId === card?.instanceId}
                     targetable={!!card && !!effectTargeting && validEffectTargetIds.has(card.instanceId)}
-                     activeReady={!!card && getActiveAbility(card) !== undefined}
-                     activeUsable={!!card && canUseActiveAbility(state, me.id, card.instanceId)}
+                     activeReady={!!card && legalActiveCardIds.has(card.instanceId)}
+                     activeUsable={!!card && legalActiveCardIds.has(card.instanceId)}
                      onUseActive={() => onUseActive(card!.instanceId)}
                    onClick={(idOrIdx) => {
-                     if (typeof idOrIdx === 'string') onSelectAttacker(idOrIdx);
+                      if (typeof idOrIdx === 'string') {
+                        if (effectTargeting) {
+                          if (validEffectTargetIds.has(idOrIdx)) onEffectTarget(idOrIdx);
+                        } else {
+                          onSelectAttacker(idOrIdx);
+                        }
+                      }
                       else handlePlaySlot(idOrIdx as BoardSlotIndex);
                    }}
                  />
@@ -778,7 +809,20 @@ export function GameStatePreview({
             {/* Player Stats & Champion */}
              <div className="ko-player-info z-[95] flex w-[180px] shrink-0 flex-col gap-1 md:w-48 md:gap-2">
               <div className="flex items-start gap-2 md:gap-3">
-                  <div ref={playerChampionRef} onClick={effectTargeting ? () => onEffectTarget(me.id) : undefined} className={`ko-player-champion relative flex h-28 w-20 shrink-0 flex-col items-center justify-center overflow-hidden rounded-sm border-2 bg-neutral-900 md:h-40 md:w-28 ${effectTargeting && validEffectTargetIds.has(me.id) ? 'cursor-crosshair border-amber-400 shadow-[0_0_15px_rgba(251,191,36,0.5)]' : 'border-blue-600 shadow-[0_0_15px_rgba(37,99,235,0.2)]'} ${activePresentationChampionId === me.champion?.id || activePresentationCue?.playerId === me.id ? 'presentation-card-pulse' : ''}`}>
+                  <div
+                    ref={playerChampionRef}
+                    role="button"
+                    tabIndex={0}
+                    aria-label="내 챔피언 대상"
+                    onClick={effectTargeting && validEffectTargetIds.has(me.id) ? () => onEffectTarget(me.id) : undefined}
+                    onKeyDown={(event) => {
+                      if ((event.key === 'Enter' || event.key === ' ') && effectTargeting && validEffectTargetIds.has(me.id)) {
+                        event.preventDefault();
+                        onEffectTarget(me.id);
+                      }
+                    }}
+                    className={`ko-player-champion relative flex h-28 w-20 shrink-0 flex-col items-center justify-center overflow-hidden rounded-sm border-2 bg-neutral-900 md:h-40 md:w-28 ${effectTargeting && validEffectTargetIds.has(me.id) ? 'cursor-crosshair border-amber-400 shadow-[0_0_15px_rgba(251,191,36,0.5)]' : 'border-blue-600 shadow-[0_0_15px_rgba(37,99,235,0.2)]'} ${activePresentationChampionId === me.champion?.id || activePresentationCue?.playerId === me.id ? 'presentation-card-pulse' : ''}`}
+                  >
                    {playerChampionPortrait && (
                      <img src={playerChampionPortrait} alt="" className="absolute inset-0 h-full w-full object-cover" />
                    )}

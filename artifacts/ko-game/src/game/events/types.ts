@@ -26,6 +26,15 @@ export type EventSubject =
   | { type: 'CHAMPION'; championId: string }
   | { type: 'SYSTEM' };
 
+/** Serializable provenance carried through nested effect resolution. */
+export interface EventAttribution {
+  sourcePlayerId: string;
+  sourceActionType: string;
+  sourceChampionDefinitionId?: string;
+  sourceAbilityId?: string;
+  sourceEffectId?: string;
+}
+
 export interface GameEvent {
   type: GameEventType;
   playerId?: string;
@@ -38,6 +47,7 @@ export interface GameEvent {
   amount?: number;
   boardSlot?: 0 | 1 | 2 | 3;
   tags?: string[];
+  sourceContext?: EventAttribution;
 }
 
 export interface EnterFieldEvent extends GameEvent {

@@ -1,7 +1,7 @@
 import type { ActionResult } from '../actions/types';
 import { actionFailure, actionSuccess } from '../actions/types';
 import type { CardInstanceId } from '../cards/types';
-import { resolveTriggeredAbilities } from '../effects/effect-engine';
+import { hasMandatoryPlayerChoice, resolveTriggeredAbilities } from '../effects/effect-engine';
 import type { GameState } from '../types/game-state';
 import { validateCurrentPlayer } from './turn-system';
 
@@ -16,6 +16,18 @@ export function playTechniqueFromHand(
   const card = player?.hand.find((candidate) => candidate.instanceId === cardInstanceId);
   if (!player || !card || card.cardType !== 'TECHNIQUE') return actionFailure(state, 'CARD_NOT_IN_HAND', '사용할 수 없는 기술입니다.');
   if (player.currentGold < card.currentCost) return actionFailure(state, 'NOT_ENOUGH_GOLD', '골드가 부족합니다.');
+  const body = card.abilities.filter((ability) => ability.trigger === 'ACTIVE').flatMap((ability) => ability.effects);
+  if (hasMandatoryPlayerChoice(state, playerId, card, body)) {
+    return actionFailure(state, 'NO_VALID_TARGET', '선택 가능한 대상이 없습니다.');
+  }
+  for (const source of player.board.filter((entry): entry is NonNullable<typeof entry> => Boolean(entry))) {
+    const listenerEffects = source.abilities
+      .filter((ability) => ability.trigger === 'TECHNIQUE_CAST')
+      .flatMap((ability) => ability.effects);
+    if (hasMandatoryPlayerChoice(state, playerId, source, listenerEffects)) {
+      return actionFailure(state, 'NO_VALID_TARGET', '선택 가능한 대상이 없습니다.');
+    }
+  }
   const paid: GameState = {
     ...state,
     players: state.players.map((candidate) => candidate.id !== playerId ? candidate : {
@@ -34,7 +46,6 @@ export function playTechniqueFromHand(
         playedFromHand: true, baseCost: card.baseCost ?? card.currentCost,
       }), paid)
     : paid;
-  const body = card.abilities.filter((ability) => ability.trigger === 'ACTIVE').flatMap((ability) => ability.effects);
   const resolved = body.length
     ? resolveTriggeredAbilities(spellListeners, playerId, { ...card, abilities: [{ trigger: 'ACTIVE', effects: body }] }, 'ACTIVE')
     : spellListeners;

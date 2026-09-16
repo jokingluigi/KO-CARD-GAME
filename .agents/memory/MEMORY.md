@@ -44,3 +44,4 @@
 - [Unified effect implementation prompt](unified-effect-prompt-boundary.md) — reanalyze live cards/Champion slots against the current registry; Champion Tokens remain CardDefinition references.
 - [AI action boundary](ai-action-boundary.md) — AI turns must choose from legal engine actions, execute through the dispatcher, and evaluate only its own hand plus public board state.
 - [Test account economy boundary](test-account-economy-boundary.md) — test-only unlimited ownership and balances are server-derived, development-gated, and never alter match Gold or normal-user economics.
+- [Attributed quest conditions](attributed-quest-conditions.md) — quests that describe a specific ability source must persist sourceActionType and match serialized event attribution.

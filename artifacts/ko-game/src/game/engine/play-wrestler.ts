@@ -26,7 +26,7 @@ export function playWrestlerFromHand(
   const player = state.players.find((candidate) => candidate.id === playerId);
 
   if (!player) {
-    throw new Error(`플레이어를 찾을 수 없습니다: ${playerId}`);
+    return actionFailure(state, 'INVALID_PLAYER', '플레이어를 찾을 수 없습니다.');
   }
 
   const card = player.hand.find(

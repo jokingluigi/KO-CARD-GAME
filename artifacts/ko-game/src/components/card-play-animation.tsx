@@ -23,6 +23,8 @@ export function CardPlayAnimation({
   onComplete: () => void;
 }) {
   const completedRef = useRef(false);
+  const onCompleteRef = useRef(onComplete);
+  onCompleteRef.current = onComplete;
   const definition = getCardDefinition(animation.card.definitionId);
   const source = animation.geometry.source;
   const target = animation.kind === "WRESTLER" ? animation.geometry.target : undefined;
@@ -42,15 +44,15 @@ export function CardPlayAnimation({
     const timeoutId = window.setTimeout(() => {
       if (completedRef.current) return;
       completedRef.current = true;
-      onComplete();
+      onCompleteRef.current();
     }, animationDuration(animation) + 120);
     return () => window.clearTimeout(timeoutId);
-  }, [animation, onComplete]);
+  }, [animation]);
 
   function complete() {
     if (completedRef.current) return;
     completedRef.current = true;
-    onComplete();
+    onCompleteRef.current();
   }
 
   const rarity = definition?.rarity ?? "NORMAL";

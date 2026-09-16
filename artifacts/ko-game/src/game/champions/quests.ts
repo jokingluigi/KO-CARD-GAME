@@ -7,8 +7,9 @@ import { resolvePendingEffects } from '../effects/effect-engine';
 
 function matchesQuestEvent(
   event: GameEvent,
-  quest: Pick<ChampionQuest, 'trackedEvent' | 'cardType'>,
+  quest: Pick<ChampionQuest, 'trackedEvent' | 'cardType' | 'sourceActionType'>,
   playerId: string,
+  championId: string,
 ): boolean {
   if (event.playerId !== playerId) return false;
   // The analyzer keeps the human-facing WRESTLER_RETIRED condition for
@@ -16,7 +17,14 @@ function matchesQuestEvent(
   const eventMatches = quest.trackedEvent === 'WRESTLER_RETIRED'
     ? event.type === 'CARD_RETIRED'
     : event.type === quest.trackedEvent;
-  return eventMatches && (!quest.cardType || event.cardType === quest.cardType);
+  if (!eventMatches || (quest.cardType && event.cardType !== quest.cardType)) return false;
+  if (quest.sourceActionType) {
+    return event.sourceContext?.sourceActionType === quest.sourceActionType &&
+      event.sourceContext.sourcePlayerId === playerId &&
+      (!quest.sourceActionType.startsWith('USE_CHAMPION_ABILITY') ||
+        event.sourceContext.sourceChampionDefinitionId === championId);
+  }
+  return true;
 }
 
 export function processChampionQuestEvents(
@@ -33,7 +41,7 @@ export function processChampionQuestEvents(
 
     const progress = newEvents.filter(
       (event) =>
-        matchesQuestEvent(event, quest, originalPlayer.id),
+        matchesQuestEvent(event, quest, originalPlayer.id, champion.id),
     ).length;
     if (progress === 0) continue;
 

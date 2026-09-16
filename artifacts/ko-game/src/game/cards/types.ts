@@ -23,6 +23,17 @@ export interface ImageDisplaySettings {
   imagePositionY: number;
 }
 
+export type CardStatHistoryEntry = {
+  stat: 'attack' | 'health' | 'maxHealth' | 'currentHealth' | 'cost';
+  before: number;
+  after: number;
+  delta: number;
+  sourceDefinitionId?: string;
+  sourceName?: string;
+  sourceEffectId?: string;
+  turnNumber?: number;
+};
+
 export const DEFAULT_IMAGE_DISPLAY_SETTINGS: ImageDisplaySettings = {
   imageDisplayMode: 'COVER',
   imageScale: 1,
@@ -125,6 +136,7 @@ export interface CardInstance {
   tags?: string[];
   /** Serializable base copies held by this card's CAPTURE action. */
   capturedCards?: CapturedCard[];
+  statHistory?: CardStatHistoryEntry[];
 }
 
 export interface CapturedCard {

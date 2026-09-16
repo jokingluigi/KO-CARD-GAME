@@ -54,6 +54,7 @@ import {
 const TURN_TIME_LIMIT_SECONDS = 90;
 const ENTRANCE_EFFECT_DELAY_MS = 180;
 const RESULT_SCREEN_SETTLE_DELAY_MS = 320;
+const AI_ACTION_DELAY_MS = 1000;
 const BGM_MUTE_STORAGE_KEY = 'ko-game-bgm-muted';
 
 function actualAttackDamage(
@@ -152,6 +153,8 @@ export default function Home() {
     media: GameMediaCatalog;
   } | null>(null);
   const aiActionRunningRef = useRef(false);
+  const presentationBusyRef = useRef(false);
+  const presentationIdleWaitersRef = useRef(new Set<() => void>());
   const [presentationBusy, setPresentationBusy] = useState(false);
   const [matchResultVisible, setMatchResultVisible] = useState(false);
   const turnKey = `${gameState.turn}:${gameState.activePlayerId ?? 'none'}`;
@@ -423,6 +426,12 @@ export default function Home() {
     let cancelled = false;
     aiActionRunningRef.current = true;
     const wait = (milliseconds: number) => new Promise<void>((resolve) => window.setTimeout(resolve, milliseconds));
+    const waitForPresentationIdle = () => {
+      if (!presentationBusyRef.current) return Promise.resolve();
+      return new Promise<void>((resolve) => {
+        presentationIdleWaitersRef.current.add(resolve);
+      });
+    };
 
     void (async () => {
       let workingState = gameState;
@@ -438,7 +447,11 @@ export default function Home() {
           );
         }
         const action = chooseBestAction(workingState, legalActions, workingState.players[1]!.id);
-        await wait(520);
+        // Let the state render mount its presentation first. The next
+        // decision is intentionally made only after that presentation settles.
+        await wait(0);
+        await waitForPresentationIdle();
+        await wait(AI_ACTION_DELAY_MS);
         if (cancelled) break;
         const result = executeAction(workingState, action);
         if (!result.success) {
@@ -455,7 +468,8 @@ export default function Home() {
         workingState.status === 'IN_PROGRESS' &&
         workingState.activePlayerId === workingState.players[1]?.id
       ) {
-        await wait(420);
+        await waitForPresentationIdle();
+        await wait(AI_ACTION_DELAY_MS);
         if (!cancelled) {
           const ended = executeAction(workingState, {
             type: 'END_TURN',
@@ -471,16 +485,20 @@ export default function Home() {
       cancelled = true;
       aiActionRunningRef.current = false;
     };
-  }, [gameState.activePlayerId, gameState.status, isAiMatch, aiMatchStarted, matchReady]);
+  }, [gameState.activePlayerId, gameState.status, isAiMatch, aiMatchStarted, matchReady, presentationBusy]);
 
   useEffect(() => {
+    if (!matchReady || (isAiMatch && !aiMatchStarted)) {
+      audioManager.stopGameAudio();
+      return;
+    }
     const bgm = mediaCatalog.bgms.find((item) => item.id === gameState.bgmId);
     if (bgm) {
       audioManager.playBgm(bgm.assetUrl, bgm.volume);
     } else {
       audioManager.stopBgm();
     }
-  }, [gameState.bgmId, mediaCatalog.bgms]);
+  }, [gameState.bgmId, mediaCatalog.bgms, isAiMatch, aiMatchStarted, matchReady]);
 
   useEffect(() => {
     const latestChampion = gameState.players
@@ -504,7 +522,9 @@ export default function Home() {
   }, [bgmMuted]);
 
   useEffect(() => () => {
-    audioManager.stopBgm();
+    audioManager.stopGameAudio();
+    for (const resolve of presentationIdleWaitersRef.current) resolve();
+    presentationIdleWaitersRef.current.clear();
   }, []);
 
   useEffect(() => {
@@ -658,7 +678,10 @@ export default function Home() {
   function handleSelectCard(cardInstanceId: string) {
     if (!matchReady || gameState.status !== 'IN_PROGRESS' || playAnimation || attackAnimation) return;
     if (gameState.targetingState?.active) {
-      return handleEffectTarget(cardInstanceId);
+      if (gameState.targetingState.validTargetIds.includes(cardInstanceId)) {
+        return handleEffectTarget(cardInstanceId);
+      }
+      return;
     }
     setSelectedAttackerId(null);
     setSelectedCardId((current) =>
@@ -669,7 +692,12 @@ export default function Home() {
 
   function handleSelectAttacker(cardInstanceId: string) {
     if (!matchReady || gameState.status !== 'IN_PROGRESS' || playAnimation || attackAnimation) return;
-    if (gameState.targetingState?.active) return handleEffectTarget(cardInstanceId);
+    if (gameState.targetingState?.active) {
+      if (gameState.targetingState.validTargetIds.includes(cardInstanceId)) {
+        handleEffectTarget(cardInstanceId);
+      }
+      return;
+    }
     setSelectedCardId(null);
     setSelectedAttackerId((current) =>
       current === cardInstanceId ? null : cardInstanceId,
@@ -778,6 +806,10 @@ export default function Home() {
   }
   function handleEffectTarget(targetId: string) {
     if (!matchReady || gameState.status !== 'IN_PROGRESS') return;
+    if (!gameState.targetingState?.active || !gameState.targetingState.validTargetIds.includes(targetId)) {
+      setPlayError('선택할 수 없는 대상입니다.');
+      return;
+    }
     const before = gameState;
     const next = processChampionQuestEvents(before, selectEffectTarget(before, targetId));
     if (next === before) {
@@ -874,6 +906,15 @@ export default function Home() {
   function handleAttackAnimationComplete() {
     setAttackAnimation(null);
     setAttackImpactTriggered(false);
+  }
+
+  function handlePresentationBusyChange(busy: boolean) {
+    presentationBusyRef.current = busy;
+    setPresentationBusy(busy);
+    if (!busy) {
+      for (const resolve of presentationIdleWaitersRef.current) resolve();
+      presentationIdleWaitersRef.current.clear();
+    }
   }
 
   function handleSelectSlot(slot: BoardSlot, geometry?: CardPlayGeometry) {
@@ -1084,7 +1125,7 @@ export default function Home() {
       onUseChampionAbility={handleUseChampionAbility}
       onCancelEffectTargeting={handleCancelEffectTargeting}
       onEffectTarget={handleEffectTarget}
-       onPresentationBusyChange={setPresentationBusy}
+       onPresentationBusyChange={handlePresentationBusyChange}
       onReturnToAdmin={isAdminTestMatch ? () => {
         window.location.href = `${import.meta.env.BASE_URL.replace(/\/$/, '')}/admin`;
       } : undefined}

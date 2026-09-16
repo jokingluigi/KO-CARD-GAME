@@ -1,7 +1,7 @@
 import type { CardInstance } from '../cards/types';
 import type { CardDefinition } from '../cards/types';
 import type { ChampionState } from '../champions/types';
-import type { GameEvent } from '../events/types';
+import type { EventAttribution, GameEvent } from '../events/types';
 import type { CardEffect, QueuedStructuredEffect } from '../effects/types';
 
 export type Board = [
@@ -84,6 +84,7 @@ export interface GameState {
       damagedTargetInstanceId?: string;
       healthBefore?: number;
       healthAfter?: number;
+      sourceContext?: EventAttribution;
     };
     /** Parent resolution frame. A child trigger always resolves before this. */
     continuation?: GameState['targetingState'];

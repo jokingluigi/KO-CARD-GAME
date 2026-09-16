@@ -245,6 +245,7 @@ export function Inspectable({
 export function CardInspectContent({ card }: { card: CardInstance }) {
   const definition = getCardDefinition(card.definitionId);
   const keywords = card.keywords;
+  const numericChanges = getNumericChanges(card);
   return (
     <div>
       <div className="mb-1 text-[10px] font-bold tracking-widest text-blue-300">
@@ -266,13 +267,30 @@ export function CardInspectContent({ card }: { card: CardInstance }) {
         className="mb-3 w-full"
         imageDisplaySettings={definition}
       />
-      {(card.currentCost !== definition?.cost ||
-        card.currentAttack !== definition?.attack ||
-        card.currentHealth !== definition?.health) && (
-        <div className="mb-3 text-[10px] text-neutral-500">
-          기본 수치: {definition?.cost ?? 0}G / 공격 {definition?.attack ?? 0} / 체력 {definition?.health ?? 0}
-        </div>
-      )}
+      <div className="mb-3 rounded border border-neutral-800 bg-neutral-900/70 p-2">
+        <div className="mb-1 text-[10px] font-black text-neutral-300">수치 변경</div>
+        {numericChanges.length === 0 ? (
+          <div className="text-[10px] text-neutral-600">변경 없음</div>
+        ) : (
+          <div className="max-h-32 space-y-1 overflow-y-auto pr-1">
+            {numericChanges.map((change, index) => (
+              <div key={`${change.stat}-${change.before}-${change.after}-${index}`} className="rounded border border-neutral-800 px-1.5 py-1 text-[9px] text-neutral-400">
+                <div className="flex items-center justify-between gap-2">
+                  <span className="font-bold text-neutral-300">{STAT_LABELS[change.stat]}</span>
+                  <span className={change.after >= change.before ? 'text-emerald-300' : 'text-red-300'}>
+                    {change.before} → {change.after}
+                  </span>
+                </div>
+                <div className="mt-0.5 flex flex-wrap gap-x-2 text-[8px] text-neutral-600">
+                  <span>{change.delta >= 0 ? '+' : ''}{change.delta}</span>
+                  {change.sourceName && <span>출처: {change.sourceName}</span>}
+                  {change.turnNumber !== undefined && <span>턴 {change.turnNumber}</span>}
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
       {keywords.length > 0 && (
         <div className="space-y-2">
           {keywords.map((keyword) => (
@@ -291,6 +309,74 @@ export function CardInspectContent({ card }: { card: CardInstance }) {
       {card.isStunned && <div className="mt-1 text-xs font-bold text-yellow-300">기절 상태</div>}
     </div>
   );
+}
+
+export type NumericChangeStat = 'attack' | 'health' | 'maxHealth' | 'currentHealth' | 'cost';
+
+export interface NumericChange {
+  stat: NumericChangeStat;
+  before: number;
+  after: number;
+  delta: number;
+  sourceDefinitionId?: string;
+  sourceName?: string;
+  sourceEffectId?: string;
+  turnNumber?: number;
+}
+
+const STAT_LABELS: Record<NumericChangeStat, string> = {
+  attack: '공격력',
+  health: '체력',
+  maxHealth: '최대 체력',
+  currentHealth: '현재 체력',
+  cost: '비용',
+};
+
+/**
+ * Card instances from older snapshots do not have history yet. The generic
+ * baseline rows still make every persisted stat change visible; newer
+ * snapshots may provide statHistory entries with effect/source attribution.
+ */
+export function getNumericChanges(card: CardInstance): NumericChange[] {
+  const definition = getCardDefinition(card.definitionId);
+  const baseline = {
+    attack: card.baseAttack ?? definition?.attack ?? card.currentAttack,
+    health: card.baseHealth ?? definition?.health ?? card.maxHealth,
+    maxHealth: card.baseHealth ?? definition?.health ?? card.maxHealth,
+    cost: card.baseCost ?? definition?.cost ?? card.currentCost,
+  };
+  const history = (card as CardInstance & { statHistory?: NumericChange[] }).statHistory ?? [];
+  const changes = history.filter((entry) => entry.before !== entry.after);
+  const has = new Set(changes.map((entry) => entry.stat));
+  const inferred: NumericChange[] = [];
+  const add = (stat: NumericChangeStat, before: number, after: number, sourceName = '기본 수치') => {
+    if (before !== after && !has.has(stat)) {
+      inferred.push({
+        stat,
+        before,
+        after,
+        delta: after - before,
+        sourceDefinitionId: definition?.id,
+        sourceName,
+      });
+    }
+  };
+  add('cost', baseline.cost, card.currentCost);
+  add('attack', baseline.attack, card.currentAttack);
+  add('maxHealth', baseline.maxHealth, card.maxHealth);
+  if (card.currentHealth === card.maxHealth) {
+    add('health', baseline.health, card.currentHealth);
+  }
+  if (card.currentHealth !== card.maxHealth && !has.has('currentHealth')) {
+    inferred.push({
+      stat: 'currentHealth',
+      before: card.maxHealth,
+      after: card.currentHealth,
+      delta: card.currentHealth - card.maxHealth,
+      sourceName: '피해/회복',
+    });
+  }
+  return [...changes, ...inferred].sort((left, right) => (right.turnNumber ?? -1) - (left.turnNumber ?? -1));
 }
 
 function rewardText(champion: ChampionState): string {

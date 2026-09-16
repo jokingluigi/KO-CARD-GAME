@@ -169,6 +169,12 @@ class AudioManager {
     this.stopBaseMusic();
   }
 
+  /** Clears every game-owned music/effect handle when leaving a match route. */
+  stopGameAudio() {
+    this.stopBgm();
+    this.stopAttack();
+  }
+
   stop() {
     this.stopTemporary(false);
     this.queue = [];

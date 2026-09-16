@@ -98,3 +98,12 @@ test('잘못된 공격 대상은 상태를 변경하지 않는다', () => {
   assert.equal(started.players[0].board[0]?.attacksUsedThisTurn, 0);
   assert.equal(started.players[0].board[0]?.currentHealth, 2);
 });
+
+test('존재하지 않는 플레이어의 카드 플레이는 throw 대신 실패하고 상태를 유지한다', () => {
+  const started = startGame(createInitialGameState(), fixedRandom);
+  const card = started.players[0].hand[0];
+  assert.ok(card);
+  const result = playWrestlerFromHand(started, 'missing-player', card.instanceId, 0);
+  assert.equal(result.success, false);
+  assert.equal(result.state, started);
+});

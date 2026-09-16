@@ -227,7 +227,7 @@ test('Champion의 SUMMON 능력과 카드 유형 Quest 조건 및 강화 능력�
       { type: 'CARD_GENERATED' as const, playerId: 'player-1', cardType: 'TECHNIQUE' as const },
     ],
   });
-  assert.equal(wrongType.players[0].champion?.questProgress, 0);
+  assert.equal(wrongType.players[0].champion?.questProgress, 1);
 
   const generatedEvents = Array.from({ length: 8 }, () => ({
     type: 'CARD_GENERATED' as const,
@@ -533,4 +533,64 @@ test('분석기의 WRESTLER_RETIRED 조건은 런타임 CARD_RETIRED 이벤트�
 
   assert.equal(completed.players[0].champion?.questProgress, 1);
   assert.equal(completed.players[0].champion?.questCompleted, true);
+});
+
+test('Champion Ability 귀속 RETIRE만 sourceActionType 퀘스트를 진행한다', () => {
+  const started = startGame(createInitialGameState(), fixedRandom);
+  const withFilteredQuest = {
+    ...started,
+    players: started.players.map((player) =>
+      player.id === 'player-1' && player.champion?.quest
+        ? {
+            ...player,
+            champion: {
+              ...player.champion,
+              questProgress: 0,
+              quest: {
+                ...player.champion.quest,
+                trackedEvent: 'WRESTLER_RETIRED' as const,
+                sourceActionType: 'USE_CHAMPION_ABILITY',
+                requiredProgress: 1,
+              },
+            },
+          }
+        : player,
+    ),
+  };
+  const unrelated = processChampionQuestEvents(withFilteredQuest, {
+    ...withFilteredQuest,
+    events: [
+      ...withFilteredQuest.events,
+      {
+        type: 'CARD_RETIRED' as const,
+        playerId: 'player-1',
+        cardInstanceId: 'unrelated',
+        boardSlot: 0,
+        sourceContext: {
+          sourcePlayerId: 'player-1',
+          sourceActionType: 'CARD_EFFECT',
+        },
+      },
+    ],
+  });
+  assert.equal(unrelated.players[0].champion?.questProgress, 0);
+
+  const attributed = processChampionQuestEvents(unrelated, {
+    ...unrelated,
+    events: [
+      ...unrelated.events,
+      {
+        type: 'CARD_RETIRED' as const,
+        playerId: 'player-1',
+        cardInstanceId: 'attributed',
+        boardSlot: 0,
+        sourceContext: {
+          sourcePlayerId: 'player-1',
+          sourceActionType: 'USE_CHAMPION_ABILITY',
+          sourceChampionDefinitionId: unrelated.players[0].champion!.id,
+        },
+      },
+    ],
+  });
+  assert.equal(attributed.players[0].champion?.questProgress, 1);
 });

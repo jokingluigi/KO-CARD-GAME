@@ -1089,6 +1089,60 @@
   }
 }
 
+@media (min-width: 769px) {
+  .ko-game-shell {
+    min-height: 100dvh;
+    height: 100dvh;
+    overflow: hidden;
+  }
+
+  .ko-game-stage {
+    width: 95vw;
+    max-width: none;
+    min-height: 92dvh;
+    height: 96dvh;
+    padding-top: clamp(12px, 1.8vh, 24px);
+  }
+
+  .ko-opponent-header {
+    height: clamp(124px, 14vh, 168px);
+  }
+
+  .ko-board-area {
+    gap: clamp(18px, 3vh, 34px);
+    padding-block: clamp(12px, 2vh, 24px);
+  }
+
+  .ko-board-cards {
+    gap: clamp(10px, 1.25vw, 24px);
+  }
+
+  .ko-board-slot {
+    width: clamp(112px, 7.1vw, 150px) !important;
+    height: clamp(157px, 15.8vh, 210px) !important;
+  }
+
+  .ko-player-footer {
+    min-height: clamp(196px, 24vh, 250px);
+    padding-bottom: clamp(10px, 1.5vh, 20px);
+  }
+
+  .ko-hand-card--small {
+    width: clamp(90px, 5.4vw, 116px);
+    height: clamp(126px, 13.5vh, 162px);
+  }
+
+  .ko-hand-card--medium {
+    width: clamp(104px, 6.2vw, 132px);
+    height: clamp(146px, 15.3vh, 184px);
+  }
+
+  .ko-hand-card--regular {
+    width: clamp(118px, 6.9vw, 148px);
+    height: clamp(166px, 17.2vh, 206px);
+  }
+}
+
 /* Deck editor — a taped-up preparation room, not a back-office screen. */
 .ko-decks {
   min-height: 100dvh;

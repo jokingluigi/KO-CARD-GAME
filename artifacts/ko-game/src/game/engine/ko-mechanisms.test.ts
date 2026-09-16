@@ -146,8 +146,8 @@ test('KO mechanisms: an aggregate summon uses zero stats when no generated board
   });
   const result = enterField(state(), 'player-1', source, 0);
   const zombie = player(result).board.find((entry) => entry?.definitionId === 'empty-zombie');
-  assert.equal(zombie?.currentAttack, 0);
-  assert.equal(zombie?.currentHealth, 0);
+  assert.equal(zombie, undefined);
+  assert.equal(player(result).graveyard.some((entry) => entry.definitionId === 'empty-zombie'), true);
 });
 
 test('KO mechanisms: silence resets base state and dodge charges are represented compatibly', () => {
