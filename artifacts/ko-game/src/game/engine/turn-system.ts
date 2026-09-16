@@ -1,4 +1,5 @@
 import type { GameState, PlayerState } from '../types/game-state';
+import type { CardInstance } from '../cards/types';
 import type { GameMediaCatalog } from '../media';
 import type { ActionResult } from '../actions/types';
 import { actionFailure, actionSuccess } from '../actions/types';
@@ -200,12 +201,18 @@ export function endTurn(
     activePlayerId: nextPlayer.id,
     players: state.players.map((player) => {
       if (player.id === actingPlayerId) {
+        const expireTemporaryCost = (card: CardInstance) =>
+          card.temporaryCostUntilTurn === state.turn
+            ? { ...card, currentCost: card.baseCost ?? card.currentCost, temporaryCostUntilTurn: undefined }
+            : card;
         return {
           ...player,
           currentGold: 0,
           board: player.board.map((card) =>
-            card ? { ...card, isStunned: false } : null,
+            card ? { ...expireTemporaryCost(card), isStunned: false } : null,
           ) as typeof player.board,
+          hand: player.hand.map(expireTemporaryCost),
+          deck: player.deck.map(expireTemporaryCost),
         };
       }
 

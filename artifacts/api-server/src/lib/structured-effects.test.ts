@@ -127,6 +127,22 @@ test("필수 카드 문장을 안전한 구조화 효과로 분석한다", () =>
   }
 });
 
+test("무덤 부활은 REVIVE와 비용 상한을 구조화한다", () => {
+  const result = analyzeEffectText("등장: 내 무덤에서 비용이 3 이하인 선수 카드 하나를 무작위로 부활시킵니다.");
+  assert.equal(result.status, "success");
+  assert.deepEqual(result.effects.map((effect) => effect.action), ["REVIVE"]);
+  assert.deepEqual(result.effects[0]?.target, {
+    zone: "GRAVEYARD",
+    owner: "SELF",
+    cardType: "WRESTLER",
+    selection: "RANDOM",
+    count: 1,
+    randomScope: "STANDARD",
+    filter: { maxCost: 3 },
+  });
+  assert.equal(isStructuredEffects({ effects: result.effects }), true);
+});
+
 test("판도라식 자신이 선택한 대상은 선택 주체와 대상 소유자를 혼동하지 않는다", () => {
   const result = analyzeEffectText("등장: 자신이 선택한 선수를 침묵시키고 파괴합니다.");
 
@@ -307,7 +323,7 @@ test("현재 registry에서 제공하는 Effect Library 메타데이터를 노�
     { attackMultiplier: "number (0..10)", healthMultiplier: "number (0..10)" },
   );
   assert.deepEqual(library.targetResolvers[0]?.config.defaultCardScope, ["HAND", "DECK", "BOARD"]);
-  assert.deepEqual(library.targetResolvers[0]?.config.filters, ["GENERATED", "MIN_COST", "TOKEN", "NON_CHAMPION_TOKEN", "EXCLUDE_SOURCE"]);
+  assert.deepEqual(library.targetResolvers[0]?.config.filters, ["GENERATED", "MIN_COST", "MAX_COST", "TOKEN", "NON_CHAMPION_TOKEN", "EXCLUDE_SOURCE"]);
   assert.deepEqual(library.targetResolvers[0]?.config.randomScope, ["STANDARD", "FULL"]);
   assert.ok(library.actions.some((action) => action.name === "SET_STATS"));
   assert.deepEqual(

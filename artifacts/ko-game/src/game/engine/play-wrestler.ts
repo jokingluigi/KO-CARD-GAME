@@ -7,7 +7,7 @@ import { isBoardFull } from './board-position';
 import { enterField } from './enter-field';
 import { validateCurrentPlayer } from './turn-system';
 import { processChampionQuestEvents } from '../champions/quests';
-import { hasMandatoryPlayerChoice, resolveQueuedEffectsForPlayedWrestler } from '../effects/effect-engine';
+import { hasMandatoryPlayerChoice, resolveBoardListeners, resolveQueuedEffectsForPlayedWrestler } from '../effects/effect-engine';
 
 export function playWrestlerFromHand(
   state: GameState,
@@ -111,6 +111,12 @@ export function playWrestlerFromHand(
       type: 'PLAYER',
       playerId,
     }, undefined, 'PLAY_FROM_HAND');
-  const resolvedState = resolveQueuedEffectsForPlayedWrestler(enteredState, playerId, cardInstanceId);
+  const playedListeners = resolveBoardListeners(enteredState, playerId, 'CARD_PLAYED_THIS_TURN', {
+    chosenTargetInstanceIds: [cardInstanceId],
+    playedFromHand: true,
+    playedCardGenerated: card.isGenerated === true,
+    playedCardType: card.cardType,
+  });
+  const resolvedState = resolveQueuedEffectsForPlayedWrestler(playedListeners, playerId, cardInstanceId);
   return actionSuccess(processChampionQuestEvents(state, resolvedState));
 }

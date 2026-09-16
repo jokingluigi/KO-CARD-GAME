@@ -104,6 +104,7 @@ export interface CardInstance {
   definitionId: CardDefinitionId;
   cardType?: 'WRESTLER' | 'TECHNIQUE';
   currentCost: number;
+  temporaryCostUntilTurn?: number;
   /** Immutable values copied from the definition, retained for runtime checks. */
   baseCost?: number;
   baseAttack?: number;

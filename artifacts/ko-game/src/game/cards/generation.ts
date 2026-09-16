@@ -28,6 +28,7 @@ export interface RandomCardPoolOptions {
   filter?: {
     isGenerated?: boolean;
     minCost?: number;
+    maxCost?: number;
     tags?: string[];
     isToken?: boolean;
     isChampionToken?: boolean;
@@ -114,6 +115,7 @@ export function getRandomCardGenerationCandidates(
   return definitions.filter((definition) => {
     if (options.cardType && definition.cardType !== options.cardType) return false;
     if (options.filter?.minCost !== undefined && definition.cost < options.filter.minCost) return false;
+    if (options.filter?.maxCost !== undefined && definition.cost > options.filter.maxCost) return false;
     if (options.filter?.isGenerated !== undefined && options.filter.isGenerated !== false) {
       // Definitions are not instances. Generated is a runtime property, so a
       // generated-only pool cannot be built from card definitions.

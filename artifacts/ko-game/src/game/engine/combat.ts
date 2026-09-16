@@ -477,8 +477,15 @@ export function attack(
     : resolveTriggeredAbilities(firstAttackedResolved, attackingPlayerId, attacker, 'EXACT_ZERO_DAMAGE', {
       damagedTargetInstanceId: defender.instanceId, healthBefore: defender.currentHealth, healthAfter: 0,
     });
+  const attackerAfterDamage = findBoardCard(exactZeroResolved, attackingPlayerId, attackerInstanceId)?.card;
+  const attackSurvivedResolved = attackerAfterDamage && attackerAfterDamage.currentHealth > 0
+    ? resolveTriggeredAbilities(exactZeroResolved, attackingPlayerId, attackerAfterDamage, 'ATTACK_SURVIVED', {
+      attackerInstanceId,
+      damagedTargetInstanceId: defender.instanceId,
+    })
+    : exactZeroResolved;
   const selfAttackResolved = resolveSelfAttackTrigger(
-    exactZeroResolved, attackingPlayerId, attackerInstanceId,
+    attackSurvivedResolved, attackingPlayerId, attackerInstanceId,
   );
   const listenersResolved = resolveBoardListeners(
     selfAttackResolved, attackingPlayerId, 'OTHER_ALLY_ATTACK', { attackerInstanceId },

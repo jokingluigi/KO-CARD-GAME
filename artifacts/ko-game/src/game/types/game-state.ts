@@ -82,6 +82,7 @@ export interface GameState {
       baseCost?: number;
       attackerInstanceId?: string;
       damagedTargetInstanceId?: string;
+      attackDelta?: number;
       healthBefore?: number;
       healthAfter?: number;
       sourceContext?: EventAttribution;

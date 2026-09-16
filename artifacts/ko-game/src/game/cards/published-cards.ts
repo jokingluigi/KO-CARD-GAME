@@ -50,8 +50,8 @@ function abilitiesFor(
       const trigger = effect.trigger;
       const action = effect.action;
       const target = effect.target;
-       if (!["ENTER_FIELD", "LEAVE_FIELD", "POSITION", "ACTIVE", "CARD_RETIRED", "FIRST_ATTACKED", "SELF_ATTACK", "OTHER_ALLY_ATTACK", "TECHNIQUE_CAST", "EXACT_ZERO_DAMAGE", "TURN_START", "TURN_END"].includes(trigger as string) ||
-           !["BUFF", "SET_STATS", "DAMAGE", "HEAL", "SILENCE", "DESTROY", "RETIRE", "ADD_GOLD", "ADD_NEXT_TURN_GOLD", "DRAW", "REDUCE_COST", "INCREASE_COST", "STUN", "DISABLE_ABILITY", "WEAKEN_TO_STUN_SILENCE", "ADD_KEYWORD", "REMOVE_KEYWORD", "SWAP_STATS", "ADD_DAMAGE_MODIFIER", "SUMMON", "SUMMON_FROM_HAND", "GENERATE", "MOVE_TO_HAND", "MILL", "SPEND_GOLD_BUFF_SELF", "QUEUE_EFFECT"].includes(action as string) ||
+       if (!["ENTER_FIELD", "LEAVE_FIELD", "POSITION", "ACTIVE", "CARD_RETIRED", "FIRST_ATTACKED", "SELF_ATTACK", "OTHER_ALLY_ATTACK", "ATTACK_SURVIVED", "STAT_CHANGED", "TECHNIQUE_CAST", "EXACT_ZERO_DAMAGE", "TURN_START", "TURN_END"].includes(trigger as string) ||
+           !["BUFF", "SET_STATS", "DAMAGE", "HEAL", "SILENCE", "DESTROY", "RETIRE", "ADD_GOLD", "ADD_NEXT_TURN_GOLD", "DRAW", "REDUCE_COST", "INCREASE_COST", "STUN", "DISABLE_ABILITY", "WEAKEN_TO_STUN_SILENCE", "ADD_KEYWORD", "REMOVE_KEYWORD", "SWAP_STATS", "ADD_DAMAGE_MODIFIER", "SUMMON", "SUMMON_FROM_HAND", "REVIVE", "GENERATE", "MOVE_TO_HAND", "STEAL", "MILL", "SPEND_GOLD_BUFF_SELF", "DEPLOY_CHAMPION_TOKEN", "CAPTURE", "RELEASE_CAPTURED", "REMOVE_FROM_GAME", "SWITCH_EFFECT_BRANCH", "QUEUE_EFFECT", "ADD_AGGREGATED_ATTACK"].includes(action as string) ||
            (target !== undefined && (!target || typeof target !== "object"))) continue;
       const list = byTrigger.get(trigger as string) ?? [];
        list.push({ type: "STRUCTURED", action: action as StructuredCardEffect["action"], target: target as StructuredCardEffect["target"], values: effect.values as StructuredCardEffect["values"] });
@@ -61,9 +61,11 @@ function abilitiesFor(
        const rawConditions = (config.effects as Array<Record<string, unknown>>)
          .filter((item) => item.trigger === trigger)
          .flatMap((item) => Array.isArray(item.conditions) ? item.conditions : []);
-       const condition = rawConditions.some((item) => (item as Record<string, unknown>).type === "SOURCE_IS_ONLY_WRESTLER")
-         ? { type: "BOARD_COUNT" as const, compare: "EQ" as const, amount: 1 }
-         : undefined;
+        const condition = rawConditions.some((item) => (item as Record<string, unknown>).type === "SOURCE_IS_ONLY_WRESTLER")
+          ? { type: "BOARD_COUNT" as const, compare: "EQ" as const, amount: 1 }
+          : rawConditions.some((item) => (item as Record<string, unknown>).type === "FIRST_ATTACK_GAIN")
+            ? { type: "FIRST_ATTACK_GAIN" as const }
+            : undefined;
        return trigger === "LEAVE_FIELD"
          ? { trigger: "LEAVE_FIELD" as const, reasons: ["RETIRE" as const], effects, ...(condition ? { condition } : {}) }
          : { trigger: trigger as Exclude<CardAbility["trigger"], "LEAVE_FIELD" | "POSITION">, effects, ...(condition ? { condition } : {}) };

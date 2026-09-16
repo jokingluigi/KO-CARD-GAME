@@ -12,7 +12,7 @@ export type Target = {
   zones?: TargetZone[];
   owner: TargetOwner;
   cardType?: "WRESTLER" | "TECHNIQUE";
-  filter?: { isGenerated?: boolean; minCost?: number; isToken?: boolean; isChampionToken?: boolean; excludeSource?: boolean };
+  filter?: { isGenerated?: boolean; minCost?: number; maxCost?: number; isToken?: boolean; isChampionToken?: boolean; excludeSource?: boolean };
   selection: TargetSelection;
   count: number;
   randomScope?: RandomScope;
@@ -31,7 +31,7 @@ export type QueuedStructuredEffect = {
     damageSource?: DamageSource;
     reference?: Reference;
     referenceStat?: "CURRENT_ATTACK" | "CURRENT_HEALTH";
-    amountReference?: "HAND_COUNT" | "GRAVEYARD_WRESTLER_COUNT" | "REMAINING_GOLD" | "BOARD_WRESTLER_COUNT";
+     amountReference?: "HAND_COUNT" | "GRAVEYARD_WRESTLER_COUNT" | "REMAINING_GOLD" | "BOARD_WRESTLER_COUNT" | "LAST_ATTACK_DELTA";
     minimum?: number;
     generatedModifiers?: { cost?: number; attack?: number; health?: number; copySourceStats?: boolean };
     deckPosition?: "TOP" | "BOTTOM";
@@ -52,7 +52,9 @@ export type StructuredEffect = {
     damageSource?: DamageSource;
     reference?: Reference;
     referenceStat?: "CURRENT_ATTACK" | "CURRENT_HEALTH";
-    amountReference?: "HAND_COUNT" | "GRAVEYARD_WRESTLER_COUNT" | "REMAINING_GOLD" | "BOARD_WRESTLER_COUNT";
+    amountReference?: "HAND_COUNT" | "GRAVEYARD_WRESTLER_COUNT" | "REMAINING_GOLD" | "BOARD_WRESTLER_COUNT" | "LAST_ATTACK_DELTA";
+    temporaryCost?: boolean;
+    conditionalBuff?: { healthEquals: number; attack: number; health: number };
     minimum?: number;
     generatedModifiers?: { cost?: number; attack?: number; health?: number; copySourceStats?: boolean };
     deckPosition?: "TOP" | "BOTTOM";
@@ -162,13 +164,15 @@ function targetCountFrom(text: string) {
 }
 function targetFilterFor(text: string): Target["filter"] | undefined {
   const generated = GENERATED_FILTER_PATTERN.test(text);
-  const minCost = Number(text.match(MIN_COST_PATTERN)?.[1]);
+  const minCost = Number(text.match(MIN_COST_PATTERN)?.[1] ?? text.match(/(?:코스트|비용)(?:이)?\s*(\d+)\s*이상/)?.[1]);
+  const maxCost = Number(text.match(/(\d+)\s*(?:코스트|비용)\s*이하/)?.[1] ?? text.match(/(?:코스트|비용)(?:이)?\s*(\d+)\s*이하/)?.[1]);
   const token = /토큰/.test(text) && !/챔피언\s*토큰/.test(text);
   const nonChampionToken = /챔피언\s*토큰\s*제외/.test(text);
   const excludeSource = /자신을\s*제외/.test(text);
   const filter = {
     ...(generated ? { isGenerated: true } : {}),
     ...(Number.isInteger(minCost) ? { minCost } : {}),
+    ...(Number.isInteger(maxCost) ? { maxCost } : {}),
     ...(token ? { isToken: true } : {}),
     ...(nonChampionToken ? { isChampionToken: false } : {}),
     ...(excludeSource ? { excludeSource: true } : {}),
@@ -206,12 +210,17 @@ function targetFor(text: string, randomPool = false): Target {
     };
   }
   if (graveyard) {
+    const graveyardFilter = targetFilterFor(text);
     return {
       zone: "GRAVEYARD",
       owner: enemyQualifier ? "ENEMY" : "SELF",
       ...(/선수/.test(text) ? { cardType: "WRESTLER" as const } : {}),
+      ...(graveyardFilter ? { filter: graveyardFilter } : {}),
       selection: /무작위|랜덤/.test(text) ? "RANDOM" : "PLAYER_CHOICE",
       count: targetCountFrom(text),
+      ...(/무작위|랜덤/.test(text)
+        ? { randomScope: /완전히\s*(?:무작위|랜덤)|완전\s*(?:무작위|랜덤)/.test(text) ? "FULL" as const : "STANDARD" as const }
+        : {}),
     };
   }
   if (/대상/.test(text)) {
@@ -494,6 +503,46 @@ function expandedMechanicAnalysis(
     return found ? { id: found.id } : { name };
   };
 
+  if (/공격력이\s*(?:증가|올라|상승).*(?:그와|같은)\s*수치.*체력/.test(text) && /효과/.test(text)) {
+    return result([{
+      trigger: "STAT_CHANGED",
+      action: "BUFF",
+      target: self,
+      values: { attack: 0, health: 0, amountReference: "LAST_ATTACK_DELTA" },
+    }]);
+  }
+  if (/공격력이\s*(?:증가|올라|상승).*(?:추가로|더).*(?:\+?1|1만큼)/.test(text)) {
+    return result([{
+      trigger: "STAT_CHANGED",
+      action: "BUFF",
+      target: self,
+      values: { attack: 1, health: 0 },
+    }]);
+  }
+  if (/(?:적|상대)\s*선수를\s*공격.*생존|공격하고\s*생존/.test(text) && /회피/.test(text)) {
+    return result([{
+      trigger: "ATTACK_SURVIVED",
+      action: "ADD_KEYWORD",
+      target: self,
+      values: { keyword: "DODGE" },
+    }]);
+  }
+  if (/처음으로\s*공격력이\s*(?:증가|올라|상승)/.test(text) && /회피/.test(text)) {
+    return result([{
+      trigger: "STAT_CHANGED",
+      action: "ADD_KEYWORD",
+      target: self,
+      conditions: [{ type: "FIRST_ATTACK_GAIN" }],
+      values: { keyword: "DODGE" },
+    }]);
+  }
+  if (/(?:무덤|묘지).*?(?:부활|소생|되살)/.test(text) && /선수/.test(text)) {
+    return result([{
+      trigger: triggerFor(),
+      action: "REVIVE",
+      target: targetFor(text),
+    }]);
+  }
   if (/어디에\s*있든.*생성된.*아군\s*선수/.test(text) && /각각\s*1씩/.test(text)) {
     return result([{ trigger: triggerFor(), action: "BUFF", target: { zones: ["HAND", "DECK", "BOARD"], owner: "SELF", cardType: "WRESTLER", filter: { isGenerated: true }, selection: "ALL", count: 20 }, values: { attack: 1, health: 1 } }]);
   }
@@ -661,7 +710,8 @@ export function analyzeEffectText(input: string, options: EffectAnalysisOptions 
     ["RELEASE_CAPTURED", /(?:포획.*(?:해방|풀)|해방.*포획)/], ["CAPTURE", /포획/],
      ["REMOVE_FROM_GAME", /(?:제거|ERASE)/i],
       ["ADD_AGGREGATED_ATTACK", AGGREGATED_ATTACK_PATTERN],
-     ["DEPLOY_CHAMPION_TOKEN", /(?:내\s*)?챔피언(?:을|를)?\s*소환(?:합니다|한다|해요|하세요)?/i],
+      ["DEPLOY_CHAMPION_TOKEN", /(?:내\s*)?챔피언(?:을|를)?\s*소환(?:합니다|한다|해요|하세요)?/i],
+      ["REVIVE", /(?:부활|소생|되살(?:립|아)|REVIVE|RESURRECT)/i],
      ["SUMMON", /(?:소환|SUMMON)/i], ["GENERATE", /(?:생성(?!된)|GENERATE)/i],
     ["REMOVE_KEYWORD", /(?:러쉬|기습|도발|회피|연타)(?:를|을)?\s*(?:제거|잃)/],
     ["ADD_KEYWORD", /(?:러쉬|기습|도발|회피|연타)(?:를|을)?\s*(?:부여|얻)/],
@@ -694,7 +744,7 @@ export function analyzeEffectText(input: string, options: EffectAnalysisOptions 
     remainder += ` ${clauseRemainder}`;
   }
      remainder = remainder.replace(/사용될\s*때까지(?:\s*\S+){0,5}\s*유지(?:합니다)?|다음\s*턴에도(?:\s*\S+){0,2}\s*유지(?:합니다)?/g, "");
-     remainder = remainder.replace(/자신의\s*양\s*옆\s*(?:빈\s*)?슬롯(?:에)?|양\s*옆\s*(?:빈\s*)?슬롯(?:에)?|각각|이\s*카드가\s*필드에\s*있(?:는\s*동안|을\s*때)|\d+\s*(?:코스트|비용)\s*이상/g, "");
+     remainder = remainder.replace(/자신의\s*양\s*옆\s*(?:빈\s*)?슬롯(?:에)?|양\s*옆\s*(?:빈\s*)?슬롯(?:에)?|각각|이\s*카드가\s*필드에\s*있(?:는\s*동안|을\s*때)|(?:비용|코스트)(?:이)?\s*\d+\s*(?:이상|이하)|\d+\s*(?:코스트|비용)\s*(?:이상|이하)/g, "");
       remainder = remainder.replace(/(?:모든\s*)?(?:생성된\s*)?(?:아군|내)\s*선수(?:\s*카드)?(?:에게|을|를|의)?/g, "");
        remainder = remainder.replace(/(?:자신|이\s*카드)(?:이|가|는|에게|을|를)?/g, "");
        remainder = remainder.replace(/(?:^|\s)이(?=\s|$)/g, " ");
@@ -802,6 +852,7 @@ export function isStructuredEffects(value: unknown): value is { effects: Structu
          target.filter === null ||
          target.filter.isGenerated !== undefined && typeof target.filter.isGenerated !== "boolean" ||
           target.filter.minCost !== undefined && (!Number.isInteger(target.filter.minCost) || target.filter.minCost < 0 || target.filter.minCost > 999) ||
+          target.filter.maxCost !== undefined && (!Number.isInteger(target.filter.maxCost) || target.filter.maxCost < 0 || target.filter.maxCost > 999) ||
           target.filter.isToken !== undefined && typeof target.filter.isToken !== "boolean" ||
           target.filter.isChampionToken !== undefined && typeof target.filter.isChampionToken !== "boolean" ||
           target.filter.excludeSource !== undefined && typeof target.filter.excludeSource !== "boolean"
@@ -824,7 +875,7 @@ export function isStructuredEffects(value: unknown): value is { effects: Structu
         const validReference = schema.referenceStat &&
          REFERENCES.includes(values?.reference as Reference) &&
          ["CURRENT_ATTACK", "CURRENT_HEALTH"].includes(values?.referenceStat as string);
-        const validDynamic = schema.dynamicValue && ["HAND_COUNT", "GRAVEYARD_WRESTLER_COUNT", "REMAINING_GOLD", "BOARD_WRESTLER_COUNT"].includes(values?.amountReference as string);
+         const validDynamic = schema.dynamicValue && ["HAND_COUNT", "GRAVEYARD_WRESTLER_COUNT", "REMAINING_GOLD", "BOARD_WRESTLER_COUNT", "LAST_ATTACK_DELTA"].includes(values?.amountReference as string);
         if (!validStats && !validMultiplier && !validReference && !validDynamic) return false;
     }
     if (schema.keyword && !KEYWORDS.includes(values?.keyword as Keyword)) return false;

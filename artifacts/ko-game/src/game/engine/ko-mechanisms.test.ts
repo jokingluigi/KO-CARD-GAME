@@ -18,7 +18,7 @@ const card = (id: string, overrides: Partial<CardInstance> = {}): CardInstance =
 });
 const state = () => ({ ...createInitialGameState(), status: 'IN_PROGRESS' as const, activePlayerId: 'player-1' });
 const player = (s: ReturnType<typeof state>, id = 'player-1') => s.players.find((p) => p.id === id)!;
-test('KO mechanisms: generated summons enter once and chained enter effects resolve', () => {
+test('KO mechanisms: generated summons enter without replaying the summoned card entry effect', () => {
   const b = card('b', { abilities: [{ trigger: 'ENTER_FIELD', effects: [{ type: 'GAIN_GOLD', amount: 1 }] }] });
   const a = card('a', { abilities: [{
     trigger: 'ENTER_FIELD',
@@ -30,8 +30,47 @@ test('KO mechanisms: generated summons enter once and chained enter effects reso
   const initial = state();
   const result = enterField(initial, 'player-1', a, 0);
   assert.equal(player(result).board.filter(Boolean).length, player(initial).board.filter(Boolean).length + 2);
-  assert.equal(player(result).currentGold, 1);
+  assert.equal(player(result).currentGold, 0);
   assert.equal(result.events.filter((e) => e.type === 'ENTER_FIELD').length, initial.events.filter((e) => e.type === 'ENTER_FIELD').length + 2);
+});
+
+test('KO mechanisms: REVIVE moves the existing graveyard instance, restores health, and skips entry effects', () => {
+  const revived = card('revived', {
+    currentHealth: 0,
+    maxHealth: 4,
+    abilities: [{ trigger: 'ENTER_FIELD', effects: [{ type: 'GAIN_GOLD', amount: 9 }] }],
+  });
+  const source = card('reviver', {
+    abilities: [{
+      trigger: 'ENTER_FIELD',
+      effects: [{
+        type: 'STRUCTURED',
+        action: 'REVIVE',
+        target: {
+          zone: 'GRAVEYARD',
+          owner: 'SELF',
+          cardType: 'WRESTLER',
+          selection: 'RANDOM',
+          count: 1,
+        },
+      }],
+    }],
+  });
+  const initial = {
+    ...state(),
+    players: state().players.map((player) => player.id === 'player-1'
+      ? { ...player, graveyard: [{ ...revived, boardSlot: null }] }
+      : player),
+  };
+  const result = enterField(initial, 'player-1', source, 0);
+  const revivedOnBoard = player(result).board.find((entry) => entry?.instanceId === revived.instanceId);
+  assert.equal(revivedOnBoard?.currentHealth, 4);
+  assert.equal(revivedOnBoard?.isGenerated, false);
+  assert.equal(player(result).graveyard.some((entry) => entry.instanceId === revived.instanceId), false);
+  assert.equal(player(result).currentGold, 0);
+  assert.equal(result.events.some((event) => event.type === 'CARD_GENERATED' && event.cardInstanceId === revived.instanceId), false);
+  const reviveEvent = result.events.find((event) => event.type === 'ENTER_FIELD' && event.cardInstanceId === revived.instanceId);
+  assert.equal(reviveEvent?.entryCause, 'REVIVE');
 });
 
 test('KO mechanisms: conditions/tags use this-turn play history, not current board', () => {

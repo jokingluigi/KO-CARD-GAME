@@ -6,8 +6,8 @@ import type { CardDefinition } from '../cards/types';
 export type CardKeyword = Keyword;
 export type RuntimeAction = Action | 'REMOVE_FROM_GAME' | 'CAPTURE' | 'RELEASE_CAPTURED';
 export type RuntimeTrigger =
-  | 'ENTER_FIELD' | 'LEAVE_FIELD' | 'POSITION' | 'ACTIVE'
-  | 'CARD_DRAWN' | 'CARD_RETIRED' | 'FIRST_ATTACKED' | 'SELF_ATTACK' | 'OTHER_ALLY_ATTACK' | 'TECHNIQUE_CAST' | 'EXACT_ZERO_DAMAGE'
+   | 'ENTER_FIELD' | 'LEAVE_FIELD' | 'POSITION' | 'ACTIVE'
+   | 'CARD_DRAWN' | 'CARD_RETIRED' | 'FIRST_ATTACKED' | 'SELF_ATTACK' | 'OTHER_ALLY_ATTACK' | 'ATTACK_SURVIVED' | 'STAT_CHANGED' | 'TECHNIQUE_CAST' | 'EXACT_ZERO_DAMAGE'
   | 'TURN_START' | 'TURN_END';
 
 export type StructuredTarget = {
@@ -17,7 +17,7 @@ export type StructuredTarget = {
   zones?: TargetZone[];
   owner: TargetOwner;
   cardType?: 'WRESTLER' | 'TECHNIQUE';
-  filter?: { isGenerated?: boolean; minCost?: number; isToken?: boolean; isChampionToken?: boolean; excludeSource?: boolean };
+  filter?: { isGenerated?: boolean; minCost?: number; maxCost?: number; isToken?: boolean; isChampionToken?: boolean; excludeSource?: boolean };
   selection: TargetSelection;
   count: number;
   randomScope?: RandomScope;
@@ -75,7 +75,7 @@ export type CardEffect =
       action: RuntimeAction;
       target?: StructuredTarget;
       values?: {
-          attack?: number; health?: number; attackMultiplier?: number; healthMultiplier?: number; amount?: number; keyword?: CardKeyword; damageSource?: DamageSource; reference?: Reference; referenceStat?: 'CURRENT_ATTACK' | 'CURRENT_HEALTH'; amountReference?: DynamicValue; minimum?: number; generatedModifiers?: { cost?: number; attack?: number; health?: number; copySourceStats?: boolean }; deckPosition?: 'TOP' | 'BOTTOM';
+          attack?: number; health?: number; attackMultiplier?: number; healthMultiplier?: number; amount?: number; keyword?: CardKeyword; damageSource?: DamageSource; reference?: Reference; referenceStat?: 'CURRENT_ATTACK' | 'CURRENT_HEALTH'; amountReference?: DynamicValue; minimum?: number; temporaryCost?: boolean; conditionalBuff?: { healthEquals: number; attack: number; health: number }; generatedModifiers?: { cost?: number; attack?: number; health?: number; copySourceStats?: boolean }; deckPosition?: 'TOP' | 'BOTTOM';
           queuedTrigger?: 'NEXT_ALLY_WRESTLER_PLAYED';
          queuedEffect?: QueuedStructuredEffect;
         /** Serializable card definition supplied by the structured DSL. */
@@ -114,7 +114,7 @@ export type CardAbility =
       condition?: AbilityCondition;
     }
   | {
-      trigger: 'CARD_DRAWN' | 'CARD_RETIRED' | 'FIRST_ATTACKED' | 'SELF_ATTACK' | 'OTHER_ALLY_ATTACK' | 'TECHNIQUE_CAST' | 'EXACT_ZERO_DAMAGE' | 'TURN_START' | 'TURN_END';
+      trigger: 'CARD_DRAWN' | 'CARD_RETIRED' | 'FIRST_ATTACKED' | 'SELF_ATTACK' | 'OTHER_ALLY_ATTACK' | 'CARD_PLAYED_THIS_TURN' | 'ATTACK_SURVIVED' | 'STAT_CHANGED' | 'TECHNIQUE_CAST' | 'EXACT_ZERO_DAMAGE' | 'TURN_START' | 'TURN_END';
       effects: CardEffect[];
       condition?: AbilityCondition;
     }
@@ -132,4 +132,5 @@ export type AbilityCondition =
   | { type: 'SOURCE_ON_RIGHT_SIDE' }
   | { type: 'HAND_COUNT'; compare: 'GTE' | 'LTE' | 'EQ'; amount: number }
   | { type: 'BOARD_COUNT'; compare: 'GTE' | 'LTE' | 'EQ'; amount: number }
-  | { type: 'HAS_TAG'; tag: string };
+  | { type: 'HAS_TAG'; tag: string }
+  | { type: 'FIRST_ATTACK_GAIN' };
