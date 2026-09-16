@@ -1,0 +1,863 @@
+현재 KO 카드게임의 선수 카드 목록에 아래 카드들의 최신 수치/효과를 반영하고,
+실제 Match Engine에서 모든 효과가 작동하도록 구현해줘.
+
+중요:
+- 기존 CardDefinition이 이미 존재하면 새 카드를 중복 생성하지 말고 기존 Definition을 업데이트.
+- 존재하지 않는 경우에만 새 Definition 생성.
+- 카드 이름 하드코딩으로 Match Engine을 구현하지 말 것.
+- 기존 Effect DSL / Structured Effect / Event / Action 시스템을 최대한 재사용.
+- 단순히 카드 설명 텍스트만 저장하고 끝내지 말고 실제 Executor까지 구현.
+- 기존 이미지, 태그, Rarity, 음악 등 이미 설정된 메타데이터는 유지.
+- 카드 밸런스를 임의로 변경하지 말 것.
+
+==================================================
+0. 이번 작업에서 먼저 변경할 공통 규칙
+==================================================
+
+--------------------------------------------------
+A. SUMMON은 등장 효과를 발동하지 않는다
+--------------------------------------------------
+
+기존 규칙을 변경한다.
+
+앞으로:
+
+1. 손에서 WRESTLER 카드를 정상 PLAY
+→ 등장 효과 발동 O
+
+2. 다른 카드 효과로 WRESTLER를 SUMMON
+→ 등장 효과 발동 X
+
+3. Token을 효과로 SUMMON
+→ 등장 효과 발동 X
+
+4. 묘지에서 REVIVE / RESURRECT
+→ 등장 효과 발동 X
+
+즉:
+
+PLAY_FROM_HAND
+와
+SUMMON / REVIVE
+
+를 반드시 구분한다.
+
+가능하면 field entry event에:
+
+entryCause:
+- PLAY_FROM_HAND
+- SUMMON
+- REVIVE
+- CHAMPION_DEPLOY
+- 기타 필요한 기존 원인
+
+형태의 정보를 넣어라.
+
+ON_ENTER / 등장 효과는 기본적으로:
+
+entryCause === PLAY_FROM_HAND
+
+일 때만 발동.
+
+단순히 BOARD에 들어왔다는 이유만으로 등장 효과를 실행하면 안 된다.
+
+--------------------------------------------------
+중요: Champion Token
+--------------------------------------------------
+
+기존의:
+
+DEPLOY_CHAMPION_TOKEN
+
+은 일반 SUMMON과 별도 Action이다.
+
+챔피언 토큰 시스템은 이번 변경으로 망가뜨리지 마.
+
+특히 기존 판도라 Champion Token의
+특수 Deploy 효과/처리는 그대로 유지해야 한다.
+
+현재 DEPLOY_CHAMPION_TOKEN이 내부적으로 SUMMON과
+섞여 있다면 이번에 둘을 명확하게 분리해라.
+
+--------------------------------------------------
+Generated와 Summon은 별개
+--------------------------------------------------
+
+새 CardInstance를 효과로 생성해서 필드에 SUMMON했다면:
+
+isGenerated = true
+CARD_GENERATED 발생
+SUMMON 발생
+
+하지만:
+
+등장 효과는 발동하지 않는다.
+
+따라서 예거 Quest의
+"선수 카드 생성" 카운트에는 포함될 수 있지만
+그 Token/Wrestler 자신의 등장 효과는 발동하지 않는다.
+
+==================================================
+B. 묘지 부활 시 0 HP 금지
+==================================================
+
+묘지에 있는 선수는 RETIRE 당시 currentHealth가
+0 이하일 수 있다.
+
+REVIVE 시 그 값을 그대로 가져오면 안 된다.
+
+부활 성공 시:
+
+currentHealth = 현재 유효한 maximumHealth
+
+로 복구해서 BOARD에 배치.
+
+최소한:
+
+currentHealth > 0
+
+인 상태로 부활해야 한다.
+
+0 HP / 음수 HP 상태로 부활해서
+즉시 이상한 Board Instance가 생기는 것을 금지.
+
+부활은 기존 CardInstance 이동으로 처리하며:
+
+isGenerated를 새로 붙이지 않는다.
+CARD_GENERATED도 발생하지 않는다.
+등장 효과도 발동하지 않는다.
+
+==================================================
+1. 벨로나
+==================================================
+
+2G
+1 Attack
+4 Health
+
+Keyword:
+도발
+
+추가 효과 없음.
+
+==================================================
+2. 황소할배
+==================================================
+
+4G
+3 Attack
+5 Health
+
+Keyword:
+도발
+
+추가 효과 없음.
+
+==================================================
+3. 도쿵
+==================================================
+
+4G
+3 Attack
+4 Health
+
+카드 텍스트:
+
+"효과 중에 공격력이 증가하면,
+같은 수치만큼 체력의 수치를 증가시킵니다."
+
+중요:
+기존의 "필드에 있는 동안" 장소 제한을 제거한다.
+
+도쿵이:
+
+HAND
+DECK
+BOARD
+
+어디에 있든
+Effect에 의해 Attack이 증가하면 발동 가능.
+
+예:
+
+Attack +1
+→ Health +1
+
+Attack +2
+→ Health +2
+
+Attack +3
+→ Health +3
+
+Attack 증가가 실제로 발생한 수치(delta)를 사용.
+
+예:
+Attack 3 → 5
+delta = +2
+→ Health +2
+
+Health 증가 시 카드의 스탯 자체가 증가하도록:
+
+maximumHealth += delta
+
+BOARD에 존재한다면:
+currentHealth도 동일하게 += delta.
+
+HAND / DECK에서는 저장된 Health Stat 증가.
+
+중요:
+기본 카드 생성/초기 스탯 세팅은 발동하지 않는다.
+
+"Effect 때문에 Attack이 증가"했을 때만 발동.
+
+같은 Effect에서 Attack 증가가 임시 Modifier라면
+기존 Modifier duration 시스템을 재사용해서
+연결된 Health Modifier도 동일한 duration을 사용.
+
+카드 표시 텍스트에는 duration 설명을 추가하지 말고
+위의 카드 텍스트 그대로 사용.
+
+==================================================
+4. 휴먼쿠커
+==================================================
+
+2G
+1 Attack
+3 Health
+
+등장:
+
+"선택한 아군 대상의 체력을 2 회복합니다."
+
+아군 대상:
+
+- 내 WRESTLER
+- 내 CHAMPION
+
+회복은 최대 체력을 초과하지 않는다.
+
+PLAYER_CHOICE 사용.
+
+==================================================
+5. 예거
+==================================================
+
+4G
+3 Attack
+4 Health
+
+효과:
+
+"이 카드가 필드에 있는 동안,
+생성된 아군 선수 카드를 손에서 낼 때
+그 선수에게 +1/+1을 부여합니다."
+
+조건:
+
+isGenerated === true
+cardType === WRESTLER
+fromZone === HAND
+playType === 정상 PLAY
+
+Effect SUMMON에는 발동하지 않는다.
+
+Token을 손에서 정상 PLAY하는 상황이 존재하고
+조건을 만족한다면 Token 여부만으로 제외하지 않는다.
+
+==================================================
+6. 만드릴쿤
+==================================================
+
+5G
+5 Attack
+6 Health
+
+최신 효과:
+
+"이 카드가 효과로 공격력을 얻을 때마다,
+공격력을 추가로 1 얻습니다."
+
+기존의:
+
+"처음 공격력이 증가할 때"
+
+제한을 삭제한다.
+
+이제 공격력 버프를 받을 때마다 발동.
+
+예:
+
+Effect A:
+Attack +2
+→ 실제 +2
+→ 만드릴쿤 효과로 추가 Attack +1
+
+Effect B:
+Attack +1
+→ 실제 +1
+→ 다시 추가 Attack +1
+
+즉 서로 다른 Attack 증가 Effect마다 반복 가능.
+
+매 턴 1회 제한 없음.
+게임 전체 1회 제한 없음.
+
+매번 발동 가능.
+
+--------------------------------------------------
+무한 루프 방지
+--------------------------------------------------
+
+만드릴쿤 자신의 능력으로 추가된:
+
+Attack +1
+
+은 다시 만드릴쿤 능력을 발동시키면 안 된다.
+
+즉:
+
+EXTERNAL / OTHER EFFECT Attack buff
+→ Mandrill bonus +1
+
+Mandrill bonus +1
+→ Mandrill bonus 재발동 X
+
+sourceEffectId 또는 internal flag를 이용해서
+Generic recursion guard 구현.
+
+==================================================
+7. 팬텀 워커
+==================================================
+
+4G
+3 Attack
+3 Health
+
+Keyword:
+러쉬
+
+효과:
+
+"적 선수를 공격하고 생존했다면
+회피 1회를 얻습니다."
+
+조건:
+
+- target이 enemy WRESTLER
+- 해당 공격 resolution 완료
+- 팬텀 워커가 BOARD에 살아 있음
+
+이면 Dodge 1 charge 획득.
+
+Champion을 공격한 경우에는 발동하지 않는다.
+
+==================================================
+8. 로드
+==================================================
+
+4G
+3 Attack
+4 Health
+
+등장:
+
+"카드를 1장 뽑습니다."
+
+기존 Draw / Hand Limit / Overdraw 규칙 그대로 사용.
+
+==================================================
+9. 레이븐
+==================================================
+
+2G
+2 Attack
+2 Health
+
+Keyword:
+러쉬
+
+추가 효과 없음.
+
+==================================================
+10. 데헌
+==================================================
+
+3G
+2 Attack
+5 Health
+
+효과:
+
+"이 카드의 공격력이 처음 증가할 때,
+회피 1회를 얻습니다."
+
+이 카드는 현재 최신안 그대로 적용.
+
+"처음"은 해당 CardInstance의 생존 기간 중 최초 1회.
+
+Attack 증가가 실제 Effect 때문에 발생한 경우만 카운트.
+
+==================================================
+11. 카미사토르
+==================================================
+
+4G
+2 Attack
+3 Health
+
+등장:
+
+"상대 덱에서 무작위 카드 1장을 훔쳐
+내 손에 넣습니다."
+
+중요:
+
+COPY가 아니다.
+GENERATE가 아니다.
+
+실제 상대 DECK의 기존 CardInstance를
+내 HAND로 이동시킨다.
+
+따라서:
+
+상대 Deck -1
+내 Hand +1
+
+새 CardInstance 생성 X.
+isGenerated 변경 X.
+
+RNG는 기존 deterministic game RNG 사용.
+
+훔친 카드는 이후 내가 정상적으로 사용할 수 있어야 한다.
+
+필요하면:
+
+originalOwnerPlayerId
+controllerPlayerId
+
+를 구분해서 원래 소유 정보는 보존하고,
+현재 Match 조작 권한은 훔친 플레이어에게 준다.
+
+Hand Limit 7 규칙은 기존 Engine 규칙을 사용.
+
+==================================================
+12. 매드 펌킨
+==================================================
+
+2G
+2 Attack
+2 Health
+
+등장:
+
+"다른 아군 선수 하나를 선택하여 손으로 되돌립니다.
+그 카드의 비용은 이번 턴에 1 감소합니다.
+(최소 1)"
+
+PLAYER_CHOICE 사용.
+
+조건:
+
+- OTHER ALLY WRESTLER
+- 자기 자신 선택 불가
+
+BOARD → HAND 이동.
+
+그 CardInstance에:
+
+temporaryCostModifier = -1
+minimumCost = 1
+duration = END_OF_CURRENT_TURN
+
+적용.
+
+턴 종료 시 Modifier 제거.
+
+손으로 돌아간 카드는
+다시 손에서 정상 PLAY하면 등장 효과를 사용할 수 있다.
+
+==================================================
+13. 선수 판도라
+==================================================
+
+챔피언 판도라가 아닌
+일반 WRESTLER CardDefinition.
+
+3G
+2 Attack
+3 Health
+
+등장:
+
+"선택한 적 선수 하나에게 피해를 1 줍니다.
+그 피해로 그 선수의 체력이 정확히 1이 되었다면,
+이 카드에게 +2/+2를 부여합니다."
+
+PLAYER_CHOICE:
+enemy WRESTLER
+
+순서:
+
+1. 선택한 적 선수에게 1 DAMAGE
+2. damage resolution 완료
+3. 해당 피해 이후 target currentHealth 확인
+4. 정확히 1이면 Pandora +2 Attack / +2 Health
+
+중요:
+
+이미 체력이 1이었던 적을 죽였다면 발동 X.
+
+판도라의 1 DAMAGE 때문에:
+
+2 → 1
+
+이 되었을 때만 발동.
+
+3 → 2
+발동 X.
+
+1 → 0 RETIRE
+발동 X.
+
+이 효과는 Champion Pandora 전용 효과가 아니다.
+
+Champion Ability 이름 하드코딩 금지.
+
+==================================================
+14. 라 칼라베라
+==================================================
+
+4G
+3 Attack
+3 Health
+
+등장:
+
+"내 묘지에서 비용이 3 이하인 선수 카드 하나를
+무작위로 부활시킵니다."
+
+대상 Pool:
+
+owner = self
+zone = GRAVEYARD
+cardType = WRESTLER
+base/current eligible Cost <= 3
+
+기존 프로젝트의 Cost filter 기준을 일관되게 사용.
+
+RANDOM은 deterministic game RNG 사용.
+
+선택 가능한 카드가 없으면 안전하게 아무 일 없음.
+
+--------------------------------------------------
+부활
+--------------------------------------------------
+
+선택된 기존 CardInstance를:
+
+GRAVEYARD → BOARD
+
+로 이동.
+
+빈 Board Slot 필요.
+
+부활한 선수는:
+
+currentHealth = valid maximumHealth
+
+즉 0 HP로 부활하면 안 된다.
+
+Generated 취급 X.
+CARD_GENERATED X.
+
+그리고 이번 공통 규칙에 따라:
+
+REVIVE이므로 등장 효과 발동 X.
+
+예:
+
+휴먼쿠커 부활
+→ 힐 등장 효과 재발동 X
+
+하스이 부활
+→ 잔상 등장 효과 재발동 X
+
+뒷정리맨 부활
+→ 등장 효과 재발동 X
+
+==================================================
+15. 스카드
+==================================================
+
+3G
+3 Attack
+1 Health
+
+Keywords:
+
+러쉬
+회피
+
+추가 효과 없음.
+
+==================================================
+16. 카드 Admin / Card List 반영
+==================================================
+
+위 카드들이 기존 Card Admin / Card List에서
+정상적으로 표시되게 해.
+
+반영할 것:
+
+- Name
+- Cost
+- Attack
+- Health
+- Keywords
+- Effect Text
+- Structured Effect
+- Analyzer status
+
+이미 같은 이름/ID CardDefinition이 존재하면
+그 Definition을 업데이트.
+
+중복 CardDefinition 생성 금지.
+
+기존:
+
+image
+rarity
+tags
+audio
+frame
+skin association
+
+등은 삭제하거나 초기화하지 마.
+
+==================================================
+17. Effect Analyzer
+==================================================
+
+위 효과들이 현재 Effect DSL에서 지원되지 않는 Generic Mechanic을
+필요로 한다면:
+
+카드 이름별 special case를 만들지 말고
+Generic Effect Executor를 추가해.
+
+필요 가능성이 있는 Generic Mechanic 예:
+
+- STAT_INCREASE_LISTENER
+- AFTER_ATTACK_SURVIVED
+- MOVE_OPPONENT_CARD
+- RETURN_TO_HAND
+- TEMP_COST_MODIFIER
+- RANDOM_REVIVE
+- DAMAGE_RESULT_CONDITION
+- SELF_BUFF
+- EFFECT_SOURCE_RECURSION_GUARD
+- ENTRY_CAUSE
+
+기존에 비슷한 Generic Action이 있다면 반드시 재사용.
+
+Analyzer만 SUPPORTED로 표시하고
+실제 Executor가 없는 가짜 구현 금지.
+
+==================================================
+18. SUMMON / 등장 회귀 테스트
+==================================================
+
+매우 중요.
+
+다음 테스트를 반드시 해.
+
+A.
+손에서 휴먼쿠커 PLAY
+→ 등장 힐 발동 O
+
+B.
+효과로 휴먼쿠커 SUMMON
+→ 등장 힐 발동 X
+
+C.
+묘지에서 휴먼쿠커 REVIVE
+→ 등장 힐 발동 X
+
+D.
+하스이를 손에서 PLAY
+→ 등장 잔상 효과 발동 O
+
+E.
+하스이를 효과 SUMMON
+→ 등장 잔상 효과 발동 X
+
+F.
+새 WRESTLER Token을 Effect로 SUMMON
+→ isGenerated=true
+→ CARD_GENERATED 발생
+→ 예거 Quest 조건이면 Progress 증가
+→ Token 자신의 등장 효과는 발동 X
+
+==================================================
+19. 도쿵 테스트
+==================================================
+
+도쿵 HAND 상태:
+
+Attack +2 Effect
+→ Attack +2
+→ Health +2
+
+도쿵 DECK 상태:
+
+Attack +1 Effect
+→ Attack +1
+→ Health +1
+
+도쿵 BOARD 상태:
+
+Attack +2
+→ maximumHealth +2
+→ currentHealth +2
+
+기본 Stat initialization:
+→ 효과 발동 X
+
+==================================================
+20. 만드릴쿤 테스트
+==================================================
+
+5/6 상태.
+
+Effect A:
+Attack +2
+→ 7/6
+→ 만드릴쿤 +1
+→ 8/6
+
+다른 Effect B:
+Attack +1
+→ 9/6
+→ 만드릴쿤 +1
+→ 10/6
+
+두 번 모두 발동 O.
+
+하지만 만드릴쿤 자신의 추가 +1 때문에
+무한 반복 발생 X.
+
+==================================================
+21. 라 칼라베라 테스트
+==================================================
+
+묘지:
+
+2G WRESTLER
+currentHealth = 0
+
+라 칼라베라 PLAY.
+
+→ 해당 카드가 RANDOM 대상으로 선택 가능
+→ BOARD로 부활
+→ currentHealth가 maximumHealth로 복구
+→ 0HP로 남지 않음
+→ 등장 효과 발동 X
+
+4G 이상 선수는 대상 Pool 제외.
+
+묘지에 eligible 카드가 없으면 crash X.
+
+==================================================
+22. 판도라 테스트
+==================================================
+
+적 WRESTLER currentHealth 2:
+
+Pandora 등장
+→ 1 DAMAGE
+→ target Health 1
+→ Pandora +2/+2
+
+적 Health 3:
+→ 2
+→ Buff X
+
+적 Health 1:
+→ 0 RETIRE
+→ Buff X
+
+==================================================
+23. 실제 Match 테스트
+==================================================
+
+TEST USER 계정으로 실제 Match에서
+위 카드들을 덱에 넣고 테스트해.
+
+최소 확인:
+
+- 벨로나 도발
+- 황소할배 도발
+- 도쿵 모든 Zone buff listener
+- 휴먼쿠커 PLAYER_CHOICE heal
+- 예거 generated card synergy
+- 만드릴쿤 반복 Attack buff synergy
+- 팬텀 워커 attack-survive Dodge
+- 로드 draw
+- 레이븐 Rush
+- 데헌 first Attack buff Dodge
+- 카미사토르 deck theft
+- 매드 펌킨 return + temporary cost
+- 판도라 exact-1-health condition
+- 라 칼라베라 random revive
+- 스카드 Rush + Dodge
+
+GameState / Event Log도 확인.
+
+==================================================
+24. 수정 금지
+==================================================
+
+이번 작업에서 하지 말 것:
+
+- 다른 카드 Cost/Stats 변경
+- 카드 이름별 Engine hardcoding
+- Match Gold 규칙 변경
+- Champion Quest 규칙 임의 변경
+- AI 판단 알고리즘 변경
+- Pack / Shop / Prism 변경
+- Deck 규칙 변경
+- 불필요한 대규모 refactor
+
+==================================================
+최종 보고
+==================================================
+
+각 카드별로:
+
+CARD DATA
+STRUCTURED EFFECT
+ENGINE EXECUTION
+BROWSER MATCH TEST
+
+를:
+
+PASS
+FIXED
+FAIL
+
+로 보고.
+
+공통 규칙도 따로:
+
+SUMMON_NO_ENTER_EFFECT
+REVIVE_RESTORE_HEALTH
+DOKUNG_ANY_ZONE_TRIGGER
+MANDRILL_REPEAT_BUFF_TRIGGER
+
+PASS / FIXED / FAIL
+
+로 보고해.
+
+텍스트만 등록됐거나 Analyzer만 SUPPORTED인 상태를
+PASS로 처리하지 마.
+
+실제 Match에서 효과가 작동해야 완료다.
