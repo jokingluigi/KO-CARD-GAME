@@ -3,7 +3,7 @@
 export const TRIGGERS = ["ENTER_FIELD", "LEAVE_FIELD", "ACTIVE", "CARD_DRAWN", "CARD_RETIRED", "FIRST_ATTACKED", "SELF_ATTACK", "OTHER_ALLY_ATTACK", "TECHNIQUE_CAST", "CARD_PLAYED_THIS_TURN", "EXACT_ZERO_DAMAGE", "TURN_START", "TURN_END"] as const;
 export const CONDITIONS = ["NEED_CONDITION", "HAS_MATCHING_TAG_PLAYED_THIS_TURN", "BASE_COST_GTE", "SOURCE_ON_LEFT_SIDE", "SOURCE_ON_RIGHT_SIDE", "SOURCE_IS_ONLY_WRESTLER"] as const;
 export const REFERENCES = ["SOURCE", "LAST_TARGET", "LAST_DRAWN_CARD", "LAST_ATTACKER", "LAST_DAMAGED_TARGET", "CAPTURED_CARD", "CURRENT_SLOT"] as const;
-export const ACTIONS = ["BUFF", "SET_STATS", "DAMAGE", "HEAL", "SILENCE", "DESTROY", "RETIRE", "ADD_GOLD", "ADD_NEXT_TURN_GOLD", "DRAW", "REDUCE_COST", "INCREASE_COST", "STUN", "DISABLE_ABILITY", "WEAKEN_TO_STUN_SILENCE", "ADD_KEYWORD", "REMOVE_KEYWORD", "SWAP_STATS", "ADD_DAMAGE_MODIFIER", "SUMMON", "SUMMON_FROM_HAND", "GENERATE", "MOVE_TO_HAND", "MILL", "SPEND_GOLD_BUFF_SELF", "DEPLOY_CHAMPION_TOKEN", "CAPTURE", "RELEASE_CAPTURED", "REMOVE_FROM_GAME", "SWITCH_EFFECT_BRANCH", "QUEUE_EFFECT", "ADD_AGGREGATED_ATTACK"] as const;
+export const ACTIONS = ["BUFF", "SET_STATS", "DAMAGE", "HEAL", "SILENCE", "DESTROY", "RETIRE", "ADD_GOLD", "ADD_NEXT_TURN_GOLD", "DRAW", "REDUCE_COST", "INCREASE_COST", "STUN", "DISABLE_ABILITY", "WEAKEN_TO_STUN_SILENCE", "ADD_KEYWORD", "REMOVE_KEYWORD", "SWAP_STATS", "ADD_DAMAGE_MODIFIER", "SUMMON", "SUMMON_FROM_HAND", "REVIVE", "GENERATE", "MOVE_TO_HAND", "MILL", "SPEND_GOLD_BUFF_SELF", "DEPLOY_CHAMPION_TOKEN", "CAPTURE", "RELEASE_CAPTURED", "REMOVE_FROM_GAME", "SWITCH_EFFECT_BRANCH", "QUEUE_EFFECT", "ADD_AGGREGATED_ATTACK"] as const;
 export const KEYWORDS = ["RUSH", "SURPRISE", "TAUNT", "DODGE", "MULTI_STRIKE"] as const;
 export const TARGET_ZONES = ["BOARD", "HAND", "DECK", "GRAVEYARD", "PLAYER", "CHARACTER"] as const;
 /** The default card scope for Korean phrases such as "어디에 있든". */
@@ -52,7 +52,7 @@ export const ACTION_SCHEMAS: Record<Action, EffectActionSchema> = {
   REDUCE_COST: { target: true, amount: true, minimum: true }, INCREASE_COST: { target: true, amount: true }, STUN: { target: true },
   RETIRE: { target: true }, DISABLE_ABILITY: { target: true }, WEAKEN_TO_STUN_SILENCE: { target: true, amount: true },
   SILENCE: { target: true }, DESTROY: { target: true }, ADD_KEYWORD: { target: true, keyword: true }, REMOVE_KEYWORD: { target: true, keyword: true },
-  SWAP_STATS: { target: true }, ADD_DAMAGE_MODIFIER: { target: false, amount: true, damageSource: true }, SUMMON: { target: false, cardDefinition: true, cardCount: true, aggregateStats: true, generatedModifiers: true }, SUMMON_FROM_HAND: { target: false, cardDefinition: true, cardCount: true }, GENERATE: { target: false, cardDefinition: true, cardCount: true, destination: true, generatedModifiers: true }, MOVE_TO_HAND: { target: true }, MILL: { target: true }, SPEND_GOLD_BUFF_SELF: { target: true, dynamicValue: true }, DEPLOY_CHAMPION_TOKEN: { target: false }, CAPTURE: { target: true }, RELEASE_CAPTURED: { target: false },
+  SWAP_STATS: { target: true }, ADD_DAMAGE_MODIFIER: { target: false, amount: true, damageSource: true }, SUMMON: { target: false, cardDefinition: true, cardCount: true, aggregateStats: true, generatedModifiers: true }, SUMMON_FROM_HAND: { target: false, cardDefinition: true, cardCount: true }, REVIVE: { target: true }, GENERATE: { target: false, cardDefinition: true, cardCount: true, destination: true, generatedModifiers: true }, MOVE_TO_HAND: { target: true }, MILL: { target: true }, SPEND_GOLD_BUFF_SELF: { target: true, dynamicValue: true }, DEPLOY_CHAMPION_TOKEN: { target: false }, CAPTURE: { target: true }, RELEASE_CAPTURED: { target: false },
   REMOVE_FROM_GAME: { target: true }, SWITCH_EFFECT_BRANCH: { target: false, branches: true }, QUEUE_EFFECT: { target: false, queuedEffect: true }, ADD_AGGREGATED_ATTACK: { target: true, aggregateStats: true },
 };
 
@@ -62,7 +62,7 @@ const ACTION_DESCRIPTIONS: Record<Action, string> = {
   ADD_NEXT_TURN_GOLD: "다음 내 턴의 골드를 증가시킵니다.", DRAW: "카드를 드로우합니다.", REDUCE_COST: "대상의 비용을 감소시킵니다.",
   INCREASE_COST: "대상의 비용을 증가시킵니다.", STUN: "대상을 기절시킵니다.", DISABLE_ABILITY: "대상의 능력을 비활성화합니다.", WEAKEN_TO_STUN_SILENCE: "공격력을 낮추고 0이 된 대상을 기절·침묵시킵니다.", ADD_KEYWORD: "대상에게 키워드를 부여합니다.",
   REMOVE_KEYWORD: "대상의 키워드를 제거합니다.", SWAP_STATS: "대상의 현재 공격력과 체력을 서로 교환합니다.", ADD_DAMAGE_MODIFIER: "조건에 맞는 카드의 피해량을 변경합니다.", SUMMON: "선수를 필드에 소환합니다.", GENERATE: "카드를 생성합니다.",
-  CAPTURE: "대상을 포획합니다.", RELEASE_CAPTURED: "포획한 카드를 필드에 해방합니다.", SUMMON_FROM_HAND: "손패의 지정 카드를 필드에 소환합니다.", MOVE_TO_HAND: "대상을 손패로 이동합니다.", MILL: "덱 맨 위 카드를 무덤으로 보냅니다.", SPEND_GOLD_BUFF_SELF: "남은 골드를 모두 소비하고 자신을 강화합니다.", DEPLOY_CHAMPION_TOKEN: "현재 챔피언에 연결된 Champion Token을 특별 전개합니다.", REMOVE_FROM_GAME: "대상을 제거합니다.",
+  CAPTURE: "대상을 포획합니다.", RELEASE_CAPTURED: "포획한 카드를 필드에 해방합니다.", SUMMON_FROM_HAND: "손패의 지정 카드를 필드에 소환합니다.", REVIVE: "무덤의 기존 선수를 체력을 회복해 필드로 되살립니다.", MOVE_TO_HAND: "대상을 손패로 이동합니다.", MILL: "덱 맨 위 카드를 무덤으로 보냅니다.", SPEND_GOLD_BUFF_SELF: "남은 골드를 모두 소비하고 자신을 강화합니다.", DEPLOY_CHAMPION_TOKEN: "현재 챔피언에 연결된 Champion Token을 특별 전개합니다.", REMOVE_FROM_GAME: "대상을 제거합니다.",
   SWITCH_EFFECT_BRANCH: "현재 슬롯의 왼쪽/오른쪽 분기에 맞는 효과를 실행합니다.", QUEUE_EFFECT: "다음 조건을 만족하는 카드에 효과를 예약합니다.", ADD_AGGREGATED_ATTACK: "직전에 퇴장시킨 대상의 현재 공격력 합을 대상에게 더합니다.",
 };
 
