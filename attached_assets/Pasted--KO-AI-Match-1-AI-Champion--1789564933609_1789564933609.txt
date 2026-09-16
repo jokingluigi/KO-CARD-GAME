@@ -1,0 +1,517 @@
+현재 KO 카드게임에
+"AI Match 1차 버전"
+을 구현해줘.
+
+중요:
+앞으로 카드와 효과가 계속 추가될 예정이므로
+AI를 특정 카드 이름이나 Champion 이름에 하드코딩하지 마.
+
+AI는 반드시 기존 Game Engine / Action / Effect 시스템을 그대로 사용해야 한다.
+
+==================================================
+1. Main Menu 연결
+==================================================
+
+현재 Main Menu의:
+
+[AI 매치]
+
+버튼을 실제 AI Match 화면으로 연결해.
+
+예:
+/ai-match
+
+Online Match는 아직 "준비 중" 유지.
+
+==================================================
+2. AI Match 시작
+==================================================
+
+로그인 User가 자신의 VALID Deck을 선택해서
+AI와 게임을 시작할 수 있게 해.
+
+VALID Deck 조건은 기존 Deck 시스템 재사용.
+
+- Champion 존재
+- 카드 20~30장
+- 소유권 정상
+- PUBLISHED
+- Token / Champion Token 없음
+
+INVALID Deck으로 AI Match 시작 금지.
+
+==================================================
+3. AI Deck
+==================================================
+
+1차 버전에서는 AI가 사용할 Deck을
+관리자/개발용으로 지정할 수 있게 해도 된다.
+
+중요:
+AI Deck도 일반 Deck과 동일한 규칙으로 GameState를 생성해.
+
+AI 전용 가짜 카드나
+규칙을 무시하는 Deck을 만들지 마.
+
+==================================================
+4. 가장 중요한 AI 구조
+==================================================
+
+AI가 GameState를 직접 수정하면 안 된다.
+
+반드시:
+
+GameState
+→ getLegalActions()
+→ AI가 Action 하나 선택
+→ 기존 executeAction()
+→ 새로운 GameState
+→ 다시 getLegalActions()
+
+흐름을 사용.
+
+사람과 AI가 동일한 Engine 규칙을 사용해야 한다.
+
+==================================================
+5. Legal Action Generator
+==================================================
+
+현재 게임 상태에서 AI가 실제로 할 수 있는
+합법 행동을 공통적으로 생성해.
+
+최소 포함:
+
+- WRESTLER 카드 플레이
+- 빈 Board Slot 선택
+- TECHNIQUE 사용
+- PLAYER_CHOICE Target 선택
+- Champion Ability 사용
+- 선수 공격
+- Champion 공격
+- END_TURN
+
+불가능한 행동은 후보에 넣지 마.
+
+==================================================
+6. PLAYER_CHOICE
+==================================================
+
+AI도 기존 공통 PLAYER_CHOICE 시스템을 사용해야 한다.
+
+예:
+
+Effect 실행
+→ pendingSelection 생성
+→ AI가 validTargetIds를 읽음
+→ Target 선택
+→ SELECT_EFFECT_TARGET Action 실행
+→ Effect 계속 진행
+
+AI가 pendingSelection을 무시하거나
+UI를 우회해서 직접 Effect를 적용하면 안 된다.
+
+공식 의미:
+
+대상 = WRESTLER + CHAMPION
+선수 = WRESTLER
+챔피언 = CHAMPION
+
+==================================================
+7. 범용 AI 평가
+==================================================
+
+카드 이름을 보지 말고
+현재 상태와 Action 결과의 가치를 평가해.
+
+1차 Normal AI는 heuristic 방식으로 구현.
+
+높은 가치 예:
+
+- 이번 행동으로 즉시 승리
+- 적 Champion에게 큰 피해
+- 위험한 적 선수 제거
+- 유리한 전투 교환
+- 내 Board 강화
+- 카드 Draw
+- Gold 효율적인 사용
+- 빈 Board에 좋은 선수 배치
+
+낮은 가치 예:
+
+- 내 선수만 일방적으로 죽는 공격
+- 효과 없는 Target
+- 불필요한 자원 낭비
+- 좋은 행동이 남아 있는데 END_TURN
+
+==================================================
+8. 미래 카드 대응
+==================================================
+
+매우 중요:
+
+AI 코드에 절대:
+
+if card.name === "나토마토"
+if card.name === "퍼플레인"
+if champion.name === "판도라"
+
+같은 구현을 하지 마.
+
+AI는:
+
+- Cost
+- CURRENT Attack
+- CURRENT Health
+- Keywords
+- Structured Effect
+- Target
+- Board State
+
+를 보고 판단해야 한다.
+
+==================================================
+9. Effect Evaluator
+==================================================
+
+AI용 Generic Effect Evaluator를 만들어.
+
+최소 다음 효과의 대략적 가치를 이해하게 해:
+
+DAMAGE
+HEAL
+BUFF
+TEMP_BUFF
+DRAW
+SUMMON
+GENERATE
+DESTROY
+RETIRE
+SILENCE
+STUN
+GOLD gain
+COST reduction
+SET_STATS
+MULTIPLY_STATS
+
+완벽한 전략 AI일 필요는 없다.
+
+==================================================
+10. 모르는 Effect
+==================================================
+
+새 카드에 AI가 아직 평가하지 못하는 Effect가 있어도
+그 카드 자체를 사용 불가능 처리하지 마.
+
+Unknown Effect:
+
+→ Effect value = neutral/limited fallback
+→ Cost + Stats + Known Effects 기준으로 평가
+→ Legal Action이면 사용 가능
+
+즉 새로운 Effect 때문에
+AI가 crash하거나 턴을 멈추면 안 된다.
+
+==================================================
+11. Effect Registry와 연결
+==================================================
+
+가능하면 AI Evaluator도
+현재 Effect Registry의 Action Type을 기준으로 동작하게 해.
+
+새 Generic Effect가 추가됐을 때
+AI 평가기만 확장하면 되도록 구성.
+
+카드별 AI 로직을 추가하는 구조 금지.
+
+==================================================
+12. 공격 판단
+==================================================
+
+AI는 가능한 공격을 평가해.
+
+우선순위 예:
+
+1. 즉시 상대 Champion 처치
+2. 유리한 선수 교환
+3. 위험한 적 선수 제거
+4. Champion 피해
+5. 손해가 큰 공격 회피
+
+도발/러쉬/기습/공격 횟수 등은
+기존 Engine legal action을 그대로 신뢰해.
+
+AI가 공격 규칙을 따로 재구현하지 마.
+
+==================================================
+13. Technique 판단
+==================================================
+
+Technique도 legal action으로 평가.
+
+Target이 필요하면
+PLAYER_CHOICE를 통해 선택.
+
+예:
+
+적에게 DAMAGE
+→ 적에게 가치가 큰 Target 선택
+
+아군 BUFF
+→ 가장 가치가 높은 아군 Target 고려
+
+AI가 Effect를 UI에서 직접 실행하면 안 된다.
+
+==================================================
+14. Champion Ability
+==================================================
+
+Champion Ability도 일반 Action처럼 처리.
+
+AI는:
+
+- Cost
+- 사용 가능 여부
+- Effect value
+- Target
+
+을 보고 사용 여부 판단.
+
+Champion 이름 하드코딩 금지.
+
+==================================================
+15. AI 행동 반복
+==================================================
+
+AI 턴:
+
+AI Turn Start
+↓
+legalActions 생성
+↓
+Action 평가
+↓
+가장 좋은 Action 실행
+↓
+Animation 기다림
+↓
+다시 legalActions
+↓
+반복
+↓
+더 좋은 행동 없으면 END_TURN
+
+형태.
+
+==================================================
+16. 무한 루프 방지
+==================================================
+
+AI 한 턴에 최대 의사결정 횟수를 둬.
+
+예:
+
+MAX_AI_ACTIONS_PER_TURN = 50
+
+초과 시 안전하게 END_TURN.
+
+동일 State / 동일 Action 반복도 감지 가능하게 해.
+
+==================================================
+17. AI 생각 시간
+==================================================
+
+AI가 모든 Action을 즉시 연속 실행해서
+Animation이 안 보이면 안 된다.
+
+주요 Action 사이에
+약 400~700ms 정도의 presentation delay를 둬.
+
+단 Game Engine 결과 자체는 delay에 의존하지 않게 해.
+
+reduced-motion / test 환경에서는 줄일 수 있음.
+
+==================================================
+18. AI와 RNG
+==================================================
+
+AI가 Game RNG 결과를 미리 보거나
+상대의 숨겨진 정보를 보면 안 된다.
+
+AI가 볼 수 있는 정보:
+
+- 자기 Hand
+- 공개 Board
+- 공개 Champion
+- 공개 Graveyard 등
+
+AI가 보면 안 되는 정보:
+
+- 상대 Hand
+- 상대 Deck 순서
+- 미래 Random 결과
+
+Game RNG는 기존 deterministic RNG 사용.
+
+==================================================
+19. Match Result
+==================================================
+
+AI Match도 기존 Match Result 시스템 사용.
+
+승리/패배 시:
+
+마지막 Animation
+→ VICTORY / DEFEAT
+→ [메인 화면으로]
+
+기존 Result Screen 재사용.
+
+AI Match 전용 승패 시스템 만들지 마.
+
+==================================================
+20. 종료 후 정리
+==================================================
+
+AI Match 종료 또는 Main Menu 복귀 시:
+
+- AI timer cleanup
+- pending AI decision cleanup
+- animation queue cleanup
+- match temporary state cleanup
+
+Session / Deck / Collection 등 User 데이터는 유지.
+
+==================================================
+21. 1차 난이도
+==================================================
+
+이번에는:
+
+NORMAL
+
+AI 하나만 구현해.
+
+Easy / Hard / Search Tree / MCTS는 아직 만들지 마.
+
+Normal AI가 안정적으로 게임을 끝까지 플레이하는 것이 우선.
+
+==================================================
+22. 디버그 기능
+==================================================
+
+개발 환경에서만 필요하면
+AI가 왜 Action을 선택했는지 확인 가능한 로그를 제공.
+
+예:
+
+PLAY_CARD score 14
+ATTACK_CHAMPION score 8
+END_TURN score 0
+
+Production UI에는 표시하지 마.
+
+==================================================
+23. 실제 테스트
+==================================================
+
+TEST USER Auth Helper가 있다면 사용해서
+실제 브라우저에서 AI Match를 끝까지 테스트해.
+
+반드시 확인:
+
+- VALID Deck 선택
+- Match 시작
+- User 카드 플레이
+- AI 카드 플레이
+- AI 선수 Slot 선택
+- AI 공격
+- AI Champion 공격
+- AI Technique
+- AI Champion Ability
+- AI PLAYER_CHOICE
+- AI END_TURN
+- Match 종료
+- Victory/Defeat 화면
+- Main Menu 복귀
+
+==================================================
+24. 미래 카드 테스트
+==================================================
+
+AI가 특정 카드 이름에 의존하지 않는지 확인.
+
+알려진 Generic Effect로 구성된
+새 테스트 CardDefinition을 하나 사용해도 된다.
+
+카드 이름을 AI 코드에 추가하지 않고도:
+
+- Play 가능
+- Target 선택 가능
+- Effect 실행 가능
+
+해야 한다.
+
+==================================================
+25. Unknown Effect 테스트
+==================================================
+
+AI Evaluator가 모르는 Effect를 가진 카드가 있어도:
+
+- crash X
+- AI turn stuck X
+- 해당 카드 영구 사용불가 X
+- fallback 평가 사용
+
+확인.
+
+==================================================
+26. 기존 기능 보호
+==================================================
+
+이번 작업에서 변경하지 마:
+
+- Game Rules
+- Card Effects
+- Champion Effects
+- Pack
+- Collection
+- Prism
+- Shop
+- Online Match
+
+AI는 기존 Game Engine의 "사용자" 역할만 해야 한다.
+
+==================================================
+27. 완료 조건
+==================================================
+
+최종 구조:
+
+User VALID Deck 선택
+↓
+AI Match 시작
+↓
+사람과 AI 모두 같은 Game Engine 사용
+
+AI:
+
+GameState
+→ Legal Actions
+→ Generic Evaluation
+→ executeAction
+→ 반복
+
+↓
+Match Result
+↓
+Victory / Defeat
+↓
+Main Menu
+
+카드/Champion 이름 하드코딩 없이
+미래에 새로운 카드가 추가되어도
+기존 Effect DSL 범위 안에서는
+AI가 자동으로 사용할 수 있어야 한다.
+
+실제 브라우저에서 최소 1경기를
+처음부터 끝까지 정상 완료한 뒤 종료해.
