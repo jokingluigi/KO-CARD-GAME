@@ -315,7 +315,7 @@ function applyRandomCardCreation(
       : enterField(nextState, playerId, generated.card, slot as 0 | 1 | 2 | 3, {
         type: 'CARD',
         cardInstanceId: sourceCard.instanceId,
-      });
+      }, undefined, 'SUMMON');
   }, state);
 }
 
@@ -351,6 +351,8 @@ function applyAdjacentRandomCardCreation(
       generated.card,
       slots[index]!,
       { type: 'CARD', cardInstanceId: sourceCard.instanceId },
+      undefined,
+      'SUMMON',
     );
   }, state);
 }
@@ -607,7 +609,7 @@ function applyEffect(
       return enterField(withoutHand, playerId, handCard, slot as 0 | 1 | 2 | 3, {
         type: 'CARD',
         cardInstanceId: sourceCard.instanceId,
-      });
+      }, undefined, 'SUMMON');
     }
     if (effect.action === 'SUMMON' || effect.action === 'GENERATE') {
       // These actions require a data-only definition; an absent/malformed
@@ -677,7 +679,7 @@ function applyEffect(
            events: [...summonState.events, generated.event],
          };
          summonState = enterField(summonState, playerId, generated.card, slot as 0 | 1 | 2 | 3,
-          { type: 'CARD', cardInstanceId: sourceCard.instanceId });
+           { type: 'CARD', cardInstanceId: sourceCard.instanceId }, undefined, 'SUMMON');
       }
       return summonState;
     }
@@ -755,7 +757,7 @@ function applyEffect(
             ? { ...card, capturedCards: card.capturedCards?.slice(1) ?? [] } : card) as typeof player.board,
         }),
       };
-      return enterField(withoutCaptured, playerId, released, slot as 0 | 1 | 2 | 3, { type: 'CARD', cardInstanceId: sourceCard.instanceId });
+      return enterField(withoutCaptured, playerId, released, slot as 0 | 1 | 2 | 3, { type: 'CARD', cardInstanceId: sourceCard.instanceId }, undefined, 'SUMMON');
     }
     if (!effect.target) return state;
     const target = effect.target;
