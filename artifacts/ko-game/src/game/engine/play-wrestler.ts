@@ -110,7 +110,7 @@ export function playWrestlerFromHand(
   const enteredState = enterField(paidState, playerId, card, boardSlot, {
       type: 'PLAYER',
       playerId,
-    });
+    }, undefined, 'PLAY_FROM_HAND');
   const resolvedState = resolveQueuedEffectsForPlayedWrestler(enteredState, playerId, cardInstanceId);
   return actionSuccess(processChampionQuestEvents(state, resolvedState));
 }

@@ -83,6 +83,8 @@ export function directDeployChampionToken(
     directChampion,
     boardSlot as 0 | 1 | 2 | 3,
     { type: 'CHAMPION', championId },
+    undefined,
+    'CHAMPION_DEPLOY',
   );
 }
 

@@ -1,6 +1,7 @@
 import type { CardInstanceId } from '../cards/types';
 
 export type LeaveReason = 'RETIRE' | 'DESTROY' | 'REMOVE_FROM_GAME';
+export type EntryCause = 'PLAY_FROM_HAND' | 'SUMMON' | 'REVIVE' | 'CHAMPION_DEPLOY';
 
 export type GameEventType =
   | 'TURN_STARTED'
@@ -55,6 +56,7 @@ export interface EnterFieldEvent extends GameEvent {
   playerId: string;
   cardInstanceId: CardInstanceId;
   boardSlot: 0 | 1 | 2 | 3;
+  entryCause: EntryCause;
 }
 
 export interface RetireEvent extends GameEvent {

@@ -1,5 +1,5 @@
 import type { CardInstance } from '../cards/types';
-import type { EnterFieldEvent, EventSubject } from '../events/types';
+import type { EnterFieldEvent, EntryCause, EventSubject } from '../events/types';
 import type { GameState } from '../types/game-state';
 import type { BoardSlot } from './board-position';
 import { appendEffectContinuation, resolveTriggeredAbilities } from '../effects/effect-engine';
@@ -14,6 +14,7 @@ export function enterField(
     cardInstanceId: card.instanceId,
   },
   chosenTargetInstanceIds?: string[],
+  entryCause: EntryCause = 'PLAY_FROM_HAND',
 ): GameState {
   const player = state.players.find((candidate) => candidate.id === playerId);
 
@@ -39,6 +40,7 @@ export function enterField(
     source,
     target: { type: 'CARD', cardInstanceId: card.instanceId },
     reason: 'ENTER_FIELD',
+    entryCause,
   };
 
   const enteredState: GameState = {
@@ -59,13 +61,15 @@ export function enterField(
     events: [...state.events, event],
   };
 
-  const afterEnter = resolveTriggeredAbilities(
-    enteredState,
-    playerId,
-    enteredCard,
-    'ENTER_FIELD',
-    { boardSlot, chosenTargetInstanceIds },
-  );
+  const afterEnter = entryCause === 'PLAY_FROM_HAND'
+    ? resolveTriggeredAbilities(
+      enteredState,
+      playerId,
+      enteredCard,
+      'ENTER_FIELD',
+      { boardSlot, chosenTargetInstanceIds },
+    )
+    : enteredState;
   // POSITION is deferred after ENTER_FIELD rather than installed as a child.
   if (afterEnter.targetingState?.active) {
     const positionEffects = enteredCard.abilities
