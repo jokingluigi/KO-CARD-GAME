@@ -42,3 +42,4 @@
 - [Artwork position precision](artwork-position-precision.md) — card artwork X/Y controls can emit fractional percentages and must remain real-valued in persistence.
 - [Champion ability turn limit](champion-ability-turn-limit.md) — enforce one Champion ability use per player turn in game state and reset at turn start.
 - [Unified effect implementation prompt](unified-effect-prompt-boundary.md) — reanalyze live cards/Champion slots against the current registry; Champion Tokens remain CardDefinition references.
+- [AI action boundary](ai-action-boundary.md) — AI turns must choose from legal engine actions, execute through the dispatcher, and evaluate only its own hand plus public board state.

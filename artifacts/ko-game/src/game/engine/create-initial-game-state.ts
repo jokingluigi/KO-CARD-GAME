@@ -1,6 +1,6 @@
 import type { GameState, PlayerState } from '../types/game-state';
 import type { CardDefinition } from '../cards/types';
-import { createTestDeck } from '../cards/test-cards';
+import { createDeckFromDefinitionIds, createTestDeck } from '../cards/test-cards';
 import { createChampionState } from '../champions/test-champions';
 import type { ChampionDefinition } from '../champions/types';
 
@@ -9,9 +9,10 @@ function createEmptyPlayer(
   championId: string,
   cardDefinitions?: readonly CardDefinition[],
   championDefinitions?: readonly ChampionDefinition[],
+  deckDefinitionIds?: readonly string[],
 ): PlayerState {
   const deckDefinitions = cardDefinitions?.filter(
-    (definition) => definition.cardType === 'WRESTLER' && !definition.isToken && !definition.isChampionToken,
+    (definition) => !definition.isToken && !definition.isChampionToken,
   );
   return {
     id,
@@ -20,7 +21,9 @@ function createEmptyPlayer(
     currentGold: 0,
     personalTurn: 0,
     nextTurnGoldBonus: 0,
-    deck: createTestDeck(id, deckDefinitions),
+    deck: deckDefinitionIds
+      ? createDeckFromDefinitionIds(id, deckDefinitionIds, deckDefinitions ?? [])
+      : createTestDeck(id, deckDefinitions),
     hand: [],
     board: [null, null, null, null],
     graveyard: [],
@@ -38,6 +41,7 @@ export function createInitialGameState(
   ],
   cardDefinitions?: readonly CardDefinition[],
   championDefinitions?: readonly ChampionDefinition[],
+  deckDefinitionIds?: readonly [readonly string[], readonly string[]],
 ): GameState {
   return {
     gameId: 'local-prototype',
@@ -51,8 +55,8 @@ export function createInitialGameState(
     winnerId: null,
     loserId: null,
     players: [
-      createEmptyPlayer('player-1', championIds[0], cardDefinitions, championDefinitions),
-      createEmptyPlayer('player-2', championIds[1], cardDefinitions, championDefinitions),
+      createEmptyPlayer('player-1', championIds[0], cardDefinitions, championDefinitions, deckDefinitionIds?.[0]),
+      createEmptyPlayer('player-2', championIds[1], cardDefinitions, championDefinitions, deckDefinitionIds?.[1]),
     ],
     events: [],
     pendingCardEffects: [],

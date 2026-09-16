@@ -16,6 +16,11 @@ import {
   type BoardSlot,
   type AttackTarget,
   type GameState,
+  type CardDefinition,
+  type ChampionDefinition,
+  getLegalActions,
+  executeAction,
+  chooseBestAction,
   fetchPublishedWrestlerCards,
   fetchPublishedCardDefinitions,
   cardRecordToDefinition,
@@ -33,6 +38,8 @@ import { MainMenu } from '@/components/main-menu';
 import { AuthLoading, AuthPage } from '@/components/auth-page';
 import { fetchCurrentUser, logout, type AuthUser } from '@/lib/auth-client';
 import { audioManager } from '@/audio/audio-manager';
+import { fetchDecks, type Deck } from '@/lib/decks-client';
+import { AiMatchSetup } from '@/components/ai-match-setup';
 import type { CardPlayAnimationState, CardPlayGeometry } from '@/components/card-play-animation-utils';
 import { landingImpactLevel } from '@/components/card-play-animation-utils';
 import type { AttackAnimationState } from '@/components/attack-animation-utils';
@@ -108,6 +115,7 @@ function readStoredBgmMute() {
 
 export default function Home() {
   const [, navigate] = useLocation();
+  const isAiMatch = window.location.pathname.endsWith('/ai-match');
   const searchParams = new URLSearchParams(window.location.search);
   const testCardId = searchParams.get('testCardId');
   const testChampionId = searchParams.get('testChampionId');
@@ -132,6 +140,14 @@ export default function Home() {
   const [attackAnimation, setAttackAnimation] = useState<AttackAnimationState | null>(null);
   const [attackImpactTriggered, setAttackImpactTriggered] = useState(false);
   const [matchReady, setMatchReady] = useState(false);
+  const [aiDecks, setAiDecks] = useState<Deck[] | null>(null);
+  const [aiMatchStarted, setAiMatchStarted] = useState(false);
+  const [aiMatchData, setAiMatchData] = useState<{
+    definitions: CardDefinition[];
+    champions: ChampionDefinition[];
+    media: GameMediaCatalog;
+  } | null>(null);
+  const aiActionRunningRef = useRef(false);
   const [presentationBusy, setPresentationBusy] = useState(false);
   const [matchResultVisible, setMatchResultVisible] = useState(false);
   const turnKey = `${gameState.turn}:${gameState.activePlayerId ?? 'none'}`;
@@ -192,6 +208,30 @@ export default function Home() {
       return () => {
         cancelled = true;
       };
+    }
+    if (isAiMatch) {
+      setMatchReady(false);
+      setAiMatchStarted(false);
+      setAiDecks(null);
+      Promise.all([
+        fetchDecks(),
+        fetchPublishedCardDefinitions(),
+        fetchPublishedChampions(),
+        fetchGameMedia(),
+      ]).then(([decks, definitions, champions, media]) => {
+        if (cancelled) return;
+        setAiDecks(decks);
+        setAiMatchData({ definitions, champions, media });
+        setMediaCatalog(media);
+        setRuntimeCardDefinitions(definitions);
+        setPlayError(null);
+      }).catch((reason) => {
+        if (cancelled) return;
+        setAiDecks([]);
+        setAiMatchData(null);
+        setPlayError(reason instanceof Error ? reason.message : 'AI 매치 데이터를 불러오지 못했습니다.');
+      });
+      return () => { cancelled = true; };
     }
     if (!testCardId && !testChampionId && !isAdminSource) {
       setMatchReady(false);
@@ -322,7 +362,97 @@ export default function Home() {
     return () => {
       cancelled = true;
     };
-  }, [authStatus, authUser?.role, isAdminSource, testCardId, testChampionId]);
+  }, [authStatus, authUser?.role, isAdminSource, isAiMatch, testCardId, testChampionId]);
+
+  function startAiMatch(deckId: string) {
+    const deck = aiDecks?.find((candidate) => candidate.id === deckId);
+    const data = aiMatchData;
+    if (!deck?.isValid || !deck.championDefinitionId || !data) return;
+    const userChampion = data.champions.find((champion) => champion.id === deck.championDefinitionId);
+    const aiChampion = data.champions.find((champion) => champion.id !== deck.championDefinitionId) ?? data.champions[0];
+    const aiDeckDefinitionIds = data.definitions
+      .filter((definition) => !definition.isToken && !definition.isChampionToken)
+      .slice(0, 20)
+      .map((definition) => definition.id);
+    if (!userChampion || !aiChampion || deck.cardDefinitionIds.length < 20 || aiDeckDefinitionIds.length < 20) {
+      setPlayError('AI 매치를 시작할 수 있는 공개 카드와 Champion이 부족합니다.');
+      return;
+    }
+    const nextState = startGame(
+      createInitialGameState(
+        [userChampion.id, aiChampion.id],
+        data.definitions,
+        data.champions,
+        [deck.cardDefinitionIds, aiDeckDefinitionIds],
+      ),
+      undefined,
+      data.media,
+    );
+    setGameState(nextState);
+    setMediaCatalog(data.media);
+    setSelectedCardId(null);
+    setSelectedAttackerId(null);
+    setPlayError(null);
+    setAiMatchStarted(true);
+    setMatchReady(true);
+  }
+
+  useEffect(() => {
+    if (
+      !isAiMatch ||
+      !aiMatchStarted ||
+      !matchReady ||
+      gameState.status !== 'IN_PROGRESS' ||
+      gameState.activePlayerId !== gameState.players[1]?.id ||
+      aiActionRunningRef.current
+    ) {
+      return;
+    }
+
+    let cancelled = false;
+    aiActionRunningRef.current = true;
+    const wait = (milliseconds: number) => new Promise<void>((resolve) => window.setTimeout(resolve, milliseconds));
+
+    void (async () => {
+      let workingState = gameState;
+      for (let decision = 0; decision < 50; decision += 1) {
+        if (cancelled || workingState.status !== 'IN_PROGRESS' || workingState.activePlayerId !== workingState.players[1]?.id) break;
+        const legalActions = getLegalActions(workingState, workingState.players[1]!.id);
+        const action = chooseBestAction(workingState, legalActions, workingState.players[1]!.id);
+        await wait(520);
+        if (cancelled) break;
+        const result = executeAction(workingState, action);
+        if (!result.success) {
+          workingState = result.state;
+          break;
+        }
+        workingState = result.state;
+        setGameState(workingState);
+        if (workingState.status === 'FINISHED') break;
+      }
+
+      if (
+        !cancelled &&
+        workingState.status === 'IN_PROGRESS' &&
+        workingState.activePlayerId === workingState.players[1]?.id
+      ) {
+        await wait(420);
+        if (!cancelled) {
+          const ended = executeAction(workingState, {
+            type: 'END_TURN',
+            playerId: workingState.players[1]!.id,
+          });
+          if (ended.success) setGameState(ended.state);
+        }
+      }
+      aiActionRunningRef.current = false;
+    })();
+
+    return () => {
+      cancelled = true;
+      aiActionRunningRef.current = false;
+    };
+  }, [gameState.activePlayerId, gameState.status, isAiMatch, aiMatchStarted, matchReady]);
 
   useEffect(() => {
     const bgm = mediaCatalog.bgms.find((item) => item.id === gameState.bgmId);
@@ -459,7 +589,18 @@ export default function Home() {
       return;
     }
 
-    // 테스트 중에는 상대 턴을 즉시 종료해 플레이어 1의 다음 턴으로 돌아온다.
+    if (isAiMatch && aiMatchStarted) {
+      if (!isTimeout) {
+        timeoutHandledTurnRef.current = turnKey;
+      }
+      setGameState(result.state);
+      setSelectedCardId(null);
+      setSelectedAttackerId(null);
+      setPlayError(isTimeout ? '시간 초과로 턴이 자동 종료되었습니다.' : null);
+      return;
+    }
+
+    // 관리자 테스트 게임에서는 상대 턴을 즉시 종료해 플레이어 1의 다음 턴으로 돌아온다.
     const opponentId = gameState.players[1].id;
     const opponentTurnResult = endTurn(result.state, opponentId);
     if (!opponentTurnResult.success) {
@@ -845,14 +986,26 @@ export default function Home() {
     );
   }
 
-  if (!testCardId && !testChampionId && !isAdminSource) {
+  if (!testCardId && !testChampionId && !isAdminSource && !isAiMatch) {
     return (
       <MainMenu
         user={authUser ?? undefined}
         onLogout={handleLogout}
+        onAiMatch={() => navigate('/ai-match')}
         onDeckEdit={() => {
           window.location.href = `${import.meta.env.BASE_URL.replace(/\/$/, "")}/decks`;
         }}
+      />
+    );
+  }
+
+  if (isAiMatch && !aiMatchStarted) {
+    return (
+      <AiMatchSetup
+        decks={aiDecks}
+        error={playError}
+        onStart={startAiMatch}
+        onBack={() => navigate('/')}
       />
     );
   }

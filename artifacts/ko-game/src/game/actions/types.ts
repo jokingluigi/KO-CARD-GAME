@@ -1,6 +1,19 @@
 import type { GameState } from '../types/game-state';
+import type { BoardSlot } from '../engine/board-position';
+import type { AttackTarget } from '../engine/combat';
 
-export interface GameAction {
+export type GameAction =
+  | { type: 'PLAY_WRESTLER'; playerId: string; cardInstanceId: string; boardSlot: BoardSlot }
+  | { type: 'PLAY_TECHNIQUE'; playerId: string; cardInstanceId: string }
+  | { type: 'USE_ACTIVE'; playerId: string; cardInstanceId: string }
+  | { type: 'USE_CHAMPION_ABILITY'; playerId: string }
+  | { type: 'ATTACK'; playerId: string; attackerInstanceId: string; target: AttackTarget }
+  | { type: 'SELECT_EFFECT_TARGET'; playerId: string; targetId: string }
+  | { type: 'END_TURN'; playerId: string };
+
+export type ActionType = GameAction['type'];
+
+export interface BaseGameAction {
   type: string;
   playerId: string;
 }

@@ -5,6 +5,7 @@ import type { AuthUser } from "@/lib/auth-client";
 type MainMenuProps = {
   onComingSoon?: (label: string) => void;
   onDeckEdit?: () => void;
+  onAiMatch?: () => void;
   user?: AuthUser;
   onLogout?: () => void;
 };
@@ -42,7 +43,7 @@ const menuItems = [
   },
 ] as const;
 
-export function MainMenu({ onComingSoon, onDeckEdit, user, onLogout }: MainMenuProps) {
+export function MainMenu({ onComingSoon, onDeckEdit, onAiMatch, user, onLogout }: MainMenuProps) {
   const [notice, setNotice] = useState("");
 
   return (
@@ -72,6 +73,10 @@ export function MainMenu({ onComingSoon, onDeckEdit, user, onLogout }: MainMenuP
               onClick={() => {
                 if (label === "덱 편집") {
                   onDeckEdit?.();
+                  return;
+                }
+                if (label === "AI 매치") {
+                  onAiMatch?.();
                   return;
                 }
                 if (label === "내 팩") {

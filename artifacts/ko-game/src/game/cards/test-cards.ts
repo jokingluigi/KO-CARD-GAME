@@ -129,3 +129,41 @@ export function createTestDeck(
     };
   });
 }
+
+export function createDeckFromDefinitionIds(
+  playerId: string,
+  definitionIds: readonly string[],
+  definitions: readonly CardDefinition[],
+): CardInstance[] {
+  return definitionIds.flatMap((definitionId, index) => {
+    const definition = definitions.find((candidate) => candidate.id === definitionId);
+    if (!definition) return [];
+    return [{
+      instanceId: `${playerId}-card-${index + 1}`,
+      definitionId: definition.id,
+      cardType: definition.cardType ?? 'WRESTLER',
+      currentCost: definition.cost,
+      currentAttack: definition.attack,
+      currentHealth: definition.health,
+      maxHealth: definition.health,
+      boardSlot: null,
+      enteredThisTurn: false,
+      attacksUsedThisTurn: 0,
+      isGenerated: false,
+      isToken: definition.isToken,
+      isChampionToken: definition.isChampionToken,
+      entranceAudioAssetId: definition.entranceAudioAssetId,
+      entranceAudioUrl: definition.entranceAudioUrl,
+      entranceAudioVolume: definition.entranceAudioVolume,
+      entranceAudioEnabled: definition.entranceAudioEnabled,
+      keywords: [...definition.keywords],
+      abilities: [...definition.abilities],
+      isSilenced: false,
+      isSilenceImmune: false,
+      dodgeAvailable: definition.keywords.includes('DODGE'),
+      isStunned: false,
+      activeUsedThisTurn: false,
+      isDirectDeployedChampion: false,
+    } satisfies CardInstance];
+  });
+}
