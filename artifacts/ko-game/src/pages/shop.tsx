@@ -7,6 +7,7 @@ const basePath = import.meta.env.BASE_URL.replace(/\/$/, "");
 
 export default function ShopPage() {
   const [currency, setCurrency] = useState(0);
+  const [isTestAccount, setIsTestAccount] = useState(false);
   const [currencyDisplayName, setCurrencyDisplayName] = useState("크레딧");
   const [listings, setListings] = useState<ShopListing[]>([]);
   const [message, setMessage] = useState("상점을 불러오는 중...");
@@ -17,6 +18,7 @@ export default function ShopPage() {
   async function refresh() {
     const result = await fetchShop();
     setCurrency(result.currencyBalance);
+    setIsTestAccount(result.isTestAccount);
     setCurrencyDisplayName(result.currencyDisplayName);
     setListings(result.listings);
   }
@@ -68,8 +70,8 @@ export default function ShopPage() {
           <button type="button" onClick={() => { window.location.href = basePath; }} className="flex items-center gap-2 text-sm font-bold text-neutral-400 hover:text-white">
             <ArrowLeft className="h-4 w-4" /> 메인 메뉴
           </button>
-          <div className="flex items-center gap-2 rounded-full border border-amber-700/50 bg-amber-950/30 px-4 py-2 text-sm font-black text-amber-200">
-            <Coins className="h-4 w-4 text-amber-400" /> {currency.toLocaleString()} {currencyDisplayName}
+           <div className="flex items-center gap-2 rounded-full border border-amber-700/50 bg-amber-950/30 px-4 py-2 text-sm font-black text-amber-200">
+             <Coins className="h-4 w-4 text-amber-400" /> {isTestAccount ? "∞" : currency.toLocaleString()} {currencyDisplayName}
           </div>
         </div>
         <header className="mb-8 flex items-end justify-between border-b border-neutral-800 pb-6">
@@ -81,7 +83,7 @@ export default function ShopPage() {
         {!message && !hasListings && <div className="rounded-xl border border-dashed border-neutral-800 px-5 py-16 text-center text-sm text-neutral-500">현재 판매 중인 카드팩이 없습니다.</div>}
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {listings.map((listing) => {
-            const canAfford = currency >= listing.price;
+             const canAfford = isTestAccount || currency >= listing.price;
             const busy = purchasingId === listing.id;
             return (
               <article key={listing.id} className="overflow-hidden rounded-xl border border-neutral-800 bg-black/40">

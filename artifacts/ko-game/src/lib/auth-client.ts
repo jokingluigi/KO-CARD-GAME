@@ -6,6 +6,7 @@ export type AuthUser = {
   currency: number;
   currencyBalance: number;
   prismBalance: number;
+  isTestAccount: boolean;
 };
 
 export type AuthResponse = {

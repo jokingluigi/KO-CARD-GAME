@@ -17,6 +17,7 @@ import {
   toPrismSettingView,
   type PrismRarity,
 } from "../lib/prism-economy";
+import { isTestAccountUser, TEST_ACCOUNT_UNLIMITED_BALANCE } from "../lib/test-account";
 
 const router: IRouter = Router();
 type QueryExecutor = { select: typeof db.select };
@@ -53,7 +54,8 @@ router.get("/", async (request, response): Promise<void> => {
   const rows = await db.select().from(prismEconomySettingsTable)
     .where(inArray(prismEconomySettingsTable.rarity, [...PRISM_RARITIES]));
   response.json({
-    prismBalance: user.prismBalance,
+    prismBalance: isTestAccountUser(user) ? TEST_ACCOUNT_UNLIMITED_BALANCE : user.prismBalance,
+    isTestAccount: isTestAccountUser(user),
     settings: PRISM_RARITIES.map((rarity) => toPrismSettingView(
       rarity,
       rows.find((row) => row.rarity === rarity),
@@ -90,17 +92,23 @@ router.post("/craft/:cardDefinitionId", async (request, response): Promise<void>
       const card = await getCraftableCard(request.params.cardDefinitionId, tx);
       if (!card) throw new PrismError(404, "제작할 수 없는 카드입니다.");
       const setting = await getUsableSetting(card.rarity as PrismRarity, "제작", tx);
-      const [updatedUser] = await tx.update(usersTable)
-        .set({
-          prismBalance: sql`${usersTable.prismBalance} - ${setting.craftCost}`,
-          updatedAt: new Date(),
-        })
-        .where(and(
-          eq(usersTable.id, user.id),
-          sql`${usersTable.prismBalance} >= ${setting.craftCost}`,
-        ))
-        .returning({ prismBalance: usersTable.prismBalance });
-      if (!updatedUser) throw new PrismError(422, "프리즘이 부족합니다.");
+      let prismBalance = user.prismBalance;
+      if (!isTestAccountUser(user)) {
+        const [updatedUser] = await tx.update(usersTable)
+          .set({
+            prismBalance: sql`${usersTable.prismBalance} - ${setting.craftCost}`,
+            updatedAt: new Date(),
+          })
+          .where(and(
+            eq(usersTable.id, user.id),
+            sql`${usersTable.prismBalance} >= ${setting.craftCost}`,
+          ))
+          .returning({ prismBalance: usersTable.prismBalance });
+        if (!updatedUser) throw new PrismError(422, "프리즘이 부족합니다.");
+        prismBalance = updatedUser.prismBalance;
+      } else {
+        prismBalance = TEST_ACCOUNT_UNLIMITED_BALANCE;
+      }
       const [collection] = await tx.insert(userCardCollectionsTable)
         .values({
           userId: user.id,
@@ -119,11 +127,11 @@ router.post("/craft/:cardDefinitionId", async (request, response): Promise<void>
         userId: user.id,
         type: "CRAFT",
         amount: -setting.craftCost,
-        balanceAfter: updatedUser.prismBalance,
+        balanceAfter: prismBalance,
         cardDefinitionId: card.id,
         metadata: JSON.stringify({ rarity: card.rarity }),
       });
-      return { card, prismBalance: updatedUser.prismBalance, quantity: collection?.quantity ?? 1 };
+      return { card, prismBalance, quantity: collection?.quantity ?? 1 };
     });
     response.json(result);
   } catch (error) {
@@ -151,24 +159,30 @@ router.post("/disenchant/:cardDefinitionId", async (request, response): Promise<
         ))
         .returning({ quantity: userCardCollectionsTable.quantity });
       if (!collection) throw new PrismError(422, "소유한 카드만 분해할 수 있습니다.");
-      const [updatedUser] = await tx.update(usersTable)
-        .set({
-          prismBalance: sql`${usersTable.prismBalance} + ${setting.disenchantReward}`,
-          updatedAt: new Date(),
-        })
-        .where(eq(usersTable.id, user.id))
-        .returning({ prismBalance: usersTable.prismBalance });
-      if (!updatedUser) throw new PrismError(404, "사용자를 찾을 수 없습니다.");
+      let prismBalance = user.prismBalance;
+      if (!isTestAccountUser(user)) {
+        const [updatedUser] = await tx.update(usersTable)
+          .set({
+            prismBalance: sql`${usersTable.prismBalance} + ${setting.disenchantReward}`,
+            updatedAt: new Date(),
+          })
+          .where(eq(usersTable.id, user.id))
+          .returning({ prismBalance: usersTable.prismBalance });
+        if (!updatedUser) throw new PrismError(404, "사용자를 찾을 수 없습니다.");
+        prismBalance = updatedUser.prismBalance;
+      } else {
+        prismBalance = TEST_ACCOUNT_UNLIMITED_BALANCE;
+      }
       await tx.insert(prismTransactionsTable).values({
         id: randomUUID(),
         userId: user.id,
         type: "DISENCHANT",
         amount: setting.disenchantReward,
-        balanceAfter: updatedUser.prismBalance,
+        balanceAfter: prismBalance,
         cardDefinitionId: card.id,
         metadata: JSON.stringify({ rarity: card.rarity }),
       });
-      return { card, prismBalance: updatedUser.prismBalance, quantity: collection.quantity };
+      return { card, prismBalance, quantity: collection.quantity };
     });
     response.json(result);
   } catch (error) {

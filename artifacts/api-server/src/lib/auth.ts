@@ -3,6 +3,7 @@ import { and, eq, gt } from "drizzle-orm";
 import type { NextFunction, Request, Response } from "express";
 import { db, sessionsTable, usersTable, type UserRecord } from "@workspace/db";
 import { ensureStartingShopCurrency } from "./shop-currency";
+import { isTestAccountUser, TEST_ACCOUNT_UNLIMITED_BALANCE } from "./test-account";
 
 export const AUTH_SESSION_COOKIE = "ko_session";
 export const AUTH_SESSION_TTL_SECONDS = 30 * 24 * 60 * 60;
@@ -10,7 +11,11 @@ const LOGIN_WINDOW_MS = 15 * 60 * 1000;
 const LOGIN_MAX_ATTEMPTS = 8;
 const loginAttempts = new Map<string, { count: number; resetAt: number }>();
 
-export type PublicUser = Pick<UserRecord, "id" | "email" | "nickname" | "role" | "currency" | "currencyBalance" | "prismBalance">;
+export type PublicUser = Pick<UserRecord, "id" | "email" | "nickname" | "role" | "currency"> & {
+  currencyBalance: number;
+  prismBalance: number;
+  isTestAccount: boolean;
+};
 
 declare global {
   namespace Express {
@@ -21,14 +26,16 @@ declare global {
 }
 
 function publicUser(user: UserRecord, currencyBalance = user.currencyBalance): PublicUser {
+  const testAccount = isTestAccountUser(user);
   return {
     id: user.id,
     email: user.email,
     nickname: user.nickname,
     role: user.role,
     currency: user.currency,
-    currencyBalance,
-    prismBalance: user.prismBalance,
+    currencyBalance: testAccount ? TEST_ACCOUNT_UNLIMITED_BALANCE : currencyBalance,
+    prismBalance: testAccount ? TEST_ACCOUNT_UNLIMITED_BALANCE : user.prismBalance,
+    isTestAccount: testAccount,
   };
 }
 

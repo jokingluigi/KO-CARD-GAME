@@ -55,8 +55,13 @@ export function MainMenu({ onComingSoon, onDeckEdit, onAiMatch, user, onLogout }
           {user && onLogout && (
             <div className="ko-main-menu__user">
               <span>{user.nickname}</span>
-              <span className="text-amber-300">크레딧 {user.currencyBalance.toLocaleString()}</span>
-              <span className="text-violet-300">프리즘 {user.prismBalance.toLocaleString()}</span>
+              {user.isTestAccount && (
+                <span className="rounded border border-amber-500/50 bg-amber-950/40 px-2 py-1 text-[10px] font-black tracking-wider text-amber-200">
+                  TEST ACCOUNT · 전체 카드/Champion · 재화 무제한
+                </span>
+              )}
+              <span className="text-amber-300">크레딧 {user.isTestAccount ? "∞" : user.currencyBalance.toLocaleString()}</span>
+              <span className="text-violet-300">프리즘 {user.isTestAccount ? "∞" : user.prismBalance.toLocaleString()}</span>
               <button type="button" onClick={onLogout} aria-label="로그아웃">
                 <LogOut className="h-3.5 w-3.5" aria-hidden="true" />
                 로그아웃

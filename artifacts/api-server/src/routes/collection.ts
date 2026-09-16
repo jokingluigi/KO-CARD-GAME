@@ -15,6 +15,12 @@ import {
 import { ensureStarterCollection } from "../lib/collection";
 import { getAuthenticatedUser } from "../lib/auth";
 import { PRISM_RARITIES, toPrismSettingView } from "../lib/prism-economy";
+import {
+  isEligibleTestCard,
+  isTestAccountUser,
+  TEST_ACCOUNT_UNLIMITED_BALANCE,
+  TEST_ACCOUNT_UNLIMITED_QUANTITY,
+} from "../lib/test-account";
 
 const router: IRouter = Router();
 
@@ -42,7 +48,7 @@ router.use(async (request, response, next) => {
 router.get("/", async (request, response): Promise<void> => {
   const user = requireUser(request, response);
   if (!user) return;
-  const [cardRows, championRows, craftableCards, prismSettings] = await Promise.all([
+  const [cardRows, championRows, craftableCards, prismSettings, publishedTestCards, publishedTestChampions] = await Promise.all([
     db.select({
       quantity: userCardCollectionsTable.quantity,
       obtainedAt: userCardCollectionsTable.obtainedAt,
@@ -78,14 +84,38 @@ router.get("/", async (request, response): Promise<void> => {
       .orderBy(asc(cardsTable.cost), asc(cardsTable.name)),
     db.select().from(prismEconomySettingsTable)
       .where(inArray(prismEconomySettingsTable.rarity, [...PRISM_RARITIES])),
+    db.select().from(cardsTable)
+      .where(and(
+        eq(cardsTable.status, "PUBLISHED"),
+        eq(cardsTable.isToken, false),
+        eq(cardsTable.isChampionToken, false),
+      ))
+      .orderBy(asc(cardsTable.cost), asc(cardsTable.name)),
+    db.select().from(championsTable)
+      .where(eq(championsTable.status, "PUBLISHED"))
+      .orderBy(asc(championsTable.name)),
   ]);
+  const testAccount = isTestAccountUser(user);
+  const visibleCardRows = testAccount
+    ? publishedTestCards.filter(isEligibleTestCard).map((card) => ({
+      quantity: TEST_ACCOUNT_UNLIMITED_QUANTITY,
+      obtainedAt: null,
+      card,
+    }))
+    : cardRows;
+  const visibleChampionRows = testAccount
+    ? publishedTestChampions.map((champion) => ({ owned: true, obtainedAt: null, champion }))
+    : championRows;
   response.json({
-    prismBalance: user.prismBalance,
-    cards: cardRows.map((row) => ({ ...row.card, quantity: row.quantity, obtainedAt: row.obtainedAt })),
-    champions: championRows.map((row) => ({ ...row.champion, obtainedAt: row.obtainedAt })),
+    prismBalance: testAccount ? TEST_ACCOUNT_UNLIMITED_BALANCE : user.prismBalance,
+    isTestAccount: testAccount,
+    cards: visibleCardRows.map((row) => ({ ...row.card, quantity: row.quantity, obtainedAt: row.obtainedAt })),
+    champions: visibleChampionRows.map((row) => ({ ...row.champion, obtainedAt: row.obtainedAt })),
     craftableCards: craftableCards.map((card) => ({
       ...card,
-      quantity: cardRows.find((row) => row.card.id === card.id)?.quantity ?? 0,
+      quantity: testAccount
+        ? TEST_ACCOUNT_UNLIMITED_QUANTITY
+        : cardRows.find((row) => row.card.id === card.id)?.quantity ?? 0,
     })),
     prismSettings: PRISM_RARITIES.map((rarity) => toPrismSettingView(
       rarity,

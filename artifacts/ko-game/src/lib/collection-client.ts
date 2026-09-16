@@ -53,6 +53,7 @@ export type Collection = {
   champions: CollectionChampion[];
   prismBalance: number;
   prismSettings: PrismSetting[];
+  isTestAccount: boolean;
 };
 export type Pack = {
   id: string; name: string; description: string; cardsPerPack: number;
@@ -113,7 +114,7 @@ export type ShopListing = {
   displayOrder: number;
   pack: Pack;
 };
-export type ShopData = { currencyBalance: number; currencyDisplayName: string; listings: ShopListing[] };
+export type ShopData = { currencyBalance: number; currencyDisplayName: string; listings: ShopListing[]; isTestAccount: boolean };
 export const fetchShop = () => request<ShopData>("/shop");
 export const purchaseShopListing = (listingId: string, quantity = 1) => request<{
   currencyBalance: number;

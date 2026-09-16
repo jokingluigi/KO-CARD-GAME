@@ -11,6 +11,7 @@ import {
 } from "@workspace/db";
 import { getAuthenticatedUser } from "../lib/auth";
 import { SHOP_CURRENCY, SHOP_CURRENCY_DISPLAY_NAME } from "../lib/shop-currency";
+import { isTestAccountUser, TEST_ACCOUNT_UNLIMITED_BALANCE } from "../lib/test-account";
 
 const router: IRouter = Router();
 
@@ -52,7 +53,8 @@ router.get("/", async (request, response): Promise<void> => {
     .orderBy(asc(shopListingsTable.displayOrder), asc(packDefinitionsTable.name));
 
   response.json({
-    currencyBalance: request.authUser!.currencyBalance,
+    currencyBalance: isTestAccountUser(request.authUser) ? TEST_ACCOUNT_UNLIMITED_BALANCE : request.authUser!.currencyBalance,
+    isTestAccount: isTestAccountUser(request.authUser),
     currencyDisplayName: SHOP_CURRENCY_DISPLAY_NAME,
     listings: listings.map(({ listing, pack, quantity }) => ({
       ...listing,
@@ -84,15 +86,22 @@ router.post("/:listingId/purchase", async (request, response): Promise<void> => 
       if (!listing) throw new ShopError(404, "판매 중인 팩을 찾을 수 없습니다.");
 
       const total = listing.listing.price;
-      const [updatedUser] = await tx
-        .update(usersTable)
-        .set({ currencyBalance: sql`${usersTable.currencyBalance} - ${total}`, updatedAt: new Date() })
-        .where(and(
-          eq(usersTable.id, request.authUser!.id),
-          sql`${usersTable.currencyBalance} >= ${total}`,
-        ))
-        .returning({ currencyBalance: usersTable.currencyBalance });
-      if (!updatedUser) throw new ShopError(422, "크레딧이 부족합니다.");
+      const testAccount = isTestAccountUser(request.authUser);
+      let currencyBalance = request.authUser!.currencyBalance;
+      if (!testAccount) {
+        const [updatedUser] = await tx
+          .update(usersTable)
+          .set({ currencyBalance: sql`${usersTable.currencyBalance} - ${total}`, updatedAt: new Date() })
+          .where(and(
+            eq(usersTable.id, request.authUser!.id),
+            sql`${usersTable.currencyBalance} >= ${total}`,
+          ))
+          .returning({ currencyBalance: usersTable.currencyBalance });
+        if (!updatedUser) throw new ShopError(422, "크레딧이 부족합니다.");
+        currencyBalance = updatedUser.currencyBalance;
+      } else {
+        currencyBalance = TEST_ACCOUNT_UNLIMITED_BALANCE;
+      }
 
       const [inventory] = await tx
         .insert(userPackInventoryTable)
@@ -115,7 +124,7 @@ router.post("/:listingId/purchase", async (request, response): Promise<void> => 
         id: randomUUID(),
         userId: request.authUser!.id,
         amount: -total,
-        balanceAfter: updatedUser.currencyBalance,
+        balanceAfter: currencyBalance,
         relatedListingId: listing.listing.id,
         currencyType: SHOP_CURRENCY,
         type: "SHOP_PURCHASE",
@@ -123,7 +132,7 @@ router.post("/:listingId/purchase", async (request, response): Promise<void> => 
       });
 
       return {
-        currencyBalance: updatedUser.currencyBalance,
+        currencyBalance,
         packQuantity: listing.listing.quantity,
         ownedQuantity: inventory?.quantity ?? listing.listing.quantity,
         pack: listing.pack,

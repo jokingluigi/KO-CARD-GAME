@@ -21,7 +21,7 @@ function rarityLabel(rarity: string) {
   return rarity === "LEGENDARY" ? "LEGENDARY" : "NORMAL";
 }
 
-function CardCollectionItem({ card, onOpen, showCraftable = false }: { card: CollectionCard; onOpen: () => void; showCraftable?: boolean }) {
+function CardCollectionItem({ card, onOpen, showCraftable = false, unlimited = false }: { card: CollectionCard; onOpen: () => void; showCraftable?: boolean; unlimited?: boolean }) {
   function handleKeyDown(event: KeyboardEvent<HTMLDivElement>) {
     if (event.key === "Enter" || event.key === " ") {
       event.preventDefault();
@@ -58,7 +58,7 @@ function CardCollectionItem({ card, onOpen, showCraftable = false }: { card: Col
           className="w-full"
         />
         <span className="absolute right-1 top-1 z-30 rounded-full border border-amber-300/50 bg-black/80 px-2 py-1 text-xs font-black text-amber-200">
-           {showCraftable && card.quantity === 0 ? "제작 가능" : `×${card.quantity}`}
+            {unlimited ? "∞" : showCraftable && card.quantity === 0 ? "제작 가능" : `×${card.quantity}`}
         </span>
       </div>
       <div className="flex items-center justify-between gap-2 px-1 pb-1 pt-2">
@@ -205,9 +205,9 @@ export default function CollectionPage() {
             <h1 className="mt-2 text-3xl font-black">내 컬렉션</h1>
             <p className="mt-2 text-sm text-neutral-500">보유한 카드와 제작 가능한 NORMAL/LEGENDARY 카드를 확인할 수 있습니다.</p>
           </div>
-           <div className="flex items-center gap-2 rounded-full border border-amber-500/40 bg-amber-950/30 px-3 py-2 text-sm font-black text-amber-200">
+             <div className="flex items-center gap-2 rounded-full border border-amber-500/40 bg-amber-950/30 px-3 py-2 text-sm font-black text-amber-200">
              <Sparkles className="h-4 w-4 text-amber-400" />
-             ◆ {collection?.prismBalance.toLocaleString() ?? "—"} 프리즘
+              ◆ {collection?.isTestAccount ? "∞" : collection?.prismBalance.toLocaleString() ?? "—"} 프리즘
            </div>
         </header>
 
@@ -248,7 +248,7 @@ export default function CollectionPage() {
               <EmptyState title={tab === "cards" ? (collection?.cards.length ? "조건에 맞는 카드가 없습니다." : "아직 보유한 카드가 없습니다.") : "제작 가능한 카드가 없습니다."} />
             ) : (
               <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 sm:gap-4 lg:grid-cols-5">
-                {(tab === "cards" ? filteredCards : filteredCraftableCards).map((card) => <CardCollectionItem key={card.id} card={card} showCraftable={tab === "crafting"} onOpen={() => setSelectedCard(card)} />)}
+               {(tab === "cards" ? filteredCards : filteredCraftableCards).map((card) => <CardCollectionItem key={card.id} card={card} showCraftable={tab === "crafting"} unlimited={collection?.isTestAccount} onOpen={() => setSelectedCard(card)} />)}
               </div>
             )}
           </>
@@ -270,7 +270,7 @@ export default function CollectionPage() {
               <DialogHeader>
                 <DialogTitle className="text-left text-xl font-black">{selectedCard.name}</DialogTitle>
                 <DialogDescription className="text-left text-xs text-neutral-500">
-                  {selectedCard.cardType} · {rarityLabel(selectedCard.rarity)} · 보유 수량 ×{selectedCard.quantity}
+                   {selectedCard.cardType} · {rarityLabel(selectedCard.rarity)} · 보유 수량 {collection?.isTestAccount ? "∞" : `×${selectedCard.quantity}`}
                 </DialogDescription>
               </DialogHeader>
               <div className="grid gap-5 sm:grid-cols-[minmax(180px,250px)_1fr] sm:items-start">
@@ -307,10 +307,10 @@ export default function CollectionPage() {
                          <p>제작 비용: <strong className="text-amber-200">{selectedSetting.craftCost!.toLocaleString()} 프리즘</strong></p>
                          <p>분해 획득량: <strong className="text-emerald-300">{selectedSetting.disenchantReward!.toLocaleString()} 프리즘</strong></p>
                          <div className="grid gap-2 sm:grid-cols-2">
-                           <button type="button" disabled={isMutating || prismBalance < selectedSetting.craftCost!} onClick={() => setPendingAction({ type: "CRAFT", card: selectedCard })} className="flex items-center justify-center gap-2 rounded bg-amber-400 px-3 py-2.5 font-black text-black disabled:cursor-not-allowed disabled:opacity-40"><Hammer className="h-4 w-4" /> 제작</button>
+                            <button type="button" disabled={isMutating || (!collection?.isTestAccount && prismBalance < selectedSetting.craftCost!)} onClick={() => setPendingAction({ type: "CRAFT", card: selectedCard })} className="flex items-center justify-center gap-2 rounded bg-amber-400 px-3 py-2.5 font-black text-black disabled:cursor-not-allowed disabled:opacity-40"><Hammer className="h-4 w-4" /> 제작</button>
                            <button type="button" disabled={isMutating || selectedCard.quantity < 1} onClick={() => setPendingAction({ type: "DISENCHANT", card: selectedCard })} className="rounded border border-emerald-700 px-3 py-2.5 font-black text-emerald-300 disabled:cursor-not-allowed disabled:opacity-40">1장 분해</button>
                          </div>
-                         {prismBalance < selectedSetting.craftCost! && <p className="text-[11px] text-red-300">프리즘이 부족합니다.</p>}
+                          {!collection?.isTestAccount && prismBalance < selectedSetting.craftCost! && <p className="text-[11px] text-red-300">프리즘이 부족합니다.</p>}
                          {selectedCard.quantity < 1 && <p className="text-[11px] text-neutral-500">소유한 카드가 있어야 분해할 수 있습니다.</p>}
                        </div>
                      ) : (

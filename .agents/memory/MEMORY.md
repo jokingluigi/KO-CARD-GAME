@@ -43,3 +43,4 @@
 - [Champion ability turn limit](champion-ability-turn-limit.md) — enforce one Champion ability use per player turn in game state and reset at turn start.
 - [Unified effect implementation prompt](unified-effect-prompt-boundary.md) — reanalyze live cards/Champion slots against the current registry; Champion Tokens remain CardDefinition references.
 - [AI action boundary](ai-action-boundary.md) — AI turns must choose from legal engine actions, execute through the dispatcher, and evaluate only its own hand plus public board state.
+- [Test account economy boundary](test-account-economy-boundary.md) — test-only unlimited ownership and balances are server-derived, development-gated, and never alter match Gold or normal-user economics.

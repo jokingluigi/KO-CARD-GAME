@@ -12,6 +12,11 @@ import {
   type DeckRecord,
 } from "@workspace/db";
 import { getAuthenticatedUser } from "../lib/auth";
+import {
+  isEligibleTestCard,
+  isTestAccountUser,
+  TEST_ACCOUNT_UNLIMITED_QUANTITY,
+} from "../lib/test-account";
 
 const router: IRouter = Router();
 const MIN_DECK_SIZE = 20;
@@ -74,7 +79,7 @@ async function loadUserDeck(userId: string, deckId: string): Promise<DeckRecord 
   return deck ?? null;
 }
 
-async function resolveDeck(deck: DeckRecord, userId: string): Promise<ResolvedDeck> {
+async function resolveDeck(deck: DeckRecord, userId: string, testAccount = false): Promise<ResolvedDeck> {
   const [champion] = deck.championDefinitionId
     ? await db
         .select()
@@ -105,6 +110,12 @@ async function resolveDeck(deck: DeckRecord, userId: string): Promise<ResolvedDe
   ]);
   const ownedCardIds = new Set(ownedCardRows.map((row) => row.id));
   const ownedCardQuantities = new Map(ownedCardRows.map((row) => [row.id, row.quantity]));
+  if (testAccount) {
+    cards.filter(isEligibleTestCard).forEach((card) => {
+      ownedCardIds.add(card.id);
+      ownedCardQuantities.set(card.id, TEST_ACCOUNT_UNLIMITED_QUANTITY);
+    });
+  }
   const missingCardDefinitionIds = uniqueCardIds.filter((id) => !cardById.has(id));
   const invalidReasons: string[] = [];
 
@@ -112,7 +123,7 @@ async function resolveDeck(deck: DeckRecord, userId: string): Promise<ResolvedDe
     invalidReasons.push("사용할 수 없는 Champion이 포함되어 있습니다.");
   } else if (champion.status !== "PUBLISHED") {
     invalidReasons.push("사용할 수 없는 Champion이 포함되어 있습니다.");
-  } else if (ownedChampionRows.length === 0) {
+  } else if (ownedChampionRows.length === 0 && !testAccount) {
     invalidReasons.push("소유하지 않은 Champion이 포함되어 있습니다.");
   }
   if (deck.cardDefinitionIds.length < MIN_DECK_SIZE) {
@@ -192,7 +203,7 @@ async function parseDeckPayload(value: unknown): Promise<
   };
 }
 
-async function validateReferences(payload: DeckPayload, userId: string): Promise<string | null> {
+async function validateReferences(payload: DeckPayload, userId: string, testAccount = false): Promise<string | null> {
   if (payload.championDefinitionId) {
     const [champion] = await db
       .select({ id: championsTable.id, status: championsTable.status })
@@ -205,7 +216,7 @@ async function validateReferences(payload: DeckPayload, userId: string): Promise
     const [ownedChampion] = await db.select({ id: userChampionCollectionsTable.championDefinitionId })
       .from(userChampionCollectionsTable)
       .where(and(eq(userChampionCollectionsTable.userId, userId), eq(userChampionCollectionsTable.championDefinitionId, champion.id), eq(userChampionCollectionsTable.owned, true)));
-    if (!ownedChampion) return "소유한 Champion만 선택할 수 있습니다.";
+    if (!ownedChampion && !testAccount) return "소유한 Champion만 선택할 수 있습니다.";
   }
   const uniqueCardIds = [...new Set(payload.cardDefinitionIds)];
   if (uniqueCardIds.length === 0) return null;
@@ -234,7 +245,10 @@ async function validateReferences(payload: DeckPayload, userId: string): Promise
   const ownedCards = await db.select({ id: userCardCollectionsTable.cardDefinitionId })
     .from(userCardCollectionsTable)
     .where(and(eq(userCardCollectionsTable.userId, userId), inArray(userCardCollectionsTable.cardDefinitionId, uniqueCardIds), sql`${userCardCollectionsTable.quantity} > 0`));
-  if (ownedCards.length !== uniqueCardIds.length) return "소유한 카드만 덱에 넣을 수 있습니다.";
+  if (
+    !testAccount &&
+    ownedCards.length !== uniqueCardIds.length
+  ) return "소유한 카드만 덱에 넣을 수 있습니다.";
   const cardById = new Map(cards.map((card) => [card.id, card]));
   const ruleReasons = getCardRuleReasons(payload.cardDefinitionIds, cardById);
   if (ruleReasons.length > 0) return ruleReasons.join(" ");
@@ -264,7 +278,7 @@ router.get("/", async (request, response): Promise<void> => {
     .where(eq(decksTable.userId, user.id))
     .orderBy(asc(decksTable.createdAt));
   response.setHeader("Cache-Control", "no-store");
-  response.json({ decks: await Promise.all(decks.map((deck) => resolveDeck(deck, user.id))) });
+  response.json({ decks: await Promise.all(decks.map((deck) => resolveDeck(deck, user.id, isTestAccountUser(user)))) });
 });
 
 router.get("/options", async (request, response): Promise<void> => {
@@ -297,12 +311,16 @@ router.get("/options", async (request, response): Promise<void> => {
   const ownedCardIds = new Set(ownedCards.map((card) => card.id));
   const ownedChampionIds = new Set(ownedChampions.map((champion) => champion.id));
   response.setHeader("Cache-Control", "no-store");
+  const testAccount = isTestAccountUser(user);
+  const visibleCards = testAccount ? cards : cards.filter((card) => ownedCardIds.has(card.id));
+  const visibleChampions = testAccount ? champions : champions.filter((champion) => ownedChampionIds.has(champion.id));
   response.json({
-    cards: cards.filter((card) => ownedCardIds.has(card.id)).map((card) => ({
+    isTestAccount: testAccount,
+    cards: visibleCards.map((card) => ({
       ...card,
-      quantity: ownedCards.find((owned) => owned.id === card.id)?.quantity ?? 0,
+      quantity: testAccount ? TEST_ACCOUNT_UNLIMITED_QUANTITY : ownedCards.find((owned) => owned.id === card.id)?.quantity ?? 0,
     })),
-    champions: champions.filter((champion) => ownedChampionIds.has(champion.id)),
+    champions: visibleChampions,
   });
 });
 
@@ -314,7 +332,7 @@ router.post("/", async (request, response): Promise<void> => {
     response.status(400).json({ message: parsed.message });
     return;
   }
-  const referenceError = await validateReferences(parsed.payload, user.id);
+  const referenceError = await validateReferences(parsed.payload, user.id, isTestAccountUser(user));
   if (referenceError) {
     response.status(400).json({ message: referenceError });
     return;
@@ -327,7 +345,7 @@ router.post("/", async (request, response): Promise<void> => {
       ...parsed.payload,
     })
     .returning();
-  response.status(201).json({ deck: deck ? await resolveDeck(deck, user.id) : null });
+  response.status(201).json({ deck: deck ? await resolveDeck(deck, user.id, isTestAccountUser(user)) : null });
 });
 
 router.patch("/:id", async (request, response): Promise<void> => {
@@ -343,7 +361,7 @@ router.patch("/:id", async (request, response): Promise<void> => {
     response.status(400).json({ message: parsed.message });
     return;
   }
-  const referenceError = await validateReferences(parsed.payload, user.id);
+  const referenceError = await validateReferences(parsed.payload, user.id, isTestAccountUser(user));
   if (referenceError) {
     response.status(400).json({ message: referenceError });
     return;
@@ -353,7 +371,7 @@ router.patch("/:id", async (request, response): Promise<void> => {
     .set({ ...parsed.payload, updatedAt: new Date() })
     .where(and(eq(decksTable.id, existing.id), eq(decksTable.userId, user.id)))
     .returning();
-  response.json({ deck: deck ? await resolveDeck(deck, user.id) : null });
+  response.json({ deck: deck ? await resolveDeck(deck, user.id, isTestAccountUser(user)) : null });
 });
 
 router.post("/:id/select", async (request, response): Promise<void> => {
@@ -364,7 +382,7 @@ router.post("/:id/select", async (request, response): Promise<void> => {
     response.status(404).json({ message: "덱을 찾을 수 없습니다." });
     return;
   }
-  const resolved = await resolveDeck(existing, user.id);
+  const resolved = await resolveDeck(existing, user.id, isTestAccountUser(user));
   if (!resolved.isValid) {
     response.status(400).json({ message: "미완성 또는 사용할 수 없는 덱은 대표 덱으로 설정할 수 없습니다." });
     return;
