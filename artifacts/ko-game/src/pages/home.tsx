@@ -21,6 +21,7 @@ import {
   getLegalActions,
   executeAction,
   chooseBestAction,
+  rankActions,
   fetchPublishedWrestlerCards,
   fetchPublishedCardDefinitions,
   cardRecordToDefinition,
@@ -39,6 +40,7 @@ import { AuthLoading, AuthPage } from '@/components/auth-page';
 import { fetchCurrentUser, logout, type AuthUser } from '@/lib/auth-client';
 import { audioManager } from '@/audio/audio-manager';
 import { fetchDecks, type Deck } from '@/lib/decks-client';
+import { fetchAIDecks, type AIDeck } from '@/lib/ai-decks-client';
 import { AiMatchSetup } from '@/components/ai-match-setup';
 import type { CardPlayAnimationState, CardPlayGeometry } from '@/components/card-play-animation-utils';
 import { landingImpactLevel } from '@/components/card-play-animation-utils';
@@ -119,6 +121,7 @@ export default function Home() {
   const searchParams = new URLSearchParams(window.location.search);
   const testCardId = searchParams.get('testCardId');
   const testChampionId = searchParams.get('testChampionId');
+  const initialAiDeckId = searchParams.get('aiDeckId');
   const isAdminSource = searchParams.get('source') === 'admin';
   const [isAdminTestMatch, setIsAdminTestMatch] = useState(isAdminSource);
   const [authStatus, setAuthStatus] = useState<'loading' | 'authenticated' | 'unauthenticated'>('loading');
@@ -141,6 +144,7 @@ export default function Home() {
   const [attackImpactTriggered, setAttackImpactTriggered] = useState(false);
   const [matchReady, setMatchReady] = useState(false);
   const [aiDecks, setAiDecks] = useState<Deck[] | null>(null);
+  const [availableAIDecks, setAvailableAIDecks] = useState<AIDeck[] | null>(null);
   const [aiMatchStarted, setAiMatchStarted] = useState(false);
   const [aiMatchData, setAiMatchData] = useState<{
     definitions: CardDefinition[];
@@ -213,14 +217,17 @@ export default function Home() {
       setMatchReady(false);
       setAiMatchStarted(false);
       setAiDecks(null);
+      setAvailableAIDecks(null);
       Promise.all([
         fetchDecks(),
+        fetchAIDecks(initialAiDeckId),
         fetchPublishedCardDefinitions(),
         fetchPublishedChampions(),
         fetchGameMedia(),
-      ]).then(([decks, definitions, champions, media]) => {
+      ]).then(([decks, aiDeckResult, definitions, champions, media]) => {
         if (cancelled) return;
         setAiDecks(decks);
+        setAvailableAIDecks(aiDeckResult.decks);
         setAiMatchData({ definitions, champions, media });
         setMediaCatalog(media);
         setRuntimeCardDefinitions(definitions);
@@ -364,16 +371,20 @@ export default function Home() {
     };
   }, [authStatus, authUser?.role, isAdminSource, isAiMatch, testCardId, testChampionId]);
 
-  function startAiMatch(deckId: string) {
+  function startAiMatch(deckId: string, aiDeckId: string | null) {
     const deck = aiDecks?.find((candidate) => candidate.id === deckId);
     const data = aiMatchData;
     if (!deck?.isValid || !deck.championDefinitionId || !data) return;
+    const candidates = availableAIDecks?.filter((candidate) => candidate.isValid && candidate.enabled) ?? [];
+    const aiDeck = (aiDeckId ? candidates.find((candidate) => candidate.id === aiDeckId) : undefined)
+      ?? candidates[Math.floor(Math.random() * candidates.length)];
+    if (!aiDeck) {
+      setPlayError('사용 가능한 AI 덱이 없습니다.');
+      return;
+    }
     const userChampion = data.champions.find((champion) => champion.id === deck.championDefinitionId);
-    const aiChampion = data.champions.find((champion) => champion.id !== deck.championDefinitionId) ?? data.champions[0];
-    const aiDeckDefinitionIds = data.definitions
-      .filter((definition) => !definition.isToken && !definition.isChampionToken)
-      .slice(0, 20)
-      .map((definition) => definition.id);
+    const aiChampion = data.champions.find((champion) => champion.id === aiDeck.championDefinitionId);
+    const aiDeckDefinitionIds = aiDeck.cardDefinitionIds;
     if (!userChampion || !aiChampion || deck.cardDefinitionIds.length < 20 || aiDeckDefinitionIds.length < 20) {
       setPlayError('AI 매치를 시작할 수 있는 공개 카드와 Champion이 부족합니다.');
       return;
@@ -418,6 +429,14 @@ export default function Home() {
       for (let decision = 0; decision < 50; decision += 1) {
         if (cancelled || workingState.status !== 'IN_PROGRESS' || workingState.activePlayerId !== workingState.players[1]?.id) break;
         const legalActions = getLegalActions(workingState, workingState.players[1]!.id);
+        if (import.meta.env.DEV) {
+          console.debug(
+            '[KO AI]',
+            rankActions(workingState, legalActions, workingState.players[1]!.id)
+              .slice(0, 3)
+              .map(({ action, score }) => ({ type: action.type, score: Number(score.toFixed(2)) })),
+          );
+        }
         const action = chooseBestAction(workingState, legalActions, workingState.players[1]!.id);
         await wait(520);
         if (cancelled) break;
@@ -1003,6 +1022,8 @@ export default function Home() {
     return (
       <AiMatchSetup
         decks={aiDecks}
+        aiDecks={availableAIDecks}
+        initialAiDeckId={initialAiDeckId}
         error={playError}
         onStart={startAiMatch}
         onBack={() => navigate('/')}

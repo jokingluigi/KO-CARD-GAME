@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Frame, Gamepad2, Image, LogOut, Music2, Package, ShieldCheck, ShoppingBag, Sparkles, Spade } from "lucide-react";
+import { Bot, Frame, Gamepad2, Image, LogOut, Music2, Package, ShieldCheck, ShoppingBag, Sparkles, Spade } from "lucide-react";
 import { useLocation } from "wouter";
 import { AdminCardManager } from "@/components/admin-card-manager";
 import { AdminChampionManager } from "@/components/admin-champion-manager";
@@ -9,6 +9,7 @@ import { AdminShopManager } from "@/components/admin-shop-manager";
 import { AdminPrismManager } from "@/components/admin-prism-manager";
 import { AdminCardSkinManager } from "@/components/admin-card-skin-manager";
 import { AdminCardFrameManager } from "@/components/admin-card-frame-manager";
+import { AdminAIDeckManager } from "@/components/admin-ai-deck-manager";
 import { fetchCurrentUser, logout } from "@/lib/auth-client";
 
 type AdminStatus = "checking" | "forbidden" | "authenticated";
@@ -16,8 +17,8 @@ type AdminStatus = "checking" | "forbidden" | "authenticated";
 export default function Admin() {
   const [location] = useLocation();
   const [status, setStatus] = useState<AdminStatus>("checking");
-  const [section, setSection] = useState<"cards" | "champions" | "packs" | "skins" | "frames" | "shop" | "prism" | "media" | "test">(
-    location.endsWith("/packs") ? "packs" : location.endsWith("/shop") ? "shop" : location.endsWith("/prism") ? "prism" : location.endsWith("/skins") ? "skins" : location.endsWith("/card-frames") ? "frames" : "cards",
+  const [section, setSection] = useState<"cards" | "champions" | "packs" | "skins" | "frames" | "shop" | "prism" | "media" | "test" | "ai-decks">(
+    location.endsWith("/packs") ? "packs" : location.endsWith("/shop") ? "shop" : location.endsWith("/prism") ? "prism" : location.endsWith("/skins") ? "skins" : location.endsWith("/card-frames") ? "frames" : location.endsWith("/ai-decks") ? "ai-decks" : "cards",
   );
 
   useEffect(() => {
@@ -162,6 +163,14 @@ export default function Admin() {
           </button>
           <button
             type="button"
+            onClick={() => setSection("ai-decks")}
+            className={`mt-2 flex w-full items-center gap-3 rounded border px-3 py-3 text-left text-sm font-black ${section === "ai-decks" ? "border-primary/60 bg-primary/10 text-primary" : "border-transparent text-neutral-400"}`}
+          >
+            <Bot className="h-4 w-4" />
+            AI 덱 관리
+          </button>
+          <button
+            type="button"
             onClick={() => setSection("shop")}
             className={`mt-2 flex w-full items-center gap-3 rounded border px-3 py-3 text-left text-sm font-black ${section === "shop" ? "border-primary/60 bg-primary/10 text-primary" : "border-transparent text-neutral-400"}`}
           >
@@ -179,7 +188,9 @@ export default function Admin() {
         </nav>
 
         <section className="min-w-0 flex-1">
-          {section === "cards"
+           {section === "ai-decks"
+             ? <AdminAIDeckManager onUnauthorized={() => setStatus("forbidden")} />
+             : section === "cards"
             ? <AdminCardManager onUnauthorized={() => setStatus("forbidden")} />
              : section === "champions"
                ? <AdminChampionManager onUnauthorized={() => setStatus("forbidden")} />

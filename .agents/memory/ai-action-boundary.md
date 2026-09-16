@@ -1,3 +1,8 @@
+AI opponents may use persisted AI Deck Definitions that store only CardDefinition and ChampionDefinition IDs. At match start, resolve those definitions into the GameState snapshot; never let later admin edits mutate an active match.
+
+**Why:** AI decks need admin management and future card compatibility without duplicating card data, while active matches must remain deterministic.
+
+**How to apply:** Validate AI decks against current PUBLISHED non-token definitions when listing/enabling/starting. Use the same legal-action dispatcher and generic evaluator after every AI action; do not add card-name branches.
 ---
 name: AI action boundary
 description: Rules for deterministic local AI turns and visibility-safe action selection.
