@@ -8,13 +8,14 @@ import {
   hashPassword,
 } from "../lib/auth";
 import { ensureStarterCollection } from "../lib/collection";
+import { TEST_USER_EMAIL } from "../lib/test-account";
 
 const router = Router();
 const STARTING_CURRENCY = Math.max(0, Number.parseInt(process.env["STARTING_CURRENCY"] ?? "1000", 10) || 1000);
 
 const TEST_ACCOUNTS = {
   USER: {
-    email: "ko-test-user@localhost.test",
+    email: TEST_USER_EMAIL,
     nickname: "KO Test User",
     password: "ko-test-user-password",
   },
