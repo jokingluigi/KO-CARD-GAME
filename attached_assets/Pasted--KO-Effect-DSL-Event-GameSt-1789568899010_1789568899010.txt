@@ -1,0 +1,735 @@
+현재 KO 카드게임 실제 매치에서 발견된 버그들을 수정해줘.
+
+중요:
+- 카드 이름별 임시 하드코딩으로 해결하지 말 것.
+- 기존 Effect DSL / Event / GameState / executeAction 구조를 유지할 것.
+- 게임 규칙과 카드 밸런스를 임의로 변경하지 말 것.
+- Invalid Action은 GameState 변경 없이 정상 실패 처리.
+- 수정 후 실제 TEST USER 계정으로 브라우저 플레이 테스트할 것.
+- 각 문제를 재현 → 원인 확인 → 최소 수정 → 재테스트 순서로 진행.
+
+==================================================
+1. 판도라 Champion Quest 진행 안 됨
+==================================================
+
+현재:
+
+챔피언 판도라의 고유 능력으로
+적 선수를 피해로 0 HP로 만들어 RETIRE시켜도
+판도라 Quest Progress가 증가하지 않는다.
+
+판도라 Quest 조건:
+
+"판도라의 고유 능력으로 선수 5명을 RETIRE"
+
+중요:
+판도라 능력 자체가 RETIRE Action을 직접 실행하는 경우뿐 아니라
+
+Champion Ability
+→ DAMAGE
+→ HP <= 0
+→ RETIRE
+
+처럼 피해 때문에 발생한 RETIRE도
+원래 Damage Source의 귀속 정보를 유지해야 한다.
+
+RETIRE Event에 최소한 다음과 같은 source context가 전달되게 해:
+
+sourcePlayerId
+sourceActionType
+sourceChampionDefinitionId
+sourceAbilityId / sourceEffectId
+
+Quest Engine은 이 정보를 이용해서
+Champion Ability로 발생한 RETIRE를 정확히 판정해야 한다.
+
+카드 이름 "판도라" 하드코딩 금지.
+
+Generic Event Attribution으로 구현.
+
+테스트:
+
+판도라 기본 능력
+→ 적 선수 HP를 1에서 0으로 만듦
+→ RETIRE 발생
+→ Quest +1
+
+선수가 살아남으면
+→ Quest 증가 X
+
+일반 공격으로 RETIRE
+→ Pandora Quest 증가 X
+
+다른 카드 효과로 RETIRE
+→ Pandora Quest 증가 X
+
+==================================================
+2. 상대 카드 플레이 잔상 버그
+==================================================
+
+현재 상대/AI가 카드를 낼 때
+카드 애니메이션 잔상이
+내 보드에서 소환되는 것처럼 잠깐 보이는 버그가 있다.
+
+실제 GameState가 아니라
+Presentation / Animation Clone 위치 문제인지 확인해.
+
+상대 카드 플레이 Animation은 반드시:
+
+event.ownerPlayerId
+event.boardSide
+destinationSlot
+
+을 기준으로 상대편 위치에 표시.
+
+절대로 플레이어 자신의 Board Slot에
+임시 Card Instance나 Animation Clone을 렌더하지 마.
+
+Animation Clone은 애니메이션 종료 후 반드시 cleanup.
+
+React key / stale clone / shared position state 등도 확인.
+
+게임 로직이나 카드 소유권은 변경하지 말고
+Presentation만 수정.
+
+==================================================
+3. ACTIVE 버튼이 표시되지 않음
+==================================================
+
+ACTIVE 효과를 가진 필드 선수가 있어도
+액티브 버튼이 표시되지 않는다.
+
+특정 카드 이름 하드코딩 금지.
+
+CardInstance / Structured Effect에:
+
+trigger = ACTIVE
+
+효과가 있고
+현재 해당 Active Action이 Engine에서 legal하면
+
+필드 카드 상세 UI에:
+
+[액티브]
+
+버튼을 표시.
+
+버튼 클릭:
+→ 기존 Game Action
+→ Engine Validation
+→ Effect Resolution
+
+순서로 실행.
+
+UI가 직접 능력을 처리하지 마.
+
+PLAYER_CHOICE가 필요한 Active라면
+기존 pendingSelection 시스템 사용.
+
+침묵 등으로 Active 사용이 불가능하면
+기존 Engine legalAction 결과를 따른다.
+
+새로운 침묵/기절 규칙을 임의로 만들지 마.
+
+==================================================
+4. AI 카드 플레이 속도 너무 빠름
+==================================================
+
+AI가 여러 행동을 거의 연속으로 실행해서
+플레이어가 무슨 일이 일어나는지 보기 어렵다.
+
+AI의 다음 Action은
+이전 Action Presentation Animation이 끝난 뒤에 실행.
+
+기본적인 행동 간 딜레이를 늘려라.
+
+권장:
+
+AI_ACTION_DELAY_MS 약 900~1200ms
+
+또는 비슷한 체감 속도.
+
+중요:
+고정 setTimeout 여러 개를 동시에 예약하지 말 것.
+
+흐름:
+
+AI Action
+→ Engine Result
+→ Presentation Queue
+→ Animation 완료
+→ 짧은 딜레이
+→ 새 GameState 분석
+→ 다음 Action
+
+으로 처리.
+
+AI 판단 로직 자체는 변경하지 마.
+
+==================================================
+5. 보드바 효과 구현
+==================================================
+
+보드바:
+
+3G / 1/2
+
+효과:
+
+"이 카드가 공격할 때마다
+다음 자신의 턴에 Gold를 1 추가로 얻습니다."
+
+ATTACK Event 기준으로 구현.
+
+보드바가 정상적으로 공격을 완료하면:
+
+nextPersonalTurnGoldBonus += 1
+
+같은 방식으로 다음 자신의 턴 Gold Bonus 예약.
+
+여러 번 공격 가능해지는 효과가 생긴 경우
+여러 번 공격하면 각각 누적 가능.
+
+예:
+
+2번 공격
+→ 다음 자신의 턴 +2 Gold.
+
+현재 턴에 즉시 Gold 지급 X.
+상대 턴 Gold에 적용 X.
+
+다음 자신의 Turn Start에서 적용 후 소비.
+
+기본 Gold 1~6 규칙은 변경하지 마.
+
+카드 이름 하드코딩 대신
+기존 ATTACK Trigger Effect로 구현.
+
+==================================================
+6. 덱 선택 화면에서 나가도 Game BGM 계속 재생
+==================================================
+
+AI Match / Game Deck Select 화면에 들어갔다가
+게임을 시작하지 않고 메인 메뉴로 돌아가면
+Game Background Music이 계속 재생된다.
+
+Central AudioManager 기준으로 수정.
+
+해당 Game / Deck Select Route를 벗어나면:
+
+- 게임용 BGM fade out
+- 현재 game music handle cleanup
+- 관련 timer cleanup
+- stale resume callback cleanup
+
+을 수행.
+
+메인 메뉴에 별도 BGM이 있다면
+기존 Main Menu Audio 규칙대로 재생.
+
+router navigation 사용.
+page reload로 해결하지 마.
+
+==================================================
+7. 실제 게임 화면이 너무 작음
+==================================================
+
+Desktop Match UI가 화면 중앙에 작게 모여 있다.
+
+게임 화면이 브라우저를 더 적극적으로 채우게 수정.
+
+Desktop 기준:
+
+- Match Root 약 95vw 사용
+- 세로 공간도 약 92~96vh 적극 사용
+- 양쪽 Champion 영역 확대
+- 4개 Board Slot 확대
+- Card 크기 확대
+- Hand 카드 확대
+- 불필요한 바깥 margin/padding 감소
+
+특히 Board와 Hand가 지금보다 확실히 커 보여야 한다.
+
+단:
+
+- 4개 고정 Slot 규칙 유지
+- 카드가 서로 완전히 가려지지 않게
+- 화면 밖 Crop 금지
+- Desktop 수정 때문에 Mobile Layout 망가지지 않게
+- 1920×927 기준 우선 확인
+- Responsive clamp 사용 권장
+
+게임 규칙은 변경하지 마.
+
+==================================================
+8. 예거 Quest 진행 안 됨 + 생성/Summon 의미 수정
+==================================================
+
+챔피언 예거 Quest:
+
+"선수 카드를 7번 생성"
+
+현재 생성/Token/Summon 관련 이벤트 때문에
+Quest Progress가 정상 증가하지 않는다.
+
+중요한 규칙을 다음과 같이 통일해.
+
+--------------------------------------------------
+NEW INSTANCE = GENERATED
+--------------------------------------------------
+
+카드 효과가 새로운 CardInstance를 만들어내면
+그 CardInstance는 생성된 카드다.
+
+목적지가:
+
+HAND
+DECK
+BOARD
+
+어디든 상관없이
+
+isGenerated = true
+
+그리고:
+
+CARD_GENERATED
+
+Event를 정확히 1회 발생.
+
+--------------------------------------------------
+Effect Summon도 새 카드를 만들면 Generated
+--------------------------------------------------
+
+예:
+
+"잔상을 소환합니다."
+
+기존 카드 Instance를 이동시키는 것이 아니라
+새로운 잔상 CardInstance를 생성해서 필드에 놓는 것이므로:
+
+CARD_GENERATED
+→ SUMMON
+→ ENTER_FIELD
+
+순서로 처리.
+
+이 경우 예거 Quest Progress 증가.
+
+--------------------------------------------------
+Token도 선수 카드일 수 있음
+--------------------------------------------------
+
+isToken === true라고 해서
+cardType=WRESTLER가 아닌 것은 아니다.
+
+Token CardDefinition이:
+
+cardType = WRESTLER
+
+라면 선수 카드로 취급.
+
+따라서 새로 생성된 선수 Token도
+예거 Quest의 "선수 카드 생성"에 포함.
+
+Token이라는 이유만으로 Quest에서 제외하지 마.
+
+--------------------------------------------------
+기존 카드 이동은 Generated 아님
+--------------------------------------------------
+
+예:
+
+HAND → BOARD
+DECK → HAND
+GRAVEYARD → BOARD
+
+처럼 이미 존재하던 CardInstance를 이동시키는 것은
+CARD_GENERATED를 발생시키지 않는다.
+
+Starting Deck 카드 역시 Generated 아님.
+
+즉 핵심 기준:
+
+"새 CardInstance가 Effect 때문에 생성되었는가?"
+
+이다.
+
+--------------------------------------------------
+Direct field generation
+--------------------------------------------------
+
+새 WRESTLER Instance가 효과로 바로 필드에 생성된다면:
+
+CARD_GENERATED 정확히 1회
+ENTER_FIELD 정확히 1회
+
+둘 다 발생.
+
+예거 Quest는 CARD_GENERATED Event 중:
+
+owner = 예거 플레이어
+cardType = WRESTLER
+
+를 카운트.
+
+isToken은 제외 조건이 아니다.
+
+특정 Token/Card 이름 하드코딩 금지.
+
+==================================================
+9. ALT 카드 상세 정보에 수치 변경 로그
+==================================================
+
+게임 중 카드의 수치가 변경된 경우
+ALT를 눌러 Card Detail을 볼 때
+"수치 변경 로그"를 표시해줘.
+
+예:
+
+기본 공격력: 3
+현재 공격력: 6
+
+[수치 변경]
+피 스타 세븐 효과   공격력 +2   3 → 5
+만드릴쿤 효과       공격력 +1   5 → 6
+
+가능하면 다음 변경을 Generic하게 기록:
+
+- Attack
+- Health / Max Health
+- Current Health
+- Cost
+
+그리고:
+
+- + / -
+- SET
+- MULTIPLY
+- SWAP
+- DAMAGE
+- HEAL
+
+등 실제 숫자가 바뀐 Action도 기록 가능하게 해.
+
+각 기록에는 가능하면:
+
+stat
+before
+after
+delta
+sourceDefinitionId
+sourceName
+sourceEffectId
+turnNumber
+
+등을 저장.
+
+CardInstance에 serializable history 형태로 저장하거나
+기존 Event History에서 안정적으로 재구성해도 된다.
+
+특정 카드별 로그 구현 금지.
+
+ALT Detail에는 너무 길어지면
+최근 항목부터 Scroll 가능하게 표시.
+
+수치가 한 번도 변경되지 않았다면
+로그 영역을 숨기거나 "변경 없음" 표시.
+
+==================================================
+10. 뒷정리맨 효과 구현
+==================================================
+
+뒷정리맨:
+
+2G / 2/2
+
+효과:
+
+"등장:
+다음에 내가 내는 선수 카드의 체력을 2 증가시킵니다."
+
+ENTER_FIELD 시:
+
+owner에게 pending buff 생성.
+
+다음:
+
+CARD_PLAYED
+owner = same player
+cardType = WRESTLER
+from HAND
+
+Event 발생 시
+그 플레이된 선수에게:
+
+Health +2
+Max Health +2
+
+적용하고 pending buff 소비.
+
+중요:
+
+Effect Summon에는 소비되지 않는다.
+Token 자동 소환에도 소비되지 않는다.
+Technique Card에도 소비되지 않는다.
+
+"카드를 낸다" = HAND에서 정상적으로 PLAY한 WRESTLER.
+
+뒷정리맨이 필드에서 퇴장해도
+이미 생성된 pending buff는 유지.
+
+여러 개의 독립 pending buff가 존재한다면
+기존 Generic delayed effect/listener 구조로 처리.
+
+카드 이름 하드코딩 금지.
+
+==================================================
+11. 발단 Zombie가 0 HP인데 살아 있음
+==================================================
+
+발단 효과:
+
+생성된 아군 필드 카드들을 DESTROY하고
+그 카드들의 CURRENT Attack / Health 합계로
+Zombie를 생성.
+
+현재 Zombie Health가 0인데도
+필드에 계속 살아 있는 버그가 있다.
+
+Generic State-Based Death Check를 추가/수정.
+
+모든 WRESTLER CardInstance는
+필드에 존재하는 상태에서:
+
+currentHealth <= 0
+
+이면 정상 RETIRE pipeline으로 처리되어야 한다.
+
+이 검사는 최소한:
+
+- DAMAGE 이후
+- Health 변경 이후
+- SET Health 이후
+- SUMMON / GENERATE 이후
+- Effect Sequence resolution 이후
+
+안전하게 실행.
+
+DESTROY된 카드를 다시 RETIRE시키면 안 됨.
+
+이미 BOARD에서 제거된 Instance 제외.
+
+0 Health Zombie가 필드에 생성됐다면
+계속 살아 있지 않아야 한다.
+
+발단 카드 이름 하드코딩 금지.
+
+==================================================
+12. TECHNIQUE 카드가 선수처럼 필드에 소환되는 버그
+==================================================
+
+매우 중요.
+
+현재 TECHNIQUE / 주문 카드가:
+
+- Board Slot을 선택하게 하고
+- 필드에 CardInstance로 소환되고
+- 0 Health 상태로 보드에 남는
+
+심각한 버그가 있다.
+
+TECHNIQUE는 WRESTLER가 아니다.
+
+--------------------------------------------------
+WRESTLER PLAY
+--------------------------------------------------
+
+WRESTLER 카드를 플레이할 때만:
+
+4개 Board Slot 중
+빈 Slot 선택 필요.
+
+Board가 가득 차면
+WRESTLER는 플레이 불가능.
+
+--------------------------------------------------
+TECHNIQUE PLAY
+--------------------------------------------------
+
+TECHNIQUE 카드는
+절대로 4개 Wrestler Slot을 사용하지 않는다.
+
+TECHNIQUE를 사용할 때는:
+
+Hand에서 Technique 선택
+→ 일반 Board Play Area를 클릭/선택
+→ 비용 지불
+→ Technique Effect 실행
+→ 기존 Technique 사용 후 zone 처리
+
+로 진행.
+
+특정 Slot 0/1/2/3을 고르게 하지 마.
+
+TECHNIQUE 자체가 Board CardInstance로
+존재해서는 안 된다.
+
+Attack / Health도 가지지 않는다.
+
+따라서:
+
+아군 Board가 4/4로 꽉 차 있어도
+TECHNIQUE는 정상적으로 사용 가능해야 한다.
+
+--------------------------------------------------
+Technique PLAYER_CHOICE
+--------------------------------------------------
+
+Technique가 대상 선택 효과라면:
+
+Technique Play
+→ 비용 지불
+→ pendingSelection
+→ valid target highlight
+→ target 선택
+→ effect resolution
+
+순서로 처리.
+
+Board Slot 선택과 Effect Target 선택을
+절대 혼동하지 마.
+
+--------------------------------------------------
+Technique presentation
+--------------------------------------------------
+
+주문 사용 애니메이션이 필요하면
+Presentation Clone만 잠깐 표시.
+
+GameState.board에는 넣지 않는다.
+
+Animation 종료 후 clone cleanup.
+
+--------------------------------------------------
+Engine validation
+--------------------------------------------------
+
+PLAY_CARD Action에서:
+
+cardType === WRESTLER
+→ boardSlot 필요
+
+cardType === TECHNIQUE
+→ boardSlot 필요 없음
+
+으로 Engine 자체에서 검증.
+
+UI만 고치는 것으로 끝내지 마.
+
+==================================================
+13. 회귀 테스트
+==================================================
+
+TEST USER로 실제 브라우저 Match를 실행해서 확인.
+
+반드시 확인:
+
+[판도라]
+- 고유 능력 DAMAGE로 적 선수 RETIRE
+- Quest +1
+
+[Animation]
+- AI가 카드 플레이
+- 상대 카드가 내 Board에 잔상으로 표시되지 않음
+
+[ACTIVE]
+- ACTIVE Effect 보유 선수
+- 액티브 버튼 표시
+- 정상 실행
+
+[AI]
+- 행동 사이 Animation 확인 가능
+- 너무 빠르게 연속 실행하지 않음
+
+[보드바]
+- 공격
+- 다음 자신의 턴 Gold +1
+- 여러 공격 시 누적
+
+[Audio]
+- Deck Select 진입
+- Main Menu 이동
+- Game BGM 정지
+
+[Layout]
+- 1920×927 Desktop에서 Board/Hand가 기존보다 크게 보임
+- 4 Slot 전부 정상
+- 화면 밖 Crop 없음
+
+[예거]
+- Effect로 새 일반 WRESTLER 생성 → +1
+- 새 WRESTLER Token 생성/소환 → +1
+- 잔상 같은 새 Token Summon → +1
+- 기존 손패 WRESTLER를 그냥 플레이 → +0
+- 기존 카드 zone 이동 → +0
+
+[ALT Detail]
+- 공격력/체력/비용 변경
+- before → after + source 표시
+
+[뒷정리맨]
+- 등장
+- 다음 HAND PLAY WRESTLER +2 Health
+- 이후 buff 소비
+- Effect Summon에는 소비 X
+
+[발단]
+- 0 Health Zombie가 필드에 계속 남지 않음
+
+[TECHNIQUE]
+- 빈 Board에서도 사용 가능
+- Board 4/4 상태에서도 사용 가능
+- Slot 선택 요구 X
+- 0HP Technique가 Board에 생성되지 않음
+- 대상형 Technique는 PLAYER_CHOICE 정상 작동
+
+==================================================
+수정 금지
+==================================================
+
+이번 작업에서 하지 말 것:
+
+- 카드 밸런스 변경
+- 카드 Cost/Attack/Health 임의 수정
+- 특정 카드 이름으로 Engine 예외처리
+- Match Gold 규칙 변경
+- Deck 규칙 변경
+- 새로운 카드 추가
+- AI 판단 알고리즘 대규모 리팩터
+- Online Match 구현
+- 전체 프로젝트 불필요한 리팩터
+
+==================================================
+최종 보고
+==================================================
+
+각 항목을:
+
+PASS
+FIXED
+FAIL
+
+로 보고.
+
+FAIL이면:
+- 재현 방법
+- 실제 원인
+- 아직 막힌 이유
+
+를 적어.
+
+특히 Engine Event가 필요한 문제는
+UI만 고쳐놓고 PASS 처리하지 마.
+
+실제 GameState / Event Log까지 확인할 것.
