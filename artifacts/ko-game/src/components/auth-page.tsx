@@ -1,6 +1,6 @@
 import { FormEvent, useState } from "react";
 import { ArrowRight, LockKeyhole, UserRound } from "lucide-react";
-import { submitAuth, submitTestAuth, type AuthUser } from "@/lib/auth-client";
+import { submitAuth, type AuthUser } from "@/lib/auth-client";
 
 export function AuthLoading() {
   return (
@@ -42,18 +42,6 @@ export function AuthPage({ onAuthenticated }: { onAuthenticated: (user: AuthUser
       onAuthenticated(user);
     } catch (error) {
       setErrorMessage(error instanceof Error ? error.message : "요청을 처리하지 못했습니다.");
-    } finally {
-      setIsSubmitting(false);
-    }
-  }
-
-  async function handleTestAdminLogin() {
-    setErrorMessage("");
-    setIsSubmitting(true);
-    try {
-      onAuthenticated(await submitTestAuth("ADMIN"));
-    } catch (error) {
-      setErrorMessage(error instanceof Error ? error.message : "개발용 관리자 로그인을 처리하지 못했습니다.");
     } finally {
       setIsSubmitting(false);
     }
@@ -152,17 +140,6 @@ export function AuthPage({ onAuthenticated }: { onAuthenticated: (user: AuthUser
             {!isSubmitting && <ArrowRight className="h-4 w-4" aria-hidden="true" />}
           </button>
         </form>
-
-        {import.meta.env.DEV && (
-          <button
-            type="button"
-            disabled={isSubmitting}
-            onClick={() => void handleTestAdminLogin()}
-            className="mt-5 w-full rounded border border-amber-500/50 bg-amber-500/10 px-4 py-3 text-xs font-bold text-amber-300 transition hover:bg-amber-500/20 disabled:opacity-50"
-          >
-            개발용 관리자 로그인
-          </button>
-        )}
 
         <p className="mt-7 flex items-center justify-center gap-2 text-xs text-neutral-500">
           {mode === "login" ? (

@@ -191,7 +191,7 @@ export default function CollectionPage() {
     <main className="min-h-screen bg-neutral-950 px-4 py-6 text-neutral-100 sm:px-8 sm:py-8">
       <div className="mx-auto max-w-6xl">
         <div className="mb-6 flex items-center justify-between gap-3">
-          <button type="button" onClick={() => { window.location.href = basePath; }} className="flex items-center gap-2 text-sm font-bold text-neutral-400 hover:text-white">
+          <button type="button" onClick={() => { window.location.href = import.meta.env.BASE_URL; }} className="flex items-center gap-2 text-sm font-bold text-neutral-400 hover:text-white">
             <ArrowLeft className="h-4 w-4" /> 메인 메뉴
           </button>
           <button type="button" onClick={() => { window.location.href = `${basePath}/decks`; }} className="rounded bg-primary px-4 py-2.5 text-xs font-black text-black transition hover:bg-yellow-400">
