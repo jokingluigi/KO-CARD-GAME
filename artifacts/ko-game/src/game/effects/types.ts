@@ -1,5 +1,5 @@
 import type {
-  Action, DamageSource, DynamicValue, Keyword, RandomScope, Reference, TargetOwner, TargetSelection, TargetZone,
+  Action, DamageSource, DynamicValue, EffectDuration, Keyword, RandomScope, Reference, StatName, TargetOwner, TargetSelection, TargetZone,
 } from "@workspace/effect-registry";
 import type { CardDefinition } from '../cards/types';
 
@@ -35,6 +35,8 @@ export type QueuedStructuredEffect = {
     attackMultiplier?: number;
     healthMultiplier?: number;
     amount?: number;
+    stat?: StatName;
+    duration?: EffectDuration;
     keyword?: CardKeyword;
     damageSource?: DamageSource;
     reference?: Reference;
@@ -75,7 +77,7 @@ export type CardEffect =
       action: RuntimeAction;
       target?: StructuredTarget;
       values?: {
-          attack?: number; health?: number; attackMultiplier?: number; healthMultiplier?: number; amount?: number; keyword?: CardKeyword; damageSource?: DamageSource; reference?: Reference; referenceStat?: 'CURRENT_ATTACK' | 'CURRENT_HEALTH'; amountReference?: DynamicValue; minimum?: number; temporaryCost?: boolean; conditionalBuff?: { healthEquals: number; attack: number; health: number }; generatedModifiers?: { cost?: number; attack?: number; health?: number; copySourceStats?: boolean }; deckPosition?: 'TOP' | 'BOTTOM';
+          attack?: number; health?: number; attackMultiplier?: number; healthMultiplier?: number; amount?: number; stat?: StatName; duration?: EffectDuration; keyword?: CardKeyword; damageSource?: DamageSource; reference?: Reference; referenceStat?: 'CURRENT_ATTACK' | 'CURRENT_HEALTH'; amountReference?: DynamicValue; minimum?: number; temporaryCost?: boolean; conditionalBuff?: { healthEquals: number; attack: number; health: number }; generatedModifiers?: { cost?: number; attack?: number; health?: number; copySourceStats?: boolean }; deckPosition?: 'TOP' | 'BOTTOM';
           queuedTrigger?: 'NEXT_ALLY_WRESTLER_PLAYED';
          queuedEffect?: QueuedStructuredEffect;
         /** Serializable card definition supplied by the structured DSL. */

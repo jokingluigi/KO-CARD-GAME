@@ -50,8 +50,8 @@ function abilitiesFor(
       const trigger = effect.trigger;
       const action = effect.action;
       const target = effect.target;
-       if (!["ENTER_FIELD", "LEAVE_FIELD", "POSITION", "ACTIVE", "CARD_RETIRED", "FIRST_ATTACKED", "SELF_ATTACK", "OTHER_ALLY_ATTACK", "ATTACK_SURVIVED", "STAT_CHANGED", "TECHNIQUE_CAST", "EXACT_ZERO_DAMAGE", "TURN_START", "TURN_END"].includes(trigger as string) ||
-           !["BUFF", "SET_STATS", "DAMAGE", "HEAL", "SILENCE", "DESTROY", "RETIRE", "ADD_GOLD", "ADD_NEXT_TURN_GOLD", "DRAW", "REDUCE_COST", "INCREASE_COST", "STUN", "DISABLE_ABILITY", "WEAKEN_TO_STUN_SILENCE", "ADD_KEYWORD", "REMOVE_KEYWORD", "SWAP_STATS", "ADD_DAMAGE_MODIFIER", "SUMMON", "SUMMON_FROM_HAND", "REVIVE", "GENERATE", "MOVE_TO_HAND", "STEAL", "MILL", "SPEND_GOLD_BUFF_SELF", "DEPLOY_CHAMPION_TOKEN", "CAPTURE", "RELEASE_CAPTURED", "REMOVE_FROM_GAME", "SWITCH_EFFECT_BRANCH", "QUEUE_EFFECT", "ADD_AGGREGATED_ATTACK"].includes(action as string) ||
+        if (!["ENTER_FIELD", "LEAVE_FIELD", "POSITION", "ACTIVE", "CARD_RETIRED", "FIRST_ATTACKED", "SELF_ATTACK", "OTHER_ALLY_ATTACK", "ATTACK_SURVIVED", "STAT_CHANGED", "TECHNIQUE_CAST", "EXACT_ZERO_DAMAGE", "TURN_START", "TURN_END"].includes(trigger as string) ||
+            !["BUFF", "SET_STATS", "MODIFY_STAT", "SET_STAT", "DAMAGE", "HEAL", "SILENCE", "DESTROY", "RETIRE", "ADD_GOLD", "ADD_NEXT_TURN_GOLD", "DRAW", "REDUCE_COST", "INCREASE_COST", "STUN", "DISABLE_ABILITY", "WEAKEN_TO_STUN_SILENCE", "ADD_KEYWORD", "REMOVE_KEYWORD", "SWAP_STATS", "ADD_DAMAGE_MODIFIER", "SUMMON", "SUMMON_FROM_HAND", "REVIVE", "GENERATE", "MOVE_TO_HAND", "STEAL", "MILL", "SPEND_GOLD_BUFF_SELF", "DEPLOY_CHAMPION_TOKEN", "CAPTURE", "RELEASE_CAPTURED", "REMOVE_FROM_GAME", "SWITCH_EFFECT_BRANCH", "QUEUE_EFFECT", "ADD_AGGREGATED_ATTACK"].includes(action as string) ||
            (target !== undefined && (!target || typeof target !== "object"))) continue;
       const list = byTrigger.get(trigger as string) ?? [];
        list.push({ type: "STRUCTURED", action: action as StructuredCardEffect["action"], target: target as StructuredCardEffect["target"], values: effect.values as StructuredCardEffect["values"] });

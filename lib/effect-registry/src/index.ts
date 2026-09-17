@@ -3,7 +3,7 @@
 export const TRIGGERS = ["ENTER_FIELD", "LEAVE_FIELD", "ACTIVE", "CARD_DRAWN", "CARD_RETIRED", "FIRST_ATTACKED", "SELF_ATTACK", "OTHER_ALLY_ATTACK", "ATTACK_SURVIVED", "STAT_CHANGED", "TECHNIQUE_CAST", "CARD_PLAYED_THIS_TURN", "EXACT_ZERO_DAMAGE", "TURN_START", "TURN_END"] as const;
 export const CONDITIONS = ["NEED_CONDITION", "HAS_MATCHING_TAG_PLAYED_THIS_TURN", "BASE_COST_GTE", "SOURCE_ON_LEFT_SIDE", "SOURCE_ON_RIGHT_SIDE", "SOURCE_IS_ONLY_WRESTLER", "FIRST_ATTACK_GAIN"] as const;
 export const REFERENCES = ["SOURCE", "LAST_TARGET", "LAST_DRAWN_CARD", "LAST_ATTACKER", "LAST_DAMAGED_TARGET", "CAPTURED_CARD", "CURRENT_SLOT"] as const;
-export const ACTIONS = ["BUFF", "SET_STATS", "DAMAGE", "HEAL", "SILENCE", "DESTROY", "RETIRE", "ADD_GOLD", "ADD_NEXT_TURN_GOLD", "DRAW", "REDUCE_COST", "INCREASE_COST", "STUN", "DISABLE_ABILITY", "WEAKEN_TO_STUN_SILENCE", "ADD_KEYWORD", "REMOVE_KEYWORD", "SWAP_STATS", "ADD_DAMAGE_MODIFIER", "SUMMON", "SUMMON_FROM_HAND", "REVIVE", "GENERATE", "MOVE_TO_HAND", "STEAL", "MILL", "SPEND_GOLD_BUFF_SELF", "DEPLOY_CHAMPION_TOKEN", "CAPTURE", "RELEASE_CAPTURED", "REMOVE_FROM_GAME", "SWITCH_EFFECT_BRANCH", "QUEUE_EFFECT", "ADD_AGGREGATED_ATTACK"] as const;
+export const ACTIONS = ["BUFF", "SET_STATS", "MODIFY_STAT", "SET_STAT", "DAMAGE", "HEAL", "SILENCE", "DESTROY", "RETIRE", "ADD_GOLD", "ADD_NEXT_TURN_GOLD", "DRAW", "REDUCE_COST", "INCREASE_COST", "STUN", "DISABLE_ABILITY", "WEAKEN_TO_STUN_SILENCE", "ADD_KEYWORD", "REMOVE_KEYWORD", "SWAP_STATS", "ADD_DAMAGE_MODIFIER", "SUMMON", "SUMMON_FROM_HAND", "REVIVE", "GENERATE", "MOVE_TO_HAND", "STEAL", "MILL", "SPEND_GOLD_BUFF_SELF", "DEPLOY_CHAMPION_TOKEN", "CAPTURE", "RELEASE_CAPTURED", "REMOVE_FROM_GAME", "SWITCH_EFFECT_BRANCH", "QUEUE_EFFECT", "ADD_AGGREGATED_ATTACK"] as const;
 export const KEYWORDS = ["RUSH", "SURPRISE", "TAUNT", "DODGE", "MULTI_STRIKE"] as const;
 export const TARGET_ZONES = ["BOARD", "HAND", "DECK", "GRAVEYARD", "PLAYER", "CHARACTER"] as const;
 /** The default card scope for Korean phrases such as "어디에 있든". */
@@ -26,7 +26,11 @@ export type TargetSelection = typeof TARGET_SELECTIONS[number];
 export type RandomScope = typeof RANDOM_SCOPES[number];
 export type DamageSource = typeof DAMAGE_SOURCES[number];
 export type DynamicValue = "HAND_COUNT" | "GRAVEYARD_WRESTLER_COUNT" | "REMAINING_GOLD" | "BOARD_WRESTLER_COUNT" | "LAST_ATTACK_DELTA";
-export type EffectActionSchema = { target: boolean; amount?: boolean; stats?: boolean; statMultiplier?: boolean; referenceStat?: boolean; dynamicValue?: boolean; generatedModifiers?: boolean; minimum?: boolean; keyword?: boolean; damageSource?: boolean; branches?: boolean; queuedEffect?: boolean; cardDefinition?: boolean; cardCount?: boolean; destination?: boolean; aggregateStats?: boolean; conditionalBuff?: boolean };
+export type StatName = "COST" | "ATTACK" | "HEALTH";
+export type EffectDuration = "THIS_TURN" | "UNTIL_NEXT_TURN" | "PERMANENT";
+export const STAT_NAMES = ["COST", "ATTACK", "HEALTH"] as const;
+export const EFFECT_DURATIONS = ["THIS_TURN", "UNTIL_NEXT_TURN", "PERMANENT"] as const;
+export type EffectActionSchema = { target: boolean; amount?: boolean; signedAmount?: boolean; stat?: boolean; duration?: boolean; stats?: boolean; statMultiplier?: boolean; referenceStat?: boolean; dynamicValue?: boolean; generatedModifiers?: boolean; minimum?: boolean; keyword?: boolean; damageSource?: boolean; branches?: boolean; queuedEffect?: boolean; cardDefinition?: boolean; cardCount?: boolean; destination?: boolean; aggregateStats?: boolean; conditionalBuff?: boolean };
 export type RegistryStatus = "ACTIVE" | "DISABLED";
 
 export const DISPLAY_LABELS = {
@@ -36,7 +40,7 @@ export const DISPLAY_LABELS = {
   LEAVE_FIELD: "퇴장", ACTIVE: "액티브", TURN_START: "턴 시작", TURN_END: "턴 종료",
   NEED_CONDITION: "조건", HAS_MATCHING_TAG_PLAYED_THIS_TURN: "태그",
   SOURCE_ON_LEFT_SIDE: "스위치(왼쪽)", SOURCE_ON_RIGHT_SIDE: "스위치(오른쪽)", FIRST_ATTACK_GAIN: "첫 공격력 증가",
-  BUFF: "강화", DAMAGE: "피해", HEAL: "회복", DESTROY: "파괴", RETIRE: "리타이어", DRAW: "드로우",
+  BUFF: "강화", SET_STATS: "스탯 설정", MODIFY_STAT: "스탯 변경", SET_STAT: "스탯 설정", DAMAGE: "피해", HEAL: "회복", DESTROY: "파괴", RETIRE: "리타이어", DRAW: "드로우",
   ADD_GOLD: "골드 획득", ADD_NEXT_TURN_GOLD: "다음 턴 골드", REDUCE_COST: "비용 감소",
   INCREASE_COST: "비용 증가", ADD_KEYWORD: "키워드 부여", REMOVE_KEYWORD: "키워드 제거",
   SUMMON: "소환", GENERATE: "생성", DEPLOY_CHAMPION_TOKEN: "챔피언 토큰 전개", ADD_DAMAGE_MODIFIER: "피해 보정", RELEASE_CAPTURED: "포획 해방",
@@ -48,7 +52,8 @@ export const DISPLAY_LABELS = {
 
 export const ACTION_SCHEMAS: Record<Action, EffectActionSchema> = {
   ADD_GOLD: { target: false, amount: true }, ADD_NEXT_TURN_GOLD: { target: false, amount: true }, DRAW: { target: false, amount: true },
-  DAMAGE: { target: true, amount: true, conditionalBuff: true }, BUFF: { target: true, stats: true, statMultiplier: true, referenceStat: true, dynamicValue: true }, SET_STATS: { target: true, stats: true }, HEAL: { target: true, amount: true },
+  MODIFY_STAT: { target: true, amount: true, signedAmount: true, stat: true, duration: true, minimum: true }, SET_STAT: { target: true, amount: true, stat: true, duration: true },
+  DAMAGE: { target: true, amount: true }, BUFF: { target: true, stats: true, statMultiplier: true, referenceStat: true, dynamicValue: true }, SET_STATS: { target: true, stats: true }, HEAL: { target: true, amount: true },
   REDUCE_COST: { target: true, amount: true, minimum: true }, INCREASE_COST: { target: true, amount: true }, STUN: { target: true },
   RETIRE: { target: true }, DISABLE_ABILITY: { target: true }, WEAKEN_TO_STUN_SILENCE: { target: true, amount: true },
   SILENCE: { target: true }, DESTROY: { target: true }, ADD_KEYWORD: { target: true, keyword: true }, REMOVE_KEYWORD: { target: true, keyword: true },
@@ -57,7 +62,7 @@ export const ACTION_SCHEMAS: Record<Action, EffectActionSchema> = {
 };
 
 const ACTION_DESCRIPTIONS: Record<Action, string> = {
-  BUFF: "대상의 공격력과 체력을 변경합니다.", SET_STATS: "대상의 공격력과 체력을 지정한 값으로 설정합니다.", DAMAGE: "대상에게 피해를 줍니다.", HEAL: "대상의 체력을 회복합니다.",
+  BUFF: "대상의 공격력과 체력을 변경합니다.", SET_STATS: "대상의 공격력과 체력을 지정한 값으로 설정합니다.", MODIFY_STAT: "대상의 비용, 공격력 또는 체력을 변경합니다.", SET_STAT: "대상의 비용, 공격력 또는 체력을 지정한 값으로 설정합니다.", DAMAGE: "대상에게 피해를 줍니다.", HEAL: "대상의 체력을 회복합니다.",
   SILENCE: "대상의 효과와 키워드를 침묵시킵니다.", DESTROY: "대상을 파괴합니다.", RETIRE: "대상을 무덤으로 보냅니다.", ADD_GOLD: "현재 골드를 획득합니다.",
   ADD_NEXT_TURN_GOLD: "다음 내 턴의 골드를 증가시킵니다.", DRAW: "카드를 드로우합니다.", REDUCE_COST: "대상의 비용을 감소시킵니다.",
   INCREASE_COST: "대상의 비용을 증가시킵니다.", STUN: "대상을 기절시킵니다.", DISABLE_ABILITY: "대상의 능력을 비활성화합니다.", WEAKEN_TO_STUN_SILENCE: "공격력을 낮추고 0이 된 대상을 기절·침묵시킵니다.", ADD_KEYWORD: "대상에게 키워드를 부여합니다.",
@@ -82,7 +87,9 @@ export const EFFECT_LIBRARY = {
   actions: ACTIONS.map((name) => {
     const schema = ACTION_SCHEMAS[name];
     const values = {
-      ...(schema.amount ? { amount: "number (0..999)" } : {}),
+       ...(schema.amount ? { amount: schema.signedAmount ? "number (-999..999)" : "number (0..999)" } : {}),
+       ...(schema.stat ? { stat: [...STAT_NAMES] } : {}),
+       ...(schema.duration ? { duration: [...EFFECT_DURATIONS] } : {}),
       ...(schema.stats ? { attack: "number (-999..999)", health: "number (-999..999)" } : {}),
        ...(schema.statMultiplier ? { attackMultiplier: "number (0..10)", healthMultiplier: "number (0..10)" } : {}),
        ...(schema.referenceStat ? { reference: [...REFERENCES], referenceStat: ["CURRENT_ATTACK", "CURRENT_HEALTH"] } : {}),

@@ -732,6 +732,73 @@ test('구조화 키워드 부여는 카드 키워드만 안전하게 변경한�
   assert.ok(result.players[0].board[0]?.keywords.includes('RUSH'));
 });
 
+test('generic stat 변경은 비용·공격력·체력과 STAT_CHANGED history를 함께 기록한다', () => {
+  const selfTarget = { zone: 'BOARD' as const, owner: 'SELF' as const, selection: 'SELF' as const, count: 1 };
+  const source = {
+    ...instance('generic-stat-source', [
+      structured('MODIFY_STAT', selfTarget, { stat: 'COST', amount: -1 }),
+      structured('MODIFY_STAT', selfTarget, { stat: 'ATTACK', amount: 2 }),
+      structured('MODIFY_STAT', selfTarget, { stat: 'HEALTH', amount: 2 }),
+    ]),
+    currentHealth: 3,
+    maxHealth: 3,
+    baseHealth: 3,
+    abilities: [
+      {
+        trigger: 'ENTER_FIELD' as const,
+        effects: [
+          structured('MODIFY_STAT', selfTarget, { stat: 'COST', amount: -1 }),
+          structured('MODIFY_STAT', selfTarget, { stat: 'ATTACK', amount: 2 }),
+          structured('MODIFY_STAT', selfTarget, { stat: 'HEALTH', amount: 2 }),
+        ],
+      },
+      {
+        trigger: 'STAT_CHANGED' as const,
+        effects: [structured('BUFF', selfTarget, { attack: 1, health: 0 })],
+      },
+    ],
+  };
+
+  const result = enterField(createInitialGameState(), 'player-1', source, 0);
+  const changed = result.players[0].board[0]!;
+  assert.equal(changed.currentCost, 0);
+  assert.equal(changed.currentAttack, 4);
+  assert.equal(changed.currentHealth, 5);
+  assert.equal(changed.maxHealth, 5);
+  assert.ok(result.events.some((event) => event.type === 'STAT_CHANGED' && event.stat === 'cost' && event.delta === -1));
+  assert.ok(result.events.some((event) => event.type === 'STAT_CHANGED' && event.stat === 'attack' && event.delta === 2));
+  assert.ok(changed.statHistory?.some((entry) => entry.stat === 'attack' && entry.delta === 1));
+});
+
+test('generic stat duration은 이번 턴 종료 시 원래 수치로 되돌아간다', () => {
+  const selfTarget = { zone: 'BOARD' as const, owner: 'SELF' as const, selection: 'SELF' as const, count: 1 };
+  const source = {
+    ...instance('temporary-stat-source', [
+    structured('MODIFY_STAT', selfTarget, { stat: 'COST', amount: 1, duration: 'THIS_TURN' }),
+    structured('MODIFY_STAT', selfTarget, { stat: 'ATTACK', amount: 2, duration: 'THIS_TURN' }),
+    structured('MODIFY_STAT', selfTarget, { stat: 'HEALTH', amount: 2, duration: 'THIS_TURN' }),
+    ]),
+    currentHealth: 3,
+    maxHealth: 3,
+    baseHealth: 3,
+  };
+
+  const initial = createInitialGameState();
+  initial.status = 'IN_PROGRESS';
+  initial.activePlayerId = 'player-1';
+  const entered = enterField(initial, 'player-1', source, 0);
+  assert.equal(entered.players[0].board[0]?.currentCost, 2);
+  assert.equal(entered.players[0].board[0]?.currentAttack, 3);
+  assert.equal(entered.players[0].board[0]?.currentHealth, 5);
+
+  const ended = endTurn(entered, 'player-1');
+  assert.equal(ended.success, true);
+  assert.equal(ended.state.players[0].board[0]?.currentCost, 1);
+  assert.equal(ended.state.players[0].board[0]?.currentAttack, 1);
+  assert.equal(ended.state.players[0].board[0]?.currentHealth, 3);
+  assert.equal(ended.state.players[0].board[0]?.maxHealth, 3);
+});
+
 test('구조화 회피 부여는 첫 효과 피해를 무효화하고 소모한다', () => {
   const source = instance('dodge-source', [
     structured('ADD_KEYWORD', { zone: 'BOARD', owner: 'SELF', selection: 'SELF', count: 1 }, { keyword: 'DODGE' }),

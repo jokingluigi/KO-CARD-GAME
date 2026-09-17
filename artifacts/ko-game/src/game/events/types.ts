@@ -19,6 +19,7 @@ export type GameEventType =
   | 'CHAMPION_ABILITY_USED'
   | 'CHAMPION_QUEST_PROGRESS'
   | 'CHAMPION_QUEST_COMPLETED'
+  | 'STAT_CHANGED'
   | 'SURRENDER';
 
 export type EventSubject =
@@ -48,6 +49,11 @@ export interface GameEvent {
   amount?: number;
   boardSlot?: 0 | 1 | 2 | 3;
   tags?: string[];
+  stat?: 'cost' | 'attack' | 'health' | 'maxHealth' | 'currentHealth';
+  before?: number;
+  after?: number;
+  delta?: number;
+  duration?: 'THIS_TURN' | 'UNTIL_NEXT_TURN' | 'PERMANENT';
   sourceContext?: EventAttribution;
 }
 

@@ -1,6 +1,6 @@
 import type { CardDefinition, CardInstance, CardStatHistoryEntry } from '../cards/types';
 import type { CardAbility, CardEffect, CardKeyword } from './types';
-import { RUNTIME_HANDLER_ACTIONS, type Action, type TargetZone } from "@workspace/effect-registry";
+import { RUNTIME_HANDLER_ACTIONS, type Action, type EffectDuration, type TargetZone } from "@workspace/effect-registry";
 
 // The executor supports exactly the action IDs advertised by the shared library.
 // Adding an advertised action requires this assertion (and the executor) to be updated.
@@ -166,6 +166,7 @@ function recordStatChanges(
   state: GameState,
   sourceCard: CardInstance,
   triggerContext?: TriggerContext,
+  duration?: EffectDuration,
 ): CardInstance {
   const fields: Array<[keyof CardInstance, CardStatHistoryEntry['stat']]> = [
     ['currentCost', 'cost'],
@@ -183,14 +184,55 @@ function recordStatChanges(
       after: next,
       delta: next - previous,
       sourceDefinitionId: sourceCard.definitionId,
-      sourceName: sourceCard.definitionId,
+      sourceInstanceId: sourceCard.instanceId,
+      sourceName: state.cardPool?.find((definition) => definition.id === sourceCard.definitionId)?.name ?? sourceCard.definitionId,
       sourceEffectId: triggerContext?.sourceContext?.sourceEffectId,
       turnNumber: state.turn,
+      ...(duration ? { duration } : {}),
     }];
   });
   return changes.length
     ? { ...after, statHistory: [...(before.statHistory ?? []), ...changes] }
     : after;
+}
+
+function statChangeEvents(
+  beforeState: GameState,
+  afterState: GameState,
+  sourceCard: CardInstance,
+  sourceContext: EventAttribution,
+  duration?: EffectDuration,
+): GameState['events'] {
+  const beforeCards = new Map(allCardsWithOwners(beforeState).map(({ card }) => [card.instanceId, card]));
+  return allCardsWithOwners(afterState).flatMap(({ ownerId, card }) => {
+    const before = beforeCards.get(card.instanceId);
+    if (!before) return [];
+    const fields: Array<[keyof CardInstance, CardStatHistoryEntry['stat']]> = [
+      ['currentCost', 'cost'],
+      ['currentAttack', 'attack'],
+      ['maxHealth', 'maxHealth'],
+      ['currentHealth', 'currentHealth'],
+    ];
+    return fields.flatMap(([field, stat]) => {
+      const previous = before[field];
+      const next = card[field];
+      if (typeof previous !== 'number' || typeof next !== 'number' || previous === next) return [];
+      return [{
+        type: 'STAT_CHANGED' as const,
+        playerId: ownerId,
+        cardInstanceId: card.instanceId,
+        source: { type: 'CARD' as const, cardInstanceId: sourceCard.instanceId },
+        target: { type: 'CARD' as const, cardInstanceId: card.instanceId },
+        reason: 'STAT_CHANGED',
+        stat,
+        before: previous,
+        after: next,
+        delta: next - previous,
+        duration,
+        sourceContext,
+      }];
+    });
+  });
 }
 
 function allCardsWithOwners(state: GameState): Array<{ ownerId: string; card: CardInstance }> {
@@ -217,23 +259,55 @@ function resolveStatChangeListeners(
   return changed.reduce((next, changedCard) => {
     return allCardsWithOwners(next)
       .filter(({ card }) => card.abilities.some((ability) => ability.trigger === 'STAT_CHANGED'))
-      .reduce((listenerState, { ownerId, card }) => resolveTriggeredAbilities(
-        listenerState,
-        ownerId,
-        card,
-        'STAT_CHANGED',
-        {
-          attackDelta: changedCard.attackDelta,
-          sourceContext: {
-            ...(sourceContext ?? {
-              sourcePlayerId: changedCard.ownerId,
-              sourceActionType: 'CARD_EFFECT',
-            }),
-            sourceActionType: 'INTERNAL_STAT_LISTENER',
+      .reduce((listenerState, { ownerId, card }) => {
+        const listenerFrame = listenerState.targetingState;
+        const hasChoice = card.abilities
+          .filter((ability) => ability.trigger === 'STAT_CHANGED')
+          .some((ability) => ability.effects.some((effect) =>
+            effect.type === 'STRUCTURED' && effect.target?.selection === 'PLAYER_CHOICE',
+          ));
+        const listenerInput = listenerFrame && !hasChoice
+          ? { ...listenerState, targetingState: undefined }
+          : listenerState;
+        const resolved = resolveTriggeredAbilities(
+          listenerInput,
+          ownerId,
+          card,
+          'STAT_CHANGED',
+          {
+            attackDelta: changedCard.attackDelta,
+            sourceContext: {
+              ...(sourceContext ?? {
+                sourcePlayerId: changedCard.ownerId,
+                sourceActionType: 'CARD_EFFECT',
+              }),
+              sourceActionType: 'INTERNAL_STAT_LISTENER',
+            },
           },
-        },
-      ), next);
+        );
+        return listenerFrame && !hasChoice
+          ? { ...resolved, targetingState: listenerFrame }
+          : resolved;
+      }, next);
   }, afterState);
+}
+
+function withTemporaryStatDeltas(
+  before: CardInstance,
+  after: CardInstance,
+  stateTurn: number,
+  duration?: EffectDuration,
+): CardInstance {
+  if (!duration || duration === 'PERMANENT') return after;
+  const untilTurn = duration === 'THIS_TURN' ? stateTurn : stateTurn + 1;
+  const deltas: CardInstance['temporaryStatModifiers'] = [
+    { stat: 'cost' as const, amount: after.currentCost - before.currentCost, untilTurn },
+    { stat: 'attack' as const, amount: after.currentAttack - before.currentAttack, untilTurn },
+    { stat: 'health' as const, amount: after.maxHealth - before.maxHealth, untilTurn },
+  ].filter((modifier) => modifier.amount !== 0);
+  return deltas.length
+    ? { ...after, temporaryStatModifiers: [...(after.temporaryStatModifiers ?? []), ...deltas] }
+    : after;
 }
 
 function dynamicValue(
@@ -1197,13 +1271,20 @@ function applyEffect(
             }),
       };
     }
-    return {
+    const updatedState: GameState = {
       ...state,
       players: state.players.map((player) => {
            const update = (card: CardInstance): CardInstance => {
           if (!ids.has(card.instanceId)) return card;
-             const finish = (next: CardInstance) =>
-               recordStatChanges(card, next, state, sourceCard, triggerContext);
+              const finish = (next: CardInstance, duration = effect.values?.duration) =>
+                recordStatChanges(
+                  card,
+                  withTemporaryStatDeltas(card, next, state.turn, duration),
+                  state,
+                  sourceCard,
+                  triggerContext,
+                  duration,
+                );
            if (effect.action === 'SILENCE') return card; // resolved centrally below
              if (effect.action === 'ADD_KEYWORD' && effect.values?.keyword) {
                if (effect.values.keyword === 'DODGE' && card.keywords.includes('DODGE')) {
@@ -1218,6 +1299,29 @@ function applyEffect(
            if (effect.action === 'STUN') return { ...card, isStunned: true };
              if (effect.action === 'REDUCE_COST') return finish({ ...card, currentCost: Math.max(effect.values?.minimum ?? 0, card.currentCost - amount) });
             if (effect.action === 'INCREASE_COST') return finish({ ...card, currentCost: card.currentCost + amount });
+             if (effect.action === 'MODIFY_STAT' && effect.values?.stat) {
+               const signedAmount = effect.values.amount ?? 0;
+               if (effect.values.stat === 'COST') {
+                 return finish({ ...card, currentCost: Math.max(effect.values.minimum ?? 0, card.currentCost + signedAmount) });
+               }
+               if (effect.values.stat === 'ATTACK') {
+                 return finish({ ...card, currentAttack: card.currentAttack + signedAmount });
+               }
+               return finish({
+                 ...card,
+                 currentHealth: card.currentHealth + signedAmount,
+                 maxHealth: Math.max(1, card.maxHealth + signedAmount),
+               });
+             }
+             if (effect.action === 'SET_STAT' && effect.values?.stat && effect.values.amount !== undefined) {
+               if (effect.values.stat === 'COST') return finish({ ...card, currentCost: Math.max(0, effect.values.amount) });
+               if (effect.values.stat === 'ATTACK') return finish({ ...card, currentAttack: effect.values.amount });
+               return finish({
+                 ...card,
+                 currentHealth: effect.values.amount,
+                 maxHealth: Math.max(1, effect.values.amount),
+               });
+             }
             if (effect.action === 'HEAL') return finish({ ...card, currentHealth: Math.min(card.maxHealth, card.currentHealth + amount) });
             if (effect.action === 'DISABLE_ABILITY') return { ...card, isAbilityDisabled: true };
             if (effect.action === 'WEAKEN_TO_STUN_SILENCE') {
@@ -1234,7 +1338,7 @@ function applyEffect(
                 currentAttack: card.currentAttack * attackMultiplier + (effect.values?.attack ?? (effect.values?.amountReference ? dynamic : 0)) + referenceAmount,
                 maxHealth: card.maxHealth * healthMultiplier + (effect.values?.health ?? (effect.values?.amountReference ? dynamic : 0)),
                 currentHealth: card.currentHealth * healthMultiplier + health + (effect.values?.health === undefined && effect.values?.amountReference ? dynamic : 0),
-              });
+               }, effect.values?.duration);
           }
            if (effect.action === 'SET_STATS') {
               return finish({
@@ -1244,7 +1348,7 @@ function applyEffect(
                  currentHealth: effect.values.health,
                  maxHealth: Math.max(card.maxHealth, effect.values.health),
                } : {}),
-              });
+               }, effect.values?.duration);
            }
            if (effect.action === 'SWAP_STATS') {
               return finish({
@@ -1264,6 +1368,16 @@ function applyEffect(
          return { ...player, deck: updatedDeck, hand: updatedHand, board: updatedBoard };
       }),
     };
+    const sourceContext = sourceContextFor(playerId, sourceCard, triggerContext);
+    const changes = statChangeEvents(state, updatedState, sourceCard, sourceContext, effect.values?.duration);
+    return resolveStatChangeListeners(
+      state,
+      {
+        ...updatedState,
+        events: changes.length ? [...updatedState.events, ...changes] : updatedState.events,
+      },
+      sourceContext,
+    );
   }
   if (effect.type === 'GAIN_GOLD') {
      const updatedState: GameState = {

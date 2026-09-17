@@ -29,9 +29,17 @@ export type CardStatHistoryEntry = {
   after: number;
   delta: number;
   sourceDefinitionId?: string;
+  sourceInstanceId?: string;
   sourceName?: string;
   sourceEffectId?: string;
   turnNumber?: number;
+  duration?: 'THIS_TURN' | 'UNTIL_NEXT_TURN' | 'PERMANENT';
+};
+
+export type TemporaryStatModifier = {
+  stat: 'cost' | 'attack' | 'health';
+  amount: number;
+  untilTurn: number;
 };
 
 export const DEFAULT_IMAGE_DISPLAY_SETTINGS: ImageDisplaySettings = {
@@ -105,6 +113,7 @@ export interface CardInstance {
   cardType?: 'WRESTLER' | 'TECHNIQUE';
   currentCost: number;
   temporaryCostUntilTurn?: number;
+  temporaryStatModifiers?: TemporaryStatModifier[];
   /** Immutable values copied from the definition, retained for runtime checks. */
   baseCost?: number;
   baseAttack?: number;

@@ -784,6 +784,45 @@ test("문서의 다음 턴 골드, 비용, 기절 문장을 분석한다", () =>
   }
 });
 
+test("비용·공격력·체력의 signed generic stat 표현을 순서대로 분석한다", () => {
+  const naturalCost = analyzeEffectText("등장: 비용이 1 감소합니다.");
+  assert.deepEqual(naturalCost.effects[0]?.values, { stat: "COST", amount: -1 });
+
+  const result = analyzeEffectText("등장: 비용이 1 감소하고 +2/+2를 얻습니다.");
+  assert.equal(result.status, "success");
+  assert.deepEqual(result.effects.map((effect) => [effect.action, effect.values?.stat, effect.values?.amount]), [
+    ["MODIFY_STAT", "COST", -1],
+    ["MODIFY_STAT", "ATTACK", 2],
+    ["MODIFY_STAT", "HEALTH", 2],
+  ]);
+
+  const compound = analyzeEffectText("등장: 비용 +1, 공격력 +3, 체력 +2");
+  assert.deepEqual(compound.effects.map((effect) => [effect.values?.stat, effect.values?.amount]), [
+    ["COST", 1],
+    ["ATTACK", 3],
+    ["HEALTH", 2],
+  ]);
+});
+
+test("generic stat parser는 SET, 최소 비용, 지속시간을 구분한다", () => {
+  const result = analyzeEffectText("등장: 공격력/체력이 4/6이 됩니다.");
+  assert.deepEqual(result.effects.map((effect) => [effect.action, effect.values?.stat, effect.values?.amount]), [
+    ["SET_STAT", "ATTACK", 4],
+    ["SET_STAT", "HEALTH", 6],
+  ]);
+
+  const temporary = analyzeEffectText("등장: 이번 턴 비용 -1 (최소 비용 1)");
+  assert.deepEqual(temporary.effects[0]?.values, {
+    stat: "COST",
+    amount: -1,
+    duration: "THIS_TURN",
+    minimum: 1,
+  });
+
+  const permanent = analyzeEffectText("등장: 영구적으로 공격력 +1");
+  assert.equal(permanent.effects[0]?.values?.duration, "PERMANENT");
+});
+
 test("발단 문장은 파괴 대상 합산, 정의 참조, 소환 대상 연계를 구조화한다", () => {
   const result = analyzeEffectText("등장:내 필드에 있는 모든 생성된 카드를 파괴시킵니다. 그 카드들의 현재 공격과 체력의 수치를 합산한 수치를 가진 '좀비'를 1장 소환합니다. 소환한 '좀비'에게 도발을 부여합니다");
   assert.equal(result.status, "success");

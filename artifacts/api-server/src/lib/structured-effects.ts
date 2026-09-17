@@ -2,7 +2,8 @@ import {
   ACTION_SCHEMAS, ACTIONS, CONDITIONS, DAMAGE_SOURCES, DEFAULT_CARD_TARGET_SCOPE, EFFECT_CAPABILITIES, EFFECT_LIBRARY, KEYWORDS, REFERENCES, TARGET_OWNERS,
   RANDOM_SCOPES, TARGET_SELECTIONS, TARGET_ZONES, TRIGGERS,
   type Action, type Condition, type Keyword, type Reference, type TargetOwner, type TargetSelection,
-  type DamageSource, type RandomScope, type TargetZone, type Trigger,
+  type DamageSource, type RandomScope, type TargetZone, type Trigger, type StatName, type EffectDuration,
+  STAT_NAMES, EFFECT_DURATIONS,
 } from "@workspace/effect-registry";
 
 export { ACTIONS, KEYWORDS, TRIGGERS };
@@ -27,6 +28,8 @@ export type QueuedStructuredEffect = {
     attackMultiplier?: number;
     healthMultiplier?: number;
     amount?: number;
+    stat?: StatName;
+    duration?: EffectDuration;
     keyword?: Keyword;
     damageSource?: DamageSource;
     reference?: Reference;
@@ -48,6 +51,8 @@ export type StructuredEffect = {
     attackMultiplier?: number;
     healthMultiplier?: number;
     amount?: number;
+    stat?: StatName;
+    duration?: EffectDuration;
     keyword?: Keyword;
     damageSource?: DamageSource;
     reference?: Reference;
@@ -138,6 +143,10 @@ const GENERATED_FILTER_PATTERN = /(?:생성된|생성\s*카드|GENERATED)/i;
 const MIN_COST_PATTERN = /(\d+)\s*(?:코스트|비용)\s*이상/;
 const AGGREGATED_STATS_PATTERN = /(?:현재\s*)?(?:공격(?:력)?\s*(?:과|\/|및)\s*체력|체력\s*(?:과|\/|및)\s*공격(?:력)?)[^.!?]{0,30}?합산/;
 const AGGREGATED_ATTACK_PATTERN = /(?:리타이어|퇴장|파괴).*공격력.*(?:더|추가)|공격력.*(?:리타이어|퇴장|파괴)/;
+const STAT_PAIR_SET_PATTERN = /(?:공격력|공격)\s*\/\s*(?:체력|HP)\s*(?:이|가|을|를)?\s*(\d+)\s*\/\s*(\d+)\s*(?:이|가)?\s*(?:됩니다|된다|됩니다|됩니다|됩니다|됩니다|만듭니다|설정)/i;
+const STAT_SET_PATTERN = /(비용|코스트|공격력|체력)\s*(?:이|가|을|를|은|는)?\s*(\d+)\s*(?:이|가|으로|로)?\s*(?:됩니다|된다|됩니다|만듭니다|설정(?:합니다|됩니다)?)/gi;
+const STAT_PAIR_INCREMENT_GENERIC_PATTERN = /([+-]\d+)\s*\/\s*([+-]\d+)/g;
+const STAT_INCREMENT_GENERIC_PATTERN = /(비용|코스트|공격력|체력)\s*(?:이|가|을|를|은|는)?\s*([+-]?\d+)\s*(?=(?:증가|감소|올라|올려|올립니다|낮아|낮추|강화|얻|씩|만큼|,|\.|\(|\)|$))/gi;
 
 export function effectLibrary() {
   return EFFECT_LIBRARY;
@@ -292,6 +301,100 @@ function targetFor(text: string, randomPool = false): Target {
 }
 function keywordFor(text: string): Keyword | undefined {
   return aliases.keyword.find(([, pattern]) => pattern.test(text))?.[0];
+}
+
+function durationFor(text: string): EffectDuration | undefined {
+  if (/이번\s*턴/.test(text)) return "THIS_TURN";
+  if (/다음\s*턴\s*(?:까지|동안)/.test(text)) return "UNTIL_NEXT_TURN";
+  if (/영구(?:적|적으로)?|계속(?:해서)?/.test(text)) return "PERMANENT";
+  return undefined;
+}
+
+function genericStatName(value: string): StatName {
+  return value === "비용" || value === "코스트" ? "COST" : value === "체력" ? "HEALTH" : "ATTACK";
+}
+
+function minimumCostFor(text: string): number | undefined {
+  const match = text.match(/최소\s*(?:비용\s*)?(\d+)/);
+  return match ? Number(match[1]) : undefined;
+}
+
+function genericStatEffects(
+  trigger: Trigger,
+  body: string,
+  conditions: EffectCondition[],
+): StructuredEffect[] {
+  const duration = durationFor(body);
+  const minimumCost = minimumCostFor(body);
+  const target = targetFor(body);
+  const parsed: Array<{ index: number; effects: StructuredEffect[] }> = [];
+
+  const setPair = STAT_PAIR_SET_PATTERN.exec(body);
+  if (setPair?.index !== undefined) {
+    parsed.push({
+      index: setPair.index,
+      effects: [
+        { trigger, action: "SET_STAT", target, values: { stat: "ATTACK", amount: Number(setPair[1]), ...(duration ? { duration } : {}), ...(conditions.length ? { conditions } : {}) } },
+        { trigger, action: "SET_STAT", target, values: { stat: "HEALTH", amount: Number(setPair[2]), ...(duration ? { duration } : {}), ...(conditions.length ? { conditions } : {}) } },
+      ],
+    });
+  }
+
+  for (const match of body.matchAll(STAT_SET_PATTERN)) {
+    if (match.index === undefined) continue;
+    parsed.push({
+      index: match.index,
+      effects: [{
+        trigger,
+        action: "SET_STAT",
+        target,
+        values: {
+          stat: genericStatName(match[1]!),
+          amount: Number(match[2]),
+          ...(duration ? { duration } : {}),
+          ...(conditions.length ? { conditions } : {}),
+        },
+      }],
+    });
+  }
+
+  for (const match of body.matchAll(STAT_PAIR_INCREMENT_GENERIC_PATTERN)) {
+    if (match.index === undefined) continue;
+    parsed.push({
+      index: match.index,
+      effects: [
+        { trigger, action: "MODIFY_STAT", target, values: { stat: "ATTACK", amount: Number(match[1]), ...(duration ? { duration } : {}), ...(conditions.length ? { conditions } : {}) } },
+        { trigger, action: "MODIFY_STAT", target, values: { stat: "HEALTH", amount: Number(match[2]), ...(duration ? { duration } : {}), ...(conditions.length ? { conditions } : {}) } },
+      ],
+    });
+  }
+
+  for (const match of body.matchAll(STAT_INCREMENT_GENERIC_PATTERN)) {
+    if (match.index === undefined) continue;
+    if (/최소\s*$/.test(body.slice(Math.max(0, match.index - 4), match.index))) continue;
+    const rawAmount = Number(match[2]);
+    const nearbyText = body.slice(match.index, match.index + match[0].length + 12);
+    const amount = /감소|낮/.test(nearbyText) ? -Math.abs(rawAmount) : rawAmount;
+    parsed.push({
+      index: match.index,
+      effects: [{
+        trigger,
+        action: "MODIFY_STAT",
+        target,
+        values: {
+          stat: genericStatName(match[1]!),
+          amount,
+          ...(genericStatName(match[1]!) === "COST" && minimumCost !== undefined ? { minimum: minimumCost } : {}),
+          ...(duration ? { duration } : {}),
+          ...(conditions.length ? { conditions } : {}),
+        },
+      }],
+    });
+  }
+
+  return parsed
+    .sort((left, right) => left.index - right.index)
+    .flatMap((entry) => entry.effects);
 }
 const GENERIC_CARD_REFERENCE_WORDS = new Set([
   "카드", "선수", "선수카드", "기술", "기술카드", "캐릭터", "무작위", "랜덤", "무작위선수", "랜덤선수",
@@ -692,6 +795,29 @@ export function analyzeEffectText(input: string, options: EffectAnalysisOptions 
     ...(needMatch ? [{ type: "NEED_CONDITION" as const, expression: needMatch[1]!.trim() }] : []),
     ...(trigger === "CARD_PLAYED_THIS_TURN" ? [{ type: "HAS_MATCHING_TAG_PLAYED_THIS_TURN" as const }] : []),
   ];
+  const genericStats = genericStatEffects(trigger, body, conditions);
+  const useGenericStats = genericStats.length > 0 && (
+    /[+-]\d+\s*\/\s*[+-]\d+/.test(body) && /(?:비용|코스트)/.test(body) ||
+    /(?:비용|코스트|공격력|체력)\s*[+-]\d+/.test(body) ||
+    STAT_SET_PATTERN.test(body) ||
+    STAT_PAIR_SET_PATTERN.test(body) ||
+    Boolean(durationFor(body)) ||
+    (/(?:비용|코스트)(?:이|가|을|를|은|는)?\s*[+-]?\d+\s*(?:증가|감소|올|낮)/.test(body) &&
+      !/(?:손패|덱|필드|선수|카드)/.test(body)) ||
+    (/(?:공격력|체력)(?:이|가|을|를|은|는)?\s*[+-]?\d+\s*(?:증가|감소|올|낮|됩|됩니다)/.test(body) &&
+      !/(?:다음에|예약|사용될 때까지|손에 있는|선택하여)/.test(body))
+  );
+  STAT_SET_PATTERN.lastIndex = 0;
+  if (useGenericStats) {
+    return {
+      status: "success",
+      outcome: "supported",
+      effects: genericStats,
+      keywords: [],
+      unsupportedSegments: [],
+      summaries: genericStats.map((item) => `${item.trigger} · ${item.action} · ${item.values?.stat} ${item.values?.amount}`),
+    };
+  }
   const recognized: Array<[Action, RegExp]> = [
     ["ADD_NEXT_TURN_GOLD", /다음(?:\s*내)?\s*턴(?:에)?\s*(?:추가\s*)?(?:골드(?:를|을)?\s*(?:추가로?\s*)?[+]?\d+\s*(?:g|골드)?|\d+\s*g|골드\s*\d+\s*추가)(?:\s*더)?(?:\s*받(?:습니다|는다|음)?)?/i],
     ["ADD_GOLD", /(?:현재\s*)?(?:\d+\s*(?:g|골드)|골드(?:를|을)?\s*[+]?\d+|현재\s*골드\s*[+]\d+)\s*(?:획득|얻(?:음|습니다)?|추가)?/i],
@@ -859,7 +985,10 @@ export function isStructuredEffects(value: unknown): value is { effects: Structu
        )) return false;
       if (target.randomScope !== undefined && (!RANDOM_SCOPES.includes(target.randomScope) || !["RANDOM", "ADJACENT_EMPTY_SLOTS"].includes(target.selection))) return false;
     } else if (target !== undefined && !(["SUMMON", "GENERATE"].includes(item.action) && ["RANDOM", "ADJACENT_EMPTY_SLOTS"].includes(target.selection))) return false;
-    if (schema.amount && !(typeof values?.amount === "number" && Number.isFinite(values.amount) && values.amount >= 0 && values.amount <= 999)) return false;
+    if (schema.amount && !(typeof values?.amount === "number" && Number.isFinite(values.amount) &&
+      (schema.signedAmount ? Math.abs(values.amount) <= 999 : values.amount >= 0 && values.amount <= 999))) return false;
+    if (schema.stat && !STAT_NAMES.includes(values?.stat as StatName)) return false;
+    if (schema.duration && !EFFECT_DURATIONS.includes(values?.duration as EffectDuration)) return false;
     if (schema.stats || schema.statMultiplier) {
        const validStats = schema.stats && (item.action === "SET_STATS"
          ? (values?.attack !== undefined || values?.health !== undefined) &&
@@ -919,6 +1048,7 @@ export function isStructuredEffects(value: unknown): value is { effects: Structu
      }
        if (item.action === "GENERATE" && values?.destination !== undefined && values.destination !== "HAND" && values.destination !== "DECK" && values.destination !== "DECK_TOP") return false;
        if (item.action === "REDUCE_COST" && values?.minimum !== undefined && (typeof values.minimum !== "number" || values.minimum < 0 || values.minimum > 999)) return false;
+      if (item.action === "MODIFY_STAT" && values?.minimum !== undefined && (typeof values.minimum !== "number" || values.minimum < 0 || values.minimum > 999)) return false;
       if ((item.action === "SUMMON" || item.action === "GENERATE") && values?.count !== undefined &&
         (!Number.isInteger(values.count) || values.count < 1 || values.count > 20)) return false;
      if (values?.aggregateStats !== undefined) {

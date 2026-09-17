@@ -201,18 +201,39 @@ export function endTurn(
     activePlayerId: nextPlayer.id,
     players: state.players.map((player) => {
       if (player.id === actingPlayerId) {
+        const expireTemporaryStats = (card: CardInstance): CardInstance => {
+          const modifiers = card.temporaryStatModifiers ?? [];
+          const expired = modifiers.filter((modifier) => modifier.untilTurn === state.turn);
+          if (!expired.length) return card;
+          const remaining = modifiers.filter((modifier) => modifier.untilTurn !== state.turn);
+          return expired.reduce((next, modifier) => {
+            if (modifier.stat === 'cost') {
+              return { ...next, currentCost: Math.max(0, next.currentCost - modifier.amount) };
+            }
+            if (modifier.stat === 'attack') {
+              return { ...next, currentAttack: next.currentAttack - modifier.amount };
+            }
+            return {
+              ...next,
+              currentHealth: Math.max(0, next.currentHealth - modifier.amount),
+              maxHealth: Math.max(1, next.maxHealth - modifier.amount),
+            };
+          }, { ...card, temporaryStatModifiers: remaining });
+        };
         const expireTemporaryCost = (card: CardInstance) =>
           card.temporaryCostUntilTurn === state.turn
             ? { ...card, currentCost: card.baseCost ?? card.currentCost, temporaryCostUntilTurn: undefined }
             : card;
+        const expireTemporaryModifiers = (card: CardInstance) =>
+          expireTemporaryCost(expireTemporaryStats(card));
         return {
           ...player,
           currentGold: 0,
           board: player.board.map((card) =>
-            card ? { ...expireTemporaryCost(card), isStunned: false } : null,
+            card ? { ...expireTemporaryModifiers(card), isStunned: false } : null,
           ) as typeof player.board,
-          hand: player.hand.map(expireTemporaryCost),
-          deck: player.deck.map(expireTemporaryCost),
+          hand: player.hand.map(expireTemporaryModifiers),
+          deck: player.deck.map(expireTemporaryModifiers),
         };
       }
 

@@ -46,3 +46,4 @@
 - [Test account economy boundary](test-account-economy-boundary.md) — test-only unlimited ownership and balances are server-derived, development-gated, and never alter match Gold or normal-user economics.
 - [Attributed quest conditions](attributed-quest-conditions.md) — quests that describe a specific ability source must persist sourceActionType and match serialized event attribution.
 - [Shared card event listeners](shared-card-event-listeners.md) — attack-stat and attack-survival mechanics use guarded registry triggers, not card-name branches.
+- [Generic stat pipeline](generic-stat-pipeline.md) — COST, ATTACK, and HEALTH share signed/set/duration events; automatic listeners must preserve the active effect frame.
