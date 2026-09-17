@@ -1,0 +1,323 @@
+현재 Replit Agent의 실제 Browser Match 검증이
+로그인 화면에서 막혀 완료되지 못하고 있다.
+
+문제:
+
+Agent가 사용하는 Browser Session에
+인증된 TEST USER session cookie가 없어서
+
+Match / Deck / Shop / Collection 등의
+실제 로그인 사용자 화면에 진입하지 못한다.
+
+이 문제를 해결하기 위해
+기존 Test Auth Helper를 점검하고,
+필요하면 개발/테스트 환경 전용 Browser Test Login Helper를 구현해줘.
+
+중요:
+이 기능은 절대로 Production에서 사용할 수 없어야 한다.
+
+==================================================
+1. 기존 Test Auth Helper 먼저 확인
+==================================================
+
+프로젝트에 기존에:
+
+TEST USER
+TEST ADMIN
+loginAsTestUser()
+loginAsTestAdmin()
+
+또는 비슷한 테스트 인증 기능이 있는지 먼저 찾아라.
+
+이미 존재한다면
+새 시스템을 중복 생성하지 말고
+기존 시스템을 실제 Browser Test에서 사용할 수 있게 수정해라.
+
+==================================================
+2. TEST USER Browser Login
+==================================================
+
+Replit Agent Browser가 직접 접근해서
+TEST USER의 정상 Session을 획득할 수 있는
+개발 전용 Login Route를 제공해.
+
+예:
+
+/__test/login/user
+
+또는 기존 프로젝트 구조에 맞는 route.
+
+이 Route를 Browser에서 열면:
+
+1. 서버가 기존 TEST USER를 찾거나 생성
+2. 기존 정상 Auth Service를 이용해서 로그인 처리
+3. 정상 Session 생성
+4. 기존과 동일한 httpOnly session cookie 발급
+5. Main Menu 또는 지정된 next route로 redirect
+
+즉 Auth Validation을 우회하는 것이 아니라
+정상 로그인 과정을 Test Helper가 대신 실행해야 한다.
+
+==================================================
+3. TEST ADMIN도 지원
+==================================================
+
+동일하게 필요하면:
+
+/__test/login/admin
+
+지원.
+
+정상 ADMIN session 발급.
+
+하지만 이번 Match Browser Test에서는
+TEST USER를 우선 사용.
+
+==================================================
+4. Production에서는 완전 차단
+==================================================
+
+매우 중요.
+
+Test Login Helper는 다음 조건에서만 활성:
+
+NODE_ENV !== "production"
+AND
+ENABLE_TEST_AUTH === "true"
+
+둘 중 하나라도 만족하지 않으면 사용 불가.
+
+Production에서:
+
+/__test/login/user
+
+접근 시:
+
+404 또는 403
+
+반환.
+
+TEST USER 자동 로그인 기능이
+Production build에 실질적으로 활성화되어 있으면 안 된다.
+
+==================================================
+5. 클라이언트 플래그 신뢰 금지
+==================================================
+
+사용자가 browser/localStorage/query parameter로
+
+isTestAccount=true
+
+같은 값을 넣는 방식 금지.
+
+서버가 TEST USER를 결정해야 한다.
+
+==================================================
+6. 정상 Session 사용
+==================================================
+
+TEST USER 로그인 이후에는
+일반 USER와 똑같은:
+
+- session cookie
+- auth middleware
+- current user endpoint
+- permission check
+
+를 통과해야 한다.
+
+Test Route에 로그인한 뒤
+일반 App Route에서는 별도 auth bypass를 사용하지 마.
+
+==================================================
+7. Replit Agent Browser 검증 흐름
+==================================================
+
+앞으로 Browser Test를 시작할 때:
+
+1.
+
+/__test/login/user
+
+접속
+
+2.
+
+정상적으로 TEST USER session cookie 생성 확인
+
+3.
+
+Main Menu 표시 확인
+
+4.
+
+AI Match / Deck Select 진입
+
+5.
+
+TEST USER의 VALID Deck 선택
+
+6.
+
+AI 상대 Deck 선택
+
+7.
+
+실제 Match 시작
+
+8.
+
+Board / Hand / Animation 실제 Browser 검증
+
+순서로 진행해.
+
+"로그인 세션이 없어서 테스트 못함"으로
+바로 테스트를 포기하지 마.
+
+먼저 Test Login Helper를 사용해 로그인해라.
+
+==================================================
+8. TEST USER 데이터
+==================================================
+
+기존 TEST USER 규칙 유지:
+
+- 모든 PUBLISHED non-token 카드 사용 가능
+- 모든 PUBLISHED Champion 사용 가능
+- Prism 무제한
+- Shop Currency 무제한
+
+하지만 Match 내부 Gold는
+기존 1~6 규칙 그대로.
+
+Token / Champion Token 직접 Deck 편성 금지.
+
+==================================================
+9. VALID Deck 확인
+==================================================
+
+TEST USER가 로그인은 됐지만
+VALID Deck이 하나도 없어 Match Test를 못 하는 경우도 확인.
+
+가능하면 기존 TEST USER에 저장된
+VALID Deck을 사용.
+
+없다면 Browser Test 과정에서
+기존 Deck Editor를 통해 정상 Deck을 하나 만들어도 된다.
+
+개발 편의를 위해 자동 Test Deck을 만들 경우에도:
+
+- Champion 1
+- Card 20~30
+- PUBLISHED
+- non-token
+
+이라는 실제 Deck Rule을 반드시 지켜라.
+
+Deck Validation 우회 금지.
+
+==================================================
+10. AI Deck 확인
+==================================================
+
+AI Match 검증을 위해
+enabled + VALID AI Deck이 최소 하나 존재하는지도 확인.
+
+없다면 기존 Admin AI Deck 시스템을 이용해
+테스트 가능한 정상 AI Deck을 생성.
+
+AI Deck Validation 우회 금지.
+
+==================================================
+11. 실제 Browser 검증 다시 수행
+==================================================
+
+Test Auth 해결 후
+이전에 인증 때문에 못 했던 테스트를 다시 실행.
+
+특히 이번에 반드시 확인:
+
+BOARD_SCALE
+HAND_SCALE
+HAND_OVERLAP
+SELF_CARD_PLAY_ORIGIN
+OPPONENT_CARD_PLAY_ORIGIN
+ATTACK_ANIMATION_ORIGIN
+ATTACK_ANIMATION_TARGET
+CARD_CLONE_HIDE_ORIGINAL
+CARD_CLONE_CLEANUP
+NO_DOUBLE_CARD_RENDER
+SELF_PLAY_ANIMATION_LAYOUT_SYNC
+OPPONENT_PLAY_ANIMATION_LAYOUT_SYNC
+ATTACK_ANIMATION_LAYOUT_SYNC
+SUMMON_ANIMATION_LAYOUT_SYNC
+REVIVE_ANIMATION_LAYOUT_SYNC
+
+실제 Match Screenshot도 확인.
+
+==================================================
+12. 테스트 결과 기준
+==================================================
+
+다시는:
+
+"로그인 화면까지만 확인되어 Match 검증 못함"
+
+상태에서 작업을 완료 처리하지 마.
+
+Test Auth 자체가 실패한다면:
+
+TEST_AUTH = FAIL
+
+로 명시하고
+
+- 정확한 오류
+- HTTP status
+- session cookie 생성 여부
+- current user endpoint 결과
+- redirect 결과
+
+를 보고해.
+
+TEST AUTH가 성공했다면
+그 세션으로 Match까지 실제 진입해서
+나머지 Browser 검증을 계속 진행해야 한다.
+
+==================================================
+13. 수정 금지
+==================================================
+
+절대 하지 말 것:
+
+- Production Auth 우회
+- 모든 User 자동 로그인
+- Admin 인증 제거
+- Auth middleware 비활성화
+- TEST USER를 일반 Production User로 생성
+- Session 검증 삭제
+- Deck Validation 우회
+- Match Rule 우회
+- URL query 하나만으로 일반 사용자가 ADMIN 되게 만들기
+
+==================================================
+최종 완료 기준
+==================================================
+
+개발/테스트 환경에서:
+
+/__test/login/user
+↓
+정상 TEST USER Session 생성
+↓
+Main Menu
+↓
+AI Match Setup
+↓
+실제 Match
+↓
+Board/Hand/Animation Browser 검증
+
+까지 자동으로 진행 가능해야 한다.
+
+Production에서는 Test Login Route가
+완전히 사용할 수 없어야 한다.
