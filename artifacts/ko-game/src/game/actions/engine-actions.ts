@@ -45,7 +45,7 @@ export function getLegalActions(state: GameState, playerId: string): GameAction[
         const action: GameAction = { type: 'PLAY_WRESTLER', playerId, cardInstanceId: card.instanceId, boardSlot };
         if (probe(state, action)) actions.push(action);
       });
-    } else {
+    } else if (card.cardType === 'TECHNIQUE') {
       const action: GameAction = { type: 'PLAY_TECHNIQUE', playerId, cardInstanceId: card.instanceId };
       if (probe(state, action)) actions.push(action);
     }

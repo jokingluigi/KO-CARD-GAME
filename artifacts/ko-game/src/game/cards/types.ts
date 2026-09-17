@@ -1,17 +1,19 @@
 import type { CardAbility, CardKeyword } from '../effects/types';
+export type { CardKeyword } from '../effects/types';
 
 export type CardDefinitionId = string;
 export type CardInstanceId = string;
-export type CardRarity = 'NORMAL' | 'LEGENDARY' | 'CHAMPION';
+export type CardRarity = 'NORMAL' | 'LEGENDARY' | 'CHAMPION' | 'TOKEN';
 
 export const CARD_RARITY_LABELS: Record<CardRarity, string> = {
   NORMAL: '일반',
   LEGENDARY: '레전더리',
   CHAMPION: '챔피언',
+  TOKEN: '토큰',
 };
 
 export function normalizeCardRarity(value?: unknown): CardRarity {
-  return value === 'LEGENDARY' || value === 'CHAMPION' ? value : 'NORMAL';
+  return value === 'LEGENDARY' || value === 'CHAMPION' || value === 'TOKEN' ? value : 'NORMAL';
 }
 
 export type ImageDisplayMode = 'COVER' | 'CONTAIN' | 'CUSTOM';

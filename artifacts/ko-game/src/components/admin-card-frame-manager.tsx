@@ -7,7 +7,7 @@ import type { CardRarity } from "../game/cards/types";
 const adminBase = `${import.meta.env.BASE_URL.replace(/\/$/, "")}/api/admin`;
 const imageAccept = ".png,.jpg,.jpeg,.webp,image/png,image/jpeg,image/webp";
 const cardTypes: CardFrameCardType[] = ["WRESTLER", "TECHNIQUE"];
-const rarities: CardRarity[] = ["NORMAL", "LEGENDARY", "CHAMPION"];
+const rarities: CardRarity[] = ["NORMAL", "LEGENDARY", "CHAMPION", "TOKEN"];
 const defaultScale = 1.1;
 
 type StoredFrame = CardFrameDefinition & { id: string; frameAssetId: string | null; frameUrl: string | null };

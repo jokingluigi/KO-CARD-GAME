@@ -32,6 +32,7 @@ import {
   emptyGameMediaCatalog,
   processChampionQuestEvents,
   type GameMediaCatalog,
+  preloadMatchAssets,
 } from '@/game';
 import { GameStatePreview } from '@/components/game-state-preview';
 import { MatchResultOverlay } from '@/components/match-result-overlay';
@@ -235,6 +236,7 @@ export default function Home() {
         setAiMatchData({ definitions, champions, media });
         setMediaCatalog(media);
         setRuntimeCardDefinitions(definitions);
+        preloadMatchAssets(definitions, champions);
         setPlayError(null);
       }).catch((reason) => {
         if (cancelled) return;
@@ -264,6 +266,7 @@ export default function Home() {
           const definition = cardRecordToDefinition(card);
           setMediaCatalog(media);
           setRuntimeCardDefinitions([definition]);
+          preloadMatchAssets([definition], []);
           setGameState(startGame(createInitialGameState(undefined, [definition]), undefined, media));
           setIsAdminTestMatch(true);
           setSelectedCardId(null);
@@ -307,6 +310,7 @@ export default function Home() {
         if (runtimeDefinitions.length === 0) throw new Error('테스트용 카드가 없습니다.');
         setMediaCatalog(media);
         setRuntimeCardDefinitions(runtimeDefinitions);
+        preloadMatchAssets(runtimeDefinitions, [testChampion, opponent]);
         setGameState(startGame(
           createInitialGameState(
             [testChampion.id, opponent.id],
@@ -353,6 +357,7 @@ export default function Home() {
         setMediaCatalog(media);
         const runtimeDefinitions = publishedDefinitions;
         setRuntimeCardDefinitions(runtimeDefinitions);
+        preloadMatchAssets(runtimeDefinitions, champions);
         const selected = champions.length >= 2
           ? [champions[0]!.id, champions[1]!.id] as [string, string]
           : undefined;
@@ -904,6 +909,12 @@ export default function Home() {
     playAttackSound(attackAnimation);
   }
 
+  function handleOpponentAttackPresentation(animation: AttackAnimationState) {
+    if (attackAnimation || playAnimation) return;
+    setAttackImpactTriggered(false);
+    setAttackAnimation(animation);
+  }
+
   function handleAttackAnimationComplete() {
     setAttackAnimation(null);
     setAttackImpactTriggered(false);
@@ -1121,6 +1132,7 @@ export default function Home() {
       onSelectAttacker={handleSelectAttacker}
       onAttackWrestler={handleAttackWrestler}
       onAttackPlayer={handleAttackPlayer}
+      onOpponentAttackPresentation={handleOpponentAttackPresentation}
       onUseActive={handleUseActive}
       onUseChampionAbility={handleUseChampionAbility}
       onCancelEffectTargeting={handleCancelEffectTargeting}

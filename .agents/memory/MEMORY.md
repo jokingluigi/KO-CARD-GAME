@@ -48,3 +48,4 @@
 - [Attributed quest conditions](attributed-quest-conditions.md) — quests that describe a specific ability source must persist sourceActionType and match serialized event attribution.
 - [Shared card event listeners](shared-card-event-listeners.md) — attack-stat and attack-survival mechanics use guarded registry triggers, not card-name branches.
 - [Generic stat pipeline](generic-stat-pipeline.md) — COST, ATTACK, and HEALTH share signed/set/duration events; automatic listeners must preserve the active effect frame.
+- [Attack event snapshots](attack-event-snapshots.md) — preserve immutable combat card data so lethal attack presentation survives target removal.

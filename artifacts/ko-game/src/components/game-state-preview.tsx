@@ -25,6 +25,10 @@ import type {
   AttackDamageImpactLevel,
 } from './attack-animation-utils';
 import {
+  attackDamageImpactLevel,
+  attackImpactLevel,
+} from './attack-animation-utils';
+import {
   AltInspectProvider,
   CardInspectContent,
   ChampionAbilityInspectContent,
@@ -58,6 +62,7 @@ interface GameStatePreviewProps {
   onSelectAttacker: (cardInstanceId: string) => void;
   onAttackWrestler: (cardInstanceId: string, geometry?: AttackAnimationState["geometry"]) => void;
   onAttackPlayer: (geometry?: AttackAnimationState["geometry"]) => void;
+  onOpponentAttackPresentation?: (animation: AttackAnimationState) => void;
   onUseActive: (cardInstanceId: string) => void;
   onUseChampionAbility: () => void;
   onCancelEffectTargeting: () => void;
@@ -89,6 +94,7 @@ export function GameStatePreview({
   onSelectAttacker,
   onAttackWrestler,
   onAttackPlayer,
+  onOpponentAttackPresentation,
   onUseActive,
   onUseChampionAbility,
   onCancelEffectTargeting,
@@ -162,8 +168,53 @@ export function GameStatePreview({
     previousCardsRef.current = currentCards(state);
     const animations: CardPlayAnimationState[] = [];
     const leaveAnimations: CardLeaveAnimationState[] = [];
+    const savedRect = (cardInstanceId: string) => {
+      const element = boardCardRefs.current.get(cardInstanceId);
+      if (element) return rectSnapshot(element.getBoundingClientRect());
+      const previous = lastCardPositionsRef.current.get(cardInstanceId);
+      return previous;
+    };
 
-    for (const event of newEvents) {
+    for (const [eventIndex, event] of newEvents.entries()) {
+      if (
+        event.type === "ATTACK_DECLARED" &&
+        event.playerId === state.players[1]?.id &&
+        event.cardInstanceId &&
+        onOpponentAttackPresentation
+      ) {
+        const attacker = previousCards.get(event.cardInstanceId);
+        const source = savedRect(event.cardInstanceId);
+        const targetId = event.target?.type === "CARD" ? event.target.cardInstanceId : undefined;
+        const target = targetId ? previousCards.get(targetId) ?? null : null;
+        const targetRect = targetId
+          ? savedRect(targetId)
+          : championRef.current
+            ? rectSnapshot(championRef.current.getBoundingClientRect())
+            : undefined;
+        const damageEvent = newEvents.slice(eventIndex + 1).find((candidate) =>
+          candidate.type === "DAMAGE_DEALT" &&
+          candidate.source?.type === "CARD" &&
+          candidate.source.cardInstanceId === event.cardInstanceId &&
+          (targetId
+            ? candidate.target?.type === "CARD" && candidate.target.cardInstanceId === targetId
+            : candidate.target?.type === "PLAYER" && candidate.target.playerId === state.players[0]?.id),
+        );
+        if (attacker && source && targetRect) {
+          const currentAttack = event.sourceSnapshot?.currentAttack ?? attacker.currentAttack;
+          const damage = damageEvent?.amount ?? 0;
+          onOpponentAttackPresentation({
+            attacker,
+            target,
+            targetKind: targetId ? "CARD" : "CHAMPION",
+            geometry: { source, target: targetRect },
+            currentAttack,
+            impactLevel: attackImpactLevel(currentAttack),
+            damage,
+            damageImpactLevel: attackDamageImpactLevel(damage),
+            soundKey: `opponent:${state.events.length}:${event.cardInstanceId}:${targetId ?? state.players[0]?.id}`,
+          });
+        }
+      }
       if (
         (event.type === "CARD_RETIRED" || event.type === "CARD_DESTROYED" || event.type === "CARD_REMOVED") &&
         event.cardInstanceId
@@ -279,7 +330,7 @@ export function GameStatePreview({
     if (cues.length) {
       setPresentationQueue((current) => [...current.slice(-18), ...cues]);
     }
-  }, [state.events, state.players]);
+  }, [onOpponentAttackPresentation, state.events, state.players]);
 
   if (!state || !state.players || state.players.length < 2) {
     return <div className="flex h-screen items-center justify-center bg-black font-sans text-white">게임을 초기화하는 중입니다...</div>;
@@ -1059,6 +1110,12 @@ function HandCard({
       size="hand"
        className={`ko-hand-card ${isSelected ? "ko-hand-card--selected " : ""}${containerClass}`}
       imageDisplaySettings={def}
+       runtimeKeywords={card.keywords}
+       isSilenced={card.isSilenced}
+       isStunned={card.isStunned}
+       isAbilityDisabled={card.isAbilityDisabled}
+       dodgeCharges={card.dodgeCharges ?? (card.dodgeAvailable ? 1 : 0)}
+       isChampionToken={card.isChampionToken}
        highlight={isSelected ? "selected" : targetable ? "target" : undefined}
       onClick={onClick}
       tabIndex={0}
@@ -1185,6 +1242,12 @@ function BoardSlot({
          size="board"
          className={`${containerClass}${animating ? " opacity-0 pointer-events-none" : ""}${presentationActive ? " presentation-card-pulse" : ""}${hit ? ` attack-target-hit--${hitImpactLevel?.toLowerCase() ?? "light"}` : ""}`}
          imageDisplaySettings={def}
+          runtimeKeywords={card.keywords}
+          isSilenced={card.isSilenced}
+          isStunned={card.isStunned}
+          isAbilityDisabled={card.isAbilityDisabled}
+          dodgeCharges={card.dodgeCharges ?? (card.dodgeAvailable ? 1 : 0)}
+          isChampionToken={card.isChampionToken}
          highlight={selected ? "selected" : targetable ? "target" : attackReady ? "attack" : undefined}
           containerRef={cardRef}
          onClick={() => onClick(card.instanceId)}

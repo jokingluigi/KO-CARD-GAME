@@ -29,4 +29,5 @@ export * from './random/random';
 export * from './media';
 export * from './rules/constants';
 export * from './types/game-state';
+export * from './match-assets';
 export * from './types/json';

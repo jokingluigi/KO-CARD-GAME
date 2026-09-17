@@ -33,8 +33,11 @@ export interface EventAttribution {
   sourcePlayerId: string;
   sourceActionType: string;
   sourceChampionDefinitionId?: string;
+  sourceChampionInstanceId?: string;
   sourceAbilityId?: string;
   sourceEffectId?: string;
+  rootSourceEventId?: string;
+  causationId?: string;
 }
 
 export interface GameEvent {
@@ -55,6 +58,17 @@ export interface GameEvent {
   delta?: number;
   duration?: 'THIS_TURN' | 'UNTIL_NEXT_TURN' | 'PERMANENT';
   sourceContext?: EventAttribution;
+  sourceSnapshot?: EventCardSnapshot;
+  targetSnapshot?: EventCardSnapshot;
+}
+
+export interface EventCardSnapshot {
+  playerId: string;
+  cardInstanceId: CardInstanceId;
+  cardType: 'WRESTLER' | 'TECHNIQUE';
+  boardSlot: 0 | 1 | 2 | 3 | null;
+  currentAttack?: number;
+  currentHealth?: number;
 }
 
 export interface EnterFieldEvent extends GameEvent {

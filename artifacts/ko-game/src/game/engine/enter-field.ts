@@ -61,15 +61,13 @@ export function enterField(
     events: [...state.events, event],
   };
 
-  const afterEnter = entryCause === 'PLAY_FROM_HAND'
-    ? resolveTriggeredAbilities(
-      enteredState,
-      playerId,
-      enteredCard,
-      'ENTER_FIELD',
-      { boardSlot, chosenTargetInstanceIds },
-    )
-    : enteredState;
+  const afterEnter = resolveTriggeredAbilities(
+    enteredState,
+    playerId,
+    enteredCard,
+    'ENTER_FIELD',
+    { boardSlot, chosenTargetInstanceIds },
+  );
   // POSITION is deferred after ENTER_FIELD rather than installed as a child.
   if (afterEnter.targetingState?.active) {
     const positionEffects = enteredCard.abilities

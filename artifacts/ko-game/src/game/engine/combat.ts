@@ -84,6 +84,7 @@ function retireDefeatedWrestlers(state: GameState): GameState {
           type: 'CARD_RETIRED',
           playerId: player.id,
           cardInstanceId: card.instanceId,
+          cardType: card.cardType,
           boardSlot: index as BoardSlot,
           source: { type: 'SYSTEM' },
           target: { type: 'CARD', cardInstanceId: card.instanceId },
@@ -337,6 +338,24 @@ export function attack(
               }
             : { type: 'PLAYER', playerId: target.playerId },
           reason: 'BASIC_ATTACK',
+          sourceSnapshot: {
+            playerId: attackingPlayerId,
+            cardInstanceId: attacker.instanceId,
+            cardType: attacker.cardType ?? 'WRESTLER',
+            boardSlot: attacker.boardSlot,
+            currentAttack: attacker.currentAttack,
+            currentHealth: attacker.currentHealth,
+          },
+          ...(damagedDirectChampion ? {
+            targetSnapshot: {
+              playerId: target.playerId,
+              cardInstanceId: damagedDirectChampion.instanceId,
+              cardType: damagedDirectChampion.cardType ?? 'WRESTLER',
+              boardSlot: damagedDirectChampion.boardSlot,
+              currentAttack: damagedDirectChampion.currentAttack,
+              currentHealth: damagedDirectChampion.currentHealth,
+            },
+          } : {}),
         },
         {
           type: 'DAMAGE_DEALT',
@@ -440,6 +459,22 @@ export function attack(
           cardInstanceId: defender.instanceId,
         },
         reason: 'BASIC_ATTACK',
+        sourceSnapshot: {
+          playerId: attackingPlayerId,
+          cardInstanceId: attacker.instanceId,
+          cardType: attacker.cardType ?? 'WRESTLER',
+          boardSlot: attacker.boardSlot,
+          currentAttack: attacker.currentAttack,
+          currentHealth: attacker.currentHealth,
+        },
+        targetSnapshot: {
+          playerId: target.playerId,
+          cardInstanceId: defender.instanceId,
+          cardType: defender.cardType ?? 'WRESTLER',
+          boardSlot: defender.boardSlot,
+          currentAttack: defender.currentAttack,
+          currentHealth: defender.currentHealth,
+        },
       },
       {
         type: 'DAMAGE_DEALT',

@@ -536,6 +536,7 @@ export function resolveStateBasedDeaths(
         type: 'CARD_RETIRED' as const,
         playerId,
         cardInstanceId: card.instanceId,
+        cardType: card.cardType,
         boardSlot: slot,
         source: { type: 'SYSTEM' as const },
         target: { type: 'CARD' as const, cardInstanceId: card.instanceId },
@@ -1051,7 +1052,9 @@ function applyEffect(
     if (effect.action === 'MOVE_TO_HAND') {
       const moved = zones.includes('BOARD')
         ? candidatePlayer.board.filter((card): card is CardInstance => card !== null && ids.has(card.instanceId))
-        : candidatePlayer.graveyard.filter((card) => ids.has(card.instanceId));
+        : zones.includes('DECK')
+          ? candidatePlayer.deck.filter((card) => ids.has(card.instanceId))
+          : candidatePlayer.graveyard.filter((card) => ids.has(card.instanceId));
       if (!moved.length) return state;
       const temporaryCost = effect.values?.temporaryCost
         ? { currentCost: Math.max(1, (moved[0].baseCost ?? moved[0].currentCost) - (effect.values?.amount ?? 1)), temporaryCostUntilTurn: state.turn }
@@ -1063,6 +1066,7 @@ function applyEffect(
           board: zones.includes('BOARD')
             ? player.board.map((card) => card && ids.has(card.instanceId) ? null : card) as typeof player.board
             : player.board,
+          deck: zones.includes('DECK') ? player.deck.filter((card) => !ids.has(card.instanceId)) : player.deck,
           graveyard: zones.includes('GRAVEYARD') ? player.graveyard.filter((card) => !ids.has(card.instanceId)) : player.graveyard,
           hand: [...player.hand, ...moved.map((card) => ({ ...card, boardSlot: null, ...temporaryCost }))],
         }),
@@ -1097,7 +1101,7 @@ function applyEffect(
             graveyard: [...player.graveyard, { ...current, boardSlot: null }],
           }),
           events: [...nextState.events, {
-            type: 'CARD_RETIRED' as const, playerId: targetOwner, cardInstanceId: current.instanceId,
+            type: 'CARD_RETIRED' as const, playerId: targetOwner, cardInstanceId: current.instanceId, cardType: current.cardType,
             boardSlot: current.boardSlot!, source: { type: 'CARD' as const, cardInstanceId: sourceCard.instanceId },
              target: { type: 'CARD' as const, cardInstanceId: current.instanceId }, reason: 'RETIRE' as const,
              sourceContext: attribution,
@@ -1228,7 +1232,7 @@ function applyEffect(
             : player),
           events: [...nextState.events,
             { type: 'DAMAGE_DEALT', playerId, cardInstanceId: sourceCard.instanceId, source: { type: 'CARD', cardInstanceId: sourceCard.instanceId }, target: { type: 'CARD', cardInstanceId: current.instanceId }, reason: 'CARD_EFFECT', amount: damageAmount, sourceContext: sourceContextFor(playerId, sourceCard, triggerContext) },
-            { type: 'CARD_RETIRED', playerId: targetOwner, cardInstanceId: current.instanceId, boardSlot: current.boardSlot!, source: { type: 'CARD', cardInstanceId: sourceCard.instanceId }, target: { type: 'CARD', cardInstanceId: current.instanceId }, reason: 'RETIRE', sourceContext: sourceContextFor(playerId, sourceCard, triggerContext) },
+            { type: 'CARD_RETIRED', playerId: targetOwner, cardInstanceId: current.instanceId, cardType: current.cardType, boardSlot: current.boardSlot!, source: { type: 'CARD', cardInstanceId: sourceCard.instanceId }, target: { type: 'CARD', cardInstanceId: current.instanceId }, reason: 'RETIRE', sourceContext: sourceContextFor(playerId, sourceCard, triggerContext) },
           ],
         };
         const retiredWithAggregate = withLastAggregatedStats(retiredState, {
@@ -1496,6 +1500,7 @@ function applyEffect(
                 type: 'CARD_RETIRED' as const,
                 playerId: opponent.id,
                 cardInstanceId: directChampion.instanceId,
+                cardType: directChampion.cardType,
                 boardSlot: directChampion.boardSlot!,
                 source: {
                   type: 'CARD' as const,
@@ -1556,7 +1561,7 @@ export function resolveQueuedEffectsForPlayedWrestler(
       {
         type: 'STRUCTURED',
         action: pending.effect.action,
-        target: pending.effect.target ?? { zone: 'BOARD', owner: 'SELF', selection: 'SELF', count: 1 },
+        target: pending.effect.target ?? { zone: 'BOARD', owner: 'SELF', cardType: 'WRESTLER', selection: 'SELF', count: 1 },
         values: pending.effect.values,
       },
     );

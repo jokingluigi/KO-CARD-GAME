@@ -133,6 +133,15 @@ export function AltInspectProvider({ children }: { children: ReactNode }) {
     target && (isAltPressed || target.showOnHover || (target.showOnTouch && isTouchInspecting)),
   );
 
+  useEffect(() => {
+    if (!isAltPressed || !target) return;
+    const preventAltWheelHistory = (event: WheelEvent) => {
+      event.preventDefault();
+    };
+    window.addEventListener('wheel', preventAltWheelHistory, { passive: false });
+    return () => window.removeEventListener('wheel', preventAltWheelHistory);
+  }, [isAltPressed, target]);
+
   const updatePanelPosition = useCallback(() => {
     if (!target || !panelRef.current) return;
 
@@ -167,7 +176,14 @@ export function AltInspectProvider({ children }: { children: ReactNode }) {
 
   return (
     <AltInspectContext.Provider value={value}>
-      {children}
+      <div
+        className="contents"
+        onWheelCapture={(event) => {
+          if (isAltPressed && target) event.preventDefault();
+        }}
+      >
+        {children}
+      </div>
       {isVisible && (
         <aside
           aria-label="상세정보"

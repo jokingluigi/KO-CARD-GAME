@@ -70,7 +70,7 @@ type AdminSessionPayload = {
 };
 
 const CARD_TYPES = ["WRESTLER", "TECHNIQUE"] as const;
-const CARD_RARITIES = ["NORMAL", "LEGENDARY", "CHAMPION"] as const;
+const CARD_RARITIES = ["NORMAL", "LEGENDARY", "CHAMPION", "TOKEN"] as const;
 const CARD_STATUSES = ["DRAFT", "PUBLISHED", "DISABLED"] as const;
 const CHAMPION_STATUSES = ["DRAFT", "PUBLISHED", "DISABLED"] as const;
 const CARD_KEYWORDS = [

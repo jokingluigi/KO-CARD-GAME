@@ -83,6 +83,7 @@ export function drawCard(state: GameState, playerId: string): GameState {
                   type: 'CARD_RETIRED' as const,
                   playerId,
                   cardInstanceId: directChampion.instanceId,
+                  cardType: directChampion.cardType,
                   source: { type: 'SYSTEM' as const },
                   target: {
                     type: 'CARD' as const,

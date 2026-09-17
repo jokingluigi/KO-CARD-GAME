@@ -30,7 +30,7 @@ async function loadCardFrames() {
     const body = await response.json() as { frames?: CardFrameDefinition[] };
     snapshot = (body.frames ?? []).filter((frame) =>
       (frame.cardType === "WRESTLER" || frame.cardType === "TECHNIQUE") &&
-      (frame.rarity === "NORMAL" || frame.rarity === "LEGENDARY" || frame.rarity === "CHAMPION") &&
+       (frame.rarity === "NORMAL" || frame.rarity === "LEGENDARY" || frame.rarity === "CHAMPION" || frame.rarity === "TOKEN") &&
       frame.enabled,
     );
     notify();

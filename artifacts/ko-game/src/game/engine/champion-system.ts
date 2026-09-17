@@ -151,6 +151,15 @@ export function useChampionAbility(
     isStunned: false, dodgeAvailable: false, isChampionToken: false,
     isDirectDeployedChampion: false, isSilenceImmune: false, isGenerated: true, isToken: false,
   };
+  const sourceContext: EventAttribution = {
+    sourcePlayerId: playerId,
+    sourceActionType: 'USE_CHAMPION_ABILITY',
+    sourceChampionDefinitionId: player.champion.id,
+    sourceChampionInstanceId: effectSource.instanceId,
+    sourceAbilityId: ability.id,
+    rootSourceEventId: `champion-ability:${playerId}:${state.events.length}`,
+    causationId: `champion-ability:${playerId}:${state.events.length}`,
+  };
   const structuredEffects = ability.effects.filter(
     (effect): effect is Extract<ChampionEffect, { type: 'STRUCTURED' }> => effect.type === 'STRUCTURED',
   );
@@ -204,12 +213,7 @@ export function useChampionAbility(
         target: { type: 'CHAMPION', championId: player.champion.id },
         reason: 'CHAMPION_ABILITY_COST',
           amount: -abilityCost,
-          sourceContext: {
-            sourcePlayerId: playerId,
-            sourceActionType: 'USE_CHAMPION_ABILITY',
-            sourceChampionDefinitionId: player.champion.id,
-            sourceAbilityId: ability.id,
-          },
+          sourceContext,
       },
       {
         type: 'CHAMPION_ABILITY_USED',
@@ -218,12 +222,7 @@ export function useChampionAbility(
         source: { type: 'CHAMPION', championId: player.champion.id },
         target: { type: 'PLAYER', playerId },
         reason: ability.id,
-          sourceContext: {
-            sourcePlayerId: playerId,
-            sourceActionType: 'USE_CHAMPION_ABILITY',
-            sourceChampionDefinitionId: player.champion.id,
-            sourceAbilityId: ability.id,
-          },
+          sourceContext,
       },
     ],
   };
@@ -235,12 +234,7 @@ export function useChampionAbility(
         playerId,
         player.champion!.id,
         effect,
-          {
-            sourcePlayerId: playerId,
-            sourceActionType: 'USE_CHAMPION_ABILITY',
-            sourceChampionDefinitionId: player.champion!.id,
-            sourceAbilityId: ability.id,
-          },
+          sourceContext,
       ),
     paidState,
   );
@@ -250,12 +244,7 @@ export function useChampionAbility(
       effects: structuredEffects, effectIndex: 0, selectedTargetIds: [], lastTargetIds: [],
       validTargetIds: [], minTargets: 0, maxTargets: 0, mandatory: true, cancelable: false,
       triggerContext: {
-        sourceContext: {
-          sourcePlayerId: playerId,
-          sourceActionType: 'USE_CHAMPION_ABILITY',
-          sourceChampionDefinitionId: player.champion.id,
-          sourceAbilityId: ability.id,
-        },
+        sourceContext,
       },
     } })
     : resolved;

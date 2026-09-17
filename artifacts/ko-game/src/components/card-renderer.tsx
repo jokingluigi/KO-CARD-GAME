@@ -3,6 +3,7 @@ import { CardArtwork } from "./card-artwork";
 import {
   normalizeCardRarity,
   type CardRarity,
+  type CardKeyword,
   type ImageDisplaySettings,
 } from "../game/cards/types";
 import {
@@ -79,6 +80,14 @@ const frameLayouts: Record<CardRarity, FrameLayout> = {
     attack: { centerX: 12.64, centerY: 85.45, size: 14 },
     health: { centerX: 85.75, centerY: 85.45, size: 14 },
   },
+  TOKEN: {
+    scale: 1.1,
+    name: { left: 20, right: 7, top: 5.5, height: 7.8 },
+    cost: { centerX: 13.68, centerY: 10.04, size: 14 },
+    rules: { left: 12, right: 12, top: 68.5, bottom: 10.5 },
+    attack: { centerX: 12.26, centerY: 86.52, size: 14 },
+    health: { centerX: 87.66, centerY: 86.52, size: 14 },
+  },
 };
 
 function frameAssetUrl(rarity: CardRarity) {
@@ -125,6 +134,12 @@ export function CardRenderer({
   onImagePositionChange,
   overlay,
   highlight,
+  runtimeKeywords = [],
+  isSilenced = false,
+  isStunned = false,
+  isAbilityDisabled = false,
+  dodgeCharges = 0,
+  isChampionToken = false,
   onClick,
   onKeyDown,
   tabIndex,
@@ -153,29 +168,52 @@ export function CardRenderer({
   ) => void;
   overlay?: ReactNode;
   highlight?: CardHighlight;
+  runtimeKeywords?: CardKeyword[];
+  isSilenced?: boolean;
+  isStunned?: boolean;
+  isAbilityDisabled?: boolean;
+  dodgeCharges?: number;
+  isChampionToken?: boolean;
   onClick?: () => void;
   onKeyDown?: (event: KeyboardEvent<HTMLDivElement>) => void;
   tabIndex?: number;
   containerRef?: Ref<HTMLDivElement>;
 }) {
-  const normalizedRarity = normalizeCardRarity(rarity);
+  const normalizedRarity = isChampionToken ? "CHAMPION" : normalizeCardRarity(rarity);
   const normalizedCardType = cardType ?? "WRESTLER";
+  const layoutRarity = normalizedRarity === "TOKEN" ? "NORMAL" : normalizedRarity;
   const remoteFrame = useCardFrameDefinition(normalizedCardType, normalizedRarity);
   const frameSettings = frameOverride?.enabled === false
     ? null
     : frameOverride
       ? { ...remoteFrame, ...frameOverride }
       : remoteFrame;
-  const frameLayout = frameLayouts[normalizedRarity];
+  const frameLayout = frameLayouts[layoutRarity];
   const frameScale = frameSettings?.frameScale ?? frameLayout.scale;
   const frameOffsetX = frameSettings?.frameOffsetX ?? 0;
   const frameOffsetY = frameSettings?.frameOffsetY ?? 0;
-  const bundledFrameUrl = frameAssetUrl(normalizedRarity);
+  const bundledFrameUrl = frameAssetUrl(layoutRarity);
   const [frameFailed, setFrameFailed] = useState(false);
   useEffect(() => {
     setFrameFailed(false);
   }, [frameSettings?.frameUrl, normalizedCardType, normalizedRarity]);
   const frameUrl = frameFailed ? bundledFrameUrl : frameSettings?.frameUrl ?? bundledFrameUrl;
+  const keywordBadges = [
+    ...runtimeKeywords,
+    ...(isSilenced ? ["SILENCE" as CardKeyword] : []),
+    ...(isStunned ? ["STUN" as CardKeyword] : []),
+    ...(isAbilityDisabled ? ["DISABLED" as CardKeyword] : []),
+  ].filter((keyword, index, all) => all.indexOf(keyword) === index);
+  const keywordLabels: Record<string, string> = {
+    TAUNT: "도발",
+    RUSH: "러쉬",
+    SURPRISE: "기습",
+    DODGE: dodgeCharges > 1 ? `회피 ×${dodgeCharges}` : "회피",
+    STUN: "기절",
+    SILENCE: "침묵",
+    DISABLED: "봉인",
+    MULTI_STRIKE: "연타",
+  };
   const nameClass =
     name.length > 22
       ? size === "admin"
@@ -332,6 +370,31 @@ export function CardRenderer({
               <span className={statClass}>{health}</span>
             </div>
           </>
+        )}
+
+        {keywordBadges.length > 0 && (
+          <div
+            data-testid="card-keyword-badges"
+            className="pointer-events-none absolute bottom-[12%] left-[8%] right-[8%] z-30 flex flex-wrap justify-center gap-0.5"
+            aria-label={`키워드 ${keywordBadges.map((keyword) => keywordLabels[keyword] ?? keyword).join(", ")}`}
+          >
+            {keywordBadges.slice(0, 5).map((keyword) => (
+              <span
+                key={keyword}
+                className={`rounded border px-1 py-0.5 text-[6px] font-black leading-none shadow ${
+                  keyword === "TAUNT" ? "border-cyan-200 bg-cyan-950/90 text-cyan-100" :
+                  keyword === "RUSH" ? "border-amber-200 bg-amber-950/90 text-amber-100" :
+                  keyword === "SURPRISE" ? "border-fuchsia-200 bg-fuchsia-950/90 text-fuchsia-100" :
+                  keyword === "DODGE" ? "border-violet-200 bg-violet-950/90 text-violet-100" :
+                  String(keyword) === "STUN" ? "border-orange-200 bg-orange-950/90 text-orange-100" :
+                  "border-red-200 bg-red-950/90 text-red-100"
+                }`}
+                title={keywordLabels[keyword] ?? keyword}
+              >
+                {keywordLabels[keyword] ?? keyword}
+              </span>
+            ))}
+          </div>
         )}
 
         {overlay && <div className="pointer-events-none absolute inset-0 z-30">{overlay}</div>}
