@@ -64,6 +64,35 @@ export type Pack = {
   normalRate: number; legendaryRate: number; championRate: number; skinChance: number;
   imageUrl: string | null; quantity: number;
 };
+export type PackDetailCard = Pick<CollectionCard, "id" | "name" | "cardType" | "cost" | "attack" | "health" | "text" | "rarity" | "imageUrl" | "imageDisplayMode" | "imageScale" | "imagePositionX" | "imagePositionY"> & {
+  individualProbability: number;
+};
+export type PackDetailChampion = Pick<CollectionChampion, "id" | "name" | "description" | "imageUrl" | "imageDisplayMode" | "imageScale" | "imagePositionX" | "imagePositionY" | "maxHealth" | "abilityName" | "abilityCost" | "abilityText"> & {
+  individualProbability: number;
+};
+export type PackDetailSkin = {
+  id: string;
+  name: string;
+  description: string;
+  imageUrl: string | null;
+  imageDisplayMode: "COVER" | "CONTAIN" | "CUSTOM";
+  imageScale: number;
+  imagePositionX: number;
+  imagePositionY: number;
+  card: PackDetailCard;
+  individualProbability: number;
+};
+export type PackDetails = {
+  valid: boolean;
+  invalidReasons: string[];
+  normalCards: PackDetailCard[];
+  legendaryCards: PackDetailCard[];
+  champions: PackDetailChampion[];
+  skins: PackDetailSkin[];
+};
+export const fetchPackDetails = (id: string) => request<{ pack: Pack; details: PackDetails }>(
+  `/packs/${encodeURIComponent(id)}/details`,
+);
 const base = `${import.meta.env.BASE_URL.replace(/\/$/, "")}/api`;
 async function request<T>(path: string, init?: RequestInit): Promise<T> {
   const response = await fetch(`${base}${path}`, { ...init, credentials: "include", headers: { ...(init?.body ? { "Content-Type": "application/json" } : {}), ...init?.headers } });

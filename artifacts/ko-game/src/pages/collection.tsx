@@ -10,13 +10,13 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { craftCard, disenchantCard, fetchCollection, type Collection, type CollectionCard, type CollectionChampion, type PrismSetting } from "@/lib/collection-client";
+import { useLocation } from "wouter";
+import { ROUTES } from "@/lib/routes";
 
 type CollectionTab = "cards" | "crafting" | "champions";
 type CardTypeFilter = "ALL" | "WRESTLER" | "TECHNIQUE";
 type RarityFilter = "ALL" | "NORMAL" | "LEGENDARY";
 type CardSort = "COST" | "NAME" | "RARITY";
-
-const basePath = import.meta.env.BASE_URL.replace(/\/$/, "");
 
 function rarityLabel(rarity: string) {
   return rarity === "LEGENDARY" ? "LEGENDARY" : "NORMAL";
@@ -103,6 +103,7 @@ function ChampionCollectionItem({ champion, onOpen }: { champion: CollectionCham
 }
 
 export default function CollectionPage() {
+  const [, navigate] = useLocation();
   const [collection, setCollection] = useState<Collection | null>(null);
   const [tab, setTab] = useState<CollectionTab>("cards");
   const [search, setSearch] = useState("");
@@ -127,7 +128,7 @@ export default function CollectionPage() {
       .catch((error: Error) => {
         if (cancelled) return;
         if (error.message.includes("로그인이 필요합니다")) {
-          window.location.href = basePath;
+          navigate(ROUTES.MAIN_MENU);
           return;
         }
         setMessage(error.message);
@@ -135,7 +136,7 @@ export default function CollectionPage() {
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [navigate]);
 
   const filteredCards = useMemo(() => {
     const normalizedSearch = search.trim().toLocaleLowerCase();
@@ -200,10 +201,10 @@ export default function CollectionPage() {
     <main className="min-h-screen bg-neutral-950 px-4 py-6 text-neutral-100 sm:px-8 sm:py-8">
       <div className="mx-auto max-w-6xl">
         <div className="mb-6 flex items-center justify-between gap-3">
-          <button type="button" onClick={() => { window.location.href = import.meta.env.BASE_URL; }} className="flex items-center gap-2 text-sm font-bold text-neutral-400 hover:text-white">
+          <button type="button" onClick={() => navigate(ROUTES.MAIN_MENU)} className="flex items-center gap-2 text-sm font-bold text-neutral-400 hover:text-white">
             <ArrowLeft className="h-4 w-4" /> 메인 메뉴
           </button>
-          <button type="button" onClick={() => { window.location.href = `${basePath}/decks`; }} className="rounded bg-primary px-4 py-2.5 text-xs font-black text-black transition hover:bg-yellow-400">
+          <button type="button" onClick={() => navigate(ROUTES.DECKS)} className="rounded bg-primary px-4 py-2.5 text-xs font-black text-black transition hover:bg-yellow-400">
             덱 편집
           </button>
         </div>

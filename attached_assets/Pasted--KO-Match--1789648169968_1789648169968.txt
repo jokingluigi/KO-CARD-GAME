@@ -1,0 +1,916 @@
+현재 KO 카드게임 실제 Match에서 아래 버그들을 수정해줘.
+
+중요:
+이번 항목들은 이전에도 수정 시도가 있었지만
+실제 플레이에서는 여전히 작동하지 않는다.
+
+따라서:
+"이미 구현되어 있을 것"이라고 가정하지 말고
+각 기능을 실제 브라우저 Match에서 재현한 뒤
+Engine → Event → Effect Executor → Presentation → UI 입력 경로를 끝까지 추적해라.
+
+특정 카드 이름별 임시 if문으로 땜빵하지 말 것.
+가능하면 Generic Mechanic을 수정할 것.
+
+수정 후 TEST USER 실제 브라우저 플레이로 검증.
+
+==================================================
+1. 판도라 Champion Quest 여전히 진행 안 됨
+==================================================
+
+판도라 Quest:
+
+"판도라의 고유 능력으로 선수 5명을 RETIRE"
+
+현재 판도라 Champion Ability로
+적 선수에게 DAMAGE를 줘서 HP를 0 이하로 만들고
+RETIRE시켜도 Quest가 진행되지 않는다.
+
+이전 수정이 실패했으므로
+Event Attribution 전체 경로를 실제로 추적해.
+
+정상 흐름:
+
+CHAMPION_ABILITY_USED
+↓
+DAMAGE
+↓
+target currentHealth <= 0
+↓
+RETIRE
+↓
+RETIRE Event가 원래 Damage Source Context를 유지
+↓
+Quest Condition 판정
+↓
+progress +1
+
+RETIRE Event에 최소한 다음 정보가 최종까지 유지되어야 한다:
+
+sourcePlayerId
+sourceActionType = CHAMPION_ABILITY
+sourceChampionDefinitionId
+sourceChampionInstanceId 또는 equivalent
+sourceAbilityId
+sourceEffectId
+rootSourceEventId / causationId
+
+중요:
+DAMAGE가 RETIRE를 발생시켰다고 해서
+source가 DAMAGE 자체로 덮어쓰기 되면 안 된다.
+
+원래 원인은 Champion Ability임.
+
+반드시 실제 Event Log를 출력해서 확인:
+
+판도라 Ability
+→ DAMAGE Event source
+→ RETIRE Event source
+→ Quest Matcher 결과
+
+테스트:
+
+A.
+적 선수 HP 1
+판도라 기본 능력 1 Damage
+→ RETIRE
+→ Quest +1
+
+B.
+일반 공격으로 RETIRE
+→ Quest +0
+
+C.
+다른 선수 Effect Damage
+→ Quest +0
+
+D.
+판도라 능력으로 피해만 주고 생존
+→ Quest +0
+
+카드 이름 "판도라" 하드코딩 금지.
+Quest Condition DSL이 source attribution을 Generic하게 검사하게 해.
+
+==================================================
+2. 상대 카드가 아군을 공격할 때 공격/피격 연출이 안 보임
+==================================================
+
+현재 상대/AI 카드가
+내 선수를 공격할 때:
+
+- 실제 공격 이동이 안 보이거나
+- 타격 Effect가 안 뜨거나
+- 무엇을 공격했는지 알기 어렵다.
+
+공격 Presentation을 점검.
+
+정상:
+
+ATTACK_STARTED
+→ attacker card clone 이동
+→ 실제 target 위치까지 이동
+→ HIT Presentation
+→ damage number / dodge 등
+→ attacker 원위치
+→ death/retire presentation
+
+상대가 공격해도 동일.
+
+owner가 opponent라는 이유로
+Animation을 생략하면 안 된다.
+
+==================================================
+3. 카드 이미지 로딩이 너무 느림
+==================================================
+
+실제 Match에서 카드 이미지 로딩이 지나치게 느리다.
+
+원인을 먼저 확인:
+
+- 매 렌더마다 동일 image 재요청
+- cache-control 문제
+- giant source image
+- asset URL 재생성
+- preload 없음
+- CardRenderer mount마다 new Image 생성
+- unnecessary blob/base64 conversion
+- React key 때문에 카드 Renderer 재마운트
+- 전체 Collection Asset을 한꺼번에 load
+- match 시작 후에야 현재 deck asset fetch
+
+등.
+
+우선순위:
+
+A. Match에 실제 필요한 이미지 미리 preload
+
+Match 시작 직전 또는 Deck Snapshot 생성 후:
+
+- 내 Deck Card artwork
+- 상대/AI Deck Card artwork
+- Champion portraits
+- Card Frames
+- Token artwork
+- Champion Token artwork
+
+등 현재 Match에서 필요한 Asset URL을
+dedupe해서 preload.
+
+B. 브라우저 캐시 활용
+
+같은 URL을 매번 다시 다운로드하지 않게 해.
+
+C. CardRenderer 불필요한 remount 감소
+
+D. 큰 이미지를 매번 base64 변환 금지
+
+E. Match 중 새 Token/Generated Card가 필요하면
+그 Definition asset만 추가 preload.
+
+중요:
+Pack/Collection 전체 수천 장 이미지를
+Match 시작 때 전부 preload하지 마.
+
+현재 Match Snapshot에 포함될 가능성이 있는 Asset 중심으로.
+
+로딩 실패 시 깨진 이미지 대신
+기존 fallback 사용.
+
+==================================================
+4. 카미사토르 효과 작동 안 됨
+==================================================
+
+카미사토르:
+
+4G / 2/3
+
+등장:
+
+"상대 덱에서 무작위 카드 1장을 훔쳐
+내 손에 넣습니다."
+
+현재 실제 Match에서 효과가 작동하지 않는다.
+
+정상 동작:
+
+PLAY_FROM_HAND
+→ ENTER/PLAY trigger
+→ opponent DECK의 CardInstance 후보 생성
+→ deterministic game RNG
+→ 1장 선택
+→ opponent DECK에서 제거
+→ 현재 플레이어 HAND로 이동
+
+중요:
+
+COPY X
+GENERATE X
+
+실제 기존 CardInstance 이동.
+
+다음 데이터를 점검:
+
+ownerPlayerId
+controllerPlayerId
+zone
+instanceId
+
+훔친 뒤:
+
+현재 controller = 훔친 플레이어
+
+원래 owner 정보를 보존할 필요가 있다면:
+originalOwnerPlayerId 별도 유지.
+
+훔친 카드는:
+- 손에서 보여야 함
+- 정상 Cost로 사용 가능
+- WRESTLER이면 정상 PLAY 가능
+- TECHNIQUE이면 정상 사용 가능
+
+Hand Limit 7이면 기존 overdraw/hand-limit 정책을 따름.
+
+상대 Deck이 0장이면 안전하게 no-op.
+
+카미사토르 이름 하드코딩 금지.
+
+Generic:
+MOVE_OPPONENT_CARD
+DECK → HAND
+RANDOM
+mechanic으로 구현.
+
+==================================================
+5. 상대가 내 카드를 공격할 때 텅 빈 Slot을 때리는 Animation 버그
+==================================================
+
+매우 중요.
+
+실제 Engine에서는 내 Wrestler를 공격했는데
+화면에서는 상대 카드가 빈 Board Slot을 공격한다.
+
+이건 Game Logic이 아니라
+Presentation Target Position Mapping 문제일 가능성이 높다.
+
+ATTACK Event에서 반드시:
+
+attackerInstanceId
+targetType
+targetInstanceId
+targetPlayerId
+targetSlotIndex
+
+를 확인.
+
+Animation destination을:
+
+현재 Rendered Board의
+targetInstanceId DOM element
+
+기준으로 우선 계산.
+
+slotIndex만 믿지 마.
+
+특히 Board state가
+Retire / Summon / Animation Queue 때문에 변했을 때
+stale slot position을 사용하면 안 된다.
+
+우선순위:
+
+1. targetInstanceId의 실제 element position
+2. 현재 targetSlotIndex
+3. fallback board position
+
+이미 target이 사라진 후 Presentation되는 경우에는
+Event 발생 당시 snapshot position을 저장해서 사용.
+
+상대/내 Board 좌표계가 뒤집혀 있는지도 확인.
+
+테스트:
+
+Opponent slot 0
+→ My slot 2 attack
+
+실제 Animation이 반드시
+My slot 2의 Card에 충돌.
+
+빈 slot로 이동 X.
+
+==================================================
+6. 하스이 효과 작동 안 됨
+==================================================
+
+하스이:
+
+1G / 2/1 / 기습
+
+등장:
+"잔상을 소환합니다."
+
+현재 실제 Match에서 잔상이 나오지 않는다.
+
+그리고 이번에 Generic Summon 규칙을 추가해.
+
+==================================================
+6-A. SUMMON에 위치가 명시되지 않은 경우
+==================================================
+
+카드 효과 텍스트에:
+
+"잔상을 소환합니다."
+"용병을 소환합니다."
+"좀비를 소환합니다."
+
+처럼 위치가 명시되지 않았다면:
+
+기본적으로
+"자신의 필드의 빈 슬롯 하나"
+
+에 소환.
+
+Default:
+
+side = SELF
+zone = BOARD
+slot = ANY_EMPTY_SLOT
+
+로 처리.
+
+특정 Slot 지정이 없는 SUMMON은
+위 규칙을 사용.
+
+카드 이름 하드코딩 금지.
+
+==================================================
+6-B. 빈 슬롯 선택
+==================================================
+
+빈 슬롯이 여러 개면
+기본적으로 Engine이 deterministic하게
+첫 번째 유효 빈 Slot을 선택해도 된다.
+
+현재 슬롯 순서:
+
+0 → 1 → 2 → 3
+
+또는 기존 Engine의 canonical slot ordering 사용.
+
+Random이라고 적혀 있지 않은 이상
+랜덤 슬롯으로 만들 필요 없음.
+
+==================================================
+6-C. Board가 꽉 찬 경우
+==================================================
+
+자신의 Board 4칸이 모두 차 있으면:
+
+SUMMON 실패.
+
+다른 카드를 밀어내거나
+상대를 제거하지 마.
+
+Effect 전체 crash 금지.
+
+==================================================
+6-D. Generated 처리
+==================================================
+
+새로운 잔상 CardInstance를 Effect로 생성해 소환:
+
+isGenerated = true
+CARD_GENERATED 발생
+SUMMON 발생
+
+현재 새 규칙대로:
+
+SUMMON은 등장 효과 발동 X.
+
+잔상 자체가 등장 효과가 있다면
+그 효과도 발동 X.
+
+==================================================
+6-E. 하스이 테스트
+==================================================
+
+내 Board:
+
+[하스이 놓을 자리 포함 최소 2칸 빈 상태]
+
+하스이를 HAND에서 PLAY
+
+→ 하스이 정상 배치
+→ 잔상 Definition resolve
+→ 새 잔상 Instance 생성
+→ 내 빈 Board Slot에 소환
+→ 잔상 1/1 확인
+
+Board가 하스이 배치 후 4/4면
+잔상 소환 실패.
+
+==================================================
+7. ALT + Mouse Wheel 때문에 Browser History 이동 / Match 종료
+==================================================
+
+현재 Match에서 ALT를 눌러 카드 상세를 보는 중
+Mouse Wheel을 사용하면
+브라우저 페이지가 뒤로/앞으로 이동해서
+게임 화면을 벗어나는 문제가 있다.
+
+Match Root 내부에서
+ALT Detail Mode가 활성화되어 있을 때만
+wheel event를 직접 처리.
+
+addEventListener("wheel", ..., { passive: false })
+
+필요 시:
+event.preventDefault()
+event.stopPropagation()
+
+사용.
+
+중요:
+브라우저 전체 전역에서 Wheel을 막지 마.
+
+조건:
+
+- Match 화면
+- ALT Detail UI 활성
+- 사용자가 해당 Card Detail 영역 위에 있거나
+  Match-specific interaction 중
+
+일 때만.
+
+ALT를 놓으면
+일반 Wheel Scroll 동작 복구.
+
+또한:
+
+Alt + Arrow
+Mouse Back/Forward Button
+wheel horizontal delta
+
+등이 Custom Detail UI 코드 때문에
+history navigation으로 잘못 전달되고 있는지도 확인.
+
+Match UI가 브라우저 History API를
+잘못 호출하는 코드가 있다면 수정.
+
+Alt Detail 종료 시
+listener cleanup.
+
+==================================================
+8. 뒷정리맨 효과 여전히 작동 안 됨
+==================================================
+
+뒷정리맨:
+
+2G / 2/2
+
+등장:
+
+"다음에 내가 내는 선수 카드의 체력을 2 증가시킵니다."
+
+현재 실제 Match에서 발동하지 않는다.
+
+이번에는 Generic Pending Listener로 다시 점검.
+
+정상 흐름:
+
+뒷정리맨 PLAY_FROM_HAND
+↓
+pending effect 생성
+↓
+OWNER의 다음 WRESTLER PLAY_FROM_HAND 감지
+↓
+played CardInstance Health +2
+↓
+pending effect consume
+
+조건:
+
+ownerPlayerId 동일
+cardType === WRESTLER
+fromZone === HAND
+playCause === PLAY_FROM_HAND
+
+발동하지 않아야 하는 경우:
+
+- Effect SUMMON
+- REVIVE
+- Token 자동 소환
+- TECHNIQUE
+- 상대 선수 PLAY
+
+뒷정리맨이 필드에서 죽어도
+이미 등록된 pending effect는 유지.
+
+Health +2:
+
+maximumHealth += 2
+currentHealth += 2
+
+ALT Stat Log에도 기록.
+
+특정 카드 이름 하드코딩 금지.
+
+Generic delayed listener:
+
+NEXT_CARD_PLAYED
+filter:
+SELF
+WRESTLER
+FROM_HAND
+
+ACTION:
+MODIFY_HEALTH +2
+
+CONSUME_AFTER_TRIGGER = true
+
+형태로 구현.
+
+==================================================
+9. TECHNIQUE가 아직도 빈 Board Slot을 눌러야 사용됨
+==================================================
+
+이 문제를 UI만이 아니라
+Legal Action Contract부터 다시 고쳐.
+
+현재 잘못된 흐름:
+
+Technique 선택
+→ 빈 Wrestler Slot 클릭 필요
+→ 사용
+
+이 구조를 완전히 제거.
+
+TECHNIQUE는 Board Slot과 무관하다.
+
+==================================================
+9-A. Engine Legal Action
+==================================================
+
+PLAY_CARD action을 카드 타입별로 분리.
+
+WRESTLER:
+
+PLAY_WRESTLER {
+  cardInstanceId
+  boardSlot
+}
+
+boardSlot 필수.
+
+TECHNIQUE:
+
+PLAY_TECHNIQUE {
+  cardInstanceId
+}
+
+boardSlot 없음.
+
+Engine validation에서 TECHNIQUE에
+boardSlot을 요구하면 안 된다.
+
+Board 4/4여도 TECHNIQUE legal.
+
+==================================================
+9-B. UI 사용 방식
+==================================================
+
+Technique Card 선택 후:
+
+Wrestler Slot을 선택하게 하지 마.
+
+다음 중 현재 UI에 가장 자연스러운 방식을 사용:
+
+A.
+Technique Card 클릭
+→ 즉시 사용
+
+또는
+
+B.
+Technique Card 선택
+→ Board의 일반 Play Area 어디든 클릭
+→ 사용
+
+중요:
+특정 empty slot을 요구하면 안 된다.
+
+빈 슬롯 highlight도 띄우지 마.
+
+==================================================
+9-C. PLAYER_CHOICE Technique
+==================================================
+
+대상이 필요한 Technique:
+
+Technique 선택/사용
+↓
+PLAY_TECHNIQUE
+↓
+pendingSelection
+↓
+valid target highlight
+↓
+대상 선택
+↓
+Effect resolve
+
+Wrestler Slot 선택 단계를 중간에 넣지 마.
+
+==================================================
+9-D. 대상 없는 Technique
+==================================================
+
+Target 없는 Technique는:
+
+카드 클릭 또는 일반 Play Area Drop
+→ 바로 Technique 실행
+
+빈 Board Slot 클릭 요구 X.
+
+==================================================
+9-E. Drag & Drop
+==================================================
+
+현재 Hand Card를 drag해서 내는 UI라면:
+
+WRESTLER:
+→ Empty Wrestler Slot만 valid drop target
+
+TECHNIQUE:
+→ 전체 Board Play Area가 valid drop target
+
+Technique Drop 시:
+slotIndex 생성하지 마.
+
+==================================================
+9-F. Board Full 테스트
+==================================================
+
+내 Board:
+
+4/4 Full
+
+Technique Card 보유
+
+→ Technique legal
+→ Empty Slot 없음
+→ 그래도 정상 사용 가능
+→ Reveal Presentation
+→ Effect resolve
+
+반드시 테스트.
+
+==================================================
+10. 이전 Technique Reveal과 연동
+==================================================
+
+TECHNIQUE 사용 시:
+
+PLAY_TECHNIQUE
+→ TECHNIQUE_REVEAL
+→ Effect Presentation
+
+순서 유지.
+
+Technique 자체는 GameState.board에 들어가지 않는다.
+
+0 Health Technique Card가 Board에 나타나는 현상 금지.
+
+==================================================
+11. 공격 Target / Animation Event Snapshot 강화
+==================================================
+
+공격 Presentation이 stale GameState 때문에
+잘못된 위치를 공격하지 않도록:
+
+ATTACK event 생성 시 Presentation용 snapshot 포함.
+
+예:
+
+presentationSnapshot {
+  attackerInstanceId
+  attackerOwnerId
+  attackerSlotIndex
+
+  targetType
+  targetInstanceId
+  targetOwnerId
+  targetSlotIndex
+}
+
+필요하면 당시 bounding logical slot 정보 저장.
+
+Game Rule 판단용 데이터와
+Presentation 위치 데이터는 구분 가능.
+
+==================================================
+12. 이미지 Preload 시스템 테스트
+==================================================
+
+Match 시작:
+
+Deck Snapshot 생성
+↓
+required asset URL 수집
+↓
+dedupe
+↓
+preload
+↓
+Match Render
+
+로 개선.
+
+하지만 모든 이미지 로딩이 끝날 때까지
+무한정 Match 진입을 막지 마.
+
+짧은 loading state 또는
+우선순위 preload 사용.
+
+우선:
+
+1. Champions
+2. Initial Hand
+3. Initial visible board/token assets
+4. Remaining deck assets
+
+순으로 load 가능.
+
+Browser Cache가 동작하는 동일 URL 사용.
+
+==================================================
+13. 실제 브라우저 회귀 테스트
+==================================================
+
+TEST USER 실제 Match에서 반드시 확인.
+
+--------------------------------
+판도라
+--------------------------------
+
+판도라 Ability로 HP1 적 RETIRE
+→ Quest +1
+
+Event Log에서:
+Champion Ability
+→ Damage
+→ Retire
+→ Quest Progress
+source chain 확인.
+
+--------------------------------
+Opponent Attack
+--------------------------------
+
+상대 선수가 내 slot 0~3 각각 공격
+
+→ 실제 대상 Card까지 Animation
+→ 빈 Slot을 공격하지 않음
+→ Hit Effect 표시
+
+--------------------------------
+카미사토르
+--------------------------------
+
+카미사토르 PLAY
+→ 상대 Deck -1
+→ 내 Hand +1
+→ 훔친 카드 실제 사용 가능
+
+--------------------------------
+하스이
+--------------------------------
+
+하스이 PLAY
+→ 잔상 생성
+→ 내 빈 Slot 자동 소환
+
+Slot을 Effect Text에 지정하지 않아도
+SELF ANY_EMPTY_SLOT 기본값 적용.
+
+--------------------------------
+ALT
+--------------------------------
+
+ALT Card Detail 활성
+→ Mouse Wheel 여러 번
+
+Browser History 이동 X
+Match Route 유지
+Card Detail 정상 사용
+
+ALT 해제
+→ 일반 Scroll 정상
+
+--------------------------------
+뒷정리맨
+--------------------------------
+
+뒷정리맨 PLAY
+
+다음 WRESTLER 직접 PLAY
+→ +2 Health
+
+중간에 Token SUMMON
+→ pending buff 소비 X
+
+다음 직접 WRESTLER PLAY
+→ +2 Health
+→ pending consume
+
+--------------------------------
+TECHNIQUE
+--------------------------------
+
+Board Empty
+→ Technique 사용 가능
+
+Board Full 4/4
+→ Technique 사용 가능
+
+Technique 선택 시
+Empty Slot highlight X
+
+Technique 사용에
+slotIndex 요구 X
+
+Target Technique:
+→ 바로 PLAYER_CHOICE
+
+No-target Technique:
+→ 바로 resolve
+
+--------------------------------
+Image Loading
+--------------------------------
+
+같은 카드 이미지를 여러 번 볼 때
+매번 네트워크 재다운로드하지 않는지 확인.
+
+Initial Hand 이미지가
+게임 시작 후 긴 시간 blank 상태로 남지 않는지 확인.
+
+==================================================
+14. 수정 금지
+==================================================
+
+이번 작업에서 하지 말 것:
+
+- 카드 밸런스 변경
+- Cost/Attack/Health 변경
+- Champion Quest 조건 변경
+- Pack/Shop 수정
+- AI 판단 알고리즘 변경
+- Deck Rule 변경
+- Online Match 구현
+- 특정 카드 이름별 Engine special case
+- Technique를 Board에 배치
+- 모든 Asset을 시작 시 무작정 preload
+- 브라우저 전체 Wheel 차단
+- page reload로 Navigation 해결
+- 불필요한 전체 프로젝트 리팩터
+
+==================================================
+15. 최종 보고
+==================================================
+
+아래 항목별:
+
+PASS
+FIXED
+FAIL
+
+PANDORA_QUEST_ATTRIBUTION
+OPPONENT_ATTACK_PRESENTATION
+OPPONENT_ATTACK_TARGET_POSITION
+MATCH_IMAGE_PRELOAD
+IMAGE_CACHE_REUSE
+KAMISATOR_STEAL
+DEFAULT_SELF_SUMMON_SLOT
+HASUI_AFTER_PLAY_SUMMON
+ALT_WHEEL_HISTORY_BLOCK
+CLEANUP_ALT_LISTENER
+CLEANUPMAN_PENDING_BUFF
+TECHNIQUE_NO_SLOT_REQUIRED
+TECHNIQUE_BOARD_FULL_PLAY
+TECHNIQUE_PLAYER_CHOICE
+TECHNIQUE_REVEAL_SEQUENCE
+
+각 FAIL은:
+
+- 실제 재현 방법
+- root cause
+- 수정한 파일
+- Event/State 로그
+- 아직 실패하는 이유
+
+를 적어.
+
+중요:
+"코드가 존재한다"는 이유로 PASS 처리 금지.
+
+실제 TEST USER 브라우저 Match에서
+사용자가 기능을 정상적으로 경험해야 PASS다.

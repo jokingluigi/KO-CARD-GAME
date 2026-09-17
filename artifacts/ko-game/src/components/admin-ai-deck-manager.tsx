@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import { useLocation } from "wouter";
 import { Copy, Plus, Save, Search, Trash2, WandSparkles } from "lucide-react";
 import {
   deleteAdminAIDeck,
@@ -12,6 +13,7 @@ import {
   type AIDeckCard,
   type AIDeckOptions,
 } from "@/lib/ai-decks-client";
+import { ROUTES } from "@/lib/routes";
 
 type Props = { onUnauthorized: () => void };
 type FilterType = "ALL" | "WRESTLER" | "TECHNIQUE";
@@ -47,6 +49,7 @@ function draftFromDeck(deck: AIDeck): Draft {
 }
 
 export function AdminAIDeckManager({ onUnauthorized }: Props) {
+  const [, navigate] = useLocation();
   const [decks, setDecks] = useState<AIDeck[]>([]);
   const [options, setOptions] = useState<AIDeckOptions | null>(null);
   const [draft, setDraft] = useState<Draft>(emptyDraft);
@@ -154,7 +157,7 @@ export function AdminAIDeckManager({ onUnauthorized }: Props) {
     setBusy(true);
     try {
       await testAdminAIDeck(deck.id);
-      window.location.href = `${import.meta.env.BASE_URL}ai-match?aiDeckId=${encodeURIComponent(deck.id)}`;
+      navigate(`${ROUTES.AI_MATCH}?aiDeckId=${encodeURIComponent(deck.id)}`);
     } catch (error) {
       setMessage(error instanceof Error ? error.message : "AI 덱 테스트를 시작하지 못했습니다.");
     } finally {

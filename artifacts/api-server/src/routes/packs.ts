@@ -11,6 +11,7 @@ import {
 import { getAuthenticatedUser } from "../lib/auth";
 import { ensureStarterCollection } from "../lib/collection";
 import { rollPack } from "./collection";
+import { getPackDetails } from "../lib/pack-details";
 
 const router: IRouter = Router();
 
@@ -41,6 +42,21 @@ router.get("/", async (request, response): Promise<void> => {
     .where(and(eq(packDefinitionsTable.status, "PUBLISHED"), sql`${packDefinitionsTable.deletedAt} IS NULL`))
     .orderBy(asc(packDefinitionsTable.name));
   response.json({ packs: packs.map(({ pack, quantity }) => ({ ...pack, quantity })) });
+});
+
+router.get("/:id/details", async (request, response): Promise<void> => {
+  const [pack] = await db.select().from(packDefinitionsTable)
+    .where(and(
+      eq(packDefinitionsTable.id, request.params.id),
+      eq(packDefinitionsTable.status, "PUBLISHED"),
+      sql`${packDefinitionsTable.deletedAt} IS NULL`,
+    ))
+    .limit(1);
+  if (!pack) {
+    response.status(404).json({ message: "공개된 팩을 찾을 수 없습니다." });
+    return;
+  }
+  response.json({ pack, details: await getPackDetails(pack) });
 });
 
 router.post("/:id/open", async (request, response): Promise<void> => {

@@ -1,0 +1,676 @@
+==================================================
+16. TOKEN 등급 + 토큰 전용 카드 테두리
+==================================================
+
+Card Rarity / Card Category 시스템에:
+
+TOKEN
+
+등급을 새로 추가해줘.
+
+목적:
+
+일반 Token 카드를
+NORMAL / LEGENDARY 등 일반 카드와
+시각적으로 명확하게 구분하기 위함.
+
+중요:
+TOKEN Rarity는 카드의 시각적 분류/Frame 선택을 위한 정보다.
+
+기존 게임 규칙에서 Token 여부를 판정할 때는
+계속:
+
+isToken === true
+
+를 canonical source로 사용.
+
+즉:
+
+rarity === TOKEN
+
+만 보고 Token Game Rule을 판정하지 마.
+
+기존:
+
+- Pack 제외
+- Deck 편성 제외
+- RANDOM 제외
+- FULL_RANDOM 포함
+
+등 Token 관련 Engine Rule은
+기존 isToken 정보를 계속 사용.
+
+==================================================
+16-A. 토큰 카드 자동 분류
+==================================================
+
+일반 Token CardDefinition은:
+
+isToken = true
+rarity = TOKEN
+
+형태를 사용할 수 있게 해.
+
+기존 일반 Token CardDefinition이 있다면
+필요한 경우 TOKEN Rarity로 migration.
+
+예:
+
+- 용병
+- 강화 용병
+- 잔상
+- 위리녀
+- 좀비
+- 기타 일반 Token
+
+단:
+
+isChampionToken === true
+
+인 Champion Token은
+일반 TOKEN 카드와 구분한다.
+
+Champion Token의 기존:
+
+- Champion Frame
+- Champion Token Rule
+- Champion 보호/패배 Rule
+
+등을 절대 깨뜨리지 마.
+
+Champion Token을 단순 일반 TOKEN으로 바꾸지 마.
+
+==================================================
+16-B. TOKEN WRESTLER 전용 Frame
+==================================================
+
+Card Frame Admin에:
+
+TOKEN + WRESTLER
+
+전용 Frame 설정을 추가.
+
+예:
+
+Rarity:
+TOKEN
+
+Card Type:
+WRESTLER
+
+→ TOKEN WRESTLER FRAME
+
+Admin에서 기존 Card Frame Manager와 동일하게:
+
+- Frame Image 업로드/교체
+- Scale
+- Offset X
+- Offset Y
+- Preview
+- Reset/Fallback
+
+가능하게 해.
+
+실제 공용 CardRenderer를 Preview에 사용.
+
+==================================================
+16-C. TOKEN TECHNIQUE 전용 Frame
+==================================================
+
+별도로:
+
+TOKEN + TECHNIQUE
+
+전용 Frame도 추가.
+
+TOKEN WRESTLER와 같은 이미지를
+강제로 공유하지 마.
+
+즉 최소한:
+
+NORMAL + WRESTLER
+LEGENDARY + WRESTLER
+CHAMPION + WRESTLER
+
+TOKEN + WRESTLER
+
+NORMAL/기존 TECHNIQUE
+TOKEN + TECHNIQUE
+
+처럼 Card Type + Rarity 기준으로
+Frame Definition을 선택 가능하게 해.
+
+==================================================
+16-D. Token Technique 지원
+==================================================
+
+현재 Token Technique가 존재하지 않더라도
+향후 추가 가능하도록 지원.
+
+예:
+
+CardDefinition {
+  cardType: TECHNIQUE
+  rarity: TOKEN
+  isToken: true
+}
+
+CardRenderer에서는:
+
+TOKEN TECHNIQUE FRAME
+
+사용.
+
+Game Engine에서는 여전히 TECHNIQUE이므로:
+
+- Board Slot 사용 X
+- Attack/Health 표시 X
+- Technique Play 규칙 사용
+
+TOKEN이라는 이유로
+WRESTLER처럼 처리하지 마.
+
+==================================================
+16-E. Frame Resolver
+==================================================
+
+Frame 선택은 Generic하게:
+
+cardType
++
+rarity
++
+필요한 기존 special metadata
+
+를 사용.
+
+특정 카드 이름으로 Frame을 고르지 마.
+
+예:
+
+resolveCardFrame({
+  cardType,
+  rarity,
+  isChampionToken
+})
+
+가능하면 기존 CardFrameDefinition 시스템 재사용.
+
+==================================================
+16-F. Fallback
+==================================================
+
+TOKEN 전용 Frame Asset이 아직 설정되지 않았다면
+카드가 깨지거나 투명해지면 안 된다.
+
+Fallback:
+
+TOKEN WRESTLER
+→ 기존 WRESTLER 기본 Frame
+
+TOKEN TECHNIQUE
+→ 기존 TECHNIQUE 기본 Frame
+
+Admin에서 Token Frame을 업로드하면
+즉시 모든 공용 CardRenderer에 반영.
+
+==================================================
+16-G. 모든 화면에 적용
+==================================================
+
+TOKEN Frame은 공용 CardRenderer를 통해:
+
+- 실제 Match
+- ALT Card Detail
+- Card Admin Preview
+- Token Preview
+- Effect로 생성된 Token
+- Effect로 손에 생성된 Token
+- 기타 Token 표시 UI
+
+모두 동일하게 적용.
+
+각 화면별로 별도 Frame 코드를 만들지 마.
+
+==================================================
+17. 필드 Keyword 시각 효과 시스템
+==================================================
+
+현재 도발 / 기습 / 러쉬 등의 Keyword는
+카드 Effect Text에 직접 적혀 있지 않은 경우
+ALT를 눌러야만 상태를 확인하기 어렵다.
+
+앞으로 필드 위 Card만 봐도
+해당 선수가 어떤 주요 Keyword를 가지고 있는지
+즉시 알아볼 수 있게 해줘.
+
+중요:
+
+Card Effect Text에 문자열이 있는지 검사하지 마.
+
+반드시 실제:
+
+CardInstance
+effectiveKeywords
+status
+charges
+
+등 Engine State를 source of truth로 사용.
+
+==================================================
+17-A. 기본 방향
+==================================================
+
+Field WRESTLER에 적용되는 주요 Keyword는:
+
+작은 Keyword Icon
++
+카드 테두리/주변의 가벼운 시각 Effect
+
+형태로 표현.
+
+텍스트를 카드 위에 크게 덕지덕지 붙이지 마.
+
+게임 화면을 한눈에 봤을 때:
+
+"저 선수 도발이구나"
+"저 선수 러쉬구나"
+"저 선수 회피 있구나"
+
+를 구분할 수 있는 것이 목적.
+
+ALT는 여전히 상세 설명용으로 유지.
+
+==================================================
+17-B. 도발 / TAUNT
+==================================================
+
+도발 보유 선수:
+
+눈에 잘 띄는 방어형 Visual Effect 표시.
+
+예:
+
+- 카드 주변 Shield 형태 표시
+- 카드 하단/측면 작은 도발 Icon
+- 안정적인 Border/Aura
+
+과도한 Animation은 필요 없음.
+
+도발이 있는 동안 지속 표시.
+
+Silence 등으로 실제 Taunt가 제거되면
+즉시 Visual Effect도 사라져야 한다.
+
+==================================================
+17-C. 러쉬 / RUSH
+==================================================
+
+러쉬 보유 선수:
+
+속도감 있는 Visual Indicator 사용.
+
+예:
+
+- 카드 주변 짧은 Speed Line
+- 공격 방향을 암시하는 Effect
+- 작은 Rush Icon
+
+카드가 실제로 등장한 턴이며
+Rush 때문에 즉시 공격 가능한 상태라면
+조금 더 명확하게 강조.
+
+이미 공격을 사용했거나
+현재 공격 불가능 상태라면
+강한 활성 Animation은 줄여도 된다.
+
+단 Keyword 자체를 보여주는 작은 Indicator는 유지 가능.
+
+==================================================
+17-D. 기습 / HASTE
+==================================================
+
+기습 보유 선수도
+러쉬와 시각적으로 구별 가능해야 한다.
+
+기습은:
+
+등장 턴 적 WRESTLER 공격 가능
+Champion 공격 불가
+
+라는 기존 Rule을 변경하지 마.
+
+예:
+
+- 날카로운 공격형 Indicator
+- 작은 Haste/기습 Icon
+- 러쉬와 다른 Shape/Pattern
+
+사용.
+
+러쉬와 기습을 같은 Icon으로 표시하지 마.
+
+==================================================
+17-E. 회피 / DODGE
+==================================================
+
+회피가 있는 선수는
+회피 상태를 필드에서 바로 확인 가능하게 해.
+
+예:
+
+- 약한 Afterimage
+- 카드 옆 Dodge Icon
+- 얇은 이중 실루엣
+
+회피 Charge가 여러 개 존재할 수 있다면:
+
+회피 Icon 옆:
+
+x2
+x3
+
+등 charge 표시.
+
+회피가 모두 소비되면
+Visual Effect도 즉시 제거.
+
+==================================================
+17-F. 기절 / STUN
+==================================================
+
+기절 상태라면:
+
+움직임이 제한된 상태라는 것을
+필드에서 바로 확인 가능하게 표시.
+
+예:
+
+- 작은 Stun Icon
+- 카드 주변 정지/충격 표시
+
+Game Rule은 기존 Stun Engine을 그대로 사용.
+
+Presentation이 행동 가능 여부를 결정하지 마.
+
+==================================================
+17-G. 침묵 / SILENCE
+==================================================
+
+침묵된 선수:
+
+명확한 Silence Indicator 표시.
+
+그리고 실제 Engine에서
+침묵으로 제거된 Keyword는:
+
+TAUNT
+RUSH
+HASTE
+DODGE
+등
+
+현재 effectiveKeywords 결과에 따라
+해당 Visual Indicator도 없어져야 한다.
+
+원본 CardDefinition만 보고
+계속 표시하면 안 된다.
+
+==================================================
+17-H. 향후 Keyword 확장
+==================================================
+
+카드 이름별 Visual Effect를 만들지 말고:
+
+KEYWORD
+→ VISUAL DEFINITION
+
+Registry 구조로 구현.
+
+예:
+
+KeywordVisualRegistry {
+  TAUNT
+  RUSH
+  HASTE
+  DODGE
+  STUN
+  SILENCE
+}
+
+향후 Keyword가 추가되면
+새 카드마다 UI 코드를 수정하는 게 아니라
+Keyword Visual Definition 하나만 추가하면 되게 해.
+
+==================================================
+17-I. Keyword Badge + Effect 중복 관리
+==================================================
+
+한 선수에게:
+
+TAUNT
++
+DODGE
+
+가 동시에 있을 수 있다.
+
+여러 Keyword가 겹쳐도
+Visual이 완전히 엉망이 되지 않게 해.
+
+권장:
+
+카드 모서리에 작은 Keyword Badge 영역을 만들고
+
+TAUNT / RUSH / HASTE / DODGE 등
+Icon을 최대 몇 개까지 정렬.
+
+중요 Keyword는 카드 주변 Effect도 추가.
+
+예:
+
+TAUNT
+→ Shield border + Icon
+
+DODGE
+→ Afterimage + Icon
+
+RUSH
+→ Speed accent + Icon
+
+==================================================
+17-J. Performance
+==================================================
+
+Board에는 양쪽 합쳐 최대 8명의 선수가 존재하므로
+가벼운 CSS 기반 Effect를 우선 사용.
+
+지속적으로 무거운:
+
+- Canvas Particle
+- WebGL
+- 큰 blur filter
+- 무한 DOM 생성
+
+등을 사용하지 마.
+
+카드 이미지 로딩/게임 Animation 성능을
+더 악화시키면 안 된다.
+
+prefers-reduced-motion도 가능하면 대응.
+
+Motion이 감소된 환경에서는
+Animation 대신 정적인 Icon/Border로 상태가 보여야 한다.
+
+==================================================
+17-K. Tooltips
+==================================================
+
+Desktop에서 Keyword Icon에 마우스를 올리면
+작은 Tooltip 표시 가능.
+
+예:
+
+도발
+적은 다른 공격 가능 대상보다
+이 선수를 먼저 공격해야 합니다.
+
+러쉬
+등장한 턴에도 공격할 수 있습니다.
+
+기습
+등장한 턴 적 선수에게 공격할 수 있습니다.
+
+회피
+다음 피해를 1회 무효화합니다.
+
+단 Tooltip 때문에
+ALT를 강제로 누르게 하지 마.
+
+Mobile에서는 Tap 또는 기존 Detail 방식 사용.
+
+==================================================
+18. 기존 카드 텍스트는 임의 수정 금지
+==================================================
+
+이번 Keyword Visual 작업을 위해
+
+Card Effect Text에:
+
+"도발"
+"러쉬"
+"기습"
+
+문구를 강제로 추가하지 마.
+
+Keyword는 기존 CardDefinition / Structured Data에
+그대로 유지.
+
+이번 작업은
+"필드에서 시각적으로 확인하기 쉽게 하는 것"
+이지 카드 텍스트를 다시 작성하는 작업이 아니다.
+
+==================================================
+19. 실제 브라우저 테스트 추가
+==================================================
+
+TEST USER 실제 Match에서 확인.
+
+--------------------------------
+TOKEN FRAME
+--------------------------------
+
+일반 WRESTLER Token 생성:
+
+예: 잔상
+
+→ rarity TOKEN
+→ isToken true
+→ TOKEN WRESTLER Frame 표시
+
+Token Technique 테스트 Definition이 있다면:
+
+→ TOKEN TECHNIQUE Frame 표시
+→ Board Slot 사용 X
+
+Token Frame을 Admin에서 교체:
+
+→ 실제 Match CardRenderer에도 반영
+
+Champion Token:
+
+→ 기존 Champion Token Frame/Rule 정상
+→ 일반 Token Frame으로 잘못 표시되지 않음
+
+--------------------------------
+KEYWORD VISUAL
+--------------------------------
+
+TAUNT 선수 필드 등장:
+
+→ ALT 없이 도발임을 시각적으로 확인 가능
+
+RUSH 선수:
+
+→ Rush Indicator 표시
+
+HASTE 선수:
+
+→ Rush와 구별되는 Haste Indicator 표시
+
+DODGE 선수:
+
+→ Dodge Indicator 표시
+
+Dodge 1회 소비:
+
+→ Indicator 제거
+
+Dodge x2:
+
+→ charge 표시
+
+Silence 적용:
+
+→ 실제 제거된 Keyword Visual도 즉시 제거
+
+여러 Keyword 동시 보유:
+
+→ UI 겹침/잘림 없음
+
+상대 선수 Keyword도
+내 선수와 동일하게 확인 가능.
+
+--------------------------------
+PERFORMANCE
+--------------------------------
+
+양쪽 Board 4/4 상태에서
+모든 선수에게 Keyword Visual이 존재해도:
+
+- 심각한 FPS 저하 없음
+- 카드 클릭 정상
+- 공격 Animation 정상
+- 이미지 로딩 성능 악화 없음
+
+==================================================
+20. 기존 최종 보고에 추가
+==================================================
+
+다음 항목도:
+
+PASS
+FIXED
+FAIL
+
+로 보고.
+
+TOKEN_RARITY
+TOKEN_WRESTLER_FRAME
+TOKEN_TECHNIQUE_FRAME
+TOKEN_FRAME_ADMIN
+TOKEN_FRAME_SHARED_RENDERER
+CHAMPION_TOKEN_FRAME_COMPATIBILITY
+
+TAUNT_FIELD_VISUAL
+RUSH_FIELD_VISUAL
+HASTE_FIELD_VISUAL
+DODGE_FIELD_VISUAL
+DODGE_CHARGE_VISUAL
+STUN_FIELD_VISUAL
+SILENCE_FIELD_VISUAL
+MULTIPLE_KEYWORD_LAYOUT
+KEYWORD_VISUAL_PERFORMANCE
+
+중요:
+
+단순히 Admin에 TOKEN 선택지가 생겼다고
+TOKEN FRAME PASS 처리하지 마.
+
+실제 Match에서 Token 카드가
+해당 Frame으로 렌더링되어야 PASS.
+
+Keyword 역시 Icon Component가 존재한다는 이유로
+PASS 처리하지 마.
+
+실제 Field에서 Engine State에 맞게
+보이고/사라지는 것까지 확인해야 PASS다.

@@ -33,6 +33,7 @@ import {
 } from './alt-inspector';
 import { PresentationFeedback, type PresentationCue } from './presentation-feedback';
 import { presentationCueDrafts } from './presentation-feedback-utils';
+import { QuestPresentation } from './quest-presentation';
 
 interface GameStatePreviewProps {
   state: GameState;
@@ -183,6 +184,21 @@ export function GameStatePreview({
             kind: event.type === "CARD_RETIRED" ? "RETIRE" : event.type === "CARD_DESTROYED" ? "DESTROY" : "REMOVE",
             geometry,
             delay: precedingDamage ? 220 : 0,
+          });
+        }
+      }
+      if (event.type === "CARD_PLAYED" && event.cardType === "TECHNIQUE" && event.cardInstanceId) {
+        const technique = previousCards.get(event.cardInstanceId);
+        if (technique) {
+          const sourceElement = handCardRefs.current.get(event.cardInstanceId);
+          const source = sourceElement
+            ? rectSnapshot(sourceElement.getBoundingClientRect())
+            : { left: window.innerWidth / 2 - 90, top: window.innerHeight * 0.42 - 135, width: 180, height: 270 };
+          animations.push({
+            kind: "TECHNIQUE",
+            card: technique,
+            playerId: event.playerId,
+            geometry: { source },
           });
         }
       }
@@ -941,19 +957,20 @@ export function GameStatePreview({
         <CardPlayAnimation
           animation={playAnimation}
           onComplete={onPlayAnimationComplete}
+          viewerPlayerId={me.id}
         />
       )}
-      {generatedPlayAnimations.map((animation) => (
+      {generatedPlayAnimations[0] && (
         <CardPlayAnimation
-          key={`generated-play-${animation.card.instanceId}`}
-          animation={animation}
+          key={`generated-play-${generatedPlayAnimations[0].card.instanceId}-${generatedPlayAnimations[0].kind}`}
+          animation={generatedPlayAnimations[0]}
+          viewerPlayerId={me.id}
           onComplete={() => {
-            setGeneratedPlayAnimations((current) =>
-              current.filter((entry) => entry.card.instanceId !== animation.card.instanceId),
-            );
+            const completed = generatedPlayAnimations[0];
+            setGeneratedPlayAnimations((current) => current.slice(1).filter((entry) => entry.card.instanceId !== completed.card.instanceId || entry.kind !== completed.kind));
           }}
         />
-      ))}
+      )}
       {cardLeaveAnimations.map((animation) => (
         <CardLeaveAnimation
           key={animation.id}
@@ -970,11 +987,10 @@ export function GameStatePreview({
           onComplete={onAttackAnimationComplete}
         />
       )}
-      {presentationQueue[0] && (
-        <PresentationFeedback
-          cue={presentationQueue[0]}
-          onComplete={() => setPresentationQueue((current) => current.slice(1))}
-        />
+      {presentationQueue[0] && !playAnimation && !generatedPlayAnimations.length && !attackAnimation && (
+        presentationQueue[0].kind === "QUEST_COMPLETE"
+          ? <QuestPresentation cue={presentationQueue[0]} state={state} onComplete={() => setPresentationQueue((current) => current.slice(1))} />
+          : <PresentationFeedback cue={presentationQueue[0]} onComplete={() => setPresentationQueue((current) => current.slice(1))} />
       )}
     </div>
     </AltInspectProvider>

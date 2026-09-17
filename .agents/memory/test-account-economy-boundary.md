@@ -7,4 +7,4 @@ KO development test accounts are identified server-side by the fixed test-user o
 
 **Why:** A client-controlled flag or database-wide grant would let ordinary users bypass ownership and economy rules, while changing match Gold would make gameplay tests misleading.
 
-**How to apply:** Reuse the server identity helper in every ownership, deck validation, Prism, and shop route. Keep the override out of production and represent infinity in the UI from the server-provided test-account flag rather than displaying the sentinel balance.
+**How to apply:** Reuse the server identity helper in every ownership, deck validation, Prism, and shop route. Keep the override out of production and represent infinity in the UI from the server-provided test-account flag rather than displaying the sentinel balance. Any persisted test-account balance sentinel must stay within the database integer range because shop purchases still write ledger snapshots.

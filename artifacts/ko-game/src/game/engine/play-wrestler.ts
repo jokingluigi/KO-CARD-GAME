@@ -91,6 +91,7 @@ export function playWrestlerFromHand(
         type: 'CARD_PLAYED',
         playerId,
         cardInstanceId,
+        cardType: card.cardType,
         source: { type: 'PLAYER', playerId },
         target: { type: 'CARD', cardInstanceId },
         reason: 'PLAY_FROM_HAND',

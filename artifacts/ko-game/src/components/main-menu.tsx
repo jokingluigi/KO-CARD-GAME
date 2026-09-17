@@ -1,6 +1,8 @@
 import { Bot, Globe2, Gift, Layers3, LogOut, ShoppingBag, Library } from "lucide-react";
 import { useState } from "react";
+import { useLocation } from "wouter";
 import type { AuthUser } from "@/lib/auth-client";
+import { ROUTES } from "@/lib/routes";
 
 type MainMenuProps = {
   onComingSoon?: (label: string) => void;
@@ -45,6 +47,7 @@ const menuItems = [
 
 export function MainMenu({ onComingSoon, onDeckEdit, onAiMatch, user, onLogout }: MainMenuProps) {
   const [notice, setNotice] = useState("");
+  const [, navigate] = useLocation();
 
   return (
     <main className="ko-main-menu min-h-screen bg-[#080808] px-5 py-10 text-white sm:px-8">
@@ -85,15 +88,15 @@ export function MainMenu({ onComingSoon, onDeckEdit, onAiMatch, user, onLogout }
                   return;
                 }
                 if (label === "내 팩") {
-                  window.location.href = `${import.meta.env.BASE_URL.replace(/\/$/, "")}/packs`;
+                  navigate(ROUTES.PACKS);
                   return;
                 }
                 if (label === "상점") {
-                  window.location.href = `${import.meta.env.BASE_URL.replace(/\/$/, "")}/shop`;
+                  navigate(ROUTES.SHOP);
                   return;
                 }
                 if (label === "컬렉션") {
-                  window.location.href = `${import.meta.env.BASE_URL.replace(/\/$/, "")}/collection`;
+                  navigate(ROUTES.COLLECTION);
                   return;
                 }
                 setNotice(`${label}은 준비 중입니다.`);

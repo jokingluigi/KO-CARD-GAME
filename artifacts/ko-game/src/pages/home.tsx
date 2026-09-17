@@ -40,6 +40,7 @@ import { AuthLoading, AuthPage } from '@/components/auth-page';
 import { fetchCurrentUser, logout, type AuthUser } from '@/lib/auth-client';
 import { audioManager } from '@/audio/audio-manager';
 import { fetchDecks, type Deck } from '@/lib/decks-client';
+import { ROUTES } from '@/lib/routes';
 import { fetchAIDecks, type AIDeck } from '@/lib/ai-decks-client';
 import { AiMatchSetup } from '@/components/ai-match-setup';
 import type { CardPlayAnimationState, CardPlayGeometry } from '@/components/card-play-animation-utils';
@@ -964,11 +965,6 @@ export default function Home() {
       return;
     }
     setGameState(result.state);
-    setPlayAnimation({
-      kind: "TECHNIQUE",
-      card,
-      geometry: { source },
-    });
     setSelectedCardId(null);
     setPlayError(null);
   }
@@ -1035,7 +1031,7 @@ export default function Home() {
           <button
             type="button"
             onClick={() => {
-              window.location.href = import.meta.env.BASE_URL;
+               navigate(ROUTES.MAIN_MENU);
             }}
             className="mt-7 rounded bg-amber-400 px-5 py-3 text-sm font-black text-black hover:bg-amber-300"
           >
@@ -1051,9 +1047,9 @@ export default function Home() {
       <MainMenu
         user={authUser ?? undefined}
         onLogout={handleLogout}
-        onAiMatch={() => navigate('/ai-match')}
+        onAiMatch={() => navigate(ROUTES.AI_MATCH)}
         onDeckEdit={() => {
-          window.location.href = `${import.meta.env.BASE_URL.replace(/\/$/, "")}/decks`;
+          navigate(ROUTES.DECKS);
         }}
       />
     );
@@ -1067,7 +1063,7 @@ export default function Home() {
         initialAiDeckId={initialAiDeckId}
         error={playError}
         onStart={startAiMatch}
-        onBack={() => navigate('/')}
+        onBack={() => navigate(ROUTES.MAIN_MENU)}
       />
     );
   }
@@ -1084,7 +1080,11 @@ export default function Home() {
           {playError && (
             <button
               type="button"
-              onClick={() => window.location.reload()}
+              onClick={() => {
+                setPlayError(null);
+                setMatchReady(false);
+                navigate(isAiMatch ? `${ROUTES.AI_MATCH}${window.location.search}` : ROUTES.MAIN_MENU);
+              }}
               className="mt-6 rounded-lg bg-amber-400 px-5 py-3 text-sm font-black text-black transition hover:bg-amber-300"
             >
               다시 시도
@@ -1127,13 +1127,13 @@ export default function Home() {
       onEffectTarget={handleEffectTarget}
        onPresentationBusyChange={handlePresentationBusyChange}
       onReturnToAdmin={isAdminTestMatch ? () => {
-        window.location.href = `${import.meta.env.BASE_URL.replace(/\/$/, '')}/admin`;
+        navigate(ROUTES.ADMIN);
       } : undefined}
     />
      {matchResultVisible && (
        <MatchResultOverlay
          state={gameState}
-         onReturnToMainMenu={() => navigate('/')}
+         onReturnToMainMenu={() => navigate(ROUTES.MAIN_MENU)}
        />
      )}
     </>

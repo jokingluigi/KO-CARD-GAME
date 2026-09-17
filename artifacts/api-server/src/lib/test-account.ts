@@ -1,6 +1,9 @@
 export const TEST_USER_EMAIL = "ko-test-user@localhost.test";
 export const TEST_ADMIN_EMAIL = "ko-test-admin@localhost.test";
-export const TEST_ACCOUNT_UNLIMITED_BALANCE = Number.MAX_SAFE_INTEGER;
+// Currency balances and ledger snapshots use PostgreSQL's 32-bit integer type.
+// This remains effectively unlimited for development tests without overflowing
+// the persisted ledger when a TEST USER purchases a shop listing.
+export const TEST_ACCOUNT_UNLIMITED_BALANCE = 2_000_000_000;
 export const TEST_ACCOUNT_UNLIMITED_QUANTITY = 1_000_000_000;
 const TEST_ACCOUNT_EMAILS = new Set([TEST_USER_EMAIL, TEST_ADMIN_EMAIL]);
 

@@ -20,11 +20,13 @@ export type CardPlayAnimationState =
       card: CardInstance;
       geometry: CardPlayGeometry & { target: CardAnimationRect };
       impactLevel: LandingImpactLevel;
+      playerId?: string;
     }
   | {
       kind: "TECHNIQUE";
       card: CardInstance;
       geometry: CardPlayGeometry;
+      playerId?: string;
     };
 
 export function rectSnapshot(rect: DOMRect): CardAnimationRect {

@@ -35,7 +35,7 @@ export function playTechniqueFromHand(
       hand: candidate.hand.filter((entry) => entry.instanceId !== cardInstanceId),
       graveyard: [...candidate.graveyard, { ...card, boardSlot: null }],
     }),
-    events: [...state.events, { type: 'CARD_PLAYED', playerId, cardInstanceId,
+    events: [...state.events, { type: 'CARD_PLAYED', playerId, cardInstanceId, cardType: card.cardType,
       source: { type: 'PLAYER', playerId }, target: { type: 'CARD', cardInstanceId }, reason: 'PLAY_FROM_HAND',
       tags: card.tags ? [...card.tags] : [] }],
   };

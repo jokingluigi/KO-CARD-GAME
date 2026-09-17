@@ -1,9 +1,13 @@
 import { useEffect, useMemo, useState } from "react";
 import { ArrowLeft, Gift } from "lucide-react";
 import { PackOpening } from "@/components/pack-opening";
+import { PackDetailDialog } from "@/components/pack-detail-dialog";
 import { fetchPacks, openPack, type Pack, type PackReward } from "@/lib/collection-client";
+import { useLocation } from "wouter";
+import { ROUTES } from "@/lib/routes";
 
 export default function PacksPage() {
+  const [, navigate] = useLocation();
   const [packs, setPacks] = useState<Pack[]>([]);
   const [selected, setSelected] = useState<Pack | null>(null);
   const [rewards, setRewards] = useState<PackReward[]>([]);
@@ -17,12 +21,12 @@ export default function PacksPage() {
       .then((body) => { setPacks(body.packs); setMessage(""); })
       .catch((error: Error) => {
         if (error.message.includes("로그인이 필요합니다")) {
-          window.location.href = import.meta.env.BASE_URL;
+          navigate(ROUTES.MAIN_MENU);
           return;
         }
         setMessage(error.message);
       });
-  }, []);
+  }, [navigate]);
 
   async function handleOpen(pack: Pack) {
     if (opening || pack.quantity < 1) return;
@@ -51,7 +55,7 @@ export default function PacksPage() {
   return (
     <main className="min-h-screen bg-neutral-950 px-5 py-7 text-neutral-100 sm:px-8">
       <div className="mx-auto max-w-6xl">
-        <button type="button" onClick={() => { window.location.href = import.meta.env.BASE_URL; }} className="mb-7 flex items-center gap-2 text-sm font-bold text-neutral-400 hover:text-white"><ArrowLeft className="h-4 w-4" /> 메인 메뉴</button>
+        <button type="button" onClick={() => navigate(ROUTES.MAIN_MENU)} className="mb-7 flex items-center gap-2 text-sm font-bold text-neutral-400 hover:text-white"><ArrowLeft className="h-4 w-4" /> 메인 메뉴</button>
         <header className="mb-8 flex items-end justify-between border-b border-neutral-800 pb-6">
           <div><p className="font-display text-xs font-bold tracking-[0.25em] text-primary">PACK INVENTORY</p><h1 className="mt-2 text-3xl font-black">내 팩</h1></div>
           <Gift className="h-8 w-8 text-amber-400" />
@@ -64,11 +68,12 @@ export default function PacksPage() {
               <div className="flex min-h-36 items-center justify-center bg-gradient-to-br from-amber-950/50 to-neutral-950 p-5">
                 {pack.imageUrl ? <img src={pack.imageUrl} alt="" className="max-h-32 rounded object-contain" /> : <Gift className="h-16 w-16 text-amber-400/80" />}
               </div>
-              <div className="p-5"><div className="flex items-start justify-between gap-3"><div><h2 className="font-black">{pack.name}</h2><p className="mt-1 text-sm text-neutral-500">{pack.description || "KO 카드팩"}</p></div><span className="rounded bg-amber-400 px-2 py-1 text-sm font-black text-black">×{pack.quantity}</span></div><p className="mt-4 text-xs text-neutral-400">{pack.cardsPerPack}장 · 일반 {pack.normalRate}% · 레전더리 {pack.legendaryRate}% · Champion {pack.championRate}% · Skin Chance {pack.skinChance}%</p><button type="button" disabled={opening || pack.quantity < 1} onClick={() => void handleOpen(pack)} className="mt-5 w-full rounded bg-primary px-4 py-3 text-sm font-black text-black transition hover:bg-yellow-400 disabled:cursor-not-allowed disabled:opacity-50">{opening && selected?.id === pack.id ? "개봉 중..." : pack.quantity > 0 ? "개봉" : "보유 없음"}</button></div>
+               <div className="p-5"><div className="flex items-start justify-between gap-3"><div><h2 className="font-black">{pack.name}</h2><p className="mt-1 text-sm text-neutral-500">{pack.description || "KO 카드팩"}</p></div><span className="rounded bg-amber-400 px-2 py-1 text-sm font-black text-black">×{pack.quantity}</span></div><p className="mt-4 text-xs text-neutral-400">{pack.cardsPerPack}장 · 일반 {pack.normalRate}% · 레전더리 {pack.legendaryRate}% · Champion {pack.championRate}% · Skin Chance {pack.skinChance}%</p><button type="button" onClick={() => setSelected(pack)} className="mt-4 w-full rounded border border-neutral-700 px-4 py-2.5 text-sm font-black text-neutral-200 hover:border-amber-500 hover:text-amber-300">구성품 및 확률 보기</button><button type="button" disabled={opening || pack.quantity < 1} onClick={() => void handleOpen(pack)} className="mt-3 w-full rounded bg-primary px-4 py-3 text-sm font-black text-black transition hover:bg-yellow-400 disabled:cursor-not-allowed disabled:opacity-50">{opening && selected?.id === pack.id ? "개봉 중..." : pack.quantity > 0 ? "개봉" : "보유 없음"}</button></div>
             </article>
           ))}
         </div>
         {selected && rewards.length > 0 && <PackOpening packName={selected.name} rewards={rewards} onClose={closeOpening} />}
+        {selected && rewards.length === 0 && !opening && <PackDetailDialog pack={selected} onClose={() => setSelected(null)} />}
       </div>
     </main>
   );

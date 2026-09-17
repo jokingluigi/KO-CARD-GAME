@@ -2,10 +2,12 @@ import { useEffect, useMemo, useState } from "react";
 import { ArrowLeft, Coins, Gift, ShoppingBag } from "lucide-react";
 import { fetchShop, purchaseShopListing, type ShopListing } from "@/lib/collection-client";
 import { useToast } from "@/hooks/use-toast";
-
-const basePath = import.meta.env.BASE_URL.replace(/\/$/, "");
+import { PackDetailDialog } from "@/components/pack-detail-dialog";
+import { useLocation } from "wouter";
+import { ROUTES } from "@/lib/routes";
 
 export default function ShopPage() {
+  const [, navigate] = useLocation();
   const [currency, setCurrency] = useState(0);
   const [isTestAccount, setIsTestAccount] = useState(false);
   const [currencyDisplayName, setCurrencyDisplayName] = useState("크레딧");
@@ -13,6 +15,7 @@ export default function ShopPage() {
   const [message, setMessage] = useState("상점을 불러오는 중...");
   const [purchasingId, setPurchasingId] = useState<string | null>(null);
   const [success, setSuccess] = useState("");
+  const [selectedListing, setSelectedListing] = useState<ShopListing | null>(null);
   const { toast } = useToast();
 
   async function refresh() {
@@ -28,12 +31,12 @@ export default function ShopPage() {
       .then(() => setMessage(""))
       .catch((error: Error) => {
         if (error.message.includes("로그인이 필요합니다")) {
-          window.location.href = basePath;
+          navigate(ROUTES.MAIN_MENU);
           return;
         }
         setMessage(error.message);
       });
-  }, []);
+  }, [navigate]);
 
   const hasListings = useMemo(() => listings.length > 0, [listings]);
 
@@ -67,7 +70,7 @@ export default function ShopPage() {
     <main className="min-h-screen bg-neutral-950 px-5 py-7 text-neutral-100 sm:px-8">
       <div className="mx-auto max-w-6xl">
         <div className="mb-7 flex items-center justify-between gap-4">
-          <button type="button" onClick={() => { window.location.href = basePath; }} className="flex items-center gap-2 text-sm font-bold text-neutral-400 hover:text-white">
+           <button type="button" onClick={() => navigate(ROUTES.MAIN_MENU)} className="flex items-center gap-2 text-sm font-bold text-neutral-400 hover:text-white">
             <ArrowLeft className="h-4 w-4" /> 메인 메뉴
           </button>
            <div className="flex items-center gap-2 rounded-full border border-amber-700/50 bg-amber-950/30 px-4 py-2 text-sm font-black text-amber-200">
@@ -96,7 +99,10 @@ export default function ShopPage() {
                     <span className="shrink-0 rounded bg-neutral-800 px-2 py-1 text-xs font-bold text-neutral-300">보유 ×{listing.ownedQuantity}</span>
                   </div>
                   <p className="mt-4 text-xs text-neutral-400">{listing.pack.name} · 팩 {listing.packQuantity}개 · {listing.pack.cardsPerPack}장</p>
-                  <button type="button" disabled={Boolean(purchasingId) || !canAfford} onClick={() => void handlePurchase(listing)} className="mt-5 flex w-full items-center justify-center gap-2 rounded bg-primary px-4 py-3 text-sm font-black text-black transition hover:bg-yellow-400 disabled:cursor-not-allowed disabled:opacity-50">
+                   <button type="button" onClick={() => setSelectedListing(listing)} className="mt-5 w-full rounded border border-neutral-700 px-4 py-2.5 text-sm font-black text-neutral-200 transition hover:border-amber-500 hover:text-amber-300">
+                     구성품 및 확률 보기
+                   </button>
+                   <button type="button" disabled={Boolean(purchasingId) || !canAfford} onClick={() => void handlePurchase(listing)} className="mt-3 flex w-full items-center justify-center gap-2 rounded bg-primary px-4 py-3 text-sm font-black text-black transition hover:bg-yellow-400 disabled:cursor-not-allowed disabled:opacity-50">
                     <Coins className="h-4 w-4" /> {busy ? "구매 중..." : canAfford ? `${listing.price.toLocaleString()} ${currencyDisplayName}로 구매` : "크레딧 부족"}
                   </button>
                 </div>
@@ -105,9 +111,10 @@ export default function ShopPage() {
           })}
         </div>
         <div className="mt-8 flex flex-wrap justify-center gap-3">
-          <button type="button" onClick={() => { window.location.href = `${basePath}/packs`; }} className="rounded border border-neutral-700 px-5 py-3 text-sm font-black text-neutral-200 hover:border-amber-500 hover:text-amber-300">내 팩 / 팩 열기</button>
+           <button type="button" onClick={() => navigate(ROUTES.PACKS)} className="rounded border border-neutral-700 px-5 py-3 text-sm font-black text-neutral-200 hover:border-amber-500 hover:text-amber-300">내 팩 / 팩 열기</button>
         </div>
       </div>
+       {selectedListing && <PackDetailDialog pack={selectedListing.pack} price={selectedListing.price} packQuantity={selectedListing.packQuantity} onClose={() => setSelectedListing(null)} />}
     </main>
   );
 }

@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
+import { useLocation } from "wouter";
 import { createPortal } from "react-dom";
 import { useForm } from "react-hook-form";
 import {
@@ -27,6 +28,7 @@ import {
   type ImageDisplayMode,
   type ImageDisplaySettings,
 } from "../game/cards/types";
+import { ROUTES } from "@/lib/routes";
 
 const adminApiBase = `${import.meta.env.BASE_URL.replace(/\/$/, "")}/api/admin`;
 
@@ -303,6 +305,7 @@ export function AdminCardManager({
 }: {
   onUnauthorized: () => void;
 }) {
+  const [, navigate] = useLocation();
   const { toast } = useToast();
   const [cards, setCards] = useState<CardRecord[]>([]);
   const [search, setSearch] = useState("");
@@ -1164,7 +1167,7 @@ export function AdminCardManager({
                </div>
               {error && <p role="alert" className="md:col-span-2 rounded border border-red-900 bg-red-950/50 px-3 py-2 text-xs font-bold text-red-300">{error}</p>}
               <div className="flex justify-end gap-2 border-t border-neutral-800 pt-4 md:col-span-2">
-                  {editingCard && editingCard.cardType === "WRESTLER" && editingCard.status !== "DISABLED" && <button type="button" onClick={() => { window.location.href = `${import.meta.env.BASE_URL}?source=admin&testCardId=${encodeURIComponent(editingCard.id)}`; }} className="rounded border border-sky-700 px-4 py-2 text-sm font-bold text-sky-300" data-testid="button-test-card">테스트 게임에서 확인</button>}
+                  {editingCard && editingCard.cardType === "WRESTLER" && editingCard.status !== "DISABLED" && <button type="button" onClick={() => navigate(`${ROUTES.MAIN_MENU}?source=admin&testCardId=${encodeURIComponent(editingCard.id)}`)} className="rounded border border-sky-700 px-4 py-2 text-sm font-bold text-sky-300" data-testid="button-test-card">테스트 게임에서 확인</button>}
                  <button type="button" onClick={closeForm} className="rounded border border-neutral-700 px-4 py-2 text-sm font-bold" data-testid="button-cancel-card">취소</button>
                  <button type="submit" disabled={busyId !== null || isUploadingImage} className="rounded bg-primary px-5 py-2 text-sm font-black text-black disabled:opacity-40" data-testid="button-save-card">{editingCard ? "수정 저장" : "DRAFT로 생성"}</button>
               </div>

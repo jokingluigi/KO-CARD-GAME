@@ -470,7 +470,16 @@ export default function Decks() {
               type="button"
               className="ko-decks__mini-button shrink-0"
               data-testid="button-retry-decks"
-              onClick={() => window.location.reload()}
+              onClick={() => {
+                setErrorMessage("");
+                setAuthStatus("checking");
+                fetchCurrentUser()
+                  .then((result) => {
+                    setAuthUser(result.authenticated ? result.user : null);
+                    setAuthStatus(result.authenticated ? "authenticated" : "unauthenticated");
+                  })
+                  .catch(() => setAuthStatus("unauthenticated"));
+              }}
             >
               <RefreshCw className="h-3.5 w-3.5" aria-hidden="true" />
               다시 시도

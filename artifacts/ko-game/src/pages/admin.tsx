@@ -11,11 +11,12 @@ import { AdminCardSkinManager } from "@/components/admin-card-skin-manager";
 import { AdminCardFrameManager } from "@/components/admin-card-frame-manager";
 import { AdminAIDeckManager } from "@/components/admin-ai-deck-manager";
 import { fetchCurrentUser, logout } from "@/lib/auth-client";
+import { ROUTES } from "@/lib/routes";
 
 type AdminStatus = "checking" | "forbidden" | "authenticated";
 
 export default function Admin() {
-  const [location] = useLocation();
+  const [location, navigate] = useLocation();
   const [status, setStatus] = useState<AdminStatus>("checking");
   const [section, setSection] = useState<"cards" | "champions" | "packs" | "skins" | "frames" | "shop" | "prism" | "media" | "test" | "ai-decks">(
     location.endsWith("/packs") ? "packs" : location.endsWith("/shop") ? "shop" : location.endsWith("/prism") ? "prism" : location.endsWith("/skins") ? "skins" : location.endsWith("/card-frames") ? "frames" : location.endsWith("/ai-decks") ? "ai-decks" : "cards",
@@ -43,7 +44,7 @@ export default function Admin() {
 
   async function handleLogout() {
     await logout();
-    window.location.href = import.meta.env.BASE_URL;
+    navigate(ROUTES.MAIN_MENU);
   }
 
   if (status === "checking") {
@@ -66,7 +67,7 @@ export default function Admin() {
           </p>
           <button
             type="button"
-            onClick={() => { window.location.href = import.meta.env.BASE_URL; }}
+            onClick={() => navigate(ROUTES.MAIN_MENU)}
             className="mt-7 rounded bg-primary px-5 py-3 text-sm font-black text-black hover:bg-yellow-400"
           >
             메인 메뉴로
@@ -222,7 +223,7 @@ export default function Admin() {
                      <button
                        type="button"
                        onClick={() => {
-                         window.location.href = `${import.meta.env.BASE_URL}?source=admin`;
+                          navigate(`${ROUTES.MAIN_MENU}?source=admin`);
                        }}
                        className="w-full rounded-lg bg-primary px-4 py-3 text-sm font-black text-black transition-colors hover:bg-yellow-400 sm:w-auto"
                      >

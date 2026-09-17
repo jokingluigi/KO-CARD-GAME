@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState, type Dispatch, type SetStateAction } from "react";
+import { useLocation } from "wouter";
 import { Ban, CheckCircle2, Copy, FilePenLine, ImagePlus, Maximize2, Plus, RotateCcw, Search, Trash2, X } from "lucide-react";
 import { AdminAudioField } from "./admin-audio-field";
 import { AdminUnifiedEffectPrompt } from "./admin-unified-effect-prompt";
@@ -9,6 +10,7 @@ import {
   type ImageDisplayMode,
   type ImageDisplaySettings,
 } from "../game/cards/types";
+import { ROUTES } from "@/lib/routes";
 
 const adminApiBase = `${import.meta.env.BASE_URL.replace(/\/$/, "")}/api/admin`;
 type Status = "DRAFT" | "PUBLISHED" | "DISABLED";
@@ -102,6 +104,7 @@ async function message(response: Response) {
 }
 
 export function AdminChampionManager({ onUnauthorized }: { onUnauthorized: () => void }) {
+  const [, navigate] = useLocation();
   const { toast } = useToast();
   const [champions, setChampions] = useState<Champion[]>([]);
   const [search, setSearch] = useState("");
@@ -853,7 +856,7 @@ export function AdminChampionManager({ onUnauthorized }: { onUnauthorized: () =>
            <button
              type="button"
              onClick={() => {
-               window.location.href = `${import.meta.env.BASE_URL}?source=admin&testChampionId=${encodeURIComponent(editing.id)}`;
+               navigate(`${ROUTES.MAIN_MENU}?source=admin&testChampionId=${encodeURIComponent(editing.id)}`);
              }}
              className="rounded border border-sky-700 px-4 py-2.5 font-bold text-sky-300"
              data-testid="button-test-champion"
