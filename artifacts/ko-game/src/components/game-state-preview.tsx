@@ -113,6 +113,8 @@ export function GameStatePreview({
   const [generatedPlayAnimations, setGeneratedPlayAnimations] = React.useState<CardPlayAnimationState[]>([]);
   const [cardLeaveAnimations, setCardLeaveAnimations] = React.useState<CardLeaveAnimationState[]>([]);
   const [presentationQueue, setPresentationQueue] = React.useState<PresentationCue[]>([]);
+  const [screenShakeLevel, setScreenShakeLevel] = React.useState<AttackDamageImpactLevel>("NONE");
+  const screenShakeTimerRef = React.useRef<number | null>(null);
   const processedEventCountRef = React.useRef<number | null>(null);
   const lastCardPositionsRef = React.useRef(new Map<string, { left: number; top: number; width: number; height: number }>());
   const previousCardStatsRef = React.useRef(new Map<string, { attack: number; health: number }>());
@@ -134,6 +136,12 @@ export function GameStatePreview({
     playAnimation,
     presentationQueue.length,
   ]);
+
+  React.useEffect(() => () => {
+    if (screenShakeTimerRef.current !== null) {
+      window.clearTimeout(screenShakeTimerRef.current);
+    }
+  }, []);
 
   React.useEffect(() => {
     const currentCardStats = new Map<string, { attack: number; health: number }>();
@@ -166,6 +174,23 @@ export function GameStatePreview({
     const previousCards = previousCardsRef.current;
     previousCardStatsRef.current = currentCardStats;
     previousCardsRef.current = currentCards(state);
+
+    const largestDamage = newEvents.reduce(
+      (largest, event) => event.type === "DAMAGE_DEALT"
+        ? Math.max(largest, event.amount ?? 0)
+        : largest,
+      0,
+    );
+    if (largestDamage > 0) {
+      setScreenShakeLevel(attackDamageImpactLevel(largestDamage));
+      if (screenShakeTimerRef.current !== null) {
+        window.clearTimeout(screenShakeTimerRef.current);
+      }
+      screenShakeTimerRef.current = window.setTimeout(() => {
+        setScreenShakeLevel("NONE");
+        screenShakeTimerRef.current = null;
+      }, 220);
+    }
     const animations: CardPlayAnimationState[] = [];
     const leaveAnimations: CardLeaveAnimationState[] = [];
     const savedRect = (cardInstanceId: string) => {
@@ -508,11 +533,7 @@ export function GameStatePreview({
   
   return (
     <AltInspectProvider>
-    <div className={`ko-game-shell flex min-h-[100dvh] w-full flex-col overflow-x-hidden overflow-y-auto bg-neutral-950 font-sans text-neutral-100 selection:bg-primary selection:text-black md:overflow-hidden ${
-      attackImpactTriggered && attackAnimation && attackAnimation.damage > 0
-        ? `attack-screen-shake--${attackAnimation.damageImpactLevel.toLowerCase()}`
-        : ""
-    }`}>
+     <div className="ko-game-shell flex min-h-[100dvh] w-full flex-col overflow-x-hidden overflow-y-auto bg-neutral-950 font-sans text-neutral-100 selection:bg-primary selection:text-black md:overflow-hidden">
       <ActionHistory state={state} />
       
       {/* Background Ambience */}
@@ -526,7 +547,13 @@ export function GameStatePreview({
         <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,_rgba(26,26,36,0.08)_0%,_rgba(5,5,5,0.18)_100%)]" />
       </div>
 
-      <div className="ko-game-stage relative mx-auto flex min-h-[100dvh] w-full max-w-5xl flex-1 flex-col justify-between pb-0 pt-2 md:h-[100dvh] md:min-h-0 md:pt-4">
+      <div className={`ko-game-stage relative mx-auto flex min-h-[100dvh] w-full max-w-5xl flex-1 flex-col justify-between pb-0 pt-2 md:h-[100dvh] md:min-h-0 md:pt-4 ${
+        screenShakeLevel !== "NONE"
+          ? `attack-screen-shake--${screenShakeLevel.toLowerCase()}`
+          : attackImpactTriggered && attackAnimation && attackAnimation.damage > 0
+            ? `attack-screen-shake--${attackAnimation.damageImpactLevel.toLowerCase()}`
+            : ""
+      }`}>
          
          {/* TOP BAR: Opponent Info */}
          <div className="ko-opponent-header relative z-[90] h-24 shrink-0 px-2 md:h-32 md:px-4">
@@ -1038,7 +1065,10 @@ export function GameStatePreview({
           onComplete={onAttackAnimationComplete}
         />
       )}
-      {presentationQueue[0] && !playAnimation && !generatedPlayAnimations.length && !attackAnimation && (
+      {presentationQueue[0] &&
+        !playAnimation &&
+        !generatedPlayAnimations.length &&
+        (!attackAnimation || attackImpactTriggered) && (
         presentationQueue[0].kind === "QUEST_COMPLETE"
           ? <QuestPresentation cue={presentationQueue[0]} state={state} onComplete={() => setPresentationQueue((current) => current.slice(1))} />
           : <PresentationFeedback cue={presentationQueue[0]} onComplete={() => setPresentationQueue((current) => current.slice(1))} />

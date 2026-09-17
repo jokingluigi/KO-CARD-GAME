@@ -1,7 +1,7 @@
 import { useEffect, useState, type CSSProperties, type KeyboardEvent, type ReactNode, type Ref } from "react";
 import { CardArtwork } from "./card-artwork";
 import {
-  normalizeCardRarity,
+  normalizeCardRarityForType,
   type CardRarity,
   type CardKeyword,
   type ImageDisplaySettings,
@@ -179,9 +179,17 @@ export function CardRenderer({
   tabIndex?: number;
   containerRef?: Ref<HTMLDivElement>;
 }) {
-  const normalizedRarity = isChampionToken ? "CHAMPION" : normalizeCardRarity(rarity);
+  const normalizedRarity = isChampionToken
+    ? "CHAMPION"
+    : normalizeCardRarityForType(cardType, rarity);
   const normalizedCardType = cardType ?? "WRESTLER";
-  const layoutRarity = normalizedRarity === "TOKEN" ? "NORMAL" : normalizedRarity;
+  // Content coordinates are canonical for every WRESTLER frame. Only the
+  // frame artwork changes by rarity; frame offsets remain independent.
+  const layoutRarity = normalizedCardType === "WRESTLER"
+    ? "NORMAL"
+    : normalizedRarity === "TOKEN"
+      ? "NORMAL"
+      : normalizedRarity;
   const remoteFrame = useCardFrameDefinition(normalizedCardType, normalizedRarity);
   const frameSettings = frameOverride?.enabled === false
     ? null

@@ -63,6 +63,21 @@ export function presentationCueDrafts(events: GameEvent[], startIndex: number) {
           });
         }
         break;
+      case "STAT_CHANGED":
+        if ((event.delta ?? 0) !== 0) {
+          const delta = event.delta ?? 0;
+          drafts.push({
+            id,
+            kind: delta > 0
+              ? event.stat === "health" || event.stat === "maxHealth" ? "HEAL" : "BUFF"
+              : "DEBUFF",
+            label: `${delta > 0 ? "+" : ""}${delta} ${event.stat?.toUpperCase() ?? "STAT"}`,
+            value: delta,
+            ...target,
+            duration: 320,
+          });
+        }
+        break;
       case "CARD_RETIRED":
         drafts.push({ id, kind: "RETIRE", label: "RETIRE", ...target, duration: 400 });
         break;

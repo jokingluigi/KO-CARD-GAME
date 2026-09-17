@@ -4,18 +4,19 @@ import type { CSSProperties } from "react";
 import { CardRenderer } from "./card-renderer";
 import { getCardDefinition } from "@/game";
 import type { CardPlayAnimationState } from "./card-play-animation-utils";
+import { PRESENTATION_CONFIG, prefersReducedMotion } from "./presentation-config";
 
 export const TECHNIQUE_REVEAL_HOLD_MS = 1600;
-export const TECHNIQUE_REVEAL_TOTAL_MS = 2200;
+export const TECHNIQUE_REVEAL_TOTAL_MS = PRESENTATION_CONFIG.techniqueRevealMs;
 
 function animationDuration(animation: CardPlayAnimationState) {
-  const reducedMotion = window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
+  const reducedMotion = prefersReducedMotion();
   if (reducedMotion) return 180;
   if (animation.kind === "TECHNIQUE") return TECHNIQUE_REVEAL_TOTAL_MS;
-  if (animation.impactLevel === "VERY_HEAVY") return 580;
-  if (animation.impactLevel === "HEAVY") return 540;
-  if (animation.impactLevel === "LIGHT") return 420;
-  return 480;
+  if (animation.impactLevel === "VERY_HEAVY") return PRESENTATION_CONFIG.veryHeavyLandingMs;
+  if (animation.impactLevel === "HEAVY") return PRESENTATION_CONFIG.heavyLandingMs;
+  if (animation.impactLevel === "LIGHT") return PRESENTATION_CONFIG.lightLandingMs;
+  return PRESENTATION_CONFIG.cardPlayMs;
 }
 
 export function CardPlayAnimation({

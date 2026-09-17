@@ -16,6 +16,23 @@ export function normalizeCardRarity(value?: unknown): CardRarity {
   return value === 'LEGENDARY' || value === 'CHAMPION' || value === 'TOKEN' ? value : 'NORMAL';
 }
 
+export function allowedCardRarities(cardType: 'WRESTLER' | 'TECHNIQUE'): CardRarity[] {
+  return cardType === 'TECHNIQUE'
+    ? ['NORMAL', 'TOKEN']
+    : ['NORMAL', 'LEGENDARY', 'CHAMPION', 'TOKEN'];
+}
+
+export function normalizeCardRarityForType(
+  cardType: 'WRESTLER' | 'TECHNIQUE' | undefined,
+  value?: unknown,
+): CardRarity {
+  const rarity = normalizeCardRarity(value);
+  if (cardType === 'TECHNIQUE' && (rarity === 'LEGENDARY' || rarity === 'CHAMPION')) {
+    return 'NORMAL';
+  }
+  return rarity;
+}
+
 export type ImageDisplayMode = 'COVER' | 'CONTAIN' | 'CUSTOM';
 
 export interface ImageDisplaySettings {

@@ -693,9 +693,14 @@ function parseCardInput(value: unknown): CardInput | null {
   const input = value as Record<string, unknown>;
   const name = typeof input.name === "string" ? input.name.trim() : "";
   const text = typeof input.text === "string" ? input.text.trim() : "";
-  const rarity = CARD_RARITIES.includes(input.rarity as (typeof CARD_RARITIES)[number])
+  const cardType = input.cardType === "TECHNIQUE" ? "TECHNIQUE" : "WRESTLER";
+  const requestedRarity = CARD_RARITIES.includes(input.rarity as (typeof CARD_RARITIES)[number])
     ? input.rarity as (typeof CARD_RARITIES)[number]
     : "NORMAL";
+  const rarity = cardType === "TECHNIQUE" &&
+    (requestedRarity === "LEGENDARY" || requestedRarity === "CHAMPION")
+    ? input.isToken === true ? "TOKEN" : "NORMAL"
+    : requestedRarity;
   const explicitEffectId =
     typeof input.effectId === "string" && input.effectId.trim()
       ? input.effectId.trim()
@@ -770,7 +775,7 @@ function parseCardInput(value: unknown): CardInput | null {
 
   return {
     name,
-    cardType: input.cardType as CardInput["cardType"],
+    cardType: cardType as CardInput["cardType"],
     rarity,
     cost: input.cost as number,
     attack: input.attack as number,

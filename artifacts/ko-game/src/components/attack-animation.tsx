@@ -4,6 +4,7 @@ import { CardRenderer } from "./card-renderer";
 import { getCardDefinition } from "@/game";
 import type { AttackAnimationState } from "./attack-animation-utils";
 import { attackAnimationDuration } from "./attack-animation-utils";
+import { PRESENTATION_CONFIG, prefersReducedMotion } from "./presentation-config";
 
 export function AttackAnimation({
   animation,
@@ -22,10 +23,12 @@ export function AttackAnimation({
   onCompleteRef.current = onComplete;
   const definition = getCardDefinition(animation.attacker.definitionId);
   const { source, target } = animation.geometry;
-  const duration = window.matchMedia?.("(prefers-reduced-motion: reduce)").matches
+  const duration = prefersReducedMotion()
     ? 140
     : attackAnimationDuration(animation.currentAttack);
-  const impactDelay = Math.round(duration * 0.56);
+  const impactDelay = prefersReducedMotion()
+    ? 70
+    : PRESENTATION_CONFIG.attackWindupMs + Math.round(duration * 0.48);
   const dx = target.left + target.width / 2 - (source.left + source.width / 2);
   const dy = target.top + target.height / 2 - (source.top + source.height / 2);
   const style = {

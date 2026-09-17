@@ -3,6 +3,7 @@ import type { CSSProperties } from "react";
 
 import { getCardDefinition, type CardInstance } from "@/game";
 import { CardRenderer } from "./card-renderer";
+import { PRESENTATION_CONFIG, prefersReducedMotion } from "./presentation-config";
 
 export type CardLeaveKind = "RETIRE" | "DESTROY" | "REMOVE";
 
@@ -20,9 +21,13 @@ export type CardLeaveAnimationState = {
 };
 
 function durationFor(kind: CardLeaveKind) {
-  const reducedMotion = window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
+  const reducedMotion = prefersReducedMotion();
   if (reducedMotion) return 140;
-  return kind === "DESTROY" ? 360 : kind === "REMOVE" ? 280 : 440;
+  return kind === "DESTROY"
+    ? PRESENTATION_CONFIG.destroyMs
+    : kind === "REMOVE"
+      ? PRESENTATION_CONFIG.removeMs
+      : PRESENTATION_CONFIG.retireMs;
 }
 
 export function CardLeaveAnimation({

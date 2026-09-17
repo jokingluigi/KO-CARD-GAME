@@ -281,6 +281,11 @@ export function attack(
     );
     const attackerDamage = attacker.currentAttack +
       getDamageModifierBonus(state, attackingPlayerId, attacker);
+    const directChampionDodges = Boolean(
+      directChampion &&
+      directChampion.dodgeAvailable &&
+      hasKeyword(directChampion, 'DODGE'),
+    );
     const damagedDirectChampion = directChampion
       ? receiveDamage(directChampion, attackerDamage)
       : null;
@@ -337,7 +342,7 @@ export function attack(
                 cardInstanceId: damagedDirectChampion.instanceId,
               }
             : { type: 'PLAYER', playerId: target.playerId },
-          reason: 'BASIC_ATTACK',
+          reason: directChampionDodges ? 'DODGE' : 'BASIC_ATTACK',
           sourceSnapshot: {
             playerId: attackingPlayerId,
             cardInstanceId: attacker.instanceId,
@@ -368,8 +373,8 @@ export function attack(
                 cardInstanceId: damagedDirectChampion.instanceId,
               }
             : { type: 'PLAYER', playerId: target.playerId },
-          reason: 'BASIC_ATTACK',
-          amount: attackerDamage,
+          reason: directChampionDodges ? 'DODGE' : 'BASIC_ATTACK',
+          amount: directChampionDodges ? 0 : attackerDamage,
         },
       ],
     };

@@ -24,6 +24,7 @@ import {
   DEFAULT_IMAGE_DISPLAY_SETTINGS,
   normalizeImageDisplaySettings,
   normalizeCardRarity,
+  allowedCardRarities,
   type CardRarity,
   type ImageDisplayMode,
   type ImageDisplaySettings,
@@ -347,6 +348,15 @@ export function AdminCardManager({
   const imageInputRef = useRef<HTMLInputElement>(null);
   const form = useForm<CardFormValues>({ defaultValues: EMPTY_CARD });
   const preview = form.watch();
+  const previewCardType = preview.cardType as CardType;
+
+  useEffect(() => {
+    if (previewCardType !== "TECHNIQUE") return;
+    const rarity = form.getValues("rarity");
+    if (rarity === "LEGENDARY" || rarity === "CHAMPION") {
+      form.setValue("rarity", "NORMAL", { shouldDirty: true });
+    }
+  }, [form, previewCardType]);
 
   const loadCards = useCallback(async () => {
     setIsLoading(true);
@@ -434,7 +444,7 @@ export function AdminCardManager({
     form.reset({
       name: card.name,
       cardType: card.cardType,
-      rarity: normalizeCardRarity(card.rarity),
+      rarity: normalizeCardRarity(card.cardType === "TECHNIQUE" && card.isToken ? "TOKEN" : card.rarity),
       cost: card.cost,
       attack: card.attack,
       health: card.health,
@@ -1101,7 +1111,7 @@ export function AdminCardManager({
                   </div>
                </div>
                <label className="space-y-1.5"><span className="text-xs font-bold text-neutral-400">카드 종류</span><select {...form.register("cardType")} data-testid="input-card-card-type" className="w-full rounded border border-neutral-700 bg-neutral-900 px-3 py-2"><option value="WRESTLER">선수</option><option value="TECHNIQUE">기술</option></select></label>
-               <label className="space-y-1.5"><span className="text-xs font-bold text-neutral-400">카드 등급</span><select {...form.register("rarity")} data-testid="input-card-rarity" className="w-full rounded border border-neutral-700 bg-neutral-900 px-3 py-2">{(["NORMAL", "LEGENDARY", "CHAMPION"] as const).map((rarity) => <option key={rarity} value={rarity}>{CARD_RARITY_LABELS[rarity]}</option>)}</select></label>
+                <label className="space-y-1.5"><span className="text-xs font-bold text-neutral-400">카드 등급</span><select {...form.register("rarity")} data-testid="input-card-rarity" className="w-full rounded border border-neutral-700 bg-neutral-900">{allowedCardRarities(previewCardType).map((rarity) => <option key={rarity} value={rarity}>{CARD_RARITY_LABELS[rarity]}</option>)}</select></label>
               <div className="grid grid-cols-3 gap-2">
                 {(["cost", "attack", "health"] as const).map((field) => <label key={field} className="space-y-1.5"><span className="text-xs font-bold text-neutral-400">{{ cost: "비용", attack: "공격력", health: "체력" }[field]}</span><input type="number" min={0} max={999} {...form.register(field, { required: true, valueAsNumber: true })} data-testid={`input-card-${field}`} className="w-full rounded border border-neutral-700 bg-neutral-900 px-2 py-2 outline-none focus:border-primary" /></label>)}
               </div>
