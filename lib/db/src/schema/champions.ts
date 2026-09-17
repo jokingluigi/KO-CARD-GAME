@@ -1,4 +1,4 @@
-import { boolean, integer, jsonb, pgTable, text, timestamp } from "drizzle-orm/pg-core";
+import { boolean, integer, jsonb, pgTable, real, text, timestamp } from "drizzle-orm/pg-core";
 
 export const championsTable = pgTable("champions", {
   id: text("id").primaryKey(),
@@ -6,6 +6,10 @@ export const championsTable = pgTable("champions", {
   description: text("description").notNull().default(""),
   imageAssetId: text("image_asset_id"),
   imageUrl: text("image_url"),
+  imageDisplayMode: text("image_display_mode").notNull().default("COVER"),
+  imageScale: real("image_scale").notNull().default(1),
+  imagePositionX: real("image_position_x").notNull().default(50),
+  imagePositionY: real("image_position_y").notNull().default(50),
   questCompletedPortraitEnabled: boolean("quest_completed_portrait_enabled").notNull().default(false),
   questCompletedPortraitAssetId: text("quest_completed_portrait_asset_id"),
   questCompletedPortraitUrl: text("quest_completed_portrait_url"),

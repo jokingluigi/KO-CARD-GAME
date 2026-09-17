@@ -30,6 +30,10 @@ export type CollectionChampion = {
   name: string;
   description: string;
   imageUrl: string | null;
+  imageDisplayMode: "COVER" | "CONTAIN" | "CUSTOM";
+  imageScale: number;
+  imagePositionX: number;
+  imagePositionY: number;
   maxHealth: number;
   abilityName: string;
   abilityCost: number;

@@ -1,8 +1,14 @@
 import { useCallback, useEffect, useRef, useState, type Dispatch, type SetStateAction } from "react";
-import { Ban, CheckCircle2, Copy, FilePenLine, ImagePlus, Plus, Search, Trash2, X } from "lucide-react";
+import { Ban, CheckCircle2, Copy, FilePenLine, ImagePlus, Maximize2, Plus, RotateCcw, Search, Trash2, X } from "lucide-react";
 import { AdminAudioField } from "./admin-audio-field";
 import { AdminUnifiedEffectPrompt } from "./admin-unified-effect-prompt";
+import { CardArtwork } from "./card-artwork";
 import { useToast } from "../hooks/use-toast";
+import {
+  DEFAULT_IMAGE_DISPLAY_SETTINGS,
+  type ImageDisplayMode,
+  type ImageDisplaySettings,
+} from "../game/cards/types";
 
 const adminApiBase = `${import.meta.env.BASE_URL.replace(/\/$/, "")}/api/admin`;
 type Status = "DRAFT" | "PUBLISHED" | "DISABLED";
@@ -23,6 +29,7 @@ type Champion = {
   id: string; name: string; description: string; imageUrl: string | null; imageAssetId: string | null;
   imageUploadToken: string | null;
   imageFileName: string | null;
+  imageDisplayMode: ImageDisplayMode; imageScale: number; imagePositionX: number; imagePositionY: number;
   questCompletedPortraitEnabled: boolean;
   questCompletedPortraitAssetId: string | null; questCompletedPortraitUrl: string | null;
   questCompletedPortraitUploadToken: string | null;
@@ -72,7 +79,8 @@ type FullAnalysis = {
   tokenReferenceError?: string;
 };
 const empty: Form = {
-  name: "", description: "", imageUrl: null, imageAssetId: null, imageUploadToken: null, imageFileName: null, maxHealth: 20,
+  name: "", description: "", imageUrl: null, imageAssetId: null, imageUploadToken: null, imageFileName: null,
+  ...DEFAULT_IMAGE_DISPLAY_SETTINGS, maxHealth: 20,
   questCompletedPortraitEnabled: false, questCompletedPortraitAssetId: null, questCompletedPortraitUrl: null,
   questCompletedPortraitUploadToken: null, questCompletedPortraitFileName: null,
   abilityName: "", abilityCost: 0, abilityText: "", abilityEffects: {},
@@ -370,7 +378,12 @@ export function AdminChampionManager({ onUnauthorized }: { onUnauthorized: () =>
      setAnalyzingKey(null);
       setEditing(champion ?? null); setTokenSearch(""); setBasicPortraitLocalUrl(null); setPortraitLocalUrl(null); setForm(champion ? {
        name: champion.name, description: champion.description, imageUrl: champion.imageUrl,
-       imageAssetId: champion.imageAssetId, imageUploadToken: null, imageFileName: null, maxHealth: champion.maxHealth, abilityName: champion.abilityName,
+       imageAssetId: champion.imageAssetId, imageUploadToken: null, imageFileName: null,
+       imageDisplayMode: champion.imageDisplayMode ?? DEFAULT_IMAGE_DISPLAY_SETTINGS.imageDisplayMode,
+       imageScale: champion.imageScale ?? DEFAULT_IMAGE_DISPLAY_SETTINGS.imageScale,
+       imagePositionX: champion.imagePositionX ?? DEFAULT_IMAGE_DISPLAY_SETTINGS.imagePositionX,
+       imagePositionY: champion.imagePositionY ?? DEFAULT_IMAGE_DISPLAY_SETTINGS.imagePositionY,
+       maxHealth: champion.maxHealth, abilityName: champion.abilityName,
        questCompletedPortraitEnabled: champion.questCompletedPortraitEnabled ?? false,
        questCompletedPortraitAssetId: champion.questCompletedPortraitAssetId ?? null,
        questCompletedPortraitUrl: champion.questCompletedPortraitUrl ?? null,
@@ -532,7 +545,17 @@ export function AdminChampionManager({ onUnauthorized }: { onUnauthorized: () =>
     <div className="mb-4 flex gap-2"><label className="flex flex-1 items-center gap-2 rounded border border-neutral-800 px-3"><Search className="h-4 w-4"/><input value={search} onChange={(e)=>setSearch(e.target.value)} className="w-full bg-transparent py-2 outline-none" placeholder="챔피언 검색"/></label>
       <select value={status} onChange={(e)=>setStatus(e.target.value)} className={input}><option value="">모든 상태</option><option>DRAFT</option><option>PUBLISHED</option><option>DISABLED</option></select></div>
      <div className="grid gap-3 md:grid-cols-2">{champions.map((champion)=><article key={champion.id} className="rounded-lg border border-neutral-800 bg-neutral-950 p-4">
-      <div className="flex gap-4">{champion.imageUrl ? <img src={champion.imageUrl} alt="" className="h-24 w-20 rounded object-cover"/> : <div className="h-24 w-20 rounded bg-neutral-900"/>}
+      <div className="flex gap-4">{champion.imageUrl ? (
+        <CardArtwork
+          src={champion.imageUrl}
+          alt=""
+          className="h-24 w-20 rounded"
+          imageDisplayMode={champion.imageDisplayMode}
+          imageScale={champion.imageScale}
+          imagePositionX={champion.imagePositionX}
+          imagePositionY={champion.imagePositionY}
+        />
+      ) : <div className="h-24 w-20 rounded bg-neutral-900"/>}
         <div><div className="text-xs text-primary">{champion.status} · v{champion.version}</div><h3 className="text-lg font-black">{champion.name}</h3><p className="text-xs text-neutral-400">HP {champion.maxHealth} · {champion.abilityCost}G</p><p className="mt-1 text-sm">{champion.abilityName}</p>{champion.hasQuest && <p className="mt-1 text-xs text-amber-300">Quest: {champion.questName} (0/{champion.questProgressRequired})</p>}</div></div>
        <div className="mt-3 flex flex-wrap gap-2 text-xs"><button type="button" onClick={()=>editor(champion)} className="rounded border px-2 py-1"><FilePenLine className="mr-1 inline h-3 w-3"/>수정</button><button type="button" onClick={()=>void mutate(champion.id,"duplicate")} className="rounded border px-2 py-1"><Copy className="mr-1 inline h-3 w-3"/>복제</button><button type="button" disabled={busy} onClick={()=>void deleteChampion(champion)} data-testid={`button-delete-champion-${champion.id}`} className="rounded border border-red-900 px-2 py-1 text-red-400 disabled:opacity-40"><Trash2 className="mr-1 inline h-3 w-3"/>삭제</button>{champion.status!=="PUBLISHED"&&<button type="button" onClick={()=>void mutate(champion.id,"status",{status:"PUBLISHED"})} className="rounded border border-emerald-800 px-2 py-1 text-emerald-400"><CheckCircle2 className="mr-1 inline h-3 w-3"/>공개</button>}{champion.status!=="DISABLED"&&<button type="button" onClick={()=>void mutate(champion.id,"status",{status:"DISABLED"})} className="rounded border border-red-900 px-2 py-1 text-red-400"><Ban className="mr-1 inline h-3 w-3"/>비활성화</button>}</div>
     </article>)}</div>
@@ -555,31 +578,44 @@ export function AdminChampionManager({ onUnauthorized }: { onUnauthorized: () =>
             <div className="rounded border border-neutral-800 bg-neutral-900/40 p-3">
               <div className="text-xs font-bold text-neutral-300">기본 초상화</div>
               <p className="mt-1 text-[10px] text-neutral-500">게임 시작부터 표시됩니다. 퀘스트 완료 초상화가 없으면 이 이미지를 계속 사용합니다.</p>
-              <div className="mt-3 flex flex-wrap items-center gap-3">
-                {basicPortraitLocalUrl || form.imageUrl ? (
-                  <img src={basicPortraitLocalUrl ?? form.imageUrl ?? undefined} alt="" className="h-24 w-20 rounded border border-neutral-700 object-cover" />
-                ) : (
-                  <div className="flex h-24 w-20 items-center justify-center rounded border border-dashed border-neutral-700 text-[10px] text-neutral-600">이미지 없음</div>
-                )}
-                <div className="flex flex-wrap gap-2">
-                  <button
-                    type="button"
-                    disabled={basicPortraitUploading}
-                    onClick={(event) => {
-                      event.preventDefault();
-                      event.stopPropagation();
-                      basicPortraitInputRef.current?.click();
-                    }}
-                    className="flex items-center gap-2 rounded border border-neutral-700 px-3 py-2 text-xs font-bold hover:border-primary hover:text-primary disabled:opacity-40"
-                  >
-                    <ImagePlus className="h-4 w-4" />
-                    {basicPortraitUploading ? "업로드 중..." : basicPortraitLocalUrl || form.imageUrl ? "이미지 변경" : "이미지 파일 선택"}
-                  </button>
-                  {(basicPortraitLocalUrl || form.imageUrl) && (
-                    <button type="button" disabled={basicPortraitUploading} onClick={removeBasicPortrait} className="flex items-center gap-2 rounded border border-red-900 px-3 py-2 text-xs font-bold text-red-400 hover:bg-red-950 disabled:opacity-40">
-                      <Trash2 className="h-4 w-4" /> 이미지 제거
+              <div className="mt-3 grid gap-3 md:grid-cols-[auto_1fr]">
+                <CardArtwork
+                  src={basicPortraitLocalUrl ?? form.imageUrl}
+                  alt={form.name || "챔피언 초상화"}
+                  className="h-44 w-32 rounded border border-neutral-700"
+                  imageDisplayMode={form.imageDisplayMode}
+                  imageScale={form.imageScale}
+                  imagePositionX={form.imagePositionX}
+                  imagePositionY={form.imagePositionY}
+                  interactive
+                  showHint={Boolean(basicPortraitLocalUrl || form.imageUrl)}
+                  onPositionChange={(position) => setForm((current) => ({ ...current, ...position }))}
+                />
+                <div className="space-y-3">
+                  <div className="flex flex-wrap gap-2">
+                    <button
+                      type="button"
+                      disabled={basicPortraitUploading}
+                      onClick={(event) => {
+                        event.preventDefault();
+                        event.stopPropagation();
+                        basicPortraitInputRef.current?.click();
+                      }}
+                      className="flex items-center gap-2 rounded border border-neutral-700 px-3 py-2 text-xs font-bold hover:border-primary hover:text-primary disabled:opacity-40"
+                    >
+                      <ImagePlus className="h-4 w-4" />
+                      {basicPortraitUploading ? "업로드 중..." : basicPortraitLocalUrl || form.imageUrl ? "이미지 변경" : "이미지 파일 선택"}
                     </button>
-                  )}
+                    {(basicPortraitLocalUrl || form.imageUrl) && (
+                      <button type="button" disabled={basicPortraitUploading} onClick={removeBasicPortrait} className="flex items-center gap-2 rounded border border-red-900 px-3 py-2 text-xs font-bold text-red-400 hover:bg-red-950 disabled:opacity-40">
+                        <Trash2 className="h-4 w-4" /> 이미지 제거
+                      </button>
+                    )}
+                  </div>
+                  <ChampionImageDisplayControls
+                    settings={form}
+                    onChange={(patch) => setForm((current) => ({ ...current, ...patch }))}
+                  />
                 </div>
               </div>
               <p className="mt-2 text-[10px] text-neutral-600">PNG, JPG, JPEG, WEBP · 저장 전 미리보기</p>
@@ -610,7 +646,15 @@ export function AdminChampionManager({ onUnauthorized }: { onUnauthorized: () =>
               </div>
               <div className="mt-3 flex flex-wrap items-center gap-3">
                 {portraitLocalUrl || form.questCompletedPortraitUrl ? (
-                  <img src={portraitLocalUrl ?? form.questCompletedPortraitUrl ?? undefined} alt="" className="h-24 w-20 rounded border border-neutral-700 object-cover" />
+                  <CardArtwork
+                    src={portraitLocalUrl ?? form.questCompletedPortraitUrl}
+                    alt={form.name || "퀘스트 완료 초상화"}
+                    className="h-24 w-20 rounded border border-neutral-700"
+                    imageDisplayMode={form.imageDisplayMode}
+                    imageScale={form.imageScale}
+                    imagePositionX={form.imagePositionX}
+                    imagePositionY={form.imagePositionY}
+                  />
                 ) : (
                   <div className="flex h-24 w-20 items-center justify-center rounded border border-dashed border-neutral-700 text-[10px] text-neutral-600">이미지 없음</div>
                 )}
@@ -976,4 +1020,131 @@ function QuestConditionField({ value, onChange, onAnalyze, onApply, onPrompt, on
       prompting={prompting}
     />
   </label>;
+}
+
+function ChampionImageDisplayControls({
+  settings,
+  onChange,
+}: {
+  settings: Pick<ImageDisplaySettings, "imageDisplayMode" | "imageScale" | "imagePositionX" | "imagePositionY">;
+  onChange: (patch: Partial<ImageDisplaySettings>) => void;
+}) {
+  return (
+    <div className="space-y-3 rounded border border-neutral-800 bg-neutral-950/50 p-3">
+      <div className="text-xs font-bold text-neutral-400">이미지 표시 설정</div>
+      <div className="grid grid-cols-3 gap-2">
+        {([
+          ["COVER", "채우기"],
+          ["CONTAIN", "전체 보기"],
+          ["CUSTOM", "수동 조절"],
+        ] as const).map(([mode, label]) => (
+          <button
+            key={mode}
+            type="button"
+            onClick={() => onChange({ imageDisplayMode: mode })}
+            className={`rounded border px-2 py-2 text-xs font-bold ${
+              settings.imageDisplayMode === mode
+                ? "border-primary bg-primary/15 text-primary"
+                : "border-neutral-700 text-neutral-400 hover:border-neutral-500"
+            }`}
+            data-testid={`button-champion-image-mode-${mode.toLowerCase()}`}
+          >
+            {label}
+          </button>
+        ))}
+      </div>
+      <ChampionImageSlider
+        label="확대/축소"
+        value={settings.imageScale}
+        min={0.5}
+        max={2}
+        step={0.01}
+        displayValue={`${Math.round(settings.imageScale * 100)}%`}
+        onChange={(value) => onChange({ imageScale: value })}
+        testId="input-champion-image-scale"
+      />
+      <ChampionImageSlider
+        label="좌우 위치"
+        value={settings.imagePositionX}
+        min={0}
+        max={100}
+        step={0.1}
+        displayValue={`${Math.round(settings.imagePositionX)}`}
+        onChange={(value) => onChange({ imagePositionX: value })}
+        testId="input-champion-image-position-x"
+      />
+      <ChampionImageSlider
+        label="상하 위치"
+        value={settings.imagePositionY}
+        min={0}
+        max={100}
+        step={0.1}
+        displayValue={`${Math.round(settings.imagePositionY)}`}
+        onChange={(value) => onChange({ imagePositionY: value })}
+        testId="input-champion-image-position-y"
+      />
+      <div className="flex flex-wrap gap-2">
+        <button
+          type="button"
+          onClick={() => onChange({ ...DEFAULT_IMAGE_DISPLAY_SETTINGS })}
+          className="flex items-center gap-1.5 rounded border border-neutral-700 px-2.5 py-1.5 text-xs font-bold text-neutral-300 hover:border-primary hover:text-primary"
+          data-testid="button-reset-champion-image-position"
+        >
+          <RotateCcw className="h-3.5 w-3.5" /> 이미지 위치 초기화
+        </button>
+        <button
+          type="button"
+          onClick={() => onChange({
+            imageDisplayMode: "CONTAIN",
+            imageScale: 1,
+            imagePositionX: 50,
+            imagePositionY: 50,
+          })}
+          className="flex items-center gap-1.5 rounded border border-neutral-700 px-2.5 py-1.5 text-xs font-bold text-neutral-300 hover:border-primary hover:text-primary"
+          data-testid="button-fit-champion-image"
+        >
+          <Maximize2 className="h-3.5 w-3.5" /> 이미지 전체 보기
+        </button>
+      </div>
+    </div>
+  );
+}
+
+function ChampionImageSlider({
+  label,
+  value,
+  min,
+  max,
+  step,
+  displayValue,
+  onChange,
+  testId,
+}: {
+  label: string;
+  value: number;
+  min: number;
+  max: number;
+  step: number;
+  displayValue: string;
+  onChange: (value: number) => void;
+  testId: string;
+}) {
+  return (
+    <label className="block space-y-1">
+      <span className="flex items-center justify-between text-[11px] font-bold text-neutral-400">
+        <span>{label}</span>
+        <span className="text-primary">{displayValue}</span>
+      </span>
+      <input
+        type="range"
+        min={min}
+        max={max}
+        step={step}
+        value={value}
+        onChange={(event) => onChange(Number(event.target.value))}
+        className="w-full accent-primary"
+        data-testid={testId}
+      />
+    </label>
+  );
 }

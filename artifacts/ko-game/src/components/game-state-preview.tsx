@@ -1,5 +1,6 @@
 import React from 'react';
 import { CardRenderer } from './card-renderer';
+import { CardArtwork } from './card-artwork';
 import {
   getCardDefinition,
   getLegalActions,
@@ -505,7 +506,15 @@ export function GameStatePreview({
                        }}
                  >
                    {opponentChampionPortrait && (
-                     <img src={opponentChampionPortrait} alt="" className="absolute inset-0 h-full w-full object-cover" />
+                     <CardArtwork
+                       src={opponentChampionPortrait}
+                       alt=""
+                       className="absolute inset-0 h-full w-full"
+                       imageDisplayMode={opp.champion?.imageDisplayMode}
+                       imageScale={opp.champion?.imageScale}
+                       imagePositionX={opp.champion?.imagePositionX}
+                       imagePositionY={opp.champion?.imagePositionY}
+                     />
                    )}
                    <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-black/20" />
                    {opponentChampionProtected && (
@@ -823,9 +832,17 @@ export function GameStatePreview({
                     }}
                     className={`ko-player-champion relative flex h-28 w-20 shrink-0 flex-col items-center justify-center overflow-hidden rounded-sm border-2 bg-neutral-900 md:h-40 md:w-28 ${effectTargeting && validEffectTargetIds.has(me.id) ? 'cursor-crosshair border-amber-400 shadow-[0_0_15px_rgba(251,191,36,0.5)]' : 'border-blue-600 shadow-[0_0_15px_rgba(37,99,235,0.2)]'} ${activePresentationChampionId === me.champion?.id || activePresentationCue?.playerId === me.id ? 'presentation-card-pulse' : ''}`}
                   >
-                   {playerChampionPortrait && (
-                     <img src={playerChampionPortrait} alt="" className="absolute inset-0 h-full w-full object-cover" />
-                   )}
+                    {playerChampionPortrait && (
+                      <CardArtwork
+                        src={playerChampionPortrait}
+                        alt=""
+                        className="absolute inset-0 h-full w-full"
+                        imageDisplayMode={me.champion?.imageDisplayMode}
+                        imageScale={me.champion?.imageScale}
+                        imagePositionX={me.champion?.imagePositionX}
+                        imagePositionY={me.champion?.imagePositionY}
+                      />
+                    )}
                    <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-black/20" />
                    {playerChampionProtected && (
                      <span className="pointer-events-none absolute bottom-1 left-1/2 z-20 -translate-x-1/2 rounded border border-cyan-300/70 bg-cyan-950/90 px-1.5 py-0.5 text-[7px] font-black text-cyan-200 md:text-[9px]">

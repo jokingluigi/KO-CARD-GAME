@@ -1,5 +1,6 @@
 import type { GameEventType } from '../events/types';
 import type { CardEffect } from '../effects/types';
+import type { ImageDisplayMode } from '../cards/types';
 
 export type ChampionTrackedEvent = GameEventType | 'WRESTLER_RETIRED';
 export type ChampionQuestCardType = 'WRESTLER' | 'TECHNIQUE';
@@ -51,6 +52,10 @@ export interface ChampionDefinition {
   description?: string;
   imageAssetId?: string | null;
   imageUrl?: string | null;
+  imageDisplayMode?: ImageDisplayMode;
+  imageScale?: number;
+  imagePositionX?: number;
+  imagePositionY?: number;
   questCompletedPortraitEnabled?: boolean;
   questCompletedPortraitAssetId?: string | null;
   questCompletedPortraitUrl?: string | null;
@@ -79,6 +84,10 @@ export interface ChampionState {
   questProgress: number;
   questCompleted: boolean;
   imageUrl?: string | null;
+  imageDisplayMode?: ImageDisplayMode;
+  imageScale?: number;
+  imagePositionX?: number;
+  imagePositionY?: number;
   questCompletedPortraitEnabled?: boolean;
   questCompletedPortraitAssetId?: string | null;
   questCompletedPortraitUrl?: string | null;

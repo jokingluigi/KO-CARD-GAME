@@ -22,6 +22,10 @@ export type DeckChampion = {
   name: string;
   description: string;
   imageUrl: string | null;
+  imageDisplayMode: "COVER" | "CONTAIN" | "CUSTOM";
+  imageScale: number;
+  imagePositionX: number;
+  imagePositionY: number;
   maxHealth: number;
   status: "DRAFT" | "PUBLISHED" | "DISABLED" | string;
 };

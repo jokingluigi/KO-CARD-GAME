@@ -123,6 +123,8 @@ type CardInput = {
 type ChampionInput = {
   name: string; description: string; imageAssetId: string | null; imageUrl: string | null;
   imageUploadToken: string | null;
+  imageDisplayMode: (typeof IMAGE_DISPLAY_MODES)[number];
+  imageScale: number; imagePositionX: number; imagePositionY: number;
   questCompletedPortraitEnabled: boolean;
   questCompletedPortraitAssetId: string | null; questCompletedPortraitUrl: string | null;
   questCompletedPortraitUploadToken: string | null;
@@ -187,6 +189,19 @@ function parseChampionInput(value: unknown): ChampionInput | null {
   const imageAssetId = text("imageAssetId");
   const imageUrl = text("imageUrl");
   const imageUploadToken = text("imageUploadToken");
+  const imageDisplayMode = IMAGE_DISPLAY_MODES.includes(input.imageDisplayMode as (typeof IMAGE_DISPLAY_MODES)[number])
+    ? input.imageDisplayMode as (typeof IMAGE_DISPLAY_MODES)[number]
+    : "COVER";
+  const decimal = (key: string, fallback: number, min: number, max: number) => {
+    const rawValue = input[key];
+    const value = typeof rawValue === "number"
+      ? rawValue
+      : typeof rawValue === "string" && rawValue.trim() ? Number(rawValue) : Number.NaN;
+    return Number.isFinite(value) ? Math.min(max, Math.max(min, value)) : fallback;
+  };
+  const imageScale = decimal("imageScale", 1, 0.5, 2);
+  const imagePositionX = decimal("imagePositionX", 50, 0, 100);
+  const imagePositionY = decimal("imagePositionY", 50, 0, 100);
   const questCompletedPortraitAssetId = text("questCompletedPortraitAssetId");
   const questCompletedPortraitUrl = text("questCompletedPortraitUrl");
   const questCompletedPortraitUploadToken = text("questCompletedPortraitUploadToken");
@@ -223,7 +238,8 @@ function parseChampionInput(value: unknown): ChampionInput | null {
        questProgressRequired === null ||
        !text("questRewardText", true))) return null;
   return {
-    name, description: text("description") ?? "", imageAssetId, imageUrl, imageUploadToken,
+     name, description: text("description") ?? "", imageAssetId, imageUrl, imageUploadToken,
+     imageDisplayMode, imageScale, imagePositionX, imagePositionY,
      questCompletedPortraitEnabled,
      questCompletedPortraitAssetId, questCompletedPortraitUrl,
      questCompletedPortraitUploadToken, maxHealth, abilityName, abilityCost,

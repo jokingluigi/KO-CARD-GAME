@@ -1,10 +1,12 @@
 import type { ChampionAbility, ChampionDefinition, ChampionEffect, ChampionQuest, ChampionQuestCardType } from "./types";
 import type { CardEffect } from "../effects/types";
+import type { ImageDisplayMode } from "../cards/types";
 import { ACTIONS } from "@workspace/effect-registry";
 
 type Structured = { effects?: Array<{ action?: string; target?: unknown; values?: unknown }> };
 export type PublishedChampionRecord = {
   id: string; name: string; description: string; imageAssetId: string | null; imageUrl: string | null;
+  imageDisplayMode?: ImageDisplayMode; imageScale?: number; imagePositionX?: number; imagePositionY?: number;
   questCompletedPortraitEnabled?: boolean;
   questCompletedPortraitAssetId?: string | null; questCompletedPortraitUrl?: string | null;
   maxHealth: number; abilityName: string; abilityCost: number; abilityText: string; abilityEffects: Structured;
@@ -75,6 +77,8 @@ export function championRecordToDefinition(record: PublishedChampionRecord): Cha
   return {
     id: record.id, name: record.name, description: record.description,
     imageAssetId: record.imageAssetId, imageUrl: record.imageUrl, maxHealth: record.maxHealth,
+    imageDisplayMode: record.imageDisplayMode, imageScale: record.imageScale,
+    imagePositionX: record.imagePositionX, imagePositionY: record.imagePositionY,
     questCompletedPortraitEnabled: record.questCompletedPortraitEnabled,
     questCompletedPortraitAssetId: record.questCompletedPortraitAssetId,
     questCompletedPortraitUrl: record.questCompletedPortraitUrl,

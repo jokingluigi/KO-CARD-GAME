@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { Check, Gift, RotateCcw, Sparkles } from "lucide-react";
 import { CardRenderer } from "@/components/card-renderer";
+import { CardArtwork } from "@/components/card-artwork";
 import { audioManager } from "@/audio/audio-manager";
 import type { PackReward } from "@/lib/collection-client";
 
@@ -93,7 +94,17 @@ export function PackOpening({ packName, rewards, preview = false, onClose, onRep
                     <div className="text-center"><Sparkles className="mx-auto h-8 w-8 text-amber-400" /><p className="mt-3 text-xs font-black text-neutral-400">REVEAL</p></div>
                   ) : reward.rewardType === "CHAMPION_UNLOCK" ? (
                     <div className="p-3 text-center">
-                      {champion?.imageUrl ? <img src={champion.imageUrl} alt="" className="mx-auto aspect-square w-full rounded object-cover" /> : <div className="flex aspect-square items-center justify-center rounded bg-rose-950/50 text-rose-300"><Gift className="h-10 w-10" /></div>}
+                      {champion?.imageUrl ? (
+                        <CardArtwork
+                          src={champion.imageUrl}
+                          alt=""
+                          className="mx-auto aspect-square w-full rounded"
+                          imageDisplayMode={champion.imageDisplayMode}
+                          imageScale={champion.imageScale}
+                          imagePositionX={champion.imagePositionX}
+                          imagePositionY={champion.imagePositionY}
+                        />
+                      ) : <div className="flex aspect-square items-center justify-center rounded bg-rose-950/50 text-rose-300"><Gift className="h-10 w-10" /></div>}
                       <p className="mt-3 text-sm font-black text-rose-200">{reward.alreadyOwned ? "이미 보유한 챔피언" : "챔피언 해금!"}</p>
                       <p className="mt-1 text-xs font-bold">{rewardTitle(reward)}</p>
                     </div>

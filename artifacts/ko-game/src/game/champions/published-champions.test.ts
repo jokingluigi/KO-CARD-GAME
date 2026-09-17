@@ -5,7 +5,8 @@ import { championRecordToDefinition } from "./published-champions";
 test("DB 챔피언을 직렬화 가능한 매치 스냅샷 정의로 변환한다", () => {
   const definition = championRecordToDefinition({
     id: "champion-a", name: "챔피언 A", description: "설명", imageAssetId: null,
-    imageUrl: null, maxHealth: 20, abilityName: "지원", abilityCost: 2,
+     imageUrl: null, imageDisplayMode: "CUSTOM", imageScale: 1.35, imagePositionX: 62.5, imagePositionY: 38,
+     maxHealth: 20, abilityName: "지원", abilityCost: 2,
     abilityText: "강화", abilityEffects: { effects: [{
       action: "BUFF", target: { zone: "HAND", owner: "SELF", selection: "RANDOM", count: 1 },
       values: { attack: 1, health: 1 },
@@ -18,6 +19,10 @@ test("DB 챔피언을 직렬화 가능한 매치 스냅샷 정의로 변환한�
     championTokenDefinitionId: null, status: "PUBLISHED", version: 3,
   });
   assert.equal(definition.maxHealth, 20);
+  assert.equal(definition.imageDisplayMode, "CUSTOM");
+  assert.equal(definition.imageScale, 1.35);
+  assert.equal(definition.imagePositionX, 62.5);
+  assert.equal(definition.imagePositionY, 38);
   assert.equal(definition.version, 3);
   assert.equal(definition.ability.effects[0]?.type, "STRUCTURED");
   assert.equal(definition.quest?.trackedEvent, "CARD_GENERATED");

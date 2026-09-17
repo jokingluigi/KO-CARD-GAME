@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState, type KeyboardEvent } from "react";
 import { ArrowLeft, BookOpen, ChevronDown, Hammer, Search, Shield, Sparkles, Swords, X } from "lucide-react";
 import { CardRenderer } from "@/components/card-renderer";
+import { CardArtwork } from "@/components/card-artwork";
 import {
   Dialog,
   DialogContent,
@@ -78,7 +79,15 @@ function ChampionCollectionItem({ champion, onOpen }: { champion: CollectionCham
     >
       <div className="relative aspect-[4/3] overflow-hidden bg-gradient-to-br from-rose-950/80 to-neutral-950">
         {champion.imageUrl ? (
-          <img src={champion.imageUrl} alt="" className="h-full w-full object-cover transition duration-300 group-hover:scale-105" />
+          <CardArtwork
+            src={champion.imageUrl}
+            alt=""
+            className="h-full w-full transition duration-300 group-hover:scale-105"
+            imageDisplayMode={champion.imageDisplayMode}
+            imageScale={champion.imageScale}
+            imagePositionX={champion.imagePositionX}
+            imagePositionY={champion.imagePositionY}
+          />
         ) : (
           <div className="flex h-full items-center justify-center text-rose-300"><Shield className="h-12 w-12" /></div>
         )}
@@ -379,7 +388,17 @@ function ChampionDetail({ champion }: { champion: CollectionChampion }) {
       </DialogHeader>
       <div className="grid gap-5 sm:grid-cols-[minmax(180px,280px)_1fr] sm:items-start">
         <div className="overflow-hidden rounded-lg border border-rose-900/70 bg-neutral-950">
-          {champion.imageUrl ? <img src={champion.imageUrl} alt={champion.name} className="aspect-square w-full object-cover" /> : <div className="flex aspect-square items-center justify-center text-rose-300"><Shield className="h-20 w-20" /></div>}
+          {champion.imageUrl ? (
+            <CardArtwork
+              src={champion.imageUrl}
+              alt={champion.name}
+              className="aspect-square w-full"
+              imageDisplayMode={champion.imageDisplayMode}
+              imageScale={champion.imageScale}
+              imagePositionX={champion.imagePositionX}
+              imagePositionY={champion.imagePositionY}
+            />
+          ) : <div className="flex aspect-square items-center justify-center text-rose-300"><Shield className="h-20 w-20" /></div>}
         </div>
         <div className="space-y-4">
           <InfoBlock icon={<Swords className="h-4 w-4" />} label={`${champion.abilityName}${champion.abilityCost > 0 ? ` · ${champion.abilityCost} Cost` : ""}`} text={champion.abilityText || champion.description} />

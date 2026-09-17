@@ -4,6 +4,7 @@ import { Link } from "wouter";
 import { AuthPage, AuthLoading } from "@/components/auth-page";
 import { AltInspectProvider, Inspectable } from "@/components/alt-inspector";
 import { CardRenderer } from "@/components/card-renderer";
+import { CardArtwork } from "@/components/card-artwork";
 import { fetchCurrentUser, type AuthUser } from "@/lib/auth-client";
 import {
   deleteDeck,
@@ -143,10 +144,14 @@ function ChampionPortrait({ champion }: { champion: DeckChampion }) {
   return (
     <div className="ko-decks__champion-art" data-testid={`img-champion-${champion.id}`}>
       {champion.imageUrl ? (
-        <img
+        <CardArtwork
           src={champion.imageUrl}
           alt={`${champion.name} 챔피언 초상`}
-          className="aspect-[4/5] w-full object-cover"
+          className="aspect-[4/5] w-full"
+          imageDisplayMode={champion.imageDisplayMode}
+          imageScale={champion.imageScale}
+          imagePositionX={champion.imagePositionX}
+          imagePositionY={champion.imagePositionY}
         />
       ) : (
         <div className="flex aspect-[4/5] items-center justify-center bg-[#211b16] text-center font-display text-[9px] font-bold tracking-[0.12em] text-[#b28a47]">
