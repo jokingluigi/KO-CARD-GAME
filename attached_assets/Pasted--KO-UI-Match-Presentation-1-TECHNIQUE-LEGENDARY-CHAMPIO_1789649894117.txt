@@ -1,0 +1,1099 @@
+현재 KO 카드게임의 카드 UI와 실제 Match Presentation을 개선해줘.
+
+이번 작업 핵심:
+
+1. TECHNIQUE 주문 카드에서 LEGENDARY / CHAMPION 등급 제거
+2. LEGENDARY / CHAMPION 선수 카드의 글씨 위치를 NORMAL 선수 카드와 완전히 동일하게 정렬
+3. 기존에 요청했던 DAMAGE 기반 Screen Shake가 실제 Match에서 작동하도록 복구
+4. 공격/피격/버프/회복/퇴장 등 카드게임다운 자연스러운 Presentation을 공통 시스템으로 강화
+
+중요:
+- 게임 규칙 변경 금지
+- 카드 능력 변경 금지
+- 특정 카드 이름 하드코딩 금지
+- 실제 Game Event 결과를 Presentation이 표현하는 구조 유지
+- Animation이 GameState를 결정하면 안 됨
+- 기존 Presentation Queue를 반드시 재사용
+- 상대/AI 행동도 동일한 Animation 적용
+- 실제 브라우저 Match에서 확인 후 PASS 처리
+
+==================================================
+1. TECHNIQUE 카드 Rarity 단순화
+==================================================
+
+TECHNIQUE 카드에는 앞으로:
+
+NORMAL
+TOKEN
+
+두 종류만 허용.
+
+다음 Technique Rarity는 제거:
+
+LEGENDARY
+CHAMPION
+
+즉:
+
+WRESTLER:
+- NORMAL
+- LEGENDARY
+- CHAMPION
+- TOKEN
+
+TECHNIQUE:
+- NORMAL
+- TOKEN
+
+구조로 정리.
+
+==================================================
+1-A. Card Admin
+==================================================
+
+Card Admin에서:
+
+cardType === TECHNIQUE
+
+이면 Rarity 선택 UI에서:
+
+NORMAL
+TOKEN
+
+만 표시.
+
+LEGENDARY
+CHAMPION
+
+선택지 표시 금지.
+
+cardType을 WRESTLER로 변경하면
+기존 WRESTLER Rarity 선택지는 다시 사용 가능.
+
+==================================================
+1-B. 기존 Technique 데이터 Migration
+==================================================
+
+기존 TECHNIQUE CardDefinition 중:
+
+rarity === LEGENDARY
+또는
+rarity === CHAMPION
+
+인 카드가 존재하면:
+
+isToken === true
+→ TOKEN
+
+그 외
+→ NORMAL
+
+로 안전하게 정규화.
+
+카드 효과 / 이미지 / 음악 / Frame Asset 등은 유지.
+
+==================================================
+1-C. Technique Frame
+==================================================
+
+NORMAL TECHNIQUE:
+→ 기존 보라색 Technique Frame 사용.
+
+TOKEN TECHNIQUE:
+→ 이전에 추가한 TOKEN TECHNIQUE Frame 사용.
+
+Technique에 Wrestler용 Legendary/Champion Frame을
+절대로 적용하지 마.
+
+==================================================
+2. WRESTLER 글씨 배치 통일
+==================================================
+
+현재:
+
+NORMAL 선수 카드와
+
+LEGENDARY 선수 카드
+CHAMPION 선수 카드
+
+사이에서:
+
+- 카드 이름
+- Cost
+- Effect Text
+- Attack
+- Health
+
+위치가 서로 다르게 렌더링되고 있다.
+
+이를 수정.
+
+==================================================
+2-A. NORMAL WRESTLER를 기준 Layout으로 사용
+==================================================
+
+현재 NORMAL WRESTLER에서 사용 중인:
+
+name position
+cost position
+effect text area
+attack position
+health position
+font size
+line height
+text alignment
+padding
+
+을 WRESTLER의 canonical content layout으로 사용.
+
+LEGENDARY / CHAMPION은:
+
+Frame 이미지와 재질만 다르고
+글씨 배치는 NORMAL WRESTLER와 동일해야 한다.
+
+==================================================
+2-B. 공통 Wrestler Layout
+==================================================
+
+가능하면:
+
+WRESTLER_CONTENT_LAYOUT
+
+같은 Shared Layout Definition을 사용.
+
+예:
+
+NORMAL WRESTLER
+LEGENDARY WRESTLER
+CHAMPION WRESTLER
+TOKEN WRESTLER
+
+→ 동일한 Content Coordinates
+
+Frame Asset만 각 Rarity에 따라 변경.
+
+카드마다 별도 CSS 좌표를 복사하지 마.
+
+==================================================
+2-C. 기존 Frame Offset과 구분
+==================================================
+
+Frame 이미지 자체의:
+
+frameScale
+frameOffsetX
+frameOffsetY
+
+와
+
+카드 내용:
+
+name
+cost
+effect
+attack
+health
+
+위치를 구분.
+
+Frame 이미지를 조절했다고
+글씨까지 같이 밀리면 안 된다.
+
+==================================================
+2-D. 실제 비교 테스트
+==================================================
+
+동일한 Cost / Stats / 비슷한 길이 Effect Text를 가진:
+
+NORMAL
+LEGENDARY
+CHAMPION
+
+WRESTLER를 나란히 렌더링.
+
+확인:
+
+- 이름 baseline 동일
+- Cost 위치 동일
+- Effect 영역 시작 위치 동일
+- Attack 위치 동일
+- Health 위치 동일
+
+Frame만 다르게 보여야 한다.
+
+==================================================
+3. DAMAGE SCREEN SHAKE 복구
+==================================================
+
+이전에 요청한 Screen Shake가
+실제 Match에서 작동하지 않는다.
+
+단순히 CSS class 존재 여부만 보지 말고:
+
+Game Event
+→ Presentation Queue
+→ Damage Presentation
+→ Screen Shake
+
+전체 연결을 실제로 추적.
+
+==================================================
+3-A. 실제 피해량 기준
+==================================================
+
+Screen Shake 강도는 반드시:
+
+damageApplied
+
+즉 실제 적용된 최종 피해량 기준.
+
+예:
+
+0 Damage
+→ Shake 없음
+
+1~3
+→ SMALL
+
+4~6
+→ MEDIUM
+
+7~10
+→ LARGE
+
+11+
+→ VERY_LARGE
+
+기존에 동일 규칙이 구현되어 있다면
+새로 중복 구현하지 말고 고쳐서 재사용.
+
+==================================================
+3-B. 0 Damage
+==================================================
+
+다음은 강한 Hit Shake를 발생시키지 않는다:
+
+- Dodge
+- Immune
+- Damage Prevented
+- 최종 damageApplied = 0
+
+회피의 경우 별도의 Dodge Presentation 사용.
+
+==================================================
+3-C. Wrestler / Champion 공통
+==================================================
+
+피해 대상이:
+
+WRESTLER
+CHAMPION
+Champion Token
+
+어느 쪽이든 실제 Damage가 적용되면
+적절한 Hit Presentation 발생.
+
+상대가 내 카드를 때릴 때도 동일.
+
+내 카드가 상대 카드를 때릴 때만
+Animation이 나오는 구조 금지.
+
+==================================================
+4. 기본 공격 Animation 강화
+==================================================
+
+공격 시 다음 Presentation 흐름을 사용.
+
+ATTACK_START
+↓
+ATTACKER_LUNGE
+↓
+IMPACT
+↓
+TARGET_HIT_REACTION
+↓
+SCREEN_SHAKE
+↓
+DAMAGE_NUMBER
+↓
+HP_UPDATE
+↓
+COUNTER_DAMAGE Presentation
+↓
+RETIRE if needed
+↓
+ATTACKER_RETURN
+
+실제 KO Combat Rule은 변경하지 마.
+
+Wrestler vs Wrestler Damage는
+기존 Engine의 simultaneous combat 결과를 사용.
+
+==================================================
+4-A. Attacker Lunge
+==================================================
+
+공격자는 자기 자리에서
+목표 방향으로 짧게 전진.
+
+너무 멀리 날아다니는 Animation 금지.
+
+빠른 카드게임 느낌으로:
+
+약 120~220ms
+
+정도의 짧은 이동.
+
+실제 Card DOM을 위험하게 이동시키기보다
+기존 Presentation Clone 방식을 우선 사용.
+
+Animation 종료 후 원본 정상 표시.
+
+==================================================
+4-B. Impact
+==================================================
+
+공격자가 Target에 도달할 때:
+
+- 짧은 Impact Scale
+- 가벼운 타격 강조
+- Hit SFX
+- Screen Shake
+
+적용.
+
+과도한 Particle은 필요 없음.
+
+==================================================
+4-C. 피격 카드 반동
+==================================================
+
+피해를 받은 카드가:
+
+공격 반대 방향으로 아주 짧게 밀렸다가
+원위치로 돌아오게 해.
+
+예:
+
+translate 6~14px 정도 수준의
+짧은 Hit Recoil.
+
+실제 Board Slot 위치는 변경하지 않는다.
+
+Presentation only.
+
+==================================================
+4-D. 카드 자체 흔들림
+==================================================
+
+Screen 전체 Shake와 별도로
+피격 Card도 짧게 흔들리게 해.
+
+SMALL Damage:
+→ 아주 작은 recoil
+
+큰 Damage:
+→ 조금 더 강한 recoil
+
+하지만 카드가 Slot 밖으로 크게 벗어나지 않게.
+
+==================================================
+5. Damage Number
+==================================================
+
+피해를 받으면 대상 근처에:
+
+-1
+-3
+-7
+
+같은 Damage Number 표시.
+
+실제:
+
+damageApplied
+
+값 사용.
+
+예:
+
+공격력 5
+하지만 Dodge
+→ Damage Number 0 표시하지 말고
+→ "회피" Presentation 사용.
+
+==================================================
+5-A. Damage Number Motion
+==================================================
+
+Damage 숫자는:
+
+짧게 Pop
+→ 약간 위로 이동
+→ Fade Out
+
+정도로 처리.
+
+너무 오래 남지 않음.
+
+==================================================
+6. Health 변경 Presentation
+==================================================
+
+Damage Animation 직후
+Health 숫자가 실제 변경된 것을
+플레이어가 인식할 수 있게 해.
+
+예:
+
+6 → 3
+
+현재 Health 표시가:
+
+짧게 Scale Up
+→ 새 값으로 전환
+→ 정상 크기
+
+정도로 반응.
+
+==================================================
+7. Dodge Presentation
+==================================================
+
+회피가 발동하면:
+
+Damage Hit Animation 대신:
+
+- 카드가 옆으로 살짝 움직임
+- Afterimage
+- "회피" 짧은 Text
+- Damage Number 없음
+- Screen Shake 없음
+
+또는 아주 약한 whoosh 정도만 사용.
+
+Dodge Charge도 실제 Engine 결과대로 감소.
+
+==================================================
+8. TAUNT / RUSH / HASTE 기존 Field Visual 연동
+==================================================
+
+이전에 요청한 Keyword Visual과
+Attack Presentation이 충돌하지 않게 해.
+
+TAUNT:
+→ 방어형 Indicator 유지
+
+RUSH:
+→ 즉시 공격 가능 강조
+
+HASTE:
+→ 선수 공격 가능 강조
+
+DODGE:
+→ Charge Indicator
+
+Attack Clone이 생성되더라도
+원본 Card의 Keyword Visual이 이상하게 복제되어
+두 개 겹쳐 보이지 않게 해.
+
+==================================================
+9. RETIRE Animation
+==================================================
+
+currentHealth <= 0으로 RETIRE하면:
+
+Hit
+→ Damage Number
+→ 아주 짧은 확인 시간
+→ RETIRE Animation
+
+순서.
+
+맞자마자 카드가 즉시 순간삭제되어
+무슨 일이 일어났는지 못 보게 하지 마.
+
+RETIRE Animation 예:
+
+카드가 짧게 흔들림
+→ 축소 / Fade
+→ Graveyard 이동 Presentation
+
+과도하게 길지 않게.
+
+==================================================
+10. DESTROY Animation과 구분
+==================================================
+
+DESTROY는 RETIRE와 다른 Rule이므로
+시각적으로도 구분.
+
+RETIRE:
+→ 전투/피해로 쓰러지는 느낌
+
+DESTROY:
+→ 즉각적인 파괴 느낌
+
+DESTROY에서:
+
+- Damage Number X
+- Damage Shake X
+- RETIRE Animation X
+
+기존 DESTROY Rule:
+- RETIRE Trigger X
+- Graveyard X
+
+그대로 유지.
+
+==================================================
+11. Buff Presentation
+==================================================
+
+Attack / Health가 증가하면
+Field Card의 Stat 표시가 자연스럽게 반응.
+
+예:
+
+Attack:
+3 → 5
+
+Health:
+4 → 6
+
+해당 숫자:
+
+Scale Up
+→ 변경값 표시
+→ 원래 크기
+
+그리고 잠깐:
+
++2
+
+같은 작은 Modifier 표시 가능.
+
+==================================================
+11-A. +X/+Y
+==================================================
+
+예:
+
++2/+2
+
+적용 시:
+
+Attack 쪽 +2
+Health 쪽 +2
+
+각각 자연스럽게 반응.
+
+도쿵/만드릴쿤 Listener가 추가 Stat을 만들면
+그 결과도 순서대로 표시.
+
+==================================================
+12. Debuff Presentation
+==================================================
+
+Attack / Health가 감소한 경우도:
+
+기존 숫자
+→ 감소 반응
+→ 새 값
+
+으로 표시.
+
+Damage와 Stat 감소는 구분.
+
+"체력 -2 Stat Modifier"
+
+와
+
+"2 Damage"
+
+가 같은 Hit Animation을 쓰면 안 된다.
+
+==================================================
+13. Heal Presentation
+==================================================
+
+회복:
+
+currentHealth 2
+→ 4
+
+이면:
+
+- Health Number 부드럽게 상승
+- 작은 Heal Number +2
+- Card가 아주 짧게 Scale/Pulse
+
+정도.
+
+Screen Shake는 없음.
+
+==================================================
+14. Card Draw Animation
+==================================================
+
+Draw Event 발생:
+
+Deck
+→ Hand 방향으로
+작은 Card Back Clone 이동
+
+→ Hand Card 등장.
+
+상대 Draw는 카드 앞면을 공개하지 마.
+
+내 Draw만 실제 Card Face 확인 가능.
+
+Hidden Information Rule 유지.
+
+==================================================
+15. Wrestler Play Animation
+==================================================
+
+손에서 선수를 정상 PLAY하면:
+
+Hand
+→ 선택한 Board Slot
+
+으로 카드가 짧게 이동/확대되면서 배치.
+
+PLAY_FROM_HAND이므로
+이후 등장 Effect Presentation.
+
+==================================================
+16. SUMMON Animation
+==================================================
+
+Effect SUMMON:
+
+빈 Board Slot에
+카드가 짧게 나타나는 Animation.
+
+하지만 최근 확정 Rule:
+
+SUMMON
+→ 등장 효과 발동 X
+
+Presentation 때문에 ENTER/등장 효과를
+잘못 실행시키지 마.
+
+==================================================
+17. Technique Reveal 유지
+==================================================
+
+이전에 요청한:
+
+TECHNIQUE 사용
+→ 화면 중앙에 카드 크게 Reveal
+→ 확인 시간
+→ Fade Out
+→ Effect Presentation
+
+규칙 유지.
+
+Attack Presentation 추가하면서
+Technique Reveal Queue를 깨뜨리지 마.
+
+==================================================
+18. Champion Hit Presentation
+==================================================
+
+Champion이 직접 Damage를 받으면:
+
+Champion Portrait가
+짧게 Hit Reaction.
+
+Damage가 크면
+Screen Shake도 더 강해짐.
+
+Champion HP 변경도
+숫자가 자연스럽게 반응.
+
+==================================================
+19. Champion Lethal
+==================================================
+
+Champion HP <= 0:
+
+마지막 Hit Animation
+↓
+Damage Number
+↓
+Champion HP 0
+↓
+짧은 Lethal Pause
+↓
+기존 Match Result Presentation
+
+순서.
+
+Final Damage Animation이 끝나기도 전에
+VICTORY / DEFEAT 화면이 덮어버리지 않게 해.
+
+==================================================
+20. 공격 Target 위치
+==================================================
+
+이전에 발견된:
+
+상대 카드가 내 선수를 공격하면서
+빈 Slot을 때리는 Animation 버그
+
+수정 상태도 반드시 유지/재검증.
+
+공격 Animation Destination은:
+
+targetInstanceId의 실제 Rendered Card 위치
+
+우선.
+
+stale slotIndex만 사용하지 마.
+
+==================================================
+21. Animation Queue
+==================================================
+
+모든 Presentation은:
+
+Game Event
+→ Presentation Queue
+
+를 통해 순서대로 처리.
+
+예:
+
+ATTACK
+→ HIT
+→ DAMAGE
+→ DODGE/HP CHANGE
+→ RETIRE
+→ QUEST
+→ NEXT ACTION
+
+AI가 Animation 중
+다음 행동을 실행하지 않게 해.
+
+==================================================
+22. Screen Shake 구현 방식
+==================================================
+
+Screen Shake는 전체 Browser body가 아니라
+Match Presentation Root에 적용.
+
+예:
+
+.match-stage
+
+같은 실제 게임 영역.
+
+Browser UI / Modal / Navigation이
+같이 흔들릴 필요 없음.
+
+==================================================
+22-A. Shake 중첩
+==================================================
+
+짧은 시간 안에 Damage Event가 여러 개 발생해도
+CSS animation class가 씹히지 않게 처리.
+
+필요하면:
+
+restartAnimation
+또는
+central shake controller
+
+사용.
+
+여러 setTimeout이 서로 꼬이지 않게 해.
+
+==================================================
+23. SFX 연동
+==================================================
+
+기존 Damage SFX 규칙 유지:
+
+1~3 Damage
+→ Small Hit SFX
+
+4~6
+→ Medium Hit SFX
+
+7~10
+→ Large Hit SFX
+
+11+
+→ Heavy Hit SFX
+
+damageApplied 기준.
+
+Dodge / 0 Damage면
+Hit SFX 사용하지 마.
+
+==================================================
+24. Animation 속도
+==================================================
+
+모든 Animation이 너무 길어져
+Match가 답답해지면 안 된다.
+
+일반 공격 한 번:
+
+대략 0.5~0.9초 안에서
+주요 타격 결과가 인식되게.
+
+RETIRE 등 후속 Effect가 있으면
+추가 Presentation.
+
+AI 행동은 Presentation 완료 후
+기존 AI Delay 적용.
+
+==================================================
+25. Reduced Motion
+==================================================
+
+prefers-reduced-motion 환경에서는:
+
+- 큰 이동 감소
+- 강한 Screen Shake 감소/비활성
+- Damage Number / Icon / HP 변경은 유지
+
+즉 Animation이 줄어도
+게임 상태 변화는 알아볼 수 있어야 함.
+
+==================================================
+26. 실제 Browser 테스트
+==================================================
+
+TEST USER 실제 Match에서 반드시 테스트.
+
+--------------------------------
+CARD FRAME / LAYOUT
+--------------------------------
+
+NORMAL WRESTLER
+LEGENDARY WRESTLER
+CHAMPION WRESTLER
+
+나란히 비교.
+
+확인:
+
+- Name 동일 위치
+- Cost 동일 위치
+- Effect Text 동일 위치
+- Attack 동일 위치
+- Health 동일 위치
+
+Frame만 다름.
+
+TECHNIQUE:
+
+NORMAL / TOKEN만 선택 가능.
+
+LEGENDARY / CHAMPION Technique 생성 불가.
+
+--------------------------------
+SMALL DAMAGE
+--------------------------------
+
+1 Damage
+
+→ 작은 Hit Reaction
+→ 작은 Screen Shake
+→ Damage Number
+→ HP Update
+
+--------------------------------
+MEDIUM
+--------------------------------
+
+5 Damage
+
+→ Medium Shake
+→ 더 강한 Card Recoil
+→ Damage Number
+→ HP Update
+
+--------------------------------
+LARGE
+--------------------------------
+
+8 Damage
+
+→ Large Shake
+
+--------------------------------
+VERY LARGE
+--------------------------------
+
+11+ Damage
+
+→ Very Large Shake
+
+과도하게 화면이 날아다니지 않는지 확인.
+
+--------------------------------
+DODGE
+--------------------------------
+
+Attack
+→ Dodge
+
+→ Screen Shake 없음
+→ Hit Damage Number 없음
+→ Dodge Presentation
+→ Dodge charge 감소
+
+--------------------------------
+WRESTLER COMBAT
+--------------------------------
+
+상대 AI가 내 Wrestler 공격
+
+→ Attacker 실제 내 카드 위치까지 이동
+→ Hit
+→ Shake
+→ 양쪽 Damage 반영
+→ 필요하면 Retire
+
+빈 Slot 공격 X.
+
+--------------------------------
+CHAMPION DAMAGE
+--------------------------------
+
+Champion 피격
+
+→ Portrait Reaction
+→ Screen Shake
+→ HP Update
+
+--------------------------------
+BUFF
+--------------------------------
+
++2/+2
+
+→ Attack 변화 Animation
+→ Health 변화 Animation
+
+--------------------------------
+HEAL
+--------------------------------
+
+Heal +2
+
+→ Health 상승 Animation
+→ Shake 없음
+
+--------------------------------
+RETIRE
+--------------------------------
+
+Damage로 0 HP
+
+→ Hit
+→ Damage
+→ 짧은 Delay
+→ Retire Animation
+
+--------------------------------
+DESTROY
+--------------------------------
+
+Destroy
+
+→ Destroy Animation
+→ Damage Number 없음
+→ Damage Shake 없음
+
+--------------------------------
+AI
+--------------------------------
+
+AI 공격에서도
+모든 Animation 동일하게 보임.
+
+Animation 끝나기 전에
+다음 AI 행동 실행 X.
+
+==================================================
+27. 수정 금지
+==================================================
+
+이번 작업에서 하지 말 것:
+
+- 카드 Effect 변경
+- 카드 Cost/Attack/Health 변경
+- Combat Rule 변경
+- Champion Rule 변경
+- Technique Rule 변경
+- Pack RNG 변경
+- AI 판단 알고리즘 변경
+- 특정 카드별 Animation hardcoding
+- Damage를 UI에서 다시 계산
+- Animation을 위해 GameState 직접 변경
+- Browser 전체에 wheel/navigation block 추가
+- 불필요한 대규모 리팩터
+
+==================================================
+28. 최종 보고
+==================================================
+
+아래 항목을:
+
+PASS
+FIXED
+FAIL
+
+로 보고.
+
+TECHNIQUE_RARITY_RESTRICTION
+TECHNIQUE_RARITY_MIGRATION
+
+WRESTLER_SHARED_TEXT_LAYOUT
+LEGENDARY_TEXT_ALIGNMENT
+CHAMPION_TEXT_ALIGNMENT
+
+ATTACK_LUNGE
+TARGET_HIT_REACTION
+SCREEN_SHAKE_SMALL
+SCREEN_SHAKE_MEDIUM
+SCREEN_SHAKE_LARGE
+SCREEN_SHAKE_VERY_LARGE
+DAMAGE_NUMBER
+HP_CHANGE_PRESENTATION
+DODGE_PRESENTATION
+BUFF_PRESENTATION
+HEAL_PRESENTATION
+RETIRE_PRESENTATION
+DESTROY_PRESENTATION
+CHAMPION_HIT_PRESENTATION
+
+OPPONENT_ATTACK_ANIMATION
+ATTACK_TARGET_POSITION
+AI_PRESENTATION_WAIT
+
+각 FAIL은:
+
+- 재현 방법
+- Root Cause
+- 수정 파일
+- Event Log / Presentation Log
+- 아직 실패하는 이유
+
+를 적어.
+
+특히 Screen Shake는:
+
+"CSS Animation을 만들었다"
+
+만으로 PASS 처리 금지.
+
+실제 TEST USER Match에서
+1 / 5 / 8 / 11 이상의 Damage를 각각 발생시켜
+화면 흔들림 강도가 다르게 보이는 것까지 확인해야 PASS다.
