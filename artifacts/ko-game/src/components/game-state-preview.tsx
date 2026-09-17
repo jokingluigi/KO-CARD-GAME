@@ -24,6 +24,7 @@ import type {
   AttackAnimationState,
   AttackDamageImpactLevel,
 } from './attack-animation-utils';
+import type { EnterFieldEvent } from '@/game/events/types';
 import {
   attackDamageImpactLevel,
   attackImpactLevel,
@@ -107,7 +108,9 @@ export function GameStatePreview({
   const [surrenderConfirming, setSurrenderConfirming] = React.useState(false);
   const handCardRefs = React.useRef(new Map<string, HTMLDivElement>());
   const boardSlotRefs = React.useRef(new Map<number, HTMLDivElement>());
+  const opponentBoardSlotRefs = React.useRef(new Map<number, HTMLDivElement>());
   const boardCardRefs = React.useRef(new Map<string, HTMLDivElement>());
+  const opponentHandRef = React.useRef<HTMLDivElement | null>(null);
   const championRef = React.useRef<HTMLDivElement | null>(null);
   const playerChampionRef = React.useRef<HTMLDivElement | null>(null);
   const [generatedPlayAnimations, setGeneratedPlayAnimations] = React.useState<CardPlayAnimationState[]>([]);
@@ -266,7 +269,9 @@ export function GameStatePreview({
       if (event.type === "CARD_PLAYED" && event.cardType === "TECHNIQUE" && event.cardInstanceId) {
         const technique = previousCards.get(event.cardInstanceId);
         if (technique) {
-          const sourceElement = handCardRefs.current.get(event.cardInstanceId);
+          const sourceElement = event.playerId === me.id
+            ? handCardRefs.current.get(event.cardInstanceId)
+            : opponentHandRef.current;
           const source = sourceElement
             ? rectSnapshot(sourceElement.getBoundingClientRect())
             : { left: window.innerWidth / 2 - 90, top: window.innerHeight * 0.42 - 135, width: 180, height: 270 };
@@ -279,17 +284,26 @@ export function GameStatePreview({
         }
       }
       if (event.type !== 'ENTER_FIELD' || !event.source || event.source.type !== 'CARD' || event.boardSlot === undefined) continue;
+      const enterFieldEvent = event as EnterFieldEvent;
       const enteredCard = state.players
         .flatMap((player) => player.board)
         .find((card): card is CardInstance => card?.instanceId === event.cardInstanceId);
-      if (!enteredCard?.isGenerated) continue;
+      const shouldAnimateOpponentPlay =
+        event.playerId === opp.id &&
+        enterFieldEvent.entryCause === "PLAY_FROM_HAND";
+      if (!enteredCard || (!enteredCard.isGenerated && !shouldAnimateOpponentPlay)) continue;
 
-      const targetElement = boardSlotRefs.current.get(event.boardSlot);
+      const targetElement = event.playerId === me.id
+        ? boardSlotRefs.current.get(event.boardSlot)
+        : opponentBoardSlotRefs.current.get(event.boardSlot);
       if (!targetElement) continue;
       const target = rectSnapshot(targetElement.getBoundingClientRect());
+      const ownerHandElement = event.playerId === me.id && event.cardInstanceId
+        ? handCardRefs.current.get(event.cardInstanceId)
+        : opponentHandRef.current;
       const sourceElement =
         boardCardRefs.current.get(event.source.cardInstanceId) ??
-        handCardRefs.current.get(event.source.cardInstanceId);
+        ownerHandElement;
       const source = sourceElement
         ? rectSnapshot(sourceElement.getBoundingClientRect())
         : {
@@ -302,6 +316,7 @@ export function GameStatePreview({
       animations.push({
         kind: 'WRESTLER',
         card: enteredCard,
+        playerId: event.playerId,
         geometry: { source, target },
         impactLevel: landingImpactLevel(enteredCard.baseCost, enteredCard.currentCost),
       });
@@ -422,6 +437,11 @@ export function GameStatePreview({
   function setBoardSlotRef(slot: number, element: HTMLDivElement | null) {
     if (element) boardSlotRefs.current.set(slot, element);
     else boardSlotRefs.current.delete(slot);
+  }
+
+  function setOpponentBoardSlotRef(slot: number, element: HTMLDivElement | null) {
+    if (element) opponentBoardSlotRefs.current.set(slot, element);
+    else opponentBoardSlotRefs.current.delete(slot);
   }
 
   function setBoardCardRef(cardId: string, element: HTMLDivElement | null) {
@@ -558,7 +578,10 @@ export function GameStatePreview({
          {/* TOP BAR: Opponent Info */}
          <div className="ko-opponent-header relative z-[90] h-24 shrink-0 px-2 md:h-32 md:px-4">
             {/* Opponent Hand: centered like the player's hand */}
-             <div className="ko-opponent-hand absolute left-1/2 top-0 z-[100] flex -translate-x-1/2 items-start -space-x-2 md:-space-x-4">
+              <div
+                ref={opponentHandRef}
+                className="ko-opponent-hand absolute left-1/2 top-0 z-[100] flex -translate-x-1/2 items-start -space-x-2 md:-space-x-4"
+              >
                {opp.hand.length === 0 ? (
                  <span className="text-xs font-bold text-neutral-600">손패 없음</span>
                ) : (
@@ -672,6 +695,7 @@ export function GameStatePreview({
                     activeReady={false}
                     activeUsable={false}
                     onUseActive={() => undefined}
+                      slotRef={(element) => setOpponentBoardSlotRef(i, element)}
                      cardRef={card ? (element) => setBoardCardRef(card.instanceId, element) : undefined}
                      hit={Boolean(
                        attackImpactTriggered &&
@@ -679,6 +703,12 @@ export function GameStatePreview({
                        attackAnimation?.targetKind === "CARD" &&
                        attackAnimation.target?.instanceId === card?.instanceId,
                      )}
+                      animating={
+                        playAnimation?.card.instanceId === card?.instanceId ||
+                        generatedPlayAnimations.some((animation) => animation.card.instanceId === card?.instanceId) ||
+                        attackAnimation?.attacker.instanceId === card?.instanceId ||
+                        attackAnimation?.target?.instanceId === card?.instanceId
+                      }
                      hitImpactLevel={attackAnimation?.damageImpactLevel}
                      onClick={(id) => handleAttackCardTarget(id as string)}
                  />
@@ -716,7 +746,8 @@ export function GameStatePreview({
                       (playAnimation?.kind === "WRESTLER" &&
                         playAnimation.card.instanceId === card?.instanceId) ||
                         generatedPlayAnimations.some((animation) => animation.card.instanceId === card?.instanceId) ||
-                        attackAnimation?.attacker.instanceId === card?.instanceId
+                         attackAnimation?.attacker.instanceId === card?.instanceId ||
+                         attackAnimation?.target?.instanceId === card?.instanceId
                     }
                      selected={card?.instanceId === selectedAttackerId || !!card && selectedEffectTargetIds.has(card.instanceId)}
                    attackReady={!!card && canSelectAsAttacker(state, me.id, card.instanceId)}
