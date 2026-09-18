@@ -71,6 +71,7 @@ interface GameStatePreviewProps {
   onEffectTarget: (targetId: string) => void;
   onPresentationBusyChange: (busy: boolean) => void;
   onReturnToAdmin?: () => void;
+  onReturnToMainMenu?: () => void;
 }
 
 export function GameStatePreview({
@@ -104,6 +105,7 @@ export function GameStatePreview({
   onEffectTarget,
   onPresentationBusyChange,
   onReturnToAdmin,
+  onReturnToMainMenu,
 }: GameStatePreviewProps) {
   const [openGraveyardPlayerId, setOpenGraveyardPlayerId] = React.useState<string | null>(null);
   const [settingsOpen, setSettingsOpen] = React.useState(false);
@@ -884,6 +886,16 @@ export function GameStatePreview({
                           관리자로 돌아가기
                         </button>
                       )}
+                       {onReturnToMainMenu && (
+                         <button
+                           type="button"
+                           data-testid="button-return-to-main-menu-settings"
+                           onClick={onReturnToMainMenu}
+                           className="w-full rounded border border-neutral-700 bg-neutral-900 px-3 py-2 text-xs font-black text-neutral-200 transition-colors hover:border-amber-500 hover:bg-neutral-800 hover:text-amber-200"
+                         >
+                           메인 화면으로
+                         </button>
+                       )}
                      <label className="flex items-center justify-between gap-3 text-xs font-bold text-neutral-300">
                        <span>배경 음악 음소거</span>
                        <button

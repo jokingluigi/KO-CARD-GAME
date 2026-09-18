@@ -573,6 +573,7 @@ function OnlineMatchPage() {
           presentationBusyRef.current = busy;
           setPresentationBusy(busy);
         }}
+        onReturnToMainMenu={() => navigate(ROUTES.MAIN_MENU)}
       />
       {matchResultVisible && (
         <MatchResultOverlay state={state} onReturnToMainMenu={() => navigate(ROUTES.MAIN_MENU)} />
