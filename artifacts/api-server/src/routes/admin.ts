@@ -186,8 +186,26 @@ function parseChampionInput(value: unknown): ChampionInput | null {
     : hasQuest ? rawQuestCondition : null;
   const upgradedAbilityCost = integer("upgradedAbilityCost", 0, 999, true);
   const questCompletedPortraitEnabled = input.questCompletedPortraitEnabled === true;
-  const imageAssetId = text("imageAssetId");
-  const imageUrl = text("imageUrl");
+  const normalizeAssetPair = (
+    assetId: string | null,
+    url: string | null,
+    assetPrefix: string,
+  ) => {
+    if (assetId?.startsWith(assetPrefix)) {
+      return { assetId, url: `/api/storage${assetId}` };
+    }
+    if (url?.startsWith("/api/storage/objects/")) {
+      return { assetId: url.slice("/api/storage".length), url };
+    }
+    return { assetId, url };
+  };
+  const imagePair = normalizeAssetPair(
+    text("imageAssetId"),
+    text("imageUrl"),
+    "/objects/uploads/card-images/",
+  );
+  const imageAssetId = imagePair.assetId;
+  const imageUrl = imagePair.url;
   const imageUploadToken = text("imageUploadToken");
   const imageDisplayMode = IMAGE_DISPLAY_MODES.includes(input.imageDisplayMode as (typeof IMAGE_DISPLAY_MODES)[number])
     ? input.imageDisplayMode as (typeof IMAGE_DISPLAY_MODES)[number]
@@ -202,8 +220,13 @@ function parseChampionInput(value: unknown): ChampionInput | null {
   const imageScale = decimal("imageScale", 1, 0.5, 2);
   const imagePositionX = decimal("imagePositionX", 50, 0, 100);
   const imagePositionY = decimal("imagePositionY", 50, 0, 100);
-  const questCompletedPortraitAssetId = text("questCompletedPortraitAssetId");
-  const questCompletedPortraitUrl = text("questCompletedPortraitUrl");
+  const completedPortraitPair = normalizeAssetPair(
+    text("questCompletedPortraitAssetId"),
+    text("questCompletedPortraitUrl"),
+    "/objects/uploads/card-images/",
+  );
+  const questCompletedPortraitAssetId = completedPortraitPair.assetId;
+  const questCompletedPortraitUrl = completedPortraitPair.url;
   const questCompletedPortraitUploadToken = text("questCompletedPortraitUploadToken");
   const isStarterGrant = input.isStarterGrant === true;
   const validEffects = (effects: Record<string, unknown> | null | undefined, championReward = false) =>
