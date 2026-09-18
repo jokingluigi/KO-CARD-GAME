@@ -17,6 +17,7 @@ import adminCardSkinsRouter from "./admin-card-skins";
 import testAuthRouter from "./test-auth";
 import aiDecksRouter from "./ai-decks";
 import adminAiDecksRouter from "./admin-ai-decks";
+import onlineMatchesRouter from "./online-matches";
 
 const router: IRouter = Router();
 
@@ -38,5 +39,6 @@ router.use("/admin/prism", adminPrismRouter);
 router.use("/admin/card-skins", adminCardSkinsRouter);
 router.use("/ai-decks", aiDecksRouter);
 router.use("/admin/ai-decks", adminAiDecksRouter);
+router.use("/online-matches", onlineMatchesRouter);
 
 export default router;

@@ -7,6 +7,7 @@ import { playWrestlerFromHand } from '../engine/play-wrestler';
 import { endTurn } from '../engine/turn-system';
 import { processChampionQuestEvents } from '../champions/quests';
 import { selectEffectTarget } from '../effects/effect-engine';
+import { surrender } from '../engine/surrender';
 import type { BoardSlot } from '../engine/board-position';
 import type { GameState } from '../types/game-state';
 import {
@@ -99,6 +100,8 @@ export function executeAction(state: GameState, action: GameAction): ActionResul
       return attack(state, action.playerId, action.attackerInstanceId, action.target);
     case 'END_TURN':
       return endTurn(state, action.playerId);
+    case 'SURRENDER':
+      return surrender(state, action.playerId);
     case 'SELECT_EFFECT_TARGET': {
       const pending = state.targetingState;
       if (!pending?.active || pending.playerId !== action.playerId) {

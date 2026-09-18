@@ -29,3 +29,4 @@ export * from "./shop";
 export * from "./prism";
 export * from "./card-frames";
 export * from "./ai-decks";
+export * from "./online-matches";

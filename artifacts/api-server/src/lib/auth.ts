@@ -45,7 +45,10 @@ export async function getPublicUser(user: UserRecord): Promise<PublicUser> {
 }
 
 function getCookie(request: Request, name: string): string | null {
-  const cookieHeader = request.headers.cookie;
+  return getCookieFromHeader(request.headers.cookie, name);
+}
+
+export function getCookieFromHeader(cookieHeader: string | undefined, name: string): string | null {
   if (!cookieHeader) return null;
   const prefix = `${name}=`;
   return cookieHeader
@@ -175,6 +178,18 @@ export async function getAuthenticatedUser(request: Request): Promise<PublicUser
   if (!session) return null;
   const [user] = await db.select().from(usersTable).where(eq(usersTable.id, session.userId)).limit(1);
   return user ? await getPublicUser(user) : null;
+}
+
+export async function getAuthenticatedUserFromSessionToken(token: string): Promise<PublicUser | null> {
+  if (!token) return null;
+  const [session] = await db
+    .select()
+    .from(sessionsTable)
+    .where(and(eq(sessionsTable.tokenHash, hashSessionToken(token)), gt(sessionsTable.expiresAt, new Date())))
+    .limit(1);
+  if (!session) return null;
+  const [user] = await db.select().from(usersTable).where(eq(usersTable.id, session.userId)).limit(1);
+  return user ? getPublicUser(user) : null;
 }
 
 export async function invalidateAuthSession(request: Request): Promise<void> {

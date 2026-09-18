@@ -70,7 +70,7 @@ function requireUser(request: Request, response: Response): NonNullable<Request[
   return null;
 }
 
-async function loadUserDeck(userId: string, deckId: string): Promise<DeckRecord | null> {
+export async function loadUserDeck(userId: string, deckId: string): Promise<DeckRecord | null> {
   const [deck] = await db
     .select()
     .from(decksTable)
@@ -79,7 +79,7 @@ async function loadUserDeck(userId: string, deckId: string): Promise<DeckRecord 
   return deck ?? null;
 }
 
-async function resolveDeck(deck: DeckRecord, userId: string, testAccount = false): Promise<ResolvedDeck> {
+export async function resolveDeck(deck: DeckRecord, userId: string, testAccount = false): Promise<ResolvedDeck> {
   const [champion] = deck.championDefinitionId
     ? await db
         .select()

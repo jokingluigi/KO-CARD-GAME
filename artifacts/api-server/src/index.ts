@@ -1,6 +1,8 @@
+import { createServer } from "node:http";
 import app from "./app";
 import { logger } from "./lib/logger";
 import { ensureProductionAdmin } from "./lib/production-admin";
+import { attachOnlineMatchWebSocket } from "./online/websocket";
 
 const rawPort = process.env["PORT"];
 
@@ -19,7 +21,10 @@ if (Number.isNaN(port) || port <= 0) {
 async function start(): Promise<void> {
   await ensureProductionAdmin();
 
-  app.listen(port, (err) => {
+  const server = createServer(app);
+  attachOnlineMatchWebSocket(server);
+  server.listen(port, () => {
+    const err = undefined;
     if (err) {
       logger.error({ err }, "Error listening on port");
       process.exit(1);

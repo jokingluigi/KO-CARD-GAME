@@ -17,6 +17,9 @@
     },
     {
       "path": "../../lib/effect-registry"
+    },
+    {
+      "path": "../../lib/game-engine"
     }
   ]
 }

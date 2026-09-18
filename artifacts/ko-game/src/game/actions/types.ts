@@ -9,7 +9,8 @@ export type GameAction =
   | { type: 'USE_CHAMPION_ABILITY'; playerId: string }
   | { type: 'ATTACK'; playerId: string; attackerInstanceId: string; target: AttackTarget }
   | { type: 'SELECT_EFFECT_TARGET'; playerId: string; targetId: string }
-  | { type: 'END_TURN'; playerId: string };
+  | { type: 'END_TURN'; playerId: string }
+  | { type: 'SURRENDER'; playerId: string };
 
 export type ActionType = GameAction['type'];
 

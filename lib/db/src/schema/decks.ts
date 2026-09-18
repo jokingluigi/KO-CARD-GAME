@@ -1,5 +1,5 @@
 import { sql } from "drizzle-orm";
-import { boolean, pgTable, text, timestamp } from "drizzle-orm/pg-core";
+import { boolean, index, pgTable, text, timestamp } from "drizzle-orm/pg-core";
 import { usersTable } from "./users";
 
 export const decksTable = pgTable("decks", {
@@ -16,7 +16,9 @@ export const decksTable = pgTable("decks", {
   isSelected: boolean("is_selected").notNull().default(false),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
-});
+}, (table) => ({
+  userIdIdx: index("decks_user_id_idx").on(table.userId),
+}));
 
 export type DeckRecord = typeof decksTable.$inferSelect;
 export type NewDeckRecord = typeof decksTable.$inferInsert;
