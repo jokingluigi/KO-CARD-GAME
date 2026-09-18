@@ -326,11 +326,32 @@ export function AdminChampionManager({ onUnauthorized }: { onUnauthorized: () =>
     }));
   }
   async function save() {
+    const imageAssetId = form.imageAssetId?.trim() || null;
+    const imageUrl = form.imageUrl?.trim() || null;
+    const completedPortraitAssetId = form.questCompletedPortraitAssetId?.trim() || null;
+    const completedPortraitUrl = form.questCompletedPortraitUrl?.trim() || null;
+    const questCompleteAudioAssetId = form.questCompleteAudioAssetId?.trim() || null;
+    const questCompleteAudioUrl = form.questCompleteAudioUrl?.trim() || null;
+    const saveForm: Form = {
+      ...form,
+      imageAssetId,
+      imageUrl,
+      questCompletedPortraitAssetId: completedPortraitAssetId,
+      questCompletedPortraitUrl: completedPortraitUrl,
+      questCompleteAudioAssetId,
+      questCompleteAudioUrl,
+    };
+    if ((imageAssetId === null) !== (imageUrl === null) ||
+        (completedPortraitAssetId === null) !== (completedPortraitUrl === null) ||
+        (questCompleteAudioAssetId === null) !== (questCompleteAudioUrl === null)) {
+      setError("초상화와 이미지 주소를 함께 확인해 주세요.");
+      return;
+    }
     setBusy(true); setError("");
     try {
       const response = await fetch(editing ? `${adminApiBase}/champions/${editing.id}` : `${adminApiBase}/champions`, {
         method: editing ? "PATCH" : "POST", credentials: "include",
-        headers: { "Content-Type": "application/json" }, body: JSON.stringify(form),
+        headers: { "Content-Type": "application/json" }, body: JSON.stringify(saveForm),
       });
       if (response.status === 401) { onUnauthorized(); return; }
        if (!response.ok) throw new Error(await message(response));
@@ -864,7 +885,13 @@ export function AdminChampionManager({ onUnauthorized }: { onUnauthorized: () =>
              테스트 게임에서 확인
            </button>
          )}
-         <button disabled={busy} onClick={()=>void save()} className="rounded bg-primary px-5 py-2.5 font-black text-black">DRAFT 저장</button>
+         <button
+           disabled={busy || basicPortraitUploading || portraitUploading}
+           onClick={()=>void save()}
+           className="rounded bg-primary px-5 py-2.5 font-black text-black disabled:cursor-not-allowed disabled:opacity-50"
+         >
+           {basicPortraitUploading || portraitUploading ? "이미지 업로드 중..." : "DRAFT 저장"}
+         </button>
        </div>
     </div></div>}
   </div>;
