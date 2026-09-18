@@ -187,7 +187,7 @@ export function AltInspectProvider({ children }: { children: ReactNode }) {
       {isVisible && (
         <aside
           aria-label="상세정보"
-          className="ko-touch-inspector pointer-events-none fixed z-[200] w-[280px] rounded-md border border-neutral-600 bg-neutral-950/95 p-4 text-neutral-100 shadow-2xl backdrop-blur-md"
+          className="ko-touch-inspector pointer-events-none fixed z-[200] w-[min(620px,calc(100vw-24px))] rounded-md border border-neutral-600 bg-neutral-950/95 p-4 text-neutral-100 shadow-2xl backdrop-blur-md"
           ref={panelRef}
           style={{
             left: panelPosition.left,

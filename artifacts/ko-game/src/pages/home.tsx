@@ -58,6 +58,7 @@ const ENTRANCE_EFFECT_DELAY_MS = 180;
 const RESULT_SCREEN_SETTLE_DELAY_MS = 320;
 const AI_ACTION_DELAY_MS = 1000;
 const BGM_MUTE_STORAGE_KEY = 'ko-game-bgm-muted';
+const BGM_VOLUME_STORAGE_KEY = 'ko-game-bgm-volume';
 
 function actualAttackDamage(
   before: GameState,
@@ -118,6 +119,15 @@ function readStoredBgmMute() {
   }
 }
 
+function readStoredBgmVolume() {
+  try {
+    const value = Number(window.localStorage.getItem(BGM_VOLUME_STORAGE_KEY));
+    return Number.isFinite(value) ? Math.min(100, Math.max(0, value)) : 100;
+  } catch {
+    return 100;
+  }
+}
+
 export default function Home() {
   const [, navigate] = useLocation();
   const isAiMatch = window.location.pathname.endsWith('/ai-match');
@@ -142,6 +152,7 @@ export default function Home() {
     TURN_TIME_LIMIT_SECONDS,
   );
   const [bgmMuted, setBgmMuted] = useState(readStoredBgmMute);
+  const [bgmVolume, setBgmVolume] = useState(readStoredBgmVolume);
   const [playAnimation, setPlayAnimation] = useState<CardPlayAnimationState | null>(null);
   const [attackAnimation, setAttackAnimation] = useState<AttackAnimationState | null>(null);
   const [attackImpactTriggered, setAttackImpactTriggered] = useState(false);
@@ -519,13 +530,15 @@ export default function Home() {
   }, [gameState.latestQuestCompletedChampionId, gameState.players]);
 
   useEffect(() => {
+    audioManager.setBgmVolume(bgmVolume);
     audioManager.setBgmMuted(bgmMuted);
     try {
       window.localStorage.setItem(BGM_MUTE_STORAGE_KEY, String(bgmMuted));
+      window.localStorage.setItem(BGM_VOLUME_STORAGE_KEY, String(bgmVolume));
     } catch {
       // Audio preference persistence is optional and must not affect gameplay.
     }
-  }, [bgmMuted]);
+  }, [bgmMuted, bgmVolume]);
 
   useEffect(() => () => {
     audioManager.stopGameAudio();
@@ -618,7 +631,6 @@ export default function Home() {
         secondsRemaining === 0 &&
         timeoutHandledTurnRef.current !== turnKey
       ) {
-        timeoutHandledTurnRef.current = turnKey;
         handleEndTurn(true);
       }
     }, 250);
@@ -638,6 +650,7 @@ export default function Home() {
       if (!isTimeout) {
         timeoutHandledTurnRef.current = turnKey;
       }
+      if (isTimeout) timeoutHandledTurnRef.current = turnKey;
       setGameState(result.state);
       setSelectedCardId(null);
       setSelectedAttackerId(null);
@@ -653,11 +666,8 @@ export default function Home() {
       return;
     }
 
-    if (!isTimeout) {
-      // 수동 종료 직후 타이머 interval이 한 번 더 실행되어
-      // 타임아웃 알림을 덮어쓰지 않도록 현재 턴을 처리 완료로 표시한다.
-      timeoutHandledTurnRef.current = turnKey;
-    }
+    // 수동/자동 종료 모두 실제 전환이 성공한 뒤에만 같은 턴의 재시도를 막는다.
+    timeoutHandledTurnRef.current = turnKey;
 
     setGameState(opponentTurnResult.state);
     setSelectedCardId(null);
@@ -1117,8 +1127,17 @@ export default function Home() {
       playError={playError}
       turnSecondsRemaining={turnSecondsRemaining}
       onEndTurn={handleEndTurn}
+      canEndTurn={Boolean(
+        gameState.activePlayerId === gameState.players[0].id &&
+        !gameState.targetingState?.active &&
+        !playAnimation &&
+        !attackAnimation &&
+        !presentationBusy,
+      )}
       bgmMuted={bgmMuted}
       onBgmMutedChange={setBgmMuted}
+      bgmVolume={bgmVolume}
+      onBgmVolumeChange={setBgmVolume}
       onSurrender={handleSurrender}
       onSelectCard={handleSelectCard}
       onSelectSlot={handleSelectSlot}

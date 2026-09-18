@@ -274,7 +274,7 @@ export default function CollectionPage() {
       </div>
 
       <Dialog open={Boolean(selectedCard)} onOpenChange={(open) => { if (!open) setSelectedCard(null); }}>
-        <DialogContent className="border-neutral-800 bg-neutral-950 text-white sm:max-w-2xl">
+        <DialogContent className="max-w-[min(620px,calc(100vw-24px))] border-neutral-800 bg-neutral-950 text-white">
           {selectedCard && (
             <>
               <DialogHeader>
@@ -283,7 +283,7 @@ export default function CollectionPage() {
                    {selectedCard.cardType} · {rarityLabel(selectedCard.rarity)} · 보유 수량 {collection?.isTestAccount ? "∞" : `×${selectedCard.quantity}`}
                 </DialogDescription>
               </DialogHeader>
-              <div className="grid gap-5 sm:grid-cols-[minmax(180px,250px)_1fr] sm:items-start">
+              <div className="grid gap-5 sm:grid-cols-[minmax(220px,320px)_1fr] sm:items-start">
                 <CardRenderer
                   name={selectedCard.name}
                 cardType={selectedCard.cardType as "WRESTLER" | "TECHNIQUE"}
@@ -300,7 +300,7 @@ export default function CollectionPage() {
                     imagePositionY: selectedCard.imagePositionY,
                   }}
                   size="detail"
-                  className="mx-auto w-full max-w-[250px]"
+                  className="mx-auto w-full max-w-[320px]"
                 />
                 <div className="space-y-4 rounded-lg border border-neutral-800 bg-black/30 p-4 text-sm">
                   <div className="grid grid-cols-2 gap-3">

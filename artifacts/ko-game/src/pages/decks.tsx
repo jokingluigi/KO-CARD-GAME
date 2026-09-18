@@ -1,10 +1,17 @@
 import { useEffect, useMemo, useState } from "react";
-import { AlertTriangle, ArrowLeft, Check, ChevronDown, CirclePlus, Minus, Plus, RefreshCw, Search, Shield, Trash2 } from "lucide-react";
+import { AlertTriangle, ArrowLeft, Check, CirclePlus, Minus, Plus, RefreshCw, Search, Shield, Trash2 } from "lucide-react";
 import { Link } from "wouter";
 import { AuthPage, AuthLoading } from "@/components/auth-page";
 import { AltInspectProvider, Inspectable } from "@/components/alt-inspector";
 import { CardRenderer } from "@/components/card-renderer";
 import { CardArtwork } from "@/components/card-artwork";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { fetchCurrentUser, type AuthUser } from "@/lib/auth-client";
 import {
   deleteDeck,
@@ -83,7 +90,7 @@ function DeckCardVisual({
               rarity={card.rarity as "NORMAL" | "LEGENDARY" | "CHAMPION"}
               imageDisplaySettings={cardSettings(card)}
               size="detail"
-              className="mx-auto w-44"
+              className="mx-auto w-64 max-w-full"
             />
             <p className="whitespace-pre-wrap text-xs leading-5 text-neutral-300">{card.text || "효과 없음"}</p>
           </div>
@@ -194,6 +201,7 @@ export default function Decks() {
   const [isMutating, setIsMutating] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
   const [statusMessage, setStatusMessage] = useState("");
+  const [championPickerOpen, setChampionPickerOpen] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
@@ -415,7 +423,7 @@ export default function Decks() {
   async function handleDelete() {
     if (!editingId) return;
     const targetName = deckName || "이 덱";
-    if (!window.confirm(`“${targetName}”을 삭제할까요? 이 작업은 되돌릴 수 없습니다.`)) return;
+    if (!window.confirm(`"${targetName}" 덱을 삭제하시겠습니까?`)) return;
     setIsMutating(true);
     setErrorMessage("");
     try {
@@ -612,31 +620,28 @@ export default function Decks() {
             <div className="ko-decks__editor-scroll">
               <div className="flex items-center justify-between gap-3">
                 <p className="ko-decks__section-label">Champion</p>
-                <label className="relative">
-                  <span className="sr-only">챔피언 선택</span>
-                  <select
-                    value={championId ?? ""}
-                    onChange={(event) => setChampionId(event.target.value || null)}
-                    className="appearance-none border-b border-[#554a3a] bg-transparent py-1 pr-6 text-right text-xs font-bold text-[#cdbb94] outline-none"
-                    data-testid="select-champion"
-                  >
-                    <option value="">챔피언 없음</option>
-                    {Array.from(championById.values()).map((champion) => (
-                      <option key={champion.id} value={champion.id}>
-                        {champion.name}{champion.status !== "PUBLISHED" ? " · 사용 불가" : ""}
-                      </option>
-                    ))}
-                  </select>
-                  <ChevronDown className="pointer-events-none absolute right-0 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-[#a98548]" aria-hidden="true" />
-                </label>
+                <button
+                  type="button"
+                  className="rounded border border-[#554a3a] px-3 py-1 text-xs font-bold text-[#cdbb94] transition hover:border-[#d9b04b] hover:text-[#f1d47a]"
+                  onClick={() => setChampionPickerOpen(true)}
+                  data-testid="select-champion"
+                >
+                  {selectedChampion?.name ?? "챔피언 선택"}
+                </button>
               </div>
-              <div className="ko-decks__champion-slot mt-3" data-testid="panel-selected-champion">
+              <button
+                type="button"
+                className="ko-decks__champion-slot mt-3 w-full text-left transition hover:border-[#d9b04b] hover:bg-[#201a14]"
+                onClick={() => setChampionPickerOpen(true)}
+                data-testid="panel-selected-champion"
+                aria-label={selectedChampion ? `${selectedChampion.name} 챔피언 변경` : "챔피언 선택"}
+              >
                 {selectedChampion ? (
                   <>
                     <ChampionPortrait champion={selectedChampion} />
                     <div className="ko-decks__champion-copy min-w-0">
                       <h3>{selectedChampion.name}</h3>
-                      <p>{selectedChampion.description || "이 챔피언의 링 위 계획을 완성하세요."}</p>
+                      <p>{selectedChampion.abilityName} · {selectedChampion.abilityCost}G</p>
                       {selectedChampion.status !== "PUBLISHED" && (
                         <p className="mt-2 flex items-center gap-1 text-[#de8e7f]"><AlertTriangle className="h-3 w-3" /> 공개되지 않은 챔피언</p>
                       )}
@@ -645,7 +650,7 @@ export default function Decks() {
                 ) : (
                   <p className="col-span-2 py-5 text-center text-xs font-bold text-[#736b62]">챔피언을 선택하세요</p>
                 )}
-              </div>
+              </button>
 
               <div className="ko-decks__meter" data-testid="panel-deck-meter">
                 <div className="ko-decks__meter-line">
@@ -742,6 +747,71 @@ export default function Decks() {
           </section>
         </div>
       </div>
+      <Dialog open={championPickerOpen} onOpenChange={setChampionPickerOpen}>
+        <DialogContent className="max-w-3xl border-neutral-800 bg-[#110f0d] text-white max-h-[88vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="text-left text-xl font-black">챔피언 선택</DialogTitle>
+            <DialogDescription className="text-left text-sm text-neutral-400">
+              현재 계정에서 사용할 수 있는 공개 챔피언만 표시됩니다.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="grid gap-3 sm:grid-cols-2">
+            {Array.from(championById.values())
+              .filter((champion) => champion.status === "PUBLISHED")
+              .map((champion) => (
+                <button
+                  key={champion.id}
+                  type="button"
+                  className={`grid grid-cols-[72px_1fr] gap-3 rounded-lg border p-3 text-left transition ${
+                    champion.id === championId
+                      ? "border-amber-400 bg-amber-950/30"
+                      : "border-neutral-800 bg-neutral-950/70 hover:border-amber-700"
+                  }`}
+                  onClick={() => {
+                    setChampionId(champion.id);
+                    setChampionPickerOpen(false);
+                  }}
+                  data-testid={`button-select-champion-${champion.id}`}
+                >
+                  <ChampionPortrait champion={champion} />
+                  <span className="min-w-0">
+                    <strong className="block truncate text-sm text-amber-200">{champion.name}</strong>
+                    <span className="mt-1 block text-xs font-bold text-neutral-300">
+                      {champion.abilityName} · {champion.abilityCost}G
+                    </span>
+                    <span className="mt-2 block line-clamp-3 text-xs leading-5 text-neutral-400">
+                      {champion.abilityText || champion.description || "능력 설명 없음"}
+                    </span>
+                    {champion.hasQuest && (
+                      <span className="mt-2 inline-block rounded border border-emerald-800 px-1.5 py-0.5 text-[10px] font-black text-emerald-300">
+                        QUEST
+                      </span>
+                    )}
+                  </span>
+                </button>
+              ))}
+          </div>
+          {selectedChampion && (
+            <div className="rounded-lg border border-neutral-800 bg-black/30 p-4">
+              <h3 className="font-black text-amber-200">{selectedChampion.name} 상세</h3>
+              <p className="mt-2 text-sm font-bold text-neutral-200">
+                기본 능력 · {selectedChampion.abilityCost}G · {selectedChampion.abilityName}
+              </p>
+              <p className="mt-2 whitespace-pre-wrap text-sm leading-6 text-neutral-300">
+                {selectedChampion.abilityText || selectedChampion.description || "능력 설명 없음"}
+              </p>
+              {selectedChampion.hasQuest && (
+                <div className="mt-3 space-y-2 border-t border-neutral-800 pt-3 text-sm">
+                  <p className="font-black text-emerald-300">퀘스트 · {selectedChampion.questName}</p>
+                  <p className="whitespace-pre-wrap text-neutral-300">{selectedChampion.questText}</p>
+                  {selectedChampion.questRewardText && <p className="whitespace-pre-wrap text-amber-200">보상 · {selectedChampion.questRewardText}</p>}
+                  {selectedChampion.upgradedAbilityText && <p className="whitespace-pre-wrap text-sky-200">강화 능력 · {selectedChampion.upgradedAbilityText}</p>}
+                </div>
+              )}
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
       </main>
     </AltInspectProvider>
   );

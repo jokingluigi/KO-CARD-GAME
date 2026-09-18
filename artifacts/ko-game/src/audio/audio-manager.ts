@@ -44,6 +44,7 @@ class AudioManager {
   private pendingBaseMusic: { url: string; volume: number } | null = null;
   private baseTransitionId = 0;
   private bgmMuted = false;
+  private bgmVolume = 100;
   private attackAudio: HTMLAudioElement | null = null;
   private packReveal: {
     audio: HTMLAudioElement;
@@ -145,20 +146,26 @@ class AudioManager {
   }
 
   setBgmVolume(volume: number) {
-    if (!this.bgm) return;
-    this.bgm.volume = volume;
-    this.bgm.audio.volume = this.bgmMuted ? 0 : safeVolume(volume);
+    this.bgmVolume = Math.min(100, Math.max(0, Number.isFinite(volume) ? volume : 100));
+    if (!this.bgm || this.bgmMuted) return;
+    this.bgm.audio.volume = safeVolume(this.bgm.volume * this.bgmVolume / 100);
   }
 
   setBgmMuted(muted: boolean) {
     this.bgmMuted = muted;
     if (this.bgm) {
-      this.bgm.audio.volume = muted ? 0 : safeVolume(this.bgm.volume);
+      this.bgm.audio.volume = muted
+        ? 0
+        : safeVolume(this.bgm.volume * this.bgmVolume / 100);
     }
   }
 
   isBgmMuted() {
     return this.bgmMuted;
+  }
+
+  getBgmVolume() {
+    return this.bgmVolume;
   }
 
   /** Stops both the persistent base and any temporary entrance music. */
@@ -185,7 +192,7 @@ class AudioManager {
     if (this.bgm?.url === url) {
       this.bgm.volume = volume;
       if (!this.bgmMuted && !this.current) {
-        this.bgm.audio.volume = safeVolume(volume);
+        this.bgm.audio.volume = safeVolume(volume * this.bgmVolume / 100);
       }
       return;
     }
@@ -356,7 +363,7 @@ class AudioManager {
     music.audio.play().catch(() => {
       if (this.bgm?.audio === music.audio) this.stopBaseMusic();
     });
-    this.startFade(music.audio, safeVolume(music.volume), (timerId) => {
+    this.startFade(music.audio, safeVolume(music.volume * this.bgmVolume / 100), (timerId) => {
       if (this.bgm?.audio === music.audio) music.fadeTimerId = timerId;
     });
   }

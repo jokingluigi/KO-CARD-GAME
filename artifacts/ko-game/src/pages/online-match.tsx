@@ -38,6 +38,7 @@ import { ROUTES } from "@/lib/routes";
 const TURN_TIME_LIMIT_SECONDS = 90;
 const RESULT_SCREEN_SETTLE_DELAY_MS = 320;
 const BGM_MUTE_STORAGE_KEY = "ko-game-bgm-muted";
+const BGM_VOLUME_STORAGE_KEY = "ko-game-bgm-volume";
 
 type ConnectionStatus = "CONNECTED" | "DISCONNECTED_GRACE" | "FORFEITED";
 
@@ -59,6 +60,15 @@ function readStoredBgmMute() {
     return window.localStorage.getItem(BGM_MUTE_STORAGE_KEY) === "true";
   } catch {
     return false;
+  }
+}
+
+function readStoredBgmVolume() {
+  try {
+    const value = Number(window.localStorage.getItem(BGM_VOLUME_STORAGE_KEY));
+    return Number.isFinite(value) ? Math.min(100, Math.max(0, value)) : 100;
+  } catch {
+    return 100;
   }
 }
 
@@ -110,6 +120,7 @@ function OnlineMatchPage() {
   const [sessionReplaced, setSessionReplaced] = useState(false);
   const [pendingAction, setPendingAction] = useState(false);
   const [bgmMuted, setBgmMuted] = useState(readStoredBgmMute);
+  const [bgmVolume, setBgmVolume] = useState(readStoredBgmVolume);
   const [playAnimation, setPlayAnimation] = useState<CardPlayAnimationState | null>(null);
   const [attackAnimation, setAttackAnimation] = useState<AttackAnimationState | null>(null);
   const [attackImpactTriggered, setAttackImpactTriggered] = useState(false);
@@ -278,13 +289,15 @@ function OnlineMatchPage() {
   }, [mediaCatalog.bgms, state?.bgmId]);
 
   useEffect(() => {
+    audioManager.setBgmVolume(bgmVolume);
     audioManager.setBgmMuted(bgmMuted);
     try {
       window.localStorage.setItem(BGM_MUTE_STORAGE_KEY, String(bgmMuted));
+      window.localStorage.setItem(BGM_VOLUME_STORAGE_KEY, String(bgmVolume));
     } catch {
       // Audio preference persistence is optional.
     }
-  }, [bgmMuted]);
+  }, [bgmMuted, bgmVolume]);
 
   useEffect(() => {
     if (!state) return;
@@ -521,8 +534,11 @@ function OnlineMatchPage() {
         playError={playError}
         turnSecondsRemaining={secondsRemaining}
         onEndTurn={() => sendAction({ type: "END_TURN" })}
+        canEndTurn={Boolean(canAct && !state.targetingState?.active)}
         bgmMuted={bgmMuted}
         onBgmMutedChange={setBgmMuted}
+        bgmVolume={bgmVolume}
+        onBgmVolumeChange={setBgmVolume}
         onSurrender={() => sendAction({ type: "SURRENDER" }, { allowOffTurn: true })}
         onSelectCard={handleSelectCard}
         onSelectSlot={handleSelectSlot}

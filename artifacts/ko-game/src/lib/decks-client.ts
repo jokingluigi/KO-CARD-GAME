@@ -27,6 +27,15 @@ export type DeckChampion = {
   imagePositionX: number;
   imagePositionY: number;
   maxHealth: number;
+  abilityName: string;
+  abilityCost: number;
+  abilityText: string;
+  hasQuest: boolean;
+  questName: string | null;
+  questText: string | null;
+  questRewardText: string | null;
+  upgradedAbilityName: string | null;
+  upgradedAbilityText: string | null;
   status: "DRAFT" | "PUBLISHED" | "DISABLED" | string;
 };
 

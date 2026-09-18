@@ -48,8 +48,11 @@ interface GameStatePreviewProps {
   playError: string | null;
   turnSecondsRemaining: number;
   onEndTurn: () => void;
+  canEndTurn?: boolean;
   bgmMuted: boolean;
   onBgmMutedChange: (muted: boolean) => void;
+  bgmVolume: number;
+  onBgmVolumeChange: (volume: number) => void;
   onSurrender: () => void;
   onSelectCard: (cardInstanceId: string) => void;
   onSelectSlot: (slot: BoardSlotIndex, geometry?: { source: CardAnimationRect; target: CardAnimationRect }) => void;
@@ -82,8 +85,11 @@ export function GameStatePreview({
   playError,
   turnSecondsRemaining,
   onEndTurn,
+  canEndTurn: canEndTurnOverride,
   bgmMuted,
   onBgmMutedChange,
+  bgmVolume,
+  onBgmVolumeChange,
   onSurrender,
   onSelectCard,
   onSelectSlot,
@@ -217,12 +223,17 @@ export function GameStatePreview({
         const attacker = previousCards.get(event.cardInstanceId);
         const source = savedRect(event.cardInstanceId);
         const targetId = event.target?.type === "CARD" ? event.target.cardInstanceId : undefined;
+        const targetPlayerId = event.target?.type === "PLAYER" ? event.target.playerId : undefined;
         const target = targetId ? previousCards.get(targetId) ?? null : null;
         const targetRect = targetId
           ? savedRect(targetId)
-          : championRef.current
-            ? rectSnapshot(championRef.current.getBoundingClientRect())
-            : undefined;
+          : targetPlayerId === me.id
+            ? playerChampionRef.current
+              ? rectSnapshot(playerChampionRef.current.getBoundingClientRect())
+              : undefined
+            : targetPlayerId === opp.id && championRef.current
+              ? rectSnapshot(championRef.current.getBoundingClientRect())
+              : undefined;
         const damageEvent = newEvents.slice(eventIndex + 1).find((candidate) =>
           candidate.type === "DAMAGE_DEALT" &&
           candidate.source?.type === "CARD" &&
@@ -398,7 +409,9 @@ export function GameStatePreview({
   
   const selectedHandCard = me.hand.find((card) => card.instanceId === selectedCardId);
     
-  const canEndTurn = isCurrentPlayer(state, me.id);
+  const canEndTurn = canEndTurnOverride ?? (
+    isCurrentPlayer(state, me.id) && !effectTargeting
+  );
   const legalActions = getLegalActions(state, me.id);
   const legalActiveCardIds = new Set(
     legalActions
@@ -911,6 +924,22 @@ export function GameStatePreview({
                        >
                          {bgmMuted ? 'ON' : 'OFF'}
                        </button>
+                     </label>
+                     <label className="block text-xs font-bold text-neutral-300">
+                       <span className="flex items-center justify-between gap-3">
+                         <span>배경 음악 볼륨</span>
+                         <span className="text-[10px] text-amber-300">{bgmVolume}%</span>
+                       </span>
+                       <input
+                         type="range"
+                         min="0"
+                         max="100"
+                         step="1"
+                         value={bgmVolume}
+                         onChange={(event) => onBgmVolumeChange(Number(event.target.value))}
+                         className="mt-2 w-full accent-amber-400"
+                         aria-label="배경 음악 볼륨"
+                       />
                      </label>
                      <button
                        type="button"

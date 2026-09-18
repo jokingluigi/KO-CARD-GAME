@@ -9,6 +9,7 @@
 - [Champion card presentation](champion-card-presentation.md) — CHAMPION rarity represents champion token cards and uses the dedicated red-gold card frame.
 - [Match media selection](game-media-selection.md) — choose enabled background and BGM once at match start, then keep only their IDs in game state.
 - [Audio transition policy](audio-transition-policy.md) — persistent quest music is the base; temporary entrance tracks fade it down and resume the newest base.
+- [BGM preference scaling](bgm-preference-scaling.md) — user BGM volume is a persisted multiplier over each track's configured media volume; SFX stay independent.
 - [Pack reveal audio boundary](pack-reveal-audio-boundary.md) — pack rare music is a bounded temporary AudioManager channel; user and admin opening share the same Reveal component.
 - [Reusable card effect workflow](reusable-effect-workflow.md) — inspect and reuse active mechanics first; add generic registry-backed effects, analyzer mappings, and tests only when needed.
 - [Card play presentation](card-play-animations.md) — keep play motion client-side; derive impact from base cost and keep rarity emphasis separate from landing weight.
@@ -51,6 +52,7 @@
 - [Shared card event listeners](shared-card-event-listeners.md) — attack-stat and attack-survival mechanics use guarded registry triggers, not card-name branches.
 - [Generic stat pipeline](generic-stat-pipeline.md) — COST, ATTACK, and HEALTH share signed/set/duration events; automatic listeners must preserve the active effect frame.
 - [Attack event snapshots](attack-event-snapshots.md) — preserve immutable combat card data so lethal attack presentation survives target removal.
+- [Attack target projection](attack-target-projection.md) — attack presentation must resolve player targets to the viewer-relative Champion DOM ref, not a fixed board side.
 - [Online PvP foundation](online-pvp-foundation.md) — reuse the shared KO engine; persist accepted state changes and sanitize every viewer projection.
 - [Online Stage 3 recovery](online-stage3-recovery.md) — persist deadlines at transitions, lazy-restore one runtime, and use primary-connection gating for reconnect safety.
 - [Online presentation projection](online-presentation-projection.md) — reorder sanitized players viewer-first and adapt hidden zones to card-back placeholders before shared GameStatePreview.
