@@ -64,6 +64,7 @@ interface GameStatePreviewProps {
   onAttackWrestler: (cardInstanceId: string, geometry?: AttackAnimationState["geometry"]) => void;
   onAttackPlayer: (geometry?: AttackAnimationState["geometry"]) => void;
   onOpponentAttackPresentation?: (animation: AttackAnimationState) => void;
+  onSelfPlayPresentation?: (card: CardInstance, playerId: string) => void;
   onUseActive: (cardInstanceId: string) => void;
   onUseChampionAbility: () => void;
   onCancelEffectTargeting: () => void;
@@ -96,6 +97,7 @@ export function GameStatePreview({
   onAttackWrestler,
   onAttackPlayer,
   onOpponentAttackPresentation,
+  onSelfPlayPresentation,
   onUseActive,
   onUseChampionAbility,
   onCancelEffectTargeting,
@@ -288,6 +290,14 @@ export function GameStatePreview({
       const enteredCard = state.players
         .flatMap((player) => player.board)
         .find((card): card is CardInstance => card?.instanceId === event.cardInstanceId);
+      if (
+        enteredCard &&
+        onSelfPlayPresentation &&
+        event.playerId === me.id &&
+        enterFieldEvent.entryCause === "PLAY_FROM_HAND"
+      ) {
+        onSelfPlayPresentation(enteredCard, me.id);
+      }
       const shouldAnimateOpponentPlay =
         event.playerId === opp.id &&
         enterFieldEvent.entryCause === "PLAY_FROM_HAND";
@@ -370,7 +380,7 @@ export function GameStatePreview({
     if (cues.length) {
       setPresentationQueue((current) => [...current.slice(-18), ...cues]);
     }
-  }, [onOpponentAttackPresentation, state.events, state.players]);
+  }, [onOpponentAttackPresentation, onSelfPlayPresentation, state.events, state.players]);
 
   if (!state || !state.players || state.players.length < 2) {
     return <div className="flex h-screen items-center justify-center bg-black font-sans text-white">게임을 초기화하는 중입니다...</div>;

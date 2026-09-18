@@ -1,50 +1,92 @@
-import { useEffect, useMemo, useRef, useState } from "react";
-import { ArrowLeft, CircleAlert, LoaderCircle, LogOut, Shield, Swords } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
+import { CircleAlert, LoaderCircle } from "lucide-react";
 import { useLocation, useParams } from "wouter";
+
+import { GameStatePreview } from "@/components/game-state-preview";
+import { MatchResultOverlay } from "@/components/match-result-overlay";
 import { OnlineAuthGate } from "@/components/online-lobby-ui";
-import { getOnlineLobbyClient, type OnlineLobbyConnectionState, type OnlineServerMessage } from "@/lib/online-lobby-client";
-import { ROUTES } from "@/lib/routes";
+import type { AttackAnimationState } from "@/components/attack-animation-utils";
+import {
+  attackDamageImpactLevel,
+  attackImpactLevel,
+  attackSoundPitch,
+} from "@/components/attack-animation-utils";
+import type { CardPlayAnimationState, CardPlayGeometry } from "@/components/card-play-animation-utils";
+import { landingImpactLevel } from "@/components/card-play-animation-utils";
+import {
+  emptyGameMediaCatalog,
+  fetchGameMedia,
+  fetchPublishedCardDefinitions,
+  fetchPublishedChampions,
+  preloadMatchAssets,
+  setRuntimeCardDefinitions,
+  type BoardSlot,
+  type CardInstance,
+  type GameMediaCatalog,
+  type GameState,
+} from "@/game";
+import { audioManager } from "@/audio/audio-manager";
+import {
+  getOnlineLobbyClient,
+  type OnlineLobbyConnectionState,
+  type OnlineServerMessage,
+} from "@/lib/online-lobby-client";
 import type { OnlineActionPayload } from "@/lib/online-match-protocol";
+import { projectOnlineGameState } from "@/lib/online-game-state";
+import { ROUTES } from "@/lib/routes";
 
-type VisibleCard = {
-  instanceId: string;
-  definitionId: string;
-  cardType: "WRESTLER" | "TECHNIQUE" | string;
-  currentCost: number;
-  currentAttack: number;
-  currentHealth: number;
-  boardSlot: number | null;
-};
-
-type VisiblePlayer = {
-  id: string;
-  health: number;
-  maxHealth: number;
-  currentGold: number;
-  hand: VisibleCard[] | { hidden: true; count: number };
-  deck: VisibleCard[] | { hidden: true; count: number };
-  board: Array<VisibleCard | null>;
-  champion: { name?: string; currentHealth?: number; maxHealth?: number } | null;
-};
-
-type OnlineGameState = {
-  status: "NOT_STARTED" | "IN_PROGRESS" | "FINISHED";
-  turn: number;
-  activePlayerId: string | null;
-  winnerId: string | null;
-  players: VisiblePlayer[];
-};
+const TURN_TIME_LIMIT_SECONDS = 90;
+const RESULT_SCREEN_SETTLE_DELAY_MS = 320;
+const BGM_MUTE_STORAGE_KEY = "ko-game-bgm-muted";
 
 type ConnectionStatus = "CONNECTED" | "DISCONNECTED_GRACE" | "FORFEITED";
 
-function isGameState(value: unknown): value is OnlineGameState {
-  if (!value || typeof value !== "object") return false;
-  const candidate = value as Partial<OnlineGameState>;
-  return Array.isArray(candidate.players) && typeof candidate.status === "string";
+type PendingPlay = {
+  card: CardInstance;
+  geometry: CardPlayGeometry & { target: NonNullable<CardPlayGeometry["target"]> };
+};
+
+type PendingAttack = {
+  attacker: CardInstance;
+  target: CardInstance | null;
+  targetKind: "CARD" | "CHAMPION";
+  geometry: AttackAnimationState["geometry"];
+  targetPlayerId: string;
+};
+
+function readStoredBgmMute() {
+  try {
+    return window.localStorage.getItem(BGM_MUTE_STORAGE_KEY) === "true";
+  } catch {
+    return false;
+  }
 }
 
-function isCards(value: VisiblePlayer["hand"]): value is VisibleCard[] {
-  return Array.isArray(value);
+function actualDamage(
+  previous: GameState,
+  next: GameState,
+  attackerId: string,
+  targetPlayerId: string,
+  targetCardId?: string,
+) {
+  const directChampion = previous.players
+    .find((player) => player.id === targetPlayerId)
+    ?.board.find((card) => card?.isDirectDeployedChampion);
+  const damage = next.events.slice(previous.events.length).find((event) => {
+    if (
+      event.type !== "DAMAGE_DEALT" ||
+      event.source?.type !== "CARD" ||
+      event.source.cardInstanceId !== attackerId
+    ) {
+      return false;
+    }
+    return targetCardId
+      ? event.target?.type === "CARD" && event.target.cardInstanceId === targetCardId
+      : directChampion
+        ? event.target?.type === "CARD" && event.target.cardInstanceId === directChampion.instanceId
+        : event.target?.type === "PLAYER" && event.target.playerId === targetPlayerId;
+  });
+  return Math.max(0, damage?.amount ?? 0);
 }
 
 function OnlineMatchPage() {
@@ -53,26 +95,68 @@ function OnlineMatchPage() {
   const client = getOnlineLobbyClient();
   const [connection, setConnection] = useState<OnlineLobbyConnectionState>(client.state);
   const [seat, setSeat] = useState<"PLAYER_ONE" | "PLAYER_TWO" | null>(null);
-  const [state, setState] = useState<OnlineGameState | null>(null);
+  const [state, setState] = useState<GameState | null>(null);
   const [version, setVersion] = useState<number | null>(null);
+  const [mediaCatalog, setMediaCatalog] = useState<GameMediaCatalog>(emptyGameMediaCatalog);
+  const [resourcesReady, setResourcesReady] = useState(false);
   const [selectedCardId, setSelectedCardId] = useState<string | null>(null);
   const [selectedAttackerId, setSelectedAttackerId] = useState<string | null>(null);
-  const [error, setError] = useState<string | null>(null);
+  const [playError, setPlayError] = useState<string | null>(null);
   const [turnDeadlineAt, setTurnDeadlineAt] = useState<number | null>(null);
   const [serverOffset, setServerOffset] = useState(0);
   const [clock, setClock] = useState(() => Date.now());
   const [connectionStates, setConnectionStates] = useState<Record<"PLAYER_ONE" | "PLAYER_TWO", ConnectionStatus> | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
   const [sessionReplaced, setSessionReplaced] = useState(false);
+  const [pendingAction, setPendingAction] = useState(false);
+  const [bgmMuted, setBgmMuted] = useState(readStoredBgmMute);
+  const [playAnimation, setPlayAnimation] = useState<CardPlayAnimationState | null>(null);
+  const [attackAnimation, setAttackAnimation] = useState<AttackAnimationState | null>(null);
+  const [attackImpactTriggered, setAttackImpactTriggered] = useState(false);
+  const [presentationBusy, setPresentationBusy] = useState(false);
+  const [matchResultVisible, setMatchResultVisible] = useState(false);
+  const [presentationEpoch, setPresentationEpoch] = useState(0);
   const lastEventSequence = useRef(-1);
+  const seatRef = useRef<typeof seat>(null);
+  const stateRef = useRef<GameState | null>(null);
+  const pendingActionIdRef = useRef<string | null>(null);
+  const pendingPlayRef = useRef<PendingPlay | null>(null);
+  const pendingAttackRef = useRef<PendingAttack | null>(null);
+  const presentationBusyRef = useRef(false);
+  const processedAudioEventsRef = useRef(new Set<string>());
+  const processedAttackSoundsRef = useRef(new Set<string>());
+  const lastAudioEventCountRef = useRef<number | null>(null);
+  const pendingEntranceAudioRef = useRef<{ url: string; volume: number } | null>(null);
 
   useEffect(() => {
-    client.connect();
+    let cancelled = false;
+    Promise.all([
+      fetchPublishedCardDefinitions(),
+      fetchPublishedChampions(),
+      fetchGameMedia(),
+    ]).then(([definitions, champions, media]) => {
+      if (cancelled) return;
+      setRuntimeCardDefinitions(definitions);
+      preloadMatchAssets(definitions, champions);
+      setMediaCatalog(media);
+      setResourcesReady(true);
+    }).catch((reason) => {
+      if (!cancelled) setPlayError(reason instanceof Error ? reason.message : "온라인 매치 데이터를 불러오지 못했습니다.");
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  useEffect(() => {
+    const timer = window.setInterval(() => setClock(Date.now()), 250);
+    return () => window.clearInterval(timer);
+  }, []);
+
+  useEffect(() => {
     const unsubscribeConnection = client.onConnectionState((next) => {
       setConnection(next);
-      if (next === "open" && matchId) {
-        client.send({ type: "SUBSCRIBE", matchId });
-      }
+      if (next === "open" && matchId) client.send({ type: "SUBSCRIBE", matchId });
     });
     const unsubscribeMessage = client.onMessage((message: OnlineServerMessage) => {
       if ("matchId" in message && message.matchId !== matchId) return;
@@ -82,7 +166,17 @@ function OnlineMatchPage() {
         message.type === "MATCH_ENDED" ||
         message.type === "RESYNC_REQUIRED"
       ) {
-        if (message.type === "MATCH_SNAPSHOT") setSeat(message.seat);
+        const nextSeat = message.type === "MATCH_SNAPSHOT" ? message.seat : seatRef.current;
+        if (!nextSeat || !matchId) return;
+        if (message.type === "MATCH_SNAPSHOT" || message.type === "RESYNC_REQUIRED") {
+          lastEventSequence.current = -1;
+          setPlayAnimation(null);
+          setAttackAnimation(null);
+          setAttackImpactTriggered(false);
+          pendingPlayRef.current = null;
+          pendingAttackRef.current = null;
+          setPresentationEpoch((current) => current + 1);
+        }
         setTurnDeadlineAt(message.turnDeadlineAt);
         setServerOffset(message.serverTime - Date.now());
         setConnectionStates(message.connectionStates);
@@ -90,21 +184,39 @@ function OnlineMatchPage() {
         const sequencedEvents = message.events.filter((event): event is { sequenceNumber: number } =>
           Boolean(event && typeof event === "object" && typeof (event as { sequenceNumber?: unknown }).sequenceNumber === "number"),
         );
-        if (message.type === "MATCH_SNAPSHOT" || message.type === "RESYNC_REQUIRED") {
-          lastEventSequence.current = sequencedEvents.at(-1)?.sequenceNumber ?? -1;
-        } else if (sequencedEvents.some((event) => event.sequenceNumber > lastEventSequence.current + 1)) {
+        if (
+          message.type !== "MATCH_SNAPSHOT" &&
+          message.type !== "RESYNC_REQUIRED" &&
+          sequencedEvents.some((event) => event.sequenceNumber > lastEventSequence.current + 1)
+        ) {
           client.send({ type: "RESYNC", matchId });
           return;
-        } else if (sequencedEvents.length) {
-          lastEventSequence.current = sequencedEvents.at(-1)!.sequenceNumber;
         }
-        if (isGameState(message.state)) {
-          setState(message.state);
-          setVersion("version" in message ? message.version : null);
-          setError(null);
+        if (sequencedEvents.length) lastEventSequence.current = sequencedEvents.at(-1)!.sequenceNumber;
+
+        const projected = projectOnlineGameState(message.state, nextSeat);
+        if (!projected) {
+          setPlayError("서버 매치 상태를 해석하지 못했습니다.");
+          return;
+        }
+        const previous = stateRef.current;
+        if (message.type === "ACTION_ACCEPTED") {
+          if (pendingActionIdRef.current === message.requestId) {
+            pendingActionIdRef.current = null;
+            setPendingAction(false);
+          }
+          prepareOwnAttackAnimation(previous, projected);
         } else {
-          setError("서버 매치 상태를 해석하지 못했습니다.");
+          pendingActionIdRef.current = null;
+          setPendingAction(false);
         }
+        stateRef.current = projected;
+        setSeat(nextSeat);
+        seatRef.current = nextSeat;
+        setState(projected);
+        setVersion("version" in message ? message.version : null);
+        setPlayError(null);
+        if (message.type === "MATCH_ENDED") setNotice("매치가 종료되었습니다.");
         return;
       }
       if (message.type === "MATCH_CONNECTION_STATUS") {
@@ -112,49 +224,157 @@ function OnlineMatchPage() {
           ...(current ?? { PLAYER_ONE: "CONNECTED", PLAYER_TWO: "CONNECTED" }),
           [message.playerId]: message.status,
         }));
-        setNotice(message.status === "DISCONNECTED_GRACE" ? "상대의 연결이 끊어졌습니다. 재접속을 기다리는 중..." : "상대가 다시 연결되었습니다.");
+        setNotice(
+          message.status === "DISCONNECTED_GRACE"
+            ? "상대의 연결이 끊어졌습니다. 재접속을 기다리는 중..."
+            : message.status === "FORFEITED"
+              ? "상대의 연결 시간이 초과되었습니다."
+              : "상대가 다시 연결되었습니다.",
+        );
         return;
       }
       if (message.type === "SESSION_REPLACED") {
         setSessionReplaced(true);
+        setPendingAction(false);
         setNotice(message.message);
         return;
       }
       if (message.type === "ACTION_REJECTED" || message.type === "LOBBY_ERROR" || message.type === "ERROR") {
-        setError(message.message);
+        if (!("requestId" in message) || !message.requestId || pendingActionIdRef.current === message.requestId) {
+          pendingActionIdRef.current = null;
+          setPendingAction(false);
+        }
+        setPlayError(message.message);
       }
     });
+    client.connect();
     return () => {
       unsubscribeMessage();
       unsubscribeConnection();
       if (matchId) client.send({ type: "UNSUBSCRIBE", matchId });
+      audioManager.stopGameAudio();
     };
   }, [client, matchId]);
 
   useEffect(() => {
-    const timer = window.setInterval(() => setClock(Date.now()), 250);
-    return () => window.clearInterval(timer);
-  }, []);
+    if (!state || state.status !== "FINISHED" || presentationBusy) {
+      setMatchResultVisible(false);
+      return;
+    }
+    const timeoutId = window.setTimeout(() => setMatchResultVisible(true), RESULT_SCREEN_SETTLE_DELAY_MS);
+    return () => window.clearTimeout(timeoutId);
+  }, [state?.events.length, state?.status, presentationBusy]);
 
-  const me = useMemo(
-    () => state?.players.find((player) => player.id === seat) ?? state?.players[0] ?? null,
-    [seat, state],
-  );
-  const opponent = useMemo(
-    () => state?.players.find((player) => player.id !== me?.id) ?? null,
-    [me?.id, state],
-  );
-  const isMyTurn = Boolean(me && state?.activePlayerId === me.id && state.status === "IN_PROGRESS");
+  useEffect(() => {
+    if (!matchResultVisible) return;
+    audioManager.stopAttack();
+    audioManager.stop();
+  }, [matchResultVisible]);
+
+  useEffect(() => {
+    const bgm = state && mediaCatalog.bgms.find((item) => item.id === state.bgmId);
+    if (bgm) audioManager.playBgm(bgm.assetUrl, bgm.volume);
+    else audioManager.stopBgm();
+  }, [mediaCatalog.bgms, state?.bgmId]);
+
+  useEffect(() => {
+    audioManager.setBgmMuted(bgmMuted);
+    try {
+      window.localStorage.setItem(BGM_MUTE_STORAGE_KEY, String(bgmMuted));
+    } catch {
+      // Audio preference persistence is optional.
+    }
+  }, [bgmMuted]);
+
+  useEffect(() => {
+    if (!state) return;
+    if (state.latestQuestCompletedChampionId) {
+      const champion = state.players
+        .map((player) => player.champion)
+        .find((candidate) => candidate?.id === state.latestQuestCompletedChampionId);
+      if (champion?.questCompleteAudioEnabled && champion.questCompleteAudioUrl) {
+        audioManager.playQuestComplete(
+          champion.questCompleteAudioUrl,
+          champion.questCompleteAudioVolume ?? 100,
+        );
+      }
+    }
+  }, [state?.latestQuestCompletedChampionId, state?.players]);
+
+  useEffect(() => {
+    if (!state) return;
+    const previousCount = lastAudioEventCountRef.current;
+    const startIndex = previousCount !== null && state.events.length >= previousCount ? previousCount : 0;
+    if (previousCount !== null && state.events.length < previousCount) processedAudioEventsRef.current.clear();
+    state.events.slice(startIndex).forEach((event, offset) => {
+      const eventKey = `${startIndex + offset}:${event.type}:${event.cardInstanceId ?? ""}`;
+      if (processedAudioEventsRef.current.has(eventKey)) return;
+      processedAudioEventsRef.current.add(eventKey);
+      if (event.type !== "ENTER_FIELD" || !event.cardInstanceId) return;
+      const card = state.players.flatMap((player) => [
+        ...player.deck,
+        ...player.hand,
+        ...player.board.filter((entry): entry is CardInstance => entry !== null),
+        ...player.graveyard,
+        ...player.removedFromGame,
+      ]).find((entry) => entry.instanceId === event.cardInstanceId);
+      if (!card?.entranceAudioEnabled || !card.entranceAudioUrl) return;
+      const sound = { url: card.entranceAudioUrl, volume: card.entranceAudioVolume ?? 100 };
+      if (playAnimation?.kind === "WRESTLER" && playAnimation.card.instanceId === event.cardInstanceId) {
+        pendingEntranceAudioRef.current = sound;
+      } else {
+        audioManager.playCardEntrance(sound.url, sound.volume);
+      }
+    });
+    lastAudioEventCountRef.current = state.events.length;
+  }, [playAnimation, state]);
+
+  const me = state?.players[0] ?? null;
+  const opponent = state?.players[1] ?? null;
   const isConnected = connection === "open" && !sessionReplaced;
-  const canAct = isConnected && isMyTurn;
+  const isMyTurn = Boolean(me && state?.status === "IN_PROGRESS" && state.activePlayerId === me.id);
+  const canAct = Boolean(isConnected && isMyTurn && !pendingAction && !presentationBusy);
   const secondsRemaining = turnDeadlineAt === null
-    ? null
+    ? TURN_TIME_LIMIT_SECONDS
     : Math.max(0, Math.ceil((turnDeadlineAt - (clock + serverOffset)) / 1000));
-  const selectedCard = me && isCards(me.hand) ? me.hand.find((card) => card.instanceId === selectedCardId) : null;
 
-  function sendAction(action: OnlineActionPayload) {
-    if (!matchId || version === null) return;
-    const requestId = typeof crypto.randomUUID === "function" ? crypto.randomUUID() : `${Date.now()}-${Math.random()}`;
+  function prepareOwnAttackAnimation(previous: GameState | null, next: GameState) {
+    const pending = pendingAttackRef.current;
+    if (!previous || !pending) return;
+    const eventIndex = next.events.findIndex((event, index) =>
+      index >= previous.events.length &&
+      event.type === "ATTACK_DECLARED" &&
+      event.cardInstanceId === pending.attacker.instanceId,
+    );
+    if (eventIndex < 0) return;
+    const event = next.events[eventIndex];
+    const damage = actualDamage(
+      previous,
+      next,
+      pending.attacker.instanceId,
+      pending.targetPlayerId,
+      pending.target?.instanceId,
+    );
+    setAttackImpactTriggered(false);
+    setAttackAnimation({
+      ...pending,
+      currentAttack: event.sourceSnapshot?.currentAttack ?? pending.attacker.currentAttack,
+      impactLevel: attackImpactLevel(event.sourceSnapshot?.currentAttack ?? pending.attacker.currentAttack),
+      damage,
+      damageImpactLevel: attackDamageImpactLevel(damage),
+      soundKey: `self:${eventIndex}:${pending.attacker.instanceId}:${pending.target?.instanceId ?? pending.targetPlayerId}`,
+    });
+    pendingAttackRef.current = null;
+  }
+
+  function sendAction(action: OnlineActionPayload, options?: { allowOffTurn?: boolean }) {
+    const actionAllowed = isConnected && !pendingAction && (options?.allowOffTurn || isMyTurn);
+    if (!matchId || version === null || !actionAllowed) return false;
+    const requestId = typeof crypto.randomUUID === "function"
+      ? crypto.randomUUID()
+      : `${Date.now()}-${Math.random()}`;
+    pendingActionIdRef.current = requestId;
+    setPendingAction(true);
     client.send({
       type: "MATCH_ACTION",
       matchId,
@@ -164,160 +384,200 @@ function OnlineMatchPage() {
     });
     setSelectedCardId(null);
     setSelectedAttackerId(null);
+    setPlayError(null);
+    return true;
   }
 
-  function playSelectedCard() {
-    if (!selectedCard || !isMyTurn) return;
-    if (selectedCard.cardType === "TECHNIQUE") {
-      sendAction({ type: "PLAY_TECHNIQUE", cardInstanceId: selectedCard.instanceId });
+  function handleSelectCard(cardInstanceId: string) {
+    if (!canAct || !state) return;
+    if (state.targetingState?.active) {
+      if (state.targetingState.validTargetIds.includes(cardInstanceId)) sendAction({ type: "SELECT_EFFECT_TARGET", targetId: cardInstanceId });
       return;
     }
-    const slot = me?.board.findIndex((card) => card === null);
-    if (slot === undefined || slot < 0) {
-      setError("비어 있는 보드 슬롯이 없습니다.");
+    setSelectedAttackerId(null);
+    setSelectedCardId((current) => current === cardInstanceId ? null : cardInstanceId);
+  }
+
+  function handleSelectAttacker(cardInstanceId: string) {
+    if (!canAct || !state) return;
+    if (state.targetingState?.active) {
+      if (state.targetingState.validTargetIds.includes(cardInstanceId)) sendAction({ type: "SELECT_EFFECT_TARGET", targetId: cardInstanceId });
       return;
     }
-    sendAction({ type: "PLAY_WRESTLER", cardInstanceId: selectedCard.instanceId, boardSlot: slot as 0 | 1 | 2 | 3 });
+    setSelectedCardId(null);
+    setSelectedAttackerId((current) => current === cardInstanceId ? null : cardInstanceId);
+  }
+
+  function rememberPlay(card: CardInstance, geometry?: CardPlayGeometry) {
+    if (!geometry?.target) return;
+    pendingPlayRef.current = { card, geometry: { ...geometry, target: geometry.target } };
+  }
+
+  function handleSelectSlot(slot: BoardSlot, geometry?: CardPlayGeometry) {
+    if (!state || !me || !selectedCardId || !canAct) return;
+    const card = me.hand.find((entry) => entry.instanceId === selectedCardId);
+    if (!card || card.cardType === "TECHNIQUE") return;
+    rememberPlay(card, geometry);
+    if (!sendAction({ type: "PLAY_WRESTLER", cardInstanceId: card.instanceId, boardSlot: slot })) {
+      pendingPlayRef.current = null;
+    }
+  }
+
+  function handleUseTechnique(cardInstanceId: string) {
+    if (!sendAction({ type: "PLAY_TECHNIQUE", cardInstanceId })) return;
+  }
+
+  function handleAttackWrestler(targetCardInstanceId: string, geometry?: AttackAnimationState["geometry"]) {
+    if (!state || !me || !opponent || !selectedAttackerId || !geometry || !canAct) return;
+    const attacker = me.board.find((card) => card?.instanceId === selectedAttackerId);
+    const target = opponent.board.find((card) => card?.instanceId === targetCardInstanceId) ?? null;
+    if (!attacker) return;
+    pendingAttackRef.current = {
+      attacker,
+      target,
+      targetKind: "CARD",
+      geometry,
+      targetPlayerId: opponent.id,
+    };
+    if (!sendAction({
+      type: "ATTACK",
+      attackerInstanceId: attacker.instanceId,
+      target: { type: "WRESTLER", playerId: opponent.id, cardInstanceId: targetCardInstanceId },
+    })) {
+      pendingAttackRef.current = null;
+    }
+  }
+
+  function handleAttackPlayer(geometry?: AttackAnimationState["geometry"]) {
+    if (!state || !me || !opponent || !selectedAttackerId || !geometry || !canAct) return;
+    const attacker = me.board.find((card) => card?.instanceId === selectedAttackerId);
+    if (!attacker) return;
+    pendingAttackRef.current = {
+      attacker,
+      target: null,
+      targetKind: "CHAMPION",
+      geometry,
+      targetPlayerId: opponent.id,
+    };
+    if (!sendAction({
+      type: "ATTACK",
+      attackerInstanceId: attacker.instanceId,
+      target: { type: "PLAYER", playerId: opponent.id },
+    })) {
+      pendingAttackRef.current = null;
+    }
+  }
+
+  function playAttackSound(animation: Pick<AttackAnimationState, "currentAttack" | "impactLevel" | "soundKey">) {
+    if (processedAttackSoundsRef.current.has(animation.soundKey)) return;
+    processedAttackSoundsRef.current.add(animation.soundKey);
+    const sound = mediaCatalog.attackSounds[
+      animation.impactLevel === "LIGHT"
+        ? "LIGHT_ATTACK"
+        : animation.impactLevel === "NORMAL"
+          ? "NORMAL_ATTACK"
+          : animation.impactLevel === "HEAVY"
+            ? "HEAVY_ATTACK"
+            : "VERY_HEAVY_ATTACK"
+    ];
+    if (sound) audioManager.playAttack(sound.assetUrl, sound.volume, attackSoundPitch(animation.currentAttack));
+  }
+
+  if (!resourcesReady || !state || !me || !opponent) {
+    return (
+      <main className="flex min-h-[100dvh] items-center justify-center bg-black px-6 text-white">
+        <div className="text-center">
+          {playError ? <CircleAlert className="mx-auto h-8 w-8 text-red-300" /> : <LoaderCircle className="mx-auto h-8 w-8 animate-spin text-amber-400" />}
+          <p className="mt-5 text-sm font-black">{playError ?? "서버 매치를 불러오는 중입니다."}</p>
+          <p className="mt-3 text-xs text-neutral-500">{connection === "open" ? "게임 상태를 기다리는 중" : "서버에 재연결하는 중"}</p>
+        </div>
+      </main>
+    );
   }
 
   return (
-    <main className="min-h-[100dvh] bg-[#080808] px-4 py-5 text-white sm:px-8">
-      <div className="mx-auto w-full max-w-6xl">
-        <header className="flex items-center justify-between border-b border-neutral-900 pb-4">
-          <button type="button" data-testid="button-online-match-back" onClick={() => navigate(ROUTES.ONLINE)} className="inline-flex items-center gap-2 text-xs font-black text-neutral-500 hover:text-amber-200">
-            <ArrowLeft className="h-4 w-4" aria-hidden="true" /> 온라인 메뉴
-          </button>
-          <div className="text-right">
-            <p className="font-display text-xs font-black tracking-[0.25em] text-amber-400">KO / LIVE MATCH</p>
-            <p className={`mt-1 text-[0.62rem] font-bold ${isConnected ? "text-emerald-400" : "text-red-300"}`} data-testid="status-online-match-connection">
-              {sessionReplaced ? "SESSION REPLACED" : isConnected ? "SERVER CONNECTED" : "RECONNECTING..."}
-            </p>
-          </div>
-        </header>
-
-        {!state ? (
-          <section className="flex min-h-[70dvh] items-center justify-center">
-            <div className="text-center">
-              {error ? <CircleAlert className="mx-auto h-8 w-8 text-red-300" aria-hidden="true" /> : <LoaderCircle className="mx-auto h-8 w-8 animate-spin text-amber-400" aria-hidden="true" />}
-              <p className="mt-5 text-lg font-black" data-testid="status-online-match-loading">{error ?? "서버 매치를 불러오는 중입니다."}</p>
-              {error && <button type="button" data-testid="button-online-match-retry" onClick={() => window.location.reload()} className="mt-6 rounded bg-amber-400 px-5 py-3 text-sm font-black text-black">다시 연결</button>}
-            </div>
-          </section>
-        ) : (
-          <section className="py-6 sm:py-10">
-            <div className="flex items-center justify-between gap-4">
-              <div>
-                <p className="font-display text-xs font-black tracking-[0.25em] text-neutral-500">TURN {state.turn}</p>
-                <h1 className="mt-2 text-2xl font-black" data-testid="text-online-match-status">
-                  {state.status === "FINISHED" ? "매치 종료" : isMyTurn ? "내 턴" : "상대 턴"}
-                </h1>
-              </div>
-              <div className="text-right text-xs font-bold text-neutral-500">
-                <p data-testid="text-online-match-version">STATE v{version ?? "-"}</p>
-                <p className="mt-1">{seat ?? "SEAT UNKNOWN"}</p>
-                 {secondsRemaining !== null && state.status === "IN_PROGRESS" && (
-                   <p className={`mt-2 text-sm font-black ${secondsRemaining <= 10 ? "text-red-300" : "text-amber-300"}`} data-testid="text-online-turn-timer">
-                     {isMyTurn ? "내 턴 " : "상대 턴 "}{secondsRemaining}s
-                   </p>
-                 )}
-              </div>
-            </div>
-
-             {(error || notice || !isConnected) && <div className={`mt-5 flex items-center gap-2 rounded border px-4 py-3 text-sm font-bold ${error ? "border-red-900/70 bg-red-950/20 text-red-200" : "border-amber-900/70 bg-amber-950/20 text-amber-100"}`} data-testid="status-online-match-error"><CircleAlert className="h-4 w-4" aria-hidden="true" />{error ?? notice ?? "연결이 끊겼습니다. 재연결 중..."}</div>}
-
-            <div className="mt-8 grid gap-5 lg:grid-cols-[1fr_auto_1fr]">
-              {[opponent, me].map((player, index) => player ? (
-                <section key={player.id} className={`rounded-xl border p-5 ${player.id === me?.id ? "border-amber-500/40 bg-amber-400/[0.04]" : "border-neutral-800 bg-neutral-950"}`} data-testid={`panel-online-player-${player.id}`}>
-                  <div className="flex items-start justify-between gap-3">
-                    <div>
-                      <p className="font-display text-xs font-black tracking-[0.2em] text-amber-400">{player.id === me?.id ? "YOU" : "OPPONENT"}</p>
-                      <p className="mt-2 text-lg font-black">{player.champion?.name ?? "Champion"}</p>
-                    </div>
-                    <div className="text-right">
-                      <p className="text-2xl font-black text-white">{player.health}<span className="text-sm text-neutral-600">/{player.maxHealth}</span></p>
-                      <p className="mt-1 text-xs font-bold text-amber-300">GOLD {player.currentGold}</p>
-                    </div>
-                  </div>
-                  <div className="mt-5 grid grid-cols-4 gap-2">
-                    {player.board.map((card, slot) => (
-                      <button
-                        type="button"
-                        key={`${player.id}-slot-${slot}`}
-                        data-testid={`button-online-board-${player.id}-${slot}`}
-                         disabled={!canAct || (player.id !== me?.id && !selectedAttackerId)}
-                        onClick={() => {
-                          if (player.id === me?.id) {
-                            if (selectedCard?.cardType === "WRESTLER") {
-                              sendAction({ type: "PLAY_WRESTLER", cardInstanceId: selectedCard.instanceId, boardSlot: slot as 0 | 1 | 2 | 3 });
-                            } else if (card) {
-                              setSelectedAttackerId(card.instanceId);
-                            }
-                          } else if (selectedAttackerId && card) {
-                            sendAction({
-                              type: "ATTACK",
-                              attackerInstanceId: selectedAttackerId,
-                              target: { type: "WRESTLER", playerId: player.id, cardInstanceId: card.instanceId },
-                            });
-                          }
-                        }}
-                        className={`min-h-24 rounded border p-2 text-left disabled:cursor-default ${
-                          selectedAttackerId === card?.instanceId
-                            ? "border-amber-400 bg-amber-400/10"
-                            : "border-neutral-800 bg-black/40"
-                        }`}
-                      >
-                        {card ? <><p className="truncate text-[0.62rem] font-black text-white">{card.definitionId}</p><p className="mt-3 text-xs font-bold text-amber-300">{card.currentAttack}/{card.currentHealth}</p></> : <span className="text-[0.6rem] font-bold text-neutral-700">SLOT {slot + 1}</span>}
-                      </button>
-                    ))}
-                  </div>
-                  {player.id !== me?.id && selectedAttackerId && (
-                    <button
-                      type="button"
-                      data-testid={`button-online-direct-attack-${player.id}`}
-                      onClick={() => sendAction({
-                        type: "ATTACK",
-                        attackerInstanceId: selectedAttackerId,
-                        target: { type: "PLAYER", playerId: player.id },
-                      })}
-                      className="mt-4 w-full rounded border border-red-900/80 px-3 py-2 text-xs font-black text-red-300 hover:bg-red-950/30"
-                    >
-                      선택한 wrestler로 직접 공격
-                    </button>
-                  )}
-                  {isCards(player.hand) ? (
-                    <div className="mt-5">
-                      <p className="text-[0.65rem] font-black tracking-[0.18em] text-neutral-500">{player.id === me?.id ? "YOUR HAND" : "HAND"}</p>
-                      <div className="mt-2 flex flex-wrap gap-2">
-                        {player.hand.map((card) => (
-                         <button type="button" key={card.instanceId} data-testid={`button-online-card-${card.instanceId}`} disabled={player.id !== me?.id || !canAct} onClick={() => setSelectedCardId(card.instanceId)} className={`rounded border px-3 py-2 text-left ${selectedCardId === card.instanceId ? "border-amber-400 bg-amber-400/10" : "border-neutral-800 bg-black/40"} disabled:opacity-60`}>
-                            <p className="max-w-28 truncate text-[0.62rem] font-black">{card.definitionId}</p>
-                            <p className="mt-1 text-[0.62rem] font-bold text-neutral-500">{card.cardType} · {card.currentCost}</p>
-                          </button>
-                        ))}
-                      </div>
-                    </div>
-                  ) : (
-                    <p className="mt-5 text-xs font-bold text-neutral-500" data-testid={`text-online-hidden-hand-${player.id}`}>HIDDEN HAND · {player.hand.count} cards</p>
-                  )}
-                </section>
-              ) : null)}
-              <div className="hidden items-center justify-center lg:flex"><Swords className="h-8 w-8 text-amber-400/50" aria-hidden="true" /></div>
-            </div>
-
-            <div className="mt-8 flex flex-wrap items-center justify-center gap-3 border-t border-neutral-900 pt-6">
-               <button type="button" data-testid="button-online-play-card" disabled={!selectedCard || !canAct} onClick={playSelectedCard} className="inline-flex items-center gap-2 rounded bg-amber-400 px-5 py-3 text-sm font-black text-black disabled:cursor-not-allowed disabled:bg-neutral-800 disabled:text-neutral-500">
-                <Shield className="h-4 w-4" aria-hidden="true" /> 선택 카드 사용
-              </button>
-               <button type="button" data-testid="button-online-end-turn" disabled={!canAct} onClick={() => sendAction({ type: "END_TURN" })} className="rounded border border-neutral-700 px-5 py-3 text-sm font-black text-neutral-200 hover:border-amber-400 disabled:cursor-not-allowed disabled:opacity-40">턴 종료</button>
-               <button type="button" data-testid="button-online-surrender" disabled={state.status === "FINISHED" || !isConnected} onClick={() => sendAction({ type: "SURRENDER" })} className="inline-flex items-center gap-2 rounded border border-red-900/80 px-5 py-3 text-sm font-black text-red-300 hover:bg-red-950/30 disabled:opacity-40">
-                <LogOut className="h-4 w-4" aria-hidden="true" /> 항복
-              </button>
-            </div>
-            {state.status === "FINISHED" && <p className="mt-6 text-center text-xl font-black text-amber-300" data-testid="status-online-match-result">{state.winnerId === me?.id ? "승리했습니다." : state.winnerId ? "패배했습니다." : "매치가 종료되었습니다."}</p>}
-          </section>
-        )}
+    <>
+      <div className="pointer-events-none fixed left-1/2 top-2 z-[220] flex -translate-x-1/2 items-center gap-3 rounded-full border border-neutral-700 bg-black/80 px-4 py-2 text-[10px] font-black tracking-[0.16em] text-neutral-300 shadow-lg">
+        <span className={isConnected ? "text-emerald-400" : "text-red-300"} data-testid="status-online-match-connection">
+          {sessionReplaced ? "SESSION REPLACED" : isConnected ? "SERVER CONNECTED" : "RECONNECTING"}
+        </span>
+        <span data-testid="text-online-match-version">v{version ?? "-"}</span>
+        <span>{seat ?? "SEAT UNKNOWN"}</span>
+        {state.status === "IN_PROGRESS" && <span className={secondsRemaining <= 10 ? "text-red-300" : "text-amber-300"} data-testid="text-online-turn-timer">{secondsRemaining}s</span>}
+        {connectionStates && <span className="hidden sm:inline">{connectionStates.PLAYER_ONE === "CONNECTED" && connectionStates.PLAYER_TWO === "CONNECTED" ? "LIVE" : "GRACE"}</span>}
       </div>
-    </main>
+      {(playError || notice || !isConnected) && (
+        <div className="fixed bottom-3 left-1/2 z-[220] flex max-w-[calc(100vw-2rem)] -translate-x-1/2 items-center gap-2 rounded border border-amber-900/80 bg-black/90 px-4 py-2 text-xs font-bold text-amber-100 shadow-lg" data-testid="status-online-match-error">
+          <CircleAlert className="h-4 w-4 shrink-0" />
+          <span>{playError ?? notice ?? "연결이 끊겼습니다. 재연결 중..."}</span>
+        </div>
+      )}
+      <GameStatePreview
+        key={presentationEpoch}
+        state={state}
+        selectedCardId={selectedCardId}
+        selectedAttackerId={selectedAttackerId}
+        mediaCatalog={mediaCatalog}
+        playError={playError}
+        turnSecondsRemaining={secondsRemaining}
+        onEndTurn={() => sendAction({ type: "END_TURN" })}
+        bgmMuted={bgmMuted}
+        onBgmMutedChange={setBgmMuted}
+        onSurrender={() => sendAction({ type: "SURRENDER" }, { allowOffTurn: true })}
+        onSelectCard={handleSelectCard}
+        onSelectSlot={handleSelectSlot}
+        onUseTechnique={handleUseTechnique}
+        playAnimation={playAnimation}
+        onPlayAnimationComplete={() => {
+          const pending = pendingEntranceAudioRef.current;
+          if (pending) {
+            audioManager.playCardEntrance(pending.url, pending.volume);
+            pendingEntranceAudioRef.current = null;
+          }
+          window.setTimeout(() => setPlayAnimation(null), 180);
+        }}
+        attackAnimation={attackAnimation}
+        attackImpactTriggered={attackImpactTriggered}
+        onAttackImpact={() => {
+          setAttackImpactTriggered(true);
+          if (attackAnimation) playAttackSound(attackAnimation);
+        }}
+        onAttackAnimationComplete={() => {
+          setAttackAnimation(null);
+          setAttackImpactTriggered(false);
+        }}
+        onSelectAttacker={handleSelectAttacker}
+        onAttackWrestler={handleAttackWrestler}
+        onAttackPlayer={handleAttackPlayer}
+        onOpponentAttackPresentation={(animation) => {
+          if (attackAnimation || playAnimation) return;
+          setAttackImpactTriggered(false);
+          setAttackAnimation(animation);
+        }}
+        onSelfPlayPresentation={(card) => {
+          const pending = pendingPlayRef.current;
+          if (!pending || pending.card.instanceId !== card.instanceId) return;
+          setPlayAnimation({
+            kind: "WRESTLER",
+            card: pending.card,
+            geometry: pending.geometry,
+            impactLevel: landingImpactLevel(pending.card.baseCost, pending.card.currentCost),
+          });
+          pendingPlayRef.current = null;
+        }}
+        onUseActive={(cardInstanceId) => sendAction({ type: "USE_ACTIVE", cardInstanceId })}
+        onUseChampionAbility={() => sendAction({ type: "USE_CHAMPION_ABILITY" })}
+        onCancelEffectTargeting={() => setPlayError("이 선택은 서버에서 완료될 때까지 유지됩니다.")}
+        onEffectTarget={(targetId) => sendAction({ type: "SELECT_EFFECT_TARGET", targetId })}
+        onPresentationBusyChange={(busy) => {
+          presentationBusyRef.current = busy;
+          setPresentationBusy(busy);
+        }}
+      />
+      {matchResultVisible && (
+        <MatchResultOverlay state={state} onReturnToMainMenu={() => navigate(ROUTES.MAIN_MENU)} />
+      )}
+    </>
   );
 }
 
