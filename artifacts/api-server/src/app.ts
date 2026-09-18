@@ -29,6 +29,13 @@ app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
+app.get(
+  ["/__test/login/user", "/__test/login/admin"],
+  (_request, response) => {
+    response.status(404).json({ message: "Not found" });
+  },
+);
+
 app.use("/api", router);
 
 export default app;
