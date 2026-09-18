@@ -7,6 +7,7 @@ import {
   createWaitingMatch,
   detachConnection,
   getRuntime,
+  getActiveMatchForUser,
   joinWaitingMatch,
   matchSeat,
   messageForViewer,
@@ -47,6 +48,17 @@ router.post("/", async (request, response) => {
   } catch (error) {
     response.status(400).json({ message: error instanceof Error ? error.message : "매치를 생성하지 못했습니다." });
   }
+});
+
+router.get("/active", async (request, response) => {
+  const user = await requireUser(request, response);
+  if (!user) return;
+  const match = await getActiveMatchForUser(user.id);
+  response.json({
+    match: match
+      ? { id: match.id, status: match.status, stateVersion: match.stateVersion }
+      : null,
+  });
 });
 
 router.post("/:matchId/join", async (request, response) => {

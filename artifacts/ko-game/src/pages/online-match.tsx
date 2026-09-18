@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { ArrowLeft, CircleAlert, LoaderCircle, LogOut, Shield, Swords } from "lucide-react";
 import { useLocation, useParams } from "wouter";
 import { OnlineAuthGate } from "@/components/online-lobby-ui";
@@ -35,6 +35,8 @@ type OnlineGameState = {
   players: VisiblePlayer[];
 };
 
+type ConnectionStatus = "CONNECTED" | "DISCONNECTED_GRACE" | "FORFEITED";
+
 function isGameState(value: unknown): value is OnlineGameState {
   if (!value || typeof value !== "object") return false;
   const candidate = value as Partial<OnlineGameState>;
@@ -56,6 +58,13 @@ function OnlineMatchPage() {
   const [selectedCardId, setSelectedCardId] = useState<string | null>(null);
   const [selectedAttackerId, setSelectedAttackerId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [turnDeadlineAt, setTurnDeadlineAt] = useState<number | null>(null);
+  const [serverOffset, setServerOffset] = useState(0);
+  const [clock, setClock] = useState(() => Date.now());
+  const [connectionStates, setConnectionStates] = useState<Record<"PLAYER_ONE" | "PLAYER_TWO", ConnectionStatus> | null>(null);
+  const [notice, setNotice] = useState<string | null>(null);
+  const [sessionReplaced, setSessionReplaced] = useState(false);
+  const lastEventSequence = useRef(-1);
 
   useEffect(() => {
     client.connect();
@@ -74,6 +83,21 @@ function OnlineMatchPage() {
         message.type === "RESYNC_REQUIRED"
       ) {
         if (message.type === "MATCH_SNAPSHOT") setSeat(message.seat);
+        setTurnDeadlineAt(message.turnDeadlineAt);
+        setServerOffset(message.serverTime - Date.now());
+        setConnectionStates(message.connectionStates);
+        setSessionReplaced(false);
+        const sequencedEvents = message.events.filter((event): event is { sequenceNumber: number } =>
+          Boolean(event && typeof event === "object" && typeof (event as { sequenceNumber?: unknown }).sequenceNumber === "number"),
+        );
+        if (message.type === "MATCH_SNAPSHOT" || message.type === "RESYNC_REQUIRED") {
+          lastEventSequence.current = sequencedEvents.at(-1)?.sequenceNumber ?? -1;
+        } else if (sequencedEvents.some((event) => event.sequenceNumber > lastEventSequence.current + 1)) {
+          client.send({ type: "RESYNC", matchId });
+          return;
+        } else if (sequencedEvents.length) {
+          lastEventSequence.current = sequencedEvents.at(-1)!.sequenceNumber;
+        }
         if (isGameState(message.state)) {
           setState(message.state);
           setVersion("version" in message ? message.version : null);
@@ -81,6 +105,19 @@ function OnlineMatchPage() {
         } else {
           setError("서버 매치 상태를 해석하지 못했습니다.");
         }
+        return;
+      }
+      if (message.type === "MATCH_CONNECTION_STATUS") {
+        setConnectionStates((current) => ({
+          ...(current ?? { PLAYER_ONE: "CONNECTED", PLAYER_TWO: "CONNECTED" }),
+          [message.playerId]: message.status,
+        }));
+        setNotice(message.status === "DISCONNECTED_GRACE" ? "상대의 연결이 끊어졌습니다. 재접속을 기다리는 중..." : "상대가 다시 연결되었습니다.");
+        return;
+      }
+      if (message.type === "SESSION_REPLACED") {
+        setSessionReplaced(true);
+        setNotice(message.message);
         return;
       }
       if (message.type === "ACTION_REJECTED" || message.type === "LOBBY_ERROR" || message.type === "ERROR") {
@@ -94,6 +131,11 @@ function OnlineMatchPage() {
     };
   }, [client, matchId]);
 
+  useEffect(() => {
+    const timer = window.setInterval(() => setClock(Date.now()), 250);
+    return () => window.clearInterval(timer);
+  }, []);
+
   const me = useMemo(
     () => state?.players.find((player) => player.id === seat) ?? state?.players[0] ?? null,
     [seat, state],
@@ -103,6 +145,11 @@ function OnlineMatchPage() {
     [me?.id, state],
   );
   const isMyTurn = Boolean(me && state?.activePlayerId === me.id && state.status === "IN_PROGRESS");
+  const isConnected = connection === "open" && !sessionReplaced;
+  const canAct = isConnected && isMyTurn;
+  const secondsRemaining = turnDeadlineAt === null
+    ? null
+    : Math.max(0, Math.ceil((turnDeadlineAt - (clock + serverOffset)) / 1000));
   const selectedCard = me && isCards(me.hand) ? me.hand.find((card) => card.instanceId === selectedCardId) : null;
 
   function sendAction(action: OnlineActionPayload) {
@@ -142,8 +189,8 @@ function OnlineMatchPage() {
           </button>
           <div className="text-right">
             <p className="font-display text-xs font-black tracking-[0.25em] text-amber-400">KO / LIVE MATCH</p>
-            <p className={`mt-1 text-[0.62rem] font-bold ${connection === "open" ? "text-emerald-400" : "text-red-300"}`} data-testid="status-online-match-connection">
-              {connection === "open" ? "SERVER CONNECTED" : "CONNECTION LOST"}
+            <p className={`mt-1 text-[0.62rem] font-bold ${isConnected ? "text-emerald-400" : "text-red-300"}`} data-testid="status-online-match-connection">
+              {sessionReplaced ? "SESSION REPLACED" : isConnected ? "SERVER CONNECTED" : "RECONNECTING..."}
             </p>
           </div>
         </header>
@@ -168,10 +215,15 @@ function OnlineMatchPage() {
               <div className="text-right text-xs font-bold text-neutral-500">
                 <p data-testid="text-online-match-version">STATE v{version ?? "-"}</p>
                 <p className="mt-1">{seat ?? "SEAT UNKNOWN"}</p>
+                 {secondsRemaining !== null && state.status === "IN_PROGRESS" && (
+                   <p className={`mt-2 text-sm font-black ${secondsRemaining <= 10 ? "text-red-300" : "text-amber-300"}`} data-testid="text-online-turn-timer">
+                     {isMyTurn ? "내 턴 " : "상대 턴 "}{secondsRemaining}s
+                   </p>
+                 )}
               </div>
             </div>
 
-            {error && <div className="mt-5 flex items-center gap-2 rounded border border-red-900/70 bg-red-950/20 px-4 py-3 text-sm font-bold text-red-200" data-testid="status-online-match-error"><CircleAlert className="h-4 w-4" aria-hidden="true" />{error}</div>}
+             {(error || notice || !isConnected) && <div className={`mt-5 flex items-center gap-2 rounded border px-4 py-3 text-sm font-bold ${error ? "border-red-900/70 bg-red-950/20 text-red-200" : "border-amber-900/70 bg-amber-950/20 text-amber-100"}`} data-testid="status-online-match-error"><CircleAlert className="h-4 w-4" aria-hidden="true" />{error ?? notice ?? "연결이 끊겼습니다. 재연결 중..."}</div>}
 
             <div className="mt-8 grid gap-5 lg:grid-cols-[1fr_auto_1fr]">
               {[opponent, me].map((player, index) => player ? (
@@ -192,7 +244,7 @@ function OnlineMatchPage() {
                         type="button"
                         key={`${player.id}-slot-${slot}`}
                         data-testid={`button-online-board-${player.id}-${slot}`}
-                        disabled={!isMyTurn || (player.id !== me?.id && !selectedAttackerId)}
+                         disabled={!canAct || (player.id !== me?.id && !selectedAttackerId)}
                         onClick={() => {
                           if (player.id === me?.id) {
                             if (selectedCard?.cardType === "WRESTLER") {
@@ -237,7 +289,7 @@ function OnlineMatchPage() {
                       <p className="text-[0.65rem] font-black tracking-[0.18em] text-neutral-500">{player.id === me?.id ? "YOUR HAND" : "HAND"}</p>
                       <div className="mt-2 flex flex-wrap gap-2">
                         {player.hand.map((card) => (
-                          <button type="button" key={card.instanceId} data-testid={`button-online-card-${card.instanceId}`} disabled={player.id !== me?.id || !isMyTurn} onClick={() => setSelectedCardId(card.instanceId)} className={`rounded border px-3 py-2 text-left ${selectedCardId === card.instanceId ? "border-amber-400 bg-amber-400/10" : "border-neutral-800 bg-black/40"} disabled:opacity-60`}>
+                         <button type="button" key={card.instanceId} data-testid={`button-online-card-${card.instanceId}`} disabled={player.id !== me?.id || !canAct} onClick={() => setSelectedCardId(card.instanceId)} className={`rounded border px-3 py-2 text-left ${selectedCardId === card.instanceId ? "border-amber-400 bg-amber-400/10" : "border-neutral-800 bg-black/40"} disabled:opacity-60`}>
                             <p className="max-w-28 truncate text-[0.62rem] font-black">{card.definitionId}</p>
                             <p className="mt-1 text-[0.62rem] font-bold text-neutral-500">{card.cardType} · {card.currentCost}</p>
                           </button>
@@ -253,11 +305,11 @@ function OnlineMatchPage() {
             </div>
 
             <div className="mt-8 flex flex-wrap items-center justify-center gap-3 border-t border-neutral-900 pt-6">
-              <button type="button" data-testid="button-online-play-card" disabled={!selectedCard || !isMyTurn} onClick={playSelectedCard} className="inline-flex items-center gap-2 rounded bg-amber-400 px-5 py-3 text-sm font-black text-black disabled:cursor-not-allowed disabled:bg-neutral-800 disabled:text-neutral-500">
+               <button type="button" data-testid="button-online-play-card" disabled={!selectedCard || !canAct} onClick={playSelectedCard} className="inline-flex items-center gap-2 rounded bg-amber-400 px-5 py-3 text-sm font-black text-black disabled:cursor-not-allowed disabled:bg-neutral-800 disabled:text-neutral-500">
                 <Shield className="h-4 w-4" aria-hidden="true" /> 선택 카드 사용
               </button>
-              <button type="button" data-testid="button-online-end-turn" disabled={!isMyTurn} onClick={() => sendAction({ type: "END_TURN" })} className="rounded border border-neutral-700 px-5 py-3 text-sm font-black text-neutral-200 hover:border-amber-400 disabled:cursor-not-allowed disabled:opacity-40">턴 종료</button>
-              <button type="button" data-testid="button-online-surrender" disabled={state.status === "FINISHED"} onClick={() => sendAction({ type: "SURRENDER" })} className="inline-flex items-center gap-2 rounded border border-red-900/80 px-5 py-3 text-sm font-black text-red-300 hover:bg-red-950/30 disabled:opacity-40">
+               <button type="button" data-testid="button-online-end-turn" disabled={!canAct} onClick={() => sendAction({ type: "END_TURN" })} className="rounded border border-neutral-700 px-5 py-3 text-sm font-black text-neutral-200 hover:border-amber-400 disabled:cursor-not-allowed disabled:opacity-40">턴 종료</button>
+               <button type="button" data-testid="button-online-surrender" disabled={state.status === "FINISHED" || !isConnected} onClick={() => sendAction({ type: "SURRENDER" })} className="inline-flex items-center gap-2 rounded border border-red-900/80 px-5 py-3 text-sm font-black text-red-300 hover:bg-red-950/30 disabled:opacity-40">
                 <LogOut className="h-4 w-4" aria-hidden="true" /> 항복
               </button>
             </div>

@@ -27,7 +27,8 @@ export type OnlineClientMessage =
   | { type: "JOIN_PRIVATE_ROOM"; roomCode: string; deckId: string }
   | { type: "LEAVE_PRIVATE_ROOM" }
   | { type: "CLOSE_PRIVATE_ROOM" }
-  | { type: "SET_ROOM_READY"; ready: boolean };
+  | { type: "SET_ROOM_READY"; ready: boolean }
+  | { type: "RESYNC"; matchId: string };
 
 export type LobbyDeckSummary = {
   deckId: string;
@@ -75,6 +76,10 @@ export type OnlineServerMessage =
       version: number;
       state: unknown;
       events: unknown[];
+      serverTime: number;
+      turnStartedAt: number | null;
+      turnDeadlineAt: number | null;
+      connectionStates: Record<"PLAYER_ONE" | "PLAYER_TWO", "CONNECTED" | "DISCONNECTED_GRACE" | "FORFEITED">;
     }
   | {
       type: "ACTION_ACCEPTED";
@@ -83,6 +88,10 @@ export type OnlineServerMessage =
       version: number;
       state: unknown;
       events: unknown[];
+      serverTime: number;
+      turnStartedAt: number | null;
+      turnDeadlineAt: number | null;
+      connectionStates: Record<"PLAYER_ONE" | "PLAYER_TWO", "CONNECTED" | "DISCONNECTED_GRACE" | "FORFEITED">;
     }
   | {
       type: "ACTION_REJECTED";
@@ -98,6 +107,10 @@ export type OnlineServerMessage =
       version: number;
       state: unknown;
       events: unknown[];
+      serverTime: number;
+      turnStartedAt: number | null;
+      turnDeadlineAt: number | null;
+      connectionStates: Record<"PLAYER_ONE" | "PLAYER_TWO", "CONNECTED" | "DISCONNECTED_GRACE" | "FORFEITED">;
     }
   | {
       type: "RESYNC_REQUIRED";
@@ -105,7 +118,20 @@ export type OnlineServerMessage =
       version: number;
       state: unknown;
       events: unknown[];
+      serverTime: number;
+      turnStartedAt: number | null;
+      turnDeadlineAt: number | null;
+      connectionStates: Record<"PLAYER_ONE" | "PLAYER_TWO", "CONNECTED" | "DISCONNECTED_GRACE" | "FORFEITED">;
     }
+  | {
+      type: "MATCH_CONNECTION_STATUS";
+      matchId: string;
+      playerId: "PLAYER_ONE" | "PLAYER_TWO";
+      status: "CONNECTED" | "DISCONNECTED_GRACE" | "FORFEITED";
+      reconnectDeadlineAt: number | null;
+      serverTime: number;
+    }
+  | { type: "SESSION_REPLACED"; matchId: string; message: string }
   | { type: "ERROR"; code: string; message: string }
   | LobbyServerMessage;
 

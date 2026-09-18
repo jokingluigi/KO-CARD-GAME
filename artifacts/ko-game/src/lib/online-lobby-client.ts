@@ -47,6 +47,10 @@ export type OnlineMatchMessage =
       version: number;
       state: unknown;
       events: unknown[];
+      serverTime: number;
+      turnStartedAt: number | null;
+      turnDeadlineAt: number | null;
+      connectionStates: Record<"PLAYER_ONE" | "PLAYER_TWO", "CONNECTED" | "DISCONNECTED_GRACE" | "FORFEITED">;
     }
   | {
       type: "ACTION_ACCEPTED";
@@ -55,6 +59,10 @@ export type OnlineMatchMessage =
       version: number;
       state: unknown;
       events: unknown[];
+      serverTime: number;
+      turnStartedAt: number | null;
+      turnDeadlineAt: number | null;
+      connectionStates: Record<"PLAYER_ONE" | "PLAYER_TWO", "CONNECTED" | "DISCONNECTED_GRACE" | "FORFEITED">;
     }
   | {
       type: "ACTION_REJECTED";
@@ -70,6 +78,10 @@ export type OnlineMatchMessage =
       version: number;
       state: unknown;
       events: unknown[];
+      serverTime: number;
+      turnStartedAt: number | null;
+      turnDeadlineAt: number | null;
+      connectionStates: Record<"PLAYER_ONE" | "PLAYER_TWO", "CONNECTED" | "DISCONNECTED_GRACE" | "FORFEITED">;
     }
   | {
       type: "RESYNC_REQUIRED";
@@ -77,7 +89,20 @@ export type OnlineMatchMessage =
       version: number;
       state: unknown;
       events: unknown[];
-    };
+      serverTime: number;
+      turnStartedAt: number | null;
+      turnDeadlineAt: number | null;
+      connectionStates: Record<"PLAYER_ONE" | "PLAYER_TWO", "CONNECTED" | "DISCONNECTED_GRACE" | "FORFEITED">;
+    }
+  | {
+      type: "MATCH_CONNECTION_STATUS";
+      matchId: string;
+      playerId: "PLAYER_ONE" | "PLAYER_TWO";
+      status: "CONNECTED" | "DISCONNECTED_GRACE" | "FORFEITED";
+      reconnectDeadlineAt: number | null;
+      serverTime: number;
+    }
+  | { type: "SESSION_REPLACED"; matchId: string; message: string };
 
 export type OnlineServerMessage = OnlineLobbyMessage | OnlineMatchMessage;
 
@@ -91,6 +116,7 @@ export type OnlineLobbyClientMessage =
   | { type: "SET_ROOM_READY"; roomId: string; ready: boolean }
   | { type: "SUBSCRIBE"; matchId: string }
   | { type: "UNSUBSCRIBE"; matchId: string }
+  | { type: "RESYNC"; matchId: string }
   | {
       type: "MATCH_ACTION";
       matchId: string;
@@ -122,6 +148,9 @@ class OnlineLobbyClient {
   private readonly listeners = new Set<OnlineLobbyListener>();
   private readonly connectionListeners = new Set<OnlineLobbyConnectionListener>();
   private lastHandoff: Extract<OnlineLobbyMessage, { type: "MATCH_FOUND" | "MATCH_STARTING" }> | null = null;
+  private reconnectTimer: ReturnType<typeof setTimeout> | null = null;
+  private reconnectAttempt = 0;
+  private shouldReconnect = true;
 
   get state() {
     return this.connectionState;
@@ -144,13 +173,17 @@ class OnlineLobbyClient {
   }
 
   connect() {
+    this.shouldReconnect = true;
     if (this.socket && (this.socket.readyState === WebSocket.OPEN || this.socket.readyState === WebSocket.CONNECTING)) {
       return;
     }
     this.setConnectionState("connecting");
     const socket = new WebSocket(websocketUrl());
     this.socket = socket;
-    socket.addEventListener("open", () => this.setConnectionState("open"));
+    socket.addEventListener("open", () => {
+      this.reconnectAttempt = 0;
+      this.setConnectionState("open");
+    });
     socket.addEventListener("message", (event) => {
       try {
         const message = JSON.parse(String(event.data)) as OnlineServerMessage;
@@ -171,11 +204,15 @@ class OnlineLobbyClient {
       if (this.socket === socket) {
         this.socket = null;
         this.setConnectionState("closed");
+        this.scheduleReconnect();
       }
     });
   }
 
   close() {
+    this.shouldReconnect = false;
+    if (this.reconnectTimer) clearTimeout(this.reconnectTimer);
+    this.reconnectTimer = null;
     this.socket?.close();
     this.socket = null;
     this.setConnectionState("closed");
@@ -195,6 +232,16 @@ class OnlineLobbyClient {
   private setConnectionState(state: OnlineLobbyConnectionState) {
     this.connectionState = state;
     this.connectionListeners.forEach((listener) => listener(state));
+  }
+
+  private scheduleReconnect() {
+    if (!this.shouldReconnect || this.reconnectTimer) return;
+    const delay = Math.min(500 * (2 ** this.reconnectAttempt), 8000);
+    this.reconnectAttempt += 1;
+    this.reconnectTimer = setTimeout(() => {
+      this.reconnectTimer = null;
+      this.connect();
+    }, delay);
   }
 }
 

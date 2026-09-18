@@ -6,6 +6,7 @@ export type EntryCause = 'PLAY_FROM_HAND' | 'SUMMON' | 'REVIVE' | 'CHAMPION_DEPL
 export type GameEventType =
   | 'TURN_STARTED'
   | 'TURN_ENDED'
+  | 'TURN_TIMEOUT'
   | 'CARD_DRAWN'
   | 'CARD_PLAYED'
   | 'ENTER_FIELD'

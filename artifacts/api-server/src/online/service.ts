@@ -30,6 +30,7 @@ import {
   sequencedEventsForViewer,
   sanitizeGameStateForViewer,
 } from "./sanitizer";
+import { ONLINE_MATCH_CONFIG } from "./config";
 import type {
   OnlineActionPayload,
   OnlineServerMessage,
@@ -51,6 +52,8 @@ export interface OnlineMatchConnection {
   send(message: OnlineServerMessage): void;
 }
 
+export type OnlineConnectionStatus = "CONNECTED" | "DISCONNECTED_GRACE" | "FORFEITED";
+
 type CachedAction = {
   userId: string;
   version: number;
@@ -65,10 +68,21 @@ export type OnlineMatchRuntime = {
   version: number;
   requestIds: Map<string, CachedAction>;
   connections: Set<OnlineMatchConnection>;
+  primaryConnections: Map<string, OnlineMatchConnection>;
+  connectionStates: Record<OnlineSeat, OnlineConnectionStatus>;
+  disconnectStartedAt: Partial<Record<OnlineSeat, number>>;
+  reconnectDeadlineAt: Partial<Record<OnlineSeat, number>>;
+  turnStartedAt: number | null;
+  turnDeadlineAt: number | null;
+  resultReason: string | null;
   queue: Promise<void>;
+  turnTimer: ReturnType<typeof setTimeout> | null;
+  disconnectTimers: Map<OnlineSeat, ReturnType<typeof setTimeout>>;
+  cleanupTimer: ReturnType<typeof setTimeout> | null;
 };
 
 const runtimes = new Map<string, OnlineMatchRuntime>();
+const runtimeRestores = new Map<string, Promise<OnlineMatchRuntime | null>>();
 const MAX_REQUEST_CACHE = 64;
 
 function seatFor(snapshot: OnlineMatchSnapshot, userId: string): OnlineSeat | null {
@@ -135,12 +149,24 @@ async function persistRuntime(runtime: OnlineMatchRuntime): Promise<void> {
       status: finished ? "ENDED" : "ACTIVE",
       serializedGameState: runtime.state,
       stateVersion: runtime.version,
+      turnStartedAt: runtime.turnStartedAt ? new Date(runtime.turnStartedAt) : null,
+      turnDeadlineAt: runtime.turnDeadlineAt ? new Date(runtime.turnDeadlineAt) : null,
+      player1DisconnectStartedAt: runtime.disconnectStartedAt.PLAYER_ONE
+        ? new Date(runtime.disconnectStartedAt.PLAYER_ONE)
+        : null,
+      player1ReconnectDeadlineAt: runtime.reconnectDeadlineAt.PLAYER_ONE
+        ? new Date(runtime.reconnectDeadlineAt.PLAYER_ONE)
+        : null,
+      player2DisconnectStartedAt: runtime.disconnectStartedAt.PLAYER_TWO
+        ? new Date(runtime.disconnectStartedAt.PLAYER_TWO)
+        : null,
+      player2ReconnectDeadlineAt: runtime.reconnectDeadlineAt.PLAYER_TWO
+        ? new Date(runtime.reconnectDeadlineAt.PLAYER_TWO)
+        : null,
       updatedAt: new Date(),
       endedAt: finished ? new Date() : null,
       winnerUserId,
-      resultReason: finished
-        ? runtime.state.events.at(-1)?.reason ?? "GAME_FINISHED"
-        : null,
+      resultReason: finished ? runtime.resultReason ?? runtime.state.events.at(-1)?.reason ?? "GAME_FINISHED" : null,
     })
     .where(and(
       eq(onlineMatchesTable.id, runtime.matchId),
@@ -150,6 +176,34 @@ async function persistRuntime(runtime: OnlineMatchRuntime): Promise<void> {
   if (!updated) {
     throw new Error("온라인 매치 상태 저장에 실패했습니다.");
   }
+}
+
+async function persistConnectionState(runtime: OnlineMatchRuntime): Promise<void> {
+  await db.update(onlineMatchesTable)
+    .set({
+      player1DisconnectStartedAt: runtime.disconnectStartedAt.PLAYER_ONE
+        ? new Date(runtime.disconnectStartedAt.PLAYER_ONE)
+        : null,
+      player1ReconnectDeadlineAt: runtime.reconnectDeadlineAt.PLAYER_ONE
+        ? new Date(runtime.reconnectDeadlineAt.PLAYER_ONE)
+        : null,
+      player2DisconnectStartedAt: runtime.disconnectStartedAt.PLAYER_TWO
+        ? new Date(runtime.disconnectStartedAt.PLAYER_TWO)
+        : null,
+      player2ReconnectDeadlineAt: runtime.reconnectDeadlineAt.PLAYER_TWO
+        ? new Date(runtime.reconnectDeadlineAt.PLAYER_TWO)
+        : null,
+      updatedAt: new Date(),
+    })
+    .where(and(eq(onlineMatchesTable.id, runtime.matchId), eq(onlineMatchesTable.status, "ACTIVE")));
+}
+
+function timestamp(value: Date | null): number | null {
+  return value?.getTime() ?? null;
+}
+
+function restoredConnectionState(): OnlineConnectionStatus {
+  return "DISCONNECTED_GRACE";
 }
 
 async function hydrateRuntime(record: OnlineMatchRecord): Promise<OnlineMatchRuntime> {
@@ -162,6 +216,9 @@ async function hydrateRuntime(record: OnlineMatchRecord): Promise<OnlineMatchRun
     throw new Error("활성화되지 않은 온라인 매치입니다.");
   }
 
+  const now = Date.now();
+  const player1Deadline = timestamp(record.player1ReconnectDeadlineAt) ?? now + ONLINE_MATCH_CONFIG.reconnectGraceSeconds * 1000;
+  const player2Deadline = timestamp(record.player2ReconnectDeadlineAt) ?? now + ONLINE_MATCH_CONFIG.reconnectGraceSeconds * 1000;
   const runtime: OnlineMatchRuntime = {
     matchId: record.id,
     snapshot,
@@ -169,9 +226,31 @@ async function hydrateRuntime(record: OnlineMatchRecord): Promise<OnlineMatchRun
     version: record.stateVersion,
     requestIds: new Map(),
     connections: new Set(),
+    primaryConnections: new Map(),
+    connectionStates: {
+      PLAYER_ONE: restoredConnectionState(),
+      PLAYER_TWO: restoredConnectionState(),
+    },
+    disconnectStartedAt: {
+      PLAYER_ONE: timestamp(record.player1DisconnectStartedAt) ?? now,
+      PLAYER_TWO: timestamp(record.player2DisconnectStartedAt) ?? now,
+    },
+    reconnectDeadlineAt: {
+      ...(player1Deadline ? { PLAYER_ONE: player1Deadline } : {}),
+      ...(player2Deadline ? { PLAYER_TWO: player2Deadline } : {}),
+    },
+    turnStartedAt: timestamp(record.turnStartedAt) ?? now,
+    turnDeadlineAt: timestamp(record.turnDeadlineAt) ?? now + ONLINE_MATCH_CONFIG.turnTimeLimitSeconds * 1000,
+    resultReason: record.resultReason,
     queue: Promise.resolve(),
+    turnTimer: null,
+    disconnectTimers: new Map(),
+    cleanupTimer: null,
   };
   runtimes.set(record.id, runtime);
+  void persistConnectionState(runtime);
+  scheduleTurnTimer(runtime);
+  scheduleDisconnectTimers(runtime);
   return runtime;
 }
 
@@ -185,10 +264,199 @@ export async function getOnlineMatchRecord(matchId: string): Promise<OnlineMatch
 export async function getRuntime(matchId: string): Promise<OnlineMatchRuntime | null> {
   const active = runtimes.get(matchId);
   if (active && active.state.status !== "FINISHED") return active;
-  if (active) runtimes.delete(matchId);
-  const record = await getOnlineMatchRecord(matchId);
-  if (!record || record.status !== "ACTIVE") return null;
-  return hydrateRuntime(record);
+  if (active) cleanupMatchRuntime(matchId);
+  const pending = runtimeRestores.get(matchId);
+  if (pending) return pending;
+  const restore = (async () => {
+    const record = await getOnlineMatchRecord(matchId);
+    if (!record || (record.status !== "ACTIVE" && record.status !== "ENDED")) return null;
+    return hydrateRuntime(record);
+  })();
+  runtimeRestores.set(matchId, restore);
+  try {
+    return await restore;
+  } finally {
+    runtimeRestores.delete(matchId);
+  }
+}
+
+function clearTurnTimer(runtime: OnlineMatchRuntime): void {
+  if (runtime.turnTimer) clearTimeout(runtime.turnTimer);
+  runtime.turnTimer = null;
+}
+
+function clearDisconnectTimer(runtime: OnlineMatchRuntime, seat: OnlineSeat): void {
+  const timer = runtime.disconnectTimers.get(seat);
+  if (timer) clearTimeout(timer);
+  runtime.disconnectTimers.delete(seat);
+}
+
+function connectionStatusMessage(
+  runtime: OnlineMatchRuntime,
+  seat: OnlineSeat,
+): OnlineServerMessage {
+  return {
+    type: "MATCH_CONNECTION_STATUS",
+    matchId: runtime.matchId,
+    playerId: seat,
+    status: runtime.connectionStates[seat],
+    reconnectDeadlineAt: runtime.reconnectDeadlineAt[seat] ?? null,
+    serverTime: Date.now(),
+  };
+}
+
+function broadcastConnectionStatus(runtime: OnlineMatchRuntime, seat: OnlineSeat): void {
+  const message = connectionStatusMessage(runtime, seat);
+  for (const connection of runtime.connections) connection.send(message);
+}
+
+function scheduleTurnTimer(runtime: OnlineMatchRuntime): void {
+  clearTurnTimer(runtime);
+  if (runtime.state.status === "FINISHED" || !runtime.turnDeadlineAt) return;
+  const expectedTurn = runtime.state.turn;
+  const expectedDeadline = runtime.turnDeadlineAt;
+  const delay = Math.max(0, expectedDeadline - Date.now());
+  runtime.turnTimer = setTimeout(() => {
+    void withRuntimeLock(runtime, async () => {
+      if (
+        runtime.state.status === "FINISHED" ||
+        runtime.state.turn !== expectedTurn ||
+        runtime.turnDeadlineAt !== expectedDeadline
+      ) {
+        return;
+      }
+      if (Date.now() < expectedDeadline) {
+        scheduleTurnTimer(runtime);
+        return;
+      }
+      await resolveTurnTimeoutLocked(runtime);
+    });
+  }, delay);
+}
+
+function scheduleDisconnectTimers(runtime: OnlineMatchRuntime): void {
+  for (const seat of ["PLAYER_ONE", "PLAYER_TWO"] as const) {
+    clearDisconnectTimer(runtime, seat);
+    const deadline = runtime.reconnectDeadlineAt[seat];
+    if (runtime.connectionStates[seat] !== "DISCONNECTED_GRACE" || !deadline) continue;
+    const expectedDeadline = deadline;
+    runtime.disconnectTimers.set(seat, setTimeout(() => {
+      void withRuntimeLock(runtime, async () => {
+        if (
+          runtime.state.status === "FINISHED" ||
+          runtime.connectionStates[seat] !== "DISCONNECTED_GRACE" ||
+          runtime.reconnectDeadlineAt[seat] !== expectedDeadline
+        ) {
+          return;
+        }
+        if (Date.now() < expectedDeadline) {
+          scheduleDisconnectTimers(runtime);
+          return;
+        }
+        await resolveDisconnectTimeoutLocked(runtime, seat);
+      });
+    }, Math.max(0, expectedDeadline - Date.now())));
+  }
+}
+
+function setNextTurnDeadline(runtime: OnlineMatchRuntime): void {
+  runtime.turnStartedAt = Date.now();
+  runtime.turnDeadlineAt = runtime.turnStartedAt + ONLINE_MATCH_CONFIG.turnTimeLimitSeconds * 1000;
+}
+
+function appendTimeoutEvent(state: GameState, playerId: string): GameState {
+  return {
+    ...state,
+    events: [
+      ...state.events,
+      {
+        type: "TURN_TIMEOUT",
+        playerId,
+        source: { type: "SYSTEM" },
+        target: { type: "PLAYER", playerId },
+        reason: "AUTO_END_TURN",
+      },
+    ],
+  };
+}
+
+async function commitTransition(
+  runtime: OnlineMatchRuntime,
+  state: GameState,
+  eventStart: number,
+  resultReason: string | null = null,
+): Promise<{ version: number; eventStart: number }> {
+  const turnChanged = state.turn !== runtime.state.turn || state.activePlayerId !== runtime.state.activePlayerId;
+  runtime.state = turnChanged ? state : state;
+  runtime.version += 1;
+  runtime.resultReason = resultReason;
+  if (turnChanged && runtime.state.status !== "FINISHED") setNextTurnDeadline(runtime);
+  if (runtime.state.status === "FINISHED") {
+    clearTurnTimer(runtime);
+    for (const seat of ["PLAYER_ONE", "PLAYER_TWO"] as const) clearDisconnectTimer(runtime, seat);
+  }
+  await persistRuntime(runtime);
+  if (turnChanged) scheduleTurnTimer(runtime);
+  return { version: runtime.version, eventStart };
+}
+
+async function resolveTurnTimeoutLocked(runtime: OnlineMatchRuntime): Promise<void> {
+  if (runtime.state.status === "FINISHED" || !runtime.state.activePlayerId) return;
+  const playerId = runtime.state.activePlayerId;
+  const candidate = structuredClone(runtime.state);
+  candidate.targetingState = undefined;
+  const result = executeAction(candidate, { type: "END_TURN", playerId });
+  if (!result.success) return;
+  const eventStart = runtime.state.events.length;
+  const nextState = appendTimeoutEvent(result.state, playerId);
+  await commitTransition(runtime, nextState, eventStart);
+  const execution = {
+    ok: true as const,
+    runtime,
+    requestId: `turn-timeout:${runtime.matchId}:${runtime.version}`,
+    version: runtime.version,
+    eventStart,
+    duplicate: false,
+  };
+  broadcastExecution(execution);
+}
+
+async function resolveDisconnectTimeoutLocked(
+  runtime: OnlineMatchRuntime,
+  forfeitingSeat: OnlineSeat,
+): Promise<void> {
+  if (runtime.state.status === "FINISHED") return;
+  const winnerSeat: OnlineSeat = forfeitingSeat === "PLAYER_ONE" ? "PLAYER_TWO" : "PLAYER_ONE";
+  const eventStart = runtime.state.events.length;
+  runtime.state = {
+    ...runtime.state,
+    status: "FINISHED",
+    winnerId: playerIdForSeat(winnerSeat),
+    loserId: playerIdForSeat(forfeitingSeat),
+    events: [
+      ...runtime.state.events,
+      {
+        type: "SURRENDER",
+        playerId: playerIdForSeat(forfeitingSeat),
+        source: { type: "SYSTEM" },
+        target: { type: "PLAYER", playerId: playerIdForSeat(forfeitingSeat) },
+        reason: "DISCONNECT_TIMEOUT",
+      },
+    ],
+  };
+  runtime.connectionStates[forfeitingSeat] = "FORFEITED";
+  runtime.resultReason = "DISCONNECT_TIMEOUT";
+  runtime.version += 1;
+  await persistRuntime(runtime);
+  const execution = {
+    ok: true as const,
+    runtime,
+    requestId: `disconnect-timeout:${runtime.matchId}:${runtime.version}`,
+    version: runtime.version,
+    eventStart,
+    duplicate: false,
+  };
+  broadcastExecution(execution);
 }
 
 export function matchSeat(runtime: OnlineMatchRuntime, userId: string): OnlineSeat | null {
@@ -265,7 +533,12 @@ export async function validateOnlineDeck(
 }
 
 export async function userHasActiveMatch(userId: string): Promise<boolean> {
-  const [record] = await db.select({ id: onlineMatchesTable.id })
+  const record = await getActiveMatchForUser(userId);
+  return Boolean(record);
+}
+
+export async function getActiveMatchForUser(userId: string): Promise<OnlineMatchRecord | null> {
+  const [record] = await db.select()
     .from(onlineMatchesTable)
     .where(and(
       eq(onlineMatchesTable.status, "ACTIVE"),
@@ -275,7 +548,7 @@ export async function userHasActiveMatch(userId: string): Promise<boolean> {
       ),
     ))
     .limit(1);
-  return Boolean(record);
+  return record ?? null;
 }
 
 export async function startOnlineMatch(
@@ -333,6 +606,8 @@ export async function startOnlineMatch(
     createDeterministicRandom(matchId),
     { backgrounds: [], bgms: [], attackSounds: {} },
   );
+  const turnStartedAt = Date.now();
+  const turnDeadlineAt = turnStartedAt + ONLINE_MATCH_CONFIG.turnTimeLimitSeconds * 1000;
 
   let record: OnlineMatchRecord | undefined;
   if (existingWaitingMatchId) {
@@ -344,6 +619,8 @@ export async function startOnlineMatch(
         serializedSnapshot: snapshot,
         serializedGameState: started,
         stateVersion: 0,
+        turnStartedAt: new Date(turnStartedAt),
+        turnDeadlineAt: new Date(turnDeadlineAt),
         startedAt: new Date(),
         updatedAt: new Date(),
       })
@@ -364,6 +641,8 @@ export async function startOnlineMatch(
       serializedSnapshot: snapshot,
       serializedGameState: started,
       stateVersion: 0,
+      turnStartedAt: new Date(turnStartedAt),
+      turnDeadlineAt: new Date(turnDeadlineAt),
       startedAt: new Date(),
       updatedAt: new Date(),
     }).returning();
@@ -414,6 +693,7 @@ export async function applyMatchAction(
   requestId: string,
   expectedVersion: number,
   payload: OnlineActionPayload,
+  connection?: OnlineMatchConnection,
 ): Promise<ActionExecution> {
   const runtime = await getRuntime(matchId);
   if (!runtime) {
@@ -425,6 +705,15 @@ export async function applyMatchAction(
   }
 
   return withRuntimeLock(runtime, async () => {
+    if (connection && runtime.primaryConnections.get(userId) !== connection) {
+      return {
+        ok: false,
+        runtime,
+        requestId,
+        code: "NOT_PRIMARY_CONNECTION",
+        message: "다른 창에서 이 대전에 접속했습니다.",
+      };
+    }
     const cached = runtime.requestIds.get(requestId);
     if (cached) {
       if (cached.userId !== userId) {
@@ -444,6 +733,22 @@ export async function applyMatchAction(
       return { ok: false, runtime, requestId, code: "STALE_VERSION", message: "최신 매치 상태를 먼저 받아야 합니다." };
     }
 
+    if (
+      actionIsNotSurrender(payload) &&
+      runtime.turnDeadlineAt !== null &&
+      Date.now() >= runtime.turnDeadlineAt &&
+      runtime.state.activePlayerId === playerId
+    ) {
+      await resolveTurnTimeoutLocked(runtime);
+      return {
+        ok: false,
+        runtime,
+        requestId,
+        code: "TURN_EXPIRED",
+        message: "턴 시간이 만료되어 자동으로 턴을 넘겼습니다.",
+      };
+    }
+
     const action = toServerAction(payload, playerId);
     if (!action) {
       return { ok: false, runtime, requestId, code: "INVALID_ACTION", message: "알 수 없는 action입니다." };
@@ -461,12 +766,10 @@ export async function applyMatchAction(
     }
 
     const eventStart = runtime.state.events.length;
-    runtime.state = result.state;
-    runtime.version += 1;
-    await persistRuntime(runtime);
+    const transition = await commitTransition(runtime, result.state, eventStart);
     runtime.requestIds.set(requestId, {
       userId,
-      version: runtime.version,
+      version: transition.version,
       state: structuredClone(runtime.state),
       eventStart,
     });
@@ -475,8 +778,12 @@ export async function applyMatchAction(
       if (!oldest) break;
       runtime.requestIds.delete(oldest);
     }
-    return { ok: true, runtime, requestId, version: runtime.version, eventStart, duplicate: false };
+    return { ok: true, runtime, requestId, version: transition.version, eventStart, duplicate: false };
   });
+}
+
+function actionIsNotSurrender(payload: OnlineActionPayload): boolean {
+  return payload.type !== "SURRENDER";
 }
 
 export function messageForViewer(
@@ -499,6 +806,10 @@ export function messageForViewer(
       state.events.slice(execution.eventStart),
       execution.eventStart,
     ),
+    serverTime: Date.now(),
+    turnStartedAt: execution.runtime.turnStartedAt,
+    turnDeadlineAt: execution.runtime.turnDeadlineAt,
+    connectionStates: execution.runtime.connectionStates,
   };
 }
 
@@ -513,6 +824,10 @@ export function snapshotMessage(runtime: OnlineMatchRuntime, userId: string): On
     version: runtime.version,
     state: sanitizeGameStateForViewer(runtime.state, viewerId),
     events: sequencedEventsForViewer(runtime.state, viewerId, runtime.state.events),
+    serverTime: Date.now(),
+    turnStartedAt: runtime.turnStartedAt,
+    turnDeadlineAt: runtime.turnDeadlineAt,
+    connectionStates: runtime.connectionStates,
   };
 }
 
@@ -548,6 +863,10 @@ export function endedMessageForViewer(
       state.events.slice(execution.eventStart),
       execution.eventStart,
     ),
+    serverTime: Date.now(),
+    turnStartedAt: execution.runtime.turnStartedAt,
+    turnDeadlineAt: execution.runtime.turnDeadlineAt,
+    connectionStates: execution.runtime.connectionStates,
   };
 }
 
@@ -559,22 +878,79 @@ export function broadcastExecution(execution: Extract<ActionExecution, { ok: tru
     for (const recipient of execution.runtime.connections) {
       recipient.send(endedMessageForViewer(execution, recipient.userId));
     }
-    cleanupMatchRuntime(execution.runtime.matchId);
+    scheduleRuntimeCleanup(execution.runtime);
   }
 }
 
+export function isPrimaryConnection(runtime: OnlineMatchRuntime, connection: OnlineMatchConnection): boolean {
+  return runtime.primaryConnections.get(connection.userId) === connection;
+}
+
 export function attachConnection(runtime: OnlineMatchRuntime, connection: OnlineMatchConnection): void {
+  const previous = runtime.primaryConnections.get(connection.userId);
+  if (previous && previous !== connection) {
+    previous.send({
+      type: "SESSION_REPLACED",
+      matchId: runtime.matchId,
+      message: "다른 창에서 이 대전에 접속했습니다.",
+    });
+    runtime.connections.delete(previous);
+  }
+  runtime.primaryConnections.set(connection.userId, connection);
   runtime.connections.add(connection);
+  const seat = matchSeat(runtime, connection.userId);
+  if (!seat) return;
+  clearDisconnectTimer(runtime, seat);
+  delete runtime.disconnectStartedAt[seat];
+  delete runtime.reconnectDeadlineAt[seat];
+  runtime.connectionStates[seat] = "CONNECTED";
+  void withRuntimeLock(runtime, async () => {
+    if (runtime.state.status !== "FINISHED") await persistConnectionState(runtime);
+    broadcastConnectionStatus(runtime, seat);
+  });
 }
 
 export function detachConnection(runtime: OnlineMatchRuntime, connection: OnlineMatchConnection): void {
   runtime.connections.delete(connection);
+  if (runtime.primaryConnections.get(connection.userId) === connection) {
+    runtime.primaryConnections.delete(connection.userId);
+  }
+}
+
+export async function markConnectionDisconnected(
+  runtime: OnlineMatchRuntime,
+  connection: OnlineMatchConnection,
+): Promise<void> {
+  const seat = matchSeat(runtime, connection.userId);
+  if (!seat || runtime.state.status === "FINISHED") return;
+  if (runtime.primaryConnections.get(connection.userId) !== connection) return;
+  detachConnection(runtime, connection);
+  await withRuntimeLock(runtime, async () => {
+    if (runtime.state.status === "FINISHED") return;
+    if (runtime.primaryConnections.get(connection.userId) !== undefined) return;
+    const disconnectedAt = Date.now();
+    runtime.connectionStates[seat] = "DISCONNECTED_GRACE";
+    runtime.disconnectStartedAt[seat] = disconnectedAt;
+    runtime.reconnectDeadlineAt[seat] = disconnectedAt + ONLINE_MATCH_CONFIG.reconnectGraceSeconds * 1000;
+    await persistConnectionState(runtime);
+    broadcastConnectionStatus(runtime, seat);
+    scheduleDisconnectTimers(runtime);
+  });
+}
+
+function scheduleRuntimeCleanup(runtime: OnlineMatchRuntime): void {
+  if (runtime.cleanupTimer) clearTimeout(runtime.cleanupTimer);
+  runtime.cleanupTimer = setTimeout(() => cleanupMatchRuntime(runtime.matchId), ONLINE_MATCH_CONFIG.runtimeCleanupGraceMs);
 }
 
 export function cleanupMatchRuntime(matchId: string): void {
   const runtime = runtimes.get(matchId);
   if (!runtime) return;
+  clearTurnTimer(runtime);
+  for (const seat of ["PLAYER_ONE", "PLAYER_TWO"] as const) clearDisconnectTimer(runtime, seat);
+  if (runtime.cleanupTimer) clearTimeout(runtime.cleanupTimer);
   runtime.connections.clear();
+  runtime.primaryConnections.clear();
   runtime.requestIds.clear();
   runtimes.delete(matchId);
 }

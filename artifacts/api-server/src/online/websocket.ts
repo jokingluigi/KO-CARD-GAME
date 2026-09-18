@@ -11,7 +11,8 @@ import {
   applyMatchAction,
   attachConnection,
   broadcastExecution,
-  detachConnection,
+  isPrimaryConnection,
+  markConnectionDisconnected,
   getRuntime,
   matchSeat,
   rejectionMessage,
@@ -79,7 +80,8 @@ async function handleConnection(socket: WebSocket, user: PublicUser): Promise<vo
 
   const detach = () => {
     if (subscribedRuntime) {
-      detachConnection(subscribedRuntime, connection);
+      const runtime = subscribedRuntime;
+      void markConnectionDisconnected(runtime, connection);
       subscribedRuntime = null;
     }
     void detachLobbyConnection(connection);
@@ -149,17 +151,35 @@ async function handleMessage(
       return;
     }
     const previous = getSubscription();
-    if (previous && previous !== runtime) detachConnection(previous, connection);
+    if (previous && previous !== runtime) {
+      void markConnectionDisconnected(previous, connection);
+    }
     setSubscription(runtime);
     attachConnection(runtime, connection);
     send(socket, snapshotMessage(runtime, connection.userId));
     return;
   }
 
+  if (parsed.type === "RESYNC") {
+    const runtime = await getRuntime(parsed.matchId);
+    if (!runtime || !matchSeat(runtime, connection.userId)) {
+      send(socket, { type: "ERROR", code: "FORBIDDEN", message: "참가 중인 매치만 동기화할 수 있습니다." });
+      return;
+    }
+    const previous = getSubscription();
+    if (previous && previous !== runtime) void markConnectionDisconnected(previous, connection);
+    setSubscription(runtime);
+    attachConnection(runtime, connection);
+    const snapshot = snapshotMessage(runtime, connection.userId);
+    if (snapshot.type !== "MATCH_SNAPSHOT") return;
+    send(socket, { ...snapshot, type: "RESYNC_REQUIRED" });
+    return;
+  }
+
   if (parsed.type === "UNSUBSCRIBE") {
     const runtime = getSubscription();
     if (runtime?.matchId === parsed.matchId) {
-      detachConnection(runtime, connection);
+      void markConnectionDisconnected(runtime, connection);
       setSubscription(null);
     }
     return;
@@ -172,12 +192,24 @@ async function handleMessage(
   }
 
   try {
+    if (!isPrimaryConnection(runtime, connection)) {
+      send(socket, {
+        type: "ACTION_REJECTED",
+        matchId: runtime.matchId,
+        requestId: parsed.requestId,
+        code: "NOT_PRIMARY_CONNECTION",
+        message: "다른 창에서 이 대전에 접속했습니다.",
+        currentVersion: runtime.version,
+      });
+      return;
+    }
     const result = await applyMatchAction(
       parsed.matchId,
       connection.userId,
       parsed.requestId,
       parsed.expectedVersion,
       parsed.action,
+      connection,
     );
     if (!result.ok) {
       send(socket, rejectionMessage(result));

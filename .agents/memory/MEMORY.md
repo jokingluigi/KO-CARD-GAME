@@ -52,3 +52,4 @@
 - [Generic stat pipeline](generic-stat-pipeline.md) — COST, ATTACK, and HEALTH share signed/set/duration events; automatic listeners must preserve the active effect frame.
 - [Attack event snapshots](attack-event-snapshots.md) — preserve immutable combat card data so lethal attack presentation survives target removal.
 - [Online PvP foundation](online-pvp-foundation.md) — reuse the shared KO engine; persist accepted state changes and sanitize every viewer projection.
+- [Online Stage 3 recovery](online-stage3-recovery.md) — persist deadlines at transitions, lazy-restore one runtime, and use primary-connection gating for reconnect safety.

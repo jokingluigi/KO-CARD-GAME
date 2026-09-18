@@ -22,6 +22,6 @@ export function isGenericMechanicEffectName(
   // dependable capability names. Require at least one mechanics vocabulary word.
   if (!words.some((word) => genericWords.has(word))) return false;
 
-  const cardTitleTokens = originalCardText.match(/[A-Za-z0-9]{4,}/g) ?? [];
+  const cardTitleTokens: string[] = originalCardText.match(/[A-Za-z0-9]{4,}/g) ?? [];
   return !cardTitleTokens.some((token) => words.includes(token.toUpperCase()));
 }

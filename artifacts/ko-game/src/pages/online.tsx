@@ -1,10 +1,21 @@
-import { Shield } from "lucide-react";
+import { LoaderCircle, Shield } from "lucide-react";
+import { useEffect, useState } from "react";
 import { useLocation } from "wouter";
 import { ModeCard, OnlineAuthGate, OnlineShell } from "@/components/online-lobby-ui";
 import { ROUTES } from "@/lib/routes";
 
 export default function Online() {
   const [, navigate] = useLocation();
+  const [activeMatchId, setActiveMatchId] = useState<string | null>(null);
+  const [checkingActiveMatch, setCheckingActiveMatch] = useState(true);
+  useEffect(() => {
+    const apiBase = import.meta.env.BASE_URL.replace(/\/$/, "");
+    void fetch(`${apiBase}/api/online-matches/active`, { credentials: "include" })
+      .then((response) => response.ok ? response.json() as Promise<{ match: { id: string } | null }> : { match: null })
+      .then((result) => setActiveMatchId(result.match?.id ?? null))
+      .catch(() => setActiveMatchId(null))
+      .finally(() => setCheckingActiveMatch(false));
+  }, []);
   return (
     <OnlineAuthGate>
       {() => <OnlineShell
@@ -12,6 +23,17 @@ export default function Online() {
         title="실제 상대와 겨루는 링"
         description="빠르게 상대를 찾거나, 친구와 방 코드를 공유하세요. 전투의 모든 판정은 서버가 담당합니다."
       >
+        {checkingActiveMatch ? (
+          <div className="mb-5 flex items-center gap-2 text-xs font-bold text-neutral-500"><LoaderCircle className="h-4 w-4 animate-spin" />진행 중인 대전을 확인하는 중입니다.</div>
+        ) : activeMatchId ? (
+          <div className="mb-5 flex flex-wrap items-center justify-between gap-4 rounded-xl border border-amber-500/40 bg-amber-400/[0.06] p-4">
+            <div>
+              <p className="text-sm font-black text-amber-200">진행 중인 대전이 있습니다.</p>
+              <p className="mt-1 text-xs font-bold text-neutral-500">새로고침 후에도 같은 매치로 복귀할 수 있습니다.</p>
+            </div>
+            <button type="button" data-testid="button-online-resume" onClick={() => navigate(`${ROUTES.ONLINE_MATCH}/${encodeURIComponent(activeMatchId)}`)} className="rounded bg-amber-400 px-4 py-2.5 text-xs font-black text-black">대전으로 복귀</button>
+          </div>
+        ) : null}
         <div className="grid gap-4 lg:grid-cols-2">
           <ModeCard
             title="빠른 대전"
