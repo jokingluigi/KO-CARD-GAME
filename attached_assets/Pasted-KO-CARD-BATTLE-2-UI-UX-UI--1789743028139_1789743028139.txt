@@ -1,0 +1,568 @@
+KO CARD BATTLE에서 아래 2가지 UI/UX를 수정해줘.
+
+중요:
+컬렉션, 덱 에디터, 인게임에서 사용하는 카드 상세 정보 UI는
+가능하면 공용 컴포넌트를 재사용해서 한 번 수정하면 모두 동일하게 반영되게 해줘.
+
+기존 카드 데이터, 카드 효과, 덱 규칙, 게임 엔진, 온라인 PvP 로직은 임의로 변경하지 마.
+
+==================================================
+1. ALT 카드 상세 정보 팝업이 너무 작음
+==================================================
+
+현재 다음 화면에서 ALT 키를 눌러 카드 정보를 확인할 때 뜨는
+카드 상세 정보 팝업이 너무 작아서 읽기 어렵다.
+
+대상:
+
+- 컬렉션
+- 덱 에디터
+- 실제 게임 중 Match 화면
+
+이 세 곳 모두 동일하게 수정.
+
+==================================================
+2. 카드 상세 팝업 크기 확대
+==================================================
+
+현재 크기보다 확실히 크게 보여줘.
+
+Desktop 기준 권장:
+
+popup 전체 width:
+clamp(420px, 34vw, 620px)
+
+또는 현재 CardRenderer 비율에 맞는 equivalent 크기.
+
+카드 미리보기 자체도
+일반 필드 카드보다 훨씬 크게 보여야 한다.
+
+목표:
+
+- 카드 이름 쉽게 읽힘
+- Cost 쉽게 읽힘
+- 효과 텍스트 쉽게 읽힘
+- Attack / Health 쉽게 읽힘
+- Keyword 쉽게 읽힘
+- 카드 Artwork 충분히 크게 보임
+
+현재처럼 작은 카드에
+작은 글씨를 억지로 확대해서 넣는 방식 금지.
+
+==================================================
+3. 기존 카드 비율 유지
+==================================================
+
+카드의 원래 aspect ratio 유지.
+
+강제로 width/height를 찌그러뜨리지 마.
+
+CardRenderer 또는 기존 Card Detail Renderer를 재사용.
+
+별도의 가짜 카드 UI를 새로 만들지 마.
+
+==================================================
+4. 화면 밖으로 나가지 않게
+==================================================
+
+큰 Popup으로 바꾸더라도:
+
+- 화면 위로 잘림 X
+- 화면 아래로 잘림 X
+- 좌우 잘림 X
+- 브라우저 scroll 이상 발생 X
+
+해야 한다.
+
+필요하면 viewport 기준:
+
+max-width
+max-height
+
+사용.
+
+예:
+
+max-height: 88vh
+
+정도.
+
+==================================================
+5. 긴 효과 텍스트
+==================================================
+
+효과가 긴 카드도
+팝업 내부에서 정상적으로 읽을 수 있어야 한다.
+
+필요하면:
+
+카드 이미지 영역
++
+상세 텍스트 영역
+
+구조를 사용할 수 있다.
+
+단 현재 KO Card 디자인을 깨지 마.
+
+카드 자체를 크게 렌더링하면서
+추가 정보가 필요하면 옆 또는 아래에 설명 panel을 두는 방식 가능.
+
+==================================================
+6. ALT 동작 유지
+==================================================
+
+기존 ALT 카드 확인 동작은 그대로 유지.
+
+예:
+
+ALT 누름
++
+Card Hover
+
+또는 현재 프로젝트의 기존 interaction 방식.
+
+이번 작업에서 키 조작 자체를 바꾸지 마.
+
+==================================================
+7. ALT 떼면 정상적으로 닫힘
+==================================================
+
+ALT release 또는 기존 close 조건 발생 시
+Popup이 깨끗하게 닫혀야 한다.
+
+stale popup이 남으면 안 된다.
+
+==================================================
+8. Collection 테스트
+==================================================
+
+컬렉션에서 카드 Hover
+→ ALT
+
+확인:
+
+큰 Card Detail Popup 표시.
+
+텍스트 가독성 정상.
+
+==================================================
+9. Deck Editor 테스트
+==================================================
+
+Deck Editor에서 카드 Hover
+→ ALT
+
+동일한 크기 / 동일한 스타일의
+Card Detail Popup 표시.
+
+==================================================
+10. Match 테스트
+==================================================
+
+실제 Match에서:
+
+Own Hand
+Own Board
+Opponent 공개 Board Card
+
+각각 ALT Detail 정상.
+
+Hidden opponent hand card는
+identity를 노출하면 안 된다.
+
+==================================================
+11. 공용 Detail 컴포넌트
+==================================================
+
+가능하면 다음 같은 공용 구조로 정리:
+
+CardDetailPopup
+CardInspectionOverlay
+CardPreviewOverlay
+
+등 existing equivalent가 있으면 재사용.
+
+Collection / Deck / Match에서
+서로 다른 크기 숫자를 하드코딩하지 마.
+
+중앙 Config 또는 공용 CSS 사용.
+
+==================================================
+12. 덱 편성 Champion 선택 UX 개선
+==================================================
+
+현재 Deck Builder에:
+
+"챔피언을 선택하세요"
+
+라고 표시된 영역이 있다.
+
+지금은 이 영역 자체를 눌러서
+Champion 목록을 직접 열 수 있게 해줘.
+
+==================================================
+13. Champion 선택 영역 전체 클릭 가능
+==================================================
+
+현재:
+
+[ 챔피언을 선택하세요 ]
+
+영역 전체를 clickable control로 만들어.
+
+작은 버튼이나 아이콘만 눌러야 하는 구조 X.
+
+영역 어디를 눌러도:
+
+Champion Selection UI
+
+가 열려야 한다.
+
+hover 상태도 제공해서
+클릭 가능한 영역임을 명확히 보여줘.
+
+==================================================
+14. Champion 목록 표시
+==================================================
+
+영역 클릭 시 현재 사용 가능한
+Champion 목록을 표시.
+
+표시 정보:
+
+- Champion Portrait / Card
+- Champion 이름
+- Champion Ability 이름
+- Ability Gold Cost
+- 짧은 Ability 설명
+
+Quest Champion이면 가능하면:
+
+- Quest 존재 indicator
+
+도 표시.
+
+==================================================
+15. Champion 데이터는 실제 데이터 사용
+==================================================
+
+Champion 목록을 UI에 하드코딩하지 마.
+
+현재 실제 Champion definitions /
+Champion Admin 데이터 /
+published Champion registry
+
+등 canonical source 사용.
+
+새 Champion을 Admin에서 추가했을 때
+Deck Builder에도 자동으로 나타나야 한다.
+
+==================================================
+16. 선택 가능한 Champion만
+==================================================
+
+현재 계정이 실제로 사용할 수 있는 Champion 규칙이 있다면
+그 규칙을 그대로 적용.
+
+예:
+
+ownership
+unlocked
+published
+test-user virtual ownership
+
+기존 정책 유지.
+
+사용 불가능 Champion을
+임의로 선택 가능하게 만들지 마.
+
+==================================================
+17. Champion Selection UI 형태
+==================================================
+
+Modal / Drawer / Dropdown 중
+현재 Deck Builder 구조에 가장 자연스러운 형태 사용.
+
+추천:
+
+중앙 Modal 또는 Side Panel.
+
+Champion 수가 늘어나도 대응할 수 있게
+scroll 가능.
+
+각 Champion은 충분히 크게 보여줘.
+
+==================================================
+18. Champion 선택
+==================================================
+
+Champion을 클릭:
+
+selectedChampionId 저장.
+
+Champion Selection UI 닫힘.
+
+Deck Builder 상단의
+"챔피언을 선택하세요"
+
+영역이:
+
+선택된 Champion Portrait
+Champion Name
+
+으로 변경.
+
+==================================================
+19. 선택된 Champion 다시 누르기
+==================================================
+
+이미 Champion이 선택된 상태에서
+Champion 영역을 다시 클릭하면:
+
+Champion 목록 다시 열기.
+
+다른 Champion으로 변경 가능.
+
+==================================================
+20. Champion Ability 상세 확인
+==================================================
+
+Champion Selection 목록에서
+Champion을 고르기 전에
+Ability를 확인할 수 있어야 한다.
+
+필요하면:
+
+Champion Card 클릭
+→ 우측 Detail
+
+또는
+
+hover/detail button
+
+사용.
+
+기존에 추가한 Champion Ability 정보 UI와
+가능하면 재사용.
+
+==================================================
+21. 선택과 상세보기 구분
+==================================================
+
+Champion Detail을 보려다
+실수로 바로 선택되는 UX를 피할 수 있으면 좋다.
+
+예:
+
+Champion item 클릭:
+선택
+
+ALT / Detail button:
+상세
+
+또는
+
+Card 클릭:
+Detail
+[선택] 버튼:
+선택
+
+현재 UX에 자연스럽게 맞춰 구현.
+
+==================================================
+22. Deck 저장 로직 유지
+==================================================
+
+Champion 선택 UI만 바꾸고
+실제 Deck 저장에서는
+기존 canonical selectedChampionId 사용.
+
+Champion 이름 문자열로 저장 금지.
+
+==================================================
+23. Deck validation 유지
+==================================================
+
+기존 규칙 유지:
+
+Deck Champion exactly 1.
+
+Champion 미선택:
+Incomplete deck로 저장 가능 정책이 있다면 기존 정책 유지.
+
+VALID 여부는 기존 Deck Validator 사용.
+
+이번 UX 변경으로 validator 새로 만들지 마.
+
+==================================================
+24. 기존 선택된 덱 편집
+==================================================
+
+기존 Deck을 편집할 때:
+
+현재 selectedChampion이
+영역에 정상 표시되어야 한다.
+
+"챔피언을 선택하세요"로 초기화되면 안 된다.
+
+==================================================
+25. Mobile / 작은 화면
+==================================================
+
+작은 화면에서는 Champion modal과
+Card Detail Popup이 viewport를 넘지 않도록 responsive 처리.
+
+Desktop 우선이지만
+overflow로 UI가 깨지면 안 된다.
+
+==================================================
+26. 이번 작업에서 건드리지 말 것
+==================================================
+
+다음은 변경 금지:
+
+- Champion 능력 효과
+- Quest 조건
+- 카드 밸런스
+- Deck card count 규칙
+- Card rarity
+- Match targeting
+- AI logic
+- Online PvP protocol
+- Card artwork
+- Card effect text
+
+==================================================
+27. Browser 테스트
+==================================================
+
+반드시 실제 Browser에서 테스트.
+
+TEST A - Collection ALT Detail
+
+Collection
+→ Card Hover
+→ ALT
+
+확인:
+Popup 충분히 큼.
+효과 텍스트 읽기 쉬움.
+viewport 안에 있음.
+
+-------------------------
+
+TEST B - Deck Editor ALT Detail
+
+Deck Editor
+→ Wrestler card Hover
+→ ALT
+
+Collection과 동일한 Popup 크기.
+
+-------------------------
+
+TEST C - Match ALT Detail
+
+Match
+→ Hand Card ALT
+→ Board Card ALT
+→ 공개 Opponent Card ALT
+
+큰 Detail 정상.
+
+Hidden info leak 없음.
+
+-------------------------
+
+TEST D - Champion Picker
+
+Deck Builder
+→ "챔피언을 선택하세요" 영역 클릭.
+
+확인:
+Champion 목록 열림.
+
+Champion 선택.
+
+확인:
+selectedChampionId 정상.
+Champion portrait/name 표시.
+
+-------------------------
+
+TEST E - Champion 변경
+
+선택된 Champion 영역 다시 클릭
+→ 다른 Champion 선택.
+
+정상 변경.
+
+-------------------------
+
+TEST F - Existing Deck
+
+Champion이 이미 지정된 기존 Deck 편집.
+
+확인:
+기존 Champion 그대로 표시.
+
+==================================================
+28. 최종 보고
+==================================================
+
+PASS / FIXED / FAIL로 보고:
+
+CARD_DETAIL_POPUP_SHARED_COMPONENT
+CARD_DETAIL_POPUP_LARGER
+COLLECTION_ALT_DETAIL
+DECK_EDITOR_ALT_DETAIL
+MATCH_ALT_DETAIL
+CARD_DETAIL_TEXT_READABLE
+CARD_DETAIL_VIEWPORT_SAFE
+NO_HIDDEN_INFO_LEAK
+
+CHAMPION_SELECTOR_AREA_CLICKABLE
+CHAMPION_LIST_OPENS
+CHAMPION_LIST_CANONICAL_DATA
+CHAMPION_ABILITY_VISIBLE_IN_SELECTOR
+CHAMPION_SELECTION_WORKS
+CHAMPION_CHANGE_WORKS
+EXISTING_DECK_CHAMPION_RESTORED
+DECK_VALIDATION_REGRESSION
+
+==================================================
+29. Root Cause / 변경 내용
+==================================================
+
+마지막에:
+
+CARD_DETAIL_POPUP_PREVIOUS_SIZE:
+<기존 구조>
+
+CARD_DETAIL_POPUP_NEW_STRUCTURE:
+<새 구조>
+
+CHAMPION_PICKER_PREVIOUS_BEHAVIOR:
+<기존 구조>
+
+CHAMPION_PICKER_NEW_BEHAVIOR:
+<새 구조>
+
+를 설명.
+
+==================================================
+30. 최종 판정
+==================================================
+
+마지막에 반드시:
+
+CARD_INSPECTION_UX_READY:
+YES / NO
+
+DECK_CHAMPION_PICKER_READY:
+YES / NO
+
+ALL_UI_FIXES_READY:
+YES / NO
+
+를 출력해.
