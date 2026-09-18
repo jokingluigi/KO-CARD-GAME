@@ -19,6 +19,15 @@ import {
   type OnlineMatchConnection,
   type OnlineMatchRuntime,
 } from "./service";
+import {
+  createPrivateRoom,
+  detachLobbyConnection,
+  joinPrivateRoom,
+  joinQuickQueue,
+  leavePrivateRoom,
+  leaveQuickQueue,
+  setPrivateRoomReady,
+} from "./lobby";
 import type { OnlineClientMessage, OnlineServerMessage } from "./protocol";
 
 const ONLINE_WS_PATH = "/api/online-matches/ws";
@@ -62,16 +71,18 @@ async function authenticateUpgrade(request: IncomingMessage): Promise<PublicUser
 
 async function handleConnection(socket: WebSocket, user: PublicUser): Promise<void> {
   let subscribedRuntime: OnlineMatchRuntime | null = null;
-  const connection: OnlineMatchConnection = {
+  const connection = {
     userId: user.id,
+    nickname: user.nickname,
     send: (message) => send(socket, message),
-  };
+  } satisfies OnlineMatchConnection & { nickname: string };
 
   const detach = () => {
     if (subscribedRuntime) {
       detachConnection(subscribedRuntime, connection);
       subscribedRuntime = null;
     }
+    void detachLobbyConnection(connection);
   };
 
   socket.on("close", detach);
@@ -86,7 +97,7 @@ async function handleConnection(socket: WebSocket, user: PublicUser): Promise<vo
 async function handleMessage(
   raw: string,
   socket: WebSocket,
-  connection: OnlineMatchConnection,
+  connection: OnlineMatchConnection & { nickname: string },
   getSubscription: () => OnlineMatchRuntime | null,
   setSubscription: (runtime: OnlineMatchRuntime | null) => void,
 ): Promise<void> {
@@ -99,6 +110,35 @@ async function handleMessage(
   }
   if (!isClientMessage(parsed)) {
     send(socket, { type: "ERROR", code: "INVALID_MESSAGE", message: "알 수 없는 메시지입니다." });
+    return;
+  }
+
+  if (parsed.type === "JOIN_QUICK_QUEUE") {
+    await joinQuickQueue(connection, parsed.deckId);
+    return;
+  }
+  if (parsed.type === "LEAVE_QUICK_QUEUE") {
+    await leaveQuickQueue(connection);
+    return;
+  }
+  if (parsed.type === "CREATE_PRIVATE_ROOM") {
+    await createPrivateRoom(connection, parsed.deckId);
+    return;
+  }
+  if (parsed.type === "JOIN_PRIVATE_ROOM") {
+    await joinPrivateRoom(connection, parsed.roomCode, parsed.deckId);
+    return;
+  }
+  if (parsed.type === "LEAVE_PRIVATE_ROOM") {
+    await leavePrivateRoom(connection);
+    return;
+  }
+  if (parsed.type === "CLOSE_PRIVATE_ROOM") {
+    await leavePrivateRoom(connection, true);
+    return;
+  }
+  if (parsed.type === "SET_ROOM_READY") {
+    await setPrivateRoomReady(connection, parsed.ready);
     return;
   }
 

@@ -1,0 +1,1610 @@
+KO 카드게임 Online PvP
+
+[2단계]
+LOW-COST MATCHMAKING + PRIVATE ROOM / ROOM CODE
+
+를 구현해줘.
+
+전제:
+
+Online PvP Stage 1에서 이미 구현된:
+
+- Server authoritative GameState
+- OnlineMatch
+- WebSocket
+- authenticated user connection
+- Match subscription
+- Action validation
+- viewer sanitization
+- Match Snapshot
+- Match persistence
+- per-match runtime
+- deterministic server RNG
+
+를 반드시 재사용한다.
+
+절대로 Online Match Engine을 새로 만들지 마.
+
+==================================================
+0. 이번 단계 목표
+==================================================
+
+유저가 메인 화면에서:
+
+[온라인 대전]
+
+을 눌렀을 때:
+
+온라인 대전
+├─ 빠른 대전
+└─ 친선전
+
+을 선택할 수 있게 한다.
+
+빠른 대전:
+
+VALID Deck 선택
+↓
+상대 찾기
+↓
+다른 실제 User와 매칭
+↓
+OnlineMatch 생성
+↓
+실제 Match 입장
+
+친선전:
+
+VALID Deck 선택
+↓
+방 만들기 또는 방 코드 입력
+↓
+두 User 참가
+↓
+양쪽 준비
+↓
+OnlineMatch 생성
+↓
+실제 Match 입장
+
+이번 단계에서
+전투 규칙을 새로 만들지 않는다.
+
+==================================================
+1. 매우 중요: 저비용 원칙
+==================================================
+
+초기 Discord 베타 규모를 전제로 한다.
+
+다음 금지:
+
+- 별도 Matchmaking Server
+- Redis
+- Message Queue
+- 별도 Lobby Server
+- 별도 Presence Server
+- matchmaking DB polling
+- 1초마다 waiting user 조회
+- 1초마다 room state DB update
+- waiting room heartbeat DB write
+- queue 상태 DB 지속 저장
+- room timer DB 지속 저장
+
+현재 KO API/WebSocket Server 안에서 구현.
+
+==================================================
+2. 대기열과 친선방은 Ephemeral
+==================================================
+
+게임 시작 전 상태:
+
+Quick Match Queue
+Private Room Waiting State
+
+는 초기 베타에서
+Server Memory에 두어도 된다.
+
+예:
+
+MatchmakingQueue
+
+PrivateRoomRegistry
+
+중요:
+
+Server가 재시작되어
+대기열/대기방이 사라지면:
+
+사용자에게
+"대기방 연결이 종료되었습니다. 다시 시도해주세요."
+
+정도로 안내하면 된다.
+
+아직 시작하지 않은 방까지
+DB에 영구 보존할 필요 없다.
+
+==================================================
+3. 실제 게임 시작 후에는 Persistent OnlineMatch
+==================================================
+
+두 User가 실제 게임 시작 조건을 만족하면:
+
+Stage 1의 기존 OnlineMatch 생성 로직을 사용.
+
+그 순간부터:
+
+GameState
+Snapshot
+State Version
+Result
+
+등은 기존 Stage 1 persistence 사용.
+
+즉:
+
+WAITING QUEUE / ROOM
+→ cheap memory state
+
+ACTIVE MATCH
+→ existing persistent OnlineMatch
+
+구조.
+
+==================================================
+4. 서버 전체 2인 제한 절대 금지
+==================================================
+
+한 Online Match는 1v1이다.
+
+하지만 서버 전체는:
+
+Match 1:
+A vs B
+
+Match 2:
+C vs D
+
+Match 3:
+E vs F
+
+등 여러 Match를 동시에 지원해야 한다.
+
+Quick Match Queue도
+여러 User를 보관 가능해야 한다.
+
+Private Room도
+여러 개 동시에 존재 가능.
+
+==================================================
+5. 온라인 대전 메인 UI
+==================================================
+
+기존 Main Menu에:
+
+[온라인 대전]
+
+버튼 추가.
+
+기존 AI 대전은 그대로 유지.
+
+온라인 대전 진입:
+
+ONLINE BATTLE
+
+[빠른 대전]
+
+[친선전]
+
+[뒤로]
+
+정도의 간단하고 명확한 UI.
+
+기존 KO 검정/금색 스타일 재사용.
+
+새로운 대규모 디자인 시스템 만들지 마.
+
+==================================================
+6. 온라인 대전 전에 Deck 선택
+==================================================
+
+Quick Match / Friendly Match 모두
+실제 사용할 Deck을 선택해야 한다.
+
+기존 Deck Selector 재사용.
+
+표시:
+
+Deck Name
+Champion
+대표 카드/정보
+VALID 여부
+
+ONLINE MATCH에 사용할 수 있는 것은:
+
+VALID Deck만.
+
+==================================================
+7. Deck 선택 Server Validation
+==================================================
+
+Client에서 VALID로 보여도
+Server에서 다시 검증.
+
+기존 Deck Validator 사용.
+
+확인:
+
+Champion 1
+20~30 cards
+Published
+Ownership
+Token direct deck X
+Champion Token direct deck X
+
+Invalid면 Queue/Room 참가 거부.
+
+==================================================
+8. 빠른 대전
+==================================================
+
+Quick Match Flow:
+
+온라인 대전
+↓
+빠른 대전
+↓
+Deck 선택
+↓
+[상대 찾기]
+↓
+MATCHMAKING QUEUE 참가
+↓
+상대 찾는 중...
+↓
+상대 발견
+↓
+OnlineMatch 생성
+↓
+Match 진입
+
+==================================================
+9. Matchmaking Queue 구조
+==================================================
+
+초기 버전에서는 복잡한 MMR 없음.
+
+Generic FIFO Queue로 충분.
+
+Queue entry 최소 정보:
+
+userId
+connectionId
+selectedDeckId
+joinedAt
+
+필요 이상의 정보를 저장하지 마.
+
+Card collection 전체
+Deck 전체 snapshot
+GameState
+
+등을 Queue에 넣지 마.
+
+실제 Match 생성 시 Server가 조회/검증.
+
+==================================================
+10. 같은 User 중복 Queue 참가 금지
+==================================================
+
+한 User가:
+
+빠른 대전 대기열에 두 번 참가하거나
+
+브라우저 더블 클릭 때문에
+QUEUE_JOIN 요청을 여러 번 보내도
+
+Queue Entry는 하나만 존재.
+
+idempotent하게 처리.
+
+==================================================
+11. 이미 Match 중인 User
+==================================================
+
+이미 ACTIVE OnlineMatch에 참가 중인 User가
+새 Quick Match Queue에 들어가는 것을 막아라.
+
+기존 Match 상태 확인.
+
+응답:
+
+ALREADY_IN_ACTIVE_MATCH
+
+같은 generic error.
+
+==================================================
+12. 자기 자신과 매칭 금지
+==================================================
+
+같은 Account가
+다른 Tab/Connection으로 접속했더라도
+자기 자신과 매칭되면 안 된다.
+
+userId 기준으로 제외.
+
+==================================================
+13. Quick Match Pairing
+==================================================
+
+Queue에 서로 다른 User 2명 이상 있으면:
+
+가장 오래 기다린 두 compatible User를
+우선 매칭.
+
+현재는 Rank/MMR/Region 조건 없음.
+
+즉 단순 FIFO.
+
+==================================================
+14. Match Found 원자성
+==================================================
+
+A와 B를 Pairing할 때:
+
+둘을 Queue에서 제거
+↓
+둘의 Deck 재검증
+↓
+OnlineMatch 생성
+↓
+양쪽에 MATCH_FOUND
+↓
+Match 연결
+
+과정이 안전해야 한다.
+
+중복 Match 생성 금지.
+
+A가 동시에:
+B와 Match 1
+C와 Match 2
+
+에 들어가면 안 된다.
+
+==================================================
+15. Pairing 중 Deck invalid
+==================================================
+
+Queue 참가 후
+Deck이 수정되어 invalid가 됐을 수 있다.
+
+실제 Match 생성 직전에
+Server가 다시 Deck 검증.
+
+Invalid된 User는 Queue에서 제거.
+
+해당 User:
+
+"선택한 덱이 더 이상 유효하지 않습니다."
+
+다른 정상 User는
+다시 Queue로 복귀시키거나
+계속 검색 상태 유지.
+
+==================================================
+16. Queue Cancel
+==================================================
+
+상대 찾는 중 화면:
+
+[취소]
+
+버튼 제공.
+
+취소 시:
+
+해당 User Entry만 Queue에서 제거.
+
+DB write 필요 없음.
+
+Main/Online menu로 복귀.
+
+==================================================
+17. Disconnect Queue Cleanup
+==================================================
+
+Queue 대기 중 WebSocket disconnect:
+
+해당 Queue Entry 즉시 cleanup.
+
+Ghost Queue User 남지 않게.
+
+==================================================
+18. Quick Match 대기 UI
+==================================================
+
+화면 중앙:
+
+상대 찾는 중...
+
+작은 loading animation.
+
+표시 가능:
+
+선택 Deck
+선택 Champion
+
+[검색 취소]
+
+시간 표시를 넣고 싶다면
+Client-side elapsed time만 사용.
+
+DB timer 금지.
+
+==================================================
+19. Fake Queue 요청 보안
+==================================================
+
+Client가:
+
+userId
+nickname
+rank
+
+같은 값을 조작해 보내도
+Server가 신뢰하지 않는다.
+
+User identity:
+
+authenticated Session 기반.
+
+Deck:
+
+Server에서 user ownership 확인.
+
+==================================================
+20. 친선전 메뉴
+==================================================
+
+[친선전]
+
+진입:
+
+[방 만들기]
+
+[방 코드 입력]
+
+두 옵션.
+
+==================================================
+21. 방 만들기
+==================================================
+
+User가:
+
+Deck 선택
+↓
+[방 만들기]
+
+Server가 Private Room 생성.
+
+Room은 게임 Match가 아니라
+"게임 시작 전 Lobby"다.
+
+예:
+
+PrivateRoom {
+  roomId
+  roomCode
+  hostUserId
+  hostDeckId
+  guestUserId?
+  guestDeckId?
+  hostReady
+  guestReady
+  createdAt
+}
+
+초기에는 Memory object.
+
+==================================================
+22. Room Code
+==================================================
+
+사람이 Discord에서 쉽게 전달할 수 있는
+짧은 Room Code 생성.
+
+예:
+
+K7F4P2
+
+또는
+
+KO-A7F2
+
+정도.
+
+정확한 포맷은 프로젝트 스타일에 맞춰라.
+
+==================================================
+23. Room Code 생성 안전성
+==================================================
+
+Math.random 기반으로
+충돌 가능성이 큰 코드를 무식하게 만들지 마.
+
+crypto-safe random 또는
+현재 server utility를 사용.
+
+생성 시
+현재 active PrivateRoomRegistry와
+collision check.
+
+충돌하면 다시 생성.
+
+==================================================
+24. Room Code 대소문자
+==================================================
+
+사용자가 Discord에서 복붙하기 편하게:
+
+대문자로 normalization.
+
+앞뒤 whitespace trim.
+
+가능하면 헷갈리는 문자:
+
+O / 0
+I / 1
+
+등은 제외해도 됨.
+
+==================================================
+25. Room Code 노출 범위
+==================================================
+
+방 생성 후:
+
+친선전 방
+
+방 코드:
+KO-A7F2
+
+[코드 복사]
+
+상대 기다리는 중...
+
+형태.
+
+Room Code는
+Public Room List에 뿌리지 마.
+
+현재는 공개 방 검색 기능 없음.
+
+==================================================
+26. Room Join
+==================================================
+
+Guest:
+
+[방 코드 입력]
+
+↓
+코드 입력
+↓
+Server validate
+↓
+Room 참가.
+
+Server 확인:
+
+- Room 존재
+- 아직 guest 없음
+- Room 취소 안 됨
+- Host와 다른 User
+- Guest Deck valid
+- Guest가 ACTIVE Match 중이 아님
+
+==================================================
+27. Room Full
+==================================================
+
+이미 Guest가 있는 방에
+제3 User가 들어오면:
+
+ROOM_FULL.
+
+관전 기능 만들지 마.
+
+==================================================
+28. 자기 방 Join 금지
+==================================================
+
+Host가 다른 Tab으로
+자기 Room Code를 입력해도
+Guest로 참가 금지.
+
+userId 기준.
+
+==================================================
+29. 친선방 화면
+==================================================
+
+양 User 참가 후:
+
+친선전
+
+HOST
+닉네임
+Champion
+Deck Name
+READY 상태
+
+VS
+
+GUEST
+닉네임
+Champion
+Deck Name
+READY 상태
+
+표시.
+
+상대의 전체 Deck Contents는 공개하지 마.
+
+==================================================
+30. Friendly Room Hidden Information
+==================================================
+
+게임 시작 전에도
+상대 Deck의 전체 카드 목록을 보내지 마.
+
+공개 가능:
+
+nickname
+Champion
+Deck Name
+Ready
+
+카드 리스트/Deck order는 숨김.
+
+==================================================
+31. Ready 시스템
+==================================================
+
+Host와 Guest 모두:
+
+[준비]
+
+버튼.
+
+READY 상태는 Server가 관리.
+
+둘 다 Ready가 됐을 때만 Match 시작.
+
+==================================================
+32. Deck 변경
+==================================================
+
+Room 대기 중 자신의 Deck을 변경할 수 있다면:
+
+Deck 변경
+→ ready=false
+
+처리.
+
+Server에서 새 Deck 다시 validation.
+
+구현이 복잡하다면 초기 버전에서는:
+
+Room 나가기
+→ Deck 변경
+→ 다시 참가
+
+방식이어도 된다.
+
+기존 UI 구조를 보고 더 단순한 쪽 선택.
+
+==================================================
+33. Match Start
+==================================================
+
+hostReady === true
+AND
+guestReady === true
+
+가 되면:
+
+Server가 양 Deck 최종 validation.
+
+성공:
+
+Stage 1의 기존:
+
+createOnlineMatch(...)
+
+호출.
+
+Match Snapshot 생성.
+
+PrivateRoom 제거.
+
+양쪽에:
+
+MATCH_STARTING
+matchId
+
+전송.
+
+Client는 실제 Match Route로 이동.
+
+==================================================
+34. Host가 임의로 게임 시작시키지 못하게
+==================================================
+
+Guest READY 안 했는데
+Host가 API를 직접 조작해서
+게임 시작 불가.
+
+Server가 양 Ready를 검사.
+
+==================================================
+35. Room Leave
+==================================================
+
+Guest가 나가면:
+
+Guest 정보 제거.
+
+Host Room은 유지 가능.
+
+Host에게:
+
+상대가 방을 나갔습니다.
+
+표시.
+
+==================================================
+36. Host Leave
+==================================================
+
+Host가 방에서 나가거나
+Host connection이 완전히 종료되면:
+
+초기 버전에서는 Room 종료.
+
+Guest에게:
+
+방장이 방을 나갔습니다.
+
+전달.
+
+Room Registry cleanup.
+
+Host migration은 아직 만들지 마.
+
+==================================================
+37. Room Cancel
+==================================================
+
+Host:
+
+[방 닫기]
+
+가능.
+
+Room 삭제.
+
+Guest가 있다면
+ROOM_CLOSED event 전달.
+
+==================================================
+38. Waiting Room DB write 금지
+==================================================
+
+Room code 생성할 때마다
+DB INSERT하지 마.
+
+Ready 클릭할 때마다
+DB UPDATE하지 마.
+
+초기 베타에서는 waiting room은
+ephemeral memory.
+
+실제 Match 시작 후에만
+persistent OnlineMatch 사용.
+
+==================================================
+39. Room Expiration
+==================================================
+
+아무도 게임 시작하지 않고
+오래 방치한 Room은
+Memory에서 정리해야 한다.
+
+예:
+
+30~60분 idle.
+
+정확한 값은 config로 분리.
+
+매초 전체 Room Registry를
+DB 조회하지 마.
+
+Server memory에서
+가벼운 cleanup 방식 사용.
+
+가능하면 per-room timeout 또는
+저빈도 memory cleanup.
+
+==================================================
+40. Queue / Room 동시 참가 금지
+==================================================
+
+User는 동시에:
+
+Quick Match Queue
++
+Private Room
+
+둘 다 참가하면 안 된다.
+
+또한 ACTIVE Match 중에도 안 됨.
+
+Server에서 Presence State를 관리.
+
+예:
+
+IDLE
+QUICK_QUEUE
+PRIVATE_ROOM
+ACTIVE_MATCH
+
+이 정도 ephemeral state면 충분.
+
+==================================================
+41. Presence를 DB에 저장하지 마
+==================================================
+
+위 IDLE / QUEUE / ROOM 상태를
+매번 DB에 저장할 필요 없음.
+
+현재 Server Instance memory 기준.
+
+ACTIVE Match만
+기존 OnlineMatch persistence.
+
+==================================================
+42. Online Lobby WebSocket 재사용
+==================================================
+
+Stage 1 WebSocket connection을 재사용.
+
+새로운 WebSocket connection을
+메뉴마다 따로 열지 마.
+
+한 로그인 User가:
+
+Lobby
+Quick Match
+Private Room
+Match
+
+에서 기존 연결을 재사용할 수 있게.
+
+==================================================
+43. Client → Server Lobby Message
+==================================================
+
+명확한 discriminated union 사용.
+
+예:
+
+JOIN_QUICK_QUEUE
+LEAVE_QUICK_QUEUE
+
+CREATE_PRIVATE_ROOM
+JOIN_PRIVATE_ROOM
+LEAVE_PRIVATE_ROOM
+CLOSE_PRIVATE_ROOM
+
+SET_ROOM_READY
+
+필요하다면:
+SELECT_ONLINE_DECK
+
+실제 구조에 맞춰 조정.
+
+==================================================
+44. Server → Client Lobby Message
+==================================================
+
+예:
+
+QUICK_QUEUE_JOINED
+QUICK_QUEUE_LEFT
+MATCH_FOUND
+
+PRIVATE_ROOM_CREATED
+PRIVATE_ROOM_JOINED
+PRIVATE_ROOM_UPDATED
+PRIVATE_ROOM_LEFT
+PRIVATE_ROOM_CLOSED
+
+MATCH_STARTING
+
+LOBBY_ERROR
+
+불필요하게 많은 message type 만들지 마.
+
+==================================================
+45. Error 처리
+==================================================
+
+다음은 정상적 실패:
+
+ROOM_NOT_FOUND
+ROOM_FULL
+INVALID_DECK
+ALREADY_IN_QUEUE
+ALREADY_IN_ROOM
+ALREADY_IN_MATCH
+NOT_ROOM_HOST
+NOT_ROOM_MEMBER
+INVALID_ROOM_CODE
+
+App crash 금지.
+
+Game state reset 금지.
+
+사용자에게 이해 가능한 메시지 표시.
+
+==================================================
+46. Page Refresh
+==================================================
+
+고급 Reconnect는 Stage 3에서 구현 예정.
+
+이번 단계에서는
+대기 Queue/Private Room에서 새로고침하면:
+
+기존 ephemeral lobby state를
+정리하고 Online Menu로 복귀해도 된다.
+
+단:
+
+이미 ACTIVE OnlineMatch가 생성된 뒤라면
+Stage 1의 Match 정보를 삭제하지 마.
+
+==================================================
+47. Browser Back
+==================================================
+
+Queue 대기 중 Browser Back:
+
+가능하면 Queue leave 처리.
+
+Private Room에서 Back:
+
+Room leave 처리.
+
+Ghost user 방지.
+
+==================================================
+48. Route Exit Cleanup
+==================================================
+
+Online Lobby Component unmount 시:
+
+listener cleanup.
+
+하지만 WebSocket 전체를
+불필요하게 매번 reconnect시키지 마.
+
+Shared connection 유지.
+
+==================================================
+49. Quick Match DB 비용 테스트
+==================================================
+
+A가 Queue에서 30초 대기.
+
+확인:
+
+30초 동안
+Matchmaking 때문에 반복 DB query/write가 발생하지 않아야 한다.
+
+==================================================
+50. Friendly Room DB 비용 테스트
+==================================================
+
+방을 만들고
+2명이 30초 대기.
+
+확인:
+
+Room state 때문에
+주기적인 DB write 발생 X.
+
+==================================================
+51. Multiple Quick Matches
+==================================================
+
+테스트 User 4명 사용:
+
+A
+B
+C
+D
+
+Queue 참가.
+
+결과:
+
+A vs B
+C vs D
+
+처럼 2개의 OnlineMatch가 생성 가능해야 한다.
+
+Server 전체 OnlineMatch 1개 제한 금지.
+
+==================================================
+52. Quick Match isolation
+==================================================
+
+Match 1과 Match 2의:
+
+GameState
+RNG
+Events
+Subscribers
+Action Queue
+
+Stage 1 기준으로 완전히 독립.
+
+==================================================
+53. Multiple Private Rooms
+==================================================
+
+동시에:
+
+Room ABCD
+A + B
+
+Room EFGH
+C + D
+
+존재 가능.
+
+Room Code collision 없음.
+
+Room state가 서로 섞이면 FAIL.
+
+==================================================
+54. Matchmaking Race Condition
+==================================================
+
+A/B/C가 거의 동시에 Queue 참가해도:
+
+한 User가 두 Match에 들어가지 않아야 함.
+
+Pairing 작업을 atomic하게 처리.
+
+==================================================
+55. Queue Cancel Race
+==================================================
+
+A가 취소 버튼을 누르는 순간
+B와 Match가 발견될 수 있다.
+
+둘 중 하나의 결과만 확정.
+
+예:
+
+Cancel 먼저 확정:
+A Queue 제거, Match 생성 X.
+
+Match Found 먼저 확정:
+Cancel은 TOO_LATE/ALREADY_MATCHED.
+
+중복/유령 Match 금지.
+
+==================================================
+56. Room Ready Race
+==================================================
+
+Host/Guest가 거의 동시에 Ready.
+
+OnlineMatch가 정확히 하나만 생성.
+
+Double Match creation 금지.
+
+==================================================
+57. Deck Snapshot 시점
+==================================================
+
+Quick Match:
+
+Match Found 후
+최종 Deck validation
+↓
+Match Snapshot 생성.
+
+Friendly:
+
+Both Ready
+↓
+최종 Deck validation
+↓
+Snapshot.
+
+Waiting 상태에서 미리 Snapshot 만들어
+오래 들고 있지 마.
+
+==================================================
+58. Match 입장
+==================================================
+
+MATCH_STARTING 또는 MATCH_FOUND 후:
+
+기존 Online Match 화면으로 이동.
+
+예:
+
+/online/match/:matchId
+
+실제 프로젝트 Router 스타일에 맞춰라.
+
+==================================================
+59. 상대 정보
+==================================================
+
+Match 진입 전에 최소한:
+
+상대 Nickname
+Champion
+
+정도 공개 가능.
+
+상대 Deck contents는 숨김.
+
+==================================================
+60. 선공/후공
+==================================================
+
+Match 시작 시 선공/후공 결정은
+기존 KO Game Engine의 Match initialization을 사용.
+
+Client가 결정 금지.
+
+Random이 필요하면
+Server RNG.
+
+==================================================
+61. Match Start Presentation
+==================================================
+
+아직 화려한 Online-specific cinematic은 필요 없음.
+
+최소:
+
+상대 발견!
+
+닉네임
+Champion
+
+VS
+
+내 닉네임
+Champion
+
+짧게 보여준 뒤 Match 진입 가능.
+
+기존 Presentation과 충돌하지 않게.
+
+==================================================
+62. AI Match와 Online Match 메뉴 구분
+==================================================
+
+Main:
+
+[AI 대전]
+[온라인 대전]
+
+명확히 분리.
+
+기존 AI Match Flow 깨뜨리지 마.
+
+==================================================
+63. Online 기능 미지원/서버 문제
+==================================================
+
+WebSocket 연결 실패 등으로
+Online Lobby 사용이 불가능하면:
+
+"온라인 서버에 연결할 수 없습니다."
+
+표시.
+
+AI Match는 계속 사용 가능해야 함.
+
+==================================================
+64. Loading 무한 대기 방지
+==================================================
+
+MATCH_FOUND 이후
+Match 생성 API/Server 작업 실패하면
+무한 loading 화면 금지.
+
+LOBBY_ERROR
+또는 recoverable 상태 제공.
+
+==================================================
+65. Lobby State Manager
+==================================================
+
+Client에 generic OnlineLobby State 사용.
+
+예:
+
+IDLE
+SELECTING_DECK
+QUICK_SEARCHING
+ROOM_HOST
+ROOM_GUEST
+MATCH_STARTING
+
+수많은 boolean:
+
+isQueue
+isRoom
+isHost
+isStarting
+...
+
+난립하지 않게.
+
+==================================================
+66. 비용 최적화
+==================================================
+
+이 단계에서 Server idle 비용을 늘릴
+상시 background workload를 만들지 마.
+
+Queue/Room이 하나도 없으면
+Matchmaking code가 사실상 idle이어야 한다.
+
+==================================================
+67. Autoscale max=1 초기 베타
+==================================================
+
+초기 배포:
+
+Autoscale
+Maximum Machines = 1
+
+구조에서 정상 동작 가능해야 한다.
+
+한 Process 안에서:
+- 여러 Queue users
+- 여러 Rooms
+- 여러 Active Matches
+
+동시에 관리 가능.
+
+==================================================
+68. 향후 Scale-out
+==================================================
+
+향후 instance >1이 되면
+memory queue/room registry 공유 문제가 발생할 수 있다.
+
+이번 단계에서 Redis 추가하지 마.
+
+대신 해당 dependency를
+MatchmakingService / PrivateRoomService
+
+같은 abstraction 뒤에 두어
+향후 shared backend로 교체 가능하게.
+
+==================================================
+69. 실제 Integration Test
+==================================================
+
+반드시 자동/Integration Test 실행.
+
+최소 다음 시나리오:
+
+QUICK MATCH:
+
+A 로그인
+B 로그인
+
+A valid deck
+B valid deck
+
+A queue
+B queue
+
+→ 서로 Match
+→ exactly one OnlineMatch
+→ Stage 1 GameState 생성.
+
+==================================================
+70. Quick Match cancel test
+==================================================
+
+A queue
+↓
+A cancel
+↓
+B queue
+
+A와 B Match 생성 X.
+
+A ghost entry 없음.
+
+==================================================
+71. Friendly Room test
+==================================================
+
+A create room.
+
+Room Code 생성.
+
+B join code.
+
+A ready.
+B ready.
+
+→ exactly one OnlineMatch.
+
+Room Registry에서는 제거.
+
+==================================================
+72. Wrong Room Code test
+==================================================
+
+잘못된 code:
+
+ROOM_NOT_FOUND.
+
+Server crash X.
+
+==================================================
+73. Room Full test
+==================================================
+
+A host
+B guest
+
+C join 시도.
+
+ROOM_FULL.
+
+==================================================
+74. Self Join test
+==================================================
+
+A Host.
+
+A 다른 Connection에서
+자기 Room join.
+
+거부.
+
+==================================================
+75. Multiple Match test
+==================================================
+
+A/B Quick Match.
+C/D Quick Match.
+
+두 Match 동시에 ACTIVE.
+
+상태 격리 확인.
+
+==================================================
+76. Multiple Room test
+==================================================
+
+A/B Room 1.
+C/D Room 2.
+
+각 Room 독립.
+
+==================================================
+77. DB Cost test
+==================================================
+
+Queue/Room에서 idle 30초.
+
+확인:
+
+periodic Matchmaking DB write = 0
+periodic Room DB write = 0
+
+불필요 periodic query도 없어야 함.
+
+==================================================
+78. Stage 1 회귀 테스트
+==================================================
+
+실제 OnlineMatch가 시작된 뒤:
+
+Player A Play Card.
+Player B End/Play.
+Attack.
+
+State sync 정상.
+
+Hidden information 정상.
+
+즉 Stage 2 추가 때문에
+Stage 1 전투가 깨지지 않아야 함.
+
+==================================================
+79. AI Match 회귀 테스트
+==================================================
+
+기존 AI Match 정상.
+
+Online Lobby 추가 때문에
+AI matchmaking/AI Game이 영향 받으면 안 됨.
+
+==================================================
+80. 아직 만들지 말 것
+==================================================
+
+Stage 2에서 제외:
+
+MMR
+Ranked
+Leaderboard
+Friends list
+Friend request
+Spectator
+Public room browser
+Lobby chat
+Match chat
+Tournament
+Replay
+Complex reconnect
+Turn timeout
+AFK loss
+
+이건 이후 단계.
+
+==================================================
+81. 완료 기준
+==================================================
+
+이 단계 완료 후 실제 UX:
+
+MAIN MENU
+
+[AI 대전]
+[온라인 대전]
+
+온라인 대전
+↓
+[빠른 대전]
+[친선전]
+
+빠른 대전:
+Deck
+→ 상대 찾기
+→ Match.
+
+친선전:
+Deck
+→ 방 생성
+→ 코드 공유
+→ 상대 입장
+→ 둘 다 Ready
+→ Match.
+
+여기까지 실제 Server flow가 동작해야 한다.
+
+UI만 그려놓으면 FAIL.
+
+==================================================
+82. 최종 보고
+==================================================
+
+다음을:
+
+PASS
+FIXED
+FAIL
+
+로 보고.
+
+ONLINE_BATTLE_MENU
+ONLINE_DECK_SELECTION
+
+QUICK_MATCH_QUEUE
+QUICK_MATCH_FIFO
+QUICK_MATCH_CANCEL
+QUICK_MATCH_DISCONNECT_CLEANUP
+QUICK_MATCH_DUPLICATE_PROTECTION
+QUICK_MATCH_RACE_SAFETY
+
+PRIVATE_ROOM_CREATE
+ROOM_CODE_GENERATION
+ROOM_CODE_COLLISION_PROTECTION
+PRIVATE_ROOM_JOIN
+PRIVATE_ROOM_LEAVE
+PRIVATE_ROOM_CLOSE
+PRIVATE_ROOM_READY
+ROOM_FULL_PROTECTION
+SELF_JOIN_PROTECTION
+ROOM_EXPIRATION
+
+LOBBY_WEBSOCKET_REUSE
+LOBBY_SESSION_AUTH
+LOBBY_STATE_MANAGER
+
+FINAL_DECK_REVALIDATION
+MATCH_CREATION_FROM_QUICK
+MATCH_CREATION_FROM_ROOM
+MATCH_SNAPSHOT_ON_START
+
+MULTIPLE_CONCURRENT_MATCHES
+MULTIPLE_PRIVATE_ROOMS
+MATCH_STATE_ISOLATION
+
+NO_MATCHMAKING_DB_POLLING
+NO_QUEUE_DB_WRITES
+NO_ROOM_HEARTBEAT_WRITES
+LOW_COST_IDLE_LOBBY
+
+STAGE1_MULTIPLAYER_REGRESSION
+AI_MATCH_REGRESSION
+
+각 FAIL에:
+
+- 재현 방법
+- root cause
+- 수정 파일
+- 다음 필요한 작업
+
+을 적어.
+
+==================================================
+83. 최종 판정
+==================================================
+
+마지막에 반드시:
+
+ONLINE_PVP_STAGE_2_READY:
+YES / NO
+
+QUICK_MATCH_READY:
+YES / NO
+
+PRIVATE_ROOM_READY:
+YES / NO
+
+LOW_COST_LOBBY_READY:
+YES / NO
+
+MULTIPLE_CONCURRENT_MATCHES_READY:
+YES / NO
+
+AUTOSCALE_MAX_1_BETA_COMPATIBLE:
+YES / NO
+
+를 출력.
+
+이번 단계의 완료는:
+
+"온라인 대전 메뉴가 생겼다"
+
+가 아니라
+
+실제 서로 다른 두 authenticated User가
+Quick Match 또는 Room Code를 통해 연결되고,
+Stage 1의 진짜 Server OnlineMatch가 생성되는 것
+
+이다.

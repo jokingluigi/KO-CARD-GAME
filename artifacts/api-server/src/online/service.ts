@@ -1,5 +1,5 @@
 import { randomUUID } from "node:crypto";
-import { and, eq, inArray } from "drizzle-orm";
+import { and, eq, inArray, or } from "drizzle-orm";
 import {
   cardsTable,
   championsTable,
@@ -217,26 +217,83 @@ export async function createWaitingMatch(
   return record;
 }
 
-export async function joinWaitingMatch(
-  matchId: string,
+export type OnlineDeckValidation = {
+  deckId: string;
+  deckName: string;
+  championName: string | null;
+  championDefinitionId: string | null;
+  cardDefinitionIds: string[];
+  isValid: boolean;
+  invalidReasons: string[];
+};
+
+export async function validateOnlineDeck(
   userId: string,
   deckId: string,
-  testAccount = false,
-): Promise<OnlineMatchRuntime> {
-  const record = await getOnlineMatchRecord(matchId);
-  if (!record || record.status !== "WAITING") throw new Error("참가할 수 없는 매치입니다.");
-  if (record.player1UserId === userId) throw new Error("같은 사용자는 매치에 두 번 참가할 수 없습니다.");
+  testAccountOverride = false,
+): Promise<OnlineDeckValidation> {
+  const deck = await loadUserDeck(userId, deckId);
+  if (!deck) {
+    return {
+      deckId,
+      deckName: "",
+      championName: null,
+      championDefinitionId: null,
+      cardDefinitionIds: [],
+      isValid: false,
+      invalidReasons: ["선택한 덱을 찾을 수 없습니다."],
+    };
+  }
+  const [account] = await db.select({ email: usersTable.email })
+    .from(usersTable)
+    .where(eq(usersTable.id, userId))
+    .limit(1);
+  const resolved = await resolveDeck(
+    deck,
+    userId,
+    testAccountOverride || isTestAccountUser(account),
+  );
+  return {
+    deckId,
+    deckName: deck.name,
+    championName: resolved.champion?.name ?? null,
+    championDefinitionId: resolved.champion?.id ?? null,
+    cardDefinitionIds: resolved.cardDefinitionIds,
+    isValid: resolved.isValid,
+    invalidReasons: resolved.invalidReasons,
+  };
+}
 
-  const firstDeck = await loadUserDeck(record.player1UserId, record.player1DeckId);
-  const secondDeck = await loadUserDeck(userId, deckId);
-  if (!firstDeck || !secondDeck) throw new Error("매치 덱을 찾을 수 없습니다.");
-  const users = await db.select().from(usersTable).where(inArray(usersTable.id, [record.player1UserId, userId]));
-  const userById = new Map(users.map((account) => [account.id, account]));
-  const [firstResolved, secondResolved] = await Promise.all([
-    resolveDeck(firstDeck, record.player1UserId, isTestAccountUser(userById.get(record.player1UserId))),
-    resolveDeck(secondDeck, userId, testAccount || isTestAccountUser(userById.get(userId))),
+export async function userHasActiveMatch(userId: string): Promise<boolean> {
+  const [record] = await db.select({ id: onlineMatchesTable.id })
+    .from(onlineMatchesTable)
+    .where(and(
+      eq(onlineMatchesTable.status, "ACTIVE"),
+      or(
+        eq(onlineMatchesTable.player1UserId, userId),
+        eq(onlineMatchesTable.player2UserId, userId),
+      ),
+    ))
+    .limit(1);
+  return Boolean(record);
+}
+
+export async function startOnlineMatch(
+  player1UserId: string,
+  player1DeckId: string,
+  player2UserId: string,
+  player2DeckId: string,
+  existingWaitingMatchId?: string,
+): Promise<OnlineMatchRuntime> {
+  if (player1UserId === player2UserId) {
+    throw new Error("같은 사용자는 서로 매칭될 수 없습니다.");
+  }
+
+  const [firstDeck, secondDeck] = await Promise.all([
+    validateOnlineDeck(player1UserId, player1DeckId),
+    validateOnlineDeck(player2UserId, player2DeckId),
   ]);
-  if (!firstResolved.isValid || !secondResolved.isValid) {
+  if (!firstDeck.isValid || !secondDeck.isValid) {
     throw new Error("두 플레이어의 덱이 더 이상 유효하지 않습니다.");
   }
 
@@ -246,20 +303,21 @@ export async function joinWaitingMatch(
   ]);
   const cardDefinitions = cards.map(toCardDefinition);
   const championDefinitions = champions.map(toChampionDefinition);
+  const matchId = existingWaitingMatchId ?? randomUUID();
   const snapshot: OnlineMatchSnapshot = {
-    player1UserId: record.player1UserId,
-    player2UserId: userId,
-    player1DeckId: record.player1DeckId,
-    player2DeckId: deckId,
+    player1UserId,
+    player2UserId,
+    player1DeckId,
+    player2DeckId,
     cardDefinitions,
     championDefinitions,
   };
 
   const initial = createInitialGameState(
-    [firstResolved.champion!.id, secondResolved.champion!.id],
+    [firstDeck.championDefinitionId!, secondDeck.championDefinitionId!],
     cardDefinitions,
     championDefinitions,
-    [firstResolved.cardDefinitionIds, secondResolved.cardDefinitionIds],
+    [firstDeck.cardDefinitionIds, secondDeck.cardDefinitionIds],
   );
   const state: GameState = {
     ...initial,
@@ -276,23 +334,62 @@ export async function joinWaitingMatch(
     { backgrounds: [], bgms: [], attackSounds: {} },
   );
 
-  const [updated] = await db.update(onlineMatchesTable)
-    .set({
+  let record: OnlineMatchRecord | undefined;
+  if (existingWaitingMatchId) {
+    const [updated] = await db.update(onlineMatchesTable)
+      .set({
+        status: "ACTIVE",
+        player2UserId,
+        player2DeckId,
+        serializedSnapshot: snapshot,
+        serializedGameState: started,
+        stateVersion: 0,
+        startedAt: new Date(),
+        updatedAt: new Date(),
+      })
+      .where(and(
+        eq(onlineMatchesTable.id, existingWaitingMatchId),
+        eq(onlineMatchesTable.status, "WAITING"),
+      ))
+      .returning();
+    record = updated;
+  } else {
+    const [created] = await db.insert(onlineMatchesTable).values({
+      id: matchId,
       status: "ACTIVE",
-      player2UserId: userId,
-      player2DeckId: deckId,
+      player1UserId,
+      player2UserId,
+      player1DeckId,
+      player2DeckId,
       serializedSnapshot: snapshot,
       serializedGameState: started,
       stateVersion: 0,
       startedAt: new Date(),
       updatedAt: new Date(),
-    })
-    .where(and(eq(onlineMatchesTable.id, matchId), eq(onlineMatchesTable.status, "WAITING")))
-    .returning();
-  if (!updated) throw new Error("매치 참가 처리에 실패했습니다.");
+    }).returning();
+    record = created;
+  }
+  if (!record) throw new Error("매치 참가 처리에 실패했습니다.");
 
-  const runtime = await hydrateRuntime(updated);
-  return runtime;
+  return hydrateRuntime(record);
+}
+
+export async function joinWaitingMatch(
+  matchId: string,
+  userId: string,
+  deckId: string,
+  testAccount = false,
+): Promise<OnlineMatchRuntime> {
+  const record = await getOnlineMatchRecord(matchId);
+  if (!record || record.status !== "WAITING") throw new Error("참가할 수 없는 매치입니다.");
+  if (record.player1UserId === userId) throw new Error("같은 사용자는 매치에 두 번 참가할 수 없습니다.");
+  return startOnlineMatch(
+    record.player1UserId,
+    record.player1DeckId,
+    userId,
+    deckId,
+    matchId,
+  );
 }
 
 async function withRuntimeLock<T>(runtime: OnlineMatchRuntime, task: () => Promise<T>): Promise<T> {

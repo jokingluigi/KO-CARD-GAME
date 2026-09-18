@@ -78,6 +78,7 @@ export function MainMenu({ onComingSoon, onDeckEdit, onAiMatch, user, onLogout }
             <button
               key={label}
               type="button"
+              data-testid={`button-main-menu-${label === "온라인 매치" ? "online" : label === "AI 매치" ? "ai" : label}`}
               onClick={() => {
                 if (label === "덱 편집") {
                   onDeckEdit?.();
@@ -85,6 +86,10 @@ export function MainMenu({ onComingSoon, onDeckEdit, onAiMatch, user, onLogout }
                 }
                 if (label === "AI 매치") {
                   onAiMatch?.();
+                  return;
+                }
+                if (label === "온라인 매치") {
+                  navigate(ROUTES.ONLINE);
                   return;
                 }
                 if (label === "내 팩") {

@@ -10,6 +10,10 @@ import Decks from '@/pages/decks';
 import Collection from '@/pages/collection';
 import Packs from '@/pages/packs';
 import Shop from '@/pages/shop';
+import Online from '@/pages/online';
+import OnlineQuick from '@/pages/online-quick';
+import OnlineFriendly from '@/pages/online-friendly';
+import OnlineMatch from '@/pages/online-match';
 import {
   Route,
   Switch,
@@ -31,6 +35,10 @@ function Router() {
         <Route path="/admin/card-frames" component={Admin} />
         <Route path="/admin/ai-decks" component={Admin} />
         <Route path="/ai-match" component={Home} />
+        <Route path="/online/match/:matchId" component={OnlineMatch} />
+        <Route path="/online/quick" component={OnlineQuick} />
+        <Route path="/online/friendly" component={OnlineFriendly} />
+        <Route path="/online" component={Online} />
         <Route path="/decks" component={Decks} />
         <Route path="/collection" component={Collection} />
         <Route path="/packs" component={Packs} />

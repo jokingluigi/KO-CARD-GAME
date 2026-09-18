@@ -1,0 +1,206 @@
+import type { OnlineActionPayload } from "./online-match-protocol";
+
+export type LobbyDeckSummary = {
+  deckId: string;
+  deckName: string;
+  championName: string | null;
+};
+
+export type LobbyOpponentSummary = {
+  nickname: string;
+  championName: string | null;
+  deckName: string;
+};
+
+export type LobbyRoomMember = LobbyDeckSummary & {
+  userId: string;
+  nickname: string;
+  ready: boolean;
+};
+
+export type LobbyRoomState = {
+  roomId: string;
+  roomCode: string;
+  host: LobbyRoomMember;
+  guest: LobbyRoomMember | null;
+  youAreHost: boolean;
+};
+
+export type OnlineLobbyMessage =
+  | { type: "QUICK_QUEUE_JOINED"; deck: LobbyDeckSummary }
+  | { type: "QUICK_QUEUE_LEFT"; reason?: string }
+  | { type: "MATCH_FOUND"; matchId: string; opponent?: LobbyOpponentSummary }
+  | { type: "PRIVATE_ROOM_CREATED"; room: LobbyRoomState }
+  | { type: "PRIVATE_ROOM_JOINED"; room: LobbyRoomState }
+  | { type: "PRIVATE_ROOM_UPDATED"; room: LobbyRoomState }
+  | { type: "PRIVATE_ROOM_LEFT"; roomId?: string; message?: string }
+  | { type: "PRIVATE_ROOM_CLOSED"; roomId?: string; message?: string }
+  | { type: "MATCH_STARTING"; matchId: string; opponent?: LobbyOpponentSummary }
+  | { type: "LOBBY_ERROR"; code: string; message: string }
+  | { type: "ERROR"; code: string; message: string };
+
+export type OnlineMatchMessage =
+  | {
+      type: "MATCH_SNAPSHOT";
+      matchId: string;
+      seat: "PLAYER_ONE" | "PLAYER_TWO";
+      version: number;
+      state: unknown;
+      events: unknown[];
+    }
+  | {
+      type: "ACTION_ACCEPTED";
+      matchId: string;
+      requestId: string;
+      version: number;
+      state: unknown;
+      events: unknown[];
+    }
+  | {
+      type: "ACTION_REJECTED";
+      matchId: string;
+      requestId?: string;
+      code: string;
+      message: string;
+      currentVersion: number;
+    }
+  | {
+      type: "MATCH_ENDED";
+      matchId: string;
+      version: number;
+      state: unknown;
+      events: unknown[];
+    }
+  | {
+      type: "RESYNC_REQUIRED";
+      matchId: string;
+      version: number;
+      state: unknown;
+      events: unknown[];
+    };
+
+export type OnlineServerMessage = OnlineLobbyMessage | OnlineMatchMessage;
+
+export type OnlineLobbyClientMessage =
+  | { type: "JOIN_QUICK_QUEUE"; deckId: string }
+  | { type: "LEAVE_QUICK_QUEUE" }
+  | { type: "CREATE_PRIVATE_ROOM"; deckId: string }
+  | { type: "JOIN_PRIVATE_ROOM"; roomCode: string; deckId: string }
+  | { type: "LEAVE_PRIVATE_ROOM"; roomId: string }
+  | { type: "CLOSE_PRIVATE_ROOM"; roomId: string }
+  | { type: "SET_ROOM_READY"; roomId: string; ready: boolean }
+  | { type: "SUBSCRIBE"; matchId: string }
+  | { type: "UNSUBSCRIBE"; matchId: string }
+  | {
+      type: "MATCH_ACTION";
+      matchId: string;
+      requestId: string;
+      expectedVersion: number;
+      action: OnlineActionPayload;
+    };
+
+export type OnlineLobbyConnectionState = "idle" | "connecting" | "open" | "closed" | "error";
+export type OnlineLobbyListener = (message: OnlineServerMessage) => void;
+export type OnlineLobbyConnectionListener = (state: OnlineLobbyConnectionState) => void;
+
+const WS_PATH = "/api/online-matches/ws";
+
+function websocketUrl(): string {
+  const base = import.meta.env.BASE_URL.replace(/\/$/, "");
+  const protocol = window.location.protocol === "https:" ? "wss:" : "ws:";
+  return `${protocol}//${window.location.host}${base}${WS_PATH}`;
+}
+
+/**
+ * One authenticated socket is shared by the online menu, lobby and match.
+ * The lobby message names intentionally live here so a server contract change
+ * does not leak into page components.
+ */
+class OnlineLobbyClient {
+  private socket: WebSocket | null = null;
+  private connectionState: OnlineLobbyConnectionState = "idle";
+  private readonly listeners = new Set<OnlineLobbyListener>();
+  private readonly connectionListeners = new Set<OnlineLobbyConnectionListener>();
+  private lastHandoff: Extract<OnlineLobbyMessage, { type: "MATCH_FOUND" | "MATCH_STARTING" }> | null = null;
+
+  get state() {
+    return this.connectionState;
+  }
+
+  onMessage(listener: OnlineLobbyListener) {
+    this.listeners.add(listener);
+    if (this.lastHandoff) {
+      queueMicrotask(() => {
+        if (this.listeners.has(listener) && this.lastHandoff) listener(this.lastHandoff);
+      });
+    }
+    return () => this.listeners.delete(listener);
+  }
+
+  onConnectionState(listener: OnlineLobbyConnectionListener) {
+    this.connectionListeners.add(listener);
+    listener(this.connectionState);
+    return () => this.connectionListeners.delete(listener);
+  }
+
+  connect() {
+    if (this.socket && (this.socket.readyState === WebSocket.OPEN || this.socket.readyState === WebSocket.CONNECTING)) {
+      return;
+    }
+    this.setConnectionState("connecting");
+    const socket = new WebSocket(websocketUrl());
+    this.socket = socket;
+    socket.addEventListener("open", () => this.setConnectionState("open"));
+    socket.addEventListener("message", (event) => {
+      try {
+        const message = JSON.parse(String(event.data)) as OnlineServerMessage;
+        if (message && typeof message.type === "string") {
+          if (message.type === "MATCH_FOUND" || message.type === "MATCH_STARTING") {
+            this.lastHandoff = message;
+          }
+          this.listeners.forEach((listener) => listener(message));
+        }
+      } catch {
+        this.listeners.forEach((listener) =>
+          listener({ type: "LOBBY_ERROR", code: "INVALID_SERVER_MESSAGE", message: "온라인 서버 응답을 해석하지 못했습니다." }),
+        );
+      }
+    });
+    socket.addEventListener("error", () => this.setConnectionState("error"));
+    socket.addEventListener("close", () => {
+      if (this.socket === socket) {
+        this.socket = null;
+        this.setConnectionState("closed");
+      }
+    });
+  }
+
+  close() {
+    this.socket?.close();
+    this.socket = null;
+    this.setConnectionState("closed");
+  }
+
+  send(message: OnlineLobbyClientMessage) {
+    if (this.socket?.readyState !== WebSocket.OPEN) {
+      this.listeners.forEach((listener) =>
+        listener({ type: "LOBBY_ERROR", code: "OFFLINE", message: "온라인 서버에 연결할 수 없습니다." }),
+      );
+      return false;
+    }
+    this.socket.send(JSON.stringify(message));
+    return true;
+  }
+
+  private setConnectionState(state: OnlineLobbyConnectionState) {
+    this.connectionState = state;
+    this.connectionListeners.forEach((listener) => listener(state));
+  }
+}
+
+let sharedClient: OnlineLobbyClient | null = null;
+
+export function getOnlineLobbyClient() {
+  if (!sharedClient) sharedClient = new OnlineLobbyClient();
+  return sharedClient;
+}
