@@ -1,0 +1,131 @@
+KO 카드게임의 Production 운영 비용을 최소화하기 위한
+COST READINESS AUDIT를 수행해줘.
+
+아직 게임 기능이나 UI를 변경하지 말고,
+불필요한 Production resource usage가 있는지 먼저 조사해.
+
+목표:
+
+소규모 초기 베타에서는
+Replit Autoscale 최소 머신 + 최대 인스턴스 1개로
+안정적으로 운영할 수 있게 한다.
+
+확인할 것:
+
+1. 서버가 idle 상태에서도 불필요한 polling / interval / background loop를
+계속 실행하고 있는지 확인.
+
+2. setInterval로 DB를 주기적으로 읽거나 쓰는 코드가 있다면 확인.
+필요 없는 polling은 제거하거나 event-driven 방식으로 변경.
+
+3. WebSocket heartbeat 때문에 DB write를 발생시키지 말 것.
+Connection heartbeat는 memory/network level에서 처리.
+
+4. Online Match turn timer를 매초 DB에 저장하지 말 것.
+server timestamp/deadline 기반으로 관리하고,
+중요한 state transition에서만 persistence.
+
+5. Match animation / Presentation 상태를 DB에 저장하지 말 것.
+
+6. Active Online Match persistence는
+복구에 필요한 최소 데이터만 저장:
+- matchId
+- players
+- snapshot
+- latest GameState
+- state version
+- status
+- result
+- reconnect에 필요한 metadata
+
+7. 매 Action마다 전체 DB를 불필요하게 여러 번 저장하고 있지 않은지 확인.
+필요하면 안전성을 해치지 않는 범위에서 write 수를 줄여라.
+
+8. Card artwork / BGM / SFX / Card Frame 같은 대형 binary asset을
+PostgreSQL Base64/blob 형태로 반복 저장/전송하고 있지 않은지 확인.
+
+기존 asset URL / Replit storage 구조를 재사용.
+
+9. API에서 같은 CardDefinition / ChampionDefinition을
+매 요청마다 과도하게 다시 읽는 부분이 있는지 확인.
+
+Match 시작 후에는 기존 Match Snapshot을 사용.
+
+10. Client polling이 존재하는지 확인.
+Online PvP 상태 동기화는 WebSocket/Event 기반을 우선 사용.
+매초 /api/match 호출 같은 polling 금지.
+
+11. 브라우저가 같은 카드 이미지/BGM을 반복 다운로드하지 않게
+기존 browser caching / shared URL을 유지.
+
+12. Production 로그가 모든 GameState 전체 JSON,
+전체 Deck, 전체 Match snapshot을 Action마다 출력하고 있지 않은지 확인.
+
+Production에서는 필요한 로그만 남겨라.
+
+13. 서버 시작 시 전체 DB를 메모리에 무조건 로드하지 말 것.
+
+14. Active Match가 없고 요청도 없을 때
+Autoscale 인스턴스가 idle 될 수 없게 만드는
+불필요한 background task가 있는지 확인.
+
+15. Production DB에 불필요한 heartbeat write,
+presence write, timer tick write가 없는지 확인.
+
+16. Online PvP 때문에 server memory only 구조가 되지 않게 한다.
+Autoscale 인스턴스 restart 이후에도
+진행 중 Match를 복구할 최소 persistence를 유지.
+
+17. 현재 예상 구조에서 Autoscale max instances=1로
+초기 베타 운영이 가능한지 확인.
+
+단:
+하드코딩으로 scale-out을 영구적으로 막는 코드를 작성하지 마.
+이것은 Deployment 설정 문제다.
+
+18. 서버 메모리 누수 가능성 확인:
+- ended match runtime cleanup
+- disconnected websocket cleanup
+- timer cleanup
+- event listener cleanup
+- presentation 관련 server object cleanup
+
+19. 사용자가 Match를 종료했는데
+OnlineMatchRuntime이 memory에 영구히 남지 않게 확인.
+
+20. Production Database index도 확인.
+자주 조회하는:
+- user/session
+- deck owner
+- matchId
+- active match participant
+등에 기존 적절한 index가 있는지 확인.
+
+단 무작정 index를 많이 추가하지 마.
+
+최종 보고:
+
+AUTOSCALE_IDLE_FRIENDLY
+UNNECESSARY_BACKGROUND_WORK
+DB_WRITE_EFFICIENCY
+WEBSOCKET_DB_WRITE
+MATCH_PERSISTENCE_EFFICIENCY
+ASSET_STORAGE_EFFICIENCY
+API_POLLING
+ASSET_CACHE
+PRODUCTION_LOG_VOLUME
+MATCH_RUNTIME_CLEANUP
+MEMORY_LEAK_RISK
+DB_QUERY_EFFICIENCY
+AUTOSCALE_SINGLE_INSTANCE_BETA_READY
+
+각 항목을:
+
+PASS
+FIXED
+FAIL
+
+로 보고.
+
+이번 작업에서는 기능을 삭제하거나
+게임 규칙을 변경하지 마.
