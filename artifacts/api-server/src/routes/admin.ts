@@ -867,6 +867,24 @@ async function cardReferenceCatalog(): Promise<CardReferenceCandidate[]> {
   }));
 }
 
+async function publishedEffectPayloadError(card: {
+  text: string;
+  effectId: string | null;
+  effectConfig: Record<string, unknown>;
+}): Promise<string | null> {
+  if (card.effectId === "STRUCTURED_EFFECTS_V1" && isStructuredEffects(card.effectConfig)) {
+    return null;
+  }
+  if (card.effectId) return null;
+
+  const analysis = analyzeEffectText(card.text, {
+    cardCatalog: await cardReferenceCatalog(),
+  });
+  return analysis.status === "success" && analysis.effects.length > 0
+    ? "실행 가능한 구조화 효과를 저장한 뒤 공개해 주세요."
+    : null;
+}
+
 function collectCardDefinitionReferenceIds(value: unknown, ids = new Set<string>()): Set<string> {
   if (Array.isArray(value)) {
     for (const item of value) collectCardDefinitionReferenceIds(item, ids);
@@ -2494,6 +2512,13 @@ router.patch("/cards/:id", async (request, response): Promise<void> => {
     response.status(404).json({ message: "카드를 찾을 수 없습니다." });
     return;
   }
+  if (existing.status === "PUBLISHED") {
+    const effectPayloadError = await publishedEffectPayloadError(input);
+    if (effectPayloadError) {
+      response.status(422).json({ message: effectPayloadError });
+      return;
+    }
+  }
   if (
     input.imageAssetId &&
     input.imageAssetId !== existing.imageAssetId &&
@@ -2666,6 +2691,11 @@ router.post("/cards/:id/status", async (request, response): Promise<void> => {
     return;
   }
   if (status === "PUBLISHED") {
+    const effectPayloadError = await publishedEffectPayloadError(existing);
+    if (effectPayloadError) {
+      response.status(422).json({ message: effectPayloadError });
+      return;
+    }
     const referenceErrors = await validatePublishedCardReferences(id);
     if (referenceErrors.length) {
       response.status(422).json({

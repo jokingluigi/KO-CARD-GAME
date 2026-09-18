@@ -277,6 +277,36 @@ function OnlineMatchPage() {
   }, [state?.events.length, state?.status, presentationBusy]);
 
   useEffect(() => {
+    if (!state || !resourcesReady || state.status !== "IN_PROGRESS") return;
+
+    const guardState = { koMatchNavigationGuard: true };
+    window.history.pushState(guardState, "", window.location.href);
+    let leaving = false;
+    const handlePopState = () => {
+      if (leaving) return;
+      if (window.confirm("진행 중인 매치에서 나가시겠습니까? 현재 진행 상황이 사라질 수 있습니다.")) {
+        leaving = true;
+        window.history.back();
+      } else {
+        window.history.pushState(guardState, "", window.location.href);
+      }
+    };
+    const handleBeforeUnload = (event: BeforeUnloadEvent) => {
+      if (leaving) return;
+      event.preventDefault();
+      event.returnValue = "";
+    };
+
+    window.addEventListener("popstate", handlePopState);
+    window.addEventListener("beforeunload", handleBeforeUnload);
+    return () => {
+      leaving = true;
+      window.removeEventListener("popstate", handlePopState);
+      window.removeEventListener("beforeunload", handleBeforeUnload);
+    };
+  }, [resourcesReady, state?.status]);
+
+  useEffect(() => {
     if (!matchResultVisible) return;
     audioManager.stopAttack();
     audioManager.stop();
@@ -380,8 +410,11 @@ function OnlineMatchPage() {
     pendingAttackRef.current = null;
   }
 
-  function sendAction(action: OnlineActionPayload, options?: { allowOffTurn?: boolean }) {
-    const actionAllowed = isConnected && !pendingAction && (options?.allowOffTurn || isMyTurn);
+  function sendAction(action: OnlineActionPayload, options?: { allowOffTurn?: boolean; allowDuringPresentation?: boolean }) {
+    const actionAllowed = isConnected &&
+      !pendingAction &&
+      (options?.allowDuringPresentation || !presentationBusy) &&
+      (options?.allowOffTurn || isMyTurn);
     if (!matchId || version === null || !actionAllowed) return false;
     const requestId = typeof crypto.randomUUID === "function"
       ? crypto.randomUUID()
@@ -533,8 +566,15 @@ function OnlineMatchPage() {
         mediaCatalog={mediaCatalog}
         playError={playError}
         turnSecondsRemaining={secondsRemaining}
-        onEndTurn={() => sendAction({ type: "END_TURN" })}
-        canEndTurn={Boolean(canAct && !state.targetingState?.active)}
+        onEndTurn={() => sendAction({ type: "END_TURN" }, { allowDuringPresentation: true })}
+        canEndTurn={Boolean(
+          isConnected &&
+          isMyTurn &&
+          !pendingAction &&
+          !state.targetingState?.active &&
+          !playAnimation &&
+          !attackAnimation,
+        )}
         bgmMuted={bgmMuted}
         onBgmMutedChange={setBgmMuted}
         bgmVolume={bgmVolume}

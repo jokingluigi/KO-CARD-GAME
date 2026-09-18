@@ -76,6 +76,43 @@ test('등장 시 자신에게 +2/+2를 부여한다', () => {
   assert.equal(result.players[0].board[0]?.maxHealth, 3);
 });
 
+test('선택한 선수에게 피해를 준 뒤 체력이 정확히 1이면 자신을 강화한다', () => {
+  const source = instance('pandora', [
+    structured(
+      'DAMAGE',
+      {
+        zone: 'BOARD',
+        owner: 'ENEMY',
+        cardType: 'WRESTLER',
+        selection: 'PLAYER_CHOICE',
+        count: 1,
+      },
+      {
+        amount: 1,
+        conditionalBuff: { healthEquals: 1, attack: 2, health: 2 },
+      },
+    ),
+  ]);
+  const target = {
+    ...instance('pandora-target'),
+    boardSlot: 0 as const,
+    currentHealth: 2,
+    maxHealth: 2,
+  };
+  const state = createInitialGameState();
+  state.players[1].board[0] = target;
+
+  const pending = enterField(state, 'player-1', source, 1);
+  assert.ok(pending.targetingState);
+  const result = selectEffectTarget(pending, target.instanceId);
+
+  assert.equal(result.players[1].board[0]?.currentHealth, 1);
+  assert.equal(result.players[0].board[1]?.currentAttack, 3);
+  assert.equal(result.players[0].board[1]?.currentHealth, 3);
+  assert.equal(result.players[0].board[1]?.maxHealth, 3);
+  assert.equal(result.targetingState, undefined);
+});
+
 test('콤보는 마지막으로 공격한 아군의 공격력을 자기 공격력에 더하고 턴 종료에 0으로 설정한다', () => {
   const selfTarget = { zone: 'BOARD' as const, owner: 'SELF' as const, selection: 'SELF' as const, count: 1 };
   const attacker = { ...instance('combo-attacker'), boardSlot: 0 as const, enteredThisTurn: false, currentAttack: 4 };

@@ -14,3 +14,9 @@ Published Champion Tokens are runtime snapshot data, not deck data: include them
 **Why:** A global test-definition fallback can silently deploy a development token when a published token is missing, while putting tokens in the deck makes internal Champion assets playable as normal cards.
 
 **How to apply:** Build the public runtime definition list from published normal cards plus published `isChampionToken` cards; keep test fixtures explicit in engine tests and admin-only test matches.
+
+Published status alone does not guarantee an executable card: analyzer-supported effect text must have a validated structured payload before publication, and existing published rows should be repaired through data migration rather than reparsed in the game client.
+
+**Why:** A published wrestler can otherwise reach the match snapshot with `effectId` empty and `effectConfig` empty, so its visible rules text works as decoration while the engine has no effect to execute.
+
+**How to apply:** Enforce the payload at admin publish/update boundaries and keep runtime execution dependent only on the stored structured effect.

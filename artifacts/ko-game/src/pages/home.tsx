@@ -179,6 +179,36 @@ export default function Home() {
   const processedAttackSoundsRef = useRef(new Set<string>());
 
   useEffect(() => {
+    if (!matchReady || gameState.status !== 'IN_PROGRESS') return;
+
+    const guardState = { koMatchNavigationGuard: true };
+    window.history.pushState(guardState, '', window.location.href);
+    let leaving = false;
+    const handlePopState = () => {
+      if (leaving) return;
+      if (window.confirm('진행 중인 매치에서 나가시겠습니까? 현재 진행 상황이 사라질 수 있습니다.')) {
+        leaving = true;
+        window.history.back();
+      } else {
+        window.history.pushState(guardState, '', window.location.href);
+      }
+    };
+    const handleBeforeUnload = (event: BeforeUnloadEvent) => {
+      if (leaving) return;
+      event.preventDefault();
+      event.returnValue = '';
+    };
+
+    window.addEventListener('popstate', handlePopState);
+    window.addEventListener('beforeunload', handleBeforeUnload);
+    return () => {
+      leaving = true;
+      window.removeEventListener('popstate', handlePopState);
+      window.removeEventListener('beforeunload', handleBeforeUnload);
+    };
+  }, [gameState.status, matchReady]);
+
+  useEffect(() => {
     if (gameState.status !== 'FINISHED') {
       setMatchResultVisible(false);
       return;
@@ -1131,8 +1161,7 @@ export default function Home() {
         gameState.activePlayerId === gameState.players[0].id &&
         !gameState.targetingState?.active &&
         !playAnimation &&
-        !attackAnimation &&
-        !presentationBusy,
+        !attackAnimation,
       )}
       bgmMuted={bgmMuted}
       onBgmMutedChange={setBgmMuted}
