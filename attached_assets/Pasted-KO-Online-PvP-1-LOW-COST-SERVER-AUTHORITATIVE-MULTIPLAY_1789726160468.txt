@@ -1,0 +1,1301 @@
+KO 카드게임에 Online PvP를 추가하기 위한
+
+[1단계]
+LOW-COST SERVER-AUTHORITATIVE MULTIPLAYER FOUNDATION
+
+을 구현해줘.
+
+이번 단계의 가장 중요한 목표:
+
+"온라인 PvP 기반은 제대로 만들되,
+초기 소규모 베타에서는 Replit 비용을 최대한 적게 사용한다."
+
+현재는 소수의 Discord 테스터가 사용하는 초기 베타를 전제로 한다.
+
+==================================================
+0. 이번 단계에서 절대 과하게 만들지 마
+==================================================
+
+이번 단계에서 다음 인프라는 추가하지 마:
+
+- Redis
+- 별도 Matchmaking Server
+- 별도 WebSocket Server Process
+- 별도 Microservice
+- Kafka
+- Message Queue
+- Worker Server
+- Presence Server
+- Analytics Server
+- 별도 realtime database
+- 매초 DB polling
+- 매초 Match save
+- 매초 Player presence save
+
+현재 KO의 기존 Node/API Server 안에서
+최소한의 Online Match 기능을 구현해.
+
+초기 Production은:
+
+Replit Autoscale
+Maximum Machines = 1
+
+운영을 우선 전제로 한다.
+
+단 코드에 "인스턴스는 영원히 1개"라고 하드코딩하지 마.
+
+향후 확장 가능성은 남겨둔다.
+
+==================================================
+1. 이번 단계의 실제 완료 목표
+==================================================
+
+두 명의 로그인 User가:
+
+Player A
+Player B
+
+하나의 Online Match에 참가.
+
+Client는:
+
+"무엇을 하겠다"
+
+라는 Action만 Server에 보냄.
+
+Server가:
+
+공식 GameState를 소유
+↓
+기존 KO Engine으로 Action 검증
+↓
+Action 실행
+↓
+Game Event 생성
+↓
+공식 GameState 갱신
+↓
+각 Player에게 필요한 정보만 전송
+
+하는 구조.
+
+온라인 UI / 예쁜 매칭 화면은 아직 만들지 않아도 된다.
+
+==================================================
+2. 기존 KO Engine 반드시 재사용
+==================================================
+
+먼저 프로젝트를 조사.
+
+찾을 것:
+
+GameState
+CardInstance
+Champion State
+Game Action
+executeAction
+getLegalActions
+Event / Event Log
+deterministic RNG
+pendingSelection
+PLAYER_CHOICE
+Match Snapshot
+Match Result
+Presentation Queue
+
+온라인 전용으로
+두 번째 게임 엔진을 만들지 마.
+
+AI Match와 Online Match가
+동일한 KO Game Engine을 사용해야 한다.
+
+==================================================
+3. Engine Server Compatibility
+==================================================
+
+Game Engine Core가 Server Node 환경에서
+실행 가능한지 확인.
+
+Engine Core에서 다음 직접 참조 금지:
+
+window
+document
+HTMLElement
+React state
+localStorage
+
+UI dependency가 있다면
+게임 규칙 부분만 최소한으로 shared module로 분리.
+
+대규모 엔진 재작성 금지.
+
+==================================================
+4. Server Authoritative 구조
+==================================================
+
+Online Match에서 공식 GameState는
+항상 SERVER가 소유.
+
+Client가 보내는 것은 Action뿐.
+
+예:
+
+PLAY_WRESTLER
+PLAY_TECHNIQUE
+ATTACK
+USE_CHAMPION_ABILITY
+SELECT_EFFECT_TARGET
+END_TURN
+SURRENDER
+
+Client가 보내면 안 되는 값:
+
+currentHealth 결과
+Attack 결과
+Gold 결과
+RNG 결과
+RETIRE 여부
+승패 결과
+전체 GameState
+
+이런 결과는 전부 Server Engine이 계산.
+
+==================================================
+5. 최소 OnlineMatch 데이터 모델
+==================================================
+
+기존 DB/ORM 구조에 맞춰
+필요 최소한의 OnlineMatch persistent model 추가.
+
+예:
+
+id
+status
+
+player1UserId
+player2UserId
+
+player1DeckId
+player2DeckId
+
+serializedSnapshot
+serializedGameState
+
+stateVersion
+
+startedAt
+updatedAt
+endedAt
+
+winnerUserId
+resultReason
+
+status 예:
+
+WAITING
+ACTIVE
+ENDED
+CANCELLED
+
+불필요한 테이블을 여러 개 만들지 마.
+
+초기 베타에서는 가능하면
+한 OnlineMatch row에 필요한 최소 상태를 저장.
+
+==================================================
+6. Active Match Runtime
+==================================================
+
+실제 ACTIVE Match는
+Server memory에서 빠르게 처리 가능.
+
+예:
+
+Map<matchId, OnlineMatchRuntime>
+
+Runtime:
+
+matchId
+gameState
+snapshot
+version
+connections
+
+하지만 Memory-only는 금지.
+
+Server restart 시 복구 가능한
+최신 serialized GameState가 DB에 있어야 한다.
+
+==================================================
+7. DB 비용 최소화
+==================================================
+
+매초 DB 저장 금지.
+
+heartbeat마다 DB 저장 금지.
+
+animation마다 DB 저장 금지.
+
+turn timer tick마다 DB 저장 금지.
+
+DB write는 실제 Game State가 변경되는
+"성공한 Game Action" 중심으로만 한다.
+
+권장:
+
+Accepted Action 1회
+→ Engine 처리
+→ 최종 State 1회 atomic persistence
+
+한 Action에서:
+
+HP UPDATE
+Gold UPDATE
+Card UPDATE
+Turn UPDATE
+
+등을 별도 query 여러 번 발생시키지 마.
+
+가능하면 serialized Match State를
+한 번 업데이트.
+
+==================================================
+8. Presentation은 DB에 저장하지 마
+==================================================
+
+절대 저장 금지:
+
+attack animation position
+screen shake
+damage number
+card clone
+hover
+target ring
+presentation queue progress
+
+이건 전부 Client UI 상태다.
+
+==================================================
+9. Player Seat 인증
+==================================================
+
+Match 내부 seat:
+
+PLAYER_ONE
+PLAYER_TWO
+
+또는 기존 player id 체계 사용.
+
+Account User ID와 연결.
+
+Client가:
+
+playerId: "PLAYER_ONE"
+
+이라고 보내는 값을 신뢰하지 마.
+
+현재 로그인 Session User를 기준으로
+Server가 Seat를 판단.
+
+==================================================
+10. Deck 검증
+==================================================
+
+Online Match 참여 시
+Server가 직접 Deck 검증.
+
+확인:
+
+Champion 정확히 1
+Card 20~30
+PUBLISHED
+User 실제 ownership
+Token 직접 편성 X
+Champion Token 직접 편성 X
+VALID Deck
+
+Client의 valid=true 신뢰 금지.
+
+기존 Deck Validator 재사용.
+
+==================================================
+11. Match Snapshot
+==================================================
+
+Match 시작 순간
+양쪽 Deck/Champion/CardDefinition을 snapshot.
+
+포함:
+
+ChampionDefinition
+Deck cards
+referenced cards
+tokens
+Champion Token
+effect references
+
+기존 AI Match Snapshot 구조가 있다면 재사용.
+
+Match 진행 중 Admin이 Card Effect를 수정해도
+이미 진행 중인 Match에는 반영되지 않아야 한다.
+
+==================================================
+12. Action Envelope
+==================================================
+
+Online Action은 최소한 다음 구조.
+
+{
+  type: "MATCH_ACTION",
+  matchId,
+  requestId,
+  expectedVersion,
+  action
+}
+
+requestId:
+중복 Action 방지.
+
+expectedVersion:
+stale client 방지.
+
+==================================================
+13. State Version
+==================================================
+
+GameState 변경 성공할 때마다:
+
+version + 1
+
+예:
+
+18
+→ Action
+→ 19
+
+Client는 currentVersion을 받음.
+
+stale Action이면
+안전하게 reject/resync.
+
+==================================================
+14. Duplicate Action 방지
+==================================================
+
+Double click이나 network retry 때문에
+같은 Action이 2번 실행되면 안 된다.
+
+requestId를 이용.
+
+같은 requestId 재수신:
+
+executeAction 재실행 X.
+
+최근 requestId만
+작은 in-memory cache로 유지.
+
+끝없이 저장하지 마.
+
+Match 종료 시 cleanup.
+
+==================================================
+15. Match별 Action 직렬화
+==================================================
+
+같은 Match에서
+동시에 두 Action이 State를 수정하면 안 됨.
+
+Per-Match queue/mutex 사용.
+
+전역 lock 금지.
+
+Match A 때문에
+Match B가 기다리지 않아야 함.
+
+==================================================
+16. Server Validation
+==================================================
+
+매 Action:
+
+로그인 User인가
+↓
+해당 Match Player인가
+↓
+Match ACTIVE인가
+↓
+해당 User 차례인가
+↓
+pendingSelection 상태인가
+↓
+legal action인가
+↓
+CardInstance가 실제 존재하는가
+↓
+Gold 충분한가
+↓
+target legal인가
+↓
+slot legal인가
+
+확인.
+
+기존 Engine Validator / getLegalActions 재사용.
+
+==================================================
+17. Invalid Action
+==================================================
+
+Invalid Action은 정상적인 실패.
+
+Server crash X.
+Match reset X.
+GameState 변경 X.
+version 변경 X.
+
+응답 예:
+
+ok: false
+code: INVALID_ACTION
+currentVersion: ...
+
+Client에서 Toast 가능.
+
+==================================================
+18. Game RNG
+==================================================
+
+온라인에서 모든 게임 RNG는 Server만 실행.
+
+사용:
+
+기존 deterministic game RNG.
+
+금지:
+
+Client Math.random
+Client random target
+Client random summon
+Client random revive
+
+A/B Client가 따로 RNG를 계산하면 FAIL.
+
+==================================================
+19. 최소 Realtime Transport
+==================================================
+
+기존 API Server에
+WebSocket을 붙인다.
+
+이미 Socket.IO/WebSocket이 있다면 재사용.
+
+없다면 기존 HTTP Server 위에
+가장 단순한 WebSocket transport 구성.
+
+별도 realtime server process 만들지 마.
+
+==================================================
+20. WebSocket 인증
+==================================================
+
+기존 로그인 Session/Cookie 사용.
+
+Client가:
+
+userId
+
+를 보내서 인증하는 구조 금지.
+
+Server가 기존 Session으로 User 식별.
+
+미인증 User 연결/Match Subscribe 거부.
+
+==================================================
+21. WebSocket heartbeat
+==================================================
+
+ping/pong 수준 heartbeat 사용 가능.
+
+하지만 heartbeat마다:
+
+DB SELECT
+DB UPDATE
+presence UPDATE
+match UPDATE
+
+절대 금지.
+
+Heartbeat는 network/memory에서만 처리.
+
+==================================================
+22. Match Subscription
+==================================================
+
+User는 자기가 참가한 Match만 subscribe 가능.
+
+matchId를 알아냈다고
+제3자가 관전할 수 있으면 안 된다.
+
+관전 기능은 이번 단계에서 만들지 마.
+
+==================================================
+23. 최소 Server Message
+==================================================
+
+필요 최소 Message만.
+
+예:
+
+MATCH_SNAPSHOT
+MATCH_EVENTS
+ACTION_ACCEPTED
+ACTION_REJECTED
+MATCH_ENDED
+RESYNC_REQUIRED
+
+메시지 종류를 쓸데없이 수십 개 만들지 마.
+
+==================================================
+24. Event Sequence
+==================================================
+
+Game Event에는
+sequenceNumber 또는 equivalent ordering id 사용.
+
+Client는 순서대로 Presentation Queue에 전달.
+
+중복/역순 event 처리 가능해야 함.
+
+==================================================
+25. Hidden Information Sanitization
+==================================================
+
+매우 중요.
+
+Server Full GameState를
+그대로 양쪽에게 보내지 마.
+
+반드시:
+
+sanitizeGameStateForViewer(
+ fullState,
+ viewerPlayerId
+)
+
+구현.
+
+==================================================
+26. 상대 Hand 숨김
+==================================================
+
+상대 Hand는:
+
+장수만 공개.
+
+hidden card의:
+
+cardDefinitionId
+name
+effect
+stats
+artwork
+instance identity
+
+노출 금지.
+
+==================================================
+27. 상대 Deck 숨김
+==================================================
+
+상대 Deck:
+
+남은 장수 정도만 공개.
+
+노출 금지:
+
+deck order
+next draw
+exact card identities
+
+==================================================
+28. Event Sanitization
+==================================================
+
+State만 숨기고
+Event에서 정보가 새면 안 된다.
+
+예:
+
+상대 CARD_DRAWN
+
+상대에게는:
+실제 카드 정보
+
+나에게는:
+"상대가 카드 1장 Draw"
+
+정도.
+
+cardDefinitionId leak 금지.
+
+==================================================
+29. Generated Hidden Card
+==================================================
+
+상대가 Hand에 Generated Card를 생성해도
+기본적으로 exact identity는 숨김.
+
+원래 Effect 자체가 카드 이름을 공개하는 규칙일 때만
+필요한 정보를 공개.
+
+새 공개 규칙 임의 생성 금지.
+
+==================================================
+30. 기존 Presentation Queue 재사용
+==================================================
+
+Server는 Animation command를 보내지 않는다.
+
+Server:
+Game Event 전송.
+
+Client:
+기존 Presentation Queue가 연출.
+
+예:
+
+ATTACK
+DAMAGE
+RETIRE
+
+↓
+
+Attack animation
+Hit
+Damage Number
+Retire animation.
+
+==================================================
+31. Client Animation은 Server를 막지 않는다
+==================================================
+
+Server의 게임 결과는
+Animation과 무관하게 확정.
+
+"Animation 끝나야 Damage 계산"
+
+같은 구조 금지.
+
+Client UX 차원의 input lock은 가능.
+
+==================================================
+32. 기존 KO 규칙 회귀 금지
+==================================================
+
+온라인에서도 다음 그대로:
+
+Board 4 slots.
+
+Technique:
+board slot 요구 X.
+
+PLAYER_CHOICE:
+pendingSelection 사용.
+
+PLAY_FROM_HAND만 등장 Trigger.
+
+SUMMON:
+등장 X.
+
+REVIVE:
+등장 X.
+
+RETIRE / DESTROY / REMOVE_FROM_GAME 구분.
+
+Generated semantics 유지.
+
+Champion Token special rules 유지.
+
+==================================================
+33. Technique Online
+==================================================
+
+PLAY_TECHNIQUE {
+ cardInstanceId
+}
+
+boardSlot 없음.
+
+Board 4/4에서도 사용 가능.
+
+Target 필요:
+
+pendingSelection
+→ SELECT_EFFECT_TARGET.
+
+==================================================
+34. PLAYER_CHOICE Online
+==================================================
+
+Server State에 pendingSelection 저장.
+
+해당 Player만 target 선택 가능.
+
+Opponent가 선택 Action 보내면 reject.
+
+선택 후 Server에서 다시 legal target 검증.
+
+==================================================
+35. Server Result
+==================================================
+
+승패는 Server만 공식 결정.
+
+기존 조건:
+
+Champion HP <= 0
+
+SURRENDER
+
+Active Champion Token RETIRE
+
+Client가 HP 보고 직접 Match 종료 처리하지 마.
+
+==================================================
+36. Surrender
+==================================================
+
+Online Action으로 지원:
+
+SURRENDER
+
+Server가 result 확정.
+
+양쪽에 MATCH_ENDED 전달.
+
+==================================================
+37. Match Persistence
+==================================================
+
+초기 저비용 운영에서는
+매 Accepted Action마다 최신 State를
+가능하면 1회 persistence.
+
+이유:
+
+Autoscale Process가 재시작돼도
+진행 중 Match 복구 가능해야 함.
+
+하지만 Animation/Event 전체를
+매번 별도 DB row로 저장하지 마.
+
+==================================================
+38. Match History 최소화
+==================================================
+
+Match 종료 시 필요한 최소 기록:
+
+matchId
+player1
+player2
+winner
+loser
+resultReason
+startedAt
+endedAt
+
+Rank/MMR는 아직 만들지 마.
+
+==================================================
+39. Cleanup
+==================================================
+
+Match 끝나면:
+
+runtime Map entry 제거
+requestId cache 제거
+WebSocket subscription 제거
+timer 제거
+listener 제거
+
+메모리 누수 방지.
+
+DB Match History는 유지.
+
+==================================================
+40. Disconnect
+==================================================
+
+이번 단계에서는
+고급 reconnect UI까지 구현할 필요 없음.
+
+하지만 disconnect됐다고
+매치 GameState 자체를 삭제하면 안 된다.
+
+connection만 제거.
+
+재접속 기반은 다음 단계에서 사용 가능하게.
+
+==================================================
+41. 비용 때문에 하지 말 것
+==================================================
+
+절대 추가하지 마:
+
+5초마다 Active Match DB 조회
+
+1초마다 User online UPDATE
+
+1초마다 Turn timer UPDATE
+
+WebSocket heartbeat DB UPDATE
+
+Event마다 별도 EventLog DB INSERT
+
+Animation마다 persistence
+
+Match 전체 CardDefinition을
+매 Action마다 DB에서 재조회
+
+==================================================
+42. Definition DB 조회 최소화
+==================================================
+
+Match 시작:
+
+Snapshot 생성.
+
+그 후 Match 중에는
+가능하면 Snapshot 사용.
+
+CardDefinition을 Action마다
+DB에서 다시 읽지 마.
+
+==================================================
+43. Logging 최소화
+==================================================
+
+Development:
+
+상세 Online Match debug log 허용.
+
+Production:
+
+전체 GameState JSON 출력 금지.
+
+전체 Hand/Deck 출력 금지.
+
+필요한 metadata만:
+
+matchId
+userId
+actionType
+accepted/rejected
+version
+errorCode
+
+==================================================
+44. Development Multiplayer Test Helper
+==================================================
+
+아직 Online UI가 없으므로
+DEV/TEST 환경에서 두 Test User로
+실제 Multiplayer integration test 가능하게.
+
+Production에서 노출 금지.
+
+TEST PLAYER A
+TEST PLAYER B
+
+각각 정상 Session을 사용.
+
+Auth bypass 방식으로 Game Action을 실행하지 마.
+
+==================================================
+45. Integration Test - Match Start
+==================================================
+
+두 Test User + valid decks.
+
+Online Match 생성.
+
+Server authoritative GameState 생성.
+
+확인:
+
+starting hand
+turn
+Gold
+draw
+snapshot
+version
+
+==================================================
+46. Hidden Info Test
+==================================================
+
+A가 보는 State:
+
+B Hand identity 숨김.
+
+B가 보는 State:
+
+B 자기 Hand 표시.
+
+B Deck exact order:
+A에게 숨김.
+
+반대 방향도 동일.
+
+==================================================
+47. Play Test
+==================================================
+
+Player A:
+
+PLAY_WRESTLER
+
+Server validate.
+
+State update.
+
+Player A/B 양쪽에
+필드 카드 정상 표시.
+
+==================================================
+48. Wrong Turn Test
+==================================================
+
+Player B 차례가 아닌데 Action.
+
+REJECT.
+
+State unchanged.
+Version unchanged.
+
+==================================================
+49. Fake Gold Test
+==================================================
+
+Client payload에:
+
+gold: 999
+cost: 0
+
+추가해서 보내도 무시.
+
+Server official State 기준.
+
+==================================================
+50. Fake Card Test
+==================================================
+
+Hand에 없는 cardInstanceId로 PLAY.
+
+REJECT.
+
+==================================================
+51. Illegal Target Test
+==================================================
+
+잘못된 targetInstanceId.
+
+REJECT.
+
+==================================================
+52. Duplicate Request Test
+==================================================
+
+같은 requestId로 Action 2회.
+
+실행 1회.
+
+Gold 1회 소비.
+State version 1회 증가.
+
+==================================================
+53. Concurrent Action Test
+==================================================
+
+동시에 두 Action 요청.
+
+Match State corruption 없어야 함.
+
+==================================================
+54. Random Test
+==================================================
+
+Random Effect 실행.
+
+Server 한 번만 RNG 결정.
+
+양 Client 공개 결과 일치.
+
+==================================================
+55. Technique Test
+==================================================
+
+Board 4/4.
+
+Technique 사용 성공.
+
+빈 Board Slot 요구 X.
+
+==================================================
+56. PLAYER_CHOICE Test
+==================================================
+
+Target Effect.
+
+pendingSelection 생성.
+
+정상 Player Target 선택.
+
+Opponent Target 선택 요청은 reject.
+
+==================================================
+57. SUMMON Test
+==================================================
+
+Effect SUMMON.
+
+actual destination slot 사용.
+
+등장 Trigger X.
+
+==================================================
+58. REVIVE Test
+==================================================
+
+graveyard existing CardInstance revive.
+
+Generated X.
+CARD_GENERATED X.
+등장 Trigger X.
+
+valid HP로 Board 복귀.
+
+==================================================
+59. RETIRE / DESTROY / REMOVE Test
+==================================================
+
+기존 차이를 그대로 검증.
+
+RETIRE:
+graveyard + ON_RETIRE.
+
+DESTROY:
+graveyard X
+ON_RETIRE X.
+
+REMOVE:
+removedFromGame.
+
+==================================================
+60. Champion Token Test
+==================================================
+
+Active Champion Token protection 정상.
+
+Active Champion Token RETIRE:
+
+Server가 owner 패배 확정.
+
+==================================================
+61. Cross Match Security
+==================================================
+
+제3 User가:
+
+남의 match subscribe
+남의 match action
+
+시도.
+
+모두 거부.
+
+==================================================
+62. AI Match 회귀 테스트
+==================================================
+
+Online foundation 추가 후
+기존 AI Match도 실행.
+
+Online 때문에 AI Match가 깨지면 FAIL.
+
+둘은 같은 Engine을 사용하되
+AI Match를 억지로 WebSocket으로 바꿀 필요 없음.
+
+==================================================
+63. TypeScript
+==================================================
+
+Online 메시지에 any 남발 금지.
+
+discriminated union 사용.
+
+예:
+
+OnlineClientMessage
+OnlineServerMessage
+OnlineMatchAction
+
+==================================================
+64. Performance / Cost Test
+==================================================
+
+Test Match 1개가 ACTIVE인 상태에서 확인:
+
+불필요한 periodic DB query 없음.
+
+불필요한 periodic DB write 없음.
+
+WebSocket idle 상태에서
+DB write 계속 발생하지 않음.
+
+Match Action이 없는데
+Match row updatedAt가 계속 바뀌면 FAIL.
+
+==================================================
+65. 아직 만들지 말 것
+==================================================
+
+이번 단계에서 제외:
+
+Quick Match UI
+Room Code UI
+MMR
+Ranked
+Leaderboard
+Friends
+Spectator
+Chat
+Replay
+Tournament
+Presence list
+Fancy online animation
+
+==================================================
+66. 완료 기준
+==================================================
+
+이번 1단계 PASS 기준:
+
+Client A
+↓
+Action
+
+Server
+↓
+existing KO Engine
+↓
+official GameState
+
+↓
+
+sanitize for A
+sanitize for B
+
+↓
+
+A/B realtime sync
+
+가 실제 Integration Test로 동작.
+
+그리고 idle 상태에서는
+불필요한 DB 비용이 발생하지 않아야 한다.
+
+==================================================
+67. 최종 보고
+==================================================
+
+다음을:
+
+PASS
+FIXED
+FAIL
+
+로 보고.
+
+SHARED_ENGINE_SERVER_READY
+SERVER_AUTHORITATIVE_STATE
+
+ONLINE_MATCH_MODEL
+ACTIVE_MATCH_RUNTIME
+MATCH_SNAPSHOT
+DECK_SERVER_VALIDATION
+
+WEBSOCKET_SINGLE_SERVER
+WEBSOCKET_SESSION_AUTH
+MATCH_SUBSCRIPTION_SECURITY
+
+ACTION_ENVELOPE
+STATE_VERSION
+ACTION_IDEMPOTENCY
+PER_MATCH_ACTION_SERIALIZATION
+SERVER_LEGAL_ACTION_VALIDATION
+
+SERVER_RNG
+
+VIEWER_STATE_SANITIZATION
+OPPONENT_HAND_HIDDEN
+OPPONENT_DECK_HIDDEN
+VIEWER_EVENT_SANITIZATION
+
+PLAYER_CHOICE_ONLINE
+TECHNIQUE_ONLINE
+SUMMON_ONLINE
+REVIVE_ONLINE
+RETIRE_DESTROY_REMOVE_ONLINE
+CHAMPION_TOKEN_ONLINE
+
+SERVER_MATCH_RESULT
+SURRENDER
+
+MATCH_STATE_PERSISTENCE
+MATCH_HISTORY_MINIMAL
+MATCH_RUNTIME_CLEANUP
+WEBSOCKET_CLEANUP
+
+NO_DB_HEARTBEAT_WRITES
+NO_TURN_TIMER_TICK_WRITES
+NO_MATCH_POLLING
+NO_UNNECESSARY_BACKGROUND_WORK
+
+DUPLICATE_ACTION_TEST
+CONCURRENT_ACTION_TEST
+HIDDEN_INFO_TEST
+RNG_SYNC_TEST
+CROSS_MATCH_SECURITY_TEST
+
+AI_MATCH_REGRESSION
+
+각 FAIL:
+
+- 재현 방법
+- root cause
+- 수정 파일
+- 다음 필요한 작업
+
+==================================================
+68. 최종 판정
+==================================================
+
+마지막에 반드시:
+
+ONLINE_PVP_STAGE_1_READY:
+YES / NO
+
+LOW_COST_MULTIPLAYER_FOUNDATION:
+YES / NO
+
+AUTOSCALE_MAX_1_BETA_COMPATIBLE:
+YES / NO
+
+를 출력.
+
+"UI가 아직 없다"는 이유로
+STAGE_1을 FAIL 처리하지 마.
+
+이번 단계에서 중요한 것은
+실제 Server Multiplayer Foundation이다.
