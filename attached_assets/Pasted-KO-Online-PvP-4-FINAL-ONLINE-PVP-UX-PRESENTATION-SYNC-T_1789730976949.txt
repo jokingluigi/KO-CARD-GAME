@@ -1,0 +1,1883 @@
+KO 카드게임 Online PvP
+
+[4단계 / FINAL]
+ONLINE PVP UX + PRESENTATION SYNC + TWO-CLIENT END-TO-END VERIFICATION
+
+을 구현하고 검증해줘.
+
+전제:
+
+Stage 1:
+- Server-authoritative Online Match
+- OnlineMatch persistence
+- WebSocket
+- Action validation
+- Viewer sanitization
+- Match Snapshot
+- Server RNG
+- multiple concurrent matches
+
+Stage 2:
+- Online Battle menu
+- Quick Match
+- Private Room / Room Code
+- Ready
+- Match creation
+
+Stage 3:
+- Reconnect
+- Refresh resume
+- Turn Timer
+- Disconnect Grace
+- Duplicate Tab protection
+- Runtime Lazy Restore
+- Server Restart Recovery
+
+가 이미 구현되어 있다.
+
+이번 단계에서는
+기존 Stage 1~3 구조를 다시 만들지 마.
+
+==================================================
+0. 이번 단계 최종 목표
+==================================================
+
+실제 서로 다른 두 authenticated User가
+
+MAIN MENU
+↓
+ONLINE BATTLE
+↓
+QUICK MATCH 또는 PRIVATE ROOM
+↓
+서로 매칭
+↓
+실제 Online Match
+↓
+카드 플레이
+↓
+공격
+↓
+Technique
+↓
+Champion Ability
+↓
+PLAYER_CHOICE
+↓
+Quest
+↓
+Retire / Destroy / Summon / Revive
+↓
+Match Result
+
+까지 한 판을 정상적으로 끝낼 수 있어야 한다.
+
+그리고 양쪽 Client에서:
+
+- GameState
+- Hidden Information
+- Presentation
+- Animation
+- Turn
+- Timer
+- Result
+
+가 서로 일치해야 한다.
+
+==================================================
+1. 절대 원칙
+==================================================
+
+이번 단계는 UI Mockup 단계가 아니다.
+
+실제:
+
+Client A
+↕
+Server
+↕
+Client B
+
+구조에서 검증.
+
+절대 하지 말 것:
+
+- Online용 별도 Game Engine 생성
+- Client가 게임 결과 계산
+- Client가 HP/Gold/Retire 판정
+- UI만 만들어놓고 PASS
+- 두 브라우저 테스트 없이 PASS
+- Fake opponent 사용 후 Online E2E라고 주장
+- Online Match를 AI Match로 대체해서 검증
+- Hidden information을 테스트 편의상 노출
+- Presentation 때문에 GameState 변경
+
+==================================================
+2. 기존 Match UI 최대한 재사용
+==================================================
+
+Online Match도 기존 KO Match UI를 재사용.
+
+새로운 Online 전용 보드를 따로 만들지 마.
+
+재사용:
+
+- Board
+- Hand
+- Champion UI
+- Gold
+- Deck/Graveyard
+- CardRenderer
+- Target Selection
+- Presentation Queue
+- Damage Number
+- Screen Shake
+- Technique Reveal
+- Quest Presentation
+- Result Screen
+
+AI Match와 Online Match가
+시각적으로 완전히 다른 게임처럼 되면 안 된다.
+
+==================================================
+3. Online Match Viewer Perspective
+==================================================
+
+매우 중요.
+
+각 Client는 항상 자기 자신이
+화면 아래쪽에 보여야 한다.
+
+Player A 화면:
+
+TOP:
+Player B
+
+BOTTOM:
+Player A
+
+Player B 화면:
+
+TOP:
+Player A
+
+BOTTOM:
+Player B
+
+즉 Server의 PLAYER_ONE / PLAYER_TWO를
+그대로 top/bottom으로 하드코딩하지 마.
+
+viewer 기준으로 렌더.
+
+==================================================
+4. Board Slot Perspective
+==================================================
+
+각 User의 own board는
+항상 화면 아래.
+
+Opponent board는
+항상 화면 위.
+
+Card Play / Attack / Summon Animation도
+viewer perspective를 따라야 한다.
+
+예:
+
+Player A가 카드 플레이.
+
+A 화면:
+아래 Hand → 아래 Board.
+
+B 화면:
+위 Opponent Hand 영역 → 위 Opponent Board.
+
+같은 Game Event지만
+각 Client의 시점은 다르다.
+
+==================================================
+5. 상대 Card Play Animation
+==================================================
+
+현재 과거에 있었던 버그를
+온라인에서 절대 재발시키지 마.
+
+상대가 카드를 내면:
+
+절대로
+내 Hand 또는 내 Board에서 카드가 잠깐 나타났다
+상대 Board로 이동하면 안 된다.
+
+Opponent PLAY_FROM_HAND:
+
+Opponent Hand Area
+↓
+Opponent Board target Slot
+
+에서 시작해야 한다.
+
+==================================================
+6. Self Card Play Animation
+==================================================
+
+내가 카드 플레이:
+
+현재 실제 Hand Card DOM 위치
+↓
+실제 target slot DOM 위치
+
+로 이동.
+
+Board/Hand Layout이 커졌거나
+반응형 크기가 바뀌어도
+실제 DOM rect를 사용.
+
+옛 고정 좌표 사용 금지.
+
+==================================================
+7. Card Clone 중복 표시 금지
+==================================================
+
+공격 / 카드 플레이 animation에서
+clone을 사용한다면:
+
+clone 생성
+↓
+원본 visually hidden
+↓
+clone animation
+↓
+clone cleanup
+↓
+원본 restore
+
+순서.
+
+원본 + clone이 동시에 보여
+카드가 두 장처럼 보이면 FAIL.
+
+SELF / OPPONENT 모두 테스트.
+
+==================================================
+8. Attack Presentation
+==================================================
+
+온라인 공격에서도 기존 Presentation 유지:
+
+ATTACK WINDUP
+↓
+LUNGE
+↓
+IMPACT
+↓
+HIT REACTION
+↓
+DAMAGE NUMBER
+↓
+HP UPDATE
+↓
+COUNTER DAMAGE
+↓
+RETIRE if needed
+↓
+RETURN
+
+Server Game Event 결과를 사용.
+
+==================================================
+9. Attack Destination
+==================================================
+
+공격 destination은:
+
+targetInstanceId의
+실제 Rendered DOM rect
+
+우선.
+
+stale slotIndex만 사용 금지.
+
+특히 상대가 내 카드를 때릴 때
+빈 Slot을 향해 공격하는 기존 버그 재발 금지.
+
+==================================================
+10. 양 Client Attack 비교
+==================================================
+
+같은 공격 Event라도:
+
+공격자 Client:
+자기 카드가 아래에서 위로 공격.
+
+피격 Client:
+상대 카드가 위에서 아래로 공격.
+
+양쪽에서
+동일한 실제 attacker/target을 표현해야 한다.
+
+==================================================
+11. Screen Shake
+==================================================
+
+실제 damageApplied 기준:
+
+0:
+없음
+
+1~3:
+SMALL
+
+4~6:
+MEDIUM
+
+7~10:
+LARGE
+
+11+:
+VERY_LARGE
+
+Online에서도 동일.
+
+공격자 화면 / 피격자 화면 모두
+해당 Damage Event를 표현할 수 있지만
+피격 Player 화면은 타격감을 조금 더 명확하게 느낄 수 있어도 된다.
+
+단 Damage 값 자체는 동일.
+
+==================================================
+12. Dodge
+==================================================
+
+Online에서도:
+
+Damage 0
+↓
+Dodge presentation
+↓
+Afterimage
+↓
+"회피"
+↓
+No damage number
+↓
+No hit shake
+
+양 Client에서 동일 Event 의미 유지.
+
+==================================================
+13. Simultaneous Combat
+==================================================
+
+Wrestler vs Wrestler:
+
+Server Engine 결과 그대로.
+
+양쪽 Damage가 거의 동시에 보이게.
+
+A Client와 B Client가
+서로 다른 combat order를 보여주면 안 된다.
+
+==================================================
+14. Technique Online Presentation
+==================================================
+
+Technique 사용 시:
+
+사용한 Player:
+"주문 사용"
+
+상대:
+"상대가 주문을 사용했습니다"
+
+CardRenderer로 실제 Technique Reveal.
+
+중앙 Reveal
+↓
+Effect Presentation.
+
+Technique는 Board Slot을 사용하지 않는다.
+
+Board 4/4여도 정상 사용.
+
+==================================================
+15. Technique Hidden Information
+==================================================
+
+상대 Technique가 사용되기 전에는
+Hand에서 identity 숨김.
+
+실제로 PLAY_TECHNIQUE Event가 발생한 뒤
+공개.
+
+==================================================
+16. Champion Ability
+==================================================
+
+Champion Ability 사용:
+
+Source Champion portrait react
+↓
+Ability strip
+↓
+Target / Effect
+↓
+Result
+
+Opponent Client에서도
+상대 Champion이 Ability를 사용했다는 것이 명확히 보여야 한다.
+
+==================================================
+17. PLAYER_CHOICE Online UX
+==================================================
+
+pendingSelection owner에게만:
+
+유효 target highlight.
+
+Opponent는 target choice UI가 뜨면 안 된다.
+
+Owner:
+
+click target
+↓
+Server validation
+↓
+Effect continuation.
+
+잘못된 target:
+State unchanged
+Targeting 유지.
+
+==================================================
+18. Opponent pendingSelection
+==================================================
+
+상대가 Target을 선택 중이면
+다른 Player 화면에서는
+필요하다면:
+
+"상대가 대상을 선택 중입니다."
+
+정도의 작은 상태 표시 가능.
+
+Target candidates나 hidden information 노출 금지.
+
+==================================================
+19. Buff / Debuff Online
+==================================================
+
+Stat Changed Events가
+양 Client에 동일하게 Presentation.
+
++2/+2:
+Attack / Health animation.
+
+Attack -2:
+Debuff animation.
+
+Damage와 Stat Change 시각적으로 구분.
+
+==================================================
+20. Chain Trigger
+==================================================
+
+온라인에서도 Event causation 순서 보존.
+
+예:
+
+Original Buff
+↓
+Mandrill Trigger
+↓
+additional +1 Attack
+
+Dokung:
+Attack gain
+↓
+Dokung Trigger
+↓
+Health gain
+
+두 Client에서 같은 Event order.
+
+==================================================
+21. Summon
+==================================================
+
+SUMMON:
+
+Server가 확정한 destination slot 사용.
+
+양 Client에서 동일 slot.
+
+Viewer Perspective에 맞게 top/bottom만 변환.
+
+SUMMON은 등장 Trigger X.
+
+==================================================
+22. Revive
+==================================================
+
+Revive:
+
+Graveyard
+↓
+Board.
+
+Existing CardInstance.
+
+Generated X.
+CARD_GENERATED X.
+등장 X.
+
+양 Client에서 동일 복구 카드/Slot 표시.
+
+==================================================
+23. Retire
+==================================================
+
+RETIRE:
+
+Damage
+↓
+HP 0
+↓
+Retire Animation
+↓
+Graveyard.
+
+퇴장 Trigger가 있다면
+Server Event 순서에 따라 후속 효과 표시.
+
+==================================================
+24. Destroy
+==================================================
+
+DESTROY:
+
+distinct destroy animation.
+
+Damage Number X.
+Graveyard X.
+ON_RETIRE X.
+
+양쪽 Client 동일.
+
+==================================================
+25. Remove From Game
+==================================================
+
+REMOVE_FROM_GAME:
+
+distinct erase animation.
+
+Graveyard X.
+
+State sanitation과 zone count도 정상.
+
+==================================================
+26. Draw
+==================================================
+
+내 Draw:
+
+Deck
+→ Hand
+→ Card Face visible.
+
+상대 Draw:
+
+Opponent Deck
+→ Opponent Hand.
+
+Card Back만.
+
+상대 drawn card identity leak 절대 금지.
+
+==================================================
+27. Generated Card
+==================================================
+
+내 Hand 생성:
+identity visible.
+
+상대 Hand 생성:
+기본 hidden.
+
+필드 생성:
+공개된 Card 정보 표시.
+
+Stage 1 sanitization 유지.
+
+==================================================
+28. Steal
+==================================================
+
+Opponent Deck에서 Card를 steal:
+
+피해자 Client:
+Deck에서 card back 빠짐.
+
+stealing Client:
+card back → own Hand
+→ own Hand에서 identity visible.
+
+제3 정보 leak 없음.
+
+==================================================
+29. Quest Progress
+==================================================
+
+Quest progress가 발생하면:
+
+Owner:
+Quest UI progress pulse.
+
+Opponent:
+공개되는 Quest 정보 범위 내에서
+상대 Quest progress 표시.
+
+기존 KO Quest 공개 정책 유지.
+
+==================================================
+30. Quest Complete
+==================================================
+
+Owner:
+
+퀘스트 성공!
+
+Opponent:
+
+상대의 퀘스트 성공!
+
+Banner
+↓
+Reward Reveal.
+
+양 Client에서 같은 Quest Completion Event 기반.
+
+==================================================
+31. Champion Token Deploy
+==================================================
+
+특수 Champion Token:
+
+Reward Reveal
+↓
+dramatic deploy
+↓
+Board.
+
+양 Client에게 동일 Card 공개.
+
+Champion protection 상태 즉시 UI 반영.
+
+==================================================
+32. Champion Protection
+==================================================
+
+Active Champion Token 존재:
+
+Champion target 불가.
+
+두 Client 모두 Target UI가 Engine legal targets와 일치.
+
+Client가 Champion target을 억지로 보내도
+Server reject.
+
+==================================================
+33. Turn Indicator
+==================================================
+
+내 Turn:
+
+"내 턴"
+
+Opponent:
+"상대 턴"
+
+각 Viewer 기준.
+
+PLAYER_ONE TURN 같은 내부 표현을
+UI에 그대로 노출하지 마.
+
+==================================================
+34. Turn Timer
+==================================================
+
+Stage 3 deadline 기반 timer 사용.
+
+두 Client의 표시 시간이
+대략 일치해야 한다.
+
+Server가 authoritative.
+
+Client local timer는 표시만.
+
+==================================================
+35. Turn timeout Presentation
+==================================================
+
+시간 초과 발생:
+
+해당 Player:
+"시간 초과"
+
+상대:
+"상대의 시간이 초과되었습니다."
+
+Server Event 이후
+실제 turn transition.
+
+==================================================
+36. Disconnect UX
+==================================================
+
+상대 disconnect:
+
+"상대의 연결이 끊어졌습니다.
+재접속을 기다리는 중..."
+
+Board는 유지.
+
+내 Action input은
+현재 정책에 따라 적절히 처리.
+
+==================================================
+37. Self reconnect UX
+==================================================
+
+본인 socket disconnect:
+
+"연결이 끊어졌습니다.
+재연결 중..."
+
+Input lock.
+
+Reconnect 성공:
+
+"대전에 다시 연결되었습니다."
+
+Snapshot resync.
+
+==================================================
+38. Refresh UX
+==================================================
+
+Match에서 F5:
+
+Loading
+↓
+Auth
+↓
+Active Match lookup
+↓
+Resume
+↓
+Board 복구.
+
+새 Starting Hand가 뜨면 FAIL.
+
+==================================================
+39. Duplicate Tab UX
+==================================================
+
+같은 account가 새 Tab에서 Match 접속:
+
+new Tab primary.
+
+old Tab:
+
+"다른 창에서 이 대전에 접속했습니다."
+
+old Tab Action 불가.
+
+==================================================
+40. Online Match 시작 Presentation
+==================================================
+
+Match 시작 전 짧은 VS Presentation.
+
+예:
+
+[내 Champion]
+내 닉네임
+
+VS
+
+[상대 Champion]
+상대 닉네임
+
+약 1~2초 수준.
+
+너무 긴 cinematic 금지.
+
+==================================================
+41. 선공/후공 표시
+==================================================
+
+Server Engine이 결정한
+first/second player를 사용.
+
+내가 선공이면:
+"선공"
+
+후공이면:
+"후공"
+
+짧게 보여줄 수 있음.
+
+Client random 금지.
+
+==================================================
+42. Starting Hand
+==================================================
+
+기존 규칙 유지:
+
+First Player:
+3장.
+
+Second Player:
+4장.
+
+온라인 때문에 변경 금지.
+
+상대 Starting Hand identity는 hidden.
+
+==================================================
+43. Turn Start Draw
+==================================================
+
+기존 KO 규칙:
+
+personal turn start draw 1
+including first personal turn
+
+현재 엔진 기준 그대로.
+
+Presentation이 중복 draw를 만들지 마.
+
+==================================================
+44. Online Input Lock
+==================================================
+
+다음 상황에서는 적절히 input lock:
+
+- 상대 턴
+- reconnect 중
+- Match Starting
+- Major Presentation 중 필요한 경우
+- Match ended
+
+하지만 animation 때문에
+영구 lock 발생 금지.
+
+==================================================
+45. Action Pending UX
+==================================================
+
+Client가 Server에 Action 전송 후
+응답이 올 때까지
+같은 Action을 spam하지 않게.
+
+짧은 pending state 사용.
+
+하지만 전체 Match UI를
+매 Action마다 2초간 얼리지 마.
+
+==================================================
+46. Latency UX
+==================================================
+
+네트워크 latency가 있을 수 있다.
+
+Action click 직후
+아무 반응도 없는 느낌을 줄이지 않도록:
+
+선택 상태 / pending indicator 정도 가능.
+
+하지만 HP 감소나 Card Play 결과를
+Server 확인 전에 optimistic하게 확정 표시하지 마.
+
+==================================================
+47. Server Reject UX
+==================================================
+
+Action rejected:
+
+- State rollback이 필요 없는 구조
+- Toast/feedback
+- 필요하면 latest snapshot resync
+
+예:
+
+STALE_STATE
+INVALID_ACTION
+NOT_YOUR_TURN
+INVALID_TARGET
+NOT_PRIMARY_CONNECTION
+
+App crash 금지.
+
+==================================================
+48. Result Screen
+==================================================
+
+Server MATCH_ENDED 기준.
+
+Winner Client:
+VICTORY
+
+Loser Client:
+DEFEAT
+
+Surrender:
+correct winner/loser.
+
+Disconnect timeout:
+correct result.
+
+Champion Token retire:
+correct result.
+
+==================================================
+49. Final Lethal Presentation
+==================================================
+
+Champion lethal:
+
+Final hit
+↓
+Damage Number
+↓
+HP 0
+↓
+Lethal Pause
+↓
+MATCH_ENDED Presentation
+↓
+VICTORY / DEFEAT.
+
+Result가 공격보다 먼저 뜨면 FAIL.
+
+==================================================
+50. Surrender Presentation
+==================================================
+
+Player A surrender:
+
+A:
+DEFEAT.
+
+B:
+VICTORY.
+
+짧게:
+
+"상대가 기권했습니다."
+
+표시 가능.
+
+==================================================
+51. Disconnect Loss Presentation
+==================================================
+
+Reconnect grace 만료:
+
+Disconnected player:
+재접속했다면 이미 ended Match result.
+
+Opponent:
+"상대의 연결이 복구되지 않아 승리했습니다."
+
+정도의 reason 표시 가능.
+
+==================================================
+52. Match Result 버튼
+==================================================
+
+[메인 화면으로]
+
+또는
+
+[온라인 대전으로]
+
+제공.
+
+Router API 사용.
+
+window.location.reload 금지.
+
+==================================================
+53. Online Match 종료 Cleanup
+==================================================
+
+Result 후 route exit:
+
+Online Presentation Queue cleanup.
+Target Selection cleanup.
+Attack clone cleanup.
+Timer UI cleanup.
+Match socket subscription cleanup.
+
+Shared authenticated WebSocket connection 자체는
+Lobby에서 계속 재사용 가능하면 유지.
+
+==================================================
+54. Board / Hand Size 회귀 테스트
+==================================================
+
+기존에 확대했던 Layout 유지.
+
+Desktop에서:
+
+Field cards 충분히 큼.
+Hand 충분히 큼.
+
+Online UI 추가했다고
+다시 작아지면 FAIL.
+
+==================================================
+55. Animation Layout Sync 회귀
+==================================================
+
+Board가 큰 상태에서도:
+
+Self card play 정확.
+Opponent card play 정확.
+Attack destination 정확.
+Summon 정확.
+Revive 정확.
+Damage number 정확.
+
+==================================================
+56. Online-specific DOM coordinate test
+==================================================
+
+A Client와 B Client의 DOM layout은
+viewer perspective 때문에 다르다.
+
+따라서 Server 좌표를 보내지 마.
+
+Server:
+instance ID / slot / Event
+
+Client:
+자기 DOM 기준으로 rect 계산.
+
+==================================================
+57. Resolution Test
+==================================================
+
+최소 Desktop:
+
+1920x927
+1600x900
+1366x768
+
+에서 Online Match 정상.
+
+모바일은 기존 지원 범위 내 regression 확인.
+
+==================================================
+58. Browser Back
+==================================================
+
+ACTIVE Online Match 중
+Browser Back을 실수로 눌렀을 때:
+
+Match를 즉시 삭제하거나 surrender 처리하지 마.
+
+필요하면 confirm/guard.
+
+다시 Match route로 복귀 가능.
+
+현재 Router 구조에 맞는 안전한 UX 구현.
+
+==================================================
+59. Page Visibility
+==================================================
+
+Tab이 background가 됐다고
+disconnect 처리하지 마.
+
+WebSocket이 실제로 끊긴 경우만
+disconnect logic.
+
+==================================================
+60. Audio
+==================================================
+
+Online에서도 기존 AudioManager 사용.
+
+Attack SFX
+Damage SFX
+Technique
+Quest Music
+Card Entrance Music
+
+정상.
+
+두 Client 각각 자기 화면에서 재생.
+
+Server는 Audio command를 보내지 않음.
+
+==================================================
+61. Music cleanup
+==================================================
+
+Match 종료 후 Main/Online menu로 이동:
+
+Match music cleanup/fade.
+
+stale BGM 남지 않게.
+
+==================================================
+62. Online Match Presentation Queue
+==================================================
+
+Server Event sequence를
+Presentation Queue에 순서대로 넣음.
+
+Sequence gap:
+resync.
+
+중복 sequence:
+두 번 재생 금지.
+
+==================================================
+63. Reconnect Presentation Reset
+==================================================
+
+Reconnect snapshot을 받으면:
+
+old queued attack
+old damage
+old technique reveal
+
+등 stale online presentation 제거.
+
+현재 snapshot 기준으로 렌더.
+
+==================================================
+64. Server가 Client Animation 기다리지 않음
+==================================================
+
+Server GameState는 Client Animation과 독립.
+
+하지만 Client UX에서는
+Presentation Queue 동안
+필요한 Action input lock 가능.
+
+==================================================
+65. Online Action과 Presentation backlog
+==================================================
+
+Network event가 빠르게 여러 개 들어와도
+Presentation Queue 순서 유지.
+
+단 너무 긴 backlog 때문에
+실제 State와 화면이 10초 이상 차이나지 않도록
+일반 animation duration 유지.
+
+==================================================
+66. 두 Client 실제 E2E 테스트
+==================================================
+
+이번 단계에서 가장 중요.
+
+반드시 서로 다른 authenticated users:
+
+TEST USER A
+TEST USER B
+
+를 사용.
+
+가능하다면
+서로 독립적인 Browser Context / Session 사용.
+
+같은 cookie session을 공유하면 안 된다.
+
+==================================================
+67. Quick Match E2E
+==================================================
+
+Client A:
+Online
+→ Quick Match
+→ Deck A
+→ Queue.
+
+Client B:
+Online
+→ Quick Match
+→ Deck B
+→ Queue.
+
+확인:
+
+MATCH FOUND.
+동일 matchId.
+A/B 서로 다른 viewer state.
+Match 시작.
+
+==================================================
+68. Private Room E2E
+==================================================
+
+A:
+Create Room.
+
+Room Code.
+
+B:
+Join Code.
+
+Both Ready.
+
+Match start.
+
+Room cleanup.
+
+==================================================
+69. Full Match E2E - Card Play
+==================================================
+
+A Card Play.
+
+A 화면:
+own Hand → own Board.
+
+B 화면:
+opponent Hand → opponent Board.
+
+Card identity 공개 시점 정상.
+
+중복 카드 표시 X.
+
+==================================================
+70. Full Match E2E - Opponent Card Play
+==================================================
+
+B Card Play.
+
+A 화면에서
+카드가 A board에서 시작하면 FAIL.
+
+반드시 opponent side에서 시작.
+
+==================================================
+71. Full Match E2E - Attack
+==================================================
+
+A attacks B Wrestler.
+
+두 Client:
+
+correct attacker
+correct target
+correct Damage
+correct simultaneous combat
+correct Retire.
+
+빈 Slot hit X.
+
+==================================================
+72. Full Match E2E - Reverse Attack
+==================================================
+
+B attacks A.
+
+A Client에서
+상대 카드가 위에서 아래로 공격.
+
+B Client에서는
+자기 카드가 아래에서 위로 공격.
+
+둘 다 자연스러움.
+
+==================================================
+73. Technique E2E
+==================================================
+
+Targeted Technique 사용.
+
+Board full이어도 play 가능.
+
+Reveal
+↓
+Selection
+↓
+Effect.
+
+상대에게 Technique 공개 정상.
+
+==================================================
+74. Champion Ability E2E
+==================================================
+
+Champion ability:
+
+target selection
+damage/effect
+Gold cost
+Event sync.
+
+양 Client 일치.
+
+==================================================
+75. PLAYER_CHOICE E2E
+==================================================
+
+Owner만 선택 UI.
+
+Opponent 선택 불가.
+
+Target 이후 effect continuation 정상.
+
+==================================================
+76. Dodge E2E
+==================================================
+
+Dodge 발생:
+
+양쪽 Client에서
+Damage 0.
+
+Dodge Presentation.
+
+Charge 감소 sync.
+
+==================================================
+77. Summon E2E
+==================================================
+
+Effect Summon.
+
+동일 destination slot.
+
+SUMMON card는 등장 Trigger X.
+
+==================================================
+78. Revive E2E
+==================================================
+
+Graveyard card revive.
+
+양쪽 state 동일.
+
+valid HP.
+
+등장 Trigger X.
+
+==================================================
+79. Destroy E2E
+==================================================
+
+Destroy:
+
+no graveyard.
+no retire trigger.
+
+양쪽 동일.
+
+==================================================
+80. Quest E2E
+==================================================
+
+Quest progress.
+
+Quest complete.
+
+Owner:
+퀘스트 성공!
+
+Opponent:
+상대의 퀘스트 성공!
+
+Reward sync.
+
+==================================================
+81. Champion Token E2E
+==================================================
+
+Special Champion Token deploy.
+
+Protection.
+
+Champion cannot generic-target.
+
+Token retire → owner immediate loss.
+
+양 Client Result 정확.
+
+==================================================
+82. Reconnect E2E
+==================================================
+
+A Match 중 browser refresh.
+
+B:
+A disconnect indicator.
+
+A:
+resume same Match.
+
+B:
+A reconnected.
+
+State sync.
+
+==================================================
+83. Turn Timer E2E
+==================================================
+
+Turn timeout.
+
+Server AUTO_END_TURN 또는 현재 Stage 3 정책 실행.
+
+양 Client turn transition sync.
+
+DB tick write 없음.
+
+==================================================
+84. Duplicate Tab E2E
+==================================================
+
+A second tab.
+
+New controlling connection.
+
+Old tab Action rejected.
+
+Match state 정상.
+
+==================================================
+85. Surrender E2E
+==================================================
+
+A surrender.
+
+A defeat.
+B victory.
+
+DB Match result 동일.
+
+==================================================
+86. Disconnect Timeout E2E
+==================================================
+
+B disconnect.
+Grace expires.
+
+Server Match Result.
+
+A victory.
+B loss state persistent.
+
+==================================================
+87. Match Result Persistence
+==================================================
+
+Match 끝난 뒤
+둘 다 refresh/relogin.
+
+같은 Match가 ACTIVE로 다시 나타나지 않음.
+
+Result DB 정상.
+
+==================================================
+88. Hidden Information Audit
+==================================================
+
+두 Client WebSocket payload / API response를 검사.
+
+A에게 절대 노출되면 안 되는 B 정보:
+
+hidden Hand identities
+Deck order
+next draw
+hidden generated cards
+
+반대 방향도 동일.
+
+Frontend UI만 안 보여주는 것으로 PASS 금지.
+
+Network payload 자체에 없어야 한다.
+
+==================================================
+89. Security E2E
+==================================================
+
+Client A가 DevTools/직접 request로:
+
+B의 cardInstanceId 사용.
+illegal target.
+fake Gold.
+fake playerId.
+wrong matchId.
+old stateVersion.
+
+시도.
+
+Server reject.
+
+==================================================
+90. Multiple Concurrent Matches E2E
+==================================================
+
+가능하면 4 test clients:
+
+A vs B
+C vs D
+
+두 Match 동시.
+
+A/B Event가
+C/D 화면에 절대 나타나지 않음.
+
+==================================================
+91. Cost / Performance Audit
+==================================================
+
+Final Online PvP 상태에서 확인:
+
+Queue idle:
+DB polling X.
+
+Private Room idle:
+DB writes X.
+
+Active Match idle:
+timer tick DB write X.
+
+WebSocket heartbeat:
+DB write X.
+
+Match action:
+필요한 persistence만.
+
+==================================================
+92. Network traffic
+==================================================
+
+전체 GameState를
+매 Animation frame마다 보내지 마.
+
+Action 결과 / Event / 필요한 Snapshot만.
+
+Idle Match에서
+대형 payload 반복 전송 금지.
+
+==================================================
+93. Asset traffic
+==================================================
+
+Card Artwork / Frames / Audio
+같은 URL 반복 다운로드 최소화.
+
+Browser cache 사용.
+
+Online이라고
+두 번째 asset system 만들지 마.
+
+==================================================
+94. Error Recovery
+==================================================
+
+Network error가 있어도:
+
+white screen
+app crash
+infinite loading
+
+금지.
+
+recoverable error:
+
+Reconnect / Resync / Online menu return.
+
+==================================================
+95. Production-like Test
+==================================================
+
+가능하면 Production-like build에서
+두 Client 테스트.
+
+Development-only Test Auth에만 의존해
+기능 로직이 달라지면 안 된다.
+
+Test Auth는 Session 생성 편의만 제공.
+
+Online Engine은 실제 Auth/Server path 사용.
+
+==================================================
+96. AI Match Regression
+==================================================
+
+Online Finalization 때문에
+AI Match가 깨지면 안 된다.
+
+AI Match:
+
+Card Play
+Attack
+Technique
+Quest
+Result
+
+정상.
+
+==================================================
+97. Shop/Deck/Auth Regression
+==================================================
+
+최소:
+
+Login
+Deck Select
+Collection
+Shop
+
+정상.
+
+Online 코드 때문에
+일반 사이트 기능이 깨지면 안 됨.
+
+==================================================
+98. 아직 만들지 말 것
+==================================================
+
+이번 Final Stage에도 다음은 제외:
+
+Ranked
+MMR
+Leaderboard
+Friend list
+Spectator
+Replay
+Tournament
+Match chat
+Season
+Leaver penalty
+Rank rewards
+
+온라인 1v1 기본 기능을 먼저 완성.
+
+==================================================
+99. 완료 기준
+==================================================
+
+이번 Stage 4는
+"UI 구현 완료"
+
+가 완료 기준이 아니다.
+
+반드시:
+
+서로 다른 두 authenticated Client가
+
+Matchmaking
+↓
+Online Match
+↓
+Full Gameplay
+↓
+Match End
+
+까지 실제로 진행.
+
+그리고 각 Event마다:
+
+Server State
+Client A State
+Client B State
+Presentation
+
+이 일치해야 한다.
+
+==================================================
+100. 최종 보고
+==================================================
+
+다음을:
+
+PASS
+FIXED
+FAIL
+
+로 보고.
+
+ONLINE_VIEWER_PERSPECTIVE
+SELF_BOARD_POSITION
+OPPONENT_BOARD_POSITION
+
+SELF_CARD_PLAY_PRESENTATION
+OPPONENT_CARD_PLAY_PRESENTATION
+NO_DOUBLE_CARD_CLONE
+
+ATTACK_PRESENTATION_SELF
+ATTACK_PRESENTATION_OPPONENT
+ATTACK_TARGET_ACCURACY
+SCREEN_SHAKE_ONLINE
+DODGE_ONLINE_PRESENTATION
+
+TECHNIQUE_ONLINE_PRESENTATION
+CHAMPION_ABILITY_PRESENTATION
+PLAYER_CHOICE_ONLINE_UX
+
+BUFF_DEBUFF_SYNC
+SUMMON_SYNC
+REVIVE_SYNC
+RETIRE_SYNC
+DESTROY_SYNC
+REMOVE_SYNC
+
+DRAW_HIDDEN_INFO
+GENERATED_HIDDEN_INFO
+STEAL_HIDDEN_INFO
+
+QUEST_PROGRESS_SYNC
+QUEST_COMPLETE_SYNC
+CHAMPION_TOKEN_SYNC
+
+TURN_INDICATOR
+TURN_TIMER_UI
+TURN_TIMEOUT_SYNC
+
+DISCONNECT_UI
+RECONNECT_UI
+REFRESH_RESUME_UI
+DUPLICATE_TAB_UI
+
+SERVER_REJECT_FEEDBACK
+STATE_RESYNC_UX
+
+VICTORY_RESULT
+DEFEAT_RESULT
+SURRENDER_RESULT
+DISCONNECT_RESULT
+CHAMPION_TOKEN_LOSS_RESULT
+
+QUICK_MATCH_E2E
+PRIVATE_ROOM_E2E
+FULL_MATCH_E2E
+
+TWO_CLIENT_STATE_SYNC
+TWO_CLIENT_EVENT_SYNC
+TWO_CLIENT_PRESENTATION_SYNC
+
+HIDDEN_INFORMATION_NETWORK_AUDIT
+ONLINE_ACTION_SECURITY
+
+MULTIPLE_MATCH_ISOLATION
+
+NO_MATCHMAKING_DB_POLLING
+NO_ROOM_DB_HEARTBEAT
+NO_TIMER_DB_TICK_WRITES
+NO_PRESENCE_DB_HEARTBEAT
+
+ONLINE_NETWORK_EFFICIENCY
+ONLINE_ASSET_CACHE
+
+AI_MATCH_REGRESSION
+AUTH_REGRESSION
+DECK_REGRESSION
+SHOP_REGRESSION
+
+==================================================
+101. 실제 Browser 검증 실패 시
+==================================================
+
+두 개의 독립 Browser Session을
+도구 제한 때문에 실제로 열 수 없다면
+
+그 사실을 숨기거나
+PASS라고 주장하지 마.
+
+그 경우:
+
+BROWSER_TWO_CLIENT_E2E:
+FAIL / TOOL_LIMITATION
+
+으로 명시.
+
+하지만 가능한 automated integration test,
+WebSocket test clients,
+독립 Session cookies
+
+를 사용해서
+Server-side E2E는 최대한 검증.
+
+무조건 테스트를 포기하지 마.
+
+==================================================
+102. 각 FAIL 보고
+==================================================
+
+각 FAIL마다:
+
+- 재현 방법
+- 어느 Client에서 발생했는지
+- Server Event
+- State Version
+- Presentation Event
+- root cause
+- 수정 파일
+- 남은 문제
+
+를 적어.
+
+==================================================
+103. 최종 판정
+==================================================
+
+마지막에 반드시:
+
+ONLINE_PVP_STAGE_4_READY:
+YES / NO
+
+ONLINE_PVP_CORE_COMPLETE:
+YES / NO
+
+TWO_PLAYER_REAL_MATCH_READY:
+YES / NO
+
+QUICK_MATCH_PRODUCTION_READY:
+YES / NO
+
+PRIVATE_ROOM_PRODUCTION_READY:
+YES / NO
+
+RECONNECT_PRODUCTION_READY:
+YES / NO
+
+HIDDEN_INFORMATION_SAFE:
+YES / NO
+
+LOW_COST_ONLINE_PVP_READY:
+YES / NO
+
+AUTOSCALE_MAX_1_BETA_COMPATIBLE:
+YES / NO
+
+를 출력.
+
+ONLINE_PVP_CORE_COMPLETE = YES는
+
+서로 다른 두 실제 User가:
+
+온라인 대전 진입
+→ 상대 연결
+→ 한 판 플레이
+→ 정상 승패
+
+까지 실제로 가능한 경우에만 허용.
+
+"코드가 존재한다"
+"UI가 존재한다"
+"테스트 파일이 존재한다"
+
+만으로 YES 처리 금지.
