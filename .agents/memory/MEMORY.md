@@ -21,6 +21,7 @@
 - [Generated damage modifiers](damage-modifier-source.md) — field auras use explicit source scopes and are evaluated for both card effects and combat damage.
 - [Aggregated summon stats](aggregated-summon-stats.md) — sequential destroy effects can expose current-stat sums to a later summon without card-specific runtime branches.
 - [Published data boundary](published-data-boundary.md) — the playable UI must never silently fall back to test cards or champions when public data is missing.
+- [Production publish data boundary](production-publish-data-boundary.md) — first Publish must keep Production isolated and explicitly exclude development test data when copying is offered.
 - [Self-attack triggers](self-attack-triggers.md) — cards that react to their own attacks use a distinct SELF_ATTACK dispatch; OTHER_ALLY_ATTACK remains for board listeners.
 - [Champion admin form contract](champion-admin-form-contract.md) — quest toggles need a numeric progress default, and analyzer responses must be visible and scoped to their source field.
 - [API workflow restart](api-workflow-restart.md) — restart the bundled API workflow before trusting proxied HTTP checks after route changes.
