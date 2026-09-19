@@ -12,11 +12,21 @@ export type TestAccountIdentity = {
 };
 
 export function isTestAccountUser(user: TestAccountIdentity | null | undefined): boolean {
-  return Boolean(
-    user &&
-    process.env["NODE_ENV"] !== "production" &&
-    process.env["ENABLE_TEST_AUTH"] === "true" &&
-    TEST_ACCOUNT_EMAILS.has(user.email.trim().toLowerCase()),
+  if (!user) return false;
+
+  const email = user.email.trim().toLowerCase();
+
+  return (
+    (
+      process.env["NODE_ENV"] !== "production" &&
+      process.env["ENABLE_TEST_AUTH"] === "true" &&
+      TEST_ACCOUNT_EMAILS.has(email)
+    ) ||
+    (
+      process.env["NODE_ENV"] === "production" &&
+      process.env["ENABLE_PROD_ADMIN_UNLIMITED"] === "true" &&
+      email === TEST_ADMIN_EMAIL
+    )
   );
 }
 
