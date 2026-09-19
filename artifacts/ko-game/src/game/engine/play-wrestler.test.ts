@@ -61,6 +61,7 @@ test('필드 진입은 ENTER_FIELD 이벤트를 발생시킨다', () => {
     source: { type: 'PLAYER', playerId: 'player-1' },
     target: { type: 'CARD', cardInstanceId: card.instanceId },
     reason: 'ENTER_FIELD',
+     entryCause: 'PLAY_FROM_HAND',
     },
   );
   assert.equal(state.players[0].champion?.questProgress, 1);
