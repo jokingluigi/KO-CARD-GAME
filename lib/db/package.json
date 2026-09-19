@@ -8,10 +8,13 @@
     "./schema": "./src/schema/index.ts"
   },
   "scripts": {
+    "migrate:storage": "node ./ko_migrate_storage.mjs",
     "push": "drizzle-kit push --config ./drizzle.config.ts",
     "push-force": "drizzle-kit push --force --config ./drizzle.config.ts"
   },
   "dependencies": {
+    "@google-cloud/storage": "^7.18.0",
+    "@supabase/supabase-js": "^2.116.0",
     "drizzle-orm": "catalog:",
     "drizzle-zod": "^0.8.3",
     "pg": "^8.22.0",

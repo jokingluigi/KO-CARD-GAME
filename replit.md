@@ -9,7 +9,9 @@ React와 TypeScript로 만든 브라우저 카드게임 KO의 엔진 중심 프�
 - `pnpm run build` — typecheck + build all packages
 - `pnpm --filter @workspace/api-spec run codegen` — regenerate API hooks and Zod schemas from the OpenAPI spec
 - `pnpm --filter @workspace/db run push` — push DB schema changes (dev only)
+- `pnpm --filter @workspace/db run migrate:storage` — run the Replit-to-Supabase asset migration in DRY RUN mode
 - Required env: `DATABASE_URL` — Postgres connection string
+- Storage env: `STORAGE_PROVIDER=replit` for Preview, or `STORAGE_PROVIDER=supabase` with server-only `SUPABASE_URL`, `SUPABASE_SECRET_KEY`, and `SUPABASE_STORAGE_BUCKET`
 
 ## Stack
 
@@ -43,7 +45,8 @@ _Describe the high-level user-facing capabilities of this app once they exist._
 
 ## Gotchas
 
-_Populate as you build — sharp edges, "always run X before Y" rules._
+- Storage migration is read-only unless `APPLY_STORAGE_MIGRATION=YES` is set; it never deletes Replit objects or changes either database.
+- Keep `SUPABASE_SECRET_KEY` in the API server environment only; never expose it to the frontend bundle.
 
 ## Pointers
 

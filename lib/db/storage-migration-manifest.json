@@ -1,0 +1,780 @@
+{
+  "mode": "DRY_RUN",
+  "source": "helium",
+  "destinationBucket": null,
+  "generatedAt": "2026-09-19T15:44:41.983Z",
+  "entries": [
+    {
+      "assetId": "/objects/uploads/card-images/0dbeea0d-ea59-4dea-b675-b750eedef700.png",
+      "destinationPath": "uploads/card-images/0dbeea0d-ea59-4dea-b675-b750eedef700.png",
+      "references": [
+        {
+          "table": "card_frame_definitions",
+          "column": "frame_asset_id",
+          "rowId": "d4036a2c-3fd8-4944-abb5-e1f8bb75701a"
+        }
+      ],
+      "source": {
+        "status": "SOURCE_READY",
+        "contentType": "image/png",
+        "size": 476402,
+        "checksum": "0fecaedde5653cbe46499615113ed96cc58ae3f4acd312ee96ef48cd50aae93d"
+      },
+      "destination": null,
+      "status": "TARGET_NOT_CONFIGURED"
+    },
+    {
+      "assetId": "/objects/uploads/card-images/1097f6be-51ff-40c2-9997-406fff0b46be.png",
+      "destinationPath": "uploads/card-images/1097f6be-51ff-40c2-9997-406fff0b46be.png",
+      "references": [
+        {
+          "table": "cards",
+          "column": "image_asset_id",
+          "rowId": "latest-wrestler-3"
+        }
+      ],
+      "source": {
+        "status": "SOURCE_READY",
+        "contentType": "image/png",
+        "size": 1330367,
+        "checksum": "05894848cb5703627402895567136ab93c54968c1aebdbce1200741fae7aadf5"
+      },
+      "destination": null,
+      "status": "TARGET_NOT_CONFIGURED"
+    },
+    {
+      "assetId": "/objects/uploads/card-images/14eae167-2893-4da7-8713-436be863ed02.png",
+      "destinationPath": "uploads/card-images/14eae167-2893-4da7-8713-436be863ed02.png",
+      "references": [
+        {
+          "table": "card_frame_definitions",
+          "column": "frame_asset_id",
+          "rowId": "be86dcb2-cb49-4ae9-82a2-b072161d3abc"
+        }
+      ],
+      "source": {
+        "status": "SOURCE_READY",
+        "contentType": "image/png",
+        "size": 716193,
+        "checksum": "96fb61238f6a9d7384d9a2120bf4c0ecd24c63b075917da630bd38433178140c"
+      },
+      "destination": null,
+      "status": "TARGET_NOT_CONFIGURED"
+    },
+    {
+      "assetId": "/objects/uploads/card-images/177fa079-1729-47d9-bb37-0463b1cd6bd8.png",
+      "destinationPath": "uploads/card-images/177fa079-1729-47d9-bb37-0463b1cd6bd8.png",
+      "references": [
+        {
+          "table": "cards",
+          "column": "image_asset_id",
+          "rowId": "f3b46674-c658-4e03-b5b4-ced71547768e"
+        }
+      ],
+      "status": "MISSING_SOURCE"
+    },
+    {
+      "assetId": "/objects/uploads/card-images/205ce7b1-1c72-4697-84e5-6c781e426432.png",
+      "destinationPath": "uploads/card-images/205ce7b1-1c72-4697-84e5-6c781e426432.png",
+      "references": [
+        {
+          "table": "cards",
+          "column": "image_asset_id",
+          "rowId": "latest-wrestler-5"
+        }
+      ],
+      "source": {
+        "status": "SOURCE_READY",
+        "contentType": "image/png",
+        "size": 1065940,
+        "checksum": "c94fc216f019201b6d13b827c4e635391a98e4a89b04d15002b03e690578dbe5"
+      },
+      "destination": null,
+      "status": "TARGET_NOT_CONFIGURED"
+    },
+    {
+      "assetId": "/objects/uploads/card-images/2369702a-b9f5-4927-b500-97073f06927c.png",
+      "destinationPath": "uploads/card-images/2369702a-b9f5-4927-b500-97073f06927c.png",
+      "references": [
+        {
+          "table": "cards",
+          "column": "image_asset_id",
+          "rowId": "latest-wrestler-15"
+        }
+      ],
+      "source": {
+        "status": "SOURCE_READY",
+        "contentType": "image/png",
+        "size": 1079992,
+        "checksum": "4784f9ddecdbcea31a28c880ff4eeefafab68c4028aee2185be605c087fedd20"
+      },
+      "destination": null,
+      "status": "TARGET_NOT_CONFIGURED"
+    },
+    {
+      "assetId": "/objects/uploads/card-images/2577d7ab-70e4-437b-81fb-fbbcff471be5.png",
+      "destinationPath": "uploads/card-images/2577d7ab-70e4-437b-81fb-fbbcff471be5.png",
+      "references": [
+        {
+          "table": "champions",
+          "column": "quest_completed_portrait_asset_id",
+          "rowId": "bcffab96-f61f-497e-b60b-de5a869837d3"
+        }
+      ],
+      "source": {
+        "status": "SOURCE_READY",
+        "contentType": "image/png",
+        "size": 3045050,
+        "checksum": "8ef06809f4fc857d3d12aaa189c49736b2774585cd2d88936c61b2b648f8d919"
+      },
+      "destination": null,
+      "status": "TARGET_NOT_CONFIGURED"
+    },
+    {
+      "assetId": "/objects/uploads/card-images/25d4feaf-0f4c-4330-a4e1-da95d14c171a.png",
+      "destinationPath": "uploads/card-images/25d4feaf-0f4c-4330-a4e1-da95d14c171a.png",
+      "references": [
+        {
+          "table": "card_frame_definitions",
+          "column": "frame_asset_id",
+          "rowId": "bb1acff4-bac6-496d-8944-c056d95e62dd"
+        }
+      ],
+      "source": {
+        "status": "SOURCE_READY",
+        "contentType": "image/png",
+        "size": 634127,
+        "checksum": "3edc2f77cdb7c6e3b7648d3a75c7a16a8e8694aeda8b472d7ceefa1ad98103fc"
+      },
+      "destination": null,
+      "status": "TARGET_NOT_CONFIGURED"
+    },
+    {
+      "assetId": "/objects/uploads/card-images/2ee077f2-3a28-480e-bd88-72a5dfcc3cdd.png",
+      "destinationPath": "uploads/card-images/2ee077f2-3a28-480e-bd88-72a5dfcc3cdd.png",
+      "references": [
+        {
+          "table": "cards",
+          "column": "image_asset_id",
+          "rowId": "21e9e816-4d5f-461d-8cf8-b57749a33753"
+        }
+      ],
+      "source": {
+        "status": "SOURCE_READY",
+        "contentType": "image/png",
+        "size": 1133571,
+        "checksum": "d98ab2f170688af5a70eba37b2c358bac7cd24178de2d1a032d77de13f1349dc"
+      },
+      "destination": null,
+      "status": "TARGET_NOT_CONFIGURED"
+    },
+    {
+      "assetId": "/objects/uploads/card-images/36618029-aecc-40e7-9078-3035dfff94b3.png",
+      "destinationPath": "uploads/card-images/36618029-aecc-40e7-9078-3035dfff94b3.png",
+      "references": [
+        {
+          "table": "card_frame_definitions",
+          "column": "frame_asset_id",
+          "rowId": "e35c1f43-046e-4ea3-ab03-ec022cbdcff9"
+        }
+      ],
+      "source": {
+        "status": "SOURCE_READY",
+        "contentType": "image/png",
+        "size": 591974,
+        "checksum": "3ad7d340b7d0767bbf682d2106757a4bcb71e264ba22173232c1bb4540359de4"
+      },
+      "destination": null,
+      "status": "TARGET_NOT_CONFIGURED"
+    },
+    {
+      "assetId": "/objects/uploads/card-images/382a7022-dc41-4bcf-9768-20da13220072.png",
+      "destinationPath": "uploads/card-images/382a7022-dc41-4bcf-9768-20da13220072.png",
+      "references": [
+        {
+          "table": "cards",
+          "column": "image_asset_id",
+          "rowId": "df532c95-0e4d-4b17-8200-a86e6a682341"
+        }
+      ],
+      "source": {
+        "status": "SOURCE_READY",
+        "contentType": "image/png",
+        "size": 870700,
+        "checksum": "30d9d662c285a62e874b87ce02d803589658b76f18dce912aab3e313502477ec"
+      },
+      "destination": null,
+      "status": "TARGET_NOT_CONFIGURED"
+    },
+    {
+      "assetId": "/objects/uploads/card-images/3ac27433-13ff-4194-8b33-2d320445cfab.png",
+      "destinationPath": "uploads/card-images/3ac27433-13ff-4194-8b33-2d320445cfab.png",
+      "references": [
+        {
+          "table": "cards",
+          "column": "image_asset_id",
+          "rowId": "ff6f154d-a675-4a6b-bb12-50af8d227d15"
+        }
+      ],
+      "source": {
+        "status": "SOURCE_READY",
+        "contentType": "image/png",
+        "size": 1021433,
+        "checksum": "5200c152c228e63ebc3238a2176ce53d36d0a9f32dc2f83e045e6a9b4e1ca584"
+      },
+      "destination": null,
+      "status": "TARGET_NOT_CONFIGURED"
+    },
+    {
+      "assetId": "/objects/uploads/card-images/407a1f82-cffb-4bea-8a76-fef57b054949.png",
+      "destinationPath": "uploads/card-images/407a1f82-cffb-4bea-8a76-fef57b054949.png",
+      "references": [
+        {
+          "table": "champions",
+          "column": "image_asset_id",
+          "rowId": "bcffab96-f61f-497e-b60b-de5a869837d3"
+        }
+      ],
+      "source": {
+        "status": "SOURCE_READY",
+        "contentType": "image/png",
+        "size": 2428380,
+        "checksum": "1defe53dc5acb7651149f95d2652eb3d288a9163a4163080abcd5c4dbfc202f2"
+      },
+      "destination": null,
+      "status": "TARGET_NOT_CONFIGURED"
+    },
+    {
+      "assetId": "/objects/uploads/card-images/4e376046-e5c3-4839-baa0-6b65bbc9b1a4.png",
+      "destinationPath": "uploads/card-images/4e376046-e5c3-4839-baa0-6b65bbc9b1a4.png",
+      "references": [
+        {
+          "table": "cards",
+          "column": "image_asset_id",
+          "rowId": "855e87f9-1769-4036-ad49-491ab4b2058a"
+        }
+      ],
+      "source": {
+        "status": "SOURCE_READY",
+        "contentType": "image/png",
+        "size": 1329505,
+        "checksum": "b5e0ed95c9ab2fa2449ecd782cd51078e7820d6ea03d2804189604811ca995ff"
+      },
+      "destination": null,
+      "status": "TARGET_NOT_CONFIGURED"
+    },
+    {
+      "assetId": "/objects/uploads/card-images/5e60c91e-93c4-4b20-a24f-756ecafda6b6.png",
+      "destinationPath": "uploads/card-images/5e60c91e-93c4-4b20-a24f-756ecafda6b6.png",
+      "references": [
+        {
+          "table": "cards",
+          "column": "image_asset_id",
+          "rowId": "8c120069-e0c7-4461-bed3-2dc586c50f7b"
+        }
+      ],
+      "source": {
+        "status": "SOURCE_READY",
+        "contentType": "image/png",
+        "size": 1263934,
+        "checksum": "3807f2136483346d06f68797bea0fd0fac0963f6f4ee67808f02c60503337f33"
+      },
+      "destination": null,
+      "status": "TARGET_NOT_CONFIGURED"
+    },
+    {
+      "assetId": "/objects/uploads/card-images/6267e295-e1a4-4b64-b889-a4f982bf573b.png",
+      "destinationPath": "uploads/card-images/6267e295-e1a4-4b64-b889-a4f982bf573b.png",
+      "references": [
+        {
+          "table": "cards",
+          "column": "image_asset_id",
+          "rowId": "latest-wrestler-7"
+        }
+      ],
+      "source": {
+        "status": "SOURCE_READY",
+        "contentType": "image/png",
+        "size": 1021188,
+        "checksum": "0973d1adeb5df60724a97633e4e3b31d475c868d021152c951b866720adab61b"
+      },
+      "destination": null,
+      "status": "TARGET_NOT_CONFIGURED"
+    },
+    {
+      "assetId": "/objects/uploads/card-images/63c5874d-f605-4021-8b20-0389b925c519.png",
+      "destinationPath": "uploads/card-images/63c5874d-f605-4021-8b20-0389b925c519.png",
+      "references": [
+        {
+          "table": "cards",
+          "column": "image_asset_id",
+          "rowId": "latest-wrestler-4"
+        }
+      ],
+      "source": {
+        "status": "SOURCE_READY",
+        "contentType": "image/png",
+        "size": 1225706,
+        "checksum": "230317bbef3e585d95b8d765446dd3476a77d1929e1b763c3babeb3f52cb1850"
+      },
+      "destination": null,
+      "status": "TARGET_NOT_CONFIGURED"
+    },
+    {
+      "assetId": "/objects/uploads/card-images/6541d799-0dc5-4056-92df-23240dd41d00.png",
+      "destinationPath": "uploads/card-images/6541d799-0dc5-4056-92df-23240dd41d00.png",
+      "references": [
+        {
+          "table": "cards",
+          "column": "image_asset_id",
+          "rowId": "5361339a-fd72-47e2-bbcb-f5a193a64ea3"
+        }
+      ],
+      "source": {
+        "status": "SOURCE_READY",
+        "contentType": "image/png",
+        "size": 1486679,
+        "checksum": "7b7475f051df0483849bc0f45e0a14f4476c594712c3c9aa9adc21b6ac126c6b"
+      },
+      "destination": null,
+      "status": "TARGET_NOT_CONFIGURED"
+    },
+    {
+      "assetId": "/objects/uploads/card-images/7371f678-4a31-41da-84de-cdd118061cd4.png",
+      "destinationPath": "uploads/card-images/7371f678-4a31-41da-84de-cdd118061cd4.png",
+      "references": [
+        {
+          "table": "cards",
+          "column": "image_asset_id",
+          "rowId": "9b7c0e52-2184-4ec1-8d68-39a4d5981d2a"
+        }
+      ],
+      "source": {
+        "status": "SOURCE_READY",
+        "contentType": "image/png",
+        "size": 1150622,
+        "checksum": "aff644f6bbddb2ed65ebe81ab2bc0d222422792e91305db84c055d5625f0dc37"
+      },
+      "destination": null,
+      "status": "TARGET_NOT_CONFIGURED"
+    },
+    {
+      "assetId": "/objects/uploads/card-images/8564f599-3c03-4dc8-81df-ffe137374b6b.png",
+      "destinationPath": "uploads/card-images/8564f599-3c03-4dc8-81df-ffe137374b6b.png",
+      "references": [
+        {
+          "table": "cards",
+          "column": "image_asset_id",
+          "rowId": "2519b37a-74ea-4b26-afe2-2227f40a03bc"
+        }
+      ],
+      "source": {
+        "status": "SOURCE_READY",
+        "contentType": "image/png",
+        "size": 1270327,
+        "checksum": "256e56f3cbaa07b47b7301338eaec2d9aaef4890763927da399fee24f14fef80"
+      },
+      "destination": null,
+      "status": "TARGET_NOT_CONFIGURED"
+    },
+    {
+      "assetId": "/objects/uploads/card-images/8c0b8be0-e73f-4f3c-9681-9350902e3939.png",
+      "destinationPath": "uploads/card-images/8c0b8be0-e73f-4f3c-9681-9350902e3939.png",
+      "references": [
+        {
+          "table": "cards",
+          "column": "image_asset_id",
+          "rowId": "75863228-ae51-48cb-afec-43cc391672a8"
+        }
+      ],
+      "source": {
+        "status": "SOURCE_READY",
+        "contentType": "image/png",
+        "size": 1177358,
+        "checksum": "1084c8ea1b4d382a910b8ae81dd78db294b7521b22e7961fd975e2c992617f5f"
+      },
+      "destination": null,
+      "status": "TARGET_NOT_CONFIGURED"
+    },
+    {
+      "assetId": "/objects/uploads/card-images/92935ecb-3595-42da-b3bb-9398d280e82a.png",
+      "destinationPath": "uploads/card-images/92935ecb-3595-42da-b3bb-9398d280e82a.png",
+      "references": [
+        {
+          "table": "champions",
+          "column": "image_asset_id",
+          "rowId": "3cbb09c4-f8ac-4668-9378-5c01bfa9474b"
+        }
+      ],
+      "source": {
+        "status": "SOURCE_READY",
+        "contentType": "image/png",
+        "size": 2174604,
+        "checksum": "28ed60a38ea0f1edad5fec7976c9103646540545a6eca35e9375711cafe71ebf"
+      },
+      "destination": null,
+      "status": "TARGET_NOT_CONFIGURED"
+    },
+    {
+      "assetId": "/objects/uploads/card-images/9f5d99f1-93dd-4633-bf4b-5665a0205bfd.png",
+      "destinationPath": "uploads/card-images/9f5d99f1-93dd-4633-bf4b-5665a0205bfd.png",
+      "references": [
+        {
+          "table": "card_frame_definitions",
+          "column": "frame_asset_id",
+          "rowId": "27625a5d-902b-4ed2-a32c-e0a8a39c71cd"
+        }
+      ],
+      "source": {
+        "status": "SOURCE_READY",
+        "contentType": "image/png",
+        "size": 554719,
+        "checksum": "581ed972690595ec36fda3b010dd5107e369be5d57d7159f3a063229384f7c2f"
+      },
+      "destination": null,
+      "status": "TARGET_NOT_CONFIGURED"
+    },
+    {
+      "assetId": "/objects/uploads/card-images/a7a4eb55-42b2-42f9-ac93-9096f307a46c.png",
+      "destinationPath": "uploads/card-images/a7a4eb55-42b2-42f9-ac93-9096f307a46c.png",
+      "references": [
+        {
+          "table": "cards",
+          "column": "image_asset_id",
+          "rowId": "8a09fec1-16d8-452b-85c3-a38c7a3a03f6"
+        }
+      ],
+      "source": {
+        "status": "SOURCE_READY",
+        "contentType": "image/png",
+        "size": 1133701,
+        "checksum": "48d766facd403c41ee10440ee4566f5cfd0def028364ada3fbd7d1e701e579db"
+      },
+      "destination": null,
+      "status": "TARGET_NOT_CONFIGURED"
+    },
+    {
+      "assetId": "/objects/uploads/card-images/a7b5acfb-6a3b-4846-b52f-df9d105577c0.png",
+      "destinationPath": "uploads/card-images/a7b5acfb-6a3b-4846-b52f-df9d105577c0.png",
+      "references": [
+        {
+          "table": "cards",
+          "column": "image_asset_id",
+          "rowId": "1e0bbdb3-9304-46b0-81b8-d30bb9954fc3"
+        }
+      ],
+      "source": {
+        "status": "SOURCE_READY",
+        "contentType": "image/png",
+        "size": 1498286,
+        "checksum": "9ed0e415b5b30ec641d1fedf726eb5961f8c424fc60237f0151034e7b20ac635"
+      },
+      "destination": null,
+      "status": "TARGET_NOT_CONFIGURED"
+    },
+    {
+      "assetId": "/objects/uploads/card-images/ae6161e7-7cc1-4bcf-a253-b9ba7c56dc31.png",
+      "destinationPath": "uploads/card-images/ae6161e7-7cc1-4bcf-a253-b9ba7c56dc31.png",
+      "references": [
+        {
+          "table": "cards",
+          "column": "image_asset_id",
+          "rowId": "b723c7e6-c668-4afb-b77d-da0d16f16c31"
+        }
+      ],
+      "source": {
+        "status": "SOURCE_READY",
+        "contentType": "image/png",
+        "size": 1435368,
+        "checksum": "a0ce15f7b462c521a73e3cd0c5128b968849f19ba7b1b72b704d7e2199e702e9"
+      },
+      "destination": null,
+      "status": "TARGET_NOT_CONFIGURED"
+    },
+    {
+      "assetId": "/objects/uploads/card-images/ae695be9-d60c-4002-855f-74be26569ad2.png",
+      "destinationPath": "uploads/card-images/ae695be9-d60c-4002-855f-74be26569ad2.png",
+      "references": [
+        {
+          "table": "cards",
+          "column": "image_asset_id",
+          "rowId": "a2ab5577-0072-4425-a117-fd6f7df05d00"
+        }
+      ],
+      "source": {
+        "status": "SOURCE_READY",
+        "contentType": "image/png",
+        "size": 1299248,
+        "checksum": "92ebaf0fabe182ea6dde66e937a7d03d7febf501440052832698897fddffce59"
+      },
+      "destination": null,
+      "status": "TARGET_NOT_CONFIGURED"
+    },
+    {
+      "assetId": "/objects/uploads/card-images/b0b0baf3-bbc4-482c-bb46-df2be8e19fd9.png",
+      "destinationPath": "uploads/card-images/b0b0baf3-bbc4-482c-bb46-df2be8e19fd9.png",
+      "references": [
+        {
+          "table": "cards",
+          "column": "image_asset_id",
+          "rowId": "latest-wrestler-1"
+        }
+      ],
+      "source": {
+        "status": "SOURCE_READY",
+        "contentType": "image/png",
+        "size": 1096649,
+        "checksum": "3fda17ba2e594052e281e944e91f8621f0c1fe077c0b7de8caae962f8f02c980"
+      },
+      "destination": null,
+      "status": "TARGET_NOT_CONFIGURED"
+    },
+    {
+      "assetId": "/objects/uploads/card-images/b8911825-78f7-45b4-8cd4-6929dcdc6567.png",
+      "destinationPath": "uploads/card-images/b8911825-78f7-45b4-8cd4-6929dcdc6567.png",
+      "references": [
+        {
+          "table": "cards",
+          "column": "image_asset_id",
+          "rowId": "latest-wrestler-12"
+        }
+      ],
+      "source": {
+        "status": "SOURCE_READY",
+        "contentType": "image/png",
+        "size": 1186875,
+        "checksum": "e26ab888e7ec787119bfd2c3f425159da16a86e9972348f2c87aa0f6bd8899b2"
+      },
+      "destination": null,
+      "status": "TARGET_NOT_CONFIGURED"
+    },
+    {
+      "assetId": "/objects/uploads/card-images/c0524ff2-3c36-4355-94ba-20d75a90671c.png",
+      "destinationPath": "uploads/card-images/c0524ff2-3c36-4355-94ba-20d75a90671c.png",
+      "references": [
+        {
+          "table": "cards",
+          "column": "image_asset_id",
+          "rowId": "latest-wrestler-11"
+        }
+      ],
+      "source": {
+        "status": "SOURCE_READY",
+        "contentType": "image/png",
+        "size": 1186928,
+        "checksum": "9611dc6ab1fab929d6d144b3fcaea46c73c07cbb6711ee97d6b101883121b5c3"
+      },
+      "destination": null,
+      "status": "TARGET_NOT_CONFIGURED"
+    },
+    {
+      "assetId": "/objects/uploads/card-images/c5e7e609-736b-4af7-a67d-72ed3de21e0d.png",
+      "destinationPath": "uploads/card-images/c5e7e609-736b-4af7-a67d-72ed3de21e0d.png",
+      "references": [
+        {
+          "table": "cards",
+          "column": "image_asset_id",
+          "rowId": "latest-wrestler-2"
+        }
+      ],
+      "source": {
+        "status": "SOURCE_READY",
+        "contentType": "image/png",
+        "size": 1317167,
+        "checksum": "a60d3009243369665ee5a7cccd617bc421f8fa420d56c7fa203145da224c6845"
+      },
+      "destination": null,
+      "status": "TARGET_NOT_CONFIGURED"
+    },
+    {
+      "assetId": "/objects/uploads/card-images/c6e7518d-3e26-4a14-8483-0cddf9002d7b.png",
+      "destinationPath": "uploads/card-images/c6e7518d-3e26-4a14-8483-0cddf9002d7b.png",
+      "references": [
+        {
+          "table": "cards",
+          "column": "image_asset_id",
+          "rowId": "latest-wrestler-14"
+        }
+      ],
+      "source": {
+        "status": "SOURCE_READY",
+        "contentType": "image/png",
+        "size": 1385886,
+        "checksum": "05ecddff1b64938b7e7b410253fb2e4b6480fe45fbccd605c648c4535360a389"
+      },
+      "destination": null,
+      "status": "TARGET_NOT_CONFIGURED"
+    },
+    {
+      "assetId": "/objects/uploads/card-images/c9ff21c4-c80f-449e-bc0a-299e23d969c0.png",
+      "destinationPath": "uploads/card-images/c9ff21c4-c80f-449e-bc0a-299e23d969c0.png",
+      "references": [
+        {
+          "table": "cards",
+          "column": "image_asset_id",
+          "rowId": "8be831d2-6e56-4f77-985e-3860d6eaa2d3"
+        }
+      ],
+      "source": {
+        "status": "SOURCE_READY",
+        "contentType": "image/png",
+        "size": 1337851,
+        "checksum": "9e70ed90f8939027854297b7ef380858326a3aec5a438b0edbfc220bd0534426"
+      },
+      "destination": null,
+      "status": "TARGET_NOT_CONFIGURED"
+    },
+    {
+      "assetId": "/objects/uploads/card-images/d2b4c8b4-2f5c-4cce-97ad-61006580cc64.png",
+      "destinationPath": "uploads/card-images/d2b4c8b4-2f5c-4cce-97ad-61006580cc64.png",
+      "references": [
+        {
+          "table": "cards",
+          "column": "image_asset_id",
+          "rowId": "393dbf7c-7f61-418a-ba1a-4726500ab0aa"
+        }
+      ],
+      "source": {
+        "status": "SOURCE_READY",
+        "contentType": "image/png",
+        "size": 1245935,
+        "checksum": "1925d97063ddbca9c9ea6285dc87754be0db0cc189ddd9e1e45a5a4efe78908a"
+      },
+      "destination": null,
+      "status": "TARGET_NOT_CONFIGURED"
+    },
+    {
+      "assetId": "/objects/uploads/card-images/d83c7bb2-fc66-4e18-be0a-be3b4f715c36.png",
+      "destinationPath": "uploads/card-images/d83c7bb2-fc66-4e18-be0a-be3b4f715c36.png",
+      "references": [
+        {
+          "table": "cards",
+          "column": "image_asset_id",
+          "rowId": "latest-wrestler-6"
+        }
+      ],
+      "source": {
+        "status": "SOURCE_READY",
+        "contentType": "image/png",
+        "size": 1440282,
+        "checksum": "8b8bfddfbe5c01ac77cac7f6f5dd69f18af3ddd9c0294790f13077d6ff1656f5"
+      },
+      "destination": null,
+      "status": "TARGET_NOT_CONFIGURED"
+    },
+    {
+      "assetId": "/objects/uploads/card-images/db928a31-26f1-4fca-b446-a105cb182584.png",
+      "destinationPath": "uploads/card-images/db928a31-26f1-4fca-b446-a105cb182584.png",
+      "references": [
+        {
+          "table": "card_frame_definitions",
+          "column": "frame_asset_id",
+          "rowId": "9a2a8c29-9408-4d41-8299-37bf1354648a"
+        }
+      ],
+      "source": {
+        "status": "SOURCE_READY",
+        "contentType": "image/png",
+        "size": 539449,
+        "checksum": "5d22f2f0626adb4864fd31ece1fb66761cbf54d779cf58998ab948fa0d6061ae"
+      },
+      "destination": null,
+      "status": "TARGET_NOT_CONFIGURED"
+    },
+    {
+      "assetId": "/objects/uploads/card-images/dee32884-620d-4a33-86ba-9254bd5018a2.png",
+      "destinationPath": "uploads/card-images/dee32884-620d-4a33-86ba-9254bd5018a2.png",
+      "references": [
+        {
+          "table": "cards",
+          "column": "image_asset_id",
+          "rowId": "66143efe-2eec-450a-8570-9a4c4d92330e"
+        }
+      ],
+      "source": {
+        "status": "SOURCE_READY",
+        "contentType": "image/png",
+        "size": 1517338,
+        "checksum": "faf16e80efe9924e7366ca2d9016589dd66bed4f4e5665ab06dcde3bc68b23e3"
+      },
+      "destination": null,
+      "status": "TARGET_NOT_CONFIGURED"
+    },
+    {
+      "assetId": "/objects/uploads/card-images/fcb6f86d-2146-4d30-a563-ed4156633c6d.png",
+      "destinationPath": "uploads/card-images/fcb6f86d-2146-4d30-a563-ed4156633c6d.png",
+      "references": [
+        {
+          "table": "cards",
+          "column": "image_asset_id",
+          "rowId": "latest-wrestler-8"
+        }
+      ],
+      "source": {
+        "status": "SOURCE_READY",
+        "contentType": "image/png",
+        "size": 992639,
+        "checksum": "ad5dd2f45a817aea404d63c8953107c261c5a7aa98f3f6924834352c3019510f"
+      },
+      "destination": null,
+      "status": "TARGET_NOT_CONFIGURED"
+    },
+    {
+      "assetId": "/objects/uploads/game-backgrounds/38977185-466b-4f85-8f1f-3f17d23e4e36.png",
+      "destinationPath": "uploads/game-backgrounds/38977185-466b-4f85-8f1f-3f17d23e4e36.png",
+      "references": [
+        {
+          "table": "game_media",
+          "column": "asset_id",
+          "rowId": "5257f417-e3ed-4c6c-9c80-b63338e9b0e5"
+        }
+      ],
+      "source": {
+        "status": "SOURCE_READY",
+        "contentType": "image/png",
+        "size": 2094697,
+        "checksum": "17684c49e4ea38cec7edf6927e553b9a0ebe28e60f1dcf89a037e3dab043f3c1"
+      },
+      "destination": null,
+      "status": "TARGET_NOT_CONFIGURED"
+    },
+    {
+      "assetId": "/objects/uploads/game-backgrounds/52ecf7eb-b486-4797-bb80-66db5d61171a.png",
+      "destinationPath": "uploads/game-backgrounds/52ecf7eb-b486-4797-bb80-66db5d61171a.png",
+      "references": [
+        {
+          "table": "game_media",
+          "column": "asset_id",
+          "rowId": "9e5f903f-e0be-4e4e-8826-39b06b95f415"
+        }
+      ],
+      "source": {
+        "status": "SOURCE_READY",
+        "contentType": "image/png",
+        "size": 2480105,
+        "checksum": "489865c080231a7c0b24e3d00313db06917ce7f62089a0454050badb1af767bb"
+      },
+      "destination": null,
+      "status": "TARGET_NOT_CONFIGURED"
+    },
+    {
+      "assetId": "/objects/uploads/game-bgm/ef19a9f2-45e0-4ce5-81c6-8995cad52d2d.mp3",
+      "destinationPath": "uploads/game-bgm/ef19a9f2-45e0-4ce5-81c6-8995cad52d2d.mp3",
+      "references": [
+        {
+          "table": "game_media",
+          "column": "asset_id",
+          "rowId": "ccb168ac-d9f9-488a-88d5-b6591cb26942"
+        }
+      ],
+      "source": {
+        "status": "SOURCE_READY",
+        "contentType": "audio/mpeg",
+        "size": 4378653,
+        "checksum": "8dad48f82fa89021509850f8b450ac390ea7aa85a1ba8376ccf0f0ddbd62df29"
+      },
+      "destination": null,
+      "status": "TARGET_NOT_CONFIGURED"
+    }
+  ]
+}
