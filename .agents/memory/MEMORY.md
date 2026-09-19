@@ -12,6 +12,7 @@
 - [BGM preference scaling](bgm-preference-scaling.md) — user BGM volume is a persisted multiplier over each track's configured media volume; SFX stay independent.
 - [Pack reveal audio boundary](pack-reveal-audio-boundary.md) — pack rare music is a bounded temporary AudioManager channel; user and admin opening share the same Reveal component.
 - [Reusable card effect workflow](reusable-effect-workflow.md) — inspect and reuse active mechanics first; add generic registry-backed effects, analyzer mappings, and tests only when needed.
+- [Technique trigger boundary](technique-trigger-boundary.md) — hand-played Technique effects resolve through ACTIVE; migrating an entry-triggered card must normalize its trigger without changing target semantics.
 - [Card play presentation](card-play-animations.md) — keep play motion client-side; derive impact from base cost and keep rarity emphasis separate from landing weight.
 - [Generated card scope](generated-card-scope.md) — creation APIs opt into Generated; the reusable “anywhere” scope is HAND + DECK + BOARD only.
 - [In-game settings boundary](in-game-settings-boundary.md) — BGM mute changes only the AudioManager BGM channel; surrender records a terminal GameState result.

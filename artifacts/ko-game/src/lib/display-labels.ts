@@ -21,7 +21,10 @@ export function normalizeCardRulesText(text: string): string {
     .replaceAll("다음턴", "다음 턴")
     .replaceAll("턴종료", "턴 종료")
     .replaceAll("무덤", "묘지")
+    .replaceAll("묘지으로", "묘지로")
     .replaceAll("코스트", "비용")
     .replaceAll("Gold", "골드")
-    .replace(/(\d+)G/g, "$1 골드");
+    .replace(/(\d+)\s*G/g, "$1골드")
+    .replace(/(\d+)\s*골드/g, "$1골드")
+    .replaceAll("골드 씩", "골드씩");
 }
