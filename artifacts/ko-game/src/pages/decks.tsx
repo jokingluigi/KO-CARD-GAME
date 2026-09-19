@@ -59,6 +59,10 @@ function replaceDeck(list: Deck[], next: Deck) {
   return exists ? list.map((deck) => (deck.id === next.id ? next : deck)) : [...list, next];
 }
 
+function sameCardIdList(left: string[], right: string[]) {
+  return left.length === right.length && left.every((id, index) => id === right[index]);
+}
+
 function DeckCardVisual({
   card,
   onAdd,
@@ -346,7 +350,15 @@ export default function Decks() {
       })),
     [cardById, counts],
   );
-  const serverReasons = unique([...(editingDeck?.invalidReasons ?? []), ...localInvalidReasons]);
+  const savedDraftMatches = Boolean(
+    editingDeck &&
+    editingDeck.championDefinitionId === championId &&
+    sameCardIdList(editingDeck.cardDefinitionIds, cardIds),
+  );
+  const validationReasons = unique([
+    ...localInvalidReasons,
+    ...(savedDraftMatches ? editingDeck?.invalidReasons ?? [] : []),
+  ]);
 
   function createDraft() {
     setEditingId(null);
@@ -668,10 +680,10 @@ export default function Decks() {
                 )}
               </div>
 
-              {serverReasons.length > 0 && (
+              {validationReasons.length > 0 && (
                 <div className="ko-decks__notice" role="status" data-testid="status-deck-invalid">
                   <AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0" aria-hidden="true" />
-                  <span>{serverReasons.join(" ")}</span>
+                  <span>{validationReasons.join(" ")}</span>
                 </div>
               )}
               {missingIds.length > 0 && (

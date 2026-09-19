@@ -17,6 +17,7 @@ type CollectionTab = "cards" | "crafting" | "champions";
 type CardTypeFilter = "ALL" | "WRESTLER" | "TECHNIQUE";
 type RarityFilter = "ALL" | "NORMAL" | "LEGENDARY";
 type CardSort = "COST" | "NAME" | "RARITY";
+type CollectionLoadState = "loading" | "ready" | "error";
 
 function rarityLabel(rarity: string) {
   return rarity === "LEGENDARY" ? "LEGENDARY" : "NORMAL";
@@ -114,14 +115,21 @@ export default function CollectionPage() {
   const [selectedChampion, setSelectedChampion] = useState<CollectionChampion | null>(null);
   const [pendingAction, setPendingAction] = useState<{ type: "CRAFT" | "DISENCHANT"; card: CollectionCard } | null>(null);
   const [isMutating, setIsMutating] = useState(false);
+  const [loadState, setLoadState] = useState<CollectionLoadState>("loading");
+  const [loadAttempt, setLoadAttempt] = useState(0);
+  const [loadError, setLoadError] = useState("");
   const [message, setMessage] = useState("컬렉션을 불러오는 중...");
 
   useEffect(() => {
     let cancelled = false;
+    setLoadState("loading");
+    setLoadError("");
+    setCollection(null);
     fetchCollection()
       .then((nextCollection) => {
         if (!cancelled) {
           setCollection(nextCollection);
+          setLoadState("ready");
           setMessage("");
         }
       })
@@ -131,12 +139,13 @@ export default function CollectionPage() {
           navigate(ROUTES.MAIN_MENU);
           return;
         }
-        setMessage(error.message);
+        setLoadState("error");
+        setLoadError(error.message || "컬렉션을 불러오지 못했습니다. 다시 시도해주세요.");
       });
     return () => {
       cancelled = true;
     };
-  }, [navigate]);
+  }, [loadAttempt, navigate]);
 
   const filteredCards = useMemo(() => {
     const normalizedSearch = search.trim().toLocaleLowerCase();
@@ -197,6 +206,33 @@ export default function CollectionPage() {
     }
   }
 
+  if (loadState === "loading") {
+    return <CollectionLoading />;
+  }
+
+  if (loadState === "error" || !collection) {
+    return (
+      <main className="min-h-screen bg-neutral-950 px-4 py-6 text-neutral-100 sm:px-8 sm:py-8">
+        <div className="mx-auto flex min-h-[70vh] max-w-xl items-center justify-center">
+          <section className="w-full rounded-xl border border-red-900/60 bg-black/40 p-8 text-center">
+            <p className="font-display text-xs font-bold tracking-[0.25em] text-red-300">COLLECTION ERROR</p>
+            <h1 className="mt-3 text-xl font-black">컬렉션을 불러오지 못했습니다.</h1>
+            <p className="mt-3 text-sm leading-6 text-neutral-400">
+              {loadError || "잠시 후 다시 시도해주세요."}
+            </p>
+            <button
+              type="button"
+              className="mt-6 rounded bg-amber-400 px-5 py-3 text-sm font-black text-black transition hover:bg-yellow-300"
+              onClick={() => setLoadAttempt((attempt) => attempt + 1)}
+            >
+              다시 시도
+            </button>
+          </section>
+        </div>
+      </main>
+    );
+  }
+
   return (
     <main className="min-h-screen bg-neutral-950 px-4 py-6 text-neutral-100 sm:px-8 sm:py-8">
       <div className="mx-auto max-w-6xl">
@@ -217,21 +253,21 @@ export default function CollectionPage() {
           </div>
              <div className="flex items-center gap-2 rounded-full border border-amber-500/40 bg-amber-950/30 px-3 py-2 text-sm font-black text-amber-200">
              <Sparkles className="h-4 w-4 text-amber-400" />
-              ◆ {collection?.isTestAccount ? "∞" : collection?.prismBalance.toLocaleString() ?? "—"} 프리즘
+              ◆ {collection.isTestAccount ? "∞" : collection.prismBalance.toLocaleString()} 프리즘
            </div>
         </header>
 
-        {message && <p role="status" className="mb-6 rounded border border-amber-800/50 bg-amber-950/20 px-4 py-3 text-sm text-amber-200">{message}</p>}
+         {message && <p role="status" className="mb-6 rounded border border-amber-800/50 bg-amber-950/20 px-4 py-3 text-sm text-amber-200">{message}</p>}
 
          <div className="mb-6 grid grid-cols-3 rounded-lg border border-neutral-800 bg-black/30 p-1">
           <button type="button" onClick={() => setTab("cards")} className={`rounded px-3 py-3 text-sm font-black transition ${tab === "cards" ? "bg-amber-400 text-black" : "text-neutral-400 hover:text-white"}`}>
-            카드 <span className="ml-1 text-xs opacity-70">{collection?.cards.length ?? 0}</span>
+             카드 <span className="ml-1 text-xs opacity-70">{collection.cards.length}</span>
           </button>
            <button type="button" onClick={() => setTab("crafting")} className={`rounded px-3 py-3 text-sm font-black transition ${tab === "crafting" ? "bg-amber-400 text-black" : "text-neutral-400 hover:text-white"}`}>
-             카드 제작 <span className="ml-1 text-xs opacity-70">{collection?.craftableCards.length ?? 0}</span>
+             카드 제작 <span className="ml-1 text-xs opacity-70">{collection.craftableCards.length}</span>
            </button>
           <button type="button" onClick={() => setTab("champions")} className={`rounded px-3 py-3 text-sm font-black transition ${tab === "champions" ? "bg-amber-400 text-black" : "text-neutral-400 hover:text-white"}`}>
-            챔피언 <span className="ml-1 text-xs opacity-70">{champions.length}</span>
+             챔피언 <span className="ml-1 text-xs opacity-70">{champions.length}</span>
           </button>
         </div>
 
@@ -254,8 +290,8 @@ export default function CollectionPage() {
                </p>
             </section>
 
-            {(tab === "cards" ? filteredCards : filteredCraftableCards).length === 0 ? (
-              <EmptyState title={tab === "cards" ? (collection?.cards.length ? "조건에 맞는 카드가 없습니다." : "아직 보유한 카드가 없습니다.") : "제작 가능한 카드가 없습니다."} />
+             {(tab === "cards" ? filteredCards : filteredCraftableCards).length === 0 ? (
+               <EmptyState title={tab === "cards" ? (collection.cards.length ? "조건에 맞는 카드가 없습니다." : "아직 보유한 카드가 없습니다.") : "제작 가능한 카드가 없습니다."} />
             ) : (
               <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 sm:gap-4 lg:grid-cols-5">
                {(tab === "cards" ? filteredCards : filteredCraftableCards).map((card) => <CardCollectionItem key={card.id} card={card} showCraftable={tab === "crafting"} unlimited={collection?.isTestAccount} onOpen={() => setSelectedCard(card)} />)}
