@@ -1,0 +1,322 @@
+KO CARD GAME의 Production 이미지/미디어 저장소를
+Replit Object Storage에서 Supabase Storage로 지원하도록 수정해줘.
+
+현재 구조:
+
+Development / Replit Preview
+- PostgreSQL: helium
+- Storage: Replit Object Storage
+- 기존 카드/Champion 이미지 정상 동작
+
+Production / Render
+- PostgreSQL: Supabase PostgreSQL
+- 현재 사용 가능한 Object Storage 없음
+- Render에는 Replit sidecar(127.0.0.1:1106)가 없어서
+  기존 Replit Object Storage 코드를 사용할 수 없음
+
+Production용 Supabase Storage bucket 이름:
+
+ko-game-assets
+
+중요:
+기존 Replit Preview 기능을 깨뜨리지 말고
+Storage Provider 구조를 분리해서 두 환경을 모두 지원해.
+
+==================================================
+1. Storage Provider 분리
+==================================================
+
+현재:
+
+artifacts/api-server/src/lib/object-storage.ts
+
+의 Replit Object Storage 구현을 조사하고,
+공통 Storage interface/provider 구조로 정리해.
+
+환경변수:
+
+STORAGE_PROVIDER=replit
+또는
+STORAGE_PROVIDER=supabase
+
+를 기준으로 provider를 선택하게 해.
+
+Replit Preview:
+STORAGE_PROVIDER=replit
+
+Render Production:
+STORAGE_PROVIDER=supabase
+
+기존 Replit Object Storage 기능은 유지.
+
+Supabase provider는 서버에서만:
+
+SUPABASE_URL
+SUPABASE_SECRET_KEY
+SUPABASE_STORAGE_BUCKET
+
+환경변수를 사용.
+
+SUPABASE_SECRET_KEY는 절대 frontend bundle에 포함하지 말 것.
+
+==================================================
+2. Supabase Storage provider 구현
+==================================================
+
+@supabase/supabase-js를 API server에서 사용해도 된다.
+
+Production bucket:
+
+ko-game-assets
+
+기존 Object Storage의 logical path를 최대한 유지.
+
+예:
+
+기존 asset id:
+
+/objects/uploads/card-images/abc.png
+
+Supabase Storage object path:
+
+uploads/card-images/abc.png
+
+즉 /objects/ prefix만 storage 내부 경로에서 제거하는 방식으로
+기존 DB asset identity를 최대한 유지해.
+
+지원해야 할 기존 prefix:
+
+uploads/card-images/
+uploads/game-backgrounds/
+uploads/game-bgm/
+uploads/game-attack/
+uploads/audio/
+
+커스텀 카드 프레임도 기존 경로 규칙을 조사해서 포함.
+
+==================================================
+3. 기존 DB URL 형식 최대한 유지
+==================================================
+
+가능하면 Production DB의 기존:
+
+image_asset_id
+image_url
+frame_asset_id
+frame_url
+game media URL
+
+을 전부 대량 변경하지 않아도 되게 만들어.
+
+특히 기존:
+
+/api/storage/objects/uploads/card-images/abc.png
+
+형식의 URL이 계속 작동하도록 하는 것을 우선해.
+
+GET /api/storage/objects/...
+
+가 Supabase provider를 사용할 때는
+Supabase Storage의 해당 object를 제공하도록 해.
+
+bucket이 public이므로,
+가능하다면 backend에서 binary 전체를 매번 proxy하지 말고
+Supabase public object URL로 redirect하는 방식도 검토해.
+
+단 기존 frontend와 API 계약을 깨지 마.
+
+==================================================
+4. /admin 이미지 업로드 Production 지원
+==================================================
+
+현재 Replit에서는:
+
+upload-url
+→ Replit signed URL
+→ browser PUT
+→ complete
+→ object validation
+
+흐름을 사용한다.
+
+Supabase provider에서도
+동일한 사용자 경험을 유지해.
+
+Supabase Storage의 signed upload 기능을 사용하거나
+기존 API contract에 맞는 최소 adapter를 구현해.
+
+관리자가 /admin에서 새 이미지 업로드 시:
+
+Render backend
+→ Supabase Storage
+→ upload
+→ file validation
+→ card/champion DB 저장
+
+이 정상 동작해야 한다.
+
+중요:
+
+- 일반 USER가 admin upload API를 사용할 수 없어야 함
+- 기존 ADMIN guard 유지
+- MIME/type/size/image metadata validation 유지
+- UUID 기반 새 object path 유지
+- 기존 파일을 같은 path로 덮어쓰기보다는
+  새 UUID path 생성 방식 유지
+
+==================================================
+5. 기존 Replit 이미지 Migration Script 생성
+==================================================
+
+기존 Replit Object Storage 파일을
+Supabase Storage로 옮기는 migration script를 만들어.
+
+절대 자동 실행하지 마.
+
+기본은 DRY RUN이어야 하고:
+
+APPLY_STORAGE_MIGRATION=YES
+
+같은 명시적 환경변수가 있을 때만 실제 업로드.
+
+Migration 대상은 helium DB에서 참조 중인:
+
+cards
+- image_asset_id
+
+champions
+- image_asset_id
+- quest_completed_portrait_asset_id
+
+card_frame_definitions
+- frame_asset_id
+
+game_media
+- 모든 storage asset 필드
+
+를 조사해서 전부 포함.
+
+동일 asset은 deduplicate.
+
+각 파일에 대해:
+
+- source asset id
+- source object 존재 여부
+- destination path
+- MIME
+- size
+- 가능하면 checksum
+- migration result
+
+를 JSON 또는 CSV manifest로 남겨.
+
+현재 조사에서:
+
+카드 이미지:
+29개 참조
+28개 정상
+1개 404
+
+Champion:
+3개 URL 정상
+
+이 확인되어 있다.
+
+helium에서도 이미 404인 파일은
+migration 전체를 실패시키지 말고:
+
+MISSING_SOURCE
+
+로 manifest에 기록하고 skip.
+
+특히 엘리트 용병의 stale image path가 보고되어 있음.
+
+==================================================
+6. Migration 안전 규칙
+==================================================
+
+절대:
+
+- Replit Object Storage 파일 삭제 금지
+- helium DB 수정 금지
+- Supabase DB 초기화 금지
+- 카드/Champion 레코드 삭제 금지
+- 기존 asset을 migration 성공 전에 덮어쓰기 금지
+
+Migration은:
+
+source read
+→ destination upload
+→ destination 검증
+
+순서.
+
+Destination에 동일 파일이 이미 있다면
+size/checksum 등을 확인해 안전하게 skip 가능하게 해.
+
+여러 번 실행해도 중복/손상이 없는
+idempotent migration이어야 함.
+
+==================================================
+7. Production 전환 검증
+==================================================
+
+수정 후 다음 테스트를 준비해.
+
+A. Replit Preview
+- 기존 카드 이미지 계속 표시
+- 기존 /admin 업로드 계속 작동
+
+B. Supabase Storage provider
+- 기존 migration image GET 성공
+- Champion image 성공
+- custom frame 성공
+- game background/BGM/SFX 성공
+
+C. Render Production
+- /api/cards의 기존 image_url로 이미지 표시
+- /api/champions 이미지 표시
+- /admin 새 이미지 업로드
+- 저장 후 실제 게임 반영
+- backend restart/redeploy 후 이미지 유지
+
+D. 보안
+- SUPABASE_SECRET_KEY frontend 노출 없음
+- 일반 USER upload/delete 차단
+- admin guard 유지
+
+==================================================
+8. 테스트
+==================================================
+
+반드시:
+
+pnpm run typecheck
+pnpm -r --if-present run build
+git diff --check
+
+Storage 관련 unit/integration test 추가.
+
+가능하면 mock provider를 사용해서
+Replit/Supabase provider 선택 테스트도 추가.
+
+==================================================
+최종 보고
+==================================================
+
+다음 형식으로 보고:
+
+1. 변경 파일
+2. 새 환경변수
+3. Replit provider 동작
+4. Supabase provider 동작
+5. Migration script 경로
+6. DRY RUN 결과
+7. 실제 migration 실행 방법
+8. 기존 404 asset 목록
+9. typecheck/build/test 결과
+10. 내가 Supabase/Render에서 수동으로 해야 할 작업
+
+중요:
+실제 Supabase 파일 migration은 아직 실행하지 마.
+코드와 migration script까지만 준비하고 DRY RUN만 수행해.
