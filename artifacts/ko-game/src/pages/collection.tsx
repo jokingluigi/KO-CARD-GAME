@@ -451,6 +451,31 @@ function InfoBlock({ icon, label, text }: { icon?: React.ReactNode; label: strin
   return <section className="rounded-lg border border-neutral-800 bg-black/30 p-4"><h3 className="flex items-center gap-2 text-xs font-black uppercase tracking-wider text-amber-300">{icon}{label}</h3><p className="mt-2 whitespace-pre-line text-sm leading-6 text-neutral-200">{text}</p></section>;
 }
 
+function CollectionLoading() {
+  return (
+    <main className="min-h-screen bg-neutral-950 px-4 py-6 text-neutral-100 sm:px-8 sm:py-8" aria-busy="true">
+      <div className="mx-auto max-w-6xl">
+        <div className="mb-6 flex items-center justify-between border-b border-neutral-800 pb-5">
+          <div className="space-y-3">
+            <div className="h-3 w-28 animate-pulse rounded bg-neutral-800" />
+            <div className="h-9 w-48 animate-pulse rounded bg-neutral-800" />
+            <div className="h-4 w-72 max-w-full animate-pulse rounded bg-neutral-900" />
+          </div>
+          <div className="h-10 w-28 animate-pulse rounded-full bg-neutral-900" />
+        </div>
+        <p role="status" className="mb-6 rounded border border-amber-800/50 bg-amber-950/20 px-4 py-3 text-sm text-amber-200">
+          컬렉션을 불러오는 중...
+        </p>
+        <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 sm:gap-4 lg:grid-cols-5">
+          {Array.from({ length: 10 }, (_, index) => (
+            <div key={index} className="aspect-[2/3] animate-pulse rounded-xl border border-neutral-800 bg-neutral-900/70" />
+          ))}
+        </div>
+      </div>
+    </main>
+  );
+}
+
 function EmptyState({ title }: { title: string }) {
   return <div className="rounded-xl border border-dashed border-neutral-800 px-5 py-16 text-center text-sm text-neutral-500">{title}</div>;
 }

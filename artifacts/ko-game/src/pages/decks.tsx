@@ -332,7 +332,6 @@ export default function Decks() {
     }
     return reasons;
   }, [cardById, cardIds, counts, legendaryCount, missingIds.length, selectedChampion]);
-  const isValidForSelection = localInvalidReasons.length === 0;
   const filteredCards = useMemo(() => {
     const normalizedSearch = search.trim().toLocaleLowerCase();
     return options.cards.filter((card) => {
@@ -359,6 +358,7 @@ export default function Decks() {
     ...localInvalidReasons,
     ...(savedDraftMatches ? editingDeck?.invalidReasons ?? [] : []),
   ]);
+  const isValidForSelection = validationReasons.length === 0;
 
   function createDraft() {
     setEditingId(null);
