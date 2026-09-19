@@ -1,5 +1,6 @@
 import { useEffect, useState, type CSSProperties, type KeyboardEvent, type ReactNode, type Ref } from "react";
 import { CardArtwork } from "./card-artwork";
+import { normalizeCardRulesText } from "@/lib/display-labels";
 import {
   normalizeCardRarityForType,
   type CardRarity,
@@ -179,6 +180,7 @@ export function CardRenderer({
   tabIndex?: number;
   containerRef?: Ref<HTMLDivElement>;
 }) {
+  const displayRulesText = normalizeCardRulesText(rulesText);
   const normalizedRarity = isChampionToken
     ? "CHAMPION"
     : normalizeCardRarityForType(cardType, rarity);
@@ -350,7 +352,7 @@ export function CardRenderer({
             }}
           >
             <span className={`line-clamp-6 w-full font-bold drop-shadow-[0_1px_2px_rgba(0,0,0,0.95)] ${rulesClass}`}>
-              {rulesText || "효과 없음"}
+              {displayRulesText || "효과 없음"}
             </span>
           </div>
         )}

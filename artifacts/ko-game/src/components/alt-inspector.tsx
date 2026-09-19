@@ -402,7 +402,7 @@ function rewardText(champion: ChampionState): string {
     ? '챔피언 고유 능력을 강화합니다.'
     : reward.type === 'GAIN_GOLD'
       ? `다음 턴 골드 ${reward.amount}를 얻습니다.`
-      : '연결된 Champion Token을 직접 전개합니다.';
+      : '연결된 챔피언 토큰을 직접 전개합니다.';
 }
 
 export function ChampionAbilityInspectContent({
@@ -422,7 +422,7 @@ export function ChampionAbilityInspectContent({
     <div>
       <div className="text-[10px] font-bold tracking-widest text-blue-300">챔피언 고유 능력</div>
       <h3 className="mt-1 text-lg font-black">{ability.name}</h3>
-      <div className="my-3 font-display text-base font-bold text-primary">비용 {champion.abilityCost}G</div>
+      <div className="my-3 font-display text-base font-bold text-primary">비용 {champion.abilityCost} 골드</div>
       <p className="text-xs leading-relaxed text-neutral-300">{ability.description}</p>
       <div className={`mt-3 text-xs font-bold ${available ? 'text-emerald-300' : 'text-red-300'}`}>
         {available ? '현재 사용할 수 있습니다.' : unavailableReason}

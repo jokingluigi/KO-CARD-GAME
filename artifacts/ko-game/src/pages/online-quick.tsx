@@ -78,7 +78,7 @@ function QuickMatchPage() {
 
   const startSearch = () => {
     if (!selectedDeckId || !selectedDeck?.isValid) {
-      setError("온라인 대전에 사용할 VALID 덱을 선택해 주세요.");
+       setError("온라인 대전에 사용할 수 있는 덱을 선택해 주세요.");
       return;
     }
     if (connection !== "open") {

@@ -116,7 +116,7 @@ function FriendlyMatchPage() {
 
   const makeRoom = () => {
     if (!selectedDeck?.isValid || connection !== "open") {
-      setError(connection !== "open" ? "온라인 서버에 연결할 수 없습니다." : "온라인 대전에 사용할 VALID 덱을 선택해 주세요.");
+       setError(connection !== "open" ? "온라인 서버에 연결할 수 없습니다." : "온라인 대전에 사용할 수 있는 덱을 선택해 주세요.");
       return;
     }
     setError(null);
@@ -126,7 +126,7 @@ function FriendlyMatchPage() {
   const joinRoom = () => {
     const normalized = roomCodeInput.trim().toUpperCase();
     if (!selectedDeck?.isValid) {
-      setError("온라인 대전에 사용할 VALID 덱을 선택해 주세요.");
+      setError("온라인 대전에 사용할 수 있는 덱을 선택해 주세요.");
       return;
     }
     if (!normalized) {

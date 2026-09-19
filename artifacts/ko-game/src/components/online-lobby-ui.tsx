@@ -4,6 +4,7 @@ import { useLocation } from "wouter";
 import { fetchCurrentUser, type AuthUser } from "@/lib/auth-client";
 import { fetchDecks, type Deck } from "@/lib/decks-client";
 import { ROUTES } from "@/lib/routes";
+import { deckValidityLabel } from "@/lib/display-labels";
 
 export type OnlineAuthState =
   | { status: "loading"; user: null }
@@ -149,7 +150,7 @@ export function DeckPicker({
           <h2 className="mt-2 text-xl font-black text-white">유효한 덱만 온라인 대전에 사용할 수 있습니다</h2>
         </div>
         <span className="text-right text-[0.68rem] font-bold text-neutral-500" data-testid="text-valid-deck-count">
-          {validDecks.length} VALID
+           {validDecks.length}개 사용 가능
         </span>
       </div>
       {decks.length === 0 ? (
@@ -187,11 +188,11 @@ export function DeckPicker({
                   <span className={`shrink-0 rounded border px-2 py-1 text-[0.62rem] font-black tracking-[0.14em] ${
                     valid ? "border-emerald-700/60 bg-emerald-950/40 text-emerald-300" : "border-red-900 bg-red-950/30 text-red-300"
                   }`} data-testid={`status-online-deck-${deck.id}`}>
-                    {valid ? "VALID" : "INVALID"}
+                     {deckValidityLabel(valid)}
                   </span>
                 </div>
                 <div className="mt-5 flex items-center justify-between border-t border-white/[0.07] pt-3 text-[0.68rem] font-bold text-neutral-500">
-                  <span>{deck.cards.length} cards</span>
+                   <span>{deck.cards.length}장</span>
                   <span>{selected ? "선택됨" : valid ? "선택하기" : deck.invalidReasons[0] ?? "사용할 수 없음"}</span>
                 </div>
               </button>
@@ -210,7 +211,7 @@ export function SelectedDeckStamp({ deck }: { deck: Deck | undefined }) {
       <Shield className="h-4 w-4 text-amber-400" aria-hidden="true" />
       <div className="min-w-0">
         <p className="truncate text-sm font-black text-white">{deck.name}</p>
-        <p className="truncate text-[0.68rem] font-bold text-neutral-500">{deck.champion?.name ?? "챔피언 없음"} · server validation required</p>
+         <p className="truncate text-[0.68rem] font-bold text-neutral-500">{deck.champion?.name ?? "챔피언 없음"} · 서버 최종 확인</p>
       </div>
       <Check className="ml-auto h-4 w-4 text-emerald-400" aria-hidden="true" />
     </div>

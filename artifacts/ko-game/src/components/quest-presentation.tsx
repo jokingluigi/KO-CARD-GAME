@@ -49,7 +49,7 @@ export function QuestPresentation({
             <div className="mt-5 rounded-xl border border-violet-800/70 bg-violet-950/30 p-4 text-left">
               <p className="text-xs font-black text-violet-300">강화된 고유 능력</p>
               <p className="mt-2 text-lg font-black">{champion.upgradedAbility.name}</p>
-              {champion.upgradedAbility.cost !== undefined && <p className="mt-1 text-sm text-amber-300">비용 {champion.upgradedAbility.cost}G</p>}
+              {champion.upgradedAbility.cost !== undefined && <p className="mt-1 text-sm text-amber-300">비용 {champion.upgradedAbility.cost} 골드</p>}
               <p className="mt-3 text-sm leading-6 text-neutral-300">{champion.upgradedAbility.description}</p>
             </div>
           ) : token ? (

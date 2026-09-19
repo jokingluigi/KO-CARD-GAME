@@ -56,3 +56,4 @@
 - [Online PvP foundation](online-pvp-foundation.md) — reuse the shared KO engine; persist accepted state changes and sanitize every viewer projection.
 - [Online Stage 3 recovery](online-stage3-recovery.md) — persist deadlines at transitions, lazy-restore one runtime, and use primary-connection gating for reconnect safety.
 - [Online presentation projection](online-presentation-projection.md) — reorder sanitized players viewer-first and adapt hidden zones to card-back placeholders before shared GameStatePreview.
+- [User-facing card display boundary](user-facing-card-display-boundary.md) — translate enum/currency labels and correct stored card copy only at render time; keep engine/API values unchanged.

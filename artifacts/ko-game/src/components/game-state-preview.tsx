@@ -1073,7 +1073,7 @@ export function GameStatePreview({
                        : 'cursor-not-allowed border-neutral-800 bg-neutral-900 text-neutral-600'
                      }`}
                    >
-                     챔피언 능력 ({me.champion.abilityCost}G)
+                     챔피언 능력 (비용 {me.champion.abilityCost} 골드)
                    </button>
                  </Inspectable>
                )}
@@ -1405,12 +1405,12 @@ function ZoneStack({
       <button
         type="button"
         onClick={onGraveyardClick}
-        aria-label={`무덤 열기, ${graveyardCount}장`}
+         aria-label={`묘지 열기, ${graveyardCount}장`}
         className={`flex h-12 w-10 flex-col items-center justify-end overflow-hidden rounded border-2 bg-neutral-900 transition-colors hover:bg-neutral-800 md:h-16 md:w-14 ${
           isOpponent ? 'border-red-900' : 'border-blue-900'
         }`}
       >
-        <span className="text-[7px] font-bold text-neutral-500 md:text-[9px]">무덤</span>
+         <span className="text-[7px] font-bold text-neutral-500 md:text-[9px]">묘지</span>
         <span className="font-display text-sm font-black text-neutral-200 md:text-lg">{graveyardCount}</span>
       </button>
     </div>
@@ -1429,13 +1429,13 @@ function GraveyardModal({
       <div
         role="dialog"
         aria-modal="true"
-        aria-label={`${player.id === 'player-1' ? '내' : '상대'} 무덤`}
+             aria-label={`${player.id === 'player-1' ? '내' : '상대'} 묘지`}
         className="max-h-[80dvh] w-full max-w-2xl overflow-hidden rounded-lg border border-neutral-700 bg-neutral-950 p-4 shadow-2xl"
       >
         <div className="mb-4 flex items-center justify-between border-b border-neutral-800 pb-3">
           <div>
             <div className="text-[10px] font-bold tracking-widest text-neutral-500">
-              {player.id === 'player-1' ? '내 무덤' : '상대 무덤'}
+               {player.id === 'player-1' ? '내 묘지' : '상대 묘지'}
             </div>
             <h2 className="text-lg font-black text-white">묘지 카드 {player.graveyard.length}장</h2>
           </div>
@@ -1448,7 +1448,7 @@ function GraveyardModal({
           </button>
         </div>
         {player.graveyard.length === 0 ? (
-          <div className="py-12 text-center text-sm text-neutral-500">무덤이 비어 있습니다.</div>
+           <div className="py-12 text-center text-sm text-neutral-500">묘지가 비어 있습니다.</div>
         ) : (
           <div className="grid max-h-[62dvh] grid-cols-2 gap-3 overflow-y-auto pr-1 sm:grid-cols-3 md:grid-cols-4">
             {player.graveyard

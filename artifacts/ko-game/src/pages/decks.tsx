@@ -5,6 +5,7 @@ import { AuthPage, AuthLoading } from "@/components/auth-page";
 import { AltInspectProvider, Inspectable } from "@/components/alt-inspector";
 import { CardRenderer } from "@/components/card-renderer";
 import { CardArtwork } from "@/components/card-artwork";
+import { CardDetailDialog } from "@/components/card-detail-dialog";
 import {
   Dialog,
   DialogContent,
@@ -23,6 +24,7 @@ import {
   type DeckCard,
   type DeckChampion,
 } from "@/lib/decks-client";
+import { cardTypeLabel, deckValidityLabel, normalizeCardRulesText } from "@/lib/display-labels";
 
 type AuthStatus = "checking" | "authenticated" | "unauthenticated";
 type CardFilter = "ALL" | "WRESTLER" | "TECHNIQUE";
@@ -66,11 +68,13 @@ function sameCardIdList(left: string[], right: string[]) {
 function DeckCardVisual({
   card,
   onAdd,
+  onOpenDetails,
   disabled,
   disabledReason,
 }: {
   card: DeckCard;
   onAdd: () => void;
+  onOpenDetails: () => void;
   disabled: boolean;
   disabledReason?: string;
 }) {
@@ -81,7 +85,7 @@ function DeckCardVisual({
         content={
           <div className="space-y-3">
             <p className="text-[0.62rem] font-black tracking-[0.18em] text-amber-300">
-              {card.cardType} · {card.rarity}
+              {cardTypeLabel(card.cardType)} · {card.rarity}
             </p>
             <CardRenderer
               name={card.name}
@@ -96,22 +100,20 @@ function DeckCardVisual({
               size="detail"
               className="mx-auto w-64 max-w-full"
             />
-            <p className="whitespace-pre-wrap text-xs leading-5 text-neutral-300">{card.text || "효과 없음"}</p>
+            <p className="whitespace-pre-wrap text-xs leading-5 text-neutral-300">{normalizeCardRulesText(card.text) || "효과 없음"}</p>
           </div>
         }
       >
         <div
           role="button"
-          tabIndex={disabled ? -1 : 0}
-          aria-label={`${card.name} 덱에 추가`}
-          data-testid={`button-add-card-${card.id}`}
-          onClick={() => {
-            if (!disabled) onAdd();
-          }}
+          tabIndex={0}
+          aria-label={`${card.name} 카드 상세 보기`}
+          data-testid={`button-card-details-${card.id}`}
+          onClick={onOpenDetails}
           onKeyDown={(event) => {
-            if (!disabled && (event.key === "Enter" || event.key === " ")) {
+            if (event.key === "Enter" || event.key === " ") {
               event.preventDefault();
-              onAdd();
+              onOpenDetails();
             }
           }}
         >
@@ -144,7 +146,7 @@ function DeckCardVisual({
       </button>
       <p className="ko-decks__card-label" data-testid={`text-card-name-${card.id}`}>{card.name}</p>
       <p className="ko-decks__card-type">
-        {card.cardType === "WRESTLER" ? "WRESTLER" : "TECHNIQUE"} · COST {card.cost} · {card.rarity}
+        {cardTypeLabel(card.cardType)} · 비용 {card.cost} · {card.rarity}
       </p>
       {disabledReason && <p className="ko-decks__card-limit">{disabledReason}</p>}
     </article>
@@ -206,6 +208,7 @@ export default function Decks() {
   const [errorMessage, setErrorMessage] = useState("");
   const [statusMessage, setStatusMessage] = useState("");
   const [championPickerOpen, setChampionPickerOpen] = useState(false);
+  const [detailCard, setDetailCard] = useState<DeckCard | null>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -535,10 +538,10 @@ export default function Decks() {
                     <span className="min-w-0">
                       <span className="ko-decks__deck-item-name block">{deck.name}</span>
                       <span className="ko-decks__deck-item-meta block">
-                        {deck.champion?.name ?? "CHAMPION 없음"} · {deck.cardDefinitionIds.length} CARDS
+                         {deck.champion?.name ?? "챔피언 없음"} · {deck.cardDefinitionIds.length}장
                       </span>
                       <span className={`ko-decks__deck-item-status ${deck.isValid ? "ko-decks__deck-item-status--valid" : ""}`}>
-                         {deck.isValid ? "VALID" : "INVALID"}
+                          {deckValidityLabel(deck.isValid)}
                       </span>
                     </span>
                     {deck.isSelected && <Check className="h-4 w-4 shrink-0 text-[#e7b642]" aria-label="대표 덱" />}
@@ -581,7 +584,7 @@ export default function Decks() {
                     data-testid={`button-filter-${item.toLowerCase()}`}
                     onClick={() => setFilter(item)}
                   >
-                    {item === "ALL" ? "ALL" : item}
+                    {item === "ALL" ? "전체" : cardTypeLabel(item)}
                   </button>
                 ))}
               </div>
@@ -601,6 +604,7 @@ export default function Decks() {
                     disabled={cardIds.length >= 30 || Boolean(cardLimitReason(card, counts.get(card.id) ?? 0, legendaryCount))}
                     disabledReason={cardLimitReason(card, counts.get(card.id) ?? 0, legendaryCount)}
                     onAdd={() => addCard(card)}
+                    onOpenDetails={() => setDetailCard(card)}
                   />
                 ))}
               </div>
@@ -653,7 +657,7 @@ export default function Decks() {
                     <ChampionPortrait champion={selectedChampion} />
                     <div className="ko-decks__champion-copy min-w-0">
                       <h3>{selectedChampion.name}</h3>
-                      <p>{selectedChampion.abilityName} · {selectedChampion.abilityCost}G</p>
+                      <p>{selectedChampion.abilityName} · 비용 {selectedChampion.abilityCost} 골드</p>
                       {selectedChampion.status !== "PUBLISHED" && (
                         <p className="mt-2 flex items-center gap-1 text-[#de8e7f]"><AlertTriangle className="h-3 w-3" /> 공개되지 않은 챔피언</p>
                       )}
@@ -729,7 +733,7 @@ export default function Decks() {
                       <div className="min-w-0">
                         <p className="ko-decks__selected-name">{card?.name ?? `확인할 수 없는 카드 (${id})`}</p>
                         <p className="ko-decks__selected-kind">
-                          {card ? `${card.cardType} · COST ${card.cost} · ${card.rarity}` : "MISSING REFERENCE"}
+                           {card ? `${cardTypeLabel(card.cardType)} · 비용 ${card.cost} · ${card.rarity}` : "카드 참조 없음"}
                         </p>
                       </div>
                       <span className="ko-decks__count text-[#d9b04b]" data-testid={`text-card-count-${id}`}>×{count}</span>
@@ -759,6 +763,11 @@ export default function Decks() {
           </section>
         </div>
       </div>
+      <CardDetailDialog
+        card={detailCard}
+        open={Boolean(detailCard)}
+        onOpenChange={(open) => { if (!open) setDetailCard(null); }}
+      />
       <Dialog open={championPickerOpen} onOpenChange={setChampionPickerOpen}>
         <DialogContent className="max-w-3xl border-neutral-800 bg-[#110f0d] text-white max-h-[88vh] overflow-y-auto">
           <DialogHeader>
@@ -789,7 +798,7 @@ export default function Decks() {
                   <span className="min-w-0">
                     <strong className="block truncate text-sm text-amber-200">{champion.name}</strong>
                     <span className="mt-1 block text-xs font-bold text-neutral-300">
-                      {champion.abilityName} · {champion.abilityCost}G
+                      {champion.abilityName} · 비용 {champion.abilityCost} 골드
                     </span>
                     <span className="mt-2 block line-clamp-3 text-xs leading-5 text-neutral-400">
                       {champion.abilityText || champion.description || "능력 설명 없음"}
@@ -807,7 +816,7 @@ export default function Decks() {
             <div className="rounded-lg border border-neutral-800 bg-black/30 p-4">
               <h3 className="font-black text-amber-200">{selectedChampion.name} 상세</h3>
               <p className="mt-2 text-sm font-bold text-neutral-200">
-                기본 능력 · {selectedChampion.abilityCost}G · {selectedChampion.abilityName}
+                기본 능력 · 비용 {selectedChampion.abilityCost} 골드 · {selectedChampion.abilityName}
               </p>
               <p className="mt-2 whitespace-pre-wrap text-sm leading-6 text-neutral-300">
                 {selectedChampion.abilityText || selectedChampion.description || "능력 설명 없음"}
