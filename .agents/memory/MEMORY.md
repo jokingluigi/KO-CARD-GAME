@@ -20,6 +20,7 @@
 - [Game attack media](game-attack-media.md) — attack SFX types use the shared media CRUD flow but need their own object-storage folder and playback channel.
 - [Portrait mobile boundary](portrait-mobile-boundary.md) — KO mobile layout changes stay inside the narrow portrait breakpoint; desktop and landscape keep their existing geometry.
 - [Inspector viewport placement](inspector-viewport-placement.md) — shared card details measure the anchor and panel, choose the roomier side, then clamp inside the viewport.
+- [ALT inspector testing boundary](alt-inspector-testing.md) — keep placement and metadata utilities outside React so Node tests avoid Vite-only card-renderer imports.
 - [Mobile board density](mobile-board-density.md) — portrait board rows use the full four-slot width while deck/grave controls move into compact row controls; hand cards overlap without shrinking away readability.
 - [Generated damage modifiers](damage-modifier-source.md) — field auras use explicit source scopes and are evaluated for both card effects and combat damage.
 - [Aggregated summon stats](aggregated-summon-stats.md) — sequential destroy effects can expose current-stat sums to a later summon without card-specific runtime branches.

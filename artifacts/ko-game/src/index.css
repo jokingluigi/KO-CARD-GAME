@@ -1076,11 +1076,11 @@
   }
 
   .ko-touch-inspector {
-    width: min(280px, calc(100vw - 16px));
+    width: min(350px, calc(100vw - 16px));
     max-height: min(68dvh, 520px) !important;
     overflow-y: auto;
     pointer-events: auto;
-    padding: 12px;
+    padding: 14px;
   }
 
   .ko-touch-inspector-close {

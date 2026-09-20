@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 
-import { calculateInspectorPosition, getNumericChanges } from './alt-inspector';
+import { calculateInspectorPosition, getNumericChanges } from './alt-inspector-utils';
 import type { CardInstance } from '../game/cards/types';
 
 const rect = (left: number, top: number, width: number, height: number) => ({
