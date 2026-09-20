@@ -1,0 +1,421 @@
+KO CARD GAME의 AI 매치/카드 효과 전수 QA를 위한
+자동화 테스트 러너를 만들어서 실제로 실행해줘.
+
+목표:
+브라우저 자동화가 아니라 게임 엔진/API를 직접 사용해서
+모든 카드, Champion, Quest, 강화 효과를 실제 게임 규칙 기준으로 검증한다.
+
+절대 하지 말 것:
+- Production DB 삭제/초기화
+- 상점 구매
+- 카드 분해
+- 덱 삭제
+- 사용자 소유 데이터 변경
+- Supabase Production 데이터 변경
+- 실제 유저 세션 변경
+
+가능하면 DB를 전혀 수정하지 않고
+in-memory GameState / fixture / test match를 사용한다.
+
+==================================================
+1. 테스트 대상 자동 수집
+==================================================
+
+현재 published 카드와 Champion을 실제 DB/seed/API 기준으로 수집한다.
+
+현재 예상:
+- cards 약 49개
+- champions 4개
+
+하드코딩된 목록만 믿지 말고 실제 현재 데이터와 비교한다.
+
+각 카드별로:
+
+- 이름
+- cardType
+- rarity
+- cost
+- baseAttack
+- baseHealth
+- 효과 설명
+- 실제 effect config / registry
+- trigger
+- target mode
+
+를 연결해 테스트 케이스를 만든다.
+
+==================================================
+2. 테스트 방식
+==================================================
+
+실제 게임 엔진의 Action/Event 흐름을 사용한다.
+
+UI 함수나 단순 effect 함수만 직접 호출해서
+"통과" 처리하면 안 된다.
+
+가능한 경우 다음 정상 플레이 경로를 사용:
+
+PLAY_WRESTLER
+PLAY_TECHNIQUE
+ATTACK
+USE_CHAMPION_ABILITY
+END_TURN
+PLAYER_CHOICE
+DEPLOY_CHAMPION_TOKEN
+
+그리고 결과 GameState와 Event Log를 검사한다.
+
+RANDOM 효과는 deterministic seeded RNG를 사용한다.
+Math.random 기반 테스트 금지.
+
+각 효과마다 필요한 상태를 직접 만든다.
+
+예:
+- 손에 특정 카드 배치
+- 필드에 아군/적군 배치
+- 묘지 구성
+- 덱 상단 구성
+- Gold 지정
+- HP 지정
+- 공격력/체력 지정
+- generated 여부 지정
+- entryCause 지정
+
+한 경기의 자연스러운 드로우만 기다리지 말고
+효과별 테스트 fixture를 만들어라.
+
+==================================================
+3. 카드 효과 전수 검사
+==================================================
+
+모든 효과 카드에 대해 최소:
+
+A. 정상 발동 조건
+B. 조건 실패
+C. target이 필요한 경우 valid target
+D. invalid target
+E. board full / hand full 등 관련 edge case
+F. 죽음/퇴장/제거 구분이 관련되면 해당 결과
+
+를 확인한다.
+
+특히 다음 공통 규칙을 반드시 검사:
+
+- 등장 = PLAY_FROM_HAND일 때만
+- SUMMON/REVIVE/Champion deploy는 등장 발동 금지
+- RETIRE와 DESTROY와 REMOVE_FROM_GAME 차이
+- generated 카드 추적
+- overdraw → removedFromGame
+- Technique은 board slot 사용 안 함
+- Technique은 board full이어도 사용 가능
+- PLAYER_CHOICE selection/revalidation
+- Taunt는 일반 공격 제한이지 effect target 제한 아님
+- Rush / 기습 차이
+- Dodge damage negation
+- Silence
+- Stun
+- Switch
+- Pinfall
+- Spell trigger
+- Tag
+- Combo
+- Prepare
+- Active
+
+==================================================
+4. 현재 알려진 중요 카드 회귀 테스트
+==================================================
+
+다음은 반드시 명시적인 개별 테스트를 만들어라.
+
+나토마토
+RM 우디르
+피 스타 세븐
+밀크 메이드
+씨 몬스터
+그레이트 챤
+뒷정리맨
+여울
+보드바
+조킹루이지
+디 오리진
+아비터
+워썬더
+플래티넘 구슬 마스터
+블랙 마카롱
+발단
+독세아
+하스이
+위리놈
+아르카나 조커
+루나
+흑구슬 마스터
+퍼플레인
+벨로나
+황소할배
+도쿵
+휴먼쿠커
+예거
+만드릴쿤
+팬텀 워커
+로드
+레이븐
+데헌
+카미사토르
+매드 펌킨
+판도라
+라 칼라베라
+스카드
+
+그리고 현재 존재하는 나머지 카드도 전부 검사.
+
+최근 수정한:
+
+오심정정
+저지먼트
+
+은 반드시 TECHNIQUE 경로로 테스트.
+
+오심정정:
+- board slot을 사용하지 않는지
+- 자신의 묘지 WRESTLER 선택
+- 손으로 이동
+- 사용 후 Technique은 묘지로 이동
+
+저지먼트:
+- board slot을 사용하지 않는지
+- 상대 필드 WRESTLER 선택
+- RETIRE 처리
+- 사용 후 Technique은 묘지로 이동
+- Champion을 잘못 target할 수 없는지
+
+==================================================
+5. Champion 전수 테스트
+==================================================
+
+Champion 4종 모두 검사.
+
+피 스타 세븐:
+- 2G 소비
+- 손의 random WRESTLER +1/+1
+- Technique은 선택 대상에서 제외
+- 손에 WRESTLER 없을 때 안전 처리
+
+여울:
+- 2G
+- 다음 자신의 턴 Gold +1
+- 같은 턴 여러 번 가능한지 현재 규칙대로 확인
+- Gold가 다음 턴에 정확히 적용되는지
+
+예거:
+Base:
+- 1G
+- 용병 0G 1/1 기습 생성/소환 규칙 확인
+
+Quest:
+- effect로 생성된 WRESTLER 7회
+- CARD_GENERATED 기준 진행
+- 기존 카드 이동은 카운트하지 않음
+- Token 포함 규칙 확인
+
+완료:
+- 정확히 7회에서 완료
+- 강화 ability로 변경
+
+Upgraded:
+- 1G
+- 강화 용병 0G 2/2 러쉬
+
+판도라:
+Base:
+- 2G
+- 선택 WRESTLER damage 1
+
+Quest:
+- 판도라 Champion ability로 RETIRE한 WRESTLER만 5회 카운트
+- 일반 combat retire는 카운트 금지
+- 다른 effect retire도 카운트 금지
+
+완료:
+- 정확히 5회에서 완료
+- 강화 ability
+- Champion Token deploy 조건 확인
+
+Upgraded:
+- 1G
+- WRESTLER + CHAMPION target 가능
+- damage 1
+
+Champion Token:
+- 챔피언 판도라(폭주)
+- deploy 시 Champion current HP를 token HP에 반영
+- token active 동안 원본 Champion target 불가/immune
+- Champion ability는 계속 사용 가능
+- Champion Token RETIRE 시 즉시 패배
+- 일반 summon된 같은 definition은 특별 보호를 받지 않는지 확인
+
+==================================================
+6. Quest 테스트 로그
+==================================================
+
+Quest는 각 단계마다 progress를 기록해.
+
+예거:
+
+0/7
+1/7
+...
+7/7
+COMPLETED
+UPGRADED
+
+판도라:
+
+0/5
+...
+5/5
+COMPLETED
+UPGRADED
+
+각 단계에서 Event Log와 실제 저장된 progress가 일치하는지 확인.
+
+==================================================
+7. 실제 설명과 구현 비교
+==================================================
+
+중요:
+
+각 카드의 현재 표시 설명과
+실제 effect config/engine 결과를 비교한다.
+
+단순히 테스트가 crash 안 났다고 PASS 처리하지 마.
+
+예:
+
+설명:
+"다른 아군 선수에게 +2 공격력"
+
+실제:
+자기 자신까지 +2
+
+라면 FAIL.
+
+각 결과는:
+
+PASS
+FAIL
+UNVERIFIED
+
+중 하나.
+
+FAIL이면 반드시:
+
+- 카드/Champion 이름
+- 설명
+- 재현용 초기 상태
+- 실행 Action 순서
+- 기대값
+- 실제값
+- 관련 Event Log
+- 의심 파일/함수
+- 심각도
+
+를 기록.
+
+==================================================
+8. 자동 수정 금지
+==================================================
+
+이번 작업에서는 발견한 버그를 자동으로 수정하지 마.
+
+먼저 QA만 한다.
+
+테스트가 잘못 작성된 것인지
+실제 게임 버그인지 구분해서 보고한다.
+
+기존 오래된 테스트가 현재 규칙과 충돌하면
+그것도 별도로:
+
+STALE_TEST
+
+로 분류.
+
+==================================================
+9. 테스트 커버리지 보고
+==================================================
+
+최종적으로 표를 만들어.
+
+카드별:
+
+| 이름 | 타입 | 효과 | 결과 | 테스트 수 | 비고 |
+
+Champion:
+
+| Champion | Base | Quest | Upgrade | Token | 결과 |
+
+그리고 전체:
+
+총 카드 수:
+테스트된 카드:
+PASS:
+FAIL:
+UNVERIFIED:
+
+Champion:
+PASS:
+FAIL:
+UNVERIFIED:
+
+Quest:
+PASS:
+FAIL:
+UNVERIFIED:
+
+==================================================
+10. 실행
+==================================================
+
+테스트 코드만 작성하고 끝내지 말고
+실제로 전부 실행해.
+
+필요하면 여러 test file로 나눠도 된다.
+
+예:
+
+game-effects-core.test.ts
+card-effects.test.ts
+technique-effects.test.ts
+champion-effects.test.ts
+quest-effects.test.ts
+keyword-effects.test.ts
+
+모든 테스트 후:
+
+pnpm run typecheck
+관련 test suite
+git diff --check
+
+도 실행.
+
+테스트 때문에 Production/Supabase 데이터를 수정하지 않았음을
+마지막에 명시.
+
+==================================================
+최종 보고 형식
+==================================================
+
+1. 실제 수집 카드/Champion 수
+2. 실행한 테스트 수
+3. PASS 수
+4. FAIL 수
+5. UNVERIFIED 수
+6. 카드별 결과표
+7. Champion별 결과표
+8. Quest 진행 단계별 결과
+9. 발견 버그 상세 재현
+10. stale test
+11. 테스트 코드 파일
+12. typecheck/test 결과
+
+이번에는 버그를 수정하지 말고 QA 결과만 제출.
