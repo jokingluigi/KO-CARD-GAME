@@ -8,7 +8,7 @@ SELECT COUNT(*) AS cards_before_tags FROM public.cards;
 ALTER TABLE public.cards
   ADD COLUMN tags text[] NOT NULL DEFAULT ARRAY[]::text[];
 
-CREATE OR REPLACE FUNCTION public.card_tags_are_valid(values text[])
+CREATE OR REPLACE FUNCTION public.card_tags_are_valid(p_tags text[])
 RETURNS boolean
 LANGUAGE plpgsql
 IMMUTABLE
@@ -17,10 +17,10 @@ DECLARE
   tag text;
   seen text[] := ARRAY[]::text[];
 BEGIN
-  IF cardinality(values) > 3 THEN
+  IF cardinality(p_tags) > 3 THEN
     RETURN false;
   END IF;
-  FOREACH tag IN ARRAY values LOOP
+  FOREACH tag IN ARRAY p_tags LOOP
     IF tag IS NULL OR btrim(tag) = '' OR tag <> btrim(tag) OR tag = ANY(seen) THEN
       RETURN false;
     END IF;
