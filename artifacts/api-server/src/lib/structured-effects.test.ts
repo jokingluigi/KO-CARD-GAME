@@ -102,8 +102,8 @@ test("필수 카드 문장을 안전한 구조화 효과로 분석한다", () =>
       values: { amount: 2 },
     },
     {
-      text: "등장: 자신의 양 옆 빈 슬롯에 무작위 선수 카드를 각각 소환합니다. 이 카드가 필드에 있는 동안 생성된 카드가 주는 데미지가 2 증가합니다.",
-      actions: ["SUMMON", "ADD_DAMAGE_MODIFIER"],
+      text: "등장: 자신의 양 옆 빈 슬롯에 무작위 선수 카드를 각각 소환하고 그들에게 도발을 부여합니다. 이 카드가 필드에 있는 동안 생성된 카드가 주는 데미지가 2 증가합니다.",
+      actions: ["SUMMON", "ADD_KEYWORD", "ADD_DAMAGE_MODIFIER"],
       target: { zone: "BOARD", owner: "SELF", cardType: "WRESTLER", selection: "ADJACENT_EMPTY_SLOTS", count: 2, randomScope: "STANDARD" },
       values: undefined,
     },

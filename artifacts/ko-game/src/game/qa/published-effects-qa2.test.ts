@@ -166,10 +166,12 @@ test('QA2 generated-board buffs and aggregate references use exact values', () =
 
 test('QA2 targeted ally and random hand buffs exclude the source and respect counts', () => {
   const state = stateWithPool();
-  const ally = { ...card('로드', 'qa2-pstar-ally'), boardSlot: 0 as const };
-  state.players[0].board = [ally, null, null, null];
+  const ally = { ...card('로드', 'qa2-pstar-ally-1'), boardSlot: 0 as const };
+  const secondAlly = { ...card('로드', 'qa2-pstar-ally-2'), boardSlot: 2 as const };
+  state.players[0].board = [ally, null, secondAlly, null];
   const result = enterAndChoose(state, card('피 스타 세븐', 'qa2-pstar'), 1);
   assert.equal(result.players[0].board[0]?.currentAttack, ally.currentAttack + 2);
+  assert.equal(result.players[0].board[2]?.currentAttack, secondAlly.currentAttack + 2);
   assert.equal(result.players[0].board[1]?.currentAttack, definitions.find((item) => item.name === '피 스타 세븐')!.attack);
 
   const handState = stateWithPool();
@@ -310,7 +312,9 @@ test('QA2 summon and aggregate effects mark generated cards and suppress SUMMON 
   const jokerState = stateWithPool();
   const joker = enterAndChoose(jokerState, card('조킹루이지', 'qa2-joker'), 1);
   const summoned = joker.players[0].board.filter((item) => item?.instanceId !== 'qa2-joker' && item !== null);
-  assert.ok(summoned.length >= 1);
+  assert.equal(Boolean(joker.players[0].board[0]), true);
+  assert.equal(Boolean(joker.players[0].board[2]), true);
+  assert.equal(summoned.length, 2);
   assert.ok(summoned.every((item) => item.isGenerated));
   assert.ok(summoned.every((item) => item.keywords.includes('TAUNT')));
   assert.ok(summoned.every((item) => item.abilities.every((ability) => ability.trigger !== 'ENTER_FIELD') || !joker.events.some((event) => event.type === 'CARD_PLAYED' && event.cardInstanceId === item.instanceId)));
@@ -321,8 +325,8 @@ test('QA2 summon and aggregate effects mark generated cards and suppress SUMMON 
   const generatedTwo = { ...card('로드', 'qa2-zombie-source-2'), isGenerated: true, currentAttack: 4, currentHealth: 5, maxHealth: 5, boardSlot: 1 as const };
   origin.players[0].board = [generatedOne, generatedTwo, null, null];
   const zombie = enterAndChoose(origin, card('발단', 'qa2-origin'), 2);
-  assert.equal(zombie.players[0].board[0], null);
-  assert.equal(zombie.players[0].board[1], null);
+  assert.equal(zombie.players[0].board.some((item) => item?.instanceId === generatedOne.instanceId), false);
+  assert.equal(zombie.players[0].board.some((item) => item?.instanceId === generatedTwo.instanceId), false);
   const zombieCard = zombie.players[0].board.find((item) => item?.definitionId === definitions.find((item) => item.name === '좀비')?.id);
   assert.ok(zombieCard);
   assert.equal(zombieCard.currentAttack, 6);
@@ -402,9 +406,20 @@ test('QA2 active and trigger-only cards verify exact stat/status results', () =>
   const healed = selectEffectTarget(healer, ally.instanceId);
   assert.equal(healed.players[0].board[0]?.currentHealth, 3);
 
-  const dodge = card('데헌', 'qa2-dodge');
+  const dodge = {
+    ...card('데헌', 'qa2-dodge'),
+    statHistory: [{ stat: 'attack' as const, before: 1, after: 3, delta: 2, turnNumber: 1 }],
+  };
   const dodgeState = withBoard(stateWithPool(), 'player-1', [{ ...dodge, boardSlot: 0 }, null, null, null]);
-  const changed = resolveTriggeredAbilities(dodgeState, 'player-1', boardCard(dodgeState, 'player-1', dodge.instanceId), 'STAT_CHANGED', { attackDelta: 2 });
+  const changed = resolveTriggeredAbilities(
+    dodgeState,
+    'player-1',
+    boardCard(dodgeState, 'player-1', dodge.instanceId),
+    'STAT_CHANGED',
+    {
+      attackDelta: 2,
+    },
+  );
   const changedCard = boardCard(changed, 'player-1', dodge.instanceId);
   assert.equal(changedCard.dodgeCharges, 1);
   assert.equal(changedCard.keywords.includes('DODGE'), true);

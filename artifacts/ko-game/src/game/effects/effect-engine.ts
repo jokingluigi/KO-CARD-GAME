@@ -49,12 +49,8 @@ export function getValidTargets(
       if (zones.length === 1 && zones[0] === 'CHARACTER' && card.cardType !== 'WRESTLER') return false;
       if (target.cardType && card.cardType !== target.cardType) return false;
       if (target.filter?.isGenerated !== undefined && card.isGenerated !== target.filter.isGenerated) return false;
-      if (target.filter?.minCost !== undefined && (card.baseCost ?? card.currentCost) < target.filter.minCost) return false;
-       if (target.filter?.maxCost !== undefined && (card.baseCost ?? card.currentCost) > target.filter.maxCost) return false;
-      if (target.filter?.maxCost !== undefined && (card.baseCost ?? card.currentCost) > target.filter.maxCost) return false;
-      if (target.filter?.isToken !== undefined && card.isToken !== target.filter.isToken) return false;
-      if (target.filter?.isChampionToken !== undefined && card.isChampionToken !== target.filter.isChampionToken) return false;
-      if (target.filter?.excludeSource && card.instanceId === sourceCard.instanceId) return false;
+      if (target.filter?.minCost !== undefined && card.currentCost < target.filter.minCost) return false;
+      if (target.filter?.maxCost !== undefined && card.currentCost > target.filter.maxCost) return false;
       if (target.filter?.isToken !== undefined && card.isToken !== target.filter.isToken) return false;
       if (target.filter?.isChampionToken !== undefined && card.isChampionToken !== target.filter.isChampionToken) return false;
       if (target.filter?.excludeSource && card.instanceId === sourceCard.instanceId) return false;
@@ -459,15 +455,16 @@ function applyAdjacentRandomCardCreation(
   });
   const selected = shuffle(definitions, randomForEffect(state, sourceCard, effect)).slice(0, slots.length);
 
-  return selected.reduce((nextState, definition, index) => {
+  const summonedIds: string[] = [];
+  const nextState = selected.reduce((currentState, definition, index) => {
     const generated = generateCard(definition, {
-      instanceId: `${sourceCard.instanceId}:${effect.action}:${nextState.events.length + index}`,
+      instanceId: `${sourceCard.instanceId}:${effect.action}:${currentState.events.length + index}`,
       playerId,
       source: { type: 'CARD', cardInstanceId: sourceCard.instanceId },
       reason: effect.action,
     });
-    return enterField(
-      nextState,
+    const entered = enterField(
+      currentState,
       playerId,
       generated.card,
       slots[index]!,
@@ -475,7 +472,12 @@ function applyAdjacentRandomCardCreation(
       undefined,
       'SUMMON',
     );
+    summonedIds.push(generated.card.instanceId);
+    return entered;
   }, state);
+  return nextState.targetingState
+    ? { ...nextState, targetingState: { ...nextState.targetingState, lastTargetIds: summonedIds } }
+    : nextState;
 }
 
 function beginResolution(state: GameState, frame: NonNullable<GameState['targetingState']>): GameState {
@@ -978,7 +980,11 @@ function applyEffect(
       if (card.isDirectDeployedChampion && (effect.action === 'SILENCE' || effect.action === 'DESTROY')) return false;
       if (target.cardType && card.cardType !== target.cardType) return false;
       if (target.filter?.isGenerated !== undefined && card.isGenerated !== target.filter.isGenerated) return false;
-      if (target.filter?.minCost !== undefined && (card.baseCost ?? card.currentCost) < target.filter.minCost) return false;
+      if (target.filter?.minCost !== undefined && card.currentCost < target.filter.minCost) return false;
+      if (target.filter?.maxCost !== undefined && card.currentCost > target.filter.maxCost) return false;
+      if (target.filter?.isToken !== undefined && card.isToken !== target.filter.isToken) return false;
+      if (target.filter?.isChampionToken !== undefined && card.isChampionToken !== target.filter.isChampionToken) return false;
+      if (target.filter?.excludeSource && card.instanceId === sourceCard.instanceId) return false;
       return true;
     });
     const randomCandidates = eligibleCandidates.filter((card) =>

@@ -698,10 +698,31 @@ function expandedMechanicAnalysis(
   if (/선택한\s*상대\s*선수\s*1장.*리타이어/.test(text)) {
     return result([{ trigger: triggerFor(), action: "RETIRE", target: { zone: "BOARD", owner: "ENEMY", cardType: "WRESTLER", selection: "PLAYER_CHOICE", count: 1 } }]);
   }
-  if (/양옆\s*빈\s*슬롯.*3\s*코스트\s*이상.*무작위\s*선수/.test(text)) {
+  if (/양\s*옆\s*빈\s*슬롯.*무작위\s*선수/.test(text)) {
+    const adjacentFilter = /(?:3\s*코스트|3\s*비용)\s*이상/.test(text) ? { minCost: 3 } : undefined;
+    const damageAmount =
+      text.match(/생성된.*?(?:데미지|피해).*?(\d+)\s*(?:증가|추가)/)?.[1] ??
+      text.match(/생성된.*?(\d+)\s*추가\s*(?:데미지|피해)/)?.[1];
     return result([
-      { trigger: triggerFor(), action: "SUMMON", target: { zone: "BOARD", owner: "SELF", cardType: "WRESTLER", filter: { minCost: 3 }, selection: "ADJACENT_EMPTY_SLOTS", count: 2, randomScope: "STANDARD" } },
-      ...( /생성된\s*카드.*추가\s*데미지/.test(text) ? [{ trigger: triggerFor(), action: "ADD_DAMAGE_MODIFIER" as const, values: { amount: 1, damageSource: "GENERATED" as const } }] : []),
+      {
+        trigger: triggerFor(),
+        action: "SUMMON",
+        target: {
+          zone: "BOARD",
+          owner: "SELF",
+          cardType: "WRESTLER",
+          ...(adjacentFilter ? { filter: adjacentFilter } : {}),
+          selection: "ADJACENT_EMPTY_SLOTS",
+          count: 2,
+          randomScope: "STANDARD",
+        },
+      },
+      ...( /도발/.test(text)
+        ? [{ trigger: triggerFor(), action: "ADD_KEYWORD" as const, target: { zone: "BOARD" as const, owner: "SELF" as const, cardType: "WRESTLER" as const, selection: "SAME_TARGET" as const, count: 2 }, values: { keyword: "TAUNT" as const } }]
+        : []),
+      ...(damageAmount
+        ? [{ trigger: triggerFor(), action: "ADD_DAMAGE_MODIFIER" as const, values: { amount: Number(damageAmount), damageSource: "GENERATED" as const } }]
+        : []),
     ]);
   }
   if (/모든\s*적\s*선수의\s*공격력을\s*2\s*감소/.test(text)) {
@@ -900,7 +921,8 @@ export function analyzeEffectText(input: string, options: EffectAnalysisOptions 
      if (/모든\s*생성된\s*카드.*합산.*소환.*도발/.test(text)) remainder = "";
    }
    // Action endings remain after matcher only for Korean conjugations.
-    remainder = remainder.replace(/(합니다|시키고|시킵니다|시킨다|증가시킨다|올린다|강화한다|부여|획득|얻음|얻습니다|줍니다|준다|주|드로우|뽑습니다|뽑기|포획|제거|소환|생성|해방|감소|증가|선택하여|선택해서|선택하고)/g, "");
+     remainder = remainder.replace(/(합니다|시키고|시킵니다|시킨다|증가시킨다|올린다|강화한다|부여|획득|얻음|얻습니다|줍니다|준다|주|드로우|뽑습니다|뽑기|포획|제거|소환|생성|해방|감소|증가|선택하여|선택해서|선택하고|(?:러쉬|기습|도발|회피|연타)(?:를|을)?)/g, "");
+     remainder = remainder.replace(/하?그들/g, "");
    const remainderUnsupported = remainder
      .replace(unsupportedMechanic, "")
      .replace(/['‘’“”「」]/g, "")

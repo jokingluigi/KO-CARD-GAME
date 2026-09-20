@@ -44,7 +44,12 @@ const savedConfigs: Record<string, SavedConfig> = {
   '워썬더': { effects: [effect('ENTER_FIELD', 'MILL', { zone: 'DECK', owner: 'SELF', selection: 'TOP', count: 3 }), effect('ENTER_FIELD', 'ADD_NEXT_TURN_GOLD', undefined, { amount: 1 })] },
   '위리놈': { effects: [effect('ENTER_FIELD', 'GENERATE', undefined, { definitionRef: { id: 'wiriyeo-id' }, destination: 'HAND', count: 1, generatedModifiers: { copySourceStats: true } }), effect('LEAVE_FIELD', 'SUMMON_FROM_HAND', undefined, { definitionRef: { id: 'wiriyeo-id' }, count: 1 })] },
   '저지먼트': { effects: [effect('ENTER_FIELD', 'RETIRE', { zone: 'BOARD', owner: 'ENEMY', cardType: 'WRESTLER', selection: 'PLAYER_CHOICE', count: 1 })] },
-  '조킹루이지': { effects: [effect('ENTER_FIELD', 'SUMMON', { zone: 'BOARD', owner: 'SELF', cardType: 'WRESTLER', filter: { minCost: 3 }, selection: 'ADJACENT_EMPTY_SLOTS', count: 2, randomScope: 'STANDARD' }), effect('ENTER_FIELD', 'ADD_DAMAGE_MODIFIER', undefined, { amount: 1, damageSource: 'GENERATED' })] },
+  '조킹루이지': {
+    effects: [
+      effect('ENTER_FIELD', 'SUMMON', { zone: 'BOARD', owner: 'SELF', cardType: 'WRESTLER', selection: 'ADJACENT_EMPTY_SLOTS', count: 2, randomScope: 'STANDARD' }),
+      effect('ENTER_FIELD', 'ADD_KEYWORD', { zone: 'BOARD', owner: 'SELF', cardType: 'WRESTLER', selection: 'SAME_TARGET', count: 2 }, { keyword: 'TAUNT' }),
+    ],
+  },
   '퍼플레인': { effects: [effect('ENTER_FIELD', 'WEAKEN_TO_STUN_SILENCE', { zone: 'BOARD', owner: 'ENEMY', cardType: 'WRESTLER', selection: 'ALL', count: 20 }, { amount: 2 })] },
   '플래티넘 구슬 마스터': { effects: [effect('ENTER_FIELD', 'SPEND_GOLD_BUFF_SELF', boardSelf, { amountReference: 'REMAINING_GOLD' })] },
   '피 스타 세븐': { effects: [effect('ENTER_FIELD', 'BUFF', { zone: 'BOARD', owner: 'SELF', cardType: 'WRESTLER', filter: { excludeSource: true }, selection: 'ALL', count: 20 }, { attack: 2, health: 0 })] },
@@ -130,9 +135,16 @@ test('독세아·블랙 마카롱·디 오리진·여울·피 스타 세븐의 �
   assert.ok(withYeo.players[0].hand.every((item) => item.currentAttack >= 2));
 
   const pStarState = stateWithPool(Object.values(saved));
-  pStarState.players[0].board = [{ ...card(saved['여울']!, 'ally'), boardSlot: 0 }, null, null, null];
+  pStarState.players[0].board = [
+    { ...card(saved['여울']!, 'ally-1'), boardSlot: 0 },
+    null,
+    { ...card(saved['여울']!, 'ally-2'), boardSlot: 2 },
+    null,
+  ];
   const withPStar = enterField(pStarState, 'player-1', card(saved['피 스타 세븐']!, 'pstar'), 1);
   assert.equal(withPStar.players[0].board[0]?.currentAttack, 3);
+  assert.equal(withPStar.players[0].board[2]?.currentAttack, 3);
+  assert.equal(withPStar.players[0].board[1]?.currentAttack, 1);
 });
 
 test('루나·씨 몬스터·아르카나 조커·워썬더의 전투/퇴장/덱 흐름이 실제 매치에서 동작한다', () => {
@@ -251,8 +263,12 @@ test('조킹루이지·퍼플레인·아비터·플래티넘 구슬 마스터의
   const jokerState = stateWithPool(Object.values(saved).map((item) => item.id === saved['여울']!.id ? { ...item, cost: 4 } : item));
   jokerState.players[0].board = [null, null, null, null];
   const joker = enterField(jokerState, 'player-1', card(saved['조킹루이지']!, 'joker'), 1);
-  assert.ok(joker.players[0].board[0] || joker.players[0].board[2]);
-  assert.ok(joker.players[0].board.some((item) => item?.isGenerated));
+  assert.ok(joker.players[0].board[0]);
+  assert.ok(joker.players[0].board[2]);
+  assert.ok(joker.players[0].board[0]?.isGenerated);
+  assert.ok(joker.players[0].board[2]?.isGenerated);
+  assert.ok(joker.players[0].board[0]?.keywords.includes('TAUNT'));
+  assert.ok(joker.players[0].board[2]?.keywords.includes('TAUNT'));
 
   const purpleState = stateWithPool(Object.values(saved));
   const enemy = { ...card(saved['여울']!, 'purple-target'), currentAttack: 2, currentHealth: 3, maxHealth: 3, boardSlot: 0 as const };
