@@ -1,0 +1,324 @@
+KO CARD GAME QA 2단계를 진행해줘.
+
+이번 목표는 이전 QA에서 UNVERIFIED로 남은 카드 효과를
+실제 결과까지 검증해서 최대한 PASS/FAIL로 확정하는 것이다.
+
+이전 결과:
+
+- published cards: 49
+- PASS: 17
+- FAIL: 0
+- UNVERIFIED: 32
+- champions: 4
+- AI full match: 정상 종료
+- 예거 Quest required count가 8로 되어 있었으나
+  공식 게임 규칙은 7회가 맞다.
+
+==================================================
+1. 예거 Quest 수정 후 회귀 테스트
+==================================================
+
+예거 Quest 요구 횟수를 7로 수정한다.
+
+단:
+- 엔진에 "예거" 이름 하드코딩 금지
+- Champion definition/config 데이터에서 수정
+- Replit development 데이터와 관련 seed/default definition도 확인
+- Production Supabase는 수정하지 말 것
+
+수정 후 반드시:
+
+0/7
+1/7
+2/7
+3/7
+4/7
+5/7
+6/7
+7/7
+COMPLETED
+
+를 실제 Event/GameState로 검증.
+
+7회 직후 upgraded ability가 활성화되는지도 확인.
+
+==================================================
+2. 기존 UNVERIFIED 32장 집중 검사
+==================================================
+
+이전 QA 결과 파일을 읽어서
+UNVERIFIED 카드 목록을 자동으로 가져와라.
+
+이미 PASS인 카드를 반복하는 것보다
+UNVERIFIED를 우선한다.
+
+각 카드마다 현재 description과 effect config를 읽고
+설명에서 검증 가능한 기대 결과를 명시적으로 작성한 뒤 테스트한다.
+
+예:
+
+초기 상태
+→ Action
+→ 예상 GameState 변화
+→ 실제 GameState 변화
+→ Event Log
+
+형태로 검증.
+
+단순히:
+- crash가 없다
+- Action이 accepted 됐다
+- effect handler가 호출됐다
+
+만으로 PASS 처리하지 마.
+
+실제 수치/zone/status/target/result까지 일치해야 PASS.
+
+==================================================
+3. Token 전수 검사
+==================================================
+
+다음 Token들을 일반 손패 플레이가 아니라
+실제 생성 경로로 검사:
+
+- 용병
+- 강화 용병
+- 잔상
+- 위리녀
+- 좀비
+- 챔피언 판도라(폭주)
+
+각각 가능한 실제 경로:
+
+SUMMON
+CARD_GENERATED
+REVIVE
+CHAMPION_DEPLOY
+
+중 해당 Token의 올바른 경로를 사용.
+
+검사:
+
+- isGenerated
+- card definition
+- stats
+- keywords
+- entryCause
+- ON_ENTER 발동 여부
+- board slot
+- graveyard 이동
+- RETIRE
+- Champion Token 특수 규칙
+
+특히 SUMMON된 WRESTLER는
+등장/ON_ENTER가 발동하지 않는지 확인.
+
+==================================================
+4. 카드 설명과 실제 결과 직접 비교
+==================================================
+
+각 효과마다 최소 하나 이상의
+명시적인 assertion을 작성.
+
+예:
+
+"공격력 +2"
+→ 정확히 +2인지
+
+"다음 턴 골드 +1"
+→ 다음 personal turn에만 +1인지
+
+"무작위 선수"
+→ Technique 제외 여부
+
+"다른 아군"
+→ 자기 자신 제외 여부
+
+"묘지에서 손으로"
+→ graveyard 감소 + hand 증가 + 동일 instance인지
+
+"제거"
+→ graveyard가 아니라 removedFromGame인지
+
+등을 검사.
+
+==================================================
+5. 특히 회귀검사가 필요한 카드
+==================================================
+
+다음 카드들은 반드시 실제 수치까지 검증:
+
+나토마토
+RM 우디르
+피 스타 세븐
+그레이트 챤
+뒷정리맨
+여울
+보드바
+조킹루이지
+디 오리진
+아비터
+워썬더
+플래티넘 구슬 마스터
+블랙 마카롱
+발단
+독세아
+하스이
+위리놈
+아르카나 조커
+루나
+흑구슬 마스터
+퍼플레인
+도쿵
+휴먼쿠커
+예거
+만드릴쿤
+팬텀 워커
+로드
+레이븐
+데헌
+카미사토르
+매드 펌킨
+판도라
+라 칼라베라
+스카드
+오심정정
+저지먼트
+
+현재 API에 존재하는 나머지 published 카드도 동일하게 검사.
+
+==================================================
+6. 밀크 메이드 확인
+==================================================
+
+이전 QA에서:
+
+"밀크 메이드가 published API에 없음"
+
+이 확인됐다.
+
+다음을 조사해:
+
+- DB에 아예 없는지
+- unpublished인지
+- 이름이 변경됐는지
+- 삭제된 카드인지
+- seed/default data에만 존재하는지
+
+임의로 다시 만들거나 publish하지 말고
+상태만 보고.
+
+==================================================
+7. 키워드 테스트
+==================================================
+
+다음 공통 mechanic을 개별 테스트:
+
+등장
+조건
+태그
+준비
+콤보
+주문
+스위치
+핀폴
+도발
+러쉬
+기습
+회피
+침묵
+기절
+포획
+제거
+
+각각 최소:
+- positive case
+- negative case
+
+를 확인.
+
+==================================================
+8. 판도라 Champion Token
+==================================================
+
+반드시 별도 상세 테스트:
+
+- Quest 5회
+- 정확히 5회 완료
+- Champion Token deploy
+- 기존 Champion current HP 반영
+- 원본 Champion immune
+- 원본 Champion target 후보 제외
+- Champion ability 계속 사용 가능
+- Token RETIRE → 즉시 owner loss
+- 일반 summon된 동일 definition은 Champion Token 보호 없음
+
+==================================================
+9. QA 분류
+
+최종 카드는 반드시:
+
+PASS
+FAIL
+UNVERIFIED
+
+중 하나.
+
+목표는 UNVERIFIED를 가능한 한 0에 가깝게 만드는 것.
+
+테스트 구현이 어렵다는 이유만으로
+PASS 처리하지 마.
+
+==================================================
+10. 기존 stale test
+
+alt-inspector.test.ts의 import.meta.env 문제는
+게임 버그와 분리해서 유지.
+
+이번 QA 때문에 억지로 게임 코드를 수정하지 마.
+
+==================================================
+11. 최종 보고
+
+반드시 다음 숫자를 명확하게 보고:
+
+Published 카드 총 수
+PASS 카드 수
+FAIL 카드 수
+UNVERIFIED 카드 수
+
+그리고:
+
+| 카드 | 설명 핵심 | 실제 검증 | 결과 |
+
+표를 작성.
+
+Champion:
+
+| Champion | Base | Quest | Upgrade | Token | 결과 |
+
+Token:
+
+| Token | 생성경로 | Stats | Keyword | Entry 처리 | 결과 |
+
+발견한 FAIL은:
+
+- 재현 초기 상태
+- Action 순서
+- 기대 결과
+- 실제 결과
+- Event Log
+- 관련 코드 위치
+
+까지 남겨.
+
+마지막에:
+
+pnpm run typecheck
+관련 QA tests
+기존 engine tests
+git diff --check
+
+를 실행.
+
+Production DB/Supabase/user data는 건드리지 말 것.
