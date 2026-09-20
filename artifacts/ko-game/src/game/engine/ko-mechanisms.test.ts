@@ -76,10 +76,93 @@ test('KO mechanisms: REVIVE moves the existing graveyard instance, restores heal
 test('KO mechanisms: conditions/tags use this-turn play history, not current board', () => {
   const tagged = card('tagged', { tags: ['demon'] });
   const source = card('source', { tags: ['demon'], abilities: [{ trigger: 'ENTER_FIELD', condition: { type: 'HAS_MATCHING_TAG_PLAYED_THIS_TURN' }, effects: [{ type: 'GAIN_GOLD', amount: 2 }] }] });
-  const s = { ...state(), events: [{ type: 'CARD_PLAYED' as const, playerId: 'player-1', cardInstanceId: tagged.instanceId, tags: ['demon'] }] };
+  const s = {
+    ...state(),
+    events: [{
+      type: 'CARD_PLAYED' as const,
+      playerId: 'player-1',
+      cardInstanceId: tagged.instanceId,
+      cardType: 'WRESTLER' as const,
+      reason: 'PLAY_FROM_HAND',
+      tags: ['demon'],
+    }],
+  };
   assert.equal(player(resolveTriggeredAbilities(s, 'player-1', source, 'ENTER_FIELD')).currentGold, 2);
   const reset = { ...s, events: [...s.events, { type: 'TURN_STARTED' as const, playerId: 'player-1' }] };
   assert.equal(player(resolveTriggeredAbilities(reset, 'player-1', source, 'ENTER_FIELD')).currentGold, 0);
+});
+
+test('KO mechanisms: tag play condition accepts only a different allied wrestler played from hand', () => {
+  const source = card('source', {
+    tags: ['mercenary'],
+    abilities: [{
+      trigger: 'CARD_PLAYED_THIS_TURN',
+      condition: { type: 'HAS_MATCHING_TAG_PLAYED_THIS_TURN' },
+      effects: [{ type: 'GAIN_GOLD', amount: 2 }],
+    }],
+  });
+  const matchingEvent = {
+    type: 'CARD_PLAYED' as const,
+    playerId: 'player-1',
+    cardInstanceId: 'ally',
+    cardType: 'WRESTLER' as const,
+    reason: 'PLAY_FROM_HAND',
+    tags: ['mercenary'],
+  };
+  const withMatch = { ...state(), events: [matchingEvent] };
+  assert.equal(player(resolveTriggeredAbilities(withMatch, 'player-1', source, 'CARD_PLAYED_THIS_TURN', {
+    playedFromHand: true,
+    playedCardType: 'WRESTLER',
+  })).currentGold, 2);
+
+  for (const excludedEvent of [
+    { ...matchingEvent, reason: 'SUMMON' },
+    { ...matchingEvent, reason: 'REVIVE' },
+    { ...matchingEvent, cardType: 'TECHNIQUE' as const },
+  ]) {
+    const excluded = { ...state(), events: [excludedEvent] };
+    assert.equal(player(resolveTriggeredAbilities(excluded, 'player-1', source, 'CARD_PLAYED_THIS_TURN', {
+      playedFromHand: true,
+      playedCardType: 'WRESTLER',
+    })).currentGold, 0);
+  }
+});
+
+test('KO mechanisms: generated wrestler cards qualify after a later normal hand play, not on summon', () => {
+  const source = card('source', {
+    tags: ['human'],
+    abilities: [{
+      trigger: 'CARD_PLAYED_THIS_TURN',
+      condition: { type: 'HAS_MATCHING_TAG_PLAYED_THIS_TURN' },
+      effects: [{ type: 'GAIN_GOLD', amount: 2 }],
+    }],
+  });
+  const generatedSummon = {
+    type: 'CARD_PLAYED' as const,
+    playerId: 'player-1',
+    cardInstanceId: 'generated',
+    cardType: 'WRESTLER' as const,
+    reason: 'SUMMON',
+    tags: ['human'],
+  };
+  const summoned = { ...state(), events: [generatedSummon] };
+  assert.equal(player(resolveTriggeredAbilities(summoned, 'player-1', source, 'CARD_PLAYED_THIS_TURN', {
+    playedFromHand: true,
+    playedCardType: 'WRESTLER',
+  })).currentGold, 0);
+
+  const normalPlay = {
+    ...summoned,
+    events: [...summoned.events, {
+      ...generatedSummon,
+      reason: 'PLAY_FROM_HAND',
+      cardInstanceId: 'generated-played-from-hand',
+    }],
+  };
+  assert.equal(player(resolveTriggeredAbilities(normalPlay, 'player-1', source, 'CARD_PLAYED_THIS_TURN', {
+    playedFromHand: true,
+    playedCardType: 'WRESTLER',
+  })).currentGold, 2);
 });
 
 test('KO mechanisms: prepare occurs before deterministic overdraw removal', () => {

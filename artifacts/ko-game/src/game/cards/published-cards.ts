@@ -13,6 +13,7 @@ export type PublishedCardRecord = {
   health: number;
   text: string;
   keywords: CardDefinition["keywords"];
+  tags?: string[];
   isToken: boolean;
   isChampionToken: boolean;
   effectId: string | null;
@@ -146,6 +147,7 @@ export function cardRecordToDefinition(card: PublishedCardRecord): CardDefinitio
       isToken: card.isToken,
       isChampionToken: card.isChampionToken,
       keywords: card.keywords,
+       tags: Array.isArray(card.tags) ? [...card.tags] : [],
       abilities: abilitiesFor(card.effectId, card.effectConfig),
       status: card.status,
       version: card.version,

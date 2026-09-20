@@ -23,6 +23,10 @@ export const cardsTable = pgTable("cards", {
     .array()
     .notNull()
     .default(sql`ARRAY[]::text[]`),
+  tags: text("tags")
+    .array()
+    .notNull()
+    .default(sql`ARRAY[]::text[]`),
   isToken: boolean("is_token").notNull().default(false),
   isChampionToken: boolean("is_champion_token").notNull().default(false),
   effectId: text("effect_id"),

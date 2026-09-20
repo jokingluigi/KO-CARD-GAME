@@ -1,4 +1,5 @@
 import type { CardDefinition, CardInstance, CardStatHistoryEntry } from '../cards/types';
+import { sharesCardTag } from '../cards/tags';
 import type { CardAbility, CardEffect, CardKeyword } from './types';
 import { RUNTIME_HANDLER_ACTIONS, type Action, type EffectDuration, type TargetZone } from "@workspace/effect-registry";
 
@@ -1603,7 +1604,7 @@ export function resolveTriggeredAbilities(
   const abilities = card.abilities.filter((ability) => {
     if (ability.trigger !== trigger) return false;
     if (trigger === 'CARD_PLAYED_THIS_TURN' &&
-      (options.playedCardGenerated !== true || options.playedCardType !== 'WRESTLER')) return false;
+      (options.playedFromHand !== true || options.playedCardType !== 'WRESTLER')) return false;
     const condition = 'condition' in ability ? ability.condition : undefined;
     if (condition) {
       const owner = state.players.find((player) => player.id === playerId);
@@ -1617,12 +1618,17 @@ export function resolveTriggeredAbilities(
        if (condition.type === 'FIRST_ATTACK_GAIN' &&
          (card.statHistory ?? []).filter((entry) => entry.stat === 'attack' && entry.delta > 0).length !== 1) return false;
        if (condition.type === 'HAS_MATCHING_TAG_PLAYED_THIS_TURN') {
-        const tags = card.tags ?? [];
         const lastTurnStart = state.events.map((event, index) => ({ event, index }))
           .filter(({ event }) => event.type === 'TURN_STARTED' && event.playerId === playerId).at(-1)?.index ?? -1;
         const played = state.events.slice(lastTurnStart + 1)
-          .filter((event) => event.type === 'CARD_PLAYED' && event.playerId === playerId && event.cardInstanceId !== card.instanceId);
-        if (!played.some((event) => event.tags?.some((tag) => tags.includes(tag)))) return false;
+           .filter((event) =>
+             event.type === 'CARD_PLAYED' &&
+             event.playerId === playerId &&
+             event.cardInstanceId !== card.instanceId &&
+             event.cardType === 'WRESTLER' &&
+             event.reason === 'PLAY_FROM_HAND',
+           );
+         if (!played.some((event) => sharesCardTag(card, { tags: event.tags }))) return false;
       }
     }
     if (

@@ -1,0 +1,166 @@
+==================================================
+추가 요구사항: 태그 기반 Effect Target Filter
+==================================================
+
+이번 tags 시스템은 단순 UI 메타데이터가 아니다.
+
+향후 카드 효과에서:
+
+"용병 태그를 가진 선수에게..."
+"마족 태그를 가진 모든 카드..."
+"언데드 태그를 가진 적 선수..."
+"이 카드와 같은 태그를 가진..."
+
+같은 효과를 구현할 예정이다.
+
+따라서 effect engine / structured effect DSL에서
+tags를 generic target/filter 조건으로 사용할 수 있게 설계해.
+
+특정 태그 이름을 엔진에 하드코딩하지 말 것.
+
+예를 들어 architecture에 맞게 다음과 같은 generic filter를 지원:
+
+targetFilter: {
+  cardType: "WRESTLER",
+  tagsAny: ["용병"]
+}
+
+또는:
+
+targetFilter: {
+  tagsAny: ["용병", "인간"]
+}
+
+의미:
+지정된 태그 중 하나 이상을 가진 카드.
+
+추후 확장을 고려해서 가능하면:
+
+tagsAny
+tagsAll
+tagsNone
+
+형태를 지원할 수 있게 구조를 설계한다.
+
+예:
+
+tagsAny: ["용병", "인간"]
+→ 둘 중 하나라도 가지면 대상
+
+tagsAll: ["용병", "인간"]
+→ 둘 다 가져야 대상
+
+tagsNone: ["언데드"]
+→ 언데드 태그를 가지면 제외
+
+현재 필요 이상으로 UI를 추가할 필요는 없지만,
+effect schema/parser/target filtering 구조는
+이 확장이 자연스럽게 가능해야 한다.
+
+==================================================
+Zone + Tag 조합
+==================================================
+
+태그 필터는 특정 zone에 하드코딩하지 말 것.
+
+향후 다음이 모두 가능해야 한다.
+
+- FIELD의 용병 태그 선수
+- HAND의 용병 태그 카드
+- DECK의 용병 태그 카드
+- GRAVEYARD의 용병 태그 선수
+
+예:
+
+zone: BOARD
+cardType: WRESTLER
+tagsAny: ["용병"]
+
+또는
+
+zone: HAND
+tagsAny: ["마족"]
+
+기존 target type / zone / ownership 필터와
+태그 필터를 조합 가능하게 만들어라.
+
+예:
+
+ownership: ALLY
+zone: BOARD
+cardType: WRESTLER
+tagsAny: ["용병"]
+
+→ 내 필드의 용병 태그 선수만 선택.
+
+==================================================
+Generated / Token
+==================================================
+
+생성된 카드와 Token도 자신의 card definition의 tags를 그대로 사용한다.
+
+isGenerated 여부 자체가 tags를 제거하거나 변경하면 안 된다.
+
+예:
+
+용병 Token definition:
+tags = ["용병"]
+
+이라면 생성된 용병 Token도
+"용병 태그를 가진 선수" 효과의 대상이 된다.
+
+단 카드 definition 자체에 해당 태그가 있어야 한다.
+
+==================================================
+같은 태그 판정
+==================================================
+
+공통 helper를 만들어 여러 mechanic에서 공유한다.
+
+예:
+
+hasCardTag(card, "용병")
+sharesCardTag(cardA, cardB)
+matchesCardTagFilter(card, filter)
+
+이 함수들은 CardInstance가 아니라
+해당 instance의 canonical CardDefinition.tags를 읽는 것을 기본으로 한다.
+
+카드 이름을 보고 태그를 추론하지 말 것.
+
+==================================================
+테스트
+==================================================
+
+추가 테스트:
+
+A:
+카드 tags=["용병","인간"]
+
+tagsAny=["용병"] → true
+tagsAny=["악마","인간"] → true
+tagsAny=["악마"] → false
+
+B:
+tagsAll=["용병","인간"] → true
+tagsAll=["용병","악마"] → false
+
+C:
+tagsNone=["악마"] → true
+tagsNone=["인간"] → false
+
+D:
+ALLY + BOARD + WRESTLER + tagsAny=["용병"]
+→ 정확히 해당 대상만 후보로 반환
+
+E:
+HAND + tagsAny=["용병"]
+→ 필드가 아니라 손패의 해당 카드만 반환
+
+F:
+generated Token의 definition.tags=["용병"]
+→ 용병 태그 필터에 정상 포함
+
+G:
+태그 없는 기존 카드 tags=[]
+→ 아무 태그 필터에도 잘못 매칭되지 않음

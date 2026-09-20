@@ -115,7 +115,6 @@ export function playWrestlerFromHand(
   const playedListeners = resolveBoardListeners(enteredState, playerId, 'CARD_PLAYED_THIS_TURN', {
     chosenTargetInstanceIds: [cardInstanceId],
     playedFromHand: true,
-    playedCardGenerated: card.isGenerated === true,
     playedCardType: card.cardType,
   });
   const resolvedState = resolveQueuedEffectsForPlayedWrestler(playedListeners, playerId, cardInstanceId);

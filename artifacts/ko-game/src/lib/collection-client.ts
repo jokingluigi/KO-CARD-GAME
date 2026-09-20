@@ -4,6 +4,7 @@ export type CollectionCard = {
   rarity: string;
   cardType: string;
   text: string;
+  tags?: string[];
   attack: number;
   health: number;
   cost: number;

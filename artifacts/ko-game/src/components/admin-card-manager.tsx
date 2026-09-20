@@ -52,6 +52,7 @@ type CardRecord = {
   health: number;
   text: string;
   keywords: CardKeyword[];
+  tags?: string[];
   isToken: boolean;
   isChampionToken: boolean;
   isStarterGrant?: boolean;
@@ -82,6 +83,7 @@ type CardFormValues = {
   health: number;
   text: string;
   keywords: CardKeyword[];
+  tags: string[];
   isToken: boolean;
   isChampionToken: boolean;
   isStarterGrant: boolean;
@@ -124,6 +126,7 @@ const EMPTY_CARD: CardFormValues = {
   health: 1,
   text: "",
   keywords: [],
+  tags: [],
   isToken: false,
   isChampionToken: false,
   isStarterGrant: false,
@@ -323,6 +326,7 @@ export function AdminCardManager({
   const [imageUrl, setImageUrl] = useState<string | null>(null);
   const [imageUploadToken, setImageUploadToken] = useState<string | null>(null);
   const [localPreviewUrl, setLocalPreviewUrl] = useState<string | null>(null);
+  const [tagDraft, setTagDraft] = useState("");
   const [imageDisplaySettings, setImageDisplaySettings] = useState<ImageDisplaySettings>({
     ...DEFAULT_IMAGE_DISPLAY_SETTINGS,
   });
@@ -425,6 +429,7 @@ export function AdminCardManager({
   function openCreate() {
     setEditingCard(null);
     form.reset(EMPTY_CARD);
+    setTagDraft("");
     setImageAssetId(null);
     setImageUrl(null);
     setImageUploadToken(null);
@@ -450,6 +455,7 @@ export function AdminCardManager({
       health: card.health,
       text: card.text,
       keywords: card.keywords,
+      tags: Array.isArray(card.tags) ? card.tags : [],
       isToken: card.isToken,
       isChampionToken: card.isChampionToken,
       isStarterGrant: card.isStarterGrant ?? false,
@@ -469,6 +475,7 @@ export function AdminCardManager({
       uploadToken: null,
       fileName: null,
     });
+    setTagDraft("");
     setError("");
     setAnalysis(null);
     setCreatedMechanicRequest(null);
@@ -537,6 +544,18 @@ export function AdminCardManager({
     } finally {
       setBusyId(null);
     }
+  }
+
+  function addTag() {
+    const tag = tagDraft.trim();
+    const tags = form.getValues("tags") ?? [];
+    if (!tag || tags.includes(tag) || tags.length >= 3) return;
+    form.setValue("tags", [...tags, tag], { shouldDirty: true });
+    setTagDraft("");
+  }
+
+  function removeTag(tag: string) {
+    form.setValue("tags", (form.getValues("tags") ?? []).filter((current) => current !== tag), { shouldDirty: true });
   }
 
   async function analyzeEffects() {
@@ -1160,6 +1179,39 @@ export function AdminCardManager({
                   </div>}
                 </div>
                <fieldset className="space-y-2 md:col-span-2"><legend className="text-xs font-bold text-neutral-400">키워드</legend><div className="flex flex-wrap gap-2">{KEYWORDS.map((keyword) => <label key={keyword} className="flex items-center gap-2 rounded border border-neutral-800 bg-neutral-900 px-3 py-2 text-xs"><input type="checkbox" value={keyword} {...form.register("keywords")} data-testid={`input-keyword-${keyword}`} />{KEYWORD_LABELS[keyword]}</label>)}</div></fieldset>
+                <fieldset className="space-y-2 md:col-span-2">
+                  <legend className="text-xs font-bold text-neutral-400">태그</legend>
+                  <div className="flex flex-wrap gap-2">
+                    {(preview.tags ?? []).map((tag) => (
+                      <span key={tag} className="inline-flex items-center gap-1 rounded-full border border-amber-700/60 bg-amber-950/40 px-2.5 py-1 text-xs font-bold text-amber-200">
+                        {tag}
+                        <button type="button" onClick={() => removeTag(tag)} aria-label={`${tag} 태그 삭제`} className="rounded-full p-0.5 hover:bg-amber-200/20">
+                          <X className="h-3 w-3" />
+                        </button>
+                      </span>
+                    ))}
+                    <div className="flex min-w-[220px] flex-1 gap-2">
+                      <input
+                        value={tagDraft}
+                        onChange={(event) => setTagDraft(event.target.value)}
+                        onKeyDown={(event) => {
+                          if (event.key === "Enter") {
+                            event.preventDefault();
+                            addTag();
+                          }
+                        }}
+                        disabled={(preview.tags ?? []).length >= 3}
+                        placeholder={(preview.tags ?? []).length >= 3 ? "최대 3개" : "태그 입력"}
+                        data-testid="input-card-tag"
+                        className="min-w-0 flex-1 rounded border border-neutral-700 bg-neutral-900 px-3 py-2 text-xs outline-none focus:border-primary disabled:opacity-40"
+                      />
+                      <button type="button" onClick={addTag} disabled={!tagDraft.trim() || (preview.tags ?? []).length >= 3} data-testid="button-add-card-tag" className="rounded border border-neutral-700 px-3 py-2 text-xs font-bold hover:border-primary hover:text-primary disabled:opacity-40">
+                        <Plus className="mr-1 inline h-3 w-3" /> 추가
+                      </button>
+                    </div>
+                  </div>
+                  <p className="text-[10px] text-neutral-600">최대 3개 · 앞뒤 공백은 저장 시 제거됩니다.</p>
+                </fieldset>
               <label className="flex items-center gap-2 rounded border border-neutral-800 bg-neutral-900 p-3 text-sm"><input type="checkbox" {...form.register("isToken")} data-testid="input-card-token" /> 토큰 카드</label>
               <label className="flex items-center gap-2 rounded border border-neutral-800 bg-neutral-900 p-3 text-sm"><input type="checkbox" {...form.register("isChampionToken")} data-testid="input-card-champion-token" /> 챔피언 토큰</label>
                <label className="flex items-center gap-2 rounded border border-amber-900/60 bg-amber-950/20 p-3 text-sm"><input type="checkbox" {...form.register("isStarterGrant")} /> 신규 계정 Starter 카드</label>

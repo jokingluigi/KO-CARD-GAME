@@ -10,6 +10,7 @@ import {
   shopListingsTable,
 } from "@workspace/db";
 import express, { Router, type IRouter, type Request, type Response } from "express";
+import { parseCardTags } from "@workspace/api-zod";
 import {
   AudioStorage,
   BackgroundImageStorage,
@@ -101,6 +102,7 @@ type CardInput = {
   health: number;
   text: string;
   keywords: (typeof CARD_KEYWORDS)[number][];
+  tags: string[];
   isToken: boolean;
   isChampionToken: boolean;
   isStarterGrant: boolean;
@@ -758,6 +760,8 @@ function parseCardInput(value: unknown): CardInput | null {
   const imagePositionX = boundedNumber(input.imagePositionX, 50, 0, 100);
   const imagePositionY = boundedNumber(input.imagePositionY, 50, 0, 100);
   const isStarterGrant = input.isStarterGrant === true;
+  const rawTags = input.tags;
+  const tags = parseCardTags(rawTags);
   const validInteger = (candidate: unknown) =>
     typeof candidate === "number" &&
     Number.isInteger(candidate) &&
@@ -779,6 +783,9 @@ function parseCardInput(value: unknown): CardInput | null {
     !input.keywords.every((keyword) =>
       CARD_KEYWORDS.includes(keyword as (typeof CARD_KEYWORDS)[number]),
     ) ||
+    tags === null ||
+    tags.length > 3 ||
+    tags.some((tag) => tag.length === 0) ||
     !input.effectConfig ||
     typeof input.effectConfig !== "object" ||
     Array.isArray(input.effectConfig)
@@ -805,6 +812,7 @@ function parseCardInput(value: unknown): CardInput | null {
     health: input.health as number,
     text,
     keywords: [...new Set(input.keywords)] as CardInput["keywords"],
+    tags,
     isToken: input.isToken,
     isChampionToken: input.isChampionToken,
     isStarterGrant,

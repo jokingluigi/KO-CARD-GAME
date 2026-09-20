@@ -59,3 +59,4 @@
 - [Online presentation projection](online-presentation-projection.md) — reorder sanitized players viewer-first and adapt hidden zones to card-back placeholders before shared GameStatePreview.
 - [User-facing card display boundary](user-facing-card-display-boundary.md) — translate enum/currency labels and correct stored card copy only at render time; keep engine/API values unchanged.
 - [Published catalog QA boundary](published-catalog-qa-boundary.md) — snapshot published API data, separate engine-path PASS from semantic UNVERIFIED, and report spec/catalog drift without auto-fixing it.
+- [Card tag play provenance](card-tag-play-provenance.md) — same-tag triggers must use CARD_PLAYED reason PLAY_FROM_HAND, not generated or entry events.

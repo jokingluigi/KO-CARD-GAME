@@ -15,6 +15,7 @@
     "../../artifacts/ko-game/src/game/cards/generation.ts",
     "../../artifacts/ko-game/src/game/cards/test-cards.ts",
     "../../artifacts/ko-game/src/game/cards/types.ts",
+    "../../artifacts/ko-game/src/game/cards/tags.ts",
     "../../artifacts/ko-game/src/game/cards/published-cards.ts",
     "../../artifacts/ko-game/src/game/champions/quests.ts",
     "../../artifacts/ko-game/src/game/champions/test-champions.ts",

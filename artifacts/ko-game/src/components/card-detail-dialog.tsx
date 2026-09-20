@@ -17,6 +17,7 @@ export type CardDetailRecord = {
   health: number;
   text: string;
   rarity: string;
+  tags?: string[];
   imageUrl: string | null;
   imageDisplayMode: "COVER" | "CONTAIN" | "CUSTOM" | string;
   imageScale: number;
@@ -79,6 +80,18 @@ export function CardDetailDialog({
                   <DetailStat label="공격력" value={String(card.attack)} />
                   <DetailStat label="체력" value={String(card.health)} />
                 </div>
+                {card.tags?.length ? (
+                  <div>
+                    <p className="text-[10px] font-black tracking-wider text-neutral-500">태그</p>
+                    <div className="mt-2 flex flex-wrap gap-2">
+                      {card.tags.map((tag) => (
+                        <span key={tag} className="rounded-full border border-amber-700/60 bg-amber-950/40 px-2.5 py-1 text-xs font-bold text-amber-200">
+                          {tag}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                ) : null}
                 <div>
                   <p className="text-[10px] font-black tracking-wider text-neutral-500">카드 효과</p>
                   <p className="mt-2 whitespace-pre-wrap leading-6 text-neutral-200">
