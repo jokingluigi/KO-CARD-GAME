@@ -1,7 +1,7 @@
 import type { GameState, PlayerState } from '../types/game-state';
 import { MAX_HAND_SIZE } from '../rules/constants';
 import { findDirectDeployedChampion } from './direct-champion';
-import { resolveTriggeredAbilities } from '../effects/effect-engine';
+import { resolveCardRetiredListeners, resolveTriggeredAbilities } from '../effects/effect-engine';
 
 function finishGameFromFatigue(
   state: GameState,
@@ -34,11 +34,8 @@ export function drawCard(state: GameState, playerId: string): GameState {
     if (directChampion) {
       const currentHealth = directChampion.currentHealth - fatigueCount;
       const defeated = currentHealth <= 0;
-      return {
+      const fatigueState: GameState = {
         ...state,
-        ...(defeated
-          ? finishGameFromFatigue(state, drawingPlayer)
-          : {}),
         players: state.players.map((player) => {
           if (player.id !== playerId) return player;
           const board = player.board.map((card) =>
@@ -96,6 +93,15 @@ export function drawCard(state: GameState, playerId: string): GameState {
             : []),
         ],
       };
+      if (!defeated) return fatigueState;
+      const withLeaveEffect = resolveTriggeredAbilities(
+        fatigueState,
+        playerId,
+        directChampion,
+        'LEAVE_FIELD',
+        { leaveReason: 'RETIRE' },
+      );
+      return resolveCardRetiredListeners(withLeaveEffect, playerId, directChampion);
     }
     const health = drawingPlayer.health - fatigueCount;
     const fatiguedPlayer = {

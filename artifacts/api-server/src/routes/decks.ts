@@ -11,6 +11,7 @@ import {
   type ChampionRecord,
   type DeckRecord,
 } from "@workspace/db";
+import { DECK_SIZE, MAX_LEGENDARY_CARDS, validateDeckCounts } from "@workspace/game-engine";
 import { getAuthenticatedUser } from "../lib/auth";
 import {
   isEligibleTestCard,
@@ -19,11 +20,8 @@ import {
 } from "../lib/test-account";
 
 const router: IRouter = Router();
-const MIN_DECK_SIZE = 20;
-const MAX_DECK_SIZE = 30;
 const MAX_NAME_LENGTH = 30;
 const MAX_CARD_COPIES = 2;
-const MAX_LEGENDARY_CARDS = 3;
 const VALID_CARD_TYPES = new Set(["WRESTLER", "TECHNIQUE"]);
 type CardRuleRecord = Pick<CardRecord, "id" | "rarity">;
 
@@ -126,11 +124,17 @@ export async function resolveDeck(deck: DeckRecord, userId: string, testAccount 
   } else if (ownedChampionRows.length === 0 && !testAccount) {
     invalidReasons.push("소유하지 않은 Champion이 포함되어 있습니다.");
   }
-  if (deck.cardDefinitionIds.length < MIN_DECK_SIZE) {
-    invalidReasons.push(`카드가 ${MIN_DECK_SIZE}장보다 적습니다.`);
-  }
-  if (deck.cardDefinitionIds.length > MAX_DECK_SIZE) {
-    invalidReasons.push(`카드가 ${MAX_DECK_SIZE}장을 초과했습니다.`);
+  for (const reason of validateDeckCounts({
+    cardCount: deck.cardDefinitionIds.length,
+    legendaryCount: deck.cardDefinitionIds.reduce(
+      (total, id) => total + (cardById.get(id)?.rarity === "LEGENDARY" ? 1 : 0),
+      0,
+    ),
+    championCount: deck.championDefinitionId ? 1 : 0,
+  })) {
+    if (reason === "INVALID_CARD_COUNT") invalidReasons.push(`카드는 정확히 ${DECK_SIZE}장이어야 합니다.`);
+    if (reason === "TOO_MANY_LEGENDARIES") invalidReasons.push(`레전더리 카드는 덱에 총 ${MAX_LEGENDARY_CARDS}장까지만 넣을 수 있습니다.`);
+    if (reason === "INVALID_CHAMPION_COUNT" && !champion) invalidReasons.push("사용할 수 있는 Champion을 정확히 1명 선택해야 합니다.");
   }
   if (missingCardDefinitionIds.length > 0) {
     invalidReasons.push("삭제되었거나 존재하지 않는 카드가 포함되어 있습니다.");
@@ -188,10 +192,9 @@ async function parseDeckPayload(value: unknown): Promise<
   }
   if (
     !Array.isArray(cardDefinitionIds) ||
-    cardDefinitionIds.length > MAX_DECK_SIZE ||
     cardDefinitionIds.some((id) => typeof id !== "string" || !id.trim())
   ) {
-    return { ok: false, message: `카드는 0~${MAX_DECK_SIZE}장까지 입력할 수 있습니다.` };
+    return { ok: false, message: "카드 목록을 확인해 주세요." };
   }
   return {
     ok: true,

@@ -32,6 +32,7 @@
 - [Admin preview route](admin-browser-preview-route.md) — the proxied KO admin page is reached at `/admin`; nested artifact prefixes can render the app’s not-found route.
 - [CardDefinition references](card-definition-references.md) — admin text resolves named creation targets to stable IDs; runtime resolves only from the match snapshot.
 - [Active Champion Token boundary](active-champion-token-boundary.md) — only linked Champion Token deployment grants Champion protection and defeat coupling; generic Token generation stays normal.
+- [Champion Token lethal boundary](champion-token-lethal-boundary.md) — direct Token lethal damage retires the board token without ending the match or consuming Champion HP.
 - [Champion full implementation prompt](champion-full-prompt.md) — aggregate unsaved Champion form data, freshly analyze live registry entries, and resolve linked Token data from Card Admin.
 - [Champion portrait uploads](champion-portrait-upload.md) — base and quest-complete portraits upload independently; missing completion art falls back to the base portrait.
 - [Champion image display settings](champion-image-display.md) — base and quest-complete portraits share one persisted crop/scale/position configuration.

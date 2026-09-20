@@ -1,0 +1,508 @@
+==================================================
+추가 중요 규칙 변경
+==================================================
+
+이번 패치에 다음 세 가지 게임 규칙 변경도 함께 적용한다.
+
+1. Champion 최대 체력을 관리자에서 설정 가능하게 변경
+2. Deck 크기를 정확히 25장으로 고정
+3. Legendary 카드는 Deck당 최대 5장으로 변경
+
+Production/Supabase는 직접 수정하지 말고
+개발 코드/개발 DB/migration/test만 준비한다.
+
+==================================================
+16. Champion별 최대 체력 시스템
+==================================================
+
+현재 Champion 최대 체력이 20으로 하드코딩되어 있다면
+이를 Champion definition의 데이터 값으로 변경한다.
+
+champions 테이블에 canonical field를 추가한다.
+
+권장 이름:
+
+max_health
+
+또는 현재 프로젝트 naming convention에 맞는
+maxHealth 대응 DB column.
+
+기존 Champion은 모두 기본값:
+
+20
+
+으로 migration한다.
+
+조건:
+
+- 정수
+- 1 이상
+- 관리자 페이지에서 수정 가능
+- 값이 없거나 오래된 데이터는 안전하게 20 fallback
+
+Champion의 실제 경기 시작 HP는:
+
+currentHP = champion.maxHealth
+
+maxHP = champion.maxHealth
+
+가 되어야 한다.
+
+게임 엔진 내부에서 Champion HP를 20으로 직접 가정하는
+모든 하드코딩을 조사해서 제거한다.
+
+특히 다음을 확인:
+
+- Match 초기화
+- Champion healing max cap
+- damage
+- UI HP 표시
+- AI
+- reconnect/snapshot
+- online match serialization
+- Champion Token 관련 처리
+- 승패 판정
+
+중요:
+
+Champion Token deploy 시
+원본 Champion HP를 Token HP에 합산하지 않는
+이번 새 규칙은 그대로 유지한다.
+
+Champion Token이 사라졌다가
+원본 Champion 보호가 풀려도
+원본 Champion의 currentHP/maxHP는
+deploy 전 상태 그대로 유지해야 한다.
+
+==================================================
+17. Admin Champion 최대 체력 입력
+==================================================
+
+/admin Champion 편집 화면에:
+
+최대 체력
+
+입력란을 추가한다.
+
+예:
+
+최대 체력
+[ 20 ]
+
+Champion별로 개별 저장 가능.
+
+관리자 저장 API/validation/schema도 함께 수정한다.
+
+잘못된 값:
+
+0
+음수
+소수
+NaN
+빈 값
+
+등은 저장되지 않게 한다.
+
+기존 Champion 편집 기능은 깨뜨리지 않는다.
+
+==================================================
+18. Champion API / 타입
+==================================================
+
+Champion API 응답에 maxHealth를 포함한다.
+
+예:
+
+{
+  "name": "챔피언 판도라",
+  "maxHealth": 20
+}
+
+공유 Zod/API 타입,
+DB schema,
+frontend type,
+game definition 변환까지 전부 연결한다.
+
+DB column만 만들고
+게임 엔진이 계속 20을 쓰는 반쪽 구현 금지.
+
+==================================================
+19. Deck 크기 규칙 변경
+==================================================
+
+기존:
+
+20~30장
+
+규칙을 완전히 제거한다.
+
+새 공식 Deck 규칙:
+
+정확히 25장.
+
+즉:
+
+24장 → INVALID
+25장 → VALID
+26장 → INVALID
+
+Champion 1명은 이 25장에 포함하지 않는다.
+
+구성:
+
+Champion 1
++
+Card 25
+
+가 하나의 완성 Deck이다.
+
+Deck validation의 canonical constant를 만들어
+frontend/backend/game logic이 같은 값을 사용하게 한다.
+
+예:
+
+DECK_SIZE = 25
+
+같은 공통 상수.
+
+여러 파일에 숫자 25를 중복 하드코딩하지 말 것.
+
+==================================================
+20. Legendary 제한 변경
+==================================================
+
+새 공식 규칙:
+
+한 Deck에 LEGENDARY 카드는 최대 5장.
+
+0~5장 → 허용
+6장 이상 → INVALID
+
+Champion은 Legendary 카드 수에 포함하지 않는다.
+
+TOKEN도 일반 Deck 구성에 들어갈 수 없는 기존 규칙 유지.
+
+TECHNIQUE의 rarity 규칙 등
+기존 카드 타입 규칙도 그대로 유지.
+
+공통 상수 사용:
+
+MAX_LEGENDARY_CARDS = 5
+
+또는 현재 architecture에 맞는 이름.
+
+==================================================
+21. 기존 Deck 안전 처리
+==================================================
+
+중요:
+
+기존에 저장된 20~30장 Deck을
+자동으로 삭제하거나 자르지 말 것.
+
+특히 기존 30장 Deck의 마지막 5장을
+임의로 삭제하면 안 된다.
+
+새 규칙 적용 후:
+
+25장이 아닌 기존 Deck
+또는
+Legendary 6장 이상인 기존 Deck
+
+은:
+
+수정 필요 / INVALID
+
+상태로 표시한다.
+
+사용자가 Deck Editor에서 직접 수정하도록 한다.
+
+기존 deck contents는 그대로 보존.
+
+Deck 열기/편집은 가능해야 한다.
+
+단 공식 Match에 사용하는 조건은
+새 validator 결과를 따른다.
+
+==================================================
+22. Deck Editor UI
+==================================================
+
+Deck Editor의 모든 기존:
+
+20
+30
+20~30
+
+표시를 조사해서 제거한다.
+
+새 UI:
+
+덱 카드
+23 / 25
+
+25 / 25
+
+26 / 25
+
+처럼 표시.
+
+25장일 때 정상 상태.
+
+Legendary도 명확하게:
+
+레전더리
+4 / 5
+
+5 / 5
+
+6 / 5
+
+로 보여준다.
+
+6장이면 수정 필요 상태를 즉시 표시.
+
+기존 stale server validation 문제가 다시 생기지 않도록
+현재 draft 기준 local validation을 즉시 반영한다.
+
+==================================================
+23. Deck 추가/삭제 UX
+==================================================
+
+25장이 이미 찬 상태에서
+26번째 카드를 추가하려는 경우:
+
+가능하면 추가 자체를 막고
+명확한 toast를 보여준다.
+
+예:
+
+"덱은 정확히 25장까지 구성할 수 있습니다."
+
+Legendary가 이미 5장인 상태에서
+6번째 Legendary 추가:
+
+추가를 막고:
+
+"레전더리 카드는 최대 5장까지 넣을 수 있습니다."
+
+같은 명확한 안내를 제공한다.
+
+단 기존에 이미 26장 이상 저장된 legacy Deck은
+열 수 있어야 하고,
+사용자가 카드를 제거해서 정상화할 수 있어야 한다.
+
+==================================================
+24. Backend Deck validation
+==================================================
+
+Frontend만 막지 말고
+backend 저장 validation도 동일하게 적용한다.
+
+Deck 저장/대표 Deck 설정/Match 시작 등에서
+공통 validator 사용.
+
+새 규칙:
+
+card count === 25
+
+legendary count <= 5
+
+champion exactly 1
+
+기존 rarity/cardType/token legality 규칙도 유지.
+
+클라이언트 검사를 우회해도
+잘못된 Deck이 정상 Deck으로 저장/사용되지 않게 한다.
+
+==================================================
+25. AI Deck도 동일 규칙 적용
+==================================================
+
+AI Deck도 가능한 한 공식 Deck 규칙과 일치해야 한다.
+
+현재 ai_decks를 조사해서:
+
+- 정확히 25장인지
+- Legendary 최대 5장인지
+
+검사한다.
+
+기존 AI Deck이 새 규칙을 위반하면
+Production 데이터를 자동 수정하지 말고
+어떤 AI Deck이 몇 장인지 최종 보고한다.
+
+개발 seed/default AI Deck은
+안전하게 수정 가능한 구조라면
+25장 / Legendary <=5로 맞춘다.
+
+단 임의의 카드 삭제로 Deck 전략을 망가뜨리지 말고
+변경 내역을 보고한다.
+
+==================================================
+26. Champion HP 테스트
+==================================================
+
+반드시 테스트:
+
+A.
+Champion maxHealth = 20
+→ Match start currentHP=20/maxHP=20
+
+B.
+Champion maxHealth = 25
+→ Match start currentHP=25/maxHP=25
+
+C.
+Champion maxHealth = 15
+→ Match start currentHP=15/maxHP=15
+
+D.
+Healing
+Champion currentHP=10
+maxHP=15
+heal 10
+→ currentHP=15
+
+20까지 올라가면 FAIL.
+
+E.
+Champion maxHealth 변경이
+다른 Champion에 영향을 주지 않음.
+
+F.
+Champion Token deploy/retire 이후에도
+원본 Champion maxHP/currentHP가 보존됨.
+
+==================================================
+27. Deck 규칙 테스트
+==================================================
+
+반드시:
+
+24장 → INVALID
+25장 → VALID
+26장 → INVALID
+
+Legendary:
+
+4장 → VALID
+5장 → VALID
+6장 → INVALID
+
+조합:
+
+25장 + Legendary 5 → VALID
+25장 + Legendary 6 → INVALID
+24장 + Legendary 5 → INVALID
+26장 + Legendary 5 → INVALID
+
+Champion:
+
+0명 → INVALID
+1명 → VALID 조건
+2명 → INVALID
+
+기존 normal/technique/token 관련 규칙도 회귀 테스트.
+
+==================================================
+28. 기존 코드 전체 검색
+==================================================
+
+Repository 전체에서 다음 기존 하드코딩을 검색:
+
+20
+30
+20~30
+deck min
+deck max
+legendary limit
+Champion HP 20
+MAX_HP
+MAX_DECK_SIZE
+MIN_DECK_SIZE
+
+단 숫자 20/30이 다른 게임 효과 수치일 수 있으므로
+무작정 replace 하지 말 것.
+
+Deck 규칙/Champion HP와 관련된 곳만 정확히 수정한다.
+
+==================================================
+29. Production migration 준비
+==================================================
+
+Champion max_health 추가용 migration을
+별도의 새 migration 파일로 작성한다.
+
+이미 존재하는:
+
+0015_card_tags.sql
+
+은 수정/삭제하지 않는다.
+
+다음 번호 migration으로 작성.
+
+예:
+
+0016_champion_max_health.sql
+
+기존 Champion 행은 모두 20으로 안전하게 migration.
+
+Production Supabase에서는 아직 실행하지 않는다.
+
+Deck 25장 / Legendary 5장 규칙이
+DB schema migration을 필요로 하지 않는다면
+불필요한 DB constraint를 추가하지 말고
+공통 application validator에서 관리한다.
+
+==================================================
+30. 최종 전체 검증
+==================================================
+
+기존 요청사항까지 포함하여 반드시 검사:
+
+- 새 cards.tags 시스템 유지
+- 구 keyword "태그" 제거
+- Champion Token HP 합산 제거
+- Champion Token RETIRE 패배 제거
+- Champion Token SILENCE 면역 유지
+- Champion Token 즉사 면역 유지
+- Champion maxHealth 관리자 설정
+- Deck 정확히 25장
+- Legendary 최대 5장
+- ALT Inspector tags/keywords
+- keyword 가독성 개선
+
+실행:
+
+pnpm run typecheck
+관련 engine tests
+deck validation tests
+Champion tests
+Pandora tests
+card tags tests
+admin tests
+ALT inspector tests
+pnpm run build
+git diff --check
+
+Production DB/Supabase/user data는 수정하지 말 것.
+git push도 자동으로 하지 말 것.
+
+==================================================
+31. 최종 보고 추가 항목
+==================================================
+
+기존 최종 보고에 추가:
+
+- Champion maxHealth DB/API/Admin 구현
+- 제거된 Champion HP=20 하드코딩 위치
+- Deck 25장 validator 위치
+- Legendary 5장 validator 위치
+- 기존 invalid Deck 처리 방식
+- 현재 개발 DB에서 25장이 아닌 Deck 목록
+- 현재 AI Deck 규칙 위반 여부
+- 새 DB migration 파일
+- Production Supabase 적용 순서
+
+최종 보고 후 기다려.

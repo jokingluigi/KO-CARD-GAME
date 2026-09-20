@@ -46,6 +46,9 @@ function ability(id: string, name: string, cost: number, description: string, co
 }
 
 export function championRecordToDefinition(record: PublishedChampionRecord): ChampionDefinition {
+  const maxHealth = Number.isInteger(record.maxHealth) && record.maxHealth >= 1
+    ? record.maxHealth
+    : 20;
   const rewardActions = record.questRewardEffects?.effects ?? [];
   const tokenId = record.championTokenDefinitionId;
   const directTokenReward = typeof tokenId === "string" &&
@@ -76,7 +79,7 @@ export function championRecordToDefinition(record: PublishedChampionRecord): Cha
     : null;
   return {
     id: record.id, name: record.name, description: record.description,
-    imageAssetId: record.imageAssetId, imageUrl: record.imageUrl, maxHealth: record.maxHealth,
+    imageAssetId: record.imageAssetId, imageUrl: record.imageUrl, maxHealth,
     imageDisplayMode: record.imageDisplayMode, imageScale: record.imageScale,
     imagePositionX: record.imagePositionX, imagePositionY: record.imagePositionY,
     questCompletedPortraitEnabled: record.questCompletedPortraitEnabled,

@@ -132,7 +132,6 @@ const aliases = {
     ["SELF_ATTACK", /^(?:(?:이\s*카드가|자신이)\s*공격할\s*때마다|SELF_ATTACK)\s*[:：]?/i],
     ["OTHER_ALLY_ATTACK", /^(?:콤보|SUPPORT)\s*[:：]?/i],
     ["TECHNIQUE_CAST", /^(?:주문|SHOCK)\s*[:：]?/i],
-    ["CARD_PLAYED_THIS_TURN", /^(?:태그|SYNERGY)\s*[:：]?/i],
     ["EXACT_ZERO_DAMAGE", /^(?:핀폴|BULLSEYE)\s*[:：]?/i],
     ["TURN_END", /^턴\s*종료(?:할\s*때|하면)?\s*[:：]?/i],
   ] as const,
@@ -786,7 +785,7 @@ export function analyzeEffectText(input: string, options: EffectAnalysisOptions 
   if (!text) return { status: "failure", outcome: "analysis_failure", effects: [], keywords: [], unsupportedSegments: ["효과 문장"], summaries: ["효과 문장을 입력해 주세요."] };
   const expanded = expandedMechanicAnalysis(text, options);
   if (expanded) return expanded;
-  const triggerMarkers = [...text.matchAll(/(?:^|\s)(?=(?:필드에\s*)?(?:등장|퇴장|액티브|준비|콤보|주문|태그|핀폴|턴\s*시작|턴\s*종료|(?:이\s*카드가|자신이)\s*공격할\s*때마다|MAGIC|TURBO|SELF_ATTACK|SUPPORT|SHOCK|SYNERGY|BULLSEYE)\s*[:：])/gi)]
+  const triggerMarkers = [...text.matchAll(/(?:^|\s)(?=(?:필드에\s*)?(?:등장|퇴장|액티브|준비|콤보|주문|핀폴|턴\s*시작|턴\s*종료|(?:이\s*카드가|자신이)\s*공격할\s*때마다|MAGIC|TURBO|SELF_ATTACK|SUPPORT|SHOCK|BULLSEYE)\s*[:：])/gi)]
     .map((match) => (match.index ?? 0) + (match[0].startsWith(" ") ? 1 : 0));
   if (triggerMarkers.length > 1) {
     const analyses = triggerMarkers.map((start, index) =>
@@ -855,7 +854,6 @@ export function analyzeEffectText(input: string, options: EffectAnalysisOptions 
   const body = triggerEntry ? analyzableText.replace(triggerEntry[1], "").trim() : analyzableText;
   const conditions: EffectCondition[] = [
     ...(needMatch ? [{ type: "NEED_CONDITION" as const, expression: needMatch[1]!.trim() }] : []),
-    ...(trigger === "CARD_PLAYED_THIS_TURN" ? [{ type: "HAS_MATCHING_TAG_PLAYED_THIS_TURN" as const }] : []),
   ];
   const genericStats = genericStatEffects(trigger, body, conditions);
   const useGenericStats = genericStats.length > 0 && (

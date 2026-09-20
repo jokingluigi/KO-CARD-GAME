@@ -25,13 +25,13 @@ import {
   type DeckChampion,
 } from "@/lib/decks-client";
 import { cardTypeLabel, deckValidityLabel, normalizeCardRulesText } from "@/lib/display-labels";
+import { DECK_SIZE, MAX_LEGENDARY_CARDS } from "@workspace/game-engine";
 
 type AuthStatus = "checking" | "authenticated" | "unauthenticated";
 type CardFilter = "ALL" | "WRESTLER" | "TECHNIQUE";
 
 const EMPTY_DECK_NAME = "새로운 전략";
 const MAX_CARD_COPIES = 2;
-const MAX_LEGENDARY_CARDS = 3;
 
 function cardSettings(card: DeckCard) {
   return {
@@ -49,7 +49,7 @@ function unique<T>(values: T[]) {
 function cardLimitReason(card: DeckCard, count: number, legendaryCount: number): string | undefined {
   if (card.rarity === "LEGENDARY") {
     if (count >= 1) return "레전더리 동일 카드 1장 제한";
-    if (legendaryCount >= MAX_LEGENDARY_CARDS) return "레전더리 총 3장 제한";
+    if (legendaryCount >= MAX_LEGENDARY_CARDS) return `레전더리 총 ${MAX_LEGENDARY_CARDS}장 제한`;
   } else if (count >= MAX_CARD_COPIES) {
     return "동일 카드 최대 2장";
   }
@@ -310,8 +310,7 @@ export default function Decks() {
     const reasons: string[] = [];
     if (!selectedChampion) reasons.push("챔피언을 선택해야 합니다.");
     else if (selectedChampion.status !== "PUBLISHED") reasons.push("챔피언이 현재 공개 상태가 아닙니다.");
-    if (cardIds.length < 20) reasons.push(`카드가 ${20 - cardIds.length}장 부족합니다.`);
-    if (cardIds.length > 30) reasons.push("카드는 최대 30장까지 구성할 수 있습니다.");
+    if (cardIds.length !== DECK_SIZE) reasons.push(`카드는 정확히 ${DECK_SIZE}장이어야 합니다.`);
     if (missingIds.length > 0) reasons.push(`확인할 수 없는 카드 참조 ${missingIds.length}개가 있습니다.`);
     if (
       cardIds.some((id) => {
@@ -374,7 +373,11 @@ export default function Decks() {
 
   function addCard(card: DeckCard) {
     const reason = cardLimitReason(card, counts.get(card.id) ?? 0, legendaryCount);
-    if (cardIds.length >= 30 || card.status !== "PUBLISHED" || card.isToken || card.isChampionToken || reason) return;
+    if (cardIds.length >= DECK_SIZE || card.status !== "PUBLISHED" || card.isToken || card.isChampionToken || reason) {
+      if (cardIds.length >= DECK_SIZE) setErrorMessage(`덱은 정확히 ${DECK_SIZE}장까지 구성할 수 있습니다.`);
+      else if (reason) setErrorMessage(reason);
+      return;
+    }
     setCardIds((current) => [...current, card.id]);
     setStatusMessage(`${card.name} 카드를 한 장 추가했습니다.`);
   }
@@ -601,7 +604,7 @@ export default function Decks() {
                   <DeckCardVisual
                     key={card.id}
                     card={card}
-                    disabled={cardIds.length >= 30 || Boolean(cardLimitReason(card, counts.get(card.id) ?? 0, legendaryCount))}
+                    disabled={cardIds.length >= DECK_SIZE || Boolean(cardLimitReason(card, counts.get(card.id) ?? 0, legendaryCount))}
                     disabledReason={cardLimitReason(card, counts.get(card.id) ?? 0, legendaryCount)}
                     onAdd={() => addCard(card)}
                     onOpenDetails={() => setDetailCard(card)}
@@ -671,15 +674,15 @@ export default function Decks() {
               <div className="ko-decks__meter" data-testid="panel-deck-meter">
                 <div className="ko-decks__meter-line">
                   <span>FIGHT PLAN / cards</span>
-                  <span className="ko-decks__meter-number" data-testid="text-deck-card-count">{cardIds.length} <small className="font-sans text-[0.62rem] text-[#91877b]">/ 30</small></span>
+                  <span className="ko-decks__meter-number" data-testid="text-deck-card-count">{cardIds.length} <small className="font-sans text-[0.62rem] text-[#91877b]">/ {DECK_SIZE}</small></span>
                 </div>
                 <div className="ko-decks__meter-track" aria-hidden="true">
-                  <div className="ko-decks__meter-fill" style={{ width: `${Math.min(100, (cardIds.length / 30) * 100)}%` }} />
+                  <div className="ko-decks__meter-fill" style={{ width: `${Math.min(100, (cardIds.length / DECK_SIZE) * 100)}%` }} />
                 </div>
-                {cardIds.length < 20 && (
+                {cardIds.length !== DECK_SIZE && (
                   <p className="ko-decks__notice ko-decks__notice--quiet mt-3" data-testid="status-deck-incomplete">
                     <AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0" aria-hidden="true" />
-                    저장은 가능하지만, 대표 덱으로 선택하려면 카드가 20장 필요합니다.
+                     저장은 가능하지만, 대표 덱으로 선택하려면 카드가 정확히 {DECK_SIZE}장 필요합니다.
                   </p>
                 )}
               </div>
@@ -698,7 +701,7 @@ export default function Decks() {
 
               <div className="mt-5 flex items-center justify-between gap-3">
                 <p className="ko-decks__section-label">Cards in plan</p>
-                  <span className="text-[0.62rem] font-bold text-[#706b65]">일반 동일 카드 2장 · 레전더리 카드별 1장 / 총 3장</span>
+                  <span className="text-[0.62rem] font-bold text-[#706b65]">일반 동일 카드 2장 · 레전더리 카드별 1장 / 총 {MAX_LEGENDARY_CARDS}장</span>
               </div>
               {selectedRows.length === 0 ? (
                 <div className="ko-decks__empty mt-3" data-testid="empty-selected-cards">

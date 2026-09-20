@@ -14,10 +14,11 @@ function createEmptyPlayer(
   const deckDefinitions = cardDefinitions?.filter(
     (definition) => !definition.isToken && !definition.isChampionToken,
   );
+  const champion = createChampionState(championId, championDefinitions);
   return {
     id,
-    health: 20,
-    maxHealth: 20,
+    health: champion.maxHealth,
+    maxHealth: champion.maxHealth,
     currentGold: 0,
     personalTurn: 0,
     nextTurnGoldBonus: 0,
@@ -30,7 +31,7 @@ function createEmptyPlayer(
     removedFromGame: [],
     fatigueCount: 0,
     championAbilityUsedThisTurn: false,
-    champion: createChampionState(championId, championDefinitions),
+    champion,
   };
 }
 

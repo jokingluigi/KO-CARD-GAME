@@ -922,7 +922,7 @@ test("명시 카드 생성은 손패와 덱 destination을 보존한다", () => 
 test("KO 기본 메커니즘 어휘와 DSL 트리거를 새 메커니즘 요청 없이 분석한다", () => {
   const cases = [
     "등장: 자신에게 +2/+2", "조건: 내 손패에 Generated 선수가 있으면 등장: 카드 1장을 뽑습니다.",
-    "태그: 피해 2", "준비: 카드 1장을 뽑습니다.", "콤보: 공격력 +1",
+    "준비: 카드 1장을 뽑습니다.", "콤보: 공격력 +1",
     "주문: 공격력 +1", "핀폴: 카드 1장을 뽑습니다.", "스위치: 왼쪽이면 +2/+2 오른쪽이면 +0/+2",
     "등장: 적 선수 하나를 포획합니다.", "등장: 적 선수 하나를 제거합니다.",
     "등장: 선수를 소환합니다.", "등장: 선수를 생성합니다.",
@@ -935,8 +935,8 @@ test("KO 기본 메커니즘 어휘와 DSL 트리거를 새 메커니즘 요청 
   }
   const needed = analyzeEffectText("조건: 내 손패에 Generated 선수가 있으면 등장: 카드 1장을 뽑습니다.");
   assert.equal(needed.effects[0]?.conditions?.[0]?.type, "NEED_CONDITION");
-  const synergy = analyzeEffectText("태그: 피해 2");
-  assert.ok(synergy.effects[0]?.conditions?.some((condition) => condition.type === "HAS_MATCHING_TAG_PLAYED_THIS_TURN"));
+  const removedLegacyTagTrigger = analyzeEffectText("태그: 피해 2");
+  assert.equal(removedLegacyTagTrigger.status, "failure");
 });
 
 test("WRESTLER 17종 원문을 완전한 구조화 효과로 분석한다", () => {

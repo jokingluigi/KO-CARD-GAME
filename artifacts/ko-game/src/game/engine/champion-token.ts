@@ -59,7 +59,6 @@ export function directDeployChampionToken(
     throw new Error('챔피언 토큰이 출전할 빈 슬롯이 없습니다.');
   }
 
-  const championHealth = player.champion.health;
   const { card, event } = generateCard(definition, {
     instanceId: `${playerId}-${championId}-direct-${state.turn}-${state.events.length}`,
     playerId,
@@ -68,8 +67,6 @@ export function directDeployChampionToken(
   });
   const directChampion: CardInstance = {
     ...card,
-    currentHealth: definition.health + championHealth,
-    maxHealth: definition.health + championHealth,
     isDirectDeployedChampion: true,
     isSilenceImmune: true,
   };

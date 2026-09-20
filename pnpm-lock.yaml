@@ -366,6 +366,9 @@ importers:
       '@workspace/effect-registry':
         specifier: workspace:*
         version: link:../../lib/effect-registry
+      '@workspace/game-engine':
+        specifier: workspace:*
+        version: link:../../lib/game-engine
       class-variance-authority:
         specifier: 'catalog:'
         version: 0.7.1

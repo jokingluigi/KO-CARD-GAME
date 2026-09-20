@@ -97,7 +97,7 @@ export function createTestDeck(
     ? definitions
     : TEST_CARD_DEFINITIONS;
 
-  return Array.from({ length: 20 }, (_, index) => {
+  return Array.from({ length: 25 }, (_, index) => {
     const definition = deckDefinitions[index % deckDefinitions.length];
 
     return {

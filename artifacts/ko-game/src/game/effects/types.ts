@@ -117,7 +117,7 @@ export type CardAbility =
       condition?: AbilityCondition;
     }
   | {
-      trigger: 'CARD_DRAWN' | 'CARD_RETIRED' | 'FIRST_ATTACKED' | 'SELF_ATTACK' | 'OTHER_ALLY_ATTACK' | 'CARD_PLAYED_THIS_TURN' | 'ATTACK_SURVIVED' | 'STAT_CHANGED' | 'TECHNIQUE_CAST' | 'EXACT_ZERO_DAMAGE' | 'TURN_START' | 'TURN_END';
+      trigger: 'CARD_DRAWN' | 'CARD_RETIRED' | 'FIRST_ATTACKED' | 'SELF_ATTACK' | 'OTHER_ALLY_ATTACK' | 'ATTACK_SURVIVED' | 'STAT_CHANGED' | 'TECHNIQUE_CAST' | 'EXACT_ZERO_DAMAGE' | 'TURN_START' | 'TURN_END';
       effects: CardEffect[];
       condition?: AbilityCondition;
     }
@@ -129,7 +129,6 @@ export type CardAbility =
     };
 
 export type AbilityCondition =
-  | { type: 'HAS_MATCHING_TAG_PLAYED_THIS_TURN' }
   | { type: 'BASE_COST_GTE'; amount: number }
   | { type: 'SOURCE_ON_LEFT_SIDE' }
   | { type: 'SOURCE_ON_RIGHT_SIDE' }

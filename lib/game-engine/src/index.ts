@@ -55,6 +55,11 @@ export type {
   ChampionState,
 } from "../../../artifacts/ko-game/src/game/champions/types";
 export {
+  DECK_SIZE,
+  MAX_LEGENDARY_CARDS,
+  validateDeckCounts,
+} from "./rules";
+export {
   championRecordToDefinition,
   type PublishedChampionRecord,
 } from "../../../artifacts/ko-game/src/game/champions/published-champions";

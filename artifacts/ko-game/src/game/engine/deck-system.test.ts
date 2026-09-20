@@ -26,11 +26,11 @@ function getPlayer(
   return player;
 }
 
-test('각 플레이어는 20장짜리 테스트 덱으로 시작한다', () => {
+test('각 플레이어는 25장짜리 테스트 덱으로 시작한다', () => {
   const state = createInitialGameState();
 
-  assert.equal(getPlayer(state, 'player-1').deck.length, 20);
-  assert.equal(getPlayer(state, 'player-2').deck.length, 20);
+  assert.equal(getPlayer(state, 'player-1').deck.length, 25);
+  assert.equal(getPlayer(state, 'player-2').deck.length, 25);
 });
 
 test('시작 손패는 선공 3장, 후공 4장이다', () => {
@@ -46,7 +46,7 @@ test('선공은 첫 자기 턴 시작에도 1장을 드로우한다', () => {
   const state = startGame(createInitialGameState(), fixedRandom);
 
   assert.equal(getPlayer(state, 'player-1').hand.length, 4);
-  assert.equal(getPlayer(state, 'player-1').deck.length, 16);
+  assert.equal(getPlayer(state, 'player-1').deck.length, 21);
 });
 
 test('후공 턴 시작 시 1장을 드로우하고 덱이 1장 감소한다', () => {
@@ -54,7 +54,7 @@ test('후공 턴 시작 시 1장을 드로우하고 덱이 1장 감소한다', (
   const state = successState(endTurn(started, 'player-1'));
 
   assert.equal(getPlayer(state, 'player-2').hand.length, 5);
-  assert.equal(getPlayer(state, 'player-2').deck.length, 15);
+  assert.equal(getPlayer(state, 'player-2').deck.length, 20);
 });
 
 test('턴 시작 드로우로 손패는 7장을 넘지 않는다', () => {

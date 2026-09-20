@@ -52,7 +52,7 @@ test("AI completes a deterministic full match through legal engine actions", asy
     .filter((card) => card.cardType === "WRESTLER" && !card.isToken && !card.isChampionToken)
     .map((card) => card.id);
   assert.ok(deckIds.length >= 10, "published catalog does not contain enough playable Wrestlers");
-  const deck = Array.from({ length: 20 }, (_, index) => deckIds[index % deckIds.length]!);
+  const deck = Array.from({ length: 25 }, (_, index) => deckIds[index % deckIds.length]!);
   const championIds: [string, string] = [
     champions[0]?.id ?? "test-champion-quest",
     champions[1]?.id ?? "test-champion-no-quest",
@@ -119,7 +119,7 @@ test("AI choice is stable when opponent hand contents change but hidden-zone siz
   const deckIds = cards
     .filter((card) => card.cardType === "WRESTLER" && !card.isToken && !card.isChampionToken)
     .map((card) => card.id);
-  const deck = Array.from({ length: 20 }, (_, index) => deckIds[index % deckIds.length]!);
+  const deck = Array.from({ length: 25 }, (_, index) => deckIds[index % deckIds.length]!);
   const base = startGame(
     createInitialGameState(
       [champions[0]?.id ?? "test-champion-quest", champions[1]?.id ?? "test-champion-no-quest"],

@@ -1,5 +1,5 @@
 import type { CardDefinition, CardInstance, CardStatHistoryEntry } from '../cards/types';
-import { matchesCardTagFilter, sharesCardTag } from '../cards/tags';
+import { matchesCardTagFilter } from '../cards/tags';
 import type { CardAbility, CardEffect, CardKeyword } from './types';
 import { RUNTIME_HANDLER_ACTIONS, type Action, type EffectDuration, type TargetZone } from "@workspace/effect-registry";
 
@@ -58,8 +58,13 @@ export function getValidTargets(
       if (!matchesCardTagFilter(card, target.filter)) return false;
       if (target.selection === 'RANDOM' && !isEligibleForRandomPool(card, target.randomScope)) return false;
       if (target.selection === 'SELF' && card.instanceId !== sourceCard.instanceId) return false;
-      // Directly deployed champion tokens remain damageable, but not silence/destroy targets.
-      if (card.isDirectDeployedChampion && (effect.action === 'SILENCE' || effect.action === 'DESTROY')) return false;
+      // Directly deployed champion tokens remain damageable, but not silence,
+      // destroy, or remove-from-game targets.
+      if (card.isDirectDeployedChampion && (
+        effect.action === 'SILENCE' ||
+        effect.action === 'DESTROY' ||
+        effect.action === 'REMOVE_FROM_GAME'
+      )) return false;
       return true;
     }).map((card) => card.instanceId);
     return canTargetPlayer && !isChampionProtectedByToken(state, owner) ? [owner, ...cardIds] : cardIds;
@@ -530,7 +535,6 @@ export function resolveStateBasedDeaths(
   });
   if (!retired.length) return state;
 
-  const directChampionLoser = retired.find(({ card }) => card.isDirectDeployedChampion)?.playerId;
   let next: GameState = {
     ...state,
     players,
@@ -548,14 +552,6 @@ export function resolveStateBasedDeaths(
         ...(sourceContext ? { sourceContext } : {}),
       })),
     ],
-    ...(directChampionLoser
-      ? {
-          status: 'FINISHED' as const,
-          activePlayerId: null,
-          winnerId: state.players.find((player) => player.id !== directChampionLoser)?.id ?? null,
-          loserId: directChampionLoser,
-        }
-      : {}),
   };
   for (const entry of retired) {
     next = resolveTriggeredAbilities(next, entry.playerId, entry.card, 'LEAVE_FIELD', {
@@ -979,7 +975,11 @@ function applyEffect(
     }
     const candidates = cardsInZones(candidatePlayer, zones);
     const eligibleCandidates = candidates.filter((card) => {
-      if (card.isDirectDeployedChampion && (effect.action === 'SILENCE' || effect.action === 'DESTROY')) return false;
+      if (card.isDirectDeployedChampion && (
+        effect.action === 'SILENCE' ||
+        effect.action === 'DESTROY' ||
+        effect.action === 'REMOVE_FROM_GAME'
+      )) return false;
       if (target.cardType && card.cardType !== target.cardType) return false;
       if (target.filter?.isGenerated !== undefined && card.isGenerated !== target.filter.isGenerated) return false;
       if (target.filter?.minCost !== undefined && card.currentCost < target.filter.minCost) return false;
@@ -1227,15 +1227,8 @@ function applyEffect(
             : damagedState;
         }
         const retired: CardInstance = { ...current, currentHealth: health, boardSlot: null };
-        const tokenDefeat = current.isDirectDeployedChampion;
         const retiredState: GameState = {
           ...nextState,
-          status: tokenDefeat ? 'FINISHED' : nextState.status,
-          activePlayerId: tokenDefeat ? null : nextState.activePlayerId,
-          winnerId: tokenDefeat
-            ? nextState.players.find((player) => player.id !== targetOwner)?.id ?? null
-            : nextState.winnerId,
-          loserId: tokenDefeat ? targetOwner : nextState.loserId,
           players: nextState.players.map((player) => player.id === targetOwner
             ? { ...player, board: player.board.map((card) => card?.instanceId === current.instanceId ? null : card) as typeof player.board, graveyard: [...player.graveyard, retired] }
             : player),
@@ -1448,12 +1441,12 @@ function applyEffect(
       : opponent.health - effect.amount;
     const defeated = remainingHealth <= 0;
 
-    return {
+    const damagedState: GameState = {
       ...state,
-      status: defeated ? 'FINISHED' : state.status,
-      activePlayerId: defeated ? null : state.activePlayerId,
-      winnerId: defeated ? playerId : state.winnerId,
-      loserId: defeated ? opponent.id : state.loserId,
+      status: defeated && !directChampion ? 'FINISHED' : state.status,
+      activePlayerId: defeated && !directChampion ? null : state.activePlayerId,
+      winnerId: defeated && !directChampion ? playerId : state.winnerId,
+      loserId: defeated && !directChampion ? opponent.id : state.loserId,
       players: state.players.map((player) => {
         if (player.id !== opponent.id) return player;
 
@@ -1526,6 +1519,19 @@ function applyEffect(
           : []),
       ],
     };
+    if (defeated && directChampion) {
+      const attribution = sourceContextFor(playerId, sourceCard, triggerContext);
+      return resolveCardRetiredListeners(
+        resolveTriggeredAbilities(damagedState, opponent.id, directChampion, 'LEAVE_FIELD', {
+          leaveReason: 'RETIRE',
+          sourceContext: attribution,
+        }),
+        opponent.id,
+        directChampion,
+        attribution,
+      );
+    }
+    return damagedState;
   }
 
   return {
@@ -1582,7 +1588,7 @@ export function resolveTriggeredAbilities(
   state: GameState,
   playerId: string,
   card: CardInstance,
-  trigger: 'ENTER_FIELD' | 'LEAVE_FIELD' | 'POSITION' | 'ACTIVE' | 'CARD_DRAWN' | 'CARD_RETIRED' | 'FIRST_ATTACKED' | 'SELF_ATTACK' | 'OTHER_ALLY_ATTACK' | 'CARD_PLAYED_THIS_TURN' | 'ATTACK_SURVIVED' | 'STAT_CHANGED' | 'TECHNIQUE_CAST' | 'EXACT_ZERO_DAMAGE' | 'TURN_START' | 'TURN_END',
+  trigger: 'ENTER_FIELD' | 'LEAVE_FIELD' | 'POSITION' | 'ACTIVE' | 'CARD_DRAWN' | 'CARD_RETIRED' | 'FIRST_ATTACKED' | 'SELF_ATTACK' | 'OTHER_ALLY_ATTACK' | 'ATTACK_SURVIVED' | 'STAT_CHANGED' | 'TECHNIQUE_CAST' | 'EXACT_ZERO_DAMAGE' | 'TURN_START' | 'TURN_END',
   options: {
     boardSlot?: 0 | 1 | 2 | 3;
     leaveReason?: LeaveReason;
@@ -1605,8 +1611,6 @@ export function resolveTriggeredAbilities(
     condition === 'GTE' ? actual >= expected : condition === 'LTE' ? actual <= expected : actual === expected;
   const abilities = card.abilities.filter((ability) => {
     if (ability.trigger !== trigger) return false;
-    if (trigger === 'CARD_PLAYED_THIS_TURN' &&
-      (options.playedFromHand !== true || options.playedCardType !== 'WRESTLER')) return false;
     const condition = 'condition' in ability ? ability.condition : undefined;
     if (condition) {
       const owner = state.players.find((player) => player.id === playerId);
@@ -1619,19 +1623,6 @@ export function resolveTriggeredAbilities(
       if (condition.type === 'BASE_COST_GTE' && (options.baseCost ?? 0) < condition.amount) return false;
        if (condition.type === 'FIRST_ATTACK_GAIN' &&
          (card.statHistory ?? []).filter((entry) => entry.stat === 'attack' && entry.delta > 0).length !== 1) return false;
-       if (condition.type === 'HAS_MATCHING_TAG_PLAYED_THIS_TURN') {
-        const lastTurnStart = state.events.map((event, index) => ({ event, index }))
-          .filter(({ event }) => event.type === 'TURN_STARTED' && event.playerId === playerId).at(-1)?.index ?? -1;
-        const played = state.events.slice(lastTurnStart + 1)
-           .filter((event) =>
-             event.type === 'CARD_PLAYED' &&
-             event.playerId === playerId &&
-             event.cardInstanceId !== card.instanceId &&
-             event.cardType === 'WRESTLER' &&
-             event.reason === 'PLAY_FROM_HAND',
-           );
-         if (!played.some((event) => sharesCardTag(card, { tags: event.tags }))) return false;
-      }
     }
     if (
       ability.trigger === 'POSITION' &&
@@ -1707,7 +1698,7 @@ export function resolveActiveAbility(
 export function resolveBoardListeners(
   state: GameState,
   playerId: string,
-  trigger: 'OTHER_ALLY_ATTACK' | 'CARD_PLAYED_THIS_TURN',
+  trigger: 'OTHER_ALLY_ATTACK',
   options: Parameters<typeof resolveTriggeredAbilities>[4] = {},
 ): GameState {
   const player = state.players.find((candidate) => candidate.id === playerId);

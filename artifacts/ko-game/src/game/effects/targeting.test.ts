@@ -112,6 +112,7 @@ test('resolver covers board, hand/player ids, multiselect duplicates and champio
   state.players[1].board[1] = { ...card('token'), boardSlot: 1, isDirectDeployedChampion: true, isSilenceImmune: true };
   assert.deepEqual(getValidTargets(state, 'player-1', source, targeted('DESTROY')), ['two']);
   assert.deepEqual(getValidTargets(state, 'player-1', source, targeted('DAMAGE')).sort(), ['token', 'two']);
+  assert.deepEqual(getValidTargets(state, 'player-1', source, targeted('REMOVE_FROM_GAME')), ['two']);
 
   const multi = card('multi', [{ ...targeted('STUN'), target: { zone: 'BOARD', owner: 'ENEMY', cardType: 'WRESTLER', selection: 'PLAYER_CHOICE', count: 2, minTargets: 2, maxTargets: 2 } }]);
   const multiPending = enterField(state, 'player-1', multi, 2);

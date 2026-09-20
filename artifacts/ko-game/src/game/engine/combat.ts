@@ -101,24 +101,10 @@ function retireDefeatedWrestlers(state: GameState): GameState {
     };
   });
 
-  const directChampionLoser = retired.find(
-    (entry) => entry.card.isDirectDeployedChampion,
-  )?.playerId;
   const retiredState: GameState = {
     ...state,
     players,
     events: [...state.events, ...retireEvents],
-    ...(directChampionLoser
-      ? {
-          status: 'FINISHED' as const,
-          activePlayerId: null,
-          winnerId:
-            state.players.find(
-              (player) => player.id !== directChampionLoser,
-            )?.id ?? null,
-          loserId: directChampionLoser,
-        }
-      : {}),
   };
 
   return retired.reduce((nextState, entry) => {
@@ -393,7 +379,6 @@ export function attack(
         ),
       );
     }
-
     if (remainingHealth > 0) {
       return actionSuccess(
         processChampionQuestEvents(state, listenersResolved),

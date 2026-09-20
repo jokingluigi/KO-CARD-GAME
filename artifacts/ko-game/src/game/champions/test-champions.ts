@@ -119,10 +119,14 @@ export function createChampionState(
   if (!definition) {
     throw new Error(`챔피언 정의를 찾을 수 없습니다: ${championId}`);
   }
+  const maxHealth = Number.isInteger(definition.maxHealth) && definition.maxHealth >= 1
+    ? definition.maxHealth
+    : 20;
 
   return {
     ...definition,
-    health: definition.maxHealth,
+    health: maxHealth,
+    maxHealth,
     questProgress: 0,
     questCompleted: false,
       questCompleteAudioAssetId: definition.questCompleteAudioAssetId,

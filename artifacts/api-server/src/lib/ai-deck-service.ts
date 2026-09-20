@@ -8,11 +8,12 @@ import {
   type CardRecord,
   type ChampionRecord,
 } from "@workspace/db";
+import { DECK_SIZE, MAX_LEGENDARY_CARDS, validateDeckCounts } from "@workspace/game-engine";
 
-export const AI_DECK_MIN_SIZE = 20;
-export const AI_DECK_MAX_SIZE = 30;
+export const AI_DECK_MIN_SIZE = DECK_SIZE;
+export const AI_DECK_MAX_SIZE = DECK_SIZE;
 export const AI_DECK_MAX_CARD_COPIES = 2;
-export const AI_DECK_MAX_LEGENDARY_CARDS = 3;
+export const AI_DECK_MAX_LEGENDARY_CARDS = MAX_LEGENDARY_CARDS;
 
 export type AIDeckValidation = {
   isValid: boolean;
@@ -65,11 +66,17 @@ export async function validateAIDeckReferences(
   } else if (champion.status !== "PUBLISHED") {
     invalidReasons.push("Champion이 더 이상 PUBLISHED 상태가 아닙니다.");
   }
-  if (cardDefinitionIds.length < AI_DECK_MIN_SIZE) {
-    invalidReasons.push(`카드가 ${AI_DECK_MIN_SIZE}장보다 적습니다.`);
-  }
-  if (cardDefinitionIds.length > AI_DECK_MAX_SIZE) {
-    invalidReasons.push(`카드가 ${AI_DECK_MAX_SIZE}장을 초과했습니다.`);
+  for (const reason of validateDeckCounts({
+    cardCount: cardDefinitionIds.length,
+    legendaryCount: cardDefinitionIds.reduce(
+      (total, id) => total + (cardsById.get(id)?.rarity === "LEGENDARY" ? 1 : 0),
+      0,
+    ),
+    championCount: championDefinitionId ? 1 : 0,
+  })) {
+    if (reason === "INVALID_CARD_COUNT") invalidReasons.push(`카드는 정확히 ${DECK_SIZE}장이어야 합니다.`);
+    if (reason === "TOO_MANY_LEGENDARIES") invalidReasons.push(`레전더리 카드는 덱에 총 ${MAX_LEGENDARY_CARDS}장까지만 넣을 수 있습니다.`);
+    if (reason === "INVALID_CHAMPION_COUNT") invalidReasons.push("PUBLISHED 상태의 Champion을 1명 선택해야 합니다.");
   }
 
   const missingCardDefinitionIds = uniqueCardIds.filter((id) => !cardsById.has(id));

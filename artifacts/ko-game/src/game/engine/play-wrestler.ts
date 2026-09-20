@@ -112,11 +112,6 @@ export function playWrestlerFromHand(
       type: 'PLAYER',
       playerId,
     }, undefined, 'PLAY_FROM_HAND');
-  const playedListeners = resolveBoardListeners(enteredState, playerId, 'CARD_PLAYED_THIS_TURN', {
-    chosenTargetInstanceIds: [cardInstanceId],
-    playedFromHand: true,
-    playedCardType: card.cardType,
-  });
-  const resolvedState = resolveQueuedEffectsForPlayedWrestler(playedListeners, playerId, cardInstanceId);
+  const resolvedState = resolveQueuedEffectsForPlayedWrestler(enteredState, playerId, cardInstanceId);
   return actionSuccess(processChampionQuestEvents(state, resolvedState));
 }
