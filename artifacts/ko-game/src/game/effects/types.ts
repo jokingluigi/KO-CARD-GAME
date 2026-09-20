@@ -2,6 +2,7 @@ import type {
   Action, DamageSource, DynamicValue, EffectDuration, Keyword, RandomScope, Reference, StatName, TargetOwner, TargetSelection, TargetZone,
 } from "@workspace/effect-registry";
 import type { CardDefinition } from '../cards/types';
+import type { CardTagFilter } from '../cards/tags';
 
 export type CardKeyword = Keyword;
 export type RuntimeAction = Action | 'REMOVE_FROM_GAME' | 'CAPTURE' | 'RELEASE_CAPTURED';
@@ -17,7 +18,7 @@ export type StructuredTarget = {
   zones?: TargetZone[];
   owner: TargetOwner;
   cardType?: 'WRESTLER' | 'TECHNIQUE';
-  filter?: { isGenerated?: boolean; minCost?: number; maxCost?: number; isToken?: boolean; isChampionToken?: boolean; excludeSource?: boolean };
+  filter?: CardTagFilter & { isGenerated?: boolean; minCost?: number; maxCost?: number; isToken?: boolean; isChampionToken?: boolean; excludeSource?: boolean };
   selection: TargetSelection;
   count: number;
   randomScope?: RandomScope;

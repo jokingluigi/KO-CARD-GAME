@@ -323,7 +323,7 @@ test("현재 registry에서 제공하는 Effect Library 메타데이터를 노�
     { attackMultiplier: "number (0..10)", healthMultiplier: "number (0..10)" },
   );
   assert.deepEqual(library.targetResolvers[0]?.config.defaultCardScope, ["HAND", "DECK", "BOARD"]);
-  assert.deepEqual(library.targetResolvers[0]?.config.filters, ["GENERATED", "MIN_COST", "MAX_COST", "TOKEN", "NON_CHAMPION_TOKEN", "EXCLUDE_SOURCE"]);
+  assert.deepEqual(library.targetResolvers[0]?.config.filters, ["GENERATED", "MIN_COST", "MAX_COST", "TOKEN", "NON_CHAMPION_TOKEN", "EXCLUDE_SOURCE", "TAGS_ANY", "TAGS_ALL", "TAGS_NONE"]);
   assert.deepEqual(library.targetResolvers[0]?.config.randomScope, ["STANDARD", "FULL"]);
   assert.ok(library.actions.some((action) => action.name === "SET_STATS"));
   assert.deepEqual(
@@ -761,6 +761,41 @@ test("액션별 Schema는 target 없는 드로우와 잘못된 값을 구분한�
   assert.equal(isStructuredEffects({ effects: [{ trigger: "ENTER_FIELD", action: "DRAW", values: { amount: 1 } }] }), true);
   assert.equal(isStructuredEffects({ effects: [{ trigger: "ENTER_FIELD", action: "DRAW", target: { zone: "BOARD", owner: "SELF", selection: "SELF", count: 1 }, values: { amount: 1 } }] }), false);
   assert.equal(isStructuredEffects({ effects: [{ trigger: "ENTER_FIELD", action: "ADD_KEYWORD", target: { zone: "BOARD", owner: "SELF", selection: "SELF", count: 1 } }] }), false);
+});
+
+test("generic target DSL accepts any/all/none card tag filters and rejects invalid lists", () => {
+  const target = { zone: "BOARD", owner: "SELF", cardType: "WRESTLER", selection: "ALL", count: 20 };
+  assert.equal(isStructuredEffects({
+    effects: [{
+      trigger: "ENTER_FIELD",
+      action: "BUFF",
+      target: { ...target, filter: { tagsAny: ["용병", "인간"] } },
+      values: { attack: 1, health: 1 },
+    }],
+  }), true);
+  assert.equal(isStructuredEffects({
+    effects: [{
+      trigger: "ENTER_FIELD",
+      action: "BUFF",
+      target: { ...target, filter: { tagsAll: ["용병", "인간"], tagsNone: ["언데드"] } },
+      values: { attack: 1, health: 1 },
+    }],
+  }), true);
+  assert.equal(isStructuredEffects({
+    effects: [{
+      trigger: "ENTER_FIELD",
+      action: "BUFF",
+      target: { ...target, filter: { tagsAny: [""] } },
+      values: { attack: 1, health: 1 },
+    }],
+  }), false);
+});
+
+test("tag target phrases analyze into a reusable tagsAny filter", () => {
+  const result = analyzeEffectText("등장: 내 필드의 용병 또는 인간 태그를 가진 선수에게 +1/+1");
+  assert.equal(result.status, "success");
+  assert.deepEqual(result.effects[0]?.target?.filter, { tagsAny: ["용병", "인간"] });
+  assert.equal(isStructuredEffects({ effects: result.effects }), true);
 });
 
 test("연결된 절은 각 절의 숫자만 해당 액션에 바인딩한다", () => {

@@ -38,7 +38,12 @@ export type {
   CardInstance,
   CardRarity,
 } from "../../../artifacts/ko-game/src/game/cards/types";
-export { canonicalCardTags, sharesCardTag } from "../../../artifacts/ko-game/src/game/cards/tags";
+export {
+  canonicalCardTags,
+  hasCardTag,
+  matchesCardTagFilter,
+  sharesCardTag,
+} from "../../../artifacts/ko-game/src/game/cards/tags";
 export type { BoardSlot } from "../../../artifacts/ko-game/src/game/engine/board-position";
 export type { AttackTarget } from "../../../artifacts/ko-game/src/game/engine/combat";
 export {

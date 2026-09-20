@@ -5,6 +5,7 @@ import type {
 } from './types';
 import type { RandomScope } from '@workspace/effect-registry';
 import type { EventAttribution, EventSubject, GameEvent } from '../events/types';
+import { matchesCardTagFilter, type CardTagFilter } from './tags';
 
 export interface GenerateCardOptions {
   instanceId: CardInstanceId;
@@ -29,10 +30,9 @@ export interface RandomCardPoolOptions {
     isGenerated?: boolean;
     minCost?: number;
     maxCost?: number;
-    tags?: string[];
     isToken?: boolean;
     isChampionToken?: boolean;
-  };
+  } & CardTagFilter;
 }
 
 export function isEligibleForRandomPool(
@@ -123,7 +123,7 @@ export function getRandomCardGenerationCandidates(
     }
     if (options.filter?.isToken !== undefined && definition.isToken !== options.filter.isToken) return false;
     if (options.filter?.isChampionToken !== undefined && definition.isChampionToken !== options.filter.isChampionToken) return false;
-    if (options.filter?.tags?.some((tag) => !(definition.tags ?? []).includes(tag))) return false;
+    if (!matchesCardTagFilter(definition, options.filter)) return false;
     return isEligibleForRandomPool(definition, randomScope);
   });
 }

@@ -16,8 +16,8 @@ import type { CardEffect } from './types';
 const targeted = (action: Extract<CardEffect, { type: 'STRUCTURED' }>['action'], owner: 'SELF' | 'ENEMY' = 'ENEMY', selection: 'PLAYER_CHOICE' | 'SELF' | 'RANDOM' | 'ALL' | 'SAME_TARGET' = 'PLAYER_CHOICE', count = 1): CardEffect =>
   ({ type: 'STRUCTURED', action, target: { zone: 'BOARD', owner, cardType: 'WRESTLER', selection, count }, values: { amount: 1 } });
 
-function card(id: string, effects: CardEffect[] = []): CardInstance {
-  const definition: CardDefinition = { id, name: id, cardType: 'WRESTLER', cost: 1, attack: 1, health: 2, rulesText: '', isToken: false, isChampionToken: false, keywords: [], abilities: [{ trigger: 'ENTER_FIELD', effects }] };
+function card(id: string, effects: CardEffect[] = [], tags: string[] = []): CardInstance {
+  const definition: CardDefinition = { id, name: id, cardType: 'WRESTLER', cost: 1, attack: 1, health: 2, rulesText: '', isToken: false, isChampionToken: false, keywords: [], tags, abilities: [{ trigger: 'ENTER_FIELD', effects }] };
   return generateCard(definition, { instanceId: id, playerId: 'player-1', source: { type: 'PLAYER', playerId: 'player-1' }, reason: 'TEST' }).card;
 }
 
@@ -120,6 +120,68 @@ test('resolver covers board, hand/player ids, multiselect duplicates and champio
   assert.equal(selectEffectTarget(first, 'two'), first);
   const multiDone = selectEffectTarget(first, 'token');
   assert.equal(multiDone.targetingState, undefined);
+});
+
+test('tag filters compose with zone, owner, and card type without hardcoded tag names', () => {
+  const source = card('tag-filter-source');
+  const allyBoard = { ...card('ally-board', [], ['용병', '인간']), boardSlot: 0 as const };
+  const allyUntagged = { ...card('ally-untagged'), boardSlot: 1 as const };
+  const allyTechnique = { ...card('ally-technique', [], ['용병']), cardType: 'TECHNIQUE' as const, boardSlot: 2 as const };
+  const allyHand = card('ally-hand', [], ['용병']);
+  const generatedToken = { ...card('generated-token', [], ['용병']), isGenerated: true, isToken: true };
+  const enemyBoard = { ...card('enemy-board', [], ['용병']), boardSlot: 0 as const };
+  const state = createInitialGameState();
+  state.players[0].board[0] = allyBoard;
+  state.players[0].board[1] = allyUntagged;
+  state.players[0].board[2] = allyTechnique;
+  state.players[0].hand = [allyHand];
+  state.players[0].board[3] = generatedToken;
+  state.players[1].board[0] = enemyBoard;
+
+  const boardWrestlers = {
+    type: 'STRUCTURED' as const,
+    action: 'BUFF' as const,
+    target: {
+      zone: 'BOARD' as const,
+      owner: 'SELF' as const,
+      cardType: 'WRESTLER' as const,
+      filter: { tagsAny: ['용병'] },
+      selection: 'PLAYER_CHOICE' as const,
+      count: 1,
+    },
+    values: { attack: 1, health: 1 },
+  };
+  assert.deepEqual(getValidTargets(state, 'player-1', source, boardWrestlers), ['ally-board', 'generated-token']);
+
+  const handAll = {
+    ...boardWrestlers,
+    target: {
+      zone: 'HAND' as const,
+      owner: 'SELF' as const,
+      filter: { tagsAny: ['용병'] },
+      selection: 'PLAYER_CHOICE' as const,
+      count: 1,
+    },
+  };
+  assert.deepEqual(getValidTargets(state, 'player-1', source, handAll), ['ally-hand']);
+
+  const allTags = {
+    ...boardWrestlers,
+    target: {
+      ...boardWrestlers.target,
+      filter: { tagsAll: ['용병', '인간'] },
+    },
+  };
+  assert.deepEqual(getValidTargets(state, 'player-1', source, allTags), ['ally-board']);
+
+  const noHumans = {
+    ...boardWrestlers,
+    target: {
+      ...boardWrestlers.target,
+      filter: { tagsNone: ['인간'] },
+    },
+  };
+  assert.deepEqual(getValidTargets(state, 'player-1', source, noHumans), ['ally-untagged', 'generated-token']);
 });
 
 test('CHARACTER targeting offers the owner id and wrestlers, then applies player and card damage/healing separately', () => {

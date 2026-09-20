@@ -5,6 +5,7 @@ import {
   type DamageSource, type RandomScope, type TargetZone, type Trigger, type StatName, type EffectDuration,
   STAT_NAMES, EFFECT_DURATIONS,
 } from "@workspace/effect-registry";
+import { cardTagsSchema } from "@workspace/api-zod";
 
 export { ACTIONS, KEYWORDS, TRIGGERS };
 export type { Action, Keyword, Trigger };
@@ -13,7 +14,17 @@ export type Target = {
   zones?: TargetZone[];
   owner: TargetOwner;
   cardType?: "WRESTLER" | "TECHNIQUE";
-  filter?: { isGenerated?: boolean; minCost?: number; maxCost?: number; isToken?: boolean; isChampionToken?: boolean; excludeSource?: boolean };
+  filter?: {
+    isGenerated?: boolean;
+    minCost?: number;
+    maxCost?: number;
+    isToken?: boolean;
+    isChampionToken?: boolean;
+    excludeSource?: boolean;
+    tagsAny?: string[];
+    tagsAll?: string[];
+    tagsNone?: string[];
+  };
   selection: TargetSelection;
   count: number;
   randomScope?: RandomScope;
@@ -178,6 +189,7 @@ function targetFilterFor(text: string): Target["filter"] | undefined {
   const token = /토큰/.test(text) && !/챔피언\s*토큰/.test(text);
   const nonChampionToken = /챔피언\s*토큰\s*제외/.test(text);
   const excludeSource = /자신을\s*제외/.test(text);
+  const tagFilter = tagFilterFor(text);
   const filter = {
     ...(generated ? { isGenerated: true } : {}),
     ...(Number.isInteger(minCost) ? { minCost } : {}),
@@ -185,8 +197,37 @@ function targetFilterFor(text: string): Target["filter"] | undefined {
     ...(token ? { isToken: true } : {}),
     ...(nonChampionToken ? { isChampionToken: false } : {}),
     ...(excludeSource ? { excludeSource: true } : {}),
+    ...(tagFilter ?? {}),
   };
   return Object.keys(filter).length ? filter : undefined;
+}
+
+function tagNamesBeforeMarker(text: string): string[] {
+  const marker = text.match(/태그/);
+  if (!marker || marker.index === undefined) return [];
+  const prefix = text.slice(0, marker.index)
+    .replace(/(?:모든|전부|아군|내|상대|적|선수|카드|가진|있는|필드|손패|덱|의|을|를|이|가)/g, " ")
+    .trim();
+  const quoted = [...prefix.matchAll(/['‘’“”"]([^'‘’“”"]+)['‘’“”"]/g)].map((match) => match[1]!.trim());
+  const source = quoted.length ? quoted.join(",") : prefix;
+  return source
+    .split(/\s*(?:,|，|및|또는|와|과)\s*|\s+/)
+    .map((tag) => tag.trim())
+    .filter(Boolean)
+    .slice(-3);
+}
+
+function tagFilterFor(text: string): Target["filter"] | undefined {
+  const tags = tagNamesBeforeMarker(text);
+  if (!tags.length) return undefined;
+  if (/태그\s*(?:가|를|은|는)?\s*(?:없는|없음|제외|아닌)/.test(text)) return { tagsNone: tags };
+  if (/(?:모두|둘\s*다|전부)\s*가진/.test(text)) return { tagsAll: tags };
+  return { tagsAny: tags };
+}
+
+function validTagFilterValues(value: unknown): value is string[] {
+  const parsed = cardTagsSchema.safeParse(value);
+  return parsed.success && parsed.data.length > 0;
 }
 function targetFor(text: string, randomPool = false): Target {
   const hand = /손(?:패)?/.test(text);
@@ -890,6 +931,7 @@ export function analyzeEffectText(input: string, options: EffectAnalysisOptions 
     }
     remainder += ` ${clauseRemainder}`;
   }
+      remainder = remainder.replace(/(?:내\s+)?(?:필드|손패|덱)?\s*의?\s*(?:[가-힣A-Za-z0-9]+\s*(?:또는|및|와|과|,)\s*)*[가-힣A-Za-z0-9]+\s*태그\s*(?:를|가|은|는)?\s*(?:가진|있는|없는|제외|아닌)/g, "");
      remainder = remainder.replace(/사용될\s*때까지(?:\s*\S+){0,5}\s*유지(?:합니다)?|다음\s*턴에도(?:\s*\S+){0,2}\s*유지(?:합니다)?/g, "");
      remainder = remainder.replace(/자신의\s*양\s*옆\s*(?:빈\s*)?슬롯(?:에)?|양\s*옆\s*(?:빈\s*)?슬롯(?:에)?|각각|이\s*카드가\s*필드에\s*있(?:는\s*동안|을\s*때)|(?:비용|코스트)(?:이)?\s*\d+\s*(?:이상|이하)|\d+\s*(?:코스트|비용)\s*(?:이상|이하)/g, "");
       remainder = remainder.replace(/(?:모든\s*)?(?:생성된\s*)?(?:아군|내)\s*선수(?:\s*카드)?(?:에게|을|를|의)?/g, "");
@@ -995,7 +1037,7 @@ export function isStructuredEffects(value: unknown): value is { effects: Structu
       if (target.selection === "ALL" && target.count < 1) return false;
       if (zones.some((zone) => zone === "CHARACTER") && ["REDUCE_COST", "INCREASE_COST"].includes(item.action)) return false;
       if (zones.some((zone) => zone === "PLAYER") && !(zones.length === 1 && ((item.action === "DAMAGE" && target.owner === "ENEMY" && target.selection === "SELF") || (item.action === "HEAL" && target.owner === "SELF" && target.selection === "SELF")))) return false;
-       if (target.filter && (
+        if (target.filter && (
          typeof target.filter !== "object" ||
          target.filter === null ||
          target.filter.isGenerated !== undefined && typeof target.filter.isGenerated !== "boolean" ||
@@ -1003,7 +1045,10 @@ export function isStructuredEffects(value: unknown): value is { effects: Structu
           target.filter.maxCost !== undefined && (!Number.isInteger(target.filter.maxCost) || target.filter.maxCost < 0 || target.filter.maxCost > 999) ||
           target.filter.isToken !== undefined && typeof target.filter.isToken !== "boolean" ||
           target.filter.isChampionToken !== undefined && typeof target.filter.isChampionToken !== "boolean" ||
-          target.filter.excludeSource !== undefined && typeof target.filter.excludeSource !== "boolean"
+          target.filter.excludeSource !== undefined && typeof target.filter.excludeSource !== "boolean" ||
+          target.filter.tagsAny !== undefined && !validTagFilterValues(target.filter.tagsAny) ||
+          target.filter.tagsAll !== undefined && !validTagFilterValues(target.filter.tagsAll) ||
+          target.filter.tagsNone !== undefined && !validTagFilterValues(target.filter.tagsNone)
        )) return false;
       if (target.randomScope !== undefined && (!RANDOM_SCOPES.includes(target.randomScope) || !["RANDOM", "ADJACENT_EMPTY_SLOTS"].includes(target.selection))) return false;
     } else if (target !== undefined && !(["SUMMON", "GENERATE"].includes(item.action) && ["RANDOM", "ADJACENT_EMPTY_SLOTS"].includes(target.selection))) return false;

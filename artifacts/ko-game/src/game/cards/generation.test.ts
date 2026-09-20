@@ -133,3 +133,16 @@ test('무작위 생성 Pool은 최소 코스트 필터를 적용한다', () => {
     ['high-cost'],
   );
 });
+
+test('무작위 생성 Pool은 CardDefinition 태그 필터를 적용하고 토큰 태그를 유지한다', () => {
+  const taggedToken = { ...definition('tagged-token', true), tags: ['용병'] };
+  const untaggedToken = { ...definition('untagged-token', true), tags: [] };
+  assert.deepEqual(
+    getRandomCardGenerationCandidates(
+      [taggedToken, untaggedToken],
+      { randomScope: 'FULL', filter: { tagsAny: ['용병'] } },
+    ).map((card) => card.id),
+    ['tagged-token'],
+  );
+  assert.deepEqual(generateCardInstance(taggedToken, { instanceId: 'tagged-token-instance' }).tags, ['용병']);
+});

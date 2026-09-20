@@ -1,5 +1,5 @@
 import type { CardDefinition, CardInstance, CardStatHistoryEntry } from '../cards/types';
-import { sharesCardTag } from '../cards/tags';
+import { matchesCardTagFilter, sharesCardTag } from '../cards/tags';
 import type { CardAbility, CardEffect, CardKeyword } from './types';
 import { RUNTIME_HANDLER_ACTIONS, type Action, type EffectDuration, type TargetZone } from "@workspace/effect-registry";
 
@@ -55,6 +55,7 @@ export function getValidTargets(
       if (target.filter?.isToken !== undefined && card.isToken !== target.filter.isToken) return false;
       if (target.filter?.isChampionToken !== undefined && card.isChampionToken !== target.filter.isChampionToken) return false;
       if (target.filter?.excludeSource && card.instanceId === sourceCard.instanceId) return false;
+      if (!matchesCardTagFilter(card, target.filter)) return false;
       if (target.selection === 'RANDOM' && !isEligibleForRandomPool(card, target.randomScope)) return false;
       if (target.selection === 'SELF' && card.instanceId !== sourceCard.instanceId) return false;
       // Directly deployed champion tokens remain damageable, but not silence/destroy targets.
@@ -986,6 +987,7 @@ function applyEffect(
       if (target.filter?.isToken !== undefined && card.isToken !== target.filter.isToken) return false;
       if (target.filter?.isChampionToken !== undefined && card.isChampionToken !== target.filter.isChampionToken) return false;
       if (target.filter?.excludeSource && card.instanceId === sourceCard.instanceId) return false;
+       if (!matchesCardTagFilter(card, target.filter)) return false;
       return true;
     });
     const randomCandidates = eligibleCandidates.filter((card) =>

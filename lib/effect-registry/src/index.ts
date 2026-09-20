@@ -8,7 +8,7 @@ export const KEYWORDS = ["RUSH", "SURPRISE", "TAUNT", "DODGE", "MULTI_STRIKE"] a
 export const TARGET_ZONES = ["BOARD", "HAND", "DECK", "GRAVEYARD", "PLAYER", "CHARACTER"] as const;
 /** The default card scope for Korean phrases such as "어디에 있든". */
 export const DEFAULT_CARD_TARGET_SCOPE = ["HAND", "DECK", "BOARD"] as const;
-export const TARGET_FILTERS = ["GENERATED", "MIN_COST", "MAX_COST", "TOKEN", "NON_CHAMPION_TOKEN", "EXCLUDE_SOURCE"] as const;
+export const TARGET_FILTERS = ["GENERATED", "MIN_COST", "MAX_COST", "TOKEN", "NON_CHAMPION_TOKEN", "EXCLUDE_SOURCE", "TAGS_ANY", "TAGS_ALL", "TAGS_NONE"] as const;
 export const TARGET_OWNERS = ["SELF", "ENEMY", "ALL"] as const;
 export const TARGET_SELECTIONS = ["SELF", "PLAYER_CHOICE", "RANDOM", "TOP", "ADJACENT_EMPTY_SLOTS", "SAME_TARGET", "ALL"] as const;
 export const RANDOM_SCOPES = ["STANDARD", "FULL"] as const;
@@ -117,6 +117,6 @@ export const EFFECT_LIBRARY = {
   }),
   triggers: TRIGGERS.map((name) => ({ name, label: DISPLAY_LABELS[name as keyof typeof DISPLAY_LABELS] ?? name, description: triggerDescriptions[name], status: "ACTIVE" as const, version: 1 })),
   conditions: CONDITIONS.map((name) => ({ name, label: DISPLAY_LABELS[name as keyof typeof DISPLAY_LABELS] ?? name, description: name === "HAS_MATCHING_TAG_PLAYED_THIS_TURN" ? "이번 턴 먼저 플레이한 아군과 태그가 하나 이상 일치합니다." : name === "SOURCE_IS_ONLY_WRESTLER" ? "이 카드가 내 필드의 유일한 선수인지 확인합니다." : "구조화된 조건을 확인합니다.", status: "ACTIVE" as const, version: 1 })),
-   targetResolvers: [{ name: "ZONE_OWNER_SELECTION", description: "영역(여러 영역 포함), 소유자, 카드 유형, 필터, 선택 방식 및 수로 대상을 해석합니다.", config: { zone: [...TARGET_ZONES], zones: "TargetZone[]", defaultCardScope: [...DEFAULT_CARD_TARGET_SCOPE], owner: [...TARGET_OWNERS], filters: [...TARGET_FILTERS], selection: [...TARGET_SELECTIONS], randomScope: [...RANDOM_SCOPES], count: "integer (1..20)" }, status: "ACTIVE" as const, version: 1 }],
+   targetResolvers: [{ name: "ZONE_OWNER_SELECTION", description: "영역(여러 영역 포함), 소유자, 카드 유형, 태그 필터, 선택 방식 및 수로 대상을 해석합니다.", config: { zone: [...TARGET_ZONES], zones: "TargetZone[]", defaultCardScope: [...DEFAULT_CARD_TARGET_SCOPE], owner: [...TARGET_OWNERS], filters: [...TARGET_FILTERS], tagFilters: { tagsAny: "string[]", tagsAll: "string[]", tagsNone: "string[]" }, selection: [...TARGET_SELECTIONS], randomScope: [...RANDOM_SCOPES], count: "integer (1..20)" }, status: "ACTIVE" as const, version: 1 }],
    valueResolvers: [{ name: "AMOUNT", description: "골드, 피해, 회복, 드로우 및 비용 수치를 해석합니다.", status: "ACTIVE" as const, version: 1 }, { name: "STAT_PAIR", description: "+공격력/+체력 수치를 해석합니다.", status: "ACTIVE" as const, version: 1 }, { name: "STAT_MULTIPLIER", description: "대상의 현재 공격력과 체력을 배수로 변경합니다.", config: { attackMultiplier: "number (0..10)", healthMultiplier: "number (0..10)" }, status: "ACTIVE" as const, version: 1 }, { name: "REFERENCE_STAT", description: "마지막 공격자 등 참조 대상의 현재 능력치를 수치로 해석합니다.", config: { reference: [...REFERENCES], referenceStat: ["CURRENT_ATTACK", "CURRENT_HEALTH"] }, status: "ACTIVE" as const, version: 1 }, { name: "KEYWORD", description: "지원 키워드를 해석합니다.", values: [...KEYWORDS], status: "ACTIVE" as const, version: 1 }],
 } as const;
