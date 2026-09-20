@@ -385,18 +385,20 @@ export function CardRenderer({
         {keywordBadges.length > 0 && (
           <div
             data-testid="card-keyword-badges"
-            className="pointer-events-none absolute bottom-[12%] left-[8%] right-[8%] z-30 flex flex-wrap justify-center gap-0.5"
+            className="pointer-events-none absolute bottom-[11%] left-[6%] right-[6%] z-30 flex flex-wrap justify-center gap-1"
             aria-label={`키워드 ${keywordBadges.map((keyword) => keywordLabels[keyword] ?? keyword).join(", ")}`}
           >
-            {keywordBadges.slice(0, 5).map((keyword) => (
+            {keywordBadges.map((keyword) => (
               <span
                 key={keyword}
-                className={`rounded border px-1 py-0.5 text-[6px] font-black leading-none shadow ${
+                className={`rounded-md border px-1.5 py-1 text-[0.75rem] font-extrabold leading-none shadow-lg ${
                   keyword === "TAUNT" ? "border-cyan-200 bg-cyan-950/90 text-cyan-100" :
                   keyword === "RUSH" ? "border-amber-200 bg-amber-950/90 text-amber-100" :
                   keyword === "SURPRISE" ? "border-fuchsia-200 bg-fuchsia-950/90 text-fuchsia-100" :
                   keyword === "DODGE" ? "border-violet-200 bg-violet-950/90 text-violet-100" :
                   String(keyword) === "STUN" ? "border-orange-200 bg-orange-950/90 text-orange-100" :
+                  String(keyword) === "SILENCE" ? "border-purple-200 bg-purple-950/90 text-purple-100" :
+                  String(keyword) === "DISABLED" ? "border-slate-200 bg-slate-950/90 text-slate-100" :
                   "border-red-200 bg-red-950/90 text-red-100"
                 }`}
                 title={keywordLabels[keyword] ?? keyword}

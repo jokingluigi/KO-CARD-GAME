@@ -14,6 +14,8 @@ import {
   type CardInstance,
   type ChampionState,
 } from '@/game';
+import { canonicalCardTags } from '@/game/cards/tags';
+import { normalizeCardRulesText } from '@/lib/display-labels';
 import { CardRenderer } from './card-renderer';
 
 interface InspectTarget {
@@ -79,6 +81,30 @@ export function calculateInspectorPosition(
   return {
     left: Math.min(Math.max(margin, preferredLeft), maxLeft),
     top: Math.min(Math.max(margin, preferredTop), maxTop),
+  };
+}
+
+export function getCardInspectorMetadata(card: CardInstance) {
+  const definition = getCardDefinition(card.definitionId);
+  const tags = canonicalCardTags(definition?.tags ?? card.tags).slice(0, 3);
+  const keywords = card.keywords
+    .filter((keyword) => !['SILENCE', 'STUN', 'DISABLED'].includes(keyword))
+    .map((keyword) => ({
+      key: keyword,
+      label: KEYWORD_LABELS[keyword] ?? keyword,
+      description: KEYWORD_DESCRIPTIONS[keyword] ?? '특수 키워드입니다.',
+    }));
+  const statuses = [
+    card.isSilenced ? { key: 'SILENCE', label: '침묵', description: KEYWORD_DESCRIPTIONS.SILENCE } : null,
+    card.isStunned ? { key: 'STUN', label: '기절', description: KEYWORD_DESCRIPTIONS.STUN } : null,
+    card.isAbilityDisabled ? { key: 'DISABLED', label: '봉인', description: '카드의 능력을 사용할 수 없습니다.' } : null,
+  ].filter((status): status is { key: string; label: string; description: string } => Boolean(status));
+  return {
+    definition,
+    tags,
+    keywords,
+    statuses,
+    rulesText: normalizeCardRulesText(definition?.rulesText ?? '') || '효과 없음',
   };
 }
 
