@@ -1,0 +1,884 @@
+좋아. 이번엔 **“온라인 PvP 준비 상태를 확인하는 것”이 아니라, 기존 구조를 최대한 활용해서 실제 2인 온라인 매치가 돌아가는 상태까지 구현하는 것**을 목표로 잡자.
+
+아래 그대로 Replit Agent에 넣으면 돼.
+
+KO CARD GAME의 **온라인 PvP를 실제로 플레이 가능한 상태까지 구현해주세요.**
+
+이번 작업의 목표는 온라인 구조를 조사해서 보고하는 것이 아닙니다.
+
+현재 존재하는 Quick Match / Friendly Match / WebSocket / 게임 엔진 구조를 최대한 재사용해서,
+
+**실제 사용자 2명이 같은 온라인 Match에 들어가 서로 턴을 주고받으며 게임을 진행할 수 있는 상태까지 구현하는 것**이 목표입니다.
+
+코드상 문제를 발견하면 단순히 “미구현”, “추가 작업 필요”라고 보고하고 끝내지 말고,
+현재 구조 안에서 합리적으로 구현 가능한 부분은 이번 작업에서 실제로 완성해주세요.
+
+단, 기존 시스템 전체를 새로 만드는 수준의 대규모 재설계가 반드시 필요한 경우에만 그 부분은 중단하고 정확한 이유를 보고해주세요.
+
+---
+
+# 1. 최종 목표
+
+이번 작업이 끝났을 때 최소한 다음 두 방식의 온라인 경기가 실제 코드상 성립해야 합니다.
+
+## Quick Match
+
+```text
+Player A
+→ 정상 Deck 선택
+→ 상대 찾기
+
+Player B
+→ 정상 Deck 선택
+→ 상대 찾기
+
+Server
+→ 두 Player를 queue에서 매칭
+→ 하나의 Match 생성
+→ 하나의 gameId 생성
+→ A/B를 같은 Match에 연결
+→ 양쪽 Online Game 화면 진입
+→ 한쪽이 Action
+→ Server 검증
+→ 동일 GameState 갱신
+→ 양쪽 Client에 반영
+```
+
+---
+
+## Friendly Match
+
+```text
+Player A
+→ 방 만들기
+→ Server Room 생성
+→ Room Code 발급
+
+Player B
+→ Room Code 입력
+→ 방 참가
+
+Server
+→ 두 Player 연결
+→ 하나의 Match 생성
+→ 하나의 gameId 생성
+→ 양쪽 Online Game 화면 진입
+→ 실제 게임 진행
+```
+
+단순히 Room Code가 생성되거나 “Searching...” 화면이 뜨는 것만으로 완료 처리하지 마세요.
+
+**실제 Match/GameState까지 이어지는 구조**여야 합니다.
+
+---
+
+# 2. 기존 구조를 우선 사용
+
+현재 프로젝트에는 이미 다음 기반이 있습니다.
+
+* React + TypeScript frontend
+* API Server
+* 로그인/session
+* Deck 시스템
+* Quick Match 페이지
+* Friendly Match 페이지
+* WebSocket 관련 multiplayer 코드
+* queue / lobby 관련 코드
+* disconnect cleanup 일부
+* 게임 엔진
+* Action → Event → GameState 구조
+
+이걸 다시 처음부터 만들지 마세요.
+
+새 multiplayer framework도 도입하지 마세요.
+
+현재 구조를 좁게 추적해서:
+
+```text
+이미 구현되어 있지만 연결이 끊긴 부분
+→ 연결
+
+불완전한 부분
+→ 최소 구현
+
+중복 구현
+→ 가능하면 기존 구조로 통합
+```
+
+하는 방식으로 작업해주세요.
+
+---
+
+# 3. Repository 탐색 범위 제한
+
+처음부터 repository 전체를 읽지 마세요.
+
+온라인 PvP와 직접 관련된 경로부터 확인해주세요.
+
+우선순위:
+
+1. `online-quick`
+2. `online-friendly`
+3. multiplayer client / WebSocket client
+4. API/WebSocket server multiplayer handler
+5. lobby / queue / room registry
+6. match/game creation
+7. online game state
+8. server-side Action handling
+9. game engine bridge
+
+카드 밸런스, Admin UI, 카드 이미지, 상점, 컬렉션 등은 이번 작업과 관계없으므로 탐색하지 마세요.
+
+---
+
+# 4. Quick Match를 실제로 구현
+
+현재 Quick Match에서 `상대 찾기`가 정상적으로 작동하지 않는 문제가 있습니다.
+
+단순히 버튼을 활성화하는 것으로 끝내지 마세요.
+
+다음 전체 흐름을 완성해주세요.
+
+```text
+Find Match click
+→ Client validation
+→ Server queue join
+→ searching 상태
+→ 다른 유저 queue join
+→ Server match
+→ Match object 생성
+→ gameId 생성
+→ 양쪽 client에 MATCH_FOUND
+→ game route 이동
+→ 같은 GameState 연결
+```
+
+## 반드시 확인/구현할 것
+
+* 정상 Deck이 선택되어 있는지
+* 로그인/session 존재
+* button disabled 조건 정상화
+* click handler 연결
+* WebSocket 연결
+* queue join request
+* 중복 queue 등록 방지
+* queue leave
+* 두 Player pairing
+* match/game 생성
+* gameId 전달
+* Player slot 지정
+* game page navigation
+
+---
+
+# 5. Quick Match queue 규칙
+
+한 Player가 queue에 여러 번 들어가면 안 됩니다.
+
+예:
+
+```text
+Player A
+→ Find Match
+→ queue 등록
+
+다시 Find Match
+→ 중복 entry 생성 금지
+```
+
+화면 이탈/취소/disconnect 시:
+
+```text
+queue에서 제거
+```
+
+기존 cleanup 코드가 있다면 유지/재사용하세요.
+
+---
+
+# 6. Friendly Room 실제 구현
+
+현재 Friendly Match에서는 방 생성 자체가 정상 작동하지 않습니다.
+
+다음 흐름을 완성해주세요.
+
+## Host
+
+```text
+Create Room
+→ server request
+→ Room 생성
+→ unique Room Code 생성
+→ host attach
+→ Room Code client 표시
+```
+
+## Guest
+
+```text
+Room Code 입력
+→ Join
+→ server room 조회
+→ 유효성 검사
+→ guest attach
+→ 두 Player 준비 완료
+→ Match 생성
+→ gameId 발급
+→ 양쪽 game route 이동
+```
+
+## 처리해야 하는 오류
+
+* 존재하지 않는 Room Code
+* 이미 Full인 Room
+* Host가 떠난 Room
+* 본인이 자기 Room에 중복 참가
+* 같은 session의 중복 connection
+* join 도중 disconnect
+
+이 경우 서버가 crash하면 안 됩니다.
+
+정상적인 error response만 반환하세요.
+
+---
+
+# 7. Match/Game 생성
+
+Quick Match와 Friendly Match가 결국 **같은 Match 생성 함수**를 사용하도록 하는 것이 가능하면 그렇게 해주세요.
+
+예:
+
+```text
+Quick Match pair
+        ↓
+createOnlineMatch()
+
+Friendly Room ready
+        ↓
+createOnlineMatch()
+```
+
+두 시스템이 게임 초기화 로직을 따로 복제하지 않게 하세요.
+
+이미 공통 함수가 있다면 반드시 재사용하세요.
+
+---
+
+# 8. Match 초기화
+
+Match 생성 시 Server에서 최소한 다음을 확정해야 합니다.
+
+* gameId
+* Player A
+* Player B
+* 각 Player의 Deck
+* Champion
+* 최초 GameState
+* 첫 Player / turn
+* RNG seed
+* Event sequence/version
+
+Client가 각자 따로 GameState를 초기화하지 않게 하세요.
+
+---
+
+# 9. Server Authoritative 구조 구현
+
+온라인 PvP에서는 Server가 GameState의 최종 권한을 가져야 합니다.
+
+정상 흐름:
+
+```text
+Client
+→ Action request
+→ Server
+→ Action validation
+→ Game Engine
+→ Event
+→ GameState 변경
+→ 결과 broadcast
+→ 두 Client UI 갱신
+```
+
+다음 구조는 금지합니다.
+
+```text
+Client A가 자기 GameState 변경
+Client B도 자기 GameState 변경
+```
+
+Client는 Action을 요청하고 Server가 결과를 확정해야 합니다.
+
+---
+
+# 10. 온라인에서 처리해야 하는 Action
+
+최소한 실제 게임 진행에 필요한 기존 Action들이 온라인에서도 Server를 통해 처리되게 연결해주세요.
+
+* PLAY_FROM_HAND
+* WRESTLER play
+* TECHNIQUE play
+* PLAYER_CHOICE
+* ATTACK
+* USE_CHAMPION_ABILITY
+* END_TURN
+
+현재 프로젝트의 실제 Action 이름이 다르면 기존 이름을 사용하세요.
+
+새로운 별도 온라인 전용 게임 엔진을 만들지 마세요.
+
+기존 게임 엔진을 Server에서 호출하는 구조로 연결하세요.
+
+---
+
+# 11. Turn 검증
+
+Server에서 반드시 현재 turn owner를 검증하세요.
+
+예:
+
+```text
+Player A turn
+
+Player B:
+PLAY_CARD 요청
+→ reject
+
+Player B:
+ATTACK 요청
+→ reject
+
+Player B:
+END_TURN 요청
+→ reject
+```
+
+단, 현재 게임 규칙상 상대 턴에도 허용되는 Action이 실제로 존재한다면 해당 규칙은 유지하세요.
+
+Client UI disabled만 믿지 마세요.
+
+---
+
+# 12. Action validation
+
+잘못된 Action은 안전하게 거부되어야 합니다.
+
+Invalid Action 때문에:
+
+* exception
+* server crash
+* page reload
+* GameState 초기화
+* Match 종료
+
+가 발생하면 안 됩니다.
+
+형태는 가능하면:
+
+```text
+ACTION_REJECTED
+reason: ...
+```
+
+처럼 Client가 처리 가능한 구조를 사용하세요.
+
+기존 error protocol이 있다면 그대로 사용하세요.
+
+---
+
+# 13. GameState 동기화
+
+두 Player는 항상 동일 Match의 동일한 public GameState를 봐야 합니다.
+
+동기화 대상 예:
+
+* turn
+* board
+* Champion HP
+* Gold
+* graveyard
+* card positions
+* Quest progress
+* active effects
+* match status
+* Event sequence
+
+Action 처리 후 Server가 변경된 state/event를 양쪽에 전달하도록 구현하세요.
+
+---
+
+# 14. 비공개 정보 보호
+
+상대의 다음 정보가 그대로 노출되면 안 됩니다.
+
+* hand 카드 identity
+* deck order
+* 숨겨져야 하는 private data
+
+온라인 GameState를 그대로 모든 Client에 broadcast해서
+상대 손패/덱이 개발자 도구에서 보이는 구조라면 수정해주세요.
+
+가능하면 Server의 canonical GameState를:
+
+```text
+Player A view
+Player B view
+```
+
+로 sanitize해서 전달하세요.
+
+이미 view/snapshot 변환기가 있다면 그것을 사용하세요.
+
+---
+
+# 15. RNG
+
+온라인 경기 RNG는 Server에서 결정하거나 deterministic해야 합니다.
+
+게임 결과에 영향을 주는 random 처리를
+두 Client가 각각 실행하면 안 됩니다.
+
+확인 대상:
+
+* shuffle
+* draw 순서
+* random target
+* random generation
+* 기타 랜덤 효과
+
+가능하면 Match 생성 시 Server가 seed를 정하고
+기존 deterministic RNG 구조를 사용하세요.
+
+이미 구현된 RNG 구조가 있다면 변경하지 말고 연결만 하세요.
+
+---
+
+# 16. Deck 검증
+
+온라인 Match에 들어갈 때 Server에서 Deck을 검증하세요.
+
+현재 공식 규칙:
+
+## Deck
+
+* 카드 정확히 25장
+* Champion 정확히 1명
+
+## Legendary
+
+* Deck 전체 최대 5장
+* 동일 Legendary CardDefinition 중복 금지
+
+## Normal
+
+* 기존 Normal 중복 규칙 유지
+
+## Token
+
+* 일반 Deck 직접 편성 금지
+
+## Legacy Deck
+
+* 자동 삭제 금지
+* 자동 자르기 금지
+* INVALID / 수정 필요
+* 온라인 Match에는 사용 금지
+
+Frontend validation만 믿지 마세요.
+
+Server에서도 Match 참가 전에 validation해야 합니다.
+
+---
+
+# 17. Match 시작
+
+두 Player가 연결되면 Server가 한 번만 Match를 시작해야 합니다.
+
+중복 start 때문에:
+
+```text
+gameId 두 개 생성
+```
+
+또는:
+
+```text
+Player A와 B가 서로 다른 gameId를 받음
+```
+
+같은 문제가 발생하면 안 됩니다.
+
+Match 생성은 atomic하게 처리하세요.
+
+---
+
+# 18. Match 종료
+
+승패는 Server가 결정해야 합니다.
+
+정상 흐름:
+
+```text
+GameState
+→ 패배 조건 발생
+→ Server Match result 확정
+→ GAME_OVER Event
+→ Player A/B 동일 결과 수신
+→ 이후 Action reject
+```
+
+한 Client만 승리 화면을 띄우고 다른 Client는 계속 플레이 가능한 상태가 되면 안 됩니다.
+
+---
+
+# 19. Disconnect
+
+완벽한 reconnect 시스템을 새로 만드는 것은 이번 작업의 필수 목표가 아닙니다.
+
+하지만 최소한:
+
+* queue 중 disconnect
+* Friendly room 중 disconnect
+* Match 중 disconnect
+
+에서 Server state가 깨지면 안 됩니다.
+
+Match 중 disconnect가 발생하면 현재 구조에 가장 잘 맞는 최소 정책을 사용하세요.
+
+이미 reconnect 기능이 있으면 연결해주세요.
+
+없다면 Match를 바로 삭제하지 말고,
+현재 구조에서 안전한 방식으로 disconnected 상태를 관리할 수 있으면 구현해주세요.
+
+대규모 reconnect 시스템이 필요하다면 그 부분만 최종 보고에 남기세요.
+
+---
+
+# 20. 새로고침
+
+현재 online match route에서 refresh가 일어났을 때
+가능하면 기존 session/gameId로 다시 접속할 수 있는 구조가 있다면 연결해주세요.
+
+전혀 기반이 없다면 이번 작업 때문에 별도 거대한 persistence 시스템까지 만들 필요는 없습니다.
+
+다만 refresh 즉시 server Match를 망가뜨리는 구조는 피해주세요.
+
+---
+
+# 21. Quick / Friendly 공통 multiplayer protocol
+
+가능하다면 Quick Match와 Friendly Match가 Match 생성 이후에는 같은 protocol을 사용하세요.
+
+예:
+
+```text
+Lobby 방식만 다름
+
+Quick Queue
+Friendly Room
+
+        ↓
+
+createOnlineMatch
+        ↓
+Online Match protocol
+        ↓
+Server Action processing
+```
+
+두 개의 별도 Game engine을 만들지 마세요.
+
+---
+
+# 22. UI 최소 구현
+
+이번 작업은 UI redesign이 아닙니다.
+
+필요한 최소 UI만 수정하세요.
+
+## Quick Match
+
+* 상대 찾기
+* 검색 중
+* 취소/뒤로가기
+* Match 발견
+* Game 이동
+* 오류
+
+## Friendly
+
+* Room 생성
+* Room Code
+* Join 입력
+* 대기
+* Match 시작
+* 오류
+
+현재 KO 디자인을 유지하세요.
+
+CSS 전체를 다시 만들지 마세요.
+
+---
+
+# 23. 이번 작업에서 수정하지 말 것
+
+온라인 PvP 완성과 관계없는 다음 문제는 건드리지 마세요.
+
+* 하스이 효과
+* 판도라 Quest
+* 예거 Quest
+* 오심정정
+* TECHNIQUE 개별 카드 버그
+* 카드 밸런스
+* Champion 밸런스
+* Admin 카드 편집
+* 상점
+* 컬렉션
+* 카드 프레임/UI
+* AI Match 밸런스
+
+단, 온라인 Action 처리를 위해 generic Technique/Champion Action 경로를 호출하는 것은 허용합니다.
+
+기존 카드 효과 자체를 수정하지는 마세요.
+
+---
+
+# 24. Production 안전 규칙
+
+절대 하지 마세요.
+
+* Production Supabase 직접 수정
+* Production DB 직접 수정
+* Production DB reset
+* seed
+* migration 자동 실행
+* schema push
+* 실제 사용자 데이터 수정/삭제
+* 카드/Champion Production 원본 수정
+* 사용자 계정 삭제
+* 카드 삭제/분해
+* 상점 구매
+* AI Deck 삭제
+* git push
+* Render deploy
+
+DB schema 변경이 정말 필요하다면 자동 실행하지 말고
+migration 파일까지만 준비하고 최종 보고에 명확히 적으세요.
+
+가능하면 기존 schema로 해결하세요.
+
+---
+
+# 25. 구현 우선순위
+
+Credit 낭비를 줄이기 위해 다음 순서로 작업하세요.
+
+## 1단계
+
+Quick/Friendly client ↔ server 연결 경로 확인
+
+## 2단계
+
+queue / room 정상화
+
+## 3단계
+
+공통 Match 생성 연결
+
+## 4단계
+
+Server GameState + Action 처리 연결
+
+## 5단계
+
+두 Client state broadcast
+
+## 6단계
+
+turn / invalid action / game over validation
+
+## 7단계
+
+private state filtering / RNG 확인
+
+이 순서에서 이미 정상 구현된 단계는 다시 만들지 말고 넘어가세요.
+
+---
+
+# 26. 단순 조사로 종료 금지
+
+이번 작업에서 다음 식으로 끝내지 마세요.
+
+> Quick Match가 미구현되어 있습니다.
+
+또는:
+
+> server authoritative 기능이 필요합니다.
+
+현재 코드 구조로 합리적인 범위에서 구현 가능하다면
+**직접 구현해주세요.**
+
+다만 정말로 대규모 아키텍처 교체나 DB schema 설계부터 새로 필요한 경우에는
+그 부분만 임시 구현으로 덮지 말고 정확하게 보고하세요.
+
+---
+
+# 27. 불필요한 QA 금지
+
+이번 작업은 구현이 목적입니다.
+
+브라우저에서 수십 경기 반복,
+모든 카드 효과 전수 검사,
+AI Match QA 등을 하지 마세요.
+
+온라인 인프라 구현에 시간을 사용하세요.
+
+코드 변경 완료 후 관련된 최소 검증만 수행하세요.
+
+---
+
+# 28. 구현 후 필수 검증
+
+다음은 실행해주세요.
+
+```text
+typecheck
+관련 multiplayer tests
+build
+git diff --check
+```
+
+기존 multiplayer test가 없다면
+이번 구현의 핵심 경로를 검증할 **작고 제한된 테스트**는 추가해도 됩니다.
+
+예:
+
+* queue A + B → same gameId
+* Friendly host + guest → same gameId
+* 상대 turn Action reject
+* valid Action → GameState update
+* game over 후 Action reject
+
+거대한 전체 테스트 suite는 만들지 마세요.
+
+---
+
+# 29. 완료 판단 기준
+
+아래 항목이 구현되어야 온라인 PvP “구현 완료”로 판단합니다.
+
+## Quick Match
+
+* queue join
+* matchmaking
+* Match 생성
+* 동일 gameId
+* Game 진입
+
+## Friendly
+
+* Room 생성
+* Room Code
+* Join
+* Match 생성
+* 동일 gameId
+* Game 진입
+
+## Online Game
+
+* Server canonical GameState
+* Player Action server validation
+* turn validation
+* Action → Event → GameState
+* 양쪽 state update
+* private state 보호
+* deterministic/server RNG
+* Server game-over 판정
+
+일부가 구현되지 않았다면 완료라고 하지 마세요.
+
+---
+
+# 30. 최종 보고 형식
+
+## 온라인 PvP 구현 상태
+
+* Quick Match:
+* Friendly Match:
+* 실제 2인 Match 생성:
+* Server authoritative GameState:
+* Action 처리:
+* GameState 동기화:
+* Turn 검증:
+* Game Over:
+* RNG:
+* Private state filtering:
+* Disconnect:
+* Reconnect:
+
+각각:
+
+```text
+완료
+부분 완료
+미구현
+```
+
+중 하나로 표시해주세요.
+
+---
+
+## 실제 구현한 내용
+
+무엇을 새로 연결/구현했는지 간단히 설명해주세요.
+
+---
+
+## 실제 원인
+
+기존 Quick Match / Friendly가 작동하지 않았던 확인된 원인을 적어주세요.
+
+추측하지 마세요.
+
+---
+
+## 변경 파일
+
+실제로 수정한 파일만 작성해주세요.
+
+---
+
+## DB 변경
+
+* DB schema 변경:
+* migration 필요 여부:
+* Production DB 직접 수정: 없음
+
+migration이 필요하면 파일만 준비하고 실행하지 마세요.
+
+---
+
+## 검증
+
+* typecheck:
+* multiplayer tests:
+* build:
+* git diff --check:
+
+---
+
+## 아직 남은 온라인 기능
+
+실제 서비스 전에 필요한 것이 있다면
+정말 필요한 것만 작성해주세요.
+
+단순 nice-to-have 기능은 제외해주세요.
+
+---
+
+## Git / 배포
+
+* git push: 하지 않음
+* Render deploy: 하지 않음
+
+이번 작업은 **온라인 PvP 구조 조사 보고가 아니라, 기존 KO CARD GAME 구조를 이용해 실제 2인 온라인 게임이 가능한 상태까지 구현하는 작업**입니다.
