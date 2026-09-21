@@ -1,0 +1,940 @@
+KO CARD GAME의 Structured Effect DSL과 Admin AI 효과 생성기를 확장해줘.
+
+==================================================
+현재 문제
+==================================================
+
+Production Admin의 AI 효과 생성 기능은 정상 작동 중이다.
+
+현재 자연어 효과를 입력하면:
+
+POST /api/admin/effects/generate
+
+→ OpenAI
+→ 현재 KO Effect DSL로 변환
+→ schema/registry validation
+→ READY 또는 NEEDS_CLARIFICATION
+→ Admin preview
+→ 관리자가 적용
+→ 기존 저장 버튼으로 DB 저장
+
+구조다.
+
+아래와 같은 효과를 생성하려 했더니 현재는 NEEDS_CLARIFICATION이 반환된다.
+
+의도하는 효과 예시:
+
+"등장: 이 카드 양옆의 빈 슬롯에 각각 무작위 선수 카드 1장을 소환하고,
+그렇게 소환된 선수들에게 도발을 부여한다."
+
+현재 AI가 반환한 clarification:
+
+1.
+'무작위 선수 카드'를 어떤 풀에서 뽑아야 하는가?
+현재 SUMMON / GENERATE는 고정 definitionRef 중심이다.
+
+2.
+양옆 빈 슬롯에 '각각' 소환하는 방식이 현재 DSL에서 명확하지 않다.
+
+3.
+직전에 소환된 카드들을 후속 효과의 대상으로 참조하는 표준 DSL이 없다.
+
+이걸 특정 카드 전용 코드로 해결하지 말고,
+KO CARD GAME에서 앞으로 여러 카드가 재사용할 수 있는
+범용 Structured Effect DSL 기능으로 구현해라.
+
+==================================================
+목표
+==================================================
+
+최소 다음 세 가지 범용 기능을 추가한다.
+
+A. CardDefinition을 조건으로 필터링한 뒤 deterministic RNG로 무작위 선택
+
+B. 효과 원본 카드 기준 좌/우 인접 빈 슬롯을 대상으로 SUMMON 가능
+
+C. 같은 effect resolution 안에서 직전에 SUMMON된 카드들을
+후속 effect의 target으로 참조 가능
+
+그리고 Admin AI 효과 생성기가 이 새 DSL을 이해하도록 확장한다.
+
+최종적으로 아래 자연어가 NEEDS_CLARIFICATION 없이
+정상적인 READY draft로 생성 가능해야 한다.
+
+"등장: 이 카드 양옆의 빈 슬롯에 각각 무작위 선수 카드 1장을 소환하고,
+그렇게 소환된 선수들에게 도발을 부여한다."
+
+==================================================
+0. 먼저 현재 구조 조사
+==================================================
+
+repo 전체를 무작정 탐색하지 말고 관련 코드부터 조사해라.
+
+우선 확인:
+
+- artifacts/ko-game/src/game/effects/effect-engine.ts
+- artifacts/ko-game/src/game/effects/types.ts
+- effect-registry
+- RuntimeAction
+- StructuredTarget
+- CardDefinitionReference
+- SUMMON
+- GENERATE
+- generatedModifiers
+- sourceContext
+- current resolution / continuation 구조
+- targetingState
+- PLAYER_CHOICE continuation
+- LAST_DESTROYED_TARGETS / aggregateStats 관련 구현
+- cardPool
+- createInitialGameState
+- deterministic RNG 사용 방식
+- CardInstance boardSlot
+- ENTER_FIELD
+- keyword 부여 방식
+- TAUNT 또는 도발 keyword의 canonical enum/value
+- Admin AI generation endpoint
+- AI generation schema
+- AI prompt/context builder
+- AI result validator/canonicalizer
+- 관련 tests
+
+기존 구조를 최대한 재사용해라.
+
+새 시스템을 별도로 평행 구현하지 마.
+
+==================================================
+1. 절대 카드별 하드코딩 금지
+==================================================
+
+절대 이런 식으로 구현하지 마.
+
+if (card.name === "...")
+if (card.id === "...")
+if (sourceCard.definitionId === "...")
+
+특정 카드 이름/ID를 engine source에 넣지 마.
+
+이번 기능은 generic DSL capability다.
+
+새 카드가 추가되어도
+DB definition + Structured Effect DSL만으로 사용할 수 있어야 한다.
+
+==================================================
+2. 무작위 CardDefinition 선택 기능
+==================================================
+
+SUMMON / GENERATE에서 고정 definitionRef뿐 아니라
+조건에 맞는 CardDefinition pool에서 무작위 definition을 선택할 수 있도록 한다.
+
+이 기능은 반드시 generic filter 기반이어야 한다.
+
+최소 지원해야 하는 필터:
+
+- cardType
+- tagsAny
+- tagsAll
+- tagsNone
+
+현재 project에 이미 공용 tag matcher:
+
+- hasCardTag
+- sharesCardTag
+- matchesCardTagFilter
+- tagsAny
+- tagsAll
+- tagsNone
+
+등이 있다면 반드시 그것을 재사용한다.
+
+별도 tag 판정 로직을 만들지 마.
+
+예시 개념:
+
+definitionSelector: {
+  mode: "RANDOM",
+  filter: {
+    cardType: "WRESTLER"
+  }
+}
+
+정확한 property 이름은 현재 DSL 스타일을 조사해서
+가장 일관적인 이름으로 정해도 된다.
+
+하지만 의미는 명확해야 한다.
+
+"모든 공개 선수 CardDefinition 중 무작위 하나"
+
+같은 표현이 가능해야 한다.
+
+==================================================
+3. RNG 규칙
+==================================================
+
+절대 Math.random() 사용 금지.
+
+온라인 PvP는 server-authoritative + deterministic RNG를 유지해야 한다.
+
+현재 game engine이 사용하는 deterministic random source를 반드시 재사용해라.
+
+같은 state / seed / action sequence라면
+동일한 definition이 선택되어야 한다.
+
+무작위 선택은 canonical server action resolution에서만 결정되어야 한다.
+
+클라이언트가 별도로 random card를 선택하면 안 된다.
+
+필요하다면 RANDOM_CARD_SELECTED 같은 event 또는
+기존 event attribution 구조를 사용해서
+결정된 결과가 replay/resync에서도 명확하게 유지되도록 한다.
+
+불필요하게 새로운 RNG 시스템을 만들지 마.
+
+==================================================
+4. Random pool의 기준
+==================================================
+
+무작위 CardDefinition 선택은
+state.cardPool의 canonical CardDefinition catalog를 기준으로 한다.
+
+온라인 서버의 state.cardPool은 현재 모든 PUBLISHED 공개 카드 정의 catalog이다.
+
+Production DB에 직접 query하는 effect engine을 만들지 마.
+
+effect-engine은 GameState/cardPool만 사용해야 한다.
+
+필터 결과가 0장일 경우:
+
+- exception으로 전체 게임 crash 금지
+- invalid effect configuration인지
+- 정상적인 no-result resolution인지
+
+현재 engine의 규칙을 조사해서 가장 일관적인 처리를 선택한다.
+
+하지만 silent corruption은 금지.
+
+테스트로 명확히 규정해라.
+
+==================================================
+5. 자기 자신/Token 등 제외 옵션
+==================================================
+
+generic selector가 재사용 가능하도록
+필요하다면 다음과 같은 선택적 조건을 지원할 수 있다.
+
+- excludeSourceDefinition
+- includeTokens / excludeTokens
+
+단, 현재 요구를 넘어서 지나치게 큰 selector framework를 만들지 마.
+
+이번 핵심은:
+
+cardType = WRESTLER
+
+인 공개 CardDefinition 중 무작위 선택이다.
+
+==================================================
+6. 인접 빈 슬롯 대상 기능
+==================================================
+
+현재 board slot 구조를 조사해서
+sourceCard.boardSlot을 기준으로 좌/우 인접 슬롯을 계산한다.
+
+4-slot board라면 예:
+
+source slot 0:
+오른쪽 1만 인접
+
+source slot 1:
+왼쪽 0 / 오른쪽 2
+
+source slot 2:
+왼쪽 1 / 오른쪽 3
+
+source slot 3:
+왼쪽 2만 인접
+
+단 실제 slot semantics는 현재 engine 구현을 authoritative source로 사용해라.
+
+새 DSL에서는 다음 의미가 가능해야 한다.
+
+"source의 좌/우 인접 슬롯 중 비어 있는 슬롯"
+
+예시 개념:
+
+placement:
+  ADJACENT_EMPTY_SLOTS
+
+또는 현재 target/values 구조와 일관된 표현.
+
+정확한 이름은 현재 DSL 스타일에 맞춰도 된다.
+
+==================================================
+7. "각각 소환"의 정확한 규칙
+==================================================
+
+이번 요구에서:
+
+"양옆 빈 슬롯에 각각 무작위 선수 카드 1장"
+
+의 공식 규칙은 다음이다.
+
+- source 기준 왼쪽 인접 슬롯이 존재하고 비어 있으면 1장 소환
+- source 기준 오른쪽 인접 슬롯이 존재하고 비어 있으면 1장 소환
+- 최대 2장
+- 한쪽만 비어 있으면 1장
+- 둘 다 차 있으면 0장
+- board edge라서 인접 슬롯이 하나뿐이면 그 한 슬롯만 검사
+- 일반적인 board capacity를 무시하지 않는다
+
+각 슬롯에 사용할 random definition은
+독립적으로 deterministic selection하도록 한다.
+
+즉 두 슬롯이 비었다면
+random selection을 두 번 수행하는 것이 기본이다.
+
+같은 CardDefinition이 두 번 나오는 것도
+현재 rules에서 금지되지 않는다면 허용한다.
+
+별도 uniqueness 규칙을 임의로 추가하지 마.
+
+==================================================
+8. SUMMON 결과 참조 기능
+==================================================
+
+같은 Structured Effect resolution chain 안에서
+직전 SUMMON이 생성한 CardInstance들을
+후속 effect에서 target으로 참조할 수 있게 한다.
+
+예:
+
+Effect 1:
+SUMMON random WRESTLER into adjacent empty slots
+
+Effect 2:
+ADD_KEYWORD / GRANT_KEYWORD
+target = cards summoned by Effect 1
+keyword = TAUNT
+
+이 기능을 특정 TAUNT 카드 전용으로 만들지 마.
+
+generic result reference여야 한다.
+
+개념 예:
+
+LAST_SUMMONED
+
+LAST_SUMMONED_TARGETS
+
+PREVIOUS_EFFECT_RESULTS
+
+등.
+
+정확한 이름은 기존 DSL과 일관되게 정해도 된다.
+
+==================================================
+9. resolution scope
+==================================================
+
+"직전 SUMMON 결과"는
+현재 effect chain / active resolution 범위 안에서만 유효해야 한다.
+
+다음 턴이나 전혀 다른 카드 효과까지 남아 있으면 안 된다.
+
+현재 engine에 이미:
+
+LAST_DESTROYED_TARGETS
+lastAggregatedStats
+active resolution frame
+triggerContext
+continuation
+
+등 비슷한 개념이 있다면
+그 구조를 재사용하거나 확장한다.
+
+불필요하게 전역 GameState property를 영구 저장하지 마.
+
+다만 PLAYER_CHOICE처럼 effect resolution이 중간에 중단되어
+후속 continuation이 필요한 경우,
+필요한 state는 serializable 해야 한다.
+
+이번 immediate summon → keyword 부여 흐름은
+불필요한 targeting UI를 띄우지 않는다.
+
+==================================================
+10. 후속 효과 대상은 실제 성공적으로 소환된 카드만
+==================================================
+
+LAST_SUMMONED 류 target에는:
+
+- 실제 board에 들어간 CardInstance만 포함
+- 슬롯이 없어서 소환되지 않은 카드 제외
+- 생성 시도했으나 실패한 카드 제외
+
+예:
+
+왼쪽 빈 슬롯 있음
+오른쪽 차 있음
+
+→ 1장만 SUMMON
+→ 후속 TAUNT도 그 1장에만 적용
+
+둘 다 차 있음:
+
+→ SUMMON 0장
+→ 후속 TAUNT 대상도 0장
+→ exception 금지
+
+==================================================
+11. Keyword 부여
+==================================================
+
+"도발"은 현재 project에서 사용하는 canonical keyword를 사용해라.
+
+새로운 "도발" 문자열 시스템을 만들지 마.
+
+현재 CardKeyword enum / keyword utility / keyword application logic를 재사용한다.
+
+기존 keyword 부여 action이 있으면 그것을 사용한다.
+
+없다면 generic structured action으로 추가하되
+TAUNT 전용 action으로 만들지 마.
+
+예:
+
+GRANT_KEYWORD
+keyword: TAUNT
+
+처럼 generic해야 한다.
+
+==================================================
+12. Action → Event → GameState 규칙 유지
+==================================================
+
+KO CARD GAME의 핵심 규칙:
+
+Action
+→ Event
+→ GameState
+
+를 깨지 마.
+
+Random selection,
+SUMMON,
+keyword 부여가
+canonical state 변화와 event history에 일관되게 반영되어야 한다.
+
+UI에서 임의로 결과를 만들어내지 마.
+
+==================================================
+13. ENTER_FIELD 규칙 회귀 금지
+==================================================
+
+현재 공식 규칙:
+
+ON_ENTER / 등장 효과는
+WRESTLER PLAY_FROM_HAND일 때만 발생한다.
+
+SUMMON
+REVIVE
+Champion Token direct deploy
+
+에는 일반적인 ENTER_FIELD / 등장 trigger를 재발동시키지 않는 현재 규칙을 유지해라.
+
+이번 random SUMMON이
+소환된 카드 자신의 등장 효과를 잘못 발동시키지 않도록 회귀 테스트해라.
+
+==================================================
+14. Champion Token 회귀 금지
+==================================================
+
+이번 작업으로 Champion Token 규칙을 변경하지 마.
+
+현재 공식 규칙 유지:
+
+- Champion Token deploy와 ordinary SUMMON은 구분
+- 같은 CardDefinition을 ordinary SUMMON했다고 Champion Token state를 얻으면 안 됨
+- Champion Token immunity/protection 규칙 유지
+- fallback FIELD → HAND → DECK TOP 유지
+
+==================================================
+15. Online PvP
+==================================================
+
+온라인에서는 반드시 server-authoritative로 처리한다.
+
+클라이언트가 random selection을 결정하지 않는다.
+
+MATCH_SNAPSHOT
+ACTION_ACCEPTED
+RESYNC_REQUIRED
+
+후에도 결과가 동일해야 한다.
+
+최근 수정된 공개 cardPool snapshot을 이용한
+definitionRef / CardDefinition resolution을 유지한다.
+
+online sanitizer에서:
+
+- cardPool 공개 catalog 유지
+- randomSeed 숨김
+- 상대 hand/deck identity 숨김
+- hidden draw/generated event redaction 유지
+
+이번 작업 때문에 sanitizer 보안을 약화시키지 마.
+
+==================================================
+16. AI Match
+==================================================
+
+AI Match에서도 동일 engine logic을 사용해야 한다.
+
+온라인 전용 별도 effect implementation을 만들지 마.
+
+AI Match와 Online PvP가 같은 Structured DSL behavior를 사용해야 한다.
+
+==================================================
+17. Admin AI 효과 생성기 확장
+==================================================
+
+현재 구현된:
+
+POST /api/admin/effects/generate
+
+의 AI context/schema/validator를 새 DSL에 맞게 확장해라.
+
+AI에게 새로운 capability를 알려줘야 한다.
+
+최소 다음 개념을 AI가 생성할 수 있어야 한다.
+
+- random CardDefinition selector
+- cardType WRESTLER filter
+- adjacent empty slot placement
+- previous/last summoned result target
+- generic keyword grant
+
+AI가 예전처럼:
+
+"현재 DSL에서 지원되지 않습니다"
+
+라고 잘못 판단하지 않게 한다.
+
+하지만 지원되지 않는 것을 멋대로 만들어내는 것도 금지다.
+
+==================================================
+18. 이 자연어를 READY로 만들 것
+==================================================
+
+최종 integration test에서 다음 입력:
+
+"등장: 이 카드 양옆의 빈 슬롯에 각각 무작위 선수 카드 1장을 소환하고,
+그렇게 소환된 선수들에게 도발을 부여한다."
+
+가 정상적인 READY draft를 생성해야 한다.
+
+의미:
+
+Trigger:
+ENTER_FIELD
+
+Effect 1:
+source 기준 인접 빈 슬롯 각각에
+cardType=WRESTLER인 공개 CardDefinition 중
+deterministic random selection으로 1장씩 SUMMON
+
+Effect 2:
+Effect 1에서 실제 성공적으로 SUMMON된 CardInstance들에게
+TAUNT keyword 부여
+
+최대 2장.
+
+==================================================
+19. AI가 질문하지 않아야 하는 부분
+==================================================
+
+위 exact wording에 대해서는 더 이상 다음 질문을 하지 마.
+
+- random pool이 무엇인지?
+  → 공식 의미: 공개 cardPool의 WRESTLER CardDefinitions
+
+- 몇 장인지?
+  → 공식 의미: 좌/우 인접 빈 슬롯 각각 1장, 최대 2장
+
+- 도발 대상이 누구인지?
+  → 공식 의미: 바로 앞 SUMMON에서 실제 성공적으로 소환된 카드들
+
+이 세 가지는 이제 DSL semantics로 명확하게 정의한다.
+
+==================================================
+20. AI output safety 유지
+==================================================
+
+기존 안전장치 유지:
+
+- malformed JSON 거부
+- unknown action 거부
+- unknown field 거부
+- effectConfig wrapper 자동 추측 금지
+- ambiguous CardDefinition name 거부
+- canonical ID 사용
+- AI draft 단계에서 DB write 금지
+- Admin apply는 form state만 변경
+- 실제 DB write는 기존 Admin Save에서만
+
+==================================================
+21. Production DB 절대 수정 금지
+==================================================
+
+이번 작업 중:
+
+- Production DB 직접 수정 금지
+- 기존 카드 effect 자동 변경 금지
+- 카드/Champion 원본 데이터 수정 금지
+- migration 자동 실행 금지
+- 테스트용으로 Production 카드 수정 금지
+- 기존 사용자 덱 수정 금지
+
+schema migration이 정말 필요해 보이면
+자동 실행하지 말고 먼저 보고해라.
+
+가급적 이번 변경은 TypeScript DSL/runtime 수준에서 해결한다.
+
+==================================================
+22. 테스트 — engine
+==================================================
+
+최소 다음 테스트를 추가해라.
+
+TEST 1
+source가 middle slot에 있고
+좌/우 모두 비어 있음.
+
+결과:
+2장 SUMMON
+각각 WRESTLER definition
+두 카드 모두 TAUNT
+source는 그대로
+
+TEST 2
+왼쪽만 비어 있음.
+
+결과:
+1장 SUMMON
+그 카드만 TAUNT
+
+TEST 3
+오른쪽만 비어 있음.
+
+결과:
+1장 SUMMON
+그 카드만 TAUNT
+
+TEST 4
+양쪽 모두 차 있음.
+
+결과:
+0장 SUMMON
+TAUNT 대상 0
+exception 없음
+
+TEST 5
+source가 board edge.
+
+결과:
+존재하는 한쪽 인접 슬롯만 처리
+
+TEST 6
+cardPool에 WRESTLER과 TECHNIQUE가 섞여 있음.
+
+결과:
+random selector는 WRESTLER만 선택
+
+TEST 7
+tagsAny / tagsAll / tagsNone filter가 있다면 정확히 적용
+
+TEST 8
+같은 seed + 같은 state + 같은 action
+
+결과:
+동일한 random selection
+
+TEST 9
+다른 deterministic RNG progression
+
+결과:
+허용된 pool에서 정상 선택
+
+TEST 10
+random SUMMON으로 나온 카드의 ENTER_FIELD 효과가
+현재 공식 규칙을 위반해 자동 발동하지 않음
+
+==================================================
+23. 테스트 — result reference
+==================================================
+
+TEST 11
+
+SUMMON 2장
+→ LAST_SUMMONED target
+→ GRANT_KEYWORD TAUNT
+
+결과:
+두 장만 TAUNT
+
+TEST 12
+
+SUMMON 1장
+→ LAST_SUMMONED
+
+결과:
+그 한 장만 target
+
+TEST 13
+
+SUMMON 0장
+→ LAST_SUMMONED
+
+결과:
+0 target
+exception 없음
+
+TEST 14
+
+다음 unrelated effect chain에서는
+이전 LAST_SUMMONED 결과가 남아 있지 않음
+
+==================================================
+24. 테스트 — online
+==================================================
+
+TEST 15
+
+online sanitized snapshot에서도
+cardPool을 이용해 random selector가 definition을 resolve할 수 있음.
+
+TEST 16
+
+randomSeed는 client snapshot에 노출되지 않음.
+
+TEST 17
+
+상대 hand/deck은 계속 count-only.
+
+TEST 18
+
+server에서 결정된 summon 결과가
+MATCH_SNAPSHOT / ACTION_ACCEPTED / RESYNC 후 동일하게 보임.
+
+클라이언트가 자체 random selection하지 않는지 확인.
+
+==================================================
+25. 테스트 — Admin AI generator
+==================================================
+
+실제 OpenAI API를 unit test에서 호출하지 마.
+provider mock/stub을 사용해라.
+
+TEST 19
+
+입력:
+
+"등장: 이 카드 양옆의 빈 슬롯에 각각 무작위 선수 카드 1장을 소환하고,
+그렇게 소환된 선수들에게 도발을 부여한다."
+
+결과:
+NEEDS_CLARIFICATION이 아니라 READY.
+
+TEST 20
+
+생성된 DSL이 실제 registry/schema validation PASS.
+
+TEST 21
+
+AI가 unsupported property/action을 반환하면 기존대로 거부.
+
+TEST 22
+
+AI draft 생성만으로 DB write 없음.
+
+==================================================
+26. 기존 기능 회귀 테스트
+==================================================
+
+기존 다음 기능을 깨지 마.
+
+- fixed definitionRef SUMMON
+- GENERATE
+- SUMMON_FROM_HAND
+- generatedModifiers
+- PLAYER_CHOICE
+- targeting
+- LAST_DESTROYED_TARGETS aggregateStats
+- Champion ability
+- Champion quest
+- Champion Token
+- TECHNIQUE
+- revive
+- normal play
+- online sanitizer
+- reconnect/resync
+
+관련 기존 테스트가 있다면 반드시 실행해라.
+
+==================================================
+27. 구현 품질
+==================================================
+
+가능하면 DSL 타입은 명확한 discriminated union으로 유지한다.
+
+`any` 남발 금지.
+
+AI provider에서 사용하는 schema와
+runtime validation schema가 서로 어긋나지 않게 한다.
+
+같은 capability 목록을
+서로 다른 파일에 수동으로 중복 hardcoding하지 마.
+
+가능하면 registry/type/schema를 authoritative source로 공유한다.
+
+==================================================
+28. 에러 처리
+==================================================
+
+잘못된 admin-authored effect 때문에
+게임 전체 React ErrorBoundary가 터지는 구조를 새로 만들지 마.
+
+Authoring 단계에서 최대한 validation한다.
+
+runtime에서도 invalid config가 들어왔을 때
+현재 engine의 안전 정책을 유지한다.
+
+기존:
+
+SUMMON requires a serializable card definition.
+
+같은 중요한 validation을 삭제하거나 silent no-op으로 바꾸지 마.
+
+==================================================
+29. 범위 제한
+==================================================
+
+이번 작업의 목적은 딱 이것이다.
+
+1. filtered deterministic random definition selection
+2. adjacent empty slot summon placement
+3. last successful summoned instances result reference
+4. generic keyword grant와 연결
+5. Admin AI generator가 이를 이해
+
+관련 없는 UI redesign,
+deck system 변경,
+shop 변경,
+account 변경,
+card data 변경,
+DB migration,
+large refactor는 하지 마.
+
+==================================================
+30. 검증 명령
+==================================================
+
+실제 package.json을 확인해서
+repo가 사용하는 명령으로 검증해라.
+
+최소:
+
+- game engine 관련 tests
+- 새 Structured Effect tests
+- Admin AI generator tests
+- api-server typecheck
+- frontend typecheck
+- api-server build
+- frontend build
+- git diff --check
+
+테스트 runner가 없다고 임의 dependency부터 설치하지 마.
+repo에서 기존에 사용하는 실행 방식을 먼저 찾아라.
+
+==================================================
+31. 실제 runtime smoke test
+==================================================
+
+가능하다면 local/Replit runtime에서
+실제 effect definition을 하나 temporary in-memory fixture로 만들어
+다음을 확인해라.
+
+source wrestler ENTER_FIELD
+→ adjacent random WRESTLER summon
+→ summoned cards gain TAUNT
+
+Production DB에는 저장하지 마.
+
+GameState before/after와 Event를 확인해라.
+
+Action
+→ Event
+→ GameState
+
+결과가 일치해야 한다.
+
+==================================================
+32. Git
+==================================================
+
+작업 완료 후 모든 필수 검증이 PASS한 경우에만:
+
+1. git status 확인
+2. 이번 변경에 필요한 파일만 stage
+3. Replit/Agent metadata stage 금지
+4. secret/log/temp file stage 금지
+5. commit
+6. origin/main 최신 상태 확인
+7. 필요하면 안전하게 rebase
+8. main branch에 git push
+
+git push --force 금지.
+
+remote가 앞서 있으면:
+
+git fetch origin
+git rebase origin/main
+
+방식으로 통합하되,
+CONFLICT가 발생하면 임의 해결하지 말고
+충돌 내용을 보고해라.
+
+Render를 직접 수정하지 마.
+Production DB를 직접 수정하지 마.
+
+==================================================
+33. 최종 보고
+==================================================
+
+완료 후 반드시 다음을 보고해라.
+
+- 실제 구현한 DSL 구조
+- random selector 타입/구조
+- 지원 filter 목록
+- deterministic RNG를 어떻게 연결했는지
+- adjacent slot 계산 방식
+- last summoned result reference 구현 방식
+- result scope가 어떻게 초기화되는지
+- TAUNT 부여 구현 방식
+- ENTER_FIELD 회귀 방지 방식
+- online server-authoritative 보장 방식
+- AI generator schema/prompt에 무엇을 추가했는지
+- exact sample 자연어가 READY가 되는지
+- 변경 파일 목록
+- 추가한 테스트 목록
+- 각 테스트 PASS/FAIL
+- api-server typecheck
+- frontend typecheck
+- api-server build
+- frontend build
+- git diff --check
+- commit hash
+- push 성공 여부
+- Production에서 내가 직접 확인해야 할 테스트
+
+문제가 발견되면 PASS라고 하지 말고
+FAIL / UNVERIFIED로 정확히 보고해라.

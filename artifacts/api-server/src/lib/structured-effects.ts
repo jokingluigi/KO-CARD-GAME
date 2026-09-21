@@ -738,7 +738,7 @@ function expandedMechanicAnalysis(
   if (/선택한\s*상대\s*선수\s*1장.*리타이어/.test(text)) {
     return result([{ trigger: triggerFor(), action: "RETIRE", target: { zone: "BOARD", owner: "ENEMY", cardType: "WRESTLER", selection: "PLAYER_CHOICE", count: 1 } }]);
   }
-  if (/양\s*옆\s*빈\s*슬롯.*무작위\s*선수/.test(text)) {
+  if (/양\s*옆\s*(?:의\s*)?빈\s*슬롯.*무작위\s*선수/.test(text)) {
     const adjacentFilter = /(?:3\s*코스트|3\s*비용)\s*이상/.test(text) ? { minCost: 3 } : undefined;
     const damageAmount =
       text.match(/생성된.*?(?:데미지|피해).*?(\d+)\s*(?:증가|추가)/)?.[1] ??
@@ -931,7 +931,7 @@ export function analyzeEffectText(input: string, options: EffectAnalysisOptions 
   }
       remainder = remainder.replace(/(?:내\s+)?(?:필드|손패|덱)?\s*의?\s*(?:[가-힣A-Za-z0-9]+\s*(?:또는|및|와|과|,)\s*)*[가-힣A-Za-z0-9]+\s*태그\s*(?:를|가|은|는)?\s*(?:가진|있는|없는|제외|아닌)/g, "");
      remainder = remainder.replace(/사용될\s*때까지(?:\s*\S+){0,5}\s*유지(?:합니다)?|다음\s*턴에도(?:\s*\S+){0,2}\s*유지(?:합니다)?/g, "");
-     remainder = remainder.replace(/자신의\s*양\s*옆\s*(?:빈\s*)?슬롯(?:에)?|양\s*옆\s*(?:빈\s*)?슬롯(?:에)?|각각|이\s*카드가\s*필드에\s*있(?:는\s*동안|을\s*때)|(?:비용|코스트)(?:이)?\s*\d+\s*(?:이상|이하)|\d+\s*(?:코스트|비용)\s*(?:이상|이하)/g, "");
+     remainder = remainder.replace(/자신의\s*양\s*옆\s*(?:의\s*)?(?:빈\s*)?슬롯(?:에)?|양\s*옆\s*(?:의\s*)?(?:빈\s*)?슬롯(?:에)?|각각|이\s*카드가\s*필드에\s*있(?:는\s*동안|을\s*때)|(?:비용|코스트)(?:이)?\s*\d+\s*(?:이상|이하)|\d+\s*(?:코스트|비용)(?:\s*(?:이상|이하))/g, "");
       remainder = remainder.replace(/(?:모든\s*)?(?:생성된\s*)?(?:아군|내)\s*선수(?:\s*카드)?(?:에게|을|를|의)?/g, "");
        remainder = remainder.replace(/(?:자신|이\s*카드)(?:이|가|는|에게|을|를)?/g, "");
        remainder = remainder.replace(/(?:^|\s)이(?=\s|$)/g, " ");

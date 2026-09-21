@@ -189,7 +189,7 @@ test('루나·씨 몬스터·아르카나 조커·워썬더의 전투/퇴장/덱
   const afterArcana = enterField(arcanaState, 'player-1', arcana, 0);
   assert.equal(afterArcana.players[0].graveyard.at(-1)?.instanceId, top.instanceId);
   assert.equal(afterArcana.players[0].deck[0]?.isGenerated, true);
-  assert.ok((afterArcana.players[0].deck[0]?.currentCost ?? 0) >= 1);
+  assert.equal(afterArcana.players[0].deck[0]?.currentCost, 0);
 
   const thunderState = stateWithPool(Object.values(saved));
   thunderState.players[0].deck = [card(saved['여울']!, 't1'), card(saved['여울']!, 't2'), card(saved['여울']!, 't3'), card(saved['여울']!, 'keep')];

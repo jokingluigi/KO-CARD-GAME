@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 
-import { EffectAiError, validateGeneratedEffectDraft } from "./admin-effect-ai";
+import { EffectAiError, generateEffectDraft, validateGeneratedEffectDraft } from "./admin-effect-ai";
 
 const catalog = [
   { id: "card-1", name: "불꽃", cardType: "WRESTLER" as const, isToken: false, isChampionToken: false },
@@ -69,4 +69,117 @@ test("AI는 모호한 효과를 clarification 상태로 반환할 수 있다", (
     status: "NEEDS_CLARIFICATION",
     questions: ["피해량은 얼마인가요?"],
   });
+});
+
+test("인접 무작위 선수 소환과 직전 결과 도발 부여 초안은 READY로 검증된다", () => {
+  const result = validateGeneratedEffectDraft({
+    status: "READY",
+    effects: [
+      {
+        trigger: "ENTER_FIELD",
+        action: "SUMMON",
+        target: {
+          zone: "BOARD",
+          owner: "SELF",
+          cardType: "WRESTLER",
+          selection: "ADJACENT_EMPTY_SLOTS",
+          count: 2,
+          randomScope: "STANDARD",
+        },
+      },
+      {
+        trigger: "ENTER_FIELD",
+        action: "ADD_KEYWORD",
+        target: {
+          zone: "BOARD",
+          owner: "SELF",
+          cardType: "WRESTLER",
+          selection: "SAME_TARGET",
+          count: 2,
+        },
+        values: { keyword: "TAUNT" },
+      },
+    ],
+    keywords: [],
+  }, { sourceType: "CARD", cardType: "WRESTLER" }, []);
+
+  assert.equal(result.status, "READY");
+  if (result.status === "READY") {
+    assert.equal(result.effects[0]?.target?.selection, "ADJACENT_EMPTY_SLOTS");
+    assert.equal(result.effects[1]?.target?.selection, "SAME_TARGET");
+    assert.equal(result.effects[1]?.values?.keyword, "TAUNT");
+  }
+});
+
+test("provider stub에서도 exact 문장이 READY draft와 새 capability prompt로 변환된다", async () => {
+  const originalFetch = globalThis.fetch;
+  const originalKey = process.env.OPENAI_API_KEY;
+  const originalIntegratedKey = process.env.AI_INTEGRATIONS_OPENAI_API_KEY;
+  const originalBaseUrl = process.env.OPENAI_BASE_URL;
+  const exactText = "등장: 이 카드 양옆의 빈 슬롯에 각각 무작위 선수 카드 1장을 소환하고, 그렇게 소환된 선수들에게 도발을 부여한다.";
+  let requestBody: Record<string, unknown> | undefined;
+
+  process.env.OPENAI_API_KEY = "test-provider-key";
+  delete process.env.AI_INTEGRATIONS_OPENAI_API_KEY;
+  process.env.OPENAI_BASE_URL = "https://provider.test/v1";
+  globalThis.fetch = async (input, init) => {
+    requestBody = JSON.parse(String(init?.body)) as Record<string, unknown>;
+    return new Response(JSON.stringify({
+      choices: [{
+        message: {
+          content: JSON.stringify({
+            status: "READY",
+            effects: [
+              {
+                trigger: "ENTER_FIELD",
+                action: "SUMMON",
+                target: {
+                  zone: "BOARD",
+                  owner: "SELF",
+                  cardType: "WRESTLER",
+                  selection: "ADJACENT_EMPTY_SLOTS",
+                  count: 2,
+                  randomScope: "STANDARD",
+                },
+              },
+              {
+                trigger: "ENTER_FIELD",
+                action: "ADD_KEYWORD",
+                target: {
+                  zone: "BOARD",
+                  owner: "SELF",
+                  cardType: "WRESTLER",
+                  selection: "SAME_TARGET",
+                  count: 2,
+                },
+                values: { keyword: "TAUNT" },
+              },
+            ],
+            keywords: [],
+          }),
+        },
+      }],
+    }), { status: 200, headers: { "Content-Type": "application/json" } });
+  };
+
+  try {
+    const result = await generateEffectDraft(exactText, { sourceType: "CARD", cardType: "WRESTLER" }, []);
+    assert.equal(result.status, "READY");
+    assert.equal(result.effects[0]?.target?.selection, "ADJACENT_EMPTY_SLOTS");
+    assert.equal(result.effects[1]?.target?.selection, "SAME_TARGET");
+    assert.equal(result.effects[1]?.values?.keyword, "TAUNT");
+    const systemPrompt = String((requestBody?.messages as Array<{ role: string; content: string }>)[0]?.content);
+    const userMessage = String((requestBody?.messages as Array<{ role: string; content: string }>)[1]?.content);
+    assert.match(systemPrompt, /ADJACENT_EMPTY_SLOTS/);
+    assert.match(systemPrompt, /SAME_TARGET/);
+    assert.match(userMessage, new RegExp(exactText.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")));
+  } finally {
+    globalThis.fetch = originalFetch;
+    if (originalKey === undefined) delete process.env.OPENAI_API_KEY;
+    else process.env.OPENAI_API_KEY = originalKey;
+    if (originalIntegratedKey === undefined) delete process.env.AI_INTEGRATIONS_OPENAI_API_KEY;
+    else process.env.AI_INTEGRATIONS_OPENAI_API_KEY = originalIntegratedKey;
+    if (originalBaseUrl === undefined) delete process.env.OPENAI_BASE_URL;
+    else process.env.OPENAI_BASE_URL = originalBaseUrl;
+  }
 });

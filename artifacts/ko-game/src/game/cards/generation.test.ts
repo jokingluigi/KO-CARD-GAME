@@ -75,6 +75,45 @@ test('일반 인스턴스 생성은 기본적으로 기존 카드 인스턴스�
   assert.equal(card.isDirectDeployedChampion, false);
 });
 
+test('기본 비용 0인 generated/token 카드는 0G를 유지한다', () => {
+  const card = generateCardInstance(
+    { ...definition('zero-cost-token', true), cost: 0 },
+    { instanceId: 'zero-cost-token-instance', isGenerated: true },
+  );
+
+  assert.equal(card.isGenerated, true);
+  assert.equal(card.isToken, true);
+  assert.equal(card.currentCost, 0);
+});
+
+test('generatedModifiers.cost가 0이면 generated 카드도 0G가 된다', () => {
+  const { card } = generateCard({ ...definition('zero-modifier'), cost: 0 }, {
+    instanceId: 'zero-modifier-instance',
+    playerId: 'player-1',
+    source: { type: 'CARD', cardInstanceId: 'source-card' },
+    reason: 'TEST_GENERATION',
+    statModifiers: { cost: 0 },
+  });
+
+  assert.equal(card.isGenerated, true);
+  assert.equal(card.currentCost, 0);
+});
+
+test('음수 비용 보정은 0G 아래로 내려가지 않는다', () => {
+  const { card } = generateCard(
+    { ...definition('negative-modifier'), cost: 1 },
+    {
+      instanceId: 'negative-modifier-instance',
+      playerId: 'player-1',
+      source: { type: 'CARD', cardInstanceId: 'source-card' },
+      reason: 'TEST_GENERATION',
+      statModifiers: { cost: -2 },
+    },
+  );
+
+  assert.equal(card.currentCost, 0);
+});
+
 test('표준 무작위 카드 생성 후보에서는 일반 토큰과 챔피언 토큰을 제외한다', () => {
   const normal = definition('normal');
   const token = definition('token', true, false);

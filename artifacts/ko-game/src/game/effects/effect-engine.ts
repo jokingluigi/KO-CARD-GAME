@@ -383,6 +383,21 @@ function definitionsFromState(state: GameState): CardDefinition[] {
   return [...byDefinition.values()];
 }
 
+function selectRandomDefinitions(
+  definitions: readonly CardDefinition[],
+  count: number,
+  random: ReturnType<typeof createDeterministicRandom>,
+): CardDefinition[] {
+  if (!definitions.length || count <= 0) return [];
+  return Array.from({ length: count }, () => definitions[Math.floor(random() * definitions.length)]!);
+}
+
+function setLastTargetIds(state: GameState, ids: string[]): GameState {
+  return state.targetingState
+    ? { ...state, targetingState: { ...state.targetingState, lastTargetIds: ids } }
+    : state;
+}
+
 function applyRandomCardCreation(
   state: GameState,
   playerId: string,
@@ -399,12 +414,15 @@ function applyRandomCardCreation(
       filter: target.filter,
     },
   );
-  const selected = shuffle(definitions, randomForEffect(state, sourceCard, effect))
-    .slice(0, Math.max(0, target.count));
+  const selected = shuffle(
+    definitions,
+    randomForEffect(state, sourceCard, effect),
+  ).slice(0, Math.max(0, target.count));
+  const summonedIds: string[] = [];
 
-  return selected.reduce((nextState, definition, index) => {
+  const result = selected.reduce((nextState, definition) => {
     const generated = generateCard(definition, {
-      instanceId: `${sourceCard.instanceId}:${effect.action}:${nextState.events.length + index}`,
+      instanceId: `${sourceCard.instanceId}:${effect.action}:${nextState.events.length}`,
       playerId,
       source: { type: 'CARD', cardInstanceId: sourceCard.instanceId },
       reason: effect.action,
@@ -434,13 +452,23 @@ function applyRandomCardCreation(
     }
     const owner = nextState.players.find((player) => player.id === playerId);
     const slot = owner?.board.findIndex((card) => card === null) ?? -1;
-    return slot < 0
-      ? nextState
-      : enterField(nextState, playerId, generated.card, slot as 0 | 1 | 2 | 3, {
+    if (slot < 0) return nextState;
+    const entered = enterField(
+      { ...nextState, events: [...nextState.events, generated.event] },
+      playerId,
+      generated.card,
+      slot as 0 | 1 | 2 | 3,
+      {
         type: 'CARD',
         cardInstanceId: sourceCard.instanceId,
-      }, undefined, 'SUMMON');
-  }, state);
+      },
+      undefined,
+      'SUMMON',
+    );
+    summonedIds.push(generated.card.instanceId);
+    return entered;
+  }, setLastTargetIds(state, []));
+  return effect.action === 'SUMMON' ? setLastTargetIds(result, summonedIds) : result;
 }
 
 function applyAdjacentRandomCardCreation(
@@ -460,18 +488,22 @@ function applyAdjacentRandomCardCreation(
     cardType: target.cardType,
     filter: target.filter,
   });
-  const selected = shuffle(definitions, randomForEffect(state, sourceCard, effect)).slice(0, slots.length);
+  const selected = selectRandomDefinitions(
+    definitions,
+    slots.length,
+    randomForEffect(state, sourceCard, effect),
+  );
 
   const summonedIds: string[] = [];
   const nextState = selected.reduce((currentState, definition, index) => {
     const generated = generateCard(definition, {
-      instanceId: `${sourceCard.instanceId}:${effect.action}:${currentState.events.length + index}`,
+      instanceId: `${sourceCard.instanceId}:${effect.action}:${currentState.events.length}`,
       playerId,
       source: { type: 'CARD', cardInstanceId: sourceCard.instanceId },
       reason: effect.action,
     });
     const entered = enterField(
-      currentState,
+      { ...currentState, events: [...currentState.events, generated.event] },
       playerId,
       generated.card,
       slots[index]!,
@@ -479,12 +511,12 @@ function applyAdjacentRandomCardCreation(
       undefined,
       'SUMMON',
     );
-    summonedIds.push(generated.card.instanceId);
+    if (entered.players.find((player) => player.id === playerId)?.board[slots[index]!]?.instanceId === generated.card.instanceId) {
+      summonedIds.push(generated.card.instanceId);
+    }
     return entered;
   }, state);
-  return nextState.targetingState
-    ? { ...nextState, targetingState: { ...nextState.targetingState, lastTargetIds: summonedIds } }
-    : nextState;
+  return setLastTargetIds(nextState, summonedIds);
 }
 
 function beginResolution(state: GameState, frame: NonNullable<GameState['targetingState']>): GameState {
@@ -785,25 +817,21 @@ function applyEffect(
           events: [...state.events, ...generatedCards.map(({ event }) => event)],
         };
       }
-      let summonState = clearLastAggregatedStats(state);
+       let summonState = setLastTargetIds(clearLastAggregatedStats(state), []);
+       const summonedIds: string[] = [];
       for (const generated of generatedCards) {
         const currentOwner = summonState.players.find((player) => player.id === playerId);
         const slot = currentOwner?.board.findIndex((card) => card === null) ?? -1;
         if (slot < 0) break;
-        summonState = {
-          ...summonState,
-          targetingState: summonState.targetingState
-             ? { ...summonState.targetingState, lastTargetIds: [generated.card.instanceId] }
-            : summonState.targetingState,
-        };
          summonState = {
            ...summonState,
            events: [...summonState.events, generated.event],
          };
          summonState = enterField(summonState, playerId, generated.card, slot as 0 | 1 | 2 | 3,
            { type: 'CARD', cardInstanceId: sourceCard.instanceId }, undefined, 'SUMMON');
+         summonedIds.push(generated.card.instanceId);
       }
-      return summonState;
+       return setLastTargetIds(summonState, summonedIds);
     }
     if (effect.action === 'SWITCH_EFFECT_BRANCH') {
       const branch = sourceCard.boardSlot !== null && sourceCard.boardSlot <= 1

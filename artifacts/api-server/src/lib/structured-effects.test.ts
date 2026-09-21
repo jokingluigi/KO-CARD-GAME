@@ -273,6 +273,32 @@ test("양옆 무작위 소환과 생성 카드 피해 보정을 각각 구조화
   });
 });
 
+test("정확한 양옆의 빈 슬롯 문장을 무작위 소환과 직전 결과 키워드로 구조화한다", () => {
+  const result = analyzeEffectText(
+    "등장: 이 카드 양옆의 빈 슬롯에 각각 무작위 선수 카드 1장을 소환하고, 그렇게 소환된 선수들에게 도발을 부여한다.",
+  );
+
+  assert.equal(result.status, "success");
+  assert.deepEqual(result.effects.map((effect) => effect.action), ["SUMMON", "ADD_KEYWORD"]);
+  assert.deepEqual(result.effects[0]?.target, {
+    zone: "BOARD",
+    owner: "SELF",
+    cardType: "WRESTLER",
+    selection: "ADJACENT_EMPTY_SLOTS",
+    count: 2,
+    randomScope: "STANDARD",
+  });
+  assert.deepEqual(result.effects[1]?.target, {
+    zone: "BOARD",
+    owner: "SELF",
+    cardType: "WRESTLER",
+    selection: "SAME_TARGET",
+    count: 2,
+  });
+  assert.deepEqual(result.effects[1]?.values, { keyword: "TAUNT" });
+  assert.equal(isStructuredEffects({ effects: result.effects }), true);
+});
+
 test("요구된 기존 라이브러리 문장을 모두 지원한다", () => {
   for (const text of [
     "등장: 골드 1 획득", "등장: 카드 1장 드로우", "등장: 자신에게 +1/+1",

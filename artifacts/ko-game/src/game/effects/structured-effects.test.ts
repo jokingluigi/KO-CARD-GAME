@@ -374,6 +374,189 @@ test('등장 시 자신의 양옆 빈 슬롯에 표준 무작위 선수를 각�
   assert.equal(result.players[0].board[3], null);
 });
 
+test('인접 무작위 소환 결과를 같은 resolution에서 모두 참조해 도발을 부여한다', () => {
+  const source = instance('adjacent-taunt-source', [
+    structured('SUMMON', {
+      zone: 'BOARD',
+      owner: 'SELF',
+      cardType: 'WRESTLER',
+      selection: 'ADJACENT_EMPTY_SLOTS',
+      count: 2,
+      randomScope: 'STANDARD',
+    }),
+    structured('ADD_KEYWORD', {
+      zone: 'BOARD',
+      owner: 'SELF',
+      cardType: 'WRESTLER',
+      selection: 'SAME_TARGET',
+      count: 2,
+    }, { keyword: 'TAUNT' }),
+  ]);
+  const state = createInitialGameState();
+  state.randomSeed = 21;
+  state.cardPool = [
+    definition('pool-wrestler-a', []),
+    definition('pool-wrestler-b', []),
+    { ...definition('pool-technique', []), cardType: 'TECHNIQUE' },
+  ];
+
+  const result = enterField(state, 'player-1', source, 1);
+  const left = result.players[0].board[0];
+  const right = result.players[0].board[2];
+  assert.ok(left);
+  assert.ok(right);
+  assert.equal(left?.isGenerated, true);
+  assert.equal(right?.isGenerated, true);
+  assert.equal(left?.keywords.includes('TAUNT'), true);
+  assert.equal(right?.keywords.includes('TAUNT'), true);
+  assert.equal(result.players[0].board[1]?.instanceId, source.instanceId);
+  assert.equal(result.players[0].board.filter(Boolean).length, 3);
+  assert.equal(result.events.filter((event) => event.type === 'CARD_GENERATED').length, 2);
+});
+
+test('인접 슬롯마다 독립적으로 무작위 선택해 같은 definition도 허용한다', () => {
+  const source = instance('duplicate-random-source', [
+    structured('SUMMON', {
+      zone: 'BOARD',
+      owner: 'SELF',
+      cardType: 'WRESTLER',
+      selection: 'ADJACENT_EMPTY_SLOTS',
+      count: 2,
+      randomScope: 'STANDARD',
+    }),
+  ]);
+  const state = createInitialGameState();
+  state.cardPool = [definition('only-wrestler', [])];
+  const result = enterField(state, 'player-1', source, 1);
+  assert.equal(result.players[0].board[0]?.definitionId, 'only-wrestler');
+  assert.equal(result.players[0].board[2]?.definitionId, 'only-wrestler');
+});
+
+test('한쪽 인접 슬롯만 비었으면 그쪽만 소환하고 결과도 한 장만 참조한다', () => {
+  const source = instance('one-side-source', [
+    structured('SUMMON', {
+      zone: 'BOARD',
+      owner: 'SELF',
+      cardType: 'WRESTLER',
+      selection: 'ADJACENT_EMPTY_SLOTS',
+      count: 2,
+      randomScope: 'STANDARD',
+    }),
+    structured('ADD_KEYWORD', {
+      zone: 'BOARD',
+      owner: 'SELF',
+      cardType: 'WRESTLER',
+      selection: 'SAME_TARGET',
+      count: 2,
+    }, { keyword: 'TAUNT' }),
+  ]);
+  const state = createInitialGameState();
+  state.cardPool = [definition('one-side-wrestler', [])];
+  state.players[0].board[2] = { ...instance('right-blocker'), boardSlot: 2 };
+  const result = enterField(state, 'player-1', source, 1);
+  assert.equal(result.players[0].board[0]?.definitionId, 'one-side-wrestler');
+  assert.equal(result.players[0].board[0]?.keywords.includes('TAUNT'), true);
+  assert.equal(result.players[0].board[2]?.instanceId, 'right-blocker-instance');
+  assert.equal(result.players[0].board.filter(Boolean).length, 3);
+});
+
+test('양쪽 인접 슬롯이 차 있으면 소환과 후속 키워드 부여를 안전하게 건너뛴다', () => {
+  const source = instance('full-adjacent-source', [
+    structured('SUMMON', {
+      zone: 'BOARD',
+      owner: 'SELF',
+      cardType: 'WRESTLER',
+      selection: 'ADJACENT_EMPTY_SLOTS',
+      count: 2,
+      randomScope: 'STANDARD',
+    }),
+    structured('ADD_KEYWORD', {
+      zone: 'BOARD',
+      owner: 'SELF',
+      cardType: 'WRESTLER',
+      selection: 'SAME_TARGET',
+      count: 2,
+    }, { keyword: 'TAUNT' }),
+  ]);
+  const state = createInitialGameState();
+  state.cardPool = [definition('unused-wrestler', [])];
+  state.players[0].board[0] = { ...instance('left-blocker'), boardSlot: 0 };
+  state.players[0].board[2] = { ...instance('right-blocker'), boardSlot: 2 };
+  const result = enterField(state, 'player-1', source, 1);
+  assert.equal(result.players[0].board[0]?.instanceId, 'left-blocker-instance');
+  assert.equal(result.players[0].board[2]?.instanceId, 'right-blocker-instance');
+  assert.equal(result.events.some((event) => event.type === 'CARD_GENERATED'), false);
+  assert.equal(result.targetingState, undefined);
+});
+
+test('보드 가장자리에서는 존재하는 한쪽 인접 슬롯만 검사한다', () => {
+  const source = instance('edge-source', [
+    structured('SUMMON', {
+      zone: 'BOARD',
+      owner: 'SELF',
+      cardType: 'WRESTLER',
+      selection: 'ADJACENT_EMPTY_SLOTS',
+      count: 2,
+      randomScope: 'STANDARD',
+    }),
+  ]);
+  const state = createInitialGameState();
+  state.cardPool = [definition('edge-wrestler', [])];
+  const result = enterField(state, 'player-1', source, 0);
+  assert.equal(result.players[0].board[0]?.instanceId, source.instanceId);
+  assert.equal(result.players[0].board[1]?.definitionId, 'edge-wrestler');
+  assert.equal(result.players[0].board.filter(Boolean).length, 2);
+});
+
+test('무작위 선수 풀은 기술 카드를 제외하고 같은 seed에서 같은 결과를 낸다', () => {
+  const run = (seed: number) => {
+    const source = instance('deterministic-source', [
+      structured('SUMMON', {
+        zone: 'BOARD',
+        owner: 'SELF',
+        cardType: 'WRESTLER',
+        selection: 'ADJACENT_EMPTY_SLOTS',
+        count: 2,
+        randomScope: 'STANDARD',
+      }),
+    ]);
+    const state = createInitialGameState();
+    state.randomSeed = seed;
+    state.cardPool = [
+      definition('deterministic-a', []),
+      definition('deterministic-b', []),
+      { ...definition('deterministic-technique', []), cardType: 'TECHNIQUE' },
+    ];
+    const result = enterField(state, 'player-1', source, 1);
+    return [result.players[0].board[0]?.definitionId, result.players[0].board[2]?.definitionId];
+  };
+  assert.deepEqual(run(77), run(77));
+  assert.equal(run(77).every((id) => id !== 'deterministic-technique'), true);
+});
+
+test('무작위 소환은 소환된 카드 자신의 ENTER_FIELD 효과를 재발동하지 않는다', () => {
+  const summonedDefinition = {
+    ...definition('no-enter-trigger', [
+      structured('BUFF', { zone: 'BOARD', owner: 'SELF', selection: 'SELF', count: 1 }, { attack: 5, health: 5 }),
+    ]),
+  };
+  const source = instance('no-enter-source', [
+    structured('SUMMON', {
+      zone: 'BOARD',
+      owner: 'SELF',
+      cardType: 'WRESTLER',
+      selection: 'ADJACENT_EMPTY_SLOTS',
+      count: 1,
+      randomScope: 'STANDARD',
+    }),
+  ]);
+  const state = createInitialGameState();
+  state.cardPool = [summonedDefinition];
+  const result = enterField(state, 'player-1', source, 1);
+  assert.equal(result.players[0].board[0]?.currentAttack, 1);
+  assert.equal(result.players[0].board[0]?.currentHealth, 1);
+});
+
 test('필드에 있는 카드가 생성 카드의 전투 피해를 보정하고 퇴장하면 만료된다', () => {
   const aura = instance('generated-damage-aura', [
     structured('ADD_DAMAGE_MODIFIER', undefined, { amount: 1, damageSource: 'GENERATED' }),
