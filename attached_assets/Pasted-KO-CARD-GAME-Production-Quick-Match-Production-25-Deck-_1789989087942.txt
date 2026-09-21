@@ -1,0 +1,255 @@
+KO CARD GAME Production의 Quick Match가 아직 작동하지 않습니다.
+
+현재 실제 Production 화면에서 확인된 상태:
+
+* 유효한 25장 Deck `QA-0921` 선택됨
+* Deck 상태: `사용 가능`
+* 하지만 `상대 찾기` 버튼은 비활성화됨
+* 화면 오른쪽 위 연결 상태가 **`연결 종료`** 로 표시됨
+
+따라서 이번 작업에서는 Quick Match 전체를 다시 분석하지 말고,
+**왜 Production에서 multiplayer/WebSocket 연결이 종료 상태가 되는지 찾아 실제로 수정해주세요.**
+
+이번 목표는 조사 보고가 아니라 **Production 환경에서도 WebSocket이 정상 연결되는 코드 상태로 수정하는 것**입니다.
+
+---
+
+# 1. 우선 확인할 흐름
+
+다음 경로만 우선 추적하세요.
+
+```text
+online-quick
+→ multiplayer/WebSocket client 생성
+→ WebSocket URL 생성
+→ connection open
+→ server WebSocket upgrade/handler
+→ connection state
+→ Quick Match button enabled
+```
+
+이미 수정된 queue cleanup이나 Deck validation을 다시 분석하지 마세요.
+
+---
+
+# 2. 가장 먼저 확인할 것
+
+Production 사이트는 HTTPS입니다.
+
+현재 Production:
+
+`https://ko-card-game-vr69.onrender.com/`
+
+WebSocket client가 Production에서 잘못된 주소를 만들고 있지 않은지 확인해주세요.
+
+특히:
+
+* `ws://`를 HTTPS Production에서 사용 중인지
+* Production에서는 `wss://`가 필요한지
+* localhost / Replit URL이 하드코딩돼 있는지
+* WebSocket path가 frontend와 server에서 다른지
+* `/ws`, `/api/ws`, multiplayer 전용 path 등이 서로 불일치하는지
+* `window.location.host`를 정상 사용하고 있는지
+* Render에서 같은 Service의 WebSocket upgrade가 정상 처리되는지
+* 연결 직후 server가 socket을 close하는 조건이 있는지
+* 인증/session 검증 때문에 Production connection이 즉시 거부되는지
+
+를 확인하세요.
+
+URL을 추측해서 새 시스템을 만들지 말고 현재 WebSocket 구현을 수정하세요.
+
+---
+
+# 3. 기대되는 Production 연결 방식
+
+같은 Render host를 사용하는 구조라면 기존 architecture에 맞춰 Production WebSocket endpoint를 만들되,
+HTTPS 페이지에서는 secure WebSocket을 사용해야 합니다.
+
+개념적으로:
+
+```text
+https page
+→ wss connection
+
+http/local development
+→ ws connection
+```
+
+이 원칙을 현재 코드 구조에 맞게 적용하세요.
+
+특정 Render domain을 코드에 직접 하드코딩하는 방식은 가능하면 사용하지 마세요.
+
+현재 host/protocol에서 안전하게 계산하거나 기존 configuration을 사용하세요.
+
+---
+
+# 4. 연결 종료 원인까지 수정
+
+단순히 UI의 `"연결 종료"` 문구를 `"연결됨"`으로 바꾸면 안 됩니다.
+
+실제 `WebSocket.OPEN` 상태가 되어야 합니다.
+
+다음도 확인하세요.
+
+```text
+constructor
+→ open
+→ auth/hello handshake
+→ server accept
+→ connection retained
+```
+
+연결 직후 서버에서 close된다면 close code/reason을 확인하고 실제 원인을 수정하세요.
+
+Client reconnect loop가 잘못되어 연결 즉시 닫히는 경우도 확인하세요.
+
+---
+
+# 5. 상대 찾기 버튼
+
+WebSocket이 실제 연결되면,
+유효한 Deck이 선택된 현재 상태에서는 `상대 찾기` 버튼을 사용할 수 있어야 합니다.
+
+정상 조건:
+
+```text
+authenticated
++ valid deck selected
++ socket connected
++ not already queued
+= Find Match enabled
+```
+
+버튼을 무조건 enabled로 바꾸지 마세요.
+
+실제 socket connection 상태를 기준으로 정상화하세요.
+
+---
+
+# 6. 연결 후 Queue까지 이어지게 수정
+
+WebSocket 연결만 성공하고 끝내지 마세요.
+
+기존 Quick Match 흐름을 사용해서:
+
+```text
+상대 찾기 클릭
+→ queue join message/request
+→ server queue 등록
+→ searching state
+```
+
+까지 연결이 끊기지 않도록 수정하세요.
+
+다른 Player가 없어도 **`검색 중` 상태까지 정상 진입**하면 됩니다.
+
+상대 2명을 실제로 만들어 장시간 QA할 필요는 없습니다.
+
+---
+
+# 7. Friendly Match도 같은 연결을 공유한다면
+
+Quick Match와 Friendly Match가 동일 WebSocket client/server를 사용하고,
+이번 연결 종료의 원인이 공통이라면 **공통 연결 문제를 한 번만 수정**하세요.
+
+그 결과 Friendly 방 생성도 같이 복구될 수 있습니다.
+
+하지만 Friendly 전용 기능을 이번 작업에서 새로 리팩터링하지 마세요.
+
+---
+
+# 8. 이미 정상/수정된 부분은 건드리지 말 것
+
+다음은 이번 작업 범위가 아닙니다.
+
+* Deck 보유 수량
+* AI Deck 규칙
+* Champion Token
+* 카드 효과
+* Champion 효과
+* Quest
+* Technique
+* Quick Match queue leave cleanup
+* Friendly pending cleanup
+
+WebSocket 연결 문제와 직접 관계없는 코드는 수정하지 마세요.
+
+---
+
+# 9. Production 안전
+
+금지:
+
+* Production DB 수정
+* Supabase 수정
+* 사용자 데이터 변경
+* 카드/Champion 원본 변경
+* migration
+* seed
+* DB reset
+* git push
+* Render deploy
+
+이번에는 코드 수정까지만 합니다.
+
+---
+
+# 10. 불필요한 테스트 금지
+
+브라우저 장시간 QA나 전체 카드 테스트를 하지 마세요.
+
+수정 완료 후 최소한:
+
+* typecheck
+* build
+* git diff --check
+
+만 확인하세요.
+
+WebSocket 관련 기존 짧은 테스트가 있다면 해당 테스트만 실행할 수 있습니다.
+
+---
+
+# 완료 보고
+
+다음만 알려주세요.
+
+## 실제 원인
+
+예:
+
+* 잘못된 WebSocket URL
+* ws/wss 문제
+* server path 불일치
+* auth/session으로 즉시 close
+* server upgrade 문제
+* 기타 실제 확인된 원인
+
+## 수정 내용
+
+어떤 연결 경로를 어떻게 고쳤는지
+
+## 변경 파일
+
+실제 수정 파일만
+
+## 예상 Production 상태
+
+* WebSocket 연결:
+* `연결 종료` → `연결됨` 가능 여부:
+* 상대 찾기 활성화 조건:
+* queue join 경로:
+
+## 검증
+
+* typecheck:
+* build:
+* git diff --check:
+
+## Git / 배포
+
+* git push: 하지 않음
+* Render deploy: 하지 않음
+
+단순히 연결 실패를 보고하지 말고,
+**현재 코드에서 해결 가능한 WebSocket 연결 문제는 실제로 수정해주세요.**
