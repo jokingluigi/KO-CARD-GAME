@@ -1,0 +1,198 @@
+KO CARD GAME 온라인 PvP의 매치 진입 크래시를 수정해줘.
+
+현재 실제 Production에서 다음까지는 정상이다.
+
+- WebSocket 연결 성공
+- 빠른 대전 매칭 성공
+- 두 플레이어 매치 생성 성공
+- /online/match/:matchId 로 화면 전환 성공
+
+하지만 매치 화면에 진입하자마자 ErrorBoundary가 발생하며 화면에
+"Something went wrong"
+가 표시된다.
+
+브라우저 Console의 실제 오류:
+
+Error: SUMMON requires a serializable card definition.
+
+관련해서 이미 직접 조사한 내용:
+
+1. 오류 발생 위치
+artifacts/ko-game/src/game/effects/effect-engine.ts
+
+SUMMON / GENERATE 처리에서:
+
+const definition = resolveCardDefinition(
+  state,
+  effect.values?.definition,
+  effect.values?.definitionRef,
+);
+
+definition이 유효한 CardDefinition이 아니면:
+
+throw new Error(`${effect.action} requires a serializable card definition.`);
+
+2. resolveCardDefinition은 다음 구조다.
+
+- effect.values.definition이 있으면 그것 사용
+- 아니면 definitionRef.id를 state.cardPool에서 찾음
+
+즉 definitionRef 기반 SUMMON은 state.cardPool이 필요하다.
+
+3. 온라인 서버에서 match 초기 GameState를 만들 때
+artifacts/api-server/src/online/service.ts
+
+DB의 모든 PUBLISHED 카드를 가져와:
+
+const cardDefinitions = cards.map(toCardDefinition);
+
+createInitialGameState(..., cardDefinitions, ...)
+
+에 전달한다.
+
+따라서 서버의 state.cardPool은 특정 플레이어의 덱 목록이 아니라
+모든 PUBLISHED CardDefinition의 공개 카탈로그다.
+
+4. 그런데
+artifacts/api-server/src/online/sanitizer.ts
+
+sanitizeGameStateForViewer()에서 현재:
+
+const {
+  cardPool: _cardPool,
+  randomSeed: _randomSeed,
+  ...publicState
+} = state;
+
+처럼 cardPool을 온라인 클라이언트 snapshot에서 제거하고 있다.
+
+이 때문에 클라이언트가 definitionRef 기반 SUMMON을 복원할 때
+state.cardPool이 없어 definition resolution이 실패하는 것으로 보인다.
+
+이미 로컬에서 sanitizer.ts의
+
+cardPool: _cardPool,
+
+한 줄을 제거하는 수정까지 해둔 상태일 수 있으니,
+먼저 git diff와 실제 working tree를 확인하고 중복 수정하지 마.
+
+==================================================
+해야 할 일
+==================================================
+
+1. 위 원인이 실제로 맞는지 코드 흐름으로 검증해라.
+추측으로 PASS 처리하지 마.
+
+GameState 생성
+→ online sanitizer
+→ MATCH_SNAPSHOT / RESYNC
+→ client projection
+→ effect-engine resolveCardDefinition
+→ SUMMON
+
+전체 흐름을 확인해라.
+
+2. 보안 규칙을 유지해라.
+
+반드시 계속 숨겨야 함:
+- randomSeed
+- 상대 hand 실제 카드 정보
+- 상대 deck 실제 카드 정보
+- 상대의 비공개 generated/drawn 카드 identity
+
+절대 상대 덱 내용을 공개하지 마.
+
+단, 현재 cardPool이 실제로 모든 PUBLISHED 공개 CardDefinition의 카탈로그라는 사실을 코드로 검증한 뒤,
+공개 카드 정의 카탈로그를 snapshot에서 유지하는 것이 안전하다면 그렇게 수정해라.
+
+3. sanitizer.ts를 최소 범위로 수정해라.
+
+현재 의도는:
+
+- cardPool: 유지
+- randomSeed: 제거
+- 상대 hand/deck: count-only 유지
+- hidden event redaction: 유지
+
+다른 온라인 보안 로직은 바꾸지 마.
+
+4. 회귀 테스트를 추가/수정해라.
+
+artifacts/api-server/src/online/sanitizer.test.ts에서 최소 다음을 검증해야 한다.
+
+- cardPool은 viewer projection에 유지된다.
+- randomSeed는 viewer projection에 포함되지 않는다.
+- 상대 CARD_DRAWN / CARD_GENERATED event의 secret cardInstanceId/source/target redaction은 기존대로 유지된다.
+- 상대 hand/deck identity는 계속 숨겨진다.
+
+가능하다면 definitionRef 기반 SUMMON이 sanitized online snapshot에서도 resolve 가능한 회귀 테스트도 추가해라.
+
+5. 절대 하지 말 것
+
+- Production DB 수정 금지
+- 카드/Champion 데이터 수정 금지
+- SUMMON validation throw 삭제 금지
+- invalid definition을 silent no-op으로 변경 금지
+- randomSeed 노출 금지
+- 상대 덱/손패 정보 노출 금지
+- unrelated refactor 금지
+- 카드별 hardcoding 금지
+- 특정 카드 이름으로 예외 처리 금지
+- Replit/Agent metadata 파일 stage 금지
+- secrets 수정 금지
+
+6. 검증
+
+가능한 실제 프로젝트 명령을 먼저 package.json에서 확인한 뒤 실행해라.
+
+최소:
+- api-server typecheck
+- 관련 sanitizer 테스트
+- game-engine 관련 테스트가 필요하면 실행
+- api-server build
+- git diff --check
+
+테스트 도구가 설치되어 있지 않다면 새 dependency를 함부로 추가하지 말고,
+현재 repo에서 사용 중인 테스트 실행 방식을 찾아라.
+
+7. 최종 확인
+
+가능하면 local/runtime에서:
+
+- online match snapshot에 cardPool이 존재
+- randomSeed는 없음
+- opponent hand/deck은 hidden count
+- definitionRef SUMMON이 더 이상
+  "SUMMON requires a serializable card definition"
+  오류를 발생시키지 않음
+
+을 확인해라.
+
+8. Git
+
+문제가 실제로 수정되고 모든 검증이 통과한 경우에만:
+
+- 의도한 파일만 stage
+- commit
+- main branch에 git push
+
+까지 진행해라.
+
+Render를 수동으로 건드리거나 Production DB를 변경하지 마.
+Git push 후 자동 배포는 기존 설정에 맡겨라.
+
+==================================================
+최종 보고
+==================================================
+
+작업 후 반드시 다음을 보고해라.
+
+- 실제 root cause
+- 수정한 파일
+- 수정 내용
+- 보안상 cardPool을 노출해도 되는 이유 또는 다른 안전한 해결을 선택한 이유
+- 실행한 테스트/검증
+- PASS/FAIL
+- commit hash
+- push 성공 여부
+- Production에서 내가 직접 확인해야 할 항목
