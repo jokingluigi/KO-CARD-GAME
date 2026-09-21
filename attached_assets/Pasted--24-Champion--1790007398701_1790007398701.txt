@@ -1,0 +1,465 @@
+==================================================
+추가 요구사항 24
+판도라 Champion 고유 능력 — 아군 대상 및 팀킬 허용
+==================================================
+
+판도라 Champion의 고유 능력 targeting 규칙을 수정해라.
+
+공식 요구사항:
+
+판도라의 Champion Ability는
+적 선수뿐 아니라
+자신의 필드에 있는 아군 선수도 대상으로 지정할 수 있어야 한다.
+
+즉:
+
+판도라 능력
+→ target selection
+→ MY_BOARD 또는 OPPONENT_BOARD의 유효한 WRESTLER 선택 가능
+→ 선택한 선수에게 능력 피해 적용
+
+아군에게도 실제 DAMAGE를 적용한다.
+
+그 피해로 아군 선수 HP가 0 이하가 되면
+정상적인 RETIRE 절차를 거쳐야 한다.
+
+즉 "팀킬"이 가능해야 한다.
+
+예:
+
+내 필드 용병 HP 2
+→ 판도라 능력으로 2 피해
+→ HP 0
+→ RETIRE
+→ graveyard/retire 처리
+→ RETIRE event 발생
+→ 판도라 Quest 조건과 일치하면 Quest progress 증가
+
+==================================================
+판도라 구현 원칙
+==================================================
+
+판도라라는 이름을 effect-engine 내부에 hardcoding하지 마.
+
+가능하면 판도라 ChampionDefinition / Ability Effect Script가
+generic target selector를 사용하도록 수정한다.
+
+예:
+
+target:
+  PLAYER_CHOICE
+
+valid zones:
+  MY_BOARD
+  OPPONENT_BOARD
+
+cardType:
+  WRESTLER
+
+와 같은 현재 DSL/Effect Script의 실제 구조를 이용한다.
+
+정확한 schema/property 이름은
+현재 repo의 authoritative Effect Script 구조를 따른다.
+
+다음처럼 만들지 마:
+
+if (champion.name === "판도라") {
+  allowFriendlyFire = true;
+}
+
+금지.
+
+ChampionDefinition 또는 generic selector/filter로 표현해라.
+
+==================================================
+판도라 팀킬 시 Event Attribution
+==================================================
+
+아군을 공격했다고 해서
+DAMAGE / RETIRE event attribution이 사라지면 안 된다.
+
+반드시:
+
+USE_CHAMPION_ABILITY
+→ DAMAGE
+→ target = allied wrestler
+→ HP <= 0
+→ RETIRE
+→ Event attribution 유지
+
+되어야 한다.
+
+Quest matcher가 다음 정보를 정상적으로 추적할 수 있어야 한다.
+
+- source player
+- source Champion ability
+- target CardInstance
+- target owner
+- RETIRE 발생 여부
+- source effect / source action
+
+판도라 Quest가
+"판도라의 능력으로 선수를 RETIRE시킨 횟수"
+또는 현재 ChampionDefinition에 저장된 공식 조건이라면,
+아군 팀킬 RETIRE도 그 공식 조건에 포함되는지
+현재 definition을 authoritative source로 확인한다.
+
+사용자의 공식 의도는:
+
+판도라 능력으로 아군 용병을 직접 죽여도
+해당 RETIRE가 판도라 Quest의 유효 진행 조건이라면
+Quest progress가 증가해야 한다.
+
+==================================================
+판도라 실제 Gameplay 테스트
+==================================================
+
+반드시 실제 AI Match 또는 안전한 테스트 게임에서 확인:
+
+TEST P1
+
+내 필드:
+- 판도라
+- HP가 능력 피해보다 높은 아군 선수
+
+판도라 능력
+→ 아군 선수 선택
+
+기대:
+- targeting UI에서 아군 선택 가능
+- 실제 피해 적용
+- 적 대상 선택도 기존대로 가능
+
+TEST P2
+
+아군 용병의 HP가
+판도라 능력 피해 이하인 상태.
+
+판도라 능력
+→ 아군 용병 선택
+→ 팀킬
+
+기대:
+- 용병 RETIRE
+- 정상적인 Event 발생
+- GameState에서 필드에서 제거
+- 관련 zone 이동 정상
+
+TEST P3
+
+판도라 Quest가 0/5인 상태에서
+공식 Quest 조건에 해당하는 아군 용병을
+판도라 능력으로 RETIRE.
+
+기대:
+
+0/5
+→ 1/5
+
+실제 GameState와 UI 양쪽 확인.
+
+TEST P4
+
+Quest 4/5
+→ 판도라 능력 팀킬 RETIRE
+→ 5/5
+→ Quest 완료
+→ Quest reward
+→ Quest 완료 연출
+
+전체 확인.
+
+TEST P5
+
+아군 대상이 존재하지 않아도
+적 선수 대상은 기존대로 선택 가능.
+
+TEST P6
+
+판도라가 아군을 대상으로 지정하는 기능 때문에
+다른 Champion ability의 targeting rule이 넓어지면 안 된다.
+
+==================================================
+아군 Champion 자체는 대상에 포함하지 말 것
+==================================================
+
+사용자가 요청한 "아군 팀킬"의 대상은
+자기 필드의 WRESTLER/선수 카드다.
+
+별도 공식 정의가 없는 한
+자기 Champion HP 자체를 판도라 능력 대상으로 추가하지 마.
+
+즉 기본 범위:
+
+MY_BOARD WRESTLER
++
+OPPONENT_BOARD WRESTLER
+
+이다.
+
+==================================================
+추가 요구사항 25
+AI Match 상대 덱은 매 경기 무조건 랜덤 선택
+==================================================
+
+AI Match 시작 시
+상대 AI의 덱이 특정 하나로 고정되거나
+이전 선택을 계속 재사용하지 않게 수정해라.
+
+공식 규칙:
+
+새 AI Match를 시작할 때마다
+현재 사용 가능한 유효한 AI 상대 덱들 중
+하나를 무작위로 선택한다.
+
+예:
+
+AI Deck A
+AI Deck B
+AI Deck C
+AI Deck D
+
+가 모두 유효하면
+
+새 게임 시작
+→ 이 중 하나 random select
+
+다음 새 게임
+→ 다시 전체 eligible pool에서 random select
+
+한다.
+
+==================================================
+AI 덱 random pool
+==================================================
+
+random 대상에는
+현재 Admin AI Deck 시스템에서
+실제로 사용 가능한/활성화된/유효한 AI 덱만 포함한다.
+
+정확한 eligibility 기준은
+현재 AI Deck validation을 authoritative source로 사용한다.
+
+다음은 제외:
+
+- invalid deck
+- 삭제된 deck
+- disabled/inactive deck
+- Champion 없음
+- deck rule 위반
+- 실제 게임에서 사용할 수 없는 AI deck
+
+테스트용 임시 데이터나
+일반 사용자의 개인 덱을
+AI 상대 pool에 섞지 마.
+
+==================================================
+AI 덱 선택은 "덱 내용 랜덤 생성"이 아님
+==================================================
+
+중요:
+
+요구사항은
+AI 덱의 25장을 매 경기 뒤섞어서 임의 구성하라는 뜻이 아니다.
+
+기존에 Admin에서 정의된
+완성된 AI Deck 중 하나를
+상대 덱으로 랜덤 선택하는 것이다.
+
+즉:
+
+eligible AI Deck 목록
+→ random 1개 선택
+→ 해당 AI Deck의 Champion + 25장 그대로 사용
+
+한다.
+
+==================================================
+매치 도중 재추첨 금지
+==================================================
+
+AI 상대 덱은
+게임 생성 시 딱 한 번 결정한다.
+
+이후:
+
+- 새로고침
+- reconnect
+- resync
+- UI rerender
+- turn 변경
+- remount
+
+때마다 다른 AI 덱으로 바뀌면 안 된다.
+
+선택된 AI deck ID / snapshot은
+해당 match 동안 canonical state에 고정한다.
+
+==================================================
+새 게임에서는 다시 추첨
+==================================================
+
+AI Match가 끝난 뒤
+새로운 AI Match를 시작하면
+다시 eligible AI deck pool에서 추첨한다.
+
+"지난 경기 상대 덱을 그대로 사용"을 기본 동작으로 하지 마.
+
+사용자가 별도로 opponent deck을 지정하는
+명시적 QA/debug 기능이 존재한다면
+그 테스트 기능만 예외로 유지할 수 있다.
+
+일반 사용자 AI Match는 항상 random opponent다.
+
+==================================================
+AI 상대 선택 RNG
+==================================================
+
+KO CARD GAME의 deterministic RNG 원칙을 깨지 마.
+
+Math.random()을 gameplay canonical path에 직접 추가하지 마.
+
+현재 match seed / deterministic random infrastructure를 조사해서
+가장 적절한 canonical random source를 사용한다.
+
+선택된 결과는 매치 시작 시 확정하고 저장한다.
+
+같은 match를 reload/resync한다고
+다시 추첨하지 않는다.
+
+==================================================
+AI 덱 랜덤 선택 UI
+==================================================
+
+일반 AI Match 화면에서
+사용자가 상대 AI Deck을 직접 골라야만 시작되는 구조라면
+그 dependency를 제거한다.
+
+일반 UX:
+
+내 덱 선택
+→ AI Match 시작
+→ 서버/게임 로직이 상대 AI Deck 자동 random 선택
+→ 게임 시작
+
+으로 한다.
+
+필요하면 매치 시작 후:
+
+상대: <AI 이름/Champion>
+
+정도는 표시 가능.
+
+상대의 전체 덱 리스트를
+게임 시작 전에 불필요하게 공개할 필요는 없다.
+
+==================================================
+AI 덱 랜덤 실제 테스트
+==================================================
+
+반드시 실제 AI Match를 여러 번 새로 시작해서 확인한다.
+
+최소 10회 정도 match creation을 반복하거나
+동등한 deterministic integration test를 통해:
+
+- eligible AI deck pool 밖의 deck이 선택되지 않음
+- invalid deck 선택 안 됨
+- 선택된 deck이 match 도중 바뀌지 않음
+- 새 match마다 다시 selection 수행
+
+확인.
+
+랜덤이므로 10회 안에 모든 덱이 반드시 나와야 한다는
+잘못된 테스트는 만들지 마.
+
+대신 random selector가 eligible pool 전체를
+후보로 사용하고 있다는 것을 코드/테스트로 검증한다.
+
+가능하면 controlled deterministic seeds로:
+
+seed A → AI deck X
+seed B → AI deck Y
+
+처럼 서로 다른 결과도 검증한다.
+
+==================================================
+실제 브라우저 AI Match 검증
+==================================================
+
+최소 여러 번:
+
+Main
+→ AI Match
+→ 내 덱 선택
+→ 게임 시작
+→ 상대 확인
+→ 게임 종료/메뉴 복귀
+→ 새 AI Match
+→ 상대 확인
+
+을 반복한다.
+
+특정 AI deck 하나가 계속 hardcoded되어 있지 않은지 확인한다.
+
+실제 browser gameplay 확인 없이
+AI 상대 랜덤 기능을 PASS 처리하지 마.
+
+==================================================
+추가 회귀 방지
+==================================================
+
+판도라 팀킬 및 AI random opponent 작업 때문에
+다음을 깨지 마.
+
+- 다른 Champion targeting
+- opponent targeting
+- PLAYER_CHOICE
+- Quest
+- RETIRE
+- Champion Token
+- AI Deck validation
+- user deck selection
+- deck count/rules
+- deterministic RNG
+- Online PvP
+- AI Match turn logic
+- production AI Deck data
+
+Production DB 직접 수정 금지.
+
+==================================================
+최종 보고에 추가할 내용
+==================================================
+
+기존 23개 QA 항목 보고에 추가해서 반드시 보고:
+
+[24] 판도라 아군 Target / Team Kill
+
+- 실제 아군 WRESTLER 선택 가능 여부
+- 실제 DAMAGE 여부
+- HP 0 → RETIRE 여부
+- Event attribution
+- Quest progress
+- 0/5 → 1/5 실제 확인 여부
+- Gameplay PASS/FAIL
+
+[25] AI Match Random Opponent Deck
+
+- eligible AI deck pool 결정 방식
+- random selection 위치
+- RNG 방식
+- match 동안 고정되는 방식
+- 새 match 재추첨 여부
+- 실제 AI Match 반복 테스트 횟수
+- 특정 deck hardcoding 존재 여부
+- Gameplay PASS/FAIL
+
+특히 두 항목 모두:
+
+코드상 정상
+또는
+unit test 정상
+
+만으로 PASS 처리하지 마.
+
+실제 게임에서 동작한 것을 확인해야 PASS다.
