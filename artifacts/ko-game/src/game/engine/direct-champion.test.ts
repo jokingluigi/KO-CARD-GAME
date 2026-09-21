@@ -15,10 +15,12 @@ import { useChampionAbility } from './champion-system';
 import { startGame } from './turn-system';
 import type { GameState } from '../types/game-state';
 import { generateCard } from '../cards/generation';
-import type { CardDefinition } from '../cards/types';
+import type { CardDefinition, CardInstance } from '../cards/types';
 import { TEST_CHAMPION_TOKEN_DEFINITION } from '../cards/test-cards';
 import { TEST_CHAMPIONS } from '../champions/test-champions';
 import type { ChampionDefinition } from '../champions/types';
+import { directDeployChampionToken } from './champion-token';
+import { MAX_HAND_SIZE } from '../rules/constants';
 
 const fixedRandom = () => 0.5;
 
@@ -75,6 +77,33 @@ function linkedChampion(overrides: Partial<ChampionDefinition> = {}): ChampionDe
   };
 }
 
+function linkedChampionState(): GameState {
+  return startGame(
+    createInitialGameState(
+      ['test-linked-champion', 'test-champion-no-quest'],
+      [TEST_CHAMPION_TOKEN_DEFINITION],
+      [linkedChampion(), TEST_CHAMPIONS[1]!],
+    ),
+    fixedRandom,
+  );
+}
+
+function withFullBoard(state: GameState, hand: CardInstance[]): GameState {
+  const player = state.players[0];
+  const board = player.deck.slice(0, 4).map((card, index) => ({
+    ...card,
+    boardSlot: index as 0 | 1 | 2 | 3,
+  })) as [CardInstance, CardInstance, CardInstance, CardInstance];
+  return {
+    ...state,
+    players: state.players.map((candidate) =>
+      candidate.id === 'player-1'
+        ? { ...candidate, deck: candidate.deck.slice(4), hand, board }
+        : candidate,
+    ),
+  };
+}
+
 test('챔피언 자신의 효과로만 직접 출전 상태를 만든다', () => {
   const state = deployDirectChampion();
   const card = findDirectDeployedChampion(state, 'player-1');
@@ -84,6 +113,54 @@ test('챔피언 자신의 효과로만 직접 출전 상태를 만든다', () =>
   assert.equal(card.isDirectDeployedChampion, true);
   assert.equal(card.isSilenceImmune, true);
   assert.equal(card.isGenerated, true);
+  assert.equal(card.currentCost, 0);
+});
+
+test('필드가 가득 찬 Champion Token은 손패로 보존된다', () => {
+  const state = linkedChampionState();
+  const fullBoard = withFullBoard(state, []);
+  const result = directDeployChampionToken(
+    fullBoard,
+    'player-1',
+    'test-linked-champion',
+    TEST_CHAMPION_TOKEN_DEFINITION.id,
+  );
+  const token = result.players[0].hand.at(-1);
+
+  assert.ok(token);
+  assert.equal(token.isDirectDeployedChampion, true);
+  assert.equal(token.isSilenceImmune, true);
+  assert.equal(token.boardSlot, null);
+  assert.equal(result.players[0].board.every(Boolean), true);
+});
+
+test('필드와 손패가 가득 찬 Champion Token은 덱 맨 위에 보존되고 빈자리가 생기면 뽑힌다', () => {
+  const state = linkedChampionState();
+  const sourceCard = state.players[0].hand[0]!;
+  const fullHand = Array.from({ length: MAX_HAND_SIZE }, (_, index) => ({
+    ...sourceCard,
+    instanceId: `full-hand-${index}`,
+  }));
+  const fullBoard = withFullBoard(state, fullHand);
+  const stored = directDeployChampionToken(
+    fullBoard,
+    'player-1',
+    'test-linked-champion',
+    TEST_CHAMPION_TOKEN_DEFINITION.id,
+  );
+
+  const storedToken = stored.players[0].deck[0];
+  assert.equal(storedToken?.isDirectDeployedChampion, true);
+  const withHandSpace = {
+    ...stored,
+    players: stored.players.map((player) =>
+      player.id === 'player-1' ? { ...player, hand: player.hand.slice(1) } : player,
+    ),
+  };
+  const drawn = drawCard(withHandSpace, 'player-1');
+
+  assert.equal(drawn.players[0].hand.some((card) => card.isDirectDeployedChampion), true);
+  assert.equal(drawn.players[0].deck[0]?.isDirectDeployedChampion, false);
 });
 
 test('직접 출전 토큰은 Champion 현재 체력을 합산하지 않고 카드 기본 체력으로 전개한다', () => {

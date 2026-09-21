@@ -86,12 +86,31 @@ export function AdminAIDeckManager({ onUnauthorized }: Props) {
     );
   }, [draft.cardDefinitionIds, filterRarity, filterType, options?.cards, search]);
 
-  function toggleCard(card: AIDeckCard) {
+  const cardCounts = useMemo(() => {
+    const counts = new Map<string, number>();
+    draft.cardDefinitionIds.forEach((id) => counts.set(id, (counts.get(id) ?? 0) + 1));
+    return counts;
+  }, [draft.cardDefinitionIds]);
+
+  function addCard(card: AIDeckCard) {
+    const count = cardCounts.get(card.id) ?? 0;
+    const maxCopies = card.rarity === "LEGENDARY" ? 1 : 2;
+    if (
+      draft.cardDefinitionIds.length >= (options?.maxCardCount ?? 25) ||
+      card.isToken ||
+      card.isChampionToken ||
+      card.status !== "PUBLISHED" ||
+      count >= maxCopies
+    ) return;
+    setDraft((current) => ({ ...current, cardDefinitionIds: [...current.cardDefinitionIds, card.id] }));
+  }
+
+  function removeCard(card: AIDeckCard) {
+    const index = draft.cardDefinitionIds.indexOf(card.id);
+    if (index < 0) return;
     setDraft((current) => ({
       ...current,
-      cardDefinitionIds: current.cardDefinitionIds.includes(card.id)
-        ? current.cardDefinitionIds.filter((id) => id !== card.id)
-        : [...current.cardDefinitionIds, card.id],
+      cardDefinitionIds: [...current.cardDefinitionIds.slice(0, index), ...current.cardDefinitionIds.slice(index + 1)],
     }));
   }
 
@@ -212,8 +231,23 @@ export function AdminAIDeckManager({ onUnauthorized }: Props) {
 
           <div className="grid max-h-[480px] gap-2 overflow-y-auto pr-1 sm:grid-cols-2">
             {filteredCards.map((card) => {
-              const selected = draft.cardDefinitionIds.includes(card.id);
-              return <button key={card.id} type="button" onClick={() => toggleCard(card)} className={`rounded border p-3 text-left transition ${selected ? "border-primary bg-primary/10" : "border-neutral-800 bg-neutral-950 hover:border-neutral-600"}`}><div className="flex items-center justify-between gap-2"><span className="font-black">{card.name}</span><span className="text-xs text-neutral-500">{selected ? "선택됨" : "+"}</span></div><p className="mt-1 text-xs text-neutral-500">{card.cardType} · {card.rarity} · 비용 {card.cost} · {card.attack}/{card.health}</p></button>;
+              const count = cardCounts.get(card.id) ?? 0;
+              const maxCopies = card.rarity === "LEGENDARY" ? 1 : 2;
+              const canAdd = draft.cardDefinitionIds.length < (options?.maxCardCount ?? 25) &&
+                !card.isToken && !card.isChampionToken && card.status === "PUBLISHED" && count < maxCopies;
+              return (
+                <div key={card.id} className={`rounded border p-3 transition ${count ? "border-primary bg-primary/10" : "border-neutral-800 bg-neutral-950"}`}>
+                  <div className="flex items-center justify-between gap-2">
+                    <span className="font-black">{card.name}</span>
+                    <div className="flex items-center gap-1">
+                      <button type="button" disabled={!count || busy} onClick={() => removeCard(card)} className="rounded border border-neutral-700 px-2 py-0.5 text-xs disabled:opacity-40">−</button>
+                      <span className="min-w-5 text-center text-xs font-black text-primary">{count}</span>
+                      <button type="button" disabled={!canAdd || busy} onClick={() => addCard(card)} className="rounded border border-neutral-700 px-2 py-0.5 text-xs disabled:opacity-40">+</button>
+                    </div>
+                  </div>
+                  <p className="mt-1 text-xs text-neutral-500">{card.cardType} · {card.rarity} · 비용 {card.cost} · {card.attack}/{card.health}</p>
+                </div>
+              );
             })}
           </div>
           {draft.cardDefinitionIds.some((id) => !options?.cards.some((card) => card.id === id)) && (

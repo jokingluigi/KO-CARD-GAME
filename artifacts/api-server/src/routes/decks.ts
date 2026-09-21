@@ -252,13 +252,26 @@ async function validateReferences(payload: DeckPayload, userId: string, testAcco
   ) {
     return "PUBLISHED 일반 카드만 덱에 넣을 수 있습니다.";
   }
-  const ownedCards = await db.select({ id: userCardCollectionsTable.cardDefinitionId })
+  const ownedCards = await db.select({
+    id: userCardCollectionsTable.cardDefinitionId,
+    quantity: userCardCollectionsTable.quantity,
+  })
     .from(userCardCollectionsTable)
     .where(and(eq(userCardCollectionsTable.userId, userId), inArray(userCardCollectionsTable.cardDefinitionId, uniqueCardIds), sql`${userCardCollectionsTable.quantity} > 0`));
   if (
     !testAccount &&
     ownedCards.length !== uniqueCardIds.length
   ) return "소유한 카드만 덱에 넣을 수 있습니다.";
+  if (!testAccount) {
+    const ownedQuantities = new Map(ownedCards.map((card) => [card.id, card.quantity]));
+    const cardCopies = new Map<string, number>();
+    payload.cardDefinitionIds.forEach((id) => {
+      cardCopies.set(id, (cardCopies.get(id) ?? 0) + 1);
+    });
+    if ([...cardCopies].some(([id, count]) => count > (ownedQuantities.get(id) ?? 0))) {
+      return "현재 보유 수량보다 많은 카드는 덱에 넣을 수 없습니다.";
+    }
+  }
   const cardById = new Map(cards.map((card) => [card.id, card]));
   const ruleReasons = getCardRuleReasons(payload.cardDefinitionIds, cardById);
   if (ruleReasons.length > 0) return ruleReasons.join(" ");

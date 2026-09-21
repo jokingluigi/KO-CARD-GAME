@@ -16,6 +16,7 @@ export type DeckCard = {
   isToken: boolean;
   isChampionToken: boolean;
   status: "DRAFT" | "PUBLISHED" | "DISABLED" | string;
+  quantity?: number;
 };
 
 export type DeckChampion = {
@@ -56,6 +57,7 @@ export type Deck = {
 };
 
 export type DeckOptions = {
+  isTestAccount?: boolean;
   cards: DeckCard[];
   champions: DeckChampion[];
 };

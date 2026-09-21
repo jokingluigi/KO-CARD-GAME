@@ -23,6 +23,7 @@ import {
   type Deck,
   type DeckCard,
   type DeckChampion,
+  type DeckOptions,
 } from "@/lib/decks-client";
 import { cardTypeLabel, deckValidityLabel, normalizeCardRulesText } from "@/lib/display-labels";
 import { DECK_SIZE, MAX_LEGENDARY_CARDS, validateDeckCounts } from "@workspace/game-engine";
@@ -56,6 +57,13 @@ function cardLimitReason(card: DeckCard, count: number, legendaryCount: number):
   return undefined;
 }
 
+function cardOwnershipReason(card: DeckCard, count: number, isTestAccount: boolean): string | undefined {
+  if (!isTestAccount && card.quantity !== undefined && count >= card.quantity) {
+    return `보유 수량 ${card.quantity}장에 도달했습니다.`;
+  }
+  return undefined;
+}
+
 function replaceDeck(list: Deck[], next: Deck) {
   const exists = list.some((deck) => deck.id === next.id);
   return exists ? list.map((deck) => (deck.id === next.id ? next : deck)) : [...list, next];
@@ -71,12 +79,14 @@ function DeckCardVisual({
   onOpenDetails,
   disabled,
   disabledReason,
+  selectedCount,
 }: {
   card: DeckCard;
   onAdd: () => void;
   onOpenDetails: () => void;
   disabled: boolean;
   disabledReason?: string;
+  selectedCount: number;
 }) {
   return (
     <article className="ko-decks__collection-card" aria-disabled={disabled} data-testid={`card-collection-${card.id}`}>
@@ -148,6 +158,11 @@ function DeckCardVisual({
       <p className="ko-decks__card-type">
         {cardTypeLabel(card.cardType)} · 비용 {card.cost} · {card.rarity}
       </p>
+      {card.quantity !== undefined && (
+        <p className="ko-decks__card-type" data-testid={`text-card-ownership-${card.id}`}>
+          보유 {card.quantity} · 덱 {selectedCount}
+        </p>
+      )}
       {disabledReason && <p className="ko-decks__card-limit">{disabledReason}</p>}
     </article>
   );
@@ -193,7 +208,7 @@ export default function Decks() {
   const [authStatus, setAuthStatus] = useState<AuthStatus>("checking");
   const [authUser, setAuthUser] = useState<AuthUser | null>(null);
   const [decks, setDecks] = useState<Deck[]>([]);
-  const [options, setOptions] = useState<{ cards: DeckCard[]; champions: DeckChampion[] }>({
+  const [options, setOptions] = useState<DeckOptions>({
     cards: [],
     champions: [],
   });
@@ -279,8 +294,8 @@ export default function Decks() {
   const editingDeck = decks.find((deck) => deck.id === editingId) ?? null;
   const cardById = useMemo(() => {
     const map = new Map<string, DeckCard>();
-    options.cards.forEach((card) => map.set(card.id, card));
     editingDeck?.cards.forEach((card) => map.set(card.id, card));
+    options.cards.forEach((card) => map.set(card.id, card));
     return map;
   }, [editingDeck, options.cards]);
   const championById = useMemo(() => {
@@ -325,6 +340,8 @@ export default function Decks() {
       if (card.rarity !== "LEGENDARY" && count > MAX_CARD_COPIES) {
         reasons.push(`같은 카드는 최대 ${MAX_CARD_COPIES}장까지 넣을 수 있습니다.`);
       }
+      const ownershipReason = cardOwnershipReason(card, count, options.isTestAccount === true);
+      if (ownershipReason) reasons.push(ownershipReason);
     });
     const canonicalReasons = validateDeckCounts({
       cardCount: cardIds.length,
@@ -341,7 +358,7 @@ export default function Decks() {
       if (reason === "INVALID_CHAMPION_COUNT" && !selectedChampion) reasons.push("챔피언을 선택해야 합니다.");
     }
     return reasons;
-  }, [cardById, cardIds, counts, legendaryCount, missingIds.length, selectedChampion]);
+  }, [cardById, cardIds, counts, legendaryCount, missingIds.length, options.isTestAccount, selectedChampion]);
   const filteredCards = useMemo(() => {
     const normalizedSearch = search.trim().toLocaleLowerCase();
     return options.cards.filter((card) => {
@@ -381,9 +398,11 @@ export default function Decks() {
 
   function addCard(card: DeckCard) {
     const reason = cardLimitReason(card, counts.get(card.id) ?? 0, legendaryCount);
-    if (cardIds.length >= DECK_SIZE || card.status !== "PUBLISHED" || card.isToken || card.isChampionToken || reason) {
+    const ownershipReason = cardOwnershipReason(card, counts.get(card.id) ?? 0, options.isTestAccount === true);
+    if (cardIds.length >= DECK_SIZE || card.status !== "PUBLISHED" || card.isToken || card.isChampionToken || reason || ownershipReason) {
       if (cardIds.length >= DECK_SIZE) setErrorMessage(`덱은 정확히 ${DECK_SIZE}장까지 구성할 수 있습니다.`);
       else if (reason) setErrorMessage(reason);
+      else if (ownershipReason) setErrorMessage(ownershipReason);
       return;
     }
     setCardIds((current) => [...current, card.id]);
@@ -612,8 +631,9 @@ export default function Decks() {
                   <DeckCardVisual
                     key={card.id}
                     card={card}
-                    disabled={cardIds.length >= DECK_SIZE || Boolean(cardLimitReason(card, counts.get(card.id) ?? 0, legendaryCount))}
-                    disabledReason={cardLimitReason(card, counts.get(card.id) ?? 0, legendaryCount)}
+                    selectedCount={counts.get(card.id) ?? 0}
+                    disabled={cardIds.length >= DECK_SIZE || Boolean(cardLimitReason(card, counts.get(card.id) ?? 0, legendaryCount) || cardOwnershipReason(card, counts.get(card.id) ?? 0, options.isTestAccount === true))}
+                    disabledReason={cardLimitReason(card, counts.get(card.id) ?? 0, legendaryCount) || cardOwnershipReason(card, counts.get(card.id) ?? 0, options.isTestAccount === true)}
                     onAdd={() => addCard(card)}
                     onOpenDetails={() => setDetailCard(card)}
                   />

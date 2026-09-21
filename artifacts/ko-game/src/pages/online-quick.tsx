@@ -31,6 +31,7 @@ function QuickMatchPage() {
   const [error, setError] = useState<string | null>(decksError);
   const [elapsed, setElapsed] = useState(0);
   const matchFoundRef = useRef(false);
+  const joinRequestedRef = useRef(false);
   const searchStartedAtRef = useRef<number | null>(null);
 
   const selectedDeck = useMemo(() => decks?.find((deck) => deck.id === selectedDeckId), [decks, selectedDeckId]);
@@ -51,9 +52,11 @@ function QuickMatchPage() {
       }
       if (message.type === "MATCH_FOUND") {
         matchFoundRef.current = true;
+        joinRequestedRef.current = false;
         navigate(`${ROUTES.ONLINE_MATCH}/${encodeURIComponent(message.matchId)}`);
       }
       if (message.type === "LOBBY_ERROR" || message.type === "ERROR") {
+        joinRequestedRef.current = false;
         setError(message.message);
         if (message.code !== "OFFLINE") setQuickState("selecting");
       }
@@ -61,9 +64,9 @@ function QuickMatchPage() {
     return () => {
       unsubscribeMessage();
       unsubscribeConnection();
-      if (!matchFoundRef.current && quickState === "searching") client.send({ type: "LEAVE_QUICK_QUEUE" });
+      if (!matchFoundRef.current && joinRequestedRef.current) client.send({ type: "LEAVE_QUICK_QUEUE" });
     };
-  }, [client, navigate, quickState]);
+  }, [client, navigate]);
 
   useEffect(() => {
     if (quickState !== "searching") {
@@ -86,10 +89,12 @@ function QuickMatchPage() {
       return;
     }
     setError(null);
+    joinRequestedRef.current = true;
     client.send({ type: "JOIN_QUICK_QUEUE", deckId: selectedDeckId });
   };
 
   const cancelSearch = () => {
+    joinRequestedRef.current = false;
     client.send({ type: "LEAVE_QUICK_QUEUE" });
     setQuickState("selecting");
     setError(null);

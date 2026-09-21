@@ -4,6 +4,7 @@ import { enterField } from './enter-field';
 import type { GameState } from '../types/game-state';
 import { findDirectDeployedChampion } from './direct-champion';
 import type { ActionErrorCode } from '../actions/types';
+import { MAX_HAND_SIZE } from '../rules/constants';
 
 export function validateLinkedChampionToken(
   state: GameState,
@@ -28,13 +29,6 @@ export function validateLinkedChampionToken(
       message: '연결된 챔피언 토큰 카드를 찾을 수 없습니다.',
     };
   }
-  if (!player?.board.some((card) => card === null)) {
-    return {
-      ok: false,
-      errorCode: 'BOARD_FULL',
-      message: '필드에 빈 자리가 없습니다.',
-    };
-  }
   return { ok: true };
 }
 
@@ -54,11 +48,6 @@ export function directDeployChampionToken(
   ) {
     throw new Error('유효한 챔피언 토큰을 직접 출전시킬 수 없습니다.');
   }
-  const boardSlot = player.board.findIndex((card) => card === null);
-  if (boardSlot < 0) {
-    throw new Error('챔피언 토큰이 출전할 빈 슬롯이 없습니다.');
-  }
-
   const { card, event } = generateCard(definition, {
     instanceId: `${playerId}-${championId}-direct-${state.turn}-${state.events.length}`,
     playerId,
@@ -74,6 +63,19 @@ export function directDeployChampionToken(
     ...state,
     events: [...state.events, event],
   };
+  const boardSlot = player.board.findIndex((card) => card === null);
+  if (boardSlot < 0) {
+    return {
+      ...generatedState,
+      players: generatedState.players.map((candidate) => {
+        if (candidate.id !== playerId) return candidate;
+        if (candidate.hand.length < MAX_HAND_SIZE) {
+          return { ...candidate, hand: [...candidate.hand, directChampion] };
+        }
+        return { ...candidate, deck: [directChampion, ...candidate.deck] };
+      }),
+    };
+  }
   return enterField(
     generatedState,
     playerId,
@@ -101,8 +103,7 @@ export function deployLinkedChampionToken(
     !champion ||
     !tokenId ||
     !definition?.isChampionToken ||
-    findDirectDeployedChampion(state, playerId) ||
-    !player.board.some((card) => card === null)
+    findDirectDeployedChampion(state, playerId)
   ) {
     return state;
   }
@@ -119,7 +120,7 @@ export function tryDirectDeployChampionToken(
   const player = state.players.find((candidate) => candidate.id === playerId);
   const definition = state.cardPool?.find((candidate) => candidate.id === cardDefinitionId);
   if (!player?.champion || player.champion.id !== championId ||
-      !definition?.isChampionToken || !player.board.some((card) => card === null)) {
+      !definition?.isChampionToken) {
     return state;
   }
   return directDeployChampionToken(state, playerId, championId, cardDefinitionId, reason);

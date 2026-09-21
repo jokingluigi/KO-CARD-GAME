@@ -53,7 +53,7 @@ export function generateCardInstance(
     instanceId: options.instanceId,
     definitionId: definition.id,
     cardType: definition.cardType ?? 'WRESTLER',
-    currentCost: Math.max(1, definition.cost + (options.statModifiers?.cost ?? 0)),
+    currentCost: Math.max(0, definition.cost + (options.statModifiers?.cost ?? 0)),
     baseCost: definition.cost,
     baseAttack: definition.attack,
     baseHealth: definition.health,

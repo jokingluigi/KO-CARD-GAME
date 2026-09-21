@@ -70,6 +70,7 @@ function FriendlyMatchPage() {
   const [copied, setCopied] = useState(false);
   const roomRef = useRef<LobbyRoomState | null>(null);
   const roomExitRef = useRef(false);
+  const pendingRoomActionRef = useRef(false);
 
   const selectedDeck = useMemo(() => decks?.find((deck) => deck.id === selectedDeckId), [decks, selectedDeckId]);
   useEffect(() => {
@@ -85,20 +86,26 @@ function FriendlyMatchPage() {
     const unsubscribeMessage = client.onMessage((message) => {
       if (message.type === "PRIVATE_ROOM_CREATED" || message.type === "PRIVATE_ROOM_JOINED" || message.type === "PRIVATE_ROOM_UPDATED") {
         roomExitRef.current = false;
+        pendingRoomActionRef.current = false;
+        roomRef.current = message.room;
         setRoom(message.room);
         setMode("choose");
         setError(null);
       }
       if (message.type === "PRIVATE_ROOM_LEFT" || message.type === "PRIVATE_ROOM_CLOSED") {
+        pendingRoomActionRef.current = false;
+        roomRef.current = null;
         setRoom(null);
         setMode("choose");
         if (message.message) setError(message.message);
       }
       if (message.type === "MATCH_STARTING") {
         roomExitRef.current = true;
+        pendingRoomActionRef.current = false;
         navigate(`${ROUTES.ONLINE_MATCH}/${encodeURIComponent(message.matchId)}`);
       }
       if (message.type === "LOBBY_ERROR" || message.type === "ERROR") {
+        pendingRoomActionRef.current = false;
         setError(message.message);
       }
     });
@@ -110,6 +117,10 @@ function FriendlyMatchPage() {
         client.send(activeRoom.youAreHost
           ? { type: "CLOSE_PRIVATE_ROOM", roomId: activeRoom.roomId }
           : { type: "LEAVE_PRIVATE_ROOM", roomId: activeRoom.roomId });
+      } else if (pendingRoomActionRef.current && !roomExitRef.current) {
+        // There is no roomId yet. Closing the socket lets the server's
+        // detach handler cancel an in-flight create/join request.
+        client.close();
       }
     };
   }, [client, navigate]);
@@ -120,7 +131,7 @@ function FriendlyMatchPage() {
       return;
     }
     setError(null);
-    client.send({ type: "CREATE_PRIVATE_ROOM", deckId: selectedDeck.id });
+    pendingRoomActionRef.current = client.send({ type: "CREATE_PRIVATE_ROOM", deckId: selectedDeck.id });
   };
 
   const joinRoom = () => {
@@ -138,13 +149,15 @@ function FriendlyMatchPage() {
       return;
     }
     setError(null);
-    client.send({ type: "JOIN_PRIVATE_ROOM", roomCode: normalized, deckId: selectedDeck.id });
+    pendingRoomActionRef.current = client.send({ type: "JOIN_PRIVATE_ROOM", roomCode: normalized, deckId: selectedDeck.id });
   };
 
   const leaveRoom = () => {
     if (!room) return;
     roomExitRef.current = true;
+    pendingRoomActionRef.current = false;
     client.send(room.youAreHost ? { type: "CLOSE_PRIVATE_ROOM", roomId: room.roomId } : { type: "LEAVE_PRIVATE_ROOM", roomId: room.roomId });
+    roomRef.current = null;
     setRoom(null);
     setError(null);
   };
