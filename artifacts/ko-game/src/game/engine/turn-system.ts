@@ -102,7 +102,7 @@ export function prepareDecks(
       player.deck.length > MAX_DECK_SIZE
     ) {
       throw new Error(
-        `덱은 ${MIN_DECK_SIZE}장 이상 ${MAX_DECK_SIZE}장 이하여야 합니다: ${player.id}`,
+        `덱은 정확히 ${MIN_DECK_SIZE}장이어야 합니다: ${player.id}`,
       );
     }
   }

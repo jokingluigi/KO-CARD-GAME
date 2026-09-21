@@ -78,8 +78,8 @@ function readPayload(value: unknown): {
 async function validateForSave(payload: ReturnType<typeof readPayload>): Promise<string | null> {
   if (!payload) return "AI 덱 정보를 확인해 주세요.";
   if (!payload.name || Array.from(payload.name).length > 50) return "AI 덱 이름은 1~50자로 입력해 주세요.";
-  if (payload.cardDefinitionIds.length < AI_DECK_MIN_SIZE || payload.cardDefinitionIds.length > AI_DECK_MAX_SIZE) {
-    return `AI 덱 카드는 ${AI_DECK_MIN_SIZE}~${AI_DECK_MAX_SIZE}장이어야 합니다.`;
+  if (payload.cardDefinitionIds.length !== AI_DECK_MIN_SIZE) {
+    return `AI 덱 카드는 정확히 ${AI_DECK_MIN_SIZE}장이어야 합니다.`;
   }
   const validation = await validateAIDeckReferences(payload.championDefinitionId, payload.cardDefinitionIds);
   if (!validation.isValid) return validation.invalidReasons.join(" ");
