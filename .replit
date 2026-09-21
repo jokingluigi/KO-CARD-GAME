@@ -26,3 +26,6 @@ ADMIN_USERNAME = "GM JOKINGLUIGI"
 
 [nix]
 channel = "stable-25_05"
+
+[objectStorage]
+defaultBucketID = "replit-objstore-36b46e0d-7260-4143-9d5d-b716d8191906"
