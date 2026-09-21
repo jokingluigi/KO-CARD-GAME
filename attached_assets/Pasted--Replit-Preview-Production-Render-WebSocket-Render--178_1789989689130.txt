@@ -1,0 +1,348 @@
+그럼 원인이 거의 **“Replit Preview용 연결은 맞는데, Production(Render)용 WebSocket 연결 설정이 다르다”** 쪽이야.
+
+특히 Render 공식 문서상 Render Web Service는 WebSocket 자체는 지원하고, **외부 인터넷에서 연결할 때는 `wss://`를 써야 해.** `ws://`로 붙으면 TLS 리다이렉트 때문에 handshake가 실패할 수 있어. ([Render][1])
+
+쉽게 말하면:
+
+```text
+Replit Preview
+http://... 또는 내부 dev 환경
+→ ws://... 연결
+→ 정상 ✅
+
+Production
+https://ko-card-game-vr69.onrender.com
+→ 여전히 ws://... 또는 잘못된 host/path
+→ 연결 종료 ❌
+```
+
+또는 Production에서 이런 문제가 있을 수도 있어:
+
+* WebSocket URL이 Replit 도메인으로 남아 있음
+* `/ws`와 `/api/ws`처럼 client/server path가 다름
+* Production에서 session/cookie 인증이 실패해서 서버가 즉시 close
+* frontend는 Render A 서비스인데 WebSocket server는 다른 서비스에 있음
+* 배포된 commit이 최신 WebSocket 수정 commit이 아님
+
+지금은 **DB, 빠대 버튼, 덱을 다시 볼 필요 없어.** Production WebSocket 연결만 잡으면 돼.
+
+Replit Agent에 이걸 넣어.
+
+KO CARD GAME의 WebSocket 연결이 **Replit Preview에서는 정상 연결되지만 실제 Production(Render)에서는 `연결 종료` 상태**입니다.
+
+이번 작업의 목표는 원인 보고가 아니라 **Production에서도 실제 WebSocket 연결이 성공하도록 수정하고, 검증 후 git push까지 완료하는 것**입니다.
+
+현재 Production:
+
+[https://ko-card-game-vr69.onrender.com/](https://ko-card-game-vr69.onrender.com/)
+
+현재 증상:
+
+* Replit Preview: WebSocket 연결 정상
+* Production: Quick Match 화면 상단 `연결 종료`
+* 정상 25장 Deck 선택됨
+* Production에서는 `상대 찾기` 버튼이 비활성화됨
+
+따라서 Deck/Queue 규칙이 아니라 **개발환경과 Production 환경의 WebSocket 연결 차이**를 우선 조사하고 수정해주세요.
+
+---
+
+# 1. 가장 먼저 확인할 것
+
+다음 경로만 추적하세요.
+
+```text
+online-quick
+→ multiplayer WebSocket client
+→ WebSocket URL 생성
+→ production protocol/host/path
+→ server upgrade handler
+→ authentication/handshake
+→ open / close
+```
+
+Repository 전체를 다시 분석하지 마세요.
+
+---
+
+# 2. Production URL 생성 확인
+
+Production 페이지는 HTTPS입니다.
+
+따라서 public WebSocket 연결은 Production에서 정상적으로 secure WebSocket을 사용해야 합니다.
+
+확인해주세요.
+
+* Production에서 `ws://`가 생성되고 있지 않은지
+* HTTPS일 때 `wss://`를 사용하는지
+* `window.location.protocol`
+* `window.location.host`
+* localhost
+* Replit preview host
+* Replit-specific URL
+* hardcoded development WebSocket URL
+
+등이 잘못 사용되고 있지 않은지 확인하세요.
+
+가능하면 특정 Render domain을 하드코딩하지 말고 현재 페이지의 protocol/host를 기준으로 안전하게 구성하세요.
+
+개념적으로:
+
+```ts
+const protocol =
+  window.location.protocol === "https:"
+    ? "wss:"
+    : "ws:";
+```
+
+같은 원칙을 현재 프로젝트 구조에 맞게 적용하세요.
+
+새 WebSocket 시스템을 만들지 마세요.
+
+---
+
+# 3. WebSocket path 일치 확인
+
+Client와 server가 정확히 같은 WebSocket path를 사용하는지 확인하세요.
+
+예:
+
+```text
+client → /ws
+server → /ws
+```
+
+또는 현재 프로젝트의 기존 실제 path.
+
+다음과 같은 불일치가 있으면 수정하세요.
+
+```text
+client: /api/ws
+server: /ws
+```
+
+Preview에서 우연히 proxy가 처리해주는 구조라면 Production에서도 직접 정상 동작하도록 수정하세요.
+
+---
+
+# 4. 같은 HTTP Server에서 upgrade되는지 확인
+
+Render public WebSocket은 해당 Web Service가 받는 HTTP 연결을 WebSocket으로 upgrade하는 구조여야 합니다.
+
+현재 server 코드에서:
+
+* HTTP server
+* WebSocket server
+* upgrade handler
+
+가 Production에서도 실제 실행되는지 확인하세요.
+
+개발환경 전용 조건문 때문에 Preview에서만 WebSocket server가 붙는지 확인해주세요.
+
+예:
+
+```ts
+if (process.env.NODE_ENV !== "production") {
+  setupWebSocket(...)
+}
+```
+
+같은 구조가 있다면 실제 의도에 맞게 수정하세요.
+
+---
+
+# 5. PORT 문제 확인
+
+Render는 public HTTP/WebSocket 트래픽을 Web Service의 public port로 전달합니다.
+
+WebSocket용 별도 public port를 사용하려는 구조면 안 됩니다.
+
+확인:
+
+* HTTP와 WebSocket이 같은 public server/port에서 동작하는지
+* server가 `process.env.PORT`를 정상 사용하고 있는지
+* Production에서 별도 WS port를 browser가 직접 호출하지 않는지
+
+WebSocket 전용 새 public port를 만들지 마세요.
+
+---
+
+# 6. 연결 직후 종료되는 경우
+
+WebSocket이 생성은 되지만 바로 close된다면 실제 close 원인을 확인하세요.
+
+확인 대상:
+
+* close code
+* close reason
+* server authentication rejection
+* session/cookie 누락
+* Origin validation
+* malformed initial message
+* handshake timeout
+* duplicate connection rejection
+
+UI의 `연결 종료` 문구만 바꾸지 마세요.
+
+실제 connection이 `OPEN` 상태로 유지되어야 합니다.
+
+---
+
+# 7. Production 인증 확인
+
+Preview에서는 인증이 되지만 Production에서 session/cookie가 WebSocket handshake에 제대로 전달되지 않는 문제인지 확인하세요.
+
+특히:
+
+* cookie path/domain
+* secure cookie
+* SameSite
+* session lookup
+* Origin
+* host
+
+관련 차이를 확인하세요.
+
+하지만 인증을 우회하거나 무조건 허용하도록 바꾸면 안 됩니다.
+
+기존 로그인/session 보안 구조를 유지하면서 Production에서도 정상 인증되게 수정하세요.
+
+---
+
+# 8. Quick Match 활성화 조건
+
+WebSocket이 실제로 연결된 뒤:
+
+```text
+authenticated
++ valid deck selected
++ websocket OPEN
++ not queued
+```
+
+이면 `상대 찾기`가 활성화되어야 합니다.
+
+버튼을 무조건 enabled 처리하지 마세요.
+
+---
+
+# 9. Queue 진입까지 연결
+
+수정 후 코드상 흐름이:
+
+```text
+WebSocket OPEN
+→ 상대 찾기
+→ queue join
+→ server queue 등록
+→ searching state
+```
+
+까지 이어지도록 해주세요.
+
+Quick Match 전체를 새로 구현하지 마세요.
+
+---
+
+# 10. Friendly가 동일 WebSocket을 사용한다면
+
+Quick Match와 Friendly가 같은 WebSocket client/server를 공유한다면,
+Production 연결 문제를 공통 위치에서 한 번 수정하세요.
+
+Friendly 전용 기능을 불필요하게 다시 만들지 마세요.
+
+---
+
+# 11. 이번 작업에서 건드리지 말 것
+
+* DB
+* Supabase
+* Deck 규칙
+* 카드 효과
+* Champion 효과
+* Quest
+* AI
+* Champion Token
+* Admin
+* 상점
+* 컬렉션
+
+Production DB 데이터도 수정하지 마세요.
+
+---
+
+# 12. 검증
+
+코드 수정 후 다음을 실행하세요.
+
+* typecheck
+* 관련 WebSocket/multiplayer test가 있으면 그것만
+* build
+* git diff --check
+
+불필요한 전체 QA는 하지 마세요.
+
+---
+
+# 13. Git Push까지 진행
+
+검증이 모두 통과하면 **이번 작업과 관련된 코드만 commit하고 `git push origin main`까지 진행해주세요.**
+
+주의:
+
+* `git add .`로 unrelated 파일을 무조건 stage하지 말 것
+* `.agents/memory/*`
+* `.replit-artifact/*`
+* `.env`
+* Secret
+* DATABASE_URL
+* Replit Agent metadata
+
+등 이번 수정과 관계없는 파일은 commit하지 마세요.
+
+먼저 `git status`와 `git diff`로 실제 수정 파일을 확인하고 필요한 파일만 stage하세요.
+
+Secret이 diff에 포함되어 있으면 push하지 말고 중단하세요.
+
+`git push --force` 금지.
+
+Render deploy는 직접 실행하지 마세요.
+Git push 이후 기존 Auto-Deploy가 있다면 그것을 사용합니다.
+
+---
+
+# 완료 보고
+
+## 실제 원인
+
+Production에서만 연결이 종료된 정확한 이유
+
+## 수정 내용
+
+어떤 protocol / host / path / server 설정을 수정했는지
+
+## 변경 파일
+
+실제 코드 파일만
+
+## 검증
+
+* typecheck:
+* WebSocket 관련 tests:
+* build:
+* git diff --check:
+
+## Git
+
+* commit:
+* git push origin main:
+
+## Production DB
+
+* 수정 없음
+
+단순 조사로 종료하지 말고 **Production WebSocket 연결 문제가 코드에서 해결 가능한 경우 실제 수정 후 git push까지 완료해주세요.**
+
+이 상황에선 특히 **`ws://` → `wss://` 처리와 Production host/path**가 1순위야. Render 자체가 WebSocket을 지원하지 않는 건 아니야. Render는 Web Service에서 WebSocket을 지원하고, public 연결에는 `wss` 사용을 권장하고 있어. ([Render][1])
+
+[1]: https://render.com/docs/websocket?utm_source=chatgpt.com "WebSockets on Render – Render Docs"
