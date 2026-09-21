@@ -159,7 +159,7 @@ function apiUrl(path: string): string {
 }
 
 async function requestWebSocketTicket(): Promise<string> {
-  const response = await fetch(apiUrl(WS_TICKET_PATH), {
+  const response = await fetch(WS_TICKET_PATH, {
     method: "POST",
     credentials: "include",
   });
