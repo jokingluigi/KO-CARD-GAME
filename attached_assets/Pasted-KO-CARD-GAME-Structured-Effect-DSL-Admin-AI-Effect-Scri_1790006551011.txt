@@ -1,0 +1,1419 @@
+KO CARD GAME의 현재 Structured Effect DSL과 Admin AI 효과 생성기를
+"범용 Effect Script Engine + 자연어 AI Compiler" 구조로 확장해줘.
+
+이번 작업에서 매우 중요한 추가 요구사항이 있다.
+
+==================================================
+최우선 비용 / AI 호출 규칙
+==================================================
+
+OpenAI API는 오직 Admin에서 사용자가 명시적으로:
+
+- AI 효과 생성
+- AI 효과 재생성
+- clarification 답변 후 다시 생성
+
+같은 버튼을 눌렀을 때만 호출한다.
+
+게임 Runtime에서는 OpenAI API를 절대 호출하지 않는다.
+
+즉 다음에서는 OpenAI 호출 횟수가 반드시 0이어야 한다.
+
+- 실제 카드 효과 발동
+- AI Match
+- Online PvP
+- Quick Match
+- Friendly Match
+- 카드 공격
+- 카드 소환
+- 피해/회복
+- targeting
+- PLAYER_CHOICE
+- turn start/end
+- quest 진행
+- Champion ability
+- Effect Script validation
+- Effect Script 저장
+- Admin 페이지 단순 로딩
+- 저장된 효과 preview
+- reconnect/resync
+- game state serialization
+- effect interpreter
+- server startup
+
+저장된 Effect Script는 순수 JSON 데이터이고,
+실제 게임에서는 KO 서버의 Script Interpreter가 직접 실행한다.
+
+절대:
+
+카드 효과 발동
+→ OpenAI
+→ 결과 결정
+
+구조로 만들지 마.
+
+정확한 구조는:
+
+Admin에서 자연어 작성
+→ OpenAI API 1회
+→ Effect Script JSON 생성
+→ server validation
+→ form에 적용
+→ Admin 저장
+
+이후:
+
+게임 플레이
+→ 저장된 Effect Script JSON 읽기
+→ KO Script Interpreter가 실행
+→ Action / Event / GameState 처리
+
+이며 이 Runtime 과정의 OpenAI API 비용은 0이어야 한다.
+
+==================================================
+AI 비용 폭주 방지
+==================================================
+
+한 번의 사용자가 누른 [AI 효과 생성] 요청에
+provider 호출은 기본적으로 정확히 1회만 허용한다.
+
+자동 재시도 루프를 만들지 마.
+
+provider 오류나 invalid output이면:
+
+- 자동으로 5번, 10번 재생성 금지
+- 서버가 알아서 계속 AI 호출 금지
+
+오류를 Admin에게 반환하고
+사용자가 직접 다시 생성 버튼을 눌렀을 때만 새 호출을 허용한다.
+
+네트워크 SDK 자체의 기본 retry가 존재한다면
+현재 provider SDK 설정을 조사하고,
+비용 폭주 가능성이 있는 반복 retry는 제한한다.
+
+AI에게 매 요청마다 다음을 보내지 마:
+
+- repo 전체 source
+- 전체 game engine 코드
+- 전체 Production DB
+- 모든 카드의 전체 상세 데이터
+- 전체 event history
+
+대신 최소 context만 사용한다.
+
+최소 context 예:
+
+- Effect Script schema의 compact representation
+- 지원 trigger 목록
+- 지원 selector/filter/action/value 목록
+- 선택 중인 카드/Champion context
+- 해당 요청에 실제로 필요한 CardDefinition 후보
+- 사용자의 자연어 효과 설명
+
+CardDefinition 후보가 필요하면
+전체 카드 데이터를 무조건 prompt에 넣지 말고
+서버에서 먼저 검색/필터링해서 필요한 후보만 전달한다.
+
+AI output도 JSON Effect Script만 반환하게 하며
+불필요한 긴 설명문 생성을 금지한다.
+
+현재 provider에서 output token limit 설정이 가능하면
+Effect Script 작성에 충분한 합리적인 상한을 둔다.
+
+현재 사용 중인 AI model을 임의로
+더 비싼 model로 변경하지 마.
+
+model이 configurable하다면 기존 환경변수/설정을 유지하거나
+필요 시 별도 EFFECT_AI_MODEL 설정으로 분리하되
+기존보다 고비용 모델을 자동 선택하지 마.
+
+==================================================
+최종 목표
+==================================================
+
+현재 Admin AI 효과 생성기는
+기존 엔진에 이미 존재하는 action 조합만 만들 수 있다.
+
+이 방식은 새로운 카드 효과를 만들 때마다
+TypeScript engine action을 추가해야 해서 자동 AI 기능의 가치가 낮다.
+
+목표는:
+
+자연어 카드 효과
+→ AI가 범용 Effect Script 생성
+→ 서버가 schema / semantic validation
+→ Admin form에 자동 적용
+→ 사용자가 저장
+→ 실제 게임 엔진이 Script 실행
+→ AI Match / Online PvP에서 실제 효과 발동
+
+이다.
+
+카드마다 TypeScript 코드를 새로 작성하지 않는다.
+
+==================================================
+목표로 하는 카드 효과 표현력
+==================================================
+
+최소 다음 정도의 효과는
+새 카드 전용 TypeScript 코딩 없이 Script만으로 표현 가능해야 한다.
+
+예시 A
+
+"등장: 적 챔피언에게 2 피해를 준다."
+
+예시 B
+
+"이 카드가 죽으면 내 무덤의 좀비 수만큼 내 챔피언을 회복한다."
+
+예시 C
+
+"공격할 때 상대 손에서 비용이 가장 높은 카드의 비용을 2 증가시킨다."
+
+예시 D
+
+"상대 덱 위 3장 중 비용이 가장 높은 선수를 내 손에 복사한다."
+
+예시 E
+
+"이번 턴에 죽은 선수들의 공격력 합만큼 상대 챔피언에게 피해를 준다."
+
+예시 F
+
+"이 카드 양옆의 빈 슬롯에 각각 무작위 선수 하나를 소환하고,
+그렇게 소환된 선수들에게 도발을 부여한다."
+
+예시 G
+
+"내 무덤에서 비용 3 이하 선수 하나를 무작위로 부활시킨다."
+
+예시 H
+
+"다음에 내가 사용하는 Technique의 비용을 0으로 만든다."
+
+예시 I
+
+"내 필드에 좀비가 3명 이상이면 이 카드는 +3/+3을 얻는다."
+
+예시 J
+
+"이 카드가 피해를 받을 때마다 공격력이 1 증가한다."
+
+이런 일반적인 카드게임 gameplay effect 대부분을
+데이터 Script 조합으로 표현하는 것이 목표다.
+
+==================================================
+보안 원칙
+==================================================
+
+Effect Script에서 절대 허용 금지:
+
+- eval()
+- new Function()
+- arbitrary JavaScript
+- arbitrary TypeScript
+- dynamic executable code
+- shell command
+- filesystem access
+- SQL 실행
+- arbitrary HTTP/network request
+- process.env 접근
+- server function 이름 직접 실행
+
+AI output은 오직 declarative JSON data다.
+
+구조:
+
+AI
+→ JSON Script
+→ schema validation
+→ semantic validation
+→ Script Interpreter
+→ canonical game operations
+→ Event
+→ GameState
+
+를 유지한다.
+
+==================================================
+1. 현재 구조 조사
+==================================================
+
+repo 전체를 무작정 탐색하지 말고 관련 코드부터 조사한다.
+
+우선:
+
+- CardEffect
+- STRUCTURED
+- RuntimeAction
+- StructuredTarget
+- effect-engine
+- effect-registry
+- targeting
+- PLAYER_CHOICE
+- targetingState
+- triggerContext
+- sourceContext
+- continuation
+- SAME_TARGET
+- LAST_DESTROYED_TARGETS
+- ADJACENT_EMPTY_SLOTS
+- definitionSelector
+- deterministic RNG
+- CardDefinitionReference
+- cardPool
+- generatedModifiers
+- keyword system
+- Champion ability
+- Champion quest/reward
+- queuedEffect
+- AI Match
+- Online PvP
+- online sanitizer
+- Admin AI generate endpoint
+- Admin 카드/Champion form
+
+기존 기능을 최대한 재사용한다.
+
+현재 Structured Effect DSL을 버리고
+완전히 별개 게임 엔진을 하나 더 만들지 마.
+
+==================================================
+2. 범용 Effect Script
+==================================================
+
+최소 다음 개념을 declarative JSON으로 표현한다.
+
+- Trigger
+- Condition
+- Selector
+- Filter
+- Collection operation
+- Value expression
+- Action
+- Result reference
+- Local resolution value
+- Duration / queued behavior
+- IF / ELSE
+
+개념적으로 다음 종류가 필요하다.
+
+SELECT
+FILTER
+SORT
+TAKE
+RANDOM
+COUNT
+SUM
+MIN
+MAX
+
+IF
+AND
+OR
+NOT
+
+DAMAGE
+HEAL
+BUFF
+MODIFY_COST
+ADD_KEYWORD
+REMOVE_KEYWORD
+SUMMON
+GENERATE
+REVIVE
+DRAW
+COPY
+MOVE
+DESTROY
+RETIRE
+
+정확한 enum/property 이름은
+현재 KO DSL 스타일에 맞게 설계한다.
+
+==================================================
+3. Trigger
+==================================================
+
+현재 GameEvent 시스템을 authoritative source로 사용한다.
+
+현재 엔진에서 안전하게 지원 가능한 범위에서
+generic trigger를 구축한다.
+
+예:
+
+PLAY_FROM_HAND
+ENTER_FIELD
+LEAVE_FIELD
+DESTROYED
+RETIRED
+ATTACK_DECLARED
+AFTER_ATTACK
+DAMAGE_TAKEN
+DAMAGE_DEALT
+TURN_START
+TURN_END
+ALLY_PLAYED
+ENEMY_PLAYED
+TECHNIQUE_PLAYED
+CARD_DRAWN
+CARD_GENERATED
+CARD_SUMMONED
+CARD_DESTROYED
+CHAMPION_ABILITY_USED
+
+없는 이벤트를 이름만 추가하지 않는다.
+
+==================================================
+4. Selector / Zone
+==================================================
+
+최소 다음 대상을 generic selector로 표현 가능하게 한다.
+
+SELF
+SOURCE
+MY_CHAMPION
+OPPONENT_CHAMPION
+
+MY_BOARD
+OPPONENT_BOARD
+ALL_BOARD
+
+MY_HAND
+OPPONENT_HAND
+
+MY_DECK
+OPPONENT_DECK
+
+MY_GRAVEYARD
+OPPONENT_GRAVEYARD
+
+REMOVED_FROM_GAME
+CARD_POOL
+
+EVENT_SOURCE
+EVENT_TARGET
+
+PREVIOUS_RESULT
+STEP_RESULT
+
+==================================================
+5. Filter
+==================================================
+
+최소:
+
+cardType
+tagsAny
+tagsAll
+tagsNone
+keyword
+cost
+attack
+health
+damaged
+isToken
+isGenerated
+isChampionToken
+owner
+
+비교:
+
+EQ
+NE
+LT
+LTE
+GT
+GTE
+
+지원.
+
+기존 tag helper를 반드시 재사용한다.
+
+카드 이름으로 engine hardcoding 금지.
+
+==================================================
+6. Collection operation
+==================================================
+
+Selector 결과에:
+
+FILTER
+SORT
+TAKE
+RANDOM
+COUNT
+SUM
+MIN
+MAX
+
+등을 안전하게 적용 가능하게 한다.
+
+예:
+
+상대 손에서 비용 가장 높은 카드:
+
+OPPONENT_HAND
+→ SORT cost DESC
+→ TAKE 1
+
+내 무덤의 좀비 수:
+
+MY_GRAVEYARD
+→ FILTER tag=ZOMBIE
+→ COUNT
+
+==================================================
+7. Value Expression
+==================================================
+
+상수뿐 아니라 dynamic value를 지원한다.
+
+최소:
+
+CONSTANT
+COUNT(selection)
+SUM(selection.stat)
+
+SOURCE.currentAttack
+SOURCE.currentHealth
+
+TARGET.currentAttack
+TARGET.currentHealth
+
+MY_CHAMPION.currentHealth
+MY_CHAMPION.maxHealth
+
+EVENT.amount
+
+PREVIOUS_RESULT count/stat
+
+기본 계산:
+
+ADD
+SUBTRACT
+MULTIPLY
+MIN
+MAX
+CLAMP
+
+arbitrary expression language 금지.
+
+typed AST 형태로 만든다.
+
+==================================================
+8. Condition
+==================================================
+
+다음 형태 지원:
+
+comparison
+AND
+OR
+NOT
+IF
+ELSE
+
+예:
+
+COUNT(MY_BOARD where tag ZOMBIE) >= 3
+
+THEN
+
+BUFF SELF +3/+3
+
+Script nesting / node count 제한을 둔다.
+
+==================================================
+9. Result Reference
+==================================================
+
+이전 step의 실제 결과를
+후속 step이 참조할 수 있게 한다.
+
+예:
+
+step id = "summonFriends"
+
+SUMMON 2 cards
+
+↓
+
+ADD_KEYWORD
+target = result("summonFriends")
+
+이때 실제 성공적으로 소환된 CardInstance만 result에 포함한다.
+
+다른 resolution의 결과와 섞이면 안 된다.
+
+기존:
+
+SAME_TARGET
+LAST_DESTROYED_TARGETS
+
+등을 범용 result frame으로 정리할 수 있다면
+backward compatibility를 유지하며 일반화한다.
+
+==================================================
+10. Resolution Local State
+==================================================
+
+Script 실행 중 필요한 임시 result/variable은
+resolution frame 안에 유지한다.
+
+GameState에 불필요하게 영구 저장하지 않는다.
+
+PLAYER_CHOICE 때문에 실행이 중단되는 경우에만
+필요한 continuation state를 serializable하게 저장한다.
+
+resolution 종료 시 cleanup.
+
+==================================================
+11. Random
+==================================================
+
+모든 random은 기존 deterministic RNG만 사용한다.
+
+Math.random() 금지.
+
+Online PvP에서는 서버만 random 결과를 결정한다.
+
+클라이언트는 canonical random result를 결정하지 않는다.
+
+Random selector가 최소 다음에서 동작 가능하도록 한다.
+
+- cardPool
+- hand
+- deck
+- board
+- graveyard
+
+hidden information은 서버에서만 처리.
+
+==================================================
+12. Zone 이동 / Copy
+==================================================
+
+가능한 경우 generic operation을 구축하되
+기존 canonical game functions를 재사용한다.
+
+HAND → BOARD
+DECK → HAND
+GRAVEYARD → HAND
+GRAVEYARD → BOARD
+BOARD → HAND
+→ REMOVED_FROM_GAME
+
+단:
+
+PLAY_FROM_HAND
+SUMMON
+REVIVE
+Champion Token deployment
+
+의 semantics를 섞지 않는다.
+
+COPY는 원본 CardInstance를 훔치는 것과
+CardDefinition 기반 generated copy를 만드는 것을 구분한다.
+
+==================================================
+13. Cost modification
+==================================================
+
+최소 다음 패턴을 표현 가능하게 한다.
+
+cost +N
+cost -N
+cost = 0
+
+지원되는 기존 duration이 있다면:
+
+THIS_TURN
+UNTIL_PLAYED
+PERMANENT
+
+등을 현재 규칙에 맞게 사용.
+
+없는 duration을 있는 것처럼 만들지 않는다.
+
+generated/token card는 0G 허용.
+
+비용 floor:
+
+Math.max(0, ...)
+
+규칙 유지.
+
+==================================================
+14. Event History Query
+==================================================
+
+다음 효과를 위해 bounded history query를 지원한다.
+
+- 이번 턴에 죽은 카드 수
+- 이번 턴 받은 피해
+- 직전에 사용한 Technique
+- 이번 resolution에서 파괴된 카드
+
+scope 예:
+
+CURRENT_RESOLUTION
+CURRENT_ACTION
+CURRENT_TURN
+ENTIRE_MATCH
+
+단, 전체 history를 무제한 반복 scan하는 구조는 피한다.
+
+==================================================
+15. Queued / Delayed Effect
+==================================================
+
+기존 queuedEffect 구조를 일반화 가능한지 조사한다.
+
+예:
+
+"다음에 사용하는 Technique 비용 0"
+"다음에 소환하는 선수 +2/+2"
+"다음 턴 시작 시 3 회복"
+
+기존 engine event/continuation을 활용한다.
+
+새 거대한 scheduler를 만들지 않는다.
+
+==================================================
+16. PLAYER_CHOICE
+==================================================
+
+선택이 필요한 Script는 기존 PLAYER_CHOICE를 사용한다.
+
+Script
+→ valid target set
+→ targetingState
+→ player selection
+→ serializable continuation
+→ Script resume
+
+UI가 effect logic을 소유하면 안 된다.
+
+==================================================
+17. 실행 복잡도 제한
+==================================================
+
+최소 제한:
+
+maxScriptSteps
+maxConditionDepth
+maxExpressionDepth
+maxSelectorResults
+maxGeneratedCards
+maxQueuedEffects
+maxContinuationDepth
+
+명시적 unbounded LOOP 문법은 만들지 않는다.
+
+Effect Script로 무한 루프가 구조적으로 불가능해야 한다.
+
+==================================================
+18. Action → Event → GameState
+==================================================
+
+기존 KO 핵심 규칙 유지.
+
+Script Interpreter가 무작위로 객체 mutate하지 않는다.
+
+가능한 한 기존 canonical engine function을 호출한다.
+
+Effect Script
+→ Engine Operation
+→ GameEvent
+→ GameState
+
+구조 유지.
+
+source attribution도 유지.
+
+==================================================
+19. ENTER_FIELD 공식 규칙
+==================================================
+
+기존 공식 규칙 유지:
+
+ON_ENTER / 등장 효과는
+WRESTLER PLAY_FROM_HAND일 때만 발동.
+
+SUMMON
+REVIVE
+Champion Token direct deploy
+
+에서는 일반 등장 trigger가 자동 발동하면 안 된다.
+
+==================================================
+20. Champion Token 회귀 금지
+==================================================
+
+기존 규칙 그대로 유지:
+
+- direct Champion Token state 별도
+- ordinary SUMMON ≠ Champion Token
+- Token RETIRE ≠ 즉시 패배
+- 원본 Champion protection
+- immunity
+- FIELD → HAND → DECK TOP fallback
+
+==================================================
+21. TECHNIQUE 회귀 금지
+==================================================
+
+기존 규칙 유지:
+
+- board slot 미사용
+- board full이어도 사용
+- 사용 후 graveyard
+- PLAYER_CHOICE 가능
+
+==================================================
+22. Online PvP
+==================================================
+
+Script 실행은 서버 canonical GameState에서만 한다.
+
+클라이언트는:
+
+- 렌더링
+- target 선택
+- action 제출
+
+역할만 한다.
+
+OpenAI API 호출 금지.
+
+특히 Online match 중:
+
+OPENAI_API_KEY 사용 0회
+provider function 호출 0회
+/admin/effects/generate 호출 0회
+
+여야 한다.
+
+sanitizer 유지:
+
+- public cardPool 유지
+- randomSeed 숨김
+- opponent hand/deck hidden
+- hidden draw/generated identity redaction
+
+==================================================
+23. AI Match
+==================================================
+
+AI Match도 동일 Effect Script Interpreter를 사용한다.
+
+AI Match의 "AI"는 게임 상대 로직이지
+OpenAI API가 아니다.
+
+AI Match 중 OpenAI API 호출은 반드시 0회다.
+
+==================================================
+24. Legacy 효과 호환
+==================================================
+
+Production 기존 카드 데이터를 자동 migration하지 않는다.
+
+기존 Structured Effect DSL은 계속 동작해야 한다.
+
+가능하면 기존 Structured effect를
+공용 internal execution representation으로 normalize하거나
+legacy/new Script 둘 다 지원한다.
+
+DB migration이 필요하다면 자동 실행하지 말고 보고한다.
+
+==================================================
+25. Admin AI Compiler
+==================================================
+
+현재:
+
+POST /api/admin/effects/generate
+
+를 자연어 → Effect Script compiler endpoint로 사용한다.
+
+이 endpoint만 OpenAI provider를 호출할 수 있다.
+
+provider call site를 가능한 한 한 module로 집중시킨다.
+
+게임 engine package가 OpenAI SDK를 import하면 안 된다.
+
+game runtime package가 OPENAI_API_KEY를 읽으면 안 된다.
+
+==================================================
+26. Admin AI 호출 횟수 제한
+==================================================
+
+사용자가 [AI 효과 생성] 한 번 클릭:
+
+→ 최대 provider request 1회
+
+기본 규칙.
+
+invalid script이면
+OpenAI에게 자동으로 다시 물어보지 않는다.
+
+Admin에게 validation error를 보여준다.
+
+사용자가 직접 [다시 생성]을 눌러야
+두 번째 provider 호출이 발생한다.
+
+Clarification도:
+
+AI가 NEEDS_CLARIFICATION 반환
+→ 질문 표시
+→ 사용자가 답 입력
+→ 사용자가 다시 생성 실행
+→ 그때 새 API 1회
+
+구조.
+
+==================================================
+27. Prompt 크기 최소화
+==================================================
+
+매 요청마다 repo 소스 전체를 보내지 않는다.
+
+Effect Script schema도
+필요한 concise representation을 사용한다.
+
+Card catalog를 전부 prompt에 넣지 않는다.
+
+CardDefinition 이름 resolution은 가능한 한 서버에서 한다.
+
+예:
+
+사용자:
+"좀비를 소환"
+
+서버:
+관련 CardDefinition candidate 검색
+
+→ 그 후보만 AI context에 제공
+
+AI가 모든 카드 DB를 받을 필요가 없게 한다.
+
+==================================================
+28. Admin 자동 적용 UX
+==================================================
+
+사용 흐름:
+
+자연어 입력
+→ AI 효과 생성 클릭
+→ provider 1회
+→ JSON parse
+→ validation
+→ READY
+→ form state 자동 적용
+
+기존 효과 없음:
+즉시 적용.
+
+기존 효과 있음:
+교체 / 추가 / 취소 선택.
+
+DB 자동 저장 금지.
+
+마지막 Admin 저장 버튼은 사용자가 직접 누른다.
+
+==================================================
+29. 저장 시 AI 호출 금지
+==================================================
+
+Admin Save를 누를 때
+OpenAI API를 다시 호출하면 안 된다.
+
+Save에서는 오직:
+
+- Script schema validation
+- semantic validation
+- 기존 Admin persistence
+
+만 수행한다.
+
+즉:
+
+Generate → AI 비용 발생
+
+Save → AI 비용 0
+
+이다.
+
+==================================================
+30. Script Validation 시 AI 호출 금지
+==================================================
+
+Effect Script validator는 deterministic local code여야 한다.
+
+validation 실패를 고치기 위해
+AI에게 자동 질문하지 않는다.
+
+Validation 비용:
+
+OpenAI = 0.
+
+==================================================
+31. 기존 저장 Script 실행 시 AI 호출 금지
+==================================================
+
+저장된 카드가:
+
+1번 발동해도
+100번 발동해도
+1,000,000번 발동해도
+
+OpenAI API 호출 횟수는 0이다.
+
+이 규칙을 architecture test로 검증한다.
+
+==================================================
+32. Provider module 격리
+==================================================
+
+가능하면 provider module이:
+
+Admin authoring API
+
+에서만 import되도록 한다.
+
+다음 package/module에서 provider import가 없어야 한다.
+
+- game engine
+- online match runtime
+- AI Match runtime
+- Script Interpreter
+- event engine
+- state reducer
+
+가능하면 dependency graph/test로 검증한다.
+
+==================================================
+33. Unsupported 기능
+==================================================
+
+정말 Script Engine 밖의 요청만:
+
+UNSUPPORTED_ENGINE_CAPABILITY
+
+로 반환한다.
+
+예:
+
+- 브라우저 DOM 직접 조작
+- 새 미니게임 UI 생성
+- 외부 웹 API 호출
+- 시스템 파일 접근
+
+일반적인 카드게임 state manipulation은
+최대한 Script로 표현 가능하게 만든다.
+
+==================================================
+34. Replit Prompt Generator
+==================================================
+
+기존 prompt generator는 유지한다.
+
+역할:
+
+Admin AI Effect Compiler
+= 일반 카드 효과 대부분
+
+Replit Prompt Generator
+= Script Engine 자체에 없는 새 시스템 기능
+
+으로 구분한다.
+
+==================================================
+35. AI 결과 상태
+==================================================
+
+최소:
+
+READY
+NEEDS_CLARIFICATION
+INVALID_SCRIPT
+UNSUPPORTED_ENGINE_CAPABILITY
+PROVIDER_ERROR
+
+구분.
+
+모호한 단일 에러 문구 대신
+Admin에게 validation path/reason을 안전하게 보여준다.
+
+secret/stack/API key는 노출하지 않는다.
+
+==================================================
+36. Save 시 재검증
+==================================================
+
+AI generation endpoint validation만 믿지 않는다.
+
+실제 카드/Champion Save API에서도
+Script를 deterministic server-side validator로 재검증한다.
+
+여기서도 OpenAI 호출은 0이다.
+
+==================================================
+37. Production DB 안전
+==================================================
+
+작업 중:
+
+Production DB 직접 변경 금지
+기존 카드 자동 migration 금지
+Production 카드 테스트 수정 금지
+Champion 데이터 일괄 수정 금지
+migration 자동 실행 금지
+
+fixture / unit test / in-memory state를 사용한다.
+
+==================================================
+38. Script Engine 테스트
+==================================================
+
+최소 다음 실제 실행 테스트:
+
+A
+ENTER_FIELD
+→ opponent champion DAMAGE 2
+
+B
+DESTROYED
+→ SELECT own graveyard zombies
+→ COUNT
+→ HEAL own champion
+
+C
+ATTACK
+→ SELECT opponent hand
+→ SORT cost DESC
+→ TAKE 1
+→ MODIFY_COST +2
+
+D
+COUNT own board zombies >=3
+→ BUFF SELF +3/+3
+
+E
+adjacent empty slots
+→ RANDOM WRESTLER SUMMON
+→ result reference
+→ TAUNT
+
+F
+graveyard cost <=3
+→ RANDOM
+→ REVIVE
+
+G
+same seed/state/action
+→ same random result
+
+H
+empty selector
+→ safe result
+→ no crash
+
+==================================================
+39. AI Compiler 실제 provider smoke
+==================================================
+
+OPENAI_API_KEY가 Replit Secret에 있을 때만
+optional actual-provider smoke test를 지원한다.
+
+최소:
+
+"등장: 적 챔피언에게 2 피해"
+
+"이 카드가 죽으면 내 무덤의 좀비 수만큼 내 챔피언을 회복"
+
+"상대 손에서 비용이 가장 높은 카드의 비용을 2 증가"
+
+"양옆 빈 슬롯에 무작위 선수 하나씩 소환하고 그 선수들에게 도발"
+
+이 네 개를:
+
+actual OpenAI
+→ JSON
+→ local validator
+→ READY
+
+까지 검증한다.
+
+단 smoke test 실행 횟수는 최소화한다.
+
+같은 테스트를 반복 호출하지 않는다.
+
+실제 provider 테스트는 unit test suite의 매 실행마다
+무조건 호출되도록 만들지 않는다.
+
+기본 automated test는 provider stub/mock을 사용한다.
+
+==================================================
+40. 비용 관련 자동 테스트
+==================================================
+
+반드시 다음을 검증하는 테스트 또는 명확한 dependency check를 추가한다.
+
+TEST COST-1
+
+Script Interpreter로 카드 효과를 실행.
+
+기대:
+provider call count = 0
+
+TEST COST-2
+
+AI Match 한 턴/효과 실행.
+
+기대:
+provider call count = 0
+
+TEST COST-3
+
+Online match effect resolution.
+
+기대:
+provider call count = 0
+
+TEST COST-4
+
+Admin Save.
+
+기대:
+provider call count = 0
+
+TEST COST-5
+
+Admin AI Generate 1회.
+
+기대:
+provider call count = 1
+
+TEST COST-6
+
+invalid AI output.
+
+기대:
+자동 provider retry = 0
+
+TEST COST-7
+
+NEEDS_CLARIFICATION.
+
+기대:
+자동 추가 provider call = 0
+
+사용자가 명시적으로 다시 생성할 때만
+새 provider call 1회.
+
+==================================================
+41. 사용량 기록
+==================================================
+
+provider response가 token usage metadata를 제공한다면
+secret 없이 서버 로그 또는 Admin debug용으로:
+
+- model
+- input tokens
+- output tokens
+- total tokens
+
+정도를 기록할 수 있다.
+
+단:
+
+API key
+전체 prompt
+사용자의 private 정보
+
+는 로그에 남기지 않는다.
+
+이 기능 때문에 별도의 외부 billing API를 호출할 필요는 없다.
+
+==================================================
+42. 기존 회귀 테스트
+==================================================
+
+반드시 유지:
+
+- existing Structured Effects
+- SUMMON
+- GENERATE
+- SUMMON_FROM_HAND
+- generated 0G
+- PLAYER_CHOICE
+- targeting
+- saved wrestler effects
+- Champion ability
+- Quest
+- Champion Token
+- TECHNIQUE
+- AI Match
+- online sanitizer
+- reconnect/resync
+
+==================================================
+43. 범위 제한
+==================================================
+
+하지 말 것:
+
+- UI 전체 redesign
+- deck system 변경
+- shop 변경
+- account 변경
+- ownership 변경
+- unrelated DB refactor
+- card-specific hardcoding
+
+목표:
+
+Universal Effect Script Engine
++
+Admin Natural Language AI Compiler
++
+Runtime OpenAI API Call = ZERO
+
+이다.
+
+==================================================
+44. 검증
+==================================================
+
+repo의 실제 package.json scripts를 사용한다.
+
+최소:
+
+- Script Engine tests
+- Structured Effect tests
+- targeting tests
+- generation tests
+- saved effect tests
+- Admin AI tests
+- cost/provider-call-boundary tests
+- online sanitizer tests
+- API typecheck
+- KO typecheck
+- API build
+- KO build
+- git diff --check
+
+실제 OpenAI smoke test는
+한 번의 검증에 필요한 최소 횟수만 수행한다.
+
+==================================================
+45. Git
+==================================================
+
+모든 필수 검증 PASS 후에만:
+
+git status 확인
+
+의도한 파일만 stage
+
+제외:
+- OPENAI_API_KEY
+- .env secrets
+- logs
+- temp files
+- Agent metadata
+
+commit
+
+git fetch origin
+
+remote가 앞서 있으면 safe rebase
+
+git push origin main
+
+force push 금지.
+
+Production DB 직접 수정 금지.
+Render 수동 변경 금지.
+
+==================================================
+46. 최종 보고
+==================================================
+
+완료 보고에는 반드시 다음을 포함한다.
+
+1. Universal Effect Script 구조
+
+2. 지원:
+- Trigger
+- Selector
+- Filter
+- Collection operations
+- Value expression
+- Condition
+- Result reference
+- Queued effect
+
+3. Script Interpreter 구조
+
+4. 기존 Structured Effect 호환 방식
+
+5. Admin AI Compiler 구조
+
+6. OpenAI API가 호출되는 정확한 코드 경로
+
+7. OpenAI API가 절대 호출되지 않는 Runtime 경로
+
+8. 다음에 대해 provider call count:
+- Admin Generate
+- Admin Save
+- AI Match
+- Online PvP
+- actual card effect resolution
+- Script validation
+
+기대값:
+
+Admin Generate = 사용자 클릭당 1
+Admin Save = 0
+AI Match = 0
+Online PvP = 0
+Card Effect Runtime = 0
+Validation = 0
+
+9. 자동 provider retry 여부
+기대:
+없음 또는 비용 폭주가 불가능한 명확한 제한
+
+10. 실제 provider smoke에서 사용한 호출 횟수
+
+11. AI prompt에 전체 repo/card DB를 보내지 않는다는 확인
+
+12. 테스트 결과
+
+13. API/KO typecheck
+
+14. API/KO build
+
+15. git diff --check
+
+16. DB migration 여부
+
+17. commit hash
+
+18. remote main hash
+
+19. push 성공 여부
+
+20. Production에서 직접 확인해야 할 테스트
+
+PASS / FAIL / UNVERIFIED를 정확히 구분해라.
+
+특히:
+
+"Runtime OpenAI API calls = 0"
+
+을 코드와 테스트로 검증하지 못했다면
+작업 완료라고 보고하지 마.
