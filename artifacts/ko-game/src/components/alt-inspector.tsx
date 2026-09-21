@@ -220,7 +220,7 @@ export function CardInspectContent({ card }: { card: CardInstance }) {
   return (
     <div className="ko-inspector-content space-y-4">
       <div className="border-b border-neutral-800 pb-3">
-        <div className="mb-1 text-sm font-bold tracking-[0.18em] text-blue-300">
+          <div className="mb-1 text-[clamp(0.9rem,1.2vw,1rem)] font-bold tracking-[0.18em] text-blue-300">
         {card.isChampionToken ? '챔피언 토큰' : card.isToken ? '토큰 선수' : '선수 카드'}
         </div>
         <h3 className="text-[clamp(1.35rem,1.8vw,1.7rem)] font-black leading-tight text-white">
@@ -248,19 +248,19 @@ export function CardInspectContent({ card }: { card: CardInstance }) {
       </div>
       <InspectorSection title="키워드" tone="amber">
         {keywords.length === 0 ? (
-          <p className="text-[clamp(0.82rem,1vw,0.98rem)] text-neutral-500">고유 키워드 없음</p>
+              <p className="text-[clamp(0.875rem,1.1vw,0.98rem)] text-neutral-500">고유 키워드 없음</p>
         ) : (
           <div className="space-y-2.5">
             <div className="flex flex-wrap gap-2">
               {keywords.map((keyword) => (
-                <span key={keyword.key} className="rounded-full border border-amber-500/60 bg-amber-950/60 px-3 py-1 text-[clamp(0.82rem,1vw,1rem)] font-black text-amber-100">
+                <span key={keyword.key} className="rounded-full border border-amber-500/60 bg-amber-950/60 px-3 py-1 text-[clamp(0.875rem,1.2vw,1.0625rem)] font-black text-amber-100">
                   {keyword.label}
                 </span>
               ))}
             </div>
             <div className="space-y-1.5">
               {keywords.map((keyword) => (
-                <p key={`${keyword.key}-description`} className="text-[clamp(0.85rem,1vw,1rem)] leading-[1.45] text-neutral-300">
+                <p key={`${keyword.key}-description`} className="text-[clamp(0.9375rem,1.25vw,1.125rem)] leading-[1.5] text-neutral-300">
                   <strong className="font-bold text-amber-200">{keyword.label}:</strong> {keyword.description}
                 </p>
               ))}
@@ -272,7 +272,7 @@ export function CardInspectContent({ card }: { card: CardInstance }) {
         <InspectorSection title="태그" tone="cyan">
           <div className="flex flex-wrap gap-2">
             {tags.map((tag) => (
-              <span key={tag} data-testid="inspector-card-tag" className="rounded-full border border-cyan-500/60 bg-cyan-950/60 px-3 py-1 text-[clamp(0.82rem,1vw,1rem)] font-black text-cyan-100">
+              <span key={tag} data-testid="inspector-card-tag" className="rounded-full border border-cyan-500/60 bg-cyan-950/60 px-3 py-1 text-[clamp(0.875rem,1.2vw,1.0625rem)] font-black text-cyan-100">
                 {tag}
               </span>
             ))}
@@ -283,14 +283,14 @@ export function CardInspectContent({ card }: { card: CardInstance }) {
         <InspectorSection title="현재 상태" tone="rose">
           <div className="flex flex-wrap gap-2">
             {statuses.map((status) => (
-              <span key={status.key} className="rounded-full border border-rose-500/60 bg-rose-950/60 px-3 py-1 text-[clamp(0.82rem,1vw,1rem)] font-black text-rose-100">
+                <span key={status.key} className="rounded-full border border-rose-500/60 bg-rose-950/60 px-3 py-1 text-[clamp(0.875rem,1.2vw,1.0625rem)] font-black text-rose-100">
                 {status.label}
               </span>
             ))}
           </div>
           <div className="mt-2 space-y-1.5">
             {statuses.map((status) => (
-              <p key={`${status.key}-description`} className="text-[clamp(0.85rem,1vw,1rem)] leading-[1.45] text-neutral-300">
+              <p key={`${status.key}-description`} className="text-[clamp(0.9375rem,1.25vw,1.125rem)] leading-[1.5] text-neutral-300">
                 <strong className="font-bold text-rose-200">{status.label}:</strong> {status.description}
               </p>
             ))}
@@ -298,25 +298,25 @@ export function CardInspectContent({ card }: { card: CardInstance }) {
         </InspectorSection>
       )}
       <InspectorSection title="효과 설명" tone="neutral">
-        <p data-testid="inspector-card-rules" className="whitespace-pre-wrap break-words text-[clamp(0.95rem,1.1vw,1.1rem)] leading-[1.5] text-neutral-100">
+        <p data-testid="inspector-card-rules" className="whitespace-pre-wrap break-words text-[clamp(0.9375rem,1.25vw,1.125rem)] leading-[1.55] text-neutral-100">
           {rulesText}
         </p>
       </InspectorSection>
       <div className="rounded-lg border border-neutral-800 bg-neutral-900/70 p-3">
-        <div className="mb-2 text-sm font-black text-neutral-200">수치 변경</div>
+        <div className="mb-2 text-[clamp(0.875rem,1.1vw,1rem)] font-black text-neutral-200">수치 변경</div>
         {numericChanges.length === 0 ? (
-          <div className="text-[0.85rem] text-neutral-500">변경 없음</div>
+          <div className="text-[clamp(0.8125rem,1vw,0.9375rem)] text-neutral-500">변경 없음</div>
         ) : (
           <div className="max-h-40 space-y-1.5 overflow-y-auto pr-1">
             {numericChanges.map((change, index) => (
-              <div key={`${change.stat}-${change.before}-${change.after}-${index}`} className="rounded border border-neutral-800 px-2 py-1.5 text-[0.82rem] text-neutral-400">
+              <div key={`${change.stat}-${change.before}-${change.after}-${index}`} className="rounded border border-neutral-800 px-2 py-1.5 text-[clamp(0.8125rem,1vw,0.9375rem)] text-neutral-400">
                 <div className="flex items-center justify-between gap-2">
                   <span className="font-bold text-neutral-300">{STAT_LABELS[change.stat]}</span>
                   <span className={change.after >= change.before ? 'text-emerald-300' : 'text-red-300'}>
                     {change.before} → {change.after}
                   </span>
                 </div>
-                <div className="mt-1 flex flex-wrap gap-x-2 text-[0.75rem] text-neutral-500">
+                <div className="mt-1 flex flex-wrap gap-x-2 text-[clamp(0.75rem,0.95vw,0.875rem)] text-neutral-500">
                   <span>{change.delta >= 0 ? '+' : ''}{change.delta}</span>
                   {change.sourceName && <span>출처: {change.sourceName}</span>}
                   {change.turnNumber !== undefined && <span>턴 {change.turnNumber}</span>}
@@ -395,11 +395,11 @@ export function ChampionAbilityInspectContent({
       : champion.ability;
   return (
     <div>
-      <div className="text-[10px] font-bold tracking-widest text-blue-300">챔피언 고유 능력</div>
-      <h3 className="mt-1 text-lg font-black">{ability.name}</h3>
-      <div className="my-3 font-display text-base font-bold text-primary">비용 {champion.abilityCost} 골드</div>
-      <p className="text-xs leading-relaxed text-neutral-300">{ability.description}</p>
-      <div className={`mt-3 text-xs font-bold ${available ? 'text-emerald-300' : 'text-red-300'}`}>
+      <div className="text-[clamp(0.875rem,1.1vw,1rem)] font-bold tracking-widest text-blue-300">챔피언 고유 능력</div>
+      <h3 className="mt-1 text-[clamp(1.2rem,1.8vw,1.5rem)] font-black">{ability.name}</h3>
+      <div className="my-3 font-display text-[clamp(1rem,1.3vw,1.125rem)] font-bold text-primary">비용 {champion.abilityCost} 골드</div>
+      <p className="text-[clamp(0.9375rem,1.25vw,1.125rem)] leading-[1.5] text-neutral-300">{ability.description}</p>
+      <div className={`mt-3 text-[clamp(0.875rem,1.1vw,1rem)] font-bold ${available ? 'text-emerald-300' : 'text-red-300'}`}>
         {available ? '현재 사용할 수 있습니다.' : unavailableReason}
       </div>
     </div>
@@ -411,18 +411,18 @@ export function ChampionQuestInspectContent({ champion }: { champion: ChampionSt
   if (!quest) return <div className="text-sm text-neutral-400">진행 중인 퀘스트가 없습니다.</div>;
   return (
     <div>
-      <div className="text-[10px] font-bold tracking-widest text-purple-300">챔피언 퀘스트</div>
-      <h3 className="mt-1 text-lg font-black">{quest.name}</h3>
-      <div className="mt-3 text-[10px] font-bold text-neutral-500">조건</div>
-      <p className="text-xs leading-relaxed text-neutral-300">{quest.description}</p>
-      <div className="mt-3 text-[10px] font-bold text-neutral-500">진행</div>
-      <div className="font-display text-base font-black text-white">
+      <div className="text-[clamp(0.875rem,1.1vw,1rem)] font-bold tracking-widest text-purple-300">챔피언 퀘스트</div>
+      <h3 className="mt-1 text-[clamp(1.2rem,1.8vw,1.5rem)] font-black">{quest.name}</h3>
+      <div className="mt-3 text-[clamp(0.8125rem,1vw,0.9375rem)] font-bold text-neutral-500">조건</div>
+      <p className="text-[clamp(0.9375rem,1.25vw,1.125rem)] leading-[1.5] text-neutral-300">{quest.description}</p>
+      <div className="mt-3 text-[clamp(0.8125rem,1vw,0.9375rem)] font-bold text-neutral-500">진행</div>
+      <div className="font-display text-[clamp(1rem,1.3vw,1.125rem)] font-black text-white">
         {champion.questCompleted
           ? '완료됨'
           : `${champion.questProgress} / ${quest.requiredProgress}`}
       </div>
-      <div className="mt-3 text-[10px] font-bold text-neutral-500">완료 보상</div>
-      <p className="text-xs leading-relaxed text-neutral-300">{rewardText(champion)}</p>
+      <div className="mt-3 text-[clamp(0.8125rem,1vw,0.9375rem)] font-bold text-neutral-500">완료 보상</div>
+      <p className="text-[clamp(0.9375rem,1.25vw,1.125rem)] leading-[1.5] text-neutral-300">{rewardText(champion)}</p>
     </div>
   );
 }

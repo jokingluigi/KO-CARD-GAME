@@ -25,7 +25,7 @@ import {
   type DeckChampion,
 } from "@/lib/decks-client";
 import { cardTypeLabel, deckValidityLabel, normalizeCardRulesText } from "@/lib/display-labels";
-import { DECK_SIZE, MAX_LEGENDARY_CARDS } from "@workspace/game-engine";
+import { DECK_SIZE, MAX_LEGENDARY_CARDS, validateDeckCounts } from "@workspace/game-engine";
 
 type AuthStatus = "checking" | "authenticated" | "unauthenticated";
 type CardFilter = "ALL" | "WRESTLER" | "TECHNIQUE";
@@ -310,7 +310,6 @@ export default function Decks() {
     const reasons: string[] = [];
     if (!selectedChampion) reasons.push("챔피언을 선택해야 합니다.");
     else if (selectedChampion.status !== "PUBLISHED") reasons.push("챔피언이 현재 공개 상태가 아닙니다.");
-    if (cardIds.length !== DECK_SIZE) reasons.push(`카드는 정확히 ${DECK_SIZE}장이어야 합니다.`);
     if (missingIds.length > 0) reasons.push(`확인할 수 없는 카드 참조 ${missingIds.length}개가 있습니다.`);
     if (
       cardIds.some((id) => {
@@ -323,14 +322,23 @@ export default function Decks() {
     counts.forEach((count, id) => {
       const card = cardById.get(id);
       if (!card) return;
-      if (card.rarity === "LEGENDARY" && count > 1) {
-        reasons.push("레전더리 카드는 같은 카드를 1장만 넣을 수 있습니다.");
-      } else if (card.rarity !== "LEGENDARY" && count > MAX_CARD_COPIES) {
+      if (card.rarity !== "LEGENDARY" && count > MAX_CARD_COPIES) {
         reasons.push(`같은 카드는 최대 ${MAX_CARD_COPIES}장까지 넣을 수 있습니다.`);
       }
     });
-    if (legendaryCount > MAX_LEGENDARY_CARDS) {
-      reasons.push(`레전더리 카드는 덱에 총 ${MAX_LEGENDARY_CARDS}장까지만 넣을 수 있습니다.`);
+    const canonicalReasons = validateDeckCounts({
+      cardCount: cardIds.length,
+      legendaryCount,
+      legendaryDefinitionCounts: Array.from(counts.entries())
+        .filter(([id]) => cardById.get(id)?.rarity === "LEGENDARY")
+        .map(([, count]) => count),
+      championCount: selectedChampion ? 1 : 0,
+    });
+    for (const reason of canonicalReasons) {
+      if (reason === "INVALID_CARD_COUNT") reasons.push(`카드는 정확히 ${DECK_SIZE}장이어야 합니다.`);
+      if (reason === "DUPLICATE_LEGENDARY") reasons.push("레전더리 카드는 같은 카드를 1장만 넣을 수 있습니다.");
+      if (reason === "TOO_MANY_LEGENDARIES") reasons.push(`레전더리 카드는 덱에 총 ${MAX_LEGENDARY_CARDS}장까지만 넣을 수 있습니다.`);
+      if (reason === "INVALID_CHAMPION_COUNT" && !selectedChampion) reasons.push("챔피언을 선택해야 합니다.");
     }
     return reasons;
   }, [cardById, cardIds, counts, legendaryCount, missingIds.length, selectedChampion]);

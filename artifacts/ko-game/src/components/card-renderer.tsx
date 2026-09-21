@@ -383,15 +383,15 @@ export function CardRenderer({
         )}
 
         {keywordBadges.length > 0 && (
-          <div
+             <div
             data-testid="card-keyword-badges"
-            className="pointer-events-none absolute bottom-[11%] left-[6%] right-[6%] z-30 flex flex-wrap justify-center gap-1"
+             className="pointer-events-none absolute bottom-[10.5%] left-[5%] right-[5%] z-30 flex flex-wrap justify-center gap-1.5"
             aria-label={`키워드 ${keywordBadges.map((keyword) => keywordLabels[keyword] ?? keyword).join(", ")}`}
           >
             {keywordBadges.map((keyword) => (
               <span
                 key={keyword}
-                className={`rounded-md border px-1.5 py-1 text-[0.75rem] font-extrabold leading-none shadow-lg ${
+                 className={`max-w-full rounded-md border px-2 py-1.5 text-[clamp(0.78rem,1.15vw,1rem)] font-extrabold leading-tight shadow-lg ${
                   keyword === "TAUNT" ? "border-cyan-200 bg-cyan-950/90 text-cyan-100" :
                   keyword === "RUSH" ? "border-amber-200 bg-amber-950/90 text-amber-100" :
                   keyword === "SURPRISE" ? "border-fuchsia-200 bg-fuchsia-950/90 text-fuchsia-100" :

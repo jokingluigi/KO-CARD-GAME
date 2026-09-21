@@ -29,6 +29,7 @@ function cardRuleReasons(cardDefinitionIds: string[], cardsById: Map<string, Car
   const counts = new Map<string, number>();
   cardDefinitionIds.forEach((id) => counts.set(id, (counts.get(id) ?? 0) + 1));
   let legendaryCount = 0;
+  const legendaryDefinitionCounts: number[] = [];
   const reasons: string[] = [];
 
   for (const [id, count] of counts) {
@@ -36,13 +37,19 @@ function cardRuleReasons(cardDefinitionIds: string[], cardsById: Map<string, Car
     if (!card) continue;
     if (card.rarity === "LEGENDARY") {
       legendaryCount += count;
-      if (count > 1) reasons.push("레전더리 카드는 같은 카드를 1장만 넣을 수 있습니다.");
+      legendaryDefinitionCounts.push(count);
     } else if (count > AI_DECK_MAX_CARD_COPIES) {
       reasons.push(`같은 카드는 최대 ${AI_DECK_MAX_CARD_COPIES}장까지 넣을 수 있습니다.`);
     }
   }
-  if (legendaryCount > AI_DECK_MAX_LEGENDARY_CARDS) {
-    reasons.push(`레전더리 카드는 덱에 총 ${AI_DECK_MAX_LEGENDARY_CARDS}장까지만 넣을 수 있습니다.`);
+  for (const reason of validateDeckCounts({
+    cardCount: cardDefinitionIds.length,
+    legendaryCount,
+    legendaryDefinitionCounts,
+    championCount: 1,
+  })) {
+    if (reason === "DUPLICATE_LEGENDARY") reasons.push("레전더리 카드는 같은 카드를 1장만 넣을 수 있습니다.");
+    if (reason === "TOO_MANY_LEGENDARIES") reasons.push(`레전더리 카드는 덱에 총 ${AI_DECK_MAX_LEGENDARY_CARDS}장까지만 넣을 수 있습니다.`);
   }
   return reasons;
 }
