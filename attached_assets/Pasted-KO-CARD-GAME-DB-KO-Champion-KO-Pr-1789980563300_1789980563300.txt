@@ -1,0 +1,133 @@
+KO CARD GAME의 서버/DB 연결 구조를 먼저 점검해주세요.
+
+현재 문제가 있습니다.
+
+KO 관리자 사이트에서 카드나 Champion 데이터를 수정했을 때, 실제 KO Production 사이트와 Replit에서 실행되는 KO의 데이터가 서로 맞지 않는 상황이 발생하고 있습니다.
+
+이번 작업의 목적은 **수정이 아니라 원인 확인**입니다.
+
+아직 어떤 설정도 변경하지 마세요.
+
+## 확인할 것
+
+1. Replit에서 실행되는 KO CARD GAME이 현재 어떤 Backend/API를 바라보고 있는지 확인해주세요.
+
+2. Replit KO가 어떤 Database를 사용하는지 확인해주세요.
+
+3. 현재 실제 Production KO CARD GAME이 어떤 Backend/API와 Database를 사용하는지 코드와 환경설정 기준으로 확인해주세요.
+
+4. KO 관리자 사이트가 카드와 Champion을 수정할 때 실제로 어느 Backend/API와 Database에 요청을 보내는지 확인해주세요.
+
+5. 아래 3개가 같은 데이터 원본을 바라보는지 비교해주세요.
+
+* KO 관리자 사이트
+* Production KO CARD GAME
+* Replit에서 실행되는 KO
+
+6. 서로 다르다면 정확히 무엇이 다른지 알려주세요.
+
+예:
+
+* API URL이 다름
+* Database URL이 다름
+* Supabase 프로젝트가 다름
+* Replit이 로컬 DB를 사용 중
+* Production만 별도 환경변수를 사용 중
+* 관리자 사이트가 다른 Backend를 사용 중
+* Seed 또는 로컬 데이터가 Production DB보다 우선해서 사용되고 있음
+
+7. 관련된 환경변수 이름도 알려주세요.
+
+예:
+
+* DATABASE_URL
+* SUPABASE_URL
+* API_URL
+* VITE_API_URL
+* BACKEND_URL
+
+단, **Secret 값이나 API Key 실제 값은 절대 출력하지 마세요.**
+주소를 비교할 필요가 있다면 민감정보가 아닌 endpoint/domain 수준만 알려주세요.
+
+8. 카드와 Champion 데이터의 최종 Source of Truth가 현재 어디인지 확인해주세요.
+
+즉,
+“관리자 사이트에서 수정한 데이터가 최종 기준인지”
+“코드 내부의 seed/static data가 기준인지”
+“별도 DB가 기준인지”
+를 명확히 알려주세요.
+
+## 탐색 범위 제한
+
+이번 작업에서는 서버 연결과 데이터 Source of Truth 확인에 필요한 파일만 확인해주세요.
+
+프로젝트 전체를 무작정 분석하거나 리팩터링하지 마세요.
+
+우선 다음 종류의 파일만 확인하면 됩니다.
+
+* 환경변수 관련 설정
+* API client 설정
+* Database client 설정
+* Supabase 설정
+* frontend/backend 연결 설정
+* 관리자 사이트의 API 요청 코드
+* 카드/Champion 데이터를 읽어오는 코드
+
+관련 없는 UI, 게임 밸런스, 카드 효과, 애니메이션, CSS, 덱 로직 등은 확인하지 마세요.
+
+## 절대 하지 말 것
+
+* Production DB 수정 금지
+* Replit DB 수정 금지
+* 환경변수 변경 금지
+* API 주소 변경 금지
+* 카드 데이터 수정 금지
+* Champion 데이터 수정 금지
+* Migration 실행 금지
+* Seed 실행 금지
+* DB 초기화 금지
+* 테이블 생성/삭제 금지
+* Production 배포 금지
+* 관리자 사이트 수정 금지
+* 자동으로 문제를 해결하려고 코드 변경하지 말 것
+
+이번 단계에서는 **읽기와 비교만** 해주세요.
+
+## 결과는 간단하게 정리
+
+불필요하게 긴 설명은 하지 말고 아래 형식으로 결과만 정리해주세요.
+
+### 1. Replit KO
+
+* API:
+* DB:
+* 관련 환경변수:
+
+### 2. Production KO
+
+* API:
+* DB:
+* 관련 환경변수:
+
+### 3. KO 관리자 사이트
+
+* API:
+* DB:
+* 관련 환경변수:
+
+### 4. 불일치 여부
+
+* 동일 / 다름
+* 다르다면 정확히 무엇이 다른지
+
+### 5. Source of Truth
+
+* 카드/Champion 데이터의 실제 기준 위치
+
+### 6. 원인
+
+* 현재 관리자 사이트 수정 후 Replit과 데이터가 달라지는 가장 직접적인 이유
+
+아직 해결 작업은 하지 말고 여기서 종료해주세요.
+
+확실하지 않은 부분은 추측하지 말고 “확인 불가”라고 표시해주세요.
