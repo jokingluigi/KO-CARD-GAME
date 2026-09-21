@@ -52,6 +52,11 @@ import {
   prepareCompletionApply,
   validateMechanicCompletion,
 } from "../lib/mechanic-completion-service";
+import {
+  EffectAiError,
+  generateEffectDraft,
+  type EffectAiContext,
+} from "../lib/admin-effect-ai";
 import { getAuthenticatedUser } from "../lib/auth";
 
 const router: IRouter = Router();
@@ -1218,6 +1223,51 @@ router.post("/effects/analyze", async (request, response): Promise<void> => {
   const context = championEffectContext(body);
   const analysis = analyzeForContext(text, context, await cardReferenceCatalog());
   response.json(context ? { ...analysis, unsupportedParts: analysis.unsupportedSegments } : analysis);
+});
+
+router.post("/effects/generate", async (request, response): Promise<void> => {
+  if (!requireAdmin(request, response)) return;
+  const body = request.body && typeof request.body === "object"
+    ? request.body as Record<string, unknown>
+    : {};
+  const text = typeof body.text === "string" ? body.text.trim() : "";
+  const sourceType = body.sourceType === "CHAMPION" ? "CHAMPION" : body.sourceType === "CARD" ? "CARD" : null;
+  const effectContext = typeof body.effectContext === "string" &&
+    ["CHAMPION_ABILITY", "QUEST_REWARD", "UPGRADED_CHAMPION_ABILITY"].includes(body.effectContext)
+    ? body.effectContext as EffectAiContext["effectContext"]
+    : undefined;
+  const cardType = body.cardType === "TECHNIQUE" ? "TECHNIQUE" : body.cardType === "WRESTLER" ? "WRESTLER" : undefined;
+  const sourceName = typeof body.sourceName === "string" ? body.sourceName.trim().slice(0, 120) : undefined;
+  if (!text || text.length > 2000 || !sourceType ||
+      (sourceType === "CHAMPION" && !effectContext) ||
+      (sourceType === "CARD" && effectContext)) {
+    response.status(400).json({ message: "AI 효과 생성 입력값을 확인해 주세요." });
+    return;
+  }
+  try {
+    const result = await generateEffectDraft(
+      text,
+      { sourceType, ...(cardType ? { cardType } : {}), ...(effectContext ? { effectContext } : {}), ...(sourceName ? { sourceName } : {}) },
+      await cardReferenceCatalog(),
+    );
+    if (result.status === "NEEDS_CLARIFICATION") {
+      response.status(409).json(result);
+      return;
+    }
+    response.json({
+      ...result,
+      structuredEffect: { effects: result.effects },
+    });
+  } catch (error) {
+    if (error instanceof EffectAiError) {
+      const status = error.code === "NOT_CONFIGURED" ? 503
+        : error.code === "INVALID_DRAFT" || error.code === "MALFORMED_RESPONSE" ? 422
+          : 502;
+      response.status(status).json({ message: error.message, code: error.code });
+      return;
+    }
+    response.status(502).json({ message: "AI 효과 생성 요청을 처리하지 못했습니다." });
+  }
 });
 
 router.post("/quests/analyze", (request, response) => {

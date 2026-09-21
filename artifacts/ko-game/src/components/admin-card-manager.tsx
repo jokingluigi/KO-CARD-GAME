@@ -18,6 +18,7 @@ import {
 import { CardRenderer } from "./card-renderer";
 import { AdminAudioField } from "./admin-audio-field";
 import { AdminUnifiedEffectPrompt } from "./admin-unified-effect-prompt";
+import { AdminEffectAiGenerator } from "./admin-effect-ai-generator";
 import { useToast } from "../hooks/use-toast";
 import {
   CARD_RARITY_LABELS,
@@ -160,6 +161,15 @@ function statusClass(status: CardStatus) {
   if (status === "PUBLISHED") return "border-emerald-700 bg-emerald-950 text-emerald-300";
   if (status === "DISABLED") return "border-neutral-700 bg-neutral-900 text-neutral-500";
   return "border-amber-700 bg-amber-950 text-amber-300";
+}
+
+function structuredEffectCount(value: string): number {
+  try {
+    const parsed = JSON.parse(value || "{}") as { effects?: unknown };
+    return Array.isArray(parsed.effects) ? parsed.effects.length : 0;
+  } catch {
+    return 0;
+  }
 }
 
 async function responseMessage(response: Response) {
@@ -642,6 +652,32 @@ export function AdminCardManager({
       form.setValue("effectConfig", JSON.stringify({ effects: analysis.effects }, null, 2), { shouldDirty: true });
     }
     setMessage("분석 결과를 적용했습니다. 카드 저장을 눌러 DRAFT에 저장하세요.");
+  }
+
+  function applyAiDraft(
+    draft: { effects: unknown[]; keywords: string[] },
+    mode: "replace" | "append",
+  ) {
+    let currentEffects: unknown[] = [];
+    try {
+      const parsed = JSON.parse(form.getValues("effectConfig") || "{}") as { effects?: unknown };
+      currentEffects = Array.isArray(parsed.effects) ? parsed.effects : [];
+    } catch {
+      currentEffects = [];
+    }
+    const effects = mode === "append" ? [...currentEffects, ...draft.effects] : draft.effects;
+    form.setValue("effectId", "STRUCTURED_EFFECTS_V1", { shouldDirty: true });
+    form.setValue("effectConfig", JSON.stringify({ effects }, null, 2), { shouldDirty: true });
+    if (draft.keywords.length) {
+      form.setValue("keywords", [...new Set([
+        ...form.getValues("keywords"),
+        ...draft.keywords.filter((keyword): keyword is CardKeyword => KEYWORDS.includes(keyword as CardKeyword)),
+      ])], { shouldDirty: true });
+    }
+    setMessage(mode === "append"
+      ? "AI 초안을 기존 효과 뒤에 추가했습니다. 카드 저장을 눌러 DRAFT에 저장하세요."
+      : "AI 초안을 현재 효과에 적용했습니다. 카드 저장을 눌러 DRAFT에 저장하세요.");
+    setError("");
   }
 
   async function reanalyzeMechanicCompletion() {
@@ -1175,9 +1211,18 @@ export function AdminCardManager({
                         <textarea readOnly value={replitPrompt} rows={16} data-testid="textarea-replit-agent-prompt" className="mt-2 w-full rounded border border-neutral-700 bg-neutral-950 p-3 font-mono text-xs leading-relaxed" />
                         <div className="mt-2 flex gap-2"><button type="button" onClick={() => void copyReplitPrompt()} data-testid="button-copy-replit-prompt" className="rounded bg-primary px-3 py-1.5 text-xs font-bold text-black">프롬프트 복사</button><button type="button" onClick={() => void generateReplitPrompt()} data-testid="button-regenerate-replit-prompt" className="rounded border border-amber-700 px-3 py-1.5 text-xs font-bold text-amber-300">다시 생성</button></div>
                       </section>}
-                    <details className="mt-2"><summary>고급 JSON 보기</summary><pre className="mt-1 overflow-auto text-[10px]">{JSON.stringify(analysis.effects, null, 2)}</pre></details>
-                  </div>}
-                </div>
+                     <details className="mt-2"><summary>고급 JSON 보기</summary><pre className="mt-1 overflow-auto text-[10px]">{JSON.stringify(analysis.effects, null, 2)}</pre></details>
+                   </div>}
+                 </div>
+                 <AdminEffectAiGenerator
+                   defaultText={preview.text}
+                   sourceType="CARD"
+                   cardType={preview.cardType}
+                   sourceName={preview.name}
+                   existingEffectCount={preview.effectId === "STRUCTURED_EFFECTS_V1" ? structuredEffectCount(preview.effectConfig) : 0}
+                   onApply={(draft, mode) => applyAiDraft(draft, mode)}
+                   onUnauthorized={onUnauthorized}
+                 />
                <fieldset className="space-y-2 md:col-span-2"><legend className="text-xs font-bold text-neutral-400">키워드</legend><div className="flex flex-wrap gap-2">{KEYWORDS.map((keyword) => <label key={keyword} className="flex items-center gap-2 rounded border border-neutral-800 bg-neutral-900 px-3 py-2 text-xs"><input type="checkbox" value={keyword} {...form.register("keywords")} data-testid={`input-keyword-${keyword}`} />{KEYWORD_LABELS[keyword]}</label>)}</div></fieldset>
                 <fieldset className="space-y-2 md:col-span-2">
                   <legend className="text-xs font-bold text-neutral-400">태그</legend>
