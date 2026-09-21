@@ -33,6 +33,168 @@ export const EFFECT_DURATIONS = ["THIS_TURN", "UNTIL_NEXT_TURN", "PERMANENT"] as
 export type EffectActionSchema = { target: boolean; amount?: boolean; signedAmount?: boolean; stat?: boolean; duration?: boolean; stats?: boolean; statMultiplier?: boolean; referenceStat?: boolean; dynamicValue?: boolean; generatedModifiers?: boolean; minimum?: boolean; keyword?: boolean; damageSource?: boolean; branches?: boolean; queuedEffect?: boolean; cardDefinition?: boolean; cardCount?: boolean; destination?: boolean; aggregateStats?: boolean; conditionalBuff?: boolean };
 export type RegistryStatus = "ACTIVE" | "DISABLED";
 
+/** Closed, data-only Script AST. It is intentionally separate from the
+ * legacy Structured Effect payload so old saved cards remain byte-compatible. */
+export const SCRIPT_MAX_STEPS = 32 as const;
+export const SCRIPT_MAX_DEPTH = 6 as const;
+export const SCRIPT_MAX_SELECTOR_RESULTS = 20 as const;
+export const SCRIPT_OPERATIONS = ["COUNT", "SUM", "MIN", "MAX"] as const;
+export const SCRIPT_COMPARATORS = ["EQ", "NE", "LT", "LTE", "GT", "GTE"] as const;
+export const SCRIPT_VALUE_KINDS = ["CONSTANT", "RESULT_COUNT", "RESULT_VALUE"] as const;
+export type ScriptOperation = typeof SCRIPT_OPERATIONS[number];
+export type ScriptComparator = typeof SCRIPT_COMPARATORS[number];
+export type ScriptValueKind = typeof SCRIPT_VALUE_KINDS[number];
+export type ScriptStat = "COST" | "ATTACK" | "HEALTH";
+export type ScriptFilter = {
+  isGenerated?: boolean;
+  minCost?: number;
+  maxCost?: number;
+  isToken?: boolean;
+  isChampionToken?: boolean;
+  excludeSource?: boolean;
+  tagsAny?: string[];
+  tagsAll?: string[];
+  tagsNone?: string[];
+};
+export type ScriptTarget = {
+  zone?: TargetZone;
+  zones?: TargetZone[];
+  owner?: TargetOwner;
+  cardType?: "WRESTLER" | "TECHNIQUE";
+  filter?: ScriptFilter;
+  selection?: TargetSelection;
+  count?: number;
+  randomScope?: RandomScope;
+  resultId?: string;
+};
+export type ScriptValue = {
+  kind: ScriptValueKind;
+  value?: number;
+  resultId?: string;
+};
+export type ScriptCondition = {
+  left: ScriptValue;
+  compare: ScriptComparator;
+  right: ScriptValue;
+};
+export type ScriptEffect = {
+  action: Action;
+  target?: ScriptTarget;
+  values?: Record<string, unknown>;
+};
+export type ScriptStep =
+  | { type: "SELECT"; id: string; target: ScriptTarget }
+  | { type: "AGGREGATE"; id: string; selectionId: string; operation: ScriptOperation; stat?: ScriptStat }
+  | { type: "EFFECT"; effect: ScriptEffect }
+  | { type: "IF"; condition: ScriptCondition; then: ScriptStep[]; else?: ScriptStep[] };
+export type EffectScript = {
+  version: "SCRIPT_V1";
+  trigger: Trigger;
+  steps: ScriptStep[];
+};
+
+const SCRIPT_TARGET_KEYS = new Set(["zone", "zones", "owner", "cardType", "filter", "selection", "count", "randomScope", "resultId"]);
+const SCRIPT_FILTER_KEYS = new Set(["isGenerated", "minCost", "maxCost", "isToken", "isChampionToken", "excludeSource", "tagsAny", "tagsAll", "tagsNone"]);
+const SCRIPT_VALUE_KEYS = new Set(["kind", "value", "resultId"]);
+const SCRIPT_EFFECT_KEYS = new Set(["action", "target", "values"]);
+const SCRIPT_EFFECT_VALUE_KEYS = new Set([
+  "amount", "amountExpression", "attack", "attackExpression", "health", "healthExpression", "countExpression",
+  "attackMultiplier", "healthMultiplier", "stat", "duration",
+  "keyword", "damageSource", "reference", "referenceStat", "amountReference", "minimum", "temporaryCost",
+  "generatedModifiers", "deckPosition", "count", "destination",
+]);
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return Boolean(value && typeof value === "object" && !Array.isArray(value));
+}
+
+function hasOnlyKeys(value: Record<string, unknown>, allowed: Set<string>): boolean {
+  return Object.keys(value).every((key) => allowed.has(key));
+}
+
+function validScriptTarget(value: unknown): value is ScriptTarget {
+  if (!isRecord(value) || !hasOnlyKeys(value, SCRIPT_TARGET_KEYS)) return false;
+  if (value.zone !== undefined && !TARGET_ZONES.includes(value.zone as TargetZone)) return false;
+  if (value.zones !== undefined && (!Array.isArray(value.zones) || value.zones.length < 1 ||
+    value.zones.length > TARGET_ZONES.length || !value.zones.every((zone) => TARGET_ZONES.includes(zone as TargetZone)))) return false;
+  if (value.owner !== undefined && !TARGET_OWNERS.includes(value.owner as TargetOwner)) return false;
+  if (value.selection !== undefined && !TARGET_SELECTIONS.includes(value.selection as TargetSelection)) return false;
+  if (value.selection === "PLAYER_CHOICE" || value.selection === "ADJACENT_EMPTY_SLOTS" || value.selection === "SAME_TARGET") return false;
+  if (value.randomScope !== undefined && !RANDOM_SCOPES.includes(value.randomScope as RandomScope)) return false;
+  if (value.cardType !== undefined && value.cardType !== "WRESTLER" && value.cardType !== "TECHNIQUE") return false;
+  if (value.count !== undefined && (typeof value.count !== "number" || !Number.isInteger(value.count) ||
+    value.count < 1 || value.count > SCRIPT_MAX_SELECTOR_RESULTS)) return false;
+  if (value.resultId !== undefined && (typeof value.resultId !== "string" || !/^[A-Za-z][A-Za-z0-9_-]{0,31}$/.test(value.resultId))) return false;
+  if (value.zone !== undefined && value.zones !== undefined) return false;
+  if (value.filter !== undefined) {
+    if (!isRecord(value.filter) || !hasOnlyKeys(value.filter, SCRIPT_FILTER_KEYS)) return false;
+    const filter = value.filter;
+    for (const key of ["isGenerated", "isToken", "isChampionToken", "excludeSource"]) {
+      if (filter[key] !== undefined && typeof filter[key] !== "boolean") return false;
+    }
+    for (const key of ["minCost", "maxCost"]) {
+      if (filter[key] !== undefined && (!Number.isInteger(filter[key]) || Number(filter[key]) < 0 || Number(filter[key]) > 999)) return false;
+    }
+    for (const key of ["tagsAny", "tagsAll", "tagsNone"]) {
+      if (filter[key] !== undefined && (!Array.isArray(filter[key]) || filter[key].length > 20 ||
+        !filter[key].every((tag) => typeof tag === "string" && tag.length > 0 && tag.length <= 80))) return false;
+    }
+  }
+  return true;
+}
+
+function validScriptValue(value: unknown): value is ScriptValue {
+  if (!isRecord(value) || !hasOnlyKeys(value, SCRIPT_VALUE_KEYS) || !SCRIPT_VALUE_KINDS.includes(value.kind as ScriptValueKind)) return false;
+  if (value.kind === "CONSTANT") return typeof value.value === "number" && Number.isFinite(value.value) && Math.abs(value.value) <= 999;
+  return typeof value.resultId === "string" && /^[A-Za-z][A-Za-z0-9_-]{0,31}$/.test(value.resultId);
+}
+
+function validScriptSteps(value: unknown, depth: number, seen: Set<string>): value is ScriptStep[] {
+  if (!Array.isArray(value) || value.length < 1 || value.length > SCRIPT_MAX_STEPS || depth > SCRIPT_MAX_DEPTH) return false;
+  for (const raw of value) {
+    if (!isRecord(raw) || typeof raw.type !== "string") return false;
+    if (raw.type === "SELECT") {
+      if (typeof raw.id !== "string" || !/^[A-Za-z][A-Za-z0-9_-]{0,31}$/.test(raw.id) ||
+        seen.has(raw.id) || !validScriptTarget(raw.target)) return false;
+      seen.add(raw.id);
+      continue;
+    }
+    if (raw.type === "AGGREGATE") {
+      if (typeof raw.id !== "string" || !/^[A-Za-z][A-Za-z0-9_-]{0,31}$/.test(raw.id) || seen.has(raw.id) ||
+        typeof raw.selectionId !== "string" || !seen.has(raw.selectionId) ||
+        !SCRIPT_OPERATIONS.includes(raw.operation as ScriptOperation)) return false;
+      if (raw.stat !== undefined && !["COST", "ATTACK", "HEALTH"].includes(raw.stat as string)) return false;
+      seen.add(raw.id);
+      continue;
+    }
+    if (raw.type === "EFFECT") {
+      if (!isRecord(raw.effect) || !hasOnlyKeys(raw.effect, SCRIPT_EFFECT_KEYS) ||
+        !ACTIONS.includes(raw.effect.action as Action)) return false;
+      if (raw.effect.target !== undefined && !validScriptTarget(raw.effect.target)) return false;
+      if (raw.effect.values !== undefined) {
+        if (!isRecord(raw.effect.values) || !hasOnlyKeys(raw.effect.values, SCRIPT_EFFECT_VALUE_KEYS)) return false;
+        if (raw.effect.values.amountExpression !== undefined && !validScriptValue(raw.effect.values.amountExpression)) return false;
+      }
+      continue;
+    }
+    if (raw.type === "IF") {
+      if (!isRecord(raw.condition) || !hasOnlyKeys(raw.condition, new Set(["left", "compare", "right"])) ||
+        !validScriptValue(raw.condition.left) || !validScriptValue(raw.condition.right) ||
+        !SCRIPT_COMPARATORS.includes(raw.condition.compare as ScriptComparator)) return false;
+      if (!validScriptSteps(raw.then, depth + 1, seen) ||
+        (raw.else !== undefined && !validScriptSteps(raw.else, depth + 1, seen))) return false;
+      continue;
+    }
+    return false;
+  }
+  return true;
+}
+
+export function isEffectScript(value: unknown): value is EffectScript {
+  if (!isRecord(value) || value.version !== "SCRIPT_V1" || !TRIGGERS.includes(value.trigger as Trigger)) return false;
+  return validScriptSteps(value.steps, 0, new Set());
+}
+
 export const DISPLAY_LABELS = {
   ENTER_FIELD: "등장", CARD_DRAWN: "준비", SELF_ATTACK: "자신 공격", OTHER_ALLY_ATTACK: "콤보", ATTACK_SURVIVED: "공격 생존", STAT_CHANGED: "스탯 변경", TECHNIQUE_CAST: "주문",
   CARD_RETIRED: "아군 퇴장", CARD_SUMMONED: "아군 소환", FIRST_ATTACKED: "첫 공격",

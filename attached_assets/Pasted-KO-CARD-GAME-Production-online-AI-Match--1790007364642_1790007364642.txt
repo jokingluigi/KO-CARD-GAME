@@ -1,0 +1,1180 @@
+KO CARD GAME의 현재 Production/online/AI Match 관련 버그와 미구현 사항을
+전부 조사하고 실제로 수정해줘.
+
+이번 작업의 목표는 "코드를 수정하는 것"이 아니다.
+
+최종 목표는:
+
+문제 재현
+→ 실제 root cause 확인
+→ 최소 범위 수정
+→ unit/integration test
+→ 실제 브라우저에서 테스트 게임 플레이
+→ 수정된 동작을 직접 확인
+→ regression 확인
+→ commit/push
+
+까지 완료하는 것이다.
+
+==================================================
+최우선 원칙
+==================================================
+
+절대 코드만 읽고 PASS 처리하지 마.
+
+반드시 가능한 항목은 실제 게임을 실행해서
+브라우저에서 직접 플레이하고 결과를 확인해야 한다.
+
+특히 다음은 실제 게임 플레이 검증 필수:
+
+- 카드 효과
+- Champion 능력
+- Champion Quest
+- 공격/피해/회복
+- 턴 종료
+- 타이머
+- AI 행동
+- Online PvP
+- reconnect
+- 애니메이션
+- 카드 사용 연출
+- 퀘스트 완료 알림
+- 상대 닉네임
+- 메인 메뉴 복귀
+
+실제 게임에서 확인하지 못한 항목은
+PASS가 아니라 UNVERIFIED로 보고해라.
+
+"코드상 정상으로 보임"
+"테스트는 통과함"
+
+만으로 실제 gameplay PASS 처리 금지.
+
+==================================================
+절대 하지 말 것
+==================================================
+
+- Production DB 직접 수정 금지
+- 실제 사용자 카드 삭제 금지
+- 카드 분해/제작을 Production 계정에서 실제 수행 금지
+- 상점 구매 금지
+- 실제 사용자 덱 삭제 금지
+- 계정 삭제 금지
+- 카드/Champion 원본 Production 데이터 임의 수정 금지
+- 관리자 데이터 일괄 변경 금지
+- DB migration 자동 실행 금지
+- secret 노출 금지
+- git push --force 금지
+
+테스트 데이터가 필요하면:
+
+- 기존 test auth
+- fixture
+- in-memory state
+- test account
+- local/Replit environment
+
+을 사용해라.
+
+Production 공유 DB에 위험한 write를 하지 마.
+
+==================================================
+현재 게임 구조 보존
+==================================================
+
+KO CARD GAME은:
+
+Action
+→ Event
+→ GameState
+
+구조를 따른다.
+
+온라인은 server-authoritative.
+
+RNG는 deterministic.
+
+최근 Universal Effect Script / Structured Effect 시스템이 추가되어 있다.
+
+기존:
+
+- Structured Effect
+- Effect Script
+- PLAYER_CHOICE
+- result reference
+- deterministic random selector
+- Champion Token
+- Technique
+- Quest
+- AI Match
+- Online PvP
+
+를 최대한 공용 engine path에서 처리해라.
+
+카드마다 이름/ID를 hardcoding해서 고치지 마.
+
+예:
+
+if (card.name === "하스이") ...
+
+같은 방식 금지.
+
+문제가 범용 engine/trigger/event attribution 문제라면
+generic하게 수정한다.
+
+==================================================
+작업 시작 전
+==================================================
+
+먼저:
+
+git status
+git log --oneline -10
+
+을 확인해라.
+
+현재 working tree에 사용자의 미완성 변경이 있으면
+덮어쓰지 마.
+
+origin/main과 상태를 확인한다.
+
+그리고 관련 코드만 먼저 조사한다.
+
+불필요한 repo 전체 탐색으로 시간을 낭비하지 마.
+
+==================================================
+현재 확인된 문제 1
+등장 시 대상 지정 효과가 씹힘
+==================================================
+
+예:
+흑구슬 마스터
+
+대상 선택이 필요한 등장 효과가
+정상적인 PLAYER_CHOICE로 이어지지 않거나
+효과가 아예 사라지는 사례가 있다.
+
+확인:
+
+PLAY_FROM_HAND
+→ ENTER_FIELD
+→ trigger
+→ valid target 계산
+→ targetingState
+→ PLAYER_CHOICE
+→ SELECT_EFFECT_TARGET
+→ continuation
+→ effect resolve
+→ Event
+→ GameState
+
+전체 흐름.
+
+공식 규칙:
+
+일반 ON_ENTER/등장은
+WRESTLER PLAY_FROM_HAND일 때만 발동.
+
+SUMMON/REVIVE/Champion Token deploy에서
+일반 등장 효과를 잘못 재발동시키면 안 된다.
+
+실제 게임에서 대상 선택 카드 사용까지 테스트한다.
+
+==================================================
+문제 2
+제작/분해 수량 지정
+==================================================
+
+카드 제작/분해 시
+수량을 직접 지정할 수 있어야 한다.
+
+이미 수정된 이력이 있을 수 있으므로
+현재 구현을 먼저 확인한다.
+
+이미 정상이라면 재수정하지 말고
+실제 UI에서 확인한다.
+
+Production 카드 자산을 실제 분해하지 마.
+
+test/mock 환경에서 검증.
+
+==================================================
+문제 3
+랜덤워커 Rush 표기 누락
+==================================================
+
+랜덤워커가 실제 Rush keyword를 가지고 있는데
+카드 UI에서 표기가 누락되는지 확인.
+
+CardDefinition keyword
+→ CardInstance
+→ UI keyword rendering
+
+경로 조사.
+
+실제 카드 상세 및 인게임에서 확인.
+
+효과 자체와 표기 문제를 구분한다.
+
+==================================================
+문제 4
+온라인 상대 닉네임 표시
+==================================================
+
+Online PvP match 화면에서
+상대방의 실제 게임 닉네임을 표시한다.
+
+민감한 account identifier나 email 노출 금지.
+
+공개 nickname만 사용.
+
+Quick/Friendly 둘 다 확인.
+
+==================================================
+문제 5
+온라인에서 주문 사용이 상대에게 정상 표시되지 않음
+==================================================
+
+한 플레이어가 Technique/주문을 사용했을 때
+상대 클라이언트에서도:
+
+- 어떤 카드가 사용되었는지
+- 사용 연출
+- 효과 발생
+
+이 자연스럽게 보이는지 확인.
+
+canonical server event를 기반으로 표시한다.
+
+상대 hidden hand identity는
+사용 전에 노출하면 안 된다.
+
+사용이 공개된 이후의 카드 정보만 표시 가능.
+
+==================================================
+문제 6
+온라인 카드 플레이 애니메이션 미작동
+==================================================
+
+Online PvP에서
+카드를 손에서 사용했을 때
+카드 플레이 애니메이션이 작동하지 않는다.
+
+AI Match와 Online Match의 presentation path를 비교한다.
+
+GameState를 UI에서 따로 재구현하지 말고
+canonical event/snapshot을 활용한다.
+
+실제로 두 클라이언트에서 확인.
+
+==================================================
+문제 7
+재접속 안내 메시지가 사라지지 않음
+==================================================
+
+예:
+
+"상대가 다시 연결되었습니다."
+
+메시지가 계속 화면에 남는다.
+
+일시적인 status message는
+적절한 시간 후 사라지거나
+다음 상태 전환에서 clear되어야 한다.
+
+DISCONNECTED_GRACE
+→ CONNECTED
+
+전환 확인.
+
+실제 reconnect 시나리오 테스트.
+
+==================================================
+문제 8
+여러 카드/Champion 효과가 실제 게임에서 작동하지 않음
+==================================================
+
+현재 신고된 카드:
+
+- 매드펌킨
+- 뒷정리맨
+- 예거
+- 조크루이지
+- 아르카나 조커
+- 카이사토르
+- 흑구슬 마스터
+- 히든온
+- 하스이
+- 데헌
+  - 패에 있을 때 효과 미작동
+
+각각 현재 DB/CardDefinition/ChampionDefinition의
+공식 설명과 실제 Effect Script/Structured Effect를 확인한다.
+
+중요:
+
+카드 이름만 보고 효과를 추측하지 마.
+
+authoritative source:
+
+- 현재 CardDefinition
+- ChampionDefinition
+- Admin에 저장된 effect data
+- 카드 설명
+- Effect Script
+
+를 사용한다.
+
+각 카드마다:
+
+설명
+→ expected event
+→ expected state transition
+→ 실제 결과
+
+를 비교한다.
+
+하나의 공통 engine bug가 여러 카드를 깨뜨린 경우
+각 카드별 예외를 넣지 말고 generic root cause를 수정한다.
+
+각 신고 카드의 실제 인게임 사용을 목표로 한다.
+
+==================================================
+문제 9
+온라인 턴 시작 알림 없음
+==================================================
+
+Online PvP에서
+내 턴이 시작되어도 사용자가 즉시 알기 어렵다.
+
+기존 게임 UI/animation 스타일에 맞게
+명확하지만 과도하지 않은 턴 시작 표시를 구현한다.
+
+예:
+
+YOUR TURN
+
+짧은 transition/pulse/audio existing style.
+
+기존 UI를 대규모 redesign하지 마.
+
+상대 턴과 내 턴이 명확하게 구분되어야 한다.
+
+==================================================
+문제 10
+카드 설명 ALT UI를 toggle 방식으로
+==================================================
+
+현재 카드 설명을
+길게 누르는 방식으로만 보는 구조라면
+일반 click/tap toggle 방식으로 개선한다.
+
+한 번:
+열림
+
+다시:
+닫힘
+
+desktop/mobile 모두 고려.
+
+카드 선택/공격/drag interaction과 충돌하지 않게 한다.
+
+==================================================
+문제 11
+회피가 사라졌는데 관련 텍스트가 남음
+==================================================
+
+DODGE 상태/charge가 실제 GameState에서 사라졌는데
+UI 문자열/배지가 남는 문제 조사.
+
+UI local stale state인지
+GameState keyword/charge cleanup 문제인지 구분.
+
+실제 회피 소비 후 확인.
+
+==================================================
+문제 12
+온라인 Quest 완료 알림 없음
+==================================================
+
+온라인에서 Champion Quest가 완료되어도
+Quest Clear/Complete 알림이 안 뜬다.
+
+AI Match와 Online presentation path 비교.
+
+GameState의:
+
+latestQuestCompletedChampionId
+
+또는 현재 canonical completion event를 사용.
+
+Quest 완료 사운드/연출도 기존 설정에 맞게 확인.
+
+실제로 Online에서 quest 완료시켜 검증.
+
+==================================================
+문제 13
+정체불명의 "위리너"가 계속 등장
+==================================================
+
+사용자 신고:
+
+"위리너"라는 카드/선수가
+어디서 나오는지 모르겠는데 계속 나타난다.
+
+절대 이름만 보고 삭제하지 마.
+
+먼저 출처를 추적한다.
+
+확인:
+
+- SUMMON
+- GENERATE
+- REVIVE
+- token
+- default/fallback definition
+- invalid definition fallback
+- stale preview
+- AI deck
+- Effect Script selector
+- generated CardDefinition
+- hidden-card placeholder
+
+실제 Event attribution을 이용해서:
+
+누가
+어떤 효과로
+어떤 CardDefinition을
+왜 생성했는지
+
+확인한다.
+
+의도되지 않은 생성이면 root cause 수정.
+
+==================================================
+문제 14
+할 행동이 없는데 턴이 자동으로 넘어가지 않음
+==================================================
+
+플레이 가능한 카드 없음
+공격 가능한 선수 없음
+사용 가능한 Champion ability 없음
+targeting 없음
+기타 legal action 없음
+
+상태에서
+게임이 멈추는 사례 조사.
+
+기존 공식 규칙에 자동 종료가 맞는 경우
+정확한 legal action 판정 후 자동 종료.
+
+단:
+
+사용자가 실제로 할 수 있는 행동이 있는데
+잘못 자동 종료하면 안 된다.
+
+AI Match / Online 양쪽 확인.
+
+==================================================
+문제 15
+상대 턴 종료 후 "상대의 턴입니다"에서 멈춤
+==================================================
+
+수정된 이력이 있으므로 반드시 재검증.
+
+상대가 END_TURN
+→ server state activePlayer 변경
+→ ACTION_ACCEPTED / snapshot
+→ client
+→ turn UI 업데이트
+
+확인.
+
+실제 Online 두 클라이언트에서
+여러 턴 왕복 테스트.
+
+==================================================
+문제 16
+예거 능력 사용 후 턴 종료 불가
+==================================================
+
+예거 Champion ability 사용 후:
+
+- 턴 종료 버튼이 먹지 않음
+- 다음 턴까지 이상 상태가 유지됨
+- 공격 여부에 따라 풀리는 사례
+
+신고 있음.
+
+과거 수정 이력이 있을 수 있으므로
+재현부터 한다.
+
+확인:
+
+- targetingState
+- pending continuation
+- activeUsedThisTurn
+- action lock
+- presentationBusy
+- pending request ID
+- server version
+- client disabled state
+
+Champion ability 이후
+정상적으로 END_TURN 가능해야 한다.
+
+AI Match와 Online 모두 확인.
+
+==================================================
+문제 17
+AI가 타이머 종료 후에야 행동
+==================================================
+
+AI가 자기 턴 시간을 전부 소비한 뒤
+마지막에 행동하는 문제.
+
+AI action scheduling과
+turn deadline logic을 조사한다.
+
+AI는 합리적인 짧은 delay 이후 행동해야 한다.
+
+타이머 만료 이후 늦게 canonical action을 보내면 안 된다.
+
+AI의 자연스러운 연출 delay와
+실제 server turn deadline을 분리한다.
+
+==================================================
+문제 18
+AI전 패배 후 체력 1로 부활
+==================================================
+
+AI Match에서 패배했는데
+Champion HP가 1로 돌아오거나
+게임이 종료되지 않는 문제.
+
+확인:
+
+damage
+→ HP <= 0
+→ defeat
+→ status FINISHED
+→ winner
+→ end presentation
+
+패배 후 GameState를
+1HP로 되살리는 fallback/normalization이 있으면 안 된다.
+
+Champion Token 규칙과 혼동하지 마.
+
+==================================================
+문제 19
+나토마토 턴 종료 시 공격력이 원래대로 안 돌아옴
+==================================================
+
+나토마토 효과가
+턴 한정 temporary stat modifier라면
+TURN_END cleanup에서 원복되어야 한다.
+
+공식 CardDefinition/Effect Script를 먼저 확인.
+
+PERMANENT 효과라면 임의로 원복시키지 않는다.
+
+설명 기준으로 expected behavior 결정.
+
+실제 턴 종료 전/후 attack 비교.
+
+==================================================
+문제 20
+시간 초과 턴 전환 시 내 필드 선수 하나가 손으로 돌아감
+==================================================
+
+매우 중요한 GameState corruption 의심.
+
+turn timeout
+→ automatic end turn
+
+과정에서
+board CardInstance가 hand로 이동하는 사례.
+
+확인:
+
+- timeout handler
+- default/fallback action
+- stale PLAYER_CHOICE
+- cancel targeting
+- MOVE effect
+- reconnect/resync merge
+- client projection
+- server canonical state
+
+UI 애니메이션만 손으로 간 것처럼 보이는지
+실제 server GameState의 zone이 바뀌는지도 구분.
+
+반드시 before/after GameState 비교.
+
+==================================================
+문제 21
+콘텐츠 예정 항목
+==================================================
+
+A.
+rm유디르를 Legendary로 승격 예정.
+
+B.
+모든 Champion에 Quest 및 Quest Reward 추가 예정.
+
+중요:
+
+이미 공식 데이터/설계가 repo/Admin에 존재하는 경우에만
+그 정의에 맞게 구현한다.
+
+Quest 목표 수치/보상 내용이
+어디에도 정의되어 있지 않다면
+임의의 밸런스 수치를 창작하지 마.
+
+그 경우:
+
+NEEDS_DESIGN
+
+으로 최종 보고하고
+engine/UI infrastructure만 정상인지 확인한다.
+
+==================================================
+문제 22
+판도라 Champion Quest가 RETIRE를 집계하지 않음
+==================================================
+
+매우 중요.
+
+실제 신고:
+
+판도라 Champion ability로
+용병을 RETIRE시킨 뒤에도
+Quest progress가:
+
+0/5
+
+에 그대로 남음.
+
+반드시 실제로 재현한다.
+
+확인 경로:
+
+USE_CHAMPION_ABILITY
+→ RETIRE
+→ RETIRE event
+→ event attribution
+→ quest condition matcher
+→ quest progress
+→ GameState
+→ UI
+
+판도라 능력이 발생시킨 RETIRE도
+공식 Quest 조건에 해당한다면
+정상적으로 progress +1 되어야 한다.
+
+중요:
+
+단순 UI 표시 문제인지
+실제 server/GameState questProgress가 0인지
+반드시 구분.
+
+다음 경우 각각 테스트:
+
+- 일반 카드 효과 RETIRE
+- Champion ability RETIRE
+- combat/damage에 의한 RETIRE
+- 판도라 자신의 Champion ability
+
+Quest가 어떤 RETIRE를 세도록 설계되었는지는
+ChampionDefinition의 공식 condition을 authoritative source로 사용한다.
+
+특정 판도라 이름 hardcoding 금지.
+
+RETIRE event attribution / quest matcher를 generic하게 수정한다.
+
+실제 테스트 게임에서:
+
+0/5
+→ 능력으로 1명 RETIRE
+→ 1/5
+
+가 되는지 확인.
+
+가능하면 Quest 완료:
+
+4/5
+→ RETIRE
+→ 5/5
+→ completion
+→ reward
+
+까지 테스트.
+
+==================================================
+문제 23
+온라인 메뉴에서 메인 화면으로 복귀 불가
+==================================================
+
+위치:
+
+Main
+→ Online Battle
+→ Quick Match / Friendly Match 선택 화면
+
+여기서
+메인 메뉴로 정상적으로 돌아갈 수 없다.
+
+확인:
+
+- 상단 뒤로가기
+- Main Menu 버튼
+- browser back
+- internal router
+- OnlineLobby singleton cleanup
+- WebSocket lifecycle
+- queue/room cleanup
+
+메인으로 이동할 때:
+
+- Quick queue leave
+- private room leave/close
+- unnecessary WebSocket state
+- stale route
+
+가 남지 않게 한다.
+
+단 이미 진행 중인 실제 match를
+실수로 자동 surrender시키는 식으로 구현하지 마.
+
+실제 브라우저에서:
+
+Main
+→ Online
+→ Quick
+→ Back
+→ Online
+→ Main
+
+Main
+→ Online
+→ Friendly
+→ Back
+→ Online
+→ Main
+
+둘 다 테스트.
+
+==================================================
+애니메이션 검증 원칙
+==================================================
+
+사용자가 특히
+"게임이 자연스럽고 정상적이었으면 좋겠다"고 요청했다.
+
+따라서 기능 결과만 보지 말고:
+
+- card play animation
+- attack animation
+- damage impact
+- Technique use
+- summon presentation
+- retire
+- Quest complete
+- turn transition
+- reconnect message
+- timeout transition
+
+에서:
+
+일시적 presentation state
+vs
+canonical final GameState
+
+를 구분해서 검사한다.
+
+애니메이션 때문에 실제 GameState가 꼬이면 안 되고,
+GameState가 정상인데 애니메이션만 틀린 경우도
+별도 버그로 수정한다.
+
+==================================================
+실제 테스트 게임 필수
+==================================================
+
+코드 수정 후 반드시 실제 앱을 실행해라.
+
+가능하면 Replit browser/preview/browser automation을 이용한다.
+
+로그인이 필요한 경우
+기존 test auth/test account를 사용한다.
+
+실제 사용자 계정을 임의 변경하지 마.
+
+최소 실제 플레이:
+
+--------------------------------
+TEST GAME A — AI Match
+--------------------------------
+
+여러 턴 실제 플레이.
+
+확인:
+
+- 일반 카드 play
+- target selection
+- attack
+- Technique
+- Champion ability
+- END_TURN
+- timer
+- temporary stats
+- defeat
+- Quest
+- animation
+
+신고된 카드 효과를 가능한 한
+테스트 덱에 넣어 실제 사용한다.
+
+--------------------------------
+TEST GAME B — Online Quick Match
+--------------------------------
+
+서로 다른 두 인증 사용자/테스트 세션 필요.
+
+실제 Quick Match 매칭.
+
+확인:
+
+- WebSocket 연결
+- 상대 nickname
+- card play
+- opponent presentation
+- Technique
+- attack
+- turn transition
+- Quest progress
+- Quest completion
+- reconnect
+- timeout
+- Main navigation
+
+--------------------------------
+TEST GAME C — Online Friendly
+--------------------------------
+
+두 테스트 세션으로:
+
+room create
+→ code
+→ join
+→ ready
+→ match
+
+확인.
+
+방 나가기/메뉴 복귀도 확인.
+
+==================================================
+모든 신고 카드 사용 목표
+==================================================
+
+가능한 한 테스트 덱을 여러 번 바꿔서
+신고된 카드를 실제 사용한다.
+
+목표:
+
+- 매드펌킨
+- 뒷정리맨
+- 예거
+- 조크루이지
+- 아르카나 조커
+- 카이사토르
+- 흑구슬 마스터
+- 히든온
+- 하스이
+- 데헌
+- 랜덤워커
+- 나토마토
+- 판도라
+
+한 판으로 전부 테스트하려고 하지 마.
+
+필요하면 여러 경기를 진행한다.
+
+==================================================
+PASS 판정 기준
+==================================================
+
+각 문제는 다음 중 하나로 보고한다.
+
+PASS
+- 실제 gameplay에서 기대 결과 확인.
+
+FAIL
+- 재현되며 아직 수정되지 않음.
+
+UNVERIFIED
+- 테스트 환경 한계 때문에 실제 확인 불가.
+
+NEEDS_DESIGN
+- 공식 기대 동작/수치가 repo에 정의되어 있지 않음.
+
+절대:
+
+코드 읽음
+→ PASS
+
+unit test 통과
+→ gameplay PASS
+
+로 처리하지 마.
+
+==================================================
+회귀 테스트
+==================================================
+
+최소 기존 관련 테스트:
+
+- Structured Effects
+- Universal Effect Script
+- targeting
+- PLAYER_CHOICE
+- generation
+- saved wrestler effects
+- Quest
+- Champion ability
+- Champion Token
+- Technique
+- AI Match
+- Online sanitizer
+- Online service
+- reconnect/resync
+- turn timer
+- deterministic RNG
+
+실행.
+
+==================================================
+Champion Token 공식 규칙 유지
+==================================================
+
+절대 회귀 금지.
+
+- Champion Token deploy는 original Champion HP를 더하지 않음
+- own base stats 사용
+- Token RETIRE ≠ immediate loss
+- Token active 동안 original Champion protected
+- Champion ability 계속 사용 가능
+- Token leave 후 original Champion HP 그대로
+- Token SILENCE/DESTROY/REMOVE_FROM_GAME immunity
+- regular damage/combat 가능
+- HP 0이면 RETIRE 가능
+- ordinary SUMMON은 Champion Token state 획득 금지
+- fallback FIELD → HAND → DECK TOP
+
+==================================================
+Technique 공식 규칙 유지
+==================================================
+
+- board slot 사용하지 않음
+- board full이어도 사용 가능
+- 사용 후 graveyard
+- PLAYER_CHOICE 사용 가능
+
+==================================================
+온라인 보안 유지
+==================================================
+
+- server-authoritative
+- randomSeed client 노출 금지
+- opponent hand/deck identity 숨김
+- public cardPool만 허용
+- hidden generated/drawn identity redaction
+- client가 canonical RNG 결정 금지
+
+==================================================
+OpenAI 비용 관련 규칙 유지
+==================================================
+
+최근 Admin AI Effect Compiler가 존재한다.
+
+이번 QA/게임 runtime 수정 때문에
+게임 중 OpenAI API를 호출하게 만들지 마.
+
+다음 provider call count는 반드시 0:
+
+- AI Match
+- Online Match
+- 카드 effect resolution
+- Quest
+- attack
+- targeting
+- animation
+- reconnect
+- validation
+
+Admin에서 사용자가 AI 효과 생성 버튼을 누를 때만
+OpenAI 호출 가능.
+
+==================================================
+수정 후 브라우저 재검증
+==================================================
+
+수정 하나 했다고 바로 완료하지 마.
+
+최소:
+
+수정
+→ 관련 unit test
+→ build
+→ 앱 재시작
+→ 실제 재현 절차 반복
+
+순서로 검증한다.
+
+특히:
+
+판도라:
+0/5 → RETIRE → 1/5
+
+예거:
+ability → END_TURN 정상
+
+Online:
+opponent turn → my turn 정상
+
+timeout:
+board card가 hand로 이동하지 않음
+
+reconnect:
+message가 정상적으로 사라짐
+
+Main:
+Online selection 화면 → Main 정상 복귀
+
+를 실제로 확인.
+
+==================================================
+Git / 배포
+==================================================
+
+전체 수정 및 필수 검증이 끝난 후:
+
+- git status
+- git diff
+- git diff --check
+- API typecheck
+- KO typecheck
+- API build
+- KO build
+- relevant tests
+
+전부 PASS 확인.
+
+그 다음 이번 작업 관련 파일만 stage.
+
+금지:
+
+- secret
+- OPENAI_API_KEY
+- .env
+- log
+- temp
+- Replit Agent metadata
+- unrelated files
+
+commit.
+
+origin/main 확인.
+
+remote가 앞서 있으면:
+
+git fetch origin
+git rebase origin/main
+
+safe rebase.
+
+CONFLICT가 있으면 임의로 덮어쓰지 말고 보고.
+
+force push 금지.
+
+정상일 때:
+
+git push origin main
+
+까지 진행.
+
+Render를 직접 조작하지 마.
+기존 GitHub → Render 자동 배포를 사용한다.
+
+==================================================
+최종 보고 형식
+==================================================
+
+반드시 23개 항목 각각에 대해 보고한다.
+
+각 항목:
+
+[번호]
+문제:
+재현:
+Root cause:
+수정:
+Unit/Integration:
+실제 Gameplay:
+결과: PASS / FAIL / UNVERIFIED / NEEDS_DESIGN
+
+그리고 마지막에 별도로:
+
+1. 실제 진행한 AI Match 경기 수
+
+2. 실제 진행한 Quick Match 경기 수
+
+3. 실제 진행한 Friendly Match 경기 수
+
+4. 실제 사용해 본 카드/Champion 목록
+
+5. 실제 확인한 애니메이션 목록
+
+6. 아직 재현 못 한 항목
+
+7. 변경 파일 목록
+
+8. 테스트 결과
+
+9. KO/API typecheck
+
+10. KO/API build
+
+11. git diff --check
+
+12. commit hash
+
+13. remote main hash
+
+14. push 성공 여부
+
+15. Production에서 사용자가 추가로 확인해야 하는 항목
+
+을 보고해라.
+
+==================================================
+가장 중요한 완료 조건
+==================================================
+
+아래 상태에서는 작업 완료라고 말하지 마.
+
+- 코드는 고쳤지만 실제 게임은 안 해봄
+- 테스트만 통과하고 browser gameplay 미확인
+- 판도라 Quest 실제 0/5 → 1/5 미확인
+- Online Main 복귀 실제 미확인
+- 턴 꼬임 실제 미확인
+- 신고 카드 효과 대부분 미사용
+- 애니메이션 미확인
+
+이번 작업은
+"코드를 고쳤다"가 아니라
+
+"실제 게임에서 고쳐진 것을 확인했다"
+
+가 완료 조건이다.

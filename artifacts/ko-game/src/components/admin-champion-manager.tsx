@@ -197,15 +197,17 @@ export function AdminChampionManager({ onUnauthorized }: { onUnauthorized: () =>
 
   function applyAiEffect(
     effectsKey: "abilityEffects" | "questRewardEffects" | "upgradedAbilityEffects",
-    effects: unknown[],
+    draft: { effectId: "STRUCTURED_EFFECTS_V1" | "SCRIPT_V1"; effects: unknown[]; scripts: unknown[] },
     mode: "replace" | "append",
   ) {
     const current = form[effectsKey];
-    const currentEffects = current && typeof current === "object" && Array.isArray(current.effects)
-      ? current.effects
+    const key = draft.effectId === "SCRIPT_V1" ? "scripts" : "effects";
+    const incoming = draft.effectId === "SCRIPT_V1" ? draft.scripts : draft.effects;
+    const currentItems = current && typeof current === "object" && Array.isArray(current[key])
+      ? current[key]
       : [];
     update(effectsKey, {
-      effects: mode === "append" ? [...currentEffects, ...effects] : effects,
+      [key]: mode === "append" ? [...currentItems, ...incoming] : incoming,
     } as Form[typeof effectsKey]);
     setMessageText(mode === "append"
       ? "AI 초안을 기존 Champion 효과 뒤에 추가했습니다. 저장 버튼을 눌러 보존하세요."
@@ -1031,7 +1033,7 @@ function EffectField({ title, value, onChange, onAnalyze, onApply, onPrompt, onR
   prompting?: boolean;
   effectContext: "CHAMPION_ABILITY" | "QUEST_REWARD" | "UPGRADED_CHAMPION_ABILITY";
   existingEffectCount: number;
-  onApplyAi: (effects: unknown[], mode: "replace" | "append") => void;
+  onApplyAi: (draft: { effectId: "STRUCTURED_EFFECTS_V1" | "SCRIPT_V1"; effects: unknown[]; scripts: unknown[] }, mode: "replace" | "append") => void;
   onUnauthorized: () => void;
 }) {
   return <label className="md:col-span-2">
@@ -1056,7 +1058,7 @@ function EffectField({ title, value, onChange, onAnalyze, onApply, onPrompt, onR
       sourceType="CHAMPION"
       effectContext={effectContext}
       existingEffectCount={existingEffectCount}
-      onApply={(draft, mode) => onApplyAi(draft.effects, mode)}
+       onApply={(draft, mode) => onApplyAi(draft, mode)}
       onUnauthorized={onUnauthorized}
     />
   </label>;

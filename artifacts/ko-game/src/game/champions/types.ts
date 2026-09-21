@@ -9,6 +9,7 @@ export type ChampionEffect =
   | { type: 'GAIN_GOLD'; amount: number }
   | { type: 'HEAL_CHAMPION'; amount: number }
   | Extract<CardEffect, { type: 'STRUCTURED' }>
+  | Extract<CardEffect, { type: 'SCRIPT' }>
   | {
       type: 'DIRECT_DEPLOY_CHAMPION_TOKEN';
       cardDefinitionId: string;
@@ -25,13 +26,13 @@ export interface ChampionAbility {
 export type ChampionQuestReward =
   | {
       type: 'UPGRADE_ABILITY';
-      effects?: Array<Extract<ChampionEffect, { type: 'STRUCTURED' }>>;
+       effects?: Array<Extract<ChampionEffect, { type: 'STRUCTURED' | 'SCRIPT' }>>;
     }
   | { type: 'GAIN_GOLD'; amount: number }
   | { type: 'DIRECT_DEPLOY_CHAMPION_TOKEN'; cardDefinitionId: string }
   | {
       type: 'STRUCTURED';
-      effects: Array<Extract<ChampionEffect, { type: 'STRUCTURED' }>>;
+       effects: Array<Extract<ChampionEffect, { type: 'STRUCTURED' | 'SCRIPT' }>>;
     };
 
 export interface ChampionQuest {

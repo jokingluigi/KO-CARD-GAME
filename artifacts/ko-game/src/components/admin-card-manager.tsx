@@ -655,19 +655,28 @@ export function AdminCardManager({
   }
 
   function applyAiDraft(
-    draft: { effects: unknown[]; keywords: string[] },
+    draft: {
+      effectId: "STRUCTURED_EFFECTS_V1" | "SCRIPT_V1";
+      effects: unknown[];
+      scripts: unknown[];
+      effectConfig: { effects?: unknown[]; scripts?: unknown[] };
+      keywords: string[];
+    },
     mode: "replace" | "append",
   ) {
-    let currentEffects: unknown[] = [];
+    let currentConfig: { effects?: unknown[]; scripts?: unknown[] } = {};
     try {
-      const parsed = JSON.parse(form.getValues("effectConfig") || "{}") as { effects?: unknown };
-      currentEffects = Array.isArray(parsed.effects) ? parsed.effects : [];
+      const parsed = JSON.parse(form.getValues("effectConfig") || "{}") as { effects?: unknown[]; scripts?: unknown[] };
+      currentConfig = parsed;
     } catch {
-      currentEffects = [];
+      currentConfig = {};
     }
-    const effects = mode === "append" ? [...currentEffects, ...draft.effects] : draft.effects;
-    form.setValue("effectId", "STRUCTURED_EFFECTS_V1", { shouldDirty: true });
-    form.setValue("effectConfig", JSON.stringify({ effects }, null, 2), { shouldDirty: true });
+    const effectId = draft.effectId;
+    const key = effectId === "SCRIPT_V1" ? "scripts" : "effects";
+    const incoming = effectId === "SCRIPT_V1" ? draft.scripts : draft.effects;
+    const current = mode === "append" && Array.isArray(currentConfig[key]) ? currentConfig[key] : [];
+    form.setValue("effectId", effectId, { shouldDirty: true });
+    form.setValue("effectConfig", JSON.stringify({ [key]: mode === "append" ? [...current, ...incoming] : incoming }, null, 2), { shouldDirty: true });
     if (draft.keywords.length) {
       form.setValue("keywords", [...new Set([
         ...form.getValues("keywords"),

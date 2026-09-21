@@ -41,6 +41,7 @@ import { analyzeChampionQuestText } from "../lib/champion-quest-analysis";
 import {
   analyzeEffectText,
   effectLibrary,
+  isEffectScriptConfig,
   isChampionQuestRewardEffects,
   isStructuredEffects,
   type Analysis,
@@ -238,6 +239,7 @@ function parseChampionInput(value: unknown): ChampionInput | null {
   const isStarterGrant = input.isStarterGrant === true;
   const validEffects = (effects: Record<string, unknown> | null | undefined, championReward = false) =>
     effects === null || effects === undefined || !("effects" in effects) ||
+    isEffectScriptConfig(effects) ||
     (championReward ? isChampionQuestRewardEffects(effects) : isStructuredEffects(effects));
   if (!name || name.length > 120 || !abilityName || abilityName.length > 120 ||
       maxHealth == null || abilityCost == null || abilityAudioVolume == null ||
@@ -794,7 +796,8 @@ function parseCardInput(value: unknown): CardInput | null {
     !input.effectConfig ||
     typeof input.effectConfig !== "object" ||
     Array.isArray(input.effectConfig)
-    || (effectId === "STRUCTURED_EFFECTS_V1" && !isStructuredEffects(input.effectConfig))
+     || (effectId === "STRUCTURED_EFFECTS_V1" && !isStructuredEffects(input.effectConfig))
+     || (effectId === "SCRIPT_V1" && !isEffectScriptConfig(input.effectConfig))
     || (imageAssetId === null) !== (imageUrl === null)
     || (imageAssetId !== null &&
       !imageAssetId.startsWith("/objects/uploads/card-images/"))
@@ -1256,7 +1259,7 @@ router.post("/effects/generate", async (request, response): Promise<void> => {
     }
     response.json({
       ...result,
-      structuredEffect: { effects: result.effects },
+      structuredEffect: result.effectConfig,
     });
   } catch (error) {
     if (error instanceof EffectAiError) {

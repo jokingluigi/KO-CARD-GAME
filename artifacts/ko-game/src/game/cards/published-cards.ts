@@ -1,5 +1,6 @@
 import type { CardAbility, CardEffect } from "../effects/types";
 import type { CardDefinition, CardRarity } from "./types";
+import { isEffectScript, type EffectScript } from "@workspace/effect-registry";
 
 type StructuredCardEffect = Extract<CardEffect, { type: "STRUCTURED" }>;
 
@@ -43,6 +44,14 @@ function abilitiesFor(
   effectId: string | null,
   config: Record<string, unknown>,
 ): CardAbility[] {
+  if (effectId === "SCRIPT_V1" && Array.isArray(config.scripts)) {
+    return config.scripts
+      .filter((script): script is EffectScript => isEffectScript(script))
+      .map((script) => ({
+        trigger: script.trigger as Exclude<CardAbility["trigger"], "POSITION" | "LEAVE_FIELD">,
+        effects: [{ type: "SCRIPT" as const, script }],
+      }));
+  }
   if (effectId === "STRUCTURED_EFFECTS_V1" && Array.isArray(config.effects)) {
     const byTrigger = new Map<string, CardEffect[]>();
     for (const raw of config.effects) {

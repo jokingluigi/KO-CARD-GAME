@@ -3,7 +3,7 @@ import {
   RANDOM_SCOPES, TARGET_SELECTIONS, TARGET_ZONES, TRIGGERS,
   type Action, type Condition, type Keyword, type Reference, type TargetOwner, type TargetSelection,
   type DamageSource, type RandomScope, type TargetZone, type Trigger, type StatName, type EffectDuration,
-  STAT_NAMES, EFFECT_DURATIONS,
+  STAT_NAMES, EFFECT_DURATIONS, isEffectScript, type EffectScript,
 } from "@workspace/effect-registry";
 import { cardTagsSchema } from "@workspace/api-zod";
 
@@ -89,6 +89,7 @@ export type StructuredEffect = {
     rightEffects?: StructuredEffect[];
   };
 };
+export type EffectScriptConfig = { scripts: EffectScript[] };
 /** Champion-only reward marker. It is stored beside normal structured effects
  * in the Champion quest reward payload, but is not a card runtime action. */
 export type ChampionUpgradeEffect = {
@@ -1193,4 +1194,10 @@ export function isStructuredEffects(value: unknown): value is { effects: Structu
      }
     return !item.conditions || item.conditions.every((condition) => CONDITIONS.includes(condition.type));
   });
+}
+
+export function isEffectScriptConfig(value: unknown): value is EffectScriptConfig {
+  if (!value || typeof value !== "object" || Array.isArray(value)) return false;
+  const scripts = (value as { scripts?: unknown }).scripts;
+  return Array.isArray(scripts) && scripts.length >= 1 && scripts.length <= 10 && scripts.every(isEffectScript);
 }

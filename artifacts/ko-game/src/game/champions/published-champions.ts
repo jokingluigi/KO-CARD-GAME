@@ -1,9 +1,12 @@
 import type { ChampionAbility, ChampionDefinition, ChampionEffect, ChampionQuest, ChampionQuestCardType } from "./types";
 import type { CardEffect } from "../effects/types";
 import type { ImageDisplayMode } from "../cards/types";
-import { ACTIONS } from "@workspace/effect-registry";
+import { ACTIONS, isEffectScript, type EffectScript } from "@workspace/effect-registry";
 
-type Structured = { effects?: Array<{ action?: string; target?: unknown; values?: unknown }> };
+type Structured = {
+  effects?: Array<{ action?: string; target?: unknown; values?: unknown }>;
+  scripts?: EffectScript[];
+};
 export type PublishedChampionRecord = {
   id: string; name: string; description: string; imageAssetId: string | null; imageUrl: string | null;
   imageDisplayMode?: ImageDisplayMode; imageScale?: number; imagePositionX?: number; imagePositionY?: number;
@@ -24,6 +27,9 @@ export type PublishedChampionRecord = {
 
 function effects(config: Structured | null, tokenId?: string | null): ChampionEffect[] {
   const result: ChampionEffect[] = [];
+  for (const script of config?.scripts ?? []) {
+    if (isEffectScript(script)) result.push({ type: "SCRIPT", script });
+  }
   for (const effect of config?.effects ?? []) {
     if (effect.action === "DIRECT_DEPLOY_CHAMPION_TOKEN" && tokenId) {
       result.push({ type: "DIRECT_DEPLOY_CHAMPION_TOKEN", cardDefinitionId: tokenId });
@@ -54,8 +60,8 @@ export function championRecordToDefinition(record: PublishedChampionRecord): Cha
   const directTokenReward = typeof tokenId === "string" &&
     rewardActions.some((item) => item.action === "DIRECT_DEPLOY_CHAMPION_TOKEN");
   const structuredRewardEffects = effects(record.questRewardEffects, tokenId)
-    .filter((item): item is Extract<ChampionEffect, { type: "STRUCTURED" }> =>
-      item.type === "STRUCTURED" && (ACTIONS as readonly string[]).includes(item.action));
+    .filter((item): item is Extract<ChampionEffect, { type: "STRUCTURED" | "SCRIPT" }> =>
+      item.type === "SCRIPT" || (item.type === "STRUCTURED" && (ACTIONS as readonly string[]).includes(item.action)));
   const quest: ChampionQuest | null = record.hasQuest && record.questCondition?.event &&
     record.questName && record.questProgressRequired
     ? {

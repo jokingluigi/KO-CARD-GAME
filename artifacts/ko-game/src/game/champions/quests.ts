@@ -3,7 +3,7 @@ import type { GameState } from '../types/game-state';
 import type { ChampionQuest } from './types';
 import { tryDirectDeployChampionToken } from '../engine/champion-token';
 import type { CardInstance } from '../cards/types';
-import { resolvePendingEffects } from '../effects/effect-engine';
+import { applyEffect, resolvePendingEffects } from '../effects/effect-engine';
 
 function matchesQuestEvent(
   event: GameEvent,
@@ -151,14 +151,24 @@ export function processChampionQuestEvents(
         activeUsedThisTurn: false,
         isDirectDeployedChampion: false,
       };
-      resolvedState = resolvePendingEffects({
+      const scriptRewards = rewardEffects.filter(
+        (effect): effect is Extract<typeof effect, { type: 'SCRIPT' }> => effect.type === 'SCRIPT',
+      );
+      resolvedState = scriptRewards.reduce(
+        (nextState, effect) => applyEffect(nextState, originalPlayer.id, sourceCard, effect),
+        resolvedState,
+      );
+      const structuredRewards = rewardEffects.filter(
+        (effect): effect is Extract<typeof effect, { type: 'STRUCTURED' }> => effect.type === 'STRUCTURED',
+      );
+      if (structuredRewards.length) resolvedState = resolvePendingEffects({
         ...resolvedState,
         targetingState: {
           active: true,
           playerId: originalPlayer.id,
           sourceInstanceId: sourceCard.instanceId,
           sourceCard,
-          effects: rewardEffects,
+          effects: structuredRewards,
           effectIndex: 0,
           selectedTargetIds: [],
           lastTargetIds: [],

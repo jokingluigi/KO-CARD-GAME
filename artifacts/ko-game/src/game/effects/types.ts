@@ -1,5 +1,5 @@
 import type {
-  Action, DamageSource, DynamicValue, EffectDuration, Keyword, RandomScope, Reference, StatName, TargetOwner, TargetSelection, TargetZone,
+  Action, DamageSource, DynamicValue, EffectDuration, EffectScript, Keyword, RandomScope, Reference, StatName, TargetOwner, TargetSelection, TargetZone,
 } from "@workspace/effect-registry";
 import type { CardDefinition } from '../cards/types';
 import type { CardTagFilter } from '../cards/tags';
@@ -61,6 +61,10 @@ export type CardDefinitionReference = {
 };
 
 export type CardEffect =
+  | {
+      type: 'SCRIPT';
+      script: EffectScript;
+    }
   | {
       type: 'GAIN_GOLD';
       amount: number;

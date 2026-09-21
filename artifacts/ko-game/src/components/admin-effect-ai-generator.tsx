@@ -5,10 +5,13 @@ type ApplyMode = "replace" | "append";
 
 type EffectAiDraft = {
   status: "READY";
+  effectId: "STRUCTURED_EFFECTS_V1" | "SCRIPT_V1";
   effects: unknown[];
+  scripts: unknown[];
   keywords: string[];
   preview: Array<{ label: string; value: string }>;
-  structuredEffect: { effects: unknown[] };
+  effectConfig: { effects?: unknown[]; scripts?: unknown[] };
+  structuredEffect: { effects?: unknown[]; scripts?: unknown[] };
 };
 
 type EffectAiClarification = {

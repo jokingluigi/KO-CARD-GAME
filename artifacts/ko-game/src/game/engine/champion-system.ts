@@ -9,7 +9,7 @@ import { processChampionQuestEvents } from '../champions/quests';
 import { validateCurrentPlayer } from './turn-system';
 import { findDirectDeployedChampion } from './direct-champion';
 import type { CardInstance } from '../cards/types';
-import { hasMandatoryPlayerChoice, resolvePendingEffects } from '../effects/effect-engine';
+import { applyEffect, hasMandatoryPlayerChoice, resolvePendingEffects } from '../effects/effect-engine';
 import { directDeployChampionToken, validateLinkedChampionToken } from './champion-token';
 import type { EventAttribution } from '../events/types';
 
@@ -19,7 +19,11 @@ function applyChampionEffect(
   championId: string,
   effect: ChampionEffect,
   sourceContext?: EventAttribution,
+  sourceCard?: CardInstance,
 ): GameState {
+  if (effect.type === 'SCRIPT') {
+    return sourceCard ? applyEffect(state, playerId, sourceCard, effect) : state;
+  }
   if (effect.type === 'STRUCTURED') return state;
   if (effect.type === 'DIRECT_DEPLOY_CHAMPION_TOKEN') {
     return directDeployChampionToken(
@@ -235,6 +239,7 @@ export function useChampionAbility(
         player.champion!.id,
         effect,
           sourceContext,
+          effectSource,
       ),
     paidState,
   );

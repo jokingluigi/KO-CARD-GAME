@@ -1,7 +1,17 @@
 import type { CardDefinition, CardInstance, CardStatHistoryEntry } from '../cards/types';
 import { matchesCardTagFilter } from '../cards/tags';
 import type { CardAbility, CardEffect, CardKeyword } from './types';
-import { RUNTIME_HANDLER_ACTIONS, type Action, type EffectDuration, type TargetZone } from "@workspace/effect-registry";
+import {
+  RUNTIME_HANDLER_ACTIONS,
+  type Action,
+  type EffectDuration,
+  type EffectScript,
+  type ScriptStep,
+  type ScriptTarget,
+  type ScriptValue,
+  SCRIPT_MAX_SELECTOR_RESULTS,
+  type TargetZone,
+} from "@workspace/effect-registry";
 
 // The executor supports exactly the action IDs advertised by the shared library.
 // Adding an advertised action requires this assertion (and the executor) to be updated.
@@ -92,6 +102,196 @@ function cardsInZones(
     return [];
   });
   return [...new Map(cards.map((card) => [card.instanceId, card])).values()];
+}
+
+type ScriptRegister = { ids: string[] } | { value: number };
+type ScriptRegisters = Map<string, ScriptRegister>;
+
+function scriptZones(target: ScriptTarget): TargetZone[] {
+  return target.zones ?? (target.zone ? [target.zone] : ['BOARD']);
+}
+
+function scriptTargetCards(
+  state: GameState,
+  playerId: string,
+  sourceCard: CardInstance,
+  target: ScriptTarget,
+): CardInstance[] {
+  const owners = target.owner === 'ALL'
+    ? state.players
+    : [state.players.find((player) => player.id === (target.owner === 'ENEMY'
+      ? state.players.find((candidate) => candidate.id !== playerId)?.id
+      : playerId))].filter((player): player is GameState['players'][number] => Boolean(player));
+  const zones = scriptZones(target);
+  const candidates = owners.flatMap((owner) => cardsInZones(owner, zones)).filter((card) => {
+    if (target.cardType && card.cardType !== target.cardType) return false;
+    const filter = target.filter;
+    if (filter?.isGenerated !== undefined && card.isGenerated !== filter.isGenerated) return false;
+    if (filter?.minCost !== undefined && card.currentCost < filter.minCost) return false;
+    if (filter?.maxCost !== undefined && card.currentCost > filter.maxCost) return false;
+    if (filter?.isToken !== undefined && card.isToken !== filter.isToken) return false;
+    if (filter?.isChampionToken !== undefined && card.isChampionToken !== filter.isChampionToken) return false;
+    if (filter?.excludeSource && card.instanceId === sourceCard.instanceId) return false;
+    return matchesCardTagFilter(card, filter);
+  });
+  const selection = target.selection ?? 'ALL';
+  if (selection === 'SELF') return candidates.filter((card) => card.instanceId === sourceCard.instanceId);
+  if (selection === 'TOP') return candidates.slice(0, target.count ?? 1);
+  if (selection === 'ALL') return candidates;
+  if (selection === 'ADJACENT') {
+    return candidates.filter((card) =>
+      sourceCard.boardSlot !== null &&
+      card.boardSlot !== null &&
+      getAdjacentSlots(sourceCard.boardSlot).includes(card.boardSlot),
+    ).slice(0, target.count ?? SCRIPT_MAX_SELECTOR_RESULTS);
+  }
+  if (selection === 'RANDOM') {
+    return shuffle(
+      candidates.filter((card) => isEligibleForRandomPool(card, target.randomScope)),
+      createDeterministicRandom(JSON.stringify({
+        seed: state.randomSeed ?? 0,
+        events: state.events.length,
+        source: sourceCard.instanceId,
+        scriptTarget: target,
+      })),
+    ).slice(0, target.count ?? 1);
+  }
+  return candidates.slice(0, target.count ?? 1);
+}
+
+function scriptValue(registers: ScriptRegisters, value: ScriptValue): number {
+  if (value.kind === 'CONSTANT') return value.value ?? 0;
+  const register = value.resultId ? registers.get(value.resultId) : undefined;
+  if (!register || !('value' in register)) return register?.ids.length ?? 0;
+  return register.value;
+}
+
+function scriptCompare(left: number, operator: string, right: number): boolean {
+  if (operator === 'EQ') return left === right;
+  if (operator === 'NE') return left !== right;
+  if (operator === 'LT') return left < right;
+  if (operator === 'LTE') return left <= right;
+  if (operator === 'GT') return left > right;
+  return left >= right;
+}
+
+function scriptEffectTarget(
+  target: ScriptTarget | undefined,
+  registers: ScriptRegisters,
+): { target?: Extract<CardEffect, { type: 'STRUCTURED' }>['target']; selectedIds?: string[] } {
+  if (!target) return {};
+  const selectedIds = target.resultId && 'ids' in (registers.get(target.resultId) ?? {})
+    ? (registers.get(target.resultId) as { ids: string[] }).ids
+    : undefined;
+  if (target.resultId) {
+    return {
+      target: {
+        zone: target.zone ?? 'BOARD',
+        zones: target.zones,
+        owner: target.owner ?? 'SELF',
+        cardType: target.cardType,
+        filter: target.filter,
+        selection: 'SAME_TARGET',
+        count: selectedIds?.length ?? target.count ?? 1,
+      },
+      selectedIds,
+    };
+  }
+  return {
+    target: {
+      zone: target.zone,
+      zones: target.zones,
+      owner: target.owner ?? 'SELF',
+      cardType: target.cardType,
+      filter: target.filter,
+      selection: target.selection ?? 'ALL',
+      count: target.count ?? 1,
+      randomScope: target.randomScope,
+    },
+  };
+}
+
+function scriptEffectValues(
+  values: Record<string, unknown> | undefined,
+  registers: ScriptRegisters,
+): Extract<CardEffect, { type: 'STRUCTURED' }>['values'] {
+  if (!values) return undefined;
+  const resolved = { ...values } as Record<string, unknown>;
+  for (const [key, expressionKey] of [
+    ['amount', 'amountExpression'],
+    ['attack', 'attackExpression'],
+    ['health', 'healthExpression'],
+    ['count', 'countExpression'],
+  ] as const) {
+    const expression = resolved[expressionKey];
+    if (expression && typeof expression === 'object') resolved[key] = scriptValue(registers, expression as ScriptValue);
+    delete resolved[expressionKey];
+  }
+  return resolved as Extract<CardEffect, { type: 'STRUCTURED' }>['values'];
+}
+
+function applyScriptSteps(
+  state: GameState,
+  playerId: string,
+  sourceCard: CardInstance,
+  steps: ScriptStep[],
+  registers: ScriptRegisters,
+  depth = 0,
+): GameState {
+  if (depth > 6 || steps.length > 32) throw new Error('SCRIPT_V1 execution budget exceeded.');
+  let next = state;
+  for (const step of steps) {
+    if (step.type === 'SELECT') {
+      registers.set(step.id, { ids: scriptTargetCards(next, playerId, sourceCard, step.target).map((card) => card.instanceId) });
+      continue;
+    }
+    if (step.type === 'AGGREGATE') {
+      const selected = registers.get(step.selectionId);
+      const ids = selected && 'ids' in selected ? selected.ids : [];
+      const cards = ids.map((id) => sourceInState(next, id)).filter((card): card is CardInstance => Boolean(card));
+      if (step.operation === 'COUNT') {
+        registers.set(step.id, { value: cards.length });
+        continue;
+      }
+      const values = cards.map((card) =>
+        step.stat === 'COST' ? card.currentCost : step.stat === 'HEALTH' ? card.currentHealth : card.currentAttack,
+      );
+      const value = step.operation === 'SUM'
+        ? values.reduce((sum, item) => sum + item, 0)
+        : step.operation === 'MIN'
+          ? (values.length ? Math.min(...values) : 0)
+          : (values.length ? Math.max(...values) : 0);
+      registers.set(step.id, { value });
+      continue;
+    }
+    if (step.type === 'IF') {
+      const branch = scriptCompare(
+        scriptValue(registers, step.condition.left),
+        step.condition.compare,
+        scriptValue(registers, step.condition.right),
+      ) ? step.then : (step.else ?? []);
+      next = applyScriptSteps(next, playerId, sourceCard, branch, registers, depth + 1);
+      continue;
+    }
+    const { target, selectedIds } = scriptEffectTarget(step.effect.target, registers);
+    const effect: CardEffect = {
+      type: 'STRUCTURED',
+      action: step.effect.action,
+      target,
+      values: scriptEffectValues(step.effect.values, registers),
+    };
+    next = applyEffect(next, playerId, sourceCard, effect, selectedIds);
+  }
+  return next;
+}
+
+function applyScript(
+  state: GameState,
+  playerId: string,
+  sourceCard: CardInstance,
+  script: EffectScript,
+): GameState {
+  return applyScriptSteps(state, playerId, sourceCard, script.steps, new Map());
 }
 
 export function getDamageModifierBonus(
@@ -774,7 +974,7 @@ export function getActiveAbility(
       );
 }
 
-function applyEffect(
+export function applyEffect(
   state: GameState,
   playerId: string,
   sourceCard: CardInstance,
@@ -782,6 +982,9 @@ function applyEffect(
   chosenTargetInstanceIds?: string[],
   triggerContext?: TriggerContext,
 ): GameState {
+  if (effect.type === 'SCRIPT') {
+    return applyScript(state, playerId, sourceCard, effect.script);
+  }
   if (effect.type === 'STRUCTURED') {
     if (effect.action === 'DEPLOY_CHAMPION_TOKEN') {
       return deployLinkedChampionToken(state, playerId);

@@ -111,6 +111,68 @@ test("인접 무작위 선수 소환과 직전 결과 도발 부여 초안은 RE
   }
 });
 
+test("SCRIPT_V1은 선택 결과를 집계해 조건부 기존 효과로 변환할 수 있다", () => {
+  const result = validateGeneratedEffectDraft({
+    status: "READY",
+    effectId: "SCRIPT_V1",
+    scripts: [{
+      version: "SCRIPT_V1",
+      trigger: "ENTER_FIELD",
+      steps: [
+        {
+          type: "SELECT",
+          id: "allies",
+          target: { zone: "BOARD", owner: "SELF", selection: "ALL", count: 20 },
+        },
+        { type: "AGGREGATE", id: "allyCount", selectionId: "allies", operation: "COUNT" },
+        {
+          type: "IF",
+          condition: {
+            left: { kind: "RESULT_VALUE", resultId: "allyCount" },
+            compare: "GTE",
+            right: { kind: "CONSTANT", value: 2 },
+          },
+          then: [{
+            type: "EFFECT",
+            effect: {
+              action: "DAMAGE",
+              target: { resultId: "allies", owner: "SELF", zone: "BOARD" },
+              values: { amountExpression: { kind: "RESULT_VALUE", resultId: "allyCount" } },
+            },
+          }],
+        },
+      ],
+    }],
+    keywords: [],
+  }, { sourceType: "CARD", cardType: "WRESTLER" }, []);
+
+  assert.equal(result.status, "READY");
+  if (result.status === "READY") {
+    assert.equal(result.effectId, "SCRIPT_V1");
+    assert.ok("scripts" in result.effectConfig);
+    assert.equal(result.effectConfig.scripts.length, 1);
+  }
+});
+
+test("SCRIPT_V1 rejects executable or unknown fields before save", () => {
+  assert.throws(
+    () => validateGeneratedEffectDraft({
+      status: "READY",
+      effectId: "SCRIPT_V1",
+      scripts: [{
+        version: "SCRIPT_V1",
+        trigger: "ENTER_FIELD",
+        steps: [{
+          type: "EFFECT",
+          effect: { action: "DRAW", values: { amount: 1, executeSql: "drop table cards" } },
+        }],
+      }],
+      keywords: [],
+    }, { sourceType: "CARD", cardType: "WRESTLER" }, []),
+    (error: unknown) => error instanceof EffectAiError && error.code === "INVALID_DRAFT",
+  );
+});
+
 test("provider stub에서도 exact 문장이 READY draft와 새 capability prompt로 변환된다", async () => {
   const originalFetch = globalThis.fetch;
   const originalKey = process.env.OPENAI_API_KEY;
@@ -118,11 +180,13 @@ test("provider stub에서도 exact 문장이 READY draft와 새 capability promp
   const originalBaseUrl = process.env.OPENAI_BASE_URL;
   const exactText = "등장: 이 카드 양옆의 빈 슬롯에 각각 무작위 선수 카드 1장을 소환하고, 그렇게 소환된 선수들에게 도발을 부여한다.";
   let requestBody: Record<string, unknown> | undefined;
+  let providerCalls = 0;
 
   process.env.OPENAI_API_KEY = "test-provider-key";
   delete process.env.AI_INTEGRATIONS_OPENAI_API_KEY;
   process.env.OPENAI_BASE_URL = "https://provider.test/v1";
   globalThis.fetch = async (input, init) => {
+    providerCalls += 1;
     requestBody = JSON.parse(String(init?.body)) as Record<string, unknown>;
     return new Response(JSON.stringify({
       choices: [{
@@ -168,6 +232,7 @@ test("provider stub에서도 exact 문장이 READY draft와 새 capability promp
     assert.equal(result.effects[0]?.target?.selection, "ADJACENT_EMPTY_SLOTS");
     assert.equal(result.effects[1]?.target?.selection, "SAME_TARGET");
     assert.equal(result.effects[1]?.values?.keyword, "TAUNT");
+    assert.equal(providerCalls, 1);
     const systemPrompt = String((requestBody?.messages as Array<{ role: string; content: string }>)[0]?.content);
     const userMessage = String((requestBody?.messages as Array<{ role: string; content: string }>)[1]?.content);
     assert.match(systemPrompt, /ADJACENT_EMPTY_SLOTS/);
