@@ -2,7 +2,7 @@ import type { CardInstance } from '../cards/types';
 import type { EnterFieldEvent, EntryCause, EventSubject } from '../events/types';
 import type { GameState } from '../types/game-state';
 import type { BoardSlot } from './board-position';
-import { appendEffectContinuation, resolveTriggeredAbilities } from '../effects/effect-engine';
+import { appendEffectContinuation, resolveSummonListeners, resolveTriggeredAbilities } from '../effects/effect-engine';
 
 export function enterField(
   state: GameState,
@@ -70,20 +70,23 @@ export function enterField(
       { boardSlot, chosenTargetInstanceIds },
     )
     : enteredState;
+  const afterSummonListeners = entryCause === 'SUMMON'
+    ? resolveSummonListeners(afterEnter, playerId, enteredCard)
+    : afterEnter;
   // POSITION is deferred after ENTER_FIELD rather than installed as a child.
-  if (afterEnter.targetingState?.active) {
+  if (afterSummonListeners.targetingState?.active) {
     const positionEffects = enteredCard.abilities
       .filter((ability) => ability.trigger === 'POSITION' && ability.boardSlots.includes(boardSlot))
       .flatMap((ability) => ability.effects);
-    if (!positionEffects.length) return afterEnter;
-    return appendEffectContinuation(afterEnter, {
+     if (!positionEffects.length) return afterSummonListeners;
+     return appendEffectContinuation(afterSummonListeners, {
       active: true, playerId, sourceInstanceId: enteredCard.instanceId, sourceCard: enteredCard,
       effects: positionEffects, effectIndex: 0, selectedTargetIds: [], lastTargetIds: [],
       validTargetIds: [], minTargets: 0, maxTargets: 0, mandatory: true, cancelable: false,
     });
   }
-  return resolveTriggeredAbilities(
-    afterEnter,
+   return resolveTriggeredAbilities(
+     afterSummonListeners,
     playerId,
     enteredCard,
     'POSITION',

@@ -47,7 +47,7 @@ export type QueuedStructuredEffect = {
     referenceStat?: "CURRENT_ATTACK" | "CURRENT_HEALTH";
      amountReference?: "HAND_COUNT" | "GRAVEYARD_WRESTLER_COUNT" | "REMAINING_GOLD" | "BOARD_WRESTLER_COUNT" | "LAST_ATTACK_DELTA";
     minimum?: number;
-    generatedModifiers?: { cost?: number; attack?: number; health?: number; copySourceStats?: boolean };
+    generatedModifiers?: { cost?: number; attack?: number; health?: number; copySourceStats?: boolean; copyTargetStats?: boolean };
     deckPosition?: "TOP" | "BOTTOM";
   };
 };
@@ -72,7 +72,7 @@ export type StructuredEffect = {
     temporaryCost?: boolean;
     conditionalBuff?: { healthEquals: number; attack: number; health: number };
     minimum?: number;
-    generatedModifiers?: { cost?: number; attack?: number; health?: number; copySourceStats?: boolean };
+    generatedModifiers?: { cost?: number; attack?: number; health?: number; copySourceStats?: boolean; copyTargetStats?: boolean };
     deckPosition?: "TOP" | "BOTTOM";
     queuedTrigger?: "NEXT_ALLY_WRESTLER_PLAYED";
     queuedEffect?: QueuedStructuredEffect;
@@ -646,7 +646,7 @@ function expandedMechanicAnalysis(
     return found ? { id: found.id } : { name };
   };
 
-  if (/공격력이\s*(?:증가|올라|상승).*(?:그와|같은)\s*수치.*체력/.test(text) && /효과/.test(text)) {
+  if (/공격력이\s*(?:증가|올라|상승).*(?:그와|같은)\s*수치.*체력/.test(text)) {
     return result([{
       trigger: "STAT_CHANGED",
       action: "BUFF",
@@ -670,7 +670,7 @@ function expandedMechanicAnalysis(
       values: { keyword: "DODGE" },
     }]);
   }
-  if (/처음으로\s*공격력이\s*(?:증가|올라|상승)/.test(text) && /회피/.test(text)) {
+  if (/(?:처음으로\s*)?공격력이\s*처음\s*(?:증가|올라|상승)|처음으로\s*공격력이\s*(?:증가|올라|상승)/.test(text) && /회피/.test(text)) {
     return result([{
       trigger: "STAT_CHANGED",
       action: "ADD_KEYWORD",
@@ -703,6 +703,14 @@ function expandedMechanicAnalysis(
   }
   if (/현재\s*내\s*손패에\s*있는\s*카드\s*수만큼/.test(text)) {
     return result([{ trigger: triggerFor(), action: "BUFF", target: self, values: { amountReference: "HAND_COUNT" } }]);
+  }
+  if (/필드에\s*있는\s*아군\s*선수\s*하나를\s*선택하여\s*손으로\s*되돌/.test(text) && /비용.*이번\s*턴.*1.*감소/.test(text)) {
+    return result([{
+      trigger: triggerFor(),
+      action: "MOVE_TO_HAND",
+      target: { zone: "BOARD", owner: "SELF", cardType: "WRESTLER", selection: "PLAYER_CHOICE", count: 1 },
+      values: { amount: 1, minimum: 1, temporaryCost: true },
+    }]);
   }
   if (/손패에\s*있을\s*때.*아군\s*선수가\s*리타이어/.test(text)) {
     return result([{ trigger: "CARD_RETIRED", action: "REDUCE_COST", target: { zone: "HAND", owner: "SELF", selection: "SELF", count: 1 }, values: { amount: 1, minimum: 1 } }]);
@@ -764,6 +772,58 @@ function expandedMechanicAnalysis(
         ? [{ trigger: triggerFor(), action: "ADD_DAMAGE_MODIFIER" as const, values: { amount: Number(damageAmount), damageSource: "GENERATED" as const } }]
         : []),
     ]);
+  }
+  if (/양\s*옆에\s*있는\s*카드들?.*체력.*\+?1/.test(text)) {
+    return result([{
+      trigger: triggerFor(),
+      action: "BUFF",
+      target: { zone: "BOARD", owner: "SELF", cardType: "WRESTLER", selection: "ADJACENT", count: 2 },
+      values: { attack: 0, health: 1 },
+    }]);
+  }
+  if (/묘지에\s*있는\s*무작위\s*카드.*공격력과\s*체력.*같은.*좀비.*소환/.test(text)) {
+    return result([
+      {
+        trigger: triggerFor(),
+        action: "SUMMON",
+        target: { zone: "GRAVEYARD", owner: "SELF", selection: "RANDOM", count: 1, randomScope: "STANDARD" },
+        values: { definitionRef: makeRef("좀비"), count: 1, generatedModifiers: { copyTargetStats: true } },
+      },
+      {
+        trigger: triggerFor(),
+        action: "ADD_KEYWORD",
+        target: { zone: "BOARD", owner: "SELF", selection: "SAME_TARGET", count: 1 },
+        values: { keyword: "TAUNT" },
+      },
+    ]);
+  }
+  if (/이\s*카드가\s*필드에\s*있는\s*동안.*솔져.*태그.*카드들이\s*소환될\s*때.*\+1\/\+1/.test(text)) {
+    return result([{
+      trigger: "CARD_SUMMONED",
+      action: "BUFF",
+      target: { zone: "BOARD", owner: "SELF", cardType: "WRESTLER", filter: { tagsAny: ["솔져"] }, selection: "SAME_TARGET", count: 1 },
+      values: { attack: 1, health: 1 },
+    }]);
+  }
+  if (/턴\s*종료.*체력과\s*공격.*\+1\/\+1/.test(text)) {
+    return result([{ trigger: "TURN_END", action: "BUFF", target: self, values: { attack: 1, health: 1 } }]);
+  }
+  if (/등장.*카드를\s*1장\s*뽑/.test(text)) {
+    return result([{ trigger: "ENTER_FIELD", action: "DRAW", values: { amount: 1 } }]);
+  }
+  if (/등장.*상대\s*손패에서\s*무작위\s*카드\s*1장.*손으로\s*훔쳐/.test(text)) {
+    return result([{ trigger: "ENTER_FIELD", action: "STEAL", target: { zone: "HAND", owner: "ENEMY", selection: "RANDOM", count: 1, randomScope: "STANDARD" } }]);
+  }
+  if (/러쉬\s*[,，]\s*회피/.test(text)) {
+    return { ...result([]), keywords: ["RUSH", "DODGE"], summaries: ["기본 키워드 · RUSH", "기본 키워드 · DODGE"] };
+  }
+  if (/선택한\s*적\s*선수에게\s*1\s*피해.*체력이\s*정확히\s*1.*(?:공격.*체력|체력.*공격).*2/.test(text)) {
+    return result([{
+      trigger: "ENTER_FIELD",
+      action: "DAMAGE",
+      target: { zone: "BOARD", owner: "ENEMY", cardType: "WRESTLER", selection: "PLAYER_CHOICE", count: 1 },
+      values: { amount: 1, conditionalBuff: { healthEquals: 1, attack: 2, health: 2 } },
+    }]);
   }
   if (/모든\s*적\s*선수의\s*공격력을\s*2\s*감소/.test(text)) {
     return result([{ trigger: triggerFor(), action: "WEAKEN_TO_STUN_SILENCE", target: { zone: "BOARD", owner: "ENEMY", cardType: "WRESTLER", selection: "ALL", count: 20 }, values: { amount: 2 } }]);
@@ -1113,7 +1173,14 @@ export function isStructuredEffects(value: unknown): value is { effects: Structu
      }
        if (item.action === "GENERATE" && values?.destination !== undefined && values.destination !== "HAND" && values.destination !== "DECK" && values.destination !== "DECK_TOP") return false;
        if (item.action === "REDUCE_COST" && values?.minimum !== undefined && (typeof values.minimum !== "number" || values.minimum < 0 || values.minimum > 999)) return false;
-      if (item.action === "MODIFY_STAT" && values?.minimum !== undefined && (typeof values.minimum !== "number" || values.minimum < 0 || values.minimum > 999)) return false;
+       if (item.action === "MODIFY_STAT" && values?.minimum !== undefined && (typeof values.minimum !== "number" || values.minimum < 0 || values.minimum > 999)) return false;
+       if (item.action === "MOVE_TO_HAND" && values?.temporaryCost !== undefined && (
+         typeof values.temporaryCost !== "boolean" ||
+         typeof values.amount !== "number" ||
+         values.amount < 0 || values.amount > 999 ||
+         typeof values.minimum !== "number" ||
+         values.minimum < 0 || values.minimum > 999
+       )) return false;
       if ((item.action === "SUMMON" || item.action === "GENERATE") && values?.count !== undefined &&
         (!Number.isInteger(values.count) || values.count < 1 || values.count > 20)) return false;
      if (values?.aggregateStats !== undefined) {

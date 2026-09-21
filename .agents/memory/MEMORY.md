@@ -66,3 +66,4 @@
 - [Card tag play provenance](card-tag-play-provenance.md) — same-tag triggers must use CARD_PLAYED reason PLAY_FROM_HAND, not generated or entry events.
 - [AI effect provider boundary](ai-effect-provider-boundary.md) — keep provider keys server-side and reject model wrappers/unknown fields instead of auto-correcting AI drafts.
 - [Adjacent summon result semantics](adjacent-summon-result-semantics.md) — independent slot rolls may repeat definitions, and only successfully entered instances feed SAME_TARGET.
+- [Summon aura and target-stat copy](summon-aura-target-copy.md) — summon listeners target the entered instance, while graveyard-stat copies snapshot before creation.

@@ -46,7 +46,7 @@ export function getValidTargets(
     const player = state.players.find((candidate) => candidate.id === owner);
     if (!player) return [];
     const cards = cardsInZones(player, zones);
-    const cardIds = cards.filter((card) => {
+    const filteredCards = cards.filter((card) => {
       if (zones.length === 1 && zones[0] === 'CHARACTER' && card.cardType !== 'WRESTLER') return false;
       if (target.cardType && card.cardType !== target.cardType) return false;
       if (target.filter?.isGenerated !== undefined && card.isGenerated !== target.filter.isGenerated) return false;
@@ -66,7 +66,14 @@ export function getValidTargets(
         effect.action === 'REMOVE_FROM_GAME'
       )) return false;
       return true;
-    }).map((card) => card.instanceId);
+    });
+    const sourceBoardSlot = sourceCard.boardSlot;
+    const adjacentCards = target.selection === 'ADJACENT' && sourceBoardSlot !== null
+      ? filteredCards.filter((card) =>
+        card.boardSlot !== null && getAdjacentSlots(sourceBoardSlot).includes(card.boardSlot),
+      )
+      : filteredCards;
+    const cardIds = adjacentCards.map((card) => card.instanceId);
     return canTargetPlayer && !isChampionProtectedByToken(state, owner) ? [owner, ...cardIds] : cardIds;
   });
 }
@@ -519,6 +526,61 @@ function applyAdjacentRandomCardCreation(
   return setLastTargetIds(nextState, summonedIds);
 }
 
+function applyRandomTargetSummon(
+  state: GameState,
+  playerId: string,
+  sourceCard: CardInstance,
+  effect: Extract<CardEffect, { type: 'STRUCTURED' }>,
+): GameState {
+  const target = effect.target;
+  const definition = resolveCardDefinition(state, effect.values?.definition, effect.values?.definitionRef);
+  const targetOwner = target?.owner === 'SELF'
+    ? playerId
+    : state.players.find((player) => player.id !== playerId)?.id;
+  if (!target || !definition || !targetOwner || target.selection !== 'RANDOM') return state;
+  const owner = state.players.find((player) => player.id === targetOwner);
+  if (!owner) return state;
+  const candidates = cardsInZones(owner, target.zones ?? (target.zone ? [target.zone] : []))
+    .filter((card) => target.cardType === undefined || card.cardType === target.cardType)
+    .filter((card) => matchesCardTagFilter(card, target.filter))
+    .filter((card) => isEligibleForRandomPool(card, target.randomScope));
+  const selected = shuffle(candidates, randomForEffect(state, sourceCard, effect))
+    .slice(0, Math.max(0, target.count));
+  let nextState = setLastTargetIds(state, []);
+  const summonedIds: string[] = [];
+  for (const selectedCard of selected) {
+    const currentOwner = nextState.players.find((player) => player.id === playerId);
+    const slot = currentOwner?.board.findIndex((card) => card === null) ?? -1;
+    if (slot < 0) break;
+    const generated = generateCard(definition, {
+      instanceId: `${sourceCard.instanceId}:${effect.action}:${nextState.events.length}`,
+      playerId,
+      source: { type: 'CARD', cardInstanceId: sourceCard.instanceId },
+      reason: effect.action,
+      isGenerated: true,
+      statModifiers: {
+        ...(effect.values?.generatedModifiers?.cost !== undefined ? { cost: effect.values.generatedModifiers.cost } : {}),
+        ...(effect.values?.generatedModifiers?.attack !== undefined ? { attack: effect.values.generatedModifiers.attack } : {}),
+        ...(effect.values?.generatedModifiers?.health !== undefined ? { health: effect.values.generatedModifiers.health } : {}),
+        ...(effect.values?.generatedModifiers?.copyTargetStats
+          ? { copySourceStats: { attack: selectedCard.currentAttack, health: selectedCard.currentHealth } }
+          : {}),
+      },
+    });
+    nextState = enterField(
+      { ...nextState, events: [...nextState.events, generated.event] },
+      playerId,
+      generated.card,
+      slot as 0 | 1 | 2 | 3,
+      { type: 'CARD', cardInstanceId: sourceCard.instanceId },
+      undefined,
+      'SUMMON',
+    );
+    summonedIds.push(generated.card.instanceId);
+  }
+  return setLastTargetIds(nextState, summonedIds);
+}
+
 function beginResolution(state: GameState, frame: NonNullable<GameState['targetingState']>): GameState {
   return resolvePendingEffects({
     ...state,
@@ -726,6 +788,13 @@ function applyEffect(
     }
     if (effect.action === 'SUMMON' && effect.target?.selection === 'ADJACENT_EMPTY_SLOTS') {
       return applyAdjacentRandomCardCreation(state, playerId, sourceCard, effect);
+    }
+    if (
+      effect.action === 'SUMMON' &&
+      effect.target?.selection === 'RANDOM' &&
+      effect.values?.generatedModifiers?.copyTargetStats
+    ) {
+      return applyRandomTargetSummon(state, playerId, sourceCard, effect);
     }
     if ((effect.action === 'SUMMON' || effect.action === 'GENERATE') && effect.target?.selection === 'RANDOM') {
       return applyRandomCardCreation(state, playerId, sourceCard, effect);
@@ -1027,6 +1096,12 @@ function applyEffect(
         ? eligibleCandidates.filter((card) => chosenTargetInstanceIds?.includes(card.instanceId)).slice(0, Math.max(0, target.count))
         : target.selection === 'SAME_TARGET'
           ? eligibleCandidates.filter((card) => chosenTargetInstanceIds?.includes(card.instanceId)).slice(0, Math.max(0, target.count))
+        : target.selection === 'ADJACENT'
+          ? eligibleCandidates.filter((card) =>
+            sourceCard.boardSlot !== null &&
+            card.boardSlot !== null &&
+            getAdjacentSlots(sourceCard.boardSlot).includes(card.boardSlot),
+          ).slice(0, Math.max(0, target.count))
         : target.selection === 'TOP'
           ? eligibleCandidates.slice(0, Math.max(0, target.count))
         : target.selection === 'ALL'
@@ -1094,7 +1169,7 @@ function applyEffect(
           : candidatePlayer.graveyard.filter((card) => ids.has(card.instanceId));
       if (!moved.length) return state;
       const temporaryCost = effect.values?.temporaryCost
-        ? { currentCost: Math.max(1, (moved[0].baseCost ?? moved[0].currentCost) - (effect.values?.amount ?? 1)), temporaryCostUntilTurn: state.turn }
+        ? { currentCost: Math.max(effect.values.minimum ?? 0, (moved[0].baseCost ?? moved[0].currentCost) - (effect.values?.amount ?? 1)), temporaryCostUntilTurn: state.turn }
         : {};
       return {
         ...state,
@@ -1113,12 +1188,20 @@ function applyEffect(
       const sourcePlayer = state.players.find((player) => player.id === targetOwner);
       const destinationPlayer = state.players.find((player) => player.id === playerId);
       if (!sourcePlayer || !destinationPlayer) return state;
-      const stolen = sourcePlayer.deck.filter((card) => ids.has(card.instanceId));
+       const stolen = cardsInZones(sourcePlayer, zones).filter((card) => ids.has(card.instanceId));
       if (!stolen.length || destinationPlayer.hand.length >= 7) return state;
       return {
         ...state,
         players: state.players.map((player) => player.id === targetOwner
-          ? { ...player, deck: player.deck.filter((card) => !ids.has(card.instanceId)) }
+           ? {
+             ...player,
+             deck: zones.includes('DECK') ? player.deck.filter((card) => !ids.has(card.instanceId)) : player.deck,
+             hand: zones.includes('HAND') ? player.hand.filter((card) => !ids.has(card.instanceId)) : player.hand,
+             graveyard: zones.includes('GRAVEYARD') ? player.graveyard.filter((card) => !ids.has(card.instanceId)) : player.graveyard,
+             board: zones.includes('BOARD')
+               ? player.board.map((card) => card && ids.has(card.instanceId) ? null : card) as typeof player.board
+               : player.board,
+           }
           : player.id === playerId
             ? { ...player, hand: [...player.hand, ...stolen.map((card) => ({ ...card, boardSlot: null }))] }
             : player),
@@ -1616,7 +1699,7 @@ export function resolveTriggeredAbilities(
   state: GameState,
   playerId: string,
   card: CardInstance,
-  trigger: 'ENTER_FIELD' | 'LEAVE_FIELD' | 'POSITION' | 'ACTIVE' | 'CARD_DRAWN' | 'CARD_RETIRED' | 'FIRST_ATTACKED' | 'SELF_ATTACK' | 'OTHER_ALLY_ATTACK' | 'ATTACK_SURVIVED' | 'STAT_CHANGED' | 'TECHNIQUE_CAST' | 'EXACT_ZERO_DAMAGE' | 'TURN_START' | 'TURN_END',
+  trigger: 'ENTER_FIELD' | 'LEAVE_FIELD' | 'POSITION' | 'ACTIVE' | 'CARD_DRAWN' | 'CARD_RETIRED' | 'CARD_SUMMONED' | 'FIRST_ATTACKED' | 'SELF_ATTACK' | 'OTHER_ALLY_ATTACK' | 'ATTACK_SURVIVED' | 'STAT_CHANGED' | 'TECHNIQUE_CAST' | 'EXACT_ZERO_DAMAGE' | 'TURN_START' | 'TURN_END',
   options: {
     boardSlot?: 0 | 1 | 2 | 3;
     leaveReason?: LeaveReason;
@@ -1694,6 +1777,27 @@ export function resolveCardRetiredListeners(
     .reduce(
       (next, card) => resolveTriggeredAbilities(next, playerId, card, 'CARD_RETIRED', {
         chosenTargetInstanceIds: [retiredCard.instanceId],
+        sourceContext,
+      }),
+      state,
+    );
+}
+
+/** Dispatches the generic summon aura trigger to the summoning player's board. */
+export function resolveSummonListeners(
+  state: GameState,
+  playerId: string,
+  summonedCard: CardInstance,
+  sourceContext?: EventAttribution,
+): GameState {
+  const player = state.players.find((candidate) => candidate.id === playerId);
+  if (!player) return state;
+  return player.board
+    .filter((card): card is CardInstance => Boolean(card))
+    .filter((card) => card.instanceId !== summonedCard.instanceId)
+    .reduce(
+      (next, card) => resolveTriggeredAbilities(next, playerId, card, 'CARD_SUMMONED', {
+        chosenTargetInstanceIds: [summonedCard.instanceId],
         sourceContext,
       }),
       state,

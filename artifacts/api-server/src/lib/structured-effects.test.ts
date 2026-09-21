@@ -994,3 +994,64 @@ test("WRESTLER 17종 원문을 완전한 구조화 효과로 분석한다", () =
     assert.equal(isStructuredEffects({ effects: analysis.effects }), true, text);
   }
 });
+
+test("분석 실패였던 11개 WRESTLER 문구를 공용 Registry 효과로 분석한다", () => {
+  const cases = [
+    {
+      text: "이 카드의 공격력이 처음 증가할 때, 회피 1회를 얻습니다.",
+      trigger: "STAT_CHANGED",
+      action: "ADD_KEYWORD",
+    },
+    {
+      text: "이 카드의 공격력이 증가하면, 같은 수치만큼 체력의 수치를 증가시킵니다.",
+      trigger: "STAT_CHANGED",
+      action: "BUFF",
+    },
+    {
+      text: "출현:이 카드의 양 옆에 있는 카드들의 체력을 +1 증가시킵니다.",
+      trigger: "ENTER_FIELD",
+      action: "BUFF",
+    },
+    { text: "등장: 카드를 1장 뽑습니다.", trigger: "ENTER_FIELD", action: "DRAW" },
+    {
+      text: "등장:필드에 있는 아군 선수 하나를 선택하여 손으로 되돌립니다. 그 카드의 비용은 이번 턴에 1 감소합니다. (최소 1)",
+      trigger: "ENTER_FIELD",
+      action: "MOVE_TO_HAND",
+    },
+    {
+      text: "등장:묘지에 있는 무작위 카드 한장의 공격력과 체력이랑 똑같은 수치의 '좀비'를 하나 소환하고 그 소환한 '좀비'에게 도발을 부여한다.",
+      trigger: "ENTER_FIELD",
+      action: "SUMMON",
+    },
+    { text: "러쉬, 회피", trigger: undefined, action: undefined },
+    {
+      text: "이 카드가 필드에 있는 동안 '솔져' 태그가 있는 카드들이 소환될때 +1/+1을 받습니다",
+      trigger: "CARD_SUMMONED",
+      action: "BUFF",
+    },
+    { text: "턴 종료:체력과 공격이 +1/+1 씩 증가한다", trigger: "TURN_END", action: "BUFF" },
+    {
+      text: "등장: 상대 손패에서 무작위 카드 1장을 내 손으로 훔쳐옵니다.",
+      trigger: "ENTER_FIELD",
+      action: "STEAL",
+    },
+    {
+      text: "등장: 선택한 적 선수에게 1 피해를 줍니다. 그 효과로 대상의 체력이 정확히 1이 되면 자신에게 체력과 공격을 각각 2씩 부여합니다.",
+      trigger: "ENTER_FIELD",
+      action: "DAMAGE",
+    },
+  ];
+
+  for (const item of cases) {
+    const analysis = analyzeEffectText(item.text);
+    assert.equal(analysis.status, "success", item.text);
+    assert.equal(analysis.outcome, "supported", item.text);
+    if (item.text !== "러쉬, 회피") {
+      assert.equal(isStructuredEffects({ effects: analysis.effects }), true, item.text);
+    }
+    if (item.trigger) assert.equal(analysis.effects[0]?.trigger, item.trigger, item.text);
+    if (item.action) assert.equal(analysis.effects[0]?.action, item.action, item.text);
+  }
+  const keywords = analyzeEffectText("러쉬, 회피");
+  assert.deepEqual(keywords.keywords, ["RUSH", "DODGE"]);
+});

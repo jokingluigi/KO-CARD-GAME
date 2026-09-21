@@ -113,6 +113,131 @@ test('선택한 선수에게 피해를 준 뒤 체력이 정확히 1이면 자�
   assert.equal(result.targetingState, undefined);
 });
 
+test('인접한 아군 카드만 선택하는 범용 대상 선택이 양 옆의 점유 슬롯을 강화한다', () => {
+  const source = {
+    ...instance('cleanup-adjacent', [
+      structured('BUFF', {
+        zone: 'BOARD',
+        owner: 'SELF',
+        cardType: 'WRESTLER',
+        selection: 'ADJACENT',
+        count: 2,
+      }, { attack: 0, health: 1 }),
+    ]),
+  };
+  const left = { ...instance('left'), boardSlot: 0 as const, currentHealth: 2, maxHealth: 2 };
+  const right = { ...instance('right'), boardSlot: 2 as const, currentHealth: 3, maxHealth: 3 };
+  const state = createInitialGameState();
+  state.players[0].board = [left, null, right, null];
+
+  const result = enterField(state, 'player-1', source, 1);
+
+  assert.equal(result.players[0].board[0]?.currentHealth, 3);
+  assert.equal(result.players[0].board[2]?.currentHealth, 4);
+});
+
+test('무덤의 선택 대상 스탯을 복사하는 좀비 소환과 같은 대상 도발이 함께 동작한다', () => {
+  const zombie = { ...definition('zombie-definition', []), id: 'zombie-definition', attack: 1, health: 1 };
+  const source = instance('baldan', [
+    structured('SUMMON', {
+      zone: 'GRAVEYARD',
+      owner: 'SELF',
+      selection: 'RANDOM',
+      count: 1,
+      randomScope: 'STANDARD',
+    }, {
+      definitionRef: { id: zombie.id },
+      count: 1,
+      generatedModifiers: { copyTargetStats: true },
+    }),
+    structured('ADD_KEYWORD', {
+      zone: 'BOARD',
+      owner: 'SELF',
+      selection: 'SAME_TARGET',
+      count: 1,
+    }, { keyword: 'TAUNT' }),
+  ]);
+  const grave = { ...instance('grave-source'), currentAttack: 5, currentHealth: 4, maxHealth: 4, boardSlot: null };
+  const state = createInitialGameState();
+  state.cardPool = [zombie];
+  state.players[0].graveyard = [grave];
+
+  const result = enterField(state, 'player-1', source, 0);
+  const summoned = result.players[0].board.find((card) => card?.definitionId === zombie.id);
+
+  assert.equal(summoned?.currentAttack, 5);
+  assert.equal(summoned?.currentHealth, 4);
+  assert.deepEqual(summoned?.keywords, ['TAUNT']);
+});
+
+test('소환 오라는 태그가 맞는 아군 소환 카드에만 같은 대상 강화 효과를 적용한다', () => {
+  const aura = {
+    ...instance('jaeger', []),
+    boardSlot: 0 as const,
+    abilities: [{
+      trigger: 'CARD_SUMMONED' as const,
+      effects: [structured('BUFF', {
+        zone: 'BOARD',
+        owner: 'SELF',
+        cardType: 'WRESTLER',
+        filter: { tagsAny: ['솔져'] },
+        selection: 'SAME_TARGET',
+        count: 1,
+      }, { attack: 1, health: 1 })],
+    }],
+  };
+  const soldier = { ...instance('soldier'), tags: ['솔져'], currentAttack: 2, currentHealth: 2, maxHealth: 2 };
+  const state = createInitialGameState();
+  state.players[0].board[0] = aura;
+
+  const result = enterField(state, 'player-1', soldier, 1, undefined, undefined, 'SUMMON');
+
+  assert.equal(result.players[0].board[1]?.currentAttack, 3);
+  assert.equal(result.players[0].board[1]?.currentHealth, 3);
+});
+
+test('STEAL은 선언된 상대 손패 영역에서 무작위 카드를 내 손으로 이동한다', () => {
+  const source = instance('kamisator', [
+    structured('STEAL', {
+      zone: 'HAND',
+      owner: 'ENEMY',
+      selection: 'RANDOM',
+      count: 1,
+      randomScope: 'STANDARD',
+    }),
+  ]);
+  const enemyCard = { ...instance('enemy-hand'), playerId: 'player-2' };
+  const state = createInitialGameState();
+  state.players[1].hand = [enemyCard];
+
+  const result = enterField(state, 'player-1', source, 0);
+
+  assert.equal(result.players[1].hand.length, 0);
+  assert.equal(result.players[0].hand.at(-1)?.instanceId, enemyCard.instanceId);
+});
+
+test('MOVE_TO_HAND의 임시 비용 감소는 최소 비용과 턴 만료를 보존한다', () => {
+  const source = instance('mad-pumpkin', [
+    structured('MOVE_TO_HAND', {
+      zone: 'BOARD',
+      owner: 'SELF',
+      cardType: 'WRESTLER',
+      selection: 'PLAYER_CHOICE',
+      count: 1,
+    }, { amount: 1, minimum: 1, temporaryCost: true }),
+  ]);
+  const ally = { ...instance('ally-to-hand'), boardSlot: 1 as const, currentCost: 1, baseCost: 1 };
+  const state = createInitialGameState();
+  state.players[0].board[1] = ally;
+
+  const pending = enterField(state, 'player-1', source, 0);
+  const result = selectEffectTarget(pending, ally.instanceId);
+
+  assert.equal(result.players[0].board[1], null);
+  assert.equal(result.players[0].hand.at(-1)?.currentCost, 1);
+  assert.equal(result.players[0].hand.at(-1)?.temporaryCostUntilTurn, state.turn);
+});
+
 test('콤보는 마지막으로 공격한 아군의 공격력을 자기 공격력에 더하고 턴 종료에 0으로 설정한다', () => {
   const selfTarget = { zone: 'BOARD' as const, owner: 'SELF' as const, selection: 'SELF' as const, count: 1 };
   const attacker = { ...instance('combo-attacker'), boardSlot: 0 as const, enteredThisTurn: false, currentAttack: 4 };
