@@ -367,6 +367,19 @@ test('QA2 token generation paths preserve isGenerated, definition and no hand-en
 test('QA2 linked Champion Token deploy is distinct from a normal summon', () => {
   const token = definitions.find((item) => item.isChampionToken);
   assert.ok(token, 'published Champion Token missing');
+  const normalSummon = enterField(
+    stateWithPool(),
+    'player-1',
+    generateCardInstance(token, { instanceId: 'qa2-normal-champion-token' }),
+    0,
+  );
+  const normallySummonedToken = normalSummon.players[0].board.find(
+    (item) => item?.instanceId === 'qa2-normal-champion-token',
+  );
+  assert.ok(normallySummonedToken);
+  assert.equal(normallySummonedToken.isDirectDeployedChampion, false);
+  assert.equal(normallySummonedToken.isSilenceImmune, false);
+
   const state = stateWithPool();
   const champion = state.players[0].champion;
   assert.ok(champion);
@@ -387,7 +400,8 @@ test('QA2 linked Champion Token deploy is distinct from a normal summon', () => 
   assert.ok(deployedToken);
   assert.equal(deployedToken.isGenerated, true);
   assert.equal(deployedToken.isSilenceImmune, true);
-  assert.equal(deployedToken.currentHealth, token.health + 13);
+  assert.equal(deployedToken.currentHealth, token.health);
+  assert.equal(deployedToken.maxHealth, token.health);
   assert.equal((eventFor(viaChampionDeploy, 'ENTER_FIELD', deployedToken.instanceId).entryCause), 'CHAMPION_DEPLOY');
 });
 
