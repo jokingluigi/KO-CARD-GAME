@@ -314,7 +314,9 @@ function buildSystemPrompt(context: EffectAiContext, catalog: readonly CardRefer
     "게임 코드, SQL, eval, 임의 action, 임의 필드를 만들지 마라.",
     "반드시 JSON 하나만 반환하고 Markdown 설명을 붙이지 마라.",
     '반환 형식은 {"status":"READY","effects":[...],"keywords":[...]} 또는 {"status":"NEEDS_CLARIFICATION","questions":["..."]} 중 하나다.',
-    "READY일 때 effects는 기존 STRUCTURED Effect DSL의 효과 객체만 사용한다. effectConfig에 넣을 때는 {effects}로 감싼다.",
+    "READY일 때 effects 배열의 각 원소는 trigger/action/target/conditions/values를 직접 가진 단일 Effect 객체다.",
+    "effects 배열의 원소 안에 effectConfig, structuredEffect, effect, config 같은 래퍼를 절대 만들지 마라. effectConfig에 저장할 때만 클라이언트가 최종적으로 {effects}로 감싼다.",
+    '정상 예시는 {"status":"READY","effects":[{"trigger":"ENTER_FIELD","action":"BUFF","target":{"zone":"BOARD","owner":"SELF","selection":"SELF","count":1},"values":{"attack":1,"health":1}}],"keywords":[]}다.',
     "지원 목록과 requiredConfig는 아래 Registry에서만 가져온다.",
     `context=${JSON.stringify(context)}`,
     `registry=${JSON.stringify({
