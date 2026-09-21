@@ -6,6 +6,24 @@ import { logger } from "./lib/logger";
 
 const app: Express = express();
 
+const configuredCorsOrigins = new Set(
+  (process.env["CORS_ORIGINS"] ?? "")
+    .split(",")
+    .map((origin) => origin.trim())
+    .filter(Boolean),
+);
+configuredCorsOrigins.add("https://ko-card-game-vr69.onrender.com");
+
+function isAllowedCorsOrigin(origin: string): boolean {
+  if (configuredCorsOrigins.has(origin)) return true;
+  if (process.env["NODE_ENV"] === "production") return false;
+  return (
+    /^https?:\/\/localhost(?::\d+)?$/.test(origin) ||
+    /^https?:\/\/127\.0\.0\.1(?::\d+)?$/.test(origin) ||
+    /^https:\/\/[^/]+\.replit\.dev$/.test(origin)
+  );
+}
+
 app.use(
   pinoHttp({
     logger,
@@ -25,7 +43,18 @@ app.use(
     },
   }),
 );
-app.use(cors());
+app.use(
+  cors({
+    credentials: true,
+    origin: (origin, callback) => {
+      if (!origin || isAllowedCorsOrigin(origin)) {
+        callback(null, origin ?? true);
+        return;
+      }
+      callback(null, false);
+    },
+  }),
+);
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 

@@ -29,6 +29,7 @@ import {
   leaveQuickQueue,
   setPrivateRoomReady,
 } from "./lobby";
+import { getUserFromWebSocketAuthTicket } from "./websocket-auth";
 import type { OnlineActionPayload, OnlineClientMessage, OnlineServerMessage } from "./protocol";
 
 const ONLINE_WS_PATH = "/api/online-matches/ws";
@@ -126,6 +127,13 @@ export function attachOnlineMatchWebSocket(server: HttpServer): void {
 }
 
 async function authenticateUpgrade(request: IncomingMessage): Promise<PublicUser | null> {
+  const url = new URL(request.url ?? "/", `http://${request.headers.host ?? "localhost"}`);
+  const ticket = url.searchParams.get("ticket");
+  if (ticket) {
+    const user = await getUserFromWebSocketAuthTicket(ticket);
+    if (user) return user;
+  }
+
   const token = getCookieFromHeader(request.headers.cookie, AUTH_SESSION_COOKIE);
   return token ? getAuthenticatedUserFromSessionToken(token) : null;
 }

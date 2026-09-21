@@ -17,6 +17,10 @@ import {
   type OnlineMatchConnection,
 } from "../online/service";
 import type { OnlineActionPayload } from "../online/protocol";
+import {
+  createWebSocketAuthTicket,
+  WEBSOCKET_AUTH_TICKET_TTL_SECONDS,
+} from "../online/websocket-ticket";
 
 const router = Router();
 
@@ -28,6 +32,15 @@ async function requireUser(request: Request, response: Response) {
   }
   return user;
 }
+
+router.post("/ws-ticket", async (request, response) => {
+  const user = await requireUser(request, response);
+  if (!user) return;
+  response.json({
+    ticket: createWebSocketAuthTicket(user.id),
+    expiresIn: WEBSOCKET_AUTH_TICKET_TTL_SECONDS,
+  });
+});
 
 router.post("/", async (request, response) => {
   const user = await requireUser(request, response);

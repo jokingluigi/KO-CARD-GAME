@@ -149,15 +149,39 @@ export type OnlineLobbyConnectionListener = (
 ) => void;
 
 const WS_PATH = "/api/online-matches/ws";
+const WS_TICKET_PATH = "/api/online-matches/ws-ticket";
+const PRODUCTION_API_ORIGIN = "https://ko-card-game.onrender.com";
 
-function websocketUrl(): string {
+function apiUrl(path: string): string {
+  if (import.meta.env.PROD) return `${PRODUCTION_API_ORIGIN}${path}`;
+  const base = import.meta.env.BASE_URL.replace(/\/$/, "");
+  return `${base}${path}`;
+}
+
+async function requestWebSocketTicket(): Promise<string> {
+  const response = await fetch(apiUrl(WS_TICKET_PATH), {
+    method: "POST",
+    credentials: "include",
+  });
+  if (!response.ok) {
+    throw new Error("온라인 서버 인증 ticket을 발급받지 못했습니다.");
+  }
+  const body = (await response.json()) as { ticket?: unknown };
+  if (typeof body.ticket !== "string" || body.ticket.length === 0) {
+    throw new Error("온라인 서버 인증 ticket 응답이 올바르지 않습니다.");
+  }
+  return body.ticket;
+}
+
+function websocketUrl(ticket?: string): string {
+  const query = ticket ? `?ticket=${encodeURIComponent(ticket)}` : "";
   if (import.meta.env.PROD) {
-    return `wss://ko-card-game.onrender.com${WS_PATH}`;
+    return `wss://ko-card-game.onrender.com${WS_PATH}${query}`;
   }
 
   const base = import.meta.env.BASE_URL.replace(/\/$/, "");
   const protocol = window.location.protocol === "https:" ? "wss:" : "ws:";
-  return `${protocol}//${window.location.host}${base}${WS_PATH}`;
+  return `${protocol}//${window.location.host}${base}${WS_PATH}${query}`;
 }
 
 /**
@@ -178,6 +202,7 @@ class OnlineLobbyClient {
   private reconnectTimer: ReturnType<typeof setTimeout> | null = null;
   private reconnectAttempt = 0;
   private shouldReconnect = true;
+  private connectingPromise: Promise<void> | null = null;
 
   get state() {
     return this.connectionState;
@@ -211,7 +236,27 @@ class OnlineLobbyClient {
       return;
     }
     this.setConnectionState("connecting");
-    const socket = new WebSocket(websocketUrl());
+    if (!this.connectingPromise) {
+      this.connectingPromise = this.openSocket().finally(() => {
+        this.connectingPromise = null;
+      });
+    }
+  }
+
+  private async openSocket(): Promise<void> {
+    let ticket: string | undefined;
+    try {
+      if (import.meta.env.PROD) ticket = await requestWebSocketTicket();
+    } catch {
+      if (this.shouldReconnect) {
+        this.setConnectionState("error");
+        this.scheduleReconnect();
+      }
+      return;
+    }
+    if (!this.shouldReconnect) return;
+
+    const socket = new WebSocket(websocketUrl(ticket));
     this.socket = socket;
     socket.addEventListener("open", () => {
       this.reconnectAttempt = 0;
