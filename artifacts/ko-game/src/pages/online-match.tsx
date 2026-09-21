@@ -421,13 +421,19 @@ function OnlineMatchPage() {
       : `${Date.now()}-${Math.random()}`;
     pendingActionIdRef.current = requestId;
     setPendingAction(true);
-    client.send({
+    const sent = client.send({
       type: "MATCH_ACTION",
       matchId,
       requestId,
       expectedVersion: version,
       action,
     });
+    if (!sent) {
+      pendingActionIdRef.current = null;
+      setPendingAction(false);
+      setPlayError("온라인 서버에 연결할 수 없습니다.");
+      return false;
+    }
     setSelectedCardId(null);
     setSelectedAttackerId(null);
     setPlayError(null);

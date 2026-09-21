@@ -71,18 +71,33 @@ function FriendlyMatchPage() {
   const roomRef = useRef<LobbyRoomState | null>(null);
   const roomExitRef = useRef(false);
   const pendingRoomActionRef = useRef(false);
+  const selectedDeckIdRef = useRef<string | null>(null);
 
   const selectedDeck = useMemo(() => decks?.find((deck) => deck.id === selectedDeckId), [decks, selectedDeckId]);
   useEffect(() => {
     if (!selectedDeckId && decks?.some((deck) => deck.isValid)) setSelectedDeckId(decks.find((deck) => deck.isValid)!.id);
   }, [decks, selectedDeckId]);
   useEffect(() => {
+    selectedDeckIdRef.current = selectedDeckId;
+  }, [selectedDeckId]);
+
+  useEffect(() => {
     roomRef.current = room;
   }, [room]);
 
   useEffect(() => {
     client.connect();
-    const unsubscribeConnection = client.onConnectionState(setConnection);
+    const unsubscribeConnection = client.onConnectionState((next) => {
+      setConnection(next);
+      const activeRoom = roomRef.current;
+      if (next === "open" && activeRoom && !roomExitRef.current && !pendingRoomActionRef.current) {
+        const deckId = selectedDeckIdRef.current;
+        if (!deckId) return;
+        pendingRoomActionRef.current = client.send(activeRoom.youAreHost
+          ? { type: "CREATE_PRIVATE_ROOM", deckId }
+          : { type: "JOIN_PRIVATE_ROOM", roomCode: activeRoom.roomCode, deckId });
+      }
+    });
     const unsubscribeMessage = client.onMessage((message) => {
       if (message.type === "PRIVATE_ROOM_CREATED" || message.type === "PRIVATE_ROOM_JOINED" || message.type === "PRIVATE_ROOM_UPDATED") {
         roomExitRef.current = false;

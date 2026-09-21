@@ -32,6 +32,7 @@ function QuickMatchPage() {
   const [elapsed, setElapsed] = useState(0);
   const matchFoundRef = useRef(false);
   const joinRequestedRef = useRef(false);
+  const selectedDeckIdRef = useRef<string | null>(null);
   const searchStartedAtRef = useRef<number | null>(null);
 
   const selectedDeck = useMemo(() => decks?.find((deck) => deck.id === selectedDeckId), [decks, selectedDeckId]);
@@ -42,8 +43,17 @@ function QuickMatchPage() {
   }, [decks, selectedDeckId]);
 
   useEffect(() => {
+    selectedDeckIdRef.current = selectedDeckId;
+  }, [selectedDeckId]);
+
+  useEffect(() => {
     client.connect();
-    const unsubscribeConnection = client.onConnectionState(setConnection);
+    const unsubscribeConnection = client.onConnectionState((next) => {
+      setConnection(next);
+      if (next === "open" && joinRequestedRef.current && selectedDeckIdRef.current) {
+        client.send({ type: "JOIN_QUICK_QUEUE", deckId: selectedDeckIdRef.current });
+      }
+    });
     const unsubscribeMessage = client.onMessage((message) => {
       if (message.type === "QUICK_QUEUE_JOINED") {
         searchStartedAtRef.current = Date.now();

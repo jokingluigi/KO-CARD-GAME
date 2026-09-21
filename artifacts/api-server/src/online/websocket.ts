@@ -29,7 +29,7 @@ import {
   leaveQuickQueue,
   setPrivateRoomReady,
 } from "./lobby";
-import type { OnlineClientMessage, OnlineServerMessage } from "./protocol";
+import type { OnlineActionPayload, OnlineClientMessage, OnlineServerMessage } from "./protocol";
 
 const ONLINE_WS_PATH = "/api/online-matches/ws";
 
@@ -42,8 +42,68 @@ function rejectUpgrade(socket: Duplex, status = "401 Unauthorized"): void {
   socket.destroy();
 }
 
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return Boolean(value && typeof value === "object" && !Array.isArray(value));
+}
+
+function isNonEmptyString(value: unknown, maxLength = 256): value is string {
+  return typeof value === "string" && value.trim().length > 0 && value.length <= maxLength;
+}
+
+function isOnlineActionPayload(value: unknown): value is OnlineActionPayload {
+  if (!isRecord(value) || typeof value.type !== "string") return false;
+  switch (value.type) {
+    case "PLAY_WRESTLER":
+      return isNonEmptyString(value.cardInstanceId) &&
+        (value.boardSlot === 0 || value.boardSlot === 1 || value.boardSlot === 2 || value.boardSlot === 3);
+    case "PLAY_TECHNIQUE":
+    case "USE_ACTIVE":
+      return isNonEmptyString(value.cardInstanceId);
+    case "USE_CHAMPION_ABILITY":
+    case "END_TURN":
+    case "SURRENDER":
+      return true;
+    case "SELECT_EFFECT_TARGET":
+      return isNonEmptyString(value.targetId);
+    case "ATTACK": {
+      if (!isNonEmptyString(value.attackerInstanceId) || !isRecord(value.target)) return false;
+      if (value.target.type === "PLAYER") return isNonEmptyString(value.target.playerId);
+      return value.target.type === "WRESTLER" &&
+        isNonEmptyString(value.target.playerId) &&
+        isNonEmptyString(value.target.cardInstanceId);
+    }
+    default:
+      return false;
+  }
+}
+
 function isClientMessage(value: unknown): value is OnlineClientMessage {
-  return Boolean(value && typeof value === "object" && typeof (value as { type?: unknown }).type === "string");
+  if (!isRecord(value) || typeof value.type !== "string") return false;
+  switch (value.type) {
+    case "JOIN_QUICK_QUEUE":
+    case "CREATE_PRIVATE_ROOM":
+      return isNonEmptyString(value.deckId);
+    case "LEAVE_QUICK_QUEUE":
+    case "LEAVE_PRIVATE_ROOM":
+    case "CLOSE_PRIVATE_ROOM":
+      return true;
+    case "JOIN_PRIVATE_ROOM":
+      return isNonEmptyString(value.roomCode) && isNonEmptyString(value.deckId);
+    case "SET_ROOM_READY":
+      return typeof value.ready === "boolean";
+    case "SUBSCRIBE":
+    case "UNSUBSCRIBE":
+    case "RESYNC":
+      return isNonEmptyString(value.matchId);
+    case "MATCH_ACTION":
+      return isNonEmptyString(value.matchId) &&
+        isNonEmptyString(value.requestId, 128) &&
+        Number.isInteger(value.expectedVersion) &&
+        (value.expectedVersion as number) >= 0 &&
+        isOnlineActionPayload(value.action);
+    default:
+      return false;
+  }
 }
 
 export function attachOnlineMatchWebSocket(server: HttpServer): void {

@@ -159,8 +159,10 @@ class OnlineLobbyClient {
   onMessage(listener: OnlineLobbyListener) {
     this.listeners.add(listener);
     if (this.lastHandoff) {
+      const handoff = this.lastHandoff;
+      this.lastHandoff = null;
       queueMicrotask(() => {
-        if (this.listeners.has(listener) && this.lastHandoff) listener(this.lastHandoff);
+        if (this.listeners.has(listener)) listener(handoff);
       });
     }
     return () => this.listeners.delete(listener);

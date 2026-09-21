@@ -11,6 +11,7 @@ import {
   joinWaitingMatch,
   matchSeat,
   messageForViewer,
+  endedMessageForViewer,
   rejectionMessage,
   snapshotMessage,
   type OnlineMatchConnection,
@@ -94,7 +95,7 @@ router.post("/:matchId/action", async (request, response) => {
   const requestId = typeof request.body?.requestId === "string" ? request.body.requestId : "";
   const expectedVersion = request.body?.expectedVersion;
   const action = request.body?.action as OnlineActionPayload;
-  if (!requestId || !Number.isInteger(expectedVersion)) {
+   if (!requestId || requestId.length > 128 || !Number.isInteger(expectedVersion) || expectedVersion < 0) {
     response.status(400).json({ message: "requestId와 expectedVersion이 필요합니다." });
     return;
   }
@@ -106,7 +107,11 @@ router.post("/:matchId/action", async (request, response) => {
       expectedVersion,
       action,
     );
-    const message = result.ok ? messageForViewer(result, user.id) : rejectionMessage(result);
+     const message = result.ok
+       ? result.runtime.state.status === "FINISHED"
+         ? endedMessageForViewer(result, user.id)
+         : messageForViewer(result, user.id)
+       : rejectionMessage(result);
     if (result.ok) broadcastExecution(result);
     response.status(result.ok ? 200 : 409).json(message);
   } catch (error) {

@@ -468,6 +468,8 @@ export async function createWaitingMatch(
   deckId: string,
   testAccount = false,
 ): Promise<OnlineMatchRecord> {
+  const existing = await getOpenMatchForUser(userId);
+  if (existing) throw new Error("이미 참가 중인 온라인 매치가 있습니다.");
   const deck = await loadUserDeck(userId, deckId);
   if (!deck) throw new Error("선택한 덱을 찾을 수 없습니다.");
   const resolved = await resolveDeck(deck, userId, testAccount);
@@ -535,6 +537,24 @@ export async function validateOnlineDeck(
 export async function userHasActiveMatch(userId: string): Promise<boolean> {
   const record = await getActiveMatchForUser(userId);
   return Boolean(record);
+}
+
+async function getOpenMatchForUser(userId: string): Promise<OnlineMatchRecord | null> {
+  const [record] = await db.select()
+    .from(onlineMatchesTable)
+    .where(and(
+      or(
+        eq(onlineMatchesTable.status, "WAITING"),
+        eq(onlineMatchesTable.status, "ACTIVE"),
+      ),
+      or(
+        eq(onlineMatchesTable.player1UserId, userId),
+        eq(onlineMatchesTable.player2UserId, userId),
+      ),
+    ))
+    .orderBy(onlineMatchesTable.createdAt)
+    .limit(1);
+  return record ?? null;
 }
 
 export async function getActiveMatchForUser(userId: string): Promise<OnlineMatchRecord | null> {
@@ -662,6 +682,8 @@ export async function joinWaitingMatch(
   const record = await getOnlineMatchRecord(matchId);
   if (!record || record.status !== "WAITING") throw new Error("참가할 수 없는 매치입니다.");
   if (record.player1UserId === userId) throw new Error("같은 사용자는 매치에 두 번 참가할 수 없습니다.");
+  const existing = await getOpenMatchForUser(userId);
+  if (existing && existing.id !== matchId) throw new Error("이미 참가 중인 온라인 매치가 있습니다.");
   return startOnlineMatch(
     record.player1UserId,
     record.player1DeckId,
@@ -705,6 +727,15 @@ export async function applyMatchAction(
   }
 
   return withRuntimeLock(runtime, async () => {
+    if (!connection && runtime.primaryConnections.has(userId)) {
+      return {
+        ok: false,
+        runtime,
+        requestId,
+        code: "NOT_PRIMARY_CONNECTION",
+        message: "현재 연결된 온라인 세션에서 행동해야 합니다.",
+      };
+    }
     if (connection && runtime.primaryConnections.get(userId) !== connection) {
       return {
         ok: false,
@@ -871,14 +902,19 @@ export function endedMessageForViewer(
 }
 
 export function broadcastExecution(execution: Extract<ActionExecution, { ok: true }>): void {
-  for (const recipient of execution.runtime.connections) {
-    recipient.send(messageForViewer(execution, recipient.userId));
-  }
+  const cachedUserId = execution.runtime.requestIds.get(execution.requestId)?.userId;
+  const recipients = execution.duplicate && cachedUserId
+    ? [...execution.runtime.connections].filter((connection) => connection.userId === cachedUserId)
+    : [...execution.runtime.connections];
   if (execution.runtime.state.status === "FINISHED") {
-    for (const recipient of execution.runtime.connections) {
+    for (const recipient of recipients) {
       recipient.send(endedMessageForViewer(execution, recipient.userId));
     }
     scheduleRuntimeCleanup(execution.runtime);
+    return;
+  }
+  for (const recipient of recipients) {
+    recipient.send(messageForViewer(execution, recipient.userId));
   }
 }
 
