@@ -50,7 +50,10 @@ export type OnlineMatchMessage =
       serverTime: number;
       turnStartedAt: number | null;
       turnDeadlineAt: number | null;
-      connectionStates: Record<"PLAYER_ONE" | "PLAYER_TWO", "CONNECTED" | "DISCONNECTED_GRACE" | "FORFEITED">;
+      connectionStates: Record<
+        "PLAYER_ONE" | "PLAYER_TWO",
+        "CONNECTED" | "DISCONNECTED_GRACE" | "FORFEITED"
+      >;
     }
   | {
       type: "ACTION_ACCEPTED";
@@ -62,7 +65,10 @@ export type OnlineMatchMessage =
       serverTime: number;
       turnStartedAt: number | null;
       turnDeadlineAt: number | null;
-      connectionStates: Record<"PLAYER_ONE" | "PLAYER_TWO", "CONNECTED" | "DISCONNECTED_GRACE" | "FORFEITED">;
+      connectionStates: Record<
+        "PLAYER_ONE" | "PLAYER_TWO",
+        "CONNECTED" | "DISCONNECTED_GRACE" | "FORFEITED"
+      >;
     }
   | {
       type: "ACTION_REJECTED";
@@ -81,7 +87,10 @@ export type OnlineMatchMessage =
       serverTime: number;
       turnStartedAt: number | null;
       turnDeadlineAt: number | null;
-      connectionStates: Record<"PLAYER_ONE" | "PLAYER_TWO", "CONNECTED" | "DISCONNECTED_GRACE" | "FORFEITED">;
+      connectionStates: Record<
+        "PLAYER_ONE" | "PLAYER_TWO",
+        "CONNECTED" | "DISCONNECTED_GRACE" | "FORFEITED"
+      >;
     }
   | {
       type: "RESYNC_REQUIRED";
@@ -92,7 +101,10 @@ export type OnlineMatchMessage =
       serverTime: number;
       turnStartedAt: number | null;
       turnDeadlineAt: number | null;
-      connectionStates: Record<"PLAYER_ONE" | "PLAYER_TWO", "CONNECTED" | "DISCONNECTED_GRACE" | "FORFEITED">;
+      connectionStates: Record<
+        "PLAYER_ONE" | "PLAYER_TWO",
+        "CONNECTED" | "DISCONNECTED_GRACE" | "FORFEITED"
+      >;
     }
   | {
       type: "MATCH_CONNECTION_STATUS";
@@ -125,13 +137,24 @@ export type OnlineLobbyClientMessage =
       action: OnlineActionPayload;
     };
 
-export type OnlineLobbyConnectionState = "idle" | "connecting" | "open" | "closed" | "error";
+export type OnlineLobbyConnectionState =
+  | "idle"
+  | "connecting"
+  | "open"
+  | "closed"
+  | "error";
 export type OnlineLobbyListener = (message: OnlineServerMessage) => void;
-export type OnlineLobbyConnectionListener = (state: OnlineLobbyConnectionState) => void;
+export type OnlineLobbyConnectionListener = (
+  state: OnlineLobbyConnectionState,
+) => void;
 
 const WS_PATH = "/api/online-matches/ws";
 
 function websocketUrl(): string {
+  if (import.meta.env.PROD) {
+    return `wss://ko-card-game.onrender.com${WS_PATH}`;
+  }
+
   const base = import.meta.env.BASE_URL.replace(/\/$/, "");
   const protocol = window.location.protocol === "https:" ? "wss:" : "ws:";
   return `${protocol}//${window.location.host}${base}${WS_PATH}`;
@@ -146,8 +169,12 @@ class OnlineLobbyClient {
   private socket: WebSocket | null = null;
   private connectionState: OnlineLobbyConnectionState = "idle";
   private readonly listeners = new Set<OnlineLobbyListener>();
-  private readonly connectionListeners = new Set<OnlineLobbyConnectionListener>();
-  private lastHandoff: Extract<OnlineLobbyMessage, { type: "MATCH_FOUND" | "MATCH_STARTING" }> | null = null;
+  private readonly connectionListeners =
+    new Set<OnlineLobbyConnectionListener>();
+  private lastHandoff: Extract<
+    OnlineLobbyMessage,
+    { type: "MATCH_FOUND" | "MATCH_STARTING" }
+  > | null = null;
   private reconnectTimer: ReturnType<typeof setTimeout> | null = null;
   private reconnectAttempt = 0;
   private shouldReconnect = true;
@@ -176,7 +203,11 @@ class OnlineLobbyClient {
 
   connect() {
     this.shouldReconnect = true;
-    if (this.socket && (this.socket.readyState === WebSocket.OPEN || this.socket.readyState === WebSocket.CONNECTING)) {
+    if (
+      this.socket &&
+      (this.socket.readyState === WebSocket.OPEN ||
+        this.socket.readyState === WebSocket.CONNECTING)
+    ) {
       return;
     }
     this.setConnectionState("connecting");
@@ -190,14 +221,21 @@ class OnlineLobbyClient {
       try {
         const message = JSON.parse(String(event.data)) as OnlineServerMessage;
         if (message && typeof message.type === "string") {
-          if (message.type === "MATCH_FOUND" || message.type === "MATCH_STARTING") {
+          if (
+            message.type === "MATCH_FOUND" ||
+            message.type === "MATCH_STARTING"
+          ) {
             this.lastHandoff = message;
           }
           this.listeners.forEach((listener) => listener(message));
         }
       } catch {
         this.listeners.forEach((listener) =>
-          listener({ type: "LOBBY_ERROR", code: "INVALID_SERVER_MESSAGE", message: "온라인 서버 응답을 해석하지 못했습니다." }),
+          listener({
+            type: "LOBBY_ERROR",
+            code: "INVALID_SERVER_MESSAGE",
+            message: "온라인 서버 응답을 해석하지 못했습니다.",
+          }),
         );
       }
     });
@@ -223,7 +261,11 @@ class OnlineLobbyClient {
   send(message: OnlineLobbyClientMessage) {
     if (this.socket?.readyState !== WebSocket.OPEN) {
       this.listeners.forEach((listener) =>
-        listener({ type: "LOBBY_ERROR", code: "OFFLINE", message: "온라인 서버에 연결할 수 없습니다." }),
+        listener({
+          type: "LOBBY_ERROR",
+          code: "OFFLINE",
+          message: "온라인 서버에 연결할 수 없습니다.",
+        }),
       );
       return false;
     }
@@ -238,7 +280,7 @@ class OnlineLobbyClient {
 
   private scheduleReconnect() {
     if (!this.shouldReconnect || this.reconnectTimer) return;
-    const delay = Math.min(500 * (2 ** this.reconnectAttempt), 8000);
+    const delay = Math.min(500 * 2 ** this.reconnectAttempt, 8000);
     this.reconnectAttempt += 1;
     this.reconnectTimer = setTimeout(() => {
       this.reconnectTimer = null;
