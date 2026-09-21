@@ -31,7 +31,6 @@ function sanitizeEvent(event: GameEvent, viewerId: string): unknown {
  */
 export function sanitizeGameStateForViewer(state: GameState, viewerId: string): unknown {
   const {
-    cardPool: _cardPool,
     randomSeed: _randomSeed,
     ...publicState
   } = state;
