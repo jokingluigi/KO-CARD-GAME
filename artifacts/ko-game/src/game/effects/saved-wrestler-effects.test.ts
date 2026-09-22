@@ -104,6 +104,68 @@ test('저장된 17개 WRESTLER 정의가 runtime abilities로 모두 변환된�
   }
 });
 
+test('authoritative 뒷정리맨 정의는 자신이 아닌 다음 아군 선수에게 체력 +2를 한 번 적용한다', () => {
+  const cleanupDefinition = cardRecordToDefinition({
+    id: '855e87f9-1769-4036-ad49-491ab4b2058a',
+    name: '뒷정리맨',
+    cardType: 'WRESTLER',
+    cost: 2,
+    attack: 1,
+    health: 2,
+    text: '출현:다음에 출현하는 카드에게 체력을 +2 부여합니다.',
+    keywords: ['TAUNT'],
+    isToken: false,
+    isChampionToken: false,
+    effectId: 'STRUCTURED_EFFECTS_V1',
+    effectConfig: {
+      effects: [{
+        trigger: 'ENTER_FIELD',
+        action: 'QUEUE_EFFECT',
+        values: {
+          queuedTrigger: 'NEXT_ALLY_WRESTLER_PLAYED',
+          queuedEffect: {
+            action: 'BUFF',
+            target: { zone: 'BOARD', owner: 'SELF', selection: 'SELF', count: 1 },
+            values: { attack: 0, health: 2 },
+          },
+        },
+      }],
+    },
+    status: 'PUBLISHED',
+    version: 9,
+    createdAt: '',
+    updatedAt: '',
+    imageAssetId: null,
+    imageUrl: null,
+  });
+  const nextDefinition = definition('authoritative-next', { effects: [] }, { attack: 3, health: 1 });
+  const state = stateWithPool([cleanupDefinition, nextDefinition]);
+  const cleanup = card(cleanupDefinition, 'authoritative-cleanup');
+  const next = card(nextDefinition, 'authoritative-next');
+  state.players[0].hand = [cleanup];
+  state.players[0].currentGold = 10;
+
+  const afterCleanup = playWrestlerFromHand(state, 'player-1', cleanup.instanceId, 0);
+  assert.equal(afterCleanup.success, true);
+  if (!afterCleanup.success) return;
+  assert.equal(afterCleanup.state.players[0].board[0]?.currentAttack, 1);
+  assert.equal(afterCleanup.state.players[0].board[0]?.currentHealth, 2);
+  assert.equal(afterCleanup.state.pendingCardEffects.length, 1);
+
+  const withNext = {
+    ...afterCleanup.state,
+    players: afterCleanup.state.players.map((player) => player.id === 'player-1'
+      ? { ...player, hand: [next], currentGold: 10 }
+      : player),
+  };
+  const afterNext = playWrestlerFromHand(withNext, 'player-1', next.instanceId, 1);
+  assert.equal(afterNext.success, true);
+  if (!afterNext.success) return;
+  assert.equal(afterNext.state.players[0].board[1]?.currentAttack, 3);
+  assert.equal(afterNext.state.players[0].board[1]?.currentHealth, 3);
+  assert.equal(afterNext.state.pendingCardEffects.length, 0);
+});
+
 test('독세아·블랙 마카롱·디 오리진·여울·피 스타 세븐의 보드 효과가 실제 상태를 변경한다', () => {
   const grave = card(saved['여울']!, 'grave');
   const generatedHand = { ...card(saved['독세아']!, 'generated-hand'), isGenerated: true };
