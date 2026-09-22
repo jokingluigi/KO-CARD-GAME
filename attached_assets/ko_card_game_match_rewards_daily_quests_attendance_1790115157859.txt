@@ -1,0 +1,921 @@
+KO CARD GAME — IMPLEMENT ONLY:
+MATCH REWARDS + DAILY QUESTS + ATTENDANCE BOARD
+
+이번 작업에서는 아래 3개의 유저 진행도/보상 시스템만 구현한다.
+
+1. 게임 승리/패배 보상
+2. 일일 퀘스트 시스템
+3. 출석 보드
+
+다른 카드 효과,
+Pandora,
+Champion Token,
+Online presentation,
+AI scheduler,
+AI Mechanic Compiler,
+Admin 카드 Grid,
+분해,
+덱 규칙,
+공지,
+메인 배경/BGM
+
+은 수정하지 마.
+
+==================================================
+0. 작업 방식
+==================================================
+
+세 기능을 동시에 뒤섞어서 구현하지 말고
+아래 순서대로 각각 끝낸 뒤 다음으로 넘어간다.
+
+1. Match Rewards
+→ 구현
+→ 테스트
+
+2. Daily Quests
+→ 구현
+→ 테스트
+
+3. Attendance Board
+→ 구현
+→ 테스트
+
+마지막에 전체 typecheck/build/regression을 실행한다.
+
+이번 작업의 핵심 원칙:
+
+- 보상 지급은 server-authoritative
+- 중복 지급 금지
+- reconnect/reload/retry로 보상 중복 금지
+- client가 reward amount를 결정하지 않음
+- Production 사용자 데이터 직접 수정 금지
+- 실제 보상 수치는 기존 authoritative economy 설정을 우선 사용
+- 공식 수치가 아직 없으면 임의로 창작하지 말고 CONFIG_REQUIRED로 보고
+
+==================================================
+PART A — 게임 승리 / 패배 보상
+==================================================
+
+현재 요구:
+
+정상적으로 끝난 경기에서
+승리한 플레이어와 패배한 플레이어에게
+각각 보상을 지급한다.
+
+AI Match / Online Match 중
+어디에 적용할지는 현재 authoritative product rule을 확인한다.
+
+공식 규칙이 아직 없으면
+게임 모드별 적용 여부를 임의로 정하지 마.
+
+==================================================
+1. 보상 지급 시점
+==================================================
+
+보상은 반드시
+canonical match status가 FINISHED가 된 뒤 지급한다.
+
+예:
+
+Match Active
+→ lethal / win condition
+→ winner 결정
+→ FINISHED
+→ reward eligibility
+→ reward transaction
+→ reward receipt/state 기록
+
+결과 화면을 열었다고 보상을 지급하는 구조 금지.
+client page mount를 지급 trigger로 사용하지 마.
+
+==================================================
+2. 승리 / 패배 보상 분리
+==================================================
+
+authoritative config에서 최소:
+
+WIN_REWARD
+LOSS_REWARD
+
+를 관리할 수 있게 한다.
+
+이미 economy/reward config가 있다면 재사용.
+새로운 재화 종류를 임의로 만들지 마.
+
+==================================================
+3. 무승부가 존재하는 경우
+==================================================
+
+현재 게임에 DRAW/TIE가 공식적으로 존재하면
+별도 authoritative rule을 확인한다.
+
+없다면 임의의 draw reward를 만들지 마.
+
+==================================================
+4. 보상 중복 지급 방지
+==================================================
+
+매우 중요.
+
+같은 matchId에 대해
+동일 플레이어에게 동일 reward가
+두 번 지급되면 안 된다.
+
+다음 상황 모두 안전해야 한다.
+
+- 결과 화면 새로고침
+- reconnect
+- API retry
+- client double submit
+- server retry
+- websocket 재연결
+- 동일 FINISHED snapshot 반복 수신
+
+가능하면 idempotency 기준:
+
+matchId + userId + rewardType
+
+또는 현재 시스템의 equivalent unique key를 사용.
+
+==================================================
+5. 클라이언트가 보상 수치를 보내지 않음
+==================================================
+
+금지:
+
+client:
+rewardAmount = 100
+
+→ server 지급
+
+서버는 match result와 authoritative config를 보고
+직접 금액/보상을 결정해야 한다.
+
+==================================================
+6. 비정상 종료 처리
+==================================================
+
+다음 상황의 공식 정책을 현재 코드/제품 규칙에서 확인:
+
+- surrender
+- disconnect
+- timeout defeat
+- aborted match
+- server error
+- cancelled matchmaking
+
+정상 FINISHED match가 아닌데
+보상이 잘못 지급되면 안 된다.
+
+공식적으로 surrender도 loss로 취급한다면
+그 규칙을 따른다.
+
+임의 정책 추가 금지.
+
+==================================================
+7. 보상 receipt
+==================================================
+
+가능하면 결과 화면에서:
+
+승리
++ [보상]
+
+패배
++ [보상]
+
+처럼 실제 지급 결과를 표시할 수 있도록
+server reward result를 반환한다.
+
+UI가 예상값을 계산해서 보여주지 마.
+
+==================================================
+8. Match Reward Tests
+==================================================
+
+TEST MR1
+
+정상 승리.
+
+기대:
+winner reward 정확히 1회.
+
+TEST MR2
+
+정상 패배.
+
+기대:
+loser reward 정확히 1회.
+
+TEST MR3
+
+같은 FINISHED match reward 처리 두 번.
+
+기대:
+두 번째는 idempotent.
+추가 지급 없음.
+
+TEST MR4
+
+reload/reconnect.
+
+기대:
+보상 중복 없음.
+
+TEST MR5
+
+ACTIVE match.
+
+기대:
+reward 지급 없음.
+
+==================================================
+PART B — 일일 퀘스트 시스템
+==================================================
+
+현재 요구:
+
+관리자 페이지에서 관리자가
+일일 퀘스트를 추가/수정/비활성화할 수 있다.
+
+활성화된 일일 퀘스트 풀에서
+각 사용자에게 매일 랜덤으로 3개를 지급한다.
+
+Champion Quest와는 완전히 별개의 시스템이다.
+
+==================================================
+9. Daily Quest Definition
+==================================================
+
+일일 퀘스트 definition은 최소 다음 정보를 관리할 수 있어야 한다.
+
+- id
+- title
+- description
+- objective type
+- target value
+- reward
+- enabled / disabled
+- 필요 시 조건/게임모드 범위
+
+실제 schema는 현재 프로젝트 구조에 맞게 설계.
+arbitrary JavaScript 조건 저장 금지.
+
+==================================================
+10. Admin 관리
+==================================================
+
+Admin에서 최소:
+
+- 새 일일 퀘스트 추가
+- 수정
+- 활성화
+- 비활성화
+
+가능.
+
+삭제가 기존 architecture상 위험하다면
+soft disable 우선.
+
+이미 유저에게 할당된 quest definition을
+Admin이 비활성화했다고 해서
+진행 중인 유저 퀘스트가 즉시 깨지지 않게 한다.
+
+==================================================
+11. 매일 랜덤 3개
+==================================================
+
+각 사용자에게 하루에 3개 지급.
+
+중요:
+
+하루 동안 페이지를 새로고침할 때마다
+새로운 3개로 바뀌면 안 된다.
+
+즉:
+
+그 날 최초 할당 시 랜덤 3개 선택
+→ DB/state에 저장
+→ 그 날 동안 고정
+
+이어야 한다.
+
+==================================================
+12. 중복 Quest 금지
+==================================================
+
+같은 날 한 사용자에게
+동일 quest definition을 두 번 주지 않는다.
+
+활성 quest pool이 3개 미만이면:
+
+임의 중복 생성 금지.
+
+현재 product policy가 없다면
+available count만 할당하고
+ADMIN_POOL_TOO_SMALL 상태를 보고.
+
+==================================================
+13. 랜덤 처리
+==================================================
+
+서버에서 결정.
+client random 금지.
+
+테스트 가능하도록 deterministic selector 또는
+server-side controlled RNG를 사용.
+
+Math.random을 canonical gameplay/data assignment에서
+무분별하게 사용하지 마.
+
+==================================================
+14. Daily boundary
+==================================================
+
+"하루"의 기준 timezone을 명확히 한다.
+
+현재 프로젝트의 authoritative timezone 설정을 확인.
+없다면 임의로 UTC/KST를 섞지 마.
+
+하루 경계가 바뀌면:
+새 daily assignment 생성 가능.
+
+이전 날 퀘스트와 오늘 퀘스트가 섞이지 않게 한다.
+
+==================================================
+15. Quest Progress
+==================================================
+
+일일 퀘스트 objective는
+가능하면 기존 canonical game events를 사용해 진행한다.
+
+예:
+
+- 경기 플레이
+- 승리
+- 카드 플레이
+- Technique 사용
+- 공격
+- 피해
+- 특정 카드 타입 사용
+
+실제 지원할 objective 목록은
+현재 engine/event registry를 기반으로 제한.
+
+카드 이름 hardcoding 금지.
+
+==================================================
+16. progress 중복 방지
+==================================================
+
+같은 match/event를
+reconnect/resync 때문에 두 번 세면 안 된다.
+
+event occurrence / match result identity를 기준으로
+idempotent progress 처리.
+
+==================================================
+17. 완료와 보상 수령 분리
+==================================================
+
+가능하면:
+
+progress >= target
+→ COMPLETED
+
+보상 버튼
+→ CLAIMED
+
+로 분리한다.
+
+완료됐다고 자동으로 계속 반복 지급하지 않는다.
+
+현재 product UX가 auto-claim을 원한다면
+기존 정책을 확인.
+
+정책이 없다면 명시적으로 claim하는 구조를 우선.
+
+==================================================
+18. Daily Quest Reward
+==================================================
+
+reward amount/type은
+Admin definition을 서버가 검증.
+
+클라이언트가 임의 amount를 보내면 안 된다.
+
+보상 수령은 transaction/idempotent.
+같은 daily quest assignment를 두 번 claim 금지.
+
+==================================================
+19. Daily Quest 상태
+==================================================
+
+최소 개념:
+
+ASSIGNED
+IN_PROGRESS
+COMPLETED
+CLAIMED
+
+또는 현재 architecture에 맞는 equivalent.
+
+==================================================
+20. Daily Quest Tests
+==================================================
+
+TEST DQ1
+활성 quest 10개.
+신규 하루 첫 접속.
+기대: 서로 다른 3개 할당.
+
+TEST DQ2
+같은 날 새로고침.
+기대: 동일한 3개 유지.
+
+TEST DQ3
+다음 날.
+기대: 새 daily assignment 생성 가능.
+
+TEST DQ4
+Admin disabled quest.
+기대: 새 assignment pool에서 제외.
+이미 할당된 기존 quest는 안전하게 유지.
+
+TEST DQ5
+canonical event 1회.
+기대: progress 정확히 1회 증가.
+동일 occurrence replay: 추가 progress 없음.
+
+TEST DQ6
+target 도달.
+기대: COMPLETED.
+
+TEST DQ7
+reward claim.
+기대: reward 1회.
+두 번째 claim: 추가 지급 없음.
+
+==================================================
+PART C — 출석 보드
+==================================================
+
+현재 요구:
+
+사용자가 매일 출석하고
+일차별 보상을 받을 수 있는 출석 보드를 추가한다.
+
+보상 구성은 Admin에서 관리 가능해야 한다.
+
+==================================================
+21. Attendance Definition
+==================================================
+
+Admin에서 최소:
+
+- day/index
+- reward type
+- reward amount/content
+- enabled state
+
+관리 가능.
+
+현재 프로젝트에 season/cycle concept가 있다면 재사용.
+없다면 지나치게 복잡한 season system을 새로 만들지 마.
+
+==================================================
+22. 출석 기준
+==================================================
+
+단순 페이지 렌더만으로
+보상이 자동 지급되지 않게 한다.
+
+오늘 출석 가능 여부
+→ 사용자가 출석/보상 수령
+→ 서버 검증
+→ 지급
+
+구조를 권장.
+
+==================================================
+23. 하루 한 번
+==================================================
+
+같은 날짜에는
+출석을 한 번만 처리.
+
+새로고침
+다른 기기
+double click
+API retry
+
+로 중복 출석/보상 지급 금지.
+
+==================================================
+24. Day progression
+==================================================
+
+출석 Day 1
+→ 다음 eligible day
+→ Day 2
+
+순으로 진행.
+
+중간 하루를 빠뜨렸을 때
+연속 출석 reset 여부는 product rule이 필요하다.
+
+현재 공식 규칙이 없다면
+임의로 streak reset을 만들지 마.
+
+기본적으로 "누적 출석 보드"인지
+"연속 출석 보드"인지 확인하고 구현.
+
+불명확하면 해당 정책만 CONFIG_REQUIRED로 보고,
+나머지 framework는 구현 가능.
+
+==================================================
+25. Admin reward 관리
+==================================================
+
+Admin에서 출석 보상 수정 가능.
+
+단 이미 수령된 과거 reward transaction은
+Admin 변경으로 소급 변경하지 않는다.
+
+새 reward definition은
+미수령/향후 eligible day에 적용.
+
+==================================================
+26. Attendance UI
+==================================================
+
+출석 보드에서 최소 표시:
+
+- 각 Day
+- reward
+- 이미 수령함
+- 오늘 수령 가능
+- 아직 잠김
+
+상태 구분.
+
+현재 UI 스타일 유지.
+과도한 redesign 금지.
+
+==================================================
+27. Claim Security
+==================================================
+
+server에서 검증:
+
+- authenticated user
+- 오늘 claim 가능 여부
+- 이미 claim했는지
+- 현재 attendance day
+- authoritative reward definition
+
+client가 day/reward amount를 자유롭게 조작해서
+다른 보상을 받을 수 없어야 한다.
+
+==================================================
+28. Attendance Tests
+==================================================
+
+TEST AT1
+첫 출석.
+기대: Day 1 reward 1회.
+
+TEST AT2
+같은 날 두 번째 claim.
+기대: reject/idempotent. 추가 보상 없음.
+
+TEST AT3
+다음 eligible day.
+기대: 다음 day reward.
+
+TEST AT4
+다른 day 번호를 client가 조작해 요청.
+기대: server reject.
+
+TEST AT5
+Admin reward 변경.
+기대: 이미 지급된 transaction 변경 없음.
+
+==================================================
+29. 공통 Reward Ledger / Transaction
+==================================================
+
+Match reward,
+Daily Quest reward,
+Attendance reward
+
+세 시스템이 각각 제멋대로 재화를 수정하지 않게 한다.
+
+현재 공용 wallet/economy/reward service가 있다면
+반드시 재사용.
+
+가능하면 공통 reward grant path:
+
+validate
+→ transaction
+→ ledger/receipt
+→ updated balance
+
+사용.
+
+==================================================
+30. 공통 Idempotency
+==================================================
+
+최소 각각 unique source identity를 갖는다.
+
+Match:
+matchId + userId
+
+Daily Quest:
+assignmentId + claim
+
+Attendance:
+userId + attendanceDate/day
+
+실제 schema에 맞게 구현.
+같은 보상 source가 두 번 지급되지 않는 것이 핵심.
+
+==================================================
+31. 실제 보상 수치
+==================================================
+
+이번 프롬프트는
+승리/패배 보상이나 출석 보상 수치를
+임의로 정하라는 요구가 아니다.
+
+authoritative config가 있으면 사용.
+
+없으면:
+CONFIG_REQUIRED
+
+로 표시하고
+Admin/config에서 설정 가능한 구조까지 구현.
+
+임의로:
+승리 100
+패배 50
+
+같은 값을 영구 게임 규칙으로 박지 마.
+
+테스트 fixture에서는 임의 수치 사용 가능.
+
+==================================================
+32. Production 안전
+==================================================
+
+테스트 중 Production 사용자에게
+실제 보상을 지급하지 마.
+
+fixture
+mock wallet
+development/test DB
+test account
+
+사용.
+
+Production DB 직접 수정 금지.
+
+==================================================
+33. 이번 작업에서 하지 말 것
+==================================================
+
+절대 수정 금지:
+
+- 카드 효과
+- Champion
+- Pandora
+- Online presentation
+- AI scheduler
+- AI Mechanic Compiler
+- Deck rule
+- 카드 분해
+- Admin Card Grid
+- 공지
+- 메인 배경
+- 메인 BGM
+- 경제 밸런스 수치 임의 변경
+
+==================================================
+34. 브라우저 검증
+==================================================
+
+가능하면 Development/Test 환경에서:
+
+1. 경기 정상 종료 → 승/패 보상 표시 및 지급
+2. Daily Quest 화면 → 랜덤 3개 → progress → 완료 → 보상 claim
+3. Attendance Board → 오늘 출석 → reward claim → claimed state
+
+확인.
+
+브라우저 없으면
+IMPLEMENTATION/AUTOMATED는 계속하고
+BROWSER VERIFICATION만 UNVERIFIED.
+
+==================================================
+35. 자동 검증
+==================================================
+
+필수:
+
+Match reward service tests
+Match reward idempotency tests
+Daily quest assignment tests
+Daily quest progress tests
+Daily quest claim tests
+Attendance eligibility tests
+Attendance claim/idempotency tests
+Reward ledger/wallet regression
+
+그리고:
+
+pnpm run typecheck
+pnpm --filter @workspace/ko-game run build
+git diff --check
+
+API 변경이 예상되므로:
+
+API typecheck
+API production build
+
+도 실행.
+
+==================================================
+36. Git
+==================================================
+
+이번 작업 관련 파일만 stage.
+
+금지:
+
+Pasted-*.txt
+.env
+secret
+logs
+temp
+unrelated changes
+
+검증 후 commit.
+force push 금지.
+
+push 실패 시 local commit 유지.
+
+==================================================
+37. 최종 보고
+==================================================
+
+MATCH REWARDS
+
+Authoritative reward config:
+FOUND / CONFIG_REQUIRED
+
+Winner reward:
+PASS / FAIL / CONFIG_REQUIRED
+
+Loser reward:
+PASS / FAIL / CONFIG_REQUIRED
+
+Server authoritative:
+PASS / FAIL
+
+Duplicate prevention:
+PASS / FAIL
+
+Reconnect/reload idempotency:
+PASS / FAIL
+
+
+DAILY QUESTS
+
+Admin create/edit/disable:
+PASS / FAIL
+
+Active quest pool:
+PASS / FAIL
+
+Random 3 assignment:
+PASS / FAIL
+
+Same-day stability:
+PASS / FAIL
+
+Daily rollover:
+PASS / FAIL
+
+Progress:
+PASS / FAIL
+
+Duplicate event protection:
+PASS / FAIL
+
+Completion:
+PASS / FAIL
+
+Reward claim:
+PASS / FAIL
+
+Double claim protection:
+PASS / FAIL
+
+
+ATTENDANCE
+
+Admin reward management:
+PASS / FAIL
+
+Daily eligibility:
+PASS / FAIL
+
+Claim:
+PASS / FAIL
+
+Duplicate claim protection:
+PASS / FAIL
+
+Day progression:
+PASS / FAIL / CONFIG_REQUIRED
+
+Client tampering protection:
+PASS / FAIL
+
+
+COMMON REWARD SYSTEM
+
+Shared reward service:
+PASS / FAIL
+
+Atomic grant:
+PASS / FAIL
+
+Idempotency:
+PASS / FAIL
+
+Production writes during tests:
+NONE / FAIL
+
+
+==================================================
+
+IMPLEMENTATION:
+PASS / FAIL / BLOCKED
+
+AUTOMATED VERIFICATION:
+PASS / FAIL
+
+BROWSER VERIFICATION:
+PASS / FAIL / UNVERIFIED
+
+TYPECHECK:
+PASS / FAIL
+
+KO BUILD:
+PASS / FAIL
+
+API TYPECHECK:
+PASS / FAIL
+
+API BUILD:
+PASS / FAIL
+
+git diff --check:
+PASS / FAIL
+
+CHANGED FILES:
+...
+
+COMMIT:
+...
+
+PUSH:
+...
+
+CONFIG_REQUIRED:
+...
+
+==================================================
+완료 조건
+==================================================
+
+1. 정상 종료된 경기에서 승/패 보상 시스템이
+   server-authoritative + idempotent하게 동작.
+
+2. Admin이 일일 Quest pool을 관리할 수 있고
+   사용자에게 하루 3개가 고정 배정되며
+   진행/완료/보상 수령이 정상 동작.
+
+3. Admin이 출석 보상을 관리할 수 있고
+   사용자가 하루 한 번 정상 claim할 수 있으며
+   중복 지급이 불가능.
+
+4. 세 시스템 모두 실제 reward grant를
+   안전한 공통 서버 경로로 처리.
+
+5. 공식 경제 수치가 없는 부분은
+   임의 창작하지 않고 CONFIG_REQUIRED로 명확히 남긴다.
+
+이 세 기능만 구현하고 멈춰라.
