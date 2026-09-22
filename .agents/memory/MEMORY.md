@@ -38,6 +38,7 @@
 - [Champion portrait uploads](champion-portrait-upload.md) — base and quest-complete portraits upload independently; missing completion art falls back to the base portrait.
 - [Champion image display settings](champion-image-display.md) — base and quest-complete portraits share one persisted crop/scale/position configuration.
 - [Presentation feedback queue](presentation-feedback-queue.md) — cosmetic event feedback must consume committed state asynchronously, preserve event order, remain reduced-motion safe, and deduplicate stable event identities.
+- [AI turn scheduler boundary](ai-turn-scheduler-boundary.md) — presentation cleanup cannot cancel canonical AI turns; timeout must use the latest state and active player.
 - [Mixed-owner target scopes](mixed-owner-targets.md) — ALL target selections must resolve each instance through its actual owner so allied damage/retire works.
 - [KO authentication boundary](auth-boundary.md) — account data and server-side sessions stay behind the API; roles are never client-controlled.
 - [Browser auth smoke tests](browser-auth-smoke-tests.md) — test accounts must exercise real HttpOnly sessions; Pack catalog rows can be visible at quantity zero, so assert ownership by quantity.

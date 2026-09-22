@@ -182,6 +182,13 @@ export function endTurn(
   state: GameState,
   actingPlayerId: string,
 ): ActionResult {
+  if (state.status !== 'IN_PROGRESS') {
+    return actionFailure(
+      state,
+      'GAME_NOT_IN_PROGRESS',
+      '진행 중인 게임에서만 턴을 종료할 수 있습니다.',
+    );
+  }
   if (state.targetingState?.active) {
     return actionFailure(state, 'TARGET_SELECTION_PENDING', '먼저 대상을 선택하세요.');
   }

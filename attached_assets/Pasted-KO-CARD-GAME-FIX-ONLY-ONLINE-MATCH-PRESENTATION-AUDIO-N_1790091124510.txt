@@ -1,0 +1,1108 @@
+KO CARD GAME — FIX ONLY:
+ONLINE MATCH PRESENTATION + AUDIO + NAVIGATION
+
+이번 작업에서는 이미 정상 연결되는 Online Match의
+UI / Presentation / Audio / Navigation 문제만 수정한다.
+
+현재 Online 연결 오류는 해결된 문제다.
+
+따라서:
+
+WebSocket architecture
+WS ticket
+API routing
+CORS
+Render connection
+authentication architecture
+
+를 새로 뜯어고치지 마.
+
+==================================================
+이번 작업 대상
+==================================================
+
+오직 아래 문제만 수정한다.
+
+1. Online Match 화면에서 뒤로가기 시 메인 화면으로 복귀하지 않음
+
+2. Online Match에서 경기 음악/BGM이 나오지 않음
+
+3. Online Match에서 카드 PLAY 애니메이션이 나오지 않음
+
+4. Online Match에서 공격/피해/회복/버프 등
+   기존 게임 연출이 일부 나오지 않음
+
+5. 상대가 Technique을 사용했을 때
+   Technique 사용 연출/표시가 제대로 나오지 않음
+
+6. 상대 nickname 표시 문제
+
+7. "상대가 다시 연결되었습니다" 알림이
+   계속 화면에 남는 문제
+
+8. 내 턴이 시작됐을 때
+   YOUR TURN 계열 알림이 나오지 않는 문제
+
+9. Online Quest 완료 알림이 안 뜨는 문제
+
+10. 반대로 같은 Quest 완료 화면이
+    여러 번 반복해서 나타나는 문제
+
+11. 실제 턴은 넘어갔는데 UI가 계속
+    "상대의 턴입니다" 같은 이전 턴 표시를 유지하는 문제
+
+이번 작업은 Online Presentation 전용이다.
+
+==================================================
+0. FIX-FIRST
+==================================================
+
+이번 작업은 조사 보고서가 아니다.
+
+각 문제마다:
+
+재현
+→ canonical state/event 확인
+→ presentation 연결 확인
+→ root cause
+→ 실제 수정
+→ regression test
+
+순서로 진행한다.
+
+Online connection 자체가 정상이라면
+connection 코드를 불필요하게 수정하지 마.
+
+==================================================
+중요 원칙
+==================================================
+
+Online Match에서도
+게임 연출의 source of truth는
+server-authoritative canonical Event / GameState여야 한다.
+
+즉 클라이언트가 임의로:
+
+"아마 카드가 사용됐겠지"
+"HP가 줄었으니 공격했겠지"
+
+라고 추측해서 animation을 만들지 마.
+
+Server Event
+→ Online client receive
+→ Presentation Event
+→ Animation / Audio / Notification
+
+구조를 사용한다.
+
+가능하면 AI Match와 동일한
+presentation system을 재사용한다.
+
+Online 전용으로 게임 로직을 복제하지 마.
+
+==================================================
+PART A — ONLINE 뒤로가기
+==================================================
+
+현재 신고:
+
+Online Match 관련 화면에서
+뒤로가기를 눌러도 메인 화면으로 돌아가지 않는다.
+
+특히 확인:
+
+- Online 메뉴
+- Quick Match
+- Friendly Match
+- matchmaking/queue screen
+- room/lobby screen
+- match screen
+
+화면별 semantics를 구분한다.
+
+==================================================
+1. Match 시작 전
+==================================================
+
+아직 실제 경기가 시작되지 않은 상태:
+
+Online
+→ Quick/Friendly
+→ queue/lobby
+
+에서 Back을 누르면:
+
+필요한 queue leave
+room cleanup
+temporary socket subscription cleanup
+
+후 정상적으로 이전 화면 또는 Main으로 이동.
+
+stale queue가 서버에 남으면 안 된다.
+
+==================================================
+2. 실제 Match 진행 중
+==================================================
+
+경기 중 단순 브라우저 Back이나 UI Back이
+즉시 자동 surrender를 발생시키면 안 된다.
+
+현재 게임의 기존 UX가:
+
+확인창
+재접속 가능 상태
+메뉴 차단
+
+중 무엇인지 확인하고
+기존 공식 semantics를 따른다.
+
+이번 작업에서 임의로 새 surrender 규칙을 만들지 마.
+
+==================================================
+3. Navigation test
+==================================================
+
+TEST NAV1
+
+Main
+→ Online
+→ Quick
+→ Back
+
+기대:
+정상 이전 화면/Main.
+
+==================================================
+
+TEST NAV2
+
+Main
+→ Online
+→ Friendly
+→ Back
+
+기대:
+정상 이전 화면/Main.
+
+==================================================
+
+TEST NAV3
+
+queue 진입
+→ Back
+
+기대:
+
+queue cleanup
+→ navigation 성공.
+
+==================================================
+PART B — ONLINE BGM
+==================================================
+
+현재 신고:
+
+Online Match에서는 경기 음악이 나오지 않는다.
+
+AI Match 등 다른 경기 화면과
+audio lifecycle을 비교한다.
+
+==================================================
+4. 기대 동작
+==================================================
+
+Online Match 진입:
+
+메인 메뉴 BGM 종료/전환
+→ Match BGM 시작.
+
+Online Match 종료:
+
+Match BGM 정리
+→ 결과/메인 화면의 공식 BGM lifecycle.
+
+==================================================
+5. 확인
+==================================================
+
+- Online route에서 audio init이 호출되는가?
+- AI Match만 별도로 BGM을 시작하고 있는가?
+- browser autoplay restriction 때문인가?
+- route/component mount 순서 문제인가?
+- socket 연결 완료를 기다리다 audio가 누락되는가?
+- main BGM stop만 되고 match BGM start가 없는가?
+
+==================================================
+6. 음악 중복 금지
+==================================================
+
+Main BGM + Match BGM이
+동시에 재생되면 안 된다.
+
+컴포넌트 rerender/reconnect 때
+BGM이 여러 번 중첩 재생되어도 안 된다.
+
+==================================================
+7. Audio test
+==================================================
+
+Online match mount:
+Match BGM start = 1회.
+
+rerender:
+추가 start 없음.
+
+reconnect:
+중복 audio 없음.
+
+unmount:
+cleanup 정상.
+
+==================================================
+PART C — ONLINE 카드 PLAY 애니메이션
+==================================================
+
+현재 신고:
+
+Online에서 카드를 플레이해도
+AI Match 등에서 보이던 카드 플레이 연출이 나오지 않는다.
+
+내 카드뿐 아니라
+상대 카드도 확인한다.
+
+==================================================
+8. Canonical PLAY event를 사용
+==================================================
+
+정상 흐름:
+
+server:
+PLAY_CARD Action
+→ canonical card-play Event
+→ GameState
+
+client:
+event receive
+→ presentation queue
+→ card-play animation.
+
+Online에서는 state snapshot만 보고
+결과 화면을 즉시 렌더해서
+animation event를 건너뛰는지 확인.
+
+==================================================
+9. 내 카드 PLAY
+==================================================
+
+TEST CP1
+
+내 WRESTLER PLAY_FROM_HAND.
+
+기대:
+
+정상 card-play animation
+→ board placement
+→ 필요 효과 연출.
+
+==================================================
+10. 상대 카드 PLAY
+==================================================
+
+TEST CP2
+
+상대 WRESTLER PLAY_FROM_HAND.
+
+기대:
+
+공개 가능한 시점에 카드 identity 표시
+→ card-play animation
+→ field placement.
+
+상대 손에 있을 때
+카드 identity 사전 노출 금지.
+
+==================================================
+11. animation 때문에 GameState를 늦추지 마
+==================================================
+
+canonical server state는 이미 결정되어 있고
+animation은 presentation이다.
+
+animation 종료 여부 때문에
+server turn progression이 멈추는 구조를 만들지 마.
+
+==================================================
+PART D — 공격 / 피해 / 회복 / 버프 연출
+==================================================
+
+Online에서 canonical events가 발생해도
+presentation이 빠지는지 확인.
+
+최소:
+
+ATTACK
+DAMAGE
+HEAL
+BUFF
+DEBUFF
+RETIRE
+
+관련 기존 presentation을
+Online에서도 정상 사용.
+
+==================================================
+12. Attack test
+==================================================
+
+상대 공격:
+
+ATTACK event
+→ 공격 animation
+→ DAMAGE presentation
+→ HP update
+
+순서가 시각적으로 자연스럽게 보이는지 확인.
+
+==================================================
+13. Buff/Heal test
+==================================================
+
+Online 상대/내 카드에서:
+
+BUFF
+HEAL
+
+event가 발생하면
+기존 presentation cue가 정상 출력.
+
+==================================================
+PART E — 상대 Technique 사용 표시
+==================================================
+
+현재 신고:
+
+상대가 Technique 카드를 사용해도
+상대 화면에서 제대로 표시되지 않는다.
+
+==================================================
+14. Technique 공개 시점
+==================================================
+
+Technique이 상대 HAND에 있을 때는 hidden.
+
+사용 Action이 확정된 뒤에는:
+
+- Technique 카드 identity
+- 사용 presentation
+- effect animation
+
+정상 공개.
+
+==================================================
+15. Technique는 field slot을 사용하지 않음
+==================================================
+
+기존 Technique 규칙 유지:
+
+사용
+→ effect
+→ graveyard.
+
+Online animation을 위해
+Technique를 잠깐 field CardInstance로 위조하지 마.
+
+==================================================
+16. Technique test
+==================================================
+
+상대 Technique use:
+
+사용 전:
+identity hidden.
+
+사용 후:
+card presentation 표시.
+
+effect:
+정상 presentation.
+
+최종:
+graveyard.
+
+==================================================
+PART F — 상대 NICKNAME
+==================================================
+
+Online Match에서
+상대 공개 nickname을 정상 표시.
+
+==================================================
+17. 금지
+==================================================
+
+상대의:
+
+email
+account ID
+internal UUID
+auth user ID
+
+를 nickname 대신 노출하지 마.
+
+현재 서버에서 이미 제공하는
+public player identity/nickname 필드를 사용.
+
+==================================================
+PART G — RECONNECT 메시지
+==================================================
+
+현재:
+
+"상대가 다시 연결되었습니다"
+
+알림이 계속 남아 있는 문제가 있다.
+
+이건 persistent GameState가 아니라
+temporary notification이어야 한다.
+
+==================================================
+18. 기대 동작
+==================================================
+
+opponent reconnect event
+
+→ notification 표시
+
+→ 공식 duration 후 제거.
+
+rerender 때문에 timer가 계속 reset되어
+영원히 남으면 안 된다.
+
+==================================================
+19. cleanup
+==================================================
+
+notification timer는:
+
+component unmount
+새 reconnect notification
+
+등에서 안전하게 cleanup.
+
+==================================================
+PART H — YOUR TURN 표시
+==================================================
+
+Online에서 activePlayer가
+상대 → 나
+
+로 바뀌면
+내 턴 시작 presentation을 표시.
+
+==================================================
+20. 새 turn occurrence에 한 번만
+==================================================
+
+같은 GameState snapshot이 반복 수신되어도:
+
+YOUR TURN
+YOUR TURN
+YOUR TURN
+
+여러 번 띄우지 마.
+
+turn ID / turn number / active-player transition 등
+기존 stable occurrence를 사용해 dedupe.
+
+==================================================
+21. 첫 snapshot 주의
+==================================================
+
+match 처음 접속했을 때
+이미 내 턴이라고 해서
+rerender마다 알림을 반복하면 안 된다.
+
+==================================================
+PART I — QUEST COMPLETE 알림
+==================================================
+
+두 가지 반대 문제가 모두 있었다.
+
+A.
+Quest 완료 알림이 아예 안 뜸.
+
+B.
+Quest 완료 화면이 계속 반복해서 뜸.
+
+둘 다 해결.
+
+==================================================
+22. 정상 Quest presentation
+==================================================
+
+new Quest completion event
+
+→ Quest Complete UI 1회
+
+→ 종료
+
+→ 같은 completion은 다시 표시하지 않음.
+
+==================================================
+23. 반복 금지
+==================================================
+
+다음으로 동일 completion이 재표시되면 실패:
+
+rerender
+snapshot refresh
+next action
+next turn
+reconnect
+resync
+component remount
+
+==================================================
+24. 새로운 Quest 완료는 표시
+==================================================
+
+dedupe 때문에
+다른 새로운 Quest completion까지 막으면 안 된다.
+
+completion occurrence/event identity를 기준으로 처리.
+
+==================================================
+25. Quest reward를 presentation에서 실행하지 마
+==================================================
+
+Quest Reward는 canonical engine에서 이미 처리한다.
+
+UI가 Quest Complete를 표시하면서
+reward를 다시 실행하면 안 된다.
+
+==================================================
+26. Quest presentation tests
+==================================================
+
+TEST Q1
+
+new completion event.
+
+기대:
+UI 1회.
+
+==================================================
+
+TEST Q2
+
+동일 event 다시 수신.
+
+기대:
+추가 UI 0.
+
+==================================================
+
+TEST Q3
+
+reconnect/resync.
+
+기대:
+기존 completion 재표시 없음.
+
+==================================================
+
+TEST Q4
+
+새로운 completion event.
+
+기대:
+새 UI 1회.
+
+==================================================
+PART J — 상대 턴 표시 STALE
+==================================================
+
+현재:
+
+실제 canonical activePlayer는 나로 바뀌었는데
+화면에는 계속:
+
+"상대의 턴입니다"
+
+가 남는 경우가 있다.
+
+이번 작업에서는
+실제 turn engine 자체를 수정하지 않는다.
+
+이전 Turn/AI 작업 범위와 섞지 마.
+
+==================================================
+27. Presentation mismatch인지 확인
+==================================================
+
+server state:
+
+activePlayer = ME
+
+인데
+
+UI:
+OPPONENT TURN
+
+이면 presentation/client-state 문제.
+
+canonical state를 따라 즉시 갱신.
+
+==================================================
+28. 반대로 canonical state 자체가 안 바뀌었다면
+==================================================
+
+그건 Turn Engine 문제다.
+
+이번 Presentation 작업에서
+억지로 UI만 내 턴이라고 표시하지 마.
+
+그 경우:
+
+ENGINE_STATE_BLOCKER
+
+로 정확히 보고.
+
+==================================================
+29. STALE turn UI test
+==================================================
+
+snapshot/event:
+
+activePlayer:
+Opponent → Me
+
+기대:
+
+Opponent Turn indicator 제거
+YOUR TURN presentation 1회
+action UI enabled according to legal actions.
+
+==================================================
+PART K — PRESENTATION QUEUE
+==================================================
+
+Online presentation이 누락되는 공통 원인이
+presentation queue라면
+generic하게 수정 가능.
+
+확인:
+
+- event IDs
+- dedupe keys
+- queue insertion
+- queue consumption
+- event ordering
+- snapshot/event race
+- reconnect replay
+- local-player event filtering
+- opponent event filtering
+
+==================================================
+30. 지나친 dedupe 금지
+==================================================
+
+서로 다른 두 카드가 연속으로 같은 종류의 event를 발생시켜도:
+
+DAMAGE 2
+DAMAGE 2
+
+라는 이유만으로
+두 번째 presentation을 제거하면 안 된다.
+
+dedupe는 event occurrence identity 기준.
+
+event payload equality만으로 dedupe 금지.
+
+==================================================
+31. 렉 유발 금지
+==================================================
+
+Online presentation 수정으로:
+
+- infinite useEffect
+- timer accumulation
+- animation queue duplication
+- repeated audio mount
+- snapshot rerender storm
+
+을 만들면 안 된다.
+
+필요하면 fake timers/event fixture로 확인.
+
+==================================================
+32. 연결 시스템 수정 금지
+==================================================
+
+현재 Online connection error는 해결 완료.
+
+이번 작업에서는 특별한 근거 없이:
+
+- WS host
+- WS ticket
+- reconnect protocol
+- Render rewrite
+- CORS
+- auth architecture
+
+를 변경하지 마.
+
+단 temporary reconnect notification UI를 위해
+기존 reconnect event를 읽는 것은 허용.
+
+==================================================
+33. 게임 로직 수정 금지
+==================================================
+
+Presentation 문제를 해결하려고:
+
+HP
+ATK
+turn owner
+Quest progress
+card zone
+effect result
+
+등 canonical GameState를 UI에서 직접 수정하지 마.
+
+UI는 결과를 표시할 뿐이다.
+
+==================================================
+34. 이번 작업에서 수정 금지
+==================================================
+
+절대 건드리지 마:
+
+- Pandora
+- Champion Token
+- 뒷정리맨
+- 매드 펌킨
+- 여울
+- 그레이트 챤
+- 흑구슬마스터
+- 조크루이지
+- 데헌
+- 나토마토
+- 예거 effect
+- AI scheduler
+- Effect Engine 신규 capability
+- AI Mechanic Compiler
+- daily quests
+- attendance
+- rewards
+- Admin redesign
+- deck rules
+
+==================================================
+35. 자동 Regression
+==================================================
+
+최소:
+
+Online navigation test
+Audio lifecycle test
+Card-play presentation test
+Opponent card-play test
+Technique presentation test
+Attack/Damage presentation test
+Reconnect toast test
+YOUR TURN dedupe test
+Quest complete dedupe test
+activePlayer UI sync test
+
+==================================================
+36. 실제 Browser 검증
+==================================================
+
+이 작업은 UI/Presentation이므로
+브라우저가 가능하면 실제 Online flow 확인이 매우 중요하다.
+
+Development/Test Online match에서 최소:
+
+1.
+Online queue/lobby
+→ Back
+→ 정상 복귀.
+
+2.
+Online match 진입
+→ Match BGM 재생.
+
+3.
+내 카드 play
+→ animation.
+
+4.
+상대 카드 play
+→ animation.
+
+5.
+상대 Technique
+→ 사용 표시.
+
+6.
+공격
+→ attack/damage presentation.
+
+7.
+내 turn 진입
+→ YOUR TURN 1회.
+
+8.
+Quest Complete
+→ UI 1회.
+
+9.
+reconnect event
+→ 메시지 표시
+→ 사라짐.
+
+브라우저 불가라면
+자동/component test까지 수행하고
+GAMEPLAY = UNVERIFIED.
+
+브라우저 없음을 이유로
+코드 수정을 중단하지 마.
+
+==================================================
+37. 성능 체크
+==================================================
+
+현재 게임에서 렉 신고도 있으므로
+이번 Online Presentation 수정으로 최소 확인:
+
+animation queue length가
+정상적으로 감소하는지.
+
+timer/listener가
+rerender마다 누적되지 않는지.
+
+Audio instance가
+계속 추가되지 않는지.
+
+이번 작업에서 전체 성능 최적화는 하지 마.
+
+==================================================
+38. Typecheck / Build
+==================================================
+
+반드시:
+
+pnpm run typecheck
+pnpm --filter @workspace/ko-game run build
+git diff --check
+
+API/shared 수정이 정말 필요한 경우에만
+API typecheck/build.
+
+==================================================
+39. Git
+==================================================
+
+이번 작업 관련 파일만 stage.
+
+절대 stage 금지:
+
+Pasted-*.txt
+.env
+secret
+logs
+temp
+unrelated user changes
+
+검증 후 commit.
+
+force push 금지.
+
+push 실패 시
+local commit 유지.
+
+==================================================
+40. 최종 보고
+==================================================
+
+ONLINE BACK NAVIGATION
+
+ROOT CAUSE:
+...
+
+Quick Back:
+PASS / FAIL
+
+Friendly Back:
+PASS / FAIL
+
+Queue cleanup:
+PASS / FAIL
+
+
+ONLINE BGM
+
+ROOT CAUSE:
+...
+
+Match BGM start:
+PASS / FAIL
+
+Duplicate playback:
+YES / NO
+
+Cleanup:
+PASS / FAIL
+
+
+CARD PLAY PRESENTATION
+
+Own card:
+PASS / FAIL
+
+Opponent card:
+PASS / FAIL
+
+Hidden info preserved:
+PASS / FAIL
+
+
+COMBAT PRESENTATION
+
+Attack:
+PASS / FAIL
+
+Damage:
+PASS / FAIL
+
+Heal:
+PASS / FAIL
+
+Buff:
+PASS / FAIL
+
+Retire:
+PASS / FAIL
+
+
+TECHNIQUE PRESENTATION
+
+Opponent Technique:
+PASS / FAIL
+
+Pre-use hidden:
+PASS / FAIL
+
+Post-use presentation:
+PASS / FAIL
+
+
+NICKNAME
+
+Public nickname:
+PASS / FAIL
+
+Private identity leak:
+YES / NO
+
+
+RECONNECT MESSAGE
+
+Appears:
+PASS / FAIL
+
+Automatically disappears:
+PASS / FAIL
+
+Timer cleanup:
+PASS / FAIL
+
+
+YOUR TURN
+
+Shows:
+PASS / FAIL
+
+Exactly once:
+PASS / FAIL
+
+
+QUEST COMPLETE
+
+New completion:
+PASS / FAIL
+
+Exactly once:
+PASS / FAIL
+
+Reconnect replay:
+YES / NO
+
+New separate completion:
+PASS / FAIL
+
+
+TURN INDICATOR
+
+Canonical active player:
+...
+
+Displayed player:
+...
+
+PASS / FAIL
+
+
+==================================================
+
+IMPLEMENTATION:
+PASS / FAIL / BLOCKED
+
+AUTOMATED VERIFICATION:
+PASS / FAIL
+
+BROWSER VERIFICATION:
+PASS / FAIL / UNVERIFIED
+
+CONNECTION REGRESSION:
+PASS / FAIL
+
+TYPECHECK:
+PASS / FAIL
+
+KO BUILD:
+PASS / FAIL
+
+git diff --check:
+PASS / FAIL
+
+CHANGED FILES:
+...
+
+COMMIT:
+...
+
+PUSH:
+...
+
+==================================================
+완료 조건
+==================================================
+
+1. Online 뒤로가기 정상
+2. Online Match BGM 정상
+3. 내 카드 플레이 animation 정상
+4. 상대 카드 플레이 animation 정상
+5. 공격/피해 등 Online presentation 정상
+6. 상대 Technique 사용 표시 정상
+7. 상대 nickname 정상
+8. reconnect 알림 자동 제거
+9. YOUR TURN 정확히 1회
+10. Quest Complete 정확히 1회
+11. canonical activePlayer와 turn UI 일치
+12. 기존 Online connection 회귀 없음
+
+위 항목을 처리하고 멈춰라.
+
+다른 게임 버그나 신규 기능으로 범위를 확장하지 마.

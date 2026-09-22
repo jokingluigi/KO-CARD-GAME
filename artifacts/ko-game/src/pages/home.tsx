@@ -18,10 +18,7 @@ import {
   type GameState,
   type CardDefinition,
   type ChampionDefinition,
-  getLegalActions,
-  executeAction,
-  chooseBestAction,
-  rankActions,
+  runAITurn,
   fetchPublishedWrestlerCards,
   fetchPublishedCardDefinitions,
   cardRecordToDefinition,
@@ -58,7 +55,6 @@ import {
 const TURN_TIME_LIMIT_SECONDS = 90;
 const ENTRANCE_EFFECT_DELAY_MS = 180;
 const RESULT_SCREEN_SETTLE_DELAY_MS = 320;
-const AI_ACTION_DELAY_MS = 1000;
 const BGM_MUTE_STORAGE_KEY = 'ko-game-bgm-muted';
 const BGM_VOLUME_STORAGE_KEY = 'ko-game-bgm-volume';
 
@@ -167,6 +163,7 @@ export default function Home() {
     media: GameMediaCatalog;
   } | null>(null);
   const aiActionRunningRef = useRef(false);
+  const aiSchedulerGenerationRef = useRef(0);
   const presentationBusyRef = useRef(false);
   const presentationIdleWaitersRef = useRef(new Set<() => void>());
   const [presentationBusy, setPresentationBusy] = useState(false);
@@ -178,6 +175,8 @@ export default function Home() {
   const lastAudioEventCountRef = useRef<number | null>(null);
   const pendingEntranceAudioRef = useRef<{ url: string; volume: number } | null>(null);
   const processedAttackSoundsRef = useRef(new Set<string>());
+  const latestGameStateRef = useRef(gameState);
+  latestGameStateRef.current = gameState;
 
   useEffect(() => {
     if (!matchReady || gameState.status !== 'IN_PROGRESS') return;
@@ -472,6 +471,8 @@ export default function Home() {
     }
 
     let cancelled = false;
+    const schedulerGeneration = aiSchedulerGenerationRef.current + 1;
+    aiSchedulerGenerationRef.current = schedulerGeneration;
     aiActionRunningRef.current = true;
     const wait = (milliseconds: number) => new Promise<void>((resolve) => window.setTimeout(resolve, milliseconds));
     const waitForPresentationIdle = () => {
@@ -481,59 +482,24 @@ export default function Home() {
       });
     };
 
-    void (async () => {
-      let workingState = gameState;
-      for (let decision = 0; decision < 50; decision += 1) {
-        if (cancelled || workingState.status !== 'IN_PROGRESS' || workingState.activePlayerId !== workingState.players[1]?.id) break;
-        const legalActions = getLegalActions(workingState, workingState.players[1]!.id);
-        if (import.meta.env.DEV) {
-          console.debug(
-            '[KO AI]',
-            rankActions(workingState, legalActions, workingState.players[1]!.id)
-              .slice(0, 3)
-              .map(({ action, score }) => ({ type: action.type, score: Number(score.toFixed(2)) })),
-          );
-        }
-        const action = chooseBestAction(workingState, legalActions, workingState.players[1]!.id);
-        // Let the state render mount its presentation first. The next
-        // decision is intentionally made only after that presentation settles.
-        await wait(0);
-        await waitForPresentationIdle();
-        await wait(AI_ACTION_DELAY_MS);
-        if (cancelled) break;
-        const result = executeAction(workingState, action);
-        if (!result.success) {
-          workingState = result.state;
-          break;
-        }
-        workingState = result.state;
-        setGameState(workingState);
-        if (workingState.status === 'FINISHED') break;
+    void runAITurn(gameState, gameState.players[1]!.id, {
+      wait,
+      waitForPresentationIdle,
+      isCancelled: () => cancelled || aiSchedulerGenerationRef.current !== schedulerGeneration,
+      onState: setGameState,
+    }).finally(() => {
+      if (aiSchedulerGenerationRef.current === schedulerGeneration) {
+        aiActionRunningRef.current = false;
       }
-
-      if (
-        !cancelled &&
-        workingState.status === 'IN_PROGRESS' &&
-        workingState.activePlayerId === workingState.players[1]?.id
-      ) {
-        await waitForPresentationIdle();
-        await wait(AI_ACTION_DELAY_MS);
-        if (!cancelled) {
-          const ended = executeAction(workingState, {
-            type: 'END_TURN',
-            playerId: workingState.players[1]!.id,
-          });
-          if (ended.success) setGameState(ended.state);
-        }
-      }
-      aiActionRunningRef.current = false;
-    })();
+    });
 
     return () => {
       cancelled = true;
-      aiActionRunningRef.current = false;
+      if (aiSchedulerGenerationRef.current === schedulerGeneration) {
+        aiActionRunningRef.current = false;
+      }
     };
-  }, [gameState.activePlayerId, gameState.status, isAiMatch, aiMatchStarted, matchReady, presentationBusy]);
+  }, [gameState.activePlayerId, gameState.status, isAiMatch, aiMatchStarted, matchReady]);
 
   useEffect(() => {
     if (!matchReady || (isAiMatch && !aiMatchStarted)) {
@@ -670,8 +636,14 @@ export default function Home() {
   }, [turnKey, gameState.status, matchReady]);
 
   function handleEndTurn(isTimeout = false) {
-    if (!matchReady || gameState.status !== 'IN_PROGRESS' || playAnimation || attackAnimation) return;
-    const result = endTurn(gameState, gameState.players[0].id);
+    const currentState = latestGameStateRef.current;
+    if (!matchReady || currentState.status !== 'IN_PROGRESS') return;
+    if (!isTimeout && (playAnimation || attackAnimation)) return;
+    const actingPlayerId = isTimeout
+      ? currentState.activePlayerId
+      : currentState.players[0]?.id;
+    if (!actingPlayerId) return;
+    const result = endTurn(currentState, actingPlayerId);
     if (!result.success) {
       setPlayError(result.message);
       return;
@@ -690,7 +662,7 @@ export default function Home() {
     }
 
     // 관리자 테스트 게임에서는 상대 턴을 즉시 종료해 플레이어 1의 다음 턴으로 돌아온다.
-    const opponentId = gameState.players[1].id;
+    const opponentId = currentState.players[1].id;
     const opponentTurnResult = endTurn(result.state, opponentId);
     if (!opponentTurnResult.success) {
       setPlayError(opponentTurnResult.message);

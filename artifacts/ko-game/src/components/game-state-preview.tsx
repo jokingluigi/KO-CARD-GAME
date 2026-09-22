@@ -39,6 +39,7 @@ import {
 import { PresentationFeedback, type PresentationCue } from './presentation-feedback';
 import { presentationCueDrafts, presentationEventKey } from './presentation-feedback-utils';
 import { QuestPresentation } from './quest-presentation';
+import { displayHealth } from './match-display-utils';
 
 interface GameStatePreviewProps {
   state: GameState;
@@ -696,7 +697,7 @@ export function GameStatePreview({
                   <div className="w-full rounded border border-red-800 bg-red-950/80 px-2 py-1 text-right">
                     <div className="text-[7px] font-bold text-red-300 md:text-[9px]">챔피언 체력</div>
                     <div className="font-display text-sm font-black text-white md:text-lg">
-                      <span key={opponentSurvivalHealth} className="presentation-stat-change">{opponentSurvivalHealth}</span> / {opp.champion?.maxHealth ?? 20}
+                      <span key={opponentSurvivalHealth} className="presentation-stat-change">{displayHealth(opponentSurvivalHealth)}</span> / {opp.champion?.maxHealth ?? 20}
                     </div>
                   </div>
                 </div>
@@ -1055,7 +1056,7 @@ export function GameStatePreview({
                 <div className="rounded border border-blue-800 bg-blue-950/80 px-2 py-1">
                  <div className="text-[7px] font-bold text-blue-300 md:text-[9px]">챔피언 체력</div>
                   <div className="font-display text-sm font-black text-white md:text-xl">
-                    <span key={mySurvivalHealth} className="presentation-stat-change">{mySurvivalHealth}</span> / {me.champion?.maxHealth ?? 20}
+                    <span key={mySurvivalHealth} className="presentation-stat-change">{displayHealth(mySurvivalHealth)}</span> / {me.champion?.maxHealth ?? 20}
                  </div>
                 </div>
                </div>
