@@ -4,7 +4,7 @@ import { CardArtwork } from './card-artwork';
 import {
   getCardDefinition,
   getLegalActions,
-  canSelectAsAttacker,
+  getAttackLegality,
   isCurrentPlayer,
   canUseChampionAbility,
   getPlayerSurvivalHealth,
@@ -121,6 +121,7 @@ export function GameStatePreview({
   const [openGraveyardPlayerId, setOpenGraveyardPlayerId] = React.useState<string | null>(null);
   const [settingsOpen, setSettingsOpen] = React.useState(false);
   const [surrenderConfirming, setSurrenderConfirming] = React.useState(false);
+  const [attackHint, setAttackHint] = React.useState<string | null>(null);
   const handCardRefs = React.useRef(new Map<string, HTMLDivElement>());
   const boardSlotRefs = React.useRef(new Map<number, HTMLDivElement>());
   const opponentBoardSlotRefs = React.useRef(new Map<number, HTMLDivElement>());
@@ -430,8 +431,8 @@ export function GameStatePreview({
   const selectedEffectTargetIds = new Set(state.targetingState?.selectedTargetIds ?? []);
   
   const isMyTurn = state.activePlayerId === me.id;
-  
   const selectedHandCard = me.hand.find((card) => card.instanceId === selectedCardId);
+  const attackerSelectionActive = isMyTurn && !selectedHandCard && !effectTargeting;
     
   const canEndTurn = canEndTurnOverride ?? (
     isCurrentPlayer(state, me.id) && !effectTargeting
@@ -567,6 +568,7 @@ export function GameStatePreview({
       return;
     }
     if (!selectedAttackerId) return;
+    setAttackHint(null);
     onAttackWrestler(cardId, attackGeometry(boardCardRefs.current.get(cardId) ?? null));
   }
 
@@ -576,6 +578,7 @@ export function GameStatePreview({
       return;
     }
     if (!selectedAttackerId || opponentChampionProtected) return;
+    setAttackHint(null);
     onAttackPlayer(attackGeometry(championRef.current));
   }
 
@@ -741,6 +744,8 @@ export function GameStatePreview({
                    selectable={false}
                    selected={false}
                    attackReady={false}
+                    attackSelectionActive={false}
+                    attackReason={undefined}
                     targetingActive={!!effectTargeting}
                     presentationActive={activePresentationCardId === card?.instanceId}
                      targetable={!!card && (effectTargeting ? validEffectTargetIds.has(card.instanceId) : !!selectedAttackerId)}
@@ -802,7 +807,14 @@ export function GameStatePreview({
                          attackAnimation?.target?.instanceId === card?.instanceId
                     }
                      selected={card?.instanceId === selectedAttackerId || !!card && selectedEffectTargetIds.has(card.instanceId)}
-                   attackReady={!!card && canSelectAsAttacker(state, me.id, card.instanceId)}
+                    attackReady={!!card && getAttackLegality(state, me.id, card.instanceId).allowed}
+                    attackSelectionActive={attackerSelectionActive}
+                    attackReason={card
+                      ? (() => {
+                          const legality = getAttackLegality(state, me.id, card.instanceId);
+                          return legality.allowed ? undefined : legality.message;
+                        })()
+                      : undefined}
                     targetingActive={!!effectTargeting}
                     presentationActive={activePresentationCardId === card?.instanceId}
                     targetable={!!card && !!effectTargeting && validEffectTargetIds.has(card.instanceId)}
@@ -814,7 +826,17 @@ export function GameStatePreview({
                         if (effectTargeting) {
                           if (validEffectTargetIds.has(idOrIdx)) onEffectTarget(idOrIdx);
                         } else {
-                          onSelectAttacker(idOrIdx);
+                           if (
+                             attackerSelectionActive &&
+                             card &&
+                             !getAttackLegality(state, me.id, card.instanceId).allowed
+                           ) {
+                              const legality = getAttackLegality(state, me.id, card.instanceId);
+                              setAttackHint(legality.allowed ? null : legality.message);
+                             return;
+                           }
+                           setAttackHint(null);
+                           onSelectAttacker(idOrIdx);
                         }
                       }
                       else handlePlaySlot(idOrIdx as BoardSlotIndex);
@@ -888,6 +910,14 @@ export function GameStatePreview({
                 {playError}
               </div>
             )}
+              {attackHint && (
+                <div
+                  className="absolute right-0 top-full mt-2 w-44 rounded border border-blue-500/70 bg-blue-950/95 px-3 py-2 text-[10px] font-bold text-blue-100 shadow-xl"
+                  role="status"
+                >
+                  {attackHint}
+                </div>
+              )}
           </aside>
 
            {settingsOpen && (
@@ -1284,6 +1314,8 @@ function BoardSlot({
   selectable,
   selected,
   attackReady,
+  attackSelectionActive,
+  attackReason,
   targetingActive,
   presentationActive,
   targetable,
@@ -1303,6 +1335,8 @@ function BoardSlot({
   selectable: boolean;
   selected: boolean;
   attackReady: boolean;
+  attackSelectionActive: boolean;
+  attackReason?: string;
   targetingActive: boolean;
   presentationActive: boolean;
   targetable: boolean;
@@ -1335,6 +1369,8 @@ function BoardSlot({
       containerClass += "hover:-translate-y-1 hover:scale-[1.03] cursor-crosshair z-10";
     } else if (targetingActive) {
       containerClass += "opacity-40 grayscale cursor-not-allowed";
+    } else if (attackSelectionActive && !attackReady) {
+      containerClass += "opacity-50 grayscale cursor-help";
     } else if (attackReady) {
       containerClass += "hover:-translate-y-1 hover:scale-[1.03] cursor-pointer z-10";
     } else {
@@ -1355,7 +1391,11 @@ function BoardSlot({
 
   return (
     <Inspectable content={<CardInspectContent card={card} />} className="ko-board-slot-wrapper relative shrink-0">
-    <div ref={slotRef} className={`relative${animating ? " invisible" : ""}`}>
+       <div
+         ref={slotRef}
+         title={attackSelectionActive && !attackReady ? attackReason : undefined}
+         className={`relative${animating ? " invisible" : ""}`}
+       >
       {activeReady && (
         <button
           type="button"

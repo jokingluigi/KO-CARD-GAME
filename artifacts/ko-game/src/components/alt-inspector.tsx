@@ -246,6 +246,12 @@ export function CardInspectContent({ card }: { card: CardInstance }) {
         className="mx-auto w-full max-w-[260px]"
         showRules={false}
         imageDisplaySettings={definition}
+         runtimeKeywords={card.keywords}
+         isSilenced={card.isSilenced}
+         isStunned={card.isStunned}
+         isAbilityDisabled={card.isAbilityDisabled}
+         dodgeCharges={card.dodgeCharges ?? (card.dodgeAvailable ? 1 : 0)}
+         isChampionToken={card.isChampionToken}
       />
       <div className="grid grid-cols-3 gap-2">
         <InspectorStat label="비용" value={card.currentCost} />

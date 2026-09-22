@@ -1,6 +1,9 @@
 import { useEffect, useState, type CSSProperties, type KeyboardEvent, type ReactNode, type Ref } from "react";
 import { CardArtwork } from "./card-artwork";
-import { normalizeCardRulesText } from "@/lib/display-labels";
+import {
+  getVisibleCardKeywords,
+  getVisibleCardRulesText,
+} from "@/lib/card-display-state";
 import {
   normalizeCardRarityForType,
   type CardRarity,
@@ -180,7 +183,15 @@ export function CardRenderer({
   tabIndex?: number;
   containerRef?: Ref<HTMLDivElement>;
 }) {
-  const displayRulesText = normalizeCardRulesText(rulesText);
+  const visibleRuntimeKeywords = getVisibleCardKeywords(
+    runtimeKeywords,
+    isSilenced,
+    dodgeCharges,
+  );
+  const displayRulesText = getVisibleCardRulesText(
+    rulesText,
+    visibleRuntimeKeywords,
+  );
   const normalizedRarity = isChampionToken
     ? "CHAMPION"
     : normalizeCardRarityForType(cardType, rarity);
@@ -209,7 +220,7 @@ export function CardRenderer({
   }, [frameSettings?.frameUrl, normalizedCardType, normalizedRarity]);
   const frameUrl = frameFailed ? bundledFrameUrl : frameSettings?.frameUrl ?? bundledFrameUrl;
   const keywordBadges = [
-    ...runtimeKeywords.filter((keyword) => keyword !== "DODGE" || dodgeCharges > 0),
+    ...visibleRuntimeKeywords,
     ...(isSilenced ? ["SILENCE" as CardKeyword] : []),
     ...(isStunned ? ["STUN" as CardKeyword] : []),
     ...(isAbilityDisabled ? ["DISABLED" as CardKeyword] : []),

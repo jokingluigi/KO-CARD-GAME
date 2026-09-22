@@ -1,6 +1,6 @@
 import { getCardDefinition, type CardInstance } from '../game';
 import { canonicalCardTags } from '../game/cards/tags';
-import { normalizeCardRulesText } from '../lib/display-labels';
+import { getVisibleCardKeywords, getVisibleCardRulesText } from '../lib/card-display-state';
 
 export const KEYWORD_DESCRIPTIONS: Record<string, string> = {
   RUSH: '등장한 턴에도 선수 또는 상대 챔피언을 공격할 수 있습니다.',
@@ -55,7 +55,12 @@ export function calculateInspectorPosition(
 export function getCardInspectorMetadata(card: CardInstance) {
   const definition = getCardDefinition(card.definitionId);
   const tags = canonicalCardTags(definition?.tags ?? card.tags).slice(0, 3);
-  const keywords = card.keywords
+  const visibleKeywords = getVisibleCardKeywords(
+    card.keywords,
+    card.isSilenced,
+    card.dodgeCharges ?? (card.dodgeAvailable ? 1 : 0),
+  );
+  const keywords = visibleKeywords
     .filter((keyword) => !['SILENCE', 'STUN', 'DISABLED'].includes(keyword))
     .map((keyword) => ({
       key: keyword,
@@ -72,7 +77,9 @@ export function getCardInspectorMetadata(card: CardInstance) {
     tags,
     keywords,
     statuses,
-    rulesText: normalizeCardRulesText(definition?.rulesText ?? '') || '효과 없음',
+    rulesText:
+      getVisibleCardRulesText(definition?.rulesText ?? '', visibleKeywords) ||
+      '효과 없음',
   };
 }
 

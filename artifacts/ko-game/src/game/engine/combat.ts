@@ -1,5 +1,5 @@
 import type { CardInstanceId } from '../cards/types';
-import type { ActionResult } from '../actions/types';
+import type { ActionErrorCode, ActionResult } from '../actions/types';
 import { actionFailure, actionSuccess } from '../actions/types';
 import type { RetireEvent } from '../events/types';
 import type { GameState } from '../types/game-state';
@@ -16,6 +16,7 @@ import {
 } from '../effects/effect-engine';
 import { processChampionQuestEvents } from '../champions/quests';
 import { findDirectDeployedChampion, isChampionProtectedByToken } from './direct-champion';
+import { resetCardForGraveyard } from '../cards/zone-state';
 
 export type AttackTarget =
   | {
@@ -41,28 +42,97 @@ function findBoardCard(
   return player && card ? { player, card } : null;
 }
 
+export type AttackLegality =
+  | { allowed: true }
+  | { allowed: false; reasonCode: ActionErrorCode; message: string };
+
+export function getAttackLegality(
+  state: GameState,
+  playerId: string,
+  cardInstanceId: CardInstanceId,
+): AttackLegality {
+  if (state.targetingState?.active) {
+    return {
+      allowed: false,
+      reasonCode: 'TARGET_SELECTION_PENDING',
+      message: '먼저 대상을 선택하세요.',
+    };
+  }
+  if (state.activePlayerId !== playerId) {
+    return {
+      allowed: false,
+      reasonCode: 'NOT_YOUR_TURN',
+      message: '내 턴에만 공격할 수 있습니다.',
+    };
+  }
+  if (state.status !== 'IN_PROGRESS') {
+    return {
+      allowed: false,
+      reasonCode: 'GAME_NOT_IN_PROGRESS',
+      message: '진행 중인 게임에서만 공격할 수 있습니다.',
+    };
+  }
+  const entry = findBoardCard(state, playerId, cardInstanceId);
+  if (!entry) {
+    return {
+      allowed: false,
+      reasonCode: 'INVALID_ATTACK_TARGET',
+      message: '공격할 수 없는 선수입니다.',
+    };
+  }
+  if (entry.card.isStunned) {
+    return {
+      allowed: false,
+      reasonCode: 'CARD_STUNNED',
+      message: '기절한 선수는 공격할 수 없습니다.',
+    };
+  }
+
+  const maximumAttacks = hasKeyword(entry.card, 'MULTI_STRIKE') ? 2 : 1;
+  if (entry.card.attacksUsedThisTurn >= maximumAttacks) {
+    return {
+      allowed: false,
+      reasonCode: 'ATTACK_ALREADY_USED',
+      message: '이 선수는 이번 턴에 더 이상 공격할 수 없습니다.',
+    };
+  }
+
+  if (
+    entry.card.enteredThisTurn &&
+    !hasKeyword(entry.card, 'RUSH') &&
+    !hasKeyword(entry.card, 'SURPRISE')
+  ) {
+    return {
+      allowed: false,
+      reasonCode: 'SUMMONED_THIS_TURN',
+      message: '이 선수는 이번 턴에 공격할 수 없습니다.',
+    };
+  }
+
+  const opponent = state.players.find((player) => player.id !== playerId);
+  const hasOpponentWrestler = Boolean(opponent?.board.some((card) => card !== null));
+  const canAttackChampion = Boolean(
+    opponent &&
+      !isChampionProtectedByToken(state, opponent.id) &&
+      (!entry.card.enteredThisTurn || !hasKeyword(entry.card, 'SURPRISE')),
+  );
+  if (!hasOpponentWrestler && !canAttackChampion) {
+    return {
+      allowed: false,
+      reasonCode: 'NO_VALID_TARGET',
+      message: '공격할 수 있는 대상이 없습니다.',
+    };
+  }
+
+  return { allowed: true };
+}
+
 export function canSelectAsAttacker(
   state: GameState,
   playerId: string,
   cardInstanceId: CardInstanceId,
 ): boolean {
-  if (
-    state.status !== 'IN_PROGRESS' ||
-    state.activePlayerId !== playerId
-  ) {
-    return false;
-  }
-  const entry = findBoardCard(state, playerId, cardInstanceId);
-  if (!entry || entry.card.isStunned) return false;
-
-  const maximumAttacks = hasKeyword(entry.card, 'MULTI_STRIKE') ? 2 : 1;
-  if (entry.card.attacksUsedThisTurn >= maximumAttacks) return false;
-
-  return (
-    !entry.card.enteredThisTurn ||
-    hasKeyword(entry.card, 'RUSH') ||
-    hasKeyword(entry.card, 'SURPRISE')
-  );
+  return getAttackLegality(state, playerId, cardInstanceId).allowed;
 }
 
 function retireDefeatedWrestlers(state: GameState): GameState {
@@ -91,7 +161,7 @@ function retireDefeatedWrestlers(state: GameState): GameState {
 
        if (card && card.currentHealth <= 0 && !protectedState.preventedRetireTargetIds?.includes(card.instanceId)) {
         retired.push({ playerId: player.id, card });
-        retiredCards.push({ ...card, boardSlot: null });
+        retiredCards.push(resetCardForGraveyard(card));
         retireEvents.push({
           type: 'CARD_RETIRED',
           playerId: player.id,

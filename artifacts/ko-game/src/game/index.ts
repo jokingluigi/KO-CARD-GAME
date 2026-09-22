@@ -5,6 +5,7 @@ export * from './actions/ai-turn-scheduler';
 export * from './cards/types';
 export * from './cards/test-cards';
 export * from './cards/generation';
+export * from './cards/zone-state';
 export * from './cards/published-cards';
 export * from './champions/types';
 export * from './champions/test-champions';

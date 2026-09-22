@@ -14,6 +14,7 @@ import { enterField } from '../engine/enter-field';
 import { playWrestlerFromHand } from '../engine/play-wrestler';
 import { applyEffect, resolveTriggeredAbilities, selectEffectTarget } from '../effects/effect-engine';
 import type { GameState } from '../types/game-state';
+import { getVisibleCardKeywords } from '../../lib/card-display-state';
 
 const apiOrigin = process.env.KO_QA_API_ORIGIN ?? 'http://127.0.0.1:8080';
 const response = await fetch(`${apiOrigin}/api/cards`);
@@ -70,6 +71,13 @@ function statTriggerCard(instanceId: string): CardInstance {
   };
   return card(statTriggerDefinition, instanceId);
 }
+
+test('published 팬텀워커 keeps the generic RUSH keyword in its runtime display state', () => {
+  const walker = definition('팬텀워커');
+  assert.equal(walker.keywords.includes('RUSH'), true);
+  const instance = card(walker, 'phantom-walker');
+  assert.deepEqual(getVisibleCardKeywords(instance.keywords, instance.isSilenced, instance.dodgeCharges ?? 0), ['RUSH']);
+});
 
 function buffHandCard(
   state: GameState,

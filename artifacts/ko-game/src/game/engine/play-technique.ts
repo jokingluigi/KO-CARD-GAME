@@ -4,6 +4,7 @@ import type { CardInstanceId } from '../cards/types';
 import { hasMandatoryPlayerChoice, resolveQueuedEffectsForPlayedTechnique, resolveRegisteredRuleListeners, resolveTriggeredAbilities } from '../effects/effect-engine';
 import type { GameState } from '../types/game-state';
 import { validateCurrentPlayer } from './turn-system';
+import { resetCardForGraveyard } from '../cards/zone-state';
 
 /** Plays a technique only when it is directly cast from the player's hand. */
 export function playTechniqueFromHand(
@@ -37,7 +38,7 @@ export function playTechniqueFromHand(
     players: queuedState.players.map((candidate) => candidate.id !== playerId ? candidate : {
       ...candidate, currentGold: candidate.currentGold - queuedCard.currentCost,
       hand: candidate.hand.filter((entry) => entry.instanceId !== cardInstanceId),
-      graveyard: [...candidate.graveyard, { ...queuedCard, boardSlot: null }],
+       graveyard: [...candidate.graveyard, resetCardForGraveyard(queuedCard)],
     }),
     events: [...state.events, { type: 'CARD_PLAYED', playerId, cardInstanceId, cardType: card.cardType,
       source: { type: 'PLAYER', playerId }, target: { type: 'CARD', cardInstanceId }, reason: 'PLAY_FROM_HAND',

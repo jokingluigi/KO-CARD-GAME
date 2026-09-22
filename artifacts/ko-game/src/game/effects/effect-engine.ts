@@ -31,6 +31,7 @@ import { generateCard, generateCardInstance, getRandomCardGenerationCandidates, 
 import { getAdjacentSlots } from '../engine/board-position';
 import { deployLinkedChampionToken } from '../engine/champion-token';
 import { isChampionProtectedByToken } from '../engine/direct-champion';
+import { resetCardForGraveyard } from '../cards/zone-state';
 
 /** The single authoritative target resolver.  UI must only display these ids. */
 export function getValidTargets(
@@ -1113,7 +1114,7 @@ export function resolveStateBasedDeaths(
       const slot = index as 0 | 1 | 2 | 3;
       retired.push({ playerId: player.id, card, slot });
       board[index] = null;
-      graveyard.push({ ...card, boardSlot: null });
+      graveyard.push(resetCardForGraveyard(card));
     });
     return { ...player, board: board as typeof player.board, graveyard };
   });
@@ -1767,7 +1768,7 @@ export function applyEffect(
                 board: player.board.map((card) => card?.instanceId === directChampion.instanceId
                   ? defeated ? null : { ...card, currentHealth: health }
                   : card) as typeof player.board,
-                graveyard: defeated ? [...player.graveyard, { ...directChampion, currentHealth: health, boardSlot: null }] : player.graveyard,
+                graveyard: defeated ? [...player.graveyard, resetCardForGraveyard(directChampion)] : player.graveyard,
               }
             : {
                 ...player,
@@ -1840,8 +1841,9 @@ export function applyEffect(
         if (!owner || !current || slot < 0) return nextState;
 
         const revived: CardInstance = {
-          ...current,
-          currentHealth: Math.max(1, current.maxHealth),
+          ...resetCardForGraveyard(current),
+          currentHealth: Math.max(1, current.baseHealth ?? current.maxHealth),
+          maxHealth: Math.max(1, current.baseHealth ?? current.maxHealth),
           boardSlot: null,
           enteredThisTurn: false,
           attacksUsedThisTurn: 0,
@@ -1871,7 +1873,7 @@ export function applyEffect(
         players: state.players.map((player) => player.id !== targetOwner ? player : {
           ...player,
           deck: player.deck.filter((card) => !ids.has(card.instanceId)),
-          graveyard: [...player.graveyard, ...player.deck.filter((card) => ids.has(card.instanceId)).map((card) => ({ ...card, boardSlot: null }))],
+           graveyard: [...player.graveyard, ...player.deck.filter((card) => ids.has(card.instanceId)).map(resetCardForGraveyard)],
         }),
       };
     }
@@ -1894,7 +1896,10 @@ export function applyEffect(
             : player.board,
           deck: zones.includes('DECK') ? player.deck.filter((card) => !ids.has(card.instanceId)) : player.deck,
           graveyard: zones.includes('GRAVEYARD') ? player.graveyard.filter((card) => !ids.has(card.instanceId)) : player.graveyard,
-          hand: [...player.hand, ...moved.map((card) => ({ ...card, boardSlot: null, ...temporaryCost }))],
+           hand: [...player.hand, ...moved.map((card) => ({
+             ...(zones.includes('GRAVEYARD') ? resetCardForGraveyard(card) : { ...card, boardSlot: null }),
+             ...temporaryCost,
+           }))],
         }),
       };
     }
@@ -1917,7 +1922,7 @@ export function applyEffect(
                : player.board,
            }
           : player.id === playerId
-            ? { ...player, hand: [...player.hand, ...stolen.map((card) => ({ ...card, boardSlot: null }))] }
+             ? { ...player, hand: [...player.hand, ...stolen.map((card) => zones.includes('GRAVEYARD') ? resetCardForGraveyard(card) : { ...card, boardSlot: null })] }
             : player),
       };
     }
@@ -1932,7 +1937,7 @@ export function applyEffect(
           players: nextState.players.map((player) => player.id !== targetOwner ? player : {
             ...player,
             board: player.board.map((card) => card?.instanceId === current.instanceId ? null : card) as typeof player.board,
-            graveyard: [...player.graveyard, { ...current, boardSlot: null }],
+             graveyard: [...player.graveyard, resetCardForGraveyard(current)],
           }),
           events: [...nextState.events, {
             type: 'CARD_RETIRED' as const, playerId: targetOwner, cardInstanceId: current.instanceId, cardType: current.cardType,
@@ -2090,11 +2095,15 @@ export function applyEffect(
             events: [...protectedState.events, { type: 'DAMAGE_DEALT', playerId, cardInstanceId: sourceCard.instanceId, source: { type: 'CARD', cardInstanceId: sourceCard.instanceId }, target: { type: 'CARD', cardInstanceId: current.instanceId }, reason: 'CARD_EFFECT', amount: 0, sourceContext: sourceContextFor(playerId, sourceCard, triggerContext) }],
           }, 'DAMAGE_TAKEN', targetOwner, current.instanceId, current.cardType);
         }
-        const retired: CardInstance = { ...preparedCurrent, currentHealth: health, boardSlot: null };
+         const retired: CardInstance = resetCardForGraveyard({
+           ...preparedCurrent,
+           currentHealth: health,
+           boardSlot: null,
+         });
         const retiredState: GameState = {
           ...clearDamageMarker(protectedState),
           players: protectedState.players.map((player) => player.id === targetOwner
-            ? { ...player, board: player.board.map((card) => card?.instanceId === current.instanceId ? null : card) as typeof player.board, graveyard: [...player.graveyard, retired] }
+             ? { ...player, board: player.board.map((card) => card?.instanceId === current.instanceId ? null : card) as typeof player.board, graveyard: [...player.graveyard, retired] }
             : player),
           events: [...protectedState.events,
             { type: 'DAMAGE_DEALT', playerId, cardInstanceId: sourceCard.instanceId, source: { type: 'CARD', cardInstanceId: sourceCard.instanceId }, target: { type: 'CARD', cardInstanceId: current.instanceId }, reason: 'CARD_EFFECT', amount: damageAmount, sourceContext: sourceContextFor(playerId, sourceCard, triggerContext) },
@@ -2330,7 +2339,7 @@ export function applyEffect(
                 : card,
             ) as typeof player.board,
             graveyard: defeated
-              ? [...player.graveyard, damagedChampion]
+               ? [...player.graveyard, resetCardForGraveyard(damagedChampion)]
               : player.graveyard,
           };
         }

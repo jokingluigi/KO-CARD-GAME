@@ -2,6 +2,7 @@ import type { GameState, PlayerState } from '../types/game-state';
 import { MAX_HAND_SIZE } from '../rules/constants';
 import { findDirectDeployedChampion } from './direct-champion';
 import { resolveCardRetiredListeners, resolveTriggeredAbilities } from '../effects/effect-engine';
+import { resetCardForGraveyard } from '../cards/zone-state';
 
 function finishGameFromFatigue(
   state: GameState,
@@ -52,11 +53,7 @@ export function drawCard(state: GameState, playerId: string): GameState {
             graveyard: defeated
               ? [
                   ...player.graveyard,
-                  {
-                    ...directChampion,
-                    currentHealth,
-                    boardSlot: null,
-                  },
+                   resetCardForGraveyard(directChampion),
                 ]
               : player.graveyard,
           };

@@ -8,11 +8,14 @@ import type { CardDefinition, CardInstance } from '../cards/types';
 import { getActiveAbility } from '../effects/effect-engine';
 import type { CardKeyword } from '../effects/types';
 import type { GameState } from '../types/game-state';
+import { getVisibleCardKeywords, getVisibleCardRulesText } from '../../lib/card-display-state';
 import { silenceCard, setCardStunned, useActiveAbility } from './card-status';
-import { attack } from './combat';
+import { attack, canSelectAsAttacker, getAttackLegality } from './combat';
 import { createInitialGameState } from './create-initial-game-state';
 import { enterField } from './enter-field';
 import { startGame } from './turn-system';
+import { resolveStateBasedDeaths, resolveTriggeredAbilities } from '../effects/effect-engine';
+import { resetCardForGraveyard } from '../cards/zone-state';
 
 const fixedRandom = () => 0.5;
 
@@ -265,6 +268,131 @@ test('침묵은 키워드와 능력을 막지만 침묵 면역은 보존한다',
     silenceCard(immuneState, 'ability').players[0].board[0]?.isSilenced,
     false,
   );
+});
+
+test('침묵과 회피 소비는 현재 키워드와 키워드 전용 텍스트를 함께 숨긴다', () => {
+  const silenced = silenceCard(
+    combatState([
+      card('silenced-rush', {
+        keywords: ['RUSH', 'TAUNT', 'SURPRISE'],
+        definition: definition('test-rush'),
+      }),
+    ]),
+    'silenced-rush',
+  );
+  const silencedCard = silenced.players[0].board[0]!;
+  assert.deepEqual(getVisibleCardKeywords(silencedCard.keywords, silencedCard.isSilenced, 0), []);
+  assert.equal(getVisibleCardRulesText('러쉬, 도발, 기습', []), '');
+
+  assert.deepEqual(getVisibleCardKeywords(['DODGE'], false, 0), []);
+  assert.equal(getVisibleCardRulesText('러쉬, 회피', ['RUSH']), '러쉬');
+});
+
+test('공격 legality는 선택 불가 사유를 제공하고 소환된 일반 선수를 차단한다', () => {
+  const state = combatState(
+    [card('summoned', { keywords: [], enteredThisTurn: true })],
+    [card('target', { keywords: [] })],
+  );
+  const legality = getAttackLegality(state, 'player-1', 'summoned');
+  assert.equal(legality.allowed, false);
+  if (!legality.allowed) {
+    assert.equal(legality.reasonCode, 'SUMMONED_THIS_TURN');
+    assert.equal(legality.message, '이 선수는 이번 턴에 공격할 수 없습니다.');
+  }
+  assert.equal(canSelectAsAttacker(state, 'player-1', 'summoned'), false);
+  assert.equal(canSelectAsAttacker(state, 'player-1', 'target'), false);
+});
+
+test('묘지 진입은 변경된 스탯/비용을 원본으로 되돌리고 부활과 손패 이동도 reset 상태를 사용한다', () => {
+  const original = card('grave-reset', { attack: 3, health: 5 });
+  const modified = {
+    ...original,
+    currentCost: 2,
+    currentAttack: 6,
+    currentHealth: 0,
+    maxHealth: 8,
+    temporaryCostUntilTurn: 1,
+    temporaryStatModifiers: [{ stat: 'attack' as const, amount: 3, untilTurn: 1 }],
+  };
+  const state = combatState([modified]);
+  const retired = resolveStateBasedDeaths(state);
+  const inGraveyard = retired.players[0].graveyard.at(-1);
+  assert.equal(inGraveyard?.currentCost, original.baseCost);
+  assert.equal(inGraveyard?.currentAttack, original.baseAttack);
+  assert.equal(inGraveyard?.currentHealth, original.baseHealth);
+  assert.equal(inGraveyard?.maxHealth, original.baseHealth);
+  assert.deepEqual(inGraveyard?.temporaryStatModifiers, []);
+
+  const reviveSource = {
+    ...card('revive-source'),
+    abilities: [{
+      trigger: 'ENTER_FIELD' as const,
+      effects: [{
+        type: 'STRUCTURED' as const,
+        action: 'REVIVE' as const,
+        target: {
+          zone: 'GRAVEYARD' as const,
+          owner: 'SELF' as const,
+          cardType: 'WRESTLER' as const,
+          selection: 'RANDOM' as const,
+          count: 1,
+        },
+      }],
+    }],
+  };
+  const revived = resolveTriggeredAbilities(
+    {
+      ...retired,
+      players: retired.players.map((player) =>
+        player.id === 'player-1'
+          ? { ...player, board: [null, null, null, null], graveyard: [inGraveyard!] }
+          : player,
+      ),
+    },
+    'player-1',
+    reviveSource,
+    'ENTER_FIELD',
+  );
+  const revivedCard = revived.players[0].board.find((entry) => entry?.instanceId === original.instanceId);
+  assert.equal(revivedCard?.currentAttack, original.baseAttack);
+  assert.equal(revivedCard?.currentHealth, original.baseHealth);
+  assert.equal(revivedCard?.currentCost, original.baseCost);
+
+  const movedToHand = resolveTriggeredAbilities(
+    {
+      ...retired,
+      players: retired.players.map((player) =>
+        player.id === 'player-1'
+          ? { ...player, board: [null, null, null, null], graveyard: [modified] }
+          : player,
+      ),
+    },
+    'player-1',
+    {
+      ...card('hand-source'),
+      abilities: [{
+        trigger: 'ENTER_FIELD' as const,
+        effects: [{
+          type: 'STRUCTURED' as const,
+          action: 'MOVE_TO_HAND' as const,
+          target: {
+            zone: 'GRAVEYARD' as const,
+            owner: 'SELF' as const,
+            cardType: 'WRESTLER' as const,
+            selection: 'RANDOM' as const,
+            count: 1,
+          },
+        }],
+      }],
+    },
+    'ENTER_FIELD',
+  );
+  const handCard = movedToHand.players[0].hand.find((entry) => entry.instanceId === modified.instanceId);
+  assert.equal(handCard?.currentAttack, original.baseAttack);
+  assert.equal(handCard?.currentHealth, original.baseHealth);
+  assert.equal(handCard?.currentCost, original.baseCost);
+  assert.deepEqual(handCard?.temporaryStatModifiers, []);
+  assert.deepEqual(resetCardForGraveyard(modified).statHistory, []);
 });
 
 test('등장과 포지션 효과는 ENTER_FIELD 처리에서 실행된다', () => {
