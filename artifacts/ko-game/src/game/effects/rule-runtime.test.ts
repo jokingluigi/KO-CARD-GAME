@@ -3,6 +3,7 @@ import test from 'node:test';
 
 import { generateCard } from '../cards/generation';
 import type { CardAbility, CardDefinition, CardEffect } from './types';
+import type { EffectScript } from '@workspace/effect-registry';
 import { createInitialGameState } from '../engine/create-initial-game-state';
 import { attack } from '../engine/combat';
 import { enterField } from '../engine/enter-field';
@@ -179,4 +180,44 @@ test('card-effect damage uses the same prevention and replacement pipeline as co
   });
   assert.equal(result.players[1].board[0]?.instanceId, defender.instanceId);
   assert.equal(result.players[1].board[0]?.currentHealth, 1);
+});
+
+test('SCRIPT_V1 history queries are bounded and feed a later effect amount', () => {
+  const source = card('history-source', [], { attack: 1, health: 3 });
+  const script: EffectScript = {
+    version: 'SCRIPT_V1',
+    trigger: 'LEAVE_FIELD',
+    steps: [
+      {
+        type: 'HISTORY',
+        id: 'retiredCount',
+        query: {
+          scope: 'CURRENT_TURN',
+          eventType: 'CARD_RETIRED',
+          cardType: 'WRESTLER',
+          operation: 'COUNT',
+        },
+      },
+      {
+        type: 'EFFECT',
+        effect: {
+          action: 'DAMAGE',
+          target: { zone: 'PLAYER', owner: 'ENEMY', selection: 'SELF', count: 1 },
+          values: { amountExpression: { kind: 'RESULT_VALUE', resultId: 'retiredCount' } },
+        },
+      },
+    ],
+  };
+  let state = createInitialGameState();
+  state.status = 'IN_PROGRESS';
+  state.turn = 1;
+  state.activePlayerId = 'player-1';
+  state.events = [
+    { type: 'TURN_STARTED', playerId: 'player-1' },
+    { type: 'CARD_RETIRED', playerId: 'player-1', cardType: 'WRESTLER', cardInstanceId: 'old-1' },
+    { type: 'CARD_RETIRED', playerId: 'player-2', cardType: 'WRESTLER', cardInstanceId: 'old-2' },
+  ];
+  const result = applyEffect(state, 'player-1', source, { type: 'SCRIPT', script });
+  assert.equal(result.players[1].health, 18);
+  assert.equal(JSON.stringify(script).includes('function'), false);
 });

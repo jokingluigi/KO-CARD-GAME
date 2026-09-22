@@ -41,9 +41,13 @@ export const SCRIPT_MAX_SELECTOR_RESULTS = 20 as const;
 export const SCRIPT_OPERATIONS = ["COUNT", "SUM", "MIN", "MAX"] as const;
 export const SCRIPT_COMPARATORS = ["EQ", "NE", "LT", "LTE", "GT", "GTE"] as const;
 export const SCRIPT_VALUE_KINDS = ["CONSTANT", "RESULT_COUNT", "RESULT_VALUE"] as const;
+export const SCRIPT_HISTORY_SCOPES = ["CURRENT_RESOLUTION", "CURRENT_ACTION", "CURRENT_TURN", "CURRENT_MATCH"] as const;
+export const SCRIPT_HISTORY_EVENTS = ["CARD_PLAYED", "CARD_RETIRED", "DAMAGE_DEALT", "CARD_DRAWN", "CARD_GENERATED"] as const;
 export type ScriptOperation = typeof SCRIPT_OPERATIONS[number];
 export type ScriptComparator = typeof SCRIPT_COMPARATORS[number];
 export type ScriptValueKind = typeof SCRIPT_VALUE_KINDS[number];
+export type ScriptHistoryScope = typeof SCRIPT_HISTORY_SCOPES[number];
+export type ScriptHistoryEvent = typeof SCRIPT_HISTORY_EVENTS[number];
 export type ScriptStat = "COST" | "ATTACK" | "HEALTH";
 export type ScriptFilter = {
   isGenerated?: boolean;
@@ -83,6 +87,15 @@ export type ScriptCondition = {
   compare: ScriptComparator;
   right: ScriptValue;
 };
+export type ScriptHistoryQuery = {
+  scope: ScriptHistoryScope;
+  eventType: ScriptHistoryEvent;
+  owner?: TargetOwner;
+  cardType?: "WRESTLER" | "TECHNIQUE";
+  tag?: string;
+  operation: ScriptOperation;
+  stat?: ScriptStat;
+};
 export type ScriptEffect = {
   action: Action;
   target?: ScriptTarget;
@@ -91,6 +104,7 @@ export type ScriptEffect = {
 export type ScriptStep =
   | { type: "SELECT"; id: string; target: ScriptTarget }
   | { type: "AGGREGATE"; id: string; selectionId: string; operation: ScriptOperation; stat?: ScriptStat }
+  | { type: "HISTORY"; id: string; query: ScriptHistoryQuery }
   | { type: "EFFECT"; id?: string; effect: ScriptEffect }
   | { type: "IF"; condition: ScriptCondition; then: ScriptStep[]; else?: ScriptStep[] };
 export type EffectScript = {
@@ -102,6 +116,7 @@ export type EffectScript = {
 const SCRIPT_TARGET_KEYS = new Set(["zone", "zones", "owner", "cardType", "filter", "selection", "count", "randomScope", "resultId", "sort", "take"]);
 const SCRIPT_FILTER_KEYS = new Set(["isGenerated", "minCost", "maxCost", "cost", "attack", "health", "isToken", "isChampionToken", "excludeSource", "keyword", "tagsAny", "tagsAll", "tagsNone"]);
 const SCRIPT_VALUE_KEYS = new Set(["kind", "value", "resultId"]);
+const SCRIPT_HISTORY_KEYS = new Set(["scope", "eventType", "owner", "cardType", "tag", "operation", "stat"]);
 const SCRIPT_EFFECT_KEYS = new Set(["action", "target", "values"]);
 const SCRIPT_EFFECT_VALUE_KEYS = new Set([
   "amount", "amountExpression", "attack", "attackExpression", "health", "healthExpression", "countExpression",
@@ -181,6 +196,19 @@ function validScriptSteps(value: unknown, depth: number, seen: Set<string>): val
         typeof raw.selectionId !== "string" || !seen.has(raw.selectionId) ||
         !SCRIPT_OPERATIONS.includes(raw.operation as ScriptOperation)) return false;
       if (raw.stat !== undefined && !["COST", "ATTACK", "HEALTH"].includes(raw.stat as string)) return false;
+      seen.add(raw.id);
+      continue;
+    }
+    if (raw.type === "HISTORY") {
+      if (typeof raw.id !== "string" || !/^[A-Za-z][A-Za-z0-9_-]{0,31}$/.test(raw.id) || seen.has(raw.id) ||
+        !isRecord(raw.query) || !hasOnlyKeys(raw.query, SCRIPT_HISTORY_KEYS) ||
+        !SCRIPT_HISTORY_SCOPES.includes(raw.query.scope as ScriptHistoryScope) ||
+        !SCRIPT_HISTORY_EVENTS.includes(raw.query.eventType as ScriptHistoryEvent) ||
+        (raw.query.owner !== undefined && !TARGET_OWNERS.includes(raw.query.owner as TargetOwner)) ||
+        (raw.query.cardType !== undefined && raw.query.cardType !== "WRESTLER" && raw.query.cardType !== "TECHNIQUE") ||
+        (raw.query.tag !== undefined && (typeof raw.query.tag !== "string" || raw.query.tag.length < 1 || raw.query.tag.length > 80)) ||
+        !SCRIPT_OPERATIONS.includes(raw.query.operation as ScriptOperation) ||
+        (raw.query.stat !== undefined && !["COST", "ATTACK", "HEALTH"].includes(raw.query.stat as string))) return false;
       seen.add(raw.id);
       continue;
     }

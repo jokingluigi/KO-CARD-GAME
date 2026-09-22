@@ -7,6 +7,7 @@ import {
   type EffectDuration,
   type EffectScript,
   type ScriptStep,
+  type ScriptHistoryQuery,
   type ScriptTarget,
   type ScriptValue,
   SCRIPT_MAX_SELECTOR_RESULTS,
@@ -187,6 +188,35 @@ function scriptValue(registers: ScriptRegisters, value: ScriptValue): number {
   return register.value;
 }
 
+function historyValue(
+  state: GameState,
+  playerId: string,
+  query: ScriptHistoryQuery,
+): number {
+  const turnStart = [...state.events].map((event, index) => ({ event, index }))
+    .filter(({ event }) => event.type === 'TURN_STARTED' && event.playerId === playerId)
+    .at(-1)?.index ?? 0;
+  const start = query.scope === 'CURRENT_MATCH'
+    ? 0
+    : query.scope === 'CURRENT_TURN'
+      ? turnStart + 1
+      : Math.max(0, state.events.length - (query.scope === 'CURRENT_ACTION' ? 32 : 64));
+  const enemyId = state.players.find((player) => player.id !== playerId)?.id;
+  const events = state.events.slice(start).filter((event) => {
+    if (event.type !== query.eventType) return false;
+    if (query.cardType !== undefined && event.cardType !== query.cardType) return false;
+    if (query.owner === 'SELF' && event.playerId !== playerId) return false;
+    if (query.owner === 'ENEMY' && event.playerId !== enemyId) return false;
+    if (query.tag !== undefined && !(event.tags ?? []).includes(query.tag)) return false;
+    return true;
+  });
+  if (query.operation === 'COUNT') return Math.min(events.length, 64);
+  const values = events.map((event) => event.amount ?? 1);
+  if (query.operation === 'SUM') return Math.min(values.reduce((sum, value) => sum + value, 0), 999);
+  if (!values.length) return 0;
+  return query.operation === 'MIN' ? Math.min(...values) : Math.max(...values);
+}
+
 function scriptCompare(left: number, operator: string, right: number): boolean {
   if (operator === 'EQ') return left === right;
   if (operator === 'NE') return left !== right;
@@ -339,6 +369,10 @@ function applyScriptSteps(
           ? (values.length ? Math.min(...values) : 0)
           : (values.length ? Math.max(...values) : 0);
       registers.set(step.id, { value });
+      continue;
+    }
+    if (step.type === 'HISTORY') {
+      registers.set(step.id, { value: historyValue(next, playerId, step.query) });
       continue;
     }
     if (step.type === 'IF') {
