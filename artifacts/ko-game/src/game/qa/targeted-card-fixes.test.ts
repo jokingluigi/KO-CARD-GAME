@@ -8,9 +8,11 @@ import {
 import { generateCardInstance } from '../cards/generation';
 import type { CardDefinition, CardInstance } from '../cards/types';
 import { createInitialGameState } from '../engine/create-initial-game-state';
+import { attack } from '../engine/combat';
+import { endTurn } from '../engine/turn-system';
 import { enterField } from '../engine/enter-field';
 import { playWrestlerFromHand } from '../engine/play-wrestler';
-import { selectEffectTarget } from '../effects/effect-engine';
+import { resolveTriggeredAbilities, selectEffectTarget } from '../effects/effect-engine';
 import type { GameState } from '../types/game-state';
 
 const apiOrigin = process.env.KO_QA_API_ORIGIN ?? 'http://127.0.0.1:8080';
@@ -150,4 +152,148 @@ test('authoritative 조킹루이지 summons two adjacent generated wrestlers and
   assert.ok(summoned.every((item) => item.keywords.includes('TAUNT')));
   assert.equal(entered.targetingState, undefined);
   assert.equal(entered.pendingCardEffects.length, 0);
+});
+
+test('authoritative 데헌 in HAND gains one DODGE on its first attack increase', () => {
+  const dehun = definition('데헌');
+  const handCard = {
+    ...card(dehun, 'dehun-hand'),
+    currentAttack: 3,
+    statHistory: [{
+      stat: 'attack' as const,
+      before: 2,
+      after: 3,
+      delta: 1,
+      turnNumber: 1,
+    }],
+  };
+  const state = stateWithPool();
+  state.players[0].hand = [handCard];
+
+  const changed = resolveTriggeredAbilities(
+    state,
+    'player-1',
+    handCard,
+    'STAT_CHANGED',
+    { attackDelta: 1 },
+  );
+  const updated = changed.players[0].hand[0];
+  assert.ok(updated);
+  assert.equal(updated?.keywords.includes('DODGE'), true);
+  assert.equal(updated?.dodgeCharges, 1);
+  assert.equal(updated?.boardSlot, null);
+  assert.equal(changed.players[0].board.every((item) => item === null), true);
+});
+
+test('데헌 does not apply its HAND effect when the source is on BOARD', () => {
+  const dehun = definition('데헌');
+  const boardCard = {
+    ...card(dehun, 'dehun-board'),
+    boardSlot: 0 as const,
+    currentAttack: 3,
+    statHistory: [{
+      stat: 'attack' as const,
+      before: 2,
+      after: 3,
+      delta: 1,
+      turnNumber: 1,
+    }],
+  };
+  const state = stateWithPool();
+  state.players[0].board = [boardCard, null, null, null];
+
+  const changed = resolveTriggeredAbilities(
+    state,
+    'player-1',
+    boardCard,
+    'STAT_CHANGED',
+    { attackDelta: 1 },
+  );
+  assert.equal(changed.players[0].board[0]?.keywords.includes('DODGE'), false);
+  assert.equal(changed.players[0].board[0]?.dodgeCharges, 0);
+});
+
+test('데헌 consumes only the first HAND attack increase and keeps the hand instance hidden from board state', () => {
+  const dehun = definition('데헌');
+  const handCard = {
+    ...card(dehun, 'dehun-repeat'),
+    currentAttack: 4,
+    statHistory: [
+      {
+        stat: 'attack' as const,
+        before: 2,
+        after: 3,
+        delta: 1,
+        turnNumber: 1,
+      },
+      {
+        stat: 'attack' as const,
+        before: 3,
+        after: 4,
+        delta: 1,
+        turnNumber: 1,
+      },
+    ],
+  };
+  const state = stateWithPool();
+  state.players[0].hand = [handCard];
+
+  const changed = resolveTriggeredAbilities(
+    state,
+    'player-1',
+    handCard,
+    'STAT_CHANGED',
+    { attackDelta: 1 },
+  );
+  assert.equal(changed.players[0].hand[0]?.keywords.includes('DODGE'), false);
+  assert.equal(changed.players[0].hand[0]?.dodgeCharges, 0);
+  assert.equal(changed.players[0].hand[0]?.boardSlot, null);
+  assert.equal(changed.players[0].board.every((item) => item === null), true);
+});
+
+test('authoritative 나토마토 applies an attack-based combo buff for this turn and preserves permanent attack', () => {
+  const natomato = definition('나토마토');
+  const attackerDefinition = definition('로드');
+  const enemyDefinition = definition('RM우디르');
+  const state = stateWithPool();
+  const attacker = {
+    ...card(attackerDefinition, 'natomato-attacker'),
+    boardSlot: 0 as const,
+    enteredThisTurn: false,
+    currentAttack: 4,
+  };
+  const source = {
+    ...card(natomato, 'natomato-source'),
+    boardSlot: 1 as const,
+    enteredThisTurn: false,
+    currentAttack: 1,
+  };
+  const enemy = {
+    ...card(enemyDefinition, 'natomato-enemy'),
+    boardSlot: 0 as const,
+    currentHealth: 10,
+    maxHealth: 10,
+  };
+  state.players[0].board = [attacker, source, null, null];
+  state.players[1].board = [enemy, null, null, null];
+
+  const attacked = attack(state, 'player-1', attacker.instanceId, {
+    type: 'WRESTLER',
+    playerId: 'player-2',
+    cardInstanceId: enemy.instanceId,
+  });
+  assert.equal(attacked.success, true);
+  if (!attacked.success) return;
+  const boosted = attacked.state.players[0].board[1];
+  assert.equal(boosted?.currentAttack, 5);
+  assert.deepEqual(boosted?.temporaryStatModifiers, [{ stat: 'attack', amount: 4, untilTurn: 1 }]);
+
+  const ended = endTurn(attacked.state, 'player-1');
+  assert.equal(ended.success, true);
+  if (!ended.success) return;
+  const restored = ended.state.players[0].board[1];
+  assert.equal(restored?.currentAttack, 1);
+  assert.deepEqual(restored?.temporaryStatModifiers, []);
+  assert.equal(restored?.baseAttack, 0);
+  assert.equal(restored?.boardSlot, 1);
 });

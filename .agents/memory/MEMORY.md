@@ -72,3 +72,4 @@
 - [Summon aura and target-stat copy](summon-aura-target-copy.md) — summon listeners target the entered instance, while graveyard-stat copies snapshot before creation.
 - [Script engine boundary](script-engine-boundary.md) — SCRIPT_V1 is a closed bounded AST; interactive target continuation must use the existing engine stack before being enabled.
 - [SCRIPT_V1 event history](script-history-boundary.md) — bounded event queries are declarative script steps whose numeric results feed later effects.
+- [Targeted wrestler effect semantics](targeted-wrestler-effect-semantics.md) — Dehun reacts from HAND only; Natomato's combo attack is temporary so permanent attack modifiers survive turn end.

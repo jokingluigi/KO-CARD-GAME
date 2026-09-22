@@ -449,19 +449,22 @@ test('QA2 active and trigger-only cards verify exact stat/status results', () =>
     ...card('데헌', 'qa2-dodge'),
     statHistory: [{ stat: 'attack' as const, before: 1, after: 3, delta: 2, turnNumber: 1 }],
   };
-  const dodgeState = withBoard(stateWithPool(), 'player-1', [{ ...dodge, boardSlot: 0 }, null, null, null]);
+  const dodgeState = stateWithPool();
+  dodgeState.players[0].hand = [dodge];
   const changed = resolveTriggeredAbilities(
     dodgeState,
     'player-1',
-    boardCard(dodgeState, 'player-1', dodge.instanceId),
+    dodge,
     'STAT_CHANGED',
     {
       attackDelta: 2,
     },
   );
-  const changedCard = boardCard(changed, 'player-1', dodge.instanceId);
+  const changedCard = changed.players[0].hand[0];
+  assert.ok(changedCard);
   assert.equal(changedCard.dodgeCharges, 1);
   assert.equal(changedCard.keywords.includes('DODGE'), true);
+  assert.equal(changedCard.boardSlot, null);
 
   const modifierSource = card('발단', 'qa2-modifier-source');
   assert.equal(getDamageModifierBonus(enterField(stateWithPool(), 'player-1', modifierSource, 0), 'player-1', modifierSource), 0);
