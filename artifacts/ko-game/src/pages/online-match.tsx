@@ -225,6 +225,7 @@ function OnlineMatchPage() {
         setSeat(nextSeat);
         seatRef.current = nextSeat;
         setState(projected);
+        if (message.type !== "MATCH_ENDED") setNotice(null);
         setVersion("version" in message ? message.version : null);
         setPlayError(null);
         if (message.type === "MATCH_ENDED") setNotice("매치가 종료되었습니다.");

@@ -32,7 +32,7 @@ interface InspectTarget {
 interface AltInspectContextValue {
   isAltPressed: boolean;
   inspect: (target: InspectTarget) => void;
-  inspectTouch: (target: InspectTarget) => void;
+  toggleTouch: (target: InspectTarget) => void;
   clear: () => void;
 }
 
@@ -77,13 +77,19 @@ export function AltInspectProvider({ children }: { children: ReactNode }) {
     setTarget(nextTarget);
     setIsTouchInspecting(false);
   }, []);
-  const inspectTouch = useCallback((nextTarget: InspectTarget) => {
-    setTarget(nextTarget);
-    setIsTouchInspecting(true);
-  }, []);
+  const toggleTouch = useCallback((nextTarget: InspectTarget) => {
+    setTarget((current) => {
+      if (current?.anchor === nextTarget.anchor && isTouchInspecting) {
+        setIsTouchInspecting(false);
+        return current;
+      }
+      setIsTouchInspecting(true);
+      return nextTarget;
+    });
+  }, [isTouchInspecting]);
   const value = useMemo(
-    () => ({ isAltPressed, inspect, inspectTouch, clear }),
-    [clear, inspect, inspectTouch, isAltPressed],
+    () => ({ isAltPressed, inspect, toggleTouch, clear }),
+    [clear, inspect, isAltPressed, toggleTouch],
   );
   const isVisible = Boolean(
     target && (isAltPressed || target.showOnHover || (target.showOnTouch && isTouchInspecting)),
@@ -189,8 +195,8 @@ export function Inspectable({
       showOnHover,
       showOnTouch: false,
     });
-  const inspectTouch = (element: HTMLElement) =>
-    context.inspectTouch({
+  const toggleTouch = (element: HTMLElement) =>
+    context.toggleTouch({
       content,
       anchor: element,
       rect: element.getBoundingClientRect(),
@@ -206,7 +212,7 @@ export function Inspectable({
       onFocus={(event) => inspect(event.currentTarget)}
       onBlur={context.clear}
       onPointerUp={(event) => {
-        if (event.pointerType === 'touch') inspectTouch(event.currentTarget);
+        if (event.pointerType === 'touch') toggleTouch(event.currentTarget);
       }}
     >
       {children}

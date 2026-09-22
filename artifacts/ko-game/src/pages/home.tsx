@@ -33,6 +33,7 @@ import {
   processChampionQuestEvents,
   type GameMediaCatalog,
   preloadMatchAssets,
+  createDeterministicRandom,
 } from '@/game';
 import { GameStatePreview } from '@/components/game-state-preview';
 import { MatchResultOverlay } from '@/components/match-result-overlay';
@@ -43,6 +44,7 @@ import { audioManager } from '@/audio/audio-manager';
 import { fetchDecks, type Deck } from '@/lib/decks-client';
 import { ROUTES } from '@/lib/routes';
 import { fetchAIDecks, type AIDeck } from '@/lib/ai-decks-client';
+import { createLocalAIMatchId, seedForAIMatch, selectAIOpponentDeck } from '@/lib/ai-match-selection';
 import { AiMatchSetup } from '@/components/ai-match-setup';
 import type { CardPlayAnimationState, CardPlayGeometry } from '@/components/card-play-animation-utils';
 import { landingImpactLevel } from '@/components/card-play-animation-utils';
@@ -134,7 +136,6 @@ export default function Home() {
   const searchParams = new URLSearchParams(window.location.search);
   const testCardId = searchParams.get('testCardId');
   const testChampionId = searchParams.get('testChampionId');
-  const initialAiDeckId = searchParams.get('aiDeckId');
   const isAdminSource = searchParams.get('source') === 'admin';
   const [isAdminTestMatch, setIsAdminTestMatch] = useState(isAdminSource);
   const [authStatus, setAuthStatus] = useState<'loading' | 'authenticated' | 'unauthenticated'>('loading');
@@ -266,7 +267,7 @@ export default function Home() {
       setAvailableAIDecks(null);
       Promise.all([
         fetchDecks(),
-        fetchAIDecks(initialAiDeckId),
+        fetchAIDecks(),
         fetchPublishedCardDefinitions(),
         fetchPublishedChampions(),
         fetchGameMedia(),
@@ -421,13 +422,12 @@ export default function Home() {
     };
   }, [authStatus, authUser?.role, isAdminSource, isAiMatch, testCardId, testChampionId]);
 
-  function startAiMatch(deckId: string, aiDeckId: string | null) {
+  function startAiMatch(deckId: string) {
     const deck = aiDecks?.find((candidate) => candidate.id === deckId);
     const data = aiMatchData;
     if (!deck?.isValid || !deck.championDefinitionId || !data) return;
-    const candidates = availableAIDecks?.filter((candidate) => candidate.isValid && candidate.enabled) ?? [];
-    const aiDeck = (aiDeckId ? candidates.find((candidate) => candidate.id === aiDeckId) : undefined)
-      ?? candidates[Math.floor(Math.random() * candidates.length)];
+    const matchId = createLocalAIMatchId();
+    const aiDeck = selectAIOpponentDeck(availableAIDecks ?? [], matchId);
     if (!aiDeck) {
       setPlayError('사용 가능한 AI 덱이 없습니다.');
       return;
@@ -445,8 +445,9 @@ export default function Home() {
         data.definitions,
         data.champions,
         [deck.cardDefinitionIds, aiDeckDefinitionIds],
+        { gameId: matchId, randomSeed: seedForAIMatch(matchId) },
       ),
-      undefined,
+      createDeterministicRandom(matchId),
       data.media,
     );
     setGameState(nextState);
@@ -1111,7 +1112,6 @@ export default function Home() {
       <AiMatchSetup
         decks={aiDecks}
         aiDecks={availableAIDecks}
-        initialAiDeckId={initialAiDeckId}
         error={playError}
         onStart={startAiMatch}
         onBack={() => navigate(ROUTES.MAIN_MENU)}

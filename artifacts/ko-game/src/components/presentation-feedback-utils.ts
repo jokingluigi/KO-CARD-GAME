@@ -13,7 +13,8 @@ export type PresentationCueKind =
   | "GENERATE"
   | "QUEST_PROGRESS"
   | "QUEST_COMPLETE"
-  | "GOLD";
+  | "GOLD"
+  | "TURN";
 
 export type PresentationCueDraft = {
   id: string;
@@ -129,6 +130,15 @@ export function presentationCueDrafts(events: GameEvent[], startIndex: number) {
             duration: 260,
           });
         }
+        break;
+      case "TURN_STARTED":
+        drafts.push({
+          id,
+          kind: "TURN",
+          label: "TURN START",
+          ...target,
+          duration: 620,
+        });
         break;
       default:
         break;

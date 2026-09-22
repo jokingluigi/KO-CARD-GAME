@@ -1,5 +1,5 @@
 import type {
-  Action, DamageSource, DynamicValue, EffectDuration, EffectScript, Keyword, RandomScope, Reference, StatName, TargetOwner, TargetSelection, TargetZone,
+  Action, DamageSource, DynamicValue, EffectDuration, EffectScript, Keyword, RandomScope, Reference, ScriptComparator, StatName, TargetOwner, TargetSelection, TargetZone,
 } from "@workspace/effect-registry";
 import type { CardDefinition } from '../cards/types';
 import type { CardTagFilter } from '../cards/tags';
@@ -18,7 +18,10 @@ export type StructuredTarget = {
   zones?: TargetZone[];
   owner: TargetOwner;
   cardType?: 'WRESTLER' | 'TECHNIQUE';
-  filter?: CardTagFilter & { isGenerated?: boolean; minCost?: number; maxCost?: number; isToken?: boolean; isChampionToken?: boolean; excludeSource?: boolean };
+  filter?: CardTagFilter & {
+    isGenerated?: boolean; minCost?: number; maxCost?: number; isToken?: boolean; isChampionToken?: boolean; excludeSource?: boolean; keyword?: CardKeyword;
+    cost?: { compare: ScriptComparator; value: number }; attack?: { compare: ScriptComparator; value: number }; health?: { compare: ScriptComparator; value: number };
+  };
   selection: TargetSelection;
   count: number;
   randomScope?: RandomScope;
@@ -83,7 +86,7 @@ export type CardEffect =
       target?: StructuredTarget;
       values?: {
            attack?: number; health?: number; attackMultiplier?: number; healthMultiplier?: number; amount?: number; stat?: StatName; duration?: EffectDuration; keyword?: CardKeyword; damageSource?: DamageSource; reference?: Reference; referenceStat?: 'CURRENT_ATTACK' | 'CURRENT_HEALTH'; amountReference?: DynamicValue; minimum?: number; temporaryCost?: boolean; conditionalBuff?: { healthEquals: number; attack: number; health: number }; generatedModifiers?: { cost?: number; attack?: number; health?: number; copySourceStats?: boolean; copyTargetStats?: boolean }; deckPosition?: 'TOP' | 'BOTTOM';
-          queuedTrigger?: 'NEXT_ALLY_WRESTLER_PLAYED';
+          queuedTrigger?: 'NEXT_ALLY_WRESTLER_PLAYED' | 'NEXT_TECHNIQUE_PLAYED';
          queuedEffect?: QueuedStructuredEffect;
         /** Serializable card definition supplied by the structured DSL. */
         definition?: CardDefinition;

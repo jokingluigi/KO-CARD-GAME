@@ -65,6 +65,10 @@ export function getValidTargets(
       if (target.filter?.isToken !== undefined && card.isToken !== target.filter.isToken) return false;
       if (target.filter?.isChampionToken !== undefined && card.isChampionToken !== target.filter.isChampionToken) return false;
       if (target.filter?.excludeSource && card.instanceId === sourceCard.instanceId) return false;
+      if (target.filter?.keyword !== undefined && !card.keywords.includes(target.filter.keyword)) return false;
+      if (target.filter?.cost && !scriptCompare(card.currentCost, target.filter.cost.compare, target.filter.cost.value)) return false;
+      if (target.filter?.attack && !scriptCompare(card.currentAttack, target.filter.attack.compare, target.filter.attack.value)) return false;
+      if (target.filter?.health && !scriptCompare(card.currentHealth, target.filter.health.compare, target.filter.health.value)) return false;
       if (!matchesCardTagFilter(card, target.filter)) return false;
       if (target.selection === 'RANDOM' && !isEligibleForRandomPool(card, target.randomScope)) return false;
       if (target.selection === 'SELF' && card.instanceId !== sourceCard.instanceId) return false;
@@ -104,7 +108,7 @@ function cardsInZones(
   return [...new Map(cards.map((card) => [card.instanceId, card])).values()];
 }
 
-type ScriptRegister = { ids: string[] } | { value: number };
+type ScriptRegister = { ids: string[] } | { slots: number[] } | { value: number };
 type ScriptRegisters = Map<string, ScriptRegister>;
 
 function scriptZones(target: ScriptTarget): TargetZone[] {
@@ -132,14 +136,29 @@ function scriptTargetCards(
     if (filter?.isToken !== undefined && card.isToken !== filter.isToken) return false;
     if (filter?.isChampionToken !== undefined && card.isChampionToken !== filter.isChampionToken) return false;
     if (filter?.excludeSource && card.instanceId === sourceCard.instanceId) return false;
+    if (filter?.keyword !== undefined && !card.keywords.includes(filter.keyword)) return false;
+    const compare = (value: number, condition?: { compare: string; value: number }) =>
+      !condition || scriptCompare(value, condition.compare, condition.value);
+    if (!compare(card.currentCost, filter?.cost) ||
+      !compare(card.currentAttack, filter?.attack) ||
+      !compare(card.currentHealth, filter?.health)) return false;
     return matchesCardTagFilter(card, filter);
   });
   const selection = target.selection ?? 'ALL';
-  if (selection === 'SELF') return candidates.filter((card) => card.instanceId === sourceCard.instanceId);
-  if (selection === 'TOP') return candidates.slice(0, target.count ?? 1);
-  if (selection === 'ALL') return candidates;
+  const sorted = target.sort
+    ? [...candidates].sort((left, right) => {
+      const leftValue = target.sort!.stat === 'COST' ? left.currentCost : target.sort!.stat === 'HEALTH' ? left.currentHealth : left.currentAttack;
+      const rightValue = target.sort!.stat === 'COST' ? right.currentCost : target.sort!.stat === 'HEALTH' ? right.currentHealth : right.currentAttack;
+      const delta = leftValue - rightValue;
+      return (target.sort!.direction === 'ASC' ? delta : -delta) || left.instanceId.localeCompare(right.instanceId);
+    })
+    : candidates;
+  const taken = sorted.slice(0, target.take ?? sorted.length);
+  if (selection === 'SELF') return taken.filter((card) => card.instanceId === sourceCard.instanceId);
+  if (selection === 'TOP') return taken.slice(0, target.count ?? 1);
+  if (selection === 'ALL') return taken;
   if (selection === 'ADJACENT') {
-    return candidates.filter((card) =>
+    return taken.filter((card) =>
       sourceCard.boardSlot !== null &&
       card.boardSlot !== null &&
       getAdjacentSlots(sourceCard.boardSlot).includes(card.boardSlot),
@@ -147,7 +166,7 @@ function scriptTargetCards(
   }
   if (selection === 'RANDOM') {
     return shuffle(
-      candidates.filter((card) => isEligibleForRandomPool(card, target.randomScope)),
+      taken.filter((card) => isEligibleForRandomPool(card, target.randomScope)),
       createDeterministicRandom(JSON.stringify({
         seed: state.randomSeed ?? 0,
         events: state.events.length,
@@ -156,13 +175,15 @@ function scriptTargetCards(
       })),
     ).slice(0, target.count ?? 1);
   }
-  return candidates.slice(0, target.count ?? 1);
+  return taken.slice(0, target.count ?? 1);
 }
 
 function scriptValue(registers: ScriptRegisters, value: ScriptValue): number {
   if (value.kind === 'CONSTANT') return value.value ?? 0;
   const register = value.resultId ? registers.get(value.resultId) : undefined;
-  if (!register || !('value' in register)) return register?.ids.length ?? 0;
+  if (!register || !('value' in register)) {
+    return register && 'ids' in register ? register.ids.length : register?.slots.length ?? 0;
+  }
   return register.value;
 }
 
@@ -180,6 +201,17 @@ function scriptEffectTarget(
   registers: ScriptRegisters,
 ): { target?: Extract<CardEffect, { type: 'STRUCTURED' }>['target']; selectedIds?: string[] } {
   if (!target) return {};
+  const register = target.resultId ? registers.get(target.resultId) : undefined;
+  if (target.resultId && register && 'slots' in register) {
+    return {
+      target: {
+        zone: 'BOARD',
+        owner: target.owner ?? 'SELF',
+        selection: 'ADJACENT_EMPTY_SLOTS',
+        count: register.slots.length,
+      },
+    };
+  }
   const selectedIds = target.resultId && 'ids' in (registers.get(target.resultId) ?? {})
     ? (registers.get(target.resultId) as { ids: string[] }).ids
     : undefined;
@@ -237,11 +269,56 @@ function applyScriptSteps(
   steps: ScriptStep[],
   registers: ScriptRegisters,
   depth = 0,
+  script?: EffectScript,
+  parentContinuation?: NonNullable<GameState['targetingState']>,
 ): GameState {
   if (depth > 6 || steps.length > 32) throw new Error('SCRIPT_V1 execution budget exceeded.');
   let next = state;
-  for (const step of steps) {
+  for (const [stepIndex, step] of steps.entries()) {
     if (step.type === 'SELECT') {
+      if (step.target.selection === 'ADJACENT_EMPTY_SLOTS') {
+        const slots = sourceCard.boardSlot === null
+          ? []
+          : getAdjacentSlots(sourceCard.boardSlot).filter((slot) =>
+            state.players.find((player) => player.id === playerId)?.board[slot] === null,
+          );
+        registers.set(step.id, { slots });
+        continue;
+      }
+      if (step.target.selection === 'PLAYER_CHOICE') {
+        const validTargetIds = scriptTargetCards(next, playerId, sourceCard, {
+          ...step.target,
+          selection: 'ALL',
+        }).map((card) => card.instanceId);
+        const minimum = step.target.count ?? 1;
+        if (validTargetIds.length < minimum) continue;
+        const registerObject = Object.fromEntries(registers.entries());
+        return {
+          ...next,
+          targetingState: {
+            active: true,
+            playerId,
+            sourceInstanceId: sourceCard.instanceId,
+            sourceCard,
+            effects: [],
+            effectIndex: 0,
+            selectedTargetIds: [],
+            lastTargetIds: [],
+            validTargetIds,
+            minTargets: minimum,
+            maxTargets: step.target.count ?? minimum,
+            mandatory: true,
+            cancelable: false,
+            continuation: parentContinuation,
+            scriptContinuation: {
+              selectedResultId: step.id,
+              remainingSteps: steps.slice(stepIndex + 1),
+              registers: registerObject,
+              script: script!,
+            },
+          },
+        };
+      }
       registers.set(step.id, { ids: scriptTargetCards(next, playerId, sourceCard, step.target).map((card) => card.instanceId) });
       continue;
     }
@@ -270,8 +347,16 @@ function applyScriptSteps(
         step.condition.compare,
         scriptValue(registers, step.condition.right),
       ) ? step.then : (step.else ?? []);
-      next = applyScriptSteps(next, playerId, sourceCard, branch, registers, depth + 1);
-      continue;
+      return applyScriptSteps(
+        next,
+        playerId,
+        sourceCard,
+        [...branch, ...steps.slice(stepIndex + 1)],
+        registers,
+        depth + 1,
+        script,
+        parentContinuation,
+      );
     }
     const { target, selectedIds } = scriptEffectTarget(step.effect.target, registers);
     const effect: CardEffect = {
@@ -281,6 +366,10 @@ function applyScriptSteps(
       values: scriptEffectValues(step.effect.values, registers),
     };
     next = applyEffect(next, playerId, sourceCard, effect, selectedIds);
+    if (step.id) {
+      const resultIds = next.targetingState?.lastTargetIds ?? [];
+      registers.set(step.id, { ids: [...resultIds] });
+    }
   }
   return next;
 }
@@ -291,7 +380,17 @@ function applyScript(
   sourceCard: CardInstance,
   script: EffectScript,
 ): GameState {
-  return applyScriptSteps(state, playerId, sourceCard, script.steps, new Map());
+  const parentContinuation = state.targetingState?.active
+    ? {
+      ...state.targetingState,
+      effectIndex: state.targetingState.effectIndex + 1,
+      selectedTargetIds: [],
+      validTargetIds: [],
+      minTargets: 0,
+      maxTargets: 0,
+    }
+    : undefined;
+  return applyScriptSteps(state, playerId, sourceCard, script.steps, new Map(), 0, script, parentContinuation);
 }
 
 export function getDamageModifierBonus(
@@ -920,6 +1019,39 @@ export function resolvePendingEffects(state: GameState): GameState {
 export function selectEffectTarget(state: GameState, targetId: string): GameState {
   const pending = state.targetingState;
   if (!pending) return state;
+  if (pending.scriptContinuation) {
+    if (!pending.validTargetIds.includes(targetId) || pending.selectedTargetIds.includes(targetId)) return state;
+    const selected = [...pending.selectedTargetIds, targetId];
+    if (selected.length < pending.minTargets) {
+      return { ...state, targetingState: { ...pending, selectedTargetIds: selected } };
+    }
+    const registers = new Map<string, ScriptRegister>(
+      Object.entries(pending.scriptContinuation.registers) as Array<[string, ScriptRegister]>,
+    );
+    registers.set(pending.scriptContinuation.selectedResultId, { ids: selected });
+    const source = pending.sourceCard ?? sourceInState(state, pending.sourceInstanceId);
+    if (!source) return state;
+    let resumed = applyScriptSteps(
+      { ...state, targetingState: pending },
+      pending.playerId,
+      source,
+      pending.scriptContinuation.remainingSteps,
+      registers,
+      0,
+      pending.scriptContinuation.script,
+      pending.continuation,
+    );
+    if (
+      resumed.targetingState?.scriptContinuation &&
+      resumed.targetingState.scriptContinuation !== pending.scriptContinuation
+    ) return resumed;
+    if (resumed.targetingState) {
+      const { scriptContinuation: _completedScript, ...completedFrame } = resumed.targetingState;
+      resumed = { ...resumed, targetingState: completedFrame };
+    }
+    if (pending.continuation) return resolvePendingEffects({ ...resumed, targetingState: pending.continuation });
+    return { ...resumed, targetingState: undefined };
+  }
   const effect = pending.effects[pending.effectIndex];
   const source = pending.sourceCard ?? sourceInState(state, pending.sourceInstanceId);
   if (!source || !effect || !pending.validTargetIds.includes(targetId) || pending.selectedTargetIds.includes(targetId)) return state;
@@ -1132,7 +1264,10 @@ export function applyEffect(
     }
     if (effect.action === 'QUEUE_EFFECT') {
       const queuedEffect = effect.values?.queuedEffect;
-      if (effect.values?.queuedTrigger !== 'NEXT_ALLY_WRESTLER_PLAYED' || !queuedEffect) {
+      if (
+        effect.values?.queuedTrigger !== 'NEXT_ALLY_WRESTLER_PLAYED' &&
+        effect.values?.queuedTrigger !== 'NEXT_TECHNIQUE_PLAYED'
+      || !queuedEffect) {
         throw new Error('QUEUE_EFFECT requires a supported queue trigger and queued effect.');
       }
       return {
@@ -1287,6 +1422,10 @@ export function applyEffect(
       if (target.filter?.isToken !== undefined && card.isToken !== target.filter.isToken) return false;
       if (target.filter?.isChampionToken !== undefined && card.isChampionToken !== target.filter.isChampionToken) return false;
       if (target.filter?.excludeSource && card.instanceId === sourceCard.instanceId) return false;
+      if (target.filter?.keyword !== undefined && !card.keywords.includes(target.filter.keyword)) return false;
+      if (target.filter?.cost && !scriptCompare(card.currentCost, target.filter.cost.compare, target.filter.cost.value)) return false;
+      if (target.filter?.attack && !scriptCompare(card.currentAttack, target.filter.attack.compare, target.filter.attack.value)) return false;
+      if (target.filter?.health && !scriptCompare(card.currentHealth, target.filter.health.compare, target.filter.health.value)) return false;
        if (!matchesCardTagFilter(card, target.filter)) return false;
       return true;
     });
@@ -1894,6 +2033,34 @@ export function resolveQueuedEffectsForPlayedWrestler(
         values: pending.effect.values,
       },
     );
+  }
+  return next;
+}
+
+export function resolveQueuedEffectsForPlayedTechnique(
+  state: GameState,
+  playerId: string,
+  cardInstanceId: string,
+): GameState {
+  const queued = (state.pendingCardEffects ?? []).filter(
+    (pending) => pending.playerId === playerId && pending.trigger === 'NEXT_TECHNIQUE_PLAYED',
+  );
+  if (!queued.length) return state;
+  let next = {
+    ...state,
+    pendingCardEffects: (state.pendingCardEffects ?? []).filter(
+      (pending) => !(pending.playerId === playerId && pending.trigger === 'NEXT_TECHNIQUE_PLAYED'),
+    ),
+  };
+  const sourceCard = sourceInState(next, cardInstanceId);
+  if (!sourceCard) return next;
+  for (const pending of queued) {
+    next = applyEffect(next, playerId, sourceCard, {
+      type: 'STRUCTURED',
+      action: pending.effect.action,
+      target: pending.effect.target ?? { zone: 'HAND', owner: 'SELF', selection: 'SELF', count: 1 },
+      values: pending.effect.values,
+    });
   }
   return next;
 }

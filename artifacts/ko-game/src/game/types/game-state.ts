@@ -3,6 +3,7 @@ import type { CardDefinition } from '../cards/types';
 import type { ChampionState } from '../champions/types';
 import type { EntryCause, EventAttribution, GameEvent } from '../events/types';
 import type { CardEffect, QueuedStructuredEffect } from '../effects/types';
+import type { EffectScript, ScriptStep } from '@workspace/effect-registry';
 
 export type Board = [
   CardInstance | null,
@@ -14,7 +15,7 @@ export type Board = [
 export interface PendingCardEffect {
   playerId: string;
   sourceInstanceId: string;
-  trigger: 'NEXT_ALLY_WRESTLER_PLAYED';
+  trigger: 'NEXT_ALLY_WRESTLER_PLAYED' | 'NEXT_TECHNIQUE_PLAYED';
   effect: QueuedStructuredEffect;
 }
 
@@ -90,5 +91,12 @@ export interface GameState {
     };
     /** Parent resolution frame. A child trigger always resolves before this. */
     continuation?: GameState['targetingState'];
+    /** Serializable SCRIPT_V1 program counter and registers while PLAYER_CHOICE is pending. */
+    scriptContinuation?: {
+      selectedResultId: string;
+      remainingSteps: ScriptStep[];
+      registers: Record<string, { ids: string[] } | { slots: number[] } | { value: number }>;
+      script: EffectScript;
+    };
   };
 }

@@ -776,6 +776,12 @@
 .presentation-feedback--draw,
 .presentation-feedback--generate { color: #93c5fd; font-size: clamp(.65rem, 1.2vw, .95rem); }
 .presentation-feedback--gold { color: #facc15; }
+.presentation-feedback--turn {
+  color: #fbbf24;
+  font-size: clamp(1rem, 2.4vw, 1.7rem);
+  letter-spacing: .16em;
+  text-shadow: 0 0 18px rgba(251, 191, 36, .55);
+}
 .presentation-feedback--quest { color: #d8b4fe; }
 .presentation-feedback--quest-complete {
   z-index: 260;

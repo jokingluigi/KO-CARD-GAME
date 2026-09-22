@@ -209,7 +209,7 @@ export function CardRenderer({
   }, [frameSettings?.frameUrl, normalizedCardType, normalizedRarity]);
   const frameUrl = frameFailed ? bundledFrameUrl : frameSettings?.frameUrl ?? bundledFrameUrl;
   const keywordBadges = [
-    ...runtimeKeywords,
+    ...runtimeKeywords.filter((keyword) => keyword !== "DODGE" || dodgeCharges > 0),
     ...(isSilenced ? ["SILENCE" as CardKeyword] : []),
     ...(isStunned ? ["STUN" as CardKeyword] : []),
     ...(isAbilityDisabled ? ["DISABLED" as CardKeyword] : []),

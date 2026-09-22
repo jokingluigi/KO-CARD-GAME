@@ -22,6 +22,7 @@ const toneClass: Record<PresentationCue["kind"], string> = {
   QUEST_PROGRESS: "presentation-feedback--quest",
   QUEST_COMPLETE: "presentation-feedback--quest-complete",
   GOLD: "presentation-feedback--gold",
+  TURN: "presentation-feedback--turn",
 };
 
 export function PresentationFeedback({

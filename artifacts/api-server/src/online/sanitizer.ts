@@ -6,9 +6,6 @@ function hiddenCardCount(cards: unknown[]): { hidden: true; count: number } {
 
 function eventExposesHiddenCard(event: GameEvent, viewerId: string): boolean {
   if (event.playerId === viewerId) return false;
-  // These events are emitted while the card is entering a private zone. The
-  // card may have left that zone by the time a later snapshot/resync is made,
-  // so checking only the current hand would disclose its old identity.
   return event.type === "CARD_DRAWN" || event.type === "CARD_GENERATED";
 }
 
@@ -25,37 +22,14 @@ function sanitizeEvent(event: GameEvent, viewerId: string): unknown {
   return safeEvent;
 }
 
-/**
- * Only this viewer projection is sent over the wire. The full state remains
- * inside the server runtime and is never serialized into a client message.
- */
 export function sanitizeGameStateForViewer(state: GameState, viewerId: string): unknown {
-  const {
-    randomSeed: _randomSeed,
-    ...publicState
-  } = state;
+  const { randomSeed: _randomSeed, ...publicState } = state;
   const players = state.players.map((player) => {
-    if (player.id === viewerId) {
-      return player;
-    }
-
-    const {
-      hand: opponentHand,
-      deck: opponentDeck,
-      ...opponent
-    } = player;
-
-    return {
-      ...opponent,
-      hand: hiddenCardCount(opponentHand),
-      deck: hiddenCardCount(opponentDeck),
-    };
+    if (player.id === viewerId) return player;
+    const { hand: opponentHand, deck: opponentDeck, ...opponent } = player;
+    return { ...opponent, hand: hiddenCardCount(opponentHand), deck: hiddenCardCount(opponentDeck) };
   });
-
-  const targetingState = state.targetingState?.playerId === viewerId
-    ? state.targetingState
-    : undefined;
-
+  const targetingState = state.targetingState?.playerId === viewerId ? state.targetingState : undefined;
   return {
     ...publicState,
     players,

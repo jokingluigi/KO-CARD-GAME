@@ -43,9 +43,11 @@ export function createInitialGameState(
   cardDefinitions?: readonly CardDefinition[],
   championDefinitions?: readonly ChampionDefinition[],
   deckDefinitionIds?: readonly [readonly string[], readonly string[]],
+  options?: { gameId?: string; randomSeed?: number },
 ): GameState {
   return {
-    gameId: 'local-prototype',
+    gameId: options?.gameId ?? 'local-prototype',
+    ...(options?.randomSeed === undefined ? {} : { randomSeed: options.randomSeed }),
     cardPool: cardDefinitions ? [...cardDefinitions] : undefined,
     backgroundId: null,
     bgmId: null,

@@ -49,9 +49,13 @@ export type ScriptFilter = {
   isGenerated?: boolean;
   minCost?: number;
   maxCost?: number;
+  cost?: { compare: ScriptComparator; value: number };
+  attack?: { compare: ScriptComparator; value: number };
+  health?: { compare: ScriptComparator; value: number };
   isToken?: boolean;
   isChampionToken?: boolean;
   excludeSource?: boolean;
+  keyword?: Keyword;
   tagsAny?: string[];
   tagsAll?: string[];
   tagsNone?: string[];
@@ -66,6 +70,8 @@ export type ScriptTarget = {
   count?: number;
   randomScope?: RandomScope;
   resultId?: string;
+  sort?: { stat: ScriptStat; direction: "ASC" | "DESC" };
+  take?: number;
 };
 export type ScriptValue = {
   kind: ScriptValueKind;
@@ -85,7 +91,7 @@ export type ScriptEffect = {
 export type ScriptStep =
   | { type: "SELECT"; id: string; target: ScriptTarget }
   | { type: "AGGREGATE"; id: string; selectionId: string; operation: ScriptOperation; stat?: ScriptStat }
-  | { type: "EFFECT"; effect: ScriptEffect }
+  | { type: "EFFECT"; id?: string; effect: ScriptEffect }
   | { type: "IF"; condition: ScriptCondition; then: ScriptStep[]; else?: ScriptStep[] };
 export type EffectScript = {
   version: "SCRIPT_V1";
@@ -93,15 +99,15 @@ export type EffectScript = {
   steps: ScriptStep[];
 };
 
-const SCRIPT_TARGET_KEYS = new Set(["zone", "zones", "owner", "cardType", "filter", "selection", "count", "randomScope", "resultId"]);
-const SCRIPT_FILTER_KEYS = new Set(["isGenerated", "minCost", "maxCost", "isToken", "isChampionToken", "excludeSource", "tagsAny", "tagsAll", "tagsNone"]);
+const SCRIPT_TARGET_KEYS = new Set(["zone", "zones", "owner", "cardType", "filter", "selection", "count", "randomScope", "resultId", "sort", "take"]);
+const SCRIPT_FILTER_KEYS = new Set(["isGenerated", "minCost", "maxCost", "cost", "attack", "health", "isToken", "isChampionToken", "excludeSource", "keyword", "tagsAny", "tagsAll", "tagsNone"]);
 const SCRIPT_VALUE_KEYS = new Set(["kind", "value", "resultId"]);
 const SCRIPT_EFFECT_KEYS = new Set(["action", "target", "values"]);
 const SCRIPT_EFFECT_VALUE_KEYS = new Set([
   "amount", "amountExpression", "attack", "attackExpression", "health", "healthExpression", "countExpression",
   "attackMultiplier", "healthMultiplier", "stat", "duration",
   "keyword", "damageSource", "reference", "referenceStat", "amountReference", "minimum", "temporaryCost",
-  "generatedModifiers", "deckPosition", "count", "destination",
+  "generatedModifiers", "deckPosition", "count", "destination", "queuedTrigger", "queuedEffect",
 ]);
 
 function isRecord(value: unknown): value is Record<string, unknown> {
@@ -119,11 +125,15 @@ function validScriptTarget(value: unknown): value is ScriptTarget {
     value.zones.length > TARGET_ZONES.length || !value.zones.every((zone) => TARGET_ZONES.includes(zone as TargetZone)))) return false;
   if (value.owner !== undefined && !TARGET_OWNERS.includes(value.owner as TargetOwner)) return false;
   if (value.selection !== undefined && !TARGET_SELECTIONS.includes(value.selection as TargetSelection)) return false;
-  if (value.selection === "PLAYER_CHOICE" || value.selection === "ADJACENT_EMPTY_SLOTS" || value.selection === "SAME_TARGET") return false;
   if (value.randomScope !== undefined && !RANDOM_SCOPES.includes(value.randomScope as RandomScope)) return false;
   if (value.cardType !== undefined && value.cardType !== "WRESTLER" && value.cardType !== "TECHNIQUE") return false;
   if (value.count !== undefined && (typeof value.count !== "number" || !Number.isInteger(value.count) ||
     value.count < 1 || value.count > SCRIPT_MAX_SELECTOR_RESULTS)) return false;
+  if (value.take !== undefined && (typeof value.take !== "number" || !Number.isInteger(value.take) ||
+    value.take < 1 || value.take > SCRIPT_MAX_SELECTOR_RESULTS)) return false;
+  if (value.sort !== undefined && (!isRecord(value.sort) || !hasOnlyKeys(value.sort, new Set(["stat", "direction"])) ||
+    !["COST", "ATTACK", "HEALTH"].includes(value.sort.stat as string) ||
+    !["ASC", "DESC"].includes(value.sort.direction as string))) return false;
   if (value.resultId !== undefined && (typeof value.resultId !== "string" || !/^[A-Za-z][A-Za-z0-9_-]{0,31}$/.test(value.resultId))) return false;
   if (value.zone !== undefined && value.zones !== undefined) return false;
   if (value.filter !== undefined) {
@@ -131,6 +141,13 @@ function validScriptTarget(value: unknown): value is ScriptTarget {
     const filter = value.filter;
     for (const key of ["isGenerated", "isToken", "isChampionToken", "excludeSource"]) {
       if (filter[key] !== undefined && typeof filter[key] !== "boolean") return false;
+    }
+    if (filter.keyword !== undefined && !KEYWORDS.includes(filter.keyword as Keyword)) return false;
+    for (const key of ["cost", "attack", "health"]) {
+      const comparison = filter[key];
+      if (comparison !== undefined && (!isRecord(comparison) || !hasOnlyKeys(comparison, new Set(["compare", "value"])) ||
+        !SCRIPT_COMPARATORS.includes(comparison.compare as ScriptComparator) ||
+        typeof comparison.value !== "number" || !Number.isFinite(comparison.value))) return false;
     }
     for (const key of ["minCost", "maxCost"]) {
       if (filter[key] !== undefined && (!Number.isInteger(filter[key]) || Number(filter[key]) < 0 || Number(filter[key]) > 999)) return false;
@@ -168,7 +185,8 @@ function validScriptSteps(value: unknown, depth: number, seen: Set<string>): val
       continue;
     }
     if (raw.type === "EFFECT") {
-      if (!isRecord(raw.effect) || !hasOnlyKeys(raw.effect, SCRIPT_EFFECT_KEYS) ||
+      if ((raw.id !== undefined && (typeof raw.id !== "string" || !/^[A-Za-z][A-Za-z0-9_-]{0,31}$/.test(raw.id))) ||
+        !isRecord(raw.effect) || !hasOnlyKeys(raw.effect, SCRIPT_EFFECT_KEYS) ||
         !ACTIONS.includes(raw.effect.action as Action)) return false;
       if (raw.effect.target !== undefined && !validScriptTarget(raw.effect.target)) return false;
       if (raw.effect.values !== undefined) {

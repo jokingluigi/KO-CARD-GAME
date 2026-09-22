@@ -354,9 +354,13 @@ function buildSystemPrompt(context: EffectAiContext, catalog: readonly CardRefer
       actionSchemas: ACTION_SCHEMAS,
     })}`,
     "무작위 CardDefinition 소환/생성은 target.selection=RANDOM을 사용하고, 공개 cardPool에서 target.cardType 및 target.filter(tagsAny/tagsAll/tagsNone 등)에 맞는 definition을 서버가 deterministic RNG로 선택한다.",
+    "SCRIPT_V1 SELECT는 zone/cardType/filter(cardType, tagsAny/tagsAll/tagsNone, keyword, cost/attack/health 비교)을 지원하며, sort:{stat:COST|ATTACK|HEALTH,direction:ASC|DESC}와 take로 결과를 제한한다. 비교 연산자는 EQ/NE/LT/LTE/GT/GTE만 사용한다.",
+    "SCRIPT_V1에서 PLAYER_CHOICE는 authoritative targetingState를 열고 선택 후 다음 step을 재개한다. UI용 임시 상태나 상대 패/덱 identity를 결과에 넣지 마라.",
+    "SCRIPT_V1의 결과 참조는 이전 SELECT/EFFECT의 id를 target.resultId로 사용한다. EFFECT에 id를 붙이면 실제 성공한 대상/소환 CardInstance 결과만 다음 step에서 참조할 수 있다.",
     "source 카드의 양옆 빈 슬롯에 각각 한 장씩 소환하는 의미는 SUMMON + target.selection=ADJACENT_EMPTY_SLOTS + target.count=2 + target.cardType=WRESTLER처럼 표현한다. 실제 빈 슬롯 수가 2보다 적으면 가능한 슬롯만 사용하며, 각 슬롯 선택은 독립적이고 중복 definition도 허용된다.",
     "직전 SUMMON에서 실제 필드에 들어간 CardInstance들을 후속 효과가 대상으로 삼을 때는 target.selection=SAME_TARGET을 사용한다. 이는 PLAYER_CHOICE를 열지 않고 성공한 결과만 참조하며, 둘 다 소환되지 않으면 대상 0개로 안전하게 끝난다.",
     "일반 키워드 부여는 ADD_KEYWORD와 values.keyword를 사용한다. 예시 문장은 ENTER_FIELD SUMMON(ADJACENT_EMPTY_SLOTS, WRESTLER, RANDOM/STANDARD) 뒤 ADD_KEYWORD(SAME_TARGET, TAUNT) 두 효과로 변환한다.",
+    "SCRIPT_V1에서 REVIVE는 GRAVEYARD + RANDOM/FILTER + resultId 참조로 표현하고, QUEUE_EFFECT는 기존 지원 queuedTrigger/queuedEffect 구조만 사용한다. 새 scheduler나 event query 문법을 만들지 마라.",
     "SUMMON/GENERATE의 고정 카드 참조는 definitionRef:{name:" +
       '"카드 이름"' +
       "}를 사용하고 서버가 canonical ID로 바꾸게 한다. 임의 ID를 만들지 마라. 무작위 카드 풀 효과만 참조를 생략할 수 있다.",
