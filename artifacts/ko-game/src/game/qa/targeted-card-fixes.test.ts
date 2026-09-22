@@ -12,7 +12,7 @@ import { attack } from '../engine/combat';
 import { endTurn } from '../engine/turn-system';
 import { enterField } from '../engine/enter-field';
 import { playWrestlerFromHand } from '../engine/play-wrestler';
-import { resolveTriggeredAbilities, selectEffectTarget } from '../effects/effect-engine';
+import { applyEffect, resolveTriggeredAbilities, selectEffectTarget } from '../effects/effect-engine';
 import type { GameState } from '../types/game-state';
 
 const apiOrigin = process.env.KO_QA_API_ORIGIN ?? 'http://127.0.0.1:8080';
@@ -50,6 +50,44 @@ function stateWithPool(): GameState {
   return state;
 }
 
+function statTriggerCard(instanceId: string): CardInstance {
+  const statTriggerDefinition: CardDefinition = {
+    id: 'qa-stat-trigger',
+    name: 'QA stat trigger',
+    cardType: 'WRESTLER',
+    cost: 1,
+    attack: 2,
+    health: 4,
+    rulesText: 'stat trigger',
+    rarity: 'NORMAL',
+    isToken: false,
+    isChampionToken: false,
+    keywords: [],
+    abilities: [{
+      trigger: 'STAT_CHANGED',
+      effects: [{ type: 'GAIN_GOLD', amount: 1 }],
+    }],
+  };
+  return card(statTriggerDefinition, instanceId);
+}
+
+function buffHandCard(
+  state: GameState,
+  target: CardInstance,
+  values: { attack?: number; health?: number },
+): GameState {
+  const source = {
+    ...target,
+    abilities: [],
+  };
+  return applyEffect(state, 'player-1', source, {
+    type: 'STRUCTURED',
+    action: 'BUFF',
+    target: { zone: 'HAND', owner: 'SELF', selection: 'SELF', count: 1 },
+    values,
+  });
+}
+
 test('authoritative 흑구슬마스터 PLAY_FROM_HAND creates target selection and destroys the chosen enemy', () => {
   const blackOrb = definition('흑구슬마스터');
   const enemyDefinition = definition('로드');
@@ -82,6 +120,83 @@ test('authoritative 흑구슬마스터 PLAY_FROM_HAND creates target selection a
     ),
     true,
   );
+});
+
+test('generic stat-increase listeners trigger once for HAND attack and health increases', () => {
+  const state = stateWithPool();
+  const attackCard = statTriggerCard('hand-attack-trigger');
+  const healthCard = statTriggerCard('hand-health-trigger');
+  state.players[0].hand = [attackCard, healthCard];
+
+  const afterAttack = buffHandCard(state, attackCard, { attack: 1 });
+  assert.equal(afterAttack.players[0].currentGold, 11);
+  assert.equal(afterAttack.players[0].hand[0]?.currentAttack, 3);
+
+  const afterHealth = buffHandCard(afterAttack, healthCard, { health: 1 });
+  assert.equal(afterHealth.players[0].currentGold, 12);
+  assert.equal(afterHealth.players[0].hand[1]?.currentHealth, 5);
+  assert.equal(afterHealth.players[0].hand[1]?.maxHealth, 5);
+});
+
+test('generic stat-increase listeners preserve FIELD behavior without duplicate or decrease triggers', () => {
+  const state = stateWithPool();
+  const fieldCard = { ...statTriggerCard('field-stat-trigger'), boardSlot: 0 as const };
+  const handCard = statTriggerCard('hand-decrease-trigger');
+  const unchangedCard = statTriggerCard('hand-unchanged-trigger');
+  state.players[0].board = [fieldCard, null, null, null];
+  state.players[0].hand = [handCard, unchangedCard];
+
+  const afterFieldAttack = applyEffect(state, 'player-1', fieldCard, {
+    type: 'STRUCTURED',
+    action: 'BUFF',
+    target: { zone: 'BOARD', owner: 'SELF', selection: 'SELF', count: 1 },
+    values: { attack: 1 },
+  });
+  assert.equal(afterFieldAttack.players[0].currentGold, 11);
+  assert.equal(afterFieldAttack.players[0].board[0]?.currentAttack, 3);
+
+  const afterDecrease = buffHandCard(afterFieldAttack, handCard, { attack: -1 });
+  assert.equal(afterDecrease.players[0].currentGold, 11);
+  assert.equal(afterDecrease.players[0].hand[0]?.currentAttack, 1);
+
+  const afterUnchanged = buffHandCard(afterDecrease, unchangedCard, { attack: 0 });
+  assert.equal(afterUnchanged.players[0].currentGold, 11);
+  assert.equal(afterUnchanged.players[0].hand[1]?.currentAttack, 2);
+});
+
+test('ON_ENTER PLAYER_CHOICE with no valid targets skips only the effect and leaves play usable', () => {
+  const blackOrb = definition('흑구슬마스터');
+  const state = stateWithPool();
+  state.players[0].hand = [
+    card(blackOrb, 'black-orb-no-target'),
+    card(definition('로드'), 'black-orb-follow-up'),
+  ];
+
+  const played = playWrestlerFromHand(state, 'player-1', 'black-orb-no-target', 0);
+  assert.equal(played.success, true);
+  if (!played.success) return;
+  assert.equal(played.state.players[0].currentGold, 3);
+  assert.equal(played.state.players[0].board[0]?.instanceId, 'black-orb-no-target');
+  assert.equal(played.state.targetingState, undefined);
+  assert.equal(played.state.pendingCardEffects.length, 0);
+
+  const ended = endTurn(played.state, 'player-1');
+  assert.equal(ended.success, true);
+  if (!ended.success) return;
+
+  const nextState = {
+    ...ended.state,
+    activePlayerId: 'player-2',
+    players: ended.state.players.map((player) =>
+      player.id === 'player-2'
+        ? { ...player, hand: [card(definition('로드'), 'other-player-card')], currentGold: 10 }
+        : player),
+  };
+  const playedAgain = playWrestlerFromHand(nextState, 'player-2', 'other-player-card', 0);
+  assert.equal(playedAgain.success, true);
+  if (playedAgain.success) {
+    assert.equal(playedAgain.state.targetingState, undefined);
+  }
 });
 
 test('흑구슬마스터 targeting rejects non-enemy targets and does not leave a stale frame', () => {

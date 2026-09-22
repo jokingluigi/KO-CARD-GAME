@@ -73,3 +73,4 @@
 - [Script engine boundary](script-engine-boundary.md) — SCRIPT_V1 is a closed bounded AST; interactive target continuation must use the existing engine stack before being enabled.
 - [SCRIPT_V1 event history](script-history-boundary.md) — bounded event queries are declarative script steps whose numeric results feed later effects.
 - [Targeted wrestler effect semantics](targeted-wrestler-effect-semantics.md) — Dehun reacts from HAND only; Natomato's combo attack is temporary so permanent attack modifiers survive turn end.
+- [HAND stat and no-target entry](hand-stat-and-no-target-entry.md) — stat listeners are limited to HAND/BOARD and no-target WRESTLER entry choices skip without rejecting the play.

@@ -715,20 +715,32 @@ function allCardsWithOwners(state: GameState): Array<{ ownerId: string; card: Ca
   ].map((card) => ({ ownerId: player.id, card })));
 }
 
+function statListenerCards(state: GameState): Array<{ ownerId: string; card: CardInstance }> {
+  return state.players.flatMap((player) => [
+    ...player.hand,
+    ...player.board.filter((card): card is CardInstance => card !== null),
+  ].map((card) => ({ ownerId: player.id, card })));
+}
+
 function resolveStatChangeListeners(
   beforeState: GameState,
   afterState: GameState,
   sourceContext?: EventAttribution,
 ): GameState {
   if (sourceContext?.sourceActionType === 'INTERNAL_STAT_LISTENER') return afterState;
-  const beforeCards = new Map(allCardsWithOwners(beforeState).map(({ card }) => [card.instanceId, card]));
-  const changed = allCardsWithOwners(afterState).flatMap(({ ownerId, card }) => {
+  const beforeCards = new Map(statListenerCards(beforeState).map(({ card }) => [card.instanceId, card]));
+  const changed = statListenerCards(afterState).flatMap(({ ownerId, card }) => {
     const before = beforeCards.get(card.instanceId);
     const attackDelta = before ? card.currentAttack - before.currentAttack : 0;
-    return attackDelta > 0 ? [{ ownerId, card, attackDelta }] : [];
+    const healthDelta = before ? card.currentHealth - before.currentHealth : 0;
+    const maxHealthDelta = before ? card.maxHealth - before.maxHealth : 0;
+    return attackDelta > 0 || healthDelta > 0 || maxHealthDelta > 0
+      ? [{ ownerId, card, attackDelta, healthDelta: Math.max(healthDelta, maxHealthDelta) }]
+      : [];
   });
   return changed.reduce((next, changedCard) => {
-    return allCardsWithOwners(next)
+    return statListenerCards(next)
+      .filter(({ card }) => card.instanceId === changedCard.card.instanceId)
       .filter(({ card }) => card.abilities.some((ability) => ability.trigger === 'STAT_CHANGED'))
       .reduce((listenerState, { ownerId, card }) => {
         const listenerFrame = listenerState.targetingState;
@@ -754,6 +766,7 @@ function resolveStatChangeListeners(
               }),
               sourceActionType: 'INTERNAL_STAT_LISTENER',
             },
+            healthDelta: changedCard.healthDelta,
           },
         );
         return listenerFrame && !hasChoice
@@ -2483,6 +2496,7 @@ export function resolveTriggeredAbilities(
     attackerInstanceId?: string;
     damagedTargetInstanceId?: string;
     attackDelta?: number;
+    healthDelta?: number;
     playedCardGenerated?: boolean;
     playedCardType?: CardInstance['cardType'];
     healthBefore?: number;
@@ -2535,7 +2549,7 @@ export function resolveTriggeredAbilities(
     active: true, playerId, sourceInstanceId: card.instanceId, sourceCard: card, effects,
      effectIndex: 0, selectedTargetIds: [], lastTargetIds: options.chosenTargetInstanceIds ?? (trigger === 'FIRST_ATTACKED' && options.attackerInstanceId ? [options.attackerInstanceId] : []),
     validTargetIds: [], minTargets: 0, maxTargets: 0, mandatory: true, cancelable: false,
-      triggerContext: { playedFromHand: options.playedFromHand, baseCost: options.baseCost, attackerInstanceId: options.attackerInstanceId, damagedTargetInstanceId: options.damagedTargetInstanceId, attackDelta: options.attackDelta, healthBefore: options.healthBefore, healthAfter: options.healthAfter, sourceContext: options.sourceContext },
+      triggerContext: { playedFromHand: options.playedFromHand, baseCost: options.baseCost, attackerInstanceId: options.attackerInstanceId, damagedTargetInstanceId: options.damagedTargetInstanceId, attackDelta: options.attackDelta, healthDelta: options.healthDelta, healthBefore: options.healthBefore, healthAfter: options.healthAfter, sourceContext: options.sourceContext },
      lastAggregatedStats: state.targetingState?.lastAggregatedStats,
   });
 }
