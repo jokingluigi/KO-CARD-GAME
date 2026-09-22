@@ -12,6 +12,7 @@ import { createTestDeck, setRuntimeCardDefinitions, TEST_CHAMPION_TOKEN_DEFINITI
 import { TEST_CHAMPIONS } from '../champions/test-champions';
 import { championRecordToDefinition } from '../champions/published-champions';
 import type { CardDefinition } from '../cards/types';
+import { executeAction } from '../actions/engine-actions';
 
 const fixedRandom = () => 0.5;
 
@@ -51,6 +52,77 @@ test('챔피언 능력은 비용을 지불하고 직접 사용한다', () => {
     ),
     true,
   );
+});
+
+test('Pandora-style ALL WRESTLER ability can retire an ally and advance its attributed quest', () => {
+  const base = TEST_CHAMPIONS.find((definition) => definition.id === 'test-champion-no-quest')!;
+  const pandora = {
+    ...base,
+    id: 'test-pandora-all-wrestlers',
+    ability: {
+      ...base.ability,
+      effects: [{
+        type: 'STRUCTURED' as const,
+        action: 'DAMAGE' as const,
+        target: {
+          zone: 'BOARD' as const,
+          owner: 'ALL' as const,
+          cardType: 'WRESTLER' as const,
+          selection: 'PLAYER_CHOICE' as const,
+          count: 1,
+        },
+        values: { amount: 1 },
+      }],
+    },
+    quest: {
+      id: 'test-pandora-quest',
+      name: '리타이어',
+      description: '능력으로 선수를 리타이어 시킵니다.',
+      trackedEvent: 'WRESTLER_RETIRED' as const,
+      cardType: 'WRESTLER' as const,
+      sourceActionType: 'USE_CHAMPION_ABILITY',
+      requiredProgress: 1,
+      reward: { type: 'GAIN_GOLD' as const, amount: 0 },
+    },
+  };
+  const started = startGame(
+    createInitialGameState(
+      ['test-pandora-all-wrestlers', 'test-champion-no-quest'],
+      undefined,
+      [pandora, TEST_CHAMPIONS.find((definition) => definition.id === 'test-champion-no-quest')!],
+    ),
+    fixedRandom,
+  );
+  const ally = { ...started.players[0].deck[0]!, boardSlot: 0 as const, currentHealth: 1, maxHealth: 1 };
+  const enemy = { ...started.players[1].deck[0]!, boardSlot: 0 as const, currentHealth: 1, maxHealth: 1 };
+  const ready = {
+    ...started,
+    players: started.players.map((player) =>
+      player.id === 'player-1'
+        ? { ...player, currentGold: 2, board: [ally, null, null, null] as typeof player.board }
+        : { ...player, board: [enemy, null, null, null] as typeof player.board },
+    ),
+  };
+
+  const pending = useChampionAbility(ready, 'player-1');
+  assert.equal(pending.success, true);
+  if (!pending.success) return;
+  assert.deepEqual(
+    pending.state.targetingState?.validTargetIds,
+    [ally.instanceId, enemy.instanceId],
+  );
+
+  const resolvedResult = executeAction(pending.state, {
+    type: 'SELECT_EFFECT_TARGET',
+    playerId: 'player-1',
+    targetId: ally.instanceId,
+  });
+  assert.equal(resolvedResult.success, true);
+  if (!resolvedResult.success) return;
+  const resolved = resolvedResult.state;
+  assert.equal(resolved.players[0].board[0], null);
+  assert.equal(resolved.players[1].board[0]?.instanceId, enemy.instanceId);
+  assert.equal(resolved.players[0].champion?.questProgress, 1);
 });
 
 test('퀘스트 없는 Champion의 구조화된 다음 턴 골드 능력이 다음 자기 턴에 적용된다', () => {

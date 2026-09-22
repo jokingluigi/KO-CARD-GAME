@@ -1168,7 +1168,26 @@ export function resolvePendingEffects(state: GameState): GameState {
       return { ...next, targetingState: { ...pending, effectIndex: index, selectedTargetIds: [], lastTargetIds: last, validTargetIds, minTargets, maxTargets, mandatory: !effect.target.optionalTarget, cancelable: Boolean(effect.target.optionalTarget) } };
     }
     const ids = effect.type === 'STRUCTURED' && effect.target?.selection === 'SAME_TARGET' ? last : undefined;
-     next = applyEffect(next, pending.playerId, source, effect, ids, pending.triggerContext);
+    // Automatic effects do not pass through selectEffectTarget, so advance the
+    // active frame before applying them. Otherwise a nested damage trigger sees
+    // the same unresolved effect and re-enters resolvePendingEffects forever.
+    const frameAfterCurrentEffect: NonNullable<GameState['targetingState']> = {
+      ...pending,
+      effectIndex: index + 1,
+      selectedTargetIds: [],
+      validTargetIds: [],
+      minTargets: 0,
+      maxTargets: 0,
+      lastTargetIds: last,
+    };
+    next = applyEffect(
+      { ...next, targetingState: frameAfterCurrentEffect },
+      pending.playerId,
+      source,
+      effect,
+      ids,
+      pending.triggerContext,
+    );
     if (next.targetingState?.continuation &&
       next.targetingState.continuation.sourceInstanceId === pending.sourceInstanceId &&
       next.targetingState.continuation.effectIndex > pending.effectIndex) return next;
@@ -1606,6 +1625,44 @@ export function applyEffect(
         }, state);
       }
       if (target.selection === 'ALL') {
+        if (zones.length === 1 && zones[0] === 'CHARACTER') {
+          const selectedIds = getValidTargets(state, playerId, sourceCard, effect);
+          return selectedIds.reduce((nextState, selectedId) => {
+            const owner = nextState.players.find((player) =>
+              player.id === selectedId ||
+              player.board.some((card) => card?.instanceId === selectedId),
+            );
+            if (!owner) return nextState;
+            const isPlayerTarget = owner.id === selectedId;
+            return applyEffect(
+              nextState,
+              playerId,
+              sourceCard,
+              {
+                ...effect,
+                target: isPlayerTarget
+                  ? {
+                      ...target,
+                      zone: 'PLAYER',
+                      zones: undefined,
+                      owner: owner.id === playerId ? 'SELF' : 'ENEMY',
+                      selection: 'SELF',
+                      count: 1,
+                    }
+                  : {
+                      ...target,
+                      zone: 'BOARD',
+                      zones: undefined,
+                      owner: owner.id === playerId ? 'SELF' : 'ENEMY',
+                      selection: 'PLAYER_CHOICE',
+                      count: 1,
+                    },
+              },
+              isPlayerTarget ? undefined : [selectedId],
+              triggerContext,
+            );
+          }, state);
+        }
         return state.players.reduce(
           (nextState, owner) =>
             applyEffect(

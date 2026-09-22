@@ -33,6 +33,7 @@ test("DB 챔피언을 직렬화 가능한 매치 스냅샷 정의로 변환한�
   assert.equal(definition.upgradedAbility?.cost, 1);
 });
 
+
 test("직접 전개는 연결된 명시적 Champion Token ID만 사용한다", () => {
   const definition = championRecordToDefinition({
     id: "champion-b", name: "B", description: "", imageAssetId: null, imageUrl: null,
@@ -65,5 +66,61 @@ test("Quest 보상도 연결된 Champion Token ID를 직접 전개 보상으로 
   assert.deepEqual(definition.quest?.reward, {
     type: "DIRECT_DEPLOY_CHAMPION_TOKEN",
     cardDefinitionId: "linked-token",
+  });
+});
+
+test("구조화된 Champion Token 보상은 현재 챔피언 연결을 사용하는 전개 effect로 변환한다", () => {
+  const definition = championRecordToDefinition({
+    id: "pandora-fixture", name: "판도라 fixture", description: "", imageAssetId: null, imageUrl: null,
+    maxHealth: 20, abilityName: "불안한 일격", abilityCost: 2, abilityText: "",
+    abilityEffects: {
+      effects: [{
+        action: "DAMAGE",
+        target: {
+          zone: "BOARD",
+          owner: "ALL",
+          cardType: "WRESTLER",
+          selection: "PLAYER_CHOICE",
+          count: 1,
+        },
+        values: { amount: 1 },
+      }],
+    },
+    hasQuest: true, questName: "폭주의 조짐", questText: "선수 카드를 리타이어 시킵니다.",
+    questCondition: {
+      event: "WRESTLER_RETIRED",
+      cardType: "WRESTLER",
+      sourceActionType: "USE_CHAMPION_ABILITY",
+      required: 1,
+    },
+    questProgressRequired: 1,
+    questRewardText: "능력을 강화하고 연결된 토큰을 전개합니다.",
+    questRewardEffects: { effects: [{ action: "DEPLOY_CHAMPION_TOKEN" }] },
+    upgradedAbilityName: "파멸의 일격", upgradedAbilityCost: 1,
+    upgradedAbilityText: "강화", upgradedAbilityEffects: { effects: [] },
+    championTokenDefinitionId: "pandora-token",
+    status: "PUBLISHED", version: 1,
+  });
+
+  assert.deepEqual(definition.ability.effects[0], {
+    type: "STRUCTURED",
+    action: "DAMAGE",
+    target: {
+      zone: "BOARD",
+      owner: "ALL",
+      cardType: "WRESTLER",
+      selection: "PLAYER_CHOICE",
+      count: 1,
+    },
+    values: { amount: 1 },
+  });
+  assert.deepEqual(definition.quest?.reward, {
+    type: "STRUCTURED",
+    effects: [{
+      type: "STRUCTURED",
+      action: "DEPLOY_CHAMPION_TOKEN",
+      target: undefined,
+      values: undefined,
+    }],
   });
 });

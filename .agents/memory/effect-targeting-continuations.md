@@ -14,3 +14,9 @@ Automatic effects that create new card instances must store the created instance
 **Why:** Re-deriving targets from the board after nested resolution can include the source or lose the exact generated cards, and using printed cost rejects cards whose live cost was reduced.
 
 **How to apply:** Creation handlers should return their produced IDs through `lastTargetIds`, and instance target resolvers should compare `currentCost`; keep definition candidate filters on `definition.cost`.
+
+Automatic effects must advance the active frame before applying their body so nested damage and trigger resolution cannot re-enter the same unresolved effect.
+
+**Why:** An automatic `ALL` damage effect can invoke a nested resolver while its original frame is still current; without the advance, resolution recurses indefinitely.
+
+**How to apply:** Treat automatic effect execution like a completed selection: apply it against a frame whose `effectIndex` already points to the next effect, then let child continuations resume through the normal stack.

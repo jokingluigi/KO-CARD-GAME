@@ -329,6 +329,44 @@ test('pending targeting blocks end turn with the exact warning', () => {
   if (!result.success) assert.equal(result.message, '먼저 대상을 선택하세요.');
 });
 
+test('ALL BOARD WRESTLERS targeting includes both players but excludes both Champions', () => {
+  const pandoraEffect: CardEffect = {
+    type: 'STRUCTURED',
+    action: 'DAMAGE',
+    target: {
+      zone: 'BOARD',
+      owner: 'ALL',
+      cardType: 'WRESTLER',
+      selection: 'PLAYER_CHOICE',
+      count: 1,
+    },
+    values: { amount: 1 },
+  };
+  const source = card('pandora', [pandoraEffect]);
+  const state = createInitialGameState();
+  state.players[0].board[0] = { ...card('ally-wrestler'), boardSlot: 0 };
+  state.players[1].board[0] = { ...card('enemy-wrestler'), boardSlot: 0 };
+
+  assert.deepEqual(
+    getValidTargets(state, 'player-1', source, pandoraEffect).sort(),
+    ['ally-wrestler', 'enemy-wrestler'],
+  );
+
+  const allyDamage = selectEffectTarget(
+    enterField(state, 'player-1', source, 1),
+    'ally-wrestler',
+  );
+  assert.equal(allyDamage.players[0].board[0]?.currentHealth, 1);
+  assert.equal(allyDamage.players[1].board[0]?.currentHealth, 2);
+
+  const enemyDamage = selectEffectTarget(
+    enterField(state, 'player-1', source, 1),
+    'enemy-wrestler',
+  );
+  assert.equal(enemyDamage.players[0].board[0]?.currentHealth, 2);
+  assert.equal(enemyDamage.players[1].board[0]?.currentHealth, 1);
+});
+
 test('mandatory no-target play preserves hand, gold and board', () => {
   const state = createInitialGameState();
   state.status = 'IN_PROGRESS'; state.activePlayerId = 'player-1';
