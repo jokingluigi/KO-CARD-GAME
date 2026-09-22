@@ -1,0 +1,757 @@
+KO CARD GAME — FIX ONLY:
+UNEXPECTED "위리너" ENTITY + GENERAL MATCH LAG
+
+이번 작업에서는 아래 2개만 처리한다.
+
+1. 경기 중 정체불명의 "위리너" 카드/엔티티가 나타나는 문제
+2. 경기 중 전체적으로 느려지거나 반응이 늦어지는 일반적인 게임 렉
+
+이번 작업의 핵심은
+원인을 추적한 뒤 최소 수정으로 해결하는 것이다.
+
+"위리너"를 이름으로 하드코딩해서 숨기거나 삭제하지 마.
+
+성능 문제도 근거 없이 전체 구조를 갈아엎지 마.
+
+==================================================
+0. FIX-FIRST
+==================================================
+
+각 항목은 반드시:
+
+재현
+→ 실제 source 추적
+→ root cause
+→ 최소 수정
+→ regression
+→ typecheck/build
+
+순서로 진행한다.
+
+브라우저가 없어도
+코드 수정과 자동 검증은 계속한다.
+
+==================================================
+PART A — 정체불명의 "위리너" 엔티티 출현
+==================================================
+
+현재 신고:
+
+게임 중 사용자가 의도하지 않은
+"위리너"라는 카드/엔티티가 필드 또는 게임 상태에 나타나는 경우가 있다.
+
+이 엔티티가:
+
+- 실제 CardDefinition인지
+- placeholder인지
+- fallback인지
+- 잘못된 Token인지
+- Generate 결과인지
+- Summon 결과인지
+- Revive 결과인지
+- Champion Token 오해석인지
+- AI deck/cardPool fallback인지
+
+먼저 정확히 추적한다.
+
+==================================================
+1. 절대 이름으로 삭제하지 마
+==================================================
+
+금지:
+
+if (card.name === "위리너") removeCard();
+
+금지:
+
+UI에서 "위리너"만 숨김.
+
+금지:
+
+해당 이름을 placeholder blacklist에 추가해서
+증상을 감춤.
+
+반드시
+왜 그 CardInstance가 생성되었는지 찾아야 한다.
+
+==================================================
+2. CardInstance lineage 추적
+==================================================
+
+"위리너"가 나타나는 순간
+가능하면 다음 정보를 추적한다.
+
+- CardInstance ID
+- CardDefinition ID
+- ownerId
+- zone
+- createdBy action/event
+- source CardInstance
+- source CardDefinition
+- source effect ID
+- creation reason
+- turn number
+- action sequence/event sequence
+
+현재 engine에 debug lineage가 없다면
+Development/Test에서만 사용할 수 있는
+최소한의 추적 정보를 추가할 수 있다.
+
+Production UI에 debug 정보 노출 금지.
+
+==================================================
+3. 가능한 생성 경로 전부 확인
+==================================================
+
+최소 확인:
+
+PLAY_FROM_HAND
+SUMMON
+GENERATE
+REVIVE
+DEPLOY_CHAMPION_TOKEN
+TOKEN CREATION
+COPY/CLONE
+fallback CardDefinition resolution
+AI deck construction
+match initial cardPool
+invalid/missing definition fallback
+legacy serialized CardInstance restore
+
+어느 경로가 실제 원인인지 증명한다.
+
+==================================================
+4. Missing CardDefinition fallback 확인
+==================================================
+
+특히 확인:
+
+CardDefinition ID를 찾지 못했을 때
+임의의 첫 카드,
+기본 카드,
+placeholder 카드,
+특정 이름의 카드
+
+를 대신 사용하는 코드가 있는지.
+
+잘못된 ID가 들어왔는데
+다른 실제 카드로 조용히 대체하는 구조라면 위험하다.
+
+가능하면:
+
+missing definition
+→ explicit validation/error handling
+
+로 처리하고
+다른 실제 CardDefinition으로 대체하지 않는다.
+
+단 정상적인 공식 fallback mechanic이 있다면
+그 규칙은 유지.
+
+==================================================
+5. Token / Champion Token 구분
+==================================================
+
+Champion Token은
+authoritative Champion → linked Token relation을 사용한다.
+
+이 문제를 고친다고
+Champion Token linkage를 이름/태그 기반으로 바꾸지 마.
+
+ordinary SUMMON of same CardDefinition과
+Champion Token deployment context도 계속 구분한다.
+
+==================================================
+6. Generate / Summon target 확인
+==================================================
+
+효과가 특정 CardDefinition을 생성해야 한다면
+실제 structured effect/AST가 지정한 ID와
+생성된 definition ID가 동일해야 한다.
+
+index mismatch,
+array fallback,
+undefined ID,
+stale catalog ordering
+
+등을 확인한다.
+
+==================================================
+7. AI deck / cardPool 확인
+==================================================
+
+AI deck 또는 cardPool 구성 과정에서
+
+invalid card
+missing definition
+empty slot
+
+을 채우기 위해
+임의 카드가 삽입되는지 확인.
+
+특히:
+
+array[0]
+firstPublishedCard
+defaultCard
+
+같은 silent fallback이 있다면 조사.
+
+공식적으로 필요한 fallback이 아니라면
+임의 카드 삽입을 막는다.
+
+==================================================
+8. Regression
+==================================================
+
+TEST W1
+
+정상 PLAY_FROM_HAND.
+
+기대:
+선택한 정확한 CardDefinition만 생성.
+
+TEST W2
+
+SUMMON effect.
+
+기대:
+effect가 지정한 정확한 CardDefinition.
+
+TEST W3
+
+GENERATE effect.
+
+기대:
+정상 selector/pool 결과만 생성.
+
+TEST W4
+
+REVIVE.
+
+기대:
+실제 graveyard target과 동일한 definition.
+
+TEST W5
+
+Champion Token deploy.
+
+기대:
+Champion에 연결된 정확한 Token definition.
+
+TEST W6
+
+존재하지 않는 CardDefinition ID.
+
+기대:
+다른 실제 카드를 임의 대체하지 않음.
+
+현재 architecture에 맞는 안전한 reject/error path 사용.
+
+TEST W7
+
+AI deck/cardPool initialization.
+
+기대:
+정의되지 않은 slot 때문에
+임의의 "위리너" 또는 다른 카드가 삽입되지 않음.
+
+==================================================
+PART B — 일반적인 경기 렉 / 반응 지연
+==================================================
+
+현재 신고:
+
+게임 플레이 중 전반적으로
+반응이 느리거나 끊기는 느낌이 있다.
+
+이번 작업은
+"성능 개선"이라는 이유로
+전체 엔진을 재작성하는 작업이 아니다.
+
+먼저 실제 병목을 측정하고
+확인된 hotspot만 수정한다.
+
+==================================================
+9. PROFILE FIRST
+==================================================
+
+최소 아래 구간을 계측한다.
+
+- PLAY_CARD action
+- ATTACK action
+- USE_ABILITY
+- END_TURN
+- effect resolution
+- legal action calculation
+- AI scheduler
+- GameState update
+- React render
+- presentation queue
+- animation queue
+
+가능하면 Dev/Test 환경에서
+각 구간의 시간과 호출 횟수를 측정.
+
+==================================================
+10. 특히 반복 호출/루프 확인
+==================================================
+
+다음 문제를 우선 조사:
+
+- 같은 legal actions를 한 프레임/한 action에서 반복 계산
+- useEffect dependency 오류로 반복 실행
+- duplicated timers
+- duplicated event listeners
+- AI scheduler 중복 등록
+- presentation queue가 소비되지 않고 누적
+- animation queue 중복
+- 전체 GameState deep clone 과다
+- 전체 card catalog 반복 scan
+- render마다 비싼 sort/filter
+- 동일 selector가 여러 번 전체 board/deck/hand scan
+- reconnect/snapshot handler 중복
+- 로그/debug output 과다
+
+==================================================
+11. React rerender 확인
+==================================================
+
+한 번의 canonical action으로
+주요 Match component가 비정상적으로 수십 번 재렌더되는지 확인.
+
+원인이 확인된 경우에만:
+
+memoization
+stable callback
+selector 분리
+derived data memo
+
+등을 적용.
+
+무조건 React.memo 도배 금지.
+
+==================================================
+12. GameState clone/copy 확인
+==================================================
+
+action 한 번마다
+거대한 cardPool/catalog 전체를
+여러 번 deep clone하는지 확인.
+
+불필요한 복제가 병목이면
+immutability를 깨지 않는 범위에서
+copy 범위를 줄인다.
+
+canonical correctness 우선.
+
+==================================================
+13. Effect listener scan 확인
+==================================================
+
+모든 event마다:
+
+모든 카드
+모든 zone
+모든 definitions
+
+을 반복 scan한다면
+실제 비용을 측정.
+
+확인된 병목일 때만
+zone/index/listener registry 등
+현재 architecture와 맞는 방식으로 최적화.
+
+이번 작업에서 effect semantics는 변경하지 마.
+
+==================================================
+14. AI scheduler
+==================================================
+
+AI scheduler를 이미 수정한 경우
+그 동작을 깨지 않는다.
+
+확인:
+
+- 같은 turn에 scheduler 여러 개 생성
+- stale timer 계속 생존
+- action 후 scheduler 중복 호출
+- timeout + normal scheduler 동시 실행
+
+이런 것이 성능 문제라면 수정 가능.
+
+AI 의사결정 규칙 자체는 바꾸지 마.
+
+==================================================
+15. Presentation / Animation
+==================================================
+
+확인:
+
+- 처리 완료된 presentation event가 queue에서 제거되는가
+- 동일 event가 중복 enqueue되는가
+- animation timer가 cleanup되는가
+- 화면에서 보이지 않는 오래된 animation이 계속 살아 있는가
+
+presentation을 없애서 성능을 개선하지 마.
+
+정상 연출은 유지해야 한다.
+
+==================================================
+16. Online architecture 함부로 변경 금지
+==================================================
+
+현재 Online connection 자체는 해결된 상태다.
+
+일반 렉을 이유로:
+
+WebSocket host
+ticket architecture
+Render routing
+auth
+CORS
+
+를 변경하지 마.
+
+단 명확하게 중복 snapshot/event subscription이
+성능 원인으로 증명되면
+해당 listener lifecycle만 최소 수정 가능.
+
+==================================================
+17. 성능 목표
+==================================================
+
+절대적인 FPS 숫자를 임의로 성공 기준으로 만들지 마.
+
+대신 수정 전/후 동일 fixture에서:
+
+- action 처리 시간
+- duplicate call count
+- rerender count
+- timer/listener count
+- queue length
+
+를 비교한다.
+
+성능 개선을 수치로 보고.
+
+==================================================
+18. 성능 Regression Fixture
+==================================================
+
+최소 하나의 실제에 가까운 match fixture:
+
+- 양쪽 board 카드 존재
+- hand 여러 장
+- trigger effect 몇 개 존재
+- turn progression
+- attack
+- card play
+
+상태에서 측정.
+
+==================================================
+19. TEST P1 — action duplicate
+==================================================
+
+PLAY_CARD 1회.
+
+기대:
+
+canonical action execution 1회.
+동일 effect frame이 이유 없이 반복 실행되지 않음.
+
+==================================================
+20. TEST P2 — timers/listeners
+==================================================
+
+여러 턴 진행.
+
+기대:
+
+timer/listener count가
+턴 수에 비례해 무한 증가하지 않음.
+
+==================================================
+21. TEST P3 — presentation queue
+==================================================
+
+여러 animation 발생.
+
+기대:
+
+처리 후 queue가 정상 감소.
+
+==================================================
+22. TEST P4 — rerender
+==================================================
+
+동일 fixture에서
+핵심 action 전/후 render count 측정.
+
+수정 전보다 명확히 개선되거나,
+적어도 runaway rerender가 제거되었음을 증명.
+
+==================================================
+23. correctness 우선
+==================================================
+
+성능 최적화 때문에 다음을 깨뜨리면 실패:
+
+- effect trigger
+- hidden information
+- deterministic RNG
+- target selection
+- turn progression
+- Online state sync
+- Champion Token
+- Quest
+- Technique
+- endgame
+
+==================================================
+24. 이번 작업에서 하지 말 것
+==================================================
+
+절대 수정 금지:
+
+- 카드 밸런스
+- 개별 카드 효과 재설계
+- Pandora
+- Champion Token 규칙 변경
+- Online connection architecture
+- Online presentation 기능 추가
+- Daily Quest
+- Attendance
+- Match Reward
+- Main Notice
+- Main Background
+- Main BGM
+- Admin AI
+- AI Mechanic Compiler
+- SCRIPT_V1 capability 추가
+- Deck rule
+- 분해 시스템
+
+==================================================
+25. Browser Verification
+==================================================
+
+가능하면 Development/Test에서:
+
+1.
+"위리너"가 출현했던 재현 경로를 실행
+→ 더 이상 잘못된 entity가 생성되지 않는지 확인.
+
+2.
+여러 턴 진행
+→ 카드 play
+→ attack
+→ ability
+→ end turn
+
+반복.
+
+3.
+수정 전과 비교해
+입력 후 반응 지연/끊김이 감소했는지 확인.
+
+브라우저가 없으면:
+
+IMPLEMENTATION / AUTOMATED / PROFILE은 계속.
+
+GAMEPLAY VERIFICATION만 UNVERIFIED.
+
+==================================================
+26. 자동 검증
+==================================================
+
+필수:
+
+Card creation lineage regression
+SUMMON/GENERATE regression
+REVIVE regression
+Champion Token mapping regression
+missing-definition regression
+AI deck/cardPool regression
+
+그리고 성능 관련:
+
+duplicate scheduler/timer regression
+listener cleanup regression
+presentation queue regression
+representative action benchmark/profiling
+
+마지막:
+
+pnpm run typecheck
+pnpm --filter @workspace/ko-game run build
+git diff --check
+
+API/shared 변경 시:
+
+API typecheck
+API build
+
+==================================================
+27. Git
+==================================================
+
+이번 작업 관련 파일만 stage.
+
+금지:
+
+Pasted-*.txt
+.env
+secret
+logs
+temp
+profiling dump
+unrelated user changes
+
+검증 후 commit.
+
+force push 금지.
+
+push 실패 시 local commit 유지.
+
+==================================================
+28. 최종 보고
+==================================================
+
+UNEXPECTED "위리너"
+
+REPRODUCTION:
+...
+
+ACTUAL CardDefinition ID:
+...
+
+CREATION PATH:
+PLAY / SUMMON / GENERATE / REVIVE / TOKEN / FALLBACK / AI_DECK / OTHER
+
+SOURCE ACTION/EVENT:
+...
+
+ROOT CAUSE:
+...
+
+NAME HARDCODING USED:
+NO
+
+Incorrect entity generation:
+FIXED / NOT FIXED
+
+SUMMON regression:
+PASS / FAIL
+
+GENERATE regression:
+PASS / FAIL
+
+REVIVE regression:
+PASS / FAIL
+
+Champion Token regression:
+PASS / FAIL
+
+Missing-definition safety:
+PASS / FAIL
+
+AI deck/cardPool:
+PASS / FAIL
+
+
+GENERAL MATCH LAG
+
+MEASURED HOTSPOTS:
+...
+
+ROOT CAUSE:
+...
+
+BEFORE:
+Action processing: ...
+Render count: ...
+Timer/listener count: ...
+Presentation queue: ...
+
+AFTER:
+Action processing: ...
+Render count: ...
+Timer/listener count: ...
+Presentation queue: ...
+
+Runaway rerenders:
+YES / NO
+
+Duplicate timers:
+YES / NO
+
+Duplicate listeners:
+YES / NO
+
+Duplicate scheduler:
+YES / NO
+
+Queue leak:
+YES / NO
+
+
+==================================================
+
+IMPLEMENTATION:
+PASS / FAIL / BLOCKED
+
+AUTOMATED VERIFICATION:
+PASS / FAIL
+
+PERFORMANCE VERIFICATION:
+PASS / FAIL
+
+GAMEPLAY VERIFICATION:
+PASS / FAIL / UNVERIFIED
+
+TYPECHECK:
+PASS / FAIL
+
+KO BUILD:
+PASS / FAIL
+
+API BUILD:
+PASS / FAIL / NOT_MODIFIED
+
+git diff --check:
+PASS / FAIL
+
+CHANGED FILES:
+...
+
+COMMIT:
+...
+
+PUSH:
+...
+
+==================================================
+완료 조건
+==================================================
+
+1.
+"위리너"가 왜 나타났는지 실제 생성 경로를 찾아
+근본 원인을 수정한다.
+
+2.
+이름 하드코딩/숨김으로 증상을 감추지 않는다.
+
+3.
+일반 게임 렉은 profiling으로 실제 병목을 확인한 뒤
+해당 부분만 최적화한다.
+
+4.
+수정 전/후 최소 한 가지 이상의
+측정 가능한 성능 지표를 보고한다.
+
+5.
+게임 규칙과 기존 정상 기능에 회귀가 없다.
+
+이 두 문제만 수정하고 멈춰라.
