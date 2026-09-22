@@ -1,0 +1,1250 @@
+KO CARD GAME — NATURAL LANGUAGE → REAL GAME MECHANIC COMPILER
+
+현재 Admin AI 효과 생성기의 방향을 수정해라.
+
+현재 시스템은 자연어를 받아
+기존 SCRIPT_V1 AST "초안"을 생성하고,
+현재 지원되는 action/selector와 조금만 다르면
+INVALID_DRAFT / NEEDS_CLARIFICATION으로 끝나는 경향이 있다.
+
+이것은 최종 목표가 아니다.
+
+==================================================
+최종 목표
+==================================================
+
+Admin 사용자는 게임 엔진 구조를 몰라도 된다.
+
+사용자는 오직 자연어로 효과를 작성한다.
+
+예:
+
+"이 카드가 죽으면 다음 내 턴 시작에 부활하고
+공격력을 2 얻는다."
+
+AI는 이것을 읽고 스스로:
+
+- 어떤 trigger가 필요한지
+- 어떤 대상을 추적해야 하는지
+- 어떤 state를 기억해야 하는지
+- 언제 effect를 예약해야 하는지
+- 어떤 GameEvent를 발생시켜야 하는지
+- 어떤 GameState 변경이 필요한지
+
+판단해서
+
+실제 KO CARD GAME engine이 실행 가능한
+declarative Game Rule을 생성해야 한다.
+
+최종 흐름:
+
+자연어
+→ AI Mechanic Compiler
+→ executable Rule/Effect AST
+→ validator
+→ Admin effect state 자동 적용
+→ 사용자가 저장
+→ 실제 AI Match / Online Match runtime 실행
+
+이어야 한다.
+
+단순히:
+
+자연어
+→ "초안 JSON"
+→ preview
+
+로 끝나면 실패다.
+
+==================================================
+1. 핵심 개념 — AI가 메커니즘을 구성한다
+==================================================
+
+AI는 사용자의 문장을
+기존 카드 이름이나 미리 준비된 효과 template과
+1:1 매칭하는 역할이 아니다.
+
+AI는 카드 효과를 작은 범용 게임 메커니즘으로 분해해야 한다.
+
+예:
+
+"죽으면 다음 턴에 부활"
+
+AI 판단:
+
+TRIGGER:
+SELF_RETIRED
+
+REMEMBER:
+retired card instance/definition
+
+SCHEDULE:
+OWNER_NEXT_TURN_START
+
+ACTION:
+REVIVE remembered card
+
+또:
+
+"부활하면 공격력 +2"
+
+AI 판단:
+
+RESULT:
+successful revived instance
+
+ACTION:
+BUFF result attack +2
+
+이처럼 effect를 실제 engine operation으로 구성한다.
+
+==================================================
+2. 기존 action이 없다고 즉시 실패하지 마
+==================================================
+
+현재 AI가:
+
+"정확히 같은 action 이름이 Registry에 없음"
+→ INVALID_DRAFT
+
+하는 방향을 바꾼다.
+
+먼저 해당 자연어를
+기존 범용 primitive 여러 개의 조합으로 표현할 수 있는지
+반드시 시도한다.
+
+예:
+
+"가장 비싼 카드"
+
+새 HIGHEST_COST_CARD action 생성 금지.
+
+대신:
+
+SELECT
+→ SORT COST DESC
+→ TAKE 1
+
+"좀비 수만큼"
+
+새 ZOMBIE_COUNT action 생성 금지.
+
+대신:
+
+SELECT
+→ FILTER ZOMBIE
+→ COUNT
+
+"다음에 내는 선수"
+
+새 NEXT_CARD_SPECIAL_CASE 금지.
+
+대신:
+
+REGISTER/QUEUE
+→ trigger PLAY_FROM_HAND
+→ owner SELF
+→ cardType WRESTLER
+→ TAKE first occurrence
+→ execute effect
+→ consume registration
+
+이런 식으로 조합한다.
+
+==================================================
+3. 범용 Game Rule Engine을 완성한다
+==================================================
+
+SCRIPT_V1을 단순 effect step 목록이 아니라
+일반적인 카드게임 메커니즘을 표현할 수 있는
+bounded declarative Rule Engine으로 확장한다.
+
+최소 다음 요소가 조합 가능해야 한다.
+
+TRIGGER
+
+SELECT
+
+FILTER
+
+SORT
+
+TAKE
+
+RANDOM
+
+COUNT
+
+SUM
+
+MIN
+
+MAX
+
+COMPARE
+
+IF / ELSE
+
+STORE RESULT
+
+STEP RESULT
+
+EVENT SOURCE
+
+EVENT TARGET
+
+DAMAGE
+
+HEAL
+
+BUFF
+
+MODIFY STAT
+
+MODIFY COST
+
+SET VALUE
+
+ADD KEYWORD
+
+REMOVE KEYWORD
+
+DRAW
+
+GENERATE
+
+SUMMON
+
+REVIVE
+
+RETURN TO HAND
+
+MOVE ZONE
+
+COPY
+
+RETIRE
+
+DESTROY
+
+REGISTER DELAYED EFFECT
+
+REGISTER ONE-SHOT TRIGGER
+
+REGISTER TEMPORARY MODIFIER
+
+CONSUME REGISTERED EFFECT
+
+PLAYER_CHOICE
+
+==================================================
+4. Event 기반 메커니즘
+==================================================
+
+AI가 다음과 같은 자연어를 구현할 수 있어야 한다.
+
+"피해를 받을 때마다 공격력 +1"
+
+필요 개념:
+
+DAMAGE_TAKEN
+→ source/self 확인
+→ BUFF SELF +1 attack
+
+"내가 Technique을 사용할 때마다 1 회복"
+
+TECHNIQUE_PLAYED
+→ owner 확인
+→ HEAL MY_CHAMPION 1
+
+"다음에 선수를 내면 +2/+2"
+
+Effect activation
+→ register one-shot listener
+
+PLAY_FROM_HAND
++ WRESTLER
++ same owner
+→ BUFF event card
+→ consume listener
+
+특정 카드별 TypeScript hardcoding 금지.
+
+==================================================
+5. Replacement / Prevention 메커니즘
+==================================================
+
+카드게임에 필요한 다음 종류도 표현 가능하게 설계한다.
+
+예:
+
+"이 카드가 처음 받을 피해를 0으로 만든다."
+
+필요 개념:
+
+BEFORE_DAMAGE 또는 현재 engine의 equivalent hook
+→ condition source/target
+→ MODIFY/PREVENT event amount
+→ one-shot consume
+
+"죽는 대신 체력 1로 남는다."
+
+RETIRE/LETHAL 전 replacement hook
+→ condition
+→ prevent retire
+→ set health 1
+→ consume effect
+
+현재 Action → Event → GameState 구조를 훼손하지 말고
+generic replacement/prevention layer를 설계한다.
+
+카드 이름 hardcoding 금지.
+
+==================================================
+6. Delayed / Scheduled 메커니즘
+==================================================
+
+다음 자연어를 표현 가능하게 한다.
+
+"다음 내 턴 시작에 부활한다."
+
+"2턴 뒤에 파괴된다."
+
+"이번 턴 동안 공격력 +3."
+
+"다음 Technique의 비용은 0."
+
+"다음에 피해를 줄 때 피해량을 2 증가."
+
+이를 위해 bounded declarative duration/schedule을 지원한다.
+
+예:
+
+CURRENT_TURN
+
+UNTIL_END_OF_TURN
+
+OWNER_NEXT_TURN_START
+
+NEXT_MATCHING_EVENT
+
+N_MATCHING_EVENTS
+
+UNTIL_SOURCE_LEAVES
+
+PERMANENT
+
+실제 현재 engine semantics에 맞게 구현한다.
+
+==================================================
+7. Event History / Memory
+==================================================
+
+AI가 다음 효과도 구성할 수 있어야 한다.
+
+"이번 턴에 죽은 선수 수만큼 피해."
+
+"이번 턴 내가 받은 피해만큼 회복."
+
+"마지막으로 사용한 Technique을 복사."
+
+"이번 게임에서 좀비가 5번 RETIRE됐다면..."
+
+이를 위해 bounded event query를 지원한다.
+
+scope:
+
+CURRENT_RESOLUTION
+CURRENT_ACTION
+CURRENT_TURN
+CURRENT_MATCH
+
+filter:
+
+eventType
+owner
+source
+target
+cardType
+tag
+keyword
+
+aggregation:
+
+COUNT
+SUM
+
+무제한 arbitrary history query 금지.
+
+==================================================
+8. Local variable / mechanic memory
+==================================================
+
+하나의 효과 resolution 또는 등록된 delayed effect가
+값을 기억할 수 있게 한다.
+
+예:
+
+"선택한 선수의 공격력만큼 피해."
+
+SELECT player choice
+→ STORE selected
+
+READ selected.currentAttack
+→ DAMAGE enemy champion
+
+또:
+
+"이 카드가 죽을 때 공격력을 기억하고
+다음 턴에 그만큼 회복."
+
+RETIRE
+→ snapshot attack
+→ store value
+→ schedule next turn
+→ HEAL stored value
+
+arbitrary JavaScript variable 금지.
+
+typed serializable value만 허용.
+
+==================================================
+9. Result chaining
+==================================================
+
+AI가:
+
+"그 카드"
+"그렇게 소환된 선수"
+"선택한 선수"
+"부활한 선수"
+
+같은 자연어 대명사를 이해해서
+실제 이전 step result를 참조해야 한다.
+
+예:
+
+SUMMON
+id = summoned
+
+ADD_KEYWORD
+target = RESULT(summoned)
+keyword = TAUNT
+
+==================================================
+10. Target / Zone
+==================================================
+
+AI는 최소 다음 영역을 이해한다.
+
+SELF
+SOURCE
+
+MY_CHAMPION
+OPPONENT_CHAMPION
+
+MY_BOARD
+OPPONENT_BOARD
+ALL_BOARD
+
+MY_HAND
+OPPONENT_HAND
+
+MY_DECK
+OPPONENT_DECK
+
+MY_GRAVEYARD
+OPPONENT_GRAVEYARD
+
+EVENT_SOURCE
+EVENT_TARGET
+
+PREVIOUS_RESULT
+STEP_RESULT
+
+ADJACENT
+ADJACENT_EMPTY_SLOTS
+
+PLAYER_CHOICE
+
+==================================================
+11. 자연어 해석은 AI가 담당
+==================================================
+
+Admin 사용자가:
+
+SELECT
+FILTER
+STEP_RESULT
+
+같은 말을 직접 쓸 필요가 없어야 한다.
+
+예:
+
+사용자:
+
+"내 무덤에서 비용이 가장 낮은 좀비 둘을 손으로 가져온다."
+
+AI가 자동으로:
+
+MY_GRAVEYARD
+→ WRESTLER/ZOMBIE filter
+→ SORT COST ASC
+→ TAKE 2
+→ MOVE TO HAND
+
+로 구성한다.
+
+==================================================
+12. 명확한 문장에 clarification 남발 금지
+==================================================
+
+다음은 의미가 명확하다.
+
+"비용 3 이하 선수 하나를 무작위로 부활"
+
+"가장 공격력이 높은 적에게 2 피해"
+
+"내 좀비 수만큼 회복"
+
+"다음에 사용하는 Technique 비용 0"
+
+이런 문장에서:
+
+NEEDS_CLARIFICATION
+
+을 반환하지 마.
+
+정말 의미가 불명확한 경우만 질문한다.
+
+예:
+
+"강한 카드를 강화한다."
+
+'강하다' 기준 불명확.
+
+이 경우 clarification 가능.
+
+==================================================
+13. 단순 Registry lookup AI가 아니다
+==================================================
+
+AI가 effect registry에서
+exact matching action만 찾는 구조로 만들지 마.
+
+AI의 역할은:
+
+NATURAL LANGUAGE
+→ MECHANIC DECOMPOSITION
+→ RULE GRAPH
+
+이다.
+
+예:
+
+"다음에 아군이 죽으면 그 공격력만큼 적에게 피해"
+
+AI는:
+
+REGISTER ONE-SHOT
+trigger = ALLY_RETIRED
+
+capture:
+EVENT_TARGET.attack snapshot
+
+action:
+DAMAGE OPPONENT_CHAMPION amount=capturedAttack
+
+consume:
+true
+
+를 구성해야 한다.
+
+==================================================
+14. Rule Graph
+==================================================
+
+필요하다면 기존 SCRIPT_V1 위에
+generic Rule Graph representation을 추가한다.
+
+단 별도의 완전히 새로운 게임 엔진을 만들지 말고
+기존:
+
+Action
+Event
+GameState
+Effect Engine
+Targeting
+Quest
+Queued Effects
+
+를 실행 backend로 재사용한다.
+
+개념:
+
+Rule
+ ├ trigger
+ ├ condition
+ ├ selections
+ ├ values
+ ├ actions
+ ├ registrations
+ └ results
+
+AI는 이 Rule Graph를 생성한다.
+
+==================================================
+15. AI가 TypeScript를 생성해서 실행하는 방식 금지
+==================================================
+
+절대:
+
+eval()
+
+new Function()
+
+dynamic TypeScript
+
+runtime source compilation
+
+AI가 생성한 JS 실행
+
+금지.
+
+AI가 "게임엔진에 넣는다"는 의미는:
+
+AI가 declarative game mechanic definition을 생성하고
+KO Rule Engine이 그것을 실행한다는 뜻이다.
+
+이렇게 해야 Admin에서 새 효과를 저장해도
+재배포 없이 작동 가능하다.
+
+==================================================
+16. 흔한 카드게임 효과는 새 배포 없이 구현
+==================================================
+
+다음 종류는 앞으로 Replit Agent를 다시 호출하지 않고
+Admin AI만으로 생성 가능해야 한다.
+
+- damage
+- heal
+- stat buff/debuff
+- cost modification
+- keyword
+- draw
+- discard
+- generate
+- summon
+- revive
+- return
+- copy
+- retire
+- destroy
+- conditional
+- random
+- highest/lowest
+- count/sum
+- tags
+- graveyard
+- hand
+- deck
+- adjacent
+- PLAYER_CHOICE
+- next card
+- next Technique
+- next turn
+- until turn end
+- event count
+- delayed effect
+- replacement/prevention
+- one-shot listener
+- repeated triggered listener
+- effect based on previous result
+
+==================================================
+17. AI가 새로운 메커니즘을 이해했는지 확인
+==================================================
+
+AI output에 단순 AST뿐 아니라
+server-internal validation용 mechanic plan을 사용할 수 있다.
+
+예:
+
+User intent:
+"죽으면 다음 턴 부활하며 +2 attack"
+
+Mechanic analysis:
+1 RETIRE trigger
+2 capture self definition/instance data
+3 schedule owner next turn
+4 revive
+5 buff successful revive result
+
+그 후 actual Rule AST 생성.
+
+이 analysis는 내부 처리용이며
+사용자에게 장황하게 표시할 필요 없음.
+
+==================================================
+18. Admin UX
+==================================================
+
+사용자 경험:
+
+효과 자연어 작성
+
+[AI 효과 생성]
+
+→ AI가 mechanic 분석
+→ executable Rule 생성
+→ server validation
+
+성공:
+
+"효과 구현 완료"
+
+그리고 Admin form에 바로 적용.
+
+"초안 생성"
+
+이라는 개념을 UI 중심 개념으로 사용하지 마.
+
+이 기능은 실제 executable effect authoring이다.
+
+==================================================
+19. 기존 효과가 없는 카드
+==================================================
+
+effectId/effectConfig가 null인 카드라도
+
+Admin에서 자연어 효과를 입력하고 생성하면:
+
+새 valid Rule config 생성
+→ current form에 attach
+
+가능해야 한다.
+
+기존 effectConfig가 있어야 AI가 작동하는 구조 금지.
+
+==================================================
+20. 기존 효과가 있는 카드
+==================================================
+
+기존 effect가 있으면:
+
+[교체]
+[추가]
+[취소]
+
+선택.
+
+추가를 고르면
+기존 trigger/effects를 보존하면서
+새 Rule을 추가.
+
+==================================================
+21. 저장
+==================================================
+
+AI Generate 자체는 DB 저장하지 않는다.
+
+AI:
+→ Rule 생성
+→ form 적용
+
+사용자가:
+
+[저장]
+
+을 누르면 저장.
+
+Save에서는 OpenAI 재호출 금지.
+
+server-side validator를 다시 실행.
+
+==================================================
+22. Runtime
+==================================================
+
+저장 이후 실제 게임에서는:
+
+OpenAI API 사용 금지.
+
+카드 효과가:
+
+1회
+100회
+1,000,000회
+
+발동해도 provider call = 0.
+
+Rule Engine만 사용.
+
+==================================================
+23. 실제 인게임 효과까지 검증
+==================================================
+
+AI가 JSON 생성 성공했다고 PASS 금지.
+
+반드시:
+
+Natural language
+→ AI-generated Rule
+→ form
+→ test definition
+→ actual Effect Engine
+→ Action/Event/GameState
+
+까지 테스트한다.
+
+==================================================
+24. 대표 End-to-End 테스트
+==================================================
+
+TEST A
+
+자연어:
+
+"등장: 적 챔피언에게 2 피해."
+
+기대:
+actual HP -2.
+
+--------------------------------
+
+TEST B
+
+"이 카드가 죽으면 내 무덤의 좀비 수만큼
+내 챔피언을 회복."
+
+graveyard:
+Zombie x2
+
+기대:
+Champion +2 HP.
+
+--------------------------------
+
+TEST C
+
+"공격할 때 상대 손에서 비용이 가장 높은 카드의
+비용을 2 증가."
+
+기대:
+highest-cost card +2.
+
+--------------------------------
+
+TEST D
+
+"양옆 빈 슬롯에 무작위 선수 하나씩 소환하고
+그 선수들에게 도발."
+
+기대:
+actual summon result에 TAUNT.
+
+--------------------------------
+
+TEST E
+
+"내 무덤의 비용 3 이하 선수 하나를
+무작위로 부활."
+
+기대:
+eligible random wrestler revive.
+
+--------------------------------
+
+TEST F
+
+"이 카드가 죽으면 다음 내 턴 시작에 부활하고
+부활한 뒤 공격력을 2 얻는다."
+
+이 테스트는 매우 중요.
+
+기대:
+
+RETIRE
+→ graveyard
+→ opponent turn
+→ owner next turn
+→ REVIVE
+→ revived instance +2 ATK.
+
+--------------------------------
+
+TEST G
+
+"다음에 내가 내는 선수는 +2/+2를 얻는다."
+
+기대:
+
+Rule 등록
+→ source card 자체 play에는 소비되지 않음
+→ 이후 WRESTLER PLAY_FROM_HAND
+→ +2/+2
+→ listener consume.
+
+--------------------------------
+
+TEST H
+
+"이 카드가 처음 받을 피해를 0으로 만든다."
+
+기대:
+
+first damage:
+0
+
+second damage:
+normal damage.
+
+--------------------------------
+
+TEST I
+
+"내 필드 좀비가 3명 이상이면
+이 카드는 +3/+3."
+
+기대:
+condition true → buff.
+
+--------------------------------
+
+TEST J
+
+"이번 턴에 RETIRE된 선수 수만큼
+적 챔피언에게 피해."
+
+기대:
+event query COUNT
+→ actual DAMAGE.
+
+==================================================
+25. 실제 OpenAI provider 테스트
+==================================================
+
+mock만 사용하지 마.
+
+OPENAI_API_KEY가 있는 development environment에서
+실제 provider로 위 대표 자연어들을 테스트한다.
+
+단 비용 보호:
+
+- 자동 retry loop 금지
+- 같은 요청 무제한 반복 금지
+- provider test는 명시적으로 실행
+- 일반 unit suite에서는 mock
+
+실패하면:
+
+왜 Rule 생성에 실패했는지
+정확한 validator path 확인 후 수정.
+
+==================================================
+26. "초안을 생성하지 못했습니다" 제거
+==================================================
+
+현재 Admin에서:
+
+"AI가 초안을 생성하지 못했습니다"
+
+만 표시되는 현상이 있다.
+
+최종적으로 일반적이고 지원 가능한 카드 효과에서는
+이 문구가 나오면 안 된다.
+
+AI가 명확한 자연어를 받았는데
+현재 primitive 조합으로 표현 가능하다면
+실제 Rule을 생성해야 한다.
+
+UI 문구도 기능 목적에 맞게 변경 가능:
+
+생성 중:
+"효과를 구현하는 중..."
+
+성공:
+"게임 효과가 적용되었습니다."
+
+실패:
+정확한 사유.
+
+==================================================
+27. 지원 불가 판정은 마지막 수단
+==================================================
+
+다음처럼 gameplay state로 표현 가능한 요청을
+쉽게 UNSUPPORTED 처리하지 마.
+
+- 턴
+- 피해
+- 체력
+- 스탯
+- 카드 이동
+- 소환
+- 부활
+- 비용
+- 키워드
+- 이벤트
+- 다음 행동
+- 특정 횟수
+- 조건
+- 무덤/패/덱
+- Quest-style progress
+- delayed effect
+
+먼저 Rule Graph 조합 가능성을 탐색한다.
+
+==================================================
+28. 진짜 Engine 바깥 요청만 unsupported
+==================================================
+
+예:
+
+"상대 모니터를 흔든다."
+
+"유튜브 영상을 재생한다."
+
+"새 3D 미니게임을 실행한다."
+
+같이 KO gameplay state 밖의 요청만:
+
+UNSUPPORTED_ENGINE_CAPABILITY
+
+가능.
+
+일반적인 카드게임 효과에는
+이 상태 사용을 최소화한다.
+
+==================================================
+29. 안전 제한
+==================================================
+
+Rule Graph는 bounded.
+
+제한:
+
+max steps
+max trigger registrations
+max depth
+max selector results
+max generated cards
+max scheduled rules
+max event query results
+
+무한 loop 금지.
+
+Rule이 자기 자신의 Event를 무한 재발동시키는
+recursive trigger도 차단한다.
+
+==================================================
+30. Online
+==================================================
+
+Online server-authoritative 유지.
+
+hidden:
+
+opponent hand
+opponent deck
+
+관련 mechanic은 서버에서 실행.
+
+client에 identity leak 금지.
+
+RNG 서버 결정.
+
+==================================================
+31. PLAYER_CHOICE
+==================================================
+
+자연어:
+
+"선수 하나를 선택해서..."
+
+AI가 자동으로 PLAYER_CHOICE 생성.
+
+runtime:
+
+valid targets
+→ targetingState
+→ selection
+→ serialized continuation
+→ Rule resume.
+
+==================================================
+32. 기존 데이터 호환
+==================================================
+
+STRUCTURED_EFFECTS_V1과 기존 SCRIPT_V1 카드
+계속 작동.
+
+기존 Production 카드 자동 migration 금지.
+
+새 AI-generated effect만
+새 Rule representation을 사용할 수 있음.
+
+==================================================
+33. 테스트
+==================================================
+
+필수:
+
+Rule schema
+Rule validator
+Rule interpreter
+event trigger
+condition
+selection
+aggregation
+result reference
+delayed rule
+one-shot listener
+replacement/prevention
+PLAYER_CHOICE
+deterministic RNG
+online sanitizer
+legacy Structured Effect
+
+==================================================
+34. 비용
+==================================================
+
+OpenAI 사용:
+
+Admin에서 자연어 → Rule 생성 시에만.
+
+Runtime:
+0 calls.
+
+Save:
+0 calls.
+
+Validation:
+0 calls.
+
+AI Match:
+0 calls.
+
+Online:
+0 calls.
+
+==================================================
+35. 이번 작업에서 절대로 하지 말 것
+==================================================
+
+"사용자 자연어를 Replit Agent용 개발 프롬프트로 바꿔준다"
+
+를 최종 기능으로 만들지 마.
+
+이미 별도의 Replit Prompt Generator가 있다.
+
+Admin AI Effect의 목적은:
+
+프롬프트 생성
+
+이 아니라
+
+실제 인게임 효과 생성 및 적용
+
+이다.
+
+==================================================
+36. 완료 판정
+==================================================
+
+다음은 FAIL:
+
+AI가 설명문만 생성
+AI가 JSON preview만 생성
+AI가 Replit prompt 생성
+AI가 INVALID_DRAFT로 대부분 종료
+AI가 기존 exact action만 조합
+저장 후 게임에서 발동 안 됨
+
+PASS:
+
+자연어
+→ mechanic decomposition
+→ executable Rule
+→ form 적용
+→ 저장 가능한 상태
+→ actual game execution.
+
+==================================================
+37. Git
+==================================================
+
+기존 사용자 변경 보존.
+
+Pasted-*.txt stage 금지.
+
+필수 테스트/build/typecheck 후 commit.
+
+force push 금지.
+
+GitHub 인증 실패가 있더라도
+local commit을 유지하고 보고.
+
+==================================================
+38. 최종 보고
+==================================================
+
+반드시 다음을 보고:
+
+1. AI Mechanic Compiler architecture
+
+2. Rule Graph schema
+
+3. AI가 자연어를 mechanic으로 분해하는 방식
+
+4. Trigger support
+
+5. Selector support
+
+6. Condition support
+
+7. Result/memory support
+
+8. delayed/one-shot effect support
+
+9. replacement/prevention support
+
+10. event-history support
+
+11. PLAYER_CHOICE support
+
+12. A~J 각각:
+- actual provider
+- validator
+- runtime result
+
+13. Admin에서 실제 form 적용 여부
+
+14. Save 후 runtime effect 실행 여부
+
+15. runtime provider calls = 0
+
+16. actual provider 총 호출 수
+
+17. legacy regression
+
+18. typecheck/build
+
+19. changed files
+
+20. commit
+
+21. push status
+
+이번 작업의 최종 목표는:
+
+"AI가 효과 초안을 작성한다"
+
+가 아니다.
+
+"AI가 자연어를 이해해서
+실제 KO CARD GAME의 게임 메커니즘으로 만들고,
+그 효과가 인게임에서 실제로 작동한다"
+
+이다.
