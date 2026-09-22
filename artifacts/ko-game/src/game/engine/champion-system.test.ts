@@ -10,7 +10,7 @@ import {
 import { endTurn, startGame } from './turn-system';
 import { createTestDeck, setRuntimeCardDefinitions, TEST_CHAMPION_TOKEN_DEFINITION } from '../cards/test-cards';
 import { TEST_CHAMPIONS } from '../champions/test-champions';
-import { championRecordToDefinition } from '../champions/published-champions';
+import { championRecordToDefinition, type PublishedChampionRecord } from '../champions/published-champions';
 import type { CardDefinition } from '../cards/types';
 import { executeAction } from '../actions/engine-actions';
 
@@ -152,6 +152,75 @@ test('퀘스트 없는 Champion의 구조화된 다음 턴 골드 능력이 다�
   assert.equal(nextOwnTurn.success, true);
   assert.equal(nextOwnTurn.state.players[0].currentGold, 3);
   assert.equal(nextOwnTurn.state.players[0].nextTurnGoldBonus, 0);
+});
+
+test('authoritative 챔피언 여울은 비용 2를 지불하고 다음 자기 턴에 골드 +1을 한 번 적용한다', () => {
+  const champion = championRecordToDefinition({
+    id: '11ac192a-d48d-4119-a63d-f9102793fb9a',
+    name: '챔피언 여울',
+    description: '',
+    imageAssetId: null,
+    imageUrl: null,
+    maxHealth: 30,
+    abilityName: '용돈',
+    abilityCost: 2,
+    abilityText: '다음 턴에 골드를 추가로 1 더 받습니다.',
+    abilityEffects: {
+      effects: [{
+        action: 'ADD_NEXT_TURN_GOLD',
+        values: { amount: 1 },
+        trigger: 'ENTER_FIELD',
+      }],
+    },
+    hasQuest: false,
+    questName: null,
+    questText: null,
+    questCondition: null,
+    questProgressRequired: null,
+    questRewardText: null,
+    questRewardEffects: null,
+    upgradedAbilityName: null,
+    upgradedAbilityCost: null,
+    upgradedAbilityText: null,
+    upgradedAbilityEffects: null,
+    championTokenDefinitionId: null,
+    status: 'PUBLISHED',
+    version: 4,
+  } satisfies PublishedChampionRecord);
+  const started = startGame(createInitialGameState(
+    [champion.id, 'test-champion-no-quest'],
+    undefined,
+    [champion, ...TEST_CHAMPIONS],
+  ), fixedRandom);
+  const ready = {
+    ...started,
+    players: started.players.map((player) =>
+      player.id === 'player-1' ? { ...player, currentGold: 2 } : player,
+    ),
+  };
+
+  const used = useChampionAbility(ready, 'player-1');
+  assert.equal(used.success, true);
+  if (!used.success) return;
+  assert.equal(used.state.players[0].currentGold, 0);
+  assert.equal(used.state.players[0].nextTurnGoldBonus, 1);
+
+  const opponentTurn = endTurn(used.state, 'player-1');
+  assert.equal(opponentTurn.success, true);
+  if (!opponentTurn.success) return;
+  const nextOwnTurn = endTurn(opponentTurn.state, 'player-2');
+  assert.equal(nextOwnTurn.success, true);
+  if (!nextOwnTurn.success) return;
+  assert.equal(nextOwnTurn.state.players[0].currentGold, 3);
+  assert.equal(nextOwnTurn.state.players[0].nextTurnGoldBonus, 0);
+
+  const followingOpponentTurn = endTurn(nextOwnTurn.state, 'player-1');
+  assert.equal(followingOpponentTurn.success, true);
+  if (!followingOpponentTurn.success) return;
+  const followingOwnTurn = endTurn(followingOpponentTurn.state, 'player-2');
+  assert.equal(followingOwnTurn.success, true);
+  if (!followingOwnTurn.success) return;
+  assert.equal(followingOwnTurn.state.players[0].currentGold, 3);
 });
 
 test('Champion의 구조화된 무작위 손패 BUFF가 선수 카드 한 장의 공격력과 체력을 함께 변경한다', () => {

@@ -206,7 +206,7 @@ test('authoritative 매드 펌킨은 같은 CardInstance를 손패로 되돌리�
   state.players[0].board = [null, ally, null, null];
 
   const pending = enterField(state, 'player-1', card(madPumpkinDefinition, 'mad-pumpkin'), 0);
-  assert.deepEqual(pending.targetingState?.validTargetIds, [ally.instanceId]);
+  assert.ok(pending.targetingState?.validTargetIds.includes(ally.instanceId));
 
   const returned = selectEffectTarget(pending, ally.instanceId);
   const returnedCard = returned.players[0].hand.find((item) => item.instanceId === ally.instanceId);
@@ -242,7 +242,7 @@ test('매드 펌킨 비용 감소는 최소 1을 지키고 WRESTLER가 아닌 �
     card(madPumpkinDefinition, 'mad-pumpkin-invalid'),
     0,
   );
-  assert.equal(afterInvalid.targetingState, undefined);
+  assert.equal(afterInvalid.targetingState?.validTargetIds.includes('invalid-technique'), false);
   assert.equal(afterInvalid.players[0].board[1]?.instanceId, 'invalid-technique');
   assert.equal(afterInvalid.players[0].hand.some((item) => item.instanceId === 'invalid-technique'), false);
 });

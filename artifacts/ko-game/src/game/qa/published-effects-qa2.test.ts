@@ -20,6 +20,7 @@ import { endTurn } from '../engine/turn-system';
 import { playWrestlerFromHand } from '../engine/play-wrestler';
 import { playTechniqueFromHand } from '../engine/play-technique';
 import { canUseChampionAbility, useChampionAbility } from '../engine/champion-system';
+import { executeAction, getLegalActions } from '../actions/engine-actions';
 import { processChampionQuestEvents } from '../champions/quests';
 import { selectEffectTarget, resolveTriggeredAbilities, getDamageModifierBonus } from '../effects/effect-engine';
 import type { GameEvent } from '../events/types';
@@ -175,9 +176,26 @@ test('QA2 targeted ally and random hand buffs exclude the source and respect cou
   assert.equal(result.players[0].board[1]?.currentAttack, definitions.find((item) => item.name === '피 스타 세븐')!.attack);
 
   const handState = stateWithPool();
-  handState.players[0].hand = [0, 1, 2].map((index) => card('로드', `qa2-yeoul-${index}`));
+  const hand = [0, 1, 2, 3].map((index) => card('로드', `qa2-yeoul-${index}`));
+  const beforeStats = new Map(hand.map((item) => [
+    item.instanceId,
+    { attack: item.currentAttack, health: item.currentHealth },
+  ]));
+  handState.players[0].hand = hand;
   const handResult = enterAndChoose(handState, card('여울', 'qa2-yeoul'), 0);
-  assert.equal(handResult.players[0].hand.filter((item) => item.currentAttack === item.baseAttack! + 1).length, 3);
+  assert.equal(handResult.players[0].hand.filter((item) => {
+    const before = beforeStats.get(item.instanceId);
+    return before && item.currentAttack === before.attack + 1 && item.currentHealth === before.health + 1;
+  }).length, 3);
+  assert.equal(handResult.players[0].hand.filter((item) => {
+    const before = beforeStats.get(item.instanceId);
+    return before && item.currentAttack === before.attack && item.currentHealth === before.health;
+  }).length, 1);
+
+  const shortHandState = stateWithPool();
+  shortHandState.players[0].hand = [0, 1].map((index) => card('로드', `qa2-yeoul-short-${index}`));
+  const shortHandResult = enterAndChoose(shortHandState, card('여울', 'qa2-yeoul-short'), 0);
+  assert.equal(shortHandResult.players[0].hand.filter((item) => item.currentAttack === item.baseAttack! + 1 && item.currentHealth === item.baseHealth! + 1).length, 2);
 });
 
 test('QA2 draw, mill, generated card and cost changes match zones and events', () => {
@@ -447,6 +465,26 @@ test('QA2 active and trigger-only cards verify exact stat/status results', () =>
 
   const modifierSource = card('발단', 'qa2-modifier-source');
   assert.equal(getDamageModifierBonus(enterField(stateWithPool(), 'player-1', modifierSource, 0), 'player-1', modifierSource), 0);
+});
+
+test('QA2 published Great Chan exposes legal USE_ACTIVE and swaps canonical stats', () => {
+  const state = stateWithPool();
+  const great = card('그레이트 챤', 'qa2-great-legal', {
+    currentAttack: 2,
+    currentHealth: 5,
+    maxHealth: 5,
+    boardSlot: 0,
+  });
+  state.players[0].board = [great, null, null, null];
+
+  const activeAction = getLegalActions(state, 'player-1').find(
+    (action) => action.type === 'USE_ACTIVE' && action.cardInstanceId === great.instanceId,
+  );
+  assert.ok(activeAction);
+  const result = executeAction(state, activeAction!);
+  assert.equal(result.success, true);
+  assert.equal(boardCard(result.state, 'player-1', great.instanceId).currentAttack, 5);
+  assert.equal(boardCard(result.state, 'player-1', great.instanceId).currentHealth, 2);
 });
 
 test('QA2 production quest source is data-driven and Jaeger progress is exactly seven', async () => {
