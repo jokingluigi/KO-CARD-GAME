@@ -3,8 +3,8 @@ name: Artifact WebSocket routing
 description: Web and API artifact path ownership for same-origin REST and WebSocket traffic.
 ---
 
-The static KO web artifact must own only its frontend route prefix. `/api` and `/api/online-matches/ws` belong to the API artifact; listing them on the web service can make the preview/deployment router return Vite or static HTML instead of forwarding the WebSocket upgrade.
+The static KO web artifact must own only its frontend route prefix. Authenticated HTTP requests, including the WebSocket ticket request, should use the frontend-relative `/api` rewrite so the browser sends its frontend-host session cookie. The WebSocket upgrade itself must use the API host directly with `wss://`; `/api/online-matches/ws` belongs to the API artifact.
 
-**Why:** A normal API health request can still reach the API while the more-specific WebSocket path is intercepted by the web service, leaving the browser at `연결 종료` even though the client computes the correct `wss` URL.
+**Why:** Cross-origin ticket requests do not include a session cookie set on the static frontend host, while the static rewrite cannot proxy a WebSocket upgrade reliably. Either mismatch appears to the player as a generic connection failure.
 
-**How to apply:** When diagnosing same-origin online connection failures, test the exact WS path through the artifact router and keep API/WS paths exclusive to the API service. An unauthenticated upgrade should reach the API handler and return its auth rejection, not HTML.
+**How to apply:** Keep HTTP API/ticket URLs relative to `BASE_URL`, and keep only the production WebSocket origin absolute. Test both the frontend-host ticket endpoint and the direct API-host upgrade path; an unauthenticated request should return the API's auth rejection, not HTML.

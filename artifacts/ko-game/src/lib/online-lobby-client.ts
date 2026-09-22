@@ -1,4 +1,9 @@
 import type { OnlineActionPayload } from "./online-match-protocol";
+import {
+  ONLINE_WS_TICKET_PATH,
+  onlineApiUrl,
+  onlineWebSocketUrl,
+} from "./online-transport";
 
 export type LobbyDeckSummary = { deckId: string; deckName: string; championName: string | null };
 export type LobbyOpponentSummary = { nickname: string; championName: string | null; deckName: string };
@@ -46,26 +51,20 @@ export type OnlineLobbyConnectionState = "idle" | "connecting" | "open" | "close
 export type OnlineLobbyListener = (message: OnlineServerMessage) => void;
 export type OnlineLobbyConnectionListener = (state: OnlineLobbyConnectionState) => void;
 
-const WS_PATH = "/api/online-matches/ws";
-const WS_TICKET_PATH = "/api/online-matches/ws-ticket";
-const PRODUCTION_API_ORIGIN = "https://ko-card-game.onrender.com";
-
-function apiUrl(path: string): string {
-  if (import.meta.env.PROD) return `${PRODUCTION_API_ORIGIN}${path}`;
-  return `${import.meta.env.BASE_URL.replace(/\/$/, "")}${path}`;
-}
 async function requestWebSocketTicket(): Promise<string> {
-  const response = await fetch(apiUrl(WS_TICKET_PATH), { method: "POST", credentials: "include" });
+  const response = await fetch(onlineApiUrl(ONLINE_WS_TICKET_PATH, import.meta.env.BASE_URL), { method: "POST", credentials: "include" });
   if (!response.ok) throw new Error("온라인 서버 인증 ticket을 발급받지 못했습니다.");
   const body = (await response.json()) as { ticket?: unknown };
   if (typeof body.ticket !== "string" || !body.ticket) throw new Error("온라인 서버 인증 ticket 응답이 올바르지 않습니다.");
   return body.ticket;
 }
 function websocketUrl(ticket?: string): string {
-  const query = ticket ? `?ticket=${encodeURIComponent(ticket)}` : "";
-  if (import.meta.env.PROD) return `wss://ko-card-game.onrender.com${WS_PATH}${query}`;
-  const base = import.meta.env.BASE_URL.replace(/\/$/, "");
-  return `${window.location.protocol === "https:" ? "wss:" : "ws:"}//${window.location.host}${base}${WS_PATH}${query}`;
+  return onlineWebSocketUrl(ticket, {
+    production: import.meta.env.PROD,
+    baseUrl: import.meta.env.BASE_URL,
+    protocol: window.location.protocol,
+    host: window.location.host,
+  });
 }
 
 class OnlineLobbyClient {
