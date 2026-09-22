@@ -683,9 +683,9 @@ export function AdminCardManager({
         ...draft.keywords.filter((keyword): keyword is CardKeyword => KEYWORDS.includes(keyword as CardKeyword)),
       ])], { shouldDirty: true });
     }
-    setMessage(mode === "append"
-      ? "AI 초안을 기존 효과 뒤에 추가했습니다. 카드 저장을 눌러 DRAFT에 저장하세요."
-      : "AI 초안을 현재 효과에 적용했습니다. 카드 저장을 눌러 DRAFT에 저장하세요.");
+     setMessage(mode === "append"
+       ? "컴파일된 게임 규칙을 기존 효과 뒤에 추가했습니다. 카드 저장을 눌러 DRAFT에 저장하세요."
+       : "컴파일된 게임 규칙을 현재 효과에 적용했습니다. 카드 저장을 눌러 DRAFT에 저장하세요.");
     setError("");
   }
 

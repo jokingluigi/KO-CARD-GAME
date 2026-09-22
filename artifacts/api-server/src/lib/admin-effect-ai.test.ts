@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 
-import { EffectAiError, generateEffectDraft, validateGeneratedEffectDraft } from "./admin-effect-ai";
+import { EffectAiError, buildMechanicPlan, generateEffectDraft, validateGeneratedEffectDraft } from "./admin-effect-ai";
 
 const catalog = [
   { id: "card-1", name: "불꽃", cardType: "WRESTLER" as const, isToken: false, isChampionToken: false },
@@ -173,6 +173,28 @@ test("SCRIPT_V1 rejects executable or unknown fields before save", () => {
   );
 });
 
+test("검증된 실행 AST에서 trigger, selection, memory, action plan을 서버가 재구성한다", () => {
+  const result = buildMechanicPlan("STRUCTURED_EFFECTS_V1", [{
+    trigger: "ENTER_FIELD",
+    action: "QUEUE_EFFECT",
+    target: { zone: "BOARD", owner: "SELF", selection: "SELF", count: 1 },
+    values: {
+      queuedTrigger: "NEXT_ALLY_WRESTLER_PLAYED",
+      queuedEffect: {
+        action: "BUFF",
+        target: { zone: "BOARD", owner: "SELF", selection: "SELF", count: 1 },
+        values: { attack: 2, health: 2 },
+      },
+    },
+  }], []);
+
+  assert.deepEqual(result.triggers, ["ENTER_FIELD"]);
+  assert.deepEqual(result.actions, ["QUEUE_EFFECT"]);
+  assert.deepEqual(result.memory, ["REGISTER NEXT_ALLY_WRESTLER_PLAYED"]);
+  assert.deepEqual(result.schedule, ["NEXT_MATCHING_EVENT"]);
+  assert.equal(result.execution, "STRUCTURED_EFFECTS_V1");
+});
+
 test("provider stub에서도 exact 문장이 READY draft와 새 capability prompt로 변환된다", async () => {
   const originalFetch = globalThis.fetch;
   const originalKey = process.env.OPENAI_API_KEY;
@@ -244,6 +266,40 @@ test("provider stub에서도 exact 문장이 READY draft와 새 capability promp
     else process.env.OPENAI_API_KEY = originalKey;
     if (originalIntegratedKey === undefined) delete process.env.AI_INTEGRATIONS_OPENAI_API_KEY;
     else process.env.AI_INTEGRATIONS_OPENAI_API_KEY = originalIntegratedKey;
+    if (originalBaseUrl === undefined) delete process.env.OPENAI_BASE_URL;
+    else process.env.OPENAI_BASE_URL = originalBaseUrl;
+  }
+});
+
+test("provider가 clarification을 반환해도 공유 analyzer가 명확한 문장을 실행 효과로 컴파일한다", async () => {
+  const originalFetch = globalThis.fetch;
+  const originalKey = process.env.OPENAI_API_KEY;
+  const originalBaseUrl = process.env.OPENAI_BASE_URL;
+  process.env.OPENAI_API_KEY = "test-provider-key";
+  process.env.OPENAI_BASE_URL = "https://provider.test/v1";
+  globalThis.fetch = async () => new Response(JSON.stringify({
+    choices: [{ message: { content: JSON.stringify({
+      status: "NEEDS_CLARIFICATION",
+      questions: ["대상을 지정해 주세요."],
+    }) } }],
+  }), { status: 200, headers: { "Content-Type": "application/json" } });
+
+  try {
+    const result = await generateEffectDraft(
+      "등장: 적 챔피언에게 2 피해를 줍니다.",
+      { sourceType: "CARD", cardType: "WRESTLER" },
+      [],
+    );
+    assert.equal(result.status, "READY");
+    if (result.status === "READY") {
+      assert.equal(result.effects[0]?.action, "DAMAGE");
+      assert.equal(result.effects[0]?.values?.amount, 2);
+      assert.deepEqual(result.mechanicPlan.triggers, ["ENTER_FIELD"]);
+    }
+  } finally {
+    globalThis.fetch = originalFetch;
+    if (originalKey === undefined) delete process.env.OPENAI_API_KEY;
+    else process.env.OPENAI_API_KEY = originalKey;
     if (originalBaseUrl === undefined) delete process.env.OPENAI_BASE_URL;
     else process.env.OPENAI_BASE_URL = originalBaseUrl;
   }

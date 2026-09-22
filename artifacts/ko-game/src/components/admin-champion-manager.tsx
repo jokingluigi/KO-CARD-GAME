@@ -209,9 +209,9 @@ export function AdminChampionManager({ onUnauthorized }: { onUnauthorized: () =>
     update(effectsKey, {
       [key]: mode === "append" ? [...currentItems, ...incoming] : incoming,
     } as Form[typeof effectsKey]);
-    setMessageText(mode === "append"
-      ? "AI 초안을 기존 Champion 효과 뒤에 추가했습니다. 저장 버튼을 눌러 보존하세요."
-      : "AI 초안을 Champion 효과에 적용했습니다. 저장 버튼을 눌러 보존하세요.");
+     setMessageText(mode === "append"
+       ? "컴파일된 게임 규칙을 기존 Champion 효과 뒤에 추가했습니다. 저장 버튼을 눌러 보존하세요."
+       : "컴파일된 게임 규칙을 Champion 효과에 적용했습니다. 저장 버튼을 눌러 보존하세요.");
     setError("");
   }
 

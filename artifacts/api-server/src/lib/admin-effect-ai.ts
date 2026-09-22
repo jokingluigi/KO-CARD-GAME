@@ -13,6 +13,7 @@ import {
   TARGET_ZONES,
   TRIGGERS,
   type EffectScript,
+  type ScriptStep,
   type Action,
   type Keyword,
 } from "@workspace/effect-registry";
@@ -21,6 +22,7 @@ import {
   isEffectScriptConfig,
   isChampionQuestRewardEffects,
   isStructuredEffects,
+  analyzeEffectText,
   type CardReferenceCandidate,
   type StructuredEffect,
 } from "./structured-effects";
@@ -40,6 +42,19 @@ export type EffectAiDraft = {
   effectConfig: { effects: StructuredEffect[] } | { scripts: EffectScript[] };
   keywords: Keyword[];
   preview: Array<{ label: string; value: string }>;
+  mechanicPlan: MechanicPlan;
+};
+
+export type MechanicPlan = {
+  execution: "STRUCTURED_EFFECTS_V1" | "SCRIPT_V1";
+  triggers: string[];
+  selections: string[];
+  filters: string[];
+  conditions: string[];
+  memory: string[];
+  schedule: string[];
+  actions: string[];
+  resultReferences: string[];
 };
 
 export type EffectAiClarification = {
@@ -303,6 +318,89 @@ function previewScripts(scripts: EffectScript[]): Array<{ label: string; value: 
   }));
 }
 
+function addUnique(target: string[], values: Iterable<string>) {
+  for (const value of values) if (value && !target.includes(value)) target.push(value);
+}
+
+function targetPlan(target: Record<string, unknown> | undefined, plan: MechanicPlan) {
+  if (!target) return;
+  const zones = Array.isArray(target.zones)
+    ? target.zones
+    : typeof target.zone === "string" ? [target.zone] : [];
+  const owner = typeof target.owner === "string" ? target.owner : "";
+  const selection = typeof target.selection === "string" ? target.selection : "";
+  if (zones.length || owner || selection) {
+    addUnique(plan.selections, [`${owner || "TARGET"}:${zones.join("+") || "CHARACTER"}:${selection || "ALL"}`]);
+  }
+  if (isRecord(target.filter)) {
+    for (const [key, value] of Object.entries(target.filter)) {
+      if (value !== undefined) addUnique(plan.filters, [`${key}=${typeof value === "object" ? JSON.stringify(value) : String(value)}`]);
+    }
+  }
+  if (target.resultId) addUnique(plan.resultReferences, [`TARGET(${String(target.resultId)})`]);
+}
+
+function collectScriptPlan(steps: ScriptStep[], plan: MechanicPlan) {
+  for (const step of steps) {
+    if (step.type === "SELECT") {
+      targetPlan(step.target as Record<string, unknown>, plan);
+      addUnique(plan.memory, [`STORE ${step.id}`]);
+    } else if (step.type === "AGGREGATE") {
+      addUnique(plan.memory, [`${step.operation}${step.stat ? ` ${step.stat}` : ""}(${step.selectionId})`]);
+      addUnique(plan.resultReferences, [step.id]);
+    } else if (step.type === "EFFECT") {
+      addUnique(plan.actions, [step.effect.action]);
+      targetPlan(step.effect.target as Record<string, unknown> | undefined, plan);
+      if (step.id) addUnique(plan.resultReferences, [step.id]);
+    } else if (step.type === "IF") {
+      addUnique(plan.conditions, [`${step.condition.left.kind} ${step.condition.compare} ${step.condition.right.kind}`]);
+      collectScriptPlan(step.then, plan);
+      if (step.else) collectScriptPlan(step.else, plan);
+    }
+  }
+}
+
+export function buildMechanicPlan(
+  effectId: "STRUCTURED_EFFECTS_V1" | "SCRIPT_V1",
+  effects: StructuredEffect[],
+  scripts: EffectScript[],
+): MechanicPlan {
+  const plan: MechanicPlan = {
+    execution: effectId,
+    triggers: [],
+    selections: [],
+    filters: [],
+    conditions: [],
+    memory: [],
+    schedule: [],
+    actions: [],
+    resultReferences: [],
+  };
+  if (effectId === "SCRIPT_V1") {
+    for (const script of scripts) {
+      addUnique(plan.triggers, [script.trigger]);
+      collectScriptPlan(script.steps, plan);
+    }
+    return plan;
+  }
+  for (const effect of effects) {
+    addUnique(plan.triggers, [effect.trigger]);
+    addUnique(plan.actions, [effect.action]);
+    targetPlan(effect.target as Record<string, unknown> | undefined, plan);
+    for (const condition of effect.conditions ?? []) addUnique(plan.conditions, [condition.type]);
+    if (effect.values?.queuedTrigger) {
+      addUnique(plan.memory, [`REGISTER ${effect.values.queuedTrigger}`]);
+      addUnique(plan.schedule, ["NEXT_MATCHING_EVENT"]);
+    }
+    if (effect.values?.aggregateStats) addUnique(plan.memory, [effect.values.aggregateStats.source]);
+    if (effect.values?.definitionRef) addUnique(plan.memory, ["CARD_DEFINITION_REFERENCE"]);
+    if (effect.target?.selection === "SAME_TARGET") addUnique(plan.resultReferences, ["PREVIOUS_RESULT"]);
+    if (effect.values?.duration) addUnique(plan.schedule, [effect.values.duration]);
+    if (effect.trigger === "TURN_START" || effect.trigger === "TURN_END") addUnique(plan.schedule, [effect.trigger]);
+  }
+  return plan;
+}
+
 function providerConfig(): { baseUrl: string; apiKey: string; model: string } | null {
   const integratedKey = process.env["AI_INTEGRATIONS_OPENAI_API_KEY"]?.trim();
   const directKey = process.env["OPENAI_API_KEY"]?.trim();
@@ -466,6 +564,7 @@ export function validateGeneratedEffectDraft(
       effectConfig: { scripts },
       keywords,
       preview: previewScripts(scripts),
+      mechanicPlan: buildMechanicPlan("SCRIPT_V1", [], scripts),
     };
   }
   const effects = isRecord(raw) ? { effects: raw.effects } : raw;
@@ -489,6 +588,7 @@ export function validateGeneratedEffectDraft(
     effectConfig: { effects: resolvedEffects },
     keywords,
     preview: previewEffects(resolvedEffects),
+    mechanicPlan: buildMechanicPlan("STRUCTURED_EFFECTS_V1", resolvedEffects, []),
   };
 }
 
@@ -498,5 +598,23 @@ export async function generateEffectDraft(
   catalog: readonly CardReferenceCandidate[],
 ): Promise<EffectAiResult> {
   const raw = await callProvider(text, context, catalog);
+  if (isRecord(raw) && raw.status === "NEEDS_CLARIFICATION") {
+    // The provider is still the primary natural-language compiler. If it asks
+    // for clarification on a sentence already understood by the shared
+    // analyzer, compile that validated result instead of making the admin
+    // rewrite an unambiguous effect.
+    const localAnalysis = analyzeEffectText(text, {
+      defaultTrigger: context.effectContext ? "ENTER_FIELD" : undefined,
+      cardCatalog: catalog,
+    });
+    if (localAnalysis.outcome === "supported" && localAnalysis.effects.length > 0) {
+      return validateGeneratedEffectDraft({
+        status: "READY",
+        effectId: "STRUCTURED_EFFECTS_V1",
+        effects: localAnalysis.effects,
+        keywords: localAnalysis.keywords,
+      }, context, catalog);
+    }
+  }
   return validateGeneratedEffectDraft(raw, context, catalog);
 }
