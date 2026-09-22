@@ -114,8 +114,9 @@ export default function CollectionPage() {
   const [rarity, setRarity] = useState<RarityFilter>("ALL");
   const [sort, setSort] = useState<CardSort>("COST");
   const [selectedCard, setSelectedCard] = useState<CollectionCard | null>(null);
+  const [disassemblyQuantity, setDisassemblyQuantity] = useState(1);
   const [selectedChampion, setSelectedChampion] = useState<CollectionChampion | null>(null);
-  const [pendingAction, setPendingAction] = useState<{ type: "CRAFT" | "DISENCHANT"; card: CollectionCard } | null>(null);
+  const [pendingAction, setPendingAction] = useState<{ type: "CRAFT" | "DISENCHANT"; card: CollectionCard; quantity: number } | null>(null);
   const [isMutating, setIsMutating] = useState(false);
   const [loadState, setLoadState] = useState<CollectionLoadState>("loading");
   const [loadAttempt, setLoadAttempt] = useState(0);
@@ -184,6 +185,9 @@ export default function CollectionPage() {
     ? collection?.prismSettings.find((setting) => setting.rarity === selectedCard.rarity)
     : undefined;
   const prismBalance = collection?.prismBalance ?? 0;
+  const safeDisassemblyQuantity = selectedCard
+    ? Math.min(Math.max(disassemblyQuantity, 1), Math.max(selectedCard.quantity, 1))
+    : 1;
 
   async function executePendingAction() {
     if (!pendingAction || isMutating) return;
@@ -194,13 +198,13 @@ export default function CollectionPage() {
       if (action.type === "CRAFT") {
         await craftCard(action.card.id);
       } else {
-        await disenchantCard(action.card.id);
+         await disenchantCard(action.card.id, action.quantity);
       }
       const nextCollection = await fetchCollection();
       setCollection(nextCollection);
       setSelectedCard(nextCollection.craftableCards.find((card) => card.id === action.card.id) ?? null);
       setPendingAction(null);
-      setMessage(action.type === "CRAFT" ? "카드를 제작했습니다." : "카드를 1장 분해했습니다.");
+       setMessage(action.type === "CRAFT" ? "카드를 제작했습니다." : `카드를 ${action.quantity}장 분해했습니다.`);
     } catch (error) {
       setMessage(error instanceof Error ? error.message : "프리즘 요청을 처리하지 못했습니다.");
     } finally {
@@ -325,8 +329,25 @@ export default function CollectionPage() {
                 <p>제작 비용: <strong className="text-amber-200">{selectedSetting.craftCost!.toLocaleString()} 프리즘</strong></p>
                 <p>분해 획득량: <strong className="text-emerald-300">{selectedSetting.disenchantReward!.toLocaleString()} 프리즘</strong></p>
                 <div className="grid gap-2 sm:grid-cols-2">
-                  <button type="button" disabled={isMutating || (!collection?.isTestAccount && prismBalance < selectedSetting.craftCost!)} onClick={() => setPendingAction({ type: "CRAFT", card: selectedCard })} className="flex items-center justify-center gap-2 rounded bg-amber-400 px-3 py-2.5 font-black text-black disabled:cursor-not-allowed disabled:opacity-40"><Hammer className="h-4 w-4" /> 제작</button>
-                  <button type="button" disabled={isMutating || selectedCard.quantity < 1} onClick={() => setPendingAction({ type: "DISENCHANT", card: selectedCard })} className="rounded border border-emerald-700 px-3 py-2.5 font-black text-emerald-300 disabled:cursor-not-allowed disabled:opacity-40">1장 분해</button>
+                  <button type="button" disabled={isMutating || (!collection?.isTestAccount && prismBalance < selectedSetting.craftCost!)} onClick={() => setPendingAction({ type: "CRAFT", card: selectedCard, quantity: 1 })} className="flex items-center justify-center gap-2 rounded bg-amber-400 px-3 py-2.5 font-black text-black disabled:cursor-not-allowed disabled:opacity-40"><Hammer className="h-4 w-4" /> 제작</button>
+                   <button type="button" disabled={isMutating || selectedCard.quantity < 1} onClick={() => setPendingAction({ type: "DISENCHANT", card: selectedCard, quantity: 1 })} className="rounded border border-emerald-700 px-3 py-2.5 font-black text-emerald-300 disabled:cursor-not-allowed disabled:opacity-40">1장 분해</button>
+                   <button type="button" disabled={isMutating || selectedCard.quantity < 1} onClick={() => setPendingAction({ type: "DISENCHANT", card: selectedCard, quantity: selectedCard.quantity })} className="rounded border border-emerald-700 px-3 py-2.5 font-black text-emerald-300 disabled:cursor-not-allowed disabled:opacity-40">최대 분해</button>
+                   <div className="sm:col-span-2 flex items-center gap-2 rounded border border-neutral-700 bg-neutral-950/70 px-3 py-2">
+                     <label htmlFor="disassembly-quantity" className="shrink-0 text-[11px] font-bold text-neutral-400">수량</label>
+                     <input
+                       id="disassembly-quantity"
+                       type="number"
+                       min={1}
+                       max={selectedCard.quantity}
+                       step={1}
+                       value={safeDisassemblyQuantity}
+                       onChange={(event) => setDisassemblyQuantity(Number(event.target.value) || 1)}
+                       className="w-full min-w-0 rounded border border-neutral-700 bg-neutral-900 px-2 py-1.5 text-sm font-black text-white outline-none focus:border-emerald-400"
+                       aria-label="분해 수량"
+                     />
+                     <span className="shrink-0 text-[11px] text-neutral-500">/ {selectedCard.quantity}</span>
+                     <button type="button" disabled={isMutating || selectedCard.quantity < 1} onClick={() => setPendingAction({ type: "DISENCHANT", card: selectedCard, quantity: safeDisassemblyQuantity })} className="shrink-0 rounded bg-emerald-700 px-3 py-2 text-xs font-black text-white disabled:cursor-not-allowed disabled:opacity-40">분해</button>
+                   </div>
                 </div>
                 {!collection?.isTestAccount && prismBalance < selectedSetting.craftCost! && <p className="text-[11px] text-red-300">프리즘이 부족합니다.</p>}
                 {selectedCard.quantity < 1 && <p className="text-[11px] text-neutral-500">소유한 카드가 있어야 분해할 수 있습니다.</p>}
@@ -353,7 +374,7 @@ export default function CollectionPage() {
                 <DialogDescription className="whitespace-pre-line text-left text-sm leading-6 text-neutral-400">
                   {pendingAction.type === "CRAFT"
                     ? `${selectedSetting?.craftCost?.toLocaleString() ?? "—"} 프리즘을 사용해\n${pendingAction.card.name} 카드를 제작하시겠습니까?`
-                    : `이 카드를 1장 분해하고\n${selectedSetting?.disenchantReward?.toLocaleString() ?? "—"} 프리즘을 획득하시겠습니까?`}
+                     : `이 카드를 ${pendingAction.quantity}장 분해하고\n${((selectedSetting?.disenchantReward ?? 0) * pendingAction.quantity).toLocaleString()} 프리즘을 획득하시겠습니까?`}
                 </DialogDescription>
               </DialogHeader>
               <div className="flex gap-2">

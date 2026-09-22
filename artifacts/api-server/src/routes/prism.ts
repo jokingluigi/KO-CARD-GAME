@@ -143,6 +143,24 @@ router.post("/craft/:cardDefinitionId", async (request, response): Promise<void>
 router.post("/disenchant/:cardDefinitionId", async (request, response): Promise<void> => {
   const user = requireUser(request, response);
   if (!user) return;
+  const requestedQuantity: unknown = request.body === undefined
+    ? 1
+    : request.body && typeof request.body === "object" && !Array.isArray(request.body)
+      ? (request.body as Record<string, unknown>).quantity
+      : undefined;
+  let quantity: number;
+  if (requestedQuantity === undefined) {
+    quantity = 1;
+  } else if (
+    typeof requestedQuantity !== "number" ||
+    !Number.isSafeInteger(requestedQuantity) ||
+    requestedQuantity < 1
+  ) {
+    response.status(400).json({ message: "분해 수량은 1 이상의 정수여야 합니다." });
+    return;
+  } else {
+    quantity = requestedQuantity;
+  }
   try {
     const result = await db.transaction(async (tx) => {
       const card = await getCraftableCard(request.params.cardDefinitionId, tx);
@@ -150,20 +168,24 @@ router.post("/disenchant/:cardDefinitionId", async (request, response): Promise<
       const setting = await getUsableSetting(card.rarity as PrismRarity, "분해", tx);
       const [collection] = await tx.update(userCardCollectionsTable)
         .set({
-          quantity: sql`${userCardCollectionsTable.quantity} - 1`,
+          quantity: sql`${userCardCollectionsTable.quantity} - ${quantity}`,
         })
         .where(and(
           eq(userCardCollectionsTable.userId, user.id),
           eq(userCardCollectionsTable.cardDefinitionId, card.id),
-          sql`${userCardCollectionsTable.quantity} > 0`,
+          sql`${userCardCollectionsTable.quantity} >= ${quantity}`,
         ))
         .returning({ quantity: userCardCollectionsTable.quantity });
       if (!collection) throw new PrismError(422, "소유한 카드만 분해할 수 있습니다.");
+      const reward = setting.disenchantReward * quantity;
+      if (!Number.isSafeInteger(reward)) {
+        throw new PrismError(422, "분해 수량이 너무 큽니다.");
+      }
       let prismBalance = user.prismBalance;
       if (!isTestAccountUser(user)) {
         const [updatedUser] = await tx.update(usersTable)
           .set({
-            prismBalance: sql`${usersTable.prismBalance} + ${setting.disenchantReward}`,
+            prismBalance: sql`${usersTable.prismBalance} + ${reward}`,
             updatedAt: new Date(),
           })
           .where(eq(usersTable.id, user.id))
@@ -177,12 +199,12 @@ router.post("/disenchant/:cardDefinitionId", async (request, response): Promise<
         id: randomUUID(),
         userId: user.id,
         type: "DISENCHANT",
-        amount: setting.disenchantReward,
+        amount: reward,
         balanceAfter: prismBalance,
         cardDefinitionId: card.id,
-        metadata: JSON.stringify({ rarity: card.rarity }),
+        metadata: JSON.stringify({ rarity: card.rarity, quantity }),
       });
-      return { card, prismBalance, quantity: collection.quantity };
+      return { card, prismBalance, quantity: collection.quantity, dismantledQuantity: quantity, reward };
     });
     response.json(result);
   } catch (error) {

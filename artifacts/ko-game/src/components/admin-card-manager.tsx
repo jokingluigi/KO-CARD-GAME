@@ -324,6 +324,7 @@ export function AdminCardManager({
   const [cards, setCards] = useState<CardRecord[]>([]);
   const [search, setSearch] = useState("");
   const [cardType, setCardType] = useState("");
+  const [rarity, setRarity] = useState("");
   const [status, setStatus] = useState("");
   const [tokenKind, setTokenKind] = useState("");
   const [editingCard, setEditingCard] = useState<CardRecord | null>(null);
@@ -379,6 +380,7 @@ export function AdminCardManager({
     const params = new URLSearchParams();
     if (search.trim()) params.set("search", search.trim());
     if (cardType) params.set("cardType", cardType);
+    if (rarity) params.set("rarity", rarity);
     if (status) params.set("status", status);
     if (tokenKind) params.set("tokenKind", tokenKind);
 
@@ -398,7 +400,7 @@ export function AdminCardManager({
     } finally {
       setIsLoading(false);
     }
-  }, [cardType, onUnauthorized, search, status, tokenKind]);
+  }, [cardType, onUnauthorized, rarity, search, status, tokenKind]);
 
   useEffect(() => {
     const timer = window.setTimeout(loadCards, 200);
@@ -965,6 +967,13 @@ export function AdminCardManager({
           <option value="WRESTLER">선수</option>
           <option value="TECHNIQUE">기술</option>
         </select>
+        <select value={rarity} onChange={(event) => setRarity(event.target.value)} data-testid="select-card-rarity" className="rounded border border-neutral-700 bg-neutral-900 px-3 py-2 text-sm">
+          <option value="">모든 등급</option>
+          <option value="NORMAL">NORMAL</option>
+          <option value="LEGENDARY">LEGENDARY</option>
+          <option value="CHAMPION">CHAMPION</option>
+          <option value="TOKEN">TOKEN</option>
+        </select>
         <select value={tokenKind} onChange={(event) => setTokenKind(event.target.value)} data-testid="select-token-kind" className="rounded border border-neutral-700 bg-neutral-900 px-3 py-2 text-sm">
           <option value="">모든 카드</option>
           <option value="STANDARD">일반 카드</option>
@@ -1002,46 +1011,63 @@ export function AdminCardManager({
          />,
          document.body,
        )}
-       <div className="overflow-x-auto rounded-lg border border-neutral-800">
-        <table className="w-full min-w-[920px] text-left text-xs">
-          <thead className="bg-neutral-900 text-neutral-500">
-             <tr>
-               {["이름", "종류", "등급", "비용", "공격력", "체력", "상태", "버전", "수정일", "작업"].map((label) => (
-                <th key={label} className="px-3 py-3 font-bold">{label}</th>
-              ))}
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-neutral-800">
+        <div className="rounded-lg border border-neutral-800 bg-neutral-950/70 p-3 sm:p-4">
+          {cards.length > 0 && <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
             {cards.map((card) => (
-             <tr key={card.id} data-testid={`row-card-${card.id}`} onClick={() => openEdit(card)} onKeyDown={(event) => { if (event.key === "Enter" || event.key === " ") openEdit(card); }} tabIndex={0} className="cursor-pointer bg-neutral-950 hover:bg-neutral-900/60 focus:bg-neutral-900 focus:outline-none">
-                 <td className="px-3 py-3">
-                  <div className="font-bold text-neutral-100">{card.name}</div>
-                  {(card.isToken || card.isChampionToken) && <div className="mt-1 text-[10px] text-primary">{card.isChampionToken ? "챔피언 토큰" : "토큰"}</div>}
-                </td>
-                <td className="px-3 py-3 text-neutral-400">{card.cardType === "WRESTLER" ? "선수" : "기술"}</td>
-                 <td className="px-3 py-3 font-bold text-amber-300">{CARD_RARITY_LABELS[normalizeCardRarity(card.rarity)]}</td>
-                <td className="px-3 py-3">{card.cost}</td>
-                <td className="px-3 py-3">{card.attack}</td>
-                <td className="px-3 py-3">{card.health}</td>
-                <td className="px-3 py-3"><span className={`rounded border px-2 py-1 text-[10px] font-black ${statusClass(card.status)}`}>{statusLabel(card.status)}</span></td>
-                <td className="px-3 py-3">v{card.version}</td>
-                <td className="px-3 py-3 text-neutral-500">{new Date(card.updatedAt).toLocaleString("ko-KR")}</td>
-                 <td className="px-3 py-3" onClick={(event) => event.stopPropagation()}>
-                  <div className="flex flex-wrap gap-1.5">
-                    <button type="button" onClick={() => openEdit(card)} data-testid={`button-edit-card-${card.id}`} className="flex items-center gap-1 rounded border border-neutral-700 px-2 py-1.5 font-bold hover:border-primary hover:text-primary"><FilePenLine className="h-3 w-3" /> 수정</button>
-                    <button type="button" disabled={busyId === card.id} onClick={() => mutateCard(`/cards/${card.id}/duplicate`, `${card.name} Copy를 생성했습니다.`, card.id)} data-testid={`button-duplicate-card-${card.id}`} className="flex items-center gap-1 rounded border border-neutral-700 px-2 py-1.5 font-bold hover:border-primary hover:text-primary disabled:opacity-40"><Copy className="h-3 w-3" /> 복제</button>
-                     <button type="button" disabled={busyId === card.id} onClick={() => void deleteCard(card)} data-testid={`button-delete-card-${card.id}`} className="flex items-center gap-1 rounded border border-red-900 px-2 py-1.5 font-bold text-red-400 hover:bg-red-950 disabled:opacity-40"><Trash2 className="h-3 w-3" /> 삭제</button>
-                    {card.status !== "PUBLISHED" && <button type="button" disabled={busyId === card.id} onClick={() => mutateCard(`/cards/${card.id}/status`, "카드를 공개했습니다.", card.id, { status: "PUBLISHED" })} data-testid={`button-publish-card-${card.id}`} className="flex items-center gap-1 rounded border border-emerald-800 px-2 py-1.5 font-bold text-emerald-400 hover:bg-emerald-950 disabled:opacity-40"><CheckCircle2 className="h-3 w-3" /> 공개</button>}
-                    {card.status !== "DISABLED" && <button type="button" disabled={busyId === card.id} onClick={() => mutateCard(`/cards/${card.id}/status`, "카드를 비활성화했습니다.", card.id, { status: "DISABLED" })} data-testid={`button-disable-card-${card.id}`} className="flex items-center gap-1 rounded border border-red-900 px-2 py-1.5 font-bold text-red-400 hover:bg-red-950 disabled:opacity-40"><Ban className="h-3 w-3" /> 비활성화</button>}
+              <article
+                key={card.id}
+                role="button"
+                tabIndex={0}
+                data-testid={`row-card-${card.id}`}
+                onClick={() => openEdit(card)}
+                onKeyDown={(event) => { if (event.key === "Enter" || event.key === " ") { event.preventDefault(); openEdit(card); } }}
+                className="group cursor-pointer rounded-xl border border-neutral-800 bg-black/40 p-2 text-left transition hover:-translate-y-1 hover:border-primary/70 hover:bg-primary/5 focus:outline-none focus:ring-2 focus:ring-primary"
+                aria-label={`${card.name} 카드 수정`}
+              >
+                <div className="relative overflow-hidden rounded-lg bg-neutral-900">
+                  <CardRenderer
+                    name={card.name}
+                    cardType={card.cardType}
+                    cost={card.cost}
+                    attack={card.attack}
+                    health={card.health}
+                    rulesText={card.text}
+                    imageUrl={card.imageUrl}
+                    rarity={normalizeCardRarity(card.rarity) as "NORMAL" | "LEGENDARY" | "CHAMPION"}
+                    imageDisplaySettings={{
+                      imageDisplayMode: card.imageDisplayMode ?? "COVER",
+                      imageScale: card.imageScale ?? 1,
+                      imagePositionX: card.imagePositionX ?? 50,
+                      imagePositionY: card.imagePositionY ?? 50,
+                    }}
+                    size="board"
+                    showRules={false}
+                    showStats
+                    className="w-full"
+                  />
+                  <span className={`absolute left-2 top-2 rounded border px-1.5 py-1 text-[9px] font-black ${statusClass(card.status)}`}>{statusLabel(card.status)}</span>
+                </div>
+                <div className="mt-2 min-w-0">
+                  <div className="flex items-start justify-between gap-2">
+                    <h3 className="truncate text-sm font-black text-white">{card.name}</h3>
+                    <span className="shrink-0 text-[10px] font-bold text-amber-300">{CARD_RARITY_LABELS[normalizeCardRarity(card.rarity)]}</span>
                   </div>
-                </td>
-              </tr>
+                  <p className="mt-1 text-[10px] text-neutral-500">{card.cardType === "WRESTLER" ? "선수" : "기술"} · 비용 {card.cost} · v{card.version}</p>
+                  {(card.isToken || card.isChampionToken) && <p className="mt-1 text-[10px] font-bold text-primary">{card.isChampionToken ? "챔피언 토큰" : "토큰"}</p>}
+                </div>
+                <div className="mt-3 flex flex-wrap gap-1.5" onClick={(event) => event.stopPropagation()}>
+                  <button type="button" onClick={() => openEdit(card)} data-testid={`button-edit-card-${card.id}`} className="flex items-center gap-1 rounded border border-neutral-700 px-2 py-1.5 text-[10px] font-bold hover:border-primary hover:text-primary"><FilePenLine className="h-3 w-3" /> 수정</button>
+                  <button type="button" disabled={busyId === card.id} onClick={() => mutateCard(`/cards/${card.id}/duplicate`, `${card.name} Copy를 생성했습니다.`, card.id)} data-testid={`button-duplicate-card-${card.id}`} className="flex items-center gap-1 rounded border border-neutral-700 px-2 py-1.5 text-[10px] font-bold hover:border-primary hover:text-primary disabled:opacity-40"><Copy className="h-3 w-3" /> 복제</button>
+                  <button type="button" disabled={busyId === card.id} onClick={() => void deleteCard(card)} data-testid={`button-delete-card-${card.id}`} className="flex items-center gap-1 rounded border border-red-900 px-2 py-1.5 text-[10px] font-bold text-red-400 hover:bg-red-950 disabled:opacity-40"><Trash2 className="h-3 w-3" /> 삭제</button>
+                  {card.status !== "PUBLISHED" && <button type="button" disabled={busyId === card.id} onClick={() => mutateCard(`/cards/${card.id}/status`, "카드를 공개했습니다.", card.id, { status: "PUBLISHED" })} data-testid={`button-publish-card-${card.id}`} className="flex items-center gap-1 rounded border border-emerald-800 px-2 py-1.5 text-[10px] font-bold text-emerald-400 hover:bg-emerald-950 disabled:opacity-40"><CheckCircle2 className="h-3 w-3" /> 공개</button>}
+                  {card.status !== "DISABLED" && <button type="button" disabled={busyId === card.id} onClick={() => mutateCard(`/cards/${card.id}/status`, "카드를 비활성화했습니다.", card.id, { status: "DISABLED" })} data-testid={`button-disable-card-${card.id}`} className="flex items-center gap-1 rounded border border-red-900 px-2 py-1.5 text-[10px] font-bold text-red-400 hover:bg-red-950 disabled:opacity-40"><Ban className="h-3 w-3" /> 비활성화</button>}
+                </div>
+              </article>
             ))}
-          </tbody>
-        </table>
+          </div>}
         {!isLoading && cards.length === 0 && <div data-testid="status-empty-cards" className="p-10 text-center text-sm text-neutral-600">조건에 맞는 카드가 없습니다.</div>}
         {isLoading && <div data-testid="status-loading-cards" className="p-10 text-center text-sm text-neutral-600">카드 목록을 불러오는 중...</div>}
-      </div>
+        </div>
 
       {isFormOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-4">

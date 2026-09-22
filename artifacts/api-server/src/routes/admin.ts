@@ -2470,6 +2470,7 @@ router.get("/cards", async (request, response): Promise<void> => {
 
   const search = firstParam(request.query.search)?.trim();
   const cardType = firstParam(request.query.cardType);
+  const rarity = firstParam(request.query.rarity);
   const status = firstParam(request.query.status);
   const tokenKind = firstParam(request.query.tokenKind);
   const filters = [];
@@ -2477,6 +2478,9 @@ router.get("/cards", async (request, response): Promise<void> => {
   if (search) filters.push(ilike(cardsTable.name, `%${search}%`));
   if (CARD_TYPES.includes(cardType as (typeof CARD_TYPES)[number])) {
     filters.push(eq(cardsTable.cardType, cardType as string));
+  }
+  if (CARD_RARITIES.includes(rarity as (typeof CARD_RARITIES)[number])) {
+    filters.push(eq(cardsTable.rarity, rarity as string));
   }
   if (CARD_STATUSES.includes(status as (typeof CARD_STATUSES)[number])) {
     filters.push(eq(cardsTable.status, status as string));

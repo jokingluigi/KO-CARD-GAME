@@ -41,6 +41,15 @@ export type DeckChampion = {
   status: "DRAFT" | "PUBLISHED" | "DISABLED" | string;
 };
 
+export type DeckValidationReason = {
+  scope: "DECK" | "CARD";
+  reasonCode: string;
+  message: string;
+  cardDefinitionIds?: string[];
+  count?: number;
+  limit?: number;
+};
+
 export type Deck = {
   id: string;
   name: string;
@@ -54,6 +63,7 @@ export type Deck = {
   missingCardDefinitionIds: string[];
   isValid: boolean;
   invalidReasons: string[];
+  validationReasons: DeckValidationReason[];
 };
 
 export type DeckOptions = {

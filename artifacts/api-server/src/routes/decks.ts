@@ -31,20 +31,41 @@ type DeckPayload = {
   cardDefinitionIds: string[];
 };
 
+export type DeckValidationReason = {
+  scope: "DECK" | "CARD";
+  reasonCode: string;
+  message: string;
+  cardDefinitionIds?: string[];
+  count?: number;
+  limit?: number;
+};
+
 type ResolvedDeck = DeckRecord & {
   champion: ChampionRecord | null;
   cards: CardRecord[];
   missingCardDefinitionIds: string[];
   isValid: boolean;
   invalidReasons: string[];
+  validationReasons: DeckValidationReason[];
 };
 
-function getCardRuleReasons(cardDefinitionIds: string[], cardsById: Map<string, CardRuleRecord>): string[] {
+function uniqueReasons(reasons: DeckValidationReason[]): DeckValidationReason[] {
+  const seen = new Set<string>();
+  return reasons.filter((reason) => {
+    const key = `${reason.reasonCode}:${reason.message}:${(reason.cardDefinitionIds ?? []).join(",")}`;
+    if (seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
+}
+
+function getCardRuleReasons(cardDefinitionIds: string[], cardsById: Map<string, CardRuleRecord>): DeckValidationReason[] {
   const counts = new Map<string, number>();
   cardDefinitionIds.forEach((id) => counts.set(id, (counts.get(id) ?? 0) + 1));
-  const reasons: string[] = [];
+  const reasons: DeckValidationReason[] = [];
   let legendaryCount = 0;
   const legendaryDefinitionCounts: number[] = [];
+  const legendaryIds: string[] = [];
 
   counts.forEach((count, id) => {
     const card = cardsById.get(id);
@@ -52,8 +73,16 @@ function getCardRuleReasons(cardDefinitionIds: string[], cardsById: Map<string, 
     if (card.rarity === "LEGENDARY") {
       legendaryCount += count;
       legendaryDefinitionCounts.push(count);
+      legendaryIds.push(id);
     } else if (count > MAX_CARD_COPIES) {
-      reasons.push(`같은 카드는 최대 ${MAX_CARD_COPIES}장까지 넣을 수 있습니다.`);
+      reasons.push({
+        scope: "CARD",
+        reasonCode: "DUPLICATE_CARD",
+        message: `같은 카드는 최대 ${MAX_CARD_COPIES}장까지 넣을 수 있습니다.`,
+        cardDefinitionIds: [id],
+        count,
+        limit: MAX_CARD_COPIES,
+      });
     }
   });
 
@@ -63,10 +92,30 @@ function getCardRuleReasons(cardDefinitionIds: string[], cardsById: Map<string, 
     legendaryDefinitionCounts,
     championCount: 1,
   })) {
-    if (reason === "DUPLICATE_LEGENDARY") reasons.push("레전더리 카드는 같은 카드를 1장만 넣을 수 있습니다.");
-    if (reason === "TOO_MANY_LEGENDARIES") reasons.push(`레전더리 카드는 덱에 총 ${MAX_LEGENDARY_CARDS}장까지만 넣을 수 있습니다.`);
+    if (reason === "DUPLICATE_LEGENDARY") {
+      counts.forEach((count, id) => {
+        if (cardsById.get(id)?.rarity === "LEGENDARY" && count > 1) {
+          reasons.push({
+            scope: "CARD",
+            reasonCode: "DUPLICATE_LEGENDARY",
+            message: "레전더리 카드는 같은 카드를 1장만 넣을 수 있습니다.",
+            cardDefinitionIds: [id],
+            count,
+            limit: 1,
+          });
+        }
+      });
+    }
+    if (reason === "TOO_MANY_LEGENDARIES") reasons.push({
+      scope: "CARD",
+      reasonCode: "LEGENDARY_LIMIT_EXCEEDED",
+      message: `레전더리 카드는 덱에 총 ${MAX_LEGENDARY_CARDS}장까지만 넣을 수 있습니다.`,
+      cardDefinitionIds: legendaryIds,
+      count: legendaryCount,
+      limit: MAX_LEGENDARY_CARDS,
+    });
   }
-  return [...new Set(reasons)];
+  return uniqueReasons(reasons);
 }
 
 function requireUser(request: Request, response: Response): NonNullable<Request["authUser"]> | null {
@@ -122,14 +171,14 @@ export async function resolveDeck(deck: DeckRecord, userId: string, testAccount 
     });
   }
   const missingCardDefinitionIds = uniqueCardIds.filter((id) => !cardById.has(id));
-  const invalidReasons: string[] = [];
+  const validationReasons: DeckValidationReason[] = [];
 
   if (!champion) {
-    invalidReasons.push("사용할 수 없는 Champion이 포함되어 있습니다.");
+    validationReasons.push({ scope: "DECK", reasonCode: "CHAMPION_UNAVAILABLE", message: "사용할 수 없는 Champion이 포함되어 있습니다." });
   } else if (champion.status !== "PUBLISHED") {
-    invalidReasons.push("사용할 수 없는 Champion이 포함되어 있습니다.");
+    validationReasons.push({ scope: "DECK", reasonCode: "CHAMPION_UNAVAILABLE", message: "사용할 수 없는 Champion이 포함되어 있습니다." });
   } else if (ownedChampionRows.length === 0 && !testAccount) {
-    invalidReasons.push("소유하지 않은 Champion이 포함되어 있습니다.");
+    validationReasons.push({ scope: "DECK", reasonCode: "CHAMPION_NOT_OWNED", message: "소유하지 않은 Champion이 포함되어 있습니다." });
   }
   for (const reason of validateDeckCounts({
     cardCount: deck.cardDefinitionIds.length,
@@ -139,30 +188,85 @@ export async function resolveDeck(deck: DeckRecord, userId: string, testAccount 
     ),
     championCount: deck.championDefinitionId ? 1 : 0,
   })) {
-    if (reason === "INVALID_CARD_COUNT") invalidReasons.push(`카드는 정확히 ${DECK_SIZE}장이어야 합니다.`);
-    if (reason === "TOO_MANY_LEGENDARIES") invalidReasons.push(`레전더리 카드는 덱에 총 ${MAX_LEGENDARY_CARDS}장까지만 넣을 수 있습니다.`);
-    if (reason === "INVALID_CHAMPION_COUNT" && !champion) invalidReasons.push("사용할 수 있는 Champion을 정확히 1명 선택해야 합니다.");
+    if (reason === "INVALID_CARD_COUNT") validationReasons.push({
+      scope: "DECK",
+      reasonCode: "CARD_COUNT_INVALID",
+      message: `카드는 정확히 ${DECK_SIZE}장이어야 합니다.`,
+      count: deck.cardDefinitionIds.length,
+      limit: DECK_SIZE,
+    });
+    if (reason === "TOO_MANY_LEGENDARIES") {
+      const ids = uniqueCardIds.filter((id) => cardById.get(id)?.rarity === "LEGENDARY");
+      validationReasons.push({
+        scope: "CARD",
+        reasonCode: "LEGENDARY_LIMIT_EXCEEDED",
+        message: `레전더리 카드는 덱에 총 ${MAX_LEGENDARY_CARDS}장까지만 넣을 수 있습니다.`,
+        cardDefinitionIds: ids,
+        count: deck.cardDefinitionIds.filter((id) => cardById.get(id)?.rarity === "LEGENDARY").length,
+        limit: MAX_LEGENDARY_CARDS,
+      });
+    }
+    if (reason === "INVALID_CHAMPION_COUNT" && !champion) validationReasons.push({
+      scope: "DECK",
+      reasonCode: "CHAMPION_REQUIRED",
+      message: "사용할 수 있는 Champion을 정확히 1명 선택해야 합니다.",
+      count: deck.championDefinitionId ? 1 : 0,
+      limit: 1,
+    });
   }
   if (missingCardDefinitionIds.length > 0) {
-    invalidReasons.push("삭제되었거나 존재하지 않는 카드가 포함되어 있습니다.");
+    validationReasons.push({
+      scope: "CARD",
+      reasonCode: "CARD_DEFINITION_MISSING",
+      message: "삭제되었거나 존재하지 않는 카드가 포함되어 있습니다.",
+      cardDefinitionIds: missingCardDefinitionIds,
+    });
   }
-  if (cards.some((card) =>
+  const tokenIds = cards.filter((card) => card.isToken || card.isChampionToken).map((card) => card.id);
+  if (tokenIds.length > 0) {
+    validationReasons.push({
+      scope: "CARD",
+      reasonCode: "TOKEN_CARD_NOT_ALLOWED",
+      message: "Token 카드는 덱에 직접 편성할 수 없습니다.",
+      cardDefinitionIds: tokenIds,
+    });
+  }
+  const unavailableCardIds = cards.filter((card) =>
     card.status !== "PUBLISHED" ||
-    card.isToken ||
-    card.isChampionToken ||
-    !VALID_CARD_TYPES.has(card.cardType)
-  )) {
-    invalidReasons.push("사용할 수 없는 카드가 포함되어 있습니다.");
+    !VALID_CARD_TYPES.has(card.cardType),
+  ).map((card) => card.id);
+  if (unavailableCardIds.length > 0) {
+    validationReasons.push({
+      scope: "CARD",
+      reasonCode: "CARD_NOT_PLAYABLE",
+      message: "공개된 일반 카드만 덱에 넣을 수 있습니다.",
+      cardDefinitionIds: unavailableCardIds,
+    });
   }
-  invalidReasons.push(...getCardRuleReasons(deck.cardDefinitionIds, cardById));
-  if (uniqueCardIds.some((id) => !ownedCardIds.has(id))) {
-    invalidReasons.push("소유하지 않은 카드가 포함되어 있습니다.");
+  validationReasons.push(...getCardRuleReasons(deck.cardDefinitionIds, cardById));
+  const unownedCardIds = uniqueCardIds.filter((id) => !ownedCardIds.has(id));
+  if (unownedCardIds.length > 0) {
+    validationReasons.push({
+      scope: "CARD",
+      reasonCode: "CARD_NOT_OWNED",
+      message: "소유하지 않은 카드가 포함되어 있습니다.",
+      cardDefinitionIds: unownedCardIds,
+    });
   }
   const cardCopies = new Map<string, number>();
   deck.cardDefinitionIds.forEach((id) => cardCopies.set(id, (cardCopies.get(id) ?? 0) + 1));
-  if ([...cardCopies].some(([id, count]) => (ownedCardQuantities.get(id) ?? 0) < count)) {
-    invalidReasons.push("현재 보유 수량보다 많은 카드가 덱에 포함되어 있습니다.");
+  const overOwnedCardIds = [...cardCopies]
+    .filter(([id, count]) => (ownedCardQuantities.get(id) ?? 0) < count)
+    .map(([id]) => id);
+  if (overOwnedCardIds.length > 0) {
+    validationReasons.push({
+      scope: "CARD",
+      reasonCode: "CARD_QUANTITY_EXCEEDED",
+      message: "현재 보유 수량보다 많은 카드가 덱에 포함되어 있습니다.",
+      cardDefinitionIds: overOwnedCardIds,
+    });
   }
+  const uniqueValidationReasons = uniqueReasons(validationReasons);
 
   const orderedCards = deck.cardDefinitionIds
     .map((id) => cardById.get(id))
@@ -173,8 +277,9 @@ export async function resolveDeck(deck: DeckRecord, userId: string, testAccount 
     champion: champion ?? null,
     cards: orderedCards,
     missingCardDefinitionIds,
-    isValid: invalidReasons.length === 0,
-    invalidReasons: [...new Set(invalidReasons)],
+    isValid: uniqueValidationReasons.length === 0,
+    invalidReasons: uniqueValidationReasons.map((reason) => reason.message),
+    validationReasons: uniqueValidationReasons,
   };
 }
 

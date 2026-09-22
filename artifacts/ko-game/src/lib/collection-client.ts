@@ -109,11 +109,16 @@ export const craftCard = (cardDefinitionId: string) => request<{
   quantity: number;
   card: CollectionCard;
 }>(`/prism/craft/${encodeURIComponent(cardDefinitionId)}`, { method: "POST" });
-export const disenchantCard = (cardDefinitionId: string) => request<{
+export const disenchantCard = (cardDefinitionId: string, quantity = 1) => request<{
   prismBalance: number;
   quantity: number;
+  dismantledQuantity: number;
+  reward: number;
   card: CollectionCard;
-}>(`/prism/disenchant/${encodeURIComponent(cardDefinitionId)}`, { method: "POST" });
+}>(`/prism/disenchant/${encodeURIComponent(cardDefinitionId)}`, {
+  method: "POST",
+  body: JSON.stringify({ quantity }),
+});
 export const fetchPacks = () => request<{ packs: Pack[] }>("/packs");
 export type PackReward = {
   rewardType: "NORMAL_CARD" | "LEGENDARY_CARD" | "CHAMPION_UNLOCK" | "SKIN";

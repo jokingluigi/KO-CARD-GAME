@@ -24,6 +24,7 @@ import {
   type DeckCard,
   type DeckChampion,
   type DeckOptions,
+  type DeckValidationReason,
 } from "@/lib/decks-client";
 import { cardTypeLabel, deckValidityLabel, normalizeCardRulesText } from "@/lib/display-labels";
 import { DECK_SIZE, MAX_LEGENDARY_CARDS, validateDeckCounts } from "@workspace/game-engine";
@@ -45,6 +46,32 @@ function cardSettings(card: DeckCard) {
 
 function unique<T>(values: T[]) {
   return Array.from(new Set(values));
+}
+
+function uniqueValidationReasons(reasons: DeckValidationReason[]) {
+  const seen = new Set<string>();
+  return reasons.filter((reason) => {
+    const key = `${reason.reasonCode}:${reason.message}:${(reason.cardDefinitionIds ?? []).join(",")}`;
+    if (seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
+}
+
+function validationReason(
+  scope: "DECK" | "CARD",
+  reasonCode: string,
+  message: string,
+  cardDefinitionIds?: string[],
+  extra?: Pick<DeckValidationReason, "count" | "limit">,
+): DeckValidationReason {
+  return {
+    scope,
+    reasonCode,
+    message,
+    ...(cardDefinitionIds?.length ? { cardDefinitionIds } : {}),
+    ...extra,
+  };
 }
 
 function cardLimitReason(card: DeckCard, count: number, legendaryCount: number): string | undefined {
@@ -321,27 +348,33 @@ export default function Decks() {
     () => unique([...(editingDeck?.missingCardDefinitionIds ?? []), ...cardIds.filter((id) => !cardById.has(id))]),
     [cardById, cardIds, editingDeck?.missingCardDefinitionIds],
   );
-  const localInvalidReasons = useMemo(() => {
-    const reasons: string[] = [];
-    if (!selectedChampion) reasons.push("챔피언을 선택해야 합니다.");
-    else if (selectedChampion.status !== "PUBLISHED") reasons.push("챔피언이 현재 공개 상태가 아닙니다.");
-    if (missingIds.length > 0) reasons.push(`확인할 수 없는 카드 참조 ${missingIds.length}개가 있습니다.`);
-    if (
-      cardIds.some((id) => {
-        const card = cardById.get(id);
-        return !card || card.status !== "PUBLISHED" || card.isToken || card.isChampionToken;
-      })
-    ) {
-      reasons.push("공개된 비토큰 카드만 대표 덱에 사용할 수 있습니다.");
-    }
+  const localValidationReasons = useMemo(() => {
+    const reasons: DeckValidationReason[] = [];
+    if (!selectedChampion) reasons.push(validationReason("DECK", "CHAMPION_REQUIRED", "챔피언을 선택해야 합니다.", undefined, { count: 0, limit: 1 }));
+    else if (selectedChampion.status !== "PUBLISHED") reasons.push(validationReason("DECK", "CHAMPION_UNAVAILABLE", "챔피언이 현재 공개 상태가 아닙니다."));
+    if (missingIds.length > 0) reasons.push(validationReason("CARD", "CARD_DEFINITION_MISSING", `확인할 수 없는 카드 참조 ${missingIds.length}개가 있습니다.`, missingIds));
+    const tokenIds = unique(cardIds.filter((id) => {
+      const card = cardById.get(id);
+      return Boolean(card?.isToken || card?.isChampionToken);
+    }));
+    if (tokenIds.length > 0) reasons.push(validationReason("CARD", "TOKEN_CARD_NOT_ALLOWED", "Token 카드는 덱에 직접 편성할 수 없습니다.", tokenIds));
+    const unavailableIds = unique(cardIds.filter((id) => {
+      const card = cardById.get(id);
+      return Boolean(card && card.status !== "PUBLISHED" && !card.isToken && !card.isChampionToken);
+    }));
+    if (unavailableIds.length > 0) reasons.push(validationReason("CARD", "CARD_NOT_PLAYABLE", "공개된 일반 카드만 대표 덱에 사용할 수 있습니다.", unavailableIds));
     counts.forEach((count, id) => {
       const card = cardById.get(id);
       if (!card) return;
       if (card.rarity !== "LEGENDARY" && count > MAX_CARD_COPIES) {
-        reasons.push(`같은 카드는 최대 ${MAX_CARD_COPIES}장까지 넣을 수 있습니다.`);
+        reasons.push(validationReason("CARD", "DUPLICATE_CARD", `같은 카드는 최대 ${MAX_CARD_COPIES}장까지 넣을 수 있습니다.`, [id], { count, limit: MAX_CARD_COPIES }));
+      } else if (card.rarity === "LEGENDARY" && count > 1) {
+        reasons.push(validationReason("CARD", "DUPLICATE_LEGENDARY", "레전더리 카드는 같은 카드를 1장만 넣을 수 있습니다.", [id], { count, limit: 1 }));
       }
       const ownershipReason = cardOwnershipReason(card, count, options.isTestAccount === true);
-      if (ownershipReason) reasons.push(ownershipReason);
+      if (ownershipReason) {
+        reasons.push(validationReason("CARD", "CARD_QUANTITY_EXCEEDED", ownershipReason, [id], { count, limit: card.quantity }));
+      }
     });
     const canonicalReasons = validateDeckCounts({
       cardCount: cardIds.length,
@@ -352,12 +385,13 @@ export default function Decks() {
       championCount: selectedChampion ? 1 : 0,
     });
     for (const reason of canonicalReasons) {
-      if (reason === "INVALID_CARD_COUNT") reasons.push(`카드는 정확히 ${DECK_SIZE}장이어야 합니다.`);
-      if (reason === "DUPLICATE_LEGENDARY") reasons.push("레전더리 카드는 같은 카드를 1장만 넣을 수 있습니다.");
-      if (reason === "TOO_MANY_LEGENDARIES") reasons.push(`레전더리 카드는 덱에 총 ${MAX_LEGENDARY_CARDS}장까지만 넣을 수 있습니다.`);
-      if (reason === "INVALID_CHAMPION_COUNT" && !selectedChampion) reasons.push("챔피언을 선택해야 합니다.");
+       if (reason === "INVALID_CARD_COUNT") reasons.push(validationReason("DECK", "CARD_COUNT_INVALID", `카드는 정확히 ${DECK_SIZE}장이어야 합니다.`, undefined, { count: cardIds.length, limit: DECK_SIZE }));
+       if (reason === "TOO_MANY_LEGENDARIES") {
+         reasons.push(validationReason("CARD", "LEGENDARY_LIMIT_EXCEEDED", `레전더리 카드는 덱에 총 ${MAX_LEGENDARY_CARDS}장까지만 넣을 수 있습니다.`, unique(cardIds.filter((id) => cardById.get(id)?.rarity === "LEGENDARY")), { count: legendaryCount, limit: MAX_LEGENDARY_CARDS }));
+       }
+       if (reason === "INVALID_CHAMPION_COUNT" && !selectedChampion) reasons.push(validationReason("DECK", "CHAMPION_REQUIRED", "챔피언을 선택해야 합니다.", undefined, { count: 0, limit: 1 }));
     }
-    return reasons;
+     return uniqueValidationReasons(reasons);
   }, [cardById, cardIds, counts, legendaryCount, missingIds.length, options.isTestAccount, selectedChampion]);
   const filteredCards = useMemo(() => {
     const normalizedSearch = search.trim().toLocaleLowerCase();
@@ -381,10 +415,14 @@ export default function Decks() {
     editingDeck.championDefinitionId === championId &&
     sameCardIdList(editingDeck.cardDefinitionIds, cardIds),
   );
-  const validationReasons = unique([
-    ...localInvalidReasons,
-    ...(savedDraftMatches ? editingDeck?.invalidReasons ?? [] : []),
+  const validationReasons = uniqueValidationReasons([
+    ...localValidationReasons,
+    ...(savedDraftMatches ? (editingDeck?.validationReasons ?? []) : []),
   ]);
+  const problematicCardIds = useMemo(
+    () => new Set(validationReasons.flatMap((reason) => reason.cardDefinitionIds ?? [])),
+    [validationReasons],
+  );
   const isValidForSelection = validationReasons.length === 0;
 
   function createDraft() {
@@ -718,7 +756,18 @@ export default function Decks() {
               {validationReasons.length > 0 && (
                 <div className="ko-decks__notice" role="status" data-testid="status-deck-invalid">
                   <AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0" aria-hidden="true" />
-                  <span>{validationReasons.join(" ")}</span>
+                  <div className="space-y-1">
+                    <p className="font-black">이 덱은 현재 사용할 수 없습니다.</p>
+                    {validationReasons.map((reason, index) => (
+                      <p key={`${reason.reasonCode}-${index}`} data-testid={`deck-validation-${reason.reasonCode}`}>
+                        {reason.scope === "CARD" ? "카드 문제 · " : "덱 문제 · "}
+                        {reason.message}
+                        {reason.count !== undefined && reason.limit !== undefined && reason.reasonCode !== "CARD_QUANTITY_EXCEEDED"
+                          ? ` (${reason.count}/${reason.limit})`
+                          : ""}
+                      </p>
+                    ))}
+                  </div>
                 </div>
               )}
               {missingIds.length > 0 && (
@@ -738,7 +787,12 @@ export default function Decks() {
               ) : (
                 <div className="ko-decks__selected-list" data-testid="list-selected-cards">
                   {selectedRows.map(({ id, count, card }) => (
-                    <div key={id} className="ko-decks__selected-row" data-testid={`row-selected-card-${id}`}>
+                    <div
+                      key={id}
+                      className={`ko-decks__selected-row ${problematicCardIds.has(id) ? "border-[#b85c4d] bg-[#351c19]" : ""}`}
+                      data-testid={`row-selected-card-${id}`}
+                      data-invalid={problematicCardIds.has(id) ? "true" : undefined}
+                    >
                       {card ? (
                         <div className="ko-decks__selected-thumb">
                           <CardRenderer
@@ -762,7 +816,10 @@ export default function Decks() {
                         </div>
                       )}
                       <div className="min-w-0">
-                        <p className="ko-decks__selected-name">{card?.name ?? `확인할 수 없는 카드 (${id})`}</p>
+                        <p className="ko-decks__selected-name flex items-center gap-2">
+                          {card?.name ?? `확인할 수 없는 카드 (${id})`}
+                          {problematicCardIds.has(id) && <AlertTriangle className="h-3.5 w-3.5 shrink-0 text-[#e18a79]" aria-label="덱 검증 문제" />}
+                        </p>
                         <p className="ko-decks__selected-kind">
                            {card ? `${cardTypeLabel(card.cardType)} · 비용 ${card.cost} · ${card.rarity}` : "카드 참조 없음"}
                         </p>
