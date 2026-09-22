@@ -1,0 +1,531 @@
+KO CARD GAME — FIX ONLY: 뒷정리맨 EFFECT BUG
+
+이번 작업에서는 오직 "뒷정리맨" 효과 문제만 수정한다.
+
+다른 카드 버그,
+판도라,
+온라인,
+AI Match,
+AI Mechanic Compiler,
+Admin 신규 기능,
+일일 퀘스트,
+출석,
+보상,
+UI redesign
+
+등은 절대로 건드리지 마.
+
+==================================================
+현재 신고된 문제
+==================================================
+
+뒷정리맨 효과가 정상적으로 발동하지 않는다.
+
+과거에는 다음 현상도 실제로 관찰됐다.
+
+뒷정리맨을 플레이:
+
+2/2 → 2/4
+
+즉 뒷정리맨이
+자신이 만든 "다음 카드용 예약 버프"를
+자기 자신에게 즉시 소비했다.
+
+그 후 다음에 플레이한 선수:
+
+스카드 3/1
+
+은 아무 버프도 받지 않았다.
+
+최근에는 효과 자체가
+정상적으로 발동하지 않는 증상도 신고됐다.
+
+따라서 현재 실제 구현을 다시 확인해서
+정확한 root cause를 수정해야 한다.
+
+==================================================
+1. 먼저 공식 효과 확인
+==================================================
+
+뒷정리맨의 현재 authoritative effect를 확인한다.
+
+우선순위:
+
+1. 현재 CardDefinition
+2. effectConfig / SCRIPT / Structured Effect
+3. Admin 저장 데이터
+4. seed/catalog source
+5. 필요한 경우 git history
+
+카드 설명과 실제 effect config를 비교한다.
+
+효과 수치나 대상은 추측하지 마.
+
+예를 들어 공식 설명이:
+
+"다음에 플레이하는 선수에게 +0/+2"
+
+라면 그 규칙을 사용한다.
+
+실제 공식 수치가 다르면
+공식 definition을 기준으로 테스트한다.
+
+==================================================
+2. 이번 작업의 핵심 조사 지점
+==================================================
+
+특히 다음 경로를 추적한다.
+
+PLAY_FROM_HAND
+→ 뒷정리맨 effect trigger
+→ queued effect 생성
+→ queued effect 등록 시점
+→ 다음 PLAY_FROM_HAND event
+→ eligibility 검사
+→ buff 적용
+→ queued effect consume
+
+확인해야 할 핵심:
+
+A.
+queued effect가 생성된 바로 그 PLAY_FROM_HAND event를
+다시 잡아서 뒷정리맨 자신에게 적용되는가?
+
+B.
+effect가 생성되기 전에 listener가 등록되어
+현재 event까지 consume하고 있는가?
+
+C.
+sourceInstanceId와 targetInstanceId 구분이 잘못됐는가?
+
+D.
+"다음 카드" 조건이
+다음 event가 아니라 현재 event를 포함하고 있는가?
+
+E.
+queued effect가 너무 일찍 consume되어
+실제 다음 선수에게 도달하지 못하는가?
+
+F.
+최근 변경으로 queued effect 자체가
+등록되지 않는 상태가 되었는가?
+
+==================================================
+3. 카드 이름 hardcoding 금지
+==================================================
+
+다음과 같은 수정 금지:
+
+if (card.name === "뒷정리맨") ...
+
+generic queued effect / trigger timing 문제라면
+공통 시스템을 수정한다.
+
+단 다른 카드들의 기존 정상 queued effect를
+깨뜨리면 안 된다.
+
+==================================================
+4. 기대 동작
+==================================================
+
+공식 effect가
+"다음에 플레이하는 유효 선수에게 버프"
+형태라면 기대 흐름은 다음이다.
+
+뒷정리맨 PLAY_FROM_HAND
+
+→ 뒷정리맨 자신의 등장/효과 resolution
+→ queued effect 등록
+
+중요:
+
+현재 플레이 중인 뒷정리맨 자신은
+그 queued effect의 대상이 아니다.
+
+그 후 같은 플레이어가
+다음 유효 WRESTLER를 PLAY_FROM_HAND
+
+→ 그 선수에게 공식 buff 적용
+→ queued effect consume
+
+그 다음 선수에는
+같은 버프가 다시 적용되지 않는다.
+
+==================================================
+5. 반드시 실제 코드 수정
+==================================================
+
+이번 작업은 조사만 하는 작업이 아니다.
+
+순서:
+
+1. 현재 효과 정의 확인
+2. failing path 재현
+3. root cause 확인
+4. 실제 source 수정
+5. 뒷정리맨 전용 regression test 작성
+6. 관련 queued-effect regression 실행
+7. typecheck/build
+
+"원인을 찾았습니다"로 끝내지 마.
+
+==================================================
+6. 필수 Regression Test — 자기 자신 버프 금지
+==================================================
+
+TEST A
+
+초기 상태:
+
+뒷정리맨이 손에 있음.
+
+뒷정리맨 PLAY_FROM_HAND.
+
+기대:
+
+뒷정리맨 자신의 공격/체력은
+공식 base/effect에 없는 추가 버프를 받지 않는다.
+
+과거 버그처럼:
+
+2/2 → 2/4
+
+가 되어서는 안 된다
+(공식 카드 효과 자체가 자기 버프를 포함하지 않는다는 전제에서).
+
+그리고 queued effect는
+정상적으로 pending 상태여야 한다.
+
+==================================================
+7. 필수 Regression Test — 다음 선수 적용
+==================================================
+
+TEST B
+
+뒷정리맨을 플레이한 뒤
+다음 유효 WRESTLER를 PLAY_FROM_HAND.
+
+예:
+
+Skard.
+
+기대:
+
+그 다음 선수에게
+뒷정리맨 공식 buff가 정확히 적용.
+
+CardInstance 기준으로 확인.
+
+UI 숫자만 바뀌는 것이 아니라
+실제 GameState의 stats가 변경되어야 한다.
+
+==================================================
+8. 필수 Regression Test — 1회만 소비
+==================================================
+
+TEST C
+
+뒷정리맨
+→ 다음 선수 A
+→ 그 다음 선수 B
+
+기대:
+
+A:
+buff 적용
+
+B:
+동일 queued buff 추가 적용 없음
+
+queued effect:
+A에서 정확히 한 번 consume.
+
+==================================================
+9. 유효하지 않은 event가 끼어 있을 경우
+==================================================
+
+공식 effect가 "다음에 내는 선수"라면:
+
+뒷정리맨
+→ Technique 사용
+→ 다음 WRESTLER
+
+같은 상황에서
+Technique이 queued effect를 소비하면 안 된다.
+
+또:
+
+SUMMON
+REVIVE
+Champion Token deploy
+
+가 "PLAY_FROM_HAND WRESTLER"가 아니라면
+이를 다음 카드로 잘못 소비하지 마.
+
+현재 게임의 공식 trigger semantics를 따른다.
+
+==================================================
+10. 다른 플레이어 행동
+==================================================
+
+뒷정리맨 효과 owner가 Player A라면
+
+Player B가 카드를 플레이했다고
+Player A의 queued effect가 소비되면 안 된다.
+
+TEST:
+
+Player A 뒷정리맨
+→ Player B WRESTLER play
+→ Player A queued effect 유지
+→ Player A 다음 WRESTLER
+→ buff 적용
+
+==================================================
+11. 턴을 넘기는 경우
+==================================================
+
+공식 카드 설명에서
+"이번 턴" 제한이 없다면
+
+뒷정리맨
+→ 턴 종료
+→ 상대 턴
+→ 다시 내 턴
+→ 다음 WRESTLER
+
+에서도 효과가 유지되어야 한다.
+
+반대로 공식 효과가
+"이번 턴 다음 선수"라면
+턴 종료 시 만료되어야 한다.
+
+임의로 결정하지 말고
+authoritative effect text/config를 따른다.
+
+==================================================
+12. Effect 데이터 누락인 경우
+==================================================
+
+만약 현재 Development catalog에서
+뒷정리맨의 effectId/effectConfig가 null 또는 누락되어 있다면:
+
+"데이터가 없습니다"
+
+로 끝내지 마.
+
+repo:
+
+seed
+catalog
+fixture
+git history
+
+에서 정상 authoritative definition이 존재하는지 찾는다.
+
+복구 가능한 경우
+development source를 실제로 복구하고
+runtime test까지 수행한다.
+
+Production DB 직접 수정 금지.
+
+Production DB에만 적용이 필요한 경우:
+
+PRODUCTION_DATA_APPLY_REQUIRED
+
+로 정확한:
+
+record
+field
+expected value
+
+를 보고한다.
+
+==================================================
+13. 회귀 방지
+==================================================
+
+뒷정리맨을 고치면서
+기존 queued/delayed effect 전체가 깨지지 않는지 확인.
+
+최소 관련 테스트:
+
+- queued effect 등록
+- owner filtering
+- PLAY_FROM_HAND filtering
+- consume once
+- source event 제외
+- next matching event
+- turn transition serialization
+
+기존 정상 카드 이름을 hardcode해서
+테스트할 필요는 없다.
+
+generic fixture 사용 가능.
+
+==================================================
+14. 이번 작업에서 절대 하지 말 것
+==================================================
+
+금지:
+
+- 판도라 수정
+- 매드 펌킨 수정
+- 여울 수정
+- 그레이트 챤 수정
+- 예거 수정
+- Online 수정
+- AI Compiler 수정
+- SCRIPT_V1 신규 capability 추가
+- Admin UI 신규 기능
+- Production DB write
+- 카드 밸런스 변경
+- unrelated refactor
+
+뒷정리맨 문제 해결에 직접 필요한
+generic queued-effect 수정만 허용.
+
+==================================================
+15. 자동 검증
+==================================================
+
+수정 후 반드시:
+
+뒷정리맨 전용 regression
+관련 queued effect tests
+pnpm run typecheck
+KO production build
+git diff --check
+
+실행.
+
+API 코드를 수정했다면
+API typecheck/build도 실행.
+
+==================================================
+16. Gameplay 검증
+==================================================
+
+브라우저 사용 가능하면
+Development/Test 환경에서 실제로:
+
+뒷정리맨 플레이
+→ 자신은 버프 안 됨
+→ 다음 선수 플레이
+→ 다음 선수만 buff
+
+확인.
+
+브라우저가 없으면 수정 자체를 중단하지 마.
+
+보고:
+
+IMPLEMENTATION
+AUTOMATED VERIFICATION
+GAMEPLAY VERIFICATION
+
+세 개를 분리한다.
+
+==================================================
+17. Git
+==================================================
+
+기존 사용자 변경을 건드리지 마.
+
+Pasted-*.txt
+.env
+secret
+log
+temp
+
+stage 금지.
+
+검증 완료 후
+이번 수정 파일만 commit.
+
+force push 금지.
+
+push 인증이 실패해도
+local commit을 유지하고 보고한다.
+
+==================================================
+18. 최종 보고 형식
+==================================================
+
+반드시 아래 형식으로 보고:
+
+뒷정리맨 공식 효과:
+...
+
+ROOT CAUSE:
+...
+
+왜 자기 자신에게 적용됐거나 발동하지 않았는지:
+...
+
+CHANGED FILES:
+...
+
+TEST A — source card self-buff:
+PASS / FAIL
+
+TEST B — next wrestler receives buff:
+PASS / FAIL
+
+TEST C — consume once:
+PASS / FAIL
+
+TEST D — opponent event does not consume:
+PASS / FAIL
+
+TEST E — non-PLAY_FROM_HAND event does not consume:
+PASS / FAIL
+
+IMPLEMENTATION:
+PASS / FAIL / BLOCKED
+
+AUTOMATED VERIFICATION:
+PASS / FAIL
+
+GAMEPLAY VERIFICATION:
+PASS / FAIL / UNVERIFIED
+
+PRODUCTION DATA APPLY:
+NONE / REQUIRED
+
+TYPECHECK:
+PASS / FAIL
+
+BUILD:
+PASS / FAIL
+
+git diff --check:
+PASS / FAIL
+
+COMMIT:
+...
+
+PUSH:
+...
+
+==================================================
+완료 기준
+==================================================
+
+완료는:
+
+"뒷정리맨 코드를 확인했다"
+
+가 아니다.
+
+실제로:
+
+뒷정리맨
+→ 효과 정상 등록
+→ 자기 자신에게 잘못 소비되지 않음
+→ 다음 유효 선수에게 정확히 적용
+→ 정확히 한 번 소비
+
+가 regression test로 증명되어야 한다.
+
+이 문제 하나만 끝내고 멈춰라.
