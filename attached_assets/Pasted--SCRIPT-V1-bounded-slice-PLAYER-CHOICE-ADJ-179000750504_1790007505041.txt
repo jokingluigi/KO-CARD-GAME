@@ -1,0 +1,656 @@
+현재 SCRIPT_V1 첫 bounded slice 구현은 확인했다.
+
+하지만 이 작업은 아직 전체 목표 완료가 아니다.
+
+현재 보고에서:
+
+- PLAYER_CHOICE
+- ADJACENT_EMPTY_SLOTS
+- SAME_TARGET
+
+Script selector/continuation이 아직 거부되고 있고,
+범용 Effect Script 목표의 핵심 capability들이 일부만 구현되어 있다.
+
+이번 작업에서는 "first bounded slice"로 다시 멈추지 말고,
+기존 SCRIPT_V1 위에서 다음 핵심 2차 기능을 실제 end-to-end로 완성해라.
+
+==================================================
+최우선 원칙
+==================================================
+
+기존에 구현된 다음은 유지:
+
+- STRUCTURED_EFFECTS_V1 backward compatibility
+- SCRIPT_V1
+- Runtime OpenAI/provider calls = 0
+- Admin Generate 1회당 provider call 최대 1회
+- 서버측 Script validation
+- executable content 거부
+- Production DB 직접 수정 금지
+- Action → Event → GameState
+- deterministic RNG
+- Online server-authoritative
+
+기존 테스트를 깨지 마.
+
+==================================================
+1. Script FILTER 구현
+==================================================
+
+SELECT 결과에 generic FILTER를 사용할 수 있게 한다.
+
+최소:
+
+- cardType
+- tagsAny
+- tagsAll
+- tagsNone
+- keyword
+- cost
+- attack
+- health
+- isToken
+- isGenerated
+- isChampionToken
+
+비교:
+
+EQ
+NE
+LT
+LTE
+GT
+GTE
+
+지원.
+
+기존 tag helper를 재사용.
+
+카드 이름 hardcoding 금지.
+
+==================================================
+2. SORT + TAKE
+==================================================
+
+다음 효과를 Script로 표현할 수 있어야 한다.
+
+"상대 손에서 비용이 가장 높은 카드 1장"
+
+예:
+
+SELECT OPPONENT_HAND
+→ SORT currentCost DESC
+→ TAKE 1
+
+최소 정렬 stat:
+
+- cost
+- attack
+- health
+
+ASC / DESC 지원.
+
+동률 처리 규칙은 deterministic해야 한다.
+
+==================================================
+3. RANDOM selector
+==================================================
+
+SELECT/FILTER 결과에서 RANDOM selection을 지원한다.
+
+반드시 기존 deterministic RNG 사용.
+
+Math.random() 금지.
+
+최소:
+
+- cardPool
+- hand
+- deck
+- board
+- graveyard
+
+에서 사용 가능.
+
+Online에서 hidden zone RANDOM은 서버에서만 resolution.
+
+클라이언트가 상대 hand/deck identity를 알 필요가 없어야 한다.
+
+==================================================
+4. ADJACENT_EMPTY_SLOTS
+==================================================
+
+SCRIPT_V1에서도 source card 기준
+좌우 인접 빈 슬롯을 표현 가능하게 한다.
+
+공식 semantics:
+
+- 왼쪽 인접 슬롯이 존재하고 비어 있으면 대상
+- 오른쪽 인접 슬롯이 존재하고 비어 있으면 대상
+- 최대 2개
+- 한쪽만 비면 1개
+- 둘 다 차 있으면 0개
+- edge slot에서는 존재하는 쪽만
+
+SUMMON과 조합 가능해야 한다.
+
+==================================================
+5. Step Result Reference
+==================================================
+
+SAME_TARGET을 단순 특례로 유지하지 말고
+가능하면 generic Script step-result reference를 구현한다.
+
+예:
+
+{
+  "id": "summon-allies",
+  ...
+}
+
+다음 step:
+
+target/resultSource = "summon-allies"
+
+처럼 앞 단계의 실제 성공 결과를 참조.
+
+최소 지원:
+
+- 성공적으로 SUMMON된 CardInstance들
+- 실제 DAMAGE target
+- 실제 BUFF target
+- 실제 DESTROY/RETIRE target
+- selector 결과
+
+다른 resolution의 결과가 섞이면 안 된다.
+
+resolution 종료 후 cleanup.
+
+==================================================
+6. SAME_TARGET backward compatibility
+==================================================
+
+기존 Structured Effect의 SAME_TARGET 동작은 유지한다.
+
+SCRIPT_V1에서는 generic result reference로 normalize할 수 있다면 그렇게 한다.
+
+기존 카드 데이터 migration은 하지 마.
+
+==================================================
+7. PLAYER_CHOICE Script continuation
+==================================================
+
+가장 중요하다.
+
+SCRIPT_V1 selector가 PLAYER_CHOICE를 요구하면:
+
+Script 실행
+→ valid target 계산
+→ targetingState
+→ client target selection
+→ SELECT_EFFECT_TARGET
+→ serializable continuation
+→ Script resume
+
+까지 실제로 작동해야 한다.
+
+UI가 Script logic을 소유하지 않는다.
+
+GameState/continuation이 authoritative.
+
+새로고침/reconnect/resync 후에도
+pending PLAYER_CHOICE가 복구 가능해야 한다.
+
+==================================================
+8. PLAYER_CHOICE 후 Result 유지
+==================================================
+
+예:
+
+Step A:
+PLAYER_CHOICE로 적 선수 1장 선택
+
+Step B:
+그 선택 대상에게 DAMAGE
+
+Step C:
+같은 대상에게 ADD_KEYWORD
+
+가 가능해야 한다.
+
+continuation 전/후에도 step result가 유지되어야 한다.
+
+==================================================
+9. SUMMON → 후속 효과
+==================================================
+
+아래 exact effect가 SCRIPT_V1으로 완전히 표현되고 실행되어야 한다.
+
+"등장: 이 카드 양옆의 빈 슬롯에 각각 무작위 선수 카드 1장을 소환하고,
+그렇게 소환된 선수들에게 도발을 부여한다."
+
+공식 의미:
+
+Trigger:
+ENTER_FIELD
+
+Step 1:
+source 기준 ADJACENT_EMPTY_SLOTS
+
+각 빈 슬롯마다:
+cardPool
+→ FILTER cardType=WRESTLER
+→ RANDOM 1
+→ SUMMON
+
+각 슬롯은 독립 deterministic random.
+
+Step 2:
+Step 1에서 실제 성공적으로 SUMMON된 CardInstance 전체
+→ ADD_KEYWORD TAUNT
+
+둘 다 비었으면 최대 2장.
+한쪽이면 1장.
+둘 다 차면 0장.
+
+0장이어도 exception 없음.
+
+==================================================
+10. 상대 패 최고 비용 카드 변경
+==================================================
+
+다음 exact effect를 실제 Script로 지원:
+
+"공격할 때 상대 손에서 비용이 가장 높은 카드 1장의 비용을 2 증가시킨다."
+
+구성:
+
+Trigger
+→ SELECT OPPONENT_HAND
+→ SORT cost DESC
+→ TAKE 1
+→ MODIFY_COST +2
+
+hidden information은 서버에서만 처리.
+
+상대 클라이언트에 다른 패 identity가 노출되면 안 된다.
+
+==================================================
+11. 무덤 랜덤 부활
+==================================================
+
+다음 exact effect 지원:
+
+"내 무덤에서 비용 3 이하 선수 하나를 무작위로 부활시킨다."
+
+SELECT MY_GRAVEYARD
+→ FILTER cardType=WRESTLER
+→ FILTER cost <=3
+→ RANDOM 1
+→ REVIVE
+
+기존 REVIVE semantics를 재사용.
+
+REVIVE가 일반 ENTER_FIELD trigger를 잘못 발생시키지 않도록 한다.
+
+==================================================
+12. Event History Query
+==================================================
+
+최소 CURRENT_TURN / CURRENT_RESOLUTION 범위에서
+event history를 query할 수 있게 한다.
+
+목표 effect:
+
+"이번 턴에 RETIRE된 선수들의 공격력 합만큼 상대 챔피언에게 피해"
+
+event snapshot/attribution을 사용.
+
+현재 event data에 없는 값을 추측하지 마.
+
+==================================================
+13. Queued Effect
+==================================================
+
+기존 queuedEffect 구조를 일반화해서 최소:
+
+"다음에 내가 사용하는 Technique의 비용을 0으로 만든다."
+
+같은 effect를 Script로 표현 가능하게 한다.
+
+새 scheduler를 만들지 말고
+기존 event/queued continuation을 재사용.
+
+==================================================
+14. Cost Rule
+==================================================
+
+비용은 0G 허용.
+
+generated/token 포함:
+
+Math.max(0, ...)
+
+유지.
+
+1G minimum으로 되돌리지 마.
+
+==================================================
+15. ENTER_FIELD 규칙
+==================================================
+
+공식 규칙 유지:
+
+ENTER_FIELD / 등장:
+WRESTLER PLAY_FROM_HAND에서만.
+
+SUMMON
+REVIVE
+Champion Token deploy
+
+에서는 일반 등장 효과 자동 발동 금지.
+
+==================================================
+16. Admin AI Compiler 업데이트
+==================================================
+
+POST /api/admin/effects/generate가
+새 SCRIPT_V1 capability를 정확히 이해하도록 한다.
+
+AI context/schema에 추가:
+
+- FILTER
+- SORT
+- TAKE
+- RANDOM
+- ADJACENT_EMPTY_SLOTS
+- step result reference
+- PLAYER_CHOICE
+- REVIVE
+- event history
+- queued effect
+
+AI가 존재하지 않는 비슷한 명칭을 invent하지 못하게 한다.
+
+==================================================
+17. Actual Provider 검증
+==================================================
+
+stub test만으로 완료 처리 금지.
+
+OPENAI_API_KEY가 있는 Replit 환경에서는
+최소 1회의 bounded actual-provider smoke batch를 실행한다.
+
+다음 자연어 각각이:
+
+OpenAI
+→ JSON
+→ parse
+→ canonicalization
+→ Script validator
+
+를 통과하는지 확인.
+
+A.
+"등장: 적 챔피언에게 2 피해를 준다."
+
+B.
+"이 카드가 죽으면 내 무덤의 좀비 수만큼 내 챔피언을 회복한다."
+
+C.
+"공격할 때 상대 손에서 비용이 가장 높은 카드 1장의 비용을 2 증가시킨다."
+
+D.
+"이 카드 양옆의 빈 슬롯에 각각 무작위 선수 하나를 소환하고, 그렇게 소환된 선수들에게 도발을 부여한다."
+
+E.
+"내 무덤에서 비용 3 이하 선수 하나를 무작위로 부활시킨다."
+
+Provider smoke 때문에 자동 retry loop를 만들지 마.
+
+사용자가 명시적으로 Admin Generate를 누르지 않는 runtime에서는
+provider calls = 0 유지.
+
+==================================================
+18. Runtime 비용 경계
+==================================================
+
+반드시 계속 검증:
+
+Admin Generate 1회 = provider 최대 1회
+
+Admin Save = 0
+Script Validation = 0
+AI Match = 0
+Online Match = 0
+Card Effect Runtime = 0
+PLAYER_CHOICE continuation = 0
+Reconnect/Resync = 0
+
+provider module을 game runtime에서 import하지 마.
+
+==================================================
+19. 실제 Engine Execution Test
+==================================================
+
+단순 validator PASS가 아니라
+실제 GameState 변화까지 테스트한다.
+
+반드시:
+
+Action
+→ Event
+→ GameState
+
+확인.
+
+특히:
+
+A.
+PLAYER_CHOICE
+→ 선택
+→ continuation resume
+→ DAMAGE
+
+B.
+ADJACENT_EMPTY_SLOTS
+→ RANDOM SUMMON
+→ result reference
+→ TAUNT
+
+C.
+OPPONENT_HAND
+→ SORT
+→ TAKE
+→ MODIFY_COST
+
+D.
+GRAVEYARD
+→ FILTER
+→ RANDOM
+→ REVIVE
+
+각각 실제 state transition 확인.
+
+==================================================
+20. Online 테스트
+==================================================
+
+Online server-authoritative 유지.
+
+특히 상대 HAND selector:
+
+서버:
+실제 card identity 접근 가능
+
+클라이언트:
+hidden count만 확인
+
+이어야 한다.
+
+Script execution 때문에 opponent hand/deck identity leak 금지.
+
+randomSeed leak 금지.
+
+==================================================
+21. Complexity Limit
+==================================================
+
+기존 Script limits 유지/확장.
+
+반드시 bounded:
+
+- steps
+- selector results
+- expression depth
+- condition depth
+- continuation depth
+- random selection count
+- generated/summoned card count
+
+무한 loop 구조 금지.
+
+==================================================
+22. 기존 STRUCTURED 호환
+==================================================
+
+기존:
+
+PLAYER_CHOICE
+ADJACENT_EMPTY_SLOTS
+SAME_TARGET
+
+Structured Effect 카드들은 계속 정상 동작해야 한다.
+
+새 SCRIPT_V1을 구현하면서 기존 카드 데이터를
+자동 migration하지 마.
+
+==================================================
+23. 범위
+==================================================
+
+이번 단계에서 UI 전체 redesign 금지.
+
+목표는 Script Engine capability 완성이다.
+
+shop/deck/account/ownership unrelated 변경 금지.
+
+Production DB 수정 금지.
+
+==================================================
+24. 테스트
+==================================================
+
+최소:
+
+- SCRIPT_V1 runtime tests
+- SCRIPT validator tests
+- PLAYER_CHOICE continuation tests
+- deterministic random tests
+- Structured Effect regression
+- targeting tests
+- generation tests
+- saved wrestler tests
+- online sanitizer tests
+- Admin AI tests
+- provider call boundary tests
+
+API/KO typecheck
+API/KO build
+git diff --check
+
+전부 확인.
+
+==================================================
+25. 완료 기준
+==================================================
+
+다음 상태에서는 완료라고 하지 마.
+
+- PLAYER_CHOICE Script 아직 reject
+- ADJACENT_EMPTY_SLOTS Script 아직 reject
+- Step result reference 없음
+- D exact sample NEEDS_CLARIFICATION/INVALID
+- C effect 실제 engine execution 불가
+- E REVIVE 실제 실행 불가
+- actual provider는 미검증
+- runtime provider call이 존재
+
+"첫 bounded slice 완료"로 다시 중단하지 마.
+
+위 핵심 capability까지 실제 작동해야 이번 단계 PASS다.
+
+==================================================
+26. Git
+==================================================
+
+모든 필수 검증 PASS 후:
+
+git status
+git diff
+git diff --check
+
+확인.
+
+이번 작업 관련 파일만 stage.
+
+secret
+OPENAI_API_KEY
+.env
+logs
+temp
+Agent metadata
+
+stage 금지.
+
+git fetch origin
+필요 시 safe rebase
+force push 금지
+
+git push origin main
+
+Production DB/Render 직접 수정 금지.
+
+==================================================
+27. 최종 보고
+==================================================
+
+반드시 다음을 명확히 보고:
+
+- FILTER 구현 여부
+- SORT/TAKE 구현 여부
+- RANDOM 구현 여부
+- ADJACENT_EMPTY_SLOTS Script 지원 여부
+- Step Result Reference 구조
+- PLAYER_CHOICE continuation 구조
+- reconnect/resync continuation 여부
+- REVIVE Script 여부
+- event history query 여부
+- queued effect 여부
+
+그리고 exact A~E 각각:
+
+AI Compiler:
+PASS/FAIL
+
+Script Validator:
+PASS/FAIL
+
+Actual Engine Execution:
+PASS/FAIL
+
+실제 provider smoke:
+PASS/FAIL/UNVERIFIED
+
+추가로:
+
+- runtime provider calls = 0 여부
+- actual provider 호출 횟수
+- 테스트 수 및 결과
+- typecheck/build
+- git diff --check
+- commit hash
+- remote main hash
+- push 성공 여부
+
+를 보고해라.
