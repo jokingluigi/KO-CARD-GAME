@@ -18,21 +18,28 @@ import {
 } from './types';
 
 const BOARD_SLOTS: BoardSlot[] = [0, 1, 2, 3];
+const legalActionsCache = new WeakMap<GameState, Map<string, GameAction[]>>();
 
 function probe(state: GameState, action: GameAction): boolean {
   return executeAction(state, action).success;
 }
 
 export function getLegalActions(state: GameState, playerId: string): GameAction[] {
+  const cachedByPlayer = legalActionsCache.get(state);
+  const cached = cachedByPlayer?.get(playerId);
+  if (cached) return cached;
   if (state.status !== 'IN_PROGRESS' || state.activePlayerId !== playerId) return [];
 
   if (state.targetingState?.active) {
     if (state.targetingState.playerId !== playerId) return [];
-    return state.targetingState.validTargetIds.map((targetId) => ({
+    const actions = state.targetingState.validTargetIds.map((targetId) => ({
       type: 'SELECT_EFFECT_TARGET' as const,
       playerId,
       targetId,
     }));
+    if (cachedByPlayer) cachedByPlayer.set(playerId, actions);
+    else legalActionsCache.set(state, new Map([[playerId, actions]]));
+    return actions;
   }
 
   const player = state.players.find((candidate) => candidate.id === playerId);
@@ -83,6 +90,8 @@ export function getLegalActions(state: GameState, playerId: string): GameAction[
   });
 
   actions.push({ type: 'END_TURN', playerId });
+  if (cachedByPlayer) cachedByPlayer.set(playerId, actions);
+  else legalActionsCache.set(state, new Map([[playerId, actions]]));
   return actions;
 }
 

@@ -7,7 +7,7 @@ import {
   generateCardInstance,
   getRandomCardGenerationCandidates,
 } from './generation';
-import { createTestDeck } from './test-cards';
+import { createDeckFromDefinitionIds, createTestDeck } from './test-cards';
 
 function definition(
   id: string,
@@ -47,6 +47,17 @@ test('생성 카드는 isGenerated가 true이고 CARD_GENERATED 이벤트를 만
     type: 'CARD',
     cardInstanceId: 'source-card',
   });
+  assert.deepEqual(card.lineage, {
+    creationPath: 'TEST_GENERATION',
+    sourceCardInstanceId: 'source-card',
+  });
+});
+
+test('존재하지 않는 덱 CardDefinition은 다른 카드로 조용히 대체하지 않는다', () => {
+  assert.throws(
+    () => createDeckFromDefinitionIds('player-1', ['missing-definition'], [definition('known')]),
+    /CardDefinition을 찾을 수 없습니다/,
+  );
 });
 
 test('일반 토큰과 챔피언 토큰을 따로 관리한다', () => {

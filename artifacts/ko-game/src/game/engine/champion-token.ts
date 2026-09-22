@@ -53,6 +53,7 @@ export function directDeployChampionToken(
     playerId,
     source: { type: 'CHAMPION', championId },
     reason,
+    creationEventIndex: state.events.length,
   });
   const directChampion: CardInstance = {
     ...card,

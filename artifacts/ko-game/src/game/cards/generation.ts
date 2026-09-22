@@ -1,4 +1,5 @@
 import type {
+  CardLineage,
   CardDefinition,
   CardInstance,
   CardInstanceId,
@@ -21,6 +22,8 @@ export interface GenerateCardWithEventOptions extends GenerateCardOptions {
   source?: EventSubject;
   reason?: string;
   sourceContext?: EventAttribution;
+  sourceDefinitionId?: string;
+  creationEventIndex?: number;
 }
 
 export interface RandomCardPoolOptions {
@@ -91,9 +94,17 @@ export function generateCard(
   options: GenerateCardWithEventOptions,
 ): { card: CardInstance; event: GameEvent } {
   const card = generateCardInstance(definition, { ...options, isGenerated: true });
+  const lineage: CardLineage = {
+    creationPath: options.reason ?? 'CARD_EFFECT',
+    ...(options.source?.type === 'CARD' ? { sourceCardInstanceId: options.source.cardInstanceId } : {}),
+    ...(options.source?.type === 'CHAMPION' ? { sourceChampionId: options.source.championId } : {}),
+    ...(options.sourceDefinitionId ? { sourceDefinitionId: options.sourceDefinitionId } : {}),
+    ...(options.sourceContext?.sourceEffectId ? { sourceEffectId: options.sourceContext.sourceEffectId } : {}),
+    ...(options.creationEventIndex === undefined ? {} : { creationEventIndex: options.creationEventIndex }),
+  };
 
   return {
-    card,
+    card: { ...card, lineage },
     event: {
       type: 'CARD_GENERATED',
       playerId: options.playerId,

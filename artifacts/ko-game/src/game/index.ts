@@ -14,6 +14,7 @@ export * from './champions/quests';
 export * from './effects/types';
 export * from './effects/effect-engine';
 export * from './engine/create-initial-game-state';
+export * from './engine/card-definition-validation';
 export * from './engine/board-position';
 export * from './engine/combat';
 export * from './engine/card-status';

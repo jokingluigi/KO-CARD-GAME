@@ -162,10 +162,21 @@ export interface CardInstance {
   isStunned: boolean;
   activeUsedThisTurn: boolean;
   isDirectDeployedChampion: boolean;
+  /** Creation provenance for development diagnostics and event correlation. */
+  lineage?: CardLineage;
   tags?: string[];
   /** Serializable base copies held by this card's CAPTURE action. */
   capturedCards?: CapturedCard[];
   statHistory?: CardStatHistoryEntry[];
+}
+
+export interface CardLineage {
+  creationPath: string;
+  sourceCardInstanceId?: string;
+  sourceDefinitionId?: string;
+  sourceChampionId?: string;
+  sourceEffectId?: string;
+  creationEventIndex?: number;
 }
 
 export interface CapturedCard {

@@ -17,6 +17,7 @@ import {
   championRecordToDefinition,
   createDeterministicRandom,
   createInitialGameState,
+  validateCardDefinitionReferences,
   executeAction,
   getLegalActions,
   startGame,
@@ -136,7 +137,9 @@ function snapshotFromRecord(record: OnlineMatchRecord): OnlineMatchSnapshot {
 }
 
 function stateFromRecord(record: OnlineMatchRecord): GameState {
-  return record.serializedGameState as unknown as GameState;
+  const state = record.serializedGameState as unknown as GameState;
+  validateCardDefinitionReferences(state);
+  return state;
 }
 
 async function persistRuntime(runtime: OnlineMatchRuntime): Promise<void> {

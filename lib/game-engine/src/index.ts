@@ -19,6 +19,9 @@ export {
   createInitialGameState,
 } from "../../../artifacts/ko-game/src/game/engine/create-initial-game-state";
 export {
+  validateCardDefinitionReferences,
+} from "../../../artifacts/ko-game/src/game/engine/card-definition-validation";
+export {
   startGame,
   endTurn,
 } from "../../../artifacts/ko-game/src/game/engine/turn-system";

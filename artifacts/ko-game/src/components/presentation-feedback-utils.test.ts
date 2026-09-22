@@ -68,6 +68,31 @@ test("동일한 퀘스트 완료 이벤트를 재동기화해도 occurrence key�
   assert.deepEqual(resyncedKeys, firstKeys);
 });
 
+test("긴 이벤트 로그도 중복 payload를 고유 key로 선형 처리한다", () => {
+  const events = Array.from({ length: 1_000 }, (_, index) => ({
+    type: "DAMAGE_DEALT" as const,
+    cardInstanceId: "same-target",
+    amount: index % 5,
+  }));
+  const before = performance.now();
+  const keys = events.map((event, index) => presentationEventKey(event, index, events));
+  const optimizedMs = performance.now() - before;
+  const oldBefore = performance.now();
+  const oldKeys = events.map((event, index) => {
+    const fingerprint = JSON.stringify(event);
+    const occurrence = events
+      .slice(0, index)
+      .filter((candidate) => JSON.stringify(candidate) === fingerprint)
+      .length;
+    return `${fingerprint}:${occurrence}`;
+  });
+  const quadraticBaselineMs = performance.now() - oldBefore;
+  console.log(`presentation key benchmark: optimized=${optimizedMs.toFixed(2)}ms baseline=${quadraticBaselineMs.toFixed(2)}ms`);
+  assert.equal(new Set(keys).size, events.length);
+  assert.equal(new Set(oldKeys).size, events.length);
+  assert.deepEqual(presentationEventKey(events[0]!, 0, events), presentationEventKey(events[0]!, 0, events));
+});
+
 test("새 이벤트 배치가 이전 큐 항목과 같은 모양이어도 stable key가 충돌하지 않는다", () => {
   const event = { type: "DAMAGE_DEALT" as const, cardInstanceId: "target", amount: 1 };
   const first = presentationCueDrafts([event], 0, ["match:17"]);

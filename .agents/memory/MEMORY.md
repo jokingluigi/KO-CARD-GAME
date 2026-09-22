@@ -77,3 +77,5 @@
 - [HAND stat and no-target entry](hand-stat-and-no-target-entry.md) — stat listeners are limited to HAND/BOARD and no-target WRESTLER entry choices skip without rejecting the play.
 - [Progress reward policy boundary](progress-reward-policy.md) — live reward values, eligible modes, daily timezone, and attendance streak policy remain configuration until product policy is confirmed.
 - [Main content boundary](main-content-boundary.md) — notices stay escaped plain text; main background/BGM reuse game media with a separate main selection flag.
+- [Online catalog validation](online-catalog-validation.md) — persisted matches must carry the exact CardDefinition catalog used by their instances; reject unknown references instead of rendering a substitute.
+- [Presentation event keys](presentation-event-keys.md) — event-log presentation keys should use append-order identity and a small fingerprint, not repeated deep serialization scans.

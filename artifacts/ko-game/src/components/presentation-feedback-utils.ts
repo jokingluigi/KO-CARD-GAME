@@ -1,4 +1,4 @@
-import type { GameEvent } from "@/game/events/types";
+import type { EventSubject, GameEvent } from "@/game/events/types";
 
 export type PresentationCueKind =
   | "DAMAGE"
@@ -28,13 +28,27 @@ export type PresentationCueDraft = {
 };
 
 /** Stable within a match even when the same event payload occurs more than once. */
-export function presentationEventKey(event: GameEvent, index: number, events: GameEvent[]): string {
-  const fingerprint = JSON.stringify(event);
-  const occurrence = events
-    .slice(0, index)
-    .filter((candidate) => JSON.stringify(candidate) === fingerprint)
-    .length;
-  return `${fingerprint}:${occurrence}`;
+export function presentationEventKey(event: GameEvent, index: number, _events: GameEvent[]): string {
+  const subjectKey = (subject: EventSubject | undefined) => {
+    if (!subject) return "";
+    if (subject.type === "CARD") return `CARD:${subject.cardInstanceId}`;
+    if (subject.type === "PLAYER") return `PLAYER:${subject.playerId}`;
+    if (subject.type === "CHAMPION") return `CHAMPION:${subject.championId}`;
+    return "SYSTEM";
+  };
+  return [
+    index,
+    event.type,
+    event.playerId ?? "",
+    event.cardInstanceId ?? "",
+    event.championId ?? "",
+    event.reason ?? "",
+    event.amount ?? "",
+    event.stat ?? "",
+    event.delta ?? "",
+    subjectKey(event.target),
+    subjectKey(event.source),
+  ].join(":");
 }
 
 function targetIds(event: GameEvent) {

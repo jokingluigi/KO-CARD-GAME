@@ -924,6 +924,8 @@ function applyRandomCardCreation(
       playerId,
       source: { type: 'CARD', cardInstanceId: sourceCard.instanceId },
       reason: effect.action,
+      sourceDefinitionId: sourceCard.definitionId,
+      creationEventIndex: nextState.events.length,
       statModifiers: effect.values?.generatedModifiers
         ? {
             cost: effect.values.generatedModifiers.cost,
@@ -999,6 +1001,8 @@ function applyAdjacentRandomCardCreation(
       playerId,
       source: { type: 'CARD', cardInstanceId: sourceCard.instanceId },
       reason: effect.action,
+      sourceDefinitionId: sourceCard.definitionId,
+      creationEventIndex: currentState.events.length,
     });
     const entered = enterField(
       { ...currentState, events: [...currentState.events, generated.event] },
@@ -1048,6 +1052,8 @@ function applyRandomTargetSummon(
       playerId,
       source: { type: 'CARD', cardInstanceId: sourceCard.instanceId },
       reason: effect.action,
+      sourceDefinitionId: sourceCard.definitionId,
+      creationEventIndex: nextState.events.length,
       isGenerated: true,
       statModifiers: {
         ...(effect.values?.generatedModifiers?.cost !== undefined ? { cost: effect.values.generatedModifiers.cost } : {}),
@@ -1397,7 +1403,9 @@ export function applyEffect(
            source: { type: 'CARD', cardInstanceId: sourceCard.instanceId },
            reason: effect.action,
            sourceContext: sourceContextFor(playerId, sourceCard, triggerContext),
-          isGenerated: true,
+            sourceDefinitionId: sourceCard.definitionId,
+            creationEventIndex: state.events.length,
+            isGenerated: true,
           statModifiers: effect.values?.generatedModifiers
             ? {
                 cost: effect.values.generatedModifiers.cost,

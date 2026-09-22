@@ -137,7 +137,9 @@ export function createDeckFromDefinitionIds(
 ): CardInstance[] {
   return definitionIds.flatMap((definitionId, index) => {
     const definition = definitions.find((candidate) => candidate.id === definitionId);
-    if (!definition) return [];
+    if (!definition) {
+      throw new Error(`덱에 필요한 CardDefinition을 찾을 수 없습니다: ${definitionId}`);
+    }
     return [{
       instanceId: `${playerId}-card-${index + 1}`,
       definitionId: definition.id,
