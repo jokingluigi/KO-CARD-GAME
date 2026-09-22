@@ -75,3 +75,12 @@ test("새 이벤트 배치가 이전 큐 항목과 같은 모양이어도 stable
 
   assert.notEqual(first[0]?.id, second[0]?.id);
 });
+
+test("온라인 viewer의 턴 시작은 YOUR TURN으로 표시한다", () => {
+  const cues = presentationCueDrafts([
+    { type: "TURN_STARTED" as const, playerId: "PLAYER_TWO" },
+    { type: "TURN_STARTED" as const, playerId: "PLAYER_ONE" },
+  ], 0, undefined, "PLAYER_TWO");
+
+  assert.deepEqual(cues.map((cue) => cue.label), ["YOUR TURN", "TURN START"]);
+});

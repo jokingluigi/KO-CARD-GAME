@@ -51,6 +51,7 @@ export function presentationCueDrafts(
   events: GameEvent[],
   startIndex: number,
   eventKeys?: string[],
+  viewerPlayerId?: string,
 ) {
   const drafts: PresentationCueDraft[] = [];
 
@@ -150,7 +151,7 @@ export function presentationCueDrafts(
         drafts.push({
           id,
           kind: "TURN",
-          label: "TURN START",
+          label: viewerPlayerId && event.playerId === viewerPlayerId ? "YOUR TURN" : "TURN START",
           ...target,
           duration: 620,
         });

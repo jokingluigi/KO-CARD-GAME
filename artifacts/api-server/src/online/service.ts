@@ -4,6 +4,7 @@ import {
   cardsTable,
   championsTable,
   db,
+  gameMediaTable,
   onlineMatchesTable,
   usersTable,
   type CardRecord,
@@ -22,6 +23,7 @@ import {
   type ChampionDefinition,
   type GameAction,
   type GameState,
+  type GameMediaCatalog,
 } from "@workspace/game-engine";
 import { loadUserDeck, resolveDeck } from "../routes/decks";
 import { isTestAccountUser } from "../lib/test-account";
@@ -590,12 +592,31 @@ export async function startOnlineMatch(
     throw new Error("두 플레이어의 덱이 더 이상 유효하지 않습니다.");
   }
 
-  const [cards, champions] = await Promise.all([
+  const [cards, champions, media] = await Promise.all([
     db.select().from(cardsTable).where(eq(cardsTable.status, "PUBLISHED")),
     db.select().from(championsTable).where(eq(championsTable.status, "PUBLISHED")),
+    db.select({
+      id: gameMediaTable.id,
+      mediaType: gameMediaTable.mediaType,
+      name: gameMediaTable.name,
+      assetUrl: gameMediaTable.assetUrl,
+      width: gameMediaTable.width,
+      height: gameMediaTable.height,
+      volume: gameMediaTable.volume,
+    }).from(gameMediaTable)
+      .where(eq(gameMediaTable.enabled, true)),
   ]);
   const cardDefinitions = cards.map(toCardDefinition);
   const championDefinitions = champions.map(toChampionDefinition);
+  const mediaCatalog: GameMediaCatalog = {
+    backgrounds: media.filter((item) => item.mediaType === "BACKGROUND") as GameMediaCatalog["backgrounds"],
+    bgms: media.filter((item) => item.mediaType === "BGM") as GameMediaCatalog["bgms"],
+    attackSounds: Object.fromEntries(
+      media
+        .filter((item) => item.mediaType !== "BACKGROUND" && item.mediaType !== "BGM")
+        .map((item) => [item.mediaType, item]),
+    ),
+  };
   const matchId = existingWaitingMatchId ?? randomUUID();
   const snapshot: OnlineMatchSnapshot = {
     player1UserId,
@@ -624,7 +645,7 @@ export async function startOnlineMatch(
   const started = startGame(
     state,
     createDeterministicRandom(matchId),
-    { backgrounds: [], bgms: [], attackSounds: {} },
+    mediaCatalog,
   );
   const turnStartedAt = Date.now();
   const turnDeadlineAt = turnStartedAt + ONLINE_MATCH_CONFIG.turnTimeLimitSeconds * 1000;

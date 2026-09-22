@@ -13,6 +13,7 @@ import {
 } from "@/components/attack-animation-utils";
 import type { CardPlayAnimationState, CardPlayGeometry } from "@/components/card-play-animation-utils";
 import { landingImpactLevel } from "@/components/card-play-animation-utils";
+import { presentationEventKey } from "@/components/presentation-feedback-utils";
 import {
   emptyGameMediaCatalog,
   fetchGameMedia,
@@ -101,8 +102,11 @@ function actualDamage(
 
 function OnlineMatchPage() {
   const { matchId } = useParams<{ matchId: string }>();
-  const [, navigate] = useLocation();
+  const [location, navigate] = useLocation();
   const client = getOnlineLobbyClient();
+  const opponentNickname = typeof window === "undefined"
+    ? null
+    : new URL(location, window.location.origin).searchParams.get("opponent");
   const [connection, setConnection] = useState<OnlineLobbyConnectionState>(client.state);
   const [seat, setSeat] = useState<"PLAYER_ONE" | "PLAYER_TWO" | null>(null);
   const [state, setState] = useState<GameState | null>(null);
@@ -126,7 +130,6 @@ function OnlineMatchPage() {
   const [attackImpactTriggered, setAttackImpactTriggered] = useState(false);
   const [presentationBusy, setPresentationBusy] = useState(false);
   const [matchResultVisible, setMatchResultVisible] = useState(false);
-  const [presentationEpoch, setPresentationEpoch] = useState(0);
   const lastEventSequence = useRef(-1);
   const seatRef = useRef<typeof seat>(null);
   const stateRef = useRef<GameState | null>(null);
@@ -137,7 +140,13 @@ function OnlineMatchPage() {
   const processedAudioEventsRef = useRef(new Set<string>());
   const processedAttackSoundsRef = useRef(new Set<string>());
   const lastAudioEventCountRef = useRef<number | null>(null);
+  const processedQuestAudioRef = useRef(new Set<string>());
   const pendingEntranceAudioRef = useRef<{ url: string; volume: number } | null>(null);
+  const pendingOpponentAttacksRef = useRef<AttackAnimationState[]>([]);
+  const noticeTimerRef = useRef<number | null>(null);
+  const noticeTokenRef = useRef(0);
+  const playAnimationTimerRef = useRef<number | null>(null);
+  const activeBgmKeyRef = useRef<string | null>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -186,7 +195,8 @@ function OnlineMatchPage() {
           setAttackImpactTriggered(false);
           pendingPlayRef.current = null;
           pendingAttackRef.current = null;
-          setPresentationEpoch((current) => current + 1);
+          pendingEntranceAudioRef.current = null;
+          pendingOpponentAttacksRef.current = [];
         }
         setTurnDeadlineAt(message.turnDeadlineAt);
         setServerOffset(message.serverTime - Date.now());
@@ -225,17 +235,19 @@ function OnlineMatchPage() {
         setSeat(nextSeat);
         seatRef.current = nextSeat;
         setState(projected);
-        if (message.type !== "MATCH_ENDED") setNotice(null);
         setVersion("version" in message ? message.version : null);
         setPlayError(null);
         if (message.type === "MATCH_ENDED") setNotice("매치가 종료되었습니다.");
         return;
       }
       if (message.type === "MATCH_CONNECTION_STATUS") {
+        if (message.playerId === seatRef.current) return;
         setConnectionStates((current) => ({
           ...(current ?? { PLAYER_ONE: "CONNECTED", PLAYER_TWO: "CONNECTED" }),
           [message.playerId]: message.status,
         }));
+        const noticeToken = ++noticeTokenRef.current;
+        if (noticeTimerRef.current !== null) window.clearTimeout(noticeTimerRef.current);
         setNotice(
           message.status === "DISCONNECTED_GRACE"
             ? "상대의 연결이 끊어졌습니다. 재접속을 기다리는 중..."
@@ -243,6 +255,10 @@ function OnlineMatchPage() {
               ? "상대의 연결 시간이 초과되었습니다."
               : "상대가 다시 연결되었습니다.",
         );
+        noticeTimerRef.current = window.setTimeout(() => {
+          if (noticeTokenRef.current === noticeToken) setNotice(null);
+          noticeTimerRef.current = null;
+        }, 4_000);
         return;
       }
       if (message.type === "SESSION_REPLACED") {
@@ -265,6 +281,9 @@ function OnlineMatchPage() {
       unsubscribeConnection();
       if (matchId) client.send({ type: "UNSUBSCRIBE", matchId });
       audioManager.stopGameAudio();
+      pendingOpponentAttacksRef.current = [];
+      if (noticeTimerRef.current !== null) window.clearTimeout(noticeTimerRef.current);
+      if (playAnimationTimerRef.current !== null) window.clearTimeout(playAnimationTimerRef.current);
     };
   }, [client, matchId]);
 
@@ -314,9 +333,16 @@ function OnlineMatchPage() {
   }, [matchResultVisible]);
 
   useEffect(() => {
-    const bgm = state && mediaCatalog.bgms.find((item) => item.id === state.bgmId);
-    if (bgm) audioManager.playBgm(bgm.assetUrl, bgm.volume);
-    else audioManager.stopBgm();
+    const bgm = state ? mediaCatalog.bgms.find((item) => item.id === state.bgmId) : undefined;
+    if (!bgm) {
+      if (activeBgmKeyRef.current !== null) audioManager.stopBgm();
+      activeBgmKeyRef.current = null;
+      return;
+    }
+    const key = `${bgm.id}:${bgm.assetUrl}:${bgm.volume}`;
+    if (activeBgmKeyRef.current === key) return;
+    activeBgmKeyRef.current = key;
+    audioManager.playBgm(bgm.assetUrl, bgm.volume);
   }, [mediaCatalog.bgms, state?.bgmId]);
 
   useEffect(() => {
@@ -332,18 +358,25 @@ function OnlineMatchPage() {
 
   useEffect(() => {
     if (!state) return;
-    if (state.latestQuestCompletedChampionId) {
+    for (let index = state.events.length - 1; index >= 0; index -= 1) {
+      const event = state.events[index];
+      if (event.type !== "CHAMPION_QUEST_COMPLETED") continue;
+      const key = presentationEventKey(event, index, state.events);
+      if (processedQuestAudioRef.current.has(key)) break;
+      processedQuestAudioRef.current.add(key);
+      const championId = event.championId ?? state.latestQuestCompletedChampionId;
       const champion = state.players
         .map((player) => player.champion)
-        .find((candidate) => candidate?.id === state.latestQuestCompletedChampionId);
+        .find((candidate) => candidate?.id === championId);
       if (champion?.questCompleteAudioEnabled && champion.questCompleteAudioUrl) {
         audioManager.playQuestComplete(
           champion.questCompleteAudioUrl,
           champion.questCompleteAudioVolume ?? 100,
         );
       }
+      break;
     }
-  }, [state?.latestQuestCompletedChampionId, state?.players]);
+  }, [state]);
 
   useEffect(() => {
     if (!state) return;
@@ -536,6 +569,11 @@ function OnlineMatchPage() {
     if (sound) audioManager.playAttack(sound.assetUrl, sound.volume, attackSoundPitch(animation.currentAttack));
   }
 
+  useEffect(() => {
+    if (attackAnimation || playAnimation || pendingOpponentAttacksRef.current.length === 0) return;
+    setAttackAnimation(pendingOpponentAttacksRef.current.shift() ?? null);
+  }, [attackAnimation, playAnimation]);
+
   if (!resourcesReady || !state || !me || !opponent) {
     return (
       <main className="flex min-h-[100dvh] items-center justify-center bg-black px-6 text-white">
@@ -566,7 +604,6 @@ function OnlineMatchPage() {
         </div>
       )}
       <GameStatePreview
-        key={presentationEpoch}
         state={state}
         selectedCardId={selectedCardId}
         selectedAttackerId={selectedAttackerId}
@@ -597,7 +634,11 @@ function OnlineMatchPage() {
             audioManager.playCardEntrance(pending.url, pending.volume);
             pendingEntranceAudioRef.current = null;
           }
-          window.setTimeout(() => setPlayAnimation(null), 180);
+          if (playAnimationTimerRef.current !== null) window.clearTimeout(playAnimationTimerRef.current);
+          playAnimationTimerRef.current = window.setTimeout(() => {
+            setPlayAnimation(null);
+            playAnimationTimerRef.current = null;
+          }, 180);
         }}
         attackAnimation={attackAnimation}
         attackImpactTriggered={attackImpactTriggered}
@@ -613,9 +654,11 @@ function OnlineMatchPage() {
         onAttackWrestler={handleAttackWrestler}
         onAttackPlayer={handleAttackPlayer}
         onOpponentAttackPresentation={(animation) => {
-          if (attackAnimation || playAnimation) return;
-          setAttackImpactTriggered(false);
-          setAttackAnimation(animation);
+          pendingOpponentAttacksRef.current.push(animation);
+          if (!attackAnimation && !playAnimation) {
+            setAttackImpactTriggered(false);
+            setAttackAnimation(pendingOpponentAttacksRef.current.shift() ?? null);
+          }
         }}
         onSelfPlayPresentation={(card) => {
           const pending = pendingPlayRef.current;
@@ -636,6 +679,8 @@ function OnlineMatchPage() {
           presentationBusyRef.current = busy;
           setPresentationBusy(busy);
         }}
+        presentationPlayerId={me.id}
+        opponentNickname={opponentNickname}
         onReturnToMainMenu={() => navigate(ROUTES.MAIN_MENU)}
       />
       {matchResultVisible && (

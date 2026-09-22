@@ -74,6 +74,8 @@ interface GameStatePreviewProps {
   onCancelEffectTargeting: () => void;
   onEffectTarget: (targetId: string) => void;
   onPresentationBusyChange: (busy: boolean) => void;
+  presentationPlayerId?: string;
+  opponentNickname?: string | null;
   onReturnToAdmin?: () => void;
   onReturnToMainMenu?: () => void;
 }
@@ -111,6 +113,8 @@ export function GameStatePreview({
   onCancelEffectTargeting,
   onEffectTarget,
   onPresentationBusyChange,
+  presentationPlayerId,
+  opponentNickname,
   onReturnToAdmin,
   onReturnToMainMenu,
 }: GameStatePreviewProps) {
@@ -294,7 +298,11 @@ export function GameStatePreview({
         }
       }
       if (event.type === "CARD_PLAYED" && event.cardType === "TECHNIQUE" && event.cardInstanceId) {
-        const technique = previousCards.get(event.cardInstanceId);
+        // The opponent's hand is deliberately projected as card backs. Once a
+        // Technique is played its public instance is in the graveyard, so use
+        // the current snapshot as the presentation source when the previous
+        // snapshot could not contain the hidden card identity.
+        const technique = previousCards.get(event.cardInstanceId) ?? currentCards(state).get(event.cardInstanceId);
         if (technique) {
           const sourceElement = event.playerId === me.id
             ? handCardRefs.current.get(event.cardInstanceId)
@@ -366,7 +374,7 @@ export function GameStatePreview({
         ...leaveAnimations,
       ]);
     }
-    const cues = presentationCueDrafts(newEvents, 0, newEventKeys).map((draft) => ({
+    const cues = presentationCueDrafts(newEvents, 0, newEventKeys, presentationPlayerId).map((draft) => ({
       ...draft,
       ...cuePosition(draft),
     }));
@@ -637,6 +645,9 @@ export function GameStatePreview({
 
             {/* Mirrored opponent HUD */}
             <div className="ko-opponent-hud ml-auto flex w-[180px] flex-col items-end gap-1 md:w-48 md:gap-2">
+                 <span className="max-w-full truncate text-[9px] font-black text-neutral-300 md:text-[11px]" data-testid="text-online-opponent-nickname">
+                   {opponentNickname || "상대"}
+                 </span>
                 <div className="flex items-start gap-2 md:gap-3">
                  <div
                     ref={championRef}

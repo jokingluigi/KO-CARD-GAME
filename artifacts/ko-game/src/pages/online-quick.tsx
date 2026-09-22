@@ -63,7 +63,10 @@ function QuickMatchPage() {
       if (message.type === "MATCH_FOUND") {
         matchFoundRef.current = true;
         joinRequestedRef.current = false;
-        navigate(`${ROUTES.ONLINE_MATCH}/${encodeURIComponent(message.matchId)}`);
+        const opponent = message.opponent?.nickname
+          ? `?opponent=${encodeURIComponent(message.opponent.nickname)}`
+          : "";
+        navigate(`${ROUTES.ONLINE_MATCH}/${encodeURIComponent(message.matchId)}${opponent}`);
       }
       if (message.type === "LOBBY_ERROR" || message.type === "ERROR") {
         joinRequestedRef.current = false;

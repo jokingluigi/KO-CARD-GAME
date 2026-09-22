@@ -117,7 +117,10 @@ function FriendlyMatchPage() {
       if (message.type === "MATCH_STARTING") {
         roomExitRef.current = true;
         pendingRoomActionRef.current = false;
-        navigate(`${ROUTES.ONLINE_MATCH}/${encodeURIComponent(message.matchId)}`);
+        const opponent = message.opponent?.nickname
+          ? `?opponent=${encodeURIComponent(message.opponent.nickname)}`
+          : "";
+        navigate(`${ROUTES.ONLINE_MATCH}/${encodeURIComponent(message.matchId)}${opponent}`);
       }
       if (message.type === "LOBBY_ERROR" || message.type === "ERROR") {
         pendingRoomActionRef.current = false;

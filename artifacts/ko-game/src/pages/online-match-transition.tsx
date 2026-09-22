@@ -76,7 +76,12 @@ function MatchTransitionPage() {
               <p className="mt-2 font-mono text-[0.68rem] text-neutral-600" data-testid="text-match-id">{matchId}</p>
             </div>
             <div className="mt-8 border-t border-neutral-900 pt-5 text-center">
-              <button type="button" data-testid="button-match-continue" onClick={() => navigate(`${ROUTES.ONLINE_MATCH}/${encodeURIComponent(matchId ?? "")}`)} className="ko-online-action inline-flex items-center gap-2 rounded border border-neutral-700 px-4 py-2.5 text-xs font-black text-neutral-300 hover:border-amber-500 hover:text-amber-200">
+              <button type="button" data-testid="button-match-continue" onClick={() => {
+                const nickname = opponent?.nickname
+                  ? `?opponent=${encodeURIComponent(opponent.nickname)}`
+                  : "";
+                navigate(`${ROUTES.ONLINE_MATCH}/${encodeURIComponent(matchId ?? "")}${nickname}`);
+              }} className="ko-online-action inline-flex items-center gap-2 rounded border border-neutral-700 px-4 py-2.5 text-xs font-black text-neutral-300 hover:border-amber-500 hover:text-amber-200">
                 전투 화면 계속
                 <ArrowRight className="h-3.5 w-3.5" aria-hidden="true" />
               </button>
