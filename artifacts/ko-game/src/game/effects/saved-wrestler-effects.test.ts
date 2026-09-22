@@ -166,6 +166,87 @@ test('authoritative 뒷정리맨 정의는 자신이 아닌 다음 아군 선수
   assert.equal(afterNext.state.pendingCardEffects.length, 0);
 });
 
+test('authoritative 매드 펌킨은 같은 CardInstance를 손패로 되돌리고 이번 턴 비용을 1 줄인다', () => {
+  const madPumpkinDefinition = cardRecordToDefinition({
+    id: 'latest-wrestler-12',
+    name: '매드 펌킨',
+    cardType: 'WRESTLER',
+    cost: 2,
+    attack: 2,
+    health: 2,
+    text: '등장:필드에 있는 아군 선수 하나를 선택하여 손으로 되돌립니다. 그 카드의 비용은 이번 턴에 1 감소합니다. (최소 1)',
+    keywords: [],
+    isToken: false,
+    isChampionToken: false,
+    effectId: 'STRUCTURED_EFFECTS_V1',
+    effectConfig: {
+      effects: [{
+        trigger: 'ENTER_FIELD',
+        action: 'MOVE_TO_HAND',
+        target: {
+          zone: 'BOARD',
+          owner: 'SELF',
+          cardType: 'WRESTLER',
+          selection: 'PLAYER_CHOICE',
+          count: 1,
+        },
+        values: { amount: 1, minimum: 1, temporaryCost: true },
+      }],
+    },
+    status: 'PUBLISHED',
+    version: 7,
+    createdAt: '',
+    updatedAt: '',
+    imageAssetId: null,
+    imageUrl: null,
+  });
+  const allyDefinition = definition('매드 펌킨 대상', { effects: [] }, { cost: 5, attack: 4, health: 4 });
+  const ally = { ...card(allyDefinition, 'mad-pumpkin-target'), boardSlot: 1 as const };
+  const state = stateWithPool([madPumpkinDefinition, allyDefinition]);
+  state.players[0].board = [null, ally, null, null];
+
+  const pending = enterField(state, 'player-1', card(madPumpkinDefinition, 'mad-pumpkin'), 0);
+  assert.deepEqual(pending.targetingState?.validTargetIds, [ally.instanceId]);
+
+  const returned = selectEffectTarget(pending, ally.instanceId);
+  const returnedCard = returned.players[0].hand.find((item) => item.instanceId === ally.instanceId);
+  assert.equal(returned.players[0].board[1], null);
+  assert.equal(returnedCard?.instanceId, ally.instanceId);
+  assert.equal(returnedCard?.currentCost, 4);
+  assert.equal(returnedCard?.temporaryCostUntilTurn, state.turn);
+});
+
+test('매드 펌킨 비용 감소는 최소 1을 지키고 WRESTLER가 아닌 카드는 선택 대상이 아니다', () => {
+  const madPumpkinDefinition = definition('매드 펌킨', {
+    effects: [{
+      trigger: 'ENTER_FIELD',
+      action: 'MOVE_TO_HAND',
+      target: { zone: 'BOARD', owner: 'SELF', cardType: 'WRESTLER', selection: 'PLAYER_CHOICE', count: 1 },
+      values: { amount: 1, minimum: 1, temporaryCost: true },
+    }],
+  }, { cost: 2, attack: 2, health: 2 });
+  const allyDefinition = definition('비용 1 선수', { effects: [] }, { cost: 1 });
+  const techniqueDefinition = definition('기술 카드 대상', { effects: [] }, { cardType: 'TECHNIQUE' });
+  const state = stateWithPool([madPumpkinDefinition, allyDefinition, techniqueDefinition]);
+  const ally = { ...card(allyDefinition, 'minimum-cost-target'), boardSlot: 1 as const };
+  state.players[0].board = [null, ally, null, null];
+  const pending = enterField(state, 'player-1', card(madPumpkinDefinition, 'mad-pumpkin-minimum'), 0);
+  const returned = selectEffectTarget(pending, ally.instanceId);
+  assert.equal(returned.players[0].hand.find((item) => item.instanceId === ally.instanceId)?.currentCost, 1);
+
+  const invalidState = stateWithPool([madPumpkinDefinition, techniqueDefinition]);
+  invalidState.players[0].board = [null, { ...card(techniqueDefinition, 'invalid-technique'), boardSlot: 1 }, null, null];
+  const afterInvalid = enterField(
+    invalidState,
+    'player-1',
+    card(madPumpkinDefinition, 'mad-pumpkin-invalid'),
+    0,
+  );
+  assert.equal(afterInvalid.targetingState, undefined);
+  assert.equal(afterInvalid.players[0].board[1]?.instanceId, 'invalid-technique');
+  assert.equal(afterInvalid.players[0].hand.some((item) => item.instanceId === 'invalid-technique'), false);
+});
+
 test('독세아·블랙 마카롱·디 오리진·여울·피 스타 세븐의 보드 효과가 실제 상태를 변경한다', () => {
   const grave = card(saved['여울']!, 'grave');
   const generatedHand = { ...card(saved['독세아']!, 'generated-hand'), isGenerated: true };

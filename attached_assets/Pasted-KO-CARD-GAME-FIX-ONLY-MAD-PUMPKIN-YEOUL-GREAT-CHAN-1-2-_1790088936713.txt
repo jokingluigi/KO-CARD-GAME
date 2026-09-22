@@ -1,0 +1,809 @@
+KO CARD GAME — FIX ONLY:
+MAD PUMPKIN + YEOUL + GREAT CHAN
+
+이번 작업에서는 아래 세 카드/선수 문제만 수정한다.
+
+1. 매드 펌킨
+2. 선수 여울
+3. 그레이트 챤
+
+다른 카드,
+Pandora,
+뒷정리맨,
+Jaeger,
+Online,
+AI Match scheduler,
+Admin AI,
+SCRIPT_V1 신규 기능,
+신규 콘텐츠
+
+는 절대로 수정하지 마.
+
+==================================================
+0. 작업 방식
+==================================================
+
+이번 작업은 QA 보고서가 아니다.
+
+각 카드마다 반드시:
+
+재현
+→ authoritative effect 확인
+→ root cause 확인
+→ 실제 source/config 수정
+→ 전용 regression test
+→ 관련 회귀 테스트
+→ typecheck/build
+
+순서로 끝내라.
+
+세 카드 모두 조사만 한 뒤
+마지막에 조금 수정하는 방식 금지.
+
+반드시:
+
+매드 펌킨 수정+테스트
+→ 여울 수정+테스트
+→ 그레이트 챤 수정+테스트
+
+순서로 진행한다.
+
+==================================================
+PART A — 매드 펌킨
+==================================================
+
+현재 실제 신고:
+
+매드 펌킨 효과에서
+필드의 하스이를 대상으로 선택했지만
+
+- 해당 선수가 손으로 돌아오지 않음
+- 비용 감소도 적용되지 않음
+
+즉 PLAYER_CHOICE까지는 보이지만
+선택 이후 effect resolution이 실패하는 것으로 보인다.
+
+==================================================
+1. 매드 펌킨 공식 효과 확인
+==================================================
+
+먼저 현재 authoritative source에서
+매드 펌킨의 정확한 효과를 확인한다.
+
+우선순위:
+
+1. CardDefinition
+2. effectConfig / SCRIPT / Structured Effect
+3. Admin saved data
+4. seed/catalog
+5. git history
+
+수치나 조건 추측 금지.
+
+공식 설명이:
+
+"선수 하나를 손으로 돌리고
+그 카드의 비용을 X 감소"
+
+형태라면 그 정확한 X를 사용한다.
+
+==================================================
+2. 매드 펌킨 실패 경로 추적
+==================================================
+
+확인:
+
+PLAY / ACTIVE / trigger
+→ PLAYER_CHOICE
+→ selected CardInstance ID
+→ continuation
+→ RETURN / MOVE_TO_HAND
+→ 동일 instance 비용 수정
+
+특히 확인:
+
+- selected target ID가 continuation 이후 사라지는가?
+- target object를 stale snapshot으로 참조하는가?
+- BOARD → HAND 이동 후 새로운 instance가 생성되는가?
+- 비용 감소가 이동 전 instance에만 적용되는가?
+- result reference가 RETURN 결과를 가리키지 못하는가?
+- effect 중간에 target legality 재검증이 실패하는가?
+
+==================================================
+3. 매드 펌킨 기대 동작
+==================================================
+
+공식 대상이 WRESTLER라면:
+
+target 선택
+→ 그 동일 CardInstance가 FIELD에서 제거
+→ 같은 owner HAND로 이동
+→ 그 동일 카드에 공식 비용 감소 적용
+
+카드가 복사되거나
+새 CardInstance로 바뀌면 안 된다
+(현재 엔진의 공식 MOVE semantics가 instance 유지라면).
+
+==================================================
+4. 매드 펌킨 테스트
+==================================================
+
+TEST MP1
+
+필드에 valid Wrestler A 존재.
+
+매드 펌킨 effect
+→ A 선택.
+
+기대:
+
+A FIELD에 없음.
+A HAND에 있음.
+
+==================================================
+
+TEST MP2
+
+A의 원래 비용이 5,
+공식 감소값이 2라면:
+
+HAND의 동일 A 비용 = 3.
+
+실제 공식 수치를 사용.
+
+==================================================
+
+TEST MP3
+
+RETURN 성공했지만
+cost reduction만 빠지는 경우가 없어야 함.
+
+==================================================
+
+TEST MP4
+
+cost reduction은 성공했는데
+FIELD에 카드가 남아 있어서는 안 됨.
+
+==================================================
+
+TEST MP5
+
+invalid/non-targetable 카드 선택 불가.
+
+==================================================
+PART B — 선수 여울
+==================================================
+
+현재 여울 관련 두 개의 실제 실패가 있다.
+
+B1.
+손패 3장 +1/+1 효과가
+어느 카드에도 적용되지 않음.
+
+B2.
+능력 사용 시 2 Gold는 정상 소비되지만,
+다음 자신의 턴에 추가 +1 Gold가 적용되지 않음.
+
+두 문제를 각각 별도로 수정한다.
+
+==================================================
+5. 여울 공식 효과 확인
+==================================================
+
+authoritative definition에서:
+
+- 손패 버프 대상
+- 선택 방식
+- 정확한 카드 수
+- 정확한 ATK/HP 증가값
+- 다음 턴 Gold 증가값
+- 지속 시간
+- 1회성 여부
+
+를 확인.
+
+추측 금지.
+
+==================================================
+6. 여울 손패 버프
+==================================================
+
+현재 신고:
+
+능력 사용 후
+손패 3장 어느 카드에도 +1/+1이 적용되지 않음.
+
+공식 효과가:
+
+"손패의 선수 3장에게 +1/+1"
+
+이라면 실제로 CardInstance stats가 변경되어야 한다.
+
+UI만 숫자를 바꾸면 안 된다.
+
+==================================================
+7. 여울 손패 버프 조사
+==================================================
+
+확인:
+
+ability activation
+→ Gold cost
+→ HAND collection
+→ target/selection/random logic
+→ CardInstance modifiers
+→ GameState update
+
+특히:
+
+- BOARD selector를 잘못 사용하는가?
+- HAND CardInstance modifier가 지원되지 않는가?
+- generated hand state와 canonical hand state가 분리됐는가?
+- modifier가 render 시 무시되는가?
+
+==================================================
+8. 여울 손패 버프 테스트
+==================================================
+
+TEST Y1
+
+손패 WRESTLER 4장.
+
+능력 사용.
+
+공식적으로 3장이 대상이면:
+
+정확히 3장만 buff.
+
+각각:
+
+ATK + 공식 값
+HP + 공식 값.
+
+나머지 1장은 unchanged.
+
+==================================================
+
+TEST Y2
+
+손패가 2장뿐이면
+공식 규칙이 "최대 3장"이라면
+2장 모두 안전하게 처리.
+
+빈 target 때문에 crash 금지.
+
+==================================================
+9. 여울 다음 자기 턴 Gold
+==================================================
+
+현재 신고:
+
+능력 사용 즉시 2 Gold 소비는 정상.
+
+그런데 다음 자신의 턴 시작 시:
+
+3/3
+
+기본 Gold만 지급되고
+공식 +1 Gold가 없음.
+
+==================================================
+10. 여울 Gold는 queued resource effect로 처리
+==================================================
+
+공식 의미가:
+
+"다음 자신의 턴 +1 Gold"
+
+라면
+
+현재 턴 즉시 Gold를 다시 더하는 것이 아니다.
+
+기대:
+
+ability 사용
+→ 공식 ability cost 소비
+→ next-own-turn resource modifier 등록
+→ 상대 턴
+→ owner next turn start
+→ 기본 Gold 계산
+→ +1 적용
+→ modifier 1회 consume
+
+==================================================
+11. 여울 Gold 조사
+==================================================
+
+확인:
+
+- queued modifier 생성 여부
+- owner player ID
+- NEXT_OWNER_TURN_START trigger
+- current/max Gold 중 어느 값이 공식 대상인지
+- turn initialization 순서
+- modifier가 turn change 중 cleanup되는지
+- opponent turn에서 잘못 consume되는지
+- 다음 턴 이후에도 반복되는지
+
+==================================================
+12. 여울 Gold 테스트
+==================================================
+
+TEST Y3
+
+현재 Gold 충분.
+
+여울 ability 사용.
+
+기대:
+
+ability cost 2 정확히 소비.
+
+==================================================
+
+TEST Y4
+
+상대 턴 시작.
+
+여울 bonus Gold 적용 금지.
+
+==================================================
+
+TEST Y5
+
+다음 자신의 턴 시작.
+
+기대:
+
+기본 Gold + 공식 bonus 1.
+
+예:
+
+기본이 3이라면
+공식 규칙에 맞는 4.
+
+==================================================
+
+TEST Y6
+
+그 다음 자신의 턴.
+
+1회성 효과라면 bonus 반복 금지.
+
+==================================================
+PART C — 그레이트 챤
+==================================================
+
+현재 신고:
+
+필드의 그레이트 챤을 선택해도
+Active Ability 실행 UI가 나타나지 않는다.
+
+그리고 다시 선택해도
+
+2/5 → 5/2
+
+스탯 교환이 발생하지 않는다.
+
+==================================================
+13. 그레이트 챤 공식 효과 확인
+==================================================
+
+authoritative definition에서 확인:
+
+- Active ability 여부
+- activation 조건
+- 사용 횟수
+- Gold cost
+- target 필요 여부
+- ATK / HP swap semantics
+
+현재 신고의 2/5 → 5/2가
+공식 효과와 일치하는지 확인.
+
+==================================================
+14. Active UI와 canonical action을 분리해서 확인
+==================================================
+
+두 문제가 있을 수 있다.
+
+A.
+engine에서는 ACTIVE action이 legal인데
+UI button/action menu가 안 보여주는 경우.
+
+B.
+애초에 engine legal actions에
+ACTIVE action이 생성되지 않는 경우.
+
+먼저 구분.
+
+==================================================
+15. 그레이트 챤 기대 동작
+==================================================
+
+공식 효과가 자신의 ATK/HP swap이라면:
+
+2 ATK / 5 HP
+→ Active
+→ 5 ATK / 2 HP
+
+실제 canonical CardInstance의
+현재 stats가 변경되어야 한다.
+
+렌더링만 5/2로 보이면 실패.
+
+==================================================
+16. 현재 HP와 Max/Base Health 주의
+==================================================
+
+ATK/HP swap 구현 시
+현재 health / effective health / base health 개념을
+현재 engine 규칙에 맞게 사용.
+
+임의로 base CardDefinition을 영구 수정하면 안 된다.
+
+예를 들어 현재 2/5 상태에서
+실제 damage를 받아 2/3이라면
+공식 ability가 무엇을 swap하는지
+CardDefinition 설명/기존 semantics로 확인.
+
+추측 금지.
+
+==================================================
+17. 그레이트 챤 테스트
+==================================================
+
+TEST G1
+
+그레이트 챤이 FIELD에 있고
+ability가 사용 가능한 상태.
+
+legal actions에
+ACTIVE/equivalent 존재.
+
+==================================================
+
+TEST G2
+
+UI/component가 해당 legal action을 받아
+실행 가능한 Active control을 표시.
+
+==================================================
+
+TEST G3
+
+2/5 상태에서 Active 실행.
+
+GameState:
+
+5/2
+
+정확히 변경.
+
+==================================================
+
+TEST G4
+
+사용 제한이 있다면
+한 번 사용 후 같은 턴 재사용 불가.
+
+공식 제한이 없다면
+임의 제한 추가 금지.
+
+==================================================
+
+TEST G5
+
+다른 선수에게
+Active UI가 잘못 생기지 않음.
+
+==================================================
+18. 공통 금지사항
+==================================================
+
+카드 이름 hardcoding 금지.
+
+금지 예:
+
+if (card.name === "매드 펌킨")
+if (card.name === "여울")
+if (card.name === "그레이트 챤")
+
+정상 CardDefinition/effect config가
+generic engine path로 실행되도록 한다.
+
+단 각 카드의 authoritative data 자체가 잘못돼 있다면
+그 data를 수정하는 것은 허용.
+
+==================================================
+19. 데이터 누락 처리
+==================================================
+
+effectId/effectConfig/ability가
+development catalog에서 null이라면:
+
+"데이터 없음"
+
+으로 끝내지 마.
+
+확인:
+
+seed
+catalog
+fixture
+Admin saved definition
+git history
+
+기존 authoritative definition을 찾는다.
+
+복구 가능하면 development source에 실제 복구.
+
+Production DB 직접 수정 금지.
+
+Production에 별도 적용이 필요하면:
+
+PRODUCTION_DATA_APPLY_REQUIRED
+
+로 exact record/field/value를 보고.
+
+==================================================
+20. Regression 범위
+==================================================
+
+이번 수정으로 최소 다음 공통 동작이 깨지지 않아야 한다.
+
+- PLAYER_CHOICE
+- CardInstance identity
+- BOARD → HAND movement
+- cost modifier
+- HAND stat modifier
+- queued next-turn effects
+- resource initialization
+- Active legal actions
+- stat modifiers
+
+==================================================
+21. 이번 작업에서 하지 말 것
+==================================================
+
+절대 수정 금지:
+
+- 판도라
+- 판도라 Champion Token
+- 뒷정리맨
+- 예거
+- 흑구슬마스터
+- 조크루이지
+- 데헌
+- 나토마토
+- Online
+- AI scheduler
+- AI Mechanic Compiler
+- SCRIPT_V1 신규 capability
+- 일일 퀘스트
+- 출석
+- 승패 보상
+- 공지
+- Admin redesign
+
+==================================================
+22. Gameplay Verification
+==================================================
+
+브라우저가 가능하면 Development/Test에서:
+
+매드 펌킨:
+target 선택
+→ 손 복귀
+→ 비용 감소
+
+여울:
+ability
+→ hand buff
+→ 상대 턴
+→ 다음 자신의 턴 bonus Gold
+
+그레이트 챤:
+field 선택
+→ Active UI
+→ 실행
+→ stats swap
+
+확인.
+
+브라우저 불가면:
+
+IMPLEMENTATION
+AUTOMATED VERIFICATION
+
+은 계속.
+
+GAMEPLAY만 UNVERIFIED.
+
+==================================================
+23. 자동 검증
+==================================================
+
+필수:
+
+Mad Pumpkin regression
+Yeoul hand buff regression
+Yeoul next-turn Gold regression
+Great Chan Active regression
+
+관련 공통 tests.
+
+그리고:
+
+pnpm run typecheck
+pnpm --filter @workspace/ko-game run build
+git diff --check
+
+API/shared 변경 시
+해당 typecheck/build도 실행.
+
+==================================================
+24. Git
+==================================================
+
+이번 작업 관련 파일만 stage.
+
+금지:
+
+Pasted-*.txt
+.env
+secret
+logs
+temp
+unrelated changes
+
+검증 후 commit.
+
+force push 금지.
+
+push 인증 실패 시 local commit 유지.
+
+==================================================
+25. 최종 보고
+==================================================
+
+MAD PUMPKIN
+
+Official effect:
+...
+
+ROOT CAUSE:
+...
+
+PLAYER_CHOICE:
+PASS / FAIL
+
+Return same CardInstance to hand:
+PASS / FAIL
+
+Cost reduction:
+PASS / FAIL
+
+IMPLEMENTATION:
+PASS / FAIL
+
+
+YEOUL — HAND BUFF
+
+Official effect:
+...
+
+ROOT CAUSE:
+...
+
+Correct cards affected:
+PASS / FAIL
+
+ATK buff:
+PASS / FAIL
+
+HP buff:
+PASS / FAIL
+
+
+YEOUL — NEXT TURN GOLD
+
+ROOT CAUSE:
+...
+
+Ability cost:
+PASS / FAIL
+
+Queued modifier:
+PASS / FAIL
+
+Opponent turn does not consume:
+PASS / FAIL
+
+Next own turn bonus:
+PASS / FAIL
+
+Consumed once:
+PASS / FAIL
+
+
+GREAT CHAN
+
+Official effect:
+...
+
+ROOT CAUSE:
+...
+
+Legal Active action:
+PASS / FAIL
+
+Active UI:
+PASS / FAIL
+
+Action accepted:
+PASS / FAIL
+
+Stats swap:
+PASS / FAIL
+
+GameState actual:
+...
+
+--------------------------------
+
+IMPLEMENTATION:
+PASS / FAIL / BLOCKED
+
+AUTOMATED VERIFICATION:
+PASS / FAIL
+
+GAMEPLAY VERIFICATION:
+PASS / FAIL / UNVERIFIED
+
+PRODUCTION DATA APPLY:
+NONE / REQUIRED
+
+TYPECHECK:
+PASS / FAIL
+
+KO BUILD:
+PASS / FAIL
+
+API BUILD:
+PASS / FAIL / NOT_MODIFIED
+
+git diff --check:
+PASS / FAIL
+
+CHANGED FILES:
+...
+
+COMMIT:
+...
+
+PUSH:
+...
+
+==================================================
+완료 조건
+==================================================
+
+이번 작업은 정확히 다음까지만 완료한다.
+
+1. 매드 펌킨
+   target → hand return → cost reduction
+
+2. 여울
+   hand buff 정상 적용
+
+3. 여울
+   next-own-turn Gold 정상 적용 후 1회 소비
+
+4. 그레이트 챤
+   Active UI → canonical action → actual stats swap
+
+네 가지가 자동 테스트로 증명돼야 한다.
+
+그 외 문제는 수정하지 말고 멈춰라.
