@@ -35,6 +35,7 @@ import {
 import type { OnlineActionPayload } from "@/lib/online-match-protocol";
 import { projectOnlineGameState } from "@/lib/online-game-state";
 import { ROUTES } from "@/lib/routes";
+import { fetchOnlineMatchRewards } from "@/lib/rewards-client";
 
 const TURN_TIME_LIMIT_SECONDS = 90;
 const RESULT_SCREEN_SETTLE_DELAY_MS = 320;
@@ -130,6 +131,7 @@ function OnlineMatchPage() {
   const [attackImpactTriggered, setAttackImpactTriggered] = useState(false);
   const [presentationBusy, setPresentationBusy] = useState(false);
   const [matchResultVisible, setMatchResultVisible] = useState(false);
+  const [matchReward, setMatchReward] = useState<{ amount: number; sourceType: string } | null>(null);
   const lastEventSequence = useRef(-1);
   const seatRef = useRef<typeof seat>(null);
   const stateRef = useRef<GameState | null>(null);
@@ -295,6 +297,25 @@ function OnlineMatchPage() {
     const timeoutId = window.setTimeout(() => setMatchResultVisible(true), RESULT_SCREEN_SETTLE_DELAY_MS);
     return () => window.clearTimeout(timeoutId);
   }, [state?.events.length, state?.status, presentationBusy]);
+
+  useEffect(() => {
+    if (!matchId || state?.status !== "FINISHED") {
+      setMatchReward(null);
+      return;
+    }
+    let cancelled = false;
+    fetchOnlineMatchRewards(matchId)
+      .then((result) => {
+        if (!cancelled) {
+          const grant = result.grants[0];
+          setMatchReward(grant ? { amount: grant.amount, sourceType: grant.sourceType } : null);
+        }
+      })
+      .catch(() => {
+        if (!cancelled) setMatchReward(null);
+      });
+    return () => { cancelled = true; };
+  }, [matchId, state?.status]);
 
   useEffect(() => {
     if (!state || !resourcesReady || state.status !== "IN_PROGRESS") return;
@@ -684,7 +705,7 @@ function OnlineMatchPage() {
         onReturnToMainMenu={() => navigate(ROUTES.MAIN_MENU)}
       />
       {matchResultVisible && (
-        <MatchResultOverlay state={state} onReturnToMainMenu={() => navigate(ROUTES.MAIN_MENU)} />
+        <MatchResultOverlay state={state} reward={matchReward} onReturnToMainMenu={() => navigate(ROUTES.MAIN_MENU)} />
       )}
     </>
   );

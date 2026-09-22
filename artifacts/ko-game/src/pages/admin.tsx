@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Bot, Frame, Gamepad2, Image, LogOut, Music2, Package, ShieldCheck, ShoppingBag, Sparkles, Spade } from "lucide-react";
+import { Bot, CalendarCheck2, Frame, Gamepad2, Image, ListChecks, LogOut, Music2, Package, ShieldCheck, ShoppingBag, Sparkles, Spade } from "lucide-react";
 import { useLocation } from "wouter";
 import { AdminCardManager } from "@/components/admin-card-manager";
 import { AdminChampionManager } from "@/components/admin-champion-manager";
@@ -10,6 +10,7 @@ import { AdminPrismManager } from "@/components/admin-prism-manager";
 import { AdminCardSkinManager } from "@/components/admin-card-skin-manager";
 import { AdminCardFrameManager } from "@/components/admin-card-frame-manager";
 import { AdminAIDeckManager } from "@/components/admin-ai-deck-manager";
+import { AdminRewardsManager } from "@/components/admin-rewards-manager";
 import { fetchCurrentUser, logout } from "@/lib/auth-client";
 import { ROUTES } from "@/lib/routes";
 
@@ -18,8 +19,8 @@ type AdminStatus = "checking" | "forbidden" | "authenticated";
 export default function Admin() {
   const [location, navigate] = useLocation();
   const [status, setStatus] = useState<AdminStatus>("checking");
-  const [section, setSection] = useState<"cards" | "champions" | "packs" | "skins" | "frames" | "shop" | "prism" | "media" | "test" | "ai-decks">(
-    location.endsWith("/packs") ? "packs" : location.endsWith("/shop") ? "shop" : location.endsWith("/prism") ? "prism" : location.endsWith("/skins") ? "skins" : location.endsWith("/card-frames") ? "frames" : location.endsWith("/ai-decks") ? "ai-decks" : "cards",
+  const [section, setSection] = useState<"cards" | "champions" | "packs" | "skins" | "frames" | "shop" | "prism" | "media" | "test" | "ai-decks" | "rewards">(
+    location.endsWith("/packs") ? "packs" : location.endsWith("/shop") ? "shop" : location.endsWith("/prism") ? "prism" : location.endsWith("/skins") ? "skins" : location.endsWith("/card-frames") ? "frames" : location.endsWith("/ai-decks") ? "ai-decks" : location.endsWith("/rewards") ? "rewards" : "cards",
   );
 
   useEffect(() => {
@@ -186,10 +187,20 @@ export default function Admin() {
             <Sparkles className="h-4 w-4" />
             카드 제작 설정
           </button>
+          <button
+            type="button"
+            onClick={() => setSection("rewards")}
+            className={`mt-2 flex w-full items-center gap-3 rounded border px-3 py-3 text-left text-sm font-black ${section === "rewards" ? "border-primary/60 bg-primary/10 text-primary" : "border-transparent text-neutral-400"}`}
+          >
+            <span className="flex items-center gap-1"><ListChecks className="h-4 w-4" /><CalendarCheck2 className="h-3.5 w-3.5" /></span>
+            진행도·보상 관리
+          </button>
         </nav>
 
         <section className="min-w-0 flex-1">
-           {section === "ai-decks"
+           {section === "rewards"
+             ? <AdminRewardsManager onUnauthorized={() => setStatus("forbidden")} />
+             : section === "ai-decks"
              ? <AdminAIDeckManager onUnauthorized={() => setStatus("forbidden")} />
              : section === "cards"
             ? <AdminCardManager onUnauthorized={() => setStatus("forbidden")} />

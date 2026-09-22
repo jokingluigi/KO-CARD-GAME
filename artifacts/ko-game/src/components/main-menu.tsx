@@ -1,4 +1,4 @@
-import { Bot, Globe2, Gift, Layers3, LogOut, ShoppingBag, Library } from "lucide-react";
+import { Bot, CalendarCheck2, ClipboardList, Globe2, Gift, Layers3, LogOut, ShoppingBag, Library } from "lucide-react";
 import { useState } from "react";
 import { useLocation } from "wouter";
 import type { AuthUser } from "@/lib/auth-client";
@@ -42,6 +42,16 @@ const menuItems = [
     label: "내 팩",
     description: "보유한 팩을 열어 보상을 확인합니다",
     icon: Gift,
+  },
+  {
+    label: "일일 퀘스트",
+    description: "오늘의 퀘스트를 완료하고 보상을 받습니다",
+    icon: ClipboardList,
+  },
+  {
+    label: "출석 보드",
+    description: "매일 출석하고 단계별 보상을 받습니다",
+    icon: CalendarCheck2,
   },
 ] as const;
 
@@ -102,6 +112,14 @@ export function MainMenu({ onComingSoon, onDeckEdit, onAiMatch, user, onLogout }
                 }
                 if (label === "컬렉션") {
                   navigate(ROUTES.COLLECTION);
+                  return;
+                }
+                if (label === "일일 퀘스트") {
+                  navigate(ROUTES.DAILY_QUESTS);
+                  return;
+                }
+                if (label === "출석 보드") {
+                  navigate(ROUTES.ATTENDANCE);
                   return;
                 }
                 setNotice(`${label}은 준비 중입니다.`);

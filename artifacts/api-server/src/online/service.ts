@@ -6,6 +6,7 @@ import {
   db,
   gameMediaTable,
   onlineMatchesTable,
+  rewardSettingsTable,
   usersTable,
   type CardRecord,
   type ChampionRecord,
@@ -27,6 +28,9 @@ import {
 } from "@workspace/game-engine";
 import { loadUserDeck, resolveDeck } from "../routes/decks";
 import { isTestAccountUser } from "../lib/test-account";
+import { processMatchEventsForDailyQuests } from "../lib/daily-quest-service";
+import { grantReward, isFinishedMatchRewardEligible } from "../lib/reward-service";
+import { logger } from "../lib/logger";
 import { toServerAction } from "./action-parser";
 import {
   sequencedEventsForViewer,
@@ -178,6 +182,72 @@ async function persistRuntime(runtime: OnlineMatchRuntime): Promise<void> {
   if (!updated) {
     throw new Error("온라인 매치 상태 저장에 실패했습니다.");
   }
+  if (finished) {
+    try {
+      await settleFinishedOnlineMatch(runtime);
+    } catch (error) {
+      logger.error({ error, matchId: runtime.matchId }, "온라인 매치 보상/일일 퀘스트 정산에 실패했습니다.");
+    }
+  }
+}
+
+async function settleFinishedOnlineMatch(runtime: OnlineMatchRuntime): Promise<void> {
+  const winnerUserId = runtime.state.winnerId === "PLAYER_TWO"
+    ? runtime.snapshot.player2UserId
+    : runtime.state.winnerId === "PLAYER_ONE"
+      ? runtime.snapshot.player1UserId
+      : null;
+  if (!isFinishedMatchRewardEligible(runtime.state.status, winnerUserId, runtime.resultReason) || !winnerUserId) return;
+
+  const settings = await db.select().from(rewardSettingsTable).where(inArray(
+    rewardSettingsTable.key,
+    ["MATCH_ONLINE_WIN", "MATCH_ONLINE_LOSS"],
+  ));
+  const winSetting = settings.find((setting) => setting.key === "MATCH_ONLINE_WIN");
+  const lossSetting = settings.find((setting) => setting.key === "MATCH_ONLINE_LOSS");
+  const loserUserId = winnerUserId === runtime.snapshot.player1UserId
+    ? runtime.snapshot.player2UserId
+    : runtime.snapshot.player1UserId;
+
+  await db.transaction(async (tx) => {
+    await processMatchEventsForDailyQuests(
+      runtime.snapshot.player1UserId,
+      "PLAYER_ONE",
+      runtime.matchId,
+      runtime.state,
+      0,
+      tx,
+    );
+    await processMatchEventsForDailyQuests(
+      runtime.snapshot.player2UserId,
+      "PLAYER_TWO",
+      runtime.matchId,
+      runtime.state,
+      0,
+      tx,
+    );
+
+    if (winSetting?.enabled && winSetting.rewardType === "CURRENCY" && winSetting.amount > 0) {
+      await grantReward({
+        userId: winnerUserId,
+        sourceType: "MATCH_ONLINE_WIN",
+        sourceId: runtime.matchId,
+        rewardType: winSetting.rewardType,
+        amount: winSetting.amount,
+        metadata: { resultReason: runtime.resultReason ?? "GAME_FINISHED" },
+      }, tx);
+    }
+    if (lossSetting?.enabled && lossSetting.rewardType === "CURRENCY" && lossSetting.amount > 0) {
+      await grantReward({
+        userId: loserUserId,
+        sourceType: "MATCH_ONLINE_LOSS",
+        sourceId: runtime.matchId,
+        rewardType: lossSetting.rewardType,
+        amount: lossSetting.amount,
+        metadata: { resultReason: runtime.resultReason ?? "GAME_FINISHED" },
+      }, tx);
+    }
+  });
 }
 
 async function persistConnectionState(runtime: OnlineMatchRuntime): Promise<void> {
@@ -272,7 +342,15 @@ export async function getRuntime(matchId: string): Promise<OnlineMatchRuntime | 
   const restore = (async () => {
     const record = await getOnlineMatchRecord(matchId);
     if (!record || (record.status !== "ACTIVE" && record.status !== "ENDED")) return null;
-    return hydrateRuntime(record);
+    const runtime = await hydrateRuntime(record);
+    if (record.status === "ENDED" && runtime.state.status === "FINISHED") {
+      try {
+        await settleFinishedOnlineMatch(runtime);
+      } catch (error) {
+        logger.error({ error, matchId }, "저장된 종료 매치 보상/일일 퀘스트 재정산에 실패했습니다.");
+      }
+    }
+    return runtime;
   })();
   runtimeRestores.set(matchId, restore);
   try {

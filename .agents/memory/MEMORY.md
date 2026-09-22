@@ -75,3 +75,4 @@
 - [SCRIPT_V1 event history](script-history-boundary.md) — bounded event queries are declarative script steps whose numeric results feed later effects.
 - [Targeted wrestler effect semantics](targeted-wrestler-effect-semantics.md) — Dehun reacts from HAND only; Natomato's combo attack is temporary so permanent attack modifiers survive turn end.
 - [HAND stat and no-target entry](hand-stat-and-no-target-entry.md) — stat listeners are limited to HAND/BOARD and no-target WRESTLER entry choices skip without rejecting the play.
+- [Progress reward policy boundary](progress-reward-policy.md) — live reward values, eligible modes, daily timezone, and attendance streak policy remain configuration until product policy is confirmed.

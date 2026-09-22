@@ -18,6 +18,9 @@ import testAuthRouter from "./test-auth";
 import aiDecksRouter from "./ai-decks";
 import adminAiDecksRouter from "./admin-ai-decks";
 import onlineMatchesRouter from "./online-matches";
+import dailyQuestsRouter from "./daily-quests";
+import attendanceRouter from "./attendance";
+import adminRewardsRouter from "./admin-rewards";
 
 const router: IRouter = Router();
 
@@ -40,5 +43,8 @@ router.use("/admin/card-skins", adminCardSkinsRouter);
 router.use("/ai-decks", aiDecksRouter);
 router.use("/admin/ai-decks", adminAiDecksRouter);
 router.use("/online-matches", onlineMatchesRouter);
+router.use("/daily-quests", dailyQuestsRouter);
+router.use("/attendance", attendanceRouter);
+router.use("/admin/rewards", adminRewardsRouter);
 
 export default router;

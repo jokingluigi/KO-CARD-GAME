@@ -9,5 +9,7 @@ export const ROUTES = {
   ONLINE_QUICK: "/online/quick",
   ONLINE_FRIENDLY: "/online/friendly",
   ONLINE_MATCH: "/online/match",
+  DAILY_QUESTS: "/daily-quests",
+  ATTENDANCE: "/attendance",
   ADMIN: "/admin",
 } as const;

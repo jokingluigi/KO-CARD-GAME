@@ -30,9 +30,11 @@ function resultReason(state: GameState, playerId: string) {
 export function MatchResultOverlay({
   state,
   onReturnToMainMenu,
+  reward,
 }: {
   state: GameState;
   onReturnToMainMenu: () => void;
+  reward?: { amount: number; sourceType: string } | null;
 }) {
   const player = state.players[0];
   const isVictory = state.winnerId === player?.id;
@@ -61,6 +63,11 @@ export function MatchResultOverlay({
         <p className="mt-6 text-sm leading-6 text-neutral-300">
           {reason}
         </p>
+        {reward && (
+          <p className="mt-5 rounded border border-amber-300/30 bg-black/30 px-4 py-3 text-sm font-black text-amber-200">
+            +{reward.amount.toLocaleString()} 크레딧 지급
+          </p>
+        )}
         <button
           type="button"
           onClick={onReturnToMainMenu}

@@ -1,4 +1,6 @@
 import { Router, type Request, type Response } from "express";
+import { and, eq, inArray } from "drizzle-orm";
+import { db, onlineMatchesTable, rewardGrantsTable } from "@workspace/db";
 import { getAuthenticatedUser } from "../lib/auth";
 import {
   applyMatchAction,
@@ -73,6 +75,39 @@ router.get("/active", async (request, response) => {
       ? { id: match.id, status: match.status, stateVersion: match.stateVersion }
       : null,
   });
+});
+
+router.get("/:matchId/rewards", async (request, response) => {
+  const user = await requireUser(request, response);
+  if (!user) return;
+  const [match] = await db.select({
+    player1UserId: onlineMatchesTable.player1UserId,
+    player2UserId: onlineMatchesTable.player2UserId,
+    status: onlineMatchesTable.status,
+    winnerUserId: onlineMatchesTable.winnerUserId,
+  }).from(onlineMatchesTable)
+    .where(eq(onlineMatchesTable.id, request.params.matchId))
+    .limit(1);
+  if (!match || (match.player1UserId !== user.id && match.player2UserId !== user.id)) {
+    response.status(404).json({ message: "매치를 찾을 수 없습니다." });
+    return;
+  }
+  if (match.status === "ENDED") {
+    await getRuntime(request.params.matchId);
+  }
+  const grants = await db.select({
+    sourceType: rewardGrantsTable.sourceType,
+    amount: rewardGrantsTable.amount,
+    rewardType: rewardGrantsTable.rewardType,
+    balanceAfter: rewardGrantsTable.balanceAfter,
+    createdAt: rewardGrantsTable.createdAt,
+  }).from(rewardGrantsTable)
+    .where(and(
+      eq(rewardGrantsTable.userId, user.id),
+      eq(rewardGrantsTable.sourceId, request.params.matchId),
+      inArray(rewardGrantsTable.sourceType, ["MATCH_ONLINE_WIN", "MATCH_ONLINE_LOSS"]),
+    ));
+  response.json({ status: match.status, winnerUserId: match.winnerUserId, grants });
 });
 
 router.post("/:matchId/join", async (request, response) => {

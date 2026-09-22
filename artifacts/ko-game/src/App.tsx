@@ -14,6 +14,8 @@ import Online from '@/pages/online';
 import OnlineQuick from '@/pages/online-quick';
 import OnlineFriendly from '@/pages/online-friendly';
 import OnlineMatch from '@/pages/online-match';
+import DailyQuests from '@/pages/daily-quests';
+import Attendance from '@/pages/attendance';
 import {
   Route,
   Switch,
@@ -34,8 +36,11 @@ function Router() {
         <Route path="/admin/skins" component={Admin} />
         <Route path="/admin/card-frames" component={Admin} />
         <Route path="/admin/ai-decks" component={Admin} />
+        <Route path="/admin/rewards" component={Admin} />
         <Route path="/ai-match" component={Home} />
         <Route path="/online/match/:matchId" component={OnlineMatch} />
+        <Route path="/daily-quests" component={DailyQuests} />
+        <Route path="/attendance" component={Attendance} />
         <Route path="/online/quick" component={OnlineQuick} />
         <Route path="/online/friendly" component={OnlineFriendly} />
         <Route path="/online" component={Online} />
