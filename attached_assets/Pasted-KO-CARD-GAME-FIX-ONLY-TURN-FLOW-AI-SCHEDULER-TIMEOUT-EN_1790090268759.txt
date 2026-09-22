@@ -1,0 +1,972 @@
+KO CARD GAME — FIX ONLY:
+TURN FLOW + AI SCHEDULER + TIMEOUT + ENDGAME
+
+이번 작업에서는 아래 문제만 수정한다.
+
+1. 상대 예거가 Quest 완료 후 AI 턴에서 멈추는 문제
+2. 예거 Champion Ability 사용 후 END_TURN이 안 되는 문제
+3. AI가 턴 타이머가 거의 끝날 때까지 행동하지 않는 문제
+4. legal action이 없는데도 턴이 자동으로 진행되지 않는 문제
+5. timeout으로 턴이 넘어갈 때 필드 카드가 손으로 돌아오는 문제
+6. AI Match 패배 후 Champion이 1 HP로 되살아나는 문제
+7. 결과 화면에 HP가 -1/30처럼 표시되는 문제
+
+이번 작업에서는 위 7개만 다룬다.
+
+카드 효과,
+Pandora,
+Champion Token,
+뒷정리맨,
+매드 펌킨,
+여울,
+그레이트 챤,
+흑구슬마스터,
+조크루이지,
+데헌,
+나토마토,
+Online presentation,
+Admin,
+AI Mechanic Compiler,
+신규 기능
+
+은 수정하지 마.
+
+==================================================
+0. FIX-FIRST
+==================================================
+
+이번 작업은 QA 보고서가 아니다.
+
+반드시:
+
+재현
+→ root cause
+→ 실제 수정
+→ 전용 regression
+→ integration regression
+→ typecheck/build
+
+순서로 처리한다.
+
+브라우저가 없다고 수정 중단 금지.
+
+"확인했지만 재현하지 못했습니다"
+"UNVERIFIED"
+
+만 남기고 종료 금지.
+
+==================================================
+PART A — 예거 Quest 완료 후 AI 정지
+==================================================
+
+현재 실제 재현:
+
+상대 AI 예거가 Quest를 완료.
+
+"상대의 퀘스트 성공!"
+
+연출이 표시되고
+연출이 사라진 뒤에도
+
+상대 턴에서 AI가 더 이상 행동하지 않는다.
+
+실제 관찰:
+
+- 카드 사용 없음
+- 공격 없음
+- END_TURN 없음
+- 5초 이상 정지
+- turn timer는 계속 감소
+
+이 문제를 최우선으로 수정한다.
+
+==================================================
+1. Quest 완료 이후 AI scheduler 전체 경로 추적
+==================================================
+
+확인:
+
+AI action
+→ Quest progress
+→ Quest complete
+→ reward
+→ completion event
+→ presentation state
+→ AI action scheduler resume
+→ next legal action / END_TURN
+
+특히:
+
+- pendingQuestReward
+- pendingEffect
+- pendingContinuation
+- targetingState
+- presentationBusy
+- animation lock
+- action lock
+- scheduler token
+- AI pending promise
+- turn generation/version
+
+중 무엇이 stale 상태로 남는지 확인.
+
+==================================================
+2. Presentation이 AI engine을 막으면 안 됨
+==================================================
+
+Quest 완료 애니메이션 자체가
+canonical turn engine을 영구 block하면 안 된다.
+
+필요한 presentation delay가 있다면:
+
+presentation 종료
+→ scheduler resume
+
+가 반드시 발생.
+
+client animation state와
+server/game engine state를 혼동하지 마.
+
+==================================================
+3. 예거 Quest regression
+==================================================
+
+TEST JQ1
+
+AI 예거 Quest = 4/5.
+
+AI action으로 조건 달성.
+
+기대:
+
+5/5
+→ Quest Complete
+→ Reward 정확히 1회.
+
+==================================================
+
+TEST JQ2
+
+Quest completion 이후:
+
+pending continuation = none
+targeting state = none
+stale effect frame = none
+
+이어야 함.
+
+==================================================
+
+TEST JQ3
+
+Quest complete 후
+AI가 legal action이 있다면
+다음 action을 정상 수행.
+
+==================================================
+
+TEST JQ4
+
+추가 legal action이 없다면
+AI가 정상 END_TURN.
+
+==================================================
+
+TEST JQ5
+
+Quest animation/presentation state가 종료된 뒤
+AI scheduler가 다시 wake/resume되는지 확인.
+
+==================================================
+PART B — 예거 Ability 후 END_TURN 불가
+==================================================
+
+현재 신고:
+
+예거 Champion Ability 사용 후
+END_TURN이 먹히지 않는 경우가 있다.
+
+때로:
+
+공격을 한 뒤에야 정상화되거나
+다음 턴까지 pending 상태가 남는다.
+
+==================================================
+4. END_TURN legality 조사
+==================================================
+
+Ability 완료 후 확인:
+
+- targetingState
+- pending effect
+- continuation
+- ability resolution frame
+- legalAction cache
+- active player
+- presentation lock
+
+Ability resolution이 끝났으면
+END_TURN은 정상 legal이어야 한다.
+
+==================================================
+5. 예거 Ability regression
+==================================================
+
+TEST JA1
+
+예거 Ability 사용
+→ resolution 완료
+→ END_TURN 제출.
+
+기대:
+
+accepted.
+
+==================================================
+
+TEST JA2
+
+공격을 하지 않아도
+END_TURN 가능.
+
+==================================================
+
+TEST JA3
+
+실제 unresolved PLAYER_CHOICE가 있다면
+그때만 필요한 block 유지.
+
+resolved 되었는데 block 남는 것은 실패.
+
+==================================================
+PART C — AI가 타이머 끝날 때까지 행동 안 함
+==================================================
+
+현재 신고:
+
+AI가 자신의 턴을 받았지만
+즉시 행동하지 않고
+turn timer가 거의 끝난 뒤에야 움직이거나
+timeout으로 넘어가는 경우가 있다.
+
+==================================================
+6. AI scheduler와 turn timer 분리
+==================================================
+
+AI는:
+
+turn started
+→ 짧은 의도된 delay
+→ legal actions 계산
+→ action 선택
+→ execute
+→ 다시 scheduler
+
+흐름이어야 한다.
+
+turn timer expiration이
+AI action trigger가 되어서는 안 된다.
+
+==================================================
+7. 확인할 것
+==================================================
+
+- AI scheduler가 TURN_STARTED event를 놓치는가?
+- initial schedule call이 누락되는가?
+- stale timeout handle이 있는가?
+- presentation 종료 이벤트를 기다리다가 영원히 멈추는가?
+- legal action request promise가 resolve되지 않는가?
+- action 실행 후 다음 scheduling이 빠지는가?
+- scheduler가 activePlayer 변경을 늦게 인식하는가?
+
+==================================================
+8. AI scheduler test
+==================================================
+
+fake timer를 사용.
+
+TEST AI1
+
+AI turn start.
+
+기대:
+
+정상 scheduling window 안에
+첫 action 발생.
+
+turn timeout 직전까지 기다리면 실패.
+
+==================================================
+
+TEST AI2
+
+첫 action 후
+legal action이 더 있으면
+다음 AI action schedule.
+
+==================================================
+
+TEST AI3
+
+행동 종료 후
+더 이상 유효 action이 없으면
+END_TURN.
+
+==================================================
+PART D — NO LEGAL ACTION AUTO ADVANCE
+==================================================
+
+현재 신고:
+
+사용 가능한 행동이 전혀 없는데도
+턴이 그대로 멈추는 경우가 있다.
+
+==================================================
+9. 실제 legal action detector 사용
+==================================================
+
+다음을 모두 고려:
+
+- playable card
+- attack
+- Champion ability
+- Technique
+- required PLAYER_CHOICE
+
+실제 actionable option이 하나도 없다면
+공식 rule에 따라 자동 END_TURN.
+
+단:
+
+선택 가능한 행동이 있는데
+AI가 마음에 안 든다는 이유로 auto end하면 안 된다.
+
+==================================================
+10. 테스트
+==================================================
+
+TEST NL1
+
+legal action = END_TURN only.
+
+기대:
+
+automatic END_TURN 또는
+AI END_TURN 정상 실행.
+
+==================================================
+
+TEST NL2
+
+WRESTLER play 가능.
+
+기대:
+
+"no legal actions"로 오판 금지.
+
+==================================================
+
+TEST NL3
+
+pending PLAYER_CHOICE가 있음.
+
+기대:
+
+auto-end 금지.
+
+먼저 selection resolve.
+
+==================================================
+PART E — TIMEOUT 시 필드 카드가 손으로 돌아감
+==================================================
+
+현재 신고:
+
+turn timer timeout으로 턴이 넘어가는 순간
+필드에 있던 WRESTLER가 갑자기 손으로 돌아오는 경우가 있다.
+
+이것은 정상 turn transition에서 절대 일어나면 안 된다.
+
+==================================================
+11. timeout 전후 GameState 비교
+==================================================
+
+timeout 직전:
+
+board instance IDs
+hand instance IDs
+graveyard instance IDs
+deck instance IDs
+
+snapshot 저장.
+
+timeout 처리:
+
+automatic END_TURN
+
+후 동일 zone membership 비교.
+
+timeout 자체는 card MOVE action을 발생시키면 안 된다.
+
+==================================================
+12. 특히 확인
+==================================================
+
+- pending target cancellation이 RETURN_TO_HAND를 잘못 실행?
+- optimistic UI rollback?
+- stale client snapshot merge?
+- server resync에서 older state가 다시 적용?
+- timeout fallback action이 MOVE action으로 잘못 구현?
+- animation cleanup이 GameState를 변경?
+- unresolved CardInstance를 원래 hand state로 되돌리는 로직?
+
+canonical GameState와 presentation rollback을 구분.
+
+==================================================
+13. Timeout regression
+==================================================
+
+TEST TO1
+
+board:
+A, B
+
+hand:
+C
+
+timeout 발생.
+
+기대:
+
+board = A, B
+hand = C
+
+zone 변화 없음.
+
+==================================================
+
+TEST TO2
+
+pending animation 존재.
+
+timeout.
+
+기대:
+
+presentation cleanup만 수행.
+
+GameState card zones unchanged.
+
+==================================================
+
+TEST TO3
+
+pending invalid action이 있더라도
+timeout 자체로 정상 field card가 hand로 이동하지 않음.
+
+==================================================
+PART F — AI 패배 후 1HP 부활
+==================================================
+
+현재 신고:
+
+AI Match에서 Champion HP가 0 이하가 되어
+패배했는데
+
+게임 종료 직후 Champion이
+1 HP로 돌아오는 현상이 있다.
+
+==================================================
+14. lethal → FINISHED 경로 추적
+==================================================
+
+기대:
+
+DAMAGE
+→ Champion HP <= 0
+→ winner 결정
+→ match status FINISHED
+→ 이후 gameplay action 중단
+
+패배 Champion HP를
+1로 normalize하면 안 된다.
+
+==================================================
+15. Champion Token과 혼동 금지
+==================================================
+
+Champion Token RETIRE 규칙과
+original Champion lethal을 혼동하지 마.
+
+Original Champion HP <= 0:
+
+match defeat.
+
+Champion Token HP <= 0:
+
+Token RETIRE.
+
+서로 완전히 구분.
+
+==================================================
+16. 1HP revive 원인 조사
+==================================================
+
+확인:
+
+- clamp HP minimum 1
+- display normalization
+- reconnect/resync fallback
+- Champion Token restore code
+- match reset code
+- end screen transition
+- state sanitizer
+- legacy "prevent zero HP" code
+
+==================================================
+17. Endgame test
+==================================================
+
+TEST EG1
+
+Original Champion HP = 1.
+
+2 damage.
+
+기대:
+
+HP <= 0
+match FINISHED
+winner set.
+
+==================================================
+
+TEST EG2
+
+FINISHED 이후
+Champion HP를 1로 돌리는 mutation 없음.
+
+==================================================
+
+TEST EG3
+
+FINISHED 이후:
+
+PLAY_CARD
+ATTACK
+USE_ABILITY
+END_TURN
+
+등 gameplay action reject/no-op.
+
+==================================================
+PART G — 결과창 -1/30
+==================================================
+
+현재 신고:
+
+결과 화면에서 Champion HP가:
+
+-1/30
+
+처럼 표시됨.
+
+==================================================
+18. canonical HP와 display HP 분리
+==================================================
+
+combat calculation에서
+canonical HP가 -1일 수 있다면
+그 자체는 engine semantics에 따라 허용 가능.
+
+하지만 사용자-facing HP:
+
+max(0, currentHP)
+
+형태로 표시.
+
+즉:
+
+canonical:
+-1
+
+result UI:
+0/30
+
+==================================================
+19. 절대로 이렇게 고치지 마
+==================================================
+
+금지:
+
+패배 후 canonical HP를 1로 바꾸기.
+
+금지:
+
+lethal damage를 강제로 0에서 stop하면서
+승패 판정을 깨뜨리기.
+
+이번 문제는 endgame calculation과
+display normalization을 분리.
+
+==================================================
+20. Result UI tests
+==================================================
+
+TEST UI1
+
+canonical Champion HP = -1
+maxHP = 30
+
+result display:
+
+0/30
+
+==================================================
+
+TEST UI2
+
+canonical HP = 0
+
+display:
+0/30.
+
+==================================================
+
+TEST UI3
+
+canonical HP = 12
+
+display:
+12/30.
+
+==================================================
+21. AI/Turn 공통 invariant
+==================================================
+
+이번 수정 후 반드시 유지:
+
+- 한 시점 activePlayer는 1명
+- FINISHED match에서는 turn progression 없음
+- pending PLAYER_CHOICE만 실제 action block 가능
+- presentation state가 canonical game engine을 영구 block하지 않음
+- timeout은 END_TURN semantics
+- timeout 자체가 card zone을 바꾸지 않음
+- AI actions는 canonical legal action 사용
+- deterministic gameplay RNG 유지
+
+==================================================
+22. 실제 게임 렉과 이번 작업
+==================================================
+
+전체 performance refactor는 이번 범위가 아니다.
+
+다만 AI scheduler가:
+
+- 불필요한 tight loop
+- 무한 scheduling
+- repeated timer registration
+- repeated legal action calculation
+
+으로 렉을 발생시키는 것이 root cause로 확인된다면
+그 부분은 수정 가능.
+
+UI/general rendering 최적화는 이번 작업에서 하지 마.
+
+==================================================
+23. 이번 작업에서 건드리지 말 것
+==================================================
+
+금지:
+
+- 카드 효과 변경
+- Pandora
+- Champion Token 정의 변경
+- 뒷정리맨
+- 매드 펌킨
+- 여울
+- 그레이트 챤
+- 흑구슬마스터
+- 조크루이지
+- 데헌
+- 나토마토
+- Online BGM
+- Online animation
+- Online navigation
+- Admin
+- AI Mechanic Compiler
+- SCRIPT_V1 신규 capability
+- daily quest
+- attendance
+- notice
+- reward economy
+- deck editor
+
+==================================================
+24. Integration regression
+==================================================
+
+반드시 테스트:
+
+Turn start
+END_TURN
+Timeout END_TURN
+AI scheduler
+Quest complete
+Quest reward
+Champion Ability resolution
+PLAYER_CHOICE
+Match FINISHED
+Champion lethal
+Champion Token non-lethal retirement
+
+==================================================
+25. 브라우저 Gameplay
+==================================================
+
+브라우저 가능 시 Development/Test 환경에서
+최소 아래 확인:
+
+1.
+예거 Quest 완료
+→ 연출 종료
+→ AI 다음 행동 또는 정상 END_TURN.
+
+2.
+예거 Ability
+→ 바로 END_TURN.
+
+3.
+AI turn
+→ timer 끝나기 전 정상 행동.
+
+4.
+timeout
+→ field cards 그대로.
+
+5.
+AI Champion lethal
+→ FINISHED
+→ 1HP 부활 없음.
+
+브라우저 불가:
+
+IMPLEMENTATION / AUTOMATED는 계속.
+
+GAMEPLAY만 UNVERIFIED.
+
+==================================================
+26. 자동 검증
+==================================================
+
+수정 후:
+
+전용 AI/turn regression
+existing turn tests
+Quest tests
+Champion Ability tests
+endgame tests
+
+그리고:
+
+pnpm run typecheck
+pnpm --filter @workspace/ko-game run build
+git diff --check
+
+API/shared 수정 시:
+
+API typecheck
+API build
+
+실행.
+
+==================================================
+27. Git
+==================================================
+
+이번 작업 관련 파일만 stage.
+
+Pasted-*.txt
+.env
+secret
+logs
+temp
+unrelated user changes
+
+stage 금지.
+
+검증 후 commit.
+
+force push 금지.
+
+Push 인증 실패 시
+local commit 유지.
+
+==================================================
+28. 최종 보고
+==================================================
+
+JAEGER QUEST AI STALL
+
+ROOT CAUSE:
+...
+
+Quest Complete:
+PASS / FAIL
+
+Reward:
+PASS / FAIL
+
+AI scheduler resumed:
+PASS / FAIL
+
+AI next action:
+PASS / FAIL
+
+AI END_TURN:
+PASS / FAIL
+
+Timeout recovery:
+PASS / FAIL
+
+
+JAEGER ABILITY END_TURN
+
+ROOT CAUSE:
+...
+
+Ability resolution:
+PASS / FAIL
+
+END_TURN immediately legal:
+PASS / FAIL
+
+Stale pending state:
+YES / NO
+
+
+AI TIMER DELAY
+
+ROOT CAUSE:
+...
+
+Turn-start scheduling:
+PASS / FAIL
+
+Action before timeout:
+PASS / FAIL
+
+Repeated scheduling:
+PASS / FAIL
+
+
+NO LEGAL ACTION
+
+Auto progression:
+PASS / FAIL
+
+False auto-end:
+PASS / FAIL
+
+
+TIMEOUT ZONE BUG
+
+ROOT CAUSE:
+...
+
+Board before:
+...
+
+Board after:
+...
+
+Hand before:
+...
+
+Hand after:
+...
+
+Unexpected movement:
+YES / NO
+
+
+AI DEFEAT 1HP
+
+ROOT CAUSE:
+...
+
+Lethal:
+PASS / FAIL
+
+FINISHED:
+PASS / FAIL
+
+Champion restored to 1HP:
+YES / NO
+
+
+RESULT HP DISPLAY
+
+Canonical HP:
+...
+
+Displayed HP:
+...
+
+Expected:
+0 / MAX
+
+PASS / FAIL
+
+
+==================================================
+
+IMPLEMENTATION:
+PASS / FAIL / BLOCKED
+
+AUTOMATED VERIFICATION:
+PASS / FAIL
+
+GAMEPLAY VERIFICATION:
+PASS / FAIL / UNVERIFIED
+
+TYPECHECK:
+PASS / FAIL
+
+KO BUILD:
+PASS / FAIL
+
+API BUILD:
+PASS / FAIL / NOT_MODIFIED
+
+git diff --check:
+PASS / FAIL
+
+CHANGED FILES:
+...
+
+COMMIT:
+...
+
+PUSH:
+...
+
+==================================================
+완료 조건
+==================================================
+
+이번 작업은 턴/AI/endgame 문제만 끝낸다.
+
+완료 기준:
+
+1. 예거 Quest 완료 후 AI가 다시 행동함
+2. 예거 Ability 후 즉시 END_TURN 가능
+3. AI가 timer expiration을 기다리지 않고 행동
+4. legal action 없으면 정상 진행
+5. timeout이 card zone을 변경하지 않음
+6. original Champion lethal 후 1HP 부활 없음
+7. 결과 UI는 음수 HP를 표시하지 않음
+
+위 7개가 자동 테스트로 증명되어야 한다.
+
+다른 문제는 수정하지 말고 멈춰라.
