@@ -1,0 +1,633 @@
+KO CARD GAME — FIX ONLY:
+HAND-ZONE STAT-INCREASE TRIGGERS + ON_ENTER NO-TARGET HANDLING
+
+이번 작업에서는 아래 두 가지 공통 게임 규칙만 수정한다.
+
+1. 공격력/체력 증가를 감지해서 발동하는 효과는
+   해당 카드가 HAND에 있어도 정상 발동해야 한다.
+
+2. 등장(ON_ENTER) 효과가 선택 대상을 요구하지만
+   유효한 대상이 하나도 없다면
+   PLAYER_CHOICE 화면을 만들지 말고
+   해당 등장 효과만 발동하지 않은 것으로 처리하고
+   정상적으로 게임을 계속 진행해야 한다.
+
+다른 카드 밸런스,
+온라인,
+AI,
+Champion,
+Admin,
+신규 기능은 수정하지 마.
+
+==================================================
+PART A — HAND에서도 공격력/체력 증가 Trigger 발동
+==================================================
+
+현재 요구 규칙:
+
+공격력 증가 또는 체력 증가를 감지해서 발동하는 카드 효과는
+그 카드가 FIELD에 있을 때뿐 아니라
+HAND에 있을 때도 정상적으로 trigger되어야 한다.
+
+예:
+
+카드 X가 손패에 있고
+카드 X의 효과가
+
+"이 카드의 공격력이 증가할 때 ..."
+또는
+"이 카드의 체력이 증가할 때 ..."
+또는
+"이 카드의 공격력이나 체력이 증가하면 ..."
+
+형태라면,
+
+HAND 상태에서 실제 stat 증가가 발생해도
+해당 효과가 발동해야 한다.
+
+==================================================
+1. FIELD-only listener 여부 확인
+==================================================
+
+현재 stat-change trigger system이:
+
+BOARD / FIELD CardInstance만
+trigger source로 탐색하는지 확인한다.
+
+특히:
+
+- ATTACK_INCREASED
+- HEALTH_INCREASED
+- STAT_INCREASED
+- BUFF_APPLIED
+
+또는 현재 실제 equivalent event를 확인한다.
+
+HAND CardInstance도 해당 trigger를 구독할 수 있도록
+generic effect listener를 수정한다.
+
+카드 이름 hardcoding 금지.
+
+==================================================
+2. 반드시 실제 CardInstance stat 증가를 기준으로
+==================================================
+
+단순 UI 숫자 변경이 아니라
+
+canonical GameState의 CardInstance에서
+공격력/체력이 실제로 증가했을 때 발동해야 한다.
+
+예:
+
+HAND Card A
+ATK 2 → 3
+
+이면 공격력 증가 trigger 발생.
+
+HAND Card B
+HP 4 → 5
+
+이면 체력 증가 trigger 발생.
+
+==================================================
+3. 감소에는 발동 금지
+==================================================
+
+ATK:
+
+3 → 2
+
+HP:
+
+5 → 3
+
+은 "증가"가 아니므로
+increase trigger 발동 금지.
+
+==================================================
+4. 값 변화가 없으면 발동 금지
+==================================================
+
+2 → 2
+5 → 5
+
+같이 실제 값이 증가하지 않았다면
+trigger 금지.
+
+==================================================
+5. 묘지 초기화 같은 normalization과 구분
+==================================================
+
+카드가 zone 이동 때문에
+원본 stats로 복귀하는 과정 등을
+
+"buff를 받아 stat이 증가했다"
+
+로 잘못 판단하지 마.
+
+실제 gameplay stat-increase event와
+zone cleanup/reset을 구분한다.
+
+==================================================
+6. 숨겨진 HAND 정보 보호
+==================================================
+
+매우 중요.
+
+상대 HAND에 있는 카드가
+stat increase trigger를 가지고 있더라도
+
+server-side에서는 정상 effect를 처리할 수 있어야 한다.
+
+하지만 trigger 전/후 공식적으로 공개되지 않아야 하는 정보는
+상대 client에 미리 노출하면 안 된다.
+
+즉:
+
+server authoritative HAND trigger
+
+와
+
+client hidden-information sanitizer
+
+를 둘 다 유지한다.
+
+==================================================
+7. 기존 FIELD trigger 회귀 금지
+==================================================
+
+HAND 지원을 추가한다고
+기존 FIELD 카드의 stat-increase trigger가
+두 번 발동하면 안 된다.
+
+FIELD:
+기존대로 정확히 발동.
+
+HAND:
+새롭게 정상 발동.
+
+다른 zone은 공식 effect semantics에 따라 처리.
+
+DECK / GRAVEYARD까지 자동 확장하지 마.
+
+이번 요구는 HAND 추가다.
+
+==================================================
+8. 필수 Regression
+==================================================
+
+TEST H1
+
+Card X가 HAND에 있음.
+
+X:
+"공격력 증가 시 발동"
+
+X에게 +1 ATK.
+
+기대:
+effect trigger 1회.
+
+==================================================
+
+TEST H2
+
+Card X가 HAND에 있음.
+
+X:
+"체력 증가 시 발동"
+
+X에게 +1 HP.
+
+기대:
+effect trigger 1회.
+
+==================================================
+
+TEST H3
+
+Card X가 FIELD에 있음.
+
+동일 increase.
+
+기대:
+기존대로 trigger 1회.
+
+중복 trigger 금지.
+
+==================================================
+
+TEST H4
+
+HAND Card:
+ATK 감소.
+
+기대:
+increase trigger 없음.
+
+==================================================
+
+TEST H5
+
+HAND Card:
+HP 변화 없음.
+
+기대:
+trigger 없음.
+
+==================================================
+
+TEST H6
+
+상대 HAND 카드가 해당 효과를 가짐.
+
+server:
+정상 effect resolution.
+
+다른 client:
+공개되기 전 카드 identity leak 없음.
+
+==================================================
+PART B — ON_ENTER에 선택 가능한 대상이 없으면 그냥 미발동
+==================================================
+
+새 공식 규칙:
+
+등장(ON_ENTER) 효과가 PLAYER_CHOICE를 요구하는데
+현재 유효한 대상이 0개라면
+
+효과 선택창을 띄우지 않는다.
+
+게임을 멈추지 않는다.
+
+카드 PLAY 자체를 취소하지 않는다.
+
+에러를 발생시키지 않는다.
+
+그 ON_ENTER 효과만 아무 일 없이 종료한다.
+
+==================================================
+9. 기대 흐름
+==================================================
+
+WRESTLER PLAY_FROM_HAND
+
+→ 카드 정상 FIELD 진입
+
+→ ON_ENTER 확인
+
+→ target selector 계산
+
+→ valid targets = 0
+
+이면:
+
+PLAYER_CHOICE 생성하지 않음
+
+targetingState 생성하지 않음
+
+pending continuation 남기지 않음
+
+effect frame 정상 종료
+
+카드 플레이는 성공 상태 유지
+
+게임 계속 진행.
+
+==================================================
+10. 절대로 카드 플레이 자체를 실패시키지 마
+==================================================
+
+잘못된 처리 금지:
+
+"No valid targets"
+→ PLAY_CARD reject
+
+금지.
+
+ON_ENTER는 카드가 이미 정상 등장한 후 처리되는 효과다.
+
+선택 대상이 없다는 이유로
+카드를 다시 HAND로 돌리거나
+Gold를 환불하거나
+GameState를 rollback하면 안 된다.
+
+==================================================
+11. stale pending state 금지
+==================================================
+
+대상 0개인 ON_ENTER 처리 후:
+
+targetingState = none
+
+pending PLAYER_CHOICE = none
+
+pending continuation = none
+
+unresolved effect frame = none
+
+이어야 한다.
+
+이 때문에 END_TURN이나
+다음 카드 사용이 막히면 실패.
+
+==================================================
+12. 대상이 있으면 기존대로 선택
+==================================================
+
+valid target >= 1이면
+기존 PLAYER_CHOICE 흐름을 유지.
+
+즉:
+
+targets = 0
+→ effect skip
+
+targets >= 1
+→ PLAYER_CHOICE
+
+이다.
+
+"대상이 하나면 자동 선택" 같은 새로운 규칙은
+이번 작업에서 추가하지 마.
+
+==================================================
+13. PLAY_FROM_HAND 등장 규칙 유지
+==================================================
+
+기존 규칙 유지:
+
+ON_ENTER / 등장 효과는
+WRESTLER PLAY_FROM_HAND에서만 발생.
+
+다음은 일반 등장 trigger 아님:
+
+SUMMON
+REVIVE
+Champion Token deploy
+
+이 규칙을 변경하지 마.
+
+==================================================
+14. 필수 Regression
+==================================================
+
+TEST E1
+
+ON_ENTER target effect를 가진 WRESTLER.
+
+valid targets = 0.
+
+PLAY_FROM_HAND.
+
+기대:
+
+카드 FIELD 진입 성공.
+Gold 정상 소비.
+ON_ENTER target effect = no-op.
+PLAYER_CHOICE 없음.
+게임 계속 진행.
+
+==================================================
+
+TEST E2
+
+valid targets = 0 처리 후
+END_TURN.
+
+기대:
+정상 accepted.
+
+==================================================
+
+TEST E3
+
+valid targets = 0 처리 후
+다른 카드 PLAY.
+
+기대:
+정상.
+
+==================================================
+
+TEST E4
+
+valid targets = 2.
+
+PLAY_FROM_HAND.
+
+기대:
+PLAYER_CHOICE 정상 생성.
+
+==================================================
+
+TEST E5
+
+target 선택.
+
+기대:
+기존 continuation resume
+→ effect 정상 실행.
+
+==================================================
+
+TEST E6
+
+SUMMON으로 동일 카드 생성.
+
+기대:
+일반 ON_ENTER trigger 없음.
+
+==================================================
+15. Generic Engine으로 수정
+==================================================
+
+특정 카드 이름으로 처리 금지.
+
+예:
+
+if (card.name === "흑구슬마스터")
+  noTargetSkip()
+
+금지.
+
+모든:
+
+ON_ENTER
++
+PLAYER_CHOICE target effect
+
+에 동일하게 적용되는 generic rule이어야 한다.
+
+HAND stat trigger도 마찬가지로
+특정 카드 hardcoding 금지.
+
+==================================================
+16. 기존 정상 효과 회귀 확인
+==================================================
+
+최소 확인:
+
+- FIELD stat increase trigger
+- HAND stat increase trigger
+- PLAYER_CHOICE
+- continuation
+- ON_ENTER
+- PLAY_FROM_HAND
+- SUMMON
+- REVIVE
+- hidden hand sanitizer
+- END_TURN after no-target effect
+
+==================================================
+17. 이번 작업에서 건드리지 말 것
+==================================================
+
+금지:
+
+- 카드별 효과 수치 변경
+- Pandora
+- Champion Token
+- 뒷정리맨
+- 여울
+- 그레이트 챤
+- 예거
+- Online
+- AI scheduler
+- AI Mechanic Compiler
+- SCRIPT_V1 신규 capability
+- Admin 신규 기능
+- 신규 콘텐츠
+
+공통 trigger/target resolution에 필요한
+최소한의 engine 수정만 허용.
+
+==================================================
+18. 자동 검증
+==================================================
+
+반드시:
+
+HAND stat-trigger regression
+FIELD stat-trigger regression
+ON_ENTER no-target regression
+PLAYER_CHOICE regression
+continuation regression
+hidden-information regression
+
+실행.
+
+그리고:
+
+pnpm run typecheck
+pnpm --filter @workspace/ko-game run build
+git diff --check
+
+API/shared 변경 시
+API typecheck/build도 실행.
+
+==================================================
+19. 최종 보고
+==================================================
+
+HAND STAT INCREASE TRIGGERS
+
+ROOT CAUSE:
+...
+
+Attack increase in HAND:
+PASS / FAIL
+
+Health increase in HAND:
+PASS / FAIL
+
+Decrease does not trigger:
+PASS / FAIL
+
+FIELD regression:
+PASS / FAIL
+
+Hidden hand preserved:
+PASS / FAIL
+
+
+ON_ENTER NO TARGET
+
+ROOT CAUSE:
+...
+
+0 valid targets:
+PASS / FAIL
+
+Card still enters field:
+PASS / FAIL
+
+PLAYER_CHOICE skipped:
+PASS / FAIL
+
+No stale continuation:
+PASS / FAIL
+
+END_TURN after effect:
+PASS / FAIL
+
+Targets exist → PLAYER_CHOICE:
+PASS / FAIL
+
+SUMMON/REVIVE ON_ENTER regression:
+PASS / FAIL
+
+
+IMPLEMENTATION:
+PASS / FAIL
+
+AUTOMATED VERIFICATION:
+PASS / FAIL
+
+TYPECHECK:
+PASS / FAIL
+
+BUILD:
+PASS / FAIL
+
+git diff --check:
+PASS / FAIL
+
+CHANGED FILES:
+...
+
+COMMIT:
+...
+
+PUSH:
+...
+
+==================================================
+완료 조건
+==================================================
+
+1.
+공격력 증가 trigger를 가진 카드가
+HAND에 있어도 실제 증가 시 발동.
+
+2.
+체력 증가 trigger를 가진 카드가
+HAND에 있어도 실제 증가 시 발동.
+
+3.
+기존 FIELD trigger는 중복 없이 유지.
+
+4.
+ON_ENTER 선택 대상이 0명이면
+효과만 skip.
+
+5.
+카드는 정상적으로 FIELD에 남음.
+
+6.
+targeting/pending state가 남지 않음.
+
+7.
+선택 대상이 존재하면 기존 PLAYER_CHOICE 정상 작동.
+
+이 두 공통 규칙만 수정하고 멈춰라.
