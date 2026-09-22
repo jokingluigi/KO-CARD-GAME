@@ -1,0 +1,763 @@
+KO CARD GAME — IMPLEMENT ONLY:
+MAIN NOTICE + MAIN BACKGROUND + MAIN BGM ADMIN MANAGEMENT
+
+이번 작업에서는 메인 화면 운영 기능 3개만 구현한다.
+
+1. 메인 화면 공지 시스템
+2. 메인 화면 배경 이미지 Admin 관리
+3. 메인 화면 BGM Admin 관리
+
+다른 카드 효과,
+Pandora,
+Champion Token,
+Online Match,
+AI scheduler,
+AI Mechanic Compiler,
+일일 퀘스트,
+출석,
+승패 보상,
+분해,
+덱 에디터,
+Admin 카드 Grid
+
+은 수정하지 마.
+
+==================================================
+0. 작업 방식
+==================================================
+
+이번 작업은 아래 순서대로 각각 완료한다.
+
+1. Notice System
+→ 구현
+→ 테스트
+
+2. Main Background Management
+→ 구현
+→ 테스트
+
+3. Main BGM Management
+→ 구현
+→ 테스트
+
+마지막에 전체 typecheck/build를 실행한다.
+
+이번 작업의 공통 목표:
+
+Admin에서 운영자가 콘텐츠를 관리하면
+메인 화면이 코드 재배포 없이
+현재 활성 설정을 읽어 반영하도록 한다.
+
+Production DB 직접 수정은 하지 않는다.
+
+==================================================
+PART A — 메인 화면 공지 시스템
+==================================================
+
+현재 요구:
+
+메인 화면에서 유저가 볼 수 있는 공지 영역을 추가한다.
+
+공지 내용은 Admin에서:
+
+- 추가
+- 수정
+- 활성화
+- 비활성화
+
+할 수 있어야 한다.
+
+가능하면 삭제보다 soft-disable을 우선한다.
+
+==================================================
+1. Notice Definition
+==================================================
+
+공지 데이터는 최소 다음 정보를 지원한다.
+
+- id
+- title
+- body/content
+- enabled
+- createdAt
+- updatedAt
+- 필요 시 displayOrder
+- 필요 시 startAt / endAt
+
+실제 프로젝트 schema에 맞게 설계한다.
+
+필요하지 않은 필드는 억지로 추가하지 마.
+
+==================================================
+2. 메인 화면 표시
+==================================================
+
+메인 화면에서 활성 공지를 표시한다.
+
+공지 UI는 기존 KO CARD GAME의 디자인을 유지한다.
+
+과도한 redesign 금지.
+
+공지 여러 개가 있다면 현재 UX에 맞게:
+
+- 최신 공지 우선
+- 리스트
+- carousel
+- expandable panel
+
+중 가장 자연스러운 방식을 사용.
+
+==================================================
+3. 활성 공지만 표시
+==================================================
+
+disabled notice는
+일반 사용자 메인 화면에 표시하지 않는다.
+
+startAt/endAt을 지원한다면
+현재 시간 범위 내 공지만 표시.
+
+시간 조건을 임의로 추가하지 말고
+해당 기능을 구현한 경우에만 적용.
+
+==================================================
+4. Admin Notice 관리
+==================================================
+
+Admin에서 최소:
+
+- 공지 추가
+- 공지 수정
+- 활성/비활성
+- 목록 확인
+
+가능.
+
+Admin 변경이 실제 저장되어야 한다.
+
+단 테스트에서 Production 데이터 직접 수정 금지.
+
+==================================================
+5. HTML/XSS 주의
+==================================================
+
+공지 body를 그대로 dangerous HTML로 실행하지 마.
+
+현재 프로젝트에 rich text sanitization이 없다면
+기본적으로 plain text 또는 안전한 markdown subset을 사용.
+
+arbitrary script injection 금지.
+
+==================================================
+6. Notice fetch
+==================================================
+
+메인 화면은 현재 활성 공지만 가져오도록 한다.
+
+Admin용 전체 목록 endpoint와
+일반 유저용 public endpoint를 필요하면 분리.
+
+public endpoint가
+disabled/draft notice까지 노출하지 않게 한다.
+
+==================================================
+7. Notice Tests
+==================================================
+
+TEST N1
+
+활성 공지 2개
+비활성 공지 1개.
+
+Public main response:
+활성 2개만.
+
+==================================================
+
+TEST N2
+
+Admin에서 공지 수정.
+
+재조회:
+변경 내용 반영.
+
+==================================================
+
+TEST N3
+
+공지 비활성화.
+
+Main에서 사라짐.
+
+==================================================
+
+TEST N4
+
+악성 HTML/script text 저장 시도.
+
+기대:
+실행되지 않음.
+
+==================================================
+PART B — 메인 화면 배경 이미지 Admin 관리
+==================================================
+
+현재 요구:
+
+메인 화면의 배경 이미지를
+코드에 하드코딩하지 않고
+Admin에서 관리할 수 있어야 한다.
+
+==================================================
+8. 현재 배경 구조 확인
+==================================================
+
+먼저 현재 Main 화면에서
+배경이 어디에서 정의되는지 확인.
+
+예:
+
+- CSS url
+- imported asset
+- remote URL
+- static image
+- theme config
+
+실제 현재 구조를 확인한 뒤
+최소 변경으로 Admin-managed setting으로 전환한다.
+
+==================================================
+9. Background Setting
+==================================================
+
+필요한 최소 설정:
+
+- active background image URL / asset reference
+- enabled
+- optional fallback
+
+가능하면 현재 프로젝트의
+media/file storage 방식을 재사용.
+
+새 storage system을 불필요하게 만들지 마.
+
+==================================================
+10. Admin UX
+==================================================
+
+Admin에서 최소:
+
+- 현재 배경 미리보기
+- 새 이미지 선택/URL 설정
+- 적용
+- 비활성화 또는 기본값 복귀
+
+가능.
+
+현재 시스템에 이미지 upload 기능이 있다면 재사용.
+
+없다면 임의의 복잡한 업로드 인프라를 만들지 말고
+현재 지원 방식에 맞는 asset reference 방식을 사용.
+
+==================================================
+11. Fallback
+==================================================
+
+Admin 배경 설정이 없거나
+이미지가 로드되지 않을 경우
+
+메인 화면이 깨지지 않아야 한다.
+
+기존 기본 배경 또는 안전한 fallback 사용.
+
+==================================================
+12. Background caching
+==================================================
+
+배경 변경 후
+영구적으로 오래된 이미지가 남지 않도록 한다.
+
+필요하면 versioned URL / cache-busting strategy를 사용하되
+불필요한 매 요청 timestamp query는 피한다.
+
+==================================================
+13. Background Tests
+==================================================
+
+TEST BG1
+
+Admin active background 존재.
+
+Main:
+해당 배경 사용.
+
+==================================================
+
+TEST BG2
+
+background disabled.
+
+Main:
+기본 fallback 사용.
+
+==================================================
+
+TEST BG3
+
+invalid/missing image.
+
+Main:
+layout crash 없음.
+fallback 정상.
+
+==================================================
+PART C — 메인 화면 BGM Admin 관리
+==================================================
+
+현재 요구:
+
+메인 메뉴에서 재생되는 음악을
+Admin에서 변경/관리할 수 있어야 한다.
+
+중요:
+
+이 작업은 "Online Match에서 BGM이 안 나오는 버그"를
+다시 수정하는 작업이 아니다.
+
+이번 범위는 오직
+메인 화면 BGM 콘텐츠 관리다.
+
+==================================================
+14. Main BGM Setting
+==================================================
+
+최소:
+
+- active track URL / asset reference
+- title/name
+- enabled
+- optional volume/default volume
+
+를 지원.
+
+실제 프로젝트의 기존 audio config가 있다면 재사용.
+
+==================================================
+15. Admin BGM 관리
+==================================================
+
+Admin에서 최소:
+
+- 현재 메인 BGM 확인
+- 새 BGM 설정
+- 활성/비활성
+- 변경 저장
+
+가능.
+
+필요하다면 preview 재생을 제공할 수 있지만
+이번 핵심은 실제 Main BGM 적용이다.
+
+==================================================
+16. Audio lifecycle 유지
+==================================================
+
+메인 화면 진입:
+
+Main BGM start
+
+다른 게임 화면 진입:
+
+Main BGM stop/transition
+
+메인 복귀:
+
+Main BGM resume/start
+
+현재 audio manager가 있다면 재사용.
+
+새로운 별도 audio system을 만들지 마.
+
+==================================================
+17. 중복 재생 금지
+==================================================
+
+rerender
+route update
+Admin config refresh
+
+때마다 Main BGM이 여러 겹으로 재생되면 안 된다.
+
+동시에 여러 audio instance가 생성되지 않도록 한다.
+
+==================================================
+18. 브라우저 autoplay 정책
+==================================================
+
+브라우저 autoplay restriction을 무시하지 마.
+
+현재 앱의 user interaction/audio unlock 구조가 있다면 재사용.
+
+autoplay가 차단됐다고
+무한 retry loop를 만들지 마.
+
+==================================================
+19. BGM 변경 반영
+==================================================
+
+Admin에서 active BGM을 바꾼 뒤
+다음 Main load 또는 설정 refresh에서
+새 BGM이 정상 사용되어야 한다.
+
+현재 재생 중인 트랙을 즉시 교체할지,
+다음 진입부터 적용할지는
+기존 audio architecture에 맞게 일관되게 처리.
+
+==================================================
+20. BGM Fallback
+==================================================
+
+BGM 설정이 없거나
+URL이 잘못됐을 경우:
+
+Main 화면 crash 금지.
+
+음악 없이 정상 사용 가능해야 한다.
+
+==================================================
+21. BGM Tests
+==================================================
+
+TEST M1
+
+active Main BGM 존재.
+
+Main mount:
+정확한 track start.
+
+==================================================
+
+TEST M2
+
+rerender.
+
+중복 playback 없음.
+
+==================================================
+
+TEST M3
+
+Main → Match/other screen.
+
+Main BGM cleanup.
+
+==================================================
+
+TEST M4
+
+다시 Main.
+
+Main BGM 정상 시작/재개.
+
+==================================================
+
+TEST M5
+
+BGM disabled / invalid.
+
+Main crash 없음.
+
+==================================================
+PART D — 공통 Admin Settings 원칙
+==================================================
+
+공지 / 배경 / 음악을 위해
+각각 완전히 별개의 임시 저장 방식을 만들지 마.
+
+현재 프로젝트에:
+
+- app settings
+- site settings
+- content management
+- admin config
+
+구조가 있다면 재사용.
+
+없다면 최소 범위의
+typed server-side settings/config structure를 설계.
+
+==================================================
+22. Client trust 금지
+==================================================
+
+Admin 권한 검증은 서버에서 수행.
+
+일반 사용자가:
+
+- 공지 수정
+- 배경 변경
+- 음악 변경
+
+endpoint를 호출할 수 없어야 한다.
+
+==================================================
+23. Public read vs Admin write
+==================================================
+
+일반 사용자는
+현재 활성화된 public settings만 읽는다.
+
+Admin만 관리 endpoint를 사용.
+
+민감한 internal metadata나 draft data를
+public response에 불필요하게 노출하지 마.
+
+==================================================
+24. 저장 후 반영
+==================================================
+
+Admin Save:
+
+server validation
+→ persistent save
+→ success response
+
+이후 Main에서 정상 반영.
+
+Admin UI에서만 바뀌고
+새로고침하면 사라지는 local state로 만들지 마.
+
+==================================================
+25. Production 안전
+==================================================
+
+자동 테스트는
+Production DB를 변경하지 않는다.
+
+fixture
+mock
+test/dev DB
+
+사용.
+
+Production 운영 데이터는
+사용자가 Admin에서 직접 관리하게 한다.
+
+==================================================
+26. 이번 작업에서 하지 말 것
+==================================================
+
+절대 수정 금지:
+
+- 카드 효과
+- Champion
+- Pandora
+- Online connection
+- Online BGM bug
+- Online animations
+- AI scheduler
+- AI Mechanic Compiler
+- SCRIPT_V1
+- Match reward
+- Daily Quest
+- Attendance
+- Card disassembly
+- Deck rules
+- Admin card grid
+- 경제 수치
+
+==================================================
+27. Browser Verification
+==================================================
+
+가능하면 Development/Test에서:
+
+NOTICE
+Admin에서 공지 생성
+→ Main에 표시
+→ 비활성화
+→ Main에서 제거
+
+BACKGROUND
+Admin에서 배경 변경
+→ Main 새 배경 표시
+
+BGM
+Admin에서 음악 변경
+→ Main에서 새 BGM 재생
+→ 다른 화면 이동 시 정리
+
+확인.
+
+브라우저 불가:
+
+IMPLEMENTATION/AUTOMATED는 계속하고
+BROWSER VERIFICATION만 UNVERIFIED.
+
+==================================================
+28. 자동 검증
+==================================================
+
+필수:
+
+Notice CRUD/admin auth tests
+Public notice filtering tests
+Main background settings tests
+Background fallback test
+Main BGM config tests
+Audio lifecycle regression
+Admin settings permission tests
+
+그리고:
+
+pnpm run typecheck
+pnpm --filter @workspace/ko-game run build
+git diff --check
+
+API 변경 시:
+
+API typecheck
+API production build
+
+실행.
+
+==================================================
+29. Git
+==================================================
+
+이번 작업 관련 파일만 stage.
+
+금지:
+
+Pasted-*.txt
+.env
+secret
+logs
+temp
+unrelated changes
+
+검증 후 commit.
+
+force push 금지.
+
+push 실패 시 local commit 유지.
+
+==================================================
+30. 최종 보고
+==================================================
+
+NOTICE SYSTEM
+
+Admin create:
+PASS / FAIL
+
+Admin edit:
+PASS / FAIL
+
+Enable/disable:
+PASS / FAIL
+
+Public filtering:
+PASS / FAIL
+
+Main render:
+PASS / FAIL
+
+XSS protection:
+PASS / FAIL
+
+
+MAIN BACKGROUND
+
+Admin management:
+PASS / FAIL
+
+Main apply:
+PASS / FAIL
+
+Fallback:
+PASS / FAIL
+
+Broken image handling:
+PASS / FAIL
+
+
+MAIN BGM
+
+Admin management:
+PASS / FAIL
+
+Main playback:
+PASS / FAIL
+
+Duplicate playback:
+YES / NO
+
+Route cleanup:
+PASS / FAIL
+
+Fallback:
+PASS / FAIL
+
+
+ADMIN SECURITY
+
+Unauthorized write blocked:
+PASS / FAIL
+
+Public response safe:
+PASS / FAIL
+
+
+==================================================
+
+IMPLEMENTATION:
+PASS / FAIL / BLOCKED
+
+AUTOMATED VERIFICATION:
+PASS / FAIL
+
+BROWSER VERIFICATION:
+PASS / FAIL / UNVERIFIED
+
+TYPECHECK:
+PASS / FAIL
+
+KO BUILD:
+PASS / FAIL
+
+API TYPECHECK:
+PASS / FAIL / NOT_MODIFIED
+
+API BUILD:
+PASS / FAIL / NOT_MODIFIED
+
+git diff --check:
+PASS / FAIL
+
+CHANGED FILES:
+...
+
+COMMIT:
+...
+
+PUSH:
+...
+
+==================================================
+완료 조건
+==================================================
+
+1.
+Admin에서 공지를 추가/수정/활성화/비활성화할 수 있고
+메인 화면에 활성 공지만 정상 표시된다.
+
+2.
+Admin에서 메인 배경을 관리할 수 있고
+메인 화면이 해당 설정을 실제로 사용한다.
+
+3.
+Admin에서 메인 BGM을 관리할 수 있고
+메인 화면 audio lifecycle이 중복 없이 정상 동작한다.
+
+이 세 기능만 구현하고 멈춰라.
