@@ -122,6 +122,32 @@ test("등장 음악 뒤에는 가장 최근 Quest 음악 base로 복귀한다", 
   }
 });
 
+test("같은 메인 BGM을 다시 적용해도 audio instance를 중복 생성하지 않는다", () => {
+  const previousAudio = globalThis.Audio;
+  const previousWindow = globalThis.window;
+  Object.defineProperty(globalThis, "Audio", { configurable: true, value: FakeAudio });
+  Object.defineProperty(globalThis, "window", {
+    configurable: true,
+    value: { setInterval, clearInterval, setTimeout, clearTimeout },
+  });
+
+  try {
+    audioManager.stopBgm();
+    audioManager.playBgm("/main.mp3", 70);
+    const manager = audioManager as unknown as {
+      bgm: { audio: FakeAudio } | null;
+    };
+    const first = manager.bgm?.audio;
+    audioManager.playBgm("/main.mp3", 55);
+    assert.equal(manager.bgm?.audio, first);
+    assert.equal(manager.bgm?.volume, 55);
+  } finally {
+    audioManager.stopBgm();
+    Object.defineProperty(globalThis, "Audio", { configurable: true, value: previousAudio });
+    Object.defineProperty(globalThis, "window", { configurable: true, value: previousWindow });
+  }
+});
+
 test("팩 희귀 Reveal 음악은 중앙 채널에서 시작하고 명시적으로 cleanup된다", () => {
   const previousAudio = globalThis.Audio;
   const previousWindow = globalThis.window;

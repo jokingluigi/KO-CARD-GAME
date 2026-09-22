@@ -37,6 +37,7 @@ function Router() {
         <Route path="/admin/card-frames" component={Admin} />
         <Route path="/admin/ai-decks" component={Admin} />
         <Route path="/admin/rewards" component={Admin} />
+        <Route path="/admin/notices" component={Admin} />
         <Route path="/ai-match" component={Home} />
         <Route path="/online/match/:matchId" component={OnlineMatch} />
         <Route path="/daily-quests" component={DailyQuests} />

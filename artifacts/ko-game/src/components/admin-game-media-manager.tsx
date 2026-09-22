@@ -30,6 +30,7 @@ type MediaRecord = {
   height: number | null;
   volume: number;
   enabled: boolean;
+  mainEnabled: boolean;
 };
 
 type Props = {
@@ -306,7 +307,7 @@ export function AdminGameMediaManager({ onUnauthorized }: Props) {
       <div>
         <div className="font-display text-xs font-bold tracking-[0.2em] text-primary">GAME MEDIA</div>
         <h2 className="mt-1 text-2xl font-black">백그라운드 관리</h2>
-        <p className="mt-2 text-sm text-neutral-500">게임 시작 시 활성 배경 1개와 BGM 1개를 각각 독립적으로 랜덤 선택합니다.</p>
+       <p className="mt-2 text-sm text-neutral-500">게임용 미디어와 메인 메뉴 미디어를 같은 저장소에서 관리합니다. 메인 적용 항목은 배경과 BGM에서 각각 하나만 선택됩니다.</p>
       </div>
 
       <section className="rounded-lg border border-primary/30 bg-primary/5 p-4">
@@ -416,7 +417,7 @@ function MediaSection({
   accept: string;
   uploading: boolean;
   onUpload: (file: File) => void;
-  onPatch: (item: MediaRecord, patch: Partial<Pick<MediaRecord, "name" | "enabled" | "volume">>) => Promise<void>;
+  onPatch: (item: MediaRecord, patch: Partial<Pick<MediaRecord, "name" | "enabled" | "volume" | "mainEnabled">>) => Promise<void>;
   onDelete: (item: MediaRecord) => Promise<void>;
   ratioWarning: (item: MediaRecord) => boolean | null;
   viewportRatio: number;
@@ -498,7 +499,8 @@ function MediaSection({
                       />
                       <p className="truncate px-1 text-[10px] text-neutral-600">{item.fileName}</p>
                     </div>
-                    <label className="flex shrink-0 items-center gap-2 text-xs font-bold text-neutral-300">
+                     <div className="flex flex-wrap items-center gap-3 text-xs font-bold text-neutral-300">
+                     <label className="flex shrink-0 items-center gap-2">
                       <input
                         type="checkbox"
                         checked={item.enabled}
@@ -506,6 +508,18 @@ function MediaSection({
                       />
                       <Power className="h-3.5 w-3.5" /> 활성
                     </label>
+                     {(item.mediaType === "BACKGROUND" || item.mediaType === "BGM") && (
+                       <label className="flex shrink-0 items-center gap-2 text-amber-300">
+                         <input
+                           type="checkbox"
+                           checked={item.mainEnabled}
+                           disabled={!item.enabled}
+                           onChange={(event) => void onPatch(item, { mainEnabled: event.target.checked })}
+                         />
+                         메인 적용
+                       </label>
+                     )}
+                     </div>
                   </div>
                   {item.mediaType === "BACKGROUND" && (
                     <p className={`text-[11px] ${warning ? "text-amber-300" : "text-neutral-500"}`}>

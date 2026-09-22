@@ -2392,6 +2392,7 @@ router.post("/game-media", async (request, response): Promise<void> => {
   const height = typeof body.height === "number" ? body.height : null;
   const volume = typeof body.volume === "number" ? body.volume : 100;
   const enabled = body.enabled === undefined ? true : body.enabled;
+  const mainEnabled = body.mainEnabled === undefined ? false : body.mainEnabled;
   const validDimensions = mediaType !== "BACKGROUND" ||
     (width !== null && height !== null &&
       Number.isInteger(width) && Number.isInteger(height) && width > 0 && height > 0);
@@ -2399,7 +2400,10 @@ router.post("/game-media", async (request, response): Promise<void> => {
       !assetUrl || !fileName || !contentType || !validGameMediaAssetToken(mediaType, assetId, uploadToken) ||
       !validDimensions ||
        (mediaType !== "BACKGROUND" && (!Number.isInteger(volume) || volume < 0 || volume > 100)) ||
-      typeof enabled !== "boolean") {
+       typeof enabled !== "boolean" ||
+       typeof mainEnabled !== "boolean" ||
+       (mainEnabled && mediaType !== "BACKGROUND" && mediaType !== "BGM") ||
+       (mainEnabled && !enabled)) {
     response.status(400).json({ message: "게임 미디어 정보가 올바르지 않습니다." });
     return;
   }
@@ -2408,19 +2412,30 @@ router.post("/game-media", async (request, response): Promise<void> => {
     response.status(400).json({ message: "저장된 파일 경로가 올바르지 않습니다." });
     return;
   }
-  const [media] = await db.insert(gameMediaTable).values({
-    id: randomUUID(),
-    mediaType,
-    name,
-    assetId,
-    assetUrl,
-    fileName,
-    contentType,
-    width: mediaType === "BACKGROUND" ? width as number : null,
-    height: mediaType === "BACKGROUND" ? height as number : null,
-     volume: mediaType !== "BACKGROUND" ? volume as number : 100,
-    enabled,
-  }).returning();
+  const [media] = await db.transaction(async (tx) => {
+    if (mainEnabled) {
+      await tx.update(gameMediaTable)
+        .set({ mainEnabled: false, updatedAt: new Date() })
+        .where(and(
+          eq(gameMediaTable.mediaType, mediaType),
+          eq(gameMediaTable.mainEnabled, true),
+        ));
+    }
+    return tx.insert(gameMediaTable).values({
+      id: randomUUID(),
+      mediaType,
+      name,
+      assetId,
+      assetUrl,
+      fileName,
+      contentType,
+      width: mediaType === "BACKGROUND" ? width as number : null,
+      height: mediaType === "BACKGROUND" ? height as number : null,
+      volume: mediaType !== "BACKGROUND" ? volume as number : 100,
+      enabled,
+      mainEnabled: mediaType === "BACKGROUND" || mediaType === "BGM" ? mainEnabled : false,
+    }).returning();
+  });
   response.status(201).json({ media });
 });
 
@@ -2437,17 +2452,33 @@ router.patch("/game-media/:id", async (request, response): Promise<void> => {
   const name = body.name === undefined ? existing.name : typeof body.name === "string" ? body.name.trim() : "";
   const enabled = body.enabled === undefined ? existing.enabled : body.enabled;
   const volume = typeof body.volume === "number" ? body.volume : existing.volume;
+  const mainEnabled = body.mainEnabled === undefined ? existing.mainEnabled : body.mainEnabled;
   if (!name || name.length > 120 || typeof enabled !== "boolean" ||
-      !Number.isInteger(volume) || volume < 0 || volume > 100) {
+      !Number.isInteger(volume) || volume < 0 || volume > 100 ||
+      typeof mainEnabled !== "boolean" ||
+      (mainEnabled && existing.mediaType !== "BACKGROUND" && existing.mediaType !== "BGM") ||
+      (mainEnabled && !enabled)) {
     response.status(400).json({ message: "게임 미디어 설정이 올바르지 않습니다." });
     return;
   }
-  const [media] = await db.update(gameMediaTable).set({
-    name,
-    enabled,
-     volume: existing.mediaType !== "BACKGROUND" ? volume : existing.volume,
-    updatedAt: new Date(),
-  }).where(eq(gameMediaTable.id, id)).returning();
+  const nextMainEnabled = enabled ? mainEnabled : false;
+  const [media] = await db.transaction(async (tx) => {
+    if (nextMainEnabled) {
+      await tx.update(gameMediaTable)
+        .set({ mainEnabled: false, updatedAt: new Date() })
+        .where(and(
+          eq(gameMediaTable.mediaType, existing.mediaType),
+          eq(gameMediaTable.mainEnabled, true),
+        ));
+    }
+    return tx.update(gameMediaTable).set({
+      name,
+      enabled,
+      volume: existing.mediaType !== "BACKGROUND" ? volume : existing.volume,
+      mainEnabled: nextMainEnabled,
+      updatedAt: new Date(),
+    }).where(eq(gameMediaTable.id, id)).returning();
+  });
   response.json({ media });
 });
 

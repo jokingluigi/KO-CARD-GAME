@@ -1,8 +1,10 @@
 import { Bot, CalendarCheck2, ClipboardList, Globe2, Gift, Layers3, LogOut, ShoppingBag, Library } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useLocation } from "wouter";
 import type { AuthUser } from "@/lib/auth-client";
 import { ROUTES } from "@/lib/routes";
+import { audioManager } from "@/audio/audio-manager";
+import { emptyMainContent, fetchMainContent, type MainContent } from "@/lib/main-content-client";
 
 type MainMenuProps = {
   onComingSoon?: (label: string) => void;
@@ -57,11 +59,69 @@ const menuItems = [
 
 export function MainMenu({ onComingSoon, onDeckEdit, onAiMatch, user, onLogout }: MainMenuProps) {
   const [notice, setNotice] = useState("");
+  const [mainContent, setMainContent] = useState<MainContent>(emptyMainContent);
+  const [contentLoaded, setContentLoaded] = useState(false);
+  const [backgroundState, setBackgroundState] = useState<"fallback" | "loading" | "ready">("fallback");
   const [, navigate] = useLocation();
 
+  useEffect(() => {
+    let cancelled = false;
+    setContentLoaded(false);
+    void fetchMainContent()
+      .then((content) => {
+        if (cancelled) return;
+        setMainContent(content);
+        setContentLoaded(true);
+      })
+      .catch(() => {
+        if (!cancelled) setContentLoaded(true);
+      });
+    return () => {
+      cancelled = true;
+      audioManager.stopBgm();
+    };
+  }, []);
+
+  useEffect(() => {
+    const url = mainContent.background?.assetUrl;
+    if (!url) {
+      setBackgroundState("fallback");
+      return;
+    }
+    setBackgroundState("loading");
+    const image = new window.Image();
+    image.onload = () => setBackgroundState("ready");
+    image.onerror = () => setBackgroundState("fallback");
+    image.src = url;
+    return () => {
+      image.onload = null;
+      image.onerror = null;
+    };
+  }, [mainContent.background?.assetUrl]);
+
+  useEffect(() => {
+    if (!contentLoaded) return;
+    const bgm = mainContent.bgm;
+    if (!bgm) {
+      audioManager.stopBgm();
+      return;
+    }
+    audioManager.playBgm(bgm.assetUrl, bgm.volume);
+    return () => audioManager.stopBgm();
+  }, [contentLoaded, mainContent.bgm?.assetUrl, mainContent.bgm?.volume]);
+
+  const backgroundUrl = backgroundState === "ready" ? mainContent.background?.assetUrl : null;
+
   return (
-    <main className="ko-main-menu min-h-screen bg-[#080808] px-5 py-10 text-white sm:px-8">
-      <div className="ko-main-menu__content mx-auto flex min-h-[calc(100vh-5rem)] w-full max-w-4xl flex-col justify-center">
+    <main className="ko-main-menu relative min-h-screen overflow-hidden bg-[#080808] px-5 py-10 text-white sm:px-8">
+      {backgroundUrl && (
+        <div
+          aria-hidden="true"
+          className="pointer-events-none absolute inset-0 bg-cover bg-center"
+          style={{ backgroundImage: `linear-gradient(rgba(8, 8, 8, 0.72), rgba(8, 8, 8, 0.9)), url(${JSON.stringify(backgroundUrl)})` }}
+        />
+      )}
+      <div className="ko-main-menu__content relative z-10 mx-auto flex min-h-[calc(100vh-5rem)] w-full max-w-4xl flex-col justify-center">
         <header className="ko-main-menu__header text-center">
           <h1 className="ko-main-menu__logo font-display font-black text-white">KO</h1>
           <p className="ko-main-menu__tagline font-display font-bold text-neutral-500">CARD BATTLE</p>
@@ -82,6 +142,23 @@ export function MainMenu({ onComingSoon, onDeckEdit, onAiMatch, user, onLogout }
             </div>
           )}
         </header>
+
+        {mainContent.notices.length > 0 && (
+          <section className="mb-6 rounded-lg border border-amber-700/60 bg-black/55 p-4 shadow-xl" aria-label="공지">
+            <div className="mb-3 flex items-center justify-between gap-3">
+              <h2 className="text-xs font-black tracking-[0.2em] text-amber-300">NOTICE</h2>
+              <span className="text-[10px] font-bold text-neutral-600">운영 안내</span>
+            </div>
+            <div className="space-y-3">
+              {mainContent.notices.map((item) => (
+                <article key={item.id} className="border-l-2 border-amber-400/70 pl-3">
+                  <h3 className="text-sm font-black text-white">{item.title}</h3>
+                  <p className="mt-1 whitespace-pre-wrap text-xs leading-5 text-neutral-300">{item.body}</p>
+                </article>
+              ))}
+            </div>
+          </section>
+        )}
 
         <section aria-label="메인 메뉴" className="ko-main-menu__grid grid gap-4 sm:grid-cols-2">
           {menuItems.map(({ label, description, icon: Icon }) => (

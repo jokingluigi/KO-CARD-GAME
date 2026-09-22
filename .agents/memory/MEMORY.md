@@ -76,3 +76,4 @@
 - [Targeted wrestler effect semantics](targeted-wrestler-effect-semantics.md) — Dehun reacts from HAND only; Natomato's combo attack is temporary so permanent attack modifiers survive turn end.
 - [HAND stat and no-target entry](hand-stat-and-no-target-entry.md) — stat listeners are limited to HAND/BOARD and no-target WRESTLER entry choices skip without rejecting the play.
 - [Progress reward policy boundary](progress-reward-policy.md) — live reward values, eligible modes, daily timezone, and attendance streak policy remain configuration until product policy is confirmed.
+- [Main content boundary](main-content-boundary.md) — notices stay escaped plain text; main background/BGM reuse game media with a separate main selection flag.

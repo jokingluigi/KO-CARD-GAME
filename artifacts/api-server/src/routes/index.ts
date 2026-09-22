@@ -21,6 +21,7 @@ import onlineMatchesRouter from "./online-matches";
 import dailyQuestsRouter from "./daily-quests";
 import attendanceRouter from "./attendance";
 import adminRewardsRouter from "./admin-rewards";
+import { adminNoticesRouter, mainContentRouter } from "./main-content";
 
 const router: IRouter = Router();
 
@@ -28,6 +29,7 @@ router.use(healthRouter);
 router.use(storageRouter);
 router.use(cardsRouter);
 router.use(gameMediaRouter);
+router.use(mainContentRouter);
 router.use("/admin", adminRouter);
 router.use("/auth", authRouter);
 router.use("/test-auth", testAuthRouter);
@@ -46,5 +48,6 @@ router.use("/online-matches", onlineMatchesRouter);
 router.use("/daily-quests", dailyQuestsRouter);
 router.use("/attendance", attendanceRouter);
 router.use("/admin/rewards", adminRewardsRouter);
+router.use("/admin/notices", adminNoticesRouter);
 
 export default router;

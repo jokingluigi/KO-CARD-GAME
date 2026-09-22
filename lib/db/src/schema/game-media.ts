@@ -12,6 +12,7 @@ export const gameMediaTable = pgTable("game_media", {
   height: integer("height"),
   volume: integer("volume").notNull().default(100),
   enabled: boolean("enabled").notNull().default(true),
+  mainEnabled: boolean("main_enabled").notNull().default(false),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
 });

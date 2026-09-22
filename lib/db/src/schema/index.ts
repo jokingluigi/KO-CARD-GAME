@@ -31,3 +31,4 @@ export * from "./card-frames";
 export * from "./ai-decks";
 export * from "./online-matches";
 export * from "./rewards";
+export * from "./notices";
