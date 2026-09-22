@@ -1,0 +1,942 @@
+KO CARD GAME — FIX ONLY:
+흑구슬마스터 + 조크루이지 + 데헌 + 나토마토
+
+이번 작업에서는 아래 네 카드/선수 문제만 수정한다.
+
+1. 흑구슬마스터
+2. 조크루이지
+3. 데헌
+4. 나토마토
+
+다른 카드,
+Pandora,
+Champion Token,
+뒷정리맨,
+매드 펌킨,
+여울,
+그레이트 챤,
+예거,
+Online,
+AI scheduler,
+Admin AI,
+AI Mechanic Compiler,
+신규 기능
+
+은 절대로 수정하지 마.
+
+==================================================
+0. FIX-FIRST
+==================================================
+
+이번 작업은 QA/조사 보고서가 아니다.
+
+반드시 각 카드마다:
+
+authoritative effect 확인
+→ 실패 경로 재현
+→ root cause 확인
+→ 실제 source/config 수정
+→ 카드 전용 regression test
+→ 관련 공통 regression
+→ 다음 카드
+
+순서로 진행한다.
+
+네 카드를 전부 조사만 하고
+마지막에 일부만 수정하는 방식 금지.
+
+순서:
+
+흑구슬마스터
+→ 조크루이지
+→ 데헌
+→ 나토마토
+
+각 항목을 실제로 끝낸 뒤 다음으로 이동.
+
+==================================================
+PART A — 흑구슬마스터
+==================================================
+
+현재 신고:
+
+흑구슬마스터를 손에서 플레이하면
+대상을 지정해야 하는 등장 효과가
+정상적으로 이어지지 않거나 씹힌다.
+
+특히:
+
+PLAY_FROM_HAND
+→ ON_ENTER
+→ PLAYER_CHOICE
+
+까지 연결되어야 하는 효과가
+중간에서 resolution되지 않는 문제가 있었다.
+
+==================================================
+1. 흑구슬마스터 공식 효과 확인
+==================================================
+
+먼저 authoritative definition을 확인.
+
+우선순위:
+
+1. CardDefinition
+2. effectConfig
+3. SCRIPT_V1 / Structured Effect
+4. Admin saved effect
+5. seed/catalog
+6. git history
+
+정확한:
+
+- trigger
+- 대상
+- 효과
+- 수치
+- 조건
+
+을 확인.
+
+효과를 추측해서 새로 만들지 마.
+
+==================================================
+2. 흑구슬마스터 핵심 경로
+==================================================
+
+정상 흐름이 target-selection ON_ENTER라면:
+
+PLAY_FROM_HAND
+→ ON_ENTER
+→ effect frame 생성
+→ PLAYER_CHOICE targetingState
+→ 유효 target 표시
+→ SELECT_EFFECT_TARGET
+→ continuation resume
+→ 실제 effect
+→ effect frame 완료
+
+까지 이어져야 한다.
+
+==================================================
+3. 특히 확인할 것
+==================================================
+
+A.
+ON_ENTER가 PLAY_FROM_HAND에서 실제 발생하는가?
+
+B.
+PLAYER_CHOICE에서 targetingState가 생성되는가?
+
+C.
+선택 후 continuation ID/frame이 유지되는가?
+
+D.
+target 선택 순간 effect frame이 삭제되는가?
+
+E.
+최근 nested effect-frame 수정으로
+이 효과가 잘못 종료되는가?
+
+F.
+target 선택 후 stale source/target 때문에
+validator가 effect를 취소하는가?
+
+G.
+UI만 targeting 상태인데
+canonical engine은 이미 effect를 종료했는가?
+
+==================================================
+4. ON_ENTER 규칙 유지
+==================================================
+
+기존 공식 규칙:
+
+ON_ENTER / 등장 효과는
+WRESTLER의 PLAY_FROM_HAND에서만 발생.
+
+다음에서는 일반 등장 효과 자동 발동 금지:
+
+- SUMMON
+- REVIVE
+- Champion Token deployment
+
+흑구슬마스터를 고치면서
+이 규칙을 깨뜨리지 마.
+
+==================================================
+5. 흑구슬마스터 Regression
+==================================================
+
+TEST B1
+
+흑구슬마스터 PLAY_FROM_HAND.
+
+기대:
+
+ON_ENTER trigger 발생.
+
+==================================================
+
+TEST B2
+
+유효 target이 있으면:
+
+PLAYER_CHOICE 생성.
+
+유효하지 않은 대상은 선택 불가.
+
+==================================================
+
+TEST B3
+
+target 선택.
+
+기대:
+
+continuation resume
+→ 공식 effect 실제 실행
+→ GameState 변경.
+
+==================================================
+
+TEST B4
+
+effect 완료 후:
+
+targetingState 없음
+pending continuation 없음
+stale effect frame 없음.
+
+==================================================
+
+TEST B5
+
+흑구슬마스터를 SUMMON.
+
+기대:
+
+일반 ON_ENTER 자동 발동 없음.
+
+==================================================
+
+TEST B6
+
+REVIVE.
+
+기대:
+
+일반 ON_ENTER 자동 발동 없음.
+
+==================================================
+PART B — 조크루이지
+==================================================
+
+현재 신고:
+
+조크루이지의 카드 효과가
+실제 게임에서 정상적으로 작동하지 않는다.
+
+효과 내용은 이번 프롬프트에서 임의로 정의하지 않는다.
+
+==================================================
+6. 조크루이지 공식 효과부터 정확히 확인
+==================================================
+
+다음에서 authoritative definition 검색:
+
+CardDefinition
+effectConfig
+SCRIPT_V1
+Structured Effect
+Admin saved data
+seed/catalog
+git history
+
+최종적으로 다음을 명시:
+
+OFFICIAL EFFECT:
+...
+
+TRIGGER:
+...
+
+TARGET:
+...
+
+EXPECTED RESULT:
+...
+
+==================================================
+7. 단순히 description만 있으면 끝내지 마
+==================================================
+
+카드 description과
+실제 executable effect config를 비교.
+
+가능한 경우:
+
+description 존재
+effectId null
+
+description 존재
+effectConfig null
+
+잘못된 trigger
+
+잘못된 selector
+
+잘못된 result reference
+
+unsupported legacy definition
+
+등을 구분.
+
+==================================================
+8. 조크루이지 실제 Runtime Test
+==================================================
+
+공식 효과에 맞는 최소 fixture를 만든다.
+
+반드시:
+
+Action
+→ Event
+→ Effect resolution
+→ GameState
+
+전체를 확인.
+
+예를 들어 공식 효과가:
+
+damage라면 실제 HP 변화,
+
+buff라면 실제 CardInstance stat,
+
+summon이라면 실제 board instance,
+
+draw라면 실제 hand/deck state,
+
+queued라면 등록 → trigger → consume
+
+를 확인.
+
+"effect function이 호출됐다"만으로 PASS 금지.
+
+==================================================
+9. 조크루이지 이름 hardcoding 금지
+==================================================
+
+금지:
+
+if (card.name === "조크루이지")
+
+실제 effect definition이
+generic engine을 사용해서 작동해야 한다.
+
+==================================================
+PART C — 데헌
+==================================================
+
+현재 신고:
+
+데헌은 손패(HAND)에 있을 때
+작동해야 하는 효과가 정상적으로 발동하지 않는다.
+
+즉 FIELD에 나오지 않은 카드의
+HAND-zone reactive/passive effect 처리 문제가 의심된다.
+
+==================================================
+10. 데헌 공식 효과 확인
+==================================================
+
+authoritative definition에서:
+
+- trigger
+- HAND에서 작동하는 조건
+- owner
+- event source
+- 대상
+- 효과
+- 1회/반복 여부
+- duration
+
+을 정확히 확인.
+
+추측 금지.
+
+==================================================
+11. HAND-zone effect 조사
+==================================================
+
+특히 확인:
+
+A.
+Effect listener가 FIELD 카드만 등록하는가?
+
+B.
+HAND CardInstance를 trigger source 후보에서 제외하는가?
+
+C.
+zone filter가 BOARD로 고정되어 있는가?
+
+D.
+HAND에서 effect config를 읽지 않는가?
+
+E.
+event 발생 시 source card를 찾는 과정이
+board-only lookup인가?
+
+F.
+hidden information 때문에
+server-side effect 자체까지 막고 있는가?
+
+==================================================
+12. HAND 효과는 server-side에서 처리
+==================================================
+
+데헌이 상대에게 공개되지 않아야 하는
+HAND 카드라면:
+
+효과가 발동하기 전까지
+상대 client에 identity를 노출하면 안 된다.
+
+하지만 hidden information 보호 때문에
+server-side trigger까지 막으면 안 된다.
+
+즉:
+
+server knows HAND card
+→ trigger 판정
+→ effect resolution
+→ 공개가 필요한 시점에 presentation
+
+구조 유지.
+
+==================================================
+13. 데헌 Regression
+==================================================
+
+TEST D1
+
+데헌이 HAND에 존재.
+
+공식 trigger 발생.
+
+기대:
+
+effect 발동.
+
+==================================================
+
+TEST D2
+
+데헌이 HAND에 없으면:
+
+동일 effect 발동 없음.
+
+==================================================
+
+TEST D3
+
+상대 HAND에 있는 데헌이
+내 client state에 사전 노출되지 않음.
+
+==================================================
+
+TEST D4
+
+동일 trigger가 반복될 경우
+공식적으로 반복 효과라면 반복,
+1회 효과라면 정확히 한 번만.
+
+==================================================
+
+TEST D5
+
+HAND effect 때문에
+카드가 FIELD에 있는 것처럼
+board slot/targeting에 들어가면 안 됨.
+
+==================================================
+PART D — 나토마토
+==================================================
+
+현재 신고:
+
+나토마토의 공격력 증가가
+임시 효과인데도 턴이 끝난 뒤
+원래 값으로 돌아오지 않는 문제가 있다.
+
+중요:
+
+먼저 공식 effect가 실제로 temporary인지 확인.
+
+영구 buff라면 복구시키면 안 된다.
+
+==================================================
+14. 나토마토 공식 duration 확인
+==================================================
+
+authoritative definition에서:
+
+- ATK 증가 수치
+- 발생 trigger
+- 대상
+- duration
+
+확인.
+
+특히:
+
+UNTIL_END_OF_TURN
+CURRENT_TURN
+NEXT_TURN
+PERMANENT
+
+중 어떤 semantics인지 명확히 확인.
+
+==================================================
+15. Temporary modifier lifecycle 조사
+==================================================
+
+공식적으로 이번 턴 동안만 유지되는 효과라면:
+
+effect activation
+→ temporary attack modifier 등록
+→ 현재 turn 동안 effectiveAttack 증가
+→ TURN_END
+→ 해당 temporary modifier 제거
+→ 원래 effectiveAttack 복구
+
+되어야 한다.
+
+==================================================
+16. base stats 자체를 덮어쓰지 마
+==================================================
+
+나토마토 effect 때문에:
+
+CardDefinition.attack
+
+이나 영구 base stat을
+직접 변경하면 안 된다.
+
+temporary modifier layer를 사용.
+
+턴 종료 시 modifier만 제거.
+
+==================================================
+17. 기존 다른 modifier와 함께 있을 경우
+==================================================
+
+예:
+
+base attack = 3
+
+permanent +1
+temporary 나토마토 +2
+
+현재 attack = 6
+
+TURN_END 후 기대:
+
+4
+
+이지
+
+3
+
+이 아니다.
+
+즉 나토마토 temporary modifier만 제거.
+
+다른 permanent modifier까지 초기화 금지.
+
+==================================================
+18. 나토마토 Regression
+==================================================
+
+TEST N1
+
+나토마토 공식 temporary buff 발동.
+
+기대:
+
+ATK 증가.
+
+==================================================
+
+TEST N2
+
+현재 턴 동안:
+
+ATK 증가 유지.
+
+==================================================
+
+TEST N3
+
+TURN_END.
+
+기대:
+
+나토마토 temporary modifier 제거.
+
+==================================================
+
+TEST N4
+
+다른 permanent modifier 존재.
+
+TURN_END 후:
+
+permanent modifier 유지.
+
+==================================================
+
+TEST N5
+
+턴 종료 presentation만 바뀌는 것이 아니라
+canonical GameState effective stats가 정상 복구.
+
+==================================================
+19. 데이터 누락 처리
+==================================================
+
+네 카드 중 하나라도:
+
+effectId = null
+effectConfig = null
+invalid script
+missing catalog entry
+
+라면:
+
+"데이터 없음"
+
+으로 종료 금지.
+
+확인:
+
+- seed
+- catalog source
+- Admin data schema
+- fixtures
+- git history
+
+authoritative definition 복구 가능하면
+development source를 실제 수정.
+
+Production DB 직접 수정 금지.
+
+Production 데이터 적용이 따로 필요하면:
+
+PRODUCTION_DATA_APPLY_REQUIRED
+
+와 함께:
+
+CARD:
+FIELD:
+EXPECTED VALUE:
+
+를 정확히 보고.
+
+==================================================
+20. 공통 엔진 수정 범위
+==================================================
+
+이번 네 카드 문제의 root cause가 generic engine이면
+필요한 공통 수정은 허용.
+
+예:
+
+PLAYER_CHOICE continuation bug
+
+HAND-zone event listener bug
+
+temporary modifier expiration bug
+
+하지만 수정은 해당 root cause에 필요한 최소 범위로 제한.
+
+새로운 SCRIPT_V1 capability 개발 금지.
+
+==================================================
+21. Regression 범위
+==================================================
+
+최소 기존 정상 동작 회귀 확인:
+
+PLAY_FROM_HAND
+ON_ENTER
+PLAYER_CHOICE
+continuation
+SUMMON
+REVIVE
+HAND-zone effects
+hidden information sanitizer
+temporary modifiers
+TURN_END cleanup
+permanent modifiers
+
+==================================================
+22. 이번 작업에서 수정 금지
+==================================================
+
+절대 건드리지 마:
+
+- Pandora
+- Champion Token
+- Pandora Quest
+- 뒷정리맨
+- 매드 펌킨
+- 여울
+- 그레이트 챤
+- 예거
+- AI scheduler
+- Online
+- Online animations
+- BGM
+- Admin UI 신규 기능
+- AI Mechanic Compiler
+- SCRIPT_V1 신규 기능
+- 분해
+- 일일 퀘스트
+- 출석
+- 공지
+- 승패 보상
+- 덱 에디터 개선
+
+==================================================
+23. 브라우저 Gameplay
+==================================================
+
+브라우저 가능 시 Development/Test 환경에서:
+
+흑구슬마스터:
+PLAY_FROM_HAND
+→ 대상 선택
+→ effect 정상 실행
+
+조크루이지:
+공식 trigger 발생
+→ 실제 결과 확인
+
+데헌:
+HAND 상태
+→ 공식 trigger
+→ effect 확인
+
+나토마토:
+temporary buff
+→ TURN_END
+→ 원상복구
+
+확인.
+
+브라우저 불가:
+
+수정과 자동 테스트는 계속하고
+GAMEPLAY만 UNVERIFIED.
+
+==================================================
+24. 자동 검증
+==================================================
+
+반드시:
+
+Black Orb Master regression
+Joke Luigi regression
+Dehun HAND-effect regression
+Natomato temporary-modifier regression
+
+관련 공통 engine tests.
+
+그리고:
+
+pnpm run typecheck
+pnpm --filter @workspace/ko-game run build
+git diff --check
+
+API/shared 변경 시:
+
+API typecheck
+API build
+
+도 실행.
+
+==================================================
+25. Git
+==================================================
+
+이번 작업 관련 파일만 stage.
+
+금지:
+
+Pasted-*.txt
+.env
+secret
+logs
+temp
+unrelated user changes
+
+검증 후 commit.
+
+force push 금지.
+
+Push 인증 실패 시
+local commit 유지하고 보고.
+
+==================================================
+26. 최종 보고
+==================================================
+
+흑구슬마스터
+
+OFFICIAL EFFECT:
+...
+
+ROOT CAUSE:
+...
+
+PLAY_FROM_HAND:
+PASS / FAIL
+
+PLAYER_CHOICE:
+PASS / FAIL
+
+Continuation:
+PASS / FAIL
+
+Actual GameState effect:
+PASS / FAIL
+
+SUMMON does not trigger ON_ENTER:
+PASS / FAIL
+
+REVIVE does not trigger ON_ENTER:
+PASS / FAIL
+
+
+조크루이지
+
+OFFICIAL EFFECT:
+...
+
+ROOT CAUSE:
+...
+
+Trigger:
+PASS / FAIL
+
+Effect resolution:
+PASS / FAIL
+
+Expected GameState:
+...
+
+Actual GameState:
+...
+
+
+데헌
+
+OFFICIAL EFFECT:
+...
+
+ROOT CAUSE:
+...
+
+HAND trigger:
+PASS / FAIL
+
+Server-side execution:
+PASS / FAIL
+
+Hidden info preserved:
+PASS / FAIL
+
+GameState result:
+PASS / FAIL
+
+
+나토마토
+
+OFFICIAL EFFECT:
+...
+
+Official duration:
+...
+
+ROOT CAUSE:
+...
+
+Buff applied:
+PASS / FAIL
+
+TURN_END cleanup:
+PASS / FAIL
+
+Permanent modifiers preserved:
+PASS / FAIL
+
+Final GameState:
+...
+
+
+==================================================
+
+IMPLEMENTATION:
+PASS / FAIL / BLOCKED
+
+AUTOMATED VERIFICATION:
+PASS / FAIL
+
+GAMEPLAY VERIFICATION:
+PASS / FAIL / UNVERIFIED
+
+PRODUCTION DATA APPLY:
+NONE / REQUIRED
+
+TYPECHECK:
+PASS / FAIL
+
+KO BUILD:
+PASS / FAIL
+
+API BUILD:
+PASS / FAIL / NOT_MODIFIED
+
+git diff --check:
+PASS / FAIL
+
+CHANGED FILES:
+...
+
+COMMIT:
+...
+
+PUSH:
+...
+
+==================================================
+완료 조건
+==================================================
+
+이번 작업은 정확히 네 카드만 끝낸다.
+
+1. 흑구슬마스터
+   PLAY_FROM_HAND → target selection → effect 정상 실행
+
+2. 조크루이지
+   authoritative effect가 실제 GameState에 적용
+
+3. 데헌
+   HAND 상태에서 공식 effect 정상 발동
+
+4. 나토마토
+   공식 temporary buff라면 정확한 시점에 원상복구
+
+이 네 가지가 자동 regression으로 증명되어야 한다.
+
+다른 문제는 수정하지 말고 멈춰라.
