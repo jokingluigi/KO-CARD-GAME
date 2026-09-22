@@ -37,7 +37,7 @@ import {
   Inspectable,
 } from './alt-inspector';
 import { PresentationFeedback, type PresentationCue } from './presentation-feedback';
-import { presentationCueDrafts } from './presentation-feedback-utils';
+import { presentationCueDrafts, presentationEventKey } from './presentation-feedback-utils';
 import { QuestPresentation } from './quest-presentation';
 
 interface GameStatePreviewProps {
@@ -129,6 +129,7 @@ export function GameStatePreview({
   const [screenShakeLevel, setScreenShakeLevel] = React.useState<AttackDamageImpactLevel>("NONE");
   const screenShakeTimerRef = React.useRef<number | null>(null);
   const processedEventCountRef = React.useRef<number | null>(null);
+  const processedEventKeysRef = React.useRef(new Set<string>());
   const lastCardPositionsRef = React.useRef(new Map<string, { left: number; top: number; width: number; height: number }>());
   const previousCardStatsRef = React.useRef(new Map<string, { attack: number; health: number }>());
   const previousCardsRef = React.useRef(new Map<string, CardInstance>());
@@ -170,6 +171,9 @@ export function GameStatePreview({
       state.events.length < processedEventCountRef.current;
     if (processedEventCountRef.current === null || eventLogReset) {
       processedEventCountRef.current = state.events.length;
+      processedEventKeysRef.current = new Set(
+        state.events.map((event, index) => presentationEventKey(event, index, state.events)),
+      );
       previousCardStatsRef.current = currentCardStats;
       previousCardsRef.current = currentCards(state);
       if (eventLogReset) {
@@ -180,8 +184,15 @@ export function GameStatePreview({
       return;
     }
 
-    const startIndex = processedEventCountRef.current;
-    const newEvents = state.events.slice(startIndex);
+    const eventKeys = state.events.map((event, index) =>
+      presentationEventKey(event, index, state.events),
+    );
+    const newEventEntries = state.events
+      .map((event, index) => ({ event, key: eventKeys[index]! }))
+      .filter(({ key }) => !processedEventKeysRef.current.has(key));
+    const newEvents = newEventEntries.map(({ event }) => event);
+    const newEventKeys = newEventEntries.map(({ key }) => key);
+    for (const key of eventKeys) processedEventKeysRef.current.add(key);
     processedEventCountRef.current = state.events.length;
     const previousCardStats = previousCardStatsRef.current;
     const previousCards = previousCardsRef.current;
@@ -354,7 +365,7 @@ export function GameStatePreview({
         ...leaveAnimations,
       ]);
     }
-    const cues = presentationCueDrafts(state.events, startIndex).map((draft) => ({
+    const cues = presentationCueDrafts(newEvents, 0, newEventKeys).map((draft) => ({
       ...draft,
       ...cuePosition(draft),
     }));
@@ -391,7 +402,11 @@ export function GameStatePreview({
       }
     }
     if (cues.length) {
-      setPresentationQueue((current) => [...current.slice(-18), ...cues]);
+      setPresentationQueue((current) => {
+        const existingIds = new Set(current.map((cue) => cue.id));
+        const freshCues = cues.filter((cue) => !existingIds.has(cue.id));
+        return freshCues.length ? [...current.slice(-18), ...freshCues] : current;
+      });
     }
   }, [onOpponentAttackPresentation, onSelfPlayPresentation, state.events, state.players]);
 

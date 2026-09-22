@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 
-import { presentationCueDrafts } from "./presentation-feedback-utils";
+import { presentationCueDrafts, presentationEventKey } from "./presentation-feedback-utils";
 
 test("이벤트 순서대로 피해, 퇴장, 퀘스트 완료 피드백을 만든다", () => {
   const cues = presentationCueDrafts([
@@ -52,4 +52,26 @@ test("이벤트 로그 커서 이후의 항목만 큐에 추가한다", () => {
 
   assert.equal(cues.length, 1);
   assert.equal(cues[0]?.cardInstanceId, "new");
+});
+
+test("동일한 퀘스트 완료 이벤트를 재동기화해도 occurrence key가 유지된다", () => {
+  const event = {
+    type: "CHAMPION_QUEST_COMPLETED" as const,
+    championId: "champion",
+    target: { type: "CHAMPION" as const, championId: "champion" },
+  };
+  const snapshot = [event, { ...event }];
+  const firstKeys = snapshot.map((item, index) => presentationEventKey(item, index, snapshot));
+  const resyncedKeys = snapshot.map((item, index) => presentationEventKey(item, index, snapshot));
+
+  assert.notEqual(firstKeys[0], firstKeys[1]);
+  assert.deepEqual(resyncedKeys, firstKeys);
+});
+
+test("새 이벤트 배치가 이전 큐 항목과 같은 모양이어도 stable key가 충돌하지 않는다", () => {
+  const event = { type: "DAMAGE_DEALT" as const, cardInstanceId: "target", amount: 1 };
+  const first = presentationCueDrafts([event], 0, ["match:17"]);
+  const second = presentationCueDrafts([event], 0, ["match:18"]);
+
+  assert.notEqual(first[0]?.id, second[0]?.id);
 });

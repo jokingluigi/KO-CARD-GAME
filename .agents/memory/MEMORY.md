@@ -36,7 +36,8 @@
 - [Champion full implementation prompt](champion-full-prompt.md) — aggregate unsaved Champion form data, freshly analyze live registry entries, and resolve linked Token data from Card Admin.
 - [Champion portrait uploads](champion-portrait-upload.md) — base and quest-complete portraits upload independently; missing completion art falls back to the base portrait.
 - [Champion image display settings](champion-image-display.md) — base and quest-complete portraits share one persisted crop/scale/position configuration.
-- [Presentation feedback queue](presentation-feedback-queue.md) — cosmetic event feedback must consume committed state asynchronously, preserve event order, and remain reduced-motion safe.
+- [Presentation feedback queue](presentation-feedback-queue.md) — cosmetic event feedback must consume committed state asynchronously, preserve event order, remain reduced-motion safe, and deduplicate stable event identities.
+- [Mixed-owner target scopes](mixed-owner-targets.md) — ALL target selections must resolve each instance through its actual owner so allied damage/retire works.
 - [KO authentication boundary](auth-boundary.md) — account data and server-side sessions stay behind the API; roles are never client-controlled.
 - [Browser auth smoke tests](browser-auth-smoke-tests.md) — test accounts must exercise real HttpOnly sessions; Pack catalog rows can be visible at quantity zero, so assert ownership by quantity.
 - [KO deck definition boundary](deck-definition-boundary.md) — decks keep owned Definition IDs and resolve current published status at read/select time.

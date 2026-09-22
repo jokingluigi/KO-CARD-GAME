@@ -27,6 +27,16 @@ export type PresentationCueDraft = {
   duration: number;
 };
 
+/** Stable within a match even when the same event payload occurs more than once. */
+export function presentationEventKey(event: GameEvent, index: number, events: GameEvent[]): string {
+  const fingerprint = JSON.stringify(event);
+  const occurrence = events
+    .slice(0, index)
+    .filter((candidate) => JSON.stringify(candidate) === fingerprint)
+    .length;
+  return `${fingerprint}:${occurrence}`;
+}
+
 function targetIds(event: GameEvent) {
   const target = event.target;
   if (target?.type === "CARD") return { cardInstanceId: target.cardInstanceId };
@@ -37,11 +47,16 @@ function targetIds(event: GameEvent) {
   return {};
 }
 
-export function presentationCueDrafts(events: GameEvent[], startIndex: number) {
+export function presentationCueDrafts(
+  events: GameEvent[],
+  startIndex: number,
+  eventKeys?: string[],
+) {
   const drafts: PresentationCueDraft[] = [];
 
   events.slice(startIndex).forEach((event, offset) => {
-    const id = `${startIndex + offset}:${event.type}:${event.cardInstanceId ?? ""}:${event.championId ?? ""}`;
+    const id = eventKeys?.[startIndex + offset] ??
+      `${startIndex + offset}:${event.type}:${event.cardInstanceId ?? ""}:${event.championId ?? ""}`;
     const target = targetIds(event);
     switch (event.type) {
       case "DAMAGE_DEALT":

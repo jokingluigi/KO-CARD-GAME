@@ -113,6 +113,47 @@ test('선택한 선수에게 피해를 준 뒤 체력이 정확히 1이면 자�
   assert.equal(result.targetingState, undefined);
 });
 
+test('ALL 범위의 선택 대상은 아군과 상대 WRESTLER를 모두 대상으로 하고 아군도 정상 퇴장시킨다', () => {
+  const source = instance('pandora-all', [
+    structured('DAMAGE', {
+      zone: 'BOARD',
+      owner: 'ALL',
+      cardType: 'WRESTLER',
+      filter: { excludeSource: true },
+      selection: 'PLAYER_CHOICE',
+      count: 1,
+    }, { amount: 2 }),
+  ]);
+  const ally = { ...instance('pandora-ally'), boardSlot: 0 as const, currentHealth: 2, maxHealth: 2 };
+  const enemy = { ...instance('pandora-enemy'), boardSlot: 0 as const, currentHealth: 2, maxHealth: 2 };
+  const state = createInitialGameState();
+  state.players[0].board = [ally, null, null, null];
+  state.players[1].board = [enemy, null, null, null];
+
+  const pending = enterField(state, 'player-1', source, 1);
+  assert.deepEqual(
+    new Set(pending.targetingState?.validTargetIds),
+    new Set([ally.instanceId, enemy.instanceId]),
+  );
+  const allyResult = selectEffectTarget(pending, ally.instanceId);
+
+  assert.equal(allyResult.players[0].board[0], null);
+  assert.equal(allyResult.players[0].graveyard.some((card) => card.instanceId === ally.instanceId), true);
+  assert.equal(allyResult.players[1].board[0]?.instanceId, enemy.instanceId);
+  assert.equal(
+    allyResult.events.some((event) =>
+      event.type === 'CARD_RETIRED' &&
+      event.cardInstanceId === ally.instanceId &&
+      event.sourceContext?.sourceActionType === 'CARD_EFFECT',
+    ),
+    true,
+  );
+
+  const enemyResult = selectEffectTarget(pending, enemy.instanceId);
+  assert.equal(enemyResult.players[1].board[0], null);
+  assert.equal(enemyResult.players[1].graveyard.some((card) => card.instanceId === enemy.instanceId), true);
+});
+
 test('인접한 아군 카드만 선택하는 범용 대상 선택이 양 옆의 점유 슬롯을 강화한다', () => {
   const source = {
     ...instance('cleanup-adjacent', [

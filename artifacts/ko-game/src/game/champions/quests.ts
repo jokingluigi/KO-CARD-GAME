@@ -11,7 +11,6 @@ function matchesQuestEvent(
   playerId: string,
   championId: string,
 ): boolean {
-  if (event.playerId !== playerId) return false;
   // The analyzer keeps the human-facing WRESTLER_RETIRED condition for
   // compatibility; the event stream uses the canonical CARD_RETIRED event.
   const eventMatches = quest.trackedEvent === 'WRESTLER_RETIRED'
@@ -19,12 +18,16 @@ function matchesQuestEvent(
     : event.type === quest.trackedEvent;
   if (!eventMatches || (quest.cardType && event.cardType !== quest.cardType)) return false;
   if (quest.sourceActionType) {
-    return event.sourceContext?.sourceActionType === quest.sourceActionType &&
+    const sourceMatches = event.sourceContext?.sourceActionType === quest.sourceActionType &&
       event.sourceContext.sourcePlayerId === playerId &&
       (!quest.sourceActionType.startsWith('USE_CHAMPION_ABILITY') ||
         event.sourceContext.sourceChampionDefinitionId === championId);
+    // A source-attributed Champion ability can retire either player's
+    // wrestler. The retired card's owner remains the event playerId, but the
+    // quest belongs to the Champion that caused the retirement.
+    return sourceMatches;
   }
-  return true;
+  return event.playerId === playerId;
 }
 
 export function processChampionQuestEvents(

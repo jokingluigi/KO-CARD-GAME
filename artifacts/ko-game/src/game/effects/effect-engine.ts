@@ -1324,6 +1324,59 @@ export function applyEffect(
     const zones = target.zones ?? (target.zone ? [target.zone] : []);
     if (zones.length === 1 && zones[0] === 'CHARACTER' &&
       (effect.action === 'REDUCE_COST' || effect.action === 'INCREASE_COST')) return state;
+    // `ALL` is a real target scope, not an alias for ENEMY. A PLAYER_CHOICE
+    // effect can select a card on either side, so resolve each selected id
+    // against its actual owner before entering the normal owner-specific path.
+    // This keeps damage/retire/move semantics identical for SELF and ENEMY.
+    if (target.owner === 'ALL') {
+      if (
+        target.selection === 'PLAYER_CHOICE' ||
+        target.selection === 'SAME_TARGET' ||
+        target.selection === 'ADJACENT'
+      ) {
+        const selectedIds = chosenTargetInstanceIds ?? [];
+        return selectedIds.reduce((nextState, selectedId) => {
+          const owner = nextState.players.find((player) =>
+            player.board.some((card) => card?.instanceId === selectedId),
+          );
+          if (!owner) return nextState;
+          return applyEffect(
+            nextState,
+            playerId,
+            sourceCard,
+            {
+              ...effect,
+              target: {
+                ...target,
+                owner: owner.id === playerId ? 'SELF' : 'ENEMY',
+              },
+            },
+            [selectedId],
+            triggerContext,
+          );
+        }, state);
+      }
+      if (target.selection === 'ALL') {
+        return state.players.reduce(
+          (nextState, owner) =>
+            applyEffect(
+              nextState,
+              playerId,
+              sourceCard,
+              {
+                ...effect,
+                target: {
+                  ...target,
+                  owner: owner.id === playerId ? 'SELF' : 'ENEMY',
+                },
+              },
+              undefined,
+              triggerContext,
+            ),
+          state,
+        );
+      }
+    }
     const targetOwner = target.owner === 'SELF' ? playerId : state.players.find((player) => player.id !== playerId)?.id;
     if (!targetOwner) return state;
     const candidatePlayer = state.players.find((player) => player.id === targetOwner);

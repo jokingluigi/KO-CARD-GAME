@@ -593,4 +593,28 @@ test('Champion Ability 귀속 RETIRE만 sourceActionType 퀘스트를 진행한�
     ],
   });
   assert.equal(attributed.players[0].champion?.questProgress, 1);
+
+  const enemyRetired = processChampionQuestEvents(attributed, {
+    ...attributed,
+    players: attributed.players.map((player) =>
+      player.id === 'player-1' && player.champion
+        ? { ...player, champion: { ...player.champion, questProgress: 0, questCompleted: false } }
+        : player,
+    ),
+    events: [
+      ...attributed.events,
+      {
+        type: 'CARD_RETIRED' as const,
+        playerId: 'player-2',
+        cardInstanceId: 'enemy-attributed',
+        boardSlot: 0,
+        sourceContext: {
+          sourcePlayerId: 'player-1',
+          sourceActionType: 'USE_CHAMPION_ABILITY',
+          sourceChampionDefinitionId: attributed.players[0].champion!.id,
+        },
+      },
+    ],
+  });
+  assert.equal(enemyRetired.players[0].champion?.questProgress, 1);
 });
