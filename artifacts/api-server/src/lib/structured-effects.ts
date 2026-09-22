@@ -45,11 +45,26 @@ export type QueuedStructuredEffect = {
     damageSource?: DamageSource;
     reference?: Reference;
     referenceStat?: "CURRENT_ATTACK" | "CURRENT_HEALTH";
-     amountReference?: "HAND_COUNT" | "GRAVEYARD_WRESTLER_COUNT" | "REMAINING_GOLD" | "BOARD_WRESTLER_COUNT" | "LAST_ATTACK_DELTA";
+     amountReference?: "HAND_COUNT" | "GRAVEYARD_WRESTLER_COUNT" | "REMAINING_GOLD" | "BOARD_WRESTLER_COUNT" | "LAST_ATTACK_DELTA" | "CURRENT_TURN_RETIRED_WRESTLER_COUNT" | "CURRENT_TURN_DAMAGE_TAKEN";
     minimum?: number;
     generatedModifiers?: { cost?: number; attack?: number; health?: number; copySourceStats?: boolean; copyTargetStats?: boolean };
     deckPosition?: "TOP" | "BOTTOM";
   };
+};
+export type RuleSchedule = {
+  kind: "OWNER_NEXT_TURN_START" | "OPPONENT_NEXT_TURN_START" | "END_OF_CURRENT_TURN" | "NEXT_MATCHING_EVENT" | "N_MATCHING_EVENTS";
+  count?: number;
+  eventTrigger?: "CARD_PLAYED" | "TECHNIQUE_PLAYED" | "CARD_RETIRED" | "DAMAGE_TAKEN";
+};
+export type RuleListener = {
+  trigger: "CARD_PLAYED" | "TECHNIQUE_PLAYED" | "CARD_RETIRED" | "DAMAGE_TAKEN";
+  cardType?: "WRESTLER" | "TECHNIQUE";
+  owner?: "SELF" | "ENEMY";
+  uses?: number;
+};
+export type RulePrevention = {
+  uses?: number;
+  setHealth?: number;
 };
 export type StructuredEffect = {
   trigger: Trigger;
@@ -68,7 +83,7 @@ export type StructuredEffect = {
     damageSource?: DamageSource;
     reference?: Reference;
     referenceStat?: "CURRENT_ATTACK" | "CURRENT_HEALTH";
-    amountReference?: "HAND_COUNT" | "GRAVEYARD_WRESTLER_COUNT" | "REMAINING_GOLD" | "BOARD_WRESTLER_COUNT" | "LAST_ATTACK_DELTA";
+     amountReference?: "HAND_COUNT" | "GRAVEYARD_WRESTLER_COUNT" | "REMAINING_GOLD" | "BOARD_WRESTLER_COUNT" | "LAST_ATTACK_DELTA" | "CURRENT_TURN_RETIRED_WRESTLER_COUNT" | "CURRENT_TURN_DAMAGE_TAKEN";
     temporaryCost?: boolean;
     conditionalBuff?: { healthEquals: number; attack: number; health: number };
     minimum?: number;
@@ -87,6 +102,9 @@ export type StructuredEffect = {
     };
     leftEffects?: StructuredEffect[];
     rightEffects?: StructuredEffect[];
+     delayed?: RuleSchedule & { effect: QueuedStructuredEffect; followUpEffects?: QueuedStructuredEffect[] };
+     listener?: RuleListener & { effect: QueuedStructuredEffect };
+     prevention?: RulePrevention;
   };
 };
 export type EffectScriptConfig = { scripts: EffectScript[] };
@@ -1130,7 +1148,7 @@ export function isStructuredEffects(value: unknown): value is { effects: Structu
         const validReference = schema.referenceStat &&
          REFERENCES.includes(values?.reference as Reference) &&
          ["CURRENT_ATTACK", "CURRENT_HEALTH"].includes(values?.referenceStat as string);
-         const validDynamic = schema.dynamicValue && ["HAND_COUNT", "GRAVEYARD_WRESTLER_COUNT", "REMAINING_GOLD", "BOARD_WRESTLER_COUNT", "LAST_ATTACK_DELTA"].includes(values?.amountReference as string);
+         const validDynamic = schema.dynamicValue && ["HAND_COUNT", "GRAVEYARD_WRESTLER_COUNT", "REMAINING_GOLD", "BOARD_WRESTLER_COUNT", "LAST_ATTACK_DELTA", "CURRENT_TURN_RETIRED_WRESTLER_COUNT", "CURRENT_TURN_DAMAGE_TAKEN"].includes(values?.amountReference as string);
         if (!validStats && !validMultiplier && !validReference && !validDynamic) return false;
     }
     if (schema.keyword && !KEYWORDS.includes(values?.keyword as Keyword)) return false;
@@ -1161,6 +1179,42 @@ export function isStructuredEffects(value: unknown): value is { effects: Structu
          !validQueuedBuff
        ) return false;
      }
+      if (schema.delayed) {
+        const delayed = values?.delayed;
+        const delayedEffect = delayed?.effect;
+        if (
+          !delayed || typeof delayed !== "object" || Array.isArray(delayed) ||
+          !["OWNER_NEXT_TURN_START", "OPPONENT_NEXT_TURN_START", "END_OF_CURRENT_TURN", "NEXT_MATCHING_EVENT", "N_MATCHING_EVENTS"].includes(delayed.kind as string) ||
+          (delayed.kind === "N_MATCHING_EVENTS" && (typeof delayed.count !== "number" || !Number.isInteger(delayed.count) || delayed.count < 1 || delayed.count > 20)) ||
+          (delayed.eventTrigger !== undefined && !["CARD_PLAYED", "TECHNIQUE_PLAYED", "CARD_RETIRED", "DAMAGE_TAKEN"].includes(delayed.eventTrigger as string)) ||
+          !delayedEffect || typeof delayedEffect !== "object" || Array.isArray(delayedEffect) ||
+          !ACTIONS.includes(delayedEffect.action) || delayedEffect.action === "REGISTER_DELAYED" ||
+          (delayedEffect.values !== undefined && (typeof delayedEffect.values !== "object" || Array.isArray(delayedEffect.values))) ||
+          (delayed.followUpEffects !== undefined && (!Array.isArray(delayed.followUpEffects) || delayed.followUpEffects.length > 4 || delayed.followUpEffects.some((child) => !child || typeof child !== "object" || Array.isArray(child) || !ACTIONS.includes(child.action) || child.action === "REGISTER_DELAYED")))
+        ) return false;
+      }
+      if (schema.listener) {
+        const listener = values?.listener;
+        const listenerEffect = listener?.effect;
+        if (
+          !listener || typeof listener !== "object" || Array.isArray(listener) ||
+          !["CARD_PLAYED", "TECHNIQUE_PLAYED", "CARD_RETIRED", "DAMAGE_TAKEN"].includes(listener.trigger as string) ||
+          (listener.cardType !== undefined && !["WRESTLER", "TECHNIQUE"].includes(listener.cardType as string)) ||
+          (listener.owner !== undefined && !["SELF", "ENEMY"].includes(listener.owner as string)) ||
+          (listener.uses !== undefined && (!Number.isInteger(listener.uses) || listener.uses < 1 || listener.uses > 20)) ||
+          !listenerEffect || typeof listenerEffect !== "object" || Array.isArray(listenerEffect) ||
+          !ACTIONS.includes(listenerEffect.action) || listenerEffect.action === "REGISTER_LISTENER" ||
+          (listenerEffect.values !== undefined && (typeof listenerEffect.values !== "object" || Array.isArray(listenerEffect.values)))
+        ) return false;
+      }
+      if (schema.prevention) {
+        const prevention = values?.prevention;
+        if (
+          !prevention || typeof prevention !== "object" || Array.isArray(prevention) ||
+          (prevention.uses !== undefined && (!Number.isInteger(prevention.uses) || prevention.uses < 1 || prevention.uses > 20)) ||
+          (prevention.setHealth !== undefined && (!Number.isInteger(prevention.setHealth) || prevention.setHealth < 1 || prevention.setHealth > 999))
+        ) return false;
+      }
      if (item.action === "SUMMON") {
        const definition = values?.definition;
        const validDefinition = Boolean(definition && typeof definition === "object" && !Array.isArray(definition));

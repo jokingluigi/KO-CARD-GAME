@@ -8,7 +8,7 @@ import { MAX_DECK_SIZE, MIN_DECK_SIZE } from '../rules/constants';
 import { drawCard } from './draw-card';
 import { defaultRandom, shuffle } from '../random/random';
 import { processChampionQuestEvents } from '../champions/quests';
-import { resolvePendingEffects, resolveTriggeredAbilities } from '../effects/effect-engine';
+import { resolveDueDelayedEffects, resolvePendingEffects, resolveTriggeredAbilities } from '../effects/effect-engine';
 
 function beginPlayerTurn(state: GameState, playerId: string): GameState {
   const player = state.players.find((candidate) => candidate.id === playerId);
@@ -64,7 +64,8 @@ function beginPlayerTurn(state: GameState, playerId: string): GameState {
   };
 
   const afterDraw = drawCard(turnStartedState, playerId);
-  return afterDraw.players
+  const afterDelayed = resolveDueDelayedEffects(afterDraw, 'TURN_START', playerId);
+  return afterDelayed.players
     .find((candidate) => candidate.id === playerId)
     ?.board
     .filter((card): card is NonNullable<typeof card> => Boolean(card))
@@ -75,7 +76,7 @@ function beginPlayerTurn(state: GameState, playerId: string): GameState {
       if (!currentCard) return nextState;
       const triggered = resolveTriggeredAbilities(nextState, playerId, currentCard, 'TURN_START');
       return triggered.targetingState?.active ? resolvePendingEffects(triggered) : triggered;
-    }, afterDraw) ?? afterDraw;
+    }, afterDelayed) ?? afterDelayed;
 }
 
 function drawOpeningHand(
@@ -272,10 +273,11 @@ export function endTurn(
       return triggered.targetingState?.active ? resolvePendingEffects(triggered) : triggered;
     }, turnedState) ?? turnedState;
 
+  const afterScheduled = resolveDueDelayedEffects(afterTurnEnd, 'TURN_END', actingPlayerId);
   return actionSuccess(
     processChampionQuestEvents(
-      afterTurnEnd,
-      beginPlayerTurn(afterTurnEnd, nextPlayer.id),
+      afterScheduled,
+      beginPlayerTurn(afterScheduled, nextPlayer.id),
     ),
   );
 }

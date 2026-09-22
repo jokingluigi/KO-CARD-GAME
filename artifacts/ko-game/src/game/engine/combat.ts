@@ -10,6 +10,8 @@ import {
   hasKeyword,
   resolveBoardListeners,
   resolveCardRetiredListeners,
+  resolvePendingEffects,
+  resolveRegisteredRuleListeners,
   resolveTriggeredAbilities,
 } from '../effects/effect-engine';
 import { processChampionQuestEvents } from '../champions/quests';
@@ -64,20 +66,30 @@ export function canSelectAsAttacker(
 }
 
 function retireDefeatedWrestlers(state: GameState): GameState {
+  let protectedState = state;
+  for (const player of state.players) {
+    for (const card of player.board) {
+      if (!card || card.currentHealth > 0) continue;
+      const triggered = resolveTriggeredAbilities(protectedState, player.id, card, 'BEFORE_RETIRE');
+      protectedState = triggered.targetingState?.active
+        ? resolvePendingEffects(triggered)
+        : triggered;
+    }
+  }
   const retireEvents: RetireEvent[] = [];
   const retired: Array<{
     playerId: string;
     card: NonNullable<GameState['players'][number]['board'][number]>;
   }> = [];
 
-  const players = state.players.map((player) => {
+  const players = protectedState.players.map((player) => {
     const board = [...player.board];
     const retiredCards = [];
 
     for (let index = 0; index < board.length; index += 1) {
       const card = board[index];
 
-      if (card && card.currentHealth <= 0) {
+       if (card && card.currentHealth <= 0 && !protectedState.preventedRetireTargetIds?.includes(card.instanceId)) {
         retired.push({ playerId: player.id, card });
         retiredCards.push({ ...card, boardSlot: null });
         retireEvents.push({
@@ -102,11 +114,12 @@ function retireDefeatedWrestlers(state: GameState): GameState {
   });
 
   const retiredState: GameState = {
-    ...state,
+    ...protectedState,
     players,
     events: [...state.events, ...retireEvents],
   };
 
+  const clearedInterceptions = { ...retiredState, preventedRetireTargetIds: undefined };
   return retired.reduce((nextState, entry) => {
     const withLeaveEffect = resolveTriggeredAbilities(
       nextState,
@@ -116,7 +129,7 @@ function retireDefeatedWrestlers(state: GameState): GameState {
       { leaveReason: 'RETIRE' },
     );
     return resolveCardRetiredListeners(withLeaveEffect, entry.playerId, entry.card);
-  }, retiredState);
+  }, clearedInterceptions);
 }
 
 function receiveDamage(
@@ -267,19 +280,29 @@ export function attack(
     );
     const attackerDamage = attacker.currentAttack +
       getDamageModifierBonus(state, attackingPlayerId, attacker);
+    const preDamageTriggered = directChampion
+      ? resolveTriggeredAbilities(state, target.playerId, directChampion, 'BEFORE_DAMAGE')
+      : state;
+    const preDamageState = preDamageTriggered.targetingState?.active
+      ? resolvePendingEffects(preDamageTriggered)
+      : preDamageTriggered;
+    const preventedChampionDamage = Boolean(
+      directChampion && preDamageState.preventedDamageTargetIds?.includes(directChampion.instanceId),
+    );
     const directChampionDodges = Boolean(
       directChampion &&
+      !preventedChampionDamage &&
       directChampion.dodgeAvailable &&
       hasKeyword(directChampion, 'DODGE'),
     );
     const damagedDirectChampion = directChampion
-      ? receiveDamage(directChampion, attackerDamage)
+      ? preventedChampionDamage ? directChampion : receiveDamage(directChampion, attackerDamage)
       : null;
     const remainingHealth = damagedDirectChampion
       ? damagedDirectChampion.currentHealth
       : defendingPlayer.health - attackerDamage;
     const attackedState: GameState = {
-      ...state,
+      ...preDamageState,
       players: state.players.map((player) => {
         if (player.id === attackingPlayerId) {
           return {
@@ -316,7 +339,7 @@ export function attack(
           : player;
       }),
       events: [
-        ...state.events,
+           ...preDamageState.events,
         {
           type: 'ATTACK_DECLARED',
           playerId: attackingPlayerId,
@@ -360,7 +383,7 @@ export function attack(
               }
             : { type: 'PLAYER', playerId: target.playerId },
           reason: directChampionDodges ? 'DODGE' : 'BASIC_ATTACK',
-          amount: directChampionDodges ? 0 : attackerDamage,
+           amount: directChampionDodges || preventedChampionDamage ? 0 : attackerDamage,
         },
       ],
     };
@@ -371,23 +394,30 @@ export function attack(
     const listenersResolved = resolveBoardListeners(
       selfAttackResolved, attackingPlayerId, 'OTHER_ALLY_ATTACK', { attackerInstanceId },
     );
+    const damageListenersResolved = resolveRegisteredRuleListeners(
+      { ...listenersResolved, preventedDamageTargetIds: undefined },
+      'DAMAGE_TAKEN',
+      target.playerId,
+      damagedDirectChampion?.instanceId,
+      damagedDirectChampion?.cardType,
+    );
     if (directChampion) {
       return actionSuccess(
         processChampionQuestEvents(
           state,
-          retireDefeatedWrestlers(listenersResolved),
+          retireDefeatedWrestlers(damageListenersResolved),
         ),
       );
     }
     if (remainingHealth > 0) {
       return actionSuccess(
-        processChampionQuestEvents(state, listenersResolved),
+        processChampionQuestEvents(state, damageListenersResolved),
       );
     }
 
     return actionSuccess(
       processChampionQuestEvents(state, {
-        ...listenersResolved,
+        ...damageListenersResolved,
         status: 'FINISHED',
         activePlayerId: null,
         winnerId: attackingPlayerId,
@@ -409,36 +439,60 @@ export function attack(
     );
   }
   const { card: defender } = defenderEntry;
+  const defenderBeforeDamage = resolveTriggeredAbilities(
+    state,
+    target.playerId,
+    defender,
+    'BEFORE_DAMAGE',
+  );
+  const defenderPrepared = defenderBeforeDamage.targetingState?.active
+    ? resolvePendingEffects(defenderBeforeDamage)
+    : defenderBeforeDamage;
+  const attackerCurrent = findBoardCard(defenderPrepared, attackingPlayerId, attackerInstanceId)?.card ?? attacker;
+  const defenderCurrent = findBoardCard(defenderPrepared, target.playerId, defender.instanceId)?.card ?? defender;
+  const attackerBeforeDamage = resolveTriggeredAbilities(
+    defenderPrepared,
+    attackingPlayerId,
+    attackerCurrent,
+    'BEFORE_DAMAGE',
+  );
+  const preDamageState = attackerBeforeDamage.targetingState?.active
+    ? resolvePendingEffects(attackerBeforeDamage)
+    : attackerBeforeDamage;
+  const attackerPrepared = findBoardCard(preDamageState, attackingPlayerId, attackerInstanceId)?.card ?? attackerCurrent;
+  const defenderPreparedCard = findBoardCard(preDamageState, target.playerId, defender.instanceId)?.card ?? defenderCurrent;
+  const preventedAttackerDamage = Boolean(preDamageState.preventedDamageTargetIds?.includes(defender.instanceId));
+  const preventedDefenderDamage = Boolean(preDamageState.preventedDamageTargetIds?.includes(attackerInstanceId));
   const attackerDodges =
-    attacker.dodgeAvailable && hasKeyword(attacker, 'DODGE');
+    !preventedDefenderDamage && attackerPrepared.dodgeAvailable && hasKeyword(attackerPrepared, 'DODGE');
   const defenderDodges =
-    defender.dodgeAvailable && hasKeyword(defender, 'DODGE');
+    !preventedAttackerDamage && defenderPreparedCard.dodgeAvailable && hasKeyword(defenderPreparedCard, 'DODGE');
 
-  const attackerDamage = attacker.currentAttack +
-    getDamageModifierBonus(state, attackingPlayerId, attacker);
-  const defenderDamage = defender.currentAttack +
-    getDamageModifierBonus(state, target.playerId, defender);
+  const attackerDamage = attackerPrepared.currentAttack +
+    getDamageModifierBonus(preDamageState, attackingPlayerId, attackerPrepared);
+  const defenderDamage = defenderPreparedCard.currentAttack +
+    getDamageModifierBonus(preDamageState, target.playerId, defenderPreparedCard);
   const damagedState: GameState = {
-    ...state,
-    players: state.players.map((player) => ({
+    ...preDamageState,
+    players: preDamageState.players.map((player) => ({
       ...player,
       board: player.board.map((card) => {
         if (card?.instanceId === attackerInstanceId) {
           return {
-            ...receiveDamage(card, defenderDamage),
+            ...(preventedDefenderDamage ? card : receiveDamage(card, defenderDamage)),
             attacksUsedThisTurn: card.attacksUsedThisTurn + 1,
           };
         }
 
         if (card?.instanceId === defender.instanceId) {
-          return receiveDamage(card, attackerDamage);
+          return preventedAttackerDamage ? card : receiveDamage(card, attackerDamage);
         }
 
         return card;
       }) as typeof player.board,
     })),
     events: [
-      ...state.events,
+           ...preDamageState.events,
       {
         type: 'ATTACK_DECLARED',
         playerId: attackingPlayerId,
@@ -476,7 +530,7 @@ export function attack(
           cardInstanceId: defender.instanceId,
         },
         reason: 'COMBAT',
-          amount: defenderDodges ? 0 : attackerDamage,
+          amount: defenderDodges || preventedAttackerDamage ? 0 : attackerDamage,
       },
       {
         type: 'DAMAGE_DEALT',
@@ -485,7 +539,7 @@ export function attack(
         source: { type: 'CARD', cardInstanceId: defender.instanceId },
         target: { type: 'CARD', cardInstanceId: attackerInstanceId },
         reason: 'COMBAT',
-          amount: attackerDodges ? 0 : defenderDamage,
+          amount: attackerDodges || preventedDefenderDamage ? 0 : defenderDamage,
       },
     ],
   };
@@ -493,11 +547,11 @@ export function attack(
   const firstAttackedResolved = resolveTriggeredAbilities(
     damagedState,
     target.playerId,
-    defender,
+    defenderPreparedCard,
     'FIRST_ATTACKED',
     { attackerInstanceId },
   );
-  const exactZeroResolved = defenderDodges || defender.currentHealth - attackerDamage !== 0
+  const exactZeroResolved = defenderDodges || preventedAttackerDamage || defenderPreparedCard.currentHealth - attackerDamage !== 0
     ? firstAttackedResolved
     : resolveTriggeredAbilities(firstAttackedResolved, attackingPlayerId, attacker, 'EXACT_ZERO_DAMAGE', {
       damagedTargetInstanceId: defender.instanceId, healthBefore: defender.currentHealth, healthAfter: 0,
@@ -515,10 +569,17 @@ export function attack(
   const listenersResolved = resolveBoardListeners(
     selfAttackResolved, attackingPlayerId, 'OTHER_ALLY_ATTACK', { attackerInstanceId },
   );
+  const damageListenersResolved = resolveRegisteredRuleListeners(
+    { ...listenersResolved, preventedDamageTargetIds: undefined },
+    'DAMAGE_TAKEN',
+    target.playerId,
+    defender.instanceId,
+    defender.cardType,
+  );
   return actionSuccess(
     processChampionQuestEvents(
       state,
-      retireDefeatedWrestlers(listenersResolved),
+      retireDefeatedWrestlers(damageListenersResolved),
     ),
   );
 }

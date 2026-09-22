@@ -1,0 +1,618 @@
+현재 66ae5d9의 Natural Language → Game Mechanic Compiler 구현은 유지한다.
+
+하지만 이번 작업은 아직 사용자가 요구한 최종 목표를 충족하지 않았다.
+
+Agent가 후속으로 분리한:
+
+#57 — 자연어 효과 실제 match End-to-End 검증
+#58 — delayed/replacement mechanic 지원
+
+을 이번 작업에서 함께 완료해라.
+
+"후속 범위"로 다시 분리하지 마.
+
+==================================================
+최종 목표
+==================================================
+
+Admin 사용자가 카드게임 효과를 자연어로 작성하면
+AI가 해당 문장을 실제 게임 메커니즘으로 분해하고,
+
+필요한:
+
+- trigger
+- selector
+- condition
+- result reference
+- memory
+- delayed schedule
+- one-shot listener
+- repeated listener
+- event-history query
+- replacement/prevention
+- action
+
+을 조합하여
+
+실제 KO CARD GAME Runtime이 실행 가능한
+bounded declarative Rule을 생성해야 한다.
+
+그 Rule은 Admin form에 적용되고,
+사용자가 저장한 뒤 실제 AI Match / Online Match에서
+OpenAI 없이 작동해야 한다.
+
+==================================================
+중요
+==================================================
+
+이번에는:
+
+"현재 SCRIPT_V1로 표현 가능한 범위까지만 구현하고
+나머지는 후속"
+
+으로 종료하지 마.
+
+아래 핵심 capability까지 구현해야 완료다.
+
+==================================================
+1. DELAYED SCHEDULE
+==================================================
+
+최소 지원:
+
+OWNER_NEXT_TURN_START
+OPPONENT_NEXT_TURN_START
+END_OF_CURRENT_TURN
+NEXT_MATCHING_EVENT
+N_MATCHING_EVENTS
+
+필요한 경우 기존 queued effect 시스템을 일반화한다.
+
+예:
+
+"이 카드가 죽으면 다음 내 턴 시작에 부활한다."
+
+RETIRE
+→ capture source reference/definition
+→ schedule OWNER_NEXT_TURN_START
+→ REVIVE
+
+==================================================
+2. ONE-SHOT LISTENER
+==================================================
+
+다음 효과를 카드별 코드 없이 구현 가능하게 한다.
+
+"다음에 내가 내는 선수는 +2/+2."
+
+Rule 생성 시:
+
+REGISTER ONE-SHOT
+trigger = PLAY_FROM_HAND
+owner = SELF
+cardType = WRESTLER
+
+→ matching event 발생
+→ event card +2/+2
+→ listener consume
+
+중요:
+
+Rule을 만든 source card 자신의 현재 PLAY event가
+listener를 즉시 소비하면 안 된다.
+
+==================================================
+3. REPEATED LISTENER
+==================================================
+
+예:
+
+"내가 Technique을 사용할 때마다 1 회복한다."
+
+TECHNIQUE_PLAYED
+→ same owner
+→ HEAL MY_CHAMPION 1
+
+duration이 없는 영구 listener가
+source의 유효 기간 규칙을 따라야 한다.
+
+==================================================
+4. EVENT HISTORY QUERY
+==================================================
+
+최소 bounded scope:
+
+CURRENT_RESOLUTION
+CURRENT_ACTION
+CURRENT_TURN
+CURRENT_MATCH
+
+지원.
+
+filter:
+
+eventType
+owner
+source
+target
+cardType
+tag
+
+aggregation:
+
+COUNT
+SUM
+
+예:
+
+"이번 턴 RETIRE된 선수 수만큼
+적 챔피언에게 피해."
+
+CURRENT_TURN
+→ RETIRE events
+→ WRESTLER filter
+→ COUNT
+→ DAMAGE opponent champion
+
+무제한 event scan 금지.
+
+==================================================
+5. REPLACEMENT / PREVENTION
+==================================================
+
+다음 효과를 generic하게 지원:
+
+"이 카드가 처음 받을 피해를 0으로 만든다."
+
+현재 damage pipeline에 적합한
+BEFORE_DAMAGE/equivalent hook을 사용.
+
+one-shot prevention
+→ event amount 0
+→ consume
+
+또:
+
+"처음 죽는 대신 체력 1로 남는다."
+
+lethal/retire replacement
+→ prevent retirement
+→ HP = 1
+→ consume
+
+Action → Event → GameState 구조 유지.
+
+==================================================
+6. SERIALIZABLE RULE STATE
+==================================================
+
+delayed/listener/replacement가 필요한 상태는
+GameState에 serializable하게 저장한다.
+
+금지:
+
+closure
+function
+dynamic JS
+eval
+runtime generated code
+
+필요 정보만 저장:
+
+rule ID
+owner
+source
+captured values
+remaining uses
+expiration
+scheduled trigger
+
+reconnect/resync에서도 복구 가능해야 한다.
+
+==================================================
+7. RECURSION / LOOP 방지
+==================================================
+
+Rule이 자신이 발생시킨 Event를 다시 잡아서
+무한 반복하면 안 된다.
+
+최소:
+
+max chained triggers
+max scheduled effects
+max repeated resolution depth
+max event-history results
+
+제한.
+
+같은 occurrence를 같은 Rule이
+무한 재소비하지 못하게 한다.
+
+==================================================
+8. AI COMPILER에 새 capability 제공
+==================================================
+
+Admin AI가 다음을 이해하도록 schema/prompt를 갱신:
+
+DELAYED
+ONE_SHOT_LISTENER
+REPEATED_LISTENER
+EVENT_HISTORY
+REPLACEMENT
+PREVENTION
+CAPTURE_VALUE
+CAPTURE_TARGET
+SCHEDULE
+CONSUME
+
+정확한 이름은 실제 canonical AST에 맞게 설계.
+
+AI가 pseudo-action을 창작하지 않게
+structured output schema와 일치시킨다.
+
+==================================================
+9. 자연어 대표 A~J 전부 실제 provider
+==================================================
+
+다음 모두 actual OpenAI provider에서
+실행 가능한 Rule로 생성되어야 한다.
+
+A
+"등장: 적 챔피언에게 2 피해를 준다."
+
+B
+"이 카드가 죽으면 내 무덤의 좀비 수만큼
+내 챔피언을 회복한다."
+
+C
+"공격할 때 상대 손에서 비용이 가장 높은 카드의
+비용을 2 증가시킨다."
+
+D
+"양옆 빈 슬롯에 무작위 선수 하나씩 소환하고
+그 선수들에게 도발을 부여한다."
+
+E
+"내 무덤의 비용 3 이하 선수 하나를
+무작위로 부활시킨다."
+
+F
+"이 카드가 죽으면 다음 내 턴 시작에 부활하고
+부활한 뒤 공격력을 2 얻는다."
+
+G
+"다음에 내가 내는 선수는 +2/+2를 얻는다."
+
+H
+"이 카드가 처음 받을 피해를 0으로 만든다."
+
+I
+"내 필드에 좀비가 3명 이상이면
+이 카드는 +3/+3을 얻는다."
+
+J
+"이번 턴에 RETIRE된 선수 수만큼
+적 챔피언에게 피해를 준다."
+
+==================================================
+10. A~J Runtime Test
+==================================================
+
+Provider READY만으로 PASS 금지.
+
+각각:
+
+Natural Language
+→ actual provider
+→ Rule AST
+→ server validator
+→ test CardDefinition
+→ actual Effect Engine
+→ Event
+→ GameState
+
+까지 실행한다.
+
+F 실제 테스트:
+
+source RETIRE
+→ graveyard
+→ opponent turn
+→ owner next turn
+→ source REVIVE
+→ revived instance ATK +2
+
+G:
+
+Rule 생성
+→ 다음 WRESTLER PLAY_FROM_HAND
+→ +2/+2
+→ listener 제거
+
+H:
+
+first damage = 0
+second damage = normal
+
+J:
+
+current-turn RETIRE WRESTLER count = N
+→ opponent champion damage N
+
+==================================================
+11. Admin End-to-End
+==================================================
+
+최소 하나의 development/test 카드로:
+
+Admin
+→ 자연어 입력
+→ AI 게임 효과 구현
+→ Rule 생성
+→ form에 적용
+→ Admin Save
+→ 다시 catalog load
+→ Rule 유지
+→ 실제 test match
+→ effect 발동
+
+까지 검증한다.
+
+Production DB 직접 수정 금지.
+
+test/development data 사용.
+
+==================================================
+12. "초안" 개념 제거
+==================================================
+
+Admin 사용자 관점에서
+이 기능은 draft generator가 아니다.
+
+표현을:
+
+AI 효과 구현
+
+또는
+
+AI 게임 메커니즘 생성
+
+으로 통일.
+
+성공:
+
+"게임 효과가 적용되었습니다."
+
+지원 가능한 자연어에서:
+
+"AI가 초안을 생성하지 못했습니다."
+
+generic error를 사용하지 마.
+
+==================================================
+13. 기존 effect가 null인 카드
+==================================================
+
+effectConfig가 없는 카드도:
+
+자연어
+→ Rule 생성
+→ form attach
+→ Save
+
+가능해야 한다.
+
+빈 effect를 이유로 AI 생성 실패 금지.
+
+==================================================
+14. OpenAI 호출 경계
+==================================================
+
+OpenAI는 오직 Admin Generate에서만.
+
+Admin Generate:
+1 explicit request → max 1 provider call
+
+Save:
+0
+
+validation:
+0
+
+AI Match:
+0
+
+Online Match:
+0
+
+effect runtime:
+0
+
+delayed trigger:
+0
+
+event history:
+0
+
+replacement:
+0
+
+==================================================
+15. 기존 호환성
+==================================================
+
+기존:
+
+STRUCTURED_EFFECTS_V1
+SCRIPT_V1
+PLAYER_CHOICE
+Champion Ability
+Quest
+Technique
+Champion Token
+
+회귀 금지.
+
+Production 기존 카드 자동 migration 금지.
+
+==================================================
+16. 실제 Provider 비용 보호
+==================================================
+
+A~J actual provider 검증은
+일반 test suite에서 자동 실행하지 마.
+
+명시적 smoke test로만 실행.
+
+자동 retry loop 금지.
+
+첫 A~J 실행 후
+실패한 항목만 수정 후 최소 재호출.
+
+최종 provider 호출 횟수 보고.
+
+==================================================
+17. 완료 조건
+==================================================
+
+이번 작업은 다음이 모두 되어야 완료:
+
+A READY + Runtime PASS
+B READY + Runtime PASS
+C READY + Runtime PASS
+D READY + Runtime PASS
+E READY + Runtime PASS
+F READY + Runtime PASS
+G READY + Runtime PASS
+H READY + Runtime PASS
+I READY + Runtime PASS
+J READY + Runtime PASS
+
+Admin form apply PASS
+
+Admin Save/reload PASS
+
+test match effect execution PASS
+
+Runtime OpenAI calls = 0
+
+다음 상태에서 "후속 작업"으로 다시 미루지 마:
+
+- delayed schedule 미구현
+- listener 미구현
+- event-history 미구현
+- replacement 미구현
+- actual match E2E 미검증
+
+==================================================
+18. 테스트 / 빌드
+==================================================
+
+필수:
+
+Rule schema tests
+Rule validation
+Rule runtime
+Schedule
+One-shot listener
+Repeated listener
+Event history
+Replacement
+PLAYER_CHOICE
+deterministic RNG
+online serialization/resync
+legacy structured effects
+
+그리고:
+
+pnpm run typecheck
+KO build
+API build
+git diff --check
+
+==================================================
+19. Git
+==================================================
+
+현재 66ae5d9 이후 사용자 변경을 보존.
+
+Pasted-*.txt stage 금지.
+secret/.env/log/temp stage 금지.
+
+모든 검증 후 commit.
+
+force push 금지.
+
+GitHub HTTPS 인증 실패 시
+local commit 유지하고 보고.
+
+==================================================
+20. 최종 보고
+==================================================
+
+A~J 각각:
+
+Provider:
+Validator:
+Runtime:
+GameState result:
+
+별도로:
+
+Delayed schedule:
+PASS/FAIL
+
+One-shot listener:
+PASS/FAIL
+
+Repeated listener:
+PASS/FAIL
+
+Event history:
+PASS/FAIL
+
+Replacement/prevention:
+PASS/FAIL
+
+Admin form apply:
+PASS/FAIL
+
+Save/reload:
+PASS/FAIL
+
+Actual test match:
+PASS/FAIL/UNVERIFIED
+
+Runtime provider calls:
+0 / FAIL
+
+Actual provider call total:
+N
+
+Tests:
+...
+
+Typecheck:
+...
+
+Build:
+...
+
+Changed files:
+...
+
+Commit:
+...
+
+Push:
+...
+
+이번 작업은
+"AI가 효과를 설명했다"
+또는
+"mechanic plan을 보여줬다"
+
+가 완료 기준이 아니다.
+
+자연어가 실제 저장 가능한 Game Rule이 되고,
+그 Rule이 실제 KO 게임에서 발동하는 것이 완료 기준이다.

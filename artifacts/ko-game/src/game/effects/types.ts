@@ -9,7 +9,7 @@ export type RuntimeAction = Action | 'REMOVE_FROM_GAME' | 'CAPTURE' | 'RELEASE_C
 export type RuntimeTrigger =
    | 'ENTER_FIELD' | 'LEAVE_FIELD' | 'POSITION' | 'ACTIVE'
    | 'CARD_DRAWN' | 'CARD_RETIRED' | 'CARD_SUMMONED' | 'FIRST_ATTACKED' | 'SELF_ATTACK' | 'OTHER_ALLY_ATTACK' | 'ATTACK_SURVIVED' | 'STAT_CHANGED' | 'TECHNIQUE_CAST' | 'EXACT_ZERO_DAMAGE'
-  | 'TURN_START' | 'TURN_END';
+   | 'TURN_START' | 'TURN_END' | 'BEFORE_DAMAGE' | 'BEFORE_RETIRE';
 
 export type StructuredTarget = {
   /** Legacy single-zone shape retained for stored effects. */
@@ -45,7 +45,7 @@ export type QueuedStructuredEffect = {
     damageSource?: DamageSource;
     reference?: Reference;
     referenceStat?: 'CURRENT_ATTACK' | 'CURRENT_HEALTH';
-    amountReference?: DynamicValue;
+     amountReference?: DynamicValue;
     minimum?: number;
     generatedModifiers?: { cost?: number; attack?: number; health?: number; copySourceStats?: boolean; copyTargetStats?: boolean };
     deckPosition?: 'TOP' | 'BOTTOM';
@@ -95,6 +95,21 @@ export type CardEffect =
           count?: number;
           destination?: 'HAND' | 'DECK' | 'DECK_TOP';
          aggregateStats?: AggregatedStatsResolver;
+    delayed?: {
+      kind: 'OWNER_NEXT_TURN_START' | 'OPPONENT_NEXT_TURN_START' | 'END_OF_CURRENT_TURN' | 'NEXT_MATCHING_EVENT' | 'N_MATCHING_EVENTS';
+      count?: number;
+      eventTrigger?: 'CARD_PLAYED' | 'TECHNIQUE_PLAYED' | 'CARD_RETIRED' | 'DAMAGE_TAKEN';
+      effect: QueuedStructuredEffect;
+      followUpEffects?: QueuedStructuredEffect[];
+    };
+    listener?: {
+      trigger: 'CARD_PLAYED' | 'TECHNIQUE_PLAYED' | 'CARD_RETIRED' | 'DAMAGE_TAKEN';
+      cardType?: 'WRESTLER' | 'TECHNIQUE';
+      owner?: 'SELF' | 'ENEMY';
+      uses?: number;
+      effect: QueuedStructuredEffect;
+    };
+    prevention?: { uses?: number; setHealth?: number };
         leftEffects?: CardEffect[];
         rightEffects?: CardEffect[];
       };
@@ -124,7 +139,7 @@ export type CardAbility =
       condition?: AbilityCondition;
     }
    | {
-      trigger: 'CARD_DRAWN' | 'CARD_RETIRED' | 'CARD_SUMMONED' | 'FIRST_ATTACKED' | 'SELF_ATTACK' | 'OTHER_ALLY_ATTACK' | 'ATTACK_SURVIVED' | 'STAT_CHANGED' | 'TECHNIQUE_CAST' | 'EXACT_ZERO_DAMAGE' | 'TURN_START' | 'TURN_END';
+       trigger: 'CARD_DRAWN' | 'CARD_RETIRED' | 'CARD_SUMMONED' | 'FIRST_ATTACKED' | 'SELF_ATTACK' | 'OTHER_ALLY_ATTACK' | 'ATTACK_SURVIVED' | 'STAT_CHANGED' | 'TECHNIQUE_CAST' | 'EXACT_ZERO_DAMAGE' | 'TURN_START' | 'TURN_END' | 'BEFORE_DAMAGE' | 'BEFORE_RETIRE';
       effects: CardEffect[];
       condition?: AbilityCondition;
     }

@@ -1,6 +1,6 @@
 import type { CardDefinition, CardInstance, CardStatHistoryEntry } from '../cards/types';
 import { matchesCardTagFilter } from '../cards/tags';
-import type { CardAbility, CardEffect, CardKeyword } from './types';
+import type { CardAbility, CardEffect, CardKeyword, QueuedStructuredEffect } from './types';
 import {
   RUNTIME_HANDLER_ACTIONS,
   type Action,
@@ -430,6 +430,134 @@ function sourceInState(state: GameState, id: string): CardInstance | undefined {
     .find((card) => card.instanceId === id);
 }
 
+function queuedEffectCardEffect(effect: QueuedStructuredEffect): Extract<CardEffect, { type: 'STRUCTURED' }> {
+  return {
+    type: 'STRUCTURED',
+    action: effect.action,
+    target: effect.target,
+    values: effect.values,
+  };
+}
+
+function applyQueuedRuleEffect(
+  state: GameState,
+  playerId: string,
+  source: CardInstance,
+  effect: QueuedStructuredEffect,
+  lastTargetIds: string[] = [],
+): { state: GameState; lastTargetIds: string[] } {
+  const chosen = effect.target?.selection === 'SAME_TARGET' ? lastTargetIds : undefined;
+  const next = applyEffect(state, playerId, source, queuedEffectCardEffect(effect), chosen);
+  const resolved = next.targetingState?.active ? resolvePendingEffects(next) : next;
+  if (effect.action === 'REVIVE' && resolved.players.some((player) =>
+    player.board.some((card) => card?.instanceId === source.instanceId),
+  )) {
+    return { state: resolved, lastTargetIds: [source.instanceId] };
+  }
+  return {
+    state: resolved,
+    lastTargetIds: resolved.targetingState?.lastTargetIds ?? lastTargetIds,
+  };
+}
+
+function applyQueuedRuleSequence(
+  state: GameState,
+  pending: { playerId: string; sourceInstanceId: string; effect: QueuedStructuredEffect; followUpEffects?: QueuedStructuredEffect[] },
+): GameState {
+  const source = sourceInState(state, pending.sourceInstanceId);
+  if (!source) return state;
+  let next = applyQueuedRuleEffect(state, pending.playerId, source, pending.effect);
+  for (const effect of pending.followUpEffects ?? []) {
+    next = applyQueuedRuleEffect(next.state, pending.playerId, source, effect, next.lastTargetIds);
+  }
+  return next.state;
+}
+
+export function resolveRegisteredRuleListeners(
+  state: GameState,
+  trigger: 'CARD_PLAYED' | 'TECHNIQUE_PLAYED' | 'CARD_RETIRED' | 'DAMAGE_TAKEN',
+  eventPlayerId: string,
+  eventCardInstanceId?: string,
+  eventCardType?: 'WRESTLER' | 'TECHNIQUE',
+): GameState {
+  const eventIndex = Math.max(0, state.events.length - 1);
+  let next = state;
+  const dueDelayed = (next.pendingDelayedEffects ?? []).filter((pending) =>
+    (pending.schedule === 'NEXT_MATCHING_EVENT' || pending.schedule === 'N_MATCHING_EVENTS') &&
+    pending.eventTrigger === trigger &&
+    eventIndex >= 0,
+  );
+  if (dueDelayed.length) {
+    next = {
+      ...next,
+      pendingDelayedEffects: (next.pendingDelayedEffects ?? []).filter((pending) => !dueDelayed.includes(pending)),
+    };
+    for (const pending of dueDelayed.slice(0, 32)) {
+      next = applyQueuedRuleSequence(next, pending);
+      if (pending.schedule === 'N_MATCHING_EVENTS' && (pending.remainingMatches ?? 1) > 1) {
+        next = {
+          ...next,
+          pendingDelayedEffects: [
+            ...(next.pendingDelayedEffects ?? []),
+            { ...pending, remainingMatches: (pending.remainingMatches ?? 1) - 1 },
+          ],
+        };
+      }
+    }
+  }
+
+  const activeListeners = (next.pendingRuleListeners ?? []).filter((listener) =>
+    next.players.some((player) => player.board.some((card) => card?.instanceId === listener.sourceInstanceId)),
+  );
+  next = { ...next, pendingRuleListeners: activeListeners };
+  const listeners = activeListeners.filter((listener) =>
+    listener.trigger === trigger &&
+    eventIndex > listener.registeredEventIndex &&
+    (listener.owner === undefined ||
+      (listener.owner === 'SELF' ? listener.playerId === eventPlayerId : listener.playerId !== eventPlayerId)) &&
+    (listener.cardType === undefined || listener.cardType === eventCardType),
+  );
+  if (!listeners.length) return next;
+  const listenerIds = new Set(listeners.map((listener) => listener.id));
+  next = {
+    ...next,
+    pendingRuleListeners: (next.pendingRuleListeners ?? []).filter((listener) => {
+      if (!listenerIds.has(listener.id)) return true;
+      return listener.uses !== 1;
+    }),
+  };
+  for (const listener of listeners.slice(0, 32)) {
+    const source = sourceInState(next, listener.sourceInstanceId);
+    const eventCard = eventCardInstanceId ? sourceInState(next, eventCardInstanceId) : undefined;
+    if (!source && !eventCard) continue;
+    const effectSource = eventCard ?? source!;
+    next = applyQueuedRuleEffect(next, listener.playerId, effectSource, listener.effect).state;
+  }
+  return next;
+}
+
+export function resolveDueDelayedEffects(
+  state: GameState,
+  trigger: 'TURN_START' | 'TURN_END',
+  playerId: string,
+): GameState {
+  const pendingDelayedEffects = state.pendingDelayedEffects ?? [];
+  const due = pendingDelayedEffects.filter((pending) => {
+    if (pending.schedule === 'END_OF_CURRENT_TURN') return trigger === 'TURN_END' && pending.dueTurn <= state.turn;
+    if (trigger !== 'TURN_START' || pending.dueTurn > state.turn) return false;
+    if (pending.schedule === 'OWNER_NEXT_TURN_START') return pending.playerId === playerId;
+    if (pending.schedule === 'OPPONENT_NEXT_TURN_START') return pending.playerId !== playerId;
+    return false;
+  });
+  if (!due.length) return state;
+  let next = {
+    ...state,
+    pendingDelayedEffects: pendingDelayedEffects.filter((pending) => !due.includes(pending)),
+  };
+  for (const pending of due.slice(0, 32)) next = applyQueuedRuleSequence(next, pending);
+  return next;
+}
+
 function withLastAggregatedStats(
   state: GameState,
   stats: { attack: number; health: number },
@@ -631,6 +759,22 @@ function dynamicValue(
   if (reference === 'GRAVEYARD_WRESTLER_COUNT') return player.graveyard.filter((card) => card.cardType === 'WRESTLER').length;
   if (reference === 'BOARD_WRESTLER_COUNT') return player.board.filter((card) => card?.cardType === 'WRESTLER').length;
   if (reference === 'LAST_ATTACK_DELTA') return triggerContext?.attackDelta ?? 0;
+  if (reference === 'CURRENT_TURN_RETIRED_WRESTLER_COUNT') {
+    const turnStart = [...state.events].map((event, index) => ({ event, index }))
+      .filter(({ event }) => event.type === 'TURN_STARTED' && event.playerId === playerId)
+      .at(-1)?.index ?? 0;
+    return state.events.slice(turnStart + 1).filter((event) =>
+      event.type === 'CARD_RETIRED' && event.cardType === 'WRESTLER' && event.playerId === playerId,
+    ).length;
+  }
+  if (reference === 'CURRENT_TURN_DAMAGE_TAKEN') {
+    const turnStart = [...state.events].map((event, index) => ({ event, index }))
+      .filter(({ event }) => event.type === 'TURN_STARTED' && event.playerId === playerId)
+      .at(-1)?.index ?? 0;
+    return state.events.slice(turnStart + 1)
+      .filter((event) => event.type === 'DAMAGE_DEALT' && event.target?.type === 'PLAYER' && event.target.playerId === playerId)
+      .reduce((total, event) => total + (event.amount ?? 0), 0);
+  }
   return player.currentGold;
 }
 
@@ -1279,8 +1423,79 @@ export function applyEffect(
             sourceInstanceId: sourceCard.instanceId,
             trigger: effect.values.queuedTrigger,
             effect: queuedEffect,
+            registeredEventIndex: state.events.length - 1,
           },
         ],
+      };
+    }
+    if (effect.action === 'REGISTER_DELAYED') {
+      const delayed = effect.values?.delayed;
+      if (!delayed) throw new Error('REGISTER_DELAYED requires a delayed schedule.');
+      const dueTurn = delayed.kind === 'OWNER_NEXT_TURN_START'
+        ? state.turn + state.players.length
+        : delayed.kind === 'OPPONENT_NEXT_TURN_START'
+          ? state.turn + 1
+          : state.turn;
+      return {
+        ...state,
+        pendingDelayedEffects: [
+          ...(state.pendingDelayedEffects ?? []),
+          {
+            id: `${sourceCard.instanceId}:delayed:${state.events.length}:${(state.pendingDelayedEffects ?? []).length}`,
+            playerId,
+            sourceInstanceId: sourceCard.instanceId,
+            schedule: delayed.kind,
+            dueTurn,
+            ...(delayed.count ? { remainingMatches: delayed.count } : {}),
+            ...(delayed.eventTrigger ? { eventTrigger: delayed.eventTrigger } : {}),
+            effect: delayed.effect,
+            ...(delayed.followUpEffects ? { followUpEffects: delayed.followUpEffects } : {}),
+          },
+        ],
+      };
+    }
+    if (effect.action === 'REGISTER_LISTENER') {
+      const listener = effect.values?.listener;
+      if (!listener) throw new Error('REGISTER_LISTENER requires a listener definition.');
+      return {
+        ...state,
+        pendingRuleListeners: [
+          ...(state.pendingRuleListeners ?? []),
+          {
+            id: `${sourceCard.instanceId}:listener:${state.events.length}:${(state.pendingRuleListeners ?? []).length}`,
+            playerId,
+            sourceInstanceId: sourceCard.instanceId,
+            trigger: listener.trigger,
+            ...(listener.owner ? { owner: listener.owner } : {}),
+            ...(listener.cardType ? { cardType: listener.cardType } : {}),
+            ...(listener.uses ? { uses: listener.uses } : {}),
+            registeredEventIndex: state.events.length - 1,
+            effect: listener.effect,
+          },
+        ],
+      };
+    }
+    if (effect.action === 'PREVENT_DAMAGE') {
+      const key = `${sourceCard.instanceId}:BEFORE_DAMAGE`;
+      return {
+        ...state,
+        preventedDamageTargetIds: [...new Set([...(state.preventedDamageTargetIds ?? []), sourceCard.instanceId])],
+        consumedRuleKeys: [...new Set([...(state.consumedRuleKeys ?? []), key])],
+      };
+    }
+    if (effect.action === 'PREVENT_RETIRE') {
+      const health = effect.values?.prevention?.setHealth ?? 1;
+      const key = `${sourceCard.instanceId}:BEFORE_RETIRE`;
+      return {
+        ...state,
+        players: state.players.map((player) => ({
+          ...player,
+          board: player.board.map((card) => card?.instanceId === sourceCard.instanceId
+            ? { ...card, currentHealth: Math.max(1, health), maxHealth: Math.max(card.maxHealth, health) }
+            : card) as typeof player.board,
+        })),
+        preventedRetireTargetIds: [...new Set([...(state.preventedRetireTargetIds ?? []), sourceCard.instanceId])],
+        consumedRuleKeys: [...new Set([...(state.consumedRuleKeys ?? []), key])],
       };
     }
     if (effect.action === 'ADD_AGGREGATED_ATTACK') {
@@ -1696,49 +1911,88 @@ export function applyEffect(
         const owner = nextState.players.find((player) => player.id === targetOwner);
         const current = owner?.board.find((card) => card?.instanceId === target.instanceId);
         if (!owner || !current) return nextState;
+        const beforeDamage = resolveTriggeredAbilities(nextState, targetOwner, current, 'BEFORE_DAMAGE');
+        const preparedState = beforeDamage.targetingState?.active
+          ? resolvePendingEffects(beforeDamage)
+          : beforeDamage;
+        const preparedCurrent = preparedState.players
+          .find((player) => player.id === targetOwner)
+          ?.board.find((card) => card?.instanceId === target.instanceId) ?? current;
+        const preventedDamage = preparedState.preventedDamageTargetIds?.includes(current.instanceId) ?? false;
+        const clearDamageMarker = (stateWithMarker: GameState): GameState => ({
+          ...stateWithMarker,
+          preventedDamageTargetIds: stateWithMarker.preventedDamageTargetIds?.filter((id) => id !== current.instanceId),
+        });
+        if (preventedDamage) {
+          return resolveRegisteredRuleListeners({
+            ...clearDamageMarker(preparedState),
+            events: [
+              ...preparedState.events,
+              { type: 'DAMAGE_DEALT', playerId, cardInstanceId: sourceCard.instanceId, source: { type: 'CARD', cardInstanceId: sourceCard.instanceId }, target: { type: 'CARD', cardInstanceId: current.instanceId }, reason: 'CARD_EFFECT', amount: 0, sourceContext: sourceContextFor(playerId, sourceCard, triggerContext) },
+            ],
+          }, 'DAMAGE_TAKEN', targetOwner, current.instanceId, current.cardType);
+        }
         // Legacy snapshots may carry dodgeAvailable=true with a missing or
         // zero-initialized charge count. The boolean remains authoritative for
         // that compatibility case; newly created cards keep both fields aligned.
         const dodgeCharges = Math.max(
-          current.dodgeCharges ?? 0,
-          current.dodgeAvailable ? 1 : 0,
+          preparedCurrent.dodgeCharges ?? 0,
+          preparedCurrent.dodgeAvailable ? 1 : 0,
         );
-        const dodged = damageAmount > 0 && dodgeCharges > 0 && hasKeyword(current, 'DODGE');
+        const dodged = damageAmount > 0 && dodgeCharges > 0 && hasKeyword(preparedCurrent, 'DODGE');
         if (dodged) {
-          return {
-            ...nextState,
-            players: nextState.players.map((player) => player.id === targetOwner
+          return resolveRegisteredRuleListeners({
+            ...clearDamageMarker(preparedState),
+            players: preparedState.players.map((player) => player.id === targetOwner
               ? { ...player, board: player.board.map((card) => card?.instanceId === current.instanceId ? { ...card, dodgeAvailable: dodgeCharges > 1, dodgeCharges: dodgeCharges - 1 } : card) as typeof player.board }
               : player),
-            events: [...nextState.events, { type: 'DAMAGE_DEALT', playerId, cardInstanceId: sourceCard.instanceId, source: { type: 'CARD', cardInstanceId: sourceCard.instanceId }, target: { type: 'CARD', cardInstanceId: current.instanceId }, reason: 'CARD_EFFECT', amount: 0, sourceContext: sourceContextFor(playerId, sourceCard, triggerContext) }],
-          };
+            events: [...preparedState.events, { type: 'DAMAGE_DEALT', playerId, cardInstanceId: sourceCard.instanceId, source: { type: 'CARD', cardInstanceId: sourceCard.instanceId }, target: { type: 'CARD', cardInstanceId: current.instanceId }, reason: 'CARD_EFFECT', amount: 0, sourceContext: sourceContextFor(playerId, sourceCard, triggerContext) }],
+          }, 'DAMAGE_TAKEN', targetOwner, current.instanceId, current.cardType);
         }
-        const health = current.currentHealth - damageAmount;
+        const health = preparedCurrent.currentHealth - damageAmount;
         if (health > 0) {
           const damagedState: GameState = {
-            ...nextState,
-            players: nextState.players.map((player) => player.id === targetOwner
+            ...clearDamageMarker(preparedState),
+            players: preparedState.players.map((player) => player.id === targetOwner
               ? { ...player, board: player.board.map((card) => card?.instanceId === current.instanceId ? { ...card, currentHealth: health } : card) as typeof player.board }
               : player),
-            events: [...nextState.events, { type: 'DAMAGE_DEALT', playerId, cardInstanceId: sourceCard.instanceId, source: { type: 'CARD', cardInstanceId: sourceCard.instanceId }, target: { type: 'CARD', cardInstanceId: current.instanceId }, reason: 'CARD_EFFECT', amount: damageAmount, sourceContext: sourceContextFor(playerId, sourceCard, triggerContext) }],
+            events: [...preparedState.events, { type: 'DAMAGE_DEALT', playerId, cardInstanceId: sourceCard.instanceId, source: { type: 'CARD', cardInstanceId: sourceCard.instanceId }, target: { type: 'CARD', cardInstanceId: current.instanceId }, reason: 'CARD_EFFECT', amount: damageAmount, sourceContext: sourceContextFor(playerId, sourceCard, triggerContext) }],
           };
+          const withDamageListeners = resolveRegisteredRuleListeners(
+            damagedState,
+            'DAMAGE_TAKEN',
+            targetOwner,
+            current.instanceId,
+            current.cardType,
+          );
           const conditional = effect.values?.conditionalBuff;
           return conditional && health === conditional.healthEquals
-            ? applyEffect(damagedState, playerId, sourceCard, {
+            ? applyEffect(withDamageListeners, playerId, sourceCard, {
               type: 'STRUCTURED',
               action: 'BUFF',
               target: { zone: 'BOARD', owner: 'SELF', selection: 'SELF', count: 1 },
               values: { attack: conditional.attack, health: conditional.health },
             }, undefined, triggerContext)
-            : damagedState;
+            : withDamageListeners;
         }
-        const retired: CardInstance = { ...current, currentHealth: health, boardSlot: null };
+        const beforeRetire = resolveTriggeredAbilities(preparedState, targetOwner, preparedCurrent, 'BEFORE_RETIRE');
+        const protectedState = beforeRetire.targetingState?.active
+          ? resolvePendingEffects(beforeRetire)
+          : beforeRetire;
+        if (protectedState.preventedRetireTargetIds?.includes(current.instanceId)) {
+          return resolveRegisteredRuleListeners({
+            ...protectedState,
+            preventedRetireTargetIds: protectedState.preventedRetireTargetIds.filter((id) => id !== current.instanceId),
+            events: [...protectedState.events, { type: 'DAMAGE_DEALT', playerId, cardInstanceId: sourceCard.instanceId, source: { type: 'CARD', cardInstanceId: sourceCard.instanceId }, target: { type: 'CARD', cardInstanceId: current.instanceId }, reason: 'CARD_EFFECT', amount: 0, sourceContext: sourceContextFor(playerId, sourceCard, triggerContext) }],
+          }, 'DAMAGE_TAKEN', targetOwner, current.instanceId, current.cardType);
+        }
+        const retired: CardInstance = { ...preparedCurrent, currentHealth: health, boardSlot: null };
         const retiredState: GameState = {
-          ...nextState,
-          players: nextState.players.map((player) => player.id === targetOwner
+          ...clearDamageMarker(protectedState),
+          players: protectedState.players.map((player) => player.id === targetOwner
             ? { ...player, board: player.board.map((card) => card?.instanceId === current.instanceId ? null : card) as typeof player.board, graveyard: [...player.graveyard, retired] }
             : player),
-          events: [...nextState.events,
+          events: [...protectedState.events,
             { type: 'DAMAGE_DEALT', playerId, cardInstanceId: sourceCard.instanceId, source: { type: 'CARD', cardInstanceId: sourceCard.instanceId }, target: { type: 'CARD', cardInstanceId: current.instanceId }, reason: 'CARD_EFFECT', amount: damageAmount, sourceContext: sourceContextFor(playerId, sourceCard, triggerContext) },
             { type: 'CARD_RETIRED', playerId: targetOwner, cardInstanceId: current.instanceId, cardType: current.cardType, boardSlot: current.boardSlot!, source: { type: 'CARD', cardInstanceId: sourceCard.instanceId }, target: { type: 'CARD', cardInstanceId: current.instanceId }, reason: 'RETIRE', sourceContext: sourceContextFor(playerId, sourceCard, triggerContext) },
           ],
@@ -2062,7 +2316,8 @@ export function resolveQueuedEffectsForPlayedWrestler(
   cardInstanceId: string,
 ): GameState {
   const queued = (state.pendingCardEffects ?? []).filter(
-    (pending) => pending.playerId === playerId && pending.trigger === 'NEXT_ALLY_WRESTLER_PLAYED',
+    (pending) => pending.playerId === playerId && pending.trigger === 'NEXT_ALLY_WRESTLER_PLAYED' &&
+      (pending.registeredEventIndex === undefined || pending.registeredEventIndex < state.events.length - 1),
   );
   if (!queued.length) return state;
 
@@ -2096,7 +2351,8 @@ export function resolveQueuedEffectsForPlayedTechnique(
   cardInstanceId: string,
 ): GameState {
   const queued = (state.pendingCardEffects ?? []).filter(
-    (pending) => pending.playerId === playerId && pending.trigger === 'NEXT_TECHNIQUE_PLAYED',
+    (pending) => pending.playerId === playerId && pending.trigger === 'NEXT_TECHNIQUE_PLAYED' &&
+      (pending.registeredEventIndex === undefined || pending.registeredEventIndex < state.events.length - 1),
   );
   if (!queued.length) return state;
   let next = {
@@ -2122,7 +2378,7 @@ export function resolveTriggeredAbilities(
   state: GameState,
   playerId: string,
   card: CardInstance,
-  trigger: 'ENTER_FIELD' | 'LEAVE_FIELD' | 'POSITION' | 'ACTIVE' | 'CARD_DRAWN' | 'CARD_RETIRED' | 'CARD_SUMMONED' | 'FIRST_ATTACKED' | 'SELF_ATTACK' | 'OTHER_ALLY_ATTACK' | 'ATTACK_SURVIVED' | 'STAT_CHANGED' | 'TECHNIQUE_CAST' | 'EXACT_ZERO_DAMAGE' | 'TURN_START' | 'TURN_END',
+  trigger: 'ENTER_FIELD' | 'LEAVE_FIELD' | 'POSITION' | 'ACTIVE' | 'CARD_DRAWN' | 'CARD_RETIRED' | 'CARD_SUMMONED' | 'FIRST_ATTACKED' | 'SELF_ATTACK' | 'OTHER_ALLY_ATTACK' | 'ATTACK_SURVIVED' | 'STAT_CHANGED' | 'TECHNIQUE_CAST' | 'EXACT_ZERO_DAMAGE' | 'TURN_START' | 'TURN_END' | 'BEFORE_DAMAGE' | 'BEFORE_RETIRE',
   options: {
     boardSlot?: 0 | 1 | 2 | 3;
     leaveReason?: LeaveReason;
@@ -2145,6 +2401,8 @@ export function resolveTriggeredAbilities(
     condition === 'GTE' ? actual >= expected : condition === 'LTE' ? actual <= expected : actual === expected;
   const abilities = card.abilities.filter((ability) => {
     if (ability.trigger !== trigger) return false;
+    if ((trigger === 'BEFORE_DAMAGE' || trigger === 'BEFORE_RETIRE') &&
+      state.consumedRuleKeys?.includes(`${card.instanceId}:${trigger}`)) return false;
     const condition = 'condition' in ability ? ability.condition : undefined;
     if (condition) {
       const owner = state.players.find((player) => player.id === playerId);
@@ -2195,7 +2453,7 @@ export function resolveCardRetiredListeners(
   sourceContext?: EventAttribution,
 ): GameState {
   const hand = state.players.find((player) => player.id === playerId)?.hand ?? [];
-  return hand
+  const withCardAbilities = hand
     .filter((card) => card.cardType === 'WRESTLER')
     .reduce(
       (next, card) => resolveTriggeredAbilities(next, playerId, card, 'CARD_RETIRED', {
@@ -2204,6 +2462,7 @@ export function resolveCardRetiredListeners(
       }),
       state,
     );
+  return resolveRegisteredRuleListeners(withCardAbilities, 'CARD_RETIRED', playerId, retiredCard.instanceId, retiredCard.cardType);
 }
 
 /** Dispatches the generic summon aura trigger to the summoning player's board. */

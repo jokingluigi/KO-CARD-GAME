@@ -118,6 +118,9 @@ const VALUE_KEYS = new Set([
   "aggregateStats",
   "leftEffects",
   "rightEffects",
+  "delayed",
+  "listener",
+  "prevention",
 ]);
 const DRAFT_KEYS = new Set(["status", "effectId", "effects", "scripts", "keywords", "questions"]);
 
@@ -458,7 +461,9 @@ function buildSystemPrompt(context: EffectAiContext, catalog: readonly CardRefer
     "source 카드의 양옆 빈 슬롯에 각각 한 장씩 소환하는 의미는 SUMMON + target.selection=ADJACENT_EMPTY_SLOTS + target.count=2 + target.cardType=WRESTLER처럼 표현한다. 실제 빈 슬롯 수가 2보다 적으면 가능한 슬롯만 사용하며, 각 슬롯 선택은 독립적이고 중복 definition도 허용된다.",
     "직전 SUMMON에서 실제 필드에 들어간 CardInstance들을 후속 효과가 대상으로 삼을 때는 target.selection=SAME_TARGET을 사용한다. 이는 PLAYER_CHOICE를 열지 않고 성공한 결과만 참조하며, 둘 다 소환되지 않으면 대상 0개로 안전하게 끝난다.",
     "일반 키워드 부여는 ADD_KEYWORD와 values.keyword를 사용한다. 예시 문장은 ENTER_FIELD SUMMON(ADJACENT_EMPTY_SLOTS, WRESTLER, RANDOM/STANDARD) 뒤 ADD_KEYWORD(SAME_TARGET, TAUNT) 두 효과로 변환한다.",
-    "SCRIPT_V1에서 REVIVE는 GRAVEYARD + RANDOM/FILTER + resultId 참조로 표현하고, QUEUE_EFFECT는 기존 지원 queuedTrigger/queuedEffect 구조만 사용한다. 새 scheduler나 event query 문법을 만들지 마라.",
+    "SCRIPT_V1에서 REVIVE는 GRAVEYARD + RANDOM/FILTER + resultId 참조로 표현하고, QUEUE_EFFECT는 기존 지원 queuedTrigger/queuedEffect 구조만 사용한다. 지연/리스너/방지 효과는 Registry가 제공하는 REGISTER_DELAYED, REGISTER_LISTENER, PREVENT_DAMAGE, PREVENT_RETIRE와 values.delayed/listener/prevention만 사용한다.",
+    "REGISTER_DELAYED는 values.delayed={kind:OWNER_NEXT_TURN_START|OPPONENT_NEXT_TURN_START|END_OF_CURRENT_TURN|NEXT_MATCHING_EVENT|N_MATCHING_EVENTS,effect:{action,target?,values?}}로 표현한다. REGISTER_LISTENER는 values.listener={trigger:CARD_PLAYED|TECHNIQUE_PLAYED|CARD_RETIRED|DAMAGE_TAKEN,owner?,cardType?,uses?,effect:{...}}로 표현하며 source의 현재 CARD_PLAYED occurrence는 소비하지 않는다.",
+    "PREVENT_DAMAGE와 PREVENT_RETIRE는 BEFORE_DAMAGE/BEFORE_RETIRE trigger에서만 사용하고 values.prevention={uses?:1,setHealth?:1}로 표현한다. DAMAGE amountReference는 CURRENT_TURN_RETIRED_WRESTLER_COUNT 또는 CURRENT_TURN_DAMAGE_TAKEN을 사용할 수 있다.",
     "SUMMON/GENERATE의 고정 카드 참조는 definitionRef:{name:" +
       '"카드 이름"' +
       "}를 사용하고 서버가 canonical ID로 바꾸게 한다. 임의 ID를 만들지 마라. 무작위 카드 풀 효과만 참조를 생략할 수 있다.",

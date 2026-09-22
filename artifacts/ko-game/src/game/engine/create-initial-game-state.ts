@@ -63,6 +63,8 @@ export function createInitialGameState(
     ],
     events: [],
     pendingCardEffects: [],
+    pendingDelayedEffects: [],
+    pendingRuleListeners: [],
   };
 }
 

@@ -17,6 +17,32 @@ export interface PendingCardEffect {
   sourceInstanceId: string;
   trigger: 'NEXT_ALLY_WRESTLER_PLAYED' | 'NEXT_TECHNIQUE_PLAYED';
   effect: QueuedStructuredEffect;
+  /** Event index at registration; the registering play must not consume itself. */
+  registeredEventIndex?: number;
+}
+
+export interface PendingDelayedEffect {
+  id: string;
+  playerId: string;
+  sourceInstanceId: string;
+  schedule: 'OWNER_NEXT_TURN_START' | 'OPPONENT_NEXT_TURN_START' | 'END_OF_CURRENT_TURN' | 'NEXT_MATCHING_EVENT' | 'N_MATCHING_EVENTS';
+  dueTurn: number;
+  remainingMatches?: number;
+  eventTrigger?: 'CARD_PLAYED' | 'TECHNIQUE_PLAYED' | 'CARD_RETIRED' | 'DAMAGE_TAKEN';
+  effect: QueuedStructuredEffect;
+  followUpEffects?: QueuedStructuredEffect[];
+}
+
+export interface PendingRuleListener {
+  id: string;
+  playerId: string;
+  sourceInstanceId: string;
+  trigger: 'CARD_PLAYED' | 'TECHNIQUE_PLAYED' | 'CARD_RETIRED' | 'DAMAGE_TAKEN';
+  owner?: 'SELF' | 'ENEMY';
+  cardType?: 'WRESTLER' | 'TECHNIQUE';
+  uses?: number;
+  registeredEventIndex: number;
+  effect: QueuedStructuredEffect;
 }
 
 export interface PlayerState {
@@ -55,6 +81,12 @@ export interface GameState {
   players: PlayerState[];
   events: GameEvent[];
   pendingCardEffects: PendingCardEffect[];
+  pendingDelayedEffects: PendingDelayedEffect[];
+  pendingRuleListeners: PendingRuleListener[];
+  /** Ephemeral, serializable interception markers consumed by the current resolution. */
+  preventedDamageTargetIds?: string[];
+  preventedRetireTargetIds?: string[];
+  consumedRuleKeys?: string[];
   /** Effect resolution is deliberately part of game state, not UI state. */
   targetingState?: {
     active: true;
