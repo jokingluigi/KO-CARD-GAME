@@ -1,0 +1,1125 @@
+KO CARD GAME — FIX ONLY: PANDORA TARGETING + LINKED CHAMPION TOKEN DEPLOYMENT
+
+이번 작업에서는 판도라 관련 아래 두 문제만 수정한다.
+
+1. 판도라 Champion Ability가 현재 아군 WRESTLER만 지정되는 문제
+2. 판도라가 자신의 "연결된 Champion Token 카드"를 정상적으로 소환하지 못하는 문제
+
+매우 중요:
+
+Champion Token은 generic token이 아니다.
+
+각 Champion에게는 해당 Champion과 연결된
+전용 Champion Token CardDefinition이 존재한다.
+
+Champion이 Champion Token을 소환할 때는
+반드시 그 Champion에게 연결된 Champion Token 카드를 찾아
+그 CardDefinition으로 CardInstance를 생성/배치해야 한다.
+
+예:
+
+Pandora Champion
+→ Pandora에 연결된 Champion Token CardDefinition
+→ 해당 Token CardInstance 생성
+→ Champion Token context로 배치
+
+다른 Token 카드,
+동일 tag 카드,
+이름이 비슷한 카드,
+fallback token
+
+을 임의로 사용하면 안 된다.
+
+==================================================
+0. 이번 작업 범위
+==================================================
+
+수정 대상은 오직:
+
+A. Pandora targeting
+B. Pandora linked Champion Token deployment
+
+두 개다.
+
+다음은 수정하지 마:
+
+- 판도라 Quest 설계
+- 판도라 Quest progress system
+- 뒷정리맨
+- 매드 펌킨
+- 여울
+- 그레이트 챤
+- 예거
+- Online presentation
+- AI scheduler
+- Admin AI
+- AI Mechanic Compiler
+- SCRIPT_V1 신규 기능
+- 일일 퀘스트
+- 출석
+- 공지
+- 보상
+- unrelated refactor
+
+판도라 Quest 진행도 문제는 이미 해결된 것으로 취급한다.
+
+이번 변경 때문에 회귀하지 않는지만 테스트한다.
+
+==================================================
+1. FIX FIRST
+==================================================
+
+이번 작업은 조사 보고서가 아니다.
+
+순서:
+
+1. 현재 Champion definition 확인
+2. Pandora와 Champion Token 간 실제 연결 구조 확인
+3. 현재 실패 경로 재현
+4. root cause 확인
+5. 실제 source/data definition 수정
+6. regression test
+7. typecheck/build
+8. 가능하면 gameplay 확인
+
+브라우저가 없거나
+Production DB를 직접 수정할 수 없다는 이유로
+코드 수정/자동 테스트를 중단하지 마.
+
+==================================================
+PART A — PANDORA TARGETING
+==================================================
+
+현재 신고:
+
+판도라 Champion Ability를 사용하면
+아군 WRESTLER만 선택 가능하다.
+
+공식 기대:
+
+판도라 Ability는:
+
+- 내 필드 WRESTLER
+- 상대 필드 WRESTLER
+
+모두 대상으로 선택 가능.
+
+하지만:
+
+- 내 Champion
+- 상대 Champion
+
+은 대상이 아니다.
+
+즉 의미는:
+
+ALL BOARD WRESTLERS
+
+이다.
+
+ALL CHARACTERS가 아니다.
+
+==================================================
+2. Pandora target definition 확인
+==================================================
+
+현재 Pandora Champion definition에서 확인:
+
+- ability
+- selector
+- owner scope
+- cardType filter
+- PLAYER_CHOICE config
+- effect config
+- saved Admin data
+
+특히:
+
+owner = ALL
+
+이 실제 target resolver에서
+MY 또는 ALLY만 반환하는지 확인.
+
+또는 Pandora definition 자체가
+ALLY / SELF owner로 잘못 저장되어 있는지도 확인.
+
+engine 문제와 data 문제를 구분한다.
+
+==================================================
+3. 이름 hardcoding 금지
+==================================================
+
+금지:
+
+if (champion.name === "Pandora")
+if (champion.name === "판도라")
+
+Pandora definition이 잘못됐으면 definition 수정.
+
+generic ALL target resolver가 잘못됐으면
+generic resolver 수정.
+
+다른 Champion의:
+
+SELF
+ALLY
+ENEMY
+ALL
+
+semantics를 깨뜨리지 마.
+
+==================================================
+4. Pandora targeting regression
+==================================================
+
+TEST P1
+
+Player A board:
+Ally Wrestler A
+
+Player B board:
+Enemy Wrestler B
+
+Pandora Champion Ability 사용.
+
+기대:
+
+Ally Wrestler A = valid target
+Enemy Wrestler B = valid target
+
+==================================================
+TEST P2
+
+Player A Champion
+Player B Champion
+
+기대:
+
+둘 다 invalid target.
+
+==================================================
+TEST P3
+
+Ally Wrestler 선택.
+
+Ability가 DAMAGE라면:
+
+DAMAGE 정상 적용.
+
+아군이라는 이유로 차단하지 않는다.
+
+HP <= 0:
+
+RETIRE 정상 처리.
+
+==================================================
+TEST P4
+
+Enemy Wrestler 선택.
+
+같은 canonical Ability resolution 경로로 처리.
+
+==================================================
+TEST P5
+
+다른 Champion의 ENEMY-only target ability는
+여전히 enemy-only.
+
+Pandora를 고쳤다고
+모든 ability target 범위가 ALL이 되면 실패.
+
+==================================================
+5. Pandora Quest 회귀
+==================================================
+
+Quest engine은 새로 수정하지 마.
+
+단 이미 해결된:
+
+Pandora Ability
+→ WRESTLER DAMAGE
+→ RETIRE
+→ Quest progress
+
+가 이번 targeting 변경 후에도 유지되는지만 확인.
+
+==================================================
+PART B — LINKED CHAMPION TOKEN
+==================================================
+
+현재 신고:
+
+Pandora가 Champion Token을 소환하려 해도
+정상적으로 Token 카드가 배치되지 않는다.
+
+매우 중요:
+
+Champion Token은
+Champion마다 연결된 "전용 Token CardDefinition"이다.
+
+Pandora는 반드시:
+
+Pandora Champion
+→ Pandora linked Champion Token
+
+을 소환해야 한다.
+
+==================================================
+6. Champion ↔ Champion Token 연결 구조부터 확인
+==================================================
+
+repo에서 현재 실제 연결 구조를 찾는다.
+
+예시일 뿐이며 필드명을 추측하지 마:
+
+championTokenCardDefinitionId
+tokenDefinitionId
+championTokenId
+linkedTokenCardId
+tokenCardDefinition
+relatedTokenDefinition
+
+등.
+
+실제 현재 schema를 확인한다.
+
+목표는:
+
+ChampionDefinition
+→ 정확히 연결된 Champion Token CardDefinition
+
+을 deterministic하게 resolve하는 것.
+
+Champion 이름 검색으로 찾지 마.
+
+==================================================
+7. 절대 하면 안 되는 Token resolution
+==================================================
+
+금지:
+
+"Champion Token" tag를 가진 첫 번째 카드 사용
+
+금지:
+
+name.includes("판도라")
+
+금지:
+
+token 카드 중 하나 random 선택
+
+금지:
+
+임시 Token definition 생성
+
+금지:
+
+Champion ID와 이름이 비슷한 카드를 추측
+
+금지:
+
+Pandora 전용 ID를 engine에 hardcode
+
+반드시 Champion이 가진 authoritative relation을 사용.
+
+==================================================
+8. 정상 Champion Token resolution
+==================================================
+
+기대 흐름:
+
+Pandora ChampionDefinition
+
+→ linked Champion Token reference 확인
+
+→ 해당 CardDefinition lookup
+
+→ CardDefinition 존재/Published/Token type 검증
+
+→ 새로운 CardInstance 생성
+
+→ 이 instance에 Champion Token deployment context 부여
+
+→ field placement
+
+이어야 한다.
+
+==================================================
+9. 연결된 Token의 CardDefinition 그대로 사용
+==================================================
+
+Champion Token 생성 시:
+
+- 이름
+- 이미지
+- 공격력
+- 체력
+- 비용
+- keywords
+- effect
+- tags
+- 기타 카드 metadata
+
+는 Pandora에 연결된 Token CardDefinition을 기준으로 한다.
+
+원래 Pandora Champion stats를 복사하지 마.
+
+Champion HP를 Token HP에 더하지 마.
+
+임의 기본 Token stats를 만들지 마.
+
+==================================================
+10. CardDefinition과 Champion Token context는 별개
+==================================================
+
+같은 Token CardDefinition을 사용하더라도
+Champion Token으로 배치된 instance는
+Champion Token deployment context/marker를 가져야 한다.
+
+즉:
+
+CardDefinition identity
+
+와
+
+Champion Token status
+
+를 구분.
+
+예:
+
+linked Token CardDefinition X를
+Champion Token deploy action으로 생성
+
+→ isChampionToken = true
+
+반면 동일 X가
+일반 SUMMON으로 생성될 수 있다면:
+
+→ ordinary summon
+→ isChampionToken = false
+
+이어야 한다.
+
+==================================================
+11. ordinary SUMMON != Champion Token
+==================================================
+
+매우 중요.
+
+Champion Token의 특별 규칙은:
+
+"어떤 CardDefinition인가?"
+
+만으로 판정하면 안 된다.
+
+Champion Token 전용 deployment context를 통해 판정.
+
+동일 CardDefinition을 일반 SUMMON했다고 해서
+원래 Champion이 보호되거나
+Champion Token 규칙이 발동하면 안 된다.
+
+==================================================
+12. Champion Token 공식 공통 규칙
+==================================================
+
+Pandora linked Champion Token이 정상 field 배치되면:
+
+- Token은 자신의 CardDefinition stats 사용
+- original Champion HP를 Token에 합산하지 않음
+- Token RETIRE != 즉시 경기 패배
+- Token이 정상 field에 있는 동안 original Champion 보호
+- original Champion Ability 계속 사용 가능
+- Token이 field를 떠나면 original Champion protection 종료
+- original Champion HP는 Token 생성 전 값을 그대로 유지
+
+Champion Token은 기존 공식 규칙에 따라:
+
+SILENCE
+DESTROY
+REMOVE_FROM_GAME
+
+면역 유지.
+
+하지만:
+
+normal DAMAGE
+combat DAMAGE
+
+는 정상 적용.
+
+HP <= 0:
+
+RETIRE.
+
+==================================================
+13. Token linked owner 확인
+==================================================
+
+Champion Token instance에는 필요하다면
+어느 Champion으로부터 생성된 Token인지
+serializable한 관계를 유지한다.
+
+예:
+
+sourceChampionInstanceId
+sourceChampionDefinitionId
+
+실제 현재 engine에 이미 equivalent가 있다면 재사용.
+
+새 필드를 불필요하게 만들지 마.
+
+이 관계를 통해:
+
+- original Champion protection
+- Token leave handling
+- reconnect/resync
+
+가 안정적으로 동작해야 한다.
+
+==================================================
+14. Champion Token deployment action 추적
+==================================================
+
+Pandora Token 실패 경로를 실제로 추적.
+
+확인:
+
+Champion Ability / Champion Token action
+
+→ linked Token ref resolve
+
+→ CardDefinition lookup
+
+→ CardInstance creation
+
+→ ChampionToken flag/context
+
+→ placement
+
+→ GameState update
+
+→ sanitizer
+
+→ client render
+
+어디에서 끊기는지 찾는다.
+
+==================================================
+15. 특히 확인할 실패 원인
+==================================================
+
+A.
+Pandora Champion에 Token reference가 없거나 null인가?
+
+B.
+Token reference는 있는데 해당 CardDefinition lookup 실패인가?
+
+C.
+Token CardDefinition이 catalog/cardPool에 없는가?
+
+D.
+CardDefinition은 있는데 Token instance 생성이 실패하는가?
+
+E.
+Champion Token marker가 빠지는가?
+
+F.
+placement legality가 실패하는가?
+
+G.
+field에는 들어갔지만 sanitizer가 제거하는가?
+
+H.
+client가 Champion Token CardInstance를 렌더하지 않는가?
+
+I.
+배치 직후 cleanup/RETIRE 되는가?
+
+J.
+legal action 자체가 생성되지 않는가?
+
+K.
+Pandora와 다른 Champion의 Token link가 혼동되는가?
+
+정확한 실패 지점만 수정.
+
+==================================================
+16. Pandora linked Token regression
+==================================================
+
+TEST T1 — correct link resolution
+
+Pandora ChampionDefinition에서
+linked Champion Token reference를 resolve.
+
+기대:
+
+Pandora에게 연결된 정확한 Token CardDefinition 반환.
+
+다른 Champion의 Token 반환 금지.
+
+==================================================
+TEST T2 — multiple Champions
+==================================================
+
+fixture에:
+
+Champion A → Token A
+Pandora → Token Pandora
+Champion C → Token C
+
+가 있을 때:
+
+Pandora deploy
+
+→ 반드시 Token Pandora.
+
+첫 번째 Token,
+가장 가까운 Token,
+random Token
+
+사용 금지.
+
+==================================================
+TEST T3 — CardDefinition preservation
+==================================================
+
+Pandora linked Token의:
+
+baseAttack
+baseHealth
+keywords
+tags
+
+fixture 값을 설정.
+
+deploy 후:
+
+CardInstance가 해당 정의를 그대로 사용.
+
+==================================================
+TEST T4 — Champion Token marker
+==================================================
+
+Pandora linked Token이
+Champion Token deployment로 생성되면:
+
+isChampionToken/equivalent = true.
+
+==================================================
+TEST T5 — ordinary summon distinction
+==================================================
+
+동일 Token CardDefinition을
+ordinary SUMMON fixture로 생성.
+
+기대:
+
+isChampionToken/equivalent = false.
+
+original Champion protection 없음.
+
+==================================================
+17. Field placement
+==================================================
+
+빈 field slot이 있으면:
+
+Champion Token instance
+→ FIELD.
+
+실제 board에 존재해야 한다.
+
+==================================================
+18. Existing fallback
+==================================================
+
+현재 Champion Token 공식 fallback:
+
+FIELD
+→ HAND
+→ DECK TOP
+
+규칙 유지.
+
+필드가 꽉 차면
+기존 fallback을 사용.
+
+Pandora만 별도 fallback 만들지 마.
+
+==================================================
+TEST T6 — fallback
+==================================================
+
+CASE A:
+field slot available
+→ FIELD
+
+CASE B:
+field unavailable, hand valid
+→ HAND
+
+CASE C:
+field + hand unavailable
+→ DECK TOP
+
+실제 기존 engine rule에 맞게 검증.
+
+==================================================
+19. Champion protection
+==================================================
+
+Pandora linked Champion Token이
+"정상 Champion Token instance"로 FIELD에 있을 때만:
+
+Pandora original Champion protected.
+
+Token이:
+
+HAND
+DECK
+GRAVEYARD
+
+에 있다고 protection이 켜지면 안 된다.
+
+==================================================
+TEST T7
+==================================================
+
+Token field 존재:
+
+original Champion protected = true.
+
+Token field leave:
+
+protected = false.
+
+==================================================
+20. Champion Ability 유지
+==================================================
+
+Champion Token이 field에 있어도
+original Pandora Champion Ability는 사용 가능해야 한다.
+
+TEST T8:
+
+Token field
+→ Pandora ability legal
+→ valid target 선택
+→ resolution PASS.
+
+==================================================
+21. Token RETIRE
+==================================================
+
+TEST T9:
+
+Pandora linked Token이 DAMAGE를 받아
+HP <= 0.
+
+기대:
+
+Token RETIRE.
+
+경기 FINISHED 아님.
+
+Pandora original Champion 다시 targetable/active.
+
+Pandora HP는 Token 생성 이전 값을 그대로 유지.
+
+==================================================
+22. Token 면역 회귀
+==================================================
+
+기존 Champion Token 규칙에 맞춰:
+
+SILENCE
+DESTROY
+REMOVE_FROM_GAME
+
+처리 회귀 확인.
+
+이 테스트 때문에 기존 Token 규칙 자체를
+새로 설계하지 마.
+
+==================================================
+23. linked Token data가 누락된 경우
+==================================================
+
+만약 Pandora ChampionDefinition에서
+linked Token reference 자체가 null/누락이면:
+
+"데이터가 없어서 못 고칩니다"
+
+로 끝내지 마.
+
+다음 확인:
+
+- current Champion seed
+- token seed
+- catalog source
+- Admin Champion definition
+- fixture
+- git history
+
+기존 authoritative link가 존재했는지 찾는다.
+
+복구 가능한 경우:
+
+development source/seed에서
+실제 Pandora → Pandora Token relation을 복구.
+
+임의 Token을 새로 디자인하지 마.
+
+==================================================
+24. Production data 직접 수정 금지
+==================================================
+
+Production DB 직접 write 금지.
+
+Production에서만 link data 수정이 필요한 경우:
+
+PRODUCTION_DATA_APPLY_REQUIRED
+
+로 보고.
+
+반드시:
+
+Champion record:
+...
+
+linked token field:
+...
+
+required Token CardDefinition:
+...
+
+expected relation:
+Pandora → [exact token definition]
+
+형태로 보고.
+
+==================================================
+25. 다른 Champion도 generic regression
+==================================================
+
+Pandora bug를 고칠 때
+Champion → linked Token resolve 구조가 generic이라면
+
+다른 Champion fixture에서도:
+
+Champion A
+→ Token A
+
+Champion B
+→ Token B
+
+가 정확히 각각 resolve되는지 테스트.
+
+특정 Pandora special-case 금지.
+
+==================================================
+26. UI-only fix 금지
+==================================================
+
+Token 카드 이미지만 field에 표시하는 식으로
+고치면 안 된다.
+
+실제 canonical GameState에:
+
+CardInstance
+linked CardDefinition
+Champion Token context
+owner
+zone
+
+가 존재해야 한다.
+
+==================================================
+27. Targeting + Token Gameplay Test
+==================================================
+
+브라우저가 가능하면 development/test environment에서:
+
+CASE A:
+
+Pandora Ability
+→ ally Wrestler 선택 가능
+→ cancel
+
+다시:
+
+Pandora Ability
+→ enemy Wrestler 선택 가능.
+
+==================================================
+
+CASE B:
+
+Pandora Champion Token deploy
+
+→ Pandora에게 연결된 Token 카드 이미지/이름 표시
+→ 정확한 Token stats
+→ field 배치
+→ original Pandora protection.
+
+==================================================
+
+CASE C:
+
+Token DAMAGE
+→ RETIRE
+→ 경기 계속
+→ Pandora original Champion 정상 복귀.
+
+==================================================
+28. 브라우저가 없어도 수정
+==================================================
+
+브라우저가 없으면:
+
+IMPLEMENTATION
+AUTOMATED VERIFICATION
+
+은 계속 수행.
+
+GAMEPLAY VERIFICATION만:
+
+UNVERIFIED
+
+로 보고.
+
+==================================================
+29. 이번 작업에서 수정 금지
+==================================================
+
+절대 건드리지 마:
+
+- Pandora Quest 시스템 재설계
+- 뒷정리맨
+- 매드 펌킨
+- 여울
+- 그레이트 챤
+- 흑구슬마스터
+- 조크루이지
+- 데헌
+- 나토마토
+- 예거
+- Online BGM
+- Online animation
+- Online navigation
+- AI scheduler
+- AI Mechanic Compiler
+- SCRIPT_V1 신규 capability
+- 일일 퀘스트
+- 출석
+- 공지
+- reward system
+- Admin redesign
+
+==================================================
+30. 자동 검증
+==================================================
+
+필수:
+
+Pandora target tests
+Champion → linked Token resolution tests
+Champion Token deployment tests
+Champion Token marker tests
+ordinary summon distinction
+Token protection tests
+Token RETIRE tests
+fallback tests
+Champion Ability regression
+Pandora Quest regression
+
+그리고:
+
+pnpm run typecheck
+pnpm --filter @workspace/ko-game run build
+git diff --check
+
+API/shared 변경 시:
+
+API typecheck/build도 실행.
+
+==================================================
+31. Git
+==================================================
+
+이번 작업 파일만 stage.
+
+금지:
+
+Pasted-*.txt
+.env
+secret
+logs
+temp
+unrelated changes
+
+검증 후 commit.
+
+force push 금지.
+
+push 인증 실패가 있어도
+local commit 유지.
+
+==================================================
+32. 최종 보고
+==================================================
+
+PANDORA TARGETING
+
+ROOT CAUSE:
+...
+
+Authoritative target scope:
+...
+
+Ally Wrestler:
+PASS / FAIL
+
+Enemy Wrestler:
+PASS / FAIL
+
+Own Champion excluded:
+PASS / FAIL
+
+Enemy Champion excluded:
+PASS / FAIL
+
+Existing Quest regression:
+PASS / FAIL
+
+
+PANDORA LINKED CHAMPION TOKEN
+
+Champion → Token relation field:
+...
+
+Pandora linked Token CardDefinition:
+...
+
+ROOT CAUSE:
+...
+
+Correct linked token resolved:
+PASS / FAIL
+
+Wrong Champion token excluded:
+PASS / FAIL
+
+Token CardDefinition preserved:
+PASS / FAIL
+
+Champion Token marker:
+PASS / FAIL
+
+Field deployment:
+PASS / FAIL
+
+Ordinary SUMMON != Champion Token:
+PASS / FAIL
+
+Original Champion protection:
+PASS / FAIL
+
+Original Champion ability usable:
+PASS / FAIL
+
+Token DAMAGE:
+PASS / FAIL
+
+Token RETIRE != defeat:
+PASS / FAIL
+
+Original Champion HP preserved:
+PASS / FAIL
+
+Fallback:
+PASS / FAIL
+
+PRODUCTION DATA APPLY:
+NONE / REQUIRED
+
+
+IMPLEMENTATION:
+PASS / FAIL / BLOCKED
+
+AUTOMATED VERIFICATION:
+PASS / FAIL
+
+GAMEPLAY VERIFICATION:
+PASS / FAIL / UNVERIFIED
+
+TYPECHECK:
+PASS / FAIL
+
+KO BUILD:
+PASS / FAIL
+
+API BUILD:
+PASS / FAIL / NOT_MODIFIED
+
+git diff --check:
+PASS / FAIL
+
+CHANGED FILES:
+...
+
+COMMIT:
+...
+
+PUSH:
+...
+
+==================================================
+완료 조건
+==================================================
+
+이번 작업 완료 기준은 정확히 다음이다.
+
+1.
+Pandora Ability에서 ally Wrestler 선택 가능.
+
+2.
+Pandora Ability에서 enemy Wrestler 선택 가능.
+
+3.
+Champion은 ability target이 아님.
+
+4.
+Pandora가 Token을 생성할 때
+아무 Token이 아니라
+"Pandora Champion에게 연결된 Champion Token CardDefinition"
+을 정확히 resolve.
+
+5.
+그 CardDefinition으로 실제 CardInstance 생성.
+
+6.
+Champion Token deployment context 유지.
+
+7.
+FIELD 배치 성공.
+
+8.
+Token field 중 original Pandora protection.
+
+9.
+Token이 있어도 Pandora Ability 사용 가능.
+
+10.
+Token RETIRE가 경기 패배를 발생시키지 않음.
+
+11.
+ordinary SUMMON된 동일 CardDefinition은
+Champion Token 취급되지 않음.
+
+12.
+기존 Pandora Quest progress 회귀 없음.
+
+이 작업 하나만 완료하고 멈춰라.

@@ -1,0 +1,54 @@
+# KO 카드 효과 메커니즘 수정 요청
+
+이 문서는 외부 AI/API를 호출하거나 코드를 자동 실행하기 위한 것이 아닙니다. 관리자가 현재 Replit Agent 채팅에 그대로 붙여넣는 개발 프롬프트입니다.
+
+## 카드 정보
+카드 이름: 뒷정리맨
+원본 카드 효과: 출현:다음에 출현하는 카드에게 체력을 +2 부여합니다.
+
+## 현재 Analyzer가 이해한 내용
+출현:다음에 출현하는 카드에게 체력을 +2 부여합니다.
+
+## 현재 지원되는 부분
+- 지원하는 Trigger Registry 항목을 찾지 못했습니다.
+
+구조화된 지원 효과:
+- 없음
+
+## 지원되지 않는 부분
+- 출현:다음에 출현하는 카드에게 체력을 +2 부여
+
+## 참조 카드 (CardDefinition ID 기준)
+- 없음
+생성/소환 효과는 문자열 이름이 아니라 definitionRef.id를 사용하세요. 카드 이름이 변경되어도 ID 연결을 유지하고, 미존재·동명이인 카드를 임의 선택하지 마세요.
+
+## 필요한 범용 구성요소 추정
+- Trigger: 현재 문장에서 발동 시점을 확인해 범용 Trigger로 매핑
+- Action: 현재 미지원 동작을 기존 Action 조합으로 표현할 수 있는지 확인한 뒤 필요한 범용 Action만 추가
+- Target: 문장에 나타난 Zone/owner/filter/selection을 보존하는 Target Resolver
+- Value Resolver: STAT_PAIR (+공격력/+체력 수치를 해석합니다.), STAT_MULTIPLIER (대상의 현재 공격력과 체력을 배수로 변경합니다.)
+- Condition: 조건이 있는지 확인하고 필요할 때만 범용 Condition
+- Listener: 필요 여부를 확인한 뒤 필요할 때만 범용 Listener
+- Duration: 지속 시간이 없으면 Duration을 추가하지 않음
+- Sequence: 단일 효과인지, 중첩 트리거가 있는지 확인하고 기존 continuation/sequence 규칙을 재사용
+
+## 현재 실제 ACTIVE Effect Library에서 관련성이 높은 항목
+Trigger: 관련 ACTIVE 항목 없음
+Effect / Action: BUFF (대상의 공격력과 체력을 변경합니다.), SET_STATS (대상의 공격력과 체력을 지정한 값으로 설정합니다.), MODIFY_STAT (대상의 비용, 공격력 또는 체력을 변경합니다.), SET_STAT (대상의 비용, 공격력 또는 체력을 지정한 값으로 설정합니다.), HEAL (대상의 체력을 회복합니다.), WEAKEN_TO_STUN_SILENCE (공격력을 낮추고 0이 된 대상을 기절·침묵시킵니다.), SWAP_STATS (대상의 현재 공격력과 체력을 서로 교환합니다.), ADD_DAMAGE_MODIFIER (조건에 맞는 카드의 피해량을 변경합니다.), REVIVE (무덤의 기존 선수를 체력을 회복해 필드로 되살립니다.), ADD_AGGREGATED_ATTACK (직전에 퇴장시킨 대상의 현재 공격력 합을 대상에게 더합니다.), PREVENT_RETIRE (다음 치명적 퇴장을 체력 1로 대체합니다.)
+Target Resolver: ZONE_OWNER_SELECTION (영역(여러 영역 포함), 소유자, 카드 유형, 태그 필터, 선택 방식 및 수로 대상을 해석합니다.)
+Value Resolver: STAT_PAIR (+공격력/+체력 수치를 해석합니다.), STAT_MULTIPLIER (대상의 현재 공격력과 체력을 배수로 변경합니다.)
+Condition: 관련 ACTIVE 항목 없음
+Listener: 현재 ACTIVE Effect Library에 등록된 Listener 항목만 확인하고, 목록에 없는 Listener를 존재한다고 가정하지 마세요.
+
+## 구현 지침
+- 먼저 위의 현재 ACTIVE Effect Library와 프로젝트의 Effect Registry를 다시 확인하고, 이미 존재하는 Effect, Trigger, Target Resolver, Value Resolver, Condition, Listener를 최대한 재사용하세요.
+- 기존 기능 조합으로 표현할 수 없는 부족한 부분일 때만 다른 카드에도 재사용 가능한 범용 Effect/Trigger/Resolver/Condition/Listener를 추가하세요.
+- 새 메커니즘을 구현하면 Effect Registry, Schema, Handler, Analyzer mapping, 필요한 Resolver/Trigger/Condition/Listener/Duration/Sequence와 테스트까지 등록하세요. 다음 유사 효과가 새 코딩 없이 같은 Effect를 재사용할 수 있어야 합니다.
+- 특정 카드 이름, 카드 ID, 또는 이 카드의 문장만을 위한 하드코딩 분기를 추가하지 마세요.
+- 필요한 관련 파일만 최소 수정하세요. 프로젝트 전체 재탐색, 대규모 리팩터링, 정상 기능 삭제는 하지 마세요.
+- 기존 게임 규칙, 저장 흐름, 전투, Champion, Gold, 턴 시스템 및 기존 Effect 동작을 변경하지 마세요.
+- 자연어 문장이나 DB 문자열을 코드로 실행하지 말고, 정식 TypeScript와 Registry/Schema/Handler를 사용하세요.
+- TypeScript 검사와 필요한 관련 테스트를 실행하고 기존 테스트도 통과시키세요.
+- 부분적으로만 이해된 효과를 자동 적용하지 말고, 구조화된 데이터로 안전하게 검증하세요.
+- 이 카드 효과가 실제 게임에서 동작하도록 구현하세요.
+- 기능이 완료되면 추가 작업이나 임의의 기능을 만들지 말고 종료하세요. 수정 파일과 실행한 검사 결과만 간단히 보고하세요.
