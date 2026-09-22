@@ -2351,14 +2351,16 @@ export function resolveQueuedEffectsForPlayedWrestler(
 ): GameState {
   const queued = (state.pendingCardEffects ?? []).filter(
     (pending) => pending.playerId === playerId && pending.trigger === 'NEXT_ALLY_WRESTLER_PLAYED' &&
+      pending.sourceInstanceId !== cardInstanceId &&
       (pending.registeredEventIndex === undefined || pending.registeredEventIndex < state.events.length - 1),
   );
   if (!queued.length) return state;
 
+  const consumed = new Set(queued);
   let next = {
     ...state,
     pendingCardEffects: (state.pendingCardEffects ?? []).filter(
-      (pending) => !(pending.playerId === playerId && pending.trigger === 'NEXT_ALLY_WRESTLER_PLAYED'),
+      (pending) => !consumed.has(pending),
     ),
   };
   for (const pending of queued) {
@@ -2386,13 +2388,15 @@ export function resolveQueuedEffectsForPlayedTechnique(
 ): GameState {
   const queued = (state.pendingCardEffects ?? []).filter(
     (pending) => pending.playerId === playerId && pending.trigger === 'NEXT_TECHNIQUE_PLAYED' &&
+      pending.sourceInstanceId !== cardInstanceId &&
       (pending.registeredEventIndex === undefined || pending.registeredEventIndex < state.events.length - 1),
   );
   if (!queued.length) return state;
+  const consumed = new Set(queued);
   let next = {
     ...state,
     pendingCardEffects: (state.pendingCardEffects ?? []).filter(
-      (pending) => !(pending.playerId === playerId && pending.trigger === 'NEXT_TECHNIQUE_PLAYED'),
+      (pending) => !consumed.has(pending),
     ),
   };
   const sourceCard = sourceInState(next, cardInstanceId);

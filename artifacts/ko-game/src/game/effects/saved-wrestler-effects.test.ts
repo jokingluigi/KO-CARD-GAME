@@ -10,6 +10,8 @@ import { destroyCard } from '../engine/destroy-card';
 import { enterField } from '../engine/enter-field';
 import { attack } from '../engine/combat';
 import { endTurn } from '../engine/turn-system';
+import { directDeployChampionToken } from '../engine/champion-token';
+import { playTechniqueFromHand } from '../engine/play-technique';
 import { playWrestlerFromHand } from '../engine/play-wrestler';
 import { selectEffectTarget } from './effect-engine';
 
@@ -257,6 +259,129 @@ test('뒷정리맨·오심정정·위리놈·저지먼트의 선택/continuation
   const judgeWithTarget = enterField({ ...judgePending, targetingState: undefined }, 'player-1', card(saved['저지먼트']!, 'judge-2'), 1);
   const judged = selectEffectTarget(judgeWithTarget, enemy.instanceId);
   assert.equal(judged.players[1].board.some((item) => item?.instanceId === enemy.instanceId), false);
+});
+
+test('뒷정리맨 queue는 자기 자신을 제외하고 다음 아군 선수에게 한 번만 적용된다', () => {
+  const cleanupDefinition = definition('뒷정리맨', savedConfigs['뒷정리맨']!, { attack: 1, health: 2 });
+  const nextDefinition = definition('다음 선수', { effects: [] });
+  const state = stateWithPool([cleanupDefinition, nextDefinition]);
+  const cleanup = card(cleanupDefinition, 'cleanup-source');
+  const nextA = card(nextDefinition, 'next-a');
+  const nextB = card(nextDefinition, 'next-b');
+  state.players[0].hand = [cleanup];
+  state.players[0].currentGold = 10;
+
+  const afterCleanup = playWrestlerFromHand(state, 'player-1', cleanup.instanceId, 0);
+  assert.equal(afterCleanup.success, true);
+  assert.equal(afterCleanup.state.players[0].board[0]?.instanceId, cleanup.instanceId);
+  assert.equal(afterCleanup.state.players[0].board[0]?.currentHealth, 2);
+  assert.equal(afterCleanup.state.pendingCardEffects.length, 1);
+
+  const withNextA = {
+    ...afterCleanup.state,
+    players: afterCleanup.state.players.map((player) => player.id === 'player-1'
+      ? { ...player, hand: [nextA], currentGold: 10 }
+      : player),
+  };
+  const afterNextA = playWrestlerFromHand(withNextA, 'player-1', nextA.instanceId, 1);
+  assert.equal(afterNextA.success, true);
+  assert.equal(afterNextA.state.players[0].board[1]?.currentHealth, 3);
+  assert.equal(afterNextA.state.pendingCardEffects.length, 0);
+
+  const withNextB = {
+    ...afterNextA.state,
+    players: afterNextA.state.players.map((player) => player.id === 'player-1'
+      ? { ...player, hand: [nextB], currentGold: 10 }
+      : player),
+  };
+  const afterNextB = playWrestlerFromHand(withNextB, 'player-1', nextB.instanceId, 2);
+  assert.equal(afterNextB.success, true);
+  assert.equal(afterNextB.state.players[0].board[2]?.currentHealth, 1);
+});
+
+test('뒷정리맨 queue는 상대 선수와 기술 카드 플레이로 소비되지 않는다', () => {
+  const cleanupDefinition = definition('뒷정리맨', savedConfigs['뒷정리맨']!, { attack: 1, health: 2 });
+  const wrestlerDefinition = definition('상대 선수', { effects: [] });
+  const techniqueDefinition = definition('기술 카드', { effects: [] }, { cardType: 'TECHNIQUE' });
+  const state = stateWithPool([cleanupDefinition, wrestlerDefinition, techniqueDefinition]);
+  const cleanup = card(cleanupDefinition, 'cleanup-source');
+  const opponentWrestler = card(wrestlerDefinition, 'opponent-wrestler');
+  const technique = card(techniqueDefinition, 'technique');
+  state.players[0].hand = [cleanup];
+  state.players[0].currentGold = 10;
+
+  const afterCleanup = playWrestlerFromHand(state, 'player-1', cleanup.instanceId, 0);
+  assert.equal(afterCleanup.success, true);
+  const afterOpponent = {
+    ...afterCleanup.state,
+    activePlayerId: 'player-2',
+    players: afterCleanup.state.players.map((player) => player.id === 'player-2'
+      ? { ...player, hand: [opponentWrestler], currentGold: 10 }
+      : player),
+  };
+  const opponentResult = playWrestlerFromHand(afterOpponent, 'player-2', opponentWrestler.instanceId, 0);
+  assert.equal(opponentResult.success, true);
+  assert.equal(opponentResult.state.pendingCardEffects.length, 1);
+
+  const afterTechnique = {
+    ...opponentResult.state,
+    activePlayerId: 'player-1',
+    players: opponentResult.state.players.map((player) => player.id === 'player-1'
+      ? { ...player, hand: [technique], currentGold: 10 }
+      : player),
+  };
+  const techniqueResult = playTechniqueFromHand(afterTechnique, 'player-1', technique.instanceId);
+  assert.equal(techniqueResult.success, true);
+  assert.equal(techniqueResult.state.pendingCardEffects.length, 1);
+});
+
+test('뒷정리맨 queue는 SUMMON·REVIVE·Champion Token 전개로 소비되지 않는다', () => {
+  const cleanupDefinition = definition('뒷정리맨', savedConfigs['뒷정리맨']!, { attack: 1, health: 2 });
+  const wrestlerDefinition = definition('소환 선수', { effects: [] });
+  const championTokenDefinition = definition('챔피언 토큰', { effects: [] }, {
+    id: 'champion-token',
+    isToken: true,
+    isChampionToken: true,
+  });
+
+  const queuedState = () => {
+    const state = stateWithPool([cleanupDefinition, wrestlerDefinition, championTokenDefinition]);
+    const cleanup = card(cleanupDefinition, 'cleanup-source');
+    return enterField(state, 'player-1', cleanup, 0);
+  };
+
+  const summonedState = queuedState();
+  const summoned = { ...card(wrestlerDefinition, 'summoned'), isGenerated: true };
+  const afterSummon = enterField(summonedState, 'player-1', summoned, 1, undefined, undefined, 'SUMMON');
+  assert.equal(afterSummon.players[0].board[1]?.currentHealth, 1);
+  assert.equal(afterSummon.pendingCardEffects.length, 1);
+
+  const revivedState = queuedState();
+  const revived = card(wrestlerDefinition, 'revived');
+  const afterRevive = enterField(revivedState, 'player-1', revived, 1, undefined, undefined, 'REVIVE');
+  assert.equal(afterRevive.players[0].board[1]?.currentHealth, 1);
+  assert.equal(afterRevive.pendingCardEffects.length, 1);
+
+  const championState = queuedState();
+  const championPlayer = championState.players.find((player) => player.id === 'player-1');
+  assert.ok(championPlayer?.champion);
+  const withLinkedToken = {
+    ...championState,
+    players: championState.players.map((player) => player.id === 'player-1'
+      ? {
+          ...player,
+          champion: { ...player.champion!, championTokenDefinitionId: championTokenDefinition.id },
+        }
+      : player),
+  };
+  const afterChampionDeploy = directDeployChampionToken(
+    withLinkedToken,
+    'player-1',
+    championPlayer!.champion!.id,
+    championTokenDefinition.id,
+  );
+  assert.equal(afterChampionDeploy.pendingCardEffects.length, 1);
+  assert.equal(afterChampionDeploy.players[0].board.filter(Boolean).length, 2);
 });
 
 test('조킹루이지·퍼플레인·아비터·플래티넘 구슬 마스터의 지속/조건부 효과가 실제 매치에서 동작한다', () => {
