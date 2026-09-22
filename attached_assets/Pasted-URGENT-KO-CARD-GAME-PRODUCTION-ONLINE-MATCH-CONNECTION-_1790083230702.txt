@@ -1,0 +1,683 @@
+URGENT — KO CARD GAME PRODUCTION ONLINE MATCH CONNECTION FAILURE
+
+현재 다른 작업은 즉시 중단한다.
+
+특히 다음 작업은 이번 범위에서 하지 마:
+
+- AI Mechanic Compiler
+- SCRIPT_V1
+- Event History
+- Admin AI
+- 카드 효과
+- 신규 기능
+- UI redesign
+
+현재 최우선 문제:
+
+Replit development에서는 Online Match가 정상 연결되는데,
+Render Production에서는 다시 "연결 오류"가 발생한다.
+
+Production:
+
+Frontend:
+https://ko-card-game-vr69.onrender.com/
+
+Node API / WebSocket:
+https://ko-card-game.onrender.com/
+
+이 Production Online Match 연결 문제를
+실제 root cause까지 찾아 수정해라.
+
+==================================================
+0. 가장 먼저 — Replit과 Production 코드 버전 비교
+==================================================
+
+이 단계가 최우선이다.
+
+실행:
+
+git status
+git branch --show-current
+git rev-parse HEAD
+git rev-parse origin/main
+git log --oneline --decorate -15
+
+현재 최근 local commit으로 보고된 것은:
+
+437f9f9
+Add bounded event history to rule scripts
+
+이전 여러 작업에서도:
+
+git push
+→ Invalid username or token
+
+으로 실패했다.
+
+따라서 Replit Preview가 local HEAD를 실행하는 반면,
+Render는 오래된 GitHub origin/main을 배포하고 있을 가능성을
+반드시 먼저 확인한다.
+
+보고:
+
+LOCAL_HEAD=
+ORIGIN_MAIN=
+AHEAD_BY=
+SAME_CODE=YES/NO
+
+LOCAL_HEAD != origin/main 이라면
+이 사실을 Production/Replit 차이의 핵심 후보로 취급한다.
+
+==================================================
+1. 절대로 처음부터 코드 수정하지 마
+==================================================
+
+우선 다음 4개를 분리해서 확인:
+
+A. VERSION MISMATCH
+B. HTTP API CONNECTION
+C. AUTH / WS TICKET
+D. WEBSOCKET CONNECTION
+
+어디가 실패하는지 찾은 다음
+해당 계층만 최소 수정한다.
+
+==================================================
+2. Production Frontend → API 실제 요청 검사
+==================================================
+
+Production frontend에서 Online Match 진입 시
+실제 Network request를 확인한다.
+
+다음을 기록:
+
+REQUEST URL
+METHOD
+STATUS
+RESPONSE BODY
+CORS
+COOKIE/AUTH 상태
+
+특히 Online match 생성/queue/join 관련
+/api/... 요청이:
+
+https://ko-card-game-vr69.onrender.com/api/...
+
+relative route를 통해 정상적으로 Node로 전달되는지 확인.
+
+현재 architecture에서는 authenticated frontend API call은
+가능하면 relative:
+
+/api/...
+
+를 사용하는 것이 원칙이다.
+
+Production frontend에서
+Replit URL이나 localhost URL을 참조하면 안 된다.
+
+검색:
+
+localhost
+127.0.0.1
+.replit.dev
+.repl.co
+REPLIT
+ws://
+hardcoded API hostname
+
+Production bundle/config에 남아 있는지 확인.
+
+==================================================
+3. Render Static Rewrite 확인
+==================================================
+
+Production frontend는 Render Static Site다.
+
+반드시 /api/* rewrite가 Node API로 먼저 전달되고,
+SPA catch-all이 그 뒤에 있어야 한다.
+
+잘못된 예:
+
+/* → /index.html
+/api/* → Node
+
+이 순서 때문에 /api 요청이 index.html을 반환하면 안 된다.
+
+기대 개념:
+
+/api/* → Node service
+/* → /index.html
+
+실제 Render 설정 / rewrite config / source config를 확인.
+
+Online API request가 JSON 대신:
+
+<!doctype html>
+
+또는 frontend index.html을 받는다면
+rewrite ordering 문제를 수정한다.
+
+==================================================
+4. HTTP API 자체 검사
+==================================================
+
+Node root "/"가 404인 것만으로 장애 판정하지 마.
+
+실제 앱에서 사용하는 API route를 확인하고 테스트.
+
+예:
+
+auth/session
+online queue
+match creation
+WS ticket
+
+등 실제 존재하는 route.
+
+Production frontend가 사용하는 endpoint와
+Node server route가 일치하는지 확인한다.
+
+다음을 구분:
+
+404 = route/rewrite mismatch
+401 = auth/session 문제
+403 = origin/permission 문제
+500 = backend exception
+502/503 = Render service 문제
+
+==================================================
+5. WebSocket Ticket 경로 확인
+==================================================
+
+현재 Online architecture에서
+WebSocket은 one-time WS ticket을 사용하는 경로가 존재한다.
+
+Online 진입 시:
+
+authenticated HTTP
+→ WS ticket 발급
+→ WebSocket connect
+→ ticket consume
+→ match/session attach
+
+전체를 추적한다.
+
+확인:
+
+1. WS ticket 요청이 성공하는가
+2. ticket response가 frontend에 정상 전달되는가
+3. ticket이 undefined/null이 아닌가
+4. ticket URL encoding 정상인가
+5. ticket을 두 번 소비하지 않는가
+6. reconnect가 이미 소비된 ticket을 재사용하지 않는가
+
+==================================================
+6. WebSocket URL 확인
+==================================================
+
+Production HTTPS 페이지에서는
+WebSocket은 반드시 secure connection을 사용.
+
+https:
+→ wss:
+
+Production에서:
+
+ws://
+
+사용 금지.
+
+실제 생성되는 WebSocket URL을 확인.
+
+정상 예 개념:
+
+wss://ko-card-game.onrender.com/...
+
+잘못된 예:
+
+ws://ko-card-game.onrender.com/...
+ws://localhost...
+wss://Replit-host...
+undefined/...
+
+실제 runtime URL을 로그로 확인하되
+ticket/token 전체 값은 로그에 출력하지 마.
+
+==================================================
+7. Frontend API URL과 WS URL을 혼동하지 마
+==================================================
+
+HTTP API는 static frontend의 relative:
+
+/api/...
+
+를 사용할 수 있다.
+
+WebSocket은 Render Static rewrite가 일반 WS proxy를
+담당하지 않는 구조라면
+Node WebSocket host로 직접 연결해야 한다.
+
+현재 기존 architecture를 확인한 뒤
+정상 경로를 유지한다.
+
+무조건 HTTP와 WS URL을 하나로 합치지 마.
+
+==================================================
+8. Production Environment 확인
+==================================================
+
+Render Node service environment에서
+Online Match에 필요한 environment를 확인.
+
+값 자체는 출력하지 마.
+
+확인:
+
+- NODE_ENV
+- frontend/public origin 관련 env
+- API/public URL 관련 env
+- WS/public URL 관련 env
+- auth/session 관련 env
+- Supabase 관련 required env
+- 필요한 secret 존재 여부
+
+값은:
+
+PRESENT / MISSING
+
+으로만 보고.
+
+Replit Secrets에만 존재하고
+Render Environment에 없는 설정이 있는지 확인.
+
+==================================================
+9. Allowed Origin / CORS 확인
+==================================================
+
+Production frontend origin:
+
+https://ko-card-game-vr69.onrender.com
+
+이 Node API/WS에서 허용되는지 확인.
+
+Replit origin만 허용되어 있으면:
+
+Replit = 정상
+Production = 실패
+
+가 정확히 발생할 수 있다.
+
+HTTP CORS뿐 아니라
+WebSocket upgrade/origin validation도 확인.
+
+단 보안을 해결한다고:
+
+Access-Control-Allow-Origin: *
+
+로 무작정 열지 마.
+
+Production frontend origin을 정확히 허용.
+
+==================================================
+10. Authentication / Cookie 확인
+==================================================
+
+Replit에서는 되고 Production에서만 안 되므로
+cookie/session/auth propagation 확인.
+
+특히:
+
+SameSite
+Secure
+credentials
+domain
+origin
+
+문제 확인.
+
+Frontend API request가
+필요한 auth 정보를 전달하는지 확인.
+
+Online endpoint에서만
+다른 fetch wrapper를 사용하는지도 확인.
+
+==================================================
+11. 실제 WebSocket handshake 확인
+==================================================
+
+Production Online Match에서 실제 handshake를 검사.
+
+기록:
+
+HTTP upgrade status
+WS URL
+Origin
+close code
+close reason
+
+가능하면:
+
+101 Switching Protocols
+
+까지 확인.
+
+실패 시 정확히:
+
+WS_HANDSHAKE_FAILED
+AUTH_FAILED
+TICKET_FAILED
+ORIGIN_REJECTED
+SERVER_ERROR
+ROUTE_ERROR
+
+중 어디인지 분류.
+
+"연결 오류"만 보고하지 마.
+
+==================================================
+12. 서버 로그 확인
+==================================================
+
+Online Match 연결 시 Node에서:
+
+connection attempt
+ticket validation
+auth resolution
+queue join
+match attach
+socket close
+
+경로를 확인.
+
+Frontend에서 "연결 오류"가 뜨는 순간과
+Node log를 시간상 대응시켜라.
+
+단:
+
+auth token
+session token
+WS ticket
+API secret
+
+원문 로그 금지.
+
+==================================================
+13. 최근 코드와 Production 코드 차이 검사
+==================================================
+
+LOCAL_HEAD와 origin/main이 다르다면:
+
+Online 관련 파일의 차이를 확인.
+
+예:
+
+git diff origin/main..HEAD -- <online-related-files>
+
+특히 최근 local commits에:
+
+WS ticket
+sanitizer
+API routing
+online client
+auth
+socket handling
+
+변경이 있는지 확인한다.
+
+Production 장애가
+"최신 수정이 Render에 배포되지 않았기 때문"인지
+"최신 코드 자체에 새로운 bug가 있기 때문"인지
+구분한다.
+
+==================================================
+14. 매우 중요 — Push 실패를 해결 없이 무시하지 마
+==================================================
+
+현재 shell git push가:
+
+Invalid username or token
+
+으로 반복 실패했다.
+
+Render가 GitHub main 자동배포라면
+push 실패 상태에서는
+Replit에서 아무리 고쳐도 Production은 바뀌지 않는다.
+
+코드 수정 완료 후:
+
+git status
+git rev-parse HEAD
+git rev-parse origin/main
+
+확인.
+
+Shell push 인증 실패 시
+force push 금지.
+
+Local commit을 보존.
+
+그리고 최종 보고에 매우 명확하게:
+
+PRODUCTION CANNOT RECEIVE THIS FIX UNTIL GITHUB PUSH SUCCEEDS
+
+라고 표시.
+
+==================================================
+15. Replit Git integration도 고려
+==================================================
+
+Shell HTTPS push와
+Replit Git UI authentication은 별도일 수 있다.
+
+Shell push가 Invalid username/token이면
+무한 재시도하지 마.
+
+사용자가 Replit Git UI의
+[Push / 푸시]
+
+버튼으로 local commits를 push할 수 있도록:
+
+LOCAL HEAD
+origin/main
+ahead count
+
+를 알려라.
+
+==================================================
+16. 실제 수정
+==================================================
+
+Root cause가 확인되면
+해당 부분만 실제 수정.
+
+가능한 예:
+
+- Production API base URL 잘못됨
+- WS URL 잘못됨
+- ws:// → wss:// 문제
+- /api rewrite 순서 문제
+- Production origin allowlist 누락
+- WS ticket endpoint mismatch
+- reconnect ticket reuse
+- auth credentials 누락
+- frontend/backend contract mismatch
+
+하지만 원인을 확인하지 않고
+모든 설정을 한꺼번에 바꾸지 마.
+
+==================================================
+17. Online Game Logic 건드리지 말 것
+==================================================
+
+이번 문제가 connection layer라면:
+
+- 카드 효과
+- Quest
+- Champion
+- SCRIPT_V1
+- AI Match logic
+- turn engine
+
+수정하지 마.
+
+범위를 Online connection에 제한.
+
+==================================================
+18. Regression Test
+==================================================
+
+Root cause에 해당하는 자동 테스트를 추가.
+
+최소:
+
+Production frontend origin
+→ API accepted
+
+WS ticket
+→ issue
+→ consume once
+
+valid ticket
+→ WS connection accepted
+
+invalid ticket
+→ rejected
+
+reused ticket
+→ rejected safely
+
+disconnect/reconnect
+→ new ticket path 정상
+
+Production URL generation
+→ HTTPS => WSS
+
+==================================================
+19. Production smoke
+==================================================
+
+수정 코드가 실제 Production에 배포된 후에만
+Production PASS 판정 가능.
+
+배포 전:
+
+IMPLEMENTATION = PASS
+AUTOMATED = PASS
+PRODUCTION = NOT_DEPLOYED
+
+로 표시.
+
+배포되면 실제:
+
+Production login
+→ Online
+→ Quick 또는 Friendly
+→ connection
+→ opponent/queue/match
+→ socket active
+
+확인.
+
+==================================================
+20. 연결 후 최소 실제 경기 검사
+==================================================
+
+연결 성공만 보고 끝내지 마.
+
+최소:
+
+match state 수신
+turn state 수신
+card play 1회
+END_TURN 1회
+상대 state update 수신
+
+까지 확인.
+
+단 이번 작업에서 전체 카드 QA는 하지 마.
+
+==================================================
+21. 최종 보고
+==================================================
+
+반드시:
+
+LOCAL_HEAD:
+...
+
+ORIGIN_MAIN:
+...
+
+AHEAD_BY:
+...
+
+REPLIT WORKS:
+YES/NO
+
+PRODUCTION FRONTEND:
+PASS/FAIL
+
+PRODUCTION API:
+PASS/FAIL
+
+WS TICKET:
+PASS/FAIL
+
+WEBSOCKET HANDSHAKE:
+PASS/FAIL
+
+WS CLOSE CODE:
+...
+
+WS CLOSE REASON:
+...
+
+PRODUCTION ORIGIN:
+PASS/FAIL
+
+AUTH:
+PASS/FAIL
+
+ROOT CAUSE:
+...
+
+CHANGED FILES:
+...
+
+REGRESSION TEST:
+...
+
+TYPECHECK:
+...
+
+BUILD:
+...
+
+LOCAL COMMIT:
+...
+
+PUSH:
+SUCCESS/FAILED
+
+DEPLOYED:
+YES/NO
+
+PRODUCTION ONLINE MATCH:
+PASS/FAIL/NOT_DEPLOYED
+
+==================================================
+22. 진짜 완료 조건
+==================================================
+
+Replit Preview가 되는 것은
+Production Online Match PASS가 아니다.
+
+최종 목표는:
+
+https://ko-card-game-vr69.onrender.com/
+
+에서 실제 로그인한 사용자가 Online Match에 들어가
+Node WebSocket에 연결되고
+정상적으로 Match State를 받는 것이다.
+
+원인을 찾아 실제로 수정해라.
