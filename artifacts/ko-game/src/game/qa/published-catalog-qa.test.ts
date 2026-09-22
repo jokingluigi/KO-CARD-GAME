@@ -422,6 +422,12 @@ function runChampionQa(definition: ChampionDefinition): ChampionQaResult {
       const afterEnemyHealth = settled.state.players[1].board
         .filter((card): card is NonNullable<typeof card> => Boolean(card))
         .map((card) => card.currentHealth);
+      const beforeOwnBoardHealth = state.players[0].board
+        .filter((card): card is NonNullable<typeof card> => Boolean(card))
+        .map((card) => card.currentHealth);
+      const afterOwnBoardHealth = settled.state.players[0].board
+        .filter((card): card is NonNullable<typeof card> => Boolean(card))
+        .map((card) => card.currentHealth);
       const generatedToken = settled.state.players[0].board.some(
         (card) => card?.definitionId === definition.ability.effects.find(
           (effect) => effect.type === "STRUCTURED" && effect.action === "SUMMON",
@@ -439,6 +445,12 @@ function runChampionQa(definition: ChampionDefinition): ChampionQaResult {
         base = changed ? "PASS" : "FAIL";
         if (!changed) notes.push("손의 WRESTLER +1/+1 결과를 확인하지 못함");
       } else if (championName === normalized("챔피언 판도라")) {
+        const damagedAlly = afterOwnBoardHealth.some(
+          (health, index) => health < (beforeOwnBoardHealth[index] ?? health),
+        );
+        base = damagedAlly ? "PASS" : "FAIL";
+        if (!damagedAlly) notes.push("선택한 아군 WRESTLER damage 결과를 확인하지 못함");
+      } else if (championName === normalized("챔피언 판도라(폭주)")) {
         const damaged = afterEnemyHealth.some(
           (health, index) => health < (beforeEnemyHealth[index] ?? health),
         );
@@ -600,7 +612,7 @@ test.after(() => {
     `- API source: ${apiOrigin}`,
     `- Published cards: ${publishedCards.length}`,
     `- Published Champions: ${publishedChampions.length}`,
-    `- DB/storage mutation: 없음`,
+    `- Production DB/storage mutation: 없음 (development catalog snapshot was corrected before QA)`,
     `- Deterministic seed: 20260920`,
     "",
     "## 요약",

@@ -272,7 +272,14 @@ test('QA2 combat listeners apply exact attack, gold, dodge and silence results',
 
   const lunaState = stateWithPool();
   const luna = { ...card('루나', 'qa2-luna'), boardSlot: 0 as const, enteredThisTurn: false };
-  const enemyAttacker = { ...card('로드', 'qa2-luna-attacker'), boardSlot: 0 as const, enteredThisTurn: false, currentAttack: 1 };
+  const enemyAttacker = {
+    ...card('로드', 'qa2-luna-attacker'),
+    boardSlot: 0 as const,
+    enteredThisTurn: false,
+    currentAttack: 1,
+    currentHealth: 5,
+    maxHealth: 5,
+  };
   lunaState.players[0].board = [luna, null, null, null];
   lunaState.players[1].board = [enemyAttacker, null, null, null];
   lunaState.activePlayerId = 'player-2';

@@ -1,13 +1,13 @@
 # KO AI Match QA
 
 - API source: http://127.0.0.1:8080
-- Published cards: 49
+- Published cards: 45
 - Published Champions: 4
-- deterministic action steps: 50
+- deterministic action steps: 61
 - final status: FINISHED
 - winner: player-1
 - action types: END_TURN, USE_CHAMPION_ABILITY, PLAY_WRESTLER, ATTACK
-- event count: 186
+- event count: 210
 - failures: none
 
 ## Hidden-information probe
