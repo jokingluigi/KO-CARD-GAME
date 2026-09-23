@@ -16,7 +16,7 @@ router.get("/game-media", async (_request, response): Promise<void> => {
       volume: gameMediaTable.volume,
     })
     .from(gameMediaTable)
-    .where(eq(gameMediaTable.enabled, true))
+    .where(eq(gameMediaTable.gameEnabled, true))
     .orderBy(asc(gameMediaTable.createdAt));
 
   response.setHeader("Cache-Control", "no-store");

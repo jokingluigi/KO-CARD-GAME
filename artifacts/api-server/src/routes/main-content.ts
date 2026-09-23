@@ -1,4 +1,4 @@
-import { and, desc, eq } from "drizzle-orm";
+import { and, desc, eq, or } from "drizzle-orm";
 import { randomUUID } from "node:crypto";
 import { Router, type IRouter, type Request, type Response } from "express";
 import {
@@ -48,16 +48,18 @@ const publicMediaFields = {
 async function activeMainMedia(mediaType: "BACKGROUND" | "BGM") {
   const media = await db.select({
     ...publicMediaFields,
+    titleEnabled: gameMediaTable.titleEnabled,
     mainEnabled: gameMediaTable.mainEnabled,
-    enabled: gameMediaTable.enabled,
     createdAt: gameMediaTable.createdAt,
     updatedAt: gameMediaTable.updatedAt,
   })
     .from(gameMediaTable)
     .where(and(
       eq(gameMediaTable.mediaType, mediaType),
-      eq(gameMediaTable.enabled, true),
-      eq(gameMediaTable.mainEnabled, true),
+      or(
+        eq(gameMediaTable.titleEnabled, true),
+        and(eq(gameMediaTable.titleEnabled, false), eq(gameMediaTable.mainEnabled, true)),
+      ),
     ))
     .orderBy(desc(gameMediaTable.updatedAt), desc(gameMediaTable.createdAt))
   const selected = selectActiveMainMedia(media);

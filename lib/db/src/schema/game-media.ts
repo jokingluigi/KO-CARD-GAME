@@ -11,6 +11,11 @@ export const gameMediaTable = pgTable("game_media", {
   width: integer("width"),
   height: integer("height"),
   volume: integer("volume").notNull().default(100),
+  /** Whether this asset is available for in-game match selection. */
+  gameEnabled: boolean("game_enabled").notNull().default(true),
+  /** Whether this asset is selected for the title/main menu. */
+  titleEnabled: boolean("title_enabled").notNull().default(false),
+  /** Legacy aliases retained while existing clients/data migrate. */
   enabled: boolean("enabled").notNull().default(true),
   mainEnabled: boolean("main_enabled").notNull().default(false),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),

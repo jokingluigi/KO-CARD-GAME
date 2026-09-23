@@ -27,12 +27,19 @@ test("공지 입력은 plain text를 보존하고 유효하지 않은 범위를 
   assert.equal(validateNoticeInput({ title: "제목", body: "내용", displayOrder: 1.5 }), null);
 });
 
-test("메인 미디어는 enabled + mainEnabled 중 최신 항목 하나만 선택한다", () => {
+test("메인 미디어는 titleEnabled 중 최신 항목 하나만 선택한다", () => {
   const selected = selectActiveMainMedia([
-    { id: "disabled", enabled: false, mainEnabled: true, createdAt: "2026-09-23", updatedAt: "2026-09-23" },
-    { id: "old", enabled: true, mainEnabled: true, createdAt: "2026-09-20", updatedAt: "2026-09-20" },
-    { id: "new", enabled: true, mainEnabled: true, createdAt: "2026-09-21", updatedAt: "2026-09-22" },
+    { id: "not-title", titleEnabled: false, createdAt: "2026-09-23", updatedAt: "2026-09-23" },
+    { id: "old", titleEnabled: true, createdAt: "2026-09-20", updatedAt: "2026-09-20" },
+    { id: "new", titleEnabled: true, createdAt: "2026-09-21", updatedAt: "2026-09-22" },
   ]);
   assert.equal(selected?.id, "new");
   assert.equal(selectActiveMainMedia([]), null);
+});
+
+test("기존 mainEnabled만 있는 미디어는 title 설정으로 안전하게 대체한다", () => {
+  const selected = selectActiveMainMedia([
+    { id: "legacy", titleEnabled: false, mainEnabled: true, createdAt: "2026-09-20", updatedAt: "2026-09-20" },
+  ]);
+  assert.equal(selected?.id, "legacy");
 });

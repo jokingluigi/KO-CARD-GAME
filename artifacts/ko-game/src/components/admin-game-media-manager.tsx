@@ -29,8 +29,8 @@ type MediaRecord = {
   width: number | null;
   height: number | null;
   volume: number;
-  enabled: boolean;
-  mainEnabled: boolean;
+  gameEnabled: boolean;
+  titleEnabled: boolean;
 };
 
 type Props = {
@@ -232,7 +232,8 @@ export function AdminGameMediaManager({ onUnauthorized }: Props) {
           width,
           height,
           volume: 100,
-          enabled: true,
+          gameEnabled: true,
+          titleEnabled: false,
           uploadToken: completed.uploadToken,
         }),
       });
@@ -258,7 +259,7 @@ export function AdminGameMediaManager({ onUnauthorized }: Props) {
     }
   }
 
-  async function patchItem(item: MediaRecord, patch: Partial<Pick<MediaRecord, "name" | "enabled" | "volume">>) {
+  async function patchItem(item: MediaRecord, patch: Partial<Pick<MediaRecord, "name" | "gameEnabled" | "titleEnabled" | "volume">>) {
     const response = await fetch(`${apiBase}/game-media/${encodeURIComponent(item.id)}`, {
       method: "PATCH",
       credentials: "include",
@@ -307,7 +308,7 @@ export function AdminGameMediaManager({ onUnauthorized }: Props) {
       <div>
         <div className="font-display text-xs font-bold tracking-[0.2em] text-primary">GAME MEDIA</div>
         <h2 className="mt-1 text-2xl font-black">백그라운드 관리</h2>
-       <p className="mt-2 text-sm text-neutral-500">게임용 미디어와 메인 메뉴 미디어를 같은 저장소에서 관리합니다. 메인 적용 항목은 배경과 BGM에서 각각 하나만 선택됩니다.</p>
+       <p className="mt-2 text-sm text-neutral-500">Title과 In-Game 미디어 선택을 독립적으로 관리합니다. Title 적용 항목은 배경과 BGM에서 각각 하나만 선택되며, In-Game 선택을 꺼도 Title 미디어는 유지됩니다.</p>
       </div>
 
       <section className="rounded-lg border border-primary/30 bg-primary/5 p-4">
@@ -417,7 +418,7 @@ function MediaSection({
   accept: string;
   uploading: boolean;
   onUpload: (file: File) => void;
-  onPatch: (item: MediaRecord, patch: Partial<Pick<MediaRecord, "name" | "enabled" | "volume" | "mainEnabled">>) => Promise<void>;
+  onPatch: (item: MediaRecord, patch: Partial<Pick<MediaRecord, "name" | "gameEnabled" | "titleEnabled" | "volume">>) => Promise<void>;
   onDelete: (item: MediaRecord) => Promise<void>;
   ratioWarning: (item: MediaRecord) => boolean | null;
   viewportRatio: number;
@@ -503,20 +504,19 @@ function MediaSection({
                      <label className="flex shrink-0 items-center gap-2">
                       <input
                         type="checkbox"
-                        checked={item.enabled}
-                        onChange={(event) => void onPatch(item, { enabled: event.target.checked })}
+                        checked={item.gameEnabled}
+                        onChange={(event) => void onPatch(item, { gameEnabled: event.target.checked })}
                       />
-                      <Power className="h-3.5 w-3.5" /> 활성
+                      <Power className="h-3.5 w-3.5" /> In-Game
                     </label>
                      {(item.mediaType === "BACKGROUND" || item.mediaType === "BGM") && (
                        <label className="flex shrink-0 items-center gap-2 text-amber-300">
                          <input
                            type="checkbox"
-                           checked={item.mainEnabled}
-                           disabled={!item.enabled}
-                           onChange={(event) => void onPatch(item, { mainEnabled: event.target.checked })}
+                           checked={item.titleEnabled}
+                           onChange={(event) => void onPatch(item, { titleEnabled: event.target.checked })}
                          />
-                         메인 적용
+                         Title 적용
                        </label>
                      )}
                      </div>

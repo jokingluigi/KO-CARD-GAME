@@ -353,6 +353,12 @@ export function AdminChampionManager({ onUnauthorized }: { onUnauthorized: () =>
     const completedPortraitUrl = form.questCompletedPortraitUrl?.trim() || null;
     const questCompleteAudioAssetId = form.questCompleteAudioAssetId?.trim() || null;
     const questCompleteAudioUrl = form.questCompleteAudioUrl?.trim() || null;
+    const questProgressRequired = form.hasQuest
+      ? form.questProgressRequired ?? (typeof form.questCondition?.required === "number" ? form.questCondition.required : 1)
+      : null;
+    const questCondition = form.hasQuest && form.questCondition
+      ? { ...form.questCondition, required: questProgressRequired }
+      : form.hasQuest ? form.questCondition : null;
     const saveForm: Form = {
       ...form,
       imageAssetId,
@@ -361,6 +367,8 @@ export function AdminChampionManager({ onUnauthorized }: { onUnauthorized: () =>
       questCompletedPortraitUrl: completedPortraitUrl,
       questCompleteAudioAssetId,
       questCompleteAudioUrl,
+      questProgressRequired,
+      questCondition,
     };
     if ((imageAssetId === null) !== (imageUrl === null) ||
         (completedPortraitAssetId === null) !== (completedPortraitUrl === null) ||

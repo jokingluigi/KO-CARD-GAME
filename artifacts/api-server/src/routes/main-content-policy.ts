@@ -10,8 +10,9 @@ export type NoticePolicyRecord = {
 
 export type MainMediaPolicyRecord = {
   id: string;
-  enabled: boolean;
-  mainEnabled: boolean;
+  titleEnabled: boolean;
+  /** Legacy fallback for rows created before titleEnabled existed. */
+  mainEnabled?: boolean;
   createdAt: Date | string;
   updatedAt: Date | string;
 };
@@ -50,7 +51,7 @@ export function filterAndSortPublicNotices<T extends NoticePolicyRecord>(notices
 
 export function selectActiveMainMedia<T extends MainMediaPolicyRecord>(media: T[]): T | null {
   return media
-    .filter((item) => item.enabled && item.mainEnabled)
+    .filter((item) => item.titleEnabled || item.mainEnabled === true)
     .sort((left, right) => {
       const updated = new Date(right.updatedAt).getTime() - new Date(left.updatedAt).getTime();
       return updated || new Date(right.createdAt).getTime() - new Date(left.createdAt).getTime();

@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState, type ReactNode } from "react";
+import { useCallback, useEffect, useRef, useMemo, useState, type ReactNode } from "react";
 import { ArrowLeft, Check, CircleAlert, Crown, LockKeyhole, Radio, Shield, Swords } from "lucide-react";
 import { useLocation } from "wouter";
 import { fetchCurrentUser, type AuthUser } from "@/lib/auth-client";
@@ -13,23 +13,30 @@ export type OnlineAuthState =
 
 export function useOnlineAuth() {
   const [auth, setAuth] = useState<OnlineAuthState>({ status: "loading", user: null });
-  useEffect(() => {
-    let active = true;
+  const requestGeneration = useRef(0);
+  const checkAuthentication = useCallback(() => {
+    const generation = ++requestGeneration.current;
+    setAuth({ status: "loading", user: null });
     fetchCurrentUser()
       .then((response) => {
-        if (!active) return;
+        if (generation !== requestGeneration.current) return;
         setAuth(response.authenticated && response.user
           ? { status: "ready", user: response.user }
           : { status: "error", user: null, message: "온라인 대전은 로그인 후 이용할 수 있습니다." });
       })
       .catch((error) => {
-        if (active) setAuth({ status: "error", user: null, message: error instanceof Error ? error.message : "로그인 상태를 확인하지 못했습니다." });
+        if (generation !== requestGeneration.current) return;
+        setAuth({ status: "error", user: null, message: error instanceof Error ? error.message : "로그인 상태를 확인하지 못했습니다." });
       });
-    return () => {
-      active = false;
-    };
   }, []);
-  return auth;
+
+  useEffect(() => {
+    checkAuthentication();
+    return () => {
+      requestGeneration.current += 1;
+    };
+  }, [checkAuthentication]);
+  return { auth, retry: checkAuthentication };
 }
 
 export function OnlineShell({
@@ -82,8 +89,7 @@ export function OnlineShell({
 }
 
 export function OnlineAuthGate({ children }: { children: (user: AuthUser) => ReactNode }) {
-  const auth = useOnlineAuth();
-  const [, navigate] = useLocation();
+  const { auth, retry } = useOnlineAuth();
   if (auth.status === "loading") {
     return (
       <main className="ko-online-shell flex min-h-[100dvh] items-center justify-center p-6">
@@ -104,11 +110,11 @@ export function OnlineAuthGate({ children }: { children: (user: AuthUser) => Rea
           <p className="mt-3 text-sm leading-6 text-neutral-400" data-testid="status-online-auth-error">{auth.message}</p>
           <button
             type="button"
-            data-testid="button-online-auth-back"
-            onClick={() => navigate(ROUTES.MAIN_MENU)}
+            data-testid="button-online-auth-retry"
+            onClick={retry}
             className="ko-online-action mt-7 rounded bg-amber-400 px-5 py-3 text-sm font-black text-black hover:bg-amber-300"
           >
-            메인 메뉴로
+            다시 시도
           </button>
         </section>
       </main>

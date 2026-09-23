@@ -685,7 +685,7 @@ export async function startOnlineMatch(
       height: gameMediaTable.height,
       volume: gameMediaTable.volume,
     }).from(gameMediaTable)
-      .where(eq(gameMediaTable.enabled, true)),
+      .where(eq(gameMediaTable.gameEnabled, true)),
   ]);
   const cardDefinitions = cards.map(toCardDefinition);
   const championDefinitions = champions.map(toChampionDefinition);

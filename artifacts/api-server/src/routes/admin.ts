@@ -174,8 +174,14 @@ function parseChampionInput(value: unknown): ChampionInput | null {
   const abilityName = text("abilityName", true);
   const maxHealth = integer("maxHealth", 1, 999);
   const abilityCost = integer("abilityCost", 0, 999);
-  const abilityAudioVolume = integer("abilityAudioVolume", 0, 100);
-  const questCompleteAudioVolume = integer("questCompleteAudioVolume", 0, 100) ?? 100;
+  // Audio volume was added after the first Champion records. Missing legacy
+  // values are safe to default, but present invalid values must still reject.
+  const defaultedInteger = (key: string, min: number, max: number, fallback: number) =>
+    input[key] === undefined || input[key] === null || input[key] === ""
+      ? fallback
+      : integer(key, min, max);
+  const abilityAudioVolume = defaultedInteger("abilityAudioVolume", 0, 100, 100);
+  const questCompleteAudioVolume = defaultedInteger("questCompleteAudioVolume", 0, 100, 100);
   const questCompleteAudioAssetId = text("questCompleteAudioAssetId");
   const questCompleteAudioUrl = text("questCompleteAudioUrl");
   const questCompleteAudioEnabled = input.questCompleteAudioEnabled === true;
@@ -291,6 +297,59 @@ function parseChampionInput(value: unknown): ChampionInput | null {
     abilityAudioVolume, questCompleteAudioAssetId, questCompleteAudioUrl,
     questCompleteAudioVolume, questCompleteAudioEnabled, questCompleteAudioUploadToken,
   };
+}
+
+function championInputError(value: unknown): string {
+  if (!value || typeof value !== "object" || Array.isArray(value)) return "챔피언 입력값이 객체여야 합니다.";
+  const input = value as Record<string, unknown>;
+  const isIntegerInRange = (key: string, min: number, max: number) => {
+    const raw = input[key];
+    const parsed = typeof raw === "number" ? raw : typeof raw === "string" && raw.trim() ? Number(raw) : Number.NaN;
+    return Number.isInteger(parsed) && parsed >= min && parsed <= max;
+  };
+  if (typeof input.name !== "string" || !input.name.trim() || input.name.trim().length > 120) {
+    return "챔피언 이름을 확인해 주세요.";
+  }
+  if (typeof input.abilityName !== "string" || !input.abilityName.trim() || input.abilityName.trim().length > 120) {
+    return "고유 능력 이름을 확인해 주세요.";
+  }
+  if (!isIntegerInRange("maxHealth", 1, 999)) return "최대 체력은 1~999 정수여야 합니다.";
+  if (!isIntegerInRange("abilityCost", 0, 999)) return "고유 능력 비용은 0~999 정수여야 합니다.";
+  if (input.abilityAudioVolume !== undefined && !isIntegerInRange("abilityAudioVolume", 0, 100)) {
+    return "고유 능력 음악 볼륨은 0~100 정수여야 합니다.";
+  }
+  if (input.questCompleteAudioVolume !== undefined && !isIntegerInRange("questCompleteAudioVolume", 0, 100)) {
+    return "퀘스트 완료 음악 볼륨은 0~100 정수여야 합니다.";
+  }
+  if (input.hasQuest !== true && input.hasQuest !== false) return "퀘스트 사용 여부를 확인해 주세요.";
+  const effectObject = (key: string) => input[key] === null || input[key] === undefined ||
+    (typeof input[key] === "object" && !Array.isArray(input[key]));
+  if (!effectObject("abilityEffects")) return "고유 능력 효과 형식을 확인해 주세요.";
+  if (input.abilityEffects && typeof input.abilityEffects === "object" &&
+      "effects" in input.abilityEffects &&
+      !isEffectScriptConfig(input.abilityEffects) &&
+      !isStructuredEffects(input.abilityEffects)) {
+    return "고유 능력 효과를 확인해 주세요.";
+  }
+  if (input.hasQuest) {
+    if (typeof input.questName !== "string" || !input.questName.trim()) return "Quest 이름을 확인해 주세요.";
+    if (typeof input.questText !== "string" || !input.questText.trim()) return "Quest 설명을 확인해 주세요.";
+    if (!effectObject("questCondition") || !input.questCondition) return "Quest Condition을 확인해 주세요.";
+    const condition = input.questCondition as Record<string, unknown>;
+    if (typeof condition.event !== "string" || !condition.event.trim()) return "Quest Condition 이벤트를 확인해 주세요.";
+    if (!isIntegerInRange("questProgressRequired", 1, 999) &&
+        !(typeof condition.required === "number" && Number.isInteger(condition.required) && condition.required >= 1 && condition.required <= 999)) {
+      return "Quest 필요 진행도는 1~999 정수여야 합니다.";
+    }
+    if (typeof input.questRewardText !== "string" || !input.questRewardText.trim()) return "Quest Reward 설명을 확인해 주세요.";
+  }
+  if (input.questRewardEffects !== null && input.questRewardEffects !== undefined && !effectObject("questRewardEffects")) {
+    return "Quest Reward 효과 형식을 확인해 주세요.";
+  }
+  if (input.upgradedAbilityEffects !== null && input.upgradedAbilityEffects !== undefined && !effectObject("upgradedAbilityEffects")) {
+    return "업그레이드 능력 효과 형식을 확인해 주세요.";
+  }
+  return "챔피언 입력값을 확인해 주세요.";
 }
 
 async function validateChampionTokenReference(
@@ -1600,7 +1659,7 @@ router.get("/champions/:id/test", async (request, response): Promise<void> => {
 router.post("/champions", async (request, response): Promise<void> => {
   if (!requireAdmin(request, response)) return;
   const input = parseChampionInput(request.body);
-  if (!input) { response.status(400).json({ message: "챔피언 입력값을 확인해 주세요." }); return; }
+  if (!input) { response.status(400).json({ message: championInputError(request.body) }); return; }
   const tokenValidation = await validateChampionTokenReference(input.championTokenDefinitionId);
   if (!tokenValidation.ok) { response.status(400).json({ message: tokenValidation.message }); return; }
   if (
@@ -1643,7 +1702,10 @@ router.patch("/champions/:id", async (request, response): Promise<void> => {
   if (!requireAdmin(request, response)) return;
   const id = firstParam(request.params.id);
   const input = parseChampionInput(request.body);
-  if (!id || !input) { response.status(400).json({ message: "챔피언 입력값을 확인해 주세요." }); return; }
+  if (!id || !input) {
+    response.status(400).json({ message: id ? championInputError(request.body) : "챔피언 ID를 확인해 주세요." });
+    return;
+  }
   const tokenValidation = await validateChampionTokenReference(input.championTokenDefinitionId);
   if (!tokenValidation.ok) { response.status(400).json({ message: tokenValidation.message }); return; }
   const [existing] = await db.select().from(championsTable).where(eq(championsTable.id, id)).limit(1);
@@ -2450,8 +2512,12 @@ router.post("/game-media", async (request, response): Promise<void> => {
   const width = typeof body.width === "number" ? body.width : null;
   const height = typeof body.height === "number" ? body.height : null;
   const volume = typeof body.volume === "number" ? body.volume : 100;
-  const enabled = body.enabled === undefined ? true : body.enabled;
-  const mainEnabled = body.mainEnabled === undefined ? false : body.mainEnabled;
+  const gameEnabled = body.gameEnabled === undefined
+    ? body.enabled === undefined ? true : body.enabled
+    : body.gameEnabled;
+  const titleEnabled = body.titleEnabled === undefined
+    ? body.mainEnabled === undefined ? false : body.mainEnabled
+    : body.titleEnabled;
   const validDimensions = mediaType !== "BACKGROUND" ||
     (width !== null && height !== null &&
       Number.isInteger(width) && Number.isInteger(height) && width > 0 && height > 0);
@@ -2459,10 +2525,9 @@ router.post("/game-media", async (request, response): Promise<void> => {
       !assetUrl || !fileName || !contentType || !validGameMediaAssetToken(mediaType, assetId, uploadToken) ||
       !validDimensions ||
        (mediaType !== "BACKGROUND" && (!Number.isInteger(volume) || volume < 0 || volume > 100)) ||
-       typeof enabled !== "boolean" ||
-       typeof mainEnabled !== "boolean" ||
-       (mainEnabled && mediaType !== "BACKGROUND" && mediaType !== "BGM") ||
-       (mainEnabled && !enabled)) {
+       typeof gameEnabled !== "boolean" ||
+       typeof titleEnabled !== "boolean" ||
+       (titleEnabled && mediaType !== "BACKGROUND" && mediaType !== "BGM")) {
     response.status(400).json({ message: "게임 미디어 정보가 올바르지 않습니다." });
     return;
   }
@@ -2472,12 +2537,12 @@ router.post("/game-media", async (request, response): Promise<void> => {
     return;
   }
   const [media] = await db.transaction(async (tx) => {
-    if (mainEnabled) {
+    if (titleEnabled) {
       await tx.update(gameMediaTable)
-        .set({ mainEnabled: false, updatedAt: new Date() })
+        .set({ titleEnabled: false, mainEnabled: false, updatedAt: new Date() })
         .where(and(
           eq(gameMediaTable.mediaType, mediaType),
-          eq(gameMediaTable.mainEnabled, true),
+          eq(gameMediaTable.titleEnabled, true),
         ));
     }
     return tx.insert(gameMediaTable).values({
@@ -2491,8 +2556,10 @@ router.post("/game-media", async (request, response): Promise<void> => {
       width: mediaType === "BACKGROUND" ? width as number : null,
       height: mediaType === "BACKGROUND" ? height as number : null,
       volume: mediaType !== "BACKGROUND" ? volume as number : 100,
-      enabled,
-      mainEnabled: mediaType === "BACKGROUND" || mediaType === "BGM" ? mainEnabled : false,
+      gameEnabled,
+      titleEnabled: mediaType === "BACKGROUND" || mediaType === "BGM" ? titleEnabled : false,
+      enabled: gameEnabled,
+      mainEnabled: mediaType === "BACKGROUND" || mediaType === "BGM" ? titleEnabled : false,
     }).returning();
   });
   response.status(201).json({ media });
@@ -2509,32 +2576,36 @@ router.patch("/game-media/:id", async (request, response): Promise<void> => {
   const body = request.body && typeof request.body === "object"
     ? request.body as Record<string, unknown> : {};
   const name = body.name === undefined ? existing.name : typeof body.name === "string" ? body.name.trim() : "";
-  const enabled = body.enabled === undefined ? existing.enabled : body.enabled;
+  const gameEnabled = body.gameEnabled === undefined
+    ? body.enabled === undefined ? existing.gameEnabled : body.enabled
+    : body.gameEnabled;
   const volume = typeof body.volume === "number" ? body.volume : existing.volume;
-  const mainEnabled = body.mainEnabled === undefined ? existing.mainEnabled : body.mainEnabled;
-  if (!name || name.length > 120 || typeof enabled !== "boolean" ||
+  const titleEnabled = body.titleEnabled === undefined
+    ? body.mainEnabled === undefined ? existing.titleEnabled : body.mainEnabled
+    : body.titleEnabled;
+  if (!name || name.length > 120 || typeof gameEnabled !== "boolean" ||
       !Number.isInteger(volume) || volume < 0 || volume > 100 ||
-      typeof mainEnabled !== "boolean" ||
-      (mainEnabled && existing.mediaType !== "BACKGROUND" && existing.mediaType !== "BGM") ||
-      (mainEnabled && !enabled)) {
+      typeof titleEnabled !== "boolean" ||
+      (titleEnabled && existing.mediaType !== "BACKGROUND" && existing.mediaType !== "BGM")) {
     response.status(400).json({ message: "게임 미디어 설정이 올바르지 않습니다." });
     return;
   }
-  const nextMainEnabled = enabled ? mainEnabled : false;
   const [media] = await db.transaction(async (tx) => {
-    if (nextMainEnabled) {
+    if (titleEnabled) {
       await tx.update(gameMediaTable)
-        .set({ mainEnabled: false, updatedAt: new Date() })
+        .set({ titleEnabled: false, mainEnabled: false, updatedAt: new Date() })
         .where(and(
           eq(gameMediaTable.mediaType, existing.mediaType),
-          eq(gameMediaTable.mainEnabled, true),
+          eq(gameMediaTable.titleEnabled, true),
         ));
     }
     return tx.update(gameMediaTable).set({
       name,
-      enabled,
+      gameEnabled,
+      titleEnabled,
+      enabled: gameEnabled,
       volume: existing.mediaType !== "BACKGROUND" ? volume : existing.volume,
-      mainEnabled: nextMainEnabled,
+      mainEnabled: titleEnabled,
       updatedAt: new Date(),
     }).where(eq(gameMediaTable.id, id)).returning();
   });
