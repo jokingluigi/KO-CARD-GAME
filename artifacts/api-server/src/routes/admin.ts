@@ -883,6 +883,48 @@ async function cardReferenceCatalog(): Promise<CardReferenceCandidate[]> {
   }));
 }
 
+async function trustedEffectContext(
+  sourceType: "CARD" | "CHAMPION",
+  sourceId: string | undefined,
+  requestedCardType: EffectAiContext["cardType"] | undefined,
+  effectContext: EffectAiContext["effectContext"] | undefined,
+  sourceName: string | undefined,
+): Promise<EffectAiContext | null> {
+  if (!sourceId) {
+    return {
+      sourceType,
+      ...(requestedCardType ? { cardType: requestedCardType } : {}),
+      ...(effectContext ? { effectContext } : {}),
+      ...(sourceName ? { sourceName } : {}),
+    };
+  }
+  if (sourceType === "CARD") {
+    const [card] = await db.select({
+      id: cardsTable.id,
+      name: cardsTable.name,
+      cardType: cardsTable.cardType,
+    }).from(cardsTable).where(eq(cardsTable.id, sourceId)).limit(1);
+    if (!card || (requestedCardType && card.cardType !== requestedCardType)) return null;
+    return {
+      sourceType,
+      sourceId: card.id,
+      sourceName: card.name,
+      cardType: card.cardType === "TECHNIQUE" ? "TECHNIQUE" : "WRESTLER",
+    };
+  }
+  const [champion] = await db.select({
+    id: championsTable.id,
+    name: championsTable.name,
+  }).from(championsTable).where(eq(championsTable.id, sourceId)).limit(1);
+  if (!champion) return null;
+  return {
+    sourceType,
+    sourceId: champion.id,
+    sourceName: champion.name,
+    ...(effectContext ? { effectContext } : {}),
+  };
+}
+
 async function publishedEffectPayloadError(card: {
   text: string;
   effectId: string | null;
@@ -1240,17 +1282,26 @@ router.post("/effects/generate", async (request, response): Promise<void> => {
     ? body.effectContext as EffectAiContext["effectContext"]
     : undefined;
   const cardType = body.cardType === "TECHNIQUE" ? "TECHNIQUE" : body.cardType === "WRESTLER" ? "WRESTLER" : undefined;
-  const sourceName = typeof body.sourceName === "string" ? body.sourceName.trim().slice(0, 120) : undefined;
+   const sourceName = typeof body.sourceName === "string" ? body.sourceName.trim().slice(0, 120) : undefined;
+   const sourceId = typeof body.sourceId === "string" && body.sourceId.trim()
+     ? body.sourceId.trim()
+     : undefined;
   if (!text || text.length > 2000 || !sourceType ||
       (sourceType === "CHAMPION" && !effectContext) ||
-      (sourceType === "CARD" && effectContext)) {
+       (sourceType === "CARD" && effectContext) ||
+       (body.sourceId !== undefined && !sourceId)) {
     response.status(400).json({ message: "AI 효과 생성 입력값을 확인해 주세요." });
     return;
   }
   try {
+    const context = await trustedEffectContext(sourceType, sourceId, cardType, effectContext, sourceName);
+    if (!context) {
+      response.status(400).json({ message: "현재 편집 중인 CardDefinition/ChampionDefinition을 확인해 주세요." });
+      return;
+    }
     const result = await generateEffectDraft(
       text,
-      { sourceType, ...(cardType ? { cardType } : {}), ...(effectContext ? { effectContext } : {}), ...(sourceName ? { sourceName } : {}) },
+      context,
       await cardReferenceCatalog(),
     );
     if (result.status === "NEEDS_CLARIFICATION") {

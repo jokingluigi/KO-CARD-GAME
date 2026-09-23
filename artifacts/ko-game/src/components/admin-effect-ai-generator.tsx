@@ -33,6 +33,7 @@ type EffectAiClarification = {
 export function AdminEffectAiGenerator({
   defaultText,
   sourceType,
+  sourceId,
   cardType,
   effectContext,
   sourceName,
@@ -42,6 +43,7 @@ export function AdminEffectAiGenerator({
 }: {
   defaultText: string;
   sourceType: "CARD" | "CHAMPION";
+  sourceId?: string;
   cardType?: "WRESTLER" | "TECHNIQUE";
   effectContext?: EffectAiContext;
   sourceName?: string;
@@ -73,6 +75,7 @@ export function AdminEffectAiGenerator({
         body: JSON.stringify({
           text: trimmed,
           sourceType,
+          ...(sourceId ? { sourceId } : {}),
           ...(cardType ? { cardType } : {}),
           ...(effectContext ? { effectContext } : {}),
           ...(sourceName?.trim() ? { sourceName: sourceName.trim() } : {}),

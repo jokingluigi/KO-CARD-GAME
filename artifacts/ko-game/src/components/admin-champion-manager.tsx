@@ -755,6 +755,7 @@ export function AdminChampionManager({ onUnauthorized }: { onUnauthorized: () =>
             onCopyPrompt={()=>void copyPrompt("abilityText")}
             analyzing={analyzingKey === "abilityText"}
             prompting={promptingKey === "abilityText"}
+            sourceId={editing?.id}
             effectContext="CHAMPION_ABILITY"
             existingEffectCount={Array.isArray(form.abilityEffects.effects) ? form.abilityEffects.effects.length : 0}
             onApplyAi={(effects, mode) => applyAiEffect("abilityEffects", effects, mode)}
@@ -801,6 +802,7 @@ export function AdminChampionManager({ onUnauthorized }: { onUnauthorized: () =>
                onCopyPrompt={()=>void copyPrompt("questRewardText")}
                analyzing={analyzingKey === "questRewardText"}
                prompting={promptingKey === "questRewardText"}
+                sourceId={editing?.id}
                 effectContext="QUEST_REWARD"
                 existingEffectCount={Array.isArray(form.questRewardEffects?.effects) ? form.questRewardEffects.effects.length : 0}
                 onApplyAi={(effects, mode) => applyAiEffect("questRewardEffects", effects, mode)}
@@ -821,6 +823,7 @@ export function AdminChampionManager({ onUnauthorized }: { onUnauthorized: () =>
              onCopyPrompt={()=>void copyPrompt("upgradedAbilityText")}
              analyzing={analyzingKey === "upgradedAbilityText"}
              prompting={promptingKey === "upgradedAbilityText"}
+              sourceId={editing?.id}
              effectContext="UPGRADED_CHAMPION_ABILITY"
              existingEffectCount={Array.isArray(form.upgradedAbilityEffects?.effects) ? form.upgradedAbilityEffects.effects.length : 0}
              onApplyAi={(effects, mode) => applyAiEffect("upgradedAbilityEffects", effects, mode)}
@@ -1018,7 +1021,7 @@ function AnalysisControls({
   </div>;
 }
 
-function EffectField({ title, value, onChange, onAnalyze, onApply, onPrompt, onReanalyze, analysis, prompt, onCopyPrompt, analyzing, prompting, effectContext, existingEffectCount, onApplyAi, onUnauthorized }: {
+function EffectField({ title, value, onChange, onAnalyze, onApply, onPrompt, onReanalyze, analysis, prompt, onCopyPrompt, analyzing, prompting, sourceId, effectContext, existingEffectCount, onApplyAi, onUnauthorized }: {
   title: string;
   value: string;
   onChange: (value: string) => void;
@@ -1031,6 +1034,7 @@ function EffectField({ title, value, onChange, onAnalyze, onApply, onPrompt, onR
   onCopyPrompt: () => void;
   analyzing?: boolean;
   prompting?: boolean;
+  sourceId?: string;
   effectContext: "CHAMPION_ABILITY" | "QUEST_REWARD" | "UPGRADED_CHAMPION_ABILITY";
   existingEffectCount: number;
   onApplyAi: (draft: { effectId: "STRUCTURED_EFFECTS_V1" | "SCRIPT_V1"; effects: unknown[]; scripts: unknown[] }, mode: "replace" | "append") => void;
@@ -1056,6 +1060,7 @@ function EffectField({ title, value, onChange, onAnalyze, onApply, onPrompt, onR
     <AdminEffectAiGenerator
       defaultText={value}
       sourceType="CHAMPION"
+       sourceId={sourceId}
       effectContext={effectContext}
       existingEffectCount={existingEffectCount}
        onApply={(draft, mode) => onApplyAi(draft, mode)}

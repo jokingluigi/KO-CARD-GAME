@@ -1252,6 +1252,7 @@ export function AdminCardManager({
                  <AdminEffectAiGenerator
                    defaultText={preview.text}
                    sourceType="CARD"
+                   sourceId={editingCard?.id}
                    cardType={preview.cardType}
                    sourceName={preview.name}
                    existingEffectCount={preview.effectId === "STRUCTURED_EFFECTS_V1" ? structuredEffectCount(preview.effectConfig) : 0}

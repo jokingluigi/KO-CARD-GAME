@@ -113,6 +113,126 @@ export type EffectScript = {
   steps: ScriptStep[];
 };
 
+/** Authoritative structured-effect contract shared by administration and runtime.
+ * Provider output is parsed into this data shape, then the server resolves
+ * definition references before it is persisted. No source identity belongs in
+ * this provider-facing effect AST. */
+export type StructuredTarget = {
+  zone?: TargetZone;
+  zones?: TargetZone[];
+  owner: TargetOwner;
+  cardType?: "WRESTLER" | "TECHNIQUE";
+  filter?: {
+    isGenerated?: boolean;
+    minCost?: number;
+    maxCost?: number;
+    isToken?: boolean;
+    isChampionToken?: boolean;
+    excludeSource?: boolean;
+    keyword?: Keyword;
+    cost?: { compare: ScriptComparator; value: number };
+    attack?: { compare: ScriptComparator; value: number };
+    health?: { compare: ScriptComparator; value: number };
+    tagsAny?: string[];
+    tagsAll?: string[];
+    tagsNone?: string[];
+  };
+  selection: TargetSelection;
+  count: number;
+  randomScope?: RandomScope;
+  minTargets?: number;
+  maxTargets?: number;
+  optionalTarget?: boolean;
+  resultId?: string;
+  sort?: { stat: ScriptStat; direction: "ASC" | "DESC" };
+  take?: number;
+};
+
+export type StructuredEffectCondition = { type: Condition; expression?: string };
+export type CardDefinitionReference = { id?: string; name?: string };
+export type StructuredAggregateStats = {
+  source: "LAST_DESTROYED_TARGETS";
+  attack: "CURRENT_ATTACK_SUM";
+  health: "CURRENT_HEALTH_SUM";
+};
+export type StructuredQueuedEffect = {
+  action: Action;
+  target?: StructuredTarget;
+  values?: {
+    attack?: number;
+    health?: number;
+    attackMultiplier?: number;
+    healthMultiplier?: number;
+    amount?: number;
+    stat?: StatName;
+    duration?: EffectDuration;
+    keyword?: Keyword;
+    damageSource?: DamageSource;
+    reference?: Reference;
+    referenceStat?: "CURRENT_ATTACK" | "CURRENT_HEALTH";
+    amountReference?: DynamicValue;
+    minimum?: number;
+    generatedModifiers?: { cost?: number; attack?: number; health?: number; copySourceStats?: boolean; copyTargetStats?: boolean };
+    deckPosition?: "TOP" | "BOTTOM";
+  };
+};
+export type StructuredSchedule = {
+  kind: "OWNER_NEXT_TURN_START" | "OPPONENT_NEXT_TURN_START" | "END_OF_CURRENT_TURN" | "NEXT_MATCHING_EVENT" | "N_MATCHING_EVENTS";
+  count?: number;
+  eventTrigger?: "CARD_PLAYED" | "TECHNIQUE_PLAYED" | "CARD_RETIRED" | "DAMAGE_TAKEN";
+};
+export type StructuredListener = {
+  trigger: "CARD_PLAYED" | "TECHNIQUE_PLAYED" | "CARD_RETIRED" | "DAMAGE_TAKEN";
+  cardType?: "WRESTLER" | "TECHNIQUE";
+  owner?: "SELF" | "ENEMY";
+  uses?: number;
+};
+export type StructuredPrevention = { uses?: number; setHealth?: number };
+export type StructuredEffectValues = {
+  attack?: number;
+  health?: number;
+  attackMultiplier?: number;
+  healthMultiplier?: number;
+  amount?: number;
+  stat?: StatName;
+  duration?: EffectDuration;
+  keyword?: Keyword;
+  damageSource?: DamageSource;
+  reference?: Reference;
+  referenceStat?: "CURRENT_ATTACK" | "CURRENT_HEALTH";
+  amountReference?: DynamicValue;
+  temporaryCost?: boolean;
+  conditionalBuff?: { healthEquals: number; attack: number; health: number };
+  minimum?: number;
+  generatedModifiers?: { cost?: number; attack?: number; health?: number; copySourceStats?: boolean; copyTargetStats?: boolean };
+  deckPosition?: "TOP" | "BOTTOM";
+  queuedTrigger?: "NEXT_ALLY_WRESTLER_PLAYED" | "NEXT_TECHNIQUE_PLAYED";
+  queuedEffect?: StructuredQueuedEffect;
+  definition?: Record<string, unknown>;
+  definitionRef?: CardDefinitionReference;
+  count?: number;
+  destination?: "HAND" | "DECK" | "DECK_TOP";
+  aggregateStats?: StructuredAggregateStats;
+  leftEffects?: StructuredEffect[];
+  rightEffects?: StructuredEffect[];
+  delayed?: StructuredSchedule & { effect: StructuredQueuedEffect; followUpEffects?: StructuredQueuedEffect[] };
+  listener?: StructuredListener & { effect: StructuredQueuedEffect };
+  prevention?: StructuredPrevention;
+};
+export type StructuredEffect = {
+  trigger: Trigger;
+  action: Action;
+  target?: StructuredTarget;
+  conditions?: StructuredEffectCondition[];
+  values?: StructuredEffectValues;
+};
+export type StructuredEffectConfig = { effects: StructuredEffect[] };
+export type EffectScriptConfig = { scripts: EffectScript[] };
+export type MechanicCompilerProviderOutput =
+  | { status: "READY"; effectId: "STRUCTURED_EFFECTS_V1"; effects: StructuredEffect[]; keywords?: Keyword[] }
+  | { status: "READY"; effectId: "SCRIPT_V1"; scripts: EffectScript[]; keywords?: Keyword[] }
+  | { status: "NEEDS_CLARIFICATION"; questions: string[] };
+
 const SCRIPT_TARGET_KEYS = new Set(["zone", "zones", "owner", "cardType", "filter", "selection", "count", "randomScope", "resultId", "sort", "take"]);
 const SCRIPT_FILTER_KEYS = new Set(["isGenerated", "minCost", "maxCost", "cost", "attack", "health", "isToken", "isChampionToken", "excludeSource", "keyword", "tagsAny", "tagsAll", "tagsNone"]);
 const SCRIPT_VALUE_KEYS = new Set(["kind", "value", "resultId"]);

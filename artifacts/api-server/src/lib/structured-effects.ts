@@ -3,111 +3,27 @@ import {
   RANDOM_SCOPES, TARGET_SELECTIONS, TARGET_ZONES, TRIGGERS,
   type Action, type Condition, type Keyword, type Reference, type TargetOwner, type TargetSelection,
   type DamageSource, type RandomScope, type TargetZone, type Trigger, type StatName, type EffectDuration,
+  type StructuredEffect, type StructuredTarget, type StructuredQueuedEffect, type StructuredEffectConfig,
+  type StructuredEffectCondition, type StructuredSchedule, type StructuredListener, type StructuredPrevention,
   STAT_NAMES, EFFECT_DURATIONS, isEffectScript, type EffectScript,
 } from "@workspace/effect-registry";
 import { cardTagsSchema } from "@workspace/api-zod";
 
 export { ACTIONS, KEYWORDS, TRIGGERS };
 export type { Action, Keyword, Trigger };
-export type Target = {
-  zone?: TargetZone;
-  zones?: TargetZone[];
-  owner: TargetOwner;
-  cardType?: "WRESTLER" | "TECHNIQUE";
-  filter?: {
-    isGenerated?: boolean;
-    minCost?: number;
-    maxCost?: number;
-    isToken?: boolean;
-    isChampionToken?: boolean;
-    excludeSource?: boolean;
-    tagsAny?: string[];
-    tagsAll?: string[];
-    tagsNone?: string[];
-  };
-  selection: TargetSelection;
-  count: number;
-  randomScope?: RandomScope;
-};
-export type EffectCondition = { type: Condition; expression?: string };
-export type QueuedStructuredEffect = {
-  action: Action;
-  target?: Target;
-  values?: {
-    attack?: number;
-    health?: number;
-    attackMultiplier?: number;
-    healthMultiplier?: number;
-    amount?: number;
-    stat?: StatName;
-    duration?: EffectDuration;
-    keyword?: Keyword;
-    damageSource?: DamageSource;
-    reference?: Reference;
-    referenceStat?: "CURRENT_ATTACK" | "CURRENT_HEALTH";
-     amountReference?: "HAND_COUNT" | "GRAVEYARD_WRESTLER_COUNT" | "REMAINING_GOLD" | "BOARD_WRESTLER_COUNT" | "LAST_ATTACK_DELTA" | "CURRENT_TURN_RETIRED_WRESTLER_COUNT" | "CURRENT_TURN_DAMAGE_TAKEN";
-    minimum?: number;
-    generatedModifiers?: { cost?: number; attack?: number; health?: number; copySourceStats?: boolean; copyTargetStats?: boolean };
-    deckPosition?: "TOP" | "BOTTOM";
-  };
-};
-export type RuleSchedule = {
-  kind: "OWNER_NEXT_TURN_START" | "OPPONENT_NEXT_TURN_START" | "END_OF_CURRENT_TURN" | "NEXT_MATCHING_EVENT" | "N_MATCHING_EVENTS";
-  count?: number;
-  eventTrigger?: "CARD_PLAYED" | "TECHNIQUE_PLAYED" | "CARD_RETIRED" | "DAMAGE_TAKEN";
-};
-export type RuleListener = {
-  trigger: "CARD_PLAYED" | "TECHNIQUE_PLAYED" | "CARD_RETIRED" | "DAMAGE_TAKEN";
-  cardType?: "WRESTLER" | "TECHNIQUE";
-  owner?: "SELF" | "ENEMY";
-  uses?: number;
-};
-export type RulePrevention = {
-  uses?: number;
-  setHealth?: number;
-};
-export type StructuredEffect = {
-  trigger: Trigger;
-  action: Action;
-  target?: Target;
-  conditions?: EffectCondition[];
-  values?: {
-    attack?: number;
-    health?: number;
-    attackMultiplier?: number;
-    healthMultiplier?: number;
-    amount?: number;
-    stat?: StatName;
-    duration?: EffectDuration;
-    keyword?: Keyword;
-    damageSource?: DamageSource;
-    reference?: Reference;
-    referenceStat?: "CURRENT_ATTACK" | "CURRENT_HEALTH";
-     amountReference?: "HAND_COUNT" | "GRAVEYARD_WRESTLER_COUNT" | "REMAINING_GOLD" | "BOARD_WRESTLER_COUNT" | "LAST_ATTACK_DELTA" | "CURRENT_TURN_RETIRED_WRESTLER_COUNT" | "CURRENT_TURN_DAMAGE_TAKEN";
-    temporaryCost?: boolean;
-    conditionalBuff?: { healthEquals: number; attack: number; health: number };
-    minimum?: number;
-    generatedModifiers?: { cost?: number; attack?: number; health?: number; copySourceStats?: boolean; copyTargetStats?: boolean };
-    deckPosition?: "TOP" | "BOTTOM";
-    queuedTrigger?: "NEXT_ALLY_WRESTLER_PLAYED";
-    queuedEffect?: QueuedStructuredEffect;
-    definition?: Record<string, unknown>;
-    definitionRef?: { id?: string; name?: string };
-    count?: number;
-    destination?: "HAND" | "DECK" | "DECK_TOP";
-    aggregateStats?: {
-      source: "LAST_DESTROYED_TARGETS";
-      attack: "CURRENT_ATTACK_SUM";
-      health: "CURRENT_HEALTH_SUM";
-    };
-    leftEffects?: StructuredEffect[];
-    rightEffects?: StructuredEffect[];
-     delayed?: RuleSchedule & { effect: QueuedStructuredEffect; followUpEffects?: QueuedStructuredEffect[] };
-     listener?: RuleListener & { effect: QueuedStructuredEffect };
-     prevention?: RulePrevention;
-  };
-};
-export type EffectScriptConfig = { scripts: EffectScript[] };
+export type {
+  StructuredEffect,
+  StructuredTarget,
+  StructuredQueuedEffect,
+  StructuredEffectConfig,
+} from "@workspace/effect-registry";
+export type Target = StructuredTarget;
+export type EffectCondition = StructuredEffectCondition;
+export type QueuedStructuredEffect = StructuredQueuedEffect;
+export type RuleSchedule = StructuredSchedule;
+export type RuleListener = StructuredListener;
+export type RulePrevention = StructuredPrevention;
+export type EffectScriptConfig = import("@workspace/effect-registry").EffectScriptConfig;
 /** Champion-only reward marker. It is stored beside normal structured effects
  * in the Champion quest reward payload, but is not a card runtime action. */
 export type ChampionUpgradeEffect = {
