@@ -1,0 +1,926 @@
+KO CARD GAME — FIX ONLY:
+RESOLVE REMAINING PROVIDER CASES C / E / I
+
+이번 작업에서는 AI Mechanic Compiler의 실제 Provider smoke에서
+아직 남아 있는 아래 3개 케이스만 처리한다.
+
+- C — clarification
+- E — INVALID_DRAFT
+- I — INVALID_DRAFT
+
+다른 케이스는 이번 작업에서 수정하지 마.
+
+현재 상태:
+
+A READY
+B READY
+C clarification
+D READY
+E INVALID_DRAFT
+F READY
+G READY
+H READY
+I INVALID_DRAFT
+J READY
+
+관련 최근 commit:
+
+62a02bc — Stabilize AI mechanic compiler contract
+7ac7df0 — Recover D F H provider regressions
+
+D/F/H는 이미 복구 완료다.
+이번 작업에서 다시 건드리지 마.
+
+==================================================
+0. 작업 목표
+==================================================
+
+목표는 C/E/I를
+기존에 이미 지원되는 DSL/AST capability 범위 안에서
+정상 compile할 수 있게 만드는 것이다.
+
+새 SCRIPT_V1 capability 추가 금지.
+
+먼저 각 case의 실제 intended mechanic을
+기존 A–J fixture / history / tests / prompt memory에서 정확히 복원한다.
+
+추측해서 새 mechanic을 만들지 마.
+
+==================================================
+1. 절대 하지 말 것
+==================================================
+
+금지:
+
+- 새로운 DSL operation 추가
+- 새로운 runtime mechanic 추가
+- schema를 any 수준으로 느슨하게 만들기
+- unknown field 무조건 허용
+- malformed AST 자동 추측 보정
+- clarification을 강제로 READY 처리
+- INVALID_DRAFT를 validation skip으로 통과
+- sourceId 정책 완화
+- provider가 sourceId 생성
+- 카드/Champion 이름 hardcoding
+- C/E/I fixture명 hardcoding
+- 자동 provider retry
+- C/E/I 각 1회 초과 provider 호출
+- A/B/D/F/G/H/J 실제 Provider 재호출
+- Production DB 수정
+- Production effect 자동 Apply/Save
+
+==================================================
+2. Provider call budget
+==================================================
+
+이번 작업의 실제 Provider 호출 예산:
+
+C: 최대 1회
+E: 최대 1회
+I: 최대 1회
+
+TOTAL:
+최대 3회.
+
+먼저 provider를 호출하지 마.
+
+기존:
+
+- fixture
+- saved test data
+- prompt examples
+- git history
+- previous failure result
+- current schema
+
+를 분석해 수정한 뒤
+마지막 smoke verification으로만 각 1회 호출.
+
+실패해도 자동 재시도 금지.
+
+==================================================
+PART A — C: clarification 원인 분석
+==================================================
+
+3. C는 INVALID_DRAFT와 별개로 처리
+==================================================
+
+C는 현재 provider가 draft를 내놓지 않고
+clarification을 요청한 상태다.
+
+따라서 먼저 아래 중 무엇인지 구분한다.
+
+CASE C1:
+사용자 요청 자체가 실제로 모호함.
+
+CASE C2:
+Provider prompt가 이미 충분히 명확한 mechanic을
+불필요하게 clarification하도록 유도함.
+
+CASE C3:
+현재 DSL capability 설명이 부족해서
+provider가 지원 여부를 판단하지 못함.
+
+CASE C4:
+필수 server context가 provider prompt에 누락됨.
+
+CASE C5:
+예시가 실제 C mechanic과 잘못 매칭됨.
+
+==================================================
+4. C intended mechanic 복원
+==================================================
+
+기존 A–J fixture/history에서
+C의 정확한 원문 요구와 intended mechanic을 찾는다.
+
+다음을 보고:
+
+C PROMPT:
+...
+
+EXPECTED MECHANIC:
+...
+
+EXISTING SUPPORTED CAPABILITIES:
+...
+
+를 기록.
+
+복원 불가능하면:
+MISSING_FIXTURE
+
+로 보고하고
+provider를 임의 호출하지 마.
+
+==================================================
+5. clarification이 정말 필요한 경우
+==================================================
+
+요청이 실제로 두 가지 이상 의미로 해석되어
+실행 결과가 달라지는 경우에만 clarification 허용.
+
+예:
+
+대상
+시점
+범위
+지속시간
+
+이 명확하지 않아
+runtime semantics를 결정할 수 없다면
+clarification이 정당할 수 있다.
+
+하지만 이미 prompt에 명시된 내용을
+AI가 다시 묻는 것은 실패.
+
+==================================================
+6. 불필요한 clarification 제거
+==================================================
+
+C가 충분히 명확한 요청이라면
+provider system prompt에서 다음을 점검:
+
+- "모르면 무조건 질문" 같은 과도한 지시
+- 지원 capability인데도 clarification 우선하도록 한 규칙
+- 실제 C mechanic example 누락
+- schema가 요구하는 field를 prompt가 설명하지 않음
+
+수정 원칙:
+
+"명확한 요청 + 지원 capability"
+→ structured draft 생성
+
+"실제로 모호한 요청"
+→ clarification
+
+==================================================
+7. C fixture test
+==================================================
+
+Provider 호출 없이
+C fixture를 통해 expected compile path를 검증.
+
+필요한 경우 mock provider response fixture를 사용.
+
+기대:
+
+REQUEST_CLEAR
+→ structured draft
+→ schema valid
+→ canonical valid
+→ runtime valid
+→ mechanic plan valid
+→ READY
+
+단 실제 요청이 본질적으로 모호한 것으로 증명되면
+CLARIFICATION_EXPECTED로 보고하고
+억지 READY 금지.
+
+==================================================
+PART B — E: INVALID_DRAFT 원인 추적
+==================================================
+
+8. E intended mechanic 먼저 확인
+==================================================
+
+기존 A–J fixture/history에서
+E의 실제 intended mechanic을 복원.
+
+절대 추측 금지.
+
+기록:
+
+E PROMPT:
+...
+
+EXPECTED AST FAMILY:
+...
+
+USED EXISTING CAPABILITIES:
+...
+
+==================================================
+9. E validation path 추적
+==================================================
+
+최소 단계별 확인:
+
+provider raw structured output
+→ outer schema
+→ effect schema
+→ node validation
+→ canonicalization
+→ trusted source context injection
+→ reference resolution
+→ runtime validation
+→ mechanic plan
+→ READY gate
+
+정확한 실패 stage 기록.
+
+==================================================
+10. E failure detail
+==================================================
+
+가능하면:
+
+JSON PATH:
+...
+
+RECEIVED:
+...
+
+EXPECTED:
+...
+
+REJECTION:
+...
+
+를 기록.
+
+이전 raw payload가 없다면
+provider 재호출 전에
+fixture/history/prompt contract로 root cause를 먼저 좁힌다.
+
+==================================================
+11. E 수정 원칙
+==================================================
+
+runtime이 이미 지원하는 mechanic인데
+prompt/schema mismatch로 실패한다면
+그 mismatch만 수정.
+
+새 capability 추가 금지.
+
+schema를 느슨하게 하지 말고
+정확한 supported union branch를 표현.
+
+==================================================
+12. E fixture regression
+==================================================
+
+Provider 호출 전:
+
+E fixture
+→ SCHEMA_VALID
+→ CANONICAL_VALID
+→ RUNTIME_VALID
+→ MECHANIC_PLAN_VALID
+→ READY
+
+전부 PASS해야 한다.
+
+==================================================
+PART C — I: INVALID_DRAFT 원인 추적
+==================================================
+
+13. I intended mechanic 먼저 확인
+==================================================
+
+기존 A–J fixture/history에서
+I의 정확한 intended mechanic을 복원.
+
+기록:
+
+I PROMPT:
+...
+
+EXPECTED AST FAMILY:
+...
+
+USED EXISTING CAPABILITIES:
+...
+
+==================================================
+14. I validation path 추적
+==================================================
+
+E와 동일하게:
+
+provider output
+→ schema
+→ canonical
+→ runtime
+→ plan
+→ READY
+
+어디서 떨어지는지 정확히 기록.
+
+==================================================
+15. I failure detail
+==================================================
+
+가능하면:
+
+JSON PATH:
+...
+
+RECEIVED:
+...
+
+EXPECTED:
+...
+
+REJECTION:
+...
+
+를 기록.
+
+==================================================
+16. I 수정 원칙
+==================================================
+
+기존 지원 capability 안에서만 수정.
+
+금지:
+
+- unsupported node 새로 추가
+- provider output을 임의로 다른 mechanic으로 변환
+- invalid draft 강제 READY
+
+==================================================
+17. I fixture regression
+==================================================
+
+Provider 호출 전:
+
+I fixture
+→ SCHEMA_VALID
+→ CANONICAL_VALID
+→ RUNTIME_VALID
+→ MECHANIC_PLAN_VALID
+→ READY
+
+PASS.
+
+==================================================
+PART D — 최근 안정화 정책 유지
+==================================================
+
+18. sourceId 정책 유지
+==================================================
+
+반드시 유지:
+
+- AI sourceId 생성 금지
+- server trusted context injection
+- spoofed sourceId reject
+- sourceId omitted compile 가능
+
+C/E/I를 살리기 위해
+이 정책을 되돌리지 마.
+
+==================================================
+19. Authoritative schema 유지
+==================================================
+
+계속:
+
+Provider schema
+validator
+canonicalizer
+runtime AST
+mechanic plan
+
+이 동일 contract를 따라야 한다.
+
+C/E/I 전용 예외 parser 금지.
+
+==================================================
+20. Canonicalizer semantic guessing 금지
+==================================================
+
+허용:
+
+- trusted context injection
+- existing enum normalization
+- existing reference resolution
+- safe structural normalization
+
+금지:
+
+- action type 추측
+- missing target 임의 생성
+- unsupported mechanic을 비슷한 mechanic으로 치환
+- malformed node를 자동 repair
+
+==================================================
+21. Provider call policy 유지
+==================================================
+
+Generate click:
+최대 provider 1회.
+
+다음은 provider call 0:
+
+- validation
+- canonicalization
+- mechanic plan
+- Apply
+- Save
+- runtime
+- AI Match
+- Online Match
+- reload
+
+자동 retry 0.
+
+==================================================
+PART E — 기존 READY 케이스 회귀 금지
+==================================================
+
+22. Fixture regression only
+==================================================
+
+실제 Provider 호출 없이
+아래 fixture가 계속 READY인지 확인:
+
+A
+B
+D
+F
+G
+H
+J
+
+특히 D/F/H는
+7ac7df0에서 복구한 canonical examples를 유지.
+
+==================================================
+23. D/F/H prompt example 회귀 금지
+==================================================
+
+D:
+SUMMON + ADJACENT_EMPTY_SLOTS
+→ SAME_TARGET ADD_KEYWORD/TAUNT
+
+F:
+REGISTER_DELAYED
+→ OWNER_NEXT_TURN_START
+→ REVIVE
+→ followUpEffects BUFF +2 ATK
+
+H:
+BEFORE_DAMAGE
+→ PREVENT_DAMAGE
+→ prevention.uses = 1
+
+이 canonical guidance를
+다시 다른 예시로 덮어쓰지 마.
+
+==================================================
+PART F — Provider prompt example mapping 점검
+==================================================
+
+24. A–J example mapping audit
+==================================================
+
+D/F/H 회귀의 원인이
+잘못된 canonical example mapping이었으므로
+이번에는 C/E/I를 고치면서
+전체 A–J prompt example mapping을 "읽기 전용으로" 점검.
+
+수정은 C/E/I에 직접 관련된 잘못된 mapping만 허용.
+
+A/B/D/F/G/H/J의 정상 mapping은 건드리지 마.
+
+==================================================
+25. example 이름보다 mechanic 기준
+==================================================
+
+Provider prompt가 case letter에 의존하도록 만들지 마.
+
+실제 user request의 mechanic 패턴을 설명해야 한다.
+
+금지:
+
+"Case E이면 이 JSON을 출력"
+
+허용:
+
+"이 mechanic 패턴은 이 canonical AST shape를 사용"
+
+==================================================
+PART G — 자동 검증
+==================================================
+
+26. 필수 tests
+==================================================
+
+C fixture
+E fixture
+I fixture
+
+A/B/D/F/G/H/J fixture regression
+
+source spoofing
+sourceId omitted
+malformed EFFECT
+no-auto-retry
+provider call count
+schema/runtime parity
+READY gating
+
+기존:
+
+admin-effect-ai tests
+structured-effects tests
+mechanic completion tests
+
+전부 실행.
+
+==================================================
+27. build
+==================================================
+
+반드시:
+
+pnpm run typecheck
+pnpm --filter @workspace/ko-game run build
+git diff --check
+
+API:
+
+API typecheck
+API build
+
+실행.
+
+==================================================
+PART H — 실제 Provider smoke
+==================================================
+
+28. 실행 조건
+==================================================
+
+모든 fixture/regression/build PASS 후에만
+실제 provider smoke 실행.
+
+순서:
+
+C 1회
+E 1회
+I 1회
+
+총 최대 3회.
+
+==================================================
+29. 각 case 기록
+==================================================
+
+각 case마다:
+
+PROVIDER_RESPONSE:
+DRAFT / CLARIFICATION / ERROR
+
+SCHEMA_VALID:
+PASS / FAIL / N/A
+
+CANONICAL_VALID:
+PASS / FAIL / N/A
+
+RUNTIME_VALID:
+PASS / FAIL / N/A
+
+MECHANIC_PLAN_VALID:
+PASS / FAIL / N/A
+
+FINAL:
+READY / CLARIFICATION / INVALID_DRAFT / FAIL
+
+Provider calls:
+1 max
+
+==================================================
+30. 실패해도 재호출 금지
+==================================================
+
+C/E/I 중 하나가 실패해도
+같은 작업에서 다시 Provider 호출하지 마.
+
+실패 evidence를 저장하고
+후속 작업으로 남긴다.
+
+==================================================
+PART I — Production / Git
+==================================================
+
+31. Production 안전
+==================================================
+
+실제 Provider smoke는
+draft/compile verification까지만.
+
+Production CardDefinition/ChampionDefinition:
+
+- 자동 Apply 금지
+- 자동 Save 금지
+- DB 직접 수정 금지
+
+==================================================
+32. Git
+==================================================
+
+baseline:
+
+62a02bc
+7ac7df0
+
+그 위에 새 follow-up commit 생성.
+
+이번 작업 관련 파일만 stage.
+
+금지:
+
+Pasted-*.txt
+.env
+OPENAI_API_KEY
+sensitive provider logs
+temp
+unrelated changes
+
+force push 금지.
+
+C/E/I 결과까지 검증되기 전
+Production deploy 금지.
+
+==================================================
+33. 최종 보고
+==================================================
+
+C CASE
+
+CURRENT:
+clarification
+
+INTENDED MECHANIC:
+...
+
+CLARIFICATION ACTUALLY REQUIRED:
+YES / NO
+
+ROOT CAUSE:
+...
+
+FIX:
+...
+
+Fixture:
+PASS / FAIL
+
+Provider calls:
+0 / 1
+
+Actual Provider:
+READY / CLARIFICATION / FAIL / NOT_RUN
+
+
+==================================================
+
+E CASE
+
+CURRENT:
+INVALID_DRAFT
+
+INTENDED MECHANIC:
+...
+
+FAILURE STAGE:
+...
+
+JSON PATH:
+...
+
+RECEIVED:
+...
+
+EXPECTED:
+...
+
+ROOT CAUSE:
+...
+
+FIX:
+...
+
+Fixture:
+PASS / FAIL
+
+Provider calls:
+0 / 1
+
+Actual Provider:
+READY / FAIL / NOT_RUN
+
+
+==================================================
+
+I CASE
+
+CURRENT:
+INVALID_DRAFT
+
+INTENDED MECHANIC:
+...
+
+FAILURE STAGE:
+...
+
+JSON PATH:
+...
+
+RECEIVED:
+...
+
+EXPECTED:
+...
+
+ROOT CAUSE:
+...
+
+FIX:
+...
+
+Fixture:
+PASS / FAIL
+
+Provider calls:
+0 / 1
+
+Actual Provider:
+READY / FAIL / NOT_RUN
+
+
+==================================================
+
+REGRESSION
+
+A:
+PASS / FAIL
+
+B:
+PASS / FAIL
+
+D:
+PASS / FAIL
+
+F:
+PASS / FAIL
+
+G:
+PASS / FAIL
+
+H:
+PASS / FAIL
+
+J:
+PASS / FAIL
+
+sourceId server injection:
+PASS / FAIL
+
+spoofed sourceId:
+PASS / FAIL
+
+no-auto-retry:
+PASS / FAIL
+
+save/runtime provider calls:
+0 / FAIL
+
+
+==================================================
+
+PROVIDER BUDGET
+
+C calls:
+...
+
+E calls:
+...
+
+I calls:
+...
+
+TOTAL:
+...
+
+MAX:
+3
+
+
+==================================================
+
+IMPLEMENTATION:
+PASS / FAIL / BLOCKED
+
+AUTOMATED VERIFICATION:
+PASS / FAIL
+
+C/E/I PROVIDER SMOKE:
+PASS / PARTIAL / FAIL / UNVERIFIED
+
+TYPECHECK:
+PASS / FAIL
+
+KO BUILD:
+PASS / FAIL
+
+API TYPECHECK:
+PASS / FAIL
+
+API BUILD:
+PASS / FAIL
+
+git diff --check:
+PASS / FAIL
+
+CHANGED FILES:
+...
+
+COMMIT:
+...
+
+PUSH:
+DO NOT PUSH UNTIL FINAL REVIEW / ...
+
+==================================================
+완료 조건
+==================================================
+
+1.
+C/E/I 각각의 실제 intended mechanic을
+기존 fixture/history에서 정확히 복원한다.
+
+2.
+C clarification이 정당한지,
+불필요한 clarification인지 구분한다.
+
+3.
+E/I INVALID_DRAFT의 정확한 reject stage를 찾는다.
+
+4.
+기존 supported capability 안에서만 수정한다.
+
+5.
+새 DSL capability를 추가하지 않는다.
+
+6.
+sourceId 서버 주입 정책을 유지한다.
+
+7.
+A/B/D/F/G/H/J fixture 회귀가 없다.
+
+8.
+실제 Provider 호출은
+C/E/I 각각 최대 1회,
+총 최대 3회다.
+
+9.
+자동 retry는 0회다.
+
+10.
+Production DB/카드 정의는 수정하지 않는다.
+
+이 세 케이스만 처리하고 멈춰라.
