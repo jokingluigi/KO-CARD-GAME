@@ -1,11 +1,13 @@
 export const AUDIO_STINGER_DURATION = 10;
 export const AUDIO_FADE_IN_DURATION = 0.5;
 export const AUDIO_FADE_OUT_DURATION = 0.8;
+export const LEGENDARY_ENTRANCE_DURATION = 7;
+export const LEGENDARY_ENTRANCE_FADE_OUT = 0.8;
 export const PACK_REVEAL_MAX_DURATION = 7000;
 export const PACK_REVEAL_FADE_IN = 600;
 export const PACK_REVEAL_FADE_OUT = 800;
 
-type TemporaryAudioKind = "CARD_ENTRANCE" | "PREVIEW";
+type TemporaryAudioKind = "CARD_ENTRANCE" | "LEGENDARY_ENTRANCE" | "PREVIEW";
 type AudioRequest = {
   url: string;
   volume: number;
@@ -32,6 +34,7 @@ class AudioManager {
     audio: HTMLAudioElement;
     request: AudioRequest;
     fadeTimerId: number | null;
+    fadeOutTimerId: number | null;
     timeoutId: number;
   } | null = null;
   private queue: AudioRequest[] = [];
@@ -55,6 +58,20 @@ class AudioManager {
 
   playCardEntrance(url: string, volume: number) {
     this.enqueue({ url, volume, kind: "CARD_ENTRANCE" });
+  }
+
+  playLegendaryEntrance(url: string, volume: number) {
+    if (!hasBrowserAudio() || !url) return;
+    this.queue = [];
+    this.stopTemporary(false);
+    this.startTemporary(
+      { url, volume, kind: "LEGENDARY_ENTRANCE" },
+      {
+        durationMs: LEGENDARY_ENTRANCE_DURATION * 1000,
+        fadeOutMs: LEGENDARY_ENTRANCE_FADE_OUT * 1000,
+        pauseBase: true,
+      },
+    );
   }
 
   playPackRevealMusic(
@@ -262,34 +279,92 @@ class AudioManager {
     this.queue.push(request);
   }
 
-  private startTemporary(request: AudioRequest) {
+  private startTemporary(
+    request: AudioRequest,
+    options: {
+      durationMs?: number;
+      fadeOutMs?: number;
+      pauseBase?: boolean;
+    } = {},
+  ) {
     this.stopPackRevealMusic();
     this.stopTemporary(false);
-    this.fadeBaseOut();
+    if (options.pauseBase) {
+      this.pauseBaseMusic();
+    } else {
+      this.fadeBaseOut();
+    }
     try {
       const audio = new Audio(request.url);
       audio.preload = "auto";
       audio.volume = 0;
-      const timeoutId = window.setTimeout(
-        () => this.finishTemporary(true),
-        AUDIO_STINGER_DURATION * 1000 + 100,
+      const current = {
+        audio,
+        request,
+        fadeTimerId: null as number | null,
+        fadeOutTimerId: null as number | null,
+        timeoutId: 0,
+      };
+      this.current = current;
+      if (options.pauseBase) {
+        this.commitPendingBaseMusic(this.baseTransitionId);
+      }
+      const durationMs = options.durationMs ?? AUDIO_STINGER_DURATION * 1000 + 100;
+      const fadeOutMs = options.fadeOutMs ?? 0;
+      const finish = () => this.fadeOutTemporary(audio, fadeOutMs, true);
+      current.timeoutId = window.setTimeout(
+        finish,
+        Math.max(0, durationMs - fadeOutMs),
       );
-      this.current = { audio, request, fadeTimerId: null, timeoutId };
       this.startFade(audio, safeVolume(request.volume), (timerId) => {
         if (this.current?.audio === audio) this.current.fadeTimerId = timerId;
       });
-      audio.addEventListener("ended", () => this.finishTemporary(true), { once: true });
-      audio.play().catch(() => this.finishTemporary(false));
+      audio.addEventListener("ended", () => {
+        if (this.current?.audio === audio) finish();
+      }, { once: true });
+      audio.play().catch(() => {
+        if (this.current?.audio === audio) this.finishTemporaryFor(audio, false);
+      });
     } catch {
-      this.finishTemporary(false);
+      this.finishTemporaryFor(undefined, false);
     }
   }
 
-  private finishTemporary(playNext: boolean) {
+  private fadeOutTemporary(audio: HTMLAudioElement, durationMs: number, playNext: boolean) {
+    const current = this.current;
+    if (!current || current.audio !== audio) return;
+    if (durationMs <= 0) {
+      this.finishTemporaryFor(audio, playNext);
+      return;
+    }
+    if (current.fadeOutTimerId !== null) window.clearInterval(current.fadeOutTimerId);
+    const startVolume = audio.volume;
+    const startedAt = Date.now();
+    const timerId = window.setInterval(() => {
+      if (this.current?.audio !== audio) {
+        window.clearInterval(timerId);
+        return;
+      }
+      const progress = Math.min(1, (Date.now() - startedAt) / durationMs);
+      audio.volume = startVolume * (1 - progress);
+      if (progress >= 1) {
+        window.clearInterval(timerId);
+        if (this.current?.audio === audio) {
+          this.current.fadeOutTimerId = null;
+          this.finishTemporaryFor(audio, playNext);
+        }
+      }
+    }, 40);
+    current.fadeOutTimerId = timerId;
+  }
+
+  private finishTemporaryFor(audio: HTMLAudioElement | undefined, playNext: boolean) {
     const current = this.current;
     if (!current) return;
+    if (audio && current.audio !== audio) return;
     this.current = null;
     if (current.fadeTimerId !== null) window.clearInterval(current.fadeTimerId);
+    if (current.fadeOutTimerId !== null) window.clearInterval(current.fadeOutTimerId);
     window.clearTimeout(current.timeoutId);
     current.audio.pause();
     current.audio.currentTime = 0;
@@ -312,6 +387,7 @@ class AudioManager {
     }
     this.current = null;
     if (current.fadeTimerId !== null) window.clearInterval(current.fadeTimerId);
+    if (current.fadeOutTimerId !== null) window.clearInterval(current.fadeOutTimerId);
     window.clearTimeout(current.timeoutId);
     current.audio.pause();
     current.audio.currentTime = 0;
@@ -337,18 +413,33 @@ class AudioManager {
     const audio = this.bgm.audio;
     const start = audio.volume;
     const startedAt = Date.now();
-    this.bgm.fadeTimerId = window.setInterval(() => {
-      if (!this.bgm || this.bgm.audio !== audio) return;
+    const timerId = window.setInterval(() => {
+      if (!this.bgm || this.bgm.audio !== audio) {
+        window.clearInterval(timerId);
+        return;
+      }
       const progress = Math.min(1, (Date.now() - startedAt) / (AUDIO_FADE_OUT_DURATION * 1000));
       audio.volume = start * (1 - progress);
       if (progress >= 1) {
         if (this.bgm?.audio === audio) {
-          window.clearInterval(this.bgm.fadeTimerId!);
+          window.clearInterval(timerId);
           this.bgm.fadeTimerId = null;
           audio.pause();
         }
       }
     }, 40);
+    this.bgm.fadeTimerId = timerId;
+  }
+
+  private pauseBaseMusic() {
+    if (!this.bgm) return;
+    if (this.bgm.fadeTimerId !== null) window.clearInterval(this.bgm.fadeTimerId);
+    this.bgm.fadeTimerId = null;
+    this.bgm.audio.pause();
+    if (this.pendingBaseMusic) {
+      this.bgm.audio.currentTime = 0;
+      this.bgm = null;
+    }
   }
 
   private resumeBaseMusic() {

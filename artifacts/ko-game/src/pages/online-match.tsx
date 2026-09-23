@@ -19,6 +19,7 @@ import {
   fetchGameMedia,
   fetchPublishedCardDefinitions,
   fetchPublishedChampions,
+  getCardDefinition,
   preloadMatchAssets,
   setRuntimeCardDefinitions,
   type BoardSlot,
@@ -147,7 +148,7 @@ function OnlineMatchPage() {
   const processedAttackSoundsRef = useRef(new Set<string>());
   const lastAudioEventCountRef = useRef<number | null>(null);
   const processedQuestAudioRef = useRef(new Set<string>());
-  const pendingEntranceAudioRef = useRef<{ url: string; volume: number } | null>(null);
+  const pendingEntranceAudioRef = useRef<{ url: string; volume: number; isLegendary: boolean } | null>(null);
   const pendingOpponentAttacksRef = useRef<AttackAnimationState[]>([]);
   const opponentConnectionStateRef = useRef<OnlineConnectionStatus | null>(null);
   const noticeTimerRef = useRef<number | null>(null);
@@ -362,7 +363,7 @@ function OnlineMatchPage() {
   useEffect(() => {
     if (!matchResultVisible) return;
     audioManager.stopAttack();
-    audioManager.stop();
+    audioManager.stopGameAudio();
   }, [matchResultVisible]);
 
   useEffect(() => {
@@ -429,11 +430,19 @@ function OnlineMatchPage() {
         ...player.removedFromGame,
       ]).find((entry) => entry.instanceId === event.cardInstanceId);
       if (!card?.entranceAudioEnabled || !card.entranceAudioUrl) return;
-      const sound = { url: card.entranceAudioUrl, volume: card.entranceAudioVolume ?? 100 };
+      const sound = {
+        url: card.entranceAudioUrl,
+        volume: card.entranceAudioVolume ?? 100,
+        isLegendary: getCardDefinition(card.definitionId)?.rarity === "LEGENDARY",
+      };
       if (playAnimation?.kind === "WRESTLER" && playAnimation.card.instanceId === event.cardInstanceId) {
         pendingEntranceAudioRef.current = sound;
       } else {
-        audioManager.playCardEntrance(sound.url, sound.volume);
+        if (sound.isLegendary) {
+          audioManager.playLegendaryEntrance(sound.url, sound.volume);
+        } else {
+          audioManager.playCardEntrance(sound.url, sound.volume);
+        }
       }
     });
     lastAudioEventCountRef.current = state.events.length;
@@ -664,7 +673,11 @@ function OnlineMatchPage() {
         onPlayAnimationComplete={() => {
           const pending = pendingEntranceAudioRef.current;
           if (pending) {
-            audioManager.playCardEntrance(pending.url, pending.volume);
+            if (pending.isLegendary) {
+              audioManager.playLegendaryEntrance(pending.url, pending.volume);
+            } else {
+              audioManager.playCardEntrance(pending.url, pending.volume);
+            }
             pendingEntranceAudioRef.current = null;
           }
           if (playAnimationTimerRef.current !== null) window.clearTimeout(playAnimationTimerRef.current);

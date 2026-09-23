@@ -22,6 +22,7 @@ import {
   fetchPublishedWrestlerCards,
   fetchPublishedCardDefinitions,
   cardRecordToDefinition,
+  getCardDefinition,
   setRuntimeCardDefinitions,
   fetchPublishedChampions,
   championRecordToDefinition,
@@ -175,7 +176,7 @@ export default function Home() {
   const timeoutHandledTurnRef = useRef<string | null>(null);
   const processedAudioEventsRef = useRef(new Set<string>());
   const lastAudioEventCountRef = useRef<number | null>(null);
-  const pendingEntranceAudioRef = useRef<{ url: string; volume: number } | null>(null);
+  const pendingEntranceAudioRef = useRef<{ url: string; volume: number; isLegendary: boolean } | null>(null);
   const processedAttackSoundsRef = useRef(new Set<string>());
   const latestGameStateRef = useRef(gameState);
   latestGameStateRef.current = gameState;
@@ -553,7 +554,7 @@ export default function Home() {
 
   useEffect(() => {
     if (gameState.status === "FINISHED") {
-      audioManager.stopBgm();
+      audioManager.stopGameAudio();
     }
   }, [gameState.status]);
 
@@ -585,11 +586,16 @@ export default function Home() {
           const entranceAudio = {
             url: card.entranceAudioUrl,
             volume: card.entranceAudioVolume ?? 100,
+            isLegendary: getCardDefinition(card.definitionId)?.rarity === 'LEGENDARY',
           };
           if (playAnimation?.kind === "WRESTLER" && playAnimation.card.instanceId === event.cardInstanceId) {
             pendingEntranceAudioRef.current = entranceAudio;
           } else {
-            audioManager.playCardEntrance(entranceAudio.url, entranceAudio.volume);
+            if (entranceAudio.isLegendary) {
+              audioManager.playLegendaryEntrance(entranceAudio.url, entranceAudio.volume);
+            } else {
+              audioManager.playCardEntrance(entranceAudio.url, entranceAudio.volume);
+            }
           }
         }
       }
@@ -600,7 +606,11 @@ export default function Home() {
   function handlePlayAnimationComplete() {
     const pendingAudio = pendingEntranceAudioRef.current;
     if (pendingAudio) {
-      audioManager.playCardEntrance(pendingAudio.url, pendingAudio.volume);
+      if (pendingAudio.isLegendary) {
+        audioManager.playLegendaryEntrance(pendingAudio.url, pendingAudio.volume);
+      } else {
+        audioManager.playCardEntrance(pendingAudio.url, pendingAudio.volume);
+      }
       pendingEntranceAudioRef.current = null;
     }
     window.setTimeout(() => setPlayAnimation(null), ENTRANCE_EFFECT_DELAY_MS);
