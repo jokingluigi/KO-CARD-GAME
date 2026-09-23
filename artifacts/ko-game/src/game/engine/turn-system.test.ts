@@ -133,3 +133,38 @@ test('nextTurnGoldBonus는 적용된 직후 0으로 초기화된다', () => {
   assert.equal(playerTwo.currentGold, 4);
   assert.equal(playerTwo.nextTurnGoldBonus, 0);
 });
+
+test('관리자 테스트 게임의 두 단계 턴 전환은 Turn 4까지 상태를 보존한다', () => {
+  let state = startGame(createInitialGameState(), () => 0.5);
+  const initialZoneSizes = state.players.map((player) =>
+    player.hand.length + player.deck.length + player.board.filter(Boolean).length +
+    player.graveyard.length + player.removedFromGame.length,
+  );
+
+  for (let transition = 0; transition < 4; transition += 1) {
+    const actingPlayerId = state.players[0]?.id;
+    const opponentPlayerId = state.players[1]?.id;
+    assert.ok(actingPlayerId);
+    assert.ok(opponentPlayerId);
+    const first = endTurn(state, actingPlayerId);
+    assert.equal(first.success, true);
+    if (!first.success) return;
+    const second = endTurn(first.state, opponentPlayerId);
+    assert.equal(second.success, true);
+    if (!second.success) return;
+    state = second.state;
+    assert.equal(state.status, 'IN_PROGRESS');
+    assert.equal(state.activePlayerId, actingPlayerId);
+    assert.equal(state.targetingState, undefined);
+    assert.equal(state.pendingCardEffects.length, 0);
+    assert.equal(state.pendingDelayedEffects.length, 0);
+    assert.deepEqual(
+      state.players.map((player) => ({
+        total: player.hand.length + player.deck.length + player.board.filter(Boolean).length +
+          player.graveyard.length + player.removedFromGame.length,
+      })).map((player) => player.total),
+      initialZoneSizes,
+    );
+  }
+  assert.equal(state.turn, 9);
+});

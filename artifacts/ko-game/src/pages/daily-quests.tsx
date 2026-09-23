@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { ArrowLeft, CheckCircle2, ListChecks } from "lucide-react";
 import { useLocation } from "wouter";
-import { fetchDailyQuests, claimDailyQuest, type DailyQuest } from "@/lib/rewards-client";
+import { fetchDailyQuests, claimDailyQuest, fetchRewardCatalogs, type DailyQuest, type RewardCatalogCard, type RewardCatalogPack } from "@/lib/rewards-client";
 import { ROUTES } from "@/lib/routes";
 
 function objectiveLabel(objective: string) {
@@ -21,12 +21,14 @@ export default function DailyQuestsPage() {
   const [loading, setLoading] = useState(true);
   const [busyId, setBusyId] = useState<string | null>(null);
   const [message, setMessage] = useState("");
+  const [catalog, setCatalog] = useState<{ cards: RewardCatalogCard[]; packs: RewardCatalogPack[] }>({ cards: [], packs: [] });
 
   async function load() {
     setLoading(true);
     try {
-      const result = await fetchDailyQuests();
+      const [result, nextCatalog] = await Promise.all([fetchDailyQuests(), fetchRewardCatalogs()]);
       setQuests(result.assignments);
+      setCatalog(nextCatalog);
     } catch (error) {
       setMessage(error instanceof Error ? error.message : "일일 퀘스트를 불러오지 못했습니다.");
     } finally {
@@ -42,12 +44,39 @@ export default function DailyQuestsPage() {
     try {
       const result = await claimDailyQuest(quest.id);
       setQuests((current) => current.map((item) => item.id === quest.id ? result.assignment : item));
-      setMessage(result.alreadyClaimed ? "이미 받은 보상입니다." : `${result.reward?.amount.toLocaleString() ?? 0} 크레딧을 받았습니다.`);
+      setMessage(result.alreadyClaimed ? "이미 받은 보상입니다." : rewardLabel(result.assignment));
     } catch (error) {
       setMessage(error instanceof Error ? error.message : "보상을 받을 수 없습니다.");
     } finally {
       setBusyId(null);
     }
+  }
+
+  function rewardLabel(quest: DailyQuest) {
+    if (quest.rewardType === "CARD") return `카드 ${catalog.cards.find((card) => card.id === quest.rewardTargetId)?.name ?? "보상 카드"} ×${quest.rewardAmount}을 받았습니다.`;
+    if (quest.rewardType === "PACK") return `팩 ${catalog.packs.find((pack) => pack.id === quest.rewardTargetId)?.name ?? "보상 팩"} ×${quest.rewardAmount}을 받았습니다.`;
+    return `${quest.rewardAmount.toLocaleString()} 크레딧을 받았습니다.`;
+  }
+
+  function rewardDisplay(quest: DailyQuest) {
+    if (quest.rewardType === "CARD" || quest.rewardType === "PACK") {
+      const item = quest.rewardType === "CARD"
+        ? catalog.cards.find((card) => card.id === quest.rewardTargetId)
+        : catalog.packs.find((pack) => pack.id === quest.rewardTargetId);
+      return (
+        <span className="flex min-w-0 items-center gap-2">
+          {item?.imageUrl ? (
+            <img src={item.imageUrl} alt="" className="h-9 w-9 shrink-0 rounded object-cover" />
+          ) : (
+            <span aria-hidden="true" className="flex h-9 w-9 shrink-0 items-center justify-center rounded bg-neutral-800 text-[10px] font-black text-neutral-400">
+              {quest.rewardType === "CARD" ? "CARD" : "PACK"}
+            </span>
+          )}
+          <span className="truncate">{quest.rewardType === "CARD" ? "카드" : "팩"} · {item?.name ?? quest.rewardTargetId ?? "알 수 없음"} ×{quest.rewardAmount}</span>
+        </span>
+      );
+    }
+    return `+${quest.rewardAmount.toLocaleString()} 크레딧`;
   }
 
   return (
@@ -73,7 +102,7 @@ export default function DailyQuestsPage() {
                   <p className="mt-4 min-h-12 text-sm leading-6 text-neutral-400">{quest.description}</p>
                   <p className="mt-4 text-xs font-bold text-neutral-300">{objectiveLabel(quest.objectiveType)} · {quest.progress}/{quest.targetValue}</p>
                   <div className="mt-2 h-2 overflow-hidden rounded-full bg-neutral-800"><div className="h-full rounded-full bg-amber-400 transition-all" style={{ width: `${percent}%` }} /></div>
-                  <div className="mt-5 flex items-center justify-between gap-3"><span className="text-sm font-black text-amber-200">+{quest.rewardAmount.toLocaleString()} 크레딧</span><button type="button" disabled={quest.status !== "COMPLETED" || Boolean(busyId)} onClick={() => void claim(quest)} className="rounded bg-amber-400 px-3 py-2 text-xs font-black text-black disabled:cursor-not-allowed disabled:opacity-40">{quest.status === "CLAIMED" ? "수령 완료" : quest.status === "COMPLETED" ? "보상 받기" : "진행 중"}</button></div>
+                    <div className="mt-5 flex items-center justify-between gap-3"><span className="text-sm font-black text-amber-200">{rewardDisplay(quest)}</span><button type="button" disabled={quest.status !== "COMPLETED" || Boolean(busyId)} onClick={() => void claim(quest)} className="rounded bg-amber-400 px-3 py-2 text-xs font-black text-black disabled:cursor-not-allowed disabled:opacity-40">{quest.status === "CLAIMED" ? "수령 완료" : quest.status === "COMPLETED" ? "보상 받기" : "진행 중"}</button></div>
                 </article>
               );
             })}

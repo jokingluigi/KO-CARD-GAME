@@ -669,6 +669,18 @@ export default function Home() {
       return;
     }
 
+    // A turn-end effect may finish the match before the admin shortcut
+    // advances the opponent. Commit that terminal state instead of asking
+    // the turn engine to advance a finished match.
+    if (result.state.status !== 'IN_PROGRESS') {
+      timeoutHandledTurnRef.current = turnKey;
+      setGameState(result.state);
+      setSelectedCardId(null);
+      setSelectedAttackerId(null);
+      setPlayError(isTimeout ? '시간 초과로 턴이 자동 종료되었습니다.' : null);
+      return;
+    }
+
     // 관리자 테스트 게임에서는 상대 턴을 즉시 종료해 플레이어 1의 다음 턴으로 돌아온다.
     const opponentId = currentState.players[1].id;
     const opponentTurnResult = endTurn(result.state, opponentId);
@@ -941,14 +953,14 @@ export default function Home() {
     setAttackImpactTriggered(false);
   }
 
-  function handlePresentationBusyChange(busy: boolean) {
+  const handlePresentationBusyChange = useCallback((busy: boolean) => {
     presentationBusyRef.current = busy;
     setPresentationBusy(busy);
     if (!busy) {
       for (const resolve of presentationIdleWaitersRef.current) resolve();
       presentationIdleWaitersRef.current.clear();
     }
-  }
+  }, []);
 
   function handleSelectSlot(slot: BoardSlot, geometry?: CardPlayGeometry) {
     if (!matchReady || gameState.status !== 'IN_PROGRESS' || playAnimation || attackAnimation) return;

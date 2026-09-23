@@ -5,6 +5,7 @@ export const rewardSettingsTable = pgTable("reward_settings", {
   key: text("key").primaryKey(),
   rewardType: text("reward_type").notNull().default("CURRENCY"),
   amount: integer("amount").notNull().default(0),
+  rewardTargetId: text("reward_target_id"),
   enabled: boolean("enabled").notNull().default(false),
   updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
 });
@@ -17,6 +18,7 @@ export const rewardGrantsTable = pgTable("reward_grants", {
   sourceId: text("source_id").notNull(),
   rewardType: text("reward_type").notNull(),
   amount: integer("amount").notNull(),
+  rewardTargetId: text("reward_target_id"),
   balanceAfter: integer("balance_after").notNull(),
   metadata: jsonb("metadata"),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
@@ -33,6 +35,7 @@ export const dailyQuestDefinitionsTable = pgTable("daily_quest_definitions", {
   targetValue: integer("target_value").notNull(),
   rewardType: text("reward_type").notNull().default("CURRENCY"),
   rewardAmount: integer("reward_amount").notNull().default(0),
+  rewardTargetId: text("reward_target_id"),
   enabled: boolean("enabled").notNull().default(true),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
@@ -51,6 +54,7 @@ export const dailyQuestAssignmentsTable = pgTable("daily_quest_assignments", {
   targetValue: integer("target_value").notNull(),
   rewardType: text("reward_type").notNull(),
   rewardAmount: integer("reward_amount").notNull(),
+  rewardTargetId: text("reward_target_id"),
   progress: integer("progress").notNull().default(0),
   status: text("status").notNull().default("ASSIGNED"),
   claimedAt: timestamp("claimed_at", { withTimezone: true }),
@@ -73,6 +77,7 @@ export const attendanceRewardDefinitionsTable = pgTable("attendance_reward_defin
   dayIndex: integer("day_index").primaryKey(),
   rewardType: text("reward_type").notNull().default("CURRENCY"),
   rewardAmount: integer("reward_amount").notNull().default(0),
+  rewardTargetId: text("reward_target_id"),
   enabled: boolean("enabled").notNull().default(true),
   updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
 });
@@ -84,6 +89,7 @@ export const attendanceClaimsTable = pgTable("attendance_claims", {
   dayIndex: integer("day_index").notNull().references(() => attendanceRewardDefinitionsTable.dayIndex, { onDelete: "restrict" }),
   rewardType: text("reward_type").notNull(),
   rewardAmount: integer("reward_amount").notNull(),
+  rewardTargetId: text("reward_target_id"),
   claimedAt: timestamp("claimed_at", { withTimezone: true }).notNull().defaultNow(),
 }, (table) => ({
   userDateIdx: uniqueIndex("attendance_claims_user_date_idx").on(table.userId, table.claimDate),

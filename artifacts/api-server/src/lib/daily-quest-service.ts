@@ -8,7 +8,7 @@ import {
   type DailyQuestAssignmentRecord,
 } from "@workspace/db";
 import type { GameEvent, GameState } from "@workspace/game-engine";
-import { grantReward, type RewardExecutor } from "./reward-service";
+import { grantReward, isRewardType, type RewardExecutor } from "./reward-service";
 
 export const DAILY_TIME_ZONE = process.env["KO_DAILY_TIMEZONE"]?.trim() || "UTC";
 export const DAILY_QUEST_OBJECTIVES = [
@@ -102,6 +102,7 @@ export async function ensureDailyQuestAssignments(
         targetValue: definition.targetValue,
         rewardType: definition.rewardType,
         rewardAmount: definition.rewardAmount,
+        rewardTargetId: definition.rewardTargetId,
       })))
       .onConflictDoNothing();
   }
@@ -191,6 +192,7 @@ export async function claimDailyQuest(userId: string, assignmentId: string) {
       sourceId: assignment.id,
       rewardType: assignment.rewardType,
       amount: assignment.rewardAmount,
+      rewardTargetId: assignment.rewardTargetId,
       metadata: { assignmentDate: assignment.assignmentDate, definitionId: assignment.definitionId },
     }, tx);
     const [claimed] = await tx.update(dailyQuestAssignmentsTable)
@@ -217,6 +219,7 @@ export function publicDailyQuest(assignment: DailyQuestAssignmentRecord) {
     targetValue: assignment.targetValue,
     rewardType: assignment.rewardType,
     rewardAmount: assignment.rewardAmount,
+    rewardTargetId: assignment.rewardTargetId,
     progress: assignment.progress,
     status: assignment.status,
     claimedAt: assignment.claimedAt,
@@ -236,6 +239,9 @@ export function validateDailyQuestInput(value: unknown) {
   const cardType = input.cardType === "WRESTLER" || input.cardType === "TECHNIQUE" ? input.cardType : null;
   const targetValue = typeof input.targetValue === "number" ? input.targetValue : Number.NaN;
   const rewardType = input.rewardType ?? "CURRENCY";
+  const rewardTargetId = typeof input.rewardTargetId === "string" && input.rewardTargetId.trim()
+    ? input.rewardTargetId.trim()
+    : null;
   const rewardAmount = typeof input.rewardAmount === "number" ? input.rewardAmount : Number.NaN;
   const enabled = input.enabled !== false;
   if (
@@ -244,8 +250,10 @@ export function validateDailyQuestInput(value: unknown) {
     !isDailyQuestObjective(objectiveType) ||
     (objectiveType !== "CARD_PLAYED" && cardType !== null) ||
     !Number.isSafeInteger(targetValue) || targetValue < 1 || targetValue > 1000 ||
-    rewardType !== "CURRENCY" ||
+    !isRewardType(rewardType) ||
+    (rewardType === "CURRENCY" && rewardTargetId !== null) ||
+    (rewardType !== "CURRENCY" && rewardTargetId === null) ||
     !Number.isSafeInteger(rewardAmount) || rewardAmount < 1 || rewardAmount > 2_147_483_647
   ) return null;
-  return { title, description, objectiveType, cardType, targetValue, rewardType, rewardAmount, enabled };
+  return { title, description, objectiveType, cardType, targetValue, rewardType, rewardAmount, rewardTargetId, enabled };
 }

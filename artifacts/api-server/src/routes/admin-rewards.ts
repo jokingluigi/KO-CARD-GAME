@@ -13,7 +13,7 @@ import {
   validateDailyQuestInput,
 } from "../lib/daily-quest-service";
 import { validateAttendanceInput } from "../lib/attendance-service";
-import { REWARD_TYPE } from "../lib/reward-service";
+import { REWARD_TYPE, REWARD_TYPES, validateRewardTarget } from "../lib/reward-service";
 
 const router: IRouter = Router();
 
@@ -39,7 +39,7 @@ router.get("/", async (request, response): Promise<void> => {
     db.select().from(dailyQuestDefinitionsTable).orderBy(asc(dailyQuestDefinitionsTable.createdAt), asc(dailyQuestDefinitionsTable.id)),
     db.select().from(attendanceRewardDefinitionsTable).orderBy(asc(attendanceRewardDefinitionsTable.dayIndex)),
   ]);
-  response.json({ settings, dailyQuests, attendance, rewardType: REWARD_TYPE, objectiveTypes: DAILY_QUEST_OBJECTIVES });
+  response.json({ settings, dailyQuests, attendance, rewardType: REWARD_TYPE, rewardTypes: REWARD_TYPES, objectiveTypes: DAILY_QUEST_OBJECTIVES });
 });
 
 router.patch("/match", async (request, response): Promise<void> => {
@@ -74,6 +74,10 @@ router.post("/daily-quests", async (request, response): Promise<void> => {
     response.status(400).json({ message: "일일 퀘스트 입력값을 확인해 주세요." });
     return;
   }
+  if (!(await validateRewardTarget(input.rewardType, input.rewardTargetId))) {
+    response.status(400).json({ message: "공개된 카드 또는 팩을 선택해 주세요." });
+    return;
+  }
   const [definition] = await db.insert(dailyQuestDefinitionsTable)
     .values({ id: randomUUID(), ...input })
     .returning();
@@ -85,6 +89,10 @@ router.patch("/daily-quests/:id", async (request, response): Promise<void> => {
   const input = validateDailyQuestInput(request.body);
   if (!input) {
     response.status(400).json({ message: "일일 퀘스트 입력값을 확인해 주세요." });
+    return;
+  }
+  if (!(await validateRewardTarget(input.rewardType, input.rewardTargetId))) {
+    response.status(400).json({ message: "공개된 카드 또는 팩을 선택해 주세요." });
     return;
   }
   const [definition] = await db.update(dailyQuestDefinitionsTable)
@@ -105,11 +113,15 @@ router.post("/attendance", async (request, response): Promise<void> => {
     response.status(400).json({ message: "출석 보상 입력값을 확인해 주세요." });
     return;
   }
+  if (!(await validateRewardTarget(input.rewardType, input.rewardTargetId))) {
+    response.status(400).json({ message: "공개된 카드 또는 팩을 선택해 주세요." });
+    return;
+  }
   const [definition] = await db.insert(attendanceRewardDefinitionsTable)
     .values(input)
     .onConflictDoUpdate({
       target: attendanceRewardDefinitionsTable.dayIndex,
-      set: { rewardType: input.rewardType, rewardAmount: input.rewardAmount, enabled: input.enabled, updatedAt: new Date() },
+      set: { rewardType: input.rewardType, rewardAmount: input.rewardAmount, rewardTargetId: input.rewardTargetId, enabled: input.enabled, updatedAt: new Date() },
     })
     .returning();
   response.status(201).json({ definition });
@@ -122,8 +134,12 @@ router.patch("/attendance/:dayIndex", async (request, response): Promise<void> =
     response.status(400).json({ message: "출석 보상 입력값을 확인해 주세요." });
     return;
   }
+  if (!(await validateRewardTarget(input.rewardType, input.rewardTargetId))) {
+    response.status(400).json({ message: "공개된 카드 또는 팩을 선택해 주세요." });
+    return;
+  }
   const [definition] = await db.update(attendanceRewardDefinitionsTable)
-    .set({ rewardType: input.rewardType, rewardAmount: input.rewardAmount, enabled: input.enabled, updatedAt: new Date() })
+    .set({ rewardType: input.rewardType, rewardAmount: input.rewardAmount, rewardTargetId: input.rewardTargetId, enabled: input.enabled, updatedAt: new Date() })
     .where(eq(attendanceRewardDefinitionsTable.dayIndex, input.dayIndex))
     .returning();
   if (!definition) {

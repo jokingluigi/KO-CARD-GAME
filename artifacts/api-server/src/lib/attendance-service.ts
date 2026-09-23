@@ -8,7 +8,7 @@ import {
   type AttendanceRewardDefinitionRecord,
 } from "@workspace/db";
 import { dailyDate } from "./daily-quest-service";
-import { grantReward } from "./reward-service";
+import { grantReward, isRewardType } from "./reward-service";
 
 export function nextAttendanceDayIndex(claimedDayIndexes: number[]): number {
   return (claimedDayIndexes.length > 0 ? Math.max(...claimedDayIndexes) : 0) + 1;
@@ -64,6 +64,7 @@ export async function claimAttendance(userId: string) {
         dayIndex: definition.dayIndex,
         rewardType: definition.rewardType,
         rewardAmount: definition.rewardAmount,
+        rewardTargetId: definition.rewardTargetId,
       })
       .onConflictDoNothing()
       .returning();
@@ -79,6 +80,7 @@ export async function claimAttendance(userId: string) {
       sourceId: claim.id,
       rewardType: claim.rewardType,
       amount: claim.rewardAmount,
+      rewardTargetId: claim.rewardTargetId,
       metadata: { claimDate: claim.claimDate, dayIndex: claim.dayIndex },
     }, tx);
     return { claim, reward, alreadyClaimed: false };
@@ -90,14 +92,19 @@ export function validateAttendanceInput(value: unknown) {
   const input = value as Record<string, unknown>;
   const dayIndex = typeof input.dayIndex === "number" ? input.dayIndex : Number.NaN;
   const rewardType = input.rewardType ?? "CURRENCY";
+  const rewardTargetId = typeof input.rewardTargetId === "string" && input.rewardTargetId.trim()
+    ? input.rewardTargetId.trim()
+    : null;
   const rewardAmount = typeof input.rewardAmount === "number" ? input.rewardAmount : Number.NaN;
   const enabled = input.enabled !== false;
   if (
     !Number.isSafeInteger(dayIndex) || dayIndex < 1 || dayIndex > 365 ||
-    rewardType !== "CURRENCY" ||
+    !isRewardType(rewardType) ||
+    (rewardType === "CURRENCY" && rewardTargetId !== null) ||
+    (rewardType !== "CURRENCY" && rewardTargetId === null) ||
     !Number.isSafeInteger(rewardAmount) || rewardAmount < 1 || rewardAmount > 2_147_483_647
   ) return null;
-  return { dayIndex, rewardType, rewardAmount, enabled };
+  return { dayIndex, rewardType, rewardAmount, rewardTargetId, enabled };
 }
 
 export function publicAttendance(
@@ -114,6 +121,7 @@ export function publicAttendance(
       dayIndex: definition.dayIndex,
       rewardType: definition.rewardType,
       rewardAmount: definition.rewardAmount,
+      rewardTargetId: definition.rewardTargetId,
       enabled: definition.enabled,
       state: claimedDaySet.has(definition.dayIndex)
         ? "CLAIMED"
@@ -127,6 +135,7 @@ export function publicAttendance(
       dayIndex: claim.dayIndex,
       rewardType: claim.rewardType,
       rewardAmount: claim.rewardAmount,
+      rewardTargetId: claim.rewardTargetId,
       claimedAt: claim.claimedAt,
     })),
   };

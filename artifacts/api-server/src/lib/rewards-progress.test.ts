@@ -1,8 +1,18 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { isDailyQuestClaimable, objectiveIncrement, selectDailyQuestDefinitions } from "./daily-quest-service";
-import { nextAttendanceDayIndex } from "./attendance-service";
-import { isFinishedMatchRewardEligible, rewardIdempotencyKey } from "./reward-service";
+import { randomUUID } from "node:crypto";
+import { eq } from "drizzle-orm";
+import {
+  cardsTable,
+  db,
+  packDefinitionsTable,
+  userCardCollectionsTable,
+  userPackInventoryTable,
+  usersTable,
+} from "@workspace/db";
+import { isDailyQuestClaimable, objectiveIncrement, selectDailyQuestDefinitions, validateDailyQuestInput } from "./daily-quest-service";
+import { nextAttendanceDayIndex, validateAttendanceInput } from "./attendance-service";
+import { grantReward, isFinishedMatchRewardEligible, isRewardType, rewardIdempotencyKey } from "./reward-service";
 
 test("MR1/MR2: only a canonical finished match with a winner is reward eligible", () => {
   assert.equal(isFinishedMatchRewardEligible("FINISHED", "winner-1", "GAME_FINISHED"), true);
@@ -53,4 +63,100 @@ test("AT1/AT2/AT3/AT4: attendance advances from the highest claimed day without 
   assert.equal(nextAttendanceDayIndex([]), 1);
   assert.equal(nextAttendanceDayIndex([1]), 2);
   assert.equal(nextAttendanceDayIndex([1, 3]), 4);
+});
+
+test("CR1/CR2/PR1/PR2/PR3: card and pack grants are authoritative, atomic, and idempotent", async () => {
+  assert.equal(isRewardType("CARD"), true);
+  assert.equal(isRewardType("PACK"), true);
+  assert.equal(isRewardType("GOLD"), false);
+  assert.equal(validateDailyQuestInput({
+    title: "Card reward",
+    description: "",
+    objectiveType: "PLAY_MATCH",
+    targetValue: 1,
+    rewardType: "CARD",
+    rewardTargetId: "card-fixture",
+    rewardAmount: 2,
+  })?.rewardTargetId, "card-fixture");
+  assert.equal(validateAttendanceInput({
+    dayIndex: 1,
+    rewardType: "PACK",
+    rewardTargetId: "pack-fixture",
+    rewardAmount: 1,
+  })?.rewardTargetId, "pack-fixture");
+
+  const fixture = {
+    userId: `reward-test-user-${randomUUID()}`,
+    cardId: `reward-test-card-${randomUUID()}`,
+    packId: `reward-test-pack-${randomUUID()}`,
+  };
+  await assert.rejects(db.transaction(async (tx) => {
+      await tx.insert(usersTable).values({
+        id: fixture.userId,
+        email: `${fixture.userId}@localhost.test`,
+        nickname: fixture.userId,
+        passwordHash: "test-only",
+      });
+      await tx.insert(cardsTable).values({
+        id: fixture.cardId,
+        name: "Reward Fixture Card",
+        cardType: "WRESTLER",
+        cost: 1,
+        attack: 1,
+        health: 1,
+        text: "",
+        status: "PUBLISHED",
+        isToken: false,
+        isChampionToken: false,
+      });
+      await tx.insert(packDefinitionsTable).values({
+        id: fixture.packId,
+        name: "Reward Fixture Pack",
+        status: "PUBLISHED",
+      });
+
+      const firstCardGrant = await grantReward({
+        userId: fixture.userId,
+        sourceType: "DAILY_QUEST_CLAIM",
+        sourceId: "daily-fixture",
+        rewardType: "CARD",
+        rewardTargetId: fixture.cardId,
+        amount: 2,
+      }, tx);
+      await assert.rejects(grantReward({
+        userId: fixture.userId,
+        sourceType: "DAILY_QUEST_CLAIM",
+        sourceId: "daily-fixture",
+        rewardType: "CARD",
+        rewardTargetId: "wrong-card-from-client",
+        amount: 999,
+      }, tx), /보상 대상이 유효하지 않습니다/);
+      const duplicateCardGrant = await grantReward({
+        userId: fixture.userId,
+        sourceType: "DAILY_QUEST_CLAIM",
+        sourceId: "daily-fixture",
+        rewardType: "CARD",
+        rewardTargetId: fixture.cardId,
+        amount: 999,
+      }, tx);
+      const firstPackGrant = await grantReward({
+        userId: fixture.userId,
+        sourceType: "ATTENDANCE_CLAIM",
+        sourceId: "attendance-fixture",
+        rewardType: "PACK",
+        rewardTargetId: fixture.packId,
+        amount: 1,
+      }, tx);
+
+      assert.equal(firstCardGrant.granted, true);
+      assert.equal(duplicateCardGrant.granted, false);
+      assert.equal(firstPackGrant.granted, true);
+      const [cardOwnership] = await tx.select().from(userCardCollectionsTable)
+        .where(eq(userCardCollectionsTable.userId, fixture.userId));
+      const [packOwnership] = await tx.select().from(userPackInventoryTable)
+        .where(eq(userPackInventoryTable.userId, fixture.userId));
+      assert.equal(cardOwnership?.quantity, 2);
+      assert.equal(packOwnership?.quantity, 1);
+      throw new Error("ROLLBACK_REWARD_FIXTURE");
+    }), /ROLLBACK_REWARD_FIXTURE/);
 });

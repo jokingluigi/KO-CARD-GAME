@@ -9,6 +9,7 @@ import { attack } from './combat';
 import { createInitialGameState } from './create-initial-game-state';
 import { useChampionAbility } from './champion-system';
 import { endTurn, startGame } from './turn-system';
+import { runAITurn } from '../actions/ai-turn-scheduler';
 import { displayHealth } from '../../components/match-display-utils';
 
 const fixedRandom = () => 0.5;
@@ -137,6 +138,44 @@ test('AI can choose and execute a legal action after Jaeger quest completion', (
   const action = legal.find((candidate) => candidate.type === 'USE_CHAMPION_ABILITY') ?? legal[0]!;
   const result = executeAction(prepared, action);
   assert.equal(result.success, true);
+});
+
+test('AI resumes after a completed Jaeger quest without presentation or timeout recovery', async () => {
+  const started = startedWithJaeger();
+  const prepared = {
+    ...started,
+    activePlayerId: 'player-2' as const,
+    players: started.players.map((player) =>
+      player.id === 'player-2' && player.champion
+        ? {
+            ...player,
+            currentGold: 2,
+            hand: [],
+            deck: [],
+            board: [null, null, null, null] as typeof player.board,
+            champion: {
+              ...player.champion,
+              questProgress: player.champion.quest?.requiredProgress ?? 5,
+              questCompleted: true,
+            },
+          }
+        : player,
+    ),
+  };
+  const waits: number[] = [];
+  const states: typeof prepared[] = [];
+  const result = await runAITurn(prepared, 'player-2', {
+    wait: async (milliseconds) => waits.push(milliseconds),
+    waitForPresentationIdle: async () => {},
+    isCancelled: () => false,
+    onState: (next) => states.push(next),
+    actionDelayMs: 1,
+  });
+
+  assert.equal(result.activePlayerId, 'player-1');
+  assert.equal(states.at(-1)?.activePlayerId, 'player-1');
+  assert.equal(waits.includes(90_000), false);
+  assert.equal(result.events.filter((event) => event.type === 'CHAMPION_QUEST_COMPLETED').length, 0);
 });
 
 test('turn transition preserves board and hand membership for timeout END_TURN semantics', () => {

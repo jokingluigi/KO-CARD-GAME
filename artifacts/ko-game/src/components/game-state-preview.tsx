@@ -139,6 +139,9 @@ export function GameStatePreview({
   const lastCardPositionsRef = React.useRef(new Map<string, { left: number; top: number; width: number; height: number }>());
   const previousCardStatsRef = React.useRef(new Map<string, { attack: number; health: number }>());
   const previousCardsRef = React.useRef(new Map<string, CardInstance>());
+  const handlePresentationQueueComplete = React.useCallback(() => {
+    setPresentationQueue((current) => current.slice(1));
+  }, []);
 
   React.useEffect(() => {
     onPresentationBusyChange(Boolean(
@@ -1209,8 +1212,8 @@ export function GameStatePreview({
         !generatedPlayAnimations.length &&
         (!attackAnimation || attackImpactTriggered) && (
         presentationQueue[0].kind === "QUEST_COMPLETE"
-          ? <QuestPresentation cue={presentationQueue[0]} state={state} onComplete={() => setPresentationQueue((current) => current.slice(1))} />
-          : <PresentationFeedback cue={presentationQueue[0]} onComplete={() => setPresentationQueue((current) => current.slice(1))} />
+          ? <QuestPresentation cue={presentationQueue[0]} state={state} onComplete={handlePresentationQueueComplete} />
+          : <PresentationFeedback cue={presentationQueue[0]} onComplete={handlePresentationQueueComplete} />
       )}
     </div>
     </AltInspectProvider>

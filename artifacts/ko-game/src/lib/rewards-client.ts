@@ -28,6 +28,7 @@ export type DailyQuest = {
   targetValue: number;
   rewardType: string;
   rewardAmount: number;
+  rewardTargetId: string | null;
   progress: number;
   status: "ASSIGNED" | "IN_PROGRESS" | "COMPLETED" | "CLAIMED";
   claimedAt: string | null;
@@ -37,6 +38,7 @@ export type AttendanceDay = {
   dayIndex: number;
   rewardType: string;
   rewardAmount: number;
+  rewardTargetId: string | null;
   enabled: boolean;
   state: "CLAIMED" | "AVAILABLE" | "LOCKED";
 };
@@ -51,6 +53,7 @@ export type AttendanceData = {
     dayIndex: number;
     rewardType: string;
     rewardAmount: number;
+    rewardTargetId: string | null;
     claimedAt: string;
   }>;
 };
@@ -66,10 +69,12 @@ export type RewardAdminData = {
     targetValue: number;
     rewardType: string;
     rewardAmount: number;
+    rewardTargetId: string | null;
     enabled: boolean;
   }>;
-  attendance: Array<{ dayIndex: number; rewardType: string; rewardAmount: number; enabled: boolean }>;
+  attendance: Array<{ dayIndex: number; rewardType: string; rewardAmount: number; rewardTargetId: string | null; enabled: boolean }>;
   rewardType: string;
+  rewardTypes: string[];
   objectiveTypes: string[];
 };
 
@@ -78,6 +83,12 @@ export const claimDailyQuest = (id: string) => request<{ assignment: DailyQuest;
 export const fetchAttendance = () => request<AttendanceData>("/attendance");
 export const claimAttendance = () => request<{ attendance: AttendanceData; reward: { amount: number; balanceAfter: number } | null; alreadyClaimed: boolean }>("/attendance/claim", { method: "POST" });
 export const fetchRewardAdminData = () => request<RewardAdminData>("/admin/rewards");
+export type RewardCatalogCard = { id: string; name: string; imageUrl: string | null; status: string; isToken: boolean; isChampionToken: boolean };
+export type RewardCatalogPack = { id: string; name: string; imageUrl: string | null; status: string; deletedAt: string | null };
+export const fetchRewardCatalogs = () => Promise.all([
+  request<{ cards: RewardCatalogCard[] }>("/cards"),
+  request<{ packs: RewardCatalogPack[] }>("/packs"),
+]).then(([cards, packs]) => ({ cards: cards.cards, packs: packs.packs }));
 export const saveMatchRewardSettings = (body: { winAmount: number; lossAmount: number; enabled: boolean }) => request<{ updated: boolean }>("/admin/rewards/match", { method: "PATCH", body: JSON.stringify(body) });
 export const createDailyQuest = (body: object) => request("/admin/rewards/daily-quests", { method: "POST", body: JSON.stringify(body) });
 export const updateDailyQuest = (id: string, body: object) => request(`/admin/rewards/daily-quests/${encodeURIComponent(id)}`, { method: "PATCH", body: JSON.stringify(body) });
