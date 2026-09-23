@@ -3,6 +3,7 @@ import { randomUUID } from "node:crypto";
 import { Router, type IRouter, type Request, type Response } from "express";
 import {
   db,
+  championPrismEconomySettingsTable,
   prismEconomySettingsTable,
   prismTransactionsTable,
   usersTable,
@@ -15,6 +16,12 @@ import {
   toPrismSettingView,
   type PrismRarity,
 } from "../lib/prism-economy";
+import {
+  CHAMPION_PRISM_CONFIG_ID,
+  getChampionPrismSetting,
+  isValidChampionPrismValue,
+  toChampionPrismSettingView,
+} from "../lib/champion-prism";
 
 const router: IRouter = Router();
 
@@ -35,7 +42,7 @@ router.use(async (request, response, next) => {
 
 router.get("/", async (request, response): Promise<void> => {
   if (!requireAdmin(request, response)) return;
-  const [settings, users] = await Promise.all([
+  const [settings, users, championPrismSetting] = await Promise.all([
     db.select().from(prismEconomySettingsTable)
       .where(inArray(prismEconomySettingsTable.rarity, [...PRISM_RARITIES])),
     db.select({
@@ -44,6 +51,7 @@ router.get("/", async (request, response): Promise<void> => {
       nickname: usersTable.nickname,
       prismBalance: usersTable.prismBalance,
     }).from(usersTable).orderBy(asc(usersTable.nickname)),
+    getChampionPrismSetting(),
   ]);
   response.json({
     settings: PRISM_RARITIES.map((rarity) => toPrismSettingView(
@@ -51,7 +59,26 @@ router.get("/", async (request, response): Promise<void> => {
       settings.find((setting) => setting.rarity === rarity),
     )),
     users,
+    championPrismSetting: toChampionPrismSettingView(championPrismSetting ?? undefined),
   });
+});
+
+router.put("/champion-settings", async (request, response): Promise<void> => {
+  if (!requireAdmin(request, response)) return;
+  const craftCost = request.body?.craftCost;
+  const duplicateReward = request.body?.duplicateReward;
+  if (!isValidChampionPrismValue(craftCost) || !isValidChampionPrismValue(duplicateReward)) {
+    response.status(400).json({ message: "챔피언 프리즘 제작 비용/중복 보상은 0 이상의 정수여야 합니다." });
+    return;
+  }
+  const [setting] = await db.insert(championPrismEconomySettingsTable)
+    .values({ id: CHAMPION_PRISM_CONFIG_ID, craftCost, duplicateReward, updatedAt: new Date() })
+    .onConflictDoUpdate({
+      target: championPrismEconomySettingsTable.id,
+      set: { craftCost, duplicateReward, updatedAt: new Date() },
+    })
+    .returning();
+  response.json({ championPrismSetting: toChampionPrismSettingView(setting) });
 });
 
 router.put("/settings/:rarity", async (request, response): Promise<void> => {

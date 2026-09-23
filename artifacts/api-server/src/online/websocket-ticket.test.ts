@@ -16,6 +16,7 @@ function testUser(id: string): PublicUser {
     currency: 0,
     currencyBalance: 0,
     prismBalance: 0,
+    championPrismBalance: 0,
     isTestAccount: false,
   };
 }

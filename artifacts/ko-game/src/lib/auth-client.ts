@@ -6,6 +6,7 @@ export type AuthUser = {
   currency: number;
   currencyBalance: number;
   prismBalance: number;
+  championPrismBalance: number;
   isTestAccount: boolean;
 };
 

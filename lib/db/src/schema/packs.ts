@@ -1,5 +1,6 @@
-import { integer, pgTable, text, timestamp } from "drizzle-orm/pg-core";
+import { integer, jsonb, pgTable, text, timestamp, uniqueIndex } from "drizzle-orm/pg-core";
 import { sql } from "drizzle-orm";
+import { usersTable } from "./users";
 
 export const packDefinitionsTable = pgTable("pack_definitions", {
   id: text("id").primaryKey(),
@@ -23,4 +24,17 @@ export const packDefinitionsTable = pgTable("pack_definitions", {
   updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
 });
 
+export const packOpeningClaimsTable = pgTable("pack_opening_claims", {
+  id: text("id").primaryKey(),
+  userId: text("user_id").notNull().references(() => usersTable.id, { onDelete: "cascade" }),
+  packDefinitionId: text("pack_definition_id").notNull().references(() => packDefinitionsTable.id, { onDelete: "cascade" }),
+  idempotencyKey: text("idempotency_key").notNull(),
+  rewards: jsonb("rewards").$type<Array<Record<string, unknown>>>().notNull(),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+}, (table) => ({
+  userIdIdempotencyKeyUnique: uniqueIndex("pack_opening_claims_user_id_idempotency_key_idx")
+    .on(table.userId, table.idempotencyKey),
+}));
+
 export type PackDefinitionRecord = typeof packDefinitionsTable.$inferSelect;
+export type PackOpeningClaimRecord = typeof packOpeningClaimsTable.$inferSelect;

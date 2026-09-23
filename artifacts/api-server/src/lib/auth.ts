@@ -33,6 +33,7 @@ export type AuthLookupOptions = {
 export type PublicUser = Pick<UserRecord, "id" | "email" | "nickname" | "role" | "currency"> & {
   currencyBalance: number;
   prismBalance: number;
+  championPrismBalance: number;
   isTestAccount: boolean;
 };
 
@@ -54,6 +55,7 @@ function publicUser(user: UserRecord, currencyBalance = user.currencyBalance): P
     currency: user.currency,
     currencyBalance: testAccount ? TEST_ACCOUNT_UNLIMITED_BALANCE : currencyBalance,
     prismBalance: testAccount ? TEST_ACCOUNT_UNLIMITED_BALANCE : user.prismBalance,
+    championPrismBalance: testAccount ? TEST_ACCOUNT_UNLIMITED_BALANCE : user.championPrismBalance,
     isTestAccount: testAccount,
   };
 }

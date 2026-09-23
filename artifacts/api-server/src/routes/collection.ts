@@ -14,6 +14,7 @@ import {
 } from "@workspace/db";
 import { ensureStarterCollection } from "../lib/collection";
 import { getAuthenticatedUser } from "../lib/auth";
+import { getChampionPrismSetting, toChampionPrismSettingView } from "../lib/champion-prism";
 import { PRISM_RARITIES, toPrismSettingView } from "../lib/prism-economy";
 import {
   isEligibleTestCard,
@@ -48,7 +49,7 @@ router.use(async (request, response, next) => {
 router.get("/", async (request, response): Promise<void> => {
   const user = requireUser(request, response);
   if (!user) return;
-  const [cardRows, championRows, craftableCards, prismSettings, publishedTestCards, publishedTestChampions] = await Promise.all([
+  const [cardRows, championOwnershipRows, craftableCards, prismSettings, publishedTestCards, publishedChampions, championPrismSetting] = await Promise.all([
     db.select({
       quantity: userCardCollectionsTable.quantity,
       obtainedAt: userCardCollectionsTable.obtainedAt,
@@ -63,17 +64,11 @@ router.get("/", async (request, response): Promise<void> => {
       ))
       .orderBy(asc(cardsTable.cost), asc(cardsTable.name)),
     db.select({
+      championDefinitionId: userChampionCollectionsTable.championDefinitionId,
       owned: userChampionCollectionsTable.owned,
       obtainedAt: userChampionCollectionsTable.obtainedAt,
-      champion: championsTable,
     }).from(userChampionCollectionsTable)
-      .innerJoin(championsTable, eq(championsTable.id, userChampionCollectionsTable.championDefinitionId))
-      .where(and(
-        eq(userChampionCollectionsTable.userId, user.id),
-        eq(userChampionCollectionsTable.owned, true),
-        eq(championsTable.status, "PUBLISHED"),
-      ))
-      .orderBy(asc(championsTable.name)),
+      .where(eq(userChampionCollectionsTable.userId, user.id)),
     db.select().from(cardsTable)
       .where(and(
         eq(cardsTable.status, "PUBLISHED"),
@@ -94,6 +89,7 @@ router.get("/", async (request, response): Promise<void> => {
     db.select().from(championsTable)
       .where(eq(championsTable.status, "PUBLISHED"))
       .orderBy(asc(championsTable.name)),
+    getChampionPrismSetting(),
   ]);
   const testAccount = isTestAccountUser(user);
   const visibleCardRows = testAccount
@@ -103,14 +99,21 @@ router.get("/", async (request, response): Promise<void> => {
       card,
     }))
     : cardRows;
-  const visibleChampionRows = testAccount
-    ? publishedTestChampions.map((champion) => ({ owned: true, obtainedAt: null, champion }))
-    : championRows;
+  const visibleChampionRows = publishedChampions.map((champion) => {
+    const ownership = championOwnershipRows.find((row) => row.championDefinitionId === champion.id);
+    return {
+      owned: testAccount || ownership?.owned === true,
+      obtainedAt: testAccount ? null : ownership?.obtainedAt ?? null,
+      champion,
+    };
+  });
   response.json({
     prismBalance: testAccount ? TEST_ACCOUNT_UNLIMITED_BALANCE : user.prismBalance,
+    championPrismBalance: testAccount ? TEST_ACCOUNT_UNLIMITED_BALANCE : user.championPrismBalance,
+    championPrismSetting: toChampionPrismSettingView(championPrismSetting ?? undefined),
     isTestAccount: testAccount,
     cards: visibleCardRows.map((row) => ({ ...row.card, quantity: row.quantity, obtainedAt: row.obtainedAt })),
-    champions: visibleChampionRows.map((row) => ({ ...row.champion, obtainedAt: row.obtainedAt })),
+    champions: visibleChampionRows.map((row) => ({ ...row.champion, owned: row.owned, obtainedAt: row.obtainedAt })),
     craftableCards: craftableCards.map((card) => ({
       ...card,
       quantity: testAccount
@@ -127,7 +130,7 @@ router.get("/", async (request, response): Promise<void> => {
 type Reward =
   | { rewardType: "NORMAL_CARD"; cardDefinitionId: string; card: typeof cardsTable.$inferSelect }
   | { rewardType: "LEGENDARY_CARD"; cardDefinitionId: string; card: typeof cardsTable.$inferSelect }
-  | { rewardType: "CHAMPION_UNLOCK"; championDefinitionId: string; champion: typeof championsTable.$inferSelect; alreadyOwned?: boolean }
+  | { rewardType: "CHAMPION_UNLOCK"; championDefinitionId: string; champion: typeof championsTable.$inferSelect; alreadyOwned?: boolean; championPrismReward?: number }
   | { rewardType: "SKIN"; skinDefinitionId: string; skin: typeof cardSkinDefinitionsTable.$inferSelect; card: typeof cardsTable.$inferSelect; alreadyOwned?: boolean };
 
 type QueryExecutor = { select: typeof db.select };

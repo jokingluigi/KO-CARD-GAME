@@ -3,10 +3,13 @@ import { randomUUID } from "node:crypto";
 import { Router, type IRouter, type Request, type Response } from "express";
 import {
   cardsTable,
+  championsTable,
+  championPrismTransactionsTable,
   db,
   prismEconomySettingsTable,
   prismTransactionsTable,
   userCardCollectionsTable,
+  userChampionCollectionsTable,
   usersTable,
 } from "@workspace/db";
 import { getAuthenticatedUser } from "../lib/auth";
@@ -18,6 +21,7 @@ import {
   type PrismRarity,
 } from "../lib/prism-economy";
 import { isTestAccountUser, TEST_ACCOUNT_UNLIMITED_BALANCE } from "../lib/test-account";
+import { getChampionPrismSetting } from "../lib/champion-prism";
 
 const router: IRouter = Router();
 type QueryExecutor = { select: typeof db.select };
@@ -83,6 +87,77 @@ async function getCraftableCard(cardDefinitionId: string, executor: QueryExecuto
   )).limit(1);
   return card ?? null;
 }
+
+async function getCraftableChampion(championDefinitionId: string, executor: QueryExecutor = db) {
+  const [champion] = await executor.select().from(championsTable).where(and(
+    eq(championsTable.id, championDefinitionId),
+    eq(championsTable.status, "PUBLISHED"),
+  )).limit(1);
+  return champion ?? null;
+}
+
+router.post("/champion/craft/:championDefinitionId", async (request, response): Promise<void> => {
+  const user = requireUser(request, response);
+  if (!user) return;
+  try {
+    const result = await db.transaction(async (tx) => {
+      const champion = await getCraftableChampion(request.params.championDefinitionId, tx);
+      if (!champion) throw new PrismError(404, "제작할 수 없는 챔피언입니다.");
+      const setting = await getChampionPrismSetting(tx);
+      if (!setting) throw new PrismError(503, "챔피언 프리즘 설정이 없어 해당 기능을 사용할 수 없습니다.");
+
+      const [claimedExisting] = await tx.update(userChampionCollectionsTable)
+        .set({ owned: true, obtainedAt: new Date() })
+        .where(and(
+          eq(userChampionCollectionsTable.userId, user.id),
+          eq(userChampionCollectionsTable.championDefinitionId, champion.id),
+          eq(userChampionCollectionsTable.owned, false),
+        ))
+        .returning({ championDefinitionId: userChampionCollectionsTable.championDefinitionId });
+      const [claimedNew] = claimedExisting
+        ? [claimedExisting]
+        : await tx.insert(userChampionCollectionsTable).values({
+          userId: user.id,
+          championDefinitionId: champion.id,
+          owned: true,
+        }).onConflictDoNothing().returning({ championDefinitionId: userChampionCollectionsTable.championDefinitionId });
+      if (!claimedNew) throw new PrismError(409, "이미 보유한 챔피언입니다.");
+
+      let championPrismBalance = user.championPrismBalance;
+      if (!isTestAccountUser(user)) {
+        const [updatedUser] = await tx.update(usersTable)
+          .set({
+            championPrismBalance: sql`${usersTable.championPrismBalance} - ${setting.craftCost}`,
+            updatedAt: new Date(),
+          })
+          .where(and(
+            eq(usersTable.id, user.id),
+            sql`${usersTable.championPrismBalance} >= ${setting.craftCost}`,
+          ))
+          .returning({ championPrismBalance: usersTable.championPrismBalance });
+        if (!updatedUser) throw new PrismError(422, "챔피언 프리즘이 부족합니다.");
+        championPrismBalance = updatedUser.championPrismBalance;
+      } else {
+        championPrismBalance = TEST_ACCOUNT_UNLIMITED_BALANCE;
+      }
+
+      await tx.insert(championPrismTransactionsTable).values({
+        id: randomUUID(),
+        userId: user.id,
+        type: "CRAFT",
+        amount: -setting.craftCost,
+        balanceAfter: championPrismBalance,
+        championDefinitionId: champion.id,
+        metadata: JSON.stringify({ source: "COLLECTION" }),
+      });
+      return { champion, championPrismBalance };
+    });
+    response.json({ ...result, owned: true });
+  } catch (error) {
+    const status = error instanceof PrismError ? error.status : 500;
+    response.status(status).json({ message: error instanceof Error ? error.message : "챔피언 제작에 실패했습니다." });
+  }
+});
 
 router.post("/craft/:cardDefinitionId", async (request, response): Promise<void> => {
   const user = requireUser(request, response);

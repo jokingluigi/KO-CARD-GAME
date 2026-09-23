@@ -51,14 +51,23 @@ export type CollectionChampion = {
   questCompleteAudioVolume: number;
   questCompleteAudioEnabled: boolean;
   status: string;
+  owned: boolean;
+  obtainedAt: string | null;
 };
 export type Collection = {
   cards: CollectionCard[];
   craftableCards: CollectionCard[];
   champions: CollectionChampion[];
   prismBalance: number;
+  championPrismBalance: number;
+  championPrismSetting: ChampionPrismSetting;
   prismSettings: PrismSetting[];
   isTestAccount: boolean;
+};
+export type ChampionPrismSetting = {
+  craftCost: number | null;
+  duplicateReward: number | null;
+  configured: boolean;
 };
 export type Pack = {
   id: string; name: string; description: string; cardsPerPack: number;
@@ -109,6 +118,11 @@ export const craftCard = (cardDefinitionId: string) => request<{
   quantity: number;
   card: CollectionCard;
 }>(`/prism/craft/${encodeURIComponent(cardDefinitionId)}`, { method: "POST" });
+export const craftChampion = (championDefinitionId: string) => request<{
+  championPrismBalance: number;
+  owned: true;
+  champion: CollectionChampion;
+}>(`/prism/champion/craft/${encodeURIComponent(championDefinitionId)}`, { method: "POST" });
 export const disenchantCard = (cardDefinitionId: string, quantity = 1) => request<{
   prismBalance: number;
   quantity: number;
@@ -136,8 +150,12 @@ export type PackReward = {
     status: string;
   };
   alreadyOwned?: boolean;
+  championPrismReward?: number;
 };
-export const openPack = (id: string) => request<{ rewards: PackReward[] }>(`/packs/${encodeURIComponent(id)}/open`, { method: "POST" });
+export const openPack = (id: string, idempotencyKey: string) => request<{ rewards: PackReward[] }>(`/packs/${encodeURIComponent(id)}/open`, {
+  method: "POST",
+  headers: { "Idempotency-Key": idempotencyKey },
+});
 
 export type ShopListing = {
   id: string;

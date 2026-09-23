@@ -1,19 +1,31 @@
 import { and, asc, eq, sql } from "drizzle-orm";
+import { randomUUID } from "node:crypto";
 import { Router, type IRouter } from "express";
 import {
   db,
+  championPrismTransactionsTable,
   packDefinitionsTable,
+  packOpeningClaimsTable,
   userCardCollectionsTable,
   userChampionCollectionsTable,
   userCardSkinCollectionsTable,
   userPackInventoryTable,
+  usersTable,
 } from "@workspace/db";
 import { getAuthenticatedUser } from "../lib/auth";
 import { ensureStarterCollection } from "../lib/collection";
 import { rollPack } from "./collection";
 import { getPackDetails } from "../lib/pack-details";
+import { getChampionPrismSetting } from "../lib/champion-prism";
+import { isTestAccountUser, TEST_ACCOUNT_UNLIMITED_BALANCE } from "../lib/test-account";
 
 const router: IRouter = Router();
+
+class PackOpenError extends Error {
+  constructor(public readonly status: number, message: string) {
+    super(message);
+  }
+}
 
 router.use(async (request, response, next) => {
   try {
@@ -60,9 +72,47 @@ router.get("/:id/details", async (request, response): Promise<void> => {
 });
 
 router.post("/:id/open", async (request, response): Promise<void> => {
+  const idempotencyKey = request.get("Idempotency-Key")?.trim() ?? "";
+  if (!idempotencyKey || idempotencyKey.length > 200) {
+    response.status(400).json({ message: "팩 개봉 요청 식별자가 필요합니다." });
+    return;
+  }
   try {
-    let rewards: Array<Record<string, unknown>> = [];
-    await db.transaction(async (tx) => {
+    const rewards = await db.transaction(async (tx) => {
+      const [existingClaim] = await tx.select().from(packOpeningClaimsTable)
+        .where(and(
+          eq(packOpeningClaimsTable.userId, request.authUser!.id),
+          eq(packOpeningClaimsTable.idempotencyKey, idempotencyKey),
+        ))
+        .limit(1);
+      if (existingClaim) {
+        if (existingClaim.packDefinitionId !== request.params.id) {
+          throw new PackOpenError(409, "이미 다른 팩에 사용된 개봉 요청 식별자입니다.");
+        }
+        return existingClaim.rewards;
+      }
+
+      const [claim] = await tx.insert(packOpeningClaimsTable).values({
+        id: randomUUID(),
+        userId: request.authUser!.id,
+        packDefinitionId: request.params.id,
+        idempotencyKey,
+        rewards: [],
+      }).onConflictDoNothing().returning();
+      if (!claim) {
+        const [retryClaim] = await tx.select().from(packOpeningClaimsTable)
+          .where(and(
+            eq(packOpeningClaimsTable.userId, request.authUser!.id),
+            eq(packOpeningClaimsTable.idempotencyKey, idempotencyKey),
+          ))
+          .limit(1);
+        if (!retryClaim) throw new PackOpenError(409, "팩 개봉 요청이 이미 처리 중입니다.");
+        if (retryClaim.packDefinitionId !== request.params.id) {
+          throw new PackOpenError(409, "이미 다른 팩에 사용된 개봉 요청 식별자입니다.");
+        }
+        return retryClaim.rewards;
+      }
+
       const [pack] = await tx.select().from(packDefinitionsTable)
         .where(and(eq(packDefinitionsTable.id, request.params.id), eq(packDefinitionsTable.status, "PUBLISHED"), sql`${packDefinitionsTable.deletedAt} IS NULL`))
         .limit(1);
@@ -99,13 +149,51 @@ router.post("/:id/open", async (request, response): Promise<void> => {
               eq(userChampionCollectionsTable.championDefinitionId, champion.id),
             ))
             .limit(1);
-          reward.alreadyOwned = existingChampion?.owned === true;
-          await tx.insert(userChampionCollectionsTable).values({
-            userId: request.authUser!.id, championDefinitionId: champion.id, owned: true,
-          }).onConflictDoUpdate({
-            target: [userChampionCollectionsTable.userId, userChampionCollectionsTable.championDefinitionId],
-            set: { owned: true, obtainedAt: new Date() },
-          });
+          let newlyOwned = false;
+          if (!existingChampion) {
+            const [inserted] = await tx.insert(userChampionCollectionsTable).values({
+              userId: request.authUser!.id, championDefinitionId: champion.id, owned: true,
+            }).onConflictDoNothing().returning({ championDefinitionId: userChampionCollectionsTable.championDefinitionId });
+            newlyOwned = Boolean(inserted);
+          }
+          if (!newlyOwned && existingChampion?.owned !== true) {
+            const [restored] = await tx.update(userChampionCollectionsTable).set({
+              owned: true,
+              obtainedAt: new Date(),
+            }).where(and(
+              eq(userChampionCollectionsTable.userId, request.authUser!.id),
+              eq(userChampionCollectionsTable.championDefinitionId, champion.id),
+              eq(userChampionCollectionsTable.owned, false),
+            )).returning({ championDefinitionId: userChampionCollectionsTable.championDefinitionId });
+            newlyOwned = Boolean(restored);
+          }
+          reward.alreadyOwned = !newlyOwned;
+          if (!newlyOwned) {
+            const setting = await getChampionPrismSetting(tx);
+            if (!setting) throw new Error("챔피언 중복 보상 설정이 없어 팩을 열 수 없습니다.");
+            let championPrismBalance = request.authUser!.championPrismBalance;
+            if (!isTestAccountUser(request.authUser!)) {
+              const [updatedUser] = await tx.update(usersTable).set({
+                championPrismBalance: sql`${usersTable.championPrismBalance} + ${setting.duplicateReward}`,
+                updatedAt: new Date(),
+              }).where(eq(usersTable.id, request.authUser!.id))
+                .returning({ championPrismBalance: usersTable.championPrismBalance });
+              if (!updatedUser) throw new Error("사용자를 찾을 수 없습니다.");
+              championPrismBalance = updatedUser.championPrismBalance;
+            } else {
+              championPrismBalance = TEST_ACCOUNT_UNLIMITED_BALANCE;
+            }
+            await tx.insert(championPrismTransactionsTable).values({
+              id: randomUUID(),
+              userId: request.authUser!.id,
+              type: "PACK_DUPLICATE",
+              amount: setting.duplicateReward,
+              balanceAfter: championPrismBalance,
+              championDefinitionId: champion.id,
+              metadata: JSON.stringify({ packDefinitionId: pack.id }),
+            });
+            reward.championPrismReward = setting.duplicateReward;
+          }
         } else {
           const [existingSkin] = await tx.select({ id: userCardSkinCollectionsTable.skinDefinitionId })
             .from(userCardSkinCollectionsTable)
@@ -120,13 +208,20 @@ router.post("/:id/open", async (request, response): Promise<void> => {
           }).onConflictDoNothing();
         }
       }
-      rewards = nextRewards.map((reward) => reward.rewardType === "CHAMPION_UNLOCK"
+      const resultRewards = nextRewards.map((reward) => reward.rewardType === "CHAMPION_UNLOCK"
         ? { ...reward, alreadyOwned: reward.alreadyOwned ?? false }
         : reward);
+      await tx.update(packOpeningClaimsTable)
+        .set({ rewards: resultRewards })
+        .where(eq(packOpeningClaimsTable.id, claim.id));
+      return resultRewards;
     });
     response.json({ rewards });
   } catch (error) {
-    response.status(error instanceof Error && error.message === "공개된 팩을 찾을 수 없습니다." ? 404 : 422)
+    const status = error instanceof PackOpenError
+      ? error.status
+      : error instanceof Error && error.message === "공개된 팩을 찾을 수 없습니다." ? 404 : 422;
+    response.status(status)
       .json({ message: error instanceof Error ? error.message : "현재 이 팩은 개봉할 수 없습니다." });
   }
 });

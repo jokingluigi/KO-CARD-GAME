@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { ArrowLeft, Gift } from "lucide-react";
 import { PackOpening } from "@/components/pack-opening";
 import { PackDetailDialog } from "@/components/pack-detail-dialog";
@@ -14,6 +14,7 @@ export default function PacksPage() {
   const [revealed, setRevealed] = useState(-1);
   const [opening, setOpening] = useState(false);
   const [message, setMessage] = useState("내 팩을 불러오는 중...");
+  const openingKeyRef = useRef<string | null>(null);
   const available = useMemo(() => packs, [packs]);
 
   useEffect(() => {
@@ -34,11 +35,13 @@ export default function PacksPage() {
     setSelected(pack);
     setMessage("");
     try {
-      const result = await openPack(pack.id);
+      if (!openingKeyRef.current) openingKeyRef.current = globalThis.crypto.randomUUID();
+      const result = await openPack(pack.id, openingKeyRef.current);
       setSelected(pack);
       setRewards(result.rewards);
       setRevealed(-1);
       setPacks(await fetchPacks().then((body) => body.packs));
+      openingKeyRef.current = null;
     } catch (error) {
       setMessage(error instanceof Error ? error.message : "팩을 열 수 없습니다.");
     } finally {

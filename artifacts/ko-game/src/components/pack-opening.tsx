@@ -105,8 +105,11 @@ export function PackOpening({ packName, rewards, preview = false, onClose, onRep
                           imagePositionY={champion.imagePositionY}
                         />
                       ) : <div className="flex aspect-square items-center justify-center rounded bg-rose-950/50 text-rose-300"><Gift className="h-10 w-10" /></div>}
-                      <p className="mt-3 text-sm font-black text-rose-200">{reward.alreadyOwned ? "이미 보유한 챔피언" : "챔피언 해금!"}</p>
+                      <p className="mt-3 text-sm font-black text-rose-200">{reward.alreadyOwned ? "중복 챔피언 → 챔피언 프리즘" : "챔피언 해금!"}</p>
                       <p className="mt-1 text-xs font-bold">{rewardTitle(reward)}</p>
+                      {reward.alreadyOwned && reward.championPrismReward !== undefined && (
+                        <p className="mt-2 rounded bg-rose-950/70 px-2 py-1 text-xs font-black text-rose-200">◈ +{reward.championPrismReward.toLocaleString()} 챔피언 프리즘</p>
+                      )}
                     </div>
                   ) : card ? (
                     <CardRenderer

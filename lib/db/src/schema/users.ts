@@ -12,6 +12,7 @@ export const usersTable = pgTable("users", {
   currencyBalance: integer("currency_balance").notNull().default(0),
   shopCurrencyStarterGrantedAt: timestamp("shop_currency_starter_granted_at", { withTimezone: true }),
   prismBalance: integer("prism_balance").notNull().default(0),
+  championPrismBalance: integer("champion_prism_balance").notNull().default(0),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
 });

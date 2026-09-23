@@ -10,7 +10,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { craftCard, disenchantCard, fetchCollection, type Collection, type CollectionCard, type CollectionChampion, type PrismSetting } from "@/lib/collection-client";
+import { craftCard, craftChampion, disenchantCard, fetchCollection, type ChampionPrismSetting, type Collection, type CollectionCard, type CollectionChampion, type PrismSetting } from "@/lib/collection-client";
 import { useLocation } from "wouter";
 import { ROUTES } from "@/lib/routes";
 import { cardTypeLabel } from "@/lib/display-labels";
@@ -94,11 +94,11 @@ function ChampionCollectionItem({ champion, onOpen }: { champion: CollectionCham
         ) : (
           <div className="flex h-full items-center justify-center text-rose-300"><Shield className="h-12 w-12" /></div>
         )}
-        <span className="absolute bottom-2 left-2 rounded bg-emerald-950/90 px-2 py-1 text-[10px] font-black text-emerald-300">해금됨</span>
+        <span className={`absolute bottom-2 left-2 rounded px-2 py-1 text-[10px] font-black ${champion.owned ? "bg-emerald-950/90 text-emerald-300" : "bg-neutral-950/90 text-neutral-300"}`}>{champion.owned ? "해금됨" : "미보유"}</span>
       </div>
       <div className="p-4">
         <h3 className="font-black text-white">{champion.name}</h3>
-        <p className="mt-2 line-clamp-2 text-xs leading-5 text-neutral-400">{champion.abilityText || champion.description}</p>
+        <p className="mt-2 line-clamp-2 text-xs leading-5 text-neutral-400">{champion.owned ? (champion.abilityText || champion.description) : "미보유 챔피언 · 상세 정보를 확인하고 제작할 수 있습니다."}</p>
         <p className="mt-3 text-[10px] font-bold uppercase tracking-wider text-amber-300">기본 능력 · {champion.abilityName}</p>
       </div>
     </button>
@@ -116,7 +116,12 @@ export default function CollectionPage() {
   const [selectedCard, setSelectedCard] = useState<CollectionCard | null>(null);
   const [disassemblyQuantity, setDisassemblyQuantity] = useState(1);
   const [selectedChampion, setSelectedChampion] = useState<CollectionChampion | null>(null);
-  const [pendingAction, setPendingAction] = useState<{ type: "CRAFT" | "DISENCHANT"; card: CollectionCard; quantity: number } | null>(null);
+  const [pendingAction, setPendingAction] = useState<
+    | { type: "CRAFT"; card: CollectionCard; quantity: number }
+    | { type: "DISENCHANT"; card: CollectionCard; quantity: number }
+    | { type: "CHAMPION_CRAFT"; champion: CollectionChampion }
+    | null
+  >(null);
   const [isMutating, setIsMutating] = useState(false);
   const [loadState, setLoadState] = useState<CollectionLoadState>("loading");
   const [loadAttempt, setLoadAttempt] = useState(0);
@@ -185,6 +190,7 @@ export default function CollectionPage() {
     ? collection?.prismSettings.find((setting) => setting.rarity === selectedCard.rarity)
     : undefined;
   const prismBalance = collection?.prismBalance ?? 0;
+  const championPrismBalance = collection?.championPrismBalance ?? 0;
   const safeDisassemblyQuantity = selectedCard
     ? Math.min(Math.max(disassemblyQuantity, 1), Math.max(selectedCard.quantity, 1))
     : 1;
@@ -197,14 +203,20 @@ export default function CollectionPage() {
     try {
       if (action.type === "CRAFT") {
         await craftCard(action.card.id);
-      } else {
+      } else if (action.type === "DISENCHANT") {
          await disenchantCard(action.card.id, action.quantity);
+      } else {
+        await craftChampion(action.champion.id);
       }
       const nextCollection = await fetchCollection();
       setCollection(nextCollection);
-      setSelectedCard(nextCollection.craftableCards.find((card) => card.id === action.card.id) ?? null);
+      if (action.type !== "CHAMPION_CRAFT") {
+        setSelectedCard(nextCollection.craftableCards.find((card) => card.id === action.card.id) ?? null);
+      } else {
+        setSelectedChampion(nextCollection.champions.find((champion) => champion.id === action.champion.id) ?? null);
+      }
       setPendingAction(null);
-       setMessage(action.type === "CRAFT" ? "카드를 제작했습니다." : `카드를 ${action.quantity}장 분해했습니다.`);
+       setMessage(action.type === "CRAFT" ? "카드를 제작했습니다." : action.type === "DISENCHANT" ? `카드를 ${action.quantity}장 분해했습니다.` : "챔피언을 제작했습니다.");
     } catch (error) {
       setMessage(error instanceof Error ? error.message : "프리즘 요청을 처리하지 못했습니다.");
     } finally {
@@ -255,11 +267,17 @@ export default function CollectionPage() {
           <div>
             <p className="font-display text-xs font-bold tracking-[0.25em] text-primary">MY COLLECTION</p>
             <h1 className="mt-2 text-3xl font-black">내 컬렉션</h1>
-            <p className="mt-2 text-sm text-neutral-500">보유한 카드와 제작 가능한 NORMAL/LEGENDARY 카드를 확인할 수 있습니다.</p>
+             <p className="mt-2 text-sm text-neutral-500">보유한 카드와 제작 가능한 카드, 챔피언을 확인할 수 있습니다.</p>
           </div>
-             <div className="flex items-center gap-2 rounded-full border border-amber-500/40 bg-amber-950/30 px-3 py-2 text-sm font-black text-amber-200">
-             <Sparkles className="h-4 w-4 text-amber-400" />
-              ◆ {collection.isTestAccount ? "∞" : collection.prismBalance.toLocaleString()} 프리즘
+             <div className="flex flex-wrap items-center justify-end gap-2 text-xs font-black">
+               <div className="flex items-center gap-2 rounded-full border border-amber-500/40 bg-amber-950/30 px-3 py-2 text-amber-200">
+                 <Sparkles className="h-4 w-4 text-amber-400" />
+                 ◆ {collection.isTestAccount ? "∞" : collection.prismBalance.toLocaleString()} 일반 프리즘
+               </div>
+               <div className="flex items-center gap-2 rounded-full border border-rose-500/40 bg-rose-950/30 px-3 py-2 text-rose-200">
+                 <Shield className="h-4 w-4 text-rose-300" />
+                 ◈ {collection.isTestAccount ? "∞" : championPrismBalance.toLocaleString()} 챔피언 프리즘
+               </div>
            </div>
         </header>
 
@@ -305,8 +323,8 @@ export default function CollectionPage() {
             )}
           </>
         ) : (
-          champions.length === 0 ? (
-            <EmptyState title="아직 해금한 챔피언이 없습니다." />
+           champions.length === 0 ? (
+             <EmptyState title="현재 공개된 챔피언이 없습니다." />
           ) : (
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
               {champions.map((champion) => <ChampionCollectionItem key={champion.id} champion={champion} onOpen={() => setSelectedChampion(champion)} />)}
@@ -359,9 +377,18 @@ export default function CollectionPage() {
         )}
       </CardDetailDialog>
 
-      <Dialog open={Boolean(selectedChampion)} onOpenChange={(open) => { if (!open) setSelectedChampion(null); }}>
+       <Dialog open={Boolean(selectedChampion)} onOpenChange={(open) => { if (!open) setSelectedChampion(null); }}>
         <DialogContent className="border-neutral-800 bg-neutral-950 text-white sm:max-w-2xl">
-          {selectedChampion && <ChampionDetail champion={selectedChampion} />}
+           {selectedChampion && (
+             <ChampionDetail
+               champion={selectedChampion}
+               setting={collection.championPrismSetting}
+               balance={championPrismBalance}
+               unlimited={collection.isTestAccount}
+               isMutating={isMutating}
+               onCraft={() => setPendingAction({ type: "CHAMPION_CRAFT", champion: selectedChampion })}
+             />
+           )}
         </DialogContent>
       </Dialog>
 
@@ -370,16 +397,18 @@ export default function CollectionPage() {
           {pendingAction && (
             <>
               <DialogHeader>
-                <DialogTitle className="text-left text-xl font-black">{pendingAction.type === "CRAFT" ? "카드 제작 확인" : "카드 분해 확인"}</DialogTitle>
+                 <DialogTitle className="text-left text-xl font-black">{pendingAction.type === "CRAFT" ? "카드 제작 확인" : pendingAction.type === "DISENCHANT" ? "카드 분해 확인" : "챔피언 제작 확인"}</DialogTitle>
                 <DialogDescription className="whitespace-pre-line text-left text-sm leading-6 text-neutral-400">
-                  {pendingAction.type === "CRAFT"
+                   {pendingAction.type === "CRAFT"
                     ? `${selectedSetting?.craftCost?.toLocaleString() ?? "—"} 프리즘을 사용해\n${pendingAction.card.name} 카드를 제작하시겠습니까?`
-                     : `이 카드를 ${pendingAction.quantity}장 분해하고\n${((selectedSetting?.disenchantReward ?? 0) * pendingAction.quantity).toLocaleString()} 프리즘을 획득하시겠습니까?`}
+                     : pendingAction.type === "DISENCHANT"
+                       ? `이 카드를 ${pendingAction.quantity}장 분해하고\n${((selectedSetting?.disenchantReward ?? 0) * pendingAction.quantity).toLocaleString()} 프리즘을 획득하시겠습니까?`
+                       : `${collection.championPrismSetting.craftCost?.toLocaleString() ?? "—"} 챔피언 프리즘을 사용해\n${pendingAction.champion.name}을 제작하시겠습니까?`}
                 </DialogDescription>
               </DialogHeader>
               <div className="flex gap-2">
                 <button type="button" disabled={isMutating} onClick={() => setPendingAction(null)} className="flex-1 rounded border border-neutral-700 px-4 py-3 text-sm font-black text-neutral-300">취소</button>
-                <button type="button" disabled={isMutating} onClick={() => void executePendingAction()} className="flex-1 rounded bg-amber-400 px-4 py-3 text-sm font-black text-black disabled:opacity-50">{isMutating ? "처리 중..." : pendingAction.type === "CRAFT" ? "제작" : "분해"}</button>
+                 <button type="button" disabled={isMutating} onClick={() => void executePendingAction()} className="flex-1 rounded bg-amber-400 px-4 py-3 text-sm font-black text-black disabled:opacity-50">{isMutating ? "처리 중..." : pendingAction.type === "CRAFT" || pendingAction.type === "CHAMPION_CRAFT" ? "제작" : "분해"}</button>
               </div>
             </>
           )}
@@ -401,12 +430,26 @@ function FilterSelect({ label, value, onChange, options }: { label: string; valu
   );
 }
 
-function ChampionDetail({ champion }: { champion: CollectionChampion }) {
+function ChampionDetail({
+  champion,
+  setting,
+  balance,
+  unlimited,
+  isMutating,
+  onCraft,
+}: {
+  champion: CollectionChampion;
+  setting: ChampionPrismSetting;
+  balance: number;
+  unlimited: boolean;
+  isMutating: boolean;
+  onCraft: () => void;
+}) {
   return (
     <>
       <DialogHeader>
         <DialogTitle className="text-left text-xl font-black">{champion.name}</DialogTitle>
-        <DialogDescription className="text-left text-xs text-emerald-300">해금됨 · 기본 체력 {champion.maxHealth}</DialogDescription>
+        <DialogDescription className={`text-left text-xs ${champion.owned ? "text-emerald-300" : "text-neutral-400"}`}>{champion.owned ? "해금됨" : "미보유"} · 기본 체력 {champion.maxHealth}</DialogDescription>
       </DialogHeader>
       <div className="grid gap-5 sm:grid-cols-[minmax(180px,280px)_1fr] sm:items-start">
         <div className="overflow-hidden rounded-lg border border-rose-900/70 bg-neutral-950">
@@ -426,6 +469,32 @@ function ChampionDetail({ champion }: { champion: CollectionChampion }) {
           <InfoBlock icon={<Swords className="h-4 w-4" />} label={`${champion.abilityName}${champion.abilityCost > 0 ? ` · 비용 ${champion.abilityCost} 골드` : ""}`} text={champion.abilityText || champion.description} />
           {champion.hasQuest && <InfoBlock label={champion.questName || "Quest"} text={champion.questText || "Quest 정보가 없습니다."} />}
           {champion.hasQuest && champion.questRewardText && <InfoBlock label="Quest 보상 / 강화 능력" text={`${champion.questRewardText}${champion.upgradedAbilityText ? `\n\n강화 능력: ${champion.upgradedAbilityName || ""}\n${champion.upgradedAbilityText}` : ""}`} />}
+          <section className="rounded-lg border border-rose-800/60 bg-rose-950/20 p-4">
+            <p className="text-xs font-black uppercase tracking-wider text-rose-200">챔피언 프리즘 제작</p>
+            <p className="mt-2 text-sm text-neutral-300">현재 보유량: <strong className="text-rose-200">{unlimited ? "∞" : balance.toLocaleString()}</strong> ◈</p>
+            {setting.configured ? (
+              <>
+                <p className="mt-1 text-sm text-neutral-300">제작 비용: <strong className="text-rose-200">{setting.craftCost!.toLocaleString()} 챔피언 프리즘</strong></p>
+                {champion.owned ? (
+                  <p className="mt-3 rounded border border-emerald-800/60 bg-emerald-950/30 px-3 py-2 text-xs font-bold text-emerald-300">이미 보유한 챔피언입니다.</p>
+                ) : (
+                  <>
+                    <button
+                      type="button"
+                      disabled={isMutating || (!unlimited && balance < setting.craftCost!)}
+                      onClick={onCraft}
+                      className="mt-3 flex w-full items-center justify-center gap-2 rounded bg-rose-400 px-3 py-2.5 font-black text-black disabled:cursor-not-allowed disabled:opacity-40"
+                    >
+                      <Hammer className="h-4 w-4" /> 챔피언 제작
+                    </button>
+                    {!unlimited && balance < setting.craftCost! && <p className="mt-2 text-[11px] text-red-300">챔피언 프리즘이 부족합니다.</p>}
+                  </>
+                )}
+              </>
+            ) : (
+              <p className="mt-2 text-xs leading-5 text-rose-200">관리자 챔피언 프리즘 설정이 없어 제작을 사용할 수 없습니다.</p>
+            )}
+          </section>
         </div>
       </div>
     </>
