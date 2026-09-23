@@ -1,5 +1,5 @@
 import { FormEvent, useState } from "react";
-import { ArrowRight, LockKeyhole, UserRound } from "lucide-react";
+import { ArrowRight, LockKeyhole, RefreshCw, UserRound } from "lucide-react";
 import { submitAuth, type AuthUser } from "@/lib/auth-client";
 
 export function AuthLoading() {
@@ -9,6 +9,24 @@ export function AuthLoading() {
         <p className="font-display text-xs font-bold tracking-[0.45em] text-amber-400">KO</p>
         <p className="mt-4 text-xs font-bold tracking-[0.2em] text-neutral-500">인증 상태 확인 중</p>
       </div>
+    </main>
+  );
+}
+
+export function AuthRecovery({ message, onRetry }: { message?: string; onRetry: () => void }) {
+  return (
+    <main className="ko-auth-screen flex min-h-screen items-center justify-center px-5 text-white">
+      <section className="ko-auth-card w-full max-w-[380px] text-center">
+        <p className="font-display text-xs font-bold tracking-[0.45em] text-amber-400">KO</p>
+        <h1 className="mt-5 text-xl font-black">인증 서버에 연결할 수 없습니다</h1>
+        <p className="mt-3 text-sm leading-6 text-neutral-500">
+          {message ?? "잠시 후 다시 시도해 주세요."}
+        </p>
+        <button type="button" onClick={onRetry} className="ko-auth-submit mt-7">
+          <RefreshCw className="h-4 w-4" aria-hidden="true" />
+          다시 시도
+        </button>
+      </section>
     </main>
   );
 }

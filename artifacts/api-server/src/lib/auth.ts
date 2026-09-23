@@ -7,9 +7,28 @@ import { isTestAccountUser, TEST_ACCOUNT_UNLIMITED_BALANCE } from "./test-accoun
 
 export const AUTH_SESSION_COOKIE = "ko_session";
 export const AUTH_SESSION_TTL_SECONDS = 30 * 24 * 60 * 60;
+export const AUTH_LOOKUP_TIMEOUT_MS = 5_000;
 const LOGIN_WINDOW_MS = 15 * 60 * 1000;
 const LOGIN_MAX_ATTEMPTS = 8;
 const loginAttempts = new Map<string, { count: number; resetAt: number }>();
+
+export type AuthTraceStage =
+  | "SESSION_VERIFY_START"
+  | "SESSION_VERIFY_END"
+  | "USER_LOOKUP_START"
+  | "USER_LOOKUP_END";
+
+export class AuthDependencyTimeoutError extends Error {
+  constructor(public readonly stage: "SESSION_VERIFY" | "USER_LOOKUP") {
+    super(`Authentication ${stage.toLowerCase()} timed out.`);
+    this.name = "AuthDependencyTimeoutError";
+  }
+}
+
+export type AuthLookupOptions = {
+  timeoutMs?: number;
+  onStage?: (stage: AuthTraceStage, durationMs: number) => void;
+};
 
 export type PublicUser = Pick<UserRecord, "id" | "email" | "nickname" | "role" | "currency"> & {
   currencyBalance: number;
@@ -162,22 +181,61 @@ export async function createAuthSession(userId: string, response: Response): Pro
   setSessionCookie(response, token);
 }
 
-export async function getAuthenticatedUser(request: Request): Promise<PublicUser | null> {
-  const token = getCookie(request, AUTH_SESSION_COOKIE);
-  if (!token) return null;
+export async function withAuthTimeout<T>(
+  stage: "SESSION_VERIFY" | "USER_LOOKUP",
+  operation: () => Promise<T>,
+  options: AuthLookupOptions = {},
+): Promise<T> {
+  const timeoutMs = options.timeoutMs ?? AUTH_LOOKUP_TIMEOUT_MS;
+  const startedAt = Date.now();
+  options.onStage?.(`${stage}_START`, 0);
+  let timer: ReturnType<typeof setTimeout> | undefined;
+  try {
+    return await Promise.race([
+      Promise.resolve().then(operation),
+      new Promise<T>((_, reject) => {
+        timer = setTimeout(() => reject(new AuthDependencyTimeoutError(stage)), timeoutMs);
+      }),
+    ]);
+  } finally {
+    if (timer) clearTimeout(timer);
+    options.onStage?.(`${stage}_END`, Date.now() - startedAt);
+  }
+}
 
-  const [session] = await db
-    .select({
-      userId: sessionsTable.userId,
-      expiresAt: sessionsTable.expiresAt,
-    })
-    .from(sessionsTable)
-    .where(and(eq(sessionsTable.tokenHash, hashSessionToken(token)), gt(sessionsTable.expiresAt, new Date())))
-    .limit(1);
+export async function getAuthenticatedUser(
+  request: Request,
+  options: AuthLookupOptions = {},
+): Promise<PublicUser | null> {
+  const token = getCookie(request, AUTH_SESSION_COOKIE);
+  if (!token) {
+    options.onStage?.("SESSION_VERIFY_START", 0);
+    options.onStage?.("SESSION_VERIFY_END", 0);
+    return null;
+  }
+
+  const [session] = await withAuthTimeout(
+    "SESSION_VERIFY",
+    () => db
+      .select({
+        userId: sessionsTable.userId,
+        expiresAt: sessionsTable.expiresAt,
+      })
+      .from(sessionsTable)
+      .where(and(eq(sessionsTable.tokenHash, hashSessionToken(token)), gt(sessionsTable.expiresAt, new Date())))
+      .limit(1),
+    options,
+  );
 
   if (!session) return null;
-  const [user] = await db.select().from(usersTable).where(eq(usersTable.id, session.userId)).limit(1);
-  return user ? await getPublicUser(user) : null;
+  return withAuthTimeout(
+    "USER_LOOKUP",
+    async () => {
+      const [user] = await db.select().from(usersTable).where(eq(usersTable.id, session.userId)).limit(1);
+      return user ? await getPublicUser(user) : null;
+    },
+    options,
+  );
 }
 
 export async function getAuthenticatedUserFromSessionToken(token: string): Promise<PublicUser | null> {

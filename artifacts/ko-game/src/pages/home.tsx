@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { useLocation } from 'wouter';
 
 import {
@@ -35,7 +35,7 @@ import {
 import { GameStatePreview } from '@/components/game-state-preview';
 import { MatchResultOverlay } from '@/components/match-result-overlay';
 import { MainMenu } from '@/components/main-menu';
-import { AuthLoading, AuthPage } from '@/components/auth-page';
+import { AuthLoading, AuthPage, AuthRecovery } from '@/components/auth-page';
 import { fetchCurrentUser, logout, type AuthUser } from '@/lib/auth-client';
 import { audioManager } from '@/audio/audio-manager';
 import { fetchDecks, type Deck } from '@/lib/decks-client';
@@ -134,8 +134,10 @@ export default function Home() {
   const testChampionId = searchParams.get('testChampionId');
   const isAdminSource = searchParams.get('source') === 'admin';
   const [isAdminTestMatch, setIsAdminTestMatch] = useState(isAdminSource);
-  const [authStatus, setAuthStatus] = useState<'loading' | 'authenticated' | 'unauthenticated'>('loading');
+  const [authStatus, setAuthStatus] = useState<'loading' | 'authenticated' | 'unauthenticated' | 'error'>('loading');
   const [authUser, setAuthUser] = useState<AuthUser | null>(null);
+  const [authError, setAuthError] = useState<string | null>(null);
+  const authRequestGeneration = useRef(0);
   const [mediaCatalog, setMediaCatalog] = useState<GameMediaCatalog>(emptyGameMediaCatalog);
   const [gameState, setGameState] = useState<GameState>(() =>
     startGame(createInitialGameState()),
@@ -229,24 +231,30 @@ export default function Home() {
     audioManager.stop();
   }, [matchResultVisible]);
 
-  useEffect(() => {
-    let cancelled = false;
+  const checkAuthentication = useCallback(() => {
+    const generation = ++authRequestGeneration.current;
+    setAuthStatus('loading');
+    setAuthError(null);
     fetchCurrentUser()
       .then((result) => {
-        if (cancelled) return;
+        if (generation !== authRequestGeneration.current) return;
         setAuthUser(result.authenticated ? result.user : null);
         setAuthStatus(result.authenticated && result.user ? 'authenticated' : 'unauthenticated');
       })
-      .catch(() => {
-        if (!cancelled) {
-          setAuthUser(null);
-          setAuthStatus('unauthenticated');
-        }
+      .catch((error) => {
+        if (generation !== authRequestGeneration.current) return;
+        setAuthUser(null);
+        setAuthError(error instanceof Error ? error.message : '인증 상태를 확인하지 못했습니다.');
+        setAuthStatus('error');
       });
-    return () => {
-      cancelled = true;
-    };
   }, []);
+
+  useEffect(() => {
+    checkAuthentication();
+    return () => {
+      authRequestGeneration.current += 1;
+    };
+  }, [checkAuthentication]);
 
   useEffect(() => {
     let cancelled = false;
@@ -1032,11 +1040,16 @@ export default function Home() {
     return <AuthLoading />;
   }
 
+  if (authStatus === 'error') {
+    return <AuthRecovery message={authError ?? undefined} onRetry={checkAuthentication} />;
+  }
+
   if (authStatus === 'unauthenticated') {
     return (
       <AuthPage
         onAuthenticated={(user) => {
           setAuthUser(user);
+          setAuthError(null);
           setAuthStatus('authenticated');
         }}
       />

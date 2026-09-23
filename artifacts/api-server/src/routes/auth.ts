@@ -3,6 +3,9 @@ import { Router } from "express";
 import { eq, or } from "drizzle-orm";
 import { db, usersTable } from "@workspace/db";
 import {
+  AUTH_LOOKUP_TIMEOUT_MS,
+  AuthDependencyTimeoutError,
+  type AuthTraceStage,
   clearLoginRateLimit,
   clearSessionCookie,
   createAuthSession,
@@ -19,8 +22,10 @@ import {
   recordFailedLogin,
   verifyPassword,
   getPublicUser,
+  withAuthTimeout,
 } from "../lib/auth";
 import { ensureStarterCollection } from "../lib/collection";
+import { logger } from "../lib/logger";
 
 const router = Router();
 const STARTING_CURRENCY = Math.max(0, Number.parseInt(process.env["STARTING_CURRENCY"] ?? "1000", 10) || 1000);
@@ -125,13 +130,43 @@ router.post("/logout", async (request, response) => {
 });
 
 router.get("/me", async (request, response) => {
-  const user = await getAuthenticatedUser(request);
-  if (!user) {
-    response.json({ authenticated: false, user: null });
-    return;
+  const requestStartedAt = Date.now();
+  const trace = (stage: AuthTraceStage | "REQUEST_RECEIVED" | "AUTH_MIDDLEWARE_ENTER" | "AUTH_MIDDLEWARE_EXIT" | "RESPONSE_SENT", durationMs = Date.now() - requestStartedAt) => {
+    logger.info({ authStage: stage, durationMs }, `auth/me ${stage}`);
+  };
+  trace("REQUEST_RECEIVED", 0);
+  trace("AUTH_MIDDLEWARE_ENTER", 0);
+  try {
+    const user = await getAuthenticatedUser(request, {
+      timeoutMs: AUTH_LOOKUP_TIMEOUT_MS,
+      onStage: trace,
+    });
+    trace("AUTH_MIDDLEWARE_EXIT");
+    if (!user) {
+      response.json({ authenticated: false, user: null });
+      trace("RESPONSE_SENT");
+      return;
+    }
+    await withAuthTimeout(
+      "USER_LOOKUP",
+      () => ensureStarterCollection(user.id),
+      { timeoutMs: AUTH_LOOKUP_TIMEOUT_MS, onStage: trace },
+    );
+    response.json({ authenticated: true, user });
+    trace("RESPONSE_SENT");
+  } catch (error) {
+    trace("AUTH_MIDDLEWARE_EXIT");
+    if (error instanceof AuthDependencyTimeoutError) {
+      if (response.headersSent) return;
+      response.status(503).json({ message: "인증 서버에 연결할 수 없습니다. 잠시 후 다시 시도해 주세요." });
+      trace("RESPONSE_SENT");
+      return;
+    }
+    logger.error({ err: error, durationMs: Date.now() - requestStartedAt }, "auth/me failed");
+    if (response.headersSent) return;
+    response.status(500).json({ message: "인증 상태를 확인하지 못했습니다." });
+    trace("RESPONSE_SENT");
   }
-  await ensureStarterCollection(user.id);
-  response.json({ authenticated: true, user });
 });
 
 export default router;

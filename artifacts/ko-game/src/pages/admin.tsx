@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { Bot, CalendarCheck2, Frame, Gamepad2, Image, ListChecks, LogOut, Megaphone, Music2, Package, ShieldCheck, ShoppingBag, Sparkles, Spade } from "lucide-react";
 import { useLocation } from "wouter";
 import { AdminCardManager } from "@/components/admin-card-manager";
@@ -13,36 +13,42 @@ import { AdminAIDeckManager } from "@/components/admin-ai-deck-manager";
 import { AdminRewardsManager } from "@/components/admin-rewards-manager";
 import { AdminNoticesManager } from "@/components/admin-notices-manager";
 import { fetchCurrentUser, logout } from "@/lib/auth-client";
+import { AuthRecovery } from "@/components/auth-page";
 import { ROUTES } from "@/lib/routes";
 
-type AdminStatus = "checking" | "forbidden" | "authenticated";
+type AdminStatus = "checking" | "forbidden" | "error" | "authenticated";
 
 export default function Admin() {
   const [location, navigate] = useLocation();
   const [status, setStatus] = useState<AdminStatus>("checking");
+  const [authError, setAuthError] = useState<string | null>(null);
+  const authRequestGeneration = useRef(0);
   const [section, setSection] = useState<"cards" | "champions" | "packs" | "skins" | "frames" | "shop" | "prism" | "media" | "notices" | "test" | "ai-decks" | "rewards">(
     location.endsWith("/packs") ? "packs" : location.endsWith("/shop") ? "shop" : location.endsWith("/prism") ? "prism" : location.endsWith("/skins") ? "skins" : location.endsWith("/card-frames") ? "frames" : location.endsWith("/ai-decks") ? "ai-decks" : location.endsWith("/rewards") ? "rewards" : location.endsWith("/notices") ? "notices" : "cards",
   );
 
-  useEffect(() => {
-    let cancelled = false;
-
+  const checkAuthentication = useCallback(() => {
+    const generation = ++authRequestGeneration.current;
+    setStatus("checking");
+    setAuthError(null);
     fetchCurrentUser()
       .then((result) => {
-        if (!cancelled) {
-          setStatus(result.authenticated && result.user?.role === "ADMIN" ? "authenticated" : "forbidden");
-        }
+        if (generation !== authRequestGeneration.current) return;
+        setStatus(result.authenticated && result.user?.role === "ADMIN" ? "authenticated" : "forbidden");
       })
-      .catch(() => {
-        if (!cancelled) {
-          setStatus("forbidden");
-        }
+      .catch((error) => {
+        if (generation !== authRequestGeneration.current) return;
+        setAuthError(error instanceof Error ? error.message : "인증 상태를 확인하지 못했습니다.");
+        setStatus("error");
       });
-
-    return () => {
-      cancelled = true;
-    };
   }, []);
+
+  useEffect(() => {
+    checkAuthentication();
+    return () => {
+      authRequestGeneration.current += 1;
+    };
+  }, [checkAuthentication]);
 
   async function handleLogout() {
     await logout();
@@ -54,6 +60,15 @@ export default function Admin() {
       <main className="flex min-h-screen items-center justify-center bg-neutral-950 text-sm text-neutral-500">
         관리자 세션 확인 중...
       </main>
+    );
+  }
+
+  if (status === "error") {
+    return (
+      <AuthRecovery
+        message={authError ?? undefined}
+        onRetry={checkAuthentication}
+      />
     );
   }
 

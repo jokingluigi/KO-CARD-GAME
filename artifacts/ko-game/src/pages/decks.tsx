@@ -1,7 +1,7 @@
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { AlertTriangle, ArrowLeft, Check, CirclePlus, Minus, Plus, RefreshCw, Search, Shield, Trash2 } from "lucide-react";
 import { Link } from "wouter";
-import { AuthPage, AuthLoading } from "@/components/auth-page";
+import { AuthPage, AuthLoading, AuthRecovery } from "@/components/auth-page";
 import { AltInspectProvider, Inspectable } from "@/components/alt-inspector";
 import { CardRenderer } from "@/components/card-renderer";
 import { CardArtwork } from "@/components/card-artwork";
@@ -29,7 +29,7 @@ import {
 import { cardTypeLabel, deckValidityLabel, normalizeCardRulesText } from "@/lib/display-labels";
 import { DECK_SIZE, MAX_LEGENDARY_CARDS, validateDeckCounts } from "@workspace/game-engine";
 
-type AuthStatus = "checking" | "authenticated" | "unauthenticated";
+type AuthStatus = "checking" | "authenticated" | "unauthenticated" | "error";
 type CardFilter = "ALL" | "WRESTLER" | "TECHNIQUE";
 
 const EMPTY_DECK_NAME = "새로운 전략";
@@ -234,6 +234,8 @@ function DeckSkeleton() {
 export default function Decks() {
   const [authStatus, setAuthStatus] = useState<AuthStatus>("checking");
   const [authUser, setAuthUser] = useState<AuthUser | null>(null);
+  const [authError, setAuthError] = useState<string | null>(null);
+  const authRequestGeneration = useRef(0);
   const [decks, setDecks] = useState<Deck[]>([]);
   const [options, setOptions] = useState<DeckOptions>({
     cards: [],
@@ -252,11 +254,13 @@ export default function Decks() {
   const [championPickerOpen, setChampionPickerOpen] = useState(false);
   const [detailCard, setDetailCard] = useState<DeckCard | null>(null);
 
-  useEffect(() => {
-    let cancelled = false;
+  const checkAuthentication = useCallback(() => {
+    const generation = ++authRequestGeneration.current;
+    setAuthStatus("checking");
+    setAuthError(null);
     fetchCurrentUser()
       .then((result) => {
-        if (cancelled) return;
+        if (generation !== authRequestGeneration.current) return;
         if (result.authenticated && result.user) {
           setAuthUser(result.user);
           setAuthStatus("authenticated");
@@ -265,16 +269,20 @@ export default function Decks() {
           setIsLoading(false);
         }
       })
-      .catch(() => {
-        if (!cancelled) {
-          setAuthStatus("unauthenticated");
-          setIsLoading(false);
-        }
+      .catch((error) => {
+        if (generation !== authRequestGeneration.current) return;
+        setAuthError(error instanceof Error ? error.message : "인증 상태를 확인하지 못했습니다.");
+        setAuthStatus("error");
+        setIsLoading(false);
       });
-    return () => {
-      cancelled = true;
-    };
   }, []);
+
+  useEffect(() => {
+    checkAuthentication();
+    return () => {
+      authRequestGeneration.current += 1;
+    };
+  }, [checkAuthentication]);
 
   function openDeck(deck: Deck) {
     setEditingId(deck.id);
@@ -523,11 +531,15 @@ export default function Decks() {
   }
 
   if (authStatus === "checking") return <AuthLoading />;
+  if (authStatus === "error") {
+    return <AuthRecovery message={authError ?? undefined} onRetry={checkAuthentication} />;
+  }
   if (authStatus === "unauthenticated") {
     return (
       <AuthPage
         onAuthenticated={(user) => {
           setAuthUser(user);
+          setAuthError(null);
           setAuthStatus("authenticated");
         }}
       />

@@ -14,7 +14,19 @@ export type AuthResponse = {
   user: AuthUser | null;
 };
 
-const authApiBase = `${import.meta.env.BASE_URL.replace(/\/$/, "")}/api/auth`;
+const authBasePath = (import.meta.env?.BASE_URL ?? "/").replace(/\/$/, "");
+const authApiBase = `${authBasePath}/api/auth`;
+export const AUTH_REQUEST_TIMEOUT_MS = 8_000;
+
+export class AuthRequestError extends Error {
+  constructor(
+    message: string,
+    public readonly status?: number,
+  ) {
+    super(message);
+    this.name = "AuthRequestError";
+  }
+}
 
 async function readResponseMessage(response: Response, fallback: string): Promise<string> {
   try {
@@ -25,10 +37,33 @@ async function readResponseMessage(response: Response, fallback: string): Promis
   }
 }
 
-export async function fetchCurrentUser(): Promise<AuthResponse> {
-  const response = await fetch(`${authApiBase}/me`, { credentials: "include" });
-  if (!response.ok) throw new Error("인증 상태를 확인하지 못했습니다.");
-  return (await response.json()) as AuthResponse;
+export async function fetchCurrentUser(options: { timeoutMs?: number } = {}): Promise<AuthResponse> {
+  const timeoutMs = options.timeoutMs ?? AUTH_REQUEST_TIMEOUT_MS;
+  const controller = new AbortController();
+  const timer = globalThis.setTimeout(() => controller.abort(), timeoutMs);
+  try {
+    let response: Response;
+    try {
+      response = await fetch(`${authApiBase}/me`, {
+        credentials: "include",
+        signal: controller.signal,
+      });
+    } catch (error) {
+      if (controller.signal.aborted) {
+        throw new AuthRequestError("인증 서버에 연결할 수 없습니다.");
+      }
+      throw new AuthRequestError("인증 상태를 확인하지 못했습니다.");
+    }
+    if (!response.ok) {
+      throw new AuthRequestError(
+        await readResponseMessage(response, "인증 상태를 확인하지 못했습니다."),
+        response.status,
+      );
+    }
+    return (await response.json()) as AuthResponse;
+  } finally {
+    globalThis.clearTimeout(timer);
+  }
 }
 
 export async function logout(): Promise<void> {
