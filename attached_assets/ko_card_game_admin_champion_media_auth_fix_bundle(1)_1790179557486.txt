@@ -1,0 +1,378 @@
+KO CARD GAME — ADMIN / AUTH FIX BUNDLE
+CHAMPION SAVE VALIDATION + TITLE/IN-GAME MEDIA SPLIT + AUTH SERVER CONNECTION ERROR
+
+이번 작업에서는 아래 3개만 처리한다.
+1) Admin Champion 저장 시 "챔피언 입력값을 확인해주세요"로 저장 실패
+2) 배경 이미지/음악을 Title과 In-Game에 각각 독립 지정
+3) "인증서버에 연결 할 수 없습니다" 오류의 실제 원인 추적 및 복구
+
+각 항목은 재현 → root cause → 최소 수정 → 자동 테스트 → 브라우저 검증 순서로 진행.
+관련 없는 카드 효과/밸런스/AI/Online gameplay는 건드리지 마.
+
+==================================================
+A. CHAMPION SAVE VALIDATION
+==================================================
+
+현상:
+Admin에서 Champion create/update 후 Save 시 정상 입력처럼 보여도
+"챔피언 입력값을 확인해주세요"가 뜨며 저장 실패.
+
+목표:
+- 실제 실패 field/schema 확인
+- 정상 create/update 저장 성공
+- invalid payload는 계속 거부
+- 가능하면 generic error 대신 field-level reason 표시
+
+반드시 확인:
+- frontend form state
+- 실제 submit payload
+- endpoint/method
+- HTTP status/response
+- schema validation issue path
+- server log
+- create/update schema 차이
+- draft/published 차이
+- required/optional, null/empty string
+- maxHealth/abilityCost number-vs-string
+- Champion Token relation
+- Quest Condition/Reward
+- Upgraded Ability
+- structured effect wrapper
+- status/version
+- Champion Prism/crafting 신규 field
+- hidden stale field
+- undefined/empty array/null serialization
+- legacy Champion compatibility
+
+금지:
+- validation 제거
+- passthrough로 문제 숨기기
+- invalid field 조용히 삭제
+- try/catch로 강제 저장
+- invalid Champion 저장
+- API error를 200으로 위장
+
+에러 UX:
+가능하면 "최대 체력", "Champion Token 연결", "Quest Condition" 등 실제 잘못된 필드를 표시.
+raw stack/DB/secret/SQL 노출 금지.
+
+테스트:
+C1 정상 신규 Champion create → PASS
+C2 기존 Champion update → PASS
+C3 Quest 없는 Champion(공식 허용 시) → PASS
+C4 Quest 포함 Champion → PASS
+C5 Champion Token relation 포함 → PASS
+C6 invalid maxHealth/type → 정확히 거부
+C7 invalid structured effect → 거부
+C8 저장 후 reload → 값 유지
+
+==================================================
+B. TITLE / IN-GAME BACKGROUND & MUSIC SPLIT
+==================================================
+
+현재:
+배경 이미지와 음악이 Title/In-Game에서 하나의 설정을 공유.
+
+요구:
+아래 4개를 완전히 독립 설정으로 분리.
+- Title Background Image
+- In-Game Background Image
+- Title Music
+- In-Game Music
+
+중요:
+Admin UI만 분리하고 DB/API가 하나면 FAIL.
+Admin form → API → persistent config → frontend consumer 전체가 분리되어야 함.
+
+기존 settings/theme/media architecture를 먼저 조사하고 확장.
+대형 새 시스템 만들지 마.
+
+예시 field:
+titleBackgroundImage
+inGameBackgroundImage
+titleMusic
+inGameMusic
+(실제 이름은 프로젝트 convention에 맞춤)
+
+적용 범위:
+- Title Background/Music: Main/Title scope만
+- In-Game Background/Music: AI Match + Online Match 공통 Match scope
+- Title 설정이 Match에 새지 않음
+- In-Game 설정이 Main에 새지 않음
+
+중요 — 기존 인게임 음악 우선순위 유지:
+Legendary Entrance
+>
+나중에 완료된 Champion Quest music
+>
+먼저 완료된 Champion Quest music
+>
+Normal In-Game BGM
+
+새 inGameMusic은 오직 최하위 NORMAL_MATCH_BGM 역할.
+
+Legendary 규칙 회귀 금지:
+현재 persistent track PAUSE
+→ currentTime 보존
+→ Legendary 약 7초
+→ 마지막 fade-out
+→ 동일 persistent track이 여전히 최고 priority면 멈춘 위치부터 RESUME
+→ Legendary 중 더 높은 Quest music이 생겼다면 새 최고 priority music 선택
+
+legacy config가 한 필드만 갖고 있으면 안전한 fallback 설계.
+Production DB 파괴적 migration 금지.
+필요 시 migration file만 준비하고 보고.
+
+Admin UI:
+TITLE 섹션
+- 배경 이미지
+- 음악
+IN-GAME 섹션
+- 배경 이미지
+- 음악
+
+한쪽 변경이 다른 쪽 값을 덮어쓰면 FAIL.
+
+테스트:
+M1 Title BG=A, In-Game BG=B → 각각 해당 scope에 적용
+M2 Title Music=X, In-Game Music=Y → 각각 해당 scope에 적용
+M3 Title만 변경 → In-Game 유지
+M4 In-Game만 변경 → Title 유지
+M5 reload 후 4개 값 유지
+M6 Quest music > In-Game BGM 유지
+M7 Legendary pause/resume/fade 유지
+
+==================================================
+C. "인증서버에 연결 할 수 없습니다"
+==================================================
+
+이 문구를 띄우는 정확한 code path부터 찾는다.
+
+확인:
+- frontend auth client
+- /api/auth/me
+- login/session verification
+- user/profile lookup
+- timeout handler
+- network error mapper
+- Render frontend rewrite
+- Node API health
+- CORS/credentials
+- cookie/session
+- env/API URL
+- SPA catchall이 /api/auth/me를 먹는지
+
+실제 브라우저 network trace에서:
+- 요청 URL/method
+- status
+- response body
+- duration
+- CORS
+- credentials
+- cookie
+- redirect
+- timeout
+- failed fetch / 401 / 502 / 503 구분
+
+UI 문구만 보고 auth server가 죽었다고 단정 금지.
+timeout 숫자만 늘리고 끝내지 마.
+
+현재 Production architecture:
+Frontend: https://ko-card-game-vr69.onrender.com
+Node API/WebSocket: https://ko-card-game.onrender.com
+Frontend authenticated API는 기존 공식 구조대로 relative /api/... 사용.
+Static /api/* rewrite는 SPA catchall보다 먼저.
+
+반드시 확인:
+- /api/auth/me가 HTML SPA를 반환하지 않는지
+- rewrite order
+- credentials/cookie
+- build/runtime env mismatch
+- API host/protocol
+
+기존 auth recovery 기능 회귀 금지:
+- server-side dependency timeout
+- controlled 503 JSON
+- session cookie 보존
+- frontend timeout/retry UI
+- stale auth request generation protection
+
+auth 상태 테스트:
+AUTH1 logged-out /api/auth/me → 정상 unauthenticated response, connection error 오탐 없음
+AUTH2 valid session → user/profile 200
+AUTH3 expired/invalid session → auth error로 처리, network error로 오인 금지
+AUTH4 actual 503 → recovery UI, cookie 강제 삭제 금지
+AUTH5 retry 후 정상 복구
+AUTH6 stale old request가 최신 retry 결과 덮어쓰기 금지
+AUTH7 Admin bootstrap 정상
+AUTH8 Champion Save 요청이 auth를 통과해 실제 Admin API까지 도달
+
+중요:
+Champion Save 실패와 auth failure가 연결돼 있을 수도 있으므로 request chain을 같이 본다.
+예: save 직전 auth bootstrap 실패가 Champion validation error로 잘못 매핑되는지 확인.
+서로 독립 문제라면 각 root cause를 따로 보고.
+
+==================================================
+D. 금지
+==================================================
+
+- Production DB 직접 수정
+- 실제 사용자 데이터/계정 변경
+- auth bypass
+- Admin 권한 우회
+- session cookie 무조건 삭제
+- API URL 하드코딩
+- validation 전체 비활성화
+- WebSocket 구조 변경
+- 카드/Champion gameplay 변경
+- Quest logic 변경
+- AI scheduler 변경
+- Pack/Reward 변경
+
+==================================================
+E. BROWSER VERIFICATION
+==================================================
+
+가능하면 Development/Test에서 실제 확인:
+
+1. 로그인/세션 정상
+2. Admin 진입 정상
+3. Champion 수정 Save 성공
+4. Champion 신규 생성 Save 성공
+5. Title BG/Music, In-Game BG/Music 서로 다른 값 저장
+6. Main에서 Title 설정만 적용
+7. AI Match에서 In-Game 설정 적용
+8. 가능하면 Online Match도 동일 In-Game 설정 적용
+9. Quest complete → Quest music이 In-Game BGM보다 우선
+10. Legendary → persistent music pause → 7초 → fade → same position resume
+
+브라우저 불가면 구현/자동검증은 계속하고 Browser Verification만 UNVERIFIED.
+
+==================================================
+F. 자동 테스트
+==================================================
+
+Champion:
+- valid create/update
+- invalid payload rejection
+- quest/no-quest
+- Champion Token relation
+- persistence
+
+Media:
+- 4 independent values
+- partial update isolation
+- legacy fallback
+- Title consumer
+- Match consumer
+- Quest priority regression
+- Legendary pause/resume regression
+
+Auth:
+- unauthenticated
+- authenticated /api/auth/me
+- invalid session
+- timeout/503 recovery
+- retry
+- stale request protection
+- Admin bootstrap
+- Champion Save reaches API
+
+==================================================
+G. 검증
+==================================================
+
+반드시:
+pnpm run typecheck
+pnpm --filter @workspace/ko-game run build
+git diff --check
+
+API/shared 변경 시:
+API typecheck
+API build
+관련 API tests
+
+schema 변경 시 migration validation.
+
+==================================================
+H. Git
+==================================================
+
+이번 작업 파일만 stage.
+제외:
+Pasted-*.txt, .env, secrets, logs, screenshots, temp, Replit metadata, unrelated changes.
+
+검증 후 commit.
+force push 금지.
+별도 요청 없으면 push하지 마.
+
+==================================================
+I. 최종 보고
+==================================================
+
+CHAMPION SAVE
+REPRODUCED:
+ROOT CAUSE:
+VALID CREATE:
+VALID UPDATE:
+INVALID REJECTION:
+FIELD ERROR UX:
+PERSISTENCE:
+
+TITLE / IN-GAME MEDIA
+ROOT CAUSE:
+TITLE BG:
+IN-GAME BG:
+TITLE MUSIC:
+IN-GAME MUSIC:
+PARTIAL UPDATE ISOLATION:
+LEGACY FALLBACK:
+QUEST PRIORITY REGRESSION:
+LEGENDARY PAUSE/RESUME REGRESSION:
+
+AUTH
+REPRODUCED:
+ERROR SOURCE:
+FAILED REQUEST:
+ROOT CAUSE:
+UNAUTH PATH:
+AUTH /api/auth/me:
+INVALID SESSION:
+503/TIMEOUT RECOVERY:
+RETRY:
+STALE REQUEST PROTECTION:
+ADMIN BOOTSTRAP:
+CHAMPION SAVE AUTH PATH:
+
+IMPLEMENTATION:
+AUTOMATED VERIFICATION:
+BROWSER VERIFICATION:
+TYPECHECK:
+KO BUILD:
+API TYPECHECK:
+API BUILD:
+git diff --check:
+DB MIGRATION:
+PRODUCTION DATA MUTATION:
+CHANGED FILES:
+COMMIT:
+PUSH: NOT REQUESTED
+
+==================================================
+완료 조건
+==================================================
+
+1. 정상 Champion create/update 저장 성공.
+2. invalid Champion은 안전하게 거부.
+3. Champion generic validation error의 실제 원인 추적 가능.
+4. Title/In-Game background 완전 분리.
+5. Title/In-Game music 완전 분리.
+6. 한쪽 수정이 다른 쪽을 덮어쓰지 않음.
+7. In-Game music은 기존 음악 우선순위의 최하위 BGM.
+8. Quest/Legendary priority 및 pause/resume semantics 회귀 없음.
+9. "인증서버에 연결 할 수 없습니다"의 실제 원인 해결.
+10. auth error 종류를 잘못 뭉개지 않음.
+11. Admin bootstrap 및 Champion Save 인증 정상.
+12. Production DB/실사용자 데이터 직접 수정 없음.
+
+이 3개만 해결하고 멈춰라.
