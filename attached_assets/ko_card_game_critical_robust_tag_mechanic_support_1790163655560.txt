@@ -1,0 +1,974 @@
+KO CARD GAME — CRITICAL FEATURE
+ROBUST CARD TAG SUPPORT FOR AI MECHANIC COMPILER
+
+이 작업은 중요도가 매우 높다.
+
+단순히 "좀비 태그" 한두 문장을 통과시키는 수준으로 끝내지 말고,
+앞으로 카드 효과를 자연어로 작성할 때 `cards.tags`가
+OWNER / ZONE / TYPE / COST / STAT / COUNT / PLAYER_CHOICE /
+RANDOM / SORT / REVIVE / BUFF / DAMAGE / HEAL / IF 등
+기존 매커니즘 전체와 안정적으로 조합될 수 있도록 구현한다.
+
+목표:
+"태그가 있는 카드"라는 개념이 AI Mechanic Compiler의 정식 1급 조건(first-class filter)이 되는 것.
+
+==================================================
+0. SOURCE OF TRUTH
+==================================================
+
+"태그"는 반드시 CardDefinition의 canonical metadata:
+
+cards.tags
+
+를 뜻한다.
+
+예:
+tags = ["좀비", "언데드"]
+
+다음과 절대 혼동하지 마:
+
+- keywords
+- status
+- card name
+- description
+- flavor text
+- rarity
+- old combo-tag mechanic
+- Champion Token marker
+
+예:
+
+tags = ["좀비"]
+keywords = ["TAUNT"]
+
+"좀비 태그" → MATCH
+"TAUNT 태그" → NO MATCH
+
+카드 이름이 "좀비왕"이어도
+tags에 "좀비"가 없으면 좀비 태그 카드가 아니다.
+
+==================================================
+1. TAG FILTER를 FIRST-CLASS FILTER로 구현
+==================================================
+
+태그 조건을 특정 카드용 special case로 만들지 마.
+
+기존 SELECT/FILTER pipeline에 정식 predicate로 통합한다.
+
+지원 최소 의미:
+
+- TAG_INCLUDES
+- TAG_EXCLUDES
+- TAG_ANY
+- TAG_ALL
+
+실제 enum/schema naming은 현재 effect-registry convention을 따른다.
+
+가능하면 기존 generic FILTER AST 안에서:
+
+field: tags
+operator: ...
+value / values: ...
+
+형태로 통일한다.
+
+Provider prompt,
+JSON schema,
+validator,
+canonicalizer,
+mechanic plan,
+runtime types,
+runtime evaluator,
+tests
+
+모두 같은 canonical contract를 사용해야 한다.
+
+==================================================
+2. 자연어 표현 폭넓게 지원
+==================================================
+
+다음 문장들은 모두 해석 가능해야 한다.
+
+- "좀비 태그가 있는 카드"
+- "좀비 태그 카드"
+- "좀비인 선수"
+- "좀비 속성을 가진 선수"
+- "좀비 태그를 가진 아군 선수"
+- "내 필드의 좀비 태그 선수"
+- "내 손의 좀비 태그 카드"
+- "내 묘지의 좀비 태그 선수"
+- "상대 필드의 마족 태그 선수"
+- "상대 손의 마족 태그 카드"
+- "좀비 태그가 없는 카드"
+- "좀비 또는 언데드 태그가 있는 카드"
+- "좀비/언데드 중 하나의 태그를 가진 카드"
+- "좀비와 언데드 태그를 모두 가진 카드"
+- "좀비면서 언데드 태그를 가진 카드"
+
+주의:
+"좀비같은 카드", "악마 느낌의 카드"처럼 실제 canonical tag를 특정할 수 없는 표현은 임의 추측 금지.
+필요하면 clarification.
+
+==================================================
+3. SINGLE / ANY / ALL / EXCLUDE
+==================================================
+
+SINGLE:
+"좀비 태그가 있는 카드"
+→ tags contains "좀비"
+
+EXCLUDE:
+"좀비 태그가 없는 카드"
+→ tags does not contain "좀비"
+
+ANY:
+"좀비 또는 언데드 태그가 있는 카드"
+→ tags contains ANY of ["좀비", "언데드"]
+
+ALL:
+"좀비와 언데드 태그를 모두 가진 카드"
+→ tags contains ALL of ["좀비", "언데드"]
+
+==================================================
+4. OWNER / ZONE / TYPE과 조합
+==================================================
+
+지원:
+
+OWNER:
+내 / 아군 / 상대 / 적
+
+ZONE:
+FIELD / HAND / GRAVEYARD / DECK
+
+TYPE:
+WRESTLER 등 기존 card type
+
+예:
+
+"내 묘지의 좀비 태그 선수"
+→ SELF + GRAVEYARD + WRESTLER + TAG zombie
+
+"상대 손의 마족 태그 카드"
+→ ENEMY + HAND + TAG demon
+
+태그 때문에 owner/zone/type 조건이 사라지거나 뒤바뀌면 안 된다.
+
+==================================================
+5. COST / STAT 조건과 조합
+==================================================
+
+예:
+
+"내 묘지의 좀비 태그 선수 중 비용 3 이하"
+→ SELF + GRAVEYARD + WRESTLER + TAG zombie + COST <= 3
+
+"공격력이 가장 높은 좀비 태그 선수"
+→ TAG zombie → SORT ATTACK DESC → TAKE 1
+
+"체력이 5 이상인 마족 태그 선수"
+→ TAG demon + HEALTH >= 5
+
+태그 filter가 들어가도 기존 filter/sort/take chain이 깨지면 안 된다.
+
+==================================================
+6. COUNT / AGGREGATE와 조합
+==================================================
+
+매우 중요.
+
+"내 필드에 좀비 태그 선수가 3장 이상 있으면 자신에게 +3/+3"
+
+정확한 의미:
+
+SELECT SELF FIELD WRESTLER
+FILTER TAG zombie
+AGGREGATE COUNT
+IF count >= 3
+BUFF SELF +3/+3
+
+반드시 tag filter 이후 COUNT.
+
+전체 FIELD 수를 먼저 세고 태그를 나중에 적용하면 FAIL.
+
+==================================================
+7. PLAYER_CHOICE와 조합
+==================================================
+
+"좀비 태그가 있는 아군 선수 하나를 선택해 +2/+2"
+
+정확한 target pool:
+
+SELF
+FIELD
+WRESTLER
+TAG zombie
+
+non-zombie는 선택지에 나오면 안 된다.
+
+0 valid target이면 기존 공식 no-target 규칙 유지.
+
+특히 ON_ENTER라면:
+
+- 카드 FIELD 진입 성공
+- Gold 소비 유지
+- PLAYER_CHOICE 미생성
+- effect no-op
+- stale pending 없음
+
+==================================================
+8. RANDOM / SORT / TAKE 순서
+==================================================
+
+예:
+
+"내 묘지의 좀비 태그 선수 중 하나를 무작위로 부활"
+
+→ 먼저 tag filter
+→ 그 결과 안에서 deterministic RANDOM
+→ TAKE
+→ REVIVE
+
+절대 전체 묘지에서 random을 뽑고 나중에 tag를 검사하지 마.
+
+RNG는 기존 deterministic RNG 사용.
+Math.random 금지.
+
+==================================================
+9. REVIVE / BUFF / DAMAGE / HEAL과 조합
+==================================================
+
+REVIVE:
+"내 묘지의 좀비 태그 선수 중 비용 3 이하 하나를 부활"
+
+BUFF:
+"내 필드의 좀비 태그 선수 모두 공격력 +1"
+
+DAMAGE:
+"상대 필드의 마족 태그 선수 모두에게 피해 2"
+
+HEAL:
+"아군 천사 태그 선수 모두 체력 +2"
+
+모두 tags filter 결과만 실제 target이어야 한다.
+
+==================================================
+10. HAND / DECK + HIDDEN INFO
+==================================================
+
+태그 filter는 HAND에서도 작동해야 한다.
+
+예:
+"내 손의 좀비 태그 카드 모두 +1 공격력"
+
+상대 HAND/DECK도 canonical engine 내부 effect가 요구하면 필터링 가능.
+
+단 상대 hidden zone의:
+
+- card identity
+- CardInstance ID
+- tags
+- generated identity
+
+를 client payload에 노출하지 마.
+
+hidden-hand/deck sanitizer regression 필수.
+
+==================================================
+11. GENERATED / TOKEN
+==================================================
+
+Generated Card / Token도 해당 CardDefinition.tags를 가진다면 동일한 tag filter semantics를 사용.
+
+단:
+
+tags에 "좀비"가 있음 ≠ 자동 Zombie Token
+Champion Token ≠ tag
+ordinary SUMMON context ≠ tag
+
+각 개념을 분리.
+
+==================================================
+12. TAG 값은 정의 기반
+==================================================
+
+runtime에서 다음 추론 금지:
+
+if name contains "좀비"
+if description contains "좀비"
+if effect summons zombie
+if flavor says undead
+
+오직 authoritative CardDefinition.tags.
+
+==================================================
+13. TAG NORMALIZATION
+==================================================
+
+현재 프로젝트에 tag normalize helper가 있으면 재사용.
+없다면 storage convention부터 확인.
+
+임의 fuzzy matching 금지.
+
+예:
+"좀비" vs "좀비족"
+이 별개의 canonical tag라면 별개.
+
+자연어의 "좀비 태그"에서 접미사 "태그"를 제거해 canonical value를 찾는 것은 가능.
+
+==================================================
+14. AVAILABLE TAG VOCABULARY
+==================================================
+
+가능하면 Provider에게 현재 사용 가능한 canonical tag vocabulary를 안전한 context로 제공.
+
+예:
+availableTags = ["좀비", "마족", "천사", ...]
+
+목적:
+- 오타 감소
+- 존재하지 않는 tag hallucination 감소
+- 실제 게임 tag와 정확히 일치
+
+전체 CardDefinition이나 hidden user data를 불필요하게 provider에 보내지 마.
+
+존재하지 않는 tag는 임의 생성하지 않는다.
+VALIDATION_ERROR 또는 NEEDS_CLARIFICATION 처리.
+
+==================================================
+15. VALIDATOR
+==================================================
+
+Validator는 최소:
+
+- non-empty string
+- values array non-empty
+- duplicate tag 처리
+- ANY/ALL mode enum validation
+- unknown operator reject
+- unknown field reject
+- malformed nesting reject
+- wrong value type reject
+
+잘못된 필드 예:
+
+race
+tribe
+cardTag
+tagName
+
+를 자동 repair하지 말고 reject.
+
+==================================================
+16. CANONICAL REPRESENTATION
+==================================================
+
+동일 의미는 동일 AST로 정규화.
+
+예:
+
+"좀비 태그"
+"좀비 태그가 있는"
+"좀비 태그를 가진"
+
+→ 동일 canonical predicate.
+
+ANY/ALL도 한 형태로 통일.
+
+==================================================
+17. PROVIDER POSITIVE EXAMPLES
+==================================================
+
+EXAMPLE 1
+"내 필드의 좀비 태그 선수 모두 공격력 +1"
+
+SELF FIELD WRESTLER
+TAG zombie
+BUFF ATK +1
+
+EXAMPLE 2
+"내 묘지의 좀비 태그 선수 중 비용 3 이하 하나를 무작위 부활"
+
+SELF GRAVEYARD WRESTLER
+TAG zombie
+COST <= 3
+RANDOM
+TAKE 1
+REVIVE
+
+EXAMPLE 3
+"내 필드에 좀비 태그 선수가 3장 이상이면 자신 +3/+3"
+
+SELECT + TAG
+COUNT
+IF >= 3
+BUFF SELF
+
+EXAMPLE 4
+"상대 손의 마족 태그 카드 중 비용이 가장 높은 카드 비용 +2"
+
+ENEMY HAND
+TAG demon
+SORT COST DESC
+TAKE 1
+INCREASE_COST
+
+EXAMPLE 5
+"좀비 또는 언데드 태그가 있는 아군 선수 하나 선택"
+
+SELF FIELD WRESTLER
+TAG ANY ["좀비","언데드"]
+PLAYER_CHOICE
+
+EXAMPLE 6
+"좀비와 언데드 태그를 모두 가진 카드"
+
+TAG ALL ["좀비","언데드"]
+
+EXAMPLE 7
+"좀비 태그가 없는 아군 선수"
+
+TAG EXCLUDES "좀비"
+
+==================================================
+18. NEGATIVE EXAMPLES
+==================================================
+
+"TAUNT가 있는 카드"
+→ keyword filter, NOT tag filter
+
+"Champion 카드"
+→ Champion/type/context, NOT tag unless explicitly stored in tags
+
+"좀비를 소환하는 카드"
+→ effect semantics, NOT necessarily zombie tag
+
+"좀비라는 이름의 카드"
+→ name condition, NOT tag condition
+
+==================================================
+19. PROVIDER ONE-CALL POLICY
+==================================================
+
+Generate click 1회
+→ Provider call 최대 1회.
+
+자동 retry 금지.
+
+Save:
+0 calls.
+
+Runtime:
+0 calls.
+
+AI Match:
+0 calls.
+
+Online:
+0 calls.
+
+==================================================
+20. TAG FILTER COMPATIBILITY MATRIX
+==================================================
+
+반드시 테스트:
+
+TAG + OWNER
+TAG + ZONE
+TAG + TYPE
+TAG + COST
+TAG + ATTACK
+TAG + HEALTH
+TAG + SORT
+TAG + TAKE
+TAG + RANDOM
+TAG + COUNT
+TAG + IF
+TAG + PLAYER_CHOICE
+TAG + BUFF
+TAG + DAMAGE
+TAG + HEAL
+TAG + REVIVE
+
+현재 runtime에서 지원되는 범위라면:
+
+TAG + SUMMON
+TAG + result reference
+TAG + delayed/listener effect
+
+도 regression 확인.
+
+==================================================
+21. UNIT TESTS
+==================================================
+
+TAG1
+tags=["좀비"]
+includes zombie
+→ true
+
+TAG2
+tags=["좀비"]
+includes demon
+→ false
+
+TAG3
+tags=["좀비","언데드"]
+ANY ["좀비","마족"]
+→ true
+
+TAG4
+tags=["좀비","언데드"]
+ALL ["좀비","언데드"]
+→ true
+
+TAG5
+tags=["좀비"]
+ALL ["좀비","언데드"]
+→ false
+
+TAG6
+tags=[]
+includes zombie
+→ false
+
+TAG7
+name="좀비 전사"
+tags=[]
+→ zombie tag filter false
+
+TAG8
+keywords=["TAUNT"]
+tags=[]
+→ TAUNT tag filter false
+
+TAG9
+tags=["좀비"]
+EXCLUDES zombie
+→ false
+
+TAG10
+tags=["천사"]
+EXCLUDES zombie
+→ true
+
+==================================================
+22. ORDER-OF-OPERATIONS TESTS
+==================================================
+
+O1:
+TAG filter → SORT → TAKE
+
+O2:
+TAG filter → RANDOM → TAKE
+
+O3:
+TAG filter → COUNT → IF
+
+O4:
+TAG filter → PLAYER_CHOICE
+
+O5:
+TAG filter → REVIVE
+
+각 경우 tag filter가 올바른 단계에서 먼저 적용되는지 검증.
+
+==================================================
+23. REAL-MATCH ENGINE TESTS
+==================================================
+
+컴파일 성공만으로 PASS 처리 금지.
+
+최소 다음은 실제 Action → Event → GameState로 실행.
+
+M1:
+필드 zombie tag buff
+
+M2:
+graveyard zombie tag revive
+
+M3:
+zombie count conditional
+
+M4:
+zombie PLAYER_CHOICE
+
+M5:
+enemy hand demon-tag cost increase + hidden-info sanitizer
+
+각 테스트에서:
+
+generated mechanic
+→ validator
+→ canonicalizer
+→ runtime
+→ resulting GameState
+
+까지 검증.
+
+==================================================
+24. PROVIDER SMOKE TEST
+==================================================
+
+가능하면 실제 Provider로 아래 6개를 각각 정확히 1회 Generate.
+
+P1.
+"내 필드의 좀비 태그 선수 모두에게 공격력 +1"
+
+P2.
+"내 묘지의 좀비 태그 선수 중 비용이 3 이하인 카드 하나를 무작위로 부활시킨다"
+
+P3.
+"내 필드에 좀비 태그 선수가 3장 이상이면 자신에게 +3/+3"
+
+P4.
+"좀비 또는 언데드 태그가 있는 아군 선수 하나를 선택해 +2/+2"
+
+P5.
+"좀비와 언데드 태그를 모두 가진 아군 선수들에게 체력 +1"
+
+P6.
+"좀비 태그가 없는 아군 선수 하나에게 +1/+1"
+
+각각:
+Provider calls = 1
+
+READY면 canonical AST 기록.
+
+불필요 clarification이면 FAIL.
+
+자동 retry 금지.
+
+==================================================
+25. EXISTING COMPILER REGRESSION
+==================================================
+
+반드시 다시 확인:
+
+- A–J canonical fixtures
+- D/F/H regressions
+- C/E/I regressions
+- real-match structured effects
+- delayed effect
+- SAME_TARGET
+- PLAYER_CHOICE continuation
+- hidden hand sanitizer
+- malformed rejection
+- sourceId spoof rejection
+- provider one-call
+- Save/runtime zero-call
+
+==================================================
+26. ADMIN INSPECTOR
+==================================================
+
+AI-generated mechanic을 Admin에서 볼 때
+tag filter가 사람이 읽을 수 있게 표시되는지 확인.
+
+예:
+
+TAG includes: 좀비
+TAG mode: ANY
+
+기존 inspector rendering pattern을 확장.
+
+Admin 전체 UI 재설계 금지.
+
+==================================================
+27. 성능
+==================================================
+
+tags는 최대 3개이므로 단순 membership check 사용.
+
+매 effect resolution마다:
+- 전체 catalog 재검색
+- description parsing
+- fuzzy inference
+
+금지.
+
+==================================================
+28. 이번 작업에서 하지 말 것
+==================================================
+
+절대 하지 말 것:
+
+- 모든 카드의 tags 자동 생성/수정
+- 카드 이름에서 tags 자동 추론
+- old "태그" combo keyword 부활
+- keywords를 tags로 변환
+- tags를 keywords로 변환
+- 카드별 runtime hardcoding
+- 좀비 전용 hardcoded branch
+- AI Match scheduler 변경
+- Online 변경
+- Champion Prism 변경
+- Reward 변경
+- Pack odds 변경
+- Deck rule 변경
+
+==================================================
+29. 검증 커맨드
+==================================================
+
+반드시 실행:
+
+pnpm run typecheck
+pnpm --filter @workspace/ko-game run build
+git diff --check
+
+API/shared 변경 시:
+
+API typecheck
+API build
+
+관련 compiler/runtime test suite 전부.
+
+==================================================
+30. Git
+==================================================
+
+이번 변경 관련 파일만 stage.
+
+제외:
+
+Pasted-*.txt
+.env
+secret
+log
+screenshot
+temp
+Replit metadata
+unrelated modifications
+
+검증 후 commit.
+
+force push 금지.
+
+별도 요청 없으면 push하지 마.
+
+==================================================
+31. 최종 보고
+==================================================
+
+TAG SUPPORT ARCHITECTURE
+
+Canonical source:
+...
+
+DSL representation:
+...
+
+Validator:
+PASS / FAIL
+
+Canonicalizer:
+PASS / FAIL
+
+Runtime:
+PASS / FAIL
+
+Available tag vocabulary:
+PASS / FAIL / NOT USED
+
+
+FILTER SUPPORT
+
+INCLUDES:
+PASS / FAIL
+
+EXCLUDES:
+PASS / FAIL
+
+ANY:
+PASS / FAIL
+
+ALL:
+PASS / FAIL
+
+
+COMBINATIONS
+
+Owner:
+PASS / FAIL
+
+Zone:
+PASS / FAIL
+
+Type:
+PASS / FAIL
+
+Cost:
+PASS / FAIL
+
+Stats:
+PASS / FAIL
+
+Sort/Take:
+PASS / FAIL
+
+Random:
+PASS / FAIL
+
+Count/IF:
+PASS / FAIL
+
+Player Choice:
+PASS / FAIL
+
+Buff:
+PASS / FAIL
+
+Damage:
+PASS / FAIL
+
+Heal:
+PASS / FAIL
+
+Revive:
+PASS / FAIL
+
+Hand:
+PASS / FAIL
+
+Hidden info:
+PASS / FAIL
+
+
+SEMANTIC SAFETY
+
+Name mistaken for tag:
+YES / NO
+
+Keyword mistaken for tag:
+YES / NO
+
+Old combo-tag revived:
+YES / NO
+
+Fuzzy tag guessing:
+YES / NO
+
+
+PROVIDER SMOKE
+
+P1:
+READY / FAIL
+CALLS: ...
+
+P2:
+READY / FAIL
+CALLS: ...
+
+P3:
+READY / FAIL
+CALLS: ...
+
+P4:
+READY / FAIL
+CALLS: ...
+
+P5:
+READY / FAIL
+CALLS: ...
+
+P6:
+READY / FAIL
+CALLS: ...
+
+TOTAL CALLS:
+...
+
+
+REAL MATCH
+
+M1:
+PASS / FAIL
+
+M2:
+PASS / FAIL
+
+M3:
+PASS / FAIL
+
+M4:
+PASS / FAIL
+
+M5:
+PASS / FAIL
+
+
+REGRESSION
+
+A–J:
+PASS / FAIL
+
+Hidden-hand:
+PASS / FAIL
+
+Malformed:
+PASS / FAIL
+
+sourceId:
+PASS / FAIL
+
+One-call:
+PASS / FAIL
+
+Runtime zero-call:
+PASS / FAIL
+
+
+IMPLEMENTATION:
+PASS / FAIL
+
+AUTOMATED VERIFICATION:
+PASS / FAIL
+
+TYPECHECK:
+PASS / FAIL
+
+KO BUILD:
+PASS / FAIL
+
+API BUILD:
+PASS / FAIL / NOT_MODIFIED
+
+git diff --check:
+PASS / FAIL
+
+CHANGED FILES:
+...
+
+COMMIT:
+...
+
+PUSH:
+NOT REQUESTED / ...
+
+==================================================
+완료 조건 — 매우 중요
+==================================================
+
+아래가 모두 충족되어야 완료다.
+
+1. `cards.tags`가 AI Mechanic Compiler의 정식 filter 조건이다.
+2. 단일 태그뿐 아니라 INCLUDES / EXCLUDES / ANY / ALL을 지원한다.
+3. OWNER / ZONE / TYPE / COST / STAT과 자연스럽게 조합된다.
+4. SORT / TAKE / RANDOM과 조합된다.
+5. COUNT / IF와 조합된다.
+6. PLAYER_CHOICE와 조합된다.
+7. BUFF / DAMAGE / HEAL / REVIVE 등 기존 actions와 조합된다.
+8. HAND tag effect도 지원하며 hidden info leak이 없다.
+9. Card name / description / keyword를 tag로 오인하지 않는다.
+10. Runtime에서는 오직 CardDefinition.tags를 사용한다.
+11. Provider가 존재하지 않는 tag를 임의 생성하지 않는다.
+12. 명확한 tag 요청을 불필요하게 clarification하지 않는다.
+13. 실제 engine Action → Event → GameState 테스트가 통과한다.
+14. 기존 A–J compiler 기능에 회귀가 없다.
+15. Provider one-call / runtime zero-call 정책을 유지한다.
+
+단순히 예제 몇 개 통과시키고 완료 처리하지 마.
+
+태그 조건은 앞으로 많은 카드 효과에서 사용될
+핵심 매커니즘이므로 generic하고 확장 가능한 구조로 구현한 뒤 멈춰라.
