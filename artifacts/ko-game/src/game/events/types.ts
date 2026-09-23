@@ -21,6 +21,7 @@ export type GameEventType =
   | 'CHAMPION_QUEST_PROGRESS'
   | 'CHAMPION_QUEST_COMPLETED'
   | 'STAT_CHANGED'
+  | 'CARD_TEXT_GRANTED'
   | 'SURRENDER';
 
 export type EventSubject =
@@ -61,6 +62,7 @@ export interface GameEvent {
   sourceContext?: EventAttribution;
   sourceSnapshot?: EventCardSnapshot;
   targetSnapshot?: EventCardSnapshot;
+  grantedFromDefinitionId?: string;
 }
 
 export interface EventCardSnapshot {

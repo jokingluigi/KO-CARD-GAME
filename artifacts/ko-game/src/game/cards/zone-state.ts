@@ -1,4 +1,5 @@
 import type { CardInstance } from './types';
+import { getActiveCardKeywords } from './granted-text';
 
 /**
  * A card entering the graveyard starts its next lifecycle from its definition
@@ -7,7 +8,7 @@ import type { CardInstance } from './types';
  */
 export function resetCardForGraveyard(card: CardInstance): CardInstance {
   const baseHealth = card.baseHealth ?? card.maxHealth;
-  const hasDodge = card.keywords.includes('DODGE');
+  const hasDodge = getActiveCardKeywords(card).includes('DODGE');
 
   return {
     ...card,

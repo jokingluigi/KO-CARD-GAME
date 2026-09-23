@@ -3,6 +3,7 @@ import type { EnterFieldEvent, EntryCause, EventSubject } from '../events/types'
 import type { GameState } from '../types/game-state';
 import type { BoardSlot } from './board-position';
 import { appendEffectContinuation, resolveSummonListeners, resolveTriggeredAbilities } from '../effects/effect-engine';
+import { getActiveCardAbilities } from '../cards/granted-text';
 
 export function enterField(
   state: GameState,
@@ -75,7 +76,7 @@ export function enterField(
     : afterEnter;
   // POSITION is deferred after ENTER_FIELD rather than installed as a child.
   if (afterSummonListeners.targetingState?.active) {
-    const positionEffects = enteredCard.abilities
+     const positionEffects = getActiveCardAbilities(enteredCard)
       .filter((ability) => ability.trigger === 'POSITION' && ability.boardSlots.includes(boardSlot))
       .flatMap((ability) => ability.effects);
      if (!positionEffects.length) return afterSummonListeners;

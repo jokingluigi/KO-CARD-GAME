@@ -13,6 +13,7 @@
     "src",
     "../../artifacts/ko-game/src/game/actions/**/*.ts",
     "../../artifacts/ko-game/src/game/cards/generation.ts",
+    "../../artifacts/ko-game/src/game/cards/granted-text.ts",
     "../../artifacts/ko-game/src/game/cards/zone-state.ts",
     "../../artifacts/ko-game/src/game/cards/test-cards.ts",
     "../../artifacts/ko-game/src/game/cards/types.ts",

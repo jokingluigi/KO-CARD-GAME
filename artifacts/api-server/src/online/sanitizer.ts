@@ -45,6 +45,7 @@ function sanitizeEvent(
     delete safeEvent.target;
     delete safeEvent.sourceSnapshot;
     delete safeEvent.targetSnapshot;
+    delete safeEvent.grantedFromDefinitionId;
     return safeEvent;
   }
   for (const [field, reference] of [
@@ -54,6 +55,9 @@ function sanitizeEvent(
     ["targetSnapshot", candidate.targetSnapshot],
   ] as const) {
     if (reference && hiddenCardIds.has(reference.cardInstanceId ?? "")) delete safeEvent[field];
+  }
+  if (hiddenCardIds.has(event.cardInstanceId ?? "")) {
+    delete safeEvent.grantedFromDefinitionId;
   }
   return safeEvent;
 }

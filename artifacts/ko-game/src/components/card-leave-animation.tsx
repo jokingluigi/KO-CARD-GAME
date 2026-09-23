@@ -3,6 +3,8 @@ import type { CSSProperties } from "react";
 
 import { getCardDefinition, type CardInstance } from "@/game";
 import { CardRenderer } from "./card-renderer";
+import { getActiveCardKeywords } from "../game/cards/granted-text";
+import { getCardRuntimeRulesText } from "../lib/card-display-state";
 import { PRESENTATION_CONFIG, prefersReducedMotion } from "./presentation-config";
 
 export type CardLeaveKind = "RETIRE" | "DESTROY" | "REMOVE";
@@ -78,11 +80,15 @@ export function CardLeaveAnimation({
         cost={animation.card.currentCost}
         attack={animation.card.currentAttack}
         health={animation.card.currentHealth}
-        rulesText={definition?.rulesText ?? "효과 없음"}
+        rulesText={getCardRuntimeRulesText(animation.card, definition?.rulesText ?? "효과 없음")}
         imageUrl={definition?.imageUrl}
         rarity={definition?.rarity}
         size="board"
         imageDisplaySettings={definition}
+        runtimeKeywords={getActiveCardKeywords(animation.card)}
+        isSilenced={animation.card.isSilenced}
+        isStunned={animation.card.isStunned}
+        isAbilityDisabled={animation.card.isAbilityDisabled}
         className="h-full w-full"
       />
     </div>

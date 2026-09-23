@@ -2,6 +2,8 @@ import { useEffect, useRef } from "react";
 import type { CSSProperties } from "react";
 import { CardRenderer } from "./card-renderer";
 import { getCardDefinition } from "@/game";
+import { getActiveCardKeywords } from "../game/cards/granted-text";
+import { getCardRuntimeRulesText } from "../lib/card-display-state";
 import type { AttackAnimationState } from "./attack-animation-utils";
 import { attackAnimationDuration } from "./attack-animation-utils";
 import { PRESENTATION_CONFIG, prefersReducedMotion } from "./presentation-config";
@@ -82,11 +84,15 @@ export function AttackAnimation({
             cost={animation.target.currentCost}
             attack={animation.target.currentAttack}
             health={animation.target.currentHealth}
-            rulesText={getCardDefinition(animation.target.definitionId)?.rulesText ?? "효과 없음"}
+            rulesText={getCardRuntimeRulesText(animation.target, getCardDefinition(animation.target.definitionId)?.rulesText ?? "효과 없음")}
             imageUrl={getCardDefinition(animation.target.definitionId)?.imageUrl}
             rarity={getCardDefinition(animation.target.definitionId)?.rarity}
             size="board"
             imageDisplaySettings={getCardDefinition(animation.target.definitionId)}
+            runtimeKeywords={getActiveCardKeywords(animation.target)}
+            isSilenced={animation.target.isSilenced}
+            isStunned={animation.target.isStunned}
+            isAbilityDisabled={animation.target.isAbilityDisabled}
             className="h-full w-full"
           />
         ) : (
@@ -102,11 +108,15 @@ export function AttackAnimation({
           cost={animation.attacker.currentCost}
           attack={animation.attacker.currentAttack}
           health={animation.attacker.currentHealth}
-          rulesText={definition?.rulesText ?? "효과 없음"}
+          rulesText={getCardRuntimeRulesText(animation.attacker, definition?.rulesText ?? "효과 없음")}
           imageUrl={definition?.imageUrl}
           rarity={definition?.rarity}
           size="board"
           imageDisplaySettings={definition}
+          runtimeKeywords={getActiveCardKeywords(animation.attacker)}
+          isSilenced={animation.attacker.isSilenced}
+          isStunned={animation.attacker.isStunned}
+          isAbilityDisabled={animation.attacker.isAbilityDisabled}
           className="h-full w-full"
         />
       </div>

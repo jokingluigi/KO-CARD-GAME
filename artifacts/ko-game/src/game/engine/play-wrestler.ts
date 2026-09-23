@@ -8,6 +8,7 @@ import { enterField } from './enter-field';
 import { validateCurrentPlayer } from './turn-system';
 import { processChampionQuestEvents } from '../champions/quests';
 import { hasMandatoryPlayerChoice, resolveBoardListeners, resolveQueuedEffectsForPlayedWrestler, resolveRegisteredRuleListeners } from '../effects/effect-engine';
+import { getActiveCardAbilities } from '../cards/granted-text';
 
 export function playWrestlerFromHand(
   state: GameState,
@@ -56,7 +57,7 @@ export function playWrestlerFromHand(
   if (player.currentGold < card.currentCost) {
     return actionFailure(state, 'NOT_ENOUGH_GOLD', '골드가 부족합니다.');
   }
-  const enterEffects = card.abilities
+  const enterEffects = getActiveCardAbilities(card)
     .filter((ability) => ability.trigger === 'ENTER_FIELD')
     .flatMap((ability) => ability.effects);
   if (hasMandatoryPlayerChoice(state, playerId, card, enterEffects)) {

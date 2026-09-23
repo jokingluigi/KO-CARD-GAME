@@ -3,12 +3,12 @@
 export const TRIGGERS = ["ENTER_FIELD", "LEAVE_FIELD", "ACTIVE", "CARD_DRAWN", "CARD_RETIRED", "CARD_SUMMONED", "FIRST_ATTACKED", "SELF_ATTACK", "OTHER_ALLY_ATTACK", "ATTACK_SURVIVED", "STAT_CHANGED", "TECHNIQUE_CAST", "EXACT_ZERO_DAMAGE", "TURN_START", "TURN_END", "BEFORE_DAMAGE", "BEFORE_RETIRE"] as const;
 export const CONDITIONS = ["NEED_CONDITION", "BASE_COST_GTE", "SOURCE_ON_LEFT_SIDE", "SOURCE_ON_RIGHT_SIDE", "SOURCE_IS_ONLY_WRESTLER", "FIRST_ATTACK_GAIN"] as const;
 export const REFERENCES = ["SOURCE", "LAST_TARGET", "LAST_DRAWN_CARD", "LAST_ATTACKER", "LAST_DAMAGED_TARGET", "CAPTURED_CARD", "CURRENT_SLOT"] as const;
-export const ACTIONS = ["BUFF", "SET_STATS", "MODIFY_STAT", "SET_STAT", "DAMAGE", "HEAL", "SILENCE", "DESTROY", "RETIRE", "ADD_GOLD", "ADD_NEXT_TURN_GOLD", "DRAW", "REDUCE_COST", "INCREASE_COST", "STUN", "DISABLE_ABILITY", "WEAKEN_TO_STUN_SILENCE", "ADD_KEYWORD", "REMOVE_KEYWORD", "SWAP_STATS", "ADD_DAMAGE_MODIFIER", "SUMMON", "SUMMON_FROM_HAND", "REVIVE", "GENERATE", "MOVE_TO_HAND", "STEAL", "MILL", "SPEND_GOLD_BUFF_SELF", "DEPLOY_CHAMPION_TOKEN", "CAPTURE", "RELEASE_CAPTURED", "REMOVE_FROM_GAME", "SWITCH_EFFECT_BRANCH", "QUEUE_EFFECT", "ADD_AGGREGATED_ATTACK", "REGISTER_DELAYED", "REGISTER_LISTENER", "PREVENT_DAMAGE", "PREVENT_RETIRE"] as const;
+export const ACTIONS = ["BUFF", "SET_STATS", "MODIFY_STAT", "SET_STAT", "DAMAGE", "HEAL", "SILENCE", "DESTROY", "RETIRE", "ADD_GOLD", "ADD_NEXT_TURN_GOLD", "DRAW", "REDUCE_COST", "INCREASE_COST", "STUN", "DISABLE_ABILITY", "WEAKEN_TO_STUN_SILENCE", "ADD_KEYWORD", "REMOVE_KEYWORD", "SWAP_STATS", "ADD_DAMAGE_MODIFIER", "SUMMON", "SUMMON_FROM_HAND", "REVIVE", "GENERATE", "MOVE_TO_HAND", "STEAL", "MILL", "SPEND_GOLD_BUFF_SELF", "DEPLOY_CHAMPION_TOKEN", "CAPTURE", "RELEASE_CAPTURED", "REMOVE_FROM_GAME", "SWITCH_EFFECT_BRANCH", "QUEUE_EFFECT", "ADD_AGGREGATED_ATTACK", "REGISTER_DELAYED", "REGISTER_LISTENER", "PREVENT_DAMAGE", "PREVENT_RETIRE", "GRANT_RANDOM_CARD_TEXT"] as const;
 export const KEYWORDS = ["RUSH", "SURPRISE", "TAUNT", "DODGE", "MULTI_STRIKE"] as const;
 export const TARGET_ZONES = ["BOARD", "HAND", "DECK", "GRAVEYARD", "PLAYER", "CHARACTER"] as const;
 /** The default card scope for Korean phrases such as "어디에 있든". */
 export const DEFAULT_CARD_TARGET_SCOPE = ["HAND", "DECK", "BOARD"] as const;
-export const TARGET_FILTERS = ["GENERATED", "MIN_COST", "MAX_COST", "TOKEN", "NON_CHAMPION_TOKEN", "EXCLUDE_SOURCE", "TAGS_ANY", "TAGS_ALL", "TAGS_NONE"] as const;
+export const TARGET_FILTERS = ["GENERATED", "MIN_COST", "MAX_COST", "TOKEN", "NON_CHAMPION_TOKEN", "EXCLUDE_SOURCE", "VANILLA", "TAGS_ANY", "TAGS_ALL", "TAGS_NONE"] as const;
 export const TARGET_OWNERS = ["SELF", "ENEMY", "ALL"] as const;
 export const TARGET_SELECTIONS = ["SELF", "PLAYER_CHOICE", "RANDOM", "TOP", "ADJACENT", "ADJACENT_EMPTY_SLOTS", "SAME_TARGET", "ALL"] as const;
 export const RANDOM_SCOPES = ["STANDARD", "FULL"] as const;
@@ -59,6 +59,7 @@ export type ScriptFilter = {
   isToken?: boolean;
   isChampionToken?: boolean;
   excludeSource?: boolean;
+  isVanilla?: boolean;
   keyword?: Keyword;
   tagsAny?: string[];
   tagsAll?: string[];
@@ -129,6 +130,7 @@ export type StructuredTarget = {
     isToken?: boolean;
     isChampionToken?: boolean;
     excludeSource?: boolean;
+    isVanilla?: boolean;
     keyword?: Keyword;
     cost?: { compare: ScriptComparator; value: number };
     attack?: { compare: ScriptComparator; value: number };
@@ -234,7 +236,7 @@ export type MechanicCompilerProviderOutput =
   | { status: "NEEDS_CLARIFICATION"; questions: string[] };
 
 const SCRIPT_TARGET_KEYS = new Set(["zone", "zones", "owner", "cardType", "filter", "selection", "count", "randomScope", "resultId", "sort", "take"]);
-const SCRIPT_FILTER_KEYS = new Set(["isGenerated", "minCost", "maxCost", "cost", "attack", "health", "isToken", "isChampionToken", "excludeSource", "keyword", "tagsAny", "tagsAll", "tagsNone"]);
+const SCRIPT_FILTER_KEYS = new Set(["isGenerated", "minCost", "maxCost", "cost", "attack", "health", "isToken", "isChampionToken", "excludeSource", "isVanilla", "keyword", "tagsAny", "tagsAll", "tagsNone"]);
 const SCRIPT_VALUE_KEYS = new Set(["kind", "value", "resultId"]);
 const SCRIPT_HISTORY_KEYS = new Set(["scope", "eventType", "owner", "cardType", "tag", "operation", "stat"]);
 const SCRIPT_EFFECT_KEYS = new Set(["action", "target", "values"]);
@@ -274,7 +276,7 @@ function validScriptTarget(value: unknown): value is ScriptTarget {
   if (value.filter !== undefined) {
     if (!isRecord(value.filter) || !hasOnlyKeys(value.filter, SCRIPT_FILTER_KEYS)) return false;
     const filter = value.filter;
-    for (const key of ["isGenerated", "isToken", "isChampionToken", "excludeSource"]) {
+    for (const key of ["isGenerated", "isToken", "isChampionToken", "excludeSource", "isVanilla"]) {
       if (filter[key] !== undefined && typeof filter[key] !== "boolean") return false;
     }
     if (filter.keyword !== undefined && !KEYWORDS.includes(filter.keyword as Keyword)) return false;
@@ -388,6 +390,7 @@ export const ACTION_SCHEMAS: Record<Action, EffectActionSchema> = {
   SWAP_STATS: { target: true }, ADD_DAMAGE_MODIFIER: { target: false, amount: true, damageSource: true }, SUMMON: { target: false, cardDefinition: true, cardCount: true, aggregateStats: true, generatedModifiers: true }, SUMMON_FROM_HAND: { target: false, cardDefinition: true, cardCount: true }, REVIVE: { target: true }, GENERATE: { target: false, cardDefinition: true, cardCount: true, destination: true, generatedModifiers: true }, MOVE_TO_HAND: { target: true }, MILL: { target: true }, SPEND_GOLD_BUFF_SELF: { target: true, dynamicValue: true }, DEPLOY_CHAMPION_TOKEN: { target: false }, CAPTURE: { target: true }, RELEASE_CAPTURED: { target: false },
   REMOVE_FROM_GAME: { target: true }, SWITCH_EFFECT_BRANCH: { target: false, branches: true }, QUEUE_EFFECT: { target: false, queuedEffect: true }, ADD_AGGREGATED_ATTACK: { target: true, aggregateStats: true }, STEAL: { target: true },
   REGISTER_DELAYED: { target: false, delayed: true }, REGISTER_LISTENER: { target: false, listener: true }, PREVENT_DAMAGE: { target: false, prevention: true }, PREVENT_RETIRE: { target: false, prevention: true },
+  GRANT_RANDOM_CARD_TEXT: { target: true },
 };
 
 const ACTION_DESCRIPTIONS: Record<Action, string> = {
@@ -399,6 +402,7 @@ const ACTION_DESCRIPTIONS: Record<Action, string> = {
   CAPTURE: "대상을 포획합니다.", RELEASE_CAPTURED: "포획한 카드를 필드에 해방합니다.", SUMMON_FROM_HAND: "손패의 지정 카드를 필드에 소환합니다.", REVIVE: "무덤의 기존 선수를 체력을 회복해 필드로 되살립니다.", MOVE_TO_HAND: "대상을 손패로 이동합니다.", STEAL: "상대 영역의 기존 카드를 내 손패로 이동합니다.", MILL: "덱 맨 위 카드를 무덤으로 보냅니다.", SPEND_GOLD_BUFF_SELF: "남은 골드를 모두 소비하고 자신을 강화합니다.", DEPLOY_CHAMPION_TOKEN: "현재 챔피언에 연결된 Champion Token을 특별 전개합니다.", REMOVE_FROM_GAME: "대상을 제거합니다.",
   SWITCH_EFFECT_BRANCH: "현재 슬롯의 왼쪽/오른쪽 분기에 맞는 효과를 실행합니다.", QUEUE_EFFECT: "다음 조건을 만족하는 카드에 효과를 예약합니다.", ADD_AGGREGATED_ATTACK: "직전에 퇴장시킨 대상의 현재 공격력 합을 대상에게 더합니다.",
   REGISTER_DELAYED: "턴 시작/종료 또는 다음 일치 이벤트에 실행할 효과를 등록합니다.", REGISTER_LISTENER: "일치하는 이벤트에 한 번 또는 반복해서 실행할 효과를 등록합니다.", PREVENT_DAMAGE: "다음 지정 피해를 막습니다.", PREVENT_RETIRE: "다음 치명적 퇴장을 체력 1로 대체합니다.",
+  GRANT_RANDOM_CARD_TEXT: "현재 매치의 기존 선수 카드 텍스트를 무작위로 부여합니다.",
 };
 
 export const EFFECT_CAPABILITIES: Record<Action, { description: string; status: RegistryStatus; version: number; runtimeHandler: true }> =

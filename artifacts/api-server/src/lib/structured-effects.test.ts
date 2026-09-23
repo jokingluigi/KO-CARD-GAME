@@ -3,6 +3,24 @@ import test from "node:test";
 
 import { analyzeEffectText, effectLibrary, isStructuredEffects } from "./structured-effects";
 
+test("바닐라 선수 대상의 무작위 카드 텍스트 부여 문장을 registry action으로 분석한다", () => {
+  const result = analyzeEffectText(
+    "등장: 바닐라 선수 하나에게 무작위 카드 텍스트를 부여합니다.",
+  );
+  assert.equal(result.status, "success");
+  assert.deepEqual(result.effects?.map((effect) => effect.action), ["GRANT_RANDOM_CARD_TEXT"]);
+  assert.deepEqual(result.effects?.[0]?.target, {
+    zone: "BOARD",
+    owner: "SELF",
+    cardType: "WRESTLER",
+    selection: "RANDOM",
+    count: 1,
+    filter: { isVanilla: true },
+    randomScope: "STANDARD",
+  });
+  assert.equal(isStructuredEffects({ effects: result.effects }), true);
+});
+
 test("필수 카드 문장을 안전한 구조화 효과로 분석한다", () => {
   const cases = [
     {
@@ -349,7 +367,7 @@ test("현재 registry에서 제공하는 Effect Library 메타데이터를 노�
     { attackMultiplier: "number (0..10)", healthMultiplier: "number (0..10)" },
   );
   assert.deepEqual(library.targetResolvers[0]?.config.defaultCardScope, ["HAND", "DECK", "BOARD"]);
-  assert.deepEqual(library.targetResolvers[0]?.config.filters, ["GENERATED", "MIN_COST", "MAX_COST", "TOKEN", "NON_CHAMPION_TOKEN", "EXCLUDE_SOURCE", "TAGS_ANY", "TAGS_ALL", "TAGS_NONE"]);
+  assert.deepEqual(library.targetResolvers[0]?.config.filters, ["GENERATED", "MIN_COST", "MAX_COST", "TOKEN", "NON_CHAMPION_TOKEN", "EXCLUDE_SOURCE", "VANILLA", "TAGS_ANY", "TAGS_ALL", "TAGS_NONE"]);
   assert.deepEqual(library.targetResolvers[0]?.config.randomScope, ["STANDARD", "FULL"]);
   assert.ok(library.actions.some((action) => action.name === "SET_STATS"));
   assert.deepEqual(

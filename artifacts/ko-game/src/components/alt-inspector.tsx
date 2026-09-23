@@ -14,6 +14,8 @@ import {
   type ChampionState,
 } from '@/game';
 import { CardRenderer } from './card-renderer';
+import { getActiveCardKeywords } from '../game/cards/granted-text';
+import { getCardRuntimeRulesText } from '../lib/card-display-state';
 import {
   calculateInspectorPosition,
   getCardInspectorMetadata,
@@ -239,14 +241,14 @@ export function CardInspectContent({ card }: { card: CardInstance }) {
         cost={card.currentCost}
         attack={card.currentAttack}
         health={card.currentHealth}
-        rulesText={definition?.rulesText ?? '효과 없음'}
+         rulesText={getCardRuntimeRulesText(card, definition?.rulesText ?? '효과 없음')}
         imageUrl={definition?.imageUrl}
         rarity={definition?.rarity}
         size="detail"
         className="mx-auto w-full max-w-[260px]"
         showRules={false}
         imageDisplaySettings={definition}
-         runtimeKeywords={card.keywords}
+          runtimeKeywords={getActiveCardKeywords(card)}
          isSilenced={card.isSilenced}
          isStunned={card.isStunned}
          isAbilityDisabled={card.isAbilityDisabled}

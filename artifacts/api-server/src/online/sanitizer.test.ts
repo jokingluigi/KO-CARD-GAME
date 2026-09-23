@@ -68,3 +68,35 @@ test("effects that modify a hidden opponent hand card do not expose its identity
   assert.equal(projected.events[0]?.target, undefined);
   assert.equal((projected.events[0]?.source as { cardInstanceId?: string } | undefined)?.cardInstanceId, "public-source");
 });
+
+test("hidden card-text grants redact donor metadata while public board grants remain inspectable", () => {
+  const state = {
+    cardPool: [publicDefinition],
+    randomSeed: 123,
+    players: [
+      { id: "PLAYER_ONE", hand: [], deck: [], board: [{ instanceId: "public-board-card", definitionId: "published-card" }] },
+      { id: "PLAYER_TWO", hand: [{ instanceId: "hidden-hand-card", definitionId: "secret" }], deck: [], board: [] },
+    ],
+    events: [
+      {
+        type: "CARD_TEXT_GRANTED",
+        playerId: "PLAYER_TWO",
+        cardInstanceId: "hidden-hand-card",
+        source: { type: "CARD", cardInstanceId: "public-board-card" },
+        target: { type: "CARD", cardInstanceId: "hidden-hand-card" },
+        grantedFromDefinitionId: "secret-donor",
+      },
+      {
+        type: "CARD_TEXT_GRANTED",
+        playerId: "PLAYER_ONE",
+        cardInstanceId: "public-board-card",
+        source: { type: "CARD", cardInstanceId: "public-board-card" },
+        target: { type: "CARD", cardInstanceId: "public-board-card" },
+        grantedFromDefinitionId: "published-card",
+      },
+    ],
+  } as unknown as GameState;
+  const projected = sanitizeGameStateForViewer(state, "PLAYER_ONE") as { events: Array<Record<string, unknown>> };
+  assert.equal(projected.events[0]?.grantedFromDefinitionId, undefined);
+  assert.equal(projected.events[1]?.grantedFromDefinitionId, "published-card");
+});

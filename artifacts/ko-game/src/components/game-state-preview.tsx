@@ -40,6 +40,8 @@ import { PresentationFeedback, type PresentationCue } from './presentation-feedb
 import { presentationCueDrafts, presentationEventKey } from './presentation-feedback-utils';
 import { QuestPresentation } from './quest-presentation';
 import { displayHealth } from './match-display-utils';
+import { getCardRuntimeRulesText, getVisibleCardKeywords } from '../lib/card-display-state';
+import { getActiveCardKeywords } from '../game/cards/granted-text';
 
 interface GameStatePreviewProps {
   state: GameState;
@@ -1276,13 +1278,13 @@ function HandCard({
       cost={card.currentCost}
       attack={card.currentAttack}
       health={card.currentHealth}
-      rulesText={def?.rulesText ?? '효과 없음'}
+       rulesText={getCardRuntimeRulesText(card, def?.rulesText ?? '효과 없음')}
       imageUrl={def?.imageUrl}
       rarity={def?.rarity}
       size="hand"
        className={`ko-hand-card ${isSelected ? "ko-hand-card--selected " : ""}${containerClass}`}
       imageDisplaySettings={def}
-       runtimeKeywords={card.keywords}
+       runtimeKeywords={getActiveCardKeywords(card)}
        isSilenced={card.isSilenced}
        isStunned={card.isStunned}
        isAbilityDisabled={card.isAbilityDisabled}
@@ -1418,13 +1420,13 @@ function BoardSlot({
          cost={card.currentCost}
          attack={card.currentAttack}
          health={card.currentHealth}
-         rulesText={def?.rulesText ?? '효과 없음'}
+          rulesText={getCardRuntimeRulesText(card, def?.rulesText ?? '효과 없음')}
          imageUrl={def?.imageUrl}
          rarity={def?.rarity}
          size="board"
          className={`${containerClass}${animating ? " opacity-0 pointer-events-none" : ""}${presentationActive ? " presentation-card-pulse" : ""}${hit ? ` attack-target-hit--${hitImpactLevel?.toLowerCase() ?? "light"}` : ""}`}
          imageDisplaySettings={def}
-          runtimeKeywords={card.keywords}
+           runtimeKeywords={getActiveCardKeywords(card)}
           isSilenced={card.isSilenced}
           isStunned={card.isStunned}
           isAbilityDisabled={card.isAbilityDisabled}

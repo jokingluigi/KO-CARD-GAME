@@ -5,6 +5,7 @@ import { getActiveAbility, hasMandatoryPlayerChoice, resolveActiveAbility } from
 import type { GameState } from '../types/game-state';
 import { validateCurrentPlayer } from './turn-system';
 import { processChampionQuestEvents } from '../champions/quests';
+import { removeGrantedCardText } from '../cards/granted-text';
 
 function updateBoardCard(
   state: GameState,
@@ -31,7 +32,7 @@ export function silenceCard(
     card.isDirectDeployedChampion || card.isSilenceImmune
       ? card
       : {
-          ...card,
+          ...removeGrantedCardText(card),
           isSilenced: true,
           currentAttack: card.baseAttack ?? card.currentAttack,
           maxHealth: card.baseHealth ?? card.maxHealth,

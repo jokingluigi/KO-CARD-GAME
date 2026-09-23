@@ -1,6 +1,7 @@
 import type { CardEffect } from '../effects/types';
 import type { CardInstance } from '../cards/types';
 import type { GameState, PlayerState } from '../types/game-state';
+import { getActiveCardAbilities, getActiveCardKeywords } from '../cards/granted-text';
 import { executeAction } from './engine-actions';
 import type { GameAction } from './types';
 
@@ -55,12 +56,12 @@ function effectValue(effect: CardEffect): number {
 }
 
 function keywordValue(card: CardInstance): number {
-  return card.keywords.reduce((total, keyword) => total + (KEYWORD_VALUES[keyword] ?? 1.5), 0);
+  return getActiveCardKeywords(card).reduce((total, keyword) => total + (KEYWORD_VALUES[keyword] ?? 1.5), 0);
 }
 
 function abilityValue(card: CardInstance): number {
   if (card.isSilenced || card.isAbilityDisabled) return 0;
-  return card.abilities.reduce(
+  return getActiveCardAbilities(card).reduce(
     (total, ability) => total + ability.effects.reduce((sum, effect) => sum + effectValue(effect), 0),
     0,
   );
@@ -75,7 +76,7 @@ export function estimateCardValue(card: CardInstance): number {
 function boardValue(player: PlayerState): number {
   return player.board.reduce((total, card) => {
     if (!card) return total;
-    const championProtection = card.keywords.includes('TAUNT') && player.champion ? 3 : 0;
+    const championProtection = getActiveCardKeywords(card).includes('TAUNT') && player.champion ? 3 : 0;
     return total + estimateCardValue(card) + championProtection;
   }, 0);
 }

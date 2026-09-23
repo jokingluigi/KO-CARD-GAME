@@ -1,5 +1,6 @@
 - [TypeScript engine tests](typescript-engine-tests.md) — bundle focused KO tests with existing esbuild before running Node’s test runner.
 - [Structured card effects](structured-card-effects.md) — new admin effects are validated data; partial parses never apply and gameplay never reparses display text.
+- [Granted card text layer](granted-card-text-layer.md) — copied executable text is a separate CardInstance layer; silence removes it without reconstructing printed data.
 - [Tag target filters](tag-target-filters.md) — generic any/all/none tag matching composes with zones and preserves definition tags on generated cards.
 - [Effect targeting continuations](effect-targeting-continuations.md) — PLAYER_CHOICE pauses use an engine-owned stack so nested triggers resume in order.
 - [Effect targeting UI boundary](effect-targeting-ui-boundary.md) — while choosing an effect target, every card/champion click must reach engine validation so invalid clicks can report without leaving the mode.

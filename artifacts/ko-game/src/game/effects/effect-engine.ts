@@ -32,6 +32,13 @@ import { getAdjacentSlots } from '../engine/board-position';
 import { deployLinkedChampionToken } from '../engine/champion-token';
 import { isChampionProtectedByToken } from '../engine/direct-champion';
 import { resetCardForGraveyard } from '../cards/zone-state';
+import {
+  getActiveCardAbilities,
+  getActiveCardKeywords,
+  grantCardText,
+  isVanillaCard,
+  removeGrantedCardText,
+} from '../cards/granted-text';
 
 /** The single authoritative target resolver.  UI must only display these ids. */
 export function getValidTargets(
@@ -67,7 +74,8 @@ export function getValidTargets(
       if (target.filter?.isToken !== undefined && card.isToken !== target.filter.isToken) return false;
       if (target.filter?.isChampionToken !== undefined && card.isChampionToken !== target.filter.isChampionToken) return false;
       if (target.filter?.excludeSource && card.instanceId === sourceCard.instanceId) return false;
-      if (target.filter?.keyword !== undefined && !card.keywords.includes(target.filter.keyword)) return false;
+      if (target.filter?.isVanilla && !isVanillaCard(card)) return false;
+      if (target.filter?.keyword !== undefined && !getActiveCardKeywords(card).includes(target.filter.keyword)) return false;
       if (target.filter?.cost && !scriptCompare(card.currentCost, target.filter.cost.compare, target.filter.cost.value)) return false;
       if (target.filter?.attack && !scriptCompare(card.currentAttack, target.filter.attack.compare, target.filter.attack.value)) return false;
       if (target.filter?.health && !scriptCompare(card.currentHealth, target.filter.health.compare, target.filter.health.value)) return false;
@@ -159,7 +167,8 @@ function scriptTargetCards(
     if (filter?.isToken !== undefined && card.isToken !== filter.isToken) return false;
     if (filter?.isChampionToken !== undefined && card.isChampionToken !== filter.isChampionToken) return false;
     if (filter?.excludeSource && card.instanceId === sourceCard.instanceId) return false;
-    if (filter?.keyword !== undefined && !card.keywords.includes(filter.keyword)) return false;
+    if (filter?.isVanilla && !isVanillaCard(card)) return false;
+    if (filter?.keyword !== undefined && !getActiveCardKeywords(card).includes(filter.keyword)) return false;
     const compare = (value: number, condition?: { compare: string; value: number }) =>
       !condition || scriptCompare(value, condition.compare, condition.value);
     if (!compare(card.currentCost, filter?.cost) ||
@@ -459,7 +468,7 @@ export function getDamageModifierBonus(
 
   return owner.board.reduce((bonus, card) => {
     if (!card || card.isSilenced) return bonus;
-    const aura = card.abilities
+    const aura = getActiveCardAbilities(card)
       .flatMap((ability) => ability.effects)
       .filter((effect): effect is Extract<CardEffect, { type: 'STRUCTURED' }> =>
         effect.type === 'STRUCTURED' && effect.action === 'ADD_DAMAGE_MODIFIER',
@@ -781,10 +790,10 @@ function resolveStatChangeListeners(
   return changed.reduce((next, changedCard) => {
     return statListenerCards(next)
       .filter(({ card }) => card.instanceId === changedCard.card.instanceId)
-      .filter(({ card }) => card.abilities.some((ability) => ability.trigger === 'STAT_CHANGED'))
+      .filter(({ card }) => getActiveCardAbilities(card).some((ability) => ability.trigger === 'STAT_CHANGED'))
       .reduce((listenerState, { ownerId, card }) => {
         const listenerFrame = listenerState.targetingState;
-        const hasChoice = card.abilities
+        const hasChoice = getActiveCardAbilities(card)
           .filter((ability) => ability.trigger === 'STAT_CHANGED')
           .some((ability) => ability.effects.some((effect) =>
             effect.type === 'STRUCTURED' && effect.target?.selection === 'PLAYER_CHOICE',
@@ -927,6 +936,86 @@ function selectRandomDefinitions(
 ): CardDefinition[] {
   if (!definitions.length || count <= 0) return [];
   return Array.from({ length: count }, () => definitions[Math.floor(random() * definitions.length)]!);
+}
+
+function containsGrantAction(value: unknown): boolean {
+  if (!value || typeof value !== 'object') return false;
+  if (Array.isArray(value)) return value.some(containsGrantAction);
+  const record = value as Record<string, unknown>;
+  if (record.action === 'GRANT_RANDOM_CARD_TEXT') return true;
+  return Object.values(record).some(containsGrantAction);
+}
+
+function randomTextDonorCandidates(state: GameState): CardDefinition[] {
+  return (state.cardPool ?? [])
+    .filter((definition) =>
+      definition.cardType === 'WRESTLER' &&
+      (definition.status ?? 'PUBLISHED') === 'PUBLISHED' &&
+      (definition.keywords.length > 0 || definition.abilities.length > 0) &&
+      !containsGrantAction(definition.abilities),
+    )
+    .sort((left, right) => left.id.localeCompare(right.id));
+}
+
+function grantRandomCardText(
+  state: GameState,
+  playerId: string,
+  sourceCard: CardInstance,
+  targets: readonly CardInstance[],
+  effect: Extract<CardEffect, { type: 'STRUCTURED' }>,
+): GameState {
+  const donors = randomTextDonorCandidates(state);
+  if (!donors.length) return state;
+  const random = createDeterministicRandom(JSON.stringify({
+    seed: state.randomSeed ?? 0,
+    events: state.events.length,
+    source: sourceCard.instanceId,
+    action: effect.action,
+    targets: targets.map((card) => card.instanceId),
+  }));
+  let next = state;
+  for (const target of targets) {
+    const donor = donors[Math.floor(random() * donors.length)]!;
+    const owner = next.players.find((player) =>
+      player.board.some((card) => card?.instanceId === target.instanceId) ||
+      player.hand.some((card) => card.instanceId === target.instanceId) ||
+      player.deck.some((card) => card.instanceId === target.instanceId) ||
+      player.graveyard.some((card) => card.instanceId === target.instanceId),
+    );
+    if (!owner) continue;
+    const updated = grantCardText(target, donor);
+    const isOnBoard = target.boardSlot !== null;
+    next = {
+      ...next,
+      players: next.players.map((player) => player.id !== owner.id ? player : {
+        ...player,
+        hand: player.hand.map((card) => card.instanceId === target.instanceId ? updated : card),
+        deck: player.deck.map((card) => card.instanceId === target.instanceId ? updated : card),
+        graveyard: player.graveyard.map((card) => card.instanceId === target.instanceId ? updated : card),
+        board: player.board.map((card) => card?.instanceId === target.instanceId ? updated : card) as typeof player.board,
+      }),
+      events: [...next.events, {
+        type: 'CARD_TEXT_GRANTED',
+        playerId,
+        cardInstanceId: target.instanceId,
+        cardType: target.cardType,
+        source: { type: 'CARD', cardInstanceId: sourceCard.instanceId },
+        target: { type: 'CARD', cardInstanceId: target.instanceId },
+        reason: 'GRANT_RANDOM_CARD_TEXT',
+        grantedFromDefinitionId: donor.id,
+      }],
+    };
+    if (isOnBoard) {
+      const grantedOnly = { ...updated, abilities: [], keywords: [] };
+      const enterEffects = getActiveCardAbilities(grantedOnly)
+        .filter((ability) => ability.trigger === 'ENTER_FIELD')
+        .flatMap((ability) => ability.effects);
+      if (enterEffects.length) {
+        next = resolveTriggeredAbilities(next, owner.id, grantedOnly, 'ENTER_FIELD');
+      }
+    }
+  }
+  return next;
 }
 
 function setLastTargetIds(state: GameState, ids: string[]): GameState {
@@ -1348,15 +1437,15 @@ export function hasKeyword(
   card: CardInstance,
   keyword: CardKeyword,
 ): boolean {
-  return !card.isSilenced && card.keywords.includes(keyword);
+  return getActiveCardKeywords(card).includes(keyword);
 }
 
 export function getActiveAbility(
   card: CardInstance,
 ): Extract<CardAbility, { trigger: 'ACTIVE' }> | undefined {
-  return card.isSilenced || card.isAbilityDisabled
+  return card.isAbilityDisabled
     ? undefined
-    : card.abilities.find(
+    : getActiveCardAbilities(card).find(
         (ability): ability is Extract<CardAbility, { trigger: 'ACTIVE' }> =>
           ability.trigger === 'ACTIVE',
       );
@@ -1634,7 +1723,7 @@ export function applyEffect(
         instanceId: `${sourceCard.instanceId}:captured:${state.events.length}`,
         boardSlot: null, enteredThisTurn: false, attacksUsedThisTurn: 0,
         isSilenced: false, isSilenceImmune: false, dodgeAvailable: (captured.baseSnapshot.dodgeCharges ?? 0) > 0,
-        dodgeCharges: captured.baseSnapshot.dodgeCharges ?? (captured.baseSnapshot.keywords.includes('DODGE') ? 1 : 0),
+        dodgeCharges: captured.baseSnapshot.dodgeCharges ?? (getActiveCardKeywords(captured.baseSnapshot as CardInstance).includes('DODGE') ? 1 : 0),
         isStunned: false, activeUsedThisTurn: false, isDirectDeployedChampion: false, capturedCards: [],
       };
       const withoutCaptured = {
@@ -1844,7 +1933,8 @@ export function applyEffect(
       if (target.filter?.isToken !== undefined && card.isToken !== target.filter.isToken) return false;
       if (target.filter?.isChampionToken !== undefined && card.isChampionToken !== target.filter.isChampionToken) return false;
       if (target.filter?.excludeSource && card.instanceId === sourceCard.instanceId) return false;
-      if (target.filter?.keyword !== undefined && !card.keywords.includes(target.filter.keyword)) return false;
+      if (target.filter?.isVanilla && !isVanillaCard(card)) return false;
+      if (target.filter?.keyword !== undefined && !getActiveCardKeywords(card).includes(target.filter.keyword)) return false;
       if (target.filter?.cost && !scriptCompare(card.currentCost, target.filter.cost.compare, target.filter.cost.value)) return false;
       if (target.filter?.attack && !scriptCompare(card.currentAttack, target.filter.attack.compare, target.filter.attack.value)) return false;
       if (target.filter?.health && !scriptCompare(card.currentHealth, target.filter.health.compare, target.filter.health.value)) return false;
@@ -1875,6 +1965,9 @@ export function applyEffect(
               randomCandidates,
               randomForEffect(state, sourceCard, effect),
             ).slice(0, Math.max(0, target.count));
+    if (effect.action === 'GRANT_RANDOM_CARD_TEXT') {
+      return grantRandomCardText(state, playerId, sourceCard, targets, effect);
+    }
     if (!targets.length) {
       return effect.action === 'DESTROY'
         ? withLastAggregatedStats(state, { attack: 0, health: 0 })
@@ -2053,7 +2146,8 @@ export function applyEffect(
           currentHealth: current.baseHealth ?? current.maxHealth,
           maxHealth: current.baseHealth ?? current.maxHealth,
           isGenerated: current.isGenerated, isToken: current.isToken, isChampionToken: current.isChampionToken,
-          keywords: [...current.keywords], abilities: [...current.abilities], tags: current.tags ? [...current.tags] : [],
+           keywords: [...current.keywords], abilities: [...current.abilities], tags: current.tags ? [...current.tags] : [],
+           grantedText: current.grantedText ? structuredClone(current.grantedText) : undefined,
         };
         return {
           ...nextState,
@@ -2216,11 +2310,11 @@ export function applyEffect(
                 );
            if (effect.action === 'SILENCE') return card; // resolved centrally below
              if (effect.action === 'ADD_KEYWORD' && effect.values?.keyword) {
-               if (effect.values.keyword === 'DODGE' && card.keywords.includes('DODGE')) {
+               if (effect.values.keyword === 'DODGE' && getActiveCardKeywords(card).includes('DODGE')) {
                  const charges = Math.max(0, card.dodgeCharges ?? (card.dodgeAvailable ? 1 : 0)) + 1;
                  return { ...card, dodgeAvailable: true, dodgeCharges: charges };
                }
-               if (!card.keywords.includes(effect.values.keyword)) {
+               if (!getActiveCardKeywords(card).includes(effect.values.keyword)) {
                  return { ...card, keywords: [...card.keywords, effect.values.keyword], dodgeAvailable: effect.values.keyword === 'DODGE' ? true : card.dodgeAvailable, dodgeCharges: effect.values.keyword === 'DODGE' ? Math.max(1, card.dodgeCharges ?? 0) : card.dodgeCharges };
                }
              }
@@ -2563,11 +2657,11 @@ export function resolveTriggeredAbilities(
     sourceContext?: EventAttribution;
   } = {},
 ): GameState {
-  if (card.isSilenced || card.isAbilityDisabled) return state;
+  if (card.isAbilityDisabled || (card.isSilenced && !card.grantedText)) return state;
 
   const compare = (actual: number, condition: 'GTE' | 'LTE' | 'EQ', expected: number) =>
     condition === 'GTE' ? actual >= expected : condition === 'LTE' ? actual <= expected : actual === expected;
-  const abilities = card.abilities.filter((ability) => {
+  const abilities = getActiveCardAbilities(card).filter((ability) => {
     if (ability.trigger !== trigger) return false;
     if ((trigger === 'BEFORE_DAMAGE' || trigger === 'BEFORE_RETIRE') &&
       state.consumedRuleKeys?.includes(`${card.instanceId}:${trigger}`)) return false;

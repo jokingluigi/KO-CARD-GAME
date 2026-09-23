@@ -1,5 +1,6 @@
 import { normalizeCardRulesText } from "./display-labels";
 import type { CardKeyword } from "../game/effects/types";
+import type { CardInstance } from "../game/cards/types";
 
 export const KEYWORD_RULE_LABELS: Partial<Record<CardKeyword, string>> = {
   TAUNT: "도발",
@@ -50,4 +51,14 @@ export function getVisibleCardRulesText(
   }
 
   return normalized;
+}
+
+export function getCardRuntimeRulesText(
+  card: Pick<CardInstance, "isSilenced" | "grantedText">,
+  printedRulesText: string,
+): string {
+  if (card.isSilenced) return card.grantedText?.rulesText ?? "";
+  if (!card.grantedText?.rulesText) return printedRulesText;
+  if (!printedRulesText) return card.grantedText.rulesText;
+  return `${printedRulesText}\n${card.grantedText.rulesText}`;
 }

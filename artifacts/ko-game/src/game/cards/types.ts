@@ -168,6 +168,13 @@ export interface CardInstance {
   /** Serializable base copies held by this card's CAPTURE action. */
   capturedCards?: CapturedCard[];
   statHistory?: CardStatHistoryEntry[];
+  /** Executable text copied from a published match CardDefinition. */
+  grantedText?: {
+    donorDefinitionId: string;
+    rulesText: string;
+    keywords: CardKeyword[];
+    abilities: CardAbility[];
+  };
 }
 
 export interface CardLineage {
@@ -181,5 +188,5 @@ export interface CardLineage {
 
 export interface CapturedCard {
   definitionId: CardDefinitionId;
-  baseSnapshot: Pick<CardInstance, 'definitionId' | 'cardType' | 'currentCost' | 'currentAttack' | 'currentHealth' | 'maxHealth' | 'isGenerated' | 'isToken' | 'isChampionToken' | 'keywords' | 'abilities' | 'tags' | 'dodgeCharges'>;
+  baseSnapshot: Pick<CardInstance, 'definitionId' | 'cardType' | 'currentCost' | 'currentAttack' | 'currentHealth' | 'maxHealth' | 'isGenerated' | 'isToken' | 'isChampionToken' | 'keywords' | 'abilities' | 'tags' | 'dodgeCharges' | 'grantedText'>;
 }

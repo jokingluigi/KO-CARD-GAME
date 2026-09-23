@@ -132,6 +132,7 @@ function targetFilterFor(text: string, availableTags: readonly string[] = []): T
   const tagFilter = tagFilterFor(text, availableTags);
   const filter = {
     ...(generated ? { isGenerated: true } : {}),
+    ...(/바닐라|효과가\s*없는|능력이\s*없는/.test(text) ? { isVanilla: true } : {}),
     ...(Number.isInteger(minCost) ? { minCost } : {}),
     ...(Number.isInteger(maxCost) ? { maxCost } : {}),
     ...(token ? { isToken: true } : {}),
@@ -576,7 +577,7 @@ function effect(
              : 0;
   }
   if (schema.keyword) { const keyword = keywordFor(body); if (!keyword) return null; values.keyword = keyword; }
-  const explicitTarget = /(선택한\s*(?:선수|대상)|자신|이\s*카드(?!는)|모든\s*캐릭터|모든\s*(?:생성된\s*)?선수|(?:적|상대)\s*(?:선수|챔피언|플레이어|캐릭터)|(?:아군|내)\s*캐릭터|손(?:패)?|생성된|어디에\s*(?:있든|있는)|모든\s*위치의|손패\s*[,，]\s*덱\s*[,，]\s*(?:필드|보드))/.test(targetBody);
+  const explicitTarget = /(선택한\s*(?:선수|대상)|자신|이\s*카드(?!는)|모든\s*캐릭터|모든\s*(?:생성된\s*)?선수|(?:적|상대)\s*(?:선수|챔피언|플레이어|캐릭터)|(?:아군|내)\s*캐릭터|손(?:패)?|생성된|바닐라|효과가\s*없는|능력이\s*없는|어디에\s*(?:있든|있는)|모든\s*위치의|손패\s*[,，]\s*덱\s*[,，]\s*(?:필드|보드))/.test(targetBody);
   const sameSummonedTarget = action === "ADD_KEYWORD" && /소환한\s*['‘’“”]?[^'‘’“”\s]+['‘’“”]?\s*에게/.test(body);
   const randomPoolAction = action === "SUMMON" || action === "GENERATE";
   const resolvedTarget = sameSummonedTarget
@@ -922,6 +923,7 @@ export function analyzeEffectText(input: string, options: EffectAnalysisOptions 
     };
   }
   const recognized: Array<[Action, RegExp]> = [
+    ["GRANT_RANDOM_CARD_TEXT", /(?:바닐라|효과가\s*없는|능력이\s*없는)[^.!?]*(?:무작위|랜덤)[^.!?]*(?:텍스트|능력|효과)/i],
     ["ADD_NEXT_TURN_GOLD", /다음(?:\s*내)?\s*턴(?:에)?\s*(?:추가\s*)?(?:골드(?:를|을)?\s*(?:추가로?\s*)?[+]?\d+\s*(?:g|골드)?|\d+\s*g|골드\s*\d+\s*추가)(?:\s*더)?(?:\s*받(?:습니다|는다|음)?)?/i],
     ["ADD_GOLD", /(?:현재\s*)?(?:\d+\s*(?:g|골드)|골드(?:를|을)?\s*(?:추가로?\s*)?[+]?\d+|현재\s*골드\s*[+]\d+)\s*(?:획득|얻(?:음|습니다)?|추가)?/i],
     ["DRAW", /(?:(?:카드)?\s*(?:\d+\s*장|한\s*장|\d+)(?:을|를)?\s*(?:드로우|뽑(?:기|습니다|는다|음)?))/],
@@ -1095,7 +1097,7 @@ export function isStructuredEffects(value: unknown): value is { effects: Structu
          typeof target.filter !== "object" ||
          target.filter === null ||
           Object.keys(target.filter).some((key) => ![
-            "isGenerated", "minCost", "maxCost", "isToken", "isChampionToken", "excludeSource",
+            "isGenerated", "minCost", "maxCost", "isToken", "isChampionToken", "excludeSource", "isVanilla",
             "keyword", "cost", "attack", "health", "tagsAny", "tagsAll", "tagsNone",
           ].includes(key)) ||
          target.filter.isGenerated !== undefined && typeof target.filter.isGenerated !== "boolean" ||
@@ -1104,6 +1106,7 @@ export function isStructuredEffects(value: unknown): value is { effects: Structu
           target.filter.isToken !== undefined && typeof target.filter.isToken !== "boolean" ||
           target.filter.isChampionToken !== undefined && typeof target.filter.isChampionToken !== "boolean" ||
           target.filter.excludeSource !== undefined && typeof target.filter.excludeSource !== "boolean" ||
+          target.filter.isVanilla !== undefined && typeof target.filter.isVanilla !== "boolean" ||
            target.filter.keyword !== undefined && !KEYWORDS.includes(target.filter.keyword as Keyword) ||
            ["cost", "attack", "health"].some((key) => {
              const comparison = target.filter?.[key as "cost" | "attack" | "health"];
@@ -1130,7 +1133,7 @@ export function isStructuredEffects(value: unknown): value is { effects: Structu
          target.filter && (
            typeof target.filter !== "object" ||
            Object.keys(target.filter).some((key) => ![
-             "isGenerated", "minCost", "maxCost", "isToken", "isChampionToken", "excludeSource",
+              "isGenerated", "minCost", "maxCost", "isToken", "isChampionToken", "excludeSource", "isVanilla",
              "keyword", "cost", "attack", "health", "tagsAny", "tagsAll", "tagsNone",
            ].includes(key)) ||
            target.filter.tagsAny !== undefined && !validTagFilterValues(target.filter.tagsAny) ||
