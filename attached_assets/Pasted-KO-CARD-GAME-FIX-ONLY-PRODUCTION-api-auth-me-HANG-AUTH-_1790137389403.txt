@@ -1,0 +1,588 @@
+KO CARD GAME — FIX ONLY:
+PRODUCTION /api/auth/me HANG + AUTH LOADING RECOVERY
+
+현재 Final Production QA는 다른 게임 기능을 테스트하기 전에
+인증 초기화 단계에서 BLOCKED 되었다.
+
+이번 작업에서는 아래 2개만 수정한다.
+
+1. Production에서 GET /api/auth/me가 간헐적으로 영원히 pending 되는 문제
+2. auth check가 실패/timeout 되었을 때 frontend가
+   "인증 상태 확인 중"에서 영원히 멈추는 문제
+
+다른 게임 기능은 수정하지 마.
+
+==================================================
+현재 실제 Production 증상
+==================================================
+
+Production:
+https://ko-card-game-vr69.onrender.com/
+
+실제 Chromium QA 결과:
+
+1. 사이트 접속
+2. DOM/HTML/JS/CSS 정상 로드
+3. document.readyState = complete
+4. frontend가 GET /api/auth/me 요청
+5. 요청이 12초 이상 pending
+6. 별도 HTTP 확인에서도 약 20초 timeout
+7. response body 0 bytes
+8. 화면은 계속:
+
+KO
+인증 상태 확인 중
+
+에서 멈춤.
+
+첫 번째 새 브라우저 세션에서는
+몇 초 후 로그인 화면으로 정상 전환된 적도 있음.
+
+즉:
+INTERMITTENT.
+
+console uncaught exception은 관찰되지 않음.
+
+==================================================
+0. FIX-FIRST
+==================================================
+
+이번 작업은 timeout 숫자만 넣고 끝내는 작업이 아니다.
+
+반드시:
+
+Production request path 추적
+→ /api/auth/me server handler 진입 여부
+→ auth middleware
+→ session/token verification
+→ DB/profile lookup
+→ response completion
+→ root cause 수정
+→ frontend fallback 추가
+→ regression test
+
+순서로 처리한다.
+
+==================================================
+PART A — /api/auth/me SERVER HANG
+==================================================
+
+1. request lifecycle 추적
+
+/api/auth/me에 대해 최소 다음 구간을 계측한다.
+
+REQUEST_RECEIVED
+AUTH_MIDDLEWARE_ENTER
+AUTH_MIDDLEWARE_EXIT
+SESSION_VERIFY_START
+SESSION_VERIFY_END
+USER_LOOKUP_START
+USER_LOOKUP_END
+RESPONSE_SENT
+
+Production secret/token/user data는 log에 남기지 마.
+
+각 단계의 duration만 확인.
+
+==================================================
+2. route handler 자체 확인
+==================================================
+
+확인:
+
+- handler가 모든 branch에서 return/response하는가
+- await가 resolve되지 않는 branch가 있는가
+- Promise를 생성하고 await하지 않는가
+- next() / response.end()가 빠진 branch가 있는가
+- middleware가 request를 소비하고 다음으로 안 넘기는가
+- exception이 catch되었지만 response가 없는가
+- Supabase/auth SDK call이 무기한 대기 가능한가
+- DB profile lookup이 무기한 대기 가능한가
+
+==================================================
+3. authenticated / unauthenticated 모두 확인
+
+/api/auth/me는 최소 다음 둘 다
+유한 시간 안에 응답해야 한다.
+
+A. valid authenticated session
+→ 200 + public user/auth payload
+
+B. no valid session
+→ 현재 공식 contract의 401 또는 unauthenticated response
+
+"로그인 안 됨"은 pending 상태가 아니다.
+
+==================================================
+4. upstream dependency hang 확인
+
+auth/me가 외부 auth/DB dependency를 기다린다면:
+
+- connection pool
+- Supabase request
+- token verification
+- database profile fetch
+- DNS/network call
+
+중 어디서 block되는지 확인.
+
+근거 없이 Supabase나 Render 탓으로 단정하지 마.
+
+==================================================
+5. timeout safety
+
+외부 dependency가 실제로 hang할 수 있다면
+server-side bounded timeout을 둔다.
+
+단:
+
+timeout
+→ request를 영원히 pending
+
+이 아니라
+
+timeout
+→ controlled error response
+
+여야 한다.
+
+인증 실패와 infrastructure timeout을
+같은 "로그아웃 상태"로 위장하지 마.
+
+예:
+
+401 = 실제 unauthenticated
+503/504 equivalent = auth service temporarily unavailable
+
+현재 API error conventions를 따른다.
+
+==================================================
+6. response once
+
+race:
+
+timeout response
++
+late upstream response
+
+가 동시에 발생해
+headers already sent 같은 문제가 생기지 않게 한다.
+
+request당 response exactly once.
+
+==================================================
+PART B — RENDER / COLD START 여부
+==================================================
+
+7. 실제 cold start인지 측정
+
+첫 세션이 느리고 이후 성공한다는 이유만으로
+Render cold start라고 추측하지 마.
+
+측정:
+
+- API process ready time
+- /health 응답
+- /api/auth/me handler 도착 시점
+- DB/auth dependency latency
+
+를 비교한다.
+
+==================================================
+8. API 자체가 깨어나는 중인 경우
+
+API health가 늦게 뜨는 것과
+health는 정상인데 auth/me만 pending인 것을 구분한다.
+
+CASE A:
+전체 API cold start
+
+CASE B:
+auth route만 stall
+
+CASE C:
+DB/auth dependency stall
+
+정확히 분류.
+
+==================================================
+PART C — FRONTEND 무한 AUTH SPINNER 제거
+==================================================
+
+9. frontend auth bootstrap
+
+현재 흐름:
+
+app mount
+→ auth/me
+→ resolve될 때까지 loading
+
+이라면 failure path를 확인한다.
+
+최소 state:
+
+LOADING
+AUTHENTICATED
+UNAUTHENTICATED
+TEMPORARY_ERROR
+
+를 명확히 구분.
+
+==================================================
+10. 무한 spinner 금지
+
+auth/me가 비정상적으로 오래 걸리거나
+network error/5xx가 발생하면
+
+"인증 상태 확인 중"
+
+을 영원히 유지하지 않는다.
+
+대신:
+
+"인증 서버에 연결할 수 없습니다."
+"다시 시도"
+
+같은 기존 UI 스타일의 recovery state 표시.
+
+==================================================
+11. timeout 후 자동 로그아웃 처리 금지
+
+Infrastructure timeout을:
+
+user is unauthenticated
+
+라고 간주해서
+세션을 삭제하지 마.
+
+사용자의 valid session/cookie를
+frontend가 임의 삭제하지 않는다.
+
+==================================================
+12. 재시도
+
+Retry button:
+
+→ 새로운 auth/me request 1회
+
+가능.
+
+무한 automatic retry loop 금지.
+
+필요하다면 제한된 1회 auto retry만
+기존 UX 정책이 있을 때 허용.
+
+==================================================
+13. stale request
+
+첫 auth request가 늦게 응답한 뒤
+새 retry response를 덮어쓰지 않도록 한다.
+
+AbortController / request generation 등
+현재 architecture에 맞는 방식 사용.
+
+==================================================
+PART D — PROXY / STATIC REWRITE 확인
+==================================================
+
+14. Production frontend architecture 유지
+
+Frontend:
+ko-card-game-vr69.onrender.com
+
+API:
+ko-card-game.onrender.com
+
+authenticated frontend request는
+기존 relative /api/... architecture를 유지.
+
+이번 버그 때문에
+frontend API URL architecture를 새로 뜯어고치지 마.
+
+==================================================
+15. /api/auth/me rewrite
+
+Static frontend에서:
+
+GET /api/auth/me
+
+가 Node API로 정상 rewrite/proxy되는지 확인.
+
+SPA catchall이 /api 요청을 먹으면 안 된다.
+
+단 현재 request가 실제 API까지 도착하는지
+로그/trace로 확인 후 수정.
+
+추측으로 Render rewrite 변경 금지.
+
+==================================================
+PART E — REGRESSION TESTS
+==================================================
+
+16. API tests
+
+TEST AUTH1
+
+unauthenticated GET /api/auth/me.
+
+기대:
+유한 시간 내 공식 unauthenticated response.
+
+pending 금지.
+
+TEST AUTH2
+
+valid authenticated request.
+
+기대:
+유한 시간 내 200.
+
+TEST AUTH3
+
+auth dependency timeout simulation.
+
+기대:
+bounded error response.
+request completion.
+
+TEST AUTH4
+
+DB/profile lookup failure.
+
+기대:
+controlled response.
+pending 없음.
+
+TEST AUTH5
+
+middleware exception.
+
+기대:
+error middleware/response.
+pending 없음.
+
+==================================================
+17. Frontend tests
+
+TEST UI1
+
+auth/me → 200.
+
+기대:
+authenticated Main.
+
+TEST UI2
+
+auth/me → unauthenticated response.
+
+기대:
+Login screen.
+
+TEST UI3
+
+auth/me → network timeout.
+
+기대:
+무한 spinner 없음.
+temporary error + Retry.
+
+TEST UI4
+
+Retry → success.
+
+기대:
+정상 Login/Main.
+
+TEST UI5
+
+old request가 retry 이후 늦게 resolve.
+
+기대:
+최신 auth state를 덮어쓰지 않음.
+
+==================================================
+18. 반복 테스트
+
+이 문제는 INTERMITTENT였으므로
+한 번 성공했다고 PASS 금지.
+
+Dev/Test에서 auth bootstrap을
+여러 번 반복한다.
+
+최소:
+
+20회 auth/me request sequence
+
+에서:
+
+pending forever = 0
+
+이어야 한다.
+
+==================================================
+19. 성능 측정
+
+각 auth/me request에 대해:
+
+min
+median
+p95
+max
+
+정도를 Dev/Test에서 기록.
+
+절대적인 숫자를 억지 성공 기준으로 만들 필요는 없지만
+무기한 pending이 없어야 한다.
+
+==================================================
+20. Production 안전
+
+이번 수정 과정에서:
+
+- Production DB 직접 변경 금지
+- user session 삭제 금지
+- account mutation 금지
+- env var 변경 금지
+- OPENAI key 변경 금지
+
+==================================================
+21. 다른 기능 수정 금지
+
+이번 작업에서 절대 건드리지 마:
+
+- Card effects
+- Champion
+- Quest
+- AI Match logic
+- Online game logic
+- AI Mechanic Compiler
+- Daily Quest
+- Attendance
+- Rewards
+- Collection
+- Deck Editor
+- Main content
+- BGM
+
+인증 bootstrap 문제만 수정.
+
+==================================================
+22. 검증
+
+반드시:
+
+auth API tests
+frontend auth bootstrap tests
+timeout/retry tests
+
+그리고:
+
+pnpm run typecheck
+pnpm --filter @workspace/ko-game run build
+API typecheck
+API build
+git diff --check
+
+==================================================
+23. 브라우저 검증
+
+가능하면 Development/Test browser에서:
+
+fresh session
+→ auth check
+→ Login
+
+을 여러 번 반복.
+
+그 후 Production 배포가 별도 승인/작업으로 완료되면
+Production에서 다시 Final QA를 수행할 수 있게 한다.
+
+이번 fix task 자체에서
+Production QA 전체를 다시 하지 마.
+
+==================================================
+24. 최종 보고
+
+ROOT CAUSE:
+...
+
+HANG LOCATION:
+route / middleware / auth SDK / DB / proxy / other
+
+REQUEST RECEIVED:
+YES / NO
+
+AUTH MIDDLEWARE COMPLETES:
+YES / NO
+
+DB/AUTH DEPENDENCY COMPLETES:
+YES / NO
+
+RESPONSE ALWAYS COMPLETES:
+YES / NO
+
+SERVER TIMEOUT SAFETY:
+PASS / FAIL
+
+UNAUTHENTICATED RESPONSE:
+PASS / FAIL
+
+AUTHENTICATED RESPONSE:
+PASS / FAIL
+
+FRONTEND INFINITE SPINNER:
+FIXED / NOT FIXED
+
+TEMPORARY ERROR UI:
+PASS / FAIL
+
+RETRY:
+PASS / FAIL
+
+STALE REQUEST PROTECTION:
+PASS / FAIL
+
+20x REPEAT:
+PASS / FAIL
+
+FOREVER-PENDING REQUESTS:
+...
+
+TYPECHECK:
+PASS / FAIL
+
+KO BUILD:
+PASS / FAIL
+
+API TYPECHECK:
+PASS / FAIL
+
+API BUILD:
+PASS / FAIL
+
+git diff --check:
+PASS / FAIL
+
+CHANGED FILES:
+...
+
+COMMIT:
+...
+
+PUSH:
+...
+
+==================================================
+완료 조건
+==================================================
+
+1. /api/auth/me가 모든 코드 경로에서 응답을 종료한다.
+2. unauthenticated 상태도 pending이 아니라 정상 응답한다.
+3. upstream hang은 bounded error로 종료된다.
+4. frontend가 인증 오류 시 무한 spinner에 머물지 않는다.
+5. Retry가 가능하다.
+6. infrastructure timeout 때문에 valid session을 삭제하지 않는다.
+7. 반복 auth 테스트에서 forever pending이 0건이다.
+8. 다른 게임 기능은 수정하지 않는다.
+
+이 문제만 수정하고 멈춰라.
