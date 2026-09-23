@@ -1,0 +1,769 @@
+KO CARD GAME — FEATURE BUNDLE
+CHAMPION CRAFTING + CHAMPION PRISM + DUPLICATE CHAMPION CONVERSION
+
+이번 작업에서는 서로 연결된 아래 3개 기능만 구현한다.
+
+1. Champion도 선수 카드처럼 Collection에서 직접 생성(Craft)할 수 있게 한다.
+2. 선수 카드 Prism과 완전히 분리된 "Champion Prism" 재화를 추가한다.
+3. Pack Opening에서 이미 보유한 Champion이 다시 나오면 Champion 중복 소유 대신 Champion Prism으로 변환한다.
+
+이 세 기능은 하나의 Champion ownership/economy 흐름으로 구현한다.
+
+기존 일반 선수 카드 Prism,
+Pack 확률,
+Card crafting,
+Champion gameplay 효과,
+Deck rules
+
+를 임의로 변경하지 마.
+
+==================================================
+0. 핵심 공식 규칙
+==================================================
+
+Champion은 기본적으로 unique ownership이다.
+
+즉 한 ChampionDefinition을 이미 보유하고 있다면
+동일 Champion을 두 번째 "소유 개수"로 쌓지 않는다.
+
+Pack에서:
+
+미보유 Champion 획득
+→ Champion unlock/ownership 추가.
+
+이미 보유한 Champion 획득
+→ Champion ownership 증가 없음
+→ Champion Prism 지급.
+
+Champion Craft:
+
+미보유 Champion
++ 충분한 Champion Prism
+→ Champion Prism 차감
+→ 해당 Champion unlock.
+
+이미 보유한 Champion은 다시 Craft 불가.
+
+==================================================
+1. Champion Prism은 일반 Prism과 별도
+==================================================
+
+새 재화:
+
+CHAMPION_PRISM
+
+또는 현재 프로젝트 naming convention에 맞는
+동등한 canonical currency type을 추가.
+
+중요:
+
+일반 선수 카드 Prism과 Champion Prism은 서로 섞이지 않는다.
+
+금지:
+
+- Champion 제작에 일반 Prism 사용
+- 선수 카드 제작에 Champion Prism 사용
+- UI에서 둘을 같은 balance로 표시
+- 내부적으로 하나의 balance를 이름만 다르게 표현
+
+기존 wallet/economy architecture가 있다면
+새 authoritative currency type으로 확장한다.
+
+==================================================
+2. 기존 Prism architecture 재사용
+==================================================
+
+먼저 현재 일반 선수 카드 제작 흐름을 조사:
+
+- Prism balance 저장 방식
+- Craft request
+- 서버 검증
+- CardDefinition lookup
+- ownership grant
+- transaction
+- insufficient currency error
+- UI refresh
+- duplicate prevention
+- animation/toast
+
+가능한 한 같은 구조를 Champion용으로 재사용.
+
+단 Champion과 Card의 definition/ownership table이 다르면
+현재 authoritative Champion ownership model에 맞춰 구현.
+
+==================================================
+3. Champion Craft UI
+==================================================
+
+Collection 또는 현재 선수 카드 Craft UI와 일관된 위치에서
+Champion도 제작할 수 있어야 한다.
+
+Champion 상세/Collection에서 최소 표시:
+
+- Champion 이미지
+- Champion 이름
+- owned / unowned 상태
+- Champion Prism 제작 비용
+- 현재 Champion Prism 보유량
+- Craft 버튼
+
+미보유 + 재화 충분:
+Craft enabled.
+
+미보유 + 재화 부족:
+Craft disabled + 부족한 재화 표시.
+
+이미 보유:
+Craft disabled.
+"보유 중" 상태.
+
+==================================================
+4. Champion Craft 비용
+==================================================
+
+Champion 제작 비용을 임의 숫자로 하드코딩하지 마.
+
+먼저 프로젝트에:
+
+- rarity별 crafting cost
+- global economy config
+- Admin-configurable crafting cost
+- Champion-specific cost
+
+중 기존 구조가 있는지 확인.
+
+적절한 기존 config가 있으면 확장/재사용.
+
+아무 구조도 없다면
+Champion crafting cost를 하나의 중앙 authoritative config로 만든다.
+
+예:
+
+championCraftCost
+
+중요:
+
+React component 내부 숫자 하드코딩 금지.
+클라이언트가 보낸 cost를 신뢰하지 마.
+서버가 authoritative cost를 조회한다.
+
+==================================================
+5. Champion Prism balance UI
+==================================================
+
+Champion crafting 화면에서
+현재 Champion Prism 보유량을 명확히 보여준다.
+
+일반 Prism과 시각적으로 구분.
+
+기존 재화 bar/wallet component가 있다면 확장.
+
+표시 예:
+
+일반 Prism: ...
+Champion Prism: ...
+
+단 UI 전체를 대규모 리디자인하지 마.
+
+==================================================
+6. Craft API / Server authoritative
+==================================================
+
+Champion Craft 요청은 최소:
+
+championDefinitionId
+
+만 보내고,
+
+서버가:
+
+1. 인증 사용자 확인
+2. ChampionDefinition 존재 확인
+3. craft 가능한 Champion인지 확인
+4. 이미 보유했는지 확인
+5. authoritative championCraftCost 조회
+6. Champion Prism balance 확인
+7. Prism 차감
+8. Champion ownership grant
+
+를 처리.
+
+client가 보내는:
+
+- cost
+- balance
+- owned 여부
+
+를 신뢰하지 마.
+
+==================================================
+7. Atomicity
+==================================================
+
+Craft는 반드시 원자적으로 처리.
+
+Champion Prism만 빠지고 Champion이 안 들어오는 상태 금지.
+Champion은 들어왔는데 Prism이 안 빠지는 상태 금지.
+
+가능하면 DB transaction 사용.
+
+현재 architecture에 transaction abstraction이 있다면 반드시 사용.
+
+==================================================
+8. Double-click / duplicate request 방지
+==================================================
+
+Craft 버튼 연타,
+network retry,
+같은 request 재전송으로
+
+Champion이 중복 지급되거나
+Champion Prism이 중복 차감되면 안 된다.
+
+최소한:
+
+- 이미 owned 재검증
+- request in-flight UI lock
+- server-side authoritative guard
+
+적용.
+
+==================================================
+9. Pack Opening — Champion 획득
+==================================================
+
+현재 Pack roll 자체의 확률/Champion 등장 확률은 건드리지 마.
+
+Pack 결과에 Champion이 포함될 때:
+
+CASE A:
+사용자가 해당 Champion 미보유
+
+→ Champion unlock.
+→ Champion Prism 보상 없음.
+
+CASE B:
+사용자가 해당 Champion 이미 보유
+
+→ ownership count 추가 금지.
+→ Champion Prism 지급.
+→ Pack result UI에서 "중복 Champion → Champion Prism" 변환을 명확히 표시.
+
+==================================================
+10. Duplicate Champion Prism 지급량
+==================================================
+
+지급량을 임의 숫자로 하드코딩하지 마.
+
+먼저 기존 duplicate card → Prism 변환 구조가 있는지 확인.
+
+Champion용 값은 일반 선수 카드 Prism 값과 분리한다.
+
+권장 구조:
+
+duplicateChampionPrismReward
+
+또는 rarity/Champion별 reward config.
+
+현재 Champion에 rarity가 있고
+게임 경제가 rarity 기반 duplicate reward를 이미 사용한다면
+그 구조를 자연스럽게 확장.
+
+Champion rarity가 없다면
+단일 중앙 config 사용.
+
+UI/클라이언트에서 지급량 결정 금지.
+
+==================================================
+11. Pack result UI
+==================================================
+
+미보유 Champion:
+
+- 기존 Champion reveal
+- "NEW" 또는 현재 신규 획득 표시
+- Champion unlock
+
+중복 Champion:
+
+- Champion reveal은 그대로 보여줘도 됨
+- 명확하게 duplicate임을 표시
+- Champion Prism 아이콘/수량 표시
+- 실제 wallet 증가와 UI 수량 일치
+
+중복인데 사용자 Collection에
+Champion 2개로 표시되면 FAIL.
+
+==================================================
+12. Pack transaction / retry
+==================================================
+
+Pack opening에서 duplicate Champion conversion도
+기존 pack claim/open transaction 안에서 처리.
+
+network retry/reload로:
+
+- 같은 Champion Prism 두 번 지급
+- Champion unlock + duplicate reward 동시 지급
+- pack 결과 재처리
+
+가 발생하면 안 된다.
+
+기존 pack opening idempotency를 유지/확장.
+
+==================================================
+13. Champion ownership semantics
+==================================================
+
+Champion ownership이 boolean/unlock 방식이면 그대로 사용.
+
+만약 현재 DB가 quantity를 갖고 있더라도
+Champion gameplay/collection에서 duplicate quantity를
+실제 별도 Champion copies처럼 사용하지 않도록
+현재 공식 unique ownership semantics를 따른다.
+
+기존 데이터를 자동 삭제/정리하지 마.
+
+legacy duplicate Champion 데이터가 존재한다면
+migration을 임의로 실행하지 말고 보고만 한다.
+
+==================================================
+14. Collection
+==================================================
+
+Champion Collection에서:
+
+- owned Champion
+- unowned Champion
+
+둘 다 현재 디자인 원칙에 맞게 확인 가능해야 한다.
+
+미보유 Champion은 제작 가능 여부가 보여야 한다.
+
+Craft 성공 후:
+
+- owned 상태 즉시 갱신
+- Champion Prism balance 즉시 갱신
+- 새로고침 후에도 유지
+
+==================================================
+15. 일반 선수 카드 회귀 금지
+==================================================
+
+반드시 확인:
+
+- 일반 카드 Prism balance 정상
+- 일반 카드 Craft 정상
+- 일반 duplicate card conversion 정상
+- Champion Prism 때문에 일반 Prism 수치 변하지 않음
+- Card crafting cost 변경 없음
+
+==================================================
+16. Pack 확률 회귀 금지
+==================================================
+
+이번 기능은 "이미 뽑힌 Champion 결과를 어떻게 지급하는가"만 변경한다.
+
+다음 변경 금지:
+
+- Champion 등장 확률
+- rarity 확률
+- pack contents
+- pity
+- pack price
+- number of pulls
+- RNG seed logic
+
+==================================================
+17. Admin / Economy config
+==================================================
+
+이미 Economy/Admin 설정 화면이 있다면
+최소한 다음 값을 관리 가능한 구조인지 확인:
+
+- Champion Craft Cost
+- Duplicate Champion Prism Reward
+
+기존 config pattern이 있다면 Admin에 추가 가능.
+
+하지만 새로운 대형 Admin 시스템을 만들 필요는 없다.
+
+Admin 노출보다 우선순위는:
+
+authoritative server config
++ 실제 Craft/Pack 지급 정상 동작.
+
+==================================================
+18. Security
+==================================================
+
+다음 요청 변조를 막는다:
+
+- owned Champion을 다시 craft
+- cost=0 전송
+- negative cost
+- 다른 ChampionDefinition ID
+- fake duplicate flag
+- fake Champion Prism reward amount
+- duplicate pack result 재처리
+
+서버가 모든 값을 authoritative하게 판단.
+
+==================================================
+19. REGRESSION TEST — CHAMPION CRAFT
+==================================================
+
+TEST CC1
+
+User:
+Champion A 미보유.
+Champion Prism = craft cost.
+
+Craft Champion A.
+
+기대:
+
+Champion A owned = true.
+Champion Prism = 0.
+일반 Prism 변화 없음.
+
+==================================================
+
+TEST CC2
+
+Champion Prism < craft cost.
+
+기대:
+
+Craft 거부.
+Champion ownership 변화 없음.
+Champion Prism 변화 없음.
+
+==================================================
+
+TEST CC3
+
+이미 Champion A 보유.
+
+Craft 재시도.
+
+기대:
+
+거부.
+Champion Prism 차감 없음.
+duplicate ownership 없음.
+
+==================================================
+
+TEST CC4
+
+Craft button double-click / duplicate request.
+
+기대:
+
+1회만 처리.
+중복 차감 없음.
+
+==================================================
+20. REGRESSION TEST — PACK
+==================================================
+
+TEST CP1
+
+미보유 Champion A가 Pack에서 등장.
+
+기대:
+
+Champion A unlock.
+Champion Prism +0.
+
+==================================================
+
+TEST CP2
+
+이미 Champion A 보유 상태에서
+Champion A가 Pack에서 등장.
+
+기대:
+
+Champion A ownership duplicate 없음.
+Champion Prism += configured duplicate reward.
+
+==================================================
+
+TEST CP3
+
+같은 Pack result가 retry/replay.
+
+기대:
+
+Champion Prism 중복 지급 없음.
+
+==================================================
+
+TEST CP4
+
+한 Pack에서:
+new Champion + duplicate Champion
+둘 다 존재 가능한 구조라면
+
+기대:
+
+new Champion unlock.
+duplicate Champion만 Prism 변환.
+
+==================================================
+21. UI TEST
+==================================================
+
+가능하면 Development/Test browser에서:
+
+A.
+Collection → unowned Champion 선택
+→ Champion Prism cost 표시
+→ Craft
+→ owned 상태
+→ Prism 감소.
+
+B.
+insufficient Champion Prism
+→ Craft disabled/error 정상.
+
+C.
+Pack opening fixture/test account에서
+duplicate Champion 등장
+→ Champion Prism 변환 표시
+→ wallet 실제 증가.
+
+D.
+새 Champion 등장
+→ unlock
+→ duplicate Prism 지급 없음.
+
+브라우저 unavailable이면
+Implementation/Automated Verification은 계속하고
+Browser Verification만 UNVERIFIED.
+
+==================================================
+22. Production 안전
+==================================================
+
+테스트에서:
+
+Production DB 직접 수정 금지.
+실제 사용자 Champion 지급 금지.
+실제 사용자 Pack 소비 금지.
+실제 사용자 재화 차감 금지.
+
+test fixture
+mock DB
+development account
+
+사용.
+
+==================================================
+23. 이번 작업에서 하지 말 것
+==================================================
+
+수정 금지:
+
+- Champion gameplay ability
+- Champion Token 규칙
+- Deck 25장 규칙
+- Legendary 제한
+- Pack 확률
+- Shop 가격
+- AI
+- Online networking
+- Quest
+- Attendance
+- Daily Quest
+- AI Mechanic Compiler
+- 카드 밸런스
+
+==================================================
+24. 자동 검증
+==================================================
+
+필수:
+
+- Champion Prism wallet tests
+- Champion Craft success
+- insufficient Champion Prism
+- owned Champion craft rejection
+- double-request protection
+- new Champion from pack
+- duplicate Champion conversion
+- duplicate pack replay/idempotency
+- ordinary card Prism regression
+- ordinary card Craft regression
+- pack RNG regression
+- collection ownership refresh
+
+그리고:
+
+pnpm run typecheck
+pnpm --filter @workspace/ko-game run build
+git diff --check
+
+API/shared/DB code 변경 시:
+
+API typecheck
+API build
+relevant DB/unit tests
+
+실제 schema migration이 필요하다면
+Production에 직접 적용하지 마.
+migration file만 안전하게 준비하고 보고.
+
+==================================================
+25. Git
+==================================================
+
+이번 작업 관련 파일만 stage.
+
+금지:
+
+Pasted-*.txt
+.env
+secrets
+logs
+screenshots
+temp
+Replit metadata
+unrelated changes
+
+검증 후 commit.
+
+force push 금지.
+
+push는 별도 요청 없으면 하지 마.
+
+==================================================
+26. 최종 보고
+==================================================
+
+CHAMPION PRISM
+
+Currency added:
+PASS / FAIL
+
+Separate from normal Prism:
+PASS / FAIL
+
+Balance persistence:
+PASS / FAIL
+
+UI balance:
+PASS / FAIL
+
+
+CHAMPION CRAFT
+
+Unowned Champion craft:
+PASS / FAIL
+
+Server-authoritative cost:
+PASS / FAIL
+
+Insufficient balance:
+PASS / FAIL
+
+Already-owned rejection:
+PASS / FAIL
+
+Atomic grant:
+PASS / FAIL
+
+Double request:
+PASS / FAIL
+
+
+PACK DUPLICATE CHAMPION
+
+New Champion unlock:
+PASS / FAIL
+
+Owned Champion duplicate detected:
+PASS / FAIL
+
+Duplicate ownership prevented:
+PASS / FAIL
+
+Champion Prism granted:
+PASS / FAIL
+
+Configured reward amount:
+PASS / FAIL
+
+Pack replay idempotency:
+PASS / FAIL
+
+Pack RNG unchanged:
+PASS / FAIL
+
+
+NORMAL CARD REGRESSION
+
+Normal Prism:
+PASS / FAIL
+
+Normal Card Craft:
+PASS / FAIL
+
+Normal duplicate conversion:
+PASS / FAIL
+
+
+IMPLEMENTATION:
+PASS / FAIL
+
+AUTOMATED VERIFICATION:
+PASS / FAIL
+
+BROWSER VERIFICATION:
+PASS / FAIL / UNVERIFIED
+
+TYPECHECK:
+PASS / FAIL
+
+KO BUILD:
+PASS / FAIL
+
+API TYPECHECK:
+PASS / FAIL / NOT_MODIFIED
+
+API BUILD:
+PASS / FAIL / NOT_MODIFIED
+
+git diff --check:
+PASS / FAIL
+
+DB MIGRATION:
+NONE / PREPARED / ...
+
+CHANGED FILES:
+...
+
+COMMIT:
+...
+
+PUSH:
+NOT REQUESTED / ...
+
+==================================================
+완료 조건
+==================================================
+
+1. Champion도 Collection에서 제작할 수 있다.
+2. 제작에는 일반 Prism이 아닌 Champion Prism만 사용한다.
+3. Champion Prism은 일반 Prism과 별도 balance다.
+4. 미보유 Champion Pack 획득은 Champion unlock.
+5. 이미 보유한 Champion Pack 획득은 duplicate ownership 대신 Champion Prism 지급.
+6. duplicate reward 양은 authoritative config에서 결정.
+7. Craft cost도 authoritative config에서 결정.
+8. Pack retry/replay로 Prism 중복 지급이 발생하지 않는다.
+9. 일반 선수 카드 Prism/Craft/duplicate 시스템에 회귀가 없다.
+10. Pack 확률/RNG는 변경하지 않는다.
+
+이 기능 묶음만 구현하고 멈춰라.
