@@ -1,0 +1,846 @@
+KO CARD GAME — FIX/IMPLEMENT ONLY:
+ADMIN TEST GAME TURN-3 CRASH + DAILY/ATTENDANCE CARD/PACK REWARDS + JÄGER AI QUEST STALL
+
+이번 작업에서는 아래 3개만 처리한다.
+
+1. 관리자 사이트의 Test Game이 3턴째에 크래시하는 문제
+2. Daily Quest / Attendance Board 보상에 CARD 및 PACK 타입 추가
+3. 상대 AI Jäger가 Quest 완료 후 더 이상 행동하지 않는 문제
+
+세 작업은 서로 섞지 말고 아래 순서대로 각각:
+재현 → root cause → 최소 수정 → 전용 regression test
+를 끝낸 뒤 다음 항목으로 넘어간다.
+
+다른 카드 효과,
+AI Mechanic Compiler,
+Online presentation,
+Main UI,
+Deck rule,
+경제 밸런스 전반
+은 수정하지 마.
+
+==================================================
+PART A — ADMIN TEST GAME TURN 3 CRASH
+==================================================
+
+현재 실제 신고:
+
+관리자 사이트에서 Test Game을 실행하면
+정상적으로 진행되다가 3턴째에 크래시가 발생한다.
+
+중요:
+"3턴"이라는 숫자를 하드코딩해서 회피하지 말고
+왜 세 번째 턴 전환/시작 시점에서 크래시하는지 실제 원인을 찾아라.
+
+==================================================
+1. 실제 Admin Test Game에서 재현
+==================================================
+
+가능하면 관리자 Test Game UI를 실제로 실행해서 재현.
+
+확인:
+
+- Turn 1 start/end
+- Turn 2 start/end
+- Turn 3 start 직전/직후
+- 어떤 Action 직후 크래시하는지
+- 어떤 Event 처리 중인지
+- 어떤 effect/pending/scheduler가 남아 있는지
+
+브라우저 console과 server/API log 모두 확인.
+
+브라우저 접근 불가하면
+동일 Admin Test Game fixture/harness를 사용해
+최소 Turn 4까지 deterministic simulation.
+
+==================================================
+2. 반드시 확보할 정보
+==================================================
+
+크래시 발생 시:
+
+ERROR:
+...
+
+STACK:
+...
+
+TURN:
+...
+
+ACTIVE PLAYER:
+...
+
+LAST ACTION:
+...
+
+LAST EVENT:
+...
+
+PENDING EFFECT:
+...
+
+PENDING CONTINUATION:
+...
+
+DELAYED/LISTENER STATE:
+...
+
+PRESENTATION STATE:
+...
+
+를 기록.
+
+==================================================
+3. 특히 조사할 것
+==================================================
+
+최근 runtime 변경도 있으므로 다음을 확인하되
+원인이라고 가정하지 마.
+
+- turn-start delayed effect processing
+- OWNER_NEXT_TURN_START / OPPONENT_NEXT_TURN_START
+- serialized PendingDelayedEffect
+- sourceCard snapshot
+- effect listener consume
+- Quest completion
+- AI scheduler
+- stale continuation
+- test-game state serialization/deserialization
+- null/undefined CardInstance/CardDefinition
+- Test Game 전용 mock data
+- turn counter/index off-by-one
+- duplicate END_TURN
+- component unmount/rerender crash
+
+==================================================
+4. Admin Test Game 전용 hack 금지
+==================================================
+
+금지:
+
+if (turn === 3) ...
+try/catch로 오류 삼키기
+자동 reload
+GameState reset
+turn skip
+
+실제 root cause를 수정.
+
+가능하면 generic engine/test-harness fix로 해결한다.
+
+==================================================
+5. Test Game regression
+==================================================
+
+TEST ATG1
+
+Admin Test Game 시작.
+
+Turn 1 → 정상.
+Turn 2 → 정상.
+Turn 3 → 정상.
+Turn 4 → 정상.
+
+최소 4턴 이상 진행.
+
+TEST ATG2
+
+각 turn transition 후:
+
+activePlayer 정확
+pending state 유효
+GameState reset 없음
+card zones 보존
+console/server exception 없음.
+
+TEST ATG3
+
+최근 delayed/listener effect가 없는 단순 fixture와
+있는 fixture 둘 다 최소 4턴 진행.
+
+==================================================
+PART B — DAILY QUEST / ATTENDANCE REWARD에 CARD + PACK 추가
+==================================================
+
+현재 요구:
+
+Daily Quest와 Attendance Board의 보상으로
+기존 재화 보상뿐 아니라
+
+- CARD
+- PACK
+
+을 설정하고 지급할 수 있어야 한다.
+
+==================================================
+6. 기존 reward architecture 우선 확인
+==================================================
+
+먼저 현재 공용 reward/economy 구조 확인.
+
+이미:
+
+RewardItem
+RewardType
+grantReward
+wallet/inventory service
+pack inventory
+card ownership service
+
+가 있다면 반드시 재사용.
+
+Daily Quest와 Attendance가
+각자 별도의 카드 지급 코드를 만들지 마.
+
+==================================================
+7. Reward type
+==================================================
+
+기존 reward 구조를 확장해 최소:
+
+- 기존 currency/resource 타입
+- CARD
+- PACK
+
+을 지원.
+
+현재 reward가 배열 구조라면 그대로 확장.
+
+현재 single reward 구조라면
+프로젝트 구조상 자연스러운 최소 변경을 사용하되
+기존 보상 호환성을 깨지 마.
+
+==================================================
+8. CARD reward
+==================================================
+
+Admin에서 CARD reward 설정 시 최소:
+
+- CardDefinition 선택
+- quantity 설정
+
+가능.
+
+서버에서 다시 검증:
+
+- definition 존재
+- reward 가능한 실제 카드인지
+- quantity >= 1
+- Token 직접 보상 금지 여부는 기존 카드 소유 규칙을 따름
+- disabled/unpublished 카드 보상 허용 여부는 현재 운영 규칙을 따름
+
+임의 정책을 만들지 말고 기존 ownership/catalog 규칙 사용.
+
+==================================================
+9. PACK reward
+==================================================
+
+Admin에서 PACK reward 설정 시 최소:
+
+- 기존 PackDefinition / Pack product 선택
+- quantity 설정
+
+가능.
+
+중요:
+
+팩 보상을 받았다고
+자동으로 팩을 개봉하지 마.
+
+현재 게임에 "보유 팩/inventory" 개념이 있으면
+그 inventory에 정확한 pack을 지급.
+
+현재 pack architecture가
+"팩 아이템 소유"가 아니라 즉시 open만 지원한다면
+임의 구현하지 말고 구조를 확인한 뒤
+현재 공식 pack semantics에 맞게 처리.
+
+==================================================
+10. Admin UX
+==================================================
+
+Daily Quest Admin과 Attendance Admin에서
+reward type 선택 가능:
+
+CURRENCY
+CARD
+PACK
+
+CARD 선택 시:
+Card selector
+quantity
+
+PACK 선택 시:
+Pack selector
+quantity
+
+기존 currency 선택 UI는 그대로 유지.
+
+가능하면 이름만 입력하는 text field보다
+실제 authoritative definition selector 사용.
+
+==================================================
+11. 사용자 표시
+==================================================
+
+Daily Quest / Attendance UI에서
+보상 내용을 실제 지급 내용과 일치하게 표시.
+
+CARD:
+카드 이미지/이름 + 수량
+
+PACK:
+팩 이미지/이름 + 수량
+
+기존 currency:
+기존대로 표시.
+
+깨진 이미지에는 fallback.
+
+==================================================
+12. 서버 authoritative 지급
+==================================================
+
+client가 보내는:
+
+cardDefinitionId
+packDefinitionId
+quantity
+reward amount
+
+를 그대로 신뢰하지 마.
+
+claim 요청은 assignment/attendance reward identity만 보내고,
+서버가 authoritative reward definition을 조회해서 지급.
+
+==================================================
+13. 공통 idempotency 유지
+==================================================
+
+Daily Quest:
+같은 assignment reward 두 번 지급 금지.
+
+Attendance:
+같은 날짜/day reward 두 번 지급 금지.
+
+CARD/PACK도 currency와 동일하게
+중복 claim 방지.
+
+==================================================
+14. Atomic grant
+==================================================
+
+복합 보상이 가능하다면:
+
+예:
+currency + card + pack
+
+중간에 일부만 지급되고 실패하는 상태를 피한다.
+
+가능하면 하나의 transaction/atomic reward grant.
+
+현재 DB architecture가 완전 atomic을 지원하지 않으면
+기존 reward ledger/idempotency 구조를 사용해
+재시도 시 중복 없이 완결되도록 한다.
+
+==================================================
+15. CARD reward tests
+==================================================
+
+TEST CR1
+
+Daily Quest reward:
+CARD A ×2.
+
+claim.
+
+기대:
+Card A ownership +2.
+claim state = CLAIMED.
+두 번째 claim 추가 지급 0.
+
+TEST CR2
+
+Attendance reward:
+CARD B ×1.
+
+기대:
+ownership +1.
+중복 지급 없음.
+
+==================================================
+16. PACK reward tests
+==================================================
+
+TEST PR1
+
+Daily Quest:
+PACK X ×2.
+
+claim.
+
+기대:
+공식 pack inventory/ownership +2.
+
+자동 open 없음
+(현재 공식 architecture가 inventory 방식일 경우).
+
+TEST PR2
+
+Attendance:
+PACK Y ×1.
+
+기대:
+정확한 pack +1.
+
+TEST PR3
+
+client가 다른 pack ID/quantity 조작.
+
+기대:
+authoritative reward definition 기준으로 처리,
+임의 reward 획득 불가.
+
+==================================================
+17. 기존 reward regression
+==================================================
+
+기존 currency reward:
+
+Daily Quest
+Attendance
+
+둘 다 계속 정상.
+
+CARD/PACK 추가 때문에 기존 저장 데이터가 깨지면 안 된다.
+
+==================================================
+PART C — OPPONENT AI JÄGER QUEST COMPLETE 후 정지
+==================================================
+
+현재 실제 신고:
+
+상대 AI가 Jäger를 사용 중일 때
+Jäger Quest를 완료하면
+그 이후 AI가 작동하지 않는다.
+
+이 문제는 과거에도 있었으므로
+regression으로 취급한다.
+
+Timeout이 지나서 겨우 턴이 넘어가는 것은 PASS가 아니다.
+
+==================================================
+18. 정확한 재현 fixture
+==================================================
+
+가능하면 Jäger Quest progress를
+완료 직전 상태로 fixture 구성.
+
+예:
+
+progress = target - 1
+
+AI가 정상 legal action을 수행
+→ Quest 조건 충족
+→ Quest complete
+→ reward/effect
+→ Quest presentation
+
+그 이후 AI scheduler가
+정상적으로 다음 행동을 이어가야 한다.
+
+==================================================
+19. Action → Event → State 추적
+==================================================
+
+다음 경로를 로그/테스트로 증명:
+
+AI Action
+→ Quest Progress Event
+→ Quest Complete Event
+→ Quest Reward Resolution
+→ pending effect/continuation cleanup
+→ presentation completion or canonical completion
+→ AI scheduler resume
+→ next legal action OR END_TURN
+
+==================================================
+20. 특히 확인
+==================================================
+
+Quest 완료 이후 아래가 stale하게 남는지 확인:
+
+- pendingQuest
+- pendingReward
+- pendingEffect
+- pendingContinuation
+- targetingState
+- presentation lock
+- animation lock
+- action lock
+- AI scheduler token
+- scheduled timeout
+- activePlayer generation/version
+
+==================================================
+21. Presentation과 canonical engine 분리
+==================================================
+
+Quest 성공 팝업/연출 때문에
+canonical AI turn progression이 영구 정지하면 안 된다.
+
+필요한 presentation delay가 있다면
+종료 후 scheduler resume.
+
+단 AI가 클라이언트 연출 완료 신호가 없으면
+영원히 기다리는 구조는 금지.
+
+==================================================
+22. Timeout fallback은 성공 아님
+==================================================
+
+다음은 FAIL:
+
+Quest 완료
+→ AI 20~30초 멈춤
+→ timer timeout
+→ 겨우 다음 턴.
+
+정상:
+
+Quest complete/reward resolution 이후
+일반 AI think delay 안에
+next action 또는 END_TURN.
+
+==================================================
+23. Jäger regression tests
+==================================================
+
+TEST JQ1
+
+AI Jäger:
+Quest = target - 1.
+
+AI action으로 완료.
+
+기대:
+Quest Complete 정확히 1회.
+Reward 정확히 1회.
+
+TEST JQ2
+
+Quest 완료 직후:
+
+pending continuation = none
+stale targeting = none
+unresolved effect frame = none
+
+(실제로 후속 choice가 필요한 공식 effect라면
+그 choice만 정상적으로 resolve한 뒤 cleanup.)
+
+TEST JQ3
+
+legal action이 더 있음.
+
+기대:
+AI가 timeout 전에 다음 action 수행.
+
+TEST JQ4
+
+추가 legal action 없음.
+
+기대:
+AI가 정상 END_TURN.
+
+TEST JQ5
+
+Quest completion snapshot/event가 반복 수신되어도:
+
+Quest reward 중복 없음.
+presentation 중복 없음.
+scheduler 중복 없음.
+
+TEST JQ6
+
+Jäger가 아닌 일반 AI Champion도
+Quest/turn scheduler regression 없음.
+
+==================================================
+PART D — 세 작업 공통 안전 규칙
+==================================================
+
+24. Production 안전
+==================================================
+
+테스트 중:
+
+Production DB 직접 수정 금지.
+실제 사용자 reward 지급 금지.
+실제 Production attendance/quest claim 금지.
+
+fixture
+mock
+development/test DB
+test account
+
+사용.
+
+==================================================
+25. 이번 작업에서 하지 말 것
+==================================================
+
+절대 수정 금지:
+
+- AI Mechanic Compiler capability
+- 새로운 SCRIPT_V1 operation
+- Pandora
+- Champion Token 규칙
+- Online presentation
+- Main notice/background/BGM
+- Deck rules
+- 카드 밸런스
+- 기타 개별 카드 효과
+- 상점
+- pack 확률/내용물 밸런스
+- reward 수치 자체의 경제 밸런스
+
+==================================================
+26. Browser verification
+==================================================
+
+가능하면 Development/Test 환경에서:
+
+A.
+Admin Test Game 실행
+→ 최소 Turn 4 이상
+→ Turn 3 crash 없음.
+
+B.
+Daily Quest/Attendance Admin
+→ CARD reward 설정 화면
+→ PACK reward 설정 화면
+→ test claim에서 정확한 reward 지급.
+
+C.
+AI Jäger Quest 완료
+→ Quest presentation 이후
+→ AI next action/END_TURN.
+
+브라우저가 없으면:
+
+IMPLEMENTATION / AUTOMATED는 계속.
+BROWSER VERIFICATION만 UNVERIFIED.
+
+==================================================
+27. 자동 검증
+==================================================
+
+필수:
+
+Admin Test Game turn progression regression
+Turn 1~4+ crash regression
+Daily Quest CARD reward tests
+Daily Quest PACK reward tests
+Attendance CARD reward tests
+Attendance PACK reward tests
+reward idempotency tests
+existing currency reward regression
+Jäger Quest completion scheduler tests
+Quest reward dedupe tests
+AI next-action/END_TURN tests
+
+그리고:
+
+pnpm run typecheck
+pnpm --filter @workspace/ko-game run build
+git diff --check
+
+API/shared 변경이 예상되므로:
+
+API typecheck
+API build
+
+도 실행.
+
+==================================================
+28. Git
+==================================================
+
+이번 작업 관련 파일만 stage.
+
+금지:
+
+Pasted-*.txt
+.env
+secrets
+logs
+screenshots
+temp
+Replit metadata
+unrelated changes
+
+검증 후 commit.
+
+force push 금지.
+
+push는 사용자가 별도로 요청하지 않으면 수행하지 마.
+
+==================================================
+29. 최종 보고
+==================================================
+
+ADMIN TEST GAME CRASH
+
+REPRODUCED:
+YES / NO
+
+CRASH TURN:
+...
+
+LAST ACTION:
+...
+
+LAST EVENT:
+...
+
+ROOT CAUSE:
+...
+
+Turn 1:
+PASS / FAIL
+
+Turn 2:
+PASS / FAIL
+
+Turn 3:
+PASS / FAIL
+
+Turn 4+:
+PASS / FAIL
+
+Console/server exception:
+NONE / ...
+
+
+==================================================
+
+DAILY / ATTENDANCE REWARDS
+
+Existing currency:
+PASS / FAIL
+
+CARD reward type:
+PASS / FAIL
+
+PACK reward type:
+PASS / FAIL
+
+Admin CARD selector:
+PASS / FAIL
+
+Admin PACK selector:
+PASS / FAIL
+
+Card quantity:
+PASS / FAIL
+
+Pack quantity:
+PASS / FAIL
+
+Server-authoritative:
+PASS / FAIL
+
+Double claim protection:
+PASS / FAIL
+
+Atomic/idempotent grant:
+PASS / FAIL
+
+Production reward mutation:
+NONE / FAIL
+
+
+==================================================
+
+JÄGER AI QUEST STALL
+
+REPRODUCED:
+YES / NO
+
+Quest complete:
+PASS / FAIL
+
+Reward:
+PASS / FAIL
+
+Pending state cleanup:
+PASS / FAIL
+
+AI scheduler resumed:
+PASS / FAIL
+
+Next legal action:
+PASS / FAIL / NONE_AVAILABLE
+
+END_TURN:
+PASS / FAIL
+
+Timeout required to recover:
+YES / NO
+
+Duplicate quest/reward:
+YES / NO
+
+
+==================================================
+
+IMPLEMENTATION:
+PASS / FAIL / BLOCKED
+
+AUTOMATED VERIFICATION:
+PASS / FAIL
+
+BROWSER VERIFICATION:
+PASS / FAIL / UNVERIFIED
+
+TYPECHECK:
+PASS / FAIL
+
+KO BUILD:
+PASS / FAIL
+
+API TYPECHECK:
+PASS / FAIL
+
+API BUILD:
+PASS / FAIL
+
+git diff --check:
+PASS / FAIL
+
+CHANGED FILES:
+...
+
+COMMIT:
+...
+
+PUSH:
+NOT REQUESTED / ...
+
+==================================================
+완료 조건
+==================================================
+
+1. Admin Test Game이 Turn 3에서 크래시하지 않고 최소 Turn 4 이상 정상 진행.
+2. Daily Quest 보상으로 CARD 설정/지급 가능.
+3. Daily Quest 보상으로 PACK 설정/지급 가능.
+4. Attendance 보상으로 CARD 설정/지급 가능.
+5. Attendance 보상으로 PACK 설정/지급 가능.
+6. 기존 currency reward 회귀 없음.
+7. CARD/PACK claim 중복 지급 불가.
+8. Jäger Quest 완료 후 상대 AI가 일반 think delay 안에 계속 행동하거나 END_TURN.
+9. Timeout이 AI recovery 수단이 아님.
+10. 다른 시스템으로 범위를 확장하지 않는다.
+
+이 세 항목만 처리하고 멈춰라.
