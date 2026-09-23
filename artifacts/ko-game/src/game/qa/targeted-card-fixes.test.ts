@@ -254,27 +254,95 @@ test('흑구슬마스터 SUMMON and REVIVE do not auto-trigger its PLAY_FROM_HAN
   }
 });
 
-test('authoritative 조킹루이지 summons two adjacent generated wrestlers and taunts only those results', () => {
+test('조킹루이지 JL1-JL6 targets only occupied same-side adjacent cards and never itself', () => {
   const joker = definition('조킹루이지');
-  const state = stateWithPool();
-  const entered = enterField(
-    state,
-    'player-1',
-    card(joker, 'joking-luigi-source'),
-    1,
+  assert.equal(joker.keywords.includes('TAUNT'), false);
+  const effects = Array.isArray(joker.effectConfig.effects) ? joker.effectConfig.effects : [];
+  assert.equal(effects.length, 1);
+  assert.equal(
+    (effects[0] as { action?: string; target?: { selection?: string } } | undefined)?.action,
+    'ADD_KEYWORD',
   );
-  const summoned = entered.players[0].board.filter(
-    (item): item is CardInstance =>
-      item !== null && item.instanceId !== 'joking-luigi-source',
+  assert.equal(
+    (effects[0] as { action?: string; target?: { selection?: string } } | undefined)?.target?.selection,
+    'ADJACENT',
   );
 
-  assert.equal(summoned.length, 2);
-  assert.deepEqual(summoned.map((item) => item.boardSlot), [0, 2]);
-  assert.ok(summoned.every((item) => item.isGenerated));
-  assert.ok(summoned.every((item) => item.cardType === 'WRESTLER'));
-  assert.ok(summoned.every((item) => item.keywords.includes('TAUNT')));
-  assert.equal(entered.targetingState, undefined);
-  assert.equal(entered.pendingCardEffects.length, 0);
+  const makeCard = (instanceId: string, boardSlot: 0 | 1 | 2 | 3): CardInstance => ({
+    ...card(joker, instanceId),
+    boardSlot,
+  });
+  const scenarios: Array<{
+    name: string;
+    sourceSlot: 0 | 1 | 2 | 3;
+    board: [CardInstance | null, CardInstance | null, CardInstance | null, CardInstance | null];
+    expectedTauntIds: string[];
+  }> = [
+    {
+      name: 'JL1 center',
+      sourceSlot: 1,
+      board: [makeCard('jl1-left', 0), null, makeCard('jl1-right', 2), null],
+      expectedTauntIds: ['jl1-left', 'jl1-right'],
+    },
+    {
+      name: 'JL2 left edge with two occupied cards',
+      sourceSlot: 0,
+      board: [null, makeCard('jl2-adjacent', 1), makeCard('jl2-distant', 2), null],
+      expectedTauntIds: ['jl2-adjacent'],
+    },
+    {
+      name: 'JL3 right edge with two occupied cards',
+      sourceSlot: 2,
+      board: [makeCard('jl3-distant', 0), makeCard('jl3-adjacent', 1), null, null],
+      expectedTauntIds: ['jl3-adjacent'],
+    },
+    {
+      name: 'JL4 distant card across an empty slot',
+      sourceSlot: 2,
+      board: [makeCard('jl4-distant', 0), null, null, null],
+      expectedTauntIds: [],
+    },
+    {
+      name: 'JL5 distant card across an empty slot',
+      sourceSlot: 0,
+      board: [null, null, makeCard('jl5-distant', 2), null],
+      expectedTauntIds: [],
+    },
+    {
+      name: 'JL6 both adjacent slots empty',
+      sourceSlot: 1,
+      board: [null, null, null, null],
+      expectedTauntIds: [],
+    },
+  ];
+
+  for (const scenario of scenarios) {
+    const state = stateWithPool();
+    state.players[0].board = scenario.board;
+    const opponent = makeCard(`${scenario.name}-opponent`, 0);
+    state.players[1].board = [opponent, null, null, null];
+    const result = enterField(
+      state,
+      'player-1',
+      card(joker, `${scenario.name}-source`),
+      scenario.sourceSlot,
+    );
+    const source = result.players[0].board[scenario.sourceSlot];
+    const tauntedIds = result.players[0].board
+      .filter((item): item is CardInstance => item !== null && item.keywords.includes('TAUNT'))
+      .map((item) => item.instanceId)
+      .filter((instanceId) => instanceId !== source?.instanceId);
+
+    assert.deepEqual(tauntedIds, scenario.expectedTauntIds, scenario.name);
+    assert.equal(source?.keywords.includes('TAUNT'), false, scenario.name);
+    assert.equal(
+      result.players[1].board[0]?.keywords.includes('TAUNT'),
+      false,
+      `${scenario.name}: opponent field`,
+    );
+    assert.equal(result.targetingState, undefined, scenario.name);
+    assert.equal(result.pendingCardEffects.length, 0, scenario.name);
+  }
 });
 
 test('authoritative 데헌 in HAND gains one DODGE on its first attack increase', () => {

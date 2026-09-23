@@ -48,8 +48,7 @@ const savedConfigs: Record<string, SavedConfig> = {
   '저지먼트': { effects: [effect('ENTER_FIELD', 'RETIRE', { zone: 'BOARD', owner: 'ENEMY', cardType: 'WRESTLER', selection: 'PLAYER_CHOICE', count: 1 })] },
   '조킹루이지': {
     effects: [
-      effect('ENTER_FIELD', 'SUMMON', { zone: 'BOARD', owner: 'SELF', cardType: 'WRESTLER', selection: 'ADJACENT_EMPTY_SLOTS', count: 2, randomScope: 'STANDARD' }),
-      effect('ENTER_FIELD', 'ADD_KEYWORD', { zone: 'BOARD', owner: 'SELF', cardType: 'WRESTLER', selection: 'SAME_TARGET', count: 2 }, { keyword: 'TAUNT' }),
+      effect('ENTER_FIELD', 'ADD_KEYWORD', { zone: 'BOARD', owner: 'SELF', cardType: 'WRESTLER', selection: 'ADJACENT', count: 2 }, { keyword: 'TAUNT' }),
     ],
   },
   '퍼플레인': { effects: [effect('ENTER_FIELD', 'WEAKEN_TO_STUN_SILENCE', { zone: 'BOARD', owner: 'ENEMY', cardType: 'WRESTLER', selection: 'ALL', count: 20 }, { amount: 2 })] },
@@ -529,14 +528,16 @@ test('뒷정리맨 queue는 SUMMON·REVIVE·Champion Token 전개로 소비되�
 
 test('조킹루이지·퍼플레인·아비터·플래티넘 구슬 마스터의 지속/조건부 효과가 실제 매치에서 동작한다', () => {
   const jokerState = stateWithPool(Object.values(saved).map((item) => item.id === saved['여울']!.id ? { ...item, cost: 4 } : item));
-  jokerState.players[0].board = [null, null, null, null];
+  jokerState.players[0].board = [
+    { ...card(saved['여울']!, 'joker-left'), boardSlot: 0 },
+    null,
+    { ...card(saved['여울']!, 'joker-right'), boardSlot: 2 },
+    null,
+  ];
   const joker = enterField(jokerState, 'player-1', card(saved['조킹루이지']!, 'joker'), 1);
-  assert.ok(joker.players[0].board[0]);
-  assert.ok(joker.players[0].board[2]);
-  assert.ok(joker.players[0].board[0]?.isGenerated);
-  assert.ok(joker.players[0].board[2]?.isGenerated);
   assert.ok(joker.players[0].board[0]?.keywords.includes('TAUNT'));
   assert.ok(joker.players[0].board[2]?.keywords.includes('TAUNT'));
+  assert.equal(joker.players[0].board[1]?.keywords.includes('TAUNT'), false);
 
   const purpleState = stateWithPool(Object.values(saved));
   const enemy = { ...card(saved['여울']!, 'purple-target'), currentAttack: 2, currentHealth: 3, maxHealth: 3, boardSlot: 0 as const };
