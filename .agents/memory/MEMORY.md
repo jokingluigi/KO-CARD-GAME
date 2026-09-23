@@ -79,3 +79,5 @@
 - [Main content boundary](main-content-boundary.md) — notices stay escaped plain text; main background/BGM reuse game media with a separate main selection flag.
 - [Online catalog validation](online-catalog-validation.md) — persisted matches must carry the exact CardDefinition catalog used by their instances; reject unknown references instead of rendering a substitute.
 - [Presentation event keys](presentation-event-keys.md) — event-log presentation keys should use append-order identity and a small fingerprint, not repeated deep serialization scans.
+- [Delayed source snapshots](delayed-source-snapshots.md) — delayed effects must retain their source and resolve next-turn timing relative to the active player.
+- [Hidden event references](hidden-event-references.md) — viewer sanitization must redact references to opponent hand/deck cards, while preserving public source metadata.

@@ -43,3 +43,28 @@ test("historical opponent draw and generation events stay redacted", () => {
     assert.equal(event.targetSnapshot, undefined);
   }
 });
+
+test("effects that modify a hidden opponent hand card do not expose its identity", () => {
+  const state = {
+    cardPool: [],
+    players: [
+      { id: "PLAYER_ONE", hand: [], deck: [] },
+      { id: "PLAYER_TWO", hand: [{ instanceId: "hidden-hand-card", definitionId: "secret" }], deck: [] },
+    ],
+    events: [{
+      type: "STAT_CHANGED",
+      playerId: "PLAYER_TWO",
+      cardInstanceId: "hidden-hand-card",
+      source: { type: "CARD", cardInstanceId: "public-source" },
+      target: { type: "CARD", cardInstanceId: "hidden-hand-card" },
+      stat: "cost",
+      before: 5,
+      after: 7,
+      delta: 2,
+    }],
+  } as unknown as GameState;
+  const projected = sanitizeGameStateForViewer(state, "PLAYER_ONE") as { events: Array<Record<string, unknown>> };
+  assert.equal(projected.events[0]?.cardInstanceId, undefined);
+  assert.equal(projected.events[0]?.target, undefined);
+  assert.equal((projected.events[0]?.source as { cardInstanceId?: string } | undefined)?.cardInstanceId, "public-source");
+});

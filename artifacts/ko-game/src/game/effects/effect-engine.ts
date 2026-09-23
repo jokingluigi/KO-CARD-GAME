@@ -482,12 +482,24 @@ function applyQueuedRuleEffect(
   lastTargetIds: string[] = [],
 ): { state: GameState; lastTargetIds: string[] } {
   const chosen = effect.target?.selection === 'SAME_TARGET' ? lastTargetIds : undefined;
+  const reviveOwnerId = effect.action === 'REVIVE'
+    ? (effect.target?.owner === 'SELF'
+      ? playerId
+      : state.players.find((player) => player.id !== playerId)?.id)
+    : undefined;
+  const graveyardIdsBeforeRevive = reviveOwnerId
+    ? new Set(state.players.find((player) => player.id === reviveOwnerId)?.graveyard.map((card) => card.instanceId))
+    : undefined;
   const next = applyEffect(state, playerId, source, queuedEffectCardEffect(effect), chosen);
   const resolved = next.targetingState?.active ? resolvePendingEffects(next) : next;
-  if (effect.action === 'REVIVE' && resolved.players.some((player) =>
-    player.board.some((card) => card?.instanceId === source.instanceId),
-  )) {
-    return { state: resolved, lastTargetIds: [source.instanceId] };
+  if (graveyardIdsBeforeRevive && reviveOwnerId) {
+    const ownerAfterRevive = resolved.players.find((player) => player.id === reviveOwnerId);
+    const stillInGraveyard = new Set(ownerAfterRevive?.graveyard.map((card) => card.instanceId));
+    const revivedIds = ownerAfterRevive?.board
+      .filter((card): card is CardInstance => card !== null && graveyardIdsBeforeRevive.has(card.instanceId))
+      .map((card) => card.instanceId)
+      .filter((instanceId) => !stillInGraveyard.has(instanceId)) ?? [];
+    if (revivedIds.length) return { state: resolved, lastTargetIds: revivedIds };
   }
   return {
     state: resolved,
@@ -497,9 +509,15 @@ function applyQueuedRuleEffect(
 
 function applyQueuedRuleSequence(
   state: GameState,
-  pending: { playerId: string; sourceInstanceId: string; effect: QueuedStructuredEffect; followUpEffects?: QueuedStructuredEffect[] },
+  pending: {
+    playerId: string;
+    sourceInstanceId: string;
+    sourceCard?: CardInstance;
+    effect: QueuedStructuredEffect;
+    followUpEffects?: QueuedStructuredEffect[];
+  },
 ): GameState {
-  const source = sourceInState(state, pending.sourceInstanceId);
+  const source = sourceInState(state, pending.sourceInstanceId) ?? pending.sourceCard;
   if (!source) return state;
   let next = applyQueuedRuleEffect(state, pending.playerId, source, pending.effect);
   for (const effect of pending.followUpEffects ?? []) {
@@ -1506,10 +1524,11 @@ export function applyEffect(
     if (effect.action === 'REGISTER_DELAYED') {
       const delayed = effect.values?.delayed;
       if (!delayed) throw new Error('REGISTER_DELAYED requires a delayed schedule.');
+      const ownerIsActivePlayer = state.activePlayerId === playerId;
       const dueTurn = delayed.kind === 'OWNER_NEXT_TURN_START'
-        ? state.turn + state.players.length
+        ? state.turn + (ownerIsActivePlayer ? state.players.length : 1)
         : delayed.kind === 'OPPONENT_NEXT_TURN_START'
-          ? state.turn + 1
+          ? state.turn + (ownerIsActivePlayer ? 1 : state.players.length)
           : state.turn;
       return {
         ...state,
@@ -1519,6 +1538,7 @@ export function applyEffect(
             id: `${sourceCard.instanceId}:delayed:${state.events.length}:${(state.pendingDelayedEffects ?? []).length}`,
             playerId,
             sourceInstanceId: sourceCard.instanceId,
+            sourceCard,
             schedule: delayed.kind,
             dueTurn,
             ...(delayed.count ? { remainingMatches: delayed.count } : {}),

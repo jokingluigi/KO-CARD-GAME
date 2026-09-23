@@ -1,0 +1,1111 @@
+KO CARD GAME — VERIFY/FIX ONLY:
+RUN NATURAL-LANGUAGE EFFECTS THROUGH REAL MATCHES BEFORE RELEASE
+
+이번 작업에서는 AI Mechanic Compiler 자체의 새 기능을 추가하지 않는다.
+
+현재 Provider A–J는 모두 READY 상태다.
+
+관련 commit chain:
+
+62a02bc — Stabilize AI mechanic compiler contract
+7ac7df0 — Recover D F H provider regressions
+fe15505 — Resolve C E I provider cases
+
+이번 작업의 목표는 아래 2개다.
+
+1. A–J 자연어 효과를 실제 게임 엔진/실제 매치 흐름에서 실행해
+   "READY이지만 실제 runtime에서는 안 되는 효과"가 없는지 검증
+2. Generate → Apply → Save → reload → 실제 match 실행까지
+   전체 persistence/runtime round-trip을 검증
+
+새 DSL capability 추가 금지.
+
+==================================================
+0. 현재 전제
+==================================================
+
+Provider smoke:
+
+A READY
+B READY
+C READY
+D READY
+E READY
+F READY
+G READY
+H READY
+I READY
+J READY
+
+provider call 정책:
+
+- Generate 1회당 provider 최대 1회
+- auto retry 0
+- Save provider call 0
+- Runtime provider call 0
+
+sourceId 정책:
+
+- AI가 sourceId 생성하지 않음
+- server가 trusted source context 주입
+- spoofed sourceId reject
+
+이 모든 기존 동작을 유지한다.
+
+==================================================
+1. 이번 작업의 핵심
+==================================================
+
+지금까지의 테스트가:
+
+"AI가 valid AST를 만들 수 있는가"
+
+였다면,
+
+이번 작업은:
+
+"그 AST를 실제 Card/Champion definition에 적용한 뒤
+실제 게임 Action → Event → GameState 흐름에서
+설명대로 작동하는가"
+
+를 검증한다.
+
+즉 READY만으로 PASS 처리하지 마.
+
+==================================================
+2. 절대 하지 말 것
+==================================================
+
+금지:
+
+- 새로운 SCRIPT_V1 capability 추가
+- Provider prompt를 다시 대규모 수정
+- Provider를 불필요하게 다시 호출
+- A–J를 Generate부터 반복 호출
+- runtime에서 OpenAI 호출
+- Save 시 OpenAI 호출
+- card name hardcoding
+- fixture에서만 돌아가는 special-case engine code
+- Production DB 직접 수정
+- Production 사용자 데이터 변경
+- 실제 운영 카드 definition 덮어쓰기
+- online/AI 전체 시스템 리팩터링
+- 정상 효과를 테스트 편의를 위해 단순화
+
+==================================================
+PART A — TEST DEFINITIONS / SAFE FIXTURE SETUP
+==================================================
+
+3. Production-safe test definitions
+==================================================
+
+실제 Production CardDefinition/ChampionDefinition을 수정하지 않는다.
+
+다음 중 프로젝트에 이미 있는 안전한 방식을 사용:
+
+- fixture definitions
+- development/test catalog
+- temporary test-only definitions
+- isolated mock/test DB
+
+A–J effect AST를
+테스트용 Card/Champion definitions에 적용한다.
+
+실제 운영 데이터는 건드리지 마.
+
+==================================================
+4. Provider 재호출 금지
+==================================================
+
+A–J는 이미 READY를 증명했다.
+
+이번 작업에서는 기존 validated AST fixture를 재사용.
+
+실제 Provider 호출 목표:
+0회.
+
+정말 fixture가 저장되어 있지 않아 복구 불가능한 case가 있으면
+그 case만 MISSING_AST_FIXTURE로 보고하고 멈춘다.
+
+Provider를 다시 호출해서 메우지 마.
+
+==================================================
+PART B — APPLY / SAVE / RELOAD ROUND-TRIP
+==================================================
+
+5. Apply to form
+==================================================
+
+각 A–J AST에 대해:
+
+validated AST
+→ Apply to Admin form / definition model
+
+이 과정에서:
+
+- field 유실
+- resultId 유실
+- continuation 유실
+- trigger 변형
+- selector 변형
+- delayed/listener metadata 유실
+
+이 없어야 한다.
+
+==================================================
+6. Save
+==================================================
+
+Apply 후 저장:
+
+persisted effect definition이
+validated canonical AST와 semantic하게 동일해야 한다.
+
+serialization 때문에:
+
+undefined/null
+enum
+nested wrapper
+result reference
+listener config
+schedule config
+prevention config
+
+가 깨지지 않는지 확인.
+
+==================================================
+7. Reload
+==================================================
+
+저장 후 다시 definition을 읽었을 때
+동일 effect를 runtime이 로드할 수 있어야 한다.
+
+기대:
+
+Generate AST
+→ Apply
+→ Save
+→ Reload
+→ Runtime parse
+
+전부 동일 semantics 유지.
+
+==================================================
+8. round-trip test
+==================================================
+
+각 case A–J:
+
+ROUND_TRIP:
+PASS / FAIL
+
+검증 항목:
+
+- trigger preserved
+- selectors preserved
+- filters preserved
+- target/reference preserved
+- amount/value expressions preserved
+- schedule/listener preserved
+- prevention/replacement preserved
+- runtime validation still PASS
+
+==================================================
+PART C — ACTUAL MATCH EXECUTION
+==================================================
+
+9. 실제 engine 경로 사용
+==================================================
+
+각 effect는 가능하면 실제 엔진의:
+
+getLegalActions
+executeAction
+Event emission
+effect resolution
+GameState mutation
+
+경로를 사용한다.
+
+직접 state를 임의 수정해서
+"결과만 맞음" 처리 금지.
+
+==================================================
+10. PASS 기준
+==================================================
+
+각 case는 최소:
+
+SETUP
+→ legal action
+→ trigger occurrence
+→ effect resolution
+→ resulting GameState
+
+까지 확인한다.
+
+설명과 실제 결과를 비교.
+
+==================================================
+11. 실제 매치가 불가능한 환경
+==================================================
+
+브라우저가 없어도:
+
+deterministic engine full-match / scenario match fixture
+
+로 실행.
+
+브라우저가 가능하면
+Development/Test match에서 추가 manual verification.
+
+브라우저 unavailable을 이유로
+engine execution test를 생략하지 마.
+
+==================================================
+PART D — CASE C
+==================================================
+
+12. C intended mechanic
+==================================================
+
+C:
+
+공격 시
+상대 손의 최고 비용 카드 1장 비용 +2.
+
+Expected:
+
+trigger:
+SELF_ATTACK
+
+selection:
+zone HAND
+owner ENEMY
+scope ALL
+sort COST DESC
+take 1
+
+action:
+INCREASE_COST +2
+target = selected result
+
+==================================================
+13. C actual match test
+==================================================
+
+SETUP:
+
+내 C source 카드가 필드에 있음.
+
+상대 손:
+
+Card X cost 2
+Card Y cost 5
+Card Z cost 3
+
+C source가 정상 공격.
+
+기대:
+
+Card Y만:
+5 → 7
+
+X/Z unchanged.
+
+추가 확인:
+
+- attack event가 실제 trigger
+- attack 시도 실패에서는 trigger되지 않음
+- HAND hidden identity가 상대방에게 불필요하게 노출되지 않음
+- 동일 공격 occurrence에서 1회만 적용
+
+==================================================
+PART E — CASE D
+==================================================
+
+14. D intended mechanic
+==================================================
+
+D:
+
+인접 빈 슬롯에 무작위 소환 후
+방금 소환된 SAME_TARGET에 도발 부여.
+
+Expected capability:
+
+SUMMON
+ADJACENT_EMPTY_SLOTS
+deterministic RANDOM
+result reference / SAME_TARGET
+ADD_KEYWORD TAUNT
+
+==================================================
+15. D actual match test
+==================================================
+
+SETUP:
+
+source 주변에
+최소 1개 이상의 legal adjacent empty slot.
+
+효과 발동.
+
+기대:
+
+정확한 legal adjacent empty slot에 summon.
+
+그 소환된 CardInstance에만:
+TAUNT.
+
+다른 카드에 TAUNT 금지.
+
+추가:
+
+- random은 deterministic
+- 빈 슬롯 없음이면 official no-target/no-op semantics
+- summon result reference가 save/reload 후에도 유지
+
+==================================================
+PART F — CASE E
+==================================================
+
+16. E intended mechanic
+==================================================
+
+E:
+
+등장 시
+내 무덤의 비용 3 이하 선수 1장을 무작위 부활.
+
+Expected:
+
+ENTER_FIELD
+SELECT:
+GRAVEYARD / SELF / WRESTLER / maxCost 3
+RANDOM
+REVIVE STANDARD
+
+==================================================
+17. E actual match test
+==================================================
+
+SETUP:
+
+내 graveyard:
+
+A WRESTLER cost 2
+B WRESTLER cost 3
+C WRESTLER cost 5
+D TECHNIQUE cost 1
+
+E source:
+PLAY_FROM_HAND.
+
+기대:
+
+A/B 중 정확히 1장만 random revive.
+
+C 제외.
+D 제외.
+
+추가:
+
+- SUMMON/REVIVE로 E 자체가 들어온 경우 ON_ENTER가 발동하지 않는 기존 규칙 유지
+- deterministic RNG
+- legal target 0개면 등장 자체는 성공, effect만 no-op
+- stale pending state 없음
+
+==================================================
+PART G — CASE F
+==================================================
+
+18. F intended mechanic
+==================================================
+
+F:
+
+다음 내 턴 시작에 부활하고
+그 부활한 대상의 공격력 +2.
+
+Expected:
+
+REGISTER_DELAYED
+OWNER_NEXT_TURN_START
+REVIVE
+followUpEffects
+BUFF +2 ATK
+target = revived result
+
+==================================================
+19. F actual match test
+==================================================
+
+SETUP:
+
+delayed effect 등록.
+
+상대 턴 진행.
+
+다음 owner turn 시작.
+
+기대:
+
+지정된 revive 대상이 부활.
+
+그 부활한 정확한 CardInstance:
+ATK +2.
+
+다른 카드 buff 금지.
+
+추가:
+
+- 등록 즉시 발동 금지
+- opponent turn start에 발동 금지
+- owner next turn start에 정확히 1회
+- 발동 후 listener/schedule consume
+- reconnect/reload equivalent state restore 시 duplicate 발동 금지
+
+==================================================
+PART H — CASE H
+==================================================
+
+20. H intended mechanic
+==================================================
+
+H:
+
+첫 피해를
+PREVENT_DAMAGE로 1회 방지.
+
+Expected:
+
+BEFORE_DAMAGE
+PREVENT_DAMAGE
+prevention.uses = 1
+
+==================================================
+21. H actual match test
+==================================================
+
+SETUP:
+
+H prevention active.
+
+첫 incoming damage:
+3
+
+기대:
+prevented according to exact official prevention semantics.
+
+두 번째 damage:
+3
+
+기대:
+더 이상 prevention 없음.
+정상 피해.
+
+추가:
+
+- uses exactly 1
+- prevented hit에서도 state/event consistency 유지
+- effect가 permanent하게 남지 않음
+- save/reload 후 uses state가 깨지지 않음
+
+==================================================
+PART I — CASE I
+==================================================
+
+22. I intended mechanic
+==================================================
+
+I:
+
+필드의 좀비 선수 3명 이상이면
+자신에게 +3/+3.
+
+Expected:
+
+SELECT zombies
+AGGREGATE count
+RESULT_VALUE GTE CONSTANT 3
+BUFF SELF +3/+3
+
+==================================================
+23. I actual match test
+==================================================
+
+SETUP 1:
+
+field Zombie WRESTLER = 2
+
+기대:
+조건 false.
+buff 없음.
+
+SETUP 2:
+
+field Zombie WRESTLER = 3
+
+기대:
+조건 true.
+source SELF +3/+3.
+
+SETUP 3:
+
+Zombie 태그지만 WRESTLER 아님
+
+기대:
+count에서 제외.
+
+추가:
+
+- field만 count
+- HAND/GRAVEYARD Zombie 제외
+- 정확한 Zombie tag metadata 사용
+- UI text가 아니라 canonical tags 사용
+
+==================================================
+PART J — A / B / G / J
+==================================================
+
+24. A/B/G/J
+==================================================
+
+이 4개도 실제 runtime execution 검증 대상이다.
+
+기존 A–J fixture/history에서
+각 intended mechanic을 정확히 읽어와 테스트한다.
+
+추측 금지.
+
+각 case에 대해 반드시 기록:
+
+PROMPT:
+...
+
+EXPECTED:
+...
+
+ACTION/EVENT PATH:
+...
+
+ACTUAL:
+...
+
+PASS / FAIL
+
+==================================================
+25. 전체 A–J matrix
+==================================================
+
+각 case마다:
+
+AST LOAD
+ROUND_TRIP
+ACTION TRIGGER
+RUNTIME RESOLUTION
+EXPECTED GAMESTATE
+NO DUPLICATE
+NO PROVIDER CALL
+
+을 체크.
+
+==================================================
+PART K — EFFECT ENGINE INVARIANTS
+==================================================
+
+26. no runtime provider
+==================================================
+
+A–J 전체 실제 match execution 동안
+OpenAI/provider call count:
+
+0
+
+이어야 한다.
+
+==================================================
+27. deterministic RNG
+==================================================
+
+RANDOM을 쓰는 case는
+동일 seed + 동일 GameState + 동일 Action이면
+동일 결과.
+
+Math.random 금지.
+
+==================================================
+28. hidden information
+==================================================
+
+HAND target/query가 포함된 effect는
+server-side로 처리 가능하되
+상대 client에 불필요한 hand identity를 노출하지 않는다.
+
+==================================================
+29. no stale continuation
+==================================================
+
+PLAYER_CHOICE
+delayed
+listener
+result reference
+
+등 처리 후:
+
+stale pending effect
+stale continuation
+stale target state
+
+가 남지 않아야 한다.
+
+==================================================
+30. action/event/game state
+==================================================
+
+모든 case에서 가능한 한:
+
+Action
+→ Event
+→ Effect Resolution
+→ GameState
+
+를 증명.
+
+직접 state mutation helper만 호출해서
+PASS 처리하지 마.
+
+==================================================
+PART L — 실패 시 수정 범위
+==================================================
+
+31. 실제 runtime mismatch 발견 시
+==================================================
+
+수정 가능:
+
+- serialization/deserialization bug
+- Apply mapping bug
+- persisted AST field loss
+- existing runtime supported node handling bug
+- result reference wiring bug
+- trigger registration bug
+- existing selector implementation bug
+
+==================================================
+32. 새 capability 필요 시
+==================================================
+
+만약 A–J 중 하나가
+실제로 현재 runtime에 존재하지 않는 capability를 요구한다면
+
+새 capability를 몰래 추가하지 마.
+
+그 case를:
+
+CAPABILITY_GAP
+
+으로 보고하고 멈춘다.
+
+다음 별도 작업으로 분리.
+
+==================================================
+33. card-specific hardcoding 금지
+==================================================
+
+금지:
+
+if (case === "F") ...
+if (card.name === "...") ...
+
+generic AST/runtime fix만 허용.
+
+==================================================
+PART M — 자동 검증
+==================================================
+
+34. 필수
+==================================================
+
+A–J round-trip tests
+A–J runtime execution tests
+Action→Event→GameState assertions
+deterministic RNG tests
+hidden hand tests where relevant
+delayed/listener consume tests
+result-reference tests
+save/reload persistence tests
+provider-call-count runtime test
+
+기존:
+
+admin-effect-ai
+stabilization
+structured-effects
+mechanic completion
+D/F/H regression
+C/E/I regression
+
+도 회귀 실행.
+
+==================================================
+35. build
+==================================================
+
+반드시:
+
+pnpm run typecheck
+pnpm --filter @workspace/ko-game run build
+git diff --check
+
+API/shared 변경 시:
+
+API typecheck
+API build
+
+==================================================
+PART N — Browser / Full Match Verification
+==================================================
+
+36. 브라우저 가능 시
+==================================================
+
+Development/Test 환경에서
+최소 대표 effect들을 실제 match UI로 확인.
+
+우선순위:
+
+C — SELF_ATTACK → enemy hand cost
+D — summon + SAME_TARGET taunt
+E — ON_ENTER revive
+F — delayed next-turn revive + buff
+H — one-use prevention
+I — Zombie count conditional buff
+
+가능하면 A/B/G/J도 확인.
+
+==================================================
+37. 브라우저 불가
+==================================================
+
+브라우저 unavailable이면:
+
+IMPLEMENTATION
+AUTOMATED
+ENGINE MATCH
+
+는 계속.
+
+BROWSER만 UNVERIFIED.
+
+==================================================
+PART O — Git / Release Safety
+==================================================
+
+38. Git
+==================================================
+
+baseline chain:
+
+62a02bc
+7ac7df0
+fe15505
+
+그 위에 필요한 runtime/persistence fix가 있을 때만
+새 commit 생성.
+
+수정이 필요 없고 검증만 통과했다면
+불필요한 commit 만들지 않아도 된다.
+
+stage 금지:
+
+Pasted-*.txt
+.env
+OPENAI_API_KEY
+logs
+temp
+test artifacts
+unrelated changes
+
+force push 금지.
+
+==================================================
+39. Push 금지
+==================================================
+
+이번 작업에서는 아직 push하지 마.
+
+최종 A–J real-match 검증 결과를 확인한 뒤
+다음 release-sync 작업에서 push한다.
+
+==================================================
+40. 최종 보고
+==================================================
+
+PROVIDER CALLS DURING THIS TASK:
+...
+
+EXPECTED:
+0
+
+
+A
+
+ROUND_TRIP:
+PASS / FAIL
+
+ENGINE EXECUTION:
+PASS / FAIL
+
+EXPECTED:
+...
+
+ACTUAL:
+...
+
+ACTION→EVENT→STATE:
+PASS / FAIL
+
+
+B
+
+ROUND_TRIP:
+PASS / FAIL
+
+ENGINE EXECUTION:
+PASS / FAIL
+
+EXPECTED:
+...
+
+ACTUAL:
+...
+
+ACTION→EVENT→STATE:
+PASS / FAIL
+
+
+C
+
+ROUND_TRIP:
+PASS / FAIL
+
+SELF_ATTACK:
+PASS / FAIL
+
+Highest-cost enemy HAND selection:
+PASS / FAIL
+
+Cost +2:
+PASS / FAIL
+
+Hidden info preserved:
+PASS / FAIL
+
+
+D
+
+ROUND_TRIP:
+PASS / FAIL
+
+Adjacent summon:
+PASS / FAIL
+
+Deterministic random:
+PASS / FAIL
+
+SAME_TARGET:
+PASS / FAIL
+
+Taunt:
+PASS / FAIL
+
+
+E
+
+ROUND_TRIP:
+PASS / FAIL
+
+PLAY_FROM_HAND ENTER_FIELD:
+PASS / FAIL
+
+Cost <= 3 filter:
+PASS / FAIL
+
+WRESTLER filter:
+PASS / FAIL
+
+Random revive:
+PASS / FAIL
+
+No-target no-op:
+PASS / FAIL
+
+
+F
+
+ROUND_TRIP:
+PASS / FAIL
+
+Delayed registration:
+PASS / FAIL
+
+Owner next turn:
+PASS / FAIL
+
+Revive:
+PASS / FAIL
+
+Follow-up +2 ATK:
+PASS / FAIL
+
+Consumes once:
+PASS / FAIL
+
+
+G
+
+ROUND_TRIP:
+PASS / FAIL
+
+ENGINE EXECUTION:
+PASS / FAIL
+
+EXPECTED:
+...
+
+ACTUAL:
+...
+
+
+H
+
+ROUND_TRIP:
+PASS / FAIL
+
+First damage prevention:
+PASS / FAIL
+
+uses = 1:
+PASS / FAIL
+
+Second damage normal:
+PASS / FAIL
+
+
+I
+
+ROUND_TRIP:
+PASS / FAIL
+
+2 Zombies:
+NO BUFF / FAIL
+
+3 Zombies:
++3/+3 / FAIL
+
+Non-WRESTLER excluded:
+PASS / FAIL
+
+Non-field excluded:
+PASS / FAIL
+
+
+J
+
+ROUND_TRIP:
+PASS / FAIL
+
+ENGINE EXECUTION:
+PASS / FAIL
+
+EXPECTED:
+...
+
+ACTUAL:
+...
+
+
+==================================================
+
+A–J SUMMARY
+
+A: PASS / FAIL
+B: PASS / FAIL
+C: PASS / FAIL
+D: PASS / FAIL
+E: PASS / FAIL
+F: PASS / FAIL
+G: PASS / FAIL
+H: PASS / FAIL
+I: PASS / FAIL
+J: PASS / FAIL
+
+READY BUT RUNTIME FAILURES:
+...
+
+CAPABILITY_GAPS:
+...
+
+PERSISTENCE/ROUND-TRIP FAILURES:
+...
+
+PROVIDER CALLS:
+0 / FAIL
+
+
+==================================================
+
+IMPLEMENTATION:
+PASS / FAIL / NOT_NEEDED / BLOCKED
+
+AUTOMATED VERIFICATION:
+PASS / FAIL
+
+ENGINE MATCH VERIFICATION:
+PASS / FAIL
+
+BROWSER VERIFICATION:
+PASS / FAIL / UNVERIFIED
+
+TYPECHECK:
+PASS / FAIL
+
+KO BUILD:
+PASS / FAIL
+
+API TYPECHECK:
+PASS / FAIL / NOT_MODIFIED
+
+API BUILD:
+PASS / FAIL / NOT_MODIFIED
+
+git diff --check:
+PASS / FAIL
+
+CHANGED FILES:
+...
+
+NEW COMMIT:
+...
+
+PUSH:
+DO NOT PUSH YET
+
+==================================================
+완료 조건
+==================================================
+
+1. A–J validated AST를 Provider 재호출 없이 재사용한다.
+2. Generate/Apply/Save/Reload/runtime round-trip을 검증한다.
+3. A–J를 실제 Action→Event→GameState 경로로 실행한다.
+4. 설명과 실제 GameState 결과가 모두 일치한다.
+5. delayed/listener/result-reference/random/hidden-hand semantics가 정상이다.
+6. runtime provider call은 0이다.
+7. 새 DSL capability는 추가하지 않는다.
+8. 실제 capability gap이 발견되면 숨기지 않고 별도 보고한다.
+9. Production 데이터는 수정하지 않는다.
+10. 이번 작업에서는 아직 push하지 않는다.
+
+이 검증을 끝내고 멈춰라.

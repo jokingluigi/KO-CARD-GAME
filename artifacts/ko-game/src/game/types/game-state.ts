@@ -25,6 +25,8 @@ export interface PendingDelayedEffect {
   id: string;
   playerId: string;
   sourceInstanceId: string;
+  /** Serializable source snapshot keeps delayed effects executable after the source leaves play. */
+  sourceCard?: CardInstance;
   schedule: 'OWNER_NEXT_TURN_START' | 'OPPONENT_NEXT_TURN_START' | 'END_OF_CURRENT_TURN' | 'NEXT_MATCHING_EVENT' | 'N_MATCHING_EVENTS';
   dueTurn: number;
   remainingMatches?: number;
