@@ -65,7 +65,7 @@ export type EffectAnalysisOptions = {
 
 const aliases = {
   trigger: [
-    ["ENTER_FIELD", /^(?:필드에\s*)?(?:등장|MAGIC)(?:할\s*때|하면)?\s*[:：]?/i],
+    ["ENTER_FIELD", /^(?:필드에\s*)?(?:등장|출현|MAGIC)(?:할\s*때|하면)?\s*[:：]?/i],
     ["LEAVE_FIELD", /^(?:필드에서\s*)?퇴장(?:할\s*때|하면)?\s*[:：]?/],
     ["ACTIVE", /^액티브(?:\s*사용)?(?:하면)?\s*[:：]?/],
     ["CARD_DRAWN", /^(?:준비|TURBO)\s*[:：]?/i],
@@ -73,6 +73,7 @@ const aliases = {
     ["OTHER_ALLY_ATTACK", /^(?:콤보|SUPPORT)\s*[:：]?/i],
     ["TECHNIQUE_CAST", /^(?:주문|SHOCK)\s*[:：]?/i],
     ["EXACT_ZERO_DAMAGE", /^(?:핀폴|BULLSEYE)\s*[:：]?/i],
+    ["TURN_START", /^턴\s*시작(?:할\s*때|하면)?\s*[:：]?/i],
     ["TURN_END", /^턴\s*종료(?:할\s*때|하면)?\s*[:：]?/i],
   ] as const,
   keyword: [
@@ -86,7 +87,7 @@ const STAT_PAIR_INCREMENT_PATTERN = /(?:공격(?:력)?\s*(?:과|\/|및)\s*체력
 const SINGLE_STAT_INCREMENT_PATTERN = /(공격력|체력)(?:을|를|이|가)?\s*([+-]?\d+)\s*(?:씩\s*)?(?:증가|올려|올립(?:니다|다)?|상승|강화)(?:시킵니다|합니다|한다)?/i;
 const REFERENCE_ATTACK_INCREMENT_PATTERN = /공격한\s*(?:아군\s*)?선수의\s*공격력\s*만큼\s*(?:자신의\s*)?공격력(?:을|이)?\s*(?:증가|올려|상승|강화)/i;
 const SET_ATTACK_ZERO_PATTERN = /(?:자신의\s*)?공격력을\s*0\s*으로(?:\s*(?:만들|설정|변경))?/i;
-const NEXT_PLAY_HEALTH_BUFF_PATTERN = /다음(?:에)?\s*(?:(?:내가|제가)\s*)?내는\s*(?:아군\s*)?선수\s*카드\s*(?:1장|한\s*장)(?:(?:이|을|의)\s*)?(?:체력(?:이|을)?\s*)?(\d+)\s*(?:증가|늘어|올라|올라갑니다?|올립니다?)/i;
+const NEXT_PLAY_HEALTH_BUFF_PATTERN = /다음(?:에)?\s*(?:(?:내가|제가)\s*)?(?:내는|플레이하는|출현하는|등장하는)\s*(?:아군\s*)?(?:선수\s*)?카드(?:\s*(?:1장|한\s*장))?(?:에게)?\s*(?:(?:이|을|의)\s*)?(?:체력(?:이|을)?\s*)?[+]?(\d+)\s*(?:증가|늘어|올라|올라갑니다?|올립니다?|부여)/i;
 const STAT_SWAP_PATTERN = /(?:자신(?:의|에게)?\s*)?(?:현재\s*)?(?:공격(?:력)?\s*(?:과|\/|및)\s*체력|체력\s*(?:과|\/|및)\s*공격(?:력)?)[^.!?]{0,30}?(?:서로\s*)?(?:교환|바꾸|바꿉니다)/i;
 const ACTIVE_CARD_SCOPE_PATTERN = /(?:어디에\s*(?:있든|있는)|모든\s*위치의|손패\s*[,，]\s*덱\s*[,，]\s*(?:필드|보드)|손패\s*(?:및|와|과)\s*덱\s*(?:및|와|과)\s*(?:필드|보드))/;
 const GENERATED_FILTER_PATTERN = /(?:생성된|생성\s*카드|GENERATED)/i;
@@ -597,7 +598,8 @@ function expandedMechanicAnalysis(
   options: EffectAnalysisOptions,
 ): Analysis | null {
   const triggerFor = (fallback: Trigger = "ENTER_FIELD"): Trigger =>
-    /(?:처음으로\s*)?공격한/.test(text) ? "FIRST_ATTACKED"
+    /(?:이\s*카드가|자신이)\s*공격할\s*때마다|공격할\s*때마다/.test(text) ? "SELF_ATTACK"
+      : /(?:처음으로\s*)?공격한/.test(text) ? "FIRST_ATTACKED"
       : /^턴\s*시작/.test(text) ? "TURN_START"
         : /^퇴장/.test(text) ? "LEAVE_FIELD"
           : options.defaultTrigger ?? fallback;
@@ -659,8 +661,9 @@ function expandedMechanicAnalysis(
   if (/어디에\s*있든.*생성된.*아군\s*선수/.test(text) && /각각\s*1씩/.test(text)) {
     return result([{ trigger: triggerFor(), action: "BUFF", target: { zones: ["HAND", "DECK", "BOARD"], owner: "SELF", cardType: "WRESTLER", filter: { isGenerated: true }, selection: "ALL", count: 20 }, values: { attack: 1, health: 1 } }]);
   }
-  if (/다음에\s*(?:내가\s*)?플레이하는\s*아군\s*선수/.test(text) && /체력.*\+?2/.test(text)) {
-    return result([{ trigger: triggerFor(), action: "QUEUE_EFFECT", values: { queuedTrigger: "NEXT_ALLY_WRESTLER_PLAYED", queuedEffect: { action: "BUFF", target: { zone: "BOARD", owner: "SELF", selection: "SELF", count: 1 }, values: { attack: 0, health: 2 } } } }]);
+  const nextPlayHealthMatch = text.match(NEXT_PLAY_HEALTH_BUFF_PATTERN);
+  if (nextPlayHealthMatch) {
+    return result([{ trigger: triggerFor(), action: "QUEUE_EFFECT", values: { queuedTrigger: "NEXT_ALLY_WRESTLER_PLAYED", queuedEffect: { action: "BUFF", target: { zone: "BOARD", owner: "SELF", selection: "SELF", count: 1 }, values: { attack: 0, health: Number(nextPlayHealthMatch[1]) } } } }]);
   }
   if (/(?:자신의\s*)?(?:무덤|묘지).*선수.*수\s*만큼.*공격력과\s*체력/.test(text)) {
     return result([{ trigger: triggerFor(), action: "BUFF", target: wrestlerSelf, values: { amountReference: "GRAVEYARD_WRESTLER_COUNT" } }]);
@@ -743,6 +746,14 @@ function expandedMechanicAnalysis(
         : []),
     ]);
   }
+  if (/양\s*옆.*아군\s*선수.*도발/.test(text)) {
+    return result([{
+      trigger: triggerFor(),
+      action: "ADD_KEYWORD",
+      target: { zone: "BOARD", owner: "SELF", cardType: "WRESTLER", selection: "ADJACENT", count: 2 },
+      values: { keyword: "TAUNT" },
+    }]);
+  }
   if (/양\s*옆에\s*있는\s*카드들?.*체력.*\+?1/.test(text)) {
     return result([{
       trigger: triggerFor(),
@@ -751,7 +762,7 @@ function expandedMechanicAnalysis(
       values: { attack: 0, health: 1 },
     }]);
   }
-  if (/묘지에\s*있는\s*무작위\s*카드.*공격력과\s*체력.*같은.*좀비.*소환/.test(text)) {
+  if (/(?:묘지|무덤).*?무작위\s*카드.*공격력과\s*체력.*같은.*좀비.*소환/.test(text)) {
     return result([
       {
         trigger: triggerFor(),
@@ -781,8 +792,9 @@ function expandedMechanicAnalysis(
   if (/등장.*카드를\s*1장\s*뽑/.test(text)) {
     return result([{ trigger: "ENTER_FIELD", action: "DRAW", values: { amount: 1 } }]);
   }
-  if (/등장.*상대\s*손패에서\s*무작위\s*카드\s*1장.*손으로\s*훔쳐/.test(text)) {
-    return result([{ trigger: "ENTER_FIELD", action: "STEAL", target: { zone: "HAND", owner: "ENEMY", selection: "RANDOM", count: 1, randomScope: "STANDARD" } }]);
+  if (/(?:상대|적)\s*(?:덱|손패|무덤|묘지)에서\s*무작위\s*카드\s*1장.*손으로\s*훔쳐/.test(text)) {
+    const zone = /덱/.test(text) ? "DECK" as const : /(?:무덤|묘지)/.test(text) ? "GRAVEYARD" as const : "HAND" as const;
+    return result([{ trigger: triggerFor(), action: "STEAL", target: { zone, owner: "ENEMY", selection: "RANDOM", count: 1, randomScope: "STANDARD" } }]);
   }
   if (/러쉬\s*[,，]\s*회피/.test(text)) {
     return { ...result([]), keywords: ["RUSH", "DODGE"], summaries: ["기본 키워드 · RUSH", "기본 키워드 · DODGE"] };
@@ -804,8 +816,9 @@ function expandedMechanicAnalysis(
   if (/남은\s*골드.*모두\s*소비|골드당\s*\+?2\/\+?2|1G마다.*\+?2/.test(text)) {
     return result([{ trigger: triggerFor(), action: "SPEND_GOLD_BUFF_SELF", target: self, values: { amountReference: "REMAINING_GOLD" } }]);
   }
-  if (/자신을\s*제외한.*아군\s*선수.*공격력\s*\+?2/.test(text)) {
-    return result([{ trigger: triggerFor(), action: "BUFF", target: { zone: "BOARD", owner: "SELF", cardType: "WRESTLER", filter: { excludeSource: true }, selection: "ALL", count: 20 }, values: { attack: 2, health: 0 } }]);
+  if (/자신을\s*제외한.*아군\s*선수.*(?:공격력\s*(?:및|과)\s*체력|공격력).*?\+?2/.test(text)) {
+    const bothStats = /공격력\s*(?:및|과)\s*체력/.test(text);
+    return result([{ trigger: triggerFor(), action: "BUFF", target: { zone: "BOARD", owner: "SELF", cardType: "WRESTLER", filter: { excludeSource: true }, selection: "ALL", count: 20 }, values: { attack: 2, health: bothStats ? 2 : 0 } }]);
   }
   return null;
 }
@@ -815,7 +828,7 @@ export function analyzeEffectText(input: string, options: EffectAnalysisOptions 
   if (!text) return { status: "failure", outcome: "analysis_failure", effects: [], keywords: [], unsupportedSegments: ["효과 문장"], summaries: ["효과 문장을 입력해 주세요."] };
   const expanded = expandedMechanicAnalysis(text, options);
   if (expanded) return expanded;
-  const triggerMarkers = [...text.matchAll(/(?:^|\s)(?=(?:필드에\s*)?(?:등장|퇴장|액티브|준비|콤보|주문|핀폴|턴\s*시작|턴\s*종료|(?:이\s*카드가|자신이)\s*공격할\s*때마다|MAGIC|TURBO|SELF_ATTACK|SUPPORT|SHOCK|BULLSEYE)\s*[:：])/gi)]
+  const triggerMarkers = [...text.matchAll(/(?:^|\s)(?=(?:필드에\s*)?(?:등장|출현|퇴장|액티브|준비|콤보|주문|핀폴|턴\s*시작|턴\s*종료|(?:이\s*카드가|자신이)\s*공격할\s*때마다|MAGIC|TURBO|SELF_ATTACK|SUPPORT|SHOCK|BULLSEYE)\s*[:：])/gi)]
     .map((match) => (match.index ?? 0) + (match[0].startsWith(" ") ? 1 : 0));
   if (triggerMarkers.length > 1) {
     const analyses = triggerMarkers.map((start, index) =>
@@ -910,7 +923,7 @@ export function analyzeEffectText(input: string, options: EffectAnalysisOptions 
   }
   const recognized: Array<[Action, RegExp]> = [
     ["ADD_NEXT_TURN_GOLD", /다음(?:\s*내)?\s*턴(?:에)?\s*(?:추가\s*)?(?:골드(?:를|을)?\s*(?:추가로?\s*)?[+]?\d+\s*(?:g|골드)?|\d+\s*g|골드\s*\d+\s*추가)(?:\s*더)?(?:\s*받(?:습니다|는다|음)?)?/i],
-    ["ADD_GOLD", /(?:현재\s*)?(?:\d+\s*(?:g|골드)|골드(?:를|을)?\s*[+]?\d+|현재\s*골드\s*[+]\d+)\s*(?:획득|얻(?:음|습니다)?|추가)?/i],
+    ["ADD_GOLD", /(?:현재\s*)?(?:\d+\s*(?:g|골드)|골드(?:를|을)?\s*(?:추가로?\s*)?[+]?\d+|현재\s*골드\s*[+]\d+)\s*(?:획득|얻(?:음|습니다)?|추가)?/i],
     ["DRAW", /(?:(?:카드)?\s*(?:\d+\s*장|한\s*장|\d+)(?:을|를)?\s*(?:드로우|뽑(?:기|습니다|는다|음)?))/],
      ["SWAP_STATS", STAT_SWAP_PATTERN],
      ["QUEUE_EFFECT", NEXT_PLAY_HEALTH_BUFF_PATTERN],

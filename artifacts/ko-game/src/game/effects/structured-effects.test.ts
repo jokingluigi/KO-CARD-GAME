@@ -257,6 +257,26 @@ test('STEAL은 선언된 상대 손패 영역에서 무작위 카드를 내 손�
   assert.equal(result.players[0].hand.at(-1)?.instanceId, enemyCard.instanceId);
 });
 
+test('STEAL은 선언된 상대 덱 영역에서 무작위 카드를 내 손으로 이동한다', () => {
+  const source = instance('kamisator-deck', [
+    structured('STEAL', {
+      zone: 'DECK',
+      owner: 'ENEMY',
+      selection: 'RANDOM',
+      count: 1,
+      randomScope: 'STANDARD',
+    }),
+  ]);
+  const enemyCard = { ...instance('enemy-deck'), playerId: 'player-2' };
+  const state = createInitialGameState();
+  state.players[1].deck = [enemyCard];
+
+  const result = enterField(state, 'player-1', source, 0);
+
+  assert.equal(result.players[1].deck.length, 0);
+  assert.equal(result.players[0].hand.at(-1)?.instanceId, enemyCard.instanceId);
+});
+
 test('MOVE_TO_HAND의 임시 비용 감소는 최소 비용과 턴 만료를 보존한다', () => {
   const source = instance('mad-pumpkin', [
     structured('MOVE_TO_HAND', {

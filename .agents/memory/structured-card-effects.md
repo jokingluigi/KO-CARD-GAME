@@ -56,3 +56,9 @@ When a structured effect adds a new destination or random-pool filter, update bo
 **Why:** The analyzer can produce a valid payload that still loses its destination or filter in a separate runtime branch, and persisted cards do not benefit from parser changes until they are explicitly refreshed.
 
 **How to apply:** Cover registry metadata, server validation, runtime target resolution, random generation, database reanalysis, and exact production wording in one regression set.
+
+Natural-language analyzer coverage must include the production trigger aliases, Korean particles, and trailing connective wording—not just the central nouns and verbs.
+
+**Why:** Small wording differences such as `출현`, `턴 시작`, `카드에게`, or `체력이 +2` can otherwise produce an empty or partial result even when the runtime already supports the mechanic.
+
+**How to apply:** Add exact production-phrase regressions for each newly recovered catalog effect, assert `success`/`supported`, and pair target-zone changes with a runtime test that verifies the declared source zone.

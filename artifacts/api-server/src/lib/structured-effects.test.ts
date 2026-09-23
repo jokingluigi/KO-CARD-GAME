@@ -425,6 +425,54 @@ test("뒷정리맨의 다음 아군 선수 체력 예약을 구조화하고 지�
   assert.equal(isStructuredEffects({ effects: result.effects }), true);
 });
 
+test("최신 보고서의 미분석 문장도 기존 범용 효과로 구조화한다", () => {
+  const queued = analyzeEffectText("출현:다음에 출현하는 카드에게 체력을 +2 부여합니다.");
+  assert.deepEqual(queued.effects, [{
+    trigger: "ENTER_FIELD",
+    action: "QUEUE_EFFECT",
+    values: {
+      queuedTrigger: "NEXT_ALLY_WRESTLER_PLAYED",
+      queuedEffect: {
+        action: "BUFF",
+        target: { zone: "BOARD", owner: "SELF", selection: "SELF", count: 1 },
+        values: { attack: 0, health: 2 },
+      },
+    },
+  }]);
+
+  const steal = analyzeEffectText("이 카드가 공격할때마다 상대 덱에서 무작위 카드 1장을 내 손으로 훔쳐옵니다.");
+  assert.deepEqual(steal.effects, [{
+    trigger: "SELF_ATTACK",
+    action: "STEAL",
+    target: { zone: "DECK", owner: "ENEMY", selection: "RANDOM", count: 1, randomScope: "STANDARD" },
+  }]);
+
+  const adjacent = analyzeEffectText("등장: 양옆의 아군 선수들에게 도발을 부여합니다.");
+  assert.deepEqual(adjacent.effects[0], {
+    trigger: "ENTER_FIELD",
+    action: "ADD_KEYWORD",
+    target: { zone: "BOARD", owner: "SELF", cardType: "WRESTLER", selection: "ADJACENT", count: 2 },
+    values: { keyword: "TAUNT" },
+  });
+
+  const excludedBuff = analyzeEffectText("등장:자신을 제외한 필드에 나와있는 아군 선수들에게 공격력 및 체력에 +2를 부여합니다.");
+  assert.deepEqual(excludedBuff.effects[0]?.target?.filter, { excludeSource: true });
+  assert.deepEqual(excludedBuff.effects[0]?.values, { attack: 2, health: 2 });
+
+  const turnStart = analyzeEffectText("턴 시작:골드를 추가로 1 더 받습니다.");
+  assert.deepEqual(turnStart.effects, [{
+    trigger: "TURN_START",
+    action: "ADD_GOLD",
+    values: { amount: 1 },
+  }]);
+
+  const zombie = analyzeEffectText("등장:묘지에 있는 3코스트 이하의 무작위 카드 한장의 공격력과 체력이랑 똑같은 수치의 '좀비'를 하나 소환하고 그 소환한 '좀비'에게 도발을 부여한다.");
+  assert.equal(zombie.status, "success");
+  assert.equal(zombie.outcome, "supported");
+  assert.deepEqual(zombie.effects[0]?.values?.generatedModifiers, { copyTargetStats: true });
+  assert.deepEqual(zombie.effects[1]?.target, { zone: "BOARD", owner: "SELF", selection: "SAME_TARGET", count: 1 });
+});
+
 test("Champion의 자연스러운 다음 턴 골드 문장을 부분 분석 없이 구조화한다", () => {
   const result = analyzeEffectText("다음 턴에 골드를 추가로 1 더 받습니다", {
     defaultTrigger: "ENTER_FIELD",
