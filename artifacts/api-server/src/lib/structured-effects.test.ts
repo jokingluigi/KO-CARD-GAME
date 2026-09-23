@@ -824,6 +824,31 @@ test("tag target phrases analyze into a reusable tagsAny filter", () => {
   assert.equal(isStructuredEffects({ effects: result.effects }), true);
 });
 
+test("natural tag vocabulary supports implicit, negative, and all-tag Korean phrasing", () => {
+  const vocabulary = ["좀비", "인간", "용병"];
+  const implicit = analyzeEffectText("등장: 좀비인 선수에게 +1/+1", { availableTags: vocabulary });
+  assert.deepEqual(implicit.effects[0]?.target?.filter, { tagsAny: ["좀비"] });
+
+  const negative = analyzeEffectText("등장: 좀비 태그가 없는 선수에게 +1/+1", { availableTags: vocabulary });
+  assert.deepEqual(negative.effects[0]?.target?.filter, { tagsNone: ["좀비"] });
+
+  const all = analyzeEffectText("등장: 좀비와 인간 태그를 모두 가진 선수에게 +1/+1", { availableTags: vocabulary });
+  assert.deepEqual(all.effects[0]?.target?.filter, { tagsAll: ["좀비", "인간"] });
+});
+
+test("structured target ordering is bounded and rejects unknown target predicates", () => {
+  const target = { zone: "BOARD", owner: "SELF", cardType: "WRESTLER", selection: "TOP", count: 1, sort: { stat: "ATTACK", direction: "DESC" }, take: 1 };
+  assert.equal(isStructuredEffects({
+    effects: [{ trigger: "ENTER_FIELD", action: "BUFF", target, values: { attack: 1, health: 1 } }],
+  }), true);
+  assert.equal(isStructuredEffects({
+    effects: [{ trigger: "ENTER_FIELD", action: "BUFF", target: { ...target, take: 21 }, values: { attack: 1, health: 1 } }],
+  }), false);
+  assert.equal(isStructuredEffects({
+    effects: [{ trigger: "ENTER_FIELD", action: "BUFF", target: { ...target, predicate: "highest" }, values: { attack: 1, health: 1 } }],
+  }), false);
+});
+
 test("연결된 절은 각 절의 숫자만 해당 액션에 바인딩한다", () => {
   const result = analyzeEffectText("등장: 적 선수 2장에게 피해 1 그리고 카드 1장 뽑기");
   assert.equal(result.status, "success");

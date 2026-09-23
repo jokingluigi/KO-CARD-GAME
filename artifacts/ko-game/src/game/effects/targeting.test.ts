@@ -185,6 +185,37 @@ test('tag filters compose with zone, owner, and card type without hardcoded tag 
   assert.deepEqual(getValidTargets(state, 'player-1', source, noHumans), ['ally-untagged', 'generated-token']);
 });
 
+test('structured tag targets sort and take the highest matching card before applying', () => {
+  const source = card('ordered-source');
+  const low = { ...card('low-tagged', [], ['fighter']), currentAttack: 2, boardSlot: 0 as const };
+  const high = { ...card('high-tagged', [], ['fighter']), currentAttack: 6, boardSlot: 1 as const };
+  const state = createInitialGameState();
+  state.players[0].board[0] = low;
+  state.players[0].board[1] = high;
+  const effect: CardEffect = {
+    type: 'STRUCTURED',
+    action: 'BUFF',
+    target: {
+      zone: 'BOARD',
+      owner: 'SELF',
+      cardType: 'WRESTLER',
+      filter: { tagsAny: ['fighter'] },
+      selection: 'PLAYER_CHOICE',
+      count: 1,
+      sort: { stat: 'ATTACK', direction: 'DESC' },
+      take: 1,
+    },
+    values: { attack: 1, health: 0 },
+  };
+  const orderedSource = card('ordered-source', [effect]);
+  assert.deepEqual(getValidTargets(state, 'player-1', source, effect), ['high-tagged']);
+  const pending = enterField(state, 'player-1', orderedSource, 3);
+  assert.deepEqual(pending.targetingState?.validTargetIds, ['high-tagged']);
+  const resolved = selectEffectTarget(pending, 'high-tagged');
+  assert.equal(resolved.players[0].board[0]?.currentAttack, 2);
+  assert.equal(resolved.players[0].board[1]?.currentAttack, 7);
+});
+
 test('CHARACTER targeting offers the owner id and wrestlers, then applies player and card damage/healing separately', () => {
   const damageCharacter: CardEffect = {
     type: 'STRUCTURED', action: 'DAMAGE',

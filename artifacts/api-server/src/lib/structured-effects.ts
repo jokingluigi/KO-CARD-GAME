@@ -56,7 +56,12 @@ export type Analysis = {
   referencedCards?: ReferencedCard[];
   referenceErrors?: CardReferenceError[];
 };
-export type EffectAnalysisOptions = { defaultTrigger?: Trigger; cardCatalog?: readonly CardReferenceCandidate[] };
+export type EffectAnalysisOptions = {
+  defaultTrigger?: Trigger;
+  cardCatalog?: readonly CardReferenceCandidate[];
+  /** Safe, server-derived vocabulary used only to disambiguate natural-language tags. */
+  availableTags?: readonly string[];
+};
 
 const aliases = {
   trigger: [
@@ -116,14 +121,14 @@ function targetCountFrom(text: string) {
   if (/(모든|전부)/.test(text)) return 20;
   return 1;
 }
-function targetFilterFor(text: string): Target["filter"] | undefined {
+function targetFilterFor(text: string, availableTags: readonly string[] = []): Target["filter"] | undefined {
   const generated = GENERATED_FILTER_PATTERN.test(text);
   const minCost = Number(text.match(MIN_COST_PATTERN)?.[1] ?? text.match(/(?:코스트|비용)(?:이)?\s*(\d+)\s*이상/)?.[1]);
   const maxCost = Number(text.match(/(\d+)\s*(?:코스트|비용)\s*이하/)?.[1] ?? text.match(/(?:코스트|비용)(?:이)?\s*(\d+)\s*이하/)?.[1]);
   const token = /토큰/.test(text) && !/챔피언\s*토큰/.test(text);
   const nonChampionToken = /챔피언\s*토큰\s*제외/.test(text);
   const excludeSource = /자신을\s*제외/.test(text);
-  const tagFilter = tagFilterFor(text);
+  const tagFilter = tagFilterFor(text, availableTags);
   const filter = {
     ...(generated ? { isGenerated: true } : {}),
     ...(Number.isInteger(minCost) ? { minCost } : {}),
@@ -136,26 +141,37 @@ function targetFilterFor(text: string): Target["filter"] | undefined {
   return Object.keys(filter).length ? filter : undefined;
 }
 
-function tagNamesBeforeMarker(text: string): string[] {
+function normalizedTag(value: string): string {
+  return value.normalize("NFC").replace(/\s+/g, " ").trim();
+}
+
+function tagNamesBeforeMarker(text: string, availableTags: readonly string[] = []): string[] {
   const marker = text.match(/태그/);
-  if (!marker || marker.index === undefined) return [];
+  const vocabulary = [...new Set(availableTags.map(normalizedTag).filter(Boolean))]
+    .sort((left, right) => right.length - left.length);
+  if (!marker || marker.index === undefined) {
+    if (vocabulary.length === 0) return [];
+    return vocabulary.filter((tag) => new RegExp(`(?:^|[\\s'‘’“”\",，])${tag.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}(?=인\\s|속성|을\\s*가진|를\\s*가진|이\\s*있는|가\\s*있는)`, "i").test(text)).slice(0, 3);
+  }
   const prefix = text.slice(0, marker.index)
     .replace(/(?:모든|전부|아군|내|상대|적|선수|카드|가진|있는|필드|손패|덱|의|을|를|이|가)/g, " ")
     .trim();
   const quoted = [...prefix.matchAll(/['‘’“”"]([^'‘’“”"]+)['‘’“”"]/g)].map((match) => match[1]!.trim());
   const source = quoted.length ? quoted.join(",") : prefix;
-  return source
+  const parsed = source
     .split(/\s*(?:,|，|및|또는|와|과)\s*|\s+/)
-    .map((tag) => tag.trim())
+    .map(normalizedTag)
     .filter(Boolean)
     .slice(-3);
+  if (!vocabulary.length) return parsed;
+  return vocabulary.filter((tag) => parsed.some((candidate) => candidate === tag || candidate.includes(tag))).slice(0, 3);
 }
 
-function tagFilterFor(text: string): Target["filter"] | undefined {
-  const tags = tagNamesBeforeMarker(text);
+function tagFilterFor(text: string, availableTags: readonly string[] = []): Target["filter"] | undefined {
+  const tags = tagNamesBeforeMarker(text, availableTags);
   if (!tags.length) return undefined;
-  if (/태그\s*(?:가|를|은|는)?\s*(?:없는|없음|제외|아닌)/.test(text)) return { tagsNone: tags };
-  if (/(?:모두|둘\s*다|전부)\s*가진/.test(text)) return { tagsAll: tags };
+  if (/(?:태그\s*(?:가|를|은|는)?\s*(?:없는|없음|제외|아닌|포함하지\s*않)|(?:태그|속성)[^.!?]{0,12}(?:없는|아닌|제외))/.test(text)) return { tagsNone: tags };
+  if (/(?:모두|둘\s*다|전부)\s*(?:가진|포함)|(?:및|와|과)\s*[^.!?]{0,20}(?:태그|속성).*(?:가진|포함)/.test(text)) return { tagsAll: tags };
   return { tagsAny: tags };
 }
 
@@ -163,7 +179,7 @@ function validTagFilterValues(value: unknown): value is string[] {
   const parsed = cardTagsSchema.safeParse(value);
   return parsed.success && parsed.data.length > 0;
 }
-function targetFor(text: string, randomPool = false): Target {
+function baseTargetFor(text: string, randomPool = false, availableTags: readonly string[] = []): Target {
   const hand = /손(?:패)?/.test(text);
   const graveyard = /(?:무덤|묘지)/.test(text);
   const topOfDeck = /(?:덱\s*(?:맨\s*)?위|덱\s*위)/.test(text);
@@ -194,7 +210,7 @@ function targetFor(text: string, randomPool = false): Target {
     };
   }
   if (graveyard) {
-    const graveyardFilter = targetFilterFor(text);
+    const graveyardFilter = targetFilterFor(text, availableTags);
     return {
       zone: "GRAVEYARD",
       owner: enemyQualifier ? "ENEMY" : "SELF",
@@ -230,7 +246,7 @@ function targetFor(text: string, randomPool = false): Target {
   const adjacentEmptySlots = /양\s*옆\s*(?:의\s*)?빈\s*슬롯/.test(text);
   const summonEnd = text.search(/(?:소환|SUMMON)/i);
   const filterText = adjacentEmptySlots && summonEnd >= 0 ? text.slice(0, summonEnd) : text;
-  const filter = targetFilterFor(filterText);
+  const filter = targetFilterFor(filterText, availableTags);
   if (randomPool && adjacentEmptySlots && randomTarget) {
     return {
       zone: "BOARD",
@@ -274,6 +290,24 @@ function targetFor(text: string, randomPool = false): Target {
     ...(randomTarget ? { randomScope } : {}),
   };
 }
+
+function targetFor(text: string, randomPool = false, availableTags: readonly string[] = []): Target {
+  const target = baseTargetFor(text, randomPool, availableTags);
+  const highest = /(?:가장|제일)\s*(높은|큰)|(?:높은|큰)\s*(?:비용|코스트|공격력|체력).*(?:하나|한\s*장)/.test(text);
+  const lowest = /(?:가장|제일)\s*(낮은|작은)|(?:낮은|작은)\s*(?:비용|코스트|공격력|체력).*(?:하나|한\s*장)/.test(text);
+  if (!highest && !lowest) return target;
+  const stat = /(?:공격력|공격)/.test(text)
+    ? "ATTACK" as const
+    : /체력/.test(text)
+      ? "HEALTH" as const
+      : "COST" as const;
+  return {
+    ...target,
+    selection: target.selection === "PLAYER_CHOICE" ? "TOP" as const : target.selection,
+    sort: { stat, direction: highest ? "DESC" as const : "ASC" as const },
+    take: 1,
+  };
+}
 function keywordFor(text: string): Keyword | undefined {
   return aliases.keyword.find(([, pattern]) => pattern.test(text))?.[0];
 }
@@ -298,10 +332,11 @@ function genericStatEffects(
   trigger: Trigger,
   body: string,
   conditions: EffectCondition[],
+  options: EffectAnalysisOptions = {},
 ): StructuredEffect[] {
   const duration = durationFor(body);
   const minimumCost = minimumCostFor(body);
-  const target = targetFor(body);
+  const target = targetFor(body, false, options.availableTags);
   const parsed: Array<{ index: number; effects: StructuredEffect[] }> = [];
 
   const setPair = STAT_PAIR_SET_PATTERN.exec(body);
@@ -440,7 +475,7 @@ function effect(
     return {
       trigger,
       action,
-      target: targetFor(body),
+      target: targetFor(body, false, options.availableTags),
       ...(conditions?.length ? { conditions } : {}),
       values,
     };
@@ -512,7 +547,7 @@ function effect(
       return {
         trigger,
         action,
-        target: targetFor(body),
+        target: targetFor(body, false, options.availableTags),
         ...(conditions?.length ? { conditions } : {}),
         values,
       };
@@ -546,7 +581,7 @@ function effect(
   const resolvedTarget = sameSummonedTarget
     ? { zone: "BOARD" as const, owner: "SELF" as const, selection: "SAME_TARGET" as const, count: 1 }
     : (schema.target || (randomPoolAction && /(무작위|랜덤)/.test(body)))
-       ? (!explicitTarget && priorTarget ? { ...priorTarget, selection: "SAME_TARGET" as const } : targetFor(targetBody, randomPoolAction))
+       ? (!explicitTarget && priorTarget ? { ...priorTarget, selection: "SAME_TARGET" as const } : targetFor(targetBody, randomPoolAction, options.availableTags))
       : undefined;
   return {
     trigger,
@@ -618,7 +653,7 @@ function expandedMechanicAnalysis(
     return result([{
       trigger: triggerFor(),
       action: "REVIVE",
-      target: targetFor(text),
+      target: targetFor(text, false, options.availableTags),
     }]);
   }
   if (/어디에\s*있든.*생성된.*아군\s*선수/.test(text) && /각각\s*1씩/.test(text)) {
@@ -808,7 +843,7 @@ export function analyzeEffectText(input: string, options: EffectAnalysisOptions 
     const [leftText = "", rightText = ""] = text.replace(/^(?:스위치|SWITCH)\s*:\s*/i, "").split(/오른쪽(?:이면)?/);
     const parseBranch = (branch: string) => {
       const pair = branch.match(/([+-]\d+)\s*\/\s*([+-]\d+)/);
-      return pair ? [{ trigger: "ENTER_FIELD" as Trigger, action: "BUFF" as Action, target: targetFor("자신"), values: { attack: Number(pair[1]), health: Number(pair[2]) } }] : [];
+      return pair ? [{ trigger: "ENTER_FIELD" as Trigger, action: "BUFF" as Action, target: targetFor("자신", false, options.availableTags), values: { attack: Number(pair[1]), health: Number(pair[2]) } }] : [];
     };
     const branchEffect: StructuredEffect = { trigger: "ENTER_FIELD", action: "SWITCH_EFFECT_BRANCH", values: { leftEffects: parseBranch(leftText.replace(/왼쪽(?:이면)?/, "")), rightEffects: parseBranch(rightText) } };
     return { status: "success", outcome: "supported", effects: [branchEffect], keywords: [], unsupportedSegments: [], summaries: ["스위치 · 현재 슬롯 분기"] };
@@ -850,7 +885,7 @@ export function analyzeEffectText(input: string, options: EffectAnalysisOptions 
   const conditions: EffectCondition[] = [
     ...(needMatch ? [{ type: "NEED_CONDITION" as const, expression: needMatch[1]!.trim() }] : []),
   ];
-  const genericStats = genericStatEffects(trigger, body, conditions);
+  const genericStats = genericStatEffects(trigger, body, conditions, options);
   const useGenericStats = genericStats.length > 0 && (
     /[+-]\d+\s*\/\s*[+-]\d+/.test(body) && /(?:비용|코스트)/.test(body) ||
     /(?:비용|코스트|공격력|체력)\s*[+-]\d+/.test(body) ||
@@ -1025,6 +1060,19 @@ export function isStructuredEffects(value: unknown): value is { effects: Structu
         new Set(zones).size === zones.length && zones.every((zone) => TARGET_ZONES.includes(zone));
       if (!hasValidZones || !target || !TARGET_OWNERS.includes(target.owner) || !TARGET_SELECTIONS.includes(target.selection) || !Number.isInteger(target.count) || target.count < 1 || target.count > 20 || (target.selection === "PLAYER_CHOICE" && target.count !== 1)) return false;
       if (target.zone && target.zones) return false;
+      const targetKeys = new Set([
+        "zone", "zones", "owner", "cardType", "filter", "selection", "count", "randomScope",
+        "minTargets", "maxTargets", "optionalTarget", "resultId", "sort", "take",
+      ]);
+      if (Object.keys(target).some((key) => !targetKeys.has(key))) return false;
+      if (target.count > 20 || (target.take !== undefined &&
+        (!Number.isInteger(target.take) || target.take < 1 || target.take > 20))) return false;
+      if (target.sort !== undefined && (
+        typeof target.sort !== "object" || target.sort === null ||
+        !["COST", "ATTACK", "HEALTH"].includes(target.sort.stat) ||
+        !["ASC", "DESC"].includes(target.sort.direction) ||
+        Object.keys(target.sort).some((key) => !["stat", "direction"].includes(key))
+      )) return false;
       if (item.trigger === "ACTIVE" && target.selection === "PLAYER_CHOICE") return false;
       if (target.owner === "ALL" && (zones.length !== 1 || zones[0] !== "CHARACTER" || target.selection !== "ALL")) return false;
       if (target.selection === "ALL" && target.count < 1) return false;
@@ -1033,18 +1081,50 @@ export function isStructuredEffects(value: unknown): value is { effects: Structu
         if (target.filter && (
          typeof target.filter !== "object" ||
          target.filter === null ||
+          Object.keys(target.filter).some((key) => ![
+            "isGenerated", "minCost", "maxCost", "isToken", "isChampionToken", "excludeSource",
+            "keyword", "cost", "attack", "health", "tagsAny", "tagsAll", "tagsNone",
+          ].includes(key)) ||
          target.filter.isGenerated !== undefined && typeof target.filter.isGenerated !== "boolean" ||
           target.filter.minCost !== undefined && (!Number.isInteger(target.filter.minCost) || target.filter.minCost < 0 || target.filter.minCost > 999) ||
           target.filter.maxCost !== undefined && (!Number.isInteger(target.filter.maxCost) || target.filter.maxCost < 0 || target.filter.maxCost > 999) ||
           target.filter.isToken !== undefined && typeof target.filter.isToken !== "boolean" ||
           target.filter.isChampionToken !== undefined && typeof target.filter.isChampionToken !== "boolean" ||
           target.filter.excludeSource !== undefined && typeof target.filter.excludeSource !== "boolean" ||
+           target.filter.keyword !== undefined && !KEYWORDS.includes(target.filter.keyword as Keyword) ||
+           ["cost", "attack", "health"].some((key) => {
+             const comparison = target.filter?.[key as "cost" | "attack" | "health"];
+             return comparison !== undefined && (
+               typeof comparison !== "object" || comparison === null ||
+               Object.keys(comparison).some((childKey) => !["compare", "value"].includes(childKey)) ||
+               !["EQ", "NE", "LT", "LTE", "GT", "GTE"].includes(comparison.compare) ||
+               typeof comparison.value !== "number" || !Number.isFinite(comparison.value)
+             );
+           }) ||
           target.filter.tagsAny !== undefined && !validTagFilterValues(target.filter.tagsAny) ||
           target.filter.tagsAll !== undefined && !validTagFilterValues(target.filter.tagsAll) ||
           target.filter.tagsNone !== undefined && !validTagFilterValues(target.filter.tagsNone)
        )) return false;
       if (target.randomScope !== undefined && (!RANDOM_SCOPES.includes(target.randomScope) || !["RANDOM", "ADJACENT_EMPTY_SLOTS"].includes(target.selection))) return false;
-    } else if (target !== undefined && !(["SUMMON", "GENERATE"].includes(item.action) && ["RANDOM", "ADJACENT_EMPTY_SLOTS"].includes(target.selection))) return false;
+     } else if (target !== undefined) {
+       if (!(["SUMMON", "GENERATE"].includes(item.action) &&
+         ["RANDOM", "ADJACENT_EMPTY_SLOTS"].includes(target.selection))) return false;
+       const targetKeys = new Set([
+         "zone", "zones", "owner", "cardType", "filter", "selection", "count", "randomScope",
+         "minTargets", "maxTargets", "optionalTarget", "resultId", "sort", "take",
+       ]);
+       if (Object.keys(target).some((key) => !targetKeys.has(key)) ||
+         target.filter && (
+           typeof target.filter !== "object" ||
+           Object.keys(target.filter).some((key) => ![
+             "isGenerated", "minCost", "maxCost", "isToken", "isChampionToken", "excludeSource",
+             "keyword", "cost", "attack", "health", "tagsAny", "tagsAll", "tagsNone",
+           ].includes(key)) ||
+           target.filter.tagsAny !== undefined && !validTagFilterValues(target.filter.tagsAny) ||
+           target.filter.tagsAll !== undefined && !validTagFilterValues(target.filter.tagsAll) ||
+           target.filter.tagsNone !== undefined && !validTagFilterValues(target.filter.tagsNone)
+         )) return false;
+     }
     if (schema.amount && !(typeof values?.amount === "number" && Number.isFinite(values.amount) &&
       (schema.signedAmount ? Math.abs(values.amount) <= 999 : values.amount >= 0 && values.amount <= 999))) return false;
     if (schema.stat && !STAT_NAMES.includes(values?.stat as StatName)) return false;

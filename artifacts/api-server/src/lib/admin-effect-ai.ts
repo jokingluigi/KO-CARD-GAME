@@ -34,6 +34,8 @@ export type EffectAiContext = {
   cardType?: "WRESTLER" | "TECHNIQUE";
   effectContext?: "CHAMPION_ABILITY" | "QUEST_REWARD" | "UPGRADED_CHAMPION_ABILITY";
   sourceName?: string;
+  /** Server-derived public vocabulary only; never a catalog or user-specific data set. */
+  availableTags?: string[];
 };
 
 export type EffectAiDraft = {
@@ -82,7 +84,10 @@ export class EffectAiError extends Error {
 type EffectAiResult = EffectAiDraft | EffectAiClarification;
 
 const EFFECT_KEYS = new Set(["trigger", "action", "target", "conditions", "values"]);
-const TARGET_KEYS = new Set(["zone", "zones", "owner", "cardType", "filter", "selection", "count", "randomScope"]);
+const TARGET_KEYS = new Set([
+  "zone", "zones", "owner", "cardType", "filter", "selection", "count", "randomScope",
+  "minTargets", "maxTargets", "optionalTarget", "resultId", "sort", "take",
+]);
 const TARGET_FILTER_KEYS = new Set([
   "isGenerated",
   "minCost",
@@ -90,6 +95,10 @@ const TARGET_FILTER_KEYS = new Set([
   "isToken",
   "isChampionToken",
   "excludeSource",
+  "keyword",
+  "cost",
+  "attack",
+  "health",
   "tagsAny",
   "tagsAll",
   "tagsNone",
@@ -347,6 +356,10 @@ function targetPlan(target: Record<string, unknown> | undefined, plan: MechanicP
   if (zones.length || owner || selection) {
     addUnique(plan.selections, [`${owner || "TARGET"}:${zones.join("+") || "CHARACTER"}:${selection || "ALL"}`]);
   }
+  if (isRecord(target.sort) && typeof target.sort.stat === "string" && typeof target.sort.direction === "string") {
+    addUnique(plan.selections, [`SORT ${target.sort.stat} ${target.sort.direction}`]);
+  }
+  if (typeof target.take === "number") addUnique(plan.selections, [`TAKE ${target.take}`]);
   if (isRecord(target.filter)) {
     for (const [key, value] of Object.entries(target.filter)) {
       if (value !== undefined) addUnique(plan.filters, [`${key}=${typeof value === "object" ? JSON.stringify(value) : String(value)}`]);
@@ -448,6 +461,7 @@ function buildSystemPrompt(context: EffectAiContext, catalog: readonly CardRefer
     ...(context.cardType ? { cardType: context.cardType } : {}),
     ...(context.effectContext ? { effectContext: context.effectContext } : {}),
     ...(context.sourceName ? { sourceName: context.sourceName } : {}),
+    ...(context.availableTags?.length ? { availableTags: context.availableTags } : {}),
   };
   return [
     'READY output may use effectId "SCRIPT_V1" with a scripts array for typed aggregate/condition logic; never wrap either output in effectConfig or structuredEffect.',
@@ -484,6 +498,8 @@ function buildSystemPrompt(context: EffectAiContext, catalog: readonly CardRefer
       actionSchemas: ACTION_SCHEMAS,
     })}`,
     "무작위 CardDefinition 소환/생성은 target.selection=RANDOM을 사용하고, 공개 cardPool에서 target.cardType 및 target.filter(tagsAny/tagsAll/tagsNone 등)에 맞는 definition을 서버가 deterministic RNG로 선택한다.",
+    "태그는 오직 canonical cards.tags metadata만 뜻한다. 카드 이름/설명/키워드/희귀도/토큰 여부로 태그를 추론하지 마라. context.availableTags에 없는 태그는 만들지 말고, 명확한 태그 요청은 clarification으로 되돌리지 마라.",
+    "구조화 target은 sort:{stat:COST|ATTACK|HEALTH,direction:ASC|DESC}와 take(1..20)를 사용할 수 있다. 실행 순서는 filter→sort→take이며 selection=ALL/TOP/PLAYER_CHOICE에 적용한다.",
     "SCRIPT_V1 SELECT는 zone/cardType/filter(cardType, tagsAny/tagsAll/tagsNone, keyword, cost/attack/health 비교)을 지원하며, sort:{stat:COST|ATTACK|HEALTH,direction:ASC|DESC}와 take로 결과를 제한한다. 비교 연산자는 EQ/NE/LT/LTE/GT/GTE만 사용한다.",
     "SCRIPT_V1에서 PLAYER_CHOICE는 authoritative targetingState를 열고 선택 후 다음 step을 재개한다. UI용 임시 상태나 상대 패/덱 identity를 결과에 넣지 마라.",
     "SCRIPT_V1의 결과 참조는 이전 SELECT/EFFECT의 id를 target.resultId로 사용한다. EFFECT에 id를 붙이면 실제 성공한 대상/소환 CardInstance 결과만 다음 step에서 참조할 수 있다.",
@@ -667,6 +683,7 @@ export async function generateEffectDraft(
     const localAnalysis = analyzeEffectText(text, {
       defaultTrigger: context.effectContext ? "ENTER_FIELD" : undefined,
       cardCatalog: catalog,
+      availableTags: context.availableTags,
     });
     if (localAnalysis.outcome === "supported" && localAnalysis.effects.length > 0) {
         return canonicalizeGeneratedEffectDraft({

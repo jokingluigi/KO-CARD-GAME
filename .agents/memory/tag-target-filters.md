@@ -7,4 +7,4 @@ Card tag target filters are metadata-based and generic: `tagsAny`, `tagsAll`, an
 
 **Why:** Tags are reusable card-definition metadata, and generated/token instances must remain eligible when their definition carries the tag. Name-based inference or zone-specific branches would make the mechanic brittle.
 
-**How to apply:** Keep one shared canonical matcher for ordinary targets and random generation candidates. Validate each nonempty filter list with the existing card-tag limits, and keep parser output, registry metadata, runtime types, and tests synchronized.
+**How to apply:** Keep one shared canonical matcher for ordinary targets and random generation candidates. Resolve `filter → sort → take`, using instance ID as the stable tie-breaker. Validate each nonempty filter list with the existing card-tag limits, and keep parser output, registry metadata, runtime types, and tests synchronized.

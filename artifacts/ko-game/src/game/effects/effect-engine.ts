@@ -89,7 +89,8 @@ export function getValidTargets(
         card.boardSlot !== null && getAdjacentSlots(sourceBoardSlot).includes(card.boardSlot),
       )
       : filteredCards;
-    const cardIds = adjacentCards.map((card) => card.instanceId);
+    const orderedCards = sortAndTakeTargetCards(adjacentCards, target);
+    const cardIds = orderedCards.map((card) => card.instanceId);
     return canTargetPlayer && !isChampionProtectedByToken(state, owner) ? [owner, ...cardIds] : cardIds;
   });
 }
@@ -108,6 +109,26 @@ function cardsInZones(
     return [];
   });
   return [...new Map(cards.map((card) => [card.instanceId, card])).values()];
+}
+
+function sortAndTakeTargetCards<T extends CardInstance>(
+  cards: readonly T[],
+  target: { sort?: { stat: 'COST' | 'ATTACK' | 'HEALTH'; direction: 'ASC' | 'DESC' }; take?: number },
+): T[] {
+  const sorted = target.sort
+    ? [...cards].sort((left, right) => {
+      const leftValue = target.sort!.stat === 'COST'
+        ? left.currentCost
+        : target.sort!.stat === 'HEALTH' ? left.currentHealth : left.currentAttack;
+      const rightValue = target.sort!.stat === 'COST'
+        ? right.currentCost
+        : target.sort!.stat === 'HEALTH' ? right.currentHealth : right.currentAttack;
+      const delta = leftValue - rightValue;
+      return (target.sort!.direction === 'ASC' ? delta : -delta) ||
+        left.instanceId.localeCompare(right.instanceId);
+    })
+    : [...cards];
+  return target.take === undefined ? sorted : sorted.slice(0, target.take);
 }
 
 type ScriptRegister = { ids: string[] } | { slots: number[] } | { value: number };
@@ -1830,25 +1851,26 @@ export function applyEffect(
        if (!matchesCardTagFilter(card, target.filter)) return false;
       return true;
     });
-    const randomCandidates = eligibleCandidates.filter((card) =>
+    const scopedCandidates = sortAndTakeTargetCards(eligibleCandidates, target);
+    const randomCandidates = scopedCandidates.filter((card) =>
       target.selection !== 'RANDOM' || isEligibleForRandomPool(card, target.randomScope),
     );
     const targets = target.selection === 'SELF'
-      ? eligibleCandidates.filter((card) => card.instanceId === sourceCard.instanceId)
+      ? scopedCandidates.filter((card) => card.instanceId === sourceCard.instanceId)
       : target.selection === 'PLAYER_CHOICE'
-        ? eligibleCandidates.filter((card) => chosenTargetInstanceIds?.includes(card.instanceId)).slice(0, Math.max(0, target.count))
+        ? scopedCandidates.filter((card) => chosenTargetInstanceIds?.includes(card.instanceId)).slice(0, Math.max(0, target.count))
         : target.selection === 'SAME_TARGET'
-          ? eligibleCandidates.filter((card) => chosenTargetInstanceIds?.includes(card.instanceId)).slice(0, Math.max(0, target.count))
+          ? scopedCandidates.filter((card) => chosenTargetInstanceIds?.includes(card.instanceId)).slice(0, Math.max(0, target.count))
         : target.selection === 'ADJACENT'
-          ? eligibleCandidates.filter((card) =>
+          ? scopedCandidates.filter((card) =>
             sourceCard.boardSlot !== null &&
             card.boardSlot !== null &&
             getAdjacentSlots(sourceCard.boardSlot).includes(card.boardSlot),
           ).slice(0, Math.max(0, target.count))
         : target.selection === 'TOP'
-          ? eligibleCandidates.slice(0, Math.max(0, target.count))
+          ? scopedCandidates.slice(0, Math.max(0, target.count))
         : target.selection === 'ALL'
-          ? eligibleCandidates
+          ? scopedCandidates
           : shuffle(
               randomCandidates,
               randomForEffect(state, sourceCard, effect),

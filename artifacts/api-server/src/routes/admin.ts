@@ -883,6 +883,12 @@ async function cardReferenceCatalog(): Promise<CardReferenceCandidate[]> {
   }));
 }
 
+async function availableCardTags(): Promise<string[]> {
+  const cards = await db.select({ tags: cardsTable.tags }).from(cardsTable);
+  return [...new Set(cards.flatMap((card) => card.tags.map((tag) => tag.trim()).filter(Boolean)))]
+    .sort((left, right) => left.localeCompare(right));
+}
+
 async function trustedEffectContext(
   sourceType: "CARD" | "CHAMPION",
   sourceId: string | undefined,
@@ -1004,6 +1010,7 @@ export function analyzeForContext(
   text: string,
   context?: ChampionEffectContext,
   catalog?: readonly CardReferenceCandidate[],
+  availableTags: readonly string[] = [],
 ): Analysis {
   if (context === "QUEST_CONDITION") {
     const quest = analyzeChampionQuestText(text);
@@ -1033,6 +1040,7 @@ export function analyzeForContext(
     ? analyzeEffectText(effectText, {
         ...(context ? { defaultTrigger: "ENTER_FIELD" as Trigger } : {}),
         ...(catalog ? { cardCatalog: catalog } : {}),
+        availableTags,
       })
     : {
         status: "success" as const,
@@ -1266,7 +1274,7 @@ router.post("/effects/analyze", async (request, response): Promise<void> => {
     response.status(400).json({ message: "효과 텍스트를 확인해 주세요." }); return;
   }
   const context = championEffectContext(body);
-  const analysis = analyzeForContext(text, context, await cardReferenceCatalog());
+  const analysis = analyzeForContext(text, context, await cardReferenceCatalog(), await availableCardTags());
   response.json(context ? { ...analysis, unsupportedParts: analysis.unsupportedSegments } : analysis);
 });
 
@@ -1301,7 +1309,7 @@ router.post("/effects/generate", async (request, response): Promise<void> => {
     }
     const result = await generateEffectDraft(
       text,
-      context,
+      { ...context, availableTags: await availableCardTags() },
       await cardReferenceCatalog(),
     );
     if (result.status === "NEEDS_CLARIFICATION") {
