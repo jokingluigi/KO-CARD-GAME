@@ -1,0 +1,763 @@
+KO CARD GAME — IN-MATCH MUSIC PRIORITY SYSTEM
+LEGENDARY ENTRANCE > LATEST QUEST THEME > EARLIER QUEST THEME > NORMAL BGM
+
+이번 작업에서는 인게임 음악 우선순위를 아래 공식 규칙으로 고정한다.
+
+==================================================
+0. 공식 우선순위 — 절대 변경 금지
+==================================================
+
+가장 높은 우선순위:
+
+1. Legendary 선수 등장 음악
+2. 나중에 완료된 Champion Quest 음악
+3. 먼저 완료된 Champion Quest 음악
+4. 통상 게임 배경 음악
+
+즉:
+
+LEGENDARY_ENTRANCE
+>
+LATEST_COMPLETED_CHAMPION_QUEST
+>
+EARLIER_COMPLETED_CHAMPION_QUEST
+>
+NORMAL_MATCH_BGM
+
+==================================================
+1. Legendary 선수 등장 음악
+==================================================
+
+Legendary 선수 등장 음악은
+가장 높은 우선순위의 "일시적 override 음악"이다.
+
+Legendary 선수가 등장하면:
+
+1. 현재 재생 중인 낮은 우선순위 음악을 일시 중지/정지
+2. Legendary 등장 음악 시작
+3. 약 7초 정도 재생
+4. 마지막 구간에서 자연스럽게 fade-out
+5. Legendary 음악 종료
+6. 현재 활성화된 persistent 음악 중
+   가장 높은 우선순위 음악을 다시 재생
+
+중요:
+
+Legendary 음악이 끝났다고
+무조건 Normal BGM으로 돌아가면 안 된다.
+
+예:
+
+Quest 음악이 이미 활성화된 상태
+→ Legendary 등장
+→ Legendary 약 7초 재생
+→ fade-out
+→ Quest 음악 복귀
+
+Quest 음악이 없는 상태
+→ Legendary 등장
+→ 약 7초
+→ fade-out
+→ Normal BGM 복귀
+
+==================================================
+2. Champion Quest 완료 음악
+==================================================
+
+Champion Quest 완료 음악은
+짧은 one-shot 효과음이 아니다.
+
+Quest가 실제 완료된 뒤부터
+해당 Match가 끝날 때까지 유지되는
+persistent match music state다.
+
+다음으로 끊기면 안 된다:
+
+- 카드 PLAY
+- ATTACK
+- Champion Ability
+- Technique
+- END_TURN
+- turn transition
+- damage/heal/buff
+- AI action
+- 일반 animation
+- GameState snapshot
+- rerender
+
+==================================================
+3. 두 Champion Quest가 모두 완료된 경우
+==================================================
+
+Quest 완료 순서가 음악 우선순위를 결정한다.
+
+예:
+
+Player A Quest 완료
+→ A Quest music 재생
+
+이후 Player B Quest 완료
+→ B Quest music이 A보다 높은 우선순위
+→ B Quest music 재생
+
+즉:
+
+가장 최근에 완료된 Quest music
+>
+그보다 먼저 완료된 Quest music
+
+이 규칙은 어느 플레이어의 Quest인지와 무관하게
+"완료 시점이 더 늦은 음악"이 우선이다.
+
+==================================================
+4. Quest 음악 상태는 사라지지 않는다
+==================================================
+
+나중 Quest 음악이 우선 재생되고 있어도
+먼저 완료된 Quest 상태 자체를 삭제하지 마.
+
+예:
+
+A Quest complete
+→ A active
+
+B Quest complete
+→ B active, B가 현재 재생
+
+그 후 Legendary 등장
+→ Legendary override
+
+Legendary 종료
+→ 여전히 가장 높은 persistent 음악인 B Quest music 복귀
+
+A Quest complete 상태는
+Match lifecycle 안에서는 유지되지만
+B보다 우선순위가 낮으므로 들리지 않는다.
+
+==================================================
+5. Normal Match BGM
+==================================================
+
+Normal Match BGM은
+가장 낮은 우선순위.
+
+다음 경우에만 재생:
+
+- 활성화된 Quest music 없음
+- Legendary entrance override 없음
+
+Quest 완료 후에는
+Normal BGM이 action/turn update 때문에
+다시 Quest music을 덮으면 안 된다.
+
+==================================================
+6. Music state machine
+==================================================
+
+가능하면 현재 Audio Manager 안에서
+명확한 priority/state model을 사용한다.
+
+예상 개념:
+
+persistentMusic:
+- NORMAL
+- QUEST_COMPLETE(timestamp/order, track)
+
+temporaryOverride:
+- LEGENDARY_ENTRANCE
+
+현재 들려야 하는 음악:
+
+if legendaryEntranceActive:
+    legendary
+else if completedQuestThemes.length > 0:
+    mostRecentlyCompletedQuestTheme
+else:
+    normalMatchBgm
+
+실제 코드 구조/이름은
+현재 프로젝트 convention을 따른다.
+
+카드 이름/Champion 이름 하드코딩 금지.
+
+==================================================
+7. Quest completion ordering
+==================================================
+
+"나중에 완료된 Quest"를 판단할 때
+React render 순서나 local Date.now()에 의존하지 마.
+
+가능하면 canonical event order를 사용:
+
+- Game event sequence
+- server action sequence
+- deterministic match event index
+- existing canonical completion timestamp/order
+
+Online에서도 양쪽 클라이언트가
+동일한 음악 우선순위를 계산할 수 있어야 한다.
+
+==================================================
+8. Legendary 약 7초 재생
+==================================================
+
+Legendary entrance music은
+약 7초 동안 우선 재생한다.
+
+현재 asset 자체가 약 7초 길이라면
+실제 track duration을 사용할 수 있다.
+
+더 긴 asset이라면
+현재 연출 의도에 맞춰 약 7초 window 후 fade-out.
+
+단:
+
+- abrupt stop 금지
+- fade-out 적용
+- 여러 timer 중복 금지
+- unmount cleanup
+- stale callback이 다음 음악을 끊는 문제 금지
+
+==================================================
+9. Legendary 종료 후 resume/reselect
+==================================================
+
+Legendary 종료 후에는
+"이전에 재생하던 audio object를 무조건 resume"하지 말고
+현재 canonical priority를 다시 계산한다.
+
+이유:
+
+Legendary 재생 도중
+새 Quest가 완료될 수도 있음.
+
+예:
+
+A Quest music 재생
+→ Legendary 등장
+→ Legendary 재생 중 B Quest 완료
+→ Legendary 종료
+→ A가 아니라 B Quest music 재생
+
+즉 Legendary 종료 시:
+
+resolveHighestPriorityPersistentMusic()
+
+같은 개념으로 현재 상태 재평가.
+
+==================================================
+10. Quest 음악 loop
+==================================================
+
+Quest 완료 음악은
+Match가 끝날 때까지 계속 들려야 한다.
+
+track duration보다 Match가 길면:
+
+- loop
+또는
+- gap 없는 재시작
+
+현재 Audio Manager 방식에 맞게 구현.
+
+한 곡이 끝났다고
+Normal BGM으로 떨어지면 FAIL.
+
+같은 Quest track이 겹쳐서
+2개 이상 동시에 재생되어도 FAIL.
+
+==================================================
+11. Match 종료 시 cleanup
+==================================================
+
+다음에서 모든 Match music state cleanup:
+
+- Match FINISHED
+- Result screen transition
+- Main/Menu로 이탈
+- Match component teardown
+- 새 Match session 시작
+
+이전 Match의:
+
+- Quest completion order
+- active Quest themes
+- Legendary timer
+- fade timer
+- paused track
+- audio instance
+
+가 다음 Match로 넘어가면 안 된다.
+
+==================================================
+12. 일반 action은 음악 priority를 변경하지 않는다
+==================================================
+
+다음은 음악 priority 변경 이벤트가 아니다:
+
+- PLAY_CARD
+- ATTACK
+- BUFF
+- DAMAGE
+- HEAL
+- TECHNIQUE
+- Champion Ability
+- END_TURN
+- DRAW
+- SUMMON
+- REVIVE
+- Quest progress only
+
+이 이벤트 때문에
+음악을 stop/start/reset하지 마.
+
+Quest COMPLETE와
+Legendary entrance만
+현재 공식 priority에 영향을 준다.
+
+==================================================
+13. 최초 Quest 완료와 event replay
+==================================================
+
+Quest completion은
+미완료 → 완료 transition에서만 등록.
+
+동일 completion event가:
+
+- reconnect
+- snapshot replay
+- state resync
+- rerender
+
+때 다시 들어와도
+completion order를 새로 갱신하지 마.
+
+그렇지 않으면
+"먼저 완료된 Quest"가
+재접속 때문에 갑자기 최신 Quest로 바뀌는 버그가 생긴다.
+
+==================================================
+14. Online과 AI Match
+==================================================
+
+가능하면 동일한 Audio Manager / priority resolver를 사용.
+
+Online:
+canonical Quest completion order 기준.
+
+AI Match:
+같은 규칙.
+
+네트워크/AI gameplay 로직 자체는 건드리지 마.
+
+==================================================
+15. 테스트 시나리오
+==================================================
+
+TEST P1
+
+Match 시작.
+
+기대:
+Normal BGM.
+
+--------------------------------------------------
+
+TEST P2
+
+A Champion Quest 완료.
+
+기대:
+A Quest music 시작.
+Normal BGM 중지.
+A 음악은 지속 재생.
+
+--------------------------------------------------
+
+TEST P3
+
+A Quest music 재생 중
+카드 PLAY / ATTACK / END_TURN 여러 번.
+
+기대:
+A Quest music 계속 재생.
+끊김 없음.
+
+--------------------------------------------------
+
+TEST P4
+
+A Quest 완료 후
+B Champion Quest 완료.
+
+기대:
+B Quest music으로 전환.
+B가 A보다 우선.
+
+--------------------------------------------------
+
+TEST P5
+
+A → B Quest 완료 상태에서
+Legendary 선수 등장.
+
+기대:
+B Quest music 일시 중지/정지.
+Legendary music 약 7초.
+끝부분 fade-out.
+Legendary 종료 후 B Quest music 복귀.
+
+--------------------------------------------------
+
+TEST P6
+
+A Quest 완료 상태에서
+Legendary music 재생 도중
+B Quest 완료.
+
+기대:
+Legendary는 약 7초까지 유지.
+Legendary 종료 후
+A가 아닌 B Quest music 재생.
+
+--------------------------------------------------
+
+TEST P7
+
+Quest music 없는 상태에서
+Legendary 등장.
+
+기대:
+Normal BGM 중지
+→ Legendary 약 7초
+→ fade-out
+→ Normal BGM 복귀.
+
+--------------------------------------------------
+
+TEST P8
+
+Quest music track 자체가 끝남.
+
+기대:
+Match가 진행 중이면
+계속 loop/restart.
+Normal BGM으로 떨어지지 않음.
+
+--------------------------------------------------
+
+TEST P9
+
+동일 Quest Complete event replay.
+
+기대:
+음악 중복 없음.
+completion priority order 변화 없음.
+
+--------------------------------------------------
+
+TEST P10
+
+Match FINISHED.
+
+기대:
+Quest/Legendary/Normal match audio cleanup.
+
+--------------------------------------------------
+
+TEST P11
+
+새 Match 시작.
+
+기대:
+이전 Match Quest priority state 없음.
+Normal BGM부터 정상 시작.
+
+==================================================
+16. Legendary fade-out 검증
+==================================================
+
+Legendary track 종료 직전:
+
+volume:
+정상 volume
+→ 점진 감소
+→ 0 근처
+→ stop/cleanup
+
+갑자기 끊기면 FAIL.
+
+fade가 global master volume 자체를 0으로 바꾸면 안 된다.
+
+다음 Quest/Normal 음악은
+사용자 설정 volume으로 정상 재생.
+
+==================================================
+17. audio race condition 방지
+==================================================
+
+특히 확인:
+
+- stale setTimeout
+- overlapping fade interval
+- old `ended` callback
+- async play() promise
+- component unmount
+- rapid state updates
+- reconnect snapshot
+- duplicate Quest event
+
+오래된 callback이
+새로운 고우선순위 음악을 stop하면 안 된다.
+
+필요하면 playback/session generation token 사용.
+
+==================================================
+18. UI/Audio state 분리
+==================================================
+
+Toast/animation/presentation이 사라졌다고
+Quest music state까지 사라지면 안 된다.
+
+Quest 완료 presentation:
+일시적 UI
+
+Quest completion music state:
+Match 종료까지 지속
+
+두 lifecycle을 분리.
+
+==================================================
+19. 하지 말 것
+==================================================
+
+이번 작업에서 수정 금지:
+
+- Quest 진행 조건
+- Quest reward
+- Champion 능력
+- 카드 효과
+- Legendary 카드 능력
+- matchmaking
+- Online reconnect
+- AI scheduler
+- Pack
+- Reward
+- Admin
+- AI Mechanic Compiler
+
+audio priority/lifecycle만 수정.
+
+==================================================
+20. 자동 테스트
+==================================================
+
+필수:
+
+- Normal only
+- First Quest overrides Normal
+- Later Quest overrides earlier Quest
+- normal action does not change Quest music
+- Legendary overrides Normal
+- Legendary overrides Quest
+- Legendary ends → latest Quest resumes
+- Quest completes during Legendary → newest Quest resumes
+- Legendary ends with no Quest → Normal resumes
+- Legendary fade-out
+- Quest track loops/persists
+- duplicate Quest event no reorder
+- duplicate audio instance prevention
+- Match finish cleanup
+- new Match state reset
+- stale callback does not stop newer music
+
+==================================================
+21. Browser Verification
+==================================================
+
+가능하면 실제 Development/Test Match에서
+아래 순서를 직접 재현:
+
+Normal
+→ Quest A complete
+→ Quest B complete
+→ Legendary entrance
+→ Legendary fade-out
+→ Quest B resumes
+→ several turns
+→ Match finish
+
+실제 청취 기준으로:
+
+- 갑작스러운 끊김 없음
+- 음악 중첩 없음
+- 우선순위 역전 없음
+- Quest music 중간 종료 없음
+
+Browser unavailable이면
+implementation/automated test는 계속하고
+BROWSER VERIFICATION만 UNVERIFIED.
+
+==================================================
+22. 검증
+==================================================
+
+반드시:
+
+pnpm run typecheck
+pnpm --filter @workspace/ko-game run build
+git diff --check
+
+API/shared 미수정이면
+API를 불필요하게 건드리지 마.
+
+==================================================
+23. Git
+==================================================
+
+이번 작업 관련 파일만 stage.
+
+제외:
+
+Pasted-*.txt
+.env
+secrets
+logs
+screenshots
+temp
+Replit metadata
+unrelated changes
+
+검증 후 commit.
+
+force push 금지.
+
+별도 요청 없으면 push하지 마.
+
+==================================================
+24. 최종 보고
+==================================================
+
+MUSIC PRIORITY
+
+Priority implemented:
+
+LEGENDARY
+>
+LATEST QUEST
+>
+EARLIER QUEST
+>
+NORMAL
+
+PASS / FAIL
+
+
+Normal BGM:
+PASS / FAIL
+
+First Quest > Normal:
+PASS / FAIL
+
+Later Quest > Earlier Quest:
+PASS / FAIL
+
+Legendary > Quest:
+PASS / FAIL
+
+Legendary > Normal:
+PASS / FAIL
+
+Legendary duration ~7s:
+PASS / FAIL
+
+Legendary fade-out:
+PASS / FAIL
+
+Legendary → latest Quest resume:
+PASS / FAIL
+
+Legendary → Normal resume:
+PASS / FAIL
+
+Quest completed during Legendary:
+PASS / FAIL
+
+Quest persists across turns/actions:
+PASS / FAIL
+
+Quest persists beyond track duration:
+PASS / FAIL
+
+Duplicate Quest replay:
+PASS / FAIL
+
+Duplicate audio:
+ABSENT / PRESENT
+
+Stale callback race:
+ABSENT / PRESENT
+
+Match finish cleanup:
+PASS / FAIL
+
+New Match reset:
+PASS / FAIL
+
+
+IMPLEMENTATION:
+PASS / FAIL
+
+AUTOMATED VERIFICATION:
+PASS / FAIL
+
+BROWSER VERIFICATION:
+PASS / FAIL / UNVERIFIED
+
+TYPECHECK:
+PASS / FAIL
+
+KO BUILD:
+PASS / FAIL
+
+git diff --check:
+PASS / FAIL
+
+CHANGED FILES:
+...
+
+COMMIT:
+...
+
+PUSH:
+NOT REQUESTED / ...
+
+==================================================
+완료 조건
+==================================================
+
+공식 음악 우선순위가 정확히:
+
+Legendary 선수 등장 음악
+>
+나중에 완료된 Champion Quest 음악
+>
+먼저 완료된 Champion Quest 음악
+>
+통상 게임 BGM
+
+순서로 작동해야 한다.
+
+Legendary는 약 7초의 일시 override이며
+마지막에 fade-out 후
+그 순간의 최고 우선순위 persistent 음악으로 복귀한다.
+
+Champion Quest 음악은
+완료 이후 Match 종료까지 지속되며,
+더 나중에 완료된 Champion Quest 음악이
+기존 Quest 음악보다 우선한다.
+
+일반 action/turn update는
+음악 priority를 변경하지 않는다.
+
+이 음악 priority/lifecycle만 구현하고 멈춰라.
