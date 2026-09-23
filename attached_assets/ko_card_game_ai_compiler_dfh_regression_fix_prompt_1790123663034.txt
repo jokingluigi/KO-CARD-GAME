@@ -1,0 +1,837 @@
+KO CARD GAME — FIX ONLY:
+PROVIDER REGRESSION RECOVERY FOR D / F / H
+
+BASELINE COMMIT:
+62a02bc — Stabilize AI mechanic compiler contract
+
+이번 작업은 AI Mechanic Compiler 전체를 다시 설계하는 작업이 아니다.
+
+오직 실제 Provider smoke에서
+기존에는 READY였지만
+contract stabilization 이후 `INVALID_DRAFT`로 회귀한:
+
+- Case D
+- Case F
+- Case H
+
+이 3개만 복구한다.
+
+C / E / I는 이번 작업에서 건드리지 마.
+A / B / G / J는 이미 READY이므로 회귀만 검사한다.
+
+==================================================
+0. 현재 확인된 상태
+==================================================
+
+stabilization 이후:
+
+A = READY
+B = READY
+C = FAIL — clarification
+D = FAIL — INVALID_DRAFT
+E = FAIL — INVALID_DRAFT
+F = FAIL — INVALID_DRAFT
+G = READY
+H = FAIL — INVALID_DRAFT
+I = FAIL — INVALID_DRAFT
+J = READY
+
+하지만 이전 실제 Provider 결과에서는:
+
+D = READY
+F = READY
+H = READY
+
+였음.
+
+따라서 D/F/H는
+"원래 provider가 못 만드는 기능"으로 처리하면 안 된다.
+
+이번 작업의 핵심은:
+
+62a02bc 이후 무엇이 바뀌어서
+기존 READY 출력이 `INVALID_DRAFT`가 되었는지
+
+정확히 비교하고
+contract를 느슨하게 무너뜨리지 않으면서
+회귀를 복구하는 것.
+
+==================================================
+1. 절대 하지 말 것
+==================================================
+
+금지:
+
+- 새로운 SCRIPT_V1 capability 추가
+- provider call 무한 재시도
+- validator를 통째로 느슨하게 변경
+- unknown field를 전부 허용
+- malformed AST 자동 실행
+- invalid AST를 "대충 비슷하게" 자동 수정
+- sourceId를 다시 AI에게 맡김
+- source spoofing 허용
+- eval / new Function
+- arbitrary code execution
+- C/E/I까지 함께 수정
+- Provider smoke를 3회 초과 사용
+- Production card/champion definition 자동 수정
+
+==================================================
+PART A — D/F/H 실패 지점 정확히 찾기
+==================================================
+
+2. raw provider response → 실패 단계 추적
+==================================================
+
+Case D/F/H 각각에 대해
+다음 pipeline 중 정확히 어디서 실패하는지 기록한다.
+
+PROVIDER_RESPONSE
+→ structured output parse
+→ authoritative schema validation
+→ canonicalization
+→ trusted source context injection
+→ definition/reference resolution
+→ runtime AST validation
+→ mechanic plan reconstruction
+→ READY
+
+단순히:
+
+INVALID_DRAFT
+
+만 출력하고 끝내면 안 된다.
+
+예:
+
+D:
+schema validation fail
+path = effects[0].action.foo
+reason = unknown field
+
+처럼 정확한 path/reason을 남긴다.
+
+==================================================
+3. 62a02bc 이전/이후 비교
+==================================================
+
+가능하면 git history에서
+stabilization 직전 코드와 62a02bc를 비교한다.
+
+특히 확인:
+
+- provider response JSON schema
+- discriminated union 변화
+- required fields 변화
+- forbidden fields 변화
+- wrapper shape 변화
+- sourceId 제거 영향
+- canonicalizer normalization 제거 영향
+- mechanic plan reconstruction gating
+- runtime AST validation order
+- enum naming/casing
+- nullable / optional field 변화
+
+D/F/H가 예전에는 어떤 shape로 READY였는지
+fixture/history/log가 있으면 비교한다.
+
+==================================================
+PART B — "정상 변형"과 "malformed" 구분
+==================================================
+
+4. 안전한 provider variance만 허용
+==================================================
+
+Provider가 runtime 의미는 동일하지만
+표현 형식만 약간 다르게 내는 경우가 있다.
+
+이번 작업에서 허용 가능한 것은
+"이미 지원되는 DSL 의미를 유지하는 안전한 canonicalization"뿐이다.
+
+예시 개념:
+
+- 이미 정의된 enum alias normalization
+- 명백한 wrapper 제거
+- nullable optional field 정리
+- 서버가 소유하는 context field 주입
+- 기존 DSL에서 의미가 동일한 legacy shape → canonical shape
+
+단 실제 프로젝트의 기존 contract에 맞는 경우에만 허용.
+
+==================================================
+5. 의미 추측은 금지
+==================================================
+
+아래는 금지:
+
+- DAMAGE를 BUFF로 추측
+- selector 누락을 임의 생성
+- target을 임의 변경
+- unsupported effect type을 비슷한 effect로 치환
+- 조건을 임의 생성
+- 누락된 amount를 임의 숫자로 채움
+
+즉:
+
+safe shape normalization은 가능
+semantic invention은 금지.
+
+==================================================
+6. schema와 canonicalizer 역할 분리
+==================================================
+
+가능하면:
+
+Provider-facing schema:
+허용 가능한 안전한 provider variance를 표현
+
+Canonicalizer:
+그 variance를 하나의 canonical AST로 변환
+
+Runtime validator:
+canonical AST만 허용
+
+구조로 유지.
+
+runtime contract 자체를 provider 편의 때문에 느슨하게 만들지 마.
+
+==================================================
+PART C — D 케이스 복구
+==================================================
+
+7. Case D만 먼저 분석
+==================================================
+
+기존 A–J fixture/history에서
+Case D가 어떤 mechanic인지 확인.
+
+Case D의 요구사항을 새로 창작하지 마.
+
+실제 fixture가 없으면:
+
+MISSING_FIXTURE
+
+로 중단하지 말고
+git history / previous tests / logs / prompt constants에서 최대한 복원.
+
+정말 찾을 수 없을 때만 보고.
+
+==================================================
+8. D 실패 원인
+==================================================
+
+D의 실제 provider response와
+schema reject path를 확인.
+
+수정은
+D를 위한 카드 이름 hardcoding이 아니라
+해당 provider shape를 generic하게 처리.
+
+==================================================
+9. D 자동 fixture
+==================================================
+
+provider call 전에
+가능하면 D의 실패 raw shape를 fixture로 저장/재구성하여
+provider 호출 없이 regression test를 만든다.
+
+테스트:
+
+old failing D shape
+→ canonicalization
+→ runtime validation
+→ READY
+
+단 malformed 의미까지 억지 허용하지 마.
+
+==================================================
+PART D — F 케이스 복구
+==================================================
+
+10. D 수정 후 F 분석
+==================================================
+
+D 수정이 끝난 뒤
+F를 별도로 분석.
+
+F가 D와 같은 root cause인지
+다른 root cause인지 구분.
+
+같은 원인이면 shared fix로 처리.
+
+다른 원인이면 별도 최소 수정.
+
+==================================================
+11. F regression fixture
+==================================================
+
+F의 실제 실패 shape를
+자동 테스트 fixture로 고정.
+
+Provider 없이:
+
+schema
+→ canonical
+→ runtime
+→ mechanic plan
+
+PASS해야 함.
+
+==================================================
+PART E — H 케이스 복구
+==================================================
+
+12. H 별도 분석
+==================================================
+
+H도 같은 방식으로 처리.
+
+특히 H가:
+
+event-history
+listener
+schedule
+result reference
+PLAYER_CHOICE
+기타
+
+어떤 기존 capability를 쓰는지
+실제 fixture를 확인한 뒤 수정.
+
+기능을 새로 추가하지 마.
+
+==================================================
+13. H regression fixture
+==================================================
+
+H 실패 shape를 fixture화하고
+provider 없이 재현/검증.
+
+==================================================
+PART F — Provider 호출 예산
+==================================================
+
+14. 실제 Provider 호출 총 3회 제한
+==================================================
+
+이번 작업 전체에서 실제 Provider 호출은:
+
+D 최대 1회
+F 최대 1회
+H 최대 1회
+
+TOTAL <= 3
+
+자동 retry 없음.
+
+==================================================
+15. 호출 순서
+==================================================
+
+각 case는:
+
+1. 기존 raw/history/fixture 기반 자동 수정
+2. 자동 tests PASS
+3. 마지막에 실제 Provider 1회 smoke
+
+순서.
+
+즉 Provider를 디버깅 도구처럼 반복 호출하지 마.
+
+==================================================
+16. smoke 결과
+==================================================
+
+각 case:
+
+PROVIDER_RESPONSE
+SCHEMA_VALID
+CANONICAL_VALID
+RUNTIME_VALID
+MECHANIC_PLAN_VALID
+READY
+
+를 기록.
+
+==================================================
+PART G — A/B/G/J 회귀 검사
+==================================================
+
+17. Provider 추가 호출 없이 검사
+==================================================
+
+A/B/G/J는 이미 READY.
+
+이번 작업에서
+이 4개를 실제 Provider로 다시 호출하지 마.
+
+기존 fixture를 사용하여:
+
+schema
+canonical
+runtime
+mechanic plan
+
+regression만 자동 테스트.
+
+==================================================
+18. C/E/I 건드리지 않기
+==================================================
+
+C:
+clarification
+
+E:
+INVALID_DRAFT
+
+I:
+INVALID_DRAFT
+
+는 이번 작업 범위 밖.
+
+D/F/H를 고치는 과정에서
+우연히 fixture가 통과하게 되더라도
+별도 Provider call은 하지 않는다.
+
+최종 보고에:
+
+UNCHANGED / INCIDENTAL_FIX
+
+정도로만 기록 가능.
+
+==================================================
+PART H — sourceId 안정화 회귀 금지
+==================================================
+
+19. sourceId 정책 유지
+==================================================
+
+반드시 유지:
+
+- AI prompt에서 sourceId 생성 금지
+- provider source spoofing reject
+- server trusted context injection
+- sourceId 생략 가능
+- 다른 card/champion ID 주입 불가
+
+D/F/H를 살리려고
+sourceId contract를 되돌리면 실패.
+
+==================================================
+20. source tests
+==================================================
+
+기존 stabilization source tests
+모두 다시 PASS해야 함.
+
+==================================================
+PART I — READY 기준 유지
+==================================================
+
+21. READY gating
+==================================================
+
+READY는 반드시:
+
+schema valid
+→ canonical valid
+→ runtime valid
+→ mechanic plan valid
+
+후에만 가능.
+
+D/F/H를 READY로 만들기 위해
+runtime validation을 건너뛰면 안 된다.
+
+==================================================
+22. malformed fixture는 계속 FAIL
+==================================================
+
+기존:
+
+- source spoofing
+- malformed EFFECT wrapper
+- unknown unsafe field
+- ambiguous reference
+
+테스트가 계속 실패/reject되는지 확인.
+
+==================================================
+PART J — 자동 테스트
+==================================================
+
+23. 필수 신규 tests
+==================================================
+
+최소:
+
+D provider-shape regression
+F provider-shape regression
+H provider-shape regression
+
+각각 provider 없이 fixture 기반으로:
+
+parse
+schema
+canonical
+runtime
+mechanic plan
+READY
+
+검증.
+
+==================================================
+24. 기존 stabilization tests
+==================================================
+
+반드시 다시 실행:
+
+source spoofing
+sourceId omitted
+malformed EFFECT wrapper
+provider call count
+no-retry
+admin-effect-ai
+structured-effects
+mechanic completion
+
+==================================================
+25. 전체 검증
+==================================================
+
+반드시:
+
+pnpm run typecheck
+pnpm --filter @workspace/ko-game run build
+API typecheck
+API build
+git diff --check
+
+==================================================
+PART K — Browser/Admin Verification
+==================================================
+
+26. 가능하면 Development/Test Admin에서
+==================================================
+
+D/F/H 해당 자연어 prompt를 각각 한 번만 Generate.
+
+기대:
+
+각 case provider call 1회 이하.
+
+결과가 READY면:
+
+mechanic plan 표시
+Apply to form 가능
+
+Apply/Save 시:
+provider call 추가 없음.
+
+==================================================
+27. Browser 불가
+==================================================
+
+브라우저 없으면
+코드 수정/자동 테스트는 계속.
+
+실제 Provider smoke 가능한 별도 script/test path가 있으면
+거기서 총 3회만 수행.
+
+둘 다 불가하면:
+PROVIDER SMOKE = UNVERIFIED
+
+라고 정확히 보고.
+
+==================================================
+PART L — Git
+==================================================
+
+28. baseline
+==================================================
+
+현재 baseline commit:
+
+62a02bc
+
+그 위에 수정.
+
+이 커밋을 revert하지 마.
+
+==================================================
+29. commit
+==================================================
+
+관련 파일만 stage.
+
+금지:
+
+Pasted-*.txt
+.env
+OPENAI_API_KEY
+provider secret logs
+temp
+unrelated changes
+
+검증 후 새 commit 생성.
+
+force push 금지.
+
+이번 작업에서도 push는 자동 수행하지 마.
+사용자 승인 전 local commit까지만.
+
+==================================================
+30. 최종 보고 형식
+==================================================
+
+D REGRESSION
+
+PREVIOUS STATUS:
+READY
+
+CURRENT FAILURE BEFORE FIX:
+INVALID_DRAFT
+
+FAIL STAGE:
+...
+
+FAIL PATH:
+...
+
+ROOT CAUSE:
+...
+
+FIX:
+...
+
+Fixture regression:
+PASS / FAIL
+
+Provider calls:
+0 / 1
+
+Provider schema:
+PASS / FAIL
+
+Canonical:
+PASS / FAIL
+
+Runtime:
+PASS / FAIL
+
+Mechanic plan:
+PASS / FAIL
+
+FINAL:
+READY / FAIL
+
+
+==================================================
+
+F REGRESSION
+
+PREVIOUS STATUS:
+READY
+
+CURRENT FAILURE BEFORE FIX:
+INVALID_DRAFT
+
+FAIL STAGE:
+...
+
+FAIL PATH:
+...
+
+ROOT CAUSE:
+...
+
+FIX:
+...
+
+Fixture regression:
+PASS / FAIL
+
+Provider calls:
+0 / 1
+
+Provider schema:
+PASS / FAIL
+
+Canonical:
+PASS / FAIL
+
+Runtime:
+PASS / FAIL
+
+Mechanic plan:
+PASS / FAIL
+
+FINAL:
+READY / FAIL
+
+
+==================================================
+
+H REGRESSION
+
+PREVIOUS STATUS:
+READY
+
+CURRENT FAILURE BEFORE FIX:
+INVALID_DRAFT
+
+FAIL STAGE:
+...
+
+FAIL PATH:
+...
+
+ROOT CAUSE:
+...
+
+FIX:
+...
+
+Fixture regression:
+PASS / FAIL
+
+Provider calls:
+0 / 1
+
+Provider schema:
+PASS / FAIL
+
+Canonical:
+PASS / FAIL
+
+Runtime:
+PASS / FAIL
+
+Mechanic plan:
+PASS / FAIL
+
+FINAL:
+READY / FAIL
+
+
+==================================================
+
+REGRESSION SAFETY
+
+A fixture:
+PASS / FAIL
+
+B fixture:
+PASS / FAIL
+
+G fixture:
+PASS / FAIL
+
+J fixture:
+PASS / FAIL
+
+source spoofing rejected:
+PASS / FAIL
+
+sourceId omitted:
+PASS / FAIL
+
+malformed EFFECT rejected:
+PASS / FAIL
+
+no-auto-retry:
+PASS / FAIL
+
+Save provider calls:
+0 / FAIL
+
+Runtime provider calls:
+0 / FAIL
+
+
+==================================================
+
+PROVIDER CALL BUDGET
+
+D calls:
+...
+
+F calls:
+...
+
+H calls:
+...
+
+TOTAL:
+...
+
+REQUIRED:
+<= 3
+
+
+==================================================
+
+C:
+UNCHANGED / INCIDENTAL_FIX
+
+E:
+UNCHANGED / INCIDENTAL_FIX
+
+I:
+UNCHANGED / INCIDENTAL_FIX
+
+
+==================================================
+
+IMPLEMENTATION:
+PASS / FAIL / BLOCKED
+
+AUTOMATED VERIFICATION:
+PASS / FAIL
+
+PROVIDER SMOKE:
+PASS / PARTIAL / FAIL / UNVERIFIED
+
+TYPECHECK:
+PASS / FAIL
+
+KO BUILD:
+PASS / FAIL
+
+API TYPECHECK:
+PASS / FAIL
+
+API BUILD:
+PASS / FAIL
+
+git diff --check:
+PASS / FAIL
+
+BASELINE:
+62a02bc
+
+NEW COMMIT:
+...
+
+PUSH:
+NOT PERFORMED
+
+CHANGED FILES:
+...
+
+==================================================
+완료 조건
+==================================================
+
+1. D/F/H 각각의 `INVALID_DRAFT` 실제 reject 지점을 밝혀낸다.
+2. D/F/H가 기존 지원 capability만으로 다시 READY가 된다.
+3. runtime contract를 무작정 느슨하게 만들지 않는다.
+4. sourceId/server-context 안정화 규칙을 유지한다.
+5. malformed/unsafe AST는 계속 reject한다.
+6. A/B/G/J fixture에 회귀가 없다.
+7. 실제 Provider 호출 총합은 최대 3회다.
+8. 자동 retry는 0회다.
+9. Save/runtime Provider 호출은 0회다.
+10. C/E/I는 이번 작업에서 별도 수정하지 않는다.
+
+위 범위만 수정하고 멈춰라.
