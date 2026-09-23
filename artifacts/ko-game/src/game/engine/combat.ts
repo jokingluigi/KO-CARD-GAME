@@ -1,22 +1,19 @@
 import type { CardInstanceId } from '../cards/types';
 import type { ActionErrorCode, ActionResult } from '../actions/types';
 import { actionFailure, actionSuccess } from '../actions/types';
-import type { RetireEvent } from '../events/types';
 import type { GameState } from '../types/game-state';
-import type { BoardSlot } from './board-position';
 import { validateCurrentPlayer } from './turn-system';
 import {
   getDamageModifierBonus,
   hasKeyword,
   resolveBoardListeners,
-  resolveCardRetiredListeners,
+  resolveStateBasedDeaths,
   resolvePendingEffects,
-  resolveRegisteredRuleListeners,
   resolveTriggeredAbilities,
+  resolveRegisteredRuleListeners,
 } from '../effects/effect-engine';
 import { processChampionQuestEvents } from '../champions/quests';
 import { findDirectDeployedChampion, isChampionProtectedByToken } from './direct-champion';
-import { resetCardForGraveyard } from '../cards/zone-state';
 
 export type AttackTarget =
   | {
@@ -136,70 +133,7 @@ export function canSelectAsAttacker(
 }
 
 function retireDefeatedWrestlers(state: GameState): GameState {
-  let protectedState = state;
-  for (const player of state.players) {
-    for (const card of player.board) {
-      if (!card || card.currentHealth > 0) continue;
-      const triggered = resolveTriggeredAbilities(protectedState, player.id, card, 'BEFORE_RETIRE');
-      protectedState = triggered.targetingState?.active
-        ? resolvePendingEffects(triggered)
-        : triggered;
-    }
-  }
-  const retireEvents: RetireEvent[] = [];
-  const retired: Array<{
-    playerId: string;
-    card: NonNullable<GameState['players'][number]['board'][number]>;
-  }> = [];
-
-  const players = protectedState.players.map((player) => {
-    const board = [...player.board];
-    const retiredCards = [];
-
-    for (let index = 0; index < board.length; index += 1) {
-      const card = board[index];
-
-       if (card && card.currentHealth <= 0 && !protectedState.preventedRetireTargetIds?.includes(card.instanceId)) {
-        retired.push({ playerId: player.id, card });
-        retiredCards.push(resetCardForGraveyard(card));
-        retireEvents.push({
-          type: 'CARD_RETIRED',
-          playerId: player.id,
-          cardInstanceId: card.instanceId,
-          cardType: card.cardType,
-          boardSlot: index as BoardSlot,
-          source: { type: 'SYSTEM' },
-          target: { type: 'CARD', cardInstanceId: card.instanceId },
-          reason: 'RETIRE',
-        });
-        board[index] = null;
-      }
-    }
-
-    return {
-      ...player,
-      board: board as typeof player.board,
-      graveyard: [...player.graveyard, ...retiredCards],
-    };
-  });
-
-  const retiredState: GameState = {
-    ...protectedState,
-    players,
-    events: [...state.events, ...retireEvents],
-  };
-
-  const clearedInterceptions = { ...retiredState, preventedRetireTargetIds: undefined };
-  return retired.reduce((nextState, entry) => {
-    const withLeaveEffect = resolveTriggeredAbilities(
-      nextState,
-      entry.playerId,
-      entry.card,
-      'LEAVE_FIELD',
-      { leaveReason: 'RETIRE' },
-    );
-    return resolveCardRetiredListeners(withLeaveEffect, entry.playerId, entry.card);
-  }, clearedInterceptions);
+  return resolveStateBasedDeaths(state);
 }
 
 function receiveDamage(
@@ -353,7 +287,7 @@ export function attack(
     const preDamageTriggered = directChampion
       ? resolveTriggeredAbilities(state, target.playerId, directChampion, 'BEFORE_DAMAGE')
       : state;
-    const preDamageState = preDamageTriggered.targetingState?.active
+    const preDamageState = preDamageTriggered !== state && preDamageTriggered.targetingState?.active
       ? resolvePendingEffects(preDamageTriggered)
       : preDamageTriggered;
     const preventedChampionDamage = Boolean(
@@ -472,10 +406,11 @@ export function attack(
       damagedDirectChampion?.cardType,
     );
     if (directChampion) {
+      const resolved = retireDefeatedWrestlers(damageListenersResolved);
       return actionSuccess(
         processChampionQuestEvents(
           state,
-          retireDefeatedWrestlers(damageListenersResolved),
+          resolved,
         ),
       );
     }
@@ -515,7 +450,7 @@ export function attack(
     defender,
     'BEFORE_DAMAGE',
   );
-  const defenderPrepared = defenderBeforeDamage.targetingState?.active
+  const defenderPrepared = defenderBeforeDamage !== state && defenderBeforeDamage.targetingState?.active
     ? resolvePendingEffects(defenderBeforeDamage)
     : defenderBeforeDamage;
   const attackerCurrent = findBoardCard(defenderPrepared, attackingPlayerId, attackerInstanceId)?.card ?? attacker;
@@ -526,7 +461,7 @@ export function attack(
     attackerCurrent,
     'BEFORE_DAMAGE',
   );
-  const preDamageState = attackerBeforeDamage.targetingState?.active
+  const preDamageState = attackerBeforeDamage !== defenderPrepared && attackerBeforeDamage.targetingState?.active
     ? resolvePendingEffects(attackerBeforeDamage)
     : attackerBeforeDamage;
   const attackerPrepared = findBoardCard(preDamageState, attackingPlayerId, attackerInstanceId)?.card ?? attackerCurrent;
@@ -646,10 +581,6 @@ export function attack(
     defender.instanceId,
     defender.cardType,
   );
-  return actionSuccess(
-    processChampionQuestEvents(
-      state,
-      retireDefeatedWrestlers(damageListenersResolved),
-    ),
-  );
+  const resolved = retireDefeatedWrestlers(damageListenersResolved);
+  return actionSuccess(processChampionQuestEvents(state, resolved));
 }

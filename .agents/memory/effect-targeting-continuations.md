@@ -20,3 +20,9 @@ Automatic effects must advance the active frame before applying their body so ne
 **Why:** An automatic `ALL` damage effect can invoke a nested resolver while its original frame is still current; without the advance, resolution recurses indefinitely.
 
 **How to apply:** Treat automatic effect execution like a completed selection: apply it against a frame whose `effectIndex` already points to the next effect, then let child continuations resume through the normal stack.
+
+Trigger callers must only resume a pending frame when `resolveTriggeredAbilities` installed a new child state; a no-op trigger can otherwise mistake the active parent frame for its own resolution.
+
+**Why:** Lethal damage inside a paused effect caused a no-op `BEFORE_RETIRE`/`BEFORE_DAMAGE` lookup to replay the parent continuation and discard the retired card's aggregate follow-up data.
+
+**How to apply:** Compare the returned state with the trigger input before calling `resolvePendingEffects`; preserve the existing active frame when the trigger returned the same state.

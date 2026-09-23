@@ -75,7 +75,7 @@ function beginPlayerTurn(state: GameState, playerId: string): GameState {
         ?.board.find((candidate) => candidate?.instanceId === card.instanceId);
       if (!currentCard) return nextState;
       const triggered = resolveTriggeredAbilities(nextState, playerId, currentCard, 'TURN_START');
-      return triggered.targetingState?.active ? resolvePendingEffects(triggered) : triggered;
+      return triggered !== nextState && triggered.targetingState?.active ? resolvePendingEffects(triggered) : triggered;
     }, afterDelayed) ?? afterDelayed;
 }
 
@@ -277,7 +277,7 @@ export function endTurn(
         ?.board.find((candidate) => candidate?.instanceId === card.instanceId);
       if (!currentCard) return nextState;
       const triggered = resolveTriggeredAbilities(nextState, actingPlayerId, currentCard, 'TURN_END');
-      return triggered.targetingState?.active ? resolvePendingEffects(triggered) : triggered;
+      return triggered !== nextState && triggered.targetingState?.active ? resolvePendingEffects(triggered) : triggered;
     }, turnedState) ?? turnedState;
 
   const afterScheduled = resolveDueDelayedEffects(afterTurnEnd, 'TURN_END', actingPlayerId);

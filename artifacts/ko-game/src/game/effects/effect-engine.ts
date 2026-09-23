@@ -1239,12 +1239,38 @@ export function resolveStateBasedDeaths(
   state: GameState,
   sourceContext?: EventAttribution,
 ): GameState {
+  // Resolve all BEFORE_RETIRE replacements against the live board before
+  // taking the lethal snapshot. This keeps state-based lethal damage
+  // consistent with combat damage and structured DAMAGE.
+  let preparedState = state;
+  const candidateIds = state.players.flatMap((player) =>
+    player.board
+      .filter((card): card is CardInstance => card !== null && card.currentHealth <= 0)
+      .map((card) => ({ playerId: player.id, cardInstanceId: card.instanceId })),
+  );
+  if (!candidateIds.length) return state;
+  for (const candidate of candidateIds) {
+    const player = preparedState.players.find((entry) => entry.id === candidate.playerId);
+    const card = player?.board.find((entry) => entry?.instanceId === candidate.cardInstanceId);
+    if (!card || card.currentHealth > 0) continue;
+    const beforeRetire = resolveTriggeredAbilities(
+      preparedState,
+      candidate.playerId,
+      card,
+      'BEFORE_RETIRE',
+      { sourceContext },
+    );
+    preparedState = beforeRetire !== preparedState && beforeRetire.targetingState?.active
+      ? resolvePendingEffects(beforeRetire)
+      : beforeRetire;
+  }
+
   const retired: Array<{ playerId: string; card: CardInstance; slot: 0 | 1 | 2 | 3 }> = [];
-  const players = state.players.map((player) => {
+  const players = preparedState.players.map((player) => {
     const board = [...player.board];
     const graveyard = [...player.graveyard];
     board.forEach((card, index) => {
-      if (!card || card.currentHealth > 0) return;
+      if (!card || card.currentHealth > 0 || preparedState.preventedRetireTargetIds?.includes(card.instanceId)) return;
       const slot = index as 0 | 1 | 2 | 3;
       retired.push({ playerId: player.id, card, slot });
       board[index] = null;
@@ -1252,13 +1278,17 @@ export function resolveStateBasedDeaths(
     });
     return { ...player, board: board as typeof player.board, graveyard };
   });
-  if (!retired.length) return state;
+  const clearedInterceptions = {
+    ...preparedState,
+    preventedRetireTargetIds: undefined,
+  };
+  if (!retired.length) return clearedInterceptions;
 
   let next: GameState = {
-    ...state,
+    ...clearedInterceptions,
     players,
     events: [
-      ...state.events,
+      ...preparedState.events,
       ...retired.map(({ playerId, card, slot }) => ({
         type: 'CARD_RETIRED' as const,
         playerId,
@@ -1289,6 +1319,7 @@ export function resolvePendingEffects(state: GameState): GameState {
   // trigger can then install itself as a child continuation.
   let next: GameState = { ...state, targetingState: pending };
   let last = pending.lastTargetIds;
+  let lastAggregatedStats = pending.lastAggregatedStats;
   for (let index = pending.effectIndex; index < pending.effects.length; index += 1) {
     const effect = pending.effects[index];
     const source = pending.sourceCard ?? sourceInState(next, pending.sourceInstanceId);
@@ -1327,6 +1358,7 @@ export function resolvePendingEffects(state: GameState): GameState {
       minTargets: 0,
       maxTargets: 0,
       lastTargetIds: last,
+      lastAggregatedStats,
     };
     next = applyEffect(
       { ...next, targetingState: frameAfterCurrentEffect },
@@ -1342,6 +1374,7 @@ export function resolvePendingEffects(state: GameState): GameState {
     if (ids?.length) last = ids;
      if (next.targetingState?.sourceInstanceId === pending.sourceInstanceId) {
        last = next.targetingState.lastTargetIds;
+      lastAggregatedStats = next.targetingState.lastAggregatedStats;
      }
   }
   if (pending.markActiveUsed) {
@@ -2165,7 +2198,7 @@ export function applyEffect(
         const current = owner?.board.find((card) => card?.instanceId === target.instanceId);
         if (!owner || !current) return nextState;
         const beforeDamage = resolveTriggeredAbilities(nextState, targetOwner, current, 'BEFORE_DAMAGE');
-        const preparedState = beforeDamage.targetingState?.active
+        const preparedState = beforeDamage !== nextState && beforeDamage.targetingState?.active
           ? resolvePendingEffects(beforeDamage)
           : beforeDamage;
         const preparedCurrent = preparedState.players
@@ -2229,7 +2262,7 @@ export function applyEffect(
             : withDamageListeners;
         }
         const beforeRetire = resolveTriggeredAbilities(preparedState, targetOwner, preparedCurrent, 'BEFORE_RETIRE');
-        const protectedState = beforeRetire.targetingState?.active
+        const protectedState = beforeRetire !== preparedState && beforeRetire.targetingState?.active
           ? resolvePendingEffects(beforeRetire)
           : beforeRetire;
         if (protectedState.preventedRetireTargetIds?.includes(current.instanceId)) {
