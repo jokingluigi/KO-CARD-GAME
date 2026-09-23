@@ -1,0 +1,688 @@
+KO CARD GAME — FINAL PRODUCTION QA ONLY
+
+이번 작업은 배포/Push/코드 수정 작업이 아니다.
+
+이미 배포되어 있는 Production 사이트를
+실제 브라우저로 직접 열고 플레이하면서
+최종 QA만 수행한다.
+
+Production 사이트:
+https://ko-card-game-vr69.onrender.com/
+
+중요:
+반드시 실제 사이트를 클릭하고 플레이해서 확인한다.
+
+코드만 읽거나
+테스트 코드만 보고
+PASS 처리하지 마.
+
+==================================================
+절대 하지 말 것
+==================================================
+
+- git push 금지
+- commit 금지
+- Render deploy 금지
+- 코드 수정 금지
+- Production DB 직접 수정 금지
+- 관리자 데이터 수정 금지
+- 카드/Champion 원본 데이터 수정 금지
+- 상점 구매 금지
+- 카드 분해/삭제 금지
+- 사용자 계정 삭제 금지
+- AI Deck 삭제 금지
+- 덱을 임의로 저장 변경 금지
+- Production에서 AI Mechanic Compiler effect를 새로 Apply/Save/Publish 금지
+- OPENAI Provider 불필요한 재호출 금지
+
+버그를 발견해도
+이번 작업에서는 고치지 않는다.
+
+재현 순서와 실제 결과만 기록한다.
+
+==================================================
+0. 로그인
+==================================================
+
+로그인이 필요하면
+로그인 화면에서 멈춘다.
+
+사용자가 직접 로그인할 수 있게 하고,
+로그인 완료 후 같은 브라우저 세션에서 QA를 계속한다.
+
+비밀번호를 요청하지 마.
+
+==================================================
+1. 첫 접속 / 기본 상태
+==================================================
+
+실제 브라우저에서 확인:
+
+- 페이지 정상 로드
+- blank screen 없음
+- 무한 로딩 없음
+- React fatal crash 없음
+- 주요 이미지/asset 깨짐 없음
+- 메인 화면 레이아웃 정상
+- 버튼 클릭 정상
+- 새로고침 후 로그인/session 유지
+- 치명적인 console error 없음
+- API 5xx 반복 없음
+
+==================================================
+2. 메인 메뉴
+==================================================
+
+확인:
+
+- AI Match 진입
+- Online 메뉴 진입
+- Collection 진입
+- Deck Editor 진입
+- 뒤로가기
+- 메인 복귀
+
+추가:
+
+- 배경 정상 표시
+- Main BGM이 있다면 정상 재생
+- BGM 중복 재생 없음
+- 공지가 있다면 레이아웃 깨짐 없음
+
+==================================================
+3. Collection
+==================================================
+
+읽기 전용으로 확인:
+
+- 카드 이미지
+- 카드 이름
+- 수량
+- 스크롤
+- 필터/검색
+- 카드 상세보기
+- ALT/detail toggle
+- 이미지/text clipping
+- 모바일/좁은 화면에서 깨짐
+
+절대:
+
+분해
+삭제
+제작
+Prism 변경
+
+하지 마.
+
+==================================================
+4. Deck Editor
+==================================================
+
+기존 덱을 읽기 위주로 확인.
+
+확인:
+
+- 덱 정상 로드
+- Champion 별도 표시
+- 카드 이미지 정상
+- 카드 상세보기 정상
+- invalid deck이면 원인 표시
+- 문제 카드 highlight가 있다면 정상
+- 25장 rule UI 정상
+
+덱을 실제로 저장 변경하지 마.
+
+==================================================
+5. AI MATCH — 최소 여러 판
+==================================================
+
+최종 QA의 핵심이다.
+
+한 판만으로 확인이 부족하면
+여러 판 진행한다.
+
+목표:
+
+실제 gameplay 흐름이 자연스럽고
+카드/Champion/Quest/턴 진행/애니메이션이
+정상적으로 작동하는지 확인.
+
+==================================================
+6. AI Match 기본 흐름
+==================================================
+
+실제 클릭으로 확인:
+
+- Match start
+- 첫 턴 시작
+- draw
+- Gold 증가
+- 카드 cost 차감
+- WRESTLER PLAY_FROM_HAND
+- ON_ENTER
+- Technique 사용
+- Champion Ability
+- attack
+- damage
+- heal
+- buff/debuff
+- RETIRE
+- END_TURN
+- AI action
+- turn change
+- lethal
+- result screen
+- 다시 메인으로 복귀
+
+==================================================
+7. Turn / AI 최종 회귀
+==================================================
+
+특히 아래 과거 문제를 실제로 확인:
+
+- AI가 턴 타이머 끝까지 멈추지 않는가
+- AI가 정상적인 시간 안에 행동하는가
+- legal action이 없으면 턴이 정상 진행되는가
+- Quest 완료 연출 후 AI가 멈추지 않는가
+- Champion Ability 후 END_TURN 가능
+- timeout 전환에서 필드 카드가 손으로 튀지 않음
+- AI 패배 후 Champion이 1HP로 부활하지 않음
+- result HP가 -1/30 같은 음수로 보이지 않음
+- 턴 표시와 실제 active player가 일치
+- END_TURN 후 stuck 없음
+
+발생하지 않은 상황은:
+NOT_TRIGGERED
+
+라고 정확히 기록.
+
+억지로 Production 데이터를 수정해서 재현하지 마.
+
+==================================================
+8. 카드 상태 / 전투 UX
+==================================================
+
+가능한 경우 확인:
+
+- SILENCE 후 Rush/기습/TAUNT 등 제거된 표시도 사라짐
+- DODGE consume/expire 후 stale badge 없음
+- Random Walker Rush 표시
+- 공격할 수 없는 선수는 공격자로 선택되지 않음
+- 공격 불가 이유가 사용자에게 표시됨
+- 공격 불가 카드도 상세보기 가능
+- 카드 상세보기 때문에 공격/target/action이 오발하지 않음
+
+==================================================
+9. HAND stat trigger
+==================================================
+
+가능한 카드가 있으면 확인:
+
+공격력/체력 증가 시 발동하는 효과가
+HAND에 있어도 정상 발동.
+
+확인:
+
+- HAND ATK increase
+- HAND HP increase
+- 감소에는 발동하지 않음
+- FIELD에서도 기존대로 정상
+- 동일 trigger 중복 발동 없음
+
+실제 안전하게 재현할 카드가 없으면:
+UNVERIFIED
+
+==================================================
+10. ON_ENTER no-target
+==================================================
+
+등장 효과가 PLAYER_CHOICE target을 요구하는데
+유효 대상이 0명인 경우가 나오면 확인:
+
+- 카드 FIELD 진입 성공
+- Gold 정상 소비
+- PLAYER_CHOICE 창 없음
+- effect만 no-op
+- stale pending 없음
+- 다음 action/END_TURN 정상
+
+==================================================
+11. 기존 주요 카드 버그 회귀
+==================================================
+
+가능한 경우 아래 카드들을 실제로 사용하거나
+상대 AI가 사용하도록 여러 판 진행.
+
+확인 대상:
+
+- 뒷정리맨
+- Pandora
+- Mad Pumpkin
+- Yeoul
+- Great Chan
+- Black Orb Master
+- Joke Luigi
+- Dehun
+- Natomato
+- Jäger
+
+각 카드마다:
+
+CARD:
+...
+
+DESCRIPTION:
+...
+
+EXPECTED:
+...
+
+ACTUAL:
+...
+
+RESULT:
+PASS / FAIL / NOT_TRIGGERED
+
+==================================================
+12. Pandora
+==================================================
+
+가능하면 별도 확인:
+
+- target = ally + enemy BOARD WRESTLER
+- Champions target 제외
+- linked Champion Token이 정확한 Pandora-linked token인지
+- random/name/tag fallback 아님
+- Champion Token retire가 패배로 처리되지 않음
+- original Champion HP 유지
+
+==================================================
+13. Graveyard reset
+==================================================
+
+buff/debuff/cost change를 받은 카드가
+graveyard로 이동하는 상황이 나오면 확인:
+
+graveyard에서:
+
+- attack 원본
+- health 원본
+- cost 원본
+
+으로 보이는지.
+
+REVIVE되면 이전 temporary modifier가
+잘못 남아 있지 않는지 확인.
+
+==================================================
+14. Quest
+==================================================
+
+Quest가 있는 Champion으로 가능하면 진행.
+
+확인:
+
+- progress 정확
+- complete 조건 정확
+- complete presentation 1회
+- reward/effect 정확
+- 다음 턴에 같은 완료 연출 반복 없음
+- AI Quest complete 후 freeze 없음
+
+==================================================
+15. Champion
+==================================================
+
+가능한 Champion들에 대해:
+
+- max HP 정상
+- Ability 사용 가능 조건
+- Gold cost
+- target selection
+- effect result
+- END_TURN 가능
+- Champion Token과 ordinary SUMMON 구분
+
+==================================================
+16. Technique
+==================================================
+
+확인:
+
+- board slot 사용 안 함
+- board full이어도 사용 가능
+- PLAYER_CHOICE 정상
+- 사용 후 graveyard
+- 연출 정상
+- 효과 결과 정상
+
+==================================================
+17. AI Mechanic Compiler runtime 회귀
+==================================================
+
+Provider A–J는 이미 engine 검증 완료 상태다.
+
+이번 Production QA에서:
+
+새 AI effect 생성 금지.
+Provider 재호출 금지.
+
+단 Production catalog에 이미 저장된
+structured/natural-language compiled effect가 실제 경기에서 보이면
+정상 실행되는지 관찰.
+
+안전하게 확인할 fixture가 없으면:
+NO_SAFE_PRODUCTION_FIXTURE
+
+==================================================
+18. Online Match
+==================================================
+
+안전한 테스트 상대/계정이 있을 때만
+Online Match를 실제 플레이.
+
+공개 matchmaking에
+무작정 일반 사용자와 QA하지 마.
+
+safe setup이 없으면:
+ONLINE FULL MATCH = UNVERIFIED
+
+==================================================
+19. Online 확인 항목
+==================================================
+
+가능한 경우:
+
+- 연결 성공
+- Back → Main
+- 상대 nickname
+- Match BGM
+- YOUR TURN 알림 정확히 1회
+- 내 카드 play animation
+- 상대 카드 play animation
+- attack/damage animation
+- buff/heal animation
+- 상대 Technique 표시
+- Quest complete 알림 정확히 1회
+- reconnect 메시지 자동 제거
+- END_TURN 후 실제 턴/UI 동기화
+
+==================================================
+20. Online hidden information
+==================================================
+
+가능하면 network/devtools에서 확인:
+
+상대 HAND/DECK의:
+
+- card identity
+- CardInstance ID
+- hidden generated card identity
+
+가 공개되기 전 payload에 노출되지 않는지.
+
+특히:
+
+STAT_CHANGED
+buff/debuff
+generated effect events
+
+등에서 hidden instance ID leak이 없는지 확인.
+
+==================================================
+21. 자연스러운 애니메이션 / 연출
+==================================================
+
+단순히 "동작함"만 보지 말고
+게임이 실제 출시작처럼 자연스러운지 확인.
+
+특히:
+
+- 카드가 순간이동하는 느낌
+- 애니메이션 순서 뒤바뀜
+- effect와 HP 변화 순서 부자연스러움
+- 공격 전 damage가 먼저 뜸
+- 카드가 갑자기 사라졌다 나타남
+- 동일 animation 반복
+- 너무 긴 delay
+- 애니메이션 때문에 gameplay가 멈춤
+- 연출 종료 후 input lock이 남음
+- 카드가 겹치거나 화면 밖으로 나감
+- UI popup이 계속 남음
+
+발견 시 기록.
+
+==================================================
+22. 전체 성능
+==================================================
+
+여러 턴 진행하면서 확인:
+
+- 턴이 갈수록 렉 증가 여부
+- 카드 많아질수록 급격한 프레임 저하
+- 클릭 반응 지연
+- animation queue 누적
+- BGM 중복
+- timer/listener 누적처럼 보이는 현상
+- AI 행동 시간이 점점 늦어짐
+
+==================================================
+23. "위리너" 회귀
+==================================================
+
+여러 게임 동안
+정체불명의 "위리너" 또는
+사용자가 생성/편성하지 않은 이상한 엔티티가
+갑자기 등장하는지 관찰.
+
+발생하면 반드시:
+
+- turn
+- 직전 action
+- source card/effect
+- 나타난 zone
+- card name
+- 가능하면 screenshot/state
+
+기록.
+
+이름으로 숨기거나 수정하지 마.
+
+==================================================
+24. Console / Network
+==================================================
+
+가능한 경우 DevTools 확인:
+
+CONSOLE:
+- uncaught exception
+- unhandled rejection
+- infinite render warning
+- repeating error
+- WS reconnect loop
+- audio error loop
+
+NETWORK:
+- API 5xx
+- 반복 4xx
+- failed assets
+- websocket errors
+- duplicate requests 폭증
+
+민감한 token은 보고서에 복사 금지.
+
+==================================================
+25. PASS 기준
+==================================================
+
+코드 inspection만으로 PASS 금지.
+
+실제 브라우저에서
+직접 클릭/플레이해 본 항목만 PASS.
+
+실제 발생하지 않아 확인하지 못한 항목:
+
+NOT_TRIGGERED
+또는
+UNVERIFIED
+
+로 기록.
+
+==================================================
+26. 버그 기록 형식
+==================================================
+
+각 오류는:
+
+BUG:
+...
+
+SEVERITY:
+CRITICAL / MAJOR / MINOR
+
+REPRO:
+1.
+2.
+3.
+
+EXPECTED:
+...
+
+ACTUAL:
+...
+
+FREQUENCY:
+ALWAYS / INTERMITTENT / ONCE
+
+SCREEN/STATE:
+...
+
+CONSOLE/NETWORK:
+...
+
+LIKELY AREA:
+...
+
+로 기록.
+
+추측을 확정 사실처럼 쓰지 마.
+
+==================================================
+27. 최종 리포트
+==================================================
+
+FIRST LOAD:
+PASS / FAIL
+
+MAIN:
+PASS / FAIL
+
+COLLECTION:
+PASS / FAIL / PARTIAL
+
+DECK EDITOR:
+PASS / FAIL / PARTIAL
+
+AI MATCH:
+PASS / FAIL
+
+TURN FLOW:
+PASS / FAIL
+
+AI BEHAVIOR:
+PASS / FAIL
+
+CARD EFFECTS:
+PASS / FAIL / PARTIAL
+
+CHAMPION:
+PASS / FAIL / PARTIAL
+
+QUEST:
+PASS / FAIL / PARTIAL
+
+TECHNIQUE:
+PASS / FAIL / PARTIAL
+
+STATUS UI:
+PASS / FAIL / PARTIAL
+
+COMBAT UX:
+PASS / FAIL / PARTIAL
+
+ANIMATIONS:
+PASS / FAIL / PARTIAL
+
+PERFORMANCE:
+PASS / FAIL / PARTIAL
+
+ONLINE:
+PASS / FAIL / UNVERIFIED
+
+HIDDEN INFO:
+PASS / FAIL / UNVERIFIED
+
+AI COMPILER RUNTIME:
+PASS / FAIL / NO_SAFE_PRODUCTION_FIXTURE
+
+UNKNOWN ENTITY ("위리너"):
+ABSENT / PRESENT
+
+
+==================================================
+28. 발견된 문제 요약
+==================================================
+
+CRITICAL:
+...
+
+MAJOR:
+...
+
+MINOR:
+...
+
+NOT_TRIGGERED:
+...
+
+UNVERIFIED:
+...
+
+
+==================================================
+29. 최종 판정
+==================================================
+
+FINAL QA STATUS:
+
+PASS
+또는
+FAIL
+
+PASS 조건:
+
+- Production 실제 브라우저에서 핵심 화면 정상
+- AI Match 실제 플레이 가능
+- 카드 play/attack/turn/endgame 정상
+- 치명적 stuck/crash 없음
+- hidden info leak 없음
+- 주요 과거 regression 재발 없음
+- 게임 진행이 자연스럽고 심각한 animation/UI 오류 없음
+
+Online full match는 안전한 테스트 상대가 없으면
+UNVERIFIED로 둘 수 있다.
+
+==================================================
+완료 조건
+==================================================
+
+1. Production 사이트를 실제 브라우저로 연다.
+2. 로그인 필요 시 사용자에게 직접 로그인받는다.
+3. AI Match를 최소 여러 판 실제 플레이한다.
+4. 가능한 많은 카드/Champion/Quest/Technique을 실제로 사용한다.
+5. 정상/오류/미검증을 명확히 구분한다.
+6. 자연스럽지 않은 애니메이션/연출도 기록한다.
+7. Console/Network 오류도 확인한다.
+8. Production 데이터는 수정하지 않는다.
+9. 버그를 발견해도 이번 task에서는 코드 수정하지 않는다.
+10. 최종 QA 결과만 상세히 보고하고 멈춘다.
