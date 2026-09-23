@@ -36,6 +36,10 @@ import type { OnlineActionPayload } from "@/lib/online-match-protocol";
 import { projectOnlineGameState } from "@/lib/online-game-state";
 import { ROUTES } from "@/lib/routes";
 import { fetchOnlineMatchRewards } from "@/lib/rewards-client";
+import {
+  onlineConnectionNotice,
+  type OnlineConnectionStatus,
+} from "@/lib/online-connection-notice";
 
 const TURN_TIME_LIMIT_SECONDS = 90;
 const RESULT_SCREEN_SETTLE_DELAY_MS = 320;
@@ -145,6 +149,7 @@ function OnlineMatchPage() {
   const processedQuestAudioRef = useRef(new Set<string>());
   const pendingEntranceAudioRef = useRef<{ url: string; volume: number } | null>(null);
   const pendingOpponentAttacksRef = useRef<AttackAnimationState[]>([]);
+  const opponentConnectionStateRef = useRef<OnlineConnectionStatus | null>(null);
   const noticeTimerRef = useRef<number | null>(null);
   const noticeTokenRef = useRef(0);
   const playAnimationTimerRef = useRef<number | null>(null);
@@ -203,6 +208,9 @@ function OnlineMatchPage() {
         setTurnDeadlineAt(message.turnDeadlineAt);
         setServerOffset(message.serverTime - Date.now());
         setConnectionStates(message.connectionStates);
+        opponentConnectionStateRef.current = message.connectionStates[
+          nextSeat === "PLAYER_ONE" ? "PLAYER_TWO" : "PLAYER_ONE"
+        ];
         setSessionReplaced(false);
         const sequencedEvents = message.events.filter((event): event is { sequenceNumber: number } =>
           Boolean(event && typeof event === "object" && typeof (event as { sequenceNumber?: unknown }).sequenceNumber === "number"),
@@ -248,12 +256,16 @@ function OnlineMatchPage() {
           ...(current ?? { PLAYER_ONE: "CONNECTED", PLAYER_TWO: "CONNECTED" }),
           [message.playerId]: message.status,
         }));
+        const previousOpponentStatus = opponentConnectionStateRef.current;
+        opponentConnectionStateRef.current = message.status;
+        const noticeKind = onlineConnectionNotice(previousOpponentStatus, message.status);
+        if (!noticeKind) return;
         const noticeToken = ++noticeTokenRef.current;
         if (noticeTimerRef.current !== null) window.clearTimeout(noticeTimerRef.current);
         setNotice(
-          message.status === "DISCONNECTED_GRACE"
+          noticeKind === "OPPONENT_DISCONNECTED"
             ? "상대의 연결이 끊어졌습니다. 재접속을 기다리는 중..."
-            : message.status === "FORFEITED"
+            : noticeKind === "OPPONENT_FORFEITED"
               ? "상대의 연결 시간이 초과되었습니다."
               : "상대가 다시 연결되었습니다.",
         );

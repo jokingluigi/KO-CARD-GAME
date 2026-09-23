@@ -13,3 +13,5 @@ export const ROUTES = {
   ATTENDANCE: "/attendance",
   ADMIN: "/admin",
 } as const;
+
+export const ONLINE_MODE_SELECT_BACK_ROUTE = ROUTES.MAIN_MENU;

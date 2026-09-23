@@ -1,0 +1,401 @@
+KO CARD GAME — FIX BUNDLE 1
+ONLINE MODE BACK NAVIGATION + FALSE RECONNECT TOAST
+
+이번 작업에서는 Online 관련 아래 2개만 처리한다.
+
+1. 빠른대전 / 친선전 선택 화면에서 뒤로가기 버튼이 Main으로 돌아가지 않는 문제
+2. 정상적인 게임 행동을 할 때마다 "상대가 다시 연결되었습니다"가 뜨는 문제
+
+두 문제 외에는 범위를 넓히지 마.
+각 항목마다 재현 → root cause → 최소 수정 → regression test 순서로 처리.
+
+==================================================
+A. ONLINE MODE SELECT BACK → MAIN
+==================================================
+
+현재 문제:
+
+Main
+→ Online
+→ 빠른대전 / 친선전 선택 화면
+→ Back
+
+했을 때 Main으로 돌아가지 않고
+현재 화면에 그대로 남아 있다.
+
+공식 기대 동작:
+
+Online Mode Select에서 Back 클릭
+→ 즉시 Main 화면으로 복귀.
+
+이 화면은 아직 실제 Match 시작 전이므로:
+
+- surrender 처리 금지
+- match result 생성 금지
+- 전적 변경 금지
+- disconnect penalty 금지
+
+실제 queue/room에 들어가기 전이라면
+불필요한 leave API도 호출하지 마.
+
+==================================================
+A-1. ROOT CAUSE 확인
+==================================================
+
+확인:
+
+- Back onClick handler
+- navigate/router target
+- local Online mode state
+- useEffect가 navigation 후 다시 Online route로 보내는지
+- overlay가 click을 막는지
+- form submit 때문에 navigation 취소되는지
+- mode select 진입 시 생성된 listener/socket state가 남는지
+
+하드코딩 workaround 금지.
+
+==================================================
+A-2. REGRESSION
+==================================================
+
+TEST A1
+Main → Online
+→ Mode Select 정상 표시.
+
+TEST A2
+Mode Select → Back
+→ Main 정상 복귀.
+
+TEST A3
+Main → Online → Back → 다시 Online
+→ 정상 재진입.
+stale state 없음.
+
+TEST A4
+빠른대전 버튼
+→ 기존 Quick Match flow 정상.
+
+TEST A5
+친선전 버튼
+→ 기존 Friendly Match flow 정상.
+
+==================================================
+B. FALSE "상대가 다시 연결되었습니다"
+==================================================
+
+현재 문제:
+
+상대가 실제로 disconnect/reconnect하지 않았는데도
+Online Match에서 다음 행동을 할 때마다:
+
+- 카드 PLAY
+- ATTACK
+- Champion Ability
+- Technique
+- END_TURN
+- BUFF
+- DAMAGE
+- HEAL
+- Quest progress
+- 기타 GameState update
+
+"상대가 다시 연결되었습니다"
+
+toast가 뜬다.
+
+공식 기대 동작:
+
+정상 GameState update
+→ reconnect toast 0회.
+
+실제 연결 상태가:
+
+CONNECTED
+→ DISCONNECTED
+→ CONNECTED
+
+로 바뀐 경우에만
+reconnect toast 정확히 1회.
+
+==================================================
+B-1. RECONNECT는 TRANSITION
+==================================================
+
+다음은 reconnect가 아니다:
+
+true → true
+initial unknown → true
+일반 snapshot true → true
+PLAY_CARD 이후 true → true
+ATTACK 이후 true → true
+END_TURN 이후 true → true
+
+최초 match mount에서 상대가 이미 connected여도
+reconnect toast 금지.
+
+실제로 false → true가 되었고,
+이전에 실제 disconnect 상태가 확인된 경우에만
+reconnect 처리.
+
+==================================================
+B-2. ROOT CAUSE 확인
+==================================================
+
+특히 확인:
+
+- opponentConnected가 snapshot마다 재초기화되는지
+- state merge에서 previous connection state가 유실되는지
+- 전체 opponent object reference 변경을 reconnect로 오인하는지
+- useEffect dependency가 과도한지
+- component remount 때 previous connection ref가 초기화되는지
+- WebSocket snapshot을 reconnect event로 오인하는지
+- heartbeat/presence update를 reconnect로 오인하는지
+- action response의 full snapshot replace를 reconnect로 오인하는지
+- component key가 action/version에 묶여 remount되는지
+
+서버/WebSocket에 명시적:
+
+OPPONENT_DISCONNECTED
+OPPONENT_RECONNECTED
+
+event가 이미 있다면 그것을 우선 사용.
+
+같은 reconnect event replay/resync로
+toast가 중복되어선 안 된다.
+
+==================================================
+B-3. REGRESSION
+==================================================
+
+TEST B1
+initial mount, opponent connected=true
+→ reconnect toast 0회.
+
+TEST B2
+내 카드 PLAY
+→ 0회.
+
+TEST B3
+상대 카드 PLAY
+→ 0회.
+
+TEST B4
+ATTACK
+→ 0회.
+
+TEST B5
+Champion Ability
+→ 0회.
+
+TEST B6
+Technique
+→ 0회.
+
+TEST B7
+END_TURN
+→ 0회.
+
+TEST B8
+buff/damage/heal/Quest snapshot
+→ 0회.
+
+TEST B9
+실제 opponent disconnect
+→ reconnect toast 아직 없음.
+
+TEST B10
+실제 opponent reconnect
+→ "상대가 다시 연결되었습니다" 정확히 1회.
+
+TEST B11
+그 후 여러 action 수행
+→ 추가 reconnect toast 없음.
+
+TEST B12
+같은 reconnect event replay
+→ 중복 toast 없음.
+
+==================================================
+C. ONLINE 회귀 금지
+==================================================
+
+이번 수정 때문에 다음을 깨지 마:
+
+- Quick Match
+- Friendly Match
+- WebSocket connection
+- WS ticket
+- reconnect/resync
+- opponent presence
+- card play
+- attack
+- Technique
+- END_TURN sync
+- hidden information
+- Online BGM/presentation
+
+API routing/auth/Render 설정은
+root cause가 아닌 이상 건드리지 마.
+
+==================================================
+D. BROWSER VERIFICATION
+==================================================
+
+가능하면 2-client Development/Test Online Match에서 확인.
+
+1.
+Main → Online → Back → Main.
+
+2.
+다시 Online 진입 후 Quick/Friendly 진입 정상.
+
+3.
+두 클라이언트 연결 상태에서
+card play / attack / ability / Technique / END_TURN 수행.
+false reconnect toast 없어야 함.
+
+4.
+한쪽을 실제 disconnect 후 reconnect.
+다른 쪽에 reconnect toast 정확히 1회.
+
+Browser unavailable이면
+implementation/test는 계속하고
+BROWSER VERIFICATION만 UNVERIFIED.
+
+==================================================
+E. 자동 검증
+==================================================
+
+필수:
+
+- Mode Select Back → Main
+- Re-enter Online
+- Quick navigation regression
+- Friendly navigation regression
+- initial connected no-toast
+- connected→connected no-toast
+- normal action update no-toast
+- disconnect→reconnect one-toast
+- replayed reconnect no duplicate
+- toast auto-dismiss
+
+그리고:
+
+pnpm run typecheck
+pnpm --filter @workspace/ko-game run build
+git diff --check
+
+API 변경 시에만:
+API typecheck
+API build
+
+==================================================
+F. 금지
+==================================================
+
+이번 작업에서 수정 금지:
+
+- 카드 효과
+- Champion 효과
+- Quest logic
+- AI
+- Admin
+- reward system
+- AI Mechanic Compiler
+- matchmaking algorithm 자체
+
+==================================================
+G. FINAL REPORT
+==================================================
+
+ONLINE BACK NAVIGATION
+
+REPRODUCED:
+YES / NO
+
+ROOT CAUSE:
+...
+
+Back → Main:
+PASS / FAIL
+
+Re-enter Online:
+PASS / FAIL
+
+Quick Match:
+PASS / FAIL
+
+Friendly Match:
+PASS / FAIL
+
+Stale state:
+YES / NO
+
+
+FALSE RECONNECT TOAST
+
+REPRODUCED:
+YES / NO
+
+ROOT CAUSE:
+...
+
+Initial mount toast:
+0 / ...
+
+PLAY_CARD toast:
+0 / ...
+
+ATTACK toast:
+0 / ...
+
+ABILITY toast:
+0 / ...
+
+TECHNIQUE toast:
+0 / ...
+
+END_TURN toast:
+0 / ...
+
+Real reconnect:
+PASS / FAIL
+
+Reconnect toast exactly once:
+PASS / FAIL
+
+Duplicate toast:
+YES / NO
+
+
+IMPLEMENTATION:
+PASS / FAIL
+
+AUTOMATED VERIFICATION:
+PASS / FAIL
+
+BROWSER VERIFICATION:
+PASS / FAIL / UNVERIFIED
+
+TYPECHECK:
+PASS / FAIL
+
+KO BUILD:
+PASS / FAIL
+
+API BUILD:
+PASS / FAIL / NOT_MODIFIED
+
+git diff --check:
+PASS / FAIL
+
+CHANGED FILES:
+...
+
+COMMIT:
+...
+
+PUSH:
+NOT REQUESTED / ...
+
+두 Online 문제만 해결하고 멈춰라.

@@ -1,0 +1,364 @@
+KO CARD GAME — FIX BUNDLE 2
+JOKE LUIGI ADJACENT TAUNT TARGETING
+
+이번 작업에서는 조킹루이지의 도발 대상 문제만 수정한다.
+
+현재 문제:
+
+조킹루이지 효과가 발동하면
+양옆 카드뿐 아니라
+조킹루이지 자기 자신에게도 TAUNT/도발이 부여된다.
+
+공식 기대 동작:
+
+조킹루이지 자기 자신은 TAUNT를 받지 않는다.
+
+오직 같은 편 FIELD에서
+조킹루이지의 바로 왼쪽 슬롯과 바로 오른쪽 슬롯에
+실제로 카드가 존재할 때 그 카드에게만 TAUNT를 부여한다.
+
+==================================================
+1. 정확한 TARGET 규칙
+==================================================
+
+source slot index - 1
+source slot index + 1
+
+만 대상.
+
+제외:
+
+- SELF
+- 두 칸 이상 떨어진 카드
+- 빈 슬롯 너머 카드
+- 상대 필드
+- Champion
+- HAND
+- GRAVEYARD
+
+예:
+
+[A] [조킹루이지] [B]
+
+결과:
+
+A → TAUNT
+조킹루이지 → TAUNT 없음
+B → TAUNT
+
+예:
+
+[조킹루이지] [B] [C]
+
+결과:
+
+B → TAUNT
+C → 변화 없음
+조킹루이지 → TAUNT 없음
+
+예:
+
+[A] [empty] [조킹루이지]
+
+결과:
+
+A → 변화 없음
+조킹루이지 → TAUNT 없음
+
+빈 슬롯을 건너뛰지 않는다.
+
+==================================================
+2. ROOT CAUSE
+==================================================
+
+확인:
+
+- current selector가 SELF + ADJACENT인지
+- adjacent helper가 source를 포함하는지
+- result set에 source CardInstance가 섞이는지
+- same-row selector가 잘못 쓰이는지
+- structured effect definition 자체가 잘못됐는지
+
+UI에서 badge만 숨기는 수정 금지.
+
+canonical GameState에서
+source CardInstance에 TAUNT가 추가되지 않아야 한다.
+
+==================================================
+3. GENERIC ENGINE 주의
+==================================================
+
+조킹루이지 definition만 잘못됐다면
+definition만 수정.
+
+generic ADJACENT helper 자체 문제라면
+generic helper 수정 가능.
+
+단 카드 이름 하드코딩 금지.
+
+금지 예:
+
+if (card.name === "조킹루이지") ...
+
+generic helper를 수정했다면
+다른 adjacent 효과 regression도 반드시 실행.
+
+==================================================
+4. EDGE / EMPTY SLOT
+==================================================
+
+가장 왼쪽 슬롯:
+
+오른쪽 adjacent만 적용.
+
+가장 오른쪽 슬롯:
+
+왼쪽 adjacent만 적용.
+
+양옆 empty:
+
+아무 대상 없음.
+효과 정상 종료.
+stale pending 없음.
+
+존재하지 않는 slot 때문에
+undefined/null crash가 나면 안 된다.
+
+==================================================
+5. TAUNT 중복
+==================================================
+
+인접 카드가 이미 TAUNT를 가지고 있다면
+현재 공식 keyword semantics를 그대로 따른다.
+
+중복 badge나 중복 keyword instance를 만들지 마.
+
+TAUNT 일반 규칙 자체는 변경하지 않는다.
+
+==================================================
+6. REGRESSION TESTS
+==================================================
+
+TEST JL1
+
+[A] [조킹루이지] [B]
+
+기대:
+
+A TAUNT = true
+B TAUNT = true
+조킹루이지 TAUNT = false
+
+==================================================
+
+TEST JL2
+
+[조킹루이지] [B] [C]
+
+기대:
+
+B TAUNT = true
+C unchanged
+조킹루이지 TAUNT = false
+
+==================================================
+
+TEST JL3
+
+[A] [B] [조킹루이지]
+
+기대:
+
+B TAUNT = true
+A unchanged
+조킹루이지 TAUNT = false
+
+==================================================
+
+TEST JL4
+
+[A] [empty] [조킹루이지]
+
+기대:
+
+A unchanged
+조킹루이지 TAUNT = false
+
+==================================================
+
+TEST JL5
+
+[조킹루이지] [empty] [B]
+
+기대:
+
+B unchanged
+조킹루이지 TAUNT = false
+
+==================================================
+
+TEST JL6
+
+[empty] [조킹루이지] [empty]
+
+기대:
+
+아무 카드에도 TAUNT 부여 안 됨.
+effect resolution 정상 종료.
+stale pending 없음.
+
+==================================================
+7. 핵심 ASSERTION
+==================================================
+
+effect resolved target IDs에
+source 조킹루이지 CardInstance ID가
+절대 포함되지 않는지 직접 assertion.
+
+UI만 검사하지 마.
+
+==================================================
+8. BROWSER VERIFICATION
+==================================================
+
+가능하면 Development/Test Match에서
+실제 조킹루이지를 배치해 확인.
+
+중앙:
+양옆만 TAUNT.
+
+왼쪽 edge:
+오른쪽만 TAUNT.
+
+오른쪽 edge:
+왼쪽만 TAUNT.
+
+빈 adjacent:
+건너뛰지 않음.
+
+자기 자신:
+TAUNT 없음.
+
+Browser unavailable이면
+engine regression까지 수행하고
+BROWSER VERIFICATION만 UNVERIFIED.
+
+==================================================
+9. 이번 작업에서 하지 말 것
+==================================================
+
+수정 금지:
+
+- 조킹루이지 stats/cost
+- 조킹루이지의 다른 효과
+- TAUNT 일반 룰
+- 다른 카드 밸런스
+- Online networking
+- AI scheduler
+- Quest
+- Champion
+- Admin
+- reward system
+- AI Mechanic Compiler
+
+==================================================
+10. 검증
+==================================================
+
+필수:
+
+- center slot
+- left edge
+- right edge
+- empty adjacent
+- both empty
+- self exclusion
+- distant card exclusion
+
+generic helper 수정 시:
+다른 adjacent-effect regressions.
+
+그리고:
+
+pnpm run typecheck
+pnpm --filter @workspace/ko-game run build
+git diff --check
+
+API/shared 수정 시:
+API typecheck
+API build
+
+==================================================
+11. FINAL REPORT
+==================================================
+
+JOKE LUIGI TAUNT TARGETING
+
+REPRODUCED:
+YES / NO
+
+ROOT CAUSE:
+...
+
+TARGET SELECTOR BEFORE:
+...
+
+TARGET SELECTOR AFTER:
+...
+
+SELF INCLUDED:
+YES / NO
+
+LEFT ADJACENT:
+PASS / FAIL
+
+RIGHT ADJACENT:
+PASS / FAIL
+
+EDGE:
+PASS / FAIL
+
+EMPTY SLOT:
+PASS / FAIL
+
+DISTANT CARD:
+EXCLUDED / FAIL
+
+SELF TAUNT:
+ABSENT / PRESENT
+
+OTHER ADJACENT REGRESSION:
+PASS / FAIL / NOT_APPLICABLE
+
+
+IMPLEMENTATION:
+PASS / FAIL
+
+AUTOMATED VERIFICATION:
+PASS / FAIL
+
+BROWSER VERIFICATION:
+PASS / FAIL / UNVERIFIED
+
+TYPECHECK:
+PASS / FAIL
+
+KO BUILD:
+PASS / FAIL
+
+API BUILD:
+PASS / FAIL / NOT_MODIFIED
+
+git diff --check:
+PASS / FAIL
+
+CHANGED FILES:
+...
+
+COMMIT:
+...
+
+PUSH:
+NOT REQUESTED / ...
+
+조킹루이지 문제만 해결하고 멈춰라.

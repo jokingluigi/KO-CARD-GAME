@@ -2,7 +2,7 @@ import { LoaderCircle, Shield } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useLocation } from "wouter";
 import { ModeCard, OnlineAuthGate, OnlineShell } from "@/components/online-lobby-ui";
-import { ROUTES } from "@/lib/routes";
+import { ONLINE_MODE_SELECT_BACK_ROUTE, ROUTES } from "@/lib/routes";
 
 export default function Online() {
   const [, navigate] = useLocation();
@@ -22,6 +22,7 @@ export default function Online() {
         eyebrow="ONLINE BATTLE"
         title="실제 상대와 겨루는 링"
         description="빠르게 상대를 찾거나, 친구와 방 코드를 공유하세요. 전투의 모든 판정은 서버가 담당합니다."
+        backHref={ONLINE_MODE_SELECT_BACK_ROUTE}
       >
         {checkingActiveMatch ? (
           <div className="mb-5 flex items-center gap-2 text-xs font-bold text-neutral-500"><LoaderCircle className="h-4 w-4 animate-spin" />진행 중인 대전을 확인하는 중입니다.</div>
