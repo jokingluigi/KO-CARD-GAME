@@ -1,0 +1,684 @@
+KO CARD GAME — RETIRE / DESTROY SEMANTICS FIX
+HP 0 → RETIRE → GRAVEYARD + LEAVE/RETIRE EFFECT
+DESTROY → REMOVE FROM MATCH + NO LEAVE/RETIRE EFFECT
+
+이번 작업에서는 WRESTLER의 RETIRE와 DESTROY 의미를 공식 규칙대로 분리하고,
+현재 체력 0으로 묘지에 갈 때 RETIRE 효과가 발동하지 않는 문제를 수정한다.
+
+==================================================
+0. 공식 규칙 — 절대 변경 금지
+==================================================
+
+RETIRE:
+
+- 선수 카드의 현재 체력이 0 이하가 됨
+- FIELD에서 GRAVEYARD로 이동
+- RETIRE/퇴장 효과 발동
+- "체력이 다해서 묘지로 감"이 RETIRE의 대표 경로
+
+DESTROY:
+
+- 카드를 그 Match에서 제거
+- GRAVEYARD로 보내지 않음
+- RETIRE/퇴장 효과 발동하지 않음
+- 일반 RETIRE로 취급하지 않음
+
+즉:
+
+HP <= 0
+→ RETIRE
+→ FIELD → GRAVEYARD
+→ RETIRE/LEAVE effect trigger
+
+DESTROY
+→ REMOVE_FROM_MATCH / equivalent removed zone
+→ GRAVEYARD 아님
+→ RETIRE/LEAVE effect trigger 없음
+
+==================================================
+1. 현재 문제
+==================================================
+
+실제 증상:
+
+WRESTLER의 체력이 0이 되어
+FIELD에서 묘지로 이동하는데도
+RETIRE/퇴장 효과가 발동하지 않는 경우가 있다.
+
+이건 잘못된 동작이다.
+
+체력 소진으로 묘지에 가는 것은
+반드시 RETIRE event/path를 거쳐야 한다.
+
+==================================================
+2. 원인 추적
+==================================================
+
+먼저 실제 engine flow를 조사:
+
+- DAMAGE 적용
+- currentHealth <= 0 판정
+- zone 이동
+- event dispatch
+- graveyard insertion
+- leave/retire trigger resolution
+
+특히 확인:
+
+- HP 0 처리에서 DESTROY action을 재사용하는지
+- generic move-to-graveyard만 하고 RETIRE event를 생략하는지
+- state-based action이 직접 카드 삭제/이동하는지
+- combat damage와 effect damage가 서로 다른 경로인지
+- simultaneous lethal 처리에서 RETIRE event가 누락되는지
+- RETIRE effect가 card removal 후 source를 못 찾는지
+- event order 때문에 listener가 이미 사라지는지
+
+추측으로 카드별 예외 만들지 마.
+
+==================================================
+3. RETIRE canonical event
+==================================================
+
+가능하면 RETIRE를 명시적인 generic event/action으로 유지.
+
+예시 개념:
+
+RETIRE_WRESTLER
+or
+CARD_RETIRED
+
+정확한 이름은 기존 엔진 naming convention을 따른다.
+
+권장 흐름:
+
+DAMAGE
+→ health update
+→ health <= 0
+→ RETIRE resolution
+→ CARD_RETIRED event
+→ RETIRE/LEAVE triggers
+→ FIELD → GRAVEYARD finalize
+
+또는 현재 엔진이 zone 이동 후 trigger하는 구조라면
+기존 architecture를 따르되 semantic 결과가 동일해야 한다.
+
+중요:
+퇴장 효과가 source reference를 잃지 않게
+필요한 snapshot/context를 event payload에 보존.
+
+==================================================
+4. RETIRE 효과 정의
+==================================================
+
+현재 Effect Registry / trigger registry를 확인해서
+기존 RETIRE / LEAVE / ON_LEAVE / EXIT_FIELD 계열이 있으면 재사용.
+
+새 parallel trigger system 만들지 마.
+
+"퇴장:" 자연어가 현재 어느 trigger로 매핑되는지도 확인.
+
+예:
+
+"퇴장: 카드 1장을 뽑습니다."
+"리타이어: 아군 선수에게 +1/+1"
+
+이런 효과는 RETIRE일 때만 발동.
+
+==================================================
+5. DESTROY는 RETIRE가 아니다
+==================================================
+
+DESTROY는 완전히 별도 semantic.
+
+DESTROY된 카드는:
+
+- GRAVEYARD에 추가되지 않음
+- RETIRE event 발생 안 함
+- RETIRE/퇴장 effect 실행 안 함
+- graveyard count 증가 안 함
+- graveyard-based revive target이 되지 않음
+
+현재 DESTROY가
+FIELD → GRAVEYARD → remove
+같은 우회 경로를 쓴다면 수정.
+
+DESTROY는 바로 removed-from-match semantics를 가져야 한다.
+
+==================================================
+6. REMOVE_FROM_GAME와의 관계
+==================================================
+
+기존 REMOVE_FROM_GAME action/zone이 있다면
+DESTROY가 그것과 동일한 최종 zone semantics를 공유할 수 있다.
+
+단:
+
+DESTROY와 REMOVE_FROM_GAME의 UI/event 이름을
+무조건 합치라는 뜻은 아니다.
+
+중요한 건:
+
+DESTROY 결과가 graveyard가 아니고
+RETIRE trigger가 발생하지 않는 것.
+
+==================================================
+7. COMBAT LETHAL
+==================================================
+
+전투 피해로 체력 0:
+
+ATTACK
+→ DAMAGE
+→ HP <= 0
+→ RETIRE
+→ GRAVEYARD
+→ 퇴장 효과
+
+반드시 PASS.
+
+공격자/방어자 동시 lethal도 확인.
+
+두 카드 모두 HP <= 0이면
+둘 다 각각 RETIRE 처리.
+
+effect ordering은 기존 canonical event ordering 유지.
+
+==================================================
+8. EFFECT DAMAGE LETHAL
+==================================================
+
+Technique / ability / card effect damage로 HP 0:
+
+DAMAGE
+→ RETIRE
+→ GRAVEYARD
+→ RETIRE/퇴장 effect
+
+combat과 동일 semantic.
+
+"전투로 죽었을 때만 RETIRE"가 되면 FAIL.
+
+==================================================
+9. SELF DAMAGE / COST DAMAGE
+==================================================
+
+자기 자신에게 피해를 주는 효과나
+체력을 비용으로 지불하는 시스템이 있다면
+
+HP <= 0 결과는 동일하게 RETIRE.
+
+특정 damage source에 따라 RETIRE 여부가 달라지면 안 된다
+(공식적으로 별도 예외가 없는 한).
+
+==================================================
+10. DIRECT RETIRE
+==================================================
+
+기존 Effect Registry에
+직접 RETIRE action이 있다면:
+
+직접 RETIRE
+→ FIELD → GRAVEYARD
+→ RETIRE/퇴장 effect 발동
+
+단 health 0이 아니어도
+직접 RETIRE action 자체가 공식 RETIRE라면
+퇴장 효과는 발동해야 한다.
+
+==================================================
+11. DESTROY TEST
+==================================================
+
+예:
+
+카드 A:
+"퇴장: 카드 1장을 뽑습니다."
+
+DESTROY 적용.
+
+기대:
+
+- FIELD에서 제거
+- GRAVEYARD에 없음
+- DRAW 발생 안 함
+- RETIRE event 없음
+
+==================================================
+12. RETIRE TEST
+==================================================
+
+카드 A:
+HP 1
+"퇴장: 카드 1장을 뽑습니다."
+
+1 damage.
+
+기대:
+
+- HP 0
+- RETIRE event
+- A → GRAVEYARD
+- DRAW +1
+- effect exactly once
+
+==================================================
+13. DOUBLE TRIGGER 방지
+==================================================
+
+HP 0 처리 중:
+
+- RETIRE event
+- generic FIELD_LEAVE event
+- GRAVEYARD_ENTER event
+
+가 모두 존재할 수 있다.
+
+RETIRE effect가 중복으로 2번 이상 발동하지 않게 한다.
+
+한 번의 RETIRE:
+→ 해당 RETIRE/퇴장 effect 정확히 1회.
+
+==================================================
+14. SIMULTANEOUS RETIRE
+==================================================
+
+여러 WRESTLER이 동시에 HP 0이 되는 경우:
+
+- 각 카드 RETIRE
+- 각자 GRAVEYARD 이동
+- 각자의 RETIRE effect 정상 실행
+
+한 카드의 RETIRE effect가
+다른 lethal 카드의 처리 자체를 누락시키면 안 된다.
+
+기존 queued event/state-based action 구조를 재사용.
+
+==================================================
+15. SOURCE SNAPSHOT
+==================================================
+
+RETIRE effect source가 이미 FIELD를 떠난 뒤에도
+자기 카드의 printed/granted effect를 실행해야 할 수 있다.
+
+필요하다면 event에:
+
+- source instance id
+- source definition id
+- source snapshot
+- grantedText snapshot
+- owner
+- last known stats
+
+등 기존 serializable source snapshot 구조를 재사용.
+
+특히 신규 `grantedText`를 가진 카드도
+RETIRE effect를 부여받은 상태라면 정상 실행되어야 한다.
+
+==================================================
+16. VANILLA / GRANTED TEXT 회귀
+==================================================
+
+신규 random existing card text mechanic과도 호환 확인.
+
+예:
+
+바닐라 카드가
+"퇴장: 카드 1장 드로우"
+텍스트를 랜덤으로 획득.
+
+이후 HP 0.
+
+기대:
+RETIRE
+→ GRAVEYARD
+→ granted RETIRE effect 1회 실행.
+
+이후 DESTROY된 경우:
+→ effect 실행 안 함.
+
+==================================================
+17. SILENCE와 RETIRE
+==================================================
+
+RETIRE 직전 카드가 SILENCE되어
+RETIRE effect가 제거된 상태라면:
+
+HP 0
+→ RETIRE
+→ GRAVEYARD
+→ 제거된 RETIRE effect는 발동하지 않음.
+
+반대로 SILENCE되지 않은 active RETIRE effect는 정상 실행.
+
+==================================================
+18. CHAMPION TOKEN 주의
+==================================================
+
+기존 공식 Champion Token 규칙은 유지.
+
+Champion Token:
+- normal damage/combat으로 HP 0 가능
+- HP 0이면 RETIRE
+- 즉시 패배 아님
+- original Champion protection 해제
+- token RETIRE semantics 정상 처리
+
+단 Champion Token에
+일반 카드의 RETIRE effect가 존재한다면
+CardDefinition source-of-truth 기준으로 정상 적용 여부 확인.
+
+DESTROY immunity 등 기존 Champion Token 규칙은 변경 금지.
+
+==================================================
+19. GRAVEYARD 일관성
+==================================================
+
+RETIRE:
+graveyard contains exact same CardInstance semantic
+(현재 엔진이 instance snapshot/copy를 쓰면 그 convention 유지)
+
+DESTROY:
+graveyard에 절대 나타나지 않음.
+
+검증:
+
+- graveyard count
+- graveyard inspector
+- revive target pool
+- event history
+
+==================================================
+20. UI / ANIMATION
+==================================================
+
+가능하면 RETIRE와 DESTROY를 연출상 구분.
+
+RETIRE:
+- 묘지로 이동하는 기존 animation
+- 퇴장 효과 presentation
+
+DESTROY:
+- 제거/소멸 animation
+- graveyard movement animation 금지
+
+단 이번 작업의 핵심은 engine semantic.
+UI 전체 redesign은 하지 마.
+
+==================================================
+21. Analyzer / Mechanic Compiler
+==================================================
+
+자연어 trigger mapping도 확인:
+
+"리타이어:"
+"퇴장:"
+"체력이 다해 퇴장할 때"
+"이 카드가 리타이어할 때"
+
+→ canonical RETIRE/LEAVE trigger
+
+반대로:
+
+"파괴될 때"
+
+를 RETIRE trigger로 자동 동일시하지 마.
+
+DESTROY와 RETIRE는 analyzer에서도 distinct.
+
+==================================================
+22. 테스트 케이스
+==================================================
+
+R1 combat lethal
+→ RETIRE
+→ graveyard
+→ retire effect once
+
+R2 effect damage lethal
+→ RETIRE
+→ graveyard
+→ retire effect once
+
+R3 self-damage lethal
+→ RETIRE
+→ graveyard
+→ retire effect once
+
+R4 direct RETIRE action
+→ graveyard
+→ retire effect once
+
+R5 DESTROY
+→ not graveyard
+→ retire effect 0
+
+R6 REMOVE_FROM_GAME
+→ not graveyard
+→ retire effect 0
+
+R7 simultaneous double lethal
+→ both RETIRE
+→ both graveyard
+→ each effect once
+
+R8 silenced retire card
+→ graveyard
+→ removed retire effect 0
+
+R9 granted RETIRE text
+→ HP 0
+→ granted effect once
+
+R10 granted RETIRE text + DESTROY
+→ granted retire effect 0
+
+R11 Champion Token HP 0
+→ RETIRE
+→ no immediate game loss
+→ protection ends
+
+R12 reconnect/state serialization
+→ no duplicate RETIRE effect replay
+
+==================================================
+23. Action → Event → GameState 증명
+==================================================
+
+각 대표 케이스는 반드시 실제 trace:
+
+Action
+→ Event
+→ GameState
+
+를 기록.
+
+예:
+
+DAMAGE(target=A, amount=1)
+→ STAT_CHANGED HP 1→0
+→ CARD_RETIRED(A)
+→ RETIRE_TRIGGER(A)
+→ MOVE_ZONE FIELD→GRAVEYARD
+→ DRAW(owner,1)
+
+정확한 event 이름은 현재 프로젝트 convention 사용.
+
+Inspection-only PASS 금지.
+
+==================================================
+24. 회귀 테스트
+==================================================
+
+반드시 확인:
+
+- combat
+- damage
+- SILENCE
+- graveyard
+- REVIVE
+- DESTROY
+- REMOVE_FROM_GAME
+- Champion Token
+- grantedText
+- delayed/listener
+- event history
+- online sanitizer
+- AI Match
+- Online Match canonical state
+
+==================================================
+25. 절대 하지 말 것
+==================================================
+
+- 특정 카드 이름 하드코딩
+- 특정 effect text 하드코딩
+- HP 0일 때 무조건 DESTROY
+- DESTROY를 graveyard 경유 처리
+- RETIRE effect를 generic leave effect와 중복 실행
+- Production DB 직접 수정
+- 실제 사용자 데이터 변경
+- 카드 밸런스 수정
+- unrelated Champion/Quest/Audio/Auth 변경
+
+==================================================
+26. 검증 명령
+==================================================
+
+반드시:
+
+pnpm run typecheck
+pnpm --filter @workspace/ko-game run build
+git diff --check
+
+API/shared 수정 시:
+API typecheck
+API build
+관련 structured-effect/runtime tests
+
+==================================================
+27. Git
+==================================================
+
+이번 작업 관련 파일만 stage.
+
+제외:
+Pasted-*.txt
+.env
+secrets
+logs
+screenshots
+temp
+Replit metadata
+unrelated changes
+
+검증 후 commit.
+
+별도 요청 없으면 push하지 마.
+force push 금지.
+
+==================================================
+28. 최종 보고
+==================================================
+
+RETIRE / DESTROY SEMANTICS
+
+Combat lethal → RETIRE:
+PASS / FAIL
+
+Effect damage lethal → RETIRE:
+PASS / FAIL
+
+Self damage lethal → RETIRE:
+PASS / FAIL
+
+RETIRE → Graveyard:
+PASS / FAIL
+
+RETIRE effect fires:
+PASS / FAIL
+
+RETIRE effect exact once:
+PASS / FAIL
+
+DESTROY → Graveyard:
+YES / NO
+
+DESTROY fires RETIRE effect:
+YES / NO
+
+REMOVE_FROM_GAME fires RETIRE effect:
+YES / NO
+
+Simultaneous lethal:
+PASS / FAIL
+
+Silenced RETIRE effect:
+PASS / FAIL
+
+Granted RETIRE text:
+PASS / FAIL
+
+Champion Token HP0 RETIRE:
+PASS / FAIL
+
+Reconnect duplicate trigger:
+ABSENT / PRESENT
+
+
+ROOT CAUSE:
+...
+
+IMPLEMENTATION:
+PASS / FAIL
+
+AUTOMATED VERIFICATION:
+PASS / FAIL
+
+BROWSER/GAMEPLAY VERIFICATION:
+PASS / FAIL / UNVERIFIED
+
+TYPECHECK:
+PASS / FAIL
+
+KO BUILD:
+PASS / FAIL
+
+API TYPECHECK:
+PASS / FAIL / NOT_MODIFIED
+
+API BUILD:
+PASS / FAIL / NOT_MODIFIED
+
+git diff --check:
+PASS / FAIL
+
+PRODUCTION DATA MUTATION:
+NONE / FAIL
+
+CHANGED FILES:
+...
+
+COMMIT:
+...
+
+PUSH:
+NOT REQUESTED / ...
+
+==================================================
+완료 조건
+==================================================
+
+공식 규칙:
+
+RETIRE
+= WRESTLER의 HP가 0 이하가 되어 FIELD에서 GRAVEYARD로 감
+= RETIRE/퇴장 효과 발동
+
+DESTROY
+= 그 Match에서 카드 제거
+= GRAVEYARD로 가지 않음
+= RETIRE/퇴장 효과 발동하지 않음
+
+이 규칙이 combat/effect damage/direct retire/granted text/Champion Token/Online state에서 일관되게 작동해야 한다.
+
+이 의미만 정확히 수정하고 멈춰라.
