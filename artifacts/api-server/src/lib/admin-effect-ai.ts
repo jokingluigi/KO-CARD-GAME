@@ -407,6 +407,16 @@ export function buildMechanicPlan(
       addUnique(plan.memory, [`REGISTER ${effect.values.queuedTrigger}`]);
       addUnique(plan.schedule, ["NEXT_MATCHING_EVENT"]);
     }
+    if (effect.values?.delayed) {
+      addUnique(plan.memory, ["DELAYED_EFFECT"]);
+      addUnique(plan.schedule, [effect.values.delayed.kind]);
+      if (effect.values.delayed.eventTrigger) addUnique(plan.schedule, [effect.values.delayed.eventTrigger]);
+    }
+    if (effect.values?.listener) {
+      addUnique(plan.memory, ["RULE_LISTENER"]);
+      addUnique(plan.schedule, [effect.values.listener.trigger]);
+    }
+    if (effect.values?.prevention) addUnique(plan.memory, ["PREVENTION"]);
     if (effect.values?.aggregateStats) addUnique(plan.memory, [effect.values.aggregateStats.source]);
     if (effect.values?.definitionRef) addUnique(plan.memory, ["CARD_DEFINITION_REFERENCE"]);
     if (effect.target?.selection === "SAME_TARGET") addUnique(plan.resultReferences, ["PREVIOUS_RESULT"]);
@@ -487,9 +497,9 @@ function buildSystemPrompt(context: EffectAiContext, catalog: readonly CardRefer
     "대표 문장 예시의 canonical 출력: '다음에 내가 내는 선수는 +2/+2'는 ENTER_FIELD에서 QUEUE_EFFECT values.queuedTrigger='NEXT_ALLY_WRESTLER_PLAYED', queuedEffect.action='BUFF'를 사용한다( queueTrigger 오타 금지). '이번 턴에 RETIRE된 선수 수만큼 적 챔피언에게 피해'는 SCRIPT_V1 HISTORY(CURRENT_TURN,CARD_RETIRED,WRESTLER,COUNT) 뒤 DAMAGE amountExpression RESULT_VALUE를 사용한다.",
     "SCRIPT_V1로 표현 가능한 자연어는 NEEDS_CLARIFICATION으로 바꾸지 말고 위의 SELECT/AGGREGATE/HISTORY/IF/EFFECT 조합으로만 bounded AST를 만든다. 모든 SELECT/AGGREGATE/HISTORY id는 서로 달라야 한다.",
     "선택 결과를 후속 효과가 사용하거나 IF/ELSE, PLAYER_CHOICE, HISTORY가 필요하면 반드시 SCRIPT_V1을 선택한다. SCRIPT_V1의 모든 효과는 반드시 {type:'EFFECT',id?:'...',effect:{action,target?,values?}}로 감싸며, SELECT/AGGREGATE/HISTORY/IF의 필드를 EFFECT 옆에 두지 마라.",
-    "D canonical: {status:'READY',effectId:'SCRIPT_V1',scripts:[{version:'SCRIPT_V1',trigger:'ACTIVE',steps:[{type:'EFFECT',effect:{action:'STUN',target:{zone:'BOARD',owner:'ENEMY',selection:'PLAYER_CHOICE',count:1}}}]}],keywords:[]}.",
-    "F canonical: HISTORY query는 {scope,eventType,operation}을 모두 포함하고, 집계 결과를 쓰는 DAMAGE/HEAL 값은 values.amountExpression:{kind:'RESULT_VALUE',resultId:'historyId'}로 표현한다.",
-    "H canonical: 단순 예약은 REGISTER_DELAYED의 values.delayed, 반복/일회 이벤트 감시는 REGISTER_LISTENER의 values.listener 안에 반드시 effect:{action,target?,values?}를 둔다.",
+    "D canonical은 STRUCTURED_EFFECTS_V1이다: ENTER_FIELD SUMMON target {zone:'BOARD',owner:'SELF',cardType:'WRESTLER',selection:'ADJACENT_EMPTY_SLOTS',count:2,randomScope:'STANDARD'} 뒤 ENTER_FIELD ADD_KEYWORD target {zone:'BOARD',owner:'SELF',cardType:'WRESTLER',selection:'SAME_TARGET',count:2} values {keyword:'TAUNT'}이다.",
+    "F canonical은 STRUCTURED_EFFECTS_V1이다: LEAVE_FIELD REGISTER_DELAYED values.delayed {kind:'OWNER_NEXT_TURN_START',effect:{action:'REVIVE',target:{zone:'GRAVEYARD',owner:'SELF',cardType:'WRESTLER',selection:'RANDOM',count:1,randomScope:'STANDARD'}},followUpEffects:[{action:'BUFF',target:{zone:'BOARD',owner:'SELF',selection:'SAME_TARGET',count:1},values:{attack:2,health:0}}]}이다.",
+    "H canonical은 STRUCTURED_EFFECTS_V1이다: BEFORE_DAMAGE PREVENT_DAMAGE values.prevention {uses:1}이다. 첫 피해만 막는 의미에 REGISTER_LISTENER나 PLAYER_CHOICE를 만들지 마라.",
     "검증을 통과하는 canonical 예시를 그대로 따르라. B는 LEAVE_FIELD + SELECT {zone:'GRAVEYARD',owner:'SELF',cardType:'WRESTLER',filter:{tagsAny:['ZOMBIE']},selection:'ALL',count:20} + AGGREGATE COUNT + HEAL PLAYER SELF amountExpression RESULT_VALUE이다.",
     "C는 SELF_ATTACK + SELECT {zone:'HAND',owner:'ENEMY',selection:'ALL',count:1,sort:{stat:'COST',direction:'DESC'},take:1} + EFFECT INCREASE_COST target:{resultId:'highest'} values:{amount:2}이다. E는 LEAVE_FIELD + SELECT {zone:'GRAVEYARD',owner:'SELF',cardType:'WRESTLER',filter:{maxCost:3},selection:'RANDOM',count:1,randomScope:'STANDARD'} + EFFECT REVIVE target:{resultId:'revived'}이다.",
     "I는 ENTER_FIELD + SELECT {zone:'BOARD',owner:'SELF',cardType:'WRESTLER',filter:{tagsAny:['ZOMBIE']},selection:'ALL',count:20} + AGGREGATE COUNT + IF RESULT_VALUE GTE CONSTANT 3 then BUFF target:{zone:'BOARD',owner:'SELF',selection:'SELF',count:1} values:{attack:3,health:3}이다.",
