@@ -8,6 +8,7 @@ import {
   STAT_NAMES, EFFECT_DURATIONS, isEffectScript, type EffectScript,
 } from "@workspace/effect-registry";
 import { cardTagsSchema } from "@workspace/api-zod";
+import { normalizeEffectLanguage } from "./effect-language";
 
 export { ACTIONS, KEYWORDS, TRIGGERS };
 export type { Action, Keyword, Trigger };
@@ -137,6 +138,7 @@ const aliases = {
     ["ACTIVE", /^액티브(?:\s*사용)?(?:하면)?\s*[:：]?/],
     ["CARD_DRAWN", /^(?:준비|TURBO)\s*[:：]?/i],
     ["SELF_ATTACK", /^(?:(?:이\s*카드가|자신이)\s*공격할\s*때마다|SELF_ATTACK)\s*[:：]?/i],
+    ["ATTACK_SURVIVED", /^(?:ATTACK_SURVIVED|공격(?:하고|한\s*뒤에)\s*(?:살면|안\s*죽었으면|안죽었으면|죽지\s*않으면))\s*[:：]?/i],
     ["OTHER_ALLY_ATTACK", /^(?:콤보|SUPPORT)\s*[:：]?/i],
     ["TECHNIQUE_CAST", /^(?:주문|SHOCK)\s*[:：]?/i],
     ["EXACT_ZERO_DAMAGE", /^(?:핀폴|BULLSEYE)\s*[:：]?/i],
@@ -176,7 +178,7 @@ function isActiveAction(action: Action) {
 }
 
 function normalize(input: string) {
-  const normalized = input.normalize("NFC").replace(/[：:]/g, ":").replace(/[.。!！?？]/g, " ").replace(/\s+/g, " ").trim();
+  const normalized = normalizeEffectLanguage(input).normalizedText.replace(/[：:]/g, ":");
   // Admin exports can include the source card name on the line before a
   // colon-prefixed ability. It is presentation metadata, not effect text.
   const beginsWithTrigger = /^(?:필드에\s*)?(?:등장|출현|퇴장|리타이어|액티브|준비|콤보|주문|핀폴|턴\s*시작|턴\s*종료|MAGIC|TURBO|SELF_ATTACK|SUPPORT|SHOCK|BULLSEYE)\s*:/i.test(normalized);
@@ -1457,7 +1459,7 @@ export function analyzeEffectText(input: string, options: EffectAnalysisOptions 
   if (!text) return { status: "failure", outcome: "analysis_failure", effects: [], keywords: [], unsupportedSegments: ["효과 문장"], summaries: ["효과 문장을 입력해 주세요."] };
   const expanded = expandedMechanicAnalysis(text, options);
   if (expanded) return expanded;
-  const triggerMarkers = [...text.matchAll(/(?:^|\s)(?=(?:필드에\s*)?(?:등장|출현|퇴장|액티브|준비|콤보|주문|핀폴|턴\s*시작|턴\s*종료|(?:이\s*카드가|자신이)\s*공격할\s*때마다|MAGIC|TURBO|SELF_ATTACK|SUPPORT|SHOCK|BULLSEYE)\s*[:：])/gi)]
+  const triggerMarkers = [...text.matchAll(/(?:^|\s)(?=(?:필드에\s*)?(?:등장|출현|퇴장|액티브|준비|콤보|주문|핀폴|턴\s*시작|턴\s*종료|(?:이\s*카드가|자신이)\s*공격할\s*때마다|ATTACK_SURVIVED|MAGIC|TURBO|SELF_ATTACK|SUPPORT|SHOCK|BULLSEYE)\s*[:：])/gi)]
     .map((match) => (match.index ?? 0) + (match[0].startsWith(" ") ? 1 : 0));
   if (triggerMarkers.length > 1) {
     const analyses = triggerMarkers.map((start, index) =>

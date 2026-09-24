@@ -381,6 +381,7 @@ function validScriptSteps(value: unknown, depth: number, seen: Set<string>): val
       if (schema.amount && raw.effect.values === undefined) return false;
       if (schema.keyword && raw.effect.values === undefined) return false;
       if (action === "TRANSFORM_SOURCE" && raw.effect.values === undefined) return false;
+      if (!validScriptEffectValues(action, raw.effect.values)) return false;
       if (raw.effect.values !== undefined) {
         if (!isRecord(raw.effect.values) || !hasOnlyKeys(raw.effect.values, SCRIPT_EFFECT_VALUE_KEYS)) return false;
         const definitionRef = raw.effect.values.definitionRef;
@@ -451,6 +452,194 @@ export const ACTION_SCHEMAS: Record<Action, EffectActionSchema> = {
   REGISTER_DELAYED: { target: false, delayed: true }, REGISTER_LISTENER: { target: false, listener: true }, PREVENT_DAMAGE: { target: false, prevention: true }, PREVENT_RETIRE: { target: false, prevention: true },
   GRANT_RANDOM_CARD_TEXT: { target: true },
 };
+
+function finiteScriptNumber(value: unknown, min: number, max: number): value is number {
+  return typeof value === "number" && Number.isFinite(value) && value >= min && value <= max;
+}
+
+function validScriptEmbeddedEffect(value: unknown, depth: number, requireTrigger: boolean): boolean {
+  if (depth > SCRIPT_MAX_DEPTH || !isRecord(value) ||
+    !hasOnlyKeys(value, new Set(["trigger", "action", "target", "conditions", "values"])) ||
+    !ACTIONS.includes(value.action as Action) ||
+    (requireTrigger && !TRIGGERS.includes(value.trigger as Trigger)) ||
+    (!requireTrigger && value.trigger !== undefined && !TRIGGERS.includes(value.trigger as Trigger))) return false;
+  const action = value.action as Action;
+  const schema = ACTION_SCHEMAS[action];
+  if ((schema.target && value.target === undefined) ||
+    (!schema.target && value.target !== undefined &&
+      !(["SUMMON", "GENERATE"].includes(action) && isRecord(value.target) &&
+        ["RANDOM", "ADJACENT_EMPTY_SLOTS"].includes(value.target.selection as string))) ||
+    (value.target !== undefined && !validScriptTarget(value.target))) return false;
+  if (value.conditions !== undefined && (!Array.isArray(value.conditions) || value.conditions.length > 8 ||
+    !value.conditions.every((condition) => isRecord(condition) &&
+      hasOnlyKeys(condition, new Set(["type"])) && CONDITIONS.includes(condition.type as Condition)))) return false;
+  return validScriptEffectValues(action, value.values, depth + 1);
+}
+
+function validScriptEffectValues(action: Action, rawValues: unknown, depth = 0): boolean {
+  const schema = ACTION_SCHEMAS[action];
+  if (rawValues === undefined) {
+    return !schema.amount && !schema.keyword && !schema.stat && !schema.duration &&
+      !schema.stats && !schema.statMultiplier && !schema.referenceStat && !schema.dynamicValue &&
+      action !== "TRANSFORM_SOURCE";
+  }
+  if (depth > SCRIPT_MAX_DEPTH || !isRecord(rawValues) ||
+    !hasOnlyKeys(rawValues, SCRIPT_EFFECT_VALUE_KEYS)) return false;
+  const values = rawValues;
+  const allowed: Record<string, boolean> = {
+    amount: Boolean(schema.amount || action === "MOVE_TO_HAND"),
+    amountExpression: Boolean(schema.amount || action === "MOVE_TO_HAND"),
+    attack: Boolean(schema.stats || schema.statMultiplier || schema.referenceStat || schema.dynamicValue),
+    attackExpression: Boolean(schema.stats || schema.statMultiplier || schema.dynamicValue),
+    health: Boolean(schema.stats || schema.statMultiplier || schema.referenceStat || schema.dynamicValue),
+    healthExpression: Boolean(schema.stats || schema.statMultiplier || schema.dynamicValue),
+    countExpression: Boolean(schema.cardCount),
+    attackMultiplier: Boolean(schema.statMultiplier),
+    healthMultiplier: Boolean(schema.statMultiplier),
+    stat: Boolean(schema.stat),
+    duration: Boolean(schema.duration),
+    keyword: Boolean(schema.keyword),
+    damageSource: Boolean(schema.damageSource),
+    reference: Boolean(schema.referenceStat),
+    referenceStat: Boolean(schema.referenceStat),
+    amountReference: Boolean(schema.dynamicValue),
+    minimum: Boolean(schema.minimum || action === "MOVE_TO_HAND"),
+    temporaryCost: action === "MOVE_TO_HAND",
+    generatedModifiers: Boolean(schema.generatedModifiers),
+    deckPosition: action === "MOVE_TO_DECK",
+    count: Boolean(schema.cardCount),
+    destination: Boolean(schema.destination),
+    definitionRef: Boolean(schema.cardDefinition),
+    aggregateStats: Boolean(schema.aggregateStats),
+    leftEffects: Boolean(schema.branches),
+    rightEffects: Boolean(schema.branches),
+    queuedTrigger: Boolean(schema.queuedEffect),
+    queuedEffect: Boolean(schema.queuedEffect),
+    delayed: Boolean(schema.delayed),
+    listener: Boolean(schema.listener),
+    prevention: Boolean(schema.prevention),
+    captureStats: Boolean(schema.captureStats),
+  };
+  if (Object.keys(values).some((key) => !allowed[key])) return false;
+
+  const amountIsSigned = Boolean(schema.signedAmount);
+  if (values.amount !== undefined &&
+    !finiteScriptNumber(values.amount, amountIsSigned ? -999 : 0, 999)) return false;
+  if (schema.amount && values.amount === undefined && values.amountExpression === undefined) return false;
+  if (values.amountExpression !== undefined && (!validScriptValue(values.amountExpression) ||
+    (!amountIsSigned && values.amountExpression.kind === "CONSTANT" && values.amountExpression.value < 0) ||
+    (!amountIsSigned && values.amountExpression.offset !== undefined && values.amountExpression.offset < 0))) return false;
+  for (const key of ["attack", "health"] as const) {
+    if (values[key] !== undefined && !finiteScriptNumber(values[key], -999, 999)) return false;
+  }
+  for (const key of ["attackExpression", "healthExpression", "countExpression"] as const) {
+    if (values[key] !== undefined && !validScriptValue(values[key])) return false;
+  }
+  if (values.count !== undefined &&
+    (typeof values.count !== "number" || !Number.isInteger(values.count) || values.count < 1 || values.count > 20)) return false;
+  if (values.attackMultiplier !== undefined &&
+    !finiteScriptNumber(values.attackMultiplier, 0, 10)) return false;
+  if (values.healthMultiplier !== undefined &&
+    !finiteScriptNumber(values.healthMultiplier, 0, 10)) return false;
+  if (schema.stats) {
+    const explicitStats = values.attack !== undefined || values.health !== undefined ||
+      values.attackExpression !== undefined || values.healthExpression !== undefined;
+    const multiplierStats = Boolean(schema.statMultiplier) &&
+      finiteScriptNumber(values.attackMultiplier, 0, 10) &&
+      finiteScriptNumber(values.healthMultiplier, 0, 10);
+    const referencedStats = Boolean(schema.referenceStat) &&
+      values.reference !== undefined && REFERENCES.includes(values.reference as Reference) &&
+      ["CURRENT_ATTACK", "CURRENT_HEALTH"].includes(values.referenceStat as string);
+    const dynamicStats = Boolean(schema.dynamicValue) &&
+      ["HAND_COUNT", "GRAVEYARD_WRESTLER_COUNT", "REMAINING_GOLD", "BOARD_WRESTLER_COUNT",
+        "LAST_ATTACK_DELTA", "CURRENT_TURN_RETIRED_WRESTLER_COUNT", "CURRENT_TURN_DAMAGE_TAKEN"]
+        .includes(values.amountReference as string);
+    if (!explicitStats && !multiplierStats && !referencedStats && !dynamicStats) return false;
+  }
+  if (schema.stat && values.stat !== undefined && !STAT_NAMES.includes(values.stat as StatName)) return false;
+  if (schema.duration && values.duration !== undefined &&
+    !EFFECT_DURATIONS.includes(values.duration as EffectDuration)) return false;
+  if (schema.keyword && !KEYWORDS.includes(values.keyword as Keyword)) return false;
+  if (schema.damageSource && !DAMAGE_SOURCES.includes(values.damageSource as DamageSource)) return false;
+  if (schema.referenceStat &&
+    ((values.reference !== undefined && !REFERENCES.includes(values.reference as Reference)) ||
+      (values.referenceStat !== undefined && !["CURRENT_ATTACK", "CURRENT_HEALTH"].includes(values.referenceStat as string)) ||
+      ((values.reference === undefined) !== (values.referenceStat === undefined)))) return false;
+  if (schema.dynamicValue && values.amountReference !== undefined &&
+    !["HAND_COUNT", "GRAVEYARD_WRESTLER_COUNT", "REMAINING_GOLD", "BOARD_WRESTLER_COUNT",
+      "LAST_ATTACK_DELTA", "CURRENT_TURN_RETIRED_WRESTLER_COUNT", "CURRENT_TURN_DAMAGE_TAKEN"]
+      .includes(values.amountReference as string)) return false;
+  if (values.minimum !== undefined && !finiteScriptNumber(values.minimum, 0, 999)) return false;
+  if (values.temporaryCost !== undefined && typeof values.temporaryCost !== "boolean") return false;
+  if (values.temporaryCost === true &&
+    (!finiteScriptNumber(values.amount, 0, 999) || !finiteScriptNumber(values.minimum, 0, 999))) return false;
+  if (values.destination !== undefined && !["HAND", "DECK", "DECK_TOP"].includes(values.destination as string)) return false;
+  if (values.deckPosition !== undefined && !["TOP", "BOTTOM"].includes(values.deckPosition as string)) return false;
+  if (values.definitionRef !== undefined && (!isRecord(values.definitionRef) ||
+    !hasOnlyKeys(values.definitionRef, new Set(["id", "name"])) ||
+    (values.definitionRef.id !== undefined && (typeof values.definitionRef.id !== "string" || !values.definitionRef.id)) ||
+    (values.definitionRef.name !== undefined && (typeof values.definitionRef.name !== "string" || !values.definitionRef.name)) ||
+    (!values.definitionRef.id && !values.definitionRef.name))) return false;
+
+  if (values.generatedModifiers !== undefined) {
+    const modifiers = values.generatedModifiers;
+    if (!isRecord(modifiers) || !hasOnlyKeys(modifiers, new Set(["cost", "attack", "health", "copySourceStats", "copyTargetStats"]) ) ||
+      ["cost", "attack", "health"].some((key) => modifiers[key] !== undefined &&
+        !finiteScriptNumber(modifiers[key], -999, 999)) ||
+      ["copySourceStats", "copyTargetStats"].some((key) => modifiers[key] !== undefined &&
+        typeof modifiers[key] !== "boolean")) return false;
+  }
+  if (values.aggregateStats !== undefined) {
+    const aggregate = values.aggregateStats;
+    if (!isRecord(aggregate) || !hasOnlyKeys(aggregate, new Set(["source", "attack", "health"])) ||
+      !["LAST_DESTROYED_TARGETS", "LAST_CAUSED_TARGET_REMOVALS"].includes(aggregate.source as string) ||
+      aggregate.attack !== "CURRENT_ATTACK_SUM" ||
+      (aggregate.health !== undefined && aggregate.health !== "CURRENT_HEALTH_SUM") ||
+      (action === "SUMMON" && (aggregate.source !== "LAST_DESTROYED_TARGETS" ||
+        aggregate.health !== "CURRENT_HEALTH_SUM")) ||
+      (action === "ADD_AGGREGATED_ATTACK" && aggregate.source !== "LAST_CAUSED_TARGET_REMOVALS")) return false;
+  }
+  for (const key of ["leftEffects", "rightEffects"] as const) {
+    if (values[key] !== undefined && (!Array.isArray(values[key]) || values[key].length > SCRIPT_MAX_STEPS ||
+      !values[key].every((child) => validScriptEmbeddedEffect(child, depth + 1, true)))) return false;
+  }
+  if (values.queuedTrigger !== undefined &&
+    !["NEXT_ALLY_WRESTLER_PLAYED", "NEXT_TECHNIQUE_PLAYED"].includes(values.queuedTrigger as string)) return false;
+  if (values.queuedEffect !== undefined && !validScriptEmbeddedEffect(values.queuedEffect, depth + 1, false)) return false;
+  if (values.delayed !== undefined) {
+    const delayed = values.delayed;
+    if (!isRecord(delayed) || !hasOnlyKeys(delayed, new Set(["kind", "count", "eventTrigger", "effect", "followUpEffects"])) ||
+      !["OWNER_NEXT_TURN_START", "OPPONENT_NEXT_TURN_START", "END_OF_CURRENT_TURN", "NEXT_MATCHING_EVENT", "N_MATCHING_EVENTS"]
+        .includes(delayed.kind as string) ||
+      (delayed.kind === "N_MATCHING_EVENTS" &&
+        (typeof delayed.count !== "number" || !Number.isInteger(delayed.count) || delayed.count < 1 || delayed.count > 20)) ||
+      (delayed.eventTrigger !== undefined &&
+        !["CARD_PLAYED", "TECHNIQUE_PLAYED", "CARD_RETIRED", "DAMAGE_TAKEN"].includes(delayed.eventTrigger as string)) ||
+      !validScriptEmbeddedEffect(delayed.effect, depth + 1, false) ||
+      (delayed.followUpEffects !== undefined && (!Array.isArray(delayed.followUpEffects) || delayed.followUpEffects.length > 4 ||
+        !delayed.followUpEffects.every((child) => validScriptEmbeddedEffect(child, depth + 1, false))))) return false;
+  }
+  if (values.listener !== undefined) {
+    const listener = values.listener;
+    if (!isRecord(listener) || !hasOnlyKeys(listener, new Set(["trigger", "cardType", "owner", "uses", "effect"])) ||
+      !RULE_LISTENER_TRIGGERS.includes(listener.trigger as typeof RULE_LISTENER_TRIGGERS[number]) ||
+      (listener.cardType !== undefined && listener.cardType !== "WRESTLER" && listener.cardType !== "TECHNIQUE") ||
+      (listener.owner !== undefined && listener.owner !== "SELF" && listener.owner !== "ENEMY") ||
+      (listener.uses !== undefined &&
+        (typeof listener.uses !== "number" || !Number.isInteger(listener.uses) || listener.uses < 1 || listener.uses > 20)) ||
+      !validScriptEmbeddedEffect(listener.effect, depth + 1, false)) return false;
+  }
+  if (values.prevention !== undefined) {
+    const prevention = values.prevention;
+    if (!isRecord(prevention) || !hasOnlyKeys(prevention, new Set(["uses", "setHealth"])) ||
+      (prevention.uses !== undefined &&
+        (typeof prevention.uses !== "number" || !Number.isInteger(prevention.uses) || prevention.uses < 1 || prevention.uses > 20)) ||
+      (prevention.setHealth !== undefined &&
+        (typeof prevention.setHealth !== "number" || !Number.isInteger(prevention.setHealth) || prevention.setHealth < 1 || prevention.setHealth > 999))) return false;
+  }
+  if (values.captureStats !== undefined && typeof values.captureStats !== "boolean") return false;
+  return true;
+}
 
 const ACTION_DESCRIPTIONS: Record<Action, string> = {
   BUFF: "대상의 공격력과 체력을 변경합니다.", SET_STATS: "대상의 공격력과 체력을 지정한 값으로 설정합니다.", MODIFY_STAT: "대상의 비용, 공격력 또는 체력을 변경합니다.", MODIFY_MAX_HEALTH: "대상의 최대 체력만 변경합니다.", SET_STAT: "대상의 비용, 공격력 또는 체력을 지정한 값으로 설정합니다.", DAMAGE: "대상에게 피해를 줍니다.", HEAL: "대상의 체력을 회복합니다.",

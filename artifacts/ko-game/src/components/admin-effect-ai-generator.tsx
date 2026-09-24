@@ -23,11 +23,36 @@ type EffectAiDraft = {
     actions: string[];
     resultReferences: string[];
   };
+  normalization?: {
+    version: number;
+    normalizedText: string;
+    corrections: string[];
+  };
+  semanticPlan?: {
+    normalizedMeaning: string;
+    triggerIntent: string[];
+    sourceIntent: string[];
+    targetIntent: string[];
+    ownerIntent: string[];
+    zoneIntent: string[];
+    cardTypeIntent: string[];
+    filterIntent: string[];
+    selectionIntent: string[];
+    actionIntent: string[];
+    valuesIntent: string[];
+    conditionIntent: string[];
+    sequenceIntent: string[];
+    referenceIntent: string[];
+    ambiguities: string[];
+    canonicalPlan: EffectAiDraft["mechanicPlan"];
+  };
 };
 
 type EffectAiClarification = {
   status: "NEEDS_CLARIFICATION";
   questions: string[];
+  normalization?: EffectAiDraft["normalization"];
+  ambiguities?: Array<{ code: string; question: string }>;
 };
 
 export function AdminEffectAiGenerator({
@@ -36,7 +61,6 @@ export function AdminEffectAiGenerator({
   sourceId,
   cardType,
   effectContext,
-  sourceName,
   existingEffectCount,
   onApply,
   onUnauthorized,
@@ -46,7 +70,6 @@ export function AdminEffectAiGenerator({
   sourceId?: string;
   cardType?: "WRESTLER" | "TECHNIQUE";
   effectContext?: EffectAiContext;
-  sourceName?: string;
   existingEffectCount: number;
   onApply: (draft: EffectAiDraft, mode: ApplyMode) => void;
   onUnauthorized: () => void;
@@ -78,18 +101,38 @@ export function AdminEffectAiGenerator({
           ...(sourceId ? { sourceId } : {}),
           ...(cardType ? { cardType } : {}),
           ...(effectContext ? { effectContext } : {}),
-          ...(sourceName?.trim() ? { sourceName: sourceName.trim() } : {}),
         }),
       });
       if (response.status === 401) {
         onUnauthorized();
         return;
       }
-      const body = await response.json() as EffectAiDraft | EffectAiClarification | { message?: string };
-       if (!response.ok) {
-         throw new Error("message" in body && body.message ? body.message : "게임 효과를 컴파일하지 못했습니다.");
+      let body: unknown;
+      try {
+        body = await response.json();
+      } catch {
+        throw new Error("서버 응답을 읽을 수 없습니다.");
       }
-      setDraft(body as EffectAiDraft | EffectAiClarification);
+      const isClarification = Boolean(
+        body && typeof body === "object" && !Array.isArray(body) &&
+        (body as { status?: unknown }).status === "NEEDS_CLARIFICATION" &&
+        Array.isArray((body as { questions?: unknown }).questions),
+      );
+      if (isClarification) {
+        setDraft(body as EffectAiClarification);
+        return;
+      }
+      if (!response.ok) {
+        const message = body && typeof body === "object" && !Array.isArray(body)
+          ? (body as { message?: unknown }).message
+          : undefined;
+        throw new Error(typeof message === "string" ? message : "게임 효과를 컴파일하지 못했습니다.");
+      }
+      if (!body || typeof body !== "object" || Array.isArray(body) ||
+          (body as { status?: unknown }).status !== "READY") {
+        throw new Error("서버가 검증된 효과 초안을 반환하지 않았습니다.");
+      }
+      setDraft(body as EffectAiDraft);
     } catch (reason) {
        setError(reason instanceof Error ? reason.message : "게임 효과를 컴파일하지 못했습니다.");
     } finally {
@@ -97,8 +140,10 @@ export function AdminEffectAiGenerator({
     }
   }
 
-  const ready = draft?.status === "READY" ? draft : null;
+  const ready = draft?.status === "READY" &&
+    (draft.semanticPlan?.ambiguities.length ?? 0) === 0 ? draft : null;
   const clarification = draft?.status === "NEEDS_CLARIFICATION" ? draft : null;
+  const blockedDraft = draft?.status === "READY" && !ready;
 
   return (
     <section className="md:col-span-2 rounded border border-violet-900/70 bg-violet-950/15 p-3" data-testid="admin-effect-ai-generator">
@@ -156,17 +201,30 @@ export function AdminEffectAiGenerator({
       {clarification && (
         <div className="mt-3 rounded border border-amber-800 bg-amber-950/25 p-3 text-xs" data-testid="ai-effect-clarification">
           <strong className="text-amber-200">효과 설명이 모호합니다</strong>
+          {clarification.normalization?.normalizedText && (
+            <p className="mt-2 text-amber-100/80">정규화 후보: {clarification.normalization.normalizedText}</p>
+          )}
           <ul className="mt-2 list-disc space-y-1 pl-4 text-amber-100">
             {clarification.questions.map((question) => <li key={question}>{question}</li>)}
           </ul>
         </div>
       )}
+      {blockedDraft && (
+        <p role="alert" className="mt-3 rounded border border-amber-800 bg-amber-950/25 p-3 text-xs text-amber-200">
+          의미 감사 결과에 미해결 모호성이 있습니다. 이 초안은 적용할 수 없습니다.
+        </p>
+      )}
       {ready && (
         <div className="mt-3 rounded border border-emerald-800 bg-emerald-950/20 p-3" data-testid="ai-effect-draft">
           <div className="flex flex-wrap items-center justify-between gap-2">
-            <strong className="text-emerald-200">게임 효과가 적용되었습니다</strong>
-            <span className="text-[10px] font-bold text-emerald-300">실행 AST · 서버 validation 통과</span>
+            <strong className="text-emerald-200">효과 초안 검증 완료 · 아직 적용되지 않음</strong>
+            <span className="text-[10px] font-bold text-emerald-300">실행 AST · 서버 검증 통과</span>
           </div>
+          {ready.normalization?.normalizedText && (
+            <p className="mt-2 text-xs text-neutral-300" data-testid="ai-effect-normalized-meaning">
+              정규화 후보: {ready.normalization.normalizedText}
+            </p>
+          )}
           <div className="mt-3 rounded border border-emerald-900/60 bg-black/20 p-2 text-xs" data-testid="ai-mechanic-plan">
             <strong className="text-emerald-100">Mechanic plan</strong>
             <div className="mt-2 grid gap-1 sm:grid-cols-[auto_1fr]">
@@ -178,6 +236,23 @@ export function AdminEffectAiGenerator({
               <span className="text-neutral-500">Result</span><span>{ready.mechanicPlan.resultReferences.join(", ") || "없음"}</span>
             </div>
           </div>
+          {ready.semanticPlan && (
+            <details className="mt-2 rounded border border-neutral-800 bg-black/20 p-2" data-testid="ai-semantic-audit">
+              <summary className="cursor-pointer text-xs font-bold text-neutral-400">의미 슬롯 감사</summary>
+              <dl className="mt-2 grid gap-1 text-[11px] sm:grid-cols-[auto_1fr]">
+                <dt className="text-neutral-500">Trigger / source</dt>
+                <dd>{[...ready.semanticPlan.triggerIntent, ...ready.semanticPlan.sourceIntent].join(" · ") || "없음"}</dd>
+                <dt className="text-neutral-500">Target / owner / zone</dt>
+                <dd>{[...ready.semanticPlan.targetIntent, ...ready.semanticPlan.ownerIntent, ...ready.semanticPlan.zoneIntent].join(" · ") || "없음"}</dd>
+                <dt className="text-neutral-500">Card / filter / selection</dt>
+                <dd>{[...ready.semanticPlan.cardTypeIntent, ...ready.semanticPlan.filterIntent, ...ready.semanticPlan.selectionIntent].join(" · ") || "없음"}</dd>
+                <dt className="text-neutral-500">Action / values</dt>
+                <dd>{[...ready.semanticPlan.actionIntent, ...ready.semanticPlan.valuesIntent].join(" · ") || "없음"}</dd>
+                <dt className="text-neutral-500">Condition / sequence / references</dt>
+                <dd>{[...ready.semanticPlan.conditionIntent, ...ready.semanticPlan.sequenceIntent, ...ready.semanticPlan.referenceIntent].join(" · ") || "없음"}</dd>
+              </dl>
+            </details>
+          )}
           <dl className="mt-2 grid gap-1 text-xs sm:grid-cols-[auto_1fr]">
             {ready.preview.map((line, index) => (
               <div key={`${line.label}-${index}`} className="contents">
@@ -195,7 +270,14 @@ export function AdminEffectAiGenerator({
           <div className="mt-3 flex flex-wrap gap-2">
             <button
               type="button"
-              onClick={() => onApply(ready, mode)}
+              onClick={() => {
+                setError("");
+                try {
+                  onApply(ready, mode);
+                } catch (reason) {
+                  setError(reason instanceof Error ? reason.message : "효과를 현재 편집 중인 항목에 적용하지 못했습니다.");
+                }
+              }}
               className="rounded bg-primary px-3 py-1.5 text-xs font-black text-black"
               data-testid="button-apply-ai-effect"
             >

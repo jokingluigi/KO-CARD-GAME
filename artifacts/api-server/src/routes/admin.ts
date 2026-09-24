@@ -964,14 +964,12 @@ async function trustedEffectContext(
   sourceId: string | undefined,
   requestedCardType: EffectAiContext["cardType"] | undefined,
   effectContext: EffectAiContext["effectContext"] | undefined,
-  sourceName: string | undefined,
 ): Promise<EffectAiContext | null> {
   if (!sourceId) {
     return {
       sourceType,
       ...(requestedCardType ? { cardType: requestedCardType } : {}),
       ...(effectContext ? { effectContext } : {}),
-      ...(sourceName ? { sourceName } : {}),
     };
   }
   if (sourceType === "CARD") {
@@ -1360,7 +1358,6 @@ router.post("/effects/generate", async (request, response): Promise<void> => {
     ? body.effectContext as EffectAiContext["effectContext"]
     : undefined;
   const cardType = body.cardType === "TECHNIQUE" ? "TECHNIQUE" : body.cardType === "WRESTLER" ? "WRESTLER" : undefined;
-   const sourceName = typeof body.sourceName === "string" ? body.sourceName.trim().slice(0, 120) : undefined;
    const sourceId = typeof body.sourceId === "string" && body.sourceId.trim()
      ? body.sourceId.trim()
      : undefined;
@@ -1372,7 +1369,7 @@ router.post("/effects/generate", async (request, response): Promise<void> => {
     return;
   }
   try {
-    const context = await trustedEffectContext(sourceType, sourceId, cardType, effectContext, sourceName);
+    const context = await trustedEffectContext(sourceType, sourceId, cardType, effectContext);
     if (!context) {
       response.status(400).json({ message: "현재 편집 중인 CardDefinition/ChampionDefinition을 확인해 주세요." });
       return;

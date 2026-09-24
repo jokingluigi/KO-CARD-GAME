@@ -4,6 +4,7 @@ import { Ban, CheckCircle2, Copy, FilePenLine, ImagePlus, Maximize2, Plus, Rotat
 import { AdminAudioField } from "./admin-audio-field";
 import { AdminUnifiedEffectPrompt } from "./admin-unified-effect-prompt";
 import { AdminEffectAiGenerator } from "./admin-effect-ai-generator";
+import { effectConfigEntryCount, mergeGeneratedEffectDraft } from "@/lib/admin-effect-config";
 import { CardArtwork } from "./card-artwork";
 import { useToast } from "../hooks/use-toast";
 import {
@@ -219,15 +220,8 @@ export function AdminChampionManager({ onUnauthorized }: { onUnauthorized: () =>
     draft: { effectId: "STRUCTURED_EFFECTS_V1" | "SCRIPT_V1"; effects: unknown[]; scripts: unknown[] },
     mode: "replace" | "append",
   ) {
-    const current = form[effectsKey];
-    const key = draft.effectId === "SCRIPT_V1" ? "scripts" : "effects";
-    const incoming = draft.effectId === "SCRIPT_V1" ? draft.scripts : draft.effects;
-    const currentItems = current && typeof current === "object" && Array.isArray(current[key])
-      ? current[key]
-      : [];
-    update(effectsKey, {
-      [key]: mode === "append" ? [...currentItems, ...incoming] : incoming,
-    } as Form[typeof effectsKey]);
+    const merged = mergeGeneratedEffectDraft(undefined, form[effectsKey], draft, mode);
+    update(effectsKey, merged.effectConfig as Form[typeof effectsKey]);
      setMessageText(mode === "append"
        ? "컴파일된 게임 규칙을 기존 Champion 효과 뒤에 추가했습니다. 저장 버튼을 눌러 보존하세요."
        : "컴파일된 게임 규칙을 Champion 효과에 적용했습니다. 저장 버튼을 눌러 보존하세요.");
@@ -821,7 +815,7 @@ export function AdminChampionManager({ onUnauthorized }: { onUnauthorized: () =>
             prompting={promptingKey === "abilityText"}
             sourceId={editing?.id}
             effectContext="CHAMPION_ABILITY"
-            existingEffectCount={Array.isArray(form.abilityEffects.effects) ? form.abilityEffects.effects.length : 0}
+            existingEffectCount={effectConfigEntryCount(form.abilityEffects)}
             onApplyAi={(effects, mode) => applyAiEffect("abilityEffects", effects, mode)}
             onUnauthorized={onUnauthorized}
           />
@@ -872,7 +866,7 @@ export function AdminChampionManager({ onUnauthorized }: { onUnauthorized: () =>
                prompting={promptingKey === "questRewardText"}
                 sourceId={editing?.id}
                 effectContext="QUEST_REWARD"
-                existingEffectCount={Array.isArray(form.questRewardEffects?.effects) ? form.questRewardEffects.effects.length : 0}
+               existingEffectCount={effectConfigEntryCount(form.questRewardEffects)}
                 onApplyAi={(effects, mode) => applyAiEffect("questRewardEffects", effects, mode)}
                 onUnauthorized={onUnauthorized}
              /></>}
@@ -893,7 +887,7 @@ export function AdminChampionManager({ onUnauthorized }: { onUnauthorized: () =>
              prompting={promptingKey === "upgradedAbilityText"}
               sourceId={editing?.id}
              effectContext="UPGRADED_CHAMPION_ABILITY"
-             existingEffectCount={Array.isArray(form.upgradedAbilityEffects?.effects) ? form.upgradedAbilityEffects.effects.length : 0}
+            existingEffectCount={effectConfigEntryCount(form.upgradedAbilityEffects)}
              onApplyAi={(effects, mode) => applyAiEffect("upgradedAbilityEffects", effects, mode)}
              onUnauthorized={onUnauthorized}
            />

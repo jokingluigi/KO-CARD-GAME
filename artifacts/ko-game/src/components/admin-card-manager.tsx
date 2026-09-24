@@ -19,6 +19,7 @@ import { CardRenderer } from "./card-renderer";
 import { AdminAudioField } from "./admin-audio-field";
 import { AdminUnifiedEffectPrompt } from "./admin-unified-effect-prompt";
 import { AdminEffectAiGenerator } from "./admin-effect-ai-generator";
+import { effectConfigEntryCount, mergeGeneratedEffectDraft } from "@/lib/admin-effect-config";
 import { useToast } from "../hooks/use-toast";
 import {
   CARD_RARITY_LABELS,
@@ -164,12 +165,7 @@ function statusClass(status: CardStatus) {
 }
 
 function structuredEffectCount(value: string): number {
-  try {
-    const parsed = JSON.parse(value || "{}") as { effects?: unknown };
-    return Array.isArray(parsed.effects) ? parsed.effects.length : 0;
-  } catch {
-    return 0;
-  }
+  return effectConfigEntryCount(value);
 }
 
 async function responseMessage(response: Response) {
@@ -666,19 +662,14 @@ export function AdminCardManager({
     },
     mode: "replace" | "append",
   ) {
-    let currentConfig: { effects?: unknown[]; scripts?: unknown[] } = {};
-    try {
-      const parsed = JSON.parse(form.getValues("effectConfig") || "{}") as { effects?: unknown[]; scripts?: unknown[] };
-      currentConfig = parsed;
-    } catch {
-      currentConfig = {};
-    }
-    const effectId = draft.effectId;
-    const key = effectId === "SCRIPT_V1" ? "scripts" : "effects";
-    const incoming = effectId === "SCRIPT_V1" ? draft.scripts : draft.effects;
-    const current = mode === "append" && Array.isArray(currentConfig[key]) ? currentConfig[key] : [];
-    form.setValue("effectId", effectId, { shouldDirty: true });
-    form.setValue("effectConfig", JSON.stringify({ [key]: mode === "append" ? [...current, ...incoming] : incoming }, null, 2), { shouldDirty: true });
+  const merged = mergeGeneratedEffectDraft(
+    form.getValues("effectId"),
+    form.getValues("effectConfig"),
+    draft,
+    mode,
+  );
+  form.setValue("effectId", merged.effectId, { shouldDirty: true });
+  form.setValue("effectConfig", JSON.stringify(merged.effectConfig, null, 2), { shouldDirty: true });
     if (draft.keywords.length) {
       form.setValue("keywords", [...new Set([
         ...form.getValues("keywords"),
@@ -1254,8 +1245,7 @@ export function AdminCardManager({
                    sourceType="CARD"
                    sourceId={editingCard?.id}
                    cardType={preview.cardType}
-                   sourceName={preview.name}
-                   existingEffectCount={preview.effectId === "STRUCTURED_EFFECTS_V1" ? structuredEffectCount(preview.effectConfig) : 0}
+                   existingEffectCount={effectConfigEntryCount(preview.effectConfig)}
                    onApply={(draft, mode) => applyAiDraft(draft, mode)}
                    onUnauthorized={onUnauthorized}
                  />
