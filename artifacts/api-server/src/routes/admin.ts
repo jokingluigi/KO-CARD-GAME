@@ -60,6 +60,12 @@ import {
 } from "../lib/admin-effect-ai";
 import { getAuthenticatedUser } from "../lib/auth";
 import { compareAndAdvanceChampionVersion } from "../lib/champion-save-contract";
+import {
+  saveCardEffectFields,
+  saveChampionEffectSlot,
+  validatePublishedEffectReferences,
+  type ChampionEffectSlot,
+} from "../lib/effect-save-service";
 
 const router: IRouter = Router();
 const cardImageStorage = new CardImageStorage();
@@ -933,6 +939,8 @@ async function cardReferenceCatalog(): Promise<CardReferenceCandidate[]> {
     cardType: cardsTable.cardType,
     isToken: cardsTable.isToken,
     isChampionToken: cardsTable.isChampionToken,
+    attack: cardsTable.attack,
+    health: cardsTable.health,
   }).from(cardsTable);
   return cards.map((card) => ({
     id: card.id,
@@ -940,6 +948,8 @@ async function cardReferenceCatalog(): Promise<CardReferenceCandidate[]> {
     cardType: card.cardType === "TECHNIQUE" ? "TECHNIQUE" : "WRESTLER",
     isToken: card.isToken,
     isChampionToken: card.isChampionToken,
+    attack: card.attack,
+    health: card.health,
   }));
 }
 
@@ -1826,6 +1836,58 @@ router.post("/champions/:id/duplicate", async (request, response): Promise<void>
     ...copy, id: randomUUID(), name: `${source.name} Copy`, status: "DRAFT", version: 1,
   }).returning();
   response.status(201).json({ champion });
+});
+
+router.patch("/champions/:id/effects", async (request, response): Promise<void> => {
+  if (!requireAdmin(request, response)) return;
+  if (process.env["NODE_ENV"] !== "development") {
+    response.status(403).json({ message: "효과 전용 저장은 Development에서만 사용할 수 있습니다." });
+    return;
+  }
+
+  const body = request.body && typeof request.body === "object"
+    ? request.body as Record<string, unknown>
+    : {};
+  const id = firstParam(request.params.id);
+  const rawVersion = body["version"];
+  const expectedVersion = typeof rawVersion === "number" && Number.isInteger(rawVersion)
+    ? rawVersion
+    : typeof rawVersion === "string" && rawVersion.trim() && Number.isInteger(Number(rawVersion))
+      ? Number(rawVersion)
+      : null;
+  const rawSlot = body["slot"];
+  const validSlot = rawSlot === "ABILITY" || rawSlot === "QUEST_REWARD" || rawSlot === "UPGRADED_ABILITY";
+  const effectConfig = body["effectConfig"];
+  if (
+    !id ||
+    expectedVersion === null ||
+    !validSlot ||
+    !("effectConfig" in body) ||
+    (effectConfig !== null &&
+      (typeof effectConfig !== "object" || Array.isArray(effectConfig)))
+  ) {
+    response.status(400).json({ message: "챔피언 버전, 슬롯과 효과 입력값을 확인해 주세요." });
+    return;
+  }
+
+  const referenceErrors = effectConfig === null
+    ? []
+    : await validatePublishedEffectReferences(effectConfig);
+  if (referenceErrors.length) {
+    response.status(422).json({ message: "공개된 참조 카드만 효과에 사용할 수 있습니다.", errors: referenceErrors });
+    return;
+  }
+  const result = await saveChampionEffectSlot({
+    id,
+    expectedVersion,
+    slot: rawSlot as ChampionEffectSlot,
+    effectConfig: effectConfig as Record<string, unknown> | null,
+  });
+  if (!result.ok) {
+    response.status(result.status).json({ message: result.message });
+    return;
+  }
+  response.json({ champion: result.record });
 });
 
 router.post("/champions/:id/status", async (request, response): Promise<void> => {
@@ -2820,6 +2882,50 @@ router.patch("/cards/:id", async (request, response): Promise<void> => {
   }
 
   response.json({ card });
+});
+
+router.patch("/cards/:id/effects", async (request, response): Promise<void> => {
+  if (!requireAdmin(request, response)) return;
+  if (process.env["NODE_ENV"] !== "development") {
+    response.status(403).json({ message: "효과 전용 저장은 Development에서만 사용할 수 있습니다." });
+    return;
+  }
+
+  const body = request.body && typeof request.body === "object"
+    ? request.body as Record<string, unknown>
+    : {};
+  const id = firstParam(request.params.id);
+  const rawVersion = body["version"];
+  const expectedVersion = typeof rawVersion === "number" && Number.isInteger(rawVersion)
+    ? rawVersion
+    : typeof rawVersion === "string" && rawVersion.trim() && Number.isInteger(Number(rawVersion))
+      ? Number(rawVersion)
+      : null;
+  const effectId = body["effectId"];
+  const effectConfig = body["effectConfig"];
+  if (
+    !id ||
+    expectedVersion === null ||
+    (effectId !== null && typeof effectId !== "string") ||
+    !effectConfig ||
+    typeof effectConfig !== "object" ||
+    Array.isArray(effectConfig)
+  ) {
+    response.status(400).json({ message: "카드 버전과 효과 입력값을 확인해 주세요." });
+    return;
+  }
+
+  const referenceErrors = await validatePublishedEffectReferences(effectConfig, id);
+  if (referenceErrors.length) {
+    response.status(422).json({ message: "공개된 참조 카드만 효과에 사용할 수 있습니다.", errors: referenceErrors });
+    return;
+  }
+  const result = await saveCardEffectFields({ id, expectedVersion, effectId, effectConfig });
+  if (!result.ok) {
+    response.status(result.status).json({ message: result.message });
+    return;
+  }
+  response.json({ card: result.record });
 });
 
 router.delete("/cards/:id", async (request, response): Promise<void> => {

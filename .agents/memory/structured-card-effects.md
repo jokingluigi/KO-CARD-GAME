@@ -62,3 +62,9 @@ Natural-language analyzer coverage must include the production trigger aliases, 
 **Why:** Small wording differences such as `출현`, `턴 시작`, `카드에게`, or `체력이 +2` can otherwise produce an empty or partial result even when the runtime already supports the mechanic.
 
 **How to apply:** Add exact production-phrase regressions for each newly recovered catalog effect, assert `success`/`supported`, and pair target-zone changes with a runtime test that verifies the declared source zone.
+
+Persisted-effect audits are diagnostic, not bulk migrations. Analyzer differences are context-sensitive; preserve valid legacy scripts and semantically equivalent stored data, and repair only exact, reviewed snapshots through version-checked effect-only saves.
+
+**Why:** Reanalysis can expose real text/effect drift alongside harmless normalization, custom legacy implementations, or ambiguity. Treating every difference as a defect can change gameplay beyond the verified intent.
+
+**How to apply:** Match the analyzer context used by the save path, verify the text, version, effect shape, and references before each repair, and leave unsupported or ambiguous rows unchanged.

@@ -158,6 +158,38 @@ const scripts: Record<string, EffectScript> = {
       },
     ],
   },
+  K: {
+    version: "SCRIPT_V1",
+    trigger: "ENTER_FIELD",
+    steps: [
+      {
+        type: "SELECT",
+        id: "hiddenWrestlers",
+        target: {
+          zone: "HAND",
+          owner: "SELF",
+          cardType: "WRESTLER",
+          selection: "ALL",
+          count: 20,
+        },
+      },
+      {
+        type: "EFFECT",
+        effect: {
+          action: "BUFF",
+          target: {
+            resultId: "hiddenWrestlers",
+            zone: "HAND",
+            owner: "SELF",
+            cardType: "WRESTLER",
+            selection: "ALL",
+            count: 20,
+          },
+          values: { attack: 0, health: -5 },
+        },
+      },
+    ],
+  },
 };
 
 const structuredConfigs: Record<string, Record<string, unknown>> = {
@@ -247,7 +279,7 @@ const structuredConfigs: Record<string, Record<string, unknown>> = {
   },
 };
 
-type CaseKey = "A" | "B" | "C" | "D" | "E" | "F" | "G" | "H" | "I" | "J";
+type CaseKey = "A" | "B" | "C" | "D" | "E" | "F" | "G" | "H" | "I" | "J" | "K";
 
 const records: Record<CaseKey, PublishedCardRecord> = Object.fromEntries(
   (Object.keys(structuredConfigs).concat(Object.keys(scripts)) as CaseKey[]).map((key) => {
@@ -653,4 +685,33 @@ test("J uses current-turn retirement history to damage the enemy player", () => 
   }, "J attack failed");
   assert.equal(result.players[1].health, 9);
   assert.equal(event(result, "CARD_RETIRED", source.instanceId).cardInstanceId, source.instanceId);
+});
+
+test("K applies the hidden-zone health floor through a real SCRIPT_V1 card play", () => {
+  const source = card("K", "k-source");
+  const hidden = {
+    ...instance(summonDefinition, "k-generated-hand-target"),
+    currentHealth: 3,
+    maxHealth: 3,
+    isGenerated: true,
+  };
+  const state = stateWithPool();
+  state.players[0].hand = [source, hidden];
+  state.players[0].currentGold = 10;
+
+  const candidate = getLegalActions(state, PLAYER_ONE).find(
+    (item) => item.type === "PLAY_WRESTLER" &&
+      item.cardInstanceId === source.instanceId &&
+      item.boardSlot === 0,
+  );
+  assert.ok(candidate, "no legal SCRIPT_V1 play action");
+  const result = action(state, candidate!, "K play failed");
+
+  assert.equal(result.players[0].hand.find((item) => item.instanceId === hidden.instanceId)?.currentHealth, 1);
+  const healthChange = result.events.find((item) =>
+    item.type === "STAT_CHANGED" &&
+    item.cardInstanceId === hidden.instanceId &&
+    item.stat === "currentHealth",
+  );
+  assert.equal(healthChange?.delta, -2);
 });

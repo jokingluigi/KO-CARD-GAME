@@ -99,6 +99,8 @@ export type ReferencedCard = {
   cardType: "WRESTLER" | "TECHNIQUE";
   isToken: boolean;
   isChampionToken: boolean;
+  attack?: number;
+  health?: number;
 };
 export type CardReferenceCandidate = ReferencedCard;
 export type CardReferenceError = {
@@ -175,7 +177,8 @@ function normalize(input: string) {
   const normalized = input.normalize("NFC").replace(/[：:]/g, ":").replace(/[.。!！?？]/g, " ").replace(/\s+/g, " ").trim();
   // Admin exports can include the source card name on the line before a
   // colon-prefixed ability. It is presentation metadata, not effect text.
-  return normalized.replace(/^.*?\s+(?=(?:퇴장|리타이어)\s*:)/, "")
+  const beginsWithTrigger = /^(?:필드에\s*)?(?:등장|출현|퇴장|리타이어|액티브|준비|콤보|주문|핀폴|턴\s*시작|턴\s*종료|MAGIC|TURBO|SELF_ATTACK|SUPPORT|SHOCK|BULLSEYE)\s*:/i.test(normalized);
+  return (beginsWithTrigger ? normalized : normalized.replace(/^.*?\s+(?=(?:퇴장|리타이어)\s*:)/, ""))
     .replace(/(만듭니다|시킵니다|합니다|습니다|한다|해요|하세요|하기|얻기|줍니다|준다)$/g, "").trim();
 }
 function numberFrom(text: string, fallback = 1) {
@@ -394,7 +397,7 @@ function genericStatName(value: string): StatName {
 }
 
 function minimumCostFor(text: string): number | undefined {
-  const match = text.match(/최소\s*(?:비용\s*)?(\d+)/);
+  const match = text.match(/최소\s*(?:비용\s*(?:은|는|이|가|을|를)?\s*)?(\d+)/);
   return match ? Number(match[1]) : undefined;
 }
 
@@ -683,17 +686,51 @@ function expandedMechanicAnalysis(
           : options.defaultTrigger ?? fallback;
   const self = { zone: "BOARD" as const, owner: "SELF" as const, selection: "SELF" as const, count: 1 };
   const wrestlerSelf = { ...self, cardType: "WRESTLER" as const };
-  const result = (effects: StructuredEffect[]): Analysis => ({
-    status: "success",
-    outcome: "supported",
-    effects,
-    keywords: [],
-    unsupportedSegments: [],
-    summaries: effects.map((item) => `${item.trigger} · ${item.action}`),
-  });
+  const referenceErrors: CardReferenceError[] = [];
+  const referencedCards = new Map<string, ReferencedCard>();
+  const result = (effects: StructuredEffect[]): Analysis => referenceErrors.length
+    ? {
+        status: "failure",
+        outcome: "analysis_failure",
+        effects: [],
+        keywords: [],
+        unsupportedSegments: [text],
+        summaries: ["카드 참조를 정확히 확인할 수 없습니다."],
+        reason: "참조 카드 정의가 없거나 이름이 중복되어 정확한 CardDefinition을 선택할 수 없습니다.",
+        referenceErrors,
+      }
+    : {
+        status: "success",
+        outcome: "supported",
+        effects,
+        keywords: [],
+        unsupportedSegments: [],
+        summaries: effects.map((item) => `${item.trigger} · ${item.action}`),
+        ...(referencedCards.size ? { referencedCards: [...referencedCards.values()] } : {}),
+      };
   const makeRef = (name: string) => {
-    const found = options.cardCatalog?.find((candidate) => candidate.name === name);
-    return found ? { id: found.id } : { name };
+    const normalizedName = name.trim();
+    if (!normalizedName) return { name: normalizedName };
+    if (!options.cardCatalog) {
+      referenceErrors.push({ code: "CARD_REFERENCE_NOT_FOUND", name: normalizedName });
+      return { name: normalizedName };
+    }
+    const matches = options.cardCatalog
+      .filter((candidate) => candidate.name === normalizedName)
+      .filter((candidate, index, all) => all.findIndex((item) => item.id === candidate.id) === index);
+    if (matches.length !== 1) {
+      referenceErrors.push(matches.length > 1
+        ? {
+            code: "CARD_REFERENCE_AMBIGUOUS",
+            name: normalizedName,
+            candidateIds: matches.map((candidate) => candidate.id).sort(),
+          }
+        : { code: "CARD_REFERENCE_NOT_FOUND", name: normalizedName });
+      return { name: normalizedName };
+    }
+    const [found] = matches;
+    if (found) referencedCards.set(found.id, found);
+    return found ? { id: found.id } : { name: normalizedName };
   };
 
   if (/상대\s*선수\s*카드\s*1\s*장(?:을|를)?\s*선택[^.!?]*공격력(?:을|이)?\s*1\s*로\s*(?:줄이|낮추|감소시키|만들)[^.!?]*기절[^.!?]*공격력(?:을|이)?\s*(?:줄인|낮춘|감소한)\s*만큼[^.!?]*자신의?\s*체력(?:을|이)?\s*증가/.test(text)) {
@@ -995,7 +1032,7 @@ function expandedMechanicAnalysis(
         trigger: "ATTACK_SURVIVED",
         action: "REDUCE_COST",
         target: self,
-        values: { amount: 1 },
+        values: { amount: 1, ...(minimumCostFor(text) !== undefined ? { minimum: minimumCostFor(text) } : {}) },
       },
       {
         trigger: "ATTACK_SURVIVED",
@@ -1084,8 +1121,10 @@ function expandedMechanicAnalysis(
   }
 
   if (/선택한\s*(?:선수|대상).*?(?:피해|데미지).*(?:변신|바뀌)/.test(text) && /(?:이\s*효과|이\s*피해).*(?:리타이어|퇴장)/.test(text)) {
-    const name = text.match(/['‘’“”]([^'‘’“”]+)['‘’“”]\s*(?:판도라)?\s*(?:로)?\s*변신/)?.[1]?.trim()
-      ?? text.match(/['‘’“”]([^'‘’“”]+)['‘’“”]/)?.[1]?.trim() ?? "";
+    const quotedForm = text.match(/['‘’“”]([^'‘’“”]+)['‘’“”]\s*(판도라)?\s*(?:로)?\s*변신/);
+    const name = quotedForm
+      ? `${quotedForm[1]}${quotedForm[2] ? ` ${quotedForm[2]}` : ""}`.trim()
+      : text.match(/['‘’“”]([^'‘’“”]+)['‘’“”]/)?.[1]?.trim() ?? "";
     return result([
       { trigger: triggerFor(), action: "DAMAGE", target: { zone: "BOARD", owner: "ENEMY", cardType: "WRESTLER", selection: "PLAYER_CHOICE", count: 1 }, values: { amount: numberFrom(text) } },
       { trigger: triggerFor(), action: "TRANSFORM_SOURCE", values: { definitionRef: makeRef(name), causal: "DAMAGE_CAUSED_TARGET_RETIRE" } },
@@ -1117,20 +1156,41 @@ function expandedMechanicAnalysis(
     }]);
   }
   if (/(?:처음으로\s*)?공격력이\s*처음\s*(?:증가|올라|상승)|처음으로\s*공격력이\s*(?:증가|올라|상승)/.test(text) && /회피/.test(text)) {
+    const zone = /손패/.test(text) ? "HAND" as const : /필드|보드/.test(text) ? "BOARD" as const : null;
+    if (!zone) {
+      return {
+        status: "failure",
+        outcome: "analysis_failure",
+        effects: [],
+        keywords: [],
+        unsupportedSegments: [text],
+        summaries: ["발동 위치가 명시되지 않아 대상 영역을 확정할 수 없습니다."],
+        reason: "최초 공격력 증가 효과의 HAND/BOARD 범위를 원문만으로 판단할 수 없습니다.",
+      };
+    }
     return result([{
       trigger: "STAT_CHANGED",
       action: "ADD_KEYWORD",
-      target: self,
+      target: { zone, owner: "SELF", selection: "SELF", count: 1 },
       conditions: [{ type: "FIRST_ATTACK_GAIN" }],
       values: { keyword: "DODGE" },
     }]);
   }
   if (/(?:무덤|묘지).*?(?:부활|소생|되살)/.test(text) && /선수/.test(text)) {
-    return result([{
+    const effects: StructuredEffect[] = [{
       trigger: triggerFor(),
       action: "REVIVE",
       target: targetFor(text, false, options.availableTags),
-    }]);
+    }];
+    if (/(?:그\s*카드|부활(?:시킨|한)\s*선수)[^.!?]*도발/.test(text)) {
+      effects.push({
+        trigger: triggerFor(),
+        action: "ADD_KEYWORD",
+        target: { zone: "BOARD", owner: "SELF", selection: "SAME_TARGET", count: 1 },
+        values: { keyword: "TAUNT" },
+      });
+    }
+    return result(effects);
   }
   if (/어디에\s*있든.*생성된.*아군\s*선수/.test(text) && /각각\s*1씩/.test(text)) {
     return result([{ trigger: triggerFor(), action: "BUFF", target: { zones: ["HAND", "DECK", "BOARD"], owner: "SELF", cardType: "WRESTLER", filter: { isGenerated: true }, selection: "ALL", count: 20 }, values: { attack: 1, health: 1 } }]);
@@ -1183,12 +1243,85 @@ function expandedMechanicAnalysis(
       { trigger: triggerFor(), action: "ADD_NEXT_TURN_GOLD", values: { amount: 1 } },
     ]);
   }
-  if (/손패에\s*['‘’“”]?위리녀['‘’“”]?\s*를\s*생성/.test(text)) {
-    const ref = makeRef("위리녀");
-    return result([
-      { trigger: "ENTER_FIELD", action: "GENERATE", values: { definitionRef: ref, destination: "HAND", count: 1, generatedModifiers: { copySourceStats: true } } },
-      { trigger: "LEAVE_FIELD", action: "SUMMON_FROM_HAND", values: { definitionRef: ref, count: 1 } },
-    ]);
+  const statPrintedGeneratedCard = text.match(
+    /(\d+)\s*\/\s*(\d+)\s*['‘’“”「」]([^'‘’“”「」]+)['‘’“”「」]\s*(?:를|을)\s*(?:생성|만들)/,
+  );
+  if (statPrintedGeneratedCard) {
+    const [, attackText, healthText, cardName] = statPrintedGeneratedCard;
+    const matches = options.cardCatalog
+      ?.filter((candidate) => candidate.name === cardName!.trim())
+      .filter((candidate, index, all) => all.findIndex((item) => item.id === candidate.id) === index);
+    const definitionRef = makeRef(cardName!.trim());
+    if (!matches || matches.length !== 1) return result([]);
+    const definition = matches[0]!;
+    if (
+      typeof definition.attack !== "number" ||
+      typeof definition.health !== "number" ||
+      definition.attack !== Number(attackText) ||
+      definition.health !== Number(healthText)
+    ) {
+      return {
+        status: "failure",
+        outcome: "analysis_failure",
+        effects: [],
+        keywords: [],
+        unsupportedSegments: [text],
+        summaries: ["표기된 생성 카드 능력치와 정확한 CardDefinition이 일치하지 않습니다."],
+        reason: "능력치가 다른 카드 정의를 잘못 생성하지 않도록 참조를 확인해 주세요.",
+      };
+    }
+    return result([{
+      trigger: triggerFor(),
+      action: "GENERATE",
+      values: { definitionRef, destination: "HAND", count: 1 },
+    }]);
+  }
+  const handGeneratedCard = text.match(/손패에\s*['‘’“”]([^'‘’“”]+)['‘’“”]\s*(?:를|을)\s*(?:\d+\s*장\s*)?(?:생성|만들)/);
+  const handSummonedCard = text.match(/(?:퇴장|리타이어)[^.!?]*손패[^.!?]*['‘’“”]([^'‘’“”]+)['‘’“”][^.!?]*(?:필드에\s*)?소환/);
+  if (handGeneratedCard) {
+    const name = handGeneratedCard[1]!.trim();
+    const count = Number(text.match(/(\d+)\s*장/)?.[1] ?? 1);
+    const copiesCurrentSourceStats =
+      /공격\s*\/\s*체력[^.!?]*현재\s*공격\s*\/\s*체력[^.!?]*(?:같은\s*수치|맞추)/.test(text);
+    const effects: StructuredEffect[] = [{
+      trigger: "ENTER_FIELD",
+      action: "GENERATE",
+      values: {
+        definitionRef: makeRef(name),
+        destination: "HAND",
+        count,
+        ...(copiesCurrentSourceStats ? { generatedModifiers: { copySourceStats: true } } : {}),
+      },
+    }];
+    if (/(?:퇴장|리타이어)[^.!?]*손패[^.!?]*(?:필드에\s*)?소환/.test(text)) {
+      if (!handSummonedCard || handSummonedCard[1]!.trim() !== name) {
+        return {
+          status: "failure",
+          outcome: "analysis_failure",
+          effects: [],
+          keywords: [],
+          unsupportedSegments: [text],
+          summaries: ["생성 카드와 퇴장 시 소환 카드의 정의가 일치하지 않습니다."],
+          reason: "두 카드 참조를 정확히 일치시킬 수 없습니다.",
+        };
+      }
+      effects.push({
+        trigger: "SELF_RETIRE",
+        action: "SUMMON_FROM_HAND",
+        values: { definitionRef: makeRef(name), count },
+      });
+    }
+    return result(effects);
+  }
+  if (handSummonedCard) {
+    return result([{
+      trigger: "SELF_RETIRE",
+      action: "SUMMON_FROM_HAND",
+      values: {
+        definitionRef: makeRef(handSummonedCard[1]!.trim()),
+        count: Number(text.match(/(\d+)\s*장/)?.[1] ?? 1),
+      },
+    }]);
   }
   if (/선택한\s*상대\s*선수\s*1장.*리타이어/.test(text)) {
     return result([{ trigger: triggerFor(), action: "RETIRE", target: { zone: "BOARD", owner: "ENEMY", cardType: "WRESTLER", selection: "PLAYER_CHOICE", count: 1 } }]);
@@ -1237,20 +1370,43 @@ function expandedMechanicAnalysis(
     }]);
   }
   if (/(?:묘지|무덤).*?무작위\s*카드.*공격력과\s*체력.*같은.*좀비.*소환/.test(text)) {
-    return result([
-      {
-        trigger: triggerFor(),
-        action: "SUMMON",
-        target: { zone: "GRAVEYARD", owner: "SELF", selection: "RANDOM", count: 1, randomScope: "STANDARD" },
-        values: { definitionRef: makeRef("좀비"), count: 1, generatedModifiers: { copyTargetStats: true } },
+    const zombieCards = options.cardCatalog
+      ?.filter((candidate) => candidate.name === "좀비")
+      .filter((candidate, index, all) => all.findIndex((item) => item.id === candidate.id) === index) ?? [];
+    if (options.cardCatalog && zombieCards.length !== 1) {
+      const referenceError: CardReferenceError = zombieCards.length > 1
+        ? { code: "CARD_REFERENCE_AMBIGUOUS", name: "좀비", candidateIds: zombieCards.map((candidate) => candidate.id) }
+        : { code: "CARD_REFERENCE_NOT_FOUND", name: "좀비" };
+      return {
+        status: "failure",
+        outcome: "analysis_failure",
+        effects: [],
+        keywords: [],
+        unsupportedSegments: [text],
+        summaries: ["좀비 CardDefinition 참조를 정확히 확인할 수 없습니다."],
+        reason: "명시한 좀비 카드가 없거나 이름이 중복되어 정확한 정의를 선택할 수 없습니다.",
+        referenceErrors: [referenceError],
+      };
+    }
+    const effects: StructuredEffect[] = [{
+      trigger: triggerFor(),
+      action: "SUMMON",
+      target: targetFor(text, false, options.availableTags),
+      values: {
+        definitionRef: zombieCards.length === 1 ? { id: zombieCards[0]!.id } : { name: "좀비" },
+        count: 1,
+        generatedModifiers: { copyTargetStats: true },
       },
-      {
+    }];
+    if (/도발/.test(text)) {
+      effects.push({
         trigger: triggerFor(),
         action: "ADD_KEYWORD",
         target: { zone: "BOARD", owner: "SELF", selection: "SAME_TARGET", count: 1 },
         values: { keyword: "TAUNT" },
-      },
-    ]);
+      });
+    }
+    return result(effects);
   }
   if (/이\s*카드가\s*필드에\s*있는\s*동안.*솔져.*태그.*카드들이\s*소환될\s*때.*\+1\/\+1/.test(text)) {
     return result([{
@@ -1283,9 +1439,6 @@ function expandedMechanicAnalysis(
   }
   if (/모든\s*적\s*선수의\s*공격력을\s*2\s*감소/.test(text)) {
     return result([{ trigger: triggerFor(), action: "WEAKEN_TO_STUN_SILENCE", target: { zone: "BOARD", owner: "ENEMY", cardType: "WRESTLER", selection: "ALL", count: 20 }, values: { amount: 2 } }]);
-  }
-  if (/손패에\s*['‘’“”]?위리녀/.test(text) && /필드에\s*소환/.test(text)) {
-    return result([{ trigger: "LEAVE_FIELD", action: "SUMMON_FROM_HAND", values: { definitionRef: makeRef("위리녀"), count: 1 } }]);
   }
   if (/남은\s*골드.*모두\s*소비|골드당\s*\+?2\/\+?2|1G마다.*\+?2/.test(text)) {
     return result([{ trigger: triggerFor(), action: "SPEND_GOLD_BUFF_SELF", target: self, values: { amountReference: "REMAINING_GOLD" } }]);

@@ -44,6 +44,13 @@ export function analyzeChampionQuestText(text: string): ChampionQuestAnalysis {
 
   return {
     outcome: "supported",
-    condition: { ...match.condition, required },
+    condition: {
+      ...match.condition,
+      required,
+      ...(match.condition.event !== "CHAMPION_ABILITY_USED" &&
+        /(?:챔피언\s*)?고유\s*능력|챔피언\s*능력/.test(trimmed)
+        ? { sourceActionType: "USE_CHAMPION_ABILITY" }
+        : {}),
+    },
   };
 }

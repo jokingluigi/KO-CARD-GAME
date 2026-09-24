@@ -36,3 +36,19 @@ test("선수 리타이어와 챔피언 능력 사용 퀘스트를 분석한다",
     },
   );
 });
+
+test("Champion 고유 능력으로 발생한 이벤트 퀘스트는 원인 action을 유지한다", () => {
+  assert.deepEqual(
+    analyzeChampionQuestText("챔피언 고유 능력으로 선수 카드 3장을 생성합니다."),
+    {
+      outcome: "supported",
+      condition: {
+        event: "CARD_GENERATED",
+        cardType: "WRESTLER",
+        progress: 1,
+        required: 3,
+        sourceActionType: "USE_CHAMPION_ABILITY",
+      },
+    },
+  );
+});

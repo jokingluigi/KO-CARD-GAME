@@ -77,6 +77,61 @@ test('등장 시 자신에게 +2/+2를 부여한다', () => {
   assert.equal(result.players[0].board[0]?.maxHealth, 3);
 });
 
+test('source-excluding ALL targets buff allied Wrestlers without buffing the source', () => {
+  const source = instance('p-star-seven', [
+    structured('BUFF', {
+      zone: 'BOARD',
+      owner: 'SELF',
+      cardType: 'WRESTLER',
+      filter: { excludeSource: true },
+      selection: 'ALL',
+      count: 20,
+    }, { attack: 1, health: 1 }),
+  ]);
+  const ally = { ...instance('p-star-ally'), boardSlot: 0 as const, currentHealth: 2, maxHealth: 2 };
+  const state = createInitialGameState();
+  state.players[0].board[0] = ally;
+
+  const result = enterField(state, 'player-1', source, 1);
+
+  assert.equal(result.players[0].board[0]?.currentAttack, 2);
+  assert.equal(result.players[0].board[0]?.currentHealth, 3);
+  assert.equal(result.players[0].board[1]?.currentAttack, source.currentAttack);
+  assert.equal(result.players[0].board[1]?.currentHealth, source.currentHealth);
+});
+
+test('La Calavera revives only an eligible graveyard Wrestler and taunts that same instance', () => {
+  const source = instance('la-calavera', [
+    structured('REVIVE', {
+      zone: 'GRAVEYARD',
+      owner: 'SELF',
+      cardType: 'WRESTLER',
+      filter: { maxCost: 3 },
+      selection: 'RANDOM',
+      count: 1,
+      randomScope: 'STANDARD',
+    }),
+    structured('ADD_KEYWORD', {
+      zone: 'BOARD',
+      owner: 'SELF',
+      selection: 'SAME_TARGET',
+      count: 1,
+    }, { keyword: 'TAUNT' }),
+  ]);
+  const eligible = { ...instance('la-calavera-eligible'), currentCost: 3, boardSlot: null };
+  const tooExpensive = { ...instance('la-calavera-expensive'), currentCost: 4, boardSlot: null };
+  const state = createInitialGameState();
+  state.players[0].graveyard = [tooExpensive, eligible];
+
+  const result = enterField(state, 'player-1', source, 0);
+
+  const revived = result.players[0].board.find((card) => card?.instanceId === eligible.instanceId);
+  assert.ok(revived);
+  assert.deepEqual(revived.keywords, ['TAUNT']);
+  assert.equal(result.players[0].graveyard.some((card) => card.instanceId === tooExpensive.instanceId), true);
+  assert.equal(result.players[0].graveyard.some((card) => card.instanceId === eligible.instanceId), false);
+});
+
 test('선택한 선수에게 피해를 준 뒤 체력이 정확히 1이면 자신을 강화한다', () => {
   const source = instance('pandora', [
     structured(
@@ -178,12 +233,13 @@ test('인접한 아군 카드만 선택하는 범용 대상 선택이 양 옆의
   assert.equal(result.players[0].board[2]?.currentHealth, 4);
 });
 
-test('무덤의 선택 대상 스탯을 복사하는 좀비 소환과 같은 대상 도발이 함께 동작한다', () => {
+test('무덤의 비용 상한을 지키고 선택 카드를 옮기지 않은 채 좀비가 현재 스탯을 복사한다', () => {
   const zombie = { ...definition('zombie-definition', []), id: 'zombie-definition', attack: 1, health: 1 };
   const source = instance('baldan', [
     structured('SUMMON', {
       zone: 'GRAVEYARD',
       owner: 'SELF',
+      filter: { maxCost: 3 },
       selection: 'RANDOM',
       count: 1,
       randomScope: 'STANDARD',
@@ -192,24 +248,42 @@ test('무덤의 선택 대상 스탯을 복사하는 좀비 소환과 같은 대
       count: 1,
       generatedModifiers: { copyTargetStats: true },
     }),
-    structured('ADD_KEYWORD', {
-      zone: 'BOARD',
-      owner: 'SELF',
-      selection: 'SAME_TARGET',
-      count: 1,
-    }, { keyword: 'TAUNT' }),
   ]);
-  const grave = { ...instance('grave-source'), currentAttack: 5, currentHealth: 4, maxHealth: 4, boardSlot: null };
+  const eligible = {
+    ...instance('eligible-grave-source'),
+    currentCost: 3,
+    currentAttack: 5,
+    currentHealth: 4,
+    maxHealth: 4,
+    boardSlot: null,
+  };
+  const tooExpensive = {
+    ...instance('ineligible-grave-source'),
+    currentCost: 4,
+    currentAttack: 9,
+    currentHealth: 8,
+    maxHealth: 8,
+    boardSlot: null,
+  };
   const state = createInitialGameState();
   state.cardPool = [zombie];
-  state.players[0].graveyard = [grave];
+  state.players[0].graveyard = [tooExpensive, eligible];
 
   const result = enterField(state, 'player-1', source, 0);
   const summoned = result.players[0].board.find((card) => card?.definitionId === zombie.id);
 
   assert.equal(summoned?.currentAttack, 5);
   assert.equal(summoned?.currentHealth, 4);
-  assert.deepEqual(summoned?.keywords, ['TAUNT']);
+  assert.deepEqual(summoned?.keywords, []);
+  assert.deepEqual(
+    result.players[0].graveyard.map((card) => card.instanceId),
+    [tooExpensive.instanceId, eligible.instanceId],
+  );
+
+  const noTargetState = createInitialGameState();
+  noTargetState.cardPool = [zombie];
+  const noTarget = enterField(noTargetState, 'player-1', source, 0);
+  assert.deepEqual(noTarget.players[0].board.map((card) => card?.definitionId).filter(Boolean), ['baldan']);
 });
 
 test('소환 오라는 태그가 맞는 아군 소환 카드에만 같은 대상 강화 효과를 적용한다', () => {
@@ -695,6 +769,175 @@ test('HAND/DECK WRESTLER 체력은 1 아래로 내려가지 않고 FIELD는 leth
     count: 20,
   }, { attack: 0, health: -5 }));
   assert.equal(boardResult.players[0].board[0]?.currentHealth, -4);
+});
+
+test('HAND/DECK의 -1·-5와 생성 카드 체력 변경은 floor 적용 후 실제 delta를 기록한다', () => {
+  const source = instance('health-floor-direct-source');
+  const makeGenerated = (id: string, health: number) => ({
+    ...generateCard(definition(id, []), {
+      instanceId: id,
+      playerId: 'player-1',
+      source: { type: 'PLAYER' as const, playerId: 'player-1' },
+      reason: 'TEST_RANDOM_POOL',
+    }).card,
+    currentHealth: health,
+    maxHealth: health,
+  });
+  const currentHealthEvent = (state: ReturnType<typeof applyEffect>, cardId: string) =>
+    state.events.find((event) =>
+      event.type === 'STAT_CHANGED' &&
+      event.cardInstanceId === cardId &&
+      event.stat === 'currentHealth',
+    );
+  const applyToHiddenCard = (
+    zone: 'HAND' | 'DECK',
+    card: CardInstance,
+    amount: number,
+  ) => {
+    const state = createInitialGameState();
+    state.players[0][zone === 'HAND' ? 'hand' : 'deck'] = [card];
+    return applyEffect(state, 'player-1', source, structured('BUFF', {
+      zone,
+      owner: 'SELF',
+      selection: 'ALL',
+      count: 20,
+    }, { attack: 0, health: amount }));
+  };
+
+  const handMinusOne = { ...instance('hand-minus-one'), currentHealth: 2, maxHealth: 2 };
+  const handMinusOneResult = applyToHiddenCard('HAND', handMinusOne, -1);
+  assert.equal(handMinusOneResult.players[0].hand[0]?.currentHealth, 1);
+  assert.equal(currentHealthEvent(handMinusOneResult, handMinusOne.instanceId)?.delta, -1);
+
+  const handMinusFive = { ...instance('hand-minus-five'), currentHealth: 6, maxHealth: 6 };
+  const handMinusFiveResult = applyToHiddenCard('HAND', handMinusFive, -5);
+  assert.equal(handMinusFiveResult.players[0].hand[0]?.currentHealth, 1);
+  assert.equal(currentHealthEvent(handMinusFiveResult, handMinusFive.instanceId)?.delta, -5);
+
+  const generatedHand = makeGenerated('generated-hidden-hand-floor', 3);
+  assert.equal(generatedHand.isGenerated, true);
+  const generatedHandResult = applyToHiddenCard('HAND', generatedHand, -5);
+  assert.equal(generatedHandResult.players[0].hand[0]?.currentHealth, 1);
+  assert.equal(currentHealthEvent(generatedHandResult, generatedHand.instanceId)?.delta, -2);
+
+  const deckMinusFive = { ...instance('deck-minus-five'), currentHealth: 6, maxHealth: 6 };
+  const deckMinusFiveResult = applyToHiddenCard('DECK', deckMinusFive, -5);
+  assert.equal(deckMinusFiveResult.players[0].deck[0]?.currentHealth, 1);
+  assert.equal(currentHealthEvent(deckMinusFiveResult, deckMinusFive.instanceId)?.delta, -5);
+
+  const generatedDeck = makeGenerated('generated-hidden-deck-floor', 3);
+  const generatedDeckResult = applyToHiddenCard('DECK', generatedDeck, -5);
+  assert.equal(generatedDeckResult.players[0].deck[0]?.currentHealth, 1);
+  assert.equal(currentHealthEvent(generatedDeckResult, generatedDeck.instanceId)?.delta, -2);
+
+  const technique = {
+    ...instance('hidden-technique'),
+    cardType: 'TECHNIQUE' as const,
+    currentHealth: 2,
+    maxHealth: 2,
+  };
+  const techniqueResult = applyToHiddenCard('HAND', technique, -5);
+  assert.equal(techniqueResult.players[0].hand[0]?.currentHealth, -3);
+});
+
+test('FIELD lethal damage retires a WRESTLER instead of applying the hidden-zone floor', () => {
+  const source = instance('health-floor-damage-source');
+  const target = { ...instance('field-lethal-damage'), boardSlot: 0 as const, currentHealth: 2, maxHealth: 2 };
+  const state = createInitialGameState();
+  state.players[0].board[0] = target;
+
+  const result = applyEffect(state, 'player-1', source, structured('DAMAGE', {
+    zone: 'BOARD',
+    owner: 'SELF',
+    cardType: 'WRESTLER',
+    selection: 'ALL',
+    count: 20,
+  }, { amount: 5 }));
+
+  assert.equal(result.players[0].board[0], null);
+  assert.equal(result.players[0].graveyard.some((card) => card.instanceId === target.instanceId), true);
+  assert.equal(result.events.some((event) =>
+    event.type === 'CARD_RETIRED' && event.cardInstanceId === target.instanceId,
+  ), true);
+});
+
+test('queued and delayed effects also clamp hidden-zone WRESTLER health', () => {
+  const hiddenInHand = {
+    ...generateCard(definition('queued-hidden-hand', []), {
+      instanceId: 'queued-hidden-hand',
+      playerId: 'player-1',
+      source: { type: 'PLAYER' as const, playerId: 'player-1' },
+      reason: 'TEST_RANDOM_POOL',
+    }).card,
+    currentHealth: 4,
+    maxHealth: 4,
+  };
+  const nextCard = { ...instance('queued-floor-play'), currentCost: 0 };
+  const queuedSource = instance('queued-floor-source', [
+    structured('QUEUE_EFFECT', undefined, {
+      queuedTrigger: 'NEXT_ALLY_WRESTLER_PLAYED',
+      queuedEffect: {
+        action: 'BUFF',
+        target: { zone: 'HAND', owner: 'SELF', selection: 'ALL', count: 20 },
+        values: { attack: 0, health: -5 },
+      },
+    }),
+  ]);
+  const queuedState = createInitialGameState();
+  queuedState.status = 'IN_PROGRESS';
+  queuedState.activePlayerId = 'player-1';
+  queuedState.players[0].currentGold = 10;
+  queuedState.players[0].hand = [nextCard, hiddenInHand];
+  const queued = enterField(queuedState, 'player-1', queuedSource, 0);
+  const afterQueuedPlay = playWrestlerFromHand(queued, 'player-1', nextCard.instanceId, 1);
+  assert.equal(afterQueuedPlay.success, true);
+  if (!afterQueuedPlay.success) return;
+  assert.equal(afterQueuedPlay.state.players[0].hand.find((card) =>
+    card.instanceId === hiddenInHand.instanceId,
+  )?.currentHealth, 1);
+
+  const hiddenForDelayedEffect = {
+    ...generateCard(definition('delayed-hidden-hand', []), {
+      instanceId: 'delayed-hidden-hand',
+      playerId: 'player-1',
+      source: { type: 'PLAYER' as const, playerId: 'player-1' },
+      reason: 'TEST_RANDOM_POOL',
+    }).card,
+    currentHealth: 4,
+    maxHealth: 4,
+  };
+  const delayedSource = instance('delayed-floor-source', [
+    structured('REGISTER_DELAYED', undefined, {
+      delayed: {
+        kind: 'OWNER_NEXT_TURN_START',
+        effect: {
+          action: 'BUFF',
+          target: { zone: 'HAND', owner: 'SELF', selection: 'ALL', count: 20 },
+          values: { attack: 0, health: -5 },
+        },
+      },
+    }),
+  ]);
+  const delayedState = createInitialGameState();
+  delayedState.status = 'IN_PROGRESS';
+  delayedState.activePlayerId = 'player-1';
+  delayedState.players[0].hand = [hiddenForDelayedEffect];
+  const registered = enterField(delayedState, 'player-1', delayedSource, 0);
+  assert.equal(registered.pendingDelayedEffects.length, 1);
+  const opponentTurn = endTurn(registered, 'player-1');
+  assert.equal(opponentTurn.success, true);
+  if (!opponentTurn.success) return;
+  const nextOwnTurn = endTurn(opponentTurn.state, 'player-2');
+  assert.equal(nextOwnTurn.success, true);
+  if (!nextOwnTurn.success) return;
+  assert.equal(nextOwnTurn.state.players[0].hand[0]?.currentHealth, 1);
+  const delayedHealthChange = nextOwnTurn.state.events.find((event) =>
+    event.type === 'STAT_CHANGED' &&
+    event.cardInstanceId === hiddenForDelayedEffect.instanceId &&
+    event.stat === 'currentHealth',
+  );
+  assert.equal(delayedHealthChange?.delta, -3);
+  assert.equal(nextOwnTurn.state.pendingDelayedEffects.length, 0);
 });
 
 test('복원 시 손패·덱 WRESTLER만 보정하고 필드 lethal과 Technique은 유지한다', () => {

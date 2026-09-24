@@ -20,15 +20,87 @@ test("최신 보고서의 10개 원문은 공용 Analyzer에서 완전한 효과
     const result = analyzeEffectText(text, {
       defaultTrigger: "ENTER_FIELD",
       cardCatalog: [
-        { id: "zombie-id", name: "좀비", cardType: "WRESTLER", isToken: true, isChampionToken: false },
-        { id: "wolf-id", name: "늑대인간", cardType: "WRESTLER", isToken: false, isChampionToken: false },
+        { id: "zombie-id", name: "좀비", cardType: "WRESTLER", isToken: true, isChampionToken: false, attack: 1, health: 1 },
+        { id: "wolf-id", name: "늑대인간 판도라", cardType: "WRESTLER", isToken: false, isChampionToken: false },
       ],
       availableTags: ["실험체", "언데드", "좀비"],
     });
     assert.equal(result.outcome, "supported", text);
     assert.ok(result.effects.length > 0, text);
     assert.equal(result.unsupportedSegments.length, 0, text);
+    if (text.includes("늑대인간")) {
+      assert.deepEqual(result.effects[1]?.values?.definitionRef, { id: "wolf-id" });
+    }
   }
+});
+
+test("La Calavera revival preserves the graveyard filter and applies TAUNT to the revived instance", () => {
+  const result = analyzeEffectText(
+    "등장: 내 묘지에서 비용이 3 이하인 선수 카드 중 하나를 무작위로 부활시킵니다. 그 카드에게 도발을 부여합니다.",
+  );
+
+  assert.equal(result.status, "success");
+  assert.deepEqual(result.effects.map((effect) => effect.action), ["REVIVE", "ADD_KEYWORD"]);
+  assert.deepEqual(result.effects[0]?.target?.filter, { maxCost: 3 });
+  assert.deepEqual(result.effects[1]?.target, {
+    zone: "BOARD",
+    owner: "SELF",
+    selection: "SAME_TARGET",
+    count: 1,
+  });
+  assert.deepEqual(result.effects[1]?.values, { keyword: "TAUNT" });
+});
+
+test("named transformations require one exact card definition and reject missing or ambiguous names", () => {
+  const text = "등장: 선택한 선수에게 데미지를 1 줍니다. 이 효과로 상대 선수가 리타이어했다면 '늑대인간' 판도라로 변신합니다.";
+  const exact = { id: "wolf-pandora-id", name: "늑대인간 판도라", cardType: "WRESTLER" as const, isToken: false, isChampionToken: false };
+  const source = analyzeEffectText(text, { cardCatalog: [exact] });
+  assert.equal(source.status, "success");
+  assert.deepEqual(source.effects[1]?.values?.definitionRef, { id: exact.id });
+
+  const missing = analyzeEffectText(text, {
+    cardCatalog: [{ ...exact, id: "different-id", name: "늑대인간" }],
+  });
+  assert.equal(missing.outcome, "analysis_failure");
+  assert.equal(missing.referenceErrors?.[0]?.code, "CARD_REFERENCE_NOT_FOUND");
+
+  const ambiguous = analyzeEffectText(text, {
+    cardCatalog: [exact, { ...exact, id: "duplicate-id" }],
+  });
+  assert.equal(ambiguous.outcome, "analysis_failure");
+  assert.equal(ambiguous.referenceErrors?.[0]?.code, "CARD_REFERENCE_AMBIGUOUS");
+});
+
+test("Wirinom entry copy and self-retire summon resolve the same exact card", () => {
+  const result = analyzeEffectText(
+    "등장: 자신의 손패에 '위리녀'를 생성하고, 그 카드의 공격/체력을 이 카드의 현재 공격/체력과 같은 수치로 맞춥니다. 퇴장: 자신의 손패에 있는 '위리녀'를 필드에 소환합니다.",
+    {
+      cardCatalog: [
+        { id: "wiriyeo-id", name: "위리녀", cardType: "WRESTLER", isToken: true, isChampionToken: false },
+      ],
+    },
+  );
+
+  assert.equal(result.status, "success");
+  assert.deepEqual(result.effects.map(({ trigger, action }) => [trigger, action]), [
+    ["ENTER_FIELD", "GENERATE"],
+    ["SELF_RETIRE", "SUMMON_FROM_HAND"],
+  ]);
+  assert.deepEqual(result.effects[0]?.values?.definitionRef, { id: "wiriyeo-id" });
+  assert.deepEqual(result.effects[0]?.values?.generatedModifiers, { copySourceStats: true });
+  assert.deepEqual(result.effects[1]?.values?.definitionRef, { id: "wiriyeo-id" });
+});
+
+test("a stat-change keyword analyzer refuses to guess an unstated HAND/BOARD scope", () => {
+  const result = analyzeEffectText("이 카드의 공격력이 처음 증가할 때, 회피 1회를 얻습니다.");
+  assert.equal(result.outcome, "analysis_failure");
+  assert.match(result.reason ?? "", /범위/);
+});
+
+test("ATTACK_SURVIVED cost reduction keeps the stated minimum cost", () => {
+  const result = analyzeEffectText("상대 선수를 공격하고 생존하면 비용이 1 감소한 뒤 손패로 돌아옵니다. 최소 비용은 1입니다.");
+  assert.equal(result.status, "success");
+  assert.deepEqual(result.effects[0]?.values, { amount: 1, minimum: 1 });
 });
 
 test("바닐라 선수 대상의 무작위 카드 텍스트 부여 문장을 registry action으로 분석한다", () => {
@@ -514,11 +586,52 @@ test("최신 보고서의 미분석 문장도 기존 범용 효과로 구조화�
     values: { amount: 1 },
   }]);
 
-  const zombie = analyzeEffectText("등장:묘지에 있는 3코스트 이하의 무작위 카드 한장의 공격력과 체력이랑 똑같은 수치의 '좀비'를 하나 소환하고 그 소환한 '좀비'에게 도발을 부여한다.");
+  const zombieId = "66143efe-2eec-450a-8570-9a4c4d92330e";
+  const zombieCatalog = [{
+    id: zombieId,
+    name: "좀비",
+    cardType: "WRESTLER" as const,
+    isToken: false,
+    isChampionToken: false,
+  }];
+  const zombie = analyzeEffectText(
+    "등장:묘지에 있는 비용이 3 이하인 무작위 카드 한장의 공격력과 체력이랑 똑같은 수치의 '좀비'를 하나 소환합니다.",
+    { cardCatalog: zombieCatalog },
+  );
   assert.equal(zombie.status, "success");
   assert.equal(zombie.outcome, "supported");
+  assert.deepEqual(zombie.effects.map((effect) => effect.action), ["SUMMON"]);
+  assert.deepEqual(zombie.effects[0]?.target, {
+    zone: "GRAVEYARD",
+    owner: "SELF",
+    filter: { maxCost: 3 },
+    selection: "RANDOM",
+    count: 1,
+    randomScope: "STANDARD",
+  });
+  assert.deepEqual(zombie.effects[0]?.values?.definitionRef, { id: zombieId });
   assert.deepEqual(zombie.effects[0]?.values?.generatedModifiers, { copyTargetStats: true });
-  assert.deepEqual(zombie.effects[1]?.target, { zone: "BOARD", owner: "SELF", selection: "SAME_TARGET", count: 1 });
+  assert.equal(isStructuredEffects({ effects: zombie.effects }), true);
+
+  const ambiguousZombie = analyzeEffectText(
+    "등장:묘지에 있는 비용이 3 이하인 무작위 카드 한장의 공격력과 체력이랑 똑같은 수치의 '좀비'를 하나 소환합니다.",
+    { cardCatalog: [...zombieCatalog, { ...zombieCatalog[0]!, id: "duplicate-zombie" }] },
+  );
+  assert.equal(ambiguousZombie.outcome, "analysis_failure");
+  assert.equal(ambiguousZombie.referenceErrors?.[0]?.code, "CARD_REFERENCE_AMBIGUOUS");
+
+  const missingZombie = analyzeEffectText(
+    "등장:묘지에 있는 비용이 3 이하인 무작위 카드 한장의 공격력과 체력이랑 똑같은 수치의 '좀비'를 하나 소환합니다.",
+    { cardCatalog: [] },
+  );
+  assert.equal(missingZombie.outcome, "analysis_failure");
+  assert.equal(missingZombie.referenceErrors?.[0]?.code, "CARD_REFERENCE_NOT_FOUND");
+
+  const explicitlyTauntedZombie = analyzeEffectText(
+    "등장:묘지에 있는 3코스트 이하 무작위 카드 한장의 공격력과 체력만큼 '좀비'를 소환하고, 그 좀비에게 도발을 부여합니다.",
+    { cardCatalog: zombieCatalog },
+  );
+  assert.deepEqual(explicitlyTauntedZombie.effects.map((effect) => effect.action), ["SUMMON", "ADD_KEYWORD"]);
 });
 
 test("Champion의 자연스러운 다음 턴 골드 문장을 부분 분석 없이 구조화한다", () => {
@@ -1005,7 +1118,7 @@ test("generic stat parser는 SET, 최소 비용, 지속시간을 구분한다", 
   assert.equal(permanent.effects[0]?.values?.duration, "PERMANENT");
 });
 
-test("발단 문장은 파괴 대상 합산, 정의 참조, 소환 대상 연계를 구조화한다", () => {
+test("파괴 대상의 스탯 합산을 가진 좀비를 소환하고 명시한 도발을 부여한다", () => {
   const result = analyzeEffectText("등장:내 필드에 있는 모든 생성된 카드를 파괴시킵니다. 그 카드들의 현재 공격과 체력의 수치를 합산한 수치를 가진 '좀비'를 1장 소환합니다. 소환한 '좀비'에게 도발을 부여합니다");
   assert.equal(result.status, "success");
   assert.equal(result.outcome, "supported");
@@ -1066,6 +1179,40 @@ test("명시 카드 생성은 손패와 덱 destination을 보존한다", () => 
   assert.deepEqual(deck.effects[0]?.values?.definitionRef, { id: "named-card" });
 });
 
+test("기준 능력치가 적힌 생성은 일치하는 CardDefinition을 손패에 생성한다", () => {
+  const catalog = [{
+    id: "zombie",
+    name: "좀비",
+    cardType: "WRESTLER" as const,
+    isToken: false,
+    isChampionToken: false,
+    attack: 1,
+    health: 1,
+  }];
+  const result = analyzeEffectText("1/1 '좀비'를 생성합니다.", {
+    defaultTrigger: "ENTER_FIELD",
+    cardCatalog: catalog,
+  });
+  assert.equal(result.outcome, "supported");
+  assert.deepEqual(result.effects, [{
+    trigger: "ENTER_FIELD",
+    action: "GENERATE",
+    values: { definitionRef: { id: "zombie" }, destination: "HAND", count: 1 },
+  }]);
+  assert.deepEqual(result.referencedCards, [catalog[0]]);
+
+  const mismatchedStats = analyzeEffectText("1/1 '좀비'를 생성합니다.", {
+    defaultTrigger: "ENTER_FIELD",
+    cardCatalog: [{ ...catalog[0]!, attack: 2 }],
+  });
+  assert.equal(mismatchedStats.outcome, "analysis_failure");
+  assert.equal(mismatchedStats.effects.length, 0);
+
+  const missingCatalog = analyzeEffectText("1/1 '좀비'를 생성합니다.", { defaultTrigger: "ENTER_FIELD" });
+  assert.equal(missingCatalog.outcome, "analysis_failure");
+  assert.equal(missingCatalog.effects.length, 0);
+});
+
 test("KO 기본 메커니즘 어휘와 DSL 트리거를 새 메커니즘 요청 없이 분석한다", () => {
   const cases = [
     "등장: 자신에게 +2/+2", "조건: 내 손패에 Generated 선수가 있으면 등장: 카드 1장을 뽑습니다.",
@@ -1116,13 +1263,8 @@ test("WRESTLER 17종 원문을 완전한 구조화 효과로 분석한다", () =
   }
 });
 
-test("분석 실패였던 11개 WRESTLER 문구를 공용 Registry 효과로 분석한다", () => {
+test("분석 실패였던 10개 WRESTLER 문구를 공용 Registry 효과로 분석한다", () => {
   const cases = [
-    {
-      text: "이 카드의 공격력이 처음 증가할 때, 회피 1회를 얻습니다.",
-      trigger: "STAT_CHANGED",
-      action: "ADD_KEYWORD",
-    },
     {
       text: "이 카드의 공격력이 증가하면, 같은 수치만큼 체력의 수치를 증가시킵니다.",
       trigger: "STAT_CHANGED",

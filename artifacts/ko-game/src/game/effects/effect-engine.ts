@@ -1246,16 +1246,12 @@ function applyRandomTargetSummon(
 ): GameState {
   const target = effect.target;
   const definition = resolveCardDefinition(state, effect.values?.definition, effect.values?.definitionRef);
-  const targetOwner = target?.owner === 'SELF'
-    ? playerId
-    : state.players.find((player) => player.id !== playerId)?.id;
-  if (!target || !definition || !targetOwner || target.selection !== 'RANDOM') return state;
-  const owner = state.players.find((player) => player.id === targetOwner);
-  if (!owner) return state;
-  const candidates = cardsInZones(owner, target.zones ?? (target.zone ? [target.zone] : []))
-    .filter((card) => target.cardType === undefined || card.cardType === target.cardType)
-    .filter((card) => matchesCardTagFilter(card, target.filter))
-    .filter((card) => isEligibleForRandomPool(card, target.randomScope));
+  if (!target || !definition || target.selection !== 'RANDOM') return state;
+  const zones = target.zones ?? (target.zone ? [target.zone] : []);
+  const validTargetIds = new Set(getValidTargets(state, playerId, sourceCard, effect));
+  const candidates = state.players
+    .flatMap((owner) => cardsInZones(owner, zones))
+    .filter((card) => validTargetIds.has(card.instanceId));
   const selected = shuffle(candidates, randomForEffect(state, sourceCard, effect))
     .slice(0, Math.max(0, target.count));
   let nextState = setLastTargetIds(state, []);
@@ -2173,7 +2169,7 @@ export function applyEffect(
     }
     const ids = new Set(targets.map((card) => card.instanceId));
     if (effect.action === 'REVIVE') {
-      return targets.reduce((nextState, targetCard) => {
+      const revivedState = targets.reduce((nextState, targetCard) => {
         const owner = nextState.players.find((player) => player.id === targetOwner);
         const current = owner?.graveyard.find((card) => card.instanceId === targetCard.instanceId);
         const slot = owner?.board.findIndex((card) => card === null) ?? -1;
@@ -2205,6 +2201,14 @@ export function applyEffect(
           'REVIVE',
         );
       }, state);
+      const ownerAfterRevive = revivedState.players.find((player) => player.id === targetOwner);
+      const revivedIds = targets
+        .map((targetCard) => targetCard.instanceId)
+        .filter((instanceId) =>
+          ownerAfterRevive?.board.some((card) => card?.instanceId === instanceId) &&
+          !ownerAfterRevive.graveyard.some((card) => card.instanceId === instanceId),
+        );
+      return setLastTargetIds(revivedState, revivedIds);
     }
     if (effect.action === 'MILL') {
       return {
