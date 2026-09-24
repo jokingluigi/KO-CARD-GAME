@@ -1,0 +1,640 @@
+KO CARD GAME — DECK EDITOR COMPACT DECK LIST REDESIGN
+한 화면에 덱 전체가 보이도록, 스크롤 없는 Hearthstone-style 텍스트 덱 목록으로 변경
+
+현재 문제:
+Deck Editor에서 현재 덱에 들어간 카드 목록을 보려면 아래로 스크롤해야 해서
+덱 전체 구성이 한눈에 안 들어온다.
+
+목표:
+덱 편집 화면의 "현재 덱" 영역은
+가능하면 한 화면 안에서 25장 전체 구성이 보이도록
+이미지 중심 카드 목록이 아니라
+텍스트 중심의 compact deck list로 변경한다.
+
+참고 UX:
+Hearthstone 덱 구성 목록처럼
+카드 이름 + 비용 + 수량 중심으로 촘촘하게 보여주는 방식.
+
+중요:
+카드 탐색/보유 카드 브라우저는 기존 비주얼을 유지해도 되지만,
+"현재 덱에 들어간 카드 목록"은 한눈에 읽히는 compact text list가 우선.
+
+==================================================
+1. 기본 구조
+==================================================
+
+Deck Editor를 두 영역으로 분리:
+
+LEFT / MAIN:
+카드 탐색/검색/필터/보유·미보유 카드
+
+RIGHT / DECK PANEL:
+현재 덱 25장 compact text list
+
+Desktop에서는:
+덱 패널이 화면 안에 고정된 높이 안에서
+25장 전체 구성을 스크롤 없이 보여주는 것을 목표로 한다.
+
+==================================================
+2. 덱 목록 표시 형식
+==================================================
+
+각 row는 최대한 얇고 정보 밀도 높게:
+
+[비용] 카드 이름                         x2
+
+예:
+
+1  좀비                                  x2
+2  작은 하마                             x1
+2  판도라                                x2
+3  예거                                  x1
+4  블랙마카롱                            x2
+...
+
+최소 표시 정보:
+
+- Cost
+- Card Name
+- Quantity
+
+선택적으로:
+- rarity 작은 아이콘/점
+- tag 표시
+- card type 아이콘
+
+하지만 한 화면 가독성을 해치면 넣지 말 것.
+
+==================================================
+3. 스크롤 없는 25장 전체 표시
+==================================================
+
+중요:
+"한 화면에 25장의 모든 카드 구성이 보인다"가 목표.
+
+가능하면:
+- row height를 compact하게
+- font size는 읽을 수 있는 최소 수준
+- gap 최소화
+- card image 미표시
+- unnecessary padding 제거
+
+하지만 너무 작아서 읽기 어려우면 실패.
+
+Desktop 기준에서 25 rows가 너무 길면:
+"카드 인스턴스 25줄"이 아니라
+동일 카드 이름은 한 row로 합치고 quantity 표시.
+
+예:
+Zombie x2
+Pandora x2
+
+이렇게 unique card row로 압축.
+
+즉:
+25장 deck = 최대 25 rows가 아니라
+실제 unique definitions 수만큼 rows.
+
+==================================================
+4. 정렬
+==================================================
+
+기본 정렬:
+1. Cost ASC
+2. Name ASC
+
+동일 cost는 name 정렬.
+
+Champion은 deck 25장과 별도이므로
+Champion row는 deck list 상단 또는 별도 small section.
+
+예:
+
+CHAMPION
+Pandora
+
+DECK 25/25
+1 Zombie x2
+2 ...
+...
+
+==================================================
+5. 카드 클릭 interaction
+==================================================
+
+Deck list row 클릭:
+
+- 해당 카드 상세 정보 표시
+또는
+- 기존 카드 inspector/highlight 기능과 연동
+
+더블클릭/우클릭은 필수 아님.
+
+삭제:
+row 오른쪽에 작은 `-` 버튼 또는 클릭 시 remove action.
+
+예:
+
+[2] Small Hippo                         x2   [-]
+
+수량 2에서 한 번 제거:
+x2 → x1
+
+수량 1에서 제거:
+row 제거
+
+==================================================
+6. Hover / ALT 정보
+==================================================
+
+기존 ALT 카드 정보 토글과 연동.
+
+ALT Info Mode ON:
+Deck list row hover/select 시
+해당 카드 상세 정보 표시.
+
+Deck list 자체가 text-only여도
+카드 상세 보기 접근성은 유지.
+
+==================================================
+7. 색상/시각 표현
+==================================================
+
+과도한 장식 금지.
+
+읽기 쉬운 compact list.
+
+가능하면:
+- cost는 왼쪽 aligned
+- name은 가운데 flexible
+- quantity는 오른쪽
+- Legendary/Champion rarity는 작은 accent 정도
+- hover highlight
+- selected row highlight
+
+전체 카드 배경 이미지 사용 금지.
+deck panel에서 card art 사용하지 말 것.
+
+==================================================
+8. 덱 상태 요약
+==================================================
+
+Deck panel 상단에 compact summary:
+
+DECK 23 / 25
+
+Normal: 18
+Legendary: 5
+Champion: Pandora
+
+또는 현재 deck-rule 관련 핵심만.
+
+Legendary max 5 규칙 위반 시:
+5/5 정상
+6/5 빨간 경고
+
+==================================================
+9. 덱 유효성
+==================================================
+
+현재 공식 규칙 유지:
+
+- 정확히 25 cards
+- Champion separately
+- Legendary max 5
+- same Legendary duplicate forbidden
+- normal duplicate rule 유지
+- token direct-add 금지
+- invalid legacy deck auto-cut/delete 금지
+- invalid status 표시
+
+Deck list redesign 때문에
+validation logic 바꾸지 말 것.
+
+==================================================
+10. 미보유 카드와 연동
+==================================================
+
+이전 UX 유지:
+
+카드 브라우저에서 미보유 카드도 보임.
+
+미보유 카드 클릭:
+→ Craft UI
+
+미보유 카드는 덱 list에 직접 추가 금지.
+
+제작 후:
+owned state update
+→ 다시 클릭하면 deck add 가능
+
+==================================================
+11. 좁은 화면 대응
+==================================================
+
+Desktop:
+좌측 card browser + 우측 compact deck panel
+
+Tablet:
+deck panel width 줄이되 text truncate 가능
+hover/title 또는 inspector로 full name 확인
+
+Mobile:
+25장 전체를 한 화면에 강제로 욱여넣지 말 것.
+모바일에서는:
+- collapsible compact list
+또는
+- deck tab
+또는
+- bottom sheet
+
+모바일 UX는 읽기 가능성이 우선.
+
+"스크롤 없음" 목표는 Desktop Deck Editor의 현재 덱 영역 기준.
+
+==================================================
+12. 너무 긴 카드 이름
+==================================================
+
+긴 이름은:
+
+- 1줄 유지
+- ellipsis
+- hover/title/inspector에서 full name 확인
+
+row height 늘어나서 deck panel이 길어지면 안 됨.
+
+==================================================
+13. 수량 표현
+==================================================
+
+동일 card definition은 하나의 row로 합침.
+
+예:
+Zombie x2
+
+not:
+Zombie
+Zombie
+
+단 서로 다른 ALT art가 같은 CardDefinition이라면
+deck identity 기준으로 합쳐야 함.
+ALT appearance 때문에 separate deck slot처럼 보이면 안 됨.
+
+==================================================
+14. 카드 비용 변경 표시
+==================================================
+
+Deck Editor list는 deck-building 기준 canonical cost를 표시.
+
+match 중 temporary cost modifier는 Deck Editor에 반영하지 않음.
+
+카드 definition cost source 사용.
+
+==================================================
+15. 빠른 deck scan
+==================================================
+
+유저가 한눈에 다음을 파악 가능해야 함:
+
+- mana/cost curve
+- duplicate quantity
+- Legendary 수
+- deck size
+- Champion
+
+가능하면 cost별 group separator를 얇게 사용.
+
+예:
+
+1 COST
+...
+
+2 COST
+...
+
+다만 separator가 공간을 너무 많이 차지하면
+단순 cost number column만 유지.
+
+==================================================
+16. Optional cost curve
+==================================================
+
+한 화면 공간이 충분하면
+Deck list 하단/상단에 작은 cost curve summary:
+
+1: 4
+2: 6
+3: 5
+4: 4
+5+: 6
+
+텍스트 또는 작은 bars.
+
+하지만 deck list 25장 전체 표시가 우선.
+공간 부족하면 생략.
+
+==================================================
+17. 성능
+==================================================
+
+Deck list는 text rows라서 가벼워야 함.
+
+불필요한 full card component 25개 렌더링 금지.
+
+가능하면 lightweight row component 사용.
+
+==================================================
+18. 상태 동기화
+==================================================
+
+카드 추가/삭제 직후:
+
+- quantity 즉시 반영
+- 25/25 count 즉시 반영
+- Legendary count 즉시 반영
+- validation 즉시 반영
+
+save 전 local draft state와 일치.
+
+Save 후 reload:
+same compact list.
+
+==================================================
+19. 테스트
+==================================================
+
+DL1
+25-card deck load
+→ all unique card rows visible without internal deck-panel scroll on desktop
+
+DL2
+duplicate card x2
+→ one row x2
+
+DL3
+remove once
+→ x2 → x1
+
+DL4
+remove last
+→ row disappears
+
+DL5
+add card
+→ row inserted sorted by cost/name
+
+DL6
+deck 25/25
+→ summary correct
+
+DL7
+Legendary 5/5
+→ correct
+
+DL8
+invalid legacy deck
+→ warning shown, no auto-delete
+
+DL9
+Champion separate
+→ not counted in 25
+
+DL10
+long name
+→ one-row ellipsis, no vertical expansion
+
+DL11
+ALT info mode
+→ row inspect works
+
+DL12
+unowned card browser + Craft flow unchanged
+
+DL13
+save/reload
+→ same deck list
+
+DL14
+desktop 1366×768
+→ deck panel useful without scroll
+
+DL15
+desktop 1920×1080
+→ no excessive empty spacing
+
+==================================================
+20. Browser E2E
+==================================================
+
+Development/Test account에서 가능하면 실제 Deck Editor:
+
+1. 25-card deck open
+2. deck panel screenshot/viewport measurement
+3. internal vertical scroll 여부 확인
+4. 25 cards represented completely
+5. duplicate quantity correct
+6. add/remove
+7. save
+8. reload
+9. ALT card info inspect
+10. Craft flow regression
+
+Browser unavailable:
+BROWSER E2E = UNVERIFIED
+implementation/tests 계속.
+
+==================================================
+21. 회귀 금지
+==================================================
+
+깨지면 안 됨:
+
+- 25 card deck rule
+- Champion separate slot
+- Legendary max 5
+- duplicate rules
+- token direct-add restriction
+- card search/filter
+- owned/unowned display
+- Craft flow
+- ALT info toggle
+- deck save
+- mobile layout
+
+==================================================
+22. 검증
+==================================================
+
+반드시:
+
+pnpm run typecheck
+pnpm --filter @workspace/ko-game run build
+git diff --check
+
+관련:
+Deck Editor component tests
+deck validation tests
+add/remove tests
+responsive UI tests
+
+==================================================
+23. Git
+==================================================
+
+실제 수정 파일만 stage.
+
+제외:
+prompt txt
+Pasted txt
+.env
+secrets
+logs
+screenshots
+temp
+Replit metadata
+unrelated files
+
+commit.
+push 요청 없으면 push 금지.
+force push 금지.
+
+==================================================
+24. 최종 보고 형식
+==================================================
+
+DECK PANEL
+
+Old layout:
+...
+
+New layout:
+COMPACT TEXT LIST / FAIL
+
+Desktop deck panel scroll:
+NONE / FAIL
+
+Unique rows:
+...
+
+Deck size:
+25/25
+
+Champion separate:
+PASS / FAIL
+
+
+ROW CONTENT
+
+Cost:
+PASS / FAIL
+
+Name:
+PASS / FAIL
+
+Quantity:
+PASS / FAIL
+
+Remove action:
+PASS / FAIL
+
+Long-name handling:
+PASS / FAIL
+
+
+INTERACTION
+
+Add card:
+PASS / FAIL
+
+Remove:
+PASS / FAIL
+
+Duplicate x2 grouping:
+PASS / FAIL
+
+ALT inspect:
+PASS / FAIL
+
+Craft flow regression:
+PASS / FAIL
+
+
+VALIDATION
+
+25-card rule:
+PASS / FAIL
+
+Legendary limit:
+PASS / FAIL
+
+Duplicate rules:
+PASS / FAIL
+
+Token restriction:
+PASS / FAIL
+
+
+RESPONSIVE
+
+1366×768 desktop:
+PASS / FAIL
+
+1920×1080:
+PASS / FAIL
+
+Mobile:
+PASS / FAIL
+
+
+IMPLEMENTATION:
+PASS / FAIL
+
+AUTOMATED VERIFICATION:
+PASS / FAIL
+
+BROWSER E2E:
+PASS / FAIL / UNVERIFIED
+
+TYPECHECK:
+PASS / FAIL
+
+KO BUILD:
+PASS / FAIL
+
+git diff --check:
+PASS / FAIL
+
+PRODUCTION DATA MUTATION:
+NONE / FAIL
+
+CHANGED FILES:
+...
+
+COMMIT:
+...
+
+PUSH:
+NOT REQUESTED
+
+==================================================
+25. 완료 조건
+==================================================
+
+1. Desktop Deck Editor에서 현재 덱 전체 구성이 한눈에 보임.
+2. deck panel 내부 세로 스크롤 필요 없음.
+3. card art 대신 compact text rows 사용.
+4. duplicate cards는 x2 형태로 한 줄.
+5. cost/name/quantity 표시.
+6. add/remove 즉시 반영.
+7. Champion은 25-card deck과 별도 표시.
+8. deck validation 규칙 유지.
+9. ALT card info / Craft flow 회귀 없음.
+10. mobile은 읽기 가능한 별도 compact UX.
+11. Production data mutation 없음.
+12. tests/build/typecheck/diff 결과 보고.
+
+핵심:
+덱을 편집할 때 아래로 내려가며 현재 덱을 확인하게 하지 말고,
+Hearthstone처럼 "지금 덱에 무엇이 들어있는지"를 한눈에 읽을 수 있는
+고밀도 텍스트 덱 리스트로 바꿔라.
