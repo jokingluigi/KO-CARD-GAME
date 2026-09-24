@@ -1,0 +1,687 @@
+KO CARD GAME — CRITICAL ONLINE CHAMPION ABILITY FIX
+온라인 PvP에서 Champion Ability 사용 시 "알 수 없는 메시지"가 뜨고 고유 능력이 발동하지 않는 문제를 끝까지 추적·수정
+
+현재 심각한 버그:
+온라인 PvP에서 Champion 고유 능력을 사용하려고 하면 클라이언트가 "알 수 없는 메시지" 또는 이에 준하는 unknown/unrecognized message 오류를 표시하고, Champion Ability가 실제 서버 GameState에 적용되지 않는다.
+
+이 작업은 단순 UI 문구 수정이 아니다.
+온라인 프로토콜 → action serialization → server validation → effect execution → event broadcast → client reducer/UI까지 전체 경로를 추적해서 실제 Champion Ability가 서버 권위 상태에서 정상 실행되게 해야 한다.
+
+절대 원칙:
+- Online PvP는 server-authoritative 유지
+- 클라이언트에서 고유 능력을 임의 실행해서 문제를 숨기지 말 것
+- "알 수 없는 메시지" toast만 숨기지 말 것
+- Champion 이름/ID hardcode 금지
+- 특정 Pandora만 예외 처리 금지
+- offline/AI Match path를 그대로 온라인에 복붙하지 말고 shared canonical action contract를 재사용
+- Production DB 직접 수정 금지
+- 실제 사용자 매치 데이터 수정 금지
+- force push 금지
+- 별도 요청 없으면 push 금지
+- Browser unavailable이어도 구현/자동 검증 중단 금지
+
+==================================================
+1. 실제 재현과 전체 trace
+==================================================
+
+Development/Test Online Match에서:
+
+1. 두 플레이어 연결
+2. Champion Ability 사용 가능한 상태 구성
+3. Champion Ability 버튼 클릭
+4. target 필요 시 target 선택
+5. client outbound WebSocket message 캡처
+6. server inbound parse 결과 확인
+7. action validator 결과 확인
+8. executeAction 진입 여부 확인
+9. emitted events 확인
+10. authoritative GameState mutation 확인
+11. server outbound broadcast 확인
+12. self/opponent client reducer 처리 확인
+13. 최종 UI 반영 확인
+
+"알 수 없는 메시지"가 어느 레이어에서 생성되는지 반드시 특정.
+
+==================================================
+2. ROOT CAUSE 후보 전부 검사
+==================================================
+
+A. client가 보내는 WS message type을 server registry가 모름
+B. payload schema가 client/server에서 다름
+C. USE_CHAMPION_ABILITY actionType이 online schema에 없음
+D. server response/event type을 client reducer가 모름
+E. server broadcast envelope shape 불일치
+F. target-selection continuation payload 누락
+G. Champion Ability 저장 trigger/action이 online path와 불일치
+H. client가 legacy 별도 message type으로 보냄
+I. reconnect/ticket 이후 protocol registry stale
+J. frontend/server protocol enum/version drift
+K. validator reject가 generic unknown-message로 잘못 매핑
+L. server error response code를 client가 모름
+M. target UI가 online server와 다른 action shape 생성
+N. sourceChampionId/sourceActionType/targetIds 누락 또는 타입 불일치
+O. turn/usage validation failure가 unknown-message로 표시
+
+추측하지 말고 first failing layer를 찾는다.
+
+==================================================
+3. Client/Server Protocol Contract 비교
+==================================================
+
+Client outbound:
+- envelope.type
+- action.type
+- matchId
+- actionId/requestId
+- sourceChampionId
+- targetIds
+- choice/continuation id
+- player/session identity
+
+Server inbound:
+- recognized message types
+- action schema
+- source resolver
+- target resolver
+- permission/turn validator
+
+Server outbound:
+- ack/error/state/event message types
+- state patch/full state
+
+Client inbound:
+- reducer/switch/handler
+- known response types
+- error-code mapping
+
+가능하면 shared package의 enum/schema를 단일 source of truth로 사용.
+frontend와 server가 문자열 enum을 따로 복제하면 통합.
+
+==================================================
+4. Canonical Champion Ability Action
+==================================================
+
+온라인에서도 Champion Ability는 canonical action 하나로 표현.
+
+예시 개념:
+{
+  type: "USE_CHAMPION_ABILITY",
+  sourceChampionId: "...",
+  targetIds: [...]
+}
+
+실제 field naming은 현재 shared action schema 사용.
+
+중요:
+- client는 사용 의도와 target만 보냄
+- ability effect 자체는 client가 실행하지 않음
+- server가 Champion, upgraded/base state, legal target, usage availability를 authoritative하게 resolve
+- server executeAction → effect runtime → GameState mutation → broadcast
+
+==================================================
+5. 기본/강화 Ability 모두
+==================================================
+
+반드시:
+- base Champion Ability
+- upgraded Champion Ability
+
+둘 다 online에서 테스트.
+
+Quest 완료 전/후 각각.
+Champion 이름 hardcode 금지.
+
+==================================================
+6. Targeted Ability
+==================================================
+
+Ability click
+→ PLAYER_CHOICE / target selection
+→ valid target highlight
+→ target confirm
+→ canonical online action send
+→ server revalidate
+→ execute
+
+target confirm 전:
+- 비용/사용횟수/Quest 상태 commit 금지
+
+취소:
+- outbound action 없어야 함
+- usage count 변화 없음
+- Quest 변화 없음
+- pending target clear
+- retry 가능
+
+invalid/stale target:
+- typed server reject
+- GameState 유지
+- targeting state 안전 복구
+- reload/reset 금지
+
+==================================================
+7. Targetless Ability
+==================================================
+
+타겟 없는 Champion Ability:
+click
+→ direct USE_CHAMPION_ABILITY
+→ server execute
+→ state broadcast
+
+target payload를 강제로 요구하면 안 됨.
+
+==================================================
+8. Server Authoritative Validation
+==================================================
+
+서버가 다음을 검증:
+
+- correct player owns Champion
+- correct turn/timing
+- ability usage availability
+- enough resource if applicable
+- legal target
+- source Champion exists
+- match not finished
+- target still exists
+- target owner/zone/type valid
+- upgraded/base ability state correct
+
+client validation만 믿지 말 것.
+
+==================================================
+9. Champion Token Active 상태
+==================================================
+
+공식 규칙 유지:
+
+Champion Token이 FIELD에 있어도
+원본 Champion Ability는 계속 사용 가능.
+
+Champion protected/untargetable
+≠ Champion Ability disabled.
+
+온라인 validator가 Champion Token active를 이유로 ability reject하면 수정.
+
+==================================================
+10. Champion Token HP 분리 회귀
+==================================================
+
+유지:
+- Champion HP와 Token HP 별개
+- Token own definition HP 사용
+- Token damage가 Champion HP에 영향 없음
+- Token RETIRE ≠ match loss
+- Token active 동안 Champion protected
+- Champion Ability 사용 가능
+- Token leave 후 Champion HP unchanged
+- normal SUMMON same definition은 Champion Token 아님
+
+==================================================
+11. Quest Causality
+==================================================
+
+온라인 Champion Ability 실행 시
+`sourceActionType = USE_CHAMPION_ABILITY`
+causal metadata를 유지.
+
+Champion Ability kill
+→ WRESTLER_RETIRED
+→ sourceActionType preserved
+→ Quest +1 exactly once
+
+online에서 metadata 유실되면 FAIL.
+
+==================================================
+12. Error Protocol
+==================================================
+
+"알 수 없는 메시지"는 실제 unknown protocol일 때만.
+
+서버 에러를 typed error로 구분:
+UNKNOWN_MESSAGE_TYPE
+INVALID_ACTION
+INVALID_TARGET
+ABILITY_ALREADY_USED
+NOT_YOUR_TURN
+SOURCE_NOT_FOUND
+TARGET_NOT_FOUND
+MATCH_FINISHED
+UNAUTHORIZED
+STALE_ACTION
+INTERNAL_ERROR
+
+정확한 naming은 현재 프로젝트 convention 사용.
+
+client는 typed error를 사용자에게 안전하게 표시.
+
+하지만 error UI만 고치고 ability가 여전히 발동 안 되면 FAIL.
+
+==================================================
+13. Protocol Version Drift
+==================================================
+
+frontend와 Node server가 서로 다른 action/message enum을 갖는지 확인.
+
+가능하면:
+- shared TypeScript discriminated union
+- shared zod/schema
+- shared protocol package
+
+를 source of truth로 사용.
+
+==================================================
+14. Serialization
+==================================================
+
+다음이 serialize/deserialize 중 손실되지 않는지:
+
+- action type
+- champion id
+- target ids
+- choice id
+- action id
+- upgraded/base context
+- sourceActionType
+- causal metadata
+
+undefined required field가 JSON에서 사라지는 문제 확인.
+string/number ID mismatch 확인.
+
+==================================================
+15. Reconnect / Retry / Double Submit
+==================================================
+
+A. target confirm 전 reconnect
+→ pending choice 안전 복구 또는 canonical cancel
+
+B. server accepted 후 ack 받기 전 reconnect
+→ reconnect 후 effect exactly once
+
+C. same actionId retry
+→ idempotent / safe reject
+→ duplicate damage/quest 없음
+
+D. ability 버튼 연타
+→ accepted execution 1회만
+
+==================================================
+16. Champion Ability 전수 Smoke Test
+==================================================
+
+가능하면 모든 현재 PUBLISHED Champion에 대해:
+
+- base ability
+- upgraded ability
+
+각각:
+action send
+→ server recognized
+→ executeAction
+→ expected GameState
+→ client response recognized
+
+특정 Champion 한 명만 고치고 끝내지 말 것.
+
+==================================================
+17. 최소 자동 테스트
+==================================================
+
+ONLINE_CA1 targeted base ability accepted/applied
+ONLINE_CA2 upgraded targeted ability applied
+ONLINE_CA3 targetless ability applied
+ONLINE_CA4 cancel before confirm → no server action
+ONLINE_CA5 invalid target → typed reject, state unchanged
+ONLINE_CA6 Champion Token active → original ability usable
+ONLINE_CA7 double click → once
+ONLINE_CA8 same action replay → no duplicate
+ONLINE_CA9 reconnect → no duplicate
+ONLINE_CA10 Quest sourceActionType preserved
+ONLINE_CA11 opponent client receives correct state
+ONLINE_CA12 unknown message remains safely rejected
+ONLINE_CA13 all server response types recognized by client
+ONLINE_CA14 all PUBLISHED base abilities smoke
+ONLINE_CA15 all upgraded abilities smoke
+
+==================================================
+18. 실제 Two-session Online E2E
+==================================================
+
+가능하면 Development/Test에서 실제 두 브라우저/두 세션:
+
+Player A:
+Champion Ability 사용
+
+Player B:
+상대 effect/state 변화 확인
+
+반드시 기록:
+- outbound WS message
+- server parsed action
+- executeAction result
+- emitted events
+- authoritative state
+- server outbound message
+- self client state
+- opponent client state
+- UI result
+
+Inspection-only PASS 금지.
+
+대표 시나리오:
+
+A. targeted Champion Ability → 정상 발동, unknown message 0
+B. target cancel → action 미전송
+C. Champion Token active → Champion Ability 정상
+D. Quest 완료 후 upgraded ability 정상
+E. 빠른 2회 클릭 → 1회만 적용
+
+==================================================
+19. AI Match vs Online Parity
+==================================================
+
+같은 Champion / target / pre-state에서:
+
+AI/local expected GameState
+vs
+Online authoritative GameState
+
+semantic equality 확인.
+
+온라인 protocol 때문에 effect 결과가 다르면 FAIL.
+
+==================================================
+20. Development Diagnostic Logging
+==================================================
+
+필요하면 안전한 진단 로그:
+
+[ONLINE_CHAMPION_ABILITY]
+clientMessageType
+actionType
+matchId
+actionId
+sourceChampionId
+targetCount
+serverParse
+validationResult
+executeResult
+serverResponseType
+clientHandlerResult
+
+secret/token/session credential 로그 금지.
+
+==================================================
+21. Production/Deployment Drift
+==================================================
+
+Development에서는 되는데 실제 Production online에서만 실패하면:
+
+- Static frontend build commit/version
+- Node API/WebSocket build commit/version
+- shared protocol version
+
+불일치 여부 확인.
+
+Production DB write 금지.
+무단 deploy 금지.
+
+최종 보고에 version mismatch가 있으면 명시.
+
+==================================================
+22. 회귀 금지
+==================================================
+
+깨지면 안 되는 것:
+
+- normal card play online
+- attack online
+- Technique online
+- PLAYER_CHOICE
+- target cancel
+- Champion Token protection
+- Champion HP separation
+- Quest +1 exactly once
+- RETIRE/DESTROY
+- hidden sanitizer
+- reconnect
+- deterministic RNG
+- AI Match
+
+==================================================
+23. 검증
+==================================================
+
+반드시:
+
+pnpm run typecheck
+pnpm --filter @workspace/ko-game run build
+git diff --check
+
+관련:
+API typecheck/build
+shared protocol tests
+WebSocket tests
+online action tests
+Champion Ability tests
+target selection tests
+Quest tests
+Champion Token tests
+serializer/sanitizer tests
+reconnect/idempotency tests
+
+==================================================
+24. Git
+==================================================
+
+실제 수정 파일만 stage.
+
+제외:
+prompt txt
+Pasted txt
+.env
+secrets
+logs
+screenshots
+temp
+Replit metadata
+unrelated files
+
+commit.
+push 요청 없으면 push 금지.
+force push 금지.
+
+==================================================
+25. 최종 보고 형식
+==================================================
+
+ROOT CAUSE
+
+Unknown-message 생성 위치:
+...
+
+First failing layer:
+CLIENT SEND / SERVER PARSE / VALIDATION / EXECUTION / SERVER RESPONSE / CLIENT RECEIVE
+
+Client outbound:
+...
+
+Server expected:
+...
+
+Mismatch:
+...
+
+Exact file/function:
+...
+
+
+PROTOCOL CONTRACT
+
+Shared action schema:
+PASS/FAIL
+
+USE_CHAMPION_ABILITY recognized:
+PASS/FAIL
+
+Server response recognized:
+PASS/FAIL
+
+Target payload:
+PASS/FAIL
+
+ActionId/idempotency:
+PASS/FAIL
+
+
+ONLINE CHAMPION ABILITY
+
+Base targeted:
+PASS/FAIL
+
+Upgraded targeted:
+PASS/FAIL
+
+Targetless:
+PASS/FAIL
+
+Invalid target:
+PASS/FAIL
+
+Cancel:
+PASS/FAIL
+
+Double click:
+PASS/FAIL
+
+Reconnect:
+PASS/FAIL
+
+
+CHAMPION TOKEN ACTIVE
+
+Champion Ability usable:
+PASS/FAIL
+
+Protection preserved:
+PASS/FAIL
+
+HP separation preserved:
+PASS/FAIL
+
+
+QUEST
+
+sourceActionType preserved:
+PASS/FAIL
+
+One ability-caused RETIRE:
+Quest +1 / FAIL
+
+Duplicate replay:
++0 / FAIL
+
+
+ALL CHAMPIONS
+
+Published Champions tested:
+...
+
+Base:
+X/Y PASS
+
+Upgraded:
+X/Y PASS
+
+Failures:
+...
+
+
+ONLINE E2E
+
+Two-session:
+PASS/FAIL/UNVERIFIED
+
+Player A result:
+...
+
+Player B result:
+...
+
+Unknown-message errors:
+0 / FAIL
+
+
+AI VS ONLINE PARITY
+
+Same pre-state:
+PASS/FAIL
+
+Same result:
+PASS/FAIL
+
+
+IMPLEMENTATION:
+PASS/FAIL
+
+AUTOMATED VERIFICATION:
+PASS/FAIL
+
+BROWSER ONLINE E2E:
+PASS/FAIL/UNVERIFIED
+
+TYPECHECK:
+PASS/FAIL
+
+KO BUILD:
+PASS/FAIL
+
+API TYPECHECK:
+PASS/FAIL
+
+API BUILD:
+PASS/FAIL
+
+git diff --check:
+PASS/FAIL
+
+PRODUCTION DATA MUTATION:
+NONE/FAIL
+
+DEPLOY:
+NOT REQUESTED
+
+CHANGED FILES:
+...
+
+COMMIT:
+...
+
+PUSH:
+NOT REQUESTED
+
+==================================================
+26. 완료 조건
+==================================================
+
+1. Online Champion Ability action을 server가 정상 인식.
+2. "알 수 없는 메시지" 0.
+3. targeted / targetless ability 정상.
+4. base / upgraded ability 정상.
+5. client/server protocol contract 일치.
+6. target confirm 시 server-authoritative execution.
+7. cancel 시 action 미전송/미소모.
+8. invalid target typed reject + GameState 유지.
+9. Champion Token active 중 original Champion Ability 사용 가능.
+10. Quest causal metadata 유지.
+11. duplicate click/replay로 두 번 실행되지 않음.
+12. reconnect 후 duplicate 없음.
+13. self/opponent 양쪽 state 정상.
+14. 가능한 모든 PUBLISHED Champion smoke test.
+15. AI/local과 online semantic parity.
+16. Production data mutation 없음.
+17. tests/build/typecheck/diff 결과 보고.
+
+에러 메시지만 감추지 말고,
+온라인 Champion Ability의 전체 protocol/action path를 실제로 복구한 뒤 멈춰라.

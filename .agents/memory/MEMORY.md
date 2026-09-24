@@ -63,7 +63,7 @@
 - [Generic stat pipeline](generic-stat-pipeline.md) — per-stat dynamic channels coexist with signed/set modifiers; legacy paired refs and listener frames stay compatible.
 - [Attack event snapshots](attack-event-snapshots.md) — preserve immutable combat card data so lethal attack presentation survives target removal.
 - [Attack target projection](attack-target-projection.md) — attack presentation must resolve player targets to the viewer-relative Champion DOM ref, not a fixed board side.
-- [Online PvP foundation](online-pvp-foundation.md) — reuse the shared KO engine; persist accepted state changes and sanitize every viewer projection.
+- [Online PvP foundation](online-pvp-foundation.md) — server authority, hidden-data projection, and pre-commit targeting for online abilities.
 - [Artifact WebSocket routing](artifact-routing-websocket.md) — keep `/api` and online WS paths exclusive to the API artifact; web routing can otherwise return static HTML.
 - [Online Stage 3 recovery](online-stage3-recovery.md) — persist deadlines at transitions, lazy-restore one runtime, and use primary-connection gating for reconnect safety.
 - [Online presentation projection](online-presentation-projection.md) — reorder sanitized players viewer-first and adapt hidden zones to card-back placeholders before shared GameStatePreview.
