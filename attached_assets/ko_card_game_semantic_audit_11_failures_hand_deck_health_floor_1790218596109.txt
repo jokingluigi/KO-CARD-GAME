@@ -1,0 +1,1120 @@
+KO CARD GAME — FULL ANALYZER SEMANTIC AUDIT + REMAINING 11 FAILURES + HAND/DECK WRESTLER HEALTH FLOOR
+
+이번 작업은 세 가지를 한 번에 처리한다.
+
+A. 모든 SUPPORTED 항목의 원문 ↔ Analyzer output ↔ 현재 저장 Structured Effect 3-way semantic audit
+B. 최신 보고서의 ANALYSIS_FAILED 11개 generic 처리
+C. 새 전역 규칙: HAND/DECK에 있는 WRESTLER의 현재 체력은 절대로 1 미만이 될 수 없음
+
+중요:
+단순히 ANALYSIS_FAILED 숫자를 0으로 만드는 것이 목적이 아니다.
+원문을 누락하거나 원문에 없는 효과를 추가했는데도 SUPPORTED로 판정하는 false-positive를 제거해야 한다.
+
+==================================================
+0. 새 공식 규칙 — HAND / DECK WRESTLER HEALTH FLOOR
+==================================================
+
+새 공식 게임 규칙:
+
+HAND 또는 DECK에 있는 WRESTLER 카드의 현재 체력(current health)은
+절대로 1보다 낮아질 수 없다.
+
+즉:
+
+HAND WRESTLER health = 1
+→ health -1 effect
+→ 실제 결과 health = 1
+
+HAND WRESTLER health = 1
+→ health -5 effect
+→ 실제 결과 health = 1
+
+DECK WRESTLER health = 2
+→ health -5 effect
+→ 실제 결과 health = 1
+
+FIELD에는 이 floor를 적용하지 않는다.
+
+FIELD WRESTLER:
+health <= 0
+→ 기존 canonical RETIRE
+→ GRAVEYARD
+→ RETIRE effect
+
+GRAVEYARD에도 이 HAND/DECK floor를 임의 적용하지 않는다.
+
+==================================================
+1. Health Floor 적용 범위
+==================================================
+
+다음 모든 stat mutation path에서
+HAND/DECK WRESTLER health minimum = 1이 보장되어야 한다.
+
+- BUFF with negative health
+- MODIFY_STAT HEALTH
+- SET_STAT HEALTH
+- SET_STATS health
+- generatedModifiers.health
+- copied/generated card modifiers
+- queued effect
+- delayed effect
+- listener effect
+- SCRIPT_V1 EFFECT
+- grantedText effect
+- Champion Ability
+- Quest Reward
+- Admin-generated structured effect
+- AI Match
+- Online Match
+- reconnect/reserialization 이후 효과
+
+즉 특정 Action 하나에만 clamp를 넣지 말고
+가능하면 canonical stat mutation layer에서 zone-aware invariant로 처리한다.
+
+==================================================
+2. Health Floor 의미
+==================================================
+
+중요:
+
+"시도한 감소량"이 아니라 "실제 적용된 결과"가 기준.
+
+예:
+
+HAND health 1
+effect health -1
+→ final health 1
+→ actualHealthDelta = 0
+
+HAND health 3
+effect health -5
+→ final health 1
+→ actualHealthDelta = -2
+
+이 실제 delta를 event/history/stat-trigger에 사용.
+
+clamp 때문에 실제 값이 변하지 않았다면
+"체력이 감소했다" 계열 후속 trigger를 임의 발생시키지 마.
+
+==================================================
+3. FIELD와 혼동 금지
+==================================================
+
+절대 전역 Math.max(1, health)로 만들지 마.
+
+그렇게 하면 FIELD 카드가 죽지 않는다.
+
+반드시 zone-aware:
+
+if card.type === WRESTLER && zone in [HAND, DECK]
+→ currentHealth >= 1
+
+else
+→ 기존 규칙
+
+FIELD lethal:
+0 이하 가능
+→ RETIRE
+
+==================================================
+4. Max Health와의 관계
+==================================================
+
+사용자가 지정한 새 규칙은 "현재 체력" floor다.
+
+MAX_HEALTH를 무조건 1 이상으로 바꾸는 별도 규칙을 임의 추가하지 마.
+
+단 현재 엔진 invariant가:
+
+currentHealth <= maxHealth
+
+를 강제하고 있고
+HAND/DECK currentHealth=1을 유지하려면 maxHealth 조정이 불가피한 경우:
+
+- 기존 stat model 확인
+- 최소한의 invariant-preserving 처리
+- 최종 보고에 명시
+
+`MODIFY_MAX_HEALTH` semantics를 몰래 바꾸지 마.
+
+==================================================
+5. Hidden Zone에서 RETIRE 금지
+==================================================
+
+HAND/DECK WRESTLER는 health reduction으로 0 이하가 되지 않으므로
+그 stat reduction만으로 RETIRE하지 않는다.
+
+즉:
+
+HAND health 1
+→ -3 health
+→ health 1
+→ GRAVEYARD 이동 없음
+→ RETIRE event 없음
+→ RETIRE effect 없음
+
+DECK도 동일.
+
+==================================================
+6. Board 진입 시
+==================================================
+
+HAND/DECK에서 감소 효과를 받은 WRESTLER가 나중에 FIELD에 들어오면
+clamp된 실제 체력 값을 가지고 정상 진입한다.
+
+예:
+
+HAND base/current health 1
+→ health -2 attempt
+→ HAND health 1
+→ PLAY_FROM_HAND
+→ FIELD health 1
+
+그 이후 FIELD에서 1 damage:
+→ health 0
+→ RETIRE
+
+==================================================
+7. Generated Card
+==================================================
+
+생성되는 WRESTLER가 HAND/DECK로 들어갈 때:
+
+generatedModifiers.health 결과가 0 이하라면
+최종 current health는 1.
+
+예:
+
+base health 2
+generatedModifiers.health = -5
+destination HAND
+→ final current health 1
+
+단 FIELD에 직접 SUMMON되는 카드의 stat 생성 규칙은
+기존 summon semantics를 그대로 따른다.
+FIELD lethal/invalid spawn semantics를 임의로 바꾸지 마.
+
+==================================================
+8. HAND Stat Trigger와 actual delta
+==================================================
+
+현재 프로젝트 공식 규칙상
+HAND의 실제 stat increase는 일부 trigger를 발생시킬 수 있다.
+
+이번 health floor와 결합 시:
+
+HAND health 1
+→ -1 attempt
+→ actual delta 0
+
+따라서 actual delta 기반 trigger/history에는 0으로 기록.
+
+반대로:
+
+HAND health 3
+→ -5 attempt
+→ final 1
+→ actual delta -2
+
+실제 변경량 -2.
+
+==================================================
+9. 3-WAY SEMANTIC AUDIT — 최우선
+==================================================
+
+모든 WRESTLER + Champion supported slot에 대해:
+
+A. 원문 text
+B. Analyzer가 해석한 Structured Effect
+C. 현재 저장 Structured Effect
+
+를 3-way semantic diff 한다.
+
+SUPPORTED라고 적혀 있어도 자동 PASS 금지.
+
+각 clause를 분해:
+
+- trigger
+- target
+- owner
+- zone
+- filter
+- selection
+- action
+- values
+- condition
+- continuation
+- sequence
+- reference
+- keyword
+- generated modifiers
+- retire/destroy semantics
+
+원문 각 clause가 Analyzer에 정확히 1:1 대응하는지 확인.
+
+==================================================
+10. False Positive 유형
+==================================================
+
+다음 전부 탐지:
+
+MISSING_CLAUSE:
+원문에 있는데 Analyzer output에 없음
+
+HALLUCINATED_CLAUSE:
+원문에 없는데 Analyzer가 추가
+
+WRONG_TRIGGER
+WRONG_ACTION
+WRONG_TARGET
+WRONG_OWNER
+WRONG_ZONE
+WRONG_FILTER
+WRONG_SELECTION
+WRONG_VALUE
+WRONG_SEQUENCE
+WRONG_REFERENCE
+WRONG_RETIRE_SEMANTICS
+
+STORED_EFFECT_DRIFT:
+Analyzer output과 저장 Structured Effect가 다름
+
+EMPTY_TEXT_WITH_STORED_EFFECT:
+원문 "(없음)"인데 저장 효과 존재
+
+SUPPORTED_WITH_PARTIAL_PARSE:
+일부만 해석했는데 SUPPORTED 판정
+
+==================================================
+11. 현재 반드시 재검사할 알려진 예
+==================================================
+
+1) 위리놈
+
+원문:
+- ENTER_FIELD: 위리녀 생성 + source stats copy
+- RETIRE: 손의 위리녀 소환
+
+최신 Analyzer가 RETIRE 절만 보거나,
+stored effect가 LEAVE_FIELD legacy를 유지하는 문제가 있는지 확인.
+
+정상:
+ENTER_FIELD GENERATE
++
+SELF_RETIRE SUMMON_FROM_HAND/equivalent
+
+DESTROY:
+퇴장 효과 발동 금지.
+
+2) 라 칼라베라
+
+원문:
+REVIVE
++
+그 부활한 SAME_TARGET에 TAUNT
+
+Analyzer가 REVIVE만 만들고 TAUNT를 누락하면 FAIL.
+
+3) 발단
+
+현재 원문에 TAUNT 문구가 없다면
+Analyzer가 이전 버전의 ADD_KEYWORD TAUNT를 계속 생성하면
+HALLUCINATED_CLAUSE.
+
+4) 레드 렌지
+
+원문 "(없음)"
+그런데 저장 Structured Effect가 존재하면
+EMPTY_TEXT_WITH_STORED_EFFECT.
+
+절대 저장 effect를 원문보다 우선해 Analyzer를 정당화하지 마.
+
+==================================================
+12. SUPPORTED 판정 기준 강화
+==================================================
+
+SUPPORTED 조건:
+
+- 원문 모든 semantic clause가 구조화됨
+- unsupported residual 없음
+- hallucinated clause 없음
+- cardinality/target/reference 정확
+- validation PASS
+- runtime-executable contract
+- source identity secure
+
+원문 일부만 이해했으면
+SUPPORTED 금지.
+
+ANALYSIS_FAILED 또는 NEW_MECHANIC_REQUIRED로 명확히 분류.
+
+==================================================
+13. 현재 최신 ANALYSIS_FAILED 11개
+==================================================
+
+최신 보고서 기준:
+
+1. 도금구슬 마스터
+2. 리버덩크
+3. 마로쓰 2세
+4. 아포스틸
+5. 예거
+6. 오젠
+7. 워썬더
+8. 작은 하마
+9. 좀비 플래티넘구슬 마스터
+10. 팬텀워커
+11. 피 스타 세븐
+
+각 원문을 카드 이름 hardcode 없이 generic grammar/mechanic으로 지원.
+
+==================================================
+14. 도금구슬 마스터
+==================================================
+
+원문:
+
+"등장:내 덱과 손에 있는 6 비용 이상의 카드들의 비용을 전부 1 감소 시킵니다."
+
+기대:
+
+ENTER_FIELD
+→ SELECT own HAND + DECK
+→ filter.minCost = 6
+→ ALL
+→ REDUCE_COST 1
+
+현재 저장 SCRIPT_V1가 이미 semantic하게 맞을 수 있으므로
+Analyzer가 같은 generic 구조를 생성하도록 한다.
+
+잔여 fragment 때문에 FAIL하지 않게 parser 수정.
+
+==================================================
+15. 리버덩크
+==================================================
+
+원문:
+
+"게임 시작:덱에 있었다면 손패에 드로우 됩니다."
+
+필요 generic GAME_START / MATCH_START trigger semantics를 조사.
+
+의미:
+
+match/game start 시
+source card가 own DECK에 있다면
+그 source instance를 HAND로 이동/draw.
+
+일반 DRAW 1과 동일하게 새 top-card를 뽑는 효과가 아님.
+
+source instance 이동이 핵심.
+
+기존 trigger가 없으면
+generic GAME_START trigger를 Registry/validator/runtime에 추가.
+
+==================================================
+16. 마로쓰 2세
+==================================================
+
+원문:
+
+"이 카드가 필드에 있을때 아군의 턴 종료 효과가 한번 더 발동합니다."
+
+의미:
+
+source가 FIELD에 있는 동안,
+own TURN_END triggered effects를 추가 1회 resolve.
+
+주의:
+
+- source 자체 TURN_END 포함 여부는 문장의 "아군" 프로젝트 convention 확인
+- 무한 반복 금지
+- duplicated second pass가 다시 repeat aura를 재trigger해 4회/8회로 증식 금지
+- RETIRE/DESTROY로 source가 필드를 떠나면 효과 종료
+- delayed TURN_END와 일반 카드 TURN_END 구분은 existing event system 기준
+
+generic repeat-trigger modifier/listener로 구현.
+
+==================================================
+17. 아포스틸
+==================================================
+
+원문:
+
+"등장:어디에 있든 '실험체' 태그가 붙은 카드들에게 체력을 1 부여합니다."
+
+기대:
+
+ENTER_FIELD
+→ own canonical anywhere zones
+→ target.filter.tagsAny ["실험체"]
+→ ALL
+→ health +1 only
+
+매드 사이언티스트 퍼플레인의 tag parser와 동일 shared grammar 재사용.
+
+==================================================
+18. 예거
+==================================================
+
+원문:
+
+"이 카드가 필드에 있는 동안 '솔져' 태그가 있는 카드들이 등장 혹은 소환 될때 +1/+1을 받습니다."
+
+의미:
+
+source FIELD active listener
+
+matching event:
+ally WRESTLER with tagsAny["솔져"]
+enters via PLAY_FROM_HAND(등장) OR SUMMON
+
+→ that entering/summoned SAME_TARGET gets +1/+1
+
+source가 FIELD에 없으면 no effect.
+
+현재 CARD_SUMMONED만으로 PLAY_FROM_HAND를 놓치면 안 됨.
+
+generic event listener를 재사용/확장.
+
+==================================================
+19. 오젠
+==================================================
+
+원문:
+
+"등장:상대 필드에 비용이 1이하인 선수 카드가 있다면 그 카드들중 무작위 한장을 리타이어 시킵니다.(챔피언 토큰 제외)"
+
+기대:
+
+ENTER_FIELD
+→ candidate enemy BOARD WRESTLER
+→ filter.maxCost = 1
+→ filter.isChampionToken = false
+→ RANDOM 1
+→ RETIRE
+
+후보 0:
+no-op
+
+DESTROY가 아니라 RETIRE.
+
+==================================================
+20. 워썬더
+==================================================
+
+원문:
+
+"등장: 내 손에 무작위 선수 카드 1장을 생성합니다. 그 카드에게 -1/-1/-1을 적용합니다."
+
+먼저 -1/-1/-1이 프로젝트 표기상:
+
+cost / attack / health
+
+순서인지 기존 convention을 확인.
+
+의미가 그렇다면:
+
+ENTER_FIELD
+→ GENERATE random WRESTLER to HAND
+→ generatedModifiers:
+cost -1
+attack -1
+health -1
+
+같은 generated card에 모두 적용.
+
+이번 신규 HAND health floor와 결합:
+
+생성 결과 health가 1 미만이면
+최종 current health = 1.
+
+예:
+base health 1
+→ generated health -1
+→ HAND current health 1.
+
+"선수 카드 1장"을 특정 named definition으로 resolve하려고 하면 FAIL.
+이는 RANDOM WRESTLER pool reference.
+
+==================================================
+21. 작은 하마
+==================================================
+
+원문:
+
+"등장:상대의 필드에 있는 선수 카드 한장을 선택해서 상대방의 덱 맨위로 보냅니다."
+
+필요:
+
+ENTER_FIELD
+→ PLAYER_CHOICE enemy BOARD WRESTLER
+→ MOVE_TO_DECK / equivalent
+→ destination owner = original enemy
+→ position TOP
+
+MILL은 반대 방향이므로 사용 금지.
+
+generic MOVE_TO_DECK action이 없으면 재사용 가능한 이동 action 추가.
+
+RETIRE 아님.
+DESTROY 아님.
+LEAVE_FIELD lifecycle은 발생할 수 있으나 SELF_RETIRE는 아님.
+
+==================================================
+22. 좀비 플래티넘구슬 마스터
+==================================================
+
+원문:
+
+"등장:필드에 있는 '좀비' 중 가장 수치의 합이 높은 '좀비'의 체력과 공격력을 자신에게 더합니다. '좀비'가 없다면 2/2 '좀비'를 생성하고 그 '좀비'의 체력과 공격력을 자신에게 더합니다."
+
+generic conditional:
+
+ENTER_FIELD
+
+IF matching Zombie exists on FIELD:
+→ choose candidate with max(currentAttack + currentHealth)
+→ deterministic tie-break
+→ source gains candidate current attack + current health
+
+ELSE:
+→ GENERATE 2/2 Zombie according to exact destination intended by text/current mechanic
+→ reference that exact generated Zombie
+→ source gains its current attack + current health
+
+주의:
+문장에는 "생성"이라고 되어 있으므로
+SUMMON과 GENERATE를 혼동하지 마.
+
+생성 destination이 text에 없으면
+현재 GENERATE default/project convention을 authoritative contract에서 확인.
+
+이미 Registry에 COPY_BEST_STATS가 있다면 재사용.
+
+==================================================
+23. 팬텀워커
+==================================================
+
+원문:
+
+"적 선수를 공격하고 생존했다면 비용이 1 감소한채 손패로 돌아옵니다."
+
+기대:
+
+ATTACK_SURVIVED
+→ source cost -1
+→ source MOVE_TO_HAND
+
+같은 source instance.
+
+순서:
+cost reduction이 hand-return 이후에도 유지되는 canonical temporary/permanent semantics 확인.
+
+원문에는 "이번 턴"이 없으므로 임의 temporary flag 추가 금지.
+
+ATTACK_SURVIVED existing trigger 재사용.
+
+==================================================
+24. 피 스타 세븐
+==================================================
+
+원문:
+
+"등장:자신을 제외한 필드에 나와있는 아군 선수들에게 +2/+2를 부여합니다."
+
+기대:
+
+ENTER_FIELD
+→ own BOARD WRESTLER
+→ excludeSource = true
+→ ALL
+→ +2/+2
+
+현재 Analyzer가 SELF로 해석하면 FAIL.
+
+generic:
+"자신을 제외한"
+"이 카드를 제외한"
+"다른 아군"
+→ filter.excludeSource = true
+
+==================================================
+25. HEALTH FLOOR 테스트
+==================================================
+
+HF1
+HAND WRESTLER health 1
+→ MODIFY_STAT HEALTH -1
+→ 1
+
+HF2
+HAND health 1
+→ BUFF health -5
+→ 1
+
+HF3
+DECK health 2
+→ SET_STAT HEALTH 0
+→ 1
+
+HF4
+DECK health 5
+→ MODIFY_STAT HEALTH -2
+→ 3
+
+HF5
+FIELD health 1
+→ DAMAGE 1
+→ 0
+→ RETIRE
+(절대 1로 clamp 금지)
+
+HF6
+HAND health 1
+→ generated/modifier -1
+→ actual delta 0
+→ no health-decrease event
+
+HF7
+HAND health 3
+→ -5
+→ final 1
+→ actual delta -2
+
+HF8
+generated WRESTLER destination HAND
+base health 1
+generatedModifiers.health -1
+→ final 1
+
+HF9
+generated WRESTLER destination DECK
+final health never <1
+
+HF10
+SCRIPT_V1 effect reduces HAND health
+→ floor applies
+
+HF11
+queued/delayed effect reduces DECK health
+→ floor applies
+
+HF12
+Online serialize/reconnect
+→ health floor preserved
+
+==================================================
+26. Health Floor와 ATTACK/COST 분리
+==================================================
+
+이번 새 invariant는 WRESTLER health only.
+
+attack/cost 최소값은 기존 개별 action/content rule 유지.
+
+예:
+워썬더 -1/-1/-1에서
+health만 HAND floor 1 적용.
+
+cost minimum은 기존 generated modifier/cost rule.
+attack minimum도 기존 rule.
+
+새로 전역 1-floor를 만들지 마.
+
+==================================================
+27. TECHNIQUE / CHAMPION 제외
+==================================================
+
+HAND/DECK health floor는 "선수 카드" WRESTLER에만 적용.
+
+TECHNIQUE에는 health 개념 적용 금지.
+
+Champion original HP와도 별개.
+
+Champion Token이 WRESTLER CardInstance 형태라도
+HAND/DECK에 직접 존재할 수 있는 공식 경로가 있는지 확인하고
+기존 Champion Token invariant를 우선.
+
+==================================================
+28. RETIRE / DESTROY 회귀
+==================================================
+
+기존 공식 규칙 유지:
+
+FIELD health <=0
+→ RETIRE
+→ GRAVEYARD
+→ SELF_RETIRE / CARD_RETIRED
+
+DESTROY
+→ match removal
+→ no graveyard
+→ no retire trigger
+
+MOVE_TO_HAND / MOVE_TO_DECK
+→ no SELF_RETIRE.
+
+==================================================
+29. Stored Effect Drift 처리
+==================================================
+
+3-way audit에서
+Analyzer가 맞고 저장 데이터가 stale인 경우:
+
+Production DB 자동 수정 금지.
+
+대신:
+
+- affected definition 목록
+- expected canonical structured effect
+- current stored structured effect
+- drift type
+- safe re-save/migration proposal
+
+보고.
+
+DRAFT fixture/local data는 테스트 목적으로 수정 가능.
+
+PUBLISHED production row bulk mutation 금지.
+
+==================================================
+30. Full Reanalysis 완료 조건
+==================================================
+
+전체 WRESTLER + Champion slots 재분석 후:
+
+SUPPORTED:
+NEW_MECHANIC_REQUIRED:
+ANALYSIS_FAILED:
+
+뿐 아니라 아래 추가 집계:
+
+SUPPORTED_FALSE_POSITIVE:
+MISSING_CLAUSE:
+HALLUCINATED_CLAUSE:
+STORED_EFFECT_DRIFT:
+EMPTY_TEXT_WITH_STORED_EFFECT:
+HEALTH_FLOOR_VIOLATIONS:
+
+목표:
+
+SUPPORTED_FALSE_POSITIVE = 0
+MISSING_CLAUSE = 0
+HALLUCINATED_CLAUSE = 0
+HEALTH_FLOOR_VIOLATIONS = 0
+
+STORED_EFFECT_DRIFT는 production mutation 없이 발견 목록을 보고할 수 있음.
+
+==================================================
+31. Analyzer Exact + Paraphrase
+==================================================
+
+11개 ANALYSIS_FAILED 각각:
+
+- exact original
+- 최소 2 paraphrases
+
+로 generic parser 검증.
+
+카드명 exact-match 분기 금지.
+
+==================================================
+32. Runtime 검증
+==================================================
+
+Analyzer PASS만으로 완료 금지.
+
+각 신규/수정 mechanic은 실제:
+
+Action
+→ Event
+→ Target/Reference Resolution
+→ GameState
+
+검증.
+
+특히:
+
+- GAME_START source draw
+- TURN_END repeat
+- tag-listener enter/summon
+- random RETIRE
+- generated modifiers + health floor
+- MOVE_TO_DECK TOP
+- conditional best-stat/generate fallback
+- ATTACK_SURVIVED cost reduction + bounce
+- excludeSource ALL buff
+
+실제 engine test 필요.
+
+==================================================
+33. Browser E2E
+==================================================
+
+가능하면 Development/Test Admin에서:
+
+1. 11개 중 대표 5개 Generate
+2. READY
+3. Auto Apply
+4. Save
+5. Reload
+6. Test Match
+7. 결과 확인
+
+Health floor도:
+HAND health 1 card에 -health effect 적용 후 UI/Inspector에서 1 유지 확인.
+
+브라우저 불가:
+implementation/tests 계속.
+BROWSER만 UNVERIFIED.
+
+==================================================
+34. 검증 명령
+==================================================
+
+반드시:
+
+pnpm run typecheck
+pnpm --filter @workspace/ko-game run build
+git diff --check
+
+API/shared 변경 시:
+
+API typecheck
+API build
+Analyzer tests
+structured-effect tests
+Script AST tests
+runtime tests
+health-floor tests
+sanitizer tests
+
+전체 bundled effect suite 실행.
+
+==================================================
+35. Git
+==================================================
+
+실제 수정 파일만 stage.
+
+제외:
+Pasted-*.txt
+분석 report txt
+prompt txt
+.env
+secrets
+logs
+screenshots
+temp
+Replit metadata
+unrelated changes
+
+commit.
+push 요청 없으면 push 금지.
+force push 금지.
+
+==================================================
+36. 최종 보고 형식
+==================================================
+
+FULL ANALYZER
+
+SUPPORTED:
+...
+
+NEW_MECHANIC_REQUIRED:
+...
+
+ANALYSIS_FAILED:
+...
+
+SUPPORTED_FALSE_POSITIVE:
+...
+
+MISSING_CLAUSE:
+...
+
+HALLUCINATED_CLAUSE:
+...
+
+STORED_EFFECT_DRIFT:
+...
+
+EMPTY_TEXT_WITH_STORED_EFFECT:
+...
+
+
+REMAINING 11
+
+1. Gilded Orb Master:
+PASS / FAIL
+
+2. River Dunk:
+PASS / FAIL
+
+3. Maros II:
+PASS / FAIL
+
+4. Apostil:
+PASS / FAIL
+
+5. Jäger:
+PASS / FAIL
+
+6. Ozen:
+PASS / FAIL
+
+7. War Thunder:
+PASS / FAIL
+
+8. Small Hippo:
+PASS / FAIL
+
+9. Zombie Platinum Orb Master:
+PASS / FAIL
+
+10. Phantom Walker:
+PASS / FAIL
+
+11. P-Star Seven:
+PASS / FAIL
+
+EXACT ORIGINAL:
+X/11
+
+PARAPHRASE:
+X/Y
+
+
+SEMANTIC AUDIT
+
+Wirinom:
+PASS / FAIL
+
+La Calavera:
+PASS / FAIL
+
+Baldan:
+PASS / FAIL
+
+Red Rengi:
+PASS / FAIL
+
+Other mismatches:
+...
+
+
+HAND/DECK HEALTH FLOOR
+
+HAND health 1 -1:
+PASS / FAIL
+
+HAND health 1 -5:
+PASS / FAIL
+
+DECK health 2 -5:
+PASS / FAIL
+
+Actual delta after clamp:
+PASS / FAIL
+
+Generated HAND WRESTLER:
+PASS / FAIL
+
+Generated DECK WRESTLER:
+PASS / FAIL
+
+SCRIPT_V1:
+PASS / FAIL
+
+Queued/Delayed:
+PASS / FAIL
+
+Online reconnect:
+PASS / FAIL
+
+FIELD lethal still RETIRES:
+PASS / FAIL
+
+HEALTH_FLOOR_VIOLATIONS:
+...
+
+
+RETIRE
+
+FIELD HP0 → RETIRE:
+PASS / FAIL
+
+DESTROY no RETIRE:
+PASS / FAIL
+
+MOVE_TO_HAND no RETIRE:
+PASS / FAIL
+
+MOVE_TO_DECK no RETIRE:
+PASS / FAIL
+
+
+IMPLEMENTATION:
+PASS / FAIL
+
+AUTOMATED VERIFICATION:
+PASS / FAIL
+
+BROWSER E2E:
+PASS / FAIL / UNVERIFIED
+
+TYPECHECK:
+PASS / FAIL
+
+KO BUILD:
+PASS / FAIL
+
+API TYPECHECK:
+PASS / FAIL / NOT_MODIFIED
+
+API BUILD:
+PASS / FAIL / NOT_MODIFIED
+
+FULL EFFECT SUITE:
+PASS / FAIL
+
+git diff --check:
+PASS / FAIL
+
+PRODUCTION DATA MUTATION:
+NONE / FAIL
+
+AFFECTED STORED DEFINITIONS:
+...
+
+CHANGED FILES:
+...
+
+COMMIT:
+...
+
+PUSH:
+NOT REQUESTED
+
+==================================================
+37. 최종 완료 조건
+==================================================
+
+다음이 모두 충족되어야 완료:
+
+1. SUPPORTED가 원문 전체 semantic을 실제로 커버함.
+2. 원문 clause 누락 0.
+3. 원문에 없는 hallucinated effect 0.
+4. 최신 ANALYSIS_FAILED 11개를 generic하게 처리.
+5. HAND/DECK WRESTLER current health가 항상 최소 1.
+6. FIELD health floor는 적용하지 않아 정상 RETIRE 유지.
+7. health floor는 모든 stat mutation 경로에서 동일.
+8. clamp 후 actual delta가 정확히 기록됨.
+9. hidden-zone stat reduction으로 RETIRE 발생하지 않음.
+10. stored effect drift는 production 자동수정 없이 식별/보고.
+11. 기존 RETIRE/DESTROY 규칙 회귀 없음.
+12. Analyzer → Save → Runtime semantic 일치.
+13. Production 데이터 직접 수정 없음.
+
+이 범위 전체를 구현·검증한 뒤 멈춰라.
