@@ -1,0 +1,182 @@
+KO CARD GAME — PROMPT 2/5
+NEW ACCOUNT STARTER PACK REWARDS
+
+목표:
+신규 계정을 처음 생성한 유저에게 지정된 팩 보상을 안전하게 1회 지급한다.
+
+중요:
+중복 지급, 로그인 반복 지급, 새로고침 지급, API retry 중복 지급을 절대 허용하지 않는다.
+
+==================================================
+1. 먼저 기존 구조 조사
+==================================================
+
+확인:
+
+- 회원가입 / first-login / profile bootstrap 흐름
+- starter rewards 기존 구현 여부
+- pack inventory schema
+- reward grant service
+- transaction/idempotency 구조
+- 신규 유저 판정 기준
+- daily/attendance 보상과의 충돌 여부
+
+기존 공용 reward grant path가 있으면 재사용.
+
+==================================================
+2. 공식 지급 규칙
+==================================================
+
+신규 계정마다 starter pack reward는 정확히 1회.
+
+사용자가 지정한 starter pack 구성은
+중앙 설정/관리자 설정에서 읽는 구조로 설계.
+
+하드코딩된 사용자 ID 금지.
+
+필요 시 설정 예:
+
+starterRewards:
+- packDefinitionId
+- quantity
+
+정확한 schema naming은 현재 프로젝트 기준.
+
+==================================================
+3. 지급 시점
+==================================================
+
+권장:
+
+계정 생성 완료 / starter initialization transaction 내에서
+profile/account creation과 함께 원자적으로 처리.
+
+만약 기존 bootstrap 구조가 first authenticated session에서 starter init을 한다면
+그 구조를 유지하되 idempotent 보장.
+
+==================================================
+4. Idempotency
+==================================================
+
+다음 모두 추가 지급 금지:
+
+- 새로고침
+- logout/login
+- auth retry
+- API timeout 후 client retry
+- double submit signup
+- browser multiple tabs
+- concurrent starter-init requests
+
+가능하면 DB-level unique claim/reward ledger 사용.
+
+"hasReceivedStarterPack" 같은 플래그만 client에 두면 FAIL.
+
+==================================================
+5. 실패 원자성
+==================================================
+
+account/profile는 생성됐는데 reward만 실패하거나,
+reward는 지급됐는데 claim record가 실패하는 부분 성공 금지.
+
+가능하면 transaction.
+
+재시도 시:
+이미 지급된 reward를 다시 주지 않고
+미완료 transaction 상태를 안전하게 회복.
+
+==================================================
+6. 기존 유저
+==================================================
+
+기존 계정에게 자동 소급 지급 금지.
+
+명시적 migration/관리자 grant 요청이 없는 한
+새 기능 배포 이전 유저는 그대로 둔다.
+
+신규 계정 여부를 createdAt 추측만으로 판단하지 말고
+starter claim ledger/source of truth 사용.
+
+==================================================
+7. Admin/Config
+==================================================
+
+starter pack 종류/수량을 코드 여러 곳에 중복 하드코딩하지 마.
+
+가능하면 centralized config.
+
+잘못된/nonexistent packDefinitionId는
+배포 전 validation 또는 server-side reject.
+
+==================================================
+8. 테스트
+==================================================
+
+S1 new account → exact configured pack 지급
+S2 reload → 추가 0
+S3 relogin → 추가 0
+S4 concurrent bootstrap x2 → 총 1회
+S5 timeout/retry → 총 1회
+S6 existing account → 추가 0
+S7 invalid pack config → safe failure
+S8 multiple configured starter packs → 각각 정확한 수량
+S9 inventory read-back
+S10 transaction failure injection → partial grant 없음
+
+실제 Production 계정 생성/보상 지급 금지.
+fixture/test DB 사용.
+
+==================================================
+9. UI
+==================================================
+
+신규 유저에게 지급 완료 안내가 기존 UX에 자연스럽게 필요하면 표시.
+
+단 UI toast가 보상 지급 source of truth가 되면 안 됨.
+
+==================================================
+10. 검증
+==================================================
+
+typecheck
+API build
+KO build
+starter reward tests
+inventory/reward tests
+auth/bootstrap regression
+git diff --check
+
+==================================================
+11. 최종 보고
+==================================================
+
+ROOT CAUSE / EXISTING FLOW:
+...
+
+STARTER REWARD
+Configured packs:
+...
+Grant point:
+...
+Idempotency:
+PASS/FAIL
+Atomicity:
+PASS/FAIL
+Existing users untouched:
+PASS/FAIL
+
+TESTS:
+X/Y
+
+TYPECHECK:
+API BUILD:
+KO BUILD:
+git diff --check:
+
+PRODUCTION DATA MUTATION:
+NONE
+
+COMMIT:
+...
+PUSH:
+NOT REQUESTED

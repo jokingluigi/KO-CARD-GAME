@@ -1,0 +1,303 @@
+KO CARD GAME — PROMPT 1/5
+FINAL STORED-EFFECT CLEANUP + BALDAN RESOLUTION + AI MATCH VERIFICATION
+
+목표:
+현재 Analyzer/runtime 구현은 상당 부분 완료되어 있으므로,
+새 메커니즘을 추가하기보다 Development의 stale/wrong/missing stored effect를 정리하고,
+발단 ambiguity를 해소하고,
+Source Text → Analyzer → Stored Effect → Runtime 의미를 일치시킨다.
+
+Production DB read/write 금지.
+Development만 대상으로 한다.
+
+==================================================
+1. 발단 공식 의미
+==================================================
+
+최신 Source Text를 먼저 다시 읽고 아래 의도와 일치하는지 확인:
+
+"등장:
+내 묘지의 비용 3 이하 카드 중 무작위 카드 1장을 선택하고,
+그 카드의 현재 공격력/현재 체력과 같은 수치의 '좀비'를 하나 소환한다."
+
+Canonical intent:
+
+ENTER_FIELD
+→ SELECT own GRAVEYARD
+→ filter.maxCost = 3
+→ RANDOM 1
+→ selected target currentAttack/currentHealth snapshot
+→ SUMMON exact Zombie CardDefinition
+→ summoned Zombie current stats = selected snapshot
+
+규칙:
+- selected graveyard card는 이동시키지 않음
+- REVIVE 아님
+- deterministic RNG
+- no target → safe no-op
+- Math.random 금지
+- Zombie reference는 exact CardDefinition reference
+- fuzzy name search 금지
+- missing/ambiguous definition이면 ANALYSIS_FAILED
+
+원문에 TAUNT/도발 문구가 없으면:
+- Analyzer가 ADD_KEYWORD TAUNT 생성 금지
+- stored effect에 legacy TAUNT가 남아 있으면 제거 대상
+
+==================================================
+2. Development full 3-way semantic audit
+==================================================
+
+모든 WRESTLER + Champion supported slot:
+
+A. Source Text
+B. Fresh Analyzer Output
+C. Stored Structured Effect
+
+를 비교.
+
+SUPPORTED label만 보고 PASS 금지.
+
+분류:
+SEMANTIC_MATCH
+MISSING_EFFECT
+MISSING_CLAUSE
+HALLUCINATED_CLAUSE
+WRONG_TRIGGER
+WRONG_ACTION
+WRONG_TARGET
+WRONG_FILTER
+WRONG_SELECTION
+WRONG_VALUE
+WRONG_REFERENCE
+WRONG_SEQUENCE
+WRONG_RETIRE_SEMANTICS
+AMBIGUOUS_REFERENCE
+STORED_EFFECT_DRIFT
+EMPTY_TEXT_WITH_STORED_EFFECT
+SUPPORTED_FALSE_POSITIVE
+
+==================================================
+3. Known drift 반드시 재검사
+==================================================
+
+River Dunk:
+GAME_START → source instance DECK→HAND, opening hand 전에 처리
+
+Jäger:
+FIELD listener → CARD_ENTERED → friendly Soldier → SAME_TARGET +1/+1
+PLAY_FROM_HAND/SUMMON 둘 다, 중복 +2 금지
+
+Maros II:
+TURN_END → REPEAT_TURN_END exactly one extra pass
+recursive repeat 금지
+
+Small Hippo:
+ENTER_FIELD → PLAYER_CHOICE enemy WRESTLER → MOVE_TO_DECK TOP
+MILL 금지
+
+Zombie Platinum:
+exact Zombie definition reference
+best current ATK+HP branch
+없으면 exact 2/2 Zombie generate + same instance stats copy
+
+P-Star Seven:
+own BOARD WRESTLER ALL
+excludeSource=true
++2/+2
+
+Tteokkeolluk:
+SCRIPT_V1
+choose enemy WRESTLER
+if attack > 1:
+reduce to exactly 1
+actual reduction amount만 source health gain
+then STUN
+attack <=1:
+no health gain
+STUN only
+
+Wirinom:
+ENTER_FIELD Generate Wirinyeo + copy source current stats
+SELF_RETIRE summon Wirinyeo from HAND
+legacy LEAVE_FIELD 남아 있으면 drift
+
+La Calavera:
+REVIVE random own graveyard cost<=3
++ SAME_TARGET TAUNT
+
+Red Rengi:
+Source "(없음)"이면 stored effect가 없어야 함
+
+==================================================
+4. Development repair policy
+==================================================
+
+자동 repair 가능 조건:
+
+- Source Text 명확
+- Fresh Analyzer full parse
+- shared validator PASS
+- runtime-supported
+- reference ambiguity 없음
+- expected canonical과 semantic equality
+
+하나라도 불확실:
+DRIFT_REPAIR_BLOCKED
+write 금지
+
+저장은 기존 Admin/save service/repository 경로 재사용.
+raw SQL 우회 금지.
+
+PUBLISHED row:
+effect 관련 필드만 변경.
+name/stats/rarity/tags/status/media/other fields 변경 금지.
+
+==================================================
+5. HAND/DECK health floor 회귀
+==================================================
+
+공식 invariant:
+
+HAND/DECK WRESTLER currentHealth >= 1
+
+검증:
+HAND 1HP -1 → 1
+HAND 1HP -5 → 1
+DECK 2HP -5 → 1
+FIELD 1HP damage 1 → 0 → RETIRE
+generated HAND/DECK WRESTLER도 floor
+clamp 후 actual delta 정확
+SCRIPT_V1 / queued / delayed 경로 동일
+
+FIELD에는 1-floor 적용 금지.
+
+==================================================
+6. AI Match runtime verification
+==================================================
+
+Inspection-only PASS 금지.
+
+최소 실제 engine/runtime 확인:
+
+Baldan
+River Dunk
+Jäger
+Maros II
+Small Hippo
+Zombie Platinum
+P-Star Seven
+Tteokkeolluk
+
+각각:
+Description
+→ Action
+→ Event(s)
+→ Expected GameState
+→ Actual GameState
+→ PASS/FAIL
+
+필요하면 mechanics-specific test deck 사용.
+
+==================================================
+7. 회귀
+==================================================
+
+반드시 유지:
+
+RETIRE vs DESTROY
+SELF_RETIRE
+target cancel
+Pandora Quest exactly +1
+hidden-info sanitizer
+SCRIPT_V1 strict validation
+GRANT_RANDOM_CARD_TEXT
+HAND/DECK health floor
+
+==================================================
+8. 검증
+==================================================
+
+pnpm run typecheck
+pnpm --filter @workspace/ko-game run build
+git diff --check
+
+관련 시:
+API typecheck/build
+Analyzer tests
+structured-effect tests
+SCRIPT_V1 tests
+runtime tests
+deterministic AI-match tests
+health-floor tests
+target-choice tests
+Quest tests
+sanitizer tests
+
+==================================================
+9. Git
+==================================================
+
+실제 변경 파일만 stage.
+prompt/report/.env/secrets/log/temp/Replit metadata 제외.
+
+commit.
+push 요청 없으면 push 금지.
+force push 금지.
+
+==================================================
+10. 최종 보고
+==================================================
+
+BALDAN
+Analyzer:
+Stored before:
+Stored after:
+Runtime:
+TAUNT hallucination removed:
+Zombie reference:
+PASS/FAIL
+
+FULL AUDIT
+SUPPORTED:
+NEW_MECHANIC_REQUIRED:
+ANALYSIS_FAILED:
+SUPPORTED_FALSE_POSITIVE:
+MISSING_CLAUSE:
+HALLUCINATED_CLAUSE:
+STORED_EFFECT_DRIFT:
+DRIFT_REPAIR_BLOCKED:
+EMPTY_TEXT_WITH_STORED_EFFECT:
+WRONG_RETIRE_SEMANTICS:
+AMBIGUOUS_REFERENCE:
+HEALTH_FLOOR_VIOLATIONS:
+
+AI MATCH
+Baldan:
+River Dunk:
+Jäger:
+Maros II:
+Small Hippo:
+Zombie Platinum:
+P-Star Seven:
+Tteokkeolluk:
+
+IMPLEMENTATION:
+AUTOMATED VERIFICATION:
+AI MATCH RUNTIME:
+BROWSER E2E:
+TYPECHECK:
+KO BUILD:
+API BUILD:
+git diff --check:
+PRODUCTION: UNVERIFIED
+PRODUCTION DATA MUTATION: NONE
+COMMIT:
+PUSH: NOT REQUESTED
+
+완료 조건:
+- safe-repair 가능한 Development drift 정리
+- false positive/missing/hallucinated clause 0
+- 발단 ambiguity 0
+- 실제 runtime 대표 카드 검증
+- Production 건드리지 않음
