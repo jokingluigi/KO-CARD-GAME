@@ -5,6 +5,7 @@ import { fetchCurrentUser, type AuthUser } from "@/lib/auth-client";
 import { fetchDecks, type Deck } from "@/lib/decks-client";
 import { ROUTES } from "@/lib/routes";
 import { deckValidityLabel } from "@/lib/display-labels";
+import { resolveAvailableDeckId } from "@/lib/selected-deck";
 
 export type OnlineAuthState =
   | { status: "loading"; user: null }
@@ -136,6 +137,18 @@ export function useOnlineDecks() {
     };
   }, []);
   return { decks, error };
+}
+
+export function useAvailableDeckSelection(
+  decks: Deck[] | null,
+  selectedDeckId: string | null,
+  setSelectedDeckId: (id: string | null) => void,
+) {
+  useEffect(() => {
+    if (!decks) return;
+    const nextId = resolveAvailableDeckId(decks, selectedDeckId);
+    if (nextId !== selectedDeckId) setSelectedDeckId(nextId);
+  }, [decks, selectedDeckId, setSelectedDeckId]);
 }
 
 export function DeckPicker({

@@ -7,10 +7,7 @@ import {
   endTurn,
   surrender,
   playWrestlerFromHand,
-  playTechniqueFromHand,
   startGame,
-  useActiveAbility,
-  useChampionAbility,
   selectEffectTarget,
   cancelEffectTargeting,
   type BoardSlot,
@@ -29,6 +26,7 @@ import {
   fetchGameMedia,
   emptyGameMediaCatalog,
   processChampionQuestEvents,
+  executeAction,
   type GameMediaCatalog,
   preloadMatchAssets,
   createDeterministicRandom,
@@ -860,7 +858,9 @@ export default function Home() {
       return;
     }
     const before = gameState;
-    const next = processChampionQuestEvents(before, selectEffectTarget(before, targetId));
+    const next = before.targetingState?.phase === 'PRE_COMMIT'
+      ? executeAction(before, { type: 'CONFIRM_PRECOMMIT_TARGET', playerId: before.players[0].id, targetId }).state
+      : processChampionQuestEvents(before, selectEffectTarget(before, targetId));
     if (next === before) {
       setPlayError('선택할 수 없는 대상입니다.');
       return;
@@ -1009,11 +1009,11 @@ export default function Home() {
     if (!matchReady || gameState.status !== 'IN_PROGRESS' || playAnimation || attackAnimation) return;
     const card = gameState.players[0].hand.find((entry) => entry.instanceId === cardInstanceId);
     if (!card) return;
-    const result = playTechniqueFromHand(
-      gameState,
-      gameState.players[0].id,
-      cardInstanceId,
-    );
+    const result = executeAction(gameState, {
+      type: 'BEGIN_TARGETED_ACTION',
+      playerId: gameState.players[0].id,
+      action: { type: 'PLAY_TECHNIQUE', cardInstanceId },
+    });
     if (!result.success) {
       setPlayError(result.message);
       return;
@@ -1027,11 +1027,11 @@ export default function Home() {
     if (!matchReady || gameState.status !== 'IN_PROGRESS' || playAnimation || attackAnimation) return;
     const targetCardInstanceId = cardInstanceId ?? selectedAttackerId;
     if (!targetCardInstanceId) return;
-    const result = useActiveAbility(
-      gameState,
-      gameState.players[0].id,
-      targetCardInstanceId,
-    );
+    const result = executeAction(gameState, {
+      type: 'BEGIN_TARGETED_ACTION',
+      playerId: gameState.players[0].id,
+      action: { type: 'USE_ACTIVE', cardInstanceId: targetCardInstanceId },
+    });
     if (!result.success) {
       setPlayError(result.message);
       return;
@@ -1042,7 +1042,11 @@ export default function Home() {
 
   function handleUseChampionAbility() {
     if (!matchReady || gameState.status !== 'IN_PROGRESS' || playAnimation || attackAnimation) return;
-    const result = useChampionAbility(gameState, gameState.players[0].id);
+    const result = executeAction(gameState, {
+      type: 'BEGIN_TARGETED_ACTION',
+      playerId: gameState.players[0].id,
+      action: { type: 'USE_CHAMPION_ABILITY' },
+    });
     if (!result.success) {
       setPlayError(result.message);
       return;

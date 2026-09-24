@@ -62,8 +62,41 @@ function sanitizeEvent(
   return safeEvent;
 }
 
+function sanitizeTargetingState(
+  targetingState: NonNullable<GameState["targetingState"]>,
+  hiddenCardIds: Set<string>,
+): NonNullable<GameState["targetingState"]> {
+  const safe = { ...targetingState };
+  safe.validTargetIds = targetingState.validTargetIds.filter((id) => !hiddenCardIds.has(id));
+  safe.selectedTargetIds = targetingState.selectedTargetIds.filter((id) => !hiddenCardIds.has(id));
+  safe.lastTargetIds = targetingState.lastTargetIds.filter((id) => !hiddenCardIds.has(id));
+  if (safe.sourceCard && hiddenCardIds.has(safe.sourceCard.instanceId)) delete safe.sourceCard;
+  if (safe.scriptContinuation) {
+    safe.scriptContinuation = {
+      ...safe.scriptContinuation,
+      registers: Object.fromEntries(
+        Object.entries(safe.scriptContinuation.registers).map(([key, value]) => [
+          key,
+          "ids" in value
+            ? { ids: value.ids.filter((id) => !hiddenCardIds.has(id)) }
+            : value,
+        ]),
+      ),
+    };
+  }
+  if (safe.continuation) {
+    safe.continuation = sanitizeTargetingState(safe.continuation, hiddenCardIds);
+  }
+  return safe;
+}
+
 export function sanitizeGameStateForViewer(state: GameState, viewerId: string): unknown {
-  const { randomSeed: _randomSeed, ...publicState } = state;
+  const {
+    randomSeed: _randomSeed,
+    championQuestEventCursorByPlayer: _questEventCursors,
+    championQuestProcessedEventIdentitiesByPlayer: _processedQuestEventIdentities,
+    ...publicState
+  } = state;
   const hiddenCardIds = new Set(
     state.players
       .filter((player) => player.id !== viewerId)
@@ -75,7 +108,9 @@ export function sanitizeGameStateForViewer(state: GameState, viewerId: string): 
     const { hand: opponentHand, deck: opponentDeck, ...opponent } = player;
     return { ...opponent, hand: hiddenCardCount(opponentHand), deck: hiddenCardCount(opponentDeck) };
   });
-  const targetingState = state.targetingState?.playerId === viewerId ? state.targetingState : undefined;
+  const targetingState = state.targetingState?.playerId === viewerId
+    ? sanitizeTargetingState(state.targetingState, hiddenCardIds)
+    : undefined;
   return {
     ...publicState,
     players,

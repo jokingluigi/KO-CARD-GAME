@@ -59,6 +59,7 @@ import {
   type EffectAiContext,
 } from "../lib/admin-effect-ai";
 import { getAuthenticatedUser } from "../lib/auth";
+import { compareAndAdvanceChampionVersion } from "../lib/champion-save-contract";
 
 const router: IRouter = Router();
 const cardImageStorage = new CardImageStorage();
@@ -1701,6 +1702,14 @@ router.post("/champions", async (request, response): Promise<void> => {
 router.patch("/champions/:id", async (request, response): Promise<void> => {
   if (!requireAdmin(request, response)) return;
   const id = firstParam(request.params.id);
+  const rawVersion = request.body && typeof request.body === "object"
+    ? (request.body as Record<string, unknown>).version
+    : undefined;
+  const expectedVersion = typeof rawVersion === "number" && Number.isInteger(rawVersion)
+    ? rawVersion
+    : typeof rawVersion === "string" && rawVersion.trim() && Number.isInteger(Number(rawVersion))
+      ? Number(rawVersion)
+      : null;
   const input = parseChampionInput(request.body);
   if (!id || !input) {
     response.status(400).json({ message: id ? championInputError(request.body) : "챔피언 ID를 확인해 주세요." });
@@ -1710,6 +1719,22 @@ router.patch("/champions/:id", async (request, response): Promise<void> => {
   if (!tokenValidation.ok) { response.status(400).json({ message: tokenValidation.message }); return; }
   const [existing] = await db.select().from(championsTable).where(eq(championsTable.id, id)).limit(1);
   if (!existing) { response.status(404).json({ message: "챔피언을 찾을 수 없습니다." }); return; }
+  if (expectedVersion === null) {
+    response.status(400).json({ message: "저장할 챔피언 버전이 필요합니다.", field: "version" });
+    return;
+  }
+  const versionCheck = expectedVersion === null
+    ? null
+    : compareAndAdvanceChampionVersion(existing.version, expectedVersion);
+  if (versionCheck && !versionCheck.ok) {
+    response.status(409).json({
+      message: "다른 관리자 변경이 있어 최신 버전을 다시 불러온 뒤 저장해 주세요.",
+      field: "version",
+      expectedVersion,
+      currentVersion: existing.version,
+    });
+    return;
+  }
   if (
     input.imageAssetId &&
     input.imageAssetId !== existing.imageAssetId &&
@@ -1745,7 +1770,14 @@ router.patch("/champions/:id", async (request, response): Promise<void> => {
   } = input;
   const [champion] = await db.update(championsTable).set({
     ...championValues, version: sql`${championsTable.version} + 1`, updatedAt: new Date(),
-  }).where(eq(championsTable.id, id)).returning();
+  }).where(and(eq(championsTable.id, id), eq(championsTable.version, expectedVersion))).returning();
+  if (!champion) {
+    response.status(409).json({
+      message: "다른 관리자 변경이 있어 최신 버전을 다시 불러온 뒤 저장해 주세요.",
+      field: "version",
+    });
+    return;
+  }
   if (
     existing.questCompleteAudioAssetId &&
     existing.questCompleteAudioAssetId !== input.questCompleteAudioAssetId

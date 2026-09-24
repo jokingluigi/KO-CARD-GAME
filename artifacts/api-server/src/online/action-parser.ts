@@ -40,6 +40,21 @@ export function toServerAction(
       return typeof action.targetId === "string"
         ? { type: action.type, playerId, targetId: action.targetId }
         : null;
+    case "CANCEL_EFFECT_TARGET":
+      return { type: action.type, playerId };
+    case "CONFIRM_PRECOMMIT_TARGET":
+      return typeof action.targetId === "string"
+        ? { type: action.type, playerId, targetId: action.targetId }
+        : null;
+    case "BEGIN_TARGETED_ACTION": {
+      const nested = action.action;
+      if (!nested || typeof nested !== "object" || typeof nested.type !== "string") return null;
+      if (nested.type === "USE_CHAMPION_ABILITY") return { type: action.type, playerId, action: { type: nested.type } };
+      return (nested.type === "PLAY_TECHNIQUE" || nested.type === "USE_ACTIVE") &&
+        typeof nested.cardInstanceId === "string"
+        ? { type: action.type, playerId, action: { type: nested.type, cardInstanceId: nested.cardInstanceId } }
+        : null;
+    }
     case "END_TURN":
       return { type: action.type, playerId };
     case "SURRENDER":

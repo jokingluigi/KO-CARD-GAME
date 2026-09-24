@@ -30,25 +30,78 @@ function matchesQuestEvent(
   return event.playerId === playerId;
 }
 
+function stableQuestEventIdentity(event: GameEvent): string | null {
+  const rootSourceEventId = event.sourceContext?.rootSourceEventId;
+  const causationId = event.sourceContext?.causationId;
+  const targetCardInstanceId =
+    event.cardInstanceId ??
+    (event.target?.type === 'CARD' ? event.target.cardInstanceId : undefined) ??
+    event.targetSnapshot?.cardInstanceId;
+  if ((!rootSourceEventId && !causationId) || !targetCardInstanceId) return null;
+  return JSON.stringify([
+    rootSourceEventId ?? null,
+    causationId ?? null,
+    event.type,
+    targetCardInstanceId,
+  ]);
+}
+
 export function processChampionQuestEvents(
   previousState: GameState,
   nextState: GameState,
 ): GameState {
-  const newEvents = nextState.events.slice(previousState.events.length);
+  const inputEventEnd = nextState.events.length;
   let resolvedState = nextState;
 
   for (const originalPlayer of nextState.players) {
+    const previousCursor =
+      previousState.championQuestEventCursorByPlayer?.[originalPlayer.id] ?? 0;
+    const nextCursor =
+      nextState.championQuestEventCursorByPlayer?.[originalPlayer.id] ?? 0;
+    const eventCursor = Math.max(
+      previousState.events.length,
+      previousCursor,
+      nextCursor,
+    );
+    const newEvents = nextState.events.slice(
+      Math.min(eventCursor, inputEventEnd),
+      inputEventEnd,
+    );
+    const processedIdentities = new Set([
+      ...(previousState.championQuestProcessedEventIdentitiesByPlayer?.[originalPlayer.id] ?? []),
+      ...(nextState.championQuestProcessedEventIdentitiesByPlayer?.[originalPlayer.id] ?? []),
+    ]);
     const champion = originalPlayer.champion;
     const quest = champion?.quest;
-    if (!champion || !quest || champion.questCompleted) continue;
+    const progressEvents = champion && quest && !champion.questCompleted
+      ? newEvents.filter((event) => {
+          if (!matchesQuestEvent(event, quest, originalPlayer.id, champion.id)) return false;
+          const identity = stableQuestEventIdentity(event);
+          if (!identity) return true;
+          if (processedIdentities.has(identity)) return false;
+          processedIdentities.add(identity);
+          return true;
+        })
+      : [];
+    const cursorByPlayer = {
+      ...(resolvedState.championQuestEventCursorByPlayer ?? {}),
+      [originalPlayer.id]: Math.max(eventCursor, inputEventEnd),
+    };
+    const processedIdentitiesByPlayer = {
+      ...(resolvedState.championQuestProcessedEventIdentitiesByPlayer ?? {}),
+      ...(progressEvents.length
+        ? { [originalPlayer.id]: [...processedIdentities] }
+        : {}),
+    };
+    resolvedState = {
+      ...resolvedState,
+      championQuestEventCursorByPlayer: cursorByPlayer,
+      championQuestProcessedEventIdentitiesByPlayer: processedIdentitiesByPlayer,
+    };
 
-    const progress = newEvents.filter(
-      (event) =>
-        matchesQuestEvent(event, quest, originalPlayer.id, champion.id),
-    ).length;
-    if (progress === 0) continue;
+    if (!champion || !quest || champion.questCompleted || progressEvents.length === 0) continue;
 
-    const progressAmount = progress * (quest.progressPerEvent ?? 1);
+    const progressAmount = progressEvents.length * (quest.progressPerEvent ?? 1);
     const questProgress = Math.min(
       champion.questProgress + progressAmount,
       quest.requiredProgress,

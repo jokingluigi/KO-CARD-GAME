@@ -5,6 +5,7 @@ import {
   championsTable,
   db,
   decksTable,
+  onlineMatchesTable,
   userCardCollectionsTable,
   userChampionCollectionsTable,
   type CardRecord,
@@ -13,6 +14,7 @@ import {
 } from "@workspace/db";
 import { DECK_SIZE, MAX_LEGENDARY_CARDS, validateDeckCounts } from "@workspace/game-engine";
 import { getAuthenticatedUser } from "../lib/auth";
+import { deleteOwnedDeck } from "../lib/deck-delete-service";
 import {
   isEligibleTestCard,
   isTestAccountUser,
@@ -536,12 +538,27 @@ router.post("/:id/select", async (request, response): Promise<void> => {
 router.delete("/:id", async (request, response): Promise<void> => {
   const user = requireUser(request, response);
   if (!user) return;
-  const deleted = await db
-    .delete(decksTable)
-    .where(and(eq(decksTable.id, request.params.id), eq(decksTable.userId, user.id)))
-    .returning({ id: decksTable.id });
-  if (deleted.length === 0) {
+  const result = await deleteOwnedDeck({
+    findOwnedDeck: async (userId, deckId) => loadUserDeck(userId, deckId),
+    hasMatchReference: async (deckId) => {
+      const [matchReference] = await db
+        .select({ id: onlineMatchesTable.id })
+        .from(onlineMatchesTable)
+        .where(sql`${onlineMatchesTable.player1DeckId} = ${deckId} OR ${onlineMatchesTable.player2DeckId} = ${deckId}`)
+        .limit(1);
+      return Boolean(matchReference);
+    },
+    deleteDeck: async (userId, deckId) => db
+      .delete(decksTable)
+      .where(and(eq(decksTable.id, deckId), eq(decksTable.userId, userId)))
+      .returning({ id: decksTable.id }),
+  }, user.id, request.params.id);
+  if (result.kind === "NOT_FOUND") {
     response.status(404).json({ message: "덱을 찾을 수 없습니다." });
+    return;
+  }
+  if (result.kind === "REFERENCED_BY_MATCH") {
+    response.status(409).json({ message: "온라인 매치 기록에서 사용 중인 덱은 삭제할 수 없습니다." });
     return;
   }
   response.json({ deleted: true });

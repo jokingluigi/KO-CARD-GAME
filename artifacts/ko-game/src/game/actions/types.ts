@@ -9,6 +9,11 @@ export type GameAction =
   | { type: 'USE_CHAMPION_ABILITY'; playerId: string }
   | { type: 'ATTACK'; playerId: string; attackerInstanceId: string; target: AttackTarget }
   | { type: 'SELECT_EFFECT_TARGET'; playerId: string; targetId: string }
+  | { type: 'CANCEL_EFFECT_TARGET'; playerId: string }
+  | { type: 'BEGIN_TARGETED_ACTION'; playerId: string; action: {
+      type: 'PLAY_TECHNIQUE'; cardInstanceId: string;
+    } | { type: 'USE_ACTIVE'; cardInstanceId: string } | { type: 'USE_CHAMPION_ABILITY' } }
+  | { type: 'CONFIRM_PRECOMMIT_TARGET'; playerId: string; targetId: string }
   | { type: 'END_TURN'; playerId: string }
   | { type: 'SURRENDER'; playerId: string };
 

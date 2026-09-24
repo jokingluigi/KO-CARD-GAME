@@ -100,3 +100,41 @@ test("hidden card-text grants redact donor metadata while public board grants re
   assert.equal(projected.events[0]?.grantedFromDefinitionId, undefined);
   assert.equal(projected.events[1]?.grantedFromDefinitionId, "published-card");
 });
+
+test("targeting snapshots never expose hidden opponent ids", () => {
+  const hidden = { instanceId: "hidden-target", definitionId: "secret" };
+  const state = {
+    cardPool: [],
+    players: [
+      { id: "PLAYER_ONE", hand: [], deck: [], board: [] },
+      { id: "PLAYER_TWO", hand: [hidden], deck: [], board: [] },
+    ],
+    events: [],
+    targetingState: {
+      active: true, playerId: "PLAYER_ONE", sourceInstanceId: "hidden-target",
+      sourceCard: hidden, effects: [], effectIndex: 0,
+      validTargetIds: ["hidden-target", "public-target"],
+      selectedTargetIds: ["hidden-target"], lastTargetIds: ["hidden-target"],
+      minTargets: 1, maxTargets: 1, mandatory: true, cancelable: false,
+      continuation: {
+        active: true, playerId: "PLAYER_ONE", sourceInstanceId: "public-source",
+        effects: [], effectIndex: 0, validTargetIds: ["hidden-target"],
+        selectedTargetIds: ["hidden-target"], lastTargetIds: ["hidden-target"],
+        minTargets: 1, maxTargets: 1, mandatory: true, cancelable: false,
+      },
+      scriptContinuation: {
+        selectedResultId: "selected",
+        remainingSteps: [],
+        registers: { selected: { ids: ["hidden-target"] } },
+        script: { steps: [] },
+      },
+    },
+  } as unknown as GameState;
+  const targeting = (sanitizeGameStateForViewer(state, "PLAYER_ONE") as { targetingState: Record<string, any> }).targetingState;
+  assert.deepEqual(targeting.validTargetIds, ["public-target"]);
+  assert.deepEqual(targeting.selectedTargetIds, []);
+  assert.deepEqual(targeting.lastTargetIds, []);
+  assert.equal(targeting.sourceCard, undefined);
+  assert.deepEqual(targeting.scriptContinuation.registers.selected.ids, []);
+  assert.deepEqual(targeting.continuation.validTargetIds, []);
+});

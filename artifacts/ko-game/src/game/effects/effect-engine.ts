@@ -536,7 +536,9 @@ function applyQueuedRuleEffect(
     ? new Set(state.players.find((player) => player.id === reviveOwnerId)?.graveyard.map((card) => card.instanceId))
     : undefined;
   const next = applyEffect(state, playerId, source, queuedEffectCardEffect(effect), chosen);
-  const resolved = next.targetingState?.active ? resolvePendingEffects(next) : next;
+  const resolved = next.targetingState?.active && next.targetingState !== state.targetingState
+    ? resolvePendingEffects(next)
+    : next;
   if (graveyardIdsBeforeRevive && reviveOwnerId) {
     const ownerAfterRevive = resolved.players.find((player) => player.id === reviveOwnerId);
     const stillInGraveyard = new Set(ownerAfterRevive?.graveyard.map((card) => card.instanceId));
@@ -1422,7 +1424,7 @@ export function resolvePendingEffects(state: GameState): GameState {
       // A triggered effect can lose all of its candidates after the trigger
       // starts (for example, another nested effect may retire the last card).
       // Do not leave the match in an impossible targeting state.
-      if (validTargetIds.length < minTargets) {
+      if (validTargetIds.length === 0 || validTargetIds.length < minTargets) {
         return resolvePendingEffects({
           ...next,
           targetingState: {
@@ -1539,19 +1541,27 @@ export function selectEffectTarget(state: GameState, targetId: string): GameStat
   return resolvePendingEffects(next);
 }
 
-/** Cancellation is intentionally limited to explicitly optional target effects. */
+/** Cancel the active target choice without rolling back committed game state. */
 export function cancelEffectTargeting(state: GameState): GameState {
   const pending = state.targetingState;
-  if (!pending || !pending.cancelable || pending.selectedTargetIds.length > 0) return state;
-  return resolvePendingEffects({
-    ...state,
-    targetingState: {
-      ...pending,
-      effectIndex: pending.effectIndex + 1,
-      selectedTargetIds: [],
-      validTargetIds: [],
-    },
-  });
+  if (!pending) return state;
+  // Optional structured effects retain their normal continuation semantics.
+  if (pending.cancelable) {
+    if (pending.selectedTargetIds.length > 0) return state;
+    return resolvePendingEffects({
+      ...state,
+      targetingState: {
+        ...pending,
+        effectIndex: pending.effectIndex + 1,
+        selectedTargetIds: [],
+        validTargetIds: [],
+      },
+    });
+  }
+  // Mandatory choices can be abandoned, but nothing already committed is
+  // undone. Dropping the authoritative frame clears the input lock and any
+  // nested/script continuation without restoring a prior snapshot.
+  return { ...state, targetingState: undefined };
 }
 
 export function hasMandatoryPlayerChoice(state: GameState, playerId: string, source: CardInstance, effects: CardEffect[]): boolean {
@@ -2494,7 +2504,9 @@ export function applyEffect(
           'SELF_DAMAGED',
           { healthBefore: preparedCurrent.currentHealth, healthAfter: health, sourceContext: sourceContextFor(playerId, sourceCard, triggerContext) },
         );
-        const afterSelfDamaged = selfDamaged.targetingState?.active ? resolvePendingEffects(selfDamaged) : selfDamaged;
+        const afterSelfDamaged = selfDamaged !== lethalDamagedState && selfDamaged.targetingState?.active
+          ? resolvePendingEffects(selfDamaged)
+          : selfDamaged;
         const liveCurrent = afterSelfDamaged.players.find((player) => player.id === targetOwner)?.board
           .find((card) => card?.instanceId === current.instanceId) ?? preparedCurrent;
         const beforeRetire = resolveTriggeredAbilities(afterSelfDamaged, targetOwner, liveCurrent, 'BEFORE_RETIRE');

@@ -874,9 +874,7 @@ export function GameStatePreview({
              {effectTargeting && (
                <div className="rounded border border-amber-500 bg-amber-950/90 px-2 py-2 text-center text-[10px] font-bold text-amber-100">
                  대상을 선택하세요 ({state.targetingState!.selectedTargetIds.length}/{state.targetingState!.minTargets})
-                 {state.targetingState!.cancelable && (
-                   <button type="button" onClick={onCancelEffectTargeting} className="mt-1 block w-full rounded border border-amber-600 px-1 py-0.5 text-[9px]">취소</button>
-                 )}
+                 <button type="button" onClick={onCancelEffectTargeting} className="mt-1 block w-full rounded border border-amber-600 px-1 py-0.5 text-[9px]">취소</button>
                </div>
              )}
              <div className="flex items-center justify-between gap-2 border-b border-neutral-800 pb-2">

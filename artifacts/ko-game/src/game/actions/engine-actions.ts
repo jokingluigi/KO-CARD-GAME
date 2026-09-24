@@ -6,7 +6,7 @@ import { playTechniqueFromHand } from '../engine/play-technique';
 import { playWrestlerFromHand } from '../engine/play-wrestler';
 import { endTurn } from '../engine/turn-system';
 import { processChampionQuestEvents } from '../champions/quests';
-import { selectEffectTarget } from '../effects/effect-engine';
+import { cancelEffectTargeting, selectEffectTarget } from '../effects/effect-engine';
 import { surrender } from '../engine/surrender';
 import type { BoardSlot } from '../engine/board-position';
 import type { GameState } from '../types/game-state';
@@ -20,6 +20,33 @@ import {
 const BOARD_SLOTS: BoardSlot[] = [0, 1, 2, 3];
 const legalActionsCache = new WeakMap<GameState, Map<string, GameAction[]>>();
 
+type TargetedAction = Extract<GameAction, { type: 'BEGIN_TARGETED_ACTION' }>['action'];
+
+function immediateAction(state: GameState, playerId: string, action: TargetedAction): ActionResult {
+  if (action.type === 'PLAY_TECHNIQUE') return playTechniqueFromHand(state, playerId, action.cardInstanceId);
+  if (action.type === 'USE_ACTIVE') return useActiveAbility(state, playerId, action.cardInstanceId);
+  return useChampionAbility(state, playerId);
+}
+
+function beginTargetedAction(state: GameState, action: Extract<GameAction, { type: 'BEGIN_TARGETED_ACTION' }>): ActionResult {
+  const probeState = structuredClone(state);
+  const probe = immediateAction(probeState, action.playerId, action.action);
+  if (!probe.success) return actionFailure(state, probe.errorCode, probe.message);
+  const pending = probe.state.targetingState;
+  if (!pending?.active) return probe;
+  if (pending.validTargetIds.length === 0) {
+    return actionFailure(state, 'NO_VALID_TARGET', '선택 가능한 대상이 없습니다.');
+  }
+  return actionSuccess({
+    ...state,
+    targetingState: {
+      ...pending,
+      phase: 'PRE_COMMIT',
+      pendingAction: action.action,
+    },
+  });
+}
+
 function probe(state: GameState, action: GameAction): boolean {
   return executeAction(state, action).success;
 }
@@ -32,11 +59,12 @@ export function getLegalActions(state: GameState, playerId: string): GameAction[
 
   if (state.targetingState?.active) {
     if (state.targetingState.playerId !== playerId) return [];
-    const actions = state.targetingState.validTargetIds.map((targetId) => ({
-      type: 'SELECT_EFFECT_TARGET' as const,
-      playerId,
-      targetId,
-    }));
+    const actions: GameAction[] = state.targetingState.validTargetIds.map((targetId) =>
+      state.targetingState?.phase === 'PRE_COMMIT'
+        ? { type: 'CONFIRM_PRECOMMIT_TARGET' as const, playerId, targetId }
+        : { type: 'SELECT_EFFECT_TARGET' as const, playerId, targetId },
+    );
+    actions.push({ type: 'CANCEL_EFFECT_TARGET', playerId });
     if (cachedByPlayer) cachedByPlayer.set(playerId, actions);
     else legalActionsCache.set(state, new Map([[playerId, actions]]));
     return actions;
@@ -96,6 +124,7 @@ export function getLegalActions(state: GameState, playerId: string): GameAction[
 }
 
 export function executeAction(state: GameState, action: GameAction): ActionResult {
+  if (action.type === 'BEGIN_TARGETED_ACTION') return beginTargetedAction(state, action);
   switch (action.type) {
     case 'PLAY_WRESTLER':
       return playWrestlerFromHand(state, action.playerId, action.cardInstanceId, action.boardSlot);
@@ -116,10 +145,33 @@ export function executeAction(state: GameState, action: GameAction): ActionResul
       if (!pending?.active || pending.playerId !== action.playerId) {
         return actionFailure(state, 'NO_VALID_TARGET', '선택할 수 있는 대상이 없습니다.');
       }
-      const selected = processChampionQuestEvents(state, selectEffectTarget(state, action.targetId));
+      if (pending.phase === 'PRE_COMMIT') {
+        return actionFailure(state, 'TARGET_SELECTION_PENDING', '사용을 확정한 뒤 대상을 선택하세요.');
+      }
+      const selected = selectEffectTarget(state, action.targetId);
       return selected === state
         ? actionFailure(state, 'NO_VALID_TARGET', '선택할 수 없는 대상입니다.')
-        : actionSuccess(selected);
+        : actionSuccess(processChampionQuestEvents(state, selected));
+    }
+    case 'CANCEL_EFFECT_TARGET': {
+      const pending = state.targetingState;
+      if (!pending?.active || pending.playerId !== action.playerId) {
+        return actionFailure(state, 'NO_VALID_TARGET', '취소할 선택이 없습니다.');
+      }
+      return actionSuccess(cancelEffectTargeting(state));
+    }
+    case 'CONFIRM_PRECOMMIT_TARGET': {
+      const pending = state.targetingState;
+      if (!pending?.active || pending.phase !== 'PRE_COMMIT' || pending.playerId !== action.playerId ||
+        !pending.pendingAction || !pending.validTargetIds.includes(action.targetId)) {
+        return actionFailure(state, 'NO_VALID_TARGET', '선택할 수 없는 대상입니다.');
+      }
+      const actionToRun = pending.pendingAction as TargetedAction;
+      const committed = immediateAction({ ...state, targetingState: undefined }, action.playerId, actionToRun);
+      if (!committed.success || !committed.state.targetingState?.active) return committed;
+      const selectedState = selectEffectTarget(committed.state, action.targetId);
+      const selected = processChampionQuestEvents(committed.state, selectedState);
+      return actionSuccess(selected);
     }
   }
 }

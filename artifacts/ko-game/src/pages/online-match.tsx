@@ -519,7 +519,11 @@ function OnlineMatchPage() {
   function handleSelectCard(cardInstanceId: string) {
     if (!canAct || !state) return;
     if (state.targetingState?.active) {
-      if (state.targetingState.validTargetIds.includes(cardInstanceId)) sendAction({ type: "SELECT_EFFECT_TARGET", targetId: cardInstanceId });
+      if (state.targetingState.validTargetIds.includes(cardInstanceId)) sendAction(
+        state.targetingState.phase === "PRE_COMMIT"
+          ? { type: "CONFIRM_PRECOMMIT_TARGET", targetId: cardInstanceId }
+          : { type: "SELECT_EFFECT_TARGET", targetId: cardInstanceId },
+      );
       return;
     }
     setSelectedAttackerId(null);
@@ -529,7 +533,11 @@ function OnlineMatchPage() {
   function handleSelectAttacker(cardInstanceId: string) {
     if (!canAct || !state) return;
     if (state.targetingState?.active) {
-      if (state.targetingState.validTargetIds.includes(cardInstanceId)) sendAction({ type: "SELECT_EFFECT_TARGET", targetId: cardInstanceId });
+      if (state.targetingState.validTargetIds.includes(cardInstanceId)) sendAction(
+        state.targetingState.phase === "PRE_COMMIT"
+          ? { type: "CONFIRM_PRECOMMIT_TARGET", targetId: cardInstanceId }
+          : { type: "SELECT_EFFECT_TARGET", targetId: cardInstanceId },
+      );
       return;
     }
     setSelectedCardId(null);
@@ -552,7 +560,7 @@ function OnlineMatchPage() {
   }
 
   function handleUseTechnique(cardInstanceId: string) {
-    if (!sendAction({ type: "PLAY_TECHNIQUE", cardInstanceId })) return;
+    if (!sendAction({ type: "BEGIN_TARGETED_ACTION", action: { type: "PLAY_TECHNIQUE", cardInstanceId } })) return;
   }
 
   function handleAttackWrestler(targetCardInstanceId: string, geometry?: AttackAnimationState["geometry"]) {
@@ -717,9 +725,9 @@ function OnlineMatchPage() {
           });
           pendingPlayRef.current = null;
         }}
-        onUseActive={(cardInstanceId) => sendAction({ type: "USE_ACTIVE", cardInstanceId })}
-        onUseChampionAbility={() => sendAction({ type: "USE_CHAMPION_ABILITY" })}
-        onCancelEffectTargeting={() => setPlayError("이 선택은 서버에서 완료될 때까지 유지됩니다.")}
+        onUseActive={(cardInstanceId) => sendAction({ type: "BEGIN_TARGETED_ACTION", action: { type: "USE_ACTIVE", cardInstanceId } })}
+        onUseChampionAbility={() => sendAction({ type: "BEGIN_TARGETED_ACTION", action: { type: "USE_CHAMPION_ABILITY" } })}
+        onCancelEffectTargeting={() => sendAction({ type: "CANCEL_EFFECT_TARGET" })}
         onEffectTarget={(targetId) => sendAction({ type: "SELECT_EFFECT_TARGET", targetId })}
         onPresentationBusyChange={(busy) => {
           presentationBusyRef.current = busy;

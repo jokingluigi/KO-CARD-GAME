@@ -8,6 +8,12 @@ export type OnlineActionPayload =
   | { type: "USE_CHAMPION_ABILITY" }
   | { type: "ATTACK"; attackerInstanceId: string; target: AttackTarget }
   | { type: "SELECT_EFFECT_TARGET"; targetId: string }
+  | { type: "CANCEL_EFFECT_TARGET" }
+  | { type: "BEGIN_TARGETED_ACTION"; action:
+      { type: "PLAY_TECHNIQUE"; cardInstanceId: string } |
+      { type: "USE_ACTIVE"; cardInstanceId: string } |
+      { type: "USE_CHAMPION_ABILITY" } }
+  | { type: "CONFIRM_PRECOMMIT_TARGET"; targetId: string }
   | { type: "END_TURN" }
   | { type: "SURRENDER" };
 

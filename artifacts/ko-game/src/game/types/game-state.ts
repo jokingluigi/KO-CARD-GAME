@@ -85,6 +85,10 @@ export interface GameState {
   pendingCardEffects: PendingCardEffect[];
   pendingDelayedEffects: PendingDelayedEffect[];
   pendingRuleListeners: PendingRuleListener[];
+  /** Durable per-player offsets prevent a replayed event suffix from granting quest progress twice. */
+  championQuestEventCursorByPlayer?: Record<string, number>;
+  /** Stable event identities guard against the same attributed event being appended twice. */
+  championQuestProcessedEventIdentitiesByPlayer?: Record<string, string[]>;
   /** Ephemeral, serializable interception markers consumed by the current resolution. */
   preventedDamageTargetIds?: string[];
   preventedRetireTargetIds?: string[];
@@ -92,6 +96,11 @@ export interface GameState {
   /** Effect resolution is deliberately part of game state, not UI state. */
   targetingState?: {
     active: true;
+     phase?: 'PRE_COMMIT' | 'POST_COMMIT';
+     pendingAction?: {
+       type: 'PLAY_TECHNIQUE' | 'USE_ACTIVE' | 'USE_CHAMPION_ABILITY';
+       cardInstanceId?: string;
+     };
     playerId: string;
     sourceInstanceId: string;
     /** Snapshot permits champion abilities (which have no board card source). */

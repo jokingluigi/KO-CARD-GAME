@@ -103,6 +103,15 @@ async function message(response: Response) {
   try { return ((await response.json()) as { message?: string }).message ?? "요청을 처리하지 못했습니다."; }
   catch { return "요청을 처리하지 못했습니다."; }
 }
+async function classifiedMessage(response: Response) {
+  try {
+    const body = await response.json() as { message?: string; field?: string };
+    const detail = body.field ? ` [${body.field}]` : "";
+    return `${body.message ?? "요청을 처리하지 못했습니다."}${detail}`;
+  } catch {
+    return "요청을 처리하지 못했습니다.";
+  }
+}
 
 export function AdminChampionManager({ onUnauthorized }: { onUnauthorized: () => void }) {
   const [, navigate] = useLocation();
@@ -116,6 +125,9 @@ export function AdminChampionManager({ onUnauthorized }: { onUnauthorized: () =>
   const [error, setError] = useState("");
   const [messageText, setMessageText] = useState("");
   const [busy, setBusy] = useState(false);
+  const formRef = useRef<Form>(empty);
+  const pendingUploadsRef = useRef<Set<Promise<void>>>(new Set());
+  const saveInFlightRef = useRef(false);
   const [analyzingKey, setAnalyzingKey] = useState<(EffectAnalysisKey | "questText") | null>(null);
   const [analysisResults, setAnalysisResults] = useState<Partial<Record<EffectAnalysisKey, EffectAnalysis>>>({});
   const [questAnalysis, setQuestAnalysis] = useState<EffectAnalysis | null>(null);
@@ -151,8 +163,15 @@ export function AdminChampionManager({ onUnauthorized }: { onUnauthorized: () =>
   }, [onUnauthorized]);
   useEffect(() => { void loadTokenCards(); }, [loadTokenCards]);
 
-  const update = <K extends keyof Form>(key: K, value: Form[K]) =>
-    setForm((current) => ({ ...current, [key]: value }));
+  const update = <K extends keyof Form>(key: K, value: Form[K]) => {
+    const next = { ...formRef.current, [key]: value };
+    formRef.current = next;
+    setForm(next);
+  };
+  const replaceForm = (next: Form) => {
+    formRef.current = next;
+    setForm(next);
+  };
   async function analyze(textKey: EffectAnalysisKey, effectSlot: EffectSlot) {
     const text = form[textKey]?.trim();
     if (!text) { setError("분석할 자연어 효과를 입력해 주세요."); return; }
@@ -327,40 +346,59 @@ export function AdminChampionManager({ onUnauthorized }: { onUnauthorized: () =>
 
   function applyQuestAnalysis() {
     if (!questAnalysis?.condition || questAnalysis.outcome !== "supported") return;
-    setForm((current) => ({
-      ...current,
+    const next = {
+      ...formRef.current,
       questCondition: questAnalysis.condition ?? null,
       questProgressRequired: typeof questAnalysis.condition?.required === "number"
         ? questAnalysis.condition.required
-        : current.questProgressRequired,
-    }));
+        : formRef.current.questProgressRequired,
+    };
+    formRef.current = next;
+    setForm(next);
     setMessageText("퀘스트 조건 분석 결과를 적용했습니다. 챔피언 저장을 눌러 보존하세요.");
     setError("");
   }
   function updateQuestProgress(value: number | null) {
-    setForm((current) => ({
-      ...current,
+    const next = {
+      ...formRef.current,
       questProgressRequired: value,
-      questCondition: current.questCondition && value !== null
-        ? { ...current.questCondition, required: value }
-        : current.questCondition,
-    }));
+      questCondition: formRef.current.questCondition && value !== null
+        ? { ...formRef.current.questCondition, required: value }
+        : formRef.current.questCondition,
+    };
+    formRef.current = next;
+    setForm(next);
   }
   async function save() {
-    const imageAssetId = form.imageAssetId?.trim() || null;
-    const imageUrl = form.imageUrl?.trim() || null;
-    const completedPortraitAssetId = form.questCompletedPortraitAssetId?.trim() || null;
-    const completedPortraitUrl = form.questCompletedPortraitUrl?.trim() || null;
-    const questCompleteAudioAssetId = form.questCompleteAudioAssetId?.trim() || null;
-    const questCompleteAudioUrl = form.questCompleteAudioUrl?.trim() || null;
-    const questProgressRequired = form.hasQuest
-      ? form.questProgressRequired ?? (typeof form.questCondition?.required === "number" ? form.questCondition.required : 1)
+    if (saveInFlightRef.current || busy) return;
+    saveInFlightRef.current = true;
+    setBusy(true);
+    setError("");
+    try {
+      if (pendingUploadsRef.current.size) {
+        await Promise.all([...pendingUploadsRef.current]);
+      }
+    } catch (reason) {
+      saveInFlightRef.current = false;
+      setBusy(false);
+      setError(reason instanceof Error ? reason.message : "업로드가 완료되지 않아 저장하지 못했습니다.");
+      return;
+    }
+    const currentForm = formRef.current;
+    const imageAssetId = currentForm.imageAssetId?.trim() || null;
+    const imageUrl = currentForm.imageUrl?.trim() || null;
+    const completedPortraitAssetId = currentForm.questCompletedPortraitAssetId?.trim() || null;
+    const completedPortraitUrl = currentForm.questCompletedPortraitUrl?.trim() || null;
+    const questCompleteAudioAssetId = currentForm.questCompleteAudioAssetId?.trim() || null;
+    const questCompleteAudioUrl = currentForm.questCompleteAudioUrl?.trim() || null;
+    const questProgressRequired = currentForm.hasQuest
+      ? currentForm.questProgressRequired ?? (typeof currentForm.questCondition?.required === "number" ? currentForm.questCondition.required : 1)
       : null;
-    const questCondition = form.hasQuest && form.questCondition
-      ? { ...form.questCondition, required: questProgressRequired }
-      : form.hasQuest ? form.questCondition : null;
+    const questCondition = currentForm.hasQuest && currentForm.questCondition
+      ? { ...currentForm.questCondition, required: questProgressRequired }
+      : currentForm.hasQuest ? currentForm.questCondition : null;
     const saveForm: Form = {
-      ...form,
+      ...currentForm,
       imageAssetId,
       imageUrl,
       questCompletedPortraitAssetId: completedPortraitAssetId,
@@ -374,20 +412,29 @@ export function AdminChampionManager({ onUnauthorized }: { onUnauthorized: () =>
         (completedPortraitAssetId === null) !== (completedPortraitUrl === null) ||
         (questCompleteAudioAssetId === null) !== (questCompleteAudioUrl === null)) {
       setError("초상화와 이미지 주소를 함께 확인해 주세요.");
+      saveInFlightRef.current = false;
+      setBusy(false);
       return;
     }
-    setBusy(true); setError("");
     try {
       const response = await fetch(editing ? `${adminApiBase}/champions/${editing.id}` : `${adminApiBase}/champions`, {
         method: editing ? "PATCH" : "POST", credentials: "include",
-        headers: { "Content-Type": "application/json" }, body: JSON.stringify(saveForm),
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(editing ? { ...saveForm, version: editing.version } : saveForm),
       });
       if (response.status === 401) { onUnauthorized(); return; }
-       if (!response.ok) throw new Error(await message(response));
+      if (response.status === 403) throw new Error("관리자 권한이 필요합니다.");
+      if (response.status === 409) throw new Error(`충돌: ${await classifiedMessage(response)}`);
+      if (response.status >= 500) throw new Error("서버 오류로 저장하지 못했습니다. 잠시 후 다시 시도해 주세요.");
+      if (!response.ok) throw new Error(`입력값을 확인해 주세요: ${await classifiedMessage(response)}`);
        setMessageText(editing ? "챔피언을 수정했습니다." : "새 챔피언을 DRAFT로 저장했습니다.");
       setOpen(false); await load();
-    } catch (reason) { setError(reason instanceof Error ? reason.message : "챔피언을 저장하지 못했습니다."); }
-    finally { setBusy(false); }
+    } catch (reason) {
+      setError(reason instanceof TypeError
+        ? "네트워크 오류로 저장하지 못했습니다. 연결을 확인한 뒤 다시 시도해 주세요."
+        : reason instanceof Error ? reason.message : "챔피언을 저장하지 못했습니다.");
+    }
+    finally { saveInFlightRef.current = false; setBusy(false); }
   }
   async function mutate(id: string, action: "duplicate" | "status", body?: object) {
     const response = await fetch(`${adminApiBase}/champions/${id}/${action}`, {
@@ -429,7 +476,7 @@ export function AdminChampionManager({ onUnauthorized }: { onUnauthorized: () =>
       setFullAnalysis(null);
       setFullPrompt("");
      setAnalyzingKey(null);
-      setEditing(champion ?? null); setTokenSearch(""); setBasicPortraitLocalUrl(null); setPortraitLocalUrl(null); setForm(champion ? {
+       setEditing(champion ?? null); setTokenSearch(""); setBasicPortraitLocalUrl(null); setPortraitLocalUrl(null); formRef.current = champion ? {
        name: champion.name, description: champion.description, imageUrl: champion.imageUrl,
        imageAssetId: champion.imageAssetId, imageUploadToken: null, imageFileName: null,
        imageDisplayMode: champion.imageDisplayMode ?? DEFAULT_IMAGE_DISPLAY_SETTINGS.imageDisplayMode,
@@ -458,7 +505,7 @@ export function AdminChampionManager({ onUnauthorized }: { onUnauthorized: () =>
       questCompleteAudioEnabled: champion.questCompleteAudioEnabled ?? false,
       questCompleteAudioUploadToken: null,
       questCompleteAudioFileName: null,
-    } : empty); setOpen(true); setError("");
+     } : empty; setForm(formRef.current); setOpen(true); setError("");
   }
 
     async function discardPendingImage(imageAssetId: string | null, imageUploadToken: string | null) {
@@ -516,6 +563,7 @@ export function AdminChampionManager({ onUnauthorized }: { onUnauthorized: () =>
     }
 
     async function uploadPortrait(file: File, kind: "basic" | "completed") {
+      if (saveInFlightRef.current) return;
       const extension = file.name.toLowerCase().split(".").pop() ?? "";
       const allowed = (file.type === "image/png" && extension === "png") ||
         (file.type === "image/jpeg" && ["jpg", "jpeg"].includes(extension)) ||
@@ -524,6 +572,7 @@ export function AdminChampionManager({ onUnauthorized }: { onUnauthorized: () =>
         setError("PNG, JPG, JPEG, WEBP 이미지 파일만 선택할 수 있습니다.");
         return;
       }
+      const operation = (async () => {
       const setLocalUrl = kind === "basic" ? setBasicPortraitLocalUrl : setPortraitLocalUrl;
       const setUploading = kind === "basic" ? setBasicPortraitUploading : setPortraitUploading;
       const discardPending = kind === "basic" ? discardPendingBasicPortrait : discardPendingCompletedPortrait;
@@ -573,6 +622,13 @@ export function AdminChampionManager({ onUnauthorized }: { onUnauthorized: () =>
         setError(reason instanceof Error ? reason.message : "초상화를 업로드하지 못했습니다.");
       } finally {
         setUploading(false);
+      }
+      })();
+      pendingUploadsRef.current.add(operation);
+      try {
+        await operation;
+      } finally {
+        pendingUploadsRef.current.delete(operation);
       }
     }
 
@@ -642,7 +698,7 @@ export function AdminChampionManager({ onUnauthorized }: { onUnauthorized: () =>
                   imagePositionY={form.imagePositionY}
                   interactive
                   showHint={Boolean(basicPortraitLocalUrl || form.imageUrl)}
-                  onPositionChange={(position) => setForm((current) => ({ ...current, ...position }))}
+                   onPositionChange={(position) => replaceForm({ ...formRef.current, ...position })}
                 />
                 <div className="space-y-3">
                   <div className="flex flex-wrap gap-2">
@@ -667,7 +723,7 @@ export function AdminChampionManager({ onUnauthorized }: { onUnauthorized: () =>
                   </div>
                   <ChampionImageDisplayControls
                     settings={form}
-                    onChange={(patch) => setForm((current) => ({ ...current, ...patch }))}
+                     onChange={(patch) => replaceForm({ ...formRef.current, ...patch })}
                   />
                 </div>
               </div>
@@ -769,20 +825,24 @@ export function AdminChampionManager({ onUnauthorized }: { onUnauthorized: () =>
             onApplyAi={(effects, mode) => applyAiEffect("abilityEffects", effects, mode)}
             onUnauthorized={onUnauthorized}
           />
-         <label className="flex items-center gap-2"><input type="checkbox" checked={form.hasQuest} onChange={e=>setForm((current) => ({
-           ...current,
-           hasQuest: e.target.checked,
-           questProgressRequired: e.target.checked
-             ? (current.questProgressRequired ?? (typeof current.questCondition?.required === "number" ? current.questCondition.required : 1))
-             : null,
-           questCondition: e.target.checked && current.questCondition
-             ? {
-                 ...current.questCondition,
-                 required: current.questProgressRequired
-                   ?? (typeof current.questCondition.required === "number" ? current.questCondition.required : 1),
-               }
-             : current.questCondition,
-         }))}/> 퀘스트 있음</label>
+         <label className="flex items-center gap-2"><input type="checkbox" checked={form.hasQuest} onChange={e=>{
+           const current = formRef.current;
+           const enabled = e.target.checked;
+           replaceForm({
+             ...current,
+             hasQuest: enabled,
+             questProgressRequired: enabled
+               ? (current.questProgressRequired ?? (typeof current.questCondition?.required === "number" ? current.questCondition.required : 1))
+               : null,
+             questCondition: enabled && current.questCondition
+               ? {
+                   ...current.questCondition,
+                   required: current.questProgressRequired
+                     ?? (typeof current.questCondition.required === "number" ? current.questCondition.required : 1),
+                 }
+               : current.questCondition,
+           });
+         }}/> 퀘스트 있음</label>
          {form.hasQuest && <><label>퀘스트 이름<input className={input} value={form.questName??""} onChange={e=>update("questName",e.target.value)}/></label><label>필요 진행도<input type="number" className={input} value={form.questProgressRequired??1} onChange={e=>updateQuestProgress(e.target.value===""?null:Number(e.target.value))}/></label>
            <QuestConditionField
              value={form.questText??""}

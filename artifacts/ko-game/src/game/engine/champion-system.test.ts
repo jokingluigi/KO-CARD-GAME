@@ -759,3 +759,134 @@ test('Champion Ability 귀속 RETIRE만 sourceActionType 퀘스트를 진행한�
   });
   assert.equal(enemyRetired.players[0].champion?.questProgress, 1);
 });
+
+function createReplayGuardState(questProgress = 0) {
+  const started = startGame(createInitialGameState([
+    'test-champion-quest',
+    'test-champion-no-quest',
+  ]), fixedRandom);
+  return {
+    ...started,
+    players: started.players.map((player) =>
+      player.id === 'player-1' && player.champion?.quest
+        ? {
+            ...player,
+            champion: {
+              ...player.champion,
+              questProgress,
+              questCompleted: false,
+              quest: {
+                ...player.champion.quest,
+                trackedEvent: 'WRESTLER_RETIRED' as const,
+                cardType: 'WRESTLER' as const,
+                sourceActionType: 'USE_CHAMPION_ABILITY',
+                requiredProgress: 5,
+                progressPerEvent: 1,
+                reward: { type: 'GAIN_GOLD' as const, amount: 3 },
+              },
+            },
+          }
+        : player,
+    ),
+  };
+}
+
+function championAbilityRetirement(
+  championId: string,
+  rootSourceEventId: string,
+  cardInstanceId: string,
+) {
+  return {
+    type: 'CARD_RETIRED' as const,
+    playerId: 'player-2',
+    cardInstanceId,
+    cardType: 'WRESTLER' as const,
+    boardSlot: 0 as const,
+    reason: 'RETIRE' as const,
+    sourceContext: {
+      sourcePlayerId: 'player-1',
+      sourceActionType: 'USE_CHAMPION_ABILITY',
+      sourceChampionDefinitionId: championId,
+      sourceAbilityId: 'test-champion-ability',
+      sourceEffectId: 'test-damage-effect',
+      rootSourceEventId,
+      causationId: `${rootSourceEventId}:damage`,
+    },
+  };
+}
+
+test('one Champion ability retirement advances once when the same event suffix is replayed', () => {
+  const previous = createReplayGuardState();
+  const championId = previous.players[0].champion!.id;
+  const actionId = `champion-ability:player-1:${previous.events.length}`;
+  const targetInstanceId = 'retired-wrestler-once';
+  const retirement = championAbilityRetirement(championId, actionId, targetInstanceId);
+  const eventId = previous.events.length;
+  const next = { ...previous, events: [...previous.events, retirement] };
+
+  const firstPass = processChampionQuestEvents(previous, next);
+  const replay = processChampionQuestEvents(previous, firstPass);
+
+  assert.equal(retirement.sourceContext.sourceActionType, 'USE_CHAMPION_ABILITY');
+  assert.equal(retirement.sourceContext.sourceChampionDefinitionId, championId);
+  assert.equal(retirement.cardInstanceId, targetInstanceId);
+  assert.equal(eventId, next.events.length - 1);
+  assert.equal(firstPass.players[0].champion?.questProgress, 1);
+  assert.equal(replay.players[0].champion?.questProgress, 1);
+  assert.equal(
+    replay.events.filter((event) =>
+      event.type === 'CHAMPION_QUEST_PROGRESS' && event.championId === championId,
+    ).length,
+    1,
+  );
+});
+
+test('stable event identity deduplicates a repeated retirement but counts distinct targets', () => {
+  const previous = createReplayGuardState();
+  const championId = previous.players[0].champion!.id;
+  const actionId = `champion-ability:player-1:${previous.events.length}`;
+  const retirement = championAbilityRetirement(championId, actionId, 'retired-wrestler-a');
+  const repeatedEvent = { ...retirement };
+  const repeated = processChampionQuestEvents(previous, {
+    ...previous,
+    events: [...previous.events, retirement, repeatedEvent],
+  });
+  assert.equal(repeated.players[0].champion?.questProgress, 1);
+
+  const distinctTargets = processChampionQuestEvents(previous, {
+    ...previous,
+    events: [
+      ...previous.events,
+      retirement,
+      championAbilityRetirement(championId, actionId, 'retired-wrestler-b'),
+    ],
+  });
+  assert.equal(distinctTargets.players[0].champion?.questProgress, 2);
+});
+
+test('replayed progress at the completion threshold grants the reward once', () => {
+  const previous = createReplayGuardState(4);
+  const championId = previous.players[0].champion!.id;
+  const retirement = championAbilityRetirement(
+    championId,
+    `champion-ability:player-1:${previous.events.length}`,
+    'retired-wrestler-completes-quest',
+  );
+  const next = { ...previous, events: [...previous.events, retirement] };
+  const firstPass = processChampionQuestEvents(previous, next);
+  const replay = processChampionQuestEvents(previous, firstPass);
+
+  assert.equal(firstPass.players[0].champion?.questProgress, 5);
+  assert.equal(firstPass.players[0].champion?.questCompleted, true);
+  assert.equal(
+    firstPass.players[0].currentGold,
+    previous.players[0].currentGold + 3,
+  );
+  assert.equal(replay.players[0].currentGold, firstPass.players[0].currentGold);
+  assert.equal(
+    replay.events.filter((event) =>
+      event.type === 'CHAMPION_QUEST_COMPLETED' && event.championId === championId,
+    ).length,
+    1,
+  );
+});

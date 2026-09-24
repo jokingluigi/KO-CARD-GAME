@@ -253,6 +253,7 @@ export default function Decks() {
   const [statusMessage, setStatusMessage] = useState("");
   const [championPickerOpen, setChampionPickerOpen] = useState(false);
   const [detailCard, setDetailCard] = useState<DeckCard | null>(null);
+  const deleteConfirmationOpenRef = useRef(false);
 
   const checkAuthentication = useCallback(() => {
     const generation = ++authRequestGeneration.current;
@@ -513,10 +514,19 @@ export default function Decks() {
 
   async function handleDelete() {
     if (!editingId) return;
+    if (deleteConfirmationOpenRef.current || isMutating) return;
+    deleteConfirmationOpenRef.current = true;
     const targetName = deckName || "이 덱";
-    if (!window.confirm(`"${targetName}" 덱을 삭제하시겠습니까?`)) return;
+    let confirmed = false;
+    try {
+      confirmed = window.confirm(`"${targetName}" 덱을 삭제하시겠습니까?`);
+    } finally {
+      deleteConfirmationOpenRef.current = false;
+    }
+    if (!confirmed) return;
     setIsMutating(true);
     setErrorMessage("");
+    setStatusMessage("");
     try {
       await deleteDeck(editingId);
       const nextDecks = await fetchDecks();

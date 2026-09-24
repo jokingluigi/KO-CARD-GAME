@@ -6,6 +6,7 @@ import {
   OnlineAuthGate,
   OnlineShell,
   SelectedDeckStamp,
+  useAvailableDeckSelection,
   useOnlineDecks,
 } from "@/components/online-lobby-ui";
 import { getOnlineLobbyClient, type OnlineLobbyConnectionState } from "@/lib/online-lobby-client";
@@ -36,11 +37,7 @@ function QuickMatchPage() {
   const searchStartedAtRef = useRef<number | null>(null);
 
   const selectedDeck = useMemo(() => decks?.find((deck) => deck.id === selectedDeckId), [decks, selectedDeckId]);
-  useEffect(() => {
-    if (!selectedDeckId && decks?.some((deck) => deck.isValid)) {
-      setSelectedDeckId(decks.find((deck) => deck.isValid)!.id);
-    }
-  }, [decks, selectedDeckId]);
+  useAvailableDeckSelection(decks, selectedDeckId, setSelectedDeckId);
 
   useEffect(() => {
     selectedDeckIdRef.current = selectedDeckId;
