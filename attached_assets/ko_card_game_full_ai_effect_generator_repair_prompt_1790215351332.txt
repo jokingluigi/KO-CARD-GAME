@@ -1,0 +1,1480 @@
+KO CARD GAME — AI EFFECT GENERATOR / ANALYZER / AUTO-APPLY FULL REPAIR
+ALL CURRENT FAILURES IN ONE PASS
+
+현재 목표:
+KO CARD GAME의 AI 효과 생성기 전체 파이프라인을 한 번에 정리한다.
+
+현재 실제로 확인된 문제는 다음과 같다.
+
+1. SCRIPT_V1 생성 결과가 Script AST 검증을 통과하지 못함
+2. `target.filters` / `target.tagFilters` 같은 비공식 필드를 AI가 생성함
+3. 개별 필드는 맞아 보여도 `action + trigger + target + values` 조합이 Effect DSL Registry와 불일치함
+4. 최신 전체 Analyzer에서 ANALYSIS_FAILED가 10개 존재
+5. 신규 `GRANT_RANDOM_CARD_TEXT` 메커니즘이 runtime 구현과 Analyzer/Registry 사이에서 동기화되지 않은 정황
+6. `"1/1 '좀비'를 생성합니다"`에서 generated stat override를 못 읽음
+7. `"퇴장:"`이 여전히 `LEAVE_FIELD`로 해석되는 케이스가 있어 공식 RETIRE semantics와 불일치
+8. 기존 8개 WRESTLER Analyzer gap이 남아 있음
+9. READY가 떠도 Admin auto-apply/save/runtime까지 실제로 동일 semantic인지 불확실
+10. Validator error message가 너무 뭉뚱그려져 root cause 추적이 어려움
+
+이번 작업은 특정 문장 하나를 고치는 게 아니라
+AI Generator / Analyzer / Validator / Canonicalizer / Admin Auto-Apply / Save / Runtime
+전체 contract를 맞추는 작업이다.
+
+==================================================
+0. 절대 원칙
+==================================================
+
+금지:
+
+- Validator 약화
+- unknown field silently drop
+- malformed AI output을 READY로 승격
+- exact card/champion name runtime hardcode
+- exact full sentence hardcode
+- eval / new Function / arbitrary code execution
+- validation 실패 후 provider 자동 재호출
+- Save 시 provider 호출
+- Runtime 시 provider 호출
+- Production DB 직접 수정
+- PUBLISHED 카드 bulk rewrite
+- 실제 사용자 데이터 수정
+- force push
+
+Generate 1 click:
+Provider 최대 1회
+
+Save:
+Provider 0회
+
+Reload:
+Provider 0회
+
+Runtime:
+Provider 0회
+
+AI Match:
+Provider 0회
+
+Online Match:
+Provider 0회
+
+==================================================
+1. 먼저 파이프라인 전체 TRACE
+==================================================
+
+동일한 Generate 요청 하나에 대해 아래 단계 결과를 전부 캡처한다.
+
+A. RAW_PROVIDER_OUTPUT
+B. PARSED_PROVIDER_OUTPUT
+C. MAPPED_STRUCTURED_EFFECT
+D. CANONICALIZED_STRUCTURED_EFFECT
+E. VALIDATOR_INPUT
+F. VALIDATOR_RESULT
+G. ADMIN_FORM_STATE
+H. SAVE_PAYLOAD
+I. RELOADED_STRUCTURE
+J. RUNTIME_CONSUMED_STRUCTURE
+
+각 단계에서 다음을 비교:
+
+- effects[]
+- scripts[]
+- version
+- trigger
+- action
+- target
+- target.filter
+- values
+- conditions
+- steps
+- step.id
+- resultId
+- source identity
+- unknown fields
+- wrapper shape
+
+최종 보고에 반드시:
+
+First invalid stage:
+PROVIDER / PARSER / MAPPER / CANONICALIZER / VALIDATOR / ADMIN / SAVE / RUNTIME
+
+를 적는다.
+
+==================================================
+2. 단일 Shared Contract로 정렬
+==================================================
+
+다음이 서로 다른 schema를 쓰고 있는지 조사:
+
+- provider response schema
+- AI mechanic compiler schema
+- Effect DSL type
+- Script AST type
+- Zod/JSON validator
+- canonicalizer
+- Admin form type
+- save endpoint validator
+- persistence schema
+- runtime executor
+- online sanitizer
+
+목표:
+
+Provider가 생성 가능한 구조
+=
+Parser가 허용하는 구조
+=
+Canonicalizer가 보존하는 구조
+=
+Validator가 허용하는 구조
+=
+Admin이 저장하는 구조
+=
+Runtime이 실행하는 구조
+
+같은 semantic contract.
+
+별도 "AI 전용 느슨한 타입"이 Registry보다 넓으면 수정.
+
+==================================================
+3. TARGET FILTER 공식 schema 고정
+==================================================
+
+AI가 다음을 만들면 안 된다:
+
+target.filters
+target.tagFilters
+target.race
+target.tribe
+target.cardTag
+target.tagName
+
+공식 target filter는 현재 shared DSL의:
+
+target.filter
+
+단일 객체를 사용.
+
+태그 예:
+
+{
+  "target": {
+    "owner": "SELF",
+    "zone": "BOARD",
+    "cardType": "WRESTLER",
+    "filter": {
+      "tagsAny": ["좀비"]
+    },
+    "selection": "ALL"
+  }
+}
+
+실제 Registry에 있는 필드만 허용:
+
+- tagsAny
+- tagsAll
+- exclusion equivalent
+- excludeSource
+- isGenerated
+- isChampionToken
+- min/max cost
+- min/max attack
+- min/max health
+
+중 실제 존재하는 것만.
+
+없는 필드는 새로 추측하지 마.
+
+==================================================
+4. Action / Target / Value / Trigger Contract Matrix
+==================================================
+
+현재 ACTIVE Effect Registry를 source of truth로
+모든 Action에 대해 contract를 derive한다.
+
+각 Action마다:
+
+- allowed triggers
+- target required / optional / forbidden
+- allowed owners
+- allowed zones
+- allowed selections
+- allowed cardType
+- allowed filter fields
+- required values
+- optional values
+- allowed conditions
+- result reference allowed 여부
+
+를 테스트 가능한 matrix로 만든다.
+
+Provider가 action을 선택했으면
+그 action contract에 맞는 target/value만 생성해야 한다.
+
+예:
+ADD_GOLD에 target 자동 추가 금지
+BUFF에 target 누락 금지
+DRAW에 tag filter 금지
+ADD_KEYWORD에 keyword 누락 금지
+DESTROY에 stat values 금지
+STEAL에 잘못된 owner/zone 금지
+
+==================================================
+5. SCRIPT_V1 완전 정렬
+==================================================
+
+SCRIPT_V1은 shared Script AST contract를 그대로 따른다.
+
+대표 canonical shape:
+
+{
+  "scripts": [
+    {
+      "version": "SCRIPT_V1",
+      "trigger": "SELF_ATTACK",
+      "steps": [
+        {
+          "id": "selectedCard",
+          "type": "SELECT",
+          "target": {
+            ...
+          }
+        },
+        {
+          "type": "EFFECT",
+          "effect": {
+            "action": "STEAL",
+            "target": {
+              "resultId": "selectedCard"
+            }
+          }
+        }
+      ]
+    }
+  ]
+}
+
+반드시 reject:
+
+- version 없음
+- SCRIPT_V2
+- steps object
+- unknown step type
+- duplicate step id
+- nonexistent resultId
+- forward reference
+- unknown action
+- invalid target enum
+- arbitrary code
+- spoofed sourceId
+- malformed nested script
+
+Validator를 느슨하게 하지 마.
+
+==================================================
+6. Simple Effect vs SCRIPT_V1 선택 정책
+==================================================
+
+simple `effects[]`로 가능한 것은 script로 만들지 마.
+
+Simple Effect:
+- 독립 action
+- target/value dependency 없음
+- single effect로 표현 가능
+
+SCRIPT_V1:
+- SELECT 결과를 후속 EFFECT가 참조
+- sequential dependency
+- same target binding
+- resultId 필요
+
+Provider가 복잡해 보인다는 이유만으로
+무조건 SCRIPT_V1을 선택하면 FAIL.
+
+==================================================
+7. Error Message를 path-level로 개선
+==================================================
+
+현재:
+"현재 Effect DSL의 action/target/value/trigger 조합과 일치하지 않습니다."
+
+이 문구만 보여주지 말고
+개발/Admin에서 최소:
+
+effect index
+trigger
+action
+exact path
+actual value
+expected contract
+reason
+
+을 보여준다.
+
+예:
+
+effects[0].target.filters
+→ unsupported field
+→ use target.filter
+
+또는:
+
+effects[0]
+action=ADD_GOLD
+target present
+→ ADD_GOLD does not accept target
+
+또는:
+
+scripts[0].steps[1].effect.target.resultId
+→ unknown result reference "x"
+
+민감 정보/API key는 절대 노출 금지.
+
+==================================================
+8. 최신 ANALYSIS_FAILED 10개 전부 해결
+==================================================
+
+최신 보고서 기준 10개:
+
+1. 챔피언 라 칼라베라
+2. 여울
+3. 늑대인간 판도라
+4. 챔피언 퍼플레인
+5. 매드 사이언티스트 퍼플레인
+6. 좀비 벨로나
+7. 프랑켄슈타인 만드릴쿤
+8. 좀비 데헌
+9. 좀비 플래티넘구슬 마스터
+10. 하녀 판도라
+
+목표:
+각각 exact original + paraphrase로 generic하게 처리.
+
+==================================================
+9. 챔피언 라 칼라베라 — 1/1 생성
+==================================================
+
+원문:
+
+"1/1 '좀비'를 생성합니다."
+
+현재 Analyzer가:
+GENERATE
+definitionRef Zombie
+destination HAND
+count 1
+
+까지는 이해하지만
+`1/1`을 미지원 fragment로 남긴다.
+
+generic 지원:
+
+"N/M X를 생성"
+"공격력 N / 체력 M인 X 생성"
+"N/M인 X 생성"
+
+→ generatedModifiers:
+
+{
+  attack: N,
+  health: M
+}
+
+정확한 field naming은 현재 GENERATE runtime contract 사용.
+
+특정 좀비 이름 하드코딩 금지.
+
+==================================================
+10. 여울 — 추가 골드 문장
+==================================================
+
+원문:
+
+"턴 시작:골드를 추가로 1 더 받습니다."
+
+기대:
+
+TURN_START
+→ ADD_GOLD amount=1
+
+잔여 fragment "더받" 제거.
+
+paraphrase:
+- 골드 1을 추가로 얻습니다
+- +1G 받습니다
+- 골드를 2 더 받습니다
+
+숫자는 generic parser.
+
+==================================================
+11. 늑대인간 판도라 — RETIRE + stat absorb
+==================================================
+
+원문:
+
+"턴 시작:선택한 아군 선수 카드를 리타이어시키고 그 카드의 체력과 공격력을 흡수합니다."
+
+기대:
+
+TURN_START
+→ PLAYER_CHOICE allied FIELD WRESTLER
+→ RETIRE selected target
+→ capture last-known current attack/health
+→ source gains those exact values
+
+핵심:
+
+RETIRE는 DESTROY가 아님.
+
+target:
+FIELD → GRAVEYARD
+
+target retire effect:
+정상 발동
+
+흡수 값:
+RETIRE 직전 current stats snapshot
+
+source 자기 자신은
+generic excludeSource 필요 여부를 engine semantics 기준으로 결정.
+
+==================================================
+12. 챔피언 퍼플레인 — GRANT_RANDOM_CARD_TEXT
+==================================================
+
+원문:
+
+"선택한 무능력 선수 카드 1장에게 무작위 선수 카드의 텍스트를 부여합니다. 등장 효과일 경우 그 효과를 발동 시킵니다."
+
+이 메커니즘은 이미 runtime 쪽에 구현됐다고 보고된 상태이므로
+Analyzer/Registry/provider schema가 뒤처져 있으면 연결한다.
+
+필요:
+
+action:
+GRANT_RANDOM_CARD_TEXT
+
+target:
+현재 vanilla WRESTLER
+
+selection:
+PLAYER_CHOICE
+
+donor:
+authoritative published match cardPool
+
+random:
+deterministic
+
+copy:
+rules text / keywords / executable abilities only
+
+ON_ENTER granted:
+recipient가 FIELD에 있으면 새로 granted된 ON_ENTER clause만 즉시 1회 synthetic resolve
+
+금지:
+AI가 새 card text 생성
+별도 random effect pool
+printed ability 복구
+global enter event 재방송
+다른 ally-enter Quest/event 재발동
+
+그리고 이 action이 최신 ACTIVE Effect Registry report에 안 보인다면
+왜 그런지 추적:
+- runtime registry와 analyzer registry가 다른 source?
+- report generator stale?
+- shared registry export 누락?
+
+==================================================
+13. 매드 사이언티스트 퍼플레인 — tag filter
+==================================================
+
+원문:
+
+"등장:어디에 있든 '실험체' 태그가 달려있는 카드들에게 +1/+1을 부여합니다"
+
+기대:
+
+ENTER_FIELD
+→ BUFF
+→ owner SELF
+→ zones canonical "어디에 있든" 범위
+→ target.filter.tagsAny ["실험체"]
+→ ALL
+→ +1/+1
+
+tags source:
+cards.tags only
+
+name/keyword/description/rarity 사용 금지.
+
+==================================================
+14. 좀비 벨로나 — damaged trigger
+==================================================
+
+원문:
+
+"이 카드가 데미지를 입으면 1/1인 '좀비'를 소환합니다."
+
+generic trigger:
+SELF_DAMAGED / AFTER_DAMAGE equivalent
+
+실제 HP가 1 이상 감소한 damage event마다 1회.
+
+0 damage:
+no trigger
+
+PREVENT_DAMAGE:
+no trigger
+
+heal/stat set:
+no trigger
+
+actual damage:
+SUMMON Zombie with 1/1 result.
+
+치명적 damage와 RETIRE ordering도 테스트.
+
+==================================================
+15. 프랑켄슈타인 만드릴쿤 — health gain follow-up
+==================================================
+
+원문:
+
+"이 카드의 체력이 증가하면 추가로 +1 증가합니다"
+
+기대:
+
+health actual increase event
+→ additional +1 health
+
+예:
++2
+→ total +3
+
+중요:
+추가 +1이 자기 자신을 다시 trigger해서 무한 loop 금지.
+
+FIELD와 HAND에서 공식 stat-trigger 범위 유지.
+DECK/GRAVEYARD 임의 확대 금지.
+
+==================================================
+16. 좀비 데헌 — RETIRE + tag + max health
+==================================================
+
+원문:
+
+"퇴장:'언데드' 태그가 있는 카드들에게 어디에 있든 최대 체력 +2를 부여합니다"
+
+최우선:
+퇴장 = RETIRE only
+
+절대 LEAVE_FIELD generic trigger 아님.
+
+RETIRE:
+효과 발동
+
+DESTROY:
+효과 없음
+
+REMOVE_FROM_GAME:
+효과 없음
+
+target:
+cards.tags contains "언데드"
+
+effect:
+MAX_HEALTH +2
+
+HEAL +2로 바꾸면 FAIL.
+
+기존 maxHealth stat model을 사용.
+
+==================================================
+17. 좀비 플래티넘구슬 마스터 — highest stat sum
+==================================================
+
+원문:
+
+"등장:필드에 '좀비'가 있다면 자신의 체력과 공격력에 필드에 있는 '좀비' 중 가장 수치의 합이 높은 '좀비'의 체력과 공격력을 더합니다."
+
+generic:
+
+ENTER_FIELD
+→ select matching candidates
+→ currentAttack + currentHealth 계산
+→ max
+→ source gets selected.currentAttack/currentHealth
+
+tie:
+deterministic canonical order
+
+Math.random 금지.
+
+문장에 "좀비 태그"가 아니라 quoted "좀비"라고 적혀 있으므로
+name reference와 tag reference를 섞지 마.
+
+현재 analyzer/content resolver 규칙에 따라
+authoritative definition reference 사용.
+
+==================================================
+18. 하녀 판도라 — causal RETIRE transform
+==================================================
+
+원문:
+
+"등장:선택한 선수에게 데미지를 1 줍니다. 이 효과로 상대 선수가 리타이어했다면 '늑대인간' 판도라로 변신합니다."
+
+필요:
+
+ENTER_FIELD
+→ PLAYER_CHOICE enemy
+→ DAMAGE 1
+→ IF this exact damage caused this exact target to RETIRE
+→ TRANSFORM source to referenced definition
+
+causality 반드시 추적.
+
+같은 턴 unrelated retire:
+transform 금지
+
+PREVENT_RETIRE:
+transform 금지
+
+target survives:
+transform 금지
+
+Transform action 없으면
+기존 generic transform/replacement structure를 먼저 조사.
+
+특정 판도라 hardcode 금지.
+
+==================================================
+19. RETIRE / DESTROY 공식 canonicalization
+==================================================
+
+공식 규칙:
+
+RETIRE:
+- HP <= 0 또는 direct RETIRE
+- FIELD → GRAVEYARD
+- RETIRE/퇴장 effect 발동
+- CARD_RETIRED event
+- revive 대상 가능
+
+DESTROY:
+- match에서 제거
+- graveyard로 안 감
+- RETIRE/퇴장 effect 안 뜸
+- CARD_RETIRED event 없음
+- revive 대상 아님
+
+REMOVE_FROM_GAME:
+RETIRE 아님
+
+MOVE_TO_HAND:
+RETIRE 아님
+
+CAPTURE:
+RETIRE 아님
+
+==================================================
+20. "퇴장:"은 LEAVE_FIELD가 아니다
+==================================================
+
+현재 기존 카드 중
+"퇴장:"이 LEAVE_FIELD로 저장/분석된 케이스를 전부 찾는다.
+
+예:
+위리놈
+
+"퇴장: 손패의 위리녀 1장을 소환"
+
+공식 동작:
+
+RETIRE:
+발동
+
+DESTROY:
+발동 안 함
+
+REMOVE_FROM_GAME:
+발동 안 함
+
+MOVE_TO_HAND:
+발동 안 함
+
+`LEAVE_FIELD`가 필요한 진짜 일반 leave 효과와
+RETIRE-only 효과를 분리.
+
+필요하면 SELF_RETIRED trigger를 추가하되
+기존 CARD_RETIRED listener와 충돌하지 않게 설계.
+
+==================================================
+21. CARD_RETIRED ally listener 회귀
+==================================================
+
+씨 몬스터 같은:
+
+"아군 선수가 리타이어할 때마다"
+
+는 기존 global/ally CARD_RETIRED listener.
+
+SELF RETIRE effect와 구분.
+
+둘 다 canonical RETIRE event를 기반으로 할 수 있지만
+source/target matching은 다름.
+
+==================================================
+22. HP0 path 실제 RETIRE 보장
+==================================================
+
+combat damage
+effect damage
+self damage
+direct RETIRE
+
+전부:
+
+HP <= 0
+→ BEFORE_RETIRE
+→ PREVENT_RETIRE check
+→ RETIRE
+→ CARD_RETIRED
+→ GRAVEYARD
+→ RETIRE effect
+
+DESTROY path와 절대 섞지 마.
+
+==================================================
+23. PREVENT_RETIRE
+==================================================
+
+lethal damage
+→ BEFORE_RETIRE
+→ PREVENT_RETIRE
+→ health 1
+
+결과:
+
+- no RETIRE
+- no graveyard
+- no retire effect
+- 하녀 판도라 transform false
+
+==================================================
+24. SOURCE SNAPSHOT
+==================================================
+
+RETIRE effect가 source가 field를 떠난 뒤에도 실행되도록
+필요한 serializable last-known source context 유지:
+
+- instance id
+- definition id
+- owner
+- last current stats
+- active/granted effects
+- event cause
+- grantedText snapshot
+
+특히 grantedText로 받은 RETIRE effect도 정상.
+
+==================================================
+25. AI AUTO-APPLY E2E
+==================================================
+
+검증 경로:
+
+Natural language
+→ Generate
+→ Provider
+→ Parser
+→ Analyzer/Mapper
+→ Canonicalizer
+→ Validator
+→ READY
+→ Admin form apply
+→ Save
+→ Reload
+→ Runtime
+
+READY만 뜨고 실제 form state가 안 바뀌면 FAIL.
+
+UI만 바뀌고 save payload에 없으면 FAIL.
+
+save는 됐는데 reload 후 사라지면 FAIL.
+
+reload는 되는데 runtime이 다르게 실행하면 FAIL.
+
+==================================================
+26. REPLACE / ADD / CANCEL
+==================================================
+
+기존 effect가 있을 때:
+
+REPLACE:
+validated new effect로 교체
+
+ADD:
+existing + new canonical merge
+
+CANCEL:
+변경 없음
+
+invalid result:
+REPLACE/ADD flow 진입 금지
+기존 state 유지.
+
+==================================================
+27. ANALYSIS_FAILED 보호
+==================================================
+
+애매한 문장:
+
+"그 카드가 저거랑 비슷하게 좋아집니다."
+
+기대:
+
+ANALYSIS_FAILED
+
+금지:
+
+- 억지 READY
+- partial apply
+- 기존 effect 삭제
+- provider auto retry
+
+==================================================
+28. Source identity 보호
+==================================================
+
+AI가 sourceId/cardId/championId를 임의 지정하지 못하게 한다.
+
+source identity:
+server-trusted current Admin context에서 주입.
+
+spoof:
+reject.
+
+==================================================
+29. Trigger 없는 자연어
+==================================================
+
+문장에 trigger가 없을 때
+AI가 임의로 ENTER_FIELD를 발명하지 마.
+
+Admin slot이 trusted trigger context를 제공하면
+그 context 사용.
+
+그렇지 않으면 missing trigger로 처리.
+
+Champion Ability slot semantics도 server context로 주입.
+
+==================================================
+30. Existing valid canonical regression
+==================================================
+
+최소 기존 정상 payload regression:
+
+- DRAW
+- ADD_GOLD
+- BUFF SELF
+- PLAYER_CHOICE DAMAGE
+- tagsAny BUFF
+- RANDOM REVIVE
+- STEAL SCRIPT_V1
+- QUEUE_EFFECT
+- ADD_KEYWORD
+- PREVENT_DAMAGE
+- PREVENT_RETIRE
+- SUMMON
+- GENERATE
+- delayed/listener
+- Champion Token
+- grantedText
+
+기존 정상 case가 이번 fix로 깨지면 FAIL.
+
+==================================================
+31. STRICT INVALID FIXTURES
+==================================================
+
+아래는 전부 reject:
+
+1. target.filters
+2. target.tagFilters
+3. target.filter.tag
+4. target.race
+5. ADD_GOLD + target
+6. DRAW + tag filter
+7. BUFF no target
+8. DAMAGE no amount
+9. ADD_KEYWORD no keyword
+10. STEAL bad owner/zone
+11. SCRIPT no version
+12. SCRIPT bad version
+13. SCRIPT unknown step
+14. duplicate step id
+15. bad resultId
+16. unknown action
+17. arbitrary code field
+18. source spoof
+19. forward result ref
+20. malformed nested script
+
+최소 20/20 reject.
+
+==================================================
+32. EXACT ORIGINAL TESTS — 10개
+==================================================
+
+첨부 최신 보고서의 10개 원문을 그대로 analyzer에 넣는다.
+
+목표:
+10/10 ANALYSIS_FAILED 탈출.
+
+단 실제 미지원이면
+validator 약화해서 억지 READY 금지.
+
+각 항목 paraphrase 최소 2개.
+
+==================================================
+33. Runtime tests — 10개
+==================================================
+
+R1 라 칼라베라:
+1/1 generated Zombie
+→ stats exact
+
+R2 여울:
+owner turn start +1G
+enemy turn no gain
+
+R3 늑대인간 판도라:
+selected ally RETIRE
+→ graveyard
+→ retire effect
+→ source absorbs current stats
+
+R4 Champion PurpleRain:
+choose vanilla
+→ deterministic existing random text
+→ ON_ENTER granted clause immediate exactly once if recipient FIELD
+
+R5 Mad Scientist PurpleRain:
+실험체 tagsAny targets only
+→ +1/+1
+
+R6 Zombie Bellona:
+actual damage
+→ 1/1 Zombie summon
+0 damage
+→ no summon
+
+R7 Frankenstein Mandrillkun:
+health +2
+→ total +3
+no recursive loop
+
+R8 Zombie Dehun:
+RETIRE
+→ Undead maxHealth +2
+DESTROY
+→ no effect
+
+R9 Zombie Platinum Orb Master:
+highest current ATK+HP Zombie chosen deterministically
+→ exact stat absorb
+
+R10 Maid Pandora:
+exact damage causes RETIRE
+→ transform
+nonlethal / prevented retire / unrelated later retire
+→ no transform
+
+==================================================
+34. RETIRE regression tests
+==================================================
+
+RET1 combat lethal
+RET2 effect lethal
+RET3 self damage lethal
+RET4 direct RETIRE
+RET5 DESTROY
+RET6 REMOVE_FROM_GAME
+RET7 MOVE_TO_HAND
+RET8 PREVENT_RETIRE
+RET9 simultaneous lethal
+RET10 grantedText retire effect
+RET11 Champion Token HP0
+RET12 reconnect no duplicate trigger
+
+==================================================
+35. Browser E2E
+==================================================
+
+가능하면 Development/Test Admin에서:
+
+1. simple DRAW generate
+2. tag filter BUFF generate
+3. SCRIPT_V1 STEAL generate
+4. Champion PurpleRain generate
+5. save/reload
+6. Test Match runtime
+7. retire vs destroy 실제 확인
+
+브라우저 불가:
+implementation/test 계속.
+BROWSER E2E만 UNVERIFIED.
+
+==================================================
+36. Provider call count
+==================================================
+
+각 테스트 기록:
+
+Generate:
+1
+
+Validation failure extra:
+0
+
+Save:
+0
+
+Reload:
+0
+
+Runtime:
+0
+
+AI Match:
+0
+
+Online Match:
+0
+
+==================================================
+37. 전체 Analyzer 재실행
+==================================================
+
+모든 WRESTLER
++
+모든 Champion supported slots
+캐시 없이 재분석.
+
+최종:
+
+SUPPORTED:
+NEW_MECHANIC_REQUIRED:
+ANALYSIS_FAILED:
+
+그리고 별도:
+
+SCRIPT_AST_VALIDATION_FAILED:
+TARGET_FILTER_SCHEMA_FAILED:
+DSL_COMBINATION_MISMATCH:
+RETIRE_TRIGGER_MISMATCH:
+REGISTRY_SYNC_MISMATCH:
+
+목표:
+위 technical mismatch count 모두 0.
+
+실제 content semantic 미지원이 남으면
+그것만 명확히 보고.
+
+==================================================
+38. Active Effect Library 동기화
+==================================================
+
+최신 runtime에 구현된 action이
+Analyzer report의 ACTIVE Effect Library에 빠져 있으면 안 된다.
+
+특히:
+
+GRANT_RANDOM_CARD_TEXT
+
+가 runtime에 존재한다면
+shared Registry / report generator / validator / analyzer schema에서
+같이 보여야 한다.
+
+runtime-only private action이면
+왜 analyzer가 못 보는지 구조를 명확히 설명하고
+공식 shared contract로 이동 가능한지 검토.
+
+==================================================
+39. Production 안전
+==================================================
+
+테스트는:
+
+- local
+- test
+- DRAFT fixture
+
+사용.
+
+금지:
+
+- 운영 PUBLISHED bulk edit
+- 실제 사용자 account/inventory 변경
+- Production DB 직접 write
+
+필요 migration:
+file PREPARED만.
+production 실행 금지.
+
+==================================================
+40. 검증 명령
+==================================================
+
+반드시:
+
+pnpm run typecheck
+pnpm --filter @workspace/ko-game run build
+git diff --check
+
+API/shared 수정 시:
+
+API typecheck
+API build
+structured-effect tests
+Script AST tests
+Analyzer tests
+provider mock tests
+registry contract tests
+runtime tests
+online sanitizer tests
+
+전체 bundled effect suite도 실행.
+
+기존 unrelated failure가 있으면
+baseline과 비교해서 별도 보고.
+
+==================================================
+41. Git
+==================================================
+
+실제 수정 완료 후
+이번 작업 관련 파일만 stage.
+
+제외:
+
+Pasted-*.txt
+prompt txt
+.env
+secrets
+logs
+screenshots
+temp
+Replit metadata
+unrelated changes
+
+commit.
+
+별도 요청 없으면 push하지 마.
+force push 금지.
+
+==================================================
+42. 최종 보고 형식
+==================================================
+
+FULL AI EFFECT PIPELINE
+
+Provider:
+PASS / FAIL
+
+Parser:
+PASS / FAIL
+
+Mapper:
+PASS / FAIL
+
+Canonicalizer:
+PASS / FAIL
+
+Effect DSL Validator:
+PASS / FAIL
+
+Script AST Validator:
+PASS / FAIL
+
+Admin Auto-Apply:
+PASS / FAIL
+
+Save Validation:
+PASS / FAIL
+
+Reload:
+PASS / FAIL
+
+Runtime:
+PASS / FAIL
+
+
+CURRENT TECHNICAL FAILURES
+
+SCRIPT_V1:
+FIXED / REMAINING
+
+target.filters:
+FIXED / REMAINING
+
+target.tagFilters:
+FIXED / REMAINING
+
+DSL combination mismatch:
+FIXED / REMAINING
+
+Registry sync:
+FIXED / REMAINING
+
+RETIRE trigger mismatch:
+FIXED / REMAINING
+
+
+ANALYZER 10
+
+1. Champion La Calavera:
+PASS / FAIL
+
+2. Yeoul:
+PASS / FAIL
+
+3. Werewolf Pandora:
+PASS / FAIL
+
+4. Champion PurpleRain:
+PASS / FAIL
+
+5. Mad Scientist PurpleRain:
+PASS / FAIL
+
+6. Zombie Bellona:
+PASS / FAIL
+
+7. Frankenstein Mandrillkun:
+PASS / FAIL
+
+8. Zombie Dehun:
+PASS / FAIL
+
+9. Zombie Platinum Orb Master:
+PASS / FAIL
+
+10. Maid Pandora:
+PASS / FAIL
+
+EXACT ORIGINALS:
+X/10
+
+PARAPHRASES:
+X/Y
+
+
+RETIRE / DESTROY
+
+HP0 → RETIRE:
+PASS / FAIL
+
+RETIRE → GRAVEYARD:
+PASS / FAIL
+
+RETIRE EFFECT:
+PASS / FAIL
+
+DESTROY → GRAVEYARD:
+YES / NO
+
+DESTROY → RETIRE EFFECT:
+YES / NO
+
+REMOVE_FROM_GAME → RETIRE EFFECT:
+YES / NO
+
+MOVE_TO_HAND → RETIRE EFFECT:
+YES / NO
+
+PREVENT_RETIRE:
+PASS / FAIL
+
+GRANTED RETIRE TEXT:
+PASS / FAIL
+
+CHAMPION TOKEN:
+PASS / FAIL
+
+
+STRICT VALIDATION
+
+Invalid fixtures rejected:
+X/20
+
+Unknown fields rejected:
+PASS / FAIL
+
+Bad action-target-value-trigger rejected:
+PASS / FAIL
+
+Bad Script rejected:
+PASS / FAIL
+
+Source spoof rejected:
+PASS / FAIL
+
+
+AUTO APPLY
+
+READY → Form:
+PASS / FAIL
+
+Form → Save Payload:
+PASS / FAIL
+
+Save → Reload:
+PASS / FAIL
+
+Runtime semantic equality:
+PASS / FAIL
+
+REPLACE:
+PASS / FAIL
+
+ADD:
+PASS / FAIL
+
+CANCEL:
+PASS / FAIL
+
+Failure preserves old effect:
+PASS / FAIL
+
+Partial apply:
+ABSENT / PRESENT
+
+Stale response protection:
+PASS / FAIL
+
+
+PROVIDER CALLS
+
+Generate:
+...
+
+Validation failure retry:
+...
+
+Save:
+...
+
+Reload:
+...
+
+Runtime:
+...
+
+AI Match:
+...
+
+Online Match:
+...
+
+
+FULL REANALYSIS
+
+SUPPORTED:
+...
+
+NEW_MECHANIC_REQUIRED:
+...
+
+ANALYSIS_FAILED:
+...
+
+SCRIPT_AST_VALIDATION_FAILED:
+...
+
+TARGET_FILTER_SCHEMA_FAILED:
+...
+
+DSL_COMBINATION_MISMATCH:
+...
+
+RETIRE_TRIGGER_MISMATCH:
+...
+
+REGISTRY_SYNC_MISMATCH:
+...
+
+
+IMPLEMENTATION:
+PASS / FAIL
+
+AUTOMATED VERIFICATION:
+PASS / FAIL
+
+BROWSER E2E:
+PASS / FAIL / UNVERIFIED
+
+TYPECHECK:
+PASS / FAIL
+
+KO BUILD:
+PASS / FAIL
+
+API TYPECHECK:
+PASS / FAIL / NOT_MODIFIED
+
+API BUILD:
+PASS / FAIL / NOT_MODIFIED
+
+FULL EFFECT SUITE:
+PASS / FAIL
+
+git diff --check:
+PASS / FAIL
+
+DB MIGRATION:
+NONE / PREPARED / ...
+
+PRODUCTION DATA MUTATION:
+NONE / FAIL
+
+CHANGED FILES:
+...
+
+COMMIT:
+...
+
+PUSH:
+NOT REQUESTED
+
+==================================================
+43. 완료 조건
+==================================================
+
+완료라고 보고하려면 최소:
+
+1. SCRIPT_V1 contract 정합성 확보
+2. target.filter canonical schema만 사용
+3. action/trigger/target/value 조합이 Registry와 일치
+4. Validator strict 유지
+5. Generate 1회당 provider 최대 1회
+6. Save/Runtime provider call 0
+7. Admin auto-apply/save/reload/runtime semantic 동일
+8. 최신 10개 Analyzer failure를 generic하게 처리
+9. GRANT_RANDOM_CARD_TEXT shared registry/analyzer 연동
+10. 1/1 generated stats parser 지원
+11. RETIRE와 DESTROY semantics 완전 분리
+12. "퇴장:"이 RETIRE only로 작동
+13. 기존 정상 effects/scripts regression 없음
+14. invalid fixtures 모두 reject
+15. 전체 reanalysis 집계 보고
+16. technical mismatch count 모두 0
+17. Production 데이터 직접 수정 없음
+
+한두 오류만 임시로 고치고 끝내지 마.
+현재 AI 효과 생성기 파이프라인 전체를 동일한 shared contract로 정리한 뒤,
+실제 Generate → Auto-Apply → Save → Reload → Runtime까지 검증하고 보고하라.
