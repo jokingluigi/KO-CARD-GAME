@@ -79,11 +79,9 @@ export type ScriptTarget = {
   sort?: { stat: ScriptStat; direction: "ASC" | "DESC" };
   take?: number;
 };
-export type ScriptValue = {
-  kind: ScriptValueKind;
-  value?: number;
-  resultId?: string;
-};
+export type ScriptValue =
+  | { kind: "CONSTANT"; value: number }
+  | { kind: "RESULT_COUNT" | "RESULT_VALUE"; resultId: string; offset?: number };
 export type ScriptCondition = {
   left: ScriptValue;
   compare: ScriptComparator;
@@ -243,7 +241,7 @@ export type MechanicCompilerProviderOutput =
 
 const SCRIPT_TARGET_KEYS = new Set(["zone", "zones", "owner", "cardType", "filter", "selection", "count", "randomScope", "resultId", "sort", "take"]);
 const SCRIPT_FILTER_KEYS = new Set(["isGenerated", "minCost", "maxCost", "cost", "attack", "health", "isToken", "isChampionToken", "excludeSource", "isVanilla", "keyword", "tagsAny", "tagsAll", "tagsNone", "definitionRef"]);
-const SCRIPT_VALUE_KEYS = new Set(["kind", "value", "resultId"]);
+const SCRIPT_VALUE_KEYS = new Set(["kind", "value", "resultId", "offset"]);
 const SCRIPT_HISTORY_KEYS = new Set(["scope", "eventType", "owner", "cardType", "tag", "operation", "stat"]);
 const SCRIPT_EFFECT_KEYS = new Set(["action", "target", "values"]);
 const SCRIPT_EFFECT_VALUE_KEYS = new Set([
@@ -310,8 +308,15 @@ function validScriptTarget(value: unknown): value is ScriptTarget {
 
 function validScriptValue(value: unknown): value is ScriptValue {
   if (!isRecord(value) || !hasOnlyKeys(value, SCRIPT_VALUE_KEYS) || !SCRIPT_VALUE_KINDS.includes(value.kind as ScriptValueKind)) return false;
-  if (value.kind === "CONSTANT") return typeof value.value === "number" && Number.isFinite(value.value) && Math.abs(value.value) <= 999;
-  return typeof value.resultId === "string" && /^[A-Za-z][A-Za-z0-9_-]{0,31}$/.test(value.resultId);
+  if (value.kind === "CONSTANT") {
+    return value.resultId === undefined && value.offset === undefined &&
+      typeof value.value === "number" && Number.isFinite(value.value) && Math.abs(value.value) <= 999;
+  }
+  return value.value === undefined &&
+    typeof value.resultId === "string" &&
+    /^[A-Za-z][A-Za-z0-9_-]{0,31}$/.test(value.resultId) &&
+    (value.offset === undefined ||
+      (typeof value.offset === "number" && Number.isFinite(value.offset) && Math.abs(value.offset) <= 999));
 }
 
 function validScriptSteps(value: unknown, depth: number, seen: Set<string>): value is ScriptStep[] {
@@ -384,7 +389,9 @@ function validScriptSteps(value: unknown, depth: number, seen: Set<string>): val
           "DEPLOY_CHAMPION_TOKEN", "CAPTURE", "RELEASE_CAPTURED", "REMOVE_FROM_GAME",
           "COPY_BEST_STATS", "GRANT_RANDOM_CARD_TEXT"].includes(action) &&
           Object.keys(raw.effect.values).length > 0) return false;
-        if (raw.effect.values.amountExpression !== undefined && !validScriptValue(raw.effect.values.amountExpression)) return false;
+        for (const expressionKey of ["amountExpression", "attackExpression", "healthExpression", "countExpression"]) {
+          if (raw.effect.values[expressionKey] !== undefined && !validScriptValue(raw.effect.values[expressionKey])) return false;
+        }
       }
       if (raw.id !== undefined) seen.add(raw.id);
       continue;

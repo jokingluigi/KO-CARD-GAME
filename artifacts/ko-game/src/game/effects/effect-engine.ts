@@ -226,12 +226,13 @@ function scriptTargetCards(
 }
 
 function scriptValue(registers: ScriptRegisters, value: ScriptValue): number {
-  if (value.kind === 'CONSTANT') return value.value ?? 0;
-  const register = value.resultId ? registers.get(value.resultId) : undefined;
+  if (value.kind === 'CONSTANT') return value.value;
+  const register = registers.get(value.resultId);
+  const offset = value.offset ?? 0;
   if (!register || !('value' in register)) {
-    return register && 'ids' in register ? register.ids.length : register?.slots.length ?? 0;
+    return (register && 'ids' in register ? register.ids.length : register?.slots.length ?? 0) + offset;
   }
-  return register.value;
+  return register.value + offset;
 }
 
 function historyValue(

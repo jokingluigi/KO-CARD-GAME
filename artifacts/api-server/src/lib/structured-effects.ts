@@ -696,6 +696,86 @@ function expandedMechanicAnalysis(
     return found ? { id: found.id } : { name };
   };
 
+  if (/상대\s*선수\s*카드\s*1\s*장(?:을|를)?\s*선택[^.!?]*공격력(?:을|이)?\s*1\s*로\s*(?:줄이|낮추|감소시키|만들)[^.!?]*기절[^.!?]*공격력(?:을|이)?\s*(?:줄인|낮춘|감소한)\s*만큼[^.!?]*자신의?\s*체력(?:을|이)?\s*증가/.test(text)) {
+    const target = {
+      zone: "BOARD" as const,
+      owner: "ENEMY" as const,
+      cardType: "WRESTLER" as const,
+    };
+    const script: EffectScript = {
+      version: "SCRIPT_V1",
+      trigger: triggerFor(),
+      steps: [
+        {
+          type: "SELECT",
+          id: "target",
+          target: { ...target, selection: "PLAYER_CHOICE", count: 1 },
+        },
+        { type: "AGGREGATE", id: "attackBefore", selectionId: "target", operation: "MAX", stat: "ATTACK" },
+        {
+          type: "IF",
+          condition: {
+            left: { kind: "RESULT_VALUE", resultId: "attackBefore" },
+            compare: "GT",
+            right: { kind: "CONSTANT", value: 1 },
+          },
+          then: [
+            {
+              type: "EFFECT",
+              effect: {
+                action: "SET_STAT",
+                target: { ...target, resultId: "target" },
+                values: { stat: "ATTACK", amount: 1 },
+              },
+            },
+            {
+              type: "EFFECT",
+              effect: {
+                action: "BUFF",
+                target: { zone: "BOARD", owner: "SELF", cardType: "WRESTLER", selection: "SELF", count: 1 },
+                values: {
+                  healthExpression: { kind: "RESULT_VALUE", resultId: "attackBefore", offset: -1 },
+                },
+              },
+            },
+          ],
+        },
+        {
+          type: "EFFECT",
+          effect: {
+            action: "STUN",
+            target: { ...target, resultId: "target" },
+          },
+        },
+      ],
+    };
+    return {
+      status: "success",
+      outcome: "supported",
+      effects: [],
+      scripts: [script],
+      keywords: [],
+      unsupportedSegments: [],
+      summaries: [`${script.trigger} · SCRIPT_V1`],
+    };
+  }
+
+  if (/자신을\s*제외한.*아군\s*선수(?:들)?에게\s*\+?2\s*\/\s*\+?2/.test(text)) {
+    return result([{
+      trigger: triggerFor(),
+      action: "BUFF",
+      target: {
+        zone: "BOARD",
+        owner: "SELF",
+        cardType: "WRESTLER",
+        filter: { excludeSource: true },
+        selection: "ALL",
+        count: 20,
+      },
+      values: { attack: 2, health: 2 },
+    }]);
+  }
+
   if (/^게임\s*시작\s*[:：].*덱에\s*있었(?:다면|을\s*경우).*손패에\s*드로우/.test(text)) {
     return result([{
       trigger: "GAME_START",

@@ -1300,3 +1300,72 @@ test("card audit sources use generic start, entry, repeat, and scripted best-sta
   assert.equal(ambiguousCatalog.outcome, "analysis_failure");
   assert.equal(ambiguousCatalog.referenceErrors?.[0]?.code, "CARD_REFERENCE_AMBIGUOUS");
 });
+
+test("card audit gaps analyze Ttekkaluk's stat transfer and Pi Star Seven's source-excluding buff", () => {
+  const tekkaluk = analyzeEffectText(
+    "등장:상대 선수 카드 1장을 선택해서 그 카드의 공격력을 1로 줄이고 기절을 걸고, 공격력을 줄인 만큼 자신의 체력을 증가시킵니다.",
+  );
+  assert.equal(tekkaluk.status, "success");
+  assert.equal(tekkaluk.outcome, "supported");
+  assert.deepEqual(tekkaluk.effects, []);
+  assert.equal(tekkaluk.scripts?.length, 1);
+  assert.equal(isEffectScriptConfig({ scripts: tekkaluk.scripts }), true);
+  const script = tekkaluk.scripts?.[0];
+  assert.equal(script?.trigger, "ENTER_FIELD");
+  const selection = script?.steps[0];
+  assert.ok(selection?.type === "SELECT");
+  if (selection?.type === "SELECT") {
+    assert.deepEqual(selection.target, {
+      zone: "BOARD",
+      owner: "ENEMY",
+      cardType: "WRESTLER",
+      selection: "PLAYER_CHOICE",
+      count: 1,
+    });
+  }
+  const branch = script?.steps.find((step) => step.type === "IF");
+  assert.ok(branch?.type === "IF");
+  if (branch?.type === "IF") {
+    const setAttack = branch.then.find((step) => step.type === "EFFECT" && step.effect.action === "SET_STAT");
+    assert.ok(setAttack?.type === "EFFECT");
+    if (setAttack?.type === "EFFECT") {
+      assert.deepEqual(setAttack.effect.values, { stat: "ATTACK", amount: 1 });
+    }
+    const transfer = branch.then.find((step) => step.type === "EFFECT" && step.effect.action === "BUFF");
+    assert.ok(transfer?.type === "EFFECT");
+    if (transfer?.type === "EFFECT") {
+      assert.deepEqual(transfer.effect.values?.healthExpression, {
+        kind: "RESULT_VALUE",
+        resultId: "attackBefore",
+        offset: -1,
+      });
+    }
+  }
+  const stun = script?.steps.find((step) => step.type === "EFFECT" && step.effect.action === "STUN");
+  assert.ok(stun?.type === "EFFECT");
+
+  const malformed = structuredClone(script!);
+  const malformedBranch = malformed.steps.find((step) => step.type === "IF");
+  if (malformedBranch?.type === "IF") {
+    const buff = malformedBranch.then.find((step) => step.type === "EFFECT" && step.effect.action === "BUFF");
+    if (buff?.type === "EFFECT") {
+      const expression = buff.effect.values?.healthExpression as Record<string, unknown> | undefined;
+      if (expression) expression.offset = "not-a-number";
+    }
+  }
+  assert.equal(isEffectScriptConfig({ scripts: [malformed] }), false);
+
+  const piStar = analyzeEffectText("등장:자신을 제외한 필드에 나와있는 아군 선수들에게 +2/+2를 부여합니다.");
+  assert.equal(piStar.status, "success");
+  assert.equal(piStar.outcome, "supported");
+  assert.equal(piStar.effects[0]?.action, "BUFF");
+  assert.deepEqual(piStar.effects[0]?.values, { attack: 2, health: 2 });
+  assert.deepEqual(piStar.effects[0]?.target, {
+    zone: "BOARD",
+    owner: "SELF",
+    cardType: "WRESTLER",
+    filter: { excludeSource: true },
+    selection: "ALL",
+    count: 20,
+  });
+});

@@ -382,3 +382,88 @@ test("SCRIPT_V1 copies the best named Zombie stats or generates an exact 2/2 Zom
   assert.equal(existingResult.players[0]?.board[0]?.currentHealth, 8);
   assert.equal(existingResult.players[0]?.hand.some((entry) => entry.definitionId === generatedDefinition.id), false);
 });
+
+test("SCRIPT_V1 transfers only the actual attack reduction after the chosen enemy is set to one and stunned", () => {
+  const script: CardEffect = {
+    type: "SCRIPT",
+    script: {
+      version: "SCRIPT_V1",
+      trigger: "ENTER_FIELD",
+      steps: [
+        {
+          type: "SELECT",
+          id: "target",
+          target: { zone: "BOARD", owner: "ENEMY", cardType: "WRESTLER", selection: "PLAYER_CHOICE", count: 1 },
+        },
+        { type: "AGGREGATE", id: "attackBefore", selectionId: "target", operation: "MAX", stat: "ATTACK" },
+        {
+          type: "IF",
+          condition: {
+            left: { kind: "RESULT_VALUE", resultId: "attackBefore" },
+            compare: "GT",
+            right: { kind: "CONSTANT", value: 1 },
+          },
+          then: [
+            {
+              type: "EFFECT",
+              effect: {
+                action: "SET_STAT",
+                target: { resultId: "target", zone: "BOARD", owner: "ENEMY", cardType: "WRESTLER" },
+                values: { stat: "ATTACK", amount: 1 },
+              },
+            },
+            {
+              type: "EFFECT",
+              effect: {
+                action: "BUFF",
+                target: { zone: "BOARD", owner: "SELF", selection: "SELF", count: 1 },
+                values: {
+                  healthExpression: { kind: "RESULT_VALUE", resultId: "attackBefore", offset: -1 },
+                },
+              },
+            },
+          ],
+        },
+        {
+          type: "EFFECT",
+          effect: {
+            action: "STUN",
+            target: { resultId: "target", zone: "BOARD", owner: "ENEMY", cardType: "WRESTLER" },
+          },
+        },
+      ],
+    },
+  };
+
+  const noTarget = enterField(createInitialGameState(), "player-1", card("transfer-no-target", [script]), 0);
+  assert.equal(noTarget.targetingState, undefined);
+  assert.equal(noTarget.players[0]?.board[0]?.currentHealth, 3);
+
+  const strongEnemy = { ...card("transfer-strong-enemy"), boardSlot: 2 as const, currentAttack: 4 };
+  const state = createInitialGameState();
+  state.players[1]!.board[2] = strongEnemy;
+  const pending = enterField(state, "player-1", card("transfer-source", [script]), 0);
+  assert.deepEqual(pending.targetingState?.validTargetIds, [strongEnemy.instanceId]);
+
+  const invalid = selectEffectTarget(pending, "not-a-valid-target");
+  assert.deepEqual(invalid.targetingState?.validTargetIds, [strongEnemy.instanceId]);
+  assert.equal(invalid.players[1]?.board[2]?.currentAttack, 4);
+
+  const resolved = selectEffectTarget(pending, strongEnemy.instanceId);
+  assert.equal(resolved.players[1]?.board[2]?.currentAttack, 1);
+  assert.equal(resolved.players[1]?.board[2]?.isStunned, true);
+  assert.equal(resolved.players[0]?.board[0]?.currentHealth, 6);
+  assert.equal(resolved.players[0]?.board[0]?.maxHealth, 6);
+  assert.equal(resolved.targetingState, undefined);
+
+  for (const attack of [1, 0]) {
+    const lowEnemy = { ...card(`transfer-low-enemy-${attack}`), boardSlot: 3 as const, currentAttack: attack };
+    const lowState = createInitialGameState();
+    lowState.players[1]!.board[3] = lowEnemy;
+    const lowPending = enterField(lowState, "player-1", card(`transfer-low-source-${attack}`, [script]), 0);
+    const lowResult = selectEffectTarget(lowPending, lowEnemy.instanceId);
+    assert.equal(lowResult.players[1]?.board[3]?.currentAttack, attack);
+    assert.equal(lowResult.players[1]?.board[3]?.isStunned, true);
+    assert.equal(lowResult.players[0]?.board[0]?.currentHealth, 3);
+  }
+});
