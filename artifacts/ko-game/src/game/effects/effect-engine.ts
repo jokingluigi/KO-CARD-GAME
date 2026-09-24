@@ -20,7 +20,7 @@ const RUNTIME_STRUCTURED_ACTIONS = RUNTIME_HANDLER_ACTIONS satisfies readonly Ac
 type UnimplementedStructuredAction = Exclude<Action, typeof RUNTIME_STRUCTURED_ACTIONS[number]>;
 const runtimeStructuredActionsAreExhaustive: UnimplementedStructuredAction extends never ? true : never = true;
 void runtimeStructuredActionsAreExhaustive;
-import type { GameState } from '../types/game-state';
+import type { GameState, PendingRuleListener } from '../types/game-state';
 import type { EventAttribution, LeaveReason } from '../events/types';
 import { createDeterministicRandom, shuffle } from '../random/random';
 import { destroyCard } from '../engine/destroy-card';
@@ -526,6 +526,7 @@ function applyQueuedRuleEffect(
   source: CardInstance,
   effect: QueuedStructuredEffect,
   lastTargetIds: string[] = [],
+  triggerContext?: TriggerContext,
 ): { state: GameState; lastTargetIds: string[] } {
   const chosen = effect.target?.selection === 'SAME_TARGET' ? lastTargetIds : undefined;
   const reviveOwnerId = effect.action === 'REVIVE'
@@ -536,7 +537,14 @@ function applyQueuedRuleEffect(
   const graveyardIdsBeforeRevive = reviveOwnerId
     ? new Set(state.players.find((player) => player.id === reviveOwnerId)?.graveyard.map((card) => card.instanceId))
     : undefined;
-  const next = applyEffect(state, playerId, source, queuedEffectCardEffect(effect), chosen);
+  const next = applyEffect(
+    state,
+    playerId,
+    source,
+    queuedEffectCardEffect(effect),
+    chosen,
+    triggerContext,
+  );
   const resolved = next.targetingState?.active && next.targetingState !== state.targetingState
     ? resolvePendingEffects(next)
     : next;
@@ -576,12 +584,43 @@ function applyQueuedRuleSequence(
 
 export function resolveRegisteredRuleListeners(
   state: GameState,
-  trigger: 'CARD_PLAYED' | 'TECHNIQUE_PLAYED' | 'CARD_RETIRED' | 'DAMAGE_TAKEN',
+  trigger: PendingRuleListener['trigger'],
   eventPlayerId: string,
   eventCardInstanceId?: string,
   eventCardType?: 'WRESTLER' | 'TECHNIQUE',
+  eventIndexOverride?: number,
 ): GameState {
-  const eventIndex = Math.max(0, state.events.length - 1);
+  const eventIndex = eventIndexOverride ?? Math.max(0, state.events.length - 1);
+  const triggeringEvent = state.events[eventIndex];
+  const isCausalRemoval = trigger === 'SOURCE_CAUSED_TARGET_REMOVAL';
+  const removalTargetId = triggeringEvent?.target?.type === 'CARD'
+    ? triggeringEvent.target.cardInstanceId
+    : triggeringEvent?.cardInstanceId;
+  const removalSourceId = triggeringEvent?.source?.type === 'CARD'
+    ? triggeringEvent.source.cardInstanceId
+    : undefined;
+  const eventKey = isCausalRemoval && triggeringEvent
+    ? JSON.stringify([
+        triggeringEvent.sourceContext?.rootSourceEventId ?? null,
+        triggeringEvent.sourceContext?.causationId ?? null,
+        triggeringEvent.type,
+        removalSourceId ?? null,
+        removalTargetId ?? null,
+        ...(triggeringEvent.sourceContext?.rootSourceEventId ||
+            triggeringEvent.sourceContext?.causationId
+          ? []
+          : [eventIndex]),
+      ])
+    : undefined;
+  const validCausalRemoval = Boolean(
+    isCausalRemoval &&
+    triggeringEvent &&
+    (triggeringEvent.type === 'CARD_RETIRED' || triggeringEvent.type === 'CARD_DESTROYED') &&
+    (triggeringEvent.cardType ?? triggeringEvent.targetSnapshot?.cardType) === 'WRESTLER' &&
+    triggeringEvent.targetSnapshot?.currentAttack !== undefined &&
+    removalSourceId &&
+    removalTargetId,
+  );
   let next = state;
   const dueDelayed = (next.pendingDelayedEffects ?? []).filter((pending) =>
     (pending.schedule === 'NEXT_MATCHING_EVENT' || pending.schedule === 'N_MATCHING_EVENTS') &&
@@ -614,6 +653,10 @@ export function resolveRegisteredRuleListeners(
   const listeners = activeListeners.filter((listener) =>
     listener.trigger === trigger &&
     eventIndex > listener.registeredEventIndex &&
+    (!isCausalRemoval ||
+      (validCausalRemoval &&
+        removalSourceId === listener.sourceInstanceId &&
+        !listener.processedRemovalEventKeys?.includes(eventKey!))) &&
     (listener.owner === undefined ||
       (listener.owner === 'SELF' ? listener.playerId === eventPlayerId : listener.playerId !== eventPlayerId)) &&
     (listener.cardType === undefined || listener.cardType === eventCardType),
@@ -622,17 +665,40 @@ export function resolveRegisteredRuleListeners(
   const listenerIds = new Set(listeners.map((listener) => listener.id));
   next = {
     ...next,
-    pendingRuleListeners: (next.pendingRuleListeners ?? []).filter((listener) => {
-      if (!listenerIds.has(listener.id)) return true;
-      return listener.uses !== 1;
+    pendingRuleListeners: (next.pendingRuleListeners ?? []).flatMap((listener) => {
+      if (!listenerIds.has(listener.id)) return [listener];
+      if (listener.uses === 1) return [];
+      return isCausalRemoval && eventKey
+        ? [{
+            ...listener,
+            processedRemovalEventKeys: [
+              ...new Set([...(listener.processedRemovalEventKeys ?? []), eventKey]),
+            ],
+          }]
+        : [listener];
     }),
   };
   for (const listener of listeners.slice(0, 32)) {
     const source = sourceInState(next, listener.sourceInstanceId);
     const eventCard = eventCardInstanceId ? sourceInState(next, eventCardInstanceId) : undefined;
     if (!source && !eventCard) continue;
-    const effectSource = eventCard ?? source!;
-    next = applyQueuedRuleEffect(next, listener.playerId, effectSource, listener.effect).state;
+    const effectSource = isCausalRemoval ? source! : eventCard ?? source!;
+    if (isCausalRemoval && triggeringEvent?.targetSnapshot?.currentAttack !== undefined) {
+      next = withLastAggregatedStats(next, {
+        attack: triggeringEvent.targetSnapshot.currentAttack,
+        health: triggeringEvent.targetSnapshot.currentHealth ?? 0,
+      });
+    }
+    next = applyQueuedRuleEffect(
+      next,
+      listener.playerId,
+      effectSource,
+      listener.effect,
+      [],
+      isCausalRemoval && triggeringEvent?.sourceContext
+        ? { sourceContext: triggeringEvent.sourceContext }
+        : undefined,
+    ).state;
   }
   return next;
 }
@@ -741,11 +807,28 @@ function sourceContextFor(
   playerId: string,
   sourceCard: CardInstance,
   triggerContext?: TriggerContext,
+  eventIndex?: number,
 ): EventAttribution {
-  return triggerContext?.sourceContext ?? {
+  const existing = triggerContext?.sourceContext;
+  const stableId = eventIndex === undefined
+    ? undefined
+    : `card-effect:${playerId}:${sourceCard.instanceId}:${eventIndex}`;
+  if (existing) {
+    return stableId
+      ? {
+          ...existing,
+          rootSourceEventId: existing.rootSourceEventId ?? stableId,
+          causationId: stableId,
+        }
+      : existing;
+  }
+  return {
     sourcePlayerId: playerId,
     sourceActionType: 'CARD_EFFECT',
     sourceEffectId: sourceCard.definitionId,
+    ...(stableId
+      ? { rootSourceEventId: stableId, causationId: stableId }
+      : {}),
   };
 }
 
@@ -1323,6 +1406,7 @@ export function appendEffectContinuation(
 export function resolveStateBasedDeaths(
   state: GameState,
   sourceContext?: EventAttribution,
+  causeEventStartIndex?: number,
 ): GameState {
   // Resolve all BEFORE_RETIRE replacements against the live board before
   // taking the lethal snapshot. This keeps state-based lethal damage
@@ -1350,14 +1434,43 @@ export function resolveStateBasedDeaths(
       : beforeRetire;
   }
 
-  const retired: Array<{ playerId: string; card: CardInstance; slot: 0 | 1 | 2 | 3 }> = [];
+  const recentDamageCauses = causeEventStartIndex === undefined
+    ? []
+    : preparedState.events.slice(causeEventStartIndex).filter((event) =>
+        event.type === 'DAMAGE_DEALT' && (event.amount ?? 0) > 0,
+      );
+  const causeByTarget = new Map<string, {
+    sourceInstanceId: string;
+    sourceContext?: EventAttribution;
+  }>();
+  for (const event of recentDamageCauses) {
+    if (event.target?.type !== 'CARD' || event.source?.type !== 'CARD') continue;
+    causeByTarget.set(event.target.cardInstanceId, {
+      sourceInstanceId: event.source.cardInstanceId,
+      sourceContext: event.sourceContext,
+    });
+  }
+  const retired: Array<{
+    playerId: string;
+    card: CardInstance;
+    slot: 0 | 1 | 2 | 3;
+    sourceInstanceId?: string;
+    sourceContext?: EventAttribution;
+  }> = [];
   const players = preparedState.players.map((player) => {
     const board = [...player.board];
     const graveyard = [...player.graveyard];
     board.forEach((card, index) => {
       if (!card || card.currentHealth > 0 || preparedState.preventedRetireTargetIds?.includes(card.instanceId)) return;
       const slot = index as 0 | 1 | 2 | 3;
-      retired.push({ playerId: player.id, card, slot });
+      const cause = causeByTarget.get(card.instanceId);
+      retired.push({
+        playerId: player.id,
+        card,
+        slot,
+        sourceInstanceId: cause?.sourceInstanceId,
+        sourceContext: cause?.sourceContext ?? sourceContext,
+      });
       board[index] = null;
       graveyard.push(resetCardForGraveyard(card));
     });
@@ -1374,33 +1487,44 @@ export function resolveStateBasedDeaths(
     players,
     events: [
       ...preparedState.events,
-      ...retired.map(({ playerId, card, slot }) => ({
+      ...retired.map(({ playerId, card, slot, sourceInstanceId, sourceContext: retirementContext }) => ({
         type: 'CARD_RETIRED' as const,
         playerId,
         cardInstanceId: card.instanceId,
-        cardType: card.cardType,
+        cardType: card.cardType ?? 'WRESTLER',
         boardSlot: slot,
-        source: { type: 'SYSTEM' as const },
+        source: sourceInstanceId
+          ? { type: 'CARD' as const, cardInstanceId: sourceInstanceId }
+          : { type: 'SYSTEM' as const },
         target: { type: 'CARD' as const, cardInstanceId: card.instanceId },
         reason: 'RETIRE' as const,
-        ...(sourceContext ? { sourceContext } : {}),
+        targetSnapshot: {
+          playerId,
+          cardInstanceId: card.instanceId,
+          cardType: card.cardType ?? 'WRESTLER',
+          boardSlot: slot,
+          currentAttack: card.currentAttack,
+          currentHealth: card.currentHealth,
+        },
+        ...(retirementContext ? { sourceContext: retirementContext } : {}),
       })),
     ],
   };
   for (const entry of retired) {
+    const retirementContext = entry.sourceContext ?? sourceContext;
     const beforeSelfRetire = next;
     next = resolveTriggeredAbilities(next, entry.playerId, entry.card, 'SELF_RETIRE', {
       leaveReason: 'RETIRE',
-      sourceContext,
+      sourceContext: retirementContext,
     });
     next = next !== beforeSelfRetire && next.targetingState?.active
       ? resolvePendingEffects(next)
       : next;
     next = resolveTriggeredAbilities(next, entry.playerId, entry.card, 'LEAVE_FIELD', {
       leaveReason: 'RETIRE',
-      sourceContext,
+      sourceContext: retirementContext,
     });
-    next = resolveCardRetiredListeners(next, entry.playerId, entry.card, sourceContext);
+    next = resolveCardRetiredListeners(next, entry.playerId, entry.card, retirementContext);
   }
   return next;
 }
@@ -2314,7 +2438,12 @@ export function applyEffect(
         const owner = nextState.players.find((player) => player.id === targetOwner);
         const current = owner?.board.find((card) => card?.instanceId === targetCard.instanceId);
         if (!owner || !current || current.isDirectDeployedChampion) return nextState;
-        const attribution = sourceContextFor(playerId, sourceCard, triggerContext);
+        const attribution = sourceContextFor(
+          playerId,
+          sourceCard,
+          triggerContext,
+          nextState.events.length,
+        );
         const retiredState: GameState = {
           ...nextState,
           players: nextState.players.map((player) => player.id !== targetOwner ? player : {
@@ -2323,9 +2452,17 @@ export function applyEffect(
              graveyard: [...player.graveyard, resetCardForGraveyard(current)],
           }),
           events: [...nextState.events, {
-            type: 'CARD_RETIRED' as const, playerId: targetOwner, cardInstanceId: current.instanceId, cardType: current.cardType,
+            type: 'CARD_RETIRED' as const, playerId: targetOwner, cardInstanceId: current.instanceId, cardType: current.cardType ?? 'WRESTLER',
             boardSlot: current.boardSlot!, source: { type: 'CARD' as const, cardInstanceId: sourceCard.instanceId },
-             target: { type: 'CARD' as const, cardInstanceId: current.instanceId }, reason: 'RETIRE' as const,
+            target: { type: 'CARD' as const, cardInstanceId: current.instanceId }, reason: 'RETIRE' as const,
+            targetSnapshot: {
+              playerId: targetOwner,
+              cardInstanceId: current.instanceId,
+              cardType: current.cardType ?? 'WRESTLER',
+              boardSlot: current.boardSlot!,
+              currentAttack: current.currentAttack,
+              currentHealth: current.currentHealth,
+            },
              sourceContext: attribution,
           }],
         };
@@ -2374,8 +2511,23 @@ export function applyEffect(
         { attack: 0, health: 0 },
       );
       const destroyedState = targets.reduce((nextState, target) => {
-        const result = destroyCard(nextState, targetOwner, target.instanceId);
-        return result.success ? result.state : nextState;
+        const attribution = sourceContextFor(
+          playerId,
+          sourceCard,
+          triggerContext,
+          nextState.events.length,
+        );
+        const result = destroyCard(nextState, targetOwner, target.instanceId, {
+          sourceInstanceId: sourceCard.instanceId,
+          sourceContext: attribution,
+        });
+        return result.success
+          ? resolveCardDestroyedListeners(
+              result.state,
+              targetOwner,
+              target,
+            )
+          : nextState;
       }, state);
       return withLastAggregatedStats(destroyedState, aggregatedStats);
     }
@@ -2436,6 +2588,12 @@ export function applyEffect(
         const preparedCurrent = preparedState.players
           .find((player) => player.id === targetOwner)
           ?.board.find((card) => card?.instanceId === target.instanceId) ?? current;
+        const attribution = sourceContextFor(
+          playerId,
+          sourceCard,
+          triggerContext,
+          preparedState.events.length,
+        );
         const preventedDamage = preparedState.preventedDamageTargetIds?.includes(current.instanceId) ?? false;
         const clearDamageMarker = (stateWithMarker: GameState): GameState => ({
           ...stateWithMarker,
@@ -2446,7 +2604,7 @@ export function applyEffect(
             ...clearDamageMarker(preparedState),
             events: [
               ...preparedState.events,
-              { type: 'DAMAGE_DEALT', playerId, cardInstanceId: sourceCard.instanceId, source: { type: 'CARD', cardInstanceId: sourceCard.instanceId }, target: { type: 'CARD', cardInstanceId: current.instanceId }, reason: 'CARD_EFFECT', amount: 0, sourceContext: sourceContextFor(playerId, sourceCard, triggerContext) },
+              { type: 'DAMAGE_DEALT', playerId, cardInstanceId: sourceCard.instanceId, source: { type: 'CARD', cardInstanceId: sourceCard.instanceId }, target: { type: 'CARD', cardInstanceId: current.instanceId }, reason: 'CARD_EFFECT', amount: 0, sourceContext: attribution },
             ],
           }, 'DAMAGE_TAKEN', targetOwner, current.instanceId, current.cardType);
         }
@@ -2464,7 +2622,7 @@ export function applyEffect(
             players: preparedState.players.map((player) => player.id === targetOwner
               ? { ...player, board: player.board.map((card) => card?.instanceId === current.instanceId ? { ...card, dodgeAvailable: dodgeCharges > 1, dodgeCharges: dodgeCharges - 1 } : card) as typeof player.board }
               : player),
-            events: [...preparedState.events, { type: 'DAMAGE_DEALT', playerId, cardInstanceId: sourceCard.instanceId, source: { type: 'CARD', cardInstanceId: sourceCard.instanceId }, target: { type: 'CARD', cardInstanceId: current.instanceId }, reason: 'CARD_EFFECT', amount: 0, sourceContext: sourceContextFor(playerId, sourceCard, triggerContext) }],
+            events: [...preparedState.events, { type: 'DAMAGE_DEALT', playerId, cardInstanceId: sourceCard.instanceId, source: { type: 'CARD', cardInstanceId: sourceCard.instanceId }, target: { type: 'CARD', cardInstanceId: current.instanceId }, reason: 'CARD_EFFECT', amount: 0, sourceContext: attribution }],
           }, 'DAMAGE_TAKEN', targetOwner, current.instanceId, current.cardType);
         }
         const health = preparedCurrent.currentHealth - damageAmount;
@@ -2474,7 +2632,7 @@ export function applyEffect(
             players: preparedState.players.map((player) => player.id === targetOwner
               ? { ...player, board: player.board.map((card) => card?.instanceId === current.instanceId ? { ...card, currentHealth: health } : card) as typeof player.board }
               : player),
-            events: [...preparedState.events, { type: 'DAMAGE_DEALT', playerId, cardInstanceId: sourceCard.instanceId, source: { type: 'CARD', cardInstanceId: sourceCard.instanceId }, target: { type: 'CARD', cardInstanceId: current.instanceId }, reason: 'CARD_EFFECT', amount: damageAmount, sourceContext: sourceContextFor(playerId, sourceCard, triggerContext) }],
+            events: [...preparedState.events, { type: 'DAMAGE_DEALT', playerId, cardInstanceId: sourceCard.instanceId, source: { type: 'CARD', cardInstanceId: sourceCard.instanceId }, target: { type: 'CARD', cardInstanceId: current.instanceId }, reason: 'CARD_EFFECT', amount: damageAmount, sourceContext: attribution }],
           };
           const damagedCard = damagedState.players.find((player) => player.id === targetOwner)?.board
             .find((card) => card?.instanceId === current.instanceId) ?? current;
@@ -2483,7 +2641,7 @@ export function applyEffect(
             targetOwner,
             damagedCard,
             'SELF_DAMAGED',
-            { healthBefore: preparedCurrent.currentHealth, healthAfter: health, sourceContext: sourceContextFor(playerId, sourceCard, triggerContext) },
+            { healthBefore: preparedCurrent.currentHealth, healthAfter: health, sourceContext: attribution },
           );
           const withDamageListeners = resolveRegisteredRuleListeners(
             selfDamaged !== damagedState && selfDamaged.targetingState?.active
@@ -2515,7 +2673,7 @@ export function applyEffect(
           targetOwner,
           { ...preparedCurrent, currentHealth: health },
           'SELF_DAMAGED',
-          { healthBefore: preparedCurrent.currentHealth, healthAfter: health, sourceContext: sourceContextFor(playerId, sourceCard, triggerContext) },
+          { healthBefore: preparedCurrent.currentHealth, healthAfter: health, sourceContext: attribution },
         );
         const afterSelfDamaged = selfDamaged !== lethalDamagedState && selfDamaged.targetingState?.active
           ? resolvePendingEffects(selfDamaged)
@@ -2530,7 +2688,7 @@ export function applyEffect(
           return resolveRegisteredRuleListeners({
             ...protectedState,
             preventedRetireTargetIds: protectedState.preventedRetireTargetIds.filter((id) => id !== current.instanceId),
-            events: [...protectedState.events, { type: 'DAMAGE_DEALT', playerId, cardInstanceId: sourceCard.instanceId, source: { type: 'CARD', cardInstanceId: sourceCard.instanceId }, target: { type: 'CARD', cardInstanceId: current.instanceId }, reason: 'CARD_EFFECT', amount: 0, sourceContext: sourceContextFor(playerId, sourceCard, triggerContext) }],
+            events: [...protectedState.events, { type: 'DAMAGE_DEALT', playerId, cardInstanceId: sourceCard.instanceId, source: { type: 'CARD', cardInstanceId: sourceCard.instanceId }, target: { type: 'CARD', cardInstanceId: current.instanceId }, reason: 'CARD_EFFECT', amount: 0, sourceContext: attribution }],
           }, 'DAMAGE_TAKEN', targetOwner, current.instanceId, current.cardType);
         }
          const retired: CardInstance = resetCardForGraveyard({
@@ -2544,8 +2702,8 @@ export function applyEffect(
              ? { ...player, board: player.board.map((card) => card?.instanceId === current.instanceId ? null : card) as typeof player.board, graveyard: [...player.graveyard, retired] }
             : player),
           events: [...protectedState.events,
-            { type: 'DAMAGE_DEALT', playerId, cardInstanceId: sourceCard.instanceId, source: { type: 'CARD', cardInstanceId: sourceCard.instanceId }, target: { type: 'CARD', cardInstanceId: current.instanceId }, reason: 'CARD_EFFECT', amount: damageAmount, sourceContext: sourceContextFor(playerId, sourceCard, triggerContext) },
-            { type: 'CARD_RETIRED', playerId: targetOwner, cardInstanceId: current.instanceId, cardType: current.cardType, boardSlot: current.boardSlot!, source: { type: 'CARD', cardInstanceId: sourceCard.instanceId }, target: { type: 'CARD', cardInstanceId: current.instanceId }, targetSnapshot: { playerId: targetOwner, cardInstanceId: current.instanceId, cardType: current.cardType ?? 'WRESTLER', boardSlot: current.boardSlot!, currentAttack: current.currentAttack, currentHealth: current.currentHealth }, reason: 'RETIRE', sourceContext: sourceContextFor(playerId, sourceCard, triggerContext) },
+            { type: 'DAMAGE_DEALT', playerId, cardInstanceId: sourceCard.instanceId, source: { type: 'CARD', cardInstanceId: sourceCard.instanceId }, target: { type: 'CARD', cardInstanceId: current.instanceId }, reason: 'CARD_EFFECT', amount: damageAmount, sourceContext: attribution },
+            { type: 'CARD_RETIRED', playerId: targetOwner, cardInstanceId: current.instanceId, cardType: current.cardType ?? 'WRESTLER', boardSlot: current.boardSlot!, source: { type: 'CARD', cardInstanceId: sourceCard.instanceId }, target: { type: 'CARD', cardInstanceId: current.instanceId }, targetSnapshot: { playerId: targetOwner, cardInstanceId: current.instanceId, cardType: current.cardType ?? 'WRESTLER', boardSlot: current.boardSlot!, currentAttack: current.currentAttack, currentHealth: current.currentHealth }, reason: 'RETIRE', sourceContext: attribution },
           ],
         };
         const retiredWithAggregate = withLastAggregatedStats(retiredState, {
@@ -2557,7 +2715,6 @@ export function applyEffect(
             damagedTargetInstanceId: current.instanceId, healthBefore: current.currentHealth, healthAfter: health,
           })
           : retiredWithAggregate;
-        const attribution = sourceContextFor(playerId, sourceCard, triggerContext);
         const selfRetired = resolveTriggeredAbilities(exactZeroState, targetOwner, current, 'SELF_RETIRE', {
           leaveReason: 'RETIRE',
           sourceContext: attribution,
@@ -3026,6 +3183,23 @@ export function resolveTriggeredAbilities(
 }
 
 /** Dispatches retirement listeners to cards that are still in hand. */
+function removalEventIndex(
+  state: GameState,
+  type: 'CARD_RETIRED' | 'CARD_DESTROYED',
+  cardInstanceId: string,
+): number {
+  for (let index = state.events.length - 1; index >= 0; index -= 1) {
+    const event = state.events[index];
+    if (
+      event.type === type &&
+      (event.target?.type === 'CARD'
+        ? event.target.cardInstanceId
+        : event.cardInstanceId) === cardInstanceId
+    ) return index;
+  }
+  return -1;
+}
+
 export function resolveCardRetiredListeners(
   state: GameState,
   playerId: string,
@@ -3042,7 +3216,51 @@ export function resolveCardRetiredListeners(
       }),
       state,
     );
-  return resolveRegisteredRuleListeners(withCardAbilities, 'CARD_RETIRED', playerId, retiredCard.instanceId, retiredCard.cardType);
+  const eventIndex = removalEventIndex(
+    withCardAbilities,
+    'CARD_RETIRED',
+    retiredCard.instanceId,
+  );
+  if (eventIndex < 0) return withCardAbilities;
+  const event = withCardAbilities.events[eventIndex];
+  const registered = resolveRegisteredRuleListeners(
+    withCardAbilities,
+    'CARD_RETIRED',
+    event.playerId ?? playerId,
+    retiredCard.instanceId,
+    event.cardType ?? event.targetSnapshot?.cardType ?? retiredCard.cardType,
+    eventIndex,
+  );
+  return resolveRegisteredRuleListeners(
+    registered,
+    'SOURCE_CAUSED_TARGET_REMOVAL',
+    event.playerId ?? playerId,
+    retiredCard.instanceId,
+    event.cardType ?? event.targetSnapshot?.cardType ?? retiredCard.cardType,
+    eventIndex,
+  );
+}
+
+function resolveCardDestroyedListeners(
+  state: GameState,
+  playerId: string,
+  destroyedCard: CardInstance,
+): GameState {
+  const eventIndex = removalEventIndex(
+    state,
+    'CARD_DESTROYED',
+    destroyedCard.instanceId,
+  );
+  if (eventIndex < 0) return state;
+  const event = state.events[eventIndex];
+  return resolveRegisteredRuleListeners(
+    state,
+    'SOURCE_CAUSED_TARGET_REMOVAL',
+    event.playerId ?? playerId,
+    destroyedCard.instanceId,
+    event.cardType ?? event.targetSnapshot?.cardType ?? destroyedCard.cardType,
+    eventIndex,
+  );
 }
 
 /** Dispatches the generic summon aura trigger to the summoning player's board. */

@@ -11,7 +11,13 @@ import { enterField } from '../engine/enter-field';
 import { attack } from '../engine/combat';
 import { playWrestlerFromHand } from '../engine/play-wrestler';
 import { endTurn } from '../engine/turn-system';
-import { applyEffect, getDamageModifierBonus, resolveActiveAbility, selectEffectTarget } from './effect-engine';
+import {
+  applyEffect,
+  getDamageModifierBonus,
+  resolveActiveAbility,
+  resolveRegisteredRuleListeners,
+  selectEffectTarget,
+} from './effect-engine';
 import type { CardEffect } from './types';
 
 function definition(id: string, effects: CardEffect[], cost = 1): CardDefinition {
@@ -1543,6 +1549,202 @@ test('리타이어된 선수도 같은 공격력 합산 경로를 사용한다',
   assert.equal(result.players[0].board[1], null);
   assert.equal(result.players[0].board[0]?.currentAttack, 4);
   assert.ok(result.events.some((event) => event.type === 'CARD_RETIRED'));
+});
+
+function sourceCausedRemovalListener(): CardEffect {
+  return structured('REGISTER_LISTENER', undefined, {
+    listener: {
+      trigger: 'SOURCE_CAUSED_TARGET_REMOVAL',
+      cardType: 'WRESTLER',
+      effect: {
+        action: 'ADD_AGGREGATED_ATTACK',
+        target: { zone: 'BOARD', owner: 'SELF', selection: 'SELF', count: 1 },
+        values: {
+          aggregateStats: {
+            source: 'LAST_CAUSED_TARGET_REMOVALS',
+            attack: 'CURRENT_ATTACK_SUM',
+          },
+        },
+      },
+    },
+  });
+}
+
+test('source-caused removal listener grants current attack once per distinct victim and only for its source', () => {
+  const targetConfig = {
+    zone: 'BOARD' as const,
+    owner: 'ENEMY' as const,
+    cardType: 'WRESTLER' as const,
+    selection: 'PLAYER_CHOICE' as const,
+    count: 1,
+  };
+  const source = instance('causal-removal-source', [
+    sourceCausedRemovalListener(),
+    structured('DESTROY', targetConfig),
+  ]);
+  const firstTarget = {
+    ...instance('causal-removal-first'),
+    currentAttack: 4,
+    currentHealth: 2,
+    maxHealth: 2,
+    boardSlot: 0 as const,
+  };
+  const secondTarget = {
+    ...instance('causal-removal-second'),
+    currentAttack: 3,
+    currentHealth: 3,
+    maxHealth: 3,
+    boardSlot: 1 as const,
+  };
+  const state = createInitialGameState();
+  state.players[1].board[0] = firstTarget;
+  state.players[1].board[1] = secondTarget;
+
+  const pending = enterField(state, 'player-1', source, 0);
+  const firstRemoval = selectEffectTarget(pending, firstTarget.instanceId);
+  assert.equal(firstRemoval.players[0].board[0]?.currentAttack, 5);
+  assert.equal(firstRemoval.players[0].board[0]?.currentHealth, 1);
+
+  const secondRemoval = applyEffect(
+    firstRemoval,
+    'player-1',
+    firstRemoval.players[0].board[0]!,
+    structured('DESTROY', {
+      ...targetConfig,
+      selection: 'SAME_TARGET',
+    }),
+    [secondTarget.instanceId],
+  );
+  assert.equal(secondRemoval.players[0].board[0]?.currentAttack, 8);
+  assert.equal(secondRemoval.players[0].board[0]?.currentHealth, 1);
+
+  const firstRemovalEventIndex = secondRemoval.events.findIndex(
+    (event) => event.type === 'CARD_DESTROYED' &&
+      event.cardInstanceId === firstTarget.instanceId,
+  );
+  const replayedRemoval = resolveRegisteredRuleListeners(
+    secondRemoval,
+    'SOURCE_CAUSED_TARGET_REMOVAL',
+    'player-2',
+    firstTarget.instanceId,
+    'WRESTLER',
+    firstRemovalEventIndex,
+  );
+  assert.equal(replayedRemoval.players[0].board[0]?.currentAttack, 8);
+
+  const unrelatedSource = { ...instance('unrelated-destroyer'), boardSlot: 2 as const };
+  const unrelatedTarget = {
+    ...instance('unrelated-victim'),
+    currentAttack: 9,
+    boardSlot: 2 as const,
+  };
+  const unrelatedState = {
+    ...replayedRemoval,
+    players: replayedRemoval.players.map((player) =>
+      player.id === 'player-1'
+        ? { ...player, board: player.board.map((card, index) => index === 2 ? unrelatedSource : card) as typeof player.board }
+        : player.id === 'player-2'
+          ? { ...player, board: player.board.map((card, index) => index === 2 ? unrelatedTarget : card) as typeof player.board }
+          : player,
+    ),
+  };
+  const unrelatedRemoval = applyEffect(
+    unrelatedState,
+    'player-1',
+    unrelatedSource,
+    structured('DESTROY', {
+      zone: 'BOARD',
+      owner: 'ENEMY',
+      cardType: 'WRESTLER',
+      selection: 'SAME_TARGET',
+      count: 1,
+    }),
+    [unrelatedTarget.instanceId],
+  );
+  assert.equal(unrelatedRemoval.players[0].board[0]?.currentAttack, 8);
+});
+
+test('source-caused retirement snapshots the victim attack and does not add health', () => {
+  const source = instance('causal-retirement-source', [sourceCausedRemovalListener()]);
+  const target = {
+    ...instance('causal-retirement-target'),
+    currentAttack: 6,
+    currentHealth: 2,
+    maxHealth: 2,
+    boardSlot: 0 as const,
+  };
+  const state = createInitialGameState();
+  state.players[1].board[0] = target;
+  const registered = enterField(state, 'player-1', source, 0);
+  const result = applyEffect(
+    registered,
+    'player-1',
+    registered.players[0].board[0]!,
+    structured('RETIRE', {
+      zone: 'BOARD',
+      owner: 'ENEMY',
+      cardType: 'WRESTLER',
+      selection: 'PLAYER_CHOICE',
+      count: 1,
+    }),
+    [target.instanceId],
+  );
+
+  assert.equal(result.players[0].board[0]?.currentAttack, 7);
+  assert.equal(result.players[0].board[0]?.currentHealth, 1);
+  const retirement = result.events.find(
+    (event) => event.type === 'CARD_RETIRED' &&
+      event.cardInstanceId === target.instanceId,
+  );
+  assert.equal(retirement?.targetSnapshot?.currentAttack, 6);
+  assert.equal(retirement?.source?.type === 'CARD' && retirement.source.cardInstanceId, source.instanceId);
+});
+
+test('combat retirement attributes its damage to the exact attacker for removal listeners', () => {
+  const source = instance('causal-combat-source', [sourceCausedRemovalListener()]);
+  const registered = enterField(createInitialGameState(), 'player-1', source, 0);
+  const deployedSource = {
+    ...registered.players[0].board[0]!,
+    enteredThisTurn: false,
+    currentAttack: 5,
+    currentHealth: 20,
+    maxHealth: 20,
+  };
+  const target = {
+    ...instance('causal-combat-target'),
+    currentAttack: 7,
+    currentHealth: 1,
+    maxHealth: 1,
+    boardSlot: 0 as const,
+  };
+  const state = {
+    ...registered,
+    status: 'IN_PROGRESS' as const,
+    activePlayerId: 'player-1',
+    players: registered.players.map((player) =>
+      player.id === 'player-1'
+        ? { ...player, board: [deployedSource, null, null, null] as typeof player.board }
+        : { ...player, board: [target, null, null, null] as typeof player.board },
+    ),
+  };
+
+  const result = attack(state, 'player-1', deployedSource.instanceId, {
+    type: 'WRESTLER',
+    playerId: 'player-2',
+    cardInstanceId: target.instanceId,
+  });
+
+  assert.equal(result.success, true);
+  if (!result.success) return;
+  assert.equal(result.state.players[0].board[0]?.currentAttack, 12);
+  assert.equal(result.state.players[0].board[0]?.currentHealth, 13);
+  assert.equal(result.state.players[1].board[0], null);
+  const retirement = result.state.events.find(
+    (event) => event.type === 'CARD_RETIRED' &&
+      event.cardInstanceId === target.instanceId,
+  );
+  assert.equal(retirement?.source?.type === 'CARD' && retirement.source.cardInstanceId, deployedSource.instanceId);
+  assert.equal(retirement?.targetSnapshot?.currentAttack, 7);
 });
 
 test('구조화 DRAW는 기존 drawCard 규칙과 이벤트를 사용한다', () => {

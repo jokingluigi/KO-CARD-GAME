@@ -1,6 +1,7 @@
 /** The content-facing Effect DSL contract. Card and Champion administration use
  * this exact registry; English identifiers are stable implementation aliases. */
 export const TRIGGERS = ["GAME_START", "ENTER_FIELD", "LEAVE_FIELD", "SELF_RETIRE", "ACTIVE", "CARD_DRAWN", "CARD_RETIRED", "CARD_SUMMONED", "CARD_ENTERED", "FIRST_ATTACKED", "SELF_ATTACK", "OTHER_ALLY_ATTACK", "ATTACK_SURVIVED", "SELF_DAMAGED", "STAT_CHANGED", "TECHNIQUE_CAST", "EXACT_ZERO_DAMAGE", "TURN_START", "TURN_END", "BEFORE_DAMAGE", "BEFORE_RETIRE"] as const;
+export const RULE_LISTENER_TRIGGERS = ["CARD_PLAYED", "TECHNIQUE_PLAYED", "CARD_RETIRED", "DAMAGE_TAKEN", "SOURCE_CAUSED_TARGET_REMOVAL"] as const;
 export const CONDITIONS = ["NEED_CONDITION", "BASE_COST_GTE", "SOURCE_ON_LEFT_SIDE", "SOURCE_ON_RIGHT_SIDE", "SOURCE_IS_ONLY_WRESTLER", "FIRST_ATTACK_GAIN"] as const;
 export const REFERENCES = ["SOURCE", "LAST_TARGET", "LAST_DRAWN_CARD", "LAST_ATTACKER", "LAST_DAMAGED_TARGET", "CAPTURED_CARD", "CURRENT_SLOT"] as const;
 export const ACTIONS = ["BUFF", "SET_STATS", "MODIFY_STAT", "MODIFY_MAX_HEALTH", "SET_STAT", "DAMAGE", "HEAL", "SILENCE", "DESTROY", "RETIRE", "ADD_GOLD", "ADD_NEXT_TURN_GOLD", "DRAW", "REDUCE_COST", "INCREASE_COST", "STUN", "DISABLE_ABILITY", "WEAKEN_TO_STUN_SILENCE", "ADD_KEYWORD", "REMOVE_KEYWORD", "SWAP_STATS", "ADD_DAMAGE_MODIFIER", "SUMMON", "SUMMON_FROM_HAND", "REVIVE", "GENERATE", "MOVE_TO_HAND", "MOVE_TO_DECK", "STEAL", "MILL", "SPEND_GOLD_BUFF_SELF", "DEPLOY_CHAMPION_TOKEN", "CAPTURE", "RELEASE_CAPTURED", "REMOVE_FROM_GAME", "SWITCH_EFFECT_BRANCH", "QUEUE_EFFECT", "ADD_AGGREGATED_ATTACK", "COPY_BEST_STATS", "REPEAT_TURN_END", "TRANSFORM_SOURCE", "REGISTER_DELAYED", "REGISTER_LISTENER", "PREVENT_DAMAGE", "PREVENT_RETIRE", "GRANT_RANDOM_CARD_TEXT"] as const;
@@ -152,11 +153,17 @@ export type StructuredTarget = {
 
 export type StructuredEffectCondition = { type: Condition; expression?: string };
 export type CardDefinitionReference = { id?: string; name?: string };
-export type StructuredAggregateStats = {
-  source: "LAST_DESTROYED_TARGETS";
-  attack: "CURRENT_ATTACK_SUM";
-  health: "CURRENT_HEALTH_SUM";
-};
+export type StructuredAggregateStats =
+  | {
+      source: "LAST_DESTROYED_TARGETS";
+      attack: "CURRENT_ATTACK_SUM";
+      health: "CURRENT_HEALTH_SUM";
+    }
+  | {
+      source: "LAST_CAUSED_TARGET_REMOVALS";
+      attack: "CURRENT_ATTACK_SUM";
+      health?: never;
+    };
 export type StructuredQueuedEffect = {
   action: Action;
   target?: StructuredTarget;
@@ -176,6 +183,7 @@ export type StructuredQueuedEffect = {
     minimum?: number;
     generatedModifiers?: { cost?: number; attack?: number; health?: number; copySourceStats?: boolean; copyTargetStats?: boolean };
     deckPosition?: "TOP" | "BOTTOM";
+    aggregateStats?: StructuredAggregateStats;
   };
 };
 export type StructuredSchedule = {
@@ -184,7 +192,7 @@ export type StructuredSchedule = {
   eventTrigger?: "CARD_PLAYED" | "TECHNIQUE_PLAYED" | "CARD_RETIRED" | "DAMAGE_TAKEN";
 };
 export type StructuredListener = {
-  trigger: "CARD_PLAYED" | "TECHNIQUE_PLAYED" | "CARD_RETIRED" | "DAMAGE_TAKEN";
+  trigger: (typeof RULE_LISTENER_TRIGGERS)[number];
   cardType?: "WRESTLER" | "TECHNIQUE";
   owner?: "SELF" | "ENEMY";
   uses?: number;

@@ -2,7 +2,7 @@ import type { CardInstance } from '../cards/types';
 import type { CardDefinition } from '../cards/types';
 import type { ChampionState } from '../champions/types';
 import type { EntryCause, EventAttribution, GameEvent } from '../events/types';
-import type { CardEffect, QueuedStructuredEffect } from '../effects/types';
+import type { CardEffect, QueuedStructuredEffect, StructuredListener } from '../effects/types';
 import type { EffectScript, ScriptStep } from '@workspace/effect-registry';
 
 export type Board = [
@@ -39,11 +39,13 @@ export interface PendingRuleListener {
   id: string;
   playerId: string;
   sourceInstanceId: string;
-  trigger: 'CARD_PLAYED' | 'TECHNIQUE_PLAYED' | 'CARD_RETIRED' | 'DAMAGE_TAKEN';
+  trigger: StructuredListener['trigger'];
   owner?: 'SELF' | 'ENEMY';
   cardType?: 'WRESTLER' | 'TECHNIQUE';
   uses?: number;
   registeredEventIndex: number;
+  /** Stable removal event identities prevent a causal listener from resolving the same event twice. */
+  processedRemovalEventKeys?: string[];
   effect: QueuedStructuredEffect;
 }
 

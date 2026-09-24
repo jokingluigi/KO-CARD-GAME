@@ -1,12 +1,19 @@
 import type { ActionResult } from '../actions/types';
 import { actionFailure, actionSuccess } from '../actions/types';
 import type { CardInstanceId } from '../cards/types';
+import type { EventAttribution } from '../events/types';
 import type { GameState } from '../types/game-state';
+
+export interface DestroyCardProvenance {
+  sourceInstanceId?: CardInstanceId;
+  sourceContext?: EventAttribution;
+}
 
 export function destroyCard(
   state: GameState,
   playerId: string,
   cardInstanceId: CardInstanceId,
+  provenance: DestroyCardProvenance = {},
 ): ActionResult {
   const player = state.players.find((candidate) => candidate.id === playerId);
   const card = player?.board.find(
@@ -45,10 +52,24 @@ export function destroyCard(
         type: 'CARD_DESTROYED',
         playerId,
         cardInstanceId,
-        source: { type: 'SYSTEM' },
+        cardType: card.cardType ?? 'WRESTLER',
+        source: provenance.sourceInstanceId
+          ? { type: 'CARD', cardInstanceId: provenance.sourceInstanceId }
+          : { type: 'SYSTEM' },
         target: { type: 'CARD', cardInstanceId },
         reason: 'DESTROY',
         boardSlot: card.boardSlot!,
+        targetSnapshot: {
+          playerId,
+          cardInstanceId: card.instanceId,
+          cardType: card.cardType ?? 'WRESTLER',
+          boardSlot: card.boardSlot!,
+          currentAttack: card.currentAttack,
+          currentHealth: card.currentHealth,
+        },
+        ...(provenance.sourceContext
+          ? { sourceContext: provenance.sourceContext }
+          : {}),
       },
     ],
   };

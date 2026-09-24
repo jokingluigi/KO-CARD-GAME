@@ -1,5 +1,5 @@
 import {
-  ACTION_SCHEMAS, ACTIONS, CONDITIONS, DAMAGE_SOURCES, DEFAULT_CARD_TARGET_SCOPE, EFFECT_CAPABILITIES, EFFECT_LIBRARY, KEYWORDS, REFERENCES, TARGET_OWNERS,
+  ACTION_SCHEMAS, ACTIONS, CONDITIONS, DAMAGE_SOURCES, DEFAULT_CARD_TARGET_SCOPE, EFFECT_CAPABILITIES, EFFECT_LIBRARY, KEYWORDS, REFERENCES, RULE_LISTENER_TRIGGERS, TARGET_OWNERS,
   RANDOM_SCOPES, TARGET_SELECTIONS, TARGET_ZONES, TRIGGERS,
   type Action, type Condition, type Keyword, type Reference, type TargetOwner, type TargetSelection,
   type DamageSource, type RandomScope, type TargetZone, type Trigger, type StatName, type EffectDuration,
@@ -161,6 +161,8 @@ const GENERATED_FILTER_PATTERN = /(?:생성된|생성\s*카드|GENERATED)/i;
 const MIN_COST_PATTERN = /(\d+)\s*(?:코스트|비용)\s*이상/;
 const AGGREGATED_STATS_PATTERN = /(?:현재\s*)?(?:공격(?:력)?\s*(?:과|\/|및)\s*체력|체력\s*(?:과|\/|및)\s*공격(?:력)?)[^.!?]{0,30}?합산/;
 const AGGREGATED_ATTACK_PATTERN = /(?:리타이어|퇴장|파괴).*공격력.*(?:더|추가)|공격력.*(?:리타이어|퇴장|파괴)/;
+const SOURCE_CAUSED_REMOVAL_ATTACK_PATTERN =
+  /(?:이\s*카드|자신)[^.!?]{0,80}?(?:리타이어|퇴장|파괴)[^.!?]{0,50}?(?:선수|대상)[^.!?]{0,50}?공격력[^.!?]{0,50}?(?:이\s*카드의|자신의)\s*공격력[^.!?]{0,30}?(?:더|추가|증가)/;
 const STAT_PAIR_SET_PATTERN = /(?:공격력|공격)\s*\/\s*(?:체력|HP)\s*(?:이|가|을|를)?\s*(\d+)\s*\/\s*(\d+)\s*(?:이|가)?\s*(?:됩니다|된다|됩니다|됩니다|됩니다|됩니다|만듭니다|설정)/i;
 const STAT_SET_PATTERN = /(비용|코스트|공격력|체력)\s*(?:이|가|을|를|은|는)?\s*(\d+)\s*(?:이|가|으로|로)?\s*(?:됩니다|된다|됩니다|만듭니다|설정(?:합니다|됩니다)?)/gi;
 const STAT_PAIR_INCREMENT_GENERIC_PATTERN = /([+-]\d+)\s*\/\s*([+-]\d+)/g;
@@ -1574,6 +1576,7 @@ export function analyzeEffectText(input: string, options: EffectAnalysisOptions 
     ["ADD_KEYWORD", /(?:러쉬|기습|도발|회피|연타)(?:를|을)?\s*(?:부여|얻)/],
   ];
   const effects: StructuredEffect[] = [];
+  const hasSourceCausedRemovalAttack = SOURCE_CAUSED_REMOVAL_ATTACK_PATTERN.test(body);
   const referencedCards: ReferencedCard[] = [];
   const referenceErrors: CardReferenceError[] = [];
   let remainder = "";
@@ -1587,6 +1590,9 @@ export function analyzeEffectText(input: string, options: EffectAnalysisOptions 
        if (action === "ADD_GOLD" && deferredGoldClause) return [];
        if (action === "SUMMON" && /(?:내\s*)?챔피언(?:을|를)?\s*소환/i.test(clause)) return [];
        if (action === "BUFF" && NEXT_PLAY_HEALTH_BUFF_PATTERN.test(clause)) return [];
+       if (action === "ADD_AGGREGATED_ATTACK" &&
+           hasSourceCausedRemovalAttack &&
+           SOURCE_CAUSED_REMOVAL_ATTACK_PATTERN.test(clause)) return [];
       const match = matcher.exec(clause);
       return match ? [{ action, matcher, index: match.index }] : [];
     }).sort((left, right) => left.index - right.index);
@@ -1598,8 +1604,39 @@ export function analyzeEffectText(input: string, options: EffectAnalysisOptions 
       }
       clauseRemainder = clauseRemainder.replace(matcher, " ");
     }
+     if (hasSourceCausedRemovalAttack &&
+         SOURCE_CAUSED_REMOVAL_ATTACK_PATTERN.test(clause)) {
+       clauseRemainder = clauseRemainder.replace(SOURCE_CAUSED_REMOVAL_ATTACK_PATTERN, " ");
+     }
     remainder += ` ${clauseRemainder}`;
   }
+   if (hasSourceCausedRemovalAttack) {
+     const listener: StructuredEffect = {
+       trigger,
+       action: "REGISTER_LISTENER",
+       values: {
+         listener: {
+           trigger: "SOURCE_CAUSED_TARGET_REMOVAL",
+           cardType: "WRESTLER",
+           effect: {
+             action: "ADD_AGGREGATED_ATTACK",
+             target: { zone: "BOARD", owner: "SELF", selection: "SELF", count: 1 },
+             values: {
+               aggregateStats: {
+                 source: "LAST_CAUSED_TARGET_REMOVALS",
+                 attack: "CURRENT_ATTACK_SUM",
+               },
+             },
+           },
+         },
+       },
+     };
+     const firstRemovalIndex = effects.findIndex(
+       (item) => item.action === "DESTROY" || item.action === "RETIRE",
+     );
+     if (firstRemovalIndex < 0) effects.unshift(listener);
+     else effects.splice(firstRemovalIndex, 0, listener);
+   }
       remainder = remainder.replace(/(?:내\s+)?(?:필드|손패|덱)?\s*의?\s*(?:[가-힣A-Za-z0-9]+\s*(?:또는|및|와|과|,)\s*)*[가-힣A-Za-z0-9]+\s*태그\s*(?:를|가|은|는)?\s*(?:가진|있는|없는|제외|아닌)/g, "");
      remainder = remainder.replace(/사용될\s*때까지(?:\s*\S+){0,5}\s*유지(?:합니다)?|다음\s*턴에도(?:\s*\S+){0,2}\s*유지(?:합니다)?/g, "");
      remainder = remainder.replace(/자신의\s*양\s*옆\s*(?:의\s*)?(?:빈\s*)?슬롯(?:에)?|양\s*옆\s*(?:의\s*)?(?:빈\s*)?슬롯(?:에)?|각각|이\s*카드가\s*필드에\s*있(?:는\s*동안|을\s*때)|(?:비용|코스트)(?:이)?\s*\d+\s*(?:이상|이하)|\d+\s*(?:코스트|비용)(?:\s*(?:이상|이하))/g, "");
@@ -1855,7 +1892,7 @@ export function isStructuredEffects(value: unknown): value is { effects: Structu
         const listenerEffect = listener?.effect;
         if (
           !listener || typeof listener !== "object" || Array.isArray(listener) ||
-          !["CARD_PLAYED", "TECHNIQUE_PLAYED", "CARD_RETIRED", "DAMAGE_TAKEN"].includes(listener.trigger as string) ||
+          !RULE_LISTENER_TRIGGERS.includes(listener.trigger as typeof RULE_LISTENER_TRIGGERS[number]) ||
           (listener.cardType !== undefined && !["WRESTLER", "TECHNIQUE"].includes(listener.cardType as string)) ||
           (listener.owner !== undefined && !["SELF", "ENEMY"].includes(listener.owner as string)) ||
           (listener.uses !== undefined && (!Number.isInteger(listener.uses) || listener.uses < 1 || listener.uses > 20)) ||
@@ -1863,6 +1900,26 @@ export function isStructuredEffects(value: unknown): value is { effects: Structu
           !ACTIONS.includes(listenerEffect.action) || listenerEffect.action === "REGISTER_LISTENER" ||
           (listenerEffect.values !== undefined && (typeof listenerEffect.values !== "object" || Array.isArray(listenerEffect.values)))
         ) return false;
+        if (listener.trigger === "SOURCE_CAUSED_TARGET_REMOVAL") {
+          const target = listenerEffect.target;
+          const aggregate = listenerEffect.values?.aggregateStats;
+          if (
+            listener.cardType !== "WRESTLER" ||
+            listener.owner !== undefined ||
+            listenerEffect.action !== "ADD_AGGREGATED_ATTACK" ||
+            !target || target.zone !== "BOARD" || target.owner !== "SELF" ||
+            target.selection !== "SELF" || target.count !== 1 ||
+            !aggregate || aggregate.source !== "LAST_CAUSED_TARGET_REMOVALS" ||
+            aggregate.attack !== "CURRENT_ATTACK_SUM" || aggregate.health !== undefined ||
+            Object.keys(listenerEffect).some((key) => !["action", "target", "values"].includes(key)) ||
+            Object.keys(listenerEffect.values ?? {}).some((key) => key !== "aggregateStats") ||
+            Object.keys(aggregate).some((key) => !["source", "attack"].includes(key))
+          ) return false;
+        } else if (
+          listenerEffect.values?.aggregateStats?.source === "LAST_CAUSED_TARGET_REMOVALS"
+        ) {
+          return false;
+        }
       }
       if (schema.prevention) {
         const prevention = values?.prevention;

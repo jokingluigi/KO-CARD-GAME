@@ -2,6 +2,7 @@ import type { CardInstanceId } from '../cards/types';
 import type { ActionErrorCode, ActionResult } from '../actions/types';
 import { actionFailure, actionSuccess } from '../actions/types';
 import type { GameState } from '../types/game-state';
+import type { EventAttribution } from '../events/types';
 import { validateCurrentPlayer } from './turn-system';
 import {
   getDamageModifierBonus,
@@ -132,8 +133,11 @@ export function canSelectAsAttacker(
   return getAttackLegality(state, playerId, cardInstanceId).allowed;
 }
 
-function retireDefeatedWrestlers(state: GameState): GameState {
-  return resolveStateBasedDeaths(state);
+function retireDefeatedWrestlers(
+  state: GameState,
+  causeEventStartIndex?: number,
+): GameState {
+  return resolveStateBasedDeaths(state, undefined, causeEventStartIndex);
 }
 
 function receiveDamage(
@@ -477,6 +481,22 @@ export function attack(
     getDamageModifierBonus(preDamageState, attackingPlayerId, attackerPrepared);
   const defenderDamage = defenderPreparedCard.currentAttack +
     getDamageModifierBonus(preDamageState, target.playerId, defenderPreparedCard);
+  const damageEventStartIndex = preDamageState.events.length;
+  const combatEventId = `combat:${state.gameId}:${state.turn}:${damageEventStartIndex}`;
+  const attackerAttribution: EventAttribution = {
+    sourcePlayerId: attackingPlayerId,
+    sourceActionType: 'ATTACK',
+    sourceEffectId: attackerPrepared.definitionId,
+    rootSourceEventId: combatEventId,
+    causationId: `${combatEventId}:${attackerInstanceId}`,
+  };
+  const defenderAttribution: EventAttribution = {
+    sourcePlayerId: target.playerId,
+    sourceActionType: 'ATTACK',
+    sourceEffectId: defenderPreparedCard.definitionId,
+    rootSourceEventId: combatEventId,
+    causationId: `${combatEventId}:${defenderPreparedCard.instanceId}`,
+  };
   const damagedState: GameState = {
     ...preDamageState,
     players: preDamageState.players.map((player) => ({
@@ -536,6 +556,7 @@ export function attack(
         },
         reason: 'COMBAT',
           amount: defenderDodges || preventedAttackerDamage ? 0 : attackerDamage,
+        sourceContext: attackerAttribution,
       },
       {
         type: 'DAMAGE_DEALT',
@@ -545,6 +566,7 @@ export function attack(
         target: { type: 'CARD', cardInstanceId: attackerInstanceId },
         reason: 'COMBAT',
           amount: attackerDodges || preventedDefenderDamage ? 0 : defenderDamage,
+        sourceContext: defenderAttribution,
       },
     ],
   };
@@ -581,6 +603,9 @@ export function attack(
     defender.instanceId,
     defender.cardType,
   );
-  const resolved = retireDefeatedWrestlers(damageListenersResolved);
+  const resolved = retireDefeatedWrestlers(
+    damageListenersResolved,
+    damageEventStartIndex,
+  );
   return actionSuccess(processChampionQuestEvents(state, resolved));
 }

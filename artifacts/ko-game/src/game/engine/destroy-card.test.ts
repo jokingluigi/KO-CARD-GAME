@@ -41,10 +41,19 @@ test('일반 DESTROY는 카드 파괴 이벤트만 기록하고 카드를 묘지
       type: 'CARD_DESTROYED',
       playerId: 'player-1',
       cardInstanceId: card.instanceId,
+      cardType: card.cardType ?? 'WRESTLER',
       source: { type: 'SYSTEM' },
       target: { type: 'CARD', cardInstanceId: card.instanceId },
       reason: 'DESTROY',
       boardSlot: 0,
+      targetSnapshot: {
+        playerId: 'player-1',
+        cardInstanceId: card.instanceId,
+        cardType: card.cardType ?? 'WRESTLER',
+        boardSlot: 0,
+        currentAttack: card.currentAttack,
+        currentHealth: card.currentHealth,
+      },
     },
   );
   assert.equal(

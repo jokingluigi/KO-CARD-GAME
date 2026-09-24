@@ -332,7 +332,7 @@ test("손에 있는 선수 카드 선택 문장은 손패 WRESTLER 단일 공격
   assert.deepEqual(result.effects[0]?.values, { attack: 2, health: 0 });
 });
 
-test("판도라의 선택 대상 파괴와 공격력 합산은 하나의 검증된 효과 목록이 된다", () => {
+test("source-caused removal attack text becomes a validated listener before destruction", () => {
   const result = analyzeEffectText(
     "등장: 자신이 선택한 선수를 침묵시키고 파괴합니다. 이 카드는 자신이 리타이어 혹은 파괴 시킨 선수의 공격력을 자신의 공격력에 더합니다.",
   );
@@ -340,19 +340,52 @@ test("판도라의 선택 대상 파괴와 공격력 합산은 하나의 검증�
   assert.equal(result.status, "success");
   assert.deepEqual(result.effects.map((effect) => effect.action), [
     "SILENCE",
+    "REGISTER_LISTENER",
     "DESTROY",
-    "ADD_AGGREGATED_ATTACK",
   ]);
-  assert.deepEqual(result.effects[2]?.target, {
-    zone: "BOARD",
-    owner: "SELF",
-    selection: "SELF",
-    count: 1,
+  assert.deepEqual(result.effects[1]?.values?.listener, {
+    trigger: "SOURCE_CAUSED_TARGET_REMOVAL",
+    cardType: "WRESTLER",
+    effect: {
+      action: "ADD_AGGREGATED_ATTACK",
+      target: {
+        zone: "BOARD",
+        owner: "SELF",
+        selection: "SELF",
+        count: 1,
+      },
+      values: {
+        aggregateStats: {
+          source: "LAST_CAUSED_TARGET_REMOVALS",
+          attack: "CURRENT_ATTACK_SUM",
+        },
+      },
+    },
   });
-  assert.deepEqual(result.effects[2]?.values?.aggregateStats, {
-    source: "LAST_DESTROYED_TARGETS",
-    attack: "CURRENT_ATTACK_SUM",
-    health: "CURRENT_HEALTH_SUM",
+  assert.equal(isStructuredEffects({ effects: result.effects }), true);
+});
+
+test("published Champion Token wording analyzes into an attack-only causal removal listener", () => {
+  const result = analyzeEffectText(
+    "등장:선택한 선수를 파괴시킵니다. \n" +
+      "이 카드가 필드에 있을때 이 카드가 리타이어 혹은 파괴 시킨 선수의 공격력을 이 카드의 공격력에 더합니다.",
+  );
+
+  assert.equal(result.status, "success");
+  assert.deepEqual(result.effects.map((effect) => effect.action), [
+    "REGISTER_LISTENER",
+    "DESTROY",
+  ]);
+  assert.equal(result.effects[0]?.trigger, "ENTER_FIELD");
+  assert.deepEqual(result.effects[0]?.values?.listener?.effect, {
+    action: "ADD_AGGREGATED_ATTACK",
+    target: { zone: "BOARD", owner: "SELF", selection: "SELF", count: 1 },
+    values: {
+      aggregateStats: {
+        source: "LAST_CAUSED_TARGET_REMOVALS",
+        attack: "CURRENT_ATTACK_SUM",
+      },
+    },
   });
   assert.equal(isStructuredEffects({ effects: result.effects }), true);
 });

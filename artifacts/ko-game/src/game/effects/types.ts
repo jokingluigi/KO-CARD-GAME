@@ -1,6 +1,6 @@
 import type {
   Action, DamageSource, DynamicValue, EffectDuration, EffectScript, Keyword, Reference, StatName,
-  StructuredTarget, StructuredQueuedEffect, StructuredAggregateStats, CardDefinitionReference, StructuredEffectValues,
+  StructuredTarget, StructuredQueuedEffect, StructuredAggregateStats, StructuredListener, CardDefinitionReference, StructuredEffectValues,
 } from "@workspace/effect-registry";
 import type { CardDefinition } from '../cards/types';
 
@@ -11,7 +11,7 @@ export type RuntimeTrigger =
    | 'CARD_DRAWN' | 'CARD_RETIRED' | 'CARD_SUMMONED' | 'CARD_ENTERED' | 'FIRST_ATTACKED' | 'SELF_ATTACK' | 'OTHER_ALLY_ATTACK' | 'ATTACK_SURVIVED' | 'SELF_DAMAGED' | 'STAT_CHANGED' | 'TECHNIQUE_CAST' | 'EXACT_ZERO_DAMAGE'
    | 'TURN_START' | 'TURN_END' | 'BEFORE_DAMAGE' | 'BEFORE_RETIRE';
 
-export type { StructuredTarget, StructuredQueuedEffect, CardDefinitionReference };
+export type { StructuredTarget, StructuredQueuedEffect, StructuredListener, CardDefinitionReference };
 export type QueuedStructuredEffect = StructuredQueuedEffect;
 export type AggregatedStatsResolver = StructuredAggregateStats;
 

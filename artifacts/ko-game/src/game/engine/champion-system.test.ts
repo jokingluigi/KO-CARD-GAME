@@ -81,7 +81,7 @@ test('Pandora-style ALL WRESTLER ability can retire an ally and advance its attr
       trackedEvent: 'WRESTLER_RETIRED' as const,
       cardType: 'WRESTLER' as const,
       sourceActionType: 'USE_CHAMPION_ABILITY',
-      requiredProgress: 1,
+      requiredProgress: 5,
       reward: { type: 'GAIN_GOLD' as const, amount: 0 },
     },
   };
@@ -123,6 +123,23 @@ test('Pandora-style ALL WRESTLER ability can retire an ally and advance its attr
   assert.equal(resolved.players[0].board[0], null);
   assert.equal(resolved.players[1].board[0]?.instanceId, enemy.instanceId);
   assert.equal(resolved.players[0].champion?.questProgress, 1);
+  assert.equal(resolved.players[0].champion?.questCompleted, false);
+  assert.equal(
+    resolved.events.filter((event) =>
+      event.type === 'CHAMPION_QUEST_PROGRESS' &&
+      event.championId === pandora.id,
+    ).length,
+    1,
+  );
+  const replay = processChampionQuestEvents(resolved, resolved);
+  assert.equal(replay.players[0].champion?.questProgress, 1);
+  assert.equal(
+    replay.events.filter((event) =>
+      event.type === 'CHAMPION_QUEST_PROGRESS' &&
+      event.championId === pandora.id,
+    ).length,
+    1,
+  );
 });
 
 test('퀘스트 없는 Champion의 구조화된 다음 턴 골드 능력이 다음 자기 턴에 적용된다', () => {
