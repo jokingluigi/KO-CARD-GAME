@@ -26,3 +26,9 @@ Trigger callers must only resume a pending frame when `resolveTriggeredAbilities
 **Why:** Lethal damage inside a paused effect caused a no-op `BEFORE_RETIRE`/`BEFORE_DAMAGE` lookup to replay the parent continuation and discard the retired card's aggregate follow-up data.
 
 **How to apply:** Compare the returned state with the trigger input before calling `resolvePendingEffects`; preserve the existing active frame when the trigger returned the same state.
+
+Retirement-trigger resolution can clear the child frame while leaving the original targeted effect's parent frame as the only continuation; the parent must be restored before resolving the next effect.
+
+**Why:** Lethal DAMAGE followed by an aggregate effect otherwise stops after retirement, so the next effect never runs even though the card was removed correctly.
+
+**How to apply:** When a lethal retirement resolver returns without a targeting frame, retain the caller's frame, carry the retirement snapshot through the event/resolution state, and resume the parent through the common resolver.

@@ -677,6 +677,9 @@ function clearLastAggregatedStats(state: GameState): GameState {
 
 function lastRetiredSnapshot(state: GameState): { attack: number; health: number } | undefined {
   const event = [...state.events].reverse().find((entry) => entry.type === 'CARD_RETIRED');
+  if (event?.targetSnapshot?.currentAttack !== undefined && event.targetSnapshot.currentHealth !== undefined) {
+    return { attack: event.targetSnapshot.currentAttack, health: event.targetSnapshot.currentHealth };
+  }
   const cardInstanceId = event?.target?.type === 'CARD' ? event.target.cardInstanceId : undefined;
   if (cardInstanceId) {
     const snapshot = state.players
@@ -1500,7 +1503,7 @@ export function selectEffectTarget(state: GameState, targetId: string): GameStat
   let next: GameState = { ...state, targetingState: parentAfter };
   if (!validateEffectTargets(state, pending.playerId, source, effect, selected)) return state;
    next = applyEffect(next, pending.playerId, source, effect, selected, pending.triggerContext);
-  if (next.targetingState?.continuation === parentAfter) return next;
+   if (next.targetingState?.continuation === parentAfter && next.targetingState.active) return next;
   return resolvePendingEffects(next);
 }
 
@@ -2435,7 +2438,7 @@ export function applyEffect(
             : player),
           events: [...protectedState.events,
             { type: 'DAMAGE_DEALT', playerId, cardInstanceId: sourceCard.instanceId, source: { type: 'CARD', cardInstanceId: sourceCard.instanceId }, target: { type: 'CARD', cardInstanceId: current.instanceId }, reason: 'CARD_EFFECT', amount: damageAmount, sourceContext: sourceContextFor(playerId, sourceCard, triggerContext) },
-            { type: 'CARD_RETIRED', playerId: targetOwner, cardInstanceId: current.instanceId, cardType: current.cardType, boardSlot: current.boardSlot!, source: { type: 'CARD', cardInstanceId: sourceCard.instanceId }, target: { type: 'CARD', cardInstanceId: current.instanceId }, reason: 'RETIRE', sourceContext: sourceContextFor(playerId, sourceCard, triggerContext) },
+            { type: 'CARD_RETIRED', playerId: targetOwner, cardInstanceId: current.instanceId, cardType: current.cardType, boardSlot: current.boardSlot!, source: { type: 'CARD', cardInstanceId: sourceCard.instanceId }, target: { type: 'CARD', cardInstanceId: current.instanceId }, targetSnapshot: { playerId: targetOwner, cardInstanceId: current.instanceId, cardType: current.cardType ?? 'WRESTLER', boardSlot: current.boardSlot!, currentAttack: current.currentAttack, currentHealth: current.currentHealth }, reason: 'RETIRE', sourceContext: sourceContextFor(playerId, sourceCard, triggerContext) },
           ],
         };
         const retiredWithAggregate = withLastAggregatedStats(retiredState, {
@@ -2464,10 +2467,12 @@ export function applyEffect(
           current,
           attribution,
         );
-        return withLastAggregatedStats(retiredListenersState, {
+        const resumed = withLastAggregatedStats(retiredListenersState, {
           attack: current.currentAttack,
           health: Math.max(0, current.currentHealth),
         });
+        const continuation = resumed.targetingState ?? state.targetingState;
+        return continuation ? resolvePendingEffects({ ...resumed, targetingState: continuation }) : resumed;
       }, state);
     }
     if (effect.action === 'SILENCE') {
@@ -2475,16 +2480,16 @@ export function applyEffect(
     }
     if (effect.action === 'ADD_AGGREGATED_ATTACK') {
       const aggregate = state.lastAggregatedStats ?? state.targetingState?.lastAggregatedStats ?? lastRetiredSnapshot(state);
-      console.error('DEBUG_ADD', aggregate, lastRetiredSnapshot(state), state.players.map((p) => p.graveyard.map((c) => [c.instanceId, c.lastRetiredStats])));
       if (!aggregate) return clearLastAggregatedStats(state);
       const withoutAggregate = clearLastAggregatedStats(state);
+      const aggregateTargets = ids.size ? ids : new Set([sourceCard.instanceId]);
       return {
         ...withoutAggregate,
         players: withoutAggregate.players.map((player) => player.id !== targetOwner
           ? player
           : {
               ...player,
-              board: player.board.map((card) => card && ids.has(card.instanceId)
+              board: player.board.map((card) => card && aggregateTargets.has(card.instanceId)
                 ? { ...card, currentAttack: card.currentAttack + aggregate.attack }
                 : card) as typeof player.board,
             }),
