@@ -2,7 +2,7 @@ import type { CardInstance } from '../cards/types';
 import type { EnterFieldEvent, EntryCause, EventSubject } from '../events/types';
 import type { GameState } from '../types/game-state';
 import type { BoardSlot } from './board-position';
-import { appendEffectContinuation, resolveSummonListeners, resolveTriggeredAbilities } from '../effects/effect-engine';
+import { appendEffectContinuation, resolveCardEntryListeners, resolveSummonListeners, resolveTriggeredAbilities } from '../effects/effect-engine';
 import { getActiveCardAbilities } from '../cards/granted-text';
 
 export function enterField(
@@ -71,23 +71,24 @@ export function enterField(
       { boardSlot, chosenTargetInstanceIds },
     )
     : enteredState;
+  const afterEntryListeners = resolveCardEntryListeners(afterEnter, playerId, enteredCard);
   const afterSummonListeners = entryCause === 'SUMMON'
-    ? resolveSummonListeners(afterEnter, playerId, enteredCard)
-    : afterEnter;
+    ? resolveSummonListeners(afterEntryListeners, playerId, enteredCard)
+    : afterEntryListeners;
   // POSITION is deferred after ENTER_FIELD rather than installed as a child.
   if (afterSummonListeners.targetingState?.active) {
      const positionEffects = getActiveCardAbilities(enteredCard)
       .filter((ability) => ability.trigger === 'POSITION' && ability.boardSlots.includes(boardSlot))
       .flatMap((ability) => ability.effects);
-     if (!positionEffects.length) return afterSummonListeners;
-     return appendEffectContinuation(afterSummonListeners, {
+      if (!positionEffects.length) return afterSummonListeners;
+      return appendEffectContinuation(afterSummonListeners, {
       active: true, playerId, sourceInstanceId: enteredCard.instanceId, sourceCard: enteredCard,
       effects: positionEffects, effectIndex: 0, selectedTargetIds: [], lastTargetIds: [],
       validTargetIds: [], minTargets: 0, maxTargets: 0, mandatory: true, cancelable: false,
     });
   }
    return resolveTriggeredAbilities(
-     afterSummonListeners,
+      afterSummonListeners,
     playerId,
     enteredCard,
     'POSITION',

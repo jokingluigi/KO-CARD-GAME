@@ -1,5 +1,6 @@
 import { generateCard } from '../cards/generation';
 import type { CardInstance } from '../cards/types';
+import { normalizeCardForZone } from '../cards/zone-state';
 import { enterField } from './enter-field';
 import type { GameState } from '../types/game-state';
 import { findDirectDeployedChampion } from './direct-champion';
@@ -71,9 +72,9 @@ export function directDeployChampionToken(
       players: generatedState.players.map((candidate) => {
         if (candidate.id !== playerId) return candidate;
         if (candidate.hand.length < MAX_HAND_SIZE) {
-          return { ...candidate, hand: [...candidate.hand, directChampion] };
+          return { ...candidate, hand: [...candidate.hand, normalizeCardForZone(directChampion, 'HAND')] };
         }
-        return { ...candidate, deck: [directChampion, ...candidate.deck] };
+        return { ...candidate, deck: [normalizeCardForZone(directChampion, 'DECK'), ...candidate.deck] };
       }),
     };
   }

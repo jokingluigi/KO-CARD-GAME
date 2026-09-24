@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 
-import { analyzeEffectText, effectLibrary, isStructuredEffects } from "./structured-effects";
+import { analyzeEffectText, effectLibrary, isEffectScriptConfig, isStructuredEffects } from "./structured-effects";
 
 test("최신 보고서의 10개 원문은 공용 Analyzer에서 완전한 효과로 탈출한다", () => {
   const texts = [
@@ -1175,4 +1175,128 @@ test("분석 실패였던 11개 WRESTLER 문구를 공용 Registry 효과로 분
   }
   const keywords = analyzeEffectText("러쉬, 회피");
   assert.deepEqual(keywords.keywords, ["RUSH", "DODGE"]);
+});
+
+test("remaining audit effects use generic target and modifier semantics", () => {
+  const cases: Array<{ text: string; effects: Array<Record<string, any>> }> = [
+    {
+      text: "등장:내 덱과 손에 있는 6 비용 이상의 카드들의 비용을 전부 1 감소 시킵니다.",
+      effects: [{ action: "REDUCE_COST", zones: ["HAND", "DECK"], minCost: 6 }],
+    },
+    {
+      text: "등장:어디에 있든 '실험체' 태그가 붙은 카드들에게 체력을 1 부여합니다.",
+      effects: [{ action: "BUFF", zones: ["HAND", "DECK", "BOARD"], health: 1 }],
+    },
+    {
+      text: "등장:상대 필드에 비용이 1이하인 선수 카드가 있다면 그 카드들중 무작위 한장을 리타이어 시킵니다.(챔피언 토큰 제외)",
+      effects: [{ action: "RETIRE", maxCost: 1, random: true }],
+    },
+    {
+      text: "등장: 내 손에 무작위 선수 카드 1장을 생성합니다. 그 카드에게 -1/-1/-1을 적용합니다.",
+      effects: [{ action: "GENERATE", destination: "HAND", generatedModifiers: { cost: -1, attack: -1, health: -1 } }],
+    },
+    {
+      text: "적 선수를 공격하고 생존했다면 비용이 1 감소한채 손패로 돌아옵니다.",
+      effects: [{ action: "REDUCE_COST" }, { action: "MOVE_TO_HAND" }],
+    },
+    {
+      text: "등장: 상대 필드에 있는 선수 카드 한 장을 덱 맨 위로 보냅니다.",
+      effects: [{ action: "MOVE_TO_DECK", zone: "BOARD", owner: "ENEMY", selection: "PLAYER_CHOICE", deckPosition: "TOP" }],
+    },
+  ];
+
+  for (const item of cases) {
+    const analysis = analyzeEffectText(item.text);
+    assert.equal(analysis.status, "success", item.text);
+    assert.equal(analysis.outcome, "supported", item.text);
+    for (const expected of item.effects) {
+      const actual = analysis.effects.find((effect) => effect.action === expected.action);
+      assert.ok(actual, item.text);
+      if (expected.zones) assert.deepEqual(actual?.target?.zones, expected.zones, item.text);
+       if (expected.zone) assert.equal(actual?.target?.zone, expected.zone, item.text);
+       if (expected.owner) assert.equal(actual?.target?.owner, expected.owner, item.text);
+       if (expected.selection) assert.equal(actual?.target?.selection, expected.selection, item.text);
+      if (expected.minCost !== undefined) assert.equal(actual?.target?.filter?.maxCost ?? actual?.target?.filter?.minCost, expected.minCost, item.text);
+      if (expected.health !== undefined) assert.equal(actual?.values?.health, expected.health, item.text);
+      if (expected.random) assert.equal(actual?.target?.selection, "RANDOM", item.text);
+      if (expected.destination) assert.equal(actual?.values?.destination, expected.destination, item.text);
+      if (expected.generatedModifiers) assert.deepEqual(actual?.values?.generatedModifiers, expected.generatedModifiers, item.text);
+       if (expected.deckPosition) assert.equal(actual?.values?.deckPosition, expected.deckPosition, item.text);
+    }
+  }
+});
+
+test("card audit sources use generic start, entry, repeat, and scripted best-stat mechanics", () => {
+  const river = analyzeEffectText("게임 시작:덱에 있었다면 손패에 드로우 됩니다.");
+  assert.equal(river.status, "success");
+  assert.equal(river.effects[0]?.trigger, "GAME_START");
+  assert.equal(river.effects[0]?.action, "MOVE_TO_HAND");
+  assert.deepEqual(river.effects[0]?.target, {
+    zone: "DECK",
+    owner: "SELF",
+    selection: "SELF",
+    count: 1,
+  });
+
+  const jaeger = analyzeEffectText("이 카드가 필드에 있는 동안 '솔져' 태그가 있는 카드들이 등장 혹은 소환 될때 +1/+1을 받습니다.");
+  assert.equal(jaeger.status, "success");
+  assert.equal(jaeger.effects[0]?.trigger, "CARD_ENTERED");
+  assert.deepEqual(jaeger.effects[0]?.target?.filter?.tagsAny, ["솔져"]);
+
+  const maros = analyzeEffectText("이 카드가 필드에 있을때 아군의 턴 종료 효과가 한번 더 발동합니다.");
+  assert.equal(maros.status, "success");
+  assert.equal(maros.effects[0]?.trigger, "TURN_END");
+  assert.equal(maros.effects[0]?.action, "REPEAT_TURN_END");
+
+  const smallHippo = analyzeEffectText("등장:상대의 필드에 있는 선수 카드 한장을 선택해서 상대방의 덱 맨위로 보냅니다.");
+  assert.equal(smallHippo.status, "success");
+  assert.equal(smallHippo.effects[0]?.action, "MOVE_TO_DECK");
+  assert.equal(smallHippo.effects[0]?.target?.zone, "BOARD");
+  assert.equal(smallHippo.effects[0]?.target?.owner, "ENEMY");
+  assert.equal(smallHippo.effects[0]?.target?.selection, "PLAYER_CHOICE");
+  assert.equal(smallHippo.effects[0]?.values?.deckPosition, "TOP");
+
+  const zombieText = "등장:필드에 있는 '좀비' 중 가장 수치의 합이 높은 '좀비'의 체력과 공격력을 자신에게 더합니다. '좀비'가 없다면 2/2 '좀비'를 생성하고 그 '좀비'의 체력과 공격력을 자신에게 더합니다.";
+  const zombieDefinition = { id: "zombie-id", name: "좀비", cardType: "WRESTLER" as const, isToken: true, isChampionToken: false };
+  const zombie = analyzeEffectText(zombieText, { cardCatalog: [zombieDefinition] });
+  assert.equal(zombie.status, "success");
+  assert.equal(zombie.outcome, "supported");
+  assert.equal(zombie.scripts?.length, 1);
+  assert.equal(isEffectScriptConfig({ scripts: zombie.scripts }), true);
+  const script = zombie.scripts?.[0];
+  assert.equal(script?.trigger, "ENTER_FIELD");
+  const selector = script?.steps[0];
+  assert.ok(selector?.type === "SELECT");
+  if (selector?.type === "SELECT") {
+    assert.deepEqual(selector.target.filter?.definitionRef, { id: "zombie-id" });
+  }
+  const conditional = script?.steps.find((step) => step.type === "IF");
+  assert.ok(conditional?.type === "IF");
+  const generate = conditional?.type === "IF"
+    ? conditional.else?.find((step) => step.type === "EFFECT" && step.effect.action === "GENERATE")
+    : undefined;
+  assert.ok(generate?.type === "EFFECT");
+  if (generate?.type === "EFFECT") {
+    assert.equal(generate.effect.values?.destination, "HAND");
+    assert.deepEqual(generate.effect.values?.definitionRef, { id: "zombie-id" });
+  }
+  const setGeneratedStats = conditional?.type === "IF"
+    ? conditional.else?.find((step) => step.type === "EFFECT" && step.effect.action === "SET_STATS")
+    : undefined;
+  assert.ok(setGeneratedStats?.type === "EFFECT");
+  if (setGeneratedStats?.type === "EFFECT") {
+    assert.deepEqual(setGeneratedStats.effect.values, { attack: 2, health: 2 });
+  }
+
+  const missingCatalog = analyzeEffectText(zombieText);
+  assert.equal(missingCatalog.outcome, "analysis_failure");
+  assert.equal(missingCatalog.effects.length, 0);
+  const ambiguousCatalog = analyzeEffectText(zombieText, {
+    cardCatalog: [
+      zombieDefinition,
+      { ...zombieDefinition, id: "second-zombie-id" },
+    ],
+  });
+  assert.equal(ambiguousCatalog.outcome, "analysis_failure");
+  assert.equal(ambiguousCatalog.referenceErrors?.[0]?.code, "CARD_REFERENCE_AMBIGUOUS");
 });

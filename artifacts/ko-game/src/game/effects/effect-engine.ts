@@ -31,7 +31,7 @@ import { generateCard, generateCardInstance, getRandomCardGenerationCandidates, 
 import { getAdjacentSlots } from '../engine/board-position';
 import { deployLinkedChampionToken } from '../engine/champion-token';
 import { isChampionProtectedByToken } from '../engine/direct-champion';
-import { resetCardForGraveyard } from '../cards/zone-state';
+import { normalizeCardForZone, resetCardForGraveyard } from '../cards/zone-state';
 import {
   getActiveCardAbilities,
   getActiveCardKeywords,
@@ -178,6 +178,7 @@ function scriptTargetCards(
     if (filter?.isGenerated !== undefined && card.isGenerated !== filter.isGenerated) return false;
     if (filter?.minCost !== undefined && card.currentCost < filter.minCost) return false;
     if (filter?.maxCost !== undefined && card.currentCost > filter.maxCost) return false;
+    if (filter?.definitionRef && !matchesDefinitionRef(state, card, filter.definitionRef)) return false;
     if (filter?.isToken !== undefined && card.isToken !== filter.isToken) return false;
     if (filter?.isChampionToken !== undefined && card.isChampionToken !== filter.isChampionToken) return false;
     if (filter?.excludeSource && card.instanceId === sourceCard.instanceId) return false;
@@ -1070,8 +1071,8 @@ function grantRandomCardText(
       ...next,
       players: next.players.map((player) => player.id !== owner.id ? player : {
         ...player,
-        hand: player.hand.map((card) => card.instanceId === target.instanceId ? updated : card),
-        deck: player.deck.map((card) => card.instanceId === target.instanceId ? updated : card),
+        hand: player.hand.map((card) => card.instanceId === target.instanceId ? normalizeCardForZone(updated, 'HAND') : card),
+        deck: player.deck.map((card) => card.instanceId === target.instanceId ? normalizeCardForZone(updated, 'DECK') : card),
         graveyard: player.graveyard.map((card) => card.instanceId === target.instanceId ? updated : card),
         board: player.board.map((card) => card?.instanceId === target.instanceId ? updated : card) as typeof player.board,
       }),
@@ -1147,14 +1148,18 @@ function applyRandomCardCreation(
         : undefined,
     });
     if (effect.action === 'GENERATE') {
+      const generatedCard = normalizeCardForZone(
+        generated.card,
+        effect.values?.destination === 'DECK' ? 'DECK' : 'HAND',
+      );
       return {
         ...nextState,
         players: nextState.players.map((player) => player.id === playerId
           ? effect.values?.destination === 'DECK'
             ? effect.values.deckPosition === 'TOP'
-              ? { ...player, deck: [generated.card, ...player.deck] }
-              : { ...player, deck: [...player.deck, generated.card] }
-            : { ...player, hand: [...player.hand, generated.card] }
+              ? { ...player, deck: [generatedCard, ...player.deck] }
+              : { ...player, deck: [...player.deck, generatedCard] }
+            : { ...player, hand: [...player.hand, generatedCard] }
           : player),
         events: [...nextState.events, generated.event],
       };
@@ -1584,6 +1589,7 @@ export function applyEffect(
     return applyScript(state, playerId, sourceCard, effect.script);
   }
   if (effect.type === 'STRUCTURED') {
+    if (effect.action === 'REPEAT_TURN_END') return state;
     if (effect.action === 'DEPLOY_CHAMPION_TOKEN') {
       return deployLinkedChampionToken(state, playerId);
     }
@@ -1612,8 +1618,8 @@ export function applyEffect(
         ...state,
         players: state.players.map((player) => ({
           ...player,
-          deck: player.deck.map((card) => card.instanceId === sourceCard.instanceId ? replacement : card),
-          hand: player.hand.map((card) => card.instanceId === sourceCard.instanceId ? replacement : card),
+          deck: player.deck.map((card) => card.instanceId === sourceCard.instanceId ? normalizeCardForZone(replacement, 'DECK') : card),
+          hand: player.hand.map((card) => card.instanceId === sourceCard.instanceId ? normalizeCardForZone(replacement, 'HAND') : card),
           board: player.board.map((card) => card?.instanceId === sourceCard.instanceId ? replacement : card) as typeof player.board,
         })),
       };
@@ -1705,10 +1711,15 @@ export function applyEffect(
               maxHealth: aggregate.health,
             }
            : generated.card;
-         return { card, event: generated.event };
+          return {
+            card: effect.action === 'GENERATE'
+              ? normalizeCardForZone(card, effect.values?.destination === 'DECK' ? 'DECK' : 'HAND')
+              : card,
+            event: generated.event,
+          };
       });
       if (effect.action === 'GENERATE') {
-        return {
+        return setLastTargetIds({
           ...state,
           players: state.players.map((player) => player.id === playerId
             ? effect.values?.destination === 'DECK'
@@ -1718,7 +1729,7 @@ export function applyEffect(
               : { ...player, hand: [...player.hand, ...generatedCards.map(({ card }) => card)] }
             : player),
           events: [...state.events, ...generatedCards.map(({ event }) => event)],
-        };
+        }, generatedCards.map(({ card }) => card.instanceId));
       }
        let summonState = setLastTargetIds(clearLastAggregatedStats(state), []);
        const summonedIds: string[] = [];
@@ -2209,10 +2220,47 @@ export function applyEffect(
             : player.board,
           deck: zones.includes('DECK') ? player.deck.filter((card) => !ids.has(card.instanceId)) : player.deck,
           graveyard: zones.includes('GRAVEYARD') ? player.graveyard.filter((card) => !ids.has(card.instanceId)) : player.graveyard,
-           hand: [...player.hand, ...moved.map((card) => ({
-             ...(zones.includes('GRAVEYARD') ? resetCardForGraveyard(card) : { ...card, boardSlot: null }),
-             ...temporaryCost,
-           }))],
+            hand: [...player.hand, ...moved.map((card) => normalizeCardForZone({
+              ...(zones.includes('GRAVEYARD') ? resetCardForGraveyard(card) : { ...card, boardSlot: null }),
+              ...temporaryCost,
+            }, 'HAND'))],
+        }),
+      };
+    }
+    if (effect.action === 'MOVE_TO_DECK') {
+      const moved = [
+        ...(zones.includes('BOARD')
+          ? candidatePlayer.board.flatMap((card) => card && ids.has(card.instanceId) ? [{ card, zone: 'BOARD' as const }] : [])
+          : []),
+        ...(zones.includes('HAND')
+          ? candidatePlayer.hand.filter((card) => ids.has(card.instanceId)).map((card) => ({ card, zone: 'HAND' as const }))
+          : []),
+        ...(zones.includes('DECK')
+          ? candidatePlayer.deck.filter((card) => ids.has(card.instanceId)).map((card) => ({ card, zone: 'DECK' as const }))
+          : []),
+        ...(zones.includes('GRAVEYARD')
+          ? candidatePlayer.graveyard.filter((card) => ids.has(card.instanceId)).map((card) => ({ card, zone: 'GRAVEYARD' as const }))
+          : []),
+      ];
+      if (!moved.length) return state;
+      const normalized = moved.map(({ card, zone }) => normalizeCardForZone(
+        zone === 'GRAVEYARD' ? resetCardForGraveyard(card) : { ...card, boardSlot: null },
+        'DECK',
+      ));
+      return {
+        ...state,
+        players: state.players.map((player) => player.id !== targetOwner ? player : {
+          ...player,
+          board: zones.includes('BOARD')
+            ? player.board.map((card) => card && ids.has(card.instanceId) ? null : card) as typeof player.board
+            : player.board,
+          hand: zones.includes('HAND') ? player.hand.filter((card) => !ids.has(card.instanceId)) : player.hand,
+          graveyard: zones.includes('GRAVEYARD') ? player.graveyard.filter((card) => !ids.has(card.instanceId)) : player.graveyard,
+          deck: [
+            ...(effect.values?.deckPosition === 'TOP' ? normalized : []),
+            ...(zones.includes('DECK') ? player.deck.filter((card) => !ids.has(card.instanceId)) : player.deck),
+            ...(effect.values?.deckPosition === 'TOP' ? [] : normalized),
+          ],
         }),
       };
     }
@@ -2235,7 +2283,10 @@ export function applyEffect(
                : player.board,
            }
           : player.id === playerId
-             ? { ...player, hand: [...player.hand, ...stolen.map((card) => zones.includes('GRAVEYARD') ? resetCardForGraveyard(card) : { ...card, boardSlot: null })] }
+              ? { ...player, hand: [...player.hand, ...stolen.map((card) => normalizeCardForZone(
+                zones.includes('GRAVEYARD') ? resetCardForGraveyard(card) : { ...card, boardSlot: null },
+                'HAND',
+              ))] }
             : player),
       };
     }
@@ -2529,12 +2580,15 @@ export function applyEffect(
     const updatedState: GameState = {
       ...state,
       players: state.players.map((player) => {
-           const update = (card: CardInstance): CardInstance => {
+            const update = (card: CardInstance, zone: 'HAND' | 'DECK' | 'BOARD'): CardInstance => {
           if (!ids.has(card.instanceId)) return card;
               const finish = (next: CardInstance, duration = effect.values?.duration) =>
                 recordStatChanges(
                   card,
-                  withTemporaryStatDeltas(card, next, state.turn, duration),
+                  normalizeCardForZone(
+                    withTemporaryStatDeltas(card, next, state.turn, duration),
+                    zone,
+                  ),
                   state,
                   sourceCard,
                   triggerContext,
@@ -2622,10 +2676,10 @@ export function applyEffect(
           return card;
         };
         if (player.id !== targetOwner) return player;
-         const updatedDeck = zones.includes('DECK') ? player.deck.map(update) : player.deck;
-         const updatedHand = zones.includes('HAND') ? player.hand.map(update) : player.hand;
+          const updatedDeck = zones.includes('DECK') ? player.deck.map((card) => update(card, 'DECK')) : player.deck;
+          const updatedHand = zones.includes('HAND') ? player.hand.map((card) => update(card, 'HAND')) : player.hand;
          const updatedBoard = zones.includes('BOARD')
-           ? player.board.map((card) => card ? update(card) : null) as typeof player.board
+            ? player.board.map((card) => card ? update(card, 'BOARD') : null) as typeof player.board
            : player.board;
          return { ...player, deck: updatedDeck, hand: updatedHand, board: updatedBoard };
       }),
@@ -2878,7 +2932,7 @@ export function resolveTriggeredAbilities(
   state: GameState,
   playerId: string,
   card: CardInstance,
-  trigger: 'ENTER_FIELD' | 'LEAVE_FIELD' | 'SELF_RETIRE' | 'POSITION' | 'ACTIVE' | 'CARD_DRAWN' | 'CARD_RETIRED' | 'CARD_SUMMONED' | 'FIRST_ATTACKED' | 'SELF_ATTACK' | 'OTHER_ALLY_ATTACK' | 'ATTACK_SURVIVED' | 'SELF_DAMAGED' | 'STAT_CHANGED' | 'TECHNIQUE_CAST' | 'EXACT_ZERO_DAMAGE' | 'TURN_START' | 'TURN_END' | 'BEFORE_DAMAGE' | 'BEFORE_RETIRE',
+  trigger: 'GAME_START' | 'ENTER_FIELD' | 'LEAVE_FIELD' | 'SELF_RETIRE' | 'POSITION' | 'ACTIVE' | 'CARD_DRAWN' | 'CARD_RETIRED' | 'CARD_SUMMONED' | 'CARD_ENTERED' | 'FIRST_ATTACKED' | 'SELF_ATTACK' | 'OTHER_ALLY_ATTACK' | 'ATTACK_SURVIVED' | 'SELF_DAMAGED' | 'STAT_CHANGED' | 'TECHNIQUE_CAST' | 'EXACT_ZERO_DAMAGE' | 'TURN_START' | 'TURN_END' | 'BEFORE_DAMAGE' | 'BEFORE_RETIRE',
   options: {
     boardSlot?: 0 | 1 | 2 | 3;
     leaveReason?: LeaveReason;
@@ -2981,6 +3035,27 @@ export function resolveSummonListeners(
     .reduce(
       (next, card) => resolveTriggeredAbilities(next, playerId, card, 'CARD_SUMMONED', {
         chosenTargetInstanceIds: [summonedCard.instanceId],
+        sourceContext,
+      }),
+      state,
+    );
+}
+
+/** Dispatches generic ally-entry listeners for any normal field entry cause. */
+export function resolveCardEntryListeners(
+  state: GameState,
+  playerId: string,
+  enteredCard: CardInstance,
+  sourceContext?: EventAttribution,
+): GameState {
+  const player = state.players.find((candidate) => candidate.id === playerId);
+  if (!player) return state;
+  return player.board
+    .filter((card): card is CardInstance => Boolean(card))
+    .filter((card) => card.instanceId !== enteredCard.instanceId)
+    .reduce(
+      (next, card) => resolveTriggeredAbilities(next, playerId, card, 'CARD_ENTERED', {
+        chosenTargetInstanceIds: [enteredCard.instanceId],
         sourceContext,
       }),
       state,

@@ -76,3 +76,27 @@ test('턴 시작 드로우로 손패는 7장을 넘지 않는다', () => {
   assert.equal(getPlayer(state, 'player-2').hand.length, 7);
   assert.equal(getPlayer(state, 'player-2').removedFromGame.length, 1);
 });
+
+test('게임 시작 효과는 초기 손패를 나누기 전에 덱의 정확한 카드를 손으로 옮긴다', () => {
+  const initial = createInitialGameState();
+  const source = initial.players[0]!.deck[0]!;
+  initial.players[0]!.deck[0] = {
+    ...source,
+    abilities: [{
+      trigger: 'GAME_START',
+      effects: [{
+        type: 'STRUCTURED',
+        action: 'MOVE_TO_HAND',
+        target: { zone: 'DECK', owner: 'SELF', selection: 'SELF', count: 1 },
+      }],
+    }],
+  };
+  const shuffled = prepareDecks(initial, () => 0);
+  assert.equal(shuffled.players[0]!.deck.slice(0, 4).some((card) => card.instanceId === source.instanceId), false);
+
+  const state = startGame(initial, () => 0);
+  const firstPlayer = getPlayer(state, 'player-1');
+  assert.equal(firstPlayer.hand.some((card) => card.instanceId === source.instanceId), true);
+  assert.equal(firstPlayer.deck.some((card) => card.instanceId === source.instanceId), false);
+  assert.equal(firstPlayer.hand.length, 5);
+});

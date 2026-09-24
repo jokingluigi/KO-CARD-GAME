@@ -59,6 +59,7 @@ const ACTION_VALUE_KEYS: Partial<Record<Action, readonly string[]>> = {
   REVIVE: [],
   GENERATE: ["definition", "definitionRef", "count", "destination", "generatedModifiers", "deckPosition"],
   MOVE_TO_HAND: ["amount", "minimum", "temporaryCost"],
+  MOVE_TO_DECK: ["deckPosition"],
   STEAL: [],
   MILL: [],
   SPEND_GOLD_BUFF_SELF: ["amountReference"],
@@ -76,6 +77,7 @@ const ACTION_VALUE_KEYS: Partial<Record<Action, readonly string[]>> = {
   PREVENT_DAMAGE: ["prevention"],
   PREVENT_RETIRE: ["prevention"],
   GRANT_RANDOM_CARD_TEXT: [],
+  REPEAT_TURN_END: [],
 };
 
 function hasOnlyActionValueKeys(action: Action, values: unknown): boolean {
@@ -108,6 +110,7 @@ export type Analysis = {
   status: "success" | "partial" | "failure";
   outcome: AnalysisOutcome;
   effects: StructuredEffect[];
+  scripts?: EffectScript[];
   keywords: Keyword[];
   unsupportedSegments: string[];
   summaries: string[];
@@ -693,7 +696,234 @@ function expandedMechanicAnalysis(
     return found ? { id: found.id } : { name };
   };
 
+  if (/^게임\s*시작\s*[:：].*덱에\s*있었(?:다면|을\s*경우).*손패에\s*드로우/.test(text)) {
+    return result([{
+      trigger: "GAME_START",
+      action: "MOVE_TO_HAND",
+      target: { zone: "DECK", owner: "SELF", selection: "SELF", count: 1 },
+    }]);
+  }
+
+  if (/이\s*카드가\s*필드에\s*있는\s*동안.*솔져.*태그.*카드들이.*(?:등장.*소환|소환.*등장).*(?:될\s*때|할\s*때|때).*\+1\/\+1/.test(text)) {
+    return result([{
+      trigger: "CARD_ENTERED",
+      action: "BUFF",
+      target: {
+        zone: "BOARD",
+        owner: "SELF",
+        cardType: "WRESTLER",
+        filter: { tagsAny: ["솔져"] },
+        selection: "SAME_TARGET",
+        count: 1,
+      },
+      values: { attack: 1, health: 1 },
+    }]);
+  }
+
+  if (/이\s*카드가\s*필드에\s*있을\s*때.*아군의?\s*턴\s*종료\s*효과가?\s*한\s*번\s*더\s*발동/.test(text)) {
+    return result([{ trigger: "TURN_END", action: "REPEAT_TURN_END" }]);
+  }
+
+  if (/필드에\s*있는.*좀비.*가장.*합이\s*높은.*좀비.*체력과\s*공격력을\s*자신에게\s*더(?:합니다)?.*좀비.*없다면\s*2\s*\/\s*2.*좀비.*생성.*좀비.*체력과\s*공격력을\s*자신에게\s*더(?:합니다)?/.test(text)) {
+    const cardReference = explicitCardReference("'좀비' 생성", "GENERATE", options.cardCatalog);
+    if (cardReference.error) {
+      return {
+        status: "failure",
+        outcome: "analysis_failure",
+        effects: [],
+        keywords: [],
+        unsupportedSegments: [`카드 참조를 확인할 수 없습니다: ${cardReference.error.name}`],
+        summaries: [],
+        referenceErrors: [cardReference.error],
+      };
+    }
+    if (!cardReference.card || cardReference.card.cardType !== "WRESTLER") {
+      return {
+        status: "failure",
+        outcome: "analysis_failure",
+        effects: [],
+        keywords: [],
+        unsupportedSegments: ["카드 카탈로그에서 '좀비' 선수 정의를 하나로 확인할 수 없습니다."],
+        summaries: [],
+        reason: "실행 가능한 카드 참조를 위해 정확히 하나의 WRESTLER CardDefinition이 필요합니다.",
+      };
+    }
+    const zombie = cardReference.card;
+    const zombieReference = { id: zombie.id };
+    const script: EffectScript = {
+      version: "SCRIPT_V1",
+      trigger: "ENTER_FIELD",
+      steps: [
+        {
+          type: "SELECT",
+          id: "fieldZombies",
+          target: {
+            zone: "BOARD",
+            owner: "SELF",
+            cardType: "WRESTLER",
+            filter: { definitionRef: zombieReference },
+            selection: "ALL",
+            count: 20,
+          },
+        },
+        { type: "AGGREGATE", id: "zombieCount", selectionId: "fieldZombies", operation: "COUNT" },
+        {
+          type: "IF",
+          condition: {
+            left: { kind: "RESULT_VALUE", resultId: "zombieCount" },
+            compare: "GT",
+            right: { kind: "CONSTANT", value: 0 },
+          },
+          then: [{
+            type: "EFFECT",
+            effect: {
+              action: "COPY_BEST_STATS",
+              target: { zone: "BOARD", owner: "SELF", selection: "ALL", count: 20, resultId: "fieldZombies" },
+            },
+          }],
+          else: [
+            {
+              type: "EFFECT",
+              id: "generatedZombie",
+              effect: {
+                action: "GENERATE",
+                values: { definitionRef: zombieReference, count: 1, destination: "HAND" },
+              },
+            },
+            {
+              type: "EFFECT",
+              effect: {
+                action: "SET_STATS",
+                target: { zone: "HAND", owner: "SELF", selection: "ALL", count: 1, resultId: "generatedZombie" },
+                values: { attack: 2, health: 2 },
+              },
+            },
+            {
+              type: "EFFECT",
+              effect: {
+                action: "COPY_BEST_STATS",
+              target: { zone: "HAND", owner: "SELF", selection: "ALL", count: 1, resultId: "generatedZombie" },
+              },
+            },
+          ],
+        },
+      ],
+    };
+    return {
+      status: "success",
+      outcome: "supported",
+      effects: [],
+      scripts: [script],
+      keywords: [],
+      unsupportedSegments: [],
+      summaries: ["ENTER_FIELD · SCRIPT_V1"],
+      referencedCards: [zombie],
+    };
+  }
+
   const currentStatSelf = { zones: ["HAND", "BOARD"] as Array<"HAND" | "BOARD">, owner: "SELF" as const, selection: "SELF" as const, count: 1 };
+
+  if (/내\s*덱과\s*손(?:패)?에\s*있는.*(?:6\s*(?:코스트|비용)|6\s*비용)\s*이상의.*(?:비용|코스트).*전부.*1.*감소/.test(text)) {
+    return result([{
+      trigger: "ENTER_FIELD",
+      action: "REDUCE_COST",
+      target: {
+        zones: ["HAND", "DECK"],
+        owner: "SELF",
+        filter: { minCost: 6 },
+        selection: "ALL",
+        count: 20,
+      },
+      values: { amount: 1 },
+    }]);
+  }
+
+  if (/태그가?\s*(?:달려|있는|붙어|붙은|가진)|속성\s*태그/.test(text) &&
+      /어디에\s*(?:있든|있는)/.test(text) &&
+      /(?:체력|HP).*(?:\+?1|1\s*(?:증가|부여|올라))/.test(text) &&
+      !/(?:공격력|공격).*(?:\+?1|1\s*(?:증가|부여|올라))/.test(text)) {
+    const tags = tagNamesBeforeMarker(text, options.availableTags);
+    return result([{
+      trigger: "ENTER_FIELD",
+      action: "BUFF",
+      target: {
+        zones: [...DEFAULT_CARD_TARGET_SCOPE],
+        owner: "SELF",
+        filter: { tagsAny: tags.length ? tags : ["실험체"] },
+        selection: "ALL",
+        count: 20,
+      },
+      values: { attack: 0, health: 1 },
+    }]);
+  }
+
+  if (/(?:상대|적)\s*필드.*(?:비용|코스트).*1\s*(?:이하|미만).*선수.*(?:무작위|랜덤).*리타이어/.test(text)) {
+    return result([{
+      trigger: "ENTER_FIELD",
+      action: "RETIRE",
+      target: {
+        zone: "BOARD",
+        owner: "ENEMY",
+        cardType: "WRESTLER",
+        filter: { maxCost: 1, isChampionToken: false },
+        selection: "RANDOM",
+        count: 1,
+        randomScope: "STANDARD",
+      },
+    }]);
+  }
+
+  if (/(?:상대|적)의?\s*필드에\s*있는\s*선수\s*카드\s*한\s*장.*(?:덱\s*맨\s*위|덱\s*위).*(?:보내|보냅)/.test(text)) {
+    return result([{
+      trigger: "ENTER_FIELD",
+      action: "MOVE_TO_DECK",
+      target: {
+        zone: "BOARD",
+        owner: "ENEMY",
+        cardType: "WRESTLER",
+        selection: "PLAYER_CHOICE",
+        count: 1,
+      },
+      values: { deckPosition: "TOP" },
+    }]);
+  }
+
+  if (/손(?:패)?에\s*무작위\s*선수\s*카드\s*1장.*생성/.test(text) &&
+      /-?1\s*\/\s*-?1\s*\/\s*-?1/.test(text)) {
+    return result([{
+      trigger: "ENTER_FIELD",
+      action: "GENERATE",
+      target: {
+        zone: "HAND",
+        owner: "SELF",
+        cardType: "WRESTLER",
+        selection: "RANDOM",
+        count: 1,
+        randomScope: "STANDARD",
+      },
+      values: {
+        destination: "HAND",
+        generatedModifiers: { cost: -1, attack: -1, health: -1 },
+      },
+    }]);
+  }
+
+  if (/(?:적|상대)\s*선수를\s*공격하고\s*생존|공격하고\s*생존/.test(text) &&
+      /비용.*1.*감소/.test(text) && /손(?:패)?로\s*돌아/.test(text)) {
+    return result([
+      {
+        trigger: "ATTACK_SURVIVED",
+        action: "REDUCE_COST",
+        target: self,
+        values: { amount: 1 },
+      },
+      {
+        trigger: "ATTACK_SURVIVED",
+        action: "MOVE_TO_HAND",
+        target: self,
+      },
+    ]);
+  }
 
   if (/(?:체력|HP).*(?:증가|늘어나|올라|상승)/.test(text) && /추가로\s*(?:[+]?1|1\s*(?:증가|상승|늘어))/.test(text)) {
     return result([{
@@ -1425,6 +1655,7 @@ export function isStructuredEffects(value: unknown): value is { effects: Structu
           (values?.causal !== undefined && values.causal !== "DAMAGE_CAUSED_TARGET_RETIRE")
         )) return false;
        if (item.action === "GENERATE" && values?.destination !== undefined && values.destination !== "HAND" && values.destination !== "DECK" && values.destination !== "DECK_TOP") return false;
+        if (item.action === "MOVE_TO_DECK" && values?.deckPosition !== undefined && values.deckPosition !== "TOP" && values.deckPosition !== "BOTTOM") return false;
        if (item.action === "REDUCE_COST" && values?.minimum !== undefined && (typeof values.minimum !== "number" || values.minimum < 0 || values.minimum > 999)) return false;
        if (item.action === "MODIFY_STAT" && values?.minimum !== undefined && (typeof values.minimum !== "number" || values.minimum < 0 || values.minimum > 999)) return false;
        if (item.action === "MOVE_TO_HAND" && values?.temporaryCost !== undefined && (

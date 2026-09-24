@@ -2,7 +2,7 @@ import type { GameState, PlayerState } from '../types/game-state';
 import { MAX_HAND_SIZE } from '../rules/constants';
 import { findDirectDeployedChampion } from './direct-champion';
 import { resolveCardRetiredListeners, resolveTriggeredAbilities } from '../effects/effect-engine';
-import { resetCardForGraveyard } from '../cards/zone-state';
+import { normalizeCardForZone, resetCardForGraveyard } from '../cards/zone-state';
 
 function finishGameFromFatigue(
   state: GameState,
@@ -139,7 +139,9 @@ export function drawCard(state: GameState, playerId: string): GameState {
   const drawState: GameState = {
     ...state,
     players: state.players.map((player) =>
-      player.id === playerId ? { ...player, deck: remainingDeck, hand: [...player.hand, drawnCard] } : player,
+      player.id === playerId
+        ? { ...player, deck: remainingDeck, hand: [...player.hand, normalizeCardForZone(drawnCard, 'HAND')] }
+        : player,
     ),
     events: [
       ...state.events,

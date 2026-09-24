@@ -1,5 +1,7 @@
 import type { GameState, PlayerState } from '../types/game-state';
 import type { CardInstance } from '../cards/types';
+import { normalizeCardForZone } from '../cards/zone-state';
+import { getActiveCardAbilities } from '../cards/granted-text';
 import type { GameMediaCatalog } from '../media';
 import type { ActionResult } from '../actions/types';
 import { actionFailure, actionSuccess } from '../actions/types';
@@ -112,7 +114,7 @@ export function prepareDecks(
     ...state,
     players: state.players.map((player) => ({
       ...player,
-      deck: shuffle(player.deck, random),
+      deck: shuffle(player.deck.map((card) => normalizeCardForZone(card, 'DECK')), random),
     })),
   };
 }
@@ -122,6 +124,24 @@ export function dealOpeningHands(state: GameState): GameState {
   const secondPlayer = state.players[1];
   const firstPlayerDealt = drawOpeningHand(state, firstPlayer.id, 3);
   return drawOpeningHand(firstPlayerDealt, secondPlayer.id, 4);
+}
+
+function resolveGameStartAbilities(state: GameState): GameState {
+  let next = state;
+  for (const startingPlayer of state.players) {
+    const deckIds = startingPlayer.deck.map((card) => card.instanceId);
+    for (const instanceId of deckIds) {
+      const player = next.players.find((candidate) => candidate.id === startingPlayer.id);
+      const card = player?.deck.find((candidate) => candidate.instanceId === instanceId);
+      if (!player || !card || !getActiveCardAbilities(card).some((ability) => ability.trigger === 'GAME_START')) continue;
+      const triggered = resolveTriggeredAbilities(next, player.id, card, 'GAME_START');
+      next = triggered.targetingState?.active ? resolvePendingEffects(triggered) : triggered;
+      if (next.targetingState?.active) {
+        throw new Error('게임 시작 효과는 초기 손패를 나누기 전에 자동으로 완료되어야 합니다.');
+      }
+    }
+  }
+  return next;
 }
 
 export function isCurrentPlayer(
@@ -153,7 +173,7 @@ export function startGame(
     throw new Error('이미 시작된 게임입니다.');
   }
 
-  const preparedState = dealOpeningHands(prepareDecks(state, random));
+  const preparedState = dealOpeningHands(resolveGameStartAbilities(prepareDecks(state, random)));
   const firstPlayer = preparedState.players[0];
   const mediaRandom = random ?? defaultRandom;
   const backgroundId = mediaCatalog?.backgrounds.length
@@ -209,12 +229,12 @@ export function endTurn(
     activePlayerId: nextPlayer.id,
     players: state.players.map((player) => {
       if (player.id === actingPlayerId) {
-        const expireTemporaryStats = (card: CardInstance): CardInstance => {
+        const expireTemporaryStats = (card: CardInstance, zone: 'HAND' | 'DECK' | 'BOARD'): CardInstance => {
           const modifiers = card.temporaryStatModifiers ?? [];
           const expired = modifiers.filter((modifier) => modifier.untilTurn === state.turn);
           if (!expired.length) return card;
           const remaining = modifiers.filter((modifier) => modifier.untilTurn !== state.turn);
-          return expired.reduce((next, modifier) => {
+          const expiredCard = expired.reduce((next, modifier) => {
             if (modifier.stat === 'cost') {
               return { ...next, currentCost: Math.max(0, next.currentCost - modifier.amount) };
             }
@@ -227,21 +247,22 @@ export function endTurn(
               maxHealth: Math.max(1, next.maxHealth - modifier.amount),
             };
           }, { ...card, temporaryStatModifiers: remaining });
+          return normalizeCardForZone(expiredCard, zone);
         };
         const expireTemporaryCost = (card: CardInstance) =>
           card.temporaryCostUntilTurn === state.turn
             ? { ...card, currentCost: card.baseCost ?? card.currentCost, temporaryCostUntilTurn: undefined }
             : card;
-        const expireTemporaryModifiers = (card: CardInstance) =>
-          expireTemporaryCost(expireTemporaryStats(card));
+        const expireTemporaryModifiers = (card: CardInstance, zone: 'HAND' | 'DECK' | 'BOARD') =>
+          expireTemporaryCost(expireTemporaryStats(card, zone));
         return {
           ...player,
           currentGold: 0,
-          board: player.board.map((card) =>
-            card ? { ...expireTemporaryModifiers(card), isStunned: false } : null,
+           board: player.board.map((card) =>
+             card ? { ...expireTemporaryModifiers(card, 'BOARD'), isStunned: false } : null,
           ) as typeof player.board,
-          hand: player.hand.map(expireTemporaryModifiers),
-          deck: player.deck.map(expireTemporaryModifiers),
+           hand: player.hand.map((card) => expireTemporaryModifiers(card, 'HAND')),
+           deck: player.deck.map((card) => expireTemporaryModifiers(card, 'DECK')),
         };
       }
 
@@ -267,20 +288,35 @@ export function endTurn(
     ],
   };
 
-  const afterTurnEnd = state.players
+  const resolveTurnEndPass = (passState: GameState) =>
+    passState.players
+      .find((player) => player.id === actingPlayerId)
+      ?.board
+      .filter((card): card is NonNullable<typeof card> => Boolean(card))
+      .reduce((nextState, card) => {
+        const currentCard = nextState.players
+          .find((player) => player.id === actingPlayerId)
+          ?.board.find((candidate) => candidate?.instanceId === card.instanceId);
+        if (!currentCard) return nextState;
+        const triggered = resolveTriggeredAbilities(nextState, actingPlayerId, currentCard, 'TURN_END');
+        return triggered !== nextState && triggered.targetingState?.active ? resolvePendingEffects(triggered) : triggered;
+      }, passState) ?? passState;
+  const afterTurnEnd = resolveTurnEndPass(turnedState);
+  const repeatCount = afterTurnEnd.players
     .find((player) => player.id === actingPlayerId)
     ?.board
     .filter((card): card is NonNullable<typeof card> => Boolean(card))
-    .reduce((nextState, card) => {
-      const currentCard = nextState.players
-        .find((player) => player.id === actingPlayerId)
-        ?.board.find((candidate) => candidate?.instanceId === card.instanceId);
-      if (!currentCard) return nextState;
-      const triggered = resolveTriggeredAbilities(nextState, actingPlayerId, currentCard, 'TURN_END');
-      return triggered !== nextState && triggered.targetingState?.active ? resolvePendingEffects(triggered) : triggered;
-    }, turnedState) ?? turnedState;
+    .flatMap((card) => getActiveCardAbilities(card)
+      .filter((ability) => ability.trigger === 'TURN_END')
+      .flatMap((ability) => ability.effects))
+    .filter((effect) => effect.type === 'STRUCTURED' && effect.action === 'REPEAT_TURN_END')
+    .length ?? 0;
+  let afterRepeated = afterTurnEnd;
+  for (let repeat = 0; repeat < repeatCount; repeat += 1) {
+    afterRepeated = resolveTurnEndPass(afterRepeated);
+  }
 
-  const afterScheduled = resolveDueDelayedEffects(afterTurnEnd, 'TURN_END', actingPlayerId);
+  const afterScheduled = resolveDueDelayedEffects(afterRepeated, 'TURN_END', actingPlayerId);
   return actionSuccess(
     processChampionQuestEvents(
       afterScheduled,

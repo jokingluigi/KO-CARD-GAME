@@ -17,6 +17,7 @@ import {
   championRecordToDefinition,
   createDeterministicRandom,
   createInitialGameState,
+  normalizeHiddenZoneCards,
   validateCardDefinitionReferences,
   executeAction,
   getLegalActions,
@@ -137,7 +138,7 @@ function snapshotFromRecord(record: OnlineMatchRecord): OnlineMatchSnapshot {
 }
 
 function stateFromRecord(record: OnlineMatchRecord): GameState {
-  const state = record.serializedGameState as unknown as GameState;
+  const state = normalizeHiddenZoneCards(record.serializedGameState as unknown as GameState);
   validateCardDefinitionReferences(state);
   return state;
 }

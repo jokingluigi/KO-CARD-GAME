@@ -3,6 +3,7 @@ import test from 'node:test';
 
 import { generateCard } from '../cards/generation';
 import type { CardDefinition, CardInstance } from '../cards/types';
+import { normalizeHiddenZoneCards } from '../cards/zone-state';
 import { createInitialGameState } from '../engine/create-initial-game-state';
 import { drawCard } from '../engine/draw-card';
 import { destroyCard } from '../engine/destroy-card';
@@ -10,7 +11,7 @@ import { enterField } from '../engine/enter-field';
 import { attack } from '../engine/combat';
 import { playWrestlerFromHand } from '../engine/play-wrestler';
 import { endTurn } from '../engine/turn-system';
-import { getDamageModifierBonus, resolveActiveAbility, selectEffectTarget } from './effect-engine';
+import { applyEffect, getDamageModifierBonus, resolveActiveAbility, selectEffectTarget } from './effect-engine';
 import type { CardEffect } from './types';
 
 function definition(id: string, effects: CardEffect[], cost = 1): CardDefinition {
@@ -237,6 +238,70 @@ test('소환 오라는 태그가 맞는 아군 소환 카드에만 같은 대상
   assert.equal(result.players[0].board[1]?.currentHealth, 3);
 });
 
+test('아군 필드 진입 오라는 플레이와 소환 양쪽에서 새 카드만 같은 대상으로 강화한다', () => {
+  const aura = {
+    ...instance('jaeger-entry-aura', []),
+    boardSlot: 0 as const,
+    abilities: [{
+      trigger: 'CARD_ENTERED' as const,
+      effects: [structured('BUFF', {
+        zone: 'BOARD',
+        owner: 'SELF',
+        cardType: 'WRESTLER',
+        filter: { tagsAny: ['솔져'] },
+        selection: 'SAME_TARGET',
+        count: 1,
+      }, { attack: 1, health: 1 })],
+    }],
+  };
+  const makeState = () => {
+    const state = createInitialGameState();
+    state.players[0].board[0] = aura;
+    return state;
+  };
+  const soldier = { ...instance('entered-soldier'), tags: ['솔져'], currentAttack: 2, currentHealth: 2, maxHealth: 2 };
+
+  const played = enterField(makeState(), 'player-1', soldier, 1, undefined, undefined, 'PLAY_FROM_HAND');
+  assert.equal(played.players[0].board[1]?.currentAttack, 3);
+  assert.equal(played.players[0].board[1]?.currentHealth, 3);
+
+  const summoned = enterField(makeState(), 'player-1', soldier, 1, undefined, undefined, 'SUMMON');
+  assert.equal(summoned.players[0].board[1]?.currentAttack, 3);
+  assert.equal(summoned.players[0].board[1]?.currentHealth, 3);
+});
+
+test('아군 턴 종료 반복은 전체 보드를 한 번만 더 실행하고 반복 표식은 재귀하지 않는다', () => {
+  const maros = {
+    ...instance('maros-repeat-source', []),
+    boardSlot: 0 as const,
+    abilities: [{
+      trigger: 'TURN_END' as const,
+      effects: [
+        structured('ADD_GOLD', undefined, { amount: 1 }),
+        structured('REPEAT_TURN_END', undefined),
+      ],
+    }],
+  };
+  const ally = {
+    ...instance('maros-repeat-ally', []),
+    boardSlot: 1 as const,
+    abilities: [{
+      trigger: 'TURN_END' as const,
+      effects: [structured('ADD_GOLD', undefined, { amount: 1 })],
+    }],
+  };
+  const state = createInitialGameState();
+  state.status = 'IN_PROGRESS';
+  state.activePlayerId = 'player-1';
+  state.players[0].board[0] = maros;
+  state.players[0].board[1] = ally;
+
+  const ended = endTurn(state, 'player-1');
+
+  assert.equal(ended.success, true);
+  assert.equal(ended.state.players[0]?.currentGold, 4);
+});
+
 test('STEAL은 선언된 상대 손패 영역에서 무작위 카드를 내 손으로 이동한다', () => {
   const source = instance('kamisator', [
     structured('STEAL', {
@@ -297,6 +362,30 @@ test('MOVE_TO_HAND의 임시 비용 감소는 최소 비용과 턴 만료를 보
   assert.equal(result.players[0].board[1], null);
   assert.equal(result.players[0].hand.at(-1)?.currentCost, 1);
   assert.equal(result.players[0].hand.at(-1)?.temporaryCostUntilTurn, state.turn);
+});
+
+test('MOVE_TO_DECK는 선택한 카드를 원래 소유자의 덱 맨 위로 이동한다', () => {
+  const source = instance('small-hippo', [
+    structured('MOVE_TO_DECK', {
+      zone: 'BOARD',
+      owner: 'ENEMY',
+      cardType: 'WRESTLER',
+      selection: 'PLAYER_CHOICE',
+      count: 1,
+    }, { deckPosition: 'TOP' }),
+  ]);
+  const enemyCard = { ...instance('enemy-to-deck'), playerId: 'player-2', boardSlot: 0 as const };
+  const existingTop = { ...instance('existing-top'), playerId: 'player-2' };
+  const state = createInitialGameState();
+  state.players[1].board[0] = enemyCard;
+  state.players[1].deck = [existingTop];
+
+  const pending = enterField(state, 'player-1', source, 0);
+  const result = selectEffectTarget(pending, enemyCard.instanceId);
+
+  assert.equal(result.players[1].board[0], null);
+  assert.equal(result.players[1].deck[0]?.instanceId, enemyCard.instanceId);
+  assert.equal(result.players[1].deck[1]?.instanceId, existingTop.instanceId);
 });
 
 test('콤보는 마지막으로 공격한 아군의 공격력을 자기 공격력에 더하고 턴 종료에 0으로 설정한다', () => {
@@ -569,6 +658,62 @@ test('피해가 정확한 대상을 퇴장시킨 경우에만 causal 변신을 �
   const lethal = selectEffectTarget(lethalPending, lethalPending.targetingState!.validTargetIds[0]!);
   assert.equal(lethal.players[0].board[0]?.definitionId, 'wolf-form');
   assert.equal(lethal.players[1].graveyard.some((card) => card.definitionId === 'target'), true);
+});
+
+test('HAND/DECK WRESTLER 체력은 1 아래로 내려가지 않고 FIELD는 lethal을 허용한다', () => {
+  const source = instance('health-floor-source');
+  const handCard = { ...instance('hidden-hand'), currentHealth: 1, maxHealth: 1 };
+  const deckCard = { ...instance('hidden-deck'), currentHealth: 2, maxHealth: 2 };
+  const hiddenState = createInitialGameState();
+  hiddenState.players[0].hand = [handCard];
+  hiddenState.players[0].deck = [deckCard];
+
+  const handResult = applyEffect(hiddenState, 'player-1', source, structured('BUFF', {
+    zone: 'HAND',
+    owner: 'SELF',
+    selection: 'ALL',
+    count: 20,
+  }, { attack: 0, health: -5 }));
+  assert.equal(handResult.players[0].hand[0]?.currentHealth, 1);
+  assert.equal(handResult.events.some((event) => event.type === 'STAT_CHANGED'), false);
+
+  const deckResult = applyEffect(handResult, 'player-1', source, structured('SET_STAT', {
+    zone: 'DECK',
+    owner: 'SELF',
+    selection: 'ALL',
+    count: 20,
+  }, { stat: 'HEALTH', amount: 0 }));
+  assert.equal(deckResult.players[0].deck[0]?.currentHealth, 1);
+
+  const boardCard = { ...instance('board-health'), boardSlot: 0 as const, currentHealth: 1, maxHealth: 1 };
+  const boardState = createInitialGameState();
+  boardState.players[0].board[0] = boardCard;
+  const boardResult = applyEffect(boardState, 'player-1', source, structured('BUFF', {
+    zone: 'BOARD',
+    owner: 'SELF',
+    selection: 'ALL',
+    count: 20,
+  }, { attack: 0, health: -5 }));
+  assert.equal(boardResult.players[0].board[0]?.currentHealth, -4);
+});
+
+test('복원 시 손패·덱 WRESTLER만 보정하고 필드 lethal과 Technique은 유지한다', () => {
+  const state = createInitialGameState();
+  const invalidHandWrestler = { ...instance('legacy-hand'), currentHealth: -3, maxHealth: 0 };
+  const invalidDeckWrestler = { ...instance('legacy-deck'), currentHealth: 0, maxHealth: 0 };
+  const technique = { ...instance('technique'), cardType: 'TECHNIQUE' as const, currentHealth: -2, maxHealth: 0 };
+  const fieldWrestler = { ...instance('field-lethal'), boardSlot: 0 as const, currentHealth: -4, maxHealth: 3 };
+  state.players[0].hand = [invalidHandWrestler, technique];
+  state.players[0].deck = [invalidDeckWrestler];
+  state.players[0].board[0] = fieldWrestler;
+
+  const restored = normalizeHiddenZoneCards(state);
+
+  assert.equal(restored.players[0].hand[0]?.currentHealth, 1);
+  assert.equal(restored.players[0].hand[0]?.maxHealth, 1);
+  assert.equal(restored.players[0].hand[1]?.currentHealth, -2);
+  assert.equal(restored.players[0].deck[0]?.currentHealth, 1);
+  assert.equal(restored.players[0].board[0]?.currentHealth, -4);
 });
 
 test('등장 시 자신의 양옆 빈 슬롯에 표준 무작위 선수를 각각 소환한다', () => {

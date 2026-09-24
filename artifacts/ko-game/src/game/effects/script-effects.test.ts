@@ -257,3 +257,128 @@ test("SCRIPT_V1 filters a graveyard and deterministically revives one eligible w
   assert.equal(result.players[0].graveyard[0]?.instanceId, ineligible.instanceId);
   assert.equal(result.players[0].board.some((entry) => entry?.instanceId === eligible.instanceId), true);
 });
+
+test("SCRIPT_V1 copies the best named Zombie stats or generates an exact 2/2 Zombie", () => {
+  const generatedDefinition: CardDefinition = {
+    id: "script-generated-zombie",
+    name: "좀비",
+    cardType: "WRESTLER",
+    cost: 1,
+    attack: 1,
+    health: 1,
+    rulesText: "",
+    isToken: true,
+    isChampionToken: false,
+    keywords: [],
+    abilities: [],
+  };
+  const script: CardEffect = {
+    type: "SCRIPT",
+    script: {
+      version: "SCRIPT_V1",
+      trigger: "ENTER_FIELD",
+      steps: [
+        {
+          type: "SELECT",
+          id: "fieldZombies",
+          target: {
+            zone: "BOARD",
+            owner: "SELF",
+            cardType: "WRESTLER",
+            filter: { definitionRef: { id: generatedDefinition.id } },
+            selection: "ALL",
+            count: 20,
+          },
+        },
+        { type: "AGGREGATE", id: "zombieCount", selectionId: "fieldZombies", operation: "COUNT" },
+        {
+          type: "IF",
+          condition: {
+            left: { kind: "RESULT_VALUE", resultId: "zombieCount" },
+            compare: "GT",
+            right: { kind: "CONSTANT", value: 0 },
+          },
+          then: [{
+            type: "EFFECT",
+            effect: {
+              action: "COPY_BEST_STATS",
+              target: {
+                resultId: "fieldZombies",
+                zone: "BOARD",
+                owner: "SELF",
+                selection: "ALL",
+                count: 20,
+              },
+            },
+          }],
+          else: [
+            {
+              type: "EFFECT",
+              id: "generatedZombie",
+              effect: {
+                action: "GENERATE",
+                values: { definitionRef: { id: generatedDefinition.id }, destination: "HAND", count: 1 },
+              },
+            },
+            {
+              type: "EFFECT",
+              effect: {
+                action: "SET_STATS",
+                target: {
+                  resultId: "generatedZombie",
+                  zone: "HAND",
+                  owner: "SELF",
+                  selection: "ALL",
+                  count: 1,
+                },
+                values: { attack: 2, health: 2 },
+              },
+            },
+            {
+              type: "EFFECT",
+              effect: {
+                action: "COPY_BEST_STATS",
+                target: {
+                  resultId: "generatedZombie",
+                  zone: "HAND",
+                  owner: "SELF",
+                  selection: "ALL",
+                  count: 1,
+                },
+              },
+            },
+          ],
+        },
+      ],
+    },
+  };
+  const source = {
+    ...card("script-zombie-copy", [script]),
+    baseAttack: 3,
+    currentAttack: 3,
+    baseHealth: 3,
+    currentHealth: 3,
+    maxHealth: 3,
+  };
+  const initial = { ...createInitialGameState(), cardPool: [generatedDefinition] };
+  const generatedResult = enterField(initial, "player-1", source, 0);
+  const generatedSource = generatedResult.players[0]?.board[0];
+  const generated = generatedResult.players[0]?.hand.find((entry) => entry.definitionId === generatedDefinition.id);
+
+  assert.equal(generatedSource?.currentAttack, 5);
+  assert.equal(generatedSource?.currentHealth, 5);
+  assert.equal(generated?.isGenerated, true);
+  assert.equal(generated?.currentAttack, 2);
+  assert.equal(generated?.currentHealth, 2);
+  assert.ok(generatedResult.events.some((event) => event.type === "CARD_GENERATED" && event.cardInstanceId === generated?.instanceId));
+
+  const weakerZombie = { ...card("weaker-zombie"), definitionId: generatedDefinition.id, boardSlot: 1 as const, currentAttack: 2, currentHealth: 3, maxHealth: 3 };
+  const existingZombie = { ...card("existing-zombie"), definitionId: generatedDefinition.id, boardSlot: 2 as const, currentAttack: 4, currentHealth: 5, maxHealth: 5 };
+  const existingState = { ...createInitialGameState(), cardPool: [generatedDefinition] };
+  existingState.players[0].board[1] = weakerZombie;
+  existingState.players[0].board[2] = existingZombie;
+  const existingResult = enterField(existingState, "player-1", card("script-zombie-copy-existing", [script]), 0);
+  assert.equal(existingResult.players[0]?.board[0]?.currentAttack, 5);
+  assert.equal(existingResult.players[0]?.board[0]?.currentHealth, 8);
+  assert.equal(existingResult.players[0]?.hand.some((entry) => entry.definitionId === generatedDefinition.id), false);
+});

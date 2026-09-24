@@ -22,6 +22,9 @@ export {
   validateCardDefinitionReferences,
 } from "../../../artifacts/ko-game/src/game/engine/card-definition-validation";
 export {
+  normalizeHiddenZoneCards,
+} from "../../../artifacts/ko-game/src/game/cards/zone-state";
+export {
   startGame,
   endTurn,
 } from "../../../artifacts/ko-game/src/game/engine/turn-system";
