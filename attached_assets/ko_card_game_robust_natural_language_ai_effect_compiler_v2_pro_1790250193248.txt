@@ -1,0 +1,632 @@
+KO CARD GAME — ROBUST NATURAL-LANGUAGE AI EFFECT COMPILER V2
+목표: 사용자가 카드 효과를 정확한 문법으로 쓰지 않아도, 오타·은어·축약·띄어쓰기 오류·조사 생략·어순 꼬임을 AI가 이해해서 현재 KO CARD GAME의 canonical Effect DSL/SCRIPT_V1로 정확히 컴파일하게 한다.
+
+핵심 원칙:
+LANGUAGE NOISE != GAMEPLAY AMBIGUITY
+
+예:
+"등장 상대중 피 젤낮은놈 2뎀"
+→ 언어는 거칠지만 의미는 명확하므로 SUPPORTED.
+
+"상대 하나 처리"
+→ RETIRE인지 DESTROY인지 DAMAGE인지 불명확하므로 추측하지 말고 ANALYSIS_FAILED/clarification-needed.
+
+==================================================
+1. 기존 문제
+==================================================
+
+현재 컴파일러가 너무 정확한 문장을 요구한다.
+OpenAI를 단순 JSON 변환기로 쓰지 말고 다음 구조로 개선:
+
+RAW USER TEXT
+→ LANGUAGE NORMALIZATION
+→ INTENT INTERPRETATION
+→ SEMANTIC PLAN
+→ REGISTRY MAPPING
+→ CANONICAL DSL / SCRIPT_V1
+→ STRICT VALIDATOR
+→ READY
+
+OpenAI provider call은 Generate 1회당 정확히 1회만.
+Save/Reload/Runtime/AI Match/Online Match에서 provider 호출 0회.
+
+==================================================
+2. 언어 정규화
+==================================================
+
+다음 표현을 이해해야 함:
+
+- 띄어쓰기 없음: "등장상대선수하나2뎀"
+- 오타: "무작이", "리타어", "비용깍"
+- 조사 생략
+- 반말/은어
+- "피/체/체력"
+- "공/공격/공격력"
+- "코/코스트/비용"
+- "뎀/딜/피해"
+- "랜덤/무작위"
+- "손/손패/핸드"
+- "덱위/덱 맨위/탑"
+- "나올때/등장/필드 나오면"
+- "죽을때/퇴장/리타이어"
+- "공격하고 살면/안죽으면"
+- "+2/+2", "공체2씩"
+- "젤/제일/가장"
+- "얘/걔/그 카드/그놈"
+
+단어를 기계적으로 치환하지 말고 전체 문맥에서 gameplay intent를 해석.
+
+==================================================
+3. Provider semantic contract
+==================================================
+
+Provider가 개념적으로 다음을 분리해서 해석:
+
+triggerIntent
+sourceIntent
+targetIntent
+ownerIntent
+zoneIntent
+cardTypeIntent
+filterIntent
+selectionIntent
+actionIntent
+valuesIntent
+conditionIntent
+sequenceIntent
+referenceIntent
+ambiguities
+
+가능하면 debug용으로:
+- normalizedMeaning
+- confidence
+- ambiguities
+- canonicalPlan
+- output
+
+을 반환.
+
+실제 runtime은 canonical DSL/SCRIPT_V1만 사용.
+내부 chain-of-thought는 노출하지 말고 structured summary만 사용.
+
+==================================================
+4. Trusted context 제공
+==================================================
+
+Provider에게 raw text만 보내지 말고 서버가 trusted context를 inject:
+
+- source CardDefinition type/id
+- current effect slot/trigger slot
+- valid Trigger Registry
+- valid Effect Registry
+- valid target schema
+- valid tags
+- relevant CardDefinition refs
+- relevant Champion refs
+- current source metadata
+
+sourceId는 server-side trusted injection.
+client spoof 금지.
+
+전체 DB dump나 secrets 전송 금지.
+
+==================================================
+5. Registry-aware 해석
+==================================================
+
+최종 action/trigger는 반드시 Registry enum.
+
+"리타이어/퇴장" → RETIRE/SELF_RETIRE 문맥
+"파괴" → DESTROY
+"덱 맨위" → MOVE_TO_DECK TOP
+"손으로" → MOVE_TO_HAND
+"소환" → SUMMON
+"생성" → GENERATE
+"부활" → REVIVE
+"공격하고 살아남음" → ATTACK_SURVIVED
+
+AI가 임의의 새 action 이름을 만들면 reject.
+
+==================================================
+6. Owner / Zone / Target 해석
+==================================================
+
+"상대/적/상대방" → ENEMY
+"내/아군/우리" → SELF
+
+"손/손패/핸드" → HAND
+"덱/덱안" → DECK
+"필드/보드/나와있는" → BOARD
+"묘지/무덤" → GRAVEYARD
+
+"다른 아군/나 빼고/자신 제외/이 카드 말고"
+→ excludeSource=true
+
+"선수/유닛/애/놈"은 context상 WRESTLER로 해석 가능하되,
+후보 타입이 여러 개라면 추측 금지.
+
+==================================================
+7. 값/비교/조건 해석
+==================================================
+
+"+2/+2", "공체2씩", "공2 체2"
+→ attack +2, health +2
+
+"2뎀", "2딜", "피해2"
+→ DAMAGE 2
+
+"코1깎", "1싸게"
+→ REDUCE_COST 1
+
+"젤 낮은", "제일 적은", "가장 낮은"
+→ MIN
+
+"젤 높은", "가장 센"
+→ MAX
+
+"공체합 젤 높은"
+→ MAX(currentAttack + currentHealth)
+
+"없으면"
+→ IF count == 0
+
+"있으면"
+→ IF count > 0
+
+"피가 정확히 1되면"
+→ post-effect exact-current-health condition
+
+"이 효과로 죽으면"
+→ causal condition. unrelated later death 금지.
+
+==================================================
+8. Pronoun / SAME_TARGET
+==================================================
+
+예:
+"적 하나 골라 2뎀주고 걔 기절"
+→ PLAYER_CHOICE target resultId
+→ DAMAGE same target
+→ STUN SAME_TARGET
+
+"그 카드", "걔", "방금 고른 애"가 직전 result를 명확히 가리키면 resultId/SAME_TARGET 사용.
+
+직전 후보가 여러 개라 ambiguous하면 READY 금지.
+
+==================================================
+9. CardDefinition vs Tag
+==================================================
+
+"'좀비' 태그가 있는 선수"
+→ cards.tags filter
+
+"'좀비'를 생성"
+→ exact Zombie CardDefinition reference 가능성
+
+이 둘을 혼동하지 말 것.
+
+정확한 definition/tag reference가 typo인 경우:
+- unique high-confidence candidate → resolve + audit note
+- 여러 후보 → AMBIGUOUS_REFERENCE
+- low confidence → FAIL
+- arbitrary first match 금지
+
+==================================================
+10. 반드시 이해해야 할 noisy examples
+==================================================
+
+A. "등장 상대중 피 젤낮은놈 2뎀"
+→ ENTER_FIELD → enemy BOARD WRESTLER → MIN currentHealth → DAMAGE 2
+
+B. "손이랑 덱 6코이상 전부 1싸게"
+→ own HAND+DECK → minCost 6 → ALL → REDUCE_COST 1
+
+C. "나빼고 내 필드애들 2/2"
+→ own BOARD WRESTLER → excludeSource=true → ALL → +2/+2
+
+D. "공격하고 안죽었으면 코1깎고 손으로"
+→ ATTACK_SURVIVED → REDUCE_COST 1 → MOVE_TO_HAND
+
+E. "등장 적 랜덤한놈 하나 퇴장 챔토큰빼"
+→ enemy BOARD WRESTLER → isChampionToken=false → RANDOM1 → RETIRE
+
+F. "나 죽으면 언데드들 어디있든 피2올림"
+→ SELF_RETIRE → own supported zones → tagsAny["언데드"] → health-related +2 per current canonical rule
+
+G. "적 하나 골라 덱위로"
+→ PLAYER_CHOICE enemy BOARD WRESTLER → MOVE_TO_DECK TOP
+
+H. "턴끝 내공젤낮은애 공1"
+→ TURN_END → own BOARD WRESTLER → MIN currentAttack → attack +1
+
+I. "적 하나 골라 2뎀주고 걔 기절"
+→ PLAYER_CHOICE → DAMAGE 2 → SAME_TARGET STUN
+
+J. "내 좀비 없으면 2/2좀비 만들고 걔 공체 내가 먹고 있으면 젤 센 좀비꺼 먹어"
+→ IF/ELSE → best-stat Zombie branch / fallback exact 2/2 generated Zombie branch
+
+==================================================
+11. 실제 ambiguity는 거부
+==================================================
+
+다음은 억지 READY 금지:
+
+"상대 하나 처리"
+"좀비 하나 줘"
+"피 올려"
+"쟤 세게"
+"카드 하나 없애"
+"걔 좀 약하게"
+"한놈 가져와"
+"2 올려"
+"손으로 보내"
+"등장하면 강해짐"
+"퇴장하면 적당히 버프"
+
+게임 의미 자체가 부족하므로 ANALYSIS_FAILED/clarification-needed.
+Form unchanged.
+Partial apply 금지.
+
+==================================================
+12. Strict validator 유지
+==================================================
+
+언어 이해를 유연하게 만드는 것과 validator를 느슨하게 만드는 것을 혼동하지 말 것.
+
+반드시 reject:
+- unknown trigger/action/field
+- target.filters
+- target.tagFilters
+- malformed target.filter
+- invalid owner/zone/cardType
+- invalid selection
+- unresolved reference
+- malformed SCRIPT_V1
+- duplicate step ids
+- invalid resultId
+- invalid result offset
+- arbitrary code
+- sourceId spoof
+- action/target/value/trigger mismatch
+
+==================================================
+13. Provider one-call rule
+==================================================
+
+Generate 클릭 1회:
+Provider call 정확히 1회.
+
+한 번의 호출 안에서:
+normalize → interpret → plan → compile
+
+자동 retry 금지.
+Validator 실패 시 second provider call 금지.
+그냥 ANALYSIS_FAILED와 structured error를 반환.
+
+==================================================
+14. Fuzz test suite
+==================================================
+
+최소 100개 테스트.
+
+카테고리별 최소 10개:
+1) DAMAGE
+2) BUFF/DEBUFF
+3) COST
+4) RETIRE/DESTROY
+5) MOVE/BOUNCE
+6) TAG FILTER
+7) MIN/MAX/SORT
+8) IF/ELSE
+9) PRONOUN/SAME_TARGET
+10) TRIGGER slang/abbreviation
+
+각 clean canonical sentence마다 noisy variants 생성:
+- spacing removed
+- typo
+- slang
+- shortened words
+- omitted particles
+- reversed word order
+- colloquial wording
+
+Exact string hardcode로 통과시키지 말 것.
+
+==================================================
+15. 기존 실제 카드 source fuzz
+==================================================
+
+현재 WRESTLER/Champion source text 중 최소 20개 선택.
+
+각 source마다 noisy paraphrase 최소 3개.
+총 60개 이상 추가.
+
+예:
+정식:
+"등장:상대의 필드에 있는 선수 카드 한장을 선택해서 상대방의 덱 맨위로 보냅니다."
+
+Fuzz:
+"나오면 적필드 한놈 골라 걔 덱위"
+"등장 적 선수 하나 선택 덱탑으로"
+"필드올때 상대애 하나 집어서 상대 덱 맨위"
+
+세 문장 모두 semantic comparator에서 동일해야 함.
+
+원래 source 자체가 ambiguous하면 fuzz 대상에서 제외하고 AMBIGUOUS_SOURCE로 보고.
+
+==================================================
+16. Negative ambiguity tests
+==================================================
+
+최소 20개.
+실제 의미가 부족한 문장은 100% reject 목표.
+
+False READY = 0 목표.
+
+==================================================
+17. Semantic equivalence
+==================================================
+
+같은 의도의 noisy variants는 raw JSON이 완전히 같을 필요는 없지만
+아래 semantic은 같아야 함:
+
+trigger
+action
+target owner/zone/type
+filter
+selection
+value
+condition
+sequence
+reference/resultId
+
+semantic comparator로 SAME 확인.
+
+==================================================
+18. Admin E2E
+==================================================
+
+가능하면 Development Admin에서 noisy input 최소 15개 실제 입력:
+
+Generate
+→ Provider call 1
+→ READY
+→ Auto Apply
+→ 실제 form field mutation
+→ Save
+→ Reload
+→ semantic equality
+→ Test Match
+
+READY response만 보고 PASS 금지.
+
+Browser unavailable:
+BROWSER E2E = UNVERIFIED
+나머지 구현/자동 테스트 계속.
+
+==================================================
+19. Runtime verification
+==================================================
+
+최소 10 intent를 실제 engine에서:
+Action → Event → GameState
+
+검증.
+
+포함:
+- DAMAGE
+- BUFF
+- REDUCE_COST
+- RETIRE
+- MOVE_TO_DECK
+- tag filter
+- ATTACK_SURVIVED
+- SAME_TARGET
+- IF/ELSE
+- generated card
+
+==================================================
+20. 기존 시스템 회귀 금지
+==================================================
+
+유지:
+- target.filter canonical schema
+- tagsAny/tagsAll
+- PLAYER_CHOICE
+- target cancel
+- SCRIPT_V1
+- SAME_TARGET/resultId
+- REVIVE
+- generatedModifiers
+- GAME_START
+- CARD_ENTERED
+- ATTACK_SURVIVED
+- SELF_RETIRE
+- SELF_DAMAGED
+- causal TRANSFORM_SOURCE
+- GRANT_RANDOM_CARD_TEXT
+- RETIRE vs DESTROY
+- Champion Token
+- HAND/DECK health floor
+- hidden-info sanitizer
+- deterministic RNG
+
+==================================================
+21. 성공률 지표
+==================================================
+
+최종 보고:
+
+Clean phrases: X/Y
+Noisy paraphrases: X/Y
+Typos: X/Y
+Slang: X/Y
+Broken spacing: X/Y
+Pronoun/reference: X/Y
+Ambiguous negatives rejected: X/Y
+Semantic equivalence: X/Y
+False READY: X
+False ANALYSIS_FAILED: X
+
+목표:
+recoverable noisy language >=95% semantic success
+ambiguous negative 100% reject
+false READY = 0
+
+숫자 맞추려고 validator 완화 금지.
+
+==================================================
+22. Provider call audit
+==================================================
+
+Generate actions:
+Provider calls:
+Expected ratio = 1:1
+
+Save provider calls = 0
+Reload provider calls = 0
+Runtime provider calls = 0
+AI Match provider calls = 0
+Online Match provider calls = 0
+
+==================================================
+23. 전체 Analyzer 재회귀
+==================================================
+
+모든 현재 WRESTLER + Champion slots를 다시 분석.
+
+출력:
+SUPPORTED
+NEW_MECHANIC_REQUIRED
+ANALYSIS_FAILED
+SUPPORTED_FALSE_POSITIVE
+MISSING_CLAUSE
+HALLUCINATED_CLAUSE
+AMBIGUOUS_REFERENCE
+REGISTRY_SYNC_MISMATCH
+
+새 normalization 때문에 기존 clean source가 망가지면 FAIL.
+
+==================================================
+24. 검증
+==================================================
+
+반드시 실행:
+pnpm run typecheck
+pnpm --filter @workspace/ko-game run build
+git diff --check
+
+관련:
+API typecheck/build
+provider mock tests
+Analyzer tests
+fuzz tests
+semantic equivalence tests
+negative ambiguity tests
+SCRIPT_V1 tests
+structured-effect runtime tests
+sanitizer tests
+
+==================================================
+25. Git
+==================================================
+
+실제 수정 파일만 stage.
+
+제외:
+prompt txt
+Pasted txt
+fuzz output logs
+.env
+secrets
+screenshots
+temp
+Replit metadata
+unrelated files
+
+commit.
+push 요청 없으면 push 금지.
+force push 금지.
+
+==================================================
+26. 최종 보고 형식
+==================================================
+
+ARCHITECTURE
+Old flow:
+New flow:
+Language normalization: PASS/FAIL
+Intent interpretation: PASS/FAIL
+Strict validator preserved: PASS/FAIL
+
+FUZZ RESULTS
+Clean:
+Noisy:
+Typos:
+Slang:
+Broken spacing:
+Pronouns:
+Tag/reference:
+Negative rejection:
+False READY:
+False ANALYSIS_FAILED:
+
+PROVIDER CALLS
+Generate:
+Provider:
+Save:
+Reload:
+Runtime:
+AI Match:
+Online Match:
+
+ADMIN E2E
+Generate:
+READY:
+Auto Apply:
+Save:
+Reload:
+Runtime:
+
+FULL ANALYZER
+SUPPORTED:
+NEW_MECHANIC_REQUIRED:
+ANALYSIS_FAILED:
+SUPPORTED_FALSE_POSITIVE:
+MISSING_CLAUSE:
+HALLUCINATED_CLAUSE:
+AMBIGUOUS_REFERENCE:
+REGISTRY_SYNC_MISMATCH:
+
+IMPLEMENTATION:
+AUTOMATED VERIFICATION:
+BROWSER E2E:
+TYPECHECK:
+API BUILD:
+KO BUILD:
+git diff --check:
+PRODUCTION DATA MUTATION: NONE
+COMMIT:
+PUSH: NOT REQUESTED
+
+==================================================
+27. 완료 조건
+==================================================
+
+1. 사용자가 DSL 문법에 맞춰 쓰지 않아도 됨.
+2. 오타/은어/축약/띄어쓰기 오류를 recover 가능.
+3. recoverable noisy phrase >=95% semantic success.
+4. 실제 gameplay ambiguity는 100% reject.
+5. false READY = 0.
+6. exact sentence hardcode 없음.
+7. card-name runtime hardcode 없음.
+8. Generate 1회 = Provider 1회.
+9. Save/Runtime/AI Match Provider 0회.
+10. strict validator 유지.
+11. READY → Form → Save → Reload → Runtime semantic 일치.
+12. 기존 clean source regression 없음.
+13. Production mutation 없음.
+
+핵심:
+사용자가 개떡같이 말해도, 게임 의미가 충분히 명확하면 AI가 알아들어야 한다.
+하지만 실제 규칙 의미가 모호한 경우에만 추측하지 말고 실패해야 한다.
