@@ -1,0 +1,1238 @@
+KO CARD GAME — ONLINE MATCH INTRO V2
+상대 닉네임 표시 + Champion 대치 연출 + 관리자 설정형 텍스트 대사 + Champion 조합별 특수 상호대사
+※ 음성 없음. 텍스트만.
+※ KO 로고/KO 텍스트 사용 금지. 중앙은 VS만 사용.
+
+==================================================
+0. 이번 작업의 목표
+==================================================
+
+온라인 매치가 시작될 때 바로 보드로 넘어가지 말고,
+양쪽 플레이어와 Champion을 정식으로 소개하는 Match Intro를 만든다.
+
+반드시 포함:
+
+- 내 닉네임
+- 상대 닉네임
+- 내 Champion 이름
+- 상대 Champion 이름
+- 내 Champion 초상화
+- 상대 Champion 초상화
+- Champion별 기본 텍스트 대사
+- 특정 Champion 조합에서만 나오는 특수 상호대사
+- 중앙의 큰 VS 연출
+- Intro 종료 후 실제 Battle UI로 자연스럽게 전환
+
+중요:
+음성 파일/음성 재생은 이번 기능에 절대 포함하지 않는다.
+
+텍스트 대사만 사용한다.
+
+또한 KO 로고/KO 문구는 Intro에서 사용하지 않는다.
+중앙에는 VS만 사용한다.
+
+==================================================
+1. 먼저 상대 닉네임 버그부터 정확히 수정
+==================================================
+
+현재 실제 버그:
+온라인 매치에서 상대 닉네임이 보이지 않는다.
+
+다음 데이터 흐름을 실제로 추적:
+
+Matchmaking
+→ match creation
+→ player public metadata
+→ server match state / match envelope
+→ sanitizer
+→ websocket/http payload
+→ client store
+→ opponent mapping
+→ battle HUD
+→ Match Intro
+
+어디에서 nickname/displayName이 유실되는지
+first failing layer를 정확히 특정한다.
+
+UI에 임시 문자열 "상대방"을 넣고 끝내지 말 것.
+
+==================================================
+2. Public Player Metadata
+==================================================
+
+온라인 매치에서 공개 가능한 player metadata를 정식으로 유지:
+
+- playerId/internal reference
+- displayName 또는 nickname
+- selected Champion definitionId
+- Champion public name
+- Champion portrait/image reference
+
+예시 개념:
+
+publicPlayerMeta = {
+  playerId,
+  displayName,
+  championDefinitionId,
+  championName,
+  championPortrait
+}
+
+이 public metadata는 다음에서 공통 사용:
+
+- Match Intro
+- Battle HUD
+- reconnect
+- state resync
+- spectator가 현재 있다면 spectator
+
+중복 source-of-truth 금지.
+
+절대 노출 금지:
+- email
+- raw auth identifier
+- private inventory
+- deck contents
+- hidden hand/deck identities
+- randomSeed
+- private account metadata
+
+==================================================
+3. Battle HUD에서도 닉네임 계속 표시
+==================================================
+
+Intro에서만 닉네임을 보여주고
+실제 전투 화면에서는 다시 사라지면 안 된다.
+
+Battle HUD:
+
+[플레이어 닉네임]
+[Champion 이름]
+[HP]
+
+형태로 identity hierarchy를 명확히 한다.
+
+내 쪽도 동일.
+
+==================================================
+4. Match Intro 전체 방향
+==================================================
+
+연출 컨셉:
+
+- 프로레슬링 메인 이벤트
+- 격투게임 VS 화면
+- 카드게임 Champion 대치
+- 짧지만 강한 연출
+- 실제 출시작처럼 보이는 시작 화면
+
+단순:
+portrait 2장
++
+VS
++
+fade
+
+만 띄우는 수준으로 끝내지 말 것.
+
+명확한 animation sequence와 text-dialogue sequence를 구현.
+
+==================================================
+5. KO 제거
+==================================================
+
+Intro에서 다음 사용 금지:
+
+- KO text
+- KO logo
+- KO emblem
+- KO → VS 변환 연출
+
+중앙 연출은 오직:
+
+VS
+
+만 사용.
+
+Battle board 자체의 기존 KO branding이 있다면
+그것은 이번 작업 범위에서 건드리지 않는다.
+
+"Intro 중앙"에서만 KO를 제거한다.
+
+==================================================
+6. 기본 Intro 화면 구성
+==================================================
+
+Desktop 예시:
+
+┌───────────────────────────────────────┐
+│                                       │
+│   MY CHAMPION         OPP CHAMPION    │
+│       크게                크게         │
+│          ↘              ↙             │
+│                 VS                    │
+│                                       │
+│   MyNickname        OpponentNickname  │
+│   Champion Name     Champion Name     │
+│                                       │
+│   [텍스트 대사 영역]                  │
+│                                       │
+└───────────────────────────────────────┘
+
+Champion portraits는 서로 중앙을 바라보는 대치 구도로.
+
+==================================================
+7. 대사 시스템 — 기본 구조
+==================================================
+
+각 ChampionDefinition 또는 Champion Admin 설정에:
+
+기본 Intro 대사
+
+를 설정할 수 있게 한다.
+
+예:
+
+Champion Pandora
+
+기본 인트로 대사:
+"이번엔 얼마나 버틸 수 있을까?"
+
+Champion Jäger
+
+기본 인트로 대사:
+"네 실력을 확인해 보지."
+
+이 값은 관리자에서 수정 가능.
+
+==================================================
+8. 음성 관련 기능은 만들지 말 것
+==================================================
+
+이번 기능에 다음 필드/API/UI 추가 금지:
+
+- voice file
+- audio upload
+- voiceAsset
+- TTS
+- voice playback
+- voice timing
+- subtitle sync with audio
+
+텍스트만.
+
+대사 타이밍은 UI animation timeline 기준으로 처리.
+
+==================================================
+9. Champion 특수 상호대사
+==================================================
+
+특정 Champion 조합끼리는
+기본 대사 대신 전용 상호대사를 사용할 수 있게 한다.
+
+예:
+
+Pandora ↔ Jäger
+
+Pandora:
+"아직도 그 장난감 군대를 끌고 다니는 거야?"
+
+Jäger:
+"네가 쓰러질 때까진 충분하지."
+
+이 조합이 매칭되면
+각 Champion의 기본 Intro 대사를 사용하지 않고
+이 특수 상호대사를 우선 사용한다.
+
+==================================================
+10. 특수 상호대사는 관계 데이터로 관리
+==================================================
+
+중요:
+Pandora 쪽 ChampionDefinition에만
+Jäger 전용 대사를 중복 저장하는 방식 금지.
+
+내부적으로 하나의 relation/entity로 관리.
+
+예시 개념:
+
+ChampionIntroInteraction {
+  id,
+  championAId,
+  championBId,
+  championALine,
+  championBLine,
+  firstSpeaker,
+  enabled
+}
+
+championA/championB 순서는 저장 방식일 뿐,
+매치에서 플레이어 어느 쪽에 있는지는 runtime mapping으로 해결.
+
+같은 조합을 A→B / B→A 두 개 중복 생성하지 않게 한다.
+
+==================================================
+11. Admin UI — Champion 설정
+==================================================
+
+Champion Admin에 새 섹션 추가:
+
+[Match Intro]
+
+- 기본 인트로 대사
+- 저장
+- 미리보기 가능하면 추가
+
+그리고:
+
+[특수 상호 대사]
+
+- 등록된 상대 Champion 목록
+- 상대 Champion 선택
+- 내 Champion 대사
+- 상대 Champion 대사
+- 먼저 말하는 Champion
+- 활성화 여부
+- 수정
+- 삭제
+- 새 특수 상호 대사 추가
+
+==================================================
+12. 같은 관계를 양쪽 Champion Admin에서 조회
+==================================================
+
+Pandora ↔ Jäger relation이 하나 존재하면:
+
+Pandora Admin에서도 보이고
+Jäger Admin에서도 보여야 한다.
+
+하지만 실제 DB row는 하나.
+
+양쪽 화면에서 수정해도
+같은 relation을 수정.
+
+중복 생성 방지.
+
+==================================================
+13. 특수 대사 선택 우선순위
+==================================================
+
+Intro line resolver:
+
+1. 활성화된 exact Champion pair special interaction 검색
+2. 존재하면 special dialogue 사용
+3. 없으면 각 Champion의 default intro line 사용
+4. default line도 없으면 그 Champion 대사는 생략
+5. 둘 다 대사가 없어도 Intro 자체는 정상 진행
+
+대사 없음 때문에 match 시작이 막히면 FAIL.
+
+==================================================
+14. 누가 먼저 말하는가
+==================================================
+
+Special interaction에는 firstSpeaker 설정 지원.
+
+예:
+CHAMPION_A
+CHAMPION_B
+
+또는 실제 현재 schema에 맞는 방식.
+
+특수 대사가 없는 기본 Intro의 경우:
+일관된 규칙 사용.
+
+권장:
+상대 Champion이 먼저 말하고
+내 Champion이 응수.
+
+즉 각 클라이언트에서는:
+
+Opponent line
+→ My line
+→ VS impact
+
+로 보이게 할 수 있다.
+
+하지만 두 클라이언트가 서로 다른 사건 순서를 보게 되어
+동기화 문제가 생기는 구조라면
+authoritative speaker order 또는 deterministic ordering을 사용.
+
+핵심:
+두 클라이언트에서 dialogue content mapping이 뒤바뀌면 안 된다.
+
+==================================================
+15. Intro 대사 표시 방식
+==================================================
+
+말풍선보다
+게임 UI에 맞는 자막/대사 패널 권장.
+
+예:
+
+PANDORA
+「아직도 그 장난감 군대를 끌고 다니는 거야?」
+
+대사는 해당 Champion portrait 가까이에 표시.
+
+첫 번째 Champion이 말할 때:
+- 해당 portrait 살짝 zoom/forward
+- 반대쪽은 약간 dim
+- 텍스트 등장
+
+두 번째 Champion이 말할 때:
+- 강조 반전
+- 두 번째 대사 등장
+
+음성은 없음.
+
+==================================================
+16. 대사 길이 제한
+==================================================
+
+관리자에서 너무 긴 대사 입력 방지.
+
+권장:
+최대 약 60~80자.
+
+현재 UI 폭/모바일 대응을 보고 실제 제한값 결정.
+
+목표:
+Desktop에서 1~2줄
+Mobile에서도 과도한 4~5줄이 되지 않게.
+
+DB/API/Client 모두 같은 validation.
+
+초과 시 저장 거부 + 명확한 validation 메시지.
+
+==================================================
+17. 빈 문자열/공백 처리
+==================================================
+
+대사:
+
+""
+"   "
+
+는 없음으로 처리.
+
+HTML/script injection 금지.
+
+텍스트는 safe rendering.
+
+관리자 입력에 HTML을 허용하지 않는다.
+
+==================================================
+18. 특수 상호대사 중복 검증
+==================================================
+
+같은 Champion pair에
+active relation이 여러 개 생기지 않게 한다.
+
+예:
+Pandora ↔ Jäger
+
+이미 존재하면:
+새 row 생성보다 기존 row 편집 유도.
+
+Unique pair canonicalization 필요.
+
+예:
+min(championAId, championBId)
+max(championAId, championBId)
+
+또는 equivalent pair key.
+
+==================================================
+19. Champion 삭제/비활성화 대응
+==================================================
+
+특수 relation이 참조하는 Champion이
+삭제/비활성 상태가 되면:
+
+- Admin에서 broken reference 표시
+- 앱 crash 금지
+- Intro는 fallback default/no-line으로 진행
+
+자동으로 다른 Champion 대사와 연결 금지.
+
+==================================================
+20. Intro Timeline
+==================================================
+
+권장 전체 길이:
+약 3~4초
+
+대사가 있는 경우:
+
+0.00
+화면 dim / intro scene 진입
+
+0.15
+내 Champion portrait 진입
+
+0.35
+상대 Champion portrait 진입
+
+0.65
+두 portrait 대치 위치 고정
+
+0.85
+닉네임 + Champion 이름 표시
+
+1.00
+첫 번째 Champion 강조
+첫 번째 텍스트 대사 표시
+
+1.70
+두 번째 Champion 강조
+두 번째 텍스트 대사 표시
+
+2.40
+두 Champion 동시 대치
+
+2.60
+중앙 VS 강하게 등장
+짧은 flash / impact / shake
+
+3.10
+Intro scene 빠르게 정리
+
+3.30~3.60
+Battle board active
+
+실제 duration은 읽기 속도/animation QA 후 조정.
+
+==================================================
+21. 대사가 하나만 있을 때
+==================================================
+
+A line exists
+B line missing
+
+→ A line만 표시
+→ 불필요한 빈 dialogue delay 만들지 않음
+→ VS로 진행
+
+둘 다 없음:
+
+portrait + nickname + Champion name
+→ VS
+→ Battle
+
+==================================================
+22. VS 연출
+==================================================
+
+중앙에는 VS만.
+
+권장:
+
+- scale 0.6 → 1.15 → 1.0
+- opacity impact
+- 짧은 white flash
+- subtle screen shake
+- diagonal speed lines
+- metallic/arena style
+
+과도한 particle 금지.
+
+"FIGHT!"
+"MATCH START"
+같은 추가 문구는 기본적으로 넣지 않는다.
+
+요청된 핵심은:
+Champion dialogue → VS → Battle.
+
+==================================================
+23. 닉네임과 Champion 이름 hierarchy
+==================================================
+
+Intro에서는 nickname이 더 중요.
+
+예:
+
+JokingLuigi
+CHAMPION PANDORA
+
+OpponentName
+CHAMPION JÄGER
+
+nickname을 Champion 이름보다 크게.
+
+Battle HUD에서도 nickname과 Champion 이름을 구분.
+
+==================================================
+24. Champion portrait
+==================================================
+
+실제 선택된 Champion의
+public portrait/image asset 사용.
+
+하드코딩 금지.
+
+missing portrait:
+기존 fallback portrait.
+
+intro 시작 전에 preload.
+
+이미지 때문에 Intro가 무한 대기하면 안 됨.
+
+==================================================
+25. 방향/미러링
+==================================================
+
+두 Champion이 서로 마주보게.
+
+asset이 한 방향을 보고 있다면
+CSS horizontal mirror 가능.
+
+하지만 portrait에 글자/로고가 포함되어 있으면
+무조건 mirror하지 말고 asset 특성 확인.
+
+==================================================
+26. Intro와 Gameplay 분리
+==================================================
+
+Intro는 presentation layer.
+
+다음 변경 금지:
+
+- starting hand
+- gold
+- HP
+- player order
+- card state
+- quest state
+- random seed
+- match result
+
+Intro 때문에 GameState가 변경되면 안 됨.
+
+==================================================
+27. Intro 동안 gameplay input
+==================================================
+
+Intro 동안:
+
+- card play
+- attack
+- Champion Ability
+- End Turn
+- target selection
+
+금지.
+
+단 GameState를 rollback/reset하지 말고
+UI input gate로 처리.
+
+==================================================
+28. Match Timer 확인
+==================================================
+
+현재 turn timer가 있다면
+Intro 중에 timer가 먼저 소모되면 안 된다.
+
+필요하면:
+
+matchPhase:
+INTRO
+PLAYING
+
+또는
+authoritative gameplayStartsAt
+
+사용.
+
+두 client가 같은 start timing을 가지게.
+
+한 client의 animationend가
+server gameplay 시작의 source-of-truth가 되면 안 됨.
+
+==================================================
+29. Skip
+==================================================
+
+대사는 짧지만
+반복 플레이 피로를 줄이기 위해 skip 가능하게.
+
+권장:
+첫 약 0.8~1.0초 후
+tap/click으로 visual skip 허용.
+
+skip 시:
+Intro animation 빠르게 종료.
+
+단 server gameplayStartsAt가 있다면
+그 시간을 우회해 먼저 행동할 수 있게 하면 안 됨.
+
+==================================================
+30. Reconnect
+==================================================
+
+이미 PLAYING 상태에서 reconnect:
+Intro 다시 전체 재생 금지.
+
+바로 Battle UI 복귀.
+
+INTRO phase 도중 reconnect라면
+authoritative intro/start timestamp를 보고
+현재 남은 상태로 복귀하거나
+safe하게 Battle로 진입.
+
+무한 Intro loop 금지.
+
+==================================================
+31. Mobile Portrait 대응
+==================================================
+
+모바일 세로에서도 Intro는 정상 보여야 한다.
+
+권장:
+
+TOP
+상대 Champion portrait
+상대 nickname
+상대 Champion 이름
+상대 dialogue
+
+CENTER
+VS
+
+BOTTOM
+내 dialogue
+내 nickname
+내 Champion 이름
+내 Champion portrait
+
+또는 diagonal split.
+
+이번 작업에서 Mobile Battle 전체를 새로 만들지는 말고
+Intro component만 portrait-safe하게.
+
+==================================================
+32. Reduced Motion
+==================================================
+
+prefers-reduced-motion:
+
+- 큰 slide 최소화
+- heavy shake 제거
+- flash 약화
+
+하지만:
+- 두 Champion
+- nickname
+- Champion name
+- dialogue
+- VS
+
+정보는 모두 유지.
+
+==================================================
+33. Admin Preview
+==================================================
+
+가능하면 Champion Admin에서:
+
+[Intro 미리보기]
+
+기능 추가.
+
+현재 Champion과
+선택한 상대 Champion 조합을 기준으로:
+
+- 어떤 대사가 선택되는지
+- 누가 먼저 말하는지
+- 기본인지 special인지
+
+확인 가능.
+
+실제 match state는 만들지 않아도 됨.
+
+==================================================
+34. Admin 데이터 모델 migration
+==================================================
+
+기존 Champion data와 호환 유지.
+
+defaultIntroLine nullable.
+
+special interactions는 별도 relation/table/collection 권장.
+
+migration 시:
+기존 Champions는 defaultIntroLine=null.
+
+Intro는 대사 없이도 정상.
+
+Production migration이 필요한 구조라면
+안전한 schema migration만 수행하고
+실제 Champion 콘텐츠를 임의로 생성/변경하지 말 것.
+
+Production 데이터 값 직접 수정 금지.
+
+==================================================
+35. API
+==================================================
+
+Admin API:
+
+- get Champion intro settings
+- update default intro line
+- list special interactions
+- create interaction
+- update interaction
+- delete interaction
+
+권한:
+Admin only.
+
+Match/public API:
+resolved intro presentation data만 필요한 만큼 제공.
+
+상대에게 Admin internal metadata 전체 노출 금지.
+
+==================================================
+36. 서버에서 resolve할지 클라이언트에서 resolve할지
+==================================================
+
+권장:
+서버가 match 참가 Champion pair를 알고 있으므로
+Intro에 사용할 dialogue pair를 authoritative하게 resolve.
+
+예:
+
+resolvedIntro = {
+  left/right or playerA/playerB,
+  lineA,
+  lineB,
+  firstSpeaker
+}
+
+client는 presentation만.
+
+이렇게 하면:
+- 두 client 결과 불일치 방지
+- unpublished admin relation 노출 최소화
+- client에서 전체 interaction catalog를 받을 필요 없음
+
+현재 architecture에 맞게 구현하되
+두 클라이언트가 서로 다른 special dialogue를 선택하면 FAIL.
+
+==================================================
+37. AI Match
+==================================================
+
+가능하면 같은 Intro component 재사용.
+
+AI opponent에도:
+- Champion portrait
+- Champion name
+- default/special dialogue
+
+사용 가능.
+
+AI nickname은 기존 AI deck/display name 사용.
+
+하지만 이번 최우선은 Online.
+
+==================================================
+38. 테스트 — Admin
+==================================================
+
+ADMIN1
+Champion default intro line 저장
+→ reload 후 유지
+
+ADMIN2
+특수 relation 생성
+Pandora ↔ Jäger
+→ 두 Champion Admin에서 동일 relation 확인
+
+ADMIN3
+같은 pair 중복 생성
+→ 차단
+
+ADMIN4
+special disable
+→ default line fallback
+
+ADMIN5
+default line empty
+→ 정상
+
+ADMIN6
+too long text
+→ validation reject
+
+ADMIN7
+HTML/script input
+→ safe text rendering
+
+==================================================
+39. 테스트 — Dialogue Resolver
+==================================================
+
+DIALOGUE1
+special exists/enabled
+→ special used
+
+DIALOGUE2
+special disabled
+→ defaults used
+
+DIALOGUE3
+no special
+→ defaults
+
+DIALOGUE4
+one default missing
+→ one line only
+
+DIALOGUE5
+both missing
+→ no dialogue, Intro continues
+
+DIALOGUE6
+champion order reversed
+→ correct lines still map to correct Champion
+
+DIALOGUE7
+firstSpeaker mapping
+→ correct order
+
+==================================================
+40. 테스트 — Online Identity
+==================================================
+
+NICK1
+A sees B nickname
+
+NICK2
+B sees A nickname
+
+NICK3
+Battle HUD still displays nickname
+
+NICK4
+Reconnect preserves nickname
+
+NICK5
+email/userId/private data not leaked
+
+==================================================
+41. 실제 Two-Session Browser E2E
+==================================================
+
+가능하면 두 테스트 계정:
+
+Player A:
+nickname Alpha
+Champion Pandora
+
+Player B:
+nickname Bravo
+Champion Jäger
+
+special relation:
+Pandora line P
+Jäger line J
+
+A 화면:
+Alpha / Pandora
+Bravo / Jäger
+P와 J가 올바른 Champion 쪽에 표시
+Battle HUD opponent=Bravo
+
+B 화면:
+Bravo / Jäger
+Alpha / Pandora
+같은 canonical dialogue pair
+Champion mapping 정확
+Battle HUD opponent=Alpha
+
+두 화면에서 speaker identity가 뒤집혀 잘못 붙으면 FAIL.
+
+==================================================
+42. Intro Browser E2E
+==================================================
+
+확인:
+
+- portrait 2개 정확
+- nickname 2개 정확
+- Champion name 정확
+- first line
+- second line
+- VS
+- KO 없음
+- 음성 없음
+- board transition
+- input lock
+- skip
+- reconnect
+- mobile portrait
+
+==================================================
+43. Audio 회귀
+==================================================
+
+음성 대사 기능은 없지만
+기존 BGM/SFX 시스템은 깨뜨리지 않는다.
+
+Non-battle BGM:
+match 진입 시 중지.
+
+Battle BGM:
+기존 정책 유지.
+
+Intro 때문에 음성용 Audio element/API를 새로 만들지 말 것.
+
+==================================================
+44. 하지 말 것
+==================================================
+
+절대 금지:
+
+- 음성 업로드
+- TTS
+- voice field
+- KO logo/text
+- 특정 Champion 이름 runtime hardcode
+- nickname "상대방" 고정
+- raw UUID 표시
+- email 표시
+- special pair 중복 row 난립
+- 양쪽 Champion definition에 relation 중복 저장
+- Intro 때문에 gameplay state 변경
+- reconnect 때 Intro 무한 재생
+- hidden info leak
+- Production 카드/Champion 데이터 임의 수정
+
+==================================================
+45. 자동 검증
+==================================================
+
+반드시:
+
+pnpm run typecheck
+pnpm --filter @workspace/ko-game run build
+git diff --check
+
+관련:
+
+Admin Champion intro tests
+special interaction CRUD tests
+pair uniqueness tests
+dialogue resolver tests
+public player metadata tests
+sanitizer tests
+WebSocket schema tests
+reconnect tests
+two-player mapping tests
+MatchIntro component tests
+input lock tests
+skip tests
+reduced motion tests
+responsive tests
+
+==================================================
+46. Git
+==================================================
+
+실제 수정 파일만 stage.
+
+제외:
+prompt txt
+Pasted txt
+.env
+secrets
+logs
+screenshots
+temp
+Replit metadata
+unrelated files
+
+commit.
+
+push 요청 없으면 push 금지.
+force push 금지.
+
+==================================================
+47. 최종 보고 형식
+==================================================
+
+ONLINE NICKNAME
+
+Root cause:
+...
+
+Opponent nickname in server public metadata:
+PASS / FAIL
+
+Sanitizer:
+PASS / FAIL
+
+Initial payload:
+PASS / FAIL
+
+Battle HUD:
+PASS / FAIL
+
+Reconnect:
+PASS / FAIL
+
+
+ADMIN INTRO SETTINGS
+
+Default intro line:
+PASS / FAIL
+
+Special interaction CRUD:
+PASS / FAIL
+
+Pair uniqueness:
+PASS / FAIL
+
+Visible from both Champion Admin pages:
+PASS / FAIL
+
+First speaker setting:
+PASS / FAIL
+
+Text length validation:
+PASS / FAIL
+
+Audio fields added:
+NONE / FAIL
+
+
+DIALOGUE RESOLUTION
+
+Special > Default priority:
+PASS / FAIL
+
+Pair reverse-order mapping:
+PASS / FAIL
+
+One missing line:
+PASS / FAIL
+
+Both missing:
+PASS / FAIL
+
+Server-authoritative resolution:
+PASS / FAIL
+
+
+MATCH INTRO
+
+My portrait:
+PASS / FAIL
+
+Opponent portrait:
+PASS / FAIL
+
+My nickname:
+PASS / FAIL
+
+Opponent nickname:
+PASS / FAIL
+
+Champion names:
+PASS / FAIL
+
+First dialogue:
+PASS / FAIL
+
+Second dialogue:
+PASS / FAIL
+
+VS:
+PASS / FAIL
+
+KO displayed:
+NO / FAIL
+
+Voice/audio dialogue:
+NONE / FAIL
+
+Input lock:
+PASS / FAIL
+
+Skip:
+PASS / FAIL
+
+Reconnect:
+PASS / FAIL
+
+Reduced motion:
+PASS / FAIL
+
+Mobile portrait:
+PASS / FAIL
+
+Desktop:
+PASS / FAIL
+
+
+TWO-SESSION ONLINE E2E:
+PASS / FAIL / UNVERIFIED
+
+IMPLEMENTATION:
+PASS / FAIL
+
+AUTOMATED VERIFICATION:
+PASS / FAIL
+
+TYPECHECK:
+PASS / FAIL
+
+KO BUILD:
+PASS / FAIL
+
+git diff --check:
+PASS / FAIL
+
+PRODUCTION DATA MUTATION:
+NONE / FAIL
+
+CHANGED FILES:
+...
+
+COMMIT:
+...
+
+PUSH:
+NOT REQUESTED
+
+==================================================
+48. 완료 조건
+==================================================
+
+1. 온라인 상대 닉네임이 Intro와 Battle HUD 양쪽에서 정상 표시.
+2. reconnect 후에도 유지.
+3. 양 Champion 초상화가 대치하는 정식 Match Intro 구현.
+4. 중앙에는 VS만 표시.
+5. KO text/logo는 Intro에 없음.
+6. 각 Champion에 기본 텍스트 Intro 대사를 Admin에서 설정 가능.
+7. 특정 Champion pair의 특수 상호대사 등록 가능.
+8. special interaction은 pair relation 하나로 관리.
+9. special이 있으면 default보다 우선.
+10. firstSpeaker 설정 지원.
+11. 대사는 텍스트만. 음성/TTS/voice asset 전혀 없음.
+12. 대사가 없어도 match 정상 시작.
+13. Intro 종료 후 자연스럽게 Battle로 전환.
+14. Intro 동안 gameplay input 차단.
+15. Desktop/Mobile responsive.
+16. private/hidden info leak 없음.
+17. Production data mutation 없음.
+18. tests/build/typecheck/diff 결과 보고.
+
+핵심:
+이 기능은 단순한 VS splash가 아니다.
+온라인 매치 시작 순간
+"어떤 플레이어가 어떤 Champion으로 싸우는지"
+그리고 "두 Champion 사이에 어떤 관계성이 있는지"
+텍스트 한마디씩으로 보여주는
+KO CARD GAME의 정식 Champion Match Intro 시스템을 구현하라.
