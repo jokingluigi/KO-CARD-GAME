@@ -1,0 +1,833 @@
+KO CARD GAME — 4 BUG BUNDLE
+DECK DELETE + TARGET CANCEL + PANDORA QUEST DOUBLE PROGRESS + CHAMPION ADMIN SAVE
+
+현재 사용자 확인 버그/요청:
+
+1. 덱 삭제가 안 됨
+2. 타겟을 지정하는 상황에서 취소할 수 있도록 취소 버튼 필요
+3. 챔피언 판도라의 Quest 진행도가 한 번에 2씩 올라감
+4. 관리자 페이지에서 Champion 설정 저장이 간헐적으로 실패함
+
+목표:
+네 문제를 각각 임시 우회하지 말고
+UI → API → Game Action/Event → State/Persistence 흐름을 실제로 추적해서
+재현 가능한 원인을 고친다.
+
+중요:
+Browser가 unavailable이어도 구현/자동 테스트를 중단하지 말 것.
+IMPLEMENTATION / AUTOMATED VERIFICATION / BROWSER E2E를 분리해 보고한다.
+
+==================================================
+0. 공통 금지사항
+==================================================
+
+- Production DB 직접 수정 금지
+- 실제 사용자 덱 삭제 테스트 금지
+- 실제 사용자 계정/인벤토리 수정 금지
+- 카드/Champion 원본 데이터 임의 변경 금지
+- 관리자 저장 오류를 validation 완화로 숨기지 말 것
+- Quest 진행도를 카드명/Champion ID hardcode로 보정하지 말 것
+- `progress += 0.5` 같은 결과 맞추기식 보정 금지
+- target cancel 시 partial effect / Gold 소비 / stale pending state 남기기 금지
+- invalid action에서 reload/reset GameState 금지
+- force push 금지
+- 별도 요청 없으면 push 금지
+
+테스트는 fixture / local / test account / DRAFT data 사용.
+
+==================================================
+1. BUG A — 덱 삭제가 안 됨
+==================================================
+
+먼저 실제 삭제 흐름을 추적:
+
+Deck UI delete button
+→ confirmation
+→ client handler
+→ API request
+→ auth/session
+→ deck ownership check
+→ delete service/repository
+→ DB result
+→ client cache/state refresh
+→ selected/active deck state
+
+추측 금지.
+
+반드시 확인:
+
+- 버튼 클릭 자체가 안 되는가?
+- confirm 후 request가 안 나가는가?
+- 잘못된 method/path인가?
+- 401/403/404/409/500인가?
+- API는 성공했는데 UI cache가 남는가?
+- activeDeckId/selectedDeckId reference 때문에 삭제가 rollback되는가?
+- 마지막 덱/기본 덱/AI Deck restriction이 있는가?
+- FK constraint가 있는가?
+- deck cards child rows 때문에 delete 실패하는가?
+- stale React query/cache 문제인가?
+- double-click race인가?
+
+==================================================
+2. 덱 삭제 공식 동작
+==================================================
+
+사용자가 소유한 삭제 가능한 덱에서 삭제 확인:
+
+→ 해당 덱 삭제
+→ 덱 목록에서 즉시 제거
+→ 새로고침 후에도 삭제 상태 유지
+
+삭제 대상이 현재 selected/active deck이면:
+
+- dangling deck id를 남기지 말 것
+- 다른 사용 가능한 덱이 있으면 기존 프로젝트의 canonical fallback 정책 사용
+- fallback 정책이 없다면 selected/active를 안전하게 null/none 상태로 만들고
+  UI가 깨지지 않게 한다
+- 임의로 다른 덱을 자동 편집하지 말 것
+
+삭제 불가 정책이 실제로 존재하는 덱이라면:
+버튼 무반응이 아니라 명확한 사용자 메시지를 보여준다.
+
+예:
+"현재 사용 중인 덱은 삭제할 수 없습니다."
+같은 restriction은 실제 product rule이 존재할 때만 유지.
+
+==================================================
+3. 덱 삭제 원자성
+==================================================
+
+deck + deck card relation 삭제가 필요한 경우
+기존 transaction/repository pattern 사용.
+
+부분 삭제 금지.
+
+API 성공 후:
+client state/cache invalidate/refetch.
+
+API 실패:
+삭제된 것처럼 UI에서 사라지면 안 됨.
+
+중복 DELETE:
+idempotent 또는 명확한 404 handling.
+client crash 금지.
+
+==================================================
+4. 덱 삭제 테스트
+==================================================
+
+D1 일반 custom deck 삭제
+D2 selected deck 삭제
+D3 active deck 삭제
+D4 child deck-card rows 존재
+D5 없는 deck delete
+D6 다른 사용자 deck delete → reject
+D7 double click
+D8 API failure → UI rollback/보존
+D9 reload 후 삭제 유지
+D10 mobile/narrow UI 버튼 접근
+
+실제 production user deck 삭제 금지.
+
+==================================================
+5. FEATURE B — 타겟 선택 취소 버튼
+==================================================
+
+모든 "사용자가 직접 대상을 선택해야 하는" UI를 조사.
+
+최소:
+
+- PLAYER_CHOICE card effect
+- Champion Ability target selection
+- Active ability
+- Technique target selection
+- multi-step SCRIPT_V1 SELECT PLAYER_CHOICE
+- target continuation/resume
+- 공격 대상 선택 UI가 동일 pending-target system을 사용한다면 포함
+
+공통 UX:
+타겟 선택 모드에 들어가면
+명확한 "취소" 버튼을 항상 볼 수 있어야 한다.
+
+모바일에서도 접근 가능해야 한다.
+
+==================================================
+6. 사용자 시작 action의 Cancel semantics
+==================================================
+
+사용자가 action을 시작했지만
+타겟 확정 전인 경우:
+
+예:
+Champion Ability 클릭
+→ target select mode
+→ 취소
+
+결과:
+
+- action 미사용
+- Gold/비용 미소모
+- ability use count 미증가
+- Quest progress 미증가
+- cooldown/turn-use flag 미소모
+- card zone 이동 없음
+- effect 미발동
+- pending choice 삭제
+- target highlight 제거
+- 원래 플레이 가능한 상태로 복귀
+
+즉 target confirm 전에는 canonical action commit이 일어나지 않는 구조가 이상적.
+
+현재 구조가 먼저 commit한 뒤 target을 고르는 방식이라면
+기존 transaction/snapshot/continuation 구조를 조사해서
+안전하게 pre-commit 방식으로 정리한다.
+
+ad-hoc refund 여러 군데 추가 금지.
+
+==================================================
+7. 이미 commit된 trigger의 선택 취소
+==================================================
+
+ON_ENTER 등 이미 앞 action이 commit된 뒤
+후속 PLAYER_CHOICE가 뜨는 구조도 조사.
+
+예:
+카드는 이미 FIELD에 정상 진입
+→ ON_ENTER PLAYER_CHOICE가 뜸
+
+사용자가 취소할 때:
+
+- 이미 정상 commit된 카드 play 자체를 임의 rollback하지 말 것
+  (현재 engine이 atomic rollback을 공식 지원하는 경우 제외)
+- pending target selection만 안전하게 종료
+- 해당 optional/abortable choice effect는 no-op 처리
+- stale continuation 남기지 말 것
+- input lock 해제
+- 다음 legal action 가능
+
+강제 선택이 반드시 필요한 effect라면
+현재 product semantics를 확인.
+사용자 요청은 "타겟 지정 상황에서 취소 가능"이므로
+가능하면 choice flow를 abortable로 만들되
+GameState를 불완전하게 두면 안 됨.
+
+==================================================
+8. 취소 버튼 UI
+==================================================
+
+요구:
+
+- Target Select 상태에서만 노출
+- 명확한 텍스트: "취소"
+- target confirm button과 혼동되지 않음
+- ESC key 지원 가능하면 추가
+- backdrop/right-click 같은 숨겨진 동작만으로 끝내지 말 것
+- pending target가 끝나면 즉시 사라짐
+
+버튼 반복 클릭:
+safe / idempotent.
+
+==================================================
+9. Target Cancel 테스트
+==================================================
+
+T1 Champion Ability → cancel
+T2 Card PLAYER_CHOICE → cancel
+T3 Technique → cancel
+T4 Active → cancel
+T5 SCRIPT_V1 SELECT → cancel
+T6 cancel 후 다른 legal action 정상
+T7 cancel 후 같은 ability 다시 사용 가능
+T8 Gold/usage/Quest 변화 0
+T9 stale highlight/pending frame 없음
+T10 reconnect 직전/직후 pending selection 처리
+T11 zero-valid-target auto no-op과 cancel UI 충돌 없음
+T12 mobile UI
+
+==================================================
+10. BUG C — 챔피언 판도라 Quest progress가 2씩 증가
+==================================================
+
+현재 공식 Quest 의미:
+
+"자신의 고유 능력으로 선수 카드를 5번 리타이어 시킵니다."
+
+현재 저장 condition에는 개념적으로:
+
+event = WRESTLER_RETIRED
+cardType = WRESTLER
+required = 5
+sourceActionType = USE_CHAMPION_ABILITY
+
+가 존재한다.
+
+따라서:
+
+판도라 Champion Ability 하나의 사용으로
+선수 하나를 실제 RETIRE시키면
+Quest progress는 정확히 +1.
+
++2 금지.
+
+==================================================
+11. Pandora double progress — root cause trace
+==================================================
+
+반드시 실제 이벤트 trace를 남긴다:
+
+USE_CHAMPION_ABILITY action id
+→ DAMAGE effect id
+→ lethal HP result
+→ BEFORE_RETIRE
+→ WRESTLER_RETIRED event
+→ Quest matcher
+→ progress mutation
+
+한 qualifying retirement마다 아래 식별값 확인:
+
+- actionId
+- effectExecutionId
+- eventId
+- sourceActionType
+- sourceChampionId
+- targetInstanceId
+- questProgressBefore
+- questProgressAfter
+
+중복 증가 원인 후보를 모두 검사:
+
+- 같은 WRESTLER_RETIRED event가 2번 emit
+- RETIRE + CARD_RETIRED 둘 다 Quest가 듣고 있음
+- local + server가 각각 progress 적용
+- executeAction path + event listener path 두 군데에서 progress 적용
+- optimistic UI + authoritative state 중복
+- Quest matcher가 같은 event를 두 번 consume
+- reconnect/replay가 동일 event를 재적용
+- Champion Ability damage handler가 직접 progress 올리고 generic Quest도 올림
+- duplicate listener registration
+- React StrictMode/UI issue가 canonical state까지 중복 action dispatch
+- online websocket duplicate event
+- AI/local match와 online path 불일치
+
+카드/Champion 이름으로:
+`if Pandora then /2`
+같은 보정 절대 금지.
+
+==================================================
+12. Quest progress idempotency
+==================================================
+
+Quest progression은 canonical event 기준 exactly once.
+
+가능하면 unique event identity/eventId를 기준으로
+같은 Quest가 동일 event를 두 번 consume하지 못하게 한다.
+
+단순 UI dedupe가 아니라
+authoritative GameState progress mutation 자체가 exactly once여야 한다.
+
+==================================================
+13. Pandora Quest 정확한 카운트
+==================================================
+
+P1 Champion Ability로 1명 RETIRE
+→ +1
+
+P2 Ability damage가 nonlethal
+→ +0
+
+P3 PREVENT_RETIRE로 생존
+→ +0
+
+P4 다른 카드 효과로 RETIRE
+→ +0
+
+P5 combat RETIRE
+→ +0
+
+P6 Champion Token이 별도 효과로 RETIRE
+→ sourceActionType가 조건과 다르면 +0
+
+P7 강화 Champion Ability로 qualifying RETIRE
+→ 현재 Quest가 완료 전 강화될 수 없는 구조라면 fixture에서 조건만 검증;
+  source action semantics는 generic하게 유지
+
+P8 한 action이 여러 target을 실제 RETIRE시키는 generic ability라면
+→ retired WRESTLER event 개수만큼 각각 +1
+→ 동일 target/event 중복은 금지
+
+P9 reconnect/replay
+→ duplicate progress 0
+
+P10 progress 4/5 상태에서 1회 qualifying retire
+→ exactly 5/5, Quest complete exactly once
+
+==================================================
+14. Quest complete duplicate 방지
+==================================================
+
+5/5 도달 시:
+
+- Quest complete event 1회
+- reward 1회
+- Champion upgrade 1회
+- Champion Token deployment 1회
+- quest theme/music activation 1회
+- reconnect/re-render로 reward 재실행 금지
+
+Quest progress 5→6→7 같은 중복 mutation 금지
+(기존 clamp/completion 정책을 따름).
+
+==================================================
+15. BUG D — Admin Champion 저장이 간헐적으로 실패
+==================================================
+
+"가끔 안 됨"을 재현 없이 validation을 완화하지 마.
+
+Champion Admin create/update 실제 흐름을 trace:
+
+form state
+→ submit handler
+→ normalized payload
+→ request
+→ auth/session
+→ API validation
+→ service
+→ DB
+→ response
+→ form dirty/saved state
+
+실패할 때 반드시 기록:
+
+- create/update
+- endpoint/method
+- HTTP status
+- safe response body
+- exact validation path
+- auth state
+- payload field presence
+- request id
+- whether duplicate submit occurred
+
+==================================================
+16. Champion Save에서 특히 검사할 필드
+==================================================
+
+현재 Champion form/schema에 존재하는 모든 field를 실제 코드에서 확인.
+
+특히:
+
+- name
+- maxHealth
+- base Champion Ability
+- Quest Condition
+- Quest Reward
+- upgraded Champion Ability
+- linked Champion Token relation
+- Champion Prism 관련 필드가 실제 schema에 있다면 포함
+- structured effects/scripts
+- optional description/media fields
+- status/version
+- numeric/string conversion
+- null vs undefined vs ""
+- arrays empty vs omitted
+- hidden stale form fields
+
+필드를 여기 적힌 이름으로 새로 만들지 말고
+실제 현재 schema를 source of truth로 사용.
+
+==================================================
+17. 간헐 실패의 race 검사
+==================================================
+
+특히:
+
+- AI effect Generate 응답 직후 Save
+- form auto-apply 직후 Save
+- React state update가 아직 반영되기 전 Save
+- 빠른 double click
+- stale request generation
+- create 후 즉시 update
+- Token relation dropdown 변경 직후 Save
+- Quest editor 변경 직후 Save
+- async validation 중 Save
+- auth refresh 중 Save
+- 5s auth/session timeout
+- API cold start/503
+- duplicate request
+- stale version optimistic locking conflict
+
+을 재현.
+
+==================================================
+18. Save UX
+==================================================
+
+Save 시작:
+
+- 버튼 loading/disabled
+- 동일 submit 중복 방지
+
+성공:
+
+- 실제 server persisted response 기준 saved 상태
+- dirty false
+- success feedback
+
+실패:
+
+- form 내용 보존
+- dirty 유지
+- generic "입력값 확인"만 띄우지 말고 가능한 범위에서 field-level/safe error
+- auth/network/validation/conflict를 구분
+- 새로고침 강요 금지
+- retry 가능
+
+==================================================
+19. Auth와 validation 분리
+==================================================
+
+과거 `"인증서버에 연결 할 수 없습니다"` 경로가 있었으므로
+Champion Save 실패가 실제 validation인지 auth/network인지 분리한다.
+
+예:
+
+401:
+session invalid
+
+403:
+permission
+
+409:
+version/conflict
+
+422/400:
+validation
+
+502/503:
+API/server
+
+timeout/fetch:
+network/auth server reachability
+
+모두 같은 `"챔피언 입력값을 확인해주세요"`로 뭉개면 FAIL.
+
+==================================================
+20. Champion Save 테스트
+==================================================
+
+C1 existing Champion no-change save
+C2 one basic field edit
+C3 maxHealth edit
+C4 base ability structured effect
+C5 Quest Condition
+C6 Quest Reward
+C7 upgraded ability
+C8 Champion Token relation
+C9 optional empty fields
+C10 Generate auto-apply 직후 save
+C11 rapid field edit → immediate save
+C12 double-click Save
+C13 auth 401
+C14 server 503
+C15 validation failure
+C16 stale version conflict if applicable
+C17 save → reload semantic equality
+C18 repeated 20 sequential valid saves in fixture, intermittent failure 0
+
+Production Champion 수정 금지.
+DRAFT/test fixture 사용.
+
+==================================================
+21. 공통 Browser E2E
+==================================================
+
+가능하면 실제 Development/Test UI에서:
+
+A. Deck delete:
+create fixture deck
+→ delete
+→ reload
+→ gone
+
+B. Target cancel:
+Champion Ability
+→ target mode
+→ 취소
+→ no usage/cost/progress
+→ 다시 ability 사용 가능
+
+C. Pandora:
+progress 0
+→ qualifying retire 1회
+→ progress exactly 1
+
+D. Champion Admin:
+valid edit
+→ Save
+→ reload
+→ persisted
+
+관리자 인증이 필요하고 자동으로 못 넘으면
+BROWSER E2E만 UNVERIFIED로 남기고
+implementation/tests는 계속 수행.
+
+==================================================
+22. Online/AI parity
+==================================================
+
+Target Cancel과 Quest progress는
+가능한 경우:
+
+- AI Match/local
+- Online PvP authoritative server
+
+둘 다 같은 core action/event semantics 사용.
+
+UI local state만 고쳐 Online에서 다르게 동작하면 FAIL.
+
+==================================================
+23. 회귀 금지
+==================================================
+
+이번 수정으로 다음을 깨지 마:
+
+- PLAYER_CHOICE zero target no-op
+- invalid target GameState 보존
+- RETIRE / DESTROY 구분
+- Champion Token protection/deployment
+- Quest reward exactly once
+- SCRIPT_V1 continuation
+- AI effect generator
+- deck validation 25 cards + Champion separately
+- reconnect state restoration
+- music priority/Quest theme
+- hidden information sanitizer
+
+==================================================
+24. 자동 검증
+==================================================
+
+반드시:
+
+pnpm run typecheck
+pnpm --filter @workspace/ko-game run build
+git diff --check
+
+수정 범위에 따라:
+
+API typecheck/build
+deck API tests
+PLAYER_CHOICE/continuation tests
+Champion quest tests
+Champion Admin API/form tests
+online authoritative tests
+runtime regression suite
+
+전체 relevant suite 실행.
+
+==================================================
+25. Git
+==================================================
+
+실제 수정 파일만 stage.
+
+제외:
+
+Pasted-*.txt
+prompt txt
+.env
+secrets
+logs
+screenshots
+temp
+Replit metadata
+unrelated changes
+
+commit.
+
+별도 요청 없으면 push하지 마.
+force push 금지.
+
+==================================================
+26. 최종 보고 형식
+==================================================
+
+DECK DELETE
+
+Root cause:
+...
+
+UI request:
+PASS / FAIL
+
+API delete:
+PASS / FAIL
+
+Ownership:
+PASS / FAIL
+
+Selected/active deck fallback:
+PASS / FAIL
+
+Reload persistence:
+PASS / FAIL
+
+Tests:
+X/Y
+
+
+TARGET CANCEL
+
+PLAYER_CHOICE cancel:
+PASS / FAIL
+
+Champion Ability:
+PASS / FAIL
+
+Technique:
+PASS / FAIL
+
+Active:
+PASS / FAIL
+
+SCRIPT_V1:
+PASS / FAIL
+
+Cost/use count unchanged:
+PASS / FAIL
+
+Quest unchanged:
+PASS / FAIL
+
+Pending state cleared:
+PASS / FAIL
+
+Cancel then retry:
+PASS / FAIL
+
+
+PANDORA QUEST
+
+Root cause:
+...
+
+Qualifying RETIRE event count:
+...
+
+Quest mutations per event:
+...
+
+1 qualifying retire:
++1 / FAIL
+
+Nonlethal:
++0 / FAIL
+
+Prevented retire:
++0 / FAIL
+
+Non-Champion source:
++0 / FAIL
+
+Reconnect duplicate:
+0 / FAIL
+
+Completion reward:
+ONCE / FAIL
+
+
+CHAMPION ADMIN SAVE
+
+Root cause:
+...
+
+Create:
+PASS / FAIL
+
+Update:
+PASS / FAIL
+
+Quest slots:
+PASS / FAIL
+
+Token relation:
+PASS / FAIL
+
+Immediate save after edit:
+PASS / FAIL
+
+Generate → Save:
+PASS / FAIL
+
+Double submit prevention:
+PASS / FAIL
+
+Auth/network/validation errors separated:
+PASS / FAIL
+
+20 sequential fixture saves:
+X/20
+
+Save → Reload:
+PASS / FAIL
+
+
+IMPLEMENTATION:
+PASS / FAIL
+
+AUTOMATED VERIFICATION:
+PASS / FAIL
+
+BROWSER E2E:
+PASS / FAIL / UNVERIFIED
+
+TYPECHECK:
+PASS / FAIL
+
+KO BUILD:
+PASS / FAIL
+
+API TYPECHECK:
+PASS / FAIL / NOT_MODIFIED
+
+API BUILD:
+PASS / FAIL / NOT_MODIFIED
+
+FULL RELEVANT SUITE:
+PASS / FAIL
+
+git diff --check:
+PASS / FAIL
+
+PRODUCTION DATA MUTATION:
+NONE / FAIL
+
+CHANGED FILES:
+...
+
+COMMIT:
+...
+
+PUSH:
+NOT REQUESTED
+
+==================================================
+27. 완료 조건
+==================================================
+
+다음이 모두 충족되어야 완료:
+
+1. 삭제 가능한 덱이 실제 삭제되고 reload 후에도 사라짐.
+2. 삭제 후 selected/active deck dangling reference 없음.
+3. 모든 수동 target selection에서 취소 UI가 제공됨.
+4. 취소 시 미확정 action의 Gold/use count/Quest/state가 소비되지 않음.
+5. stale PLAYER_CHOICE/continuation이 남지 않음.
+6. 판도라 Quest는 qualifying WRESTLER_RETIRED 하나당 정확히 +1.
+7. 중복 event/listener/replay로 +2가 되지 않음.
+8. Quest completion/reward도 exactly once.
+9. Champion Admin valid save가 간헐적으로 실패하지 않음.
+10. Save 실패 원인이 auth/network/validation/conflict로 구분됨.
+11. form state는 실패 시 보존됨.
+12. Production 데이터 직접 수정 없음.
+
+네 문제를 모두 구현/검증한 뒤 위 형식으로 보고하고 멈춰라.
