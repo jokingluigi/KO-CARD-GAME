@@ -254,87 +254,111 @@ test('흑구슬마스터 SUMMON and REVIVE do not auto-trigger its PLAY_FROM_HAN
   }
 });
 
-test('조킹루이지 JL1-JL6 targets only occupied same-side adjacent cards and never itself', () => {
+test('조킹루이지 summons into adjacent empty slots and taunts adjacent allies only', () => {
   const joker = definition('조킹루이지');
-  assert.equal(joker.keywords.includes('TAUNT'), false);
   const effects = Array.isArray(joker.effectConfig.effects) ? joker.effectConfig.effects : [];
-  assert.equal(effects.length, 1);
+  assert.equal(effects.length, 2);
   assert.equal(
     (effects[0] as { action?: string; target?: { selection?: string } } | undefined)?.action,
-    'ADD_KEYWORD',
+    'SUMMON',
   );
   assert.equal(
     (effects[0] as { action?: string; target?: { selection?: string } } | undefined)?.target?.selection,
+    'ADJACENT_EMPTY_SLOTS',
+  );
+  assert.equal(
+    (effects[1] as { action?: string; target?: { selection?: string } } | undefined)?.action,
+    'ADD_KEYWORD',
+  );
+  assert.equal(
+    (effects[1] as { action?: string; target?: { selection?: string } } | undefined)?.target?.selection,
     'ADJACENT',
   );
 
+  const neutralDefinition: CardDefinition = {
+    ...joker,
+    id: 'qa-neutral-adjacent-wrestler',
+    name: 'QA neutral adjacent wrestler',
+    keywords: [],
+    abilities: [],
+    effectId: null,
+    effectConfig: {},
+  };
   const makeCard = (instanceId: string, boardSlot: 0 | 1 | 2 | 3): CardInstance => ({
-    ...card(joker, instanceId),
+    ...card(neutralDefinition, instanceId),
     boardSlot,
   });
   const scenarios: Array<{
     name: string;
     sourceSlot: 0 | 1 | 2 | 3;
     board: [CardInstance | null, CardInstance | null, CardInstance | null, CardInstance | null];
-    expectedTauntIds: string[];
   }> = [
     {
       name: 'JL1 center',
       sourceSlot: 1,
       board: [makeCard('jl1-left', 0), null, makeCard('jl1-right', 2), null],
-      expectedTauntIds: ['jl1-left', 'jl1-right'],
     },
     {
       name: 'JL2 left edge with two occupied cards',
       sourceSlot: 0,
       board: [null, makeCard('jl2-adjacent', 1), makeCard('jl2-distant', 2), null],
-      expectedTauntIds: ['jl2-adjacent'],
     },
     {
       name: 'JL3 right edge with two occupied cards',
       sourceSlot: 2,
       board: [makeCard('jl3-distant', 0), makeCard('jl3-adjacent', 1), null, null],
-      expectedTauntIds: ['jl3-adjacent'],
     },
     {
       name: 'JL4 distant card across an empty slot',
       sourceSlot: 2,
       board: [makeCard('jl4-distant', 0), null, null, null],
-      expectedTauntIds: [],
     },
     {
       name: 'JL5 distant card across an empty slot',
       sourceSlot: 0,
       board: [null, null, makeCard('jl5-distant', 2), null],
-      expectedTauntIds: [],
     },
     {
       name: 'JL6 both adjacent slots empty',
       sourceSlot: 1,
       board: [null, null, null, null],
-      expectedTauntIds: [],
     },
   ];
 
   for (const scenario of scenarios) {
     const state = stateWithPool();
+    state.cardPool = [neutralDefinition];
     state.players[0].board = scenario.board;
+    const adjacentSlots = [scenario.sourceSlot - 1, scenario.sourceSlot + 1]
+      .filter((slot): slot is 0 | 1 | 2 | 3 => slot >= 0 && slot < 4);
+    const expectedSummonSlots = adjacentSlots.filter((slot) => scenario.board[slot] === null);
     const opponent = makeCard(`${scenario.name}-opponent`, 0);
     state.players[1].board = [opponent, null, null, null];
+    const sourceCard = card(joker, `${scenario.name}-source`);
+    const sourceKeywords = [...sourceCard.keywords];
     const result = enterField(
       state,
       'player-1',
-      card(joker, `${scenario.name}-source`),
+      sourceCard,
       scenario.sourceSlot,
     );
     const source = result.players[0].board[scenario.sourceSlot];
+    for (const slot of expectedSummonSlots) {
+      assert.ok(result.players[0].board[slot], `${scenario.name}: adjacent empty slot ${slot} should be filled`);
+    }
+    const expectedTauntIds = adjacentSlots
+      .map((slot) => result.players[0].board[slot])
+      .filter((item): item is CardInstance => item !== null)
+      .map((item) => item.instanceId)
+      .sort();
     const tauntedIds = result.players[0].board
       .filter((item): item is CardInstance => item !== null && item.keywords.includes('TAUNT'))
       .map((item) => item.instanceId)
-      .filter((instanceId) => instanceId !== source?.instanceId);
+      .filter((instanceId) => instanceId !== source?.instanceId)
+      .sort();
 
-    assert.deepEqual(tauntedIds, scenario.expectedTauntIds, scenario.name);
-    assert.equal(source?.keywords.includes('TAUNT'), false, scenario.name);
+    assert.deepEqual(tauntedIds, expectedTauntIds, scenario.name);
+    assert.deepEqual(source?.keywords, sourceKeywords, `${scenario.name}: source keyword set`);
     assert.equal(
       result.players[1].board[0]?.keywords.includes('TAUNT'),
       false,

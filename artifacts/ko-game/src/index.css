@@ -1597,8 +1597,8 @@
 }
 
 .ko-decks__editor-scroll {
-  max-height: calc(100vh - 160px);
-  overflow: auto;
+  max-height: none;
+  overflow: visible;
   padding: 12px 14px 14px;
 }
 
@@ -1613,7 +1613,7 @@
 }
 
 .ko-decks__champion-art {
-  width: 80px;
+  width: 50px;
 }
 
 .ko-decks__champion-copy h3 {
@@ -1979,6 +1979,16 @@
 
   .ko-decks__editor-scroll {
     max-height: 46dvh;
+    overflow: auto;
+  }
+
+  .ko-decks__compact-row {
+    height: 40px;
+  }
+
+  .ko-decks__compact-remove {
+    width: 40px;
+    height: 40px;
   }
 }
 

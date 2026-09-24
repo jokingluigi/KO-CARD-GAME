@@ -48,6 +48,7 @@ const savedConfigs: Record<string, SavedConfig> = {
   '저지먼트': { effects: [effect('ENTER_FIELD', 'RETIRE', { zone: 'BOARD', owner: 'ENEMY', cardType: 'WRESTLER', selection: 'PLAYER_CHOICE', count: 1 })] },
   '조킹루이지': {
     effects: [
+      effect('ENTER_FIELD', 'SUMMON', { zone: 'BOARD', owner: 'SELF', cardType: 'WRESTLER', selection: 'ADJACENT_EMPTY_SLOTS', count: 2, randomScope: 'STANDARD' }),
       effect('ENTER_FIELD', 'ADD_KEYWORD', { zone: 'BOARD', owner: 'SELF', cardType: 'WRESTLER', selection: 'ADJACENT', count: 2 }, { keyword: 'TAUNT' }),
     ],
   },
