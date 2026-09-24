@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { AlertTriangle, ArrowLeft, Check, CirclePlus, Minus, Plus, RefreshCw, Search, Shield, Trash2 } from "lucide-react";
+import { AlertTriangle, ArrowLeft, Check, CirclePlus, Hammer, Minus, Plus, RefreshCw, Search, Shield, Trash2 } from "lucide-react";
 import { Link } from "wouter";
 import { AuthPage, AuthLoading, AuthRecovery } from "@/components/auth-page";
 import { AltInspectProvider, Inspectable } from "@/components/alt-inspector";
@@ -14,6 +14,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { fetchCurrentUser, type AuthUser } from "@/lib/auth-client";
+import { craftCard as requestCardCraft, fetchCollection, type Collection, type CollectionCard } from "@/lib/collection-client";
 import {
   deleteDeck,
   fetchDeckOptions,
@@ -28,12 +29,12 @@ import {
 } from "@/lib/decks-client";
 import { cardTypeLabel, deckValidityLabel, normalizeCardRulesText } from "@/lib/display-labels";
 import { DECK_SIZE, MAX_LEGENDARY_CARDS, validateDeckCounts } from "@workspace/game-engine";
+import { cardLimitReason, cardOwnershipReason, getDeckCardAction, MAX_CARD_COPIES } from "./deck-card-availability";
 
 type AuthStatus = "checking" | "authenticated" | "unauthenticated" | "error";
 type CardFilter = "ALL" | "WRESTLER" | "TECHNIQUE";
 
 const EMPTY_DECK_NAME = "새로운 전략";
-const MAX_CARD_COPIES = 2;
 
 function cardSettings(card: DeckCard) {
   return {
@@ -74,23 +75,6 @@ function validationReason(
   };
 }
 
-function cardLimitReason(card: DeckCard, count: number, legendaryCount: number): string | undefined {
-  if (card.rarity === "LEGENDARY") {
-    if (count >= 1) return "레전더리 동일 카드 1장 제한";
-    if (legendaryCount >= MAX_LEGENDARY_CARDS) return `레전더리 총 ${MAX_LEGENDARY_CARDS}장 제한`;
-  } else if (count >= MAX_CARD_COPIES) {
-    return "동일 카드 최대 2장";
-  }
-  return undefined;
-}
-
-function cardOwnershipReason(card: DeckCard, count: number, isTestAccount: boolean): string | undefined {
-  if (!isTestAccount && card.quantity !== undefined && count >= card.quantity) {
-    return `보유 수량 ${card.quantity}장에 도달했습니다.`;
-  }
-  return undefined;
-}
-
 function replaceDeck(list: Deck[], next: Deck) {
   const exists = list.some((deck) => deck.id === next.id);
   return exists ? list.map((deck) => (deck.id === next.id ? next : deck)) : [...list, next];
@@ -107,6 +91,8 @@ function DeckCardVisual({
   disabled,
   disabledReason,
   selectedCount,
+  unowned,
+  onCraft,
 }: {
   card: DeckCard;
   onAdd: () => void;
@@ -114,9 +100,11 @@ function DeckCardVisual({
   disabled: boolean;
   disabledReason?: string;
   selectedCount: number;
+  unowned: boolean;
+  onCraft: () => void;
 }) {
   return (
-    <article className="ko-decks__collection-card" aria-disabled={disabled} data-testid={`card-collection-${card.id}`}>
+    <article className="ko-decks__collection-card" aria-disabled={disabled && !unowned} data-unowned={unowned || undefined} data-testid={`card-collection-${card.id}`}>
       <Inspectable
         showOnHover
         content={
@@ -144,13 +132,14 @@ function DeckCardVisual({
         <div
           role="button"
           tabIndex={0}
-          aria-label={`${card.name} 카드 상세 보기`}
+          aria-label={unowned ? `${card.name} 미보유 카드 제작 정보` : `${card.name} 카드 상세 보기`}
           data-testid={`button-card-details-${card.id}`}
-          onClick={onOpenDetails}
+          onClick={unowned ? onCraft : onOpenDetails}
           onKeyDown={(event) => {
             if (event.key === "Enter" || event.key === " ") {
               event.preventDefault();
-              onOpenDetails();
+              if (unowned) onCraft();
+              else onOpenDetails();
             }
           }}
         >
@@ -174,12 +163,12 @@ function DeckCardVisual({
       <button
         type="button"
         className="ko-decks__card-action"
-        aria-label={`${card.name} 추가`}
+        aria-label={unowned ? `${card.name} 제작 정보` : `${card.name} 추가`}
         data-testid={`button-add-card-action-${card.id}`}
-        disabled={disabled}
-        onClick={onAdd}
+        disabled={!unowned && disabled}
+        onClick={unowned ? onCraft : onAdd}
       >
-        <Plus className="h-4 w-4" aria-hidden="true" />
+        {unowned ? <Hammer className="h-4 w-4" aria-hidden="true" /> : <Plus className="h-4 w-4" aria-hidden="true" />}
       </button>
       <p className="ko-decks__card-label" data-testid={`text-card-name-${card.id}`}>{card.name}</p>
       <p className="ko-decks__card-type">
@@ -253,6 +242,13 @@ export default function Decks() {
   const [statusMessage, setStatusMessage] = useState("");
   const [championPickerOpen, setChampionPickerOpen] = useState(false);
   const [detailCard, setDetailCard] = useState<DeckCard | null>(null);
+  const [craftTarget, setCraftTarget] = useState<DeckCard | null>(null);
+  const [craftCollection, setCraftCollection] = useState<Collection | null>(null);
+  const [craftLoading, setCraftLoading] = useState(false);
+  const [craftMutating, setCraftMutating] = useState(false);
+  const [craftError, setCraftError] = useState("");
+  const [craftNotice, setCraftNotice] = useState("");
+  const craftRequestGeneration = useRef(0);
   const deleteConfirmationOpenRef = useRef(false);
 
   const checkAuthentication = useCallback(() => {
@@ -433,6 +429,19 @@ export default function Decks() {
     [validationReasons],
   );
   const isValidForSelection = validationReasons.length === 0;
+  const craftInfoCard: CollectionCard | undefined = craftTarget
+    ? craftCollection?.craftableCards.find((card) => card.id === craftTarget.id) ??
+      craftCollection?.cards.find((card) => card.id === craftTarget.id)
+    : undefined;
+  const craftSetting = craftTarget
+    ? craftCollection?.prismSettings.find((setting) => setting.rarity === craftTarget.rarity)
+    : undefined;
+  const isCraftable = Boolean(
+    craftTarget &&
+    craftCollection?.craftableCards.some((card) => card.id === craftTarget.id) &&
+    !craftTarget.isToken &&
+    !craftTarget.isChampionToken,
+  );
 
   function createDraft() {
     setEditingId(null);
@@ -444,7 +453,7 @@ export default function Decks() {
   }
 
   function addCard(card: DeckCard) {
-    const reason = cardLimitReason(card, counts.get(card.id) ?? 0, legendaryCount);
+    const reason = cardLimitReason(card, counts.get(card.id) ?? 0, legendaryCount, MAX_LEGENDARY_CARDS);
     const ownershipReason = cardOwnershipReason(card, counts.get(card.id) ?? 0, options.isTestAccount === true);
     if (cardIds.length >= DECK_SIZE || card.status !== "PUBLISHED" || card.isToken || card.isChampionToken || reason || ownershipReason) {
       if (cardIds.length >= DECK_SIZE) setErrorMessage(`덱은 정확히 ${DECK_SIZE}장까지 구성할 수 있습니다.`);
@@ -454,6 +463,79 @@ export default function Decks() {
     }
     setCardIds((current) => [...current, card.id]);
     setStatusMessage(`${card.name} 카드를 한 장 추가했습니다.`);
+  }
+
+  async function openCraftFlow(card: DeckCard) {
+    const generation = ++craftRequestGeneration.current;
+    setCraftTarget(card);
+    setCraftCollection(null);
+    setCraftError("");
+    setCraftNotice("");
+    setCraftLoading(true);
+    try {
+      const collection = await fetchCollection();
+      if (generation === craftRequestGeneration.current) setCraftCollection(collection);
+    } catch (error: unknown) {
+      if (generation === craftRequestGeneration.current) {
+        setCraftError(error instanceof Error ? error.message : "제작 정보를 불러오지 못했습니다.");
+      }
+    } finally {
+      if (generation === craftRequestGeneration.current) setCraftLoading(false);
+    }
+  }
+
+  function closeCraftFlow(open: boolean) {
+    if (open || craftMutating) return;
+    craftRequestGeneration.current += 1;
+    setCraftTarget(null);
+    setCraftCollection(null);
+    setCraftError("");
+    setCraftNotice("");
+    setCraftLoading(false);
+  }
+
+  async function handleCraftCard() {
+    if (!craftTarget || !craftCollection || craftMutating) return;
+    const target = craftTarget;
+    setCraftMutating(true);
+    setCraftError("");
+    setCraftNotice("");
+    try {
+      const result = await requestCardCraft(target.id);
+      const [collectionResult, optionsResult] = await Promise.allSettled([
+        fetchCollection(),
+        fetchDeckOptions(),
+      ]);
+      if (collectionResult.status === "fulfilled") {
+        setCraftCollection(collectionResult.value);
+      } else {
+        setCraftError(
+          `카드는 제작했지만 보유 정보 갱신에 실패했습니다. ${collectionResult.reason instanceof Error ? collectionResult.reason.message : ""}`.trim(),
+        );
+      }
+      if (optionsResult.status === "fulfilled") {
+        setOptions(optionsResult.value);
+      } else {
+        // The craft endpoint is authoritative and returns the resulting quantity;
+        // retain that ownership update even if the options refresh is unavailable.
+        setOptions((current) => ({
+          ...current,
+          cards: current.cards.map((card) =>
+            card.id === target.id ? { ...card, quantity: result.quantity } : card,
+          ),
+        }));
+        setCraftError((current) =>
+          [current, `덱 카드 목록 갱신에 실패했습니다. ${optionsResult.reason instanceof Error ? optionsResult.reason.message : ""}`.trim()]
+            .filter(Boolean)
+            .join(" "),
+        );
+      }
+      setCraftNotice(`${target.name} 카드를 제작했습니다. 덱에는 자동으로 추가되지 않았습니다.`);
+    } catch (error: unknown) {
+      setCraftError(error instanceof Error ? error.message : "카드를 제작하지 못했습니다.");
+    } finally {
+      setCraftMutating(false);
+    }
   }
 
   function removeCard(id: string) {
@@ -687,17 +769,30 @@ export default function Decks() {
               </div>
             ) : (
               <div className="ko-decks__card-grid" data-testid="grid-card-collection">
-                {filteredCards.map((card) => (
-                  <DeckCardVisual
-                    key={card.id}
-                    card={card}
-                    selectedCount={counts.get(card.id) ?? 0}
-                    disabled={cardIds.length >= DECK_SIZE || Boolean(cardLimitReason(card, counts.get(card.id) ?? 0, legendaryCount) || cardOwnershipReason(card, counts.get(card.id) ?? 0, options.isTestAccount === true))}
-                    disabledReason={cardLimitReason(card, counts.get(card.id) ?? 0, legendaryCount) || cardOwnershipReason(card, counts.get(card.id) ?? 0, options.isTestAccount === true)}
-                    onAdd={() => addCard(card)}
-                    onOpenDetails={() => setDetailCard(card)}
-                  />
-                ))}
+                {filteredCards.map((card) => {
+                  const action = getDeckCardAction(card, {
+                    count: counts.get(card.id) ?? 0,
+                    deckCount: cardIds.length,
+                    deckSize: DECK_SIZE,
+                    legendaryCount,
+                    maxLegendaryCards: MAX_LEGENDARY_CARDS,
+                    isTestAccount: options.isTestAccount === true,
+                  });
+                  const unowned = action.kind === "CRAFT";
+                  return (
+                    <DeckCardVisual
+                      key={card.id}
+                      card={card}
+                      selectedCount={counts.get(card.id) ?? 0}
+                      disabled={action.kind === "DISABLED"}
+                      disabledReason={unowned ? "미보유 · 선택하여 제작" : action.kind === "DISABLED" ? action.reason : undefined}
+                      unowned={unowned}
+                      onCraft={() => void openCraftFlow(card)}
+                      onAdd={() => addCard(card)}
+                      onOpenDetails={() => setDetailCard(card)}
+                    />
+                  );
+                })}
               </div>
             )}
           </section>
@@ -878,6 +973,120 @@ export default function Decks() {
         open={Boolean(detailCard)}
         onOpenChange={(open) => { if (!open) setDetailCard(null); }}
       />
+      <Dialog
+        open={Boolean(craftTarget)}
+        onOpenChange={closeCraftFlow}
+      >
+        <DialogContent className="max-h-[88vh] overflow-y-auto border-neutral-800 bg-neutral-950 text-white sm:max-w-2xl">
+          {craftTarget && (
+            <>
+              <DialogHeader>
+                <DialogTitle className="text-left text-xl font-black">{craftInfoCard?.name ?? craftTarget.name}</DialogTitle>
+                <DialogDescription className="text-left text-sm text-neutral-400">
+                  {craftTarget.rarity} · {cardTypeLabel(craftTarget.cardType)} · 미보유 카드는 제작 전 덱에 추가되지 않습니다.
+                </DialogDescription>
+              </DialogHeader>
+              <div className="grid gap-4 sm:grid-cols-[minmax(160px,240px)_1fr] sm:items-start">
+                <div className="min-w-0">
+                  <CardRenderer
+                    name={craftInfoCard?.name ?? craftTarget.name}
+                    cardType={craftTarget.cardType}
+                    cost={craftInfoCard?.cost ?? craftTarget.cost}
+                    attack={craftInfoCard?.attack ?? craftTarget.attack}
+                    health={craftInfoCard?.health ?? craftTarget.health}
+                    rulesText={craftInfoCard?.text ?? craftTarget.text}
+                    imageUrl={craftInfoCard?.imageUrl ?? craftTarget.imageUrl}
+                    rarity={craftTarget.rarity as "NORMAL" | "LEGENDARY" | "CHAMPION"}
+                    imageDisplaySettings={craftInfoCard ? {
+                      imageDisplayMode: craftInfoCard.imageDisplayMode,
+                      imageScale: craftInfoCard.imageScale,
+                      imagePositionX: craftInfoCard.imagePositionX,
+                      imagePositionY: craftInfoCard.imagePositionY,
+                    } : cardSettings(craftTarget)}
+                    size="board"
+                    className="mx-auto w-full max-w-[240px]"
+                  />
+                </div>
+                <div className="space-y-4">
+                  <div className="rounded-lg border border-amber-800/50 bg-amber-950/20 p-4">
+                    <h3 className="font-black text-amber-200">{craftInfoCard?.name ?? craftTarget.name}</h3>
+                    <p className="mt-1 text-xs font-bold text-neutral-400">{craftTarget.rarity} · 카드 비용 {craftTarget.cost}</p>
+                    <p className="mt-3 text-sm leading-6 text-neutral-300">
+                      {normalizeCardRulesText(craftInfoCard?.text ?? craftTarget.text) || "효과 없음"}
+                    </p>
+                  </div>
+                  {craftLoading ? (
+                    <p className="rounded border border-neutral-800 bg-black/30 p-3 text-sm text-neutral-400" role="status">
+                      프리즘 제작 정보를 불러오는 중...
+                    </p>
+                  ) : craftCollection && (
+                    <section className="rounded-lg border border-neutral-800 bg-black/30 p-4" aria-label="프리즘 제작 정보">
+                      <p className="text-xs font-black text-amber-200">일반 프리즘</p>
+                      <p className="mt-2 text-sm text-neutral-300" data-testid="text-craft-prism-balance">
+                        현재 보유량: <strong className="text-amber-200">{craftCollection.isTestAccount ? "∞" : craftCollection.prismBalance.toLocaleString()}</strong>
+                      </p>
+                      {craftSetting?.configured && craftSetting.craftCost !== null ? (
+                        <>
+                          <p className="mt-1 text-sm text-neutral-300" data-testid="text-craft-prism-cost">
+                            제작 비용: <strong className="text-amber-200">{craftSetting.craftCost.toLocaleString()} 프리즘</strong>
+                          </p>
+                          {craftInfoCard && craftInfoCard.quantity > 0 && (
+                            <p className="mt-2 rounded border border-emerald-800/60 bg-emerald-950/30 px-3 py-2 text-xs font-bold text-emerald-300">
+                              이미 보유한 카드입니다. 제작 전 덱에 자동으로 추가되지 않습니다.
+                            </p>
+                          )}
+                          {!craftInfoCard?.quantity && !isCraftable && (
+                            <p className="mt-2 text-xs text-amber-200">제작할 수 없는 카드입니다.</p>
+                          )}
+                          {!craftInfoCard?.quantity && isCraftable && !craftCollection.isTestAccount && craftCollection.prismBalance < craftSetting.craftCost && (
+                            <p className="mt-2 text-xs text-red-300">프리즘이 부족합니다.</p>
+                          )}
+                        </>
+                      ) : (
+                        <p className="mt-2 text-xs leading-5 text-amber-200">관리자 프리즘 설정이 없어 이 카드를 제작할 수 없습니다.</p>
+                      )}
+                    </section>
+                  )}
+                  {craftError && <p role="alert" className="rounded border border-red-900/60 bg-red-950/30 p-3 text-sm text-red-200" data-testid="status-craft-error">{craftError}</p>}
+                  {craftNotice && <p role="status" className="rounded border border-emerald-900/60 bg-emerald-950/30 p-3 text-sm text-emerald-200" data-testid="status-craft-success">{craftNotice}</p>}
+                  <div className="flex gap-2">
+                    <button
+                      type="button"
+                      className="flex-1 rounded border border-neutral-700 px-4 py-3 text-sm font-black text-neutral-300 transition hover:border-neutral-500 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-400"
+                      data-testid="button-cancel-card-craft"
+                      disabled={craftMutating}
+                      onClick={() => closeCraftFlow(false)}
+                    >
+                      닫기
+                    </button>
+                    <button
+                      type="button"
+                      className="flex-1 rounded bg-amber-400 px-4 py-3 text-sm font-black text-black transition hover:bg-yellow-300 disabled:cursor-not-allowed disabled:opacity-40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-200"
+                      data-testid="button-confirm-card-craft"
+                      disabled={
+                        craftLoading ||
+                        craftMutating ||
+                        !craftInfoCard ||
+                        !isCraftable ||
+                        !craftSetting?.configured ||
+                        craftSetting.craftCost === null ||
+                        (Boolean(craftInfoCard.quantity > 0)) ||
+                        (!craftCollection?.isTestAccount && Boolean(craftCollection && craftSetting && craftCollection.prismBalance < (craftSetting.craftCost ?? 0)))
+                      }
+                      onClick={() => void handleCraftCard()}
+                    >
+                      <span className="inline-flex items-center justify-center gap-2">
+                        <Hammer className="h-4 w-4" aria-hidden="true" />
+                        {craftMutating ? "제작 중..." : craftInfoCard?.quantity ? "이미 보유 중" : "카드 제작"}
+                      </span>
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </>
+          )}
+        </DialogContent>
+      </Dialog>
       <Dialog open={championPickerOpen} onOpenChange={setChampionPickerOpen}>
         <DialogContent className="max-w-3xl border-neutral-800 bg-[#110f0d] text-white max-h-[88vh] overflow-y-auto">
           <DialogHeader>

@@ -15,6 +15,7 @@ import {
 import { DECK_SIZE, MAX_LEGENDARY_CARDS, validateDeckCounts } from "@workspace/game-engine";
 import { getAuthenticatedUser } from "../lib/auth";
 import { deleteOwnedDeck } from "../lib/deck-delete-service";
+import { getVisibleDeckOptionCards } from "./deck-options";
 import {
   isEligibleTestCard,
   isTestAccountUser,
@@ -438,18 +439,13 @@ router.get("/options", async (request, response): Promise<void> => {
       .from(userChampionCollectionsTable)
       .where(and(eq(userChampionCollectionsTable.userId, user.id), eq(userChampionCollectionsTable.owned, true))),
   ]);
-  const ownedCardIds = new Set(ownedCards.map((card) => card.id));
   const ownedChampionIds = new Set(ownedChampions.map((champion) => champion.id));
   response.setHeader("Cache-Control", "no-store");
   const testAccount = isTestAccountUser(user);
-  const visibleCards = testAccount ? cards : cards.filter((card) => ownedCardIds.has(card.id));
   const visibleChampions = testAccount ? champions : champions.filter((champion) => ownedChampionIds.has(champion.id));
   response.json({
     isTestAccount: testAccount,
-    cards: visibleCards.map((card) => ({
-      ...card,
-      quantity: testAccount ? TEST_ACCOUNT_UNLIMITED_QUANTITY : ownedCards.find((owned) => owned.id === card.id)?.quantity ?? 0,
-    })),
+    cards: getVisibleDeckOptionCards(cards, ownedCards, testAccount, TEST_ACCOUNT_UNLIMITED_QUANTITY),
     champions: visibleChampions,
   });
 });

@@ -1368,6 +1368,7 @@ router.post("/effects/generate", async (request, response): Promise<void> => {
     response.status(400).json({ message: "AI 효과 생성 입력값을 확인해 주세요." });
     return;
   }
+  const requestId = randomUUID();
   try {
     const context = await trustedEffectContext(sourceType, sourceId, cardType, effectContext);
     if (!context) {
@@ -1378,6 +1379,10 @@ router.post("/effects/generate", async (request, response): Promise<void> => {
       text,
       { ...context, availableTags: await availableCardTags() },
       await cardReferenceCatalog(),
+      {
+        requestId,
+        onDiagnostic: (diagnostic) => request.log.info(diagnostic, "AI effect compiler schema diagnostic"),
+      },
     );
     if (result.status === "NEEDS_CLARIFICATION") {
       response.status(409).json(result);
@@ -1392,10 +1397,34 @@ router.post("/effects/generate", async (request, response): Promise<void> => {
       const status = error.code === "NOT_CONFIGURED" ? 503
         : error.code === "INVALID_DRAFT" || error.code === "MALFORMED_RESPONSE" ? 422
           : 502;
-      response.status(status).json({ message: error.message, code: error.code });
+      const path = error.message.match(/(?:analysis|draft|clarification|effects|scripts|keywords)(?:\[\d+\])?/u)?.[0];
+      const schema = /analysis\./u.test(error.message) ? "provider-analysis" : "executable-dsl";
+      request.log.warn({
+        requestId,
+        code: error.code,
+        schema,
+        ...(path ? { path } : {}),
+      }, "AI effect draft rejected");
+      response.status(status).json({
+        message: error.code === "INVALID_DRAFT" || error.code === "MALFORMED_RESPONSE"
+          ? "AI 효과 해석 결과를 적용하지 못했습니다."
+          : error.message,
+        code: error.code,
+        requestId,
+        developerDetail: {
+          requestId,
+          schema,
+          ...(path ? { path } : {}),
+          reason: error.code,
+        },
+      });
       return;
     }
-    response.status(502).json({ message: "AI 효과 생성 요청을 처리하지 못했습니다." });
+    request.log.warn({ requestId }, "AI effect generation failed");
+    response.status(502).json({
+      message: "AI 효과 생성 요청을 처리하지 못했습니다.",
+      requestId,
+    });
   }
 });
 

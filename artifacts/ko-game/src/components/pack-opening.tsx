@@ -3,11 +3,14 @@ import { Check, Gift, RotateCcw, Sparkles } from "lucide-react";
 import { CardRenderer } from "@/components/card-renderer";
 import { CardArtwork } from "@/components/card-artwork";
 import { audioManager } from "@/audio/audio-manager";
-import type { PackReward } from "@/lib/collection-client";
+import { aggregatePackRewards, type PackReward } from "@/lib/collection-client";
 
 type PackOpeningProps = {
   packName: string;
   rewards: PackReward[];
+  packCount?: number;
+  perPackRewards?: PackReward[][];
+  notice?: string;
   preview?: boolean;
   onClose: () => void;
   onRepeat?: () => void;
@@ -16,7 +19,7 @@ type PackOpeningProps = {
 
 function rewardTitle(reward: PackReward): string {
   if (reward.rewardType === "CHAMPION_UNLOCK") return reward.champion?.name ?? "챔피언";
-  if (reward.rewardType === "SKIN") return reward.skin?.name ?? "스킨";
+  if (reward.rewardType === "SKIN") return `${reward.card?.name ?? "카드"} · ${reward.skin?.name ?? "스킨"}`;
   return reward.card?.name ?? "카드";
 }
 
@@ -34,15 +37,19 @@ function playRevealMusic(reward: PackReward) {
   }
 }
 
-export function PackOpening({ packName, rewards, preview = false, onClose, onRepeat, onRegenerate }: PackOpeningProps) {
+export function PackOpening({ packName, rewards, packCount = 1, perPackRewards, notice, preview = false, onClose, onRepeat, onRegenerate }: PackOpeningProps) {
   const [revealed, setRevealed] = useState(-1);
+  const [detailsExpanded, setDetailsExpanded] = useState(false);
   const lastRewardsRef = useRef<PackReward[]>(rewards);
+  const aggregatedRewards = aggregatePackRewards(rewards);
+  const isBulkResult = !preview && packCount > 1;
 
   useEffect(() => {
     if (lastRewardsRef.current !== rewards) {
       lastRewardsRef.current = rewards;
       audioManager.stopPackRevealMusic();
       setRevealed(-1);
+      setDetailsExpanded(false);
     }
   }, [rewards]);
 
@@ -54,19 +61,57 @@ export function PackOpening({ packName, rewards, preview = false, onClose, onRep
     audioManager.stopPackRevealMusic();
   }, []);
 
-  const allRevealed = rewards.length > 0 && revealed >= rewards.length - 1;
+  const allRevealed = rewards.length === 0 || revealed >= rewards.length - 1;
 
   return (
     <section className="fixed inset-0 z-50 overflow-y-auto bg-neutral-950/95 px-5 py-8 backdrop-blur-sm">
-      <div className="mx-auto max-w-5xl">
+      <div className="mx-auto max-w-5xl" role="dialog" aria-modal="true" aria-labelledby="pack-opening-title">
         <div className="text-center">
           <p className="font-display text-xs font-bold tracking-[0.25em] text-primary">{preview ? "PACK PREVIEW" : "PACK OPENING"}</p>
-          <h2 className="mt-2 text-3xl font-black">{packName}</h2>
-          <p className="mt-2 text-sm text-neutral-500">
+          <h2 id="pack-opening-title" data-testid="text-pack-opening-title" className="mt-2 text-3xl font-black">{packName}</h2>
+          {isBulkResult ? (
+            <p data-testid="text-bulk-open-summary" className="mt-2 text-sm text-neutral-300">{packCount}개 팩 개봉 완료 · 보상 {rewards.length}개</p>
+          ) : <p className="mt-2 text-sm text-neutral-500">
             {revealed < 0 ? "카드를 눌러 한 장씩 공개하세요." : `${Math.min(revealed + 1, rewards.length)} / ${rewards.length} 공개`}
-          </p>
+          </p>}
         </div>
-        <div className="mt-8 grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-5">
+        {isBulkResult && (
+          <section className="mt-7 rounded-xl border border-amber-800/60 bg-amber-950/20 p-4 sm:p-6" aria-label="개봉 보상 요약">
+            {notice && <p data-testid="status-pack-opening-notice" role="status" className="mb-4 rounded border border-amber-700/60 bg-amber-950/50 px-3 py-2 text-sm text-amber-200">{notice}</p>}
+            <h3 className="text-lg font-black text-amber-200">획득 보상</h3>
+            <div className="mt-3 flex flex-wrap gap-2 text-xs font-bold">
+              {(["NORMAL_CARD", "LEGENDARY_CARD", "CHAMPION_UNLOCK", "SKIN"] as const).map((type) => {
+                const count = rewards.filter((reward) => reward.rewardType === type).length;
+                const label = type === "NORMAL_CARD" ? "일반 카드" : type === "LEGENDARY_CARD" ? "레전더리" : type === "CHAMPION_UNLOCK" ? "챔피언" : "스킨";
+                return <span key={type} className="rounded bg-neutral-900 px-3 py-2 text-neutral-200">{label} {count}</span>;
+              })}
+            </div>
+            {aggregatedRewards.length > 0 ? (
+              <ul data-testid="list-aggregated-rewards" className="mt-4 grid gap-2 sm:grid-cols-2">
+                {aggregatedRewards.map(({ key, reward, quantity }) => (
+                  <li key={key} data-testid={`text-aggregated-reward-${key}`} className="flex items-center justify-between gap-3 rounded border border-neutral-800 bg-black/30 px-3 py-2 text-sm">
+                    <span className="min-w-0 truncate text-neutral-200">{rewardTitle(reward)}</span>
+                    <span className="shrink-0 rounded bg-neutral-800 px-2 py-1 font-black text-amber-200">×{quantity}</span>
+                  </li>
+                ))}
+              </ul>
+            ) : <p className="mt-4 text-sm text-neutral-400">획득한 보상이 없습니다.</p>}
+            {perPackRewards && <div className="mt-4 border-t border-neutral-800 pt-4">
+              <button type="button" data-testid="button-toggle-pack-details" aria-expanded={detailsExpanded} onClick={() => setDetailsExpanded((expanded) => !expanded)} className="rounded border border-neutral-700 px-4 py-2.5 text-sm font-bold text-neutral-200 hover:border-amber-500">
+                {detailsExpanded ? "팩별 상세 접기" : "팩별 보상 상세 보기"}
+              </button>
+              {detailsExpanded && <ol data-testid="list-pack-details" className="mt-3 grid gap-2 sm:grid-cols-2">
+                {perPackRewards.map((packRewards, index) => (
+                  <li key={index} data-testid={`text-pack-rewards-${index + 1}`} className="rounded border border-neutral-800 bg-black/30 p-3 text-sm">
+                    <p className="font-black text-amber-200">팩 {index + 1}</p>
+                    <p className="mt-1 text-neutral-300">{packRewards.map(rewardTitle).join(" · ") || "보상 없음"}</p>
+                  </li>
+                ))}
+              </ol>}
+            </div>}
+          </section>
+        )}
+        {(!isBulkResult || detailsExpanded) && <div className="mt-8 grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-5">
           {rewards.map((reward, index) => {
             const isRevealed = revealed >= index;
             const card = reward.card;
@@ -76,8 +121,9 @@ export function PackOpening({ packName, rewards, preview = false, onClose, onRep
             return (
               <button
                 type="button"
-                key={`${reward.rewardType}-${reward.cardDefinitionId ?? reward.championDefinitionId ?? reward.skinDefinitionId ?? index}`}
+                key={`${reward.rewardType}-${reward.cardDefinitionId ?? reward.championDefinitionId ?? reward.skinDefinitionId ?? index}-${index}`}
                 onClick={() => setRevealed((current) => Math.max(current, index))}
+                data-testid={`button-reveal-reward-${index}`}
                 className={`min-w-0 text-left transition-transform ${!isRevealed ? "hover:-translate-y-1" : ""}`}
                 aria-label={isRevealed ? rewardTitle(reward) : "보상 공개"}
               >
@@ -130,12 +176,13 @@ export function PackOpening({ packName, rewards, preview = false, onClose, onRep
               </button>
             );
           })}
-        </div>
+        </div>}
         <div className="mt-8 flex flex-wrap justify-center gap-3">
-          {!allRevealed && <button type="button" onClick={() => setRevealed(rewards.length - 1)} className="rounded border border-amber-700 px-5 py-3 text-sm font-black text-amber-300">모두 공개</button>}
-          {allRevealed && onRegenerate && <button type="button" onClick={onRegenerate} className="flex items-center gap-2 rounded border border-amber-700 px-5 py-3 text-sm font-black text-amber-300"><RotateCcw className="h-4 w-4" /> 결과 다시 생성</button>}
-          {allRevealed && onRepeat && <button type="button" onClick={onRepeat} className="flex items-center gap-2 rounded border border-neutral-700 px-5 py-3 text-sm font-black text-neutral-200"><RotateCcw className="h-4 w-4" /> 같은 팩 다시 테스트</button>}
-          {allRevealed && <button type="button" onClick={onClose} className="flex items-center gap-2 rounded bg-primary px-6 py-3 text-sm font-black text-black"><Check className="h-4 w-4" /> {preview ? "팩 선택으로 돌아가기" : "확인"}</button>}
+          {isBulkResult && detailsExpanded && !allRevealed && <button type="button" data-testid="button-quick-reveal-all" onClick={() => setRevealed(rewards.length - 1)} className="rounded border border-amber-700 px-5 py-3 text-sm font-black text-amber-300">빠르게 모두 공개</button>}
+          {!isBulkResult && !allRevealed && <button type="button" data-testid="button-reveal-all" onClick={() => setRevealed(rewards.length - 1)} className="rounded border border-amber-700 px-5 py-3 text-sm font-black text-amber-300">모두 공개</button>}
+          {!isBulkResult && allRevealed && onRegenerate && <button type="button" onClick={onRegenerate} className="flex items-center gap-2 rounded border border-amber-700 px-5 py-3 text-sm font-black text-amber-300"><RotateCcw className="h-4 w-4" /> 결과 다시 생성</button>}
+          {!isBulkResult && allRevealed && onRepeat && <button type="button" onClick={onRepeat} className="flex items-center gap-2 rounded border border-neutral-700 px-5 py-3 text-sm font-black text-neutral-200"><RotateCcw className="h-4 w-4" /> 같은 팩 다시 테스트</button>}
+          {(isBulkResult || allRevealed) && <button type="button" data-testid="button-close-pack-opening" onClick={onClose} className="flex items-center gap-2 rounded bg-primary px-6 py-3 text-sm font-black text-black"><Check className="h-4 w-4" /> {preview ? "팩 선택으로 돌아가기" : "확인"}</button>}
         </div>
       </div>
     </section>

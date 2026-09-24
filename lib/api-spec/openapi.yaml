@@ -24,6 +24,43 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/HealthStatus"
+  /packs/{id}/open-bulk:
+    post:
+      operationId: openBulkPack
+      tags: [packs]
+      summary: Open multiple packs atomically
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: Idempotency-Key
+          in: header
+          required: true
+          schema:
+            type: string
+            minLength: 1
+            maxLength: 200
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/BulkPackOpenInput"
+      responses:
+        "200":
+          description: Pack openings, committed together
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/BulkPackOpenResponse"
+        "400":
+          description: Invalid quantity or missing idempotency key
+        "409":
+          description: Idempotency key conflicts with a different request
+        "422":
+          description: Pack inventory is insufficient or the pack cannot be opened
 components:
   schemas:
     HealthStatus:
@@ -33,4 +70,39 @@ components:
           type: string
       required:
         - status
+    BulkPackOpenInput:
+      type: object
+      properties:
+        quantity:
+          type: integer
+          minimum: 1
+          maximum: 100
+      required: [quantity]
+      additionalProperties: false
+    BulkPackOpenResponse:
+      type: object
+      properties:
+        quantity:
+          type: integer
+        openings:
+          type: array
+          items:
+            $ref: "#/components/schemas/PackOpening"
+      required: [quantity, openings]
+    PackOpening:
+      type: object
+      properties:
+        rewards:
+          type: array
+          items:
+            $ref: "#/components/schemas/PackReward"
+      required: [rewards]
+    PackReward:
+      type: object
+      properties:
+        rewardType:
+          type: string
+          enum: [NORMAL_CARD, LEGENDARY_CARD, CHAMPION_UNLOCK, SKIN]
+      required: [rewardType]
+      additionalProperties: true
 

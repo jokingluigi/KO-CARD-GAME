@@ -46,6 +46,17 @@ type EffectAiDraft = {
     ambiguities: string[];
     canonicalPlan: EffectAiDraft["mechanicPlan"];
   };
+  interpretation?: {
+    normalizedMeaning?: string;
+    confidence?: number;
+    trigger?: string;
+    target?: string;
+    action?: string;
+    triggerIntent?: string[];
+    targetIntent?: string[];
+    actionIntent?: string[];
+    ambiguities?: string[];
+  };
 };
 
 type EffectAiClarification = {
@@ -250,6 +261,25 @@ export function AdminEffectAiGenerator({
                 <dd>{[...ready.semanticPlan.actionIntent, ...ready.semanticPlan.valuesIntent].join(" · ") || "없음"}</dd>
                 <dt className="text-neutral-500">Condition / sequence / references</dt>
                 <dd>{[...ready.semanticPlan.conditionIntent, ...ready.semanticPlan.sequenceIntent, ...ready.semanticPlan.referenceIntent].join(" · ") || "없음"}</dd>
+              </dl>
+            </details>
+          )}
+          {ready.interpretation && (
+            <details className="mt-2 rounded border border-neutral-800 bg-black/20 p-2" data-testid="ai-provider-interpretation">
+              <summary className="cursor-pointer text-xs font-bold text-neutral-400">Provider 해석 메타데이터 · 실행 설정과 분리됨</summary>
+              <dl className="mt-2 grid gap-1 text-[11px] sm:grid-cols-[auto_1fr]">
+                <dt className="text-neutral-500">요약</dt>
+                <dd>{ready.interpretation.normalizedMeaning ?? "없음"}</dd>
+                <dt className="text-neutral-500">Trigger</dt>
+                <dd>{[ready.interpretation.trigger, ...(ready.interpretation.triggerIntent ?? [])].filter(Boolean).join(" · ") || "없음"}</dd>
+                <dt className="text-neutral-500">Target / Action</dt>
+                <dd>{[ready.interpretation.target, ready.interpretation.action, ...(ready.interpretation.targetIntent ?? []), ...(ready.interpretation.actionIntent ?? [])].filter(Boolean).join(" · ") || "없음"}</dd>
+                {ready.interpretation.confidence !== undefined && (
+                  <>
+                    <dt className="text-neutral-500">Confidence</dt>
+                    <dd>{ready.interpretation.confidence}</dd>
+                  </>
+                )}
               </dl>
             </details>
           )}

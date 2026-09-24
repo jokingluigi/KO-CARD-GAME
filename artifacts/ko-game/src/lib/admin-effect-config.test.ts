@@ -106,6 +106,26 @@ test("replace deliberately switches execution format and omits the old AST", () 
   assert.equal(replaced.effectConfig.scripts?.length, 1);
 });
 
+test("auto-apply and save/reload preserve executable DSL only, never provider interpretation", () => {
+  const providerDraft = {
+    effectId: "STRUCTURED_EFFECTS_V1" as const,
+    effects: [{ trigger: "ENTER_FIELD", action: "DRAW", values: { amount: 1 } }],
+    scripts: [],
+    interpretation: {
+      trigger: "ENTER_FIELD",
+      target: "player hand",
+      action: "draw one card",
+    },
+  };
+  const applied = mergeGeneratedEffectDraft(undefined, null, providerDraft, "replace");
+  assert.deepEqual(applied.effectConfig, { effects: providerDraft.effects });
+
+  const reloaded = JSON.parse(JSON.stringify(applied.effectConfig)) as unknown;
+  assert.deepEqual(reloaded, { effects: providerDraft.effects });
+  assert.equal(JSON.stringify(reloaded).includes("interpretation"), false);
+  assert.equal(JSON.stringify(reloaded).includes("analysis"), false);
+});
+
 test("entry count supports both stored execution formats", () => {
   assert.equal(effectConfigEntryCount({ effects: [{}, {}] }), 2);
   assert.equal(effectConfigEntryCount({ scripts: [{}, {}, {}] }), 3);

@@ -58,6 +58,8 @@ export type EffectAiDraft = {
   sourceContext: Pick<EffectAiContext, "sourceType" | "sourceId" | "cardType" | "effectContext">;
   normalization?: EffectLanguageNormalization;
   semanticPlan?: EffectSemanticPlan;
+  /** Provider interpretation metadata; never part of effectConfig or runtime DSL. */
+  interpretation?: ProviderSemanticAnalysis;
 };
 
 export type MechanicPlan = {
@@ -689,6 +691,9 @@ function providerConfig(): { baseUrl: string; apiKey: string; model: string } | 
 type ProviderSemanticAnalysis = {
   normalizedMeaning?: string;
   confidence?: number;
+  trigger?: (typeof TRIGGERS)[number];
+  target?: string;
+  action?: string;
   triggerIntent?: string[];
   sourceIntent?: string[];
   targetIntent?: string[];
@@ -716,7 +721,9 @@ function readProviderSemanticAnalysis(value: unknown): ProviderSemanticAnalysis 
   if (!isRecord(value)) {
     throw new EffectAiError("MALFORMED_RESPONSE", "analysis는 구조화된 객체여야 합니다.");
   }
-  const allowed = new Set<string>(["normalizedMeaning", "confidence", ...PROVIDER_ANALYSIS_ARRAY_FIELDS]);
+  const allowed = new Set<string>([
+    "normalizedMeaning", "confidence", "trigger", "target", "action", ...PROVIDER_ANALYSIS_ARRAY_FIELDS,
+  ]);
   for (const key of Object.keys(value)) {
     if (!allowed.has(key)) {
       throw new EffectAiError("MALFORMED_RESPONSE", `analysis.${key}는 지원되지 않는 필드입니다.`);
@@ -731,6 +738,16 @@ function readProviderSemanticAnalysis(value: unknown): ProviderSemanticAnalysis 
        value.confidence < 0 || value.confidence > 1)) {
     throw new EffectAiError("MALFORMED_RESPONSE", "analysis.confidence는 0에서 1 사이여야 합니다.");
   }
+  if (value.trigger !== undefined &&
+      (typeof value.trigger !== "string" || !TRIGGERS.includes(value.trigger as (typeof TRIGGERS)[number]))) {
+    throw new EffectAiError("MALFORMED_RESPONSE", "analysis.trigger는 지원되는 trigger 요약이어야 합니다.");
+  }
+  for (const key of ["target", "action"] as const) {
+    if (value[key] !== undefined &&
+        (typeof value[key] !== "string" || value[key].trim().length === 0 || value[key].length > 200)) {
+      throw new EffectAiError("MALFORMED_RESPONSE", `analysis.${key}는 짧은 문자열 요약이어야 합니다.`);
+    }
+  }
   for (const key of PROVIDER_ANALYSIS_ARRAY_FIELDS) {
     const entry = value[key];
     if (entry !== undefined &&
@@ -740,6 +757,49 @@ function readProviderSemanticAnalysis(value: unknown): ProviderSemanticAnalysis 
     }
   }
   return value as ProviderSemanticAnalysis;
+}
+
+type EffectAiDiagnostic = {
+  requestId: string;
+  stage: "provider-envelope" | "validated-draft";
+  topLevelKeys?: string[];
+  unknownTopLevelKeyCount?: number;
+  analysisKeys?: string[];
+  unknownAnalysisKeyCount?: number;
+  analysisFieldTypes?: Record<string, string>;
+  effectId?: string;
+  hasEffects?: boolean;
+  hasScripts?: boolean;
+};
+
+function describeProviderEnvelope(raw: unknown, requestId: string): EffectAiDiagnostic {
+  const record = isRecord(raw) ? raw : {};
+  const analysis = isRecord(record.analysis) ? record.analysis : undefined;
+  const knownTopLevelKeys = ["status", "effectId", "effects", "scripts", "keywords", "questions", "analysis"];
+  const knownAnalysisKeys = [
+    "normalizedMeaning", "confidence", "trigger", "target", "action", ...PROVIDER_ANALYSIS_ARRAY_FIELDS,
+  ];
+  return {
+    requestId,
+    stage: "provider-envelope",
+    topLevelKeys: Object.keys(record).filter((key) => knownTopLevelKeys.includes(key)).sort(),
+    unknownTopLevelKeyCount: Object.keys(record).filter((key) => !knownTopLevelKeys.includes(key)).length,
+    ...(analysis ? {
+      analysisKeys: Object.keys(analysis).filter((key) => knownAnalysisKeys.includes(key)).sort(),
+      unknownAnalysisKeyCount: Object.keys(analysis).filter((key) => !knownAnalysisKeys.includes(key)).length,
+      analysisFieldTypes: Object.fromEntries(
+        Object.entries(analysis).filter(([key]) => knownAnalysisKeys.includes(key)).map(([key, value]) => [
+          key,
+          Array.isArray(value) ? "array" : value === null ? "null" : typeof value,
+        ]),
+      ),
+    } : {}),
+    ...(record.effectId === "STRUCTURED_EFFECTS_V1" || record.effectId === "SCRIPT_V1"
+      ? { effectId: record.effectId }
+      : {}),
+    hasEffects: Array.isArray(record.effects),
+    hasScripts: Array.isArray(record.scripts),
+  };
 }
 
 function compactReferenceName(value: string): string {
@@ -820,7 +880,7 @@ function buildSystemPrompt(
   return [
     "컴파일 파이프라인은 원문 보존 → 안전한 언어 정규화 → 의미 슬롯 분석 → registry 매핑 → bounded AST 검증 순서다. 정규화는 표기 잡음만 고치며 게임 의도를 변경하지 마라.",
     "원문과 normalizedCandidate를 함께 읽되 의미의 권위는 원문에 둔다. 누락된 대상·수치·시점·동작은 추측하지 말고 clarification으로 반환한다.",
-    "structured analysis에는 짧은 의미 요약과 trigger/source/target/owner/zone/cardType/filter/selection/action/values/condition/sequence/reference 슬롯을 넣는다. 숨겨진 chain-of-thought나 장황한 추론은 출력하지 않는다.",
+    "structured analysis에는 짧은 의미 요약과 trigger/source/target/owner/zone/cardType/filter/selection/action/values/condition/sequence/reference 슬롯을 넣는다. 필요하면 analysis.trigger에는 Registry trigger enum, analysis.target/action에는 짧은 문자열 요약을 넣는다. 숨겨진 chain-of-thought나 장황한 추론은 출력하지 않는다.",
     "analysis.ambiguities가 하나라도 있으면 READY가 아니라 NEEDS_CLARIFICATION을 반환한다. ambiguity 질문은 무엇이 비어 있는지 구체적으로 묻는다.",
     "‘처리’, ‘없애’, ‘가져와’, ‘세게’, ‘적당히’만으로 파괴/리타이어/게임 제외, 카드 출처, 수치 또는 능력치를 선택하지 마라.",
     "대명사는 직전의 단일하고 명시적인 선택·소환·생성 결과를 가리킬 때만 연결한다. 여러 후보가 있거나 antecedent가 없으면 clarification한다.",
@@ -837,7 +897,7 @@ function buildSystemPrompt(
     "sourceId는 provider 출력에 절대 포함하지 마라. 현재 CardDefinition/ChampionDefinition의 source identity는 서버가 주입하며, 다른 source를 추측하거나 참조하지 마라.",
     "반드시 JSON 하나만 반환하고 Markdown 설명을 붙이지 마라.",
     '반환 형식은 {"status":"READY","effectId":"STRUCTURED_EFFECTS_V1","effects":[...],"keywords":[],"analysis":{...}} 또는 {"status":"READY","effectId":"SCRIPT_V1","scripts":[...],"keywords":[],"analysis":{...}} 또는 {"status":"NEEDS_CLARIFICATION","questions":["..."],"analysis":{...}} 중 하나다.',
-    "analysis에는 normalizedMeaning, confidence(0..1), 각 의미 슬롯 문자열 배열, ambiguities 문자열 배열을 사용한다. canonicalPlan이나 임의 DSL을 analysis에 넣지 마라. AST는 별도 검증 대상이다.",
+    "analysis에는 normalizedMeaning, confidence(0..1), optional trigger enum, optional target/action 짧은 문자열 요약, 각 의미 슬롯 문자열 배열, ambiguities 문자열 배열을 사용한다. canonicalPlan이나 임의 DSL을 analysis에 넣지 마라. AST는 별도 검증 대상이다.",
     "READY일 때 effects 배열의 각 원소는 trigger/action/target/conditions/values를 직접 가진 단일 Effect 객체다.",
     "effects 배열의 원소 안에 effectConfig, structuredEffect, effect, config 같은 래퍼를 절대 만들지 마라. effectConfig에 저장할 때만 클라이언트가 최종적으로 {effects}로 감싼다.",
     '정상 예시는 {"status":"READY","effects":[{"trigger":"ENTER_FIELD","action":"BUFF","target":{"zone":"BOARD","owner":"SELF","selection":"SELF","count":1},"values":{"attack":1,"health":1}}],"keywords":[]}다.',
@@ -1108,13 +1168,22 @@ export async function generateEffectDraft(
   text: string,
   context: EffectAiContext,
   catalog: readonly CardReferenceCandidate[],
+  diagnostics?: { requestId: string; onDiagnostic: (diagnostic: EffectAiDiagnostic) => void },
 ): Promise<EffectAiResult> {
   const normalization = normalizeEffectLanguage(text);
   const ambiguities = detectEffectSemanticAmbiguities(text);
   const raw = await callProvider(text, normalization, context, catalog);
+  diagnostics?.onDiagnostic(describeProviderEnvelope(raw, diagnostics.requestId));
   const validated = canonicalizeGeneratedEffectDraft(raw, context, catalog);
   const providerAnalysis = isRecord(raw) ? readProviderSemanticAnalysis(raw.analysis) : undefined;
   const providerHasAmbiguity = (providerAnalysis?.ambiguities?.length ?? 0) > 0;
+  diagnostics?.onDiagnostic({
+    requestId: diagnostics.requestId,
+    stage: "validated-draft",
+    effectId: validated.status === "READY" ? validated.effectId : undefined,
+    hasEffects: validated.status === "READY" && validated.effects.length > 0,
+    hasScripts: validated.status === "READY" && validated.scripts.length > 0,
+  });
 
   if (ambiguities.length > 0) {
     const providerQuestions = validated.status === "NEEDS_CLARIFICATION" ? validated.questions : [];
@@ -1150,6 +1219,7 @@ export async function generateEffectDraft(
         return {
           ...localDraft,
           normalization,
+          ...(providerAnalysis ? { interpretation: providerAnalysis } : {}),
           semanticPlan: buildEffectSemanticPlan(text, context, localDraft, catalog),
         };
       }
@@ -1160,6 +1230,7 @@ export async function generateEffectDraft(
   return {
     ...validated,
     normalization,
+    ...(providerAnalysis ? { interpretation: providerAnalysis } : {}),
     semanticPlan: buildEffectSemanticPlan(text, context, validated, catalog),
   };
 }

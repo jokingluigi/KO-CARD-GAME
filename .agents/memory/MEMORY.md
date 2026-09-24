@@ -70,7 +70,7 @@
 - [User-facing card display boundary](user-facing-card-display-boundary.md) — translate enum/currency labels and correct stored card copy only at render time; keep engine/API values unchanged.
 - [Published catalog QA boundary](published-catalog-qa-boundary.md) — snapshot published API data, separate engine-path PASS from semantic UNVERIFIED, and report spec/catalog drift without auto-fixing it.
 - [Card tag play provenance](card-tag-play-provenance.md) — same-tag triggers must use CARD_PLAYED reason PLAY_FROM_HAND, not generated or entry events.
-- [AI effect provider boundary](ai-effect-provider-boundary.md) — keep provider keys server-side and reject model wrappers/unknown fields instead of auto-correcting AI drafts.
+- [AI effect provider boundary](ai-effect-provider-boundary.md) — validate analysis separately from executable DSL; reject wrappers/unknown fields without auto-correction.
 - [Mechanic compiler boundary](mechanic-compiler-boundary.md) — derive the admin mechanic plan from validated executable AST data; never trust model reasoning as runtime input.
 - [Adjacent summon result semantics](adjacent-summon-result-semantics.md) — independent slot rolls may repeat definitions, and only successfully entered instances feed SAME_TARGET.
 - [Summon aura and target-stat copy](summon-aura-target-copy.md) — summon listeners target the entered instance, while graveyard-stat copies snapshot before creation.
@@ -85,3 +85,4 @@
 - [Delayed source snapshots](delayed-source-snapshots.md) — delayed effects must retain their source and resolve next-turn timing relative to the active player.
 - [Hidden event references](hidden-event-references.md) — redact hidden IDs in event paths and pending effect queues, including delayed source snapshots.
 - [Champion Prism economy](champion-prism-economy.md) — separate Champion currency/config/ledger and user-scoped pack claims protect unique unlocks from cross-currency or replay duplication.
+- [Pack idempotency recovery](pack-idempotency-recovery.md) — uncertain opens must replay the original user-scoped pack/quantity/key before another batch can start.

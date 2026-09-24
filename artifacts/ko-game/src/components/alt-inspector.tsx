@@ -16,6 +16,7 @@ import {
 import { CardRenderer } from './card-renderer';
 import { getActiveCardKeywords } from '../game/cards/granted-text';
 import { getCardRuntimeRulesText } from '../lib/card-display-state';
+import { shouldPreventAltWheel, shouldToggleAltInfo } from './alt-inspector-keyboard';
 import {
   calculateInspectorPosition,
   getCardInspectorMetadata,
@@ -45,28 +46,49 @@ export function AltInspectProvider({ children }: { children: ReactNode }) {
   const [target, setTarget] = useState<InspectTarget | null>(null);
   const [isTouchInspecting, setIsTouchInspecting] = useState(false);
   const panelRef = useRef<HTMLElement>(null);
+  const pendingAltToggleRef = useRef<number | null>(null);
   const [panelPosition, setPanelPosition] = useState({ left: 8, top: 8 });
 
   useEffect(() => {
-    const releaseAlt = () => setIsAltPressed(false);
-    const handleKeyDown = (event: KeyboardEvent) => {
-      if (event.key === 'Alt') setIsAltPressed(true);
+    const clearPendingAltToggle = () => {
+      if (pendingAltToggleRef.current !== null) {
+        window.clearTimeout(pendingAltToggleRef.current);
+        pendingAltToggleRef.current = null;
+      }
     };
-    const handleKeyUp = (event: KeyboardEvent) => {
-      if (event.key === 'Alt') releaseAlt();
+    const isEditableTarget = (target: EventTarget | null) => {
+      if (!(target instanceof HTMLElement)) return false;
+      return Boolean(
+        target.isContentEditable ||
+        target.closest('input, textarea, select, [contenteditable="true"], [role="textbox"]'),
+      );
+    };
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Alt') {
+        if (!shouldToggleAltInfo(event, isEditableTarget(event.target))) return;
+        clearPendingAltToggle();
+        // Wait one task so a companion shortcut key (for example Alt+Tab) can
+        // cancel the toggle before it changes the inspection mode.
+        pendingAltToggleRef.current = window.setTimeout(() => {
+          pendingAltToggleRef.current = null;
+          setIsAltPressed((current) => !current);
+        }, 0);
+        return;
+      }
+      // Do not interpret an Alt+key chord as a standalone inspection toggle.
+      clearPendingAltToggle();
     };
     const handleVisibility = () => {
-      if (document.hidden) releaseAlt();
+      if (document.hidden) clearPendingAltToggle();
     };
 
     window.addEventListener('keydown', handleKeyDown);
-    window.addEventListener('keyup', handleKeyUp);
-    window.addEventListener('blur', releaseAlt);
+    window.addEventListener('blur', clearPendingAltToggle);
     document.addEventListener('visibilitychange', handleVisibility);
     return () => {
+      clearPendingAltToggle();
       window.removeEventListener('keydown', handleKeyDown);
-      window.removeEventListener('keyup', handleKeyUp);
-      window.removeEventListener('blur', releaseAlt);
+      window.removeEventListener('blur', clearPendingAltToggle);
       document.removeEventListener('visibilitychange', handleVisibility);
     };
   }, []);
@@ -98,13 +120,13 @@ export function AltInspectProvider({ children }: { children: ReactNode }) {
   );
 
   useEffect(() => {
-    if (!isAltPressed || !target) return;
+    if (!target) return;
     const preventAltWheelHistory = (event: WheelEvent) => {
-      event.preventDefault();
+      if (shouldPreventAltWheel(event)) event.preventDefault();
     };
     window.addEventListener('wheel', preventAltWheelHistory, { passive: false });
     return () => window.removeEventListener('wheel', preventAltWheelHistory);
-  }, [isAltPressed, target]);
+  }, [target]);
 
   const updatePanelPosition = useCallback(() => {
     if (!target || !panelRef.current) return;
@@ -143,11 +165,20 @@ export function AltInspectProvider({ children }: { children: ReactNode }) {
       <div
         className="contents"
         onWheelCapture={(event) => {
-          if (isAltPressed && target) event.preventDefault();
+          if (target && shouldPreventAltWheel(event)) event.preventDefault();
         }}
       >
         {children}
       </div>
+      {isAltPressed && (
+        <div
+          aria-live="polite"
+          className="pointer-events-none fixed right-3 top-3 z-[199] rounded-full border border-amber-500/40 bg-neutral-950/80 px-2.5 py-1 text-[10px] font-bold tracking-wide text-amber-200 shadow-lg backdrop-blur"
+          data-testid="status-alt-info-mode"
+        >
+          ALT 정보: ON
+        </div>
+      )}
       {isVisible && (
         <aside
           aria-label="상세정보"

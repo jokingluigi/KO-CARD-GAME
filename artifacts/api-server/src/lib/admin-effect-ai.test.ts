@@ -270,6 +270,7 @@ test("provider stub에서도 exact 문장이 READY draft와 새 capability promp
   const exactText = "등장: 이 카드 양옆의 빈 슬롯에 각각 무작위 선수 카드 1장을 소환하고, 그렇게 소환된 선수들에게 도발을 부여한다.";
   let requestBody: Record<string, unknown> | undefined;
   let providerCalls = 0;
+  const diagnostics: Array<Record<string, unknown>> = [];
 
   process.env.OPENAI_API_KEY = "test-provider-key";
   delete process.env.AI_INTEGRATIONS_OPENAI_API_KEY;
@@ -282,6 +283,7 @@ test("provider stub에서도 exact 문장이 READY draft와 새 capability promp
         message: {
           content: JSON.stringify({
             status: "READY",
+            effectId: "STRUCTURED_EFFECTS_V1",
             effects: [
               {
                 trigger: "ENTER_FIELD",
@@ -309,6 +311,15 @@ test("provider stub에서도 exact 문장이 READY draft와 새 capability promp
               },
             ],
             keywords: [],
+            analysis: {
+              normalizedMeaning: "On entry, summon two adjacent wrestlers and grant taunt.",
+              confidence: 0.98,
+              trigger: "ENTER_FIELD",
+              target: "two adjacent allied wrestler slots",
+              action: "summon and grant taunt",
+              triggerIntent: ["ENTER_FIELD"],
+              ambiguities: [],
+            },
           }),
         },
       }],
@@ -316,12 +327,23 @@ test("provider stub에서도 exact 문장이 READY draft와 새 capability promp
   };
 
   try {
-    const result = await generateEffectDraft(exactText, { sourceType: "CARD", cardType: "WRESTLER" }, []);
+    const result = await generateEffectDraft(
+      exactText,
+      { sourceType: "CARD", cardType: "WRESTLER" },
+      [],
+      { requestId: "safe-test-request-id", onDiagnostic: (entry) => diagnostics.push(entry) },
+    );
     assert.equal(result.status, "READY");
     assert.equal(result.effects[0]?.target?.selection, "ADJACENT_EMPTY_SLOTS");
     assert.equal(result.effects[1]?.target?.selection, "SAME_TARGET");
     assert.equal(result.effects[1]?.values?.keyword, "TAUNT");
+    assert.equal(result.interpretation?.trigger, "ENTER_FIELD");
+    assert.deepEqual(result.effectConfig, { effects: result.effects });
+    assert.equal(JSON.stringify(result.effectConfig).includes("interpretation"), false);
     assert.equal(providerCalls, 1);
+    assert.equal(diagnostics[0]?.requestId, "safe-test-request-id");
+    assert.deepEqual(diagnostics[0]?.topLevelKeys, ["analysis", "effectId", "effects", "keywords", "status"]);
+    assert.equal(JSON.stringify(diagnostics).includes(exactText), false);
     const systemPrompt = String((requestBody?.messages as Array<{ role: string; content: string }>)[0]?.content);
     const userMessage = String((requestBody?.messages as Array<{ role: string; content: string }>)[1]?.content);
     assert.match(systemPrompt, /ADJACENT_EMPTY_SLOTS/);
@@ -336,6 +358,99 @@ test("provider stub에서도 exact 문장이 READY draft와 새 capability promp
     if (originalBaseUrl === undefined) delete process.env.OPENAI_BASE_URL;
     else process.env.OPENAI_BASE_URL = originalBaseUrl;
   }
+});
+
+test("SCRIPT_V1 provider metadata is accepted but excluded from the executable config", async () => {
+  const originalFetch = globalThis.fetch;
+  const originalKey = process.env.OPENAI_API_KEY;
+  const originalBaseUrl = process.env.OPENAI_BASE_URL;
+  process.env.OPENAI_API_KEY = "test-provider-key";
+  process.env.OPENAI_BASE_URL = "https://provider.test/v1";
+  globalThis.fetch = async () => new Response(JSON.stringify({
+    choices: [{ message: { content: JSON.stringify({
+      status: "READY",
+      effectId: "SCRIPT_V1",
+      scripts: [{
+        version: "SCRIPT_V1",
+        trigger: "ENTER_FIELD",
+        steps: [{
+          type: "EFFECT",
+          effect: {
+            action: "DAMAGE",
+            target: { zone: "PLAYER", owner: "ENEMY", selection: "SELF", count: 1 },
+            values: { amount: 2 },
+          },
+        }],
+      }],
+      keywords: [],
+      analysis: {
+        trigger: "ENTER_FIELD",
+        target: "enemy champion",
+        action: "deal two damage",
+        normalizedMeaning: "Deal two damage to the enemy champion.",
+        confidence: 0.9,
+        ambiguities: [],
+      },
+    }) } }],
+  }), { status: 200, headers: { "Content-Type": "application/json" } });
+
+  try {
+    const result = await generateEffectDraft(
+      "등장: 적 챔피언에게 2 피해를 줍니다.",
+      { sourceType: "CARD", cardType: "WRESTLER" },
+      [],
+    );
+    assert.equal(result.status, "READY");
+    if (result.status === "READY") {
+      assert.equal(result.effectId, "SCRIPT_V1");
+      assert.equal(result.interpretation?.action, "deal two damage");
+      assert.deepEqual(result.effectConfig, { scripts: result.scripts });
+      assert.equal(JSON.stringify(result.effectConfig).includes("analysis"), false);
+    }
+  } finally {
+    globalThis.fetch = originalFetch;
+    if (originalKey === undefined) delete process.env.OPENAI_API_KEY;
+    else process.env.OPENAI_API_KEY = originalKey;
+    if (originalBaseUrl === undefined) delete process.env.OPENAI_BASE_URL;
+    else process.env.OPENAI_BASE_URL = originalBaseUrl;
+  }
+});
+
+test("metadata and executable schemas remain independently strict", () => {
+  const context = { sourceType: "CARD" as const, cardType: "WRESTLER" as const };
+  const validEffect = {
+    trigger: "ENTER_FIELD",
+    action: "DAMAGE",
+    target: { zone: "PLAYER", owner: "ENEMY", selection: "SELF", count: 1 },
+    values: { amount: 2 },
+  };
+  assert.throws(
+    () => validateGeneratedEffectDraft({
+      status: "READY",
+      effects: [validEffect],
+      keywords: [],
+      analysis: { trigger: "ENTER_FIELD", undocumentedSummary: "not allowed" },
+    }, context, []),
+    (error: unknown) => error instanceof EffectAiError && error.code === "MALFORMED_RESPONSE",
+  );
+  assert.throws(
+    () => validateGeneratedEffectDraft({
+      status: "READY",
+      effects: [{ ...validEffect, analysis: { trigger: "ENTER_FIELD" } }],
+      keywords: [],
+      analysis: { trigger: "ENTER_FIELD" },
+    }, context, []),
+    (error: unknown) => error instanceof EffectAiError && error.code === "INVALID_DRAFT",
+  );
+  assert.throws(
+    () => validateGeneratedEffectDraft({
+      status: "READY",
+      effects: [validEffect],
+      keywords: [],
+      analysis: { trigger: { execute: "not a summary" } },
+    }, context, []),
+    (error: unknown) => error instanceof EffectAiError && error.code === "MALFORMED_RESPONSE",
+  );
 });
 
 test("provider가 clarification을 반환해도 공유 analyzer가 명확한 문장을 실행 효과로 컴파일한다", async () => {
