@@ -26,6 +26,7 @@ import {
 } from "../lib/auth";
 import { ensureStarterCollection } from "../lib/collection";
 import { logger } from "../lib/logger";
+import { grantAccountStarterPacks, StarterPackConfigurationError } from "../lib/starter-pack-rewards";
 
 const router = Router();
 const STARTING_CURRENCY = Math.max(0, Number.parseInt(process.env["STARTING_CURRENCY"] ?? "1000", 10) || 1000);
@@ -34,7 +35,7 @@ function readString(value: unknown): string {
   return typeof value === "string" ? value : "";
 }
 
-router.post("/register", async (request, response) => {
+router.post("/register", async (request, response): Promise<void> => {
   const email = normalizeEmail(readString(request.body?.email));
   const nickname = readString(request.body?.nickname).trim();
   const password = readString(request.body?.password);
@@ -68,17 +69,23 @@ router.post("/register", async (request, response) => {
   }
 
   try {
-    const [user] = await db
-      .insert(usersTable)
-      .values({
-        id: randomUUID(),
-        email,
-        nickname,
-        passwordHash: await hashPassword(password),
-        role: isConfiguredAdminEmail(email) ? "ADMIN" : "USER",
-        currency: STARTING_CURRENCY,
-      })
-      .returning();
+    const passwordHash = await hashPassword(password);
+    const user = await db.transaction(async (tx) => {
+      const [createdUser] = await tx
+        .insert(usersTable)
+        .values({
+          id: randomUUID(),
+          email,
+          nickname,
+          passwordHash,
+          role: isConfiguredAdminEmail(email) ? "ADMIN" : "USER",
+          currency: STARTING_CURRENCY,
+        })
+        .returning();
+      if (!createdUser) throw new Error("계정을 만들지 못했습니다.");
+      await grantAccountStarterPacks(createdUser.id, tx);
+      return createdUser;
+    });
     if (!user) {
       response.status(500).json({ message: "계정을 만들지 못했습니다." });
       return;
@@ -89,6 +96,11 @@ router.post("/register", async (request, response) => {
   } catch (error) {
     if ((error as { code?: string }).code === "23505") {
       response.status(409).json({ message: "이미 사용 중인 이메일 또는 닉네임입니다." });
+      return;
+    }
+    if (error instanceof StarterPackConfigurationError) {
+      request.log.error({ err: error }, "Account signup starter pack configuration is invalid");
+      response.status(503).json({ message: "회원가입 보상 설정을 확인할 수 없습니다. 잠시 후 다시 시도해 주세요." });
       return;
     }
     throw error;

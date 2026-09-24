@@ -1,11 +1,12 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import { randomUUID } from "node:crypto";
-import { eq } from "drizzle-orm";
+import { eq, sql } from "drizzle-orm";
 import {
   cardsTable,
   db,
   packDefinitionsTable,
+  rewardGrantsTable,
   userCardCollectionsTable,
   userPackInventoryTable,
   usersTable,
@@ -13,6 +14,8 @@ import {
 import { isDailyQuestClaimable, objectiveIncrement, selectDailyQuestDefinitions, validateDailyQuestInput } from "./daily-quest-service";
 import { nextAttendanceDayIndex, validateAttendanceInput } from "./attendance-service";
 import { grantReward, isFinishedMatchRewardEligible, isRewardType, rewardIdempotencyKey } from "./reward-service";
+import { grantAccountStarterPacks, StarterPackConfigurationError } from "./starter-pack-rewards";
+import { ensureStarterCollection } from "./collection";
 
 test("MR1/MR2: only a canonical finished match with a winner is reward eligible", () => {
   assert.equal(isFinishedMatchRewardEligible("FINISHED", "winner-1", "GAME_FINISHED"), true);
@@ -159,4 +162,175 @@ test("CR1/CR2/PR1/PR2/PR3: card and pack grants are authoritative, atomic, and i
       assert.equal(packOwnership?.quantity, 1);
       throw new Error("ROLLBACK_REWARD_FIXTURE");
     }), /ROLLBACK_REWARD_FIXTURE/);
+});
+
+test("SR1/SR2/SR3/S5/S8/S9/S10: signup grants every configured pack once and rolls back atomically", async () => {
+  const fixture = {
+    userId: `starter-pack-test-user-${randomUUID()}`,
+    extraPackId: `starter-pack-test-pack-${randomUUID()}`,
+  };
+
+  await assert.rejects(db.transaction(async (tx) => {
+    await tx.insert(usersTable).values({
+      id: fixture.userId,
+      email: `${fixture.userId}@localhost.test`,
+      nickname: fixture.userId,
+      passwordHash: "test-only",
+    });
+    await tx.insert(packDefinitionsTable).values({
+      id: fixture.extraPackId,
+      name: "Starter Reward Fixture Pack",
+      status: "PUBLISHED",
+      starterRewardQuantity: 3,
+    });
+
+    const configuredPacks = await tx.select({
+      id: packDefinitionsTable.id,
+      quantity: packDefinitionsTable.starterRewardQuantity,
+    }).from(packDefinitionsTable)
+      .where(sql`${packDefinitionsTable.starterRewardQuantity} <> 0`);
+    assert.ok(configuredPacks.length >= 2, "expected the configured base pack and the fixture pack");
+
+    const firstAttempt = await grantAccountStarterPacks(fixture.userId, tx);
+    const retryAttempt = await grantAccountStarterPacks(fixture.userId, tx);
+    assert.equal(firstAttempt.length, configuredPacks.length);
+    assert.ok(firstAttempt.every((grant) => grant.granted));
+    assert.ok(retryAttempt.every((grant) => !grant.granted));
+
+    const inventory = await tx.select({
+      packDefinitionId: userPackInventoryTable.packDefinitionId,
+      quantity: userPackInventoryTable.quantity,
+    }).from(userPackInventoryTable)
+      .where(eq(userPackInventoryTable.userId, fixture.userId));
+    assert.deepEqual(
+      new Map(inventory.map((item) => [item.packDefinitionId, item.quantity])),
+      new Map(configuredPacks.map((pack) => [pack.id, pack.quantity])),
+    );
+    const grants = await tx.select().from(rewardGrantsTable)
+      .where(eq(rewardGrantsTable.userId, fixture.userId));
+    assert.equal(grants.length, configuredPacks.length);
+    throw new Error("ROLLBACK_STARTER_PACK_FIXTURE");
+  }), /ROLLBACK_STARTER_PACK_FIXTURE/);
+
+  assert.equal((await db.select({ id: usersTable.id }).from(usersTable)
+    .where(eq(usersTable.id, fixture.userId))).length, 0);
+  assert.equal((await db.select({ id: rewardGrantsTable.id }).from(rewardGrantsTable)
+    .where(eq(rewardGrantsTable.userId, fixture.userId))).length, 0);
+  assert.equal((await db.select({ userId: userPackInventoryTable.userId }).from(userPackInventoryTable)
+    .where(eq(userPackInventoryTable.userId, fixture.userId))).length, 0);
+  assert.equal((await db.select({ id: packDefinitionsTable.id }).from(packDefinitionsTable)
+    .where(eq(packDefinitionsTable.id, fixture.extraPackId))).length, 0);
+});
+
+test("SR4: concurrent starter initialization only increments each pack once", async () => {
+  const fixtureUserId = `starter-pack-concurrent-user-${randomUUID()}`;
+  const configuredPacks = await db.select({
+    id: packDefinitionsTable.id,
+    quantity: packDefinitionsTable.starterRewardQuantity,
+  }).from(packDefinitionsTable)
+    .where(sql`${packDefinitionsTable.starterRewardQuantity} > 0`);
+  assert.ok(configuredPacks.length > 0);
+
+  await db.insert(usersTable).values({
+    id: fixtureUserId,
+    email: `${fixtureUserId}@localhost.test`,
+    nickname: fixtureUserId,
+    passwordHash: "test-only",
+  });
+  try {
+    const attempts = await Promise.all([
+      db.transaction((tx) => grantAccountStarterPacks(fixtureUserId, tx)),
+      db.transaction((tx) => grantAccountStarterPacks(fixtureUserId, tx)),
+    ]);
+    assert.equal(attempts.flat().filter((grant) => grant.granted).length, configuredPacks.length);
+
+    const inventory = await db.select({
+      packDefinitionId: userPackInventoryTable.packDefinitionId,
+      quantity: userPackInventoryTable.quantity,
+    }).from(userPackInventoryTable)
+      .where(eq(userPackInventoryTable.userId, fixtureUserId));
+    assert.deepEqual(
+      new Map(inventory.map((item) => [item.packDefinitionId, item.quantity])),
+      new Map(configuredPacks.map((pack) => [pack.id, pack.quantity])),
+    );
+  } finally {
+    await db.delete(usersTable).where(eq(usersTable.id, fixtureUserId));
+  }
+});
+
+test("SR6: existing-account bootstrap does not issue signup pack rewards", async () => {
+  const fixtureUserId = `starter-pack-existing-user-${randomUUID()}`;
+  await db.insert(usersTable).values({
+    id: fixtureUserId,
+    email: `${fixtureUserId}@localhost.test`,
+    nickname: fixtureUserId,
+    passwordHash: "test-only",
+  });
+  try {
+    await ensureStarterCollection(fixtureUserId);
+    assert.equal((await db.select({ id: rewardGrantsTable.id }).from(rewardGrantsTable)
+      .where(eq(rewardGrantsTable.userId, fixtureUserId))).length, 0);
+    assert.equal((await db.select({ userId: userPackInventoryTable.userId }).from(userPackInventoryTable)
+      .where(eq(userPackInventoryTable.userId, fixtureUserId))).length, 0);
+  } finally {
+    await db.delete(usersTable).where(eq(usersTable.id, fixtureUserId));
+  }
+});
+
+test("SR7a: invalid starter-pack configuration rejects signup without partial grants", async () => {
+  const fixture = {
+    userId: `starter-pack-invalid-user-${randomUUID()}`,
+    packId: `starter-pack-invalid-pack-${randomUUID()}`,
+  };
+
+  await assert.rejects(db.transaction(async (tx) => {
+    await tx.insert(usersTable).values({
+      id: fixture.userId,
+      email: `${fixture.userId}@localhost.test`,
+      nickname: fixture.userId,
+      passwordHash: "test-only",
+    });
+    await tx.insert(packDefinitionsTable).values({
+      id: fixture.packId,
+      name: "Invalid Starter Reward Fixture Pack",
+      status: "DISABLED",
+      starterRewardQuantity: 2,
+    });
+    await assert.rejects(
+      grantAccountStarterPacks(fixture.userId, tx),
+      StarterPackConfigurationError,
+    );
+    throw new Error("ROLLBACK_INVALID_STARTER_PACK_FIXTURE");
+  }), /ROLLBACK_INVALID_STARTER_PACK_FIXTURE/);
+
+  assert.equal((await db.select({ id: rewardGrantsTable.id }).from(rewardGrantsTable)
+    .where(eq(rewardGrantsTable.userId, fixture.userId))).length, 0);
+  assert.equal((await db.select({ userId: userPackInventoryTable.userId }).from(userPackInventoryTable)
+    .where(eq(userPackInventoryTable.userId, fixture.userId))).length, 0);
+  assert.equal((await db.select({ id: packDefinitionsTable.id }).from(packDefinitionsTable)
+    .where(eq(packDefinitionsTable.id, fixture.packId))).length, 0);
+});
+
+test("SR7b: signup fails closed when no starter pack is configured", async () => {
+  const fixtureUserId = `starter-pack-unconfigured-user-${randomUUID()}`;
+
+  await assert.rejects(db.transaction(async (tx) => {
+    await tx.insert(usersTable).values({
+      id: fixtureUserId,
+      email: `${fixtureUserId}@localhost.test`,
+      nickname: fixtureUserId,
+      passwordHash: "test-only",
+    });
+    await tx.update(packDefinitionsTable)
+      .set({ starterRewardQuantity: 0 })
+      .where(sql`${packDefinitionsTable.starterRewardQuantity} <> 0`);
+    await assert.rejects(
+      grantAccountStarterPacks(fixtureUserId, tx),
+      StarterPackConfigurationError,
+    );
+    throw new Error("ROLLBACK_UNCONFIGURED_STARTER_PACK_FIXTURE");
+  }), /ROLLBACK_UNCONFIGURED_STARTER_PACK_FIXTURE/);
+
+  assert.equal((await db.select({ id: usersTable.id }).from(usersTable)
+    .where(eq(usersTable.id, fixtureUserId))).length, 0);
 });

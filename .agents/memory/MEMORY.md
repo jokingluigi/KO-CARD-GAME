@@ -1,4 +1,4 @@
-- [TypeScript engine tests](typescript-engine-tests.md) — use an available local TS test runner, or bundle focused KO tests with esbuild.
+- [TypeScript engine tests](typescript-engine-tests.md) — use local tsx when available; DB-backed esbuild bundles must resolve packages from lib/db.
 - [Structured card effects](structured-card-effects.md) — new admin effects are validated data; partial parses never apply and gameplay never reparses display text.
 - [Causal transform effects](causal-transform-effects.md) — conditional follow-up effects must carry a typed causal marker and verify the exact preceding runtime event.
 - [Granted card text layer](granted-card-text-layer.md) — copied executable text is a separate CardInstance layer; silence removes it without reconstructing printed data.

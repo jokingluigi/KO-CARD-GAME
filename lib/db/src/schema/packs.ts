@@ -9,6 +9,7 @@ export const packDefinitionsTable = pgTable("pack_definitions", {
   imageAssetId: text("image_asset_id"),
   imageUrl: text("image_url"),
   cardsPerPack: integer("cards_per_pack").notNull().default(1),
+  starterRewardQuantity: integer("starter_reward_quantity").notNull().default(0),
   normalRate: integer("normal_rate").notNull().default(90),
   legendaryRate: integer("legendary_rate").notNull().default(7),
   championRate: integer("champion_rate").notNull().default(3),

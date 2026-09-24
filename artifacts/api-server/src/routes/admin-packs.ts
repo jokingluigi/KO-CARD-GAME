@@ -21,6 +21,7 @@ type PackInput = {
   imageAssetId: string | null;
   imageUrl: string | null;
   cardsPerPack: number;
+  starterRewardQuantity: number;
   normalRate: number;
   legendaryRate: number;
   championRate: number;
@@ -61,12 +62,16 @@ function parseInput(value: unknown): PackInput | null {
   const name = text("name");
   const imageAssetId = text("imageAssetId") || null;
   const imageUrl = text("imageUrl") || null;
+  const starterRewardQuantity = input.starterRewardQuantity === undefined
+    ? 0
+    : integer("starterRewardQuantity", -1);
   const inputData = {
     name,
     description: text("description"),
     imageAssetId,
     imageUrl,
     cardsPerPack: integer("cardsPerPack", 1),
+    starterRewardQuantity,
     normalRate: integer("normalRate", 90),
     legendaryRate: integer("legendaryRate", 7),
     championRate: integer("championRate", 3),
@@ -77,6 +82,7 @@ function parseInput(value: unknown): PackInput | null {
     skinPool: ids("skinPool"),
   };
   if (!name || name.length > 120 || inputData.cardsPerPack < 1 || inputData.cardsPerPack > 100 ||
+      inputData.starterRewardQuantity < 0 || inputData.starterRewardQuantity > 999 ||
       [inputData.normalRate, inputData.legendaryRate, inputData.championRate, inputData.skinChance].some((rate) => rate < 0 || rate > 100)) {
     return null;
   }
@@ -213,7 +219,14 @@ router.post("/:id/duplicate", async (request, response): Promise<void> => {
   const [source] = await db.select().from(packDefinitionsTable).where(and(eq(packDefinitionsTable.id, request.params.id), sql`${packDefinitionsTable.deletedAt} IS NULL`)).limit(1);
   if (!source) { response.status(404).json({ message: "팩을 찾을 수 없습니다." }); return; }
   const { id: _id, createdAt: _createdAt, updatedAt: _updatedAt, deletedAt: _deletedAt, ...copy } = source;
-  const [pack] = await db.insert(packDefinitionsTable).values({ ...copy, id: randomUUID(), name: `${source.name} Copy`, status: "DRAFT", version: 1 }).returning();
+  const [pack] = await db.insert(packDefinitionsTable).values({
+    ...copy,
+    id: randomUUID(),
+    name: `${source.name} Copy`,
+    starterRewardQuantity: 0,
+    status: "DRAFT",
+    version: 1,
+  }).returning();
   response.status(201).json({ pack });
 });
 
