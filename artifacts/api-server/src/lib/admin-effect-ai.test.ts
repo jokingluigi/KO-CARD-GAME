@@ -26,6 +26,73 @@ test("AI 고정 카드 참조는 catalog ID로 canonicalize한다", () => {
   }
 });
 
+test("strict action/target/value fixtures are rejected with a concrete path", () => {
+  const context = { sourceType: "CARD" as const, cardType: "WRESTLER" as const };
+  const target = { zone: "BOARD", owner: "SELF", selection: "ALL", count: 20 };
+  const fixtures = [
+    { name: "target.filters", effect: { trigger: "ENTER_FIELD", action: "BUFF", target: { ...target, filters: {} }, values: { attack: 1, health: 1 } } },
+    { name: "target.tagFilters", effect: { trigger: "ENTER_FIELD", action: "BUFF", target: { ...target, tagFilters: {} }, values: { attack: 1, health: 1 } } },
+    { name: "target.filter.tag", effect: { trigger: "ENTER_FIELD", action: "BUFF", target: { ...target, filter: { tag: "x" } }, values: { attack: 1, health: 1 } } },
+    { name: "target.race", effect: { trigger: "ENTER_FIELD", action: "BUFF", target: { ...target, race: "x" }, values: { attack: 1, health: 1 } } },
+    { name: "ADD_GOLD + target", effect: { trigger: "ENTER_FIELD", action: "ADD_GOLD", target, values: { amount: 1 } } },
+    { name: "DRAW + tag filter", effect: { trigger: "ENTER_FIELD", action: "DRAW", target: { ...target, filter: { tagsAny: ["x"] } }, values: { amount: 1 } } },
+    { name: "BUFF without target", effect: { trigger: "ENTER_FIELD", action: "BUFF", values: { attack: 1, health: 1 } } },
+    { name: "DAMAGE without amount", effect: { trigger: "ENTER_FIELD", action: "DAMAGE", target } },
+    { name: "ADD_KEYWORD without keyword", effect: { trigger: "ENTER_FIELD", action: "ADD_KEYWORD", target } },
+    { name: "DESTROY with stat values", effect: { trigger: "ENTER_FIELD", action: "DESTROY", target, values: { attack: 1 } } },
+    { name: "STEAL bad owner/zone", effect: { trigger: "ENTER_FIELD", action: "STEAL", target: { ...target, zone: "BOARD" } } },
+  ];
+  for (const fixture of fixtures) {
+    assert.throws(
+      () => validateGeneratedEffectDraft({ status: "READY", effects: [fixture.effect], keywords: [] }, context, []),
+      (error: unknown) => error instanceof EffectAiError && error.message.includes("effects[0]"),
+      fixture.name,
+    );
+  }
+});
+
+test("all strict SCRIPT_V1 rejection fixtures stay out of READY", () => {
+  const context = { sourceType: "CARD" as const, cardType: "WRESTLER" as const };
+  const validScript = [{
+    version: "SCRIPT_V1",
+    trigger: "SELF_ATTACK",
+    steps: [
+      {
+        type: "SELECT",
+        id: "selectedCard",
+        target: { zone: "BOARD", owner: "ENEMY", selection: "PLAYER_CHOICE", count: 1 },
+      },
+      { type: "EFFECT", effect: { action: "STEAL", target: { resultId: "selectedCard" } } },
+    ],
+  }];
+  const draft = (scripts: unknown[], extra: Record<string, unknown> = {}) => ({
+    status: "READY",
+    effectId: "SCRIPT_V1",
+    scripts,
+    keywords: [],
+    ...extra,
+  });
+  const fixtures = [
+    { name: "script without version", scripts: [{ ...validScript[0], version: undefined }] },
+    { name: "script bad version", scripts: [{ ...validScript[0], version: "SCRIPT_V2" }] },
+    { name: "unknown step", scripts: [{ ...validScript[0], steps: [{ type: "RUN" }] }] },
+    { name: "duplicate step id", scripts: [{ ...validScript[0], steps: [{ type: "SELECT", id: "same", target: { zone: "BOARD", owner: "ENEMY", selection: "ALL", count: 1 } }, { type: "SELECT", id: "same", target: { zone: "BOARD", owner: "ENEMY", selection: "ALL", count: 1 } }] }] },
+    { name: "bad resultId", scripts: [{ ...validScript[0], steps: [{ type: "EFFECT", effect: { action: "STEAL", target: { resultId: "missing" } } }] }] },
+    { name: "unknown action", scripts: [{ ...validScript[0], steps: [{ type: "EFFECT", effect: { action: "HACK" } }] }] },
+    { name: "arbitrary code", scripts: [{ ...validScript[0], steps: [{ type: "EFFECT", effect: { action: "DRAW", values: { amount: 1, code: "return state" } } }] }] },
+    { name: "source spoof", scripts: validScript, extra: { sourceId: "spoofed" } },
+    { name: "forward result reference", scripts: [{ ...validScript[0], steps: [{ type: "EFFECT", effect: { action: "STEAL", target: { resultId: "later" } } }, { type: "SELECT", id: "later", target: { zone: "BOARD", owner: "ENEMY", selection: "ALL", count: 1 } }] }] },
+    { name: "malformed nested script", scripts: [{ ...validScript[0], steps: [{ type: "IF", condition: { left: { kind: "CONSTANT", value: 1 }, compare: "EQ", right: { kind: "CONSTANT", value: 1 } }, then: {} }] }] },
+  ];
+  for (const fixture of fixtures) {
+    assert.throws(
+      () => validateGeneratedEffectDraft(draft(fixture.scripts, fixture.extra), context, []),
+      EffectAiError,
+      fixture.name,
+    );
+  }
+});
+
 test("AI가 모호한 카드 이름을 고르면 추측하지 않고 거부한다", () => {
   assert.throws(
     () => validateGeneratedEffectDraft({

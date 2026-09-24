@@ -30,7 +30,7 @@ export type StatName = "COST" | "ATTACK" | "HEALTH";
 export type EffectDuration = "THIS_TURN" | "UNTIL_NEXT_TURN" | "PERMANENT";
 export const STAT_NAMES = ["COST", "ATTACK", "HEALTH"] as const;
 export const EFFECT_DURATIONS = ["THIS_TURN", "UNTIL_NEXT_TURN", "PERMANENT"] as const;
-export type EffectActionSchema = { target: boolean; amount?: boolean; signedAmount?: boolean; stat?: boolean; duration?: boolean; stats?: boolean; statMultiplier?: boolean; referenceStat?: boolean; dynamicValue?: boolean; generatedModifiers?: boolean; minimum?: boolean; keyword?: boolean; damageSource?: boolean; branches?: boolean; queuedEffect?: boolean; cardDefinition?: boolean; cardCount?: boolean; destination?: boolean; aggregateStats?: boolean; conditionalBuff?: boolean; delayed?: boolean; listener?: boolean; prevention?: boolean };
+export type EffectActionSchema = { target: boolean; amount?: boolean; signedAmount?: boolean; stat?: boolean; duration?: boolean; stats?: boolean; statMultiplier?: boolean; referenceStat?: boolean; dynamicValue?: boolean; generatedModifiers?: boolean; minimum?: boolean; keyword?: boolean; damageSource?: boolean; branches?: boolean; queuedEffect?: boolean; cardDefinition?: boolean; cardCount?: boolean; destination?: boolean; aggregateStats?: boolean; conditionalBuff?: boolean; delayed?: boolean; listener?: boolean; prevention?: boolean; captureStats?: boolean };
 export type RegistryStatus = "ACTIVE" | "DISABLED";
 
 /** Closed, data-only Script AST. It is intentionally separate from the
@@ -222,6 +222,7 @@ export type StructuredEffectValues = {
   listener?: StructuredListener & { effect: StructuredQueuedEffect };
   prevention?: StructuredPrevention;
   captureStats?: boolean;
+  causal?: "DAMAGE_CAUSED_TARGET_RETIRE";
   /** Copies a selected candidate's current attack and health to the source. */
   copyBestStats?: boolean;
 };
@@ -248,7 +249,7 @@ const SCRIPT_EFFECT_VALUE_KEYS = new Set([
   "amount", "amountExpression", "attack", "attackExpression", "health", "healthExpression", "countExpression",
   "attackMultiplier", "healthMultiplier", "stat", "duration",
   "keyword", "damageSource", "reference", "referenceStat", "amountReference", "minimum", "temporaryCost",
-  "generatedModifiers", "deckPosition", "count", "destination", "queuedTrigger", "queuedEffect", "delayed", "listener", "prevention",
+  "generatedModifiers", "deckPosition", "count", "destination", "queuedTrigger", "queuedEffect", "delayed", "listener", "prevention", "captureStats",
 ]);
 
 function isRecord(value: unknown): value is Record<string, unknown> {
@@ -318,7 +319,8 @@ function validScriptSteps(value: unknown, depth: number, seen: Set<string>): val
     if (!isRecord(raw) || typeof raw.type !== "string") return false;
     if (raw.type === "SELECT") {
       if (typeof raw.id !== "string" || !/^[A-Za-z][A-Za-z0-9_-]{0,31}$/.test(raw.id) ||
-        seen.has(raw.id) || !validScriptTarget(raw.target)) return false;
+        seen.has(raw.id) || !validScriptTarget(raw.target) ||
+        (isRecord(raw.target) && raw.target.resultId !== undefined && !seen.has(raw.target.resultId))) return false;
       seen.add(raw.id);
       continue;
     }
@@ -345,13 +347,39 @@ function validScriptSteps(value: unknown, depth: number, seen: Set<string>): val
     }
     if (raw.type === "EFFECT") {
       if ((raw.id !== undefined && (typeof raw.id !== "string" || !/^[A-Za-z][A-Za-z0-9_-]{0,31}$/.test(raw.id))) ||
+        (raw.id !== undefined && seen.has(raw.id)) ||
         !isRecord(raw.effect) || !hasOnlyKeys(raw.effect, SCRIPT_EFFECT_KEYS) ||
         !ACTIONS.includes(raw.effect.action as Action)) return false;
-      if (raw.effect.target !== undefined && !validScriptTarget(raw.effect.target)) return false;
+      const action = raw.effect.action as Action;
+      const schema = ACTION_SCHEMAS[action];
+      const target = raw.effect.target;
+      const targetIsReference = isRecord(target) && typeof target.resultId === "string";
+      const targetResultId = targetIsReference ? String(target.resultId) : undefined;
+      if ((schema.target && target === undefined) ||
+        (!schema.target && target !== undefined && !(["SUMMON", "GENERATE"].includes(action) &&
+          isRecord(target) && ["RANDOM", "ADJACENT_EMPTY_SLOTS"].includes(target.selection as string))) ||
+        (target !== undefined && !validScriptTarget(target)) ||
+        (targetIsReference && !seen.has(targetResultId!)) ||
+        (action === "STEAL" && !targetIsReference && isRecord(target) &&
+          (target.owner !== "ENEMY" ||
+            ![target.zone, ...(Array.isArray(target.zones) ? target.zones : [])]
+              .every((zone) => typeof zone === "string" && ["HAND", "DECK", "GRAVEYARD"].includes(zone))))) return false;
+      if (schema.amount && raw.effect.values === undefined) return false;
+      if (schema.keyword && raw.effect.values === undefined) return false;
+      if (action === "TRANSFORM_SOURCE" && raw.effect.values === undefined) return false;
       if (raw.effect.values !== undefined) {
         if (!isRecord(raw.effect.values) || !hasOnlyKeys(raw.effect.values, SCRIPT_EFFECT_VALUE_KEYS)) return false;
+        if (schema.amount &&
+          raw.effect.values.amount === undefined &&
+          raw.effect.values.amountExpression === undefined) return false;
+        if (schema.keyword && !KEYWORDS.includes(raw.effect.values.keyword as Keyword)) return false;
+        if (["DESTROY", "RETIRE", "STUN", "SILENCE", "DISABLE_ABILITY", "SWAP_STATS", "STEAL", "MILL",
+          "DEPLOY_CHAMPION_TOKEN", "CAPTURE", "RELEASE_CAPTURED", "REMOVE_FROM_GAME",
+          "COPY_BEST_STATS", "GRANT_RANDOM_CARD_TEXT"].includes(action) &&
+          Object.keys(raw.effect.values).length > 0) return false;
         if (raw.effect.values.amountExpression !== undefined && !validScriptValue(raw.effect.values.amountExpression)) return false;
       }
+      if (raw.id !== undefined) seen.add(raw.id);
       continue;
     }
     if (raw.type === "IF") {
@@ -394,7 +422,7 @@ export const ACTION_SCHEMAS: Record<Action, EffectActionSchema> = {
   MODIFY_STAT: { target: true, amount: true, signedAmount: true, stat: true, duration: true, minimum: true }, MODIFY_MAX_HEALTH: { target: true, amount: true, signedAmount: true }, SET_STAT: { target: true, amount: true, stat: true, duration: true },
   DAMAGE: { target: true, amount: true }, BUFF: { target: true, stats: true, statMultiplier: true, referenceStat: true, dynamicValue: true }, SET_STATS: { target: true, stats: true }, HEAL: { target: true, amount: true },
   REDUCE_COST: { target: true, amount: true, minimum: true }, INCREASE_COST: { target: true, amount: true }, STUN: { target: true },
-  RETIRE: { target: true }, DISABLE_ABILITY: { target: true }, WEAKEN_TO_STUN_SILENCE: { target: true, amount: true },
+  RETIRE: { target: true, captureStats: true }, DISABLE_ABILITY: { target: true }, WEAKEN_TO_STUN_SILENCE: { target: true, amount: true },
   SILENCE: { target: true }, DESTROY: { target: true }, ADD_KEYWORD: { target: true, keyword: true }, REMOVE_KEYWORD: { target: true, keyword: true },
   SWAP_STATS: { target: true }, ADD_DAMAGE_MODIFIER: { target: false, amount: true, damageSource: true }, SUMMON: { target: false, cardDefinition: true, cardCount: true, aggregateStats: true, generatedModifiers: true }, SUMMON_FROM_HAND: { target: false, cardDefinition: true, cardCount: true }, REVIVE: { target: true }, GENERATE: { target: false, cardDefinition: true, cardCount: true, destination: true, generatedModifiers: true }, MOVE_TO_HAND: { target: true }, MILL: { target: true }, SPEND_GOLD_BUFF_SELF: { target: true, dynamicValue: true }, DEPLOY_CHAMPION_TOKEN: { target: false }, CAPTURE: { target: true }, RELEASE_CAPTURED: { target: false },
   REMOVE_FROM_GAME: { target: true }, SWITCH_EFFECT_BRANCH: { target: false, branches: true }, QUEUE_EFFECT: { target: false, queuedEffect: true }, ADD_AGGREGATED_ATTACK: { target: true, aggregateStats: true }, COPY_BEST_STATS: { target: true }, TRANSFORM_SOURCE: { target: false, cardDefinition: true }, STEAL: { target: true },
@@ -446,8 +474,9 @@ export const EFFECT_LIBRARY = {
        ...(schema.cardDefinition ? { definition: "CardDefinition", definitionRef: "{ id?: string, name?: string }" } : {}),
        ...(schema.cardCount ? { count: "integer (1..20)" } : {}),
        ...(schema.destination ? { destination: '"HAND" | "DECK" | "DECK_TOP"' } : {}),
-       ...(schema.aggregateStats ? { aggregateStats: "{ source: LAST_DESTROYED_TARGETS, attack: CURRENT_ATTACK_SUM, health: CURRENT_HEALTH_SUM }" } : {}),
-       ...(name === "TRANSFORM_SOURCE" ? { definitionRef: "{ id?: string, name?: string }" } : {}),
+        ...(schema.aggregateStats ? { aggregateStats: "{ source: LAST_DESTROYED_TARGETS, attack: CURRENT_ATTACK_SUM, health: CURRENT_HEALTH_SUM }" } : {}),
+        ...(schema.captureStats ? { captureStats: "boolean" } : {}),
+        ...(name === "TRANSFORM_SOURCE" ? { definitionRef: "{ id?: string, name?: string }", causal: ["DAMAGE_CAUSED_TARGET_RETIRE"] } : {}),
        ...(schema.conditionalBuff ? { conditionalBuff: "{ healthEquals: number, attack: number, health: number }" } : {}),
     };
     return {
@@ -461,6 +490,6 @@ export const EFFECT_LIBRARY = {
   }),
     triggers: TRIGGERS.map((name) => ({ name, label: DISPLAY_LABELS[name as keyof typeof DISPLAY_LABELS] ?? name, description: triggerDescriptions[name], status: "ACTIVE" as const, version: 1 })),
    conditions: CONDITIONS.map((name) => ({ name, label: DISPLAY_LABELS[name as keyof typeof DISPLAY_LABELS] ?? name, description: name === "SOURCE_IS_ONLY_WRESTLER" ? "이 카드가 내 필드의 유일한 선수인지 확인합니다." : "구조화된 조건을 확인합니다.", status: "ACTIVE" as const, version: 1 })),
-    targetResolvers: [{ name: "ZONE_OWNER_SELECTION", description: "영역(여러 영역 포함), 소유자, 카드 유형, 태그 필터, 선택 방식 및 수로 대상을 해석합니다.", config: { zone: [...TARGET_ZONES], zones: "TargetZone[]", defaultCardScope: [...DEFAULT_CARD_TARGET_SCOPE], owner: [...TARGET_OWNERS], filters: [...TARGET_FILTERS], tagFilters: { tagsAny: "string[]", tagsAll: "string[]", tagsNone: "string[]" }, selection: [...TARGET_SELECTIONS], randomScope: [...RANDOM_SCOPES], count: "integer (1..20)" }, status: "ACTIVE" as const, version: 1 }],
+    targetResolvers: [{ name: "ZONE_OWNER_SELECTION", description: "영역(여러 영역 포함), 소유자, 카드 유형, 단일 filter 객체, 선택 방식 및 수로 대상을 해석합니다.", config: { zone: [...TARGET_ZONES], zones: "TargetZone[]", defaultCardScope: [...DEFAULT_CARD_TARGET_SCOPE], owner: [...TARGET_OWNERS], filter: { isGenerated: "boolean", minCost: "integer", maxCost: "integer", isToken: "boolean", isChampionToken: "boolean", excludeSource: "boolean", isVanilla: "boolean", keyword: [...KEYWORDS], cost: "{ compare, value }", attack: "{ compare, value }", health: "{ compare, value }", tagsAny: "string[]", tagsAll: "string[]", tagsNone: "string[]" }, selection: [...TARGET_SELECTIONS], randomScope: [...RANDOM_SCOPES], count: "integer (1..20)" }, status: "ACTIVE" as const, version: 1 }],
    valueResolvers: [{ name: "AMOUNT", description: "골드, 피해, 회복, 드로우 및 비용 수치를 해석합니다.", status: "ACTIVE" as const, version: 1 }, { name: "STAT_PAIR", description: "+공격력/+체력 수치를 해석합니다.", status: "ACTIVE" as const, version: 1 }, { name: "STAT_MULTIPLIER", description: "대상의 현재 공격력과 체력을 배수로 변경합니다.", config: { attackMultiplier: "number (0..10)", healthMultiplier: "number (0..10)" }, status: "ACTIVE" as const, version: 1 }, { name: "REFERENCE_STAT", description: "마지막 공격자 등 참조 대상의 현재 능력치를 수치로 해석합니다.", config: { reference: [...REFERENCES], referenceStat: ["CURRENT_ATTACK", "CURRENT_HEALTH"] }, status: "ACTIVE" as const, version: 1 }, { name: "KEYWORD", description: "지원 키워드를 해석합니다.", values: [...KEYWORDS], status: "ACTIVE" as const, version: 1 }],
 } as const;

@@ -532,6 +532,45 @@ test('액티브로 현재 공격력과 체력을 서로 교환한다', () => {
   assert.equal(result.players[0].board[0]?.maxHealth, 9);
 });
 
+test('피해가 정확한 대상을 퇴장시킨 경우에만 causal 변신을 실행한다', () => {
+  const transformed = definition('wolf-form', []);
+  const effects: CardEffect[] = [
+    structured('DAMAGE', {
+      zone: 'BOARD',
+      owner: 'ENEMY',
+      cardType: 'WRESTLER',
+      selection: 'PLAYER_CHOICE',
+      count: 1,
+    }, { amount: 1 }),
+    structured('TRANSFORM_SOURCE', undefined, {
+      definitionRef: { id: transformed.id },
+      causal: 'DAMAGE_CAUSED_TARGET_RETIRE',
+    }),
+  ];
+  const source = instance('maid-pandora', effects);
+  const makeState = (health: number) => {
+    const state = createInitialGameState(undefined, [definition('maid-pandora', effects), transformed]);
+    state.players[1].board[0] = {
+      ...instance('target'),
+      boardSlot: 0,
+      currentHealth: health,
+      maxHealth: health,
+    };
+    return state;
+  };
+
+  const survivedPending = enterField(makeState(2), 'player-1', source, 0);
+  assert.ok(survivedPending.targetingState);
+  const survived = selectEffectTarget(survivedPending, survivedPending.targetingState!.validTargetIds[0]!);
+  assert.equal(survived.players[0].board[0]?.definitionId, 'maid-pandora');
+
+  const lethalPending = enterField(makeState(1), 'player-1', source, 0);
+  assert.ok(lethalPending.targetingState);
+  const lethal = selectEffectTarget(lethalPending, lethalPending.targetingState!.validTargetIds[0]!);
+  assert.equal(lethal.players[0].board[0]?.definitionId, 'wolf-form');
+  assert.equal(lethal.players[1].graveyard.some((card) => card.definitionId === 'target'), true);
+});
+
 test('등장 시 자신의 양옆 빈 슬롯에 표준 무작위 선수를 각각 소환한다', () => {
   const source = instance('adjacent-summon-source', [
     structured('SUMMON', {

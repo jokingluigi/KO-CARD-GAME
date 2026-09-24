@@ -128,6 +128,8 @@ const VALUE_KEYS = new Set([
   "count",
   "destination",
   "aggregateStats",
+  "captureStats",
+  "causal",
   "leftEffects",
   "rightEffects",
   "delayed",
@@ -288,6 +290,45 @@ function validateContextCompatibility(effects: StructuredEffect[], context: Effe
   }
 }
 
+function contractErrors(effects: unknown): string[] {
+  if (!Array.isArray(effects)) return [];
+  const errors: string[] = [];
+  effects.forEach((raw, index) => {
+    if (!isRecord(raw) || typeof raw.action !== "string") return;
+    const action = raw.action as Action;
+    const schema = ACTION_SCHEMAS[action];
+    if (!schema) return;
+    const path = `effects[${index}]`;
+    const target = raw.target;
+    if (schema.target && target === undefined) {
+      errors.push(`${path}.target → ${action}에는 target이 필요합니다.`);
+    }
+    if (!schema.target && target !== undefined &&
+        !(["SUMMON", "GENERATE"].includes(action) && isRecord(target) &&
+          ["RANDOM", "ADJACENT_EMPTY_SLOTS"].includes(String(target.selection)))) {
+      errors.push(`${path}.target → ${action}은(는) target을 허용하지 않습니다.`);
+    }
+    const values = isRecord(raw.values) ? raw.values : undefined;
+    if (schema.amount && values?.amount === undefined) {
+      errors.push(`${path}.values.amount → ${action}에 필요한 수치가 없습니다.`);
+    }
+    if (schema.keyword && values?.keyword === undefined) {
+      errors.push(`${path}.values.keyword → ${action}에 필요한 keyword가 없습니다.`);
+    }
+    if (action === "DESTROY" && values && Object.keys(values).length > 0) {
+      errors.push(`${path}.values → DESTROY는 values를 허용하지 않습니다.`);
+    }
+    if (action === "STEAL" && isRecord(target) && target.resultId === undefined) {
+      const zones = target.zones ?? (target.zone ? [target.zone] : []);
+      if (target.owner !== "ENEMY" || !Array.isArray(zones) ||
+          zones.some((zone) => !["HAND", "DECK", "GRAVEYARD"].includes(String(zone)))) {
+        errors.push(`${path}.target → STEAL은 ENEMY의 HAND/DECK/GRAVEYARD만 대상으로 합니다.`);
+      }
+    }
+  });
+  return errors;
+}
+
 function extractErrorReason(effects: unknown, context: EffectAiContext, catalog: readonly CardReferenceCandidate[]) {
   const errors: string[] = [];
   if (!isRecord(effects) || !Array.isArray(effects.effects) || effects.effects.length < 1 || effects.effects.length > 10) {
@@ -302,6 +343,7 @@ function extractErrorReason(effects: unknown, context: EffectAiContext, catalog:
     ? isChampionQuestRewardEffects(payload)
     : isStructuredEffects(payload);
   if (!valid) {
+    errors.push(...contractErrors(resolved));
     errors.push("현재 Effect DSL의 action/target/value/trigger 조합과 일치하지 않습니다.");
   }
   if (valid && context.sourceType === "CARD") {

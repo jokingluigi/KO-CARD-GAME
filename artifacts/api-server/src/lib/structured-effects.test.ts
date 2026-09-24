@@ -3,6 +3,34 @@ import test from "node:test";
 
 import { analyzeEffectText, effectLibrary, isStructuredEffects } from "./structured-effects";
 
+test("최신 보고서의 10개 원문은 공용 Analyzer에서 완전한 효과로 탈출한다", () => {
+  const texts = [
+    "1/1 '좀비'를 생성합니다.",
+    "턴 시작:골드를 추가로 1 더 받습니다.",
+    "턴 시작:선택한 아군 선수 카드를 리타이어시키고 그 카드의 체력과 공격력을 흡수합니다.",
+    "선택한 무능력 선수 카드 1장에게 무작위 선수 카드의 텍스트를 부여합니다. 등장 효과일 경우 그 효과를 발동 시킵니다.",
+    "등장:어디에 있든 '실험체' 태그가 달려있는 카드들에게 +1/+1을 부여합니다",
+    "이 카드가 데미지를 입으면 1/1인 '좀비'를 소환합니다.",
+    "이 카드의 체력이 증가하면 추가로 +1 증가합니다",
+    "퇴장:'언데드' 태그가 있는 카드들에게 어디에 있든 최대 체력 +2를 부여합니다",
+    "등장:필드에 '좀비'가 있다면 자신의 체력과 공격력에 필드에 있는 '좀비' 중 가장 수치의 합이 높은 '좀비'의 체력과 공격력을 더합니다.",
+    "등장:선택한 선수에게 데미지를 1 줍니다. 이 효과로 상대 선수가 리타이어했다면 '늑대인간' 판도라로 변신합니다.",
+  ];
+  for (const text of texts) {
+    const result = analyzeEffectText(text, {
+      defaultTrigger: "ENTER_FIELD",
+      cardCatalog: [
+        { id: "zombie-id", name: "좀비", cardType: "WRESTLER", isToken: true, isChampionToken: false },
+        { id: "wolf-id", name: "늑대인간", cardType: "WRESTLER", isToken: false, isChampionToken: false },
+      ],
+      availableTags: ["실험체", "언데드", "좀비"],
+    });
+    assert.equal(result.outcome, "supported", text);
+    assert.ok(result.effects.length > 0, text);
+    assert.equal(result.unsupportedSegments.length, 0, text);
+  }
+});
+
 test("바닐라 선수 대상의 무작위 카드 텍스트 부여 문장을 registry action으로 분석한다", () => {
   const result = analyzeEffectText(
     "등장: 바닐라 선수 하나에게 무작위 카드 텍스트를 부여합니다.",
@@ -367,7 +395,9 @@ test("현재 registry에서 제공하는 Effect Library 메타데이터를 노�
     { attackMultiplier: "number (0..10)", healthMultiplier: "number (0..10)" },
   );
   assert.deepEqual(library.targetResolvers[0]?.config.defaultCardScope, ["HAND", "DECK", "BOARD"]);
-  assert.deepEqual(library.targetResolvers[0]?.config.filters, ["GENERATED", "MIN_COST", "MAX_COST", "TOKEN", "NON_CHAMPION_TOKEN", "EXCLUDE_SOURCE", "VANILLA", "TAGS_ANY", "TAGS_ALL", "TAGS_NONE"]);
+  assert.ok(library.targetResolvers[0]?.config.filter);
+  assert.equal("filters" in (library.targetResolvers[0]?.config ?? {}), false);
+  assert.equal("tagFilters" in (library.targetResolvers[0]?.config ?? {}), false);
   assert.deepEqual(library.targetResolvers[0]?.config.randomScope, ["STANDARD", "FULL"]);
   assert.ok(library.actions.some((action) => action.name === "SET_STATS"));
   assert.deepEqual(

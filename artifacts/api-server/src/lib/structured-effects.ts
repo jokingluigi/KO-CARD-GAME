@@ -24,6 +24,66 @@ export type RuleSchedule = StructuredSchedule;
 export type RuleListener = StructuredListener;
 export type RulePrevention = StructuredPrevention;
 export type EffectScriptConfig = import("@workspace/effect-registry").EffectScriptConfig;
+
+/**
+ * Values are action-scoped, not a bag of optional properties. Keeping this
+ * allow-list beside the executable validator prevents an otherwise valid
+ * field (for example `stat`) from silently changing the meaning of a
+ * destructive action such as DESTROY.
+ */
+const ACTION_VALUE_KEYS: Partial<Record<Action, readonly string[]>> = {
+  BUFF: ["attack", "health", "attackMultiplier", "healthMultiplier", "reference", "referenceStat", "amountReference", "duration", "conditionalBuff"],
+  SET_STATS: ["attack", "health", "duration"],
+  MODIFY_STAT: ["amount", "stat", "duration", "minimum"],
+  MODIFY_MAX_HEALTH: ["amount"],
+  SET_STAT: ["amount", "stat", "duration"],
+  DAMAGE: ["amount", "conditionalBuff"],
+  HEAL: ["amount"],
+  ADD_GOLD: ["amount"],
+  ADD_NEXT_TURN_GOLD: ["amount"],
+  DRAW: ["amount"],
+  SILENCE: [],
+  DESTROY: [],
+  RETIRE: ["captureStats"],
+  STUN: [],
+  DISABLE_ABILITY: [],
+  REDUCE_COST: ["amount", "minimum"],
+  INCREASE_COST: ["amount"],
+  WEAKEN_TO_STUN_SILENCE: ["amount"],
+  ADD_KEYWORD: ["keyword"],
+  REMOVE_KEYWORD: ["keyword"],
+  SWAP_STATS: [],
+  ADD_DAMAGE_MODIFIER: ["amount", "damageSource"],
+  SUMMON: ["definition", "definitionRef", "count", "generatedModifiers", "aggregateStats"],
+  SUMMON_FROM_HAND: ["definition", "definitionRef", "count"],
+  REVIVE: [],
+  GENERATE: ["definition", "definitionRef", "count", "destination", "generatedModifiers", "deckPosition"],
+  MOVE_TO_HAND: ["amount", "minimum", "temporaryCost"],
+  STEAL: [],
+  MILL: [],
+  SPEND_GOLD_BUFF_SELF: ["amountReference"],
+  DEPLOY_CHAMPION_TOKEN: [],
+  CAPTURE: [],
+  RELEASE_CAPTURED: [],
+  REMOVE_FROM_GAME: [],
+  SWITCH_EFFECT_BRANCH: ["leftEffects", "rightEffects"],
+  QUEUE_EFFECT: ["queuedTrigger", "queuedEffect"],
+  ADD_AGGREGATED_ATTACK: ["aggregateStats"],
+  COPY_BEST_STATS: [],
+  TRANSFORM_SOURCE: ["definition", "definitionRef", "causal"],
+  REGISTER_DELAYED: ["delayed"],
+  REGISTER_LISTENER: ["listener"],
+  PREVENT_DAMAGE: ["prevention"],
+  PREVENT_RETIRE: ["prevention"],
+  GRANT_RANDOM_CARD_TEXT: [],
+};
+
+function hasOnlyActionValueKeys(action: Action, values: unknown): boolean {
+  if (values === undefined) return true;
+  if (!values || typeof values !== "object" || Array.isArray(values)) return false;
+  const allowed = ACTION_VALUE_KEYS[action];
+  return !allowed || Object.keys(values).every((key) => allowed.includes(key));
+}
 /** Champion-only reward marker. It is stored beside normal structured effects
  * in the Champion quest reward payload, but is not a card runtime action. */
 export type ChampionUpgradeEffect = {
@@ -718,7 +778,7 @@ function expandedMechanicAnalysis(
       ?? text.match(/['‘’“”]([^'‘’“”]+)['‘’“”]/)?.[1]?.trim() ?? "";
     return result([
       { trigger: triggerFor(), action: "DAMAGE", target: { zone: "BOARD", owner: "ENEMY", cardType: "WRESTLER", selection: "PLAYER_CHOICE", count: 1 }, values: { amount: numberFrom(text) } },
-      { trigger: triggerFor(), action: "TRANSFORM_SOURCE", values: { definitionRef: makeRef(name) } },
+      { trigger: triggerFor(), action: "TRANSFORM_SOURCE", values: { definitionRef: makeRef(name), causal: "DAMAGE_CAUSED_TARGET_RETIRE" } },
     ]);
   }
 
@@ -1175,6 +1235,7 @@ export function isStructuredEffects(value: unknown): value is { effects: Structu
     const item = raw as StructuredEffect;
     if (!TRIGGERS.includes(item.trigger) || !ACTIONS.includes(item.action) || !isActiveAction(item.action)) return false;
     const schema = ACTION_SCHEMAS[item.action], target = item.target, values = item.values;
+     if (!hasOnlyActionValueKeys(item.action, values)) return false;
     if (schema.target) {
       const zones = target?.zones ?? (target?.zone ? [target.zone] : []);
       const hasValidZones = Boolean(target) && zones.length > 0 && zones.length <= TARGET_ZONES.length &&
@@ -1233,6 +1294,11 @@ export function isStructuredEffects(value: unknown): value is { effects: Structu
           )
        )) return false;
       if (target.randomScope !== undefined && (!RANDOM_SCOPES.includes(target.randomScope) || !["RANDOM", "ADJACENT_EMPTY_SLOTS"].includes(target.selection))) return false;
+       if (item.action === "STEAL" && (
+         target.owner !== "ENEMY" ||
+         zones.some((zone) => !["HAND", "DECK", "GRAVEYARD"].includes(zone)) ||
+         target.cardType === "TECHNIQUE"
+       )) return false;
      } else if (target !== undefined) {
        if (!(["SUMMON", "GENERATE"].includes(item.action) &&
          ["RANDOM", "ADJACENT_EMPTY_SLOTS"].includes(target.selection))) return false;
@@ -1354,6 +1420,10 @@ export function isStructuredEffects(value: unknown): value is { effects: Structu
        const allowsRandomPoolDefinition = item.target?.selection === "RANDOM" || item.target?.selection === "ADJACENT_EMPTY_SLOTS";
        if (!validDefinition && !validReference && !allowsRandomPoolDefinition) return false;
      }
+        if (item.action === "TRANSFORM_SOURCE" && (
+          !values?.definitionRef && !values?.definition ||
+          (values?.causal !== undefined && values.causal !== "DAMAGE_CAUSED_TARGET_RETIRE")
+        )) return false;
        if (item.action === "GENERATE" && values?.destination !== undefined && values.destination !== "HAND" && values.destination !== "DECK" && values.destination !== "DECK_TOP") return false;
        if (item.action === "REDUCE_COST" && values?.minimum !== undefined && (typeof values.minimum !== "number" || values.minimum < 0 || values.minimum > 999)) return false;
        if (item.action === "MODIFY_STAT" && values?.minimum !== undefined && (typeof values.minimum !== "number" || values.minimum < 0 || values.minimum > 999)) return false;

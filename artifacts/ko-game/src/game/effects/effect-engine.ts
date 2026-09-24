@@ -706,6 +706,33 @@ function resolveCardDefinition(
 
 type TriggerContext = NonNullable<GameState['targetingState']>['triggerContext'];
 
+function damageCausedTargetRetire(
+  state: GameState,
+  sourceCard: CardInstance,
+): boolean {
+  for (let index = state.events.length - 1; index >= 0; index -= 1) {
+    const event = state.events[index];
+    if (event?.type !== 'DAMAGE_DEALT' ||
+        event.reason !== 'CARD_EFFECT' ||
+        event.amount === undefined ||
+        event.amount <= 0 ||
+        event.source?.type !== 'CARD' ||
+        event.source.cardInstanceId !== sourceCard.instanceId ||
+        event.target?.type !== 'CARD') {
+      continue;
+    }
+    const damageTargetId = event.target.cardInstanceId;
+    return state.events.slice(index + 1).some((candidate) =>
+      candidate.type === 'CARD_RETIRED' &&
+      candidate.source?.type === 'CARD' &&
+      candidate.source.cardInstanceId === sourceCard.instanceId &&
+      candidate.target?.type === 'CARD' &&
+      candidate.target.cardInstanceId === damageTargetId,
+    );
+  }
+  return false;
+}
+
 function sourceContextFor(
   playerId: string,
   sourceCard: CardInstance,
@@ -1561,6 +1588,10 @@ export function applyEffect(
       return deployLinkedChampionToken(state, playerId);
     }
     if (effect.action === 'TRANSFORM_SOURCE') {
+      if (effect.values?.causal === 'DAMAGE_CAUSED_TARGET_RETIRE' &&
+          !damageCausedTargetRetire(state, sourceCard)) {
+        return state;
+      }
       const definition = resolveCardDefinition(state, effect.values?.definition, effect.values?.definitionRef);
       if (!definition) return state;
       const transformed = generateCard(definition, {
