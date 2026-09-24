@@ -1035,6 +1035,47 @@ test('인접 무작위 소환 결과를 같은 resolution에서 모두 참조해
   assert.equal(result.events.filter((event) => event.type === 'CARD_GENERATED').length, 2);
 });
 
+test('인접 무작위 소환 뒤 ADJACENT 도발은 기존 아군과 새 소환을 모두 대상으로 하며 자신은 제외한다', () => {
+  const source = instance('adjacent-taunt-with-occupied-ally', [
+    structured('SUMMON', {
+      zone: 'BOARD',
+      owner: 'SELF',
+      cardType: 'WRESTLER',
+      selection: 'ADJACENT_EMPTY_SLOTS',
+      count: 2,
+      randomScope: 'STANDARD',
+    }),
+    structured('ADD_KEYWORD', {
+      zone: 'BOARD',
+      owner: 'SELF',
+      cardType: 'WRESTLER',
+      selection: 'ADJACENT',
+      count: 2,
+    }, { keyword: 'TAUNT' }),
+  ]);
+  const existingAlly = {
+    ...instance('already-occupied-adjacent-ally'),
+    boardSlot: 0 as const,
+  };
+  const state = createInitialGameState();
+  state.randomSeed = 2026;
+  state.cardPool = [definition('adjacent-taunt-summon-pool', [])];
+  state.players[0].board[0] = existingAlly;
+
+  const result = enterField(state, 'player-1', source, 1);
+  const summonedAlly = result.players[0].board[2];
+
+  assert.ok(summonedAlly);
+  assert.equal(result.players[0].board[0]?.instanceId, existingAlly.instanceId);
+  assert.deepEqual(result.players[0].board[0]?.keywords, ['TAUNT']);
+  assert.equal(summonedAlly?.keywords.includes('TAUNT'), true);
+  assert.equal(result.players[0].board[1]?.instanceId, source.instanceId);
+  assert.equal(result.players[0].board[1]?.keywords.includes('TAUNT'), false);
+  assert.equal(result.players[0].board[0]?.boardSlot, 0);
+  assert.equal(result.targetingState, undefined);
+  assert.equal(result.pendingCardEffects.length, 0);
+});
+
 test('인접 슬롯마다 독립적으로 무작위 선택해 같은 definition도 허용한다', () => {
   const source = instance('duplicate-random-source', [
     structured('SUMMON', {
@@ -1747,6 +1788,48 @@ test('combat retirement attributes its damage to the exact attacker for removal 
   );
   assert.equal(retirement?.source?.type === 'CARD' && retirement.source.cardInstanceId, deployedSource.instanceId);
   assert.equal(retirement?.targetSnapshot?.currentAttack, 7);
+});
+
+test('persistent removal listener absorbs current attack from lethal effect damage only', () => {
+  const source = {
+    ...instance('causal-effect-damage-source', [
+      sourceCausedRemovalListener(),
+      structured('DAMAGE', {
+        zone: 'BOARD',
+        owner: 'ENEMY',
+        cardType: 'WRESTLER',
+        selection: 'PLAYER_CHOICE',
+        count: 1,
+      }, { amount: 2 }),
+    ]),
+    currentAttack: 5,
+    currentHealth: 6,
+    maxHealth: 6,
+  };
+  const target = {
+    ...instance('causal-effect-damage-target'),
+    currentAttack: 7,
+    currentHealth: 2,
+    maxHealth: 2,
+    boardSlot: 0 as const,
+  };
+  const state = createInitialGameState();
+  state.players[1].board[0] = target;
+
+  const pending = enterField(state, 'player-1', source, 0);
+  assert.deepEqual(pending.targetingState?.validTargetIds, [target.instanceId]);
+  const result = selectEffectTarget(pending, target.instanceId);
+
+  assert.equal(result.players[0].board[0]?.currentAttack, 12);
+  assert.equal(result.players[0].board[0]?.currentHealth, 6);
+  assert.equal(result.players[0].board[0]?.maxHealth, 6);
+  assert.equal(result.players[1].board[0], null);
+  assert.equal(result.players[1].graveyard.at(-1)?.instanceId, target.instanceId);
+  const retirement = result.events.find((event) =>
+    event.type === 'CARD_RETIRED' && event.cardInstanceId === target.instanceId,
+  );
+  assert.equal(retirement?.targetSnapshot?.currentAttack, 7);
+  assert.equal(retirement?.source?.type === 'CARD' && retirement.source.cardInstanceId, source.instanceId);
 });
 
 test('구조화 DRAW는 기존 drawCard 규칙과 이벤트를 사용한다', () => {

@@ -406,15 +406,18 @@ export default function Decks() {
       return !normalizedSearch || card.name.toLocaleLowerCase().includes(normalizedSearch);
     });
   }, [filter, options.cards, search]);
-  const selectedRows = useMemo(
-    () =>
-      Array.from(counts.entries()).map(([id, count]) => ({
-        id,
-        count,
-        card: cardById.get(id) ?? null,
-      })),
-    [cardById, counts],
-  );
+  const selectedRows = useMemo(() => {
+    const rows = Array.from(counts.entries()).map(([id, count]) => ({
+      id,
+      count,
+      card: cardById.get(id) ?? null,
+    }));
+    return rows.sort((a, b) => {
+      if (!a.card || !b.card) return 0;
+      if (a.card.cost !== b.card.cost) return a.card.cost - b.card.cost;
+      return a.card.name.localeCompare(b.card.name);
+    });
+  }, [cardById, counts]);
   const savedDraftMatches = Boolean(
     editingDeck &&
     editingDeck.championDefinitionId === championId &&
@@ -902,50 +905,67 @@ export default function Decks() {
                   <p>왼쪽 카드 보관함에서 작전을 채우세요.</p>
                 </div>
               ) : (
-                <div className="ko-decks__selected-list" data-testid="list-selected-cards">
+                <div className="ko-decks__compact-list" data-testid="list-selected-cards">
                   {selectedRows.map(({ id, count, card }) => (
-                    <div
+                    <Inspectable
                       key={id}
-                      className={`ko-decks__selected-row ${problematicCardIds.has(id) ? "border-[#b85c4d] bg-[#351c19]" : ""}`}
-                      data-testid={`row-selected-card-${id}`}
-                      data-invalid={problematicCardIds.has(id) ? "true" : undefined}
+                      showOnHover
+                      content={
+                        card ? (
+                          <div className="space-y-3">
+                            <p className="text-[0.62rem] font-black tracking-[0.18em] text-amber-300">
+                              {cardTypeLabel(card.cardType)} · {card.rarity}
+                            </p>
+                            <CardRenderer
+                              name={card.name}
+                              cardType={card.cardType}
+                              cost={card.cost}
+                              attack={card.attack}
+                              health={card.health}
+                              rulesText={card.text}
+                              imageUrl={card.imageUrl}
+                              rarity={card.rarity as "NORMAL" | "LEGENDARY" | "CHAMPION"}
+                              imageDisplaySettings={cardSettings(card)}
+                              size="detail"
+                              className="mx-auto w-64 max-w-full"
+                            />
+                            <p className="whitespace-pre-wrap text-xs leading-5 text-neutral-300">{normalizeCardRulesText(card.text) || "효과 없음"}</p>
+                          </div>
+                        ) : (
+                          <p className="text-xs text-neutral-400">알 수 없는 카드</p>
+                        )
+                      }
                     >
-                      {card ? (
-                        <div className="ko-decks__selected-thumb">
-                          <CardRenderer
-                            name={card.name}
-                            cardType={card.cardType}
-                            cost={card.cost}
-                            attack={card.attack}
-                            health={card.health}
-                            rulesText={card.text}
-                            imageUrl={card.imageUrl}
-                            rarity={card.rarity as "NORMAL" | "LEGENDARY" | "CHAMPION"}
-                            imageDisplaySettings={cardSettings(card)}
-                            size="admin"
-                            showRules={false}
-                            showStats={false}
-                          />
-                        </div>
-                      ) : (
-                        <div className="flex aspect-[1060/1484] items-center justify-center bg-[#331d1b] text-[#db8d7c]" title="누락된 카드">
-                          <AlertTriangle className="h-4 w-4" aria-hidden="true" />
-                        </div>
-                      )}
-                      <div className="min-w-0">
-                        <p className="ko-decks__selected-name flex items-center gap-2">
-                          {card?.name ?? `확인할 수 없는 카드 (${id})`}
-                          {problematicCardIds.has(id) && <AlertTriangle className="h-3.5 w-3.5 shrink-0 text-[#e18a79]" aria-label="덱 검증 문제" />}
-                        </p>
-                        <p className="ko-decks__selected-kind">
-                           {card ? `${cardTypeLabel(card.cardType)} · 비용 ${card.cost} · ${card.rarity}` : "카드 참조 없음"}
-                        </p>
+                      <div
+                        className={`ko-decks__compact-row ${problematicCardIds.has(id) ? "ko-decks__compact-row--invalid" : ""}`}
+                        data-testid={`row-selected-card-${id}`}
+                        data-invalid={problematicCardIds.has(id) ? "true" : undefined}
+                        data-rarity={card?.rarity}
+                      >
+                        <button
+                          type="button"
+                          className="ko-decks__compact-action"
+                          onClick={() => { if (card) setDetailCard(card); }}
+                          aria-label={card ? `${card.name} 상세 보기` : "상세 보기"}
+                        >
+                          <span className="ko-decks__compact-cost">{card?.cost ?? "?"}</span>
+                          <span className="ko-decks__compact-name" title={card?.name ?? `확인할 수 없는 카드 (${id})`}>
+                            {card?.name ?? `확인할 수 없는 카드 (${id})`}
+                            {problematicCardIds.has(id) && <AlertTriangle className="ml-1.5 inline-block h-3 w-3 shrink-0 text-[#e18a79]" aria-label="덱 검증 문제" />}
+                          </span>
+                          <span className="ko-decks__compact-qty" data-testid={`text-card-count-${id}`}>×{count}</span>
+                        </button>
+                        <button
+                          type="button"
+                          className="ko-decks__compact-remove"
+                          aria-label={`${card?.name ?? id} 한 장 제거`}
+                          data-testid={`button-remove-card-${id}`}
+                          onClick={(e) => { e.stopPropagation(); removeCard(id); }}
+                        >
+                          <Minus className="h-3.5 w-3.5" aria-hidden="true" />
+                        </button>
                       </div>
-                      <span className="ko-decks__count text-[#d9b04b]" data-testid={`text-card-count-${id}`}>×{count}</span>
-                      <button type="button" className="ko-decks__remove" aria-label={`${card?.name ?? id} 한 장 제거`} data-testid={`button-remove-card-${id}`} onClick={() => removeCard(id)}>
-                        <Minus className="h-3.5 w-3.5" aria-hidden="true" />
-                      </button>
-                    </div>
+                    </Inspectable>
                   ))}
                 </div>
               )}

@@ -339,14 +339,11 @@ function baseTargetFor(text: string, randomPool = false, availableTags: readonly
   const topOfDeck = /(?:덱\s*(?:맨\s*)?위|덱\s*위)/.test(text);
   const enemyQualifier = /(?:적|상대)/.test(text);
   const explicitSelfTarget = /(?:자신(?:의|에게|을|은)|(?:아군|내)\s*(?:선수|대상|캐릭터|챔피언)?)/.test(text);
-  const selectedOwner = enemyQualifier || !explicitSelfTarget ? "ENEMY" : "SELF";
-  if (/모든\s*(?:캐릭터|대상)/.test(text)) return { zone: "CHARACTER", owner: "ALL", selection: "ALL", count: targetCountFrom(text) };
-  if (/(상대|적)\s*(?:캐릭터|대상)/.test(text)) return { zone: "CHARACTER", owner: "ENEMY", selection: "PLAYER_CHOICE", count: targetCountFrom(text) };
-  if (/(아군|내)\s*(?:캐릭터|대상)/.test(text)) return { zone: "CHARACTER", owner: "SELF", selection: "PLAYER_CHOICE", count: targetCountFrom(text) };
-  if (/(상대|적)\s*(챔피언|플레이어)/.test(text)) return { zone: "PLAYER", owner: "ENEMY", selection: "SELF", count: 1 };
-  if (/(?:내|자신의)\s*챔피언/.test(text)) return { zone: "PLAYER", owner: "SELF", selection: "SELF", count: 1 };
-  if (/선택한\s*(?:선수|대상)/.test(text)) {
-    if (hand && /선택한\s*선수/.test(text)) {
+  const selectedOwner = enemyQualifier ? "ENEMY" : explicitSelfTarget ? "SELF" : "ALL";
+  const selectedTarget = /선택한\s*(?:모든\s*)?(?:(?:적|상대|아군|내)\s*)?(?:선수|대상|캐릭터)/.test(text);
+  const selectedWrestler = /선택한\s*(?:모든\s*)?(?:(?:적|상대|아군|내)\s*)?선수/.test(text);
+  if (selectedTarget) {
+    if (hand && selectedWrestler) {
       return {
         zone: "HAND",
         owner: enemyQualifier ? "ENEMY" : "SELF",
@@ -356,13 +353,18 @@ function baseTargetFor(text: string, randomPool = false, availableTags: readonly
       };
     }
     return {
-      zone: /선택한\s*선수/.test(text) ? "BOARD" : "CHARACTER",
+      zone: selectedWrestler ? "BOARD" : "CHARACTER",
       owner: selectedOwner,
-      ...( /선택한\s*선수/.test(text) ? { cardType: "WRESTLER" as const } : {}),
+      ...(selectedWrestler ? { cardType: "WRESTLER" as const } : {}),
       selection: "PLAYER_CHOICE",
       count: 1,
     };
   }
+  if (/모든\s*(?:캐릭터|대상)/.test(text)) return { zone: "CHARACTER", owner: "ALL", selection: "ALL", count: targetCountFrom(text) };
+  if (/(상대|적)\s*(?:캐릭터|대상)/.test(text)) return { zone: "CHARACTER", owner: "ENEMY", selection: "PLAYER_CHOICE", count: targetCountFrom(text) };
+  if (/(아군|내)\s*(?:캐릭터|대상)/.test(text)) return { zone: "CHARACTER", owner: "SELF", selection: "PLAYER_CHOICE", count: targetCountFrom(text) };
+  if (/(상대|적)\s*(챔피언|플레이어)/.test(text)) return { zone: "PLAYER", owner: "ENEMY", selection: "SELF", count: 1 };
+  if (/(?:내|자신의)\s*챔피언/.test(text)) return { zone: "PLAYER", owner: "SELF", selection: "SELF", count: 1 };
   if (graveyard) {
     const graveyardFilter = targetFilterFor(text, availableTags);
     return {
@@ -1492,11 +1494,14 @@ function expandedMechanicAnalysis(
   if (/선택한\s*상대\s*선수\s*1장.*리타이어/.test(text)) {
     return result([{ trigger: triggerFor(), action: "RETIRE", target: { zone: "BOARD", owner: "ENEMY", cardType: "WRESTLER", selection: "PLAYER_CHOICE", count: 1 } }]);
   }
-  if (/양\s*옆\s*(?:의\s*)?빈\s*슬롯.*무작위\s*선수/.test(text)) {
+  if (/양\s*옆[^.!?]*(?:무작위|랜덤)[^.!?]*선수\s*카드[^.!?]*(?:소환|생성)/.test(text)) {
     const adjacentFilter = /(?:3\s*코스트|3\s*비용)\s*이상/.test(text) ? { minCost: 3 } : undefined;
     const damageAmount =
       text.match(/생성된.*?(?:데미지|피해).*?(\d+)\s*(?:증가|추가)/)?.[1] ??
       text.match(/생성된.*?(\d+)\s*추가\s*(?:데미지|피해)/)?.[1];
+    const tauntAdjacentAllies =
+      /양\s*옆[^.!?]*아군\s*선수[^.!?]*도발/.test(text) ||
+      /자신을\s*제외한[^.!?]*(?:생성한|소환한)[^.!?]*선수\s*카드[^.!?]*도발/.test(text);
     return result([
       {
         trigger: triggerFor(),
@@ -1512,7 +1517,18 @@ function expandedMechanicAnalysis(
         },
       },
       ...( /도발/.test(text)
-        ? [{ trigger: triggerFor(), action: "ADD_KEYWORD" as const, target: { zone: "BOARD" as const, owner: "SELF" as const, cardType: "WRESTLER" as const, selection: "SAME_TARGET" as const, count: 2 }, values: { keyword: "TAUNT" as const } }]
+        ? [{
+          trigger: triggerFor(),
+          action: "ADD_KEYWORD" as const,
+          target: {
+            zone: "BOARD" as const,
+            owner: "SELF" as const,
+            cardType: "WRESTLER" as const,
+            selection: tauntAdjacentAllies ? "ADJACENT" as const : "SAME_TARGET" as const,
+            count: 2,
+          },
+          values: { keyword: "TAUNT" as const },
+        }]
         : []),
       ...(damageAmount
         ? [{ trigger: triggerFor(), action: "ADD_DAMAGE_MODIFIER" as const, values: { amount: Number(damageAmount), damageSource: "GENERATED" as const } }]
@@ -1824,6 +1840,7 @@ export function analyzeEffectText(input: string, options: EffectAnalysisOptions 
       for (const referencedCard of referencedCards) {
         remainder = remainder.replace(new RegExp(referencedCard.name.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"), "g"), "");
       }
+       remainder = remainder.replace(/선택한\s*모든\s*(?:선수|대상|캐릭터)(?:에게|을|를|의)?/g, "");
        remainder = remainder.replace(/(?:완전(?:히)?\s*)?(?:무작위|랜덤)(?:로)?\s*(?:선수|기술)?\s*(?:카드)?\s*(?:\d+\s*장|하나|한\s*장)?(?:에게|을|를|의)?|선택한|어디에\s*(?:있든|있는)|모든\s*위치의|손패\s*[,，]\s*덱\s*[,，]\s*(?:필드|보드)|손패\s*(?:및|와|과)\s*덱\s*(?:및|와|과)\s*(?:필드|보드)|생성된(?:\s*카드)?|모든\s*캐릭터(?:에게|을|를)?|모든\s*(?:선수|카드)(?:에게|을|를|의)?|(?:적|상대)\s*(?:챔피언|플레이어)(?:에게|을|를)?|(?:내|자신의)\s*챔피언(?:에게|을|를)?|(?:적|상대)\s*선수(?:\s*(?:\d+\s*장|하나|한\s*장))?(?:에게|을|를)?|(?:아군|내)\s*선수(?:\s*(?:\d+\s*장|하나|한\s*장))?(?:에게|을|를)?|(?:적|상대)\s*캐릭터(?:\s*(?:\d+\s*장|하나|한\s*장))?(?:에게|을|를)?|(?:아군|내)\s*캐릭터(?:\s*(?:\d+\s*장|하나|한\s*장))?(?:에게|을|를)?|(?:손패|손에|덱|필드|보드)(?!의?\s*(?:무작위\s*)?(?:선수|카드))(?:의)?|손패의\s*(?:무작위\s*)?선수(?:\s*카드)?(?:\s*(?:\d+\s*장|하나|한\s*장))?(?:에게|을|를|의)?|덱의\s*(?:무작위\s*)?(?:선수|카드)(?:\s*카드)?(?:\s*(?:\d+\s*장|하나|한\s*장))?(?:에게|을|를|의)?|필드의\s*(?:무작위\s*)?(?:선수|카드)(?:\s*카드)?(?:\s*(?:\d+\s*장|하나|한\s*장))?(?:에게|을|를|의)?|(?:자신|이\s*카드)(?:에게|을|를)?|(?:카드\s*)?(?:\d+\s*장|한\s*장)|선수(?:\s*카드)?(?:을|를)?|\d+\s*턴\s*동안|(?:에게|을|를|의|에)|(?:그리고|그\s*후|이후|하고|한\s*뒤|한\s*후|주고)|\s+/g, "");
       remainder = remainder
         .replace(/사용될\s*때까지\s*(?:턴을\s*)?(?:넘어도\s*)?유지(?:합니다)?|다음\s*턴에도\s*유지(?:합니다)?/g, "")
@@ -1907,6 +1924,7 @@ export function isStructuredEffects(value: unknown): value is { effects: Structu
   if (!value || typeof value !== "object" || Array.isArray(value)) return false;
   const effects = (value as { effects?: unknown }).effects;
   if (!Array.isArray(effects) || effects.length < 1 || effects.length > 10) return false;
+  let previousTarget: StructuredTarget | undefined;
   return effects.every((raw) => {
     if (!raw || typeof raw !== "object" || Array.isArray(raw)) return false;
     const item = raw as StructuredEffect;
@@ -1933,7 +1951,18 @@ export function isStructuredEffects(value: unknown): value is { effects: Structu
         Object.keys(target.sort).some((key) => !["stat", "direction"].includes(key))
       )) return false;
       if (item.trigger === "ACTIVE" && target.selection === "PLAYER_CHOICE") return false;
-      if (target.owner === "ALL" && (zones.length !== 1 || zones[0] !== "CHARACTER" || target.selection !== "ALL")) return false;
+      if (target.owner === "ALL") {
+        const characterAll = zones.length === 1 && zones[0] === "CHARACTER" && target.selection === "ALL";
+        const unrestrictedChoice = zones.length === 1 &&
+          (zones[0] === "CHARACTER" || (zones[0] === "BOARD" && target.cardType === "WRESTLER")) &&
+          target.selection === "PLAYER_CHOICE" && target.count === 1;
+        const chainedUnrestrictedWrestler = zones.length === 1 && zones[0] === "BOARD" &&
+          target.cardType === "WRESTLER" && target.selection === "SAME_TARGET" &&
+          previousTarget?.zone === "BOARD" && previousTarget.owner === "ALL" &&
+          previousTarget.cardType === "WRESTLER" && previousTarget.selection === "PLAYER_CHOICE" &&
+          previousTarget.count === target.count;
+        if (!characterAll && !unrestrictedChoice && !chainedUnrestrictedWrestler) return false;
+      }
       if (target.selection === "ALL" && target.count < 1) return false;
       if (zones.some((zone) => zone === "CHARACTER") && ["REDUCE_COST", "INCREASE_COST"].includes(item.action)) return false;
       if (zones.some((zone) => zone === "PLAYER") && !(zones.length === 1 && ((item.action === "DAMAGE" && target.owner === "ENEMY" && target.selection === "SELF") || (item.action === "HEAL" && target.owner === "SELF" && target.selection === "SELF")))) return false;
@@ -2162,7 +2191,8 @@ export function isStructuredEffects(value: unknown): value is { effects: Structu
          aggregate.attack !== "CURRENT_ATTACK_SUM" ||
          aggregate.health !== "CURRENT_HEALTH_SUM") return false;
      }
-    return !item.conditions || item.conditions.every((condition) => CONDITIONS.includes(condition.type));
+     if (target && target.selection !== "SAME_TARGET") previousTarget = target;
+     return !item.conditions || item.conditions.every((condition) => CONDITIONS.includes(condition.type));
   });
 }
 

@@ -261,21 +261,21 @@ test("무덤 부활은 REVIVE와 비용 상한을 구조화한다", () => {
   assert.equal(isStructuredEffects({ effects: result.effects }), true);
 });
 
-test("판도라식 자신이 선택한 대상은 선택 주체와 대상 소유자를 혼동하지 않는다", () => {
+test("자신이 고르는 주체라는 표현은 대상 소유자를 제한하지 않는다", () => {
   const result = analyzeEffectText("등장: 자신이 선택한 선수를 침묵시키고 파괴합니다.");
 
   assert.equal(result.status, "success");
   assert.deepEqual(result.effects.map((effect) => effect.action), ["SILENCE", "DESTROY"]);
   assert.deepEqual(result.effects[0]?.target, {
     zone: "BOARD",
-    owner: "ENEMY",
+    owner: "ALL",
     cardType: "WRESTLER",
     selection: "PLAYER_CHOICE",
     count: 1,
   });
   assert.deepEqual(result.effects[1]?.target, {
     zone: "BOARD",
-    owner: "ENEMY",
+    owner: "ALL",
     cardType: "WRESTLER",
     selection: "SAME_TARGET",
     count: 1,
@@ -296,23 +296,141 @@ test("손패의 선택한 선수 카드는 손패 WRESTLER 대상으로 유지�
   assert.equal(isStructuredEffects({ effects: result.effects }), true);
 });
 
-test("판도라의 기본 문구는 상대 선수, 강화 문구는 상대 선수와 Champion을 고른다", () => {
-  const wrestler = analyzeEffectText("자신이 선택한 선수에게 1 데미지를 줍니다.", { defaultTrigger: "ENTER_FIELD" });
-  const character = analyzeEffectText("선택한 대상에게 피해를 1 줍니다.", { defaultTrigger: "ENTER_FIELD" });
+test("무제한으로 선택하는 대상은 ALL owner이되 PLAYER_CHOICE를 유지한다", () => {
+  const wrestler = analyzeEffectText("자신이 선택한 모든 선수에게 1 데미지를 줍니다.", { defaultTrigger: "ENTER_FIELD" });
+  const character = analyzeEffectText("자신이 선택한 모든 대상에게 2 데미지를 줍니다.", { defaultTrigger: "ENTER_FIELD" });
 
   assert.deepEqual(wrestler.effects[0]?.target, {
     zone: "BOARD",
-    owner: "ENEMY",
+    owner: "ALL",
     cardType: "WRESTLER",
     selection: "PLAYER_CHOICE",
     count: 1,
   });
   assert.deepEqual(character.effects[0]?.target, {
     zone: "CHARACTER",
-    owner: "ENEMY",
+    owner: "ALL",
     selection: "PLAYER_CHOICE",
     count: 1,
   });
+  assert.equal(wrestler.status, "success");
+  assert.equal(character.status, "success");
+  assert.equal(isStructuredEffects({ effects: wrestler.effects }), true);
+  assert.equal(isStructuredEffects({ effects: character.effects }), true);
+
+  const enemyOnly = analyzeEffectText("자신이 선택한 모든 적 선수에게 1 데미지를 줍니다.", { defaultTrigger: "ENTER_FIELD" });
+  assert.equal(enemyOnly.effects[0]?.target?.owner, "ENEMY");
+  assert.equal(enemyOnly.effects[0]?.target?.selection, "PLAYER_CHOICE");
+
+  const selfOnly = analyzeEffectText("자신이 선택한 모든 아군 선수에게 1 데미지를 줍니다.", { defaultTrigger: "ENTER_FIELD" });
+  assert.equal(selfOnly.effects[0]?.target?.owner, "SELF");
+  assert.equal(selfOnly.effects[0]?.target?.selection, "PLAYER_CHOICE");
+  assert.equal(isStructuredEffects({ effects: enemyOnly.effects }), true);
+  assert.equal(isStructuredEffects({ effects: selfOnly.effects }), true);
+
+  const unrestricted = analyzeEffectText("선택한 모든 대상에게 피해를 1 줍니다.", { defaultTrigger: "ENTER_FIELD" });
+  assert.deepEqual(unrestricted.effects[0]?.target, {
+    zone: "CHARACTER",
+    owner: "ALL",
+    selection: "PLAYER_CHOICE",
+    count: 1,
+  });
+});
+
+test("structured validator permits only count-one unrestricted BOARD/CHARACTER choices", () => {
+  const baseChoice = {
+    trigger: "ENTER_FIELD",
+    action: "DAMAGE",
+    target: {
+      zone: "BOARD",
+      owner: "ALL",
+      cardType: "WRESTLER",
+      selection: "PLAYER_CHOICE",
+      count: 1,
+    },
+    values: { amount: 1 },
+  };
+  assert.equal(isStructuredEffects({ effects: [baseChoice] }), true);
+  assert.equal(isStructuredEffects({
+    effects: [{
+      ...baseChoice,
+      target: { ...baseChoice.target, zone: "CHARACTER", cardType: undefined },
+    }],
+  }), true);
+  assert.equal(isStructuredEffects({
+    effects: [{
+      ...baseChoice,
+      target: { ...baseChoice.target, count: 2 },
+    }],
+  }), false);
+  assert.equal(isStructuredEffects({
+    effects: [{
+      ...baseChoice,
+      target: { ...baseChoice.target, cardType: undefined },
+    }],
+  }), false);
+  assert.equal(isStructuredEffects({
+    effects: [{
+      ...baseChoice,
+      trigger: "ACTIVE",
+    }],
+  }), false);
+});
+
+test("ALL BOARD/WRESTLER SAME_TARGET is valid only as a constrained continuation", () => {
+  const selection = {
+    trigger: "ENTER_FIELD",
+    action: "SILENCE",
+    target: {
+      zone: "BOARD",
+      owner: "ALL",
+      cardType: "WRESTLER",
+      selection: "PLAYER_CHOICE",
+      count: 1,
+    },
+  };
+  const chained = {
+    trigger: "ENTER_FIELD",
+    action: "DESTROY",
+    target: {
+      zone: "BOARD",
+      owner: "ALL",
+      cardType: "WRESTLER",
+      selection: "SAME_TARGET",
+      count: 1,
+    },
+  };
+  assert.equal(isStructuredEffects({ effects: [selection, chained] }), true);
+  assert.equal(isStructuredEffects({ effects: [chained] }), false);
+  assert.equal(isStructuredEffects({
+    effects: [
+      selection,
+      { ...chained, target: { ...chained.target, unknownField: true } },
+    ],
+  }), false);
+});
+
+test("owner-neutral selected-all grammar is accounted for without swallowing unknown residual text", () => {
+  const valid = analyzeEffectText(
+    "자신이 선택한 모든 대상에게 2 데미지를 줍니다.",
+    { defaultTrigger: "ENTER_FIELD" },
+  );
+  assert.equal(valid.status, "success");
+  assert.equal(valid.outcome, "supported");
+  assert.deepEqual(valid.unsupportedSegments, []);
+  assert.deepEqual(valid.effects[0]?.target, {
+    zone: "CHARACTER",
+    owner: "ALL",
+    selection: "PLAYER_CHOICE",
+    count: 1,
+  });
+
+  const withUnknownText = analyzeEffectText(
+    "자신이 선택한 모든 대상에게 2 데미지를 줍니다. 미확인표식",
+    { defaultTrigger: "ENTER_FIELD" },
+  );
+  assert.equal(withUnknownText.status, "partial");
+  assert.ok(withUnknownText.unsupportedSegments.some((segment) => segment.includes("미확인표식")));
 });
 
 test("손에 있는 선수 카드 선택 문장은 손패 WRESTLER 단일 공격력 버프로 분석한다", () => {
@@ -448,6 +566,48 @@ test("정확한 양옆의 빈 슬롯 문장을 무작위 소환과 직전 결과
   });
   assert.deepEqual(result.effects[1]?.values, { keyword: "TAUNT" });
   assert.equal(isStructuredEffects({ effects: result.effects }), true);
+});
+
+test("양옆 무작위 선수 생성 문구는 빈 인접 슬롯 소환과 인접 아군 TAUNT로 분석한다", () => {
+  const expected = [
+    {
+      trigger: "ENTER_FIELD",
+      action: "SUMMON",
+      target: {
+        zone: "BOARD",
+        owner: "SELF",
+        cardType: "WRESTLER",
+        selection: "ADJACENT_EMPTY_SLOTS",
+        count: 2,
+        randomScope: "STANDARD",
+      },
+    },
+    {
+      trigger: "ENTER_FIELD",
+      action: "ADD_KEYWORD",
+      target: {
+        zone: "BOARD",
+        owner: "SELF",
+        cardType: "WRESTLER",
+        selection: "ADJACENT",
+        count: 2,
+      },
+      values: { keyword: "TAUNT" },
+    },
+  ];
+  const sourceWording = analyzeEffectText(
+    "등장: 자신에 양 옆에 무작위 선수 카드를 생성하고 자신을 제외한 생성한 그 선수카드들에게 도발을 부여합니다.",
+  );
+  const explicitWording = analyzeEffectText(
+    "등장: 자신의 양옆 빈칸에 무작위 선수 카드를 소환하고 양옆 아군 선수에게 도발을 부여합니다.",
+  );
+
+  for (const result of [sourceWording, explicitWording]) {
+    assert.equal(result.status, "success");
+    assert.equal(result.outcome, "supported");
+    assert.deepEqual(result.effects, expected);
+    assert.equal(isStructuredEffects({ effects: result.effects }), true);
+  }
 });
 
 test("요구된 기존 라이브러리 문장을 모두 지원한다", () => {

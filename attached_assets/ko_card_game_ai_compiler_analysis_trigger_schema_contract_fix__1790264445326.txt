@@ -1,0 +1,777 @@
+KO CARD GAME — CRITICAL AI MECHANIC COMPILER CONTRACT FIX
+ERROR: `analysis.trigger는 지원되지 않는 필드입니다.`
+
+현재 심각한 문제:
+AI Mechanic Compiler를 실행하면 다음 오류가 발생한다.
+
+`analysis.trigger는 지원되지 않는 필드입니다.`
+
+이 문제 때문에 Generate가 실패하고 AI 효과 적용기가 사실상 작동하지 않는다.
+
+목표:
+Provider가 반환하는 "해석용 메타데이터(analysis)"와
+실제로 저장/실행되는 Effect DSL payload를 완전히 분리하고,
+`analysis.trigger` 같은 debug/interpretation field가
+Executable Effect Validator에 들어가지 않도록 고친다.
+
+이 작업은 단순히 `analysis.trigger`만 whitelist에 추가하는 작업이 아니다.
+Provider Response Contract → Parser → Normalizer → Canonicalizer → Validator → Auto Apply 전체 경로의 schema drift를 수정해야 한다.
+
+==================================================
+0. 절대 금지
+==================================================
+
+- Validator에 `analysis.trigger`를 그냥 허용해서 통과시키기 금지
+- `analysis` 전체를 executable effect schema에 넣기 금지
+- unknown field validation을 느슨하게 만들기 금지
+- `stripUnknown: true`로 조용히 필드를 버리고 READY 처리 금지
+- malformed provider payload를 자동 수정한 척 성공시키기 금지
+- exact error 문자열만 예외처리 금지
+- 카드별/Champion별 hardcode 금지
+- Provider 재호출로 고치기 금지
+- Generate 1회당 Provider 1회 규칙 유지
+- Production DB 수정 금지
+- force push 금지
+- push 요청 없으면 push 금지
+
+==================================================
+1. ROOT CAUSE를 먼저 추적
+==================================================
+
+다음 전체 경로를 trace:
+
+Admin Generate click
+→ `/api/admin/effects/generate`
+→ provider prompt
+→ OpenAI structured response
+→ provider response schema
+→ parser
+→ normalization
+→ analyzer result
+→ canonical plan
+→ effect payload
+→ validator
+→ auto-apply
+→ save payload
+
+실패 지점을 정확히 찾는다.
+
+반드시 실제 failing payload를 안전하게 capture해서
+아래를 확인:
+
+- provider top-level keys
+- `analysis` object shape
+- `analysis.trigger`
+- canonical executable output field
+- validator가 어떤 object를 validate했는지
+- error path가 왜 `analysis.trigger`를 가리키는지
+
+최종 보고에:
+
+First failing layer:
+...
+Exact file/function:
+...
+Validator input shape:
+...
+Provider output shape:
+...
+
+를 적는다.
+
+==================================================
+2. 올바른 Provider Response Contract
+==================================================
+
+Provider 응답은 최소 두 계층으로 분리해야 한다.
+
+예시 개념:
+
+{
+  "analysis": {
+    "normalizedMeaning": "...",
+    "trigger": "ENTER_FIELD",
+    "targetSummary": "...",
+    "actionSummary": "...",
+    "ambiguities": []
+  },
+  "compiled": {
+    "format": "STRUCTURED_EFFECTS_V1",
+    "effects": [...]
+  }
+}
+
+또는 현재 프로젝트 naming에 맞는 equivalent.
+
+중요:
+`analysis`는 해석/debug용 metadata.
+`compiled` 또는 equivalent만 executable validator로 보낸다.
+
+절대:
+validator.validate(providerResponse)
+처럼 전체 provider response를 effect schema로 검증하지 말 것.
+
+반드시:
+validator.validate(providerResponse.compiled)
+또는 현재 canonical extraction path를 사용.
+
+==================================================
+3. analysis는 실행 스키마가 아니다
+==================================================
+
+`analysis.trigger`
+`analysis.target`
+`analysis.action`
+`analysis.normalizedMeaning`
+등은 debug/intent summary.
+
+이 필드는:
+
+- 저장 Structured Effect에 들어가지 않음
+- Runtime으로 전달되지 않음
+- Action/Event engine에서 읽지 않음
+- Auto Apply의 executable payload가 아님
+
+단 Admin Developer Mode에서
+해석 요약을 보여주는 용도로는 사용 가능.
+
+==================================================
+4. Strict separation
+==================================================
+
+다음 타입을 명확히 분리:
+
+ProviderInterpretationMetadata
+ProviderCompiledEffect
+GenerateEffectResponse
+ExecutableStructuredEffect
+ScriptV1Payload
+
+가능하면 shared TypeScript/Zod schema로 분리.
+
+예:
+
+ProviderGenerateResponseSchema = z.object({
+  analysis: AnalysisMetadataSchema,
+  compiled: CompiledEffectUnionSchema
+})
+
+Executable validator:
+CompiledEffectUnionSchema only.
+
+==================================================
+5. analysis schema도 검증
+==================================================
+
+`analysis`를 무시하는 게 아니라
+별도 metadata schema로 검증.
+
+예:
+analysis.trigger는 string/enum summary로 허용 가능.
+
+하지만:
+analysis에 executable arbitrary fields가 들어와도
+Runtime으로 전달되면 안 됨.
+
+즉:
+metadata schema validation과
+executable schema validation을 별도로 수행.
+
+==================================================
+6. Canonical extraction 단계
+==================================================
+
+Provider response parse 후:
+
+1. validate provider envelope
+2. extract `compiled`
+3. canonicalize compiled payload
+4. validate executable DSL
+5. semantic integrity checks
+6. READY
+
+`analysis`는 2번 이후 executable pipeline에서 완전히 분리.
+
+==================================================
+7. 현재 오류 재현 테스트
+==================================================
+
+Regression fixture:
+
+Provider returns:
+
+{
+  "analysis": {
+    "trigger": "ENTER_FIELD",
+    "normalizedMeaning": "When this card enters, deal 2 damage..."
+  },
+  "compiled": {
+    "format": "STRUCTURED_EFFECTS_V1",
+    "effects": [
+      {
+        "trigger": "ENTER_FIELD",
+        "action": "DAMAGE",
+        "target": {...},
+        "values": {"amount": 2}
+      }
+    ]
+  }
+}
+
+Expected:
+- provider envelope PASS
+- analysis metadata PASS
+- compiled executable PASS
+- READY
+- `analysis.trigger unsupported field` error 없음
+
+==================================================
+8. legacy provider response 호환
+==================================================
+
+현재 provider가 이미 아래 형태 중 하나를 쓰는지 조사:
+
+A.
+{
+  analysis: {...},
+  effect: {...}
+}
+
+B.
+{
+  analysis: {...},
+  output: {...}
+}
+
+C.
+{
+  analysis: {...},
+  result: {...}
+}
+
+D.
+{
+  analysis: {...},
+  effects: [...]
+}
+
+현재 실제 contract를 source of truth로 사용.
+
+새 필드명을 임의 도입하기보다
+가능하면 기존 contract를 정리.
+
+단 legacy response가 executable과 metadata를 섞어 반환한다면
+명확한 adapter를 하나 두고 canonical envelope로 변환.
+
+여러 parallel adapter 난립 금지.
+
+==================================================
+9. Auto Apply
+==================================================
+
+READY 이후 Admin form에는
+compiled executable payload만 적용.
+
+`analysis` object가 form의 effect config에 들어가면 FAIL.
+
+검증:
+Generate
+→ READY
+→ Auto Apply
+→ form state inspect
+
+Expected:
+form effect field에는 canonical DSL만 존재.
+
+==================================================
+10. Save / Reload
+==================================================
+
+Save payload:
+canonical executable effect only.
+
+DB stored effect:
+canonical executable effect only.
+
+Reload:
+same canonical executable effect.
+
+`analysis` metadata는 저장하지 않거나,
+별도 debug/audit store가 있다면 effect config와 분리.
+
+==================================================
+11. Runtime
+==================================================
+
+Runtime executor 입력에
+`analysis`가 절대 포함되지 않도록 테스트.
+
+Action → Event → GameState는
+compiled DSL만 사용.
+
+==================================================
+12. Unknown field strictness 유지
+==================================================
+
+다음은 여전히 reject해야 함:
+
+- executable effect 내부 `analysis`
+- `target.filters`
+- `target.tagFilters`
+- unknown action
+- unknown trigger
+- unknown value field
+- malformed SCRIPT_V1
+- duplicate script step id
+- invalid resultId
+- arbitrary code field
+- sourceId spoof
+- unsupported action/target/value combination
+
+이번 수정 때문에 validator를 느슨하게 하지 말 것.
+
+==================================================
+13. 현재 Natural Language Compiler V2와 호환
+==================================================
+
+최근 robust compiler가 다음 metadata를 추가했다면:
+
+- normalizedMeaning
+- confidence
+- ambiguities
+- triggerIntent
+- actionIntent
+- targetIntent
+
+이들은 전부 metadata layer로 유지.
+
+Executable DSL에는 최종 canonical enum/fields만 들어간다.
+
+==================================================
+14. SCRIPT_V1도 동일 원칙
+==================================================
+
+Provider response:
+
+{
+  analysis: {...},
+  compiled: {
+    format: "SCRIPT_V1",
+    scripts: [...]
+  }
+}
+
+이면
+SCRIPT validator에는 compiled payload만 전달.
+
+analysis.*가 script schema에 들어가면 안 됨.
+
+==================================================
+15. Provider one-call rule
+==================================================
+
+Generate 클릭 1회
+→ provider 1회
+
+Validation 실패했다고 provider를 다시 호출해서
+"JSON 고쳐줘" 요청 금지.
+
+Provider response invalid:
+→ ANALYSIS_FAILED
+→ structured error
+→ form unchanged
+
+==================================================
+16. 오류 메시지 개선
+==================================================
+
+현재처럼:
+`analysis.trigger는 지원되지 않는 필드입니다.`
+
+가 사용자에게 그대로 뜨면
+내부 contract leakage다.
+
+root cause를 고친 뒤,
+진짜 provider/schema 오류가 나면:
+
+사용자:
+"AI 효과 해석 결과를 적용하지 못했습니다."
+
+Developer detail:
+path
+schema
+reason
+requestId
+
+를 분리.
+
+단 error masking만 하고 root bug를 안 고치면 FAIL.
+
+==================================================
+17. Positive tests
+==================================================
+
+P1 simple STRUCTURED_EFFECTS_V1 + analysis metadata
+→ READY
+
+P2 SCRIPT_V1 + analysis metadata
+→ READY
+
+P3 normalizedMeaning present
+→ READY
+
+P4 confidence present
+→ READY
+
+P5 ambiguities=[] present
+→ READY
+
+P6 analysis.trigger present
+→ metadata valid, executable unaffected
+
+P7 analysis.target/action summaries present
+→ metadata valid
+
+P8 Save/Reload contains no analysis metadata in effect config
+
+==================================================
+18. Negative tests
+==================================================
+
+N1 executable effect object contains `analysis`
+→ reject
+
+N2 compiled.effect has unknown field
+→ reject
+
+N3 target.filters
+→ reject
+
+N4 target.tagFilters
+→ reject
+
+N5 malformed SCRIPT_V1
+→ reject
+
+N6 provider envelope missing executable compiled payload
+→ ANALYSIS_FAILED
+
+N7 ambiguities critical but READY attempted
+→ reject
+
+N8 provider returns executable at wrong nesting
+→ adapter only if explicitly supported legacy format; otherwise reject
+
+==================================================
+19. Fuzz compiler 회귀
+==================================================
+
+이 contract fix 후에도 다음 noisy phrases Generate 성공 여부 재검사:
+
+- "등장 상대중 피 젤낮은놈 2뎀"
+- "나빼고 내 필드애들 2/2"
+- "공격하고 안죽었으면 코1깎고 손으로"
+- "적 하나 골라 덱위로"
+- "실험체태그 내카드들 어디있든 1/1"
+
+이전 robust normalization 기능이 깨지면 FAIL.
+
+==================================================
+20. Tag effect 회귀
+==================================================
+
+특히:
+"등장:어디에 있든 '실험체' 태그가 달려있는 모든 아군 카드들에게 +1/+1을 부여합니다."
+
+Generate:
+→ metadata analysis
+→ compiled target.filter.tagsAny=["실험체"]
+→ validator PASS
+→ READY
+
+analysis.trigger 때문에 fail하면 절대 안 됨.
+
+==================================================
+21. Full Analyzer / Compiler suite
+==================================================
+
+기존 current WRESTLER + Champion slots 전체 재실행.
+
+출력:
+
+SUPPORTED
+NEW_MECHANIC_REQUIRED
+ANALYSIS_FAILED
+SCHEMA_CONTRACT_FAILED
+SUPPORTED_FALSE_POSITIVE
+MISSING_CLAUSE
+HALLUCINATED_CLAUSE
+
+목표:
+SCHEMA_CONTRACT_FAILED = 0
+
+==================================================
+22. 실제 Admin E2E
+==================================================
+
+가능하면 Development Admin에서:
+
+1. effect text 입력
+2. Generate
+3. provider response
+4. READY
+5. Auto Apply
+6. Save
+7. Reload
+8. Runtime/Test Match
+
+대표 최소:
+- simple effect
+- tag effect
+- SCRIPT_V1
+- noisy Korean
+
+Browser 불가:
+BROWSER E2E = UNVERIFIED
+자동 검증 계속.
+
+==================================================
+23. Instrumentation
+==================================================
+
+Development에서 안전하게 로그:
+
+[AI_EFFECT_GENERATE]
+requestId
+providerEnvelopeValid
+analysisValid
+compiledFormat
+compiledValid
+canonicalized
+ready
+
+민감정보/prompt 전체/secrets 로그 금지.
+
+==================================================
+24. 검증
+==================================================
+
+반드시:
+
+pnpm run typecheck
+pnpm --filter @workspace/ko-game run build
+git diff --check
+
+관련:
+
+API typecheck
+API build
+provider schema tests
+Analyzer tests
+structured effect tests
+SCRIPT_V1 tests
+fuzz tests
+Admin generate tests
+save/reload tests
+runtime tests
+
+==================================================
+25. Git
+==================================================
+
+실제 수정 파일만 stage.
+
+제외:
+prompt txt
+Pasted txt
+.env
+secrets
+logs
+screenshots
+temp
+Replit metadata
+unrelated files
+
+commit.
+
+push 요청 없으면 push 금지.
+force push 금지.
+
+==================================================
+26. 최종 보고 형식
+==================================================
+
+ROOT CAUSE
+
+Why `analysis.trigger` reached executable validator:
+...
+
+First failing file/function:
+...
+
+Provider envelope before:
+...
+
+Validator input before:
+...
+
+Corrected flow:
+...
+
+
+SCHEMA SEPARATION
+
+Analysis metadata schema:
+PASS / FAIL
+
+Executable schema:
+PASS / FAIL
+
+analysis.trigger accepted as metadata:
+PASS / FAIL
+
+analysis.trigger excluded from executable payload:
+PASS / FAIL
+
+
+GENERATE
+
+Simple effect:
+PASS / FAIL
+
+Tag effect:
+PASS / FAIL
+
+SCRIPT_V1:
+PASS / FAIL
+
+Noisy Korean:
+PASS / FAIL
+
+
+AUTO APPLY
+
+Effect form contains only executable DSL:
+PASS / FAIL
+
+Analysis metadata leaked into form:
+0 / FAIL
+
+
+SAVE/RELOAD
+
+Stored effect contains analysis metadata:
+0 / FAIL
+
+Semantic equality:
+PASS / FAIL
+
+
+STRICT VALIDATION
+
+Unknown executable fields rejected:
+PASS / FAIL
+
+target.filters rejected:
+PASS / FAIL
+
+target.tagFilters rejected:
+PASS / FAIL
+
+Malformed SCRIPT rejected:
+PASS / FAIL
+
+
+PROVIDER CALLS
+
+Generate actions:
+...
+
+Provider calls:
+...
+
+Ratio:
+1:1 / FAIL
+
+Save provider:
+0 / FAIL
+
+Runtime provider:
+0 / FAIL
+
+
+FULL COMPILER
+
+SUPPORTED:
+...
+
+NEW_MECHANIC_REQUIRED:
+...
+
+ANALYSIS_FAILED:
+...
+
+SCHEMA_CONTRACT_FAILED:
+...
+
+SUPPORTED_FALSE_POSITIVE:
+...
+
+
+IMPLEMENTATION:
+PASS / FAIL
+
+AUTOMATED VERIFICATION:
+PASS / FAIL
+
+BROWSER E2E:
+PASS / FAIL / UNVERIFIED
+
+TYPECHECK:
+PASS / FAIL
+
+API BUILD:
+PASS / FAIL
+
+KO BUILD:
+PASS / FAIL
+
+git diff --check:
+PASS / FAIL
+
+PRODUCTION DATA MUTATION:
+NONE / FAIL
+
+CHANGED FILES:
+...
+
+COMMIT:
+...
+
+PUSH:
+NOT REQUESTED
+
+==================================================
+27. 완료 조건
+==================================================
+
+1. `analysis.trigger는 지원되지 않는 필드입니다.` 오류 재현 0.
+2. analysis metadata와 executable DSL 완전 분리.
+3. analysis.trigger는 metadata schema에서는 허용 가능.
+4. executable validator에는 analysis가 절대 들어가지 않음.
+5. strict unknown-field validation 유지.
+6. Generate → READY → Auto Apply → Save → Reload → Runtime 정상.
+7. STRUCTURED_EFFECTS_V1 / SCRIPT_V1 둘 다 정상.
+8. noisy Korean compiler 회귀 없음.
+9. tag filter compiler 회귀 없음.
+10. Generate 1회 = provider 1회.
+11. Save/Runtime provider 0.
+12. Production mutation 없음.
+13. tests/build/typecheck/diff 결과 보고.
+
+핵심:
+`analysis.trigger`를 executable field로 허용하는 것이 해결책이 아니다.
+
+Provider의 "해석 메타데이터"와
+실제 게임이 실행하는 "canonical effect payload"를
+계약 수준에서 완전히 분리해서 고쳐라.

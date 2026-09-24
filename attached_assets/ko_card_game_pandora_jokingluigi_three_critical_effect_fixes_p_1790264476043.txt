@@ -1,0 +1,972 @@
+KO CARD GAME — CRITICAL GAMEPLAY EFFECT FIX BUNDLE
+PANDORA ALLY TARGETING + JOKING LUIGI ADJACENT SUMMON/TAUNT + PANDORA ATTACK ABSORPTION
+
+현재 실제 플레이에서 아래 3개 버그가 발생한다.
+
+BUG 1 — Champion Pandora Ability
+판도라의 고유 능력을 아군 선수 카드에게 사용할 수 없다.
+사용자가 "선택한 대상"에게 데미지를 주는 능력이라면 아군 선수도 합법적인 선택 대상이어야 한다.
+
+BUG 2 — 조킹루이지
+조킹루이지가 등장했을 때 무작위 선수 카드를 자신의 양옆에 소환해야 하는데 소환하지 않는다.
+그리고 도발도 자기 자신에게만 붙는 잘못된 동작이 발생한다.
+의도는 조킹루이지 자신이 아니라 "바로 양옆의 아군 선수"에게 도발을 주는 것이다.
+
+BUG 3 — 판도라(필드 카드)의 공격력 흡수
+판도라가 FIELD에 있고 그 판도라가 상대 선수 카드를 RETIRE 또는 DESTROY시켜도
+피해자의 공격력을 자신의 공격력에 더하지 않는다.
+
+이 3개를 단순 UI 수정이나 카드 이름 hardcode로 때우지 말고,
+Target Resolver / ADJACENT slot logic / SUMMON placement / persistent causal-removal listener를
+실제 Action → Event → GameState 경로에서 고친다.
+
+==================================================
+0. 공통 절대 원칙
+==================================================
+
+- 먼저 현재 Development DB의 최신 Source Text와 현재 저장 Structured Effect를 다시 읽는다.
+- 오래된 export/cache를 current source of truth로 착각하지 않는다.
+- Source Text / Fresh Analyzer / Stored Effect / Runtime을 4-way 비교한다.
+- 카드명/Champion명으로 generic runtime 분기 금지.
+- UI만 맞고 canonical GameState가 틀린 상태 금지.
+- Production DB 직접 수정 금지.
+- 실제 사용자 계정/덱/카드 삭제·분해·상점 구매 금지.
+- Browser unavailable이어도 IMPLEMENTATION + AUTOMATED VERIFICATION은 계속한다.
+- push 요청 없으면 push 금지.
+- force push 금지.
+
+==================================================
+1. BUG 1 — Champion Pandora Ability가 아군 선수에게 사용 불가
+==================================================
+
+현재 확인해야 할 핵심:
+
+판도라 Champion Ability의 최신 Source Text가
+예를 들어 다음과 같이 owner 제한 없이 표현되어 있다면:
+
+"자신이 선택한 대상에게 1 데미지를 줍니다."
+"자신이 선택한 대상에게 2 데미지를 줍니다."
+
+여기서 "대상"은 "상대 대상"과 다르다.
+
+Source Text에
+- 상대
+- 적
+- 상대방
+
+같은 제한어가 없다면
+Analyzer가 자동으로 owner=ENEMY를 삽입하면 안 된다.
+
+현재 기존 분석/저장 effect에 owner=ENEMY가 남아 있는지 반드시 확인한다.
+
+==================================================
+2. Pandora target 공식 기대 동작
+==================================================
+
+최소 요구:
+
+- 적 선수 선택 가능
+- 아군 선수 선택 가능
+- 아군 선수에게 실제 데미지 적용 가능
+- target이 legal하면 Champion Ability 정상 소비
+
+현재 canonical CHARACTER target이 Champion까지 포함하도록 설계되어 있고
+최신 Source Text가 단순히 "대상"이라고 되어 있다면,
+기존 공식 target domain을 그대로 존중한다.
+
+하지만 이번 버그의 최소 회귀 기준은:
+OWN BOARD WRESTLER가 합법 target이어야 한다.
+
+base ability와 upgraded ability가 동일한 target-domain semantics를 공유해야 한다.
+차이는 damage amount 같은 능력 값뿐이어야 한다.
+
+==================================================
+3. Pandora target ROOT CAUSE trace
+==================================================
+
+다음 경로 추적:
+
+Champion Source Text
+→ Fresh Analyzer
+→ target.owner
+→ Stored Effect
+→ getLegalActions / getLegalTargets
+→ PLAYER_CHOICE UI
+→ target confirm
+→ executeAction
+→ DAMAGE
+→ GameState
+
+가능한 원인:
+
+A. Analyzer가 무조건 owner=ENEMY 생성
+B. Stored Effect에 stale owner=ENEMY
+C. getLegalTargets가 Champion Ability면 enemy-only로 제한
+D. UI highlight가 enemy-only
+E. server/engine validation이 ally target reject
+F. online action schema가 enemy target만 허용
+G. generic CHARACTER resolver가 owner default ENEMY
+H. base/upgraded 중 하나만 잘못된 target schema 사용
+
+First failing layer를 반드시 특정.
+
+==================================================
+4. Generic owner semantics 수정
+==================================================
+
+중요:
+"target.owner가 생략됨"을 모든 효과에서 무조건 BOTH로 바꾸지 마라.
+
+Source text / canonical DSL에서
+명시적으로 unrestricted target을 표현할 수 있는
+현재 shared owner semantic을 사용한다.
+
+예:
+ANY / BOTH / EITHER / owner omitted-with-explicit-schema
+중 현재 프로젝트의 canonical 방식.
+
+없다면 generic하게 추가하되
+다른 enemy-only / self-only 카드가 넓어지지 않도록 한다.
+
+절대 금지:
+if (champion.name === "판도라") allowAlly = true
+
+==================================================
+5. Pandora Ability exact tests
+==================================================
+
+PA1 — base
+OWN wrestler A at 3 HP
+Pandora ability = 1 damage
+select A
+→ A becomes 2 HP
+→ ability used exactly once
+
+PA2 — upgraded
+OWN wrestler A at 4 HP
+upgraded ability = 2 damage
+select A
+→ A becomes 2 HP
+
+PA3
+enemy wrestler target
+→ still legal
+
+PA4
+ally target invalid/stale before confirm
+→ server/engine reject safely
+→ ability not consumed
+
+PA5
+cancel target selection
+→ ability not consumed
+
+PA6
+Champion Token active
+→ original Champion Ability still usable
+→ allied wrestler target still legal
+
+PA7
+if own wrestler is reduced to 0 by Pandora ability
+→ normal FIELD RETIRE semantics
+→ causal sourceActionType = USE_CHAMPION_ABILITY preserved
+→ Pandora Quest eligibility follows current official rule
+
+==================================================
+6. BUG 2 — 조킹루이지 양옆 무작위 소환 + TAUNT
+==================================================
+
+사용자 기대 동작:
+
+조킹루이지가 FIELD에 등장하면
+"자신의 바로 왼쪽 슬롯"과
+"자신의 바로 오른쪽 슬롯"을 기준으로
+효과를 처리한다.
+
+의도된 최신 Source Text를 Development에서 다시 확인한다.
+
+현재 카드 텍스트가 실제로:
+- 양옆에 무작위 선수 소환
+- 양옆 아군 선수에게 TAUNT 부여
+
+두 clause를 모두 포함한다면
+Fresh Analyzer와 Stored Effect도 두 clause를 모두 가져야 한다.
+
+Source Text가 DB에서 여전히 과거 텍스트로 남아 있다면
+그 사실을 최종 보고에 `SOURCE/EXPECTED DESIGN MISMATCH`로 명시하고
+사용자가 이번 요청에서 밝힌 최신 기대 동작과 current Admin data를 비교한다.
+오래된 export를 이유로 새 기대 동작을 무시하지 말 것.
+
+==================================================
+7. 조킹루이지 인접 슬롯 공식 정의
+==================================================
+
+ADJACENT는:
+
+sourceSlotIndex - 1
+sourceSlotIndex + 1
+
+정확히 두 좌표만.
+
+절대 포함 금지:
+
+- SELF
+- 두 칸 이상 떨어진 슬롯
+- 빈 슬롯 너머 카드
+- 상대 FIELD
+- Champion
+- HAND
+- GRAVEYARD
+
+빈 슬롯을 건너뛰어서 다음 카드를 찾지 않는다.
+
+==================================================
+8. 조킹루이지 무작위 선수 소환
+==================================================
+
+각 직접 인접 슬롯이 비어 있으면
+그 슬롯에 무작위 WRESTLER 카드 1장을 소환한다.
+
+최대:
+왼쪽 1장 + 오른쪽 1장 = 2장
+
+이미 점유된 인접 슬롯:
+- 기존 카드 overwrite 금지
+- 그 슬롯에는 summon 하지 않음
+- 기존 adjacent ally는 TAUNT 대상이 될 수 있음(최신 Source Text 의미에 따라)
+
+중요:
+소환은 source 자신이 들어간 뒤의 실제 FIELD slot 위치를 기준으로 계산.
+
+random pool:
+현재 프로젝트의 canonical random WRESTLER pool 사용.
+PUBLISHED/allowed definition 규칙 유지.
+Token/Champion/Technique가 무작위 WRESTLER pool에 잘못 섞이지 않게 한다.
+deterministic RNG 사용.
+Math.random 금지.
+
+동일 roll이 양쪽에서 같은 definition을 뽑을 수 있는지 여부는
+현재 random-generation 공식 규칙을 따른다.
+임의 unique restriction 추가 금지.
+
+==================================================
+9. 조킹루이지 TAUNT 순서
+==================================================
+
+필요하면 effect sequence를 명확히 보장:
+
+1. 조킹루이지 FIELD에 들어감
+2. 왼쪽/오른쪽 직접 인접 empty slot에 random WRESTLER summon
+3. 현재 직접 인접한 OWN WRESTLER들을 resolve
+4. 그 adjacent allies에 TAUNT 부여
+5. SELF는 절대 TAUNT 대상 아님
+
+즉:
+
+[empty] [조킹루이지] [empty]
+
+효과 후 예:
+[random A] [조킹루이지] [random B]
+
+TAUNT:
+random A = true
+조킹루이지 = false
+random B = true
+
+==================================================
+10. 조킹루이지 edge cases
+==================================================
+
+JL1
+[empty] [조킹루이지] [empty]
+→ 양쪽 random summon
+→ 두 소환 카드 TAUNT
+→ SELF no TAUNT
+
+JL2
+[A] [조킹루이지] [empty]
+→ A 유지
+→ 오른쪽 random summon
+→ A + summoned right TAUNT
+→ SELF no TAUNT
+
+JL3
+[조킹루이지] [empty] [C] ...
+source가 가장 왼쪽
+→ 존재하는 오른쪽 adjacent slot만 random summon
+→ 그 카드 TAUNT
+→ 멀리 있는 C는 영향 없음
+
+JL4
+board edge right
+→ 왼쪽만 처리
+
+JL5
+[A] [조킹루이지] [B]
+→ summon 0
+→ A/B TAUNT
+→ SELF no TAUNT
+
+JL6
+양옆 occupied + already TAUNT
+→ duplicate keyword instance/badge 만들지 않음
+
+JL7
+board full
+→ summon 0
+→ adjacent TAUNT는 정상
+→ no error / no stale pending
+
+==================================================
+11. 조킹루이지 ROOT CAUSE
+==================================================
+
+다음 확인:
+
+- Structured Effect에 SUMMON clause 자체가 누락됐는지
+- Analyzer가 random adjacent summon을 지원하지 못하는지
+- `ADJACENT_EMPTY_SLOTS` helper가 존재하는지
+- SUMMON destination slot metadata가 유실되는지
+- generic SUMMON이 first empty slot로 보내버리는지
+- ADJACENT resolver가 source SELF를 포함하는지
+- effect sequence가 TAUNT → SUMMON 순으로 잘못 실행되는지
+- SAME result/adjacent re-resolution이 필요한데 snapshot이 너무 일찍 잡히는지
+- stored effect가 stale인지
+
+카드 이름 hardcode 없이
+generic "summon into directly adjacent empty slots" mechanic으로 구현.
+
+==================================================
+12. BUG 3 — 판도라 FIELD 카드 공격력 흡수 안 됨
+==================================================
+
+현재 판도라 계열 FIELD 카드의 최신 Source Text를 다시 확인.
+
+의도:
+"이 카드는 자신이 리타이어 혹은 파괴 시킨 선수의 공격력을 자신의 공격력에 더합니다."
+
+정확한 semantic:
+
+THIS source CardInstance가 직접 원인이 되어
+어떤 WRESTLER가 RETIRE 또는 DESTROY되면:
+
+victimAttackSnapshot = 제거 직전 victim.currentAttack
+
+source.currentAttack += victimAttackSnapshot
+
+health는 절대 흡수하지 않는다.
+
+==================================================
+13. 공격력 흡수는 ENTER_FIELD destroy에만 한정하면 안 됨
+==================================================
+
+반드시 다음을 포함:
+
+A. 이 카드의 등장 DESTROY 효과로 제거
+B. 이 카드의 공격/combat damage로 상대 WRESTLER RETIRE
+C. 이 카드 자신의 effect damage로 상대 WRESTLER RETIRE
+D. 이 카드가 가진 다른 causal effect로 RETIRE/DESTROY
+
+Source가 "자신이 리타이어 혹은 파괴 시킨"이라고 하면
+단순 LAST_DESTROYED_TARGETS ENTER_FIELD snapshot만으로는 부족하다.
+
+Persistent causal listener가 필요.
+
+==================================================
+14. 기존 SOURCE_CAUSED_TARGET_REMOVAL 경로 점검
+==================================================
+
+프로젝트에 이미
+`SOURCE_CAUSED_TARGET_REMOVAL`
+또는 equivalent causal-removal listener가 구현되어 있다면
+새 시스템을 만들지 말고 그 경로가 실제로 등록/실행되는지 추적.
+
+특히 확인:
+
+- listener registration 시점
+- sourceInstanceId 저장
+- source가 FIELD에 있는 동안 listener active
+- source가 FIELD를 떠나면 listener inactive
+- RETIRE event causalSourceInstanceId
+- DESTROY event causalSourceInstanceId
+- combat attacker instance identity
+- victim attack snapshot이 removal 전에 저장되는지
+- replay/event duplication dedupe
+- reconnect/serialization 시 listener state
+- stored effect가 실제 listener를 등록하는지
+- 현재 실행 중 build가 listener implementation을 포함하는지
+
+이전 구현이 코드에만 있고
+현재 저장 effect 또는 실제 배포/preview에서 listener가 등록되지 않는 문제도 확인.
+
+==================================================
+15. Attack snapshot
+==================================================
+
+피해자가 제거되기 전에:
+
+victim.currentAttack를 snapshot.
+
+GRAVEYARD/removed object에서
+baseAttack를 나중에 읽어 계산하지 말 것.
+
+예:
+
+victim printed ATK = 3
+현재 buffed ATK = 8
+
+판도라가 retire시킴
+→ +8 ATK
+
+현재 source text가 "공격력"을 current attack으로 쓰는 기존 canonical semantics를 유지.
+
+==================================================
+16. 공격력만 흡수
+==================================================
+
+절대 금지:
+
+health += victimHealth
+maxHealth += victimHealth
+
+기존 old aggregate config에
+`health: CURRENT_HEALTH_SUM`
+이 남아 있다면 stale semantic으로 분류.
+
+Source text에 health가 없으면:
+attack-only.
+
+==================================================
+17. 정확한 causality
+==================================================
+
+다른 카드가 retire시킨 피해자를
+판도라가 흡수하면 안 됨.
+
+예:
+
+Pandora P on board.
+Ally A attacks enemy X and retires X.
+
+Expected:
+Pandora attack unchanged.
+
+Pandora P attacks enemy Y and retires Y.
+
+Expected:
+Pandora attack += Y attack snapshot.
+
+"판도라가 필드에 존재한다"만으로 전체 allied kills를 듣는 aura가 아니다.
+THIS source instance가 직접 원인이어야 함.
+
+==================================================
+18. duplicate / replay dedupe
+==================================================
+
+같은 removal event가:
+- event replay
+- websocket replay
+- reducer reprocessing
+- queued continuation
+
+으로 다시 보이더라도
+공격력 두 번 흡수 금지.
+
+반면 서로 다른 victim 두 명을 실제로 제거하면
+각 victim 공격력을 각각 한 번씩 흡수.
+
+==================================================
+19. 판도라 공격력 흡수 exact tests
+==================================================
+
+PD1 — combat retire
+Pandora 5 ATK
+enemy victim 3 ATK / 1 HP
+Pandora attacks and retires victim
+→ Pandora 8 ATK
+
+PD2 — buffed victim
+victim currentAttack = 7
+→ Pandora +7
+
+PD3 — nonlethal combat
+victim survives
+→ +0
+
+PD4 — unrelated ally kill
+→ +0
+
+PD5 — entry-time DESTROY
+victim currentAttack = 4
+→ Pandora +4 exactly once
+
+PD6 — effect damage lethal
+Pandora-caused damage retires target
+→ +victimAttack
+
+PD7 — prevented lethal
+target not removed
+→ +0
+
+PD8 — duplicate event replay
+→ second processing +0
+
+PD9 — two distinct victims
+3 ATK + 5 ATK
+→ total +8
+
+PD10 — source leaves FIELD
+later unrelated removal
+→ +0
+
+PD11 — health
+before HP 6
+after absorb HP still 6
+maxHealth unchanged
+
+==================================================
+20. Pandora Champion Token special rules 회귀
+==================================================
+
+만약 이 FIELD 판도라가 Champion Token definition이라면
+printed absorption effect와 Champion Token special context를 분리.
+
+유지:
+
+- Champion Token own stats
+- original Champion HP와 분리
+- Token damage가 Champion HP를 깎지 않음
+- Token RETIRE ≠ immediate loss
+- Token active 동안 original Champion protected/untargetable
+- original Champion Ability는 사용 가능
+- Token leave 후 protection 해제
+- SILENCE/DESTROY/REMOVE_FROM_GAME immunity는 기존 공식 rule 유지
+- normal SUMMON same definition은 Champion Token special context 아님
+
+printed attack-absorb effect 자체는
+정의에 따라 ordinary same-definition instance에도 적용될 수 있지만
+special token protection과 혼동 금지.
+
+==================================================
+21. Source / Analyzer / Stored / Runtime semantic gate
+==================================================
+
+세 버그 모두 다음 표를 작성:
+
+SOURCE
+FRESH ANALYZER
+STORED EFFECT
+RUNTIME
+
+각 clause별:
+
+- MATCH
+- MISSING_CLAUSE
+- HALLUCINATED_CLAUSE
+- WRONG_TARGET_OWNER
+- WRONG_SELECTION
+- WRONG_SEQUENCE
+- STALE_STORED_EFFECT
+- RUNTIME_RESOLVER_BUG
+- CAUSAL_LISTENER_BUG
+
+SUPPORTED라고 표시돼 있다는 이유로 PASS 금지.
+
+==================================================
+22. Development stored effect 수정
+==================================================
+
+Stored Effect가 stale이면:
+
+1. current Development row 다시 읽기
+2. current version/status 기록
+3. Source Text 확인
+4. Fresh Analyzer
+5. semantic equality 확인
+6. strict validator PASS
+7. effect-related field만 safe update
+
+unrelated 변경 금지:
+
+- card name
+- cost
+- base stats
+- tags
+- rarity
+- image/media
+- ownership
+- status
+
+Production DB write 금지.
+
+==================================================
+23. AI Mechanic Compiler 회귀
+==================================================
+
+이번 버그가 Analyzer/DSL capability 부족 때문에 생겼다면
+generic compiler도 고쳐야 한다.
+
+최소 자연어 cases:
+
+C1
+"선택한 대상에게 1 데미지"
+→ ally/enemy restriction hallucination 금지
+
+C2
+"상대 선수 한장을 선택해 1 데미지"
+→ owner=ENEMY
+
+C3
+"양옆 빈칸에 무작위 선수 카드를 소환"
+→ ADJACENT_EMPTY_SLOTS + RANDOM WRESTLER SUMMON
+
+C4
+"양옆 아군 선수들에게 도발"
+→ direct ADJACENT allies, SELF excluded
+
+C5
+"이 카드가 리타이어 혹은 파괴 시킨 선수의 공격력을 얻음"
+→ persistent SOURCE_CAUSED_TARGET_REMOVAL attack-only listener
+
+정확한 문장 hardcode 금지.
+
+==================================================
+24. Runtime Action → Event → GameState 필수 검증
+==================================================
+
+Inspection-only PASS 금지.
+
+Pandora Ability:
+USE_CHAMPION_ABILITY
+→ PLAYER_CHOICE own wrestler
+→ DAMAGE
+→ GameState
+
+Joking Luigi:
+PLAY_FROM_HAND
+→ ENTER_FIELD
+→ ADJACENT_EMPTY_SLOTS
+→ RANDOM SUMMON(s)
+→ ADJACENT resolve
+→ ADD_KEYWORD TAUNT
+→ GameState
+
+Pandora absorb:
+ATTACK/effect
+→ DAMAGE / DESTROY
+→ WRESTLER_RETIRED or removal event
+→ SOURCE_CAUSED_TARGET_REMOVAL
+→ attack snapshot
+→ source BUFF attack only
+→ GameState
+
+==================================================
+25. AI Match + Online parity
+==================================================
+
+가능하면 같은 fixture를:
+
+- deterministic engine test
+- AI Match
+- Online/server-authoritative match
+
+에서 비교.
+
+특히 Pandora ally targeting은
+online target validation에서도 own wrestler를 reject하면 안 됨.
+
+Joking Luigi random summon은
+online에서 deterministic server RNG 결과를 broadcast.
+
+Pandora absorb는
+online event replay로 두 번 적용되면 안 됨.
+
+==================================================
+26. Browser E2E
+==================================================
+
+가능하면 실제 Development 브라우저에서:
+
+SCENARIO A — Pandora ally target
+아군 WRESTLER 클릭 가능
+→ ability confirm
+→ damage 실제 반영
+
+SCENARIO B — Joking Luigi
+양옆 empty 상태에서 play
+→ 좌/우 random summon
+→ 양쪽 TAUNT
+→ self TAUNT 없음
+
+SCENARIO C — Pandora absorption
+Pandora FIELD
+→ Pandora가 상대 WRESTLER를 combat RETIRE
+→ victim currentAttack만큼 Pandora attack 상승
+
+UI만 보지 말고 debug state/event도 확인.
+
+Browser unavailable:
+BROWSER E2E = UNVERIFIED
+자동 검증은 계속.
+
+==================================================
+27. 회귀 금지
+==================================================
+
+깨지면 안 되는 것:
+
+- enemy-only target cards
+- self-only target cards
+- PLAYER_CHOICE cancel
+- invalid target rollback
+- normal ADJACENT effects
+- full-board SUMMON
+- deterministic RANDOM
+- RETIRE vs DESTROY
+- Champion Token protection
+- Champion HP separation
+- Pandora Quest +1 exactly once
+- hidden-info sanitizer
+- reconnect/idempotency
+- HAND/DECK health floor
+
+==================================================
+28. 자동 검증
+==================================================
+
+반드시 실행:
+
+pnpm run typecheck
+pnpm --filter @workspace/ko-game run build
+git diff --check
+
+관련:
+
+API typecheck/build
+Analyzer tests
+target resolver tests
+Champion Ability tests
+PLAYER_CHOICE tests
+adjacent slot tests
+random summon tests
+keyword tests
+combat RETIRE tests
+DESTROY tests
+causal-removal listener tests
+Champion Token tests
+Quest tests
+online action tests
+serializer/reconnect tests
+
+==================================================
+29. Git
+==================================================
+
+실제 수정 파일만 stage.
+
+제외:
+prompt txt
+Pasted txt
+.env
+secrets
+logs
+screenshots
+temp
+Replit metadata
+unrelated files
+
+commit.
+
+push 요청 없으면 push 금지.
+force push 금지.
+
+==================================================
+30. 최종 보고 형식
+==================================================
+
+BUG 1 — PANDORA ALLY TARGET
+
+Latest Source Text:
+...
+
+Fresh Analyzer target:
+...
+
+Stored target:
+...
+
+First failing layer:
+...
+
+Own WRESTLER legal target:
+PASS / FAIL
+
+Enemy WRESTLER still legal:
+PASS / FAIL
+
+Base ability:
+PASS / FAIL
+
+Upgraded ability:
+PASS / FAIL
+
+Cancel/invalid target:
+PASS / FAIL
+
+
+BUG 2 — JOKING LUIGI
+
+Latest Source Text:
+...
+
+Summon clause present in source:
+YES / NO
+
+Fresh Analyzer summon:
+PASS / FAIL
+
+Stored summon:
+PASS / FAIL
+
+Adjacent left summon:
+PASS / FAIL
+
+Adjacent right summon:
+PASS / FAIL
+
+Occupied slot preserved:
+PASS / FAIL
+
+Random pool:
+PASS / FAIL
+
+Deterministic RNG:
+PASS / FAIL
+
+Adjacent TAUNT:
+PASS / FAIL
+
+SELF TAUNT:
+FALSE / FAIL
+
+Effect order:
+SUMMON → ADJACENT TAUNT / FAIL
+
+
+BUG 3 — PANDORA ABSORPTION
+
+Latest Source Text:
+...
+
+Persistent causal listener:
+PASS / FAIL
+
+Combat RETIRE:
+PASS / FAIL
+
+Effect RETIRE:
+PASS / FAIL
+
+DESTROY:
+PASS / FAIL
+
+Victim currentAttack snapshot:
+PASS / FAIL
+
+Unrelated removal:
++0 / FAIL
+
+Duplicate replay:
++0 / FAIL
+
+Attack-only:
+PASS / FAIL
+
+Health unchanged:
+PASS / FAIL
+
+
+SEMANTIC GATE
+
+SOURCE ↔ ANALYZER:
+PASS / FAIL
+
+ANALYZER ↔ STORED:
+PASS / FAIL
+
+STORED ↔ RUNTIME:
+PASS / FAIL
+
+Stale stored rows repaired:
+YES / NO
+
+
+AI MATCH:
+PASS / FAIL / UNVERIFIED
+
+ONLINE:
+PASS / FAIL / UNVERIFIED
+
+BROWSER E2E:
+PASS / FAIL / UNVERIFIED
+
+IMPLEMENTATION:
+PASS / FAIL
+
+AUTOMATED VERIFICATION:
+PASS / FAIL
+
+TYPECHECK:
+PASS / FAIL
+
+KO BUILD:
+PASS / FAIL
+
+API TYPECHECK:
+PASS / FAIL / NOT_MODIFIED
+
+API BUILD:
+PASS / FAIL / NOT_MODIFIED
+
+git diff --check:
+PASS / FAIL
+
+PRODUCTION DATA MUTATION:
+NONE / FAIL
+
+CHANGED FILES:
+...
+
+COMMIT:
+...
+
+PUSH:
+NOT REQUESTED
+
+==================================================
+31. 완료 조건
+==================================================
+
+완료라고 보고하려면:
+
+1. Pandora Champion Ability가 own WRESTLER를 legal target으로 선택 가능.
+2. ally target에 실제 damage가 canonical GameState에 적용.
+3. enemy target capability 회귀 없음.
+4. base/upgraded target semantics 일치.
+5. Joking Luigi가 direct adjacent empty slots에 random WRESTLER를 소환.
+6. occupied adjacent slot overwrite 없음.
+7. Joking Luigi SELF는 TAUNT를 받지 않음.
+8. direct adjacent allied WRESTLER만 TAUNT.
+9. Pandora source instance가 직접 RETIRE/DESTROY한 victim의 currentAttack을 정확히 흡수.
+10. combat RETIRE도 흡수.
+11. unrelated kill은 흡수 0.
+12. duplicate event는 중복 흡수 0.
+13. health/maxHealth는 흡수하지 않음.
+14. Source/Analyzer/Stored/Runtime semantic mismatch가 남아 있지 않음.
+15. 카드 이름 runtime hardcode 없음.
+16. Production data mutation 없음.
+17. tests/build/typecheck/diff 결과 보고.
+
+이 세 문제를 각각 증상만 막지 말고,
+타겟 소유자 의미, 인접 슬롯 소환/선택, source-causal removal listener라는
+generic engine 계층까지 정확히 복구한 뒤 멈춰라.
