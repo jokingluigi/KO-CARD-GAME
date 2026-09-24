@@ -63,6 +63,21 @@ test("only contextually invalid selections or an otherwise-valid attack target m
     "PLAYER_ONE",
   ), "INVALID_TARGET");
 
+  const opponentConfirmationState = gameState({
+    targetingState: {
+      active: true,
+      playerId: "PLAYER_ONE",
+      phase: "PRE_COMMIT",
+      validTargetIds: ["valid-target"],
+    },
+  });
+  assert.equal(rejectedActionCode(
+    { type: "CONFIRM_PRECOMMIT_TARGET", playerId: "PLAYER_TWO", targetId: "valid-target" },
+    opponentConfirmationState,
+    [],
+    "PLAYER_TWO",
+  ), "INVALID_ACTION");
+
   const attack = { type: "ATTACK", playerId: "PLAYER_ONE", attackerInstanceId: "attacker-1", target: { type: "PLAYER", playerId: "PLAYER_TWO" } } as const;
   const otherLegalTarget: GameAction = {
     type: "ATTACK",

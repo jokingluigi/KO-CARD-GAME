@@ -1494,14 +1494,12 @@ function expandedMechanicAnalysis(
   if (/선택한\s*상대\s*선수\s*1장.*리타이어/.test(text)) {
     return result([{ trigger: triggerFor(), action: "RETIRE", target: { zone: "BOARD", owner: "ENEMY", cardType: "WRESTLER", selection: "PLAYER_CHOICE", count: 1 } }]);
   }
-  if (/양\s*옆[^.!?]*(?:무작위|랜덤)[^.!?]*선수\s*카드[^.!?]*(?:소환|생성)/.test(text)) {
+  if (/(?:양\s*옆|양\s*쪽|좌\s*우)[^.!?]*(?:무작위|랜덤)[^.!?]*선수(?:\s*카드)?[^.!?]*(?:소환|생성|만들|놓)/.test(text)) {
     const adjacentFilter = /(?:3\s*코스트|3\s*비용)\s*이상/.test(text) ? { minCost: 3 } : undefined;
     const damageAmount =
       text.match(/생성된.*?(?:데미지|피해).*?(\d+)\s*(?:증가|추가)/)?.[1] ??
       text.match(/생성된.*?(\d+)\s*추가\s*(?:데미지|피해)/)?.[1];
-    const tauntAdjacentAllies =
-      /양\s*옆[^.!?]*아군\s*선수[^.!?]*도발/.test(text) ||
-      /자신을\s*제외한[^.!?]*(?:생성한|소환한)[^.!?]*선수\s*카드[^.!?]*도발/.test(text);
+    const tauntAdjacentAllies = /양\s*옆[^.!?]*아군\s*선수[^.!?]*도발/.test(text);
     return result([
       {
         trigger: triggerFor(),

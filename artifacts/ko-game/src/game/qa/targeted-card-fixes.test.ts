@@ -254,10 +254,11 @@ test('흑구슬마스터 SUMMON and REVIVE do not auto-trigger its PLAY_FROM_HAN
   }
 });
 
-test('조킹루이지 summons into adjacent empty slots and taunts adjacent allies only', () => {
+test('조킹루이지 taunts only successfully generated adjacent wrestlers', () => {
   const joker = definition('조킹루이지');
   const effects = Array.isArray(joker.effectConfig.effects) ? joker.effectConfig.effects : [];
   assert.equal(effects.length, 2);
+  assert.equal(joker.keywords.includes('TAUNT'), false);
   assert.equal(
     (effects[0] as { action?: string; target?: { selection?: string } } | undefined)?.action,
     'SUMMON',
@@ -272,7 +273,7 @@ test('조킹루이지 summons into adjacent empty slots and taunts adjacent alli
   );
   assert.equal(
     (effects[1] as { action?: string; target?: { selection?: string } } | undefined)?.target?.selection,
-    'ADJACENT',
+    'SAME_TARGET',
   );
 
   const neutralDefinition: CardDefinition = {
@@ -294,39 +295,60 @@ test('조킹루이지 summons into adjacent empty slots and taunts adjacent alli
     board: [CardInstance | null, CardInstance | null, CardInstance | null, CardInstance | null];
   }> = [
     {
-      name: 'JL1 center',
-      sourceSlot: 1,
-      board: [makeCard('jl1-left', 0), null, makeCard('jl1-right', 2), null],
-    },
-    {
-      name: 'JL2 left edge with two occupied cards',
-      sourceSlot: 0,
-      board: [null, makeCard('jl2-adjacent', 1), makeCard('jl2-distant', 2), null],
-    },
-    {
-      name: 'JL3 right edge with two occupied cards',
-      sourceSlot: 2,
-      board: [makeCard('jl3-distant', 0), makeCard('jl3-adjacent', 1), null, null],
-    },
-    {
-      name: 'JL4 distant card across an empty slot',
-      sourceSlot: 2,
-      board: [makeCard('jl4-distant', 0), null, null, null],
-    },
-    {
-      name: 'JL5 distant card across an empty slot',
-      sourceSlot: 0,
-      board: [null, null, makeCard('jl5-distant', 2), null],
-    },
-    {
-      name: 'JL6 both adjacent slots empty',
+      name: 'JL1 both adjacent slots empty',
       sourceSlot: 1,
       board: [null, null, null, null],
+    },
+    {
+      name: 'JL2 existing left, generated right',
+      sourceSlot: 1,
+      board: [makeCard('jl2-left-existing', 0), null, null, null],
+    },
+    {
+      name: 'JL3 generated left, existing right',
+      sourceSlot: 1,
+      board: [null, null, makeCard('jl3-right-existing', 2), null],
+    },
+    {
+      name: 'JL4 both adjacent slots occupied',
+      sourceSlot: 1,
+      board: [makeCard('jl4-left-existing', 0), null, makeCard('jl4-right-existing', 2), null],
+    },
+    {
+      name: 'JL5 left board edge',
+      sourceSlot: 0,
+      board: [null, null, null, null],
+    },
+    {
+      name: 'JL6 right board edge',
+      sourceSlot: 3,
+      board: [null, null, null, null],
+    },
+    {
+      name: 'JL7 board full after source enters',
+      sourceSlot: 1,
+      board: [
+        makeCard('jl7-left-existing', 0),
+        null,
+        makeCard('jl7-right-existing', 2),
+        makeCard('jl7-distant-existing', 3),
+      ],
+    },
+    {
+      name: 'distant card does not block a direct adjacent slot',
+      sourceSlot: 0,
+      board: [null, null, makeCard('distant-existing', 2), null],
+    },
+    {
+      name: 'occupied direct neighbor is not skipped to reach a farther empty slot',
+      sourceSlot: 0,
+      board: [null, makeCard('direct-neighbor-blocker', 1), null, null],
     },
   ];
 
   for (const scenario of scenarios) {
     const state = stateWithPool();
+    state.randomSeed = 2026;
     state.cardPool = [neutralDefinition];
     state.players[0].board = scenario.board;
     const adjacentSlots = [scenario.sourceSlot - 1, scenario.sourceSlot + 1]
@@ -346,9 +368,9 @@ test('조킹루이지 summons into adjacent empty slots and taunts adjacent alli
     for (const slot of expectedSummonSlots) {
       assert.ok(result.players[0].board[slot], `${scenario.name}: adjacent empty slot ${slot} should be filled`);
     }
-    const expectedTauntIds = adjacentSlots
+    const expectedTauntIds = expectedSummonSlots
       .map((slot) => result.players[0].board[slot])
-      .filter((item): item is CardInstance => item !== null)
+      .filter((item): item is CardInstance => item !== null && item.isGenerated)
       .map((item) => item.instanceId)
       .sort();
     const tauntedIds = result.players[0].board
@@ -359,6 +381,21 @@ test('조킹루이지 summons into adjacent empty slots and taunts adjacent alli
 
     assert.deepEqual(tauntedIds, expectedTauntIds, scenario.name);
     assert.deepEqual(source?.keywords, sourceKeywords, `${scenario.name}: source keyword set`);
+    assert.equal(source?.keywords.includes('TAUNT'), false, `${scenario.name}: source never gets TAUNT`);
+    for (const slot of adjacentSlots) {
+      const before = scenario.board[slot];
+      if (!before) continue;
+      assert.equal(
+        result.players[0].board[slot]?.keywords.includes('TAUNT'),
+        false,
+        `${scenario.name}: pre-existing adjacent card remains unchanged`,
+      );
+    }
+    for (const slot of expectedSummonSlots) {
+      const generated = result.players[0].board[slot];
+      assert.equal(generated?.isGenerated, true, `${scenario.name}: generated marker`);
+      assert.equal(generated?.keywords.includes('TAUNT'), true, `${scenario.name}: generated card gets TAUNT`);
+    }
     assert.equal(
       result.players[1].board[0]?.keywords.includes('TAUNT'),
       false,
@@ -367,6 +404,143 @@ test('조킹루이지 summons into adjacent empty slots and taunts adjacent alli
     assert.equal(result.targetingState, undefined, scenario.name);
     assert.equal(result.pendingCardEffects.length, 0, scenario.name);
   }
+});
+
+test('published Pandora Token absorbs the attack snapshot of a wrestler retired in combat', () => {
+  const pandora = definition('챔피언 판도라(폭주)');
+  const effects = Array.isArray(pandora.effectConfig.effects) ? pandora.effectConfig.effects : [];
+  assert.deepEqual(effects.map((effect) => (effect as { action?: string }).action).slice(0, 1), ['REGISTER_LISTENER']);
+  const listenerAction = (effects.find((effect) =>
+    (effect as { action?: string }).action === 'REGISTER_LISTENER',
+  ) as { values?: { listener?: { effect?: { action?: string } } } } | undefined)
+    ?.values?.listener?.effect?.action;
+  assert.equal(listenerAction, 'ADD_AGGREGATED_ATTACK');
+  assert.ok(effects.some((effect) => (effect as { action?: string }).action === 'DESTROY'));
+
+  const victimDefinition: CardDefinition = {
+    id: 'qa-pandora-combat-victim',
+    name: 'QA Pandora combat victim',
+    cardType: 'WRESTLER',
+    cost: 1,
+    attack: 3,
+    health: 1,
+    rulesText: '',
+    rarity: 'NORMAL',
+    isToken: false,
+    isChampionToken: false,
+    keywords: [],
+    abilities: [],
+  };
+  const entryTargetDefinition: CardDefinition = {
+    ...victimDefinition,
+    id: 'qa-pandora-entry-target',
+    name: 'QA Pandora entry target',
+    attack: 0,
+    health: 1,
+  };
+  const state = stateWithPool();
+  const entryTarget = {
+    ...card(entryTargetDefinition, 'pandora-entry-target-instance'),
+    boardSlot: 0 as const,
+  };
+  state.players[1].board[0] = entryTarget;
+  const source = {
+    ...card(pandora, 'pandora-combat-source'),
+    currentAttack: 5,
+    currentHealth: 6,
+    maxHealth: 6,
+  };
+  const entered = enterField(state, 'player-1', source, 0);
+  assert.ok(entered.targetingState?.validTargetIds.includes(entryTarget.instanceId));
+  assert.ok(entered.pendingRuleListeners?.some((listener) => listener.sourceInstanceId === source.instanceId));
+  const afterEntryDestroy = selectEffectTarget(entered, entryTarget.instanceId);
+  assert.equal(afterEntryDestroy.targetingState, undefined);
+  const sourceOnBoard = afterEntryDestroy.players[0].board[0];
+  assert.ok(sourceOnBoard);
+
+  afterEntryDestroy.players[0].board[0] = {
+    ...sourceOnBoard,
+    currentAttack: 5,
+    currentHealth: 6,
+    maxHealth: 6,
+    enteredThisTurn: false,
+  };
+  const victim = {
+    ...card(victimDefinition, 'pandora-combat-victim-instance'),
+    boardSlot: 0 as const,
+  };
+  afterEntryDestroy.players[1].board[0] = victim;
+
+  const attacked = attack(afterEntryDestroy, 'player-1', source.instanceId, {
+    type: 'WRESTLER',
+    playerId: 'player-2',
+    cardInstanceId: victim.instanceId,
+  });
+  assert.equal(
+    attacked.success,
+    true,
+    attacked.success ? undefined : `${attacked.errorCode}: ${attacked.message}`,
+  );
+  if (!attacked.success) return;
+  const finalState = attacked.state;
+  const retired = finalState.events.find((event) =>
+    event.type === 'CARD_RETIRED' && event.cardInstanceId === victim.instanceId,
+  );
+  const updatedSource = finalState.players[0].board.find((item) => item?.instanceId === source.instanceId);
+
+  assert.ok(retired);
+  assert.equal(retired.source?.type, 'CARD');
+  assert.equal(retired.source?.type === 'CARD' ? retired.source.cardInstanceId : undefined, source.instanceId);
+  assert.equal(retired.targetSnapshot?.currentAttack, 3);
+  assert.equal(updatedSource?.currentAttack, 8);
+  assert.equal(updatedSource?.currentHealth, 3);
+  assert.equal(updatedSource?.maxHealth, 6);
+});
+
+test('published Pandora registers its listener before its on-enter DESTROY effect', () => {
+  const pandora = definition('챔피언 판도라(폭주)');
+  const victimDefinition: CardDefinition = {
+    id: 'qa-pandora-destroy-victim',
+    name: 'QA Pandora destroy victim',
+    cardType: 'WRESTLER',
+    cost: 1,
+    attack: 7,
+    health: 4,
+    rulesText: '',
+    rarity: 'NORMAL',
+    isToken: false,
+    isChampionToken: false,
+    keywords: [],
+    abilities: [],
+  };
+  const state = stateWithPool();
+  const victim = {
+    ...card(victimDefinition, 'pandora-destroy-victim-instance'),
+    boardSlot: 0 as const,
+  };
+  state.players[1].board[0] = victim;
+  const source = {
+    ...card(pandora, 'pandora-destroy-source'),
+    currentAttack: 4,
+    currentHealth: 6,
+    maxHealth: 6,
+  };
+
+  const entered = enterField(state, 'player-1', source, 0);
+  assert.ok(entered.targetingState?.validTargetIds.includes(victim.instanceId));
+  assert.ok(entered.pendingRuleListeners?.some((listener) => listener.sourceInstanceId === source.instanceId));
+  const destroyed = selectEffectTarget(entered, victim.instanceId);
+  const removal = destroyed.events.find((event) =>
+    event.type === 'CARD_DESTROYED' && event.cardInstanceId === victim.instanceId,
+  );
+  const updatedSource = destroyed.players[0].board.find((item) => item?.instanceId === source.instanceId);
+
+  assert.ok(removal);
+  assert.equal(removal.targetSnapshot?.currentAttack, 7);
+  assert.equal(updatedSource?.currentAttack, 11);
+  assert.equal(updatedSource?.currentHealth, 6);
+  assert.equal(updatedSource?.maxHealth, 6);
+  assert.equal(destroyed.targetingState, undefined);
 });
 
 test('authoritative 데헌 in HAND gains one DODGE on its first attack increase', () => {

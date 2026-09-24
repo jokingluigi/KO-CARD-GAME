@@ -568,46 +568,51 @@ test("정확한 양옆의 빈 슬롯 문장을 무작위 소환과 직전 결과
   assert.equal(isStructuredEffects({ effects: result.effects }), true);
 });
 
-test("양옆 무작위 선수 생성 문구는 빈 인접 슬롯 소환과 인접 아군 TAUNT로 분석한다", () => {
-  const expected = [
-    {
-      trigger: "ENTER_FIELD",
-      action: "SUMMON",
-      target: {
-        zone: "BOARD",
-        owner: "SELF",
-        cardType: "WRESTLER",
-        selection: "ADJACENT_EMPTY_SLOTS",
-        count: 2,
-        randomScope: "STANDARD",
-      },
-    },
-    {
-      trigger: "ENTER_FIELD",
-      action: "ADD_KEYWORD",
-      target: {
-        zone: "BOARD",
-        owner: "SELF",
-        cardType: "WRESTLER",
-        selection: "ADJACENT",
-        count: 2,
-      },
-      values: { keyword: "TAUNT" },
-    },
-  ];
-  const sourceWording = analyzeEffectText(
+test("생성한 무작위 선수만 TAUNT를 받고 명시적 인접 아군 선택은 별도 유지한다", () => {
+  const summonTarget = {
+    zone: "BOARD",
+    owner: "SELF",
+    cardType: "WRESTLER",
+    selection: "ADJACENT_EMPTY_SLOTS",
+    count: 2,
+    randomScope: "STANDARD",
+  };
+  const generatedTarget = {
+    zone: "BOARD",
+    owner: "SELF",
+    cardType: "WRESTLER",
+    selection: "SAME_TARGET",
+    count: 2,
+  };
+  const generatedOnlyTexts = [
     "등장: 자신에 양 옆에 무작위 선수 카드를 생성하고 자신을 제외한 생성한 그 선수카드들에게 도발을 부여합니다.",
-  );
+    "나오면 양옆 빈칸에 랜덤 선수 만들고 걔들 도발",
+    "등장 좌우에 무작위 선수 생성 생성된 애들만 도발",
+    "양쪽 빈자리 랜덤 선수 하나씩 만들고 본인빼고 걔들 도발",
+  ];
+
+  for (const text of generatedOnlyTexts) {
+    const result = analyzeEffectText(text);
+    assert.equal(result.status, "success", text);
+    assert.equal(result.outcome, "supported", text);
+    assert.deepEqual(result.effects.map((effect) => effect.action), ["SUMMON", "ADD_KEYWORD"], text);
+    assert.deepEqual(result.effects[0]?.target, summonTarget, text);
+    assert.deepEqual(result.effects[1]?.target, generatedTarget, text);
+    assert.deepEqual(result.effects[1]?.values, { keyword: "TAUNT" }, text);
+    assert.equal(isStructuredEffects({ effects: result.effects }), true, text);
+  }
+
   const explicitWording = analyzeEffectText(
     "등장: 자신의 양옆 빈칸에 무작위 선수 카드를 소환하고 양옆 아군 선수에게 도발을 부여합니다.",
   );
-
-  for (const result of [sourceWording, explicitWording]) {
-    assert.equal(result.status, "success");
-    assert.equal(result.outcome, "supported");
-    assert.deepEqual(result.effects, expected);
-    assert.equal(isStructuredEffects({ effects: result.effects }), true);
-  }
+  assert.equal(explicitWording.status, "success");
+  assert.deepEqual(explicitWording.effects[1]?.target, {
+    zone: "BOARD",
+    owner: "SELF",
+    cardType: "WRESTLER",
+    selection: "ADJACENT",
+    count: 2,
+  });
 });
 
 test("요구된 기존 라이브러리 문장을 모두 지원한다", () => {

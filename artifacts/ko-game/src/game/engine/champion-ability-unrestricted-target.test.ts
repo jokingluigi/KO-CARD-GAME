@@ -74,3 +74,69 @@ test('unrestricted Champion PLAYER_CHOICE damages an ally or enemy wrestler and 
   assert.equal(enemyDamaged.players[0].board[0]?.currentHealth, 3);
   assert.equal(enemyDamaged.players[1].board[0]?.currentHealth, 2);
 });
+
+test('unrestricted upgraded CHARACTER PLAYER_CHOICE can damage one own or enemy wrestler', () => {
+  const base = TEST_CHAMPIONS.find((definition) => definition.id === 'test-champion-no-quest')!;
+  const champion = {
+    ...base,
+    id: 'test-champion-unrestricted-character-choice',
+    upgradedAbility: {
+      ...base.ability,
+      id: 'test-upgraded-character-choice',
+      effects: [{
+        type: 'STRUCTURED' as const,
+        action: 'DAMAGE' as const,
+        target: {
+          zone: 'CHARACTER' as const,
+          owner: 'ALL' as const,
+          selection: 'PLAYER_CHOICE' as const,
+          count: 1,
+        },
+        values: { amount: 2 },
+      }],
+    },
+  };
+  const state = createInitialGameState(
+    [champion.id, base.id],
+    undefined,
+    [champion, base],
+  );
+  state.status = 'IN_PROGRESS';
+  state.activePlayerId = 'player-1';
+  state.players[0].currentGold = 5;
+  if (!state.players[0].champion) throw new Error('test Champion missing');
+  state.players[0].champion.questCompleted = true;
+
+  const ally = {
+    ...state.players[0].deck[0]!,
+    instanceId: 'character-ally-target',
+    currentHealth: 4,
+    maxHealth: 4,
+    boardSlot: 0 as const,
+  };
+  const enemy = {
+    ...state.players[1].deck[0]!,
+    instanceId: 'character-enemy-target',
+    currentHealth: 4,
+    maxHealth: 4,
+    boardSlot: 0 as const,
+  };
+  state.players[0].board[0] = ally;
+  state.players[1].board[0] = enemy;
+
+  const started = useChampionAbility(state, 'player-1');
+  assert.equal(started.success, true);
+  if (!started.success) return;
+  assert.ok(started.state.targetingState?.validTargetIds.includes(ally.instanceId));
+  assert.ok(started.state.targetingState?.validTargetIds.includes(enemy.instanceId));
+  assert.equal(started.state.targetingState?.minTargets, 1);
+  assert.equal(started.state.targetingState?.maxTargets, 1);
+
+  const allyDamaged = selectEffectTarget(started.state, ally.instanceId);
+  assert.equal(allyDamaged.players[0].board[0]?.currentHealth, 2);
+  assert.equal(allyDamaged.players[1].board[0]?.currentHealth, 4);
+
+  const enemyDamaged = selectEffectTarget(started.state, enemy.instanceId);
+  assert.equal(enemyDamaged.players[0].board[0]?.currentHealth, 4);
+  assert.equal(enemyDamaged.players[1].board[0]?.currentHealth, 2);
+});

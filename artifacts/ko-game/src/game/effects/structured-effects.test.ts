@@ -1035,7 +1035,7 @@ test('인접 무작위 소환 결과를 같은 resolution에서 모두 참조해
   assert.equal(result.events.filter((event) => event.type === 'CARD_GENERATED').length, 2);
 });
 
-test('인접 무작위 소환 뒤 ADJACENT 도발은 기존 아군과 새 소환을 모두 대상으로 하며 자신은 제외한다', () => {
+test('generic ADJACENT selection includes existing adjacent allies and generated cards but excludes its source', () => {
   const source = instance('adjacent-taunt-with-occupied-ally', [
     structured('SUMMON', {
       zone: 'BOARD',
