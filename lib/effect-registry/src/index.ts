@@ -26,12 +26,21 @@ export type TargetOwner = typeof TARGET_OWNERS[number];
 export type TargetSelection = typeof TARGET_SELECTIONS[number];
 export type RandomScope = typeof RANDOM_SCOPES[number];
 export type DamageSource = typeof DAMAGE_SOURCES[number];
-export type DynamicValue = "HAND_COUNT" | "GRAVEYARD_WRESTLER_COUNT" | "REMAINING_GOLD" | "BOARD_WRESTLER_COUNT" | "LAST_ATTACK_DELTA" | "CURRENT_TURN_RETIRED_WRESTLER_COUNT" | "CURRENT_TURN_DAMAGE_TAKEN";
+export const DYNAMIC_VALUES = [
+  "HAND_COUNT",
+  "GRAVEYARD_WRESTLER_COUNT",
+  "REMAINING_GOLD",
+  "BOARD_WRESTLER_COUNT",
+  "LAST_ATTACK_DELTA",
+  "CURRENT_TURN_RETIRED_WRESTLER_COUNT",
+  "CURRENT_TURN_DAMAGE_TAKEN",
+] as const;
+export type DynamicValue = (typeof DYNAMIC_VALUES)[number];
 export type StatName = "COST" | "ATTACK" | "HEALTH";
 export type EffectDuration = "THIS_TURN" | "UNTIL_NEXT_TURN" | "PERMANENT";
 export const STAT_NAMES = ["COST", "ATTACK", "HEALTH"] as const;
 export const EFFECT_DURATIONS = ["THIS_TURN", "UNTIL_NEXT_TURN", "PERMANENT"] as const;
-export type EffectActionSchema = { target: boolean; amount?: boolean; signedAmount?: boolean; stat?: boolean; duration?: boolean; stats?: boolean; statMultiplier?: boolean; referenceStat?: boolean; dynamicValue?: boolean; generatedModifiers?: boolean; minimum?: boolean; keyword?: boolean; damageSource?: boolean; branches?: boolean; queuedEffect?: boolean; cardDefinition?: boolean; cardCount?: boolean; destination?: boolean; aggregateStats?: boolean; conditionalBuff?: boolean; delayed?: boolean; listener?: boolean; prevention?: boolean; captureStats?: boolean };
+export type EffectActionSchema = { target: boolean; amount?: boolean; signedAmount?: boolean; stat?: boolean; duration?: boolean; stats?: boolean; statMultiplier?: boolean; referenceStat?: boolean; dynamicValue?: boolean; statChannelReference?: boolean; generatedModifiers?: boolean; minimum?: boolean; keyword?: boolean; damageSource?: boolean; branches?: boolean; queuedEffect?: boolean; cardDefinition?: boolean; cardCount?: boolean; destination?: boolean; aggregateStats?: boolean; conditionalBuff?: boolean; delayed?: boolean; listener?: boolean; prevention?: boolean; captureStats?: boolean };
 export type RegistryStatus = "ACTIVE" | "DISABLED";
 
 /** Closed, data-only Script AST. It is intentionally separate from the
@@ -180,6 +189,8 @@ export type StructuredQueuedEffect = {
     reference?: Reference;
     referenceStat?: "CURRENT_ATTACK" | "CURRENT_HEALTH";
     amountReference?: DynamicValue;
+    attackReference?: DynamicValue;
+    healthReference?: DynamicValue;
     minimum?: number;
     generatedModifiers?: { cost?: number; attack?: number; health?: number; copySourceStats?: boolean; copyTargetStats?: boolean };
     deckPosition?: "TOP" | "BOTTOM";
@@ -211,6 +222,8 @@ export type StructuredEffectValues = {
   reference?: Reference;
   referenceStat?: "CURRENT_ATTACK" | "CURRENT_HEALTH";
   amountReference?: DynamicValue;
+  attackReference?: DynamicValue;
+  healthReference?: DynamicValue;
   temporaryCost?: boolean;
   conditionalBuff?: { healthEquals: number; attack: number; health: number };
   minimum?: number;
@@ -443,7 +456,7 @@ export const DISPLAY_LABELS = {
 export const ACTION_SCHEMAS: Record<Action, EffectActionSchema> = {
   ADD_GOLD: { target: false, amount: true }, ADD_NEXT_TURN_GOLD: { target: false, amount: true }, DRAW: { target: false, amount: true },
   MODIFY_STAT: { target: true, amount: true, signedAmount: true, stat: true, duration: true, minimum: true }, MODIFY_MAX_HEALTH: { target: true, amount: true, signedAmount: true }, SET_STAT: { target: true, amount: true, stat: true, duration: true },
-  DAMAGE: { target: true, amount: true }, BUFF: { target: true, stats: true, statMultiplier: true, referenceStat: true, dynamicValue: true }, SET_STATS: { target: true, stats: true }, HEAL: { target: true, amount: true },
+  DAMAGE: { target: true, amount: true }, BUFF: { target: true, stats: true, statMultiplier: true, referenceStat: true, dynamicValue: true, statChannelReference: true }, SET_STATS: { target: true, stats: true }, HEAL: { target: true, amount: true },
   REDUCE_COST: { target: true, amount: true, minimum: true }, INCREASE_COST: { target: true, amount: true }, STUN: { target: true },
   RETIRE: { target: true, captureStats: true }, DISABLE_ABILITY: { target: true }, WEAKEN_TO_STUN_SILENCE: { target: true, amount: true },
   SILENCE: { target: true }, DESTROY: { target: true }, ADD_KEYWORD: { target: true, keyword: true }, REMOVE_KEYWORD: { target: true, keyword: true },
@@ -565,10 +578,8 @@ function validScriptEffectValues(action: Action, rawValues: unknown, depth = 0):
     ((values.reference !== undefined && !REFERENCES.includes(values.reference as Reference)) ||
       (values.referenceStat !== undefined && !["CURRENT_ATTACK", "CURRENT_HEALTH"].includes(values.referenceStat as string)) ||
       ((values.reference === undefined) !== (values.referenceStat === undefined)))) return false;
-  if (schema.dynamicValue && values.amountReference !== undefined &&
-    !["HAND_COUNT", "GRAVEYARD_WRESTLER_COUNT", "REMAINING_GOLD", "BOARD_WRESTLER_COUNT",
-      "LAST_ATTACK_DELTA", "CURRENT_TURN_RETIRED_WRESTLER_COUNT", "CURRENT_TURN_DAMAGE_TAKEN"]
-      .includes(values.amountReference as string)) return false;
+   if (schema.dynamicValue && values.amountReference !== undefined &&
+    !DYNAMIC_VALUES.includes(values.amountReference as DynamicValue)) return false;
   if (values.minimum !== undefined && !finiteScriptNumber(values.minimum, 0, 999)) return false;
   if (values.temporaryCost !== undefined && typeof values.temporaryCost !== "boolean") return false;
   if (values.temporaryCost === true &&
@@ -642,7 +653,7 @@ function validScriptEffectValues(action: Action, rawValues: unknown, depth = 0):
 }
 
 const ACTION_DESCRIPTIONS: Record<Action, string> = {
-  BUFF: "대상의 공격력과 체력을 변경합니다.", SET_STATS: "대상의 공격력과 체력을 지정한 값으로 설정합니다.", MODIFY_STAT: "대상의 비용, 공격력 또는 체력을 변경합니다.", MODIFY_MAX_HEALTH: "대상의 최대 체력만 변경합니다.", SET_STAT: "대상의 비용, 공격력 또는 체력을 지정한 값으로 설정합니다.", DAMAGE: "대상에게 피해를 줍니다.", HEAL: "대상의 체력을 회복합니다.",
+  BUFF: "명시된 공격력/체력 채널만 변경합니다.", SET_STATS: "대상의 공격력과 체력을 지정한 값으로 설정합니다.", MODIFY_STAT: "대상의 비용, 공격력 또는 체력을 변경합니다.", MODIFY_MAX_HEALTH: "대상의 최대 체력만 변경합니다.", SET_STAT: "대상의 비용, 공격력 또는 체력을 지정한 값으로 설정합니다.", DAMAGE: "대상에게 피해를 줍니다.", HEAL: "대상의 체력을 회복합니다.",
   SILENCE: "대상의 효과와 키워드를 침묵시킵니다.", DESTROY: "대상을 파괴합니다.", RETIRE: "대상을 무덤으로 보냅니다.", ADD_GOLD: "현재 골드를 획득합니다.",
   ADD_NEXT_TURN_GOLD: "다음 내 턴의 골드를 증가시킵니다.", DRAW: "카드를 드로우합니다.", REDUCE_COST: "대상의 비용을 감소시킵니다.",
   INCREASE_COST: "대상의 비용을 증가시킵니다.", STUN: "대상을 기절시킵니다.", DISABLE_ABILITY: "대상의 능력을 비활성화합니다.", WEAKEN_TO_STUN_SILENCE: "공격력을 낮추고 0이 된 대상을 기절·침묵시킵니다.", ADD_KEYWORD: "대상에게 키워드를 부여합니다.",
@@ -676,7 +687,8 @@ export const EFFECT_LIBRARY = {
       ...(schema.stats ? { attack: "number (-999..999)", health: "number (-999..999)" } : {}),
        ...(schema.statMultiplier ? { attackMultiplier: "number (0..10)", healthMultiplier: "number (0..10)" } : {}),
        ...(schema.referenceStat ? { reference: [...REFERENCES], referenceStat: ["CURRENT_ATTACK", "CURRENT_HEALTH"] } : {}),
-        ...(schema.dynamicValue ? { amountReference: ["HAND_COUNT", "GRAVEYARD_WRESTLER_COUNT", "REMAINING_GOLD", "BOARD_WRESTLER_COUNT", "LAST_ATTACK_DELTA"] } : {}),
+         ...(schema.dynamicValue ? { amountReference: [...DYNAMIC_VALUES] } : {}),
+        ...(schema.statChannelReference ? { attackReference: [...DYNAMIC_VALUES], healthReference: [...DYNAMIC_VALUES] } : {}),
        ...(schema.minimum ? { minimum: "number (0..999)" } : {}),
        ...(schema.generatedModifiers ? { generatedModifiers: "{ cost?: number, attack?: number, health?: number, copySourceStats?: boolean, copyTargetStats?: boolean }" } : {}),
       ...(schema.keyword ? { keyword: [...KEYWORDS] } : {}),
@@ -703,5 +715,12 @@ export const EFFECT_LIBRARY = {
     triggers: TRIGGERS.map((name) => ({ name, label: DISPLAY_LABELS[name as keyof typeof DISPLAY_LABELS] ?? name, description: triggerDescriptions[name], status: "ACTIVE" as const, version: 1 })),
    conditions: CONDITIONS.map((name) => ({ name, label: DISPLAY_LABELS[name as keyof typeof DISPLAY_LABELS] ?? name, description: name === "SOURCE_IS_ONLY_WRESTLER" ? "이 카드가 내 필드의 유일한 선수인지 확인합니다." : "구조화된 조건을 확인합니다.", status: "ACTIVE" as const, version: 1 })),
     targetResolvers: [{ name: "ZONE_OWNER_SELECTION", description: "영역(여러 영역 포함), 소유자, 카드 유형, 단일 filter 객체, 선택 방식 및 수로 대상을 해석합니다.", config: { zone: [...TARGET_ZONES], zones: "TargetZone[]", defaultCardScope: [...DEFAULT_CARD_TARGET_SCOPE], owner: [...TARGET_OWNERS], filter: { isGenerated: "boolean", minCost: "integer", maxCost: "integer", isToken: "boolean", isChampionToken: "boolean", excludeSource: "boolean", isVanilla: "boolean", keyword: [...KEYWORDS], cost: "{ compare, value }", attack: "{ compare, value }", health: "{ compare, value }", tagsAny: "string[]", tagsAll: "string[]", tagsNone: "string[]" }, selection: [...TARGET_SELECTIONS], randomScope: [...RANDOM_SCOPES], count: "integer (1..20)" }, status: "ACTIVE" as const, version: 1 }],
-   valueResolvers: [{ name: "AMOUNT", description: "골드, 피해, 회복, 드로우 및 비용 수치를 해석합니다.", status: "ACTIVE" as const, version: 1 }, { name: "STAT_PAIR", description: "+공격력/+체력 수치를 해석합니다.", status: "ACTIVE" as const, version: 1 }, { name: "STAT_MULTIPLIER", description: "대상의 현재 공격력과 체력을 배수로 변경합니다.", config: { attackMultiplier: "number (0..10)", healthMultiplier: "number (0..10)" }, status: "ACTIVE" as const, version: 1 }, { name: "REFERENCE_STAT", description: "마지막 공격자 등 참조 대상의 현재 능력치를 수치로 해석합니다.", config: { reference: [...REFERENCES], referenceStat: ["CURRENT_ATTACK", "CURRENT_HEALTH"] }, status: "ACTIVE" as const, version: 1 }, { name: "KEYWORD", description: "지원 키워드를 해석합니다.", values: [...KEYWORDS], status: "ACTIVE" as const, version: 1 }],
+    valueResolvers: [
+      { name: "AMOUNT", description: "골드, 피해, 회복, 드로우 및 비용 수치를 해석합니다.", status: "ACTIVE" as const, version: 1 },
+      { name: "STAT_PAIR", description: "+공격력/+체력 수치를 해석합니다.", status: "ACTIVE" as const, version: 1 },
+      { name: "STAT_MULTIPLIER", description: "대상의 현재 공격력과 체력을 배수로 변경합니다.", config: { attackMultiplier: "number (0..10)", healthMultiplier: "number (0..10)" }, status: "ACTIVE" as const, version: 1 },
+      { name: "REFERENCE_STAT", description: "마지막 공격자 등 참조 대상의 현재 능력치를 수치로 해석합니다.", config: { reference: [...REFERENCES], referenceStat: ["CURRENT_ATTACK", "CURRENT_HEALTH"] }, status: "ACTIVE" as const, version: 1 },
+      { name: "STAT_CHANNEL_REFERENCE", description: "attackReference는 공격력만, healthReference는 체력과 최대 체력만 변경합니다. 생략한 채널은 변경하지 않습니다. 레거시 amountReference는 두 채널을 함께 바꾸는 이전 형식입니다.", config: { attackReference: [...DYNAMIC_VALUES], healthReference: [...DYNAMIC_VALUES] }, status: "ACTIVE" as const, version: 1 },
+      { name: "KEYWORD", description: "지원 키워드를 해석합니다.", values: [...KEYWORDS], status: "ACTIVE" as const, version: 1 },
+    ],
 } as const;

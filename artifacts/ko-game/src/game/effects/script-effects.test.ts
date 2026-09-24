@@ -73,7 +73,11 @@ test("SCRIPT_V1 selects and aggregates live board cards before applying a typed 
 
   const result = enterField(withAlly, "player-1", card("script-source", [script]), 0);
   assert.equal(result.players[0].board[0]?.currentAttack, 3);
+  assert.equal(result.players[0].board[0]?.currentHealth, 3);
+  assert.equal(result.players[0].board[0]?.maxHealth, 3);
   assert.equal(result.players[0].board[1]?.currentAttack, 3);
+  assert.equal(result.players[0].board[1]?.currentHealth, 3);
+  assert.equal(result.players[0].board[1]?.maxHealth, 3);
 });
 
 test("SCRIPT_V1 tag selection reads CardDefinition tags across board and hidden zones", () => {

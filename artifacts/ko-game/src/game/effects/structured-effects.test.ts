@@ -1807,6 +1807,73 @@ test('generic stat 변경은 비용·공격력·체력과 STAT_CHANGED history�
   assert.ok(changed.statHistory?.some((entry) => entry.stat === 'attack' && entry.delta === 1));
 });
 
+test('dynamic BUFF references change only their selected stat channel and survive serialization', () => {
+  const selfTarget = { zone: 'BOARD' as const, owner: 'SELF' as const, selection: 'SELF' as const, count: 1 };
+  const scenarios = [
+    { name: 'attack-only', values: { attackReference: 'HAND_COUNT' as const }, changesAttack: true, changesHealth: false },
+    { name: 'health-only', values: { healthReference: 'HAND_COUNT' as const }, changesAttack: false, changesHealth: true },
+    {
+      name: 'both-channels',
+      values: { attackReference: 'HAND_COUNT' as const, healthReference: 'HAND_COUNT' as const },
+      changesAttack: true,
+      changesHealth: true,
+    },
+    { name: 'legacy-pair', values: { amountReference: 'HAND_COUNT' as const }, changesAttack: true, changesHealth: true },
+  ];
+
+  for (const scenario of scenarios) {
+    for (const handCount of [0, 1, 3, 5]) {
+      const source = {
+        ...instance(`dynamic-${scenario.name}-${handCount}`),
+        boardSlot: 0 as const,
+        baseAttack: 4,
+        currentAttack: 4,
+        baseHealth: 8,
+        currentHealth: 6,
+        maxHealth: 8,
+      };
+      const state = createInitialGameState();
+      state.players[0]!.board[0] = source;
+      state.players[0]!.hand = Array.from(
+        { length: handCount },
+        (_, index) => poolCard(`dynamic-hand-${scenario.name}-${handCount}-${index}`),
+      );
+
+      const result = applyEffect(
+        state,
+        'player-1',
+        source,
+        structured('BUFF', selfTarget, scenario.values),
+      );
+      const changed = result.players[0]!.board[0]!;
+      const expectedAttack = 4 + (scenario.changesAttack ? handCount : 0);
+      const expectedHealth = 6 + (scenario.changesHealth ? handCount : 0);
+      const expectedMaxHealth = 8 + (scenario.changesHealth ? handCount : 0);
+      assert.equal(changed.currentAttack, expectedAttack, `${scenario.name}, hand=${handCount}`);
+      assert.equal(changed.currentHealth, expectedHealth, `${scenario.name}, hand=${handCount}`);
+      assert.equal(changed.maxHealth, expectedMaxHealth, `${scenario.name}, hand=${handCount}`);
+
+      assert.equal(
+        result.events.some((event) => event.type === 'STAT_CHANGED' && event.stat === 'attack'),
+        scenario.changesAttack && handCount > 0,
+        `${scenario.name} attack changes must match attack presentation events`,
+      );
+      assert.equal(
+        result.events.some((event) =>
+          event.type === 'STAT_CHANGED' && (event.stat === 'health' || event.stat === 'maxHealth'),
+        ),
+        scenario.changesHealth && handCount > 0,
+        `${scenario.name} health changes must match health presentation events`,
+      );
+
+      const restored = JSON.parse(JSON.stringify(result)) as typeof result;
+      assert.equal(restored.players[0]!.board[0]?.currentAttack, expectedAttack);
+      assert.equal(restored.players[0]!.board[0]?.currentHealth, expectedHealth);
+      assert.equal(restored.players[0]!.board[0]?.maxHealth, expectedMaxHealth);
+    }
+  }
+});
+
 test('generic stat duration은 이번 턴 종료 시 원래 수치로 되돌아간다', () => {
   const selfTarget = { zone: 'BOARD' as const, owner: 'SELF' as const, selection: 'SELF' as const, count: 1 };
   const source = {

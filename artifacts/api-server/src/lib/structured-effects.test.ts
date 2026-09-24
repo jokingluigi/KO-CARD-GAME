@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 
-import { analyzeEffectText, effectLibrary, isEffectScriptConfig, isStructuredEffects } from "./structured-effects";
+import { analyzeEffectText, effectLibrary, isEffectScriptConfig, isStructuredEffects, statChannelsFromText } from "./structured-effects";
 
 test("최신 보고서의 10개 원문은 공용 Analyzer에서 완전한 효과로 탈출한다", () => {
   const texts = [
@@ -1234,6 +1234,80 @@ test("generic stat parser는 SET, 최소 비용, 지속시간을 구분한다", 
 
   const permanent = analyzeEffectText("등장: 영구적으로 공격력 +1");
   assert.equal(permanent.effects[0]?.values?.duration, "PERMANENT");
+});
+
+test("count-based buffs preserve independent stat channels and require an explicit count source", () => {
+  const blackMacaron = analyzeEffectText(
+    "등장:현재 내 손패에 있는 카드의 수만큼 공격을 +1씩 증가시킵니다.",
+  );
+  assert.equal(blackMacaron.outcome, "supported");
+  assert.deepEqual(blackMacaron.effects[0]?.values, { attackReference: "HAND_COUNT" });
+
+  const healthOnly = analyzeEffectText(
+    "등장:현재 내 손패에 있는 카드의 수만큼 체력을 +1씩 증가시킵니다.",
+  );
+  assert.equal(healthOnly.outcome, "supported");
+  assert.deepEqual(healthOnly.effects[0]?.values, { healthReference: "HAND_COUNT" });
+
+  const graveyardPair = analyzeEffectText(
+    "등장:내 무덤에 있는 선수 수만큼 공격력과 체력이 증가합니다.",
+  );
+  assert.equal(graveyardPair.outcome, "supported");
+  assert.deepEqual(graveyardPair.effects[0]?.values, {
+    attackReference: "GRAVEYARD_WRESTLER_COUNT",
+    healthReference: "GRAVEYARD_WRESTLER_COUNT",
+  });
+
+  const unspecifiedSource = analyzeEffectText("등장:카드 수만큼 공격력이 증가합니다.");
+  assert.notEqual(unspecifiedSource.outcome, "supported");
+  assert.doesNotMatch(JSON.stringify(unspecifiedSource.effects), /HAND_COUNT|GRAVEYARD_WRESTLER_COUNT/u);
+});
+
+test("noisy Korean count wording still identifies the intended stat channels", () => {
+  const cases: Array<[string, string[]]> = [
+    ["카드수만큼 공만 오름", ["ATTACK"]],
+    ["그 갯수대로 공격력만 증가", ["ATTACK"]],
+    ["조건맞는 카드 한장당 공1 체력은 안오름", ["ATTACK"]],
+    ["수만큼 공 증가", ["ATTACK"]],
+    ["카드수만큼 공체 둘다", ["ATTACK", "HEALTH"]],
+    ["카드 수만큼 체력만 증가", ["HEALTH"]],
+  ];
+  for (const [text, channels] of cases) {
+    assert.deepEqual(statChannelsFromText(text), channels, text);
+  }
+});
+
+test("structured BUFF validation accepts independent references and preserves legacy paired references", () => {
+  const effect = {
+    trigger: "ENTER_FIELD",
+    action: "BUFF",
+    target: { zone: "BOARD", owner: "SELF", selection: "SELF", count: 1 },
+  };
+  const valid = (values: Record<string, unknown>) =>
+    isStructuredEffects({ effects: [{ ...effect, values }] });
+
+  assert.equal(valid({ attackReference: "HAND_COUNT" }), true);
+  assert.equal(valid({ healthReference: "GRAVEYARD_WRESTLER_COUNT" }), true);
+  assert.equal(valid({ attackReference: "HAND_COUNT", healthReference: "HAND_COUNT" }), true);
+  assert.equal(valid({ amountReference: "HAND_COUNT" }), true);
+  assert.equal(valid({ attack: 1, health: 1 }), true);
+  assert.equal(valid({ attackReference: "NOT_A_REFERENCE" }), false);
+  assert.equal(valid({ amountReference: "HAND_COUNT", attackReference: "HAND_COUNT" }), false);
+  assert.equal(valid({ attack: 1, health: 0, attackReference: "HAND_COUNT" }), false);
+  assert.equal(isStructuredEffects({
+    effects: [{
+      trigger: "ENTER_FIELD",
+      action: "QUEUE_EFFECT",
+      values: {
+        queuedTrigger: "NEXT_ALLY_WRESTLER_PLAYED",
+        queuedEffect: {
+          action: "BUFF",
+          target: { zone: "BOARD", owner: "SELF", selection: "SELF", count: 1 },
+          values: { attackReference: "HAND_COUNT" },
+        },
+      },
+    }],
+  }), true);
 });
 
 test("파괴 대상의 스탯 합산을 가진 좀비를 소환하고 명시한 도발을 부여한다", () => {

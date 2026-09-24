@@ -37,7 +37,7 @@ const savedConfigs: Record<string, SavedConfig> = {
   '뒷정리맨': { effects: [effect('ENTER_FIELD', 'QUEUE_EFFECT', undefined, { queuedTrigger: 'NEXT_ALLY_WRESTLER_PLAYED', queuedEffect: { action: 'BUFF', target: boardSelf, values: { attack: 0, health: 2 } } })] },
   '디 오리진': { effects: [effect('ENTER_FIELD', 'BUFF', boardSelf, { amountReference: 'GRAVEYARD_WRESTLER_COUNT' })] },
   '루나': { effects: [effect('FIRST_ATTACKED', 'SILENCE', { zone: 'BOARD', owner: 'ENEMY', cardType: 'WRESTLER', selection: 'SAME_TARGET', count: 1 }), effect('FIRST_ATTACKED', 'DISABLE_ABILITY', boardSelf)] },
-  '블랙 마카롱': { effects: [effect('ENTER_FIELD', 'BUFF', boardSelf, { amountReference: 'HAND_COUNT' })] },
+  '블랙 마카롱': { effects: [effect('ENTER_FIELD', 'BUFF', boardSelf, { attackReference: 'HAND_COUNT' })] },
   '씨 몬스터': { effects: [effect('CARD_RETIRED', 'REDUCE_COST', { zone: 'HAND', owner: 'SELF', selection: 'SELF', count: 1 }, { amount: 1, minimum: 1 })] },
   '아르카나 조커': { effects: [effect('ENTER_FIELD', 'MILL', { zone: 'DECK', owner: 'SELF', selection: 'TOP', count: 1 }), effect('ENTER_FIELD', 'GENERATE', { zones: ['DECK'], owner: 'SELF', cardType: 'WRESTLER', selection: 'RANDOM', count: 1, randomScope: 'FULL', filter: { isChampionToken: false } }, { destination: 'DECK', deckPosition: 'TOP', generatedModifiers: { cost: -1, attack: -1, health: -1 } })] },
   '아비터': { effects: [effect('TURN_START', 'ADD_GOLD', undefined, { amount: 1 }, [{ type: 'SOURCE_IS_ONLY_WRESTLER' }])] },
@@ -271,7 +271,8 @@ test('독세아·블랙 마카롱·디 오리진·여울·피 스타 세븐의 �
   blackState.players[0].hand = [card(saved['여울']!, 'hand-1'), card(saved['여울']!, 'hand-2')];
   const withBlack = enterField(blackState, 'player-1', card(saved['블랙 마카롱']!, 'black'), 0);
   assert.equal(withBlack.players[0].board[0]?.currentAttack, 3);
-  assert.equal(withBlack.players[0].board[0]?.currentHealth, 3);
+  assert.equal(withBlack.players[0].board[0]?.currentHealth, 1);
+  assert.equal(withBlack.players[0].board[0]?.maxHealth, 1);
 
   const yeoulState = stateWithPool(Object.values(saved));
   yeoulState.players[0].hand = [card(saved['여울']!, 'yeoul-hand-1'), card(saved['여울']!, 'yeoul-hand-2')];

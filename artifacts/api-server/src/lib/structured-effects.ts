@@ -1,8 +1,8 @@
 import {
-  ACTION_SCHEMAS, ACTIONS, CONDITIONS, DAMAGE_SOURCES, DEFAULT_CARD_TARGET_SCOPE, EFFECT_CAPABILITIES, EFFECT_LIBRARY, KEYWORDS, REFERENCES, RULE_LISTENER_TRIGGERS, TARGET_OWNERS,
+  ACTION_SCHEMAS, ACTIONS, CONDITIONS, DAMAGE_SOURCES, DEFAULT_CARD_TARGET_SCOPE, DYNAMIC_VALUES, EFFECT_CAPABILITIES, EFFECT_LIBRARY, KEYWORDS, REFERENCES, RULE_LISTENER_TRIGGERS, TARGET_OWNERS,
   RANDOM_SCOPES, TARGET_SELECTIONS, TARGET_ZONES, TRIGGERS,
   type Action, type Condition, type Keyword, type Reference, type TargetOwner, type TargetSelection,
-  type DamageSource, type RandomScope, type TargetZone, type Trigger, type StatName, type EffectDuration,
+  type DamageSource, type DynamicValue, type RandomScope, type TargetZone, type Trigger, type StatName, type EffectDuration,
   type StructuredEffect, type StructuredTarget, type StructuredQueuedEffect, type StructuredEffectConfig,
   type StructuredEffectCondition, type StructuredSchedule, type StructuredListener, type StructuredPrevention,
   STAT_NAMES, EFFECT_DURATIONS, isEffectScript, type EffectScript,
@@ -33,7 +33,7 @@ export type EffectScriptConfig = import("@workspace/effect-registry").EffectScri
  * destructive action such as DESTROY.
  */
 const ACTION_VALUE_KEYS: Partial<Record<Action, readonly string[]>> = {
-  BUFF: ["attack", "health", "attackMultiplier", "healthMultiplier", "reference", "referenceStat", "amountReference", "duration", "conditionalBuff"],
+  BUFF: ["attack", "health", "attackMultiplier", "healthMultiplier", "reference", "referenceStat", "amountReference", "attackReference", "healthReference", "duration", "conditionalBuff"],
   SET_STATS: ["attack", "health", "duration"],
   MODIFY_STAT: ["amount", "stat", "duration", "minimum"],
   MODIFY_MAX_HEALTH: ["amount"],
@@ -196,6 +196,39 @@ function normalize(input: string) {
     .replace(/([+-]?\d+)\s*([+-]\d+)(?=\s*(?:씩|부여|강화|올))/g, "$1/$2")
     .replace(/(만듭니다|시킵니다|합니다|습니다|한다|해요|하세요|하기|얻기|줍니다|준다)$/g, "").trim();
 }
+export type StatChannel = "ATTACK" | "HEALTH";
+
+export function statChannelsFromText(input: string): StatChannel[] {
+  const text = normalize(input);
+  const isNegated = (index: number, length: number) =>
+    /^\s*(?:은|는|이|가|을|를)?\s*(?:안|않|못|그대로|변하지|증가하지|상승하지|오르지|늘지|does\s*not|doesn't)/iu
+      .test(text.slice(index + length, index + length + 20));
+  const hasMention = (pattern: RegExp) => {
+    const globalPattern = new RegExp(pattern.source, `${pattern.flags}g`);
+    return [...text.matchAll(globalPattern)].some((match) =>
+      match.index !== undefined && !isNegated(match.index, match[0].length),
+    );
+  };
+  const attack = hasMention(/공격(?:력)?|공(?=체|만|[+-]?\d|\s*(?:증가|오르|상승|강화))/iu) ||
+    hasMention(/\b(?:attack|atk)\b/iu);
+  const health = hasMention(/체력|(?<=공)체/iu) ||
+    hasMention(/\b(?:health|hp)\b/iu);
+  if (attack && health) return ["ATTACK", "HEALTH"];
+  if (attack) return ["ATTACK"];
+  if (health) return ["HEALTH"];
+  if (/[+-]?\d+\s*\/\s*[+-]?\d+/.test(text)) return ["ATTACK", "HEALTH"];
+  return [];
+}
+
+function statReferenceValues(reference: DynamicValue, input: string) {
+  const channels = statChannelsFromText(input);
+  if (channels.length === 0) return null;
+  return {
+    ...(channels.includes("ATTACK") ? { attackReference: reference } : {}),
+    ...(channels.includes("HEALTH") ? { healthReference: reference } : {}),
+  };
+}
+
 function numberFrom(text: string, fallback = 1) {
   const match = text.match(/([+-]?\d+)\s*(?:장|개|g|골드|데미지|피해)?/i);
   return match ? Math.abs(Number(match[1])) : /(한\s*장|하나)/.test(text) ? 1 : fallback;
@@ -1267,7 +1300,7 @@ function expandedMechanicAnalysis(
       trigger: "STAT_CHANGED",
       action: "BUFF",
       target: self,
-      values: { attack: 0, health: 0, amountReference: "LAST_ATTACK_DELTA" },
+      values: { attackReference: "LAST_ATTACK_DELTA", healthReference: "LAST_ATTACK_DELTA" },
     }]);
   }
   if (/공격력이\s*(?:증가|올라|상승).*(?:추가로|더).*(?:\+?1|1만큼)/.test(text)) {
@@ -1330,8 +1363,9 @@ function expandedMechanicAnalysis(
   if (nextPlayHealthMatch) {
     return result([{ trigger: triggerFor(), action: "QUEUE_EFFECT", values: { queuedTrigger: "NEXT_ALLY_WRESTLER_PLAYED", queuedEffect: { action: "BUFF", target: { zone: "BOARD", owner: "SELF", selection: "SELF", count: 1 }, values: { attack: 0, health: Number(nextPlayHealthMatch[1]) } } } }]);
   }
-  if (/(?:자신의\s*)?(?:무덤|묘지).*선수.*수\s*만큼.*공격력과\s*체력/.test(text)) {
-    return result([{ trigger: triggerFor(), action: "BUFF", target: wrestlerSelf, values: { amountReference: "GRAVEYARD_WRESTLER_COUNT" } }]);
+  if (/(?:자신의\s*)?(?:무덤|묘지).*선수.*수\s*만큼/.test(text)) {
+    const values = statReferenceValues("GRAVEYARD_WRESTLER_COUNT", text);
+    if (values) return result([{ trigger: triggerFor(), action: "BUFF", target: wrestlerSelf, values }]);
   }
   if (/처음으로\s*공격한\s*적\s*선수/.test(text) && /침묵/.test(text) && /능력.*비활성화/.test(text)) {
     return result([
@@ -1339,8 +1373,9 @@ function expandedMechanicAnalysis(
       { trigger: "FIRST_ATTACKED", action: "DISABLE_ABILITY", target: self },
     ]);
   }
-  if (/현재\s*내\s*손패에\s*있는\s*카드\s*수만큼/.test(text)) {
-    return result([{ trigger: triggerFor(), action: "BUFF", target: self, values: { amountReference: "HAND_COUNT" } }]);
+  if (/현재\s*내\s*손패에\s*있는\s*카드(?:\s*의)?\s*수만큼/.test(text)) {
+    const values = statReferenceValues("HAND_COUNT", text);
+    if (values) return result([{ trigger: triggerFor(), action: "BUFF", target: self, values }]);
   }
   if (/필드에\s*있는\s*아군\s*선수\s*하나를\s*선택하여\s*손으로\s*되돌/.test(text) && /비용.*이번\s*턴.*1.*감소/.test(text)) {
     return result([{
@@ -1969,6 +2004,14 @@ export function isStructuredEffects(value: unknown): value is { effects: Structu
       (schema.signedAmount ? Math.abs(values.amount) <= 999 : values.amount >= 0 && values.amount <= 999))) return false;
     if (schema.stat && !STAT_NAMES.includes(values?.stat as StatName)) return false;
     if (schema.duration && !EFFECT_DURATIONS.includes(values?.duration as EffectDuration)) return false;
+     const hasStatChannelReference = values?.attackReference !== undefined || values?.healthReference !== undefined;
+     const validStatChannelReferences = schema.statChannelReference && hasStatChannelReference &&
+       values?.amountReference === undefined &&
+       (values?.attackReference === undefined ||
+         (DYNAMIC_VALUES.includes(values.attackReference as DynamicValue) && values?.attack === undefined)) &&
+       (values?.healthReference === undefined ||
+         (DYNAMIC_VALUES.includes(values.healthReference as DynamicValue) && values?.health === undefined));
+     if (hasStatChannelReference && !validStatChannelReferences) return false;
     if (schema.stats || schema.statMultiplier) {
        const validStats = schema.stats && (item.action === "SET_STATS"
          ? (values?.attack !== undefined || values?.health !== undefined) &&
@@ -1984,8 +2027,9 @@ export function isStructuredEffects(value: unknown): value is { effects: Structu
         const validReference = schema.referenceStat &&
          REFERENCES.includes(values?.reference as Reference) &&
          ["CURRENT_ATTACK", "CURRENT_HEALTH"].includes(values?.referenceStat as string);
-         const validDynamic = schema.dynamicValue && ["HAND_COUNT", "GRAVEYARD_WRESTLER_COUNT", "REMAINING_GOLD", "BOARD_WRESTLER_COUNT", "LAST_ATTACK_DELTA", "CURRENT_TURN_RETIRED_WRESTLER_COUNT", "CURRENT_TURN_DAMAGE_TAKEN"].includes(values?.amountReference as string);
-        if (!validStats && !validMultiplier && !validReference && !validDynamic) return false;
+          const validDynamic = schema.dynamicValue && DYNAMIC_VALUES.includes(values?.amountReference as DynamicValue);
+          const validChannelDynamic = Boolean(validStatChannelReferences);
+         if (!validStats && !validMultiplier && !validReference && !validDynamic && !validChannelDynamic) return false;
     }
     if (schema.keyword && !KEYWORDS.includes(values?.keyword as Keyword)) return false;
     if (schema.damageSource && !DAMAGE_SOURCES.includes(values?.damageSource as DamageSource)) return false;
@@ -2001,11 +2045,22 @@ export function isStructuredEffects(value: unknown): value is { effects: Structu
          queuedTarget?.owner === "SELF" &&
          queuedTarget.selection === "SELF" &&
          queuedTarget.count === 1;
-       const validQueuedBuff = queued?.action === "BUFF" &&
-         typeof queuedValues?.attack === "number" &&
-         typeof queuedValues.health === "number" &&
-         Math.abs(queuedValues.attack) <= 999 &&
-         Math.abs(queuedValues.health) <= 999;
+        const hasQueuedChannelReference = queuedValues?.attackReference !== undefined ||
+          queuedValues?.healthReference !== undefined;
+        const validQueuedChannelReferences = hasQueuedChannelReference &&
+          queuedValues?.amountReference === undefined &&
+          (queuedValues?.attackReference === undefined ||
+            (DYNAMIC_VALUES.includes(queuedValues.attackReference as DynamicValue) &&
+              queuedValues?.attack === undefined)) &&
+          (queuedValues?.healthReference === undefined ||
+            (DYNAMIC_VALUES.includes(queuedValues.healthReference as DynamicValue) &&
+              queuedValues?.health === undefined));
+        const validQueuedStaticBuff = typeof queuedValues?.attack === "number" &&
+          typeof queuedValues.health === "number" &&
+          Math.abs(queuedValues.attack) <= 999 &&
+          Math.abs(queuedValues.health) <= 999;
+        const validQueuedBuff = queued?.action === "BUFF" &&
+          (validQueuedStaticBuff || validQueuedChannelReferences);
        if (
          values?.queuedTrigger !== "NEXT_ALLY_WRESTLER_PLAYED" ||
          !queued ||

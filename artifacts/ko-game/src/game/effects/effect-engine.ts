@@ -2842,18 +2842,36 @@ export function applyEffect(
               const attack = Math.max(0, card.currentAttack - amount);
               return finish(attack === 0 ? { ...card, currentAttack: attack, isStunned: true, isSilenced: true } : { ...card, currentAttack: attack });
             }
-            if (effect.action === 'BUFF') {
-            const health = effect.values?.health ?? 0;
-              const dynamic = dynamicValue(state, playerId, effect.values?.amountReference, triggerContext);
-             const attackMultiplier = effect.values?.attackMultiplier ?? 1;
-             const healthMultiplier = effect.values?.healthMultiplier ?? 1;
-              return finish({
-               ...card,
-                currentAttack: card.currentAttack * attackMultiplier + (effect.values?.attack ?? (effect.values?.amountReference ? dynamic : 0)) + referenceAmount,
-                maxHealth: card.maxHealth * healthMultiplier + (effect.values?.health ?? (effect.values?.amountReference ? dynamic : 0)),
-                currentHealth: card.currentHealth * healthMultiplier + health + (effect.values?.health === undefined && effect.values?.amountReference ? dynamic : 0),
+             if (effect.action === 'BUFF') {
+               const legacyDynamic = dynamicValue(
+                 state,
+                 playerId,
+                 effect.values?.amountReference,
+                 triggerContext,
+               );
+               const attackDynamic = effect.values?.attackReference === undefined
+                 ? 0
+                 : dynamicValue(state, playerId, effect.values.attackReference, triggerContext);
+               const healthDynamic = effect.values?.healthReference === undefined
+                 ? 0
+                 : dynamicValue(state, playerId, effect.values.healthReference, triggerContext);
+               const attackMultiplier = effect.values?.attackMultiplier ?? 1;
+               const healthMultiplier = effect.values?.healthMultiplier ?? 1;
+               const attackDelta = effect.values?.attack ??
+                 (effect.values?.attackReference !== undefined
+                   ? attackDynamic
+                   : effect.values?.amountReference !== undefined ? legacyDynamic : 0);
+               const healthDelta = effect.values?.health ??
+                 (effect.values?.healthReference !== undefined
+                   ? healthDynamic
+                   : effect.values?.amountReference !== undefined ? legacyDynamic : 0);
+               return finish({
+                 ...card,
+                 currentAttack: card.currentAttack * attackMultiplier + attackDelta + referenceAmount,
+                 maxHealth: card.maxHealth * healthMultiplier + healthDelta,
+                 currentHealth: card.currentHealth * healthMultiplier + healthDelta,
                }, effect.values?.duration);
-          }
+             }
            if (effect.action === 'SET_STATS') {
               return finish({
                ...card,

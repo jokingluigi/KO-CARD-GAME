@@ -60,7 +60,7 @@
 - [Test account economy boundary](test-account-economy-boundary.md) — test-only unlimited ownership and balances are server-derived, development-gated, and never alter match Gold or normal-user economics.
 - [Attributed quest conditions](attributed-quest-conditions.md) — quests that describe a specific ability source must persist sourceActionType and match serialized event attribution.
 - [Shared card event listeners](shared-card-event-listeners.md) — attack-stat and attack-survival mechanics use guarded registry triggers, not card-name branches.
-- [Generic stat pipeline](generic-stat-pipeline.md) — COST, ATTACK, and HEALTH share signed/set/duration events; automatic listeners must preserve the active effect frame.
+- [Generic stat pipeline](generic-stat-pipeline.md) — per-stat dynamic channels coexist with signed/set modifiers; legacy paired refs and listener frames stay compatible.
 - [Attack event snapshots](attack-event-snapshots.md) — preserve immutable combat card data so lethal attack presentation survives target removal.
 - [Attack target projection](attack-target-projection.md) — attack presentation must resolve player targets to the viewer-relative Champion DOM ref, not a fixed board side.
 - [Online PvP foundation](online-pvp-foundation.md) — reuse the shared KO engine; persist accepted state changes and sanitize every viewer projection.

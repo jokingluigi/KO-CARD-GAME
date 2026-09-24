@@ -91,6 +91,57 @@ test("Generate sends one request with relevant catalog context and server-derive
   });
 });
 
+test("dynamic stat references are independently validated and described to the provider", async () => {
+  const target = { zone: "BOARD", owner: "SELF", selection: "SELF", count: 1 };
+  const draft = {
+    status: "READY",
+    effectId: "STRUCTURED_EFFECTS_V1",
+    effects: [{
+      trigger: "ENTER_FIELD",
+      action: "BUFF",
+      target,
+      values: { attackReference: "HAND_COUNT" },
+    }],
+    keywords: [],
+  };
+
+  const validated = validateGeneratedEffectDraft(draft, savedCardContext, catalog);
+  assert.equal(validated.status, "READY");
+  if (validated.status === "READY") {
+    assert.deepEqual(validated.effects[0]?.values, { attackReference: "HAND_COUNT" });
+  }
+  assert.throws(
+    () => validateGeneratedEffectDraft({
+      ...draft,
+      effects: [{
+        ...draft.effects[0],
+        values: { amountReference: "HAND_COUNT", attackReference: "HAND_COUNT" },
+      }],
+    }, savedCardContext, catalog),
+    (error: unknown) => error instanceof EffectAiError &&
+      error.code === "INVALID_DRAFT" && /서로 독립된 BUFF 채널/u.test(error.message),
+  );
+
+  await withProviderStub(draft, async (capture) => {
+    const result = await generateEffectDraft(
+      "등장:현재 내 손패에 있는 카드의 수만큼 공격을 +1씩 증가시킵니다.",
+      savedCardContext,
+      catalog,
+    );
+    assert.equal(capture.calls, 1);
+    assert.equal(result.status, "READY");
+    if (result.status === "READY") {
+      assert.deepEqual(result.effects[0]?.values, { attackReference: "HAND_COUNT" });
+    }
+
+    const messages = capture.requestBody?.messages as Array<{ content?: string }> | undefined;
+    const prompt = messages?.map((message) => message.content ?? "").join("\n") ?? "";
+    assert.match(prompt, /attackReference는 공격력만/u);
+    assert.match(prompt, /healthReference는 체력/u);
+    assert.match(prompt, /NEEDS_CLARIFICATION/u);
+  });
+});
+
 test("20 locally ambiguous intents cannot become READY and each Generate sends exactly one request", async () => {
   const providerDraft = {
     status: "READY",
