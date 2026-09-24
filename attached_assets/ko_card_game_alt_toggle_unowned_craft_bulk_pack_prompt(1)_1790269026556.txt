@@ -1,0 +1,741 @@
+KO CARD GAME — UX FEATURE BUNDLE
+1) ALT CARD INFO TOGGLE
+2) DECK EDITOR SHOW UNOWNED + CRAFT FLOW
+3) BULK CARD PACK OPENING
+
+목표:
+아래 3개 UX 기능을 한 번에 구현한다.
+
+A. 카드 정보 보기:
+ALT 키를 "누르고 있는 동안 표시"가 아니라
+한 번 눌러 ON / 다시 누르면 OFF 되는 토글 방식으로 변경.
+
+B. 덱 편집:
+미보유 카드도 카드 목록에 표시.
+미보유 카드를 누르면 덱에 바로 추가하지 말고
+해당 카드의 제작 화면/제작 모달을 연다.
+
+C. 카드팩:
+팩을 한 개씩만 까는 방식 외에
+여러 개를 한 번에 여는 Bulk Open 기능 추가.
+
+중요:
+기존 카드/인벤토리/덱 규칙과 충돌하지 않게
+현재 구조를 먼저 조사하고 구현한다.
+
+==================================================
+0. 공통 원칙
+==================================================
+
+- Production DB 직접 수정 금지
+- 실제 사용자 카드/팩/덱을 테스트 목적으로 소모 금지
+- 카드/Champion 원본 정의 임의 변경 금지
+- UI만 흉내내고 실제 state/persistence를 안 바꾸는 구현 금지
+- 기존 모바일/마우스 조작 회귀 금지
+- 실제 변경 파일만 commit
+- push 요청 없으면 push 금지
+- force push 금지
+
+==================================================
+1. ALT CARD INFO — TOGGLE 방식
+==================================================
+
+현재 동작이:
+ALT keydown 동안만 상세정보 표시
+ALT keyup 시 닫힘
+
+이라면 이를 다음으로 변경:
+
+ALT 1회 press
+→ Card Info Mode ON
+
+ALT 다시 1회 press
+→ Card Info Mode OFF
+
+즉:
+hold-to-view가 아니라 toggle.
+
+==================================================
+2. ALT 키 이벤트 처리
+==================================================
+
+반드시 `keydown` edge에서만 토글.
+
+브라우저 key repeat 때문에
+ALT를 길게 눌렀을 때 ON/OFF가 빠르게 반복되면 안 됨.
+
+예:
+
+if (event.key === "Alt" && !event.repeat)
+  toggle()
+
+`keyup`에서는 상태를 바꾸지 않는다.
+
+left Alt / right Alt 둘 다 같은 기능이면
+현재 product convention에 맞게 처리.
+
+==================================================
+3. ALT 상태 UX
+==================================================
+
+Card Info Mode ON일 때:
+
+- 기존 상세 정보/ALT Inspector 표시 방식 유지
+- 마우스로 여러 카드를 이동해도 ON 상태 유지
+- 다른 카드 hover/click 시 그 카드 정보 표시
+- 덱 편집/컬렉션/게임 중 기존 지원 화면에서 동일하게 동작
+
+OFF:
+- 기존 일반 카드 표시
+
+가능하면 화면에 작게:
+`ALT 정보: ON`
+같은 상태 indication 추가.
+
+단 UI가 너무 복잡해지면
+기존 스타일에 자연스럽게 녹일 것.
+
+==================================================
+4. ALT 토글 해제 조건
+==================================================
+
+다음 동작에서 토글 state를 어떻게 유지할지 현재 UX를 먼저 확인.
+
+권장:
+- route/page 변경 시 OFF로 reset
+- modal 닫기 시 필요하면 유지
+- input/textarea/select에 focus된 상태에서 Alt 단독 입력은
+  브라우저/접근성 충돌을 피하도록 신중히 처리
+
+특히 Alt+Tab, Alt+F4 등 OS shortcut에 간섭하지 말 것.
+
+다른 키 조합:
+Alt + 다른 key
+→ Card Info toggle로 오인하지 않게 할 것.
+
+가능하면 "Alt 단독 keydown" 기준.
+
+==================================================
+5. ALT 모바일/터치 회귀
+==================================================
+
+모바일에는 ALT 키가 없으므로
+기존 tap/long-press/card info 접근 방식이 있다면 유지.
+
+이번 수정으로 모바일 카드 정보 접근을 제거하지 말 것.
+
+==================================================
+6. ALT 테스트
+==================================================
+
+ALT1
+press Alt once
+→ info ON
+
+ALT2
+release Alt
+→ still ON
+
+ALT3
+press Alt again
+→ OFF
+
+ALT4
+hold Alt
+→ one toggle only
+
+ALT5
+Alt+Tab/Alt+other shortcut
+→ unintended rapid toggle 없음
+
+ALT6
+change hovered card while ON
+→ new card info 표시
+
+ALT7
+route/page change
+→ expected reset policy
+
+ALT8
+mobile/touch existing interaction regression 없음
+
+==================================================
+7. DECK EDITOR — 미보유 카드도 표시
+==================================================
+
+현재 덱 편집 카드 풀에서
+owned quantity == 0인 카드를 숨기고 있다면
+숨기지 말 것.
+
+Deck Editor의 전체 카드 브라우저는:
+
+- 보유 카드
+- 미보유 카드
+
+모두 보여준다.
+
+단:
+현재 deck-building format에서 사용 불가능한 카드
+(예: token direct-add 금지 등)는 기존 규칙 유지.
+
+==================================================
+8. 미보유 카드 시각 표현
+==================================================
+
+미보유 카드:
+
+- 카드 이미지/이름/비용/스탯/텍스트는 볼 수 있음
+- owned count = 0 명확히 표시
+- 약간 dim/locked styling 가능
+- 하지만 읽기 어려울 정도로 가리지 말 것
+
+보유/미보유 필터가 기존에 있다면:
+- All
+- Owned
+- Unowned
+같은 선택지를 제공할 수 있음.
+
+필터가 없으면 강제 추가하지 않아도 되지만
+검색/정렬과 충돌하지 말 것.
+
+==================================================
+9. 미보유 카드 클릭 동작
+==================================================
+
+owned quantity == 0인 일반 제작 가능 카드를 클릭하면:
+
+덱에 추가 시도 금지.
+
+대신:
+해당 카드의 제작 화면/제작 모달을 연다.
+
+Craft UI에는:
+- 카드 이름
+- 카드 이미지
+- rarity
+- 제작 비용
+- 현재 보유 제작 재화
+- 제작 버튼
+- 취소/닫기
+
+현재 기존 Craft screen/modal이 있다면 반드시 재사용.
+새 중복 제작 시스템 만들지 말 것.
+
+==================================================
+10. 보유 카드 클릭 동작
+==================================================
+
+owned quantity > 0:
+
+기존처럼 덱에 추가.
+
+단 실제 덱에 이미 들어간 수량과
+보유 수량/중복 제한을 검사.
+
+예:
+owned = 1
+deck already contains = 1
+→ 추가 불가
+→ Craft option을 보여줄 수는 있음
+
+현재 duplicate rule 유지.
+
+==================================================
+11. 제작 성공 후 Deck Editor 연계
+==================================================
+
+미보유 카드 클릭
+→ Craft
+→ 제작 성공
+
+그 후:
+
+- inventory quantity 즉시 갱신
+- card tile owned state 갱신
+- Deck Editor 전체 reload 없이 반영
+- 가능하면 동일 카드가 선택된 상태 유지
+
+자동으로 덱에 넣을지는 기존 UX를 따르되,
+명시 규칙이 없다면:
+제작 성공만 하고
+사용자가 다시 클릭해서 덱에 추가하도록 하는 쪽이 안전.
+
+자동 덱 추가는 하지 말 것.
+
+==================================================
+12. 제작 불가능 카드
+==================================================
+
+다음처럼 직접 제작할 수 없는 카드가 있을 수 있음:
+
+- token
+- special event-only
+- unreleased
+- disabled
+- internal test card
+
+이 경우:
+
+미보유 카드로 보이더라도
+Craft 버튼 대신
+`제작할 수 없는 카드입니다`
+같은 명확한 상태 표시.
+
+임의로 제작 허용하지 말 것.
+
+==================================================
+13. Deck Editor 테스트
+==================================================
+
+DE1 owned card visible
+DE2 unowned card visible
+DE3 unowned click → Craft UI
+DE4 unowned click does not add to deck
+DE5 craft success → inventory reflects immediately
+DE6 craft failure → deck unchanged
+DE7 owned click → normal add
+DE8 owned quantity limit respected
+DE9 token/direct-add restriction preserved
+DE10 search/filter includes unowned correctly
+DE11 mobile layout
+DE12 save/reload deck unaffected
+
+==================================================
+14. CARD PACK BULK OPEN
+==================================================
+
+현재 팩이 한 번에 1개만 열리는 경우
+여러 개를 한 번에 열 수 있는 기능 추가.
+
+지원 방식:
+
+- 1개 열기
+- 5개 열기
+- 10개 열기
+- 전부 열기
+
+현재 inventory UX와 팩 보유량에 따라
+버튼/드롭다운/수량 선택 중 자연스러운 방식 사용.
+
+보유량보다 큰 수량은 선택 불가.
+
+==================================================
+15. Bulk Open 서버 처리
+==================================================
+
+중요:
+클라이언트에서 `open pack` API를 N번 연속 호출하는 단순 loop보다
+가능하면 서버에 canonical bulk-open API/action을 만든다.
+
+예:
+POST /api/packs/open
+{
+  packDefinitionId,
+  quantity: N
+}
+
+정확한 endpoint/schema는 현재 프로젝트 convention 사용.
+
+server가:
+
+1. ownership/quantity 확인
+2. pack N개 차감
+3. 각 pack reward roll
+4. inventory grant
+5. result summary 반환
+
+을 하나의 atomic/transactional flow로 처리.
+
+==================================================
+16. Bulk Open RNG
+==================================================
+
+현재 pack RNG/rarity odds 로직을 그대로 N회 재사용.
+
+중요:
+- bulk opening이라고 확률을 평균값으로 계산하지 말 것
+- pack 10개면 "10개 각각" 독립적인 기존 pack roll semantics
+- pity/guarantee system이 있다면 기존 순차 개봉과 semantic equivalence 유지
+- deterministic/test RNG infrastructure가 있으면 재사용
+- Math.random을 canonical gameplay/reward layer에 새로 도입 금지
+
+==================================================
+17. Bulk Open 원자성
+==================================================
+
+예:
+10개 open 요청
+
+중간에 4개만 처리되고 실패해서
+팩 10개는 차감됐는데 보상 4개만 지급되는 상황 금지.
+
+가능하면 transaction.
+
+실패:
+- pack quantity 차감 없음
+- reward grant 없음
+
+또는 기존 transaction architecture에 맞는 atomic guarantee.
+
+==================================================
+18. Bulk Open 중복 요청 방지
+==================================================
+
+버튼 연타/네트워크 retry로
+같은 10-pack open이 두 번 실행되면 안 됨.
+
+가능하면 requestId/idempotency key 사용.
+
+UI:
+opening 중 버튼 disabled.
+
+==================================================
+19. Bulk Open 결과 UI
+==================================================
+
+N개 팩 개봉 후 결과를 한꺼번에 볼 수 있게 한다.
+
+예:
+
+10 packs opened
+
+Normal: 23
+Legendary: 4
+Champion: 3
+
+그리고 실제 획득 카드 목록/수량.
+
+동일 카드 여러 장이면
+`Card X ×3`
+처럼 aggregate 가능.
+
+하지만 개별 pack 결과를 보고 싶다면
+expander/detail로 확인 가능.
+
+현재 animation이 있다면:
+- "전부 스킵"
+- 또는 bulk 전용 빠른 reveal
+를 고려.
+
+10팩을 10번 긴 애니메이션 강제 시청하게 하지 말 것.
+
+==================================================
+20. Pack quantity UX
+==================================================
+
+보유 packs = 7
+
+버튼:
+1
+5
+ALL(7)
+
+10은 disabled.
+
+보유 packs = 1:
+1
+ALL 동일 의미일 경우 중복 UI는 정리 가능.
+
+보유 packs = 0:
+open controls disabled.
+
+==================================================
+21. 기존 확률 회귀
+==================================================
+
+기존 packDefinition의 odds, pool, published-only 조건,
+Champion/Legendary/Normal selection을 그대로 사용.
+
+Bulk open이 다른 확률표를 가지면 FAIL.
+
+현재 project에 duplicate conversion,
+Prism,
+Champion ownership,
+card quantity grant 규칙이 있다면
+기존 reward service를 그대로 재사용.
+
+==================================================
+22. Bulk Pack 테스트
+==================================================
+
+PK1 open 1
+→ 기존 single open과 semantic equality
+
+PK2 open 5
+→ inventory pack -5
+→ rewards exactly 5 pack rolls
+
+PK3 open 10
+→ -10
+→ 10 rolls
+
+PK4 ALL with 7
+→ -7
+→ 7 rolls
+
+PK5 request 10 while owned 7
+→ reject, no mutation
+
+PK6 double click
+→ once
+
+PK7 retry same requestId
+→ once
+
+PK8 transaction failure
+→ no partial charge/reward
+
+PK9 duplicate cards aggregate UI
+→ inventory actual quantities correct
+
+PK10 pity/guarantee if applicable
+→ same as sequential open
+
+PK11 mobile UI
+PK12 reload after open → persisted
+
+==================================================
+23. 공통 API/Auth
+==================================================
+
+Deck craft와 Pack open 모두:
+
+- authenticated user only
+- server validates ownership/resources
+- client-provided quantity를 blindly trust하지 말 것
+- negative/zero/extreme quantities reject
+- pack quantity max bound 설정
+- crafting cost server-side authoritative
+
+==================================================
+24. Browser E2E
+==================================================
+
+가능하면 Development/Test 계정에서 실제로:
+
+A. ALT:
+press once → ON
+release → stays ON
+press again → OFF
+
+B. Deck Editor:
+미보유 카드 확인
+→ 클릭
+→ Craft UI
+→ test craft
+→ owned state update
+→ deck add
+
+C. Bulk Pack:
+fixture pack inventory
+→ 5개/ALL 개봉
+→ result summary
+→ inventory persistence
+
+실제 Production inventory 소모 금지.
+
+Browser 불가:
+BROWSER E2E = UNVERIFIED
+implementation/tests 계속.
+
+==================================================
+25. 회귀 금지
+==================================================
+
+깨지면 안 되는 것:
+
+- 카드 상세정보 기존 클릭/터치 접근
+- deck 25 cards + Champion separately
+- Legendary max 5
+- duplicate rules
+- token direct-add restriction
+- craft/disassemble rules
+- pack odds
+- Champion duplicate rules
+- card inventory
+- authentication
+- mobile layout
+- ALT Inspector
+- online/AI gameplay
+
+==================================================
+26. 자동 검증
+==================================================
+
+반드시:
+
+pnpm run typecheck
+pnpm --filter @workspace/ko-game run build
+git diff --check
+
+관련 시:
+
+API typecheck/build
+Deck Editor tests
+Craft tests
+Pack API tests
+Pack RNG/reward tests
+Inventory tests
+UI interaction tests
+keyboard tests
+idempotency/transaction tests
+
+==================================================
+27. Git
+==================================================
+
+실제 수정 파일만 stage.
+
+제외:
+prompt txt
+Pasted txt
+.env
+secrets
+logs
+screenshots
+temp
+Replit metadata
+unrelated files
+
+commit.
+
+push 요청 없으면 push 금지.
+force push 금지.
+
+==================================================
+28. 최종 보고 형식
+==================================================
+
+ALT CARD INFO
+
+Old behavior:
+...
+
+New toggle:
+PASS / FAIL
+
+Alt key repeat:
+PASS / FAIL
+
+Keyup does not close:
+PASS / FAIL
+
+Alt second press closes:
+PASS / FAIL
+
+Mobile regression:
+PASS / FAIL
+
+
+DECK EDITOR
+
+Unowned cards visible:
+PASS / FAIL
+
+Unowned click opens Craft:
+PASS / FAIL
+
+Unowned does not auto-add:
+PASS / FAIL
+
+Craft success updates ownership:
+PASS / FAIL
+
+Owned card normal add:
+PASS / FAIL
+
+Restrictions preserved:
+PASS / FAIL
+
+
+BULK PACK
+
+Open 1:
+PASS / FAIL
+
+Open 5:
+PASS / FAIL
+
+Open 10:
+PASS / FAIL
+
+Open ALL:
+PASS / FAIL
+
+Atomicity:
+PASS / FAIL
+
+Double-submit/idempotency:
+PASS / FAIL
+
+Odds parity with single open:
+PASS / FAIL
+
+Inventory persistence:
+PASS / FAIL
+
+Bulk result UI:
+PASS / FAIL
+
+
+IMPLEMENTATION:
+PASS / FAIL
+
+AUTOMATED VERIFICATION:
+PASS / FAIL
+
+BROWSER E2E:
+PASS / FAIL / UNVERIFIED
+
+TYPECHECK:
+PASS / FAIL
+
+KO BUILD:
+PASS / FAIL
+
+API TYPECHECK:
+PASS / FAIL / NOT_MODIFIED
+
+API BUILD:
+PASS / FAIL / NOT_MODIFIED
+
+git diff --check:
+PASS / FAIL
+
+PRODUCTION DATA MUTATION:
+NONE / FAIL
+
+TEST INVENTORY MUTATION:
+TEST/FIXTURE ONLY
+
+CHANGED FILES:
+...
+
+COMMIT:
+...
+
+PUSH:
+NOT REQUESTED
+
+==================================================
+29. 완료 조건
+==================================================
+
+1. ALT 한 번 → Card Info ON.
+2. ALT keyup으로 꺼지지 않음.
+3. ALT 다시 한 번 → OFF.
+4. key repeat로 토글 난사 없음.
+5. Deck Editor에서 미보유 카드도 표시.
+6. 미보유 클릭 → 해당 카드 Craft UI.
+7. 미보유 카드는 제작 전 덱에 추가되지 않음.
+8. 제작 성공 후 owned state 즉시 반영.
+9. 카드팩 1/5/10/ALL bulk open 가능.
+10. bulk open은 기존 single-open 확률/보상 semantics와 동일.
+11. 부분 차감/부분 지급 없음.
+12. double request로 중복 개봉 없음.
+13. 모바일/기존 덱 규칙/인벤토리 회귀 없음.
+14. Production 데이터 수정 없음.
+15. tests/build/typecheck/diff 결과 보고.
+
+세 기능을 각각 임시 UI로 덧대지 말고,
+현재 Card Info / Deck Editor / Craft / Pack Reward architecture에 통합해서 구현한 뒤 멈춰라.
