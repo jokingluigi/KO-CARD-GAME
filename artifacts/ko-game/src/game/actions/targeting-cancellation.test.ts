@@ -58,6 +58,27 @@ function choiceDamageEffect() {
   };
 }
 
+function optionalChoiceDamageEffect() {
+  const effect = choiceDamageEffect();
+  return {
+    ...effect,
+    target: {
+      ...effect.target,
+      minTargets: 0,
+      maxTargets: 1,
+      optionalTarget: true,
+    },
+  };
+}
+
+function addStructuredGoldEffect(amount: number) {
+  return {
+    type: 'STRUCTURED' as const,
+    action: 'ADD_GOLD' as const,
+    values: { amount },
+  };
+}
+
 function targetedEntryWrestler(): CardDefinition {
   return {
     id: 'postcommit-entry-wrestler',
@@ -77,6 +98,14 @@ function targetedEntryWrestler(): CardDefinition {
 test('technique PRE_COMMIT probes a clone, cancel is canonical no-op, confirm commits once', () => {
   const state = playableState();
   const canonical = structuredClone(state);
+  const invalidBegin = executeAction(state, {
+    type: 'BEGIN_TARGETED_ACTION',
+    playerId: 'player-1',
+    action: { type: 'PLAY_TECHNIQUE', cardInstanceId: 'missing-technique' },
+  });
+  assert.equal(invalidBegin.success, false);
+  if (!invalidBegin.success) assert.equal(invalidBegin.errorCode, 'CARD_NOT_IN_HAND');
+
   const begun = executeAction(state, {
     type: 'BEGIN_TARGETED_ACTION', playerId: 'player-1',
     action: { type: 'PLAY_TECHNIQUE', cardInstanceId: 'technique-1' },
@@ -87,6 +116,14 @@ test('technique PRE_COMMIT probes a clone, cancel is canonical no-op, confirm co
   assert.equal(begun.state.players[0].hand.length, 1);
   assert.equal(begun.state.targetingState?.phase, 'PRE_COMMIT');
   assert.ok(getLegalActions(begun.state, 'player-1').some((action) => action.type === 'CANCEL_EFFECT_TARGET'));
+  const prematureSelection = executeAction(begun.state, {
+    type: 'SELECT_EFFECT_TARGET',
+    playerId: 'player-1',
+    targetId: 'enemy-1',
+  });
+  assert.equal(prematureSelection.success, false);
+  if (!prematureSelection.success) assert.equal(prematureSelection.errorCode, 'TARGET_SELECTION_PENDING');
+  assert.equal(prematureSelection.state, begun.state);
 
   const cancelled = executeAction(begun.state, { type: 'CANCEL_EFFECT_TARGET', playerId: 'player-1' });
   assert.deepEqual({ ...cancelled.state, targetingState: undefined }, { ...state, targetingState: undefined });
@@ -105,6 +142,56 @@ test('technique PRE_COMMIT probes a clone, cancel is canonical no-op, confirm co
   assert.equal(confirmed.state.events.filter((event) => event.type === 'CARD_PLAYED').length, 1);
 });
 
+test('optional PRE_COMMIT cancel abandons the action and empty optional choices auto-skip', () => {
+  const optionalTechnique: CardDefinition = {
+    ...technique,
+    id: 'optional-precommit-technique',
+    abilities: [{
+      trigger: 'ACTIVE',
+      effects: [optionalChoiceDamageEffect(), addStructuredGoldEffect(1)],
+    }],
+  };
+  const state = playableState();
+  state.players[0].hand = [generateCardInstance(optionalTechnique, { instanceId: 'optional-technique' })];
+  const begun = executeAction(state, {
+    type: 'BEGIN_TARGETED_ACTION',
+    playerId: 'player-1',
+    action: { type: 'PLAY_TECHNIQUE', cardInstanceId: 'optional-technique' },
+  });
+  assert.equal(begun.success, true);
+  assert.equal(begun.state.targetingState?.phase, 'PRE_COMMIT');
+  assert.equal(begun.state.targetingState?.cancelable, true);
+
+  const cancelled = executeAction(begun.state, {
+    type: 'CANCEL_EFFECT_TARGET',
+    playerId: 'player-1',
+  });
+  assert.deepEqual(
+    { ...cancelled.state, targetingState: undefined },
+    { ...state, targetingState: undefined },
+  );
+
+  const noTargetState = playableState();
+  noTargetState.players[1] = { ...noTargetState.players[1], board: [null, null, null, null] };
+  noTargetState.players[0].hand = [
+    generateCardInstance(optionalTechnique, { instanceId: 'optional-no-target' }),
+  ];
+  const noTargetAction = executeAction(noTargetState, {
+    type: 'BEGIN_TARGETED_ACTION',
+    playerId: 'player-1',
+    action: { type: 'PLAY_TECHNIQUE', cardInstanceId: 'optional-no-target' },
+  });
+  assert.equal(noTargetAction.success, true, JSON.stringify(noTargetAction));
+  assert.equal(noTargetAction.state.targetingState, undefined);
+  assert.equal(noTargetAction.state.players[0].currentGold, 2);
+  assert.equal(noTargetAction.state.players[0].hand.length, 0);
+  assert.equal(noTargetAction.state.players[0].graveyard.length, 1);
+  assert.equal(
+    getLegalActions(noTargetAction.state, 'player-1').some((action) => action.type === 'CANCEL_EFFECT_TARGET'),
+    false,
+  );
+});
+
 test('Champion Ability PRE_COMMIT cancel is a no-op and reconnect confirm commits once', () => {
   const state = playableState();
   const champion = state.players[0].champion!;
@@ -117,7 +204,7 @@ test('Champion Ability PRE_COMMIT cancel is a no-op and reconnect confirm commit
       ability: {
         ...champion.ability,
         id: 'targeted-champion-ability',
-        effects: [choiceDamageEffect()],
+        effects: [choiceDamageEffect(), addStructuredGoldEffect(1)],
       },
       questProgress: 0,
       questCompleted: false,
@@ -169,6 +256,21 @@ test('Champion Ability PRE_COMMIT cancel is a no-op and reconnect confirm commit
     playerId: 'player-1',
     action: { type: 'USE_CHAMPION_ABILITY' },
   });
+  const staleTargetState = JSON.parse(JSON.stringify(retry.state)) as GameState;
+  staleTargetState.players[1] = {
+    ...staleTargetState.players[1],
+    board: [null, null, null, null],
+  };
+  const staleConfirm = executeAction(staleTargetState, {
+    type: 'CONFIRM_PRECOMMIT_TARGET',
+    playerId: 'player-1',
+    targetId: 'enemy-1',
+  });
+  assert.equal(staleConfirm.success, false);
+  if (!staleConfirm.success) assert.equal(staleConfirm.errorCode, 'NO_VALID_TARGET');
+  assert.equal(staleConfirm.state, staleTargetState);
+  assert.equal(staleConfirm.state.players[0].currentGold, 3);
+
   const reconnected = JSON.parse(JSON.stringify(retry.state)) as GameState;
   const confirmed = executeAction(reconnected, {
     type: 'CONFIRM_PRECOMMIT_TARGET',
@@ -176,7 +278,7 @@ test('Champion Ability PRE_COMMIT cancel is a no-op and reconnect confirm commit
     targetId: 'enemy-1',
   });
   assert.equal(confirmed.success, true);
-  assert.equal(confirmed.state.players[0].currentGold, 1);
+  assert.equal(confirmed.state.players[0].currentGold, 2);
   assert.equal(confirmed.state.players[0].championAbilityUsedThisTurn, true);
   assert.equal(confirmed.state.players[0].champion?.questProgress, 1);
   assert.equal(confirmed.state.players[1].board[0], null);
@@ -256,6 +358,15 @@ test('post-commit ENTER_FIELD cancellation preserves the played card and payment
   assert.equal(played.state.players[0].currentGold, 2);
   assert.equal(played.state.players[0].board[1]?.instanceId, 'entry-1');
   assert.equal(played.state.targetingState?.validTargetIds.includes('enemy-1'), true);
+
+  const invalidSelection = executeAction(played.state, {
+    type: 'SELECT_EFFECT_TARGET',
+    playerId: 'player-1',
+    targetId: 'missing-target',
+  });
+  assert.equal(invalidSelection.success, false);
+  if (!invalidSelection.success) assert.equal(invalidSelection.errorCode, 'NO_VALID_TARGET');
+  assert.equal(invalidSelection.state, played.state);
 
   const cancelled = executeAction(played.state, {
     type: 'CANCEL_EFFECT_TARGET',

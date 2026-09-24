@@ -168,8 +168,15 @@ export function executeAction(state: GameState, action: GameAction): ActionResul
       }
       const actionToRun = pending.pendingAction as TargetedAction;
       const committed = immediateAction({ ...state, targetingState: undefined }, action.playerId, actionToRun);
-      if (!committed.success || !committed.state.targetingState?.active) return committed;
+      if (!committed.success) return actionFailure(state, committed.errorCode, committed.message);
+      const committedPending = committed.state.targetingState;
+      if (!committedPending?.active || !committedPending.validTargetIds.includes(action.targetId)) {
+        return actionFailure(state, 'NO_VALID_TARGET', '선택할 수 없는 대상입니다.');
+      }
       const selectedState = selectEffectTarget(committed.state, action.targetId);
+      if (selectedState === committed.state) {
+        return actionFailure(state, 'NO_VALID_TARGET', '선택할 수 없는 대상입니다.');
+      }
       const selected = processChampionQuestEvents(committed.state, selectedState);
       return actionSuccess(selected);
     }

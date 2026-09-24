@@ -398,18 +398,18 @@ test('ALL BOARD WRESTLERS targeting includes both players but excludes both Cham
   assert.equal(enemyDamage.players[1].board[0]?.currentHealth, 1);
 });
 
-test('mandatory no-target play preserves hand, gold and board', () => {
+test('mandatory ENTER_FIELD choice with no targets skips and commits the play', () => {
   const state = createInitialGameState();
   state.status = 'IN_PROGRESS'; state.activePlayerId = 'player-1';
   state.players[0].currentGold = 5;
   const source = card('no-target', [targeted('DESTROY')]);
   state.players[0].hand = [source];
   const result = playWrestlerFromHand(state, 'player-1', source.instanceId, 0);
-  assert.equal(result.success, false);
-  if (!result.success) assert.equal(result.message, '선택 가능한 대상이 없습니다.');
-  assert.equal(state.players[0].currentGold, 5);
-  assert.equal(state.players[0].hand[0], source);
-  assert.equal(state.players[0].board[0], null);
+  assert.equal(result.success, true);
+  assert.equal(result.state.players[0].currentGold, 4);
+  assert.equal(result.state.players[0].hand.length, 0);
+  assert.equal(result.state.players[0].board[0]?.instanceId, source.instanceId);
+  assert.equal(result.state.targetingState, undefined);
 });
 
 test('active and champion abilities use pending effects once, with payment/use timing', () => {

@@ -1391,11 +1391,14 @@ export function resolveStateBasedDeaths(
     ],
   };
   for (const entry of retired) {
+    const beforeSelfRetire = next;
     next = resolveTriggeredAbilities(next, entry.playerId, entry.card, 'SELF_RETIRE', {
       leaveReason: 'RETIRE',
       sourceContext,
     });
-    next = next.targetingState?.active ? resolvePendingEffects(next) : next;
+    next = next !== beforeSelfRetire && next.targetingState?.active
+      ? resolvePendingEffects(next)
+      : next;
     next = resolveTriggeredAbilities(next, entry.playerId, entry.card, 'LEAVE_FIELD', {
       leaveReason: 'RETIRE',
       sourceContext,
@@ -1545,6 +1548,7 @@ export function selectEffectTarget(state: GameState, targetId: string): GameStat
 export function cancelEffectTargeting(state: GameState): GameState {
   const pending = state.targetingState;
   if (!pending) return state;
+  if (pending.phase === 'PRE_COMMIT') return { ...state, targetingState: undefined };
   // Optional structured effects retain their normal continuation semantics.
   if (pending.cancelable) {
     if (pending.selectedTargetIds.length > 0) return state;
@@ -2331,7 +2335,9 @@ export function applyEffect(
           sourceContext: attribution,
         });
         const legacyLeave = resolveTriggeredAbilities(
-          selfRetired.targetingState?.active ? resolvePendingEffects(selfRetired) : selfRetired,
+          selfRetired !== withSnapshot && selfRetired.targetingState?.active
+            ? resolvePendingEffects(selfRetired)
+            : selfRetired,
           targetOwner,
           current,
           'LEAVE_FIELD',
@@ -2475,7 +2481,9 @@ export function applyEffect(
             { healthBefore: preparedCurrent.currentHealth, healthAfter: health, sourceContext: sourceContextFor(playerId, sourceCard, triggerContext) },
           );
           const withDamageListeners = resolveRegisteredRuleListeners(
-            selfDamaged.targetingState?.active ? resolvePendingEffects(selfDamaged) : selfDamaged,
+            selfDamaged !== damagedState && selfDamaged.targetingState?.active
+              ? resolvePendingEffects(selfDamaged)
+              : selfDamaged,
             'DAMAGE_TAKEN',
             targetOwner,
             current.instanceId,
@@ -2549,7 +2557,7 @@ export function applyEffect(
           leaveReason: 'RETIRE',
           sourceContext: attribution,
         });
-        const legacyLeave = selfRetired.targetingState?.active
+        const legacyLeave = selfRetired !== exactZeroState && selfRetired.targetingState?.active
           ? resolvePendingEffects(selfRetired)
           : selfRetired;
         const retiredListenersState = resolveCardRetiredListeners(
