@@ -80,7 +80,7 @@ export function getValidTargets(
       if (target.filter?.cost && !scriptCompare(card.currentCost, target.filter.cost.compare, target.filter.cost.value)) return false;
       if (target.filter?.attack && !scriptCompare(card.currentAttack, target.filter.attack.compare, target.filter.attack.value)) return false;
       if (target.filter?.health && !scriptCompare(card.currentHealth, target.filter.health.compare, target.filter.health.value)) return false;
-      if (!matchesCardTagFilter(card, target.filter)) return false;
+      if (!matchesStateCardTagFilter(state, card, target.filter)) return false;
       if (target.selection === 'RANDOM' && !isEligibleForRandomPool(card, target.randomScope)) return false;
       if (target.selection === 'SELF' && card.instanceId !== sourceCard.instanceId) return false;
       // Directly deployed champion tokens remain damageable, but not silence,
@@ -118,6 +118,22 @@ function cardsInZones(
     return [];
   });
   return [...new Map(cards.map((card) => [card.instanceId, card])).values()];
+}
+
+/**
+ * Tags are definition metadata, not mutable instance state. Instances retain
+ * copied tags for display/event compatibility, but target resolution must use
+ * the authoritative published definition and reject missing metadata.
+ */
+function matchesStateCardTagFilter(
+  state: GameState,
+  card: CardInstance,
+  filter: Parameters<typeof matchesCardTagFilter>[1] | null | undefined,
+): boolean {
+  if (!filter || (!filter.tagsAny && !filter.tagsAll && !filter.tagsNone)) return true;
+  const definition = state.cardPool?.find((candidate) => candidate.id === card.definitionId);
+  if (!definition) return false;
+  return matchesCardTagFilter(definition, filter);
 }
 
 function matchesDefinitionRef(
@@ -189,7 +205,7 @@ function scriptTargetCards(
     if (!compare(card.currentCost, filter?.cost) ||
       !compare(card.currentAttack, filter?.attack) ||
       !compare(card.currentHealth, filter?.health)) return false;
-    return matchesCardTagFilter(card, filter);
+    return matchesStateCardTagFilter(state, card, filter);
   });
   const selection = target.selection ?? 'ALL';
   const sorted = target.sort
@@ -2240,7 +2256,7 @@ export function applyEffect(
       if (target.filter?.cost && !scriptCompare(card.currentCost, target.filter.cost.compare, target.filter.cost.value)) return false;
       if (target.filter?.attack && !scriptCompare(card.currentAttack, target.filter.attack.compare, target.filter.attack.value)) return false;
       if (target.filter?.health && !scriptCompare(card.currentHealth, target.filter.health.compare, target.filter.health.value)) return false;
-       if (!matchesCardTagFilter(card, target.filter)) return false;
+       if (!matchesStateCardTagFilter(state, card, target.filter)) return false;
       return true;
     });
     const scopedCandidates = sortAndTakeTargetCards(eligibleCandidates, target);

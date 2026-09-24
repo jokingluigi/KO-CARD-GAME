@@ -1,0 +1,613 @@
+KO CARD GAME — BLACK MACARON STAT CHANNEL FIX
+"카드 개수만큼 공격력만 증가"인데 체력도 같이 증가하는 버그 수정
+
+현재 버그:
+블랙마카롱 효과를 기존의
+"조건에 맞는 카드 개수만큼 공격력과 체력이 증가"
+에서
+"조건에 맞는 카드 개수만큼 공격력만 증가"
+로 변경했는데,
+실제 Runtime에서는 여전히 체력도 같이 증가한다.
+
+목표:
+블랙마카롱의 최신 Source Text / 최신 저장 effect / Analyzer output / Runtime을 추적해서
+체력 증가가 남는 정확한 원인을 찾고,
+최종적으로 해당 효과가 공격력만 증가하도록 수정한다.
+
+중요:
+단순히 UI 표시만 고치지 말고,
+실제 GameState에서 health 변화가 0이어야 한다.
+
+==================================================
+0. 절대 금지
+==================================================
+
+- `if card.name === "블랙마카롱"` 같은 runtime hardcode 금지
+- 공격력 증가 후 체력 값을 원래대로 되돌리는 보정 금지
+- UI 숫자만 감추는 수정 금지
+- source text보다 stale stored effect를 우선하지 말 것
+- unrelated card stat behavior 변경 금지
+- Production DB 직접 수정 금지
+- PUBLISHED row의 unrelated fields 변경 금지
+- force push 금지
+- 별도 요청 없으면 push 금지
+
+==================================================
+1. 먼저 ROOT CAUSE TRACE
+==================================================
+
+블랙마카롱 효과의 전체 경로를 trace:
+
+Source Text
+→ Fresh Analyzer
+→ canonical Structured Effect / SCRIPT_V1
+→ Development stored effect
+→ runtime target/count calculation
+→ BUFF / MODIFY_STAT / value resolver
+→ GameState stat mutation
+→ UI
+
+다음 중 어디서 health가 살아남는지 확인:
+
+A. Source Text는 공격력만인데 Analyzer가 여전히 attack + health 생성
+B. Analyzer는 attack only인데 Development stored effect가 stale +X/+X
+C. stored effect는 attack only인데 runtime BUFF default가 health에도 같은 값을 적용
+D. count-based value resolver가 attack/health 둘 다 반환
+E. generic stat modifier helper가 omitted health를 attack 값으로 fallback
+F. UI가 이전 combined buff 결과를 잘못 표시
+G. reload/reconnect hydration 시 legacy health modifier가 복원
+H. old cached effect config를 runtime이 사용
+I. count result를 `{attack: count, health: count}`로 만드는 legacy helper 존재
+J. effect registry metadata가 BUFF를 "+X/+X" shorthand로 강제
+
+최종 보고에:
+First failing layer
+Exact file/function
+Why health changed
+를 반드시 적을 것.
+
+==================================================
+2. 공식 블랙마카롱 의미
+==================================================
+
+최신 Source Text를 Development에서 다시 읽고,
+실제 문구가 "공격력만" 증가로 되어 있는지 확인.
+
+공식 semantics:
+
+- 조건에 맞는 카드 수를 계산
+- 그 count만큼 SOURCE의 attack만 증가
+- source health 변화 = 0
+- source maxHealth 변화 = 0
+
+예:
+
+matching count = 3
+Black Macaron before = 4 ATK / 6 HP
+
+Expected after:
+7 ATK / 6 HP
+
+절대:
+7 ATK / 9 HP
+금지.
+
+==================================================
+3. Canonical Effect Shape
+==================================================
+
+현재 shared Effect Registry 구조에 맞는 canonical 표현을 사용.
+
+예시 개념:
+
+action = BUFF
+values.attack = COUNT(...)
+values.health = 0 또는 health field omitted
+
+중요:
+프로젝트의 canonical semantics가
+"health field omitted = no health change"라면
+health: 0을 억지로 넣지 말고 omitted semantics를 사용.
+
+반대로 validator/runtime가 explicit zero를 요구하면
+shared contract에 맞춰 사용.
+
+핵심:
+공격력 channel과 체력 channel이 독립적이어야 한다.
+
+==================================================
+4. Generic Stat Channel 규칙
+==================================================
+
+이번 수정은 블랙마카롱 카드만의 임시 예외가 아니라,
+모든 stat effect에서 아래 invariant를 보장해야 한다:
+
+- attack만 지정 → attack만 변경
+- health만 지정 → health만 변경
+- maxHealth만 지정 → maxHealth만 변경
+- attack + health 둘 다 지정 → 둘 다 변경
+- omitted stat field → 변화 없음
+- 0 → 변화 없음
+
+특히 dynamic value/count-based resolver에서도 동일.
+
+==================================================
+5. Count-based Value Resolver 확인
+==================================================
+
+조건에 맞는 카드 수가 N일 때:
+
+attack delta = N
+health delta = 0
+
+다음 패턴이 있으면 제거/수정:
+
+`{ attack: count, health: count }`
+
+또는:
+
+`health = values.health ?? values.attack`
+
+또는:
+
+`if buff amount = count then apply count to all mutable stats`
+
+같은 fallback.
+
+Attack/Health value resolver는 독립 channel이어야 한다.
+
+==================================================
+6. Source / Analyzer / Stored Effect 3-way 비교
+==================================================
+
+블랙마카롱에 대해:
+
+A. Source Text
+B. Fresh Analyzer Output
+C. Current Development Stored Effect
+
+를 비교.
+
+분류:
+
+SEMANTIC_MATCH
+STALE_STORED_EFFECT
+ANALYZER_HALLUCINATED_HEALTH
+RUNTIME_STAT_CHANNEL_BUG
+UI_ONLY_BUG
+
+Source Text에 health 증가 문구가 없는데
+Analyzer/stored effect가 health를 증가시키면 FAIL.
+
+==================================================
+7. Development stored effect repair
+==================================================
+
+만약 stored effect가 legacy +attack/+health라면:
+
+1. current Development row re-read
+2. version/status 확인
+3. fresh Analyzer
+4. validator PASS
+5. expected attack-only semantic equality
+6. effect-related field만 safe re-save
+
+PUBLISHED row라면 특히:
+name/cost/attack/baseHealth/tags/rarity/status/media 등
+unrelated fields 변경 금지.
+
+Production write 금지.
+
+==================================================
+8. Exact Runtime Tests
+==================================================
+
+BM1
+matching count = 0
+before 4/6
+→ after 4/6
+
+BM2
+matching count = 1
+before 4/6
+→ after 5/6
+
+BM3
+matching count = 3
+before 4/6
+→ after 7/6
+
+BM4
+matching count = 5
+before 2/10
+→ after 7/10
+
+각 테스트에서:
+currentHealth unchanged
+maxHealth unchanged
+
+==================================================
+9. Existing Damage / Missing Health 회귀
+==================================================
+
+현재 HP가 이미 깎여 있는 상태도 확인.
+
+예:
+
+base/max health = 8
+current health = 3
+attack = 4
+matching count = 2
+
+Expected:
+attack = 6
+current health = 3
+max health = 8
+
+공격력 buff가 현재 체력을 회복시키거나
+maxHealth를 건드리면 FAIL.
+
+==================================================
+10. Multiple Trigger / Recalculation
+==================================================
+
+블랙마카롱 효과가 재계산형인지
+발동형인지 현재 source text/engine semantics를 확인.
+
+어떤 구조든:
+
+각 실행에서 health delta = 0
+
+중복 trigger 문제로 attack이 두 번 증가하는 것도 같이 확인하되
+이번 작업의 핵심은 stat channel separation.
+
+==================================================
+11. UI 검증
+==================================================
+
+Runtime state가 attack-only로 맞아도
+UI가 `+N/+N`처럼 표시하면 사용자에게 잘못 보인다.
+
+확인:
+
+- card stat display
+- buff animation text
+- combat log
+- ALT/Inspector
+- hover tooltip
+- reconnect rendering
+
+Expected:
+공격력 변화만 표시.
+
+예:
+`공격력 +3`
+
+체력 +3 애니메이션/텍스트가 뜨면 FAIL.
+
+==================================================
+12. AI Effect Compiler 회귀
+==================================================
+
+AI compiler가 다음을 구분해야 함:
+
+"카드 수만큼 공격력이 증가합니다."
+→ attack only
+
+"카드 수만큼 체력이 증가합니다."
+→ health only
+
+"카드 수만큼 공격력과 체력이 증가합니다."
+→ attack + health
+
+"카드 수만큼 +1/+1을 받습니다."
+→ attack + health
+
+언어를 정규화하면서
+"공격력 증가"를 "+N/+N" shorthand로 과잉 해석하면 안 됨.
+
+==================================================
+13. Noisy Korean Tests
+==================================================
+
+다음도 attack-only로 해석:
+
+A.
+"카드수만큼 공만 오름"
+
+B.
+"그 갯수대로 공격력만 증가"
+
+C.
+"조건맞는 카드 한장당 공1 체력은 안오름"
+
+D.
+"수만큼 공 증가"
+
+Expected:
+health delta 0
+
+반대로:
+
+E.
+"카드수만큼 공체 둘다"
+→ attack + health
+
+==================================================
+14. Generic Regression Tests
+==================================================
+
+STAT1 attack-only BUFF
+→ health unchanged
+
+STAT2 health-only BUFF
+→ attack unchanged
+
+STAT3 attack+health BUFF
+→ both changed
+
+STAT4 count-based attack-only
+→ health unchanged
+
+STAT5 count-based health-only
+→ attack unchanged
+
+STAT6 dynamic expression attack-only
+→ health unchanged
+
+STAT7 omitted health field
+→ no health fallback
+
+STAT8 explicit health 0
+→ no change
+
+STAT9 currentHealth damaged state preserved during attack-only buff
+
+STAT10 reconnect/serialize preserves correct independent stats
+
+==================================================
+15. AI Match / Runtime 검증
+==================================================
+
+Inspection-only PASS 금지.
+
+Development/Test Match에서:
+
+1. 블랙마카롱 field에 배치
+2. 조건 matching count를 명확히 구성
+3. before attack/currentHealth/maxHealth 기록
+4. effect trigger
+5. emitted effect/value resolution 확인
+6. after attack/currentHealth/maxHealth 기록
+
+예:
+
+Before:
+ATK 4
+HP 6/8
+count 3
+
+Expected:
+ATK 7
+HP 6/8
+
+Actual:
+...
+
+==================================================
+16. 회귀 금지
+==================================================
+
+깨지면 안 되는 것:
+
+- HAND/DECK health floor
+- health-only effects
+- +X/+X effects
+- maxHealth modification
+- generatedModifiers
+- stat triggers
+- reconnect
+- hidden-info sanitizer
+- AI Match
+- Online authoritative state
+- structured effect validator
+- natural-language compiler
+
+==================================================
+17. 검증
+==================================================
+
+반드시:
+
+pnpm run typecheck
+pnpm --filter @workspace/ko-game run build
+git diff --check
+
+관련 시:
+
+API typecheck/build
+Analyzer tests
+structured-effect tests
+count/value resolver tests
+stat mutation tests
+AI Match tests
+serializer/reconnect tests
+
+==================================================
+18. Git
+==================================================
+
+실제 수정 파일만 stage.
+
+제외:
+prompt txt
+Pasted txt
+.env
+secrets
+logs
+screenshots
+temp
+Replit metadata
+unrelated files
+
+commit.
+
+push 요청 없으면 push 금지.
+force push 금지.
+
+==================================================
+19. 최종 보고 형식
+==================================================
+
+ROOT CAUSE
+
+Source Text attack-only:
+YES / NO
+
+Fresh Analyzer attack-only:
+YES / NO
+
+Stored effect attack-only:
+YES / NO
+
+Runtime stat channels independent:
+YES / NO
+
+First failing layer:
+...
+
+File/function:
+...
+
+
+BLACK MACARON
+
+Matching count:
+...
+
+Attack before:
+...
+
+Health before:
+...
+
+MaxHealth before:
+...
+
+Attack after:
+...
+
+Health after:
+...
+
+MaxHealth after:
+...
+
+Expected:
+Attack +count
+Health +0
+MaxHealth +0
+
+PASS / FAIL
+
+
+STORED EFFECT
+
+Before:
+...
+
+After:
+...
+
+Development row updated:
+YES / NO
+
+Unrelated fields changed:
+NONE / FAIL
+
+
+GENERIC STAT CHANNEL
+
+Attack-only:
+PASS / FAIL
+
+Health-only:
+PASS / FAIL
+
+Attack+Health:
+PASS / FAIL
+
+Dynamic count attack-only:
+PASS / FAIL
+
+Omitted health no fallback:
+PASS / FAIL
+
+Damaged current health preserved:
+PASS / FAIL
+
+
+AI COMPILER
+
+"카드수만큼 공만":
+PASS / FAIL
+
+"그 갯수대로 공격력만":
+PASS / FAIL
+
+"공체 둘다":
+PASS / FAIL
+
+
+AI MATCH RUNTIME:
+PASS / FAIL / UNVERIFIED
+
+BROWSER E2E:
+PASS / FAIL / UNVERIFIED
+
+TYPECHECK:
+PASS / FAIL
+
+KO BUILD:
+PASS / FAIL
+
+API TYPECHECK:
+PASS / FAIL / NOT_MODIFIED
+
+API BUILD:
+PASS / FAIL / NOT_MODIFIED
+
+git diff --check:
+PASS / FAIL
+
+PRODUCTION DATA MUTATION:
+NONE / FAIL
+
+CHANGED FILES:
+...
+
+COMMIT:
+...
+
+PUSH:
+NOT REQUESTED
+
+==================================================
+20. 완료 조건
+==================================================
+
+1. 블랙마카롱 최신 Source Text가 공격력-only라면 실제 Runtime도 attack-only.
+2. matching count N → attack +N.
+3. currentHealth 변화 0.
+4. maxHealth 변화 0.
+5. attack-only stat effect가 health를 fallback으로 증가시키지 않음.
+6. count/dynamic value resolver도 stat channel 독립.
+7. stale stored effect가 원인이면 Development에서 effect field만 안전 수정.
+8. UI도 체력 증가를 표시하지 않음.
+9. AI compiler도 "공격력만"을 정확히 attack-only로 해석.
+10. unrelated +X/+X, health-only 효과 회귀 없음.
+11. Production mutation 없음.
+12. tests/build/typecheck/diff 결과 보고.
+
+블랙마카롱 한 장을 이름으로 예외 처리하지 말고,
+"지정된 stat channel만 변경한다"는 generic runtime invariant를 바로잡은 뒤 멈춰라.

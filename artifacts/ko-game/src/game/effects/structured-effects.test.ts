@@ -310,6 +310,7 @@ test('소환 오라는 태그가 맞는 아군 소환 카드에만 같은 대상
   };
   const soldier = { ...instance('soldier'), tags: ['솔져'], currentAttack: 2, currentHealth: 2, maxHealth: 2 };
   const state = createInitialGameState();
+  state.cardPool = [definition('jaeger', []), { ...definition('soldier', []), tags: ['솔져'] }];
   state.players[0].board[0] = aura;
 
   const result = enterField(state, 'player-1', soldier, 1, undefined, undefined, 'SUMMON');
@@ -336,6 +337,7 @@ test('아군 필드 진입 오라는 플레이와 소환 양쪽에서 새 카드
   };
   const makeState = () => {
     const state = createInitialGameState();
+    state.cardPool = [definition('jaeger-entry-aura', []), { ...definition('entered-soldier', []), tags: ['솔져'] }];
     state.players[0].board[0] = aura;
     return state;
   };

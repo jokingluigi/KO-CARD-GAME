@@ -26,6 +26,63 @@ test("preserves public catalog while hiding random seed and opponent zones", () 
   assert.deepEqual(projected.players[1]?.deck, { hidden: true, count: 2 });
 });
 
+test("keeps public definition tags but hides tagged opponent instances and pending source records", () => {
+  const taggedDefinition = { ...publicDefinition, id: "tagged-public-card", tags: ["실험체"] };
+  const hiddenHandCard = {
+    instanceId: "hidden-hand-card",
+    definitionId: "secret-hand-definition",
+    tags: ["hidden-instance-tag"],
+  };
+  const hiddenDeckCard = {
+    instanceId: "hidden-deck-card",
+    definitionId: "secret-deck-definition",
+    tags: ["hidden-instance-tag"],
+  };
+  const state = {
+    cardPool: [taggedDefinition],
+    randomSeed: 123,
+    players: [
+      { id: "PLAYER_ONE", hand: [], deck: [] },
+      { id: "PLAYER_TWO", hand: [hiddenHandCard], deck: [hiddenDeckCard] },
+    ],
+    events: [],
+    pendingCardEffects: [
+      { sourceInstanceId: hiddenHandCard.instanceId },
+      { sourceInstanceId: "public-source-card" },
+    ],
+    pendingDelayedEffects: [
+      { sourceInstanceId: hiddenHandCard.instanceId, sourceCard: hiddenHandCard },
+      { sourceInstanceId: "public-source-card", sourceCard: { instanceId: "public-source-card" } },
+    ],
+    pendingRuleListeners: [
+      { sourceInstanceId: hiddenDeckCard.instanceId },
+      { sourceInstanceId: "public-source-card" },
+    ],
+  } as unknown as GameState;
+
+  const projected = sanitizeGameStateForViewer(state, "PLAYER_ONE") as {
+    cardPool: Array<{ tags?: string[] }>;
+    players: Array<{ hand: unknown; deck: unknown }>;
+    pendingCardEffects: Array<{ sourceInstanceId: string }>;
+    pendingDelayedEffects: Array<{ sourceInstanceId: string; sourceCard?: { instanceId: string } }>;
+    pendingRuleListeners: Array<{ sourceInstanceId: string }>;
+  };
+
+  assert.deepEqual(projected.cardPool, [taggedDefinition]);
+  assert.deepEqual(projected.cardPool[0]?.tags, ["실험체"]);
+  assert.deepEqual(projected.players[1]?.hand, { hidden: true, count: 1 });
+  assert.deepEqual(projected.players[1]?.deck, { hidden: true, count: 1 });
+  assert.deepEqual(projected.pendingCardEffects.map((pending) => pending.sourceInstanceId), ["public-source-card"]);
+  assert.deepEqual(projected.pendingDelayedEffects.map((pending) => pending.sourceInstanceId), ["public-source-card"]);
+  assert.deepEqual(projected.pendingRuleListeners.map((listener) => listener.sourceInstanceId), ["public-source-card"]);
+  const serialized = JSON.stringify(projected);
+  assert.equal(serialized.includes("hidden-hand-card"), false);
+  assert.equal(serialized.includes("hidden-deck-card"), false);
+  assert.equal(serialized.includes("secret-hand-definition"), false);
+  assert.equal(serialized.includes("secret-deck-definition"), false);
+  assert.equal(serialized.includes("hidden-instance-tag"), false);
+});
+
 test("historical opponent draw and generation events stay redacted", () => {
   const state = {
     cardPool: [], randomSeed: 123, players: [{ id: "PLAYER_ONE", hand: [], deck: [] }, { id: "PLAYER_TWO", hand: [], deck: [] }],

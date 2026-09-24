@@ -20,3 +20,9 @@ test("card tag filters support any, all, and none semantics", () => {
   assert.equal(matchesCardTagFilter(card, { tagsNone: ["인간"] }), false);
   assert.equal(matchesCardTagFilter({}, { tagsAny: ["용병"] }), false);
 });
+
+test("card tag comparison normalizes NFC and whitespace without fuzzy matching", () => {
+  assert.equal(hasCardTag({ tags: ["실험체"] }, "실험체"), true);
+  assert.equal(hasCardTag({ tags: ["실험  체"] }, "실험 체"), true);
+  assert.equal(hasCardTag({ tags: ["실험체"] }, "실험"), false);
+});

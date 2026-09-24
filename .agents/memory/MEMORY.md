@@ -3,7 +3,7 @@
 - [Causal transform effects](causal-transform-effects.md) — conditional follow-up effects must carry a typed causal marker and verify the exact preceding runtime event.
 - [Causal removal event identities](causal-removal-event-identities.md) — per-removal causation IDs distinguish multiple removals under one action and keep replay deduplication exact.
 - [Granted card text layer](granted-card-text-layer.md) — copied executable text is a separate CardInstance layer; silence removes it without reconstructing printed data.
-- [Tag target filters](tag-target-filters.md) — generic any/all/none tag matching composes with zones and preserves definition tags on generated cards.
+- [Tag target filters](tag-target-filters.md) — exact any/all/none filters compose across zones; runtime tags come from the match's CardDefinition snapshot, never stale instances.
 - [Effect targeting continuations](effect-targeting-continuations.md) — PLAYER_CHOICE pauses use an engine-owned stack so nested triggers resume in order.
 - [Effect targeting UI boundary](effect-targeting-ui-boundary.md) — while choosing an effect target, every card/champion click must reach engine validation so invalid clicks can report without leaving the mode.
 - [Effect registry source](effect-registry-source.md) — analyzer, Effect Library, and runtime types derive identifiers from one shared registry.
@@ -83,5 +83,5 @@
 - [Online catalog validation](online-catalog-validation.md) — persisted matches must carry the exact CardDefinition catalog used by their instances; reject unknown references instead of rendering a substitute.
 - [Presentation event keys](presentation-event-keys.md) — event-log presentation keys should use append-order identity and a small fingerprint, not repeated deep serialization scans.
 - [Delayed source snapshots](delayed-source-snapshots.md) — delayed effects must retain their source and resolve next-turn timing relative to the active player.
-- [Hidden event references](hidden-event-references.md) — viewer sanitization must redact references to opponent hand/deck cards, while preserving public source metadata.
+- [Hidden event references](hidden-event-references.md) — redact hidden IDs in event paths and pending effect queues, including delayed source snapshots.
 - [Champion Prism economy](champion-prism-economy.md) — separate Champion currency/config/ledger and user-scoped pack claims protect unique unlocks from cross-currency or replay duplication.

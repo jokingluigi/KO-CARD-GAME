@@ -1060,7 +1060,9 @@ test("generic target DSL accepts any/all/none card tag filters and rejects inval
 });
 
 test("tag target phrases analyze into a reusable tagsAny filter", () => {
-  const result = analyzeEffectText("등장: 내 필드의 용병 또는 인간 태그를 가진 선수에게 +1/+1");
+  const result = analyzeEffectText("등장: 내 필드의 용병 또는 인간 태그를 가진 선수에게 +1/+1", {
+    availableTags: ["용병", "인간"],
+  });
   assert.equal(result.status, "success");
   assert.deepEqual(result.effects[0]?.target?.filter, { tagsAny: ["용병", "인간"] });
   assert.equal(isStructuredEffects({ effects: result.effects }), true);
@@ -1076,6 +1078,89 @@ test("natural tag vocabulary supports implicit, negative, and all-tag Korean phr
 
   const all = analyzeEffectText("등장: 좀비와 인간 태그를 모두 가진 선수에게 +1/+1", { availableTags: vocabulary });
   assert.deepEqual(all.effects[0]?.target?.filter, { tagsAll: ["좀비", "인간"] });
+});
+
+test("tag-based buffs use the canonical anywhere scope and never invent a tag fallback", () => {
+  const options = { availableTags: ["실험체"] };
+  const expectedTarget = {
+    zones: ["HAND", "DECK", "BOARD"],
+    owner: "SELF",
+    filter: { tagsAny: ["실험체"] },
+    selection: "ALL",
+    count: 20,
+  };
+  for (const text of [
+    "등장 실험체태그 내카드들 어디있든 1/1",
+    "나오면 내 실험체들 손덱필드 전부 공체1",
+    "내 실험체 속성 카드 어디있든 공체 1씩",
+    "등장:내 실험체 속성 카드 어디있든 공체 1씩",
+  ]) {
+    const result = analyzeEffectText(text, { ...options, defaultTrigger: "ENTER_FIELD" });
+    assert.equal(result.outcome, "supported", text);
+    assert.equal(result.unsupportedSegments.length, 0, text);
+    assert.deepEqual(result.effects[0], {
+      trigger: "ENTER_FIELD",
+      action: "BUFF",
+      target: expectedTarget,
+      values: { attack: 1, health: 1 },
+    }, text);
+  }
+  const missingVocabulary = analyzeEffectText("등장: '없는 태그' 태그가 있는 카드에게 +1/+1", {
+    availableTags: ["실험체"],
+  });
+  assert.equal(missingVocabulary.outcome, "analysis_failure");
+  assert.deepEqual(missingVocabulary.effects, []);
+});
+
+test("tag predicates support slash alternatives, all-tag, negative, exact tags, and composed selectors", () => {
+  const options = { availableTags: ["좀비", "언데드", "좀비화"] };
+  const any = analyzeEffectText("등장: 내 필드의 좀비/언데드 태그를 가진 선수 모두에게 +1/+1", options);
+  assert.equal(any.outcome, "supported");
+  assert.deepEqual(any.effects[0]?.target, {
+    zone: "BOARD",
+    owner: "SELF",
+    cardType: "WRESTLER",
+    filter: { tagsAny: ["좀비", "언데드"] },
+    selection: "ALL",
+    count: 20,
+  });
+  const all = analyzeEffectText("등장: 내 필드의 좀비와 언데드 태그를 모두 가진 선수에게 +1/+1", options);
+  assert.deepEqual(all.effects[0]?.target?.filter, { tagsAll: ["좀비", "언데드"] });
+  const none = analyzeEffectText("등장: 내 필드의 좀비 태그가 아닌 선수에게 +1/+1", options);
+  assert.deepEqual(none.effects[0]?.target?.filter, { tagsNone: ["좀비"] });
+  const exact = analyzeEffectText("등장: 내 필드의 좀비화 태그가 있는 선수에게 +1/+1", options);
+  assert.deepEqual(exact.effects[0]?.target?.filter, { tagsAny: ["좀비화"] });
+  const fuzzy = analyzeEffectText("등장: 내 필드의 좀비 태그가 있는 선수에게 +1/+1", {
+    availableTags: ["좀비화"],
+  });
+  assert.equal(fuzzy.outcome, "analysis_failure");
+  assert.deepEqual(fuzzy.effects, []);
+});
+
+test("tag buffs compose with target filters, selection, sort, and reject residual actions", () => {
+  const options = { availableTags: ["실험체"] };
+  const composed = analyzeEffectText(
+    "등장: 내 덱의 3 비용 이상 실험체 태그 카드 중 공격력이 가장 높은 한 장을 선택해 +1/+1",
+    options,
+  );
+  assert.equal(composed.outcome, "supported");
+  assert.deepEqual(composed.effects[0]?.target, {
+    zone: "DECK",
+    owner: "SELF",
+    filter: { minCost: 3, tagsAny: ["실험체"] },
+    selection: "TOP",
+    count: 1,
+    sort: { stat: "ATTACK", direction: "DESC" },
+    take: 1,
+  });
+  const chosen = analyzeEffectText("등장: 내 덱의 실험체 태그 카드 한 장을 선택해 +1/+1", options);
+  assert.equal(chosen.effects[0]?.target?.selection, "PLAYER_CHOICE");
+  const random = analyzeEffectText("등장: 어디에 있든 무작위 실험체 태그 카드 한 장에게 +1/+1", options);
+  assert.equal(random.effects[0]?.target?.selection, "RANDOM");
+  assert.deepEqual(random.effects[0]?.target?.zones, ["HAND", "DECK", "BOARD"]);
+  const residual = analyzeEffectText("등장: 어디에 있든 실험체 태그 카드에게 +1/+1을 주고 카드 한 장 뽑기", options);
+  assert.equal(residual.outcome, "analysis_failure");
+  assert.deepEqual(residual.effects, []);
 });
 
 test("structured target ordering is bounded and rejects unknown target predicates", () => {

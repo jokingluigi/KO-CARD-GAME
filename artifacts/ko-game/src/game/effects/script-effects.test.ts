@@ -76,6 +76,85 @@ test("SCRIPT_V1 selects and aggregates live board cards before applying a typed 
   assert.equal(result.players[0].board[1]?.currentAttack, 3);
 });
 
+test("SCRIPT_V1 tag selection reads CardDefinition tags across board and hidden zones", () => {
+  const script: CardEffect = {
+    type: "SCRIPT",
+    script: {
+      version: "SCRIPT_V1",
+      trigger: "ENTER_FIELD",
+      steps: [
+        {
+          type: "SELECT",
+          id: "tagged",
+          target: {
+            zones: ["BOARD", "HAND", "DECK"],
+            owner: "SELF",
+            filter: { tagsAny: ["실험체"] },
+            selection: "ALL",
+            count: 20,
+          },
+        },
+        { type: "AGGREGATE", id: "taggedCount", selectionId: "tagged", operation: "COUNT" },
+        {
+          type: "EFFECT",
+          effect: {
+            action: "BUFF",
+            target: { zone: "BOARD", owner: "SELF", selection: "SELF", count: 1 },
+            values: { attackExpression: { kind: "RESULT_VALUE", resultId: "taggedCount" } },
+          },
+        },
+      ],
+    },
+  };
+  const taggedDefinition: CardDefinition = {
+    id: "script-tagged-definition",
+    name: "script-tagged-definition",
+    cardType: "WRESTLER",
+    cost: 1,
+    attack: 1,
+    health: 3,
+    rulesText: "",
+    isToken: false,
+    isChampionToken: false,
+    keywords: [],
+    tags: ["실험체"],
+    abilities: [],
+  };
+  const untaggedDefinition: CardDefinition = { ...taggedDefinition, id: "script-untagged-definition", tags: [] };
+  const makeFromDefinition = (definition: CardDefinition, instanceId: string, instanceTags: string[]) => ({
+    ...generateCard(definition, {
+      instanceId,
+      playerId: "player-1",
+      source: { type: "PLAYER", playerId: "player-1" },
+      reason: "TEST",
+    }).card,
+    tags: instanceTags,
+  });
+  const source = card("script-tag-source", [script]);
+  const boardTag = { ...makeFromDefinition(taggedDefinition, "script-tag-board", []), boardSlot: 1 as const };
+  const handTag = makeFromDefinition(taggedDefinition, "script-tag-hand", ["다른태그"]);
+  const deckTag = makeFromDefinition(taggedDefinition, "script-tag-deck", []);
+  const staleUntagged = makeFromDefinition(untaggedDefinition, "script-stale-untagged", ["실험체"]);
+  const initial = createInitialGameState();
+  const state = {
+    ...initial,
+    cardPool: [taggedDefinition, untaggedDefinition],
+    players: initial.players.map((player) =>
+      player.id === "player-1"
+        ? {
+            ...player,
+            board: [null, boardTag, null, null] as typeof player.board,
+            hand: [handTag],
+            deck: [deckTag, staleUntagged],
+          }
+        : player,
+    ),
+  };
+
+  const result = enterField(state, "player-1", source, 0);
+  assert.equal(result.players[0]?.board[0]?.currentAttack, 4);
+});
+
 test("SCRIPT_V1 PLAYER_CHOICE pauses in GameState and resumes into a later result-referenced effect", () => {
   const script: CardEffect = {
     type: "SCRIPT",

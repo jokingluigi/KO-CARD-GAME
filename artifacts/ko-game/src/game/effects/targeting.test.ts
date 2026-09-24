@@ -4,13 +4,14 @@ import test from 'node:test';
 import { generateCard } from '../cards/generation';
 import type { CardDefinition, CardInstance } from '../cards/types';
 import { createInitialGameState } from '../engine/create-initial-game-state';
+import { drawCard } from '../engine/draw-card';
 import { enterField } from '../engine/enter-field';
 import { playWrestlerFromHand } from '../engine/play-wrestler';
 import { playTechniqueFromHand } from '../engine/play-technique';
 import { useActiveAbility } from '../engine/card-status';
 import { useChampionAbility } from '../engine/champion-system';
 import { endTurn } from '../engine/turn-system';
-import { getValidTargets, selectEffectTarget } from './effect-engine';
+import { applyEffect, getValidTargets, selectEffectTarget } from './effect-engine';
 import type { CardEffect } from './types';
 
 const targeted = (action: Extract<CardEffect, { type: 'STRUCTURED' }>['action'], owner: 'SELF' | 'ENEMY' = 'ENEMY', selection: 'PLAYER_CHOICE' | 'SELF' | 'RANDOM' | 'ALL' | 'SAME_TARGET' = 'PLAYER_CHOICE', count = 1): CardEffect =>
@@ -19,6 +20,23 @@ const targeted = (action: Extract<CardEffect, { type: 'STRUCTURED' }>['action'],
 function card(id: string, effects: CardEffect[] = [], tags: string[] = []): CardInstance {
   const definition: CardDefinition = { id, name: id, cardType: 'WRESTLER', cost: 1, attack: 1, health: 2, rulesText: '', isToken: false, isChampionToken: false, keywords: [], tags, abilities: [{ trigger: 'ENTER_FIELD', effects }] };
   return generateCard(definition, { instanceId: id, playerId: 'player-1', source: { type: 'PLAYER', playerId: 'player-1' }, reason: 'TEST' }).card;
+}
+
+function definitionFor(cardInstance: CardInstance): CardDefinition {
+  return {
+    id: cardInstance.definitionId,
+    name: cardInstance.definitionId,
+    cardType: cardInstance.cardType,
+    cost: cardInstance.baseCost ?? cardInstance.currentCost,
+    attack: cardInstance.baseAttack ?? cardInstance.currentAttack,
+    health: cardInstance.baseHealth ?? cardInstance.maxHealth,
+    rulesText: '',
+    isToken: cardInstance.isToken,
+    isChampionToken: cardInstance.isChampionToken,
+    keywords: [],
+    tags: cardInstance.tags ? [...cardInstance.tags] : [],
+    abilities: [],
+  };
 }
 
 test('PLAYER_CHOICE pauses post-enter damage, validates stale/invalid clicks, then resolves', () => {
@@ -138,6 +156,9 @@ test('tag filters compose with zone, owner, and card type without hardcoded tag 
   state.players[0].hand = [allyHand];
   state.players[0].board[3] = generatedToken;
   state.players[1].board[0] = enemyBoard;
+  state.cardPool = [
+    allyBoard, allyUntagged, allyTechnique, allyHand, generatedToken, enemyBoard,
+  ].map(definitionFor);
 
   const boardWrestlers = {
     type: 'STRUCTURED' as const,
@@ -192,6 +213,7 @@ test('structured tag targets sort and take the highest matching card before appl
   const state = createInitialGameState();
   state.players[0].board[0] = low;
   state.players[0].board[1] = high;
+  state.cardPool = [source, low, high].map(definitionFor);
   const effect: CardEffect = {
     type: 'STRUCTURED',
     action: 'BUFF',
@@ -214,6 +236,115 @@ test('structured tag targets sort and take the highest matching card before appl
   const resolved = selectEffectTarget(pending, 'high-tagged');
   assert.equal(resolved.players[0].board[0]?.currentAttack, 2);
   assert.equal(resolved.players[0].board[1]?.currentAttack, 7);
+});
+
+test('tag filters treat missing definition tags as empty but reject a missing definition', () => {
+  const source = card('tag-none-source');
+  const definitionWithoutTags = definitionFor(card('empty-tag-definition'));
+  delete definitionWithoutTags.tags;
+  const target = {
+    ...card('empty-tag-target'),
+    definitionId: definitionWithoutTags.id,
+    tags: ['stale-instance-tag'],
+    boardSlot: 0 as const,
+  };
+  const state = createInitialGameState();
+  state.players[0].board[0] = target;
+  state.cardPool = [definitionWithoutTags];
+  const effect: CardEffect = {
+    type: 'STRUCTURED',
+    action: 'BUFF',
+    target: {
+      zone: 'BOARD',
+      owner: 'SELF',
+      filter: { tagsNone: ['실험체'] },
+      selection: 'ALL',
+      count: 20,
+    },
+    values: { attack: 1 },
+  };
+
+  assert.deepEqual(getValidTargets(state, 'player-1', source, effect), [target.instanceId]);
+  assert.deepEqual(
+    getValidTargets({ ...state, cardPool: [] }, 'player-1', source, effect),
+    [],
+  );
+});
+
+test('authoritative definition tags apply once across BOARD/HAND/DECK and survive JSON round-trip and play', () => {
+  const source = card('authoritative-source');
+  const taggedDefinition = definitionFor(card('authoritative-tagged', [], ['실험체']));
+  const untaggedDefinition = definitionFor(card('authoritative-untagged'));
+  const championDefinition = {
+    ...taggedDefinition,
+    id: 'authoritative-champion-token',
+    name: 'authoritative-champion-token',
+    isToken: true,
+    isChampionToken: true,
+  };
+  const makeInstance = (id: string, definition: CardDefinition, staleTags: string[]) => ({
+    ...generateCard(definition, {
+      instanceId: id,
+      playerId: 'player-1',
+      source: { type: 'PLAYER' as const, playerId: 'player-1' },
+      reason: 'TEST',
+    }).card,
+    tags: staleTags,
+  });
+  const board = { ...makeInstance('authoritative-board', taggedDefinition, []), boardSlot: 0 as const };
+  const hand = makeInstance('authoritative-hand', taggedDefinition, ['다른태그']);
+  const deck = makeInstance('authoritative-deck', taggedDefinition, []);
+  const untagged = makeInstance('authoritative-untagged-instance', untaggedDefinition, ['실험체']);
+  const champion = makeInstance('authoritative-champion', championDefinition, []);
+  const state = createInitialGameState();
+  state.status = 'IN_PROGRESS';
+  state.activePlayerId = 'player-1';
+  state.cardPool = [definitionFor(source), taggedDefinition, untaggedDefinition, championDefinition];
+  state.players[0].currentGold = 5;
+  state.players[0].board[0] = board;
+  state.players[0].hand = [hand];
+  state.players[0].deck = [deck, untagged, champion];
+
+  const effect: CardEffect = {
+    type: 'STRUCTURED',
+    action: 'BUFF',
+    target: {
+      zones: ['BOARD', 'HAND', 'DECK'],
+      owner: 'SELF',
+      cardType: 'WRESTLER',
+      filter: { tagsAny: ['실험체'] },
+      selection: 'ALL',
+      count: 20,
+    },
+    values: { attack: 1, health: 1 },
+  };
+  const buffed = applyEffect(state, 'player-1', source, effect);
+  assert.deepEqual(getValidTargets(state, 'player-1', source, effect).sort(), [
+    'authoritative-board', 'authoritative-champion', 'authoritative-deck', 'authoritative-hand',
+  ].sort());
+  const withoutDefinitions = { ...state, cardPool: undefined };
+  assert.deepEqual(getValidTargets(withoutDefinitions, 'player-1', source, effect), []);
+  for (const cardInstance of [
+    buffed.players[0].board[0],
+    buffed.players[0].hand[0],
+    buffed.players[0].deck[0],
+  ]) {
+    assert.equal(cardInstance?.currentAttack, 2);
+    assert.equal(cardInstance?.currentHealth, 3);
+  }
+  assert.equal(buffed.players[0].deck[1]?.currentAttack, 1);
+  assert.equal(buffed.players[0].deck[2]?.isChampionToken, true);
+  assert.equal(buffed.players[0].deck[2]?.currentAttack, 2);
+
+  const restored = structuredClone(buffed);
+  const drawn = drawCard(restored, 'player-1');
+  assert.equal(drawn.players[0].hand.find((entry) => entry.instanceId === 'authoritative-deck')?.currentAttack, 2);
+  const played = playWrestlerFromHand(drawn, 'player-1', 'authoritative-deck', 1);
+  assert.equal(played.success, true);
+  if (played.success) {
+    assert.equal(played.state.players[0].board[1]?.currentAttack, 2);
+    assert.equal(played.state.players[0].board[1]?.currentHealth, 3);
+  }
 });
 
 test('CHARACTER targeting offers the owner id and wrestlers, then applies player and card damage/healing separately', () => {

@@ -158,7 +158,7 @@ const REFERENCE_ATTACK_INCREMENT_PATTERN = /공격한\s*(?:아군\s*)?선수의\
 const SET_ATTACK_ZERO_PATTERN = /(?:자신의\s*)?공격력을\s*0\s*으로(?:\s*(?:만들|설정|변경))?/i;
 const NEXT_PLAY_HEALTH_BUFF_PATTERN = /다음(?:에)?\s*(?:(?:내가|제가)\s*)?(?:내는|플레이하는|출현하는|등장하는)\s*(?:아군\s*)?(?:선수\s*)?카드(?:\s*(?:1장|한\s*장))?(?:에게)?\s*(?:(?:이|을|의)\s*)?(?:체력(?:이|을)?\s*)?[+]?(\d+)\s*(?:증가|늘어|올라|올라갑니다?|올립니다?|부여)/i;
 const STAT_SWAP_PATTERN = /(?:자신(?:의|에게)?\s*)?(?:현재\s*)?(?:공격(?:력)?\s*(?:과|\/|및)\s*체력|체력\s*(?:과|\/|및)\s*공격(?:력)?)[^.!?]{0,30}?(?:서로\s*)?(?:교환|바꾸|바꿉니다)/i;
-const ACTIVE_CARD_SCOPE_PATTERN = /(?:어디에\s*(?:있든|있는)|모든\s*위치의|손패\s*[,，]\s*덱\s*[,，]\s*(?:필드|보드)|손패\s*(?:및|와|과)\s*덱\s*(?:및|와|과)\s*(?:필드|보드))/;
+const ACTIVE_CARD_SCOPE_PATTERN = /(?:어디\s*(?:에\s*)?(?:있든|있는)|모든\s*위치의|손패?\s*[,，]?\s*덱\s*[,，]?\s*(?:필드|보드)|손패\s*(?:및|와|과)\s*덱\s*(?:및|와|과)\s*(?:필드|보드))/;
 const GENERATED_FILTER_PATTERN = /(?:생성된|생성\s*카드|GENERATED)/i;
 const MIN_COST_PATTERN = /(\d+)\s*(?:코스트|비용)\s*이상/;
 const AGGREGATED_STATS_PATTERN = /(?:현재\s*)?(?:공격(?:력)?\s*(?:과|\/|및)\s*체력|체력\s*(?:과|\/|및)\s*공격(?:력)?)[^.!?]{0,30}?합산/;
@@ -183,6 +183,17 @@ function normalize(input: string) {
   // colon-prefixed ability. It is presentation metadata, not effect text.
   const beginsWithTrigger = /^(?:필드에\s*)?(?:등장|출현|퇴장|리타이어|액티브|준비|콤보|주문|핀폴|턴\s*시작|턴\s*종료|MAGIC|TURBO|SELF_ATTACK|SUPPORT|SHOCK|BULLSEYE)\s*:/i.test(normalized);
   return (beginsWithTrigger ? normalized : normalized.replace(/^.*?\s+(?=(?:퇴장|리타이어)\s*:)/, ""))
+    // Card exports and compact Korean input frequently omit the boundaries
+    // around the canonical tag/zone vocabulary. Restore only unambiguous
+    // grammar boundaries; tag values themselves are never rewritten.
+    .replace(/(태그|속성)(?=(?:가|를|은|는|이|인|있는|붙은|달려))/g, "$1 ")
+    .replace(/(?<=[가-힣A-Za-z0-9])(태그|속성|붙은|달려|가진|있는)/gu, " $1")
+    .replace(/(?<=태그)(?=(?:카드|선수))/g, " ")
+    .replace(/손(?:패)?덱필드|손덱필드/g, "손패 덱 필드")
+    .replace(/내카드/g, "내 카드")
+    .replace(/아군카드/g, "아군 카드")
+    .replace(/([+-]\d+)([+-]\d+)/g, "$1/$2")
+    .replace(/([+-]?\d+)\s*([+-]\d+)(?=\s*(?:씩|부여|강화|올))/g, "$1/$2")
     .replace(/(만듭니다|시킵니다|합니다|습니다|한다|해요|하세요|하기|얻기|줍니다|준다)$/g, "").trim();
 }
 function numberFrom(text: string, fallback = 1) {
@@ -223,32 +234,65 @@ function normalizedTag(value: string): string {
 }
 
 function tagNamesBeforeMarker(text: string, availableTags: readonly string[] = []): string[] {
-  const marker = text.match(/태그/);
   const vocabulary = [...new Set(availableTags.map(normalizedTag).filter(Boolean))]
     .sort((left, right) => right.length - left.length);
-  if (!marker || marker.index === undefined) {
-    if (vocabulary.length === 0) return [];
-    return vocabulary.filter((tag) => new RegExp(`(?:^|[\\s'‘’“”\",，])${tag.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}(?=인\\s|속성|을\\s*가진|를\\s*가진|이\\s*있는|가\\s*있는)`, "i").test(text)).slice(0, 3);
+  const marker = /태그|속성|붙은|달려|가진|인(?:\s|$)/.exec(text);
+  const markerIndex = marker?.index ?? text.length;
+  const prefix = text.slice(0, markerIndex);
+  const quoted = [...text.matchAll(/['‘’“”"]([^'‘’“”"]+)['‘’“”"]/g)]
+    .filter((match) => (match.index ?? text.length) < markerIndex)
+    .map((match) => normalizedTag(match[1]!))
+    .filter(Boolean);
+  const exactQuoted = quoted.filter((candidate) =>
+    vocabulary.length === 0 || vocabulary.some((tag) => tag === candidate),
+  );
+  const compact = (value: string) => normalizedTag(value).replace(/\s+/g, "");
+  const compactText = compact(text);
+  const vocabularyMatches = vocabulary.filter((tag) => {
+    const candidate = compact(tag);
+    const index = compactText.indexOf(candidate);
+    if (index < 0) return false;
+    // Vocabulary matching is exact after whitespace normalization. The
+    // surrounding grammar is checked separately, so a short tag never
+    // matches a longer tag by substring accident.
+    const after = compactText.slice(index + candidate.length);
+    const longerVocabularyMatch = vocabulary.some((other) =>
+      other !== tag && compact(other).length > candidate.length &&
+      compactText.slice(index).startsWith(compact(other)),
+    );
+    const followedByTagGrammar = /^(?:태그|속성|인|붙은|달려|가진|있는|아닌|면서|가|를|은|는|들|\/|또는|및|와|과)/u.test(after);
+    return !longerVocabularyMatch && followedByTagGrammar;
+  });
+  const explicit = exactQuoted.length
+    ? exactQuoted
+    : vocabularyMatches.sort((left, right) =>
+      compactText.indexOf(compact(left)) - compactText.indexOf(compact(right)),
+    );
+  if (!explicit.length && vocabulary.length === 0 && /(?:태그|속성|붙은|달려)/.test(text)) {
+    const unquoted = prefix.match(/([가-힣A-Za-z0-9]+)\s*$/)?.[1];
+    if (unquoted) return [normalizedTag(unquoted)];
   }
-  const prefix = text.slice(0, marker.index)
-    .replace(/(?:모든|전부|아군|내|상대|적|선수|카드|가진|있는|필드|손패|덱|의|을|를|이|가)/g, " ")
-    .trim();
-  const quoted = [...prefix.matchAll(/['‘’“”"]([^'‘’“”"]+)['‘’“”"]/g)].map((match) => match[1]!.trim());
-  const source = quoted.length ? quoted.join(",") : prefix;
-  const parsed = source
-    .split(/\s*(?:,|，|및|또는|와|과)\s*|\s+/)
-    .map(normalizedTag)
-    .filter(Boolean)
-    .slice(-3);
-  if (!vocabulary.length) return parsed;
-  return vocabulary.filter((tag) => parsed.some((candidate) => candidate === tag || candidate.includes(tag))).slice(0, 3);
+  return [...new Set(explicit)].slice(0, 3);
+}
+
+function hasTagPredicateLanguage(text: string, availableTags: readonly string[] = []): boolean {
+  const compactText = text.replace(/\s+/g, "");
+  const vocabularyPredicate = availableTags.some((tag) => {
+    const compactTag = normalizedTag(tag).replace(/\s+/g, "");
+    const index = compactText.indexOf(compactTag);
+    return index >= 0 && /^(?:인|있는|들|가진)/u.test(compactText.slice(index + compactTag.length));
+  });
+  return /(?:태그|속성|붙은|달려)/.test(text) ||
+    /['‘’“”"][^'‘’“”"]+['‘’“”"]\s*(?:인|있는)/.test(text) ||
+    vocabularyPredicate;
 }
 
 function tagFilterFor(text: string, availableTags: readonly string[] = []): Target["filter"] | undefined {
+  if (!hasTagPredicateLanguage(text, availableTags)) return undefined;
   const tags = tagNamesBeforeMarker(text, availableTags);
   if (!tags.length) return undefined;
-  if (/(?:태그\s*(?:가|를|은|는)?\s*(?:없는|없음|제외|아닌|포함하지\s*않)|(?:태그|속성)[^.!?]{0,12}(?:없는|아닌|제외))/.test(text)) return { tagsNone: tags };
-  if (/(?:모두|둘\s*다|전부)\s*(?:가진|포함)|(?:및|와|과)\s*[^.!?]{0,20}(?:태그|속성).*(?:가진|포함)/.test(text)) return { tagsAll: tags };
+  if (/(?:태그|속성)\s*(?:가|를|은|는)?\s*(?:없는|없음|제외|아닌|포함하지\s*않)|(?:태그|속성|붙은|달려|가진|있는)[^.!?]{0,18}(?:없는|아닌|제외)/.test(text)) return { tagsNone: tags };
+  if (/(?:모두|둘\s*다|전부)\s*(?:가진|포함)|(?:및|와|과)\s*[^.!?]{0,24}(?:태그|속성|붙은|달려|가진|있는)|면서/.test(text)) return { tagsAll: tags };
   return { tagsAny: tags };
 }
 
@@ -310,7 +354,7 @@ function baseTargetFor(text: string, randomPool = false, availableTags: readonly
   }
   const activeCardScope = ACTIVE_CARD_SCOPE_PATTERN.test(text);
   const deck = /덱/.test(text), enemy = /(적|상대)\s*선수/.test(text);
-  const random = /(무작위|랜덤)/.test(text), all = /(모든|전부)/.test(text);
+  const random = /(무작위|랜덤)/.test(text), all = /(모든|전부|모두)/.test(text);
   const cardType = /선수/.test(text)
     ? "WRESTLER" as const
     : /기술/.test(text)
@@ -337,6 +381,27 @@ function baseTargetFor(text: string, randomPool = false, availableTags: readonly
   }
   if (/(자신|이\s*카드)/.test(text)) return { zone: "BOARD", owner: "SELF", selection: "SELF", count: 1 };
   if (activeCardScope) {
+    if (randomTarget) {
+      return {
+        zones: [...DEFAULT_CARD_TARGET_SCOPE],
+        owner: enemy ? "ENEMY" : "SELF",
+        ...(cardType ? { cardType } : {}),
+        ...(filter ? { filter } : {}),
+        selection: "RANDOM",
+        count: targetCountFrom(text),
+        randomScope,
+      };
+    }
+    if (/(?:선택|고르)/.test(text)) {
+      return {
+        zones: [...DEFAULT_CARD_TARGET_SCOPE],
+        owner: enemy ? "ENEMY" : "SELF",
+        ...(cardType ? { cardType } : {}),
+        ...(filter ? { filter } : {}),
+        selection: "PLAYER_CHOICE",
+        count: targetCountFrom(text),
+      };
+    }
     return {
       zones: [...DEFAULT_CARD_TARGET_SCOPE],
       owner: enemy ? "ENEMY" : "SELF",
@@ -687,7 +752,62 @@ function expandedMechanicAnalysis(
       : /(?:처음으로\s*)?공격한/.test(text) ? "FIRST_ATTACKED"
       : /^턴\s*시작/.test(text) ? "TURN_START"
         : /^(?:퇴장|리타이어)|^이\s*카드가\s*(?:퇴장|리타이어)/.test(text) ? "SELF_RETIRE"
-          : options.defaultTrigger ?? fallback;
+          : /나오면|나오거나|나올\s*때/.test(text) ? "ENTER_FIELD"
+            : options.defaultTrigger ?? fallback;
+  const tagScopeBuff = (): Analysis | null => {
+    const tagFilter = tagFilterFor(text, options.availableTags);
+    const hasTagLanguage = hasTagPredicateLanguage(text, options.availableTags) || Boolean(tagFilter);
+    const hasAnywhere = ACTIVE_CARD_SCOPE_PATTERN.test(text) || /어디\s*있든|손패\s*덱\s*필드/.test(text);
+    const pair = text.match(/([+-]?\d+)\s*\/\s*([+-]?\d+)/);
+    const compactPair = text.match(/공체\s*([+-]?\d+)/);
+    const namedPair = text.match(/공격(?:력)?[^.!?]*?([+-]?\d+)[^.!?]*체력[^.!?]*?([+-]?\d+)/);
+    const singleHealth = text.match(/체력[^.!?]*?([+-]?\d+)/);
+    const singleAttack = text.match(/공격(?:력)?[^.!?]*?([+-]?\d+)/);
+    const amount = compactPair ? Number(compactPair[1]) : pair ? Number(pair[1]) : namedPair ? Number(namedPair[1]) : singleHealth ? 0 : singleAttack ? Number(singleAttack[1]) : undefined;
+    const health = compactPair ? Number(compactPair[1]) : pair ? Number(pair[2]) : namedPair ? Number(namedPair[2]) : singleHealth ? Number(singleHealth[1]) : singleAttack ? 0 : undefined;
+    const parsedTarget = targetFor(text, false, options.availableTags);
+    if (/(?:카드|선수)들이?.*(?:등장|소환|될)\s*때/.test(text)) return null;
+    if (!tagFilter || !hasTagLanguage ||
+        amount === undefined || health === undefined ||
+        !/(?:\+?\d+\s*\/\s*\+?\d+|공체|공격(?:력)?|체력)/.test(text) ||
+        (!/등장|출현|나오면|나오거나|나올\s*때|ENTER_FIELD/i.test(text) && !options.defaultTrigger)) return null;
+    const unsupportedResidual = /(?:파괴|생성|이동|피해|데미지|기절|도발|뽑|드로우|DRAW)/i.test(text) ||
+      (/(?:소환|SUMMON)/i.test(text) && !/(?:소환|SUMMON).*?(?:될|할)\s*때/i.test(text));
+    if (tagFilter && unsupportedResidual) {
+      return {
+        status: "failure",
+        outcome: "analysis_failure",
+        effects: [],
+        keywords: [],
+        unsupportedSegments: [text],
+        summaries: [],
+        reason: "태그 버프 문장에 지원되지 않는 추가 효과가 포함되어 있습니다.",
+      };
+    }
+    const owner = /(?:상대|적)/.test(text) ? "ENEMY" as const : "SELF" as const;
+    const cardType = /선수/.test(text) ? "WRESTLER" as const : undefined;
+    const mergedFilter = { ...(parsedTarget.filter ?? {}), ...tagFilter };
+    const target = {
+      ...parsedTarget,
+      owner,
+      ...(cardType ? { cardType } : {}),
+      filter: mergedFilter,
+      ...(hasAnywhere && !/(?:선택|고르|무작위|랜덤)/.test(text) ? { selection: "ALL" as const, count: 20 } : {}),
+    };
+    return {
+      status: "success",
+      outcome: "supported",
+      effects: [{
+        trigger: triggerFor(),
+        action: "BUFF",
+        target,
+        values: { attack: amount, health },
+      }],
+      keywords: [],
+      unsupportedSegments: [],
+      summaries: ["태그 필터 · BUFF"],
+    };
+  };
   const self = { zone: "BOARD" as const, owner: "SELF" as const, selection: "SELF" as const, count: 1 };
   const wrestlerSelf = { ...self, cardType: "WRESTLER" as const };
   const referenceErrors: CardReferenceError[] = [];
@@ -712,6 +832,8 @@ function expandedMechanicAnalysis(
         summaries: effects.map((item) => `${item.trigger} · ${item.action}`),
         ...(referencedCards.size ? { referencedCards: [...referencedCards.values()] } : {}),
       };
+  const genericTagBuff = tagScopeBuff();
+  if (genericTagBuff) return genericTagBuff;
   const makeRef = (name: string) => {
     const normalizedName = name.trim();
     if (!normalizedName) return { name: normalizedName };
@@ -825,7 +947,9 @@ function expandedMechanicAnalysis(
     }]);
   }
 
-  if (/이\s*카드가\s*필드에\s*있는\s*동안.*솔져.*태그.*카드들이.*(?:등장.*소환|소환.*등장).*(?:될\s*때|할\s*때|때).*\+1\/\+1/.test(text)) {
+  if (/이\s*카드가\s*필드에\s*있는\s*동안.*태그.*카드들이.*(?:등장.*소환|소환.*등장).*(?:될\s*때|할\s*때|때).*\+1\/\+1/.test(text)) {
+    const tags = tagNamesBeforeMarker(text, options.availableTags);
+    if (!tags.length) return null;
     return result([{
       trigger: "CARD_ENTERED",
       action: "BUFF",
@@ -833,7 +957,7 @@ function expandedMechanicAnalysis(
         zone: "BOARD",
         owner: "SELF",
         cardType: "WRESTLER",
-        filter: { tagsAny: ["솔져"] },
+        filter: { tagsAny: tags },
         selection: "SAME_TARGET",
         count: 1,
       },
@@ -964,13 +1088,14 @@ function expandedMechanicAnalysis(
       /(?:체력|HP).*(?:\+?1|1\s*(?:증가|부여|올라))/.test(text) &&
       !/(?:공격력|공격).*(?:\+?1|1\s*(?:증가|부여|올라))/.test(text)) {
     const tags = tagNamesBeforeMarker(text, options.availableTags);
+    if (!tags.length) return null;
     return result([{
       trigger: "ENTER_FIELD",
       action: "BUFF",
       target: {
         zones: [...DEFAULT_CARD_TARGET_SCOPE],
         owner: "SELF",
-        filter: { tagsAny: tags.length ? tags : ["실험체"] },
+        filter: { tagsAny: tags },
         selection: "ALL",
         count: 20,
       },
@@ -1087,12 +1212,13 @@ function expandedMechanicAnalysis(
     ]);
   }
 
-  if (/(?:언데드|실험체).*태그.*(?:어디에\s*(?:있든|있는)).*(?:최대\s*)?체력\s*\+?\s*2/.test(text)) {
+  if (/태그.*(?:어디에\s*(?:있든|있는)).*(?:최대\s*)?체력\s*\+?\s*2/.test(text)) {
     const tags = tagNamesBeforeMarker(text, options.availableTags);
+    if (!tags.length) return null;
     return result([{
       trigger: triggerFor(),
       action: "MODIFY_MAX_HEALTH",
-      target: { zones: ["HAND", "DECK", "BOARD"], owner: "SELF", filter: { tagsAny: tags.length ? tags : ["언데드"] }, selection: "ALL", count: 20 },
+      target: { zones: [...DEFAULT_CARD_TARGET_SCOPE], owner: "SELF", filter: { tagsAny: tags }, selection: "ALL", count: 20 },
       values: { amount: 2 },
     }]);
   }
@@ -1107,10 +1233,11 @@ function expandedMechanicAnalysis(
 
   if (/태그가?\s*(?:달려|있는|붙어|가진)|속성\s*태그/.test(text) && /어디에\s*(?:있든|있는)/.test(text) && /[+]1\s*\/\s*[+]1/.test(text)) {
     const tags = tagNamesBeforeMarker(text, options.availableTags);
+    if (!tags.length) return null;
     return result([{
       trigger: triggerFor(),
       action: "BUFF",
-      target: { zones: ["HAND", "DECK", "BOARD"], owner: "SELF", filter: { tagsAny: tags.length ? tags : ["실험체"] }, selection: "ALL", count: 20 },
+      target: { zones: [...DEFAULT_CARD_TARGET_SCOPE], owner: "SELF", filter: { tagsAny: tags }, selection: "ALL", count: 20 },
       values: { attack: 1, health: 1 },
     }]);
   }
@@ -1412,11 +1539,13 @@ function expandedMechanicAnalysis(
     }
     return result(effects);
   }
-  if (/이\s*카드가\s*필드에\s*있는\s*동안.*솔져.*태그.*카드들이\s*소환될\s*때.*\+1\/\+1/.test(text)) {
+  if (/이\s*카드가\s*필드에\s*있는\s*동안.*태그.*카드들이\s*소환될\s*때.*\+1\/\+1/.test(text)) {
+    const tags = tagNamesBeforeMarker(text, options.availableTags);
+    if (!tags.length) return null;
     return result([{
       trigger: "CARD_SUMMONED",
       action: "BUFF",
-      target: { zone: "BOARD", owner: "SELF", cardType: "WRESTLER", filter: { tagsAny: ["솔져"] }, selection: "SAME_TARGET", count: 1 },
+      target: { zone: "BOARD", owner: "SELF", cardType: "WRESTLER", filter: { tagsAny: tags }, selection: "SAME_TARGET", count: 1 },
       values: { attack: 1, health: 1 },
     }]);
   }
@@ -1459,6 +1588,17 @@ export function analyzeEffectText(input: string, options: EffectAnalysisOptions 
   if (!text) return { status: "failure", outcome: "analysis_failure", effects: [], keywords: [], unsupportedSegments: ["효과 문장"], summaries: ["효과 문장을 입력해 주세요."] };
   const expanded = expandedMechanicAnalysis(text, options);
   if (expanded) return expanded;
+  if (hasTagPredicateLanguage(text, options.availableTags) && !tagFilterFor(text, options.availableTags)) {
+    return {
+      status: "failure",
+      outcome: "analysis_failure",
+      effects: [],
+      keywords: [],
+      unsupportedSegments: [text],
+      summaries: [],
+      reason: "태그 조건을 서버 태그 어휘와 정확히 일치시킬 수 없습니다.",
+    };
+  }
   const triggerMarkers = [...text.matchAll(/(?:^|\s)(?=(?:필드에\s*)?(?:등장|출현|퇴장|액티브|준비|콤보|주문|핀폴|턴\s*시작|턴\s*종료|(?:이\s*카드가|자신이)\s*공격할\s*때마다|ATTACK_SURVIVED|MAGIC|TURBO|SELF_ATTACK|SUPPORT|SHOCK|BULLSEYE)\s*[:：])/gi)]
     .map((match) => (match.index ?? 0) + (match[0].startsWith(" ") ? 1 : 0));
   if (triggerMarkers.length > 1) {

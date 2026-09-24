@@ -114,6 +114,17 @@ export function sanitizeGameStateForViewer(state: GameState, viewerId: string): 
   return {
     ...publicState,
     players,
+    pendingCardEffects: (state.pendingCardEffects ?? []).filter(
+      (pending) => !hiddenCardIds.has(pending.sourceInstanceId),
+    ),
+    pendingDelayedEffects: (state.pendingDelayedEffects ?? []).filter(
+      (pending) =>
+        !hiddenCardIds.has(pending.sourceInstanceId) &&
+        !hiddenCardIds.has(pending.sourceCard?.instanceId ?? ""),
+    ),
+    pendingRuleListeners: (state.pendingRuleListeners ?? []).filter(
+      (listener) => !hiddenCardIds.has(listener.sourceInstanceId),
+    ),
     events: state.events.map((event) =>
       sanitizeEvent(event, hiddenCardIds, isLegacyHiddenEvent(event, viewerId))),
     ...(targetingState ? { targetingState } : { targetingState: undefined }),
