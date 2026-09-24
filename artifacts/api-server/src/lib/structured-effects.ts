@@ -66,7 +66,9 @@ export type EffectAnalysisOptions = {
 const aliases = {
   trigger: [
     ["ENTER_FIELD", /^(?:필드에\s*)?(?:등장|출현|MAGIC)(?:할\s*때|하면)?\s*[:：]?/i],
-    ["LEAVE_FIELD", /^(?:필드에서\s*)?퇴장(?:할\s*때|하면)?\s*[:：]?/],
+    ["SELF_RETIRE", /^(?:필드에서\s*)?(?:퇴장|리타이어)(?:할\s*때|하면)?\s*[:：]?/],
+    ["SELF_RETIRE", /^이\s*카드가\s*(?:퇴장|리타이어)(?:할\s*때|하면)?\s*[:：]?/],
+    ["LEAVE_FIELD", /^(?:필드를?\s*(?:떠날|벗어날)\s*때|필드에서\s*(?:떠날|벗어날)\s*때)\s*[:：]?/],
     ["ACTIVE", /^액티브(?:\s*사용)?(?:하면)?\s*[:：]?/],
     ["CARD_DRAWN", /^(?:준비|TURBO)\s*[:：]?/i],
     ["SELF_ATTACK", /^(?:(?:이\s*카드가|자신이)\s*공격할\s*때마다|SELF_ATTACK)\s*[:：]?/i],
@@ -78,7 +80,7 @@ const aliases = {
   ] as const,
   keyword: [
     ["RUSH", /(?:러쉬|RUSH|CHARGE)/i], ["SURPRISE", /(?:기습|HASTE)/i], ["TAUNT", /(?:도발|TAUNT)/i],
-    ["DODGE", /(?:회피(?:\(\d+\))?|DODGE)/i], ["MULTI_STRIKE", /연타/],
+  ["DODGE", /(?:회피(?:\(\d+\))?|DODGE)/i], ["MULTI_STRIKE", /연타/],
   ] as const,
 } as const;
 
@@ -107,7 +109,10 @@ function isActiveAction(action: Action) {
 }
 
 function normalize(input: string) {
-  return input.normalize("NFC").replace(/[：:]/g, ":").replace(/[.。!！?？]/g, " ").replace(/\s+/g, " ").trim()
+  const normalized = input.normalize("NFC").replace(/[：:]/g, ":").replace(/[.。!！?？]/g, " ").replace(/\s+/g, " ").trim();
+  // Admin exports can include the source card name on the line before a
+  // colon-prefixed ability. It is presentation metadata, not effect text.
+  return normalized.replace(/^.*?\s+(?=(?:퇴장|리타이어)\s*:)/, "")
     .replace(/(만듭니다|시킵니다|합니다|습니다|한다|해요|하세요|하기|얻기|줍니다|준다)$/g, "").trim();
 }
 function numberFrom(text: string, fallback = 1) {
@@ -132,7 +137,7 @@ function targetFilterFor(text: string, availableTags: readonly string[] = []): T
   const tagFilter = tagFilterFor(text, availableTags);
   const filter = {
     ...(generated ? { isGenerated: true } : {}),
-    ...(/바닐라|효과가\s*없는|능력이\s*없는/.test(text) ? { isVanilla: true } : {}),
+    ...(/바닐라|무능력|효과가\s*없는|능력이\s*없는/.test(text) ? { isVanilla: true } : {}),
     ...(Number.isInteger(minCost) ? { minCost } : {}),
     ...(Number.isInteger(maxCost) ? { maxCost } : {}),
     ...(token ? { isToken: true } : {}),
@@ -516,6 +521,15 @@ function effect(
   }
   if (action === "GENERATE") values.destination = /덱/.test(body) ? "DECK" : "HAND";
   if ((action === "SUMMON" || action === "GENERATE") && cardReference.card) values.count = targetCountFrom(body);
+  if (action === "SUMMON" || action === "GENERATE") {
+    const statPair = body.match(/(\d+)\s*\/\s*(\d+)/);
+    if (statPair) {
+      values.generatedModifiers = {
+        attack: Number(statPair[1]),
+        health: Number(statPair[2]),
+      };
+    }
+  }
   const statMultiplier = schema.statMultiplier ? body.match(STAT_MULTIPLIER_PATTERN) : null;
    const statPairIncrement = schema.stats ? body.match(STAT_PAIR_INCREMENT_PATTERN) : null;
    const singleStatIncrement = schema.stats ? body.match(SINGLE_STAT_INCREMENT_PATTERN) : null;
@@ -577,7 +591,7 @@ function effect(
              : 0;
   }
   if (schema.keyword) { const keyword = keywordFor(body); if (!keyword) return null; values.keyword = keyword; }
-  const explicitTarget = /(선택한\s*(?:선수|대상)|자신|이\s*카드(?!는)|모든\s*캐릭터|모든\s*(?:생성된\s*)?선수|(?:적|상대)\s*(?:선수|챔피언|플레이어|캐릭터)|(?:아군|내)\s*캐릭터|손(?:패)?|생성된|바닐라|효과가\s*없는|능력이\s*없는|어디에\s*(?:있든|있는)|모든\s*위치의|손패\s*[,，]\s*덱\s*[,，]\s*(?:필드|보드))/.test(targetBody);
+  const explicitTarget = /(선택한\s*(?:선수|대상)|자신|이\s*카드(?!는)|모든\s*캐릭터|모든\s*(?:생성된\s*)?선수|(?:적|상대)\s*(?:선수|챔피언|플레이어|캐릭터)|(?:아군|내)\s*캐릭터|손(?:패)?|생성된|바닐라|무능력|효과가\s*없는|능력이\s*없는|어디에\s*(?:있든|있는)|모든\s*위치의|손패\s*[,，]\s*덱\s*[,，]\s*(?:필드|보드))/.test(targetBody);
   const sameSummonedTarget = action === "ADD_KEYWORD" && /소환한\s*['‘’“”]?[^'‘’“”\s]+['‘’“”]?\s*에게/.test(body);
   const randomPoolAction = action === "SUMMON" || action === "GENERATE";
   const resolvedTarget = sameSummonedTarget
@@ -602,7 +616,7 @@ function expandedMechanicAnalysis(
     /(?:이\s*카드가|자신이)\s*공격할\s*때마다|공격할\s*때마다/.test(text) ? "SELF_ATTACK"
       : /(?:처음으로\s*)?공격한/.test(text) ? "FIRST_ATTACKED"
       : /^턴\s*시작/.test(text) ? "TURN_START"
-        : /^퇴장/.test(text) ? "LEAVE_FIELD"
+        : /^(?:퇴장|리타이어)|^이\s*카드가\s*(?:퇴장|리타이어)/.test(text) ? "SELF_RETIRE"
           : options.defaultTrigger ?? fallback;
   const self = { zone: "BOARD" as const, owner: "SELF" as const, selection: "SELF" as const, count: 1 };
   const wrestlerSelf = { ...self, cardType: "WRESTLER" as const };
@@ -618,6 +632,95 @@ function expandedMechanicAnalysis(
     const found = options.cardCatalog?.find((candidate) => candidate.name === name);
     return found ? { id: found.id } : { name };
   };
+
+  const currentStatSelf = { zones: ["HAND", "BOARD"] as Array<"HAND" | "BOARD">, owner: "SELF" as const, selection: "SELF" as const, count: 1 };
+
+  if (/(?:체력|HP).*(?:증가|늘어나|올라|상승)/.test(text) && /추가로\s*(?:[+]?1|1\s*(?:증가|상승|늘어))/.test(text)) {
+    return result([{
+      trigger: "STAT_CHANGED",
+      action: "BUFF",
+      target: currentStatSelf,
+      values: { attack: 0, health: 1 },
+    }]);
+  }
+
+  if (/(?:실제\s*)?(?:피해|데미지).*(?:입으면|받으면|받을\s*때)/.test(text) && /(?:소환|생성)/.test(text)) {
+    const ref = makeRef(text.match(/['‘’“”]([^'‘’“”]+)['‘’“”]/)?.[1]?.trim() ?? "");
+    const stats = text.match(/(\d+)\s*\/\s*(\d+)/);
+    if (ref.name || ref.id) {
+      return result([{
+        trigger: "SELF_DAMAGED",
+        action: "SUMMON",
+        values: {
+          definitionRef: ref,
+          count: 1,
+          generatedModifiers: stats ? { attack: Number(stats[1]), health: Number(stats[2]) } : undefined,
+        },
+      }]);
+    }
+  }
+
+  if (/(?:리타이어|퇴장).*(?:선택한\s*)?아군.*(?:흡수|얻)/.test(text) && /체력.*공격력|공격력.*체력/.test(text)) {
+    return result([
+      { trigger: triggerFor(), action: "RETIRE", target: { zone: "BOARD", owner: "SELF", cardType: "WRESTLER", selection: "PLAYER_CHOICE", count: 1 }, values: { captureStats: true } as never },
+      { trigger: triggerFor(), action: "BUFF", target: self, values: { attack: 0, health: 0, reference: "LAST_TARGET", referenceStat: "CURRENT_ATTACK" } },
+      { trigger: triggerFor(), action: "BUFF", target: self, values: { attack: 0, health: 0, reference: "LAST_TARGET", referenceStat: "CURRENT_HEALTH" } },
+    ]);
+  }
+
+  if (/선택한\s*아군.*(?:리타이어|퇴장).*(?:체력.*공격력|공격력.*체력).*(?:흡수|얻)/.test(text)) {
+    return result([
+      { trigger: triggerFor(), action: "RETIRE", target: { zone: "BOARD", owner: "SELF", cardType: "WRESTLER", selection: "PLAYER_CHOICE", count: 1 }, values: { captureStats: true } as never },
+      { trigger: triggerFor(), action: "BUFF", target: self, values: { attack: 0, health: 0, reference: "LAST_TARGET", referenceStat: "CURRENT_ATTACK" } },
+      { trigger: triggerFor(), action: "BUFF", target: self, values: { attack: 0, health: 0, reference: "LAST_TARGET", referenceStat: "CURRENT_HEALTH" } },
+    ]);
+  }
+
+  if (/(?:언데드|실험체).*태그.*(?:어디에\s*(?:있든|있는)).*(?:최대\s*)?체력\s*\+?\s*2/.test(text)) {
+    const tags = tagNamesBeforeMarker(text, options.availableTags);
+    return result([{
+      trigger: triggerFor(),
+      action: "MODIFY_MAX_HEALTH",
+      target: { zones: ["HAND", "DECK", "BOARD"], owner: "SELF", filter: { tagsAny: tags.length ? tags : ["언데드"] }, selection: "ALL", count: 20 },
+      values: { amount: 2 },
+    }]);
+  }
+
+  if (/(?:무능력|효과가\s*없는|능력이\s*없는).*?(?:무작위|랜덤).*?(?:텍스트|능력|효과)/.test(text)) {
+    return result([{
+      trigger: triggerFor(),
+      action: "GRANT_RANDOM_CARD_TEXT",
+      target: { zone: "BOARD", owner: "SELF", cardType: "WRESTLER", filter: { isVanilla: true }, selection: "PLAYER_CHOICE", count: 1 },
+    }]);
+  }
+
+  if (/태그가?\s*(?:달려|있는|붙어|가진)|속성\s*태그/.test(text) && /어디에\s*(?:있든|있는)/.test(text) && /[+]1\s*\/\s*[+]1/.test(text)) {
+    const tags = tagNamesBeforeMarker(text, options.availableTags);
+    return result([{
+      trigger: triggerFor(),
+      action: "BUFF",
+      target: { zones: ["HAND", "DECK", "BOARD"], owner: "SELF", filter: { tagsAny: tags.length ? tags : ["실험체"] }, selection: "ALL", count: 20 },
+      values: { attack: 1, health: 1 },
+    }]);
+  }
+
+  if (/(?:필드에\s*)?['‘’“”]([^'‘’“”]+)['‘’“”].*(?:수치의\s*합|공격력.*체력).*(?:높|큰)/.test(text) && /자신의\s*(?:체력과\s*공격력|공격력과\s*체력)/.test(text)) {
+    const name = text.match(/['‘’“”]([^'‘’“”]+)['‘’“”]/)?.[1]?.trim() ?? "";
+    return result([{
+      trigger: triggerFor(),
+      action: "COPY_BEST_STATS",
+      target: { zone: "BOARD", owner: "SELF", cardType: "WRESTLER", filter: { definitionRef: makeRef(name) }, selection: "ALL", count: 20 },
+    }]);
+  }
+
+  if (/선택한\s*(?:선수|대상).*?(?:피해|데미지).*(?:변신|바뀌)/.test(text) && /(?:이\s*효과|이\s*피해).*(?:리타이어|퇴장)/.test(text)) {
+    const name = text.match(/['‘’“”]([^'‘’“”]+)['‘’“”]\s*(?:판도라)?\s*(?:로)?\s*변신/)?.[1]?.trim()
+      ?? text.match(/['‘’“”]([^'‘’“”]+)['‘’“”]/)?.[1]?.trim() ?? "";
+    return result([
+      { trigger: triggerFor(), action: "DAMAGE", target: { zone: "BOARD", owner: "ENEMY", cardType: "WRESTLER", selection: "PLAYER_CHOICE", count: 1 }, values: { amount: numberFrom(text) } },
+      { trigger: triggerFor(), action: "TRANSFORM_SOURCE", values: { definitionRef: makeRef(name) } },
+    ]);
+  }
 
   if (/공격력이\s*(?:증가|올라|상승).*(?:그와|같은)\s*수치.*체력/.test(text)) {
     return result([{
@@ -990,6 +1093,9 @@ export function analyzeEffectText(input: string, options: EffectAnalysisOptions 
         .replace(/(?:손패|덱|필드|보드)(?:에|의)?\s*있는/g, "")
         .replace(/있는/g, "")
         .replace(/(?:무작위|랜덤)\s*(?:한\s*장|한장의|한장|하나)/g, "")
+        .replace(/\d+\s*\/\s*\d+\s*(?:인|인인)?/g, "")
+        .replace(/더\s*받(?:습니다|는다|음)?/g, "")
+        .replace(/추가로?\s*더/g, "")
         .replace(/\s*중(?=\s|$)/g, " ")
          .replace(/(?:시킨다|증가시킨다|올린다|강화한다)/g, "")
          .replace(/중/g, "");
@@ -1098,7 +1204,7 @@ export function isStructuredEffects(value: unknown): value is { effects: Structu
          target.filter === null ||
           Object.keys(target.filter).some((key) => ![
             "isGenerated", "minCost", "maxCost", "isToken", "isChampionToken", "excludeSource", "isVanilla",
-            "keyword", "cost", "attack", "health", "tagsAny", "tagsAll", "tagsNone",
+            "keyword", "cost", "attack", "health", "tagsAny", "tagsAll", "tagsNone", "definitionRef",
           ].includes(key)) ||
          target.filter.isGenerated !== undefined && typeof target.filter.isGenerated !== "boolean" ||
           target.filter.minCost !== undefined && (!Number.isInteger(target.filter.minCost) || target.filter.minCost < 0 || target.filter.minCost > 999) ||
@@ -1119,7 +1225,12 @@ export function isStructuredEffects(value: unknown): value is { effects: Structu
            }) ||
           target.filter.tagsAny !== undefined && !validTagFilterValues(target.filter.tagsAny) ||
           target.filter.tagsAll !== undefined && !validTagFilterValues(target.filter.tagsAll) ||
-          target.filter.tagsNone !== undefined && !validTagFilterValues(target.filter.tagsNone)
+          target.filter.tagsNone !== undefined && !validTagFilterValues(target.filter.tagsNone) ||
+          target.filter.definitionRef !== undefined && (
+            typeof target.filter.definitionRef !== "object" || target.filter.definitionRef === null ||
+            Object.keys(target.filter.definitionRef).some((key) => !["id", "name"].includes(key)) ||
+            (!target.filter.definitionRef.id && !target.filter.definitionRef.name)
+          )
        )) return false;
       if (target.randomScope !== undefined && (!RANDOM_SCOPES.includes(target.randomScope) || !["RANDOM", "ADJACENT_EMPTY_SLOTS"].includes(target.selection))) return false;
      } else if (target !== undefined) {
@@ -1134,11 +1245,16 @@ export function isStructuredEffects(value: unknown): value is { effects: Structu
            typeof target.filter !== "object" ||
            Object.keys(target.filter).some((key) => ![
               "isGenerated", "minCost", "maxCost", "isToken", "isChampionToken", "excludeSource", "isVanilla",
-             "keyword", "cost", "attack", "health", "tagsAny", "tagsAll", "tagsNone",
+             "keyword", "cost", "attack", "health", "tagsAny", "tagsAll", "tagsNone", "definitionRef",
            ].includes(key)) ||
            target.filter.tagsAny !== undefined && !validTagFilterValues(target.filter.tagsAny) ||
            target.filter.tagsAll !== undefined && !validTagFilterValues(target.filter.tagsAll) ||
-           target.filter.tagsNone !== undefined && !validTagFilterValues(target.filter.tagsNone)
+           target.filter.tagsNone !== undefined && !validTagFilterValues(target.filter.tagsNone) ||
+           target.filter.definitionRef !== undefined && (
+             typeof target.filter.definitionRef !== "object" || target.filter.definitionRef === null ||
+             Object.keys(target.filter.definitionRef).some((key) => !["id", "name"].includes(key)) ||
+             (!target.filter.definitionRef.id && !target.filter.definitionRef.name)
+           )
          )) return false;
      }
     if (schema.amount && !(typeof values?.amount === "number" && Number.isFinite(values.amount) &&

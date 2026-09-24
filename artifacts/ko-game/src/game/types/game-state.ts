@@ -105,6 +105,8 @@ export interface GameState {
        attack: number;
        health: number;
      };
+    /** Prevents one multi-step resolution from retriggering a STAT_CHANGED listener per stat. */
+    statChangedCardIds?: string[];
     validTargetIds: string[];
     minTargets: number;
     maxTargets: number;
@@ -134,4 +136,6 @@ export interface GameState {
       script: EffectScript;
     };
   };
+  /** Resolution-local snapshot used by chained retirement/stat effects. */
+  lastAggregatedStats?: { attack: number; health: number };
 }

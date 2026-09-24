@@ -7,8 +7,8 @@ import type { CardDefinition } from '../cards/types';
 export type CardKeyword = Keyword;
 export type RuntimeAction = Action | 'REMOVE_FROM_GAME' | 'CAPTURE' | 'RELEASE_CAPTURED';
 export type RuntimeTrigger =
-   | 'ENTER_FIELD' | 'LEAVE_FIELD' | 'POSITION' | 'ACTIVE'
-   | 'CARD_DRAWN' | 'CARD_RETIRED' | 'CARD_SUMMONED' | 'FIRST_ATTACKED' | 'SELF_ATTACK' | 'OTHER_ALLY_ATTACK' | 'ATTACK_SURVIVED' | 'STAT_CHANGED' | 'TECHNIQUE_CAST' | 'EXACT_ZERO_DAMAGE'
+   | 'ENTER_FIELD' | 'LEAVE_FIELD' | 'SELF_RETIRE' | 'POSITION' | 'ACTIVE'
+   | 'CARD_DRAWN' | 'CARD_RETIRED' | 'CARD_SUMMONED' | 'FIRST_ATTACKED' | 'SELF_ATTACK' | 'OTHER_ALLY_ATTACK' | 'ATTACK_SURVIVED' | 'SELF_DAMAGED' | 'STAT_CHANGED' | 'TECHNIQUE_CAST' | 'EXACT_ZERO_DAMAGE'
    | 'TURN_START' | 'TURN_END' | 'BEFORE_DAMAGE' | 'BEFORE_RETIRE';
 
 export type { StructuredTarget, StructuredQueuedEffect, CardDefinitionReference };
@@ -59,6 +59,11 @@ export type CardAbility =
       condition?: AbilityCondition;
     }
   | {
+       trigger: 'SELF_RETIRE';
+       effects: CardEffect[];
+       condition?: AbilityCondition;
+     }
+   | {
       trigger: 'POSITION';
       boardSlots: Array<0 | 1 | 2 | 3>;
       effects: CardEffect[];
@@ -70,7 +75,7 @@ export type CardAbility =
       condition?: AbilityCondition;
     }
    | {
-       trigger: 'CARD_DRAWN' | 'CARD_RETIRED' | 'CARD_SUMMONED' | 'FIRST_ATTACKED' | 'SELF_ATTACK' | 'OTHER_ALLY_ATTACK' | 'ATTACK_SURVIVED' | 'STAT_CHANGED' | 'TECHNIQUE_CAST' | 'EXACT_ZERO_DAMAGE' | 'TURN_START' | 'TURN_END' | 'BEFORE_DAMAGE' | 'BEFORE_RETIRE';
+        trigger: 'CARD_DRAWN' | 'CARD_RETIRED' | 'CARD_SUMMONED' | 'FIRST_ATTACKED' | 'SELF_ATTACK' | 'OTHER_ALLY_ATTACK' | 'ATTACK_SURVIVED' | 'SELF_DAMAGED' | 'STAT_CHANGED' | 'TECHNIQUE_CAST' | 'EXACT_ZERO_DAMAGE' | 'TURN_START' | 'TURN_END' | 'BEFORE_DAMAGE' | 'BEFORE_RETIRE';
       effects: CardEffect[];
       condition?: AbilityCondition;
     }

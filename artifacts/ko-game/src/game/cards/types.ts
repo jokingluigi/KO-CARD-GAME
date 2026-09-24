@@ -168,6 +168,8 @@ export interface CardInstance {
   /** Serializable base copies held by this card's CAPTURE action. */
   capturedCards?: CapturedCard[];
   statHistory?: CardStatHistoryEntry[];
+  /** Snapshot retained only for chained effects that consume the last retirement. */
+  lastRetiredStats?: { attack: number; health: number };
   /** Executable text copied from a published match CardDefinition. */
   grantedText?: {
     donorDefinitionId: string;

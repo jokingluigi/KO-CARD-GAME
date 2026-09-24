@@ -12,6 +12,7 @@ export function resetCardForGraveyard(card: CardInstance): CardInstance {
 
   return {
     ...card,
+    lastRetiredStats: { attack: card.currentAttack, health: card.currentHealth },
     currentCost: card.baseCost ?? card.currentCost,
     temporaryCostUntilTurn: undefined,
     temporaryStatModifiers: [],

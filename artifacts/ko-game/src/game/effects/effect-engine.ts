@@ -75,6 +75,7 @@ export function getValidTargets(
       if (target.filter?.isChampionToken !== undefined && card.isChampionToken !== target.filter.isChampionToken) return false;
       if (target.filter?.excludeSource && card.instanceId === sourceCard.instanceId) return false;
       if (target.filter?.isVanilla && !isVanillaCard(card)) return false;
+      if (target.filter?.definitionRef && !matchesDefinitionRef(state, card, target.filter.definitionRef)) return false;
       if (target.filter?.keyword !== undefined && !getActiveCardKeywords(card).includes(target.filter.keyword)) return false;
       if (target.filter?.cost && !scriptCompare(card.currentCost, target.filter.cost.compare, target.filter.cost.value)) return false;
       if (target.filter?.attack && !scriptCompare(card.currentAttack, target.filter.attack.compare, target.filter.attack.value)) return false;
@@ -117,6 +118,19 @@ function cardsInZones(
     return [];
   });
   return [...new Map(cards.map((card) => [card.instanceId, card])).values()];
+}
+
+function matchesDefinitionRef(
+  state: GameState,
+  card: CardInstance,
+  reference: { id?: string; name?: string },
+): boolean {
+  if (reference.id && card.definitionId !== reference.id) return false;
+  if (reference.name) {
+    const definition = state.cardPool?.find((candidate) => candidate.id === card.definitionId);
+    if (!definition || definition.name !== reference.name) return false;
+  }
+  return Boolean(reference.id || reference.name);
 }
 
 function sortAndTakeTargetCards<T extends CardInstance>(
@@ -645,15 +659,36 @@ function withLastAggregatedStats(
   state: GameState,
   stats: { attack: number; health: number },
 ): GameState {
-  return state.targetingState
-    ? { ...state, targetingState: { ...state.targetingState, lastAggregatedStats: stats } }
-    : state;
+  return {
+    ...state,
+    lastAggregatedStats: stats,
+    ...(state.targetingState
+      ? { targetingState: { ...state.targetingState, lastAggregatedStats: stats } }
+      : {}),
+  };
 }
 
 function clearLastAggregatedStats(state: GameState): GameState {
-  if (!state.targetingState?.lastAggregatedStats) return state;
+  const next = { ...state, lastAggregatedStats: undefined };
+  if (!state.targetingState?.lastAggregatedStats) return next;
   const { lastAggregatedStats: _unused, ...targetingState } = state.targetingState;
-  return { ...state, targetingState };
+  return { ...next, targetingState };
+}
+
+function lastRetiredSnapshot(state: GameState): { attack: number; health: number } | undefined {
+  const event = [...state.events].reverse().find((entry) => entry.type === 'CARD_RETIRED');
+  const cardInstanceId = event?.target?.type === 'CARD' ? event.target.cardInstanceId : undefined;
+  if (cardInstanceId) {
+    const snapshot = state.players
+      .flatMap((player) => player.graveyard)
+      .find((card) => card.instanceId === cardInstanceId)
+      ?.lastRetiredStats;
+    if (snapshot) return snapshot;
+  }
+  return state.players.flatMap((player) => player.graveyard)
+    .map((card) => card.lastRetiredStats)
+    .filter((snapshot): snapshot is { attack: number; health: number } => Boolean(snapshot))
+    .at(-1);
 }
 
 function resolveCardDefinition(
@@ -778,7 +813,9 @@ function resolveStatChangeListeners(
 ): GameState {
   if (sourceContext?.sourceActionType === 'INTERNAL_STAT_LISTENER') return afterState;
   const beforeCards = new Map(statListenerCards(beforeState).map(({ card }) => [card.instanceId, card]));
+  const alreadyTriggered = new Set(beforeState.targetingState?.statChangedCardIds ?? []);
   const changed = statListenerCards(afterState).flatMap(({ ownerId, card }) => {
+    if (alreadyTriggered.has(card.instanceId)) return [];
     const before = beforeCards.get(card.instanceId);
     const attackDelta = before ? card.currentAttack - before.currentAttack : 0;
     const healthDelta = before ? card.currentHealth - before.currentHealth : 0;
@@ -787,7 +824,7 @@ function resolveStatChangeListeners(
       ? [{ ownerId, card, attackDelta, healthDelta: Math.max(healthDelta, maxHealthDelta) }]
       : [];
   });
-  return changed.reduce((next, changedCard) => {
+  const resolved = changed.reduce((next, changedCard) => {
     return statListenerCards(next)
       .filter(({ card }) => card.instanceId === changedCard.card.instanceId)
       .filter(({ card }) => getActiveCardAbilities(card).some((ability) => ability.trigger === 'STAT_CHANGED'))
@@ -823,6 +860,15 @@ function resolveStatChangeListeners(
           : resolved;
       }, next);
   }, afterState);
+  return resolved.targetingState && changed.length
+    ? {
+        ...resolved,
+        targetingState: {
+          ...resolved.targetingState,
+          statChangedCardIds: [...new Set([...(resolved.targetingState.statChangedCardIds ?? []), ...changed.map((entry) => entry.card.instanceId)])],
+        },
+      }
+    : resolved;
 }
 
 function withTemporaryStatDeltas(
@@ -880,6 +926,11 @@ function referenceStatValue(
   reference: NonNullable<Extract<CardEffect, { type: 'STRUCTURED' }>['values']>['reference'],
   stat: NonNullable<Extract<CardEffect, { type: 'STRUCTURED' }>['values']>['referenceStat'],
 ): number {
+  if (reference === 'LAST_TARGET' && state.targetingState?.lastAggregatedStats) {
+    return stat === 'CURRENT_HEALTH'
+      ? state.targetingState.lastAggregatedStats.health
+      : state.targetingState.lastAggregatedStats.attack;
+  }
   const referencedId = reference === 'LAST_ATTACKER' ? context?.attackerInstanceId : undefined;
   if (!referencedId) return 0;
   const referencedCard = sourceInState(state, referencedId);
@@ -1303,6 +1354,11 @@ export function resolveStateBasedDeaths(
     ],
   };
   for (const entry of retired) {
+    next = resolveTriggeredAbilities(next, entry.playerId, entry.card, 'SELF_RETIRE', {
+      leaveReason: 'RETIRE',
+      sourceContext,
+    });
+    next = next.targetingState?.active ? resolvePendingEffects(next) : next;
     next = resolveTriggeredAbilities(next, entry.playerId, entry.card, 'LEAVE_FIELD', {
       leaveReason: 'RETIRE',
       sourceContext,
@@ -1319,7 +1375,7 @@ export function resolvePendingEffects(state: GameState): GameState {
   // trigger can then install itself as a child continuation.
   let next: GameState = { ...state, targetingState: pending };
   let last = pending.lastTargetIds;
-  let lastAggregatedStats = pending.lastAggregatedStats;
+  let lastAggregatedStats = pending.lastAggregatedStats ?? state.lastAggregatedStats;
   for (let index = pending.effectIndex; index < pending.effects.length; index += 1) {
     const effect = pending.effects[index];
     const source = pending.sourceCard ?? sourceInState(next, pending.sourceInstanceId);
@@ -1359,6 +1415,7 @@ export function resolvePendingEffects(state: GameState): GameState {
       maxTargets: 0,
       lastTargetIds: last,
       lastAggregatedStats,
+      statChangedCardIds: next.targetingState?.statChangedCardIds ?? pending.statChangedCardIds,
     };
     next = applyEffect(
       { ...next, targetingState: frameAfterCurrentEffect },
@@ -1368,13 +1425,14 @@ export function resolvePendingEffects(state: GameState): GameState {
       ids,
       pending.triggerContext,
     );
+    lastAggregatedStats = next.lastAggregatedStats ?? next.targetingState?.lastAggregatedStats ?? lastAggregatedStats;
     if (next.targetingState?.continuation &&
       next.targetingState.continuation.sourceInstanceId === pending.sourceInstanceId &&
       next.targetingState.continuation.effectIndex > pending.effectIndex) return next;
     if (ids?.length) last = ids;
      if (next.targetingState?.sourceInstanceId === pending.sourceInstanceId) {
        last = next.targetingState.lastTargetIds;
-      lastAggregatedStats = next.targetingState.lastAggregatedStats;
+      lastAggregatedStats = next.targetingState.lastAggregatedStats ?? next.lastAggregatedStats ?? lastAggregatedStats;
      }
   }
   if (pending.markActiveUsed) {
@@ -1498,6 +1556,33 @@ export function applyEffect(
   if (effect.type === 'STRUCTURED') {
     if (effect.action === 'DEPLOY_CHAMPION_TOKEN') {
       return deployLinkedChampionToken(state, playerId);
+    }
+    if (effect.action === 'TRANSFORM_SOURCE') {
+      const definition = resolveCardDefinition(state, effect.values?.definition, effect.values?.definitionRef);
+      if (!definition) return state;
+      const transformed = generateCard(definition, {
+        instanceId: sourceCard.instanceId,
+        playerId,
+        source: { type: 'CARD', cardInstanceId: sourceCard.instanceId },
+        reason: 'TRANSFORM_SOURCE',
+        sourceDefinitionId: sourceCard.definitionId,
+        creationEventIndex: state.events.length,
+      }).card;
+      const replacement = {
+        ...transformed,
+        instanceId: sourceCard.instanceId,
+        boardSlot: sourceCard.boardSlot,
+        enteredThisTurn: sourceCard.enteredThisTurn,
+      };
+      return {
+        ...state,
+        players: state.players.map((player) => ({
+          ...player,
+          deck: player.deck.map((card) => card.instanceId === sourceCard.instanceId ? replacement : card),
+          hand: player.hand.map((card) => card.instanceId === sourceCard.instanceId ? replacement : card),
+          board: player.board.map((card) => card?.instanceId === sourceCard.instanceId ? replacement : card) as typeof player.board,
+        })),
+      };
     }
     if (effect.action === 'SUMMON' && effect.target?.selection === 'ADJACENT_EMPTY_SLOTS') {
       return applyAdjacentRandomCardCreation(state, playerId, sourceCard, effect);
@@ -1737,7 +1822,11 @@ export function applyEffect(
       };
     }
     if (effect.action === 'ADD_AGGREGATED_ATTACK') {
-      const aggregate = state.targetingState?.lastAggregatedStats;
+      const retiredId = state.targetingState?.lastTargetIds?.[0];
+      const retiredSnapshot = retiredId
+        ? state.players.flatMap((player) => player.graveyard).find((card) => card.instanceId === retiredId)?.lastRetiredStats
+        : undefined;
+      const aggregate = state.lastAggregatedStats ?? state.targetingState?.lastAggregatedStats ?? retiredSnapshot ?? lastRetiredSnapshot(state);
       if (!aggregate || !effect.target) return clearLastAggregatedStats(state);
     }
     if (effect.action === 'DRAW') {
@@ -2001,6 +2090,20 @@ export function applyEffect(
     if (effect.action === 'GRANT_RANDOM_CARD_TEXT') {
       return grantRandomCardText(state, playerId, sourceCard, targets, effect);
     }
+    if (effect.action === 'COPY_BEST_STATS') {
+      const best = [...targets].sort((left, right) =>
+        (right.currentAttack + right.currentHealth) - (left.currentAttack + left.currentHealth) ||
+        left.instanceId.localeCompare(right.instanceId),
+      )[0];
+      return best
+        ? applyEffect(state, playerId, sourceCard, {
+            type: 'STRUCTURED',
+            action: 'BUFF',
+            target: { zone: 'BOARD', owner: 'SELF', selection: 'SELF', count: 1 },
+            values: { attack: best.currentAttack, health: best.currentHealth },
+          }, undefined, triggerContext)
+        : state;
+    }
     if (!targets.length) {
       return effect.action === 'DESTROY'
         ? withLastAggregatedStats(state, { attack: 0, health: 0 })
@@ -2122,15 +2225,38 @@ export function applyEffect(
              sourceContext: attribution,
           }],
         };
-        return resolveCardRetiredListeners(
-          resolveTriggeredAbilities(retiredState, targetOwner, current, 'LEAVE_FIELD', {
+        const withSnapshot = effect.values?.captureStats
+          ? withLastAggregatedStats(retiredState, {
+            attack: current.currentAttack,
+            health: current.currentHealth,
+          })
+          : retiredState;
+        const selfRetired = resolveTriggeredAbilities(withSnapshot, targetOwner, current, 'SELF_RETIRE', {
+          leaveReason: 'RETIRE',
+          sourceContext: attribution,
+        });
+        const legacyLeave = resolveTriggeredAbilities(
+          selfRetired.targetingState?.active ? resolvePendingEffects(selfRetired) : selfRetired,
+          targetOwner,
+          current,
+          'LEAVE_FIELD',
+          {
             leaveReason: 'RETIRE',
             sourceContext: attribution,
-          }),
+          },
+        );
+        const retiredListenersState = resolveCardRetiredListeners(
+          legacyLeave,
           targetOwner,
           current,
           attribution,
         );
+        return effect.values?.captureStats
+          ? withLastAggregatedStats(retiredListenersState, {
+            attack: current.currentAttack,
+            health: Math.max(0, current.currentHealth),
+          })
+          : retiredListenersState;
       }, state);
     }
     if (effect.action === 'DESTROY') {
@@ -2244,8 +2370,17 @@ export function applyEffect(
               : player),
             events: [...preparedState.events, { type: 'DAMAGE_DEALT', playerId, cardInstanceId: sourceCard.instanceId, source: { type: 'CARD', cardInstanceId: sourceCard.instanceId }, target: { type: 'CARD', cardInstanceId: current.instanceId }, reason: 'CARD_EFFECT', amount: damageAmount, sourceContext: sourceContextFor(playerId, sourceCard, triggerContext) }],
           };
-          const withDamageListeners = resolveRegisteredRuleListeners(
+          const damagedCard = damagedState.players.find((player) => player.id === targetOwner)?.board
+            .find((card) => card?.instanceId === current.instanceId) ?? current;
+          const selfDamaged = resolveTriggeredAbilities(
             damagedState,
+            targetOwner,
+            damagedCard,
+            'SELF_DAMAGED',
+            { healthBefore: preparedCurrent.currentHealth, healthAfter: health, sourceContext: sourceContextFor(playerId, sourceCard, triggerContext) },
+          );
+          const withDamageListeners = resolveRegisteredRuleListeners(
+            selfDamaged.targetingState?.active ? resolvePendingEffects(selfDamaged) : selfDamaged,
             'DAMAGE_TAKEN',
             targetOwner,
             current.instanceId,
@@ -2261,8 +2396,24 @@ export function applyEffect(
             }, undefined, triggerContext)
             : withDamageListeners;
         }
-        const beforeRetire = resolveTriggeredAbilities(preparedState, targetOwner, preparedCurrent, 'BEFORE_RETIRE');
-        const protectedState = beforeRetire !== preparedState && beforeRetire.targetingState?.active
+        const lethalDamagedState = {
+          ...clearDamageMarker(preparedState),
+          players: preparedState.players.map((player) => player.id === targetOwner
+            ? { ...player, board: player.board.map((card) => card?.instanceId === current.instanceId ? { ...card, currentHealth: health } : card) as typeof player.board }
+            : player),
+        };
+        const selfDamaged = resolveTriggeredAbilities(
+          lethalDamagedState,
+          targetOwner,
+          { ...preparedCurrent, currentHealth: health },
+          'SELF_DAMAGED',
+          { healthBefore: preparedCurrent.currentHealth, healthAfter: health, sourceContext: sourceContextFor(playerId, sourceCard, triggerContext) },
+        );
+        const afterSelfDamaged = selfDamaged.targetingState?.active ? resolvePendingEffects(selfDamaged) : selfDamaged;
+        const liveCurrent = afterSelfDamaged.players.find((player) => player.id === targetOwner)?.board
+          .find((card) => card?.instanceId === current.instanceId) ?? preparedCurrent;
+        const beforeRetire = resolveTriggeredAbilities(afterSelfDamaged, targetOwner, liveCurrent, 'BEFORE_RETIRE');
+        const protectedState = beforeRetire !== afterSelfDamaged && beforeRetire.targetingState?.active
           ? resolvePendingEffects(beforeRetire)
           : beforeRetire;
         if (protectedState.preventedRetireTargetIds?.includes(current.instanceId)) {
@@ -2297,8 +2448,15 @@ export function applyEffect(
           })
           : retiredWithAggregate;
         const attribution = sourceContextFor(playerId, sourceCard, triggerContext);
-        return resolveCardRetiredListeners(
-          resolveTriggeredAbilities(exactZeroState, targetOwner, current, 'LEAVE_FIELD', {
+        const selfRetired = resolveTriggeredAbilities(exactZeroState, targetOwner, current, 'SELF_RETIRE', {
+          leaveReason: 'RETIRE',
+          sourceContext: attribution,
+        });
+        const legacyLeave = selfRetired.targetingState?.active
+          ? resolvePendingEffects(selfRetired)
+          : selfRetired;
+        const retiredListenersState = resolveCardRetiredListeners(
+          resolveTriggeredAbilities(legacyLeave, targetOwner, current, 'LEAVE_FIELD', {
             leaveReason: 'RETIRE',
             sourceContext: attribution,
           }),
@@ -2306,13 +2464,18 @@ export function applyEffect(
           current,
           attribution,
         );
+        return withLastAggregatedStats(retiredListenersState, {
+          attack: current.currentAttack,
+          health: Math.max(0, current.currentHealth),
+        });
       }, state);
     }
     if (effect.action === 'SILENCE') {
       return [...ids].reduce((nextState, id) => silenceCard(nextState, id), state);
     }
     if (effect.action === 'ADD_AGGREGATED_ATTACK') {
-      const aggregate = state.targetingState?.lastAggregatedStats;
+      const aggregate = state.lastAggregatedStats ?? state.targetingState?.lastAggregatedStats ?? lastRetiredSnapshot(state);
+      console.error('DEBUG_ADD', aggregate, lastRetiredSnapshot(state), state.players.map((p) => p.graveyard.map((c) => [c.instanceId, c.lastRetiredStats])));
       if (!aggregate) return clearLastAggregatedStats(state);
       const withoutAggregate = clearLastAggregatedStats(state);
       return {
@@ -2366,6 +2529,13 @@ export function applyEffect(
                return finish({
                  ...card,
                  currentHealth: card.currentHealth + signedAmount,
+                 maxHealth: Math.max(1, card.maxHealth + signedAmount),
+               });
+             }
+             if (effect.action === 'MODIFY_MAX_HEALTH') {
+               const signedAmount = effect.values?.amount ?? 0;
+               return finish({
+                 ...card,
                  maxHealth: Math.max(1, card.maxHealth + signedAmount),
                });
              }
@@ -2672,7 +2842,7 @@ export function resolveTriggeredAbilities(
   state: GameState,
   playerId: string,
   card: CardInstance,
-  trigger: 'ENTER_FIELD' | 'LEAVE_FIELD' | 'POSITION' | 'ACTIVE' | 'CARD_DRAWN' | 'CARD_RETIRED' | 'CARD_SUMMONED' | 'FIRST_ATTACKED' | 'SELF_ATTACK' | 'OTHER_ALLY_ATTACK' | 'ATTACK_SURVIVED' | 'STAT_CHANGED' | 'TECHNIQUE_CAST' | 'EXACT_ZERO_DAMAGE' | 'TURN_START' | 'TURN_END' | 'BEFORE_DAMAGE' | 'BEFORE_RETIRE',
+  trigger: 'ENTER_FIELD' | 'LEAVE_FIELD' | 'SELF_RETIRE' | 'POSITION' | 'ACTIVE' | 'CARD_DRAWN' | 'CARD_RETIRED' | 'CARD_SUMMONED' | 'FIRST_ATTACKED' | 'SELF_ATTACK' | 'OTHER_ALLY_ATTACK' | 'ATTACK_SURVIVED' | 'SELF_DAMAGED' | 'STAT_CHANGED' | 'TECHNIQUE_CAST' | 'EXACT_ZERO_DAMAGE' | 'TURN_START' | 'TURN_END' | 'BEFORE_DAMAGE' | 'BEFORE_RETIRE',
   options: {
     boardSlot?: 0 | 1 | 2 | 3;
     leaveReason?: LeaveReason;
