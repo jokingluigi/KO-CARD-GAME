@@ -1,0 +1,719 @@
+KO CARD GAME — PANDORA CRITICAL FIX
+QUEST +2 BUG + TOKEN ATTACK ABSORPTION BUG
+
+목표:
+1) 챔피언 판도라 Quest가 qualifying WRESTLER 1명을 리타이어시킬 때 progress가 +2가 아니라 정확히 +1만 증가하게 수정
+2) 챔피언 판도라(폭주) Token 카드가 자신이 직접 RETIRE 또는 DESTROY시킨 WRESTLER의 현재 공격력을 자신의 공격력에 정확히 흡수하게 수정
+
+Production DB 직접 수정 금지.
+숫자 보정식 임시패치 금지.
+판도라 이름/ID runtime hardcode 금지.
+Action → Event → GameState causality 자체를 수정.
+
+==================================================
+1. 공식 Quest semantics
+==================================================
+
+Champion Pandora Quest 원문:
+"자신의 고유 능력으로 선수 카드를 5번 리타이어 시킵니다."
+
+현재 canonical condition:
+event = WRESTLER_RETIRED
+cardType = WRESTLER
+required = 5
+sourceActionType = USE_CHAMPION_ABILITY
+
+정상:
+progress 0
+→ Champion Ability로 WRESTLER 1명 실제 RETIRE
+→ progress 1
+
+다음 qualifying retire:
+→ 2
+
+절대:
+0 → 2 → 4
+금지.
+
+==================================================
+2. Quest +2 ROOT CAUSE TRACE
+==================================================
+
+Champion Ability 1회 사용을 끝까지 trace:
+
+USE_CHAMPION_ABILITY action
+→ DAMAGE
+→ target HP mutation
+→ lethal check
+→ RETIRE
+→ WRESTLER_RETIRED event
+→ Quest matcher
+→ progress mutation
+→ completion check
+
+다음 값을 로그:
+
+- actionId
+- effectExecutionId
+- damageEventId
+- retireEventId
+- sourceActionType
+- sourceChampionId
+- targetInstanceId
+- quest matcher invocation count
+- quest progress before/after
+- local/server origin
+- replay/reconnect 여부
+
+반드시 실제 원인 규명.
+
+검사 후보:
+- WRESTLER_RETIRED 두 번 emit
+- RETIRE + CARD_RETIRED 둘 다 Quest가 소비
+- executeAction과 listener 양쪽에서 progress 증가
+- client optimistic + server authoritative 이중 증가
+- duplicate listener registration
+- lethal damage path + generic leave path 이중 event
+- reconnect/replay 동일 event 재처리
+- same event Quest matcher 두 번 consume
+
+금지:
+`progress += 0.5`
+`if Pandora then divide by 2`
+UI 숫자만 보정
+
+==================================================
+3. Quest exactly-once
+==================================================
+
+Quest progress는 unique retirement event 기준 exactly once.
+
+가능하면 eventId / retireEventId 기반 dedupe.
+
+단:
+하나의 action이 서로 다른 WRESTLER 2명을 실제로 RETIRE시키면
+distinct victim event 2개 → +2 가능.
+
+actionId 하나만 dedupe key로 사용해
+정상 multi-target retire를 막으면 안 됨.
+
+==================================================
+4. Quest source attribution
+==================================================
+
++1 조건:
+
+- WRESTLER_RETIRED
+- victim = WRESTLER
+- cause chain sourceActionType = USE_CHAMPION_ABILITY
+- 해당 player/champion Quest
+
++0:
+
+- 일반 combat RETIRE
+- WRESTLER card effect RETIRE
+- Technique RETIRE
+- Champion Token RETIRE/DESTROY
+- unrelated effect
+- nonlethal damage
+- PREVENT_RETIRE
+- opponent event
+
+==================================================
+5. Quest completion exactly once
+==================================================
+
+progress 4/5
+→ qualifying retire 1회
+→ 5/5
+
+그 후:
+
+Quest complete 1회
+Reward 1회
+Champion Ability upgrade 1회
+Champion Token deploy 1회
+
+중복 실행 금지.
+
+==================================================
+6. Champion Pandora Token 공식 효과
+==================================================
+
+챔피언 판도라(폭주) 원문:
+
+"등장:선택한 선수를 파괴시킵니다.
+이 카드는 자신이 리타이어 혹은 파괴 시킨 선수의 공격력을 자신의 공격력에 더합니다."
+
+공식 의미:
+
+A. Token 자신이 WRESTLER를 DESTROY시킴
+→ victim의 removal 직전 currentAttack을 snapshot
+→ Token.currentAttack += victimAttackSnapshot
+
+B. Token 자신이 combat/damage/effect로 WRESTLER를 RETIRE시킴
+→ victim의 RETIRE 직전 currentAttack snapshot
+→ Token.currentAttack += victimAttackSnapshot
+
+흡수 대상은 공격력만.
+체력 흡수 금지.
+
+==================================================
+7. 현재 구현 문제 조사
+==================================================
+
+현재 Analyzer/Stored effect가
+ENTER_FIELD DESTROY
++
+ENTER_FIELD ADD_AGGREGATED_ATTACK
+source = LAST_DESTROYED_TARGETS
+
+처럼 구현되어 있다면,
+이 방식은 등장 시 DESTROY만 커버하고
+이후 Token이 직접 RETIRE시킨 대상을 놓칠 가능성이 크다.
+
+또:
+`target SELF + PLAYER_CHOICE`
+같은 불필요한 target selection이 붙어 있으면 제거.
+
+Fresh canonical semantic:
+
+1) ENTER_FIELD → PLAYER_CHOICE enemy WRESTLER → DESTROY
+2) persistent causal listener:
+   when THIS exact source instance causes WRESTLER RETIRE or DESTROY
+   → source attack += victim currentAttack snapshot
+
+==================================================
+8. 인과관계가 핵심
+==================================================
+
+금지:
+
+on WRESTLER_RETIRED:
+  if Pandora Token on field:
+    absorb
+
+이렇게 하면 다른 카드가 죽인 것도 흡수하므로 틀림.
+
+반드시 causal metadata 사용:
+
+- sourceInstanceId
+- causedByActionId
+- effectExecutionId
+- combat attacker instance
+- parent event
+- victimInstanceId
+- unique eventId
+
+기존 `DAMAGE_CAUSED_TARGET_RETIRE`
+또는 causal TRANSFORM_SOURCE 인프라가 있다면
+같은 generic causality 구조 재사용/확장.
+
+카드명 hardcode 금지.
+
+==================================================
+9. DESTROY 흡수
+==================================================
+
+예:
+
+Token attack = 4
+victim currentAttack = 7
+
+Token ENTER_FIELD DESTROY victim
+→ victim DESTROY
+→ Token attack = 11
+
+DESTROY 공식 규칙 유지:
+- GRAVEYARD 아님
+- RETIRE trigger 아님
+
+하지만 Token 카드 텍스트는 RETIRE/DESTROY 둘 다 흡수하므로
+흡수는 DESTROY에도 발동.
+
+==================================================
+10. RETIRE 흡수
+==================================================
+
+예:
+
+Token attack = 5
+enemy currentAttack = 4
+enemy HP = 2
+
+Token이 직접 공격
+→ enemy lethal
+→ enemy RETIRE
+→ Token attack = 9
+
+combat causal attribution을 정확히 연결.
+
+==================================================
+11. victim currentAttack snapshot
+==================================================
+
+흡수값은 baseAttack이 아니라
+victim removal 직전 currentAttack.
+
+예:
+
+base attack 3
+buff 후 current attack 8
+
+Token이 kill
+→ +8
+
+victim state가 제거/이동된 뒤 0이나 base stat으로 읽으면 FAIL.
+
+==================================================
+12. 여러 victim / dedupe
+==================================================
+
+Token source action/effect가 여러 WRESTLER를 kill하면
+각 unique victim 공격력을 한 번씩 더함.
+
+같은 victim event 중복:
+흡수 1회만.
+
+RETIRE event + leave event 양쪽에서 중복 흡수 금지.
+
+==================================================
+13. unrelated kill은 흡수 금지
+==================================================
+
+Token이 FIELD에 있어도:
+
+- 다른 아군 카드가 enemy RETIRE
+- Technique가 DESTROY
+- enemy self-retire
+- unrelated triggered effect kill
+
+이면 Token gain = 0.
+
+"자신이 리타이어 혹은 파괴 시킨" 조건을 반드시 지킬 것.
+
+==================================================
+14. Token kill은 Pandora Quest 진행 금지
+==================================================
+
+Champion Pandora Quest는
+sourceActionType = USE_CHAMPION_ABILITY 조건.
+
+Champion Token이:
+
+- ENTER_FIELD DESTROY
+- combat RETIRE
+- card effect RETIRE
+
+시킨 것은 Quest progress +0.
+
+반드시 테스트.
+
+==================================================
+15. Champion Token HP 분리 회귀
+==================================================
+
+기존 공식 규칙 유지:
+
+- Champion HP와 Token HP 완전 별개
+- Token은 own CardDefinition HP
+- Token damage가 Champion HP에 영향 없음
+- Token RETIRE ≠ match loss
+- Token FIELD 동안 original Champion protected/untargetable
+- original Champion Ability 사용 가능
+- Token leave 후 original Champion HP 그대로
+- normal SUMMON same definition은 ChampionToken context 아님
+
+==================================================
+16. Development stored effect
+==================================================
+
+Analyzer/runtime contract 수정 후
+Development의 Champion Pandora(폭주) PUBLISHED row stored effect가 stale이면:
+
+1. current row re-read
+2. source text 확인
+3. fresh Analyzer full parse
+4. validator PASS
+5. semantic equality
+6. effect-related field만 safe re-save
+
+unrelated fields 변경 금지.
+
+Production write 금지.
+
+==================================================
+17. Quest 자동 테스트
+==================================================
+
+PQ1
+progress 0
+Champion Ability lethal 1 WRESTLER
+→ progress 1
+
+PQ2
+progress 1
+다음 qualifying retire
+→ progress 2
+
+PQ3
+Champion Ability nonlethal
+→ +0
+
+PQ4
+PREVENT_RETIRE
+→ +0
+
+PQ5
+combat retire
+→ +0
+
+PQ6
+Champion Token DESTROY
+→ Quest +0
+
+PQ7
+Champion Token RETIRE kill
+→ Quest +0
+
+PQ8
+same retire event replay
+→ duplicate +0
+
+PQ9
+client/server duplicate delivery
+→ authoritative progress +1 only
+
+PQ10
+4/5 → one qualifying retire
+→ 5/5 + completion exactly once
+
+==================================================
+18. Token 흡수 자동 테스트
+==================================================
+
+PA1
+ENTER_FIELD DESTROY victim currentAttack 6
+Token attack 4
+→ 10
+
+PA2
+Token combat RETIRE victim attack 5
+Token attack 10
+→ 15
+
+PA3
+Token effect damage causes RETIRE victim attack 3
+→ +3
+
+PA4
+another ally RETIREs enemy attack 8
+→ Token +0
+
+PA5
+enemy self-retires
+→ Token +0
+
+PA6
+Technique DESTROY
+→ Token +0
+
+PA7
+victim baseAttack 2 / currentAttack 7
+→ +7
+
+PA8
+duplicate event
+→ absorb once
+
+PA9
+RETIRE victim
+→ attack increases
+→ Token health unchanged
+
+PA10
+DESTROY victim
+→ attack increases
+→ no RETIRE trigger invented
+
+==================================================
+19. 실제 Runtime / AI Match 검증
+==================================================
+
+inspection-only PASS 금지.
+
+Scenario A — Quest:
+0/5
+→ Pandora Champion Ability로 1 HP WRESTLER에게 lethal
+→ WRESTLER RETIRE
+→ Quest UI/state exactly 1/5
+
+다시 한 번:
+→ 2/5
+
+Scenario B — Token DESTROY:
+Token attack before 기록
+victim currentAttack 기록
+→ ENTER_FIELD DESTROY
+→ Token attack = before + victim attack
+
+Scenario C — Token RETIRE kill:
+Token이 combat로 enemy RETIRE
+→ Token attack += victim currentAttack
+
+Scenario D:
+다른 아군이 enemy kill
+→ Token attack unchanged
+
+==================================================
+20. Browser E2E
+==================================================
+
+가능하면 Development/Test browser:
+
+- Pandora Quest 0/5 → kill → 1/5
+- next kill → 2/5
+- Token deploy
+- Token DESTROY 후 attack 증가
+- Token combat RETIRE 후 attack 증가
+
+Browser 불가:
+BROWSER E2E = UNVERIFIED
+자동/runtime 검증은 계속.
+
+==================================================
+21. 회귀 금지
+==================================================
+
+깨지면 안 됨:
+
+- RETIRE vs DESTROY
+- SELF_RETIRE
+- causal event infrastructure
+- Champion Token HP separation
+- Champion protection
+- Quest reward exactly once
+- target cancel
+- reconnect/replay
+- AI Match
+- Online authoritative state
+- hidden sanitizer
+
+==================================================
+22. 검증
+==================================================
+
+반드시:
+
+pnpm run typecheck
+pnpm --filter @workspace/ko-game run build
+git diff --check
+
+관련 시:
+
+API typecheck
+API build
+Quest tests
+Champion Token tests
+combat tests
+causal event tests
+structured-effect tests
+serializer/reconnect tests
+deterministic AI Match tests
+
+==================================================
+23. Git
+==================================================
+
+실제 변경 파일만 stage.
+
+제외:
+prompt txt
+Pasted txt
+.env
+secrets
+logs
+screenshots
+temp
+Replit metadata
+unrelated files
+
+commit.
+
+push 요청 없으면 push 금지.
+force push 금지.
+
+==================================================
+24. 최종 보고 형식
+==================================================
+
+PANDORA QUEST ROOT CAUSE
+
+Why +2 happened:
+...
+
+Duplicate event:
+YES/NO
+
+Duplicate listener:
+YES/NO
+
+Client/server double mutation:
+YES/NO
+
+First incorrect file/function:
+...
+
+
+QUEST RESULTS
+
+One qualifying retire:
+Expected +1
+Actual:
+PASS/FAIL
+
+Nonlethal:
++0 / FAIL
+
+Prevented:
++0 / FAIL
+
+Token kill:
++0 / FAIL
+
+Replay duplicate:
++0 / FAIL
+
+4/5 → one retire:
+5/5 / FAIL
+
+Completion:
+ONCE / FAIL
+
+
+TOKEN ABSORPTION ROOT CAUSE
+
+Why RETIRE kill was not absorbed:
+...
+
+Existing logic only covered LAST_DESTROYED_TARGETS:
+YES/NO
+
+Causal listener:
+...
+
+Victim attack snapshot point:
+...
+
+
+TOKEN DESTROY
+
+Token attack before:
+Victim current attack:
+Token attack after:
+PASS/FAIL
+
+
+TOKEN RETIRE
+
+Token attack before:
+Victim current attack:
+Token attack after:
+PASS/FAIL
+
+
+CAUSALITY
+
+Unrelated ally kill:
+0 gain / FAIL
+
+Technique kill:
+0 gain / FAIL
+
+Duplicate victim event:
+ONCE / FAIL
+
+Buffed victim current attack:
+Correct / FAIL
+
+
+TOKEN HP REGRESSION
+
+Champion HP unchanged:
+PASS/FAIL
+
+Token own HP:
+PASS/FAIL
+
+Token retire no match loss:
+PASS/FAIL
+
+Protection:
+PASS/FAIL
+
+
+IMPLEMENTATION:
+PASS/FAIL
+
+AUTOMATED VERIFICATION:
+PASS/FAIL
+
+AI MATCH RUNTIME:
+PASS/FAIL/UNVERIFIED
+
+BROWSER E2E:
+PASS/FAIL/UNVERIFIED
+
+TYPECHECK:
+PASS/FAIL
+
+KO BUILD:
+PASS/FAIL
+
+API TYPECHECK:
+PASS/FAIL/NOT_MODIFIED
+
+API BUILD:
+PASS/FAIL/NOT_MODIFIED
+
+git diff --check:
+PASS/FAIL
+
+PRODUCTION DATA MUTATION:
+NONE/FAIL
+
+DEVELOPMENT PUBLISHED ROW EFFECT UPDATE:
+YES/NO
+
+UNRELATED FIELD CHANGES:
+NONE/FAIL
+
+CHANGED FILES:
+...
+
+COMMIT:
+...
+
+PUSH:
+NOT REQUESTED
+
+==================================================
+25. 완료 조건
+==================================================
+
+1. Pandora Champion Ability로 WRESTLER 1명 RETIRE → Quest exactly +1.
+2. 동일 retire event 중복 소비 0.
+3. Quest completion/reward exactly once.
+4. Token이 직접 DESTROY한 WRESTLER 공격력 흡수.
+5. Token이 직접 RETIRE시킨 WRESTLER 공격력 흡수.
+6. 흡수값 = victim currentAttack snapshot.
+7. victim health는 흡수하지 않음.
+8. unrelated RETIRE/DESTROY 흡수 0.
+9. Token kill은 Pandora Champion Quest 진행 0.
+10. Champion Token HP separation 유지.
+11. runtime hardcode 없음.
+12. Production data mutation 없음.
+13. tests/build/typecheck/git diff 결과 보고.
+
+두 버그 모두 숫자 보정이 아니라
+event causality와 exactly-once semantics를 올바르게 고친 뒤 멈춰라.
