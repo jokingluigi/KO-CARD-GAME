@@ -26,6 +26,7 @@ export const onlineMatchesTable = pgTable("online_matches", {
   player2DisconnectStartedAt: timestamp("player2_disconnect_started_at", { withTimezone: true }),
   player2ReconnectDeadlineAt: timestamp("player2_reconnect_deadline_at", { withTimezone: true }),
   startedAt: timestamp("started_at", { withTimezone: true }),
+  gameplayStartsAt: timestamp("gameplay_starts_at", { withTimezone: true }),
   updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
   endedAt: timestamp("ended_at", { withTimezone: true }),
   winnerUserId: text("winner_user_id").references(() => usersTable.id, { onDelete: "set null" }),

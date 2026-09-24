@@ -1,8 +1,9 @@
 export function shouldToggleAltInfo(
-  event: Pick<KeyboardEvent, "key" | "repeat" | "ctrlKey" | "metaKey" | "shiftKey">,
+  event: Pick<KeyboardEvent, "type" | "key" | "repeat" | "ctrlKey" | "metaKey" | "shiftKey">,
   focusIsEditable: boolean,
 ): boolean {
   return (
+    event.type === "keydown" &&
     event.key === "Alt" &&
     !event.repeat &&
     !event.ctrlKey &&

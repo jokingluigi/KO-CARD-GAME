@@ -77,7 +77,10 @@ interface GameStatePreviewProps {
   onEffectTarget: (targetId: string) => void;
   onPresentationBusyChange: (busy: boolean) => void;
   presentationPlayerId?: string;
+  playerNickname?: string | null;
+  playerChampionName?: string | null;
   opponentNickname?: string | null;
+  opponentChampionName?: string | null;
   onReturnToAdmin?: () => void;
   onReturnToMainMenu?: () => void;
 }
@@ -116,7 +119,10 @@ export function GameStatePreview({
   onEffectTarget,
   onPresentationBusyChange,
   presentationPlayerId,
+  playerNickname,
+  playerChampionName,
   opponentNickname,
+  opponentChampionName,
   onReturnToAdmin,
   onReturnToMainMenu,
 }: GameStatePreviewProps) {
@@ -653,7 +659,7 @@ export function GameStatePreview({
 
             {/* Mirrored opponent HUD */}
             <div className="ko-opponent-hud ml-auto flex w-[180px] flex-col items-end gap-1 md:w-48 md:gap-2">
-                 <span className="max-w-full truncate text-[9px] font-black text-neutral-300 md:text-[11px]" data-testid="text-online-opponent-nickname">
+                  <span className="max-w-full truncate text-[11px] font-black text-white md:text-sm" data-testid="text-online-opponent-nickname">
                    {opponentNickname || "상대"}
                  </span>
                 <div className="flex items-start gap-2 md:gap-3">
@@ -700,7 +706,7 @@ export function GameStatePreview({
                      </span>
                    )}
                   <span className="px-1 text-center text-[9px] font-black leading-tight text-red-300 md:text-[11px]">
-                    {opp.champion?.name || '상대 챔피언'}
+                     {opponentChampionName || opp.champion?.name || '상대 챔피언'}
                   </span>
                   {selectedAttackerId && (
                     <div className="pointer-events-none absolute inset-0 z-10 bg-red-500/15" />
@@ -1053,6 +1059,11 @@ export function GameStatePreview({
             
             {/* Player Stats & Champion */}
              <div className="ko-player-info z-[95] flex w-[180px] shrink-0 flex-col gap-1 md:w-48 md:gap-2">
+               {playerNickname && (
+                 <span className="max-w-full truncate text-[11px] font-black text-white md:text-sm" data-testid="text-online-player-nickname">
+                   {playerNickname}
+                 </span>
+               )}
               <div className="flex items-start gap-2 md:gap-3">
                   <div
                     ref={playerChampionRef}
@@ -1086,7 +1097,7 @@ export function GameStatePreview({
                      </span>
                    )}
                   <span className="px-1 text-center text-[9px] font-black leading-tight text-blue-400 md:text-[12px]">
-                    {me.champion?.name || '내 챔피언'}
+                     {playerChampionName || me.champion?.name || '내 챔피언'}
                   </span>
                </div>
 

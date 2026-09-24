@@ -24,9 +24,12 @@ router.get("/", async (request: Request, response: Response): Promise<void> => {
   const testDeckId = typeof request.query.testDeckId === "string" ? request.query.testDeckId : null;
   const decks = testDeckId && request.authUser?.role === "ADMIN"
     ? (await listAIDecks()).filter((deck) => deck.id === testDeckId)
-    : await listAIDecks({ enabledOnly: true });
+    : (await listAIDecks({ enabledOnly: true, context: "PLAYER_DECK" })).filter((deck) =>
+        deck.champion?.status === "PUBLISHED" &&
+        deck.cards.every((card) => card.status === "PUBLISHED"),
+      );
   response.setHeader("Cache-Control", "no-store");
-  response.json({ decks: decks.filter((deck) => deck.isValid).map(({ invalidReasons: _invalidReasons, missingCardDefinitionIds: _missing, ...deck }) => deck) });
+  response.json({ decks: decks.filter((deck) => deck.isValid).map(({ invalidReasons: _invalidReasons, missingCardDefinitionIds: _missing, requiredCardDefinitionIds: _required, ...deck }) => deck) });
 });
 
 export default router;

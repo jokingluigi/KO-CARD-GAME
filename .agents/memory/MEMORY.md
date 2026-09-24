@@ -1,4 +1,5 @@
 - [TypeScript engine tests](typescript-engine-tests.md) — use local tsx when available; DB-backed esbuild bundles must resolve packages from lib/db.
+- [Rule-only engine imports](rule-only-engine-imports.md) — import shared deck-rule helpers through the rules subpath to avoid cycles through the aggregate engine entrypoint.
 - [Structured card effects](structured-card-effects.md) — new admin effects are validated data; partial parses never apply and gameplay never reparses display text.
 - [Causal transform effects](causal-transform-effects.md) — conditional follow-up effects must carry a typed causal marker and verify the exact preceding runtime event.
 - [Causal removal event identities](causal-removal-event-identities.md) — per-removal causation IDs distinguish multiple removals under one action and keep replay deduplication exact.

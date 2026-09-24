@@ -4,6 +4,7 @@ import test from "node:test";
 import { audioManager } from "./audio-manager";
 
 class FakeAudio {
+  static rejectPlay = false;
   volume = 1;
   playbackRate = 1;
   preload = "";
@@ -23,6 +24,10 @@ class FakeAudio {
   }
 
   play() {
+    if (FakeAudio.rejectPlay) {
+      this.paused = true;
+      return Promise.reject(new DOMException("Autoplay blocked", "NotAllowedError"));
+    }
     this.paused = false;
     return Promise.resolve();
   }
@@ -198,6 +203,57 @@ test("같은 메인 BGM을 다시 적용해도 audio instance를 중복 생성�
     Object.defineProperty(globalThis, "Audio", { configurable: true, value: previousAudio });
     Object.defineProperty(globalThis, "window", { configurable: true, value: previousWindow });
   }
+});
+
+test("autoplay 거부 뒤에도 base 인스턴스를 보존하고 앱 unlock에서 같은 트랙을 재시도한다", async () => {
+  const previousAudio = globalThis.Audio;
+  const previousWindow = globalThis.window;
+  Object.defineProperty(globalThis, "Audio", { configurable: true, value: FakeAudio });
+  Object.defineProperty(globalThis, "window", {
+    configurable: true,
+    value: { setInterval, clearInterval, setTimeout, clearTimeout },
+  });
+
+  try {
+    audioManager.stopBgm();
+    FakeAudio.rejectPlay = true;
+    audioManager.playBgm("/blocked.mp3", 80);
+    await Promise.resolve();
+    await Promise.resolve();
+    const manager = audioManager as unknown as {
+      bgm: { audio: FakeAudio; url: string } | null;
+    };
+    assert.equal(manager.bgm?.url, "/blocked.mp3");
+    assert.equal(audioManager.isAudioUnlockPending(), true);
+
+    FakeAudio.rejectPlay = false;
+    audioManager.unlockAudio();
+    await Promise.resolve();
+    assert.equal(manager.bgm?.audio.paused, false);
+    assert.equal(audioManager.isAudioUnlockPending(), false);
+  } finally {
+    FakeAudio.rejectPlay = false;
+    audioManager.stopBgm();
+    Object.defineProperty(globalThis, "Audio", { configurable: true, value: previousAudio });
+    Object.defineProperty(globalThis, "window", { configurable: true, value: previousWindow });
+  }
+});
+
+test("비전투 경로 전환은 같은 base audio 인스턴스와 재생 위치를 유지한다", () => {
+  withFakeAudio(() => {
+    audioManager.playBgm("/persistent.mp3", 80);
+    const manager = audioManager as unknown as {
+      bgm: { audio: FakeAudio } | null;
+    };
+    const first = manager.bgm?.audio;
+    assert.ok(first);
+    first.currentTime = 42;
+    audioManager.setMusicContext("BATTLE");
+    assert.equal(first.paused, true);
+    audioManager.setMusicContext("NON_BATTLE");
+    assert.equal(manager.bgm?.audio, first);
+    assert.equal(first.currentTime, 42);
+  });
 });
 
 test("팩 희귀 Reveal 음악은 중앙 채널에서 시작하고 명시적으로 cleanup된다", () => {

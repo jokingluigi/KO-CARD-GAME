@@ -1,4 +1,4 @@
-import { type ReactNode } from 'react';
+import { type ReactNode, useEffect } from 'react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { ErrorBoundary } from '@/components/error-boundary';
 import { Toaster } from '@/components/ui/toaster';
@@ -22,6 +22,10 @@ import {
   useLocation,
   Router as WouterRouter,
 } from 'wouter';
+import { audioManager } from '@/audio/audio-manager';
+import { readStoredBgmMute, readStoredBgmVolume } from '@/audio/audio-settings';
+import { musicContextForPath, shouldLoadMainBgm } from '@/audio/music-route';
+import { fetchMainContent } from '@/lib/main-content-client';
 
 const queryClient = new QueryClient();
 
@@ -56,6 +60,47 @@ function Router() {
   );
 }
 
+function GlobalAudioBridge() {
+  const [location] = useLocation();
+
+  useEffect(() => {
+    audioManager.setBgmVolume(readStoredBgmVolume());
+    audioManager.setBgmMuted(readStoredBgmMute());
+  }, []);
+
+  useEffect(() => {
+    audioManager.setMusicContext(musicContextForPath(location));
+  }, [location]);
+
+  useEffect(() => {
+    if (!shouldLoadMainBgm(location)) return;
+    let cancelled = false;
+    void fetchMainContent()
+      .then((content) => {
+        if (cancelled || !content.bgm) return;
+        audioManager.playBgm(content.bgm.assetUrl, content.bgm.volume);
+      })
+      .catch((error) => {
+        if (!cancelled) console.warn('메인 BGM을 불러오지 못했습니다.', error);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [location]);
+
+  useEffect(() => {
+    const unlock = () => audioManager.unlockAudio();
+    window.addEventListener('pointerdown', unlock, { passive: true });
+    window.addEventListener('keydown', unlock);
+    return () => {
+      window.removeEventListener('pointerdown', unlock);
+      window.removeEventListener('keydown', unlock);
+    };
+  }, []);
+
+  return null;
+}
+
 function RoutedErrorBoundary({ children }: { children: ReactNode }) {
   const [location] = useLocation();
   return <ErrorBoundary resetKey={location}>{children}</ErrorBoundary>;
@@ -66,6 +111,7 @@ function App() {
     <QueryClientProvider client={queryClient}>
       <TooltipProvider>
         <WouterRouter base={import.meta.env.BASE_URL.replace(/\/$/, '')}>
+          <GlobalAudioBridge />
           <Router />
         </WouterRouter>
         <Toaster />

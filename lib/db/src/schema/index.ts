@@ -19,6 +19,7 @@
 
 export * from "./cards";
 export * from "./champions";
+export * from "./champion-intro-interactions";
 export * from "./mechanic-requests";
 export * from "./game-media";
 export * from "./users";

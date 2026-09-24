@@ -17,6 +17,7 @@ import { ROUTES } from "@/lib/routes";
 
 type Props = { onUnauthorized: () => void };
 type FilterType = "ALL" | "WRESTLER" | "TECHNIQUE";
+type StatusFilter = "ALL" | "PUBLISHED" | "DRAFT";
 type Draft = {
   id?: string;
   name: string;
@@ -54,8 +55,11 @@ export function AdminAIDeckManager({ onUnauthorized }: Props) {
   const [options, setOptions] = useState<AIDeckOptions | null>(null);
   const [draft, setDraft] = useState<Draft>(emptyDraft);
   const [search, setSearch] = useState("");
+  const [championSearch, setChampionSearch] = useState("");
+  const [championStatus, setChampionStatus] = useState<StatusFilter>("ALL");
   const [filterType, setFilterType] = useState<FilterType>("ALL");
   const [filterRarity, setFilterRarity] = useState("ALL");
+  const [filterStatus, setFilterStatus] = useState<StatusFilter>("ALL");
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState("");
 
@@ -78,19 +82,30 @@ export function AdminAIDeckManager({ onUnauthorized }: Props) {
       (draft.cardDefinitionIds.includes(card.id) || (
         !card.isToken &&
         !card.isChampionToken &&
-        card.status === "PUBLISHED"
+        card.status !== "DISABLED"
       )) &&
       (filterType === "ALL" || card.cardType === filterType) &&
       (filterRarity === "ALL" || card.rarity === filterRarity) &&
+      (filterStatus === "ALL" || card.status === filterStatus) &&
       (!normalizedSearch || card.name.toLowerCase().includes(normalizedSearch)),
     );
-  }, [draft.cardDefinitionIds, filterRarity, filterType, options?.cards, search]);
+  }, [draft.cardDefinitionIds, filterRarity, filterStatus, filterType, options?.cards, search]);
+
+  const filteredChampions = useMemo(() => {
+    const normalizedSearch = championSearch.trim().toLowerCase();
+    return (options?.champions ?? []).filter((champion) =>
+      champion.status !== "DISABLED" &&
+      (championStatus === "ALL" || champion.status === championStatus) &&
+      (!normalizedSearch || champion.name.toLowerCase().includes(normalizedSearch)),
+    );
+  }, [championSearch, championStatus, options?.champions]);
 
   const cardCounts = useMemo(() => {
     const counts = new Map<string, number>();
     draft.cardDefinitionIds.forEach((id) => counts.set(id, (counts.get(id) ?? 0) + 1));
     return counts;
   }, [draft.cardDefinitionIds]);
+  const selectedDeck = draft.id ? decks.find((deck) => deck.id === draft.id) : undefined;
 
   function addCard(card: AIDeckCard) {
     const count = cardCounts.get(card.id) ?? 0;
@@ -99,7 +114,7 @@ export function AdminAIDeckManager({ onUnauthorized }: Props) {
       draft.cardDefinitionIds.length >= (options?.maxCardCount ?? 25) ||
       card.isToken ||
       card.isChampionToken ||
-      card.status !== "PUBLISHED" ||
+      card.status === "DISABLED" ||
       count >= maxCopies
     ) return;
     setDraft((current) => ({ ...current, cardDefinitionIds: [...current.cardDefinitionIds, card.id] }));
@@ -176,7 +191,7 @@ export function AdminAIDeckManager({ onUnauthorized }: Props) {
     setBusy(true);
     try {
       await testAdminAIDeck(deck.id);
-      navigate(`${ROUTES.AI_MATCH}?aiDeckId=${encodeURIComponent(deck.id)}`);
+      navigate(`${ROUTES.AI_MATCH}?source=admin&aiDeckId=${encodeURIComponent(deck.id)}`);
     } catch (error) {
       setMessage(error instanceof Error ? error.message : "AI 덱 테스트를 시작하지 못했습니다.");
     } finally {
@@ -215,7 +230,13 @@ export function AdminAIDeckManager({ onUnauthorized }: Props) {
         <div className="space-y-5 rounded-xl border border-neutral-800 bg-black/30 p-5">
           <div className="grid gap-4 md:grid-cols-2">
             <label className="text-sm font-bold">이름<input value={draft.name} onChange={(event) => setDraft({ ...draft, name: event.target.value })} className="mt-1 w-full rounded border border-neutral-700 bg-neutral-950 px-3 py-2.5" placeholder="예: Rush Pressure" /></label>
-            <label className="text-sm font-bold">Champion<select value={draft.championDefinitionId ?? ""} onChange={(event) => setDraft({ ...draft, championDefinitionId: event.target.value || null })} className="mt-1 w-full rounded border border-neutral-700 bg-neutral-950 px-3 py-2.5"><option value="">Champion 선택</option>{(options?.champions ?? []).filter((champion) => champion.status === "PUBLISHED").map((champion) => <option key={champion.id} value={champion.id}>{champion.name}</option>)}</select></label>
+            <label className="text-sm font-bold">Champion
+              <div className="mt-1 flex gap-1">
+                <input value={championSearch} onChange={(event) => setChampionSearch(event.target.value)} placeholder="Champion 검색" className="min-w-0 flex-1 rounded border border-neutral-700 bg-neutral-950 px-3 py-2.5" />
+                <select value={championStatus} onChange={(event) => setChampionStatus(event.target.value as StatusFilter)} className="rounded border border-neutral-700 bg-neutral-950 px-2 py-2.5 text-xs"><option value="ALL">전체</option><option value="PUBLISHED">공개</option><option value="DRAFT">DRAFT</option></select>
+              </div>
+              <select value={draft.championDefinitionId ?? ""} onChange={(event) => setDraft({ ...draft, championDefinitionId: event.target.value || null })} className="mt-1 w-full rounded border border-neutral-700 bg-neutral-950 px-3 py-2.5"><option value="">Champion 선택</option>{filteredChampions.map((champion) => <option key={champion.id} value={champion.id}>{champion.name}{champion.status === "DRAFT" ? " [DRAFT]" : ""}</option>)}</select>
+            </label>
           </div>
           <div className="grid gap-4 md:grid-cols-[1fr_120px]">
             <label className="text-sm font-bold">설명<textarea value={draft.description} onChange={(event) => setDraft({ ...draft, description: event.target.value })} className="mt-1 min-h-20 w-full rounded border border-neutral-700 bg-neutral-950 px-3 py-2.5" /></label>
@@ -226,6 +247,7 @@ export function AdminAIDeckManager({ onUnauthorized }: Props) {
             <div className="relative min-w-52 flex-1"><Search className="pointer-events-none absolute left-3 top-2.5 h-4 w-4 text-neutral-600" /><input value={search} onChange={(event) => setSearch(event.target.value)} placeholder="카드 이름 검색" className="w-full rounded border border-neutral-700 bg-black py-2 pl-9 pr-3 text-sm" /></div>
             <select value={filterType} onChange={(event) => setFilterType(event.target.value as FilterType)} className="rounded border border-neutral-700 bg-black px-3 py-2 text-sm"><option value="ALL">전체 타입</option><option value="WRESTLER">WRESTLER</option><option value="TECHNIQUE">TECHNIQUE</option></select>
             <select value={filterRarity} onChange={(event) => setFilterRarity(event.target.value)} className="rounded border border-neutral-700 bg-black px-3 py-2 text-sm"><option value="ALL">전체 등급</option><option value="NORMAL">NORMAL</option><option value="LEGENDARY">LEGENDARY</option></select>
+            <select value={filterStatus} onChange={(event) => setFilterStatus(event.target.value as StatusFilter)} className="rounded border border-neutral-700 bg-black px-3 py-2 text-sm"><option value="ALL">전체 상태</option><option value="PUBLISHED">공개</option><option value="DRAFT">미공개</option></select>
             <span className={`ml-auto text-sm font-black ${draft.cardDefinitionIds.length >= (options?.minCardCount ?? 20) && draft.cardDefinitionIds.length <= (options?.maxCardCount ?? 30) ? "text-emerald-300" : "text-amber-300"}`}>{draft.cardDefinitionIds.length}장 / {options?.minCardCount ?? 20}~{options?.maxCardCount ?? 30}</span>
           </div>
 
@@ -234,11 +256,11 @@ export function AdminAIDeckManager({ onUnauthorized }: Props) {
               const count = cardCounts.get(card.id) ?? 0;
               const maxCopies = card.rarity === "LEGENDARY" ? 1 : 2;
               const canAdd = draft.cardDefinitionIds.length < (options?.maxCardCount ?? 25) &&
-                !card.isToken && !card.isChampionToken && card.status === "PUBLISHED" && count < maxCopies;
+                !card.isToken && !card.isChampionToken && card.status !== "DISABLED" && count < maxCopies;
               return (
                 <div key={card.id} className={`rounded border p-3 transition ${count ? "border-primary bg-primary/10" : "border-neutral-800 bg-neutral-950"}`}>
                   <div className="flex items-center justify-between gap-2">
-                    <span className="font-black">{card.name}</span>
+                    <span className="font-black">{card.name} {card.status === "DRAFT" && <span className="ml-1 rounded border border-amber-700 px-1 text-[10px] text-amber-300">DRAFT</span>}</span>
                     <div className="flex items-center gap-1">
                       <button type="button" disabled={!count || busy} onClick={() => removeCard(card)} className="rounded border border-neutral-700 px-2 py-0.5 text-xs disabled:opacity-40">−</button>
                       <span className="min-w-5 text-center text-xs font-black text-primary">{count}</span>
@@ -257,6 +279,14 @@ export function AdminAIDeckManager({ onUnauthorized }: Props) {
                 {draft.cardDefinitionIds.filter((id) => !options?.cards.some((card) => card.id === id)).map((id) => (
                   <button key={id} type="button" onClick={() => setDraft({ ...draft, cardDefinitionIds: draft.cardDefinitionIds.filter((cardId) => cardId !== id) })} className="rounded border border-red-800 px-2 py-1 font-mono hover:bg-red-900/40">{id} ×</button>
                 ))}
+              </div>
+            </div>
+          )}
+          {selectedDeck && selectedDeck.requiredCardDefinitionIds.some((id) => !options?.cards.some((card) => card.id === id)) && (
+            <div className="rounded border border-red-900/60 bg-red-950/20 p-3 text-xs text-red-200">
+              카드 효과 또는 Champion Token 참조가 누락되었습니다. 아래 ID를 확인하세요. 자동 대체하지 않습니다.
+              <div className="mt-2 flex flex-wrap gap-2 font-mono">
+                {selectedDeck.requiredCardDefinitionIds.filter((id) => !options?.cards.some((card) => card.id === id)).map((id) => <span key={id} className="rounded border border-red-800 px-2 py-1">{id}</span>)}
               </div>
             </div>
           )}

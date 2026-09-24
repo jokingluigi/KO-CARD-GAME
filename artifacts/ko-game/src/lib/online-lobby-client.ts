@@ -25,6 +25,16 @@ export type OnlineLobbyMessage =
 type MatchPayload = {
   matchId: string; version: number; state: unknown; events: unknown[];
   serverTime: number; turnStartedAt: number | null; turnDeadlineAt: number | null;
+  gameplayStartsAt: number | null;
+  publicPlayers: Array<{
+    seat: "PLAYER_ONE" | "PLAYER_TWO";
+    displayName: string;
+    championDefinitionId: string;
+    championName: string;
+    portraitUrl: string | null;
+    dialogueLine: string | null;
+  }>;
+  introFirstSpeaker: "PLAYER_ONE" | "PLAYER_TWO" | null;
   connectionStates: Record<"PLAYER_ONE" | "PLAYER_TWO", "CONNECTED" | "DISCONNECTED_GRACE" | "FORFEITED">;
 };
 export type OnlineMatchMessage =

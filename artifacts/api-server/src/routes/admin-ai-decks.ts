@@ -96,8 +96,8 @@ router.get("/options", async (_request, response): Promise<void> => {
     db.select().from(championsTable).orderBy(asc(championsTable.name)),
   ]);
   response.json({
-    cards,
-    champions,
+    cards: cards.filter((card) => card.status !== "DISABLED"),
+    champions: champions.filter((champion) => champion.status !== "DISABLED"),
     minCardCount: AI_DECK_MIN_SIZE,
     maxCardCount: AI_DECK_MAX_SIZE,
   });

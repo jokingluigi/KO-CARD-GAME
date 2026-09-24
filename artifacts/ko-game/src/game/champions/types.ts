@@ -64,6 +64,8 @@ export interface ChampionDefinition {
   questCompleteAudioUrl?: string | null;
   questCompleteAudioVolume?: number;
   questCompleteAudioEnabled?: boolean;
+  introLineOne?: string | null;
+  introLineTwo?: string | null;
   maxHealth: number;
   abilityCost: number;
   ability: ChampionAbility;

@@ -18,10 +18,12 @@ import {
   runAITurn,
   fetchPublishedWrestlerCards,
   fetchPublishedCardDefinitions,
+  fetchAiTestCardDefinitions,
   cardRecordToDefinition,
   getCardDefinition,
   setRuntimeCardDefinitions,
   fetchPublishedChampions,
+  fetchAiTestChampions,
   championRecordToDefinition,
   fetchGameMedia,
   emptyGameMediaCatalog,
@@ -37,6 +39,12 @@ import { MainMenu } from '@/components/main-menu';
 import { AuthLoading, AuthPage, AuthRecovery } from '@/components/auth-page';
 import { fetchCurrentUser, logout, type AuthUser } from '@/lib/auth-client';
 import { audioManager } from '@/audio/audio-manager';
+import {
+  BGM_MUTE_STORAGE_KEY,
+  BGM_VOLUME_STORAGE_KEY,
+  readStoredBgmMute,
+  readStoredBgmVolume,
+} from '@/audio/audio-settings';
 import { fetchDecks, type Deck } from '@/lib/decks-client';
 import { ROUTES } from '@/lib/routes';
 import { fetchAIDecks, type AIDeck } from '@/lib/ai-decks-client';
@@ -54,9 +62,6 @@ import {
 const TURN_TIME_LIMIT_SECONDS = 90;
 const ENTRANCE_EFFECT_DELAY_MS = 180;
 const RESULT_SCREEN_SETTLE_DELAY_MS = 320;
-const BGM_MUTE_STORAGE_KEY = 'ko-game-bgm-muted';
-const BGM_VOLUME_STORAGE_KEY = 'ko-game-bgm-volume';
-
 function actualAttackDamage(
   before: GameState,
   after: GameState,
@@ -106,23 +111,6 @@ function actualAttackDamage(
   }
 
   return Math.max(0, damageEvent?.amount ?? 0);
-}
-
-function readStoredBgmMute() {
-  try {
-    return window.localStorage.getItem(BGM_MUTE_STORAGE_KEY) === 'true';
-  } catch {
-    return false;
-  }
-}
-
-function readStoredBgmVolume() {
-  try {
-    const value = Number(window.localStorage.getItem(BGM_VOLUME_STORAGE_KEY));
-    return Number.isFinite(value) ? Math.min(100, Math.max(0, value)) : 100;
-  } catch {
-    return 100;
-  }
 }
 
 export default function Home() {
@@ -177,6 +165,8 @@ export default function Home() {
   const pendingEntranceAudioRef = useRef<{ url: string; volume: number; isLegendary: boolean } | null>(null);
   const processedAttackSoundsRef = useRef(new Set<string>());
   const latestGameStateRef = useRef(gameState);
+  const matchReadyRef = useRef(matchReady);
+  matchReadyRef.current = matchReady;
   latestGameStateRef.current = gameState;
 
   useEffect(() => {
@@ -273,9 +263,9 @@ export default function Home() {
       setAvailableAIDecks(null);
       Promise.all([
         fetchDecks(),
-        fetchAIDecks(),
-        fetchPublishedCardDefinitions(),
-        fetchPublishedChampions(),
+        fetchAIDecks(isAdminSource ? searchParams.get("aiDeckId") : undefined),
+        isAdminSource ? fetchAiTestCardDefinitions() : fetchPublishedCardDefinitions(),
+        isAdminSource ? fetchAiTestChampions() : fetchPublishedChampions(),
         fetchGameMedia(),
       ]).then(([decks, aiDeckResult, definitions, champions, media]) => {
         if (cancelled) return;
@@ -441,6 +431,36 @@ export default function Home() {
     const userChampion = data.champions.find((champion) => champion.id === deck.championDefinitionId);
     const aiChampion = data.champions.find((champion) => champion.id === aiDeck.championDefinitionId);
     const aiDeckDefinitionIds = aiDeck.cardDefinitionIds;
+    const neededCardIds = new Set([...deck.cardDefinitionIds, ...aiDeckDefinitionIds]);
+    const collectReferences = (value: unknown): void => {
+      if (Array.isArray(value)) {
+        value.forEach(collectReferences);
+        return;
+      }
+      if (!value || typeof value !== "object") return;
+      const record = value as Record<string, unknown>;
+      for (const key of ["cardDefinitionId", "championTokenDefinitionId"]) {
+        if (typeof record[key] === "string") neededCardIds.add(record[key]);
+      }
+      Object.values(record).forEach(collectReferences);
+    };
+    data.definitions.forEach((definition) => {
+      if (neededCardIds.has(definition.id)) collectReferences(definition.effectConfig);
+    });
+    for (const champion of data.champions) {
+      if (champion.id === deck.championDefinitionId || champion.id === aiDeck.championDefinitionId) {
+        if (champion.championTokenDefinitionId) neededCardIds.add(champion.championTokenDefinitionId);
+      }
+    }
+    const matchDefinitions = data.definitions.filter(
+      (definition) => definition.status === "PUBLISHED" || neededCardIds.has(definition.id),
+    );
+    const matchChampions = data.champions.filter(
+      (champion) =>
+        champion.status === "PUBLISHED" ||
+        champion.id === deck.championDefinitionId ||
+        champion.id === aiDeck.championDefinitionId,
+    );
     if (!userChampion || !aiChampion || deck.cardDefinitionIds.length < 20 || aiDeckDefinitionIds.length < 20) {
       setPlayError('AI 매치를 시작할 수 있는 공개 카드와 Champion이 부족합니다.');
       return;
@@ -448,8 +468,8 @@ export default function Home() {
     const nextState = startGame(
       createInitialGameState(
         [userChampion.id, aiChampion.id],
-        data.definitions,
-        data.champions,
+         matchDefinitions,
+         matchChampions,
         [deck.cardDefinitionIds, aiDeckDefinitionIds],
         { gameId: matchId, randomSeed: seedForAIMatch(matchId) },
       ),
@@ -545,7 +565,7 @@ export default function Home() {
   }, [bgmMuted, bgmVolume]);
 
   useEffect(() => () => {
-    audioManager.stopGameAudio();
+    if (matchReadyRef.current) audioManager.stopGameAudio();
     for (const resolve of presentationIdleWaitersRef.current) resolve();
     presentationIdleWaitersRef.current.clear();
   }, []);

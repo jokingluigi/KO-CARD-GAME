@@ -49,6 +49,7 @@ type Champion = {
   abilityAudioAssetId: string | null; abilityAudioUrl: string | null; abilityAudioVolume: number;
   questCompleteAudioAssetId: string | null; questCompleteAudioUrl: string | null;
   questCompleteAudioVolume: number; questCompleteAudioEnabled: boolean;
+  introLineOne: string | null; introLineTwo: string | null;
   questCompleteAudioUploadToken: string | null;
   questCompleteAudioFileName: string | null;
   status: Status; version: number;
@@ -96,6 +97,7 @@ const empty: Form = {
   abilityAudioAssetId: null, abilityAudioUrl: null, abilityAudioVolume: 100,
   questCompleteAudioAssetId: null, questCompleteAudioUrl: null,
   questCompleteAudioVolume: 100, questCompleteAudioEnabled: false,
+  introLineOne: null, introLineTwo: null,
   questCompleteAudioUploadToken: null,
   questCompleteAudioFileName: null,
 };
@@ -146,6 +148,46 @@ export function AdminChampionManager({ onUnauthorized }: { onUnauthorized: () =>
   const [portraitLocalUrl, setPortraitLocalUrl] = useState<string | null>(null);
   const [basicPortraitUploading, setBasicPortraitUploading] = useState(false);
   const [portraitUploading, setPortraitUploading] = useState(false);
+  type IntroInteraction = { id: string; championOneId: string; championTwoId: string; lineOne: string | null; lineTwo: string | null; firstSpeaker: "ONE" | "TWO"; status: "DRAFT" | "PUBLISHED" | "DISABLED" };
+  const [introInteractions, setIntroInteractions] = useState<IntroInteraction[]>([]);
+  const [introDraft, setIntroDraft] = useState<Partial<IntroInteraction> | null>(null);
+  const [introBusy, setIntroBusy] = useState(false);
+  const [introError, setIntroError] = useState("");
+  const loadIntroInteractions = useCallback(async () => {
+    const response = await fetch(`${adminApiBase}/champion-intro-interactions`, { credentials: "include" });
+    if (response.status === 401) { onUnauthorized(); return; }
+    if (!response.ok) { setIntroError(await message(response)); return; }
+    setIntroInteractions(((await response.json()) as { interactions: IntroInteraction[] }).interactions);
+  }, [onUnauthorized]);
+  useEffect(() => { void loadIntroInteractions(); }, [loadIntroInteractions]);
+  async function saveIntroInteraction() {
+    if (!introDraft?.championOneId || !introDraft.championTwoId || introDraft.championOneId === introDraft.championTwoId) {
+      setIntroError("서로 다른 챔피언 두 명을 선택해 주세요."); return;
+    }
+    setIntroBusy(true); setIntroError("");
+    try {
+      const editingInteraction = introDraft.id;
+      const response = await fetch(`${adminApiBase}/champion-intro-interactions${editingInteraction ? `/${editingInteraction}` : ""}`, {
+        method: editingInteraction ? "PATCH" : "POST", credentials: "include",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(introDraft),
+      });
+      if (!response.ok) throw new Error(await message(response));
+      setIntroDraft(null); setMessageText(editingInteraction ? "특수 대사를 수정했습니다." : "특수 대사를 등록했습니다.");
+      await loadIntroInteractions();
+    } catch (reason) { setIntroError(reason instanceof Error ? reason.message : "특수 대사를 저장하지 못했습니다."); }
+    finally { setIntroBusy(false); }
+  }
+  async function deleteIntroInteraction(id: string) {
+    if (!window.confirm("특수 대사를 삭제하시겠습니까?")) return;
+    setIntroBusy(true); setIntroError("");
+    try {
+      const response = await fetch(`${adminApiBase}/champion-intro-interactions/${id}`, { method: "DELETE", credentials: "include" });
+      if (!response.ok) throw new Error(await message(response));
+      setMessageText("특수 대사를 삭제했습니다."); await loadIntroInteractions();
+    } catch (reason) { setIntroError(reason instanceof Error ? reason.message : "특수 대사를 삭제하지 못했습니다."); }
+    finally { setIntroBusy(false); }
+  }
   const load = useCallback(async () => {
     const query = new URLSearchParams();
     if (search.trim()) query.set("search", search.trim());
@@ -485,6 +527,7 @@ export function AdminChampionManager({ onUnauthorized }: { onUnauthorized: () =>
        questCompletedPortraitFileName: null,
       abilityCost: champion.abilityCost, abilityText: champion.abilityText, abilityEffects: champion.abilityEffects,
       hasQuest: champion.hasQuest, questName: champion.questName, questText: champion.questText,
+        introLineOne: champion.introLineOne ?? null, introLineTwo: champion.introLineTwo ?? null,
       questCondition: champion.questCondition, questProgressRequired: champion.questProgressRequired,
       questRewardText: champion.questRewardText, questRewardEffects: champion.questRewardEffects,
       upgradedAbilityName: champion.upgradedAbilityName, upgradedAbilityCost: champion.upgradedAbilityCost,
@@ -664,6 +707,22 @@ export function AdminChampionManager({ onUnauthorized }: { onUnauthorized: () =>
     </article>)}</div>
     {open && <div className="fixed inset-0 z-50 overflow-y-auto bg-black/80 p-5"><div className="mx-auto max-w-4xl rounded-lg border border-neutral-700 bg-neutral-950 p-5">
         <div className="mb-4 flex items-start justify-between gap-3"><div><h3 className="text-xl font-black">{editing?"챔피언 수정":"새 챔피언"}</h3><p className="mt-1 text-xs text-neutral-500">분석과 프롬프트 생성은 현재 입력값을 별도 상태로 처리하며 폼을 초기화하지 않습니다.</p></div><button type="button" onClick={closeEditor}><X/></button></div>
+        {editing && <section className="mb-4 rounded border border-neutral-800 bg-neutral-900/50 p-3">
+          <div className="mb-2 flex items-center justify-between"><h4 className="text-sm font-black">이 Champion의 특수 Intro 관계</h4><button type="button" disabled={introBusy} onClick={() => setIntroDraft({ championOneId: editing.id, championTwoId: champions.find(c => c.id !== editing.id)?.id, lineOne: "", lineTwo: "", firstSpeaker: "ONE", status: "DRAFT" })} className="rounded bg-primary px-2 py-1 text-[11px] font-bold text-black">새 관계</button></div>
+          {introError && <p className="mb-2 text-xs text-red-300">{introError}</p>}
+          {introInteractions.filter(item => item.championOneId === editing.id || item.championTwoId === editing.id).map(item => {
+            const currentIsOne = item.championOneId === editing.id;
+            const opponent = champions.find(c => c.id === (currentIsOne ? item.championTwoId : item.championOneId));
+            return <div key={item.id} className="mb-2 flex items-center justify-between gap-2 rounded border border-neutral-800 p-2 text-xs"><span><b>현재: {editing.name}</b> ↔ <b>상대: {opponent?.name ?? "삭제된 Champion (관계 깨짐)"}</b><br/>현재 대사: {currentIsOne ? item.lineOne || "(없음)" : item.lineTwo || "(없음)"} · 상대 대사: {currentIsOne ? item.lineTwo || "(없음)" : item.lineOne || "(없음)"} · {item.status}</span><span className="flex gap-2"><button type="button" onClick={() => setIntroDraft(item)} className="text-primary">편집</button><button type="button" onClick={() => void deleteIntroInteraction(item.id)} className="text-red-300">삭제</button></span></div>;
+          })}
+          {introDraft && <div className="grid gap-2 border-t border-neutral-800 pt-2 md:grid-cols-2">
+            <label className="text-xs">Champion 1<select className={input} value={introDraft.championOneId ?? ""} onChange={e => setIntroDraft({ ...introDraft, championOneId: e.target.value })}>{champions.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}</select></label>
+            <label className="text-xs">Champion 2<select className={input} value={introDraft.championTwoId ?? ""} onChange={e => setIntroDraft({ ...introDraft, championTwoId: e.target.value })}>{champions.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}</select></label>
+            <input className={input} maxLength={80} placeholder="Champion 1 대사" value={introDraft.lineOne ?? ""} onChange={e => setIntroDraft({ ...introDraft, lineOne: e.target.value })}/><input className={input} maxLength={80} placeholder="Champion 2 대사" value={introDraft.lineTwo ?? ""} onChange={e => setIntroDraft({ ...introDraft, lineTwo: e.target.value })}/>
+            <select className={input} value={introDraft.firstSpeaker ?? "ONE"} onChange={e => setIntroDraft({ ...introDraft, firstSpeaker: e.target.value as "ONE" | "TWO" })}><option value="ONE">첫 화자: Champion 1</option><option value="TWO">첫 화자: Champion 2</option></select><select className={input} value={introDraft.status ?? "DRAFT"} onChange={e => setIntroDraft({ ...introDraft, status: e.target.value as IntroInteraction["status"] })}><option value="DRAFT">DRAFT</option><option value="PUBLISHED">PUBLISHED</option><option value="DISABLED">DISABLED</option></select>
+            <div className="flex gap-2 md:col-span-2"><button type="button" disabled={introBusy} onClick={() => void saveIntroInteraction()} className="rounded bg-emerald-700 px-3 py-1 text-xs">저장</button><button type="button" onClick={() => setIntroDraft(null)} className="rounded border px-3 py-1 text-xs">취소</button></div>
+          </div>}
+        </section>}
        <div className="mb-4 flex flex-wrap gap-2 rounded border border-neutral-800 bg-neutral-900/40 p-3">
          <button type="button" disabled={fullPrompting} onClick={()=>void runFullChampionAnalysis(true)} className="rounded bg-primary px-3 py-2 text-xs font-black text-black disabled:opacity-50">
            {fullPrompting ? "전체 프롬프트 생성 중..." : "챔피언 전체 구현 프롬프트 생성"}
@@ -676,6 +735,8 @@ export function AdminChampionManager({ onUnauthorized }: { onUnauthorized: () =>
       <div className="grid gap-4 md:grid-cols-2">
         <label>이름<input className={input} value={form.name} onChange={e=>update("name",e.target.value)}/></label>
         <label>최대 HP<input type="number" className={input} value={form.maxHealth} onChange={e=>update("maxHealth",Number(e.target.value))}/></label>
+         <label>기본 Intro 대사 1 (최대 80자)<input maxLength={80} className={input} value={form.introLineOne ?? ""} onChange={e=>update("introLineOne",e.target.value || null)}/></label>
+         <label>기본 Intro 대사 2 (최대 80자)<input maxLength={80} className={input} value={form.introLineTwo ?? ""} onChange={e=>update("introLineTwo",e.target.value || null)}/></label>
         <label className="md:col-span-2">설명<textarea className={input} value={form.description} onChange={e=>update("description",e.target.value)}/></label>
           <div className="md:col-span-2 grid gap-3 md:grid-cols-2">
             <div className="rounded border border-neutral-800 bg-neutral-900/40 p-3">

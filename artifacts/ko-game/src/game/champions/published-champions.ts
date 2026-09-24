@@ -23,6 +23,8 @@ export type PublishedChampionRecord = {
   questCompleteAudioUrl?: string | null;
   questCompleteAudioVolume?: number;
   questCompleteAudioEnabled?: boolean;
+  introLineOne?: string | null;
+  introLineTwo?: string | null;
 };
 
 function effects(config: Structured | null, tokenId?: string | null): ChampionEffect[] {
@@ -91,6 +93,8 @@ export function championRecordToDefinition(record: PublishedChampionRecord): Cha
     questCompletedPortraitEnabled: record.questCompletedPortraitEnabled,
     questCompletedPortraitAssetId: record.questCompletedPortraitAssetId,
     questCompletedPortraitUrl: record.questCompletedPortraitUrl,
+    introLineOne: record.introLineOne ?? null,
+    introLineTwo: record.introLineTwo ?? null,
     abilityCost: record.abilityCost,
     ability: ability(`${record.id}-ability`, record.abilityName, record.abilityCost, record.abilityText,
       record.abilityEffects, record.championTokenDefinitionId),
@@ -116,5 +120,16 @@ export async function fetchPublishedChampions(): Promise<ChampionDefinition[]> {
   if (!response.ok) return [];
   const body = await response.json() as { champions?: PublishedChampionRecord[] };
   return (body.champions ?? []).filter((item) => item.status === "PUBLISHED")
+    .map(championRecordToDefinition);
+}
+
+/** Admin-only AI test pool: PUBLISHED plus DRAFT, never DISABLED. */
+export async function fetchAiTestChampions(): Promise<ChampionDefinition[]> {
+  const apiBase = `${import.meta.env.BASE_URL.replace(/\/$/, "")}/api`;
+  const response = await fetch(`${apiBase}/admin/champions`, { credentials: "include" });
+  if (!response.ok) throw new Error("AI 테스트 Champion 풀을 불러오지 못했습니다.");
+  const body = (await response.json()) as { champions?: PublishedChampionRecord[] };
+  return (body.champions ?? [])
+    .filter((champion) => champion.status !== "DISABLED")
     .map(championRecordToDefinition);
 }

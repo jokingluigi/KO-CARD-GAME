@@ -5,6 +5,7 @@ import { shouldPreventAltWheel, shouldToggleAltInfo } from "./alt-inspector-keyb
 
 const keydown = (overrides: Partial<KeyboardEvent> = {}): KeyboardEvent =>
   ({
+    type: "keydown",
     key: "Alt",
     repeat: false,
     ctrlKey: false,
@@ -23,6 +24,10 @@ test("Alt key repeat and modifier shortcuts do not toggle the mode", () => {
   assert.equal(shouldToggleAltInfo(keydown({ metaKey: true }), false), false);
   assert.equal(shouldToggleAltInfo(keydown({ shiftKey: true }), false), false);
   assert.equal(shouldToggleAltInfo(keydown({ key: "Tab" }), false), false);
+});
+
+test("Alt keyup never toggles the mode", () => {
+  assert.equal(shouldToggleAltInfo(keydown({ type: "keyup" }), false), false);
 });
 
 test("Alt alone is ignored while an editable control has focus", () => {

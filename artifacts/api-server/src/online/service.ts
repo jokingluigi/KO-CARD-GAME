@@ -6,6 +6,7 @@ import {
   db,
   gameMediaTable,
   onlineMatchesTable,
+  championIntroInteractionsTable,
   rewardSettingsTable,
   usersTable,
   type CardRecord,
@@ -40,9 +41,11 @@ import {
   sanitizeGameStateForViewer,
 } from "./sanitizer";
 import { ONLINE_MATCH_CONFIG } from "./config";
+import { mapIntroToSeats, resolveChampionIntro } from "./intro";
 import type {
   OnlineActionPayload,
   OnlineServerMessage,
+  OnlinePublicPlayerMetadata,
 } from "./protocol";
 
 export type OnlineSeat = "PLAYER_ONE" | "PLAYER_TWO";
@@ -54,6 +57,8 @@ export type OnlineMatchSnapshot = {
   player2DeckId: string;
   cardDefinitions: CardDefinition[];
   championDefinitions: ChampionDefinition[];
+  publicPlayers: OnlinePublicPlayerMetadata[];
+  introFirstSpeaker: "PLAYER_ONE" | "PLAYER_TWO" | null;
 };
 
 export interface OnlineMatchConnection {
@@ -83,6 +88,7 @@ export type OnlineMatchRuntime = {
   reconnectDeadlineAt: Partial<Record<OnlineSeat, number>>;
   turnStartedAt: number | null;
   turnDeadlineAt: number | null;
+  gameplayStartsAt: number | null;
   resultReason: string | null;
   queue: Promise<void>;
   turnTimer: ReturnType<typeof setTimeout> | null;
@@ -162,6 +168,7 @@ async function persistRuntime(runtime: OnlineMatchRuntime): Promise<void> {
       stateVersion: runtime.version,
       turnStartedAt: runtime.turnStartedAt ? new Date(runtime.turnStartedAt) : null,
       turnDeadlineAt: runtime.turnDeadlineAt ? new Date(runtime.turnDeadlineAt) : null,
+      gameplayStartsAt: runtime.gameplayStartsAt ? new Date(runtime.gameplayStartsAt) : null,
       player1DisconnectStartedAt: runtime.disconnectStartedAt.PLAYER_ONE
         ? new Date(runtime.disconnectStartedAt.PLAYER_ONE)
         : null,
@@ -316,8 +323,9 @@ async function hydrateRuntime(record: OnlineMatchRecord): Promise<OnlineMatchRun
       ...(player1Deadline ? { PLAYER_ONE: player1Deadline } : {}),
       ...(player2Deadline ? { PLAYER_TWO: player2Deadline } : {}),
     },
-    turnStartedAt: timestamp(record.turnStartedAt) ?? now,
-    turnDeadlineAt: timestamp(record.turnDeadlineAt) ?? now + ONLINE_MATCH_CONFIG.turnTimeLimitSeconds * 1000,
+    turnStartedAt: timestamp(record.turnStartedAt),
+    turnDeadlineAt: timestamp(record.turnDeadlineAt),
+    gameplayStartsAt: timestamp(record.gameplayStartsAt),
     resultReason: record.resultReason,
     queue: Promise.resolve(),
     turnTimer: null,
@@ -326,7 +334,16 @@ async function hydrateRuntime(record: OnlineMatchRecord): Promise<OnlineMatchRun
   };
   runtimes.set(record.id, runtime);
   void persistConnectionState(runtime);
-  scheduleTurnTimer(runtime);
+  if (!runtime.gameplayStartsAt || now >= runtime.gameplayStartsAt) scheduleTurnTimer(runtime);
+  else setTimeout(() => {
+    void withRuntimeLock(runtime, async () => {
+      if (runtime.state.status === "FINISHED" || !runtime.gameplayStartsAt || Date.now() < runtime.gameplayStartsAt) return;
+      runtime.turnStartedAt = runtime.gameplayStartsAt;
+      runtime.turnDeadlineAt = runtime.gameplayStartsAt + ONLINE_MATCH_CONFIG.turnTimeLimitSeconds * 1000;
+      await persistRuntime(runtime);
+      scheduleTurnTimer(runtime);
+    });
+  }, Math.max(0, runtime.gameplayStartsAt - now));
   scheduleDisconnectTimers(runtime);
   return runtime;
 }
@@ -675,7 +692,7 @@ export async function startOnlineMatch(
     throw new Error("두 플레이어의 덱이 더 이상 유효하지 않습니다.");
   }
 
-  const [cards, champions, media] = await Promise.all([
+  const [cards, champions, media, interactions] = await Promise.all([
     db.select().from(cardsTable).where(eq(cardsTable.status, "PUBLISHED")),
     db.select().from(championsTable).where(eq(championsTable.status, "PUBLISHED")),
     db.select({
@@ -688,9 +705,20 @@ export async function startOnlineMatch(
       volume: gameMediaTable.volume,
     }).from(gameMediaTable)
       .where(eq(gameMediaTable.gameEnabled, true)),
+    db.select().from(championIntroInteractionsTable),
   ]);
   const cardDefinitions = cards.map(toCardDefinition);
   const championDefinitions = champions.map(toChampionDefinition);
+  const users = await db.select({ id: usersTable.id, nickname: usersTable.nickname })
+    .from(usersTable)
+    .where(or(eq(usersTable.id, player1UserId), eq(usersTable.id, player2UserId)));
+  const firstChampion = championDefinitions.find((champion) => champion.id === firstDeck.championDefinitionId)!;
+  const secondChampion = championDefinitions.find((champion) => champion.id === secondDeck.championDefinitionId)!;
+  if (!firstChampion || !secondChampion) {
+    throw new Error("선택한 챔피언이 현재 공개 카탈로그에 없습니다.");
+  }
+  const resolvedIntro = resolveChampionIntro(firstChampion, secondChampion, interactions);
+  const seatIntro = mapIntroToSeats(firstChampion.id, secondChampion.id, resolvedIntro);
   const mediaCatalog: GameMediaCatalog = {
     backgrounds: media.filter((item) => item.mediaType === "BACKGROUND") as GameMediaCatalog["backgrounds"],
     bgms: media.filter((item) => item.mediaType === "BGM") as GameMediaCatalog["bgms"],
@@ -708,6 +736,25 @@ export async function startOnlineMatch(
     player2DeckId,
     cardDefinitions,
     championDefinitions,
+    publicPlayers: [
+      {
+        seat: "PLAYER_ONE",
+        displayName: users.find((user) => user.id === player1UserId)?.nickname ?? "Player",
+        championDefinitionId: firstDeck.championDefinitionId!,
+        championName: firstDeck.championName!,
+        portraitUrl: championDefinitions.find((champion) => champion.id === firstDeck.championDefinitionId)?.imageUrl ?? null,
+        dialogueLine: seatIntro.playerOneLine,
+      },
+      {
+        seat: "PLAYER_TWO",
+        displayName: users.find((user) => user.id === player2UserId)?.nickname ?? "Player",
+        championDefinitionId: secondDeck.championDefinitionId!,
+        championName: secondDeck.championName!,
+        portraitUrl: championDefinitions.find((champion) => champion.id === secondDeck.championDefinitionId)?.imageUrl ?? null,
+        dialogueLine: seatIntro.playerTwoLine,
+      },
+    ],
+    introFirstSpeaker: seatIntro.firstSpeaker,
   };
 
   const initial = createInitialGameState(
@@ -730,8 +777,10 @@ export async function startOnlineMatch(
     createDeterministicRandom(matchId),
     mediaCatalog,
   );
-  const turnStartedAt = Date.now();
-  const turnDeadlineAt = turnStartedAt + ONLINE_MATCH_CONFIG.turnTimeLimitSeconds * 1000;
+  const startedAt = Date.now();
+  const gameplayStartsAt = startedAt + 4500;
+  const turnStartedAt = gameplayStartsAt;
+  const turnDeadlineAt = gameplayStartsAt + ONLINE_MATCH_CONFIG.turnTimeLimitSeconds * 1000;
 
   let record: OnlineMatchRecord | undefined;
   if (existingWaitingMatchId) {
@@ -745,7 +794,8 @@ export async function startOnlineMatch(
         stateVersion: 0,
         turnStartedAt: new Date(turnStartedAt),
         turnDeadlineAt: new Date(turnDeadlineAt),
-        startedAt: new Date(),
+         gameplayStartsAt: new Date(gameplayStartsAt),
+         startedAt: new Date(startedAt),
         updatedAt: new Date(),
       })
       .where(and(
@@ -767,7 +817,8 @@ export async function startOnlineMatch(
       stateVersion: 0,
       turnStartedAt: new Date(turnStartedAt),
       turnDeadlineAt: new Date(turnDeadlineAt),
-      startedAt: new Date(),
+      gameplayStartsAt: new Date(gameplayStartsAt),
+      startedAt: new Date(startedAt),
       updatedAt: new Date(),
     }).returning();
     record = created;
@@ -887,6 +938,9 @@ export async function applyMatchAction(
     if (runtime.state.status === "FINISHED") {
       return { ok: false, runtime, requestId, code: "MATCH_FINISHED", message: "이미 종료된 매치입니다." };
     }
+    if (runtime.gameplayStartsAt !== null && Date.now() < runtime.gameplayStartsAt) {
+      return { ok: false, runtime, requestId, code: "INTRO_IN_PROGRESS", message: "매치 소개가 끝난 뒤 행동할 수 있습니다." };
+    }
 
     if (
       actionIsNotSurrender(payload) &&
@@ -992,6 +1046,9 @@ export function messageForViewer(
     serverTime: Date.now(),
     turnStartedAt: execution.runtime.turnStartedAt,
     turnDeadlineAt: execution.runtime.turnDeadlineAt,
+    gameplayStartsAt: execution.runtime.gameplayStartsAt,
+    publicPlayers: execution.runtime.snapshot.publicPlayers,
+    introFirstSpeaker: execution.runtime.snapshot.introFirstSpeaker,
     connectionStates: execution.runtime.connectionStates,
   };
 }
@@ -1010,6 +1067,9 @@ export function snapshotMessage(runtime: OnlineMatchRuntime, userId: string): On
     serverTime: Date.now(),
     turnStartedAt: runtime.turnStartedAt,
     turnDeadlineAt: runtime.turnDeadlineAt,
+    gameplayStartsAt: runtime.gameplayStartsAt,
+    publicPlayers: runtime.snapshot.publicPlayers,
+    introFirstSpeaker: runtime.snapshot.introFirstSpeaker,
     connectionStates: runtime.connectionStates,
   };
 }
@@ -1049,6 +1109,9 @@ export function endedMessageForViewer(
     serverTime: Date.now(),
     turnStartedAt: execution.runtime.turnStartedAt,
     turnDeadlineAt: execution.runtime.turnDeadlineAt,
+    gameplayStartsAt: execution.runtime.gameplayStartsAt,
+    publicPlayers: execution.runtime.snapshot.publicPlayers,
+    introFirstSpeaker: execution.runtime.snapshot.introFirstSpeaker,
     connectionStates: execution.runtime.connectionStates,
   };
 }

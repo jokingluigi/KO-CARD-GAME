@@ -133,6 +133,17 @@ export async function fetchPublishedCardDefinitions(): Promise<CardDefinition[]>
   return (await fetchPublishedCardRecords()).map(cardRecordToDefinition);
 }
 
+/** Admin-only AI test pool: PUBLISHED plus DRAFT, never DISABLED. */
+export async function fetchAiTestCardDefinitions(): Promise<CardDefinition[]> {
+  const apiBase = `${import.meta.env.BASE_URL.replace(/\/$/, "")}/api`;
+  const response = await fetch(`${apiBase}/admin/cards`, { credentials: "include" });
+  if (!response.ok) throw new Error("AI 테스트 카드 풀을 불러오지 못했습니다.");
+  const body = (await response.json()) as { cards?: PublishedCardRecord[] };
+  return (body.cards ?? [])
+    .filter((card) => card.status !== "DISABLED")
+    .map(cardRecordToDefinition);
+}
+
 export function cardRecordToDefinition(card: PublishedCardRecord): CardDefinition {
   return {
       id: card.id,

@@ -1,0 +1,597 @@
+.overlay {
+  --arena-ink: #08090b;
+  --arena-panel: rgba(19, 21, 26, 0.92);
+  --arena-line: rgba(224, 178, 91, 0.38);
+  --arena-gold: #e7b65d;
+  --arena-blue: #78a9d8;
+  --arena-red: #e28678;
+  position: fixed;
+  inset: 0;
+  z-index: 180;
+  overflow: hidden;
+  isolation: isolate;
+  color: #f5f1e8;
+  background:
+    radial-gradient(circle at 50% 49%, rgba(235, 181, 82, 0.11), transparent 18rem),
+    linear-gradient(112deg, rgba(40, 83, 122, 0.22), transparent 38%),
+    linear-gradient(292deg, rgba(133, 46, 38, 0.2), transparent 42%),
+    var(--arena-ink);
+  font-family: var(--app-font-sans, "Noto Sans KR", sans-serif);
+}
+
+.overlay::before,
+.overlay::after {
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  content: "";
+}
+
+.overlay::before {
+  opacity: 0.44;
+  background-image:
+    linear-gradient(rgba(226, 182, 93, 0.05) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(226, 182, 93, 0.05) 1px, transparent 1px);
+  background-size: 46px 46px;
+  mask-image: linear-gradient(to bottom, black 8%, transparent 86%);
+}
+
+.overlay::after {
+  opacity: 0.34;
+  background:
+    linear-gradient(123deg, transparent 0 39%, rgba(255, 255, 255, 0.055) 39.12%, transparent 39.35%),
+    linear-gradient(57deg, transparent 0 56%, rgba(255, 255, 255, 0.04) 56.12%, transparent 56.35%);
+  mix-blend-mode: screen;
+}
+
+.scene {
+  position: relative;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(110px, 15vw) minmax(0, 1fr);
+  align-items: center;
+  width: min(100%, 1500px);
+  height: 100%;
+  margin: 0 auto;
+  padding: clamp(46px, 7vh, 88px) clamp(24px, 5vw, 92px) clamp(42px, 6vh, 76px);
+}
+
+.sceneHeader {
+  position: absolute;
+  top: clamp(20px, 4vh, 42px);
+  left: clamp(24px, 5vw, 92px);
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  color: rgba(242, 221, 177, 0.72);
+  font-family: var(--app-font-display, "Oswald", sans-serif);
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+}
+
+.sceneHeader::before {
+  width: 30px;
+  height: 1px;
+  background: var(--arena-gold);
+  box-shadow: 12px 0 0 rgba(231, 182, 93, 0.28);
+  content: "";
+}
+
+.player {
+  position: relative;
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  align-items: center;
+  transform: translateZ(0);
+  transition: opacity 240ms ease, filter 240ms ease;
+}
+
+.player[data-active="false"] {
+  opacity: 0.47;
+  filter: saturate(0.65);
+}
+
+.player[data-side="self"] {
+  align-items: flex-start;
+}
+
+.player[data-side="opponent"] {
+  align-items: flex-end;
+}
+
+.portraitWrap {
+  position: relative;
+  width: clamp(180px, 26vw, 360px);
+  aspect-ratio: 0.82;
+  opacity: 0;
+  transform: translateX(0) scale(0.84);
+  animation: portraitEnter 650ms cubic-bezier(0.17, 0.78, 0.24, 1) both;
+  animation-delay: calc(var(--portrait-delay) - var(--intro-elapsed));
+}
+
+.player[data-side="self"] .portraitWrap {
+  --portrait-delay: 150ms;
+}
+
+.player[data-side="opponent"] .portraitWrap {
+  --portrait-delay: 350ms;
+}
+
+.player[data-side="self"] .portraitWrap {
+  transform-origin: right center;
+}
+
+.player[data-side="opponent"] .portraitWrap {
+  transform-origin: left center;
+}
+
+.portraitFrame {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  border: 1px solid rgba(244, 221, 166, 0.64);
+  clip-path: polygon(7% 0, 93% 0, 100% 7%, 100% 93%, 93% 100%, 7% 100%, 0 93%, 0 7%);
+  background:
+    linear-gradient(135deg, rgba(83, 127, 171, 0.35), transparent 43%),
+    linear-gradient(315deg, rgba(151, 64, 54, 0.36), transparent 45%),
+    #15181e;
+  box-shadow:
+    inset 0 0 0 6px rgba(8, 9, 11, 0.66),
+    inset 0 0 44px rgba(0, 0, 0, 0.68),
+    0 24px 70px rgba(0, 0, 0, 0.46);
+}
+
+.portraitFrame::before,
+.portraitFrame::after {
+  position: absolute;
+  z-index: 2;
+  pointer-events: none;
+  content: "";
+}
+
+.portraitFrame::before {
+  inset: 8px;
+  border: 1px solid rgba(240, 205, 132, 0.18);
+  clip-path: polygon(6% 0, 94% 0, 100% 6%, 100% 94%, 94% 100%, 6% 100%, 0 94%, 0 6%);
+}
+
+.portraitFrame::after {
+  inset: 0;
+  background:
+    linear-gradient(110deg, transparent 22%, rgba(255, 255, 255, 0.13) 22.2%, transparent 23% 76%, rgba(255, 255, 255, 0.06) 76.2%, transparent 77%),
+    linear-gradient(to bottom, transparent 55%, rgba(5, 6, 8, 0.82));
+  mix-blend-mode: screen;
+}
+
+.portraitImage,
+.portraitFallback {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+
+.portraitImage {
+  z-index: 1;
+  display: block;
+  object-fit: cover;
+  object-position: center;
+  filter: saturate(0.86) contrast(1.08);
+}
+
+.player[data-side="self"] .portraitImage {
+  transform: scaleX(-1) scale(1.035);
+}
+
+.portraitFallback {
+  display: grid;
+  place-items: center;
+  color: rgba(242, 218, 159, 0.88);
+  background:
+    radial-gradient(circle at 50% 34%, rgba(231, 182, 93, 0.25), transparent 23%),
+    linear-gradient(135deg, #263647, #171a21 54%, #382224);
+  font-family: var(--app-font-display, "Oswald", sans-serif);
+  font-size: clamp(2.7rem, 7vw, 6rem);
+  font-weight: 700;
+  letter-spacing: 0.06em;
+}
+
+.identity {
+  position: relative;
+  z-index: 3;
+  width: min(100%, 360px);
+  margin-top: -10px;
+  padding: 0 10px;
+}
+
+.player[data-side="self"] .identity {
+  text-align: left;
+}
+
+.player[data-side="opponent"] .identity {
+  text-align: right;
+}
+
+.role {
+  display: block;
+  margin-bottom: 5px;
+  color: rgba(223, 193, 132, 0.67);
+  font-family: var(--app-font-display, "Oswald", sans-serif);
+  font-size: 0.63rem;
+  font-weight: 700;
+  letter-spacing: 0.21em;
+  text-transform: uppercase;
+}
+
+.displayName {
+  display: block;
+  overflow: hidden;
+  color: #faf7ef;
+  font-family: var(--app-font-display, "Oswald", sans-serif);
+  font-size: clamp(1.25rem, 3vw, 2.35rem);
+  font-weight: 700;
+  line-height: 0.98;
+  text-overflow: ellipsis;
+  text-shadow: 0 3px 18px rgba(0, 0, 0, 0.76);
+  white-space: nowrap;
+}
+
+.championName {
+  display: block;
+  margin-top: 8px;
+  overflow: hidden;
+  color: rgba(231, 182, 93, 0.9);
+  font-family: var(--app-font-display, "Oswald", sans-serif);
+  font-size: clamp(0.72rem, 1.35vw, 0.95rem);
+  font-weight: 700;
+  letter-spacing: 0.16em;
+  text-overflow: ellipsis;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.dialogue {
+  width: min(100%, 356px);
+  min-height: 54px;
+  margin-top: 20px;
+  border-top: 1px solid rgba(231, 182, 93, 0.48);
+  padding: 12px 0 0;
+  opacity: 0;
+  transform: translateY(8px);
+  transition: opacity 240ms ease, transform 240ms ease;
+}
+
+.dialogue[data-visible="true"] {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.dialogueLabel {
+  display: block;
+  margin-bottom: 5px;
+  color: rgba(229, 205, 153, 0.72);
+  font-family: var(--app-font-display, "Oswald", sans-serif);
+  font-size: 0.65rem;
+  font-weight: 700;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+}
+
+.dialogueText {
+  display: block;
+  color: #f5ead0;
+  font-size: clamp(0.76rem, 1.38vw, 0.94rem);
+  font-weight: 700;
+  line-height: 1.5;
+  text-wrap: balance;
+}
+
+.player[data-side="opponent"] .dialogue {
+  border-top-color: rgba(226, 134, 120, 0.54);
+}
+
+.player[data-side="opponent"] .dialogueLabel {
+  color: rgba(231, 151, 137, 0.76);
+}
+
+.versusColumn {
+  position: relative;
+  z-index: 4;
+  display: grid;
+  place-items: center;
+  height: 100%;
+}
+
+.versus {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: clamp(78px, 10vw, 144px);
+  aspect-ratio: 1;
+  color: #fff6df;
+  font-family: var(--app-font-display, "Oswald", sans-serif);
+  font-size: clamp(2rem, 5.5vw, 5rem);
+  font-weight: 700;
+  letter-spacing: -0.05em;
+  line-height: 1;
+  opacity: 0;
+  text-shadow:
+    0 3px 0 rgba(109, 64, 24, 0.8),
+    0 0 22px rgba(238, 190, 90, 0.42);
+  transform: scale(0.58);
+  animation: versusImpact 720ms cubic-bezier(0.16, 0.82, 0.2, 1) both;
+  animation-delay: calc(var(--versus-at) - var(--intro-elapsed));
+}
+
+.versus::before,
+.versus::after {
+  position: absolute;
+  top: 50%;
+  width: 7vw;
+  max-width: 92px;
+  height: 1px;
+  background: linear-gradient(to right, transparent, rgba(235, 187, 92, 0.72));
+  content: "";
+}
+
+.versus::before {
+  right: 84%;
+  transform: rotate(-18deg);
+}
+
+.versus::after {
+  left: 84%;
+  transform: rotate(18deg) scaleX(-1);
+}
+
+.impactFlash {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: min(42vw, 560px);
+  aspect-ratio: 1;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(255, 248, 218, 0.24), transparent 63%);
+  opacity: 0;
+  pointer-events: none;
+  transform: translate(-50%, -50%) scale(0.68);
+  animation: flashImpact 430ms ease-out both;
+  animation-delay: calc(var(--versus-at) - var(--intro-elapsed));
+}
+
+.skipButton {
+  position: absolute;
+  right: clamp(20px, 4vw, 66px);
+  bottom: clamp(18px, 4vh, 42px);
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  border: 1px solid rgba(231, 182, 93, 0.52);
+  border-radius: 2px;
+  background: rgba(12, 13, 16, 0.72);
+  padding: 9px 13px;
+  color: rgba(246, 229, 189, 0.84);
+  cursor: pointer;
+  font-family: var(--app-font-display, "Oswald", sans-serif);
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  transition: border-color 160ms ease, background-color 160ms ease, color 160ms ease;
+}
+
+.skipButton::after {
+  width: 0;
+  height: 0;
+  border-top: 4px solid transparent;
+  border-bottom: 4px solid transparent;
+  border-left: 5px solid currentColor;
+  content: "";
+}
+
+.skipButton:hover,
+.skipButton:focus-visible {
+  border-color: var(--arena-gold);
+  background: rgba(48, 40, 25, 0.92);
+  color: #fff4d3;
+  outline: none;
+}
+
+.skipButton:focus-visible {
+  box-shadow: 0 0 0 3px rgba(231, 182, 93, 0.2);
+}
+
+@keyframes portraitEnter {
+  0% {
+    opacity: 0;
+    transform: translateX(0) scale(0.84);
+  }
+  100% {
+    opacity: 1;
+    transform: translateX(0) scale(1);
+  }
+}
+
+@keyframes versusImpact {
+  0% {
+    opacity: 0;
+    transform: scale(0.58);
+  }
+  22% {
+    opacity: 1;
+    transform: scale(1.15);
+  }
+  54% {
+    opacity: 1;
+    transform: scale(0.97);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@keyframes flashImpact {
+  0% {
+    opacity: 0;
+    transform: translate(-50%, -50%) scale(0.68);
+  }
+  42% {
+    opacity: 0.75;
+    transform: translate(-50%, -50%) scale(1);
+  }
+  100% {
+    opacity: 0;
+    transform: translate(-50%, -50%) scale(1.28);
+  }
+}
+
+@media (max-width: 760px) {
+  .overlay {
+    overflow-y: auto;
+  }
+
+  .scene {
+    grid-template-columns: 1fr;
+    grid-template-rows: minmax(0, 1fr) auto minmax(0, 1fr);
+    align-content: stretch;
+    min-height: 100dvh;
+    padding: 56px 22px 64px;
+  }
+
+  .sceneHeader {
+    top: 20px;
+    left: 22px;
+    font-size: 0.58rem;
+  }
+
+  .player {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1.05fr);
+    grid-template-areas: "identity portrait";
+    align-items: center;
+    gap: 12px;
+    width: 100%;
+  }
+
+  .player[data-side="self"] {
+    grid-template-areas: "portrait identity";
+  }
+
+  .portraitWrap {
+    grid-area: portrait;
+    justify-self: center;
+    width: min(41vw, 205px);
+  }
+
+  .player[data-side="self"] .portraitWrap {
+    transform-origin: center;
+  }
+
+  .player[data-side="opponent"] .portraitWrap {
+    transform-origin: center;
+  }
+
+  .identity {
+    grid-area: identity;
+    width: 100%;
+    margin: 0;
+    padding: 0;
+  }
+
+  .player[data-side="self"] .identity,
+  .player[data-side="opponent"] .identity {
+    text-align: left;
+  }
+
+  .role {
+    font-size: 0.53rem;
+    letter-spacing: 0.13em;
+  }
+
+  .displayName {
+    font-size: clamp(1.12rem, 5vw, 1.62rem);
+    white-space: normal;
+    overflow-wrap: anywhere;
+  }
+
+  .championName {
+    margin-top: 6px;
+    font-size: 0.65rem;
+    letter-spacing: 0.11em;
+    white-space: normal;
+  }
+
+  .dialogue {
+    grid-area: identity;
+    align-self: end;
+    width: 100%;
+    min-height: 0;
+    margin-top: 0;
+    padding-top: 8px;
+    transform: translateY(5px);
+  }
+
+  .dialogueLabel {
+    margin-bottom: 3px;
+    font-size: 0.54rem;
+    letter-spacing: 0.1em;
+  }
+
+  .dialogueText {
+    font-size: clamp(0.68rem, 2.7vw, 0.83rem);
+    line-height: 1.4;
+  }
+
+  .versusColumn {
+    height: 74px;
+  }
+
+  .versus {
+    width: 74px;
+    font-size: 2.35rem;
+  }
+
+  .versus::before,
+  .versus::after {
+    width: 28vw;
+  }
+
+  .skipButton {
+    right: 18px;
+    bottom: max(16px, env(safe-area-inset-bottom));
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .player,
+  .dialogue,
+  .skipButton {
+    transition: none;
+  }
+
+  .portraitWrap,
+  .versus,
+  .impactFlash {
+    animation: none;
+    opacity: 1;
+    transform: none;
+  }
+
+  .impactFlash {
+    display: none;
+  }
+
+  .player[data-active="false"] {
+    opacity: 1;
+    filter: none;
+  }
+
+  .dialogue {
+    opacity: 1;
+    transform: none;
+  }
+}

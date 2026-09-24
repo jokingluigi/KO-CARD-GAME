@@ -48,6 +48,8 @@ class AudioManager {
   private baseTransitionId = 0;
   private bgmMuted = false;
   private bgmVolume = 100;
+  private needsAudioUnlock = false;
+  private musicContext: "NON_BATTLE" | "BATTLE" = "NON_BATTLE";
   private attackAudio: HTMLAudioElement | null = null;
   private packReveal: {
     audio: HTMLAudioElement;
@@ -174,6 +176,7 @@ class AudioManager {
       this.bgm.audio.volume = muted
         ? 0
         : safeVolume(this.bgm.volume * this.bgmVolume / 100);
+      if (!muted) this.reconcileBgmPlayback();
     }
   }
 
@@ -183,6 +186,24 @@ class AudioManager {
 
   getBgmVolume() {
     return this.bgmVolume;
+  }
+
+  setMusicContext(context: "NON_BATTLE" | "BATTLE") {
+    this.musicContext = context;
+    if (context === "BATTLE") {
+      this.bgm?.audio.pause();
+      return;
+    }
+    this.reconcileBgmPlayback();
+  }
+
+  unlockAudio() {
+    if (this.musicContext !== "NON_BATTLE" || this.bgmMuted) return;
+    this.reconcileBgmPlayback();
+  }
+
+  isAudioUnlockPending() {
+    return this.needsAudioUnlock;
   }
 
   /** Stops both the persistent base and any temporary entrance music. */
@@ -261,6 +282,9 @@ class AudioManager {
       audio.loop = true;
       audio.volume = 0;
       this.bgm = { audio, url: request.url, volume: request.volume, fadeTimerId: null };
+      audio.addEventListener("canplay", () => {
+        if (this.bgm?.audio === audio) this.reconcileBgmPlayback();
+      }, { once: true });
       if (!this.current) {
         this.startMusicFadeIn(this.bgm);
       }
@@ -397,6 +421,7 @@ class AudioManager {
   private stopBaseMusic() {
     this.baseTransitionId += 1;
     this.pendingBaseMusic = null;
+    this.needsAudioUnlock = false;
     if (!this.bgm) return;
     if (this.bgm.fadeTimerId !== null) window.clearInterval(this.bgm.fadeTimerId);
     this.bgm.audio.pause();
@@ -443,7 +468,12 @@ class AudioManager {
   }
 
   private resumeBaseMusic() {
-    if (!this.bgm || this.bgmMuted) return;
+    this.reconcileBgmPlayback();
+  }
+
+  private reconcileBgmPlayback() {
+    if (!this.bgm || this.bgmMuted || this.musicContext === "BATTLE") return;
+    if (!this.bgm.audio.paused && !this.needsAudioUnlock) return;
     this.startMusicFadeIn(this.bgm);
   }
 
@@ -451,11 +481,14 @@ class AudioManager {
     if (!this.bgm || this.bgm.audio !== music.audio) return;
     if (music.fadeTimerId !== null) window.clearInterval(music.fadeTimerId);
     music.audio.volume = 0;
-    music.audio.play().catch(() => {
-      if (this.bgm?.audio === music.audio) this.stopBaseMusic();
-    });
-    this.startFade(music.audio, safeVolume(music.volume * this.bgmVolume / 100), (timerId) => {
-      if (this.bgm?.audio === music.audio) music.fadeTimerId = timerId;
+    music.audio.play().then(() => {
+      if (this.bgm?.audio !== music.audio) return;
+      this.needsAudioUnlock = false;
+      this.startFade(music.audio, safeVolume(music.volume * this.bgmVolume / 100), (timerId) => {
+        if (this.bgm?.audio === music.audio) music.fadeTimerId = timerId;
+      });
+    }).catch(() => {
+      if (this.bgm?.audio === music.audio) this.needsAudioUnlock = true;
     });
   }
 

@@ -4,6 +4,7 @@ import {
   cardsTable,
   cardFrameDefinitionsTable,
   championsTable,
+  championIntroInteractionsTable,
   db,
   gameMediaTable,
   mechanicRequestsTable,
@@ -154,6 +155,7 @@ type ChampionInput = {
   abilityAudioAssetId: string | null; abilityAudioUrl: string | null; abilityAudioVolume: number;
   questCompleteAudioAssetId: string | null; questCompleteAudioUrl: string | null;
   questCompleteAudioVolume: number; questCompleteAudioEnabled: boolean;
+  introLineOne: string | null; introLineTwo: string | null;
   questCompleteAudioUploadToken: string | null;
 };
 
@@ -192,6 +194,13 @@ function parseChampionInput(value: unknown): ChampionInput | null {
   const questCompleteAudioAssetId = text("questCompleteAudioAssetId");
   const questCompleteAudioUrl = text("questCompleteAudioUrl");
   const questCompleteAudioEnabled = input.questCompleteAudioEnabled === true;
+  const introLine = (key: string) => {
+    const value = text(key);
+    return value && value.length <= 80 && !/<[^>]*>|javascript:/i.test(value) ? value : value ? undefined : null;
+  };
+  const introLineOne = introLine("introLineOne");
+  const introLineTwo = introLine("introLineTwo");
+  if (introLineOne === undefined || introLineTwo === undefined) return null;
   const questCompleteAudioUploadToken = typeof input.questCompleteAudioUploadToken === "string"
     ? input.questCompleteAudioUploadToken : null;
   const abilityEffects = object("abilityEffects");
@@ -303,6 +312,7 @@ function parseChampionInput(value: unknown): ChampionInput | null {
     abilityAudioAssetId: text("abilityAudioAssetId"), abilityAudioUrl: text("abilityAudioUrl"),
     abilityAudioVolume, questCompleteAudioAssetId, questCompleteAudioUrl,
     questCompleteAudioVolume, questCompleteAudioEnabled, questCompleteAudioUploadToken,
+     introLineOne, introLineTwo,
   };
 }
 
@@ -392,8 +402,8 @@ async function validatePublishedChampionToken(
   if (!card || !card.isChampionToken) {
     return { ok: false, message: "공개할 Champion Token 참조가 유효하지 않습니다." };
   }
-  if (card.status === "DISABLED") {
-    return { ok: false, message: "비활성 Champion Token 카드가 연결되어 있어 공개할 수 없습니다." };
+  if (card.status !== "PUBLISHED") {
+    return { ok: false, message: "공개 Champion에는 PUBLISHED Champion Token만 연결할 수 있습니다." };
   }
   return { ok: true };
 }
@@ -1661,6 +1671,87 @@ router.post("/effects/unified-full-prompt", async (request, response): Promise<v
     },
     prompt: createUnifiedEffectPrompt(data),
   });
+});
+
+router.get("/champion-intro-interactions", async (_request, response): Promise<void> => {
+  const rows = await db.select().from(championIntroInteractionsTable);
+  response.json({ interactions: rows });
+});
+
+router.post("/champion-intro-interactions", async (request, response): Promise<void> => {
+  let first = typeof request.body?.championOneId === "string" ? request.body.championOneId.trim() : "";
+  let second = typeof request.body?.championTwoId === "string" ? request.body.championTwoId.trim() : "";
+  let lineOne = request.body?.lineOne;
+  let lineTwo = request.body?.lineTwo;
+  if (first > second) {
+    [first, second] = [second, first];
+    [lineOne, lineTwo] = [lineTwo, lineOne];
+  }
+  const clean = (value: unknown) => {
+    if (value === null || value === undefined || String(value).trim() === "") return null;
+    const text = String(value).trim();
+    if (text.length > 80 || /<[^>]*>|javascript:/i.test(text)) throw new Error("대사는 80자 이내의 일반 텍스트만 입력할 수 있습니다.");
+    return text;
+  };
+  if (!first || !second || first === second) {
+    response.status(400).json({ message: "서로 다른 챔피언 두 명을 선택해 주세요." });
+    return;
+  }
+  const requestedStatus = request.body?.status;
+  if (requestedStatus !== undefined && !["DRAFT", "PUBLISHED", "DISABLED"].includes(requestedStatus)) {
+    response.status(400).json({ message: "상태는 DRAFT, PUBLISHED, DISABLED 중 하나여야 합니다." });
+    return;
+  }
+  const [one, two] = await Promise.all([
+    db.select({ id: championsTable.id }).from(championsTable).where(eq(championsTable.id, first)).limit(1),
+    db.select({ id: championsTable.id }).from(championsTable).where(eq(championsTable.id, second)).limit(1),
+  ]);
+  if (!one[0] || !two[0]) {
+    response.status(400).json({ message: "챔피언을 찾을 수 없습니다." });
+    return;
+  }
+  try {
+    const [created] = await db.insert(championIntroInteractionsTable).values({
+      id: randomUUID(), championOneId: first, championTwoId: second,
+      lineOne: clean(lineOne), lineTwo: clean(lineTwo),
+      firstSpeaker: request.body?.firstSpeaker === "TWO" ? "TWO" : "ONE",
+      status: requestedStatus ?? "DRAFT",
+    }).returning();
+    response.status(201).json({ interaction: created });
+  } catch (error) {
+    response.status(409).json({ message: error instanceof Error ? error.message : "이미 등록된 챔피언 조합입니다." });
+  }
+});
+
+router.patch("/champion-intro-interactions/:id", async (request, response): Promise<void> => {
+  const clean = (value: unknown) => {
+    if (value === null || value === undefined || String(value).trim() === "") return null;
+    const text = String(value).trim();
+    if (text.length > 80 || /<[^>]*>|javascript:/i.test(text)) throw new Error("대사는 80자 이내의 일반 텍스트만 입력할 수 있습니다.");
+    return text;
+  };
+  try {
+    const requestedStatus = request.body?.status;
+    if (requestedStatus !== undefined && !["DRAFT", "PUBLISHED", "DISABLED"].includes(requestedStatus)) {
+      response.status(400).json({ message: "상태는 DRAFT, PUBLISHED, DISABLED 중 하나여야 합니다." });
+      return;
+    }
+    const [updated] = await db.update(championIntroInteractionsTable).set({
+      lineOne: clean(request.body?.lineOne), lineTwo: clean(request.body?.lineTwo),
+      firstSpeaker: request.body?.firstSpeaker === "TWO" ? "TWO" : "ONE",
+      ...(requestedStatus === undefined ? {} : { status: requestedStatus }),
+      version: sql`${championIntroInteractionsTable.version} + 1`, updatedAt: new Date(),
+    }).where(eq(championIntroInteractionsTable.id, request.params.id)).returning();
+    if (!updated) { response.status(404).json({ message: "대화 조합을 찾을 수 없습니다." }); return; }
+    response.json({ interaction: updated });
+  } catch (error) {
+    response.status(400).json({ message: error instanceof Error ? error.message : "대화를 저장하지 못했습니다." });
+  }
+});
+
+router.delete("/champion-intro-interactions/:id", async (request, response): Promise<void> => {
+  await db.delete(championIntroInteractionsTable).where(eq(championIntroInteractionsTable.id, request.params.id));
+  response.status(204).send();
 });
 
 router.get("/champions", async (request, response): Promise<void> => {

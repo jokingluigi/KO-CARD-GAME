@@ -4,6 +4,7 @@ import { useLocation, useParams } from "wouter";
 
 import { GameStatePreview } from "@/components/game-state-preview";
 import { MatchResultOverlay } from "@/components/match-result-overlay";
+import { MatchIntroOverlay } from "@/components/online-match-intro";
 import { OnlineAuthGate } from "@/components/online-lobby-ui";
 import type { AttackAnimationState } from "@/components/attack-animation-utils";
 import {
@@ -29,6 +30,12 @@ import {
 } from "@/game";
 import { audioManager } from "@/audio/audio-manager";
 import {
+  BGM_MUTE_STORAGE_KEY,
+  BGM_VOLUME_STORAGE_KEY,
+  readStoredBgmMute,
+  readStoredBgmVolume,
+} from "@/audio/audio-settings";
+import {
   getOnlineLobbyClient,
   type OnlineLobbyConnectionState,
   type OnlineServerMessage,
@@ -49,9 +56,6 @@ import {
 
 const TURN_TIME_LIMIT_SECONDS = 90;
 const RESULT_SCREEN_SETTLE_DELAY_MS = 320;
-const BGM_MUTE_STORAGE_KEY = "ko-game-bgm-muted";
-const BGM_VOLUME_STORAGE_KEY = "ko-game-bgm-volume";
-
 type ConnectionStatus = "CONNECTED" | "DISCONNECTED_GRACE" | "FORFEITED";
 
 type PendingPlay = {
@@ -66,23 +70,6 @@ type PendingAttack = {
   geometry: AttackAnimationState["geometry"];
   targetPlayerId: string;
 };
-
-function readStoredBgmMute() {
-  try {
-    return window.localStorage.getItem(BGM_MUTE_STORAGE_KEY) === "true";
-  } catch {
-    return false;
-  }
-}
-
-function readStoredBgmVolume() {
-  try {
-    const value = Number(window.localStorage.getItem(BGM_VOLUME_STORAGE_KEY));
-    return Number.isFinite(value) ? Math.min(100, Math.max(0, value)) : 100;
-  } catch {
-    return 100;
-  }
-}
 
 function actualDamage(
   previous: GameState,
@@ -113,11 +100,8 @@ function actualDamage(
 
 function OnlineMatchPage() {
   const { matchId } = useParams<{ matchId: string }>();
-  const [location, navigate] = useLocation();
+  const [, navigate] = useLocation();
   const client = getOnlineLobbyClient();
-  const opponentNickname = typeof window === "undefined"
-    ? null
-    : new URL(location, window.location.origin).searchParams.get("opponent");
   const [connection, setConnection] = useState<OnlineLobbyConnectionState>(client.state);
   const [seat, setSeat] = useState<"PLAYER_ONE" | "PLAYER_TWO" | null>(null);
   const [state, setState] = useState<GameState | null>(null);
@@ -128,6 +112,12 @@ function OnlineMatchPage() {
   const [selectedAttackerId, setSelectedAttackerId] = useState<string | null>(null);
   const [playError, setPlayError] = useState<string | null>(null);
   const [turnDeadlineAt, setTurnDeadlineAt] = useState<number | null>(null);
+  const [gameplayStartsAt, setGameplayStartsAt] = useState<number | null>(null);
+  const [publicPlayers, setPublicPlayers] = useState<Array<{
+    seat: "PLAYER_ONE" | "PLAYER_TWO"; displayName: string; championName: string; portraitUrl: string | null; dialogueLine: string | null;
+  }>>([]);
+  const [introFirstSpeaker, setIntroFirstSpeaker] = useState<"PLAYER_ONE" | "PLAYER_TWO" | null>(null);
+  const [introSkipped, setIntroSkipped] = useState(false);
   const [serverOffset, setServerOffset] = useState(0);
   const [clock, setClock] = useState(() => Date.now());
   const [connectionStates, setConnectionStates] = useState<Record<"PLAYER_ONE" | "PLAYER_TWO", ConnectionStatus> | null>(null);
@@ -231,6 +221,9 @@ function OnlineMatchPage() {
           setPendingAction(false);
         }
         setTurnDeadlineAt(message.turnDeadlineAt);
+        setGameplayStartsAt(message.gameplayStartsAt);
+        setPublicPlayers(message.publicPlayers);
+        setIntroFirstSpeaker(message.introFirstSpeaker);
         setServerOffset(message.serverTime - Date.now());
         setConnectionStates(message.connectionStates);
         opponentConnectionStateRef.current = message.connectionStates[
@@ -494,9 +487,13 @@ function OnlineMatchPage() {
 
   const me = state?.players[0] ?? null;
   const opponent = state?.players[1] ?? null;
+  const viewerSeat = nextSeatForIntro(seat);
+  const selfPublicPlayer = publicPlayers.find((player) => player.seat === viewerSeat);
+  const opponentPublicPlayer = publicPlayers.find((player) => player.seat !== viewerSeat);
   const isConnected = connection === "open" && !sessionReplaced;
   const isMyTurn = Boolean(me && state?.status === "IN_PROGRESS" && state.activePlayerId === me.id);
-  const canAct = Boolean(isConnected && isMyTurn && !pendingAction && !presentationBusy);
+  const introFinished = gameplayStartsAt === null || clock + serverOffset >= gameplayStartsAt;
+  const canAct = Boolean(isConnected && introFinished && isMyTurn && !pendingAction && !presentationBusy);
   const secondsRemaining = turnDeadlineAt === null
     ? TURN_TIME_LIMIT_SECONDS
     : Math.max(0, Math.ceil((turnDeadlineAt - (clock + serverOffset)) / 1000));
@@ -548,6 +545,7 @@ function OnlineMatchPage() {
   function sendAction(action: OnlineActionPayload, options?: { allowOffTurn?: boolean; allowDuringPresentation?: boolean }) {
     clearRejectedActionMessage();
     const actionAllowed = isConnected &&
+      introFinished &&
       !pendingAction &&
       !pendingActionInFlightRef.current &&
       (options?.allowDuringPresentation || !presentationBusy) &&
@@ -724,6 +722,28 @@ function OnlineMatchPage() {
 
   return (
     <>
+      {gameplayStartsAt !== null && clock + serverOffset < gameplayStartsAt && !introSkipped && (
+        <MatchIntroOverlay
+          self={{
+            displayName: selfPublicPlayer?.displayName ?? "Player",
+            championName: selfPublicPlayer?.championName ?? me.champion?.name ?? "Champion",
+            portraitUrl: selfPublicPlayer?.portraitUrl ?? me.champion?.imageUrl ?? null,
+            dialogueLine: selfPublicPlayer?.dialogueLine ?? null,
+          }}
+          opponent={(() => {
+            return { displayName: opponentPublicPlayer?.displayName ?? "Opponent", championName: opponentPublicPlayer?.championName ?? opponent.champion?.name ?? "Champion", portraitUrl: opponentPublicPlayer?.portraitUrl ?? opponent.champion?.imageUrl ?? null, dialogueLine: opponentPublicPlayer?.dialogueLine ?? null };
+          })()}
+          firstSpeaker={introFirstSpeaker === viewerSeat ? "self" : introFirstSpeaker ? "opponent" : null}
+          startedAt={gameplayStartsAt - 4500}
+          gameplayStartsAt={gameplayStartsAt}
+          onSkipRequest={() => setIntroSkipped(true)}
+        />
+      )}
+      {gameplayStartsAt !== null && clock + serverOffset < gameplayStartsAt && introSkipped && (
+        <div className="fixed inset-0 z-[210] flex items-center justify-center bg-black/80 text-sm font-bold text-amber-200" data-testid="match-intro-wait">
+          매치 시작을 기다리는 중… 서버 시각에 맞춰 곧 게임이 시작됩니다.
+        </div>
+      )}
       <div className="pointer-events-none fixed left-1/2 top-2 z-[220] flex -translate-x-1/2 items-center gap-3 rounded-full border border-neutral-700 bg-black/80 px-4 py-2 text-[10px] font-black tracking-[0.16em] text-neutral-300 shadow-lg">
         <span className={isConnected ? "text-emerald-400" : "text-red-300"} data-testid="status-online-match-connection">
           {sessionReplaced ? "SESSION REPLACED" : isConnected ? "SERVER CONNECTED" : "RECONNECTING"}
@@ -749,6 +769,7 @@ function OnlineMatchPage() {
         onEndTurn={() => sendAction({ type: "END_TURN" }, { allowDuringPresentation: true })}
         canEndTurn={Boolean(
           isConnected &&
+          introFinished &&
           isMyTurn &&
           !pendingAction &&
           !state.targetingState?.active &&
@@ -820,7 +841,10 @@ function OnlineMatchPage() {
           setPresentationBusy(busy);
         }}
         presentationPlayerId={me.id}
-        opponentNickname={opponentNickname}
+        playerNickname={selfPublicPlayer?.displayName}
+        playerChampionName={selfPublicPlayer?.championName}
+        opponentNickname={opponentPublicPlayer?.displayName}
+        opponentChampionName={opponentPublicPlayer?.championName}
         onReturnToMainMenu={() => navigate(ROUTES.MAIN_MENU)}
       />
       {matchResultVisible && (
@@ -828,6 +852,10 @@ function OnlineMatchPage() {
       )}
     </>
   );
+}
+
+function nextSeatForIntro(seat: "PLAYER_ONE" | "PLAYER_TWO" | null): "PLAYER_ONE" | "PLAYER_TWO" {
+  return seat ?? "PLAYER_ONE";
 }
 
 export default function OnlineMatch() {

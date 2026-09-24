@@ -50,6 +50,15 @@ export type LobbyOpponent = {
   deckName: string;
 };
 
+export type OnlinePublicPlayerMetadata = {
+  seat: "PLAYER_ONE" | "PLAYER_TWO";
+  displayName: string;
+  championDefinitionId: string;
+  championName: string;
+  portraitUrl: string | null;
+  dialogueLine: string | null;
+};
+
 export type LobbyServerMessage =
   | { type: "QUICK_QUEUE_JOINED"; deck: LobbyDeckSummary }
   | { type: "QUICK_QUEUE_LEFT"; reason?: string }
@@ -73,6 +82,9 @@ export type OnlineServerMessage =
       serverTime: number;
       turnStartedAt: number | null;
       turnDeadlineAt: number | null;
+       gameplayStartsAt: number | null;
+       publicPlayers: OnlinePublicPlayerMetadata[];
+       introFirstSpeaker: "PLAYER_ONE" | "PLAYER_TWO" | null;
       connectionStates: Record<"PLAYER_ONE" | "PLAYER_TWO", "CONNECTED" | "DISCONNECTED_GRACE" | "FORFEITED">;
     }
   | {
@@ -85,6 +97,9 @@ export type OnlineServerMessage =
       serverTime: number;
       turnStartedAt: number | null;
       turnDeadlineAt: number | null;
+       gameplayStartsAt: number | null;
+       publicPlayers: OnlinePublicPlayerMetadata[];
+       introFirstSpeaker: "PLAYER_ONE" | "PLAYER_TWO" | null;
       connectionStates: Record<"PLAYER_ONE" | "PLAYER_TWO", "CONNECTED" | "DISCONNECTED_GRACE" | "FORFEITED">;
     }
   | {
@@ -104,6 +119,9 @@ export type OnlineServerMessage =
       serverTime: number;
       turnStartedAt: number | null;
       turnDeadlineAt: number | null;
+       gameplayStartsAt: number | null;
+       publicPlayers: OnlinePublicPlayerMetadata[];
+       introFirstSpeaker: "PLAYER_ONE" | "PLAYER_TWO" | null;
       connectionStates: Record<"PLAYER_ONE" | "PLAYER_TWO", "CONNECTED" | "DISCONNECTED_GRACE" | "FORFEITED">;
     }
   | {
@@ -115,6 +133,9 @@ export type OnlineServerMessage =
       serverTime: number;
       turnStartedAt: number | null;
       turnDeadlineAt: number | null;
+       gameplayStartsAt: number | null;
+       publicPlayers: OnlinePublicPlayerMetadata[];
+       introFirstSpeaker: "PLAYER_ONE" | "PLAYER_TWO" | null;
       connectionStates: Record<"PLAYER_ONE" | "PLAYER_TWO", "CONNECTED" | "DISCONNECTED_GRACE" | "FORFEITED">;
     }
   | {

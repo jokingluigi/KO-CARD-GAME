@@ -3,7 +3,6 @@ import { useEffect, useState } from "react";
 import { useLocation } from "wouter";
 import type { AuthUser } from "@/lib/auth-client";
 import { ROUTES } from "@/lib/routes";
-import { audioManager } from "@/audio/audio-manager";
 import { emptyMainContent, fetchMainContent, type MainContent } from "@/lib/main-content-client";
 
 type MainMenuProps = {
@@ -60,25 +59,21 @@ const menuItems = [
 export function MainMenu({ onComingSoon, onDeckEdit, onAiMatch, user, onLogout }: MainMenuProps) {
   const [notice, setNotice] = useState("");
   const [mainContent, setMainContent] = useState<MainContent>(emptyMainContent);
-  const [contentLoaded, setContentLoaded] = useState(false);
   const [backgroundState, setBackgroundState] = useState<"fallback" | "loading" | "ready">("fallback");
   const [, navigate] = useLocation();
 
   useEffect(() => {
     let cancelled = false;
-    setContentLoaded(false);
     void fetchMainContent()
       .then((content) => {
         if (cancelled) return;
         setMainContent(content);
-        setContentLoaded(true);
       })
-      .catch(() => {
-        if (!cancelled) setContentLoaded(true);
+      .catch((error) => {
+        if (!cancelled) console.warn("메인 콘텐츠를 불러오지 못했습니다.", error);
       });
     return () => {
       cancelled = true;
-      audioManager.stopBgm();
     };
   }, []);
 
@@ -98,17 +93,6 @@ export function MainMenu({ onComingSoon, onDeckEdit, onAiMatch, user, onLogout }
       image.onerror = null;
     };
   }, [mainContent.background?.assetUrl]);
-
-  useEffect(() => {
-    if (!contentLoaded) return;
-    const bgm = mainContent.bgm;
-    if (!bgm) {
-      audioManager.stopBgm();
-      return;
-    }
-    audioManager.playBgm(bgm.assetUrl, bgm.volume);
-    return () => audioManager.stopBgm();
-  }, [contentLoaded, mainContent.bgm?.assetUrl, mainContent.bgm?.volume]);
 
   const backgroundUrl = backgroundState === "ready" ? mainContent.background?.assetUrl : null;
 

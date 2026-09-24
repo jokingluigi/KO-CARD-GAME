@@ -38,6 +38,7 @@ export type AIDeck = {
   isValid: boolean;
   invalidReasons: string[];
   missingCardDefinitionIds: string[];
+  requiredCardDefinitionIds: string[];
 };
 
 export type AIDeckOptions = {
