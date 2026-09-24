@@ -1,0 +1,367 @@
+KO CARD GAME — TAG-BASED EFFECTS RUNTIME FIX
+"'~~' 태그 카드들에게" 효과가 실제로 전 구역에서 작동하도록 수정
+
+현재 문제:
+`cards.tags`를 조건으로 하는 효과가 Analyzer에서는 생성되거나 저장되더라도 실제 Runtime에서 제대로 적용되지 않는 경우가 있다.
+
+대표 예:
+"등장:어디에 있든 '실험체' 태그가 달려있는 모든 아군 카드들에게 +1/+1을 부여합니다."
+
+목표:
+특정 '실험체' 카드 하나만 고치는 것이 아니라,
+"'~~' 태그가 있는 카드들에게 ..."라는 전체 계열의 효과가 generic하게 작동하도록 수정한다.
+
+공식 규칙:
+- 카드 태그 source of truth = `cards.tags`
+- keywords/name/description/flavor/rarity로 태그 추론 금지
+- old combo tag system과 혼동 금지
+- generated/token card도 CardDefinition.tags 기준
+- Champion Token context는 tags와 별도
+- exact normalized tag match 사용, fuzzy tag match 금지
+
+대표 효과 기대값:
+
+Trigger:
+ENTER_FIELD
+
+Target:
+owner = SELF
+selection = ALL
+filter.tagsAny = ["실험체"]
+zones = 프로젝트의 canonical "어디에 있든" mutable owned-card zones
+
+Action:
+BUFF
+attack +1
+health +1
+
+먼저 현재 프로젝트에서 "어디에 있든"의 canonical zone contract를 확인한다.
+기본 의도는 BOARD + HAND + DECK처럼 경기 중 살아 있는 owned card instances 전체다.
+GRAVEYARD 포함 여부는 기존 project convention을 확인한 뒤 하나로 통일하고 최종 보고에 명시한다.
+카드별 hardcode 금지.
+
+반드시 전체 경로를 trace:
+Source Text
+→ AI Analyzer
+→ canonical target.filter
+→ saved Structured Effect
+→ target resolver
+→ zone enumerator
+→ tags matcher
+→ selected CardInstances
+→ BUFF execution
+→ GameState
+→ serializer/sanitizer
+→ UI
+
+다음 문제를 모두 검사:
+- Analyzer가 filter.tagsAny를 생성하지 않는지
+- 저장 중 target.filter가 유실되는지
+- target resolver가 tagsAny를 무시하는지
+- BOARD만 검사하고 HAND/DECK를 빠뜨리는지
+- CardInstance에서 tags를 직접 찾다가 실패하는지
+- CardDefinition.tags lookup이 실패하는지
+- generated/token definition tags가 resolve되지 않는지
+- hidden-zone sanitizer 때문에 effect 실행 자체가 skip되는지
+- ALL selection인데 1장만 처리되는지
+- +1/+1 중 한 stat만 적용되는지
+- Runtime은 맞지만 UI/reload가 stale인지
+
+canonical target filter는 shared schema를 사용.
+예시 개념:
+
+target: {
+  owner: "SELF",
+  cardType: "WRESTLER",
+  selection: "ALL",
+  filter: {
+    tagsAny: ["실험체"]
+  }
+}
+
+multi-zone 표현 방식은 현재 project schema를 그대로 사용.
+
+절대 사용 금지:
+- target.filters
+- target.tagFilters
+- tagName
+- race
+- tribe
+- keyword
+- description search
+
+generic tag predicate가 이미 있으면 재사용:
+- tagsAny
+- tagsAll
+- tagsNone / exclude equivalent
+- exact hasTag
+
+지원해야 할 표현:
+"'실험체' 태그가 있는 카드"
+"실험체 태그 카드"
+"실험체인 선수"
+"실험체 속성을 가진 카드"
+"좀비 또는 언데드 태그"
+"좀비와 언데드 태그 모두"
+"솔져 태그가 아닌 카드"
+
+tag filter는 다른 조건과 조합 가능해야 한다:
+owner
+zone/multi-zone
+cardType
+minCost/maxCost
+minAttack/maxAttack
+minHealth/maxHealth
+excludeSource
+isChampionToken
+sort
+take/count
+RANDOM
+PLAYER_CHOICE
+ALL
+
+적용 순서:
+candidate zones
+→ owner
+→ cardType
+→ tag/stat/cost filters
+→ sort/random
+→ take/count
+→ action
+
+대표 Runtime fixture:
+
+BOARD
+A: tags=["실험체"], 2/2
+B: tags=["솔져"], 3/3
+
+HAND
+C: tags=["실험체"], 1/4
+D: tags=[], 5/5
+
+DECK
+E: tags=["실험체"], 4/1
+F: tags=["언데드"], 2/6
+
+효과 발동 후 기대:
+A 3/3
+B 3/3 unchanged
+C 2/5
+D 5/5 unchanged
+E 5/2
+F 2/6 unchanged
+
+matching count = 3
+
+HAND/DECK hidden card도 실제 GameState에서 버프되어야 한다.
+단 opponent에게 hidden identity leak 금지.
+
+기존 HAND/DECK health floor 유지:
+HAND/DECK WRESTLER currentHealth >= 1
+negative tag effect에서도 동일.
+FIELD는 lethal 가능.
+
+generated/token:
+- generated card는 CardDefinition.tags로 matching
+- ordinary token도 definition.tags로 matching
+- Champion Token도 definition.tags 기준 tag match 가능
+- 그러나 Champion Token special context/protection/immunity는 tag와 별도
+
+Development stored effect가 stale이면:
+1. current row re-read
+2. source text 확인
+3. fresh Analyzer
+4. validator PASS
+5. expected semantic equality
+6. effect-related field만 safe re-save
+unrelated fields 변경 금지
+Production write 금지
+
+반드시 테스트:
+
+TAG1 대표 실험체 BOARD/HAND/DECK ALL +1/+1
+TAG2 tagsAny ["좀비","언데드"]
+TAG3 tagsAll ["좀비","실험체"]
+TAG4 negative/exclude tag
+TAG5 multi-zone + tagsAny
+TAG6 same CardInstance duplicate selection 금지
+TAG7 duplicate normalized tags라도 effect once
+TAG8 cost + tag filter 조합
+TAG9 excludeSource + tag filter
+TAG10 Champion Token context와 tag filter 분리
+TAG11 generated card tag match
+TAG12 ordinary token tag match
+TAG13 save/reload hidden-zone modified stats 유지
+TAG14 reconnect 후 유지
+TAG15 hidden sanitizer identity leak 없음
+
+AI compiler도 noisy Korean을 같은 semantic으로 해석해야 함:
+
+P1:
+"등장 실험체태그 내카드들 어디있든 1/1"
+
+P2:
+"나오면 내 실험체들 손덱필드 전부 공체1"
+
+P3:
+"실험체 붙은 아군카드 다 +1+1"
+
+P4:
+"등장:내 실험체 속성 카드 어디있든 공체 1씩"
+
+전부 representative effect와 semantic equivalent여야 함.
+exact phrase hardcode 금지.
+
+실제 AI Match / Runtime에서도 inspection-only PASS 금지.
+Development/Test Match에서 BOARD/HAND/DECK에 실험체와 비실험체를 배치하고:
+PLAY_FROM_HAND
+→ ENTER_FIELD
+→ target resolver matched instance IDs 확인
+→ BUFF +1/+1
+→ GameState 확인
+→ 이후 DECK에서 해당 카드를 draw했을 때 버프된 stats 유지
+→ HAND 카드도 실제 play 시 buffed stats 유지
+
+Analyzer가 SUPPORTED 처리하려면:
+- tags predicate parsed
+- ANYWHERE zones resolved
+- ALL target
+- +1/+1 both stats
+- unsupported residual 0
+- validator PASS
+- runtime executable
+
+일부만 parse하고 SUPPORTED 금지.
+
+회귀 금지:
+- keywords/tags 분리
+- target.filter canonical schema
+- hidden-info sanitizer
+- HAND/DECK health floor
+- generated card stats
+- Champion Token context
+- PLAYER_CHOICE
+- deterministic RNG
+- AI Match
+- Online reconnect
+- RETIRE/DESTROY
+
+검증:
+pnpm run typecheck
+pnpm --filter @workspace/ko-game run build
+git diff --check
+
+관련 시:
+API typecheck/build
+Analyzer tests
+tag-filter tests
+multi-zone resolver tests
+structured-effect runtime tests
+generated/token tests
+hidden-info sanitizer tests
+online serializer/reconnect tests
+
+Git:
+실제 수정 파일만 stage.
+prompt/Pasted/.env/secrets/log/screenshots/temp/Replit metadata/unrelated files 제외.
+commit.
+push 요청 없으면 push 금지.
+force push 금지.
+
+최종 보고 형식:
+
+ROOT CAUSE
+First failing layer:
+Analyzer produced tagsAny: YES/NO
+Stored filter preserved: YES/NO
+Runtime target resolver honored tags: YES/NO
+HAND/DECK included: YES/NO
+CardDefinition.tags lookup: PASS/FAIL
+
+ANYWHERE SEMANTICS
+Resolved zones:
+Reason:
+
+REPRESENTATIVE EFFECT
+Matched BOARD:
+Matched HAND:
+Matched DECK:
+Non-tag cards changed: 0 / FAIL
+Attack +1: PASS/FAIL
+Health +1: PASS/FAIL
+
+TAG FILTERS
+tagsAny:
+tagsAll:
+negative tag:
+excludeSource:
+cost/stat filter combination:
+
+GENERATED/TOKEN
+Generated:
+Ordinary token:
+Champion Token matching:
+Champion Token special context unchanged:
+
+HIDDEN ZONES
+HAND mutation:
+DECK mutation:
+Hidden identity leak:
+Reconnect persistence:
+
+AI COMPILER
+Exact phrase:
+P1:
+P2:
+P3:
+P4:
+
+AI MATCH RUNTIME:
+PASS/FAIL/UNVERIFIED
+
+BROWSER E2E:
+PASS/FAIL/UNVERIFIED
+
+TYPECHECK:
+PASS/FAIL
+
+KO BUILD:
+PASS/FAIL
+
+API TYPECHECK:
+PASS/FAIL/NOT_MODIFIED
+
+API BUILD:
+PASS/FAIL/NOT_MODIFIED
+
+git diff --check:
+PASS/FAIL
+
+PRODUCTION DATA MUTATION:
+NONE/FAIL
+
+DEVELOPMENT STORED EFFECT UPDATE:
+YES/NO
+
+UNRELATED FIELD CHANGES:
+NONE/FAIL
+
+CHANGED FILES:
+COMMIT:
+PUSH:
+NOT REQUESTED
+
+완료 조건:
+1. cards.tags가 authoritative source.
+2. 대표 실험체 효과가 BOARD/HAND/DECK canonical anywhere zones에서 실제 작동.
+3. matching tag 카드만 +1/+1.
+4. non-tag 카드 변화 0.
+5. tagsAny/tagsAll/negative tag generic support.
+6. generated/token cards도 definition.tags로 정상 matching.
+7. hidden identity leak 없음.
+8. HAND/DECK health floor 회귀 없음.
+9. noisy language도 같은 tag effect 생성.
+10. stale stored effect는 Development에서 effect field만 안전 수정.
+11. Production mutation 없음.
+12. card-name/runtime hardcode 없음.
+13. tests/build/typecheck/diff 결과 보고.
