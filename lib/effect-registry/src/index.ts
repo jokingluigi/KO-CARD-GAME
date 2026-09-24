@@ -541,7 +541,8 @@ function validScriptEffectValues(action: Action, rawValues: unknown, depth = 0):
   if (schema.amount && values.amount === undefined && values.amountExpression === undefined) return false;
   if (values.amountExpression !== undefined && (!validScriptValue(values.amountExpression) ||
     (!amountIsSigned && values.amountExpression.kind === "CONSTANT" && values.amountExpression.value < 0) ||
-    (!amountIsSigned && values.amountExpression.offset !== undefined && values.amountExpression.offset < 0))) return false;
+    (!amountIsSigned && values.amountExpression.kind !== "CONSTANT" &&
+      values.amountExpression.offset !== undefined && values.amountExpression.offset < 0))) return false;
   for (const key of ["attack", "health"] as const) {
     if (values[key] !== undefined && !finiteScriptNumber(values[key], -999, 999)) return false;
   }

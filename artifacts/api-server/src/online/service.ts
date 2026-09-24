@@ -34,6 +34,7 @@ import { processMatchEventsForDailyQuests } from "../lib/daily-quest-service";
 import { grantReward, isFinishedMatchRewardEligible } from "../lib/reward-service";
 import { logger } from "../lib/logger";
 import { toServerAction } from "./action-parser";
+import { directActionStartsTargeting, rejectedActionCode } from "./action-validation";
 import {
   sequencedEventsForViewer,
   sanitizeGameStateForViewer,
@@ -812,6 +813,22 @@ export type ActionExecution =
   | { ok: true; runtime: OnlineMatchRuntime; requestId: string; version: number; eventStart: number; duplicate: boolean }
   | { ok: false; runtime: OnlineMatchRuntime; requestId?: string; code: string; message: string };
 
+function structurallyEqual(left: unknown, right: unknown): boolean {
+  if (left === right) return true;
+  if (!left || !right || typeof left !== "object" || typeof right !== "object") return false;
+  if (Array.isArray(left) || Array.isArray(right)) {
+    return Array.isArray(left) && Array.isArray(right) &&
+      left.length === right.length &&
+      left.every((item, index) => structurallyEqual(item, right[index]));
+  }
+  const leftRecord = left as Record<string, unknown>;
+  const rightRecord = right as Record<string, unknown>;
+  const leftKeys = Object.keys(leftRecord).sort();
+  const rightKeys = Object.keys(rightRecord).sort();
+  return leftKeys.length === rightKeys.length &&
+    leftKeys.every((key, index) => key === rightKeys[index] && structurallyEqual(leftRecord[key], rightRecord[key]));
+}
+
 export async function applyMatchAction(
   matchId: string,
   userId: string,
@@ -867,6 +884,10 @@ export async function applyMatchAction(
       return { ok: false, runtime, requestId, code: "STALE_VERSION", message: "최신 매치 상태를 먼저 받아야 합니다." };
     }
 
+    if (runtime.state.status === "FINISHED") {
+      return { ok: false, runtime, requestId, code: "MATCH_FINISHED", message: "이미 종료된 매치입니다." };
+    }
+
     if (
       actionIsNotSurrender(payload) &&
       runtime.turnDeadlineAt !== null &&
@@ -887,16 +908,44 @@ export async function applyMatchAction(
     if (!action) {
       return { ok: false, runtime, requestId, code: "INVALID_ACTION", message: "알 수 없는 action입니다." };
     }
+    if (
+      action.type !== "SURRENDER" &&
+      (runtime.state.activePlayerId !== playerId ||
+        (runtime.state.targetingState?.active && runtime.state.targetingState.playerId !== playerId))
+    ) {
+      return { ok: false, runtime, requestId, code: "NOT_YOUR_TURN", message: "현재 행동할 수 있는 턴이 아닙니다." };
+    }
     const legalActions = action.type === "SURRENDER" ? [action] : getLegalActions(runtime.state, playerId);
-    const legal = legalActions.some((candidate) => JSON.stringify(candidate) === JSON.stringify(action));
+    const actionToValidate: GameAction = action.type === "BEGIN_TARGETED_ACTION"
+      ? { ...action.action, playerId }
+      : action;
+    const legal = legalActions.some((candidate) => structurallyEqual(candidate, actionToValidate));
     if (!legal) {
-      return { ok: false, runtime, requestId, code: "INVALID_ACTION", message: "현재 상태에서 허용되지 않는 action입니다." };
+      const code = rejectedActionCode(action, runtime.state, legalActions, playerId);
+      return {
+        ok: false,
+        runtime,
+        requestId,
+        code,
+        message: code === "INVALID_TARGET"
+          ? "선택한 대상이 현재 유효하지 않습니다."
+          : "현재 상태에서 허용되지 않는 action입니다.",
+      };
     }
 
     const candidateState = structuredClone(runtime.state);
     const result = executeAction(candidateState, action);
     if (!result.success) {
       return { ok: false, runtime, requestId, code: result.errorCode, message: result.message };
+    }
+    if (directActionStartsTargeting(action, result.state)) {
+      return {
+        ok: false,
+        runtime,
+        requestId,
+        code: "TARGET_SELECTION_PENDING",
+        message: "대상 선택이 필요한 행동은 먼저 BEGIN_TARGETED_ACTION으로 시작해야 합니다.",
+      };
     }
 
     const eventStart = runtime.state.events.length;

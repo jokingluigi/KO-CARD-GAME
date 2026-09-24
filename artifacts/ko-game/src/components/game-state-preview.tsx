@@ -569,7 +569,7 @@ export function GameStatePreview({
 
   function handleAttackCardTarget(cardId: string) {
     if (effectTargeting) {
-      if (validEffectTargetIds.has(cardId)) onEffectTarget(cardId);
+      onEffectTarget(cardId);
       return;
     }
     if (!selectedAttackerId) return;
@@ -579,7 +579,7 @@ export function GameStatePreview({
 
   function handleAttackChampion() {
     if (effectTargeting) {
-      if (validEffectTargetIds.has(opp.id)) onEffectTarget(opp.id);
+      onEffectTarget(opp.id);
       return;
     }
     if (!selectedAttackerId || opponentChampionProtected) return;
@@ -674,7 +674,7 @@ export function GameStatePreview({
                        tabIndex={0}
                        aria-label="상대 챔피언 대상"
                        onClick={effectTargeting
-                         ? (validEffectTargetIds.has(opp.id) ? () => onEffectTarget(opp.id) : undefined)
+                         ? handleAttackChampion
                          : selectedAttackerId && !opponentChampionProtected ? handleAttackChampion : undefined}
                        onKeyDown={(event) => {
                          if (event.key !== 'Enter' && event.key !== ' ') return;
@@ -829,7 +829,7 @@ export function GameStatePreview({
                    onClick={(idOrIdx) => {
                       if (typeof idOrIdx === 'string') {
                         if (effectTargeting) {
-                          if (validEffectTargetIds.has(idOrIdx)) onEffectTarget(idOrIdx);
+                          onEffectTarget(idOrIdx);
                         } else {
                            if (
                              attackerSelectionActive &&
@@ -858,7 +858,7 @@ export function GameStatePreview({
             </div>
          </div>
 
-           <aside className="ko-game-controls absolute right-2 top-36 z-40 flex w-24 flex-col items-stretch gap-2 rounded border border-neutral-800 bg-black/85 p-2 shadow-2xl backdrop-blur-md md:fixed md:right-4 md:top-1/2 md:w-32 md:-translate-y-1/2 md:p-3">
+           <aside className="ko-game-controls absolute right-2 top-36 z-[110] flex w-24 flex-col items-stretch gap-2 rounded border border-neutral-800 bg-black/85 p-2 shadow-2xl backdrop-blur-md md:fixed md:right-4 md:top-1/2 md:w-32 md:-translate-y-1/2 md:p-3">
               <button
                 type="button"
                 aria-label="설정 열기"
@@ -1059,9 +1059,9 @@ export function GameStatePreview({
                     role="button"
                     tabIndex={0}
                     aria-label="내 챔피언 대상"
-                    onClick={effectTargeting && validEffectTargetIds.has(me.id) ? () => onEffectTarget(me.id) : undefined}
+                    onClick={effectTargeting ? () => onEffectTarget(me.id) : undefined}
                     onKeyDown={(event) => {
-                      if ((event.key === 'Enter' || event.key === ' ') && effectTargeting && validEffectTargetIds.has(me.id)) {
+                      if ((event.key === 'Enter' || event.key === ' ') && effectTargeting) {
                         event.preventDefault();
                         onEffectTarget(me.id);
                       }

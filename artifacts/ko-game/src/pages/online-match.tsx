@@ -34,6 +34,11 @@ import {
   type OnlineServerMessage,
 } from "@/lib/online-lobby-client";
 import type { OnlineActionPayload } from "@/lib/online-match-protocol";
+import {
+  championAbilityAction,
+  effectTargetAction,
+  shouldResyncAfterActionRejection,
+} from "@/lib/online-target-actions";
 import { projectOnlineGameState } from "@/lib/online-game-state";
 import { ROUTES } from "@/lib/routes";
 import { fetchOnlineMatchRewards } from "@/lib/rewards-client";
@@ -140,7 +145,10 @@ function OnlineMatchPage() {
   const lastEventSequence = useRef(-1);
   const seatRef = useRef<typeof seat>(null);
   const stateRef = useRef<GameState | null>(null);
+  const versionRef = useRef<number | null>(null);
   const pendingActionIdRef = useRef<string | null>(null);
+  const pendingActionInFlightRef = useRef(false);
+  const preserveRejectedActionMessageRef = useRef(false);
   const pendingPlayRef = useRef<PendingPlay | null>(null);
   const pendingAttackRef = useRef<PendingAttack | null>(null);
   const presentationBusyRef = useRef(false);
@@ -184,7 +192,20 @@ function OnlineMatchPage() {
   useEffect(() => {
     const unsubscribeConnection = client.onConnectionState((next) => {
       setConnection(next);
-      if (next === "open" && matchId) client.send({ type: "SUBSCRIBE", matchId });
+      if (next !== "open") {
+        pendingActionIdRef.current = null;
+        pendingActionInFlightRef.current = false;
+        setPendingAction(false);
+        return;
+      }
+      if (matchId) {
+        pendingActionInFlightRef.current = true;
+        setPendingAction(true);
+        if (!client.send({ type: "SUBSCRIBE", matchId })) {
+          pendingActionInFlightRef.current = false;
+          setPendingAction(false);
+        }
+      }
     });
     const unsubscribeMessage = client.onMessage((message: OnlineServerMessage) => {
       if ("matchId" in message && message.matchId !== matchId) return;
@@ -205,6 +226,9 @@ function OnlineMatchPage() {
           pendingAttackRef.current = null;
           pendingEntranceAudioRef.current = null;
           pendingOpponentAttacksRef.current = [];
+          pendingActionIdRef.current = null;
+          pendingActionInFlightRef.current = false;
+          setPendingAction(false);
         }
         setTurnDeadlineAt(message.turnDeadlineAt);
         setServerOffset(message.serverTime - Date.now());
@@ -221,7 +245,7 @@ function OnlineMatchPage() {
           message.type !== "RESYNC_REQUIRED" &&
           sequencedEvents.some((event) => event.sequenceNumber > lastEventSequence.current + 1)
         ) {
-          client.send({ type: "RESYNC", matchId });
+          requestMatchResync();
           return;
         }
         if (sequencedEvents.length) lastEventSequence.current = sequencedEvents.at(-1)!.sequenceNumber;
@@ -235,19 +259,25 @@ function OnlineMatchPage() {
         if (message.type === "ACTION_ACCEPTED") {
           if (pendingActionIdRef.current === message.requestId) {
             pendingActionIdRef.current = null;
+            pendingActionInFlightRef.current = false;
             setPendingAction(false);
           }
           prepareOwnAttackAnimation(previous, projected);
         } else {
           pendingActionIdRef.current = null;
+          pendingActionInFlightRef.current = false;
           setPendingAction(false);
         }
         stateRef.current = projected;
+        versionRef.current = "version" in message ? message.version : null;
         setSeat(nextSeat);
         seatRef.current = nextSeat;
         setState(projected);
         setVersion("version" in message ? message.version : null);
-        setPlayError(null);
+        if (message.type !== "RESYNC_REQUIRED" || !preserveRejectedActionMessageRef.current) {
+          preserveRejectedActionMessageRef.current = false;
+          setPlayError(null);
+        }
         if (message.type === "MATCH_ENDED") setNotice("매치가 종료되었습니다.");
         return;
       }
@@ -278,6 +308,8 @@ function OnlineMatchPage() {
       }
       if (message.type === "SESSION_REPLACED") {
         setSessionReplaced(true);
+        pendingActionIdRef.current = null;
+        pendingActionInFlightRef.current = false;
         setPendingAction(false);
         setNotice(message.message);
         return;
@@ -285,9 +317,21 @@ function OnlineMatchPage() {
       if (message.type === "ACTION_REJECTED" || message.type === "LOBBY_ERROR" || message.type === "ERROR") {
         if (!("requestId" in message) || !message.requestId || pendingActionIdRef.current === message.requestId) {
           pendingActionIdRef.current = null;
+          pendingActionInFlightRef.current = false;
           setPendingAction(false);
         }
         setPlayError(message.message);
+        if (
+          message.type === "ACTION_REJECTED" &&
+          shouldResyncAfterActionRejection(
+            message.code,
+            versionRef.current ?? message.currentVersion,
+            message.currentVersion,
+          )
+        ) {
+          preserveRejectedActionMessageRef.current = true;
+          requestMatchResync();
+        }
       }
     });
     client.connect();
@@ -486,9 +530,26 @@ function OnlineMatchPage() {
     pendingAttackRef.current = null;
   }
 
+  function requestMatchResync() {
+    if (!matchId) return;
+    pendingActionInFlightRef.current = true;
+    setPendingAction(true);
+    if (!client.send({ type: "RESYNC", matchId })) {
+      pendingActionInFlightRef.current = false;
+      setPendingAction(false);
+    }
+  }
+
+  function clearRejectedActionMessage() {
+    preserveRejectedActionMessageRef.current = false;
+    setPlayError(null);
+  }
+
   function sendAction(action: OnlineActionPayload, options?: { allowOffTurn?: boolean; allowDuringPresentation?: boolean }) {
+    clearRejectedActionMessage();
     const actionAllowed = isConnected &&
       !pendingAction &&
+      !pendingActionInFlightRef.current &&
       (options?.allowDuringPresentation || !presentationBusy) &&
       (options?.allowOffTurn || isMyTurn);
     if (!matchId || version === null || !actionAllowed) return false;
@@ -496,6 +557,7 @@ function OnlineMatchPage() {
       ? crypto.randomUUID()
       : `${Date.now()}-${Math.random()}`;
     pendingActionIdRef.current = requestId;
+    pendingActionInFlightRef.current = true;
     setPendingAction(true);
     const sent = client.send({
       type: "MATCH_ACTION",
@@ -506,6 +568,7 @@ function OnlineMatchPage() {
     });
     if (!sent) {
       pendingActionIdRef.current = null;
+      pendingActionInFlightRef.current = false;
       setPendingAction(false);
       setPlayError("온라인 서버에 연결할 수 없습니다.");
       return false;
@@ -518,12 +581,9 @@ function OnlineMatchPage() {
 
   function handleSelectCard(cardInstanceId: string) {
     if (!canAct || !state) return;
+    clearRejectedActionMessage();
     if (state.targetingState?.active) {
-      if (state.targetingState.validTargetIds.includes(cardInstanceId)) sendAction(
-        state.targetingState.phase === "PRE_COMMIT"
-          ? { type: "CONFIRM_PRECOMMIT_TARGET", targetId: cardInstanceId }
-          : { type: "SELECT_EFFECT_TARGET", targetId: cardInstanceId },
-      );
+      handleEffectTarget(cardInstanceId);
       return;
     }
     setSelectedAttackerId(null);
@@ -532,16 +592,42 @@ function OnlineMatchPage() {
 
   function handleSelectAttacker(cardInstanceId: string) {
     if (!canAct || !state) return;
+    clearRejectedActionMessage();
     if (state.targetingState?.active) {
-      if (state.targetingState.validTargetIds.includes(cardInstanceId)) sendAction(
-        state.targetingState.phase === "PRE_COMMIT"
-          ? { type: "CONFIRM_PRECOMMIT_TARGET", targetId: cardInstanceId }
-          : { type: "SELECT_EFFECT_TARGET", targetId: cardInstanceId },
-      );
+      handleEffectTarget(cardInstanceId);
       return;
     }
     setSelectedCardId(null);
     setSelectedAttackerId((current) => current === cardInstanceId ? null : cardInstanceId);
+  }
+
+  function handleEffectTarget(targetId: string) {
+    clearRejectedActionMessage();
+    const currentState = stateRef.current;
+    const targeting = currentState?.targetingState;
+    if (!targeting?.active || !targeting.validTargetIds.includes(targetId)) {
+      preserveRejectedActionMessageRef.current = true;
+      setPlayError("대상 상태가 변경되었습니다. 최신 매치 상태를 불러옵니다.");
+      if (!pendingActionInFlightRef.current) requestMatchResync();
+      return;
+    }
+    sendAction(effectTargetAction(targeting.phase, targetId));
+  }
+
+  function handleUseChampionAbility() {
+    clearRejectedActionMessage();
+    if (!state || !me) return;
+    const champion = me.champion;
+    const activeAbility = champion?.questCompleted && champion.upgradedAbility
+      ? champion.upgradedAbility
+      : champion?.ability;
+    const action = activeAbility ? championAbilityAction(activeAbility.effects) : null;
+    if (!action) {
+      setPlayError("현재 챔피언 능력을 사용할 수 없습니다. 최신 매치 상태를 불러옵니다.");
+      requestMatchResync();
+      return;
+    }
+    sendAction(action);
   }
 
   function rememberPlay(card: CardInstance, geometry?: CardPlayGeometry) {
@@ -726,9 +812,9 @@ function OnlineMatchPage() {
           pendingPlayRef.current = null;
         }}
         onUseActive={(cardInstanceId) => sendAction({ type: "BEGIN_TARGETED_ACTION", action: { type: "USE_ACTIVE", cardInstanceId } })}
-        onUseChampionAbility={() => sendAction({ type: "BEGIN_TARGETED_ACTION", action: { type: "USE_CHAMPION_ABILITY" } })}
+        onUseChampionAbility={handleUseChampionAbility}
         onCancelEffectTargeting={() => sendAction({ type: "CANCEL_EFFECT_TARGET" })}
-        onEffectTarget={(targetId) => sendAction({ type: "SELECT_EFFECT_TARGET", targetId })}
+        onEffectTarget={handleEffectTarget}
         onPresentationBusyChange={(busy) => {
           presentationBusyRef.current = busy;
           setPresentationBusy(busy);

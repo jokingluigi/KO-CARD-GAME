@@ -74,3 +74,7 @@ export type {
   GameEventType,
 } from "../../../artifacts/ko-game/src/game/events/types";
 export type { GameMediaCatalog } from "../../../artifacts/ko-game/src/game/media";
+export {
+  isOnlineActionPayload,
+  type OnlineActionPayload,
+} from "./online-action-payload";

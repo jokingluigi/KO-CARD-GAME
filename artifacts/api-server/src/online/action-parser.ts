@@ -1,13 +1,13 @@
 import type { GameAction } from "@workspace/game-engine";
+import { isOnlineActionPayload } from "./protocol";
 import type { OnlineActionPayload } from "./protocol";
 
 export function toServerAction(
   payload: unknown,
   playerId: string,
 ): GameAction | null {
-  if (!payload || typeof payload !== "object" || Array.isArray(payload)) return null;
-  const action = payload as Partial<OnlineActionPayload>;
-  if (typeof action.type !== "string") return null;
+  if (!isOnlineActionPayload(payload)) return null;
+  const action: OnlineActionPayload = payload;
 
   switch (action.type) {
     case "PLAY_WRESTLER":

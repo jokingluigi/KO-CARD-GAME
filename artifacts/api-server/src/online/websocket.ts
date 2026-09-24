@@ -30,7 +30,8 @@ import {
   setPrivateRoomReady,
 } from "./lobby";
 import { getUserFromWebSocketAuthTicket } from "./websocket-auth";
-import type { OnlineActionPayload, OnlineClientMessage, OnlineServerMessage } from "./protocol";
+import type { OnlineClientMessage, OnlineServerMessage } from "./protocol";
+import { classifyOnlineClientMessage } from "./client-message-parser";
 
 const ONLINE_WS_PATH = "/api/online-matches/ws";
 
@@ -41,70 +42,6 @@ function send(socket: WebSocket, message: OnlineServerMessage): void {
 function rejectUpgrade(socket: Duplex, status = "401 Unauthorized"): void {
   socket.write(`HTTP/1.1 ${status}\r\nConnection: close\r\n\r\n`);
   socket.destroy();
-}
-
-function isRecord(value: unknown): value is Record<string, unknown> {
-  return Boolean(value && typeof value === "object" && !Array.isArray(value));
-}
-
-function isNonEmptyString(value: unknown, maxLength = 256): value is string {
-  return typeof value === "string" && value.trim().length > 0 && value.length <= maxLength;
-}
-
-function isOnlineActionPayload(value: unknown): value is OnlineActionPayload {
-  if (!isRecord(value) || typeof value.type !== "string") return false;
-  switch (value.type) {
-    case "PLAY_WRESTLER":
-      return isNonEmptyString(value.cardInstanceId) &&
-        (value.boardSlot === 0 || value.boardSlot === 1 || value.boardSlot === 2 || value.boardSlot === 3);
-    case "PLAY_TECHNIQUE":
-    case "USE_ACTIVE":
-      return isNonEmptyString(value.cardInstanceId);
-    case "USE_CHAMPION_ABILITY":
-    case "END_TURN":
-    case "SURRENDER":
-      return true;
-    case "SELECT_EFFECT_TARGET":
-      return isNonEmptyString(value.targetId);
-    case "ATTACK": {
-      if (!isNonEmptyString(value.attackerInstanceId) || !isRecord(value.target)) return false;
-      if (value.target.type === "PLAYER") return isNonEmptyString(value.target.playerId);
-      return value.target.type === "WRESTLER" &&
-        isNonEmptyString(value.target.playerId) &&
-        isNonEmptyString(value.target.cardInstanceId);
-    }
-    default:
-      return false;
-  }
-}
-
-function isClientMessage(value: unknown): value is OnlineClientMessage {
-  if (!isRecord(value) || typeof value.type !== "string") return false;
-  switch (value.type) {
-    case "JOIN_QUICK_QUEUE":
-    case "CREATE_PRIVATE_ROOM":
-      return isNonEmptyString(value.deckId);
-    case "LEAVE_QUICK_QUEUE":
-    case "LEAVE_PRIVATE_ROOM":
-    case "CLOSE_PRIVATE_ROOM":
-      return true;
-    case "JOIN_PRIVATE_ROOM":
-      return isNonEmptyString(value.roomCode) && isNonEmptyString(value.deckId);
-    case "SET_ROOM_READY":
-      return typeof value.ready === "boolean";
-    case "SUBSCRIBE":
-    case "UNSUBSCRIBE":
-    case "RESYNC":
-      return isNonEmptyString(value.matchId);
-    case "MATCH_ACTION":
-      return isNonEmptyString(value.matchId) &&
-        isNonEmptyString(value.requestId, 128) &&
-        Number.isInteger(value.expectedVersion) &&
-        (value.expectedVersion as number) >= 0 &&
-        isOnlineActionPayload(value.action);
-    default:
-      return false;
-  }
 }
 
 export function attachOnlineMatchWebSocket(server: HttpServer): void {
@@ -178,42 +115,48 @@ async function handleMessage(
     send(socket, { type: "ERROR", code: "INVALID_JSON", message: "JSON 메시지를 확인해 주세요." });
     return;
   }
-  if (!isClientMessage(parsed)) {
-    send(socket, { type: "ERROR", code: "INVALID_MESSAGE", message: "알 수 없는 메시지입니다." });
+  const classification = classifyOnlineClientMessage(parsed);
+  if (classification.kind !== "VALID") {
+    send(socket, {
+      type: "ERROR",
+      code: classification.code,
+      message: classification.message,
+    });
     return;
   }
+  const message: OnlineClientMessage = classification.message;
 
-  if (parsed.type === "JOIN_QUICK_QUEUE") {
-    await joinQuickQueue(connection, parsed.deckId);
+  if (message.type === "JOIN_QUICK_QUEUE") {
+    await joinQuickQueue(connection, message.deckId);
     return;
   }
-  if (parsed.type === "LEAVE_QUICK_QUEUE") {
+  if (message.type === "LEAVE_QUICK_QUEUE") {
     await leaveQuickQueue(connection);
     return;
   }
-  if (parsed.type === "CREATE_PRIVATE_ROOM") {
-    await createPrivateRoom(connection, parsed.deckId);
+  if (message.type === "CREATE_PRIVATE_ROOM") {
+    await createPrivateRoom(connection, message.deckId);
     return;
   }
-  if (parsed.type === "JOIN_PRIVATE_ROOM") {
-    await joinPrivateRoom(connection, parsed.roomCode, parsed.deckId);
+  if (message.type === "JOIN_PRIVATE_ROOM") {
+    await joinPrivateRoom(connection, message.roomCode, message.deckId);
     return;
   }
-  if (parsed.type === "LEAVE_PRIVATE_ROOM") {
+  if (message.type === "LEAVE_PRIVATE_ROOM") {
     await leavePrivateRoom(connection);
     return;
   }
-  if (parsed.type === "CLOSE_PRIVATE_ROOM") {
+  if (message.type === "CLOSE_PRIVATE_ROOM") {
     await leavePrivateRoom(connection, true);
     return;
   }
-  if (parsed.type === "SET_ROOM_READY") {
-    await setPrivateRoomReady(connection, parsed.ready);
+  if (message.type === "SET_ROOM_READY") {
+    await setPrivateRoomReady(connection, message.ready);
     return;
   }
 
-  if (parsed.type === "SUBSCRIBE") {
-    const runtime = await getRuntime(parsed.matchId);
+  if (message.type === "SUBSCRIBE") {
+    const runtime = await getRuntime(message.matchId);
     if (!runtime || !matchSeat(runtime, connection.userId)) {
       send(socket, { type: "ERROR", code: "FORBIDDEN", message: "참가 중인 매치만 구독할 수 있습니다." });
       return;
@@ -228,8 +171,8 @@ async function handleMessage(
     return;
   }
 
-  if (parsed.type === "RESYNC") {
-    const runtime = await getRuntime(parsed.matchId);
+  if (message.type === "RESYNC") {
+    const runtime = await getRuntime(message.matchId);
     if (!runtime || !matchSeat(runtime, connection.userId)) {
       send(socket, { type: "ERROR", code: "FORBIDDEN", message: "참가 중인 매치만 동기화할 수 있습니다." });
       return;
@@ -244,9 +187,9 @@ async function handleMessage(
     return;
   }
 
-  if (parsed.type === "UNSUBSCRIBE") {
+  if (message.type === "UNSUBSCRIBE") {
     const runtime = getSubscription();
-    if (runtime?.matchId === parsed.matchId) {
+    if (runtime?.matchId === message.matchId) {
       void markConnectionDisconnected(runtime, connection);
       setSubscription(null);
     }
@@ -254,7 +197,7 @@ async function handleMessage(
   }
 
   const runtime = getSubscription();
-  if (!runtime || runtime.matchId !== parsed.matchId) {
+  if (!runtime || runtime.matchId !== message.matchId) {
     send(socket, { type: "ERROR", code: "NOT_SUBSCRIBED", message: "먼저 매치를 구독해야 합니다." });
     return;
   }
@@ -264,7 +207,7 @@ async function handleMessage(
       send(socket, {
         type: "ACTION_REJECTED",
         matchId: runtime.matchId,
-        requestId: parsed.requestId,
+        requestId: message.requestId,
         code: "NOT_PRIMARY_CONNECTION",
         message: "다른 창에서 이 대전에 접속했습니다.",
         currentVersion: runtime.version,
@@ -272,11 +215,11 @@ async function handleMessage(
       return;
     }
     const result = await applyMatchAction(
-      parsed.matchId,
+      message.matchId,
       connection.userId,
-      parsed.requestId,
-      parsed.expectedVersion,
-      parsed.action,
+      message.requestId,
+      message.expectedVersion,
+      message.action,
       connection,
     );
     if (!result.ok) {

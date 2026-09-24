@@ -1,21 +1,9 @@
-import type { AttackTarget } from "@workspace/game-engine";
-import type { BoardSlot, GameAction } from "@workspace/game-engine";
+import type { GameAction } from "@workspace/game-engine";
+import { isOnlineActionPayload } from "@workspace/game-engine/online-action";
+import type { OnlineActionPayload } from "@workspace/game-engine/online-action";
 
-export type OnlineActionPayload =
-  | { type: "PLAY_WRESTLER"; cardInstanceId: string; boardSlot: BoardSlot }
-  | { type: "PLAY_TECHNIQUE"; cardInstanceId: string }
-  | { type: "USE_ACTIVE"; cardInstanceId: string }
-  | { type: "USE_CHAMPION_ABILITY" }
-  | { type: "ATTACK"; attackerInstanceId: string; target: AttackTarget }
-  | { type: "SELECT_EFFECT_TARGET"; targetId: string }
-  | { type: "CANCEL_EFFECT_TARGET" }
-  | { type: "BEGIN_TARGETED_ACTION"; action:
-      { type: "PLAY_TECHNIQUE"; cardInstanceId: string } |
-      { type: "USE_ACTIVE"; cardInstanceId: string } |
-      { type: "USE_CHAMPION_ABILITY" } }
-  | { type: "CONFIRM_PRECOMMIT_TARGET"; targetId: string }
-  | { type: "END_TURN" }
-  | { type: "SURRENDER" };
+export { isOnlineActionPayload };
+export type { OnlineActionPayload };
 
 export type OnlineClientMessage =
   | { type: "SUBSCRIBE"; matchId: string }
