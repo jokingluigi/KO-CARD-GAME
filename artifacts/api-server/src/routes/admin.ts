@@ -1,5 +1,5 @@
 import { createHmac, randomUUID, timingSafeEqual } from "node:crypto";
-import { and, asc, desc, eq, ilike, or, sql } from "drizzle-orm";
+import { and, asc, desc, eq, ilike, inArray, or, sql } from "drizzle-orm";
 import {
   cardsTable,
   cardFrameDefinitionsTable,
@@ -23,6 +23,7 @@ import {
   isPendingMechanicRequestConflict,
   prepareMechanicRequest,
 } from "../lib/mechanic-request-service";
+import { summarizeIntroReference } from "../online/intro";
 import { prepareReplitAgentPrompt } from "../lib/replit-agent-prompt";
 import {
   createChampionFullPrompt,
@@ -1675,7 +1676,20 @@ router.post("/effects/unified-full-prompt", async (request, response): Promise<v
 
 router.get("/champion-intro-interactions", async (_request, response): Promise<void> => {
   const rows = await db.select().from(championIntroInteractionsTable);
-  response.json({ interactions: rows });
+  const championIds = [...new Set(rows.flatMap((row) => [row.championOneId, row.championTwoId]))];
+  const champions = championIds.length
+    ? await db.select({ id: championsTable.id, name: championsTable.name, status: championsTable.status })
+      .from(championsTable)
+      .where(inArray(championsTable.id, championIds))
+    : [];
+  const championsById = new Map(champions.map((champion) => [champion.id, champion]));
+  response.json({
+    interactions: rows.map((row) => ({
+      ...row,
+      championOneReference: summarizeIntroReference(championsById.get(row.championOneId)),
+      championTwoReference: summarizeIntroReference(championsById.get(row.championTwoId)),
+    })),
+  });
 });
 
 router.post("/champion-intro-interactions", async (request, response): Promise<void> => {

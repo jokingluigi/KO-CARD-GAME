@@ -22,6 +22,22 @@ export type SeatMappedIntro = {
 };
 
 export type IntroStatus = "DRAFT" | "PUBLISHED" | "DISABLED";
+export type IntroReferenceSummary = {
+  name: string | null;
+  status: string | null;
+  state: "MISSING" | "DRAFT" | "PUBLISHED" | "DISABLED";
+};
+
+export function summarizeIntroReference(
+  champion: { name: string; status: string } | undefined,
+): IntroReferenceSummary {
+  if (!champion) return { name: null, status: null, state: "MISSING" };
+  const state = champion.status === "PUBLISHED" || champion.status === "DISABLED"
+    ? champion.status
+    : "DRAFT";
+  return { name: champion.name, status: champion.status, state };
+}
+
 export function normalizeIntroStatus(value: unknown): IntroStatus | null {
   return value === "DRAFT" || value === "PUBLISHED" || value === "DISABLED" ? value : null;
 }

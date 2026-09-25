@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { canonicalChampionPair, mapIntroToSeats, normalizeIntroStatus, resolveChampionIntro } from "./intro";
+import { canonicalChampionPair, mapIntroToSeats, normalizeIntroStatus, resolveChampionIntro, summarizeIntroReference } from "./intro";
 
 const champion = (id: string, line: string | null) => ({
   id, name: id, introLineOne: line, maxHealth: 20,
@@ -38,6 +38,24 @@ test("canonical dialogue lines and first speaker map to match seats", () => {
 test("intro statuses round-trip without coercion", () => {
   for (const status of ["DRAFT", "PUBLISHED", "DISABLED"]) assert.equal(normalizeIntroStatus(status), status);
   assert.equal(normalizeIntroStatus("unexpected"), null);
+});
+
+test("Admin intro reference summaries preserve disabled and deleted states", () => {
+  assert.deepEqual(summarizeIntroReference(undefined), {
+    name: null,
+    status: null,
+    state: "MISSING",
+  });
+  assert.deepEqual(summarizeIntroReference({ name: "Jäger", status: "DISABLED" }), {
+    name: "Jäger",
+    status: "DISABLED",
+    state: "DISABLED",
+  });
+  assert.deepEqual(summarizeIntroReference({ name: "Pandora", status: "PUBLISHED" }), {
+    name: "Pandora",
+    status: "PUBLISHED",
+    state: "PUBLISHED",
+  });
 });
 
 test("online intro prefers an enabled exact canonical pair over defaults", () => {

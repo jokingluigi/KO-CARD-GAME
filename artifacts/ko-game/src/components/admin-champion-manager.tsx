@@ -148,7 +148,18 @@ export function AdminChampionManager({ onUnauthorized }: { onUnauthorized: () =>
   const [portraitLocalUrl, setPortraitLocalUrl] = useState<string | null>(null);
   const [basicPortraitUploading, setBasicPortraitUploading] = useState(false);
   const [portraitUploading, setPortraitUploading] = useState(false);
-  type IntroInteraction = { id: string; championOneId: string; championTwoId: string; lineOne: string | null; lineTwo: string | null; firstSpeaker: "ONE" | "TWO"; status: "DRAFT" | "PUBLISHED" | "DISABLED" };
+  type IntroReference = { name: string | null; status: Status | null; state: "MISSING" | Status };
+  type IntroInteraction = {
+    id: string;
+    championOneId: string;
+    championTwoId: string;
+    lineOne: string | null;
+    lineTwo: string | null;
+    firstSpeaker: "ONE" | "TWO";
+    status: Status;
+    championOneReference: IntroReference;
+    championTwoReference: IntroReference;
+  };
   const [introInteractions, setIntroInteractions] = useState<IntroInteraction[]>([]);
   const [introDraft, setIntroDraft] = useState<Partial<IntroInteraction> | null>(null);
   const [introBusy, setIntroBusy] = useState(false);
@@ -463,8 +474,10 @@ export function AdminChampionManager({ onUnauthorized }: { onUnauthorized: () =>
       if (response.status === 409) throw new Error(`충돌: ${await classifiedMessage(response)}`);
       if (response.status >= 500) throw new Error("서버 오류로 저장하지 못했습니다. 잠시 후 다시 시도해 주세요.");
       if (!response.ok) throw new Error(`입력값을 확인해 주세요: ${await classifiedMessage(response)}`);
-       setMessageText(editing ? "챔피언을 수정했습니다." : "새 챔피언을 DRAFT로 저장했습니다.");
-      setOpen(false); await load();
+      setMessageText(editing ? "챔피언을 수정했습니다." : "새 챔피언을 DRAFT로 저장했습니다.");
+      setOpen(false);
+      await load();
+      await loadIntroInteractions();
     } catch (reason) {
       setError(reason instanceof TypeError
         ? "네트워크 오류로 저장하지 못했습니다. 연결을 확인한 뒤 다시 시도해 주세요."
@@ -480,6 +493,7 @@ export function AdminChampionManager({ onUnauthorized }: { onUnauthorized: () =>
     if (response.status === 401) { onUnauthorized(); return; }
     if (!response.ok) { setError(await message(response)); return; }
     await load();
+    await loadIntroInteractions();
   }
   async function deleteChampion(champion: Champion) {
     if (!window.confirm(`"${champion.name}" 챔피언을 삭제하시겠습니까?\n삭제한 챔피언은 복구할 수 없습니다.`)) return;
@@ -495,6 +509,7 @@ export function AdminChampionManager({ onUnauthorized }: { onUnauthorized: () =>
       setMessageText(`"${champion.name}" 챔피언을 삭제했습니다.`);
       if (editing?.id === champion.id) setOpen(false);
       await load();
+      await loadIntroInteractions();
     } catch (reason) {
       setError(reason instanceof Error ? reason.message : "챔피언을 삭제하지 못했습니다.");
     } finally {
@@ -677,6 +692,19 @@ export function AdminChampionManager({ onUnauthorized }: { onUnauthorized: () =>
       setOpen(false);
     }
 
+  const hasBrokenIntroReference = (interaction: IntroInteraction) =>
+    [interaction.championOneReference, interaction.championTwoReference]
+      .some((reference) => reference.state === "MISSING" || reference.state === "DISABLED");
+  const hasMissingIntroReference = (interaction: IntroInteraction) =>
+    [interaction.championOneReference, interaction.championTwoReference]
+      .some((reference) => reference.state === "MISSING");
+  const introReferenceLabel = (id: string, reference: IntroReference) => {
+    if (reference.state === "MISSING") return `삭제된 Champion (${id})`;
+    if (reference.state === "DISABLED") return `${reference.name ?? id} (비활성화됨)`;
+    if (reference.state === "DRAFT") return `${reference.name ?? id} (DRAFT)`;
+    return reference.name ?? id;
+  };
+  const brokenIntroInteractions = introInteractions.filter(hasBrokenIntroReference);
   const input = "w-full rounded border border-neutral-700 bg-neutral-900 px-3 py-2 text-sm";
   return <div>
     <div className="mb-5 flex items-end justify-between">
@@ -688,6 +716,20 @@ export function AdminChampionManager({ onUnauthorized }: { onUnauthorized: () =>
      <AdminUnifiedEffectPrompt onUnauthorized={onUnauthorized} />
     {error && <div className="mb-4 rounded border border-red-900 bg-red-950/40 p-3 text-sm text-red-300">{error}</div>}
     {messageText && <div className="mb-4 rounded border border-emerald-900 bg-emerald-950/30 p-3 text-sm text-emerald-300">{messageText}</div>}
+    {brokenIntroInteractions.length > 0 && (
+      <section className="mb-4 rounded border border-amber-800 bg-amber-950/20 p-3" data-testid="broken-champion-intro-references">
+        <h3 className="text-sm font-bold text-amber-200">삭제되었거나 비활성화된 Champion을 참조하는 특수 Intro</h3>
+        <p className="mt-1 text-xs text-amber-100/70">이 관계는 온라인 매치에서 사용되지 않습니다. 기본 대사 또는 대사 없음으로 진행됩니다.</p>
+        <ul className="mt-2 space-y-2">
+          {brokenIntroInteractions.map((item) => (
+            <li key={item.id} className="flex flex-wrap items-center justify-between gap-2 rounded border border-amber-900/70 p-2 text-xs">
+              <span>{introReferenceLabel(item.championOneId, item.championOneReference)} ↔ {introReferenceLabel(item.championTwoId, item.championTwoReference)}</span>
+              <button type="button" onClick={() => void deleteIntroInteraction(item.id)} className="rounded border border-red-900 px-2 py-1 text-red-300">관계 삭제</button>
+            </li>
+          ))}
+        </ul>
+      </section>
+    )}
     <div className="mb-4 flex gap-2"><label className="flex flex-1 items-center gap-2 rounded border border-neutral-800 px-3"><Search className="h-4 w-4"/><input value={search} onChange={(e)=>setSearch(e.target.value)} className="w-full bg-transparent py-2 outline-none" placeholder="챔피언 검색"/></label>
       <select value={status} onChange={(e)=>setStatus(e.target.value)} className={input}><option value="">모든 상태</option><option>DRAFT</option><option>PUBLISHED</option><option>DISABLED</option></select></div>
      <div className="grid gap-3 md:grid-cols-2">{champions.map((champion)=><article key={champion.id} className="rounded-lg border border-neutral-800 bg-neutral-950 p-4">
@@ -712,8 +754,10 @@ export function AdminChampionManager({ onUnauthorized }: { onUnauthorized: () =>
           {introError && <p className="mb-2 text-xs text-red-300">{introError}</p>}
           {introInteractions.filter(item => item.championOneId === editing.id || item.championTwoId === editing.id).map(item => {
             const currentIsOne = item.championOneId === editing.id;
-            const opponent = champions.find(c => c.id === (currentIsOne ? item.championTwoId : item.championOneId));
-            return <div key={item.id} className="mb-2 flex items-center justify-between gap-2 rounded border border-neutral-800 p-2 text-xs"><span><b>현재: {editing.name}</b> ↔ <b>상대: {opponent?.name ?? "삭제된 Champion (관계 깨짐)"}</b><br/>현재 대사: {currentIsOne ? item.lineOne || "(없음)" : item.lineTwo || "(없음)"} · 상대 대사: {currentIsOne ? item.lineTwo || "(없음)" : item.lineOne || "(없음)"} · {item.status}</span><span className="flex gap-2"><button type="button" onClick={() => setIntroDraft(item)} className="text-primary">편집</button><button type="button" onClick={() => void deleteIntroInteraction(item.id)} className="text-red-300">삭제</button></span></div>;
+            const opponentId = currentIsOne ? item.championTwoId : item.championOneId;
+            const opponentReference = currentIsOne ? item.championTwoReference : item.championOneReference;
+            const missingReference = hasMissingIntroReference(item);
+            return <div key={item.id} className="mb-2 flex items-center justify-between gap-2 rounded border border-neutral-800 p-2 text-xs"><span><b>현재: {editing.name}</b> ↔ <b>상대: {introReferenceLabel(opponentId, opponentReference)}</b><br/>현재 대사: {currentIsOne ? item.lineOne || "(없음)" : item.lineTwo || "(없음)"} · 상대 대사: {currentIsOne ? item.lineTwo || "(없음)" : item.lineOne || "(없음)"} · {item.status}</span><span className="flex gap-2"><button type="button" disabled={missingReference} title={missingReference ? "삭제된 Champion 참조는 편집할 수 없습니다. 관계를 삭제한 뒤 새로 등록해 주세요." : undefined} onClick={() => setIntroDraft(item)} className="text-primary disabled:opacity-40">편집</button><button type="button" onClick={() => void deleteIntroInteraction(item.id)} className="text-red-300">삭제</button></span></div>;
           })}
           {introDraft && <div className="grid gap-2 border-t border-neutral-800 pt-2 md:grid-cols-2">
             <label className="text-xs">Champion 1<select className={input} value={introDraft.championOneId ?? ""} onChange={e => setIntroDraft({ ...introDraft, championOneId: e.target.value })}>{champions.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}</select></label>

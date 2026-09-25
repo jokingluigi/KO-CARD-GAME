@@ -1,11 +1,12 @@
 import { sql } from "drizzle-orm";
 import { check, index, integer, pgTable, text, timestamp, uniqueIndex } from "drizzle-orm/pg-core";
-import { championsTable } from "./champions";
 
 export const championIntroInteractionsTable = pgTable("champion_intro_interactions", {
   id: text("id").primaryKey(),
-  championOneId: text("champion_one_id").notNull().references(() => championsTable.id, { onDelete: "cascade" }),
-  championTwoId: text("champion_two_id").notNull().references(() => championsTable.id, { onDelete: "cascade" }),
+  // Keep these IDs after Champion deletion so Admin can surface and remove
+  // broken dialogue references instead of silently deleting their history.
+  championOneId: text("champion_one_id").notNull(),
+  championTwoId: text("champion_two_id").notNull(),
   lineOne: text("line_one"),
   lineTwo: text("line_two"),
   firstSpeaker: text("first_speaker").notNull().default("ONE"),
