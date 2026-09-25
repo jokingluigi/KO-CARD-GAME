@@ -585,7 +585,7 @@ export default function Home() {
     }
     const bgm = mediaCatalog.bgms.find((item) => item.id === gameState.bgmId);
     if (bgm) {
-      audioManager.playBgm(bgm.assetUrl, bgm.volume);
+      audioManager.playMatchBgm(bgm.assetUrl, bgm.volume);
     } else {
       audioManager.stopBgm();
     }

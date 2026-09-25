@@ -5,6 +5,8 @@ import { audioManager } from "./audio-manager";
 
 class FakeAudio {
   static rejectPlay = false;
+  static failLoad = false;
+  error: MediaError | null = null;
   volume = 1;
   playbackRate = 1;
   preload = "";
@@ -24,6 +26,12 @@ class FakeAudio {
   }
 
   play() {
+    if (FakeAudio.failLoad) {
+      this.error = { code: 4 } as MediaError;
+      this.paused = true;
+      this.emit("error");
+      return Promise.reject(new DOMException("Missing media", "NotSupportedError"));
+    }
     if (FakeAudio.rejectPlay) {
       this.paused = true;
       return Promise.reject(new DOMException("Autoplay blocked", "NotAllowedError"));
@@ -151,7 +159,8 @@ test("등장 음악 뒤에는 가장 최근 Quest 음악 base로 복귀한다", 
   try {
     audioManager.stopBgm();
     audioManager.setBgmMuted(false);
-    audioManager.playBgm("/match.mp3", 70);
+    audioManager.setMusicContext("BATTLE");
+    audioManager.playMatchBgm("/match.mp3", 70);
     audioManager.playCardEntrance("/entrance.mp3", 90);
     audioManager.playQuestComplete("/quest.mp3", 85);
 
@@ -216,6 +225,7 @@ test("autoplay 거부 뒤에도 base 인스턴스를 보존하고 앱 unlock에�
 
   try {
     audioManager.stopBgm();
+    audioManager.setMusicContext("NON_BATTLE");
     FakeAudio.rejectPlay = true;
     audioManager.playBgm("/blocked.mp3", 80);
     await Promise.resolve();
@@ -239,6 +249,39 @@ test("autoplay 거부 뒤에도 base 인스턴스를 보존하고 앱 unlock에�
   }
 });
 
+test("missing BGM assets are reported as media errors, not autoplay locks", async () => {
+  const previousAudio = globalThis.Audio;
+  const previousWindow = globalThis.window;
+  const previousWarn = console.warn;
+  Object.defineProperty(globalThis, "Audio", { configurable: true, value: FakeAudio });
+  Object.defineProperty(globalThis, "window", {
+    configurable: true,
+    value: { setInterval, clearInterval, setTimeout, clearTimeout },
+  });
+
+  try {
+    audioManager.stopBgm();
+    audioManager.setMusicContext("NON_BATTLE");
+    FakeAudio.rejectPlay = false;
+    FakeAudio.failLoad = true;
+    console.warn = () => {};
+    audioManager.playBgm("/missing.mp3", 80);
+    await Promise.resolve();
+    await Promise.resolve();
+    const manager = audioManager as unknown as {
+      bgm: { failedToLoad: boolean } | null;
+    };
+    assert.equal(manager.bgm?.failedToLoad, true);
+    assert.equal(audioManager.isAudioUnlockPending(), false);
+  } finally {
+    FakeAudio.failLoad = false;
+    audioManager.stopBgm();
+    console.warn = previousWarn;
+    Object.defineProperty(globalThis, "Audio", { configurable: true, value: previousAudio });
+    Object.defineProperty(globalThis, "window", { configurable: true, value: previousWindow });
+  }
+});
+
 test("비전투 경로 전환은 같은 base audio 인스턴스와 재생 위치를 유지한다", () => {
   withFakeAudio(() => {
     audioManager.playBgm("/persistent.mp3", 80);
@@ -253,6 +296,39 @@ test("비전투 경로 전환은 같은 base audio 인스턴스와 재생 위치
     audioManager.setMusicContext("NON_BATTLE");
     assert.equal(manager.bgm?.audio, first);
     assert.equal(first.currentTime, 42);
+  });
+});
+
+test("전투 선택 BGM은 전투 경로에서 재생되고 메인 BGM은 전투 중 정지한다", () => {
+  withFakeAudio(() => {
+    audioManager.setMusicContext("NON_BATTLE");
+    audioManager.playBgm("/title.mp3", 80);
+    const manager = audioManager as unknown as {
+      bgm: { audio: FakeAudio; url: string; scope: string } | null;
+    };
+    const titleMusic = manager.bgm?.audio;
+    assert.ok(titleMusic);
+    assert.equal(titleMusic.paused, false);
+    assert.equal(manager.bgm?.scope, "NON_BATTLE");
+
+    audioManager.setMusicContext("BATTLE");
+    assert.equal(titleMusic.paused, true);
+
+    audioManager.playBgm("/misrouted-match.mp3", 70);
+    assert.equal(manager.bgm?.scope, "NON_BATTLE");
+    assert.equal(manager.bgm?.audio.paused, true);
+
+    audioManager.playMatchBgm("/match.mp3", 70);
+    const matchMusic = manager.bgm?.audio;
+    assert.ok(matchMusic);
+    assert.equal(manager.bgm?.scope, "BATTLE");
+    assert.equal(matchMusic.paused, false);
+
+    audioManager.setMusicContext("NON_BATTLE");
+    assert.equal(matchMusic.paused, true);
+    audioManager.playBgm("/title.mp3", 80);
+    assert.equal(manager.bgm?.scope, "NON_BATTLE");
+    assert.equal(manager.bgm?.audio.paused, false);
   });
 });
 
@@ -319,7 +395,8 @@ test("Legendary 등장 음악은 persistent 음악의 재생 위치를 보존하
 
 test("Legendary 중 새 Quest가 완료되면 이전 paused track 대신 최신 Quest를 재생한다", () => {
   withFakeAudio((advance) => {
-    audioManager.playBgm("/quest-a.mp3", 80);
+    audioManager.setMusicContext("BATTLE");
+    audioManager.playMatchBgm("/quest-a.mp3", 80);
     const manager = audioManager as unknown as {
       bgm: { audio: FakeAudio; url: string } | null;
       current: { audio: FakeAudio } | null;

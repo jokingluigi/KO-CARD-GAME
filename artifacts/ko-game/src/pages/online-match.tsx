@@ -413,7 +413,7 @@ function OnlineMatchPage() {
     const key = `${bgm.id}:${bgm.assetUrl}:${bgm.volume}`;
     if (activeBgmKeyRef.current === key) return;
     activeBgmKeyRef.current = key;
-    audioManager.playBgm(bgm.assetUrl, bgm.volume);
+    audioManager.playMatchBgm(bgm.assetUrl, bgm.volume);
   }, [mediaCatalog.bgms, state?.bgmId]);
 
   useEffect(() => {

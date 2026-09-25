@@ -18,6 +18,8 @@ type MusicAudio = {
   audio: HTMLAudioElement;
   url: string;
   volume: number;
+  scope: "NON_BATTLE" | "BATTLE";
+  failedToLoad: boolean;
   fadeTimerId: number | null;
 };
 
@@ -44,7 +46,11 @@ class AudioManager {
    * when the base is a completed Champion's music.
    */
   private bgm: MusicAudio | null = null;
-  private pendingBaseMusic: { url: string; volume: number } | null = null;
+  private pendingBaseMusic: {
+    url: string;
+    volume: number;
+    scope: "NON_BATTLE" | "BATTLE";
+  } | null = null;
   private baseTransitionId = 0;
   private bgmMuted = false;
   private bgmVolume = 100;
@@ -117,7 +123,7 @@ class AudioManager {
 
   /** Replaces the persistent base without interrupting a card entrance. */
   playQuestComplete(url: string, volume: number) {
-    this.setBaseMusic(url, volume);
+    this.setBaseMusic(url, volume, "BATTLE");
   }
 
   preview(url: string, volume: number) {
@@ -126,7 +132,12 @@ class AudioManager {
   }
 
   playBgm(url: string, volume: number) {
-    this.setBaseMusic(url, volume);
+    this.setBaseMusic(url, volume, "NON_BATTLE");
+  }
+
+  /** Plays the match-selected base while the route is in a battle context. */
+  playMatchBgm(url: string, volume: number) {
+    this.setBaseMusic(url, volume, "BATTLE");
   }
 
   previewBgm(url: string, volume: number) {
@@ -190,7 +201,7 @@ class AudioManager {
 
   setMusicContext(context: "NON_BATTLE" | "BATTLE") {
     this.musicContext = context;
-    if (context === "BATTLE") {
+    if (this.bgm && this.bgm.scope !== context) {
       this.bgm?.audio.pause();
       return;
     }
@@ -198,7 +209,7 @@ class AudioManager {
   }
 
   unlockAudio() {
-    if (this.musicContext !== "NON_BATTLE" || this.bgmMuted) return;
+    if (this.bgmMuted) return;
     this.reconcileBgmPlayback();
   }
 
@@ -225,18 +236,32 @@ class AudioManager {
     this.queue = [];
   }
 
-  private setBaseMusic(url: string, volume: number) {
+  private setBaseMusic(
+    url: string,
+    volume: number,
+    scope: "NON_BATTLE" | "BATTLE",
+  ) {
     if (!hasBrowserAudio() || !url) return;
     if (this.bgm?.url === url) {
       this.bgm.volume = volume;
-      if (!this.bgmMuted && !this.current) {
+      this.bgm.scope = scope;
+      if (this.musicContext !== scope) {
+        this.bgm.audio.pause();
+        return;
+      }
+      if (this.bgmMuted) {
+        this.bgm.audio.volume = 0;
+        return;
+      }
+      if (!this.current) {
         this.bgm.audio.volume = safeVolume(volume * this.bgmVolume / 100);
+        this.reconcileBgmPlayback();
       }
       return;
     }
 
     const previous = this.bgm;
-    this.pendingBaseMusic = { url, volume };
+    this.pendingBaseMusic = { url, volume, scope };
     const transitionId = ++this.baseTransitionId;
     if (!previous) {
       this.commitPendingBaseMusic(transitionId);
@@ -281,7 +306,24 @@ class AudioManager {
       audio.preload = "auto";
       audio.loop = true;
       audio.volume = 0;
-      this.bgm = { audio, url: request.url, volume: request.volume, fadeTimerId: null };
+      const music: MusicAudio = {
+        audio,
+        url: request.url,
+        volume: request.volume,
+        scope: request.scope,
+        failedToLoad: false,
+        fadeTimerId: null,
+      };
+      this.bgm = music;
+      audio.addEventListener("error", () => {
+        if (this.bgm?.audio !== audio) return;
+        music.failedToLoad = true;
+        this.needsAudioUnlock = false;
+        console.warn("BGM 파일을 불러오지 못했습니다.", {
+          scope: music.scope,
+          mediaErrorCode: audio.error?.code ?? null,
+        });
+      }, { once: true });
       audio.addEventListener("canplay", () => {
         if (this.bgm?.audio === audio) this.reconcileBgmPlayback();
       }, { once: true });
@@ -472,13 +514,25 @@ class AudioManager {
   }
 
   private reconcileBgmPlayback() {
-    if (!this.bgm || this.bgmMuted || this.musicContext === "BATTLE") return;
+    if (
+      !this.bgm ||
+      this.bgmMuted ||
+      this.musicContext !== this.bgm.scope ||
+      this.bgm.failedToLoad ||
+      Boolean(this.bgm.audio.error) ||
+      this.current
+    ) return;
     if (!this.bgm.audio.paused && !this.needsAudioUnlock) return;
     this.startMusicFadeIn(this.bgm);
   }
 
   private startMusicFadeIn(music: MusicAudio) {
-    if (!this.bgm || this.bgm.audio !== music.audio) return;
+    if (
+      !this.bgm ||
+      this.bgm.audio !== music.audio ||
+      this.musicContext !== music.scope ||
+      this.current
+    ) return;
     if (music.fadeTimerId !== null) window.clearInterval(music.fadeTimerId);
     music.audio.volume = 0;
     music.audio.play().then(() => {
@@ -487,8 +541,30 @@ class AudioManager {
       this.startFade(music.audio, safeVolume(music.volume * this.bgmVolume / 100), (timerId) => {
         if (this.bgm?.audio === music.audio) music.fadeTimerId = timerId;
       });
-    }).catch(() => {
-      if (this.bgm?.audio === music.audio) this.needsAudioUnlock = true;
+    }).catch((error: unknown) => {
+      if (this.bgm?.audio !== music.audio) return;
+      const errorName =
+        error && typeof error === "object" && "name" in error
+          ? String(error.name)
+          : "UnknownError";
+      if (music.failedToLoad || music.audio.error) {
+        if (!music.failedToLoad) {
+          music.failedToLoad = true;
+          console.warn("BGM 파일을 불러오지 못했습니다.", {
+            scope: music.scope,
+            mediaErrorCode: music.audio.error?.code ?? null,
+          });
+        }
+        this.needsAudioUnlock = false;
+      } else if (errorName === "NotAllowedError") {
+        this.needsAudioUnlock = true;
+      } else {
+        this.needsAudioUnlock = false;
+        console.warn("BGM 재생을 시작하지 못했습니다.", {
+          scope: music.scope,
+          errorName,
+        });
+      }
     });
   }
 

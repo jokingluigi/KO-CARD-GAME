@@ -14,6 +14,8 @@ import {
   type ChampionState,
 } from '@/game';
 import { CardRenderer } from './card-renderer';
+import { CardTagExplorerDialog } from './card-tag-explorer-dialog';
+import { CardDetailDialog, type CardDetailRecord } from './card-detail-dialog';
 import { getActiveCardKeywords } from '../game/cards/granted-text';
 import { getCardRuntimeRulesText } from '../lib/card-display-state';
 import { shouldPreventAltWheel, shouldToggleAltInfo } from './alt-inspector-keyboard';
@@ -37,6 +39,7 @@ interface AltInspectContextValue {
   inspect: (target: InspectTarget) => void;
   toggleTouch: (target: InspectTarget) => void;
   clear: () => void;
+  openTagExplorer: (tag: string) => void;
 }
 
 const AltInspectContext = createContext<AltInspectContextValue | null>(null);
@@ -45,6 +48,8 @@ export function AltInspectProvider({ children }: { children: ReactNode }) {
   const [isAltPressed, setIsAltPressed] = useState(false);
   const [target, setTarget] = useState<InspectTarget | null>(null);
   const [isTouchInspecting, setIsTouchInspecting] = useState(false);
+  const [tagExplorer, setTagExplorer] = useState<string | null>(null);
+  const [tagDetailCard, setTagDetailCard] = useState<CardDetailRecord | null>(null);
   const panelRef = useRef<HTMLElement>(null);
   const pendingAltToggleRef = useRef<number | null>(null);
   const [panelPosition, setPanelPosition] = useState({ left: 8, top: 8 });
@@ -111,9 +116,13 @@ export function AltInspectProvider({ children }: { children: ReactNode }) {
       return nextTarget;
     });
   }, [isTouchInspecting]);
+  const openTagExplorer = useCallback((tag: string) => {
+    setTagDetailCard(null);
+    setTagExplorer(tag);
+  }, []);
   const value = useMemo(
-    () => ({ isAltPressed, inspect, toggleTouch, clear }),
-    [clear, inspect, isAltPressed, toggleTouch],
+    () => ({ isAltPressed, inspect, toggleTouch, clear, openTagExplorer }),
+    [clear, inspect, isAltPressed, openTagExplorer, toggleTouch],
   );
   const isVisible = Boolean(
     target && (isAltPressed || target.showOnHover || (target.showOnTouch && isTouchInspecting)),
@@ -202,6 +211,26 @@ export function AltInspectProvider({ children }: { children: ReactNode }) {
           {target?.content}
         </aside>
       )}
+      <CardTagExplorerDialog
+        tag={tagExplorer ?? ''}
+        open={tagExplorer !== null}
+        onOpenChange={(nextOpen) => {
+          if (!nextOpen) {
+            setTagExplorer(null);
+            setTagDetailCard(null);
+          }
+        }}
+        onSelectCard={setTagDetailCard}
+      />
+      {tagDetailCard && (
+        <CardDetailDialog
+          card={tagDetailCard}
+          open={Boolean(tagDetailCard)}
+          onOpenChange={(nextOpen) => {
+            if (!nextOpen) setTagDetailCard(null);
+          }}
+        />
+      )}
     </AltInspectContext.Provider>
   );
 }
@@ -254,6 +283,7 @@ export function Inspectable({
 }
 
 export function CardInspectContent({ card }: { card: CardInstance }) {
+  const altInspectContext = useContext(AltInspectContext);
   const { definition, tags, keywords, statuses, rulesText } = getCardInspectorMetadata(card);
   const numericChanges = getNumericChanges(card);
   return (
@@ -317,9 +347,19 @@ export function CardInspectContent({ card }: { card: CardInstance }) {
         <InspectorSection title="태그" tone="cyan">
           <div className="flex flex-wrap gap-2">
             {tags.map((tag) => (
-              <span key={tag} data-testid="inspector-card-tag" className="rounded-full border border-cyan-500/60 bg-cyan-950/60 px-3 py-1 text-[clamp(0.875rem,1.2vw,1.0625rem)] font-black text-cyan-100">
+              <button
+                key={tag}
+                type="button"
+                data-testid="inspector-card-tag"
+                aria-label={`${tag} 태그 카드 보기`}
+                onClick={(event) => {
+                  event.stopPropagation();
+                  altInspectContext?.openTagExplorer(tag);
+                }}
+                className="pointer-events-auto rounded-full border border-cyan-500/60 bg-cyan-950/60 px-3 py-1 text-[clamp(0.875rem,1.2vw,1.0625rem)] font-black text-cyan-100 transition hover:bg-cyan-800/70 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-300"
+              >
                 {tag}
-              </span>
+              </button>
             ))}
           </div>
         </InspectorSection>

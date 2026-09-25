@@ -32,7 +32,9 @@ export const emptyMainContent: MainContent = {
 export async function fetchMainContent(): Promise<MainContent> {
   const apiBase = `${import.meta.env.BASE_URL.replace(/\/$/, "")}/api`;
   const response = await fetch(`${apiBase}/main-content`, { credentials: "include" });
-  if (!response.ok) return emptyMainContent;
+  if (!response.ok) {
+    throw new Error(`메인 콘텐츠를 불러오지 못했습니다. (${response.status})`);
+  }
   const body = await response.json() as Partial<MainContent>;
   return {
     notices: Array.isArray(body.notices) ? body.notices : [],

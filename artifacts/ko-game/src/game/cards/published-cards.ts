@@ -115,6 +115,50 @@ async function fetchPublishedCardRecords(): Promise<PublishedCardRecord[]> {
   return (body.cards ?? []).filter((card) => card.status === "PUBLISHED");
 }
 
+let publicTagCatalogPromise: Promise<CardDefinition[]> | null = null;
+let publicTagCatalogFetchedAt = 0;
+const PUBLIC_TAG_CATALOG_TTL_MS = 5 * 60 * 1000;
+
+/**
+ * Loads the public catalog for tag browsing. Unlike match setup's fail-closed
+ * loader, this rejects on API errors so the UI can distinguish an unavailable
+ * catalog from a tag with no matching cards.
+ */
+export function fetchPublicCardTagCatalog(): Promise<CardDefinition[]> {
+  if (
+    publicTagCatalogPromise &&
+    (publicTagCatalogFetchedAt === 0 ||
+      Date.now() - publicTagCatalogFetchedAt < PUBLIC_TAG_CATALOG_TTL_MS)
+  ) {
+    return publicTagCatalogPromise;
+  }
+  publicTagCatalogFetchedAt = 0;
+  const apiBase = `${import.meta.env.BASE_URL.replace(/\/$/, "")}/api`;
+  publicTagCatalogPromise = fetch(`${apiBase}/cards`)
+    .then(async (response) => {
+      if (!response.ok) {
+        throw new Error(`공개 카드 목록을 불러오지 못했습니다. (${response.status})`);
+      }
+      const body = await response.json() as { cards?: unknown };
+      if (!Array.isArray(body.cards)) {
+        throw new Error("공개 카드 목록 응답 형식이 올바르지 않습니다.");
+      }
+      return (body.cards as PublishedCardRecord[])
+        .filter((card) => card?.status === "PUBLISHED")
+        .map(cardRecordToDefinition);
+    })
+    .then((cards) => {
+      publicTagCatalogFetchedAt = Date.now();
+      return cards;
+    })
+    .catch((error: unknown) => {
+      publicTagCatalogPromise = null;
+      publicTagCatalogFetchedAt = 0;
+      throw error;
+    });
+  return publicTagCatalogPromise;
+}
+
 export async function fetchPublishedWrestlerCards(): Promise<CardDefinition[]> {
   return (await fetchPublishedCardRecords())
     .filter((card) => card.cardType === "WRESTLER" && !card.isToken && !card.isChampionToken)
