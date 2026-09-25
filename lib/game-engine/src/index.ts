@@ -10,6 +10,13 @@ export {
   executeAction,
   getLegalActions,
 } from "../../../artifacts/ko-game/src/game/actions/engine-actions";
+export {
+  chooseBestAction,
+  evaluateAction,
+  evaluateState,
+  estimateCardValue,
+  rankActions,
+} from "../../../artifacts/ko-game/src/game/actions/ai-evaluator";
 export type {
   ActionErrorCode,
   ActionResult,

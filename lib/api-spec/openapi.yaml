@@ -24,6 +24,30 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/HealthStatus"
+  /daily-quests/ai-match-progress:
+    post:
+      operationId: completeAIMatchQuestProgress
+      tags: [daily-quests]
+      summary: Validate a completed local AI match and apply its Quest progress
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AIMatchQuestProgressInput"
+      responses:
+        "200":
+          description: Canonical match events were applied
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AIMatchQuestProgressResponse"
+        "400":
+          description: Invalid match transcript
+        "401":
+          description: Authentication required
+        "422":
+          description: Match is invalid or cannot be completed
   /packs/{id}/open-bulk:
     post:
       operationId: openBulkPack
@@ -70,6 +94,34 @@ components:
           type: string
       required:
         - status
+    AIMatchQuestProgressInput:
+      type: object
+      properties:
+        deckId:
+          type: string
+          minLength: 1
+        aiDeckId:
+          type: string
+          minLength: 1
+        matchId:
+          type: string
+          minLength: 1
+          maxLength: 64
+        actions:
+          type: array
+          maxItems: 2000
+          items:
+            type: object
+            additionalProperties: true
+      required: [deckId, aiDeckId, matchId, actions]
+      additionalProperties: false
+    AIMatchQuestProgressResponse:
+      type: object
+      properties:
+        completed:
+          type: boolean
+      required: [completed]
+      additionalProperties: false
     BulkPackOpenInput:
       type: object
       properties:

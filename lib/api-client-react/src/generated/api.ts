@@ -20,6 +20,8 @@ import type {
 } from '@tanstack/react-query';
 
 import type {
+  AIMatchQuestProgressInput,
+  AIMatchQuestProgressResponse,
   BulkPackOpenInput,
   BulkPackOpenResponse,
   HealthStatus
@@ -85,6 +87,7 @@ export const getHealthCheckQueryKey = () => {
     ] as const;
     }
 
+
 export const getHealthCheckQueryOptions = <TData = Awaited<ReturnType<typeof healthCheck>>, TError = ErrorType<unknown>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof healthCheck>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
 ) => {
 
@@ -128,6 +131,77 @@ export function useHealthCheck<TData = Awaited<ReturnType<typeof healthCheck>>, 
 
 
 
+
+export const getCompleteAIMatchQuestProgressUrl = () => {
+
+
+
+
+  return `/api/daily-quests/ai-match-progress`
+}
+
+/**
+ * @summary Validate a completed local AI match and apply its Quest progress
+ */
+export const completeAIMatchQuestProgress = async (aIMatchQuestProgressInput: AIMatchQuestProgressInput, options?: Parameters<typeof customFetch>[1]): Promise<AIMatchQuestProgressResponse> => {
+
+  return customFetch<AIMatchQuestProgressResponse>(getCompleteAIMatchQuestProgressUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(aIMatchQuestProgressInput)
+  }
+);}
+
+
+
+
+
+export const getCompleteAIMatchQuestProgressMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof completeAIMatchQuestProgress>>, TError,{data: BodyType<AIMatchQuestProgressInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof completeAIMatchQuestProgress>>, TError,{data: BodyType<AIMatchQuestProgressInput>}, TContext> => {
+
+const mutationKey = ['completeAIMatchQuestProgress'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof completeAIMatchQuestProgress>>, {data: BodyType<AIMatchQuestProgressInput>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  completeAIMatchQuestProgress(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type CompleteAIMatchQuestProgressMutationResult = NonNullable<Awaited<ReturnType<typeof completeAIMatchQuestProgress>>>
+    export type CompleteAIMatchQuestProgressMutationBody = BodyType<AIMatchQuestProgressInput>
+    export type CompleteAIMatchQuestProgressMutationError = ErrorType<void>
+
+    /**
+ * @summary Validate a completed local AI match and apply its Quest progress
+ */
+export const useCompleteAIMatchQuestProgress = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof completeAIMatchQuestProgress>>, TError,{data: BodyType<AIMatchQuestProgressInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof completeAIMatchQuestProgress>>,
+        TError,
+        {data: BodyType<AIMatchQuestProgressInput>},
+        TContext
+      > => {
+      return useMutation(getCompleteAIMatchQuestProgressMutationOptions(options));
+    }
 
 export const getOpenBulkPackUrl = (id: string,) => {
 

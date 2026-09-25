@@ -6,6 +6,9 @@
  * OpenAPI spec version: 0.1.0
  */
 
+export * from './aIMatchQuestProgressInput';
+export * from './aIMatchQuestProgressInputActionsItem';
+export * from './aIMatchQuestProgressResponse';
 export * from './bulkPackOpenInput';
 export * from './bulkPackOpenResponse';
 export * from './healthStatus';

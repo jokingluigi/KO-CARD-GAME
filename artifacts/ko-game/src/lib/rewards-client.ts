@@ -1,3 +1,5 @@
+import type { AIMatchQuestProgressInput } from "@workspace/api-client-react";
+
 const base = `${import.meta.env.BASE_URL.replace(/\/$/, "")}/api`;
 
 async function request<T>(path: string, init?: RequestInit): Promise<T> {
@@ -79,6 +81,11 @@ export type RewardAdminData = {
 };
 
 export const fetchDailyQuests = () => request<{ assignments: DailyQuest[] }>("/daily-quests");
+export const completeAIMatchQuestProgress = (body: AIMatchQuestProgressInput) =>
+  request<{ completed: boolean }>("/daily-quests/ai-match-progress", {
+    method: "POST",
+    body: JSON.stringify(body),
+  });
 export const claimDailyQuest = (id: string) => request<{ assignment: DailyQuest; reward: { amount: number; balanceAfter: number } | null; alreadyClaimed: boolean }>(`/daily-quests/${encodeURIComponent(id)}/claim`, { method: "POST" });
 export const fetchAttendance = () => request<AttendanceData>("/attendance");
 export const claimAttendance = () => request<{ attendance: AttendanceData; reward: { amount: number; balanceAfter: number } | null; alreadyClaimed: boolean }>("/attendance/claim", { method: "POST" });

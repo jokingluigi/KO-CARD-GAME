@@ -13,6 +13,7 @@ import {
   type BoardSlot,
   type AttackTarget,
   type GameState,
+  type GameAction,
   type CardDefinition,
   type ChampionDefinition,
   runAITurn,
@@ -50,6 +51,7 @@ import { ROUTES } from '@/lib/routes';
 import { fetchAIDecks, type AIDeck } from '@/lib/ai-decks-client';
 import { createLocalAIMatchId, seedForAIMatch, selectAIOpponentDeck } from '@/lib/ai-match-selection';
 import { AiMatchSetup } from '@/components/ai-match-setup';
+import { completeAIMatchQuestProgress } from '@/lib/rewards-client';
 import type { CardPlayAnimationState, CardPlayGeometry } from '@/components/card-play-animation-utils';
 import { landingImpactLevel } from '@/components/card-play-animation-utils';
 import type { AttackAnimationState } from '@/components/attack-animation-utils';
@@ -146,6 +148,9 @@ export default function Home() {
   const [aiDecks, setAiDecks] = useState<Deck[] | null>(null);
   const [availableAIDecks, setAvailableAIDecks] = useState<AIDeck[] | null>(null);
   const [aiMatchStarted, setAiMatchStarted] = useState(false);
+  const aiMatchQuestContextRef = useRef<{ deckId: string; aiDeckId: string; matchId: string } | null>(null);
+  const aiMatchActionsRef = useRef<GameAction[]>([]);
+  const submittedAIMatchRef = useRef<string | null>(null);
   const [aiMatchData, setAiMatchData] = useState<{
     definitions: CardDefinition[];
     champions: ChampionDefinition[];
@@ -163,6 +168,11 @@ export default function Home() {
   const processedAudioEventsRef = useRef(new Set<string>());
   const lastAudioEventCountRef = useRef<number | null>(null);
   const pendingEntranceAudioRef = useRef<{ url: string; volume: number; isLegendary: boolean } | null>(null);
+
+  function recordHumanAIMatchAction(action: GameAction) {
+    if (!isAiMatch || isAdminSource || !aiMatchStarted) return;
+    aiMatchActionsRef.current.push(action);
+  }
   const processedAttackSoundsRef = useRef(new Set<string>());
   const latestGameStateRef = useRef(gameState);
   const matchReadyRef = useRef(matchReady);
@@ -476,6 +486,13 @@ export default function Home() {
       createDeterministicRandom(matchId),
       data.media,
     );
+    aiMatchQuestContextRef.current = {
+      deckId: deck.id,
+      aiDeckId: aiDeck.id,
+      matchId,
+    };
+    aiMatchActionsRef.current = [];
+    submittedAIMatchRef.current = null;
     setGameState(nextState);
     setMediaCatalog(data.media);
     setSelectedCardId(null);
@@ -527,6 +544,39 @@ export default function Home() {
       }
     };
   }, [gameState.activePlayerId, gameState.status, isAiMatch, aiMatchStarted, matchReady]);
+
+  useEffect(() => {
+    const match = aiMatchQuestContextRef.current;
+    if (
+      !isAiMatch ||
+      isAdminSource ||
+      !aiMatchStarted ||
+      gameState.status !== 'FINISHED' ||
+      !match ||
+      submittedAIMatchRef.current === match.matchId
+    ) {
+      return;
+    }
+
+    submittedAIMatchRef.current = match.matchId;
+    void (async () => {
+      for (let attempt = 0; attempt < 3; attempt += 1) {
+        try {
+          await completeAIMatchQuestProgress({
+            ...match,
+            actions: aiMatchActionsRef.current as unknown as Array<Record<string, unknown>>,
+          });
+          return;
+        } catch {
+          if (attempt < 2) {
+            await new Promise((resolve) => window.setTimeout(resolve, 600 * (attempt + 1)));
+          }
+        }
+      }
+      submittedAIMatchRef.current = null;
+      setPlayError('퀘스트 진행도를 저장하지 못했습니다. 인터넷 연결을 확인해 주세요.');
+    })();
+  }, [gameState.status, isAdminSource, isAiMatch, aiMatchStarted]);
 
   useEffect(() => {
     if (!matchReady || (isAiMatch && !aiMatchStarted)) {
@@ -684,6 +734,9 @@ export default function Home() {
       setPlayError(result.message);
       return;
     }
+    if (actingPlayerId === currentState.players[0]?.id) {
+      recordHumanAIMatchAction({ type: 'END_TURN', playerId: actingPlayerId });
+    }
 
     if (isAiMatch && aiMatchStarted) {
       if (!isTimeout) {
@@ -735,6 +788,7 @@ export default function Home() {
       setPlayError(result.message);
       return;
     }
+    recordHumanAIMatchAction({ type: 'SURRENDER', playerId: gameState.players[0].id });
 
     setGameState(result.state);
     setSelectedCardId(null);
@@ -820,6 +874,16 @@ export default function Home() {
       return;
     }
 
+    recordHumanAIMatchAction({
+      type: 'ATTACK',
+      playerId: gameState.players[0].id,
+      attackerInstanceId: selectedAttackerId,
+      target: {
+        type: 'WRESTLER',
+        playerId: gameState.players[1].id,
+        cardInstanceId: targetCardInstanceId,
+      },
+    });
     const attacker = gameState.players[0].board.find(
       (card) => card?.instanceId === selectedAttackerId,
     );
@@ -878,6 +942,20 @@ export default function Home() {
       return;
     }
     const before = gameState;
+    if (isAiMatch && aiMatchStarted && !isAdminSource) {
+      const action: GameAction = before.targetingState?.phase === 'PRE_COMMIT'
+        ? { type: 'CONFIRM_PRECOMMIT_TARGET', playerId: before.players[0].id, targetId }
+        : { type: 'SELECT_EFFECT_TARGET', playerId: before.players[0].id, targetId };
+      const result = executeAction(before, action);
+      if (!result.success) {
+        setPlayError(result.message);
+        return;
+      }
+      recordHumanAIMatchAction(action);
+      setGameState(result.state);
+      setPlayError(null);
+      return;
+    }
     const next = before.targetingState?.phase === 'PRE_COMMIT'
       ? executeAction(before, { type: 'CONFIRM_PRECOMMIT_TARGET', playerId: before.players[0].id, targetId }).state
       : processChampionQuestEvents(before, selectEffectTarget(before, targetId));
@@ -890,6 +968,18 @@ export default function Home() {
   }
   function handleCancelEffectTargeting() {
     if (gameState.status !== 'IN_PROGRESS') return;
+    if (isAiMatch && aiMatchStarted && !isAdminSource) {
+      const action: GameAction = { type: 'CANCEL_EFFECT_TARGET', playerId: gameState.players[0].id };
+      const result = executeAction(gameState, action);
+      if (!result.success) {
+        setPlayError(result.message);
+        return;
+      }
+      recordHumanAIMatchAction(action);
+      setGameState(result.state);
+      setPlayError(null);
+      return;
+    }
     const next = cancelEffectTargeting(gameState);
     if (next === gameState) return;
     setGameState(next);
@@ -922,6 +1012,12 @@ export default function Home() {
       return;
     }
 
+    recordHumanAIMatchAction({
+      type: 'ATTACK',
+      playerId: gameState.players[0].id,
+      attackerInstanceId: selectedAttackerId,
+      target: { type: 'PLAYER', playerId: gameState.players[1].id },
+    });
     const attacker = gameState.players[0].board.find(
       (card) => card?.instanceId === selectedAttackerId,
     );
@@ -1009,6 +1105,12 @@ export default function Home() {
       return;
     }
 
+    recordHumanAIMatchAction({
+      type: 'PLAY_WRESTLER',
+      playerId: gameState.players[0].id,
+      cardInstanceId: selectedCardId,
+      boardSlot: slot,
+    });
     const card = gameState.players[0].hand.find((entry) => entry.instanceId === selectedCardId);
     if (card && geometry) {
       setGameState(result.state);
@@ -1038,6 +1140,11 @@ export default function Home() {
       setPlayError(result.message);
       return;
     }
+    recordHumanAIMatchAction({
+      type: 'BEGIN_TARGETED_ACTION',
+      playerId: gameState.players[0].id,
+      action: { type: 'PLAY_TECHNIQUE', cardInstanceId },
+    });
     setGameState(result.state);
     setSelectedCardId(null);
     setPlayError(null);
@@ -1056,6 +1163,11 @@ export default function Home() {
       setPlayError(result.message);
       return;
     }
+    recordHumanAIMatchAction({
+      type: 'BEGIN_TARGETED_ACTION',
+      playerId: gameState.players[0].id,
+      action: { type: 'USE_ACTIVE', cardInstanceId: targetCardInstanceId },
+    });
     setGameState(result.state);
     setPlayError(null);
   }
@@ -1071,6 +1183,11 @@ export default function Home() {
       setPlayError(result.message);
       return;
     }
+    recordHumanAIMatchAction({
+      type: 'BEGIN_TARGETED_ACTION',
+      playerId: gameState.players[0].id,
+      action: { type: 'USE_CHAMPION_ABILITY' },
+    });
     setGameState(result.state);
     setPlayError(null);
   }

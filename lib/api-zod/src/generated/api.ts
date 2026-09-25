@@ -15,6 +15,31 @@ import * as zod from 'zod';
 export const HealthCheckResponse = zod.object({
   "status": zod.string()
 })
+
+
+/**
+ * @summary Validate a completed local AI match and apply its Quest progress
+ */
+
+
+export const completeAIMatchQuestProgressBodyMatchIdMax = 64;
+
+export const completeAIMatchQuestProgressBodyActionsMax = 2000;
+
+
+
+export const CompleteAIMatchQuestProgressBody = zod.object({
+  "deckId": zod.string().min(1),
+  "aiDeckId": zod.string().min(1),
+  "matchId": zod.string().min(1).max(completeAIMatchQuestProgressBodyMatchIdMax),
+  "actions": zod.array(zod.record(zod.string(), zod.unknown())).max(completeAIMatchQuestProgressBodyActionsMax)
+})
+
+export const CompleteAIMatchQuestProgressResponse = zod.object({
+  "completed": zod.boolean()
+})
+
+
 /**
  * @summary Open multiple packs atomically
  */

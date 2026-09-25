@@ -9,6 +9,26 @@ export interface HealthStatus {
   status: string;
 }
 
+export type AIMatchQuestProgressInputActionsItem = { [key: string]: unknown };
+
+export interface AIMatchQuestProgressInput {
+  /** @minLength 1 */
+  deckId: string;
+  /** @minLength 1 */
+  aiDeckId: string;
+  /**
+     * @minLength 1
+     * @maxLength 64
+     */
+  matchId: string;
+  /** @maxItems 2000 */
+  actions: AIMatchQuestProgressInputActionsItem[];
+}
+
+export interface AIMatchQuestProgressResponse {
+  completed: boolean;
+}
+
 export interface BulkPackOpenInput {
   /**
      * @minimum 1
