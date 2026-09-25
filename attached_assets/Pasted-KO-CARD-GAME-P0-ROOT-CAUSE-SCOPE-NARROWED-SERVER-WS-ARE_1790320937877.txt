@@ -1,0 +1,834 @@
+KO CARD GAME — P0 ROOT CAUSE SCOPE NARROWED
+SERVER/WS ARE CONNECTED, BUT CLIENT REMAINS STUCK IN RECONNECTING
+
+We now have direct Production browser evidence.
+
+DO NOT modify:
+- Production DB
+- Quest schema
+- Render configuration
+- matchmaking server logic
+- game engine
+- persistRuntime
+- commitTransition
+- card/champion logic
+
+The server and WebSocket transport are demonstrably working.
+
+==================================================
+PRODUCTION EVIDENCE
+==================================================
+
+During a match where the UI was STILL showing:
+
+"연결이 끊겼습니다. 재연결 중..."
+
+the SAME WebSocket received:
+
+MATCH_FOUND
+16:18:40.963
+
+MATCH_STARTING
+16:18:40.966
+
+SUBSCRIBE sent
+16:18:41.236
+
+MATCH_SNAPSHOT received
+16:18:41.525
+
+MATCH_CONNECTION_STATUS
+PLAYER_TWO
+CONNECTED
+16:18:41.529
+
+MATCH_CONNECTION_STATUS
+PLAYER_ONE
+CONNECTED
+16:18:41.711
+
+The WebSocket handshake was also:
+
+HTTP 101 Switching Protocols
+
+The ws-ticket request was:
+
+HTTP 200
+
+Therefore:
+
+- API is alive
+- WS handshake succeeds
+- lobby socket succeeds
+- SUBSCRIBE succeeds
+- server sends authoritative MATCH_SNAPSHOT
+- server reports both players CONNECTED
+
+BUT
+
+the client UI remains stuck in RECONNECTING,
+and gameplay remains unusable.
+
+In the latest reproduction, it did not recover even after waiting.
+
+==================================================
+1. THIS IS NOW PRIMARILY A CLIENT CONNECTION-STATE BUG
+==================================================
+
+Do NOT continue debugging this as:
+
+- Render cold start
+- Quest DB failure
+- runtime registration delay
+- SUBSCRIBE failure
+- MATCH_SNAPSHOT delay
+
+unless new evidence contradicts the captured Production frames.
+
+The server delivered MATCH_SNAPSHOT approximately 289 ms after SUBSCRIBE.
+
+The client is receiving the data.
+
+The problem is now:
+
+CLIENT CONNECTION STATE
+≠
+ACTUAL WEBSOCKET / SERVER STATE
+
+==================================================
+2. TRACE EVERY WRITER OF CLIENT CONNECTION STATUS
+==================================================
+
+Find the exact state used to render:
+
+"연결이 끊겼습니다. 재연결 중..."
+
+Identify EVERY place that can set it to:
+
+CONNECTING
+CONNECTED
+RECONNECTING
+DISCONNECTED
+ERROR
+READY
+
+Search the complete frontend for:
+
+setConnectionStatus
+setReconnect*
+connectionState
+socketState
+wsState
+isConnected
+isReconnecting
+matchReady
+reconnectDeadline
+connectionTimeout
+connectionLost
+socket.onopen
+socket.onclose
+socket.onerror
+MATCH_SNAPSHOT
+MATCH_CONNECTION_STATUS
+
+Do not patch until all writers are identified.
+
+==================================================
+3. CHECK FOR STALE TIMEOUT OVERRIDING SUCCESS
+==================================================
+
+This is a high-priority possibility.
+
+Example race:
+
+socket connects
+→ MATCH_SNAPSHOT arrives
+→ client becomes READY
+
+BUT an older timeout created during initial connection is still pending
+
+→ timeout fires later
+→ setConnectionState(RECONNECTING)
+
+even though socket is OPEN.
+
+Inspect all:
+
+setTimeout
+setInterval
+AbortController
+reconnect timer
+connection timeout
+snapshot timeout
+heartbeat timeout
+
+After successful:
+
+WS OPEN
+AND MATCH_SNAPSHOT
+
+all obsolete initial connection/reconnect timers must be cancelled.
+
+Do not assume this is the cause.
+Prove whether it happens.
+
+==================================================
+4. CHECK FOR OLD SOCKET CALLBACKS
+==================================================
+
+High priority.
+
+Possible sequence:
+
+socket A exists
+
+socket B becomes the valid connected socket
+
+socket B receives:
+MATCH_SNAPSHOT
+CONNECTED
+
+later:
+
+socket A.onclose fires
+
+and old callback executes:
+
+setConnectionState(RECONNECTING)
+
+Now UI says disconnected even though socket B is healthy.
+
+Inspect whether event callbacks verify that they belong to the CURRENT socket.
+
+Example concept:
+
+if (socket !== currentSocketRef.current)
+    ignore stale callback
+
+Do not blindly use this exact code.
+Inspect architecture first.
+
+Old socket callbacks must never overwrite the state of a newer healthy socket.
+
+==================================================
+5. CHECK FOR MULTIPLE WEBSOCKET INSTANCES
+==================================================
+
+Find whether more than one connection manager/socket exists.
+
+Inspect:
+
+React component mount
+route transition
+context/provider
+custom hooks
+useEffect
+StrictMode behavior
+reconnect manager
+match page remount
+
+There must not be:
+
+socket A used for actual incoming frames
+
+while
+
+socket B is the one whose state the UI reads.
+
+This could perfectly explain:
+
+Network:
+CONNECTED
+
+UI:
+RECONNECTING
+
+Report:
+
+NUMBER OF LIVE WS INSTANCES FOR MATCH:
+...
+
+==================================================
+6. CHECK useEffect CLEANUP / DEPENDENCIES
+==================================================
+
+Inspect WebSocket-related useEffect dependencies.
+
+Look for:
+
+useEffect(() => {
+    connect()
+    return disconnect
+}, [something])
+
+where `something` changes after MATCH_FOUND / MATCH_SNAPSHOT.
+
+Possible bug:
+
+connect
+→ socket becomes healthy
+→ React state changes
+→ effect cleanup runs
+→ socket lifecycle state becomes disconnected
+→ another connection attempt begins
+
+Check especially dependencies containing:
+
+match object
+player object
+auth object
+state object
+callbacks recreated each render
+
+Prefer stable primitives where appropriate.
+
+Again:
+prove before modifying.
+
+==================================================
+7. CHECK WHAT MATCH_CONNECTION_STATUS MEANS
+==================================================
+
+The server sent:
+
+PLAYER_ONE CONNECTED
+PLAYER_TWO CONNECTED
+
+Determine whether the client incorrectly treats:
+
+opponent connection status
+
+and
+
+local WebSocket transport status
+
+as the same state.
+
+These are different concepts.
+
+There should be separate state for:
+
+LOCAL SOCKET:
+OPEN / CLOSED / RECONNECTING
+
+MATCH PLAYER PRESENCE:
+PLAYER_ONE CONNECTED/DISCONNECTED
+PLAYER_TWO CONNECTED/DISCONNECTED
+
+Do not let an opponent presence status accidentally control the local reconnect overlay.
+
+==================================================
+8. MATCH_SNAPSHOT MUST ESTABLISH AUTHORITATIVE READINESS
+==================================================
+
+We have proven the client receives MATCH_SNAPSHOT.
+
+Trace what happens when that message is handled.
+
+It should update:
+
+- canonical match state
+- player seat
+- current state/version
+- matchReady
+
+and if the current socket is OPEN:
+
+the client should become READY.
+
+Check whether MATCH_SNAPSHOT is parsed successfully but
+the connection-ready flag is never updated.
+
+Also inspect whether:
+
+snapshot handler throws AFTER parsing some data
+
+and therefore connection state never reaches READY.
+
+==================================================
+9. CHECK HEARTBEAT / WATCHDOG
+==================================================
+
+Inspect heartbeat logic.
+
+If the client expects:
+
+PING/PONG
+heartbeat timestamp
+server activity
+
+determine whether the watchdog falsely decides that the socket is dead.
+
+Possible bug:
+
+MATCH_SNAPSHOT arrives
+but lastHeartbeat is not updated
+
+→ watchdog timeout
+
+→ RECONNECTING
+
+If heartbeat exists, log:
+
+lastMessageAt
+lastPingAt
+lastPongAt
+watchdog deadline
+
+Do not add a new heartbeat system unless one already exists and is broken.
+
+==================================================
+10. CHECK READY CONDITION
+==================================================
+
+Document the exact boolean/expression that determines whether:
+
+gameplay is enabled
+
+and whether:
+
+RECONNECTING overlay is shown.
+
+For example:
+
+socketOpen &&
+snapshotReceived &&
+seatAssigned &&
+matchState != null
+
+Find the ACTUAL code.
+
+Then report which term is false in Production despite the received frames.
+
+This is critical.
+
+Do not merely say:
+"connection state is wrong."
+
+Find the exact flag that remains false.
+
+==================================================
+11. ADD SAFE CLIENT-SIDE DIAGNOSTIC LOGGING
+==================================================
+
+If needed, temporarily log:
+
+socket instance generation/id
+socket.readyState
+connection state before/after
+matchId
+message type
+MATCH_SNAPSHOT received
+local seat
+matchReady
+reconnect timer scheduled
+reconnect timer cancelled
+onopen
+onclose
+onerror
+stale callback ignored
+
+Do NOT log:
+
+ticket
+cookies
+Authorization
+private card contents
+deck contents
+tokens
+secrets
+
+==================================================
+12. USE SOCKET GENERATION / IDENTITY IF NEEDED
+==================================================
+
+If multiple sockets/reconnect attempts can exist,
+give each client socket attempt an internal generation number.
+
+Example concept:
+
+connectionGeneration += 1
+
+Every callback knows its generation.
+
+Only callbacks belonging to the current generation may mutate global connection state.
+
+Older callbacks should be ignored.
+
+Do this only if it fits existing architecture.
+
+==================================================
+13. DO NOT ADD MORE RETRIES UNTIL STATE BUG IS FIXED
+==================================================
+
+Important:
+
+The current evidence proves that the server already delivered a successful connection.
+
+Therefore adding:
+
+faster retry
+more retry
+shorter retry delay
+
+alone will NOT solve this bug.
+
+The client is failing to recognize an already successful connection.
+
+Fix connection-state ownership first.
+
+==================================================
+14. DO NOT RECONNECT A HEALTHY SOCKET
+==================================================
+
+If:
+
+socket.readyState === OPEN
+
+AND
+authoritative MATCH_SNAPSHOT has been received
+
+the client must not enter RECONNECTING simply because an old timer/callback fires.
+
+The valid current socket must win.
+
+==================================================
+15. EXPECTED CORRECT FLOW
+==================================================
+
+Production:
+
+MATCH_FOUND
+→ MATCH_STARTING
+→ SUBSCRIBE
+→ MATCH_SNAPSHOT
+→ local socket recognized OPEN
+→ seat resolved
+→ authoritative state accepted
+→ READY
+→ reconnect overlay disappears
+→ actions enabled
+
+No manual reconnect required.
+
+==================================================
+16. REPRODUCTION TEST
+==================================================
+
+Use the exact scenario:
+
+Quick Match
+→ match found
+→ game screen
+
+Verify:
+
+HTTP ws-ticket:
+200
+
+WS handshake:
+101
+
+SUBSCRIBE:
+sent
+
+MATCH_SNAPSHOT:
+received
+
+PLAYER_ONE/PLAYER_TWO:
+CONNECTED
+
+Then client must:
+
+RECONNECTING:
+NO
+
+READY:
+YES
+
+END TURN:
+enabled when legal
+
+==================================================
+17. STALE CALLBACK TEST
+==================================================
+
+Create/reproduce:
+
+socket A
+→ replacement socket B
+→ B becomes healthy
+
+Then simulate/trigger A closing afterward.
+
+Expected:
+
+A.onclose
+→ ignored as stale
+
+B remains:
+OPEN / READY
+
+UI:
+does NOT enter RECONNECTING
+
+==================================================
+18. STALE TIMER TEST
+==================================================
+
+Schedule a connection timeout/reconnect timer.
+
+Before it fires:
+
+socket succeeds
+MATCH_SNAPSHOT arrives
+
+Expected:
+
+timer cancelled
+
+or when timer fires:
+it verifies current state and performs no state downgrade.
+
+==================================================
+19. COMPONENT REMOUNT TEST
+==================================================
+
+Quick Match route transition.
+
+Ensure:
+
+- only one active connection owner
+- no duplicate socket managers
+- no old page cleanup corrupting new page state
+- no stale reconnect timer survives navigation
+
+==================================================
+20. REGRESSION PROTECTION
+==================================================
+
+Do NOT modify server core unless frontend evidence absolutely proves necessary.
+
+Production server was recently recovered.
+
+Do NOT touch:
+
+Production DB
+Quest migration
+Render settings
+persistRuntime
+commitTransition
+turn engine
+
+unless direct evidence from this new bug requires it.
+
+==================================================
+21. REQUIRED TESTS
+==================================================
+
+After minimal fix:
+
+Quick Match first connection:
+PASS
+
+MATCH_SNAPSHOT → READY:
+PASS
+
+No false reconnect overlay:
+PASS
+
+END TURN:
+PASS
+
+3 alternating turns:
+PASS
+
+forced disconnect:
+PASS
+
+real reconnect:
+PASS
+
+END TURN after real reconnect:
+PASS
+
+forfeit:
+PASS
+
+/api/healthz:
+200
+
+Quest:
+no regression
+
+==================================================
+22. AUTOMATED TESTS
+==================================================
+
+Add regression tests for the ACTUAL root cause.
+
+Likely relevant tests depending on findings:
+
+- successful snapshot clears reconnecting state
+- stale socket onclose cannot downgrade current socket
+- stale reconnect timer cannot downgrade READY connection
+- only current socket generation can mutate connection status
+- MATCH_SNAPSHOT establishes READY
+- component remount does not create competing socket owners
+
+Run:
+
+pnpm run typecheck
+
+pnpm --filter @workspace/ko-game run build
+
+focused frontend connection tests
+
+online lifecycle tests
+
+git diff --check
+
+Only run API build/typecheck if API files are actually changed.
+
+==================================================
+23. MINIMAL PATCH
+==================================================
+
+Do not broadly rewrite WebSocket architecture.
+
+Find the exact client race/state ownership bug.
+
+Fix only that.
+
+If unrelated files appear in diff:
+remove them from this patch.
+
+==================================================
+24. FINAL REPORT
+==================================================
+
+PROVEN ROOT CAUSE:
+...
+
+WHY SERVER SAID CONNECTED WHILE UI SAID RECONNECTING:
+...
+
+UI RECONNECTING CONDITION:
+...
+
+EXACT FLAG THAT WAS WRONG:
+...
+
+ALL WRITERS OF CONNECTION STATE:
+...
+
+LIVE SOCKET COUNT BEFORE:
+...
+
+LIVE SOCKET COUNT AFTER:
+...
+
+STALE SOCKET CALLBACK:
+YES / NO
+
+STALE TIMER:
+YES / NO
+
+USEEFFECT REMOUNT RACE:
+YES / NO
+
+HEARTBEAT FALSE FAILURE:
+YES / NO
+
+
+PRODUCTION EVIDENCE AFTER FIX:
+
+WS TICKET:
+200 / FAIL
+
+WS HANDSHAKE:
+101 / FAIL
+
+SUBSCRIBE:
+PASS / FAIL
+
+MATCH_SNAPSHOT:
+PASS / FAIL
+
+SERVER PLAYER STATUS:
+CONNECTED / FAIL
+
+CLIENT READY:
+PASS / FAIL
+
+FALSE RECONNECT OVERLAY:
+NO / FAIL
+
+END TURN:
+PASS / FAIL / UNVERIFIED
+
+3 TURN ALTERNATIONS:
+PASS / FAIL / UNVERIFIED
+
+REAL RECONNECT:
+PASS / FAIL / UNVERIFIED
+
+END TURN AFTER RECONNECT:
+PASS / FAIL / UNVERIFIED
+
+API HEALTH:
+PASS / FAIL
+
+
+PRODUCTION DB CHANGED:
+NO
+
+RENDER CONFIG CHANGED:
+NO
+
+SERVER CORE CHANGED:
+NO / [explain only if unavoidable]
+
+FILES CHANGED:
+...
+
+TYPECHECK:
+PASS / FAIL
+
+WEB BUILD:
+PASS / FAIL
+
+TESTS:
+PASS / FAIL
+
+git diff --check:
+PASS / FAIL
+
+BROWSER E2E:
+PASS / FAIL / UNVERIFIED
+
+COMMIT:
+...
+
+PUSH:
+NOT REQUESTED
+
+==================================================
+MOST IMPORTANT
+==================================================
+
+We now have Production evidence that:
+
+the WebSocket is open,
+SUBSCRIBE succeeds,
+MATCH_SNAPSHOT arrives,
+and the server reports both players CONNECTED,
+
+while the client remains stuck in RECONNECTING.
+
+Do NOT fix the server again.
+
+Find why the CLIENT rejects or overwrites an already-successful connection state.
+
+Prove the exact frontend state race/ownership bug,
+then make the smallest possible fix.
