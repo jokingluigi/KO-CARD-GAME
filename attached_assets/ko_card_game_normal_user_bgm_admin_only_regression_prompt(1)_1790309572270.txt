@@ -1,0 +1,454 @@
+KO CARD GAME — CRITICAL NORMAL-USER AUDIO REGRESSION + ADMIN-ONLY APP-SHELL AUDIT
+
+추가 확인된 실제 증상:
+- Admin 계정에서는 게임 음악이 들림
+- 일반 사용자 계정에서는 음악이 들리지 않음
+
+이제 Bulk Pack / Quest Progress뿐 아니라
+Global Audio/BGM까지 Admin 계정에서만 정상이라면,
+최근 패치가 개별 기능 문제가 아니라
+"Admin용 App Shell / Provider / 설정/API 경로에서만 적용되고
+일반 사용자 App Shell에는 반영되지 않는 구조"일 가능성을 최우선으로 조사해야 한다.
+
+이번 작업은 음악만 임시 재생시키는 작업이 아니다.
+
+목표:
+1. 일반 사용자 계정에서도 Main/Non-Battle/Battle BGM이 정상 작동하도록 복구.
+2. Admin과 Normal User가 서로 다른 Audio Provider/App Shell/route tree/config를 사용하는지 조사.
+3. 최근 gameplay/UI 패치가 Admin tree에만 적용된 구조가 있는지 함께 식별.
+
+==================================================
+1. ADMIN vs NORMAL AUDIO 경로 비교
+==================================================
+
+동일 브라우저/동일 환경에서 비교:
+
+ADMIN
+NORMAL AUTHENTICATED USER
+
+각각:
+
+login
+→ app root
+→ route tree
+→ layout
+→ Global Audio Provider mount
+→ user settings load
+→ audio config load
+→ route music context
+→ audio element creation
+→ source URL
+→ play() call
+→ play() promise result
+→ volume/mute
+→ actual playback
+
+첫 divergence를 정확히 찾는다.
+
+최종 보고:
+
+ADMIN AUDIO PATH:
+...
+
+NORMAL USER AUDIO PATH:
+...
+
+FIRST DIVERGENCE:
+...
+
+ROOT CAUSE:
+...
+
+==================================================
+2. 특히 확인할 것
+==================================================
+
+- GlobalAudioProvider가 Admin layout에만 mount되어 있는가
+- NormalUser layout에서 provider가 빠지는가
+- Admin route tree와 Player route tree가 다른 root를 쓰는가
+- BGM config API가 requireAdmin인가
+- audio asset URL/API가 admin-only endpoint인가
+- normal user에서 401/403으로 BGM URL/config fetch가 실패하는가
+- isAdmin 조건으로 audio init을 막는 코드가 있는가
+- settings query가 Admin에서만 성공하는가
+- normal user volume/mute hydrate가 undefined 상태에 고정되는가
+- autoplay unlock listener가 Admin shell에만 등록되는가
+- normal user main route가 NON_BATTLE context로 분류되지 않는가
+- auth loading → player layout 전환 시 AudioProvider가 unmount되는가
+- normal user bundle에서 BGM asset import/path가 빠지는가
+- service-role/admin API를 통해서만 track metadata를 받는가
+- React Query key/endpoint가 Admin namespace에 묶여 있는가
+
+추측 수정 금지.
+
+==================================================
+3. 정상 구조
+==================================================
+
+Global Audio는 role과 무관한 공용 gameplay/app 기능이다.
+
+권장:
+
+AppRoot
+  └ GlobalAudioProvider
+      └ AuthenticatedApp
+          ├ PlayerRoutes
+          └ AdminRoutes
+
+또는 현재 구조에 맞는 equivalent.
+
+핵심:
+Admin 여부가 AudioProvider 존재 여부를 결정하면 안 된다.
+
+Admin:
+ordinary gameplay audio
+→ shared audio path
+
+Normal:
+ordinary gameplay audio
+→ same shared audio path
+
+==================================================
+4. 권한
+==================================================
+
+BGM/audio asset/config 조회가 로그인 사용자에게 필요한 기능이면
+Admin 권한을 요구하면 안 된다.
+
+정상:
+PUBLIC 또는 AUTHENTICATED_PLAYER read
+(현재 asset/config 보안 정책에 맞게)
+
+Admin-only:
+audio definition을 수정하는 관리 API가 있다면 그 편집 기능만.
+
+재생 자체가 Admin-only면 안 됨.
+
+==================================================
+5. Autoplay 정책과 Auth 버그 구분
+==================================================
+
+일반 사용자가 음악을 못 듣는 원인이
+단순 browser autoplay인지
+Admin-only path인지 반드시 분리한다.
+
+확인:
+
+Normal user initial play attempted:
+YES / NO
+
+play() result:
+PLAYING
+NOT_ALLOWED_AUTOPLAY
+401/403
+MISSING_SRC
+PROVIDER_NOT_MOUNTED
+OTHER
+
+autoplay blocked라면:
+첫 user gesture에서 같은 화면에서 재생.
+
+하지만 Admin은 자동 재생되고 Normal은 provider/API 자체가 없는 경우
+autoplay 문제로 오판 금지.
+
+==================================================
+6. 정상 사용자 BGM 시나리오
+==================================================
+
+NORMAL_AUDIO_1
+Normal user login
+→ Main
+→ Main/Non-Battle BGM available
+
+NORMAL_AUDIO_2
+autoplay allowed
+→ immediate play
+
+NORMAL_AUDIO_3
+autoplay blocked
+→ first click/tap
+→ same route에서 play
+
+NORMAL_AUDIO_4
+Main → Deck → Collection → Shop
+→ same BGM continues
+
+NORMAL_AUDIO_5
+Battle entry
+→ Non-Battle BGM stop
+→ Battle BGM starts/current policy
+
+NORMAL_AUDIO_6
+Battle exit
+→ Non-Battle BGM returns
+
+NORMAL_AUDIO_7
+refresh Main
+→ route roundtrip 없이 init
+
+NORMAL_AUDIO_8
+logout/login as normal user
+→ audio system reinitializes correctly
+
+==================================================
+7. Admin과 동일한 gameplay result
+==================================================
+
+같은 계정 설정(mute=false, volume>0), 같은 browser 조건에서:
+
+Admin gameplay screen:
+BGM PASS
+
+Normal gameplay screen:
+BGM PASS
+
+role 때문에 결과가 달라지면 FAIL.
+
+==================================================
+8. 사용자 설정
+==================================================
+
+mute/volume preference가 user profile/settings에 있다면
+normal user가 자기 설정을 read/write할 권한이 있는지 확인.
+
+다음 버그 검사:
+
+- settings API admin-only
+- RLS admin-only
+- normal user settings row 없음
+- missing row를 muted=true로 fallback
+- volume undefined → 0
+- Admin default differs from player default
+
+missing settings row는 안전한 default로 bootstrap.
+
+==================================================
+9. Asset/Config 접근
+==================================================
+
+BGM 파일 자체가:
+- private bucket
+- signed URL
+- API proxy
+를 쓰는지 확인.
+
+Normal user에게 필요한 재생 asset은
+정상 권한으로 접근 가능해야 한다.
+
+401/403이면 exact network request를 기록.
+
+service-role URL 생성에 직접 의존하면서
+Admin path에서만 signed URL이 나오는 구조면
+server authenticated player path로 수정.
+
+==================================================
+10. 최근 패치 전면 감사와 연결
+==================================================
+
+이 추가 증상을 기존 ADMIN-ONLY PATCH AUDIT에 포함.
+
+최종 Admin-only gameplay bug list에
+실제 확인되면 반드시 항목 추가:
+
+"Global BGM / Audio Playback"
+
+그리고 다음을 다시 확인:
+
+- Global Provider
+- common App Shell
+- route-specific layouts
+- Admin-only config fetch
+- normal-user auth
+- player settings
+- asset permissions
+
+만약 BGM도 Admin shell에만 패치되어 있었다면,
+최근 UI 패치들이 Admin tree에만 적용된 사례가 더 있는지 확장 감사.
+
+==================================================
+11. 절대 하지 말 것
+==================================================
+
+- normal user에게 Admin 권한 부여
+- 음악을 autoplay 강제로 우회하는 hack
+- muted=false를 하드코딩해 원인 숨기기
+- Audio element를 페이지마다 중복 생성
+- service-role key client 노출
+- RLS 전체 disable
+- Admin route로 normal user를 우회
+- BGM만 setTimeout으로 억지 재생
+- Production user settings 임의 변경
+
+==================================================
+12. Browser E2E
+==================================================
+
+반드시 가능하면 같은 브라우저 조건에서:
+
+ADMIN:
+1. login
+2. Main
+3. BGM 확인
+
+NORMAL:
+1. login
+2. Main
+3. BGM 확인
+4. Deck
+5. Collection
+6. Shop
+7. Battle
+8. Battle exit
+
+Normal에서 실제 audio element:
+src
+paused
+currentTime
+volume
+muted
+play() error
+를 확인.
+
+Admin만 테스트하고 PASS 금지.
+
+==================================================
+13. 자동 검증
+==================================================
+
+반드시:
+
+pnpm run typecheck
+pnpm --filter @workspace/ko-game run build
+git diff --check
+
+관련:
+GlobalAudioProvider
+player/admin route trees
+audio settings
+autoplay unlock
+BGM config API
+asset authorization
+normal-user auth tests
+route continuity
+
+==================================================
+14. 최종 보고 형식
+==================================================
+
+AUDIO ADMIN/NORMAL DIFFERENCE
+
+Admin BGM:
+PASS / FAIL
+
+Normal User BGM:
+PASS / FAIL
+
+First divergence:
+...
+
+Root cause:
+...
+
+Admin-only dependency:
+YES / NO
+
+Provider mounted for Admin:
+YES / NO
+
+Provider mounted for Normal:
+YES / NO
+
+Normal config/API status:
+...
+
+Normal asset request status:
+...
+
+Normal initial play attempted:
+YES / NO
+
+Normal play result:
+...
+
+
+FIX
+
+Shared Global Audio path:
+PASS / FAIL
+
+Normal Main BGM:
+PASS / FAIL
+
+Normal route continuity:
+PASS / FAIL
+
+Normal Battle BGM:
+PASS / FAIL
+
+Normal autoplay fallback:
+PASS / FAIL
+
+Normal mute/volume settings:
+PASS / FAIL
+
+
+ADMIN-ONLY PATCH AUDIT
+
+Global BGM should be listed as Admin-only gameplay bug:
+YES / NO
+
+Evidence:
+...
+
+Does this indicate Admin/Player App Shell divergence:
+YES / NO
+
+Other features affected by same shell/provider split:
+1. ...
+2. ...
+
+
+IMPLEMENTATION:
+PASS / FAIL
+
+AUTOMATED VERIFICATION:
+PASS / FAIL
+
+NORMAL-USER BROWSER E2E:
+PASS / FAIL / UNVERIFIED
+
+ADMIN COMPARISON E2E:
+PASS / FAIL / UNVERIFIED
+
+TYPECHECK:
+PASS / FAIL
+
+KO BUILD:
+PASS / FAIL
+
+git diff --check:
+PASS / FAIL
+
+PRODUCTION DATA MUTATION:
+NONE / FAIL
+
+==================================================
+15. 완료 조건
+==================================================
+
+1. 일반 사용자 계정에서도 음악 정상 재생.
+2. Admin 여부가 AudioProvider/BGM 재생 조건이 아님.
+3. BGM config/asset/settings 권한이 일반 gameplay에 맞게 분리.
+4. autoplay와 auth 문제를 정확히 구분.
+5. Main/Deck/Collection/Shop/Battle 전부 normal user에서 검증.
+6. 기존 Admin-only 패치 감사 리스트에 BGM 문제 반영.
+7. 같은 App Shell/Provider 분기로 다른 패치도 누락됐는지 확인.
+8. Production 데이터 mutation 없음.
+
+핵심:
+"Admin에서는 음악이 나오고 일반 사용자는 무음"이면
+음악 기능만의 문제가 아니라
+공용 App Shell/Provider/API 패치가 Admin 경로에만 들어간 증거일 수 있다.
+
+일반 사용자를 제품의 기본 실행 경로로 두고
+Global Audio를 shared gameplay infrastructure로 복구하라.
