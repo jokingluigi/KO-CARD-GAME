@@ -100,3 +100,39 @@ test('게임 시작 효과는 초기 손패를 나누기 전에 덱의 정확한
   assert.equal(firstPlayer.deck.some((card) => card.instanceId === source.instanceId), false);
   assert.equal(firstPlayer.hand.length, 5);
 });
+
+test('게임 시작 효과는 덱과 이미 놓인 손패에서 각각 한 번만 발동한다', () => {
+  const initial = createInitialGameState();
+  const addAttack = (card: typeof initial.players[0]['deck'][number]) => ({
+    ...card,
+    abilities: [{ trigger: 'GAME_START' as const, effects: [{
+      type: 'STRUCTURED' as const,
+      action: 'MODIFY_STAT' as const,
+      target: { zones: ['DECK' as const, 'HAND' as const], owner: 'SELF' as const, selection: 'SELF' as const, count: 1 },
+      values: { stat: 'ATTACK' as const, amount: 2 },
+    }] }],
+  });
+  const deckSource = addAttack(initial.players[0]!.deck[0]!);
+  const handSource = { ...addAttack(initial.players[0]!.deck[1]!), instanceId: 'preloaded-hand-card' };
+  initial.players[0]!.deck[0] = deckSource;
+  initial.players[0]!.hand.push(handSource);
+  const started = startGame(initial, fixedRandom);
+  const player = getPlayer(started, 'player-1');
+  const found = [...player.deck, ...player.hand];
+  for (const source of [deckSource, handSource]) {
+    const updated = found.find((card) => card.instanceId === source.instanceId);
+    assert.ok(updated);
+    assert.equal(updated.currentAttack, source.currentAttack + 2);
+  }
+});
+
+test('AI 전용 옵션은 상대 덱 장수 제한만 완화한다', () => {
+  const initial = createInitialGameState();
+  initial.players[1]!.deck = initial.players[1]!.deck.slice(0, 3);
+  assert.throws(() => startGame(initial, fixedRandom));
+  const started = startGame(initial, fixedRandom, undefined, { flexibleDeckPlayerId: 'player-2' });
+  assert.equal(started.players[1]!.hand.length, 3);
+  const invalidPlayer = createInitialGameState();
+  invalidPlayer.players[0]!.deck = invalidPlayer.players[0]!.deck.slice(0, 3);
+  assert.throws(() => startGame(invalidPlayer, fixedRandom, undefined, { flexibleDeckPlayerId: 'player-2' }));
+});

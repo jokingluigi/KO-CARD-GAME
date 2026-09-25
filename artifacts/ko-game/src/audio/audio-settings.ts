@@ -1,5 +1,6 @@
 export const BGM_MUTE_STORAGE_KEY = "ko-game-bgm-muted";
 export const BGM_VOLUME_STORAGE_KEY = "ko-game-bgm-volume";
+export const SFX_VOLUME_STORAGE_KEY = "ko-game-sfx-volume";
 
 export function parseStoredBgmMute(value: string | null): boolean {
   return value === "true";
@@ -24,6 +25,15 @@ export function readStoredBgmVolume(): number {
   try {
     if (typeof window === "undefined") return 100;
     return parseStoredBgmVolume(window.localStorage.getItem(BGM_VOLUME_STORAGE_KEY));
+  } catch {
+    return 100;
+  }
+}
+
+export function readStoredSfxVolume(): number {
+  try {
+    if (typeof window === "undefined") return 100;
+    return parseStoredBgmVolume(window.localStorage.getItem(SFX_VOLUME_STORAGE_KEY));
   } catch {
     return 100;
   }

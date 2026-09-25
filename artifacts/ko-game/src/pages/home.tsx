@@ -325,10 +325,12 @@ export default function Home() {
         if (cancelled) return;
         setAiDecks(decks);
         setAvailableAIDecks(aiDeckResult.decks);
-        setAiMatchData({ definitions, champions, media });
+        const mergedDefinitions = [...new Map([...definitions, ...aiDeckResult.extraCards.map(cardRecordToDefinition)].map((item) => [item.id, item])).values()];
+        const mergedChampions = [...new Map([...champions, ...aiDeckResult.extraChampions.map(championRecordToDefinition)].map((item) => [item.id, item])).values()];
+        setAiMatchData({ definitions: mergedDefinitions, champions: mergedChampions, media });
         setMediaCatalog(media);
-        setRuntimeCardDefinitions(definitions);
-        preloadMatchAssets(definitions, champions);
+        setRuntimeCardDefinitions(mergedDefinitions);
+        preloadMatchAssets(mergedDefinitions, mergedChampions);
         setPlayError(null);
       }).catch((reason) => {
         if (cancelled) return;
@@ -515,7 +517,7 @@ export default function Home() {
         champion.id === deck.championDefinitionId ||
         champion.id === aiDeck.championDefinitionId,
     );
-    if (!authUser || !userChampion || !aiChampion || deck.cardDefinitionIds.length < 20 || aiDeckDefinitionIds.length < 20) {
+    if (!authUser || !userChampion || !aiChampion || deck.cardDefinitionIds.length < 20 || !aiDeckDefinitionIds.length) {
       setPlayError('AI 매치를 시작할 수 있는 공개 카드와 Champion이 부족합니다.');
       return;
     }
@@ -529,6 +531,7 @@ export default function Home() {
       ),
       createDeterministicRandom(matchId),
       data.media,
+      { flexibleDeckPlayerId: 'player-2' },
     );
     aiMatchQuestContextRef.current = {
       deckId: deck.id,

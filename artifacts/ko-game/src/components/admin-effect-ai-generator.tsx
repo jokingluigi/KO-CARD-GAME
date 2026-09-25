@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 type EffectAiContext = "CHAMPION_ABILITY" | "QUEST_REWARD" | "UPGRADED_CHAMPION_ABILITY";
 type ApplyMode = "replace" | "append";
@@ -12,6 +12,13 @@ type EffectAiDraft = {
   preview: Array<{ label: string; value: string }>;
   effectConfig: { effects?: unknown[]; scripts?: unknown[] };
   structuredEffect: { effects?: unknown[]; scripts?: unknown[] };
+  dryRun?: Array<{
+    trigger: string;
+    status: "EXECUTED" | "AWAITING_TARGET" | "NOT_SIMULATED" | "ERROR";
+    eventTypes: string[];
+    enemyHealthDelta: number;
+    note: string;
+  }>;
   mechanicPlan: {
     execution: "STRUCTURED_EFFECTS_V1" | "SCRIPT_V1";
     triggers: string[];
@@ -89,7 +96,22 @@ export function AdminEffectAiGenerator({
   const [draft, setDraft] = useState<EffectAiDraft | EffectAiClarification | null>(null);
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
+  const [promptBusy, setPromptBusy] = useState(false);
+  const [implementationPrompt, setImplementationPrompt] = useState("");
+  const [promptError, setPromptError] = useState("");
+  const [copied, setCopied] = useState(false);
   const [mode, setMode] = useState<ApplyMode>("replace");
+  const generation = useRef(0);
+
+  useEffect(() => {
+    generation.current += 1;
+    setDraft(null);
+    setImplementationPrompt("");
+    setPromptError("");
+    setPromptBusy(false);
+    setText(defaultText);
+    return () => { generation.current += 1; };
+  }, [defaultText, sourceId, sourceType, cardType, effectContext]);
 
   async function generate() {
     const trimmed = text.trim();
@@ -98,8 +120,12 @@ export function AdminEffectAiGenerator({
       return;
     }
     setBusy(true);
+    const requestGeneration = ++generation.current;
     setError("");
     setDraft(null);
+    setImplementationPrompt("");
+    setPromptError("");
+    setPromptBusy(false);
     try {
       const response = await fetch(`${import.meta.env.BASE_URL.replace(/\/$/, "")}/api/admin/effects/generate`, {
         method: "POST",
@@ -115,7 +141,7 @@ export function AdminEffectAiGenerator({
         }),
       });
       if (response.status === 401) {
-        onUnauthorized();
+        if (requestGeneration === generation.current) onUnauthorized();
         return;
       }
       let body: unknown;
@@ -124,6 +150,7 @@ export function AdminEffectAiGenerator({
       } catch {
         throw new Error("서버 응답을 읽을 수 없습니다.");
       }
+      if (requestGeneration !== generation.current) return;
       const isClarification = Boolean(
         body && typeof body === "object" && !Array.isArray(body) &&
         (body as { status?: unknown }).status === "NEEDS_CLARIFICATION" &&
@@ -145,9 +172,52 @@ export function AdminEffectAiGenerator({
       }
       setDraft(body as EffectAiDraft);
     } catch (reason) {
-       setError(reason instanceof Error ? reason.message : "게임 효과를 컴파일하지 못했습니다.");
+       if (requestGeneration === generation.current) setError(reason instanceof Error ? reason.message : "게임 효과를 컴파일하지 못했습니다.");
     } finally {
-      setBusy(false);
+      if (requestGeneration === generation.current) setBusy(false);
+    }
+  }
+
+  async function generateImplementationPrompt() {
+    const trimmed = text.trim();
+    if (!trimmed) {
+      setPromptError("효과 설명을 입력해 주세요.");
+      return;
+    }
+    const requestGeneration = generation.current;
+    setPromptBusy(true);
+    setPromptError("");
+    setImplementationPrompt("");
+    try {
+      const response = await fetch(`${import.meta.env.BASE_URL.replace(/\/$/, "")}/api/admin/effects/implementation-prompt`, {
+        method: "POST",
+        credentials: "include",
+        cache: "no-store",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          text: trimmed, sourceType,
+          ...(sourceId ? { sourceId } : {}),
+          ...(cardType ? { cardType } : {}),
+          ...(effectContext ? { effectContext } : {}),
+        }),
+      });
+      if (response.status === 401) {
+        if (requestGeneration === generation.current) onUnauthorized();
+        return;
+      }
+      const body: { prompt?: unknown; message?: unknown } = await response.json();
+      if (requestGeneration !== generation.current) return;
+      if (!response.ok || typeof body.prompt !== "string") {
+        throw new Error(typeof body.message === "string" ? body.message : "구현 프롬프트를 생성하지 못했습니다.");
+      }
+      setImplementationPrompt(body.prompt);
+      setCopied(false);
+    } catch (reason) {
+      if (requestGeneration === generation.current) {
+        setPromptError(reason instanceof Error ? reason.message : "구현 프롬프트를 생성하지 못했습니다.");
+      }
+    } finally {
+      if (requestGeneration === generation.current) setPromptBusy(false);
     }
   }
 
@@ -172,9 +242,14 @@ export function AdminEffectAiGenerator({
         <textarea
           value={text}
           onChange={(event) => {
+            generation.current += 1;
+            setBusy(false);
             setText(event.target.value);
             setDraft(null);
             setError("");
+            setImplementationPrompt("");
+            setPromptError("");
+            setPromptBusy(false);
           }}
           rows={3}
           maxLength={2000}
@@ -225,6 +300,32 @@ export function AdminEffectAiGenerator({
           의미 감사 결과에 미해결 모호성이 있습니다. 이 초안은 적용할 수 없습니다.
         </p>
       )}
+      {(error || clarification || blockedDraft || implementationPrompt) && (
+        <div className="mt-3 rounded border border-amber-800/70 bg-amber-950/15 p-3 text-xs" data-testid="ai-effect-implementation-fallback">
+          <p className="text-amber-100">현재 효과를 적용하지 못했다면, 엔진에 필요한 메커니즘을 구현하도록 요청하는 프롬프트를 만들 수 있습니다.</p>
+          <button
+            type="button"
+            onClick={() => void generateImplementationPrompt()}
+            disabled={promptBusy || busy}
+            className="mt-2 rounded border border-amber-600 px-2 py-1 font-bold text-amber-200 disabled:opacity-50"
+            data-testid="button-generate-mechanism-prompt"
+          >
+            {promptBusy ? "프롬프트 생성 중..." : "메커니즘 구현 프롬프트 생성"}
+          </button>
+          {promptError && <p role="alert" className="mt-2 text-red-300">{promptError}</p>}
+          {implementationPrompt && (
+            <div className="mt-2">
+              <p className="text-neutral-300">개발 도구에 전달할 지침입니다. 이 프롬프트만으로 경기 규칙이 바뀌지는 않습니다.</p>
+              <textarea readOnly value={implementationPrompt} rows={12} className="mt-2 w-full rounded border border-neutral-700 bg-neutral-950 p-2 text-xs" data-testid="mechanism-implementation-prompt" />
+              <button
+                type="button"
+                className="mt-2 rounded border border-neutral-600 px-2 py-1 text-neutral-200"
+                onClick={() => void navigator.clipboard.writeText(implementationPrompt).then(() => setCopied(true)).catch(() => setPromptError("복사에 실패했습니다. 위 내용을 직접 복사해 주세요."))}
+              >{copied ? "복사됨" : "프롬프트 복사"}</button>
+            </div>
+          )}
+        </div>
+      )}
       {ready && (
         <div className="mt-3 rounded border border-emerald-800 bg-emerald-950/20 p-3" data-testid="ai-effect-draft">
           <div className="flex flex-wrap items-center justify-between gap-2">
@@ -247,6 +348,20 @@ export function AdminEffectAiGenerator({
               <span className="text-neutral-500">Result</span><span>{ready.mechanicPlan.resultReferences.join(", ") || "없음"}</span>
             </div>
           </div>
+          {ready.dryRun && ready.dryRun.length > 0 && (
+            <div className="mt-3 rounded border border-sky-900/70 bg-sky-950/20 p-2 text-xs" data-testid="ai-effect-dry-run">
+              <strong className="text-sky-200">기본 경기에서 시험 실행</strong>
+              <ul className="mt-2 space-y-1">
+                {ready.dryRun.map((run) => (
+                  <li key={run.trigger} className={run.status === "ERROR" ? "text-amber-300" : "text-neutral-300"}>
+                    {run.trigger}: {run.status === "EXECUTED" ? "실행됨" : run.status === "AWAITING_TARGET" ? "대상 선택 대기" : run.status === "ERROR" ? "시험 중 오류" : "시험 불가"}
+                    {run.enemyHealthDelta !== 0 ? ` · 상대 체력 ${run.enemyHealthDelta} 감소` : ""}
+                    {` · ${run.note}`}
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
           {ready.semanticPlan && (
             <details className="mt-2 rounded border border-neutral-800 bg-black/20 p-2" data-testid="ai-semantic-audit">
               <summary className="cursor-pointer text-xs font-bold text-neutral-400">의미 슬롯 감사</summary>

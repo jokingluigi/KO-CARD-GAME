@@ -24,12 +24,19 @@ router.get("/", async (request: Request, response: Response): Promise<void> => {
   const testDeckId = typeof request.query.testDeckId === "string" ? request.query.testDeckId : null;
   const decks = testDeckId && request.authUser?.role === "ADMIN"
     ? (await listAIDecks()).filter((deck) => deck.id === testDeckId)
-    : (await listAIDecks({ enabledOnly: true, context: "PLAYER_DECK" })).filter((deck) =>
-        deck.champion?.status === "PUBLISHED" &&
-        deck.cards.every((card) => card.status === "PUBLISHED"),
+    : (await listAIDecks({ enabledOnly: true, context: "AI_DECK" })).filter((deck) =>
+        deck.champion?.status !== "DISABLED" &&
+        deck.cards.every((card) => card.status !== "DISABLED"),
       );
+  const available = decks.filter((deck) => deck.isValid);
+  const cardIds = [...new Set(available.flatMap((deck) => [...deck.cardDefinitionIds, ...deck.requiredCardDefinitionIds]))];
+  const championIds = [...new Set(available.map((deck) => deck.championDefinitionId).filter((id): id is string => Boolean(id)))];
+  const [extraCards, extraChampions] = await Promise.all([
+    cardIds.length ? db.select().from(cardsTable).where(inArray(cardsTable.id, cardIds)) : [],
+    championIds.length ? db.select().from(championsTable).where(inArray(championsTable.id, championIds)) : [],
+  ]);
   response.setHeader("Cache-Control", "no-store");
-  response.json({ decks: decks.filter((deck) => deck.isValid).map(({ invalidReasons: _invalidReasons, missingCardDefinitionIds: _missing, requiredCardDefinitionIds: _required, ...deck }) => deck) });
+  response.json({ decks: available.map(({ invalidReasons: _invalidReasons, missingCardDefinitionIds: _missing, requiredCardDefinitionIds: _required, ...deck }) => deck), extraCards, extraChampions });
 });
 
 export default router;

@@ -60,6 +60,8 @@ import {
   generateEffectDraft,
   type EffectAiContext,
 } from "../lib/admin-effect-ai";
+import { dryRunCardEffect } from "../lib/effect-dry-run";
+import { createMechanismImplementationPrompt } from "../lib/mechanism-implementation-prompt";
 import { getAuthenticatedUser } from "../lib/auth";
 import { compareAndAdvanceChampionVersion } from "../lib/champion-save-contract";
 import {
@@ -1357,6 +1359,43 @@ router.post("/effects/analyze", async (request, response): Promise<void> => {
   response.json(context ? { ...analysis, unsupportedParts: analysis.unsupportedSegments } : analysis);
 });
 
+router.post("/effects/implementation-prompt", async (request, response): Promise<void> => {
+  if (!requireAdmin(request, response)) return;
+  const body = request.body && typeof request.body === "object"
+    ? request.body as Record<string, unknown> : {};
+  const text = typeof body.text === "string" ? body.text.trim() : "";
+  const sourceType = body.sourceType === "CARD" || body.sourceType === "CHAMPION" ? body.sourceType : null;
+  const effectContext = typeof body.effectContext === "string" &&
+    ["CHAMPION_ABILITY", "QUEST_REWARD", "UPGRADED_CHAMPION_ABILITY"].includes(body.effectContext)
+    ? body.effectContext as EffectAiContext["effectContext"] : undefined;
+  const cardType = body.cardType === "TECHNIQUE" || body.cardType === "WRESTLER" ? body.cardType : undefined;
+  const sourceId = typeof body.sourceId === "string" && body.sourceId.trim() ? body.sourceId.trim() : undefined;
+  if (!text || text.length > 2000 || !sourceType ||
+      (sourceType === "CHAMPION" && !effectContext) ||
+      (sourceType === "CARD" && effectContext) ||
+      (body.sourceId !== undefined && !sourceId)) {
+    response.status(400).json({ message: "구현 프롬프트 입력값을 확인해 주세요." });
+    return;
+  }
+  try {
+    const context = await trustedEffectContext(sourceType, sourceId, cardType, effectContext);
+    if (!context) {
+      response.status(400).json({ message: "현재 편집 중인 카드/챔피언을 확인해 주세요." });
+      return;
+    }
+    const analysis = analyzeForContext(
+      text, effectContext, await cardReferenceCatalog(), await availableCardTags(),
+    );
+    response.json({
+      outcome: analysis.outcome,
+      prompt: createMechanismImplementationPrompt(text, context, analysis, effectLibrary()),
+    });
+  } catch (error) {
+    request.log.error({ error }, "Mechanism implementation prompt generation failed");
+    response.status(500).json({ message: "구현 프롬프트를 생성하지 못했습니다." });
+  }
+});
+
 router.post("/effects/generate", async (request, response): Promise<void> => {
   if (!requireAdmin(request, response)) return;
   const body = request.body && typeof request.body === "object"
@@ -1402,6 +1441,7 @@ router.post("/effects/generate", async (request, response): Promise<void> => {
     response.json({
       ...result,
       structuredEffect: result.effectConfig,
+      dryRun: dryRunCardEffect(result),
     });
   } catch (error) {
     if (error instanceof EffectAiError) {

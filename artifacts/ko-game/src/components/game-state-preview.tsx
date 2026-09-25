@@ -1,4 +1,5 @@
 import React from 'react';
+import { SfxVolumeControl } from './sfx-volume-control';
 import { CardRenderer } from './card-renderer';
 import { CardArtwork } from './card-artwork';
 import {
@@ -1024,6 +1025,7 @@ export function GameStatePreview({
                          aria-label="배경 음악 볼륨"
                        />
                      </label>
+                     <SfxVolumeControl />
                      <button
                        type="button"
                        disabled={state.status === 'FINISHED'}

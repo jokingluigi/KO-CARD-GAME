@@ -461,7 +461,7 @@ function previewEffects(effects: StructuredEffect[]): Array<{ label: string; val
 function previewScripts(scripts: EffectScript[]): Array<{ label: string; value: string }> {
   return scripts.map((script, index) => ({
     label: `Script ${index + 1}`,
-    value: `${script.trigger} · ${script.steps.length}단계 · SCRIPT_V1`,
+    value: `${script.trigger} · ${script.steps.length}단계${script.steps.some((step) => step.type === "REPEAT") ? " · 반복 동작" : ""} · SCRIPT_V1`,
   }));
 }
 
@@ -507,6 +507,9 @@ function collectScriptPlan(steps: ScriptStep[], plan: MechanicPlan) {
       addUnique(plan.conditions, [`${step.condition.left.kind} ${step.condition.compare} ${step.condition.right.kind}`]);
       collectScriptPlan(step.then, plan);
       if (step.else) collectScriptPlan(step.else, plan);
+    } else if (step.type === "REPEAT") {
+      addUnique(plan.schedule, ["REPEAT_UP_TO_8"]);
+      collectScriptPlan(step.steps, plan);
     }
   }
 }
@@ -653,6 +656,9 @@ function buildEffectSemanticPlan(
         add(intent.sequenceIntent, "IF");
         step.then.forEach(visitStep);
         step.else?.forEach(visitStep);
+      } else if (step.type === "REPEAT") {
+        add(intent.sequenceIntent, "REPEAT");
+        step.steps.forEach(visitStep);
       } else if (step.type === "EFFECT") {
         add(intent.sequenceIntent, `EFFECT:${step.effect.action}`);
       } else {
@@ -925,6 +931,7 @@ function buildSystemPrompt(
       actionSchemas: ACTION_SCHEMAS,
     })}`,
     "무작위 CardDefinition 소환/생성은 target.selection=RANDOM을 사용하고, 공개 cardPool에서 target.cardType 및 target.filter(tagsAny/tagsAll/tagsNone 등)에 맞는 definition을 서버가 deterministic RNG로 선택한다.",
+    "'게임 시작', '경기 시작'은 GAME_START trigger다. 초기 손패 분배 전 덱 또는 이미 존재하는 손패에 있는 source 카드에서 각각 한 번 발동한다. GAME_START에서 '자신/이 카드'의 스탯이나 비용을 바꿀 때 target={zones:['DECK','HAND'],owner:'SELF',selection:'SELF',count:1}을 사용한다. '턴 시작/종료'는 TURN_START/TURN_END trigger이며 해당 플레이어의 필드에 있는 카드에서 발동한다. 턴 시작에는 카드 드로우 뒤 효과를 실행한다.",
     "태그는 오직 canonical cards.tags metadata만 뜻한다. 카드 이름/설명/키워드/희귀도/토큰 여부로 태그를 추론하지 마라. context.availableTags에 없는 태그는 만들지 말고, 명확한 태그 요청은 clarification으로 되돌리지 마라.",
     "구조화 target은 sort:{stat:COST|ATTACK|HEALTH,direction:ASC|DESC}와 take(1..20)를 사용할 수 있다. 실행 순서는 filter→sort→take이며 selection=ALL/TOP/PLAYER_CHOICE에 적용한다.",
     "SCRIPT_V1 SELECT는 zone/cardType/filter(cardType, tagsAny/tagsAll/tagsNone, keyword, cost/attack/health 비교)을 지원하며, sort:{stat:COST|ATTACK|HEALTH,direction:ASC|DESC}와 take로 결과를 제한한다. 비교 연산자는 EQ/NE/LT/LTE/GT/GTE만 사용한다.",
@@ -937,6 +944,8 @@ function buildSystemPrompt(
     "REGISTER_DELAYED는 values.delayed={kind:OWNER_NEXT_TURN_START|OPPONENT_NEXT_TURN_START|END_OF_CURRENT_TURN|NEXT_MATCHING_EVENT|N_MATCHING_EVENTS,effect:{action,target?,values?}}로 표현한다. REGISTER_LISTENER는 values.listener={trigger:CARD_PLAYED|TECHNIQUE_PLAYED|CARD_RETIRED|DAMAGE_TAKEN|SOURCE_CAUSED_TARGET_REMOVAL,owner?,cardType?,uses?,effect:{...}}로 표현하며 source의 현재 CARD_PLAYED occurrence는 소비하지 않는다. SOURCE_CAUSED_TARGET_REMOVAL은 이 카드가 실제 원인이 된 WRESTLER 제거만 감지하며, 공격력 합산은 aggregateStats={source:LAST_CAUSED_TARGET_REMOVALS,attack:CURRENT_ATTACK_SUM}을 사용한다.",
     "PREVENT_DAMAGE와 PREVENT_RETIRE는 BEFORE_DAMAGE/BEFORE_RETIRE trigger에서만 사용하고 values.prevention={uses?:1,setHealth?:1}로 표현한다. DAMAGE amountReference는 CURRENT_TURN_RETIRED_WRESTLER_COUNT 또는 CURRENT_TURN_DAMAGE_TAKEN을 사용할 수 있다.",
     "SCRIPT_V1의 event-history는 HISTORY step {type:'HISTORY',id,query:{scope:'CURRENT_TURN'|'CURRENT_ACTION'|'CURRENT_RESOLUTION'|'CURRENT_MATCH',eventType:'CARD_RETIRED'|'DAMAGE_DEALT'|'CARD_PLAYED'|'CARD_DRAWN'|'CARD_GENERATED',owner?:'SELF'|'ENEMY',cardType?:'WRESTLER'|'TECHNIQUE',tag?:string,operation:'COUNT'|'SUM'|'MIN'|'MAX'}}로 표현하고, 결과는 amountExpression:{kind:'RESULT_VALUE',resultId:'historyId'}로 사용한다.",
+    "'횟수만큼 각각 발동', '한 번씩 반복'처럼 독립된 여러 타격/동작은 SCRIPT_V1 REPEAT step {type:'REPEAT',count:{kind:'CONSTANT',value:3}|{kind:'RESULT_VALUE',resultId:'countId'},steps:[{type:'EFFECT',effect:{action:'DAMAGE',target:{zone:'PLAYER',owner:'ENEMY',selection:'SELF',count:1},values:{amount:1}}}]}로 표현한다. 한 번에 3 피해와 1 피해 3번은 서로 다르다. 반복은 최대 8회, EFFECT step 최대 4개이고 선택 입력을 요구하는 효과는 반복할 수 없다.",
+    "SCRIPT_V1 수치 계산은 중첩 가능한 {kind:'ADD'|'SUBTRACT'|'MULTIPLY'|'MIN'|'MAX',left:ScriptValue,right:ScriptValue}를 사용한다. 예: 내 손패 수의 두 배는 MULTIPLY(RESULT_VALUE(handCount),CONSTANT(2))다. 중첩은 최대 4단계이며 런타임 수치는 -999..999로 제한한다. 존재하지 않는 resultId는 참조하지 마라.",
     "대표 문장 예시의 canonical 출력: '다음에 내가 내는 선수는 +2/+2'는 ENTER_FIELD에서 QUEUE_EFFECT values.queuedTrigger='NEXT_ALLY_WRESTLER_PLAYED', queuedEffect.action='BUFF'를 사용한다( queueTrigger 오타 금지). '이번 턴에 RETIRE된 선수 수만큼 적 챔피언에게 피해'는 SCRIPT_V1 HISTORY(CURRENT_TURN,CARD_RETIRED,WRESTLER,COUNT) 뒤 DAMAGE amountExpression RESULT_VALUE를 사용한다.",
     "SCRIPT_V1로 표현 가능한 자연어는 NEEDS_CLARIFICATION으로 바꾸지 말고 위의 SELECT/AGGREGATE/HISTORY/IF/EFFECT 조합으로만 bounded AST를 만든다. 모든 SELECT/AGGREGATE/HISTORY id는 서로 달라야 한다.",
     "선택 결과를 후속 효과가 사용하거나 IF/ELSE, PLAYER_CHOICE, HISTORY가 필요하면 반드시 SCRIPT_V1을 선택한다. SCRIPT_V1의 모든 효과는 반드시 {type:'EFFECT',id?:'...',effect:{action,target?,values?}}로 감싸며, SELECT/AGGREGATE/HISTORY/IF의 필드를 EFFECT 옆에 두지 마라.",

@@ -40,7 +40,7 @@ function amount(config: Record<string, unknown>): number {
   return typeof value === "number" && Number.isFinite(value) ? value : 0;
 }
 
-function abilitiesFor(
+export function abilitiesFor(
   effectId: string | null,
   config: Record<string, unknown>,
 ): CardAbility[] {

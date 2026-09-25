@@ -108,14 +108,11 @@ export function AdminAIDeckManager({ onUnauthorized }: Props) {
   const selectedDeck = draft.id ? decks.find((deck) => deck.id === draft.id) : undefined;
 
   function addCard(card: AIDeckCard) {
-    const count = cardCounts.get(card.id) ?? 0;
-    const maxCopies = card.rarity === "LEGENDARY" ? 1 : 2;
     if (
-      draft.cardDefinitionIds.length >= (options?.maxCardCount ?? 25) ||
+      draft.cardDefinitionIds.length >= (options?.maxCardCount ?? 100) ||
       card.isToken ||
       card.isChampionToken ||
-      card.status === "DISABLED" ||
-      count >= maxCopies
+      card.status === "DISABLED"
     ) return;
     setDraft((current) => ({ ...current, cardDefinitionIds: [...current.cardDefinitionIds, card.id] }));
   }
@@ -254,9 +251,8 @@ export function AdminAIDeckManager({ onUnauthorized }: Props) {
           <div className="grid max-h-[480px] gap-2 overflow-y-auto pr-1 sm:grid-cols-2">
             {filteredCards.map((card) => {
               const count = cardCounts.get(card.id) ?? 0;
-              const maxCopies = card.rarity === "LEGENDARY" ? 1 : 2;
-              const canAdd = draft.cardDefinitionIds.length < (options?.maxCardCount ?? 25) &&
-                !card.isToken && !card.isChampionToken && card.status !== "DISABLED" && count < maxCopies;
+              const canAdd = draft.cardDefinitionIds.length < (options?.maxCardCount ?? 100) &&
+                !card.isToken && !card.isChampionToken && card.status !== "DISABLED";
               return (
                 <div key={card.id} className={`rounded border p-3 transition ${count ? "border-primary bg-primary/10" : "border-neutral-800 bg-neutral-950"}`}>
                   <div className="flex items-center justify-between gap-2">

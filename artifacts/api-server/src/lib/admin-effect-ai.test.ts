@@ -2,6 +2,9 @@ import assert from "node:assert/strict";
 import test from "node:test";
 
 import { EffectAiError, buildMechanicPlan, generateEffectDraft, validateGeneratedEffectDraft } from "./admin-effect-ai";
+import { generateCard } from "../../../ko-game/src/game/cards/generation";
+import { createInitialGameState } from "../../../ko-game/src/game/engine/create-initial-game-state";
+import { enterField } from "../../../ko-game/src/game/engine/enter-field";
 
 const catalog = [
   { id: "card-1", name: "불꽃", cardType: "WRESTLER" as const, isToken: false, isChampionToken: false },
@@ -218,6 +221,92 @@ test("SCRIPT_V1은 선택 결과를 집계해 조건부 기존 효과로 변환�
     assert.equal(result.effectId, "SCRIPT_V1");
     assert.ok("scripts" in result.effectConfig);
     assert.equal(result.effectConfig.scripts.length, 1);
+  }
+});
+
+test("AI 효과 제작기는 독립 타격을 여러 번 실행하는 새 조합 규칙을 저장한다", () => {
+  const makeDraft = (count: unknown, effect: unknown = {
+    action: "DAMAGE",
+    target: { zone: "PLAYER", owner: "ENEMY", selection: "SELF", count: 1 },
+    values: { amount: 1 },
+  }) => ({
+    status: "READY", effectId: "SCRIPT_V1", keywords: [],
+    scripts: [{ version: "SCRIPT_V1", trigger: "ENTER_FIELD", steps: [
+      { type: "REPEAT", count, steps: [{ type: "EFFECT", effect }] },
+    ] }],
+  });
+  const context = { sourceType: "CARD" as const, cardType: "WRESTLER" as const };
+  const validated = validateGeneratedEffectDraft(makeDraft({ kind: "CONSTANT", value: 3 }), context, []);
+  assert.equal(validated.status, "READY");
+  assert.equal(validated.effectId, "SCRIPT_V1");
+  assert.ok(validated.status === "READY" && validated.mechanicPlan.actions.includes("DAMAGE"));
+  assert.throws(() => validateGeneratedEffectDraft(makeDraft({ kind: "CONSTANT", value: 100 }), context, []),
+    (error: unknown) => error instanceof EffectAiError && error.code === "INVALID_DRAFT");
+  assert.throws(() => validateGeneratedEffectDraft(makeDraft({ kind: "CONSTANT", value: 3 }, {
+    action: "DAMAGE", target: { zone: "BOARD", owner: "ENEMY", selection: "PLAYER_CHOICE", count: 1 }, values: { amount: 1 },
+  }), context, []), (error: unknown) => error instanceof EffectAiError && error.code === "INVALID_DRAFT");
+});
+
+test("AI 효과 제작기는 동적 수치의 곱셈은 받되 임의 코드와 깊은 계산은 거부한다", () => {
+  const count = (value: unknown) => ({ status: "READY", effectId: "SCRIPT_V1", scripts: [{
+    version: "SCRIPT_V1", trigger: "ENTER_FIELD", steps: [
+      { type: "SELECT", id: "allies", target: { zone: "BOARD", owner: "SELF", selection: "ALL", count: 20 } },
+      { type: "AGGREGATE", id: "count", selectionId: "allies", operation: "COUNT" },
+      { type: "EFFECT", effect: {
+        action: "DAMAGE", target: { zone: "PLAYER", owner: "ENEMY", selection: "SELF", count: 1 },
+        values: { amountExpression: value },
+      } },
+    ],
+  }], keywords: [] });
+  const context = { sourceType: "CARD" as const, cardType: "WRESTLER" as const };
+  const timesTwo = { kind: "MULTIPLY", left: { kind: "RESULT_VALUE", resultId: "count" }, right: { kind: "CONSTANT", value: 2 } };
+  assert.equal(validateGeneratedEffectDraft(count(timesTwo), context, []).status, "READY");
+  assert.throws(() => validateGeneratedEffectDraft(count({
+    kind: "MULTIPLY", left: { kind: "RESULT_VALUE", resultId: "missing" }, right: { kind: "CONSTANT", value: 2 },
+  }), context, []), (error: unknown) => error instanceof EffectAiError && error.code === "INVALID_DRAFT");
+  assert.throws(() => validateGeneratedEffectDraft(count({ ...timesTwo, code: "alert(1)" }), context, []),
+    (error: unknown) => error instanceof EffectAiError && error.code === "INVALID_DRAFT");
+  let tooDeep: unknown = { kind: "CONSTANT", value: 1 };
+  for (let i = 0; i < 6; i += 1) tooDeep = { kind: "ADD", left: tooDeep, right: { kind: "CONSTANT", value: 1 } };
+  assert.throws(() => validateGeneratedEffectDraft(count(tooDeep), context, []),
+    (error: unknown) => error instanceof EffectAiError && error.code === "INVALID_DRAFT");
+});
+
+test("거친 자연어를 AI가 반복 규칙으로 컴파일하면 그 초안이 즉시 경기 엔진에서 실행된다", async () => {
+  const originalFetch = globalThis.fetch;
+  const originalKey = process.env.OPENAI_API_KEY;
+  const originalBaseUrl = process.env.OPENAI_BASE_URL;
+  process.env.OPENAI_API_KEY = "test-provider-key";
+  process.env.OPENAI_BASE_URL = "https://provider.test/v1";
+  globalThis.fetch = async () => new Response(JSON.stringify({ choices: [{ message: { content: JSON.stringify({
+    status: "READY", effectId: "SCRIPT_V1", keywords: [], scripts: [{
+      version: "SCRIPT_V1", trigger: "ENTER_FIELD", steps: [
+        { type: "REPEAT", count: { kind: "CONSTANT", value: 3 }, steps: [{ type: "EFFECT", effect: {
+          action: "DAMAGE", target: { zone: "PLAYER", owner: "ENEMY", selection: "SELF", count: 1 }, values: { amount: 1 },
+        } }] },
+      ],
+    }], analysis: { normalizedMeaning: "등장 시 적 챔피언에게 1 피해를 세 번 준다.", confidence: 0.95, ambiguities: [] },
+  }) } }] }), { status: 200, headers: { "Content-Type": "application/json" } });
+  try {
+    const draft = await generateEffectDraft("등장: 적 챔피언한테 1뎀 세번 각각", { sourceType: "CARD", cardType: "WRESTLER" }, []);
+    assert.equal(draft.status, "READY");
+    assert.equal(draft.effectId, "SCRIPT_V1");
+    const script = draft.scripts[0]!;
+    const source = generateCard({
+      id: "live-compiled-effect", name: "live-compiled-effect", cardType: "WRESTLER", cost: 1, attack: 1, health: 2,
+      rulesText: "", isToken: false, isChampionToken: false, keywords: [],
+      abilities: [{ trigger: "ENTER_FIELD", effects: [{ type: "SCRIPT", script }] }],
+    }, { instanceId: "compiled-source", playerId: "player-1", source: { type: "PLAYER", playerId: "player-1" }, reason: "TEST" }).card;
+    const state = createInitialGameState();
+    const after = enterField(state, "player-1", source, 0);
+    assert.equal(after.players[1]!.health, state.players[1]!.health - 3);
+    assert.equal(after.events.filter((event) => event.type === "DAMAGE_DEALT").length, 3);
+  } finally {
+    globalThis.fetch = originalFetch;
+    if (originalKey === undefined) delete process.env.OPENAI_API_KEY;
+    else process.env.OPENAI_API_KEY = originalKey;
+    if (originalBaseUrl === undefined) delete process.env.OPENAI_BASE_URL;
+    else process.env.OPENAI_BASE_URL = originalBaseUrl;
   }
 });
 

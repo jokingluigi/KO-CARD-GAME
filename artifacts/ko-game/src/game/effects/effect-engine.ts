@@ -2,6 +2,7 @@ import type { CardDefinition, CardInstance, CardStatHistoryEntry } from '../card
 import { matchesCardTagFilter } from '../cards/tags';
 import type { CardAbility, CardEffect, CardKeyword, QueuedStructuredEffect } from './types';
 import {
+  ACTION_SCHEMAS,
   RUNTIME_HANDLER_ACTIONS,
   type Action,
   type EffectDuration,
@@ -243,6 +244,16 @@ function scriptTargetCards(
 
 function scriptValue(registers: ScriptRegisters, value: ScriptValue): number {
   if (value.kind === 'CONSTANT') return value.value;
+  if (value.kind === 'ADD' || value.kind === 'SUBTRACT' || value.kind === 'MULTIPLY' || value.kind === 'MIN' || value.kind === 'MAX') {
+    const left = scriptValue(registers, value.left);
+    const right = scriptValue(registers, value.right);
+    const result = value.kind === 'ADD' ? left + right
+      : value.kind === 'SUBTRACT' ? left - right
+        : value.kind === 'MULTIPLY' ? left * right
+          : value.kind === 'MIN' ? Math.min(left, right) : Math.max(left, right);
+    return Math.max(-999, Math.min(999, result));
+  }
+  if (!('resultId' in value)) return 0;
   const register = registers.get(value.resultId);
   const offset = value.offset ?? 0;
   if (!register || !('value' in register)) {
@@ -455,12 +466,26 @@ function applyScriptSteps(
         parentContinuation,
       );
     }
+    if (step.type === 'REPEAT') {
+      const count = Math.min(8, Math.max(0, Math.trunc(scriptValue(registers, step.count))));
+      for (let iteration = 0; iteration < count; iteration += 1) {
+        const priorTargeting = next.targetingState;
+        next = applyScriptSteps(next, playerId, sourceCard, step.steps, registers, depth + 1, script, parentContinuation);
+        if (next.targetingState?.active && next.targetingState !== priorTargeting) {
+          throw new Error('SCRIPT_V1 REPEAT cannot pause for a target selection.');
+        }
+      }
+      continue;
+    }
     const { target, selectedIds } = scriptEffectTarget(step.effect.target, registers);
+    const values = scriptEffectValues(step.effect.values, registers);
+    if (values && ACTION_SCHEMAS[step.effect.action].amount && !ACTION_SCHEMAS[step.effect.action].signedAmount &&
+      typeof values.amount === 'number') values.amount = Math.max(0, values.amount);
     const effect: CardEffect = {
       type: 'STRUCTURED',
       action: step.effect.action,
       target,
-      values: scriptEffectValues(step.effect.values, registers),
+      values,
     };
     next = applyEffect(next, playerId, sourceCard, effect, selectedIds);
     if (step.id) {

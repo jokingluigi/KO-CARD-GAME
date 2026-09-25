@@ -23,7 +23,7 @@ import {
   Router as WouterRouter,
 } from 'wouter';
 import { audioManager } from '@/audio/audio-manager';
-import { readStoredBgmMute, readStoredBgmVolume } from '@/audio/audio-settings';
+import { readStoredBgmMute, readStoredBgmVolume, readStoredSfxVolume } from '@/audio/audio-settings';
 import { musicContextForPath, shouldLoadMainBgm } from '@/audio/music-route';
 import { fetchMainContent } from '@/lib/main-content-client';
 import { GamepadNavigation } from '@/components/gamepad-navigation';
@@ -66,6 +66,7 @@ function GlobalAudioBridge() {
 
   useEffect(() => {
     audioManager.setBgmVolume(readStoredBgmVolume());
+    audioManager.setSfxVolume(readStoredSfxVolume());
     audioManager.setBgmMuted(readStoredBgmMute());
   }, []);
 

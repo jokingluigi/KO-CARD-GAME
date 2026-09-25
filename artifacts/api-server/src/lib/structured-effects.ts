@@ -131,6 +131,7 @@ export type EffectAnalysisOptions = {
 
 const aliases = {
   trigger: [
+    ["GAME_START", /^(?:게임|경기)(?:이|가)?\s*시작(?:\s*(?:시|할\s*때|하면|될\s*때))?\s*[:：]?/i],
     ["ENTER_FIELD", /^(?:필드에\s*)?(?:등장|출현|MAGIC)(?:할\s*때|하면)?\s*[:：]?/i],
     ["SELF_RETIRE", /^(?:필드에서\s*)?(?:퇴장|리타이어)(?:할\s*때|하면)?\s*[:：]?/],
     ["SELF_RETIRE", /^이\s*카드가\s*(?:퇴장|리타이어)(?:할\s*때|하면)?\s*[:：]?/],
@@ -142,8 +143,8 @@ const aliases = {
     ["OTHER_ALLY_ATTACK", /^(?:콤보|SUPPORT)\s*[:：]?/i],
     ["TECHNIQUE_CAST", /^(?:주문|SHOCK)\s*[:：]?/i],
     ["EXACT_ZERO_DAMAGE", /^(?:핀폴|BULLSEYE)\s*[:：]?/i],
-    ["TURN_START", /^턴\s*시작(?:할\s*때|하면)?\s*[:：]?/i],
-    ["TURN_END", /^턴\s*종료(?:할\s*때|하면)?\s*[:：]?/i],
+    ["TURN_START", /^턴(?:이|이\s*되면)?\s*시작(?:\s*(?:시|할\s*때|하면|될\s*때))?\s*[:：]?/i],
+    ["TURN_END", /^턴(?:이|이\s*되면)?\s*종료(?:\s*(?:시|할\s*때|하면|될\s*때))?\s*[:：]?/i],
   ] as const,
   keyword: [
     ["RUSH", /(?:러쉬|RUSH|CHARGE)/i], ["SURPRISE", /(?:기습|HASTE)/i], ["TAUNT", /(?:도발|TAUNT)/i],
@@ -181,7 +182,7 @@ function normalize(input: string) {
   const normalized = normalizeEffectLanguage(input).normalizedText.replace(/[：:]/g, ":");
   // Admin exports can include the source card name on the line before a
   // colon-prefixed ability. It is presentation metadata, not effect text.
-  const beginsWithTrigger = /^(?:필드에\s*)?(?:등장|출현|퇴장|리타이어|액티브|준비|콤보|주문|핀폴|턴\s*시작|턴\s*종료|MAGIC|TURBO|SELF_ATTACK|SUPPORT|SHOCK|BULLSEYE)\s*:/i.test(normalized);
+  const beginsWithTrigger = /^(?:필드에\s*)?(?:등장|출현|퇴장|리타이어|액티브|준비|콤보|주문|핀폴|(?:게임|경기)\s*시작|턴\s*시작|턴\s*종료|MAGIC|TURBO|SELF_ATTACK|SUPPORT|SHOCK|BULLSEYE)\s*:/i.test(normalized);
   return (beginsWithTrigger ? normalized : normalized.replace(/^.*?\s+(?=(?:퇴장|리타이어)\s*:)/, ""))
     // Card exports and compact Korean input frequently omit the boundaries
     // around the canonical tag/zone vocabulary. Restore only unambiguous
@@ -485,6 +486,15 @@ function targetFor(text: string, randomPool = false, availableTags: readonly str
     take: 1,
   };
 }
+function targetForTrigger(trigger: Trigger, text: string, randomPool = false, availableTags: readonly string[] = []): Target {
+  const target = targetFor(text, randomPool, availableTags);
+  if (trigger === "GAME_START" && target.zone === "BOARD" && target.selection === "SELF" &&
+    /(?:자신|이\s*카드)/.test(text) && !/(?:필드|보드)/.test(text)) {
+    const { zone: _boardZone, ...sourceTarget } = target;
+    return { ...sourceTarget, zones: ["DECK", "HAND"] };
+  }
+  return target;
+}
 function keywordFor(text: string): Keyword | undefined {
   return aliases.keyword.find(([, pattern]) => pattern.test(text))?.[0];
 }
@@ -513,7 +523,7 @@ function genericStatEffects(
 ): StructuredEffect[] {
   const duration = durationFor(body);
   const minimumCost = minimumCostFor(body);
-  const target = targetFor(body, false, options.availableTags);
+  const target = targetForTrigger(trigger, body, false, options.availableTags);
   const parsed: Array<{ index: number; effects: StructuredEffect[] }> = [];
 
   const setPair = STAT_PAIR_SET_PATTERN.exec(body);
@@ -767,7 +777,7 @@ function effect(
   const resolvedTarget = sameSummonedTarget
     ? { zone: "BOARD" as const, owner: "SELF" as const, selection: "SAME_TARGET" as const, count: 1 }
     : (schema.target || (randomPoolAction && /(무작위|랜덤)/.test(body)))
-       ? (!explicitTarget && priorTarget ? { ...priorTarget, selection: "SAME_TARGET" as const } : targetFor(targetBody, randomPoolAction, options.availableTags))
+       ? (!explicitTarget && priorTarget ? { ...priorTarget, selection: "SAME_TARGET" as const } : targetForTrigger(trigger, targetBody, randomPoolAction, options.availableTags))
       : undefined;
   return {
     trigger,
@@ -785,7 +795,9 @@ function expandedMechanicAnalysis(
   const triggerFor = (fallback: Trigger = "ENTER_FIELD"): Trigger =>
     /(?:이\s*카드가|자신이)\s*공격할\s*때마다|공격할\s*때마다/.test(text) ? "SELF_ATTACK"
       : /(?:처음으로\s*)?공격한/.test(text) ? "FIRST_ATTACKED"
-      : /^턴\s*시작/.test(text) ? "TURN_START"
+      : /^(?:게임|경기)\s*시작/.test(text) ? "GAME_START"
+        : /^턴\s*시작/.test(text) ? "TURN_START"
+          : /^턴\s*종료/.test(text) ? "TURN_END"
         : /^(?:퇴장|리타이어)|^이\s*카드가\s*(?:퇴장|리타이어)/.test(text) ? "SELF_RETIRE"
           : /나오면|나오거나|나올\s*때/.test(text) ? "ENTER_FIELD"
             : options.defaultTrigger ?? fallback;
@@ -1648,7 +1660,7 @@ export function analyzeEffectText(input: string, options: EffectAnalysisOptions 
       reason: "태그 조건을 서버 태그 어휘와 정확히 일치시킬 수 없습니다.",
     };
   }
-  const triggerMarkers = [...text.matchAll(/(?:^|\s)(?=(?:필드에\s*)?(?:등장|출현|퇴장|액티브|준비|콤보|주문|핀폴|턴\s*시작|턴\s*종료|(?:이\s*카드가|자신이)\s*공격할\s*때마다|ATTACK_SURVIVED|MAGIC|TURBO|SELF_ATTACK|SUPPORT|SHOCK|BULLSEYE)\s*[:：])/gi)]
+  const triggerMarkers = [...text.matchAll(/(?:^|\s)(?=(?:필드에\s*)?(?:등장|출현|퇴장|액티브|준비|콤보|주문|핀폴|(?:게임|경기)(?:이|가)?\s*시작|턴(?:이)?\s*시작|턴(?:이)?\s*종료|(?:이\s*카드가|자신이)\s*공격할\s*때마다|ATTACK_SURVIVED|MAGIC|TURBO|SELF_ATTACK|SUPPORT|SHOCK|BULLSEYE)\s*[:：])/gi)]
     .map((match) => (match.index ?? 0) + (match[0].startsWith(" ") ? 1 : 0));
   if (triggerMarkers.length > 1) {
     const analyses = triggerMarkers.map((start, index) =>
@@ -2030,7 +2042,7 @@ export function isStructuredEffects(value: unknown): value is { effects: Structu
     if (schema.amount && !(typeof values?.amount === "number" && Number.isFinite(values.amount) &&
       (schema.signedAmount ? Math.abs(values.amount) <= 999 : values.amount >= 0 && values.amount <= 999))) return false;
     if (schema.stat && !STAT_NAMES.includes(values?.stat as StatName)) return false;
-    if (schema.duration && !EFFECT_DURATIONS.includes(values?.duration as EffectDuration)) return false;
+    if (schema.duration && values?.duration !== undefined && !EFFECT_DURATIONS.includes(values.duration as EffectDuration)) return false;
      const hasStatChannelReference = values?.attackReference !== undefined || values?.healthReference !== undefined;
      const validStatChannelReferences = schema.statChannelReference && hasStatChannelReference &&
        values?.amountReference === undefined &&

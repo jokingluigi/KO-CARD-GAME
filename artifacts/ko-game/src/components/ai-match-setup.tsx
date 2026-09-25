@@ -30,7 +30,7 @@ export function AiMatchSetup({ decks, aiDecks, error, onStart, onBack }: AiMatch
         <div className="mb-8 text-center">
           <p className="font-display text-xs font-black tracking-[0.45em] text-amber-400">KO · AI MATCH</p>
           <h1 className="mt-4 text-3xl font-black sm:text-4xl">AI 상대와 매치 시작</h1>
-          <p className="mx-auto mt-3 max-w-xl text-sm leading-6 text-neutral-400">내 덱을 선택하면 활성화된 유효 AI 덱 중 하나가 새 매치마다 무작위로 선택되고, 매치 동안 고정됩니다.</p>
+          <p className="mx-auto mt-3 max-w-xl text-sm leading-6 text-neutral-400">내 덱을 선택하면 활성화된 AI 덱 중 하나가 새 매치마다 무작위로 선택되고, 매치 동안 고정됩니다.</p>
         </div>
 
         {error && <div className="mx-auto mb-5 flex w-full max-w-3xl items-center gap-3 rounded-lg border border-red-900/70 bg-red-950/30 px-4 py-3 text-sm text-red-200"><ShieldAlert className="h-5 w-5 shrink-0" aria-hidden="true" /><span>{error}</span></div>}
@@ -40,7 +40,7 @@ export function AiMatchSetup({ decks, aiDecks, error, onStart, onBack }: AiMatch
         ) : validDecks.length === 0 ? (
            <div className="mx-auto w-full max-w-2xl rounded-xl border border-amber-900/60 bg-amber-950/20 p-8 text-center"><p className="text-lg font-black text-amber-200">사용할 수 있는 내 덱이 없습니다.</p><p className="mt-2 text-sm leading-6 text-neutral-400">챔피언을 포함하고 공개 카드 25장으로 구성된 사용 가능한 덱을 먼저 만들어 주세요.</p><button type="button" onClick={onBack} className="mt-6 rounded-lg bg-amber-400 px-5 py-3 text-sm font-black text-black hover:bg-amber-300">메인 메뉴로</button></div>
         ) : validAIDecks.length === 0 ? (
-          <div className="mx-auto w-full max-w-2xl rounded-xl border border-amber-900/60 bg-amber-950/20 p-8 text-center"><p className="text-lg font-black text-amber-200">사용 가능한 AI 덱이 없습니다.</p><p className="mt-2 text-sm leading-6 text-neutral-400">관리자가 유효한 AI 덱을 활성화해야 AI 매치를 시작할 수 있습니다.</p><button type="button" onClick={onBack} className="mt-6 rounded-lg bg-amber-400 px-5 py-3 text-sm font-black text-black hover:bg-amber-300">메인 메뉴로</button></div>
+          <div className="mx-auto w-full max-w-2xl rounded-xl border border-amber-900/60 bg-amber-950/20 p-8 text-center"><p className="text-lg font-black text-amber-200">사용 가능한 AI 덱이 없습니다.</p><p className="mt-2 text-sm leading-6 text-neutral-400">관리자가 플레이 가능한 AI 덱을 활성화해야 AI 매치를 시작할 수 있습니다.</p><button type="button" onClick={onBack} className="mt-6 rounded-lg bg-amber-400 px-5 py-3 text-sm font-black text-black hover:bg-amber-300">메인 메뉴로</button></div>
         ) : (
           <>
             <div className="grid gap-6 lg:grid-cols-2">
@@ -51,7 +51,7 @@ export function AiMatchSetup({ decks, aiDecks, error, onStart, onBack }: AiMatch
                 </div>
               </section>
               <section className="rounded-xl border border-neutral-800 bg-neutral-950 p-5">
-                <div className="flex items-center gap-3"><Dices className="h-5 w-5 text-amber-300" /><div><h2 className="text-sm font-black tracking-wider text-neutral-300">2. AI 상대</h2><p className="mt-2 text-sm leading-6 text-neutral-400">활성화된 유효 AI 덱 {validAIDecks.length}개 중 하나를 매치 생성 시 자동 선택합니다. 상대 덱은 시작 후 바뀌지 않습니다.</p></div></div>
+                <div className="flex items-center gap-3"><Dices className="h-5 w-5 text-amber-300" /><div><h2 className="text-sm font-black tracking-wider text-neutral-300">2. AI 상대</h2><p className="mt-2 text-sm leading-6 text-neutral-400">활성화된 AI 덱 {validAIDecks.length}개 중 하나를 매치 생성 시 자동 선택합니다. 상대 덱은 시작 후 바뀌지 않습니다.</p></div></div>
               </section>
             </div>
             <div className="mt-7 flex flex-wrap justify-center gap-3"><button type="button" onClick={onBack} className="rounded-lg border border-neutral-700 px-5 py-3 text-sm font-black text-neutral-300 hover:border-neutral-500">메인 메뉴</button><button type="button" disabled={!selectedDeckId} onClick={start} className="flex items-center gap-2 rounded-lg bg-amber-400 px-6 py-3 text-sm font-black text-black hover:bg-amber-300 disabled:cursor-not-allowed disabled:opacity-40"><Bot className="h-4 w-4" /> 매치 시작 <ArrowRight className="h-4 w-4" /></button></div>

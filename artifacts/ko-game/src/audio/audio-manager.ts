@@ -54,11 +54,14 @@ class AudioManager {
   private baseTransitionId = 0;
   private bgmMuted = false;
   private bgmVolume = 100;
+  private sfxVolume = 100;
   private needsAudioUnlock = false;
   private musicContext: "NON_BATTLE" | "BATTLE" = "NON_BATTLE";
   private attackAudio: HTMLAudioElement | null = null;
+  private attackBaseVolume = 100;
   private packReveal: {
     audio: HTMLAudioElement;
+    volume: number;
     timeoutId: number;
     fadeTimerId: number | null;
   } | null = null;
@@ -150,7 +153,8 @@ class AudioManager {
     try {
       const audio = new Audio(url);
       audio.preload = "auto";
-      audio.volume = safeVolume(volume);
+      this.attackBaseVolume = volume;
+      audio.volume = safeVolume(volume * this.sfxVolume / 100);
       audio.playbackRate = Math.max(0.8, Math.min(1.25, pitch));
       this.attackAudio = audio;
       audio.addEventListener("ended", () => {
@@ -180,6 +184,15 @@ class AudioManager {
     if (!this.bgm || this.bgmMuted) return;
     this.bgm.audio.volume = safeVolume(this.bgm.volume * this.bgmVolume / 100);
   }
+
+  setSfxVolume(volume: number) {
+    this.sfxVolume = Math.min(100, Math.max(0, Number.isFinite(volume) ? volume : 100));
+    if (this.attackAudio) this.attackAudio.volume = safeVolume(this.attackBaseVolume * this.sfxVolume / 100);
+    if (this.current) this.current.audio.volume = safeVolume(this.current.request.volume * this.sfxVolume / 100);
+    if (this.packReveal) this.packReveal.audio.volume = safeVolume(this.packReveal.volume * this.sfxVolume / 100);
+  }
+
+  getSfxVolume() { return this.sfxVolume; }
 
   setBgmMuted(muted: boolean) {
     this.bgmMuted = muted;
@@ -382,7 +395,7 @@ class AudioManager {
         finish,
         Math.max(0, durationMs - fadeOutMs),
       );
-      this.startFade(audio, safeVolume(request.volume), (timerId) => {
+      this.startFade(audio, () => safeVolume(request.volume * this.sfxVolume / 100), (timerId) => {
         if (this.current?.audio === audio) this.current.fadeTimerId = timerId;
       });
       audio.addEventListener("ended", () => {
@@ -570,13 +583,13 @@ class AudioManager {
 
   private startFade(
     audio: HTMLAudioElement,
-    targetVolume: number,
+    targetVolume: number | (() => number),
     onTimer: (timerId: number) => void,
   ) {
     const startedAt = Date.now();
     const timerId = window.setInterval(() => {
       const progress = Math.min(1, (Date.now() - startedAt) / (AUDIO_FADE_IN_DURATION * 1000));
-      audio.volume = targetVolume * progress;
+      audio.volume = (typeof targetVolume === "function" ? targetVolume() : targetVolume) * progress;
       if (progress >= 1) {
         window.clearInterval(timerId);
       }
@@ -594,7 +607,7 @@ class AudioManager {
       const audio = new Audio(url);
       audio.preload = "auto";
       audio.volume = 0;
-      const reveal = { audio, timeoutId: 0, fadeTimerId: null as number | null };
+      const reveal = { audio, volume, timeoutId: 0, fadeTimerId: null as number | null };
       this.packReveal = reveal;
       this.fadeBaseOut();
       reveal.timeoutId = window.setTimeout(
@@ -618,7 +631,7 @@ class AudioManager {
           return;
         }
         const progress = Math.min(1, (Date.now() - startedAt) / Math.max(1, options.fadeInMs));
-        audio.volume = safeVolume(volume) * progress;
+        audio.volume = safeVolume(volume * this.sfxVolume / 100) * progress;
         if (progress >= 1 && reveal.fadeTimerId !== null) {
           window.clearInterval(reveal.fadeTimerId);
           reveal.fadeTimerId = null;

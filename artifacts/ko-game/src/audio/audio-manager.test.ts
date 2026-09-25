@@ -147,6 +147,19 @@ test("음악은 0에서 fade-in되고 공격 SFX는 BGM mute와 독립된 채널
   }
 });
 
+test("effect volume changes attack sounds independently of the BGM", () => {
+  withFakeAudio(() => {
+    audioManager.setSfxVolume(25);
+    audioManager.playAttack("/attack.mp3", 80);
+    const attack = (audioManager as unknown as { attackAudio: FakeAudio | null }).attackAudio;
+    assert.equal(attack?.volume, 0.2);
+    audioManager.setSfxVolume(0);
+    assert.equal(attack?.volume, 0);
+    audioManager.setSfxVolume(100);
+    assert.equal(attack?.volume, 0.8);
+  });
+});
+
 test("등장 음악 뒤에는 가장 최근 Quest 음악 base로 복귀한다", () => {
   const previousAudio = globalThis.Audio;
   const previousWindow = globalThis.window;

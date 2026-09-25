@@ -30,6 +30,60 @@ function card(id: string, effects: CardEffect[] = []): CardInstance {
   }).card;
 }
 
+test("SCRIPT_V1 반복 규칙은 피해를 합산하지 않고 독립된 이벤트로 적용한다", () => {
+  const script: CardEffect = {
+    type: "SCRIPT",
+    script: { version: "SCRIPT_V1", trigger: "ENTER_FIELD", steps: [
+      { type: "REPEAT", count: { kind: "CONSTANT", value: 3 }, steps: [{ type: "EFFECT", effect: {
+        action: "DAMAGE",
+        target: { zone: "PLAYER", owner: "ENEMY", selection: "SELF", count: 1 },
+        values: { amount: 1 },
+      } }] },
+    ] },
+  };
+  const initial = createInitialGameState();
+  const before = initial.players[1]!.health;
+  const result = enterField(initial, "player-1", card("triple-hit", [script]), 0);
+  assert.equal(result.players[1]!.health, before - 3);
+  assert.equal(result.events.filter((event) => event.type === "DAMAGE_DEALT").length, 3);
+});
+
+test("SCRIPT_V1 반복 횟수는 경기 중 필드 카드 수를 읽되 8회로 제한한다", () => {
+  const script: CardEffect = { type: "SCRIPT", script: {
+    version: "SCRIPT_V1", trigger: "ENTER_FIELD", steps: [
+      { type: "SELECT", id: "allies", target: { zone: "BOARD", owner: "SELF", selection: "ALL", count: 20 } },
+      { type: "AGGREGATE", id: "allyCount", selectionId: "allies", operation: "COUNT" },
+      { type: "REPEAT", count: { kind: "RESULT_VALUE", resultId: "allyCount" }, steps: [{ type: "EFFECT", effect: {
+        action: "DAMAGE", target: { zone: "PLAYER", owner: "ENEMY", selection: "SELF", count: 1 }, values: { amount: 1 },
+      } }] },
+    ],
+  } };
+  const initial = createInitialGameState();
+  const ally = { ...card("ally"), boardSlot: 1 as const };
+  initial.players[0]!.board[1] = ally;
+  const before = initial.players[1]!.health;
+  const result = enterField(initial, "player-1", card("counted-hits", [script]), 0);
+  assert.equal(result.players[1]!.health, before - 2);
+  assert.equal(result.events.filter((event) => event.type === "DAMAGE_DEALT").length, 2);
+});
+
+test("SCRIPT_V1은 선택 수의 두 배를 계산해 경기 규칙으로 실행한다", () => {
+  const script: CardEffect = { type: "SCRIPT", script: {
+    version: "SCRIPT_V1", trigger: "ENTER_FIELD", steps: [
+      { type: "SELECT", id: "allies", target: { zone: "BOARD", owner: "SELF", selection: "ALL", count: 20 } },
+      { type: "AGGREGATE", id: "allyCount", selectionId: "allies", operation: "COUNT" },
+      { type: "EFFECT", effect: {
+        action: "DAMAGE", target: { zone: "PLAYER", owner: "ENEMY", selection: "SELF", count: 1 },
+        values: { amountExpression: { kind: "MULTIPLY", left: { kind: "RESULT_VALUE", resultId: "allyCount" }, right: { kind: "CONSTANT", value: 2 } } },
+      } },
+    ],
+  } };
+  const state = createInitialGameState();
+  state.players[0]!.board[1] = { ...card("friend"), boardSlot: 1 };
+  const after = enterField(state, "player-1", card("double-count", [script]), 0);
+  assert.equal(after.players[1]!.health, state.players[1]!.health - 4);
+});
+
 test("SCRIPT_V1 selects and aggregates live board cards before applying a typed value", () => {
   const script: CardEffect = {
     type: "SCRIPT",

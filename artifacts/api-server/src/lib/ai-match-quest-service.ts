@@ -136,10 +136,10 @@ export async function completeAIMatchQuestProgress(input: {
     throw new Error("현재 사용할 수 없는 덱입니다.");
   }
 
-  const availableAIDecks = (await listAIDecks({ enabledOnly: true, context: "PLAYER_DECK" }))
+  const availableAIDecks = (await listAIDecks({ enabledOnly: true, context: "AI_DECK" }))
     .filter((deck) =>
-      deck.champion?.status === "PUBLISHED" &&
-      deck.cards.every((card) => card.status === "PUBLISHED") &&
+      deck.champion?.status !== "DISABLED" &&
+      deck.cards.every((card) => card.status !== "DISABLED") &&
       deck.isValid,
     );
   const eligibleAIDecks = availableAIDecks
@@ -168,9 +168,18 @@ export async function completeAIMatchQuestProgress(input: {
     ...userDeck.cardDefinitionIds,
     ...aiDeck.cardDefinitionIds,
   ]);
-  for (const record of cardRecords) {
-    if (record.status === "PUBLISHED" && requiredCardIds.has(record.id)) {
+  // Follow generated-card and token references transitively, including DRAFT
+  // definitions that the selected AI deck is allowed to use.
+  const visitedReferences = new Set<string>();
+  let pendingReferences = true;
+  while (pendingReferences) {
+    pendingReferences = false;
+    for (const record of cardRecords) {
+      if (record.status === "DISABLED" || !requiredCardIds.has(record.id) || visitedReferences.has(record.id)) continue;
+      visitedReferences.add(record.id);
+      const previousCount = requiredCardIds.size;
       collectCardReferences(record.effectConfig, requiredCardIds);
+      if (requiredCardIds.size > previousCount) pendingReferences = true;
     }
   }
   const selectedChampionIds = new Set([
@@ -202,7 +211,7 @@ export async function completeAIMatchQuestProgress(input: {
     [userDeck.cardDefinitionIds, aiDeck.cardDefinitionIds],
     { gameId: input.matchId, randomSeed: seedForMatchId(input.matchId) },
   );
-  const startedState = startGame(initialState, createDeterministicRandom(input.matchId));
+  const startedState = startGame(initialState, createDeterministicRandom(input.matchId), undefined, { flexibleDeckPlayerId: 'player-2' });
   const userPlayerId = startedState.players[0]?.id;
   const aiPlayerId = startedState.players[1]?.id;
   if (!userPlayerId || !aiPlayerId) throw new Error("경기 참가자 데이터를 만들 수 없습니다.");

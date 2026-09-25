@@ -1,12 +1,22 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import {
+  aiDeckSizeReason,
   dependencyValidationReason,
   championTokenReferenceReason,
   isDefinitionStatusAllowedForContext,
   isAIDefinitionStatusAllowed,
   isPublicDefinitionStatus,
 } from "./ai-deck-service";
+
+test("AI decks may use nonstandard sizes while an empty deck cannot start a match", () => {
+  assert.equal(aiDeckSizeReason(1), null);
+  assert.equal(aiDeckSizeReason(7), null);
+  assert.equal(aiDeckSizeReason(25), null);
+  assert.equal(aiDeckSizeReason(100), null);
+  assert.match(aiDeckSizeReason(0) ?? "", /1~100/);
+  assert.match(aiDeckSizeReason(101) ?? "", /1~100/);
+});
 
 test("AI content pool allows published and draft, but never disabled", () => {
   assert.equal(isAIDefinitionStatusAllowed("PUBLISHED"), true);

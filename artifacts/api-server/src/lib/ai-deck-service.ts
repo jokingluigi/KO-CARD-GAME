@@ -10,8 +10,8 @@ import {
 } from "@workspace/db";
 import { DECK_SIZE, MAX_LEGENDARY_CARDS, validateDeckCounts } from "@workspace/game-engine";
 
-export const AI_DECK_MIN_SIZE = DECK_SIZE;
-export const AI_DECK_MAX_SIZE = DECK_SIZE;
+export const AI_DECK_MIN_SIZE = 1;
+export const AI_DECK_MAX_SIZE = 100;
 export const AI_DECK_MAX_CARD_COPIES = 2;
 export const AI_DECK_MAX_LEGENDARY_CARDS = MAX_LEGENDARY_CARDS;
 export const AI_DECK_ALLOWED_STATUSES = ["PUBLISHED", "DRAFT"] as const;
@@ -55,6 +55,12 @@ export type AIDeckValidation = {
 };
 
 export type AIDeckView = AIDeckRecord & AIDeckValidation;
+
+export function aiDeckSizeReason(cardCount: number): string | null {
+  return cardCount < AI_DECK_MIN_SIZE || cardCount > AI_DECK_MAX_SIZE
+    ? `AI 덱에는 카드 ${AI_DECK_MIN_SIZE}~${AI_DECK_MAX_SIZE}장이 필요합니다.`
+    : null;
+}
 
 function cardRuleReasons(cardDefinitionIds: string[], cardsById: Map<string, CardRecord>): string[] {
   const counts = new Map<string, number>();
@@ -106,14 +112,14 @@ export async function validateAIDeckReferences(
   } else if (!allowedStatuses.includes(champion.status as typeof allowedStatuses[number])) {
     invalidReasons.push(`Champion 상태(${champion.status})는 사용할 수 없습니다.`);
   }
-  for (const reason of validateDeckCounts({
+  for (const reason of context === "PLAYER_DECK" ? validateDeckCounts({
     cardCount: cardDefinitionIds.length,
     legendaryCount: cardDefinitionIds.reduce(
       (total, id) => total + (cardsById.get(id)?.rarity === "LEGENDARY" ? 1 : 0),
       0,
     ),
     championCount: championDefinitionId ? 1 : 0,
-  })) {
+  }) : []) {
     if (reason === "INVALID_CARD_COUNT") invalidReasons.push(`카드는 정확히 ${DECK_SIZE}장이어야 합니다.`);
     if (reason === "TOO_MANY_LEGENDARIES") invalidReasons.push(`레전더리 카드는 덱에 총 ${MAX_LEGENDARY_CARDS}장까지만 넣을 수 있습니다.`);
     if (reason === "INVALID_CHAMPION_COUNT") invalidReasons.push(`${context === "AI_DECK" ? "PUBLISHED 또는 DRAFT" : "PUBLISHED"} 상태의 Champion을 1명 선택해야 합니다.`);
@@ -131,7 +137,9 @@ export async function validateAIDeckReferences(
   )) {
     invalidReasons.push(`${context === "AI_DECK" ? "PUBLISHED 또는 DRAFT" : "PUBLISHED"} 일반 카드만 덱에 넣을 수 있습니다.`);
   }
-  invalidReasons.push(...cardRuleReasons(cardDefinitionIds, cardsById));
+  if (context === "PLAYER_DECK") invalidReasons.push(...cardRuleReasons(cardDefinitionIds, cardsById));
+  const aiSizeReason = context === "AI_DECK" ? aiDeckSizeReason(cardDefinitionIds.length) : null;
+  if (aiSizeReason) invalidReasons.push(aiSizeReason);
 
   const requiredCardDefinitionIds = new Set<string>();
   const championTokenReferenceIds = new Set<string>();

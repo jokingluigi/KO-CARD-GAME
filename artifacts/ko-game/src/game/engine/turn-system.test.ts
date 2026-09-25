@@ -58,6 +58,28 @@ test('P2 첫 턴은 1G로 시작한다', () => {
   assert.equal(getPlayerGold(state, 'player-2'), 1);
 });
 
+test('필드 카드의 턴 종료와 다음 자기 턴 시작 효과가 실제로 발동한다', () => {
+  const started = startGame(createInitialGameState());
+  const owner = started.players[0]!;
+  const card = owner.hand[0]!;
+  const withAbility = {
+    ...started,
+    players: started.players.map((player) => player.id === owner.id ? {
+      ...player,
+      hand: player.hand.filter((candidate) => candidate.instanceId !== card.instanceId),
+      board: [{ ...card, boardSlot: 0 as const, abilities: [
+        { trigger: 'TURN_START' as const, effects: [{ type: 'STRUCTURED' as const, action: 'DRAW' as const, values: { amount: 1 } }] },
+        { trigger: 'TURN_END' as const, effects: [{ type: 'STRUCTURED' as const, action: 'DRAW' as const, values: { amount: 1 } }] },
+      ] }, ...player.board.slice(1)] as typeof player.board,
+    } : player),
+  };
+  const initialHandCount = withAbility.players[0]!.hand.length;
+  const afterEnd = successState(endTurn(withAbility, owner.id));
+  assert.equal(afterEnd.players[0]!.hand.length, initialHandCount + 1);
+  const afterNextStart = successState(endTurn(afterEnd, 'player-2'));
+  assert.equal(afterNextStart.players[0]!.hand.length, initialHandCount + 3);
+});
+
 test('P1 두 번째 턴은 2G로 시작한다', () => {
   const started = startGame(createInitialGameState());
   const playerTwoTurn = successState(endTurn(started, 'player-1'));

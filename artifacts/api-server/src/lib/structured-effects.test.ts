@@ -784,6 +784,22 @@ test("최신 보고서의 미분석 문장도 기존 범용 효과로 구조화�
     values: { amount: 1 },
   }]);
 
+  const gameStart = analyzeEffectText("게임 시작: 자신의 공격력 +2");
+  assert.equal(gameStart.status, "success");
+  assert.equal(gameStart.effects[0]?.trigger, "GAME_START");
+  assert.deepEqual(gameStart.effects[0]?.target?.zones, ["DECK", "HAND"]);
+  assert.equal(isStructuredEffects({ effects: gameStart.effects }), true);
+
+  for (const [text, trigger] of [
+    ["경기가 시작될 때: 카드 1장을 뽑습니다.", "GAME_START"],
+    ["턴이 시작될 때: 카드 1장을 뽑습니다.", "TURN_START"],
+    ["턴이 종료될 때: 카드 1장을 뽑습니다.", "TURN_END"],
+  ] as const) {
+    const result = analyzeEffectText(text);
+    assert.equal(result.status, "success", text);
+    assert.equal(result.effects[0]?.trigger, trigger, text);
+  }
+
   const zombieId = "66143efe-2eec-450a-8570-9a4c4d92330e";
   const zombieCatalog = [{
     id: zombieId,

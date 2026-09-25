@@ -98,8 +98,10 @@ function drawOpeningHand(
 export function prepareDecks(
   state: GameState,
   random?: RandomSource,
+  options: { flexibleDeckPlayerId?: string } = {},
 ): GameState {
   for (const player of state.players) {
+    if (player.id === options.flexibleDeckPlayerId && player.deck.length >= 1 && player.deck.length <= 100) continue;
     if (
       player.deck.length < MIN_DECK_SIZE ||
       player.deck.length > MAX_DECK_SIZE
@@ -129,10 +131,10 @@ export function dealOpeningHands(state: GameState): GameState {
 function resolveGameStartAbilities(state: GameState): GameState {
   let next = state;
   for (const startingPlayer of state.players) {
-    const deckIds = startingPlayer.deck.map((card) => card.instanceId);
-    for (const instanceId of deckIds) {
+    const startingIds = [...startingPlayer.deck, ...startingPlayer.hand].map((card) => card.instanceId);
+    for (const instanceId of startingIds) {
       const player = next.players.find((candidate) => candidate.id === startingPlayer.id);
-      const card = player?.deck.find((candidate) => candidate.instanceId === instanceId);
+      const card = [...(player?.deck ?? []), ...(player?.hand ?? [])].find((candidate) => candidate.instanceId === instanceId);
       if (!player || !card || !getActiveCardAbilities(card).some((ability) => ability.trigger === 'GAME_START')) continue;
       const triggered = resolveTriggeredAbilities(next, player.id, card, 'GAME_START');
       next = triggered.targetingState?.active ? resolvePendingEffects(triggered) : triggered;
@@ -164,6 +166,7 @@ export function startGame(
   state: GameState,
   random?: RandomSource,
   mediaCatalog?: GameMediaCatalog,
+  options: { flexibleDeckPlayerId?: string } = {},
 ): GameState {
   if (state.players.length !== 2) {
     throw new Error('게임을 시작하려면 플레이어가 정확히 2명이어야 합니다.');
@@ -173,7 +176,7 @@ export function startGame(
     throw new Error('이미 시작된 게임입니다.');
   }
 
-  const preparedState = dealOpeningHands(resolveGameStartAbilities(prepareDecks(state, random)));
+  const preparedState = dealOpeningHands(resolveGameStartAbilities(prepareDecks(state, random, options)));
   const firstPlayer = preparedState.players[0];
   const mediaRandom = random ?? defaultRandom;
   const backgroundId = mediaCatalog?.backgrounds.length

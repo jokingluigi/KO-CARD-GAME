@@ -5,7 +5,8 @@ import type { AuthUser } from "@/lib/auth-client";
 import { ROUTES } from "@/lib/routes";
 import { emptyMainContent, fetchMainContent, type MainContent } from "@/lib/main-content-client";
 import { audioManager } from "@/audio/audio-manager";
-import { BGM_MUTE_STORAGE_KEY, readStoredBgmMute } from "@/audio/audio-settings";
+import { BGM_MUTE_STORAGE_KEY, BGM_VOLUME_STORAGE_KEY, readStoredBgmMute, readStoredBgmVolume } from "@/audio/audio-settings";
+import { SfxVolumeControl } from "./sfx-volume-control";
 
 type MainMenuProps = {
   onComingSoon?: (label: string) => void;
@@ -63,6 +64,8 @@ export function MainMenu({ onComingSoon, onDeckEdit, onAiMatch, user, onLogout }
   const [mainContent, setMainContent] = useState<MainContent>(emptyMainContent);
   const [backgroundState, setBackgroundState] = useState<"fallback" | "loading" | "ready">("fallback");
   const [bgmMuted, setBgmMuted] = useState(readStoredBgmMute);
+  const [bgmVolume, setBgmVolume] = useState(readStoredBgmVolume);
+  const [soundSettingsOpen, setSoundSettingsOpen] = useState(false);
   const [, navigate] = useLocation();
 
   useEffect(() => {
@@ -108,10 +111,25 @@ export function MainMenu({ onComingSoon, onDeckEdit, onAiMatch, user, onLogout }
 
   return (
     <main className="ko-main-menu relative min-h-screen overflow-hidden bg-[#080808] px-5 py-10 text-white sm:px-8">
-      <button type="button" onClick={toggleBgm} aria-label={bgmMuted ? "배경음 켜기" : "배경음 음소거"} aria-pressed={bgmMuted} className="absolute right-4 top-4 z-20 flex items-center gap-2 rounded border border-amber-500/50 bg-neutral-950/80 px-3 py-2 text-xs font-bold text-amber-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-400">
+      <button type="button" onClick={toggleBgm} aria-label={bgmMuted ? "배경음 켜기" : "배경음 음소거"} aria-pressed={bgmMuted} className="absolute right-28 top-4 z-20 flex items-center gap-2 rounded border border-amber-500/50 bg-neutral-950/80 px-3 py-2 text-xs font-bold text-amber-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-400">
         {bgmMuted ? <VolumeX className="h-4 w-4" /> : <Volume2 className="h-4 w-4" />}
-        {bgmMuted ? "배경음 꺼짐" : "배경음 켜짐"}
+        {bgmMuted ? "음소거" : "배경음"}
       </button>
+      <button type="button" onClick={() => setSoundSettingsOpen((open) => !open)} aria-expanded={soundSettingsOpen}
+        className="absolute right-4 top-4 z-20 rounded border border-amber-500/50 bg-neutral-950/80 px-3 py-2 text-xs font-bold text-amber-200">음량 설정</button>
+      {soundSettingsOpen && <div className="absolute right-4 top-16 z-20 w-44 rounded border border-amber-500/50 bg-neutral-950/95 p-3 shadow-xl">
+        <label className="block text-xs font-bold text-neutral-300">
+          <span className="flex justify-between"><span>배경음 볼륨</span><span>{bgmVolume}%</span></span>
+          <input type="range" min="0" max="100" value={bgmVolume} aria-label="배경음 볼륨" className="mt-2 w-full accent-amber-400"
+            onChange={(event) => {
+              const next = Number(event.target.value);
+              setBgmVolume(next);
+              audioManager.setBgmVolume(next);
+              try { window.localStorage.setItem(BGM_VOLUME_STORAGE_KEY, String(next)); } catch { /* Storage may be unavailable. */ }
+            }} />
+        </label>
+        <div className="mt-3"><SfxVolumeControl /></div>
+      </div>}
       {backgroundUrl && (
         <div
           aria-hidden="true"

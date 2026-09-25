@@ -91,7 +91,8 @@ export type ScriptTarget = {
 };
 export type ScriptValue =
   | { kind: "CONSTANT"; value: number }
-  | { kind: "RESULT_COUNT" | "RESULT_VALUE"; resultId: string; offset?: number };
+  | { kind: "RESULT_COUNT" | "RESULT_VALUE"; resultId: string; offset?: number }
+  | { kind: "ADD" | "SUBTRACT" | "MULTIPLY" | "MIN" | "MAX"; left: ScriptValue; right: ScriptValue };
 export type ScriptCondition = {
   left: ScriptValue;
   compare: ScriptComparator;
@@ -116,6 +117,7 @@ export type ScriptStep =
   | { type: "AGGREGATE"; id: string; selectionId: string; operation: ScriptOperation; stat?: ScriptStat }
   | { type: "HISTORY"; id: string; query: ScriptHistoryQuery }
   | { type: "EFFECT"; id?: string; effect: ScriptEffect }
+  | { type: "REPEAT"; count: ScriptValue; steps: Array<{ type: "EFFECT"; effect: ScriptEffect }> }
   | { type: "IF"; condition: ScriptCondition; then: ScriptStep[]; else?: ScriptStep[] };
 export type EffectScript = {
   version: "SCRIPT_V1";
@@ -262,7 +264,7 @@ export type MechanicCompilerProviderOutput =
 
 const SCRIPT_TARGET_KEYS = new Set(["zone", "zones", "owner", "cardType", "filter", "selection", "count", "randomScope", "resultId", "sort", "take"]);
 const SCRIPT_FILTER_KEYS = new Set(["isGenerated", "minCost", "maxCost", "cost", "attack", "health", "isToken", "isChampionToken", "excludeSource", "isVanilla", "keyword", "tagsAny", "tagsAll", "tagsNone", "definitionRef"]);
-const SCRIPT_VALUE_KEYS = new Set(["kind", "value", "resultId", "offset"]);
+const SCRIPT_VALUE_KEYS = new Set(["kind", "value", "resultId", "offset", "left", "right"]);
 const SCRIPT_HISTORY_KEYS = new Set(["scope", "eventType", "owner", "cardType", "tag", "operation", "stat"]);
 const SCRIPT_EFFECT_KEYS = new Set(["action", "target", "values"]);
 const SCRIPT_EFFECT_VALUE_KEYS = new Set([
@@ -327,8 +329,13 @@ function validScriptTarget(value: unknown): value is ScriptTarget {
   return true;
 }
 
-function validScriptValue(value: unknown): value is ScriptValue {
-  if (!isRecord(value) || !hasOnlyKeys(value, SCRIPT_VALUE_KEYS) || !SCRIPT_VALUE_KINDS.includes(value.kind as ScriptValueKind)) return false;
+function validScriptValue(value: unknown, depth = 0): value is ScriptValue {
+  if (depth > 4 || !isRecord(value) || !hasOnlyKeys(value, SCRIPT_VALUE_KEYS)) return false;
+  if (["ADD", "SUBTRACT", "MULTIPLY", "MIN", "MAX"].includes(value.kind as string)) {
+    return hasOnlyKeys(value, new Set(["kind", "left", "right"])) &&
+      validScriptValue(value.left, depth + 1) && validScriptValue(value.right, depth + 1);
+  }
+  if (!SCRIPT_VALUE_KINDS.includes(value.kind as ScriptValueKind) || value.left !== undefined || value.right !== undefined) return false;
   if (value.kind === "CONSTANT") {
     return value.resultId === undefined && value.offset === undefined &&
       typeof value.value === "number" && Number.isFinite(value.value) && Math.abs(value.value) <= 999;
@@ -338,6 +345,13 @@ function validScriptValue(value: unknown): value is ScriptValue {
     /^[A-Za-z][A-Za-z0-9_-]{0,31}$/.test(value.resultId) &&
     (value.offset === undefined ||
       (typeof value.offset === "number" && Number.isFinite(value.offset) && Math.abs(value.offset) <= 999));
+}
+
+function scriptValueReferencesExist(value: ScriptValue, seen: Set<string>): boolean {
+  if (value.kind === "CONSTANT") return true;
+  if (value.kind === "RESULT_COUNT" || value.kind === "RESULT_VALUE") return seen.has(value.resultId);
+  if (!("left" in value)) return false;
+  return scriptValueReferencesExist(value.left, seen) && scriptValueReferencesExist(value.right, seen);
 }
 
 function validScriptSteps(value: unknown, depth: number, seen: Set<string>): value is ScriptStep[] {
@@ -412,7 +426,8 @@ function validScriptSteps(value: unknown, depth: number, seen: Set<string>): val
           "COPY_BEST_STATS", "GRANT_RANDOM_CARD_TEXT"].includes(action) &&
           Object.keys(raw.effect.values).length > 0) return false;
         for (const expressionKey of ["amountExpression", "attackExpression", "healthExpression", "countExpression"]) {
-          if (raw.effect.values[expressionKey] !== undefined && !validScriptValue(raw.effect.values[expressionKey])) return false;
+          const expression = raw.effect.values[expressionKey];
+          if (expression !== undefined && (!validScriptValue(expression) || !scriptValueReferencesExist(expression, seen))) return false;
         }
       }
       if (raw.id !== undefined) seen.add(raw.id);
@@ -421,9 +436,23 @@ function validScriptSteps(value: unknown, depth: number, seen: Set<string>): val
     if (raw.type === "IF") {
       if (!isRecord(raw.condition) || !hasOnlyKeys(raw.condition, new Set(["left", "compare", "right"])) ||
         !validScriptValue(raw.condition.left) || !validScriptValue(raw.condition.right) ||
+        !scriptValueReferencesExist(raw.condition.left, seen) || !scriptValueReferencesExist(raw.condition.right, seen) ||
         !SCRIPT_COMPARATORS.includes(raw.condition.compare as ScriptComparator)) return false;
       if (!validScriptSteps(raw.then, depth + 1, seen) ||
         (raw.else !== undefined && !validScriptSteps(raw.else, depth + 1, seen))) return false;
+      continue;
+    }
+    if (raw.type === "REPEAT") {
+      if (!hasOnlyKeys(raw, new Set(["type", "count", "steps"])) ||
+        !validScriptValue(raw.count) ||
+        !scriptValueReferencesExist(raw.count, seen) ||
+        !Array.isArray(raw.steps) || raw.steps.length < 1 || raw.steps.length > 4 ||
+        !raw.steps.every((entry) => isRecord(entry) && entry.type === "EFFECT" &&
+          !Object.hasOwn(entry, "id") && isRecord(entry.effect) &&
+          (!isRecord(entry.effect.target) || entry.effect.target.selection !== "PLAYER_CHOICE"))) return false;
+      if (isRecord(raw.count) && raw.count.kind === "CONSTANT" &&
+        (!Number.isInteger(raw.count.value) || Number(raw.count.value) < 0 || Number(raw.count.value) > 8)) return false;
+      if (!validScriptSteps(raw.steps, depth + 1, new Set(seen))) return false;
       continue;
     }
     return false;
@@ -541,7 +570,7 @@ function validScriptEffectValues(action: Action, rawValues: unknown, depth = 0):
   if (schema.amount && values.amount === undefined && values.amountExpression === undefined) return false;
   if (values.amountExpression !== undefined && (!validScriptValue(values.amountExpression) ||
     (!amountIsSigned && values.amountExpression.kind === "CONSTANT" && values.amountExpression.value < 0) ||
-    (!amountIsSigned && values.amountExpression.kind !== "CONSTANT" &&
+    (!amountIsSigned && (values.amountExpression.kind === "RESULT_COUNT" || values.amountExpression.kind === "RESULT_VALUE") &&
       values.amountExpression.offset !== undefined && values.amountExpression.offset < 0))) return false;
   for (const key of ["attack", "health"] as const) {
     if (values[key] !== undefined && !finiteScriptNumber(values[key], -999, 999)) return false;
@@ -670,7 +699,7 @@ export const EFFECT_CAPABILITIES: Record<Action, { description: string; status: 
 export const RUNTIME_HANDLER_ACTIONS = ACTIONS;
 
 const triggerDescriptions: Record<Trigger, string> = {
-  GAME_START: "초기 손패를 나누기 전에 덱에 있는 카드에서 발동합니다.",
+  GAME_START: "초기 손패를 나누기 전에 덱 또는 손패에 있는 카드에서 각각 한 번 발동합니다.",
   ENTER_FIELD: "선수가 어떤 정상 경로로든 필드에 들어올 때 발동합니다.", LEAVE_FIELD: "카드가 필드를 떠날 때 발동합니다.", SELF_RETIRE: "이 카드가 RETIRE로 필드를 떠날 때 발동합니다.", CARD_SUMMONED: "선수가 소환으로 필드에 들어올 때 아군 보드에서 발동합니다.", CARD_ENTERED: "아군 카드가 플레이, 소환 등으로 필드에 들어올 때 아군 보드에서 발동합니다.",
   ACTIVE: "액티브 능력을 사용할 때 발동합니다.", CARD_DRAWN: "카드가 덱에서 드로우될 때 발동합니다.", CARD_RETIRED: "아군 선수가 퇴장할 때 발동합니다.", FIRST_ATTACKED: "이 카드가 처음 공격받을 때 발동합니다.",
   SELF_ATTACK: "이 카드가 공격할 때 발동합니다.", OTHER_ALLY_ATTACK: "다른 아군 선수가 공격할 때 발동합니다.", ATTACK_SURVIVED: "적 선수를 공격하고 생존했을 때 발동합니다.", SELF_DAMAGED: "이 카드가 실제 피해를 받아 체력이 감소했을 때 발동합니다.", STAT_CHANGED: "효과로 스탯이 증가했을 때 발동합니다.", TECHNIQUE_CAST: "1G 이상 기본 비용의 기술을 손에서 사용할 때 발동합니다.",

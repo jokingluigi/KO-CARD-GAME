@@ -61,8 +61,11 @@ export type { BoardSlot } from "../../../artifacts/ko-game/src/game/engine/board
 export type { AttackTarget } from "../../../artifacts/ko-game/src/game/engine/combat";
 export {
   cardRecordToDefinition,
+  abilitiesFor,
   type PublishedCardRecord,
 } from "../../../artifacts/ko-game/src/game/cards/published-cards";
+export { generateCardInstance } from "../../../artifacts/ko-game/src/game/cards/generation";
+export { enterField } from "../../../artifacts/ko-game/src/game/engine/enter-field";
 export type {
   ChampionDefinition,
   ChampionState,

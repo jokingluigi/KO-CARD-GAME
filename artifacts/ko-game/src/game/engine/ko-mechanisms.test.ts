@@ -3,6 +3,7 @@ import test from 'node:test';
 import type { CardInstance } from '../cards/types';
 import { createInitialGameState } from './create-initial-game-state';
 import { enterField } from './enter-field';
+import { playWrestlerFromHand } from './play-wrestler';
 import { drawCard } from './draw-card';
 import { resolveTriggeredAbilities } from '../effects/effect-engine';
 import { canSelectAsAttacker } from './combat';
@@ -18,6 +19,40 @@ const card = (id: string, overrides: Partial<CardInstance> = {}): CardInstance =
 });
 const state = () => ({ ...createInitialGameState(), status: 'IN_PROGRESS' as const, activePlayerId: 'player-1' });
 const player = (s: ReturnType<typeof state>, id = 'player-1') => s.players.find((p) => p.id === id)!;
+test('fourth board slot resolves entry and ally-entry effects', () => {
+  const listener = card('listener', { boardSlot: 0, abilities: [{ trigger: 'CARD_ENTERED', effects: [{ type: 'GAIN_GOLD', amount: 2 }] }] });
+  const fourth = card('fourth', { abilities: [{ trigger: 'ENTER_FIELD', effects: [{ type: 'GAIN_GOLD', amount: 1 }] }] });
+  const initial = state();
+  const filled = { ...initial, players: initial.players.map((p) => p.id === 'player-1'
+    ? { ...p, board: [listener, card('second', { boardSlot: 1, abilities: listener.abilities }), card('third', { boardSlot: 2, abilities: listener.abilities }), null] as typeof p.board }
+    : p) };
+  const result = enterField(filled, 'player-1', fourth, 3);
+  assert.equal(player(result).board[3]?.instanceId, fourth.instanceId);
+  assert.equal(player(result).currentGold, player(filled).currentGold + 7);
+});
+test('the fourth field entry in sequence still resolves its own effect', () => {
+  let next = state();
+  for (let index = 0; index < 4; index += 1) {
+    const entrant = card(`entrant-${index}`, { abilities: [{ trigger: 'ENTER_FIELD', effects: [{ type: 'GAIN_GOLD', amount: 1 }] }] });
+    next = enterField(next, 'player-1', entrant, index as 0 | 1 | 2 | 3);
+    assert.equal(player(next).currentGold, index + 1, `entry ${index + 1} should resolve`);
+  }
+});
+test('the fourth played wrestler fires its effect through the match action', () => {
+  const hand = Array.from({ length: 4 }, (_, index) => card(`hand-${index}`, {
+    abilities: [{ trigger: 'ENTER_FIELD', effects: [{ type: 'GAIN_GOLD', amount: 2 }] }],
+  }));
+  const initial = state();
+  let next = { ...initial, players: initial.players.map((p) => p.id === 'player-1'
+    ? { ...p, hand, currentGold: 10 }
+    : p) };
+  for (let index = 0; index < 4; index += 1) {
+    const result = playWrestlerFromHand(next, 'player-1', hand[index]!.instanceId, index as 0 | 1 | 2 | 3);
+    assert.equal(result.success, true);
+    next = result.state;
+    assert.equal(player(next).currentGold, 10 + index + 1);
+  }
+});
 test('KO mechanisms: generated summons enter without replaying the summoned card entry effect', () => {
   const b = card('b', { abilities: [{ trigger: 'ENTER_FIELD', effects: [{ type: 'GAIN_GOLD', amount: 1 }] }] });
   const a = card('a', { abilities: [{
@@ -37,6 +72,7 @@ test('KO mechanisms: generated summons enter without replaying the summoned card
 test('KO mechanisms: REVIVE moves the existing graveyard instance, restores health, and skips entry effects', () => {
   const revived = card('revived', {
     currentHealth: 0,
+    baseHealth: 4,
     maxHealth: 4,
     abilities: [{ trigger: 'ENTER_FIELD', effects: [{ type: 'GAIN_GOLD', amount: 9 }] }],
   });

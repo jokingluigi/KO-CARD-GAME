@@ -326,6 +326,8 @@ const summonDefinition: CardDefinition = {
   isChampionToken: false,
   abilities: [],
 };
+const zombieDefinition: CardDefinition = { ...summonDefinition, id: "ai-real-match-zombie", tags: ["ZOMBIE"] };
+const zombieSourceDefinition: CardDefinition = { ...definitions.I, id: "ai-real-match-zombie-source", tags: ["ZOMBIE"] };
 
 function stateWithPool(): GameState {
   const state = createInitialGameState();
@@ -333,7 +335,7 @@ function stateWithPool(): GameState {
   state.activePlayerId = "player-1";
   state.turn = 1;
   state.randomSeed = 20260923;
-  state.cardPool = [...Object.values(definitions), summonDefinition];
+  state.cardPool = [...Object.values(definitions), summonDefinition, zombieDefinition, zombieSourceDefinition];
   state.players = state.players.map((player) => ({
     ...player,
     health: 10,
@@ -429,8 +431,8 @@ test("A applies a loaded effect through PLAY_WRESTLER → ENTER_FIELD → GameSt
 test("B heals from counted zombie graveyard cards on the real leave-field path", () => {
   const state = stateWithPool();
   const source = { ...card("B", "b-source"), boardSlot: 0 as const, currentHealth: 1, maxHealth: 3 };
-  const zombieOne = { ...card("A", "b-zombie-1"), tags: ["ZOMBIE"] };
-  const zombieTwo = { ...card("A", "b-zombie-2"), tags: ["ZOMBIE"] };
+  const zombieOne = instance(zombieDefinition, "b-zombie-1");
+  const zombieTwo = instance(zombieDefinition, "b-zombie-2");
   const nonZombie = card("A", "b-non-zombie");
   state.players[0].board = [source, null, null, null];
   state.players[0].graveyard = [zombieOne, zombieTwo, nonZombie];
@@ -627,8 +629,8 @@ test("H prevents the first incoming damage through combat and consumes uses", ()
 test("I counts only board zombie wrestlers and buffs itself at the threshold", () => {
   const twoZombieState = stateWithPool();
   twoZombieState.players[0].board = [
-    { ...card("A", "i-two-1", { tags: ["ZOMBIE"] }), boardSlot: 0 },
-    { ...card("A", "i-two-2", { tags: ["ZOMBIE"] }), boardSlot: 1 },
+    { ...instance(zombieDefinition, "i-two-1"), boardSlot: 0 },
+    { ...instance(zombieDefinition, "i-two-2"), boardSlot: 1 },
     null,
     null,
   ];
@@ -638,20 +640,20 @@ test("I counts only board zombie wrestlers and buffs itself at the threshold", (
 
   const threeZombieState = stateWithPool();
   threeZombieState.players[0].board = [
-    { ...card("A", "i-three-1", { tags: ["ZOMBIE"] }), boardSlot: 0 },
-    { ...card("A", "i-three-2", { tags: ["ZOMBIE"] }), boardSlot: 1 },
+    { ...instance(zombieDefinition, "i-three-1"), boardSlot: 0 },
+    { ...instance(zombieDefinition, "i-three-2"), boardSlot: 1 },
     null,
     null,
   ];
-  const threeSource = card("I", "i-three-source", { tags: ["ZOMBIE"] });
+  const threeSource = instance(zombieSourceDefinition, "i-three-source");
   const three = play(threeZombieState, threeSource, 2);
   assert.equal(three.players[0].board[2]?.currentAttack, definitions.I.attack + 3);
   assert.equal(three.players[0].board[2]?.currentHealth, definitions.I.health + 3);
 
   const nonWrestlerState = stateWithPool();
   nonWrestlerState.players[0].board = [
-    { ...card("A", "i-non-wrestler", { tags: ["ZOMBIE"], cardType: "TECHNIQUE" }), boardSlot: 0 },
-    { ...card("A", "i-one-wrestler", { tags: ["ZOMBIE"] }), boardSlot: 1 },
+    { ...instance(zombieDefinition, "i-non-wrestler", { cardType: "TECHNIQUE" }), boardSlot: 0 },
+    { ...instance(zombieDefinition, "i-one-wrestler"), boardSlot: 1 },
     null,
     null,
   ];
@@ -660,12 +662,12 @@ test("I counts only board zombie wrestlers and buffs itself at the threshold", (
 
   const nonFieldState = stateWithPool();
   nonFieldState.players[0].board = [
-    { ...card("A", "i-field-zombie", { tags: ["ZOMBIE"] }), boardSlot: 0 },
-    { ...card("A", "i-field-zombie-2", { tags: ["ZOMBIE"] }), boardSlot: 1 },
+    { ...instance(zombieDefinition, "i-field-zombie"), boardSlot: 0 },
+    { ...instance(zombieDefinition, "i-field-zombie-2"), boardSlot: 1 },
     null,
     null,
   ];
-  nonFieldState.players[0].hand = [{ ...card("A", "i-hand-zombie", { tags: ["ZOMBIE"] }) }];
+  nonFieldState.players[0].hand = [instance(zombieDefinition, "i-hand-zombie")];
   const nonField = play(nonFieldState, card("I", "i-non-field-source"), 2);
   assert.equal(nonField.players[0].board[2]?.currentAttack, definitions.I.attack);
 });
