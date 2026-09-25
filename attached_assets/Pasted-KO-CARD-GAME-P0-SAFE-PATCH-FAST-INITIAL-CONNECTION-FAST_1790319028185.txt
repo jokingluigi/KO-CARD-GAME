@@ -1,0 +1,694 @@
+KO CARD GAME — P0 SAFE PATCH
+FAST INITIAL CONNECTION / FAST RECONNECT ONLY
+
+IMPORTANT CURRENT STATE
+
+The Production Quest DB schema migration has already been successfully applied and verified.
+
+The Render API is currently healthy.
+
+Do NOT modify:
+- Production DB schema
+- Quest schema
+- Quest migration files
+- card data
+- Champion data
+- gameplay rules
+- match persistence semantics
+- server-authoritative turn logic
+- Render environment variables
+- DATABASE_URL
+- deployment/build/start commands
+- unrelated backend infrastructure
+
+The server was difficult to recover and is currently healthy.
+This patch must be MINIMAL and MUST NOT destabilize the server.
+
+==================================================
+OBSERVED BUG
+==================================================
+
+The Online Match connection is not permanently broken.
+
+Observed behavior:
+
+- Enter Online Match
+- For some initial period, connection is unstable/not ready
+- END TURN may not advance
+- UI shows:
+  "연결이 끊겼습니다. 재연결 중..."
+- After some time passes, connection recovers
+- Then END TURN works normally
+
+The delay is NOT confirmed to be exactly 60 seconds.
+
+Goal:
+
+MAKE INITIAL CONNECTION AND RECONNECTION HAPPEN QUICKLY AND RELIABLY.
+
+Do NOT invent a hardcoded 60-second fix.
+
+==================================================
+1. FIRST: INSPECT BEFORE CHANGING ANYTHING
+==================================================
+
+Before editing code, trace the current connection flow:
+
+auth ready
+→ match identity ready
+→ request WS ticket
+→ create WebSocket
+→ WS open
+→ receive authoritative snapshot
+→ match ready
+
+Also inspect:
+
+- reconnect retry timing
+- retry backoff
+- timeout values
+- stale socket cleanup
+- when a fresh WS ticket is requested
+- whether failed reconnect attempts reuse an old ticket
+- whether reconnect waits too long before retrying
+
+Do not modify anything until this flow is understood.
+
+==================================================
+2. PRIMARY GOAL
+==================================================
+
+When the backend/API is already available:
+
+Online Match should connect immediately or within a very short reasonable time.
+
+If WS connection drops:
+
+reconnect should begin quickly.
+
+Do not make the player wait unnecessarily before the next retry.
+
+==================================================
+3. RECONNECT STRATEGY
+==================================================
+
+Use a bounded, safe reconnect strategy.
+
+Example behavior:
+
+first retry:
+very soon
+
+then:
+short increasing delays
+
+cap the delay at a reasonable value.
+
+Example concept only:
+
+1s
+2s
+3s
+5s
+5s...
+
+Do NOT blindly copy these exact values if the existing architecture already has a better mechanism.
+
+The important requirement is:
+
+- retry quickly
+- avoid retry storms
+- do not wait tens of seconds unnecessarily
+- recover immediately once backend/WS becomes available
+
+==================================================
+4. FRESH WS TICKET
+==================================================
+
+Check whether a reconnect requires a fresh one-time WS ticket.
+
+If tickets are single-use or expire:
+
+do NOT reuse an old ticket.
+
+On each reconnect attempt where required:
+
+authenticated request
+→ obtain fresh WS ticket
+→ open fresh socket
+
+Do not weaken authentication.
+
+Do not bypass ticket validation.
+
+==================================================
+5. STALE SOCKET CLEANUP
+==================================================
+
+Before creating a replacement connection:
+
+ensure the old/stale socket is correctly abandoned/closed.
+
+Avoid:
+
+- multiple simultaneous sockets for same match/user
+- old socket callbacks overwriting new connection state
+- old reconnect timer opening another socket after success
+- duplicate event listeners
+- duplicate authoritative snapshots
+- duplicate END TURN sends
+
+==================================================
+6. CANCEL RECONNECT TIMERS AFTER SUCCESS
+==================================================
+
+When WS successfully reconnects:
+
+cancel all pending reconnect timers immediately.
+
+There must be only ONE active connection/reconnect loop.
+
+Do not allow an older scheduled retry to fire after a healthy socket is already open.
+
+==================================================
+7. MATCH READY STATE
+==================================================
+
+The client must distinguish:
+
+CONNECTING
+CONNECTED BUT WAITING FOR SNAPSHOT
+READY
+RECONNECTING
+
+Gameplay should be considered READY only when:
+
+- authentication resolved
+- correct match confirmed
+- WebSocket OPEN
+- authoritative state/snapshot received
+
+Do NOT fake READY.
+
+==================================================
+8. DO NOT BREAK CURRENT WORKING SERVER LOGIC
+==================================================
+
+VERY IMPORTANT:
+
+Do NOT refactor the online server broadly.
+
+Do NOT rewrite:
+- online/service.ts architecture
+- persistRuntime
+- commitTransition
+- GameState engine
+- Quest integration
+- DB transactions
+
+unless direct evidence proves a tiny change there is absolutely required.
+
+Prefer a CLIENT-SIDE / CONNECTION-MANAGEMENT fix if the problem is reconnect delay.
+
+Do not touch stable server code just to "clean it up".
+
+==================================================
+9. NO PRODUCTION DB CHANGES
+==================================================
+
+Absolutely forbidden:
+
+ALTER TABLE
+DROP
+TRUNCATE
+DELETE
+migration
+reset progress
+clear matches
+modify Production DB schema
+
+The Quest migration is complete.
+
+PRODUCTION DB CHANGED:
+must remain NO.
+
+==================================================
+10. NO RENDER CONFIG CHANGES
+==================================================
+
+Do NOT change:
+
+- Render build command
+- start command
+- root directory
+- environment variables
+- DATABASE_URL
+- health path
+- service type
+
+Do NOT restart/redeploy Render unless code deployment actually requires it.
+
+If deployment is required because code changed:
+use the normal existing deployment path only.
+
+==================================================
+11. DO NOT MASK THE BUG
+==================================================
+
+Forbidden:
+
+- hardcoded 60-second wait
+- fake connected status
+- local/client-side turn advancement
+- automatically returning user to Main
+- silently creating a new match
+- clearing active match
+- swallowing connection errors
+- infinite tight retry loop
+
+==================================================
+12. LOGGING
+==================================================
+
+If needed, add minimal temporary/dev-safe connection diagnostics.
+
+Record:
+
+- connection attempt number
+- match id
+- WS ticket request success/failure
+- socket open time
+- socket close code
+- close reason
+- reconnect scheduled delay
+- authoritative snapshot received
+- reconnect success
+
+Do NOT log:
+
+- WS ticket value
+- cookies
+- Authorization header
+- DATABASE_URL
+- passwords
+- secrets
+- private hand/deck contents
+
+==================================================
+13. IMPORTANT RACE CONDITIONS
+==================================================
+
+Test for:
+
+A.
+Socket closes
+→ reconnect scheduled
+
+B.
+New socket connects successfully
+→ old scheduled retry must NOT create another socket
+
+C.
+User changes page during reconnect
+→ reconnect loop must stop
+
+D.
+User exits match
+→ no background reconnect continues
+
+E.
+Component remount
+→ no duplicate reconnect managers
+
+F.
+END TURN clicked during RECONNECTING
+→ action must not be duplicated
+
+==================================================
+14. INITIAL CONNECTION
+==================================================
+
+Also improve FIRST connection, not only reconnect.
+
+When entering Online Match:
+
+request required auth/WS ticket promptly.
+
+Do not wait for an unnecessarily long generic timeout before opening socket.
+
+If API is already warm:
+
+connection should happen promptly.
+
+==================================================
+15. COLD START
+==================================================
+
+If Render cold start is genuinely contributing:
+
+do not attempt to "fix" Render infrastructure.
+
+Instead make the client connection manager tolerate it properly:
+
+- quick retry
+- bounded backoff
+- fresh ticket if needed
+- clear connecting state
+- instant recovery once server is available
+
+Do not spam API.
+
+==================================================
+16. KEEP EXISTING MATCH STATE
+==================================================
+
+Reconnect must always restore the SAME authoritative match.
+
+Do NOT:
+
+- create new GameState
+- restart turn counter
+- reset current player
+- regenerate deck
+- reset timers
+- clear board
+
+Use existing authoritative snapshot/recovery path.
+
+==================================================
+17. TEST — WARM SERVER
+==================================================
+
+With API already healthy:
+
+Enter Online Match.
+
+Measure:
+
+WS ticket request:
+PASS / FAIL
+
+WS open:
+PASS / FAIL
+
+Authoritative snapshot:
+PASS / FAIL
+
+Time until READY:
+___
+
+Expected:
+fast connection without long reconnect delay.
+
+==================================================
+18. TEST — FORCED DISCONNECT
+==================================================
+
+Force one client connection to drop.
+
+Verify:
+
+disconnect detected
+→ reconnect starts quickly
+→ fresh ticket if required
+→ new socket opens
+→ authoritative snapshot restored
+→ READY
+
+Record:
+
+disconnect to first retry:
+___ sec
+
+disconnect to WS OPEN:
+___ sec
+
+disconnect to READY:
+___ sec
+
+==================================================
+19. TEST — END TURN AFTER RECONNECT
+==================================================
+
+After reconnect:
+
+USER A END TURN
+→ USER B receives turn
+
+USER B END TURN
+→ USER A receives turn
+
+Repeat multiple times.
+
+No duplicate actions.
+
+No stale reconnect overlay.
+
+==================================================
+20. TEST — SERVER HEALTH
+==================================================
+
+Before patch:
+
+GET
+/api/healthz
+
+After patch/deployment:
+
+GET
+/api/healthz
+
+After repeated reconnect tests:
+
+GET
+/api/healthz
+
+All must return 200.
+
+If API health becomes unstable because of this patch:
+ROLL BACK the patch.
+
+==================================================
+21. TEST — NO REGRESSION
+==================================================
+
+Verify:
+
+- Quest page still works
+- Admin Quest page still works
+- Turn End still works after READY
+- Turn timeout still works
+- Forfeit still works
+- Main return still works
+- new match still works
+- no new server crash
+- no DB migration
+- no data loss
+
+==================================================
+22. AUTOMATED CHECKS
+==================================================
+
+Run:
+
+pnpm run typecheck
+
+pnpm --filter @workspace/ko-game run build
+
+API typecheck only if API code changed
+
+API build only if API code changed
+
+focused connection/reconnect tests
+
+online lifecycle tests
+
+git diff --check
+
+==================================================
+23. CHANGE SCOPE
+==================================================
+
+Keep the diff as small as possible.
+
+Before editing:
+identify the exact connection/reconnect files.
+
+After editing:
+report every changed file.
+
+If unrelated files appear in git diff:
+do not include them.
+
+Do not refactor unrelated code.
+
+==================================================
+24. GIT SAFETY
+==================================================
+
+Stage only intended files.
+
+Do not stage:
+
+- secrets
+- DATABASE_URL
+- logs
+- temporary files
+- prompt text
+- Replit metadata
+- unrelated changes
+
+Commit only the reconnect/readiness fix.
+
+Do NOT push unless explicitly requested.
+
+==================================================
+25. FAILURE SAFETY
+==================================================
+
+If the attempted fix makes:
+
+- Render API unhealthy
+- Online Match worse
+- server crash
+- Quest fail
+- connection completely unavailable
+
+STOP.
+
+Do not stack more speculative fixes.
+
+Report the regression and revert only the changes from THIS patch.
+
+Do not revert the verified Quest migration or previous unrelated fixes.
+
+==================================================
+26. FINAL REPORT
+==================================================
+
+ROOT CAUSE:
+...
+
+FILES CHANGED:
+...
+
+SERVER CODE CHANGED:
+YES / NO
+
+PRODUCTION DB CHANGED:
+NO
+
+RENDER CONFIG CHANGED:
+NO
+
+RECONNECT STRATEGY BEFORE:
+...
+
+RECONNECT STRATEGY AFTER:
+...
+
+WARM SERVER:
+
+WS TICKET:
+PASS / FAIL
+
+WS OPEN:
+PASS / FAIL
+
+AUTHORITATIVE SNAPSHOT:
+PASS / FAIL
+
+TIME TO READY:
+___
+
+
+FORCED DISCONNECT:
+
+TIME TO FIRST RETRY:
+___
+
+TIME TO WS OPEN:
+___
+
+TIME TO READY:
+___
+
+RECONNECT:
+PASS / FAIL
+
+
+AFTER RECONNECT:
+
+END TURN:
+PASS / FAIL / UNVERIFIED
+
+MULTIPLE TURN ALTERNATION:
+PASS / FAIL / UNVERIFIED
+
+FORFEIT:
+PASS / FAIL / UNVERIFIED
+
+
+REGRESSION:
+
+QUEST:
+PASS / FAIL / UNVERIFIED
+
+ADMIN QUEST:
+PASS / FAIL / UNVERIFIED
+
+TURN TIMEOUT:
+PASS / FAIL / UNVERIFIED
+
+NEW MATCH:
+PASS / FAIL / UNVERIFIED
+
+API HEALTH:
+PASS / FAIL
+
+
+TYPECHECK:
+PASS / FAIL
+
+WEB BUILD:
+PASS / FAIL
+
+API TYPECHECK:
+PASS / FAIL / NOT TOUCHED
+
+API BUILD:
+PASS / FAIL / NOT TOUCHED
+
+git diff --check:
+PASS / FAIL
+
+BROWSER E2E:
+PASS / FAIL / UNVERIFIED
+
+COMMIT:
+...
+
+PUSH:
+NOT REQUESTED
+
+==================================================
+27. MOST IMPORTANT RULE
+==================================================
+
+The Production server is currently healthy after a difficult recovery.
+
+DO NOT destabilize it.
+
+This patch is NOT a broad Online Match rewrite.
+
+This patch is specifically:
+
+FAST + SAFE INITIAL CONNECTION
+FAST + SAFE RECONNECT
+
+Use the smallest possible change.
+
+If the connection manager can be fixed without modifying server persistence,
+Quest integration, DB schema, or match engine:
+
+DO THAT.
