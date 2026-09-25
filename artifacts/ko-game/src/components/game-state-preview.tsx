@@ -130,6 +130,23 @@ export function GameStatePreview({
   const [settingsOpen, setSettingsOpen] = React.useState(false);
   const [surrenderConfirming, setSurrenderConfirming] = React.useState(false);
   const [attackHint, setAttackHint] = React.useState<string | null>(null);
+  React.useEffect(() => {
+    const cancel = () => {
+      if (openGraveyardPlayerId) setOpenGraveyardPlayerId(null);
+      else if (settingsOpen) { setSettingsOpen(false); setSurrenderConfirming(false); }
+      else if (state.targetingState?.active) onCancelEffectTargeting();
+      else if (selectedCardId) onSelectCard(selectedCardId);
+      else if (selectedAttackerId) onSelectAttacker(selectedAttackerId);
+    };
+    const settings = () => { setSettingsOpen((open) => !open); setSurrenderConfirming(false); };
+    window.addEventListener('ko-gamepad-cancel', cancel);
+    window.addEventListener('ko-gamepad-settings', settings);
+    return () => {
+      window.removeEventListener('ko-gamepad-cancel', cancel);
+      window.removeEventListener('ko-gamepad-settings', settings);
+    };
+  }, [openGraveyardPlayerId, settingsOpen, state.targetingState?.active, selectedCardId, selectedAttackerId,
+    onCancelEffectTargeting, onSelectCard, onSelectAttacker]);
   const handCardRefs = React.useRef(new Map<string, HTMLDivElement>());
   const boardSlotRefs = React.useRef(new Map<number, HTMLDivElement>());
   const opponentBoardSlotRefs = React.useRef(new Map<number, HTMLDivElement>());
@@ -1403,7 +1420,13 @@ function BoardSlot({
 
   if (isEmpty) {
     return (
-      <div ref={slotRef} className={containerClass} onClick={selectable ? () => onClick(slotIndex) : undefined}>
+      <div ref={slotRef} className={containerClass} onClick={selectable ? () => onClick(slotIndex) : undefined}
+        role={selectable ? 'button' : undefined} tabIndex={selectable ? 0 : undefined}
+        aria-label={selectable ? `${slotIndex + 1}구역에 카드 배치` : undefined}
+        data-gamepad-target={selectable ? '' : undefined}
+        onKeyDown={selectable ? (event) => {
+          if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); onClick(slotIndex); }
+        } : undefined}>
          <span className="text-[9px] font-bold tracking-widest text-neutral-600 md:text-[11px]">{slotIndex + 1}구역</span>
       </div>
     );

@@ -26,6 +26,7 @@ import { audioManager } from '@/audio/audio-manager';
 import { readStoredBgmMute, readStoredBgmVolume } from '@/audio/audio-settings';
 import { musicContextForPath, shouldLoadMainBgm } from '@/audio/music-route';
 import { fetchMainContent } from '@/lib/main-content-client';
+import { GamepadNavigation } from '@/components/gamepad-navigation';
 
 const queryClient = new QueryClient();
 
@@ -113,6 +114,7 @@ function App() {
         <WouterRouter base={import.meta.env.BASE_URL.replace(/\/$/, '')}>
           <GlobalAudioBridge />
           <Router />
+          <GamepadNavigation />
         </WouterRouter>
         <Toaster />
       </TooltipProvider>

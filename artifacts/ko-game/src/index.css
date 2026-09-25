@@ -2079,3 +2079,28 @@
     transition: none;
   }
 }
+
+[data-gamepad-focused="true"] {
+  outline: 3px solid #fbbf24 !important;
+  outline-offset: 4px;
+  box-shadow: 0 0 0 5px rgb(0 0 0 / 80%), 0 0 20px rgb(251 191 36 / 70%);
+  z-index: 150;
+}
+
+.ko-gamepad-hint {
+  position: fixed;
+  top: max(8px, env(safe-area-inset-top));
+  left: 50%;
+  z-index: 300;
+  max-width: calc(100vw - 20px);
+  transform: translateX(-50%);
+  pointer-events: none;
+  border: 1px solid rgb(251 191 36 / 65%);
+  border-radius: 6px;
+  background: rgb(10 10 10 / 92%);
+  padding: 5px 8px;
+  color: #fde68a;
+  font-size: 10px;
+  font-weight: 700;
+  text-align: center;
+}

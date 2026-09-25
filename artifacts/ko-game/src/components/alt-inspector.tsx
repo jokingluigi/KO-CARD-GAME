@@ -284,6 +284,12 @@ export function Inspectable({
         ) return;
         toggleTouch(event.currentTarget);
       }}
+      onClickCapture={(event) => {
+        // Programmatic click from the gamepad's X button has no pointer-up event.
+        if (event.detail === 0 && (event.target as Element).closest('[data-touch-inspect-trigger]')) {
+          toggleTouch(event.currentTarget);
+        }
+      }}
     >
       {children}
     </div>

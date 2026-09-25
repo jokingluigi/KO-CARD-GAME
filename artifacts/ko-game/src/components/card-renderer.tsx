@@ -285,6 +285,9 @@ export function CardRenderer({
              onClick={onClick}
       onKeyDown={handleKeyDown}
       tabIndex={tabIndex}
+      data-gamepad-target={onClick ? '' : undefined}
+      role={onClick ? 'button' : undefined}
+      aria-label={onClick ? name : undefined}
     >
       <div className="absolute inset-0 overflow-visible">
         <CardArtwork
