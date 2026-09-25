@@ -1,0 +1,811 @@
+KO CARD GAME — RESOLVE THE PRODUCTION ONLINE CONNECTION BUG END-TO-END
+
+이번 작업의 최우선 목표는 규칙 준수나 진단만 하는 것이 아니라:
+
+PRODUCTION에서 실제 사용자가 겪고 있는
+Online Quick Match 연결 버그를 끝까지 해결하는 것이다.
+
+필요한 코드 수정, 테스트, Git commit, GitHub push, Render 배포까지
+문제 해결에 필요하다면 직접 진행하라.
+
+더 이상 단순 진단 로그 추가 후 멈추거나,
+“추가 확인이 필요하다”는 이유만으로 작업을 끝내지 말 것.
+
+OBSERVE
+→ TRACE
+→ ROOT CAUSE
+→ FIX
+→ TEST
+→ DEPLOY
+→ PRODUCTION VERIFY
+
+까지 한 작업으로 완료하라.
+
+==================================================
+CURRENT PRODUCTION BUG
+==================================================
+
+Quick Match 자체는 정상이다.
+
+실제 Production 흐름:
+
+1. Quick Match 시작
+2. 상대 매칭 성공
+3. 게임 화면 진입
+4. ws-ticket = HTTP 200
+5. WebSocket handshake = HTTP 101
+6. SUBSCRIBE 성공
+7. MATCH_SNAPSHOT 수신
+8. PLAYER_ONE = CONNECTED 수신
+9. PLAYER_TWO = CONNECTED 수신
+
+실제 캡처에서:
+
+MATCH_FOUND
+16:18:40.963
+
+MATCH_STARTING
+16:18:40.966
+
+SUBSCRIBE
+16:18:41.236
+
+MATCH_SNAPSHOT
+16:18:41.525
+
+MATCH_CONNECTION_STATUS
+PLAYER_TWO
+CONNECTED
+16:18:41.529
+
+MATCH_CONNECTION_STATUS
+PLAYER_ONE
+CONNECTED
+16:18:41.711
+
+즉 서버와 실제 WebSocket은 매우 빠르게 연결되고 있다.
+
+그런데 같은 순간 게임 UI는:
+
+RECONNECTING
+v0
+PLAYER_TWO
+0s
+LIVE
+
+상태이며,
+
+"연결이 끊겼습니다. 재연결 중..."
+
+이라고 표시된다.
+
+심지어 어떤 재현에서는 이후에도 정상 READY로 돌아오지 않았다.
+
+따라서 핵심 문제는:
+
+SERVER / WS = CONNECTED
+
+하지만
+
+CLIENT = RECONNECTING
+
+이라는 불일치다.
+
+==================================================
+IMPORTANT EXISTING WORK
+==================================================
+
+이미 frontend diagnostic code가 준비되어 있다.
+
+Branch:
+
+frontend-diagnostics-only
+
+Commit:
+
+2d44dc3954abaeddbdee1e81194ff2d54b9d21c9
+
+Changed files:
+
+artifacts/ko-game/src/lib/online-lobby-client.ts
+
+artifacts/ko-game/src/pages/online-match.tsx
+
+Diagnostic console prefix:
+
+[KO online
+
+이 진단 코드는 현재 local/unpushed 상태였다.
+
+필요하면 이 코드를 사용하고,
+필요하면 더 나은 방식으로 수정해도 된다.
+
+이 기존 작업에 얽매이지 말고
+문제 해결에 가장 효율적인 방법을 선택하라.
+
+==================================================
+1. DO NOT STOP AT DIAGNOSTICS
+==================================================
+
+진단은 문제 해결을 위한 수단이다.
+
+이번 작업은:
+
+diagnostics added
+tests pass
+please send logs
+
+에서 끝나면 안 된다.
+
+코드와 상태 흐름을 직접 추적해서
+가능한 범위에서 root cause를 확정하고
+실제 수정까지 진행하라.
+
+사용자가 제공해야만 알 수 있는 Production 정보가 정말 필요한 경우를 제외하면
+중간 승인을 반복해서 요청하지 말 것.
+
+==================================================
+2. FIND THE ACTUAL CLIENT CONNECTION STATE OWNER
+==================================================
+
+먼저 정확히 찾아라:
+
+화면 상단의
+
+RECONNECTING
+
+과 하단의
+
+"연결이 끊겼습니다. 재연결 중..."
+
+을 결정하는 실제 state / selector / boolean / enum.
+
+예:
+
+connectionState
+connectionStatus
+isConnected
+isReconnecting
+socketReady
+matchReady
+acceptedSnapshot
+connectionPhase
+
+실제 코드를 찾아서 보고할 것.
+
+그리고 그 상태를 변경할 수 있는
+모든 writer를 추적하라.
+
+==================================================
+3. TRACE THE COMPLETE STATE TRANSITION
+==================================================
+
+아래 순서에서 client state가 어떻게 변하는지 추적:
+
+MATCH_FOUND
+
+→ MATCH_STARTING
+
+→ SUBSCRIBE
+
+→ MATCH_SNAPSHOT
+
+→ snapshot accepted
+
+→ seat resolved
+
+→ phase LIVE
+
+→ local socket OPEN
+
+→ READY
+
+실제 Production에서는:
+
+seat = PLAYER_TWO
+
+phase = LIVE
+
+version = v0
+
+까지 도달했는데
+RECONNECTING이 남아 있다.
+
+즉 어떤 READY condition 하나가 실패하거나
+READY 이후 RECONNECTING으로 다시 덮이는 것이다.
+
+그 정확한 조건을 찾아라.
+
+==================================================
+4. INVESTIGATE THE MOST LIKELY RACES
+==================================================
+
+다음 모두 실제 코드에서 확인하고
+YES / NO로 증명하라.
+
+STALE SOCKET CALLBACK
+
+예:
+
+old socket A
+→ socket B becomes current and healthy
+→ A.onclose fires
+→ A incorrectly sets RECONNECTING
+
+STALE TIMER
+
+예:
+
+connection/reconnect timeout created earlier
+→ MATCH_SNAPSHOT succeeds
+→ timer is not cancelled
+→ timer later sets RECONNECTING
+
+MULTIPLE SOCKET OWNERS
+
+예:
+
+socket A receives frames
+
+but UI reads state owned by socket B / another hook / another provider.
+
+USEEFFECT CLEANUP / REMOUNT
+
+예:
+
+MATCH_FOUND
+→ navigate
+→ state change
+→ effect cleanup
+→ connection state marked disconnected
+→ active healthy socket remains open
+
+SNAPSHOT FLAG INVALIDATION
+
+accepted snapshot becomes true
+then some code clears it.
+
+SOCKET OPEN FLAG DESYNC
+
+actual WebSocket.readyState === OPEN
+but local React state still says disconnected.
+
+HEARTBEAT / WATCHDOG FALSE FAILURE
+
+healthy socket is incorrectly declared dead.
+
+SESSION GENERATION MISMATCH
+
+new/current socket is valid
+but state still belongs to previous generation.
+
+==================================================
+5. USE THE DIAGNOSTICS AGGRESSIVELY
+==================================================
+
+The prepared diagnostics should log at minimum:
+
+connection state transition
+
+reason/writer
+
+socket generation
+
+socket readyState
+
+matchId
+
+MATCH_SNAPSHOT received
+
+MATCH_SNAPSHOT accepted
+
+snapshot invalidated
+
+reconnect scheduled
+
+reconnect cancelled
+
+socket onopen
+
+socket onclose
+
+socket onerror
+
+current socket replaced
+
+stale callback ignored
+
+READY condition evaluation
+
+Do not log credentials or private gameplay information.
+
+If existing diagnostics are insufficient,
+improve them.
+
+Then use those logs to determine the actual cause.
+
+==================================================
+6. FIX THE ROOT CAUSE
+==================================================
+
+Once identified,
+apply the smallest robust fix.
+
+But do not refuse to modify code merely because earlier instructions were conservative.
+
+You are authorized to make the code changes necessary to resolve this Production bug.
+
+Possible examples, ONLY if supported by evidence:
+
+- current socket generation owns connection state
+- stale socket callbacks ignored
+- stale reconnect/connection timers cancelled
+- MATCH_SNAPSHOT on current OPEN socket establishes READY
+- snapshot acceptance persists correctly
+- useEffect lifecycle stabilized
+- only one active connection manager owns the match
+- reconnect manager state synchronized with current socket
+- local transport state separated from player presence state
+
+Do not apply all of these blindly.
+
+Fix the actual cause.
+
+==================================================
+7. IMPORTANT INVARIANT
+==================================================
+
+If the CURRENT valid socket:
+
+readyState === OPEN
+
+AND
+
+has accepted the authoritative MATCH_SNAPSHOT
+
+AND
+
+the client has resolved:
+
+matchId
+seat
+phase
+
+then an OLD:
+
+socket callback
+timer
+reconnect callback
+component cleanup
+generation
+
+must not downgrade the current connection to RECONNECTING.
+
+==================================================
+8. REAL DISCONNECT MUST STILL WORK
+==================================================
+
+Do not simply force connection state to CONNECTED.
+
+A real disconnect must still correctly produce:
+
+CONNECTED
+→ RECONNECTING
+→ reconnect
+→ MATCH_SNAPSHOT
+→ READY
+
+The fix must distinguish:
+
+FALSE RECONNECTING
+
+from
+
+REAL RECONNECTING.
+
+==================================================
+9. END TURN MUST BE VERIFIED
+==================================================
+
+After fixing client readiness:
+
+Quick Match
+
+→ first connection
+
+→ READY
+
+→ END TURN
+
+must work immediately.
+
+Verify:
+
+PLAYER A
+END TURN
+→ PLAYER B turn
+
+PLAYER B
+END TURN
+→ PLAYER A turn
+
+at least 3 alternating turns if environment permits.
+
+==================================================
+10. DEPLOYMENT IS PART OF THE TASK
+==================================================
+
+Do not stop simply because deployment requires GitHub or Render.
+
+Use the repository and deployment setup appropriately.
+
+You may:
+
+- create/update a focused branch
+- commit the fix
+- push the focused branch
+- push to main when appropriate
+- deploy the frontend
+- trigger the existing Render deployment path
+- deploy a specific commit if appropriate
+
+Choose the deployment method that actually gets the fix onto Production.
+
+Do not let earlier “do not push” instructions block this task.
+
+The objective is a working Production site.
+
+==================================================
+11. GITHUB / RENDER
+==================================================
+
+Repository:
+
+jokingluigi/KO-CARD-GAME
+
+Production frontend:
+
+https://ko-card-game-vr69.onrender.com
+
+API:
+
+https://ko-card-game.onrender.com
+
+If frontend-only change is sufficient,
+deploy the frontend change.
+
+If evidence proves a server change is genuinely required,
+you may make and deploy the necessary server change as well.
+
+Do not avoid a required fix purely because it touches server code.
+
+However,
+do not modify unrelated systems.
+
+==================================================
+12. EXISTING UNRELATED COMMITS
+==================================================
+
+The workspace main previously contained unrelated server commits.
+
+Do not accidentally publish unrelated broken work.
+
+Inspect:
+
+git status
+git log
+git diff
+origin/main
+
+and construct a clean deployment containing the intended fix.
+
+Use:
+
+branch
+cherry-pick
+focused commit
+specific commit deployment
+
+or another correct Git workflow as necessary.
+
+The goal is NOT “never push”.
+
+The goal is:
+
+PUSH THE CORRECT FIX WITHOUT ACCIDENTALLY SHIPPING UNRELATED CHANGES.
+
+==================================================
+13. TEST BEFORE DEPLOY
+==================================================
+
+Run all relevant checks.
+
+At minimum:
+
+pnpm run typecheck
+
+pnpm --filter @workspace/ko-game run build
+
+focused online connection tests
+
+existing relevant online tests
+
+git diff --check
+
+If API code is modified:
+
+API typecheck
+API build
+API relevant tests
+
+Do not deploy a failing build.
+
+==================================================
+14. AUTOMATED REGRESSION TEST
+==================================================
+
+Once root cause is identified,
+create a regression test that reproduces that exact bug.
+
+Examples depending on actual cause:
+
+new socket healthy
+→ old socket closes
+→ current state remains READY
+
+snapshot accepted
+→ old timeout fires
+→ current state remains READY
+
+MATCH_SNAPSHOT accepted
+→ READY transition happens
+
+component remount
+→ no competing connection owner
+
+real socket close
+→ RECONNECTING still occurs
+
+Do not write meaningless tests that only assert implementation details.
+
+==================================================
+15. PRODUCTION VERIFICATION
+==================================================
+
+After deployment,
+test the actual Production URL.
+
+The critical success condition is:
+
+Quick Match
+→ Match Found
+→ Game Screen
+→ MATCH_SNAPSHOT
+→ READY immediately
+→ no false RECONNECTING
+→ END TURN works
+
+If browser login prevents full automatic E2E,
+use every available Production signal you can verify
+and clearly identify only the remaining manual step.
+
+But do not call the incident fixed merely because tests pass locally.
+
+==================================================
+16. HEALTH / REGRESSION
+==================================================
+
+Verify after deployment:
+
+Frontend loads
+
+API:
+/api/healthz = 200
+
+Quick Match works
+
+Game connection works
+
+Quest still loads
+
+Online match still persists
+
+Forfeit/reconnect still work where testable
+
+No new 5xx loop
+
+No server crash
+
+==================================================
+17. DATABASE SAFETY
+==================================================
+
+The previous Quest Production migration is complete.
+
+Do not redo it.
+
+Do not reset Production data.
+
+Do not delete:
+
+users
+matches
+quests
+progress
+cards
+decks
+
+Do not expose secrets.
+
+These are safety requirements,
+not blockers to normal code deployment.
+
+==================================================
+18. IF SERVER CHANGES ARE REQUIRED
+==================================================
+
+If evidence proves the root cause is not purely frontend:
+
+make the required server change.
+
+Do not refuse simply because earlier instructions said frontend-only.
+
+But explain:
+
+WHY server code is necessary
+
+WHAT exact server behavior is wrong
+
+WHAT file/function was changed
+
+and verify API health afterward.
+
+==================================================
+19. DO NOT WASTE THE TASK ON PROCESS QUESTIONS
+==================================================
+
+Do not repeatedly ask:
+
+Can I push?
+Can I deploy?
+Can I edit this frontend file?
+Can I create a branch?
+Can I commit?
+
+You are authorized to perform the normal engineering actions required
+to solve and deploy this incident.
+
+Only stop for user input if:
+
+- credentials/login are genuinely required
+- destructive Production data mutation would be required
+- an irreversible action outside the scope of normal deployment is required
+- there is a real ambiguity that cannot be resolved from code/tools
+
+Otherwise continue.
+
+==================================================
+20. DO NOT CLAIM SUCCESS TOO EARLY
+==================================================
+
+A successful commit is not a fix.
+
+A successful build is not a fix.
+
+A deployed diagnostic is not a fix.
+
+A reconnect eventually succeeding is not a fix.
+
+Success means:
+
+the first Quick Match game connection becomes READY correctly
+and the false RECONNECTING state is gone.
+
+==================================================
+21. FINAL REPORT
+==================================================
+
+Report:
+
+PROVEN ROOT CAUSE:
+...
+
+EXACT BROKEN STATE:
+...
+
+EXACT CODE PATH:
+...
+
+WHY SERVER/WS WAS CONNECTED BUT UI SAID RECONNECTING:
+...
+
+FILES CHANGED:
+...
+
+FIX:
+...
+
+REGRESSION TEST:
+...
+
+GIT WORKFLOW USED:
+...
+
+COMMIT:
+...
+
+PUSH:
+YES / NO
+
+DEPLOYMENT:
+...
+
+PRODUCTION FRONTEND VERSION/COMMIT:
+...
+
+PRODUCTION VERIFICATION:
+
+QUICK MATCH:
+PASS / FAIL
+
+WS HANDSHAKE:
+PASS / FAIL
+
+SUBSCRIBE:
+PASS / FAIL
+
+MATCH_SNAPSHOT:
+PASS / FAIL
+
+CLIENT READY:
+PASS / FAIL
+
+FALSE RECONNECTING:
+NO / FAIL
+
+END TURN:
+PASS / FAIL / MANUAL VERIFICATION REQUIRED
+
+MULTIPLE TURN ALTERNATION:
+PASS / FAIL / MANUAL VERIFICATION REQUIRED
+
+REAL RECONNECT:
+PASS / FAIL / MANUAL VERIFICATION REQUIRED
+
+API HEALTH:
+PASS / FAIL
+
+QUEST REGRESSION:
+PASS / FAIL / UNVERIFIED
+
+TYPECHECK:
+PASS / FAIL
+
+WEB BUILD:
+PASS / FAIL
+
+TESTS:
+PASS / FAIL
+
+git diff --check:
+PASS / FAIL
+
+==================================================
+FINAL OBJECTIVE
+==================================================
+
+Do whatever normal engineering work is necessary to resolve the incident.
+
+Do not optimize for avoiding changes.
+
+Do not optimize for avoiding push/deployment.
+
+Optimize for:
+
+PROVE THE BUG
+FIX THE BUG
+TEST THE FIX
+SHIP THE FIX
+VERIFY PRODUCTION
+
+while preserving user data and secrets.
