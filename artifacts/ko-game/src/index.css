@@ -1007,8 +1007,7 @@
   }
 
   .ko-board-slot-wrapper .ko-board-slot {
-    transform: scale(1.22);
-    transform-origin: center;
+    transform-origin: bottom center;
     z-index: 2;
   }
 
@@ -1136,19 +1135,22 @@
     width: 100%;
     min-width: 0;
     padding-top: 34px;
-    overflow-x: hidden;
+    overflow-x: auto;
+    overscroll-behavior-x: contain;
+    touch-action: pan-x pan-y;
+    scroll-padding-inline: 8px;
   }
 
   .ko-hand-cards {
-    gap: 0;
+    gap: 8px;
     width: max-content;
     max-width: none;
-    padding: 0 4px 4px;
+    padding: 0 8px 4px;
   }
 
   .ko-hand-card {
     flex-shrink: 0;
-    margin-left: -58px;
+    margin-left: 0;
     z-index: 1;
   }
 
