@@ -1,0 +1,1439 @@
+KO CARD GAME — P0 PRODUCTION BACKEND INCIDENT
+RENDER NODE FAILED + QUEST DB QUERY FAILURE + IMAGE/API FAILURE + ONLINE MATCH CONNECTION FAILURE
+
+현재 KO CARD GAME에 여러 증상이 동시에 발생하고 있다.
+
+이것들을 개별 UI 버그로 따로 패치하지 말고,
+공통 backend/API/database infrastructure 장애 가능성을 최우선으로 조사하고
+ROOT CAUSE부터 해결하라.
+
+현재 실제 증상:
+
+==================================================
+A. QUEST DATABASE QUERY FAILURE
+==================================================
+
+다음 실제 query가 실패한다:
+
+select
+"id",
+"user_id",
+"definition_id",
+"assignment_date",
+"slot",
+"title",
+"description",
+"objective_type",
+"card_type",
+"target_value",
+"reward_type",
+"reward_amount",
+"reward_target_id",
+"schema_version",
+"condition",
+"progress",
+"status",
+"claimed_at",
+"assigned_at"
+from "daily_quest_assignments"
+where (
+  "daily_quest_assignments"."user_id" = $1
+  and
+  "daily_quest_assignments"."assignment_date" = $2
+)
+order by "daily_quest_assignments"."slot" asc
+
+params:
+
+user_id =
+2ee91d61-2c36-4d88-9b47-ca51069581c5
+
+assignment_date =
+2026-09-25
+
+이 query가 왜 실패하는지 exact DB error를 반드시 확보할 것.
+
+추측 금지.
+
+==================================================
+B. IMAGE LOADING FAILURE
+==================================================
+
+게임 내 여러 이미지가 정상적으로 로드되지 않는다.
+
+카드 이미지 / Champion 이미지 / 기타 game assets 중
+실제 실패하는 request를 Network에서 확인.
+
+404 / 401 / 403 / 500 / 502 / 503
+중 무엇인지 구분.
+
+==================================================
+C. RENDER NODE SERVICE FAILED
+==================================================
+
+Render의 Node backend service 자체가
+FAILED 상태까지 발생한다.
+
+이것이 최우선 장애다.
+
+frontend UI보다 먼저
+Node backend가 왜 죽는지 반드시 해결.
+
+==================================================
+D. ONLINE MATCH FAILURE
+==================================================
+
+동시에 온라인 매치에서:
+
+- 턴 종료를 눌러도 턴이 넘어가지 않음
+- "연결이 끊겼습니다. 재연결 중..." 무한 반복
+- 항복하고 메인으로 돌아가기 실패
+- "매치를 종료하지 못했습니다."
+- stale active match 때문에 유저가 갇힘
+- 인증 상태 확인 실패
+
+가 발생한다.
+
+==================================================
+0. INCIDENT PRIORITY
+==================================================
+
+이번 작업 우선순위:
+
+P0-1
+Render Node server를 정상 HEALTHY 상태로 복구
+
+P0-2
+daily_quest_assignments DB query failure 해결
+
+P0-3
+Auth/API/media/image endpoint 정상화
+
+P0-4
+WebSocket / Online Match 재검증
+
+개별 UI symptom부터 고치지 말 것.
+
+Node backend가 죽어 있으면:
+
+Quest
+Auth
+Images
+Media
+Online Match
+Forfeit
+WS ticket
+
+모두 연쇄적으로 실패할 수 있다.
+
+==================================================
+1. RENDER NODE SERVER — 가장 먼저 조사
+==================================================
+
+Render Node service의 실제:
+
+DEPLOY LOG
+RUNTIME LOG
+CRASH LOG
+HEALTH CHECK
+EXIT CODE
+
+를 확인.
+
+반드시 기록:
+
+Last successful deploy:
+...
+
+First failed deploy:
+...
+
+Commit:
+...
+
+Build command:
+...
+
+Start command:
+...
+
+Exit code:
+...
+
+Crash stack:
+...
+
+First fatal exception:
+...
+
+Render가 FAILED가 된 정확한 이유를 찾아라.
+
+==================================================
+2. STARTUP CRASH인지 REQUEST CRASH인지 구분
+==================================================
+
+다음 둘을 분리:
+
+A.
+Node process가 아예 startup하지 못함
+
+B.
+startup은 되지만 특정 API request 이후 죽음
+
+확인:
+
+server start log
+port bind
+health endpoint
+database connection
+route registration
+migration check
+background worker
+WebSocket initialization
+
+==================================================
+3. HEALTH ENDPOINT
+==================================================
+
+backend에 기존 health endpoint가 있다면 사용.
+
+예:
+
+GET /health
+GET /api/health
+
+실제 route 기준.
+
+없다면 최소 health endpoint 추가 가능.
+
+정상:
+
+HTTP 200
+
+{
+  status: "ok"
+}
+
+정도.
+
+단 health endpoint가 DB 전체 작업을 수행하다가
+DB 한 query 때문에 server를 FAILED 처리하면 안 됨.
+
+가능하면:
+
+process alive
+database reachable
+
+를 분리해서 관찰 가능하게.
+
+==================================================
+4. QUEST QUERY의 EXACT DB ERROR 확보
+==================================================
+
+현재 query 문자열만 보고 해결하지 말 것.
+
+실제 DB error를 확보:
+
+Postgres error code
+message
+detail
+hint
+
+예:
+
+42703 undefined_column
+42P01 undefined_table
+42501 permission_denied
+
+등.
+
+최종 보고:
+
+QUEST DB ERROR CODE:
+...
+
+MESSAGE:
+...
+
+MISSING COLUMN:
+...
+
+MISSING TABLE:
+...
+
+PERMISSION:
+...
+
+를 정확히 적을 것.
+
+==================================================
+5. 실제 DB SCHEMA와 CODE EXPECTATION 비교
+==================================================
+
+`daily_quest_assignments` 실제 schema를 확인.
+
+현재 코드가 기대하는 columns:
+
+id
+user_id
+definition_id
+assignment_date
+slot
+title
+description
+objective_type
+card_type
+target_value
+reward_type
+reward_amount
+reward_target_id
+schema_version
+condition
+progress
+status
+claimed_at
+assigned_at
+
+실제 DB에서 각각:
+
+EXISTS / MISSING
+TYPE
+NULLABLE
+DEFAULT
+
+를 비교.
+
+반드시 표로 보고.
+
+==================================================
+6. 최근 QUEST V2 변경과 MIGRATION 확인
+==================================================
+
+특히 최근 자유형 Quest Engine / Quest V2 작업 후:
+
+schema_version
+condition
+progress
+
+같은 새 column이 코드에는 추가됐는데
+DB migration이 적용되지 않은 가능성을 조사.
+
+git history / migrations 확인.
+
+확인:
+
+migration file exists:
+YES / NO
+
+Development DB applied:
+YES / NO
+
+Production DB applied:
+YES / NO / UNVERIFIED
+
+code deployed before migration:
+YES / NO
+
+==================================================
+7. MIGRATION 누락이면 안전하게 해결
+==================================================
+
+만약 실제 원인이:
+
+CODE expects new column
+BUT DB does not have column
+
+이면
+query를 임시로 숨기는 것으로 끝내지 말 것.
+
+정식 migration을 만든다.
+
+조건:
+
+- additive
+- idempotent where possible
+- 기존 row 보존
+- 기존 quest progress 보존
+- destructive DROP 금지
+- truncate 금지
+- reset 금지
+
+예를 들어 필요한 column이:
+
+schema_version
+condition
+progress
+
+라면
+실제 application schema에 맞는 type/default를 확인한 후
+정식 migration.
+
+타입을 추측해서 넣지 말 것.
+
+==================================================
+8. LEGACY QUEST DATA 호환
+==================================================
+
+기존 daily quest row가
+새 Quest V2 schema 이전 데이터일 수 있다.
+
+새 column을 추가하더라도
+기존 row가 null 때문에 crash하면 안 됨.
+
+필요하면:
+
+schemaVersion default
+legacy adapter
+safe nullable mapping
+
+사용.
+
+기존 row 삭제 금지.
+
+==================================================
+9. QUERY FAILURE가 NODE PROCESS를 죽이지 않게
+==================================================
+
+DB query failure 하나 때문에
+Node process 전체가 crash하면 안 된다.
+
+다음 검사:
+
+unhandled promise rejection
+uncaught exception
+async handler without catch
+background task exception
+startup quest preload
+
+API request failure:
+
+→ request 500
+
+이어야지
+
+→ Node process exit
+
+가 되면 안 된다.
+
+==================================================
+10. QUEST API 복구
+==================================================
+
+Node 안정화 후:
+
+Normal User Quest page
+→ HTTP 200
+
+Admin Quest Progress Management
+→ HTTP 200
+
+반드시 둘 다 확인.
+
+Quest 하나의 malformed row 때문에
+전체 endpoint가 500나지 않게.
+
+==================================================
+11. IMAGE LOADING FAILURE 추적
+==================================================
+
+실제 깨지는 이미지 최소 3개를 Network에서 확인.
+
+각각:
+
+IMAGE:
+...
+
+REQUEST URL:
+...
+
+HTTP STATUS:
+...
+
+CONTENT-TYPE:
+...
+
+RESPONSE:
+...
+
+분류:
+
+STATIC_ASSET_404
+MEDIA_API_404
+AUTH_401
+AUTH_403
+SERVER_500
+SERVICE_UNAVAILABLE
+WRONG_HOST
+SPA_FALLBACK
+OTHER
+
+==================================================
+12. 이미지가 NODE API를 통하는지 확인
+==================================================
+
+이미지가:
+
+static frontend asset
+
+인지
+
+Node media endpoint
+
+인지
+
+object storage
+
+인지 구분.
+
+Node server가 FAILED 상태라서
+media endpoint 이미지까지 같이 죽는 구조인지 확인.
+
+==================================================
+13. IMAGE PATH 하드코딩 금지
+==================================================
+
+특정 카드 이미지만 path를 수정해서 끝내지 말 것.
+
+공통:
+
+CardDefinition image reference
+→ image resolver
+→ media/static/storage
+→ URL
+
+pipeline을 확인.
+
+==================================================
+14. API HOST CONFIG 전수 검사
+==================================================
+
+Frontend:
+
+https://ko-card-game-vr69.onrender.com
+
+Node API/WS:
+
+현재 실제 configured backend
+
+환경변수를 실제 build/runtime 기준으로 확인.
+
+다음 mismatch 검사:
+
+Production frontend
+→ Development API
+
+Production frontend
+→ dead Replit URL
+
+API
+→ wrong hostname
+
+WS
+→ different hostname
+
+http/https mismatch
+
+ws/wss mismatch
+
+localhost residue
+
+==================================================
+15. /api REWRITE
+==================================================
+
+Frontend Render static service에서:
+
+/api/*
+
+가 Node server로 가야 한다면
+
+SPA catchall보다 반드시 먼저 적용.
+
+확인:
+
+/api/auth
+/api/quests
+/api/cards
+/api/media
+/api/online
+/api/ws-ticket
+
+등 실제 API request가
+index.html로 떨어지지 않는지 확인.
+
+==================================================
+16. AUTH API 복구
+==================================================
+
+현재 실제로:
+
+"인증 서버에 연결할 수 없습니다"
+"인증 상태를 확인하지 못했습니다"
+
+도 발생했다.
+
+Node server 정상화 후:
+
+auth status request
+
+실제 확인:
+
+HTTP 200 authenticated
+
+또는
+401 truly unauthenticated
+
+503/500이 나면 원인 추적.
+
+temporary backend error를
+logout으로 처리하지 말 것.
+
+==================================================
+17. ONLINE MATCH는 BACKEND 복구 후 검증
+==================================================
+
+Node/API가 안정화되기 전
+턴 종료 UI부터 수정하지 말 것.
+
+backend 복구 후 실제:
+
+HTTP auth
+→ WS ticket
+→ WSS connection
+→ match subscribe
+→ authoritative snapshot
+→ END_TURN
+→ broadcast
+
+순서 검증.
+
+==================================================
+18. TURN END
+==================================================
+
+NORMAL USER A/B로:
+
+A END TURN
+→ server receives action
+→ state version increments
+→ current player becomes B
+→ A/B both receive
+
+B END TURN
+→ current player A
+
+최소 3회 턴 교대.
+
+==================================================
+19. RECONNECT
+==================================================
+
+한쪽 연결 끊기:
+
+→ fresh WS ticket
+→ WSS reconnect
+→ subscribe
+→ authoritative snapshot
+→ correct turn
+→ END TURN 가능
+
+무한 RECONNECTING 금지.
+
+==================================================
+20. FORFEIT
+==================================================
+
+특히 중요.
+
+WS가 고장난 상태에서도
+항복은 authenticated HTTP endpoint로 성공해야 한다.
+
+정상:
+
+POST forfeit
+
+→ DB match lookup
+→ participant validation
+→ authoritative state
+→ terminal finalize
+→ active presence cleanup
+→ Main
+
+WS runtime memory에만 의존하지 말 것.
+
+==================================================
+21. NODE IN-MEMORY MATCH REGISTRY 검사
+==================================================
+
+Node restart가 발생하면
+in-memory Map이 사라질 수 있다.
+
+확인:
+
+match state가 process memory에만 있는가?
+
+Render service restart 후:
+
+DB says PLAYING
+runtime Map empty
+
+상태가 가능한가?
+
+이게 가능하면:
+
+TURN END
+FORFEIT
+RECONNECT
+
+세 개 모두 깨질 수 있다.
+
+==================================================
+22. MATCH REHYDRATION
+==================================================
+
+persisted authoritative GameState가 DB에 있다면:
+
+runtime registry miss
+→ DB load
+→ validate
+→ runtime rehydrate
+→ reconnect snapshot
+
+가능하게.
+
+실제 architecture를 확인 후 구현.
+
+==================================================
+23. RENDER RESTART에 안전해야 함
+==================================================
+
+Render deploy/restart가 발생해도
+온라인 매치 사용자가 영구적으로 trapped되면 안 된다.
+
+적어도:
+
+rehydrate
+또는
+safe forfeit/finalize
+
+가능해야 한다.
+
+==================================================
+24. ACTIVE MATCH SELF-HEAL 유지
+==================================================
+
+기존 수정:
+
+terminal active match
+→ stale reference cleanup
+→ Main
+
+은 유지.
+
+Node server 복구 후 다시 테스트.
+
+==================================================
+25. 서버가 FAILED가 되는 근본 원인
+==================================================
+
+반드시 최종적으로 아래 중 무엇인지 분류:
+
+DB_SCHEMA_MISMATCH
+MISSING_MIGRATION
+STARTUP_EXCEPTION
+UNHANDLED_DB_EXCEPTION
+ENVIRONMENT_CONFIG
+BAD_START_COMMAND
+BUILD_FAILURE
+PORT_BIND_FAILURE
+DATABASE_CONNECTION
+WEBSOCKET_INITIALIZATION
+MEDIA_INITIALIZATION
+OUT_OF_MEMORY
+OTHER
+
+==================================================
+26. 최근 COMMIT 회귀 추적
+==================================================
+
+최근 commit/history를 보고
+어느 변경 이후 장애가 시작됐는지 확인.
+
+특히:
+
+Quest V2
+Audio
+Online lifecycle
+Tag explorer
+API schema
+
+변경 중
+Node startup/runtime에 영향을 준 commit 확인.
+
+무작정 revert 금지.
+
+정확히 culprit change만 수정.
+
+==================================================
+27. 전체 SERVER STARTUP에서 ADMIN DATA 의존 금지
+==================================================
+
+서버 startup 시:
+
+Quest
+BGM
+Card catalog
+Admin data
+
+중 하나 로딩 실패했다고
+전체 API server가 죽으면 안 된다.
+
+non-critical resource failure는
+개별 endpoint 오류로 격리.
+
+단 DB 자체가 unavailable한 경우 health degraded 보고.
+
+==================================================
+28. Render BUILD / START 명령 확인
+==================================================
+
+실제 Render service 설정과
+repo package scripts 일치 확인.
+
+보고:
+
+BUILD COMMAND:
+...
+
+START COMMAND:
+...
+
+EXPECTED PORT:
+...
+
+ACTUAL PORT:
+...
+
+NODE VERSION:
+...
+
+WORKING DIRECTORY:
+...
+
+==================================================
+29. Environment variables
+==================================================
+
+존재 여부만 확인하고
+값 자체는 로그에 출력하지 말 것.
+
+필요:
+
+DATABASE URL
+SUPABASE URL
+SUPABASE anon/server key
+service role server-only
+frontend URL
+API URL
+WS URL
+기타 실제 필요한 env
+
+Missing env가 crash를 일으키는지 확인.
+
+Secret 출력 금지.
+
+==================================================
+30. RLS / SERVICE ROLE
+==================================================
+
+일반 gameplay가:
+
+requireAdmin
+service-role-only
+
+에 의존하면 수정.
+
+단 server-side service role 자체를
+적절히 사용하는 backend operation은 유지 가능.
+
+service role key client 노출 금지.
+
+==================================================
+31. 자동 검증 — BACKEND
+==================================================
+
+반드시:
+
+API server starts
+→ stays alive
+
+health request:
+200
+
+quest query:
+PASS
+
+normal auth:
+PASS
+
+cards API:
+PASS
+
+media/image:
+PASS
+
+WS ticket:
+PASS
+
+WebSocket:
+PASS
+
+==================================================
+32. 자동 검증 — QUEST
+==================================================
+
+Normal User:
+
+Quest list:
+PASS
+
+daily assignments:
+PASS
+
+progress:
+PASS
+
+Admin:
+
+Quest Progress Management:
+PASS
+
+==================================================
+33. 자동 검증 — IMAGE
+==================================================
+
+최소 representative assets:
+
+card image
+Champion image
+other game image
+
+각각 HTTP 200.
+
+Content-Type:
+image/*
+
+HTML fallback이면 FAIL.
+
+==================================================
+34. 자동 검증 — ONLINE
+==================================================
+
+TURN END:
+PASS
+
+RECONNECT:
+PASS
+
+FORFEIT:
+PASS
+
+FINALIZE:
+PASS
+
+ACTIVE MATCH CLEANUP:
+PASS
+
+==================================================
+35. 실제 Browser E2E
+==================================================
+
+Node service HEALTHY 이후에만 진행.
+
+NORMAL USER A
+NORMAL USER B
+
+Scenario 1:
+
+login
+→ Main
+→ images load
+→ Quest opens
+
+Scenario 2:
+
+Online matchmaking
+→ match
+→ A END TURN
+→ B END TURN
+
+Scenario 3:
+
+disconnect A
+→ reconnect
+→ snapshot
+→ turn works
+
+Scenario 4:
+
+break A websocket
+→ forfeit via HTTP
+→ Main
+
+Scenario 5:
+
+finished match
+→ no stale active match
+→ new matchmaking possible
+
+==================================================
+36. NODE SERVICE STABILITY TEST
+==================================================
+
+서버 시작 후
+한 요청 성공했다고 PASS 금지.
+
+다음 요청 반복 후에도
+Node process alive:
+
+auth
+cards
+quests
+images/media
+online active match
+WS ticket
+
+최소 여러 번 반복.
+
+No crash loop.
+
+==================================================
+37. LOGGING
+==================================================
+
+필요한 diagnostic log 추가 가능.
+
+포함:
+
+requestId
+route
+matchId
+error category
+
+금지:
+
+access token
+refresh token
+password
+service role secret
+raw cookie
+
+==================================================
+38. PRODUCTION DATABASE 안전
+==================================================
+
+절대 금지:
+
+DROP TABLE
+TRUNCATE
+quest progress reset
+match table bulk delete
+user data delete
+inventory modification
+role change
+
+Migration이 필요하면:
+
+non-destructive
+reviewable
+idempotent where possible
+
+형태로 준비.
+
+==================================================
+39. PRODUCTION 장애 대응
+==================================================
+
+Render Node service가 실제 Production에서 FAILED인 경우:
+
+코드 fix 완료
+→ typecheck/build/test
+→ migration requirement 명시
+→ deployment-ready commit 생성
+
+하지만 사용자가 push/deploy를 별도로 요청하지 않았다면
+임의 force push 금지.
+
+최종 보고에서:
+
+DEPLOYMENT REQUIRED:
+YES / NO
+
+MIGRATION REQUIRED:
+YES / NO
+
+를 명시.
+
+==================================================
+40. 절대 하지 말 것
+==================================================
+
+- Quest query 에러를 catch해서 빈 배열 반환
+- 이미지 에러를 placeholder로 숨기고 해결했다고 하기
+- Render FAILED를 무시하고 frontend만 수정
+- DB column을 코드에서 무조건 제거
+- 기존 Quest data 삭제
+- 모든 match 강제 종료
+- 모든 user activeMatch 초기화
+- RLS disable
+- Admin 권한 부여
+- service-role secret client 노출
+- online 버튼만 활성화
+- reconnect 문구만 숨기기
+- 500을 200 빈 응답으로 바꾸기
+- tests만 통과했다고 실제 장애 해결 선언
+
+==================================================
+41. 필수 명령
+==================================================
+
+pnpm run typecheck
+
+pnpm --filter @workspace/ko-game run build
+
+API package:
+
+typecheck
+build
+tests
+
+git diff --check
+
+실제 프로젝트 script 이름에 맞게 사용.
+
+==================================================
+42. Git
+==================================================
+
+이번 incident와 관련된 파일만 stage.
+
+제외:
+
+prompt txt
+pasted txt
+screenshots
+logs
+.env
+secrets
+temporary diagnostics
+Replit metadata
+unrelated refactor
+
+검증 완료 후 commit.
+
+push는 요청 없으면 하지 말 것.
+
+force push 금지.
+
+==================================================
+43. 최종 보고 형식
+==================================================
+
+P0 INCIDENT STATUS
+
+Render Node:
+HEALTHY / FAILED
+
+Quest API:
+PASS / FAIL
+
+Images:
+PASS / FAIL
+
+Auth:
+PASS / FAIL
+
+Online Turn End:
+PASS / FAIL
+
+Reconnect:
+PASS / FAIL
+
+Forfeit:
+PASS / FAIL
+
+
+RENDER ROOT CAUSE
+
+First fatal error:
+...
+
+Category:
+...
+
+Exact file/function:
+...
+
+Crash loop:
+YES / NO
+
+
+QUEST QUERY
+
+Original DB error code:
+...
+
+Original DB error:
+...
+
+Missing/mismatched field:
+...
+
+Actual DB schema:
+...
+
+Code expected schema:
+...
+
+Migration missing:
+YES / NO
+
+Fix:
+...
+
+
+QUEST DATA SAFETY
+
+Rows deleted:
+0 / FAIL
+
+Progress reset:
+0 / FAIL
+
+
+NODE HEALTH
+
+Health endpoint:
+...
+
+HTTP:
+200 / FAIL
+
+Process remains alive:
+PASS / FAIL
+
+
+AUTH
+
+Normal authenticated request:
+PASS / FAIL
+
+Temporary API error treated as logout:
+NO / FAIL
+
+
+IMAGES
+
+Card image:
+200 / FAIL
+
+Champion image:
+200 / FAIL
+
+Other representative image:
+200 / FAIL
+
+Actual image Content-Type:
+PASS / FAIL
+
+
+ONLINE
+
+WS ticket:
+PASS / FAIL
+
+WS open:
+PASS / FAIL
+
+Snapshot:
+PASS / FAIL
+
+Turn End:
+PASS / FAIL
+
+Reconnect:
+PASS / FAIL
+
+Forfeit with healthy WS:
+PASS / FAIL
+
+Forfeit with broken WS:
+PASS / FAIL
+
+Active match cleanup:
+PASS / FAIL
+
+New match afterward:
+PASS / FAIL
+
+
+RENDER
+
+Build:
+PASS / FAIL
+
+Start:
+PASS / FAIL
+
+Health:
+PASS / FAIL
+
+Crash after requests:
+NO / FAIL
+
+
+MIGRATION REQUIRED:
+YES / NO
+
+DEPLOYMENT REQUIRED:
+YES / NO
+
+IMPLEMENTATION:
+PASS / FAIL
+
+AUTOMATED VERIFICATION:
+PASS / FAIL
+
+TWO-PLAYER BROWSER E2E:
+PASS / FAIL / UNVERIFIED
+
+NORMAL-USER QUEST E2E:
+PASS / FAIL / UNVERIFIED
+
+IMAGE BROWSER E2E:
+PASS / FAIL / UNVERIFIED
+
+TYPECHECK:
+PASS / FAIL
+
+WEB BUILD:
+PASS / FAIL
+
+API TYPECHECK:
+PASS / FAIL
+
+API BUILD:
+PASS / FAIL
+
+git diff --check:
+PASS / FAIL
+
+PRODUCTION DATA MUTATION:
+NONE / FAIL
+
+CHANGED FILES:
+...
+
+COMMIT:
+...
+
+PUSH:
+NOT REQUESTED
+
+==================================================
+44. 완료 선언 금지
+==================================================
+
+다음이 해결되기 전까지
+"완료"라고 말하지 말 것.
+
+1.
+Render Node service 정상 시작.
+
+2.
+Node service가 요청 후에도 죽지 않음.
+
+3.
+daily_quest_assignments query 정상.
+
+4.
+Normal User Quest 화면 정상.
+
+5.
+Admin Quest Progress Management 정상.
+
+6.
+카드/Champion 이미지 정상 로드.
+
+7.
+Auth API 정상.
+
+8.
+WS ticket 정상.
+
+9.
+온라인 END TURN 정상.
+
+10.
+Reconnect 정상.
+
+11.
+WS가 깨진 상태에서도 Forfeit 성공.
+
+12.
+항복 후 Main 복귀.
+
+13.
+stale active match 없음.
+
+14.
+새 온라인 매치 시작 가능.
+
+15.
+기존 사용자 데이터 삭제 없음.
+
+16.
+Production DB 강제 초기화 없음.
+
+==================================================
+45. 가장 중요한 마지막 지시
+==================================================
+
+지금 발생한 증상들을 서로 독립된 버그라고 가정하지 마라.
+
+현재 동시에:
+
+QUEST DB QUERY FAILURE
+IMAGE LOAD FAILURE
+AUTH FAILURE
+WEBSOCKET FAILURE
+TURN END FAILURE
+FORFEIT FAILURE
+RENDER NODE SERVICE FAILED
+
+가 발생하고 있다.
+
+이 상황에서는
+NODE BACKEND / DATABASE SCHEMA / DEPLOYMENT
+공통 장애를 최우선으로 의심해야 한다.
+
+따라서:
+
+RENDER PROCESS
+→ DATABASE
+→ API
+→ AUTH
+→ MEDIA
+→ WS
+→ ONLINE GAME
+
+순서대로 복구하라.
+
+특히 daily_quest_assignments query에서
+코드가 요구하는 schema와
+실제 DB schema가 다르면
+그 mismatch를 정확히 찾아
+데이터를 보존하는 정식 migration으로 해결하라.
+
+Node server를 HEALTHY 상태로 만들지 못했다면
+온라인 매치나 Quest를 해결했다고 선언하지 마라.
