@@ -542,6 +542,42 @@ test("metadata and executable schemas remain independently strict", () => {
   );
 });
 
+test("provider analysis.source 요약은 실행 효과와 분리된 sourceIntent로 받아들인다", async () => {
+  const originalFetch = globalThis.fetch;
+  const originalKey = process.env.OPENAI_API_KEY;
+  const originalBaseUrl = process.env.OPENAI_BASE_URL;
+  process.env.OPENAI_API_KEY = "test-provider-key";
+  process.env.OPENAI_BASE_URL = "https://provider.test/v1";
+  globalThis.fetch = async () => new Response(JSON.stringify({
+    choices: [{ message: { content: JSON.stringify({
+      status: "READY",
+      effectId: "STRUCTURED_EFFECTS_V1",
+      effects: [{
+        trigger: "ENTER_FIELD", action: "DAMAGE",
+        target: { zone: "PLAYER", owner: "ENEMY", selection: "SELF", count: 1 },
+        values: { amount: 2 },
+      }],
+      keywords: [],
+      analysis: { source: "현재 카드", trigger: "ENTER_FIELD", ambiguities: [] },
+    }) } }],
+  }), { status: 200, headers: { "Content-Type": "application/json" } });
+  try {
+    const draft = await generateEffectDraft("등장: 적 챔피언에게 2 피해를 줍니다.", { sourceType: "CARD", cardType: "WRESTLER" }, []);
+    assert.equal(draft.status, "READY");
+    if (draft.status === "READY") {
+      assert.deepEqual(draft.interpretation?.sourceIntent, ["현재 카드"]);
+      assert.deepEqual(draft.effectConfig, { effects: draft.effects });
+      assert.equal(JSON.stringify(draft.effectConfig).includes("source"), false);
+    }
+  } finally {
+    globalThis.fetch = originalFetch;
+    if (originalKey === undefined) delete process.env.OPENAI_API_KEY;
+    else process.env.OPENAI_API_KEY = originalKey;
+    if (originalBaseUrl === undefined) delete process.env.OPENAI_BASE_URL;
+    else process.env.OPENAI_BASE_URL = originalBaseUrl;
+  }
+});
+
 test("provider가 clarification을 반환해도 공유 analyzer가 명확한 문장을 실행 효과로 컴파일한다", async () => {
   const originalFetch = globalThis.fetch;
   const originalKey = process.env.OPENAI_API_KEY;

@@ -728,7 +728,7 @@ function readProviderSemanticAnalysis(value: unknown): ProviderSemanticAnalysis 
     throw new EffectAiError("MALFORMED_RESPONSE", "analysis는 구조화된 객체여야 합니다.");
   }
   const allowed = new Set<string>([
-    "normalizedMeaning", "confidence", "trigger", "target", "action", ...PROVIDER_ANALYSIS_ARRAY_FIELDS,
+    "normalizedMeaning", "confidence", "trigger", "source", "target", "action", ...PROVIDER_ANALYSIS_ARRAY_FIELDS,
   ]);
   for (const key of Object.keys(value)) {
     if (!allowed.has(key)) {
@@ -748,6 +748,10 @@ function readProviderSemanticAnalysis(value: unknown): ProviderSemanticAnalysis 
       (typeof value.trigger !== "string" || !TRIGGERS.includes(value.trigger as (typeof TRIGGERS)[number]))) {
     throw new EffectAiError("MALFORMED_RESPONSE", "analysis.trigger는 지원되는 trigger 요약이어야 합니다.");
   }
+  if (value.source !== undefined &&
+      (typeof value.source !== "string" || value.source.trim().length === 0 || value.source.length > 200)) {
+    throw new EffectAiError("MALFORMED_RESPONSE", "analysis.source는 짧은 문자열 요약이어야 합니다.");
+  }
   for (const key of ["target", "action"] as const) {
     if (value[key] !== undefined &&
         (typeof value[key] !== "string" || value[key].trim().length === 0 || value[key].length > 200)) {
@@ -762,7 +766,13 @@ function readProviderSemanticAnalysis(value: unknown): ProviderSemanticAnalysis 
       throw new EffectAiError("MALFORMED_RESPONSE", `analysis.${key} 형식이 올바르지 않습니다.`);
     }
   }
-  return value as ProviderSemanticAnalysis;
+  const { source, ...analysis } = value;
+  return {
+    ...analysis,
+    ...(typeof source === "string" ? {
+      sourceIntent: [...new Set([...(analysis.sourceIntent as string[] | undefined ?? []), source.trim()])],
+    } : {}),
+  } as ProviderSemanticAnalysis;
 }
 
 type EffectAiDiagnostic = {
@@ -783,7 +793,7 @@ function describeProviderEnvelope(raw: unknown, requestId: string): EffectAiDiag
   const analysis = isRecord(record.analysis) ? record.analysis : undefined;
   const knownTopLevelKeys = ["status", "effectId", "effects", "scripts", "keywords", "questions", "analysis"];
   const knownAnalysisKeys = [
-    "normalizedMeaning", "confidence", "trigger", "target", "action", ...PROVIDER_ANALYSIS_ARRAY_FIELDS,
+    "normalizedMeaning", "confidence", "trigger", "source", "target", "action", ...PROVIDER_ANALYSIS_ARRAY_FIELDS,
   ];
   return {
     requestId,
@@ -904,6 +914,7 @@ function buildSystemPrompt(
     "반드시 JSON 하나만 반환하고 Markdown 설명을 붙이지 마라.",
     '반환 형식은 {"status":"READY","effectId":"STRUCTURED_EFFECTS_V1","effects":[...],"keywords":[],"analysis":{...}} 또는 {"status":"READY","effectId":"SCRIPT_V1","scripts":[...],"keywords":[],"analysis":{...}} 또는 {"status":"NEEDS_CLARIFICATION","questions":["..."],"analysis":{...}} 중 하나다.',
     "analysis에는 normalizedMeaning, confidence(0..1), optional trigger enum, optional target/action 짧은 문자열 요약, 각 의미 슬롯 문자열 배열, ambiguities 문자열 배열을 사용한다. canonicalPlan이나 임의 DSL을 analysis에 넣지 마라. AST는 별도 검증 대상이다.",
+    "출처 요약은 analysis.sourceIntent 배열에 넣는다. analysis.source는 구형 응답을 위한 호환 필드일 뿐 새 출력에는 사용하지 마라.",
     "READY일 때 effects 배열의 각 원소는 trigger/action/target/conditions/values를 직접 가진 단일 Effect 객체다.",
     "effects 배열의 원소 안에 effectConfig, structuredEffect, effect, config 같은 래퍼를 절대 만들지 마라. effectConfig에 저장할 때만 클라이언트가 최종적으로 {effects}로 감싼다.",
     '정상 예시는 {"status":"READY","effects":[{"trigger":"ENTER_FIELD","action":"BUFF","target":{"zone":"BOARD","owner":"SELF","selection":"SELF","count":1},"values":{"attack":1,"health":1}}],"keywords":[]}다.',
