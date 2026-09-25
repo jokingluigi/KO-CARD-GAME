@@ -113,6 +113,7 @@ export function publicAttendance(
 ) {
   const today = dailyDate();
   const claimedDaySet = new Set(claims.map((claim) => claim.dayIndex));
+  const alreadyClaimedToday = claims.some((claim) => claim.claimDate === today);
   const nextDayIndex = (claims.at(-1)?.dayIndex ?? 0) + 1;
   return {
     today,
@@ -125,7 +126,7 @@ export function publicAttendance(
       enabled: definition.enabled,
       state: claimedDaySet.has(definition.dayIndex)
         ? "CLAIMED"
-        : definition.dayIndex === nextDayIndex && definition.enabled
+        : !alreadyClaimedToday && definition.dayIndex === nextDayIndex && definition.enabled
           ? "AVAILABLE"
           : "LOCKED",
     })),

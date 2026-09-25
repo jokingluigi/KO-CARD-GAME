@@ -65,6 +65,19 @@ function combatState(
   };
 }
 
+test('administrator training dummy remains available after lethal combat damage', () => {
+  const attacker = wrestler('trainer', 3, 5);
+  const dummy = { ...wrestler('dummy', 0, 1), isTrainingDummy: true };
+  const initial = combatState([attacker], [dummy]);
+  const result = attack(initial, 'player-1', attacker.instanceId, {
+    type: 'WRESTLER', playerId: 'player-2', cardInstanceId: dummy.instanceId,
+  });
+  assert.equal(result.success, true);
+  assert.equal(result.state.players[1].board[0]?.instanceId, dummy.instanceId);
+  assert.equal(result.state.players[1].board[0]?.currentHealth, 1);
+  assert.equal(result.state.players[1].graveyard.length, 0);
+});
+
 test('각 선수는 자기 턴에 한 번만 공격할 수 있다', () => {
   const initial = combatState([wrestler('a', 1, 2)]);
   const attacked = successState(

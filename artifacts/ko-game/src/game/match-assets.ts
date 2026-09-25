@@ -12,18 +12,12 @@ function preload(url: string | null | undefined): void {
   image.src = url;
 }
 
-/** Preloads only assets present in the current match snapshot. */
+/** Preload portraits used in the match UI. Card images load when their cards appear. */
 export function preloadMatchAssets(
-  definitions: readonly CardDefinition[],
+  _definitions: readonly CardDefinition[],
   champions: readonly ChampionDefinition[],
 ): void {
-  for (const definition of definitions) {
-    preload(definition.imageUrl);
-  }
   for (const champion of champions) {
     preload(champion.imageUrl);
-    if (champion.questCompletedPortraitEnabled) {
-      preload(champion.questCompletedPortraitUrl);
-    }
   }
 }

@@ -280,7 +280,7 @@ class ReplitAssetStorageProvider implements AssetStorageProvider {
       "Content-Type",
       String(metadata.contentType ?? "application/octet-stream"),
     );
-    response.setHeader("Cache-Control", "public, max-age=3600");
+    response.setHeader("Cache-Control", "public, max-age=86400");
     if (metadata.size) response.setHeader("Content-Length", String(metadata.size));
     file.createReadStream().pipe(response);
     return true;
@@ -462,7 +462,7 @@ class SupabaseAssetStorageProvider implements AssetStorageProvider {
       "Content-Type",
       downloaded.contentType ?? "application/octet-stream",
     );
-    response.setHeader("Cache-Control", "public, max-age=3600");
+    response.setHeader("Cache-Control", "public, max-age=86400");
     response.setHeader("Content-Length", String(downloaded.buffer.length));
     response.end(downloaded.buffer);
     return true;

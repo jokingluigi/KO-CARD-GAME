@@ -85,7 +85,7 @@ export function getValidTargets(
       if (target.selection === 'SELF' && card.instanceId !== sourceCard.instanceId) return false;
       // Directly deployed champion tokens remain damageable, but not silence,
       // destroy, or remove-from-game targets.
-      if (card.isDirectDeployedChampion && (
+      if ((card.isDirectDeployedChampion || card.isTrainingDummy) && (
         effect.action === 'SILENCE' ||
         effect.action === 'DESTROY' ||
         effect.action === 'REMOVE_FROM_GAME'
@@ -1430,7 +1430,7 @@ export function resolveStateBasedDeaths(
   let preparedState = state;
   const candidateIds = state.players.flatMap((player) =>
     player.board
-      .filter((card): card is CardInstance => card !== null && card.currentHealth <= 0)
+      .filter((card): card is CardInstance => card !== null && !card.isTrainingDummy && card.currentHealth <= 0)
       .map((card) => ({ playerId: player.id, cardInstanceId: card.instanceId })),
   );
   if (!candidateIds.length) return state;
@@ -2239,7 +2239,7 @@ export function applyEffect(
     }
     const candidates = cardsInZones(candidatePlayer, zones);
     const eligibleCandidates = candidates.filter((card) => {
-      if (card.isDirectDeployedChampion && (
+      if ((card.isDirectDeployedChampion || card.isTrainingDummy) && (
         effect.action === 'SILENCE' ||
         effect.action === 'DESTROY' ||
         effect.action === 'REMOVE_FROM_GAME'
@@ -2453,7 +2453,7 @@ export function applyEffect(
       return targets.reduce((nextState, targetCard) => {
         const owner = nextState.players.find((player) => player.id === targetOwner);
         const current = owner?.board.find((card) => card?.instanceId === targetCard.instanceId);
-        if (!owner || !current || current.isDirectDeployedChampion) return nextState;
+        if (!owner || !current || current.isDirectDeployedChampion || current.isTrainingDummy) return nextState;
         const attribution = sourceContextFor(
           playerId,
           sourceCard,
@@ -2641,7 +2641,7 @@ export function applyEffect(
             events: [...preparedState.events, { type: 'DAMAGE_DEALT', playerId, cardInstanceId: sourceCard.instanceId, source: { type: 'CARD', cardInstanceId: sourceCard.instanceId }, target: { type: 'CARD', cardInstanceId: current.instanceId }, reason: 'CARD_EFFECT', amount: 0, sourceContext: attribution }],
           }, 'DAMAGE_TAKEN', targetOwner, current.instanceId, current.cardType);
         }
-        const health = preparedCurrent.currentHealth - damageAmount;
+        const health = preparedCurrent.isTrainingDummy ? 1 : preparedCurrent.currentHealth - damageAmount;
         if (health > 0) {
           const damagedState: GameState = {
             ...clearDamageMarker(preparedState),

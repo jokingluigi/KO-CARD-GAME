@@ -33,6 +33,8 @@ import {
   type GameMediaCatalog,
   preloadMatchAssets,
   createDeterministicRandom,
+  TRAINING_DUMMY_DEFINITIONS,
+  createTestDeck,
 } from '@/game';
 import { GameStatePreview } from '@/components/game-state-preview';
 import { MatchResultOverlay } from '@/components/match-result-overlay';
@@ -133,6 +135,31 @@ export default function Home() {
   const [gameState, setGameState] = useState<GameState>(() =>
     startGame(createInitialGameState()),
   );
+
+  function addTrainingDummy(immortal: boolean) {
+    const definition = TRAINING_DUMMY_DEFINITIONS[immortal ? 0 : 1]!;
+    setGameState((state) => {
+      if (state.status !== 'IN_PROGRESS' || state.targetingState?.active) return state;
+      const opponent = state.players[1];
+      const slot = opponent?.board.findIndex((card) => card === null) ?? -1;
+      if (!opponent || slot < 0) return state;
+      const instance = createTestDeck('admin-training', [definition])[0]!;
+      return {
+        ...state,
+        cardPool: state.cardPool?.some((card) => card.id === definition.id)
+          ? state.cardPool : [...(state.cardPool ?? []), definition],
+        players: state.players.map((player) => player.id === opponent.id ? {
+          ...player,
+          board: player.board.map((card, index) => index === slot ? {
+            ...instance,
+            instanceId: `admin-training-${Date.now()}-${slot}`,
+            boardSlot: slot as 0 | 1 | 2 | 3,
+            isTrainingDummy: immortal,
+          } : card) as typeof player.board,
+        } : player),
+      };
+    });
+  }
   const [selectedCardId, setSelectedCardId] = useState<string | null>(null);
   const [selectedAttackerId, setSelectedAttackerId] = useState<string | null>(
     null,
@@ -589,6 +616,7 @@ export default function Home() {
 
     submittedAIMatchRef.current = match.matchId;
     void (async () => {
+      let lastError: unknown;
       for (let attempt = 0; attempt < 3; attempt += 1) {
         try {
           await completeAIMatchQuestProgress({
@@ -596,14 +624,15 @@ export default function Home() {
             actions: aiMatchActionsRef.current as unknown as Array<Record<string, unknown>>,
           });
           return;
-        } catch {
+        } catch (error) {
+          lastError = error;
           if (attempt < 2) {
             await new Promise((resolve) => window.setTimeout(resolve, 600 * (attempt + 1)));
           }
         }
       }
       submittedAIMatchRef.current = null;
-      setPlayError('퀘스트 진행도를 저장하지 못했습니다. 인터넷 연결을 확인해 주세요.');
+      setPlayError(`퀘스트 진행도를 저장하지 못했습니다: ${lastError instanceof Error ? lastError.message : '잠시 후 다시 시도해 주세요.'}`);
     })();
   }, [gameState.status, isAdminSource, isAiMatch, aiMatchStarted]);
 
@@ -1343,7 +1372,11 @@ export default function Home() {
           />
         )
       )}
-      {isAdminTestMatch && <div className="fixed left-1/2 top-2 z-[100] -translate-x-1/2 rounded border border-amber-600 bg-amber-950 px-3 py-1 text-xs font-bold text-amber-200">관리자 DRAFT 테스트 게임 · 공개 카드에는 영향을 주지 않습니다.</div>}
+      {isAdminTestMatch && <div className="fixed left-1/2 top-2 z-[100] flex max-w-[calc(100vw-16px)] flex-wrap items-center justify-center gap-2 rounded border border-amber-600 bg-amber-950 px-3 py-1 text-xs font-bold text-amber-200">
+        <span>관리자 DRAFT 테스트</span>
+        <button type="button" onClick={() => addTrainingDummy(true)} className="rounded bg-amber-300 px-2 py-1 text-black">안 죽는 샌드백</button>
+        <button type="button" onClick={() => addTrainingDummy(false)} className="rounded bg-amber-300 px-2 py-1 text-black">체력 1 샌드백</button>
+      </div>}
     <GameStatePreview
       state={gameState}
       selectedCardId={selectedCardId}

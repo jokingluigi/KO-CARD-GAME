@@ -1,9 +1,11 @@
-import { Bot, CalendarCheck2, ClipboardList, Globe2, Gift, Layers3, LogOut, ShoppingBag, Library } from "lucide-react";
+import { Bot, CalendarCheck2, ClipboardList, Globe2, Gift, Layers3, LogOut, ShoppingBag, Library, Volume2, VolumeX } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useLocation } from "wouter";
 import type { AuthUser } from "@/lib/auth-client";
 import { ROUTES } from "@/lib/routes";
 import { emptyMainContent, fetchMainContent, type MainContent } from "@/lib/main-content-client";
+import { audioManager } from "@/audio/audio-manager";
+import { BGM_MUTE_STORAGE_KEY, readStoredBgmMute } from "@/audio/audio-settings";
 
 type MainMenuProps = {
   onComingSoon?: (label: string) => void;
@@ -60,6 +62,7 @@ export function MainMenu({ onComingSoon, onDeckEdit, onAiMatch, user, onLogout }
   const [notice, setNotice] = useState("");
   const [mainContent, setMainContent] = useState<MainContent>(emptyMainContent);
   const [backgroundState, setBackgroundState] = useState<"fallback" | "loading" | "ready">("fallback");
+  const [bgmMuted, setBgmMuted] = useState(readStoredBgmMute);
   const [, navigate] = useLocation();
 
   useEffect(() => {
@@ -96,8 +99,19 @@ export function MainMenu({ onComingSoon, onDeckEdit, onAiMatch, user, onLogout }
 
   const backgroundUrl = backgroundState === "ready" ? mainContent.background?.assetUrl : null;
 
+  function toggleBgm() {
+    const next = !bgmMuted;
+    setBgmMuted(next);
+    audioManager.setBgmMuted(next);
+    try { window.localStorage.setItem(BGM_MUTE_STORAGE_KEY, String(next)); } catch { /* Storage may be unavailable. */ }
+  }
+
   return (
     <main className="ko-main-menu relative min-h-screen overflow-hidden bg-[#080808] px-5 py-10 text-white sm:px-8">
+      <button type="button" onClick={toggleBgm} aria-label={bgmMuted ? "배경음 켜기" : "배경음 음소거"} aria-pressed={bgmMuted} className="absolute right-4 top-4 z-20 flex items-center gap-2 rounded border border-amber-500/50 bg-neutral-950/80 px-3 py-2 text-xs font-bold text-amber-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-400">
+        {bgmMuted ? <VolumeX className="h-4 w-4" /> : <Volume2 className="h-4 w-4" />}
+        {bgmMuted ? "배경음 꺼짐" : "배경음 켜짐"}
+      </button>
       {backgroundUrl && (
         <div
           aria-hidden="true"

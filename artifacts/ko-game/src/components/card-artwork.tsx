@@ -15,6 +15,7 @@ export function CardArtwork({
   interactive = false,
   onPositionChange,
   showHint = false,
+  loading = "eager",
 }: {
   src?: string | null;
   alt: string;
@@ -26,6 +27,7 @@ export function CardArtwork({
   interactive?: boolean;
   onPositionChange?: (position: Pick<ImageDisplaySettings, "imagePositionX" | "imagePositionY">) => void;
   showHint?: boolean;
+  loading?: "eager" | "lazy";
 }) {
   const [failed, setFailed] = useState(false);
   const dragRef = useRef<{
@@ -118,6 +120,8 @@ export function CardArtwork({
     >
       <img
         src={src}
+        loading={loading}
+        decoding="async"
         alt={alt}
         draggable={false}
         className="absolute inset-0 h-full w-full select-none"

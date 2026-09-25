@@ -51,6 +51,7 @@ function CardCollectionItem({ card, onOpen, showCraftable = false, unlimited = f
           health={card.health}
           rulesText={card.text}
           imageUrl={card.imageUrl}
+          artworkLoading="lazy"
           rarity={card.rarity as "NORMAL" | "LEGENDARY"}
           imageDisplaySettings={{
             imageDisplayMode: card.imageDisplayMode,
@@ -84,6 +85,7 @@ function ChampionCollectionItem({ champion, onOpen }: { champion: CollectionCham
         {champion.imageUrl ? (
           <CardArtwork
             src={champion.imageUrl}
+            loading="lazy"
             alt=""
             className="h-full w-full transition duration-300 group-hover:scale-105"
             imageDisplayMode={champion.imageDisplayMode}
@@ -393,7 +395,7 @@ export default function CollectionPage() {
       </Dialog>
 
       <Dialog open={Boolean(pendingAction)} onOpenChange={(open) => { if (!open && !isMutating) setPendingAction(null); }}>
-        <DialogContent className="border-neutral-800 bg-neutral-950 text-white sm:max-w-md">
+        <DialogContent overlayClassName="!z-[240]" className="!z-[250] border-neutral-800 bg-neutral-950 text-white sm:max-w-md">
           {pendingAction && (
             <>
               <DialogHeader>

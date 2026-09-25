@@ -135,6 +135,7 @@ export function CardRenderer({
   showStats = true,
   interactiveArtwork = false,
   showArtworkHint = false,
+  artworkLoading = "eager",
   onImagePositionChange,
   overlay,
   highlight,
@@ -167,6 +168,7 @@ export function CardRenderer({
   showStats?: boolean;
   interactiveArtwork?: boolean;
   showArtworkHint?: boolean;
+  artworkLoading?: "eager" | "lazy";
   onImagePositionChange?: (
     position: Pick<ImageDisplaySettings, "imagePositionX" | "imagePositionY">,
   ) => void;
@@ -292,6 +294,7 @@ export function CardRenderer({
       <div className="absolute inset-0 overflow-visible">
         <CardArtwork
           src={imageUrl}
+          loading={artworkLoading}
           alt={name || "카드 이미지"}
           className="absolute inset-0 h-full w-full"
           {...imageDisplaySettings}

@@ -146,6 +146,8 @@ export interface CardInstance {
   isGenerated: boolean;
   isToken: boolean;
   isChampionToken: boolean;
+  /** Only used by the local administrator training match. */
+  isTrainingDummy?: boolean;
   entranceAudioAssetId?: string | null;
   entranceAudioUrl?: string | null;
   entranceAudioVolume?: number;

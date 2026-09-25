@@ -144,6 +144,7 @@ function receiveDamage(
   card: NonNullable<GameState['players'][number]['board'][number]>,
   amount: number,
 ) {
+  if (card.isTrainingDummy) return { ...card, currentHealth: 1 };
   const dodgeCharges = Math.max(
     card.dodgeCharges ?? 0,
     card.dodgeAvailable ? 1 : 0,

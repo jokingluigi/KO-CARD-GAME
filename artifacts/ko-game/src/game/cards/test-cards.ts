@@ -70,6 +70,11 @@ export const TEST_CHAMPION_TOKEN_DEFINITION: CardDefinition = {
   abilities: [],
 };
 
+export const TRAINING_DUMMY_DEFINITIONS: CardDefinition[] = [
+  { id: 'admin-training-dummy-immortal', name: '안 죽는 샌드백', cardType: 'WRESTLER', cost: 0, attack: 0, health: 1, rulesText: '관리자 테스트 전용 · 피해를 받아도 필드에 남습니다.', rarity: 'NORMAL', isToken: true, isChampionToken: false, keywords: [], abilities: [] },
+  { id: 'admin-training-dummy-one-hp', name: '체력 1 샌드백', cardType: 'WRESTLER', cost: 0, attack: 0, health: 1, rulesText: '관리자 테스트 전용 · 체력 1', rarity: 'NORMAL', isToken: true, isChampionToken: false, keywords: [], abilities: [] },
+];
+
 let runtimeCardDefinitions: CardDefinition[] = [];
 
 export function setRuntimeCardDefinitions(
@@ -86,6 +91,7 @@ export function getCardDefinition(
     ...TEST_CARD_DEFINITIONS,
     ...KEYWORD_TEST_CARD_DEFINITIONS,
     TEST_CHAMPION_TOKEN_DEFINITION,
+    ...TRAINING_DUMMY_DEFINITIONS,
   ].find((card) => card.id === definitionId);
 }
 
