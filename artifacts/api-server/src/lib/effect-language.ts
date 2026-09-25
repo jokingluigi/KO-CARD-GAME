@@ -24,6 +24,7 @@ type Rewrite = {
 };
 
 const safeRewrites: readonly Rewrite[] = [
+  { code: "ONE_CHARACTER", pattern: /(선수|캐릭터|대상)\s*한\s*명/gu, replacement: "$1 하나" },
   { code: "TYPO_MUJAKI", pattern: /무작이/giu, replacement: "무작위" },
   { code: "TYPO_RETIRE", pattern: /리타어/giu, replacement: "리타이어" },
   { code: "TYPO_COST_DECREASE", pattern: /비용\s*깍/giu, replacement: "비용 깎" },

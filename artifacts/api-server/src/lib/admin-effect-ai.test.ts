@@ -575,3 +575,62 @@ test("provider가 clarification을 반환해도 공유 analyzer가 명확한 문
     else process.env.OPENAI_BASE_URL = originalBaseUrl;
   }
 });
+
+test("AI가 잘못된 효과 JSON을 보내도 완전히 지원되는 기본 피해 효과는 실행 초안으로 복구한다", async () => {
+  const originalFetch = globalThis.fetch;
+  const originalKey = process.env.OPENAI_API_KEY;
+  const originalBaseUrl = process.env.OPENAI_BASE_URL;
+  process.env.OPENAI_API_KEY = "test-provider-key";
+  process.env.OPENAI_BASE_URL = "https://provider.test/v1";
+  globalThis.fetch = async () => new Response(JSON.stringify({
+    choices: [{ message: { content: JSON.stringify({
+      status: "READY",
+      effects: [{ trigger: "ENTER_FIELD", action: "DAMAGE", target: { invented: true }, values: { amount: 2 } }],
+      keywords: [],
+    }) } }],
+  }), { status: 200, headers: { "Content-Type": "application/json" } });
+  try {
+    const diagnostics: Array<{ stage: string }> = [];
+    const result = await generateEffectDraft(
+      "등장: 적 선수 한 명에게 2 피해를 줍니다.",
+      { sourceType: "CARD", cardType: "WRESTLER" }, [],
+      { requestId: "basic-fallback", onDiagnostic: (entry) => diagnostics.push(entry) },
+    );
+    assert.equal(result.status, "READY");
+    if (result.status === "READY") {
+      assert.equal(result.effects[0]?.action, "DAMAGE");
+      assert.equal(result.effects[0]?.values?.amount, 2);
+      assert.equal(result.effects[0]?.target?.selection, "PLAYER_CHOICE");
+    }
+    assert.ok(diagnostics.some((entry) => entry.stage === "local-supported-fallback"));
+  } finally {
+    globalThis.fetch = originalFetch;
+    if (originalKey === undefined) delete process.env.OPENAI_API_KEY;
+    else process.env.OPENAI_API_KEY = originalKey;
+    if (originalBaseUrl === undefined) delete process.env.OPENAI_BASE_URL;
+    else process.env.OPENAI_BASE_URL = originalBaseUrl;
+  }
+});
+
+test("미지원 문장은 잘못된 AI 초안에서 일부만 복구하지 않는다", async () => {
+  const originalFetch = globalThis.fetch;
+  const originalKey = process.env.OPENAI_API_KEY;
+  const originalBaseUrl = process.env.OPENAI_BASE_URL;
+  process.env.OPENAI_API_KEY = "test-provider-key";
+  process.env.OPENAI_BASE_URL = "https://provider.test/v1";
+  globalThis.fetch = async () => new Response(JSON.stringify({
+    choices: [{ message: { content: JSON.stringify({ status: "READY", effects: [{ action: "UNKNOWN" }], keywords: [] }) } }],
+  }), { status: 200, headers: { "Content-Type": "application/json" } });
+  try {
+    await assert.rejects(
+      generateEffectDraft("등장: 시간을 멈추고 적 챔피언에게 2 피해를 줍니다.", { sourceType: "CARD", cardType: "WRESTLER" }, []),
+      (error: unknown) => error instanceof EffectAiError && error.code === "INVALID_DRAFT",
+    );
+  } finally {
+    globalThis.fetch = originalFetch;
+    if (originalKey === undefined) delete process.env.OPENAI_API_KEY;
+    else process.env.OPENAI_API_KEY = originalKey;
+    if (originalBaseUrl === undefined) delete process.env.OPENAI_BASE_URL;
+    else process.env.OPENAI_BASE_URL = originalBaseUrl;
+  }
+});

@@ -1458,7 +1458,7 @@ router.post("/effects/generate", async (request, response): Promise<void> => {
       }, "AI effect draft rejected");
       response.status(status).json({
         message: error.code === "INVALID_DRAFT" || error.code === "MALFORMED_RESPONSE"
-          ? "AI 효과 해석 결과를 적용하지 못했습니다."
+          ? `AI가 만든 효과 형식이 검증을 통과하지 못했습니다: ${error.message.slice(0, 180)}`
           : error.message,
         code: error.code,
         requestId,

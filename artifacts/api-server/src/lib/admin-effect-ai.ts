@@ -767,7 +767,7 @@ function readProviderSemanticAnalysis(value: unknown): ProviderSemanticAnalysis 
 
 type EffectAiDiagnostic = {
   requestId: string;
-  stage: "provider-envelope" | "validated-draft";
+  stage: "provider-envelope" | "validated-draft" | "local-supported-fallback";
   topLevelKeys?: string[];
   unknownTopLevelKeyCount?: number;
   analysisKeys?: string[];
@@ -1183,7 +1183,47 @@ export async function generateEffectDraft(
   const ambiguities = detectEffectSemanticAmbiguities(text);
   const raw = await callProvider(text, normalization, context, catalog);
   diagnostics?.onDiagnostic(describeProviderEnvelope(raw, diagnostics.requestId));
-  const validated = canonicalizeGeneratedEffectDraft(raw, context, catalog);
+  const compileLocalIfFullySupported = (): EffectAiDraft | undefined => {
+    if (ambiguities.length > 0) return undefined;
+    const localAnalysis = analyzeEffectText(normalization.normalizedText, {
+      defaultTrigger: context.effectContext ? "ENTER_FIELD" : undefined,
+      cardCatalog: catalog,
+      availableTags: context.availableTags,
+    });
+    if (localAnalysis.outcome !== "supported" || localAnalysis.unsupportedSegments.length > 0 ||
+        (localAnalysis.effects.length === 0 && localAnalysis.keywords.length === 0)) return undefined;
+    try {
+      const localDraft = canonicalizeGeneratedEffectDraft({
+        status: "READY",
+        effectId: "STRUCTURED_EFFECTS_V1",
+        effects: localAnalysis.effects,
+        keywords: localAnalysis.keywords,
+      }, context, catalog);
+      if (localDraft.status !== "READY") return undefined;
+      return {
+        ...localDraft,
+        normalization,
+        semanticPlan: buildEffectSemanticPlan(text, context, localDraft, catalog),
+      };
+    } catch (error) {
+      if (error instanceof EffectAiError) return undefined;
+      throw error;
+    }
+  };
+  let validated: EffectAiResult;
+  try {
+    validated = canonicalizeGeneratedEffectDraft(raw, context, catalog);
+  } catch (error) {
+    if (!(error instanceof EffectAiError) ||
+        (error.code !== "INVALID_DRAFT" && error.code !== "MALFORMED_RESPONSE")) throw error;
+    // Never turn an explicitly ambiguous provider interpretation into an executable rule.
+    const providerAmbiguities = isRecord(raw) && isRecord(raw.analysis) ? raw.analysis.ambiguities : undefined;
+    const localDraft = Array.isArray(providerAmbiguities) && providerAmbiguities.length > 0
+      ? undefined : compileLocalIfFullySupported();
+    if (!localDraft) throw error;
+    diagnostics?.onDiagnostic({ requestId: diagnostics.requestId, stage: "local-supported-fallback", effectId: localDraft.effectId, hasEffects: localDraft.effects.length > 0 });
+    return localDraft;
+  }
   const providerAnalysis = isRecord(raw) ? readProviderSemanticAnalysis(raw.analysis) : undefined;
   const providerHasAmbiguity = (providerAnalysis?.ambiguities?.length ?? 0) > 0;
   diagnostics?.onDiagnostic({
@@ -1212,26 +1252,12 @@ export async function generateEffectDraft(
     // for clarification on a sentence already understood by the shared
     // analyzer, compile that validated result instead of making the admin
     // rewrite an unambiguous effect.
-    const localAnalysis = analyzeEffectText(normalization.normalizedText, {
-      defaultTrigger: context.effectContext ? "ENTER_FIELD" : undefined,
-      cardCatalog: catalog,
-      availableTags: context.availableTags,
-    });
-    if (localAnalysis.outcome === "supported" && localAnalysis.effects.length > 0) {
-      const localDraft = canonicalizeGeneratedEffectDraft({
-        status: "READY",
-        effectId: "STRUCTURED_EFFECTS_V1",
-        effects: localAnalysis.effects,
-        keywords: localAnalysis.keywords,
-      }, context, catalog);
-      if (localDraft.status === "READY") {
-        return {
-          ...localDraft,
-          normalization,
-          ...(providerAnalysis ? { interpretation: providerAnalysis } : {}),
-          semanticPlan: buildEffectSemanticPlan(text, context, localDraft, catalog),
-        };
-      }
+    const localDraft = compileLocalIfFullySupported();
+    if (localDraft) {
+      return {
+        ...localDraft,
+        ...(providerAnalysis ? { interpretation: providerAnalysis } : {}),
+      };
     }
     return { ...validated, normalization };
   }
