@@ -5,6 +5,7 @@ import {
   validateOnlineDeck,
   type OnlineDeckValidation,
 } from "./service";
+import { clearActiveMatchPresenceForUsers, lobbyPresence as presence } from "./presence";
 import type {
   LobbyRoomState,
   LobbyServerMessage,
@@ -18,8 +19,6 @@ const ROOM_CODE_ALPHABET = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
 type LobbyConnection = OnlineMatchConnection & {
   readonly nickname: string;
 };
-
-type Presence = "IDLE" | "QUICK_QUEUE" | "PRIVATE_ROOM" | "MATCH_STARTING" | "ACTIVE_MATCH";
 
 type QueueEntry = {
   userId: string;
@@ -49,7 +48,6 @@ type PrivateRoom = {
 const quickQueue = new Map<string, QueueEntry>();
 const rooms = new Map<string, PrivateRoom>();
 const roomsByCode = new Map<string, string>();
-const presence = new Map<string, Presence>();
 let lobbyQueue: Promise<void> = Promise.resolve();
 
 function send(connection: LobbyConnection, message: LobbyServerMessage): void {
@@ -127,24 +125,35 @@ function clearRoom(room: PrivateRoom): void {
 
 async function ensureCanEnter(connection: LobbyConnection): Promise<boolean> {
   const current = presence.get(connection.userId);
-  if (current && current !== "IDLE") {
-    const code = current === "ACTIVE_MATCH" ? "ALREADY_IN_MATCH"
-      : current === "QUICK_QUEUE" ? "ALREADY_IN_QUEUE"
+  if (current && current !== "IDLE" && current !== "ACTIVE_MATCH") {
+    const code = current === "QUICK_QUEUE" ? "ALREADY_IN_QUEUE"
         : current === "PRIVATE_ROOM" ? "ALREADY_IN_ROOM"
-          : "ALREADY_IN_MATCH";
+          : "MATCH_STARTING";
     const message = code === "ALREADY_IN_QUEUE"
       ? "이미 빠른 대전 대기 중입니다."
       : code === "ALREADY_IN_ROOM"
         ? "이미 친선전 방에 참가 중입니다."
-        : "이미 진행 중인 온라인 매치가 있습니다.";
+        : "매치를 준비 중입니다. 잠시만 기다려 주세요.";
     error(connection, code, message);
     return false;
   }
-  if (await userHasActiveMatch(connection.userId)) {
+  let hasActiveMatch: boolean;
+  try {
+    hasActiveMatch = await userHasActiveMatch(connection.userId);
+  } catch {
+    error(
+      connection,
+      "MATCH_STATE_UNAVAILABLE",
+      "온라인 매치 상태를 확인할 수 없습니다. 잠시 후 다시 시도해 주세요.",
+    );
+    return false;
+  }
+  if (hasActiveMatch) {
     presence.set(connection.userId, "ACTIVE_MATCH");
     error(connection, "ALREADY_IN_MATCH", "이미 진행 중인 온라인 매치가 있습니다.");
     return false;
   }
+  if (current === "ACTIVE_MATCH") clearActiveMatchPresenceForUsers(connection.userId);
   return true;
 }
 

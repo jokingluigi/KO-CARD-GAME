@@ -97,6 +97,12 @@ async function handleConnection(socket: WebSocket, user: PublicUser): Promise<vo
   socket.on("message", (raw) => {
     void handleMessage(raw.toString(), socket, connection, () => subscribedRuntime, (runtime) => {
       subscribedRuntime = runtime;
+    }).catch(() => {
+      send(socket, {
+        type: "ERROR",
+        code: "MATCH_UNAVAILABLE",
+        message: "매치 상태를 확인하지 못했습니다. 다시 연결하거나 메인으로 돌아갈 수 있습니다.",
+      });
     });
   });
 }

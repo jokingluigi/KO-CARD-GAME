@@ -4,6 +4,7 @@ import { db, onlineMatchesTable, rewardGrantsTable } from "@workspace/db";
 import { getAuthenticatedUser } from "../lib/auth";
 import {
   applyMatchAction,
+  abandonOnlineMatch,
   attachConnection,
   broadcastExecution,
   createWaitingMatch,
@@ -69,12 +70,31 @@ router.post("/", async (request, response) => {
 router.get("/active", async (request, response) => {
   const user = await requireUser(request, response);
   if (!user) return;
-  const match = await getActiveMatchForUser(user.id);
-  response.json({
-    match: match
-      ? { id: match.id, status: match.status, stateVersion: match.stateVersion }
-      : null,
-  });
+  try {
+    const match = await getActiveMatchForUser(user.id);
+    response.json({
+      match: match
+        ? { id: match.id, status: match.status, stateVersion: match.stateVersion }
+        : null,
+    });
+  } catch {
+    response.status(503).json({ message: "진행 중인 매치 상태를 확인할 수 없습니다. 잠시 후 다시 시도해 주세요." });
+  }
+});
+
+router.post("/:matchId/abandon", async (request, response) => {
+  const user = await requireUser(request, response);
+  if (!user) return;
+  try {
+    const result = await abandonOnlineMatch(request.params.matchId, user.id);
+    if (result === "FORBIDDEN") {
+      response.status(404).json({ message: "매치를 찾을 수 없습니다." });
+      return;
+    }
+    response.json({ status: result });
+  } catch {
+    response.status(503).json({ message: "매치 상태를 확인하거나 종료하지 못했습니다. 다시 시도해 주세요." });
+  }
 });
 
 router.get("/:matchId/rewards", async (request, response) => {

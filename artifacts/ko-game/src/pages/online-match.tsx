@@ -36,6 +36,7 @@ import {
   readStoredBgmVolume,
 } from "@/audio/audio-settings";
 import {
+  abandonOnlineMatch,
   getOnlineLobbyClient,
   type OnlineLobbyConnectionState,
   type OnlineServerMessage,
@@ -103,6 +104,9 @@ function OnlineMatchPage() {
   const [, navigate] = useLocation();
   const client = getOnlineLobbyClient();
   const [connection, setConnection] = useState<OnlineLobbyConnectionState>(client.state);
+  const [hasAuthoritativeSnapshot, setHasAuthoritativeSnapshot] = useState(false);
+  const [showRecoveryActions, setShowRecoveryActions] = useState(false);
+  const [abandoningMatch, setAbandoningMatch] = useState(false);
   const [seat, setSeat] = useState<"PLAYER_ONE" | "PLAYER_TWO" | null>(null);
   const [state, setState] = useState<GameState | null>(null);
   const [version, setVersion] = useState<number | null>(null);
@@ -183,12 +187,14 @@ function OnlineMatchPage() {
     const unsubscribeConnection = client.onConnectionState((next) => {
       setConnection(next);
       if (next !== "open") {
+        setHasAuthoritativeSnapshot(false);
         pendingActionIdRef.current = null;
         pendingActionInFlightRef.current = false;
         setPendingAction(false);
         return;
       }
       if (matchId) {
+        setHasAuthoritativeSnapshot(false);
         pendingActionInFlightRef.current = true;
         setPendingAction(true);
         if (!client.send({ type: "SUBSCRIBE", matchId })) {
@@ -245,9 +251,11 @@ function OnlineMatchPage() {
 
         const projected = projectOnlineGameState(message.state, nextSeat);
         if (!projected) {
+          setHasAuthoritativeSnapshot(false);
           setPlayError("서버 매치 상태를 해석하지 못했습니다.");
           return;
         }
+        setHasAuthoritativeSnapshot(true);
         const previous = stateRef.current;
         if (message.type === "ACTION_ACCEPTED") {
           if (pendingActionIdRef.current === message.requestId) {
@@ -271,7 +279,12 @@ function OnlineMatchPage() {
           preserveRejectedActionMessageRef.current = false;
           setPlayError(null);
         }
-        if (message.type === "MATCH_ENDED") setNotice("매치가 종료되었습니다.");
+        if (message.type === "MATCH_ENDED") {
+          setNotice("매치가 종료되었습니다.");
+          client.send({ type: "UNSUBSCRIBE", matchId });
+        } else if (message.type === "MATCH_SNAPSHOT" && projected.status === "FINISHED") {
+          client.send({ type: "UNSUBSCRIBE", matchId });
+        }
         return;
       }
       if (message.type === "MATCH_CONNECTION_STATUS") {
@@ -300,6 +313,7 @@ function OnlineMatchPage() {
         return;
       }
       if (message.type === "SESSION_REPLACED") {
+        setHasAuthoritativeSnapshot(false);
         setSessionReplaced(true);
         pendingActionIdRef.current = null;
         pendingActionInFlightRef.current = false;
@@ -308,6 +322,12 @@ function OnlineMatchPage() {
         return;
       }
       if (message.type === "ACTION_REJECTED" || message.type === "LOBBY_ERROR" || message.type === "ERROR") {
+        if (
+          message.type === "ERROR" &&
+          ["FORBIDDEN", "NOT_SUBSCRIBED", "MATCH_UNAVAILABLE"].includes(message.code)
+        ) {
+          setHasAuthoritativeSnapshot(false);
+        }
         if (!("requestId" in message) || !message.requestId || pendingActionIdRef.current === message.requestId) {
           pendingActionIdRef.current = null;
           pendingActionInFlightRef.current = false;
@@ -490,7 +510,17 @@ function OnlineMatchPage() {
   const viewerSeat = nextSeatForIntro(seat);
   const selfPublicPlayer = publicPlayers.find((player) => player.seat === viewerSeat);
   const opponentPublicPlayer = publicPlayers.find((player) => player.seat !== viewerSeat);
-  const isConnected = connection === "open" && !sessionReplaced;
+  const isConnected = connection === "open" && hasAuthoritativeSnapshot && !sessionReplaced;
+  const awaitingAuthoritativeMatch =
+    connection !== "open" || !hasAuthoritativeSnapshot || sessionReplaced;
+  useEffect(() => {
+    if (!matchId || !awaitingAuthoritativeMatch || state?.status === "FINISHED") {
+      setShowRecoveryActions(false);
+      return;
+    }
+    const timer = window.setTimeout(() => setShowRecoveryActions(true), 15_000);
+    return () => window.clearTimeout(timer);
+  }, [awaitingAuthoritativeMatch, matchId, state?.status]);
   const isMyTurn = Boolean(me && state?.status === "IN_PROGRESS" && state.activePlayerId === me.id);
   const introFinished = gameplayStartsAt === null || clock + serverOffset >= gameplayStartsAt;
   const canAct = Boolean(isConnected && introFinished && isMyTurn && !pendingAction && !presentationBusy);
@@ -535,6 +565,34 @@ function OnlineMatchPage() {
       pendingActionInFlightRef.current = false;
       setPendingAction(false);
     }
+  }
+
+  function retryMatchConnection() {
+    setShowRecoveryActions(false);
+    setHasAuthoritativeSnapshot(false);
+    client.reconnectNow();
+  }
+
+  async function abandonAndReturnToMain() {
+    if (!matchId || abandoningMatch) return;
+    if (!window.confirm("매치를 항복으로 종료하고 메인 화면으로 돌아갈까요? 이 결과는 매치 기록에 저장됩니다.")) return;
+    setAbandoningMatch(true);
+    setPlayError(null);
+    try {
+      await abandonOnlineMatch(matchId);
+      client.send({ type: "UNSUBSCRIBE", matchId });
+      navigate(ROUTES.MAIN_MENU);
+    } catch (reason) {
+      setPlayError(reason instanceof Error ? reason.message : "매치를 종료하지 못했습니다. 다시 시도해 주세요.");
+      setShowRecoveryActions(true);
+    } finally {
+      setAbandoningMatch(false);
+    }
+  }
+
+  function returnToMainWithMatchSaved() {
+    if (matchId) client.send({ type: "UNSUBSCRIBE", matchId });
+    navigate(ROUTES.MAIN_MENU);
   }
 
   function clearRejectedActionMessage() {
@@ -710,12 +768,51 @@ function OnlineMatchPage() {
 
   if (!resourcesReady || !state || !me || !opponent) {
     return (
-      <main className="flex min-h-[100dvh] items-center justify-center bg-black px-6 text-white">
+      <main className="flex min-h-[100dvh] flex-col items-center justify-center bg-black px-6 text-white">
         <div className="text-center">
           {playError ? <CircleAlert className="mx-auto h-8 w-8 text-red-300" /> : <LoaderCircle className="mx-auto h-8 w-8 animate-spin text-amber-400" />}
           <p className="mt-5 text-sm font-black">{playError ?? "서버 매치를 불러오는 중입니다."}</p>
-          <p className="mt-3 text-xs text-neutral-500">{connection === "open" ? "게임 상태를 기다리는 중" : "서버에 재연결하는 중"}</p>
+          <p className="mt-3 text-xs text-neutral-500">{connection === "open" ? "서버의 최신 매치 상태를 기다리는 중" : "서버에 재연결하는 중"}</p>
         </div>
+        {showRecoveryActions && (
+          <section
+            className="mt-8 w-full max-w-xl rounded-xl border border-amber-500/40 bg-neutral-950 p-4 shadow-2xl"
+            data-testid="online-match-recovery-actions"
+            aria-label="매치 연결 복구 옵션"
+          >
+            <p className="text-sm font-black text-amber-100">매치 상태를 아직 확인하지 못했습니다.</p>
+            <p className="mt-1 text-xs leading-5 text-neutral-400">
+              다시 연결하거나, 매치를 유지한 채 메인으로 돌아갈 수 있습니다. 항복은 서버에 결과를 저장한 뒤 종료합니다.
+            </p>
+            <div className="mt-4 flex flex-wrap gap-2">
+              <button
+                type="button"
+                data-testid="button-online-match-reconnect"
+                onClick={retryMatchConnection}
+                className="rounded bg-amber-400 px-3 py-2 text-xs font-black text-black hover:bg-amber-300"
+              >
+                다시 연결
+              </button>
+              <button
+                type="button"
+                data-testid="button-online-match-main-saved"
+                onClick={returnToMainWithMatchSaved}
+                className="rounded border border-neutral-700 px-3 py-2 text-xs font-bold text-neutral-200 hover:border-neutral-500"
+              >
+                매치 유지하고 메인으로
+              </button>
+              <button
+                type="button"
+                data-testid="button-online-match-abandon"
+                disabled={abandoningMatch}
+                onClick={() => void abandonAndReturnToMain()}
+                className="rounded border border-red-900/70 px-3 py-2 text-xs font-bold text-red-200 hover:bg-red-950/60 disabled:opacity-50"
+              >
+                {abandoningMatch ? "매치 종료 중…" : "항복하고 메인으로"}
+              </button>
+            </div>
+          </section>
+        )}
       </main>
     );
   }
@@ -758,6 +855,45 @@ function OnlineMatchPage() {
           <CircleAlert className="h-4 w-4 shrink-0" />
           <span>{playError ?? notice ?? "연결이 끊겼습니다. 재연결 중..."}</span>
         </div>
+      )}
+      {showRecoveryActions && state.status !== "FINISHED" && (
+        <section
+          className="fixed bottom-14 left-1/2 z-[240] w-[min(34rem,calc(100vw-2rem))] -translate-x-1/2 rounded-xl border border-amber-500/40 bg-neutral-950/95 p-4 shadow-2xl"
+          data-testid="online-match-recovery-actions"
+          aria-label="매치 연결 복구 옵션"
+        >
+          <p className="text-sm font-black text-amber-100">서버 상태를 다시 확인하고 있습니다.</p>
+          <p className="mt-1 text-xs leading-5 text-neutral-400">
+            다시 연결하거나, 매치를 유지한 채 메인으로 돌아갈 수 있습니다. 항복은 서버에 결과를 저장한 뒤 종료합니다.
+          </p>
+          <div className="mt-4 flex flex-wrap gap-2">
+            <button
+              type="button"
+              data-testid="button-online-match-reconnect"
+              onClick={retryMatchConnection}
+              className="rounded bg-amber-400 px-3 py-2 text-xs font-black text-black hover:bg-amber-300"
+            >
+              다시 연결
+            </button>
+            <button
+              type="button"
+              data-testid="button-online-match-main-saved"
+              onClick={returnToMainWithMatchSaved}
+              className="rounded border border-neutral-700 px-3 py-2 text-xs font-bold text-neutral-200 hover:border-neutral-500"
+            >
+              매치 유지하고 메인으로
+            </button>
+            <button
+              type="button"
+              data-testid="button-online-match-abandon"
+              disabled={abandoningMatch}
+              onClick={() => void abandonAndReturnToMain()}
+              className="rounded border border-red-900/70 px-3 py-2 text-xs font-bold text-red-200 hover:bg-red-950/60 disabled:opacity-50"
+            >
+              {abandoningMatch ? "매치 종료 중…" : "항복하고 메인으로"}
+            </button>
+          </div>
+        </section>
       )}
       <GameStatePreview
         state={state}

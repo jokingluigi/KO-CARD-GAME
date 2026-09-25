@@ -1,5 +1,5 @@
 import { LoaderCircle, Shield } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useLocation } from "wouter";
 import { ModeCard, OnlineAuthGate, OnlineShell } from "@/components/online-lobby-ui";
 import { ONLINE_MODE_SELECT_BACK_ROUTE, ROUTES } from "@/lib/routes";
@@ -8,14 +8,45 @@ export default function Online() {
   const [, navigate] = useLocation();
   const [activeMatchId, setActiveMatchId] = useState<string | null>(null);
   const [checkingActiveMatch, setCheckingActiveMatch] = useState(true);
-  useEffect(() => {
-    const apiBase = import.meta.env.BASE_URL.replace(/\/$/, "");
-    void fetch(`${apiBase}/api/online-matches/active`, { credentials: "include" })
-      .then((response) => response.ok ? response.json() as Promise<{ match: { id: string } | null }> : { match: null })
-      .then((result) => setActiveMatchId(result.match?.id ?? null))
-      .catch(() => setActiveMatchId(null))
-      .finally(() => setCheckingActiveMatch(false));
+  const [activeMatchError, setActiveMatchError] = useState<string | null>(null);
+  const activeRequestGeneration = useRef(0);
+  const checkActiveMatch = useCallback(async () => {
+    const generation = ++activeRequestGeneration.current;
+    const controller = new AbortController();
+    const timeout = window.setTimeout(() => controller.abort(), 8_000);
+    setCheckingActiveMatch(true);
+    setActiveMatchError(null);
+    try {
+      const apiBase = import.meta.env.BASE_URL.replace(/\/$/, "");
+      const response = await fetch(`${apiBase}/api/online-matches/active`, {
+        credentials: "include",
+        signal: controller.signal,
+      });
+      if (!response.ok) {
+        throw new Error("진행 중인 매치 상태를 확인할 수 없습니다. 다시 시도해 주세요.");
+      }
+      const result = await response.json() as { match?: { id?: unknown } | null };
+      if (result.match !== null && typeof result.match?.id !== "string") {
+        throw new Error("매치 상태 응답을 확인할 수 없습니다. 다시 시도해 주세요.");
+      }
+      if (generation === activeRequestGeneration.current) {
+        setActiveMatchId(typeof result.match?.id === "string" ? result.match.id : null);
+      }
+    } catch {
+      if (generation === activeRequestGeneration.current) {
+        setActiveMatchError("진행 중인 매치 상태를 확인할 수 없습니다. 연결을 확인하고 다시 시도해 주세요.");
+      }
+    } finally {
+      window.clearTimeout(timeout);
+      if (generation === activeRequestGeneration.current) setCheckingActiveMatch(false);
+    }
   }, []);
+  useEffect(() => {
+    void checkActiveMatch();
+    return () => {
+      activeRequestGeneration.current += 1;
+    };
+  }, [checkActiveMatch]);
   return (
     <OnlineAuthGate>
       {() => <OnlineShell
@@ -35,6 +66,19 @@ export default function Online() {
             <button type="button" data-testid="button-online-resume" onClick={() => navigate(`${ROUTES.ONLINE_MATCH}/${encodeURIComponent(activeMatchId)}`)} className="rounded bg-amber-400 px-4 py-2.5 text-xs font-black text-black">대전으로 복귀</button>
           </div>
         ) : null}
+        {activeMatchError && (
+          <div className="mb-5 flex flex-wrap items-center justify-between gap-3 rounded-xl border border-amber-500/30 bg-amber-400/[0.04] p-4" data-testid="status-online-active-match-error">
+            <p className="text-sm text-amber-100">{activeMatchError}</p>
+            <button
+              type="button"
+              data-testid="button-online-active-match-retry"
+              onClick={() => void checkActiveMatch()}
+              className="rounded border border-amber-500/40 px-4 py-2 text-xs font-black text-amber-200 hover:bg-amber-400/10"
+            >
+              다시 확인
+            </button>
+          </div>
+        )}
         <div className="grid gap-4 lg:grid-cols-2">
           <ModeCard
             title="빠른 대전"

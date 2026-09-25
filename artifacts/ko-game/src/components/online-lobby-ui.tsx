@@ -91,6 +91,7 @@ export function OnlineShell({
 
 export function OnlineAuthGate({ children }: { children: (user: AuthUser) => ReactNode }) {
   const { auth, retry } = useOnlineAuth();
+  const [, navigate] = useLocation();
   if (auth.status === "loading") {
     return (
       <main className="ko-online-shell flex min-h-[100dvh] items-center justify-center p-6">
@@ -109,14 +110,24 @@ export function OnlineAuthGate({ children }: { children: (user: AuthUser) => Rea
           <CircleAlert className="mx-auto h-8 w-8 text-amber-400" aria-hidden="true" />
           <h1 className="mt-4 text-xl font-black text-white">온라인 대전을 열 수 없습니다</h1>
           <p className="mt-3 text-sm leading-6 text-neutral-400" data-testid="status-online-auth-error">{auth.message}</p>
-          <button
-            type="button"
-            data-testid="button-online-auth-retry"
-            onClick={retry}
-            className="ko-online-action mt-7 rounded bg-amber-400 px-5 py-3 text-sm font-black text-black hover:bg-amber-300"
-          >
-            다시 시도
-          </button>
+          <div className="mt-7 flex flex-wrap justify-center gap-3">
+            <button
+              type="button"
+              data-testid="button-online-auth-retry"
+              onClick={retry}
+              className="ko-online-action rounded bg-amber-400 px-5 py-3 text-sm font-black text-black hover:bg-amber-300"
+            >
+              다시 시도
+            </button>
+            <button
+              type="button"
+              data-testid="button-online-auth-main"
+              onClick={() => navigate(ROUTES.MAIN_MENU)}
+              className="ko-online-action rounded border border-neutral-700 px-5 py-3 text-sm font-black text-neutral-200 hover:border-neutral-500"
+            >
+              메인으로
+            </button>
+          </div>
         </section>
       </main>
     );

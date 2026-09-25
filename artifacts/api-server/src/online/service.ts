@@ -1,5 +1,5 @@
 import { randomUUID } from "node:crypto";
-import { and, eq, inArray, or } from "drizzle-orm";
+import { and, eq, inArray, isNull, or } from "drizzle-orm";
 import {
   cardsTable,
   championsTable,
@@ -41,6 +41,8 @@ import {
   sanitizeGameStateForViewer,
 } from "./sanitizer";
 import { ONLINE_MATCH_CONFIG } from "./config";
+import { classifyActiveMatch } from "./match-lifecycle";
+import { clearActiveMatchPresenceForUsers } from "./presence";
 import { mapIntroToSeats, resolveChampionIntro } from "./intro";
 import type {
   OnlineActionPayload,
@@ -218,6 +220,10 @@ async function persistRuntime(runtime: OnlineMatchRuntime, eventStart?: number):
     throw new Error("온라인 매치 상태 저장에 실패했습니다.");
   }
   if (finished) {
+    clearActiveMatchPresenceForUsers(
+      runtime.snapshot.player1UserId,
+      runtime.snapshot.player2UserId,
+    );
     try {
       await settleFinishedOnlineMatch(runtime);
     } catch (error) {
@@ -226,7 +232,9 @@ async function persistRuntime(runtime: OnlineMatchRuntime, eventStart?: number):
   }
 }
 
-async function settleFinishedOnlineMatch(runtime: OnlineMatchRuntime): Promise<void> {
+async function settleFinishedOnlineMatch(
+  runtime: Pick<OnlineMatchRuntime, "matchId" | "snapshot" | "state" | "resultReason">,
+): Promise<void> {
   const winnerUserId = runtime.state.winnerId === "PLAYER_TWO"
     ? runtime.snapshot.player2UserId
     : runtime.state.winnerId === "PLAYER_ONE"
@@ -266,6 +274,104 @@ async function settleFinishedOnlineMatch(runtime: OnlineMatchRuntime): Promise<v
       }, tx);
     }
   });
+}
+
+function storedGameState(record: OnlineMatchRecord): Partial<GameState> {
+  const value = record.serializedGameState as unknown;
+  return value && typeof value === "object" ? value as Partial<GameState> : {};
+}
+
+function hasResumableRuntimeData(record: OnlineMatchRecord): boolean {
+  const state = storedGameState(record);
+  const snapshotValue = record.serializedSnapshot as unknown;
+  const snapshot = snapshotValue && typeof snapshotValue === "object"
+    ? snapshotValue as Partial<OnlineMatchSnapshot>
+    : {};
+  if (
+    classifyActiveMatch(record.status, state.status) !== "RESUMABLE" ||
+    !record.player2UserId ||
+    snapshot.player1UserId !== record.player1UserId ||
+    snapshot.player2UserId !== record.player2UserId ||
+    snapshot.player1UserId === snapshot.player2UserId ||
+    !Array.isArray(snapshot.cardDefinitions) ||
+    !Array.isArray(snapshot.championDefinitions) ||
+    !Array.isArray(snapshot.publicPlayers) ||
+    snapshot.publicPlayers.length !== 2 ||
+    !Array.isArray(state.players) ||
+    state.players.length !== 2
+  ) {
+    return false;
+  }
+  try {
+    stateFromRecord(record as OnlineMatchRecord);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+function storedResultReason(state: Partial<GameState>): string {
+  const lastEvent = Array.isArray(state.events) ? state.events.at(-1) : undefined;
+  return typeof lastEvent?.reason === "string" ? lastEvent.reason : "GAME_FINISHED";
+}
+
+async function reconcileActiveMatchRecord(
+  record: OnlineMatchRecord,
+  attempts = 0,
+): Promise<OnlineMatchRecord | null> {
+  const state = storedGameState(record);
+  const disposition = classifyActiveMatch(record.status, state.status);
+  if (disposition === "RESUMABLE" && hasResumableRuntimeData(record)) return record;
+
+  const finished = disposition === "FINISHED";
+  const winnerUserId = state.winnerId === "PLAYER_ONE"
+    ? record.player1UserId
+    : state.winnerId === "PLAYER_TWO"
+      ? record.player2UserId
+      : null;
+  const resultReason = finished ? storedResultReason(state) : "UNRECOVERABLE_MATCH_STATE";
+  const [updated] = await db.update(onlineMatchesTable)
+    .set({
+      status: finished ? "ENDED" : "CANCELLED",
+      endedAt: new Date(),
+      updatedAt: new Date(),
+      winnerUserId: finished ? winnerUserId : null,
+      resultReason,
+    })
+    .where(and(
+      eq(onlineMatchesTable.id, record.id),
+      eq(onlineMatchesTable.status, "ACTIVE"),
+      eq(onlineMatchesTable.stateVersion, record.stateVersion),
+    ))
+    .returning();
+
+  if (!updated) {
+    const latest = await getOnlineMatchRecord(record.id);
+    if (!latest || latest.status !== "ACTIVE" || attempts >= 3) return null;
+    return reconcileActiveMatchRecord(latest, attempts + 1);
+  }
+
+  clearActiveMatchPresenceForUsers(record.player1UserId, record.player2UserId);
+  cleanupMatchRuntime(record.id);
+  if (finished) {
+    try {
+      const validState = stateFromRecord(record);
+      await settleFinishedOnlineMatch({
+        matchId: record.id,
+        snapshot: snapshotFromRecord(record),
+        state: validState,
+        resultReason,
+      });
+    } catch (error) {
+      logger.error({ error, matchId: record.id }, "복구 중 종료 매치 보상 정산에 실패했습니다.");
+    }
+  } else {
+    logger.error(
+      { matchId: record.id },
+      "복구할 수 없는 활성 온라인 매치를 취소 상태로 보존했습니다.",
+    );
+  }
+  return null;
 }
 
 async function persistConnectionState(runtime: OnlineMatchRuntime): Promise<void> {
@@ -339,18 +445,20 @@ async function hydrateRuntime(record: OnlineMatchRecord): Promise<OnlineMatchRun
     cleanupTimer: null,
   };
   runtimes.set(record.id, runtime);
-  void persistConnectionState(runtime);
-  if (!runtime.gameplayStartsAt || now >= runtime.gameplayStartsAt) scheduleTurnTimer(runtime);
-  else setTimeout(() => {
-    void withRuntimeLock(runtime, async () => {
-      if (runtime.state.status === "FINISHED" || !runtime.gameplayStartsAt || Date.now() < runtime.gameplayStartsAt) return;
-      runtime.turnStartedAt = runtime.gameplayStartsAt;
-      runtime.turnDeadlineAt = runtime.gameplayStartsAt + ONLINE_MATCH_CONFIG.turnTimeLimitSeconds * 1000;
-      await persistRuntime(runtime);
-      scheduleTurnTimer(runtime);
-    });
-  }, Math.max(0, runtime.gameplayStartsAt - now));
-  scheduleDisconnectTimers(runtime);
+  if (state.status !== "FINISHED") {
+    void persistConnectionState(runtime);
+    if (!runtime.gameplayStartsAt || now >= runtime.gameplayStartsAt) scheduleTurnTimer(runtime);
+    else setTimeout(() => {
+      void withRuntimeLock(runtime, async () => {
+        if (runtime.state.status === "FINISHED" || !runtime.gameplayStartsAt || Date.now() < runtime.gameplayStartsAt) return;
+        runtime.turnStartedAt = runtime.gameplayStartsAt;
+        runtime.turnDeadlineAt = runtime.gameplayStartsAt + ONLINE_MATCH_CONFIG.turnTimeLimitSeconds * 1000;
+        await persistRuntime(runtime);
+        scheduleTurnTimer(runtime);
+      });
+    }, Math.max(0, runtime.gameplayStartsAt - now));
+    scheduleDisconnectTimers(runtime);
+  }
   return runtime;
 }
 
@@ -368,15 +476,39 @@ export async function getRuntime(matchId: string): Promise<OnlineMatchRuntime | 
   const pending = runtimeRestores.get(matchId);
   if (pending) return pending;
   const restore = (async () => {
-    const record = await getOnlineMatchRecord(matchId);
-    if (!record || (record.status !== "ACTIVE" && record.status !== "ENDED")) return null;
+    let record = await getOnlineMatchRecord(matchId);
+    if (!record) return null;
+    if (record.status === "ACTIVE") {
+      const resumable = await reconcileActiveMatchRecord(record);
+      if (resumable) {
+        record = resumable;
+      } else {
+        const reconciled = await getOnlineMatchRecord(matchId);
+        if (!reconciled || reconciled.status !== "ENDED") return null;
+        record = reconciled;
+      }
+    }
+    if (record.status !== "ACTIVE" && record.status !== "ENDED") return null;
+    if (record.status === "ENDED" && storedGameState(record).status !== "FINISHED") {
+      clearActiveMatchPresenceForUsers(record.player1UserId, record.player2UserId);
+      logger.error(
+        { matchId },
+        "종료 상태와 저장된 게임 상태가 일치하지 않아 매치를 복구하지 않았습니다.",
+      );
+      return null;
+    }
     const runtime = await hydrateRuntime(record);
     if (record.status === "ENDED" && runtime.state.status === "FINISHED") {
+      clearActiveMatchPresenceForUsers(
+        runtime.snapshot.player1UserId,
+        runtime.snapshot.player2UserId,
+      );
       try {
         await settleFinishedOnlineMatch(runtime);
       } catch (error) {
         logger.error({ error, matchId }, "저장된 종료 매치 보상 재정산에 실패했습니다.");
       }
+      scheduleRuntimeCleanup(runtime);
     }
     return runtime;
   })();
@@ -665,7 +797,7 @@ export async function userHasActiveMatch(userId: string): Promise<boolean> {
 }
 
 async function getOpenMatchForUser(userId: string): Promise<OnlineMatchRecord | null> {
-  const [record] = await db.select()
+  const records = await db.select()
     .from(onlineMatchesTable)
     .where(and(
       or(
@@ -677,13 +809,17 @@ async function getOpenMatchForUser(userId: string): Promise<OnlineMatchRecord | 
         eq(onlineMatchesTable.player2UserId, userId),
       ),
     ))
-    .orderBy(onlineMatchesTable.createdAt)
-    .limit(1);
-  return record ?? null;
+    .orderBy(onlineMatchesTable.createdAt);
+  for (const record of records) {
+    if (record.status === "WAITING") return record;
+    const resumable = await reconcileActiveMatchRecord(record);
+    if (resumable) return resumable;
+  }
+  return null;
 }
 
 export async function getActiveMatchForUser(userId: string): Promise<OnlineMatchRecord | null> {
-  const [record] = await db.select()
+  const records = await db.select()
     .from(onlineMatchesTable)
     .where(and(
       eq(onlineMatchesTable.status, "ACTIVE"),
@@ -691,9 +827,92 @@ export async function getActiveMatchForUser(userId: string): Promise<OnlineMatch
         eq(onlineMatchesTable.player1UserId, userId),
         eq(onlineMatchesTable.player2UserId, userId),
       ),
-    ))
-    .limit(1);
-  return record ?? null;
+    ));
+  for (const record of records) {
+    const resumable = await reconcileActiveMatchRecord(record);
+    if (resumable) return resumable;
+  }
+  return null;
+}
+
+export type AbandonOnlineMatchResult =
+  | "ABANDONED"
+  | "ALREADY_TERMINAL"
+  | "NOT_FOUND"
+  | "FORBIDDEN";
+
+export async function abandonOnlineMatch(
+  matchId: string,
+  userId: string,
+): Promise<AbandonOnlineMatchResult> {
+  let record = await getOnlineMatchRecord(matchId);
+  if (!record) return "NOT_FOUND";
+  if (record.player1UserId !== userId && record.player2UserId !== userId) return "FORBIDDEN";
+  if (record.status === "ENDED" || record.status === "CANCELLED") {
+    clearActiveMatchPresenceForUsers(record.player1UserId, record.player2UserId);
+    return "ALREADY_TERMINAL";
+  }
+
+  if (record.status === "WAITING") {
+    if (record.player1UserId !== userId || record.player2UserId) return "ALREADY_TERMINAL";
+    const [cancelled] = await db.update(onlineMatchesTable)
+      .set({
+        status: "CANCELLED",
+        endedAt: new Date(),
+        updatedAt: new Date(),
+        resultReason: "PLAYER_ABANDONED_BEFORE_START",
+      })
+      .where(and(
+        eq(onlineMatchesTable.id, matchId),
+        eq(onlineMatchesTable.status, "WAITING"),
+        eq(onlineMatchesTable.player1UserId, userId),
+        isNull(onlineMatchesTable.player2UserId),
+      ))
+      .returning({ id: onlineMatchesTable.id });
+    if (cancelled) {
+      clearActiveMatchPresenceForUsers(record.player1UserId, record.player2UserId);
+      return "ABANDONED";
+    }
+    record = await getOnlineMatchRecord(matchId);
+    return record && (record.status === "ENDED" || record.status === "CANCELLED")
+      ? "ALREADY_TERMINAL"
+      : "NOT_FOUND";
+  }
+
+  const resumable = await reconcileActiveMatchRecord(record);
+  if (!resumable) return "ALREADY_TERMINAL";
+  const runtime = await getRuntime(matchId);
+  if (!runtime) return "ALREADY_TERMINAL";
+  const playerId = statePlayerIdForUser(runtime.snapshot, userId);
+  if (!playerId) return "FORBIDDEN";
+
+  return withRuntimeLock(runtime, async () => {
+    if (runtime.state.status === "FINISHED") {
+      clearActiveMatchPresenceForUsers(
+        runtime.snapshot.player1UserId,
+        runtime.snapshot.player2UserId,
+      );
+      return "ALREADY_TERMINAL";
+    }
+    const eventStart = runtime.state.events.length;
+    const result = executeAction(structuredClone(runtime.state), {
+      type: "SURRENDER",
+      playerId,
+    });
+    if (!result.success) {
+      throw new Error(result.message || "온라인 매치를 종료하지 못했습니다.");
+    }
+    await commitTransition(runtime, result.state, eventStart, "PLAYER_ABANDONED");
+    broadcastExecution({
+      ok: true,
+      runtime,
+      requestId: `abandon:${matchId}:${userId}`,
+      version: runtime.version,
+      eventStart,
+      duplicate: false,
+    });
+    return "ABANDONED";
+  });
 }
 
 export async function startOnlineMatch(

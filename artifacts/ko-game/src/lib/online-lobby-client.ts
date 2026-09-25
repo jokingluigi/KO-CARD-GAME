@@ -68,6 +68,36 @@ async function requestWebSocketTicket(): Promise<string> {
   if (typeof body.ticket !== "string" || !body.ticket) throw new Error("온라인 서버 인증 ticket 응답이 올바르지 않습니다.");
   return body.ticket;
 }
+
+export type AbandonOnlineMatchStatus = "ABANDONED" | "ALREADY_TERMINAL" | "NOT_FOUND";
+
+export async function abandonOnlineMatch(matchId: string): Promise<AbandonOnlineMatchStatus> {
+  const basePath = (import.meta.env.BASE_URL ?? "/").replace(/\/$/, "");
+  const response = await fetch(
+    `${basePath}/api/online-matches/${encodeURIComponent(matchId)}/abandon`,
+    { method: "POST", credentials: "include" },
+  );
+  const body = await response.json().catch(() => null) as {
+    status?: unknown;
+    message?: unknown;
+  } | null;
+  if (!response.ok) {
+    throw new Error(
+      typeof body?.message === "string"
+        ? body.message
+        : "매치를 안전하게 종료하지 못했습니다. 다시 시도해 주세요.",
+    );
+  }
+  if (
+    body?.status === "ABANDONED" ||
+    body?.status === "ALREADY_TERMINAL" ||
+    body?.status === "NOT_FOUND"
+  ) {
+    return body.status;
+  }
+  throw new Error("매치 종료 응답을 확인하지 못했습니다. 다시 시도해 주세요.");
+}
+
 function websocketUrl(ticket?: string): string {
   return onlineWebSocketUrl(ticket, {
     production: import.meta.env.PROD,
@@ -86,6 +116,8 @@ class OnlineLobbyClient {
   private reconnectTimer: ReturnType<typeof setTimeout> | null = null;
   private reconnectAttempt = 0;
   private shouldReconnect = true;
+  private openingSocket = false;
+  private socketGeneration = 0;
 
   get state() {
     return this.connectionState;
@@ -106,18 +138,63 @@ class OnlineLobbyClient {
   }
   connect() {
     this.shouldReconnect = true;
-    if (this.socket && (this.socket.readyState === WebSocket.OPEN || this.socket.readyState === WebSocket.CONNECTING)) return;
+    if (
+      this.openingSocket ||
+      (this.socket && (this.socket.readyState === WebSocket.OPEN || this.socket.readyState === WebSocket.CONNECTING))
+    ) return;
     this.setConnectionState("connecting");
-    void this.openSocket();
+    const generation = ++this.socketGeneration;
+    void this.openSocket(generation);
   }
-  private async openSocket() {
+  reconnectNow() {
+    this.shouldReconnect = true;
+    if (this.reconnectTimer) clearTimeout(this.reconnectTimer);
+    this.reconnectTimer = null;
+    this.reconnectAttempt = 0;
+    const generation = ++this.socketGeneration;
+    this.openingSocket = false;
+    const previous = this.socket;
+    this.socket = null;
+    previous?.close();
+    this.setConnectionState("connecting");
+    void this.openSocket(generation);
+  }
+  private async openSocket(generation: number) {
+    this.openingSocket = true;
     let ticket: string | undefined;
     try { if (import.meta.env.PROD) ticket = await requestWebSocketTicket(); }
-    catch { this.setConnectionState("error"); this.scheduleReconnect(); return; }
-    if (!this.shouldReconnect) return;
-    const socket = new WebSocket(websocketUrl(ticket)); this.socket = socket;
-    socket.addEventListener("open", () => { this.reconnectAttempt = 0; this.setConnectionState("open"); });
+    catch {
+      if (generation !== this.socketGeneration) return;
+      this.openingSocket = false;
+      this.setConnectionState("error");
+      this.scheduleReconnect();
+      return;
+    }
+    if (!this.shouldReconnect || generation !== this.socketGeneration) {
+      if (generation === this.socketGeneration) this.openingSocket = false;
+      return;
+    }
+    let socket: WebSocket;
+    try {
+      socket = new WebSocket(websocketUrl(ticket));
+    } catch {
+      this.openingSocket = false;
+      this.setConnectionState("error");
+      this.scheduleReconnect();
+      return;
+    }
+    this.socket = socket;
+    this.openingSocket = false;
+    socket.addEventListener("open", () => {
+      if (this.socket !== socket || generation !== this.socketGeneration) {
+        socket.close();
+        return;
+      }
+      this.reconnectAttempt = 0;
+      this.setConnectionState("open");
+    });
     socket.addEventListener("message", (event) => {
+      if (this.socket !== socket || generation !== this.socketGeneration) return;
       try {
         const message = JSON.parse(String(event.data)) as OnlineServerMessage;
         if (message && typeof message.type === "string") {
@@ -128,11 +205,21 @@ class OnlineLobbyClient {
         this.listeners.forEach((listener) => listener({ type: "LOBBY_ERROR", code: "INVALID_SERVER_MESSAGE", message: "온라인 서버 응답을 해석하지 못했습니다." }));
       }
     });
-    socket.addEventListener("error", () => this.setConnectionState("error"));
-    socket.addEventListener("close", () => { if (this.socket === socket) { this.socket = null; this.setConnectionState("closed"); this.scheduleReconnect(); } });
+    socket.addEventListener("error", () => {
+      if (this.socket === socket && generation === this.socketGeneration) this.setConnectionState("error");
+    });
+    socket.addEventListener("close", () => {
+      if (this.socket === socket && generation === this.socketGeneration) {
+        this.socket = null;
+        this.setConnectionState("closed");
+        this.scheduleReconnect();
+      }
+    });
   }
   close() {
     this.shouldReconnect = false;
+    this.socketGeneration += 1;
+    this.openingSocket = false;
     if (this.reconnectTimer) clearTimeout(this.reconnectTimer);
     this.reconnectTimer = null; this.socket?.close(); this.socket = null; this.setConnectionState("closed");
   }
