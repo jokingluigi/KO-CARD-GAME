@@ -34,6 +34,7 @@ import { isTestAccountUser } from "../lib/test-account";
 import { processMatchEventsForDailyQuests } from "../lib/daily-quest-service";
 import { grantReward, isFinishedMatchRewardEligible } from "../lib/reward-service";
 import { logger } from "../lib/logger";
+import { runOnlineBackgroundTask } from "./background-task";
 import { toServerAction } from "./action-parser";
 import { directActionStartsTargeting, rejectedActionCode } from "./action-validation";
 import {
@@ -150,6 +151,22 @@ function stateFromRecord(record: OnlineMatchRecord): GameState {
   const state = normalizeHiddenZoneCards(record.serializedGameState as unknown as GameState);
   validateCardDefinitionReferences(state);
   return state;
+}
+
+function runRuntimeBackgroundTask(
+  runtime: OnlineMatchRuntime,
+  operation: string,
+  task: () => Promise<unknown>,
+): void {
+  runOnlineBackgroundTask(
+    task,
+    {
+      requestId: `${operation}:${runtime.matchId}:${runtime.version}`,
+      route: `background.${operation}`,
+      matchId: runtime.matchId,
+    },
+    (failure) => logger.error(failure, "Online background task failed"),
+  );
 }
 
 async function persistRuntime(runtime: OnlineMatchRuntime, eventStart?: number): Promise<void> {
@@ -446,16 +463,20 @@ async function hydrateRuntime(record: OnlineMatchRecord): Promise<OnlineMatchRun
   };
   runtimes.set(record.id, runtime);
   if (state.status !== "FINISHED") {
-    void persistConnectionState(runtime);
+    runRuntimeBackgroundTask(
+      runtime,
+      "restore-connection-state",
+      () => persistConnectionState(runtime),
+    );
     if (!runtime.gameplayStartsAt || now >= runtime.gameplayStartsAt) scheduleTurnTimer(runtime);
     else setTimeout(() => {
-      void withRuntimeLock(runtime, async () => {
+      runRuntimeBackgroundTask(runtime, "gameplay-start", () => withRuntimeLock(runtime, async () => {
         if (runtime.state.status === "FINISHED" || !runtime.gameplayStartsAt || Date.now() < runtime.gameplayStartsAt) return;
         runtime.turnStartedAt = runtime.gameplayStartsAt;
         runtime.turnDeadlineAt = runtime.gameplayStartsAt + ONLINE_MATCH_CONFIG.turnTimeLimitSeconds * 1000;
         await persistRuntime(runtime);
         scheduleTurnTimer(runtime);
-      });
+      }));
     }, Math.max(0, runtime.gameplayStartsAt - now));
     scheduleDisconnectTimers(runtime);
   }
@@ -557,7 +578,7 @@ function scheduleTurnTimer(runtime: OnlineMatchRuntime): void {
   const expectedDeadline = runtime.turnDeadlineAt;
   const delay = Math.max(0, expectedDeadline - Date.now());
   runtime.turnTimer = setTimeout(() => {
-    void withRuntimeLock(runtime, async () => {
+    runRuntimeBackgroundTask(runtime, "turn-timeout", () => withRuntimeLock(runtime, async () => {
       if (
         runtime.state.status === "FINISHED" ||
         runtime.state.turn !== expectedTurn ||
@@ -570,7 +591,7 @@ function scheduleTurnTimer(runtime: OnlineMatchRuntime): void {
         return;
       }
       await resolveTurnTimeoutLocked(runtime);
-    });
+    }));
   }, delay);
 }
 
@@ -581,7 +602,7 @@ function scheduleDisconnectTimers(runtime: OnlineMatchRuntime): void {
     if (runtime.connectionStates[seat] !== "DISCONNECTED_GRACE" || !deadline) continue;
     const expectedDeadline = deadline;
     runtime.disconnectTimers.set(seat, setTimeout(() => {
-      void withRuntimeLock(runtime, async () => {
+      runRuntimeBackgroundTask(runtime, `disconnect-timeout-${seat.toLowerCase()}`, () => withRuntimeLock(runtime, async () => {
         if (
           runtime.state.status === "FINISHED" ||
           runtime.connectionStates[seat] !== "DISCONNECTED_GRACE" ||
@@ -594,7 +615,7 @@ function scheduleDisconnectTimers(runtime: OnlineMatchRuntime): void {
           return;
         }
         await resolveDisconnectTimeoutLocked(runtime, seat);
-      });
+      }));
     }, Math.max(0, expectedDeadline - Date.now())));
   }
 }
@@ -1397,10 +1418,10 @@ export function attachConnection(runtime: OnlineMatchRuntime, connection: Online
   delete runtime.disconnectStartedAt[seat];
   delete runtime.reconnectDeadlineAt[seat];
   runtime.connectionStates[seat] = "CONNECTED";
-  void withRuntimeLock(runtime, async () => {
+  runRuntimeBackgroundTask(runtime, "connection-state-update", () => withRuntimeLock(runtime, async () => {
     if (runtime.state.status !== "FINISHED") await persistConnectionState(runtime);
     broadcastConnectionStatus(runtime, seat);
-  });
+  }));
 }
 
 export function detachConnection(runtime: OnlineMatchRuntime, connection: OnlineMatchConnection): void {

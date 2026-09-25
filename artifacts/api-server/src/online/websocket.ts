@@ -1,5 +1,6 @@
 import type { IncomingMessage, Server as HttpServer } from "node:http";
 import type { Duplex } from "node:stream";
+import { randomUUID } from "node:crypto";
 import { WebSocketServer, WebSocket } from "ws";
 import {
   AUTH_SESSION_COOKIE,
@@ -32,6 +33,11 @@ import {
 import { getUserFromWebSocketAuthTicket } from "./websocket-auth";
 import type { OnlineClientMessage, OnlineServerMessage } from "./protocol";
 import { classifyOnlineClientMessage } from "./client-message-parser";
+import { logger } from "../lib/logger";
+import {
+  classifyOnlineBackgroundFailure,
+  runOnlineBackgroundTask,
+} from "./background-task";
 
 const ONLINE_WS_PATH = "/api/online-matches/ws";
 
@@ -44,6 +50,26 @@ function rejectUpgrade(socket: Duplex, status = "401 Unauthorized"): void {
   socket.destroy();
 }
 
+function runWebSocketBackgroundTask(
+  operation: string,
+  task: () => Promise<unknown>,
+  matchId?: string,
+  onFailure?: () => void,
+): void {
+  runOnlineBackgroundTask(
+    task,
+    {
+      requestId: `${operation}:${randomUUID()}`,
+      route: `websocket.${operation}`,
+      ...(matchId ? { matchId } : {}),
+    },
+    (failure) => {
+      logger.error(failure, "WebSocket background task failed");
+      onFailure?.();
+    },
+  );
+}
+
 export function attachOnlineMatchWebSocket(server: HttpServer): void {
   const webSockets = new WebSocketServer({ noServer: true });
 
@@ -51,15 +77,16 @@ export function attachOnlineMatchWebSocket(server: HttpServer): void {
     const url = new URL(request.url ?? "/", `http://${request.headers.host ?? "localhost"}`);
     if (url.pathname !== ONLINE_WS_PATH) return;
 
-    void authenticateUpgrade(request).then((user) => {
+    runWebSocketBackgroundTask("upgrade", async () => {
+      const user = await authenticateUpgrade(request);
       if (!user) {
         rejectUpgrade(socket);
         return;
       }
       webSockets.handleUpgrade(request, socket, head, (webSocket) => {
-        void handleConnection(webSocket, user);
+        handleConnection(webSocket, user);
       });
-    }).catch(() => rejectUpgrade(socket, "500 Internal Server Error"));
+    }, undefined, () => rejectUpgrade(socket, "500 Internal Server Error"));
   });
 }
 
@@ -75,7 +102,7 @@ async function authenticateUpgrade(request: IncomingMessage): Promise<PublicUser
   return token ? getAuthenticatedUserFromSessionToken(token) : null;
 }
 
-async function handleConnection(socket: WebSocket, user: PublicUser): Promise<void> {
+function handleConnection(socket: WebSocket, user: PublicUser): void {
   let subscribedRuntime: OnlineMatchRuntime | null = null;
   const connection = {
     userId: user.id,
@@ -86,24 +113,34 @@ async function handleConnection(socket: WebSocket, user: PublicUser): Promise<vo
   const detach = () => {
     if (subscribedRuntime) {
       const runtime = subscribedRuntime;
-      void markConnectionDisconnected(runtime, connection);
+      runWebSocketBackgroundTask(
+        "match-disconnect",
+        () => markConnectionDisconnected(runtime, connection),
+        runtime.matchId,
+      );
       subscribedRuntime = null;
     }
-    void detachLobbyConnection(connection);
+    runWebSocketBackgroundTask(
+      "lobby-detach",
+      () => detachLobbyConnection(connection),
+    );
   };
 
   socket.on("close", detach);
   socket.on("error", detach);
   socket.on("message", (raw) => {
-    void handleMessage(raw.toString(), socket, connection, () => subscribedRuntime, (runtime) => {
-      subscribedRuntime = runtime;
-    }).catch(() => {
-      send(socket, {
+    runWebSocketBackgroundTask(
+      "message",
+      () => handleMessage(raw.toString(), socket, connection, () => subscribedRuntime, (runtime) => {
+        subscribedRuntime = runtime;
+      }),
+      subscribedRuntime?.matchId,
+      () => send(socket, {
         type: "ERROR",
         code: "MATCH_UNAVAILABLE",
         message: "매치 상태를 확인하지 못했습니다. 다시 연결하거나 메인으로 돌아갈 수 있습니다.",
-      });
-    });
+      }),
+    );
   });
 }
 
@@ -169,7 +206,11 @@ async function handleMessage(
     }
     const previous = getSubscription();
     if (previous && previous !== runtime) {
-      void markConnectionDisconnected(previous, connection);
+      runWebSocketBackgroundTask(
+        "match-disconnect",
+        () => markConnectionDisconnected(previous, connection),
+        previous.matchId,
+      );
     }
     setSubscription(runtime);
     attachConnection(runtime, connection);
@@ -184,7 +225,13 @@ async function handleMessage(
       return;
     }
     const previous = getSubscription();
-    if (previous && previous !== runtime) void markConnectionDisconnected(previous, connection);
+    if (previous && previous !== runtime) {
+      runWebSocketBackgroundTask(
+        "match-disconnect",
+        () => markConnectionDisconnected(previous, connection),
+        previous.matchId,
+      );
+    }
     setSubscription(runtime);
     attachConnection(runtime, connection);
     const snapshot = snapshotMessage(runtime, connection.userId);
@@ -196,7 +243,11 @@ async function handleMessage(
   if (message.type === "UNSUBSCRIBE") {
     const runtime = getSubscription();
     if (runtime?.matchId === message.matchId) {
-      void markConnectionDisconnected(runtime, connection);
+      runWebSocketBackgroundTask(
+        "match-disconnect",
+        () => markConnectionDisconnected(runtime, connection),
+        runtime.matchId,
+      );
       setSubscription(null);
     }
     return;
@@ -238,10 +289,18 @@ async function handleMessage(
       setSubscription(null);
     }
   } catch (error) {
+    logger.error(
+      classifyOnlineBackgroundFailure(error, {
+        requestId: message.requestId,
+        route: "websocket.match-action",
+        matchId: runtime.matchId,
+      }),
+      "Online match action failed",
+    );
     send(socket, {
       type: "ERROR",
       code: "MATCH_ACTION_FAILED",
-      message: error instanceof Error ? error.message : "매치 action을 처리하지 못했습니다.",
+      message: "매치 action을 처리하지 못했습니다. 잠시 후 다시 시도해 주세요.",
     });
   }
 }

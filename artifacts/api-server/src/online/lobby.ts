@@ -12,6 +12,8 @@ import type {
   OnlineServerMessage,
 } from "./protocol";
 import type { OnlineMatchConnection } from "./service";
+import { logger } from "../lib/logger";
+import { runOnlineBackgroundTask } from "./background-task";
 
 const ROOM_TTL_MS = 45 * 60 * 1000;
 const ROOM_CODE_ALPHABET = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
@@ -294,7 +296,14 @@ export async function createPrivateRoom(connection: LobbyConnection, deckId: str
       guestReady: false,
       expiresAt: Date.now() + ROOM_TTL_MS,
       expiryTimer: setTimeout(() => {
-        void expirePrivateRoom(room.roomId);
+        runOnlineBackgroundTask(
+          () => expirePrivateRoom(room.roomId),
+          {
+            requestId: `private-room-expiry:${room.roomId}`,
+            route: "background.private-room-expiry",
+          },
+          (failure) => logger.error(failure, "Online background task failed"),
+        );
       }, ROOM_TTL_MS),
     };
     rooms.set(room.roomId, room);
