@@ -1,0 +1,1457 @@
+KO CARD GAME — CRITICAL QUEST PROGRESS REPAIR + FLEXIBLE QUEST ENGINE / ADMIN QUEST BUILDER V2
+
+현재 문제는 두 가지다.
+
+1. 실제 플레이를 해도 퀘스트 진행도가 오르지 않는다.
+2. Admin에서 만들 수 있는 퀘스트 종류가 너무 한정되어 있다.
+
+이번 작업은 기존 몇 개 Quest type을 하나씩 추가하는 작업이 아니다.
+
+목표:
+A. 일반 사용자 계정에서 실제 canonical gameplay event를 기준으로 Quest progress가 다시 정상적으로 올라가게 한다.
+B. Admin이 카드/Champion 이름별 하드코딩 없이 다양한 조건의 Quest를 자유롭게 만들 수 있는 generic Quest Engine + Quest Builder를 만든다.
+
+중요:
+"퀘스트 종류 enum 몇 개 더 추가"로 끝내지 말 것.
+앞으로 새로운 Quest를 추가할 때 runtime 코드 수정 없이
+Admin 설정만으로 만들 수 있는 구조가 목표다.
+
+==================================================
+0. 절대 원칙
+==================================================
+
+- Quest progress는 Admin 계정 전용이면 안 됨.
+- 일반 로그인 사용자의 실제 gameplay가 source of truth.
+- client가 progress 숫자를 임의 제출해서 서버가 믿으면 안 됨.
+- Action → Event → Quest Evaluation → PlayerQuestState.
+- 같은 이벤트 replay/reconnect로 중복 progress 금지.
+- 카드/Champion 이름 hardcode 금지.
+- 특정 Quest ID hardcode 금지.
+- eval / new Function / arbitrary JS 금지.
+- Production 사용자 Quest 진행도 직접 수정 금지.
+- Production QuestDefinition 임의 수정 금지.
+- RLS 전체 disable 금지.
+- 일반 사용자에게 Admin role 부여로 해결 금지.
+- push 요청 없으면 push 금지.
+- force push 금지.
+
+==================================================
+1. 가장 먼저 현재 Quest progress가 안 오르는 ROOT CAUSE 추적
+==================================================
+
+실제 일반 사용자 계정 기준으로 다음 경로를 trace:
+
+Game Action
+→ canonical Event emitted
+→ Quest event ingestion
+→ active QuestDefinitions load
+→ condition matcher
+→ qualifying delta 계산
+→ dedupe
+→ PlayerQuestState update
+→ DB persistence
+→ API/WS response
+→ client query/cache update
+→ progress bar render
+
+반드시 "처음 끊기는 지점(first failing layer)"을 특정한다.
+
+가능성 예:
+
+A. Quest progress endpoint가 requireAdmin
+B. 일반 사용자의 player identity resolve 실패
+C. AI Match/Online Match가 Quest service를 호출하지 않음
+D. event type 이름 drift
+E. sourceActionType/actionId가 소실
+F. QuestDefinition parser가 old schema만 읽음
+G. PlayerQuestState INSERT/UPDATE가 RLS로 막힘
+H. quest event dedupe가 모든 새 event를 duplicate로 오판
+I. eventId가 undefined라 저장 skip
+J. progress update는 됐지만 client cache invalidation 실패
+K. Admin/test helper에서만 직접 progress 적용
+L. match result event만 서버에 있고 card/action events는 client-only
+M. ACTIVE/PUBLISHED Quest filter가 잘못됨
+N. 시간대/start/end 조건이 잘못되어 active quest 0개
+O. normal user에게 Quest assignment row가 생성되지 않음
+P. legacy Quest schema와 current matcher가 불일치
+
+추측으로 UI만 고치지 말 것.
+
+==================================================
+2. 현재 Quest 데이터 모델 전체 감사
+==================================================
+
+확인:
+
+QuestDefinition
+PlayerQuestState
+Quest assignment
+Quest reward
+Quest progress event / dedupe table
+Admin Quest form
+Quest API
+AI Match integration
+Online Match integration
+
+현재 QuestDefinition에 존재하는 필드와
+실제 runtime에서 읽는 필드를 비교.
+
+다음 drift를 찾는다:
+
+SOURCE CONFIG
+↕
+STORED QUEST JSON
+↕
+RUNTIME MATCHER
+↕
+PLAYER STATE
+
+==================================================
+3. 일반 사용자 Quest Progress 복구
+==================================================
+
+Normal authenticated player가 실제 조건을 충족하면 진행돼야 한다.
+
+Admin 여부는 조건 판정과 무관.
+
+검증 모드:
+- AI Match
+- Online Match
+
+현재 제품 정책상 Quest가 적용되는 모드만 유지하되,
+Admin-only path는 제거.
+
+Gameplay endpoint:
+requireAuth + own-player context
+
+Admin QuestDefinition CRUD:
+requireAuth + requireAdmin
+
+완전히 분리.
+
+==================================================
+4. Quest progress는 canonical Event 기반
+==================================================
+
+Quest 시스템이 UI action이나 client text를 직접 해석하지 않게 한다.
+
+Quest가 소비할 수 있는 source는
+canonical game events.
+
+예:
+
+MATCH_STARTED
+TURN_STARTED
+TURN_ENDED
+CARD_DRAWN
+CARD_PLAYED
+CARD_GENERATED
+CARD_CREATED
+CARD_MOVED
+WRESTLER_PLAYED
+TECHNIQUE_USED
+ATTACK_DECLARED
+ATTACK_RESOLVED
+DAMAGE_DEALT
+DAMAGE_TAKEN
+HEAL_APPLIED
+ATTACK_INCREASED
+HEALTH_INCREASED
+WRESTLER_RETIRED
+CARD_DESTROYED
+CARD_RETURNED_TO_HAND
+CARD_MOVED_TO_DECK
+CHAMPION_ABILITY_USED
+CHAMPION_TOKEN_DEPLOYED
+QUEST_PROGRESS_EVENT
+MATCH_WON
+MATCH_LOST
+MATCH_FINISHED
+PACK_OPENED
+CARD_CRAFTED
+CARD_DISASSEMBLED
+ATTENDANCE_CLAIMED
+
+실제 engine에 존재하는 canonical event 이름을 먼저 조사하고 재사용.
+
+없는 event를 무작정 새로 만들지 말고
+필요한 generic event contract가 없을 때만 추가.
+
+==================================================
+5. QUEST CONDITION DSL V2
+==================================================
+
+Admin이 자유롭게 Quest를 만들 수 있도록
+strict declarative QuestCondition DSL을 만든다.
+
+예시 개념:
+
+{
+  "event": "WRESTLER_RETIRED",
+  "filters": {
+    "owner": "SELF",
+    "sourceActionType": "USE_CHAMPION_ABILITY",
+    "cardType": "WRESTLER",
+    "tagsAny": ["좀비"]
+  },
+  "progress": {
+    "mode": "COUNT",
+    "amount": 1
+  },
+  "required": 7
+}
+
+실제 필드명은 현재 architecture에 맞게 설계.
+
+중요:
+runtime에서 exact Quest text를 파싱하지 않는다.
+Admin이 저장한 validated structured condition을 실행.
+
+==================================================
+6. 자유로운 FILTER 지원
+==================================================
+
+Quest 조건은 generic filters 조합 가능.
+
+최소 지원 후보:
+
+event
+mode
+owner
+opponent/self
+cardType
+zone
+rarity
+definitionRef
+tagsAny
+tagsAll
+tagsNone
+keyword
+sourceActionType
+actionType
+sourceCardType
+targetCardType
+sourceDefinitionRef
+targetDefinitionRef
+sourceTagsAny
+targetTagsAny
+result
+matchMode
+turnOwner
+isGenerated
+isChampionToken
+isLegendary
+isTechnique
+isWrestler
+minAttack
+maxAttack
+minHealth
+maxHealth
+damageType
+removalType
+wasLethal
+wasCombat
+wasAbility
+wasPlayedFromHand
+
+단 실제 canonical event payload에서 신뢰할 수 있는 필드만 expose.
+
+card name string 비교 금지.
+특정 카드 조건은 definitionRef ID 사용.
+
+==================================================
+7. Progress Aggregation 지원
+==================================================
+
+단순 COUNT만 지원하면 또 한정된다.
+
+최소 generic modes:
+
+COUNT
+→ qualifying event 수
+
+SUM
+→ event field 합산
+예: 총 50 damage
+
+SET_MAX
+→ 한 번의 event/match에서 최고 수치
+예: 한 번에 10 damage
+
+DISTINCT_COUNT
+→ 서로 다른 definition/tag/player/etc.
+예: 서로 다른 선수 5종 사용
+
+MATCH_COUNT
+→ 조건을 만족한 match 수
+
+WIN_COUNT
+→ 조건을 만족한 승리 수
+
+가능하면 현재 필요성과 architecture를 보고 구현.
+
+임의 JS expression 금지.
+
+SUM field는 whitelist된 numeric event fields만.
+
+==================================================
+8. 대표적으로 만들 수 있어야 하는 Quest
+==================================================
+
+Admin 설정만으로 최소 다음 Quest들을 만들 수 있어야 한다.
+
+Q1
+"선수 카드를 10장 냅니다."
+→ CARD_PLAYED
+→ cardType WRESTLER
+→ COUNT 10
+
+Q2
+"Technique를 5번 사용합니다."
+→ TECHNIQUE_USED
+→ COUNT 5
+
+Q3
+"상대 선수를 7번 리타이어시킵니다."
+→ WRESTLER_RETIRED
+→ victimOwner ENEMY
+→ COUNT 7
+
+Q4
+"Champion Ability로 선수를 7번 리타이어시킵니다."
+→ WRESTLER_RETIRED
+→ sourceActionType USE_CHAMPION_ABILITY
+→ COUNT 7
+
+Q5
+"좀비 태그 선수를 5장 냅니다."
+→ CARD_PLAYED
+→ cardType WRESTLER
+→ tagsAny ["좀비"]
+→ COUNT 5
+
+Q6
+"총 50 데미지를 줍니다."
+→ DAMAGE_DEALT
+→ SUM amount
+→ required 50
+
+Q7
+"한 경기에서 3번 공격합니다."
+→ ATTACK_RESOLVED
+→ per-match scoped count 3
+→ Quest progress policy에 맞게 match condition 완료 시 +1 또는 direct target 3
+현재 schema에 맞게 generic하게 표현.
+
+Q8
+"AI Match에서 3승"
+→ MATCH_WON
+→ matchMode AI
+→ COUNT 3
+
+Q9
+"온라인 대전에서 2승"
+→ MATCH_WON
+→ matchMode ONLINE
+→ COUNT 2
+
+Q10
+"Legendary 카드를 3장 냅니다."
+→ CARD_PLAYED
+→ rarity LEGENDARY
+→ COUNT 3
+
+Q11
+"생성된 카드를 5번 사용합니다."
+→ CARD_PLAYED
+→ isGenerated true
+→ COUNT 5
+
+Q12
+"팩 10개를 엽니다."
+→ PACK_OPENED
+→ SUM packCount
+→ 10
+
+이 예시들은 테스트 fixture일 뿐
+runtime에 이름별 switch를 추가하지 말 것.
+
+==================================================
+9. COMPOSITE CONDITIONS
+==================================================
+
+Quest를 더 자유롭게 만들기 위해
+AND / OR 조합을 지원.
+
+예:
+
+"온라인 대전에서 좀비 선수를 10장 낸다"
+
+event CARD_PLAYED
+AND
+matchMode ONLINE
+AND
+cardType WRESTLER
+AND
+tagsAny ["좀비"]
+
+또는:
+
+"선수 또는 Technique를 총 20장 사용"
+
+event CARD_PLAYED OR TECHNIQUE_USED
+
+구조는 strict AST.
+
+예:
+allOf: [...]
+anyOf: [...]
+
+무한 중첩 방지.
+max depth 설정.
+
+==================================================
+10. per-match / lifetime progress scope
+==================================================
+
+Admin에서 조건의 집계 scope 설정 가능하게.
+
+ACCUMULATE
+→ 여러 경기 누적
+
+PER_MATCH
+→ 한 경기 안에서 목표를 달성해야 함
+
+예:
+"한 경기에서 5명의 선수를 리타이어"
+
+PER_MATCH counter는 match end 시 조건 미달이면
+그 match-local counter reset.
+
+PlayerQuestState의 total progress와
+ephemeral match progress를 분리.
+
+==================================================
+11. Win/Loss/Match Result Quest
+==================================================
+
+MATCH_WON / MATCH_LOST / MATCH_FINISHED를
+정식 canonical event로 활용.
+
+예:
+- 3승
+- AI 5판 플레이
+- 온라인 2승
+- 특정 Champion으로 1승
+
+Champion condition은 ChampionDefinition ref로 설정.
+
+==================================================
+12. 특정 카드 / Champion 조건
+==================================================
+
+Admin Quest Builder에서:
+
+Card selector
+Champion selector
+
+지원.
+
+저장은 name string이 아니라 canonical definition ID/reference.
+
+이름 변경에도 Quest가 깨지지 않게.
+
+예:
+"판도라로 3승"
+
+조건:
+MATCH_WON
+playerChampionDefinitionRef = <id>
+
+runtime에 Pandora 이름 hardcode 금지.
+
+==================================================
+13. Tag 기반 Quest
+==================================================
+
+cards.tags가 canonical metadata.
+
+Admin에서:
+- tagsAny
+- tagsAll
+- tagsNone
+
+선택 가능.
+
+old keyword "태그"와 혼동 금지.
+
+==================================================
+14. Numeric 조건
+==================================================
+
+필요하면 event numeric fields에 비교 연산 지원:
+
+EQ
+GT
+GTE
+LT
+LTE
+BETWEEN
+
+예:
+"공격력 10 이상인 선수를 낸다"
+
+CARD_PLAYED
+cardType WRESTLER
+currentAttack GTE 10
+
+event snapshot에서 authoritative stat 사용.
+
+==================================================
+15. Source / Target 관계 조건
+==================================================
+
+Quest에서 다음 구분이 가능해야 한다.
+
+source:
+행동을 일으킨 카드/Champion/player
+
+target:
+영향을 받은 카드/player
+
+예:
+"Champion Ability로 상대 WRESTLER를 리타이어"
+→ sourceActionType USE_CHAMPION_ABILITY
+→ target cardType WRESTLER
+→ targetOwner ENEMY
+
+actor/target ownership을 혼동하지 말 것.
+
+==================================================
+16. RETIRE / DESTROY 의미 분리
+==================================================
+
+공식 규칙 유지:
+
+RETIRE
+= WRESTLER health depleted
+= FIELD → GRAVEYARD
+
+DESTROY
+= match에서 제거
+= graveyard 아님
+= RETIRE trigger 아님
+
+Quest Builder에서도
+둘을 별도 event로 선택 가능.
+
+"제거"라는 UI 용어로 두 의미를 합치지 말 것.
+
+==================================================
+17. Generated / Summoned / Played 구분
+==================================================
+
+Quest에서 필요할 수 있으므로 구분.
+
+PLAY_FROM_HAND
+SUMMON
+GENERATE
+REVIVE
+CHAMPION_TOKEN_DEPLOY
+
+가능하면 event origin/sourceActionType으로 filter.
+
+기존 ON_ENTER semantics와 섞지 말 것.
+
+==================================================
+18. Admin Quest Builder UI
+==================================================
+
+현재 제한적인 form을
+generic builder로 확장.
+
+권장 단계:
+
+[기본 정보]
+- Quest 이름
+- 설명
+- 활성/비활성
+- 기간
+- 반복 주기
+
+[조건]
+- Event 선택
+- Filter 추가
+- Progress 방식
+- Required 값
+- Scope
+
+[보상]
+- Reward 추가
+
+[미리보기]
+- 사람이 읽을 수 있는 condition summary
+
+예:
+
+이 Quest는:
+ONLINE MATCH에서
+WRESTLER 카드 중
+tagsAny = 좀비
+를 PLAY_FROM_HAND할 때
+1씩 진행
+10회 완료
+
+==================================================
+19. Condition Builder UX
+==================================================
+
++ 조건 추가
+
+Field:
+[cardType ▼]
+
+Operator:
+[= ▼]
+
+Value:
+[WRESTLER ▼]
+
+다른 예:
+
+Field:
+[tagsAny ▼]
+
+Value:
+[좀비]
+
+Filter rows를 추가/삭제 가능.
+
+UI가 허용하는 필드/operator/value 조합은
+event schema에 따라 제한.
+
+예:
+MATCH_WON event에서
+damageAmount filter를 보여주면 안 됨.
+
+==================================================
+20. Event Registry
+==================================================
+
+generic Quest Builder를 위해
+central Quest Event Registry를 둔다.
+
+각 event는:
+
+event type
+display label
+available filter fields
+available numeric fields
+supported aggregation
+payload schema
+
+를 정의.
+
+Admin UI와 runtime validator가
+같은 registry/schema를 공유.
+
+UI와 runtime이 서로 다른 지원 범위를 가지면 안 됨.
+
+==================================================
+21. Strict Validator
+==================================================
+
+저장 전 반드시 validate.
+
+예:
+
+unknown event
+→ reject
+
+unknown filter field
+→ reject
+
+invalid operator
+→ reject
+
+SUM on string field
+→ reject
+
+negative required
+→ reject
+
+required 0
+→ reject unless official special case
+
+excessive AST depth
+→ reject
+
+definitionRef not found
+→ reject
+
+tag invalid
+→ reject or current tag policy에 맞게
+
+strict validator를 약화시키지 말 것.
+
+==================================================
+22. Legacy Quest 호환
+==================================================
+
+기존 QuestDefinition이 이미 존재한다면
+자동 삭제/손실 금지.
+
+먼저 legacy schema를 inventory.
+
+가능하면:
+legacy → QuestConditionV2 adapter
+
+또는
+schemaVersion:
+QUEST_CONDITION_V1
+QUEST_CONDITION_V2
+
+로 공존.
+
+기존 Quest가 runtime에서 계속 진행 가능해야 한다.
+
+migration 시 Development에서 먼저 검증.
+
+==================================================
+23. Quest reward도 generic하게
+==================================================
+
+현재 보상이 제한적이라면 함께 generic Reward DSL로 정리.
+
+지원 후보:
+
+CURRENCY
+PACK
+SPECIFIC_CARD
+SPECIFIC_CHAMPION
+RANDOM_CARD
+COSMETIC
+기존 실제 reward types
+
+중요:
+없는 reward system을 무작정 만들 필요는 없음.
+
+하지만 기존 reward types를
+Quest ID hardcode가 아닌 declarative reward list로 실행.
+
+예:
+
+rewards: [
+  { type: "PACK", packDefinitionId: "...", amount: 2 },
+  { type: "CURRENCY", currency: "...", amount: 500 }
+]
+
+==================================================
+24. Reward는 claim 시 authoritative
+==================================================
+
+client가 보상 내용을 결정하지 않음.
+
+server:
+Quest complete 확인
+→ reward definition read
+→ transaction
+→ claimed=true
+→ authoritative inventory update
+
+double claim 방지.
+
+==================================================
+25. Quest lifecycle
+==================================================
+
+Admin에서 설정 가능 여부를 현재 시스템에 맞게 검토:
+
+- DRAFT
+- ACTIVE/PUBLISHED
+- DISABLED
+- startAt
+- endAt
+- repeatType
+
+repeat 후보:
+NONE
+DAILY
+WEEKLY
+SEASONAL
+
+현재 이미 존재하는 시스템을 우선 재사용.
+
+시간대:
+서버 canonical timezone/UTC policy 명확히.
+
+==================================================
+26. Quest assignment
+==================================================
+
+새 Quest가 생성됐을 때
+누가 받는지 generic하게.
+
+기본:
+모든 eligible normal players
+
+또는 현재 assignment system 유지.
+
+신규 계정도 active Quest를 받는지 확인.
+
+Admin 계정만 자동 assignment되는 문제 금지.
+
+==================================================
+27. Event Deduplication
+==================================================
+
+매우 중요.
+
+Quest progress key 예:
+questId
+playerId
+eventId
+
+동일 eventId 재처리:
+delta 0
+
+reconnect
+WS replay
+HTTP retry
+client remount
+
+로 중복 진행 금지.
+
+여러 Quest가 같은 event를 소비하는 것은 정상.
+
+예:
+WRESTLER play 하나가
+"선수 10장"
+"좀비 5장"
+둘 다 조건 충족하면
+각 Quest +1.
+
+==================================================
+28. Atomic Persistence
+==================================================
+
+event 하나를 처리하다 서버 오류가 나서
+일부 Quest만 저장되고 일부는 중복 재처리되는 문제 방지.
+
+현재 DB 구조에 맞게
+transaction/idempotency 적용.
+
+==================================================
+29. Match-local aggregation
+==================================================
+
+PER_MATCH Quest가 있다면
+canonical matchId 기준.
+
+예:
+한 경기에서 damage 30.
+
+match 중 local progress:
+10
+20
+30
+
+목표 달성:
+Quest complete/progress event.
+
+match 종료 전 서버 재시작/reconnect에도
+필요하면 복구 가능하게.
+
+현재 architecture에 맞게 최소 persistence 결정.
+
+==================================================
+30. UI Progress 즉시 갱신
+==================================================
+
+Quest progress가 DB에는 오르는데 UI에 안 보이는 문제도 막는다.
+
+progress mutation 이후:
+
+- query invalidate/refetch
+또는
+- authoritative WS update
+
+사용.
+
+Admin 전용 cache key 금지.
+
+Normal user Quest 화면에서 즉시 반영.
+
+==================================================
+31. 게임 중 Quest toast
+==================================================
+
+현재 Quest progress toast/UI가 있다면 유지.
+
+없다면 이번 작업에서 대규모 새 연출은 필수 아님.
+
+하지만 progress가 실제로 발생했을 때
+Quest page에서는 정확히 보여야 한다.
+
+==================================================
+32. Quest 삭제
+==================================================
+
+Admin이 QuestDefinition 삭제 시
+PlayerQuestState를 무조건 cascade-delete해서 기록 손실시키는지 확인.
+
+현재 제품 정책 유지.
+
+가능하면 hard delete보다 archive/disabled가 안전할 수 있으나
+기존 관리 정책을 우선.
+
+이번 작업에서 unrelated lifecycle을 임의 변경하지 말 것.
+
+==================================================
+33. Quest Builder Preview / Dry Run
+==================================================
+
+가능하면 Admin에서:
+
+[조건 검증]
+[샘플 이벤트 테스트]
+
+기능 제공.
+
+예:
+현재 condition JSON에
+샘플 canonical event를 넣어:
+
+MATCH / NO MATCH
+delta
+
+를 확인.
+
+실제 user progress는 변경하지 않음.
+
+==================================================
+34. 자연어 설명 미리보기
+==================================================
+
+Admin Builder 저장 전
+structured condition을 사람이 읽을 수 있는 문장으로 보여준다.
+
+예:
+
+"온라인 대전에서 좀비 태그가 있는 선수 카드를 낼 때마다 1 진행합니다. 10회 완료."
+
+이 설명은 UI helper일 뿐 source-of-truth는 DSL.
+
+==================================================
+35. Optional AI Quest Compiler — 기존 AI Effect Compiler가 있다면
+==================================================
+
+현재 OpenAI 기반 Effect Compiler architecture를
+Quest에도 재사용할 가치가 있으면
+별도 optional layer로 추가 가능.
+
+예:
+
+Admin 자연어:
+"온라인에서 좀비 선수 10장 내기"
+
+AI:
+→ strict QuestConditionV2 생성
+
+하지만 반드시:
+
+- OpenAI는 Admin Generate 클릭 시에만
+- runtime provider call 0
+- save/play/progress/claim provider call 0
+- strict validator 통과 후만 적용
+- exact sentence/card name hardcode 금지
+- malformed/ambiguous result는 READY 처리 금지
+
+이번 작업의 필수 핵심은 generic Quest DSL/Builder다.
+AI가 없어도 자유롭게 만들 수 있어야 한다.
+
+==================================================
+36. Normal User authorization 재검증
+==================================================
+
+최근 Admin-only regression이 있었으므로
+Quest 전체에서 반드시 확인:
+
+Normal User:
+- Quest list read
+- Progress
+- Completion
+- Claim
+
+Admin:
+- QuestDefinition CRUD
+
+Normal user가 Admin API를 호출해야만 Quest가 작동하면 FAIL.
+
+==================================================
+37. 필수 Progress Regression Tests
+==================================================
+
+PROGRESS_1
+normal user
+qualifying event
+→ expected +1
+
+PROGRESS_2
+same event replay
+→ +0
+
+PROGRESS_3
+nonqualifying
+→ +0
+
+PROGRESS_4
+AI Match event
+→ progress
+
+PROGRESS_5
+Online Match event
+→ progress
+
+PROGRESS_6
+reconnect/replay
+→ duplicate 0
+
+PROGRESS_7
+progress reaches required
+→ COMPLETE
+
+PROGRESS_8
+claim
+→ reward once
+
+PROGRESS_9
+double claim
+→ reward 0 second time
+
+PROGRESS_10
+Admin ordinary gameplay
+→ same result as normal user
+→ Admin privilege not required
+
+==================================================
+38. 필수 Quest Builder Tests
+==================================================
+
+BUILDER_1
+CARD_PLAYED WRESTLER COUNT 10
+→ save / execute
+
+BUILDER_2
+tagsAny 좀비
+→ correct filter
+
+BUILDER_3
+DAMAGE_DEALT SUM amount 50
+→ accumulate exact amount
+
+BUILDER_4
+MATCH_WON + AI mode 3
+→ 3 wins
+
+BUILDER_5
+MATCH_WON + ONLINE mode 2
+→ 2 wins
+
+BUILDER_6
+definitionRef specific Champion
+→ name change does not break
+
+BUILDER_7
+AND filters
+→ all required
+
+BUILDER_8
+OR events
+→ either accepted
+
+BUILDER_9
+invalid field
+→ validation reject
+
+BUILDER_10
+SUM string field
+→ reject
+
+BUILDER_11
+negative required
+→ reject
+
+BUILDER_12
+legacy Quest
+→ still works
+
+==================================================
+39. 실제 Browser E2E — 일반 사용자
+==================================================
+
+가능하면 Development/Test Normal User로:
+
+1. Quest 화면 열기
+2. 현재 progress 확인
+3. AI Match 진입
+4. 실제 Quest 조건 수행
+5. match/행동 후 progress 증가 확인
+6. 새로고침 후 유지
+7. 완료
+8. reward claim
+
+Online도 가능한 범위에서 반복.
+
+Admin 계정만으로 테스트하고 PASS 금지.
+
+==================================================
+40. Admin Browser E2E
+==================================================
+
+Admin에서:
+
+1. 새 Quest 생성
+2. Event 선택
+3. Filters 추가
+4. Required 설정
+5. Reward 설정
+6. Preview
+7. 저장
+8. 다시 열어 동일
+9. Normal User에게 노출
+10. 실제 progress
+
+최소 3종의 서로 다른 Quest를
+코드 수정 없이 Admin UI에서 생성하여 실제 동작 증명.
+
+권장 예:
+
+- 선수 3장 사용
+- 좀비 태그 선수 2장 사용
+- 총 10 damage
+
+==================================================
+41. 보안
+==================================================
+
+Normal User가:
+
+- QuestDefinition 수정
+- required 변경
+- reward 변경
+- progress arbitrary set
+- 다른 user progress 수정
+- 다른 user reward claim
+
+불가.
+
+Admin endpoint auth 유지.
+
+==================================================
+42. Production 안전
+==================================================
+
+테스트는 Development/Test 데이터.
+
+금지:
+- Production quest reset
+- Production user progress 변경
+- Production reward 지급
+- Production QuestDefinition 임의 수정
+
+schema migration이 필요하면
+안전한 migration만.
+
+==================================================
+43. FIX-FIRST
+==================================================
+
+Browser 사용 불가여도 멈추지 않는다.
+
+IMPLEMENTATION
+AUTOMATED VERIFICATION
+BROWSER E2E
+
+분리.
+
+Browser unavailable:
+BROWSER E2E = UNVERIFIED
+
+==================================================
+44. 자동 검증
+==================================================
+
+반드시:
+
+pnpm run typecheck
+pnpm --filter @workspace/ko-game run build
+git diff --check
+
+API가 별도면:
+API typecheck
+API build
+
+관련:
+Quest DSL schema
+validator
+event matcher
+aggregation
+dedupe
+persistence
+normal-user auth
+reward claim
+legacy adapter
+Admin Builder
+AI Match
+Online Match
+
+==================================================
+45. Git
+==================================================
+
+실제 수정 파일만 stage.
+
+제외:
+prompt txt
+Pasted txt
+.env
+secrets
+logs
+screenshots
+temp
+Replit metadata
+unrelated files
+
+commit.
+
+push 요청 없으면 push 금지.
+force push 금지.
+
+==================================================
+46. 최종 보고 형식
+==================================================
+
+QUEST PROGRESS ROOT CAUSE
+
+First failing layer:
+...
+
+Exact cause:
+...
+
+Admin-only dependency:
+YES / NO
+
+Normal-user fix:
+...
+
+
+EVENT PIPELINE
+
+Action → Event:
+PASS / FAIL
+
+Event → Quest matcher:
+PASS / FAIL
+
+Matcher → delta:
+PASS / FAIL
+
+Dedupe:
+PASS / FAIL
+
+Persistence:
+PASS / FAIL
+
+Client refresh:
+PASS / FAIL
+
+
+NORMAL USER
+
+AI Match progress:
+PASS / FAIL
+
+Online Match progress:
+PASS / FAIL / UNVERIFIED
+
+Refresh persists:
+PASS / FAIL
+
+Completion:
+PASS / FAIL
+
+Claim:
+PASS / FAIL
+
+
+QUEST ENGINE V2
+
+Generic event registry:
+PASS / FAIL
+
+Filters:
+PASS / FAIL
+
+COUNT:
+PASS / FAIL
+
+SUM:
+PASS / FAIL
+
+DISTINCT_COUNT:
+PASS / FAIL / NOT_IMPLEMENTED
+
+PER_MATCH:
+PASS / FAIL / NOT_IMPLEMENTED
+
+AND:
+PASS / FAIL
+
+OR:
+PASS / FAIL
+
+DefinitionRef:
+PASS / FAIL
+
+Tags:
+PASS / FAIL
+
+Numeric comparison:
+PASS / FAIL / NOT_IMPLEMENTED
+
+RETIRE/DESTROY distinction:
+PASS / FAIL
+
+
+ADMIN BUILDER
+
+Create arbitrary Quest:
+PASS / FAIL
+
+Edit:
+PASS / FAIL
+
+Delete/Disable:
+PASS / FAIL
+
+Event selector:
+PASS / FAIL
+
+Filter builder:
+PASS / FAIL
+
+Aggregation selector:
+PASS / FAIL
+
+Required:
+PASS / FAIL
+
+Reward builder:
+PASS / FAIL
+
+Human-readable preview:
+PASS / FAIL
+
+Dry-run:
+PASS / FAIL / NOT_IMPLEMENTED
+
+
+LEGACY
+
+Existing Quest compatibility:
+PASS / FAIL
+
+Unexpected migration loss:
+0 / FAIL
+
+
+SECURITY
+
+Normal user edits QuestDefinition:
+REJECTED / FAIL
+
+Normal user arbitrary progress:
+REJECTED / FAIL
+
+Normal user edits other player:
+REJECTED / FAIL
+
+Double event:
+0 duplicate / FAIL
+
+Double claim:
+0 duplicate reward / FAIL
+
+
+IMPLEMENTATION:
+PASS / FAIL
+
+AUTOMATED VERIFICATION:
+PASS / FAIL
+
+NORMAL-USER BROWSER E2E:
+PASS / FAIL / UNVERIFIED
+
+ADMIN BUILDER BROWSER E2E:
+PASS / FAIL / UNVERIFIED
+
+TYPECHECK:
+PASS / FAIL
+
+KO BUILD:
+PASS / FAIL
+
+API TYPECHECK:
+PASS / FAIL / NOT_MODIFIED
+
+API BUILD:
+PASS / FAIL / NOT_MODIFIED
+
+git diff --check:
+PASS / FAIL
+
+PRODUCTION DATA MUTATION:
+NONE / FAIL
+
+CHANGED FILES:
+...
+
+COMMIT:
+...
+
+PUSH:
+NOT REQUESTED
+
+==================================================
+47. 완료 조건
+==================================================
+
+1. 일반 사용자 실제 gameplay에서 Quest progress가 정상 증가.
+2. Admin 권한이 progress에 필요하지 않음.
+3. AI Match/Online canonical events가 Quest Engine에 도달.
+4. replay/reconnect 중복 진행 없음.
+5. Quest 완료/claim 정상.
+6. QuestDefinition과 PlayerQuestState 권한 분리.
+7. Admin이 코드 수정 없이 다양한 Quest 조건 생성 가능.
+8. event + filters + aggregation + required를 generic하게 조합 가능.
+9. card/Champion/tag 조건은 canonical refs/metadata 사용.
+10. 특정 Quest/card/Champion 이름 runtime hardcode 없음.
+11. 기존 Quest 호환 유지.
+12. reward도 declarative하게 실행.
+13. Normal User 보안/ownership 유지.
+14. Production user progress/data mutation 없음.
+15. 최소 3종 서로 다른 신규 Quest를 Admin UI만으로 만들어 실제 동작 증명.
+
+핵심:
+이번 작업의 성공 기준은
+"퀘스트 몇 종류 더 추가"가 아니다.
+
+앞으로 새로운 Quest 아이디어가 생겼을 때
+개발자가 runtime 코드를 또 수정하지 않아도
+Admin이 canonical event와 조건을 조합해
+자유롭게 만들 수 있어야 한다.
+
+그리고 그 Quest는 반드시
+일반 사용자 계정의 실제 게임 플레이로 정상 진행되어야 한다.

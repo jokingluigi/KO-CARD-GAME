@@ -1,0 +1,891 @@
+KO CARD GAME — CRITICAL DECK EDITOR OWNERSHIP COUNT / DECK COUNT DESYNC FIX
+
+증상:
+덱 편집기에서 카드를 덱에 넣으면
+해당 카드의 보유 수량이 갑자기 "1장"처럼 표시되거나,
+보유 수량/덱 포함 수량 계산이 꼬이면서 덱이 INVALID/오류 상태가 되는 문제가 있다.
+
+이 문제는 단순 표시 문제가 아닐 수 있다.
+Collection ownership, deck copy count, available-to-add count, deck validation이
+서로 같은 숫자를 재사용하고 있을 가능성이 있다.
+
+절대 추측으로 UI 숫자만 고치지 말고,
+데이터 흐름을 끝까지 추적해서 source of truth를 분리한다.
+
+==================================================
+0. 정상 개념
+==================================================
+
+반드시 아래 값들을 구분한다.
+
+ownedCount
+= 사용자가 실제로 보유한 총 카드 수량
+= Collection/Inventory source of truth
+
+deckCount
+= 현재 편집 중인 덱에 들어간 해당 CardDefinition 수량
+
+availableToAdd
+= 현재 덱에 추가 가능한 남은 수량
+= ownership rule이 적용되는 카드라면
+  max(0, ownedCount - deckCount)
+  또는 현재 프로젝트의 공식 계산식
+
+중요:
+덱에 카드를 넣었다고 ownedCount 자체가 줄어들면 안 된다.
+
+예:
+
+보유 3장
+덱에 0장
+→ ownedCount 3
+→ deckCount 0
+→ availableToAdd 3
+
+1장 추가
+→ ownedCount 3
+→ deckCount 1
+→ availableToAdd 2
+
+2장 추가
+→ ownedCount 3
+→ deckCount 2
+→ availableToAdd 1
+
+덱에서 1장 제거
+→ ownedCount 3
+→ deckCount 1
+→ availableToAdd 2
+
+카드를 덱에 넣는 것은
+"소유권 이동"이 아니다.
+
+==================================================
+1. 먼저 실제 ROOT CAUSE 추적
+==================================================
+
+다음 전체 경로 확인:
+
+Collection/Inventory query
+→ owned quantity mapping
+→ Deck Editor card browser
+→ Add Card action
+→ local deck state
+→ optimistic update
+→ displayed ownership count
+→ deck validation
+→ save payload
+→ server validation
+→ reload
+→ persisted deck
+
+첫 번째로 값이 잘못되는 layer를 찾는다.
+
+최종 보고에 반드시:
+
+Actual owned count before add:
+...
+
+Displayed owned count before add:
+...
+
+Deck count before add:
+...
+
+After add:
+Actual owned count:
+...
+
+Displayed owned count:
+...
+
+Deck count:
+...
+
+Available-to-add:
+...
+
+First wrong layer:
+...
+
+Root cause:
+...
+
+를 적는다.
+
+==================================================
+2. 가장 의심되는 버그 패턴 확인
+==================================================
+
+다음 가능성을 전부 조사하되,
+실제 코드 증거로 원인을 특정한다.
+
+A.
+UI가 ownedCount 대신
+`ownedCount - deckCount`
+를 "보유 수량"이라고 표시
+
+B.
+Add Card 시 inventory cache를 직접 decrement
+
+C.
+Deck editor의 optimistic update가
+collection row quantity를 mutate
+
+D.
+React Query/Zustand/Redux selector에서
+deckCount를 ownedCount에 덮어씀
+
+E.
+동일 CardDefinition의 collection row와 deck row가
+같은 object reference를 공유해서 mutation 발생
+
+F.
+`quantity`라는 같은 필드명을
+inventory와 deck entry가 둘 다 사용하면서 merge 충돌
+
+G.
+Deck save API response가
+deck copy count를 inventory quantity로 잘못 hydrate
+
+H.
+CardDefinition + Ownership + DeckEntry merge 과정에서
+spread 순서가 잘못되어:
+
+{
+  ...ownership,
+  ...deckEntry
+}
+
+또는 반대로
+`quantity`가 덮어써짐
+
+I.
+ALT/Prism/variant ownership을 합치는 과정에서
+base definition count가 1로 collapse
+
+J.
+Deck validator가 `availableToAdd`를
+실제 ownership으로 오해
+
+K.
+normal card duplicate validation과
+ownership validation이 뒤섞임
+
+L.
+Deck Editor에서 카드 추가 후
+refetch query key가 잘못되어
+stale partial response가 1장으로 표시
+
+M.
+card browser의 카드 하나를
+`count=1` fixture/default로 재생성
+
+N.
+AI Deck과 Player Deck 로직이 섞여
+ownership 없는 AI definition path가 적용
+
+==================================================
+3. 이름이 같은 quantity 필드 분리
+==================================================
+
+가능하면 타입에서부터 애매함 제거.
+
+좋은 예:
+
+type CollectionCard = {
+  definitionId: string
+  ownedCount: number
+}
+
+type DeckEntry = {
+  definitionId: string
+  deckCount: number
+}
+
+type DeckBuilderCardView = {
+  definition: CardDefinition
+  ownedCount: number
+  deckCount: number
+  availableToAdd: number
+}
+
+나쁜 예:
+
+quantity
+count
+copies
+
+하나를 여러 의미로 공유.
+
+현재 프로젝트 naming을 최대한 존중하되,
+충돌이 실제 원인이면 타입 수준에서 명확히 분리.
+
+==================================================
+4. Source of Truth
+==================================================
+
+Ownership source of truth:
+사용자 Collection/Inventory
+
+Deck source of truth:
+현재 Deck draft 또는 saved deck
+
+둘을 합쳐 view model을 만들 수는 있지만
+둘 중 하나가 다른 하나를 mutate하면 안 된다.
+
+Deck Editor에서:
+
+addCard(definitionId)
+
+는:
+deck draft만 변경.
+
+removeCard(definitionId)
+
+도:
+deck draft만 변경.
+
+collection quantity는 그대로.
+
+==================================================
+5. UI 표시 문구
+==================================================
+
+현재 UI가 "보유 수량"을 보여준다면
+실제 총 보유량을 표시.
+
+예:
+보유 3
+
+필요하면 별도 표시:
+
+덱 2
+추가 가능 1
+
+처럼 구분.
+
+"보유 1"이
+사실상 "남은 추가 가능 1"을 뜻하는 구조라면
+label을 잘못 쓰고 있는 것이다.
+
+혼동 금지.
+
+==================================================
+6. 카드 추가 가능 여부
+==================================================
+
+카드 추가 가능 여부는
+다음 두 조건을 함께 본다.
+
+1. ownership / availability rule
+2. deck construction rule
+
+예:
+
+ownedCount = 3
+deckCount = 1
+normal duplicate max = 2
+
+→ available ownership copies = 2
+→ duplicate rule remaining = 1
+→ 실제 추가 가능 = 1
+
+즉 단순히 ownedCount 하나만 보면 안 됨.
+
+==================================================
+7. Legendary 규칙 유지
+==================================================
+
+기존 공식 deck rule 유지:
+
+- deck 정확히 25장
+- Champion 1개 별도
+- Legendary 최대 5장
+- 동일 Legendary CardDefinition 중복 금지
+- Token 직접 추가 금지
+- normal duplicate rule 유지
+- invalid legacy deck은 자동 삭제/자동 잘라내기 금지
+
+이번 수정으로 이 규칙을 바꾸지 말 것.
+
+==================================================
+8. 일반 카드 duplicate rule
+==================================================
+
+현재 프로젝트에서 normal duplicate max가 몇 장인지
+실제 canonical validator에서 확인.
+
+UI add button과 server validator가
+같은 rule을 사용해야 한다.
+
+UI:
+추가 허용
+
+server:
+저장 거절
+
+같은 mismatch 금지.
+
+==================================================
+9. ownership validation
+==================================================
+
+Player Deck 저장 시
+실제 보유 수량보다 많은 copy를 넣으면 reject.
+
+예:
+
+ownedCount 1
+deckCount 2
+→ invalid
+
+ownedCount 2
+deckCount 2
+→ valid, duplicate rule도 허용한다면
+
+ownedCount 5
+deckCount 2
+→ valid
+
+중요:
+덱에 넣었다고 ownedCount가 2→1로 바뀌고
+그 결과 같은 덱이 self-invalid 되는 구조는 반드시 제거.
+
+==================================================
+10. 미보유 카드 / Craft UI 회귀 금지
+==================================================
+
+기존 미보유 카드 표시/Craft flow 유지.
+
+ownedCount = 0:
+- 일반 Player Deck에 직접 추가 불가
+- Craft 가능
+- Craft 성공 후 ownership refetch
+- 그 뒤 add 가능
+
+단 AI Deck Builder는 별도 규칙이므로
+이번 수정에서 Player Deck ownership 로직과 섞지 말 것.
+
+==================================================
+11. Prism / ALT Variant
+==================================================
+
+현재 카드 변형/Prism이
+같은 CardDefinition ownership을 공유하는지,
+별도 inventory item인지 실제 schema 확인.
+
+절대 임의로 합치거나 나누지 말 것.
+
+다만:
+variant display row가 여러 개라는 이유로
+ownedCount가 1로 잘못 collapse되는지 검사.
+
+==================================================
+12. Optimistic Update
+==================================================
+
+Deck add/remove를 optimistic하게 처리하더라도
+mutation 대상은 deck draft뿐.
+
+금지:
+
+collectionCard.quantity--
+collectionCard.ownedCount--
+
+add 후 UI에 남은 수량을 보여주고 싶다면
+selector에서 계산:
+
+availableToAdd = ownedCount - deckCount
+
+원본 ownership state mutation 금지.
+
+==================================================
+13. Object Reference Mutation 검사
+==================================================
+
+특히 다음 패턴 확인:
+
+const deckCard = collectionCard
+deckCard.quantity = ...
+
+이러면 같은 object reference로
+collection count가 같이 바뀔 수 있음.
+
+필요하면 immutable copy.
+
+React state object를 직접 mutate 금지.
+
+==================================================
+14. API payload contract
+==================================================
+
+Deck save payload는
+deck entry만 보내야 함.
+
+예:
+{
+  championId,
+  cards: [
+    { definitionId, count }
+  ]
+}
+
+collection ownedCount를
+deck save payload source-of-truth로 보내지 말 것.
+
+Server가 authenticated player의 inventory를
+직접 조회해서 ownership validation.
+
+==================================================
+15. save response merge
+==================================================
+
+서버 save response를 UI state에 merge할 때도 주의.
+
+Deck response의:
+
+count
+
+를 CollectionCard의:
+
+ownedCount
+
+에 덮어쓰지 말 것.
+
+API 타입을 분리.
+
+==================================================
+16. reload consistency
+==================================================
+
+다음이 같아야 함:
+
+before save
+after save
+after page refresh
+after logout/login
+
+보유 수량은 동일.
+
+Deck count만 persisted.
+
+==================================================
+17. Deck validity
+==================================================
+
+현재 "덱에 문제가 생긴다"의 정확한 오류도 추적.
+
+어떤 validator가 어떤 reason code를 반환하는지 기록:
+
+- insufficient ownership
+- duplicate limit
+- legendary limit
+- card count
+- unpublished
+- missing definition
+- token
+- champion
+- unknown
+
+실제 reason을 사용자에게 보이게 할 수 있다면
+generic "덱에 문제가 있습니다"보다 명확하게.
+
+하지만 이번 작업에서 UX 문구 대규모 redesign은 하지 말 것.
+
+==================================================
+18. 필수 테스트
+==================================================
+
+OWN_1
+owned=3
+deck=0
+→ UI owned=3
+
+OWN_2
+add 1
+→ owned=3
+→ deck=1
+→ available=2
+
+OWN_3
+add second copy
+→ owned=3
+→ deck=2
+→ available=1
+
+OWN_4
+remove 1
+→ owned=3
+→ deck=1
+→ available=2
+
+OWN_5
+save + reload
+→ owned=3
+→ deck=1
+
+OWN_6
+refresh
+→ same
+
+OWN_7
+owned=1
+add 1
+→ owned display remains 1
+→ deckCount=1
+→ available=0
+→ deck valid if duplicate/card-count rules satisfied
+
+OWN_8
+owned=1
+attempt second copy
+→ blocked/reject
+→ deck unchanged
+
+OWN_9
+owned=2
+add 2
+→ valid if normal duplicate rule allows 2
+
+OWN_10
+remove all copies
+→ owned unchanged
+
+==================================================
+19. 전체 25장 덱 regression
+==================================================
+
+실제 정상 사용자 inventory fixture로
+25장 완성 덱 생성.
+
+확인:
+
+- 25/25
+- Champion 별도
+- ownership sufficient
+- no false invalid
+- save
+- reload
+- AI Match 사용 가능
+- Online deck validation 가능
+
+"카드 하나 추가할 때마다 ownership이 줄어
+완성할수록 invalid" 현상 0.
+
+==================================================
+20. 같은 카드 여러 장 UI
+==================================================
+
+Card Browser에서 같은 카드의:
+
+보유:
+3
+
+덱:
+2
+
+추가 가능:
+1
+
+상태를 명확히 계산.
+
+필요하면 + 버튼 disabled 조건:
+
+deckCount >= ownership-limited max
+OR
+duplicate rule reached
+OR
+deck full
+OR
+other canonical restriction
+
+==================================================
+21. Deck full
+==================================================
+
+deck 25장 상태에서 추가:
+blocked.
+
+이때 ownership count는 절대 변경 안 됨.
+
+==================================================
+22. 실패 rollback
+==================================================
+
+add/save가 실패해도
+collection ownership이 변하면 안 됨.
+
+optimistic deck draft를 rollback할 수는 있음.
+
+inventory rollback이라는 개념 자체가
+Deck add에 존재하면 안 됨.
+
+==================================================
+23. Normal User 권한 회귀와 연계 확인
+==================================================
+
+최근 일반 사용자 계정에서
+Bulk Pack/Quest가 Admin에서만 동작하는 authorization bug가 있었으므로,
+Deck ownership query가 Admin 전용 endpoint 또는
+Admin용 inventory response를 재사용하는지도 확인.
+
+Normal User와 Admin User가
+동일한 자신의 ownership count를 올바르게 받는지 비교.
+
+단 이번 핵심은 Deck Editor count/validation.
+
+==================================================
+24. Player Deck vs AI Deck 분리
+==================================================
+
+AI Deck은 테스트용으로 unpublished content를 허용할 수 있지만
+Player Deck ownership 규칙과 분리.
+
+AI Deck에 ownership 개념이 없거나 별도라면
+Player Deck selector/validator를 재사용하며 count를 1로 만드는 버그가 없는지 확인.
+
+==================================================
+25. Browser E2E — 일반 사용자 계정
+==================================================
+
+가능하면 실제 일반 사용자로:
+
+1. Collection에서 특정 카드 보유 수량 확인
+2. Deck Editor 진입
+3. 같은 카드 보유 수량 확인
+4. 1장 추가
+5. 보유 수량 다시 확인
+6. deck count 확인
+7. 2번째 copy 추가 가능 여부 확인
+8. 제거
+9. 저장
+10. 새로고침
+11. 덱 valid 상태 확인
+
+Admin 계정만으로 테스트하고 PASS 금지.
+
+==================================================
+26. 자동 검증
+==================================================
+
+반드시:
+
+pnpm run typecheck
+pnpm --filter @workspace/ko-game run build
+git diff --check
+
+관련:
+
+collection ownership selectors
+deck view-model selectors
+deck add/remove reducer
+deck validator
+server save validator
+ownership API
+normal-user inventory query
+cache/refetch
+variant/prism ownership if relevant
+
+==================================================
+27. FIX-FIRST
+==================================================
+
+Browser unavailable이어도
+구현과 자동 검증 계속.
+
+구분:
+
+IMPLEMENTATION
+AUTOMATED VERIFICATION
+BROWSER E2E
+
+Browser unavailable:
+BROWSER E2E = UNVERIFIED
+
+==================================================
+28. Git
+==================================================
+
+실제 수정 파일만 stage.
+
+제외:
+prompt txt
+Pasted txt
+.env
+secrets
+logs
+screenshots
+temp
+Replit metadata
+unrelated files
+
+commit.
+
+push 요청 없으면 push 금지.
+force push 금지.
+
+==================================================
+29. 최종 보고 형식
+==================================================
+
+ROOT CAUSE
+
+Actual ownership source:
+...
+
+Deck count source:
+...
+
+First wrong layer:
+...
+
+Exact root cause:
+...
+
+
+BEFORE FIX EXAMPLE
+
+Owned:
+...
+
+Deck:
+...
+
+Displayed owned after add:
+...
+
+Validator result:
+...
+
+
+AFTER FIX
+
+ownedCount:
+PASS / FAIL
+
+deckCount:
+PASS / FAIL
+
+availableToAdd:
+PASS / FAIL
+
+Adding card mutates ownership:
+NO / FAIL
+
+Removing card mutates ownership:
+NO / FAIL
+
+Save/reload preserves ownership:
+PASS / FAIL
+
+
+VALIDATION
+
+Insufficient ownership:
+PASS / FAIL
+
+Normal duplicate rule:
+PASS / FAIL
+
+Legendary duplicate rule:
+PASS / FAIL
+
+Legendary max 5:
+PASS / FAIL
+
+25-card rule:
+PASS / FAIL
+
+Token blocked:
+PASS / FAIL
+
+Champion separate:
+PASS / FAIL
+
+
+NORMAL USER
+
+Collection count:
+PASS / FAIL
+
+Deck Editor count:
+PASS / FAIL
+
+Save:
+PASS / FAIL
+
+Refresh:
+PASS / FAIL
+
+25-card valid deck:
+PASS / FAIL
+
+
+AI DECK ISOLATION
+
+Player ownership logic leaked into AI Deck:
+NO / FAIL
+
+
+IMPLEMENTATION:
+PASS / FAIL
+
+AUTOMATED VERIFICATION:
+PASS / FAIL
+
+NORMAL-USER BROWSER E2E:
+PASS / FAIL / UNVERIFIED
+
+TYPECHECK:
+PASS / FAIL
+
+KO BUILD:
+PASS / FAIL
+
+API TYPECHECK:
+PASS / FAIL / NOT_MODIFIED
+
+API BUILD:
+PASS / FAIL / NOT_MODIFIED
+
+git diff --check:
+PASS / FAIL
+
+PRODUCTION DATA MUTATION:
+NONE / FAIL
+
+CHANGED FILES:
+...
+
+COMMIT:
+...
+
+PUSH:
+NOT REQUESTED
+
+==================================================
+30. 완료 조건
+==================================================
+
+1. 덱에 카드를 넣어도 실제 ownedCount는 절대 변하지 않음.
+2. Deck count와 owned count가 별도 상태로 관리됨.
+3. availableToAdd는 계산값으로만 처리.
+4. UI에서 "보유 수량"은 실제 총 보유 수량 표시.
+5. ownership 충분한 정상 덱이 false INVALID 되지 않음.
+6. 보유 수량보다 많은 copy는 여전히 차단.
+7. normal duplicate/Legendary/25장 규칙 유지.
+8. save/reload/refresh 후에도 count 일관성 유지.
+9. 일반 사용자 계정에서도 동일하게 정상.
+10. AI Deck 규칙과 Player Deck ownership 로직 혼동 없음.
+11. Production 데이터 mutation 없음.
+12. root cause와 수정 layer를 정확히 보고.
+
+핵심:
+"덱에 넣은 카드 수량"과 "내가 실제로 보유한 카드 수량"은
+같은 숫자가 아니다.
+
+Deck Editor는 inventory를 소비하는 화면이 아니다.
+카드를 덱에 넣는 순간 ownership이 줄거나,
+deckCount가 ownedCount에 덮어써져
+자기 자신을 INVALID로 만드는 구조를 완전히 제거하라.
