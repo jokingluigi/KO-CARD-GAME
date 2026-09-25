@@ -1279,7 +1279,7 @@ function HandCard({
   }
 
   return (
-    <Inspectable content={<CardInspectContent card={card} />} className="relative shrink-0">
+    <Inspectable content={<CardInspectContent card={card} />} touchInspectTriggerOnly className="relative shrink-0">
     <div className={`relative ${presentationActive ? "presentation-card-pulse" : ""}`}>
       <CardRenderer
       name={def?.name ?? '알 수 없는 카드'}
@@ -1304,6 +1304,15 @@ function HandCard({
       tabIndex={0}
       containerRef={cardRef}
     />
+    <button
+      type="button"
+      data-touch-inspect-trigger
+      className="ko-hand-inspect-button hidden"
+      aria-label={`${def?.name ?? '카드'} 상세정보`}
+      onClick={(event) => event.stopPropagation()}
+    >
+      ⓘ
+    </button>
     {card.cardType === "TECHNIQUE" && isSelected && (
       <button
         type="button"

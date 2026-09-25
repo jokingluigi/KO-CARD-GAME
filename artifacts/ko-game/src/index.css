@@ -1047,7 +1047,7 @@
     position: fixed;
     top: auto;
     right: 8px;
-    bottom: calc(172px + env(safe-area-inset-bottom));
+    bottom: calc(260px + env(safe-area-inset-bottom));
     left: auto;
     width: 94px;
     gap: 4px;
@@ -1106,7 +1106,8 @@
     grid-template-columns: 68px minmax(0, 1fr);
     align-items: end;
     gap: 4px;
-    min-height: 190px;
+    height: 260px;
+    min-height: 260px;
     padding: 0 2px max(4px, env(safe-area-inset-bottom));
   }
 
@@ -1134,7 +1135,8 @@
   .ko-player-hand {
     width: 100%;
     min-width: 0;
-    padding-top: 34px;
+    height: 100%;
+    padding-top: 70px;
     overflow-x: auto;
     overscroll-behavior-x: contain;
     touch-action: pan-x pan-y;
@@ -1177,6 +1179,24 @@
     transform: translateY(-32px) scale(1.1);
     transform-origin: bottom center;
     z-index: 50;
+  }
+
+  .ko-hand-inspect-button {
+    display: flex;
+    position: absolute;
+    top: 2px;
+    right: 2px;
+    z-index: 160;
+    width: 30px;
+    height: 30px;
+    align-items: center;
+    justify-content: center;
+    border: 1px solid rgb(245 158 11);
+    border-radius: 50%;
+    background: rgb(10 10 10 / 90%);
+    color: rgb(253 230 138);
+    font-size: 17px;
+    font-weight: 800;
   }
 
   .ko-hand-card .font-display {

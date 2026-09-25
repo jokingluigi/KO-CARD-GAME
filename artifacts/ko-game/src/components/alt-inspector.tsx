@@ -239,11 +239,13 @@ export function Inspectable({
   children,
   content,
   showOnHover = false,
+  touchInspectTriggerOnly = false,
   className,
 }: {
   children: ReactNode;
   content: ReactNode;
   showOnHover?: boolean;
+  touchInspectTriggerOnly?: boolean;
   className?: string;
 }) {
   const context = useContext(AltInspectContext);
@@ -274,7 +276,13 @@ export function Inspectable({
       onFocus={(event) => inspect(event.currentTarget)}
       onBlur={context.clear}
       onPointerUp={(event) => {
-        if (event.pointerType === 'touch') toggleTouch(event.currentTarget);
+        if (event.pointerType !== 'touch') return;
+        if (
+          touchInspectTriggerOnly &&
+          window.matchMedia('(max-width: 768px) and (orientation: portrait)').matches &&
+          !(event.target as Element).closest('[data-touch-inspect-trigger]')
+        ) return;
+        toggleTouch(event.currentTarget);
       }}
     >
       {children}

@@ -566,6 +566,28 @@
   }
 }
 
+@media (max-width: 760px) and (orientation: portrait) {
+  .player {
+    grid-template-areas: "identity portrait" "dialogue dialogue";
+    grid-template-rows: auto auto;
+  }
+
+  .player[data-side="self"] {
+    grid-template-areas: "portrait identity" "dialogue dialogue";
+  }
+
+  .dialogue {
+    grid-area: dialogue;
+    align-self: start;
+    margin-top: 8px;
+    transform: translateY(8px);
+  }
+
+  .dialogue[data-visible="true"] {
+    transform: translateY(0);
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   .player,
   .dialogue,
