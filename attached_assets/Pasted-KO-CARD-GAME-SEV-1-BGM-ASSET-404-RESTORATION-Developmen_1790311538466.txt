@@ -1,0 +1,1143 @@
+KO CARD GAME — SEV-1 BGM ASSET 404 RESTORATION
+
+현재 Development에서 Main BGM과 활성 Match BGM 2개가 모두
+404 "오디오를 찾을 수 없습니다"
+오류로 실패하고 있다.
+
+이번 작업은 다른 기능을 건드리지 말고
+오직 음악 asset 404 문제를 끝까지 추적해서
+실제 브라우저에서 소리가 재생되는 상태까지 해결한다.
+
+다른 기능:
+- 카드 태그
+- 퀘스트
+- 덱
+- 모바일
+- 카드 효과
+- Match Intro
+- 기타 UI
+
+전부 건드리지 말 것.
+
+==================================================
+0. 현재 확인된 사실
+==================================================
+
+최근 작업에서:
+
+- BGM routing/state logic 수정 완료
+- AI/Online match-selected music은 battle scope
+- title/admin-preview music은 non-battle scope
+- autoplay block과 media-load failure 분리
+- KO typecheck/build PASS
+- audio tests 11/11 PASS
+
+하지만 실제 Development에서는:
+
+Main BGM
+→ 404
+
+Enabled Match BGM #1
+→ 404
+
+Enabled Match BGM #2
+→ 404
+
+응답:
+"오디오를 찾을 수 없습니다"
+
+즉 현재 핵심 blocker는
+Audio routing 자체보다 실제 audio asset의
+
+DB/config reference
+→ URL
+→ storage/file
+→ media endpoint
+
+연결이 끊어진 문제다.
+
+==================================================
+1. 절대 완료 조건
+==================================================
+
+다음이 실제로 모두 확인되기 전까지
+"해결 완료"라고 말하지 말 것.
+
+A.
+현재 설정된 Main BGM URL
+→ HTTP 200 또는 206
+→ 실제 audio bytes
+→ 브라우저 실제 재생
+
+B.
+Enabled Match BGM #1
+→ HTTP 200 또는 206
+→ 브라우저 실제 재생
+
+C.
+Enabled Match BGM #2
+→ HTTP 200 또는 206
+→ 브라우저 실제 재생
+
+D.
+NORMAL USER
+→ Main BGM 실제 재생
+
+E.
+ADMIN
+→ Main BGM 실제 재생
+
+F.
+Main → Deck → Collection → Main
+→ 같은 Non-Battle BGM이 끊기지 않고 이어서 재생
+→ 처음부터 재시작 금지
+
+G.
+Main → AI Match
+→ Main BGM pause
+→ Battle BGM 실제 재생
+→ Match 종료
+→ Main BGM 이전 위치에서 resume
+
+가능하면 Online Match에서도 동일 검증.
+
+==================================================
+2. 먼저 실제 404 요청 URL을 확보
+==================================================
+
+브라우저 Network 또는 서버 로그에서
+404가 발생하는 실제 요청을 확인한다.
+
+반드시 세 개 모두 기록:
+
+MAIN_BGM_URL:
+...
+
+STATUS:
+...
+
+MATCH_BGM_1_URL:
+...
+
+STATUS:
+...
+
+MATCH_BGM_2_URL:
+...
+
+STATUS:
+...
+
+RESPONSE BODY:
+...
+
+추측으로 URL을 만들지 말 것.
+
+==================================================
+3. URL이 어떻게 만들어지는지 끝까지 추적
+==================================================
+
+각 음악에 대해:
+
+DB/config stored value
+→ Audio metadata
+→ URL/path resolver
+→ API/static route
+→ storage/file lookup
+→ final URL
+→ browser request
+
+전체를 추적한다.
+
+반드시 찾아야 할 것:
+
+- DB에는 어떤 경로/ID가 저장되어 있는가
+- Frontend가 그것을 어떤 URL로 바꾸는가
+- 그 URL을 어느 서버가 처리하는가
+- 실제 file/object가 어디에 존재하는가
+- DB reference와 실제 object key가 일치하는가
+
+==================================================
+4. 실제 파일 존재 여부 확인
+==================================================
+
+Main BGM 및 Match BGM 두 개 각각:
+
+- repository 안에 실제 파일이 존재하는가
+- public/static directory에 존재하는가
+- build output에 포함되는가
+- persistent object storage에 존재하는가
+- DB storageKey와 실제 key가 같은가
+- 확장자가 같은가
+- filename 대소문자가 같은가
+- URL encoding 문제가 없는가
+- 파일명이 한글/공백을 포함할 경우 정상 decode되는가
+
+Linux에서는 파일명 대소문자가 다르면
+실제 404가 날 수 있으므로 반드시 확인.
+
+==================================================
+5. 반드시 조사할 404 원인
+==================================================
+
+다음 가능성을 전부 검사한다.
+
+1.
+DB에 예전 audio URL/path가 남아 있음.
+
+예:
+
+DB:
+`/uploads/audio/main.mp3`
+
+실제:
+`/media/audio/main.mp3`
+
+2.
+파일명 대소문자 mismatch.
+
+예:
+
+DB:
+MainTheme.mp3
+
+실제:
+maintheme.mp3
+
+3.
+오디오 파일이 git/build에 포함되지 않음.
+
+4.
+.gitignore 때문에 audio가 배포되지 않음.
+
+5.
+개발 환경 local filesystem에만 파일이 있었고
+restart/deploy 후 사라짐.
+
+6.
+audio upload directory가 ephemeral filesystem임.
+
+7.
+DB에는 media record가 있지만
+실제 storage object는 삭제됨.
+
+8.
+media endpoint route가 잘못됨.
+
+9.
+frontend가 잘못된 hostname 또는 old path를 사용함.
+
+10.
+SPA catchall이 media request를 가로챔.
+
+11.
+Admin preview에서는 다른 URL을 사용하고
+Normal User playback에서는 broken URL을 사용함.
+
+12.
+media API가 asset ID 대신 잘못된 definition ID를 조회함.
+
+13.
+signed URL 또는 storage key 생성이 잘못됨.
+
+==================================================
+6. EPHEMERAL FILESYSTEM 여부 최우선 확인
+==================================================
+
+이 부분 매우 중요.
+
+오디오 업로드 파일이:
+
+uploads/
+public/uploads/
+tmp/
+local filesystem
+
+등 서버 로컬 디스크에만 저장되는 구조인지 확인.
+
+Replit/Render 재시작이나 deploy 후
+파일이 사라지는 구조라면
+단순히 path를 다시 연결하는 것으로 끝내지 말 것.
+
+현재 프로젝트에서 사용하는
+기존 persistent storage 구조가 있다면 그것을 사용한다.
+
+예:
+Supabase Storage 등 기존 architecture.
+
+새 외부 서비스를 임의로 추가하지 말 것.
+
+==================================================
+7. 기존 원본 파일이 정말 사라졌다면
+==================================================
+
+없는 음악을 임의의 다른 음악으로 대체하지 말 것.
+
+먼저:
+
+- repository history
+- git history
+- 기존 storage
+- 기존 uploaded object
+- 이전 asset path
+- 이전 deployment artifact
+
+에서 복구 가능한 원본 파일이 있는지 찾는다.
+
+원본 파일 자체가 정말 어디에도 없다면:
+
+"코드 문제가 아니라 원본 audio file이 존재하지 않아 재업로드가 필요함"
+
+이라고 명확히 보고.
+
+임의 sample mp3 생성 금지.
+무음 audio 생성 금지.
+다른 음악으로 대체 금지.
+
+==================================================
+8. MEDIA API ROUTE 확인
+==================================================
+
+Audio URL이 다음 같은 API route라면:
+
+GET /api/audio/:id
+GET /api/media/:id
+GET /api/music/:id
+
+실제 route를 추적.
+
+확인:
+
+- route가 서버에 등록돼 있는가
+- frontend `/api/*` rewrite가 Node API로 향하는가
+- SPA catchall보다 먼저 처리되는가
+- auth middleware가 잘못 적용되지 않았는가
+- path parameter가 올바른가
+- DB media record lookup이 성공하는가
+- storage object fetch가 성공하는가
+
+404를 다음으로 정확히 분류:
+
+ROUTE_NOT_FOUND
+
+MEDIA_RECORD_NOT_FOUND
+
+STORAGE_OBJECT_NOT_FOUND
+
+INVALID_PATH
+
+OTHER
+
+==================================================
+9. Static Asset인 경우
+==================================================
+
+예:
+
+/audio/main.mp3
+
+형태라면:
+
+source tree에서 파일 존재
+→ build 후 dist에 파일 존재
+→ deployed path 존재
+
+까지 확인.
+
+Vite/public asset이면
+build 결과에 실제 복사되는지도 확인.
+
+==================================================
+10. HTTP 200만으로 PASS 금지
+==================================================
+
+잘못된 SPA fallback 때문에:
+
+HTTP 200
+Content-Type: text/html
+
+로 index.html을 반환할 수도 있다.
+
+이건 FAIL이다.
+
+오디오 request는 반드시 실제 audio content여야 함.
+
+확인:
+
+HTTP:
+200 또는 206
+
+Content-Type:
+audio/mpeg
+audio/ogg
+audio/wav
+등 실제 파일 형식
+
+가능하면:
+Content-Length
+Accept-Ranges
+Range request
+
+도 확인.
+
+==================================================
+11. Normal User 권한 확인
+==================================================
+
+최근 KO CARD GAME에서
+Admin에서는 되고 일반 사용자는 안 되는 regression이 있었으므로
+반드시 Normal User 기준으로 테스트.
+
+정상 구조:
+
+Normal User:
+published/enabled BGM 재생 가능
+
+Admin:
+동일 gameplay BGM 재생 가능
+
+Admin-only:
+BGM 업로드/삭제/설정 변경 등 관리 기능만
+
+음악 재생 자체에 Admin 권한이 필요하면 FAIL.
+
+검사:
+
+requireAdmin
+isAdmin
+/api/admin/audio
+service role
+RLS
+
+등이 일반 playback path에 들어가 있는지 확인.
+
+==================================================
+12. 실제 브라우저 재생까지 확인
+==================================================
+
+파일 request가 성공해도 실제 playback 검증 필요.
+
+확인:
+
+audio.src
+audio.readyState
+audio.networkState
+audio.paused
+audio.currentTime
+audio.volume
+audio.muted
+
+play() promise 결과도 확인.
+
+예:
+
+재생 전:
+currentTime = 0
+
+3초 후:
+currentTime > 2
+
+이면 실제 playback 증거.
+
+Autoplay block은 media 404와 별도 문제로 취급.
+
+NotAllowedError가 나오면
+기존 first-user-gesture fallback 사용.
+
+==================================================
+13. Main BGM continuity 회귀 테스트
+==================================================
+
+파일 복구 후 반드시 기존 continuity도 실제 검증.
+
+NORMAL USER:
+
+Main
+→ BGM 재생
+→ currentTime 기록
+
+Deck
+→ 계속 재생
+
+Collection
+→ 계속 재생
+
+Shop
+→ 계속 재생
+
+Main 복귀
+→ 처음부터 재생하지 않음
+
+NON_BATTLE → NON_BATTLE에서는
+같은 Audio instance와 currentTime을 유지.
+
+==================================================
+14. Battle BGM 실제 검증
+==================================================
+
+AI Match:
+
+Main BGM playing
+
+→ AI Match 입장
+
+Main BGM:
+pause
+
+Selected Match BGM:
+play
+
+→ AI Match 종료
+
+Battle BGM:
+stop/pause
+
+Main BGM:
+이전 currentTime에서 resume
+
+Battle 동안 Main과 Battle 음악이
+동시에 겹쳐 재생되면 FAIL.
+
+==================================================
+15. Match BGM 두 개 모두 검증
+==================================================
+
+현재 enabled Match BGM asset이 두 개라고 보고됐으므로
+둘 다 개별 검증.
+
+MATCH TRACK 1
+
+ID:
+...
+
+NAME:
+...
+
+STORED PATH:
+...
+
+FINAL URL:
+...
+
+HTTP:
+...
+
+CONTENT TYPE:
+...
+
+ACTUAL PLAYBACK:
+PASS / FAIL
+
+
+MATCH TRACK 2
+
+ID:
+...
+
+NAME:
+...
+
+STORED PATH:
+...
+
+FINAL URL:
+...
+
+HTTP:
+...
+
+CONTENT TYPE:
+...
+
+ACTUAL PLAYBACK:
+PASS / FAIL
+
+하나만 고치고 완료 처리 금지.
+
+==================================================
+16. Main BGM 별도 검증
+==================================================
+
+MAIN TRACK
+
+ID:
+...
+
+NAME:
+...
+
+STORED PATH:
+...
+
+FINAL URL:
+...
+
+HTTP:
+...
+
+CONTENT TYPE:
+...
+
+ACTUAL PLAYBACK:
+PASS / FAIL
+
+==================================================
+17. 향후 Legendary 전용 음악도 같은 구조를 쓰게 할 것
+==================================================
+
+중요.
+
+이번 수정은 Main BGM만 특수 하드코딩해서
+파일을 찾게 만드는 방식으로 해결하지 말 것.
+
+향후 Legendary 선수 전용 음악도
+동일한 audio infrastructure를 사용해야 한다.
+
+권장 구조:
+
+Audio Asset
+├ Main BGM
+├ Match BGM
+├ Legendary Character Theme
+└ future music
+
+        ↓
+
+Shared Audio Asset Resolver
+
+        ↓
+
+Persistent Storage / Valid Static Asset
+
+        ↓
+
+Media URL
+
+        ↓
+
+Global Audio Manager
+
+즉:
+
+Main 음악이면 special path
+Match 음악이면 special path
+Legendary 음악이면 또 다른 special path
+
+같이 각각 따로 구현하지 말 것.
+
+공통 audio asset resolver/storage pipeline을 고친다.
+
+==================================================
+18. Legendary 음악 미래 호환성
+==================================================
+
+이번 작업에서 Legendary 등장 trigger 자체를 구현하거나
+수정할 필요는 없다.
+
+하지만 향후:
+
+Legendary CardDefinition
+→ linked music asset ID
+→ Shared Audio Resolver
+→ actual audio file
+→ Global Audio Manager
+
+로 재생할 수 있어야 한다.
+
+즉 이번 404 수정 후에는
+Legendary 음악 파일도 동일 resolver를 통과하면
+404/storage 문제 없이 재생 가능한 기반이어야 한다.
+
+특정 Main/Match 타입만 resolver가 허용하면 안 된다.
+
+==================================================
+19. broken asset 저장 방지
+==================================================
+
+가능하면 Admin 음악 관리에서
+존재하지 않는 asset을 enable하는 경우 최소 검증 추가.
+
+예:
+
+Enable BGM
+
+→ referenced audio object exists?
+
+NO
+→ 저장/활성화 차단 또는 명확한 warning
+
+단 이번 작업 때문에
+Admin UI를 대규모 재설계하지 말 것.
+
+==================================================
+20. 실패를 숨기지 말 것
+==================================================
+
+절대 금지:
+
+404
+→ []
+
+404
+→ 아무 음악 없음
+
+404
+→ silent fallback
+
+404
+→ console error만 남기고 정상 취급
+
+Audio asset이 없다면
+정확히 media load failure로 보고.
+
+현재 수정에서 이미
+autoplay block과 media failure를 분리했다면
+그 구조를 유지.
+
+==================================================
+21. Production 안전
+==================================================
+
+Development/Test에서 해결/검증.
+
+Production DB 직접 수정 금지.
+
+Production audio files 삭제/교체 금지.
+
+Production BGM metadata 임의 수정 금지.
+
+코드상 Production에도 같은 위험이 있을 경우
+"Production impact possible"
+로 보고만 할 것.
+
+==================================================
+22. 필수 자동 테스트
+==================================================
+
+AUDIO_ASSET_1
+
+Configured Main BGM
+→ resolver produces valid existing asset
+
+AUDIO_ASSET_2
+
+Enabled Match BGM #1
+→ resolver produces valid existing asset
+
+AUDIO_ASSET_3
+
+Enabled Match BGM #2
+→ resolver produces valid existing asset
+
+AUDIO_ASSET_4
+
+missing asset
+→ explicit media error
+→ silent fallback 없음
+
+AUDIO_ASSET_5
+
+Normal authenticated user
+→ published/enabled audio access 가능
+
+AUDIO_ASSET_6
+
+Admin gameplay playback
+→ same shared audio resolver 사용
+
+AUDIO_ASSET_7
+
+NON_BATTLE → NON_BATTLE
+→ same track/instance 유지
+
+AUDIO_ASSET_8
+
+BATTLE entry/exit
+→ correct BGM handoff
+
+AUDIO_ASSET_9
+
+resolver가 Main/Match만 hardcode하지 않음
+→ generic music asset identity 지원
+
+==================================================
+23. Browser E2E
+==================================================
+
+NORMAL USER를 가장 중요하게 검증.
+
+1. Normal User login
+
+2. Main 접속
+
+3. Network에서 Main BGM request 확인
+
+4. HTTP 200/206 확인
+
+5. Content-Type audio 확인
+
+6. 실제 currentTime 증가 확인
+
+7. Deck 이동
+
+8. BGM 계속 재생 확인
+
+9. Collection 이동
+
+10. 계속 재생 확인
+
+11. Main 복귀
+
+12. restart 없음 확인
+
+13. AI Match 입장
+
+14. selected Match BGM request 200/206 확인
+
+15. 실제 currentTime 증가 확인
+
+16. AI Match 종료
+
+17. Main BGM 이전 위치에서 resume 확인
+
+가능하면 두 enabled Match BGM 모두 테스트.
+
+ADMIN에서도 Main playback 최소 확인.
+
+==================================================
+24. Browser unavailable 처리
+==================================================
+
+Browser가 사용 불가능하면
+작업을 중단하지 말 것.
+
+IMPLEMENTATION
+AUTOMATED VERIFICATION
+BROWSER E2E
+
+를 분리.
+
+Browser E2E를 실제 수행하지 못했다면:
+
+BROWSER E2E = UNVERIFIED
+
+라고 명확히 보고.
+
+하지만 asset existence/API request/storage resolver 테스트는 계속 수행.
+
+==================================================
+25. 검증 명령
+==================================================
+
+반드시:
+
+pnpm run typecheck
+
+pnpm --filter @workspace/ko-game run build
+
+git diff --check
+
+API 수정 시:
+
+API typecheck
+API build
+
+기존 audio tests도 전부 다시 실행.
+
+현재 11 tests가 있다면
+다시 11/11 이상 확인.
+
+==================================================
+26. Git
+==================================================
+
+실제 수정 파일만 stage.
+
+제외:
+
+prompt txt
+Pasted txt
+.env
+secrets
+logs
+screenshots
+temp
+Replit metadata
+unrelated files
+
+commit.
+
+Push 요청 없으면 push 금지.
+
+force push 금지.
+
+==================================================
+27. 최종 보고 형식
+==================================================
+
+SEV-1 AUDIO INCIDENT
+
+Main BGM before:
+404
+
+Match BGM #1 before:
+404
+
+Match BGM #2 before:
+404
+
+
+ROOT CAUSE
+
+Category:
+
+STATIC_PATH
+DB_URL
+STORAGE_KEY
+MISSING_FILE
+EPHEMERAL_STORAGE
+MEDIA_ROUTE
+BUILD_COPY
+AUTHORIZATION
+OTHER
+
+Exact cause:
+...
+
+First failing layer:
+...
+
+Actual audio file missing:
+YES / NO
+
+DB reference stale:
+YES / NO
+
+Media route broken:
+YES / NO
+
+Ephemeral/local storage involved:
+YES / NO
+
+
+MAIN BGM
+
+ID/name:
+...
+
+Stored path:
+...
+
+Final URL:
+...
+
+HTTP:
+200 / 206 / FAIL
+
+Content-Type:
+...
+
+Actual audio bytes:
+PASS / FAIL
+
+Browser playback:
+PASS / FAIL / UNVERIFIED
+
+currentTime increases:
+PASS / FAIL / UNVERIFIED
+
+
+MATCH BGM #1
+
+ID/name:
+...
+
+Stored path:
+...
+
+Final URL:
+...
+
+HTTP:
+200 / 206 / FAIL
+
+Playback:
+PASS / FAIL / UNVERIFIED
+
+
+MATCH BGM #2
+
+ID/name:
+...
+
+Stored path:
+...
+
+Final URL:
+...
+
+HTTP:
+200 / 206 / FAIL
+
+Playback:
+PASS / FAIL / UNVERIFIED
+
+
+NORMAL USER
+
+Main BGM:
+PASS / FAIL / UNVERIFIED
+
+Main → Deck:
+CONTINUES / FAIL / UNVERIFIED
+
+Deck → Collection:
+CONTINUES / FAIL / UNVERIFIED
+
+Collection → Main:
+NO RESTART / FAIL / UNVERIFIED
+
+AI Match BGM:
+PASS / FAIL / UNVERIFIED
+
+Return to Main:
+RESUME / FAIL / UNVERIFIED
+
+
+ADMIN
+
+Main BGM:
+PASS / FAIL / UNVERIFIED
+
+Admin-only playback dependency:
+NO / FAIL
+
+
+SHARED AUDIO INFRASTRUCTURE
+
+Main uses shared resolver:
+PASS / FAIL
+
+Match uses shared resolver:
+PASS / FAIL
+
+Resolver suitable for future Legendary themes:
+PASS / FAIL
+
+Main/Match name hardcode:
+NO / FAIL
+
+
+STORAGE
+
+Persistent:
+YES / NO
+
+Deploy-safe:
+YES / NO
+
+Restart file-loss risk:
+NO / FAIL
+
+
+VERIFICATION
+
+IMPLEMENTATION:
+PASS / FAIL
+
+AUTOMATED VERIFICATION:
+PASS / FAIL
+
+AUDIO TESTS:
+N/N
+
+NORMAL USER BROWSER E2E:
+PASS / FAIL / UNVERIFIED
+
+ADMIN BROWSER E2E:
+PASS / FAIL / UNVERIFIED
+
+TYPECHECK:
+PASS / FAIL
+
+KO BUILD:
+PASS / FAIL
+
+API TYPECHECK:
+PASS / FAIL / NOT_MODIFIED
+
+API BUILD:
+PASS / FAIL / NOT_MODIFIED
+
+git diff --check:
+PASS / FAIL
+
+PRODUCTION DATA MUTATION:
+NONE / FAIL
+
+
+CHANGED FILES:
+...
+
+COMMIT:
+...
+
+PUSH:
+NOT REQUESTED
+
+==================================================
+28. 완료 선언 금지 조건
+==================================================
+
+다음 중 하나라도 충족되지 않으면
+"해결 완료"라고 말하지 말 것.
+
+- Main BGM URL 실제 200/206
+- Match BGM #1 URL 실제 200/206
+- Match BGM #2 URL 실제 200/206
+- response가 실제 audio bytes
+- missing asset을 silent fallback으로 숨기지 않음
+- Normal User playback이 Admin 권한에 의존하지 않음
+- Main/Non-Battle continuity 회귀 없음
+- Battle BGM handoff 회귀 없음
+- common audio resolver/storage 구조 사용
+- Production 데이터 mutation 없음
+- typecheck/build/tests PASS
+
+브라우저가 없으면
+실제 audible playback은 절대 PASS라고 쓰지 말고
+UNVERIFIED라고 적을 것.
+
+==================================================
+29. 핵심 지시
+==================================================
+
+지금 문제는
+"음악을 재생하라는 코드가 없다"
+가 아니다.
+
+설정된 실제 BGM 파일을 요청했을 때
+404 "오디오를 찾을 수 없습니다"
+가 발생하는 것이 핵심 문제다.
+
+따라서:
+
+DB/config reference
+→ Shared Audio Resolver
+→ media/static endpoint
+→ actual persistent asset
+→ HTTP audio response
+→ browser playback
+
+이 전체 체인을 끝까지 추적한다.
+
+Main BGM 하나만 path hardcode해서 고치지 말 것.
+
+Match BGM과
+향후 Legendary 선수 전용 음악까지
+동일한 Shared Audio Asset Pipeline을 이용할 수 있도록
+공통 원인을 해결한다.
+
+404를 숨기는 것이 아니라
+실제 audio asset이 정상적으로 존재하고
+브라우저가 실제 재생할 수 있는 상태를 만들어라.
