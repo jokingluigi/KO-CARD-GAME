@@ -16,6 +16,7 @@ export interface MatchIntroOverlayProps {
   startedAt: number;
   gameplayStartsAt: number;
   onSkipRequest: () => void;
+  matchLabel?: string;
 }
 
 type Speaker = "self" | "opponent";
@@ -107,6 +108,7 @@ export function MatchIntroOverlay({
   startedAt,
   gameplayStartsAt,
   onSkipRequest,
+  matchLabel = "ONLINE MATCH",
 }: MatchIntroOverlayProps) {
   const [now, setNow] = useState(() => Date.now());
 
@@ -157,13 +159,13 @@ export function MatchIntroOverlay({
       className={styles.overlay}
       style={sceneStyle}
       role="dialog"
-      aria-label="Online match introduction"
+      aria-label={matchLabel === "ONLINE MATCH" ? "Online match introduction" : `${matchLabel} introduction`}
       data-testid="match-intro-overlay"
       data-intro-phase={elapsed >= versusAt ? "versus" : activeSpeaker ?? "entrance"}
     >
       <main className={styles.scene}>
         <div className={styles.sceneHeader} aria-hidden="true">
-          ONLINE MATCH
+          {matchLabel}
         </div>
 
         <section

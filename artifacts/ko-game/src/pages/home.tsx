@@ -51,6 +51,8 @@ import { ROUTES } from '@/lib/routes';
 import { fetchAIDecks, type AIDeck } from '@/lib/ai-decks-client';
 import { createLocalAIMatchId, seedForAIMatch, selectAIOpponentDeck } from '@/lib/ai-match-selection';
 import { AiMatchSetup } from '@/components/ai-match-setup';
+import { MatchIntroOverlay } from '@/components/online-match-intro';
+import { createAiMatchOpening, isAiMatchOpeningActive, type AiMatchOpening } from '@/lib/ai-match-opening';
 import { completeAIMatchQuestProgress } from '@/lib/rewards-client';
 import type { CardPlayAnimationState, CardPlayGeometry } from '@/components/card-play-animation-utils';
 import { landingImpactLevel } from '@/components/card-play-animation-utils';
@@ -148,6 +150,9 @@ export default function Home() {
   const [aiDecks, setAiDecks] = useState<Deck[] | null>(null);
   const [availableAIDecks, setAvailableAIDecks] = useState<AIDeck[] | null>(null);
   const [aiMatchStarted, setAiMatchStarted] = useState(false);
+  const [aiOpening, setAiOpening] = useState<AiMatchOpening | null>(null);
+  const [aiOpeningNow, setAiOpeningNow] = useState(() => Date.now());
+  const [aiOpeningSkipped, setAiOpeningSkipped] = useState(false);
   const aiMatchQuestContextRef = useRef<{ deckId: string; aiDeckId: string; matchId: string } | null>(null);
   const aiMatchActionsRef = useRef<GameAction[]>([]);
   const submittedAIMatchRef = useRef<string | null>(null);
@@ -163,6 +168,9 @@ export default function Home() {
   const [presentationBusy, setPresentationBusy] = useState(false);
   const [matchResultVisible, setMatchResultVisible] = useState(false);
   const turnKey = `${gameState.turn}:${gameState.activePlayerId ?? 'none'}`;
+  const aiOpeningActive = isAiMatch && aiMatchStarted &&
+    isAiMatchOpeningActive(aiOpening, gameState.gameId, aiOpeningNow);
+  const gameplayReady = matchReady && !aiOpeningActive;
   const turnStartedAtRef = useRef(Date.now());
   const timeoutHandledTurnRef = useRef<string | null>(null);
   const processedAudioEventsRef = useRef(new Set<string>());
@@ -178,6 +186,15 @@ export default function Home() {
   const matchReadyRef = useRef(matchReady);
   matchReadyRef.current = matchReady;
   latestGameStateRef.current = gameState;
+
+  useEffect(() => {
+    if (!aiOpeningActive || !aiOpening) return;
+    const timer = window.setTimeout(
+      () => setAiOpeningNow(Date.now()),
+      Math.max(1, aiOpening.gameplayStartsAt - Date.now() + 1),
+    );
+    return () => window.clearTimeout(timer);
+  }, [aiOpening, aiOpeningActive, aiOpeningNow]);
 
   useEffect(() => {
     if (!matchReady || gameState.status !== 'IN_PROGRESS') return;
@@ -471,7 +488,7 @@ export default function Home() {
         champion.id === deck.championDefinitionId ||
         champion.id === aiDeck.championDefinitionId,
     );
-    if (!userChampion || !aiChampion || deck.cardDefinitionIds.length < 20 || aiDeckDefinitionIds.length < 20) {
+    if (!authUser || !userChampion || !aiChampion || deck.cardDefinitionIds.length < 20 || aiDeckDefinitionIds.length < 20) {
       setPlayError('AI 매치를 시작할 수 있는 공개 카드와 Champion이 부족합니다.');
       return;
     }
@@ -493,6 +510,17 @@ export default function Home() {
     };
     aiMatchActionsRef.current = [];
     submittedAIMatchRef.current = null;
+    const openingStartedAt = Date.now();
+    setAiOpening(createAiMatchOpening(
+      nextState.gameId,
+      authUser.nickname,
+      aiDeck.name,
+      userChampion,
+      aiChampion,
+      openingStartedAt,
+    ));
+    setAiOpeningNow(openingStartedAt);
+    setAiOpeningSkipped(false);
     setGameState(nextState);
     setMediaCatalog(data.media);
     setSelectedCardId(null);
@@ -507,6 +535,7 @@ export default function Home() {
       !isAiMatch ||
       !aiMatchStarted ||
       !matchReady ||
+      aiOpeningActive ||
       gameState.status !== 'IN_PROGRESS' ||
       gameState.activePlayerId !== gameState.players[1]?.id ||
       aiActionRunningRef.current
@@ -543,7 +572,7 @@ export default function Home() {
         aiActionRunningRef.current = false;
       }
     };
-  }, [gameState.activePlayerId, gameState.status, isAiMatch, aiMatchStarted, matchReady]);
+  }, [gameState.activePlayerId, gameState.status, isAiMatch, aiMatchStarted, matchReady, aiOpeningActive]);
 
   useEffect(() => {
     const match = aiMatchQuestContextRef.current;
@@ -691,8 +720,8 @@ export default function Home() {
   }, [playError]);
 
   useEffect(() => {
-    if (gameState.status !== 'IN_PROGRESS') {
-      setTurnSecondsRemaining(0);
+    if (gameState.status !== 'IN_PROGRESS' || !gameplayReady) {
+      setTurnSecondsRemaining(gameState.status === 'IN_PROGRESS' ? TURN_TIME_LIMIT_SECONDS : 0);
       return;
     }
 
@@ -719,11 +748,11 @@ export default function Home() {
     }, 250);
 
     return () => window.clearInterval(intervalId);
-  }, [turnKey, gameState.status, matchReady]);
+  }, [turnKey, gameState.status, gameplayReady]);
 
   function handleEndTurn(isTimeout = false) {
     const currentState = latestGameStateRef.current;
-    if (!matchReady || currentState.status !== 'IN_PROGRESS') return;
+    if (!gameplayReady || currentState.status !== 'IN_PROGRESS') return;
     if (!isTimeout && (playAnimation || attackAnimation)) return;
     const actingPlayerId = isTimeout
       ? currentState.activePlayerId
@@ -782,7 +811,7 @@ export default function Home() {
   }
 
   function handleSurrender() {
-    if (!matchReady || gameState.status !== 'IN_PROGRESS' || playAnimation || attackAnimation) return;
+    if (!gameplayReady || gameState.status !== 'IN_PROGRESS' || playAnimation || attackAnimation) return;
     const result = surrender(gameState, gameState.players[0].id);
     if (!result.success) {
       setPlayError(result.message);
@@ -797,7 +826,7 @@ export default function Home() {
   }
 
   function handleSelectCard(cardInstanceId: string) {
-    if (!matchReady || gameState.status !== 'IN_PROGRESS' || playAnimation || attackAnimation) return;
+    if (!gameplayReady || gameState.status !== 'IN_PROGRESS' || playAnimation || attackAnimation) return;
     if (gameState.targetingState?.active) {
       if (gameState.targetingState.validTargetIds.includes(cardInstanceId)) {
         return handleEffectTarget(cardInstanceId);
@@ -812,7 +841,7 @@ export default function Home() {
   }
 
   function handleSelectAttacker(cardInstanceId: string) {
-    if (!matchReady || gameState.status !== 'IN_PROGRESS' || playAnimation || attackAnimation) return;
+    if (!gameplayReady || gameState.status !== 'IN_PROGRESS' || playAnimation || attackAnimation) return;
     if (gameState.targetingState?.active) {
       if (gameState.targetingState.validTargetIds.includes(cardInstanceId)) {
         handleEffectTarget(cardInstanceId);
@@ -849,7 +878,7 @@ export default function Home() {
     targetCardInstanceId: string,
     geometry?: AttackAnimationState["geometry"],
   ) {
-    if (!matchReady || gameState.status !== 'IN_PROGRESS' || playAnimation || attackAnimation) return;
+    if (!gameplayReady || gameState.status !== 'IN_PROGRESS' || playAnimation || attackAnimation) return;
     if (gameState.targetingState?.active) {
       handleEffectTarget(targetCardInstanceId);
       return;
@@ -936,7 +965,7 @@ export default function Home() {
     setPlayError(null);
   }
   function handleEffectTarget(targetId: string) {
-    if (!matchReady || gameState.status !== 'IN_PROGRESS') return;
+    if (!gameplayReady || gameState.status !== 'IN_PROGRESS') return;
     if (!gameState.targetingState?.active || !gameState.targetingState.validTargetIds.includes(targetId)) {
       setPlayError('선택할 수 없는 대상입니다.');
       return;
@@ -967,7 +996,7 @@ export default function Home() {
     setPlayError(null);
   }
   function handleCancelEffectTargeting() {
-    if (gameState.status !== 'IN_PROGRESS') return;
+    if (!gameplayReady || gameState.status !== 'IN_PROGRESS') return;
     if (isAiMatch && aiMatchStarted && !isAdminSource) {
       const action: GameAction = { type: 'CANCEL_EFFECT_TARGET', playerId: gameState.players[0].id };
       const result = executeAction(gameState, action);
@@ -987,7 +1016,7 @@ export default function Home() {
   }
 
   function handleAttackPlayer(geometry?: AttackAnimationState["geometry"]) {
-    if (!matchReady || gameState.status !== 'IN_PROGRESS' || playAnimation || attackAnimation) return;
+    if (!gameplayReady || gameState.status !== 'IN_PROGRESS' || playAnimation || attackAnimation) return;
     if (gameState.targetingState?.active) {
       handleEffectTarget(gameState.players[1].id);
       return;
@@ -1089,7 +1118,7 @@ export default function Home() {
   }, []);
 
   function handleSelectSlot(slot: BoardSlot, geometry?: CardPlayGeometry) {
-    if (!matchReady || gameState.status !== 'IN_PROGRESS' || playAnimation || attackAnimation) return;
+    if (!gameplayReady || gameState.status !== 'IN_PROGRESS' || playAnimation || attackAnimation) return;
     if (!selectedCardId) {
       setPlayError('먼저 손패에서 선수를 선택하세요.');
       return;
@@ -1128,7 +1157,7 @@ export default function Home() {
   }
 
   function handleUseTechnique(cardInstanceId: string, source: CardPlayGeometry["source"]) {
-    if (!matchReady || gameState.status !== 'IN_PROGRESS' || playAnimation || attackAnimation) return;
+    if (!gameplayReady || gameState.status !== 'IN_PROGRESS' || playAnimation || attackAnimation) return;
     const card = gameState.players[0].hand.find((entry) => entry.instanceId === cardInstanceId);
     if (!card) return;
     const result = executeAction(gameState, {
@@ -1151,7 +1180,7 @@ export default function Home() {
   }
 
   function handleUseActive(cardInstanceId?: string) {
-    if (!matchReady || gameState.status !== 'IN_PROGRESS' || playAnimation || attackAnimation) return;
+    if (!gameplayReady || gameState.status !== 'IN_PROGRESS' || playAnimation || attackAnimation) return;
     const targetCardInstanceId = cardInstanceId ?? selectedAttackerId;
     if (!targetCardInstanceId) return;
     const result = executeAction(gameState, {
@@ -1173,7 +1202,7 @@ export default function Home() {
   }
 
   function handleUseChampionAbility() {
-    if (!matchReady || gameState.status !== 'IN_PROGRESS' || playAnimation || attackAnimation) return;
+    if (!gameplayReady || gameState.status !== 'IN_PROGRESS' || playAnimation || attackAnimation) return;
     const result = executeAction(gameState, {
       type: 'BEGIN_TARGETED_ACTION',
       playerId: gameState.players[0].id,
@@ -1296,6 +1325,24 @@ export default function Home() {
 
   return (
     <>
+      {aiOpeningActive && aiOpening && (
+        aiOpeningSkipped ? (
+          <div className="fixed inset-0 z-[210] flex items-center justify-center bg-black/80 text-sm font-bold text-amber-200" data-testid="match-intro-wait">
+            매치 시작을 기다리는 중… 곧 게임이 시작됩니다.
+          </div>
+        ) : (
+          <MatchIntroOverlay
+            key={aiOpening.gameId}
+            self={aiOpening.self}
+            opponent={aiOpening.opponent}
+            firstSpeaker={aiOpening.firstSpeaker}
+            startedAt={aiOpening.startedAt}
+            gameplayStartsAt={aiOpening.gameplayStartsAt}
+            matchLabel="AI MATCH"
+            onSkipRequest={() => setAiOpeningSkipped(true)}
+          />
+        )
+      )}
       {isAdminTestMatch && <div className="fixed left-1/2 top-2 z-[100] -translate-x-1/2 rounded border border-amber-600 bg-amber-950 px-3 py-1 text-xs font-bold text-amber-200">관리자 DRAFT 테스트 게임 · 공개 카드에는 영향을 주지 않습니다.</div>}
     <GameStatePreview
       state={gameState}
@@ -1306,6 +1353,7 @@ export default function Home() {
       turnSecondsRemaining={turnSecondsRemaining}
       onEndTurn={handleEndTurn}
       canEndTurn={Boolean(
+        gameplayReady &&
         gameState.activePlayerId === gameState.players[0].id &&
         !gameState.targetingState?.active &&
         !playAnimation &&
