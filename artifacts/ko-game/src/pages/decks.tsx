@@ -29,7 +29,7 @@ import {
 } from "@/lib/decks-client";
 import { cardTypeLabel, deckValidityLabel, normalizeCardRulesText } from "@/lib/display-labels";
 import { DECK_SIZE, MAX_LEGENDARY_CARDS, validateDeckCounts } from "@workspace/game-engine";
-import { cardLimitReason, cardOwnershipReason, getDeckCardAction, MAX_CARD_COPIES } from "./deck-card-availability";
+import { cardLimitReason, cardOwnershipReason, getDeckCardAction, getDeckCardCountView, MAX_CARD_COPIES } from "./deck-card-availability";
 
 type AuthStatus = "checking" | "authenticated" | "unauthenticated" | "error";
 type CardFilter = "ALL" | "WRESTLER" | "TECHNIQUE";
@@ -103,6 +103,7 @@ function DeckCardVisual({
   unowned: boolean;
   onCraft: () => void;
 }) {
+  const countView = getDeckCardCountView(card, selectedCount);
   return (
     <article className="ko-decks__collection-card" aria-disabled={disabled && !unowned} data-unowned={unowned || undefined} data-testid={`card-collection-${card.id}`}>
       <Inspectable
@@ -176,7 +177,7 @@ function DeckCardVisual({
       </p>
       {card.quantity !== undefined && (
         <p className="ko-decks__card-type" data-testid={`text-card-ownership-${card.id}`}>
-          보유 {card.quantity} · 덱 {selectedCount}
+          보유 {countView.ownedCount} · 덱 {countView.deckCount} · 추가 가능 {countView.availableToAdd}
         </p>
       )}
       {disabledReason && <p className="ko-decks__card-limit">{disabledReason}</p>}

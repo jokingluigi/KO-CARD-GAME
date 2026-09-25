@@ -150,7 +150,7 @@ function stateFromRecord(record: OnlineMatchRecord): GameState {
   return state;
 }
 
-async function persistRuntime(runtime: OnlineMatchRuntime): Promise<void> {
+async function persistRuntime(runtime: OnlineMatchRuntime, eventStart?: number): Promise<void> {
   const finished = runtime.state.status === "FINISHED";
   const winnerSeat = runtime.state.winnerId
     ? seatForStatePlayerId(runtime.state.winnerId)
@@ -161,44 +161,67 @@ async function persistRuntime(runtime: OnlineMatchRuntime): Promise<void> {
       ? runtime.snapshot.player2UserId
       : null;
 
-  const [updated] = await db.update(onlineMatchesTable)
-    .set({
-      status: finished ? "ENDED" : "ACTIVE",
-      serializedGameState: runtime.state,
-      stateVersion: runtime.version,
-      turnStartedAt: runtime.turnStartedAt ? new Date(runtime.turnStartedAt) : null,
-      turnDeadlineAt: runtime.turnDeadlineAt ? new Date(runtime.turnDeadlineAt) : null,
-      gameplayStartsAt: runtime.gameplayStartsAt ? new Date(runtime.gameplayStartsAt) : null,
-      player1DisconnectStartedAt: runtime.disconnectStartedAt.PLAYER_ONE
-        ? new Date(runtime.disconnectStartedAt.PLAYER_ONE)
-        : null,
-      player1ReconnectDeadlineAt: runtime.reconnectDeadlineAt.PLAYER_ONE
-        ? new Date(runtime.reconnectDeadlineAt.PLAYER_ONE)
-        : null,
-      player2DisconnectStartedAt: runtime.disconnectStartedAt.PLAYER_TWO
-        ? new Date(runtime.disconnectStartedAt.PLAYER_TWO)
-        : null,
-      player2ReconnectDeadlineAt: runtime.reconnectDeadlineAt.PLAYER_TWO
-        ? new Date(runtime.reconnectDeadlineAt.PLAYER_TWO)
-        : null,
-      updatedAt: new Date(),
-      endedAt: finished ? new Date() : null,
-      winnerUserId,
-      resultReason: finished ? runtime.resultReason ?? runtime.state.events.at(-1)?.reason ?? "GAME_FINISHED" : null,
-    })
-    .where(and(
-      eq(onlineMatchesTable.id, runtime.matchId),
-      eq(onlineMatchesTable.stateVersion, runtime.version - 1),
-    ))
-    .returning({ id: onlineMatchesTable.id });
-  if (!updated) {
+  const persisted = await db.transaction(async (tx) => {
+    const [updated] = await tx.update(onlineMatchesTable)
+      .set({
+        status: finished ? "ENDED" : "ACTIVE",
+        serializedGameState: runtime.state,
+        stateVersion: runtime.version,
+        turnStartedAt: runtime.turnStartedAt ? new Date(runtime.turnStartedAt) : null,
+        turnDeadlineAt: runtime.turnDeadlineAt ? new Date(runtime.turnDeadlineAt) : null,
+        gameplayStartsAt: runtime.gameplayStartsAt ? new Date(runtime.gameplayStartsAt) : null,
+        player1DisconnectStartedAt: runtime.disconnectStartedAt.PLAYER_ONE
+          ? new Date(runtime.disconnectStartedAt.PLAYER_ONE)
+          : null,
+        player1ReconnectDeadlineAt: runtime.reconnectDeadlineAt.PLAYER_ONE
+          ? new Date(runtime.reconnectDeadlineAt.PLAYER_ONE)
+          : null,
+        player2DisconnectStartedAt: runtime.disconnectStartedAt.PLAYER_TWO
+          ? new Date(runtime.disconnectStartedAt.PLAYER_TWO)
+          : null,
+        player2ReconnectDeadlineAt: runtime.reconnectDeadlineAt.PLAYER_TWO
+          ? new Date(runtime.reconnectDeadlineAt.PLAYER_TWO)
+          : null,
+        updatedAt: new Date(),
+        endedAt: finished ? new Date() : null,
+        winnerUserId,
+        resultReason: finished ? runtime.resultReason ?? runtime.state.events.at(-1)?.reason ?? "GAME_FINISHED" : null,
+      })
+      .where(and(
+        eq(onlineMatchesTable.id, runtime.matchId),
+        eq(onlineMatchesTable.stateVersion, runtime.version - 1),
+      ))
+      .returning({ id: onlineMatchesTable.id });
+    if (!updated) return false;
+
+    if (eventStart !== undefined) {
+      await processMatchEventsForDailyQuests(
+        runtime.snapshot.player1UserId,
+        "PLAYER_ONE",
+        runtime.matchId,
+        runtime.state,
+        eventStart,
+        tx,
+      );
+      await processMatchEventsForDailyQuests(
+        runtime.snapshot.player2UserId,
+        "PLAYER_TWO",
+        runtime.matchId,
+        runtime.state,
+        eventStart,
+        tx,
+      );
+    }
+    return true;
+  });
+  if (!persisted) {
     throw new Error("온라인 매치 상태 저장에 실패했습니다.");
   }
   if (finished) {
     try {
       await settleFinishedOnlineMatch(runtime);
     } catch (error) {
-      logger.error({ error, matchId: runtime.matchId }, "온라인 매치 보상/일일 퀘스트 정산에 실패했습니다.");
+      logger.error({ error, matchId: runtime.matchId }, "온라인 매치 보상 정산에 실패했습니다.");
     }
   }
 }
@@ -222,23 +245,6 @@ async function settleFinishedOnlineMatch(runtime: OnlineMatchRuntime): Promise<v
     : runtime.snapshot.player1UserId;
 
   await db.transaction(async (tx) => {
-    await processMatchEventsForDailyQuests(
-      runtime.snapshot.player1UserId,
-      "PLAYER_ONE",
-      runtime.matchId,
-      runtime.state,
-      0,
-      tx,
-    );
-    await processMatchEventsForDailyQuests(
-      runtime.snapshot.player2UserId,
-      "PLAYER_TWO",
-      runtime.matchId,
-      runtime.state,
-      0,
-      tx,
-    );
-
     if (winSetting?.enabled && winSetting.rewardType === "CURRENCY" && winSetting.amount > 0) {
       await grantReward({
         userId: winnerUserId,
@@ -369,7 +375,7 @@ export async function getRuntime(matchId: string): Promise<OnlineMatchRuntime | 
       try {
         await settleFinishedOnlineMatch(runtime);
       } catch (error) {
-        logger.error({ error, matchId }, "저장된 종료 매치 보상/일일 퀘스트 재정산에 실패했습니다.");
+        logger.error({ error, matchId }, "저장된 종료 매치 보상 재정산에 실패했습니다.");
       }
     }
     return runtime;
@@ -489,16 +495,35 @@ async function commitTransition(
   resultReason: string | null = null,
 ): Promise<{ version: number; eventStart: number }> {
   const turnChanged = state.turn !== runtime.state.turn || state.activePlayerId !== runtime.state.activePlayerId;
+  const previous = {
+    state: runtime.state,
+    version: runtime.version,
+    resultReason: runtime.resultReason,
+    turnStartedAt: runtime.turnStartedAt,
+    turnDeadlineAt: runtime.turnDeadlineAt,
+    gameplayStartsAt: runtime.gameplayStartsAt,
+  };
   runtime.state = turnChanged ? state : state;
   runtime.version += 1;
   runtime.resultReason = resultReason;
   if (turnChanged && runtime.state.status !== "FINISHED") setNextTurnDeadline(runtime);
+  try {
+    await persistRuntime(runtime, eventStart);
+  } catch (error) {
+    runtime.state = previous.state;
+    runtime.version = previous.version;
+    runtime.resultReason = previous.resultReason;
+    runtime.turnStartedAt = previous.turnStartedAt;
+    runtime.turnDeadlineAt = previous.turnDeadlineAt;
+    runtime.gameplayStartsAt = previous.gameplayStartsAt;
+    throw error;
+  }
   if (runtime.state.status === "FINISHED") {
     clearTurnTimer(runtime);
     for (const seat of ["PLAYER_ONE", "PLAYER_TWO"] as const) clearDisconnectTimer(runtime, seat);
+  } else if (turnChanged) {
+    scheduleTurnTimer(runtime);
   }
-  await persistRuntime(runtime);
-  if (turnChanged) scheduleTurnTimer(runtime);
   return { version: runtime.version, eventStart };
 }
 
@@ -530,7 +555,7 @@ async function resolveDisconnectTimeoutLocked(
   if (runtime.state.status === "FINISHED") return;
   const winnerSeat: OnlineSeat = forfeitingSeat === "PLAYER_ONE" ? "PLAYER_TWO" : "PLAYER_ONE";
   const eventStart = runtime.state.events.length;
-  runtime.state = {
+  const nextState: GameState = {
     ...runtime.state,
     status: "FINISHED",
     winnerId: playerIdForSeat(winnerSeat),
@@ -546,10 +571,8 @@ async function resolveDisconnectTimeoutLocked(
       },
     ],
   };
+  await commitTransition(runtime, nextState, eventStart, "DISCONNECT_TIMEOUT");
   runtime.connectionStates[forfeitingSeat] = "FORFEITED";
-  runtime.resultReason = "DISCONNECT_TIMEOUT";
-  runtime.version += 1;
-  await persistRuntime(runtime);
   const execution = {
     ok: true as const,
     runtime,

@@ -12,6 +12,7 @@ import {
   usersTable,
 } from "@workspace/db";
 import { isDailyQuestClaimable, objectiveIncrement, selectDailyQuestDefinitions, validateDailyQuestInput } from "./daily-quest-service";
+import { questConditionMatches, questEventIncrement, validateQuestCondition, QUEST_CONDITION_SCHEMA_VERSION } from "@workspace/game-engine";
 import { nextAttendanceDayIndex, validateAttendanceInput } from "./attendance-service";
 import { grantReward, isFinishedMatchRewardEligible, isRewardType, rewardIdempotencyKey } from "./reward-service";
 import { grantAccountStarterPacks, StarterPackConfigurationError } from "./starter-pack-rewards";
@@ -53,6 +54,83 @@ test("DQ5: daily quest progress counts a canonical event once and filters card t
   assert.equal(objectiveIncrement("CARD_PLAYED", event, "PLAYER_ONE", "WRESTLER"), 0);
   assert.equal(objectiveIncrement("TECHNIQUE_PLAYED", event, "PLAYER_ONE", null), 1);
   assert.equal(objectiveIncrement("CARD_PLAYED", event, "PLAYER_TWO", null), 0);
+});
+
+test("QV2: validates canonical COUNT/SUM conditions and evaluates AND/OR", () => {
+  const condition = {
+    schemaVersion: QUEST_CONDITION_SCHEMA_VERSION,
+    condition: {
+      allOf: [
+        { event: "CARD_PLAYED", filters: { cardType: "WRESTLER" } },
+        { anyOf: [
+          { event: "CARD_PLAYED", filters: { tagsAny: ["zombie"] } },
+          { event: "CARD_PLAYED", filters: { sourceActionType: "PLAY_FROM_HAND" } },
+        ] },
+      ],
+    },
+    progress: { mode: "COUNT" },
+    required: 3,
+  } as const;
+  const parsed = validateQuestCondition(condition);
+  assert.ok(parsed);
+  const event = {
+    type: "CARD_PLAYED" as const,
+    playerId: "PLAYER_ONE",
+    cardType: "WRESTLER" as const,
+    tags: ["zombie"],
+    sourceContext: { sourcePlayerId: "PLAYER_ONE", sourceActionType: "PLAY_FROM_HAND" },
+  };
+  assert.equal(questConditionMatches(parsed.condition, event, "PLAYER_ONE", { cardMetadataAvailable: true, cardTags: ["zombie"] }), true);
+  assert.equal(questEventIncrement(parsed, event, "PLAYER_ONE", { cardMetadataAvailable: true, cardTags: ["zombie"] }), 1);
+  const sum = validateQuestCondition({
+    schemaVersion: QUEST_CONDITION_SCHEMA_VERSION,
+    condition: { event: "DAMAGE_DEALT" },
+    progress: { mode: "SUM", field: "amount" },
+    required: 50,
+  });
+  assert.ok(sum);
+  assert.equal(questEventIncrement(sum, { type: "DAMAGE_DEALT", playerId: "PLAYER_ONE", amount: 12 }, "PLAYER_ONE"), 12);
+});
+
+test("QV2: rejects unknown fields and SUM of nonnumeric event fields", () => {
+  assert.equal(validateQuestCondition({
+    schemaVersion: QUEST_CONDITION_SCHEMA_VERSION,
+    condition: { event: "CARD_PLAYED", filters: { unknownField: "x" } },
+    progress: { mode: "COUNT" },
+    required: 1,
+  }), null);
+  assert.equal(validateQuestCondition({
+    schemaVersion: QUEST_CONDITION_SCHEMA_VERSION,
+    condition: { event: "CARD_PLAYED" },
+    progress: { mode: "SUM", field: "cardType" },
+    required: 1,
+  }), null);
+  assert.equal(validateQuestCondition({
+    schemaVersion: QUEST_CONDITION_SCHEMA_VERSION,
+    condition: { allOf: [{ event: "DAMAGE_DEALT" }, { event: "CARD_PLAYED" }] },
+    progress: { mode: "SUM", field: "amount" },
+    required: 1,
+  }), null);
+  assert.equal(questConditionMatches(
+    { event: "CARD_PLAYED", filters: { sourcePlayer: "ENEMY" } },
+    { type: "CARD_PLAYED", playerId: "PLAYER_ONE" },
+    "PLAYER_ONE",
+  ), false);
+  const mismatch = validateDailyQuestInput({
+    title: "Mismatch",
+    description: "",
+    objectiveType: "CARD_PLAYED",
+    targetValue: 2,
+    condition: {
+      schemaVersion: QUEST_CONDITION_SCHEMA_VERSION,
+      condition: { event: "CARD_PLAYED" },
+      progress: { mode: "COUNT" },
+      required: 3,
+    },
+    rewardType: "CURRENCY",
+    rewardAmount: 1,
+  });
+  assert.equal(mismatch, null);
 });
 
 test("DQ6/DQ7: completion is separate from claim and only completed quests are claimable", () => {

@@ -12,6 +12,7 @@ import {
   type RewardCatalogPack,
   type RewardAdminData,
 } from "@/lib/rewards-client";
+import { questEventRegistry, QUEST_CONDITION_SCHEMA_VERSION, validateQuestCondition } from "@workspace/game-engine";
 
 const emptyQuest = {
   title: "",
@@ -23,6 +24,11 @@ const emptyQuest = {
   rewardTargetId: "",
   rewardAmount: "",
   enabled: true,
+  useConditionV2: false,
+  conditionEvent: "CARD_PLAYED",
+  tagsAny: "",
+  progressMode: "COUNT",
+  progressField: "amount",
 };
 
 export function AdminRewardsManager({ onUnauthorized }: { onUnauthorized: () => void }) {
@@ -38,6 +44,20 @@ export function AdminRewardsManager({ onUnauthorized }: { onUnauthorized: () => 
   const [attendanceRewardType, setAttendanceRewardType] = useState("CURRENCY");
   const [attendanceTargetId, setAttendanceTargetId] = useState("");
   const [catalog, setCatalog] = useState<{ cards: RewardCatalogCard[]; packs: RewardCatalogPack[] }>({ cards: [], packs: [] });
+  const eventRegistry = useMemo(() => questEventRegistry(), []);
+  const conditionPreview = useMemo(() => {
+    if (!quest.useConditionV2) return "기존 Quest 조건 (legacy)";
+    const filters: Record<string, unknown> = {};
+    if (quest.conditionEvent === "CARD_PLAYED" && quest.cardType) filters.cardType = quest.cardType;
+    if (quest.tagsAny.trim()) filters.tagsAny = quest.tagsAny.split(",").map((tag) => tag.trim()).filter(Boolean);
+    const config = {
+      schemaVersion: QUEST_CONDITION_SCHEMA_VERSION,
+      condition: { event: quest.conditionEvent, filters },
+      progress: { mode: quest.progressMode, ...(quest.progressMode === "SUM" ? { field: quest.progressField } : {}) },
+      required: Number(quest.targetValue),
+    };
+    return validateQuestCondition(config) ? `${quest.conditionEvent} · ${quest.progressMode} · ${quest.targetValue}` : "조건을 확인해 주세요.";
+  }, [quest, eventRegistry]);
 
   async function load() {
     try {
@@ -70,6 +90,10 @@ export function AdminRewardsManager({ onUnauthorized }: { onUnauthorized: () => 
   }
 
   function editQuest(item: NonNullable<RewardAdminData>["dailyQuests"][number]) {
+    const stored = item as unknown as {
+      schemaVersion?: string;
+      condition?: { condition?: { event?: string; filters?: { tagsAny?: string[] } }; progress?: { mode?: string; field?: string } } | null;
+    };
     setEditingQuestId(item.id);
     setQuest({
       title: item.title,
@@ -81,6 +105,11 @@ export function AdminRewardsManager({ onUnauthorized }: { onUnauthorized: () => 
       rewardTargetId: item.rewardTargetId ?? "",
       rewardAmount: String(item.rewardAmount),
       enabled: item.enabled,
+      useConditionV2: stored.schemaVersion === QUEST_CONDITION_SCHEMA_VERSION,
+      conditionEvent: stored.condition?.condition?.event ?? "CARD_PLAYED",
+      tagsAny: (stored.condition?.condition?.filters?.tagsAny ?? []).join(", "),
+      progressMode: stored.condition?.progress?.mode ?? "COUNT",
+      progressField: stored.condition?.progress?.field ?? "amount",
     });
   }
 
@@ -92,6 +121,19 @@ export function AdminRewardsManager({ onUnauthorized }: { onUnauthorized: () => 
       rewardAmount: Number(quest.rewardAmount),
       rewardTargetId: quest.rewardType === "CURRENCY" ? null : quest.rewardTargetId || null,
       cardType: quest.cardType || null,
+      schemaVersion: quest.useConditionV2 ? QUEST_CONDITION_SCHEMA_VERSION : "QUEST_CONDITION_V1",
+      condition: quest.useConditionV2 ? {
+        schemaVersion: QUEST_CONDITION_SCHEMA_VERSION,
+        condition: {
+          event: quest.conditionEvent,
+          filters: {
+            ...(quest.cardType ? { cardType: quest.cardType } : {}),
+            ...(quest.tagsAny.trim() ? { tagsAny: quest.tagsAny.split(",").map((tag) => tag.trim()).filter(Boolean) } : {}),
+          },
+        },
+        progress: { mode: quest.progressMode, ...(quest.progressMode === "SUM" ? { field: quest.progressField } : {}) },
+        required: Number(quest.targetValue),
+      } : null,
     };
     try {
       if (editingQuestId) await updateDailyQuest(editingQuestId, body);
@@ -155,6 +197,8 @@ export function AdminRewardsManager({ onUnauthorized }: { onUnauthorized: () => 
           <input value={quest.title} onChange={(event) => setQuest({ ...quest, title: event.target.value })} placeholder="퀘스트 제목" className="rounded border border-neutral-700 bg-black px-3 py-2 text-sm text-white" />
           <select value={quest.objectiveType} onChange={(event) => setQuest({ ...quest, objectiveType: event.target.value, cardType: event.target.value === "CARD_PLAYED" ? quest.cardType : "" })} className="rounded border border-neutral-700 bg-black px-3 py-2 text-sm text-white">{objectiveOptions.map((item) => <option key={item} value={item}>{item}</option>)}</select>
           <textarea value={quest.description} onChange={(event) => setQuest({ ...quest, description: event.target.value })} placeholder="설명" className="min-h-20 rounded border border-neutral-700 bg-black px-3 py-2 text-sm text-white sm:col-span-2" />
+           <label className="flex items-center gap-2 text-xs font-bold text-neutral-300 sm:col-span-2"><input type="checkbox" checked={quest.useConditionV2} onChange={(event) => setQuest({ ...quest, useConditionV2: event.target.checked })} /> Generic Condition V2 사용</label>
+           {quest.useConditionV2 && <><select value={quest.conditionEvent} onChange={(event) => setQuest({ ...quest, conditionEvent: event.target.value })} className="rounded border border-neutral-700 bg-black px-3 py-2 text-sm text-white">{Object.keys(eventRegistry).map((item) => <option key={item} value={item}>{item}</option>)}</select><select value={quest.progressMode} onChange={(event) => setQuest({ ...quest, progressMode: event.target.value })} className="rounded border border-neutral-700 bg-black px-3 py-2 text-sm text-white"><option value="COUNT">COUNT</option><option value="SUM">SUM</option></select>{quest.progressMode === "SUM" && <select value={quest.progressField} onChange={(event) => setQuest({ ...quest, progressField: event.target.value })} className="rounded border border-neutral-700 bg-black px-3 py-2 text-sm text-white"><option value="amount">amount</option><option value="delta">delta</option><option value="before">before</option><option value="after">after</option></select>}<input value={quest.tagsAny} onChange={(event) => setQuest({ ...quest, tagsAny: event.target.value })} placeholder="tagsAny (쉼표로 구분)" className="rounded border border-neutral-700 bg-black px-3 py-2 text-sm text-white" /><p className="text-xs text-amber-200 sm:col-span-2">미리보기: {conditionPreview}</p></>}
           {quest.objectiveType === "CARD_PLAYED" && <select value={quest.cardType} onChange={(event) => setQuest({ ...quest, cardType: event.target.value })} className="rounded border border-neutral-700 bg-black px-3 py-2 text-sm text-white"><option value="">모든 카드</option><option value="WRESTLER">WRESTLER</option><option value="TECHNIQUE">TECHNIQUE</option></select>}
           <input type="number" min="1" value={quest.targetValue} onChange={(event) => setQuest({ ...quest, targetValue: event.target.value })} placeholder="목표 수치" className="rounded border border-neutral-700 bg-black px-3 py-2 text-sm text-white" />
            <select value={quest.rewardType} onChange={(event) => setQuest({ ...quest, rewardType: event.target.value, rewardTargetId: "" })} className="rounded border border-neutral-700 bg-black px-3 py-2 text-sm text-white"><option value="CURRENCY">CURRENCY</option><option value="CARD">CARD</option><option value="PACK">PACK</option></select>

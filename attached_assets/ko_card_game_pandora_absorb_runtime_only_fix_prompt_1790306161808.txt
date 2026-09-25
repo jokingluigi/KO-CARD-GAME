@@ -1,0 +1,724 @@
+KO CARD GAME — PANDORA TOKEN ATTACK ABSORB RUNTIME BUG ONLY
+증상: 챔피언 판도라(폭주)의 등장 파괴는 정상 작동하지만,
+"이 카드가 필드에 있을 때 이 카드가 리타이어 혹은 파괴 시킨 선수의 공격력을 이 카드의 공격력에 더합니다."
+부분만 전혀 작동하지 않는다.
+
+중요:
+이번 작업은 판도라의 다른 효과를 다시 만들거나 재해석하는 작업이 아니다.
+등장 파괴는 정상 작동 중이므로 건드리지 말 것.
+문제 범위는 오직 "판도라 자신이 제거한 선수의 공격력을 흡수"하는 지속 효과다.
+
+==================================================
+1. 현재 기대 효과
+==================================================
+
+판도라(폭주) 원문 의미:
+
+- 이 카드가 FIELD에 있는 동안만 활성
+- 이 카드가 WRESTLER를 RETIRE 또는 DESTROY시켰을 때
+- 제거된 그 WRESTLER의 "제거 직전 현재 공격력"을 읽음
+- 그 수치만큼 판도라 자신의 현재 공격력을 증가
+- 체력은 증가하지 않음
+- 다른 아군 카드가 죽인 대상은 흡수하지 않음
+
+예:
+
+Pandora ATK = 5
+
+상대 WRESTLER:
+printed ATK = 2
+buffed current ATK = 7
+
+Pandora가 직접 제거
+→ Pandora ATK = 12
+
++2가 아니라 +7이어야 함.
+
+==================================================
+2. 현재 알려진 사실
+==================================================
+
+현재 Stored/Fresh Analyzer에는 이미
+REGISTER_LISTENER
+→ SOURCE_CAUSED_TARGET_REMOVAL
+→ ADD_AGGREGATED_ATTACK
+→ LAST_CAUSED_TARGET_REMOVALS
+→ CURRENT_ATTACK_SUM
+
+구조가 들어 있는 것으로 보인다.
+
+따라서:
+"listener를 다시 추가"하는 식으로 끝내지 말 것.
+
+실제 Runtime에서 왜 listener가 발동하지 않는지 추적해야 한다.
+
+==================================================
+3. 첫 failing layer를 반드시 찾을 것
+==================================================
+
+다음 trace를 실제로 확인:
+
+Pandora enters FIELD
+→ REGISTER_LISTENER executor called?
+→ listener attached to Pandora instance?
+→ listener remains active while Pandora is FIELD?
+
+그 다음 제거 경로:
+
+A. ENTER_FIELD DESTROY
+Pandora chooses enemy WRESTLER
+→ DESTROY event
+→ source instance metadata?
+→ SOURCE_CAUSED_TARGET_REMOVAL emitted?
+→ listener matches?
+→ victim currentAttack snapshot available?
+→ ADD_AGGREGATED_ATTACK runs?
+→ Pandora ATK changes?
+
+B. COMBAT RETIRE
+Pandora attacks enemy WRESTLER
+→ damage
+→ target HP <= 0
+→ RETIRE
+→ attacker instance metadata preserved?
+→ SOURCE_CAUSED_TARGET_REMOVAL emitted?
+→ listener matches?
+→ victim currentAttack snapshot available?
+→ Pandora ATK changes?
+
+C. EFFECT-CAUSED RETIRE
+Pandora effect directly causes retire if such fixture exists
+→ same trace
+
+최종 보고에 first failing layer를 정확히 적을 것.
+
+==================================================
+4. 가장 의심되는 원인
+==================================================
+
+특히 다음을 집중 검사:
+
+- combat RETIRE path에서 causalSourceInstanceId가 유실됨
+- DESTROY path에는 source가 있는데 RETIRE path에는 source 없음
+- removal event가 victim만 담고 source를 안 담음
+- listener registration은 되었지만 source instance ID와 event source ID 포맷이 다름
+- source가 CardDefinition ID로 저장되고 event는 CardInstance ID 사용
+- listener가 Champion Token context에서 등록되지 않음
+- listener는 등록되지만 다음 reducer tick에서 사라짐
+- source FIELD 여부 검사에서 Champion Token을 잘못 제외
+- victim currentAttack snapshot을 제거 후 읽어서 undefined/0
+- LAST_CAUSED_TARGET_REMOVALS가 채워지지 않음
+- ADD_AGGREGATED_ATTACK이 SELF target을 원래 Pandora가 아니라 잘못 resolve
+- event ordering 때문에 source가 이미 제거된 뒤 listener 평가
+- replay/dedupe 로직이 첫 event부터 duplicate 처리
+- online serializer가 causal metadata를 drop
+
+추측으로 하나만 고치지 말 것.
+
+==================================================
+5. SOURCE identity는 CardInstance 기준
+==================================================
+
+반드시 "이 판도라 인스턴스가 제거했다"를 기준으로 판정.
+
+사용해야 할 identity:
+CardInstance ID
+
+사용 금지:
+- 카드 이름
+- CardDefinition 이름
+- "판도라" string
+- Champion 이름 hardcode
+
+같은 definition의 다른 인스턴스가 제거한 것은
+이 판도라가 흡수하면 안 된다.
+
+==================================================
+6. RETIRE causality
+==================================================
+
+가장 중요한 실제 버그 경로:
+
+Pandora attacks
+→ enemy WRESTLER HP 0
+→ RETIRE
+
+여기서 반드시 attacker source identity가
+damage → lethal → retire까지 이어져야 한다.
+
+권장 event metadata 예시는 현재 엔진 naming에 맞게:
+
+sourceInstanceId
+sourceActionId
+sourceActionType
+causedByInstanceId
+
+등 기존 필드 재사용.
+
+새 필드를 남발하지 말 것.
+
+==================================================
+7. DESTROY causality
+==================================================
+
+등장 DESTROY는 현재 작동한다고 했지만
+흡수는 안 된다고 했으므로 반드시 별도 검증.
+
+REGISTER_LISTENER가 DESTROY보다 먼저 활성화되어야 한다.
+
+순서:
+1. listener register
+2. target choice
+3. destroy
+4. removal event
+5. listener consumes
+6. attack gain
+
+현재 stored effect order가 맞아도
+runtime executor가 병렬/재정렬하는지 확인.
+
+==================================================
+8. victim 공격력 snapshot
+==================================================
+
+제거 전에 반드시 victim currentAttack snapshot 저장.
+
+예:
+base ATK 2
+buffed ATK 7
+
+제거 이벤트 payload에:
+victimCurrentAttackBeforeRemoval = 7
+
+이 값으로 흡수.
+
+GRAVEYARD/removed state의 base definition을 다시 읽지 말 것.
+
+==================================================
+9. attack-only
+==================================================
+
+흡수 시:
+
+Pandora.currentAttack += victimCurrentAttackBeforeRemoval
+
+절대:
+- maxHealth 증가
+- currentHealth 증가
+- baseAttack definition 수정
+- Champion 원본 HP 수정
+
+금지.
+
+==================================================
+10. FIELD lifetime
+==================================================
+
+원문:
+"이 카드가 필드에 있을때"
+
+즉 listener는 source Pandora가 FIELD에 있을 때만 유효.
+
+source leaves FIELD:
+→ listener inactive/remove
+
+ghost listener 금지.
+
+source가 다시 새 인스턴스로 들어오면
+새 listener lifecycle.
+
+==================================================
+11. source와 victim 동시 RETIRE
+==================================================
+
+상호 전투로:
+
+Pandora와 상대가 동시에 0 HP가 되는 경우
+현재 엔진의 공식 event ordering을 확인.
+
+원문상:
+"이 카드가 필드에 있을때"
+
+따라서 victim removal event가 처리되는 시점에
+Pandora가 이미 FIELD를 떠났다면
+흡수하지 않는 것이 자연스럽다.
+
+하지만 기존 canonical ordering이
+source removal 전에 victim removal listener를 평가하도록 되어 있다면
+그 기존 규칙을 우선.
+
+중요:
+임의로 카드 전용 예외를 만들지 말 것.
+
+==================================================
+12. unrelated removal
+==================================================
+
+Pandora가 FIELD에 있다고 해서
+모든 적 제거를 흡수하면 안 됨.
+
+예:
+
+Pandora FIELD
+ally A attacks enemy B
+B retires
+
+→ Pandora +0
+
+Pandora FIELD
+Technique destroys enemy C
+source = Technique
+
+→ Pandora +0
+
+오직 THIS Pandora instance가 직접 caused removal.
+
+==================================================
+13. duplicate prevention
+==================================================
+
+같은 removal event가:
+- reducer replay
+- reconnect
+- websocket rebroadcast
+- event rehydration
+
+으로 다시 들어와도 한 번만 흡수.
+
+same removal eventId:
+first → +X
+replay → +0
+
+두 distinct removals:
+각각 정상 흡수.
+
+==================================================
+14. Champion Token context
+==================================================
+
+이 판도라(폭주)가 Champion Token으로 FIELD에 배치되는 경우도 정상 작동해야 한다.
+
+중요:
+흡수 효과를 고치면서 Champion Token 특수 규칙 깨뜨리지 말 것.
+
+유지:
+- Token own HP/stat
+- original Champion HP와 분리
+- Token RETIRE != immediate loss
+- Token FIELD 동안 original Champion protected
+- Champion Ability 사용 가능
+- Token leave 후 protection 해제
+- SILENCE/DESTROY/REMOVE immunity current official rule 유지
+
+흡수는 token/current card instance 공격력만 증가.
+
+original Champion attack/HP 같은 별도 state를 건드리지 말 것.
+
+==================================================
+15. 일반 동일-definition 인스턴스도 구분
+==================================================
+
+ordinary SUMMON으로 같은 CardDefinition이 나왔다면
+Champion Token special context와 구분.
+
+하지만 카드 자체의 printed effect가 모든 정상 field instance에 적용되는 구조라면
+그 ordinary instance도 자신의 listener는 가질 수 있다.
+
+중요:
+special token protection과
+card text effect를 혼동하지 말 것.
+
+==================================================
+16. Action → Event → GameState 증명
+==================================================
+
+PASS 판정은 반드시 실제 event/state로.
+
+예:
+
+BEFORE
+Pandora instance P1 attack = 5
+Victim V1 attack = 4
+
+ACTION
+P1 attacks V1
+
+EVENTS
+DAMAGE ...
+WRESTLER_RETIRED {
+  victimInstanceId: V1,
+  causalSourceInstanceId: P1,
+  victimAttackSnapshot: 4
+}
+SOURCE_CAUSED_TARGET_REMOVAL ...
+ATTACK_INCREASED {
+  sourceInstanceId: P1,
+  amount: 4
+}
+
+AFTER
+P1 attack = 9
+
+UI 숫자만 변한 것처럼 보이는 테스트는 불충분.
+
+==================================================
+17. 필수 테스트
+==================================================
+
+PANDORA_ABSORB_1
+Pandora ATK 5
+enemy ATK 3 / HP 1
+Pandora attacks lethal
+→ Pandora ATK 8
+
+PANDORA_ABSORB_2
+enemy base ATK 2
+current ATK 7
+Pandora removes
+→ +7
+
+PANDORA_ABSORB_3
+Pandora damages but enemy survives
+→ +0
+
+PANDORA_ABSORB_4
+ally removes enemy
+→ Pandora +0
+
+PANDORA_ABSORB_5
+Pandora ENTER_FIELD DESTROY enemy ATK 4
+→ Pandora +4 exactly once
+
+PANDORA_ABSORB_6
+same removal event replay
+→ second +0
+
+PANDORA_ABSORB_7
+two separate victims ATK 3 and 5
+→ total +8
+
+PANDORA_ABSORB_8
+Pandora leaves FIELD
+then unrelated removal
+→ +0
+
+PANDORA_ABSORB_9
+victim attack 0
+→ +0
+→ no crash
+
+PANDORA_ABSORB_10
+Champion Token Pandora
+→ same absorb behavior
+
+PANDORA_ABSORB_11
+health before/after
+→ unchanged
+
+==================================================
+18. Online / AI Match
+==================================================
+
+가능하면 둘 다 확인:
+
+AI Match
+Online Match
+
+Online:
+server authoritative attack increase.
+
+client가 로컬에서 따로 +attack 계산하면 안 됨.
+
+serializer/sanitizer가:
+causal removal metadata 중 gameplay에 필요한 public state transition을
+깨뜨리지 않는지 확인.
+
+hidden info는 계속 보호.
+
+==================================================
+19. UI
+==================================================
+
+Runtime state가 정상적으로 attack 증가하면
+UI가 즉시 반영해야 한다.
+
+하지만 UI만 패치하지 말 것.
+
+source of truth는 GameState.
+
+==================================================
+20. 절대 하지 말 것
+==================================================
+
+- effect text에 `&` 추가해서 해결했다고 처리
+- 판도라 이름 hardcode
+- runtime에서 "if card.name === Pandora"
+- 공격력 숫자를 UI에서만 증가
+- 모든 enemy RETIRE를 Pandora caused로 간주
+- victim baseAttack 사용
+- health까지 흡수
+- listener JSON만 다시 저장하고 PASS
+- Production DB 직접 수정
+- Champion Token HP/protection 규칙 변경
+
+==================================================
+21. FIX-FIRST
+==================================================
+
+Browser unavailable이어도
+implementation/tests 계속.
+
+구분:
+
+IMPLEMENTATION
+AUTOMATED VERIFICATION
+BROWSER E2E
+
+Browser unavailable:
+BROWSER E2E = UNVERIFIED
+
+==================================================
+22. 자동 검증
+==================================================
+
+반드시:
+
+pnpm run typecheck
+pnpm --filter @workspace/ko-game run build
+git diff --check
+
+관련:
+
+REGISTER_LISTENER tests
+SOURCE_CAUSED_TARGET_REMOVAL tests
+combat RETIRE causal tests
+DESTROY causal tests
+victim stat snapshot tests
+ADD_AGGREGATED_ATTACK tests
+event dedupe tests
+Champion Token tests
+AI Match tests
+Online match tests
+serializer/reconnect tests
+
+==================================================
+23. Browser E2E
+==================================================
+
+가능하면 Development/Test에서 실제:
+
+Scenario A
+Pandora Token enters
+→ chooses enemy WRESTLER
+→ DESTROY works
+→ Pandora ATK increases by victim currentAttack
+
+Scenario B
+Pandora attacks enemy WRESTLER
+→ enemy RETIRE
+→ Pandora ATK increases
+
+Scenario C
+ally removes enemy
+→ Pandora ATK unchanged
+
+Scenario D
+buff victim attack before removal
+→ buffed current attack absorbed
+
+반드시 attack number가 실제 state에서도 변했는지 확인.
+
+==================================================
+24. Git
+==================================================
+
+실제 수정 파일만 stage.
+
+제외:
+prompt txt
+Pasted txt
+.env
+secrets
+logs
+screenshots
+temp
+Replit metadata
+unrelated files
+
+commit.
+
+push 요청 없으면 push 금지.
+force push 금지.
+
+==================================================
+25. 최종 보고 형식
+==================================================
+
+CURRENT STORED EFFECT
+
+Listener present:
+YES / NO
+
+Trigger:
+...
+
+Aggregate source:
+...
+
+Attack aggregation:
+...
+
+
+ROOT CAUSE
+
+First failing layer:
+...
+
+Exact runtime cause:
+...
+
+Was text parsing the cause:
+YES / NO
+
+Was `&` separator required:
+NO / FAIL
+
+
+LISTENER
+
+Registered on Pandora instance:
+PASS / FAIL
+
+Active while FIELD:
+PASS / FAIL
+
+Removed/deactivated after leave:
+PASS / FAIL
+
+
+RETIRE
+
+Combat source identity preserved:
+PASS / FAIL
+
+WRESTLER_RETIRED contains causal source:
+PASS / FAIL
+
+SOURCE_CAUSED_TARGET_REMOVAL emitted:
+PASS / FAIL
+
+Listener matched:
+PASS / FAIL
+
+
+DESTROY
+
+Enter-field destroy source identity:
+PASS / FAIL
+
+Listener fires:
+PASS / FAIL
+
+
+SNAPSHOT
+
+Victim currentAttack before removal:
+PASS / FAIL
+
+Base attack incorrectly used:
+NO / FAIL
+
+
+RESULT
+
+Pandora attack gain:
+PASS / FAIL
+
+Health gain:
+0 / FAIL
+
+Unrelated ally kill gain:
+0 / FAIL
+
+Duplicate event gain:
+0 / FAIL
+
+
+CHAMPION TOKEN
+
+Token context:
+PASS / FAIL
+
+Original Champion HP unaffected:
+PASS / FAIL
+
+Protection semantics unchanged:
+PASS / FAIL
+
+
+AI MATCH:
+PASS / FAIL / UNVERIFIED
+
+ONLINE:
+PASS / FAIL / UNVERIFIED
+
+BROWSER E2E:
+PASS / FAIL / UNVERIFIED
+
+IMPLEMENTATION:
+PASS / FAIL
+
+AUTOMATED VERIFICATION:
+PASS / FAIL
+
+TYPECHECK:
+PASS / FAIL
+
+KO BUILD:
+PASS / FAIL
+
+API TYPECHECK:
+PASS / FAIL / NOT_MODIFIED
+
+API BUILD:
+PASS / FAIL / NOT_MODIFIED
+
+git diff --check:
+PASS / FAIL
+
+PRODUCTION DATA MUTATION:
+NONE / FAIL
+
+CHANGED FILES:
+...
+
+COMMIT:
+...
+
+PUSH:
+NOT REQUESTED
+
+==================================================
+26. 완료 조건
+==================================================
+
+1. Pandora의 등장 DESTROY는 기존대로 정상.
+2. Pandora가 직접 RETIRE시킨 WRESTLER의 현재 공격력 흡수.
+3. Pandora가 직접 DESTROY한 WRESTLER의 현재 공격력 흡수.
+4. victim currentAttack snapshot 사용.
+5. unrelated removal 흡수 0.
+6. duplicate event 흡수 0.
+7. health 변화 0.
+8. source CardInstance identity 기반.
+9. Champion Token 규칙 회귀 없음.
+10. AI/Online 동일 canonical behavior.
+11. effect text에 `&` 같은 구분자 요구하지 않음.
+12. Production DB mutation 없음.
+
+핵심:
+이번 문제는 "효과 문장이 두 개로 안 나뉘어서"가 아니라,
+이미 등록된 지속 listener가 실제 removal causality를 받지 못하는 Runtime 문제인지
+반드시 증명하고 고쳐라.
+
+판도라의 다른 효과는 정상 작동 중이므로
+흡수 지속 효과 경로만 정밀하게 수정하라.

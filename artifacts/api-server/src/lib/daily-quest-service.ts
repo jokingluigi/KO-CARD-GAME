@@ -7,7 +7,13 @@ import {
   db,
   type DailyQuestAssignmentRecord,
 } from "@workspace/db";
-import type { GameEvent, GameState } from "@workspace/game-engine";
+import {
+  questEventIncrement,
+  validateQuestCondition,
+  QUEST_CONDITION_SCHEMA_VERSION,
+  type GameEvent,
+  type GameState,
+} from "@workspace/game-engine";
 import { grantReward, isRewardType, type RewardExecutor } from "./reward-service";
 
 export const DAILY_TIME_ZONE = process.env["KO_DAILY_TIMEZONE"]?.trim() || "UTC";
@@ -21,6 +27,19 @@ export const DAILY_QUEST_OBJECTIVES = [
 ] as const;
 export type DailyQuestObjective = (typeof DAILY_QUEST_OBJECTIVES)[number];
 export const DAILY_QUEST_STATUSES = ["ASSIGNED", "IN_PROGRESS", "COMPLETED", "CLAIMED"] as const;
+type QuestConfigRecord = { schemaVersion?: string; condition?: unknown };
+
+function eventCardMetadata(state: GameState, event: GameEvent) {
+  const instanceId = event.cardInstanceId ?? event.sourceSnapshot?.cardInstanceId ?? event.targetSnapshot?.cardInstanceId;
+  if (!instanceId || !state.cardPool) return { cardMetadataAvailable: false as const };
+  const instance = state.players.flatMap((player) => [
+    ...player.deck, ...player.hand, ...player.board.filter(Boolean), ...player.graveyard, ...player.removedFromGame,
+  ]).find((card) => card?.instanceId === instanceId);
+  const definitionId = instance?.definitionId;
+  const definition = definitionId ? state.cardPool.find((card) => card.id === definitionId) : undefined;
+  if (!definition) return { cardMetadataAvailable: false as const };
+  return { cardMetadataAvailable: true as const, cardTags: definition.tags ?? [] };
+}
 
 export function isDailyQuestClaimable(status: string, progress: number, targetValue: number): boolean {
   return status === "COMPLETED" && progress >= targetValue;
@@ -89,7 +108,9 @@ export async function ensureDailyQuestAssignments(
   const selected = selectDailyQuestDefinitions(definitions, userId, assignmentDate);
   if (selected.length > 0) {
     await executor.insert(dailyQuestAssignmentsTable)
-      .values(selected.map((definition, slot) => ({
+      .values(selected.map((definition, slot) => {
+        const config = definition as typeof definition & QuestConfigRecord;
+        return {
         id: randomUUID(),
         userId,
         definitionId: definition.id,
@@ -103,7 +124,10 @@ export async function ensureDailyQuestAssignments(
         rewardType: definition.rewardType,
         rewardAmount: definition.rewardAmount,
         rewardTargetId: definition.rewardTargetId,
-      })))
+        schemaVersion: config.schemaVersion ?? "QUEST_CONDITION_V1",
+        condition: config.condition ?? null,
+      };
+      }))
       .onConflictDoNothing();
   }
   return executor.select().from(dailyQuestAssignmentsTable)
@@ -125,8 +149,12 @@ export async function processMatchEventsForDailyQuests(
   const assignmentDate = dailyDate();
   const assignments = await ensureDailyQuestAssignments(userId, assignmentDate, executor);
   for (const assignment of assignments) {
+    const config = assignment as typeof assignment & QuestConfigRecord;
     if (assignment.status === "CLAIMED") continue;
     const increments: Array<{ occurrenceKey: string; increment: number }> = [];
+    const v2 = config.schemaVersion === QUEST_CONDITION_SCHEMA_VERSION
+      ? validateQuestCondition(config.condition)
+      : null;
     if (state.status === "FINISHED" && assignment.objectiveType === "PLAY_MATCH") {
       increments.push({ occurrenceKey: `${assignment.id}:${matchId}:FINISHED:PLAY_MATCH`, increment: 1 });
     }
@@ -138,10 +166,12 @@ export async function processMatchEventsForDailyQuests(
       increments.push({ occurrenceKey: `${assignment.id}:${matchId}:FINISHED:WIN_MATCH`, increment: 1 });
     }
     state.events.slice(eventStart).forEach((event, offset) => {
-      const increment = objectiveIncrement(assignment.objectiveType, event, playerId, assignment.cardType);
+      const increment = config.schemaVersion === QUEST_CONDITION_SCHEMA_VERSION
+        ? (v2 ? questEventIncrement(v2, event, playerId, eventCardMetadata(state, event)) : 0)
+        : objectiveIncrement(assignment.objectiveType, event, playerId, assignment.cardType);
       if (increment > 0) {
         increments.push({
-          occurrenceKey: `${assignment.id}:${matchId}:EVENT:${eventStart + offset}:${assignment.objectiveType}`,
+          occurrenceKey: `${assignment.id}:${matchId}:EVENT:${eventStart + offset}:${assignment.objectiveType}:${config.schemaVersion ?? "QUEST_CONDITION_V1"}`,
           increment,
         });
       }
@@ -207,6 +237,7 @@ export async function claimDailyQuest(userId: string, assignmentId: string) {
 }
 
 export function publicDailyQuest(assignment: DailyQuestAssignmentRecord) {
+  const config = assignment as typeof assignment & QuestConfigRecord;
   return {
     id: assignment.id,
     definitionId: assignment.definitionId,
@@ -220,6 +251,8 @@ export function publicDailyQuest(assignment: DailyQuestAssignmentRecord) {
     rewardType: assignment.rewardType,
     rewardAmount: assignment.rewardAmount,
     rewardTargetId: assignment.rewardTargetId,
+    schemaVersion: config.schemaVersion ?? "QUEST_CONDITION_V1",
+    condition: config.condition ?? null,
     progress: assignment.progress,
     status: assignment.status,
     claimedAt: assignment.claimedAt,
@@ -244,10 +277,15 @@ export function validateDailyQuestInput(value: unknown) {
     : null;
   const rewardAmount = typeof input.rewardAmount === "number" ? input.rewardAmount : Number.NaN;
   const enabled = input.enabled !== false;
+  const condition = input.condition === undefined ? null : validateQuestCondition(input.condition);
+  const schemaVersion = input.schemaVersion ?? (condition ? QUEST_CONDITION_SCHEMA_VERSION : "QUEST_CONDITION_V1");
   if (
     !title || title.length > 120 ||
     description.length > 2000 ||
     !isDailyQuestObjective(objectiveType) ||
+    (schemaVersion === QUEST_CONDITION_SCHEMA_VERSION && !condition) ||
+    (condition !== null && condition.required !== targetValue) ||
+    (schemaVersion !== QUEST_CONDITION_SCHEMA_VERSION && schemaVersion !== "QUEST_CONDITION_V1") ||
     (objectiveType !== "CARD_PLAYED" && cardType !== null) ||
     !Number.isSafeInteger(targetValue) || targetValue < 1 || targetValue > 1000 ||
     !isRewardType(rewardType) ||
@@ -255,5 +293,5 @@ export function validateDailyQuestInput(value: unknown) {
     (rewardType !== "CURRENCY" && rewardTargetId === null) ||
     !Number.isSafeInteger(rewardAmount) || rewardAmount < 1 || rewardAmount > 2_147_483_647
   ) return null;
-  return { title, description, objectiveType, cardType, targetValue, rewardType, rewardAmount, rewardTargetId, enabled };
+  return { title, description, objectiveType, cardType, targetValue, rewardType, rewardAmount, rewardTargetId, enabled, schemaVersion, condition };
 }

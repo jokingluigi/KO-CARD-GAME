@@ -528,7 +528,7 @@ router.post("/:id/select", async (request, response): Promise<void> => {
     .from(decksTable)
     .where(eq(decksTable.id, existing.id))
     .limit(1);
-  response.json({ deck: deck ? await resolveDeck(deck, user.id) : null });
+  response.json({ deck: deck ? await resolveDeck(deck, user.id, isTestAccountUser(user)) : null });
 });
 
 router.delete("/:id", async (request, response): Promise<void> => {

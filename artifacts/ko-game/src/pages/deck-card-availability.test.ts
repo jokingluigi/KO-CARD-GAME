@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import test from "node:test";
 
 import type { DeckCard } from "../lib/decks-client.ts";
-import { getDeckCardAction } from "./deck-card-availability.ts";
+import { getDeckCardAction, getDeckCardCountView } from "./deck-card-availability.ts";
 
 function deckCard(overrides: Partial<DeckCard> = {}): DeckCard {
   return {
@@ -72,4 +72,32 @@ test("tokens cannot be added and full deck remains protected", () => {
     getDeckCardAction(deckCard(), { ...args, deckCount: args.deckSize }),
     { kind: "DISABLED", reason: `덱은 정확히 ${args.deckSize}장까지 구성할 수 있습니다.` },
   );
+});
+
+test("ownership remains immutable while deck count and availability are derived", () => {
+  const card = deckCard({ quantity: 3 });
+  assert.deepEqual(getDeckCardCountView(card, 0), { ownedCount: 3, deckCount: 0, availableToAdd: 3 });
+  assert.deepEqual(getDeckCardCountView(card, 1), { ownedCount: 3, deckCount: 1, availableToAdd: 2 });
+  assert.deepEqual(getDeckCardCountView(card, 2), { ownedCount: 3, deckCount: 2, availableToAdd: 1 });
+  assert.deepEqual(getDeckCardCountView(card, 1), { ownedCount: 3, deckCount: 1, availableToAdd: 2 });
+  assert.equal(card.quantity, 3);
+});
+
+test("a single owned copy cannot be added twice and full decks stay blocked", () => {
+  const card = deckCard({ quantity: 1 });
+  assert.deepEqual(getDeckCardAction(card, args), { kind: "ADD" });
+  assert.deepEqual(
+    getDeckCardAction(card, { ...args, count: 1 }),
+    { kind: "DISABLED", reason: "보유 수량 1장에 도달했습니다." },
+  );
+  assert.deepEqual(
+    getDeckCardAction(card, { ...args, deckCount: args.deckSize }),
+    { kind: "DISABLED", reason: `덱은 정확히 ${args.deckSize}장까지 구성할 수 있습니다.` },
+  );
+});
+
+test("AI-style cards without ownership limits do not borrow player counts", () => {
+  const card = deckCard({ quantity: undefined });
+  assert.deepEqual(getDeckCardCountView(card, 2), { ownedCount: undefined, deckCount: 2, availableToAdd: undefined });
+  assert.deepEqual(getDeckCardAction(card, { ...args, count: 1 }), { kind: "ADD" });
 });

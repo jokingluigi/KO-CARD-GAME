@@ -73,6 +73,15 @@ export type {
   GameEvent,
   GameEventType,
 } from "../../../artifacts/ko-game/src/game/events/types";
+export {
+  QUEST_CONDITION_SCHEMA_VERSION,
+  questEventRegistry,
+  validateQuestCondition,
+  questConditionMatches,
+  questEventIncrement,
+  type QuestConditionV2,
+  type QuestConditionNode,
+} from "./quest-conditions";
 export type { GameMediaCatalog } from "../../../artifacts/ko-game/src/game/media";
 export {
   isOnlineActionPayload,

@@ -2,6 +2,26 @@ import type { DeckCard } from "@/lib/decks-client";
 
 export const MAX_CARD_COPIES = 2;
 
+export type DeckCardCountView = {
+  ownedCount: number | undefined;
+  deckCount: number;
+  availableToAdd: number | undefined;
+};
+
+/**
+ * Keep the immutable collection quantity separate from the editable deck draft.
+ * An absent quantity means the card source does not expose an ownership limit
+ * (for example, an AI deck), so availability is likewise left undefined.
+ */
+export function getDeckCardCountView(card: DeckCard, deckCount: number): DeckCardCountView {
+  const ownedCount = card.quantity;
+  return {
+    ownedCount,
+    deckCount,
+    availableToAdd: ownedCount === undefined ? undefined : Math.max(0, ownedCount - deckCount),
+  };
+}
+
 export function cardLimitReason(
   card: DeckCard,
   count: number,
