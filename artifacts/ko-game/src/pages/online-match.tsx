@@ -185,8 +185,10 @@ function OnlineMatchPage() {
 
   useEffect(() => {
     const unsubscribeConnection = client.onConnectionState((next) => {
+      console.info("[KO online match]", { event: "connection-notification", matchId, next, ...client.diagnostics });
       setConnection(next);
       if (next !== "open") {
+        console.info("[KO online match]", { event: "snapshot-invalidated-by-connection", matchId, next });
         setHasAuthoritativeSnapshot(false);
         pendingActionIdRef.current = null;
         pendingActionInFlightRef.current = false;
@@ -194,6 +196,7 @@ function OnlineMatchPage() {
         return;
       }
       if (matchId) {
+        console.info("[KO online match]", { event: "subscribe-on-open", matchId, ...client.diagnostics });
         setHasAuthoritativeSnapshot(false);
         pendingActionInFlightRef.current = true;
         setPendingAction(true);
@@ -204,6 +207,17 @@ function OnlineMatchPage() {
       }
     });
     const unsubscribeMessage = client.onMessage((message: OnlineServerMessage) => {
+      if (message.type === "MATCH_SNAPSHOT") {
+        console.info("[KO online match]", {
+          event: "snapshot-dispatched",
+          matchId,
+          receivedMatchId: message.matchId,
+          routeMatches: message.matchId === matchId,
+          seat: message.seat,
+          version: message.version,
+          ...client.diagnostics,
+        });
+      }
       if ("matchId" in message && message.matchId !== matchId) return;
       if (
         message.type === "MATCH_SNAPSHOT" ||
@@ -251,9 +265,13 @@ function OnlineMatchPage() {
 
         const projected = projectOnlineGameState(message.state, nextSeat);
         if (!projected) {
+          console.info("[KO online match]", { event: "snapshot-projection-failed", matchId, seat: nextSeat });
           setHasAuthoritativeSnapshot(false);
           setPlayError("서버 매치 상태를 해석하지 못했습니다.");
           return;
+        }
+        if (message.type === "MATCH_SNAPSHOT") {
+          console.info("[KO online match]", { event: "snapshot-accepted", matchId, seat: nextSeat, version: message.version, ...client.diagnostics });
         }
         setHasAuthoritativeSnapshot(true);
         const previous = stateRef.current;
@@ -313,6 +331,7 @@ function OnlineMatchPage() {
         return;
       }
       if (message.type === "SESSION_REPLACED") {
+        console.info("[KO online match]", { event: "snapshot-invalidated-by-session-replacement", matchId });
         setHasAuthoritativeSnapshot(false);
         setSessionReplaced(true);
         pendingActionIdRef.current = null;
@@ -326,6 +345,7 @@ function OnlineMatchPage() {
           message.type === "ERROR" &&
           ["FORBIDDEN", "NOT_SUBSCRIBED", "MATCH_UNAVAILABLE"].includes(message.code)
         ) {
+          console.info("[KO online match]", { event: "snapshot-invalidated-by-server-error", matchId, code: message.code });
           setHasAuthoritativeSnapshot(false);
         }
         if (!("requestId" in message) || !message.requestId || pendingActionIdRef.current === message.requestId) {
@@ -349,6 +369,7 @@ function OnlineMatchPage() {
     });
     client.connect();
     return () => {
+      console.info("[KO online match]", { event: "match-effect-cleanup", matchId, ...client.diagnostics });
       unsubscribeMessage();
       unsubscribeConnection();
       if (matchId) client.send({ type: "UNSUBSCRIBE", matchId });
@@ -514,6 +535,19 @@ function OnlineMatchPage() {
   const awaitingAuthoritativeMatch =
     connection !== "open" || !hasAuthoritativeSnapshot || sessionReplaced;
   useEffect(() => {
+    console.info("[KO online match]", {
+      event: "readiness-render",
+      matchId,
+      connection,
+      hasAuthoritativeSnapshot,
+      sessionReplaced,
+      isConnected,
+      seat,
+      version,
+      ...client.diagnostics,
+    });
+  }, [client, connection, hasAuthoritativeSnapshot, isConnected, matchId, seat, sessionReplaced, version]);
+  useEffect(() => {
     if (!matchId || !awaitingAuthoritativeMatch || state?.status === "FINISHED") {
       setShowRecoveryActions(false);
       return;
@@ -568,6 +602,7 @@ function OnlineMatchPage() {
   }
 
   function retryMatchConnection() {
+    console.info("[KO online match]", { event: "manual-retry", matchId, ...client.diagnostics });
     setShowRecoveryActions(false);
     setHasAuthoritativeSnapshot(false);
     client.reconnectNow();

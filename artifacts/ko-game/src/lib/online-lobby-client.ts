@@ -122,6 +122,17 @@ class OnlineLobbyClient {
   get state() {
     return this.connectionState;
   }
+  get diagnostics() {
+    return {
+      generation: this.socketGeneration,
+      readyState: this.socket?.readyState ?? null,
+      connectionState: this.connectionState,
+      reconnectScheduled: this.reconnectTimer !== null,
+    };
+  }
+  private trace(event: string, details: Record<string, string | number | boolean | null> = {}) {
+    console.info("[KO online WS]", { event, ...this.diagnostics, ...details });
+  }
 
   onMessage(listener: OnlineLobbyListener) {
     this.listeners.add(listener);
@@ -141,12 +152,17 @@ class OnlineLobbyClient {
     if (
       this.openingSocket ||
       (this.socket && (this.socket.readyState === WebSocket.OPEN || this.socket.readyState === WebSocket.CONNECTING))
-    ) return;
+    ) {
+      this.trace("connect-already-active");
+      return;
+    }
     this.setConnectionState("connecting");
     const generation = ++this.socketGeneration;
+    this.trace("connect-start");
     void this.openSocket(generation);
   }
   reconnectNow() {
+    this.trace("manual-reconnect");
     this.shouldReconnect = true;
     if (this.reconnectTimer) clearTimeout(this.reconnectTimer);
     this.reconnectTimer = null;
@@ -165,6 +181,7 @@ class OnlineLobbyClient {
     try { if (import.meta.env.PROD) ticket = await requestWebSocketTicket(); }
     catch {
       if (generation !== this.socketGeneration) return;
+      this.trace("ticket-failed");
       this.openingSocket = false;
       this.setConnectionState("error");
       this.scheduleReconnect();
@@ -178,6 +195,7 @@ class OnlineLobbyClient {
     try {
       socket = new WebSocket(websocketUrl(ticket));
     } catch {
+      this.trace("socket-constructor-failed");
       this.openingSocket = false;
       this.setConnectionState("error");
       this.scheduleReconnect();
@@ -185,11 +203,14 @@ class OnlineLobbyClient {
     }
     this.socket = socket;
     this.openingSocket = false;
+    this.trace("socket-created");
     socket.addEventListener("open", () => {
       if (this.socket !== socket || generation !== this.socketGeneration) {
+        this.trace("stale-open-ignored", { eventGeneration: generation });
         socket.close();
         return;
       }
+      this.trace("socket-open");
       this.reconnectAttempt = 0;
       this.setConnectionState("open");
     });
@@ -198,25 +219,42 @@ class OnlineLobbyClient {
       try {
         const message = JSON.parse(String(event.data)) as OnlineServerMessage;
         if (message && typeof message.type === "string") {
+          if (["MATCH_SNAPSHOT", "MATCH_CONNECTION_STATUS", "ERROR", "SESSION_REPLACED"].includes(message.type)) {
+            this.trace("match-message", {
+              type: message.type,
+              matchId: "matchId" in message && typeof message.matchId === "string" ? message.matchId : null,
+              listenerCount: this.listeners.size,
+            });
+          }
           if (message.type === "MATCH_FOUND" || message.type === "MATCH_STARTING") this.lastHandoff = message;
           this.listeners.forEach((listener) => listener(message));
         }
       } catch {
+        this.trace("message-parse-or-listener-failed");
         this.listeners.forEach((listener) => listener({ type: "LOBBY_ERROR", code: "INVALID_SERVER_MESSAGE", message: "온라인 서버 응답을 해석하지 못했습니다." }));
       }
     });
     socket.addEventListener("error", () => {
-      if (this.socket === socket && generation === this.socketGeneration) this.setConnectionState("error");
+      if (this.socket === socket && generation === this.socketGeneration) {
+        this.trace("socket-error", { eventGeneration: generation });
+        this.setConnectionState("error");
+      } else {
+        this.trace("stale-error-ignored", { eventGeneration: generation });
+      }
     });
     socket.addEventListener("close", () => {
       if (this.socket === socket && generation === this.socketGeneration) {
+        this.trace("socket-close", { eventGeneration: generation });
         this.socket = null;
         this.setConnectionState("closed");
         this.scheduleReconnect();
+      } else {
+        this.trace("stale-close-ignored", { eventGeneration: generation });
       }
     });
   }
   close() {
+    this.trace("client-close");
     this.shouldReconnect = false;
     this.socketGeneration += 1;
     this.openingSocket = false;
@@ -231,12 +269,18 @@ class OnlineLobbyClient {
     this.socket.send(JSON.stringify(message)); return true;
   }
   private setConnectionState(state: OnlineLobbyConnectionState) {
+    if (this.connectionState !== state) this.trace("connection-state-change", { from: this.connectionState, to: state });
     this.connectionState = state; this.connectionListeners.forEach((listener) => listener(state));
   }
   private scheduleReconnect() {
     if (!this.shouldReconnect || this.reconnectTimer) return;
     const delay = Math.min(500 * 2 ** this.reconnectAttempt, 8000); this.reconnectAttempt += 1;
-    this.reconnectTimer = setTimeout(() => { this.reconnectTimer = null; this.connect(); }, delay);
+    this.trace("reconnect-scheduled", { delayMs: delay });
+    this.reconnectTimer = setTimeout(() => {
+      this.reconnectTimer = null;
+      this.trace("reconnect-timer-fired");
+      this.connect();
+    }, delay);
   }
 }
 let sharedClient: OnlineLobbyClient | null = null;
