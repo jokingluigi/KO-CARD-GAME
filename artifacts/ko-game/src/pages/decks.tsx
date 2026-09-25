@@ -30,6 +30,7 @@ import {
 import { cardTypeLabel, deckValidityLabel, normalizeCardRulesText } from "@/lib/display-labels";
 import { DECK_SIZE, MAX_LEGENDARY_CARDS, validateDeckCounts } from "@workspace/game-engine";
 import { cardLimitReason, cardOwnershipReason, getDeckCardAction, getDeckCardCountView, MAX_CARD_COPIES } from "./deck-card-availability";
+import { cardOwnershipValidationReason, formatDeckValidationReason, mergeDeckValidationReasons, uniqueValidationReasons } from "./deck-validation";
 
 type AuthStatus = "checking" | "authenticated" | "unauthenticated" | "error";
 type CardFilter = "ALL" | "WRESTLER" | "TECHNIQUE";
@@ -47,16 +48,6 @@ function cardSettings(card: DeckCard) {
 
 function unique<T>(values: T[]) {
   return Array.from(new Set(values));
-}
-
-function uniqueValidationReasons(reasons: DeckValidationReason[]) {
-  const seen = new Set<string>();
-  return reasons.filter((reason) => {
-    const key = `${reason.reasonCode}:${reason.message}:${(reason.cardDefinitionIds ?? []).join(",")}`;
-    if (seen.has(key)) return false;
-    seen.add(key);
-    return true;
-  });
 }
 
 function validationReason(
@@ -331,6 +322,10 @@ export default function Decks() {
     options.cards.forEach((card) => map.set(card.id, card));
     return map;
   }, [editingDeck, options.cards]);
+  const cardNames = useMemo(
+    () => new Map(Array.from(cardById, ([id, card]) => [id, card.name])),
+    [cardById],
+  );
   const championById = useMemo(() => {
     const map = new Map<string, DeckChampion>();
     options.champions.forEach((champion) => map.set(champion.id, champion));
@@ -377,10 +372,8 @@ export default function Decks() {
       } else if (card.rarity === "LEGENDARY" && count > 1) {
         reasons.push(validationReason("CARD", "DUPLICATE_LEGENDARY", "레전더리 카드는 같은 카드를 1장만 넣을 수 있습니다.", [id], { count, limit: 1 }));
       }
-      const ownershipReason = cardOwnershipReason(card, count, options.isTestAccount === true);
-      if (ownershipReason) {
-        reasons.push(validationReason("CARD", "CARD_QUANTITY_EXCEEDED", ownershipReason, [id], { count, limit: card.quantity }));
-      }
+      const ownershipViolation = cardOwnershipValidationReason(card, count, options.isTestAccount === true);
+      if (ownershipViolation) reasons.push(ownershipViolation);
     });
     const canonicalReasons = validateDeckCounts({
       cardCount: cardIds.length,
@@ -424,10 +417,10 @@ export default function Decks() {
     editingDeck.championDefinitionId === championId &&
     sameCardIdList(editingDeck.cardDefinitionIds, cardIds),
   );
-  const validationReasons = uniqueValidationReasons([
-    ...localValidationReasons,
-    ...(savedDraftMatches ? (editingDeck?.validationReasons ?? []) : []),
-  ]);
+   const validationReasons = mergeDeckValidationReasons(
+     localValidationReasons,
+     savedDraftMatches ? (editingDeck?.validationReasons ?? []) : [],
+   );
   const problematicCardIds = useMemo(
     () => new Set(validationReasons.flatMap((reason) => reason.cardDefinitionIds ?? [])),
     [validationReasons],
@@ -881,11 +874,7 @@ export default function Decks() {
                     <p className="font-black">이 덱은 현재 사용할 수 없습니다.</p>
                     {validationReasons.map((reason, index) => (
                       <p key={`${reason.reasonCode}-${index}`} data-testid={`deck-validation-${reason.reasonCode}`}>
-                        {reason.scope === "CARD" ? "카드 문제 · " : "덱 문제 · "}
-                        {reason.message}
-                        {reason.count !== undefined && reason.limit !== undefined && reason.reasonCode !== "CARD_QUANTITY_EXCEEDED"
-                          ? ` (${reason.count}/${reason.limit})`
-                          : ""}
+                         {formatDeckValidationReason(reason, cardNames)}
                       </p>
                     ))}
                   </div>

@@ -1,0 +1,588 @@
+KO CARD GAME — SEV-1 DECK VALIDATION BUG
+“OWNED LIMIT REACHED” MUST NOT INVALIDATE AN ALREADY VALID DECK
+
+현재 Production에서 반복적으로 발생하는 버그다.
+
+실제 UI:
+
+"이 덱은 현재 사용할 수 없습니다."
+"카드 문제 · 보유 수량 1장에 도달했습니다."
+
+그리고 덱 목록에서
+카드 ×1이 빨간색 오류로 표시된다.
+
+이 판정은 잘못됐다.
+
+==================================================
+CORE RULE
+==================================================
+
+반드시 다음 세 개념을 분리하라.
+
+ownedCount
+= 사용자가 실제로 보유한 해당 카드 총 수량
+
+deckCount
+= 현재 덱에 들어 있는 해당 카드 수량
+
+availableToAdd
+= 현재 덱에 추가로 더 넣을 수 있는 수량
+
+IMPORTANT:
+
+availableToAdd === 0
+
+은
+
+"현재 덱이 INVALID"
+
+라는 뜻이 아니다.
+
+단지:
+
+"더 이상 이 카드를 추가할 수 없다"
+
+는 뜻이다.
+
+==================================================
+EXPECTED EXAMPLES
+==================================================
+
+CASE 1
+
+ownedCount = 1
+deckCount = 1
+
+EXPECTED:
+
+deck VALID
+canAdd = false
+
+현재 덱에 이미 보유한 1장을 정상적으로 사용하고 있으므로
+오류가 아니다.
+
+==================================================
+
+CASE 2
+
+ownedCount = 1
+deckCount = 2
+
+EXPECTED:
+
+deck INVALID
+
+reason:
+
+INSUFFICIENT_OWNERSHIP
+
+==================================================
+
+CASE 3
+
+Normal card
+
+duplicateLimit = 2
+ownedCount = 2
+deckCount = 2
+
+EXPECTED:
+
+deck VALID
+canAdd = false
+
+==================================================
+
+CASE 4
+
+Normal card
+
+duplicateLimit = 2
+ownedCount = 2
+deckCount = 3
+
+EXPECTED:
+
+deck INVALID
+
+reason:
+
+DUPLICATE_LIMIT_EXCEEDED
+
+==================================================
+
+CASE 5
+
+Legendary
+
+same CardDefinition max in deck = 1
+
+ownedCount = 1
+deckCount = 1
+
+EXPECTED:
+
+deck VALID
+canAdd = false
+
+==================================================
+
+CASE 6
+
+Legendary
+
+ownedCount = 1
+deckCount = 2
+
+EXPECTED:
+
+deck INVALID
+
+==================================================
+LIKELY BUG
+==================================================
+
+Inspect whether deck validation currently uses logic similar to:
+
+deckCount >= ownedCount
+
+or
+
+availableToAdd <= 0
+
+or
+
+!canAddCardToDeck(card)
+
+to decide whether the EXISTING deck is valid.
+
+That is incorrect.
+
+For validation:
+
+INVALID ownership condition must be:
+
+deckCount > ownedCount
+
+NOT:
+
+deckCount >= ownedCount
+
+For duplicate rules:
+
+INVALID condition must be:
+
+deckCount > duplicateLimit
+
+NOT:
+
+deckCount >= duplicateLimit
+
+==================================================
+VERY IMPORTANT ARCHITECTURE
+==================================================
+
+Separate:
+
+canAddCardToDeck()
+
+from:
+
+validateDeck()
+
+These are different questions.
+
+canAddCardToDeck:
+
+"Can the user add ONE MORE copy?"
+
+validateDeck:
+
+"Is the CURRENT number of copies legal?"
+
+Never use `canAddCardToDeck()` as the validator for cards already present in the deck.
+
+Example:
+
+owned = 1
+deck = 1
+
+canAddCardToDeck:
+false
+
+validateDeck:
+true
+
+This distinction is mandatory.
+
+==================================================
+TRACE THE ACTUAL ERROR
+==================================================
+
+Do not patch only the UI message.
+
+Find where:
+
+"보유 수량 1장에 도달했습니다."
+
+is generated.
+
+Trace backwards to the validator that marks:
+
+deck.valid = false
+
+or equivalent.
+
+Find:
+
+1. inventory count source
+2. deck card quantity source
+3. duplicate limit
+4. Legendary rule
+5. validation function
+6. add-card function
+7. save validation
+8. match-entry validation
+
+The fix must apply to the canonical validation logic,
+not just hide the warning.
+
+==================================================
+CHECK FOR QUANTITY FIELD BUGS
+==================================================
+
+Also inspect whether quantity fields are being overwritten or confused.
+
+Potentially dangerous examples:
+
+ownedCount being replaced by remaining count
+
+quantity meaning different things between:
+
+inventory
+deck entry
+API DTO
+frontend view model
+
+availableToAdd being stored where ownedCount is expected
+
+Do not assume the >= bug is the only possible cause.
+
+Prove the actual values for the failing card.
+
+For the highlighted failing card, log/report:
+
+cardDefinitionId:
+...
+
+ownedCount:
+...
+
+deckCount:
+...
+
+duplicateLimit:
+...
+
+rarity:
+...
+
+availableToAdd:
+...
+
+validator result:
+...
+
+validator reason:
+...
+
+==================================================
+LEGENDARY RULES
+==================================================
+
+Current deck rules:
+
+- Deck must contain exactly 25 cards.
+- Champion is separate from the 25 cards.
+- Legendary total maximum = 5.
+- Same Legendary CardDefinition cannot be duplicated.
+- Normal duplicate rules remain unchanged.
+- Token cards cannot be directly added.
+
+Do not accidentally change these rules.
+
+Important distinction:
+
+Legendary total max 5
+
+is different from:
+
+same Legendary definition max 1.
+
+==================================================
+DO NOT AUTO-MODIFY USER DECK
+==================================================
+
+Do not solve this by:
+
+removing cards
+reducing quantities
+auto-cutting deck
+deleting deck entries
+changing inventory
+
+A valid existing deck must simply be recognized as VALID.
+
+==================================================
+UI MESSAGE
+==================================================
+
+If user has reached the maximum but has not exceeded it:
+
+do NOT show an error.
+
+Example:
+
+owned 1
+deck 1
+
+Do not show:
+
+"보유 수량 1장에 도달했습니다."
+
+That may be useful as an ADD button disabled reason,
+but not as a deck-invalid reason.
+
+Deck validation messages should only appear for actual violations.
+
+Examples:
+
+"보유 수량보다 1장 많이 포함되어 있습니다."
+
+"동일 카드 최대 2장을 초과했습니다."
+
+"동일 레전더리 카드는 1장만 사용할 수 있습니다."
+
+==================================================
+NORMAL USER MUST BE TESTED
+==================================================
+
+This bug has repeatedly appeared in normal-user flows.
+
+Do not test Admin only.
+
+Test with NORMAL USER inventory.
+
+==================================================
+REQUIRED TEST MATRIX
+==================================================
+
+Test:
+
+owned 1 / deck 0
+VALID
+
+owned 1 / deck 1
+VALID
+canAdd false
+
+owned 1 / deck 2
+INVALID
+
+owned 2 / deck 1
+VALID
+canAdd true if duplicate rules allow
+
+owned 2 / deck 2
+VALID
+canAdd false if max 2
+
+owned 2 / deck 3
+INVALID
+
+Legendary owned 1 / deck 1
+VALID
+
+Legendary owned 1 / deck 2
+INVALID
+
+Legendary total = 5
+VALID
+
+Legendary total = 6
+INVALID
+
+25 cards exactly
+VALID if every other rule passes
+
+24 cards
+INVALID
+
+26 cards
+INVALID
+
+==================================================
+SAVE + MATCH ENTRY
+==================================================
+
+After fixing the validator:
+
+1. Save the deck.
+2. Reload.
+3. Open deck again.
+4. It remains VALID.
+5. Enter AI Match with it.
+6. Enter Online Match with it if possible.
+
+No disagreement between:
+
+Deck Builder
+Deck List
+AI Match
+Online Match
+
+All must use the same canonical validation semantics.
+
+==================================================
+AUTOMATED TESTS
+==================================================
+
+Add regression tests specifically for:
+
+ownedCount === deckCount
+
+This equality case MUST be VALID.
+
+Also test:
+
+deckCount === duplicateLimit
+
+This equality case MUST be VALID.
+
+Only `>` is invalid.
+
+Run:
+
+pnpm run typecheck
+
+pnpm --filter @workspace/ko-game run build
+
+relevant API typecheck/build if backend validator changes
+
+deck validation tests
+
+inventory/deck tests
+
+git diff --check
+
+==================================================
+DO NOT STOP AT UI PATCH
+==================================================
+
+Do not simply remove the red warning.
+
+Verify the canonical result actually becomes:
+
+deck.valid === true
+
+for:
+
+ownedCount === deckCount
+
+when all other deck rules are valid.
+
+==================================================
+FINAL REPORT
+==================================================
+
+PROVEN ROOT CAUSE:
+...
+
+FAILING CARD:
+
+card:
+...
+
+ownedCount:
+...
+
+deckCount:
+...
+
+duplicateLimit:
+...
+
+availableToAdd:
+...
+
+OLD VALIDATION:
+...
+
+NEW VALIDATION:
+...
+
+
+TESTS:
+
+owned1/deck1:
+PASS / FAIL
+
+owned1/deck2:
+PASS / FAIL
+
+owned2/deck2:
+PASS / FAIL
+
+owned2/deck3:
+PASS / FAIL
+
+Legendary1/1:
+PASS / FAIL
+
+Legendary1/2:
+PASS / FAIL
+
+25-card valid deck:
+PASS / FAIL
+
+Deck reload:
+PASS / FAIL
+
+AI Match acceptance:
+PASS / FAIL / UNVERIFIED
+
+Online Match acceptance:
+PASS / FAIL / UNVERIFIED
+
+
+TYPECHECK:
+PASS / FAIL
+
+WEB BUILD:
+PASS / FAIL
+
+API TYPECHECK:
+PASS / FAIL / NOT TOUCHED
+
+API BUILD:
+PASS / FAIL / NOT TOUCHED
+
+TESTS:
+PASS / FAIL
+
+git diff --check:
+PASS / FAIL
+
+FILES CHANGED:
+...
+
+==================================================
+SUCCESS CONDITION
+==================================================
+
+A card being used up to the amount the player owns
+must NOT invalidate the deck.
+
+"한도에 도달함" is not an error.
+
+Only "한도를 초과함" is an error.
