@@ -3,8 +3,6 @@ import { useLocation } from "wouter";
 import { Ban, CheckCircle2, Copy, FilePenLine, ImagePlus, Maximize2, Plus, RotateCcw, Search, Trash2, X } from "lucide-react";
 import { AdminAudioField } from "./admin-audio-field";
 import { AdminUnifiedEffectPrompt } from "./admin-unified-effect-prompt";
-import { AdminEffectAiGenerator } from "./admin-effect-ai-generator";
-import { effectConfigEntryCount, mergeGeneratedEffectDraft } from "@/lib/admin-effect-config";
 import { CardArtwork } from "./card-artwork";
 import { useToast } from "../hooks/use-toast";
 import {
@@ -265,19 +263,6 @@ export function AdminChampionManager({ onUnauthorized }: { onUnauthorized: () =>
     if (!analysis || analysis.outcome !== "supported") return;
     update(effectsKey, { effects: analysis.effects ?? [] } as Form[typeof effectsKey]);
     setMessageText("분석 결과를 효과 슬롯에 적용했습니다. 챔피언 저장을 눌러 보존하세요.");
-    setError("");
-  }
-
-  function applyAiEffect(
-    effectsKey: "abilityEffects" | "questRewardEffects" | "upgradedAbilityEffects",
-    draft: { effectId: "STRUCTURED_EFFECTS_V1" | "SCRIPT_V1"; effects: unknown[]; scripts: unknown[] },
-    mode: "replace" | "append",
-  ) {
-    const merged = mergeGeneratedEffectDraft(undefined, form[effectsKey], draft, mode);
-    update(effectsKey, merged.effectConfig as Form[typeof effectsKey]);
-     setMessageText(mode === "append"
-       ? "컴파일된 게임 규칙을 기존 Champion 효과 뒤에 추가했습니다. 저장 버튼을 눌러 보존하세요."
-       : "컴파일된 게임 규칙을 Champion 효과에 적용했습니다. 저장 버튼을 눌러 보존하세요.");
     setError("");
   }
 
@@ -918,11 +903,6 @@ export function AdminChampionManager({ onUnauthorized }: { onUnauthorized: () =>
             onCopyPrompt={()=>void copyPrompt("abilityText")}
             analyzing={analyzingKey === "abilityText"}
             prompting={promptingKey === "abilityText"}
-            sourceId={editing?.id}
-            effectContext="CHAMPION_ABILITY"
-            existingEffectCount={effectConfigEntryCount(form.abilityEffects)}
-            onApplyAi={(effects, mode) => applyAiEffect("abilityEffects", effects, mode)}
-            onUnauthorized={onUnauthorized}
           />
          <label className="flex items-center gap-2"><input type="checkbox" checked={form.hasQuest} onChange={e=>{
            const current = formRef.current;
@@ -969,11 +949,6 @@ export function AdminChampionManager({ onUnauthorized }: { onUnauthorized: () =>
                onCopyPrompt={()=>void copyPrompt("questRewardText")}
                analyzing={analyzingKey === "questRewardText"}
                prompting={promptingKey === "questRewardText"}
-                sourceId={editing?.id}
-                effectContext="QUEST_REWARD"
-               existingEffectCount={effectConfigEntryCount(form.questRewardEffects)}
-                onApplyAi={(effects, mode) => applyAiEffect("questRewardEffects", effects, mode)}
-                onUnauthorized={onUnauthorized}
              /></>}
         <label>강화 능력 이름<input className={input} value={form.upgradedAbilityName??""} onChange={e=>update("upgradedAbilityName",e.target.value||null)}/></label>
         <label>강화 능력 비용<input type="number" className={input} value={form.upgradedAbilityCost??""} onChange={e=>update("upgradedAbilityCost",e.target.value===""?null:Number(e.target.value))}/></label>
@@ -990,11 +965,6 @@ export function AdminChampionManager({ onUnauthorized }: { onUnauthorized: () =>
              onCopyPrompt={()=>void copyPrompt("upgradedAbilityText")}
              analyzing={analyzingKey === "upgradedAbilityText"}
              prompting={promptingKey === "upgradedAbilityText"}
-              sourceId={editing?.id}
-             effectContext="UPGRADED_CHAMPION_ABILITY"
-            existingEffectCount={effectConfigEntryCount(form.upgradedAbilityEffects)}
-             onApplyAi={(effects, mode) => applyAiEffect("upgradedAbilityEffects", effects, mode)}
-             onUnauthorized={onUnauthorized}
            />
          <div className="md:col-span-2 rounded border border-neutral-800 bg-neutral-900/40 p-3">
            <div className="mb-2 text-xs font-bold text-neutral-400">연결할 Champion Token</div>
@@ -1188,7 +1158,7 @@ function AnalysisControls({
   </div>;
 }
 
-function EffectField({ title, value, onChange, onAnalyze, onApply, onPrompt, onReanalyze, analysis, prompt, onCopyPrompt, analyzing, prompting, sourceId, effectContext, existingEffectCount, onApplyAi, onUnauthorized }: {
+function EffectField({ title, value, onChange, onAnalyze, onApply, onPrompt, onReanalyze, analysis, prompt, onCopyPrompt, analyzing, prompting }: {
   title: string;
   value: string;
   onChange: (value: string) => void;
@@ -1201,11 +1171,6 @@ function EffectField({ title, value, onChange, onAnalyze, onApply, onPrompt, onR
   onCopyPrompt: () => void;
   analyzing?: boolean;
   prompting?: boolean;
-  sourceId?: string;
-  effectContext: "CHAMPION_ABILITY" | "QUEST_REWARD" | "UPGRADED_CHAMPION_ABILITY";
-  existingEffectCount: number;
-  onApplyAi: (draft: { effectId: "STRUCTURED_EFFECTS_V1" | "SCRIPT_V1"; effects: unknown[]; scripts: unknown[] }, mode: "replace" | "append") => void;
-  onUnauthorized: () => void;
 }) {
   return <label className="md:col-span-2">
     {title}
@@ -1224,15 +1189,7 @@ function EffectField({ title, value, onChange, onAnalyze, onApply, onPrompt, onR
       analyzing={analyzing}
       prompting={prompting}
     />
-    <AdminEffectAiGenerator
-      defaultText={value}
-      sourceType="CHAMPION"
-       sourceId={sourceId}
-      effectContext={effectContext}
-      existingEffectCount={existingEffectCount}
-       onApply={(draft, mode) => onApplyAi(draft, mode)}
-      onUnauthorized={onUnauthorized}
-    />
+    <span className="mt-2 block text-xs text-neutral-400">새로운 효과 구현은 챔피언 이름, 효과 문구와 발동 조건을 대화로 전달해 주세요.</span>
   </label>;
 }
 
