@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { audioManager } from '@/audio/audio-manager';
 
 type Direction = 'up' | 'down' | 'left' | 'right';
 
@@ -70,7 +71,8 @@ export function GamepadNavigation() {
 
     const tick = (time: number) => {
       try {
-        const pad = [...navigator.getGamepads()].find((entry) => entry?.connected && entry.mapping === 'standard');
+        // Android browsers often expose Bluetooth pads with an empty mapping.
+        const pad = [...navigator.getGamepads()].find((entry) => entry?.connected);
         if (!pad) {
           if (wasConnected) { setConnected(false); clearFocus(); }
           wasConnected = false;
@@ -81,6 +83,10 @@ export function GamepadNavigation() {
           wasConnected = true;
           const held = new Set(pad.buttons.flatMap((button, index) => button.pressed ? [index] : []));
           const justPressed = (index: number) => held.has(index) && !previous.has(index);
+          if ([0, 1, 2, 9].some(justPressed)) {
+            // A pad can be the first user interaction on a mobile device.
+            audioManager.unlockAudio();
+          }
           const horizontal = pad.axes[0] ?? 0;
           const vertical = pad.axes[1] ?? 0;
           const direction: Direction | null =
@@ -109,7 +115,8 @@ export function GamepadNavigation() {
             else window.dispatchEvent(new Event('ko-gamepad-cancel'));
           }
           if (justPressed(2)) {
-            active?.closest('.ko-hand-card')?.parentElement?.querySelector<HTMLButtonElement>('[data-touch-inspect-trigger]')?.click();
+            (active?.closest('.ko-board-slot-wrapper') ?? active?.parentElement)
+              ?.querySelector<HTMLButtonElement>('[data-touch-inspect-trigger]')?.click();
           }
           if (justPressed(9) && !document.querySelector('[role="dialog"][aria-modal="true"]')) {
             window.dispatchEvent(new Event('ko-gamepad-settings'));

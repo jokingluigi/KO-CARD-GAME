@@ -989,6 +989,7 @@ async function callProvider(
   normalization: EffectLanguageNormalization,
   context: EffectAiContext,
   catalog: readonly CardReferenceCandidate[],
+  correction?: { previous: unknown; error: string },
 ): Promise<unknown> {
   const config = providerConfig();
   if (!config) {
@@ -1004,6 +1005,7 @@ async function callProvider(
       },
       body: JSON.stringify({
         model: config.model,
+        reasoning_effort: "low",
         max_completion_tokens: 4096,
         response_format: { type: "json_object" },
         messages: [
@@ -1015,17 +1017,37 @@ async function callProvider(
               normalizedCandidate: normalization.normalizedText,
               normalizationVersion: normalization.version,
               appliedNormalizations: normalization.corrections,
+              ...(correction ? {
+                previousRejectedDraft: JSON.stringify(correction.previous).slice(0, 8000),
+                validationError: correction.error,
+                instruction: "검증 오류를 고친 실행 가능한 JSON만 다시 반환하세요. 지원하지 않는 규칙이면 NEEDS_CLARIFICATION을 반환하세요.",
+              } : {}),
             }),
           },
         ],
       }),
-      signal: AbortSignal.timeout(30_000),
+      // Large rule catalogs can take longer than a short chat request.
+      signal: AbortSignal.timeout(90_000),
     });
-  } catch {
-    throw new EffectAiError("PROVIDER_ERROR", "AI 효과 생성 요청에 실패했습니다.");
+  } catch (error) {
+    throw new EffectAiError("PROVIDER_ERROR", error instanceof Error && error.name === "TimeoutError"
+      ? "OpenAI 응답 시간이 초과됐습니다. 다시 시도해 주세요."
+      : "OpenAI 서버에 연결하지 못했습니다. 서버의 API 주소와 네트워크를 확인해 주세요.");
   }
   if (!response.ok) {
-    throw new EffectAiError("PROVIDER_ERROR", "AI 효과 생성 provider가 요청을 처리하지 못했습니다.");
+    let providerCode: string | undefined;
+    try {
+      const detail = await response.json() as { error?: { code?: string } };
+      providerCode = detail.error?.code;
+    } catch { /* The status still identifies the failure. */ }
+    const explanation = providerCode === "model_not_found"
+      ? "설정된 OpenAI 모델을 사용할 수 없습니다. OPENAI_MODEL을 확인해 주세요."
+      : response.status === 401 || response.status === 403
+      ? "OpenAI API 키와 접근 권한을 확인해 주세요."
+      : response.status === 429
+        ? "OpenAI 사용 한도 또는 결제 상태를 확인해 주세요."
+          : `OpenAI 요청에 실패했습니다. (HTTP ${response.status})`;
+    throw new EffectAiError("PROVIDER_ERROR", explanation);
   }
   let body: unknown;
   try {
@@ -1192,7 +1214,7 @@ export async function generateEffectDraft(
 ): Promise<EffectAiResult> {
   const normalization = normalizeEffectLanguage(text);
   const ambiguities = detectEffectSemanticAmbiguities(text);
-  const raw = await callProvider(text, normalization, context, catalog);
+  let raw = await callProvider(text, normalization, context, catalog);
   diagnostics?.onDiagnostic(describeProviderEnvelope(raw, diagnostics.requestId));
   const compileLocalIfFullySupported = (): EffectAiDraft | undefined => {
     if (ambiguities.length > 0) return undefined;
@@ -1231,9 +1253,16 @@ export async function generateEffectDraft(
     const providerAmbiguities = isRecord(raw) && isRecord(raw.analysis) ? raw.analysis.ambiguities : undefined;
     const localDraft = Array.isArray(providerAmbiguities) && providerAmbiguities.length > 0
       ? undefined : compileLocalIfFullySupported();
-    if (!localDraft) throw error;
-    diagnostics?.onDiagnostic({ requestId: diagnostics.requestId, stage: "local-supported-fallback", effectId: localDraft.effectId, hasEffects: localDraft.effects.length > 0 });
-    return localDraft;
+    if (localDraft) {
+      diagnostics?.onDiagnostic({ requestId: diagnostics.requestId, stage: "local-supported-fallback", effectId: localDraft.effectId, hasEffects: localDraft.effects.length > 0 });
+      return localDraft;
+    }
+    if (Array.isArray(providerAmbiguities) && providerAmbiguities.length > 0) throw error;
+    // JSON mode guarantees parsing, not adherence to the game's effect DSL.
+    // Give the provider one precise validation error before rejecting it.
+    raw = await callProvider(text, normalization, context, catalog, { previous: raw, error: error.message });
+    diagnostics?.onDiagnostic(describeProviderEnvelope(raw, diagnostics.requestId));
+    validated = canonicalizeGeneratedEffectDraft(raw, context, catalog);
   }
   const providerAnalysis = isRecord(raw) ? readProviderSemanticAnalysis(raw.analysis) : undefined;
   const providerHasAmbiguity = (providerAnalysis?.ambiguities?.length ?? 0) > 0;

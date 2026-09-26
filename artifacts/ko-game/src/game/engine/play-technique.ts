@@ -5,6 +5,7 @@ import { hasMandatoryPlayerChoice, resolveQueuedEffectsForPlayedTechnique, resol
 import type { GameState } from '../types/game-state';
 import { validateCurrentPlayer } from './turn-system';
 import { resetCardForGraveyard } from '../cards/zone-state';
+import { processChampionQuestEvents } from '../champions/quests';
 
 /** Plays a technique only when it is directly cast from the player's hand. */
 export function playTechniqueFromHand(
@@ -21,7 +22,11 @@ export function playTechniqueFromHand(
   const queuedPlayer = queuedState.players.find((candidate) => candidate.id === playerId);
   const queuedCard = queuedPlayer?.hand.find((candidate) => candidate.instanceId === cardInstanceId);
   if (!queuedPlayer || !queuedCard) return actionFailure(state, 'CARD_NOT_IN_HAND', '사용할 수 없는 기술입니다.');
-  const body = queuedCard.abilities.filter((ability) => ability.trigger === 'ACTIVE').flatMap((ability) => ability.effects);
+  // A technique never enters a board slot. Older saved techniques describe
+  // their cast effect as ENTER_FIELD, so resolve that text when cast as well.
+  const body = queuedCard.abilities
+    .filter((ability) => ability.trigger === 'ACTIVE' || ability.trigger === 'ENTER_FIELD')
+    .flatMap((ability) => ability.effects);
   if (hasMandatoryPlayerChoice(state, playerId, card, body)) {
     return actionFailure(state, 'NO_VALID_TARGET', '선택 가능한 대상이 없습니다.');
   }
@@ -61,5 +66,5 @@ export function playTechniqueFromHand(
   const resolved = body.length
     ? resolveTriggeredAbilities(spellListeners, playerId, { ...queuedCard, abilities: [{ trigger: 'ACTIVE', effects: body }] }, 'ACTIVE')
     : spellListeners;
-  return actionSuccess(resolved);
+  return actionSuccess(processChampionQuestEvents(state, resolved));
 }

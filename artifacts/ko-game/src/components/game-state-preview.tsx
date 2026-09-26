@@ -42,6 +42,7 @@ import {
 import { PresentationFeedback, type PresentationCue } from './presentation-feedback';
 import { presentationCueDrafts, presentationEventKey } from './presentation-feedback-utils';
 import { QuestPresentation } from './quest-presentation';
+import { MatchTutorial } from './match-tutorial';
 import { prefersReducedMotion } from './presentation-config';
 import { displayHealth } from './match-display-utils';
 import { getCardRuntimeRulesText, getVisibleCardKeywords } from '../lib/card-display-state';
@@ -132,11 +133,13 @@ export function GameStatePreview({
 }: GameStatePreviewProps) {
   const [openGraveyardPlayerId, setOpenGraveyardPlayerId] = React.useState<string | null>(null);
   const [settingsOpen, setSettingsOpen] = React.useState(false);
+  const [tutorialStep, setTutorialStep] = React.useState<number | null>(null);
   const [surrenderConfirming, setSurrenderConfirming] = React.useState(false);
   const [attackHint, setAttackHint] = React.useState<string | null>(null);
   React.useEffect(() => {
     const cancel = () => {
-      if (openGraveyardPlayerId) setOpenGraveyardPlayerId(null);
+      if (tutorialStep !== null) setTutorialStep(null);
+      else if (openGraveyardPlayerId) setOpenGraveyardPlayerId(null);
       else if (settingsOpen) { setSettingsOpen(false); setSurrenderConfirming(false); }
       else if (state.targetingState?.active) onCancelEffectTargeting();
       else if (selectedCardId) onSelectCard(selectedCardId);
@@ -149,7 +152,7 @@ export function GameStatePreview({
       window.removeEventListener('ko-gamepad-cancel', cancel);
       window.removeEventListener('ko-gamepad-settings', settings);
     };
-  }, [openGraveyardPlayerId, settingsOpen, state.targetingState?.active, selectedCardId, selectedAttackerId,
+  }, [tutorialStep, openGraveyardPlayerId, settingsOpen, state.targetingState?.active, selectedCardId, selectedAttackerId,
     onCancelEffectTargeting, onSelectCard, onSelectAttacker]);
   const handCardRefs = React.useRef(new Map<string, HTMLDivElement>());
   const boardSlotRefs = React.useRef(new Map<number, HTMLDivElement>());
@@ -689,7 +692,7 @@ export function GameStatePreview({
             ? `attack-screen-shake--${attackScreenShakeLevel(attackAnimation.currentAttack, attackAnimation.damage).toLowerCase()}`
           : screenShakeLevel !== "NONE"
             ? `attack-screen-shake--${screenShakeLevel.toLowerCase()}`
-            : playAnimation?.kind === "WRESTLER" && (playAnimation.impactLevel === "HEAVY" || playAnimation.impactLevel === "VERY_HEAVY")
+            : playAnimation?.kind === "WRESTLER"
               ? `card-landing-shake--${playAnimation.impactLevel.toLowerCase()}`
             : ""
       }`} style={attackAnimation?.finishingBlow ? {
@@ -1015,6 +1018,10 @@ export function GameStatePreview({
                  </div>
                  {!surrenderConfirming ? (
                    <div className="space-y-3">
+                     <button type="button" onClick={() => { closeSettings(); setTutorialStep(0); }}
+                       className="w-full rounded border border-amber-600 bg-amber-950/40 px-3 py-2 text-xs font-black text-amber-200">
+                       경기 튜토리얼
+                     </button>
                       {onReturnToAdmin && (
                         <button
                           type="button"
@@ -1107,6 +1114,9 @@ export function GameStatePreview({
              </>
            )}
 
+          {tutorialStep !== null && (
+            <MatchTutorial step={tutorialStep} onStepChange={setTutorialStep} onClose={() => setTutorialStep(null)} />
+          )}
           {openGraveyardPlayerId && (
             <GraveyardModal
               player={state.players.find((player) => player.id === openGraveyardPlayerId)!}
@@ -1379,7 +1389,7 @@ function HandCard({
     {card.cardType === "TECHNIQUE" && isSelected && (
       <button
         type="button"
-        className="absolute -top-9 left-1/2 z-[130] -translate-x-1/2 rounded border border-primary bg-primary px-3 py-1 text-[10px] font-black text-black shadow-[0_0_14px_rgba(234,179,8,0.5)] hover:bg-yellow-300 md:-top-11 md:px-4 md:py-1.5 md:text-xs"
+        className="absolute left-1/2 top-9 z-[130] -translate-x-1/2 whitespace-nowrap rounded border border-primary bg-primary px-3 py-1 text-[10px] font-black text-black shadow-[0_0_14px_rgba(234,179,8,0.5)] hover:bg-yellow-300 md:-top-11 md:px-4 md:py-1.5 md:text-xs"
         onClick={(event) => {
           event.stopPropagation();
           onUseTechnique();

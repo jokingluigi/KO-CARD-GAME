@@ -277,11 +277,10 @@ export function Inspectable({
       onBlur={context.clear}
       onPointerUp={(event) => {
         if (event.pointerType !== 'touch') return;
-        if (
-          touchInspectTriggerOnly &&
-          window.matchMedia('(max-width: 768px) and (orientation: portrait)').matches &&
-          !(event.target as Element).closest('[data-touch-inspect-trigger]')
-        ) return;
+        if (touchInspectTriggerOnly && !(event.target as Element).closest('[data-touch-inspect-trigger]')) {
+          context.clear();
+          return;
+        }
         toggleTouch(event.currentTarget);
       }}
       onClickCapture={(event) => {

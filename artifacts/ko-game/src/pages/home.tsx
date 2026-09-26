@@ -40,7 +40,7 @@ import { GameStatePreview } from '@/components/game-state-preview';
 import { MatchResultOverlay } from '@/components/match-result-overlay';
 import { MainMenu } from '@/components/main-menu';
 import { AuthLoading, AuthPage, AuthRecovery } from '@/components/auth-page';
-import { fetchCurrentUser, logout, type AuthUser } from '@/lib/auth-client';
+import { AuthRequestError, fetchCurrentUser, logout, type AuthUser } from '@/lib/auth-client';
 import { audioManager } from '@/audio/audio-manager';
 import {
   BGM_MUTE_STORAGE_KEY,
@@ -278,18 +278,29 @@ export default function Home() {
     const generation = ++authRequestGeneration.current;
     setAuthStatus('loading');
     setAuthError(null);
-    fetchCurrentUser()
-      .then((result) => {
-        if (generation !== authRequestGeneration.current) return;
-        setAuthUser(result.authenticated ? result.user : null);
-        setAuthStatus(result.authenticated && result.user ? 'authenticated' : 'unauthenticated');
-      })
-      .catch((error) => {
-        if (generation !== authRequestGeneration.current) return;
-        setAuthUser(null);
-        setAuthError(error instanceof Error ? error.message : '인증 상태를 확인하지 못했습니다.');
-        setAuthStatus('error');
-      });
+    void (async () => {
+      for (let attempt = 0; attempt < 4; attempt += 1) {
+        try {
+          const result = await fetchCurrentUser();
+          if (generation !== authRequestGeneration.current) return;
+          setAuthUser(result.authenticated ? result.user : null);
+          setAuthStatus(result.authenticated && result.user ? 'authenticated' : 'unauthenticated');
+          return;
+        } catch (error) {
+          if (generation !== authRequestGeneration.current) return;
+          const retryable = error instanceof AuthRequestError &&
+            (error.status === undefined || error.status === 503 || error.status === 502);
+          if (retryable && attempt < 3) {
+            await new Promise((resolve) => window.setTimeout(resolve, 700 * (attempt + 1)));
+            continue;
+          }
+          setAuthUser(null);
+          setAuthError(error instanceof Error ? error.message : '인증 상태를 확인하지 못했습니다.');
+          setAuthStatus('error');
+          return;
+        }
+      }
+    })();
   }, []);
 
   useEffect(() => {
@@ -644,25 +655,19 @@ export default function Home() {
       audioManager.stopGameAudio();
       return;
     }
-    const bgm = mediaCatalog.bgms.find((item) => item.id === gameState.bgmId);
-    if (bgm) {
-      audioManager.playMatchBgm(bgm.assetUrl, bgm.volume);
+    const champion = gameState.players.map((player) => player.champion)
+      .find((candidate) => candidate?.id === gameState.latestQuestCompletedChampionId);
+    if (champion?.questCompleted && champion.questCompleteAudioEnabled && champion.questCompleteAudioUrl) {
+      audioManager.playQuestComplete(champion.questCompleteAudioUrl, champion.questCompleteAudioVolume ?? 100);
     } else {
-      audioManager.stopBgm();
+      const bgm = mediaCatalog.bgms.find((item) => item.id === gameState.bgmId);
+      if (bgm) {
+      audioManager.playMatchBgm(bgm.assetUrl, bgm.volume);
+      } else {
+        audioManager.stopBgm();
+      }
     }
-  }, [gameState.bgmId, mediaCatalog.bgms, isAiMatch, aiMatchStarted, matchReady]);
-
-  useEffect(() => {
-    const latestChampion = gameState.players
-      .map((player) => player.champion)
-      .find((champion) => champion?.id === gameState.latestQuestCompletedChampionId);
-    if (latestChampion?.questCompleteAudioEnabled && latestChampion.questCompleteAudioUrl) {
-      audioManager.playQuestComplete(
-        latestChampion.questCompleteAudioUrl,
-        latestChampion.questCompleteAudioVolume ?? 100,
-      );
-    }
-  }, [gameState.latestQuestCompletedChampionId, gameState.players]);
+  }, [gameState.bgmId, gameState.latestQuestCompletedChampionId, gameState.players, mediaCatalog.bgms, isAiMatch, aiMatchStarted, matchReady]);
 
   useEffect(() => {
     audioManager.setBgmVolume(bgmVolume);
@@ -897,13 +902,11 @@ export default function Home() {
         : animation.impactLevel === "HEAVY"
           ? "HEAVY_ATTACK"
           : "VERY_HEAVY_ATTACK"];
-    if (sound) {
-      audioManager.playAttack(
-        sound.assetUrl,
-        sound.volume,
-        attackSoundPitch(animation.currentAttack),
-      );
-    }
+    audioManager.playAttack(
+      `${import.meta.env.BASE_URL}sfx/impact-${animation.impactLevel.toLowerCase().replace('_', '-')}.wav`,
+      sound?.volume ?? 85,
+      attackSoundPitch(animation.currentAttack),
+    );
   }
 
   function handleAttackWrestler(

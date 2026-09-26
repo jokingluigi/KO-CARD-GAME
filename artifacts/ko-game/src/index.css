@@ -732,7 +732,9 @@
 .attack-screen-shake--heavy { animation: ko-attack-screen-shake-heavy 165ms ease-out; }
 .attack-screen-shake--very_heavy { animation: ko-attack-screen-shake-very-heavy 185ms ease-out; }
 
-.card-landing-shake--heavy { animation: ko-attack-screen-shake-light 135ms ease-out 405ms backwards; }
+.card-landing-shake--light { animation: ko-attack-screen-shake-very-light 95ms ease-out 370ms backwards; }
+.card-landing-shake--normal { animation: ko-attack-screen-shake-light 115ms ease-out 390ms backwards; }
+.card-landing-shake--heavy { animation: ko-attack-screen-shake-medium 155ms ease-out 405ms backwards; }
 .card-landing-shake--very_heavy { animation: ko-attack-screen-shake-medium 175ms ease-out 435ms backwards; }
 
 @keyframes ko-attack-finisher-zoom {
@@ -801,6 +803,7 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
+  .card-landing-shake--light, .card-landing-shake--normal,
   .card-landing-shake--heavy, .card-landing-shake--very_heavy,
   .attack-finisher-zoom, .effect-finisher-zoom { animation: none; }
   .attack-animation__finisher, .effect-finisher { display: none; }

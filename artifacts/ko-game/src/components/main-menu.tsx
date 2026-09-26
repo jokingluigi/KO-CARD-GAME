@@ -1,4 +1,4 @@
-import { Bot, CalendarCheck2, ClipboardList, Globe2, Gift, Layers3, LogOut, ShoppingBag, Library, Volume2, VolumeX } from "lucide-react";
+import { BookOpen, Bot, CalendarCheck2, ClipboardList, Globe2, Gift, Layers3, LogOut, ShoppingBag, Library, Volume2, VolumeX } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useLocation } from "wouter";
 import type { AuthUser } from "@/lib/auth-client";
@@ -7,6 +7,7 @@ import { emptyMainContent, fetchMainContent, type MainContent } from "@/lib/main
 import { audioManager } from "@/audio/audio-manager";
 import { BGM_MUTE_STORAGE_KEY, BGM_VOLUME_STORAGE_KEY, readStoredBgmMute, readStoredBgmVolume } from "@/audio/audio-settings";
 import { SfxVolumeControl } from "./sfx-volume-control";
+import { MatchTutorial } from "./match-tutorial";
 
 type MainMenuProps = {
   onComingSoon?: (label: string) => void;
@@ -26,6 +27,11 @@ const menuItems = [
     label: "AI 매치",
     description: "AI와 연습 대전을 즐깁니다",
     icon: Bot,
+  },
+  {
+    label: "튜토리얼",
+    description: "카드 사용과 공격 방법을 배웁니다",
+    icon: BookOpen,
   },
   {
     label: "덱 편집",
@@ -66,6 +72,7 @@ export function MainMenu({ onComingSoon, onDeckEdit, onAiMatch, user, onLogout }
   const [bgmMuted, setBgmMuted] = useState(readStoredBgmMute);
   const [bgmVolume, setBgmVolume] = useState(readStoredBgmVolume);
   const [soundSettingsOpen, setSoundSettingsOpen] = useState(false);
+  const [tutorialStep, setTutorialStep] = useState<number | null>(null);
   const [, navigate] = useLocation();
 
   useEffect(() => {
@@ -191,6 +198,10 @@ export function MainMenu({ onComingSoon, onDeckEdit, onAiMatch, user, onLogout }
                   onAiMatch?.();
                   return;
                 }
+                if (label === "튜토리얼") {
+                  setTutorialStep(0);
+                  return;
+                }
                 if (label === "온라인 매치") {
                   navigate(ROUTES.ONLINE);
                   return;
@@ -236,6 +247,9 @@ export function MainMenu({ onComingSoon, onDeckEdit, onAiMatch, user, onLogout }
           </p>
         )}
       </div>
+      {tutorialStep !== null && (
+        <MatchTutorial step={tutorialStep} onStepChange={setTutorialStep} onClose={() => setTutorialStep(null)} />
+      )}
     </main>
   );
 }

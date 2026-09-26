@@ -22,7 +22,6 @@ import {
   recordFailedLogin,
   verifyPassword,
   getPublicUser,
-  withAuthTimeout,
 } from "../lib/auth";
 import { ensureStarterCollection } from "../lib/collection";
 import { logger } from "../lib/logger";
@@ -159,11 +158,8 @@ router.get("/me", async (request, response) => {
       trace("RESPONSE_SENT");
       return;
     }
-    await withAuthTimeout(
-      "USER_LOOKUP",
-      () => ensureStarterCollection(user.id),
-      { timeoutMs: AUTH_LOOKUP_TIMEOUT_MS, onStage: trace },
-    );
+    // A session check must not wait for collection writes. Login, registration,
+    // and the collection/packs endpoints already provision starter cards.
     response.json({ authenticated: true, user });
     trace("RESPONSE_SENT");
   } catch (error) {

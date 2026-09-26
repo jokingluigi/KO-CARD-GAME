@@ -14,7 +14,6 @@ import {
 } from "@/components/attack-animation-utils";
 import type { CardPlayAnimationState, CardPlayGeometry } from "@/components/card-play-animation-utils";
 import { landingImpactLevel } from "@/components/card-play-animation-utils";
-import { presentationEventKey } from "@/components/presentation-feedback-utils";
 import {
   emptyGameMediaCatalog,
   fetchGameMedia,
@@ -149,7 +148,6 @@ function OnlineMatchPage() {
   const processedAudioEventsRef = useRef(new Set<string>());
   const processedAttackSoundsRef = useRef(new Set<string>());
   const lastAudioEventCountRef = useRef<number | null>(null);
-  const processedQuestAudioRef = useRef(new Set<string>());
   const pendingEntranceAudioRef = useRef<{ url: string; volume: number; isLegendary: boolean } | null>(null);
   const pendingOpponentAttacksRef = useRef<AttackAnimationState[]>([]);
   const opponentConnectionStateRef = useRef<OnlineConnectionStatus | null>(null);
@@ -445,17 +443,24 @@ function OnlineMatchPage() {
   }, [matchResultVisible]);
 
   useEffect(() => {
+    const champion = state?.players.map((player) => player.champion)
+      .find((candidate) => candidate?.id === state.latestQuestCompletedChampionId);
+    const questMusic = champion?.questCompleted && champion.questCompleteAudioEnabled && champion.questCompleteAudioUrl
+      ? { assetUrl: champion.questCompleteAudioUrl, volume: champion.questCompleteAudioVolume ?? 100 }
+      : null;
     const bgm = state ? mediaCatalog.bgms.find((item) => item.id === state.bgmId) : undefined;
-    if (!bgm) {
+    const selected = questMusic ?? bgm;
+    if (!selected) {
       if (activeBgmKeyRef.current !== null) audioManager.stopBgm();
       activeBgmKeyRef.current = null;
       return;
     }
-    const key = `${bgm.id}:${bgm.assetUrl}:${bgm.volume}`;
+    const key = `${questMusic ? 'quest' : bgm?.id}:${selected.assetUrl}:${selected.volume}`;
     if (activeBgmKeyRef.current === key) return;
     activeBgmKeyRef.current = key;
-    audioManager.playMatchBgm(bgm.assetUrl, bgm.volume);
-  }, [mediaCatalog.bgms, state?.bgmId]);
+    if (questMusic) audioManager.playQuestComplete(selected.assetUrl, selected.volume);
+    else audioManager.playMatchBgm(selected.assetUrl, selected.volume);
+  }, [mediaCatalog.bgms, state?.bgmId, state?.latestQuestCompletedChampionId, state?.players]);
 
   useEffect(() => {
     audioManager.setBgmVolume(bgmVolume);
@@ -467,28 +472,6 @@ function OnlineMatchPage() {
       // Audio preference persistence is optional.
     }
   }, [bgmMuted, bgmVolume]);
-
-  useEffect(() => {
-    if (!state) return;
-    for (let index = state.events.length - 1; index >= 0; index -= 1) {
-      const event = state.events[index];
-      if (event.type !== "CHAMPION_QUEST_COMPLETED") continue;
-      const key = presentationEventKey(event, index, state.events);
-      if (processedQuestAudioRef.current.has(key)) break;
-      processedQuestAudioRef.current.add(key);
-      const championId = event.championId ?? state.latestQuestCompletedChampionId;
-      const champion = state.players
-        .map((player) => player.champion)
-        .find((candidate) => candidate?.id === championId);
-      if (champion?.questCompleteAudioEnabled && champion.questCompleteAudioUrl) {
-        audioManager.playQuestComplete(
-          champion.questCompleteAudioUrl,
-          champion.questCompleteAudioVolume ?? 100,
-        );
-      }
-      break;
-    }
-  }, [state]);
 
   useEffect(() => {
     if (!state) return;
@@ -795,7 +778,11 @@ function OnlineMatchPage() {
             ? "HEAVY_ATTACK"
             : "VERY_HEAVY_ATTACK"
     ];
-    if (sound) audioManager.playAttack(sound.assetUrl, sound.volume, attackSoundPitch(animation.currentAttack));
+    audioManager.playAttack(
+      `${import.meta.env.BASE_URL}sfx/impact-${animation.impactLevel.toLowerCase().replace('_', '-')}.wav`,
+      sound?.volume ?? 85,
+      attackSoundPitch(animation.currentAttack),
+    );
   }
 
   useEffect(() => {

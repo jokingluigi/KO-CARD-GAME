@@ -670,3 +670,33 @@ test("미지원 문장은 잘못된 AI 초안에서 일부만 복구하지 않�
     else process.env.OPENAI_BASE_URL = originalBaseUrl;
   }
 });
+
+test("검증에 실패한 provider 출력은 오류를 전달해 한 번 재생성한다", async () => {
+  const originalFetch = globalThis.fetch;
+  const originalKey = process.env.OPENAI_API_KEY;
+  const originalBaseUrl = process.env.OPENAI_BASE_URL;
+  process.env.OPENAI_API_KEY = "test-provider-key";
+  process.env.OPENAI_BASE_URL = "https://provider.test/v1";
+  const requests: string[] = [];
+  globalThis.fetch = async (_url, init) => {
+    requests.push(String(init?.body));
+    const content = requests.length === 1
+      ? { status: "READY", effects: [{ action: "UNKNOWN" }], keywords: [] }
+      : { status: "NEEDS_CLARIFICATION", questions: ["어떤 대상을 선택할까요?"] };
+    return new Response(JSON.stringify({ choices: [{ message: { content: JSON.stringify(content) } }] }), {
+      status: 200, headers: { "Content-Type": "application/json" },
+    });
+  };
+  try {
+    const result = await generateEffectDraft("등장: 시간을 멈춘 다음 누군가를 없애", { sourceType: "CARD", cardType: "WRESTLER" }, []);
+    assert.equal(result.status, "NEEDS_CLARIFICATION");
+    assert.equal(requests.length, 2);
+    assert.match(requests[1]!, /validationError/);
+  } finally {
+    globalThis.fetch = originalFetch;
+    if (originalKey === undefined) delete process.env.OPENAI_API_KEY;
+    else process.env.OPENAI_API_KEY = originalKey;
+    if (originalBaseUrl === undefined) delete process.env.OPENAI_BASE_URL;
+    else process.env.OPENAI_BASE_URL = originalBaseUrl;
+  }
+});
