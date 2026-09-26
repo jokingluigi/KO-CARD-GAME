@@ -1482,7 +1482,7 @@ function BoardSlot({
   const isDead = card.currentHealth <= 0;
 
   return (
-    <Inspectable content={<CardInspectContent card={card} />} className="ko-board-slot-wrapper relative shrink-0">
+    <Inspectable content={<CardInspectContent card={card} />} touchInspectTriggerOnly className="ko-board-slot-wrapper relative shrink-0">
        <div
          ref={slotRef}
          title={attackSelectionActive && !attackReady ? attackReason : undefined}
@@ -1534,6 +1534,15 @@ function BoardSlot({
            </>
          }
        />
+       <button
+         type="button"
+         data-touch-inspect-trigger
+         className="ko-board-inspect-button hidden"
+         aria-label={`${def?.name ?? '카드'} 상세정보`}
+         onClick={(event) => event.stopPropagation()}
+       >
+         ⓘ
+       </button>
     </div>
     </Inspectable>
   );

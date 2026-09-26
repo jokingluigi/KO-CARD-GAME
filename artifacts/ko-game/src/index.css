@@ -1164,7 +1164,7 @@
     max-width: none;
     overflow: hidden;
     display: grid;
-    grid-template-rows: auto minmax(0, 1fr) auto;
+    grid-template-rows: auto minmax(0, 1fr) auto auto;
     gap: 4px;
     padding: 8px 6px 4px;
   }
@@ -1276,6 +1276,24 @@
     z-index: 2;
   }
 
+  .ko-board-inspect-button {
+    display: flex;
+    position: absolute;
+    top: 2px;
+    right: 2px;
+    z-index: 30;
+    width: 27px;
+    height: 27px;
+    align-items: center;
+    justify-content: center;
+    border: 1px solid rgb(245 158 11);
+    border-radius: 50%;
+    background: rgb(10 10 10 / 90%);
+    color: rgb(253 230 138);
+    font-size: 16px;
+    font-weight: 800;
+  }
+
   .ko-board-slot {
     width: 100% !important;
     height: auto !important;
@@ -1309,29 +1327,35 @@
   }
 
   .ko-game-controls {
-    position: fixed;
-    top: auto;
-    right: 8px;
-    bottom: calc(292px + env(safe-area-inset-bottom));
-    left: auto;
-    width: 94px;
+    position: relative;
+    inset: auto;
+    display: grid;
+    grid-template-columns: minmax(68px, 1fr) auto minmax(76px, 1fr);
+    align-items: center;
+    width: 100%;
     gap: 4px;
     padding: 5px;
     transform: none;
-    z-index: 140;
+    z-index: 110;
   }
 
   .ko-game-controls > button {
-    min-height: 40px;
+    min-height: 38px;
     padding: 7px 4px;
   }
 
   .ko-game-controls > div {
-    padding: 4px;
+    padding: 2px 4px;
   }
 
   .ko-game-controls > .flex {
     white-space: nowrap;
+    border-bottom: 0;
+    padding-bottom: 0;
+  }
+
+  .ko-game-controls > .border-amber-500 {
+    grid-column: 1 / -1;
   }
 
   .ko-settings-dialog {
@@ -1371,8 +1395,8 @@
     grid-template-columns: 68px minmax(0, 1fr);
     align-items: end;
     gap: 4px;
-    height: 292px;
-    min-height: 292px;
+    height: 200px;
+    min-height: 200px;
     padding: 0 2px max(4px, env(safe-area-inset-bottom));
   }
 
@@ -1401,7 +1425,7 @@
     width: 100%;
     min-width: 0;
     height: 100%;
-    padding-top: 70px;
+    padding-top: 32px;
     overflow-x: auto;
     overscroll-behavior-x: contain;
     touch-action: pan-x pan-y;
