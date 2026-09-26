@@ -2892,9 +2892,12 @@ export function applyEffect(
                    : effect.values?.amountReference !== undefined ? legacyDynamic : 0);
                return finish({
                  ...card,
-                 currentAttack: card.currentAttack * attackMultiplier + attackDelta + referenceAmount,
-                 maxHealth: card.maxHealth * healthMultiplier + healthDelta,
-                 currentHealth: card.currentHealth * healthMultiplier + healthDelta,
+                 currentAttack: card.currentAttack * attackMultiplier + attackDelta +
+                   (effect.values?.referenceStat === 'CURRENT_ATTACK' ? referenceAmount : 0),
+                 maxHealth: card.maxHealth * healthMultiplier + healthDelta +
+                   (effect.values?.referenceStat === 'CURRENT_HEALTH' ? referenceAmount : 0),
+                 currentHealth: card.currentHealth * healthMultiplier + healthDelta +
+                   (effect.values?.referenceStat === 'CURRENT_HEALTH' ? referenceAmount : 0),
                }, effect.values?.duration);
              }
            if (effect.action === 'SET_STATS') {

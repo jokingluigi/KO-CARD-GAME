@@ -34,6 +34,14 @@ test("최신 보고서의 10개 원문은 공용 Analyzer에서 완전한 효과
   }
 });
 
+test("공격력과 체력 흡수 문구는 각 능력치 참조를 따로 생성한다", () => {
+  const result = analyzeEffectText("턴 시작:선택한 아군 선수 카드를 리타이어시키고 그 카드의 체력과 공격력을 흡수합니다.");
+  assert.equal(result.outcome, "supported");
+  assert.deepEqual(result.effects.map((effect) => [effect.action, effect.values?.referenceStat]), [
+    ["RETIRE", undefined], ["BUFF", "CURRENT_ATTACK"], ["BUFF", "CURRENT_HEALTH"],
+  ]);
+});
+
 test("La Calavera revival preserves the graveyard filter and applies TAUNT to the revived instance", () => {
   const result = analyzeEffectText(
     "등장: 내 묘지에서 비용이 3 이하인 선수 카드 중 하나를 무작위로 부활시킵니다. 그 카드에게 도발을 부여합니다.",

@@ -5,7 +5,7 @@ import { createInitialGameState } from './create-initial-game-state';
 import { enterField } from './enter-field';
 import { playWrestlerFromHand } from './play-wrestler';
 import { drawCard } from './draw-card';
-import { resolveTriggeredAbilities } from '../effects/effect-engine';
+import { resolveTriggeredAbilities, selectEffectTarget } from '../effects/effect-engine';
 import { canSelectAsAttacker } from './combat';
 import { silenceCard, setCardStunned } from './card-status';
 
@@ -19,6 +19,27 @@ const card = (id: string, overrides: Partial<CardInstance> = {}): CardInstance =
 });
 const state = () => ({ ...createInitialGameState(), status: 'IN_PROGRESS' as const, activePlayerId: 'player-1' });
 const player = (s: ReturnType<typeof state>, id = 'player-1') => s.players.find((p) => p.id === id)!;
+test('absorbing a retired ally adds attack to attack and health to health separately', () => {
+  const selfTarget = { zone: 'BOARD' as const, owner: 'SELF' as const, selection: 'SELF' as const, count: 1 };
+  const source = card('absorber', { currentAttack: 2, currentHealth: 4, maxHealth: 4,
+    abilities: [{ trigger: 'ENTER_FIELD', effects: [
+      { type: 'STRUCTURED', action: 'RETIRE', target: { zone: 'BOARD', owner: 'SELF', cardType: 'WRESTLER', selection: 'PLAYER_CHOICE', count: 1 }, values: { captureStats: true } },
+      { type: 'STRUCTURED', action: 'BUFF', target: selfTarget, values: { attack: 0, health: 0, reference: 'LAST_TARGET', referenceStat: 'CURRENT_ATTACK' } },
+      { type: 'STRUCTURED', action: 'BUFF', target: selfTarget, values: { attack: 0, health: 0, reference: 'LAST_TARGET', referenceStat: 'CURRENT_HEALTH' } },
+    ] }],
+  });
+  const ally = card('ally', { boardSlot: 1, currentAttack: 3, currentHealth: 5, maxHealth: 5 });
+  const initial = state();
+  initial.players[0]!.board = [null, ally, null, null];
+  const pending = enterField(initial, 'player-1', source, 0);
+  assert.equal(pending.targetingState?.active, true);
+  const chosen = selectEffectTarget(pending, ally.instanceId);
+  const result = player(chosen).board[0]!;
+  assert.equal(player(chosen).board[1], null);
+  assert.equal(result.currentAttack, 5);
+  assert.equal(result.currentHealth, 9);
+  assert.equal(result.maxHealth, 9);
+});
 test('fourth board slot resolves entry and ally-entry effects', () => {
   const listener = card('listener', { boardSlot: 0, abilities: [{ trigger: 'CARD_ENTERED', effects: [{ type: 'GAIN_GOLD', amount: 2 }] }] });
   const fourth = card('fourth', { abilities: [{ trigger: 'ENTER_FIELD', effects: [{ type: 'GAIN_GOLD', amount: 1 }] }] });
