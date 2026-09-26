@@ -36,6 +36,7 @@ const adminApiBase = `${import.meta.env.BASE_URL.replace(/\/$/, "")}/api/admin`;
 
 type CardType = "WRESTLER" | "TECHNIQUE";
 type CardStatus = "DRAFT" | "PUBLISHED" | "DISABLED";
+type EffectAuditResult = { id: string; status: "missing" | "review" | "aligned" | "none"; reason: string };
 type CardKeyword =
   | "RUSH"
   | "SURPRISE"
@@ -321,6 +322,9 @@ export function AdminCardManager({
   const [cardType, setCardType] = useState("");
   const [rarity, setRarity] = useState("");
   const [status, setStatus] = useState("");
+  const [auditResults, setAuditResults] = useState<Record<string, EffectAuditResult> | null>(null);
+  const [auditFilter, setAuditFilter] = useState("");
+  const [auditing, setAuditing] = useState(false);
   const [tokenKind, setTokenKind] = useState("");
   const [editingCard, setEditingCard] = useState<CardRecord | null>(null);
   const [isFormOpen, setIsFormOpen] = useState(false);
@@ -396,6 +400,22 @@ export function AdminCardManager({
       setIsLoading(false);
     }
   }, [cardType, onUnauthorized, rarity, search, status, tokenKind]);
+
+  async function runEffectAudit() {
+    setAuditing(true);
+    setError("");
+    try {
+      const response = await fetch(`${adminApiBase}/cards/effect-audit`, { credentials: "include" });
+      if (response.status === 401) { onUnauthorized(); return; }
+      if (!response.ok) throw new Error(await responseMessage(response));
+      const body = await response.json() as { results: EffectAuditResult[] };
+      setAuditResults(Object.fromEntries(body.results.map((result) => [result.id, result])));
+    } catch (auditError) {
+      setError(auditError instanceof Error ? auditError.message : "카드 효과를 점검하지 못했습니다.");
+    } finally {
+      setAuditing(false);
+    }
+  }
 
   useEffect(() => {
     const timer = window.setTimeout(loadCards, 200);
@@ -545,6 +565,8 @@ export function AdminCardManager({
       setMessage(editingCard ? "카드를 수정했습니다." : "새 카드를 DRAFT로 생성했습니다.");
       clearLocalPreview();
       setIsFormOpen(false);
+      setAuditResults(null);
+      setAuditFilter("");
       await loadCards();
     } catch (saveError) {
       setError(saveError instanceof Error ? saveError.message : "카드를 저장하지 못했습니다.");
@@ -694,7 +716,9 @@ export function AdminCardManager({
       setEditingCard(body.card); setCreatedMechanicRequest(body.mechanicRequest);
       form.setValue("text", body.card.text); form.setValue("effectId", "STRUCTURED_EFFECTS_V1"); form.setValue("effectConfig", JSON.stringify(body.card.effectConfig, null, 2));
       setMechanicRequests((current) => current.map((item) => item.id === body.mechanicRequest.id ? body.mechanicRequest : item));
-      setMessage("카드 효과를 DRAFT에 적용하고 메커니즘 요청을 완료했습니다."); await loadCards();
+      setMessage("카드 효과를 DRAFT에 적용하고 메커니즘 요청을 완료했습니다.");
+      setAuditResults(null); setAuditFilter("");
+      await loadCards();
     } catch (applyError) { setError(applyError instanceof Error ? applyError.message : "카드 효과를 적용하지 못했습니다."); }
     finally { setBusyId(null); }
   }
@@ -831,6 +855,8 @@ export function AdminCardManager({
       }
       if (!response.ok) throw new Error(await responseMessage(response));
       setMessage(successMessage);
+      setAuditResults(null);
+      setAuditFilter("");
       await loadCards();
     } catch (mutationError) {
       setError(mutationError instanceof Error ? mutationError.message : "요청을 처리하지 못했습니다.");
@@ -857,6 +883,8 @@ export function AdminCardManager({
       if (editingCard?.id === card.id) {
         closeForm();
       }
+      setAuditResults(null);
+      setAuditFilter("");
       await loadCards();
     } catch (deleteError) {
       setError(deleteError instanceof Error ? deleteError.message : "카드를 삭제하지 못했습니다.");
@@ -948,6 +976,21 @@ export function AdminCardManager({
         </select>
       </div>
 
+      <div className="mb-4 flex flex-wrap items-center gap-2 rounded border border-neutral-800 bg-black/40 p-3 text-xs">
+        <button type="button" onClick={() => void runEffectAudit()} disabled={auditing} data-testid="button-audit-card-effects" className="rounded border border-amber-700 px-3 py-2 font-bold text-amber-300 disabled:opacity-40">
+          {auditing ? "효과 점검 중..." : "카드 효과 문구·설정 점검"}
+        </button>
+        {auditResults && <>
+          <select value={auditFilter} onChange={(event) => setAuditFilter(event.target.value)} aria-label="효과 점검 결과 필터" className="rounded border border-neutral-700 bg-neutral-900 px-2 py-2" data-testid="select-effect-audit-filter">
+            <option value="">모든 점검 결과</option>
+            <option value="missing">설정 누락 의심 ({Object.values(auditResults).filter((result) => result.status === "missing").length})</option>
+            <option value="review">직접 확인 필요 ({Object.values(auditResults).filter((result) => result.status === "review").length})</option>
+            <option value="aligned">문구·설정 일치</option>
+          </select>
+          <span className="text-neutral-400">정적 비교 결과입니다. 실제 경기에서 발동하는지는 별도로 확인해야 합니다. 카드를 수정했다면 다시 점검해 주세요.</span>
+        </>}
+      </div>
+
       {(message || error) && (
         <div data-testid="status-card-action" className={`mb-4 rounded border px-3 py-2 text-xs font-bold ${error ? "border-red-900 bg-red-950/50 text-red-300" : "border-emerald-900 bg-emerald-950/50 text-emerald-300"}`}>
           {error || message}
@@ -973,7 +1016,7 @@ export function AdminCardManager({
        )}
         <div className="rounded-lg border border-neutral-800 bg-neutral-950/70 p-3 sm:p-4">
           {cards.length > 0 && <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
-            {cards.map((card) => (
+            {cards.filter((card) => !auditFilter || auditResults?.[card.id]?.status === auditFilter).map((card) => (
               <article
                 key={card.id}
                 role="button"
@@ -1013,6 +1056,9 @@ export function AdminCardManager({
                     <span className="shrink-0 text-[10px] font-bold text-amber-300">{CARD_RARITY_LABELS[normalizeCardRarity(card.rarity)]}</span>
                   </div>
                   <p className="mt-1 text-[10px] text-neutral-500">{card.cardType === "WRESTLER" ? "선수" : "기술"} · 비용 {card.cost} · v{card.version}</p>
+                  {auditResults?.[card.id] && auditResults[card.id].status !== "none" && <p data-testid={`effect-audit-${card.id}`} title={auditResults[card.id].reason} className={`mt-1 text-[10px] font-bold ${auditResults[card.id].status === "missing" ? "text-red-300" : auditResults[card.id].status === "review" ? "text-amber-300" : "text-emerald-300"}`}>
+                    {auditResults[card.id].status === "missing" ? "⚠ 설정 누락 의심" : auditResults[card.id].status === "review" ? "? 직접 확인 필요" : "✓ 문구·설정 일치"} · {auditResults[card.id].reason}
+                  </p>}
                   {(card.isToken || card.isChampionToken) && <p className="mt-1 text-[10px] font-bold text-primary">{card.isChampionToken ? "챔피언 토큰" : "토큰"}</p>}
                 </div>
                 <div className="mt-3 flex flex-wrap gap-1.5" onClick={(event) => event.stopPropagation()}>
@@ -1025,7 +1071,7 @@ export function AdminCardManager({
               </article>
             ))}
           </div>}
-        {!isLoading && cards.length === 0 && <div data-testid="status-empty-cards" className="p-10 text-center text-sm text-neutral-600">조건에 맞는 카드가 없습니다.</div>}
+        {!isLoading && (cards.length === 0 || (auditFilter && !cards.some((card) => auditResults?.[card.id]?.status === auditFilter))) && <div data-testid="status-empty-cards" className="p-10 text-center text-sm text-neutral-600">조건에 맞는 카드가 없습니다.</div>}
         {isLoading && <div data-testid="status-loading-cards" className="p-10 text-center text-sm text-neutral-600">카드 목록을 불러오는 중...</div>}
         </div>
 

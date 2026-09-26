@@ -59,6 +59,7 @@ import {
   type EffectAiContext,
 } from "../lib/admin-effect-ai";
 import { createMechanismImplementationPrompt } from "../lib/mechanism-implementation-prompt";
+import { auditCardEffect } from "../lib/card-effect-audit";
 import { getAuthenticatedUser } from "../lib/auth";
 import { compareAndAdvanceChampionVersion } from "../lib/champion-save-contract";
 import {
@@ -2840,6 +2841,29 @@ router.get("/cards", async (request, response): Promise<void> => {
     .orderBy(asc(cardsTable.name));
 
   response.json({ cards });
+});
+
+router.get("/cards/effect-audit", async (request, response): Promise<void> => {
+  if (!requireAdmin(request, response)) return;
+  try {
+    const cards = await db.select({
+      id: cardsTable.id,
+      text: cardsTable.text,
+      keywords: cardsTable.keywords,
+      effectId: cardsTable.effectId,
+      effectConfig: cardsTable.effectConfig,
+    }).from(cardsTable);
+    const catalog = await cardReferenceCatalog();
+    const tags = await availableCardTags();
+    const results = cards.map((card) => auditCardEffect(
+      card,
+      card.text.trim() ? analyzeForContext(card.text, undefined, catalog, tags) : undefined,
+    ));
+    response.json({ results });
+  } catch (error) {
+    request.log.error({ error }, "Card effect audit failed");
+    response.status(500).json({ message: "카드 효과 점검을 완료하지 못했습니다." });
+  }
 });
 
 router.get("/cards/:id/test", async (request, response): Promise<void> => {
