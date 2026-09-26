@@ -742,6 +742,21 @@ test('피해가 정확한 대상을 퇴장시킨 경우에만 causal 변신을 �
   assert.equal(lethal.players[1].graveyard.some((card) => card.definitionId === 'target'), true);
 });
 
+test('저장된 하녀 판도라의 이름 참조도 퇴장시킨 상대 카드가 있을 때 변신한다', () => {
+  const form = { ...definition('wolf-form-id', []), name: '늑대인간 판도라' };
+  const effects: CardEffect[] = [
+    structured('DAMAGE', { zone: 'BOARD', owner: 'ENEMY', cardType: 'WRESTLER', selection: 'PLAYER_CHOICE', count: 1 }, { amount: 1 }),
+    structured('TRANSFORM_SOURCE', undefined, { definitionRef: { name: '늑대인간' }, causal: 'DAMAGE_CAUSED_TARGET_RETIRE' }),
+  ];
+  const source = instance('maid-pandora-saved', effects);
+  const state = createInitialGameState(undefined, [definition('maid-pandora-saved', effects), form]);
+  state.players[1].board[0] = { ...instance('enemy-to-retire'), boardSlot: 0, currentHealth: 1, maxHealth: 1 };
+  const pending = enterField(state, 'player-1', source, 0);
+  assert.ok(pending.targetingState);
+  const result = selectEffectTarget(pending, pending.targetingState.validTargetIds[0]!);
+  assert.equal(result.players[0].board[0]?.definitionId, form.id);
+});
+
 test('HAND/DECK WRESTLER 체력은 1 아래로 내려가지 않고 FIELD는 lethal을 허용한다', () => {
   const source = instance('health-floor-source');
   const handCard = { ...instance('hidden-hand'), currentHealth: 1, maxHealth: 1 };

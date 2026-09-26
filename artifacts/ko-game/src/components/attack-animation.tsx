@@ -27,7 +27,7 @@ export function AttackAnimation({
   const { source, target } = animation.geometry;
   const duration = prefersReducedMotion()
     ? 140
-    : attackAnimationDuration(animation.currentAttack) + (animation.finishingBlow ? 170 : 0);
+    : attackAnimationDuration(animation.currentAttack) + (animation.finishingBlow ? 350 : 0);
   const impactDelay = prefersReducedMotion()
     ? 70
     : Math.round(duration * 0.56);
@@ -76,7 +76,7 @@ export function AttackAnimation({
       className={`attack-animation ${impactClass} attack-animation--rarity-${rarity.toLowerCase()} ${animation.finishingBlow ? "attack-animation--finisher" : ""}`}
       style={style}
     >
-      {animation.finishingBlow && <div className="attack-animation__finisher"><span>K.O.!</span></div>}
+      {animation.finishingBlow && <div className="attack-animation__finisher"><div className="attack-animation__finisher-slash" /><span>K.O.!</span></div>}
       <div className="attack-animation__target">
         {animation.targetKind === "CARD" && animation.target ? (
           <CardRenderer

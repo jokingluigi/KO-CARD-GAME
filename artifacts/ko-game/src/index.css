@@ -738,17 +738,17 @@
 .card-landing-shake--very_heavy { animation: ko-attack-screen-shake-medium 175ms ease-out 435ms backwards; }
 
 @keyframes ko-attack-finisher-zoom {
-  0%, 16% { transform: scale(1); }
-  49% { transform: scale(1.045); }
-  55% { transform: scale(1.085); }
-  58% { transform: translate(-5px, 2px) scale(1.09); }
-  62% { transform: translate(4px, -1px) scale(1.09); }
-  70% { transform: scale(1.065); }
-  100% { transform: scale(1); }
+  0%, 20% { transform: scale(1); filter: saturate(.7) brightness(.8); }
+  45% { transform: scale(1.065); filter: saturate(1) brightness(1); }
+  53% { transform: scale(1.13); filter: saturate(1.25) brightness(1.1); }
+  57% { transform: translate(-7px, 3px) scale(1.17); filter: saturate(1.8) brightness(1.6); }
+  62% { transform: translate(6px, -2px) scale(1.16); filter: saturate(1.4) brightness(1.15); }
+  72% { transform: scale(1.12); filter: saturate(1.1) brightness(1); }
+  100% { transform: scale(1); filter: none; }
 }
 
 .attack-finisher-zoom { animation: ko-attack-finisher-zoom var(--finisher-duration, 820ms) ease-in-out both; }
-.effect-finisher-zoom { animation: ko-attack-finisher-zoom 900ms ease-in-out both; }
+.effect-finisher-zoom { animation: ko-attack-finisher-zoom 1050ms ease-in-out both; }
 
 @keyframes ko-finishing-flash {
   0%, 54% { opacity: 0; }
@@ -766,40 +766,64 @@
 
 .attack-animation__finisher {
   position: fixed;
+  z-index: 4;
+  pointer-events: none;
   inset: 0;
   display: grid;
   place-items: center;
-  background: radial-gradient(circle, rgba(255, 246, 207, .72), rgba(234, 61, 41, .24) 45%, transparent 80%);
+  background: radial-gradient(circle at center, transparent 12%, rgba(25, 0, 0, .52) 85%), radial-gradient(circle, rgba(255, 246, 207, .9), rgba(234, 61, 41, .45) 44%, transparent 75%);
+  overflow: hidden;
   animation: ko-finishing-flash var(--attack-duration) linear both;
 }
 
 .attack-animation__finisher span {
+  position: relative;
+  z-index: 1;
   color: #fff2c0;
   font-family: var(--font-display);
   font-size: clamp(4rem, 16vw, 10rem);
   font-weight: 1000;
-  text-shadow: 0 4px 1px #7f1d1d, 0 0 35px #ef4444;
+  text-shadow: 0 5px 1px #7f1d1d, 0 0 22px #f97316, 0 0 62px #ef4444;
   animation: ko-finishing-title var(--attack-duration) ease-out both;
 }
 
+@keyframes ko-finisher-slash {
+  0%, 47% { opacity: 0; transform: translate(-58vw, 43vh) rotate(-22deg) scaleX(.25); }
+  54% { opacity: 1; transform: translate(0, 0) rotate(-22deg) scaleX(1); }
+  62% { opacity: .95; transform: translate(0, 0) rotate(-22deg) scaleX(1.4); }
+  79%, 100% { opacity: 0; transform: translate(22vw, -18vh) rotate(-22deg) scaleX(2); }
+}
+.attack-animation__finisher-slash {
+  position: absolute;
+  width: 110vw;
+  height: clamp(4px, 1vw, 12px);
+  background: linear-gradient(90deg, transparent, #fff 24%, #ffcb68 45%, #fff 58%, transparent);
+  box-shadow: 0 0 24px #fff, 0 0 50px #f97316;
+  animation: ko-finisher-slash var(--attack-duration) ease-out both;
+}
+
 .effect-finisher {
+  --attack-duration: 1050ms;
   position: fixed;
   inset: 0;
   z-index: 240;
   display: grid;
   place-items: center;
   pointer-events: none;
-  background: radial-gradient(circle, rgba(255, 246, 207, .65), rgba(234, 61, 41, .24) 45%, transparent 80%);
-  animation: ko-finishing-flash 900ms linear both;
+  overflow: hidden;
+  background: radial-gradient(circle, rgba(255, 246, 207, .85), rgba(234, 61, 41, .36) 45%, rgba(28, 0, 0, .55) 80%);
+  animation: ko-finishing-flash 1050ms linear both;
 }
 
 .effect-finisher span {
+  position: relative;
+  z-index: 1;
   color: #fff2c0;
   font-family: var(--font-display);
   font-size: clamp(4rem, 16vw, 10rem);
   font-weight: 1000;
   text-shadow: 0 4px 1px #7f1d1d, 0 0 35px #ef4444;
-  animation: ko-finishing-title 900ms ease-out both;
+  animation: ko-finishing-title 1050ms ease-out both;
 }
 
 @media (prefers-reduced-motion: reduce) {

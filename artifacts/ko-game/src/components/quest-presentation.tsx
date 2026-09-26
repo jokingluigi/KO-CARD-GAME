@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { CardRenderer } from "./card-renderer";
+import { championQuestRewardText } from "./champion-quest-reward-text";
 import { getCardDefinition, type GameState } from "@/game";
 import type { PresentationCue } from "./presentation-feedback";
 
@@ -47,7 +48,7 @@ export function QuestPresentation({
         <div className="w-full max-w-xl rounded-2xl border border-amber-400/60 bg-neutral-950/95 p-5 text-center shadow-2xl sm:p-7" style={{ animation: "ko-quest-reward 2100ms ease both" }}>
           <p className="text-xs font-black tracking-[0.25em] text-amber-300">퀘스트 보상</p>
           <h2 className="mt-2 text-2xl font-black">{champion?.name ?? "Champion"}</h2>
-          {champion?.quest?.rewardText && <p className="mt-4 text-base leading-6 text-amber-100">{champion.quest.rewardText}</p>}
+          <p className="mt-4 whitespace-pre-wrap text-base leading-6 text-amber-100">{champion ? championQuestRewardText(champion) : "퀘스트를 완료했습니다."}</p>
           {reward?.type === "UPGRADE_ABILITY" && champion?.upgradedAbility ? (
             <div className="mt-5 rounded-xl border border-violet-800/70 bg-violet-950/30 p-4 text-left">
               <p className="text-xs font-black text-violet-300">강화된 고유 능력</p>
@@ -73,8 +74,6 @@ export function QuestPresentation({
             </div>
           ) : reward?.type === "GAIN_GOLD" ? (
             <p className="mt-5 text-xl font-black text-amber-300">골드 +{reward.amount}</p>
-          ) : !champion?.quest?.rewardText ? (
-            <p className="mt-5 text-sm leading-6 text-neutral-300">{reward?.type === "STRUCTURED" ? "퀘스트 보상이 적용되었습니다." : "퀘스트를 완료했습니다."}</p>
           ) : null}
         </div>
       )}

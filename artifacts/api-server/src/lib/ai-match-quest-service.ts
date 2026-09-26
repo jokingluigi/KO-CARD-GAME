@@ -12,6 +12,7 @@ import {
 } from "@workspace/game-engine";
 import { loadUserDeck, resolveDeck } from "../routes/decks";
 import { listAIDecks } from "./ai-deck-service";
+import { expandNamedCardReferences } from "./named-card-references";
 import { processMatchEventsForDailyQuests } from "./daily-quest-service";
 import { toServerAction } from "../online/action-parser";
 
@@ -182,6 +183,7 @@ export async function completeAIMatchQuestProgress(input: {
       if (requiredCardIds.size > previousCount) pendingReferences = true;
     }
   }
+  expandNamedCardReferences(cardRecords, requiredCardIds);
   const selectedChampionIds = new Set([
     userDeck.championDefinitionId,
     aiDeck.championDefinitionId,

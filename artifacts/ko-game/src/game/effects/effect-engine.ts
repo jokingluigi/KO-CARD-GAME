@@ -809,10 +809,20 @@ function resolveCardDefinition(
   state: GameState,
   definition: CardDefinition | undefined,
   reference: { id?: string; name?: string } | undefined,
+  allowName = false,
 ): CardDefinition | undefined {
   if (definition) return definition;
-  if (!reference?.id) return undefined;
-  return state.cardPool?.find((candidate) => candidate.id === reference.id);
+  if (reference?.id) return state.cardPool?.find((candidate) => candidate.id === reference.id);
+  const name = reference?.name?.trim();
+  if (!allowName || !name) return undefined;
+  // Older saved effects carry only the quoted part of a card name (for example
+  // "늑대인간" for "늑대인간 판도라"). Prefer an exact name; accept a longer
+  // name only when it identifies exactly one card in the match's allowed pool.
+  const exact = state.cardPool?.filter((candidate) => candidate.name === name) ?? [];
+  if (exact.length === 1) return exact[0];
+  if (exact.length) return undefined;
+  const matches = state.cardPool?.filter((candidate) => candidate.name.startsWith(`${name} `)) ?? [];
+  return matches.length === 1 ? matches[0] : undefined;
 }
 
 type TriggerContext = NonNullable<GameState['targetingState']>['triggerContext'];
@@ -1774,7 +1784,7 @@ export function applyEffect(
           !damageCausedTargetRetire(state, sourceCard)) {
         return state;
       }
-      const definition = resolveCardDefinition(state, effect.values?.definition, effect.values?.definitionRef);
+      const definition = resolveCardDefinition(state, effect.values?.definition, effect.values?.definitionRef, true);
       if (!definition) return state;
       const transformed = generateCard(definition, {
         instanceId: sourceCard.instanceId,

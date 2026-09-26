@@ -43,6 +43,7 @@ import { PresentationFeedback, type PresentationCue } from './presentation-feedb
 import { presentationCueDrafts, presentationEventKey } from './presentation-feedback-utils';
 import { canMulligan } from '../game/engine/mulligan';
 import { QuestPresentation } from './quest-presentation';
+import { audioManager } from '../audio/audio-manager';
 import { MatchTutorial } from './match-tutorial';
 import { prefersReducedMotion } from './presentation-config';
 import { displayHealth } from './match-display-utils';
@@ -221,11 +222,12 @@ export function GameStatePreview({
     if (!pendingEffectFinisher || playAnimation || generatedPlayAnimations.length || attackAnimation) return;
     setPendingEffectFinisher(false);
     setEffectFinisher(true);
+    audioManager.playAttack(`${import.meta.env.BASE_URL}sfx/impact-finisher.wav`, 90);
     if (effectFinisherTimerRef.current !== null) window.clearTimeout(effectFinisherTimerRef.current);
     effectFinisherTimerRef.current = window.setTimeout(() => {
       setEffectFinisher(false);
       effectFinisherTimerRef.current = null;
-    }, prefersReducedMotion() ? 180 : 900);
+    }, prefersReducedMotion() ? 180 : 1050);
   }, [pendingEffectFinisher, playAnimation, generatedPlayAnimations.length, attackAnimation]);
 
   React.useEffect(() => () => {
@@ -734,7 +736,7 @@ export function GameStatePreview({
               ? `card-landing-shake--${playAnimation.impactLevel.toLowerCase()}`
             : ""
       }`} style={attackAnimation?.finishingBlow ? {
-        "--finisher-duration": `${attackAnimationDuration(attackAnimation.currentAttack) + 170}ms`,
+        "--finisher-duration": `${attackAnimationDuration(attackAnimation.currentAttack) + 350}ms`,
         transformOrigin: `${Math.max(0, attackAnimation.geometry.target.left + attackAnimation.geometry.target.width / 2 - Math.max(0, (window.innerWidth - 1024) / 2))}px ${attackAnimation.geometry.target.top + attackAnimation.geometry.target.height / 2}px`,
       } as React.CSSProperties : undefined}>
          
@@ -1374,7 +1376,7 @@ export function GameStatePreview({
         />
       )}
       {effectFinisher && !attackAnimation && (
-        <div className="effect-finisher" aria-hidden="true"><span>K.O.!</span></div>
+        <div className="effect-finisher" aria-hidden="true"><div className="attack-animation__finisher-slash" /><span>K.O.!</span></div>
       )}
       {presentationQueue[0] &&
         !playAnimation &&

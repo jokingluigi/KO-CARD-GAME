@@ -14,6 +14,7 @@ import {
   type ChampionState,
 } from '@/game';
 import { CardRenderer } from './card-renderer';
+import { championQuestRewardText } from './champion-quest-reward-text';
 import { CardTagExplorerDialog } from './card-tag-explorer-dialog';
 import { CardDetailDialog, type CardDetailRecord } from './card-detail-dialog';
 import { getActiveCardKeywords } from '../game/cards/granted-text';
@@ -468,19 +469,6 @@ const STAT_LABELS: Record<NumericChangeStat, string> = {
   cost: '비용',
 };
 
-function rewardText(champion: ChampionState): string {
-  const reward = champion.quest?.reward;
-  if (!reward) return '보상 없음';
-  if (champion.quest?.rewardText) return champion.quest.rewardText;
-  return reward.type === 'UPGRADE_ABILITY'
-    ? '챔피언 고유 능력을 강화합니다.'
-    : reward.type === 'GAIN_GOLD'
-      ? `다음 턴 골드 ${reward.amount}를 얻습니다.`
-      : reward.type === 'DIRECT_DEPLOY_CHAMPION_TOKEN'
-        ? '연결된 챔피언 토큰을 직접 전개합니다.'
-        : '퀘스트 보상 효과를 적용합니다.';
-}
-
 export function ChampionAbilityInspectContent({
   champion,
   available,
@@ -523,7 +511,7 @@ export function ChampionQuestInspectContent({ champion }: { champion: ChampionSt
           : `${champion.questProgress} / ${quest.requiredProgress}`}
       </div>
       <div className="mt-3 text-[clamp(0.8125rem,1vw,0.9375rem)] font-bold text-neutral-500">완료 보상</div>
-      <p className="text-[clamp(0.9375rem,1.25vw,1.125rem)] leading-[1.5] text-neutral-300">{rewardText(champion)}</p>
+      <p className="text-[clamp(0.9375rem,1.25vw,1.125rem)] leading-[1.5] text-neutral-300">{championQuestRewardText(champion)}</p>
     </div>
   );
 }

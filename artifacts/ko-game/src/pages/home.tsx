@@ -903,7 +903,7 @@ export default function Home() {
     setPlayError(null);
   }
 
-  function playAttackSound(animation: Pick<AttackAnimationState, "currentAttack" | "impactLevel" | "soundKey">) {
+  function playAttackSound(animation: Pick<AttackAnimationState, "currentAttack" | "impactLevel" | "soundKey" | "finishingBlow">) {
     if (processedAttackSoundsRef.current.has(animation.soundKey)) return;
     processedAttackSoundsRef.current.add(animation.soundKey);
     const sound = mediaCatalog.attackSounds[animation.impactLevel === "LIGHT"
@@ -914,9 +914,9 @@ export default function Home() {
           ? "HEAVY_ATTACK"
           : "VERY_HEAVY_ATTACK"];
     audioManager.playAttack(
-      `${import.meta.env.BASE_URL}sfx/impact-${animation.impactLevel.toLowerCase().replace('_', '-')}.wav`,
+      `${import.meta.env.BASE_URL}sfx/impact-${animation.finishingBlow ? "finisher" : animation.impactLevel.toLowerCase().replace('_', '-')}.wav?v=2`,
       sound?.volume ?? 85,
-      attackSoundPitch(animation.currentAttack),
+      animation.finishingBlow ? 1 : attackSoundPitch(animation.currentAttack),
     );
   }
 
@@ -1133,6 +1133,7 @@ export default function Home() {
         currentAttack,
         impactLevel: attackImpactLevel(currentAttack),
         soundKey: `${attackEventIndex}:${selectedAttackerId}:${gameState.players[1].id}`,
+        finishingBlow: result.state.status === 'FINISHED' && result.state.loserId === gameState.players[1].id && damage > 0,
       });
     }
     setSelectedAttackerId(null);

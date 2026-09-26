@@ -766,7 +766,7 @@ function OnlineMatchPage() {
     }
   }
 
-  function playAttackSound(animation: Pick<AttackAnimationState, "currentAttack" | "impactLevel" | "soundKey">) {
+  function playAttackSound(animation: Pick<AttackAnimationState, "currentAttack" | "impactLevel" | "soundKey" | "finishingBlow">) {
     if (processedAttackSoundsRef.current.has(animation.soundKey)) return;
     processedAttackSoundsRef.current.add(animation.soundKey);
     const sound = mediaCatalog.attackSounds[
@@ -779,9 +779,9 @@ function OnlineMatchPage() {
             : "VERY_HEAVY_ATTACK"
     ];
     audioManager.playAttack(
-      `${import.meta.env.BASE_URL}sfx/impact-${animation.impactLevel.toLowerCase().replace('_', '-')}.wav`,
+      `${import.meta.env.BASE_URL}sfx/impact-${animation.finishingBlow ? "finisher" : animation.impactLevel.toLowerCase().replace('_', '-')}.wav?v=2`,
       sound?.volume ?? 85,
-      attackSoundPitch(animation.currentAttack),
+      animation.finishingBlow ? 1 : attackSoundPitch(animation.currentAttack),
     );
   }
 

@@ -3,6 +3,7 @@ import { Router, type IRouter, type Request, type Response } from "express";
 import { cardsTable, championsTable, db } from "@workspace/db";
 import { getAuthenticatedUser } from "../lib/auth";
 import { listAIDecks } from "../lib/ai-deck-service";
+import { expandNamedCardReferences } from "../lib/named-card-references";
 
 const router: IRouter = Router();
 
@@ -35,8 +36,21 @@ router.get("/", async (request: Request, response: Response): Promise<void> => {
     cardIds.length ? db.select().from(cardsTable).where(inArray(cardsTable.id, cardIds)) : [],
     championIds.length ? db.select().from(championsTable).where(inArray(championsTable.id, championIds)) : [],
   ]);
+  // Cards mentioned by older name-only transform effects are needed in the
+  // client match pool, even when the form is DRAFT and absent from the AI deck.
+  const extraCardsWithReferences: Array<typeof cardsTable.$inferSelect> = [...extraCards];
+  if (extraCards.length) {
+    const allCards = await db.select().from(cardsTable);
+    const referencedIds = new Set(extraCards.map((card) => card.id));
+    expandNamedCardReferences(allCards, referencedIds);
+    for (const card of allCards) {
+      if (referencedIds.has(card.id) && card.status !== "DISABLED" && !extraCardsWithReferences.some((item) => item.id === card.id)) {
+        extraCardsWithReferences.push(card);
+      }
+    }
+  }
   response.setHeader("Cache-Control", "no-store");
-  response.json({ decks: available.map(({ invalidReasons: _invalidReasons, missingCardDefinitionIds: _missing, requiredCardDefinitionIds: _required, ...deck }) => deck), extraCards, extraChampions });
+  response.json({ decks: available.map(({ invalidReasons: _invalidReasons, missingCardDefinitionIds: _missing, requiredCardDefinitionIds: _required, ...deck }) => deck), extraCards: extraCardsWithReferences, extraChampions });
 });
 
 export default router;
