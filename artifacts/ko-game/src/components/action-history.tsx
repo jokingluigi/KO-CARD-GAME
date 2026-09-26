@@ -1,96 +1,7 @@
 import { useState } from 'react';
-import { getCardDefinition, type CardInstance, type GameEvent, type GameState } from '@/game';
+import { getCardDefinition, type CardInstance, type GameState } from '@/game';
+import { eventTitle, findCard, historyEvents, playerLabel } from './action-history-utils';
 import { CardInspectContent, Inspectable } from './alt-inspector';
-
-const VISIBLE_EVENT_TYPES = new Set<GameEvent['type']>([
-  'CARD_PLAYED',
-  'ENTER_FIELD',
-  'CHAMPION_ABILITY_USED',
-  'CARD_GENERATED',
-  'CARD_DESTROYED',
-  'CARD_RETIRED',
-  'ATTACK_DECLARED',
-]);
-
-function findCard(state: GameState, cardInstanceId?: string): CardInstance | null {
-  if (!cardInstanceId) return null;
-  for (const player of state.players) {
-    const cards = [
-      ...player.deck,
-      ...player.hand,
-      ...player.board.filter((card): card is CardInstance => card !== null),
-      ...player.graveyard,
-      ...player.removedFromGame,
-    ];
-    const card = cards.find((candidate) => candidate.instanceId === cardInstanceId);
-    if (card) return card;
-  }
-  return null;
-}
-
-function playerLabel(state: GameState, playerId?: string): string {
-  if (!playerId) return '시스템';
-  return playerId === state.players[0].id ? '나' : '상대';
-}
-
-function cardName(state: GameState, cardInstanceId?: string): string {
-  const card = findCard(state, cardInstanceId);
-  return card
-    ? getCardDefinition(card.definitionId)?.name ?? '알 수 없는 카드'
-    : '알 수 없는 카드';
-}
-
-function eventTitle(state: GameState, event: GameEvent): string {
-  switch (event.type) {
-    case 'CARD_PLAYED':
-      return `${cardName(state, event.cardInstanceId)} 플레이`;
-    case 'ENTER_FIELD':
-      return `${cardName(state, event.cardInstanceId)} 소환`;
-    case 'CARD_GENERATED':
-      return `${cardName(state, event.cardInstanceId)} 생성`;
-    case 'CARD_DESTROYED':
-      return `${cardName(state, event.cardInstanceId)} 파괴`;
-    case 'CARD_RETIRED':
-      return `${cardName(state, event.cardInstanceId)} 리타이어`;
-    case 'CHAMPION_ABILITY_USED':
-      return '챔피언 고유 능력 사용';
-    case 'ATTACK_DECLARED': {
-      const attacker =
-        event.source?.type === 'CARD'
-          ? cardName(state, event.source.cardInstanceId)
-          : '선수';
-      const target =
-        event.target?.type === 'CARD'
-          ? cardName(state, event.target.cardInstanceId)
-          : event.target?.type === 'PLAYER'
-            ? `${playerLabel(state, event.target.playerId)} 챔피언`
-            : '대상';
-      return `${attacker} → ${target}`;
-    }
-    default:
-      return '';
-  }
-}
-
-function historyEvents(state: GameState): GameEvent[] {
-  const playedCardIds = new Set(
-    state.events
-      .filter((event) => event.type === 'CARD_PLAYED')
-      .map((event) => event.cardInstanceId)
-      .filter((id): id is string => id !== undefined),
-  );
-
-  return state.events
-    .filter((event) => VISIBLE_EVENT_TYPES.has(event.type))
-    .filter(
-      (event) =>
-        event.type !== 'ENTER_FIELD' ||
-        !event.cardInstanceId ||
-        !playedCardIds.has(event.cardInstanceId),
-    )
-    .slice(-6)
-    .reverse();
-}
 
 function CardMiniature({
   state,
@@ -107,7 +18,7 @@ function CardMiniature({
       </div>
     );
   }
-  const definition = getCardDefinition(card.definitionId);
+  const definition = state.cardPool?.find((entry) => entry.id === card.definitionId) ?? getCardDefinition(card.definitionId);
 
   return (
     <Inspectable
@@ -118,8 +29,8 @@ function CardMiniature({
         className="flex h-10 w-8 flex-col overflow-hidden rounded border border-neutral-600 bg-neutral-900 shadow"
         tabIndex={0}
       >
-        <div className="flex flex-1 items-center justify-center bg-neutral-950 text-[5px] text-neutral-600">
-          이미지 없음
+        <div className="flex flex-1 items-center justify-center overflow-hidden bg-neutral-950 text-[5px] text-neutral-600">
+          {definition?.imageUrl ? <img src={definition.imageUrl} alt="" className="h-full w-full object-cover" /> : '카드'}
         </div>
         <div className="truncate border-t border-neutral-800 px-0.5 py-0.5 text-center text-[5px] font-bold text-neutral-300">
           {definition?.name ?? '카드'}
@@ -129,18 +40,18 @@ function CardMiniature({
   );
 }
 
-function HistoryList({ state }: { state: GameState }) {
+function HistoryList({ state, viewerPlayerId }: { state: GameState; viewerPlayerId: string }) {
   const events = historyEvents(state);
   return (
     <div className="max-h-[52dvh] space-y-0.5 overflow-y-auto pr-1 md:max-h-none md:overflow-visible">
       {events.length === 0 ? (
         <div className="py-4 text-center text-[9px] text-neutral-600">아직 기록이 없습니다</div>
       ) : (
-        events.map((event, index) => (
+        events.map((event) => (
           <div
-            key={`${state.events.length - index}-${event.type}-${event.cardInstanceId ?? ''}`}
+            key={`${state.events.indexOf(event)}-${event.type}-${event.cardInstanceId ?? ''}`}
             className={`flex items-center gap-1.5 rounded border-l-2 bg-neutral-950/90 p-1 shadow animate-in fade-in slide-in-from-left-1 duration-200 ${
-              event.playerId === state.players[0].id
+              (event.sourceContext?.sourcePlayerId ?? event.playerId) === viewerPlayerId
                 ? 'border-l-blue-500'
                 : 'border-l-red-500'
             }`}
@@ -155,15 +66,15 @@ function HistoryList({ state }: { state: GameState }) {
             <div className="min-w-0">
               <div
                 className={`text-[8px] font-bold ${
-                  event.playerId === state.players[0].id
+                  (event.sourceContext?.sourcePlayerId ?? event.playerId) === viewerPlayerId
                     ? 'text-blue-300'
                     : 'text-red-300'
                 }`}
               >
-                {playerLabel(state, event.playerId)}
+                {playerLabel(state, event.sourceContext?.sourcePlayerId ?? event.playerId, viewerPlayerId)}
               </div>
-                <div className="line-clamp-1 text-[9px] font-bold leading-tight text-neutral-200">
-                {eventTitle(state, event)}
+                <div className="line-clamp-2 text-[9px] font-bold leading-tight text-neutral-200">
+                {eventTitle(state, event, viewerPlayerId)}
               </div>
             </div>
           </div>
@@ -173,8 +84,9 @@ function HistoryList({ state }: { state: GameState }) {
   );
 }
 
-export function ActionHistory({ state }: { state: GameState }) {
+export function ActionHistory({ state, viewerPlayerId = state.players[0].id }: { state: GameState; viewerPlayerId?: string }) {
   const [isMobileOpen, setIsMobileOpen] = useState(false);
+  const latestEvent = historyEvents(state)[0];
 
   return (
     <>
@@ -182,7 +94,7 @@ export function ActionHistory({ state }: { state: GameState }) {
         <div className="mb-1 border-b border-neutral-800 pb-1.5 text-[10px] font-black tracking-[0.18em] text-neutral-300">
           로그
         </div>
-        <HistoryList state={state} />
+        <HistoryList state={state} viewerPlayerId={viewerPlayerId} />
       </aside>
 
       <div className="fixed left-2 top-24 z-50 md:hidden">
@@ -190,13 +102,14 @@ export function ActionHistory({ state }: { state: GameState }) {
           type="button"
           aria-expanded={isMobileOpen}
           onClick={() => setIsMobileOpen((open) => !open)}
-          className="rounded border border-neutral-700 bg-black/90 px-3 py-2 text-[10px] font-black text-neutral-200 shadow-xl"
+          className="flex max-w-44 flex-col rounded border border-neutral-700 bg-black/90 px-2 py-1.5 text-left text-[10px] font-black text-neutral-200 shadow-xl"
         >
-          로그
+          <span>경기 로그 {isMobileOpen ? '닫기' : '보기'}</span>
+          {!isMobileOpen && latestEvent && <span className="mt-0.5 line-clamp-2 text-[9px] font-medium text-neutral-300">{eventTitle(state, latestEvent, viewerPlayerId)}</span>}
         </button>
         {isMobileOpen && (
           <div className="mt-1 w-48 rounded border border-neutral-800 bg-black/95 p-1.5 shadow-2xl">
-            <HistoryList state={state} />
+            <HistoryList state={state} viewerPlayerId={viewerPlayerId} />
           </div>
         )}
       </div>

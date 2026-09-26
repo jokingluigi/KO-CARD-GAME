@@ -502,6 +502,15 @@ export function GameStatePreview({
     isCurrentPlayer(state, me.id) && !effectTargeting
   );
   const legalActions = getLegalActions(state, me.id);
+  const selectedAttacker = selectedAttackerId
+    ? me.board.find((card) => card?.instanceId === selectedAttackerId)
+    : null;
+  const legalAttackTargets = new Set(legalActions.flatMap((action) =>
+    action.type === 'ATTACK' && action.attackerInstanceId === selectedAttackerId
+      ? [action.target.type === 'PLAYER' ? action.target.playerId : action.target.cardInstanceId]
+      : [],
+  ));
+  const attackBaseDamage = selectedAttacker ? Math.max(0, selectedAttacker.currentAttack) : 0;
   const legalActiveCardIds = new Set(
     legalActions
       .filter((action) => action.type === 'USE_ACTIVE')
@@ -632,6 +641,10 @@ export function GameStatePreview({
       return;
     }
     if (!selectedAttackerId) return;
+    if (!legalAttackTargets.has(cardId)) {
+      setAttackHint('이 대상은 공격할 수 없습니다. 강조된 대상을 선택하세요.');
+      return;
+    }
     setAttackHint(null);
     onAttackWrestler(cardId, attackGeometry(boardCardRefs.current.get(cardId) ?? null));
   }
@@ -641,7 +654,11 @@ export function GameStatePreview({
       onEffectTarget(opp.id);
       return;
     }
-    if (!selectedAttackerId || opponentChampionProtected) return;
+    if (!selectedAttackerId) return;
+    if (!legalAttackTargets.has(opp.id)) {
+      setAttackHint(opponentChampionProtected ? '챔피언 토큰이 보호하는 동안 본체를 공격할 수 없습니다.' : '이 대상은 공격할 수 없습니다. 강조된 대상을 선택하세요.');
+      return;
+    }
     setAttackHint(null);
     onAttackPlayer(attackGeometry(championRef.current));
   }
@@ -670,7 +687,7 @@ export function GameStatePreview({
   return (
     <AltInspectProvider>
      <div className="ko-game-shell flex min-h-[100dvh] w-full flex-col overflow-x-hidden overflow-y-auto bg-neutral-950 font-sans text-neutral-100 selection:bg-primary selection:text-black md:overflow-hidden">
-      <ActionHistory state={state} />
+      <ActionHistory state={state} viewerPlayerId={presentationPlayerId ?? me.id} />
       
       {/* Background Ambience */}
       <div className="pointer-events-none absolute inset-0 z-0 bg-neutral-950">
@@ -734,7 +751,7 @@ export function GameStatePreview({
                         ? `attack-target-hit--${attackAnimation.damageImpactLevel.toLowerCase()}`
                         : ""
                     } ${
-                       (effectTargeting && validEffectTargetIds.has(opp.id)) || (selectedAttackerId && !opponentChampionProtected)
+                       (effectTargeting && validEffectTargetIds.has(opp.id)) || (selectedAttackerId && legalAttackTargets.has(opp.id))
                         ? 'cursor-crosshair border-red-500 shadow-[0_0_15px_rgba(239,68,68,0.4)]'
                         : 'border-red-900'
                      } ${activePresentationChampionId === opp.champion?.id || activePresentationCue?.playerId === opp.id ? 'presentation-card-pulse' : ''}`}
@@ -743,7 +760,7 @@ export function GameStatePreview({
                        aria-label="상대 챔피언 대상"
                        onClick={effectTargeting
                          ? handleAttackChampion
-                         : selectedAttackerId && !opponentChampionProtected ? handleAttackChampion : undefined}
+                         : selectedAttackerId ? handleAttackChampion : undefined}
                        onKeyDown={(event) => {
                          if (event.key !== 'Enter' && event.key !== ' ') return;
                          event.preventDefault();
@@ -772,6 +789,9 @@ export function GameStatePreview({
                   </span>
                   {selectedAttackerId && (
                     <div className="pointer-events-none absolute inset-0 z-10 bg-red-500/15" />
+                  )}
+                  {selectedAttackerId && legalAttackTargets.has(opp.id) && (
+                    <span className="pointer-events-none absolute -bottom-4 left-1/2 z-20 -translate-x-1/2 whitespace-nowrap rounded bg-red-950 px-1.5 py-0.5 text-[8px] font-bold text-white">기본 피해 {attackBaseDamage}</span>
                   )}
                 </div>
                 <div className="ko-opponent-stats flex w-[76px] shrink-0 flex-col items-start gap-1">
@@ -816,12 +836,13 @@ export function GameStatePreview({
                    slotIndex={i as BoardSlotIndex}
                    selectable={false}
                    selected={false}
-                   attackReady={false}
-                    attackSelectionActive={false}
+                   attackReady={!!card && !!selectedAttackerId && legalAttackTargets.has(card.instanceId)}
+                    attackSelectionActive={!!selectedAttackerId && !effectTargeting}
                     attackReason={undefined}
                     targetingActive={!!effectTargeting}
                     presentationActive={activePresentationCardId === card?.instanceId}
-                     targetable={!!card && (effectTargeting ? validEffectTargetIds.has(card.instanceId) : !!selectedAttackerId)}
+                     targetable={!!card && (effectTargeting ? validEffectTargetIds.has(card.instanceId) : !!selectedAttackerId && legalAttackTargets.has(card.instanceId))}
+                    attackPreview={!!card && !!selectedAttackerId && !effectTargeting && legalAttackTargets.has(card.instanceId) ? `기본 피해 ${attackBaseDamage} · 반격 ${Math.max(0, card.currentAttack)}` : undefined}
                     activeReady={false}
                     activeUsable={false}
                     onUseActive={() => undefined}
@@ -941,7 +962,10 @@ export function GameStatePreview({
               </button>
              {effectTargeting && (
                <div className="rounded border border-amber-500 bg-amber-950/90 px-2 py-2 text-center text-[10px] font-bold text-amber-100">
-                 대상을 선택하세요 ({state.targetingState!.selectedTargetIds.length}/{state.targetingState!.minTargets})
+                 {state.targetingState!.sourceCard?.definitionId
+                   ? state.cardPool?.find((card) => card.id === state.targetingState!.sourceCard!.definitionId)?.name ?? '효과'
+                   : '효과'} 대상 선택 ({state.targetingState!.selectedTargetIds.length}/{state.targetingState!.minTargets})
+                 <span className="mt-1 block text-[9px] text-amber-200/80">금색으로 강조된 대상만 선택 가능</span>
                  <button type="button" onClick={onCancelEffectTargeting} className="mt-1 block w-full rounded border border-amber-600 px-1 py-0.5 text-[9px]">취소</button>
                </div>
              )}
@@ -1412,6 +1436,7 @@ function BoardSlot({
   attackReady,
   attackSelectionActive,
   attackReason,
+  attackPreview,
   targetingActive,
   presentationActive,
   targetable,
@@ -1433,6 +1458,7 @@ function BoardSlot({
   attackReady: boolean;
   attackSelectionActive: boolean;
   attackReason?: string;
+  attackPreview?: string;
   targetingActive: boolean;
   presentationActive: boolean;
   targetable: boolean;
@@ -1544,6 +1570,7 @@ function BoardSlot({
            </>
          }
        />
+       {attackPreview && <span className="pointer-events-none absolute -bottom-5 left-1/2 z-[60] -translate-x-1/2 whitespace-nowrap rounded border border-red-500 bg-red-950/95 px-1.5 py-0.5 text-[8px] font-black text-white">{attackPreview}</span>}
        <button
          type="button"
          data-touch-inspect-trigger
