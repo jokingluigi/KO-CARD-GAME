@@ -5,6 +5,7 @@ import {
   attackDamageImpactLevel,
   attackImpactLevel,
   attackSoundPitch,
+  attackScreenShakeLevel,
 } from "./attack-animation-utils";
 
 test("공격 충돌 단계는 실제 current attack을 네 구간으로 나눈다", () => {
@@ -12,6 +13,13 @@ test("공격 충돌 단계는 실제 current attack을 네 구간으로 나눈�
   assert.equal(attackImpactLevel(3), "NORMAL");
   assert.equal(attackImpactLevel(5), "HEAVY");
   assert.equal(attackImpactLevel(8), "VERY_HEAVY");
+});
+
+test("같은 피해라도 공격력이 강하면 더 크게 흔들리고 방어된 타격은 흔들리지 않는다", () => {
+  assert.equal(attackScreenShakeLevel(1, 1), "VERY_LIGHT");
+  assert.equal(attackScreenShakeLevel(7, 1), "VERY_HEAVY");
+  assert.equal(attackScreenShakeLevel(7, 0), "NONE");
+  assert.equal(attackScreenShakeLevel(2, 1, true), "VERY_HEAVY");
 });
 
 test("8 이상 공격은 매우 강한 타격의 오디오 피치를 사용한다", () => {

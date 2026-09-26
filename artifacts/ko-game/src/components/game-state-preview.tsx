@@ -29,6 +29,7 @@ import type { EnterFieldEvent } from '@/game/events/types';
 import {
   attackDamageImpactLevel,
   attackImpactLevel,
+  attackScreenShakeLevel,
 } from './attack-animation-utils';
 import {
   AltInspectProvider,
@@ -240,7 +241,7 @@ export function GameStatePreview({
         : largest,
       0,
     );
-    if (largestDamage > 0) {
+    if (largestDamage > 0 && !newEvents.some((event) => event.type === "ATTACK_DECLARED")) {
       setScreenShakeLevel(attackDamageImpactLevel(largestDamage));
       if (screenShakeTimerRef.current !== null) {
         window.clearTimeout(screenShakeTimerRef.current);
@@ -300,6 +301,8 @@ export function GameStatePreview({
             impactLevel: attackImpactLevel(currentAttack),
             damage,
             damageImpactLevel: attackDamageImpactLevel(damage),
+            finishingBlow: state.status === "FINISHED" &&
+              targetPlayerId !== undefined && state.loserId === targetPlayerId && damage > 0,
             soundKey: `opponent:${state.events.length}:${event.cardInstanceId}:${targetId ?? state.players[0]?.id}`,
           });
         }
@@ -649,10 +652,14 @@ export function GameStatePreview({
       </div>
 
       <div className={`ko-game-stage relative mx-auto flex min-h-[100dvh] w-full max-w-5xl flex-1 flex-col justify-between pb-0 pt-2 md:h-[100dvh] md:min-h-0 md:pt-4 ${
-        screenShakeLevel !== "NONE"
-          ? `attack-screen-shake--${screenShakeLevel.toLowerCase()}`
-          : attackImpactTriggered && attackAnimation && attackAnimation.damage > 0
-            ? `attack-screen-shake--${attackAnimation.damageImpactLevel.toLowerCase()}`
+        attackImpactTriggered && attackAnimation && attackAnimation.damage > 0
+          ? attackAnimation.finishingBlow
+            ? "attack-screen-shake--finisher"
+            : `attack-screen-shake--${attackScreenShakeLevel(attackAnimation.currentAttack, attackAnimation.damage).toLowerCase()}`
+          : screenShakeLevel !== "NONE"
+            ? `attack-screen-shake--${screenShakeLevel.toLowerCase()}`
+            : playAnimation?.kind === "WRESTLER" && (playAnimation.impactLevel === "HEAVY" || playAnimation.impactLevel === "VERY_HEAVY")
+              ? `card-landing-shake--${playAnimation.impactLevel.toLowerCase()}`
             : ""
       }`}>
          

@@ -45,11 +45,15 @@ export function CardPlayAnimation({
   const targetTop = animation.kind === "TECHNIQUE"
     ? window.innerHeight * 0.43 - (source.height * targetScale) / 2
     : target?.top ?? window.innerHeight / 2 - source.height / 2;
+  const travelX = targetLeft - source.left;
+  const travelY = targetTop - source.top;
   const style = {
     "--play-from-x": `${source.left}px`,
     "--play-from-y": `${source.top}px`,
     "--play-target-x": `${targetLeft}px`,
     "--play-target-y": `${targetTop}px`,
+    "--play-arc-x": `${source.left + travelX * 0.56}px`,
+    "--play-arc-y": `${source.top + travelY * 0.56 - Math.min(42, Math.max(16, Math.abs(travelY) * 0.12))}px`,
     "--play-target-scale": String(targetScale),
     "--play-source-width": `${source.width}px`,
     "--play-source-height": `${source.height}px`,
@@ -65,7 +69,9 @@ export function CardPlayAnimation({
     return () => window.clearTimeout(timeoutId);
   }, [animation]);
 
-  function complete() {
+  function complete(event: React.AnimationEvent<HTMLDivElement>) {
+    if (event.target !== event.currentTarget ||
+        event.animationName !== (animation.kind === "TECHNIQUE" ? "ko-card-play-technique" : "ko-card-play-wrestler")) return;
     if (completedRef.current) return;
     completedRef.current = true;
     onCompleteRef.current();
@@ -81,7 +87,6 @@ export function CardPlayAnimation({
       aria-hidden={animation.kind === "WRESTLER"}
       className={`card-play-animation ${animationClass} card-play-animation--rarity-${rarity.toLowerCase()}`}
       style={style}
-      onAnimationEnd={complete}
     >
       {animation.kind === "TECHNIQUE" && (
         <>

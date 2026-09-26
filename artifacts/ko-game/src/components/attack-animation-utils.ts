@@ -28,7 +28,20 @@ export type AttackAnimationState = {
   damage: number;
   damageImpactLevel: AttackDamageImpactLevel;
   soundKey: string;
+  finishingBlow?: boolean;
 };
+
+export function attackScreenShakeLevel(currentAttack: number, damage: number, finishingBlow = false): AttackDamageImpactLevel {
+  if (damage <= 0) return "NONE";
+  if (finishingBlow) return "VERY_HEAVY";
+  const attackTier = attackImpactLevel(currentAttack);
+  const attackStrength: AttackDamageImpactLevel = attackTier === "LIGHT" ? "VERY_LIGHT"
+    : attackTier === "NORMAL" ? "LIGHT"
+      : attackTier === "HEAVY" ? "HEAVY" : "VERY_HEAVY";
+  const damageStrength = attackDamageImpactLevel(damage);
+  const tiers: AttackDamageImpactLevel[] = ["NONE", "VERY_LIGHT", "LIGHT", "MEDIUM", "HEAVY", "VERY_HEAVY"];
+  return tiers[Math.max(tiers.indexOf(attackStrength), tiers.indexOf(damageStrength))];
+}
 
 export function attackImpactLevel(currentAttack: number): AttackImpactLevel {
   if (currentAttack <= 1) return "LIGHT";

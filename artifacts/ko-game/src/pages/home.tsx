@@ -1107,6 +1107,8 @@ export default function Home() {
           damage,
           damageImpactLevel: attackDamageImpactLevel(damage),
           soundKey: `${attackEventIndex}:${selectedAttackerId}:${gameState.players[1].id}`,
+          finishingBlow: result.state.status === 'FINISHED' &&
+            result.state.loserId === gameState.players[1].id && damage > 0,
         }
       : null;
     setGameState(result.state);

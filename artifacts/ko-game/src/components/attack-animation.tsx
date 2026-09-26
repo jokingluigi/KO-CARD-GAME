@@ -6,7 +6,7 @@ import { getActiveCardKeywords } from "../game/cards/granted-text";
 import { getCardRuntimeRulesText } from "../lib/card-display-state";
 import type { AttackAnimationState } from "./attack-animation-utils";
 import { attackAnimationDuration } from "./attack-animation-utils";
-import { PRESENTATION_CONFIG, prefersReducedMotion } from "./presentation-config";
+import { prefersReducedMotion } from "./presentation-config";
 
 export function AttackAnimation({
   animation,
@@ -27,10 +27,10 @@ export function AttackAnimation({
   const { source, target } = animation.geometry;
   const duration = prefersReducedMotion()
     ? 140
-    : attackAnimationDuration(animation.currentAttack);
+    : attackAnimationDuration(animation.currentAttack) + (animation.finishingBlow ? 240 : 0);
   const impactDelay = prefersReducedMotion()
     ? 70
-    : PRESENTATION_CONFIG.attackWindupMs + Math.round(duration * 0.48);
+    : Math.round(duration * 0.56);
   const dx = target.left + target.width / 2 - (source.left + source.width / 2);
   const dy = target.top + target.height / 2 - (source.top + source.height / 2);
   const style = {
@@ -73,9 +73,10 @@ export function AttackAnimation({
   return (
     <div
       aria-hidden="true"
-      className={`attack-animation ${impactClass} attack-animation--rarity-${rarity.toLowerCase()}`}
+      className={`attack-animation ${impactClass} attack-animation--rarity-${rarity.toLowerCase()} ${animation.finishingBlow ? "attack-animation--finisher" : ""}`}
       style={style}
     >
+      {animation.finishingBlow && <div className="attack-animation__finisher"><span>K.O.!</span></div>}
       <div className="attack-animation__target">
         {animation.targetKind === "CARD" && animation.target ? (
           <CardRenderer

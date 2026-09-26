@@ -362,20 +362,23 @@
 
 @keyframes ko-card-play-wrestler {
   0% {
-    opacity: 0.96;
+    opacity: 1;
     transform: translate(var(--play-from-x), var(--play-from-y)) scale(1);
   }
-  16% {
-    opacity: 1;
-    transform: translate(var(--play-from-x), var(--play-from-y)) scale(1.1);
+  14% {
+    transform: translate(var(--play-from-x), calc(var(--play-from-y) - 12px)) scale(1.07) rotate(-3deg);
   }
-  70% {
-    transform: translate(var(--play-target-x), var(--play-target-y))
-      scale(calc(var(--play-target-scale) * 1.12));
+  52% {
+    transform: translate(var(--play-arc-x), var(--play-arc-y))
+      scale(calc(var(--play-target-scale) * 1.13)) rotate(3deg);
   }
-  83% {
+  76% {
     transform: translate(var(--play-target-x), var(--play-target-y))
-      scale(calc(var(--play-target-scale) * 0.96));
+      scale(calc(var(--play-target-scale) * 1.07)) rotate(0deg);
+  }
+  88% {
+    transform: translate(var(--play-target-x), var(--play-target-y))
+      scale(calc(var(--play-target-scale) * 0.97));
   }
   100% {
     opacity: 1;
@@ -387,23 +390,23 @@
 @keyframes ko-card-play-technique {
   0% {
     opacity: 0;
-    transform: translate(var(--play-from-x), var(--play-from-y)) scale(0.84);
+    transform: translate(var(--play-from-x), var(--play-from-y)) scale(1);
   }
   14% {
     opacity: 1;
-    transform: translate(var(--play-from-x), var(--play-from-y)) scale(1.08);
+    transform: translate(var(--play-from-x), calc(var(--play-from-y) - 12px)) scale(1.08) rotate(-3deg);
   }
   28% {
     opacity: 1;
-    transform: translate(var(--play-target-x), var(--play-target-y)) scale(1.2);
+    transform: translate(var(--play-target-x), var(--play-target-y)) scale(var(--play-target-scale)) rotate(0deg);
   }
   82% {
     opacity: 1;
-    transform: translate(var(--play-target-x), var(--play-target-y)) scale(1.08);
+    transform: translate(var(--play-target-x), var(--play-target-y)) scale(var(--play-target-scale));
   }
   100% {
     opacity: 0;
-    transform: translate(var(--play-target-x), var(--play-target-y)) scale(0.92);
+    transform: translate(var(--play-target-x), var(--play-target-y)) scale(calc(var(--play-target-scale) * 0.92));
   }
 }
 
@@ -432,14 +435,14 @@
 }
 
 @keyframes ko-card-play-flash {
-  0%, 56% { opacity: 0; transform: scale(0.9); }
-  68% { opacity: 0.9; transform: scale(1.08); }
-  82%, 100% { opacity: 0; transform: scale(1.2); }
+  0%, 73% { opacity: 0; transform: scale(0.9); }
+  78% { opacity: 0.9; transform: scale(1.08); }
+  96%, 100% { opacity: 0; transform: scale(1.2); }
 }
 
 @keyframes ko-card-play-shockwave {
-  0%, 62% { opacity: 0; transform: scale(0.7); }
-  75% { opacity: 0.55; }
+  0%, 74% { opacity: 0; transform: scale(0.7); }
+  82% { opacity: 0.55; }
   100% { opacity: 0; transform: scale(1.35); }
 }
 
@@ -468,14 +471,22 @@
   animation-duration: 420ms;
 }
 
+.card-play-animation--light .card-play-animation__flash { animation-duration: 420ms; }
+
 .card-play-animation--heavy .card-play-animation__card {
   animation-duration: 540ms;
 }
+
+.card-play-animation--heavy .card-play-animation__flash,
+.card-play-animation--heavy .card-play-animation__shockwave { animation-duration: 540ms; }
 
 .card-play-animation--very_heavy .card-play-animation__card {
   animation-duration: 580ms;
   animation-timing-function: cubic-bezier(0.18, 0.86, 0.24, 1);
 }
+
+.card-play-animation--very_heavy .card-play-animation__flash,
+.card-play-animation--very_heavy .card-play-animation__shockwave { animation-duration: 580ms; }
 
 .card-play-animation--technique .card-play-animation__card {
   animation: ko-card-play-technique 2200ms cubic-bezier(0.2, 0.75, 0.25, 1) both;
@@ -720,6 +731,57 @@
 .attack-screen-shake--medium { animation: ko-attack-screen-shake-medium 145ms ease-out; }
 .attack-screen-shake--heavy { animation: ko-attack-screen-shake-heavy 165ms ease-out; }
 .attack-screen-shake--very_heavy { animation: ko-attack-screen-shake-very-heavy 185ms ease-out; }
+
+.card-landing-shake--heavy { animation: ko-attack-screen-shake-light 135ms ease-out 405ms backwards; }
+.card-landing-shake--very_heavy { animation: ko-attack-screen-shake-medium 175ms ease-out 435ms backwards; }
+
+@keyframes ko-finishing-shake {
+  0%, 100% { transform: translate(0); }
+  14% { transform: translate(-10px, 3px); }
+  30% { transform: translate(9px, -3px); }
+  50% { transform: translate(-7px, 2px); }
+  72% { transform: translate(5px, -1px); }
+}
+
+.attack-screen-shake--finisher { animation: ko-finishing-shake 350ms ease-out; }
+
+@keyframes ko-finishing-flash {
+  0%, 54% { opacity: 0; }
+  57% { opacity: 1; }
+  68% { opacity: .25; }
+  100% { opacity: 0; }
+}
+
+@keyframes ko-finishing-title {
+  0%, 54% { opacity: 0; transform: scale(.7) rotate(-6deg); }
+  61% { opacity: 1; transform: scale(1.2) rotate(2deg); }
+  77% { opacity: 1; transform: scale(1) rotate(0); }
+  100% { opacity: 0; transform: scale(1.08); }
+}
+
+.attack-animation__finisher {
+  position: fixed;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  background: radial-gradient(circle, rgba(255, 246, 207, .72), rgba(234, 61, 41, .24) 45%, transparent 80%);
+  animation: ko-finishing-flash var(--attack-duration) linear both;
+}
+
+.attack-animation__finisher span {
+  color: #fff2c0;
+  font-family: var(--font-display);
+  font-size: clamp(4rem, 16vw, 10rem);
+  font-weight: 1000;
+  text-shadow: 0 4px 1px #7f1d1d, 0 0 35px #ef4444;
+  animation: ko-finishing-title var(--attack-duration) ease-out both;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .card-landing-shake--heavy, .card-landing-shake--very_heavy,
+  .attack-screen-shake--finisher { animation: none; }
+  .attack-animation__finisher { display: none; }
+}
 
 @keyframes ko-presentation-feedback {
   0% {
