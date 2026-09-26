@@ -26,6 +26,7 @@ test("DB 챔피언을 직렬화 가능한 매치 스냅샷 정의로 변환한�
   assert.equal(definition.version, 3);
   assert.equal(definition.ability.effects[0]?.type, "STRUCTURED");
   assert.equal(definition.quest?.trackedEvent, "CARD_GENERATED");
+  assert.equal(definition.quest?.rewardText, "능력을 강화합니다.");
   assert.equal(definition.quest?.cardType, "WRESTLER");
   assert.equal(definition.quest?.progressPerEvent, 1);
   assert.deepEqual(definition.quest?.reward, { type: "UPGRADE_ABILITY", effects: [] });

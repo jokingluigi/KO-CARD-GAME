@@ -340,7 +340,8 @@ function baseTargetFor(text: string, randomPool = false, availableTags: readonly
   const topOfDeck = /(?:덱\s*(?:맨\s*)?위|덱\s*위)/.test(text);
   const enemyQualifier = /(?:적|상대)/.test(text);
   const explicitSelfTarget = /(?:자신(?:의|에게|을|은)|(?:아군|내)\s*(?:선수|대상|캐릭터|챔피언)?)/.test(text);
-  const selectedOwner = enemyQualifier ? "ENEMY" : explicitSelfTarget ? "SELF" : "ALL";
+  const selectedPhrase = text.match(/선택한\s*(?:모든\s*)?((?:적|상대|아군|내)\s*)?(?:선수|대상|캐릭터)/);
+  const selectedOwner = selectedPhrase?.[1] ? /(?:적|상대)/.test(selectedPhrase[1]) ? "ENEMY" : "SELF" : "ALL";
   const selectedTarget = /선택한\s*(?:모든\s*)?(?:(?:적|상대|아군|내)\s*)?(?:선수|대상|캐릭터)/.test(text);
   const selectedWrestler = /선택한\s*(?:모든\s*)?(?:(?:적|상대|아군|내)\s*)?선수/.test(text);
   if (selectedTarget) {
@@ -1243,20 +1244,22 @@ function expandedMechanicAnalysis(
     }
   }
 
-  if (/(?:리타이어|퇴장).*(?:선택한\s*)?아군.*(?:흡수|얻)/.test(text) && /체력.*공격력|공격력.*체력/.test(text)) {
+  if (/아군\s*선수/.test(text) && /(?:리타이어|퇴장)/.test(text) && /흡수/.test(text)) {
+    const absorption = text.match(/(?:그\s*카드의?\s*)?((?:(?:공격력|체력)(?:을|를)?(?:\s*(?:과|와|및|,|\/)\s*)?){0,2})\s*흡수/)?.[1] ?? "";
+    const attack = !absorption.trim() || /공격력/.test(absorption);
+    const health = !absorption.trim() || /체력/.test(absorption);
     return result([
       { trigger: triggerFor(), action: "RETIRE", target: { zone: "BOARD", owner: "SELF", cardType: "WRESTLER", selection: "PLAYER_CHOICE", count: 1 }, values: { captureStats: true } as never },
-      { trigger: triggerFor(), action: "BUFF", target: self, values: { attack: 0, health: 0, reference: "LAST_TARGET", referenceStat: "CURRENT_ATTACK" } },
-      { trigger: triggerFor(), action: "BUFF", target: self, values: { attack: 0, health: 0, reference: "LAST_TARGET", referenceStat: "CURRENT_HEALTH" } },
+      ...(attack ? [{ trigger: triggerFor(), action: "BUFF" as const, target: self, values: { attack: 0, health: 0, reference: "LAST_TARGET" as const, referenceStat: "CURRENT_ATTACK" as const } }] : []),
+      ...(health ? [{ trigger: triggerFor(), action: "BUFF" as const, target: self, values: { attack: 0, health: 0, reference: "LAST_TARGET" as const, referenceStat: "CURRENT_HEALTH" as const } }] : []),
     ]);
   }
 
-  if (/선택한\s*아군.*(?:리타이어|퇴장).*(?:체력.*공격력|공격력.*체력).*(?:흡수|얻)/.test(text)) {
-    return result([
-      { trigger: triggerFor(), action: "RETIRE", target: { zone: "BOARD", owner: "SELF", cardType: "WRESTLER", selection: "PLAYER_CHOICE", count: 1 }, values: { captureStats: true } as never },
-      { trigger: triggerFor(), action: "BUFF", target: self, values: { attack: 0, health: 0, reference: "LAST_TARGET", referenceStat: "CURRENT_ATTACK" } },
-      { trigger: triggerFor(), action: "BUFF", target: self, values: { attack: 0, health: 0, reference: "LAST_TARGET", referenceStat: "CURRENT_HEALTH" } },
-    ]);
+  const transformName = text.match(/['‘’“”]([^'‘’“”]+)['‘’“”]\s*(판도라)?\s*(?:로|으로)\s*(?:변신|바뀌)/);
+  if (transformName && !/(?:이\s*효과|이\s*피해).*(?:리타이어|퇴장)/.test(text)) {
+    return result([{ trigger: triggerFor(), action: "TRANSFORM_SOURCE", values: {
+      definitionRef: makeRef(`${transformName[1]}${transformName[2] ? ` ${transformName[2]}` : ""}`.trim()),
+    } }]);
   }
 
   if (/태그.*(?:어디에\s*(?:있든|있는)).*(?:최대\s*)?체력\s*\+?\s*2/.test(text)) {
@@ -1304,7 +1307,7 @@ function expandedMechanicAnalysis(
       ? `${quotedForm[1]}${quotedForm[2] ? ` ${quotedForm[2]}` : ""}`.trim()
       : text.match(/['‘’“”]([^'‘’“”]+)['‘’“”]/)?.[1]?.trim() ?? "";
     return result([
-      { trigger: triggerFor(), action: "DAMAGE", target: { zone: "BOARD", owner: "ENEMY", cardType: "WRESTLER", selection: "PLAYER_CHOICE", count: 1 }, values: { amount: numberFrom(text) } },
+      { trigger: triggerFor(), action: "DAMAGE", target: baseTargetFor(text.split(/(?:이\s*효과|이\s*피해)/)[0]!, false, options.availableTags), values: { amount: numberFrom(text) } },
       { trigger: triggerFor(), action: "TRANSFORM_SOURCE", values: { definitionRef: makeRef(name), causal: "DAMAGE_CAUSED_TARGET_RETIRE" } },
     ]);
   }

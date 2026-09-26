@@ -42,6 +42,35 @@ test("공격력과 체력 흡수 문구는 각 능력치 참조를 따로 생성
   ]);
 });
 
+test("흡수 대상 능력치를 공격력, 체력, 양쪽으로 분리한다", () => {
+  for (const [phrase, expected] of [
+    ["공격력을 흡수합니다", ["CURRENT_ATTACK"]],
+    ["체력을 흡수합니다", ["CURRENT_HEALTH"]],
+    ["흡수합니다", ["CURRENT_ATTACK", "CURRENT_HEALTH"]],
+  ] as const) {
+    const result = analyzeEffectText(`턴 시작: 선택한 아군 선수 카드를 리타이어시키고 그 카드의 ${phrase}`);
+    assert.equal(result.outcome, "supported", phrase);
+    assert.deepEqual(result.effects.map((effect) => effect.values?.referenceStat).filter(Boolean), expected);
+    assert.equal(result.effects[0]?.target?.owner, "SELF");
+  }
+});
+
+test("선택한 선수의 소속은 대상 구절로만 결정한다", () => {
+  for (const [target, owner] of [["아군 선수", "SELF"], ["상대 선수", "ENEMY"], ["선수", "ALL"]] as const) {
+    const result = analyzeEffectText(`등장: 선택한 ${target}에게 피해를 2 줍니다. 자신은 살아남습니다.`);
+    assert.equal(result.effects[0]?.target?.owner, owner, target);
+  }
+});
+
+test("이름으로 변신하는 효과는 카드 목록에서 정확한 ID를 해석한다", () => {
+  const cardCatalog = [{ id: "wolf-id", name: "늑대인간 판도라", cardType: "WRESTLER" as const, isToken: false, isChampionToken: false }];
+  const result = analyzeEffectText("등장: '늑대인간 판도라'로 변신합니다.", { cardCatalog });
+  assert.equal(result.outcome, "supported");
+  assert.equal(result.effects[0]?.action, "TRANSFORM_SOURCE");
+  assert.deepEqual(result.effects[0]?.values?.definitionRef, { id: "wolf-id" });
+  assert.equal(analyzeEffectText("등장: '없는 선수'로 변신합니다.", { cardCatalog }).outcome, "analysis_failure");
+});
+
 test("La Calavera revival preserves the graveyard filter and applies TAUNT to the revived instance", () => {
   const result = analyzeEffectText(
     "등장: 내 묘지에서 비용이 3 이하인 선수 카드 중 하나를 무작위로 부활시킵니다. 그 카드에게 도발을 부여합니다.",

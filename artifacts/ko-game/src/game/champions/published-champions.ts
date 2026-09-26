@@ -68,6 +68,7 @@ export function championRecordToDefinition(record: PublishedChampionRecord): Cha
     record.questName && record.questProgressRequired
     ? {
         id: `${record.id}-quest`, name: record.questName, description: record.questText ?? "",
+        rewardText: record.questRewardText?.trim() || undefined,
         trackedEvent: record.questCondition.event as ChampionQuest["trackedEvent"],
          ...(record.questCondition.cardType ? { cardType: record.questCondition.cardType } : {}),
          ...(record.questCondition.sourceActionType ? { sourceActionType: record.questCondition.sourceActionType } : {}),

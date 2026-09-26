@@ -39,6 +39,7 @@ export interface ChampionQuest {
   id: string;
   name: string;
   description: string;
+  rewardText?: string;
   trackedEvent: ChampionTrackedEvent;
   cardType?: ChampionQuestCardType;
   sourceActionType?: string;

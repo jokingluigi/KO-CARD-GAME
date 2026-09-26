@@ -1296,7 +1296,7 @@ export function GameStatePreview({
         !generatedPlayAnimations.length &&
         (!attackAnimation || attackImpactTriggered) && (
         presentationQueue[0].kind === "QUEST_COMPLETE"
-          ? <QuestPresentation cue={presentationQueue[0]} state={state} onComplete={handlePresentationQueueComplete} />
+          ? <QuestPresentation cue={presentationQueue[0]} state={state} viewerPlayerId={presentationPlayerId ?? me.id} onComplete={handlePresentationQueueComplete} />
           : <PresentationFeedback cue={presentationQueue[0]} onComplete={handlePresentationQueueComplete} />
       )}
     </div>
