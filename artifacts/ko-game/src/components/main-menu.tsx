@@ -8,6 +8,7 @@ import { audioManager } from "@/audio/audio-manager";
 import { BGM_MUTE_STORAGE_KEY, BGM_VOLUME_STORAGE_KEY, readStoredBgmMute, readStoredBgmVolume } from "@/audio/audio-settings";
 import { SfxVolumeControl } from "./sfx-volume-control";
 import { MatchTutorial } from "./match-tutorial";
+import { InstallAppButton } from "./install-app-button";
 
 type MainMenuProps = {
   onComingSoon?: (label: string) => void;
@@ -148,6 +149,7 @@ export function MainMenu({ onComingSoon, onDeckEdit, onAiMatch, user, onLogout }
         <header className="ko-main-menu__header text-center">
           <h1 className="ko-main-menu__logo font-display font-black text-white">KO</h1>
           <p className="ko-main-menu__tagline font-display font-bold text-neutral-500">CARD BATTLE</p>
+          <InstallAppButton />
           {user && onLogout && (
             <div className="ko-main-menu__user">
               <span>{user.nickname}</span>

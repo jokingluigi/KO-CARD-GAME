@@ -2,8 +2,11 @@ import { createRoot } from 'react-dom/client';
 
 import App from './App';
 import { ErrorBoundary } from '@/components/error-boundary';
+import { startAppInstallation } from '@/lib/install-app';
 
 import './index.css';
+
+startAppInstallation();
 
 createRoot(document.getElementById('root')!, {
   // Keeps caught errors off reportError(), which would raise the dev overlay.
