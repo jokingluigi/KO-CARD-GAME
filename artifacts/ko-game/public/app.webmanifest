@@ -1,0 +1,18 @@
+{
+  "id": "/",
+  "name": "KO CARD GAME",
+  "short_name": "KO",
+  "description": "나만의 카드 덱으로 펼치는 대결",
+  "lang": "ko",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#0a0a0a",
+  "theme_color": "#0a0a0a",
+  "categories": ["games"],
+  "icons": [
+    { "src": "/icons/ko-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "/icons/ko-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "/icons/ko-maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}
