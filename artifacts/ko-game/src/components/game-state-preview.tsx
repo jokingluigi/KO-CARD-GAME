@@ -30,6 +30,7 @@ import {
   attackDamageImpactLevel,
   attackImpactLevel,
   attackScreenShakeLevel,
+  attackAnimationDuration,
 } from './attack-animation-utils';
 import {
   AltInspectProvider,
@@ -41,6 +42,7 @@ import {
 import { PresentationFeedback, type PresentationCue } from './presentation-feedback';
 import { presentationCueDrafts, presentationEventKey } from './presentation-feedback-utils';
 import { QuestPresentation } from './quest-presentation';
+import { prefersReducedMotion } from './presentation-config';
 import { displayHealth } from './match-display-utils';
 import { getCardRuntimeRulesText, getVisibleCardKeywords } from '../lib/card-display-state';
 import { getActiveCardKeywords } from '../game/cards/granted-text';
@@ -160,7 +162,10 @@ export function GameStatePreview({
   const [cardLeaveAnimations, setCardLeaveAnimations] = React.useState<CardLeaveAnimationState[]>([]);
   const [presentationQueue, setPresentationQueue] = React.useState<PresentationCue[]>([]);
   const [screenShakeLevel, setScreenShakeLevel] = React.useState<AttackDamageImpactLevel>("NONE");
+  const [pendingEffectFinisher, setPendingEffectFinisher] = React.useState(false);
+  const [effectFinisher, setEffectFinisher] = React.useState(false);
   const screenShakeTimerRef = React.useRef<number | null>(null);
+  const effectFinisherTimerRef = React.useRef<number | null>(null);
   const processedEventCountRef = React.useRef<number | null>(null);
   const processedEventKeysRef = React.useRef(new Set<string>());
   const lastCardPositionsRef = React.useRef(new Map<string, { left: number; top: number; width: number; height: number }>());
@@ -176,7 +181,9 @@ export function GameStatePreview({
       attackAnimation ||
       generatedPlayAnimations.length ||
       cardLeaveAnimations.length ||
-      presentationQueue.length,
+      presentationQueue.length ||
+      pendingEffectFinisher ||
+      effectFinisher,
     ));
   }, [
     attackAnimation,
@@ -185,12 +192,26 @@ export function GameStatePreview({
     onPresentationBusyChange,
     playAnimation,
     presentationQueue.length,
+    pendingEffectFinisher,
+    effectFinisher,
   ]);
+
+  React.useEffect(() => {
+    if (!pendingEffectFinisher || playAnimation || generatedPlayAnimations.length || attackAnimation) return;
+    setPendingEffectFinisher(false);
+    setEffectFinisher(true);
+    if (effectFinisherTimerRef.current !== null) window.clearTimeout(effectFinisherTimerRef.current);
+    effectFinisherTimerRef.current = window.setTimeout(() => {
+      setEffectFinisher(false);
+      effectFinisherTimerRef.current = null;
+    }, prefersReducedMotion() ? 180 : 900);
+  }, [pendingEffectFinisher, playAnimation, generatedPlayAnimations.length, attackAnimation]);
 
   React.useEffect(() => () => {
     if (screenShakeTimerRef.current !== null) {
       window.clearTimeout(screenShakeTimerRef.current);
     }
+    if (effectFinisherTimerRef.current !== null) window.clearTimeout(effectFinisherTimerRef.current);
   }, []);
 
   React.useEffect(() => {
@@ -216,6 +237,8 @@ export function GameStatePreview({
         setGeneratedPlayAnimations([]);
         setCardLeaveAnimations([]);
         setPresentationQueue([]);
+        setPendingEffectFinisher(false);
+        setEffectFinisher(false);
       }
       return;
     }
@@ -228,6 +251,12 @@ export function GameStatePreview({
       .filter(({ key }) => !processedEventKeysRef.current.has(key));
     const newEvents = newEventEntries.map(({ event }) => event);
     const newEventKeys = newEventEntries.map(({ key }) => key);
+    if (state.status === "FINISHED" && state.loserId &&
+      !newEvents.some((event) => event.type === "ATTACK_DECLARED") &&
+      newEvents.some((event) => event.type === "DAMAGE_DEALT" && (event.amount ?? 0) > 0 &&
+        event.target?.type === "PLAYER" && event.target.playerId === state.loserId && event.reason !== "FATIGUE")) {
+      setPendingEffectFinisher(true);
+    }
     for (const key of eventKeys) processedEventKeysRef.current.add(key);
     processedEventCountRef.current = state.events.length;
     const previousCardStats = previousCardStatsRef.current;
@@ -652,16 +681,21 @@ export function GameStatePreview({
       </div>
 
       <div className={`ko-game-stage relative mx-auto flex min-h-[100dvh] w-full max-w-5xl flex-1 flex-col justify-between pb-0 pt-2 md:h-[100dvh] md:min-h-0 md:pt-4 ${
-        attackImpactTriggered && attackAnimation && attackAnimation.damage > 0
-          ? attackAnimation.finishingBlow
-            ? "attack-screen-shake--finisher"
-            : `attack-screen-shake--${attackScreenShakeLevel(attackAnimation.currentAttack, attackAnimation.damage).toLowerCase()}`
+        attackAnimation?.finishingBlow
+          ? "attack-finisher-zoom"
+          : effectFinisher
+            ? "effect-finisher-zoom"
+          : attackImpactTriggered && attackAnimation && attackAnimation.damage > 0
+            ? `attack-screen-shake--${attackScreenShakeLevel(attackAnimation.currentAttack, attackAnimation.damage).toLowerCase()}`
           : screenShakeLevel !== "NONE"
             ? `attack-screen-shake--${screenShakeLevel.toLowerCase()}`
             : playAnimation?.kind === "WRESTLER" && (playAnimation.impactLevel === "HEAVY" || playAnimation.impactLevel === "VERY_HEAVY")
               ? `card-landing-shake--${playAnimation.impactLevel.toLowerCase()}`
             : ""
-      }`}>
+      }`} style={attackAnimation?.finishingBlow ? {
+        "--finisher-duration": `${attackAnimationDuration(attackAnimation.currentAttack) + 170}ms`,
+        transformOrigin: `${Math.max(0, attackAnimation.geometry.target.left + attackAnimation.geometry.target.width / 2 - Math.max(0, (window.innerWidth - 1024) / 2))}px ${attackAnimation.geometry.target.top + attackAnimation.geometry.target.height / 2}px`,
+      } as React.CSSProperties : undefined}>
          
          {/* TOP BAR: Opponent Info */}
          <div className="ko-opponent-header relative z-[90] h-24 shrink-0 px-2 md:h-32 md:px-4">
@@ -1243,6 +1277,9 @@ export function GameStatePreview({
           onImpact={onAttackImpact}
           onComplete={onAttackAnimationComplete}
         />
+      )}
+      {effectFinisher && !attackAnimation && (
+        <div className="effect-finisher" aria-hidden="true"><span>K.O.!</span></div>
       )}
       {presentationQueue[0] &&
         !playAnimation &&

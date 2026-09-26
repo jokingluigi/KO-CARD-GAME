@@ -586,6 +586,8 @@ function OnlineMatchPage() {
       impactLevel: attackImpactLevel(event.sourceSnapshot?.currentAttack ?? pending.attacker.currentAttack),
       damage,
       damageImpactLevel: attackDamageImpactLevel(damage),
+      finishingBlow: pending.targetKind === "CHAMPION" && next.status === "FINISHED" &&
+        next.loserId === pending.targetPlayerId && damage > 0,
       soundKey: `self:${eventIndex}:${pending.attacker.instanceId}:${pending.target?.instanceId ?? pending.targetPlayerId}`,
     });
     pendingAttackRef.current = null;

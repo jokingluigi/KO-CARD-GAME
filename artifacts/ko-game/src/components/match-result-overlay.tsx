@@ -54,7 +54,7 @@ export function MatchResultOverlay({
       aria-modal="true"
       aria-label="매치 결과"
       data-testid="match-result-overlay"
-      className="fixed inset-0 z-[300] flex min-h-screen items-center justify-center bg-black/90 px-5 py-8 backdrop-blur-sm"
+      className="match-result-enter fixed inset-0 z-[300] flex min-h-screen items-center justify-center bg-black/90 px-5 py-8 backdrop-blur-sm"
     >
       <section className={`w-full max-w-lg rounded-2xl border p-7 text-center md:p-12 ${accentClass}`}>
         <p className="font-display text-[10px] font-bold tracking-[0.5em] text-primary md:text-xs">KO MATCH RESULT</p>

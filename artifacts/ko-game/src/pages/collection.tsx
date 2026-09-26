@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState, type KeyboardEvent } from "react";
 import { ArrowLeft, BookOpen, ChevronDown, Hammer, Search, Shield, Sparkles, Swords, X } from "lucide-react";
 import { CardRenderer } from "@/components/card-renderer";
 import { CardArtwork } from "@/components/card-artwork";
+import { CollectionActionAnimation, type CollectionActionScene } from "@/components/collection-action-animation";
 import { CardDetailDialog } from "@/components/card-detail-dialog";
 import {
   Dialog,
@@ -125,6 +126,7 @@ export default function CollectionPage() {
     | null
   >(null);
   const [isMutating, setIsMutating] = useState(false);
+  const [actionScene, setActionScene] = useState<CollectionActionScene | null>(null);
   const [loadState, setLoadState] = useState<CollectionLoadState>("loading");
   const [loadAttempt, setLoadAttempt] = useState(0);
   const [loadError, setLoadError] = useState("");
@@ -200,6 +202,7 @@ export default function CollectionPage() {
   async function executePendingAction() {
     if (!pendingAction || isMutating) return;
     const action = pendingAction;
+    let applied = false;
     setIsMutating(true);
     setMessage("");
     try {
@@ -210,6 +213,7 @@ export default function CollectionPage() {
       } else {
         await craftChampion(action.champion.id);
       }
+      applied = true;
       const nextCollection = await fetchCollection();
       setCollection(nextCollection);
       if (action.type !== "CHAMPION_CRAFT") {
@@ -220,8 +224,20 @@ export default function CollectionPage() {
       setPendingAction(null);
        setMessage(action.type === "CRAFT" ? "카드를 제작했습니다." : action.type === "DISENCHANT" ? `카드를 ${action.quantity}장 분해했습니다.` : "챔피언을 제작했습니다.");
     } catch (error) {
-      setMessage(error instanceof Error ? error.message : "프리즘 요청을 처리하지 못했습니다.");
+      setMessage(applied
+        ? `작업은 완료됐지만 컬렉션을 새로고침하지 못했습니다: ${error instanceof Error ? error.message : "다시 열어 확인해 주세요."}`
+        : error instanceof Error ? error.message : "프리즘 요청을 처리하지 못했습니다.");
     } finally {
+      if (applied) {
+        setPendingAction(null);
+        setActionScene({
+          id: Date.now(),
+          kind: action.type,
+          name: action.type === "CHAMPION_CRAFT" ? action.champion.name : action.card.name,
+          imageUrl: action.type === "CHAMPION_CRAFT" ? action.champion.imageUrl : action.card.imageUrl,
+          quantity: action.type === "DISENCHANT" ? action.quantity : undefined,
+        });
+      }
       setIsMutating(false);
     }
   }
@@ -254,7 +270,7 @@ export default function CollectionPage() {
   }
 
   return (
-    <main className="min-h-screen bg-neutral-950 px-4 py-6 text-neutral-100 sm:px-8 sm:py-8">
+    <main className="ko-page-enter min-h-screen bg-neutral-950 px-4 py-6 text-neutral-100 sm:px-8 sm:py-8">
       <div className="mx-auto max-w-6xl">
         <div className="mb-6 flex items-center justify-between gap-3">
           <button type="button" onClick={() => navigate(ROUTES.MAIN_MENU)} className="flex items-center gap-2 text-sm font-bold text-neutral-400 hover:text-white">
@@ -416,6 +432,7 @@ export default function CollectionPage() {
           )}
         </DialogContent>
       </Dialog>
+      {actionScene && <CollectionActionAnimation scene={actionScene} onComplete={() => setActionScene(null)} />}
     </main>
   );
 }

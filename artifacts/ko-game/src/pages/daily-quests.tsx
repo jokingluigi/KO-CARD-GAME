@@ -3,6 +3,7 @@ import { ArrowLeft, CheckCircle2, ListChecks } from "lucide-react";
 import { useLocation } from "wouter";
 import { fetchDailyQuests, claimDailyQuest, fetchRewardCatalogs, type DailyQuest, type RewardCatalogCard, type RewardCatalogPack } from "@/lib/rewards-client";
 import { ROUTES } from "@/lib/routes";
+import { CollectionActionAnimation, type CollectionActionScene } from "@/components/collection-action-animation";
 
 function objectiveLabel(objective: string) {
   return ({
@@ -21,6 +22,7 @@ export default function DailyQuestsPage() {
   const [loading, setLoading] = useState(true);
   const [busyId, setBusyId] = useState<string | null>(null);
   const [message, setMessage] = useState("");
+  const [rewardScene, setRewardScene] = useState<CollectionActionScene | null>(null);
   const [catalog, setCatalog] = useState<{ cards: RewardCatalogCard[]; packs: RewardCatalogPack[] }>({ cards: [], packs: [] });
 
   async function load() {
@@ -56,6 +58,13 @@ export default function DailyQuestsPage() {
       const result = await claimDailyQuest(quest.id);
       setQuests((current) => current.map((item) => item.id === quest.id ? result.assignment : item));
       setMessage(result.alreadyClaimed ? "이미 받은 보상입니다." : rewardLabel(result.assignment));
+      if (!result.alreadyClaimed) {
+        const reward = result.assignment;
+        const item = reward.rewardType === "CARD"
+          ? catalog.cards.find((card) => card.id === reward.rewardTargetId)
+          : reward.rewardType === "PACK" ? catalog.packs.find((pack) => pack.id === reward.rewardTargetId) : undefined;
+        setRewardScene({ id: Date.now(), kind: "REWARD", name: item?.name ?? (reward.rewardType === "CURRENCY" ? `${reward.rewardAmount.toLocaleString()} 크레딧` : "퀘스트 보상"), imageUrl: item?.imageUrl });
+      }
     } catch (error) {
       setMessage(error instanceof Error ? error.message : "보상을 받을 수 없습니다.");
     } finally {
@@ -91,7 +100,7 @@ export default function DailyQuestsPage() {
   }
 
   return (
-    <main className="min-h-screen bg-neutral-950 px-4 py-6 text-neutral-100 sm:px-8 sm:py-8">
+    <main className="ko-page-enter min-h-screen bg-neutral-950 px-4 py-6 text-neutral-100 sm:px-8 sm:py-8">
       <div className="mx-auto max-w-4xl">
         <button type="button" onClick={() => navigate(ROUTES.MAIN_MENU)} className="mb-6 flex items-center gap-2 text-sm font-bold text-neutral-400 hover:text-white"><ArrowLeft className="h-4 w-4" /> 메인 메뉴</button>
         <header className="mb-6 border-b border-neutral-800 pb-5">
@@ -120,6 +129,7 @@ export default function DailyQuestsPage() {
           </div>
         )}
       </div>
+      {rewardScene && <CollectionActionAnimation scene={rewardScene} onComplete={() => setRewardScene(null)} />}
     </main>
   );
 }

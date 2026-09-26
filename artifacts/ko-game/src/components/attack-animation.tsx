@@ -27,7 +27,7 @@ export function AttackAnimation({
   const { source, target } = animation.geometry;
   const duration = prefersReducedMotion()
     ? 140
-    : attackAnimationDuration(animation.currentAttack) + (animation.finishingBlow ? 240 : 0);
+    : attackAnimationDuration(animation.currentAttack) + (animation.finishingBlow ? 170 : 0);
   const impactDelay = prefersReducedMotion()
     ? 70
     : Math.round(duration * 0.56);

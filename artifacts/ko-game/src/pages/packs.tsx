@@ -176,7 +176,7 @@ export default function PacksPage() {
   }
 
   return (
-    <main className="min-h-screen bg-neutral-950 px-5 py-7 text-neutral-100 sm:px-8">
+    <main className="ko-page-enter min-h-screen bg-neutral-950 px-5 py-7 text-neutral-100 sm:px-8">
       <div className="mx-auto max-w-6xl">
         <button type="button" onClick={() => navigate(ROUTES.MAIN_MENU)} className="mb-7 flex items-center gap-2 text-sm font-bold text-neutral-400 hover:text-white"><ArrowLeft className="h-4 w-4" /> 메인 메뉴</button>
         <header className="mb-8 flex items-end justify-between border-b border-neutral-800 pb-6">

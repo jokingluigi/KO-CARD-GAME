@@ -3,6 +3,7 @@ import { ArrowLeft, Coins, Gift, ShoppingBag } from "lucide-react";
 import { fetchShop, purchaseShopListing, type ShopListing } from "@/lib/collection-client";
 import { useToast } from "@/hooks/use-toast";
 import { PackDetailDialog } from "@/components/pack-detail-dialog";
+import { CollectionActionAnimation, type CollectionActionScene } from "@/components/collection-action-animation";
 import { useLocation } from "wouter";
 import { ROUTES } from "@/lib/routes";
 
@@ -15,6 +16,7 @@ export default function ShopPage() {
   const [message, setMessage] = useState("상점을 불러오는 중...");
   const [purchasingId, setPurchasingId] = useState<string | null>(null);
   const [success, setSuccess] = useState("");
+  const [rewardScene, setRewardScene] = useState<CollectionActionScene | null>(null);
   const [selectedListing, setSelectedListing] = useState<ShopListing | null>(null);
   const { toast } = useToast();
 
@@ -54,6 +56,7 @@ export default function ShopPage() {
         ? { ...item, ownedQuantity: result.ownedQuantity }
         : item));
       setSuccess(`팩 ${result.packQuantity}개를 획득했습니다.`);
+      setRewardScene({ id: Date.now(), kind: "PACK_PURCHASE", name: listing.name || listing.pack.name, imageUrl: listing.pack.imageUrl, quantity: result.packQuantity });
       toast({ title: "구매 완료", description: `팩 ${result.packQuantity}개를 획득했습니다.` });
     } catch (error) {
       const message = error instanceof Error ? error.message : "구매에 실패했습니다.";
@@ -67,7 +70,7 @@ export default function ShopPage() {
   }
 
   return (
-    <main className="min-h-screen bg-neutral-950 px-5 py-7 text-neutral-100 sm:px-8">
+    <main className="ko-page-enter min-h-screen bg-neutral-950 px-5 py-7 text-neutral-100 sm:px-8">
       <div className="mx-auto max-w-6xl">
         <div className="mb-7 flex items-center justify-between gap-4">
            <button type="button" onClick={() => navigate(ROUTES.MAIN_MENU)} className="flex items-center gap-2 text-sm font-bold text-neutral-400 hover:text-white">
@@ -115,6 +118,7 @@ export default function ShopPage() {
         </div>
       </div>
        {selectedListing && <PackDetailDialog pack={selectedListing.pack} price={selectedListing.price} packQuantity={selectedListing.packQuantity} onClose={() => setSelectedListing(null)} />}
+       {rewardScene && <CollectionActionAnimation scene={rewardScene} onComplete={() => setRewardScene(null)} />}
     </main>
   );
 }

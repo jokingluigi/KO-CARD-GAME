@@ -5,6 +5,7 @@ import { AuthPage, AuthLoading, AuthRecovery } from "@/components/auth-page";
 import { AltInspectProvider, Inspectable } from "@/components/alt-inspector";
 import { CardRenderer } from "@/components/card-renderer";
 import { CardArtwork } from "@/components/card-artwork";
+import { CollectionActionAnimation, type CollectionActionScene } from "@/components/collection-action-animation";
 import { CardDetailDialog } from "@/components/card-detail-dialog";
 import {
   Dialog,
@@ -240,6 +241,7 @@ export default function Decks() {
   const [craftMutating, setCraftMutating] = useState(false);
   const [craftError, setCraftError] = useState("");
   const [craftNotice, setCraftNotice] = useState("");
+  const [craftScene, setCraftScene] = useState<CollectionActionScene | null>(null);
   const craftRequestGeneration = useRef(0);
   const deleteConfirmationOpenRef = useRef(false);
 
@@ -528,6 +530,7 @@ export default function Decks() {
         );
       }
       setCraftNotice(`${target.name} 카드를 제작했습니다. 덱에는 자동으로 추가되지 않았습니다.`);
+      setCraftScene({ id: Date.now(), kind: "CRAFT", name: target.name, imageUrl: target.imageUrl });
     } catch (error: unknown) {
       setCraftError(error instanceof Error ? error.message : "카드를 제작하지 못했습니다.");
     } finally {
@@ -943,7 +946,7 @@ export default function Decks() {
                             {card?.name ?? `확인할 수 없는 카드 (${id})`}
                             {problematicCardIds.has(id) && <AlertTriangle className="ml-1.5 inline-block h-3 w-3 shrink-0 text-[#e18a79]" aria-label="덱 검증 문제" />}
                           </span>
-                          <span className="ko-decks__compact-qty" data-testid={`text-card-count-${id}`}>×{count}</span>
+                          <span key={count} className="ko-decks__compact-qty" data-testid={`text-card-count-${id}`}>×{count}</span>
                         </button>
                         <button
                           type="button"
@@ -1162,6 +1165,7 @@ export default function Decks() {
           )}
         </DialogContent>
       </Dialog>
+      {craftScene && <CollectionActionAnimation scene={craftScene} onComplete={() => setCraftScene(null)} />}
       </main>
     </AltInspectProvider>
   );

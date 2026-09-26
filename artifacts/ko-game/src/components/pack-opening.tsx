@@ -40,7 +40,11 @@ function playRevealMusic(reward: PackReward) {
 export function PackOpening({ packName, rewards, packCount = 1, perPackRewards, notice, preview = false, onClose, onRepeat, onRegenerate }: PackOpeningProps) {
   const [revealed, setRevealed] = useState(-1);
   const [detailsExpanded, setDetailsExpanded] = useState(false);
+  const [specialQueue, setSpecialQueue] = useState<number[]>([]);
   const lastRewardsRef = useRef<PackReward[]>(rewards);
+  const announcedThroughRef = useRef(-1);
+  const bulkAnnouncedRef = useRef(false);
+  const rewardsResetPendingRef = useRef(false);
   const aggregatedRewards = aggregatePackRewards(rewards);
   const isBulkResult = !preview && packCount > 1;
 
@@ -50,12 +54,44 @@ export function PackOpening({ packName, rewards, packCount = 1, perPackRewards, 
       audioManager.stopPackRevealMusic();
       setRevealed(-1);
       setDetailsExpanded(false);
+      setSpecialQueue([]);
+      announcedThroughRef.current = -1;
+      bulkAnnouncedRef.current = false;
+      rewardsResetPendingRef.current = true;
     }
   }, [rewards]);
 
   useEffect(() => {
-    if (revealed >= 0) playRevealMusic(rewards[revealed]);
-  }, [revealed, rewards]);
+    if (rewardsResetPendingRef.current) {
+      rewardsResetPendingRef.current = false;
+      return;
+    }
+    if (isBulkResult && !bulkAnnouncedRef.current) {
+      const specials = rewards.flatMap((reward, index) =>
+        reward.rewardType === "CHAMPION_UNLOCK" || reward.rewardType === "LEGENDARY_CARD" ? [index] : [],
+      );
+      if (specials.length) setSpecialQueue(specials);
+      bulkAnnouncedRef.current = true;
+    }
+    if (revealed <= announcedThroughRef.current) return;
+    if (!isBulkResult) {
+      const specials = rewards.flatMap((reward, index) =>
+        index > announcedThroughRef.current && index <= revealed &&
+        (reward.rewardType === "LEGENDARY_CARD" || reward.rewardType === "CHAMPION_UNLOCK") ? [index] : [],
+      );
+      if (specials.length) setSpecialQueue((current) => [...current, ...specials]);
+    }
+    announcedThroughRef.current = revealed;
+  }, [isBulkResult, revealed, rewards]);
+
+  const specialReward = specialQueue.length ? rewards[specialQueue[0]] : undefined;
+  useEffect(() => {
+    if (!specialReward) return;
+    playRevealMusic(specialReward);
+    const timeout = window.setTimeout(() => setSpecialQueue((current) => current.slice(1)),
+      window.matchMedia?.("(prefers-reduced-motion: reduce)").matches ? 350 : 1700);
+    return () => window.clearTimeout(timeout);
+  }, [specialReward]);
 
   useEffect(() => () => {
     audioManager.stopPackRevealMusic();
@@ -185,6 +221,25 @@ export function PackOpening({ packName, rewards, packCount = 1, perPackRewards, 
           {(isBulkResult || allRevealed) && <button type="button" data-testid="button-close-pack-opening" onClick={onClose} className="flex items-center gap-2 rounded bg-primary px-6 py-3 text-sm font-black text-black"><Check className="h-4 w-4" /> {preview ? "팩 선택으로 돌아가기" : "확인"}</button>}
         </div>
       </div>
+      {specialReward && (
+        <div className={`pack-special pack-special--${specialReward.rewardType === "CHAMPION_UNLOCK" ? "champion" : "legendary"}`} role="status" aria-live="polite">
+          <div className="pack-special__rays" aria-hidden="true" />
+          <div className="pack-special__content">
+            <p className="pack-special__eyebrow">{specialReward.rewardType === "CHAMPION_UNLOCK" ? "CHAMPION UNLOCKED" : "LEGENDARY PULL"}</p>
+            <div className="pack-special__card">
+              {specialReward.rewardType === "CHAMPION_UNLOCK" ?
+                specialReward.champion?.imageUrl ? <CardArtwork src={specialReward.champion.imageUrl} alt="" className="h-full w-full" imageDisplayMode={specialReward.champion.imageDisplayMode} imageScale={specialReward.champion.imageScale} imagePositionX={specialReward.champion.imagePositionX} imagePositionY={specialReward.champion.imagePositionY} />
+                  : <Gift className="h-20 w-20" />
+                : specialReward.card ? <CardRenderer name={specialReward.card.name} cardType={specialReward.card.cardType as "WRESTLER" | "TECHNIQUE"} cost={specialReward.card.cost} attack={specialReward.card.attack} health={specialReward.card.health} rulesText={specialReward.card.text} imageUrl={specialReward.card.imageUrl} rarity="LEGENDARY" size="detail" className="h-full w-full" />
+                  : <Gift className="h-20 w-20" />}
+            </div>
+            <p className="pack-special__name">{rewardTitle(specialReward)}</p>
+            {specialReward.alreadyOwned && <p className="text-sm font-bold">중복 획득 · 프리즘으로 전환</p>}
+            <button type="button" className="pack-special__continue" onClick={() => setSpecialQueue((current) => current.slice(1))}>계속</button>
+            {specialQueue.length > 1 && <button type="button" className="text-xs font-bold underline" onClick={() => setSpecialQueue([])}>나머지 연출 건너뛰기 ({specialQueue.length - 1}개)</button>}
+          </div>
+        </div>
+      )}
     </section>
   );
 }

@@ -735,15 +735,18 @@
 .card-landing-shake--heavy { animation: ko-attack-screen-shake-light 135ms ease-out 405ms backwards; }
 .card-landing-shake--very_heavy { animation: ko-attack-screen-shake-medium 175ms ease-out 435ms backwards; }
 
-@keyframes ko-finishing-shake {
-  0%, 100% { transform: translate(0); }
-  14% { transform: translate(-10px, 3px); }
-  30% { transform: translate(9px, -3px); }
-  50% { transform: translate(-7px, 2px); }
-  72% { transform: translate(5px, -1px); }
+@keyframes ko-attack-finisher-zoom {
+  0%, 16% { transform: scale(1); }
+  49% { transform: scale(1.045); }
+  55% { transform: scale(1.085); }
+  58% { transform: translate(-5px, 2px) scale(1.09); }
+  62% { transform: translate(4px, -1px) scale(1.09); }
+  70% { transform: scale(1.065); }
+  100% { transform: scale(1); }
 }
 
-.attack-screen-shake--finisher { animation: ko-finishing-shake 350ms ease-out; }
+.attack-finisher-zoom { animation: ko-attack-finisher-zoom var(--finisher-duration, 820ms) ease-in-out both; }
+.effect-finisher-zoom { animation: ko-attack-finisher-zoom 900ms ease-in-out both; }
 
 @keyframes ko-finishing-flash {
   0%, 54% { opacity: 0; }
@@ -777,10 +780,210 @@
   animation: ko-finishing-title var(--attack-duration) ease-out both;
 }
 
+.effect-finisher {
+  position: fixed;
+  inset: 0;
+  z-index: 240;
+  display: grid;
+  place-items: center;
+  pointer-events: none;
+  background: radial-gradient(circle, rgba(255, 246, 207, .65), rgba(234, 61, 41, .24) 45%, transparent 80%);
+  animation: ko-finishing-flash 900ms linear both;
+}
+
+.effect-finisher span {
+  color: #fff2c0;
+  font-family: var(--font-display);
+  font-size: clamp(4rem, 16vw, 10rem);
+  font-weight: 1000;
+  text-shadow: 0 4px 1px #7f1d1d, 0 0 35px #ef4444;
+  animation: ko-finishing-title 900ms ease-out both;
+}
+
 @media (prefers-reduced-motion: reduce) {
   .card-landing-shake--heavy, .card-landing-shake--very_heavy,
-  .attack-screen-shake--finisher { animation: none; }
-  .attack-animation__finisher { display: none; }
+  .attack-finisher-zoom, .effect-finisher-zoom { animation: none; }
+  .attack-animation__finisher, .effect-finisher { display: none; }
+}
+
+@keyframes ko-pack-special-enter {
+  0% { opacity: 0; transform: translateY(28px) scale(.78) rotate(-5deg); }
+  52% { opacity: 1; transform: translateY(-8px) scale(1.08) rotate(2deg); }
+  75% { transform: translateY(3px) scale(.98) rotate(-1deg); }
+  100% { opacity: 1; transform: translateY(0) scale(1) rotate(0); }
+}
+
+@keyframes card-flip {
+  0% { opacity: .45; transform: rotateY(85deg) scale(.9); }
+  55% { opacity: 1; transform: rotateY(-8deg) scale(1.06); }
+  100% { opacity: 1; transform: rotateY(0deg) scale(1); }
+}
+
+@keyframes ko-pack-rays {
+  from { transform: translate(-50%, -50%) rotate(0); }
+  to { transform: translate(-50%, -50%) rotate(60deg); }
+}
+
+.pack-special {
+  position: fixed;
+  inset: 0;
+  z-index: 80;
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+  background: radial-gradient(circle, rgba(112, 71, 0, .72), rgba(9, 7, 4, .97) 70%);
+  color: #fef3c7;
+}
+
+.pack-special--champion {
+  background: radial-gradient(circle, rgba(132, 28, 43, .78), rgba(17, 5, 9, .97) 70%);
+  color: #ffe4c7;
+}
+
+.pack-special__rays {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: min(135vw, 1000px);
+  aspect-ratio: 1;
+  opacity: .34;
+  background: repeating-conic-gradient(from 0deg, transparent 0deg 16deg, rgba(255, 218, 127, .6) 17deg 24deg);
+  mask-image: radial-gradient(circle, transparent 7%, black 28%, transparent 70%);
+  animation: ko-pack-rays 16s linear infinite;
+  pointer-events: none;
+}
+
+.pack-special--champion .pack-special__rays {
+  background: repeating-conic-gradient(from 0deg, transparent 0deg 13deg, rgba(255, 91, 101, .65) 14deg 20deg, rgba(255, 222, 137, .4) 21deg 25deg);
+}
+
+.pack-special__content {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  width: min(90vw, 420px);
+  max-height: 94dvh;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: .65rem;
+  text-align: center;
+  animation: ko-pack-special-enter 650ms cubic-bezier(.2, .8, .2, 1) both;
+}
+
+.pack-special__eyebrow { font-weight: 900; letter-spacing: .22em; font-size: clamp(.8rem, 3vw, 1.2rem); }
+.pack-special__name { font-size: clamp(1.4rem, 6vw, 2.4rem); font-weight: 900; text-shadow: 0 0 25px currentColor; }
+.pack-special__card {
+  display: grid;
+  width: min(44vw, 190px);
+  aspect-ratio: 3 / 4;
+  place-items: center;
+  overflow: hidden;
+  border: 3px solid currentColor;
+  border-radius: 12px;
+  background: #18100c;
+  box-shadow: 0 0 18px currentColor, 0 0 75px currentColor;
+}
+.pack-special__continue { margin-top: .3rem; border: 1px solid currentColor; border-radius: 8px; padding: .55rem 1.7rem; font-weight: 900; }
+.pack-special__continue:hover { background: rgba(255, 255, 255, .16); }
+
+@media (prefers-reduced-motion: reduce) {
+  .pack-special__rays, .pack-special__content { animation: none; }
+  [class*="animate-[card-flip"] { animation: none; }
+}
+
+@keyframes ko-collection-craft {
+  0% { opacity: 0; transform: scale(.35) rotate(-12deg); filter: brightness(2); }
+  45% { opacity: 1; transform: scale(1.13) rotate(3deg); filter: brightness(2); }
+  65% { transform: scale(.94) rotate(-1deg); filter: brightness(1.3); }
+  100% { opacity: 1; transform: scale(1) rotate(0); filter: brightness(1); }
+}
+
+@keyframes ko-collection-disenchant {
+  0% { opacity: 1; transform: scale(1); filter: brightness(1); }
+  45% { opacity: 1; transform: scale(1.08) rotate(-4deg); filter: brightness(2); }
+  100% { opacity: 0; transform: translateY(-45px) scale(.4) rotate(8deg); filter: brightness(3); }
+}
+
+@keyframes ko-result-arrive {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+@keyframes ko-result-panel-arrive {
+  0% { opacity: 0; transform: translateY(20px) scale(.94); }
+  70% { opacity: 1; transform: translateY(-3px) scale(1.015); }
+  100% { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+@keyframes ko-deck-card-enter {
+  from { opacity: 0; transform: translateX(-14px) scale(.97); }
+  to { opacity: 1; transform: translateX(0) scale(1); }
+}
+@keyframes ko-deck-count-change {
+  0% { transform: scale(.7); color: #fff; }
+  65% { transform: scale(1.3); color: #fbbf24; }
+  100% { transform: scale(1); }
+}
+.ko-page-enter { animation: ko-result-arrive 240ms ease-out both; }
+@keyframes ko-page-enter {
+  from { opacity: 0; transform: translateY(7px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.ko-main-menu__item { animation: ko-page-enter 260ms ease-out both; }
+.ko-main-menu__item:nth-child(2n) { animation-delay: 35ms; }
+.ko-main-menu__item:nth-child(3n) { animation-delay: 70ms; }
+.ko-decks__compact-row { animation: ko-deck-card-enter 220ms ease-out both; }
+.ko-decks__compact-qty { animation: ko-deck-count-change 260ms ease-out; }
+.match-result-enter { animation: ko-result-arrive 350ms ease-out both; }
+.match-result-enter section { animation: ko-result-panel-arrive 420ms ease-out both; }
+
+.collection-action {
+  position: fixed;
+  inset: 0;
+  z-index: 120;
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+  padding: 1.5rem;
+  background: radial-gradient(circle, rgba(115, 65, 5, .7), rgba(6, 6, 9, .97) 70%);
+  color: #fde68a;
+}
+.collection-action--disenchant { background: radial-gradient(circle, rgba(6, 110, 83, .7), rgba(3, 15, 13, .97) 70%); color: #a7f3d0; }
+.collection-action--champion { background: radial-gradient(circle, rgba(135, 29, 45, .7), rgba(18, 5, 8, .97) 70%); color: #fecdd3; }
+.collection-action--reward { background: radial-gradient(circle, rgba(28, 80, 130, .72), rgba(5, 9, 23, .97) 70%); color: #bae6fd; }
+.collection-action__particles {
+  position: absolute;
+  width: min(120vw, 700px);
+  aspect-ratio: 1;
+  border: 2px solid currentColor;
+  border-radius: 50%;
+  box-shadow: 0 0 30px currentColor, inset 0 0 30px currentColor;
+  opacity: .25;
+  animation: ko-collection-craft 900ms ease-out both;
+}
+.collection-action__content { position: relative; display: flex; flex-direction: column; align-items: center; gap: .8rem; text-align: center; }
+.collection-action__label { font-weight: 900; letter-spacing: .2em; font-size: .8rem; }
+.collection-action__visual {
+  display: grid;
+  place-items: center;
+  width: min(47vw, 190px);
+  aspect-ratio: 3 / 4;
+  overflow: hidden;
+  border: 2px solid currentColor;
+  border-radius: 12px;
+  background: #101010;
+  box-shadow: 0 0 24px currentColor;
+  animation: ko-collection-craft 850ms ease-out both;
+}
+.collection-action--disenchant .collection-action__visual { animation: ko-collection-disenchant 950ms ease-in both; }
+.collection-action__content h2 { font-size: clamp(1.5rem, 6vw, 2.5rem); font-weight: 900; }
+.collection-action__content button { border: 1px solid currentColor; border-radius: 8px; padding: .6rem 1.8rem; font-weight: 900; }
+.collection-action__content button:hover { background: rgba(255, 255, 255, .14); }
+@media (prefers-reduced-motion: reduce) {
+  .collection-action__particles, .collection-action__visual { animation: none; }
+  .match-result-enter, .match-result-enter section { animation: none; }
+  .ko-decks__compact-row, .ko-decks__compact-qty { animation: none; }
+  .ko-page-enter, .ko-main-menu__item { animation: none; }
 }
 
 @keyframes ko-presentation-feedback {

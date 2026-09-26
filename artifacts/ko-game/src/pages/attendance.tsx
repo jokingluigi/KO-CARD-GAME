@@ -3,6 +3,7 @@ import { ArrowLeft, CalendarCheck2, Check } from "lucide-react";
 import { useLocation } from "wouter";
 import { claimAttendance, fetchAttendance, fetchRewardCatalogs, type AttendanceData, type RewardCatalogCard, type RewardCatalogPack } from "@/lib/rewards-client";
 import { ROUTES } from "@/lib/routes";
+import { CollectionActionAnimation, type CollectionActionScene } from "@/components/collection-action-animation";
 
 export default function AttendancePage() {
   const [, navigate] = useLocation();
@@ -10,6 +11,7 @@ export default function AttendancePage() {
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState("");
+  const [rewardScene, setRewardScene] = useState<CollectionActionScene | null>(null);
   const [catalog, setCatalog] = useState<{ cards: RewardCatalogCard[]; packs: RewardCatalogPack[] }>({ cards: [], packs: [] });
 
   async function load() {
@@ -30,6 +32,12 @@ export default function AttendancePage() {
       setData(result.attendance);
       const claimed = data?.definitions.find((day) => day.state === "AVAILABLE");
       setMessage(result.alreadyClaimed ? "오늘 출석은 이미 완료했습니다." : claimed ? rewardText(claimed) : "출석 보상을 받았습니다.");
+      if (!result.alreadyClaimed && claimed) {
+        const item = claimed.rewardType === "CARD"
+          ? catalog.cards.find((card) => card.id === claimed.rewardTargetId)
+          : claimed.rewardType === "PACK" ? catalog.packs.find((pack) => pack.id === claimed.rewardTargetId) : undefined;
+        setRewardScene({ id: Date.now(), kind: "REWARD", name: item?.name ?? (claimed.rewardType === "CURRENCY" ? `${claimed.rewardAmount.toLocaleString()} 크레딧` : "출석 보상"), imageUrl: item?.imageUrl });
+      }
     } catch (error) { setMessage(error instanceof Error ? error.message : "출석 보상을 받을 수 없습니다."); } finally { setBusy(false); }
   }
 
@@ -61,7 +69,7 @@ export default function AttendancePage() {
   }
 
   return (
-    <main className="min-h-screen bg-neutral-950 px-4 py-6 text-neutral-100 sm:px-8 sm:py-8">
+    <main className="ko-page-enter min-h-screen bg-neutral-950 px-4 py-6 text-neutral-100 sm:px-8 sm:py-8">
       <div className="mx-auto max-w-4xl">
         <button type="button" onClick={() => navigate(ROUTES.MAIN_MENU)} className="mb-6 flex items-center gap-2 text-sm font-bold text-neutral-400 hover:text-white"><ArrowLeft className="h-4 w-4" /> 메인 메뉴</button>
         <header className="mb-6 flex items-end justify-between gap-4 border-b border-neutral-800 pb-5"><div><p className="font-display text-xs font-bold tracking-[0.25em] text-primary">ATTENDANCE BOARD</p><h1 className="mt-2 text-3xl font-black">출석 보드</h1><p className="mt-2 text-sm text-neutral-500">오늘: {data?.today ?? "—"}</p></div><CalendarCheck2 className="h-9 w-9 text-amber-400" /></header>
@@ -75,6 +83,7 @@ export default function AttendancePage() {
           </>
         )}
       </div>
+      {rewardScene && <CollectionActionAnimation scene={rewardScene} onComplete={() => setRewardScene(null)} />}
     </main>
   );
 }
