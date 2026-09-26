@@ -927,6 +927,7 @@ function OnlineMatchPage() {
         playError={playError}
         turnSecondsRemaining={secondsRemaining}
         onEndTurn={() => sendAction({ type: "END_TURN" }, { allowDuringPresentation: true })}
+        onMulligan={(cardInstanceIds) => sendAction({ type: "MULLIGAN", cardInstanceIds })}
         canEndTurn={Boolean(
           isConnected &&
           introFinished &&

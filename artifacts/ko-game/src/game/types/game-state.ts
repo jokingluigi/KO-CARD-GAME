@@ -55,6 +55,7 @@ export interface PlayerState {
   maxHealth: number;
   currentGold: number;
   personalTurn: number;
+  mulliganUsed?: boolean;
   nextTurnGoldBonus: number;
   deck: CardInstance[];
   hand: CardInstance[];

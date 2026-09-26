@@ -125,3 +125,13 @@ test("action parser translates supported payloads and rejects malformed or unkno
   assert.equal(toServerAction({ type: "FUTURE_ACTION" }, "PLAYER_ONE"), null);
   assert.equal(toServerAction(null, "PLAYER_ONE"), null);
 });
+test("online mulligan accepts only unique card identifiers and binds the authenticated player", () => {
+  const valid = { type: "MULLIGAN", cardInstanceIds: ["card-a", "card-b"] };
+  assert.equal(isOnlineActionPayload(valid), true);
+  assert.deepEqual(toServerAction(valid, "PLAYER_ONE"), { ...valid, playerId: "PLAYER_ONE" });
+  for (const invalid of [
+    { type: "MULLIGAN", cardInstanceIds: ["card-a", "card-a"] },
+    { type: "MULLIGAN", cardInstanceIds: [12] },
+    { type: "MULLIGAN", cardInstanceIds: [], playerId: "PLAYER_TWO" },
+  ]) assert.equal(isOnlineActionPayload(invalid), false);
+});

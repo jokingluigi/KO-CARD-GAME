@@ -5,6 +5,7 @@ import { canUseChampionAbility, useChampionAbility } from '../engine/champion-sy
 import { playTechniqueFromHand } from '../engine/play-technique';
 import { playWrestlerFromHand } from '../engine/play-wrestler';
 import { endTurn } from '../engine/turn-system';
+import { canMulligan, mulligan } from '../engine/mulligan';
 import { processChampionQuestEvents } from '../champions/quests';
 import { cancelEffectTargeting, selectEffectTarget } from '../effects/effect-engine';
 import { surrender } from '../engine/surrender';
@@ -75,6 +76,7 @@ export function getLegalActions(state: GameState, playerId: string): GameAction[
   if (!player || !opponent) return [];
 
   const actions: GameAction[] = [];
+  if (canMulligan(state, playerId)) actions.push({ type: 'MULLIGAN', playerId, cardInstanceIds: [] });
   player.hand.forEach((card) => {
     if (card.cardType === 'WRESTLER') {
       BOARD_SLOTS.forEach((boardSlot) => {
@@ -136,6 +138,8 @@ export function executeAction(state: GameState, action: GameAction): ActionResul
       return useChampionAbility(state, action.playerId);
     case 'ATTACK':
       return attack(state, action.playerId, action.attackerInstanceId, action.target);
+    case 'MULLIGAN':
+      return mulligan(state, action.playerId, action.cardInstanceIds);
     case 'END_TURN':
       return endTurn(state, action.playerId);
     case 'SURRENDER':

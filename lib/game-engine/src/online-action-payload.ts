@@ -17,6 +17,7 @@ export type OnlineActionPayload =
         | { type: "USE_CHAMPION_ABILITY" };
     }
   | { type: "CONFIRM_PRECOMMIT_TARGET"; targetId: string }
+  | { type: "MULLIGAN"; cardInstanceIds: string[] }
   | { type: "END_TURN" }
   | { type: "SURRENDER" };
 
@@ -58,6 +59,10 @@ export function isOnlineActionPayload(value: unknown): value is OnlineActionPayl
   if (!isRecord(value) || typeof value.type !== "string") return false;
 
   switch (value.type) {
+    case "MULLIGAN":
+      return hasExactKeys(value, ["type", "cardInstanceIds"]) && Array.isArray(value.cardInstanceIds) &&
+        value.cardInstanceIds.length <= 30 && value.cardInstanceIds.every(isNonEmptyString) &&
+        new Set(value.cardInstanceIds).size === value.cardInstanceIds.length;
     case "PLAY_WRESTLER":
       return hasExactKeys(value, ["type", "cardInstanceId", "boardSlot"]) &&
         isNonEmptyString(value.cardInstanceId) &&

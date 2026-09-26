@@ -134,6 +134,8 @@ export function evaluateAction(state: GameState, action: GameAction, playerId: s
     if ((opponent && opponent.health <= 0) || opponent?.champion?.health === 0) bonus += 100;
   } else if (action.type === 'SELECT_EFFECT_TARGET') {
     bonus += Math.max(0, targetValue(state, action.targetId, playerId));
+  } else if (action.type === 'MULLIGAN') {
+    bonus += 1;
   } else if (action.type === 'END_TURN') {
     bonus -= 2;
   }

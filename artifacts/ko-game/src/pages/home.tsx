@@ -787,6 +787,17 @@ export default function Home() {
     return () => window.clearInterval(intervalId);
   }, [turnKey, gameState.status, gameplayReady]);
 
+  function handleMulligan(cardInstanceIds: string[]) {
+    const current = latestGameStateRef.current;
+    const action: GameAction = { type: 'MULLIGAN', playerId: current.players[0].id, cardInstanceIds };
+    const result = executeAction(current, action);
+    if (!result.success) { setPlayError(result.message); return; }
+    if (isAiMatch) recordHumanAIMatchAction(action);
+    setGameState(result.state);
+    setSelectedCardId(null);
+    setPlayError(null);
+  }
+
   function handleEndTurn(isTimeout = false) {
     const currentState = latestGameStateRef.current;
     if (!gameplayReady || currentState.status !== 'IN_PROGRESS') return;
@@ -1393,6 +1404,8 @@ export default function Home() {
       playError={playError}
       turnSecondsRemaining={turnSecondsRemaining}
       onEndTurn={handleEndTurn}
+      onMulligan={handleMulligan}
+      guidedTutorial={isAiMatch}
       canEndTurn={Boolean(
         gameplayReady &&
         gameState.activePlayerId === gameState.players[0].id &&

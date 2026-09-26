@@ -1236,7 +1236,8 @@ export async function applyMatchAction(
     const actionToValidate: GameAction = action.type === "BEGIN_TARGETED_ACTION"
       ? { ...action.action, playerId }
       : action;
-    const legal = legalActions.some((candidate) => structurallyEqual(candidate, actionToValidate));
+    const legal = legalActions.some((candidate) => action.type === "MULLIGAN"
+      ? candidate.type === "MULLIGAN" : structurallyEqual(candidate, actionToValidate));
     if (!legal) {
       const code = rejectedActionCode(action, runtime.state, legalActions, playerId);
       return {

@@ -10,6 +10,8 @@ export function toServerAction(
   const action: OnlineActionPayload = payload;
 
   switch (action.type) {
+    case "MULLIGAN":
+      return { type: action.type, playerId, cardInstanceIds: action.cardInstanceIds };
     case "PLAY_WRESTLER":
       return typeof action.cardInstanceId === "string" &&
         (action.boardSlot === 0 || action.boardSlot === 1 || action.boardSlot === 2 || action.boardSlot === 3)

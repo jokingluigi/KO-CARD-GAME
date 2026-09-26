@@ -41,6 +41,7 @@ import {
 } from './alt-inspector';
 import { PresentationFeedback, type PresentationCue } from './presentation-feedback';
 import { presentationCueDrafts, presentationEventKey } from './presentation-feedback-utils';
+import { canMulligan } from '../game/engine/mulligan';
 import { QuestPresentation } from './quest-presentation';
 import { MatchTutorial } from './match-tutorial';
 import { prefersReducedMotion } from './presentation-config';
@@ -56,6 +57,8 @@ interface GameStatePreviewProps {
   playError: string | null;
   turnSecondsRemaining: number;
   onEndTurn: () => void;
+  onMulligan?: (cardInstanceIds: string[]) => void;
+  guidedTutorial?: boolean;
   canEndTurn?: boolean;
   bgmMuted: boolean;
   onBgmMutedChange: (muted: boolean) => void;
@@ -98,6 +101,8 @@ export function GameStatePreview({
   playError,
   turnSecondsRemaining,
   onEndTurn,
+  onMulligan,
+  guidedTutorial = false,
   canEndTurn: canEndTurnOverride,
   bgmMuted,
   onBgmMutedChange,
@@ -134,6 +139,12 @@ export function GameStatePreview({
   const [openGraveyardPlayerId, setOpenGraveyardPlayerId] = React.useState<string | null>(null);
   const [settingsOpen, setSettingsOpen] = React.useState(false);
   const [tutorialStep, setTutorialStep] = React.useState<number | null>(null);
+  const [mulliganSelection, setMulliganSelection] = React.useState<string[]>([]);
+  const [mulliganOpen, setMulliganOpen] = React.useState(true);
+  const [coachStage, setCoachStage] = React.useState(0);
+  const [coachDismissed, setCoachDismissed] = React.useState(() => {
+    try { return localStorage.getItem("ko-match-coach-v1") === "done"; } catch { return false; }
+  });
   const [surrenderConfirming, setSurrenderConfirming] = React.useState(false);
   const [attackHint, setAttackHint] = React.useState<string | null>(null);
   React.useEffect(() => {
@@ -154,6 +165,13 @@ export function GameStatePreview({
     };
   }, [tutorialStep, openGraveyardPlayerId, settingsOpen, state.targetingState?.active, selectedCardId, selectedAttackerId,
     onCancelEffectTargeting, onSelectCard, onSelectAttacker]);
+  React.useEffect(() => {
+    if (!guidedTutorial || coachDismissed) return;
+    if (coachStage === 0 && state.events.some((event) => event.type === 'CARD_PLAYED' && event.playerId === state.players[0]?.id)) setCoachStage(1);
+    if (coachStage === 1 && state.events.some((event) => event.type === 'ATTACK_DECLARED' && event.playerId === state.players[0]?.id)) setCoachStage(2);
+    if (coachStage === 2 && state.events.some((event) => event.type === 'TURN_ENDED' && event.playerId === state.players[0]?.id)) setCoachStage(3);
+    if (coachStage === 3 && state.events.some((event) => event.type === 'CHAMPION_QUEST_PROGRESS' && event.playerId === state.players[0]?.id)) setCoachStage(4);
+  }, [state.events, state.players, guidedTutorial, coachDismissed, coachStage]);
   const handCardRefs = React.useRef(new Map<string, HTMLDivElement>());
   const boardSlotRefs = React.useRef(new Map<number, HTMLDivElement>());
   const opponentBoardSlotRefs = React.useRef(new Map<number, HTMLDivElement>());
@@ -441,6 +459,9 @@ export function GameStatePreview({
     }
     const cues = presentationCueDrafts(newEvents, 0, newEventKeys, presentationPlayerId).map((draft) => ({
       ...draft,
+      label: draft.kind === "QUEST_PROGRESS"
+        ? state.players.find((player) => player.id === draft.playerId)?.champion?.quest?.description ?? draft.label
+        : draft.label,
       ...cuePosition(draft),
     }));
     const hasDamageEvent = newEvents.some((event) =>
@@ -1138,6 +1159,43 @@ export function GameStatePreview({
              </>
            )}
 
+          {onMulligan && mulliganOpen && canMulligan(state, state.players[0].id) && (
+            <div className="fixed inset-0 z-[205] flex items-center justify-center bg-black/85 p-4" role="dialog" aria-label="시작 손패 교체">
+              <div className="max-h-[90vh] w-full max-w-xl overflow-y-auto rounded-xl border border-amber-500 bg-neutral-950 p-5 text-white shadow-2xl">
+                <h2 className="text-lg font-black text-amber-300">시작 손패 교체</h2>
+                <p className="my-3 text-sm text-neutral-300">첫 턴 행동 전, 바꿀 카드를 선택하세요. 선택한 카드만 덱의 카드와 교체합니다.</p>
+                <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
+                  {state.players[0].hand.map((card) => <button key={card.instanceId} type="button"
+                    aria-pressed={mulliganSelection.includes(card.instanceId)}
+                    onClick={() => setMulliganSelection((current) => current.includes(card.instanceId)
+                      ? current.filter((id) => id !== card.instanceId) : [...current, card.instanceId])}
+                    className={`rounded border p-3 text-left text-sm ${mulliganSelection.includes(card.instanceId) ? 'border-amber-300 bg-amber-900' : 'border-neutral-600 bg-neutral-800'}`}>
+                    {getCardDefinition(card.definitionId)?.name ?? card.definitionId} {mulliganSelection.includes(card.instanceId) ? '✓' : ''}
+                  </button>)}
+                </div>
+                <div className="mt-4 flex justify-end gap-2">
+                  <button type="button" onClick={() => { setMulliganOpen(false); onMulligan([]); }} className="rounded border border-neutral-500 px-4 py-2">그대로 시작</button>
+                  <button type="button" disabled={mulliganSelection.length > state.players[0].deck.length}
+                    onClick={() => { setMulliganOpen(false); onMulligan(mulliganSelection); }} className="rounded bg-amber-400 px-4 py-2 font-bold text-black disabled:opacity-40">{mulliganSelection.length}장 교체</button>
+                </div>
+              </div>
+            </div>
+          )}
+          {guidedTutorial && !coachDismissed && state.status === 'IN_PROGRESS' && !mulliganOpen && (
+            <div className="fixed left-1/2 top-3 z-[140] w-[min(94vw,480px)] -translate-x-1/2 rounded-lg border border-sky-400 bg-slate-950/95 p-3 text-sm text-white shadow-xl" role="status">
+              <div className="flex items-start justify-between gap-3"><strong className="text-sky-300">실전 튜토리얼</strong>
+                <button type="button" onClick={() => { setCoachDismissed(true); try { localStorage.setItem('ko-match-coach-v1', 'done'); } catch {} }} className="text-xs text-neutral-300">닫기</button></div>
+              <p className="mt-1">{coachStage === 4 ? '퀘스트가 진행됐어요! 화면의 퀘스트 표시를 눌러 조건과 보상을 확인해 보세요.'
+                : state.activePlayerId !== state.players[0].id ? '상대의 턴입니다. 다음 턴을 기다려 주세요.'
+                : selectedCardId ? '빈 필드 구역을 눌러 선택한 선수를 소환하세요.'
+                : selectedAttackerId ? '상대 선수나 챔피언을 눌러 공격하세요.'
+                : state.players[0].board.some((card) => card && !card.enteredThisTurn && card.attacksUsedThisTurn === 0)
+                  ? '필드의 내 선수를 눌러 공격 대상을 지정해 보세요.'
+                  : state.players[0].hand.some((card) => card.cardType === 'WRESTLER' && card.currentCost <= state.players[0].currentGold)
+                    ? '손패에서 비용을 낼 수 있는 선수를 눌러 보세요.'
+                    : '지금은 턴 종료를 눌러 다음 턴으로 넘어가세요.'}</p>
+            </div>
+          )}
           {tutorialStep !== null && (
             <MatchTutorial step={tutorialStep} onStepChange={setTutorialStep} onClose={() => setTutorialStep(null)} />
           )}
@@ -1215,6 +1273,9 @@ export function GameStatePreview({
                  <Inspectable content={<ChampionQuestInspectContent champion={me.champion} />}>
                   <div tabIndex={0} className={`rounded border border-purple-900 bg-purple-950/70 px-2 py-1 text-[8px] font-bold text-purple-200 md:text-[10px] ${activePresentationCue?.kind === "QUEST_PROGRESS" || activePresentationCue?.kind === "QUEST_COMPLETE" ? "presentation-card-pulse" : ""}`}>
                      퀘스트 {me.champion.questCompleted ? '완료' : `${me.champion.questProgress}/${me.champion.quest.requiredProgress}`}
+                     {activePresentationCue?.kind === 'QUEST_PROGRESS' && activePresentationCue.playerId === me.id && (
+                       <span className="mt-1 block max-w-40 text-[9px] leading-tight text-purple-100">{activePresentationCue.label} +{activePresentationCue.value}</span>
+                     )}
                    </div>
                  </Inspectable>
                )}

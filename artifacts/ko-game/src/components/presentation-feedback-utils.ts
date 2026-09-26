@@ -137,7 +137,7 @@ export function presentationCueDrafts(
           label: "QUEST",
           value: event.amount,
           ...target,
-          duration: 360,
+          duration: 1500,
         });
         break;
       case "CHAMPION_QUEST_COMPLETED":

@@ -14,6 +14,7 @@ export type GameAction =
       type: 'PLAY_TECHNIQUE'; cardInstanceId: string;
     } | { type: 'USE_ACTIVE'; cardInstanceId: string } | { type: 'USE_CHAMPION_ABILITY' } }
   | { type: 'CONFIRM_PRECOMMIT_TARGET'; playerId: string; targetId: string }
+  | { type: 'MULLIGAN'; playerId: string; cardInstanceIds: string[] }
   | { type: 'END_TURN'; playerId: string }
   | { type: 'SURRENDER'; playerId: string };
 
