@@ -18,7 +18,8 @@ import {
 import { CardRenderer } from "./card-renderer";
 import { AdminAudioField } from "./admin-audio-field";
 import { AdminUnifiedEffectPrompt } from "./admin-unified-effect-prompt";
-import { effectConfigEntryCount } from "@/lib/admin-effect-config";
+import { AdminEffectAiGenerator } from "./admin-effect-ai-generator";
+import { effectConfigEntryCount, mergeGeneratedEffectDraft } from "@/lib/admin-effect-config";
 import { useToast } from "../hooks/use-toast";
 import {
   CARD_RARITY_LABELS,
@@ -673,6 +674,36 @@ export function AdminCardManager({
     setMessage("분석 결과를 적용했습니다. 카드 저장을 눌러 DRAFT에 저장하세요.");
   }
 
+  function applyAiDraft(
+    draft: {
+      effectId: "STRUCTURED_EFFECTS_V1" | "SCRIPT_V1";
+      effects: unknown[];
+      scripts: unknown[];
+      effectConfig: { effects?: unknown[]; scripts?: unknown[] };
+      keywords: string[];
+    },
+    mode: "replace" | "append",
+  ) {
+  const merged = mergeGeneratedEffectDraft(
+    form.getValues("effectId"),
+    form.getValues("effectConfig"),
+    draft,
+    mode,
+  );
+  form.setValue("effectId", merged.effectId, { shouldDirty: true });
+  form.setValue("effectConfig", JSON.stringify(merged.effectConfig, null, 2), { shouldDirty: true });
+    if (draft.keywords.length) {
+      form.setValue("keywords", [...new Set([
+        ...form.getValues("keywords"),
+        ...draft.keywords.filter((keyword): keyword is CardKeyword => KEYWORDS.includes(keyword as CardKeyword)),
+      ])], { shouldDirty: true });
+    }
+     setMessage(mode === "append"
+       ? "컴파일된 게임 규칙을 기존 효과 뒤에 추가했습니다. 카드 저장을 눌러 DRAFT에 저장하세요."
+       : "컴파일된 게임 규칙을 현재 효과에 적용했습니다. 카드 저장을 눌러 DRAFT에 저장하세요.");
+    setError("");
+  }
+
   async function reanalyzeMechanicCompletion() {
     setError(""); setIsCompleting(true);
     try {
@@ -1255,7 +1286,15 @@ export function AdminCardManager({
                      <details className="mt-2"><summary>고급 JSON 보기</summary><pre className="mt-1 overflow-auto text-[10px]">{JSON.stringify(analysis.effects, null, 2)}</pre></details>
                    </div>}
                  </div>
-                 <p className="md:col-span-2 text-xs text-neutral-400">새로운 카드 효과 구현은 카드 이름, 효과 문구와 발동 조건을 대화로 전달해 주세요.</p>
+                 <AdminEffectAiGenerator
+                   defaultText={preview.text}
+                   sourceType="CARD"
+                   sourceId={editingCard?.id}
+                   cardType={preview.cardType}
+                   existingEffectCount={effectConfigEntryCount(preview.effectConfig)}
+                   onApply={(draft, mode) => applyAiDraft(draft, mode)}
+                   onUnauthorized={onUnauthorized}
+                 />
                <fieldset className="space-y-2 md:col-span-2"><legend className="text-xs font-bold text-neutral-400">키워드</legend><div className="flex flex-wrap gap-2">{KEYWORDS.map((keyword) => <label key={keyword} className="flex items-center gap-2 rounded border border-neutral-800 bg-neutral-900 px-3 py-2 text-xs"><input type="checkbox" value={keyword} {...form.register("keywords")} data-testid={`input-keyword-${keyword}`} />{KEYWORD_LABELS[keyword]}</label>)}</div></fieldset>
                 <fieldset className="space-y-2 md:col-span-2">
                   <legend className="text-xs font-bold text-neutral-400">태그</legend>

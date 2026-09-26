@@ -56,8 +56,12 @@ import {
   validateMechanicCompletion,
 } from "../lib/mechanic-completion-service";
 import {
+  EffectAiError,
+  generateEffectDraft,
+  repairRuntimeRejectedDraft,
   type EffectAiContext,
 } from "../lib/admin-effect-ai";
+import { dryRunCardEffect } from "../lib/effect-dry-run";
 import { createMechanismImplementationPrompt } from "../lib/mechanism-implementation-prompt";
 import { auditCardEffect } from "../lib/card-effect-audit";
 import { getAuthenticatedUser } from "../lib/auth";
@@ -1391,6 +1395,105 @@ router.post("/effects/implementation-prompt", async (request, response): Promise
   } catch (error) {
     request.log.error({ error }, "Mechanism implementation prompt generation failed");
     response.status(500).json({ message: "구현 프롬프트를 생성하지 못했습니다." });
+  }
+});
+
+router.post("/effects/generate", async (request, response): Promise<void> => {
+  if (!requireAdmin(request, response)) return;
+  const body = request.body && typeof request.body === "object"
+    ? request.body as Record<string, unknown>
+    : {};
+  const text = typeof body.text === "string" ? body.text.trim() : "";
+  const sourceType = body.sourceType === "CHAMPION" ? "CHAMPION" : body.sourceType === "CARD" ? "CARD" : null;
+  const effectContext = typeof body.effectContext === "string" &&
+    ["CHAMPION_ABILITY", "QUEST_REWARD", "UPGRADED_CHAMPION_ABILITY"].includes(body.effectContext)
+    ? body.effectContext as EffectAiContext["effectContext"]
+    : undefined;
+  const cardType = body.cardType === "TECHNIQUE" ? "TECHNIQUE" : body.cardType === "WRESTLER" ? "WRESTLER" : undefined;
+   const sourceId = typeof body.sourceId === "string" && body.sourceId.trim()
+     ? body.sourceId.trim()
+     : undefined;
+  if (!text || text.length > 2000 || !sourceType ||
+      (sourceType === "CHAMPION" && !effectContext) ||
+       (sourceType === "CARD" && effectContext) ||
+       (body.sourceId !== undefined && !sourceId)) {
+    response.status(400).json({ message: "AI 효과 생성 입력값을 확인해 주세요." });
+    return;
+  }
+  const requestId = randomUUID();
+  try {
+    const context = await trustedEffectContext(sourceType, sourceId, cardType, effectContext);
+    if (!context) {
+      response.status(400).json({ message: "현재 편집 중인 CardDefinition/ChampionDefinition을 확인해 주세요." });
+      return;
+    }
+    const trustedContext = { ...context, availableTags: await availableCardTags() };
+    const catalog = await cardReferenceCatalog();
+    let result = await generateEffectDraft(
+      text,
+      trustedContext,
+      catalog,
+      {
+        requestId,
+        onDiagnostic: (diagnostic) => request.log.info(diagnostic, "AI effect compiler schema diagnostic"),
+      },
+    );
+    if (result.status === "NEEDS_CLARIFICATION") {
+      response.status(409).json(result);
+      return;
+    }
+    let dryRun = dryRunCardEffect(result);
+    const failure = dryRun.find((run) => run.status === "ERROR");
+    if (failure) {
+      result = await repairRuntimeRejectedDraft(text, result, failure.note, trustedContext, catalog);
+      if (result.status === "NEEDS_CLARIFICATION") {
+        response.status(409).json(result);
+        return;
+      }
+      dryRun = dryRunCardEffect(result);
+    }
+    if (dryRun.some((run) => run.status === "ERROR")) {
+      response.status(422).json({ message: "생성된 효과가 기본 경기 실행에 실패했습니다. 저장하지 않았습니다.", requestId });
+      return;
+    }
+    response.json({
+      ...result,
+      structuredEffect: result.effectConfig,
+      dryRun,
+    });
+  } catch (error) {
+    if (error instanceof EffectAiError) {
+      const status = error.code === "NOT_CONFIGURED" ? 503
+        : error.code === "INVALID_DRAFT" || error.code === "MALFORMED_RESPONSE" ? 422
+          : 502;
+      const path = error.message.match(/(?:analysis|draft|clarification|effects|scripts|keywords)(?:\[\d+\])?/u)?.[0];
+      const schema = /analysis\./u.test(error.message) ? "provider-analysis" : "executable-dsl";
+      request.log.warn({
+        requestId,
+        code: error.code,
+        schema,
+        ...(path ? { path } : {}),
+      }, "AI effect draft rejected");
+      response.status(status).json({
+        message: error.code === "INVALID_DRAFT" || error.code === "MALFORMED_RESPONSE"
+          ? `AI가 만든 효과 형식이 검증을 통과하지 못했습니다: ${error.message.slice(0, 180)}`
+          : error.message,
+        code: error.code,
+        requestId,
+        developerDetail: {
+          requestId,
+          schema,
+          ...(path ? { path } : {}),
+          reason: error.code,
+        },
+      });
+      return;
+    }
+    request.log.warn({ requestId }, "AI effect generation failed");
+    response.status(502).json({
+      message: "AI 효과 생성 요청을 처리하지 못했습니다.",
+      requestId,
+    });
   }
 });
 

@@ -39,6 +39,18 @@ test("효과 제작기는 저장 전 등장 3연타 스크립트를 경기에서
   assert.deepEqual(dryRunCardEffect(result).map((run) => [run.status, run.enemyHealthDelta]), [["EXECUTED", 3]]);
 });
 
+test("효과 제작기는 주문을 손에서 사용해 피해 효과를 시험한다", () => {
+  const result = validateGeneratedEffectDraft({
+    status: "READY", effectId: "STRUCTURED_EFFECTS_V1", effects: [{
+      trigger: "ACTIVE", action: "DAMAGE",
+      target: { zone: "PLAYER", owner: "ENEMY", selection: "SELF", count: 1 },
+      values: { amount: 2 },
+    }],
+  }, { sourceType: "CARD", cardType: "TECHNIQUE" }, []);
+  assert.equal(result.status, "READY");
+  assert.deepEqual(dryRunCardEffect(result).map((run) => [run.status, run.enemyHealthDelta]), [["EXECUTED", 2]]);
+});
+
 test("시험 카드 목록으로 재귀 소환을 실행할 위험이 있는 효과는 별도 경기 시험으로 안내한다", () => {
   const result = dryRunCardEffect(draft([{ trigger: "ENTER_FIELD", action: "SUMMON",
     target: { zone: "BOARD", owner: "SELF", selection: "RANDOM", count: 1 },

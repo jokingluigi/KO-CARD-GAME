@@ -1,6 +1,7 @@
 import {
   abilitiesFor,
   createInitialGameState,
+  executeAction,
   endTurn,
   enterField,
   generateCardInstance,
@@ -50,18 +51,26 @@ export function dryRunCardEffect(draft: EffectAiDraft): EffectDryRun[] {
   };
 
   return triggers.map((trigger) => {
-    if (definition.cardType !== "WRESTLER" && trigger !== "GAME_START") return {
+    if (definition.cardType !== "WRESTLER" && trigger !== "GAME_START" && trigger !== "ACTIVE" && trigger !== "ENTER_FIELD") return {
       trigger, status: "NOT_SIMULATED" as const, eventTypes: [], enemyHealthDelta: 0,
-      note: "기술 카드 사용 시나리오는 시험 대상이 아닙니다.",
+      note: "이 기술 카드 발동 조건은 기본 시험 경기에서 재현되지 않습니다.",
     };
-    if (!["GAME_START", "TURN_START", "TURN_END", "ENTER_FIELD"].includes(trigger)) return {
+    if (!["GAME_START", "TURN_START", "TURN_END", "ENTER_FIELD", "ACTIVE"].includes(trigger)) return {
       trigger, status: "NOT_SIMULATED" as const, eventTypes: [], enemyHealthDelta: 0,
       note: "이 발동 조건은 기본 시험 경기에서 재현되지 않습니다.",
     };
     try {
       const before = initial();
       let after: GameState;
-      if (trigger === "GAME_START") {
+      if (definition.cardType === "TECHNIQUE" && (trigger === "ACTIVE" || trigger === "ENTER_FIELD")) {
+        const started = startGame(before, () => 0.5);
+        const player = started.players[0]!;
+        player.hand.push(source);
+        player.currentGold = Math.max(player.currentGold, source.currentCost);
+        const played = executeAction(started, { type: "PLAY_TECHNIQUE", playerId: "player-1", cardInstanceId: source.instanceId });
+        if (!played.success) throw new Error(played.message);
+        after = played.state;
+      } else if (trigger === "GAME_START") {
         before.players[0]!.deck[0] = source;
         after = startGame(before, () => 0.5);
       } else if (trigger === "TURN_START") {
@@ -85,10 +94,10 @@ export function dryRunCardEffect(draft: EffectAiDraft): EffectDryRun[] {
           ? "대상 선택이 필요해 자동 시험은 여기까지 실행했습니다."
           : "기본 경기 시나리오에서 발동했습니다. 카드와 대상 조건에 따라 결과가 달라질 수 있습니다.",
       };
-    } catch {
+    } catch (error) {
       return {
         trigger, status: "ERROR" as const, eventTypes: [], enemyHealthDelta: 0,
-        note: "기본 경기에서 실행 중 오류가 발생했습니다. 효과와 대상 조건을 확인해 주세요.",
+        note: `기본 경기 실행 실패: ${error instanceof Error ? error.message.slice(0, 180) : "원인을 확인하지 못했습니다."}`,
       };
     }
   });

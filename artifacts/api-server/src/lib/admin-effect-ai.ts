@@ -1309,3 +1309,30 @@ export async function generateEffectDraft(
     semanticPlan: buildEffectSemanticPlan(text, context, validated, catalog),
   };
 }
+
+/** Recompile an engine-rejected draft once with the exact runtime error. */
+export async function repairRuntimeRejectedDraft(
+  text: string,
+  previous: EffectAiDraft,
+  runtimeError: string,
+  context: EffectAiContext,
+  catalog: readonly CardReferenceCandidate[],
+): Promise<EffectAiResult> {
+  const normalization = normalizeEffectLanguage(text);
+  const raw = await callProvider(text, normalization, context, catalog, {
+    previous: {
+      status: "READY",
+      effectId: previous.effectId,
+      ...(previous.effectId === "SCRIPT_V1" ? { scripts: previous.scripts } : { effects: previous.effects }),
+      keywords: previous.keywords,
+    },
+    error: `기본 경기 엔진 실행 실패: ${runtimeError.slice(0, 300)}. 같은 효과 의미를 보존하고 실행 가능한 규칙으로 다시 작성하세요.`,
+  });
+  const repaired = canonicalizeGeneratedEffectDraft(raw, context, catalog);
+  if (repaired.status !== "READY") return repaired;
+  return {
+    ...repaired,
+    normalization,
+    semanticPlan: buildEffectSemanticPlan(text, context, repaired, catalog),
+  };
+}

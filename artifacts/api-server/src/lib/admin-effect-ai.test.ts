@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 
-import { EffectAiError, buildMechanicPlan, generateEffectDraft, validateGeneratedEffectDraft } from "./admin-effect-ai";
+import { EffectAiError, buildMechanicPlan, generateEffectDraft, repairRuntimeRejectedDraft, validateGeneratedEffectDraft } from "./admin-effect-ai";
 import { generateCard } from "../../../ko-game/src/game/cards/generation";
 import { createInitialGameState } from "../../../ko-game/src/game/engine/create-initial-game-state";
 import { enterField } from "../../../ko-game/src/game/engine/enter-field";
@@ -11,6 +11,43 @@ const catalog = [
   { id: "card-2", name: "불꽃", cardType: "WRESTLER" as const, isToken: false, isChampionToken: false },
   { id: "token-1", name: "작은 토큰", cardType: "WRESTLER" as const, isToken: true, isChampionToken: false },
 ];
+
+test("경기 실행 오류를 OpenAI에 전달해 효과를 다시 컴파일한다", async () => {
+  const originalKey = process.env.OPENAI_API_KEY;
+  const originalIntegratedKey = process.env.AI_INTEGRATIONS_OPENAI_API_KEY;
+  const originalFetch = globalThis.fetch;
+  process.env.OPENAI_API_KEY = "test-provider-key";
+  delete process.env.AI_INTEGRATIONS_OPENAI_API_KEY;
+  let correction = "";
+  globalThis.fetch = async (_url, init) => {
+    const request = JSON.parse(String(init?.body)) as { messages: Array<{ content: string }> };
+    correction = request.messages[1]!.content;
+    return new Response(JSON.stringify({ choices: [{ message: { content: JSON.stringify({
+      status: "READY", effectId: "STRUCTURED_EFFECTS_V1", effects: [{
+        trigger: "ENTER_FIELD", action: "DAMAGE",
+        target: { zone: "PLAYER", owner: "ENEMY", selection: "SELF", count: 1 },
+        values: { amount: 2 },
+      }], keywords: [],
+    }) } }] }), { status: 200 });
+  };
+  try {
+    const previous = validateGeneratedEffectDraft({ status: "READY", effects: [{
+      trigger: "ENTER_FIELD", action: "DRAW", values: { amount: 1 },
+    }] }, { sourceType: "CARD", cardType: "WRESTLER" }, []);
+    assert.equal(previous.status, "READY");
+    const repaired = await repairRuntimeRejectedDraft("등장: 적 챔피언에게 2 피해", previous,
+      "기본 경기에서 대상 오류", { sourceType: "CARD", cardType: "WRESTLER" }, []);
+    assert.equal(repaired.status, "READY");
+    assert.match(correction, /대상 오류/);
+    if (repaired.status === "READY") assert.equal(repaired.effects[0]?.action, "DAMAGE");
+  } finally {
+    globalThis.fetch = originalFetch;
+    if (originalKey === undefined) delete process.env.OPENAI_API_KEY;
+    else process.env.OPENAI_API_KEY = originalKey;
+    if (originalIntegratedKey === undefined) delete process.env.AI_INTEGRATIONS_OPENAI_API_KEY;
+    else process.env.AI_INTEGRATIONS_OPENAI_API_KEY = originalIntegratedKey;
+  }
+});
 
 test("AI 고정 카드 참조는 catalog ID로 canonicalize한다", () => {
   const result = validateGeneratedEffectDraft({
