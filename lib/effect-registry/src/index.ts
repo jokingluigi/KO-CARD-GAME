@@ -227,6 +227,8 @@ export type StructuredEffectValues = {
   attackReference?: DynamicValue;
   healthReference?: DynamicValue;
   temporaryCost?: boolean;
+  /** A deck-top destruction removes the card instead of milling to the graveyard. */
+  destroyInstead?: boolean;
   conditionalBuff?: { healthEquals: number; attack: number; health: number };
   minimum?: number;
   generatedModifiers?: { cost?: number; attack?: number; health?: number; copySourceStats?: boolean; copyTargetStats?: boolean };

@@ -1,5 +1,6 @@
 import { useEffect, useState, type CSSProperties, type KeyboardEvent, type ReactNode, type Ref } from "react";
 import { CardArtwork } from "./card-artwork";
+import { KEYWORD_DESCRIPTIONS } from './alt-inspector-utils';
 import {
   getVisibleCardKeywords,
   getVisibleCardRulesText,
@@ -190,6 +191,7 @@ export function CardRenderer({
     isSilenced,
     dodgeCharges,
   );
+  const [keywordExplanation, setKeywordExplanation] = useState<string | null>(null);
   const displayRulesText = getVisibleCardRulesText(
     rulesText,
     visibleRuntimeKeywords,
@@ -263,10 +265,10 @@ export function CardRenderer({
           : "text-[6px] leading-tight md:text-[8px]";
   const statClass =
     size === "admin"
-      ? "text-base"
+      ? "text-lg"
       : size === "detail"
-        ? "text-xs"
-        : "text-[9px] md:text-xs";
+        ? "text-sm"
+        : "text-[11px] md:text-sm";
   const style: CSSProperties = {
     aspectRatio: "1060 / 1484",
   };
@@ -369,10 +371,19 @@ export function CardRenderer({
             }}
           >
             <span className={`line-clamp-6 w-full font-bold drop-shadow-[0_1px_2px_rgba(0,0,0,0.95)] ${rulesClass}`}>
-              {displayRulesText || "효과 없음"}
+              {(displayRulesText || "효과 없음").split(/(러쉬|기습|도발|회피)/g).map((part, index) => {
+                const key = ({ 러쉬: 'RUSH', 기습: 'SURPRISE', 도발: 'TAUNT', 회피: 'DODGE' } as Record<string, string>)[part];
+                return key ? <span key={index} className="pointer-events-auto cursor-help text-amber-200 underline decoration-dotted"
+                  onContextMenu={(event) => { event.preventDefault(); event.stopPropagation(); setKeywordExplanation(`${part}: ${KEYWORD_DESCRIPTIONS[key]}`); }}
+                  onClick={(event) => { event.stopPropagation(); setKeywordExplanation(`${part}: ${KEYWORD_DESCRIPTIONS[key]}`); }}>{part}</span>
+                  : <span key={index}>{part}</span>;
+              })}
             </span>
           </div>
         )}
+
+        {keywordExplanation && <button type="button" className="absolute bottom-[18%] left-[7%] right-[7%] z-50 rounded border border-amber-400 bg-neutral-950/95 p-1 text-center text-[clamp(9px,1vw,12px)] leading-tight text-white shadow-lg"
+          onClick={(event) => { event.stopPropagation(); setKeywordExplanation(null); }} aria-label="키워드 설명 닫기">{keywordExplanation} ×</button>}
 
         {showStats && normalizedCardType === "WRESTLER" && (
           <>
@@ -384,7 +395,7 @@ export function CardRenderer({
                 width: `${scaleSize(frameLayout.attack.size, frameScale)}%`,
               }}
             >
-              <span className={statClass}>{attack}</span>
+            <span key={`attack-${attack}`} className={`${statClass} ko-stat-pop text-amber-300`}>{attack}</span>
             </div>
             <div
               className="pointer-events-none absolute z-20 flex aspect-square -translate-x-1/2 -translate-y-1/2 items-center justify-center font-display font-black text-white drop-shadow-[0_1px_2px_rgba(0,0,0,0.95)]"
@@ -394,7 +405,7 @@ export function CardRenderer({
                 width: `${scaleSize(frameLayout.health.size, frameScale)}%`,
               }}
             >
-              <span className={statClass}>{health}</span>
+              <span key={`health-${health}`} className={`${statClass} ko-stat-pop text-red-400`}>{health}</span>
             </div>
           </>
         )}
@@ -402,13 +413,13 @@ export function CardRenderer({
         {keywordBadges.length > 0 && (
              <div
             data-testid="card-keyword-badges"
-             className="pointer-events-none absolute bottom-[10.5%] left-[5%] right-[5%] z-30 flex flex-wrap justify-center gap-1.5"
+             className="pointer-events-none absolute right-[5%] top-[15%] z-30 flex max-w-[52%] flex-wrap justify-end gap-0.5"
             aria-label={`키워드 ${keywordBadges.map((keyword) => keywordLabels[keyword] ?? keyword).join(", ")}`}
           >
             {keywordBadges.map((keyword) => (
               <span
                 key={keyword}
-                 className={`max-w-full rounded-md border px-2 py-1.5 text-[clamp(0.78rem,1.15vw,1rem)] font-extrabold leading-tight shadow-lg ${
+                 className={`max-w-full rounded border px-0.5 py-0.5 text-[clamp(0.45rem,0.7vw,0.65rem)] font-extrabold leading-none shadow-lg ${
                   keyword === "TAUNT" ? "border-cyan-200 bg-cyan-950/90 text-cyan-100" :
                   keyword === "RUSH" ? "border-amber-200 bg-amber-950/90 text-amber-100" :
                   keyword === "SURPRISE" ? "border-fuchsia-200 bg-fuchsia-950/90 text-fuchsia-100" :

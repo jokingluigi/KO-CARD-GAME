@@ -192,6 +192,8 @@ export async function fetchAiTestCardDefinitions(): Promise<CardDefinition[]> {
 }
 
 export function cardRecordToDefinition(card: PublishedCardRecord): CardDefinition {
+  const zombieAbsorption = /필드에\s*있는\s*['‘]?좀비['’]?\s*중[^.!?]*가장\s*수치의\s*합/.test(card.text) &&
+    /좀비['’]?가\s*없다면[^.!?]*2\s*\/\s*2/.test(card.text);
   // Older published snapshots stored only an entrance-time attack gain for a
   // card that says it absorbs every wrestler it personally removes. Upgrade
   // the stale configuration by its rule wording, independent of card identity.
@@ -209,7 +211,11 @@ export function cardRecordToDefinition(card: PublishedCardRecord): CardDefinitio
     listener,
     ...configuredEffects.filter((effect) => !(effect.action === 'ADD_AGGREGATED_ATTACK' &&
       (effect.values as { aggregateStats?: { source?: string } } | undefined)?.aggregateStats?.source === 'LAST_DESTROYED_TARGETS')),
-  ] } : card.effectConfig;
+  ] } : /덱[^.!?]{0,35}(?:맨\s*위[^.!?]{0,20})?파괴/.test(card.text) && configuredEffects.some((effect) => effect.action === 'MILL')
+    ? { ...card.effectConfig, effects: configuredEffects.map((effect) => effect.action === 'MILL'
+      ? { ...effect, values: { ...(effect.values as Record<string, unknown> | undefined), destroyInstead: true } }
+      : effect) }
+    : card.effectConfig;
   return {
       id: card.id,
       name: card.name,
@@ -234,7 +240,21 @@ export function cardRecordToDefinition(card: PublishedCardRecord): CardDefinitio
       isChampionToken: card.isChampionToken,
       keywords: card.keywords,
        tags: Array.isArray(card.tags) ? [...card.tags] : [],
-      abilities: abilitiesFor(card.effectId, runtimeConfig),
+      abilities: (zombieAbsorption && configuredEffects.length === 0
+        ? [{ trigger: 'ENTER_FIELD' as const, effects: [{ type: 'STRUCTURED' as const,
+            action: 'COPY_BEST_STATS' as const,
+            target: { zone: 'BOARD' as const, owner: 'SELF' as const, cardType: 'WRESTLER' as const,
+              selection: 'ALL' as const, count: 4, filter: { definitionRef: { name: '좀비' }, excludeSource: true } },
+            values: { definitionRef: { name: '좀비' }, attack: 2, health: 2 },
+          }] }]
+        : abilitiesFor(card.effectId, runtimeConfig)).map((ability) =>
+        // Older saved configs omitted the source-zone condition even when the
+        // published rules explicitly say the card works from the hand.
+        /(?:손패|손)에\s*(?:있을|있는)\s*때/.test(card.text) &&
+        ability.trigger !== 'ENTER_FIELD' && ability.trigger !== 'ACTIVE' &&
+        !('condition' in ability && ability.condition)
+          ? { ...ability, condition: { type: 'SOURCE_IN_HAND' as const } }
+          : ability),
       status: card.status,
       version: card.version,
       effectId: card.effectId,

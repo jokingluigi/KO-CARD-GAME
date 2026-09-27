@@ -212,7 +212,8 @@ test('QA2 draw, mill, generated card and cost changes match zones and events', (
   const keep = card('로드', 'qa2-mill-keep');
   millState.players[0].deck = [top, keep];
   const arcanaResult = enterAndChoose(millState, card('아르카나 조커', 'qa2-arcana'), 0);
-  assert.equal(arcanaResult.players[0].graveyard.at(-1)?.instanceId, top.instanceId);
+  assert.equal(arcanaResult.players[0].graveyard.some((item) => item.instanceId === top.instanceId), false);
+  assert.equal(arcanaResult.events.some((event) => event.type === 'CARD_REMOVED' && event.cardInstanceId === top.instanceId), true);
   const generated = arcanaResult.players[0].deck[0];
   assert.ok(generated?.isGenerated);
   assert.equal(generated?.currentCost, Math.max(1, generated.baseCost! - 1));

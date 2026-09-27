@@ -2,6 +2,36 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import { championRecordToDefinition } from "./published-champions";
 
+test('필드 소환 능력은 손패 생성 설정을 필드 소환으로 정규화한다', () => {
+  const definition = championRecordToDefinition({
+    id: 'calavera', name: '챔피언 라 칼라베라', description: '', imageAssetId: null, imageUrl: null,
+    maxHealth: 25, abilityName: '좀비 생성', abilityCost: 2,
+    abilityText: "1/1 '좀비'를 필드에 생성합니다.",
+    abilityEffects: { effects: [{ action: 'GENERATE', values: { destination: 'HAND', definitionRef: { name: '좀비' } } }] },
+    hasQuest: false, questName: null, questText: null, questCondition: null, questProgressRequired: null,
+    questRewardText: null, questRewardEffects: null, upgradedAbilityName: null, upgradedAbilityCost: null,
+    upgradedAbilityText: null, upgradedAbilityEffects: null, championTokenDefinitionId: null,
+    status: 'DRAFT', version: 1,
+  });
+  assert.equal(definition.ability.effects[0]?.type === 'STRUCTURED' && definition.ability.effects[0].action, 'SUMMON');
+});
+
+test('판도라 퀘스트는 다른 카드의 리타이어를 고유 능력 킬로 세지 않는다', () => {
+  const definition = championRecordToDefinition({
+    id: 'pandora', name: '챔피언 판도라', description: '', imageAssetId: null, imageUrl: null,
+    maxHealth: 25, abilityName: '불안한 일격', abilityCost: 2, abilityText: '', abilityEffects: { effects: [] },
+    hasQuest: true, questName: '폭주의 조짐',
+    questText: '자신의 고유 능력으로 선수 카드를 5번 리타이어 시킵니다.',
+    questCondition: { event: 'CARD_RETIRED', required: 5 }, questProgressRequired: 5,
+    questRewardText: '', questRewardEffects: null, upgradedAbilityName: null, upgradedAbilityCost: null,
+    upgradedAbilityText: null, upgradedAbilityEffects: null, championTokenDefinitionId: null,
+    status: 'PUBLISHED', version: 1,
+  });
+  assert.equal(definition.quest?.sourceActionType, 'USE_CHAMPION_ABILITY');
+  assert.equal(definition.quest?.cardType, 'WRESTLER');
+  assert.equal(definition.quest?.trackedEvent, 'CARD_RETIRED');
+});
+
 test("DB 챔피언을 직렬화 가능한 매치 스냅샷 정의로 변환한다", () => {
   const definition = championRecordToDefinition({
     id: "champion-a", name: "챔피언 A", description: "설명", imageAssetId: null,

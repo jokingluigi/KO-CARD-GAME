@@ -185,6 +185,14 @@ class AudioManager {
     this.playAttack(url, volume);
   }
 
+  /** One-shot layer that does not cut off the ongoing finishing blow. */
+  playImpactOverlay(url: string, volume: number) {
+    if (!hasBrowserAudio() || !url) return;
+    const audio = new Audio(url);
+    audio.volume = safeVolume(volume * this.sfxVolume / 100);
+    void audio.play().catch(() => undefined);
+  }
+
   stopAttack() {
     if (!this.attackAudio) return;
     this.attackAudio.pause();

@@ -2331,6 +2331,27 @@ export function applyEffect(
         (right.currentAttack + right.currentHealth) - (left.currentAttack + left.currentHealth) ||
         left.instanceId.localeCompare(right.instanceId),
       )[0];
+      if (!best && effect.values?.definitionRef) {
+        const owner = state.players.find((player) => player.id === playerId);
+        const slot = owner?.board.findIndex((card) => card === null) ?? -1;
+        const zombieDefinition = resolveCardDefinition(state, undefined, effect.values.definitionRef, true);
+        if (!owner || slot < 0 || !zombieDefinition || zombieDefinition.cardType !== 'WRESTLER') return state;
+        const generated = generateCard(zombieDefinition, {
+          instanceId: `${sourceCard.instanceId}:fallback:${state.events.length}`,
+          playerId, source: { type: 'CARD', cardInstanceId: sourceCard.instanceId },
+          reason: 'SUMMON', isGenerated: true,
+          sourceDefinitionId: sourceCard.definitionId, creationEventIndex: state.events.length,
+        });
+        const attack = effect.values.attack ?? generated.card.currentAttack;
+        const health = effect.values.health ?? generated.card.currentHealth;
+        const summoned = enterField({ ...state, events: [...state.events, generated.event] }, playerId,
+          { ...generated.card, currentAttack: attack, baseAttack: attack, currentHealth: health, baseHealth: health, maxHealth: health },
+          slot as 0 | 1 | 2 | 3, { type: 'CARD', cardInstanceId: sourceCard.instanceId }, undefined, 'SUMMON');
+        return applyEffect(summoned, playerId, sourceCard, {
+          type: 'STRUCTURED', action: 'BUFF', target: { zone: 'BOARD', owner: 'SELF', selection: 'SELF', count: 1 },
+          values: { attack, health },
+        }, undefined, triggerContext);
+      }
       return best
         ? applyEffect(state, playerId, sourceCard, {
             type: 'STRUCTURED',
@@ -2433,13 +2454,22 @@ export function applyEffect(
       return setLastTargetIds(revivedState, revivedIds);
     }
     if (effect.action === 'MILL') {
+      const removed = effect.values?.destroyInstead
+        ? candidatePlayer.deck.filter((card) => ids.has(card.instanceId))
+        : [];
       return {
         ...state,
         players: state.players.map((player) => player.id !== targetOwner ? player : {
           ...player,
           deck: player.deck.filter((card) => !ids.has(card.instanceId)),
-           graveyard: [...player.graveyard, ...player.deck.filter((card) => ids.has(card.instanceId)).map(resetCardForGraveyard)],
+           graveyard: effect.values?.destroyInstead ? player.graveyard
+             : [...player.graveyard, ...player.deck.filter((card) => ids.has(card.instanceId)).map(resetCardForGraveyard)],
         }),
+        events: [...state.events, ...removed.map((card) => ({
+          type: 'CARD_REMOVED' as const, playerId: targetOwner, cardInstanceId: card.instanceId,
+          source: { type: 'CARD' as const, cardInstanceId: sourceCard.instanceId },
+          target: { type: 'CARD' as const, cardInstanceId: card.instanceId }, reason: 'DECK_DESTROY',
+        }))],
       };
     }
     if (effect.action === 'MOVE_TO_HAND') {

@@ -214,6 +214,67 @@ test('authoritative 매드 펌킨은 같은 CardInstance를 손패로 되돌리�
   assert.equal(returnedCard?.instanceId, ally.instanceId);
   assert.equal(returnedCard?.currentCost, 4);
   assert.equal(returnedCard?.temporaryCostUntilTurn, state.turn);
+  const ended = endTurn(returned, 'player-1');
+  assert.equal(ended.success, true);
+  assert.equal(ended.state.players[0].hand.find((item) => item.instanceId === ally.instanceId)?.currentCost, 5);
+  assert.equal(ended.state.players[0].hand.find((item) => item.instanceId === ally.instanceId)?.temporaryCostUntilTurn, undefined);
+});
+
+test('씨 몬스터는 손패 조건이 문구에 있으면 아군 리타이어에 반응한다', () => {
+  const seaDefinition = definition('씨 몬스터', savedConfigs['씨 몬스터']!, {
+    text: '손패에 있을 때 아군 선수가 리타이어할 때마다 비용이 -1G 씩 감소한다. (최소 비용 1G)', cost: 10,
+  });
+  assert.equal(seaDefinition.abilities[0]?.condition?.type, 'SOURCE_IN_HAND');
+  const sea = { ...card(seaDefinition, 'sea-in-hand'), currentCost: 4 };
+  const victim = { ...card(definition('아군', { effects: [] }), 'sea-ally'), boardSlot: 0 as const, currentHealth: 1 };
+  const enemy = { ...card(definition('적군', { effects: [] }), 'sea-enemy'), boardSlot: 0 as const, currentAttack: 2 };
+  const state = stateWithPool([seaDefinition]);
+  state.activePlayerId = 'player-2';
+  state.players[0].hand = [sea];
+  state.players[0].board[0] = victim;
+  state.players[1].board[0] = enemy;
+  const result = attack(state, 'player-2', enemy.instanceId, { type: 'WRESTLER', playerId: 'player-1', cardInstanceId: victim.instanceId });
+  assert.equal(result.success, true);
+  assert.equal(result.state.players[0].hand[0]?.currentCost, 3);
+});
+
+test('설정이 누락된 좀비 흡수 카드는 가장 강한 좀비를 흡수하고 없으면 2/2 좀비를 소환한다', () => {
+  const zombie = definition('좀비', { effects: [] }, { attack: 0, health: 0, tags: [] });
+  const absorber = definition('좀비 플래티넘구슬 마스터', { effects: [] }, {
+    attack: 3, health: 3,
+    text: "등장:필드에 있는 '좀비' 중 가장 수치의 합이 높은 '좀비'의 체력과 공격력을 자신에게 더합니다. '좀비'가 없다면 2/2 '좀비'를 생성하고 그 '좀비'의 체력과 공격력을 자신에게 더합니다.",
+  });
+  const state = stateWithPool([zombie, absorber]);
+  const summoned = enterField(state, 'player-1', card(absorber, 'absorber-empty'), 0);
+  assert.equal(summoned.players[0].board[0]?.currentAttack, 5);
+  assert.equal(summoned.players[0].board[0]?.currentHealth, 5);
+  assert.equal(summoned.players[0].board[1]?.currentAttack, 2);
+  const stronger = { ...card(zombie, 'zombie-strong'), boardSlot: 1 as const, currentAttack: 6, currentHealth: 4, maxHealth: 4 };
+  const withZombie = stateWithPool([zombie, absorber]);
+  withZombie.players[0].board[1] = stronger;
+  const copied = enterField(withZombie, 'player-1', card(absorber, 'absorber-copy'), 0);
+  assert.equal(copied.players[0].board[0]?.currentAttack, 9);
+  assert.equal(copied.players[0].board[0]?.currentHealth, 7);
+  assert.equal(copied.players[0].board.filter(Boolean).length, 2);
+});
+
+test('아르카나 조커가 파괴한 덱 맨 위 카드는 묘지에 가지 않고 다음 턴에는 한 장만 뽑는다', () => {
+  const arcana = definition('아르카나 조커', savedConfigs['아르카나 조커']!, {
+    text: '등장:내 덱 맨 위에 있는 카드를 파괴하고 무작위 카드를 덱 맨 위에 추가합니다.',
+  });
+  const filler = definition('일반 선수', { effects: [] });
+  const state = stateWithPool([arcana, filler]);
+  state.players[0].deck = [card(filler, 'destroyed-top'), card(filler, 'remaining')];
+  state.players[1].deck = [card(filler, 'opponent-draw')];
+  const entered = enterField(state, 'player-1', card(arcana, 'arcana-played'), 0);
+  assert.equal(entered.players[0].graveyard.some((item) => item.instanceId === 'destroyed-top'), false);
+  assert.equal(entered.players[0].deck.some((item) => item.instanceId === 'destroyed-top'), false);
+  assert.equal(entered.events.some((event) => event.type === 'CARD_REMOVED' && event.cardInstanceId === 'destroyed-top'), true);
+  const opponentTurn = endTurn(entered, 'player-1');
+  assert.equal(opponentTurn.success, true);
+  const nextTurn = endTurn(opponentTurn.state, 'player-2');
+  assert.equal(nextTurn.success, true);
+  assert.equal(nextTurn.state.events.filter((event) => event.type === 'CARD_DRAWN' && event.playerId === 'player-1').length, 1);
 });
 
 test('과거 판도라 토큰 설정은 대상 파괴와 이후 퇴장 공격력 흡수를 함께 실행한다', () => {

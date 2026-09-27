@@ -27,6 +27,7 @@ export function MatchResultOverlay({
   useEffect(() => {
     if (!lethal) return;
     audioManager.playAttack('/sfx/combat-finisher.wav?v=1', 92);
+    audioManager.playImpactOverlay('/sfx/champion-glass-shatter.wav?v=1', 95);
     const timeout = window.setTimeout(() => setCinematic(false), 1650);
     return () => window.clearTimeout(timeout);
   }, [lethal]);

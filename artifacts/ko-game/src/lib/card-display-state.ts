@@ -26,6 +26,9 @@ export function getVisibleCardRulesText(
   visibleKeywords: CardKeyword[],
 ): string {
   const normalized = normalizeCardRulesText(rulesText);
+  const keywordNames = visibleKeywords
+    .map((keyword) => KEYWORD_RULE_LABELS[keyword])
+    .filter((label): label is string => Boolean(label));
   const keywordOnlyParts = normalized
     .split(/\s*[,，]\s*/)
     .map((part) => part.trim())
@@ -49,8 +52,9 @@ export function getVisibleCardRulesText(
       .filter((part) => visibleLabels.has(part))
       .join(", ");
   }
-
-  return normalized;
+  const missing = [...new Set(keywordNames)].filter((label) =>
+    !new RegExp(`(^|[^가-힣])${label}(?=$|[^가-힣])`).test(normalized));
+  return [missing.join(", "), normalized].filter(Boolean).join("\n");
 }
 
 export function getCardRuntimeRulesText(

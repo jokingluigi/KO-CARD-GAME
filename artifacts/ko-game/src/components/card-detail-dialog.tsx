@@ -1,5 +1,6 @@
 import { useEffect, useState, type ReactNode } from "react";
 import { CardRenderer } from "@/components/card-renderer";
+import { FullCardArtwork } from "@/components/full-card-artwork";
 import { CardTagExplorerDialog } from "@/components/card-tag-explorer-dialog";
 import {
   Dialog,
@@ -76,6 +77,7 @@ export function CardDetailDialog({
               </DialogDescription>
             </DialogHeader>
             <div className="grid gap-5 sm:grid-cols-[minmax(220px,320px)_1fr] sm:items-start">
+              <FullCardArtwork name={card.name} imageUrl={card.imageUrl}>
               <CardRenderer
                 name={card.name}
                 cardType={card.cardType as "WRESTLER" | "TECHNIQUE"}
@@ -94,6 +96,7 @@ export function CardDetailDialog({
                 size="detail"
                 className="mx-auto w-full max-w-[320px]"
               />
+              </FullCardArtwork>
               <div className="space-y-4 rounded-lg border border-neutral-800 bg-black/30 p-4 text-sm">
                 <div className="grid grid-cols-2 gap-3">
                   <DetailStat label="비용" value={String(card.cost)} />

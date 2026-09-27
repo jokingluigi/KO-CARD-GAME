@@ -51,10 +51,15 @@ function effects(config: Structured | null, tokenId?: string | null): ChampionEf
 
 function ability(id: string, name: string, cost: number, description: string, config: Structured | null,
   tokenId?: string | null): ChampionAbility {
-  return { id, name, cost, description, effects: effects(config, tokenId) };
+  const ontoField = /(?:필드에|필드로)[^.!?]{0,35}(?:생성|소환|전개)/.test(description);
+  return { id, name, cost, description, effects: effects(config, tokenId).map((effect) =>
+    ontoField && effect.type === 'STRUCTURED' && effect.action === 'GENERATE'
+      ? { ...effect, action: 'SUMMON' as const }
+      : effect) };
 }
 
 export function championRecordToDefinition(record: PublishedChampionRecord): ChampionDefinition {
+  const abilityRetireQuest = /(?:자신의|본인의)\s*고유\s*능력으로[^.!?]{0,55}(?:선수|카드)[^.!?]{0,25}리타이어/.test(record.questText ?? '');
   const maxHealth = Number.isInteger(record.maxHealth) && record.maxHealth >= 1
     ? record.maxHealth
     : 20;
@@ -70,9 +75,9 @@ export function championRecordToDefinition(record: PublishedChampionRecord): Cha
     ? {
         id: `${record.id}-quest`, name: record.questName, description: record.questText ?? "",
         rewardText: record.questRewardText?.trim() || undefined,
-        trackedEvent: record.questCondition.event as ChampionQuest["trackedEvent"],
-         ...(record.questCondition.cardType ? { cardType: record.questCondition.cardType } : {}),
-         ...(record.questCondition.sourceActionType ? { sourceActionType: record.questCondition.sourceActionType } : {}),
+        trackedEvent: abilityRetireQuest ? 'CARD_RETIRED' : record.questCondition.event as ChampionQuest["trackedEvent"],
+         ...(abilityRetireQuest ? { cardType: 'WRESTLER' as const } : record.questCondition.cardType ? { cardType: record.questCondition.cardType } : {}),
+         ...(abilityRetireQuest ? { sourceActionType: 'USE_CHAMPION_ABILITY' } : record.questCondition.sourceActionType ? { sourceActionType: record.questCondition.sourceActionType } : {}),
          ...(record.questCondition.progress ? { progressPerEvent: record.questCondition.progress } : {}),
         requiredProgress: record.questProgressRequired,
          reward: directTokenReward

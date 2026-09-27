@@ -68,7 +68,8 @@ export function CardLeaveAnimation({
       aria-hidden="true"
       className={`card-leave-animation card-leave-animation--${animation.kind.toLowerCase()}`}
       style={style}
-      onAnimationEnd={() => {
+      onAnimationEnd={(event) => {
+        if (event.target !== event.currentTarget) return;
         if (completedRef.current) return;
         completedRef.current = true;
         onCompleteRef.current();

@@ -687,7 +687,9 @@ function OnlineMatchPage() {
       if (!pendingActionInFlightRef.current) requestMatchResync();
       return;
     }
-    sendAction(effectTargetAction(targeting.phase, targetId));
+    // An entrance animation may still be playing while the authoritative
+    // target picker is already open. Never discard the player's tap silently.
+    sendAction(effectTargetAction(targeting.phase, targetId), { allowDuringPresentation: true });
   }
 
   function handleUseChampionAbility() {

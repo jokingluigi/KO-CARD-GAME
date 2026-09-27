@@ -14,6 +14,7 @@ import {
   type ChampionState,
 } from '@/game';
 import { CardRenderer } from './card-renderer';
+import { FullArtworkProvider, FullCardArtwork } from './full-card-artwork';
 import { championQuestRewardText } from './champion-quest-reward-text';
 import { CardTagExplorerDialog } from './card-tag-explorer-dialog';
 import { CardDetailDialog, type CardDetailRecord } from './card-detail-dialog';
@@ -172,6 +173,7 @@ export function AltInspectProvider({ children }: { children: ReactNode }) {
 
   return (
     <AltInspectContext.Provider value={value}>
+      <FullArtworkProvider>
       <div
         className="contents"
         onWheelCapture={(event) => {
@@ -194,6 +196,7 @@ export function AltInspectProvider({ children }: { children: ReactNode }) {
           aria-label="상세정보"
           className="ko-touch-inspector pointer-events-none fixed z-[200] w-[min(720px,calc(100vw-24px))] rounded-lg border border-neutral-600 bg-neutral-950/95 p-5 text-neutral-100 shadow-2xl backdrop-blur-md"
           ref={panelRef}
+          onMouseLeave={clear}
           style={{
             left: panelPosition.left,
             top: panelPosition.top,
@@ -232,6 +235,7 @@ export function AltInspectProvider({ children }: { children: ReactNode }) {
           }}
         />
       )}
+      </FullArtworkProvider>
     </AltInspectContext.Provider>
   );
 }
@@ -250,6 +254,7 @@ export function Inspectable({
   className?: string;
 }) {
   const context = useContext(AltInspectContext);
+  const lastTouchInspectAt = useRef(0);
   if (!context) return <>{children}</>;
 
   const inspect = (element: HTMLElement) =>
@@ -273,7 +278,11 @@ export function Inspectable({
     <div
       className={className}
       onMouseEnter={(event) => inspect(event.currentTarget)}
-      onMouseLeave={context.clear}
+      onMouseLeave={(event) => {
+        const next = event.relatedTarget;
+        if (next instanceof Element && next.closest('[aria-label="상세정보"]')) return;
+        context.clear();
+      }}
       onFocus={(event) => inspect(event.currentTarget)}
       onBlur={context.clear}
       onPointerUp={(event) => {
@@ -282,11 +291,13 @@ export function Inspectable({
           context.clear();
           return;
         }
+        lastTouchInspectAt.current = Date.now();
         toggleTouch(event.currentTarget);
       }}
       onClickCapture={(event) => {
-        // Programmatic click from the gamepad's X button has no pointer-up event.
-        if (event.detail === 0 && (event.target as Element).closest('[data-touch-inspect-trigger]')) {
+        // Desktop clicks and gamepad buttons have no touch pointer event.
+        if (Date.now() - lastTouchInspectAt.current > 450 &&
+            (event.target as Element).closest('[data-touch-inspect-trigger]')) {
           toggleTouch(event.currentTarget);
         }
       }}
@@ -310,6 +321,7 @@ export function CardInspectContent({ card }: { card: CardInstance }) {
           {definition?.name ?? '알 수 없는 카드'}
         </h3>
       </div>
+      <FullCardArtwork name={definition?.name ?? '카드'} imageUrl={definition?.imageUrl}>
       <CardRenderer
         name={definition?.name ?? '알 수 없는 카드'}
         cardType={card.cardType}
@@ -330,6 +342,7 @@ export function CardInspectContent({ card }: { card: CardInstance }) {
          dodgeCharges={card.dodgeCharges ?? (card.dodgeAvailable ? 1 : 0)}
          isChampionToken={card.isChampionToken}
       />
+      </FullCardArtwork>
       <div className="grid grid-cols-3 gap-2">
         <InspectorStat label="비용" value={card.currentCost} />
         <InspectorStat label="공격력" value={card.currentAttack} />

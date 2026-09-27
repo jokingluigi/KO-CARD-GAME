@@ -2477,3 +2477,59 @@
 @keyframes ko-portrait-shatter { 0% { transform: scale(1.1); filter: brightness(1); } 38% { transform: scale(1.2); filter: brightness(2); } 55% { transform: scale(1.3) rotate(-3deg); filter: brightness(2.5); } 100% { transform: scale(1.9) rotate(8deg); filter: brightness(.15); opacity: 0; clip-path: polygon(0 0, 42% 0, 30% 37%, 0 58%, 0 100%, 52% 100%, 71% 56%, 100% 64%, 100% 0); } }
 @keyframes ko-cracks { 0%, 30% { opacity: 0; } 45%, 75% { opacity: 1; } 100% { opacity: 0; } }
 @media (prefers-reduced-motion: reduce) { .champion-spoken-line, .legendary-entrance__focus, .legendary-entrance__ring, .legendary-entrance__title, .champion-defeat-cinematic__portrait, .champion-defeat-cinematic__fracture, .champion-defeat-cinematic__ko { animation-duration: .01ms; } }
+
+/* Card information is reachable by a small corner button on pointer and touch screens. */
+.ko-hand-inspect-button, .ko-board-inspect-button {
+  display: flex;
+  position: absolute;
+  top: 2px;
+  right: 2px;
+  z-index: 160;
+  width: 19px;
+  height: 19px;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid #fbbf24;
+  border-radius: 50%;
+  background: #0a0a0ae8;
+  color: #fde68a;
+  font-size: 11px;
+  line-height: 1;
+}
+@keyframes ko-stat-pop { from { transform: scale(1.65); filter: brightness(2.5); } to { transform: scale(1); filter: brightness(1); } }
+.ko-stat-pop { display: inline-block; animation: ko-stat-pop 300ms ease-out both; }
+.ko-draw-flight {
+  position: fixed;
+  left: 0;
+  top: 0;
+  z-index: 180;
+  width: 52px;
+  height: 72px;
+  pointer-events: none;
+  border: 2px solid #d3a74c;
+  border-radius: 7px;
+  background: repeating-linear-gradient(45deg, #121a32, #121a32 7px, #34437a 8px, #34437a 10px);
+  box-shadow: 0 2px 19px #fbbf2499, inset 0 0 10px #d4af3780;
+  animation: ko-draw-flight 520ms cubic-bezier(.2,.66,.24,1) both;
+}
+.ko-draw-flight--opponent { border-color: #d17c7c; box-shadow: 0 2px 15px #dc262655; }
+.ko-destroy-burst {
+  position: fixed;
+  z-index: 230;
+  pointer-events: none;
+  background: radial-gradient(circle, #fff 0%, #ffcc79 14%, #ca3e28a8 35%, transparent 73%);
+  animation: ko-destroy-burst 480ms ease-out both;
+}
+@keyframes ko-destroy-burst {
+  from { opacity: 1; transform: scale(.4) rotate(-12deg); filter: brightness(2); }
+  to { opacity: 0; transform: scale(1.7) rotate(20deg); filter: brightness(.5); }
+}
+@keyframes ko-draw-flight {
+  from { opacity: 0; transform: translate(calc(var(--draw-from-x) - 50%), calc(var(--draw-from-y) - 50%)) scale(.65) rotate(-16deg); }
+  15% { opacity: 1; }
+  80% { opacity: 1; }
+  to { opacity: 0; transform: translate(calc(var(--draw-to-x) - 50%), calc(var(--draw-to-y) - 50%)) scale(.95) rotate(5deg); }
+}
+@media (prefers-reduced-motion: reduce) { .ko-stat-pop { animation: none; } }
+@media (prefers-reduced-motion: reduce) { .ko-draw-flight { animation-duration: 40ms; } }
+@media (prefers-reduced-motion: reduce) { .ko-destroy-burst { animation-duration: 120ms; } }

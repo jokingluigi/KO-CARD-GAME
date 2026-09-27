@@ -186,6 +186,9 @@ export function GameStatePreview({
     if (coachStage === 3 && state.events.some((event) => event.type === 'CHAMPION_QUEST_PROGRESS' && event.playerId === state.players[0]?.id)) setCoachStage(4);
   }, [state.events, state.players, guidedTutorial, coachDismissed, coachStage]);
   const handCardRefs = React.useRef(new Map<string, HTMLDivElement>());
+  const playerHandRef = React.useRef<HTMLDivElement | null>(null);
+  const playerDeckRef = React.useRef<HTMLDivElement | null>(null);
+  const opponentDeckRef = React.useRef<HTMLDivElement | null>(null);
   const boardSlotRefs = React.useRef(new Map<number, HTMLDivElement>());
   const opponentBoardSlotRefs = React.useRef(new Map<number, HTMLDivElement>());
   const boardCardRefs = React.useRef(new Map<string, HTMLDivElement>());
@@ -194,6 +197,18 @@ export function GameStatePreview({
   const playerChampionRef = React.useRef<HTMLDivElement | null>(null);
   const [generatedPlayAnimations, setGeneratedPlayAnimations] = React.useState<CardPlayAnimationState[]>([]);
   const [cardLeaveAnimations, setCardLeaveAnimations] = React.useState<CardLeaveAnimationState[]>([]);
+  const [destroyBursts, setDestroyBursts] = React.useState<Array<{ id: string; left: number; top: number; width: number; height: number }>>([]);
+  React.useEffect(() => {
+    if (!destroyBursts.length) return;
+    const timer = window.setTimeout(() => setDestroyBursts([]), 560);
+    return () => window.clearTimeout(timer);
+  }, [destroyBursts]);
+  const [drawFlights, setDrawFlights] = React.useState<Array<{ id: string; fromX: number; fromY: number; toX: number; toY: number; opponent: boolean }>>([]);
+  React.useEffect(() => {
+    if (!drawFlights.length) return;
+    const timer = window.setTimeout(() => setDrawFlights([]), 560);
+    return () => window.clearTimeout(timer);
+  }, [drawFlights]);
   const [presentationQueue, setPresentationQueue] = React.useState<PresentationCue[]>([]);
   const [screenShakeLevel, setScreenShakeLevel] = React.useState<AttackDamageImpactLevel>("NONE");
   const [pendingEffectFinisher, setPendingEffectFinisher] = React.useState(false);
@@ -271,6 +286,8 @@ export function GameStatePreview({
       if (eventLogReset) {
         setGeneratedPlayAnimations([]);
         setCardLeaveAnimations([]);
+        setDestroyBursts([]);
+        setDrawFlights([]);
         setPresentationQueue([]);
         setPendingEffectFinisher(false);
         setEffectFinisher(false);
@@ -285,6 +302,18 @@ export function GameStatePreview({
       .map((event, index) => ({ event, key: eventKeys[index]! }))
       .filter(({ key }) => !processedEventKeysRef.current.has(key));
     const newEvents = newEventEntries.map(({ event }) => event);
+    const flights = newEventEntries.flatMap(({ event, key }) => {
+      if (event.type !== 'CARD_DRAWN' || !event.playerId) return [];
+      const opponent = event.playerId !== state.players[0]?.id;
+      const from = (opponent ? opponentDeckRef : playerDeckRef).current?.getBoundingClientRect();
+      const to = (opponent ? opponentHandRef : playerHandRef).current?.getBoundingClientRect();
+      return [{ id: key, fromX: from ? from.left + from.width / 2 : window.innerWidth * .9,
+        fromY: from ? from.top + from.height / 2 : window.innerHeight * .45,
+        toX: to ? to.left + to.width / 2 : window.innerWidth * .4,
+        toY: to ? to.top + to.height / 2 : opponent ? window.innerHeight * .1 : window.innerHeight * .85,
+        opponent }];
+    });
+    if (flights.length) setDrawFlights(flights);
     for (const event of newEvents) {
       let line: string | null = null;
       let speaker = state.players.find((player) => player.id === event.playerId)?.champion?.name ?? '챔피언';
@@ -417,6 +446,15 @@ export function GameStatePreview({
             geometry,
             delay: precedingDamage ? 220 : 0,
           });
+        } else if (event.type === 'CARD_DESTROYED' && event.boardSlot !== undefined) {
+          // A card may enter and be destroyed in the same server update, so it
+          // never appears in the previous rendered snapshot.
+          const slot = (event.playerId === state.players[0]?.id ? boardSlotRefs : opponentBoardSlotRefs).current.get(event.boardSlot);
+          if (slot) {
+            const rect = slot.getBoundingClientRect();
+            setDestroyBursts((current) => [...current, { id: `${state.events.length}:${event.cardInstanceId}`, left: rect.left,
+              top: rect.top, width: rect.width, height: rect.height }]);
+          }
         }
       }
       if (event.type === "CARD_PLAYED" && event.cardType === "TECHNIQUE" && event.cardInstanceId) {
@@ -930,6 +968,7 @@ export function GameStatePreview({
                 </div>
                   <ZoneStack
                     className="ko-opponent-zones"
+                   deckRef={opponentDeckRef}
                    deckCount={opp.deck.length}
                    graveyardCount={opp.graveyard.length}
                    isOpponent
@@ -1003,6 +1042,7 @@ export function GameStatePreview({
                 </div>
                   <ZoneStack
                     className="ko-player-zones"
+                   deckRef={playerDeckRef}
                    deckCount={me.deck.length}
                    graveyardCount={me.graveyard.length}
                    onGraveyardClick={() => setOpenGraveyardPlayerId(me.id)}
@@ -1365,7 +1405,7 @@ export function GameStatePreview({
             </div>
 
             {/* Player Hand */}
-             <div className="ko-player-hand relative z-[100] flex h-full min-w-0 flex-1 items-end overflow-x-auto scrollbar-none pt-12 md:pt-16">
+             <div ref={playerHandRef} className="ko-player-hand relative z-[100] flex h-full min-w-0 flex-1 items-end overflow-x-auto scrollbar-none pt-12 md:pt-16">
                 <div className="ko-hand-cards relative z-[100] flex w-max justify-start gap-2 px-4 pb-3 md:mx-0 md:px-0 md:justify-start md:gap-3">
                  {me.hand.length === 0 ? (
                     <span className="py-4 text-xs font-bold text-neutral-600">손패 없음</span>
@@ -1425,6 +1465,11 @@ export function GameStatePreview({
           }}
         />
       ))}
+      {destroyBursts.map((burst) => <div key={burst.id} aria-hidden="true" className="ko-destroy-burst"
+        style={{ left: burst.left, top: burst.top, width: burst.width, height: burst.height }} />)}
+      {drawFlights.map((flight) => <div key={flight.id} aria-hidden="true" className={`ko-draw-flight ${flight.opponent ? 'ko-draw-flight--opponent' : ''}`}
+        style={{ '--draw-from-x': `${flight.fromX}px`, '--draw-from-y': `${flight.fromY}px`,
+          '--draw-to-x': `${flight.toX}px`, '--draw-to-y': `${flight.toY}px` } as React.CSSProperties} />)}
       {attackAnimation && (
         <AttackAnimation
           animation={attackAnimation}
@@ -1715,16 +1760,18 @@ function ZoneStack({
   isOpponent = false,
   onGraveyardClick,
   className = "",
+  deckRef,
 }: {
   deckCount: number;
   graveyardCount: number;
   isOpponent?: boolean;
   onGraveyardClick: () => void;
   className?: string;
+  deckRef?: React.Ref<HTMLDivElement>;
 }) {
   return (
     <div className={`ko-zone-stack flex shrink-0 flex-col gap-2 md:gap-3 ${className}`}>
-      <div className="relative flex h-12 w-10 flex-col items-center justify-end overflow-hidden rounded border-2 border-neutral-600 bg-neutral-800 shadow md:h-16 md:w-14">
+      <div ref={deckRef} className="relative flex h-12 w-10 flex-col items-center justify-end overflow-hidden rounded border-2 border-neutral-600 bg-neutral-800 shadow md:h-16 md:w-14">
         <div className="absolute inset-1 border border-neutral-700/60" />
         <div className="h-4 w-4 rotate-45 border border-neutral-700/60 md:h-6 md:w-6" />
         <span className="relative z-10 mt-auto w-full bg-black/70 py-0.5 text-center text-[7px] font-bold text-neutral-300 md:text-[9px]">
