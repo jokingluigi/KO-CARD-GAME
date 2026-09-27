@@ -32,7 +32,7 @@ import { generateCard, generateCardInstance, getRandomCardGenerationCandidates, 
 import { getAdjacentSlots } from '../engine/board-position';
 import { deployLinkedChampionToken } from '../engine/champion-token';
 import { isChampionProtectedByToken } from '../engine/direct-champion';
-import { normalizeCardForZone, resetCardForGraveyard } from '../cards/zone-state';
+import { normalizeCardForZone, resetCardAfterLeavingBoard, resetCardForGraveyard } from '../cards/zone-state';
 import {
   getActiveCardAbilities,
   getActiveCardKeywords,
@@ -2492,7 +2492,8 @@ export function applyEffect(
           deck: zones.includes('DECK') ? player.deck.filter((card) => !ids.has(card.instanceId)) : player.deck,
           graveyard: zones.includes('GRAVEYARD') ? player.graveyard.filter((card) => !ids.has(card.instanceId)) : player.graveyard,
             hand: [...player.hand, ...moved.map((card) => normalizeCardForZone({
-              ...(zones.includes('GRAVEYARD') ? resetCardForGraveyard(card) : { ...card, boardSlot: null }),
+              ...(zones.includes('GRAVEYARD') || zones.includes('BOARD')
+                ? resetCardAfterLeavingBoard(card) : { ...card, boardSlot: null }),
               ...temporaryCost,
             }, 'HAND'))],
         }),
@@ -2515,7 +2516,7 @@ export function applyEffect(
       ];
       if (!moved.length) return state;
       const normalized = moved.map(({ card, zone }) => normalizeCardForZone(
-        zone === 'GRAVEYARD' ? resetCardForGraveyard(card) : { ...card, boardSlot: null },
+        zone === 'GRAVEYARD' || zone === 'BOARD' ? resetCardAfterLeavingBoard(card) : { ...card, boardSlot: null },
         'DECK',
       ));
       return {
@@ -2555,7 +2556,7 @@ export function applyEffect(
            }
           : player.id === playerId
               ? { ...player, hand: [...player.hand, ...stolen.map((card) => normalizeCardForZone(
-                zones.includes('GRAVEYARD') ? resetCardForGraveyard(card) : { ...card, boardSlot: null },
+                zones.includes('GRAVEYARD') || zones.includes('BOARD') ? resetCardAfterLeavingBoard(card) : { ...card, boardSlot: null },
                 'HAND',
               ))] }
             : player),

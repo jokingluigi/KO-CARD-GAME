@@ -446,6 +446,27 @@ test('MOVE_TO_HAND의 임시 비용 감소는 최소 비용과 턴 만료를 보
   assert.equal(result.players[0].hand.at(-1)?.temporaryCostUntilTurn, state.turn);
 });
 
+test('필드에서 손패로 돌아간 선수는 공격력·체력·코스트가 초기화된다', () => {
+  const source = instance('bounce-source', [structured('MOVE_TO_HAND', {
+    zone: 'BOARD', owner: 'SELF', cardType: 'WRESTLER', selection: 'PLAYER_CHOICE', count: 1,
+  })]);
+  const ally = {
+    ...instance('buffed-ally'), boardSlot: 1 as const,
+    baseCost: 4, currentCost: 2, currentAttack: 6, currentHealth: 2, maxHealth: 8,
+    temporaryStatModifiers: [{ stat: 'attack' as const, amount: 5, untilTurn: 3 }],
+  };
+  const state = createInitialGameState();
+  state.players[0].board[1] = ally;
+
+  const result = selectEffectTarget(enterField(state, 'player-1', source, 0), ally.instanceId);
+  const returned = result.players[0].hand.find((card) => card.instanceId === ally.instanceId);
+  assert.equal(returned?.currentAttack, ally.baseAttack);
+  assert.equal(returned?.currentHealth, ally.baseHealth);
+  assert.equal(returned?.maxHealth, ally.baseHealth);
+  assert.equal(returned?.currentCost, ally.baseCost);
+  assert.deepEqual(returned?.temporaryStatModifiers, []);
+});
+
 test('MOVE_TO_DECK는 선택한 카드를 원래 소유자의 덱 맨 위로 이동한다', () => {
   const source = instance('small-hippo', [
     structured('MOVE_TO_DECK', {

@@ -33,12 +33,20 @@ export function normalizeHiddenZoneCards(state: GameState): GameState {
  * not become part of the graveyard copy.
  */
 export function resetCardForGraveyard(card: CardInstance): CardInstance {
+  return {
+    ...resetCardAfterLeavingBoard(card),
+    lastRetiredStats: { attack: card.currentAttack, health: card.currentHealth },
+  };
+}
+
+/** Clear board-only stat and cost changes before a card enters a new zone. */
+export function resetCardAfterLeavingBoard(card: CardInstance): CardInstance {
   const baseHealth = card.baseHealth ?? card.maxHealth;
   const hasDodge = getActiveCardKeywords(card).includes('DODGE');
 
   return {
     ...card,
-    lastRetiredStats: { attack: card.currentAttack, health: card.currentHealth },
+    lastRetiredStats: undefined,
     currentCost: card.baseCost ?? card.currentCost,
     temporaryCostUntilTurn: undefined,
     temporaryStatModifiers: [],
