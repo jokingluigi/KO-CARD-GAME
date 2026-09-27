@@ -7,7 +7,7 @@
   --arena-red: #e28678;
   position: fixed;
   inset: 0;
-  z-index: 180;
+  z-index: 210;
   overflow: hidden;
   isolation: isolate;
   color: #f5f1e8;

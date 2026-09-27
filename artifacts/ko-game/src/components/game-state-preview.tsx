@@ -1485,6 +1485,9 @@ export function GameStatePreview({
         <span>{spokenLine.text}</span>
       </div>}
       {presentationQueue[0] &&
+        !introActive &&
+        !state.openingMulligan &&
+        !canMulligan(state, me.id) &&
         !playAnimation &&
         !generatedPlayAnimations.length &&
         (!attackAnimation || attackImpactTriggered) && (

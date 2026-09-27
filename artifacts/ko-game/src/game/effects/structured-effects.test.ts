@@ -10,7 +10,7 @@ import { destroyCard } from '../engine/destroy-card';
 import { enterField } from '../engine/enter-field';
 import { attack } from '../engine/combat';
 import { playWrestlerFromHand } from '../engine/play-wrestler';
-import { endTurn } from '../engine/turn-system';
+import { endTurn, startGame } from '../engine/turn-system';
 import {
   applyEffect,
   getDamageModifierBonus,
@@ -434,16 +434,24 @@ test('MOVE_TO_HAND의 임시 비용 감소는 최소 비용과 턴 만료를 보
       count: 1,
     }, { amount: 1, minimum: 1, temporaryCost: true }),
   ]);
-  const ally = { ...instance('ally-to-hand'), boardSlot: 1 as const, currentCost: 1, baseCost: 1 };
-  const state = createInitialGameState();
+  const ally = {
+    ...instance('ally-to-hand'), boardSlot: 1 as const,
+    currentCost: 0, baseCost: 5, currentAttack: 6, currentHealth: 7, maxHealth: 7,
+  };
+  const state = startGame(createInitialGameState(), () => 0.5);
   state.players[0].board[1] = ally;
 
   const pending = enterField(state, 'player-1', source, 0);
   const result = selectEffectTarget(pending, ally.instanceId);
 
   assert.equal(result.players[0].board[1], null);
-  assert.equal(result.players[0].hand.at(-1)?.currentCost, 1);
+  assert.equal(result.players[0].hand.at(-1)?.currentCost, 4);
+  assert.equal(result.players[0].hand.at(-1)?.currentAttack, ally.baseAttack);
+  assert.equal(result.players[0].hand.at(-1)?.currentHealth, ally.baseHealth);
   assert.equal(result.players[0].hand.at(-1)?.temporaryCostUntilTurn, state.turn);
+  const afterTurn = endTurn(result, 'player-1');
+  assert.equal(afterTurn.success, true);
+  assert.equal(afterTurn.state.players[0].hand.at(-1)?.currentCost, 5);
 });
 
 test('필드에서 손패로 돌아간 선수는 공격력·체력·코스트가 초기화된다', () => {

@@ -1438,6 +1438,7 @@ export default function Home() {
       turnSecondsRemaining={turnSecondsRemaining}
       onEndTurn={handleEndTurn}
       onMulligan={handleMulligan}
+      introActive={aiOpeningActive}
       canEndTurn={Boolean(
         gameplayReady &&
         gameState.activePlayerId === gameState.players[0].id &&
