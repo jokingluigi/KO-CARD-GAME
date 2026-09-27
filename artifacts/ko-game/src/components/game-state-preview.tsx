@@ -1204,16 +1204,16 @@ export function GameStatePreview({
 
           {onMulligan && mulliganOpen && canMulligan(state, state.players[0].id) && (
             <div className="fixed inset-0 z-[205] flex items-center justify-center bg-black/85 p-4" role="dialog" aria-label="시작 손패 교체">
-              <div className="max-h-[90vh] w-full max-w-xl overflow-y-auto rounded-xl border border-amber-500 bg-neutral-950 p-5 text-white shadow-2xl">
+              <div className="max-h-[90vh] w-full max-w-3xl overflow-y-auto rounded-xl border border-amber-500 bg-neutral-950 p-5 text-white shadow-2xl">
                 <h2 className="text-lg font-black text-amber-300">시작 손패 교체</h2>
                 <p className="my-3 text-sm text-neutral-300">첫 턴 행동 전, 바꿀 카드를 선택하세요. 선택한 카드만 덱의 카드와 교체합니다.</p>
-                <div className="flex flex-wrap justify-center gap-3">
+                <div className="mx-auto grid w-full max-w-[660px] grid-cols-2 justify-items-center gap-3 sm:grid-cols-4">
                   {state.players[0].hand.map((card) => <button key={card.instanceId} type="button"
                     aria-pressed={mulliganSelection.includes(card.instanceId)}
                     onClick={() => setMulliganSelection((current) => current.includes(card.instanceId)
                       ? current.filter((id) => id !== card.instanceId) : [...current, card.instanceId])}
                     aria-label={`${getCardDefinition(card.definitionId)?.name ?? card.definitionId} ${mulliganSelection.includes(card.instanceId) ? '교체 선택됨' : '교체 선택'}`}
-                    className={`relative w-[clamp(105px,27vw,150px)] rounded-lg p-1 transition-transform hover:-translate-y-2 ${mulliganSelection.includes(card.instanceId) ? '-translate-y-3 bg-amber-500 ring-2 ring-amber-300' : 'bg-neutral-700'}`}>
+                    className={`relative w-full max-w-[150px] rounded-lg p-1 transition-transform hover:-translate-y-2 ${mulliganSelection.includes(card.instanceId) ? '-translate-y-3 bg-amber-500 ring-2 ring-amber-300' : 'bg-neutral-700'}`}>
                     <CardRenderer name={getCardDefinition(card.definitionId)?.name ?? '카드'} cardType={card.cardType} cost={card.currentCost} attack={card.currentAttack} health={card.currentHealth} rulesText={getCardRuntimeRulesText(card, getCardDefinition(card.definitionId)?.rulesText ?? '')} imageUrl={getCardDefinition(card.definitionId)?.imageUrl} rarity={getCardDefinition(card.definitionId)?.rarity} size="hand" imageDisplaySettings={getCardDefinition(card.definitionId)} className="pointer-events-none w-full" />
                     {mulliganSelection.includes(card.instanceId) && <span className="absolute inset-x-1 bottom-1 rounded bg-amber-300/95 py-1 text-center text-xs font-black text-black">교체 선택</span>}
                   </button>)}

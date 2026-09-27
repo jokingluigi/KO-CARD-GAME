@@ -73,6 +73,7 @@ const ACTION_VALUE_KEYS: Partial<Record<Action, readonly string[]>> = {
   ADD_AGGREGATED_ATTACK: ["aggregateStats"],
   COPY_BEST_STATS: [],
   TRANSFORM_SOURCE: ["definition", "definitionRef", "causal"],
+  TRANSFORM_TARGET: ["definition", "definitionRef"],
   REGISTER_DELAYED: ["delayed"],
   REGISTER_LISTENER: ["listener"],
   PREVENT_DAMAGE: ["prevention"],
@@ -391,6 +392,7 @@ function baseTargetFor(text: string, randomPool = false, availableTags: readonly
   }
   const activeCardScope = ACTIVE_CARD_SCOPE_PATTERN.test(text);
   const deck = /덱/.test(text), enemy = /(적|상대)\s*선수/.test(text);
+  const handAndDeck = hand && deck && /(?:덱[^.!?]{0,20}손|손[^.!?]{0,20}덱)/.test(text);
   const random = /(무작위|랜덤)/.test(text), all = /(모든|전부|모두)/.test(text);
   const cardType = /선수/.test(text)
     ? "WRESTLER" as const
@@ -405,6 +407,16 @@ function baseTargetFor(text: string, randomPool = false, availableTags: readonly
   const summonEnd = text.search(/(?:소환|SUMMON)/i);
   const filterText = adjacentEmptySlots && summonEnd >= 0 ? text.slice(0, summonEnd) : text;
   const filter = targetFilterFor(filterText, availableTags);
+  if (handAndDeck && !activeCardScope) {
+    return {
+      zones: ["DECK", "HAND"],
+      owner: enemyQualifier ? "ENEMY" : "SELF",
+      ...(cardType ? { cardType } : {}),
+      ...(filter ? { filter } : {}),
+      selection: all ? "ALL" : random ? "RANDOM" : "PLAYER_CHOICE",
+      count: all ? 20 : targetCountFrom(text),
+    };
+  }
   if (randomPool && adjacentEmptySlots && randomTarget) {
     return {
       zone: "BOARD",
@@ -416,7 +428,9 @@ function baseTargetFor(text: string, randomPool = false, availableTags: readonly
       randomScope,
     };
   }
-  if (/(자신|이\s*카드)/.test(text)) return { zone: "BOARD", owner: "SELF", selection: "SELF", count: 1 };
+  if (/(자신|이\s*카드)/.test(text) && !/(?:자신의?\s*(?:손|덱)|내\s*(?:손|덱))/.test(text)) {
+    return { zone: "BOARD", owner: "SELF", selection: "SELF", count: 1 };
+  }
   if (activeCardScope) {
     if (randomTarget) {
       return {
@@ -731,7 +745,7 @@ function effect(
       : action === "DRAW"
         ? (body.match(/(?:카드\s*)?(\d+)\s*장|(\d+)\s*드로우/)?.[1] ?? body.match(/(?:카드\s*)?(\d+)\s*장|(\d+)\s*드로우/)?.[2])
         : ["REDUCE_COST", "INCREASE_COST"].includes(action)
-          ? body.match(/(?:비용|코스트)(?:을|를)?\s*(?:[+-]?(\d+)|(\d+)\s*(?:감소|증가|낮))/)?.[1] ?? body.match(/(?:비용|코스트)(?:을|를)?\s*(?:[+-]?(\d+)|(\d+)\s*(?:감소|증가|낮))/)?.[2]
+          ? body.match(/(?:비용|코스트)(?:을|를)?\s*(?:(?:전부|모두|모든)\s*)?(?:[+-]?(\d+)|(\d+)\s*(?:감소|증가|낮))/)?.[1] ?? body.match(/(?:비용|코스트)(?:을|를)?\s*(?:(?:전부|모두|모든)\s*)?(?:[+-]?(\d+)|(\d+)\s*(?:감소|증가|낮))/)?.[2]
           : undefined;
     values.amount = amountText ? Number(amountText) : numberFrom(body);
   }
@@ -906,6 +920,21 @@ function expandedMechanicAnalysis(
     if (found) referencedCards.set(found.id, found);
     return found ? { id: found.id } : { name: normalizedName };
   };
+
+  const chosenTransformation = text.match(/(?:선수\s*카드|선수)\s*(?:하나|한\s*장)[^.!?]*?(?:['‘’“”「」]([^'‘’“”「」]+)['‘’“”「」])\s*카드로\s*(?:변화|변신)/);
+  if (chosenTransformation && /(?:현재\s*)?체력[^.!?]*공격력[^.!?]*(?:유지|그대로)|(?:현재\s*)?공격력[^.!?]*체력[^.!?]*(?:유지|그대로)/.test(text)) {
+    return result([{
+      trigger: triggerFor(), action: "TRANSFORM_TARGET",
+      target: { zone: "BOARD", owner: "ALL", cardType: "WRESTLER", selection: "PLAYER_CHOICE", count: 1, filter: { excludeSource: true } },
+      values: { definitionRef: makeRef(chosenTransformation[1]!.trim()) },
+    }]);
+  }
+
+  // A card can listen from hand and deploy its own existing instance. Keeping
+  // this as SUMMON_FROM_HAND avoids generating a second copy of the card.
+  if (/^턴\s*종료\s*[:：].*이\s*카드가\s*손(?:패)?에\s*있고.*필드에\s*빈\s*(?:공간|슬롯).*소환/.test(text)) {
+    return result([{ trigger: "TURN_END", action: "SUMMON_FROM_HAND", conditions: [{ type: "SOURCE_IN_HAND" }] }]);
+  }
 
   if (/상대\s*선수\s*카드\s*1\s*장(?:을|를)?\s*선택[^.!?]*공격력(?:을|이)?\s*1\s*로\s*(?:줄이|낮추|감소시키|만들)[^.!?]*기절[^.!?]*공격력(?:을|이)?\s*(?:줄인|낮춘|감소한)\s*만큼[^.!?]*자신의?\s*체력(?:을|이)?\s*증가/.test(text)) {
     const target = {
@@ -1647,7 +1676,7 @@ function expandedMechanicAnalysis(
   return null;
 }
 
-export function analyzeEffectText(input: string, options: EffectAnalysisOptions = {}): Analysis {
+function analyzeEffectTextCore(input: string, options: EffectAnalysisOptions = {}): Analysis {
   const text = normalize(input);
   if (!text) return { status: "failure", outcome: "analysis_failure", effects: [], keywords: [], unsupportedSegments: ["효과 문장"], summaries: ["효과 문장을 입력해 주세요."] };
   const expanded = expandedMechanicAnalysis(text, options);
@@ -1768,7 +1797,7 @@ export function analyzeEffectText(input: string, options: EffectAnalysisOptions 
     ["SET_STATS", /(?:자신의\s*)?공격력을\s*0\s*으로(?:\s*(?:만들|설정|변경))?/],
      ["DAMAGE", /(?:(?:피해|데미지)(?:을|를|이|가)?\s*\d+(?!\s*(?:증가|추가))|\d+\s*(?:피해|데미지))/],
     ["HEAL", /(?:체력(?:을|를)?\s*[+]?\d+\s*(?:회복|치유)|\d+(?:만큼)?\s*(?:회복|치유))/],
-    ["REDUCE_COST", /(?:비용|코스트)(?:을|를)?\s*(?:-\d+|\d+\s*(?:감소|낮))/],
+    ["REDUCE_COST", /(?:비용|코스트)(?:을|를)?\s*(?:(?:전부|모두|모든)\s*)?(?:-\d+|\d+\s*(?:감소|낮))/],
     ["INCREASE_COST", /(?:비용|코스트)(?:을|를)?\s*(?:[+]\d+|\d+\s*증가)/],
     ["STUN", /(?:기절|PARALYZE)(?:시키)?/i],
     ["SILENCE", /침묵(?:시키(?:고|니다)?|)/], ["DESTROY", /파괴/],
@@ -1916,6 +1945,20 @@ export function analyzeEffectText(input: string, options: EffectAnalysisOptions 
             ? "인식된 대상/의도는 있지만 현재 Effect Library에 해당 범용 동작이 없습니다. 특정 카드 전용 구현 대신 재사용 가능한 메커니즘이 필요합니다."
             : "문장의 일부를 효과로 해석하지 못했습니다. 표현을 더 구체적으로 입력해 주세요.",
         }),
+  };
+}
+
+/** Hand activation is opt-in for every trigger, never inferred from TURN_END alone. */
+export function analyzeEffectText(input: string, options: EffectAnalysisOptions = {}): Analysis {
+  const handClause = /(?:이\s*카드|자신)(?:가|이)?\s*손(?:패)?에\s*있(?:을\s*때|으면|는\s*동안)/g;
+  const hasHandClause = handClause.test(input);
+  const result = analyzeEffectTextCore(hasHandClause ? input.replace(handClause, "") : input, options);
+  if (!hasHandClause || result.effects.length !== 1) return result;
+  const [effect] = result.effects;
+  if (!effect || effect.conditions?.some((condition) => condition.type === "SOURCE_IN_HAND")) return result;
+  return {
+    ...result,
+    effects: [{ ...effect, conditions: [...(effect.conditions ?? []), { type: "SOURCE_IN_HAND" }] }],
   };
 }
 
@@ -2179,6 +2222,7 @@ export function isStructuredEffects(value: unknown): value is { effects: Structu
        const allowsRandomPoolDefinition = item.target?.selection === "RANDOM" || item.target?.selection === "ADJACENT_EMPTY_SLOTS";
        if (!validDefinition && !validReference && !allowsRandomPoolDefinition) return false;
      }
+        if (item.action === "TRANSFORM_TARGET" && (!values?.definitionRef && !values?.definition)) return false;
         if (item.action === "TRANSFORM_SOURCE" && (
           !values?.definitionRef && !values?.definition ||
           (values?.causal !== undefined && values.causal !== "DAMAGE_CAUSED_TARGET_RETIRE")

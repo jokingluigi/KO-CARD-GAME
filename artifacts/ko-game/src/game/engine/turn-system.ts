@@ -67,18 +67,19 @@ function beginPlayerTurn(state: GameState, playerId: string): GameState {
 
   const afterDraw = drawCard(turnStartedState, playerId);
   const afterDelayed = resolveDueDelayedEffects(afterDraw, 'TURN_START', playerId);
-  return afterDelayed.players
-    .find((candidate) => candidate.id === playerId)
-    ?.board
-    .filter((card): card is NonNullable<typeof card> => Boolean(card))
-    .reduce((nextState, card) => {
-      const currentCard = nextState.players
-        .find((player) => player.id === playerId)
-        ?.board.find((candidate) => candidate?.instanceId === card.instanceId);
+  const turnStartPlayer = afterDelayed.players.find((candidate) => candidate.id === playerId);
+  const turnStartCards = [
+    ...(turnStartPlayer?.board.filter((card): card is CardInstance => card !== null) ?? []),
+    ...(turnStartPlayer?.hand.filter((card) => getActiveCardAbilities(card).some((ability) => ability.trigger === 'TURN_START' && ability.condition?.type === 'SOURCE_IN_HAND')) ?? []),
+  ];
+  return turnStartCards.reduce((nextState, card) => {
+      const currentPlayer = nextState.players.find((player) => player.id === playerId);
+      const currentCard = currentPlayer?.board.find((candidate) => candidate?.instanceId === card.instanceId)
+        ?? currentPlayer?.hand.find((candidate) => candidate.instanceId === card.instanceId);
       if (!currentCard) return nextState;
       const triggered = resolveTriggeredAbilities(nextState, playerId, currentCard, 'TURN_START');
       return triggered !== nextState && triggered.targetingState?.active ? resolvePendingEffects(triggered) : triggered;
-    }, afterDelayed) ?? afterDelayed;
+    }, afterDelayed);
 }
 
 function drawOpeningHand(
@@ -291,19 +292,21 @@ export function endTurn(
     ],
   };
 
-  const resolveTurnEndPass = (passState: GameState) =>
-    passState.players
-      .find((player) => player.id === actingPlayerId)
-      ?.board
-      .filter((card): card is NonNullable<typeof card> => Boolean(card))
-      .reduce((nextState, card) => {
-        const currentCard = nextState.players
-          .find((player) => player.id === actingPlayerId)
-          ?.board.find((candidate) => candidate?.instanceId === card.instanceId);
+  const resolveTurnEndPass = (passState: GameState) => {
+    const owner = passState.players.find((player) => player.id === actingPlayerId);
+    const cards = [
+      ...(owner?.board.filter((card): card is CardInstance => card !== null) ?? []),
+      ...(owner?.hand.filter((card) => getActiveCardAbilities(card).some((ability) => ability.trigger === 'TURN_END' && ability.condition?.type === 'SOURCE_IN_HAND')) ?? []),
+    ];
+    return cards.reduce((nextState, card) => {
+        const currentPlayer = nextState.players.find((player) => player.id === actingPlayerId);
+        const currentCard = currentPlayer?.board.find((candidate) => candidate?.instanceId === card.instanceId)
+          ?? currentPlayer?.hand.find((candidate) => candidate.instanceId === card.instanceId);
         if (!currentCard) return nextState;
         const triggered = resolveTriggeredAbilities(nextState, actingPlayerId, currentCard, 'TURN_END');
         return triggered !== nextState && triggered.targetingState?.active ? resolvePendingEffects(triggered) : triggered;
-      }, passState) ?? passState;
+      }, passState);
+  };
   const afterTurnEnd = resolveTurnEndPass(turnedState);
   const repeatCount = afterTurnEnd.players
     .find((player) => player.id === actingPlayerId)

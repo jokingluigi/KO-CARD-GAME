@@ -742,6 +742,27 @@ test('피해가 정확한 대상을 퇴장시킨 경우에만 causal 변신을 �
   assert.equal(lethal.players[1].graveyard.some((card) => card.definitionId === 'target'), true);
 });
 
+test('선택한 상대 선수를 현재 공격력과 체력 그대로 다른 카드로 변신시킨다', () => {
+  const zombie = { ...definition('zombie-form', []), attack: 1, health: 1, isToken: true };
+  const effect = structured('TRANSFORM_TARGET', {
+    zone: 'BOARD', owner: 'ENEMY', cardType: 'WRESTLER', selection: 'PLAYER_CHOICE', count: 1,
+  }, { definitionRef: { id: zombie.id } });
+  const source = instance('zombie-infection', [effect]);
+  const victim = { ...instance('victim'), boardSlot: 1 as const, currentAttack: 5, currentHealth: 3, maxHealth: 6 };
+  const state = createInitialGameState(undefined, [zombie]);
+  state.players[1].board[1] = victim;
+  const pending = enterField(state, 'player-1', source, 0);
+  assert.ok(pending.targetingState?.validTargetIds.includes(victim.instanceId));
+  const resolved = selectEffectTarget(pending, victim.instanceId);
+  const transformed = resolved.players[1].board[1];
+  assert.equal(transformed?.definitionId, zombie.id);
+  assert.equal(transformed?.instanceId, victim.instanceId);
+  assert.equal(transformed?.currentAttack, 5);
+  assert.equal(transformed?.currentHealth, 3);
+  assert.ok((transformed?.maxHealth ?? 0) >= 3);
+  assert.ok(resolved.events.some((event) => event.type === 'CARD_TRANSFORMED'));
+});
+
 test('저장된 하녀 판도라의 이름 참조도 퇴장시킨 상대 카드가 있을 때 변신한다', () => {
   const form = { ...definition('wolf-form-id', []), name: '늑대인간 판도라' };
   const effects: CardEffect[] = [

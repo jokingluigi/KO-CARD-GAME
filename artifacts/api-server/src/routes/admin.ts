@@ -2999,8 +2999,8 @@ router.get("/cards/:id/test", async (request, response): Promise<void> => {
     return;
   }
   const [card] = await db.select().from(cardsTable).where(eq(cardsTable.id, id)).limit(1);
-  if (!card || card.status === "DISABLED" || card.cardType !== "WRESTLER") {
-    response.status(404).json({ message: "테스트할 수 있는 선수를 찾을 수 없습니다." });
+  if (!card || card.status === "DISABLED" || !["WRESTLER", "TECHNIQUE"].includes(card.cardType)) {
+    response.status(404).json({ message: "테스트할 수 있는 카드를 찾을 수 없습니다." });
     return;
   }
   const allCards = await db.select().from(cardsTable);

@@ -34,6 +34,7 @@ import {
   preloadMatchAssets,
   createDeterministicRandom,
   TRAINING_DUMMY_DEFINITIONS,
+  TEST_CARD_DEFINITIONS,
   createTestDeck,
 } from '@/game';
 import { GameStatePreview } from '@/components/game-state-preview';
@@ -370,12 +371,35 @@ export default function Home() {
           if (cancelled) return;
           const definition = cardRecordToDefinition(card);
           const relatedDefinitions = (relatedCards ?? []).map(cardRecordToDefinition);
-          const testState = createInitialGameState(undefined, [definition]);
+          const isTechnique = definition.cardType === 'TECHNIQUE';
+          const filler = TEST_CARD_DEFINITIONS[0]!;
+          const testState = isTechnique
+            ? createInitialGameState(undefined, [definition, filler], undefined, [
+                Array.from({ length: 25 }, (_, index) => index === 0 ? definition.id : filler.id),
+                Array.from({ length: 25 }, () => filler.id),
+              ])
+            : createInitialGameState(undefined, [definition]);
           testState.cardPool = [...(testState.cardPool ?? []), ...relatedDefinitions.filter((entry) => !testState.cardPool?.some((existing) => existing.id === entry.id))];
           setMediaCatalog(media);
-          setRuntimeCardDefinitions([definition, ...relatedDefinitions]);
+          setRuntimeCardDefinitions([definition, ...(isTechnique ? [filler] : []), ...relatedDefinitions]);
           preloadMatchAssets([definition], []);
-          setGameState(startGame(testState, undefined, media));
+          const started = startGame(testState, undefined, media);
+          if (isTechnique) {
+            const owner = started.players[0]!;
+            if (!owner.hand.some((card) => card.definitionId === definition.id)) {
+              const candidate = owner.deck.find((card) => card.definitionId === definition.id);
+              const replaced = owner.hand[0];
+              if (candidate && replaced) {
+                started.players[0] = {
+                  ...owner,
+                  hand: [candidate, ...owner.hand.slice(1)],
+                  deck: owner.deck.map((card) => card.instanceId === candidate.instanceId ? replaced : card),
+                };
+              }
+            }
+            started.players[0] = { ...started.players[0]!, currentGold: Math.max(10, started.players[0]!.currentGold) };
+          }
+          setGameState(started);
           setIsAdminTestMatch(true);
           setSelectedCardId(null);
           setSelectedAttackerId(null);

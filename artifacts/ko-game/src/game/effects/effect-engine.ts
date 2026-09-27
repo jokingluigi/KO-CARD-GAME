@@ -1840,7 +1840,9 @@ export function applyEffect(
     if (effect.action === 'SUMMON_FROM_HAND') {
       const owner = state.players.find((player) => player.id === playerId);
       const handCard = owner?.hand.find((card) =>
-        effect.values?.definitionRef?.id
+        !effect.values?.definitionRef
+          ? card.instanceId === sourceCard.instanceId
+          : effect.values?.definitionRef?.id
           ? card.definitionId === effect.values.definitionRef.id
           : effect.values?.definitionRef?.name
             ? state.cardPool?.find((definition) => definition.id === card.definitionId)?.name === effect.values.definitionRef.name
@@ -2344,6 +2346,48 @@ export function applyEffect(
           : state;
     }
     const ids = new Set(targets.map((card) => card.instanceId));
+    if (effect.action === 'TRANSFORM_TARGET') {
+      const targetDefinition = resolveCardDefinition(state, effect.values?.definition, effect.values?.definitionRef, true);
+      if (!targetDefinition || targetDefinition.cardType === 'TECHNIQUE') return state;
+      return targets.reduce((nextState, selected) => {
+        const owner = nextState.players.find((player) => player.id === targetOwner);
+        const current = owner?.board.find((card) => card?.instanceId === selected.instanceId);
+        if (!current || current.isDirectDeployedChampion || current.isTrainingDummy) return nextState;
+        const replacement = generateCard(targetDefinition, {
+          instanceId: current.instanceId,
+          playerId: targetOwner,
+          source: { type: 'CARD', cardInstanceId: sourceCard.instanceId },
+          reason: 'TRANSFORM_TARGET',
+          sourceDefinitionId: current.definitionId,
+          creationEventIndex: nextState.events.length,
+        }).card;
+        return {
+          ...nextState,
+          players: nextState.players.map((player) => player.id !== targetOwner ? player : {
+            ...player,
+            board: player.board.map((card) => card?.instanceId === current.instanceId ? {
+              ...replacement,
+              instanceId: current.instanceId,
+              boardSlot: current.boardSlot,
+              enteredThisTurn: current.enteredThisTurn,
+              attacksUsedThisTurn: current.attacksUsedThisTurn,
+              currentAttack: current.currentAttack,
+              currentHealth: current.currentHealth,
+              maxHealth: Math.max(replacement.maxHealth, current.currentHealth),
+              isGenerated: current.isGenerated,
+            } : card) as typeof player.board,
+          }),
+          events: [...nextState.events, {
+            type: 'CARD_TRANSFORMED' as const,
+            playerId: targetOwner,
+            cardInstanceId: current.instanceId,
+            source: { type: 'CARD' as const, cardInstanceId: sourceCard.instanceId },
+            target: { type: 'CARD' as const, cardInstanceId: current.instanceId },
+            reason: targetDefinition.id,
+          }],
+        };
+      }, state);
+    }
     if (effect.action === 'REVIVE') {
       const revivedState = targets.reduce((nextState, targetCard) => {
         const owner = nextState.players.find((player) => player.id === targetOwner);
@@ -3211,6 +3255,8 @@ export function resolveTriggeredAbilities(
     condition === 'GTE' ? actual >= expected : condition === 'LTE' ? actual <= expected : actual === expected;
   const abilities = getActiveCardAbilities(card).filter((ability) => {
     if (ability.trigger !== trigger) return false;
+    if (state.players.some((player) => player.hand.some((entry) => entry.instanceId === card.instanceId)) &&
+      ability.condition?.type !== 'SOURCE_IN_HAND') return false;
     if ((trigger === 'BEFORE_DAMAGE' || trigger === 'BEFORE_RETIRE') &&
       state.consumedRuleKeys?.includes(`${card.instanceId}:${trigger}`)) return false;
     const condition = 'condition' in ability ? ability.condition : undefined;
@@ -3220,6 +3266,7 @@ export function resolveTriggeredAbilities(
       if (condition.type === 'HAND_COUNT' && !compare(owner.hand.length, condition.compare, condition.amount)) return false;
       if (condition.type === 'BOARD_COUNT' && !compare(owner.board.filter(Boolean).length, condition.compare, condition.amount)) return false;
       if (condition.type === 'HAS_TAG' && !owner.hand.some((entry) => entry.tags?.includes(condition.tag))) return false;
+      if (condition.type === 'SOURCE_IN_HAND' && !owner.hand.some((entry) => entry.instanceId === card.instanceId)) return false;
       if (condition.type === 'SOURCE_ON_LEFT_SIDE' && (card.boardSlot === null || card.boardSlot > 1)) return false;
       if (condition.type === 'SOURCE_ON_RIGHT_SIDE' && (card.boardSlot === null || card.boardSlot < 2)) return false;
       if (condition.type === 'BASE_COST_GTE' && (options.baseCost ?? 0) < condition.amount) return false;

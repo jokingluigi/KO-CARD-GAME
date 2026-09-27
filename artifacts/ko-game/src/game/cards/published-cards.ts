@@ -74,6 +74,8 @@ export function abilitiesFor(
          .flatMap((item) => Array.isArray(item.conditions) ? item.conditions : []);
         const condition = rawConditions.some((item) => (item as Record<string, unknown>).type === "SOURCE_IS_ONLY_WRESTLER")
           ? { type: "BOARD_COUNT" as const, compare: "EQ" as const, amount: 1 }
+          : rawConditions.some((item) => (item as Record<string, unknown>).type === "SOURCE_IN_HAND")
+            ? { type: "SOURCE_IN_HAND" as const }
           : rawConditions.some((item) => (item as Record<string, unknown>).type === "FIRST_ATTACK_GAIN")
             ? { type: "FIRST_ATTACK_GAIN" as const }
             : undefined;

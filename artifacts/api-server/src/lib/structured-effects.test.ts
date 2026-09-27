@@ -71,6 +71,18 @@ test("이름으로 변신하는 효과는 카드 목록에서 정확한 ID를 �
   assert.equal(analyzeEffectText("등장: '없는 선수'로 변신합니다.", { cardCatalog }).outcome, "analysis_failure");
 });
 
+test("선택한 선수를 현재 능력치 그대로 이름 붙은 카드로 변신시킨다", () => {
+  const catalog = [{ id: "zombie-id", name: "좀비", cardType: "WRESTLER" as const, isToken: true, isChampionToken: false }];
+  const result = analyzeEffectText("등장:선수 카드 하나를 지정한 다음 그 카드를 현재 체력과 공격력 수치를 유지한채 '좀비' 카드로 변화시킵니다.", { cardCatalog: catalog });
+  assert.equal(result.outcome, "supported");
+  assert.deepEqual(result.effects, [{
+    trigger: "ENTER_FIELD", action: "TRANSFORM_TARGET",
+    target: { zone: "BOARD", owner: "ALL", cardType: "WRESTLER", selection: "PLAYER_CHOICE", count: 1, filter: { excludeSource: true } },
+    values: { definitionRef: { id: "zombie-id" } },
+  }]);
+  assert.equal(isStructuredEffects({ effects: result.effects }), true);
+});
+
 test("La Calavera revival preserves the graveyard filter and applies TAUNT to the revived instance", () => {
   const result = analyzeEffectText(
     "등장: 내 묘지에서 비용이 3 이하인 선수 카드 중 하나를 무작위로 부활시킵니다. 그 카드에게 도발을 부여합니다.",

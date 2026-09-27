@@ -18,6 +18,8 @@ const currentSources = [
   ["아포스틸", "등장:어디에 있든 '실험체' 태그가 달려있는 모든 아군 카드들에게 체력을 +1을 부여합니다"],
   ["매드 사이언티스트 퍼플레인", "등장:어디에 있든 '실험체' 태그가 달려있는 모든 아군 카드들에게 +1/+1을 부여합니다"],
   ["도금구슬 마스터", "등장:내 덱과 손에 있는 6 비용 이상의 카드들의 비용을 전부 1 감소 시킵니다."],
+  ["불록스", "턴 종료:이 카드가 손에 있고, 자신의 필드에 빈 공간이 있다면 그 곳으로 소환됩니다,"],
+  ["마로쓰 2세", "퇴장:자신의 손패에서 가장 비용이 높은 카드 한장의 비용을 1 감소시킨다."],
   ["작은 하마", "등장:상대의 필드에 있는 선수 카드 한장을 선택해서 상대방의 덱 맨위로 보냅니다."],
   ["뒷정리맨", "출현:다음에 출현하는 카드에게 체력을 +2 부여합니다."],
   ["도쿵", "이 카드의 공격력이 증가하면, 같은 수치만큼 체력의 수치를 증가시킵니다."],
@@ -44,6 +46,16 @@ const sourceCardCatalog: CardReferenceCandidate[] = currentSources
     isChampionToken: false,
   }));
 const availableTags = ["솔져", "좀비", "기계", "실험체", "언데드", "용병", "엘리트 용병"];
+
+test("손패와 덱의 비용 감소는 비용 조건과 감소량을 별도로 해석한다", () => {
+  const analysis = analyzeEffectText("등장:내 덱과 손에 있는 6 비용 이상의 카드들의 비용을 전부 1 감소 시킵니다.");
+  assert.equal(analysis.outcome, "supported");
+  assert.deepEqual(analysis.effects, [{
+    trigger: "ENTER_FIELD", action: "REDUCE_COST",
+    target: { zones: ["HAND", "DECK"], owner: "SELF", filter: { minCost: 6 }, selection: "ALL", count: 20 },
+    values: { amount: 1 },
+  }]);
+});
 
 function threeNoisyVariants(text: string): string[] {
   const spaced = text.replace(/\s/gu, "\u00a0") + "！";
@@ -78,7 +90,7 @@ function semanticSignature(text: string) {
 }
 
 test("current card and Champion source text corpus has three noise variants per source", () => {
-  assert.equal(currentSources.length, 28);
+  assert.equal(currentSources.length, 30);
   for (const [label, text] of currentSources) {
     const baseline = normalizeEffectLanguage(text).normalizedText;
     const baselineClass = analysisClass(text);

@@ -13,6 +13,7 @@ export type GameEventType =
   | 'CARD_PLAYED'
   | 'ENTER_FIELD'
   | 'CARD_GENERATED'
+  | 'CARD_TRANSFORMED'
   | 'CARD_DESTROYED'
   | 'CARD_RETIRED'
   | 'CARD_REMOVED'

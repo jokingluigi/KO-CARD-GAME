@@ -80,6 +80,72 @@ test('필드 카드의 턴 종료와 다음 자기 턴 시작 효과가 실제�
   assert.equal(afterNextStart.players[0]!.hand.length, initialHandCount + 3);
 });
 
+test('손에 있는 카드의 턴 종료 효과는 빈 필드에 같은 카드를 소환한다', () => {
+  const started = startGame(createInitialGameState());
+  const owner = started.players[0]!;
+  const source = owner.hand[0]!;
+  const withAbility = {
+    ...started,
+    players: started.players.map((player) => player.id === owner.id ? {
+      ...player,
+      hand: player.hand.map((candidate) => candidate.instanceId === source.instanceId ? {
+        ...candidate,
+        abilities: [{ trigger: 'TURN_END' as const, condition: { type: 'SOURCE_IN_HAND' as const }, effects: [{
+          type: 'STRUCTURED' as const,
+          action: 'SUMMON_FROM_HAND' as const,
+        }] }],
+      } : candidate),
+    } : player),
+  };
+  const resolved = successState(endTurn(withAbility, owner.id));
+  const after = resolved.players.find((player) => player.id === owner.id)!;
+  assert.equal(after.board[0]?.instanceId, source.instanceId);
+  assert.equal(after.hand.some((card) => card.instanceId === source.instanceId), false);
+});
+
+test('손패 발동 조건이 없는 턴 종료 효과는 손패에서 발동하지 않는다', () => {
+  const started = startGame(createInitialGameState());
+  const source = started.players[0]!.hand[0]!;
+  const prepared = {
+    ...started,
+    players: started.players.map((player) => player.id === 'player-1' ? {
+      ...player,
+      hand: player.hand.map((card) => card.instanceId === source.instanceId ? {
+        ...card,
+        abilities: [{ trigger: 'TURN_END' as const, effects: [{ type: 'STRUCTURED' as const, action: 'SUMMON_FROM_HAND' as const }] }],
+      } : card),
+    } : player),
+  };
+  const result = successState(endTurn(prepared, 'player-1'));
+  assert.equal(result.players[0]!.board.some(Boolean), false);
+  assert.equal(result.players[0]!.hand.some((card) => card.instanceId === source.instanceId), true);
+});
+
+test('손패 발동 조건은 턴 시작 효과에도 동일하게 적용된다', () => {
+  const started = startGame(createInitialGameState());
+  const player = started.players[1]!;
+  const source = player.hand[0]!;
+  const ability = { trigger: 'TURN_START' as const, effects: [{ type: 'STRUCTURED' as const, action: 'DRAW' as const, values: { amount: 1 } }] };
+  const withoutCondition = {
+    ...started,
+    players: started.players.map((entry) => entry.id === player.id ? {
+      ...entry, hand: entry.hand.map((card) => card.instanceId === source.instanceId ? { ...card, abilities: [ability] } : card),
+    } : entry),
+  };
+  const plain = successState(endTurn(withoutCondition, 'player-1'));
+  assert.equal(plain.players[1]!.hand.length, player.hand.length + 1);
+  const withCondition = {
+    ...started,
+    players: started.players.map((entry) => entry.id === player.id ? {
+      ...entry, hand: entry.hand.map((card) => card.instanceId === source.instanceId ? {
+        ...card, abilities: [{ ...ability, condition: { type: 'SOURCE_IN_HAND' as const } }],
+      } : card),
+    } : entry),
+  };
+  const triggered = successState(endTurn(withCondition, 'player-1'));
+  assert.equal(triggered.players[1]!.hand.length, player.hand.length + 2);
+});
+
 test('P1 두 번째 턴은 2G로 시작한다', () => {
   const started = startGame(createInitialGameState());
   const playerTwoTurn = successState(endTurn(started, 'player-1'));
