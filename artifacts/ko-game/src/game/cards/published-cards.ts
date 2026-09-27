@@ -33,6 +33,7 @@ export type PublishedCardRecord = {
   entranceAudioUrl?: string | null;
   entranceAudioVolume?: number;
   entranceAudioEnabled?: boolean;
+  summonLine?: string | null;
 };
 
 function amount(config: Record<string, unknown>): number {
@@ -208,6 +209,7 @@ export function cardRecordToDefinition(card: PublishedCardRecord): CardDefinitio
        entranceAudioUrl: card.entranceAudioUrl,
        entranceAudioVolume: card.entranceAudioVolume,
        entranceAudioEnabled: card.entranceAudioEnabled,
+       summonLine: card.summonLine ?? null,
       isToken: card.isToken,
       isChampionToken: card.isChampionToken,
       keywords: card.keywords,

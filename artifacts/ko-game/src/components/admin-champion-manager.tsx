@@ -13,6 +13,7 @@ import {
   type ImageDisplaySettings,
 } from "../game/cards/types";
 import { ROUTES } from "@/lib/routes";
+import { CHAMPION_EMOTES, CHAMPION_EMOTE_LABELS, type ChampionPresentationLines, type ChampionVoiceLines } from "../game/champions/types";
 
 const adminApiBase = `${import.meta.env.BASE_URL.replace(/\/$/, "")}/api/admin`;
 type Status = "DRAFT" | "PUBLISHED" | "DISABLED";
@@ -50,6 +51,7 @@ type Champion = {
   questCompleteAudioAssetId: string | null; questCompleteAudioUrl: string | null;
   questCompleteAudioVolume: number; questCompleteAudioEnabled: boolean;
   introLineOne: string | null; introLineTwo: string | null;
+  presentationLines: ChampionPresentationLines;
   questCompleteAudioUploadToken: string | null;
   questCompleteAudioFileName: string | null;
   status: Status; version: number;
@@ -97,7 +99,7 @@ const empty: Form = {
   abilityAudioAssetId: null, abilityAudioUrl: null, abilityAudioVolume: 100,
   questCompleteAudioAssetId: null, questCompleteAudioUrl: null,
   questCompleteAudioVolume: 100, questCompleteAudioEnabled: false,
-  introLineOne: null, introLineTwo: null,
+  introLineOne: null, introLineTwo: null, presentationLines: {},
   questCompleteAudioUploadToken: null,
   questCompleteAudioFileName: null,
 };
@@ -543,6 +545,7 @@ export function AdminChampionManager({ onUnauthorized }: { onUnauthorized: () =>
       abilityCost: champion.abilityCost, abilityText: champion.abilityText, abilityEffects: champion.abilityEffects,
       hasQuest: champion.hasQuest, questName: champion.questName, questText: champion.questText,
         introLineOne: champion.introLineOne ?? null, introLineTwo: champion.introLineTwo ?? null,
+        presentationLines: champion.presentationLines ?? {},
       questCondition: champion.questCondition, questProgressRequired: champion.questProgressRequired,
       questRewardText: champion.questRewardText, questRewardEffects: champion.questRewardEffects,
       upgradedAbilityName: champion.upgradedAbilityName, upgradedAbilityCost: champion.upgradedAbilityCost,
@@ -781,6 +784,24 @@ export function AdminChampionManager({ onUnauthorized }: { onUnauthorized: () =>
         <label>최대 HP<input type="number" className={input} value={form.maxHealth} onChange={e=>update("maxHealth",Number(e.target.value))}/></label>
          <label>기본 Intro 대사 1 (최대 80자)<input maxLength={80} className={input} value={form.introLineOne ?? ""} onChange={e=>update("introLineOne",e.target.value || null)}/></label>
          <label>기본 Intro 대사 2 (최대 80자)<input maxLength={80} className={input} value={form.introLineTwo ?? ""} onChange={e=>update("introLineTwo",e.target.value || null)}/></label>
+        <div className="md:col-span-2 grid gap-3 lg:grid-cols-2">
+          {(["BEFORE_QUEST", "AFTER_QUEST"] as const).map((phase) => (
+            <section key={phase} className="rounded-lg border border-amber-800/60 bg-neutral-900/70 p-3">
+              <h4 className="mb-2 font-black text-amber-200">{phase === "BEFORE_QUEST" ? "퀘스트 완료 전 대사" : "퀘스트 완료 후 대사"}</h4>
+              <p className="mb-3 text-xs text-neutral-400">빈칸은 대사를 재생하지 않습니다. 완료 후 대사가 비어 있으면 완료 전 대사를 사용합니다.</p>
+              {[...CHAMPION_EMOTES, "VICTORY", "DEFEAT"].map((key) => (
+                <label key={key} className="mb-2 block text-xs text-neutral-300">
+                  {key === "VICTORY" ? "승리" : key === "DEFEAT" ? "패배" : CHAMPION_EMOTE_LABELS[key as typeof CHAMPION_EMOTES[number]]}
+                  <input className={input} maxLength={120} value={form.presentationLines?.[phase]?.[key as keyof ChampionVoiceLines] ?? ""}
+                    onChange={(event) => update("presentationLines", {
+                      ...form.presentationLines,
+                      [phase]: { ...form.presentationLines?.[phase], [key]: event.target.value },
+                    })} placeholder="선택 사항 · 최대 120자" />
+                </label>
+              ))}
+            </section>
+          ))}
+        </div>
         <label className="md:col-span-2">설명<textarea className={input} value={form.description} onChange={e=>update("description",e.target.value)}/></label>
           <div className="md:col-span-2 grid gap-3 md:grid-cols-2">
             <div className="rounded border border-neutral-800 bg-neutral-900/40 p-3">

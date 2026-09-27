@@ -9,6 +9,7 @@ import { canMulligan, mulligan } from '../engine/mulligan';
 import { processChampionQuestEvents } from '../champions/quests';
 import { cancelEffectTargeting, selectEffectTarget } from '../effects/effect-engine';
 import { surrender } from '../engine/surrender';
+import { CHAMPION_EMOTES } from '../champions/types';
 import type { BoardSlot } from '../engine/board-position';
 import type { GameState } from '../types/game-state';
 import {
@@ -142,6 +143,26 @@ export function executeAction(state: GameState, action: GameAction): ActionResul
       return mulligan(state, action.playerId, action.cardInstanceIds);
     case 'END_TURN':
       return endTurn(state, action.playerId);
+    case 'EMOTE': {
+      if (state.status !== 'IN_PROGRESS') return actionFailure(state, 'GAME_NOT_IN_PROGRESS', '진행 중인 경기에서만 감정표현을 할 수 있습니다.');
+      const player = state.players.find((candidate) => candidate.id === action.playerId);
+      if (!player?.champion || !CHAMPION_EMOTES.includes(action.emote)) {
+        return actionFailure(state, 'INVALID_PLAYER', '사용할 수 없는 감정표현입니다.');
+      }
+      // Limit repeated messages without relying on wall-clock time in the deterministic engine.
+      const lastTurnStart = state.events.reduce((offset, event, index) =>
+        event.type === 'TURN_STARTED' && event.playerId === player.id ? index : offset, -1);
+      if (state.events.slice(lastTurnStart + 1).filter((event) =>
+        event.type === 'CHAMPION_EMOTE' && event.playerId === player.id).length >= 2) {
+        return actionFailure(state, 'ACTIVE_NOT_AVAILABLE', '이번 턴에는 감정표현을 모두 사용했습니다.');
+      }
+      return actionSuccess({ ...state, events: [...state.events, {
+        type: 'CHAMPION_EMOTE', playerId: player.id, championId: player.champion.id,
+        source: { type: 'CHAMPION', championId: player.champion.id },
+        target: { type: 'CHAMPION', championId: player.champion.id },
+        reason: action.emote, tags: player.champion.questCompleted ? ['AFTER_QUEST'] : [],
+      }] });
+    }
     case 'SURRENDER':
       return surrender(state, action.playerId);
     case 'SELECT_EFFECT_TARGET': {

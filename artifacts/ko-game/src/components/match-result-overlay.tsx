@@ -1,5 +1,8 @@
+import { useEffect, useState } from 'react';
 import type { GameState } from "@/game";
 import { matchEndReason, matchSummary } from '@/lib/match-summary';
+import { championVoiceLine } from '@/game/champions/types';
+import { audioManager } from '@/audio/audio-manager';
 
 export function MatchResultOverlay({
   state,
@@ -17,6 +20,18 @@ export function MatchResultOverlay({
   const subtitle = isVictory ? "VICTORY" : isDefeat ? "DEFEAT" : "MATCH COMPLETE";
   const reason = matchEndReason(state, player?.id ?? "");
   const [ownSummary, opponentSummary] = matchSummary(state);
+  const winner = state.players.find((candidate) => candidate.id === state.winnerId);
+  const loser = state.players.find((candidate) => candidate.id === state.loserId);
+  const lethal = state.events.some((event) => event.type === 'DAMAGE_DEALT' && event.target?.type === 'PLAYER' && event.target.playerId === state.loserId && (event.amount ?? 0) > 0);
+  const [cinematic, setCinematic] = useState(lethal);
+  useEffect(() => {
+    if (!lethal) return;
+    audioManager.playAttack('/sfx/impact-heavy.wav', 92, 0.86);
+    const timeout = window.setTimeout(() => setCinematic(false), 1650);
+    return () => window.clearTimeout(timeout);
+  }, [lethal]);
+  const winnerLine = winner && championVoiceLine(winner.champion?.presentationLines, Boolean(winner.champion?.questCompleted), 'VICTORY');
+  const loserLine = loser && championVoiceLine(loser.champion?.presentationLines, Boolean(loser.champion?.questCompleted), 'DEFEAT');
   const accentClass = isVictory
     ? "border-amber-300/70 bg-amber-950/80 text-amber-100 shadow-[0_0_70px_rgba(234,179,8,0.28)]"
     : isDefeat
@@ -31,6 +46,14 @@ export function MatchResultOverlay({
       data-testid="match-result-overlay"
       className="match-result-enter fixed inset-0 z-[300] flex min-h-screen items-center justify-center bg-black/90 px-4 py-5 backdrop-blur-sm"
     >
+      {cinematic && loser ? <div className="champion-defeat-cinematic" role="status" aria-label={`${loser.champion?.name} 패배`}>
+        <div className="champion-defeat-cinematic__portrait" style={{ backgroundImage: `url(${loser.champion?.questCompleted && loser.champion?.questCompletedPortraitUrl ? loser.champion?.questCompletedPortraitUrl : loser.champion?.imageUrl ?? ''})` }}>
+          <div className="champion-defeat-cinematic__fracture" />
+        </div>
+        <strong className="champion-defeat-cinematic__ko">K.O.</strong>
+        {loserLine && <p className="champion-defeat-cinematic__line">“{loserLine}”</p>}
+        {winnerLine && <p className="champion-defeat-cinematic__victory">{winner.champion?.name}: “{winnerLine}”</p>}
+      </div> :
       <section className={`max-h-[90dvh] w-full max-w-lg overflow-y-auto rounded-2xl border p-6 text-center md:p-10 ${accentClass}`}>
         <p className="font-display text-[10px] font-bold tracking-[0.5em] text-primary md:text-xs">KO MATCH RESULT</p>
         <h1 className="mt-6 text-5xl font-black tracking-tight md:text-7xl">{title}</h1>
@@ -38,6 +61,8 @@ export function MatchResultOverlay({
         <p className="mt-6 text-sm leading-6 text-neutral-300">
           {reason}
         </p>
+        {winnerLine && <p className="mt-4 text-base font-bold text-amber-200">{winner?.champion?.name}: “{winnerLine}”</p>}
+        {loserLine && <p className="mt-2 text-sm text-neutral-300">{loser?.champion?.name}: “{loserLine}”</p>}
         {ownSummary && opponentSummary && (
           <section className="mt-6 rounded-xl border border-white/15 bg-black/35 p-4 text-left" aria-label="경기 기록">
             <h2 className="text-xs font-black tracking-widest text-amber-200">이번 경기 기록</h2>
@@ -72,6 +97,7 @@ export function MatchResultOverlay({
           메인 화면으로
         </button>
       </section>
+      }
     </div>
   );
 }

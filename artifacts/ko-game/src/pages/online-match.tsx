@@ -942,6 +942,7 @@ function OnlineMatchPage() {
         bgmVolume={bgmVolume}
         onBgmVolumeChange={setBgmVolume}
         onSurrender={() => sendAction({ type: "SURRENDER" }, { allowOffTurn: true })}
+        onEmote={(emote) => { sendAction({ type: "EMOTE", emote }, { allowOffTurn: true, allowDuringPresentation: true }); }}
         onSelectCard={handleSelectCard}
         onSelectSlot={handleSelectSlot}
         onUseTechnique={handleUseTechnique}

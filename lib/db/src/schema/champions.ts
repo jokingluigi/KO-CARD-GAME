@@ -42,6 +42,7 @@ export const championsTable = pgTable("champions", {
   questCompleteAudioEnabled: boolean("quest_complete_audio_enabled").notNull().default(false),
   introLineOne: text("intro_line_one"),
   introLineTwo: text("intro_line_two"),
+  presentationLines: jsonb("presentation_lines").$type<Record<string, unknown>>().notNull().default({}),
   status: text("status").notNull().default("DRAFT"),
   isStarterGrant: boolean("is_starter_grant").notNull().default(false),
   version: integer("version").notNull().default(1),

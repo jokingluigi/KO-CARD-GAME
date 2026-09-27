@@ -49,6 +49,7 @@ import { prefersReducedMotion } from './presentation-config';
 import { displayHealth } from './match-display-utils';
 import { getCardRuntimeRulesText, getVisibleCardKeywords } from '../lib/card-display-state';
 import { getActiveCardKeywords } from '../game/cards/granted-text';
+import { CHAMPION_EMOTES, CHAMPION_EMOTE_LABELS, championVoiceLine, type ChampionEmote } from '../game/champions/types';
 
 interface GameStatePreviewProps {
   state: GameState;
@@ -66,6 +67,7 @@ interface GameStatePreviewProps {
   bgmVolume: number;
   onBgmVolumeChange: (volume: number) => void;
   onSurrender: () => void;
+  onEmote?: (emote: ChampionEmote) => void;
   onSelectCard: (cardInstanceId: string) => void;
   onSelectSlot: (slot: BoardSlotIndex, geometry?: { source: CardAnimationRect; target: CardAnimationRect }) => void;
   onUseTechnique: (cardInstanceId: string, source: CardAnimationRect) => void;
@@ -110,6 +112,7 @@ export function GameStatePreview({
   bgmVolume,
   onBgmVolumeChange,
   onSurrender,
+  onEmote,
   onSelectCard,
   onSelectSlot,
   onUseTechnique,
@@ -139,6 +142,10 @@ export function GameStatePreview({
 }: GameStatePreviewProps) {
   const [openGraveyardPlayerId, setOpenGraveyardPlayerId] = React.useState<string | null>(null);
   const [settingsOpen, setSettingsOpen] = React.useState(false);
+  const [emoteOpen, setEmoteOpen] = React.useState(false);
+  const [spokenLine, setSpokenLine] = React.useState<{ text: string; playerId: string; id: number } | null>(null);
+  const spokenTimerRef = React.useRef<number | null>(null);
+  React.useEffect(() => () => { if (spokenTimerRef.current !== null) window.clearTimeout(spokenTimerRef.current); }, []);
   const [tutorialStep, setTutorialStep] = React.useState<number | null>(null);
   const [mulliganSelection, setMulliganSelection] = React.useState<string[]>([]);
   const [mulliganOpen, setMulliganOpen] = React.useState(true);
@@ -273,6 +280,24 @@ export function GameStatePreview({
       .map((event, index) => ({ event, key: eventKeys[index]! }))
       .filter(({ key }) => !processedEventKeysRef.current.has(key));
     const newEvents = newEventEntries.map(({ event }) => event);
+    for (const event of newEvents) {
+      let line: string | null = null;
+      if (event.type === 'CHAMPION_EMOTE' && event.playerId) {
+        const owner = state.players.find((player) => player.id === event.playerId);
+        const emote = event.reason as ChampionEmote;
+        if (CHAMPION_EMOTES.includes(emote)) {
+          line = championVoiceLine(owner?.champion?.presentationLines, event.tags?.includes('AFTER_QUEST') ?? false, emote) ?? CHAMPION_EMOTE_LABELS[emote];
+        }
+      }
+      if (event.type === 'ENTER_FIELD' && event.cardInstanceId) {
+        line = state.cardPool?.find((card) => card.id === (currentCards(state).get(event.cardInstanceId!)?.definitionId))?.summonLine ?? null;
+      }
+      if (line && event.playerId) {
+        setSpokenLine({ text: line, playerId: event.playerId, id: Date.now() });
+        if (spokenTimerRef.current !== null) window.clearTimeout(spokenTimerRef.current);
+        spokenTimerRef.current = window.setTimeout(() => setSpokenLine(null), 2600);
+      }
+    }
     const newEventKeys = newEventEntries.map(({ key }) => key);
     if (state.status === "FINISHED" && state.loserId &&
       !newEvents.some((event) => event.type === "ATTACK_DECLARED") &&
@@ -983,6 +1008,12 @@ export function GameStatePreview({
               >
                 ⚙ 설정
               </button>
+              {onEmote && state.status === 'IN_PROGRESS' && <div className="relative">
+                <button type="button" aria-expanded={emoteOpen} onClick={() => setEmoteOpen((open) => !open)} className="w-full rounded border border-amber-500/60 bg-amber-950/70 px-2 py-1.5 text-[10px] font-bold text-amber-100 md:text-xs">☺ 감정표현</button>
+                {emoteOpen && <div className="absolute right-full top-0 z-[210] mr-2 grid w-36 grid-cols-2 gap-1 rounded-lg border border-amber-400/60 bg-neutral-950 p-2 shadow-2xl">
+                  {CHAMPION_EMOTES.map((emote) => <button key={emote} type="button" onClick={() => { onEmote(emote); setEmoteOpen(false); }} className="rounded bg-neutral-800 p-2 text-xs text-white hover:bg-amber-700">{CHAMPION_EMOTE_LABELS[emote]}</button>)}
+                </div>}
+              </div>}
              {effectTargeting && (
                <div className="rounded border border-amber-500 bg-amber-950/90 px-2 py-2 text-center text-[10px] font-bold text-amber-100">
                  {state.targetingState!.sourceCard?.definitionId
@@ -1378,6 +1409,10 @@ export function GameStatePreview({
       {effectFinisher && !attackAnimation && (
         <div className="effect-finisher" aria-hidden="true"><div className="attack-animation__finisher-slash" /><span>K.O.!</span></div>
       )}
+      {spokenLine && <div key={spokenLine.id} role="status" className={`champion-spoken-line ${spokenLine.playerId === me.id ? 'champion-spoken-line--mine' : 'champion-spoken-line--theirs'}`}>
+        <span className="block text-[10px] font-bold text-amber-300">{state.players.find((player) => player.id === spokenLine.playerId)?.champion?.name}</span>
+        <span>{spokenLine.text}</span>
+      </div>}
       {presentationQueue[0] &&
         !playAnimation &&
         !generatedPlayAnimations.length &&

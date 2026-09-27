@@ -1419,6 +1419,7 @@ export default function Home() {
       bgmVolume={bgmVolume}
       onBgmVolumeChange={setBgmVolume}
       onSurrender={handleSurrender}
+      onEmote={(emote) => { setGameState((current) => { const result = executeAction(current, { type: 'EMOTE', playerId: current.players[0].id, emote }); return result.success ? result.state : current; }); }}
       onSelectCard={handleSelectCard}
       onSelectSlot={handleSelectSlot}
       onUseTechnique={handleUseTechnique}

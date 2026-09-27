@@ -1226,13 +1226,13 @@ export async function applyMatchAction(
       return { ok: false, runtime, requestId, code: "INVALID_ACTION", message: "알 수 없는 action입니다." };
     }
     if (
-      action.type !== "SURRENDER" &&
+      action.type !== "SURRENDER" && action.type !== "EMOTE" &&
       (runtime.state.activePlayerId !== playerId ||
         (runtime.state.targetingState?.active && runtime.state.targetingState.playerId !== playerId))
     ) {
       return { ok: false, runtime, requestId, code: "NOT_YOUR_TURN", message: "현재 행동할 수 있는 턴이 아닙니다." };
     }
-    const legalActions = action.type === "SURRENDER" ? [action] : getLegalActions(runtime.state, playerId);
+    const legalActions = action.type === "SURRENDER" || action.type === "EMOTE" ? [action] : getLegalActions(runtime.state, playerId);
     const actionToValidate: GameAction = action.type === "BEGIN_TARGETED_ACTION"
       ? { ...action.action, playerId }
       : action;

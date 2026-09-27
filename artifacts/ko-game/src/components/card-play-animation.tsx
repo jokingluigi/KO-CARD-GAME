@@ -122,6 +122,7 @@ export function CardPlayAnimation({
       </div>
       {animation.kind === "WRESTLER" && (
         <>
+          {rarity === 'LEGENDARY' && <><div className="legendary-entrance__halo" /><div className="legendary-entrance__title">LEGENDARY · {definition?.name}</div></>}
           <div className="card-play-animation__flash" />
           {(animation.impactLevel === "HEAVY" || animation.impactLevel === "VERY_HEAVY") && (
             <div className="card-play-animation__shockwave" />

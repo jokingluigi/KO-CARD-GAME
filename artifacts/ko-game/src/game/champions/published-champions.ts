@@ -1,4 +1,4 @@
-import type { ChampionAbility, ChampionDefinition, ChampionEffect, ChampionQuest, ChampionQuestCardType } from "./types";
+import type { ChampionAbility, ChampionDefinition, ChampionEffect, ChampionQuest, ChampionQuestCardType, ChampionPresentationLines } from "./types";
 import type { CardEffect } from "../effects/types";
 import type { ImageDisplayMode } from "../cards/types";
 import { ACTIONS, isEffectScript, type EffectScript } from "@workspace/effect-registry";
@@ -25,6 +25,7 @@ export type PublishedChampionRecord = {
   questCompleteAudioEnabled?: boolean;
   introLineOne?: string | null;
   introLineTwo?: string | null;
+  presentationLines?: ChampionPresentationLines;
 };
 
 function effects(config: Structured | null, tokenId?: string | null): ChampionEffect[] {
@@ -96,6 +97,7 @@ export function championRecordToDefinition(record: PublishedChampionRecord): Cha
     questCompletedPortraitUrl: record.questCompletedPortraitUrl,
     introLineOne: record.introLineOne ?? null,
     introLineTwo: record.introLineTwo ?? null,
+    presentationLines: record.presentationLines ?? {},
     abilityCost: record.abilityCost,
     ability: ability(`${record.id}-ability`, record.abilityName, record.abilityCost, record.abilityText,
       record.abilityEffects, record.championTokenDefinitionId),

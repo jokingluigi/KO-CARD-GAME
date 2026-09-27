@@ -4,6 +4,7 @@ export type LeaveReason = 'RETIRE' | 'DESTROY' | 'REMOVE_FROM_GAME';
 export type EntryCause = 'PLAY_FROM_HAND' | 'SUMMON' | 'REVIVE' | 'CHAMPION_DEPLOY';
 
 export type GameEventType =
+  | 'CHAMPION_EMOTE'
   | 'MULLIGAN_COMPLETED'
   | 'TURN_STARTED'
   | 'TURN_ENDED'

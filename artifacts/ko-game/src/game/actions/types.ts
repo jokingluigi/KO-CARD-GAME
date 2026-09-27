@@ -1,6 +1,7 @@
 import type { GameState } from '../types/game-state';
 import type { BoardSlot } from '../engine/board-position';
 import type { AttackTarget } from '../engine/combat';
+import type { ChampionEmote } from '../champions/types';
 
 export type GameAction =
   | { type: 'PLAY_WRESTLER'; playerId: string; cardInstanceId: string; boardSlot: BoardSlot }
@@ -16,7 +17,8 @@ export type GameAction =
   | { type: 'CONFIRM_PRECOMMIT_TARGET'; playerId: string; targetId: string }
   | { type: 'MULLIGAN'; playerId: string; cardInstanceIds: string[] }
   | { type: 'END_TURN'; playerId: string }
-  | { type: 'SURRENDER'; playerId: string };
+  | { type: 'SURRENDER'; playerId: string }
+  | { type: 'EMOTE'; playerId: string; emote: ChampionEmote };
 
 export type ActionType = GameAction['type'];
 

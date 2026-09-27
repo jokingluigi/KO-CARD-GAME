@@ -44,6 +44,7 @@ export const cardsTable = pgTable("cards", {
   entranceAudioUrl: text("entrance_audio_url"),
   entranceAudioVolume: integer("entrance_audio_volume").notNull().default(100),
   entranceAudioEnabled: boolean("entrance_audio_enabled").notNull().default(false),
+  summonLine: text("summon_line"),
   status: text("status").notNull().default("DRAFT"),
   version: integer("version").notNull().default(1),
   createdAt: timestamp("created_at", { withTimezone: true })

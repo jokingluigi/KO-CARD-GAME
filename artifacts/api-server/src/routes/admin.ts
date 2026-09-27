@@ -139,6 +139,7 @@ type CardInput = {
   entranceAudioVolume: number;
   entranceAudioEnabled: boolean;
   entranceAudioUploadToken: string | null;
+  summonLine: string | null;
 };
 
 type ChampionInput = {
@@ -161,6 +162,7 @@ type ChampionInput = {
   questCompleteAudioAssetId: string | null; questCompleteAudioUrl: string | null;
   questCompleteAudioVolume: number; questCompleteAudioEnabled: boolean;
   introLineOne: string | null; introLineTwo: string | null;
+  presentationLines: Record<string, Record<string, string>>;
   questCompleteAudioUploadToken: string | null;
 };
 
@@ -206,6 +208,22 @@ function parseChampionInput(value: unknown): ChampionInput | null {
   const introLineOne = introLine("introLineOne");
   const introLineTwo = introLine("introLineTwo");
   if (introLineOne === undefined || introLineTwo === undefined) return null;
+  const rawLines = object("presentationLines") ?? {};
+  const allowedLineKeys = ["HELLO", "THANKS", "WELL_PLAYED", "SORRY", "OOPS", "THREATEN", "VICTORY", "DEFEAT"];
+  const presentationLines: Record<string, Record<string, string>> = {};
+  for (const phase of ["BEFORE_QUEST", "AFTER_QUEST"]) {
+    const candidate = rawLines[phase];
+    if (candidate !== undefined && (!candidate || typeof candidate !== "object" || Array.isArray(candidate))) return null;
+    const lines = candidate as Record<string, unknown> | undefined;
+    if (lines && Object.keys(lines).some((key) => !allowedLineKeys.includes(key))) return null;
+    presentationLines[phase] = {};
+    for (const key of allowedLineKeys) {
+      const line = lines?.[key];
+      if (line === undefined || line === null || line === "") continue;
+      if (typeof line !== "string" || line.trim().length > 120 || /<[^>]*>|javascript:/i.test(line)) return null;
+      presentationLines[phase][key] = line.trim();
+    }
+  }
   const questCompleteAudioUploadToken = typeof input.questCompleteAudioUploadToken === "string"
     ? input.questCompleteAudioUploadToken : null;
   const abilityEffects = object("abilityEffects");
@@ -317,7 +335,7 @@ function parseChampionInput(value: unknown): ChampionInput | null {
     abilityAudioAssetId: text("abilityAudioAssetId"), abilityAudioUrl: text("abilityAudioUrl"),
     abilityAudioVolume, questCompleteAudioAssetId, questCompleteAudioUrl,
     questCompleteAudioVolume, questCompleteAudioEnabled, questCompleteAudioUploadToken,
-     introLineOne, introLineTwo,
+     introLineOne, introLineTwo, presentationLines,
   };
 }
 
@@ -839,6 +857,8 @@ function parseCardInput(value: unknown): CardInput | null {
       ? input.entranceAudioUrl : null;
   const entranceAudioVolume = boundedNumber(input.entranceAudioVolume, 100, 0, 100);
   const entranceAudioEnabled = input.entranceAudioEnabled === true;
+  const summonLine = typeof input.summonLine === "string" ? input.summonLine.trim() : "";
+  if (summonLine.length > 140 || /<[^>]*>|javascript:/i.test(summonLine)) return null;
   const entranceAudioUploadToken =
     typeof input.entranceAudioUploadToken === "string" ? input.entranceAudioUploadToken : null;
   const imageDisplayMode = IMAGE_DISPLAY_MODES.includes(input.imageDisplayMode as (typeof IMAGE_DISPLAY_MODES)[number])
@@ -919,6 +939,7 @@ function parseCardInput(value: unknown): CardInput | null {
     entranceAudioVolume,
     entranceAudioEnabled,
     entranceAudioUploadToken,
+    summonLine: summonLine || null,
   };
 }
 

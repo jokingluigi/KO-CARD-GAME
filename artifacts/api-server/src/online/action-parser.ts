@@ -59,6 +59,8 @@ export function toServerAction(
     }
     case "END_TURN":
       return { type: action.type, playerId };
+    case "EMOTE":
+      return { type: "EMOTE", playerId, emote: action.emote };
     case "SURRENDER":
       return { type: action.type, playerId };
     default:
