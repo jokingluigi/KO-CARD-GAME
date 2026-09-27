@@ -44,6 +44,7 @@ import { presentationCueDrafts, presentationEventKey } from './presentation-feed
 import { canMulligan } from '../game/engine/mulligan';
 import { QuestPresentation } from './quest-presentation';
 import { audioManager } from '../audio/audio-manager';
+import { combatHitSound } from '../audio/combat-hit-sound';
 import { MatchTutorial } from './match-tutorial';
 import { prefersReducedMotion } from './presentation-config';
 import { displayHealth } from './match-display-utils';
@@ -143,6 +144,9 @@ export function GameStatePreview({
   const [openGraveyardPlayerId, setOpenGraveyardPlayerId] = React.useState<string | null>(null);
   const [settingsOpen, setSettingsOpen] = React.useState(false);
   const [emoteOpen, setEmoteOpen] = React.useState(false);
+  React.useEffect(() => {
+    audioManager.preloadAttackSounds(['1-2', '3-5', '6-9', '10-plus'].map((tier) => `${import.meta.env.BASE_URL}sfx/combat-hit-${tier}.wav?v=1`).concat(`${import.meta.env.BASE_URL}sfx/combat-finisher.wav?v=1`));
+  }, []);
   const [spokenLine, setSpokenLine] = React.useState<{ text: string; playerId: string; id: number } | null>(null);
   const spokenTimerRef = React.useRef<number | null>(null);
   React.useEffect(() => () => { if (spokenTimerRef.current !== null) window.clearTimeout(spokenTimerRef.current); }, []);
@@ -229,7 +233,7 @@ export function GameStatePreview({
     if (!pendingEffectFinisher || playAnimation || generatedPlayAnimations.length || attackAnimation) return;
     setPendingEffectFinisher(false);
     setEffectFinisher(true);
-    audioManager.playAttack(`${import.meta.env.BASE_URL}sfx/impact-finisher.wav`, 90);
+    audioManager.playAttack(combatHitSound(10, true)!, 92);
     if (effectFinisherTimerRef.current !== null) window.clearTimeout(effectFinisherTimerRef.current);
     effectFinisherTimerRef.current = window.setTimeout(() => {
       setEffectFinisher(false);
@@ -319,6 +323,10 @@ export function GameStatePreview({
       0,
     );
     if (largestDamage > 0 && !newEvents.some((event) => event.type === "ATTACK_DECLARED")) {
+      if (state.status !== 'FINISHED') {
+        const hitSound = combatHitSound(largestDamage);
+        if (hitSound) audioManager.playAttack(hitSound, 86);
+      }
       setScreenShakeLevel(attackDamageImpactLevel(largestDamage));
       if (screenShakeTimerRef.current !== null) {
         window.clearTimeout(screenShakeTimerRef.current);
@@ -758,7 +766,9 @@ export function GameStatePreview({
           : screenShakeLevel !== "NONE"
             ? `attack-screen-shake--${screenShakeLevel.toLowerCase()}`
             : playAnimation?.kind === "WRESTLER"
-              ? `card-landing-shake--${playAnimation.impactLevel.toLowerCase()}`
+              ? getCardDefinition(playAnimation.card.definitionId)?.rarity === 'LEGENDARY'
+                ? 'card-landing-shake--legendary'
+                : `card-landing-shake--${playAnimation.impactLevel.toLowerCase()}`
             : ""
       }`} style={attackAnimation?.finishingBlow ? {
         "--finisher-duration": `${attackAnimationDuration(attackAnimation.currentAttack) + 350}ms`,
@@ -872,6 +882,9 @@ export function GameStatePreview({
 
          {/* BOARDS AREA */}
           <div className="ko-board-area relative flex min-h-0 flex-1 flex-col items-center justify-center gap-4 py-2 md:gap-6 md:py-4">
+            {effectTargeting && <div role="status" className="pointer-events-none absolute left-1/2 top-0 z-[115] max-w-[74vw] -translate-x-1/2 rounded border border-amber-400/70 bg-black/90 px-3 py-1 text-center text-[11px] font-bold text-amber-100 shadow-lg md:text-sm">
+              {state.targetingState?.pendingAction?.type === 'USE_CHAMPION_ABILITY' ? me.champion?.name : state.cardPool?.find((card) => card.id === state.targetingState?.sourceCard?.definitionId)?.name ?? getCardDefinition(state.targetingState?.sourceCard?.definitionId ?? '')?.name ?? '선수'} 효과의 대상을 선택하세요
+            </div>}
             
              {/* Opponent Board + Zones */}
               <div className="ko-opponent-board-row flex w-full items-center justify-center gap-2 md:gap-4">
@@ -888,7 +901,7 @@ export function GameStatePreview({
                     attackSelectionActive={!!selectedAttackerId && !effectTargeting}
                     attackReason={undefined}
                     targetingActive={!!effectTargeting}
-                    presentationActive={activePresentationCardId === card?.instanceId}
+                    presentationActive={activePresentationCardId === card?.instanceId || (!!effectTargeting && state.targetingState?.sourceInstanceId === card?.instanceId)}
                      targetable={!!card && (effectTargeting ? validEffectTargetIds.has(card.instanceId) : !!selectedAttackerId && legalAttackTargets.has(card.instanceId))}
                     attackPreview={!!card && !!selectedAttackerId && !effectTargeting && legalAttackTargets.has(card.instanceId) ? `기본 피해 ${attackBaseDamage} · 반격 ${Math.max(0, card.currentAttack)}` : undefined}
                     activeReady={false}
@@ -958,7 +971,7 @@ export function GameStatePreview({
                         })()
                       : undefined}
                     targetingActive={!!effectTargeting}
-                    presentationActive={activePresentationCardId === card?.instanceId}
+                    presentationActive={activePresentationCardId === card?.instanceId || (!!effectTargeting && state.targetingState?.sourceInstanceId === card?.instanceId)}
                     targetable={!!card && !!effectTargeting && validEffectTargetIds.has(card.instanceId)}
                      activeReady={!!card && legalActiveCardIds.has(card.instanceId)}
                      activeUsable={!!card && legalActiveCardIds.has(card.instanceId)}
@@ -1008,17 +1021,14 @@ export function GameStatePreview({
               >
                 ⚙ 설정
               </button>
-              {onEmote && state.status === 'IN_PROGRESS' && <div className="relative">
-                <button type="button" aria-expanded={emoteOpen} onClick={() => setEmoteOpen((open) => !open)} className="w-full rounded border border-amber-500/60 bg-amber-950/70 px-2 py-1.5 text-[10px] font-bold text-amber-100 md:text-xs">☺ 감정표현</button>
-                {emoteOpen && <div className="absolute right-full top-0 z-[210] mr-2 grid w-36 grid-cols-2 gap-1 rounded-lg border border-amber-400/60 bg-neutral-950 p-2 shadow-2xl">
-                  {CHAMPION_EMOTES.map((emote) => <button key={emote} type="button" onClick={() => { onEmote(emote); setEmoteOpen(false); }} className="rounded bg-neutral-800 p-2 text-xs text-white hover:bg-amber-700">{CHAMPION_EMOTE_LABELS[emote]}</button>)}
-                </div>}
-              </div>}
              {effectTargeting && (
                <div className="rounded border border-amber-500 bg-amber-950/90 px-2 py-2 text-center text-[10px] font-bold text-amber-100">
-                 {state.targetingState!.sourceCard?.definitionId
-                   ? state.cardPool?.find((card) => card.id === state.targetingState!.sourceCard!.definitionId)?.name ?? '효과'
-                   : '효과'} 대상 선택 ({state.targetingState!.selectedTargetIds.length}/{state.targetingState!.minTargets})
+                 <strong className="block break-keep text-amber-200">{state.targetingState!.pendingAction?.type === 'USE_CHAMPION_ABILITY'
+                   ? `${me.champion?.name ?? '챔피언'} 고유 능력`
+                   : state.targetingState!.sourceCard?.definitionId
+                     ? `${state.cardPool?.find((card) => card.id === state.targetingState!.sourceCard!.definitionId)?.name ?? getCardDefinition(state.targetingState!.sourceCard!.definitionId)?.name ?? '선수'}의 효과`
+                     : '효과'} 발동 중</strong>
+                 대상 선택 ({state.targetingState!.selectedTargetIds.length}/{state.targetingState!.minTargets})
                  <span className="mt-1 block text-[9px] text-amber-200/80">금색으로 강조된 대상만 선택 가능</span>
                  <button type="button" onClick={onCancelEffectTargeting} className="mt-1 block w-full rounded border border-amber-600 px-1 py-0.5 text-[9px]">취소</button>
                </div>
@@ -1197,13 +1207,15 @@ export function GameStatePreview({
               <div className="max-h-[90vh] w-full max-w-xl overflow-y-auto rounded-xl border border-amber-500 bg-neutral-950 p-5 text-white shadow-2xl">
                 <h2 className="text-lg font-black text-amber-300">시작 손패 교체</h2>
                 <p className="my-3 text-sm text-neutral-300">첫 턴 행동 전, 바꿀 카드를 선택하세요. 선택한 카드만 덱의 카드와 교체합니다.</p>
-                <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
+                <div className="flex flex-wrap justify-center gap-3">
                   {state.players[0].hand.map((card) => <button key={card.instanceId} type="button"
                     aria-pressed={mulliganSelection.includes(card.instanceId)}
                     onClick={() => setMulliganSelection((current) => current.includes(card.instanceId)
                       ? current.filter((id) => id !== card.instanceId) : [...current, card.instanceId])}
-                    className={`rounded border p-3 text-left text-sm ${mulliganSelection.includes(card.instanceId) ? 'border-amber-300 bg-amber-900' : 'border-neutral-600 bg-neutral-800'}`}>
-                    {getCardDefinition(card.definitionId)?.name ?? card.definitionId} {mulliganSelection.includes(card.instanceId) ? '✓' : ''}
+                    aria-label={`${getCardDefinition(card.definitionId)?.name ?? card.definitionId} ${mulliganSelection.includes(card.instanceId) ? '교체 선택됨' : '교체 선택'}`}
+                    className={`relative w-[clamp(105px,27vw,150px)] rounded-lg p-1 transition-transform hover:-translate-y-2 ${mulliganSelection.includes(card.instanceId) ? '-translate-y-3 bg-amber-500 ring-2 ring-amber-300' : 'bg-neutral-700'}`}>
+                    <CardRenderer name={getCardDefinition(card.definitionId)?.name ?? '카드'} cardType={card.cardType} cost={card.currentCost} attack={card.currentAttack} health={card.currentHealth} rulesText={getCardRuntimeRulesText(card, getCardDefinition(card.definitionId)?.rulesText ?? '')} imageUrl={getCardDefinition(card.definitionId)?.imageUrl} rarity={getCardDefinition(card.definitionId)?.rarity} size="hand" imageDisplaySettings={getCardDefinition(card.definitionId)} className="pointer-events-none w-full" />
+                    {mulliganSelection.includes(card.instanceId) && <span className="absolute inset-x-1 bottom-1 rounded bg-amber-300/95 py-1 text-center text-xs font-black text-black">교체 선택</span>}
                   </button>)}
                 </div>
                 <div className="mt-4 flex justify-end gap-2">
@@ -1250,19 +1262,22 @@ export function GameStatePreview({
                  </span>
                )}
               <div className="flex items-start gap-2 md:gap-3">
+                <div className="relative shrink-0">
                   <div
                     ref={playerChampionRef}
                     role="button"
                     tabIndex={0}
-                    aria-label="내 챔피언 대상"
-                    onClick={effectTargeting ? () => onEffectTarget(me.id) : undefined}
+                    aria-label={effectTargeting ? '내 챔피언 대상' : '내 챔피언 감정표현 열기'}
+                    aria-expanded={!effectTargeting && emoteOpen}
+                    onClick={() => { if (effectTargeting) onEffectTarget(me.id); else if (onEmote && state.status === 'IN_PROGRESS') setEmoteOpen((open) => !open); }}
                     onKeyDown={(event) => {
-                      if ((event.key === 'Enter' || event.key === ' ') && effectTargeting) {
+                      if (event.key === 'Enter' || event.key === ' ') {
                         event.preventDefault();
-                        onEffectTarget(me.id);
+                        if (effectTargeting) onEffectTarget(me.id);
+                        else if (onEmote && state.status === 'IN_PROGRESS') setEmoteOpen((open) => !open);
                       }
                     }}
-                    className={`ko-player-champion relative flex h-28 w-20 shrink-0 flex-col items-center justify-center overflow-hidden rounded-sm border-2 bg-neutral-900 md:h-40 md:w-28 ${effectTargeting && validEffectTargetIds.has(me.id) ? 'cursor-crosshair border-amber-400 shadow-[0_0_15px_rgba(251,191,36,0.5)]' : 'border-blue-600 shadow-[0_0_15px_rgba(37,99,235,0.2)]'} ${activePresentationChampionId === me.champion?.id || activePresentationCue?.playerId === me.id ? 'presentation-card-pulse' : ''}`}
+                    className={`ko-player-champion relative flex h-28 w-20 shrink-0 cursor-pointer flex-col items-center justify-center overflow-hidden rounded-sm border-2 bg-neutral-900 md:h-40 md:w-28 ${effectTargeting && validEffectTargetIds.has(me.id) ? 'cursor-crosshair border-amber-400 shadow-[0_0_15px_rgba(251,191,36,0.5)]' : 'border-blue-600 shadow-[0_0_15px_rgba(37,99,235,0.2)]'} ${activePresentationChampionId === me.champion?.id || activePresentationCue?.playerId === me.id ? 'presentation-card-pulse' : ''}`}
                   >
                     {playerChampionPortrait && (
                       <CardArtwork
@@ -1285,6 +1300,10 @@ export function GameStatePreview({
                      {playerChampionName || me.champion?.name || '내 챔피언'}
                   </span>
                </div>
+                {onEmote && emoteOpen && !effectTargeting && <div role="menu" aria-label="챔피언 감정표현" className="absolute bottom-full left-0 z-[210] mb-2 grid w-40 grid-cols-2 gap-1 rounded-lg border border-amber-400/70 bg-neutral-950 p-2 shadow-2xl">
+                  {CHAMPION_EMOTES.map((emote) => <button key={emote} type="button" role="menuitem" onClick={() => { onEmote(emote); setEmoteOpen(false); }} className="rounded bg-neutral-800 p-2 text-xs text-white hover:bg-amber-700">{CHAMPION_EMOTE_LABELS[emote]}</button>)}
+                </div>}
+                </div>
 
                 <div className="ko-player-stats flex min-w-0 flex-col gap-1">
                 <div className="rounded border border-neutral-700 bg-neutral-900/80 px-2 py-1">

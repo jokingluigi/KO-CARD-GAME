@@ -7,6 +7,7 @@ import { getActiveCardKeywords } from "../game/cards/granted-text";
 import { getCardRuntimeRulesText } from "../lib/card-display-state";
 import type { CardPlayAnimationState } from "./card-play-animation-utils";
 import { PRESENTATION_CONFIG, prefersReducedMotion } from "./presentation-config";
+import { audioManager } from '../audio/audio-manager';
 
 export const TECHNIQUE_REVEAL_HOLD_MS = 1600;
 export const TECHNIQUE_REVEAL_TOTAL_MS = PRESENTATION_CONFIG.techniqueRevealMs;
@@ -15,6 +16,7 @@ function animationDuration(animation: CardPlayAnimationState) {
   const reducedMotion = prefersReducedMotion();
   if (reducedMotion) return 180;
   if (animation.kind === "TECHNIQUE") return TECHNIQUE_REVEAL_TOTAL_MS;
+  if (getCardDefinition(animation.card.definitionId)?.rarity === 'LEGENDARY') return 940;
   if (animation.impactLevel === "VERY_HEAVY") return PRESENTATION_CONFIG.veryHeavyLandingMs;
   if (animation.impactLevel === "HEAVY") return PRESENTATION_CONFIG.heavyLandingMs;
   if (animation.impactLevel === "LIGHT") return PRESENTATION_CONFIG.lightLandingMs;
@@ -61,12 +63,16 @@ export function CardPlayAnimation({
 
   useEffect(() => {
     completedRef.current = false;
+    const legendary = animation.kind === 'WRESTLER' && getCardDefinition(animation.card.definitionId)?.rarity === 'LEGENDARY';
+    const impactId = legendary ? window.setTimeout(() => {
+      audioManager.playAttack(`${import.meta.env.BASE_URL}sfx/combat-hit-6-9.wav?v=1`, 68);
+    }, prefersReducedMotion() ? 0 : 700) : null;
     const timeoutId = window.setTimeout(() => {
       if (completedRef.current) return;
       completedRef.current = true;
       onCompleteRef.current();
     }, animationDuration(animation) + 120);
-    return () => window.clearTimeout(timeoutId);
+    return () => { window.clearTimeout(timeoutId); if (impactId !== null) window.clearTimeout(impactId); };
   }, [animation]);
 
   function complete(event: React.AnimationEvent<HTMLDivElement>) {
@@ -122,7 +128,7 @@ export function CardPlayAnimation({
       </div>
       {animation.kind === "WRESTLER" && (
         <>
-          {rarity === 'LEGENDARY' && <><div className="legendary-entrance__halo" /><div className="legendary-entrance__title">LEGENDARY · {definition?.name}</div></>}
+          {rarity === 'LEGENDARY' && <><div className="legendary-entrance__focus" /><div className="legendary-entrance__ring" /><div className="legendary-entrance__title">{definition?.name}</div></>}
           <div className="card-play-animation__flash" />
           {(animation.impactLevel === "HEAVY" || animation.impactLevel === "VERY_HEAVY") && (
             <div className="card-play-animation__shockwave" />

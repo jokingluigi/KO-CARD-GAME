@@ -12,6 +12,7 @@ import {
 } from "@workspace/db";
 import express, { Router, type IRouter, type Request, type Response } from "express";
 import { parseCardTags } from "@workspace/api-zod";
+import { expandNamedCardReferences } from '../lib/named-card-references';
 import {
   AudioStorage,
   BackgroundImageStorage,
@@ -3002,7 +3003,10 @@ router.get("/cards/:id/test", async (request, response): Promise<void> => {
     response.status(404).json({ message: "테스트할 수 있는 선수를 찾을 수 없습니다." });
     return;
   }
-  response.json({ card });
+  const allCards = await db.select().from(cardsTable);
+  const requiredIds = new Set([card.id]);
+  expandNamedCardReferences(allCards, requiredIds);
+  response.json({ card, relatedCards: allCards.filter((candidate) => candidate.id !== card.id && requiredIds.has(candidate.id)) });
 });
 
 router.post("/cards", async (request, response): Promise<void> => {

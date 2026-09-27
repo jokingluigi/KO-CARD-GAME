@@ -55,6 +55,16 @@ test('PLAYER_CHOICE pauses post-enter damage, validates stale/invalid clicks, th
   assert.equal(resolved.players[1].board[0]?.currentHealth, 1);
 });
 
+test('a manually chosen ally excludes the card producing the effect', () => {
+  const source = card('choice-source', [targeted('BUFF', 'SELF')]);
+  const ally = { ...card('choice-ally'), boardSlot: 1 as const };
+  const state = createInitialGameState();
+  state.players[0].board[1] = ally;
+  const pending = enterField(state, 'player-1', source, 0);
+  assert.deepEqual(pending.targetingState?.validTargetIds, [ally.instanceId]);
+  assert.equal(selectEffectTarget(pending, source.instanceId), pending);
+});
+
 test('mandatory Technique PLAYER_CHOICE preflights before payment when no target exists', () => {
   const definition: CardDefinition = {
     id: 'targeted-technique',

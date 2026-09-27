@@ -10,7 +10,6 @@ import type { AttackAnimationState } from "@/components/attack-animation-utils";
 import {
   attackDamageImpactLevel,
   attackImpactLevel,
-  attackSoundPitch,
 } from "@/components/attack-animation-utils";
 import type { CardPlayAnimationState, CardPlayGeometry } from "@/components/card-play-animation-utils";
 import { landingImpactLevel } from "@/components/card-play-animation-utils";
@@ -28,6 +27,7 @@ import {
   type GameState,
 } from "@/game";
 import { audioManager } from "@/audio/audio-manager";
+import { combatHitSound } from "@/audio/combat-hit-sound";
 import {
   BGM_MUTE_STORAGE_KEY,
   BGM_VOLUME_STORAGE_KEY,
@@ -766,9 +766,11 @@ function OnlineMatchPage() {
     }
   }
 
-  function playAttackSound(animation: Pick<AttackAnimationState, "currentAttack" | "impactLevel" | "soundKey" | "finishingBlow">) {
+  function playAttackSound(animation: Pick<AttackAnimationState, "damage" | "impactLevel" | "soundKey" | "finishingBlow">) {
     if (processedAttackSoundsRef.current.has(animation.soundKey)) return;
     processedAttackSoundsRef.current.add(animation.soundKey);
+    const url = combatHitSound(animation.damage, animation.finishingBlow);
+    if (!url) return;
     const sound = mediaCatalog.attackSounds[
       animation.impactLevel === "LIGHT"
         ? "LIGHT_ATTACK"
@@ -779,9 +781,9 @@ function OnlineMatchPage() {
             : "VERY_HEAVY_ATTACK"
     ];
     audioManager.playAttack(
-      `${import.meta.env.BASE_URL}sfx/impact-${animation.finishingBlow ? "finisher" : animation.impactLevel.toLowerCase().replace('_', '-')}.wav?v=2`,
-      sound?.volume ?? 85,
-      animation.finishingBlow ? 1 : attackSoundPitch(animation.currentAttack),
+      url,
+      sound?.volume ?? 90,
+      1,
     );
   }
 

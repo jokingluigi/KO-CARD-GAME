@@ -26,7 +26,7 @@ export function MatchResultOverlay({
   const [cinematic, setCinematic] = useState(lethal);
   useEffect(() => {
     if (!lethal) return;
-    audioManager.playAttack('/sfx/impact-heavy.wav', 92, 0.86);
+    audioManager.playAttack('/sfx/combat-finisher.wav?v=1', 92);
     const timeout = window.setTimeout(() => setCinematic(false), 1650);
     return () => window.clearTimeout(timeout);
   }, [lethal]);

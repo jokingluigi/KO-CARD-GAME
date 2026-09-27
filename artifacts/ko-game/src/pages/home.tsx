@@ -42,6 +42,7 @@ import { MainMenu } from '@/components/main-menu';
 import { AuthLoading, AuthPage, AuthRecovery } from '@/components/auth-page';
 import { AuthRequestError, fetchCurrentUser, logout, type AuthUser } from '@/lib/auth-client';
 import { audioManager } from '@/audio/audio-manager';
+import { combatHitSound } from '@/audio/combat-hit-sound';
 import {
   BGM_MUTE_STORAGE_KEY,
   BGM_VOLUME_STORAGE_KEY,
@@ -62,7 +63,6 @@ import type { AttackAnimationState } from '@/components/attack-animation-utils';
 import {
   attackDamageImpactLevel,
   attackImpactLevel,
-  attackSoundPitch,
 } from '@/components/attack-animation-utils';
 
 const TURN_TIME_LIMIT_SECONDS = 90;
@@ -363,16 +363,19 @@ export default function Home() {
           credentials: 'include',
         }).then(async (response) => {
           if (!response.ok) throw new Error('관리자 테스트 카드를 불러오지 못했습니다.');
-          return (await response.json()) as { card: Parameters<typeof cardRecordToDefinition>[0] };
+          return (await response.json()) as { card: Parameters<typeof cardRecordToDefinition>[0]; relatedCards?: Array<Parameters<typeof cardRecordToDefinition>[0]> };
         }),
         fetchGameMedia(),
-      ]).then(([{ card }, media]) => {
+      ]).then(([{ card, relatedCards }, media]) => {
           if (cancelled) return;
           const definition = cardRecordToDefinition(card);
+          const relatedDefinitions = (relatedCards ?? []).map(cardRecordToDefinition);
+          const testState = createInitialGameState(undefined, [definition]);
+          testState.cardPool = [...(testState.cardPool ?? []), ...relatedDefinitions.filter((entry) => !testState.cardPool?.some((existing) => existing.id === entry.id))];
           setMediaCatalog(media);
-          setRuntimeCardDefinitions([definition]);
+          setRuntimeCardDefinitions([definition, ...relatedDefinitions]);
           preloadMatchAssets([definition], []);
-          setGameState(startGame(createInitialGameState(undefined, [definition]), undefined, media));
+          setGameState(startGame(testState, undefined, media));
           setIsAdminTestMatch(true);
           setSelectedCardId(null);
           setSelectedAttackerId(null);
@@ -903,9 +906,11 @@ export default function Home() {
     setPlayError(null);
   }
 
-  function playAttackSound(animation: Pick<AttackAnimationState, "currentAttack" | "impactLevel" | "soundKey" | "finishingBlow">) {
+  function playAttackSound(animation: Pick<AttackAnimationState, "damage" | "impactLevel" | "soundKey" | "finishingBlow">) {
     if (processedAttackSoundsRef.current.has(animation.soundKey)) return;
     processedAttackSoundsRef.current.add(animation.soundKey);
+    const url = combatHitSound(animation.damage, animation.finishingBlow);
+    if (!url) return;
     const sound = mediaCatalog.attackSounds[animation.impactLevel === "LIGHT"
       ? "LIGHT_ATTACK"
       : animation.impactLevel === "NORMAL"
@@ -914,9 +919,9 @@ export default function Home() {
           ? "HEAVY_ATTACK"
           : "VERY_HEAVY_ATTACK"];
     audioManager.playAttack(
-      `${import.meta.env.BASE_URL}sfx/impact-${animation.finishingBlow ? "finisher" : animation.impactLevel.toLowerCase().replace('_', '-')}.wav?v=2`,
-      sound?.volume ?? 85,
-      animation.finishingBlow ? 1 : attackSoundPitch(animation.currentAttack),
+      url,
+      sound?.volume ?? 90,
+      1,
     );
   }
 
@@ -1002,7 +1007,7 @@ export default function Home() {
     setAttackAnimation(animation);
     if (!animation) {
       playAttackSound({
-        currentAttack,
+        damage,
         impactLevel: attackImpactLevel(currentAttack),
         soundKey: `${attackEventIndex}:${selectedAttackerId}:${targetCardInstanceId}`,
       });
@@ -1130,7 +1135,7 @@ export default function Home() {
     setAttackAnimation(animation);
     if (!animation) {
       playAttackSound({
-        currentAttack,
+        damage,
         impactLevel: attackImpactLevel(currentAttack),
         soundKey: `${attackEventIndex}:${selectedAttackerId}:${gameState.players[1].id}`,
         finishingBlow: result.state.status === 'FINISHED' && result.state.loserId === gameState.players[1].id && damage > 0,
@@ -1406,7 +1411,6 @@ export default function Home() {
       turnSecondsRemaining={turnSecondsRemaining}
       onEndTurn={handleEndTurn}
       onMulligan={handleMulligan}
-      guidedTutorial={isAiMatch}
       canEndTurn={Boolean(
         gameplayReady &&
         gameState.activePlayerId === gameState.players[0].id &&

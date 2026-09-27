@@ -21,6 +21,7 @@ export function AttackAnimation({
   const completedRef = useRef(false);
   const onImpactRef = useRef(onImpact);
   const onCompleteRef = useRef(onComplete);
+  const impactTimerRef = useRef<number | null>(null);
   onImpactRef.current = onImpact;
   onCompleteRef.current = onComplete;
   const definition = getCardDefinition(animation.attacker.definitionId);
@@ -55,14 +56,15 @@ export function AttackAnimation({
       if (impactedRef.current) return;
       impactedRef.current = true;
       onImpactRef.current();
-    }, impactDelay);
+    }, impactDelay + 60);
+    impactTimerRef.current = impactTimer;
     const completeTimer = window.setTimeout(() => {
       if (completedRef.current) return;
       completedRef.current = true;
       onCompleteRef.current();
     }, duration + 100);
     return () => {
-      window.clearTimeout(impactTimer);
+      if (impactTimerRef.current !== null) window.clearTimeout(impactTimerRef.current);
       window.clearTimeout(completeTimer);
     };
   }, [duration, impactDelay]);
@@ -102,7 +104,15 @@ export function AttackAnimation({
           </div>
         )}
       </div>
-      <div className="attack-animation__attacker">
+      <div className="attack-animation__attacker" onAnimationStart={(event) => {
+        if (event.animationName !== 'ko-attack-card' || impactedRef.current) return;
+        if (impactTimerRef.current !== null) window.clearTimeout(impactTimerRef.current);
+        impactTimerRef.current = window.setTimeout(() => {
+          if (impactedRef.current) return;
+          impactedRef.current = true;
+          onImpactRef.current();
+        }, impactDelay);
+      }}>
         <CardRenderer
           name={definition?.name ?? "공격 카드"}
           cardType={animation.attacker.cardType}

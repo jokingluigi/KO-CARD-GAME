@@ -58,6 +58,7 @@ class AudioManager {
   private needsAudioUnlock = false;
   private musicContext: "NON_BATTLE" | "BATTLE" = "NON_BATTLE";
   private attackAudio: HTMLAudioElement | null = null;
+  private cachedAttackAudio = new Map<string, HTMLAudioElement>();
   private attackBaseVolume = 100;
   private packReveal: {
     audio: HTMLAudioElement;
@@ -151,7 +152,8 @@ class AudioManager {
     if (!hasBrowserAudio() || !url) return;
     this.stopAttack();
     try {
-      const audio = new Audio(url);
+      const audio = this.cachedAttackAudio.get(url) ?? new Audio(url);
+      audio.currentTime = 0;
       audio.preload = "auto";
       this.attackBaseVolume = volume;
       audio.volume = safeVolume(volume * this.sfxVolume / 100);
@@ -165,6 +167,17 @@ class AudioManager {
       });
     } catch {
       this.attackAudio = null;
+    }
+  }
+
+  preloadAttackSounds(urls: string[]) {
+    if (!hasBrowserAudio()) return;
+    for (const url of urls) {
+      if (this.cachedAttackAudio.has(url)) continue;
+      const audio = new Audio(url);
+      audio.preload = 'auto';
+      audio.load?.();
+      this.cachedAttackAudio.set(url, audio);
     }
   }
 

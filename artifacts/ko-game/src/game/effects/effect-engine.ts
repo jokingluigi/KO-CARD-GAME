@@ -84,6 +84,7 @@ export function getValidTargets(
       if (!matchesStateCardTagFilter(state, card, target.filter)) return false;
       if (target.selection === 'RANDOM' && !isEligibleForRandomPool(card, target.randomScope)) return false;
       if (target.selection === 'SELF' && card.instanceId !== sourceCard.instanceId) return false;
+      if (target.selection === 'PLAYER_CHOICE' && card.instanceId === sourceCard.instanceId) return false;
       // Directly deployed champion tokens remain damageable, but not silence,
       // destroy, or remove-from-game targets.
       if ((card.isDirectDeployedChampion || card.isTrainingDummy) && (
@@ -393,7 +394,7 @@ function applyScriptSteps(
         const validTargetIds = scriptTargetCards(next, playerId, sourceCard, {
           ...step.target,
           selection: 'ALL',
-        }).map((card) => card.instanceId);
+        }).map((card) => card.instanceId).filter((id) => id !== sourceCard.instanceId);
         const minimum = step.target.count ?? 1;
         if (validTargetIds.length < minimum) continue;
         const registerObject = Object.fromEntries(registers.entries());

@@ -3,7 +3,6 @@ import { CardRenderer } from "./card-renderer";
 import { championQuestRewardText } from "./champion-quest-reward-text";
 import { getCardDefinition, type GameState } from "@/game";
 import type { PresentationCue } from "./presentation-feedback";
-import { audioManager } from '@/audio/audio-manager';
 
 export const QUEST_BANNER_DURATION_MS = 1200;
 export const QUEST_REWARD_DURATION_MS = 2100;
@@ -30,7 +29,6 @@ export function QuestPresentation({
   const isViewer = cue.playerId === viewerPlayerId;
 
   useEffect(() => {
-    audioManager.playAttack('/sfx/impact-very-heavy.wav', 85, 0.92);
     const bannerTimer = window.setTimeout(() => setPhase("REWARD"), QUEST_BANNER_DURATION_MS);
     const completeTimer = window.setTimeout(onComplete, QUEST_BANNER_DURATION_MS + QUEST_REWARD_DURATION_MS);
     return () => {
@@ -40,15 +38,14 @@ export function QuestPresentation({
   }, [onComplete]);
 
   return (
-    <div className="quest-cinematic fixed inset-0 z-[360] flex items-center justify-center bg-black/60 px-4 pointer-events-none">
-      <div className="quest-cinematic__rays" aria-hidden="true" />
+    <div className="fixed inset-0 z-[360] flex items-center justify-center bg-black/25 px-4 pointer-events-none">
       {phase === "BANNER" ? (
-        <div className="quest-cinematic__banner text-center" style={{ animation: "ko-quest-banner 1200ms ease both" }}>
+        <div className="text-center" style={{ animation: "ko-quest-banner 1200ms ease both" }}>
           <p className="text-sm font-black tracking-[0.3em] text-amber-200">{isViewer ? "퀘스트 성공!" : "상대의 퀘스트 성공!"}</p>
           <h2 className="mt-4 text-4xl font-black text-white drop-shadow-[0_3px_10px_rgba(0,0,0,.95)] sm:text-6xl">{champion?.name ?? "Champion"}</h2>
         </div>
       ) : (
-        <div className="quest-cinematic__reward w-full max-w-xl rounded-2xl border border-amber-400/60 bg-neutral-950/95 p-5 text-center shadow-2xl sm:p-7" style={{ animation: "ko-quest-reward 2100ms ease both" }}>
+        <div className="w-full max-w-xl rounded-2xl border border-amber-400/60 bg-neutral-950/95 p-5 text-center shadow-2xl sm:p-7" style={{ animation: "ko-quest-reward 2100ms ease both" }}>
           <p className="text-xs font-black tracking-[0.25em] text-amber-300">퀘스트 보상</p>
           <h2 className="mt-2 text-2xl font-black">{champion?.name ?? "Champion"}</h2>
           <p className="mt-4 whitespace-pre-wrap text-base leading-6 text-amber-100">{champion ? championQuestRewardText(champion) : "퀘스트를 완료했습니다."}</p>
