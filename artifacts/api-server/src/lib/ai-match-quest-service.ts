@@ -1,4 +1,5 @@
-import { db, cardsTable, championsTable } from "@workspace/db";
+import { db, cardsTable, championsTable, rewardSettingsTable } from "@workspace/db";
+import { inArray } from "drizzle-orm";
 import {
   cardRecordToDefinition,
   championRecordToDefinition,
@@ -14,6 +15,7 @@ import { loadUserDeck, resolveDeck } from "../routes/decks";
 import { listAIDecks } from "./ai-deck-service";
 import { expandNamedCardReferences } from "./named-card-references";
 import { processMatchEventsForDailyQuests } from "./daily-quest-service";
+import { grantReward, isFinishedMatchRewardEligible, type RewardGrantResult } from "./reward-service";
 import { toServerAction } from "../online/action-parser";
 
 const AI_DECISIONS_PER_TURN = 50;
@@ -122,7 +124,7 @@ export async function completeAIMatchQuestProgress(input: {
   aiDeckId: string;
   matchId: string;
   actions: unknown[];
-}): Promise<void> {
+}): Promise<RewardGrantResult | null> {
   if (!/^ai-[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(input.matchId)) {
     throw new Error("AI 경기 식별자가 올바르지 않습니다.");
   }
@@ -219,7 +221,11 @@ export async function completeAIMatchQuestProgress(input: {
   if (!userPlayerId || !aiPlayerId) throw new Error("경기 참가자 데이터를 만들 수 없습니다.");
   const finalState = replayAIMatch(startedState, input.actions, userPlayerId, aiPlayerId);
 
-  await db.transaction(async (tx) => {
+  const settings = await db.select().from(rewardSettingsTable)
+    .where(inArray(rewardSettingsTable.key, ["MATCH_ONLINE_WIN", "MATCH_ONLINE_LOSS"]));
+  const won = finalState.winnerId === userPlayerId;
+  const rewardSetting = settings.find((setting) => setting.key === (won ? "MATCH_ONLINE_WIN" : "MATCH_ONLINE_LOSS"));
+  return db.transaction(async (tx) => {
     await processMatchEventsForDailyQuests(
       input.userId,
       userPlayerId,
@@ -228,5 +234,15 @@ export async function completeAIMatchQuestProgress(input: {
       0,
       tx,
     );
+    if (!isFinishedMatchRewardEligible(finalState.status, finalState.winnerId, null) ||
+      !rewardSetting?.enabled || rewardSetting.rewardType !== "CURRENCY" || rewardSetting.amount <= 0) return null;
+    return grantReward({
+      userId: input.userId,
+      sourceType: "MATCH_AI_RESULT",
+      sourceId: input.matchId,
+      rewardType: rewardSetting.rewardType,
+      amount: rewardSetting.amount,
+      metadata: { resultReason: "GAME_FINISHED", outcome: won ? "WIN" : "LOSS" },
+    }, tx);
   });
 }

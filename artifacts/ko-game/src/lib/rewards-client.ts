@@ -82,7 +82,7 @@ export type RewardAdminData = {
 
 export const fetchDailyQuests = () => request<{ assignments: DailyQuest[] }>("/daily-quests");
 export const completeAIMatchQuestProgress = (body: AIMatchQuestProgressInput) =>
-  request<{ completed: boolean }>("/daily-quests/ai-match-progress", {
+  request<{ completed: boolean; reward: { amount: number; sourceType: string } | null }>("/daily-quests/ai-match-progress", {
     method: "POST",
     body: JSON.stringify(body),
   });

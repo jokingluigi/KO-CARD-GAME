@@ -1,9 +1,20 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 
-import { getLegalActions } from "./engine-actions";
+import { executeAction, getLegalActions } from "./engine-actions";
 import { createInitialGameState } from "../engine/create-initial-game-state";
 import { startGame } from "../engine/turn-system";
+
+test("같은 턴에 챔피언 감정표현을 세 번 이상 사용할 수 있다", () => {
+  let state = startGame(createInitialGameState(), () => 0.5);
+  const playerId = state.players[0]!.id;
+  for (let count = 0; count < 4; count += 1) {
+    const result = executeAction(state, { type: "EMOTE", playerId, emote: "HELLO" });
+    assert.equal(result.success, true);
+    state = result.state;
+  }
+  assert.equal(state.events.filter((event) => event.type === "CHAMPION_EMOTE" && event.playerId === playerId).length, 4);
+});
 
 test("동일한 immutable GameState의 legal actions는 다시 probe하지 않고 재사용한다", () => {
   const state = startGame(createInitialGameState(), () => 0.5);

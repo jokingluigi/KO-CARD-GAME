@@ -195,6 +195,7 @@ export default function Home() {
   const presentationIdleWaitersRef = useRef(new Set<() => void>());
   const [presentationBusy, setPresentationBusy] = useState(false);
   const [matchResultVisible, setMatchResultVisible] = useState(false);
+  const [aiMatchReward, setAiMatchReward] = useState<{ amount: number; sourceType: string } | null>(null);
   const turnKey = `${gameState.turn}:${gameState.activePlayerId ?? 'none'}`;
   const aiOpeningActive = isAiMatch && aiMatchStarted &&
     isAiMatchOpeningActive(aiOpening, gameState.gameId, aiOpeningNow);
@@ -578,6 +579,7 @@ export default function Home() {
     };
     aiMatchActionsRef.current = [];
     submittedAIMatchRef.current = null;
+    setAiMatchReward(null);
     const openingStartedAt = Date.now();
     setAiOpening(createAiMatchOpening(
       nextState.gameId,
@@ -660,10 +662,11 @@ export default function Home() {
       let lastError: unknown;
       for (let attempt = 0; attempt < 3; attempt += 1) {
         try {
-          await completeAIMatchQuestProgress({
+          const result = await completeAIMatchQuestProgress({
             ...match,
             actions: aiMatchActionsRef.current as unknown as Array<Record<string, unknown>>,
           });
+          setAiMatchReward(result.reward);
           return;
         } catch (error) {
           lastError = error;
@@ -1473,6 +1476,7 @@ export default function Home() {
      {matchResultVisible && (
        <MatchResultOverlay
          state={gameState}
+         reward={isAiMatch ? aiMatchReward : null}
          onReturnToMainMenu={() => navigate(ROUTES.MAIN_MENU)}
        />
      )}

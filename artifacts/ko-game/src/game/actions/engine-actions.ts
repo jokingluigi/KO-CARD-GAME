@@ -154,13 +154,6 @@ export function executeAction(state: GameState, action: GameAction): ActionResul
       if (!player?.champion || !CHAMPION_EMOTES.includes(action.emote)) {
         return actionFailure(state, 'INVALID_PLAYER', '사용할 수 없는 감정표현입니다.');
       }
-      // Limit repeated messages without relying on wall-clock time in the deterministic engine.
-      const lastTurnStart = state.events.reduce((offset, event, index) =>
-        event.type === 'TURN_STARTED' && event.playerId === player.id ? index : offset, -1);
-      if (state.events.slice(lastTurnStart + 1).filter((event) =>
-        event.type === 'CHAMPION_EMOTE' && event.playerId === player.id).length >= 2) {
-        return actionFailure(state, 'ACTIVE_NOT_AVAILABLE', '이번 턴에는 감정표현을 모두 사용했습니다.');
-      }
       return actionSuccess({ ...state, events: [...state.events, {
         type: 'CHAMPION_EMOTE', playerId: player.id, championId: player.champion.id,
         source: { type: 'CHAMPION', championId: player.champion.id },
