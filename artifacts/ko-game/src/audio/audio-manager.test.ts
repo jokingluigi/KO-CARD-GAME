@@ -390,11 +390,12 @@ test("Legendary 등장 음악은 persistent 음악의 재생 위치를 보존하
     persistent.currentTime = 102;
 
     audioManager.playLegendaryEntrance("/legendary.mp3", 95);
+    assert.equal(manager.current?.audio.loop, true);
     assert.equal(persistent.paused, true);
     assert.equal(persistent.currentTime, 102);
     assert.equal(manager.current?.audio.url, "/legendary.mp3");
 
-    advance(6_200);
+    advance(10_000);
     assert.equal(manager.current?.audio.url, "/legendary.mp3");
     assert.equal(persistent.paused, true);
     advance(800);
@@ -423,7 +424,7 @@ test("Legendary 중 새 Quest가 완료되면 이전 paused track 대신 최신 
     assert.equal(manager.bgm?.url, "/quest-b.mp3");
     assert.notEqual(manager.bgm?.audio, questA);
 
-    advance(6_200);
+    advance(10_000);
     advance(800);
     assert.equal(manager.current, null);
     assert.equal(manager.bgm?.url, "/quest-b.mp3");
@@ -445,7 +446,7 @@ test("오래된 Legendary callback은 새 override를 종료하거나 persistent
 
     audioManager.playLegendaryEntrance("/legendary-b.mp3", 95);
     first.emit("ended");
-    advance(6_200);
+    advance(10_000);
 
     assert.equal(manager.current?.audio.url, "/legendary-b.mp3");
   });

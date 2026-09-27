@@ -1,7 +1,7 @@
 export const AUDIO_STINGER_DURATION = 10;
 export const AUDIO_FADE_IN_DURATION = 0.5;
 export const AUDIO_FADE_OUT_DURATION = 0.8;
-export const LEGENDARY_ENTRANCE_DURATION = 7;
+export const LEGENDARY_ENTRANCE_DURATION = 10;
 export const LEGENDARY_ENTRANCE_FADE_OUT = 0.8;
 export const PACK_REVEAL_MAX_DURATION = 7000;
 export const PACK_REVEAL_FADE_IN = 600;
@@ -79,7 +79,7 @@ class AudioManager {
     this.startTemporary(
       { url, volume, kind: "LEGENDARY_ENTRANCE" },
       {
-        durationMs: LEGENDARY_ENTRANCE_DURATION * 1000,
+        durationMs: (LEGENDARY_ENTRANCE_DURATION + LEGENDARY_ENTRANCE_FADE_OUT) * 1000,
         fadeOutMs: LEGENDARY_ENTRANCE_FADE_OUT * 1000,
         pauseBase: true,
       },
@@ -397,6 +397,7 @@ class AudioManager {
     try {
       const audio = new Audio(request.url);
       audio.preload = "auto";
+      audio.loop = request.kind === "LEGENDARY_ENTRANCE";
       audio.volume = 0;
       const current = {
         audio,
