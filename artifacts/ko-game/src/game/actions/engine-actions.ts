@@ -57,7 +57,10 @@ export function getLegalActions(state: GameState, playerId: string): GameAction[
   const cachedByPlayer = legalActionsCache.get(state);
   const cached = cachedByPlayer?.get(playerId);
   if (cached) return cached;
-  if (state.status !== 'IN_PROGRESS' || state.activePlayerId !== playerId) return [];
+  if (state.status !== 'IN_PROGRESS') return [];
+  if (state.openingMulligan) return canMulligan(state, playerId)
+    ? [{ type: 'MULLIGAN', playerId, cardInstanceIds: [] }] : [];
+  if (state.activePlayerId !== playerId) return [];
 
   if (state.targetingState?.active) {
     if (state.targetingState.playerId !== playerId) return [];
@@ -127,6 +130,8 @@ export function getLegalActions(state: GameState, playerId: string): GameAction[
 }
 
 export function executeAction(state: GameState, action: GameAction): ActionResult {
+  if (state.openingMulligan && action.type !== 'MULLIGAN' && action.type !== 'EMOTE' && action.type !== 'SURRENDER')
+    return actionFailure(state, 'NOT_YOUR_TURN', '두 플레이어가 시작 손패 교체를 마칠 때까지 기다려 주세요.');
   if (action.type === 'BEGIN_TARGETED_ACTION') return beginTargetedAction(state, action);
   switch (action.type) {
     case 'PLAY_WRESTLER':

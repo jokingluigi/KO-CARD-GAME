@@ -33,3 +33,20 @@ test('opening exchange validates ownership, duplicates and first-turn timing', (
   assert.equal(executeAction(afterTurn.state, { type: 'MULLIGAN', playerId: 'player-2', cardInstanceIds: [] }).success, true);
   assert.equal(executeAction(afterTurn.state, { type: 'MULLIGAN', playerId: 'player-1', cardInstanceIds: [] }).success, false);
 });
+
+test('온라인 시작 손패는 양쪽이 같은 턴에 선택하고 두 선택이 끝나야 행동한다', () => {
+  const opened = { ...startGame(createInitialGameState(), () => 0.5), openingMulligan: true };
+  const second = opened.players[1]!;
+  assert.ok(getLegalActions(opened, second.id).some((action) => action.type === 'MULLIGAN'));
+  assert.deepEqual(getLegalActions(opened, opened.players[0]!.id).map((action) => action.type), ['MULLIGAN']);
+  assert.equal(executeAction(opened, { type: 'END_TURN', playerId: opened.players[0]!.id }).success, false);
+  const secondDone = executeAction(opened, { type: 'MULLIGAN', playerId: second.id, cardInstanceIds: [] });
+  assert.equal(secondDone.success, true);
+  if (!secondDone.success) return;
+  assert.equal(secondDone.state.openingMulligan, true);
+  const bothDone = executeAction(secondDone.state, { type: 'MULLIGAN', playerId: opened.players[0]!.id, cardInstanceIds: [] });
+  assert.equal(bothDone.success, true);
+  if (!bothDone.success) return;
+  assert.equal(bothDone.state.openingMulligan, false);
+  assert.ok(getLegalActions(bothDone.state, opened.players[0]!.id).some((action) => action.type === 'END_TURN'));
+});

@@ -5,8 +5,9 @@ import { actionFailure, actionSuccess, type ActionResult } from '../actions/type
 /** The opening exchange is available until the player's first committed action. */
 export function canMulligan(state: GameState, playerId: string): boolean {
   const player = state.players.find((candidate) => candidate.id === playerId);
-  if (state.status !== 'IN_PROGRESS' || state.activePlayerId !== playerId ||
-      !player || player.personalTurn !== 1 || player.mulliganUsed || state.targetingState?.active) return false;
+  if (state.status !== 'IN_PROGRESS' || !player || player.mulliganUsed || state.targetingState?.active) return false;
+  if (state.openingMulligan) return true;
+  if (state.activePlayerId !== playerId || player.personalTurn !== 1) return false;
   const turnStart = state.events.reduce((last, event, index) =>
     event.type === 'TURN_STARTED' && event.playerId === playerId ? index : last, -1);
   return !state.events.slice(turnStart + 1).some((event) =>
@@ -24,14 +25,16 @@ export function mulligan(state: GameState, playerId: string, cardInstanceIds: st
   }
   const exchanged = player.hand.filter((card) => selected.has(card.instanceId));
   const replacements = player.deck.slice(0, exchanged.length).map((card) => normalizeCardForZone(card, 'HAND'));
-  return actionSuccess({
-    ...state,
-    players: state.players.map((candidate) => candidate.id !== playerId ? candidate : {
+  const players = state.players.map((candidate) => candidate.id !== playerId ? candidate : {
       ...candidate,
       mulliganUsed: true,
       hand: [...candidate.hand.filter((card) => !selected.has(card.instanceId)), ...replacements],
       deck: [...candidate.deck.slice(exchanged.length), ...exchanged.map((card) => normalizeCardForZone(card, 'DECK'))],
-    }),
+    });
+  return actionSuccess({
+    ...state,
+    openingMulligan: state.openingMulligan && !players.every((candidate) => candidate.mulliganUsed),
+    players,
     events: [...state.events, {
       type: 'MULLIGAN_COMPLETED', playerId, amount: exchanged.length,
       source: { type: 'PLAYER', playerId }, target: { type: 'PLAYER', playerId },

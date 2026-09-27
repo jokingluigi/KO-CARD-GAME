@@ -540,7 +540,7 @@ function OnlineMatchPage() {
   }, [awaitingAuthoritativeMatch, matchId, state?.status]);
   const isMyTurn = Boolean(me && state?.status === "IN_PROGRESS" && state.activePlayerId === me.id);
   const introFinished = gameplayStartsAt === null || clock + serverOffset >= gameplayStartsAt;
-  const canAct = Boolean(isConnected && introFinished && isMyTurn && !pendingAction && !presentationBusy);
+  const canAct = Boolean(isConnected && introFinished && isMyTurn && !state?.openingMulligan && !pendingAction && !presentationBusy);
   const secondsRemaining = turnDeadlineAt === null
     ? TURN_TIME_LIMIT_SECONDS
     : Math.max(0, Math.ceil((turnDeadlineAt - (clock + serverOffset)) / 1000));
@@ -929,11 +929,13 @@ function OnlineMatchPage() {
         playError={playError}
         turnSecondsRemaining={secondsRemaining}
         onEndTurn={() => sendAction({ type: "END_TURN" }, { allowDuringPresentation: true })}
-        onMulligan={(cardInstanceIds) => sendAction({ type: "MULLIGAN", cardInstanceIds })}
+        onMulligan={(cardInstanceIds) => sendAction({ type: "MULLIGAN", cardInstanceIds }, { allowOffTurn: true })}
+        introActive={!introFinished}
         canEndTurn={Boolean(
           isConnected &&
           introFinished &&
           isMyTurn &&
+          !state.openingMulligan &&
           !pendingAction &&
           !state.targetingState?.active &&
           !playAnimation &&

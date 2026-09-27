@@ -1,4 +1,4 @@
-import { and, asc, eq, inArray, sql } from "drizzle-orm";
+import { and, asc, eq, inArray, isNull, sql } from "drizzle-orm";
 import { Router, type IRouter, type Request, type Response } from "express";
 import {
   cardsTable,
@@ -131,7 +131,7 @@ export async function loadUserDeck(userId: string, deckId: string): Promise<Deck
   const [deck] = await db
     .select()
     .from(decksTable)
-    .where(and(eq(decksTable.id, deckId), eq(decksTable.userId, userId)))
+    .where(and(eq(decksTable.id, deckId), eq(decksTable.userId, userId), isNull(decksTable.deletedAt)))
     .limit(1);
   return deck ?? null;
 }
@@ -406,7 +406,7 @@ router.get("/", async (request, response): Promise<void> => {
   const decks = await db
     .select()
     .from(decksTable)
-    .where(eq(decksTable.userId, user.id))
+    .where(and(eq(decksTable.userId, user.id), isNull(decksTable.deletedAt)))
     .orderBy(asc(decksTable.createdAt));
   response.setHeader("Cache-Control", "no-store");
   response.json({ decks: await Promise.all(decks.map((deck) => resolveDeck(deck, user.id, isTestAccountUser(user)))) });
@@ -540,13 +540,15 @@ router.delete("/:id", async (request, response): Promise<void> => {
       const [matchReference] = await db
         .select({ id: onlineMatchesTable.id })
         .from(onlineMatchesTable)
-        .where(sql`${onlineMatchesTable.player1DeckId} = ${deckId} OR ${onlineMatchesTable.player2DeckId} = ${deckId}`)
+        .where(and(inArray(onlineMatchesTable.status, ["WAITING", "ACTIVE"]),
+          sql`(${onlineMatchesTable.player1DeckId} = ${deckId} OR ${onlineMatchesTable.player2DeckId} = ${deckId})`))
         .limit(1);
       return Boolean(matchReference);
     },
     deleteDeck: async (userId, deckId) => db
-      .delete(decksTable)
-      .where(and(eq(decksTable.id, deckId), eq(decksTable.userId, userId)))
+      .update(decksTable)
+      .set({ deletedAt: new Date(), isSelected: false, updatedAt: new Date() })
+      .where(and(eq(decksTable.id, deckId), eq(decksTable.userId, userId), isNull(decksTable.deletedAt)))
       .returning({ id: decksTable.id }),
   }, user.id, request.params.id);
   if (result.kind === "NOT_FOUND") {

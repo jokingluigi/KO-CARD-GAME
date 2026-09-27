@@ -14,6 +14,7 @@ export const decksTable = pgTable("decks", {
     .notNull()
     .default(sql`ARRAY[]::text[]`),
   isSelected: boolean("is_selected").notNull().default(false),
+  deletedAt: timestamp("deleted_at", { withTimezone: true }),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
 }, (table) => ({

@@ -473,7 +473,7 @@ async function hydrateRuntime(record: OnlineMatchRecord): Promise<OnlineMatchRun
       runRuntimeBackgroundTask(runtime, "gameplay-start", () => withRuntimeLock(runtime, async () => {
         if (runtime.state.status === "FINISHED" || !runtime.gameplayStartsAt || Date.now() < runtime.gameplayStartsAt) return;
         runtime.turnStartedAt = runtime.gameplayStartsAt;
-        runtime.turnDeadlineAt = runtime.gameplayStartsAt + ONLINE_MATCH_CONFIG.turnTimeLimitSeconds * 1000;
+        runtime.turnDeadlineAt = runtime.gameplayStartsAt + (runtime.state.openingMulligan ? 75_000 : ONLINE_MATCH_CONFIG.turnTimeLimitSeconds * 1000);
         await persistRuntime(runtime);
         scheduleTurnTimer(runtime);
       }));
@@ -648,6 +648,7 @@ async function commitTransition(
   resultReason: string | null = null,
 ): Promise<{ version: number; eventStart: number }> {
   const turnChanged = state.turn !== runtime.state.turn || state.activePlayerId !== runtime.state.activePlayerId;
+  const openingFinished = Boolean(runtime.state.openingMulligan && !state.openingMulligan);
   const previous = {
     state: runtime.state,
     version: runtime.version,
@@ -659,7 +660,7 @@ async function commitTransition(
   runtime.state = turnChanged ? state : state;
   runtime.version += 1;
   runtime.resultReason = resultReason;
-  if (turnChanged && runtime.state.status !== "FINISHED") setNextTurnDeadline(runtime);
+  if ((turnChanged || openingFinished) && runtime.state.status !== "FINISHED") setNextTurnDeadline(runtime);
   try {
     await persistRuntime(runtime, eventStart);
   } catch (error) {
@@ -674,7 +675,7 @@ async function commitTransition(
   if (runtime.state.status === "FINISHED") {
     clearTurnTimer(runtime);
     for (const seat of ["PLAYER_ONE", "PLAYER_TWO"] as const) clearDisconnectTimer(runtime, seat);
-  } else if (turnChanged) {
+  } else if (turnChanged || openingFinished) {
     scheduleTurnTimer(runtime);
   }
   return { version: runtime.version, eventStart };
@@ -682,6 +683,16 @@ async function commitTransition(
 
 async function resolveTurnTimeoutLocked(runtime: OnlineMatchRuntime): Promise<void> {
   if (runtime.state.status === "FINISHED" || !runtime.state.activePlayerId) return;
+  if (runtime.state.openingMulligan) {
+    let next = runtime.state;
+    for (const player of next.players) {
+      if (player.mulliganUsed) continue;
+      const exchanged = executeAction(next, { type: "MULLIGAN", playerId: player.id, cardInstanceIds: [] });
+      if (exchanged.success) next = exchanged.state;
+    }
+    if (next !== runtime.state) await commitTransition(runtime, next, runtime.state.events.length);
+    return;
+  }
   const playerId = runtime.state.activePlayerId;
   const candidate = structuredClone(runtime.state);
   candidate.targetingState = undefined;
@@ -1040,10 +1051,11 @@ export async function startOnlineMatch(
     createDeterministicRandom(matchId),
     mediaCatalog,
   );
+  started.openingMulligan = true;
   const startedAt = Date.now();
   const gameplayStartsAt = startedAt + 4500;
   const turnStartedAt = gameplayStartsAt;
-  const turnDeadlineAt = gameplayStartsAt + ONLINE_MATCH_CONFIG.turnTimeLimitSeconds * 1000;
+  const turnDeadlineAt = gameplayStartsAt + 75_000;
 
   let record: OnlineMatchRecord | undefined;
   if (existingWaitingMatchId) {
@@ -1226,7 +1238,7 @@ export async function applyMatchAction(
       return { ok: false, runtime, requestId, code: "INVALID_ACTION", message: "알 수 없는 action입니다." };
     }
     if (
-      action.type !== "SURRENDER" && action.type !== "EMOTE" &&
+      action.type !== "SURRENDER" && action.type !== "EMOTE" && action.type !== "MULLIGAN" &&
       (runtime.state.activePlayerId !== playerId ||
         (runtime.state.targetingState?.active && runtime.state.targetingState.playerId !== playerId))
     ) {

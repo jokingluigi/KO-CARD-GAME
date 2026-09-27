@@ -80,6 +80,8 @@ export interface GameState {
   latestQuestCompletedChampionId: string | null;
   turn: number;
   activePlayerId: string | null;
+  /** Online matches wait for both players to exchange their opening hands. */
+  openingMulligan?: boolean;
   status: 'NOT_STARTED' | 'IN_PROGRESS' | 'FINISHED';
   winnerId: string | null;
   loserId: string | null;

@@ -1,12 +1,22 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 
-import { runAITurn } from './ai-turn-scheduler';
+import { runAITurn, situationalAiEmote } from './ai-turn-scheduler';
 import { createInitialGameState } from '../engine/create-initial-game-state';
 import { startGame } from '../engine/turn-system';
 import type { GameState } from '../types/game-state';
 
 const fixedRandom = () => 0.5;
+
+test('AI 감정표현은 퀘스트 완료와 막타 피해 상황에 반응하고 같은 턴 반복하지 않는다', () => {
+  const state = aiOnlyTurn();
+  const playerId = 'player-2';
+  const start = state.events.length;
+  const quest = { ...state, events: [...state.events, { type: 'CHAMPION_QUEST_COMPLETED' as const, playerId }] };
+  assert.equal(situationalAiEmote(quest, playerId, start), 'THANKS');
+  const spoken = { ...quest, events: [...quest.events, { type: 'CHAMPION_EMOTE' as const, playerId, reason: 'THANKS' }] };
+  assert.equal(situationalAiEmote(spoken, playerId, start), null);
+});
 
 function aiOnlyTurn(): GameState {
   const started = startGame(createInitialGameState(), fixedRandom);

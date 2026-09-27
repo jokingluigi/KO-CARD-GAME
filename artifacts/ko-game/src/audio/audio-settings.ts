@@ -1,4 +1,6 @@
-export const BGM_MUTE_STORAGE_KEY = "ko-game-bgm-muted";
+// Older clients stored mute as the initial preference; start everyone with
+// music enabled once, while still persisting any new explicit choice.
+export const BGM_MUTE_STORAGE_KEY = "ko-game-bgm-muted-v2";
 export const BGM_VOLUME_STORAGE_KEY = "ko-game-bgm-volume";
 export const SFX_VOLUME_STORAGE_KEY = "ko-game-sfx-volume";
 

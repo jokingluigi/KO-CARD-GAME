@@ -61,6 +61,7 @@ interface GameStatePreviewProps {
   turnSecondsRemaining: number;
   onEndTurn: () => void;
   onMulligan?: (cardInstanceIds: string[]) => void;
+  introActive?: boolean;
   guidedTutorial?: boolean;
   canEndTurn?: boolean;
   bgmMuted: boolean;
@@ -106,6 +107,7 @@ export function GameStatePreview({
   turnSecondsRemaining,
   onEndTurn,
   onMulligan,
+  introActive = false,
   guidedTutorial = false,
   canEndTurn: canEndTurnOverride,
   bgmMuted,
@@ -147,12 +149,11 @@ export function GameStatePreview({
   React.useEffect(() => {
     audioManager.preloadAttackSounds(['1-2', '3-5', '6-9', '10-plus'].map((tier) => `${import.meta.env.BASE_URL}sfx/combat-hit-${tier}.wav?v=1`).concat(`${import.meta.env.BASE_URL}sfx/combat-finisher.wav?v=1`));
   }, []);
-  const [spokenLine, setSpokenLine] = React.useState<{ text: string; playerId: string; id: number } | null>(null);
+  const [spokenLine, setSpokenLine] = React.useState<{ text: string; playerId: string; speaker: string; id: number } | null>(null);
   const spokenTimerRef = React.useRef<number | null>(null);
   React.useEffect(() => () => { if (spokenTimerRef.current !== null) window.clearTimeout(spokenTimerRef.current); }, []);
   const [tutorialStep, setTutorialStep] = React.useState<number | null>(null);
   const [mulliganSelection, setMulliganSelection] = React.useState<string[]>([]);
-  const [mulliganOpen, setMulliganOpen] = React.useState(true);
   const [coachStage, setCoachStage] = React.useState(0);
   const [coachDismissed, setCoachDismissed] = React.useState(() => {
     try { return localStorage.getItem("ko-match-coach-v1") === "done"; } catch { return false; }
@@ -286,6 +287,7 @@ export function GameStatePreview({
     const newEvents = newEventEntries.map(({ event }) => event);
     for (const event of newEvents) {
       let line: string | null = null;
+      let speaker = state.players.find((player) => player.id === event.playerId)?.champion?.name ?? '챔피언';
       if (event.type === 'CHAMPION_EMOTE' && event.playerId) {
         const owner = state.players.find((player) => player.id === event.playerId);
         const emote = event.reason as ChampionEmote;
@@ -294,10 +296,12 @@ export function GameStatePreview({
         }
       }
       if (event.type === 'ENTER_FIELD' && event.cardInstanceId) {
-        line = state.cardPool?.find((card) => card.id === (currentCards(state).get(event.cardInstanceId!)?.definitionId))?.summonLine ?? null;
+        const definition = state.cardPool?.find((card) => card.id === (currentCards(state).get(event.cardInstanceId!)?.definitionId));
+        line = definition?.summonLine ?? null;
+        speaker = definition?.name ?? speaker;
       }
       if (line && event.playerId) {
-        setSpokenLine({ text: line, playerId: event.playerId, id: Date.now() });
+        setSpokenLine({ text: line, playerId: event.playerId, speaker, id: Date.now() });
         if (spokenTimerRef.current !== null) window.clearTimeout(spokenTimerRef.current);
         spokenTimerRef.current = window.setTimeout(() => setSpokenLine(null), 2600);
       }
@@ -494,9 +498,7 @@ export function GameStatePreview({
     }
     const cues = presentationCueDrafts(newEvents, 0, newEventKeys, presentationPlayerId).map((draft) => ({
       ...draft,
-      label: draft.kind === "QUEST_PROGRESS"
-        ? state.players.find((player) => player.id === draft.playerId)?.champion?.quest?.description ?? draft.label
-        : draft.label,
+      label: draft.kind === "QUEST_PROGRESS" ? '퀘스트 진행' : draft.label,
       ...cuePosition(draft),
     }));
     const hasDamageEvent = newEvents.some((event) =>
@@ -577,8 +579,8 @@ export function GameStatePreview({
   const opponentSurvivalHealth = getPlayerSurvivalHealth(state, opp.id);
   const myMaxGold = Math.min(Math.max(me.personalTurn, 1), 6);
   const opponentMaxGold = Math.min(Math.max(opp.personalTurn, 1), 6);
-  const opponentChampionProtected = opp.board.some((card) => card?.isDirectDeployedChampion);
-  const playerChampionProtected = me.board.some((card) => card?.isDirectDeployedChampion);
+  const opponentChampionProtected = opp.board.some((card) => card?.isChampionToken);
+  const playerChampionProtected = me.board.some((card) => card?.isChampionToken);
   const activePresentationCue = presentationQueue[0];
   const activePresentationCardId = activePresentationCue?.cardInstanceId;
   const activePresentationChampionId = activePresentationCue?.championId;
@@ -1202,7 +1204,7 @@ export function GameStatePreview({
              </>
            )}
 
-          {onMulligan && mulliganOpen && canMulligan(state, state.players[0].id) && (
+          {onMulligan && !introActive && canMulligan(state, state.players[0].id) && (
             <div className="fixed inset-0 z-[205] flex items-center justify-center bg-black/85 p-4" role="dialog" aria-label="시작 손패 교체">
               <div className="max-h-[90vh] w-full max-w-3xl overflow-y-auto rounded-xl border border-amber-500 bg-neutral-950 p-5 text-white shadow-2xl">
                 <h2 className="text-lg font-black text-amber-300">시작 손패 교체</h2>
@@ -1219,14 +1221,19 @@ export function GameStatePreview({
                   </button>)}
                 </div>
                 <div className="mt-4 flex justify-end gap-2">
-                  <button type="button" onClick={() => { setMulliganOpen(false); onMulligan([]); }} className="rounded border border-neutral-500 px-4 py-2">그대로 시작</button>
+                  <button type="button" onClick={() => onMulligan([])} className="rounded border border-neutral-500 px-4 py-2">그대로 시작</button>
                   <button type="button" disabled={mulliganSelection.length > state.players[0].deck.length}
-                    onClick={() => { setMulliganOpen(false); onMulligan(mulliganSelection); }} className="rounded bg-amber-400 px-4 py-2 font-bold text-black disabled:opacity-40">{mulliganSelection.length}장 교체</button>
+                    onClick={() => onMulligan(mulliganSelection)} className="rounded bg-amber-400 px-4 py-2 font-bold text-black disabled:opacity-40">{mulliganSelection.length}장 교체</button>
                 </div>
               </div>
             </div>
           )}
-          {guidedTutorial && !coachDismissed && state.status === 'IN_PROGRESS' && !mulliganOpen && (
+          {onMulligan && !introActive && state.openingMulligan && me.mulliganUsed && (
+            <div className="fixed inset-0 z-[205] flex items-center justify-center bg-black/75 p-4" role="status">
+              <div className="rounded-xl border border-amber-500 bg-neutral-950 p-6 text-center text-amber-200">상대의 시작 손패 교체를 기다리고 있습니다.</div>
+            </div>
+          )}
+          {guidedTutorial && !coachDismissed && state.status === 'IN_PROGRESS' && !canMulligan(state, me.id) && (
             <div className="fixed left-1/2 top-3 z-[140] w-[min(94vw,480px)] -translate-x-1/2 rounded-lg border border-sky-400 bg-slate-950/95 p-3 text-sm text-white shadow-xl" role="status">
               <div className="flex items-start justify-between gap-3"><strong className="text-sky-300">실전 튜토리얼</strong>
                 <button type="button" onClick={() => { setCoachDismissed(true); try { localStorage.setItem('ko-match-coach-v1', 'done'); } catch {} }} className="text-xs text-neutral-300">닫기</button></div>
@@ -1429,7 +1436,7 @@ export function GameStatePreview({
         <div className="effect-finisher" aria-hidden="true"><div className="attack-animation__finisher-slash" /><span>K.O.!</span></div>
       )}
       {spokenLine && <div key={spokenLine.id} role="status" className={`champion-spoken-line ${spokenLine.playerId === me.id ? 'champion-spoken-line--mine' : 'champion-spoken-line--theirs'}`}>
-        <span className="block text-[10px] font-bold text-amber-300">{state.players.find((player) => player.id === spokenLine.playerId)?.champion?.name}</span>
+        <span className="block text-[10px] font-bold text-amber-300">{spokenLine.speaker}</span>
         <span>{spokenLine.text}</span>
       </div>}
       {presentationQueue[0] &&

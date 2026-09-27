@@ -216,6 +216,26 @@ test('authoritative 매드 펌킨은 같은 CardInstance를 손패로 되돌리�
   assert.equal(returnedCard?.temporaryCostUntilTurn, state.turn);
 });
 
+test('과거 판도라 토큰 설정은 대상 파괴와 이후 퇴장 공격력 흡수를 함께 실행한다', () => {
+  const token = cardRecordToDefinition({
+    id: 'pandora-old-token', name: '테스트 토큰', cardType: 'WRESTLER', cost: 2, attack: 1, health: 4,
+    text: '등장:선택한 선수를 파괴시킵니다. 이 카드가 필드에 있을때 이 카드가 리타이어 혹은 파괴 시킨 선수의 공격력을 이 카드의 공격력에 더합니다.',
+    keywords: [], isToken: true, isChampionToken: true, effectId: 'STRUCTURED_EFFECTS_V1',
+    effectConfig: { effects: [
+      { trigger: 'ENTER_FIELD', action: 'DESTROY', target: { zone: 'BOARD', owner: 'ENEMY', cardType: 'WRESTLER', selection: 'PLAYER_CHOICE', count: 1 } },
+      { trigger: 'ENTER_FIELD', action: 'ADD_AGGREGATED_ATTACK', target: { zone: 'BOARD', owner: 'ENEMY', selection: 'PLAYER_CHOICE', count: 1 }, values: { aggregateStats: { source: 'LAST_DESTROYED_TARGETS', attack: 'CURRENT_ATTACK_SUM', health: 'CURRENT_HEALTH_SUM' } } },
+    ] }, status: 'PUBLISHED', version: 1, createdAt: '', updatedAt: '', imageAssetId: null, imageUrl: null,
+  });
+  assert.deepEqual(token.abilities[0]?.effects.map((effect) => effect.type === 'STRUCTURED' ? effect.action : effect.type), ['REGISTER_LISTENER', 'DESTROY']);
+  const victim = { ...card(definition('pandora-victim', { effects: [] }, { attack: 6 }), 'pandora-target'), boardSlot: 0 as const };
+  const state = stateWithPool([token]);
+  state.players[1].board[0] = victim;
+  const pending = enterField(state, 'player-1', card(token, 'pandora-runtime'), 0);
+  const result = selectEffectTarget(pending, victim.instanceId);
+  assert.equal(result.players[1].board[0], null);
+  assert.equal(result.players[0].board[0]?.currentAttack, 7);
+});
+
 test('매드 펌킨 비용 감소는 최소 1을 지키고 WRESTLER가 아닌 카드는 선택 대상이 아니다', () => {
   const madPumpkinDefinition = definition('매드 펌킨', {
     effects: [{
@@ -242,7 +262,7 @@ test('매드 펌킨 비용 감소는 최소 1을 지키고 WRESTLER가 아닌 �
     card(madPumpkinDefinition, 'mad-pumpkin-invalid'),
     0,
   );
-  assert.equal(afterInvalid.targetingState?.validTargetIds.includes('invalid-technique'), false);
+  assert.equal(afterInvalid.targetingState?.validTargetIds.includes('invalid-technique') ?? false, false);
   assert.equal(afterInvalid.players[0].board[1]?.instanceId, 'invalid-technique');
   assert.equal(afterInvalid.players[0].hand.some((item) => item.instanceId === 'invalid-technique'), false);
 });
@@ -326,7 +346,8 @@ test('루나·씨 몬스터·아르카나 조커·워썬더의 전투/퇴장/덱
     cardInstanceId: victim.instanceId,
   });
   assert.equal(retired.success, true);
-  assert.equal(retired.state.players[0].hand[0]?.currentCost, 3);
+  // This fixture has no explicit "이 카드가 손패에 있을 때" clause.
+  assert.equal(retired.state.players[0].hand[0]?.currentCost, 4);
 
   const arcana = card(saved['아르카나 조커']!, 'arcana');
   const top = card(saved['여울']!, 'top');

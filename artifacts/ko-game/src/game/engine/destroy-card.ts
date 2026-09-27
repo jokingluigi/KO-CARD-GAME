@@ -26,11 +26,11 @@ export function destroyCard(
       '파괴할 수 없는 선수입니다.',
     );
   }
-  if (card.isDirectDeployedChampion || card.isTrainingDummy) {
+  if (card.isChampionToken || card.isDirectDeployedChampion || card.isTrainingDummy) {
     return actionFailure(
       state,
       'DIRECT_CHAMPION_CANNOT_BE_DESTROYED',
-      '직접 출전한 챔피언은 효과로 파괴할 수 없습니다.',
+      '챔피언 등급 선수는 효과로 파괴할 수 없습니다.',
     );
   }
 

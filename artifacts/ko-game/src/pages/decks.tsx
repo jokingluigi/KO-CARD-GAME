@@ -224,6 +224,7 @@ export default function Decks() {
     champions: [],
   });
   const [editingId, setEditingId] = useState<string | null>(null);
+  const [editorCollapsed, setEditorCollapsed] = useState(() => typeof window !== 'undefined' && window.matchMedia('(max-width: 820px) and (orientation: portrait)').matches);
   const [deckName, setDeckName] = useState(EMPTY_DECK_NAME);
   const [championId, setChampionId] = useState<string | null>(null);
   const [cardIds, setCardIds] = useState<string[]>([]);
@@ -797,7 +798,7 @@ export default function Decks() {
             )}
           </section>
 
-          <section className="ko-decks__editor" aria-label="현재 덱 편집기">
+          <section className={`ko-decks__editor ${editorCollapsed ? 'ko-decks__editor--collapsed' : ''}`} aria-label="현재 덱 편집기">
             <div className="ko-decks__editor-head">
               <div className="flex items-start justify-between gap-3">
                 <div className="min-w-0 flex-1">
@@ -817,6 +818,7 @@ export default function Decks() {
                     SELECTED
                   </span>
                 )}
+                <button type="button" className="ko-decks__collapse-button" aria-expanded={!editorCollapsed} onClick={() => setEditorCollapsed((collapsed) => !collapsed)}>{editorCollapsed ? '덱 정보 펼치기 ▲' : '덱 정보 접기 ▼'}</button>
               </div>
             </div>
             <div className="ko-decks__editor-scroll">

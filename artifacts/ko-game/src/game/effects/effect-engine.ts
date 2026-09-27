@@ -87,9 +87,10 @@ export function getValidTargets(
       if (target.selection === 'PLAYER_CHOICE' && card.instanceId === sourceCard.instanceId) return false;
       // Directly deployed champion tokens remain damageable, but not silence,
       // destroy, or remove-from-game targets.
-      if ((card.isDirectDeployedChampion || card.isTrainingDummy) && (
+      if ((card.isChampionToken || card.isDirectDeployedChampion || card.isTrainingDummy) && (
         effect.action === 'SILENCE' ||
         effect.action === 'DESTROY' ||
+        effect.action === 'RETIRE' ||
         effect.action === 'REMOVE_FROM_GAME'
       )) return false;
       return true;
@@ -2277,9 +2278,10 @@ export function applyEffect(
     }
     const candidates = cardsInZones(candidatePlayer, zones);
     const eligibleCandidates = candidates.filter((card) => {
-      if ((card.isDirectDeployedChampion || card.isTrainingDummy) && (
+      if ((card.isChampionToken || card.isDirectDeployedChampion || card.isTrainingDummy) && (
         effect.action === 'SILENCE' ||
         effect.action === 'DESTROY' ||
+        effect.action === 'RETIRE' ||
         effect.action === 'REMOVE_FROM_GAME'
       )) return false;
       if (target.cardType && card.cardType !== target.cardType) return false;
@@ -2533,7 +2535,7 @@ export function applyEffect(
       return targets.reduce((nextState, targetCard) => {
         const owner = nextState.players.find((player) => player.id === targetOwner);
         const current = owner?.board.find((card) => card?.instanceId === targetCard.instanceId);
-        if (!owner || !current || current.isDirectDeployedChampion || current.isTrainingDummy) return nextState;
+        if (!owner || !current || current.isChampionToken || current.isDirectDeployedChampion || current.isTrainingDummy) return nextState;
         const attribution = sourceContextFor(
           playerId,
           sourceCard,

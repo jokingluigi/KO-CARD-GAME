@@ -21,6 +21,7 @@ import { TEST_CHAMPIONS } from '../champions/test-champions';
 import type { ChampionDefinition } from '../champions/types';
 import { directDeployChampionToken } from './champion-token';
 import { MAX_HAND_SIZE } from '../rules/constants';
+import { applyEffect, getValidTargets } from '../effects/effect-engine';
 
 const fixedRandom = () => 0.5;
 
@@ -114,6 +115,25 @@ test('챔피언 자신의 효과로만 직접 출전 상태를 만든다', () =>
   assert.equal(card.isSilenceImmune, true);
   assert.equal(card.isGenerated, true);
   assert.equal(card.currentCost, 0);
+});
+
+test('챔피언 등급 토큰은 직접 출전 여부와 무관하게 효과 파괴 면역이다', () => {
+  const state = linkedChampionState();
+  const definition = TEST_CHAMPION_TOKEN_DEFINITION;
+  const token = generateCard(definition, {
+    instanceId: 'ordinary-champion-token', playerId: 'player-2',
+    source: { type: 'SYSTEM' }, reason: 'TEST',
+  }).card;
+  state.players[1].board[0] = { ...token, boardSlot: 0 };
+  const destroyed = destroyCard(state, 'player-2', token.instanceId);
+  assert.equal(destroyed.success, false);
+  assert.equal(destroyed.state.players[1].board[0]?.instanceId, token.instanceId);
+  const source = state.players[0].hand[0]!;
+  const retire = { type: 'STRUCTURED' as const, action: 'RETIRE' as const,
+    target: { zone: 'BOARD' as const, owner: 'ENEMY' as const, cardType: 'WRESTLER' as const, selection: 'PLAYER_CHOICE' as const, count: 1 } };
+  assert.deepEqual(getValidTargets(state, 'player-1', source, retire), []);
+  const afterRetire = applyEffect(state, 'player-1', source, retire, [token.instanceId]);
+  assert.equal(afterRetire.players[1].board[0]?.instanceId, token.instanceId);
 });
 
 test('필드가 가득 찬 Champion Token은 손패로 보존된다', () => {

@@ -68,6 +68,7 @@ const menuItems = [
 
 export function MainMenu({ onComingSoon, onDeckEdit, onAiMatch, user, onLogout }: MainMenuProps) {
   const [notice, setNotice] = useState("");
+  const [announcementsOpen, setAnnouncementsOpen] = useState(false);
   const [mainContent, setMainContent] = useState<MainContent>(emptyMainContent);
   const [backgroundState, setBackgroundState] = useState<"fallback" | "loading" | "ready">("fallback");
   const [bgmMuted, setBgmMuted] = useState(readStoredBgmMute);
@@ -170,18 +171,18 @@ export function MainMenu({ onComingSoon, onDeckEdit, onAiMatch, user, onLogout }
 
         {mainContent.notices.length > 0 && (
           <section className="mb-6 rounded-lg border border-amber-700/60 bg-black/55 p-4 shadow-xl" aria-label="공지">
-            <div className="mb-3 flex items-center justify-between gap-3">
-              <h2 className="text-xs font-black tracking-[0.2em] text-amber-300">NOTICE</h2>
-              <span className="text-[10px] font-bold text-neutral-600">운영 안내</span>
-            </div>
-            <div className="space-y-3">
+            <button type="button" aria-expanded={announcementsOpen} onClick={() => setAnnouncementsOpen((open) => !open)} className="flex w-full items-center justify-between gap-3 text-left">
+              <h2 className="text-xs font-black tracking-[0.2em] text-amber-300">공지 · {mainContent.notices.length}건</h2>
+              <span className="text-[10px] font-bold text-neutral-300">{announcementsOpen ? '접기 ▲' : '펼치기 ▼'}</span>
+            </button>
+            {announcementsOpen && <div className="mt-3 space-y-3">
               {mainContent.notices.map((item) => (
                 <article key={item.id} className="border-l-2 border-amber-400/70 pl-3">
                   <h3 className="text-sm font-black text-white">{item.title}</h3>
                   <p className="mt-1 whitespace-pre-wrap text-xs leading-5 text-neutral-300">{item.body}</p>
                 </article>
               ))}
-            </div>
+            </div>}
           </section>
         )}
 

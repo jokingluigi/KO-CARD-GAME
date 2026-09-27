@@ -192,6 +192,24 @@ export async function fetchAiTestCardDefinitions(): Promise<CardDefinition[]> {
 }
 
 export function cardRecordToDefinition(card: PublishedCardRecord): CardDefinition {
+  // Older published snapshots stored only an entrance-time attack gain for a
+  // card that says it absorbs every wrestler it personally removes. Upgrade
+  // the stale configuration by its rule wording, independent of card identity.
+  const causalRemoval = /(?:이\s*카드|자신)[^.!?]{0,80}?(?:리타이어|퇴장|파괴)[^.!?]{0,50}?(?:선수|대상)[^.!?]{0,50}?공격력[^.!?]{0,50}?(?:이\s*카드의|자신의)\s*공격력[^.!?]{0,30}?(?:더|추가|증가)/.test(card.text);
+  const configuredEffects = Array.isArray(card.effectConfig.effects) ? card.effectConfig.effects as Array<Record<string, unknown>> : [];
+  const needsRemovalListener = causalRemoval && card.effectId === 'STRUCTURED_EFFECTS_V1' &&
+    !configuredEffects.some((effect) => effect.action === 'REGISTER_LISTENER' && (effect.values as { listener?: { trigger?: string } } | undefined)?.listener?.trigger === 'SOURCE_CAUSED_TARGET_REMOVAL');
+  const listener = { trigger: 'ENTER_FIELD', action: 'REGISTER_LISTENER', values: {
+    listener: { trigger: 'SOURCE_CAUSED_TARGET_REMOVAL', cardType: 'WRESTLER', effect: {
+      action: 'ADD_AGGREGATED_ATTACK', target: { zone: 'BOARD', owner: 'SELF', selection: 'SELF', count: 1 },
+      values: { aggregateStats: { source: 'LAST_CAUSED_TARGET_REMOVALS', attack: 'CURRENT_ATTACK_SUM' } },
+    } },
+  } };
+  const runtimeConfig = needsRemovalListener ? { ...card.effectConfig, effects: [
+    listener,
+    ...configuredEffects.filter((effect) => !(effect.action === 'ADD_AGGREGATED_ATTACK' &&
+      (effect.values as { aggregateStats?: { source?: string } } | undefined)?.aggregateStats?.source === 'LAST_DESTROYED_TARGETS')),
+  ] } : card.effectConfig;
   return {
       id: card.id,
       name: card.name,
@@ -216,7 +234,7 @@ export function cardRecordToDefinition(card: PublishedCardRecord): CardDefinitio
       isChampionToken: card.isChampionToken,
       keywords: card.keywords,
        tags: Array.isArray(card.tags) ? [...card.tags] : [],
-      abilities: abilitiesFor(card.effectId, card.effectConfig),
+      abilities: abilitiesFor(card.effectId, runtimeConfig),
       status: card.status,
       version: card.version,
       effectId: card.effectId,

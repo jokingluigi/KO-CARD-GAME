@@ -7,7 +7,7 @@ export function findDirectDeployedChampion(
 ): CardInstance | null {
   const player = state.players.find((candidate) => candidate.id === playerId);
   return (
-    player?.board.find((card) => card?.isDirectDeployedChampion) ?? null
+    player?.board.find((card) => card?.isChampionToken || card?.isDirectDeployedChampion) ?? null
   );
 }
 
