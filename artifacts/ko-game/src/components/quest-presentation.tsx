@@ -20,14 +20,14 @@ export function QuestPresentation({
   viewerPlayerId: string;
 }) {
   const [phase, setPhase] = useState<"BANNER" | "REWARD">("BANNER");
-  const owner = state.players.find((player) => player.id === cue.playerId);
+  const owner = state.players.find((player) => player.id === cue.playerId || player.champion?.id === cue.championId);
   const champion = owner?.champion;
   const reward = champion?.quest?.reward;
   const tokenId = reward?.type === "DIRECT_DEPLOY_CHAMPION_TOKEN"
     ? reward.cardDefinitionId
     : champion?.championTokenDefinitionId;
   const token = tokenId ? state.cardPool?.find((card) => card.id === tokenId) ?? getCardDefinition(tokenId) : undefined;
-  const isViewer = cue.playerId === viewerPlayerId;
+  const isViewer = owner?.id === viewerPlayerId;
 
   useEffect(() => {
     const bannerTimer = window.setTimeout(() => setPhase("REWARD"), QUEST_BANNER_DURATION_MS);

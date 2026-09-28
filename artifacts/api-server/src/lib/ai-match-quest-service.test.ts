@@ -23,6 +23,18 @@ test("AI match replay binds surrender to the authenticated player, not client pl
   assert.equal(finished.loserId, userPlayerId);
 });
 
+test("AI match replay keeps player emotes in the action transcript", () => {
+  const state = startedEmptyMatch();
+  const userPlayerId = state.players[0]!.id;
+  const aiPlayerId = state.players[1]!.id;
+  const finished = replayAIMatch(state, [
+    { type: "EMOTE", emote: "HELLO", playerId: userPlayerId },
+    { type: "SURRENDER", playerId: userPlayerId },
+  ], userPlayerId, aiPlayerId);
+  assert.equal(finished.status, "FINISHED");
+  assert.equal(finished.events.some((event) => event.type === "CHAMPION_EMOTE" && event.playerId === userPlayerId), true);
+});
+
 test("AI match replay advances the server-controlled opponent between user actions", () => {
   const state = startedEmptyMatch();
   const userPlayerId = state.players[0]!.id;

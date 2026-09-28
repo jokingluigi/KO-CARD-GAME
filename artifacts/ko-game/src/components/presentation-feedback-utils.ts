@@ -148,6 +148,7 @@ export function presentationCueDrafts(
           label: "QUEST",
           value: event.amount,
           ...target,
+          playerId: event.playerId ?? target.playerId,
           duration: 1500,
         });
         break;
@@ -157,6 +158,7 @@ export function presentationCueDrafts(
           kind: "QUEST_COMPLETE",
           label: "QUEST COMPLETE",
           ...target,
+          playerId: event.playerId ?? target.playerId,
           duration: 820,
         });
         break;

@@ -106,12 +106,12 @@ export function replayAIMatch(
     if (state.status !== "IN_PROGRESS") {
       throw new Error("경기가 끝난 뒤 추가 행동이 포함되어 있습니다.");
     }
-    const isSurrender = isRecord(rawAction) && rawAction.type === "SURRENDER";
-    if (!isSurrender) state = advanceAIOpponent(state, aiPlayerId);
+    const isOutOfTurnAction = isRecord(rawAction) && (rawAction.type === "SURRENDER" || rawAction.type === "EMOTE");
+    if (!isOutOfTurnAction) state = advanceAIOpponent(state, aiPlayerId);
     if (state.status !== "IN_PROGRESS") {
       throw new Error("AI 행동으로 경기가 먼저 끝났습니다.");
     }
-    if (state.activePlayerId !== userPlayerId && !isSurrender) {
+    if (state.activePlayerId !== userPlayerId && !isOutOfTurnAction) {
       throw new Error("사용자 행동 순서가 올바르지 않습니다.");
     }
     const action = toServerAction(stripClientPlayerId(rawAction), userPlayerId);

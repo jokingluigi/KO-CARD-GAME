@@ -33,6 +33,14 @@ test("이벤트 순서대로 피해, 퇴장, 퀘스트 완료 피드백을 만�
   );
 });
 
+test("챔피언 퀘스트 완료 연출에 실제 플레이어 ID를 전달한다", () => {
+  const cues = presentationCueDrafts([{
+    type: "CHAMPION_QUEST_COMPLETED", playerId: "player-1", championId: "champion-1",
+    target: { type: "CHAMPION", championId: "champion-1" },
+  }], 0);
+  assert.equal(cues[0]?.playerId, "player-1");
+});
+
 test("0 피해는 피해 숫자 대신 회피 피드백을 사용하고 알 수 없는 이벤트는 무시한다", () => {
   const cues = presentationCueDrafts([
     { type: "DAMAGE_DEALT", amount: 0, reason: "DODGE" },

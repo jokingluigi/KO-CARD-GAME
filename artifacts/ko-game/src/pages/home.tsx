@@ -1463,7 +1463,15 @@ export default function Home() {
       bgmVolume={bgmVolume}
       onBgmVolumeChange={setBgmVolume}
       onSurrender={handleSurrender}
-      onEmote={(emote) => { setGameState((current) => { const result = executeAction(current, { type: 'EMOTE', playerId: current.players[0].id, emote }); return result.success ? result.state : current; }); }}
+      onEmote={(emote) => {
+        const current = latestGameStateRef.current;
+        const action: GameAction = { type: 'EMOTE', playerId: current.players[0].id, emote };
+        const result = executeAction(current, action);
+        if (result.success) {
+          recordHumanAIMatchAction(action);
+          setGameState(result.state);
+        }
+      }}
       onSelectCard={handleSelectCard}
       onSelectSlot={handleSelectSlot}
       onUseTechnique={handleUseTechnique}
