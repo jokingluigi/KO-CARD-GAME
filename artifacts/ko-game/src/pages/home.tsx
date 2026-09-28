@@ -183,7 +183,7 @@ export default function Home() {
   const [aiOpeningNow, setAiOpeningNow] = useState(() => Date.now());
   const [aiOpeningSkipped, setAiOpeningSkipped] = useState(false);
   const aiMatchQuestContextRef = useRef<{ deckId: string; aiDeckId: string; matchId: string } | null>(null);
-  const aiMatchActionsRef = useRef<GameAction[]>([]);
+  const aiMatchActionsRef = useRef<Array<GameAction & { actor?: 'AI' }>>([]);
   const submittedAIMatchRef = useRef<string | null>(null);
   const [aiMatchData, setAiMatchData] = useState<{
     definitions: CardDefinition[];
@@ -638,6 +638,7 @@ export default function Home() {
       wait,
       waitForPresentationIdle,
       isCancelled: () => cancelled || aiSchedulerGenerationRef.current !== schedulerGeneration,
+      onAction: (action) => { aiMatchActionsRef.current.push({ ...action, actor: 'AI' }); },
       onState: setGameState,
     }).finally(() => {
       if (aiSchedulerGenerationRef.current === schedulerGeneration) {
@@ -675,7 +676,8 @@ export default function Home() {
         try {
           const result = await completeAIMatchQuestProgress({
             ...match,
-            actions: aiMatchActionsRef.current as unknown as Array<Record<string, unknown>>,
+            outcome: gameState.winnerId === gameState.players[0]?.id ? 'WIN' : 'LOSS',
+            actions: aiMatchActionsRef.current.slice(0, 2000) as unknown as Array<Record<string, unknown>>,
           });
           setAiMatchReward(result.reward);
           setAiRewardStatus('success');

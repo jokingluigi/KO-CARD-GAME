@@ -27,6 +27,7 @@ export interface AITurnSchedulerOptions {
   waitForPresentationIdle: () => Promise<void>;
   isCancelled: () => boolean;
   onState: (state: GameState) => void;
+  onAction?: (action: GameAction) => void;
   actionDelayMs?: number;
   maxDecisions?: number;
 }
@@ -49,7 +50,7 @@ export async function runAITurn(
   const greet = workingState.targetingState?.active ? null : situationalAiEmote(workingState, playerId, workingState.events.length);
   if (greet) {
     const spoken = executeAction(workingState, { type: 'EMOTE', playerId, emote: greet });
-    if (spoken.success) { workingState = spoken.state; options.onState(workingState); }
+    if (spoken.success) { workingState = spoken.state; options.onAction?.({ type: 'EMOTE', playerId, emote: greet }); options.onState(workingState); }
   }
 
   for (let decision = 0; decision < maxDecisions; decision += 1) {
@@ -69,6 +70,7 @@ export async function runAITurn(
       const ended = executeAction(workingState, { type: 'END_TURN', playerId });
       if (!ended.success) break;
       workingState = ended.state;
+      options.onAction?.({ type: 'END_TURN', playerId });
       options.onState(workingState);
       return workingState;
     }
@@ -83,12 +85,13 @@ export async function runAITurn(
     const result = executeAction(workingState, action);
     if (!result.success) break;
     workingState = result.state;
+    options.onAction?.(action);
     options.onState(workingState);
     if (!workingState.targetingState?.active) {
       const emote = situationalAiEmote(workingState, playerId, eventStart);
       if (emote) {
         const spoken = executeAction(workingState, { type: 'EMOTE', playerId, emote });
-        if (spoken.success) { workingState = spoken.state; options.onState(workingState); }
+        if (spoken.success) { workingState = spoken.state; options.onAction?.({ type: 'EMOTE', playerId, emote }); options.onState(workingState); }
       }
     }
     if (workingState.status === 'FINISHED') return workingState;
@@ -106,6 +109,7 @@ export async function runAITurn(
       const ended = executeAction(workingState, { type: 'END_TURN', playerId });
       if (ended.success) {
         workingState = ended.state;
+        options.onAction?.({ type: 'END_TURN', playerId });
         options.onState(workingState);
       }
     }

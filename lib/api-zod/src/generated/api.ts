@@ -32,6 +32,7 @@ export const CompleteAIMatchQuestProgressBody = zod.object({
   "deckId": zod.string().min(1),
   "aiDeckId": zod.string().min(1),
   "matchId": zod.string().min(1).max(completeAIMatchQuestProgressBodyMatchIdMax),
+  "outcome": zod.enum(["WIN", "LOSS"]),
   "actions": zod.array(zod.record(zod.string(), zod.unknown())).max(completeAIMatchQuestProgressBodyActionsMax)
 })
 

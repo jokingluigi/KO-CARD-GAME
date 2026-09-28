@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import { createInitialGameState, startGame } from "@workspace/game-engine";
+import { createInitialGameState, startGame, executeAction, type GameAction } from "@workspace/game-engine";
+import { runAITurn } from "../../../ko-game/src/game/actions/ai-turn-scheduler";
 import { replayAIMatch } from "./ai-match-quest-service";
 
 function startedEmptyMatch() {
@@ -71,4 +72,23 @@ test("AI match replay rejects an incomplete or illegal client action transcript"
       aiPlayerId,
     ),
   );
+});
+
+test("AI match reward replay follows the AI actions actually shown to the player", async () => {
+  const started = startedEmptyMatch();
+  const userId = started.players[0]!.id;
+  const aiId = started.players[1]!.id;
+  const ended = executeAction(started, { type: "END_TURN", playerId: userId });
+  assert.equal(ended.success, true);
+  const transcript: Array<GameAction & { actor?: "AI" }> = [{ type: "END_TURN", playerId: userId }];
+  const afterAI = await runAITurn(ended.state, aiId, {
+    wait: async () => {}, waitForPresentationIdle: async () => {}, isCancelled: () => false,
+    actionDelayMs: 0,
+    onState: () => {}, onAction: (action) => { transcript.push({ ...action, actor: "AI" }); },
+  });
+  assert.equal(afterAI.activePlayerId, userId);
+  transcript.push({ type: "SURRENDER", playerId: userId });
+  const result = replayAIMatch(started, transcript, userId, aiId);
+  assert.equal(result.winnerId, aiId);
+  assert.equal(result.status, "FINISHED");
 });

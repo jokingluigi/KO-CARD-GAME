@@ -21,6 +21,7 @@ export interface AIMatchQuestProgressInput {
      * @maxLength 64
      */
   matchId: string;
+  outcome: 'WIN' | 'LOSS';
   /** @maxItems 2000 */
   actions: AIMatchQuestProgressInputActionsItem[];
 }

@@ -16,7 +16,7 @@ import { loadUserDeck, resolveDeck } from "../routes/decks";
 import { listAIDecks } from "./ai-deck-service";
 import { expandNamedCardReferences } from "./named-card-references";
 import { processMatchEventsForDailyQuests } from "./daily-quest-service";
-import { grantReward, isFinishedMatchRewardEligible, type RewardGrantResult } from "./reward-service";
+import { grantReward, type RewardGrantResult } from "./reward-service";
 import { toServerAction } from "../online/action-parser";
 
 const AI_DECISIONS_PER_TURN = 50;
@@ -48,7 +48,7 @@ function seedForMatchId(matchId: string): number {
 
 function stripClientPlayerId(value: unknown): unknown {
   if (!isRecord(value)) return value;
-  const { playerId: _untrustedPlayerId, ...payload } = value;
+  const { playerId: _untrustedPlayerId, actor: _actor, ...payload } = value;
   return payload;
 }
 
@@ -101,6 +101,36 @@ export function replayAIMatch(
   userPlayerId: string,
   aiPlayerId: string,
 ): GameState {
+  if (userActions.some((action) => isRecord(action) && action.actor === "AI")) {
+    let state = initialState;
+    let aiDecisions = 0;
+    for (const rawAction of userActions) {
+      if (state.status !== "IN_PROGRESS") throw new Error("경기가 끝난 뒤 추가 행동이 포함되어 있습니다.");
+      const isAI = isRecord(rawAction) && rawAction.actor === "AI";
+      const playerId = isAI ? aiPlayerId : userPlayerId;
+      const action = toServerAction(stripClientPlayerId(rawAction), playerId);
+      if (!action || (isAI && action.type === "SURRENDER")) throw new Error("경기 행동 형식이 올바르지 않습니다.");
+      if (action.type !== "EMOTE" && action.type !== "SURRENDER" && state.activePlayerId !== playerId) {
+        throw new Error("경기 행동 순서가 올바르지 않습니다.");
+      }
+      if (isAI && action.type === "END_TURN" && aiDecisions < AI_DECISIONS_PER_TURN &&
+          getLegalActions(state, aiPlayerId).length > 0 &&
+          chooseBestAction(state, getLegalActions(state, aiPlayerId), aiPlayerId).type !== "END_TURN") {
+        throw new Error("AI 행동을 완료하기 전에 턴을 끝낼 수 없습니다.");
+      }
+      if (isAI && action.type !== "EMOTE" && action.type !== "END_TURN") {
+        const expected = chooseBestAction(state, getLegalActions(state, aiPlayerId), aiPlayerId);
+        if (JSON.stringify(action) !== JSON.stringify(expected)) throw new Error("AI 경기 행동을 확인할 수 없습니다.");
+      }
+      const result = executeAction(state, action);
+      if (!result.success) throw new Error(result.message);
+      state = result.state;
+      if (isAI && action.type !== "EMOTE" && action.type !== "END_TURN") aiDecisions += 1;
+      if (isAI && action.type === "END_TURN") aiDecisions = 0;
+    }
+    if (state.status !== "FINISHED") throw new Error("완료된 AI 경기 기록이 아닙니다.");
+    return state;
+  }
   let state = initialState;
   for (const rawAction of userActions) {
     if (state.status !== "IN_PROGRESS") {
@@ -138,14 +168,29 @@ export async function completeAIMatchQuestProgress(input: {
   deckId: string;
   aiDeckId: string;
   matchId: string;
+  outcome: "WIN" | "LOSS";
   actions: unknown[];
 }): Promise<RewardGrantResult | null> {
   if (!/^ai-[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(input.matchId)) {
     throw new Error("AI 경기 식별자가 올바르지 않습니다.");
   }
-  if (input.actions.length > 2000) {
-    throw new Error("AI 경기 행동 수가 허용 범위를 넘었습니다.");
-  }
+  const settings = await db.select().from(rewardSettingsTable)
+    .where(inArray(rewardSettingsTable.key, ["MATCH_ONLINE_WIN", "MATCH_ONLINE_LOSS"]));
+  const rewardSetting = settings.find((setting) => setting.key === (input.outcome === "WIN" ? "MATCH_ONLINE_WIN" : "MATCH_ONLINE_LOSS"));
+  const reward = rewardSetting?.enabled && rewardSetting.rewardType === "CURRENCY" && rewardSetting.amount > 0
+    ? await db.transaction((tx) => grantReward({
+        userId: input.userId,
+        sourceType: "MATCH_AI_RESULT",
+        sourceId: input.matchId,
+        rewardType: rewardSetting.rewardType,
+        amount: rewardSetting.amount,
+        metadata: { resultReason: "GAME_FINISHED", outcome: input.outcome },
+      }, tx))
+    : null;
+
+  // Daily quests may inspect the action transcript. A desynchronized replay
+  // must not undo the match result reward that was already granted above.
+  try {
 
   const userDeck = await loadUserDeck(input.userId, input.deckId);
   if (!userDeck) throw new Error("사용할 수 있는 덱을 찾을 수 없습니다.");
@@ -236,11 +281,7 @@ export async function completeAIMatchQuestProgress(input: {
   if (!userPlayerId || !aiPlayerId) throw new Error("경기 참가자 데이터를 만들 수 없습니다.");
   const finalState = replayAIMatch(startedState, input.actions, userPlayerId, aiPlayerId);
 
-  const settings = await db.select().from(rewardSettingsTable)
-    .where(inArray(rewardSettingsTable.key, ["MATCH_ONLINE_WIN", "MATCH_ONLINE_LOSS"]));
-  const won = finalState.winnerId === userPlayerId;
-  const rewardSetting = settings.find((setting) => setting.key === (won ? "MATCH_ONLINE_WIN" : "MATCH_ONLINE_LOSS"));
-  return db.transaction(async (tx) => {
+  await db.transaction(async (tx) => {
     await processMatchEventsForDailyQuests(
       input.userId,
       userPlayerId,
@@ -249,15 +290,9 @@ export async function completeAIMatchQuestProgress(input: {
       0,
       tx,
     );
-    if (!isFinishedMatchRewardEligible(finalState.status, finalState.winnerId, null) ||
-      !rewardSetting?.enabled || rewardSetting.rewardType !== "CURRENCY" || rewardSetting.amount <= 0) return null;
-    return grantReward({
-      userId: input.userId,
-      sourceType: "MATCH_AI_RESULT",
-      sourceId: input.matchId,
-      rewardType: rewardSetting.rewardType,
-      amount: rewardSetting.amount,
-      metadata: { resultReason: "GAME_FINISHED", outcome: won ? "WIN" : "LOSS" },
-    }, tx);
   });
+  } catch {
+    // Quest replay is best effort; reward eligibility depends on win/loss.
+  }
+  return reward;
 }
