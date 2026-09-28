@@ -74,6 +74,19 @@ export async function logout(): Promise<void> {
   });
 }
 
+export async function changeNickname(nickname: string): Promise<AuthUser> {
+  const response = await fetch(`${authApiBase}/nickname`, {
+    method: "PATCH",
+    credentials: "include",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ nickname }),
+  });
+  if (!response.ok) throw new AuthRequestError(await readResponseMessage(response, "닉네임을 변경하지 못했습니다."), response.status);
+  const body = (await response.json()) as AuthResponse;
+  if (!body.user) throw new AuthRequestError("로그인 상태를 확인하지 못했습니다.");
+  return body.user;
+}
+
 export async function submitAuth(
   mode: "login" | "register",
   values: Record<string, string>,

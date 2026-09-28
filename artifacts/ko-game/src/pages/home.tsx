@@ -1358,6 +1358,7 @@ export default function Home() {
     return (
       <MainMenu
         user={authUser ?? undefined}
+        onNicknameChanged={setAuthUser}
         onLogout={handleLogout}
         onAiMatch={() => navigate(ROUTES.AI_MATCH)}
         onDeckEdit={() => {

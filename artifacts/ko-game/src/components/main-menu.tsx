@@ -1,7 +1,7 @@
 import { BookOpen, Bot, CalendarCheck2, ClipboardList, Globe2, Gift, Layers3, LogOut, ShoppingBag, Library, Volume2, VolumeX } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useLocation } from "wouter";
-import type { AuthUser } from "@/lib/auth-client";
+import { changeNickname, type AuthUser } from "@/lib/auth-client";
 import { ROUTES } from "@/lib/routes";
 import { emptyMainContent, fetchMainContent, type MainContent } from "@/lib/main-content-client";
 import { audioManager } from "@/audio/audio-manager";
@@ -16,6 +16,7 @@ type MainMenuProps = {
   onAiMatch?: () => void;
   user?: AuthUser;
   onLogout?: () => void;
+  onNicknameChanged?: (user: AuthUser) => void;
 };
 
 const menuItems = [
@@ -66,7 +67,7 @@ const menuItems = [
   },
 ] as const;
 
-export function MainMenu({ onComingSoon, onDeckEdit, onAiMatch, user, onLogout }: MainMenuProps) {
+export function MainMenu({ onComingSoon, onDeckEdit, onAiMatch, user, onLogout, onNicknameChanged }: MainMenuProps) {
   const [notice, setNotice] = useState("");
   const [announcementsOpen, setAnnouncementsOpen] = useState(false);
   const [mainContent, setMainContent] = useState<MainContent>(emptyMainContent);
@@ -75,6 +76,10 @@ export function MainMenu({ onComingSoon, onDeckEdit, onAiMatch, user, onLogout }
   const [bgmVolume, setBgmVolume] = useState(readStoredBgmVolume);
   const [soundSettingsOpen, setSoundSettingsOpen] = useState(false);
   const [tutorialStep, setTutorialStep] = useState<number | null>(null);
+  const [editingNickname, setEditingNickname] = useState(false);
+  const [nicknameDraft, setNicknameDraft] = useState("");
+  const [nicknameSaving, setNicknameSaving] = useState(false);
+  const [nicknameError, setNicknameError] = useState("");
   const [, navigate] = useLocation();
 
   useEffect(() => {
@@ -154,6 +159,11 @@ export function MainMenu({ onComingSoon, onDeckEdit, onAiMatch, user, onLogout }
           {user && onLogout && (
             <div className="ko-main-menu__user">
               <span>{user.nickname}</span>
+              <button type="button" className="rounded border border-neutral-600 px-2 py-1 text-xs text-neutral-200" onClick={() => {
+                setNicknameDraft(user.nickname);
+                setNicknameError("");
+                setEditingNickname((open) => !open);
+              }}>닉네임 변경</button>
               {user.isTestAccount && (
                 <span className="rounded border border-amber-500/50 bg-amber-950/40 px-2 py-1 text-[10px] font-black tracking-wider text-amber-200">
                   TEST ACCOUNT · 전체 카드/Champion · 재화 무제한
@@ -167,6 +177,32 @@ export function MainMenu({ onComingSoon, onDeckEdit, onAiMatch, user, onLogout }
               </button>
             </div>
           )}
+          {user && editingNickname && <form className="mx-auto mt-3 flex max-w-sm flex-wrap items-center justify-center gap-2" onSubmit={async (event) => {
+            event.preventDefault();
+            if (nicknameSaving) return;
+            const nickname = nicknameDraft.trim();
+            if (Array.from(nickname).length < 2 || Array.from(nickname).length > 16) {
+              setNicknameError("닉네임은 2~16자로 입력해 주세요.");
+              return;
+            }
+            setNicknameSaving(true);
+            setNicknameError("");
+            try {
+              const updated = await changeNickname(nickname);
+              onNicknameChanged?.(updated);
+              setEditingNickname(false);
+            } catch (error) {
+              setNicknameError(error instanceof Error ? error.message : "닉네임을 변경하지 못했습니다.");
+            } finally {
+              setNicknameSaving(false);
+            }
+          }}>
+            <label htmlFor="nickname-edit" className="sr-only">새 닉네임</label>
+            <input id="nickname-edit" value={nicknameDraft} onChange={(event) => setNicknameDraft(event.target.value)} disabled={nicknameSaving} maxLength={32} autoComplete="nickname" className="min-w-0 flex-1 rounded border border-neutral-600 bg-neutral-950 px-3 py-2 text-sm text-white" placeholder="새 닉네임 (2~16자)" />
+            <button disabled={nicknameSaving} type="submit" className="rounded bg-amber-400 px-3 py-2 text-xs font-bold text-black disabled:opacity-50">{nicknameSaving ? "저장 중" : "저장"}</button>
+            <button type="button" onClick={() => setEditingNickname(false)} className="rounded border border-neutral-600 px-3 py-2 text-xs">취소</button>
+            {nicknameError && <p role="alert" className="w-full text-sm text-red-300">{nicknameError}</p>}
+          </form>}
         </header>
 
         {mainContent.notices.length > 0 && (

@@ -140,6 +140,40 @@ router.post("/logout", async (request, response) => {
   response.json({ authenticated: false });
 });
 
+router.patch("/nickname", async (request, response) => {
+  const user = await getAuthenticatedUser(request);
+  if (!user) {
+    response.status(401).json({ message: "로그인이 필요합니다." });
+    return;
+  }
+  const nickname = readString(request.body?.nickname).trim();
+  if (!isValidNickname(nickname)) {
+    response.status(400).json({ message: "닉네임은 2~16자로 입력해 주세요." });
+    return;
+  }
+  if (nickname === user.nickname) {
+    response.json({ authenticated: true, user });
+    return;
+  }
+  try {
+    const [updated] = await db.update(usersTable)
+      .set({ nickname, updatedAt: new Date() })
+      .where(eq(usersTable.id, user.id))
+      .returning();
+    if (!updated) {
+      response.status(401).json({ message: "로그인 상태를 확인하지 못했습니다." });
+      return;
+    }
+    response.json({ authenticated: true, user: await getPublicUser(updated) });
+  } catch (error) {
+    if ((error as { code?: string }).code === "23505") {
+      response.status(409).json({ message: "이미 사용 중인 닉네임입니다." });
+      return;
+    }
+    throw error;
+  }
+});
+
 router.get("/me", async (request, response) => {
   const requestStartedAt = Date.now();
   const trace = (stage: AuthTraceStage | "REQUEST_RECEIVED" | "AUTH_MIDDLEWARE_ENTER" | "AUTH_MIDDLEWARE_EXIT" | "RESPONSE_SENT", durationMs = Date.now() - requestStartedAt) => {
