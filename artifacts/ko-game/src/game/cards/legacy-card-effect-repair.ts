@@ -32,6 +32,18 @@ export function repairedLegacyCardAbilities(card: PublishedCardRecord): CardAbil
     return [{ trigger: 'ENTER_FIELD', effects: [{ type: 'STRUCTURED', action: 'MOVE_TO_DECK',
       target: enemyChoice, values: { deckPosition: 'TOP' } }] }];
   }
+  if (card.name.trim() === '마로쓰 2세' && /필드.*아군.*턴\s*종료.*(?:한\s*번|한번)\s*더/u.test(text)) {
+    return [{ trigger: 'TURN_END', effects: [{ type: 'STRUCTURED', action: 'REPEAT_TURN_END' }] }];
+  }
+  if (card.name.trim() === '마로쓰 2세' && /퇴장.*손패.*가장\s*비용이\s*높은\s*카드.*비용.*1\s*감소/u.test(text)) {
+    const script: EffectScript = { version: 'SCRIPT_V1', trigger: 'SELF_RETIRE', steps: [
+      { type: 'SELECT', id: 'mostExpensive', target: { zone: 'HAND', owner: 'SELF', selection: 'ALL', count: 1,
+        sort: { stat: 'COST', direction: 'DESC' }, take: 1 } },
+      { type: 'EFFECT', effect: { action: 'REDUCE_COST', target: { zone: 'HAND', owner: 'SELF', resultId: 'mostExpensive' },
+        values: { amount: 1, minimum: 0 } } },
+    ] };
+    return isEffectScript(script) ? [{ trigger: 'SELF_RETIRE', effects: [{ type: 'SCRIPT', script }] }] : null;
+  }
   if (card.name === '떼껄룩' && /상대.*선수.*선택.*공격력.*1로\s*줄이고.*기절.*줄인\s*만큼.*체력/u.test(text)) {
     const script: EffectScript = { version: 'SCRIPT_V1', trigger: 'ENTER_FIELD', steps: [
       { type: 'SELECT', id: 'target', target: enemyChoice },

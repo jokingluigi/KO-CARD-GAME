@@ -178,6 +178,33 @@ test('떼껄룩은 선택한 적의 줄어든 공격력만큼 자신 체력을 �
   assert.equal(result.players[0].board[0]?.currentHealth, 5);
 });
 
+test('마로쓰 2세가 필드에 있으면 아군 턴 종료 효과가 정확히 한 번 더 발동한다', () => {
+  const maros = definition('마로쓰 2세', { effects: [] }, { rulesText: '이 카드가 필드에 있을때 아군의 턴 종료 효과가 한번 더 발동합니다.' });
+  const ally = definition('턴 종료 아군', { effects: [effect('TURN_END', 'BUFF', boardSelf, { attack: 1, health: 0 })] });
+  const state = stateWithPool([maros, ally]);
+  state.players[0].board[0] = { ...card(maros, 'maros-on-board'), boardSlot: 0 };
+  state.players[0].board[1] = { ...card(ally, 'turn-end-ally'), boardSlot: 1 };
+  const result = endTurn(state, 'player-1');
+  assert.equal(result.state.players[0].board[1]?.currentAttack, 3);
+  const noMaros = stateWithPool([maros, ally]);
+  noMaros.players[0].board[1] = { ...card(ally, 'turn-end-alone'), boardSlot: 1 };
+  assert.equal(endTurn(noMaros, 'player-1').state.players[0].board[1]?.currentAttack, 2);
+});
+
+test('마로쓰 2세의 퇴장형 문구는 손패에서 가장 비싼 카드 한 장만 할인한다', () => {
+  const maros = definition('마로쓰 2세', { effects: [] }, { rulesText: '퇴장:자신의 손패에서 가장 비용이 높은 카드 한장의 비용을 1 감소시킨다.' });
+  const expensive = definition('비싼 카드', { effects: [] }, { cost: 6 });
+  const cheap = definition('싼 카드', { effects: [] }, { cost: 2 });
+  const state = stateWithPool([maros, expensive, cheap]);
+  state.players[0].board[0] = { ...card(maros, 'maros-retiring'), boardSlot: 0 };
+  state.players[0].hand = [card(cheap, 'cheap-hand'), card(expensive, 'expensive-hand')];
+  const retired = applyEffect(state, 'player-1', state.players[0].board[0]!, {
+    type: 'STRUCTURED', action: 'RETIRE', target: boardSelf,
+  });
+  assert.equal(retired.players[0].hand[0]?.currentCost, 2);
+  assert.equal(retired.players[0].hand[1]?.currentCost, 5);
+});
+
 test('저장된 17개 WRESTLER 정의가 runtime abilities로 모두 변환된다', () => {
   assert.equal(Object.keys(saved).length, 17);
   for (const [name, cardDefinition] of Object.entries(saved)) {
