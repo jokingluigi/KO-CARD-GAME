@@ -7,7 +7,7 @@ export function AuthLoading() {
     <main className="ko-auth-screen flex min-h-screen items-center justify-center px-5 text-white">
       <div className="ko-auth-loading text-center">
         <p className="font-display text-xs font-bold tracking-[0.45em] text-amber-400">KO</p>
-        <p className="mt-4 text-xs font-bold tracking-[0.2em] text-neutral-500">인증 상태 확인 중</p>
+        <p className="mt-4 text-xs font-bold tracking-[0.2em] text-neutral-500">서버 연결 중 · 잠시만 기다려 주세요</p>
       </div>
     </main>
   );

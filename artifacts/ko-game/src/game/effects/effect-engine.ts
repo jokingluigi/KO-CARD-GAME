@@ -2334,7 +2334,15 @@ export function applyEffect(
       if (!best && effect.values?.definitionRef) {
         const owner = state.players.find((player) => player.id === playerId);
         const slot = owner?.board.findIndex((card) => card === null) ?? -1;
-        const zombieDefinition = resolveCardDefinition(state, undefined, effect.values.definitionRef, true);
+        // The general name resolver accepts unique prefixes. A reference to
+        // "좀비" must never resolve to "좀비 플래티넘구슬 마스터" itself.
+        const zombieDefinition = state.cardPool?.find((candidate) =>
+          candidate.name === effect.values?.definitionRef?.name?.trim() && candidate.id !== sourceCard.definitionId,
+        ) ?? (effect.values.definitionRef.name?.trim() === '좀비' ? {
+          id: 'ko-fallback-zombie-token', name: '좀비', cardType: 'WRESTLER' as const,
+          cost: 0, attack: 2, health: 2, rulesText: '', rarity: 'TOKEN' as const,
+          isToken: true, isChampionToken: false, keywords: [], abilities: [],
+        } : undefined);
         if (!owner || slot < 0 || !zombieDefinition || zombieDefinition.cardType !== 'WRESTLER') return state;
         const generated = generateCard(zombieDefinition, {
           instanceId: `${sourceCard.instanceId}:fallback:${state.events.length}`,
@@ -2344,7 +2352,10 @@ export function applyEffect(
         });
         const attack = effect.values.attack ?? generated.card.currentAttack;
         const health = effect.values.health ?? generated.card.currentHealth;
-        const summoned = enterField({ ...state, events: [...state.events, generated.event] }, playerId,
+        const summoned = enterField({ ...state,
+          cardPool: state.cardPool?.some((candidate) => candidate.id === zombieDefinition.id)
+            ? state.cardPool : [...(state.cardPool ?? []), zombieDefinition],
+          events: [...state.events, generated.event] }, playerId,
           { ...generated.card, currentAttack: attack, baseAttack: attack, currentHealth: health, baseHealth: health, maxHealth: health },
           slot as 0 | 1 | 2 | 3, { type: 'CARD', cardInstanceId: sourceCard.instanceId }, undefined, 'SUMMON');
         return applyEffect(summoned, playerId, sourceCard, {

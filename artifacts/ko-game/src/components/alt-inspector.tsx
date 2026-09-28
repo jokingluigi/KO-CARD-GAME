@@ -41,6 +41,8 @@ interface AltInspectContextValue {
   inspect: (target: InspectTarget) => void;
   toggleTouch: (target: InspectTarget) => void;
   clear: () => void;
+  scheduleClear: () => void;
+  cancelClear: () => void;
   openTagExplorer: (tag: string) => void;
 }
 
@@ -53,6 +55,7 @@ export function AltInspectProvider({ children }: { children: ReactNode }) {
   const [tagExplorer, setTagExplorer] = useState<string | null>(null);
   const [tagDetailCard, setTagDetailCard] = useState<CardDetailRecord | null>(null);
   const panelRef = useRef<HTMLElement>(null);
+  const clearTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const pendingAltToggleRef = useRef<number | null>(null);
   const [panelPosition, setPanelPosition] = useState({ left: 8, top: 8 });
 
@@ -100,14 +103,25 @@ export function AltInspectProvider({ children }: { children: ReactNode }) {
     };
   }, []);
 
+  const cancelClear = useCallback(() => {
+    if (clearTimerRef.current !== null) clearTimeout(clearTimerRef.current);
+    clearTimerRef.current = null;
+  }, []);
+  useEffect(() => cancelClear, [cancelClear]);
   const clear = useCallback(() => {
+    cancelClear();
     setTarget(null);
     setIsTouchInspecting(false);
-  }, []);
+  }, [cancelClear]);
+  const scheduleClear = useCallback(() => {
+    cancelClear();
+    clearTimerRef.current = setTimeout(clear, 180);
+  }, [cancelClear, clear]);
   const inspect = useCallback((nextTarget: InspectTarget) => {
+    cancelClear();
     setTarget(nextTarget);
     setIsTouchInspecting(false);
-  }, []);
+  }, [cancelClear]);
   const toggleTouch = useCallback((nextTarget: InspectTarget) => {
     setTarget((current) => {
       if (current?.anchor === nextTarget.anchor && isTouchInspecting) {
@@ -123,8 +137,8 @@ export function AltInspectProvider({ children }: { children: ReactNode }) {
     setTagExplorer(tag);
   }, []);
   const value = useMemo(
-    () => ({ isAltPressed, inspect, toggleTouch, clear, openTagExplorer }),
-    [clear, inspect, isAltPressed, openTagExplorer, toggleTouch],
+    () => ({ isAltPressed, inspect, toggleTouch, clear, scheduleClear, cancelClear, openTagExplorer }),
+    [clear, inspect, isAltPressed, openTagExplorer, toggleTouch, scheduleClear, cancelClear],
   );
   const isVisible = Boolean(
     target && (isAltPressed || target.showOnHover || (target.showOnTouch && isTouchInspecting)),
@@ -194,8 +208,9 @@ export function AltInspectProvider({ children }: { children: ReactNode }) {
       {isVisible && (
         <aside
           aria-label="상세정보"
-          className="ko-touch-inspector pointer-events-none fixed z-[200] w-[min(720px,calc(100vw-24px))] rounded-lg border border-neutral-600 bg-neutral-950/95 p-5 text-neutral-100 shadow-2xl backdrop-blur-md"
+          className="ko-touch-inspector pointer-events-auto fixed z-[200] w-[min(720px,calc(100vw-24px))] rounded-lg border border-neutral-600 bg-neutral-950/95 p-5 text-neutral-100 shadow-2xl backdrop-blur-md"
           ref={panelRef}
+          onMouseEnter={cancelClear}
           onMouseLeave={clear}
           style={{
             left: panelPosition.left,
@@ -281,7 +296,7 @@ export function Inspectable({
       onMouseLeave={(event) => {
         const next = event.relatedTarget;
         if (next instanceof Element && next.closest('[aria-label="상세정보"]')) return;
-        context.clear();
+        context.scheduleClear();
       }}
       onFocus={(event) => inspect(event.currentTarget)}
       onBlur={context.clear}

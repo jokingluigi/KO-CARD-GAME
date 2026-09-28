@@ -240,7 +240,7 @@ export function cardRecordToDefinition(card: PublishedCardRecord): CardDefinitio
       isChampionToken: card.isChampionToken,
       keywords: card.keywords,
        tags: Array.isArray(card.tags) ? [...card.tags] : [],
-      abilities: (zombieAbsorption && configuredEffects.length === 0
+      abilities: (zombieAbsorption
         ? [{ trigger: 'ENTER_FIELD' as const, effects: [{ type: 'STRUCTURED' as const,
             action: 'COPY_BEST_STATS' as const,
             target: { zone: 'BOARD' as const, owner: 'SELF' as const, cardType: 'WRESTLER' as const,

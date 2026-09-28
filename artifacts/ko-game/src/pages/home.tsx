@@ -281,7 +281,9 @@ export default function Home() {
     setAuthStatus('loading');
     setAuthError(null);
     void (async () => {
-      for (let attempt = 0; attempt < 4; attempt += 1) {
+      // A cold server can take longer than several request timeouts to wake.
+      // Keep the loading screen active and retry transient failures until it responds.
+      for (let attempt = 0; generation === authRequestGeneration.current; attempt += 1) {
         try {
           const result = await fetchCurrentUser();
           if (generation !== authRequestGeneration.current) return;
@@ -292,8 +294,8 @@ export default function Home() {
           if (generation !== authRequestGeneration.current) return;
           const retryable = error instanceof AuthRequestError &&
             (error.status === undefined || error.status === 503 || error.status === 502);
-          if (retryable && attempt < 3) {
-            await new Promise((resolve) => window.setTimeout(resolve, 700 * (attempt + 1)));
+          if (retryable) {
+            await new Promise((resolve) => window.setTimeout(resolve, Math.min(5_000, 700 * (attempt + 1))));
             continue;
           }
           setAuthUser(null);

@@ -258,6 +258,25 @@ test('설정이 누락된 좀비 흡수 카드는 가장 강한 좀비를 흡수
   assert.equal(copied.players[0].board.filter(Boolean).length, 2);
 });
 
+test('기존 GENERATE 설정이 자기 자신을 가리켜도 좀비 토큰만 소환한다', () => {
+  const absorber = definition('좀비 플래티넘구슬 마스터', {
+    effects: [effect('ENTER_FIELD', 'GENERATE', undefined, {
+      definitionRef: { id: 'saved-좀비 플래티넘구슬 마스터' }, destination: 'HAND', count: 1,
+    })],
+  }, {
+    attack: 3, health: 3,
+    text: "등장:필드에 있는 '좀비' 중 가장 수치의 합이 높은 '좀비'의 체력과 공격력을 자신에게 더합니다. '좀비'가 없다면 2/2 '좀비'를 생성하고 그 '좀비'의 체력과 공격력을 자신에게 더합니다.",
+  });
+  // A deck-only pool may have no zombie token definition at all.
+  const entered = enterField(stateWithPool([absorber]), 'player-1', card(absorber, 'absorber'), 0);
+  assert.equal(entered.players[0].board[0]?.currentAttack, 5);
+  assert.equal(entered.players[0].board[0]?.currentHealth, 5);
+  assert.equal(entered.players[0].board[1]?.definitionId, 'ko-fallback-zombie-token');
+  assert.equal(entered.players[0].board[1]?.isToken, true);
+  assert.equal(entered.players[0].hand.length, 0);
+  assert.equal(entered.cardPool?.find((candidate) => candidate.id === 'ko-fallback-zombie-token')?.name, '좀비');
+});
+
 test('아르카나 조커가 파괴한 덱 맨 위 카드는 묘지에 가지 않고 다음 턴에는 한 장만 뽑는다', () => {
   const arcana = definition('아르카나 조커', savedConfigs['아르카나 조커']!, {
     text: '등장:내 덱 맨 위에 있는 카드를 파괴하고 무작위 카드를 덱 맨 위에 추가합니다.',
