@@ -241,6 +241,7 @@ class AudioManager {
   setBgmMuted(muted: boolean) {
     this.bgmMuted = muted;
     if (this.bgm) {
+      this.bgm.audio.muted = muted;
       this.bgm.audio.volume = muted
         ? 0
         : safeVolume(this.bgm.volume * this.bgmVolume / 100);
@@ -362,6 +363,7 @@ class AudioManager {
       const audio = new Audio(request.url);
       audio.preload = "auto";
       audio.loop = true;
+      audio.muted = this.bgmMuted;
       audio.volume = 0;
       const music: MusicAudio = {
         audio,
@@ -591,6 +593,7 @@ class AudioManager {
     if (
       !this.bgm ||
       this.bgm.audio !== music.audio ||
+      this.bgmMuted ||
       this.musicContext !== music.scope ||
       this.current
     ) return;

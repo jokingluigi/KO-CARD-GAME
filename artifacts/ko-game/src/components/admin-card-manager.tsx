@@ -1490,7 +1490,6 @@ function AdminCardPreview({
       className="mx-auto h-[336px] w-[240px] shadow-[0_15px_40px_rgba(0,0,0,0.7)]"
       imageDisplaySettings={imageDisplaySettings}
       interactiveArtwork
-      showArtworkHint={Boolean(imageUrl)}
       onImagePositionChange={onImagePositionChange}
     />
   );

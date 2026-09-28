@@ -8,6 +8,7 @@ class FakeAudio {
   static failLoad = false;
   error: MediaError | null = null;
   volume = 1;
+  muted = false;
   playbackRate = 1;
   preload = "";
   loop = false;
@@ -157,6 +158,26 @@ test("effect volume changes attack sounds independently of the BGM", () => {
     assert.equal(attack?.volume, 0);
     audioManager.setSfxVolume(100);
     assert.equal(attack?.volume, 0.8);
+  });
+});
+
+test("음소거 상태에서 모드가 바뀌고 새 배경음이 로드되어도 음악이 들리지 않는다", () => {
+  withFakeAudio(() => {
+    audioManager.setMusicContext("NON_BATTLE");
+    audioManager.setBgmMuted(true);
+    audioManager.playBgm("/menu.mp3", 80);
+    const first = (audioManager as unknown as { bgm: { audio: FakeAudio } | null }).bgm?.audio;
+    assert.equal(first?.muted, true);
+    audioManager.setMusicContext("BATTLE");
+    audioManager.playMatchBgm("/match.mp3", 80);
+    const second = (audioManager as unknown as { bgm: { audio: FakeAudio } | null }).bgm?.audio;
+    assert.equal(second?.muted, true);
+    audioManager.setMusicContext("NON_BATTLE");
+    audioManager.playBgm("/menu.mp3", 80);
+    const returned = (audioManager as unknown as { bgm: { audio: FakeAudio } | null }).bgm?.audio;
+    assert.equal(returned?.muted, true);
+    audioManager.setBgmMuted(false);
+    assert.equal(returned?.muted, false);
   });
 });
 

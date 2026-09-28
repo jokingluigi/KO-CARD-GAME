@@ -37,7 +37,7 @@ export default function PacksPage() {
   const [openingPackName, setOpeningPackName] = useState("");
   const [message, setMessage] = useState("내 팩을 불러오는 중...");
   const openingIntentionRef = useRef<BulkOpenIntention | null>(null);
-  const available = useMemo(() => packs, [packs]);
+  const available = useMemo(() => packs.filter((pack) => pack.quantity > 0), [packs]);
 
   useEffect(() => {
     let cancelled = false;
@@ -194,7 +194,7 @@ export default function PacksPage() {
             {opening ? "같은 요청 확인 중..." : "같은 요청 다시 확인"}
           </button>
         </section>}
-        {available.length === 0 && !message && <div className="rounded-xl border border-dashed border-neutral-800 px-5 py-16 text-center text-sm text-neutral-500">현재 공개된 팩이 없습니다.</div>}
+        {available.length === 0 && !message && <div className="rounded-xl border border-dashed border-neutral-800 px-5 py-16 text-center text-sm text-neutral-500">보유한 팩이 없습니다.</div>}
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
            {available.map((pack) => {
              const chosenQuantity = selectedQuantity(pack);
