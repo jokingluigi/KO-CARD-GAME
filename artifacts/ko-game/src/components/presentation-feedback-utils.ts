@@ -3,6 +3,7 @@ import type { EventSubject, GameEvent } from "@/game/events/types";
 export type PresentationCueKind =
   | "DAMAGE"
   | "DODGE"
+  | "BLOCK"
   | "HEAL"
   | "BUFF"
   | "DEBUFF"
@@ -77,11 +78,14 @@ export function presentationCueDrafts(
     const target = targetIds(event);
     switch (event.type) {
       case "DAMAGE_DEALT":
-        if (event.reason === "DODGE" || event.tags?.includes("DODGE")) {
+        if (event.tags?.includes('BLOCKED')) {
+          drafts.push({ id, kind: 'BLOCK', label: '무효', sourceCardInstanceId: event.source?.type === 'CARD' ? event.source.cardInstanceId : undefined, ...target, duration: 320 });
+        } else if (event.reason === "DODGE" || event.tags?.includes("DODGE")) {
           drafts.push({
             id,
             kind: "DODGE",
             label: "DODGE",
+            sourceCardInstanceId: event.source?.type === 'CARD' ? event.source.cardInstanceId : undefined,
             ...target,
             duration: 280,
           });
@@ -91,6 +95,7 @@ export function presentationCueDrafts(
             kind: "DAMAGE",
             label: `-${event.amount}`,
             value: event.amount,
+            sourceCardInstanceId: event.source?.type === 'CARD' ? event.source.cardInstanceId : undefined,
             ...target,
             duration: 320,
           });

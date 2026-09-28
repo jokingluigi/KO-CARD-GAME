@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { AlertTriangle, ArrowLeft, Check, CirclePlus, Hammer, Minus, Plus, RefreshCw, Search, Shield, Trash2 } from "lucide-react";
+import { AlertTriangle, ArrowLeft, Check, CirclePlus, Hammer, Minus, Plus, RefreshCw, Search, Shield, Star, Trash2 } from "lucide-react";
 import { Link } from "wouter";
 import { AuthPage, AuthLoading, AuthRecovery } from "@/components/auth-page";
 import { AltInspectProvider, Inspectable } from "@/components/alt-inspector";
@@ -230,6 +230,11 @@ export default function Decks() {
   const [cardIds, setCardIds] = useState<string[]>([]);
   const [search, setSearch] = useState("");
   const [filter, setFilter] = useState<CardFilter>("ALL");
+  const [favoritesOnly, setFavoritesOnly] = useState(false);
+  const [favorites] = useState<string[]>(() => {
+    try { const value = JSON.parse(window.localStorage.getItem('ko-card-favorites') ?? '[]'); return Array.isArray(value) ? value.filter((id): id is string => typeof id === 'string') : []; }
+    catch { return []; }
+  });
   const [isLoading, setIsLoading] = useState(true);
   const [isMutating, setIsMutating] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
@@ -348,6 +353,14 @@ export default function Decks() {
       }, 0),
     [cardById, cardIds],
   );
+  const deckCurve = useMemo(() => {
+    const cards = cardIds.map((id) => cardById.get(id)).filter((card): card is DeckCard => Boolean(card));
+    return {
+      early: cards.filter((card) => card.cost <= 2).length,
+      late: cards.filter((card) => card.cost >= 5).length,
+      techniques: cards.filter((card) => card.cardType === 'TECHNIQUE').length,
+    };
+  }, [cardIds, cardById]);
   const missingIds = useMemo(
     () => unique([...(editingDeck?.missingCardDefinitionIds ?? []), ...cardIds.filter((id) => !cardById.has(id))]),
     [cardById, cardIds, editingDeck?.missingCardDefinitionIds],
@@ -400,9 +413,10 @@ export default function Decks() {
     return options.cards.filter((card) => {
       if (card.status !== "PUBLISHED" || card.isToken || card.isChampionToken) return false;
       if (filter !== "ALL" && card.cardType !== filter) return false;
+      if (favoritesOnly && !favorites.includes(card.id)) return false;
       return !normalizedSearch || card.name.toLocaleLowerCase().includes(normalizedSearch);
     });
-  }, [filter, options.cards, search]);
+  }, [filter, options.cards, search, favorites, favoritesOnly]);
   const selectedRows = useMemo(() => {
     const rows = Array.from(counts.entries()).map(([id, count]) => ({
       id,
@@ -761,6 +775,10 @@ export default function Decks() {
                   </button>
                 ))}
               </div>
+              <button type="button" aria-pressed={favoritesOnly} onClick={() => setFavoritesOnly((value) => !value)}
+                className={`ko-decks__filter flex items-center gap-1 ${favoritesOnly ? 'ko-decks__filter--active' : ''}`}>
+                <Star className="h-3.5 w-3.5" /> 즐겨찾기
+              </button>
             </div>
             {filteredCards.length === 0 ? (
               <div className="ko-decks__empty mt-5" data-testid="empty-card-results">
@@ -864,6 +882,10 @@ export default function Decks() {
                 <div className="ko-decks__meter-track" aria-hidden="true">
                   <div className="ko-decks__meter-fill" style={{ width: `${Math.min(100, (cardIds.length / DECK_SIZE) * 100)}%` }} />
                 </div>
+                {cardIds.length >= 8 && <div className="mt-3 rounded border border-[#6b5840] px-2 py-2 text-[11px] text-[#ddcfb8]">
+                  <strong>덱 구성 참고</strong> · 초반(0~2) {deckCurve.early}장 · 고비용(5+) {deckCurve.late}장 · 기술 {deckCurve.techniques}장
+                  {deckCurve.early < Math.ceil(cardIds.length * 0.2) && <p className="mt-1 text-amber-300">초반에 낼 카드가 적어 손패가 무거울 수 있어요.</p>}
+                </div>}
                 {cardIds.length !== DECK_SIZE && (
                   <p className="ko-decks__notice ko-decks__notice--quiet mt-3" data-testid="status-deck-incomplete">
                     <AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0" aria-hidden="true" />

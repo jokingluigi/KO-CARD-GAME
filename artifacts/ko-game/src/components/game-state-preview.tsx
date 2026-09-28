@@ -1,5 +1,5 @@
 import React from 'react';
-import { SfxVolumeControl } from './sfx-volume-control';
+import { EntranceVolumeControl, SfxVolumeControl } from './sfx-volume-control';
 import { CardRenderer } from './card-renderer';
 import { CardArtwork } from './card-artwork';
 import {
@@ -160,6 +160,11 @@ export function GameStatePreview({
   });
   const [surrenderConfirming, setSurrenderConfirming] = React.useState(false);
   const [attackHint, setAttackHint] = React.useState<string | null>(null);
+  const [confirmEndTurn, setConfirmEndTurn] = React.useState(false);
+  const [hapticsEnabled, setHapticsEnabled] = React.useState(() => {
+    try { return window.localStorage.getItem('ko-match-haptics') !== 'off'; } catch { return true; }
+  });
+  React.useEffect(() => { setConfirmEndTurn(false); }, [state.turn, state.activePlayerId]);
   React.useEffect(() => {
     const cancel = () => {
       if (tutorialStep !== null) setTutorialStep(null);
@@ -355,6 +360,12 @@ export function GameStatePreview({
         : largest,
       0,
     );
+    if (hapticsEnabled && typeof navigator.vibrate === 'function' &&
+        window.matchMedia?.('(pointer: coarse)').matches && !prefersReducedMotion()) {
+      if (newEvents.some((event) => event.type === 'CHAMPION_QUEST_COMPLETED')) navigator.vibrate([28, 40, 58]);
+      else if (largestDamage >= 6) navigator.vibrate(largestDamage >= 10 ? [36, 28, 55] : 35);
+      else if (newEvents.some((event) => event.type === 'ENTER_FIELD')) navigator.vibrate(12);
+    }
     if (largestDamage > 0 && !newEvents.some((event) => event.type === "ATTACK_DECLARED")) {
       if (state.status !== 'FINISHED') {
         const hitSound = combatHitSound(largestDamage);
@@ -613,6 +624,7 @@ export function GameStatePreview({
     isCurrentPlayer(state, me.id) && !effectTargeting
   );
   const legalActions = getLegalActions(state, me.id);
+  const remainingActions = legalActions.filter((action) => ['ATTACK', 'USE_ACTIVE', 'USE_CHAMPION_ABILITY'].includes(action.type));
   const selectedAttacker = selectedAttackerId
     ? me.board.find((card) => card?.instanceId === selectedAttackerId)
     : null;
@@ -828,7 +840,11 @@ export function GameStatePreview({
       }`} style={attackAnimation?.finishingBlow ? {
         "--finisher-duration": `${attackAnimationDuration(attackAnimation.currentAttack) + 350}ms`,
         transformOrigin: `${Math.max(0, attackAnimation.geometry.target.left + attackAnimation.geometry.target.width / 2 - Math.max(0, (window.innerWidth - 1024) / 2))}px ${attackAnimation.geometry.target.top + attackAnimation.geometry.target.height / 2}px`,
-      } as React.CSSProperties : undefined}>
+      } as React.CSSProperties : {
+        '--shake-direction': attackAnimation?.geometry
+          ? Math.sign(attackAnimation.geometry.target.left - attackAnimation.geometry.source.left) || 1
+          : 1,
+      } as React.CSSProperties}>
          
          {/* TOP BAR: Opponent Info */}
          <div className="ko-opponent-header relative z-[90] h-24 shrink-0 px-2 md:h-32 md:px-4">
@@ -929,6 +945,7 @@ export function GameStatePreview({
                 >
                   <div tabIndex={0} className={`rounded border px-2 py-1 text-[8px] font-bold md:text-[10px] ${opp.champion.questCompleted ? 'border-rose-400 bg-rose-950/90 text-rose-100' : 'border-purple-900 bg-purple-950/70 text-purple-200'}`}>
                     퀘스트 {opp.champion.questCompleted ? '완료' : `${opp.champion.questProgress}/${opp.champion.quest.requiredProgress}`}
+                    {!opp.champion.questCompleted && opp.champion.questProgress === opp.champion.quest.requiredProgress - 1 && <span className="ml-1 text-amber-300">· 달성 임박</span>}
                   </div>
                 </Inspectable>
               )}
@@ -958,7 +975,9 @@ export function GameStatePreview({
                     targetingActive={!!effectTargeting}
                     presentationActive={activePresentationCardId === card?.instanceId || (!!effectTargeting && state.targetingState?.sourceInstanceId === card?.instanceId)}
                      targetable={!!card && (effectTargeting ? validEffectTargetIds.has(card.instanceId) : !!selectedAttackerId && legalAttackTargets.has(card.instanceId))}
-                    attackPreview={!!card && !!selectedAttackerId && !effectTargeting && legalAttackTargets.has(card.instanceId) ? `기본 피해 ${attackBaseDamage} · 반격 ${Math.max(0, card.currentAttack)}` : undefined}
+                    attackPreview={!!card && !!selectedAttackerId && !effectTargeting && legalAttackTargets.has(card.instanceId)
+                      ? `피해 ${attackBaseDamage} · ${card.dodgeAvailable || (card.dodgeCharges ?? 0) > 0 ? '회피 가능' : card.currentHealth <= attackBaseDamage ? '리타이어' : `잔여 ${card.currentHealth - attackBaseDamage}`} · 반격 ${Math.max(0, card.currentAttack)}`
+                      : undefined}
                     activeReady={false}
                     activeUsable={false}
                     onUseActive={() => undefined}
@@ -1112,15 +1131,26 @@ export function GameStatePreview({
             <button
               type="button"
               disabled={!canEndTurn}
-              onClick={() => onEndTurn()}
+              onClick={() => {
+                if (remainingActions.length && turnSecondsRemaining > 10 && !confirmEndTurn) {
+                  setConfirmEndTurn(true);
+                  return;
+                }
+                setConfirmEndTurn(false);
+                onEndTurn();
+              }}
               className={`rounded px-2 py-2 text-[10px] font-black transition-all md:py-3 md:text-sm ${
                 canEndTurn
                   ? 'bg-primary text-black shadow-[0_0_12px_rgba(234,179,8,0.3)] hover:bg-yellow-400'
                   : 'cursor-not-allowed bg-neutral-800 text-neutral-600'
               }`}
             >
-              턴 종료
+              {confirmEndTurn ? '그래도 종료' : '턴 종료'}
             </button>
+            {confirmEndTurn && <div role="status" className="rounded border border-amber-700 bg-black/90 p-2 text-[10px] text-amber-200">
+              공격이나 능력 사용이 남아 있어요.
+              <button type="button" className="mt-1 block font-bold underline" onClick={() => setConfirmEndTurn(false)}>계속 플레이</button>
+            </div>}
             {playError && (
               <div className="absolute right-0 top-full mt-2 w-44 rounded border border-red-500 bg-red-950/95 px-3 py-2 text-[10px] font-bold text-red-200 shadow-xl">
                 {playError}
@@ -1219,6 +1249,15 @@ export function GameStatePreview({
                        />
                      </label>
                      <SfxVolumeControl />
+                     <EntranceVolumeControl />
+                     <label className="flex items-center justify-between gap-2 text-xs font-bold text-neutral-300">
+                       모바일 진동
+                       <input type="checkbox" checked={hapticsEnabled} className="h-4 w-4 accent-amber-400"
+                         onChange={(event) => {
+                           setHapticsEnabled(event.target.checked);
+                           try { window.localStorage.setItem('ko-match-haptics', event.target.checked ? 'on' : 'off'); } catch { /* optional */ }
+                         }} />
+                     </label>
                      <button
                        type="button"
                        disabled={state.status === 'FINISHED'}
@@ -1387,6 +1426,7 @@ export function GameStatePreview({
                  <Inspectable content={<ChampionQuestInspectContent champion={me.champion} />}>
                   <div tabIndex={0} className={`rounded border px-2 py-1 text-[8px] font-bold md:text-[10px] ${me.champion.questCompleted ? 'border-amber-400 bg-amber-950/90 text-amber-100' : 'border-purple-900 bg-purple-950/70 text-purple-200'} ${activePresentationCue?.kind === "QUEST_PROGRESS" || activePresentationCue?.kind === "QUEST_COMPLETE" ? "presentation-card-pulse" : ""}`}>
                      퀘스트 {me.champion.questCompleted ? '완료' : `${me.champion.questProgress}/${me.champion.quest.requiredProgress}`}
+                     {!me.champion.questCompleted && me.champion.questProgress === me.champion.quest.requiredProgress - 1 && <span className="ml-1 text-amber-300">· 다음 1회!</span>}
                      {activePresentationCue?.kind === 'QUEST_PROGRESS' && activePresentationCue.playerId === me.id && (
                        <span className="mt-1 block max-w-40 text-[9px] leading-tight text-purple-100">{activePresentationCue.label} +{activePresentationCue.value}</span>
                      )}
@@ -1760,7 +1800,7 @@ function BoardSlot({
            </>
          }
        />
-       {attackPreview && <span className="pointer-events-none absolute -bottom-5 left-1/2 z-[60] -translate-x-1/2 whitespace-nowrap rounded border border-red-500 bg-red-950/95 px-1.5 py-0.5 text-[8px] font-black text-white">{attackPreview}</span>}
+       {attackPreview && <span className="pointer-events-none absolute bottom-full left-1/2 z-[60] mb-1 w-max max-w-[min(10rem,calc(100vw-24px))] -translate-x-1/2 rounded border border-red-500 bg-red-950/95 px-1.5 py-0.5 text-center text-[8px] font-black leading-tight text-white">{attackPreview}</span>}
        <button
          type="button"
          data-touch-inspect-trigger

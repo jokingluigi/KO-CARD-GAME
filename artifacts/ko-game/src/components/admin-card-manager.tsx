@@ -1020,7 +1020,7 @@ export function AdminCardManager({
             <option value="">모든 점검 결과</option>
             <option value="missing">설정 누락 의심 ({Object.values(auditResults).filter((result) => result.status === "missing").length})</option>
             <option value="review">직접 확인 필요 ({Object.values(auditResults).filter((result) => result.status === "review").length})</option>
-            <option value="aligned">문구·설정 일치</option>
+            <option value="aligned">문구·설정 일치 (경기 검증 필요)</option>
           </select>
           <span className="text-neutral-400">정적 비교 결과입니다. 실제 경기에서 발동하는지는 별도로 확인해야 합니다. 카드를 수정했다면 다시 점검해 주세요.</span>
         </>}
@@ -1092,7 +1092,7 @@ export function AdminCardManager({
                   </div>
                   <p className="mt-1 text-[10px] text-neutral-500">{card.cardType === "WRESTLER" ? "선수" : "기술"} · 비용 {card.cost} · v{card.version}</p>
                   {auditResults?.[card.id] && auditResults[card.id].status !== "none" && <p data-testid={`effect-audit-${card.id}`} title={auditResults[card.id].reason} className={`mt-1 text-[10px] font-bold ${auditResults[card.id].status === "missing" ? "text-red-300" : auditResults[card.id].status === "review" ? "text-amber-300" : "text-emerald-300"}`}>
-                    {auditResults[card.id].status === "missing" ? "⚠ 설정 누락 의심" : auditResults[card.id].status === "review" ? "? 직접 확인 필요" : "✓ 문구·설정 일치"} · {auditResults[card.id].reason}
+                    {auditResults[card.id].status === "missing" ? "⚠ 설정 누락 의심" : auditResults[card.id].status === "review" ? "? 직접 확인 필요" : "✓ 정적 검사 통과 · 실제 경기 확인 필요"} · {auditResults[card.id].reason}
                   </p>}
                   {(card.isToken || card.isChampionToken) && <p className="mt-1 text-[10px] font-bold text-primary">{card.isChampionToken ? "챔피언 토큰" : "토큰"}</p>}
                 </div>

@@ -75,7 +75,7 @@ export function AttackAnimation({
   return (
     <div
       aria-hidden="true"
-      className={`attack-animation ${impactClass} attack-animation--rarity-${rarity.toLowerCase()} ${animation.finishingBlow ? "attack-animation--finisher" : ""}`}
+      className={`attack-animation ${impactClass} attack-animation--rarity-${rarity.toLowerCase()} ${animation.target && animation.damage >= animation.target.currentHealth + 3 ? 'attack-animation--overkill' : ''} ${animation.finishingBlow ? "attack-animation--finisher" : ""}`}
       style={style}
     >
       {animation.finishingBlow && <div className="attack-animation__finisher"><div className="attack-animation__finisher-slash" /><span>K.O.!</span></div>}

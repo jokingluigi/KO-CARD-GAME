@@ -89,7 +89,8 @@ export function PackOpening({ packName, rewards, packCount = 1, perPackRewards, 
     if (!specialReward) return;
     playRevealMusic(specialReward);
     const timeout = window.setTimeout(() => setSpecialQueue((current) => current.slice(1)),
-      window.matchMedia?.("(prefers-reduced-motion: reduce)").matches ? 350 : 1700);
+      window.matchMedia?.("(prefers-reduced-motion: reduce)").matches ? 350
+        : specialReward.rewardType === 'CHAMPION_UNLOCK' ? 2300 : 1700);
     return () => window.clearTimeout(timeout);
   }, [specialReward]);
 
@@ -98,6 +99,13 @@ export function PackOpening({ packName, rewards, packCount = 1, perPackRewards, 
   }, []);
 
   const allRevealed = rewards.length === 0 || revealed >= rewards.length - 1;
+  const revealAll = () => {
+    // Do not queue a series of entrance scenes when the player skips ahead.
+    announcedThroughRef.current = rewards.length - 1;
+    setSpecialQueue([]);
+    audioManager.stopPackRevealMusic();
+    setRevealed(rewards.length - 1);
+  };
 
   return (
     <section className="fixed inset-0 z-50 overflow-y-auto bg-neutral-950/95 px-5 py-8 backdrop-blur-sm">
@@ -208,14 +216,17 @@ export function PackOpening({ packName, rewards, packCount = 1, perPackRewards, 
                     />
                   ) : <p>보상 없음</p>}
                 </div>
-                {isRevealed && <p className="mt-2 text-center text-xs font-bold text-neutral-300">{rewardTitle(reward)}</p>}
+                {isRevealed && <p className="mt-2 text-center text-xs font-bold text-neutral-300">
+                  {reward.alreadyOwned === true ? <span className="mr-1 text-amber-300">중복 ·</span> : reward.alreadyOwned === false ? <span className="mr-1 text-emerald-300">신규 ·</span> : null}
+                  {rewardTitle(reward)}
+                </p>}
               </button>
             );
           })}
         </div>}
         <div className="mt-8 flex flex-wrap justify-center gap-3">
-          {isBulkResult && detailsExpanded && !allRevealed && <button type="button" data-testid="button-quick-reveal-all" onClick={() => setRevealed(rewards.length - 1)} className="rounded border border-amber-700 px-5 py-3 text-sm font-black text-amber-300">빠르게 모두 공개</button>}
-          {!isBulkResult && !allRevealed && <button type="button" data-testid="button-reveal-all" onClick={() => setRevealed(rewards.length - 1)} className="rounded border border-amber-700 px-5 py-3 text-sm font-black text-amber-300">모두 공개</button>}
+          {isBulkResult && detailsExpanded && !allRevealed && <button type="button" data-testid="button-quick-reveal-all" onClick={revealAll} className="rounded border border-amber-700 px-5 py-3 text-sm font-black text-amber-300">빠르게 모두 공개</button>}
+          {!isBulkResult && !allRevealed && <button type="button" data-testid="button-reveal-all" onClick={revealAll} className="rounded border border-amber-700 px-5 py-3 text-sm font-black text-amber-300">연출 건너뛰고 모두 공개</button>}
           {!isBulkResult && allRevealed && onRegenerate && <button type="button" onClick={onRegenerate} className="flex items-center gap-2 rounded border border-amber-700 px-5 py-3 text-sm font-black text-amber-300"><RotateCcw className="h-4 w-4" /> 결과 다시 생성</button>}
           {!isBulkResult && allRevealed && onRepeat && <button type="button" onClick={onRepeat} className="flex items-center gap-2 rounded border border-neutral-700 px-5 py-3 text-sm font-black text-neutral-200"><RotateCcw className="h-4 w-4" /> 같은 팩 다시 테스트</button>}
           {(isBulkResult || allRevealed) && <button type="button" data-testid="button-close-pack-opening" onClick={onClose} className="flex items-center gap-2 rounded bg-primary px-6 py-3 text-sm font-black text-black"><Check className="h-4 w-4" /> {preview ? "팩 선택으로 돌아가기" : "확인"}</button>}

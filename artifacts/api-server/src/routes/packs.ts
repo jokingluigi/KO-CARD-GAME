@@ -1,4 +1,4 @@
-import { and, asc, eq, sql } from "drizzle-orm";
+import { and, asc, eq, inArray, sql } from "drizzle-orm";
 import { randomUUID } from "node:crypto";
 import { Router, type IRouter, type Request, type Response } from "express";
 import {
@@ -152,10 +152,18 @@ export async function openPackRequest(
       if (!spent) throw new Error("보유한 팩이 없습니다.");
 
       const openings = await rollPackOpenings(quantity, () => rollPack(pack, tx));
+      const rolledCardIds = [...new Set(openings.flatMap(({ rewards }) => rewards.flatMap((reward) =>
+        reward.rewardType === 'NORMAL_CARD' || reward.rewardType === 'LEGENDARY_CARD' ? [reward.card.id] : [])))];
+      const ownedCards = rolledCardIds.length ? await tx.select({ id: userCardCollectionsTable.cardDefinitionId, quantity: userCardCollectionsTable.quantity })
+        .from(userCardCollectionsTable)
+        .where(and(eq(userCardCollectionsTable.userId, request.authUser!.id), inArray(userCardCollectionsTable.cardDefinitionId, rolledCardIds))) : [];
+      const ownedCardQuantities = new Map(ownedCards.map((entry) => [entry.id, entry.quantity]));
       for (const opening of openings) {
         for (const reward of opening.rewards) {
           if (reward.rewardType === "NORMAL_CARD" || reward.rewardType === "LEGENDARY_CARD") {
             const card = reward.card;
+            reward.alreadyOwned = (ownedCardQuantities.get(card.id) ?? 0) > 0;
+            ownedCardQuantities.set(card.id, (ownedCardQuantities.get(card.id) ?? 0) + 1);
             await tx.insert(userCardCollectionsTable).values({
               userId: request.authUser!.id, cardDefinitionId: card.id, quantity: 1,
             }).onConflictDoUpdate({

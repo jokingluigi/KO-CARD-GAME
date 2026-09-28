@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState, type KeyboardEvent } from "react";
-import { ArrowLeft, BookOpen, ChevronDown, Hammer, Search, Shield, Sparkles, Swords, X } from "lucide-react";
+import { ArrowLeft, BookOpen, ChevronDown, Hammer, Search, Shield, Sparkles, Swords, Star, X } from "lucide-react";
 import { CardRenderer } from "@/components/card-renderer";
 import { CardArtwork } from "@/components/card-artwork";
 import { CollectionActionAnimation, type CollectionActionScene } from "@/components/collection-action-animation";
@@ -26,7 +26,7 @@ function rarityLabel(rarity: string) {
   return rarity === "LEGENDARY" ? "LEGENDARY" : "NORMAL";
 }
 
-function CardCollectionItem({ card, onOpen, showCraftable = false, unlimited = false }: { card: CollectionCard; onOpen: () => void; showCraftable?: boolean; unlimited?: boolean }) {
+function CardCollectionItem({ card, onOpen, showCraftable = false, unlimited = false, favorite = false, onFavorite }: { card: CollectionCard; onOpen: () => void; showCraftable?: boolean; unlimited?: boolean; favorite?: boolean; onFavorite: () => void }) {
   function handleKeyDown(event: KeyboardEvent<HTMLDivElement>) {
     if (event.key === "Enter" || event.key === " ") {
       event.preventDefault();
@@ -70,6 +70,12 @@ function CardCollectionItem({ card, onOpen, showCraftable = false, unlimited = f
       <div className="flex items-center justify-between gap-2 px-1 pb-1 pt-2">
         <span className="truncate text-sm font-black text-white">{card.name}</span>
          <span className="shrink-0 text-[10px] font-bold text-neutral-500">{cardTypeLabel(card.cardType)}</span>
+         <button type="button" aria-label={`${card.name} ${favorite ? '즐겨찾기 해제' : '즐겨찾기'}`} aria-pressed={favorite}
+           onClick={(event) => { event.stopPropagation(); onFavorite(); }}
+           onKeyDown={(event) => event.stopPropagation()}
+           className="shrink-0 rounded p-1 focus-visible:outline-2 focus-visible:outline-amber-300">
+           <Star className={`h-4 w-4 ${favorite ? 'fill-amber-400 text-amber-400' : 'text-neutral-500'}`} />
+         </button>
       </div>
     </article>
   );
@@ -116,6 +122,18 @@ export default function CollectionPage() {
   const [cardType, setCardType] = useState<CardTypeFilter>("ALL");
   const [rarity, setRarity] = useState<RarityFilter>("ALL");
   const [sort, setSort] = useState<CardSort>("COST");
+  const [favorites, setFavorites] = useState<string[]>(() => {
+    try { const value = JSON.parse(window.localStorage.getItem('ko-card-favorites') ?? '[]'); return Array.isArray(value) ? value.filter((id): id is string => typeof id === 'string') : []; }
+    catch { return []; }
+  });
+  const [favoritesOnly, setFavoritesOnly] = useState(false);
+  function toggleFavorite(id: string) {
+    setFavorites((current) => {
+      const next = current.includes(id) ? current.filter((item) => item !== id) : [...current, id];
+      try { window.localStorage.setItem('ko-card-favorites', JSON.stringify(next)); } catch { /* optional */ }
+      return next;
+    });
+  }
   const [selectedCard, setSelectedCard] = useState<CollectionCard | null>(null);
   const [disassemblyQuantity, setDisassemblyQuantity] = useState(1);
   const [selectedChampion, setSelectedChampion] = useState<CollectionChampion | null>(null);
@@ -165,6 +183,7 @@ export default function CollectionPage() {
       .filter((card) => {
         if (cardType !== "ALL" && card.cardType !== cardType) return false;
         if (rarity !== "ALL" && card.rarity !== rarity) return false;
+        if (favoritesOnly && !favorites.includes(card.id)) return false;
         return !normalizedSearch || card.name.toLocaleLowerCase().includes(normalizedSearch);
       })
       .sort((left, right) => {
@@ -172,7 +191,7 @@ export default function CollectionPage() {
         if (sort === "RARITY") return rarityLabel(left.rarity).localeCompare(rarityLabel(right.rarity)) || left.name.localeCompare(right.name, "ko");
         return left.cost - right.cost || left.name.localeCompare(right.name, "ko");
       });
-  }, [cardType, collection?.cards, rarity, search, sort]);
+  }, [cardType, collection?.cards, rarity, search, sort, favorites, favoritesOnly]);
 
   const filteredCraftableCards = useMemo(() => {
     const normalizedSearch = search.trim().toLocaleLowerCase();
@@ -180,6 +199,7 @@ export default function CollectionPage() {
       .filter((card) => {
         if (cardType !== "ALL" && card.cardType !== cardType) return false;
         if (rarity !== "ALL" && card.rarity !== rarity) return false;
+        if (favoritesOnly && !favorites.includes(card.id)) return false;
         return !normalizedSearch || card.name.toLocaleLowerCase().includes(normalizedSearch);
       })
       .sort((left, right) => {
@@ -187,7 +207,7 @@ export default function CollectionPage() {
         if (sort === "RARITY") return rarityLabel(left.rarity).localeCompare(rarityLabel(right.rarity)) || left.name.localeCompare(right.name, "ko");
         return left.cost - right.cost || left.name.localeCompare(right.name, "ko");
       });
-  }, [cardType, collection?.craftableCards, rarity, search, sort]);
+  }, [cardType, collection?.craftableCards, rarity, search, sort, favorites, favoritesOnly]);
 
   const champions = collection?.champions ?? [];
   const selectedSetting = selectedCard
@@ -202,6 +222,7 @@ export default function CollectionPage() {
   async function executePendingAction() {
     if (!pendingAction || isMutating) return;
     const action = pendingAction;
+    let earnedPrism = 0;
     let applied = false;
     setIsMutating(true);
     setMessage("");
@@ -209,7 +230,7 @@ export default function CollectionPage() {
       if (action.type === "CRAFT") {
         await craftCard(action.card.id);
       } else if (action.type === "DISENCHANT") {
-         await disenchantCard(action.card.id, action.quantity);
+         earnedPrism = (await disenchantCard(action.card.id, action.quantity)).reward;
       } else {
         await craftChampion(action.champion.id);
       }
@@ -222,7 +243,9 @@ export default function CollectionPage() {
         setSelectedChampion(nextCollection.champions.find((champion) => champion.id === action.champion.id) ?? null);
       }
       setPendingAction(null);
-       setMessage(action.type === "CRAFT" ? "카드를 제작했습니다." : action.type === "DISENCHANT" ? `카드를 ${action.quantity}장 분해했습니다.` : "챔피언을 제작했습니다.");
+       setMessage(action.type === "CRAFT" ? "카드를 제작했습니다." : action.type === "DISENCHANT"
+         ? `${action.card.name} ${action.quantity}장 분해 · ${earnedPrism.toLocaleString()} 프리즘 획득`
+         : "챔피언을 제작했습니다.");
     } catch (error) {
       setMessage(applied
         ? `작업은 완료됐지만 컬렉션을 새로고침하지 못했습니다: ${error instanceof Error ? error.message : "다시 열어 확인해 주세요."}`
@@ -326,6 +349,10 @@ export default function CollectionPage() {
                 <FilterSelect label="희귀도" value={rarity} onChange={(value) => setRarity(value as RarityFilter)} options={[["ALL", "전체 희귀도"], ["NORMAL", "NORMAL"], ["LEGENDARY", "LEGENDARY"]]} />
                 <FilterSelect label="정렬" value={sort} onChange={(value) => setSort(value as CardSort)} options={[["COST", "비용"], ["NAME", "이름"], ["RARITY", "희귀도"]]} />
               </div>
+              <button type="button" aria-pressed={favoritesOnly} onClick={() => setFavoritesOnly((value) => !value)}
+                className={`mt-3 inline-flex items-center gap-1.5 rounded border px-3 py-2 text-xs font-bold ${favoritesOnly ? 'border-amber-400 bg-amber-950/50 text-amber-200' : 'border-neutral-700 text-neutral-300'}`}>
+                <Star className={`h-3.5 w-3.5 ${favoritesOnly ? 'fill-amber-400' : ''}`} /> 즐겨찾기만
+              </button>
                <p className="mt-3 text-xs text-neutral-500">
                  <span className="font-bold text-neutral-300">{tab === "cards" ? filteredCards.length : filteredCraftableCards.length}</span>
                  {tab === "cards" ? "장의 카드 · 소유 카드만 표시" : "장의 카드 · PUBLISHED NORMAL/LEGENDARY만 표시"}
@@ -336,7 +363,7 @@ export default function CollectionPage() {
                <EmptyState title={tab === "cards" ? (collection.cards.length ? "조건에 맞는 카드가 없습니다." : "아직 보유한 카드가 없습니다.") : "제작 가능한 카드가 없습니다."} />
             ) : (
               <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 sm:gap-4 lg:grid-cols-5">
-               {(tab === "cards" ? filteredCards : filteredCraftableCards).map((card) => <CardCollectionItem key={card.id} card={card} showCraftable={tab === "crafting"} unlimited={collection?.isTestAccount} onOpen={() => setSelectedCard(card)} />)}
+               {(tab === "cards" ? filteredCards : filteredCraftableCards).map((card) => <CardCollectionItem key={card.id} card={card} showCraftable={tab === "crafting"} unlimited={collection?.isTestAccount} favorite={favorites.includes(card.id)} onFavorite={() => toggleFavorite(card.id)} onOpen={() => setSelectedCard(card)} />)}
               </div>
             )}
           </>

@@ -604,7 +604,8 @@
   10% { opacity: 1; transform: translate3d(0, 0, 0) scale(1); }
   20% { transform: translate3d(calc(var(--attack-dx) * -.035), calc(var(--attack-dy) * -.035), 0) scale(1.02); }
   56% { opacity: 1; transform: translate3d(var(--attack-dx), var(--attack-dy), 0) scale(1.06); }
-  65% { opacity: 1; transform: translate3d(var(--attack-dx), var(--attack-dy), 0) scale(1.02); }
+  60% { opacity: 1; transform: translate3d(var(--attack-dx), var(--attack-dy), 0) scale(1.06); }
+  68% { opacity: 1; transform: translate3d(calc(var(--attack-dx) * .94), calc(var(--attack-dy) * .94), 0) scale(1.02); }
   100% { opacity: 1; transform: translate3d(0, 0, 0) scale(1); }
 }
 
@@ -708,6 +709,7 @@
 }
 .attack-animation--heavy .attack-animation__shockwave,
 .attack-animation--very_heavy .attack-animation__shockwave { border-width: 5px; box-shadow: 0 0 30px rgba(239, 68, 68, .8); }
+.attack-animation--overkill .attack-animation__shockwave { border-color: rgba(255, 213, 138, .9); box-shadow: 0 0 34px rgba(255, 166, 68, .6); }
 
 .attack-animation__target {
   left: var(--attack-target-x);
@@ -749,32 +751,32 @@
 
 @keyframes ko-attack-screen-shake-light {
   0%, 100% { transform: translate(0); }
-  35% { transform: translate(-2px, 1px); }
-  70% { transform: translate(2px, -1px); }
+  35% { transform: translate(calc(2px * var(--shake-direction, 1)), 1px); }
+  70% { transform: translate(calc(-1px * var(--shake-direction, 1)), -1px); }
 }
 
 @keyframes ko-attack-screen-shake-medium {
   0%, 100% { transform: translate(0); }
-  25% { transform: translate(-3px, 1px); }
-  50% { transform: translate(3px, -1px); }
-  75% { transform: translate(-2px, 0); }
+  25% { transform: translate(calc(3px * var(--shake-direction, 1)), 1px); }
+  50% { transform: translate(calc(-2px * var(--shake-direction, 1)), -1px); }
+  75% { transform: translate(calc(1px * var(--shake-direction, 1)), 0); }
 }
 
 @keyframes ko-attack-screen-shake-heavy {
   0%, 100% { transform: translate(0); }
-  20% { transform: translate(-4px, 1px); }
-  40% { transform: translate(4px, -1px); }
-  60% { transform: translate(-3px, 0); }
-  80% { transform: translate(2px, 0); }
+  20% { transform: translate(calc(4px * var(--shake-direction, 1)), 1px); }
+  40% { transform: translate(calc(-3px * var(--shake-direction, 1)), -1px); }
+  60% { transform: translate(calc(2px * var(--shake-direction, 1)), 0); }
+  80% { transform: translate(calc(-1px * var(--shake-direction, 1)), 0); }
 }
 
 @keyframes ko-attack-screen-shake-very-heavy {
   0%, 100% { transform: translate(0); }
-  16% { transform: translate(-6px, 1px); }
-  32% { transform: translate(6px, -1px); }
-  48% { transform: translate(-5px, 1px); }
-  64% { transform: translate(4px, 0); }
-  80% { transform: translate(-2px, 0); }
+  16% { transform: translate(calc(6px * var(--shake-direction, 1)), 1px); }
+  32% { transform: translate(calc(-4px * var(--shake-direction, 1)), -1px); }
+  48% { transform: translate(calc(3px * var(--shake-direction, 1)), 1px); }
+  64% { transform: translate(calc(-2px * var(--shake-direction, 1)), 0); }
+  80% { transform: translate(calc(1px * var(--shake-direction, 1)), 0); }
 }
 
 .attack-target-hit--very_light { animation: ko-attack-shake-very-light 110ms ease-out; }

@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import type { GameState } from "@/game";
+import { getCardDefinition, type GameState } from "@/game";
 import { matchEndReason, matchSummary } from '@/lib/match-summary';
 import { championVoiceLine } from '@/game/champions/types';
 import { audioManager } from '@/audio/audio-manager';
@@ -23,6 +23,15 @@ export function MatchResultOverlay({
   const winner = state.players.find((candidate) => candidate.id === state.winnerId);
   const loser = state.players.find((candidate) => candidate.id === state.loserId);
   const lethal = state.events.some((event) => event.type === 'DAMAGE_DEALT' && event.target?.type === 'PLAYER' && event.target.playerId === state.loserId && (event.amount ?? 0) > 0);
+  const finishingHit = [...state.events].reverse().find((event) => event.type === 'DAMAGE_DEALT' &&
+    event.target?.type === 'PLAYER' && event.target.playerId === state.loserId && (event.amount ?? 0) > 0);
+  const finishingSourceId = finishingHit?.source?.type === 'CARD' ? finishingHit.source.cardInstanceId : null;
+  const finishingCard = finishingSourceId
+    ? state.players.flatMap((participant) => [...participant.board, ...participant.graveyard, ...participant.removedFromGame, ...participant.hand])
+      .find((card) => card?.instanceId === finishingSourceId)
+    : null;
+  const finishingName = finishingCard &&
+    (state.cardPool?.find((card) => card.id === finishingCard.definitionId) ?? getCardDefinition(finishingCard.definitionId))?.name;
   const [cinematic, setCinematic] = useState(lethal);
   useEffect(() => {
     if (!lethal) return;
@@ -31,8 +40,8 @@ export function MatchResultOverlay({
     const timeout = window.setTimeout(() => setCinematic(false), 1650);
     return () => window.clearTimeout(timeout);
   }, [lethal]);
-  const winnerLine = winner && championVoiceLine(winner.champion?.presentationLines, Boolean(winner.champion?.questCompleted), 'VICTORY');
-  const loserLine = loser && championVoiceLine(loser.champion?.presentationLines, Boolean(loser.champion?.questCompleted), 'DEFEAT');
+  const winnerLine = winner && championVoiceLine(winner.champion?.presentationLines, Boolean(winner.champion?.questCompleted), 'VICTORY', loser?.champion?.id);
+  const loserLine = loser && championVoiceLine(loser.champion?.presentationLines, Boolean(loser.champion?.questCompleted), 'DEFEAT', winner?.champion?.id);
   const accentClass = isVictory
     ? "border-amber-300/70 bg-amber-950/80 text-amber-100 shadow-[0_0_70px_rgba(234,179,8,0.28)]"
     : isDefeat
@@ -62,6 +71,9 @@ export function MatchResultOverlay({
         <p className="mt-6 text-sm leading-6 text-neutral-300">
           {reason}
         </p>
+        {finishingHit && <p className="mt-3 text-sm font-black text-amber-200">
+          마지막 일격 · {finishingName ?? winner?.champion?.name ?? '효과'} · {finishingHit.amount ?? 0} 피해
+        </p>}
         {winnerLine && <p className="mt-4 text-base font-bold text-amber-200">{winner?.champion?.name}: “{winnerLine}”</p>}
         {loserLine && <p className="mt-2 text-sm text-neutral-300">{loser?.champion?.name}: “{loserLine}”</p>}
         {ownSummary && opponentSummary && (

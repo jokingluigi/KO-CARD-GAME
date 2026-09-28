@@ -1,6 +1,21 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import { championRecordToDefinition } from "./published-champions";
+import { championVoiceLine } from './types';
+
+test('상대 챔피언별 승리 대사는 퀘스트 전후를 구분하고 미설정 상대는 기본 대사로 돌아간다', () => {
+  const lines = {
+    BEFORE_QUEST: { VICTORY: '기본 승리' },
+    AFTER_QUEST: { VICTORY: '기본 각성 승리' },
+    MATCHUPS: { rival: {
+      BEFORE_QUEST: { VICTORY: '라이벌 상대 승리' },
+      AFTER_QUEST: { VICTORY: '각성 후 라이벌 상대 승리' },
+    } },
+  };
+  assert.equal(championVoiceLine(lines, false, 'VICTORY', 'rival'), '라이벌 상대 승리');
+  assert.equal(championVoiceLine(lines, true, 'VICTORY', 'rival'), '각성 후 라이벌 상대 승리');
+  assert.equal(championVoiceLine(lines, true, 'VICTORY', 'another'), '기본 각성 승리');
+});
 
 test('필드 소환 능력은 손패 생성 설정을 필드 소환으로 정규화한다', () => {
   const definition = championRecordToDefinition({

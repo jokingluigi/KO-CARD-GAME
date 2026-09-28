@@ -2758,7 +2758,7 @@ export function applyEffect(
             ...clearDamageMarker(preparedState),
             events: [
               ...preparedState.events,
-              { type: 'DAMAGE_DEALT', playerId, cardInstanceId: sourceCard.instanceId, source: { type: 'CARD', cardInstanceId: sourceCard.instanceId }, target: { type: 'CARD', cardInstanceId: current.instanceId }, reason: 'CARD_EFFECT', amount: 0, sourceContext: attribution },
+              { type: 'DAMAGE_DEALT', playerId, cardInstanceId: sourceCard.instanceId, source: { type: 'CARD', cardInstanceId: sourceCard.instanceId }, target: { type: 'CARD', cardInstanceId: current.instanceId }, reason: 'CARD_EFFECT', amount: 0, tags: ['BLOCKED'], sourceContext: attribution },
             ],
           }, 'DAMAGE_TAKEN', targetOwner, current.instanceId, current.cardType);
         }
@@ -2776,7 +2776,7 @@ export function applyEffect(
             players: preparedState.players.map((player) => player.id === targetOwner
               ? { ...player, board: player.board.map((card) => card?.instanceId === current.instanceId ? { ...card, dodgeAvailable: dodgeCharges > 1, dodgeCharges: dodgeCharges - 1 } : card) as typeof player.board }
               : player),
-            events: [...preparedState.events, { type: 'DAMAGE_DEALT', playerId, cardInstanceId: sourceCard.instanceId, source: { type: 'CARD', cardInstanceId: sourceCard.instanceId }, target: { type: 'CARD', cardInstanceId: current.instanceId }, reason: 'CARD_EFFECT', amount: 0, sourceContext: attribution }],
+            events: [...preparedState.events, { type: 'DAMAGE_DEALT', playerId, cardInstanceId: sourceCard.instanceId, source: { type: 'CARD', cardInstanceId: sourceCard.instanceId }, target: { type: 'CARD', cardInstanceId: current.instanceId }, reason: 'CARD_EFFECT', amount: 0, tags: ['DODGE'], sourceContext: attribution }],
           }, 'DAMAGE_TAKEN', targetOwner, current.instanceId, current.cardType);
         }
         const health = preparedCurrent.isTrainingDummy ? 1 : preparedCurrent.currentHealth - damageAmount;
@@ -2842,7 +2842,7 @@ export function applyEffect(
           return resolveRegisteredRuleListeners({
             ...protectedState,
             preventedRetireTargetIds: protectedState.preventedRetireTargetIds.filter((id) => id !== current.instanceId),
-            events: [...protectedState.events, { type: 'DAMAGE_DEALT', playerId, cardInstanceId: sourceCard.instanceId, source: { type: 'CARD', cardInstanceId: sourceCard.instanceId }, target: { type: 'CARD', cardInstanceId: current.instanceId }, reason: 'CARD_EFFECT', amount: 0, sourceContext: attribution }],
+            events: [...protectedState.events, { type: 'DAMAGE_DEALT', playerId, cardInstanceId: sourceCard.instanceId, source: { type: 'CARD', cardInstanceId: sourceCard.instanceId }, target: { type: 'CARD', cardInstanceId: current.instanceId }, reason: 'CARD_EFFECT', amount: 0, tags: ['BLOCKED'], sourceContext: attribution }],
           }, 'DAMAGE_TAKEN', targetOwner, current.instanceId, current.cardType);
         }
          const retired: CardInstance = resetCardForGraveyard({

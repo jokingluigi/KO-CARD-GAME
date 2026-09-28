@@ -160,6 +160,23 @@ test("effect volume changes attack sounds independently of the BGM", () => {
   });
 });
 
+test('카드 등장 볼륨은 타격 효과음 볼륨과 독립적으로 조절된다', () => {
+  withFakeAudio((advance) => {
+    audioManager.setEntranceVolume(40);
+    audioManager.setSfxVolume(20);
+    audioManager.playCardEntrance('/entrance.mp3', 80);
+    advance(600);
+    const entrance = (audioManager as unknown as { current: { audio: FakeAudio } | null }).current?.audio;
+    assert.equal(entrance?.volume, 0.32);
+    audioManager.setSfxVolume(0);
+    assert.equal(entrance?.volume, 0.32);
+    audioManager.setEntranceVolume(50);
+    assert.equal(entrance?.volume, 0.4);
+    audioManager.setEntranceVolume(100);
+    audioManager.setSfxVolume(100);
+  });
+});
+
 test("등장 음악 뒤에는 가장 최근 Quest 음악 base로 복귀한다", () => {
   const previousAudio = globalThis.Audio;
   const previousWindow = globalThis.window;

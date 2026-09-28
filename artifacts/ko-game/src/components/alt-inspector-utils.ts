@@ -98,6 +98,7 @@ export interface NumericChange {
   sourceName?: string;
   sourceEffectId?: string;
   turnNumber?: number;
+  duration?: 'THIS_TURN' | 'UNTIL_NEXT_TURN' | 'PERMANENT';
 }
 
 /**

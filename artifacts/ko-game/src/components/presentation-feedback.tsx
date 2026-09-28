@@ -15,6 +15,7 @@ export type PresentationCue = PresentationCueDraft & {
 const toneClass: Record<PresentationCue["kind"], string> = {
   DAMAGE: "presentation-feedback--damage",
   DODGE: "presentation-feedback--dodge",
+  BLOCK: "presentation-feedback--dodge",
   HEAL: "presentation-feedback--heal",
   BUFF: "presentation-feedback--buff",
   DEBUFF: "presentation-feedback--debuff",

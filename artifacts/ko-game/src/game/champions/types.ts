@@ -114,12 +114,22 @@ export type ChampionVoiceLines = Partial<Record<ChampionEmote | 'VICTORY' | 'DEF
 export type ChampionPresentationLines = {
   BEFORE_QUEST?: ChampionVoiceLines;
   AFTER_QUEST?: ChampionVoiceLines;
+  MATCHUPS?: Record<string, {
+    BEFORE_QUEST?: Pick<ChampionVoiceLines, 'VICTORY' | 'DEFEAT'>;
+    AFTER_QUEST?: Pick<ChampionVoiceLines, 'VICTORY' | 'DEFEAT'>;
+  }>;
 };
 export function championVoiceLine(
   lines: ChampionPresentationLines | undefined,
   questCompleted: boolean,
   kind: ChampionEmote | 'VICTORY' | 'DEFEAT',
+  opponentChampionId?: string,
 ): string | null {
+  if (opponentChampionId && (kind === 'VICTORY' || kind === 'DEFEAT')) {
+    const matchup = lines?.MATCHUPS?.[opponentChampionId];
+    const special = questCompleted ? matchup?.AFTER_QUEST?.[kind] || matchup?.BEFORE_QUEST?.[kind] : matchup?.BEFORE_QUEST?.[kind];
+    if (special?.trim()) return special.trim();
+  }
   const phase = questCompleted ? lines?.AFTER_QUEST : lines?.BEFORE_QUEST;
   return phase?.[kind]?.trim() || (questCompleted ? lines?.BEFORE_QUEST?.[kind]?.trim() : '') || null;
 }

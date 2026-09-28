@@ -44,6 +44,14 @@ test("0 피해는 피해 숫자 대신 회피 피드백을 사용하고 알 수 
   assert.equal(cues[0]?.label, "DODGE");
 });
 
+test("피해 차단과 실제 회피를 다른 피드백으로 표시한다", () => {
+  const cues = presentationCueDrafts([
+    { type: "DAMAGE_DEALT", amount: 0, tags: ["BLOCKED"] },
+    { type: "DAMAGE_DEALT", amount: 0, tags: ["DODGE"] },
+  ], 0);
+  assert.deepEqual(cues.map((cue) => cue.kind), ["BLOCK", "DODGE"]);
+});
+
 test("흡수 스탯과 변신 효과는 출발 카드 및 목표 카드를 함께 기록한다", () => {
   const cues = presentationCueDrafts([
     { type: 'STAT_CHANGED', stat: 'attack', delta: 3, source: { type: 'CARD', cardInstanceId: 'victim' }, target: { type: 'CARD', cardInstanceId: 'absorber' } },

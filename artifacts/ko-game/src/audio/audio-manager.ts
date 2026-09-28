@@ -55,11 +55,13 @@ class AudioManager {
   private bgmMuted = false;
   private bgmVolume = 100;
   private sfxVolume = 100;
+  private entranceVolume = 100;
   private needsAudioUnlock = false;
   private musicContext: "NON_BATTLE" | "BATTLE" = "NON_BATTLE";
   private attackAudio: HTMLAudioElement | null = null;
   private cachedAttackAudio = new Map<string, HTMLAudioElement>();
   private attackBaseVolume = 100;
+  private impactDuckTimer: ReturnType<typeof setTimeout> | null = null;
   private packReveal: {
     audio: HTMLAudioElement;
     volume: number;
@@ -151,6 +153,7 @@ class AudioManager {
   playAttack(url: string, volume: number, pitch = 1) {
     if (!hasBrowserAudio() || !url) return;
     this.stopAttack();
+    this.duckBgmForImpact(url.includes('combat-finisher') ? 0.28 : 0.66, url.includes('combat-finisher') ? 650 : 270);
     try {
       const audio = this.cachedAttackAudio.get(url) ?? new Audio(url);
       audio.currentTime = 0;
@@ -203,17 +206,37 @@ class AudioManager {
   setBgmVolume(volume: number) {
     this.bgmVolume = Math.min(100, Math.max(0, Number.isFinite(volume) ? volume : 100));
     if (!this.bgm || this.bgmMuted) return;
-    this.bgm.audio.volume = safeVolume(this.bgm.volume * this.bgmVolume / 100);
+    this.bgm.audio.volume = safeVolume(this.bgm.volume * this.bgmVolume / 100) * (this.impactDuckTimer ? this.impactDuckFactor : 1);
+  }
+
+  private impactDuckFactor = 1;
+  private duckBgmForImpact(factor: number, durationMs: number) {
+    if (!this.bgm || this.bgmMuted || this.bgm.audio.paused) return;
+    if (this.impactDuckTimer) clearTimeout(this.impactDuckTimer);
+    this.impactDuckFactor = factor;
+    this.bgm.audio.volume = safeVolume(this.bgm.volume * this.bgmVolume / 100) * factor;
+    this.impactDuckTimer = setTimeout(() => {
+      this.impactDuckTimer = null;
+      this.impactDuckFactor = 1;
+      if (this.bgm && !this.bgmMuted && !this.bgm.audio.paused) this.setBgmVolume(this.bgmVolume);
+    }, durationMs);
   }
 
   setSfxVolume(volume: number) {
     this.sfxVolume = Math.min(100, Math.max(0, Number.isFinite(volume) ? volume : 100));
     if (this.attackAudio) this.attackAudio.volume = safeVolume(this.attackBaseVolume * this.sfxVolume / 100);
-    if (this.current) this.current.audio.volume = safeVolume(this.current.request.volume * this.sfxVolume / 100);
+    if (this.current && this.current.request.kind === 'PREVIEW') this.current.audio.volume = safeVolume(this.current.request.volume * this.sfxVolume / 100);
     if (this.packReveal) this.packReveal.audio.volume = safeVolume(this.packReveal.volume * this.sfxVolume / 100);
   }
 
   getSfxVolume() { return this.sfxVolume; }
+
+  setEntranceVolume(volume: number) {
+    this.entranceVolume = Math.min(100, Math.max(0, Number.isFinite(volume) ? volume : 100));
+    if (this.current && this.current.request.kind !== 'PREVIEW') {
+      this.current.audio.volume = safeVolume(this.current.request.volume * this.entranceVolume / 100);
+    }
+  }
 
   setBgmMuted(muted: boolean) {
     this.bgmMuted = muted;
@@ -417,7 +440,7 @@ class AudioManager {
         finish,
         Math.max(0, durationMs - fadeOutMs),
       );
-      this.startFade(audio, () => safeVolume(request.volume * this.sfxVolume / 100), (timerId) => {
+      this.startFade(audio, () => safeVolume(request.volume * (request.kind === 'PREVIEW' ? this.sfxVolume : this.entranceVolume) / 100), (timerId) => {
         if (this.current?.audio === audio) this.current.fadeTimerId = timerId;
       });
       audio.addEventListener("ended", () => {
@@ -496,6 +519,9 @@ class AudioManager {
   }
 
   private stopBaseMusic() {
+    if (this.impactDuckTimer) clearTimeout(this.impactDuckTimer);
+    this.impactDuckTimer = null;
+    this.impactDuckFactor = 1;
     this.baseTransitionId += 1;
     this.pendingBaseMusic = null;
     this.needsAudioUnlock = false;

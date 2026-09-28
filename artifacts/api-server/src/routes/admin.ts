@@ -163,7 +163,7 @@ type ChampionInput = {
   questCompleteAudioAssetId: string | null; questCompleteAudioUrl: string | null;
   questCompleteAudioVolume: number; questCompleteAudioEnabled: boolean;
   introLineOne: string | null; introLineTwo: string | null;
-  presentationLines: Record<string, Record<string, string>>;
+  presentationLines: Record<string, unknown>;
   questCompleteAudioUploadToken: string | null;
 };
 
@@ -211,19 +211,45 @@ function parseChampionInput(value: unknown): ChampionInput | null {
   if (introLineOne === undefined || introLineTwo === undefined) return null;
   const rawLines = object("presentationLines") ?? {};
   const allowedLineKeys = ["HELLO", "THANKS", "WELL_PLAYED", "SORRY", "OOPS", "THREATEN", "VICTORY", "DEFEAT"];
-  const presentationLines: Record<string, Record<string, string>> = {};
+  const presentationLines: Record<string, unknown> = {};
   for (const phase of ["BEFORE_QUEST", "AFTER_QUEST"]) {
     const candidate = rawLines[phase];
     if (candidate !== undefined && (!candidate || typeof candidate !== "object" || Array.isArray(candidate))) return null;
     const lines = candidate as Record<string, unknown> | undefined;
     if (lines && Object.keys(lines).some((key) => !allowedLineKeys.includes(key))) return null;
-    presentationLines[phase] = {};
+    const cleanedLines: Record<string, string> = {};
     for (const key of allowedLineKeys) {
       const line = lines?.[key];
       if (line === undefined || line === null || line === "") continue;
       if (typeof line !== "string" || line.trim().length > 120 || /<[^>]*>|javascript:/i.test(line)) return null;
-      presentationLines[phase][key] = line.trim();
+      cleanedLines[key] = line.trim();
     }
+    presentationLines[phase] = cleanedLines;
+  }
+  const matchups = rawLines.MATCHUPS;
+  if (matchups !== undefined) {
+    if (!matchups || typeof matchups !== 'object' || Array.isArray(matchups) || Object.keys(matchups).length > 50) return null;
+    const cleanedMatchups: Record<string, Record<string, Record<string, string>>> = {};
+    for (const [opponentId, value] of Object.entries(matchups)) {
+      if (!opponentId.trim() || opponentId.length > 128 || !value || typeof value !== 'object' || Array.isArray(value)) return null;
+      const matchup = value as Record<string, unknown>;
+      if (Object.keys(matchup).some((phase) => !['BEFORE_QUEST', 'AFTER_QUEST'].includes(phase))) return null;
+      cleanedMatchups[opponentId] = {};
+      for (const phase of ['BEFORE_QUEST', 'AFTER_QUEST']) {
+        const entries = matchup[phase];
+        if (entries !== undefined && (!entries || typeof entries !== 'object' || Array.isArray(entries))) return null;
+        const lines = entries as Record<string, unknown> | undefined;
+        if (lines && Object.keys(lines).some((key) => key !== 'VICTORY' && key !== 'DEFEAT')) return null;
+        cleanedMatchups[opponentId][phase] = {};
+        for (const key of ['VICTORY', 'DEFEAT']) {
+          const line = lines?.[key];
+          if (line === undefined || line === null || line === '') continue;
+          if (typeof line !== 'string' || line.trim().length > 120 || /<[^>]*>|javascript:/i.test(line)) return null;
+          cleanedMatchups[opponentId][phase][key] = line.trim();
+        }
+      }
+    }
+    presentationLines.MATCHUPS = cleanedMatchups;
   }
   const questCompleteAudioUploadToken = typeof input.questCompleteAudioUploadToken === "string"
     ? input.questCompleteAudioUploadToken : null;

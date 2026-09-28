@@ -166,6 +166,7 @@ export function AdminChampionManager({ onUnauthorized }: { onUnauthorized: () =>
   const [introDraft, setIntroDraft] = useState<Partial<IntroInteraction> | null>(null);
   const [introBusy, setIntroBusy] = useState(false);
   const [introError, setIntroError] = useState("");
+  const [rivalChampionId, setRivalChampionId] = useState('');
   const loadIntroInteractions = useCallback(async () => {
     const response = await fetch(`${adminApiBase}/champion-intro-interactions`, { credentials: "include" });
     if (response.status === 401) { onUnauthorized(); return; }
@@ -801,6 +802,30 @@ export function AdminChampionManager({ onUnauthorized }: { onUnauthorized: () =>
               ))}
             </section>
           ))}
+          <section className="md:col-span-2 rounded-lg border border-amber-800/60 bg-neutral-900/70 p-3">
+            <h4 className="mb-2 font-black text-amber-200">특정 상대 챔피언 대사</h4>
+            <p className="mb-2 text-xs text-neutral-400">상대 챔피언을 고르면 이 조합의 승리·패배 대사를 따로 설정할 수 있습니다. 비어 있으면 일반 대사를 사용합니다.</p>
+            <select className={input} value={rivalChampionId} onChange={(event) => setRivalChampionId(event.target.value)} aria-label="상대 챔피언 선택">
+              <option value="">상대 챔피언 선택</option>
+              {champions.filter((champion) => champion.id !== editing?.id).map((champion) => <option key={champion.id} value={champion.id}>{champion.name}</option>)}
+            </select>
+            {rivalChampionId && <div className="mt-3 grid gap-3 md:grid-cols-2">
+              {(['BEFORE_QUEST', 'AFTER_QUEST'] as const).map((phase) => <div key={phase}>
+                <p className="text-xs font-bold text-amber-300">{phase === 'BEFORE_QUEST' ? '퀘스트 완료 전' : '퀘스트 완료 후'}</p>
+                {(['VICTORY', 'DEFEAT'] as const).map((kind) => <label key={kind} className="mt-2 block text-xs text-neutral-300">
+                  {kind === 'VICTORY' ? '승리' : '패배'}
+                  <input className={input} maxLength={120} value={form.presentationLines?.MATCHUPS?.[rivalChampionId]?.[phase]?.[kind] ?? ''}
+                    onChange={(event) => update('presentationLines', {
+                      ...form.presentationLines,
+                      MATCHUPS: { ...form.presentationLines?.MATCHUPS, [rivalChampionId]: {
+                        ...form.presentationLines?.MATCHUPS?.[rivalChampionId],
+                        [phase]: { ...form.presentationLines?.MATCHUPS?.[rivalChampionId]?.[phase], [kind]: event.target.value },
+                      } },
+                    })} placeholder="선택 사항 · 최대 120자" />
+                </label>)}
+              </div>)}
+            </div>}
+          </section>
         </div>
         <label className="md:col-span-2">설명<textarea className={input} value={form.description} onChange={e=>update("description",e.target.value)}/></label>
           <div className="md:col-span-2 grid gap-3 md:grid-cols-2">

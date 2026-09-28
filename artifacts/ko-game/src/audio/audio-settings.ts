@@ -3,6 +3,7 @@
 export const BGM_MUTE_STORAGE_KEY = "ko-game-bgm-muted-v2";
 export const BGM_VOLUME_STORAGE_KEY = "ko-game-bgm-volume";
 export const SFX_VOLUME_STORAGE_KEY = "ko-game-sfx-volume";
+export const ENTRANCE_VOLUME_STORAGE_KEY = "ko-game-entrance-volume";
 
 export function parseStoredBgmMute(value: string | null): boolean {
   return value === "true";
@@ -39,4 +40,11 @@ export function readStoredSfxVolume(): number {
   } catch {
     return 100;
   }
+}
+
+export function readStoredEntranceVolume(): number {
+  try {
+    if (typeof window === 'undefined') return 100;
+    return parseStoredBgmVolume(window.localStorage.getItem(ENTRANCE_VOLUME_STORAGE_KEY));
+  } catch { return 100; }
 }

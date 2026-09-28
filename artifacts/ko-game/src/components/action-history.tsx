@@ -71,6 +71,7 @@ function HistoryList({ state, viewerPlayerId, expanded = false }: { state: GameS
                     : 'text-red-300'
                 }`}
               >
+                <span className="mr-1 text-amber-300">{state.events.indexOf(event) + 1}.</span>
                 {playerLabel(state, event.sourceContext?.sourcePlayerId ?? event.playerId, viewerPlayerId)}
               </div>
                 <div className="line-clamp-2 text-[9px] font-bold leading-tight text-neutral-200">

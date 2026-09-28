@@ -10,6 +10,7 @@ import {
   useState,
 } from 'react';
 import {
+  getCardDefinition,
   type CardInstance,
   type ChampionState,
 } from '@/game';
@@ -429,6 +430,14 @@ export function CardInspectContent({ card }: { card: CardInstance }) {
           {rulesText}
         </p>
       </InspectorSection>
+      {card.isGenerated && card.lineage && (
+        <div className="rounded-lg border border-neutral-800 bg-neutral-900/70 px-3 py-2 text-xs text-neutral-300">
+          <strong className="text-amber-300">생성 출처 · </strong>
+          {card.lineage.sourceDefinitionId
+            ? getCardDefinition(card.lineage.sourceDefinitionId)?.name ?? '다른 카드의 효과'
+            : card.lineage.sourceChampionId ? '챔피언 고유 능력' : '카드 효과'}
+        </div>
+      )}
       <div className="rounded-lg border border-neutral-800 bg-neutral-900/70 p-3">
         <div className="mb-2 text-[clamp(0.875rem,1.1vw,1rem)] font-black text-neutral-200">수치 변경</div>
         {numericChanges.length === 0 ? (
@@ -447,6 +456,7 @@ export function CardInspectContent({ card }: { card: CardInstance }) {
                   <span>{change.delta >= 0 ? '+' : ''}{change.delta}</span>
                   {change.sourceName && <span>출처: {change.sourceName}</span>}
                   {change.turnNumber !== undefined && <span>턴 {change.turnNumber}</span>}
+                  {change.duration && <span>{change.duration === 'THIS_TURN' ? '이번 턴까지' : change.duration === 'UNTIL_NEXT_TURN' ? '다음 턴까지' : '영구 변경'}</span>}
                 </div>
               </div>
             ))}
