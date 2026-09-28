@@ -28,9 +28,17 @@ export function repairedLegacyCardAbilities(card: PublishedCardRecord): CardAbil
       target: { zones: ['HAND', 'DECK', 'BOARD'], owner: 'SELF', filter: { maxCost: 2 }, selection: 'ALL', count: 100 },
       values: { attack: 1, health: 1 } }] }];
   }
-  if (card.name === '작은 하마' && /상대.*필드.*선수.*선택.*상대방.*덱\s*맨\s*위/u.test(text)) {
+  if (card.name.replace(/\s+/gu, '') === '작은하마' && /상대.*필드.*선수.*선택.*상대(?:방)?(?:의)?\s*덱\s*맨\s*위/u.test(text)) {
     return [{ trigger: 'ENTER_FIELD', effects: [{ type: 'STRUCTURED', action: 'MOVE_TO_DECK',
       target: enemyChoice, values: { deckPosition: 'TOP' } }] }];
+  }
+  if (card.name.trim() === '만당' && /등장.*['‘’"]?만당['‘’"]?을?\s*소환/u.test(text)) {
+    return [{ trigger: 'ENTER_FIELD', effects: [{ type: 'STRUCTURED', action: 'SUMMON',
+      values: { definitionRef: { id: card.id }, count: 1 } }] }];
+  }
+  if (card.name.trim() === '마로쓰 2세' && /퇴장.*상대.*필드.*선수.*무작위.*1\s*장.*침묵/u.test(text)) {
+    return [{ trigger: 'SELF_RETIRE', effects: [{ type: 'STRUCTURED', action: 'SILENCE',
+      target: { zone: 'BOARD', owner: 'ENEMY', cardType: 'WRESTLER', selection: 'RANDOM', count: 1 } }] }];
   }
   if (card.name.trim() === '마로쓰 2세' && /필드.*아군.*턴\s*종료.*(?:한\s*번|한번)\s*더/u.test(text)) {
     return [{ trigger: 'TURN_END', effects: [{ type: 'STRUCTURED', action: 'REPEAT_TURN_END' }] }];

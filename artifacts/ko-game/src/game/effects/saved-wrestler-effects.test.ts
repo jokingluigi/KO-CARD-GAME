@@ -126,6 +126,13 @@ test('오젠은 챔피언 토큰을 제외한 비용 1 이하의 적 선수 하�
   staleState.players[1].board[0] = { ...card(cheap, 'stale-ozen-target'), boardSlot: 0 };
   const repaired = enterField(staleState, 'player-1', card(staleOzen, 'stale-ozen-source'), 0);
   assert.equal(repaired.players[1].board[0], null);
+  const currentText = definition('오젠', { effects: [] }, { rulesText: '등장:상대 필드에 비용이 1 이하인 선수 카드가 있다면 그 카드들 중 무작위 한장을 리타이어 시킵니다.(챔피언 등급 제외)' });
+  const currentState = stateWithPool([currentText, cheap, token]);
+  currentState.players[1].board[0] = { ...card(cheap, 'current-ozen-target'), boardSlot: 0 };
+  currentState.players[1].board[1] = { ...card(token, 'current-champion-target'), boardSlot: 1 };
+  const currentResult = enterField(currentState, 'player-1', card(currentText, 'current-ozen-source'), 0);
+  assert.equal(currentResult.players[1].board[0], null);
+  assert.equal(currentResult.players[1].board[1]?.instanceId, 'current-champion-target');
 });
 
 test('불록스는 손패에 있을 때만 턴 종료에 빈 필드로 소환된다', () => {
@@ -148,6 +155,35 @@ test('작은 하마는 선택한 상대 선수만 상대 덱 맨 위로 보낸�
   const result = selectEffectTarget(pending, 'hippo-target');
   assert.equal(result.players[1].board[0], null);
   assert.equal(result.players[1].deck[0]?.instanceId, 'hippo-target');
+  const current = definition('작은하마', { effects: [] }, { rulesText: '등장:상대 필드에 있는 선수 카드 한장을 선택해서 상대의 덱 맨 위로 보냅니다.' });
+  const currentState = stateWithPool([current, victim]);
+  currentState.players[1].board[0] = { ...card(victim, 'current-hippo-target'), boardSlot: 0 };
+  const pendingCurrent = enterField(currentState, 'player-1', card(current, 'current-hippo-source'), 0);
+  assert.equal(pendingCurrent.targetingState?.active, true);
+  const moved = selectEffectTarget(pendingCurrent, 'current-hippo-target');
+  assert.equal(moved.players[1].deck[0]?.instanceId, 'current-hippo-target');
+});
+
+test('만당은 빈 아군 필드에 자신을 한 장 소환하고 소환된 카드가 재소환하지 않는다', () => {
+  const mandang = definition('만당', { effects: [] }, { rulesText: "등장:'만당'을 소환합니다." });
+  const state = stateWithPool([mandang]);
+  const result = enterField(state, 'player-1', card(mandang, 'mandang-source'), 0);
+  const summoned = result.players[0].board.filter((item) => item?.definitionId === mandang.id);
+  assert.equal(summoned.length, 2);
+  assert.equal(summoned[1]?.isGenerated, true);
+  assert.equal(result.events.filter((event) => event.type === 'ENTER_FIELD').length, 2);
+});
+
+test('마로쓰 2세가 리타이어하면 무작위 적 선수 하나만 침묵시킨다', () => {
+  const maros = definition('마로쓰 2세', { effects: [] }, { rulesText: '퇴장:상대 필드에 있는 선수 카드 중 무작위로 1장을 침묵시킨다.' });
+  const victim = definition('상대 능력 선수', { effects: [effect('TURN_END', 'BUFF', boardSelf, { attack: 1 })] });
+  const state = stateWithPool([maros, victim]);
+  state.players[0].board[0] = { ...card(maros, 'maros-retiring-current'), boardSlot: 0 };
+  state.players[1].board[0] = { ...card(victim, 'silence-target'), boardSlot: 0 };
+  const retired = applyEffect(state, 'player-1', state.players[0].board[0]!, {
+    type: 'STRUCTURED', action: 'RETIRE', target: boardSelf,
+  });
+  assert.equal(retired.players[1].board[0]?.isSilenced, true);
 });
 
 test('퀘스쳔은 어디에 있든 비용 2 이하인 아군 카드만 +1/+1 강화한다', () => {
