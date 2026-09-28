@@ -79,6 +79,7 @@ export function AttackAnimation({
       style={style}
     >
       {animation.finishingBlow && <div className="attack-animation__finisher"><div className="attack-animation__finisher-slash" /><span>K.O.!</span></div>}
+      <div className="attack-animation__windup" />
       <div className="attack-animation__target">
         {animation.targetKind === "CARD" && animation.target ? (
           <CardRenderer
@@ -131,7 +132,7 @@ export function AttackAnimation({
           className="h-full w-full"
         />
       </div>
-      {animation.damage >= 8 && <div className="attack-animation__shockwave" />}
+      {animation.damage >= 3 && <div className="attack-animation__shockwave" />}
       <div className="attack-animation__impact-flash" />
     </div>
   );

@@ -5,6 +5,7 @@ const VISIBLE_EVENT_TYPES = new Set<GameEvent['type']>([
   'ENTER_FIELD',
   'CHAMPION_ABILITY_USED',
   'CARD_GENERATED',
+  'CARD_TRANSFORMED',
   'CARD_DESTROYED',
   'CARD_RETIRED',
   'CARD_REMOVED',
@@ -56,8 +57,16 @@ export function eventTitle(state: GameState, event: GameEvent, viewerPlayerId = 
       return `${cardName(state, event.cardInstanceId)} 소환`;
     case 'CARD_GENERATED':
       return `${cardName(state, event.cardInstanceId)} 생성`;
+    case 'CARD_TRANSFORMED': {
+      const next = state.cardPool?.find((definition) => definition.id === event.reason) ?? getCardDefinition(event.reason ?? '');
+      const previousId = event.tags?.find((tag) => tag.startsWith('FROM:'))?.slice(5);
+      const previous = state.cardPool?.find((definition) => definition.id === previousId) ?? getCardDefinition(previousId ?? '');
+      const actor = event.source?.type === 'CARD' && event.source.cardInstanceId !== event.cardInstanceId
+        ? `${cardName(state, event.source.cardInstanceId)} 효과: ` : '';
+      return `${actor}${previous?.name ?? '선수'} → ${next?.name ?? '새 카드'} 변신`;
+    }
     case 'CARD_DESTROYED':
-      return `${cardName(state, event.cardInstanceId)} 파괴`;
+      return `${event.source?.type === 'CARD' ? `${cardName(state, event.source.cardInstanceId)} → ` : ''}${cardName(state, event.cardInstanceId)} 파괴`;
     case 'CARD_RETIRED':
       return `${cardName(state, event.cardInstanceId)} 리타이어`;
     case 'CARD_REMOVED':
@@ -98,7 +107,7 @@ export function eventTitle(state: GameState, event: GameEvent, viewerPlayerId = 
   }
 }
 
-export function historyEvents(state: GameState): GameEvent[] {
+export function historyEvents(state: GameState, limit = 12): GameEvent[] {
   const playedCardIds = new Set(
     state.events
       .filter((event) => event.type === 'CARD_PLAYED')
@@ -114,6 +123,6 @@ export function historyEvents(state: GameState): GameEvent[] {
         !event.cardInstanceId ||
         !playedCardIds.has(event.cardInstanceId),
     )
-    .slice(-12)
+    .slice(-limit)
     .reverse();
 }

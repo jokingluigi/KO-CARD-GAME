@@ -11,6 +11,7 @@ export type PresentationCueKind =
   | "REMOVE"
   | "DRAW"
   | "GENERATE"
+  | "TRANSFORM"
   | "QUEST_PROGRESS"
   | "QUEST_COMPLETE"
   | "GOLD"
@@ -24,6 +25,7 @@ export type PresentationCueDraft = {
   cardInstanceId?: string;
   playerId?: string;
   championId?: string;
+  sourceCardInstanceId?: string;
   duration: number;
 };
 
@@ -102,8 +104,9 @@ export function presentationCueDrafts(
             kind: delta > 0
               ? event.stat === "health" || event.stat === "maxHealth" ? "HEAL" : "BUFF"
               : "DEBUFF",
-            label: `${delta > 0 ? "+" : ""}${delta} ${event.stat?.toUpperCase() ?? "STAT"}`,
+            label: `${event.stat === "attack" ? "공격력" : event.stat === "cost" ? "비용" : "체력"} ${delta > 0 ? "+" : ""}${delta}`,
             value: delta,
+            sourceCardInstanceId: event.source?.type === "CARD" ? event.source.cardInstanceId : undefined,
             ...target,
             duration: 320,
           });
@@ -113,7 +116,7 @@ export function presentationCueDrafts(
         drafts.push({ id, kind: "RETIRE", label: "RETIRE", ...target, duration: 400 });
         break;
       case "CARD_DESTROYED":
-        drafts.push({ id, kind: "DESTROY", label: "DESTROY", ...target, duration: 360 });
+        drafts.push({ id, kind: "DESTROY", label: "파괴", sourceCardInstanceId: event.source?.type === "CARD" ? event.source.cardInstanceId : undefined, ...target, duration: 490 });
         break;
       case "CARD_REMOVED":
         drafts.push({
@@ -128,7 +131,10 @@ export function presentationCueDrafts(
         drafts.push({ id, kind: "DRAW", label: "DRAW", ...target, duration: 260 });
         break;
       case "CARD_GENERATED":
-        drafts.push({ id, kind: "GENERATE", label: "GENERATED", ...target, duration: 280 });
+        drafts.push({ id, kind: "GENERATE", label: "생성", sourceCardInstanceId: event.source?.type === "CARD" ? event.source.cardInstanceId : undefined, ...target, duration: 460 });
+        break;
+      case "CARD_TRANSFORMED":
+        drafts.push({ id, kind: "TRANSFORM", label: "변신", sourceCardInstanceId: event.source?.type === "CARD" ? event.source.cardInstanceId : undefined, ...target, duration: 660 });
         break;
       case "CHAMPION_QUEST_PROGRESS":
         drafts.push({

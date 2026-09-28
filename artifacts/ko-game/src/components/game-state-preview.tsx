@@ -534,18 +534,33 @@ export function GameStatePreview({
         ...leaveAnimations,
       ]);
     }
-    const cues = presentationCueDrafts(newEvents, 0, newEventKeys, presentationPlayerId).map((draft) => ({
-      ...draft,
-      label: draft.kind === "QUEST_PROGRESS" ? '퀘스트 진행' : draft.label,
-      ...cuePosition(draft),
-    }));
+    const cues = presentationCueDrafts(newEvents, 0, newEventKeys, presentationPlayerId).map((draft) => {
+      const source = draft.sourceCardInstanceId
+        ? boardCardRefs.current.get(draft.sourceCardInstanceId) ?? handCardRefs.current.get(draft.sourceCardInstanceId)
+        : null;
+      const rect = source?.getBoundingClientRect();
+      const before = draft.kind === 'TRANSFORM' && draft.cardInstanceId
+        ? previousCards.get(draft.cardInstanceId) : undefined;
+      const after = draft.kind === 'TRANSFORM' && draft.cardInstanceId
+        ? currentCards(state).get(draft.cardInstanceId) : undefined;
+      const artwork = (card?: CardInstance) => card &&
+        (state.cardPool?.find((entry) => entry.id === card.definitionId) ?? getCardDefinition(card.definitionId))?.imageUrl;
+      return {
+        ...draft,
+        label: draft.kind === "QUEST_PROGRESS" ? '퀘스트 진행' : draft.label,
+        ...cuePosition(draft),
+        ...(rect?.width && rect.height ? { sourceLeft: rect.left + rect.width / 2, sourceTop: rect.top + rect.height / 2 } : {}),
+        ...(before && after && before.definitionId !== after.definitionId
+          ? { previousArtwork: artwork(before) ?? undefined, nextArtwork: artwork(after) ?? undefined } : {}),
+      };
+    });
     const hasDamageEvent = newEvents.some((event) =>
       event.type === "DAMAGE_DEALT" ||
       event.type === "CARD_RETIRED" ||
       event.type === "CARD_DESTROYED" ||
       event.type === "CARD_REMOVED",
     );
-    if (!hasDamageEvent) {
+    if (!hasDamageEvent && !newEvents.some((event) => event.type === 'STAT_CHANGED')) {
       for (const [cardInstanceId, current] of currentCardStats) {
         const previous = previousCardStats.get(cardInstanceId);
         if (!previous) continue;
@@ -782,7 +797,7 @@ export function GameStatePreview({
   
   return (
     <AltInspectProvider>
-     <div className="ko-game-shell flex min-h-[100dvh] w-full flex-col overflow-x-hidden overflow-y-auto bg-neutral-950 font-sans text-neutral-100 selection:bg-primary selection:text-black md:overflow-hidden">
+     <div className={`ko-game-shell flex min-h-[100dvh] w-full flex-col overflow-x-hidden overflow-y-auto bg-neutral-950 font-sans text-neutral-100 selection:bg-primary selection:text-black md:overflow-hidden ${me.champion?.questCompleted ? 'ko-quest-awakened--mine' : ''} ${opp.champion?.questCompleted ? 'ko-quest-awakened--theirs' : ''}`}>
       <ActionHistory state={state} viewerPlayerId={presentationPlayerId ?? me.id} />
       
       {/* Background Ambience */}
@@ -852,7 +867,7 @@ export function GameStatePreview({
                        (effectTargeting && validEffectTargetIds.has(opp.id)) || (selectedAttackerId && legalAttackTargets.has(opp.id))
                         ? 'cursor-crosshair border-red-500 shadow-[0_0_15px_rgba(239,68,68,0.4)]'
                         : 'border-red-900'
-                     } ${activePresentationChampionId === opp.champion?.id || activePresentationCue?.playerId === opp.id ? 'presentation-card-pulse' : ''}`}
+                     } ${opp.champion?.questCompleted ? 'ko-quest-awakened-portrait ko-quest-awakened-portrait--enemy' : ''} ${activePresentationChampionId === opp.champion?.id || activePresentationCue?.playerId === opp.id ? 'presentation-card-pulse' : ''}`}
                        role="button"
                        tabIndex={0}
                        aria-label="상대 챔피언 대상"
@@ -912,7 +927,7 @@ export function GameStatePreview({
                   content={<ChampionQuestInspectContent champion={opp.champion} />}
                   className="ko-opponent-quest"
                 >
-                  <div tabIndex={0} className="rounded border border-purple-900 bg-purple-950/70 px-2 py-1 text-[8px] font-bold text-purple-200 md:text-[10px]">
+                  <div tabIndex={0} className={`rounded border px-2 py-1 text-[8px] font-bold md:text-[10px] ${opp.champion.questCompleted ? 'border-rose-400 bg-rose-950/90 text-rose-100' : 'border-purple-900 bg-purple-950/70 text-purple-200'}`}>
                     퀘스트 {opp.champion.questCompleted ? '완료' : `${opp.champion.questProgress}/${opp.champion.quest.requiredProgress}`}
                   </div>
                 </Inspectable>
@@ -1324,7 +1339,7 @@ export function GameStatePreview({
                         else if (onEmote && state.status === 'IN_PROGRESS') setEmoteOpen((open) => !open);
                       }
                     }}
-                    className={`ko-player-champion relative flex h-28 w-20 shrink-0 cursor-pointer flex-col items-center justify-center overflow-hidden rounded-sm border-2 bg-neutral-900 md:h-40 md:w-28 ${effectTargeting && validEffectTargetIds.has(me.id) ? 'cursor-crosshair border-amber-400 shadow-[0_0_15px_rgba(251,191,36,0.5)]' : 'border-blue-600 shadow-[0_0_15px_rgba(37,99,235,0.2)]'} ${activePresentationChampionId === me.champion?.id || activePresentationCue?.playerId === me.id ? 'presentation-card-pulse' : ''}`}
+                    className={`ko-player-champion relative flex h-28 w-20 shrink-0 cursor-pointer flex-col items-center justify-center overflow-hidden rounded-sm border-2 bg-neutral-900 md:h-40 md:w-28 ${me.champion?.questCompleted ? 'ko-quest-awakened-portrait border-amber-400' : effectTargeting && validEffectTargetIds.has(me.id) ? 'cursor-crosshair border-amber-400 shadow-[0_0_15px_rgba(251,191,36,0.5)]' : 'border-blue-600 shadow-[0_0_15px_rgba(37,99,235,0.2)]'} ${activePresentationChampionId === me.champion?.id || activePresentationCue?.playerId === me.id ? 'presentation-card-pulse' : ''}`}
                   >
                     {playerChampionPortrait && (
                       <CardArtwork
@@ -1370,7 +1385,7 @@ export function GameStatePreview({
 
                {me.champion?.quest && (
                  <Inspectable content={<ChampionQuestInspectContent champion={me.champion} />}>
-                  <div tabIndex={0} className={`rounded border border-purple-900 bg-purple-950/70 px-2 py-1 text-[8px] font-bold text-purple-200 md:text-[10px] ${activePresentationCue?.kind === "QUEST_PROGRESS" || activePresentationCue?.kind === "QUEST_COMPLETE" ? "presentation-card-pulse" : ""}`}>
+                  <div tabIndex={0} className={`rounded border px-2 py-1 text-[8px] font-bold md:text-[10px] ${me.champion.questCompleted ? 'border-amber-400 bg-amber-950/90 text-amber-100' : 'border-purple-900 bg-purple-950/70 text-purple-200'} ${activePresentationCue?.kind === "QUEST_PROGRESS" || activePresentationCue?.kind === "QUEST_COMPLETE" ? "presentation-card-pulse" : ""}`}>
                      퀘스트 {me.champion.questCompleted ? '완료' : `${me.champion.questProgress}/${me.champion.quest.requiredProgress}`}
                      {activePresentationCue?.kind === 'QUEST_PROGRESS' && activePresentationCue.playerId === me.id && (
                        <span className="mt-1 block max-w-40 text-[9px] leading-tight text-purple-100">{activePresentationCue.label} +{activePresentationCue.value}</span>
@@ -1394,11 +1409,11 @@ export function GameStatePreview({
                      onClick={onUseChampionAbility}
                      className={`w-full rounded border py-1.5 text-[9px] font-bold uppercase tracking-wider transition-all md:py-2 md:text-[11px] ${
                        canUseChampion
-                       ? 'cursor-pointer border-blue-500 bg-blue-900/50 text-blue-200 shadow-[0_0_10px_rgba(59,130,246,0.3)] hover:bg-blue-800 hover:text-white'
+                       ? me.champion?.questCompleted ? 'cursor-pointer border-amber-400 bg-amber-900/70 text-amber-100 shadow-[0_0_12px_rgba(251,191,36,0.4)] hover:bg-amber-800' : 'cursor-pointer border-blue-500 bg-blue-900/50 text-blue-200 shadow-[0_0_10px_rgba(59,130,246,0.3)] hover:bg-blue-800 hover:text-white'
                        : 'cursor-not-allowed border-neutral-800 bg-neutral-900 text-neutral-600'
                      }`}
                    >
-                     챔피언 능력 (비용 {me.champion.abilityCost} 골드)
+                     {me.champion.questCompleted && me.champion.upgradedAbility ? '강화 능력' : '챔피언 능력'} (비용 {me.champion.abilityCost} 골드)
                    </button>
                  </Inspectable>
                )}
@@ -1734,6 +1749,9 @@ function BoardSlot({
          overlay={
            <>
              <div className="absolute inset-0 bg-gradient-to-t from-black/55 to-transparent" />
+             {(targetable || attackReady) && !animating && <span className={`pointer-events-none absolute left-1/2 top-[28%] z-30 -translate-x-1/2 whitespace-nowrap rounded border px-1 py-0.5 text-[7px] font-black shadow-lg md:text-[9px] ${targetable ? 'border-amber-300 bg-amber-950/95 text-amber-100' : 'border-sky-300 bg-sky-950/95 text-sky-100'}`}>
+               {targetable ? targetingActive ? '효과 대상' : '공격 대상' : '공격 가능'}
+             </span>}
              {isDead && (
                <div className="absolute inset-0 flex items-center justify-center bg-red-950/80">
                  <span className="rotate-12 font-display text-2xl font-black text-red-500 drop-shadow-md md:text-3xl">KO</span>

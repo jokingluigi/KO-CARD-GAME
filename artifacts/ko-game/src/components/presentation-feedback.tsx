@@ -6,6 +6,10 @@ import type { PresentationCueDraft } from "./presentation-feedback-utils";
 export type PresentationCue = PresentationCueDraft & {
   left: number;
   top: number;
+  sourceLeft?: number;
+  sourceTop?: number;
+  previousArtwork?: string;
+  nextArtwork?: string;
 };
 
 const toneClass: Record<PresentationCue["kind"], string> = {
@@ -19,6 +23,7 @@ const toneClass: Record<PresentationCue["kind"], string> = {
   REMOVE: "presentation-feedback--remove",
   DRAW: "presentation-feedback--draw",
   GENERATE: "presentation-feedback--generate",
+  TRANSFORM: "presentation-feedback--transform",
   QUEST_PROGRESS: "presentation-feedback--quest",
   QUEST_COMPLETE: "presentation-feedback--quest-complete",
   GOLD: "presentation-feedback--gold",
@@ -50,6 +55,8 @@ export function PresentationFeedback({
     "--presentation-left": `${cue.left}px`,
     "--presentation-top": `${cue.top}px`,
     "--presentation-duration": `${cue.duration}ms`,
+    "--presentation-source-x": `${(cue.sourceLeft ?? cue.left) - cue.left}px`,
+    "--presentation-source-y": `${(cue.sourceTop ?? cue.top) - cue.top}px`,
   } as CSSProperties;
 
   return (
@@ -57,12 +64,21 @@ export function PresentationFeedback({
       aria-hidden="true"
       className={`presentation-feedback ${toneClass[cue.kind]}`}
       style={style}
-      onAnimationEnd={() => {
+      onAnimationEnd={(event) => {
+        if (event.target !== event.currentTarget) return;
         if (completedRef.current) return;
         completedRef.current = true;
         onCompleteRef.current();
       }}
     >
+      {cue.sourceLeft !== undefined && cue.sourceTop !== undefined &&
+        (Math.abs(cue.sourceLeft - cue.left) + Math.abs(cue.sourceTop - cue.top) > 30) &&
+        <i className="presentation-feedback__transfer" />}
+      {cue.kind === "TRANSFORM" && cue.previousArtwork && cue.nextArtwork &&
+        <span className="presentation-feedback__morph" aria-hidden="true">
+          <img src={cue.previousArtwork} alt="" className="presentation-feedback__morph-before" />
+          <img src={cue.nextArtwork} alt="" className="presentation-feedback__morph-after" />
+        </span>}
       <span>{cue.label}</span>
       {cue.kind === "QUEST_PROGRESS" && cue.value ? <small>+{cue.value}</small> : null}
     </div>

@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { CardRenderer } from "./card-renderer";
+import { CardArtwork } from "./card-artwork";
 import { championQuestRewardText } from "./champion-quest-reward-text";
 import { getCardDefinition, type GameState } from "@/game";
 import type { PresentationCue } from "./presentation-feedback";
@@ -40,9 +41,15 @@ export function QuestPresentation({
   return (
     <div className="fixed inset-0 z-[360] flex items-center justify-center bg-black/25 px-4 pointer-events-none">
       {phase === "BANNER" ? (
-        <div className="text-center" style={{ animation: "ko-quest-banner 1200ms ease both" }}>
+        <div className="ko-quest-chapter text-center" style={{ animation: "ko-quest-banner 1200ms ease both" }}>
           <p className="text-sm font-black tracking-[0.3em] text-amber-200">{isViewer ? "퀘스트 성공!" : "상대의 퀘스트 성공!"}</p>
+          {champion?.imageUrl && <div className="ko-quest-chapter__portrait">
+            <CardArtwork src={champion.imageUrl} alt="" className="absolute inset-0 h-full w-full" />
+            {champion.questCompletedPortraitEnabled && champion.questCompletedPortraitUrl &&
+              <CardArtwork src={champion.questCompletedPortraitUrl} alt="" className="ko-quest-chapter__after absolute inset-0 h-full w-full" />}
+          </div>}
           <h2 className="mt-4 text-4xl font-black text-white drop-shadow-[0_3px_10px_rgba(0,0,0,.95)] sm:text-6xl">{champion?.name ?? "Champion"}</h2>
+          <p className="mt-2 text-[10px] font-black tracking-[.35em] text-amber-300">새로운 국면</p>
         </div>
       ) : (
         <div className="w-full max-w-xl rounded-2xl border border-amber-400/60 bg-neutral-950/95 p-5 text-center shadow-2xl sm:p-7" style={{ animation: "ko-quest-reward 2100ms ease both" }}>

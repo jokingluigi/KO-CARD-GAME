@@ -40,8 +40,8 @@ function CardMiniature({
   );
 }
 
-function HistoryList({ state, viewerPlayerId }: { state: GameState; viewerPlayerId: string }) {
-  const events = historyEvents(state);
+function HistoryList({ state, viewerPlayerId, expanded = false }: { state: GameState; viewerPlayerId: string; expanded?: boolean }) {
+  const events = historyEvents(state, expanded ? Number.POSITIVE_INFINITY : 12);
   return (
     <div className="max-h-[52dvh] space-y-0.5 overflow-y-auto pr-1 md:max-h-none md:overflow-visible">
       {events.length === 0 ? (
@@ -86,15 +86,16 @@ function HistoryList({ state, viewerPlayerId }: { state: GameState; viewerPlayer
 
 export function ActionHistory({ state, viewerPlayerId = state.players[0].id }: { state: GameState; viewerPlayerId?: string }) {
   const [isMobileOpen, setIsMobileOpen] = useState(false);
+  const [showAll, setShowAll] = useState(false);
   const latestEvent = historyEvents(state)[0];
 
   return (
     <>
       <aside className="fixed left-3 top-1/2 z-50 hidden w-44 -translate-y-1/2 rounded border border-neutral-800 bg-black/85 p-1.5 shadow-2xl backdrop-blur-md md:block">
-        <div className="mb-1 border-b border-neutral-800 pb-1.5 text-[10px] font-black tracking-[0.18em] text-neutral-300">
-          로그
+        <div className="mb-1 flex items-center justify-between border-b border-neutral-800 pb-1.5 text-[10px] font-black tracking-[0.18em] text-neutral-300">
+          경기 기록 <button type="button" className="text-[9px] tracking-normal text-amber-300" onClick={() => setShowAll((open) => !open)}>{showAll ? '최근만' : '전체 보기'}</button>
         </div>
-        <HistoryList state={state} viewerPlayerId={viewerPlayerId} />
+        <div className={showAll ? 'max-h-[65dvh] overflow-y-auto' : 'max-h-[48dvh] overflow-y-auto'}><HistoryList state={state} viewerPlayerId={viewerPlayerId} expanded={showAll} /></div>
       </aside>
 
       <div className="fixed left-2 top-24 z-50 md:hidden">
@@ -109,7 +110,8 @@ export function ActionHistory({ state, viewerPlayerId = state.players[0].id }: {
         </button>
         {isMobileOpen && (
           <div className="mt-1 w-48 rounded border border-neutral-800 bg-black/95 p-1.5 shadow-2xl">
-            <HistoryList state={state} viewerPlayerId={viewerPlayerId} />
+            <button type="button" className="mb-1 text-[10px] font-bold text-amber-300" onClick={() => setShowAll((open) => !open)}>{showAll ? '최근 12개만 보기' : '전체 경기 기록 보기'}</button>
+            <HistoryList state={state} viewerPlayerId={viewerPlayerId} expanded={showAll} />
           </div>
         )}
       </div>

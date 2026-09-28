@@ -442,6 +442,35 @@
   12%, 88% { opacity: 1; transform: translateY(0) scale(1); }
   100% { opacity: 0; transform: translateY(-8px) scale(1.01); }
 }
+.ko-game-shell.ko-quest-awakened--mine .ko-game-stage {
+  background: radial-gradient(ellipse at 25% 83%, rgba(203, 152, 49, .1), transparent 58%);
+}
+.ko-game-shell.ko-quest-awakened--theirs .ko-game-stage {
+  box-shadow: inset 0 0 70px rgba(140, 42, 54, .1);
+}
+.ko-quest-awakened-portrait {
+  border-color: #fbbf24;
+  box-shadow: 0 0 18px rgba(251, 191, 36, .45), inset 0 0 14px rgba(251, 191, 36, .3);
+}
+.ko-quest-awakened-portrait--enemy {
+  border-color: #fb7185;
+  box-shadow: 0 0 18px rgba(251, 113, 133, .4), inset 0 0 14px rgba(251, 113, 133, .26);
+}
+.ko-quest-chapter__portrait {
+  position: relative;
+  width: 94px;
+  height: 130px;
+  overflow: hidden;
+  margin: .8rem auto 0;
+  border: 2px solid #fbbf24;
+  border-radius: .5rem;
+  box-shadow: 0 0 25px rgba(251, 191, 36, .35);
+}
+.ko-quest-chapter__after { animation: ko-quest-reveal-portrait 1200ms ease both; }
+@keyframes ko-quest-reveal-portrait {
+  0%, 22% { opacity: 0; transform: scale(1.1); }
+  60%, 100% { opacity: 1; transform: scale(1); }
+}
 
 @keyframes ko-card-play-flash {
   0%, 73% { opacity: 0; transform: scale(0.9); }
@@ -661,6 +690,24 @@
 .attack-animation__attacker {
   animation: ko-attack-card var(--attack-duration) cubic-bezier(.2, .75, .25, 1) both;
 }
+
+@keyframes ko-attack-windup {
+  0%, 7%, 28%, 100% { opacity: 0; transform: translate(-50%, -50%) scale(.8); }
+  15%, 22% { opacity: .9; transform: translate(-50%, -50%) scale(1.15); }
+}
+.attack-animation__windup {
+  position: fixed;
+  left: calc(var(--attack-source-x) + var(--attack-source-width) / 2);
+  top: calc(var(--attack-source-y) + var(--attack-source-height) / 2);
+  width: calc(var(--attack-source-width) * 1.12);
+  height: calc(var(--attack-source-height) * 1.12);
+  border: 2px solid rgba(251, 191, 36, .85);
+  border-radius: 9px;
+  box-shadow: 0 0 18px rgba(251, 191, 36, .45);
+  animation: ko-attack-windup var(--attack-duration) ease both;
+}
+.attack-animation--heavy .attack-animation__shockwave,
+.attack-animation--very_heavy .attack-animation__shockwave { border-width: 5px; box-shadow: 0 0 30px rgba(239, 68, 68, .8); }
 
 .attack-animation__target {
   left: var(--attack-target-x);
@@ -1066,6 +1113,45 @@
   letter-spacing: 0;
 }
 
+@keyframes ko-effect-transfer {
+  0% { opacity: 0; transform: translate3d(var(--presentation-source-x), var(--presentation-source-y), 0) scale(.4); }
+  18% { opacity: 1; }
+  76% { opacity: 1; }
+  100% { opacity: 0; transform: translate3d(0, 0, 0) scale(1.65); }
+}
+.presentation-feedback__transfer {
+  position: absolute;
+  left: 50%; top: 50%;
+  width: 13px; height: 13px;
+  border-radius: 50%;
+  background: currentColor;
+  box-shadow: 0 0 13px 4px currentColor;
+  animation: ko-effect-transfer var(--presentation-duration) ease-in-out both;
+}
+@keyframes ko-effect-morph-before {
+  0%, 32% { opacity: .85; transform: scale(1) rotate(-2deg); }
+  65%, 100% { opacity: 0; transform: scale(.65) rotate(8deg); }
+}
+@keyframes ko-effect-morph-after {
+  0%, 34% { opacity: 0; transform: scale(.65) rotate(-8deg); }
+  70%, 100% { opacity: .9; transform: scale(1) rotate(0); }
+}
+.presentation-feedback__morph {
+  position: absolute;
+  left: 50%; bottom: 1.5rem;
+  width: clamp(60px, 12vw, 92px);
+  height: clamp(80px, 16vw, 122px);
+  transform: translateX(-50%);
+  border: 2px solid currentColor;
+  border-radius: 6px;
+  overflow: hidden;
+  box-shadow: 0 0 25px currentColor;
+}
+.presentation-feedback__morph img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+.presentation-feedback__morph-before { animation: ko-effect-morph-before var(--presentation-duration) ease both; }
+.presentation-feedback__morph-after { animation: ko-effect-morph-after var(--presentation-duration) ease both; }
+.presentation-feedback--transform { color: #d8b4fe; }
+
 .presentation-feedback--damage { color: #fecaca; }
 .presentation-feedback--dodge { color: #bae6fd; font-size: clamp(.75rem, 1.5vw, 1.15rem); }
 .presentation-feedback--heal,
@@ -1153,6 +1239,7 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
+  .presentation-feedback__transfer, .presentation-feedback__morph img { animation-duration: 1ms; }
   .presentation-feedback {
     animation-duration: 120ms;
   }
@@ -1165,6 +1252,7 @@
     animation-delay: 0ms;
   }
   .attack-animation__attacker,
+  .attack-animation__windup,
   .attack-animation__target,
   .attack-animation__impact-flash,
   .attack-animation__shockwave {

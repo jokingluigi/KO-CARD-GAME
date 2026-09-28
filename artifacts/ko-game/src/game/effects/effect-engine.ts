@@ -2407,6 +2407,7 @@ export function applyEffect(
             source: { type: 'CARD' as const, cardInstanceId: sourceCard.instanceId },
             target: { type: 'CARD' as const, cardInstanceId: current.instanceId },
             reason: targetDefinition.id,
+            tags: [`FROM:${current.definitionId}`],
           }],
         };
       }, state);
