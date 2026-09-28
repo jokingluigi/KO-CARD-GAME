@@ -1,6 +1,6 @@
 import { Router, type Request, type Response } from "express";
 import { and, eq, inArray } from "drizzle-orm";
-import { db, onlineMatchesTable, rewardGrantsTable } from "@workspace/db";
+import { db, onlineMatchesTable, rewardGrantsTable, rewardSettingsTable } from "@workspace/db";
 import { getAuthenticatedUser } from "../lib/auth";
 import {
   applyMatchAction,
@@ -127,7 +127,11 @@ router.get("/:matchId/rewards", async (request, response) => {
       eq(rewardGrantsTable.sourceId, request.params.matchId),
       inArray(rewardGrantsTable.sourceType, ["MATCH_ONLINE_WIN", "MATCH_ONLINE_LOSS"]),
     ));
-  response.json({ status: match.status, winnerUserId: match.winnerUserId, grants });
+  const settingKey = match.winnerUserId === user.id ? "MATCH_ONLINE_WIN" : "MATCH_ONLINE_LOSS";
+  const [setting] = await db.select({ enabled: rewardSettingsTable.enabled, rewardType: rewardSettingsTable.rewardType, amount: rewardSettingsTable.amount })
+    .from(rewardSettingsTable).where(eq(rewardSettingsTable.key, settingKey)).limit(1);
+  response.json({ status: match.status, winnerUserId: match.winnerUserId, grants,
+    rewardEnabled: Boolean(setting?.enabled && setting.rewardType === "CURRENCY" && setting.amount > 0) });
 });
 
 router.post("/:matchId/join", async (request, response) => {

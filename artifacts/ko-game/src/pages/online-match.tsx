@@ -135,6 +135,9 @@ function OnlineMatchPage() {
   const [presentationBusy, setPresentationBusy] = useState(false);
   const [matchResultVisible, setMatchResultVisible] = useState(false);
   const [matchReward, setMatchReward] = useState<{ amount: number; sourceType: string } | null>(null);
+  const [rewardStatus, setRewardStatus] = useState<'pending' | 'success' | 'error'>('pending');
+  const [rewardError, setRewardError] = useState<string | null>(null);
+  const [rewardRetry, setRewardRetry] = useState(0);
   const lastEventSequence = useRef(-1);
   const seatRef = useRef<typeof seat>(null);
   const stateRef = useRef<GameState | null>(null);
@@ -393,18 +396,41 @@ function OnlineMatchPage() {
       return;
     }
     let cancelled = false;
-    fetchOnlineMatchRewards(matchId)
-      .then((result) => {
-        if (!cancelled) {
+    setRewardStatus('pending');
+    setRewardError(null);
+    void (async () => {
+      for (let attempt = 0; attempt < 6 && !cancelled; attempt += 1) {
+        try {
+          const result = await fetchOnlineMatchRewards(matchId);
+          if (cancelled) return;
           const grant = result.grants[0];
-          setMatchReward(grant ? { amount: grant.amount, sourceType: grant.sourceType } : null);
+          if (grant) {
+            setMatchReward({ amount: grant.amount, sourceType: grant.sourceType });
+            setRewardStatus('success');
+            return;
+          }
+          if (result.status === 'CANCELLED') {
+            setRewardStatus('success');
+            return;
+          }
+          if (result.status === 'ENDED' && !result.rewardEnabled) {
+            setRewardError('경기 보상 설정이 꺼져 있어 크레딧이 지급되지 않았습니다. 관리자에게 보상 설정을 확인해 달라고 알려주세요.');
+            setRewardStatus('error');
+            return;
+          }
+        } catch (error) {
+          if (cancelled) return;
+          if (attempt === 5) setRewardError(error instanceof Error ? error.message : '보상 조회에 실패했습니다.');
         }
-      })
-      .catch(() => {
-        if (!cancelled) setMatchReward(null);
-      });
+        if (attempt < 5) await new Promise((resolve) => window.setTimeout(resolve, 650 * (attempt + 1)));
+      }
+      if (!cancelled) {
+        setRewardError((previous) => previous ?? '지급 내역을 확인하지 못했습니다. 보상 설정과 서버 정산 상태를 확인해 주세요.');
+        setRewardStatus('error');
+      }
+    })();
     return () => { cancelled = true; };
-  }, [matchId, state?.status]);
+  }, [matchId, state?.status, rewardRetry]);
 
   useEffect(() => {
     if (!state || !resourcesReady || state.status !== "IN_PROGRESS") return;
@@ -1016,7 +1042,8 @@ function OnlineMatchPage() {
         onReturnToMainMenu={() => navigate(ROUTES.MAIN_MENU)}
       />
       {matchResultVisible && (
-        <MatchResultOverlay state={state} reward={matchReward} onReturnToMainMenu={() => navigate(ROUTES.MAIN_MENU)} />
+        <MatchResultOverlay state={state} reward={matchReward} rewardStatus={rewardStatus} rewardError={rewardError}
+          onRetryReward={() => setRewardRetry((count) => count + 1)} onReturnToMainMenu={() => navigate(ROUTES.MAIN_MENU)} />
       )}
     </>
   );

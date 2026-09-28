@@ -104,5 +104,6 @@ export const updateAttendanceReward = (dayIndex: number, body: object) => reques
 export const fetchOnlineMatchRewards = (matchId: string) => request<{
   status: string;
   winnerUserId: string | null;
+  rewardEnabled: boolean;
   grants: Array<{ sourceType: string; amount: number; rewardType: string; balanceAfter: number; createdAt: string }>;
 }>(`/online-matches/${encodeURIComponent(matchId)}/rewards`);
