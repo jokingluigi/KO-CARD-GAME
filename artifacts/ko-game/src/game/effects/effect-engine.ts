@@ -2993,16 +2993,18 @@ export function applyEffect(
                const healthDynamic = effect.values?.healthReference === undefined
                  ? 0
                  : dynamicValue(state, playerId, effect.values.healthReference, triggerContext);
+               const referenceDivisor = Number.isSafeInteger(effect.values?.referenceDivisor) && (effect.values?.referenceDivisor ?? 0) > 0
+                 ? effect.values!.referenceDivisor! : 1;
                const attackMultiplier = effect.values?.attackMultiplier ?? 1;
                const healthMultiplier = effect.values?.healthMultiplier ?? 1;
                const attackDelta = effect.values?.attack ??
                  (effect.values?.attackReference !== undefined
-                   ? attackDynamic
-                   : effect.values?.amountReference !== undefined ? legacyDynamic : 0);
+                   ? Math.floor(attackDynamic / referenceDivisor)
+                   : effect.values?.amountReference !== undefined ? Math.floor(legacyDynamic / referenceDivisor) : 0);
                const healthDelta = effect.values?.health ??
                  (effect.values?.healthReference !== undefined
-                   ? healthDynamic
-                   : effect.values?.amountReference !== undefined ? legacyDynamic : 0);
+                   ? Math.floor(healthDynamic / referenceDivisor)
+                   : effect.values?.amountReference !== undefined ? Math.floor(legacyDynamic / referenceDivisor) : 0);
                return finish({
                  ...card,
                  currentAttack: card.currentAttack * attackMultiplier + attackDelta +

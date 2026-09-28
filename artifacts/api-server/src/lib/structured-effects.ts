@@ -33,7 +33,7 @@ export type EffectScriptConfig = import("@workspace/effect-registry").EffectScri
  * destructive action such as DESTROY.
  */
 const ACTION_VALUE_KEYS: Partial<Record<Action, readonly string[]>> = {
-  BUFF: ["attack", "health", "attackMultiplier", "healthMultiplier", "reference", "referenceStat", "amountReference", "attackReference", "healthReference", "duration", "conditionalBuff"],
+  BUFF: ["attack", "health", "attackMultiplier", "healthMultiplier", "reference", "referenceStat", "amountReference", "attackReference", "healthReference", "referenceDivisor", "duration", "conditionalBuff"],
   SET_STATS: ["attack", "health", "duration"],
   MODIFY_STAT: ["amount", "stat", "duration", "minimum"],
   MODIFY_MAX_HEALTH: ["amount"],
@@ -1413,6 +1413,11 @@ function expandedMechanicAnalysis(
     const values = statReferenceValues("GRAVEYARD_WRESTLER_COUNT", text);
     if (values) return result([{ trigger: triggerFor(), action: "BUFF", target: wrestlerSelf, values }]);
   }
+  const graveyardGroups = text.match(/(?:자신의\s*|내\s*)?(?:무덤|묘지)(?:에\s*있는)?\s*선수(?:\s*카드)?\s*(\d+)\s*장당\s*1씩[^.!?]*공격력[^.!?]*체력/u);
+  if (graveyardGroups && Number(graveyardGroups[1]) > 0) {
+    return result([{ trigger: triggerFor(), action: "BUFF", target: wrestlerSelf,
+      values: { attackReference: "GRAVEYARD_WRESTLER_COUNT", healthReference: "GRAVEYARD_WRESTLER_COUNT", referenceDivisor: Number(graveyardGroups[1]) } }]);
+  }
   if (/처음으로\s*공격한\s*적\s*선수/.test(text) && /침묵/.test(text) && /능력.*비활성화/.test(text)) {
     return result([
       { trigger: "FIRST_ATTACKED", action: "SILENCE", target: { zone: "BOARD", owner: "ENEMY", cardType: "WRESTLER", selection: "SAME_TARGET", count: 1 } },
@@ -2090,6 +2095,9 @@ export function isStructuredEffects(value: unknown): value is { effects: Structu
     if (schema.stat && !STAT_NAMES.includes(values?.stat as StatName)) return false;
     if (schema.duration && values?.duration !== undefined && !EFFECT_DURATIONS.includes(values.duration as EffectDuration)) return false;
      const hasStatChannelReference = values?.attackReference !== undefined || values?.healthReference !== undefined;
+     if (values?.referenceDivisor !== undefined &&
+       (!Number.isSafeInteger(values.referenceDivisor) || values.referenceDivisor < 1 || values.referenceDivisor > 100 ||
+         !(hasStatChannelReference || values?.amountReference !== undefined))) return false;
      const validStatChannelReferences = schema.statChannelReference && hasStatChannelReference &&
        values?.amountReference === undefined &&
        (values?.attackReference === undefined ||

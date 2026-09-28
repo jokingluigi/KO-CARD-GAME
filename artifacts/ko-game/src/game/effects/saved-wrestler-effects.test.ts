@@ -35,7 +35,7 @@ const boardSelf = { zone: 'BOARD', owner: 'SELF', selection: 'SELF', count: 1 };
 const savedConfigs: Record<string, SavedConfig> = {
   '독세아': { effects: [effect('ENTER_FIELD', 'BUFF', { zones: ['HAND', 'DECK', 'BOARD'], owner: 'SELF', cardType: 'WRESTLER', filter: { isGenerated: true }, selection: 'ALL', count: 20 }, { attack: 1, health: 1 })] },
   '뒷정리맨': { effects: [effect('ENTER_FIELD', 'QUEUE_EFFECT', undefined, { queuedTrigger: 'NEXT_ALLY_WRESTLER_PLAYED', queuedEffect: { action: 'BUFF', target: boardSelf, values: { attack: 0, health: 2 } } })] },
-  '디 오리진': { effects: [effect('ENTER_FIELD', 'BUFF', boardSelf, { amountReference: 'GRAVEYARD_WRESTLER_COUNT' })] },
+  '디 오리진': { effects: [effect('ENTER_FIELD', 'BUFF', boardSelf, { attackReference: 'GRAVEYARD_WRESTLER_COUNT', healthReference: 'GRAVEYARD_WRESTLER_COUNT', referenceDivisor: 3 })] },
   '루나': { effects: [effect('FIRST_ATTACKED', 'SILENCE', { zone: 'BOARD', owner: 'ENEMY', cardType: 'WRESTLER', selection: 'SAME_TARGET', count: 1 }), effect('FIRST_ATTACKED', 'DISABLE_ABILITY', boardSelf)] },
   '블랙 마카롱': { effects: [effect('ENTER_FIELD', 'BUFF', boardSelf, { attackReference: 'HAND_COUNT' })] },
   '씨 몬스터': { effects: [effect('CARD_RETIRED', 'REDUCE_COST', { zone: 'HAND', owner: 'SELF', selection: 'SELF', count: 1 }, { amount: 1, minimum: 1 })] },
@@ -65,7 +65,7 @@ const definition = (name: string, config: SavedConfig, overrides: Partial<CardDe
     cost: overrides.cost ?? 1,
     attack: overrides.attack ?? 1,
     health: overrides.health ?? 1,
-    text: '',
+    text: overrides.rulesText ?? '',
     keywords: [],
     isToken: false,
     isChampionToken: false,
@@ -402,8 +402,22 @@ test('독세아·블랙 마카롱·디 오리진·여울·피 스타 세븐의 �
   const originState = stateWithPool(Object.values(saved));
   originState.players[0].graveyard = [grave];
   const withOrigin = enterField(originState, 'player-1', card(saved['디 오리진']!, 'origin'), 0);
-  assert.equal(withOrigin.players[0].board[0]?.currentAttack, 2);
-  assert.equal(withOrigin.players[0].board[0]?.currentHealth, 2);
+  assert.equal(withOrigin.players[0].board[0]?.currentAttack, 1);
+  assert.equal(withOrigin.players[0].board[0]?.currentHealth, 1);
+  const threeGraves = stateWithPool(Object.values(saved));
+  threeGraves.players[0].graveyard = Array.from({ length: 3 }, (_, index) => card(saved['여울']!, `origin-grave-${index}`));
+  const buffedOrigin = enterField(threeGraves, 'player-1', card(saved['디 오리진']!, 'origin-three'), 0);
+  assert.equal(buffedOrigin.players[0].board[0]?.currentAttack, 2);
+  assert.equal(buffedOrigin.players[0].board[0]?.currentHealth, 2);
+  const oldConfig = { effects: [effect('ENTER_FIELD', 'BUFF', boardSelf, { amountReference: 'GRAVEYARD_WRESTLER_COUNT' })] };
+  const migratedOrigin = definition('디 오리진', oldConfig, {
+    rulesText: '등장:자신의 무덤에 있는 선수 카드 3장당 1씩 공격력과 체력이 증가합니다.',
+  });
+  const sixGraves = stateWithPool([...Object.values(saved), migratedOrigin]);
+  sixGraves.players[0].graveyard = Array.from({ length: 6 }, (_, index) => card(saved['여울']!, `migrated-grave-${index}`));
+  const migrated = enterField(sixGraves, 'player-1', card(migratedOrigin, 'origin-six'), 0);
+  assert.equal(migrated.players[0].board[0]?.currentAttack, 3);
+  assert.equal(migrated.players[0].board[0]?.currentHealth, 3);
 
   const blackState = stateWithPool(Object.values(saved));
   blackState.players[0].hand = [card(saved['여울']!, 'hand-1'), card(saved['여울']!, 'hand-2')];

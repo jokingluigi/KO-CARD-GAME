@@ -1488,6 +1488,14 @@ test("count-based buffs preserve independent stat channels and require an explic
     healthReference: "GRAVEYARD_WRESTLER_COUNT",
   });
 
+  const origin = analyzeEffectText('등장:자신의 무덤에 있는 선수 카드 3장당 1씩 공격력과 체력이 증가합니다.');
+  assert.equal(origin.outcome, 'supported');
+  assert.deepEqual(origin.effects[0]?.values, {
+    attackReference: 'GRAVEYARD_WRESTLER_COUNT',
+    healthReference: 'GRAVEYARD_WRESTLER_COUNT',
+    referenceDivisor: 3,
+  });
+
   const unspecifiedSource = analyzeEffectText("등장:카드 수만큼 공격력이 증가합니다.");
   assert.notEqual(unspecifiedSource.outcome, "supported");
   assert.doesNotMatch(JSON.stringify(unspecifiedSource.effects), /HAND_COUNT|GRAVEYARD_WRESTLER_COUNT/u);

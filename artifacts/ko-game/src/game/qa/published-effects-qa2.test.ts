@@ -155,8 +155,10 @@ test('QA2 generated-board buffs and aggregate references use exact values', () =
   const grave = card('RM우디르', 'qa2-origin-grave');
   originState.players[0].graveyard = [grave, card('로드', 'qa2-origin-grave-2')];
   const origin = enterAndChoose(originState, card('디 오리진', 'qa2-origin'), 0);
-  assert.equal(origin.players[0].board[0]?.currentAttack, definitions.find((item) => item.name === '디 오리진')!.attack + 2);
-  assert.equal(origin.players[0].board[0]?.currentHealth, definitions.find((item) => item.name === '디 오리진')!.health + 2);
+  const originDefinition = definitions.find((item) => item.name === '디 오리진')!;
+  const expectedOriginBonus = /선수(?:\s*카드)?\s*3\s*장당\s*1씩/u.test(originDefinition.rulesText) ? 0 : 2;
+  assert.equal(origin.players[0].board[0]?.currentAttack, originDefinition.attack + expectedOriginBonus);
+  assert.equal(origin.players[0].board[0]?.currentHealth, originDefinition.health + expectedOriginBonus);
 
   const blackState = stateWithPool();
   blackState.players[0].hand = [card('로드', 'qa2-black-hand-1'), card('로드', 'qa2-black-hand-2')];

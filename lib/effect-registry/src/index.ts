@@ -226,6 +226,8 @@ export type StructuredEffectValues = {
   amountReference?: DynamicValue;
   attackReference?: DynamicValue;
   healthReference?: DynamicValue;
+  /** One stat point per this many counted cards (rounded down). */
+  referenceDivisor?: number;
   temporaryCost?: boolean;
   /** A deck-top destruction removes the card instead of milling to the graveyard. */
   destroyInstead?: boolean;

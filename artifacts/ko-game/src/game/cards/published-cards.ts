@@ -216,6 +216,20 @@ export function cardRecordToDefinition(card: PublishedCardRecord): CardDefinitio
       ? { ...effect, values: { ...(effect.values as Record<string, unknown> | undefined), destroyInstead: true } }
       : effect) }
     : card.effectConfig;
+  const originGroupSize = card.name === '디 오리진'
+    ? Number(card.text.match(/선수(?:\s*카드)?\s*(\d+)\s*장당\s*1씩/u)?.[1] ?? 0) : 0;
+  const originEffect = { trigger: 'ENTER_FIELD', action: 'BUFF',
+    target: { zone: 'BOARD', owner: 'SELF', selection: 'SELF', count: 1 },
+    values: { attackReference: 'GRAVEYARD_WRESTLER_COUNT', healthReference: 'GRAVEYARD_WRESTLER_COUNT', referenceDivisor: originGroupSize } };
+  const finalRuntimeConfig = originGroupSize > 0 && card.effectId === 'STRUCTURED_EFFECTS_V1'
+    ? { ...runtimeConfig, effects: [
+        ...((Array.isArray(runtimeConfig.effects) ? runtimeConfig.effects : []) as Array<Record<string, unknown>>)
+          .filter((effect) => !(effect.trigger === 'ENTER_FIELD' && effect.action === 'BUFF' &&
+            ['amountReference', 'attackReference', 'healthReference'].some((key) =>
+              (effect.values as Record<string, unknown> | undefined)?.[key] === 'GRAVEYARD_WRESTLER_COUNT'))),
+        originEffect,
+      ] }
+    : runtimeConfig;
   return {
       id: card.id,
       name: card.name,
@@ -247,7 +261,7 @@ export function cardRecordToDefinition(card: PublishedCardRecord): CardDefinitio
               selection: 'ALL' as const, count: 4, filter: { definitionRef: { name: '좀비' }, excludeSource: true } },
             values: { definitionRef: { name: '좀비' }, attack: 2, health: 2 },
           }] }]
-        : abilitiesFor(card.effectId, runtimeConfig)).map((ability) =>
+        : abilitiesFor(card.effectId, finalRuntimeConfig)).map((ability) =>
         // Older saved configs omitted the source-zone condition even when the
         // published rules explicitly say the card works from the hand.
         /(?:손패|손)에\s*(?:있을|있는)\s*때/.test(card.text) &&
