@@ -8,10 +8,16 @@ export function MatchResultOverlay({
   state,
   onReturnToMainMenu,
   reward,
+  rewardStatus,
+  rewardError,
+  onRetryReward,
 }: {
   state: GameState;
   onReturnToMainMenu: () => void;
   reward?: { amount: number; sourceType: string } | null;
+  rewardStatus?: 'pending' | 'success' | 'error';
+  rewardError?: string | null;
+  onRetryReward?: () => void;
 }) {
   const player = state.players[0];
   const isVictory = state.winnerId === player?.id;
@@ -101,6 +107,11 @@ export function MatchResultOverlay({
             +{reward.amount.toLocaleString()} 크레딧 지급
           </p>
         )}
+        {rewardStatus === 'pending' && <p role="status" className="mt-5 text-sm text-amber-200">AI 경기 결과와 크레딧 지급을 확인하는 중입니다…</p>}
+        {rewardStatus === 'error' && <div role="alert" className="mt-5 rounded border border-red-400/40 p-3 text-sm text-red-200">
+          <p>AI 경기 보상 지급에 실패했습니다. {rewardError}</p>
+          {onRetryReward && <button type="button" onClick={onRetryReward} className="mt-2 rounded border border-red-300 px-3 py-1 font-bold">다시 시도</button>}
+        </div>}
         <button
           type="button"
           onClick={onReturnToMainMenu}

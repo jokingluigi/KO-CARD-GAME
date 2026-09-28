@@ -17,6 +17,7 @@ export {
   estimateCardValue,
   rankActions,
 } from "../../../artifacts/ko-game/src/game/actions/ai-evaluator";
+export { situationalAiEmote } from "../../../artifacts/ko-game/src/game/actions/ai-turn-scheduler";
 export type {
   ActionErrorCode,
   ActionResult,

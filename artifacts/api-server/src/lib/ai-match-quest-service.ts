@@ -9,6 +9,7 @@ import {
   executeAction,
   getLegalActions,
   startGame,
+  situationalAiEmote,
   type GameState,
 } from "@workspace/game-engine";
 import { loadUserDeck, resolveDeck } from "../routes/decks";
@@ -53,6 +54,12 @@ function stripClientPlayerId(value: unknown): unknown {
 
 function advanceAIOpponent(state: GameState, aiPlayerId: string): GameState {
   let next = state;
+  const greet = next.status !== "IN_PROGRESS" || next.activePlayerId !== aiPlayerId || next.targetingState?.active
+    ? null : situationalAiEmote(next, aiPlayerId, next.events.length);
+  if (greet) {
+    const spoken = executeAction(next, { type: "EMOTE", playerId: aiPlayerId, emote: greet });
+    if (spoken.success) next = spoken.state;
+  }
   for (let decision = 0; decision < AI_DECISIONS_PER_TURN; decision += 1) {
     if (next.status !== "IN_PROGRESS" || next.activePlayerId !== aiPlayerId) break;
     const legalActions = getLegalActions(next, aiPlayerId);
@@ -64,9 +71,17 @@ function advanceAIOpponent(state: GameState, aiPlayerId: string): GameState {
       return next;
     }
     const action = chooseBestAction(next, legalActions, aiPlayerId);
+    const eventStart = next.events.length;
     const result = executeAction(next, action);
     if (!result.success) break;
     next = result.state;
+    if (!next.targetingState?.active) {
+      const emote = situationalAiEmote(next, aiPlayerId, eventStart);
+      if (emote) {
+        const spoken = executeAction(next, { type: "EMOTE", playerId: aiPlayerId, emote });
+        if (spoken.success) next = spoken.state;
+      }
+    }
   }
 
   if (

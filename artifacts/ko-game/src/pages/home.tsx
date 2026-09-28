@@ -196,6 +196,9 @@ export default function Home() {
   const [presentationBusy, setPresentationBusy] = useState(false);
   const [matchResultVisible, setMatchResultVisible] = useState(false);
   const [aiMatchReward, setAiMatchReward] = useState<{ amount: number; sourceType: string } | null>(null);
+  const [aiRewardStatus, setAiRewardStatus] = useState<'pending' | 'success' | 'error'>('pending');
+  const [aiRewardError, setAiRewardError] = useState<string | null>(null);
+  const [aiRewardRetry, setAiRewardRetry] = useState(0);
   const turnKey = `${gameState.turn}:${gameState.activePlayerId ?? 'none'}`;
   const aiOpeningActive = isAiMatch && aiMatchStarted &&
     isAiMatchOpeningActive(aiOpening, gameState.gameId, aiOpeningNow);
@@ -582,6 +585,8 @@ export default function Home() {
     aiMatchActionsRef.current = [];
     submittedAIMatchRef.current = null;
     setAiMatchReward(null);
+    setAiRewardStatus('pending');
+    setAiRewardError(null);
     const openingStartedAt = Date.now();
     setAiOpening(createAiMatchOpening(
       nextState.gameId,
@@ -660,6 +665,8 @@ export default function Home() {
     }
 
     submittedAIMatchRef.current = match.matchId;
+    setAiRewardStatus('pending');
+    setAiRewardError(null);
     void (async () => {
       let lastError: unknown;
       for (let attempt = 0; attempt < 3; attempt += 1) {
@@ -669,6 +676,7 @@ export default function Home() {
             actions: aiMatchActionsRef.current as unknown as Array<Record<string, unknown>>,
           });
           setAiMatchReward(result.reward);
+          setAiRewardStatus('success');
           return;
         } catch (error) {
           lastError = error;
@@ -678,9 +686,10 @@ export default function Home() {
         }
       }
       submittedAIMatchRef.current = null;
-      setPlayError(`퀘스트 진행도를 저장하지 못했습니다: ${lastError instanceof Error ? lastError.message : '잠시 후 다시 시도해 주세요.'}`);
+      setAiRewardStatus('error');
+      setAiRewardError(lastError instanceof Error ? lastError.message : '잠시 후 다시 시도해 주세요.');
     })();
-  }, [gameState.status, isAdminSource, isAiMatch, aiMatchStarted]);
+  }, [gameState.status, isAdminSource, isAiMatch, aiMatchStarted, aiRewardRetry]);
 
   useEffect(() => {
     if (!matchReady || (isAiMatch && !aiMatchStarted)) {
@@ -1481,6 +1490,9 @@ export default function Home() {
        <MatchResultOverlay
          state={gameState}
          reward={isAiMatch ? aiMatchReward : null}
+         rewardStatus={isAiMatch ? aiRewardStatus : undefined}
+         rewardError={isAiMatch ? aiRewardError : undefined}
+         onRetryReward={isAiMatch ? () => setAiRewardRetry((count) => count + 1) : undefined}
          onReturnToMainMenu={() => navigate(ROUTES.MAIN_MENU)}
        />
      )}
