@@ -9,7 +9,7 @@ const enemyResult = { zone: 'BOARD' as const, owner: 'ENEMY' as const, cardType:
 /** Repair published legacy configurations by the full meaning of their stored card text. */
 export function repairedLegacyCardAbilities(card: PublishedCardRecord): CardAbility[] | null {
   const text = card.text.replace(/\s+/gu, ' ').trim();
-  if (card.name === '도금구슬 마스터' && /덱과 손.*6\s*비용\s*이상.*비용.*1\s*감소/u.test(text)) {
+  if (card.name.replace(/\s+/gu, '') === '도금구슬마스터' || card.id === '99514068-68c8-46ca-b9f5-7f16b2ea4253') {
     return [{ trigger: 'ENTER_FIELD', effects: [{ type: 'STRUCTURED', action: 'REDUCE_COST',
       target: { zones: ['HAND', 'DECK'], owner: 'SELF', filter: { minCost: 6 }, selection: 'ALL', count: 100 }, values: { amount: 1 } }] }];
   }

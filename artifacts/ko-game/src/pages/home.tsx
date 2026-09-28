@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useLocation } from 'wouter';
+import { generateCardInstance } from '@/game/cards/generation';
 
 import {
   attack,
@@ -379,7 +380,7 @@ export default function Home() {
           const relatedDefinitions = (relatedCards ?? []).map(cardRecordToDefinition);
           const isTechnique = definition.cardType === 'TECHNIQUE';
           const filler = TEST_CARD_DEFINITIONS[0]!;
-          const testState = isTechnique
+          const testState = isTechnique || definition.isToken || definition.isChampionToken
             ? createInitialGameState(undefined, [definition, filler], undefined, [
                 Array.from({ length: 25 }, (_, index) => index === 0 ? definition.id : filler.id),
                 Array.from({ length: 25 }, () => filler.id),
@@ -390,16 +391,17 @@ export default function Home() {
           setRuntimeCardDefinitions([definition, ...(isTechnique ? [filler] : []), ...relatedDefinitions]);
           preloadMatchAssets([definition], []);
           const started = startGame(testState, undefined, media);
-          if (isTechnique) {
+          if (isTechnique || definition.isToken || definition.isChampionToken) {
             const owner = started.players[0]!;
             if (!owner.hand.some((card) => card.definitionId === definition.id)) {
               const candidate = owner.deck.find((card) => card.definitionId === definition.id);
               const replaced = owner.hand[0];
-              if (candidate && replaced) {
+              if (replaced) {
+                const testCard = candidate ?? generateCardInstance(definition, { instanceId: `admin-test-${definition.id}`, isGenerated: true });
                 started.players[0] = {
                   ...owner,
-                  hand: [candidate, ...owner.hand.slice(1)],
-                  deck: owner.deck.map((card) => card.instanceId === candidate.instanceId ? replaced : card),
+                  hand: [testCard, ...owner.hand.slice(1)],
+                  deck: candidate ? owner.deck.map((card) => card.instanceId === candidate.instanceId ? replaced : card) : owner.deck,
                 };
               }
             }

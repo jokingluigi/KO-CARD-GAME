@@ -105,6 +105,10 @@ test('도금구슬 마스터는 손패와 덱의 비용 6 이상 카드만 1 할
   const result = enterField(state, 'player-1', card(master, 'gilded'), 0);
   assert.deepEqual(result.players[0].hand.map((item) => item.currentCost), [5, 5]);
   assert.deepEqual(result.players[0].deck.map((item) => item.currentCost), [5, 5]);
+  const stale = definition('도금구슬 마스터', { effects: [] }, { rulesText: '' });
+  const staleState = stateWithPool([stale, expensive]);
+  staleState.players[0].deck = [card(expensive, 'stale-expensive')];
+  assert.equal(enterField(staleState, 'player-1', card(stale, 'stale-gilded'), 0).players[0].deck[0]?.currentCost, 5);
 });
 
 test('오젠은 챔피언 토큰을 제외한 비용 1 이하의 적 선수 하나만 리타이어시킨다', () => {
@@ -133,6 +137,25 @@ test('오젠은 챔피언 토큰을 제외한 비용 1 이하의 적 선수 하�
   const currentResult = enterField(currentState, 'player-1', card(currentText, 'current-ozen-source'), 0);
   assert.equal(currentResult.players[1].board[0], null);
   assert.equal(currentResult.players[1].board[1]?.instanceId, 'current-champion-target');
+});
+
+test('오젠과 도금구슬 마스터는 손패에서 비용을 내고 실제 플레이해도 적용된다', () => {
+  const ozen = definition('오젠', { effects: [] }, { rulesText: '' });
+  const master = definition('도금구슬 마스터', { effects: [] }, { rulesText: '' });
+  const cheap = definition('적 선수', { effects: [] }, { cost: 1 });
+  const expensive = definition('비싼 손패 선수', { effects: [] }, { cost: 6 });
+  const state = stateWithPool([ozen, master, cheap, expensive]);
+  state.players[0].currentGold = 10;
+  state.players[0].hand = [card(ozen, 'played-ozen'), card(master, 'played-master'), card(expensive, 'expensive-hand')];
+  state.players[1].board[0] = { ...card(cheap, 'opponent-cheap'), boardSlot: 0 };
+  state.players[0].deck = [card(expensive, 'expensive-deck')];
+  const first = playWrestlerFromHand(state, 'player-1', 'played-ozen', 0);
+  assert.equal(first.success, true);
+  assert.equal(first.state.players[1].board[0], null);
+  const second = playWrestlerFromHand(first.state, 'player-1', 'played-master', 1);
+  assert.equal(second.success, true);
+  assert.equal(second.state.players[0].hand[0]?.currentCost, 5);
+  assert.equal(second.state.players[0].deck[0]?.currentCost, 5);
 });
 
 test('불록스는 손패에 있을 때만 턴 종료에 빈 필드로 소환된다', () => {

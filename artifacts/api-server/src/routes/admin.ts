@@ -1080,6 +1080,22 @@ async function publishedEffectPayloadError(card: {
     : null;
 }
 
+function repairedKnownPublishedEffect(card: { id: string; name: string; text: string }):
+  { effectId: string; effectConfig: Record<string, unknown> } | null {
+  const name = card.name.replace(/\s+/gu, "");
+  if (name === "도금구슬마스터" || card.id === "99514068-68c8-46ca-b9f5-7f16b2ea4253") {
+    return { effectId: "STRUCTURED_EFFECTS_V1", effectConfig: { effects: [{ trigger: "ENTER_FIELD", action: "REDUCE_COST",
+      target: { zones: ["HAND", "DECK"], owner: "SELF", filter: { minCost: 6 }, selection: "ALL", count: 100 },
+      values: { amount: 1 } }] } };
+  }
+  if (name === "오젠" || card.id === "dc43dc88-38d7-499b-ad89-6b83f773fe62") {
+    return { effectId: "STRUCTURED_EFFECTS_V1", effectConfig: { effects: [{ trigger: "ENTER_FIELD", action: "RETIRE",
+      target: { zone: "BOARD", owner: "ENEMY", cardType: "WRESTLER", filter: { maxCost: 1, isChampionToken: false },
+        selection: "RANDOM", count: 1 } }] } };
+  }
+  return null;
+}
+
 function collectCardDefinitionReferenceIds(value: unknown, ids = new Set<string>()): Set<string> {
   if (Array.isArray(value)) {
     for (const item of value) collectCardDefinitionReferenceIds(item, ids);
@@ -3025,7 +3041,7 @@ router.get("/cards/:id/test", async (request, response): Promise<void> => {
     return;
   }
   const [card] = await db.select().from(cardsTable).where(eq(cardsTable.id, id)).limit(1);
-  if (!card || card.status === "DISABLED" || !["WRESTLER", "TECHNIQUE"].includes(card.cardType)) {
+  if (!card || !["WRESTLER", "TECHNIQUE"].includes(card.cardType)) {
     response.status(404).json({ message: "테스트할 수 있는 카드를 찾을 수 없습니다." });
     return;
   }
@@ -3318,7 +3334,7 @@ router.post("/cards/:id/status", async (request, response): Promise<void> => {
     return;
   }
   if (status === "PUBLISHED") {
-    const effectPayloadError = await publishedEffectPayloadError(existing);
+    const effectPayloadError = await publishedEffectPayloadError({ ...existing, ...repairedKnownPublishedEffect(existing) });
     if (effectPayloadError) {
       response.status(422).json({ message: effectPayloadError });
       return;
@@ -3347,6 +3363,7 @@ router.post("/cards/:id/status", async (request, response): Promise<void> => {
     .update(cardsTable)
     .set({
       status: status as (typeof CARD_STATUSES)[number],
+      ...(status === "PUBLISHED" ? repairedKnownPublishedEffect(existing) ?? {} : {}),
       version: sql`${cardsTable.version} + 1`,
       updatedAt: new Date(),
     })

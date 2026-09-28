@@ -174,8 +174,8 @@ function structuredEffectCount(value: string): number {
 
 async function responseMessage(response: Response) {
   try {
-    const body = (await response.json()) as { message?: string };
-    return body.message ?? "요청을 처리하지 못했습니다.";
+    const body = (await response.json()) as { message?: string; referenceErrors?: string[]; dependents?: string[] };
+    return [body.message ?? "요청을 처리하지 못했습니다.", ...(body.referenceErrors ?? []), ...(body.dependents ?? [])].join("\n");
   } catch {
     return "요청을 처리하지 못했습니다.";
   }
@@ -336,6 +336,7 @@ export function AdminCardManager({
   const [busyId, setBusyId] = useState<string | null>(null);
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
+  const [actionErrorCardId, setActionErrorCardId] = useState<string | null>(null);
   const [imageAssetId, setImageAssetId] = useState<string | null>(null);
   const [imageUrl, setImageUrl] = useState<string | null>(null);
   const [imageUploadToken, setImageUploadToken] = useState<string | null>(null);
@@ -877,6 +878,7 @@ export function AdminCardManager({
   async function mutateCard(path: string, successMessage: string, id: string, body?: object) {
     setBusyId(id);
     setError("");
+    setActionErrorCardId(null);
     try {
       const response = await fetch(`${adminApiBase}${path}`, {
         method: "POST",
@@ -895,6 +897,7 @@ export function AdminCardManager({
       await loadCards();
     } catch (mutationError) {
       setError(mutationError instanceof Error ? mutationError.message : "요청을 처리하지 못했습니다.");
+      setActionErrorCardId(id);
     } finally {
       setBusyId(null);
     }
@@ -1027,7 +1030,7 @@ export function AdminCardManager({
       </div>
 
       {(message || error) && (
-        <div data-testid="status-card-action" className={`mb-4 rounded border px-3 py-2 text-xs font-bold ${error ? "border-red-900 bg-red-950/50 text-red-300" : "border-emerald-900 bg-emerald-950/50 text-emerald-300"}`}>
+        <div data-testid="status-card-action" className={`mb-4 whitespace-pre-line rounded border px-3 py-2 text-xs font-bold ${error ? "border-red-900 bg-red-950/50 text-red-300" : "border-emerald-900 bg-emerald-950/50 text-emerald-300"}`}>
           {error || message}
         </div>
       )}
@@ -1095,9 +1098,11 @@ export function AdminCardManager({
                     {auditResults[card.id].status === "missing" ? "⚠ 설정 누락 의심" : auditResults[card.id].status === "review" ? "? 직접 확인 필요" : "✓ 정적 검사 통과 · 실제 경기 확인 필요"} · {auditResults[card.id].reason}
                   </p>}
                   {(card.isToken || card.isChampionToken) && <p className="mt-1 text-[10px] font-bold text-primary">{card.isChampionToken ? "챔피언 토큰" : "토큰"}</p>}
+                  {actionErrorCardId === card.id && error && <p role="alert" className="mt-2 whitespace-pre-line rounded border border-red-900 bg-red-950/50 p-2 text-xs text-red-200">{error}</p>}
                 </div>
                 <div className="mt-3 flex flex-wrap gap-1.5" onClick={(event) => event.stopPropagation()}>
                   <button type="button" onClick={() => openEdit(card)} data-testid={`button-edit-card-${card.id}`} className="flex items-center gap-1 rounded border border-neutral-700 px-2 py-1.5 text-[10px] font-bold hover:border-primary hover:text-primary"><FilePenLine className="h-3 w-3" /> 수정</button>
+                  <button type="button" onClick={() => navigate(`${ROUTES.MAIN_MENU}?source=admin&testCardId=${encodeURIComponent(card.id)}`)} data-testid={`button-test-card-${card.id}`} className="rounded border border-sky-700 px-2 py-1.5 text-[10px] font-bold text-sky-300">테스트 게임</button>
                   <button type="button" disabled={busyId === card.id} onClick={() => mutateCard(`/cards/${card.id}/duplicate`, `${card.name} Copy를 생성했습니다.`, card.id)} data-testid={`button-duplicate-card-${card.id}`} className="flex items-center gap-1 rounded border border-neutral-700 px-2 py-1.5 text-[10px] font-bold hover:border-primary hover:text-primary disabled:opacity-40"><Copy className="h-3 w-3" /> 복제</button>
                   <button type="button" disabled={busyId === card.id} onClick={() => void deleteCard(card)} data-testid={`button-delete-card-${card.id}`} className="flex items-center gap-1 rounded border border-red-900 px-2 py-1.5 text-[10px] font-bold text-red-400 hover:bg-red-950 disabled:opacity-40"><Trash2 className="h-3 w-3" /> 삭제</button>
                   {card.status !== "PUBLISHED" && <button type="button" disabled={busyId === card.id} onClick={() => mutateCard(`/cards/${card.id}/status`, "카드를 공개했습니다.", card.id, { status: "PUBLISHED" })} data-testid={`button-publish-card-${card.id}`} className="flex items-center gap-1 rounded border border-emerald-800 px-2 py-1.5 text-[10px] font-bold text-emerald-400 hover:bg-emerald-950 disabled:opacity-40"><CheckCircle2 className="h-3 w-3" /> 공개</button>}
@@ -1356,7 +1361,7 @@ export function AdminCardManager({
                </div>
               {error && <p role="alert" className="md:col-span-2 rounded border border-red-900 bg-red-950/50 px-3 py-2 text-xs font-bold text-red-300">{error}</p>}
               <div className="flex justify-end gap-2 border-t border-neutral-800 pt-4 md:col-span-2">
-                  {editingCard && editingCard.status !== "DISABLED" && <button type="button" onClick={() => navigate(`${ROUTES.MAIN_MENU}?source=admin&testCardId=${encodeURIComponent(editingCard.id)}`)} className="rounded border border-sky-700 px-4 py-2 text-sm font-bold text-sky-300" data-testid="button-test-card">테스트 게임에서 확인</button>}
+                  {editingCard && <button type="button" onClick={() => navigate(`${ROUTES.MAIN_MENU}?source=admin&testCardId=${encodeURIComponent(editingCard.id)}`)} className="rounded border border-sky-700 px-4 py-2 text-sm font-bold text-sky-300" data-testid="button-test-card">테스트 게임에서 확인</button>}
                  <button type="button" onClick={closeForm} className="rounded border border-neutral-700 px-4 py-2 text-sm font-bold" data-testid="button-cancel-card">취소</button>
                  <button type="submit" disabled={busyId !== null || isUploadingImage} className="rounded bg-primary px-5 py-2 text-sm font-black text-black disabled:opacity-40" data-testid="button-save-card">{editingCard ? "수정 저장" : "DRAFT로 생성"}</button>
               </div>
