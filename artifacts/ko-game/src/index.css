@@ -2388,8 +2388,15 @@
 }
 
 @media (max-width: 820px) {
+  .ko-decks {
+    width: 100%;
+    max-width: 100%;
+    overflow-x: hidden;
+  }
+
   .ko-decks__wrap {
-    width: min(100% - 24px, 680px);
+    width: min(calc(100% - 24px), 680px);
+    max-width: calc(100vw - 24px);
     padding-top: 18px;
   }
 
@@ -2398,15 +2405,19 @@
   }
 
   .ko-decks__columns {
-    grid-template-columns: 1fr;
+    grid-template-columns: minmax(0, 1fr);
   }
 
   .ko-decks__rail {
     position: static;
+    min-width: 0;
+    overflow: hidden;
   }
 
   .ko-decks__deck-list {
     display: flex;
+    min-width: 0;
+    max-width: 100%;
     gap: 6px;
     overflow-x: auto;
   }
@@ -2442,6 +2453,7 @@
 @media (max-width: 520px) {
   .ko-decks__wrap {
     width: calc(100% - 20px);
+    max-width: calc(100vw - 20px);
     padding-bottom: 20px;
   }
 
@@ -2462,11 +2474,14 @@
   }
 
   .ko-decks__filters {
+    min-width: 0;
+    width: 100%;
     margin-top: 10px;
   }
 
   .ko-decks__filter {
-    flex: 1;
+    min-width: 0;
+    flex: 1 1 0;
   }
 
   .ko-decks__card-grid {
