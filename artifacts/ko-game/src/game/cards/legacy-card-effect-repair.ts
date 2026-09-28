@@ -13,7 +13,9 @@ export function repairedLegacyCardAbilities(card: PublishedCardRecord): CardAbil
     return [{ trigger: 'ENTER_FIELD', effects: [{ type: 'STRUCTURED', action: 'REDUCE_COST',
       target: { zones: ['HAND', 'DECK'], owner: 'SELF', filter: { minCost: 6 }, selection: 'ALL', count: 100 }, values: { amount: 1 } }] }];
   }
-  if (card.name === '오젠' && /상대.*비용이?\s*1\s*이하.*무작위.*리타이어/u.test(text)) {
+  // The old Ozen record may carry an empty or stale effect config. Identify
+  // this published card by its stable definition ID as well as its name.
+  if (card.name.trim() === '오젠' || card.id === 'dc43dc88-38d7-499b-ad89-6b83f773fe62') {
     return [{ trigger: 'ENTER_FIELD', effects: [{ type: 'STRUCTURED', action: 'RETIRE',
       target: { zone: 'BOARD', owner: 'ENEMY', cardType: 'WRESTLER', filter: { maxCost: 1, isChampionToken: false }, selection: 'RANDOM', count: 1 } }] }];
   }

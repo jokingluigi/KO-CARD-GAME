@@ -121,6 +121,11 @@ test('오젠은 챔피언 토큰을 제외한 비용 1 이하의 적 선수 하�
   assert.equal(result.players[1].board[1]?.instanceId, 'expensive-target');
   assert.equal(result.players[1].board[2]?.instanceId, 'champion-target');
   assert.equal(result.players[1].graveyard.some((item) => item.instanceId === 'cheap-target'), true);
+  const staleOzen = definition('오젠', { effects: [] }, { rulesText: '' });
+  const staleState = stateWithPool([staleOzen, cheap]);
+  staleState.players[1].board[0] = { ...card(cheap, 'stale-ozen-target'), boardSlot: 0 };
+  const repaired = enterField(staleState, 'player-1', card(staleOzen, 'stale-ozen-source'), 0);
+  assert.equal(repaired.players[1].board[0], null);
 });
 
 test('불록스는 손패에 있을 때만 턴 종료에 빈 필드로 소환된다', () => {
