@@ -95,6 +95,84 @@ const saved = Object.fromEntries(
   Object.entries(savedConfigs).map(([name, config]) => [name, definition(name, config)]),
 ) as Record<string, CardDefinition>;
 
+test('도금구슬 마스터는 손패와 덱의 비용 6 이상 카드만 1 할인한다', () => {
+  const master = definition('도금구슬 마스터', { effects: [] }, { rulesText: '등장:내 덱과 손에 있는 6 비용 이상의 카드들의 비용을 전부 1 감소 시킵니다.' });
+  const expensive = definition('고비용', { effects: [] }, { cost: 6 });
+  const cheap = definition('저비용', { effects: [] }, { cost: 5 });
+  const state = stateWithPool([master, expensive, cheap]);
+  state.players[0].hand = [card(expensive, 'high-hand'), card(cheap, 'low-hand')];
+  state.players[0].deck = [card(expensive, 'high-deck'), card(cheap, 'low-deck')];
+  const result = enterField(state, 'player-1', card(master, 'gilded'), 0);
+  assert.deepEqual(result.players[0].hand.map((item) => item.currentCost), [5, 5]);
+  assert.deepEqual(result.players[0].deck.map((item) => item.currentCost), [5, 5]);
+});
+
+test('오젠은 챔피언 토큰을 제외한 비용 1 이하의 적 선수 하나만 리타이어시킨다', () => {
+  const ozen = definition('오젠', { effects: [] }, { rulesText: '등장:상대 필드에 비용이 1이하인 선수 카드가 있다면 그 카드들중 무작위 한장을 리타이어 시킵니다.(챔피언 토큰 제외)' });
+  const cheap = definition('저비용 상대', { effects: [] }, { cost: 1 });
+  const expensive = definition('고비용 상대', { effects: [] }, { cost: 2 });
+  const token = definition('챔피언 토큰', { effects: [] }, { cost: 0, isChampionToken: true });
+  const state = stateWithPool([ozen, cheap, expensive, token]);
+  state.players[1].board[0] = { ...card(cheap, 'cheap-target'), boardSlot: 0 };
+  state.players[1].board[1] = { ...card(expensive, 'expensive-target'), boardSlot: 1 };
+  state.players[1].board[2] = { ...card(token, 'champion-target'), boardSlot: 2 };
+  const result = enterField(state, 'player-1', card(ozen, 'ozen-source'), 0);
+  assert.equal(result.players[1].board[0], null);
+  assert.equal(result.players[1].board[1]?.instanceId, 'expensive-target');
+  assert.equal(result.players[1].board[2]?.instanceId, 'champion-target');
+  assert.equal(result.players[1].graveyard.some((item) => item.instanceId === 'cheap-target'), true);
+});
+
+test('불록스는 손패에 있을 때만 턴 종료에 빈 필드로 소환된다', () => {
+  const blox = definition('불록스', { effects: [] });
+  const state = stateWithPool([blox]);
+  state.players[0].hand = [card(blox, 'blox-hand')];
+  const result = endTurn(state, 'player-1');
+  assert.equal(result.state.players[0].board[0]?.instanceId, 'blox-hand');
+  assert.equal(result.state.players[0].hand.length, 0);
+});
+
+test('작은 하마는 선택한 상대 선수만 상대 덱 맨 위로 보낸다', () => {
+  const hippo = definition('작은 하마', { effects: [] }, { rulesText: '등장:상대의 필드에 있는 선수 카드 한장을 선택해서 상대방의 덱 맨위로 보냅니다.' });
+  const victim = definition('상대 선수', { effects: [] });
+  const state = stateWithPool([hippo, victim]);
+  state.players[1].board[0] = { ...card(victim, 'hippo-target'), boardSlot: 0 };
+  state.players[1].deck = [card(victim, 'old-top')];
+  const pending = enterField(state, 'player-1', card(hippo, 'hippo-source'), 0);
+  assert.equal(pending.targetingState?.active, true);
+  const result = selectEffectTarget(pending, 'hippo-target');
+  assert.equal(result.players[1].board[0], null);
+  assert.equal(result.players[1].deck[0]?.instanceId, 'hippo-target');
+});
+
+test('퀘스쳔은 어디에 있든 비용 2 이하인 아군 카드만 +1/+1 강화한다', () => {
+  const question = definition('퀘스쳔', { effects: [] }, { cost: 3, rulesText: '등장:어디에 있든 비용이 2이하인 카드들에게 +1/+1을 부여합니다.' });
+  const low = definition('비용 2', { effects: [] }, { cost: 2 });
+  const high = definition('비용 3', { effects: [] }, { cost: 3 });
+  const state = stateWithPool([question, low, high]);
+  state.players[0].hand = [card(low, 'low-hand')];
+  state.players[0].deck = [card(low, 'low-deck'), card(high, 'high-deck')];
+  state.players[0].board[1] = { ...card(low, 'low-board'), boardSlot: 1 };
+  const result = enterField(state, 'player-1', card(question, 'question-source'), 0);
+  assert.equal(result.players[0].hand[0]?.currentAttack, 2);
+  assert.equal(result.players[0].deck[0]?.currentHealth, 2);
+  assert.equal(result.players[0].deck[1]?.currentAttack, 1);
+  assert.equal(result.players[0].board[1]?.currentHealth, 2);
+});
+
+test('떼껄룩은 선택한 적의 줄어든 공격력만큼 자신 체력을 올리고 기절시킨다', () => {
+  const cat = definition('떼껄룩', { effects: [] }, { rulesText: '등장:상대 선수 카드 1장을 선택해서 그 카드의 공격력을 1로 줄이고 기절을 걸고, 공격력을 줄인 만큼 자신의 체력을 증가시킵니다.' });
+  const victim = definition('공격력 5 상대', { effects: [] }, { attack: 5 });
+  const state = stateWithPool([cat, victim]);
+  state.players[1].board[0] = { ...card(victim, 'cat-target'), boardSlot: 0 };
+  const pending = enterField(state, 'player-1', card(cat, 'cat-source'), 0);
+  assert.equal(pending.targetingState?.active, true);
+  const result = selectEffectTarget(pending, 'cat-target');
+  assert.equal(result.players[1].board[0]?.currentAttack, 1);
+  assert.equal(result.players[1].board[0]?.isStunned, true);
+  assert.equal(result.players[0].board[0]?.currentHealth, 5);
+});
+
 test('저장된 17개 WRESTLER 정의가 runtime abilities로 모두 변환된다', () => {
   assert.equal(Object.keys(saved).length, 17);
   for (const [name, cardDefinition] of Object.entries(saved)) {

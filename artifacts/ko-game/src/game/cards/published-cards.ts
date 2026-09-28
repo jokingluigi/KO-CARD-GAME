@@ -1,6 +1,7 @@
 import type { CardAbility, CardEffect } from "../effects/types";
 import type { CardDefinition, CardRarity } from "./types";
 import { ACTIONS, TRIGGERS, isEffectScript, type EffectScript } from "@workspace/effect-registry";
+import { repairedLegacyCardAbilities } from './legacy-card-effect-repair';
 
 type StructuredCardEffect = Extract<CardEffect, { type: "STRUCTURED" }>;
 
@@ -254,14 +255,14 @@ export function cardRecordToDefinition(card: PublishedCardRecord): CardDefinitio
       isChampionToken: card.isChampionToken,
       keywords: card.keywords,
        tags: Array.isArray(card.tags) ? [...card.tags] : [],
-      abilities: (zombieAbsorption
+      abilities: (repairedLegacyCardAbilities(card) ?? (zombieAbsorption
         ? [{ trigger: 'ENTER_FIELD' as const, effects: [{ type: 'STRUCTURED' as const,
             action: 'COPY_BEST_STATS' as const,
             target: { zone: 'BOARD' as const, owner: 'SELF' as const, cardType: 'WRESTLER' as const,
               selection: 'ALL' as const, count: 4, filter: { definitionRef: { name: '좀비' }, excludeSource: true } },
             values: { definitionRef: { name: '좀비' }, attack: 2, health: 2 },
           }] }]
-        : abilitiesFor(card.effectId, finalRuntimeConfig)).map((ability) =>
+        : abilitiesFor(card.effectId, finalRuntimeConfig))).map((ability) =>
         // Older saved configs omitted the source-zone condition even when the
         // published rules explicitly say the card works from the hand.
         /(?:손패|손)에\s*(?:있을|있는)\s*때/.test(card.text) &&
