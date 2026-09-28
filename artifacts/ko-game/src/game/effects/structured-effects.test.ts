@@ -292,6 +292,21 @@ test('무덤의 비용 상한을 지키고 선택 카드를 옮기지 않은 채
   assert.deepEqual(noTarget.players[0].board.map((card) => card?.definitionId).filter(Boolean), ['baldan']);
 });
 
+test('무덤 스탯을 복사하는 이름 참조 좀비 소환은 토큰을 필드에 놓는다', () => {
+  const source = instance('grave-zombie-summoner', [structured('SUMMON', {
+    zone: 'GRAVEYARD', owner: 'SELF', filter: { maxCost: 3 }, selection: 'RANDOM', count: 1,
+  }, { definitionRef: { name: '좀비' }, generatedModifiers: { copyTargetStats: true } })]);
+  const state = createInitialGameState();
+  state.cardPool = [definition('grave-zombie-summoner', [])];
+  state.players[0].graveyard = [{ ...instance('grave-victim'), currentAttack: 5, currentHealth: 4, maxHealth: 4 }];
+  const result = enterField(state, 'player-1', source, 0);
+  const summoned = result.players[0].board.find((card) => card?.definitionId === 'ko-fallback-zombie-token');
+  assert.equal(summoned?.isToken, true);
+  assert.equal(summoned?.currentAttack, 5);
+  assert.equal(summoned?.currentHealth, 4);
+  assert.equal(result.cardPool?.find((card) => card.id === summoned?.definitionId)?.name, '좀비');
+});
+
 test('소환 오라는 태그가 맞는 아군 소환 카드에만 같은 대상 강화 효과를 적용한다', () => {
   const aura = {
     ...instance('jaeger', []),

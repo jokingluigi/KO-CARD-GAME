@@ -13,7 +13,7 @@ import { endTurn } from '../engine/turn-system';
 import { directDeployChampionToken } from '../engine/champion-token';
 import { playTechniqueFromHand } from '../engine/play-technique';
 import { playWrestlerFromHand } from '../engine/play-wrestler';
-import { selectEffectTarget } from './effect-engine';
+import { applyEffect, selectEffectTarget } from './effect-engine';
 
 type SavedConfig = { effects: Array<Record<string, unknown>> };
 
@@ -275,6 +275,43 @@ test('기존 GENERATE 설정이 자기 자신을 가리켜도 좀비 토큰만 �
   assert.equal(entered.players[0].board[1]?.isToken, true);
   assert.equal(entered.players[0].hand.length, 0);
   assert.equal(entered.cardPool?.find((candidate) => candidate.id === 'ko-fallback-zombie-token')?.name, '좀비');
+});
+
+test('다른 선수의 이름 참조 좀비 소환은 토큰만 찾아 필드에 놓는다', () => {
+  const source = definition('다른 소환 선수', {
+    effects: [effect('ENTER_FIELD', 'SUMMON', undefined, { definitionRef: { name: '좀비' }, count: 1 })],
+  });
+  const zombie = definition('좀비', { effects: [] }, { id: 'real-zombie-token', isToken: true, attack: 1, health: 1 });
+  const summoned = enterField(stateWithPool([source, zombie]), 'player-1', card(source, 'summoner'), 0);
+  assert.equal(summoned.players[0].board[1]?.definitionId, zombie.id);
+  assert.equal(summoned.players[0].board[1]?.isToken, true);
+
+  const withoutToken = enterField(stateWithPool([source]), 'player-1', card(source, 'summoner-missing-token'), 0);
+  assert.equal(withoutToken.players[0].board[1]?.definitionId, 'ko-fallback-zombie-token');
+  assert.equal(withoutToken.players[0].board[1]?.isToken, true);
+});
+
+test('챔피언의 이름 참조 좀비 소환도 자기 이름에 좀비가 있어도 토큰을 소환한다', () => {
+  const source = definition('좀비 챔피언 대리 카드', { effects: [] });
+  const state = stateWithPool([source]);
+  state.players[0].board[0] = { ...card(source, 'champion-source'), boardSlot: 0 };
+  const summoned = applyEffect(state, 'player-1', state.players[0].board[0]!, {
+    type: 'STRUCTURED', action: 'SUMMON', values: { definitionRef: { name: '좀비' }, count: 1 },
+  });
+  assert.equal(summoned.players[0].board[1]?.definitionId, 'ko-fallback-zombie-token');
+  assert.equal(summoned.players[0].board[1]?.isToken, true);
+});
+
+test('좀비를 손패에 생성하는 카드도 실제 좀비 토큰을 생성한다', () => {
+  const source = definition('좀비 제작자', {
+    effects: [effect('ENTER_FIELD', 'GENERATE', undefined, {
+      definitionRef: { name: '좀비' }, destination: 'HAND', count: 1,
+    })],
+  });
+  const generated = enterField(stateWithPool([source]), 'player-1', card(source, 'zombie-maker'), 0);
+  assert.equal(generated.players[0].hand[0]?.definitionId, 'ko-fallback-zombie-token');
+  assert.equal(generated.players[0].hand[0]?.isToken, true);
+  assert.equal(generated.players[0].hand.length, 1);
 });
 
 test('아르카나 조커가 파괴한 덱 맨 위 카드는 묘지에 가지 않고 다음 턴에는 한 장만 뽑는다', () => {

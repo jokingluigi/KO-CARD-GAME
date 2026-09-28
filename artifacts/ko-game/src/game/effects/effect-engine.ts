@@ -817,6 +817,11 @@ function resolveCardDefinition(
   if (reference?.id) return state.cardPool?.find((candidate) => candidate.id === reference.id);
   const name = reference?.name?.trim();
   if (!allowName || !name) return undefined;
+  if (name === '좀비') {
+    // A unique prefix match could otherwise summon "좀비 플래티넘구슬 마스터".
+    return state.cardPool?.find((candidate) => candidate.name === name && candidate.isToken)
+      ?? fallbackZombieToken;
+  }
   // Older saved effects carry only the quoted part of a card name (for example
   // "늑대인간" for "늑대인간 판도라"). Prefer an exact name; accept a longer
   // name only when it identifies exactly one card in the match's allowed pool.
@@ -826,6 +831,12 @@ function resolveCardDefinition(
   const matches = state.cardPool?.filter((candidate) => candidate.name.startsWith(`${name} `)) ?? [];
   return matches.length === 1 ? matches[0] : undefined;
 }
+
+const fallbackZombieToken: CardDefinition = {
+  id: 'ko-fallback-zombie-token', name: '좀비', cardType: 'WRESTLER',
+  cost: 0, attack: 1, health: 1, rulesText: '', rarity: 'TOKEN',
+  isToken: true, isChampionToken: false, keywords: [], abilities: [],
+};
 
 type TriggerContext = NonNullable<GameState['targetingState']>['triggerContext'];
 
@@ -1381,7 +1392,8 @@ function applyRandomTargetSummon(
   effect: Extract<CardEffect, { type: 'STRUCTURED' }>,
 ): GameState {
   const target = effect.target;
-  const definition = resolveCardDefinition(state, effect.values?.definition, effect.values?.definitionRef);
+  const definition = resolveCardDefinition(state, effect.values?.definition, effect.values?.definitionRef,
+    effect.values?.definitionRef?.name?.trim() === '좀비');
   if (!target || !definition || target.selection !== 'RANDOM') return state;
   const zones = target.zones ?? (target.zone ? [target.zone] : []);
   const validTargetIds = new Set(getValidTargets(state, playerId, sourceCard, effect));
@@ -1390,7 +1402,10 @@ function applyRandomTargetSummon(
     .filter((card) => validTargetIds.has(card.instanceId));
   const selected = shuffle(candidates, randomForEffect(state, sourceCard, effect))
     .slice(0, Math.max(0, target.count));
-  let nextState = setLastTargetIds(state, []);
+  let nextState = setLastTargetIds(definition === fallbackZombieToken &&
+    !state.cardPool?.some((card) => card.id === definition.id)
+    ? { ...state, cardPool: [...(state.cardPool ?? []), definition] }
+    : state, []);
   const summonedIds: string[] = [];
   for (const selectedCard of selected) {
     const currentOwner = nextState.players.find((player) => player.id === playerId);
@@ -1833,7 +1848,8 @@ export function applyEffect(
     const damageAmount = effect.action === 'DAMAGE'
       ? amount + getDamageModifierBonus(state, playerId, sourceCard)
       : amount;
-    const definition = resolveCardDefinition(state, effect.values?.definition, effect.values?.definitionRef);
+    const definition = resolveCardDefinition(state, effect.values?.definition, effect.values?.definitionRef,
+      effect.values?.definitionRef?.name?.trim() === '좀비');
     const validDefinition = definition &&
       typeof definition.id === 'string' && typeof definition.cost === 'number' &&
       typeof definition.attack === 'number' && typeof definition.health === 'number' &&
@@ -1866,6 +1882,9 @@ export function applyEffect(
       // These actions require a data-only definition; an absent/malformed
       // reference is a rejected effect, never an advertised silent no-op.
       if (!validDefinition) throw new Error(`${effect.action} requires a serializable card definition.`);
+      if (definition === fallbackZombieToken && !state.cardPool?.some((card) => card.id === definition.id)) {
+        state = { ...state, cardPool: [...(state.cardPool ?? []), definition] };
+      }
       const owner = state.players.find((player) => player.id === playerId);
       if (!owner) return state;
       const aggregate = effect.action === 'SUMMON' && effect.values?.aggregateStats?.source === 'LAST_DESTROYED_TARGETS'
@@ -2336,13 +2355,7 @@ export function applyEffect(
         const slot = owner?.board.findIndex((card) => card === null) ?? -1;
         // The general name resolver accepts unique prefixes. A reference to
         // "좀비" must never resolve to "좀비 플래티넘구슬 마스터" itself.
-        const zombieDefinition = state.cardPool?.find((candidate) =>
-          candidate.name === effect.values?.definitionRef?.name?.trim() && candidate.id !== sourceCard.definitionId,
-        ) ?? (effect.values.definitionRef.name?.trim() === '좀비' ? {
-          id: 'ko-fallback-zombie-token', name: '좀비', cardType: 'WRESTLER' as const,
-          cost: 0, attack: 2, health: 2, rulesText: '', rarity: 'TOKEN' as const,
-          isToken: true, isChampionToken: false, keywords: [], abilities: [],
-        } : undefined);
+        const zombieDefinition = resolveCardDefinition(state, undefined, effect.values.definitionRef, true);
         if (!owner || slot < 0 || !zombieDefinition || zombieDefinition.cardType !== 'WRESTLER') return state;
         const generated = generateCard(zombieDefinition, {
           instanceId: `${sourceCard.instanceId}:fallback:${state.events.length}`,
