@@ -197,6 +197,7 @@ export function processChampionQuestEvents(
         isGenerated: true,
         isToken: false,
         isChampionToken: false,
+        tags: ['CHAMPION_QUEST_REWARD_SOURCE'],
         keywords: [],
         abilities: [],
         isSilenced: false,

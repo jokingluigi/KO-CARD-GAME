@@ -36,6 +36,7 @@ import {
   createDeterministicRandom,
   TRAINING_DUMMY_DEFINITIONS,
   TEST_CARD_DEFINITIONS,
+  TEST_CHAMPIONS,
   createTestDeck,
 } from '@/game';
 import { GameStatePreview } from '@/components/game-state-preview';
@@ -380,12 +381,13 @@ export default function Home() {
           const relatedDefinitions = (relatedCards ?? []).map(cardRecordToDefinition);
           const isTechnique = definition.cardType === 'TECHNIQUE';
           const filler = TEST_CARD_DEFINITIONS[0]!;
+          const testChampions = TEST_CHAMPIONS.map((champion) => ({ ...champion, quest: null }));
           const testState = isTechnique || definition.isToken || definition.isChampionToken
-            ? createInitialGameState(undefined, [definition, filler], undefined, [
+            ? createInitialGameState(undefined, [definition, filler], testChampions, [
                 Array.from({ length: 25 }, (_, index) => index === 0 ? definition.id : filler.id),
                 Array.from({ length: 25 }, () => filler.id),
               ])
-            : createInitialGameState(undefined, [definition]);
+            : createInitialGameState(undefined, [definition], testChampions);
           testState.cardPool = [...(testState.cardPool ?? []), ...relatedDefinitions.filter((entry) => !testState.cardPool?.some((existing) => existing.id === entry.id))];
           setMediaCatalog(media);
           setRuntimeCardDefinitions([definition, ...(isTechnique ? [filler] : []), ...relatedDefinitions]);

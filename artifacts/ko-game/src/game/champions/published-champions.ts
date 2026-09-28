@@ -66,7 +66,10 @@ export function championRecordToDefinition(record: PublishedChampionRecord): Cha
   const rewardActions = record.questRewardEffects?.effects ?? [];
   const tokenId = record.championTokenDefinitionId;
   const directTokenReward = typeof tokenId === "string" &&
-    rewardActions.some((item) => item.action === "DIRECT_DEPLOY_CHAMPION_TOKEN");
+    (rewardActions.some((item) => item.action === "DIRECT_DEPLOY_CHAMPION_TOKEN") ||
+      (record.name.replace(/\s+/gu, "").includes("판도라") &&
+        /(?:소환|전개)/u.test(record.questRewardText ?? "") &&
+        rewardActions.every((item) => item.action === "UPGRADE_CHAMPION_ABILITY")));
   const structuredRewardEffects = effects(record.questRewardEffects, tokenId)
     .filter((item): item is Extract<ChampionEffect, { type: "STRUCTURED" | "SCRIPT" }> =>
       item.type === "SCRIPT" || (item.type === "STRUCTURED" && (ACTIONS as readonly string[]).includes(item.action)));

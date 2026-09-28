@@ -4,6 +4,9 @@ import test from 'node:test';
 import type { CardDefinition, CardInstance } from '../cards/types';
 import { generateCardInstance } from '../cards/generation';
 import { cardRecordToDefinition } from '../cards/published-cards';
+import { championRecordToDefinition } from '../champions/published-champions';
+import { TEST_CHAMPIONS } from '../champions/test-champions';
+import { processChampionQuestEvents } from '../champions/quests';
 import type { PublishedCardRecord } from '../cards/published-cards';
 import { createInitialGameState } from '../engine/create-initial-game-state';
 import { destroyCard } from '../engine/destroy-card';
@@ -520,6 +523,94 @@ test('과거 판도라 토큰 설정은 대상 파괴와 이후 퇴장 공격력
   const result = selectEffectTarget(pending, victim.instanceId);
   assert.equal(result.players[1].board[0], null);
   assert.equal(result.players[0].board[0]?.currentAttack, 7);
+});
+
+test('판도라 폭주가 퀘스트 보상으로 등장하면 대상을 파괴하고 이후 전투 리타이어도 흡수한다', () => {
+  const token = definition('챔피언 판도라(폭주)', { effects: [] }, {
+    id: 'eaefcf6c-575d-4482-aaad-98b54561b49a', isToken: true, isChampionToken: true,
+    attack: 4, health: 8,
+    rulesText: '카드가 챔피언 퀘스트 보상 효과로 소환되면 등장 효과를 발동시킵니다. 등장:선택한 선수를 파괴시킵니다. 이 카드는 자신이 리타이어 혹은 파괴 시킨 선수의 공격력을 흡수합니다.',
+  });
+  const champion = championRecordToDefinition({
+    id: 'pandora-champion', name: '챔피언 판도라', description: '', imageAssetId: null, imageUrl: null,
+    maxHealth: 20, abilityName: '능력', abilityCost: 1, abilityText: '', abilityEffects: { effects: [] },
+    hasQuest: true, questName: '폭주', questText: '선수 카드 1장 사용',
+    questCondition: { event: 'CARD_PLAYED', required: 1 }, questProgressRequired: 1,
+    questRewardText: "고유 능력을 강화시키고, '챔피언 판도라(폭주)'를 필드에 소환합니다.",
+    questRewardEffects: { effects: [{ action: 'UPGRADE_CHAMPION_ABILITY' }] },
+    upgradedAbilityName: '폭주 능력', upgradedAbilityCost: 1, upgradedAbilityText: '', upgradedAbilityEffects: { effects: [] },
+    championTokenDefinitionId: token.id, status: 'PUBLISHED', version: 1,
+  });
+  assert.equal(champion.quest?.reward.type, 'DIRECT_DEPLOY_CHAMPION_TOKEN');
+  const victimDefinition = definition('상대 선수', { effects: [] }, { attack: 6, health: 2 });
+  const another = definition('전투 대상', { effects: [] }, { attack: 3, health: 1 });
+  const state = createInitialGameState([champion.id, 'test-champion-no-quest'], [token, victimDefinition, another], [champion, TEST_CHAMPIONS[1]!]);
+  state.status = 'IN_PROGRESS';
+  state.activePlayerId = 'player-1';
+  state.players[1].board[0] = { ...card(victimDefinition, 'quest-victim'), boardSlot: 0 };
+  const completed = processChampionQuestEvents(state, {
+    ...state, events: [...state.events, { type: 'CARD_PLAYED', playerId: 'player-1', cardInstanceId: 'played-card', cardType: 'WRESTLER',
+      source: { type: 'PLAYER', playerId: 'player-1' }, target: { type: 'CARD', cardInstanceId: 'played-card' }, reason: 'PLAY_FROM_HAND' }],
+  });
+  assert.equal(completed.players[0].champion?.questCompleted, true);
+  assert.equal(completed.targetingState?.validTargetIds.includes('quest-victim'), true);
+  const destroyed = selectEffectTarget(completed, 'quest-victim');
+  const pandora = destroyed.players[0].board.find((item) => item?.definitionId === token.id);
+  assert.equal(destroyed.players[1].board[0], null);
+  assert.equal(pandora?.currentAttack, 10);
+  assert.ok(pandora?.isDirectDeployedChampion);
+  destroyed.players[0].board[pandora!.boardSlot!] = { ...pandora!, enteredThisTurn: false };
+  destroyed.players[1].board[0] = { ...card(another, 'later-victim'), boardSlot: 0 };
+  const attacked = attack(destroyed, 'player-1', pandora!.instanceId, {
+    type: 'WRESTLER', playerId: 'player-2', cardInstanceId: 'later-victim',
+  });
+  assert.equal(attacked.success, true);
+  assert.equal(attacked.state.players[0].board[pandora!.boardSlot!]?.currentAttack, 13);
+});
+
+test('퀘스트 보상의 일반 SUMMON도 등장 효과를 명시한 판도라에게만 등장 효과를 발동한다', () => {
+  const token = definition('챔피언 판도라(폭주)', { effects: [] }, {
+    isToken: true, isChampionToken: true, attack: 2,
+    rulesText: '카드가 챔피언 퀘스트 보상 효과로 소환되면 등장 효과를 발동시킵니다. 등장:선택한 선수를 파괴시킵니다. 이 카드는 자신이 리타이어 혹은 파괴 시킨 선수의 공격력을 흡수합니다.',
+  });
+  const champion = championRecordToDefinition({
+    id: 'summon-pandora', name: '퀘스트 소환', description: '', imageAssetId: null, imageUrl: null,
+    maxHealth: 20, abilityName: '능력', abilityCost: 1, abilityText: '', abilityEffects: { effects: [] },
+    hasQuest: true, questName: '완료', questText: '선수 카드 1장 사용',
+    questCondition: { event: 'CARD_PLAYED', required: 1 }, questProgressRequired: 1,
+    questRewardText: '판도라를 소환합니다.', questRewardEffects: { effects: [{ action: 'SUMMON', values: { definitionRef: { id: token.id }, count: 1 } }] },
+    upgradedAbilityName: null, upgradedAbilityCost: null, upgradedAbilityText: null, upgradedAbilityEffects: null,
+    championTokenDefinitionId: null, status: 'PUBLISHED', version: 1,
+  });
+  const victim = definition('소환 대상', { effects: [] }, { attack: 5 });
+  const state = createInitialGameState([champion.id, 'test-champion-no-quest'], [token, victim], [champion, TEST_CHAMPIONS[1]!]);
+  state.status = 'IN_PROGRESS';
+  state.activePlayerId = 'player-1';
+  state.players[1].board[0] = { ...card(victim, 'summon-victim'), boardSlot: 0 };
+  const completed = processChampionQuestEvents(state, { ...state, events: [{
+    type: 'CARD_PLAYED', playerId: 'player-1', cardInstanceId: 'played-summon', cardType: 'WRESTLER',
+    source: { type: 'PLAYER', playerId: 'player-1' }, target: { type: 'CARD', cardInstanceId: 'played-summon' }, reason: 'PLAY_FROM_HAND',
+  }] });
+  assert.equal(completed.targetingState?.validTargetIds.includes('summon-victim'), true);
+  const destroyed = selectEffectTarget(completed, 'summon-victim');
+  assert.equal(destroyed.players[0].board.find((item) => item?.definitionId === token.id)?.currentAttack, 7);
+  assert.equal(destroyed.players[1].board[0], null);
+});
+
+test('판도라 폭주의 등장 대상은 아군 선수도 가능하며 자신은 대상에서 제외된다', () => {
+  const pandora = definition('챔피언 판도라(폭주)', { effects: [] }, {
+    attack: 3,
+    rulesText: '등장:선택한 선수를 파괴시킵니다. 이 카드는 자신이 리타이어 혹은 파괴 시킨 선수의 공격력을 흡수합니다.',
+  });
+  const ally = definition('아군 대상', { effects: [] }, { attack: 4 });
+  const state = stateWithPool([pandora, ally]);
+  state.players[0].board[1] = { ...card(ally, 'friendly-target'), boardSlot: 1 };
+  const entered = enterField(state, 'player-1', card(pandora, 'pandora-own-instance'), 0);
+  assert.equal(entered.targetingState?.validTargetIds.includes('friendly-target'), true);
+  assert.equal(entered.targetingState?.validTargetIds.includes('pandora-own-instance'), false);
+  const destroyed = selectEffectTarget(entered, 'friendly-target');
+  assert.equal(destroyed.players[0].board[1], null);
+  assert.equal(destroyed.players[0].board[0]?.currentAttack, 7);
 });
 
 test('매드 펌킨 비용 감소는 최소 1을 지키고 WRESTLER가 아닌 카드는 선택 대상이 아니다', () => {

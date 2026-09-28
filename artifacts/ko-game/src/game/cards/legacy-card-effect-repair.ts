@@ -9,6 +9,20 @@ const enemyResult = { zone: 'BOARD' as const, owner: 'ENEMY' as const, cardType:
 /** Repair published legacy configurations by the full meaning of their stored card text. */
 export function repairedLegacyCardAbilities(card: PublishedCardRecord): CardAbility[] | null {
   const text = card.text.replace(/\s+/gu, ' ').trim();
+  if ((card.name.replace(/\s+/gu, '') === '챔피언판도라(폭주)' || card.id === 'eaefcf6c-575d-4482-aaad-98b54561b49a') &&
+      /등장.*선택한\s*선수.*파괴/u.test(text) && /리타이어.*파괴.*선수.*공격력.*흡수|리타이어.*파괴.*선수.*공격력.*(?:더|추가)/u.test(text)) {
+    return [
+      { trigger: 'ENTER_FIELD', effects: [{ type: 'STRUCTURED', action: 'REGISTER_LISTENER', values: {
+        listener: { trigger: 'SOURCE_CAUSED_TARGET_REMOVAL', cardType: 'WRESTLER', effect: {
+          action: 'ADD_AGGREGATED_ATTACK', target: self,
+          values: { aggregateStats: { source: 'LAST_CAUSED_TARGET_REMOVALS', attack: 'CURRENT_ATTACK_SUM' } },
+        } },
+      } }] },
+      { trigger: 'ENTER_FIELD', effects: [{ type: 'STRUCTURED', action: 'DESTROY',
+        target: { zone: 'BOARD', owner: 'ALL', cardType: 'WRESTLER', selection: 'PLAYER_CHOICE', count: 1,
+          filter: { excludeSource: true } } }] },
+    ];
+  }
   if (card.name.replace(/\s+/gu, '') === '도금구슬마스터' || card.id === '99514068-68c8-46ca-b9f5-7f16b2ea4253') {
     return [{ trigger: 'ENTER_FIELD', effects: [{ type: 'STRUCTURED', action: 'REDUCE_COST',
       target: { zones: ['HAND', 'DECK'], owner: 'SELF', filter: { minCost: 6 }, selection: 'ALL', count: 100 }, values: { amount: 1 } }] }];

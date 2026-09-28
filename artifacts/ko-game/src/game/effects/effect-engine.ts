@@ -1951,7 +1951,10 @@ export function applyEffect(
            events: [...summonState.events, generated.event],
          };
          summonState = enterField(summonState, playerId, generated.card, slot as 0 | 1 | 2 | 3,
-           { type: 'CARD', cardInstanceId: sourceCard.instanceId }, undefined, 'SUMMON');
+           { type: 'CARD', cardInstanceId: sourceCard.instanceId }, undefined,
+           sourceCard.tags?.includes('CHAMPION_QUEST_REWARD_SOURCE') &&
+             /챔피언\s*퀘스트\s*보상[^.!?]*소환[^.!?]*등장\s*효과/u.test(definition!.rulesText)
+             ? 'CHAMPION_DEPLOY' : 'SUMMON');
          summonedIds.push(generated.card.instanceId);
       }
        return setLastTargetIds(summonState, summonedIds);
