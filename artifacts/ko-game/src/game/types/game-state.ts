@@ -4,6 +4,7 @@ import type { ChampionState } from '../champions/types';
 import type { EntryCause, EventAttribution, GameEvent } from '../events/types';
 import type { CardEffect, QueuedStructuredEffect, StructuredListener } from '../effects/types';
 import type { EffectScript, ScriptStep } from '@workspace/effect-registry';
+import type { TowerBattleContext } from '../tower/relics';
 
 export type Board = [
   CardInstance | null,
@@ -69,6 +70,8 @@ export interface PlayerState {
 }
 
 export interface GameState {
+  /** Absent in all existing modes; only a Tower battle may carry relic rules. */
+  tower?: TowerBattleContext;
   gameId: string;
   /** Seed used by deterministic random effect resolution. */
   randomSeed?: number;

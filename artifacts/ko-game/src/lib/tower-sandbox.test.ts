@@ -33,3 +33,18 @@ test('sandbox reuses Tower initialization and completes without changing its sel
   assert.notDeepEqual(createTowerSandbox({ ...setup, seed: 'different-seed' }, cards, TEST_CHAMPIONS).players[0]!.deck,
     createTowerSandbox(setup, cards, TEST_CHAMPIONS).players[0]!.deck);
 });
+test('admin sandbox attaches chosen relic rules before battle and rejects unknown types', () => {
+  assert.throws(() => createTowerSandbox({ ...setup, relicTypes: ['INVALID' as never] }, cards, TEST_CHAMPIONS));
+  const state = createTowerSandbox({ ...setup, relicTypes: ['MAX_FIELD_ONE'] }, cards, TEST_CHAMPIONS);
+  assert.equal(state.tower?.relics[0]?.effectType, 'MAX_FIELD_ONE');
+  let ready = state;
+  for (const playerId of ['player-1', 'player-2']) {
+    const result = executeAction(ready, { type: 'MULLIGAN', playerId, cardInstanceIds: [] });
+    assert.equal(result.success, true); ready = result.state;
+  }
+  const player = ready.players[0]!;
+  ready = { ...ready, players: ready.players.map((p, i) => i === 0 ? { ...p, currentGold: 6 } : p) };
+  const played = executeAction(ready, { type: 'PLAY_WRESTLER', playerId: 'player-1', cardInstanceId: player.hand[0]!.instanceId, boardSlot: 0 });
+  assert.equal(played.success, true);
+  assert.ok(getLegalActions(played.state, 'player-1').every(action => action.type !== 'PLAY_WRESTLER'));
+});

@@ -5,8 +5,8 @@ import { TowerRuleError, cardRecordToDefinition, championRecordToDefinition, par
 import { validateRewardTarget } from './reward-service';
 
 /** A repeatable-read snapshot prevents mixed admin revisions in a newly created run. */
-export async function loadTowerSnapshot(): Promise<TowerSnapshot> {
-  return db.transaction(async tx => {
+export async function loadTowerSnapshot(database: typeof db = db): Promise<TowerSnapshot> {
+  return database.transaction(async tx => {
     const [season] = await tx.select().from(towerSeasonsTable).where(eq(towerSeasonsTable.active, true));
     if (!season) throw new TowerRuleError('SEASON_MISSING', '활성 타워 시즌이 없습니다.');
     const [cards, champions, starters, presets, relics, characters, scenes, metadata] = await Promise.all([

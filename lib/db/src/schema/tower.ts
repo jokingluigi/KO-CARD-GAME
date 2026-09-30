@@ -57,3 +57,10 @@ export const towerBossReceiptsTable = pgTable('tower_boss_receipts', {
   reward: jsonb('reward').$type<Record<string, unknown>>().notNull(),
   createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
 }, table => [uniqueIndex('tower_one_reward_per_run_boss').on(table.runId, table.bossSlotId)]);
+
+export const towerUnlocksTable = pgTable('tower_unlocks', {
+  id: text('id').primaryKey(), userId: text('user_id').notNull().references(() => usersTable.id),
+  kind: text('kind').notNull(), targetId: text('target_id').notNull(),
+  sourceRunId: text('source_run_id').notNull().references(() => towerRunsTable.id),
+  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+}, table => [uniqueIndex('tower_permanent_unlock').on(table.userId, table.kind, table.targetId)]);

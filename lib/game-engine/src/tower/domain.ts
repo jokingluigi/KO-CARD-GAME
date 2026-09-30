@@ -123,6 +123,8 @@ export function transitionRun(previous: TowerRun, command: RunCommand, catalog: 
         if (catalog.season.bosses.hiddenBoss && catalog.season.hiddenCondition && conditionMatches(catalog.season.hiddenCondition, run, catalog, history))
           run = { ...run, encounter: encounterFor(run, catalog, true), phase: 'HUB', dialogueIndex: 0 };
         else run = { ...run, phase: 'RESULT', ended: true };
+      } else if (run.isTest && run.relicIds.length === 3) {
+        run = nextFloor(run, catalog);
       } else {
         const candidates = catalog.relics.filter(item => item.enabled && !run.offeredRelicIds.includes(item.id) &&
           (item.initiallyUnlocked || history.unlockedRelicIds.includes(item.id) || (item.unlockCondition && conditionMatches(item.unlockCondition, run, catalog, history)))).sort((a, b) => a.id.localeCompare(b.id));

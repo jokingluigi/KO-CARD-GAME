@@ -23,6 +23,7 @@
   "devDependencies": {
     "@types/node": "catalog:",
     "@types/pg": "^8.20.3",
-    "drizzle-kit": "^0.31.10"
+    "drizzle-kit": "^0.31.10",
+    "@electric-sql/pglite": "^0.5.8"
   }
 }

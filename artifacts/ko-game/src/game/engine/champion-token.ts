@@ -6,6 +6,7 @@ import type { GameState } from '../types/game-state';
 import { findDirectDeployedChampion } from './direct-champion';
 import type { ActionErrorCode } from '../actions/types';
 import { MAX_HAND_SIZE } from '../rules/constants';
+import { towerOpenSlot } from '../tower/relics';
 
 export function validateLinkedChampionToken(
   state: GameState,
@@ -65,7 +66,7 @@ export function directDeployChampionToken(
     ...state,
     events: [...state.events, event],
   };
-  const boardSlot = player.board.findIndex((card) => card === null);
+  const boardSlot = towerOpenSlot(state, playerId);
   if (boardSlot < 0) {
     return {
       ...generatedState,

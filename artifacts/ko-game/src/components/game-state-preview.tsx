@@ -1,4 +1,6 @@
+import { ChampionEmoteMenu } from './champion-emote-menu';
 import React from 'react';
+import { towerSummonCost, canEnterTowerField } from '@/game/tower/relics';
 import { EntranceVolumeControl, SfxVolumeControl } from './sfx-volume-control';
 import { CardRenderer } from './card-renderer';
 import { CardArtwork } from './card-artwork';
@@ -59,6 +61,8 @@ interface GameStatePreviewProps {
   selectedAttackerId: string | null;
   playError: string | null;
   turnSecondsRemaining: number;
+  showTurnTimer?: boolean;
+  autoPresentOwnActions?: boolean;
   onEndTurn: () => void;
   onMulligan?: (cardInstanceIds: string[]) => void;
   introActive?: boolean;
@@ -105,6 +109,8 @@ export function GameStatePreview({
   selectedAttackerId,
   playError,
   turnSecondsRemaining,
+  showTurnTimer = true,
+  autoPresentOwnActions = false,
   onEndTurn,
   onMulligan,
   introActive = false,
@@ -392,7 +398,7 @@ export function GameStatePreview({
     for (const [eventIndex, event] of newEvents.entries()) {
       if (
         event.type === "ATTACK_DECLARED" &&
-        event.playerId === state.players[1]?.id &&
+        (event.playerId === state.players[1]?.id || (autoPresentOwnActions && event.playerId === state.players[0]?.id)) &&
         event.cardInstanceId &&
         onOpponentAttackPresentation
       ) {
@@ -416,7 +422,7 @@ export function GameStatePreview({
           candidate.source.cardInstanceId === event.cardInstanceId &&
           (targetId
             ? candidate.target?.type === "CARD" && candidate.target.cardInstanceId === targetId
-            : candidate.target?.type === "PLAYER" && candidate.target.playerId === state.players[0]?.id),
+            : candidate.target?.type === "PLAYER" && candidate.target.playerId === targetPlayerId),
         );
         if (attacker && source && targetRect) {
           const currentAttack = event.sourceSnapshot?.currentAttack ?? attacker.currentAttack;
@@ -503,7 +509,7 @@ export function GameStatePreview({
         onSelfPlayPresentation(enteredCard, me.id);
       }
       const shouldAnimateOpponentPlay =
-        event.playerId === opp.id &&
+        (event.playerId === opp.id || (autoPresentOwnActions && event.playerId === me.id)) &&
         enterFieldEvent.entryCause === "PLAY_FROM_HAND";
       if (!enteredCard || (!enteredCard.isGenerated && !shouldAnimateOpponentPlay)) continue;
 
@@ -604,7 +610,7 @@ export function GameStatePreview({
         return freshCues.length ? [...current.slice(-18), ...freshCues] : current;
       });
     }
-  }, [onOpponentAttackPresentation, onSelfPlayPresentation, state.events, state.players]);
+  }, [autoPresentOwnActions, onOpponentAttackPresentation, onSelfPlayPresentation, state.events, state.players]);
 
   if (!state || !state.players || state.players.length < 2) {
     return <div className="flex h-screen items-center justify-center bg-black font-sans text-white">게임을 초기화하는 중입니다...</div>;
@@ -1116,7 +1122,7 @@ export function GameStatePreview({
                    {isMyTurn ? '내 턴' : '상대 턴'}
                  </div>
                </div>
-               <div
+               {showTurnTimer && <div
                  className={`rounded border px-2 py-1 text-center font-display text-sm font-black md:text-lg ${
                    turnSecondsRemaining <= 10
                      ? 'border-red-500 bg-red-950/80 text-red-300'
@@ -1126,7 +1132,7 @@ export function GameStatePreview({
                >
                  {String(Math.floor(turnSecondsRemaining / 60)).padStart(2, '0')}:
                  {String(turnSecondsRemaining % 60).padStart(2, '0')}
-              </div>
+              </div>}
             </div>
             <button
               type="button"
@@ -1337,7 +1343,7 @@ export function GameStatePreview({
                 : selectedAttackerId ? '상대 선수나 챔피언을 눌러 공격하세요.'
                 : state.players[0].board.some((card) => card && !card.enteredThisTurn && card.attacksUsedThisTurn === 0)
                   ? '필드의 내 선수를 눌러 공격 대상을 지정해 보세요.'
-                  : state.players[0].hand.some((card) => card.cardType === 'WRESTLER' && card.currentCost <= state.players[0].currentGold)
+                  : state.players[0].hand.some((card) => card.cardType === 'WRESTLER' && (!state.tower || canEnterTowerField(state, state.players[0].id)) && towerSummonCost(state, state.players[0].id, card.currentCost) <= state.players[0].currentGold)
                     ? '손패에서 비용을 낼 수 있는 선수를 눌러 보세요.'
                     : '지금은 턴 종료를 눌러 다음 턴으로 넘어가세요.'}</p>
             </div>
@@ -1401,9 +1407,7 @@ export function GameStatePreview({
                      {playerChampionName || me.champion?.name || '내 챔피언'}
                   </span>
                </div>
-                {onEmote && emoteOpen && !effectTargeting && <div role="menu" aria-label="챔피언 감정표현" className="absolute bottom-full left-0 z-[210] mb-2 grid w-40 grid-cols-2 gap-1 rounded-lg border border-amber-400/70 bg-neutral-950 p-2 shadow-2xl">
-                  {CHAMPION_EMOTES.map((emote) => <button key={emote} type="button" role="menuitem" onClick={() => { onEmote(emote); setEmoteOpen(false); }} className="rounded bg-neutral-800 p-2 text-xs text-white hover:bg-amber-700">{CHAMPION_EMOTE_LABELS[emote]}</button>)}
-                </div>}
+                {onEmote && emoteOpen && !effectTargeting && <ChampionEmoteMenu anchor={playerChampionRef} onEmote={onEmote} onClose={() => setEmoteOpen(false)} />}
                 </div>
 
                 <div className="ko-player-stats flex min-w-0 flex-col gap-1">
@@ -1467,13 +1471,14 @@ export function GameStatePreview({
                  ) : (
                     me.hand.map((card, i) => {
                       const isSelected = selectedCardId === card.instanceId;
-                      const canAfford = isMyTurn && me.currentGold >= card.currentCost;
+                      const payableCost = card.cardType === 'WRESTLER' ? towerSummonCost(state, me.id, card.currentCost) : card.currentCost;
+                      const canAfford = isMyTurn && me.currentGold >= payableCost && (!state.tower || card.cardType !== 'WRESTLER' || canEnterTowerField(state, me.id));
                      const density =
                        me.hand.length >= 7 ? 'small' : me.hand.length >= 5 ? 'medium' : 'regular';
                      return (
                         <HandCard
                           key={`hand-${card.instanceId}-${i}`}
-                          card={card}
+                          card={payableCost === card.currentCost ? card : { ...card, currentCost: payableCost }}
                           isSelected={isSelected}
                           canAfford={canAfford}
                            targetingActive={!!effectTargeting}

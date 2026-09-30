@@ -1,5 +1,6 @@
 import type { CardDefinition, CardInstance, CardStatHistoryEntry } from '../cards/types';
 import { matchesCardTagFilter } from '../cards/tags';
+import { towerOpenSlot, canEnterTowerField, preventTowerRetire, resolveTowerRemoval, towerIncomingDamage, refreshTowerAuras } from '../tower/relics';
 import type { CardAbility, CardEffect, CardKeyword, QueuedStructuredEffect } from './types';
 import {
   ACTION_SCHEMAS,
@@ -1315,7 +1316,7 @@ function applyRandomCardCreation(
       };
     }
     const owner = nextState.players.find((player) => player.id === playerId);
-    const slot = owner?.board.findIndex((card) => card === null) ?? -1;
+    const slot = towerOpenSlot(nextState, playerId);
     if (slot < 0) return nextState;
     const entered = enterField(
       { ...nextState, events: [...nextState.events, generated.event] },
@@ -1360,6 +1361,7 @@ function applyAdjacentRandomCardCreation(
 
   const summonedIds: string[] = [];
   const nextState = selected.reduce((currentState, definition, index) => {
+    if (!canEnterTowerField(currentState, playerId)) return currentState;
     const generated = generateCard(definition, {
       instanceId: `${sourceCard.instanceId}:${effect.action}:${currentState.events.length}`,
       playerId,
@@ -1409,7 +1411,7 @@ function applyRandomTargetSummon(
   const summonedIds: string[] = [];
   for (const selectedCard of selected) {
     const currentOwner = nextState.players.find((player) => player.id === playerId);
-    const slot = currentOwner?.board.findIndex((card) => card === null) ?? -1;
+    const slot = towerOpenSlot(nextState, playerId);
     if (slot < 0) break;
     const generated = generateCard(definition, {
       instanceId: `${sourceCard.instanceId}:${effect.action}:${nextState.events.length}`,
@@ -1865,7 +1867,7 @@ export function applyEffect(
             ? state.cardPool?.find((definition) => definition.id === card.definitionId)?.name === effect.values.definitionRef.name
             : false,
       );
-      const slot = owner?.board.findIndex((card) => card === null) ?? -1;
+      const slot = towerOpenSlot(state, playerId);
       if (!owner || !handCard || slot < 0) return state;
       const withoutHand = {
         ...state,
@@ -1944,7 +1946,7 @@ export function applyEffect(
        const summonedIds: string[] = [];
       for (const generated of generatedCards) {
         const currentOwner = summonState.players.find((player) => player.id === playerId);
-        const slot = currentOwner?.board.findIndex((card) => card === null) ?? -1;
+        const slot = towerOpenSlot(summonState, playerId);
         if (slot < 0) break;
          summonState = {
            ...summonState,
@@ -2095,7 +2097,7 @@ export function applyEffect(
     if (effect.action === 'RELEASE_CAPTURED') {
       const owner = state.players.find((player) => player.id === playerId);
       const captured = sourceCard.capturedCards?.[0];
-      const slot = owner?.board.findIndex((card) => card === null) ?? -1;
+      const slot = towerOpenSlot(state, playerId);
       if (!owner || !captured || slot < 0) return state;
       const released: CardInstance = {
         ...captured.baseSnapshot,
@@ -2355,7 +2357,7 @@ export function applyEffect(
       )[0];
       if (!best && effect.values?.definitionRef) {
         const owner = state.players.find((player) => player.id === playerId);
-        const slot = owner?.board.findIndex((card) => card === null) ?? -1;
+        const slot = towerOpenSlot(state, playerId);
         // The general name resolver accepts unique prefixes. A reference to
         // "좀비" must never resolve to "좀비 플래티넘구슬 마스터" itself.
         const zombieDefinition = resolveCardDefinition(state, undefined, effect.values.definitionRef, true);
@@ -2443,7 +2445,7 @@ export function applyEffect(
       const revivedState = targets.reduce((nextState, targetCard) => {
         const owner = nextState.players.find((player) => player.id === targetOwner);
         const current = owner?.graveyard.find((card) => card.instanceId === targetCard.instanceId);
-        const slot = owner?.board.findIndex((card) => card === null) ?? -1;
+        const slot = towerOpenSlot(nextState, targetOwner);
         if (!owner || !current || slot < 0) return nextState;
 
         const revived: CardInstance = {
@@ -2595,6 +2597,8 @@ export function applyEffect(
         const owner = nextState.players.find((player) => player.id === targetOwner);
         const current = owner?.board.find((card) => card?.instanceId === targetCard.instanceId);
         if (!owner || !current || current.isChampionToken || current.isDirectDeployedChampion || current.isTrainingDummy) return nextState;
+        const protectedState = preventTowerRetire(nextState, targetOwner, current);
+        if (protectedState !== nextState) return { ...protectedState, preventedRetireTargetIds: protectedState.preventedRetireTargetIds?.filter(id => id !== current.instanceId) };
         const attribution = sourceContextFor(
           playerId,
           sourceCard,
@@ -2739,7 +2743,7 @@ export function applyEffect(
         const current = owner?.board.find((card) => card?.instanceId === target.instanceId);
         if (!owner || !current) return nextState;
         const beforeDamage = resolveTriggeredAbilities(nextState, targetOwner, current, 'BEFORE_DAMAGE');
-        const preparedState = beforeDamage !== nextState && beforeDamage.targetingState?.active
+        let preparedState = beforeDamage !== nextState && beforeDamage.targetingState?.active
           ? resolvePendingEffects(beforeDamage)
           : beforeDamage;
         const preparedCurrent = preparedState.players
@@ -2782,14 +2786,17 @@ export function applyEffect(
             events: [...preparedState.events, { type: 'DAMAGE_DEALT', playerId, cardInstanceId: sourceCard.instanceId, source: { type: 'CARD', cardInstanceId: sourceCard.instanceId }, target: { type: 'CARD', cardInstanceId: current.instanceId }, reason: 'CARD_EFFECT', amount: 0, tags: ['DODGE'], sourceContext: attribution }],
           }, 'DAMAGE_TAKEN', targetOwner, current.instanceId, current.cardType);
         }
-        const health = preparedCurrent.isTrainingDummy ? 1 : preparedCurrent.currentHealth - damageAmount;
+        const reduced = towerIncomingDamage(preparedState, targetOwner, preparedCurrent, damageAmount);
+        preparedState = reduced.state;
+        const effectiveDamage = reduced.amount;
+        const health = preparedCurrent.isTrainingDummy ? 1 : preparedCurrent.currentHealth - effectiveDamage;
         if (health > 0) {
           const damagedState: GameState = {
             ...clearDamageMarker(preparedState),
             players: preparedState.players.map((player) => player.id === targetOwner
               ? { ...player, board: player.board.map((card) => card?.instanceId === current.instanceId ? { ...card, currentHealth: health } : card) as typeof player.board }
               : player),
-            events: [...preparedState.events, { type: 'DAMAGE_DEALT', playerId, cardInstanceId: sourceCard.instanceId, source: { type: 'CARD', cardInstanceId: sourceCard.instanceId }, target: { type: 'CARD', cardInstanceId: current.instanceId }, reason: 'CARD_EFFECT', amount: damageAmount, sourceContext: attribution }],
+            events: [...preparedState.events, { type: 'DAMAGE_DEALT', playerId, cardInstanceId: sourceCard.instanceId, source: { type: 'CARD', cardInstanceId: sourceCard.instanceId }, target: { type: 'CARD', cardInstanceId: current.instanceId }, reason: 'CARD_EFFECT', amount: effectiveDamage, sourceContext: attribution }],
           };
           const damagedCard = damagedState.players.find((player) => player.id === targetOwner)?.board
             .find((card) => card?.instanceId === current.instanceId) ?? current;
@@ -2859,7 +2866,7 @@ export function applyEffect(
              ? { ...player, board: player.board.map((card) => card?.instanceId === current.instanceId ? null : card) as typeof player.board, graveyard: [...player.graveyard, retired] }
             : player),
           events: [...protectedState.events,
-            { type: 'DAMAGE_DEALT', playerId, cardInstanceId: sourceCard.instanceId, source: { type: 'CARD', cardInstanceId: sourceCard.instanceId }, target: { type: 'CARD', cardInstanceId: current.instanceId }, reason: 'CARD_EFFECT', amount: damageAmount, sourceContext: attribution },
+            { type: 'DAMAGE_DEALT', playerId, cardInstanceId: sourceCard.instanceId, source: { type: 'CARD', cardInstanceId: sourceCard.instanceId }, target: { type: 'CARD', cardInstanceId: current.instanceId }, reason: 'CARD_EFFECT', amount: effectiveDamage, sourceContext: attribution },
             { type: 'CARD_RETIRED', playerId: targetOwner, cardInstanceId: current.instanceId, cardType: current.cardType ?? 'WRESTLER', boardSlot: current.boardSlot!, source: { type: 'CARD', cardInstanceId: sourceCard.instanceId }, target: { type: 'CARD', cardInstanceId: current.instanceId }, targetSnapshot: { playerId: targetOwner, cardInstanceId: current.instanceId, cardType: current.cardType ?? 'WRESTLER', boardSlot: current.boardSlot!, currentAttack: current.currentAttack, currentHealth: current.currentHealth }, reason: 'RETIRE', sourceContext: attribution },
           ],
         };
@@ -3312,13 +3319,18 @@ export function resolveTriggeredAbilities(
     sourceContext?: EventAttribution;
   } = {},
 ): GameState {
+  if (trigger === 'BEFORE_RETIRE') {
+    const protectedState = preventTowerRetire(state, playerId, card);
+    if (protectedState !== state) return protectedState;
+  }
   if (card.isAbilityDisabled || (card.isSilenced && !card.grantedText)) return state;
 
   const compare = (actual: number, condition: 'GTE' | 'LTE' | 'EQ', expected: number) =>
     condition === 'GTE' ? actual >= expected : condition === 'LTE' ? actual <= expected : actual === expected;
   const abilities = getActiveCardAbilities(card).filter((ability) => {
     if (ability.trigger !== trigger) return false;
-    if (state.players.some((player) => player.hand.some((entry) => entry.instanceId === card.instanceId)) &&
+    if (trigger !== 'GAME_START' && trigger !== 'CARD_DRAWN' &&
+      state.players.some((player) => player.hand.some((entry) => entry.instanceId === card.instanceId)) &&
       ability.condition?.type !== 'SOURCE_IN_HAND') return false;
     if ((trigger === 'BEFORE_DAMAGE' || trigger === 'BEFORE_RETIRE') &&
       state.consumedRuleKeys?.includes(`${card.instanceId}:${trigger}`)) return false;
@@ -3389,6 +3401,8 @@ export function resolveCardRetiredListeners(
   retiredCard: CardInstance,
   sourceContext?: EventAttribution,
 ): GameState {
+  const relicEventIndex = removalEventIndex(state, 'CARD_RETIRED', retiredCard.instanceId);
+  if (relicEventIndex >= 0) state = resolveTowerRemoval(state, state.events[relicEventIndex]!, relicEventIndex);
   const hand = state.players.find((player) => player.id === playerId)?.hand ?? [];
   const withCardAbilities = hand
     .filter((card) => card.cardType === 'WRESTLER')

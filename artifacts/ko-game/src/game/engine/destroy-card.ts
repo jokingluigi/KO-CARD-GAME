@@ -1,3 +1,4 @@
+import { resolveTowerRemoval } from '../tower/relics';
 import type { ActionResult } from '../actions/types';
 import { actionFailure, actionSuccess } from '../actions/types';
 import type { CardInstanceId } from '../cards/types';
@@ -74,5 +75,5 @@ export function destroyCard(
     ],
   };
 
-  return actionSuccess(destroyedState);
+  return actionSuccess(resolveTowerRemoval(destroyedState, destroyedState.events[destroyedState.events.length - 1]!, destroyedState.events.length - 1));
 }

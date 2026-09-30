@@ -1,3 +1,5 @@
+import towerRouter from './tower';
+import adminTowerRouter from './admin-tower';
 import { Router, type IRouter } from "express";
 import adminRouter from "./admin";
 import cardsRouter from "./cards";
@@ -26,6 +28,8 @@ import { adminNoticesRouter, mainContentRouter } from "./main-content";
 const router: IRouter = Router();
 
 router.use(healthRouter);
+router.use('/tower', towerRouter);
+router.use('/admin/tower', adminTowerRouter);
 router.use(storageRouter);
 router.use(cardsRouter);
 router.use(gameMediaRouter);

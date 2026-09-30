@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useLocation } from 'wouter';
 import { cardRecordToDefinition, championRecordToDefinition, type CardDefinition, type ChampionDefinition } from '@/game';
-import { TOWER_SANDBOX_KEY, createTowerSandbox, towerSandboxEligible, type TowerSandboxSetup } from '@/lib/tower-sandbox';
+import { TOWER_SANDBOX_KEY, TOWER_TEST_RELICS, createTowerSandbox, towerSandboxEligible, type TowerSandboxSetup } from '@/lib/tower-sandbox';
 import { ROUTES } from '@/lib/routes';
 
 export function AdminTowerTest({ onUnauthorized }: { onUnauthorized: () => void }) {
@@ -40,7 +40,7 @@ export function AdminTowerTest({ onUnauthorized }: { onUnauthorized: () => void 
   }
   return <section className="min-w-0 space-y-5" data-testid="admin-tower-test">
     <div><h2 className="text-xl font-black">타워 단일 전투 테스트</h2><p className="mt-2 text-sm leading-6 text-neutral-400">실제 카드 효과와 기존 AI로 전투합니다. 보상·컬렉션·계정 덱·타워 클리어 기록은 변경되지 않습니다. 새로고침하면 같은 Seed로 전투를 다시 시작합니다.</p></div>
-    <p className="rounded border border-neutral-700 p-3 text-sm text-neutral-400">현재는 기본 전투를 검사하는 도구입니다. 유물·난이도 프로필·시즌 대화·히든 조건·보상 지급 검사는 아직 지원하지 않습니다.</p>
+    <p className="rounded border border-neutral-700 p-3 text-sm text-neutral-400">단일 전투와 24종 유물을 검사합니다. 시즌 대화·히든 조건·보상 지급 검사는 별도 전체 도전 테스트가 필요합니다.</p>
     {loading ? <p role="status">카탈로그 불러오는 중…</p> : <>
       <div className="grid min-w-0 gap-4 sm:grid-cols-2">
         <label>시작 층<select className={control} value={setup.floor} onChange={e => setSetup(s => ({ ...s, floor: Number(e.target.value) }))}>{Array.from({ length: 16 }, (_, i) => <option key={i} value={i + 1}>{i + 1}층{i === 15 ? ' · 최종 보스' : (i + 1) % 4 === 0 ? ' · 보스' : ''}</option>)}</select></label>
@@ -58,6 +58,10 @@ export function AdminTowerTest({ onUnauthorized }: { onUnauthorized: () => void 
           </div>;
         })}
       </div>
+      <fieldset className="min-w-0 space-y-2"><legend className="mb-2 font-bold">강제 지급 유물 · {(setup.relicTypes ?? []).length}/3</legend>{TOWER_TEST_RELICS.map(relic => {
+        const selected = setup.relicTypes?.includes(relic.type) ?? false;
+        return <label key={relic.type} className="flex min-h-11 items-start gap-3 rounded border border-neutral-800 p-3"><input type="checkbox" className="mt-1 h-5 w-5 shrink-0" checked={selected} disabled={!selected && (setup.relicTypes?.length ?? 0) >= 3} onChange={() => setSetup(s => ({ ...s, relicTypes: selected ? (s.relicTypes ?? []).filter(type => type !== relic.type) : [...(s.relicTypes ?? []), relic.type] }))} /><span className="min-w-0"><strong className="block text-sm">{relic.name}</strong><span className="text-sm leading-6 text-neutral-400">{relic.description}</span></span></label>;
+      })}</fieldset>
       <button type="button" onClick={start} disabled={setup.playerDeck.length !== 25 || setup.enemyDeck.length !== 25 || !setup.championId || !setup.enemyChampionId} className="min-h-12 w-full rounded bg-primary px-5 py-3 font-black text-black disabled:opacity-40 sm:w-auto">테스트 전투 시작</button>
     </>}
     {error && <p role="alert" className="break-words text-sm text-red-300">{error}</p>}

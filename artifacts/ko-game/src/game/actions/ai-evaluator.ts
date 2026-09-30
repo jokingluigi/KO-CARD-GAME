@@ -2,7 +2,7 @@ import type { CardEffect } from '../effects/types';
 import type { CardInstance } from '../cards/types';
 import type { GameState, PlayerState } from '../types/game-state';
 import { getActiveCardAbilities, getActiveCardKeywords } from '../cards/granted-text';
-import { executeAction } from './engine-actions';
+import { executeAction, getLegalActions } from './engine-actions';
 import type { GameAction } from './types';
 
 const KEYWORD_VALUES: Record<string, number> = {
@@ -105,52 +105,82 @@ export function evaluateState(state: GameState, playerId: string): number {
   return visiblePlayerValue(state, playerId) - visiblePlayerValue(state, opponentId);
 }
 
-function targetValue(state: GameState, targetId: string, playerId: string): number {
-  for (const player of state.players) {
-    const card = player.board.find((candidate) => candidate?.instanceId === targetId);
-    if (card) {
-      const value = estimateCardValue(card);
-      return player.id === playerId ? value : -value;
-    }
-  }
-  return 0;
+/** Search uses visible board and own hand only. Hidden identities, deck order and seed are discarded. */
+export function aiInformationState(state: GameState, playerId: string): GameState {
+  const hidden = (index: number): CardInstance => ({
+    instanceId: `unknown:${index}`, definitionId: 'unknown', cardType: 'WRESTLER',
+    baseCost: 3, currentCost: 3, baseAttack: 2, currentAttack: 2, baseHealth: 3, currentHealth: 3, maxHealth: 3,
+    boardSlot: null, enteredThisTurn: false, attacksUsedThisTurn: 0, isGenerated: false, isToken: false,
+    isChampionToken: false, keywords: [], abilities: [], isSilenced: false, isSilenceImmune: false,
+    dodgeAvailable: false, dodgeCharges: 0, isStunned: false, activeUsedThisTurn: false, isDirectDeployedChampion: false,
+  });
+  return { ...state, randomSeed: 0, players: state.players.map((p, i) => ({ ...p,
+    hand: p.id === playerId ? p.hand : p.hand.map((_, n) => hidden(i * 1000 + n)),
+    deck: p.deck.map((_, n) => hidden(i * 1000 + n + 100)),
+  })) };
 }
 
 export function evaluateAction(state: GameState, action: GameAction, playerId: string): number {
-  const result = executeAction(state, action);
+  const visible = aiInformationState(state, playerId);
+  const result = executeAction(visible, action);
   if (!result.success) return -Infinity;
-  const before = evaluateState(state, playerId);
+  if (result.state.status === 'FINISHED') return result.state.winnerId === playerId ? 100000 : -100000;
+  const before = evaluateState(visible, playerId);
   const after = evaluateState(result.state, playerId);
-  let bonus = 0;
-
-  if (action.type === 'PLAY_WRESTLER' || action.type === 'PLAY_TECHNIQUE') {
-    const card = state.players.find((player) => player.id === playerId)?.hand
-      .find((candidate) => candidate.instanceId === action.cardInstanceId);
-    bonus += card ? estimateCardValue(card) : 0;
-  } else if (action.type === 'ATTACK') {
-    bonus += action.target.type === 'PLAYER' ? 8 : 3;
-    if (action.target.type === 'WRESTLER') bonus += Math.max(0, targetValue(state, action.target.cardInstanceId, playerId));
-    const opponent = result.state.players.find((player) => player.id !== playerId);
-    if ((opponent && opponent.health <= 0) || opponent?.champion?.health === 0) bonus += 100;
-  } else if (action.type === 'SELECT_EFFECT_TARGET') {
-    bonus += Math.max(0, targetValue(state, action.targetId, playerId));
-  } else if (action.type === 'MULLIGAN') {
-    bonus += 1;
-  } else if (action.type === 'END_TURN') {
-    bonus -= 2;
-  }
-  return after - before + bonus;
+  const ownBefore = visible.players.find(p => p.id === playerId)!;
+  const ownAfter = result.state.players.find(p => p.id === playerId)!;
+  const questBonus = ((ownAfter.champion?.questProgress ?? 0) - (ownBefore.champion?.questProgress ?? 0)) * 2 +
+    (ownAfter.champion?.questCompleted && !ownBefore.champion?.questCompleted ? 15 : 0);
+  const drawBonus = Math.max(0, ownAfter.hand.length - ownBefore.hand.length) * Math.max(0, 5 - ownBefore.hand.length);
+  const spent = Math.max(0, ownBefore.currentGold - ownAfter.currentGold);
+  const enemyThreat = result.state.players.find(p => p.id !== playerId)!.board.reduce((n, c) => n + (c && !c.isStunned ? c.currentAttack : 0), 0);
+  const hasGuard = ownAfter.board.some(card => card && getActiveCardKeywords(card).includes('TAUNT'));
+  // Public, immediately visible attack damage outranks optional nonlethal damage.
+  // Guards require a fuller trade search; do not assume their destruction here.
+  const exposedLethal = !hasGuard && enemyThreat >= ownAfter.health && enemyThreat > 0 ? -5000 : 0;
+  const survival = exposedLethal + (ownAfter.health <= enemyThreat ? (ownAfter.health - ownBefore.health) * 3 - enemyThreat * 0.5 : 0);
+  return after - before + questBonus + drawBonus - spent * 0.25 + survival + (action.type === 'END_TURN' ? -0.5 : 0);
 }
 
-export function chooseBestAction(state: GameState, actions: GameAction[], playerId: string): GameAction {
-  return actions
-    .map((action, index) => ({
-      action,
-      score: evaluateAction(state, action, playerId),
-      index,
-    }))
-    .sort((left, right) => right.score - left.score || left.index - right.index)[0]?.action
-    ?? { type: 'END_TURN', playerId };
+export type AIDifficulty = 'NORMAL' | 'HARD' | 'BOSS';
+export const AI_SEARCH_PROFILES = {
+  NORMAL: { depth: 1, width: 4, budget: 24 },
+  HARD: { depth: 2, width: 5, budget: 60 },
+  BOSS: { depth: 3, width: 6, budget: 120 },
+} as const;
+/** Bounded same-turn beam search. Every candidate goes through the shared legal-action engine. */
+export function chooseBestAction(state: GameState, actions: GameAction[], playerId: string, difficulty: AIDifficulty = 'HARD'): GameAction {
+  const visible = aiInformationState(state, playerId);
+  const profile = AI_SEARCH_PROFILES[difficulty];
+  const root = actions.map((action, index) => ({ action, index, score: evaluateAction(visible, action, playerId) }))
+    .sort((a, b) => b.score - a.score || a.index - b.index);
+  const fallback = root[0]?.action ?? { type: 'END_TURN' as const, playerId };
+  if (root[0]?.score === 100000 || profile.depth === 1) return fallback;
+  let best = { action: fallback, score: root[0]?.score ?? -Infinity };
+  let beam = root.slice(0, profile.width).flatMap(candidate => {
+    const result = executeAction(visible, candidate.action);
+    return result.success ? [{ first: candidate.action, state: result.state, score: candidate.score }] : [];
+  });
+  let budget = profile.budget;
+  for (let depth = 1; depth < profile.depth && beam.length && budget > 0; depth++) {
+    const expanded: typeof beam = [];
+    for (const node of beam) {
+      if (node.state.status !== 'IN_PROGRESS' || node.state.activePlayerId !== playerId || node.first.type === 'END_TURN') continue;
+      const candidates = getLegalActions(node.state, playerId).filter(a => a.type !== 'END_TURN' && a.type !== 'EMOTE')
+        .slice(0, 80).map(action => ({ action, score: evaluateAction(node.state, action, playerId) })).sort((a, b) => b.score - a.score).slice(0, profile.width);
+      for (const candidate of candidates) {
+        if (--budget < 0) break;
+        const result = executeAction(node.state, candidate.action);
+        if (!result.success) continue;
+        if (result.state.status === 'FINISHED' && result.state.winnerId === playerId) return node.first;
+        const score = node.score + candidate.score * Math.pow(0.9, depth);
+        if (score > best.score) best = { action: node.first, score };
+        expanded.push({ first: node.first, state: result.state, score });
+      }
+    }
+    beam = expanded.sort((a, b) => b.score - a.score).slice(0, profile.width);
+  }
+  return best.action;
 }
 
 export function rankActions(state: GameState, actions: GameAction[], playerId: string) {

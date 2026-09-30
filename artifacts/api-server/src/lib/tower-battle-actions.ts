@@ -21,7 +21,7 @@ export async function executeTowerPlayerAction(userId: string, runId: string, ex
     if (!mulligan.success) throw new TowerRuleError('AI_ACTION_FAILED', '상대 손패 교체를 처리하지 못했습니다. 다시 시도해 주세요.');
     state = mulligan.state;
   }
-  if (!state.openingMulligan) state = advanceAIOpponent(state, 'player-2');
+  if (!state.openingMulligan) state = advanceAIOpponent(state, 'player-2', (row.state as unknown as TowerRun).encounter.difficulty);
   // CAS and the account lock prevent concurrent actions from settling the same win twice.
   return saveTowerBattle(userId, runId, expectedVersion, state);
 }

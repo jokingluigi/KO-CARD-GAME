@@ -102,3 +102,5 @@ export {
   isOnlineActionPayload,
   type OnlineActionPayload,
 } from "./online-action-payload";
+
+export { TOWER_RELIC_DEFINITIONS } from './tower/relic-definitions';
