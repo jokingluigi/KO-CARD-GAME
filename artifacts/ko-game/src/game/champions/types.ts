@@ -37,6 +37,7 @@ export type ChampionQuestReward =
     };
 
 export interface ChampionQuest {
+  selfEffectDamage?: boolean;
   condition?: ChampionQuestCondition;
   id: string;
   name: string;

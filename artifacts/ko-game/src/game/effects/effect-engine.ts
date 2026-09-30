@@ -1798,6 +1798,29 @@ export function applyEffect(
     return applyScript(state, playerId, sourceCard, effect.script);
   }
   if (effect.type === 'STRUCTURED') {
+    // A single choice branches on the selected character; reuse normal damage
+    // resolution so armor, defense, deaths and damage attribution stay shared.
+    if (effect.action === 'DAMAGE' && effect.values?.purpleRainFollowup && chosenTargetInstanceIds?.length === 1) {
+      const targetId = chosenTargetInstanceIds[0];
+      const amount = effect.values.amount ?? 1;
+      const { purpleRainFollowup: _branch, ...values } = effect.values;
+      let next = applyEffect(state, playerId, sourceCard, { ...effect, values }, chosenTargetInstanceIds, triggerContext);
+      if (next.status === 'FINISHED') return next;
+      if (targetId === playerId) {
+        const drawnId = next.players.find(p => p.id === playerId)?.deck[0]?.instanceId;
+        next = drawCard(next, playerId);
+        return { ...next, players: next.players.map(p => p.id !== playerId ? p : {
+          ...p, hand: p.hand.map(card => card.instanceId === drawnId
+            ? { ...card, currentCost: Math.max(0, card.currentCost - amount) } : card),
+        }) };
+      }
+      return applyEffect(next, playerId, sourceCard, {
+        type: 'STRUCTURED', action: 'BUFF',
+        target: { zone: 'BOARD', owner: 'SELF', selection: 'SAME_TARGET', count: 1 },
+        values: { attack: amount },
+      }, chosenTargetInstanceIds, triggerContext);
+    }
+
     if (effect.action === 'REPEAT_TURN_END') return state;
     if (effect.action === 'DEPLOY_CHAMPION_TOKEN') {
       return deployLinkedChampionToken(state, playerId);
@@ -2260,7 +2283,7 @@ export function applyEffect(
         const directChampion = candidatePlayer.board.find((card) => card?.isDirectDeployedChampion);
         const health = directChampion
           ? directChampion.currentHealth - amount
-          : candidatePlayer.health - amount;
+          : candidatePlayer.health - damageAmount;
         const defeated = health <= 0;
         const winner = state.players.find((player) => player.id !== targetOwner);
         return {
@@ -2269,6 +2292,7 @@ export function applyEffect(
           activePlayerId: defeated ? null : state.activePlayerId,
           winnerId: defeated ? winner?.id ?? null : state.winnerId,
           loserId: defeated ? targetOwner : state.loserId,
+          events: [...state.events, { type: 'DAMAGE_DEALT', playerId, source: { type: 'CARD', cardInstanceId: sourceCard.instanceId }, target: { type: 'PLAYER', playerId: targetOwner }, amount: Math.max(0, damageAmount), reason: 'CARD_EFFECT', sourceContext: sourceContextFor(playerId, sourceCard, triggerContext) }],
           players: state.players.map((player) => player.id !== targetOwner ? player : directChampion
             ? {
                 ...player,

@@ -97,7 +97,7 @@ export function championRecordToDefinition(record: PublishedChampionRecord): Cha
                : { type: "GAIN_GOLD", amount: 0 },
       }
     : null;
-  return {
+  const definition: ChampionDefinition = {
     id: record.id, name: record.name, description: record.description,
     imageAssetId: record.imageAssetId, imageUrl: record.imageUrl, maxHealth,
     imageDisplayMode: record.imageDisplayMode, imageScale: record.imageScale,
@@ -125,6 +125,24 @@ export function championRecordToDefinition(record: PublishedChampionRecord): Cha
     questCompleteAudioEnabled: record.questCompleteAudioEnabled,
     status: record.status, version: record.version,
   };
+  if (/^(?:챔피언)?퍼플레인$/u.test(record.name.replace(/\s+/gu, ''))) {
+    const makeAbility = (amount: number, upgraded: boolean): ChampionAbility => ({
+      id: `${record.id}-ability${upgraded ? '-upgraded' : ''}`,
+      name: (upgraded ? record.upgradedAbilityName : record.abilityName) || '퍼플레인',
+      cost: upgraded ? record.upgradedAbilityCost ?? record.abilityCost : record.abilityCost,
+      description: `내 챔피언 또는 아군 선수 1장에게 ${amount} 피해를 줍니다. 챔피언이면 카드 1장을 뽑고 그 카드의 비용을 ${amount} 감소시킵니다. 선수이면 공격력 +${amount}을 부여합니다.`,
+      effects: [{ type: 'STRUCTURED', action: 'DAMAGE',
+        target: { zone: 'CHARACTER', owner: 'SELF', selection: 'PLAYER_CHOICE', count: 1 },
+        values: { amount, purpleRainFollowup: true } }],
+    });
+    definition.ability = makeAbility(1, false);
+    definition.upgradedAbility = makeAbility(2, true);
+    definition.quest = { id: `${record.id}-quest`, name: record.questName || '자해 8회',
+      description: '이번 게임에서 내 카드 또는 챔피언 효과로 내 챔피언 또는 아군 선수가 피해를 총 8회 받으세요. 상대 효과와 전투 피해는 제외합니다.',
+      rewardText: '고유 능력이 강화됩니다.', trackedEvent: 'DAMAGE_DEALT', selfEffectDamage: true,
+      requiredProgress: 8, reward: { type: 'UPGRADE_ABILITY' } };
+  }
+  return definition;
 }
 
 export async function fetchPublishedChampions(): Promise<ChampionDefinition[]> {

@@ -39,6 +39,7 @@ export type CardEffect =
        values?: Omit<StructuredEffectValues, "leftEffects" | "rightEffects"> & {
          /** Serializable card definition supplied by the runtime card pool. */
          definition?: CardDefinition;
+         purpleRainFollowup?: boolean;
          leftEffects?: CardEffect[];
          rightEffects?: CardEffect[];
        };

@@ -77,6 +77,17 @@ export function processChampionQuestEvents(
     const quest = champion?.quest;
     const progressEvents = champion && quest && !champion.questCompleted
       ? newEvents.filter((event) => {
+          if (quest.selfEffectDamage) {
+            if (event.type !== 'DAMAGE_DEALT' || !(Number(event.amount) > 0) ||
+              event.sourceContext?.sourcePlayerId !== originalPlayer.id ||
+              !['CARD_EFFECT', 'USE_CHAMPION_ABILITY'].includes(event.sourceContext.sourceActionType ?? '')) return false;
+            if (event.target?.type === 'PLAYER') return event.target.playerId === originalPlayer.id;
+            if (event.target?.type !== 'CARD') return false;
+            const targetId = event.target.cardInstanceId;
+            return [previousState, nextState].some(state => state.players.some(p => p.id === originalPlayer.id &&
+              [...p.board, ...p.graveyard].some(card => card?.instanceId === targetId && card.cardType === 'WRESTLER'))) ||
+              (event.targetSnapshot?.playerId === originalPlayer.id && event.targetSnapshot.cardType === 'WRESTLER');
+          }
           if (!matchesQuestEvent(event, quest, originalPlayer.id, champion.id)) return false;
           const identity = stableQuestEventIdentity(event);
           if (!identity) return true;
@@ -106,7 +117,9 @@ export function processChampionQuestEvents(
     if (conditionResult) resolvedState = { ...resolvedState, players: resolvedState.players.map(p => p.id === originalPlayer.id && p.champion ? { ...p, champion: { ...p.champion, questConditionCounts: conditionResult.counts } } : p) };
     if (!champion || !quest || champion.questCompleted || (conditionResult ? !conditionResult.completed : progressEvents.length === 0)) continue;
 
-    const relicBonus = towerQuestProgressBonus(resolvedState, originalPlayer.id);
+    const relicBonus = quest.selfEffectDamage
+      ? { state: resolvedState, amount: 0 }
+      : towerQuestProgressBonus(resolvedState, originalPlayer.id);
     resolvedState = relicBonus.state;
     const progressAmount = conditionResult ? quest.requiredProgress - champion.questProgress : progressEvents.length * (quest.progressPerEvent ?? 1) + relicBonus.amount;
     const questProgress = Math.min(
