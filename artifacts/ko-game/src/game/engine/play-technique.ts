@@ -19,11 +19,11 @@ export function playTechniqueFromHand(
   const card = player?.hand.find((candidate) => candidate.instanceId === cardInstanceId);
   if (!player || !card || card.cardType !== 'TECHNIQUE') return actionFailure(state, 'CARD_NOT_IN_HAND', '사용할 수 없는 기술입니다.');
   if (!canPlayConditionalCard(state, playerId, card)) return actionFailure(state, 'NO_VALID_TARGET', '카드 사용 조건을 충족하지 않았습니다.');
-  if (player.currentGold < card.currentCost) return actionFailure(state, 'NOT_ENOUGH_GOLD', '골드가 부족합니다.');
   const queuedState = resolveQueuedEffectsForPlayedTechnique(state, playerId, cardInstanceId);
   const queuedPlayer = queuedState.players.find((candidate) => candidate.id === playerId);
   const queuedCard = queuedPlayer?.hand.find((candidate) => candidate.instanceId === cardInstanceId);
   if (!queuedPlayer || !queuedCard) return actionFailure(state, 'CARD_NOT_IN_HAND', '사용할 수 없는 기술입니다.');
+  if (queuedPlayer.currentGold < queuedCard.currentCost) return actionFailure(state, 'NOT_ENOUGH_GOLD', '골드가 부족합니다.');
   // A technique never enters a board slot. Older saved techniques describe
   // their cast effect as ENTER_FIELD, so resolve that text when cast as well.
   const body = queuedCard.abilities
@@ -47,7 +47,7 @@ export function playTechniqueFromHand(
       hand: candidate.hand.filter((entry) => entry.instanceId !== cardInstanceId),
        graveyard: [...candidate.graveyard, resetCardForGraveyard(queuedCard)],
     }),
-    events: [...state.events, { type: 'CARD_PLAYED', playerId, cardInstanceId, cardType: card.cardType,
+    events: [...queuedState.events, { type: 'CARD_PLAYED', playerId, cardInstanceId, cardType: card.cardType,
       source: { type: 'PLAYER', playerId }, target: { type: 'CARD', cardInstanceId }, reason: 'PLAY_FROM_HAND',
       tags: card.tags ? [...card.tags] : [] }],
   };
