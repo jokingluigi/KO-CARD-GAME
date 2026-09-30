@@ -37,6 +37,7 @@ export type ChampionQuestReward =
     };
 
 export interface ChampionQuest {
+  goldSpent?: boolean;
   selfEffectDamage?: boolean;
   strictEventCount?: boolean;
   condition?: ChampionQuestCondition;

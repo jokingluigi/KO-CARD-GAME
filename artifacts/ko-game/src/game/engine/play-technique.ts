@@ -47,7 +47,7 @@ export function playTechniqueFromHand(
       hand: candidate.hand.filter((entry) => entry.instanceId !== cardInstanceId),
        graveyard: [...candidate.graveyard, resetCardForGraveyard(queuedCard)],
     }),
-    events: [...queuedState.events, { type: 'CARD_PLAYED', playerId, cardInstanceId, cardType: card.cardType,
+    events: [...queuedState.events, { type: 'GOLD_CHANGED', playerId, amount: -queuedCard.currentCost, reason: 'CARD_COST' }, { type: 'CARD_PLAYED', playerId, cardInstanceId, cardType: card.cardType,
       source: { type: 'PLAYER', playerId }, target: { type: 'CARD', cardInstanceId }, reason: 'PLAY_FROM_HAND',
       tags: card.tags ? [...card.tags] : [] }],
   };

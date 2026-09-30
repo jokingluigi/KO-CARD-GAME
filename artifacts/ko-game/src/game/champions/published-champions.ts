@@ -15,7 +15,7 @@ export type PublishedChampionRecord = {
   questCompletedPortraitAssetId?: string | null; questCompletedPortraitUrl?: string | null;
   maxHealth: number; abilityName: string; abilityCost: number; abilityText: string; abilityEffects: Structured;
   hasQuest: boolean; questName: string | null; questText: string | null;
-  questCondition: { condition?: unknown; selfEffectDamage?: boolean; strictEventCount?: boolean; event?: string; cardType?: ChampionQuestCardType; sourceActionType?: string; progress?: number; required?: number } | null; questProgressRequired: number | null;
+  questCondition: { condition?: unknown; goldSpent?: boolean; selfEffectDamage?: boolean; strictEventCount?: boolean; event?: string; cardType?: ChampionQuestCardType; sourceActionType?: string; progress?: number; required?: number } | null; questProgressRequired: number | null;
   questRewardText: string | null; questRewardEffects: Structured | null;
   upgradedAbilityName: string | null; upgradedAbilityCost: number | null;
   upgradedAbilityText: string | null; upgradedAbilityEffects: Structured | null;
@@ -84,6 +84,7 @@ export function championRecordToDefinition(record: PublishedChampionRecord): Cha
          ...(abilityRetireQuest ? { cardType: 'WRESTLER' as const } : record.questCondition.cardType ? { cardType: record.questCondition.cardType } : {}),
          ...(abilityRetireQuest ? { sourceActionType: 'USE_CHAMPION_ABILITY' } : record.questCondition.sourceActionType ? { sourceActionType: record.questCondition.sourceActionType } : {}),
          ...(record.questCondition.progress ? { progressPerEvent: record.questCondition.progress } : {}),
+        ...(record.questCondition.goldSpent ? { goldSpent: true } : {}),
         ...(record.questCondition.strictEventCount ? { strictEventCount: true } : {}),
         ...(record.questCondition.selfEffectDamage ? { selfEffectDamage: true } : {}),
         requiredProgress: record.questProgressRequired,

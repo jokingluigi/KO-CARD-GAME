@@ -77,6 +77,7 @@ export function processChampionQuestEvents(
     const quest = champion?.quest;
     const progressEvents = champion && quest && !champion.questCompleted
       ? newEvents.filter((event) => {
+          if (quest.goldSpent) return event.type === 'GOLD_CHANGED' && event.playerId === originalPlayer.id && Number(event.amount) < 0 && ['CARD_COST', 'CHAMPION_ABILITY_COST', 'CARD_EFFECT_COST'].includes(event.reason ?? '');
           if (quest.selfEffectDamage) {
             if (event.type !== 'DAMAGE_DEALT' || !(Number(event.amount) > 0) ||
               event.sourceContext?.sourcePlayerId !== originalPlayer.id ||
@@ -117,11 +118,11 @@ export function processChampionQuestEvents(
     if (conditionResult) resolvedState = { ...resolvedState, players: resolvedState.players.map(p => p.id === originalPlayer.id && p.champion ? { ...p, champion: { ...p.champion, questConditionCounts: conditionResult.counts } } : p) };
     if (!champion || !quest || champion.questCompleted || (conditionResult ? !conditionResult.completed : progressEvents.length === 0)) continue;
 
-    const relicBonus = quest.selfEffectDamage || quest.strictEventCount
+    const relicBonus = quest.goldSpent || quest.selfEffectDamage || quest.strictEventCount
       ? { state: resolvedState, amount: 0 }
       : towerQuestProgressBonus(resolvedState, originalPlayer.id);
     resolvedState = relicBonus.state;
-    const progressAmount = conditionResult ? quest.requiredProgress - champion.questProgress : progressEvents.length * (quest.progressPerEvent ?? 1) + relicBonus.amount;
+    const progressAmount = conditionResult ? quest.requiredProgress - champion.questProgress : (quest.goldSpent ? progressEvents.reduce((sum, event) => sum - Number(event.amount), 0) : progressEvents.length * (quest.progressPerEvent ?? 1)) + relicBonus.amount;
     const questProgress = Math.min(
       champion.questProgress + progressAmount,
       quest.requiredProgress,

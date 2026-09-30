@@ -2009,7 +2009,7 @@ export function applyEffect(
       const spend = player?.currentGold ?? 0;
       if (!spend) return state;
       return applyEffect(
-        { ...state, players: state.players.map((candidate) => candidate.id === playerId ? { ...candidate, currentGold: 0 } : candidate) },
+        { ...state, players: state.players.map((candidate) => candidate.id === playerId ? { ...candidate, currentGold: 0 } : candidate), events: [...state.events, { type: 'GOLD_CHANGED', playerId, amount: -spend, reason: 'CARD_EFFECT_COST', sourceContext: sourceContextFor(playerId, sourceCard, triggerContext) }] },
         playerId,
         sourceCard,
         { type: 'STRUCTURED', action: 'BUFF', target: { zone: 'BOARD', owner: 'SELF', selection: 'SELF', count: 1 }, values: { attack: spend * 2, health: spend * 2 } },

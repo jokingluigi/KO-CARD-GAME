@@ -3,6 +3,7 @@ import { sql } from "drizzle-orm";
 import towerStorage from "../../../../lib/db/migrations/0026_tower_mode.sql";
 import towerUnlocks from "../../../../lib/db/migrations/0027_tower_unlocks.sql";
 import piStarSevenQuest from "../../../../lib/db/migrations/0030_pi-star-seven-quest.sql";
+import yeoulQuest from "../../../../lib/db/migrations/0031_yeoul_gold_quest.sql";
 import championRules from "../../../../lib/db/migrations/0029_champion_rules.sql";
 import aiDifficulty from "../../../../lib/db/migrations/0028_ai_deck_difficulty.sql";
 
@@ -24,5 +25,6 @@ export async function ensureTowerStorage(database = db): Promise<void> {
     // One DO block preserves existing catalog rows and applies the authorized rules once.
     await tx.execute(sql.raw(championRules));
     await tx.execute(sql.raw(piStarSevenQuest));
+    await tx.execute(sql.raw(yeoulQuest));
   });
 }
