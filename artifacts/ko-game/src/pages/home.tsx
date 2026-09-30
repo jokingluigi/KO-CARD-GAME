@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useLocation } from 'wouter';
 import { generateCardInstance } from '@/game/cards/generation';
+import { TOWER_SANDBOX_KEY, createTowerSandbox } from '@/lib/tower-sandbox';
 
 import {
   attack,
@@ -124,8 +125,9 @@ function actualAttackDamage(
 
 export default function Home() {
   const [, navigate] = useLocation();
-  const isAiMatch = window.location.pathname.endsWith('/ai-match');
   const searchParams = new URLSearchParams(window.location.search);
+  const isTowerSandbox = searchParams.get('source') === 'admin' && searchParams.get('towerTest') === '1';
+  const isAiMatch = window.location.pathname.endsWith('/ai-match') || isTowerSandbox;
   const testCardId = searchParams.get('testCardId');
   const testChampionId = searchParams.get('testChampionId');
   const isAdminSource = searchParams.get('source') === 'admin';
@@ -183,7 +185,7 @@ export default function Home() {
   const [aiOpening, setAiOpening] = useState<AiMatchOpening | null>(null);
   const [aiOpeningNow, setAiOpeningNow] = useState(() => Date.now());
   const [aiOpeningSkipped, setAiOpeningSkipped] = useState(false);
-  const aiMatchQuestContextRef = useRef<{ deckId: string; aiDeckId: string; matchId: string } | null>(null);
+  const aiMatchQuestContextRef = useRef<{ deckId: string; aiDeckId: string; matchId: string; difficulty: AIDeck["difficulty"] } | null>(null);
   const aiMatchActionsRef = useRef<Array<GameAction & { actor?: 'AI' }>>([]);
   const submittedAIMatchRef = useRef<string | null>(null);
   const [aiMatchData, setAiMatchData] = useState<{
@@ -329,6 +331,39 @@ export default function Home() {
       return () => {
         cancelled = true;
       };
+    }
+    if (isTowerSandbox) {
+      setMatchReady(false);
+      Promise.all([
+        fetch(`${import.meta.env.BASE_URL.replace(/\/$/, '')}/api/admin/cards`, { credentials: 'include' }).then(async response => {
+          if (!response.ok) throw new Error('관리자 카드 데이터를 불러오지 못했습니다.');
+          return await response.json() as { cards: Array<Parameters<typeof cardRecordToDefinition>[0]> };
+        }),
+        fetch(`${import.meta.env.BASE_URL.replace(/\/$/, '')}/api/admin/champions`, { credentials: 'include' }).then(async response => {
+          if (!response.ok) throw new Error('관리자 챔피언 데이터를 불러오지 못했습니다.');
+          return await response.json() as { champions: Array<Parameters<typeof championRecordToDefinition>[0]> };
+        }),
+        fetchGameMedia(),
+      ]).then(([cardData, championData, media]) => {
+        if (cancelled) return;
+        const saved = sessionStorage.getItem(TOWER_SANDBOX_KEY);
+        if (!saved) throw new Error('타워 테스트 설정이 없습니다. 관리자에서 다시 시작해 주세요.');
+        const definitions = cardData.cards.map(cardRecordToDefinition);
+        const champions = championData.champions.map(championRecordToDefinition);
+        let state = createTowerSandbox(JSON.parse(saved), definitions, champions);
+        const exchanged = executeAction(state, { type: 'MULLIGAN', playerId: state.players[1]!.id, cardInstanceIds: [] });
+        if (!exchanged.success) throw new Error(exchanged.message);
+        state = exchanged.state;
+        setRuntimeCardDefinitions(definitions);
+        setMediaCatalog(media);
+        preloadMatchAssets(definitions, champions);
+        setGameState(state);
+        setIsAdminTestMatch(true);
+        setAiMatchStarted(true);
+        aiMatchQuestContextRef.current = null;
+        setSelectedCardId(null); setSelectedAttackerId(null); setPlayError(null); setMatchReady(true);
+      }).catch(error => { if (!cancelled) { setPlayError(error instanceof Error ? error.message : '타워 테스트를 시작하지 못했습니다.'); setMatchReady(false); } });
+      return () => { cancelled = true; };
     }
     if (isAiMatch) {
       setMatchReady(false);
@@ -520,7 +555,7 @@ export default function Home() {
     return () => {
       cancelled = true;
     };
-  }, [authStatus, authUser?.role, isAdminSource, isAiMatch, testCardId, testChampionId]);
+  }, [authStatus, authUser?.role, isAdminSource, isAiMatch, isTowerSandbox, testCardId, testChampionId]);
 
   function startAiMatch(deckId: string) {
     const deck = aiDecks?.find((candidate) => candidate.id === deckId);
@@ -584,6 +619,7 @@ export default function Home() {
     aiMatchQuestContextRef.current = {
       deckId: deck.id,
       aiDeckId: aiDeck.id,
+      difficulty: aiDeck.difficulty ?? "NORMAL",
       matchId,
     };
     aiMatchActionsRef.current = [];
@@ -637,6 +673,7 @@ export default function Home() {
     };
 
     void runAITurn(gameState, gameState.players[1]!.id, {
+      difficulty: aiMatchQuestContextRef.current?.difficulty,
       wait,
       waitForPresentationIdle,
       isCancelled: () => cancelled || aiSchedulerGenerationRef.current !== schedulerGeneration,
@@ -1383,7 +1420,7 @@ export default function Home() {
     );
   }
 
-  if (isAiMatch && !aiMatchStarted) {
+  if (isAiMatch && !isTowerSandbox && !aiMatchStarted) {
     return (
       <AiMatchSetup
         decks={aiDecks}
@@ -1408,6 +1445,7 @@ export default function Home() {
             <button
               type="button"
               onClick={() => {
+                if (isTowerSandbox) { window.location.reload(); return; }
                 setPlayError(null);
                 setMatchReady(false);
                 navigate(isAiMatch ? `${ROUTES.AI_MATCH}${window.location.search}` : ROUTES.MAIN_MENU);
@@ -1443,7 +1481,8 @@ export default function Home() {
         )
       )}
       {isAdminTestMatch && <div className="fixed left-1/2 top-2 z-[100] flex max-w-[calc(100vw-16px)] flex-wrap items-center justify-center gap-2 rounded border border-amber-600 bg-amber-950 px-3 py-1 text-xs font-bold text-amber-200">
-        <span>관리자 DRAFT 테스트</span>
+        <span>{isTowerSandbox ? '타워 단일 전투 테스트 · 보상 없음' : '관리자 DRAFT 테스트'}</span>
+        {isTowerSandbox && <button type="button" onClick={() => navigate('/admin/tower-test')} className="min-h-11 rounded border border-amber-500 px-2">테스트 설정</button>}
         <button type="button" onClick={() => addTrainingDummy(true)} className="rounded bg-amber-300 px-2 py-1 text-black">안 죽는 샌드백</button>
         <button type="button" onClick={() => addTrainingDummy(false)} className="rounded bg-amber-300 px-2 py-1 text-black">체력 1 샌드백</button>
       </div>}

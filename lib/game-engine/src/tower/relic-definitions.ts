@@ -1,0 +1,28 @@
+import type { RelicType } from './types';
+/** Explicit V1 defaults from MASTER_SPEC. Runtime never interprets the descriptions. */
+export const TOWER_RELIC_DEFINITIONS: Array<{ type: RelicType; name: string; description: string; values: Record<string, number> }> = [
+  { type: 'MAX_FIELD_ONE', name: '왕의 자리', description: '필드 최대 1명. 소환한 선수 +4/+4.', values: { attack: 4, health: 4 } },
+  { type: 'MAX_FIELD_TWO', name: '소수 정예', description: '필드 최대 2명. 소환한 선수 +2/+2.', values: { attack: 2, health: 2 } },
+  { type: 'FIRST_SUMMON_TEMP_ATK', name: '선봉장의 깃발', description: '각 턴 첫 소환 선수의 공격력 +3. 그 턴 종료 시 해제.', values: { attack: 3 } },
+  { type: 'FIRST_RETIRE_SURVIVE', name: '강철 심장', description: '전투당 최초로 리타이어될 아군 선수는 체력 1로 생존. 파괴에는 적용되지 않음.', values: {} },
+  { type: 'ON_RETIRE_NEXT_BUFF', name: '복수의 메달', description: '아군 선수 리타이어마다 다음에 소환하는 선수 +2/+2. 소환 전 누적 가능.', values: { attack: 2, health: 2 } },
+  { type: 'ON_RETIRE_DRAW', name: '망자의 종', description: '아군 선수 리타이어 시 카드 1장 드로우. 턴당 1회.', values: { amount: 1 } },
+  { type: 'ON_DESTROY_DRAW', name: '파괴자의 인장', description: '상대 선수 파괴 시 카드 2장 드로우. 턴당 1회. 리타이어에는 발동하지 않음.', values: { amount: 2 } },
+  { type: 'ON_RETIRE_KILL_BUFF', name: '승자의 벨트', description: '상대 선수를 리타이어시킨 생존 아군 선수의 공격력 +2.', values: { attack: 2 } },
+  { type: 'ATTACK_HIGHER_ATK_BUFF', name: '거인 사냥꾼의 창', description: '자신보다 공격력이 높은 상대 공격 시 해당 전투 공격력 +3.', values: { attack: 3 } },
+  { type: 'ATTACK_LOWER_ATK_BUFF', name: '약자 사냥의 문장', description: '자신보다 공격력이 낮은 상대 공격 시 해당 전투 공격력 +2.', values: { attack: 2 } },
+  { type: 'SOLO_BUFF', name: '최후의 투사', description: '필드에 아군 선수가 정확히 1명인 동안 +3/+3.', values: { attack: 3, health: 3 } },
+  { type: 'ON_RETIRE_RANDOM_ALLY_BUFF', name: '전우의 유품', description: '아군 선수 리타이어 시 다른 무작위 생존 아군 선수 1명 +1/+2.', values: { attack: 1, health: 2 } },
+  { type: 'FIRST_SUMMON_COST_DOWN_LIMIT', name: '입장권', description: '각 턴 첫 소환 비용 -1. 그 턴 선수 1장만 소환 가능.', values: { amount: 1 } },
+  { type: 'FIRST_SUMMON_COST_DOWN_NO_ATTACK', name: '폭주 티켓', description: '각 턴 첫 소환 비용 -2. 그 선수는 그 턴 공격 불가.', values: { amount: 2 } },
+  { type: 'SOLO_TURN_START_HEAL_BUFF', name: '무대 독점권', description: '내 턴 시작 시 아군 선수가 정확히 1명이면 체력 2 회복, 공격력 +1.', values: { heal: 2, attack: 1 } },
+  { type: 'FIRST_DAMAGE_REDUCTION', name: '철벽의 증표', description: '각 아군 선수가 매 턴 처음 받는 피해를 2 감소.', values: { reduction: 2 } },
+  { type: 'OUTNUMBERED_ATK_BUFF', name: '역전의 휘장', description: '아군 선수 수가 상대보다 적은 동안 모든 아군 선수 공격력 +2.', values: { attack: 2 } },
+  { type: 'MULTI_RETIRE_DRAW', name: '관중의 함성', description: '한 턴 동안 상대 선수 2명 이상을 리타이어시키면 카드 2장 드로우. 턴당 1회.', values: { threshold: 2, amount: 2 } },
+  { type: 'QUEST_PROGRESS_BONUS', name: '챔피언의 표식', description: '전투당 처음 챔피언 퀘스트 진행 조건 만족 시 진행도 +1 추가.', values: { amount: 1 } },
+  { type: 'QUEST_COMPLETE_FIELD_BUFF', name: '완주의 왕관', description: '챔피언 퀘스트 완료 순간 현재 필드의 모든 아군 선수 +2/+2.', values: { attack: 2, health: 2 } },
+  { type: 'EMPTY_FIELD_FIRST_SUMMON_BUFF', name: '빈자리의 왕관', description: '각 턴 첫 소환 시 필드가 비어 있으면 +3/+3. 그 턴 추가 소환 불가.', values: { attack: 3, health: 3 } },
+  { type: 'ONE_HP_ATK_BUFF', name: '생존자의 휘장', description: '현재 체력이 1인 아군 선수의 공격력 +3.', values: { attack: 3 } },
+  { type: 'ATTACK_HIGHEST_DAMAGE_REDUCTION', name: '도전자 벨트', description: '상대 필드 최고 공격력 선수 공격 시 받는 전투 피해 -2. 공동 최고도 적용.', values: { reduction: 2 } },
+  { type: 'HIGHEST_ATK_LEADER_BUFF', name: '폭군의 명령서', description: '유물 보정 전 공격력이 가장 높은 아군 선수 +2/+2, 나머지 공격력 -1. 공동 1위는 가장 왼쪽 선수.', values: { attack: 2, health: 2, penalty: 1 } },
+];

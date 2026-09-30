@@ -15,6 +15,7 @@ import {
 } from '../effects/effect-engine';
 import { processChampionQuestEvents } from '../champions/quests';
 import { findDirectDeployedChampion, isChampionProtectedByToken } from './direct-champion';
+import { towerAttackBlocked, towerCombatAttackBonus, towerIncomingDamage } from '../tower/relics';
 
 export type AttackTarget =
   | {
@@ -85,6 +86,7 @@ export function getAttackLegality(
       message: '기절한 선수는 공격할 수 없습니다.',
     };
   }
+  if (towerAttackBlocked(state, playerId, cardInstanceId)) return { allowed: false, reasonCode: 'SUMMONED_THIS_TURN', message: '폭주 티켓으로 소환한 선수는 이번 턴에 공격할 수 없습니다.' };
 
   const maximumAttacks = hasKeyword(entry.card, 'MULTI_STRIKE') ? 2 : 1;
   if (entry.card.attacksUsedThisTurn >= maximumAttacks) {
@@ -220,6 +222,7 @@ export function attack(
     );
   }
   const { card: attacker } = attackerEntry;
+  if (towerAttackBlocked(state, attackingPlayerId, attackerInstanceId)) return actionFailure(state, 'SUMMONED_THIS_TURN', '폭주 티켓으로 소환한 선수는 이번 턴에 공격할 수 없습니다.');
 
   if (attacker.isStunned) {
     return actionFailure(state, 'CARD_STUNNED', '기절한 선수는 공격할 수 없습니다.');
@@ -466,7 +469,7 @@ export function attack(
     attackerCurrent,
     'BEFORE_DAMAGE',
   );
-  const preDamageState = attackerBeforeDamage !== defenderPrepared && attackerBeforeDamage.targetingState?.active
+  let preDamageState = attackerBeforeDamage !== defenderPrepared && attackerBeforeDamage.targetingState?.active
     ? resolvePendingEffects(attackerBeforeDamage)
     : attackerBeforeDamage;
   const attackerPrepared = findBoardCard(preDamageState, attackingPlayerId, attackerInstanceId)?.card ?? attackerCurrent;
@@ -478,10 +481,21 @@ export function attack(
   const defenderDodges =
     !preventedAttackerDamage && defenderPreparedCard.dodgeAvailable && hasKeyword(defenderPreparedCard, 'DODGE');
 
-  const attackerDamage = attackerPrepared.currentAttack +
-    getDamageModifierBonus(preDamageState, attackingPlayerId, attackerPrepared);
-  const defenderDamage = defenderPreparedCard.currentAttack +
+  let attackerDamage = attackerPrepared.currentAttack +
+    getDamageModifierBonus(preDamageState, attackingPlayerId, attackerPrepared) +
+    towerCombatAttackBonus(preDamageState, attackingPlayerId, attackerPrepared, defenderPreparedCard);
+  let defenderDamage = defenderPreparedCard.currentAttack +
     getDamageModifierBonus(preDamageState, target.playerId, defenderPreparedCard);
+  const defendingBoard = preDamageState.players.find(p => p.id === target.playerId)!.board.filter(Boolean);
+  const attackingHighest = defendingBoard.every(c => c!.currentAttack <= defenderPreparedCard.currentAttack);
+  if (!defenderDodges && !preventedAttackerDamage) {
+    const reduced = towerIncomingDamage(preDamageState, target.playerId, defenderPreparedCard, attackerDamage);
+    preDamageState = reduced.state; attackerDamage = reduced.amount;
+  }
+  if (!attackerDodges && !preventedDefenderDamage) {
+    const reduced = towerIncomingDamage(preDamageState, attackingPlayerId, attackerPrepared, defenderDamage, attackingHighest);
+    preDamageState = reduced.state; defenderDamage = reduced.amount;
+  }
   const damageEventStartIndex = preDamageState.events.length;
   const combatEventId = `combat:${state.gameId}:${state.turn}:${damageEventStartIndex}`;
   const attackerAttribution: EventAttribution = {

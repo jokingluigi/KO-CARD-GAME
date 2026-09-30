@@ -56,6 +56,7 @@ export type CardStatHistoryEntry = {
 };
 
 export type TemporaryStatModifier = {
+  source?: 'TOWER_RELIC';
   stat: 'cost' | 'attack' | 'health';
   amount: number;
   untilTurn: number;

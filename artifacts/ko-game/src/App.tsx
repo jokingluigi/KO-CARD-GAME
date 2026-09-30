@@ -1,3 +1,4 @@
+import Tower from '@/pages/tower';
 import { type ReactNode, useEffect } from 'react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { ErrorBoundary } from '@/components/error-boundary';
@@ -35,6 +36,8 @@ function Router() {
     <RoutedErrorBoundary>
       <Switch>
         <Route path="/admin" component={Admin} />
+        <Route path="/admin/tower" component={Admin} />
+        <Route path="/admin/tower-test" component={Admin} />
         <Route path="/admin/packs" component={Admin} />
         <Route path="/admin/shop" component={Admin} />
         <Route path="/admin/prism" component={Admin} />
@@ -43,6 +46,7 @@ function Router() {
         <Route path="/admin/ai-decks" component={Admin} />
         <Route path="/admin/rewards" component={Admin} />
         <Route path="/admin/notices" component={Admin} />
+        <Route path="/tower" component={Tower} />
         <Route path="/ai-match" component={Home} />
         <Route path="/online/match/:matchId" component={OnlineMatch} />
         <Route path="/daily-quests" component={DailyQuests} />

@@ -644,7 +644,21 @@ async function removeImageIfUnreferenced(assetId: string) {
     .select({ count: sql<number>`count(*)::int` })
     .from(cardFrameDefinitionsTable)
     .where(eq(cardFrameDefinitionsTable.frameAssetId, assetId));
+  let towerReferenced = false;
+  try {
+    const result = await db.execute(sql`SELECT EXISTS (
+      SELECT 1 FROM tower_characters WHERE strpos(data::text, ${assetId}) > 0
+      UNION ALL SELECT 1 FROM tower_relics WHERE strpos(data::text, ${assetId}) > 0
+      UNION ALL SELECT 1 FROM tower_runs WHERE strpos(snapshot::text, ${assetId}) > 0
+    ) AS referenced`);
+    towerReferenced = result.rows[0]?.referenced === true;
+  } catch (error) {
+    const code = (error as { code?: string; cause?: { code?: string } }).code ?? (error as { cause?: { code?: string } }).cause?.code;
+    if (code !== '42P01') throw error;
+    // Existing installations without Tower migration retain their current image cleanup behavior.
+  }
   if (
+    !towerReferenced &&
     (cardReference?.count ?? 0) === 0 &&
     (championReference?.count ?? 0) === 0 &&
     (shopReference?.count ?? 0) === 0 &&

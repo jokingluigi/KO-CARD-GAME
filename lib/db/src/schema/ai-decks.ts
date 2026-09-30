@@ -10,6 +10,7 @@ export const aiDecksTable = pgTable("ai_decks", {
     .array()
     .notNull()
     .default(sql`ARRAY[]::text[]`),
+  difficulty: text("difficulty").notNull().default("NORMAL"),
   enabled: boolean("enabled").notNull().default(false),
   displayOrder: integer("display_order").notNull().default(0),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),

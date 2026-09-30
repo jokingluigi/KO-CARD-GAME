@@ -1,4 +1,4 @@
-import { chooseBestAction } from './ai-evaluator';
+import { chooseBestAction, type AIDifficulty } from './ai-evaluator';
 import { executeAction, getLegalActions } from './engine-actions';
 import type { GameAction } from './types';
 import type { GameState } from '../types/game-state';
@@ -28,6 +28,7 @@ export interface AITurnSchedulerOptions {
   isCancelled: () => boolean;
   onState: (state: GameState) => void;
   onAction?: (action: GameAction) => void;
+  difficulty?: AIDifficulty;
   actionDelayMs?: number;
   maxDecisions?: number;
 }
@@ -75,7 +76,7 @@ export async function runAITurn(
       return workingState;
     }
 
-    const action = chooseBestAction(workingState, legalActions, playerId);
+    const action = chooseBestAction(workingState, legalActions, playerId, options.difficulty);
     await options.wait(0);
     await options.waitForPresentationIdle();
     await options.wait(delay);

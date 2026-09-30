@@ -9,6 +9,7 @@ import { validateCurrentPlayer } from './turn-system';
 import { processChampionQuestEvents } from '../champions/quests';
 import { resolveBoardListeners, resolveQueuedEffectsForPlayedWrestler, resolveRegisteredRuleListeners } from '../effects/effect-engine';
 import { getActiveCardAbilities } from '../cards/granted-text';
+import { canEnterTowerField, towerSummonCost } from '../tower/relics';
 
 export function playWrestlerFromHand(
   state: GameState,
@@ -42,7 +43,7 @@ export function playWrestlerFromHand(
     );
   }
 
-  if (isBoardFull(player.board)) {
+  if (isBoardFull(player.board) || !canEnterTowerField(state, playerId)) {
     return actionFailure(state, 'BOARD_FULL', '필드에 빈 자리가 없습니다.');
   }
 
@@ -54,7 +55,8 @@ export function playWrestlerFromHand(
     );
   }
 
-  if (player.currentGold < card.currentCost) {
+  const payableCost = towerSummonCost(state, playerId, card.currentCost);
+  if (player.currentGold < payableCost) {
     return actionFailure(state, 'NOT_ENOUGH_GOLD', '골드가 부족합니다.');
   }
   const enterEffects = getActiveCardAbilities(card)
@@ -66,7 +68,7 @@ export function playWrestlerFromHand(
       candidate.id === playerId
         ? {
             ...candidate,
-            currentGold: candidate.currentGold - card.currentCost,
+            currentGold: candidate.currentGold - payableCost,
             hand: candidate.hand.filter(
               (handCard) => handCard.instanceId !== cardInstanceId,
             ),
@@ -91,7 +93,7 @@ export function playWrestlerFromHand(
         source: { type: 'CARD', cardInstanceId },
         target: { type: 'PLAYER', playerId },
         reason: 'CARD_COST',
-        amount: -card.currentCost,
+        amount: -payableCost,
       },
     ],
   };

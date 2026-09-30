@@ -5,6 +5,7 @@ import { ensureProductionAdmin } from "./lib/production-admin";
 import { attachOnlineMatchWebSocket } from "./online/websocket";
 import { db } from "@workspace/db";
 import { sql } from "drizzle-orm";
+import { ensureTowerStorage } from "./lib/startup-schema";
 
 const rawPort = process.env["PORT"];
 
@@ -22,6 +23,7 @@ if (Number.isNaN(port) || port <= 0) {
 
 async function start(): Promise<void> {
   await db.execute(sql`ALTER TABLE "decks" ADD COLUMN IF NOT EXISTS "deleted_at" timestamptz`);
+  await ensureTowerStorage();
   await ensureProductionAdmin();
 
   const server = createServer(app);

@@ -1,3 +1,4 @@
+import { towerQuestProgressBonus, towerQuestComplete, refreshTowerAuras } from '../tower/relics';
 import type { GameEvent } from '../events/types';
 import type { GameState } from '../types/game-state';
 import type { ChampionQuest } from './types';
@@ -101,7 +102,9 @@ export function processChampionQuestEvents(
 
     if (!champion || !quest || champion.questCompleted || progressEvents.length === 0) continue;
 
-    const progressAmount = progressEvents.length * (quest.progressPerEvent ?? 1);
+    const relicBonus = towerQuestProgressBonus(resolvedState, originalPlayer.id);
+    resolvedState = relicBonus.state;
+    const progressAmount = progressEvents.length * (quest.progressPerEvent ?? 1) + relicBonus.amount;
     const questProgress = Math.min(
       champion.questProgress + progressAmount,
       quest.requiredProgress,
@@ -164,6 +167,7 @@ export function processChampionQuestEvents(
         ? champion.id
         : resolvedState.latestQuestCompletedChampionId,
     };
+    if (questCompleted) resolvedState = towerQuestComplete(resolvedState, originalPlayer.id);
     if (questCompleted && quest.reward.type === 'DIRECT_DEPLOY_CHAMPION_TOKEN') {
       resolvedState = tryDirectDeployChampionToken(
         resolvedState,
@@ -239,5 +243,5 @@ export function processChampionQuestEvents(
     }
   }
 
-  return resolvedState;
+  return refreshTowerAuras(resolvedState);
 }

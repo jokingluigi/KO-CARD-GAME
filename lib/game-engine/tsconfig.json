@@ -11,6 +11,7 @@
   },
   "include": [
     "src",
+    "../../artifacts/ko-game/src/game/tower/**/*.ts",
     "../../artifacts/ko-game/src/game/actions/**/*.ts",
     "../../artifacts/ko-game/src/game/cards/generation.ts",
     "../../artifacts/ko-game/src/game/cards/legacy-card-effect-repair.ts",
@@ -38,6 +39,7 @@
     }
   ],
   "exclude": [
+    "src/**/*.test.ts",
     "../../artifacts/ko-game/src/**/*.test.ts",
     "../../artifacts/ko-game/src/game/match-assets.ts"
   ]

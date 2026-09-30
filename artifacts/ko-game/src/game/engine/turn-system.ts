@@ -1,5 +1,6 @@
 import type { GameState, PlayerState } from '../types/game-state';
 import type { CardInstance } from '../cards/types';
+import { expireTowerOpponentTurnBuffs, expireTowerTurnEndBuffs, towerTurnStart } from '../tower/relics';
 import { normalizeCardForZone } from '../cards/zone-state';
 import { getActiveCardAbilities } from '../cards/granted-text';
 import type { GameMediaCatalog } from '../media';
@@ -65,7 +66,7 @@ function beginPlayerTurn(state: GameState, playerId: string): GameState {
     ],
   };
 
-  const afterDraw = drawCard(turnStartedState, playerId);
+  const afterDraw = drawCard(towerTurnStart(turnStartedState, playerId), playerId);
   const afterDelayed = resolveDueDelayedEffects(afterDraw, 'TURN_START', playerId);
   const turnStartPlayer = afterDelayed.players.find((candidate) => candidate.id === playerId);
   const turnStartCards = [
@@ -270,7 +271,7 @@ export function endTurn(
         };
       }
 
-      return player;
+      return expireTowerOpponentTurnBuffs(state, player);
     }),
     events: [
       ...state.events,
@@ -322,7 +323,7 @@ export function endTurn(
     afterRepeated = resolveTurnEndPass(afterRepeated);
   }
 
-  const afterScheduled = resolveDueDelayedEffects(afterRepeated, 'TURN_END', actingPlayerId);
+  const afterScheduled = expireTowerTurnEndBuffs(resolveDueDelayedEffects(afterRepeated, 'TURN_END', actingPlayerId), state.turn);
   return actionSuccess(
     processChampionQuestEvents(
       afterScheduled,

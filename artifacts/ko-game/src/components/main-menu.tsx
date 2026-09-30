@@ -68,6 +68,7 @@ const menuItems = [
 ] as const;
 
 export function MainMenu({ onComingSoon, onDeckEdit, onAiMatch, user, onLogout, onNicknameChanged }: MainMenuProps) {
+  const [towerEnabled, setTowerEnabled] = useState(false);
   const [notice, setNotice] = useState("");
   const [announcementsOpen, setAnnouncementsOpen] = useState(false);
   const [mainContent, setMainContent] = useState<MainContent>(emptyMainContent);
@@ -81,6 +82,16 @@ export function MainMenu({ onComingSoon, onDeckEdit, onAiMatch, user, onLogout, 
   const [nicknameSaving, setNicknameSaving] = useState(false);
   const [nicknameError, setNicknameError] = useState("");
   const [, navigate] = useLocation();
+
+  useEffect(() => {
+    let cancelled = false;
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), 5000);
+    void fetch(`${import.meta.env.BASE_URL.replace(/\/$/, '')}/api/tower/availability`, { cache: 'no-store', signal: controller.signal })
+      .then(r => r.ok ? r.json() : { enabled: false }).then(data => { if (!cancelled) setTowerEnabled(data.enabled === true); })
+      .catch(() => {}).finally(() => clearTimeout(timer));
+    return () => { cancelled = true; controller.abort(); clearTimeout(timer); };
+  }, []);
 
   useEffect(() => {
     let cancelled = false;
@@ -223,12 +234,13 @@ export function MainMenu({ onComingSoon, onDeckEdit, onAiMatch, user, onLogout, 
         )}
 
         <section aria-label="메인 메뉴" className="ko-main-menu__grid grid gap-4 sm:grid-cols-2">
-          {menuItems.map(({ label, description, icon: Icon }) => (
+          {[...menuItems, ...(towerEnabled ? [{ label: '타워 모드', description: '16층 도전에서 덱을 성장시킵니다', icon: Layers3 }] : [])].map(({ label, description, icon: Icon }) => (
             <button
               key={label}
               type="button"
               data-testid={`button-main-menu-${label === "온라인 매치" ? "online" : label === "AI 매치" ? "ai" : label}`}
               onClick={() => {
+                if (label === '타워 모드') { navigate('/tower'); return; }
                 if (label === "덱 편집") {
                   onDeckEdit?.();
                   return;

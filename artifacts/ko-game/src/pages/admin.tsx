@@ -1,3 +1,4 @@
+import { AdminTowerManager } from '@/components/admin-tower-manager';
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Bot, CalendarCheck2, Frame, Gamepad2, Image, ListChecks, LogOut, Megaphone, Music2, Package, ShieldCheck, ShoppingBag, Sparkles, Spade } from "lucide-react";
 import { useLocation } from "wouter";
@@ -12,6 +13,7 @@ import { AdminCardFrameManager } from "@/components/admin-card-frame-manager";
 import { AdminAIDeckManager } from "@/components/admin-ai-deck-manager";
 import { AdminRewardsManager } from "@/components/admin-rewards-manager";
 import { AdminNoticesManager } from "@/components/admin-notices-manager";
+import { AdminTowerTest } from "@/components/admin-tower-test";
 import { fetchCurrentUser, logout } from "@/lib/auth-client";
 import { AuthRecovery } from "@/components/auth-page";
 import { ROUTES } from "@/lib/routes";
@@ -23,8 +25,8 @@ export default function Admin() {
   const [status, setStatus] = useState<AdminStatus>("checking");
   const [authError, setAuthError] = useState<string | null>(null);
   const authRequestGeneration = useRef(0);
-  const [section, setSection] = useState<"cards" | "champions" | "packs" | "skins" | "frames" | "shop" | "prism" | "media" | "notices" | "test" | "ai-decks" | "rewards">(
-    location.endsWith("/packs") ? "packs" : location.endsWith("/shop") ? "shop" : location.endsWith("/prism") ? "prism" : location.endsWith("/skins") ? "skins" : location.endsWith("/card-frames") ? "frames" : location.endsWith("/ai-decks") ? "ai-decks" : location.endsWith("/rewards") ? "rewards" : location.endsWith("/notices") ? "notices" : "cards",
+  const [section, setSection] = useState<"tower" | "tower-test" | "cards" | "champions" | "packs" | "skins" | "frames" | "shop" | "prism" | "media" | "notices" | "test" | "ai-decks" | "rewards">(
+    location.endsWith("/tower") ? "tower" : location.endsWith("/tower-test") ? "tower-test" : location.endsWith("/packs") ? "packs" : location.endsWith("/shop") ? "shop" : location.endsWith("/prism") ? "prism" : location.endsWith("/skins") ? "skins" : location.endsWith("/card-frames") ? "frames" : location.endsWith("/ai-decks") ? "ai-decks" : location.endsWith("/rewards") ? "rewards" : location.endsWith("/notices") ? "notices" : "cards",
   );
 
   const checkAuthentication = useCallback(() => {
@@ -117,6 +119,8 @@ export default function Admin() {
 
       <div className="mx-auto flex max-w-6xl flex-col gap-6 px-5 py-8 md:flex-row">
         <nav className="w-full shrink-0 md:w-52">
+          <button type="button" onClick={() => setSection("tower")} className={`mb-2 flex min-h-11 w-full items-center gap-3 rounded border px-3 py-3 text-left text-sm font-black ${section === 'tower' ? 'border-primary/60 bg-primary/10 text-primary' : 'border-transparent text-neutral-400'}`}>타워 관리</button>
+          <button type="button" onClick={() => setSection("tower-test")} className={`mb-2 flex min-h-11 w-full items-center gap-3 rounded border px-3 py-3 text-left text-sm font-black ${section === "tower" ? <AdminTowerManager onUnauthorized={() => setStatus("forbidden")} /> : section === "tower-test" ? "border-primary/60 bg-primary/10 text-primary" : "border-transparent text-neutral-400"}`}><Gamepad2 className="h-4 w-4" />타워 전투 테스트</button>
           <div className="mb-3 text-[10px] font-bold tracking-[0.2em] text-neutral-600">
             ADMIN MENU
           </div>
@@ -222,7 +226,9 @@ export default function Admin() {
         </nav>
 
         <section className="min-w-0 flex-1">
-           {section === "notices"
+           {section === "tower" ? <AdminTowerManager onUnauthorized={() => setStatus("forbidden")} /> : section === "tower-test"
+             ? <AdminTowerTest onUnauthorized={() => setStatus("forbidden")} />
+             : section === "notices"
              ? <AdminNoticesManager onUnauthorized={() => setStatus("forbidden")} />
              : section === "rewards"
              ? <AdminRewardsManager onUnauthorized={() => setStatus("forbidden")} />

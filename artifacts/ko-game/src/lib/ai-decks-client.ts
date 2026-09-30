@@ -29,6 +29,7 @@ export type AIDeck = {
   description: string;
   championDefinitionId: string | null;
   cardDefinitionIds: string[];
+  difficulty: "NORMAL" | "HARD" | "BOSS";
   enabled: boolean;
   displayOrder: number;
   createdAt: string;
@@ -96,6 +97,7 @@ export function saveAdminAIDeck(payload: {
   description: string;
   championDefinitionId: string | null;
   cardDefinitionIds: string[];
+  difficulty: "NORMAL" | "HARD" | "BOSS";
   enabled: boolean;
   displayOrder: number;
 }): Promise<{ deck: AIDeck }> {

@@ -4,6 +4,7 @@ import type { GameState } from '../types/game-state';
 import type { BoardSlot } from './board-position';
 import { appendEffectContinuation, resolveCardEntryListeners, resolveSummonListeners, resolveTriggeredAbilities } from '../effects/effect-engine';
 import { getActiveCardAbilities } from '../cards/granted-text';
+import { canEnterTowerField, applyTowerEntryStats, towerContextAfterEntry, refreshTowerAuras } from '../tower/relics';
 
 export function enterField(
   state: GameState,
@@ -26,9 +27,10 @@ export function enterField(
   if (player.board[boardSlot] !== null) {
     throw new Error(`이미 사용 중인 보드 슬롯입니다: ${boardSlot}`);
   }
+  if (!canEnterTowerField(state, playerId)) return state;
 
   const enteredCard: CardInstance = {
-    ...card,
+    ...applyTowerEntryStats(state, playerId, card),
     boardSlot,
     enteredThisTurn: true,
     attacksUsedThisTurn: 0,
@@ -44,8 +46,9 @@ export function enterField(
     entryCause,
   };
 
-  const enteredState: GameState = {
+  const enteredState: GameState = refreshTowerAuras({
     ...state,
+    ...(state.tower ? { tower: towerContextAfterEntry(state, playerId) } : {}),
     players: state.players.map((candidate) => {
       if (candidate.id !== playerId) {
         return candidate;
@@ -60,7 +63,8 @@ export function enterField(
       };
     }),
     events: [...state.events, event],
-  };
+    ...(state.tower?.playerId === playerId ? { tower: { ...towerContextAfterEntry(state, playerId)!, nextEntryBuffs: 0 } } : {}),
+  });
 
   const afterEnter = entryCause === 'PLAY_FROM_HAND' || entryCause === 'CHAMPION_DEPLOY'
     ? resolveTriggeredAbilities(
