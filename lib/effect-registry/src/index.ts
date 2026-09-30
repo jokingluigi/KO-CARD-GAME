@@ -212,6 +212,8 @@ export type StructuredListener = {
 };
 export type StructuredPrevention = { uses?: number; setHealth?: number };
 export type StructuredEffectValues = {
+  /** Purple Rain: chosen own character takes damage, then branches by target kind. */
+  purpleRainFollowup?: boolean;
   attack?: number;
   health?: number;
   attackMultiplier?: number;

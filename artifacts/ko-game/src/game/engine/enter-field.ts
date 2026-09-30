@@ -1,3 +1,4 @@
+import { mergeZombie } from './zombie-token';
 import type { CardInstance } from '../cards/types';
 import type { EnterFieldEvent, EntryCause, EventSubject } from '../events/types';
 import type { GameState } from '../types/game-state';
@@ -23,6 +24,9 @@ export function enterField(
   if (!player) {
     throw new Error(`플레이어를 찾을 수 없습니다: ${playerId}`);
   }
+
+  const merged = mergeZombie(state, playerId, card);
+  if (merged) return merged;
 
   if (player.board[boardSlot] !== null) {
     throw new Error(`이미 사용 중인 보드 슬롯입니다: ${boardSlot}`);

@@ -15,7 +15,7 @@ export type PublishedChampionRecord = {
   questCompletedPortraitAssetId?: string | null; questCompletedPortraitUrl?: string | null;
   maxHealth: number; abilityName: string; abilityCost: number; abilityText: string; abilityEffects: Structured;
   hasQuest: boolean; questName: string | null; questText: string | null;
-  questCondition: { condition?: unknown; event?: string; cardType?: ChampionQuestCardType; sourceActionType?: string; progress?: number; required?: number } | null; questProgressRequired: number | null;
+  questCondition: { condition?: unknown; selfEffectDamage?: boolean; strictEventCount?: boolean; event?: string; cardType?: ChampionQuestCardType; sourceActionType?: string; progress?: number; required?: number } | null; questProgressRequired: number | null;
   questRewardText: string | null; questRewardEffects: Structured | null;
   upgradedAbilityName: string | null; upgradedAbilityCost: number | null;
   upgradedAbilityText: string | null; upgradedAbilityEffects: Structured | null;
@@ -84,6 +84,8 @@ export function championRecordToDefinition(record: PublishedChampionRecord): Cha
          ...(abilityRetireQuest ? { cardType: 'WRESTLER' as const } : record.questCondition.cardType ? { cardType: record.questCondition.cardType } : {}),
          ...(abilityRetireQuest ? { sourceActionType: 'USE_CHAMPION_ABILITY' } : record.questCondition.sourceActionType ? { sourceActionType: record.questCondition.sourceActionType } : {}),
          ...(record.questCondition.progress ? { progressPerEvent: record.questCondition.progress } : {}),
+        ...(record.questCondition.strictEventCount ? { strictEventCount: true } : {}),
+        ...(record.questCondition.selfEffectDamage ? { selfEffectDamage: true } : {}),
         requiredProgress: record.questProgressRequired,
          reward: directTokenReward
            ? { type: "DIRECT_DEPLOY_CHAMPION_TOKEN", cardDefinitionId: tokenId }
@@ -125,7 +127,7 @@ export function championRecordToDefinition(record: PublishedChampionRecord): Cha
     questCompleteAudioEnabled: record.questCompleteAudioEnabled,
     status: record.status, version: record.version,
   };
-  if (/^(?:챔피언)?퍼플레인$/u.test(record.name.replace(/\s+/gu, ''))) {
+  if (!record.questCondition?.selfEffectDamage && /^(?:챔피언)?퍼플레인$/u.test(record.name.replace(/\s+/gu, ''))) {
     const makeAbility = (amount: number, upgraded: boolean): ChampionAbility => ({
       id: `${record.id}-ability${upgraded ? '-upgraded' : ''}`,
       name: (upgraded ? record.upgradedAbilityName : record.abilityName) || '퍼플레인',
@@ -141,6 +143,24 @@ export function championRecordToDefinition(record: PublishedChampionRecord): Cha
       description: '이번 게임에서 내 카드 또는 챔피언 효과로 내 챔피언 또는 아군 선수가 피해를 총 8회 받으세요. 상대 효과와 전투 피해는 제외합니다.',
       rewardText: '고유 능력이 강화됩니다.', trackedEvent: 'DAMAGE_DEALT', selfEffectDamage: true,
       requiredProgress: 8, reward: { type: 'UPGRADE_ABILITY' } };
+  }
+  if (record.questProgressRequired !== 10 && /^(?:챔피언)?라칼라베라$/u.test(record.name.replace(/\s+/gu, ''))) {
+    const summon = (amount: number, upgraded: boolean): ChampionAbility => ({
+      id: `${record.id}-ability${upgraded ? '-upgraded' : ''}`,
+      name: (upgraded ? record.upgradedAbilityName : record.abilityName) || '좀비 소환',
+      cost: upgraded ? record.upgradedAbilityCost ?? record.abilityCost : record.abilityCost,
+      description: `1코스트 ${amount}/${amount} 좀비를 소환합니다.`,
+      effects: [{ type: 'STRUCTURED', action: 'SUMMON', values: {
+        definitionRef: { name: '좀비' }, count: 1,
+        generatedModifiers: { attack: amount - 1, health: amount - 1 },
+      } }],
+    });
+    definition.ability = summon(1, false);
+    definition.upgradedAbility = summon(2, true);
+    definition.quest = { id: `${record.id}-quest`, name: record.questName || '아군 리타이어 10회',
+      description: '이번 게임에서 아군 선수가 총 10회 리타이어하세요. DESTROY는 포함하지 않습니다.',
+      rewardText: '고유 능력이 강화됩니다.', trackedEvent: 'CARD_RETIRED', cardType: 'WRESTLER',
+      strictEventCount: true, requiredProgress: 10, reward: { type: 'UPGRADE_ABILITY' } };
   }
   return definition;
 }

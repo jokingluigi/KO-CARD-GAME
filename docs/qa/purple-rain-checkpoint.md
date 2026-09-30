@@ -7,3 +7,5 @@ Base/upgraded ability selects own portrait or one allied wrestler and deals 1/2 
 Quest requires eight actual positive damage events on own portrait/wrestlers attributed to own CARD_EFFECT or USE_CHAMPION_ABILITY. Enemy effects, combat, fatigue and blocked damage are excluded. Multi-target damage counts each victim; damage amount does not multiply progress. Tower progress bonuses do not replace the required hits. Cursor processing prevents duplicate completion.
 
 Validation: 10 Purple Rain tests and 388 combined engine/actions/effects/champions/Tower tests passed. Frontend/API TypeScript and production builds passed. Actual deployed browser gameplay and production catalog availability remain unverified due to the previously observed Work API connection block.
+
+Follow-up: user explicitly requested writing the existing administrator settings. Migration 0029 now supplies that one-time backed-up catalog edit and stored-settings replay QA. See calavera-catalog-checkpoint.md for operational verification status.

@@ -1,3 +1,4 @@
+import { existingZombie, isZombieToken, mergeZombie, normalizeZombieDefinition, ZOMBIE_RULES } from '../engine/zombie-token';
 import { keywordDamage, hasEntryDefense } from '../engine/keyword-rules';
 import type { CardDefinition, CardInstance, CardStatHistoryEntry } from '../cards/types';
 import { matchesCardTagFilter } from '../cards/tags';
@@ -823,8 +824,8 @@ function resolveCardDefinition(
   if (!allowName || !name) return undefined;
   if (name === '좀비') {
     // A unique prefix match could otherwise summon "좀비 플래티넘구슬 마스터".
-    return state.cardPool?.find((candidate) => candidate.name === name && candidate.isToken)
-      ?? fallbackZombieToken;
+    return normalizeZombieDefinition(state.cardPool?.find((candidate) => candidate.name === name && candidate.isToken)
+      ?? fallbackZombieToken);
   }
   // Older saved effects carry only the quoted part of a card name (for example
   // "늑대인간" for "늑대인간 판도라"). Prefer an exact name; accept a longer
@@ -838,7 +839,7 @@ function resolveCardDefinition(
 
 const fallbackZombieToken: CardDefinition = {
   id: 'ko-fallback-zombie-token', name: '좀비', cardType: 'WRESTLER',
-  cost: 0, attack: 1, health: 1, rulesText: '', rarity: 'TOKEN',
+  cost: 1, attack: 1, health: 1, rulesText: ZOMBIE_RULES, rarity: 'TOKEN',
   isToken: true, isChampionToken: false, keywords: [], abilities: [],
 };
 
@@ -1407,7 +1408,7 @@ function applyRandomTargetSummon(
     .filter((card) => validTargetIds.has(card.instanceId));
   const selected = shuffle(candidates, randomForEffect(state, sourceCard, effect))
     .slice(0, Math.max(0, target.count));
-  let nextState = setLastTargetIds(definition === fallbackZombieToken &&
+  let nextState = setLastTargetIds(definition.id === fallbackZombieToken.id &&
     !state.cardPool?.some((card) => card.id === definition.id)
     ? { ...state, cardPool: [...(state.cardPool ?? []), definition] }
     : state, []);
@@ -1895,7 +1896,10 @@ export function applyEffect(
             : false,
       );
       const slot = towerOpenSlot(state, playerId);
-      if (!owner || !handCard || slot < 0) return state;
+      if (!owner || !handCard) return state;
+      const merged = mergeZombie(state, playerId, handCard);
+      if (merged) return merged;
+      if (slot < 0) return state;
       const withoutHand = {
         ...state,
         players: state.players.map((player) => player.id === playerId
@@ -1911,7 +1915,7 @@ export function applyEffect(
       // These actions require a data-only definition; an absent/malformed
       // reference is a rejected effect, never an advertised silent no-op.
       if (!validDefinition) throw new Error(`${effect.action} requires a serializable card definition.`);
-      if (definition === fallbackZombieToken && !state.cardPool?.some((card) => card.id === definition.id)) {
+      if (definition.id === fallbackZombieToken.id && !state.cardPool?.some((card) => card.id === definition.id)) {
         state = { ...state, cardPool: [...(state.cardPool ?? []), definition] };
       }
       const owner = state.players.find((player) => player.id === playerId);
@@ -1973,6 +1977,12 @@ export function applyEffect(
        const summonedIds: string[] = [];
       for (const generated of generatedCards) {
         const currentOwner = summonState.players.find((player) => player.id === playerId);
+        const merged = mergeZombie(summonState, playerId, generated.card);
+        if (merged) {
+          summonState = merged;
+          summonedIds.push(existingZombie(merged, playerId)!.instanceId);
+          continue;
+        }
         const slot = towerOpenSlot(summonState, playerId);
         if (slot < 0) break;
          summonState = {
@@ -3419,6 +3429,15 @@ export function resolveCardRetiredListeners(
   sourceContext?: EventAttribution,
 ): GameState {
   const relicEventIndex = removalEventIndex(state, 'CARD_RETIRED', retiredCard.instanceId);
+  const growthKey = `zombie-growth:${relicEventIndex}:${retiredCard.instanceId}`;
+  if (relicEventIndex >= 0 && retiredCard.cardType === 'WRESTLER' && !state.zombieGrowthEventKeys?.includes(growthKey)) {
+    state = { ...state, zombieGrowthEventKeys: [...(state.zombieGrowthEventKeys ?? []), growthKey],
+      players: state.players.map(p => ({ ...p, board: p.board.map(card =>
+        card && card.instanceId !== retiredCard.instanceId && card.currentHealth > 0 && !card.isSilenced && isZombieToken(state, card) &&
+        !state.events.slice(relicEventIndex + 1).some(e => e.type === 'ENTER_FIELD' && e.cardInstanceId === card.instanceId)
+          ? { ...card, currentAttack: card.currentAttack + 1, currentHealth: card.currentHealth + 1, maxHealth: card.maxHealth + 1 }
+          : card) as typeof p.board })) };
+  }
   if (relicEventIndex >= 0) state = resolveTowerRemoval(state, state.events[relicEventIndex]!, relicEventIndex);
   const hand = state.players.find((player) => player.id === playerId)?.hand ?? [];
   const withCardAbilities = hand

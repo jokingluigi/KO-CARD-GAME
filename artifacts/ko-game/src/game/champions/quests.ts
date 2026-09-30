@@ -117,7 +117,7 @@ export function processChampionQuestEvents(
     if (conditionResult) resolvedState = { ...resolvedState, players: resolvedState.players.map(p => p.id === originalPlayer.id && p.champion ? { ...p, champion: { ...p.champion, questConditionCounts: conditionResult.counts } } : p) };
     if (!champion || !quest || champion.questCompleted || (conditionResult ? !conditionResult.completed : progressEvents.length === 0)) continue;
 
-    const relicBonus = quest.selfEffectDamage
+    const relicBonus = quest.selfEffectDamage || quest.strictEventCount
       ? { state: resolvedState, amount: 0 }
       : towerQuestProgressBonus(resolvedState, originalPlayer.id);
     resolvedState = relicBonus.state;

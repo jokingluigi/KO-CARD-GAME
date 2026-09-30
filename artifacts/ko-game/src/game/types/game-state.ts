@@ -70,6 +70,7 @@ export interface PlayerState {
 }
 
 export interface GameState {
+  zombieGrowthEventKeys?: string[];
   /** Absent in all existing modes; only a Tower battle may carry relic rules. */
   tower?: TowerBattleContext;
   gameId: string;

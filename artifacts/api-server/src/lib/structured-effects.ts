@@ -38,7 +38,7 @@ const ACTION_VALUE_KEYS: Partial<Record<Action, readonly string[]>> = {
   MODIFY_STAT: ["amount", "stat", "duration", "minimum"],
   MODIFY_MAX_HEALTH: ["amount"],
   SET_STAT: ["amount", "stat", "duration"],
-  DAMAGE: ["amount", "conditionalBuff"],
+  DAMAGE: ["amount", "conditionalBuff", "purpleRainFollowup"],
   HEAL: ["amount"],
   ADD_GOLD: ["amount"],
   ADD_NEXT_TURN_GOLD: ["amount"],
@@ -2011,7 +2011,7 @@ export function isStructuredEffects(value: unknown): value is { effects: Structu
         !["ASC", "DESC"].includes(target.sort.direction) ||
         Object.keys(target.sort).some((key) => !["stat", "direction"].includes(key))
       )) return false;
-      if (item.trigger === "ACTIVE" && target.selection === "PLAYER_CHOICE") return false;
+      if (item.trigger === "ACTIVE" && target.selection === "PLAYER_CHOICE" && values?.purpleRainFollowup !== true) return false;
       if (target.owner === "ALL") {
         const characterAll = zones.length === 1 && zones[0] === "CHARACTER" && target.selection === "ALL";
         const unrestrictedChoice = zones.length === 1 &&
@@ -2090,6 +2090,8 @@ export function isStructuredEffects(value: unknown): value is { effects: Structu
            )
          )) return false;
      }
+    if (values?.purpleRainFollowup !== undefined && (typeof values.purpleRainFollowup !== 'boolean' ||
+      item.action !== 'DAMAGE' || target?.zone !== 'CHARACTER' || target.owner !== 'SELF' || target.selection !== 'PLAYER_CHOICE' || target.count !== 1)) return false;
     if (schema.amount && !(typeof values?.amount === "number" && Number.isFinite(values.amount) &&
       (schema.signedAmount ? Math.abs(values.amount) <= 999 : values.amount >= 0 && values.amount <= 999))) return false;
     if (schema.stat && !STAT_NAMES.includes(values?.stat as StatName)) return false;

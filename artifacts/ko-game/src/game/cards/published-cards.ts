@@ -1,3 +1,4 @@
+import { ZOMBIE_RULES } from '../engine/zombie-token';
 import type { CardAbility, CardEffect } from "../effects/types";
 import type { CardDefinition, CardRarity } from "./types";
 import { ACTIONS, TRIGGERS, isEffectScript, type EffectScript } from "@workspace/effect-registry";
@@ -193,6 +194,7 @@ export async function fetchAiTestCardDefinitions(): Promise<CardDefinition[]> {
 }
 
 export function cardRecordToDefinition(card: PublishedCardRecord): CardDefinition {
+  if (card.isToken && card.name.trim() === '좀비') card = { ...card, cost: 1, attack: 1, health: 1, text: ZOMBIE_RULES, keywords: [], effectId: 'STRUCTURED_EFFECTS_V1', effectConfig: { effects: [] } };
   const zombieAbsorption = /필드에\s*있는\s*['‘]?좀비['’]?\s*중[^.!?]*가장\s*수치의\s*합/.test(card.text) &&
     /좀비['’]?가\s*없다면[^.!?]*2\s*\/\s*2/.test(card.text);
   // Older published snapshots stored only an entrance-time attack gain for a
