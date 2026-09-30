@@ -1,0 +1,21 @@
+import type { CardInstance } from '../cards/types';
+import type { GameState } from '../types/game-state';
+import { getActiveCardKeywords } from '../cards/granted-text';
+import { evaluateChampionQuestCondition, validChampionQuestCondition } from '../../../../../lib/game-engine/src/champion-quest-conditions';
+export function hasEntryDefense(card: CardInstance, turn: number): boolean {
+ return getActiveCardKeywords(card).includes('DEFENSE') && (card.enteredOnTurn !== undefined ? card.enteredOnTurn === turn : card.enteredThisTurn);
+}
+export function keywordDamage(card: CardInstance, amount: number, turn: number): number {
+ const keywords=getActiveCardKeywords(card);
+ if(hasEntryDefense(card,turn))return 0;
+ return Math.max(0,amount-(keywords.includes('ARMOR')?card.grantedText?.armor??card.armor??0:0));
+}
+export function canPlayConditionalCard(state:GameState,playerId:string,card:CardInstance):boolean {
+ if(!getActiveCardKeywords(card).includes('CONDITION'))return true;
+ const condition = card.grantedText?.playCondition ?? card.playCondition;
+ return validChampionQuestCondition(condition)&&evaluateChampionQuestCondition(condition,state,playerId,state.events).completed;
+}
+export function healLifesteal(state:GameState,playerId:string,card:CardInstance,amount:number):GameState {
+ if(amount<=0||!getActiveCardKeywords(card).includes('LIFESTEAL'))return state;
+ return {...state,players:state.players.map(p=>p.id!==playerId?p:{...p,health:Math.min(p.maxHealth,p.health+amount),champion:p.champion?{...p.champion,health:Math.min(p.maxHealth,p.health+amount)}:null})};
+}

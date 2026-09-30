@@ -104,3 +104,6 @@ export {
 } from "./online-action-payload";
 
 export { TOWER_RELIC_DEFINITIONS } from './tower/relic-definitions';
+
+export { validChampionQuestCondition, evaluateChampionQuestCondition } from './champion-quest-conditions';
+export type { ChampionQuestCondition } from './champion-quest-conditions';

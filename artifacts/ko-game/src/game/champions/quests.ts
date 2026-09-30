@@ -1,3 +1,4 @@
+import { evaluateChampionQuestCondition } from '../../../../../lib/game-engine/src/champion-quest-conditions';
 import { towerQuestProgressBonus, towerQuestComplete, refreshTowerAuras } from '../tower/relics';
 import type { GameEvent } from '../events/types';
 import type { GameState } from '../types/game-state';
@@ -100,11 +101,14 @@ export function processChampionQuestEvents(
       championQuestProcessedEventIdentitiesByPlayer: processedIdentitiesByPlayer,
     };
 
-    if (!champion || !quest || champion.questCompleted || progressEvents.length === 0) continue;
+    const conditionResult = champion && quest?.condition && !champion.questCompleted
+      ? evaluateChampionQuestCondition(quest.condition, resolvedState, originalPlayer.id, newEvents, champion.questConditionCounts) : undefined;
+    if (conditionResult) resolvedState = { ...resolvedState, players: resolvedState.players.map(p => p.id === originalPlayer.id && p.champion ? { ...p, champion: { ...p.champion, questConditionCounts: conditionResult.counts } } : p) };
+    if (!champion || !quest || champion.questCompleted || (conditionResult ? !conditionResult.completed : progressEvents.length === 0)) continue;
 
     const relicBonus = towerQuestProgressBonus(resolvedState, originalPlayer.id);
     resolvedState = relicBonus.state;
-    const progressAmount = progressEvents.length * (quest.progressPerEvent ?? 1) + relicBonus.amount;
+    const progressAmount = conditionResult ? quest.requiredProgress - champion.questProgress : progressEvents.length * (quest.progressPerEvent ?? 1) + relicBonus.amount;
     const questProgress = Math.min(
       champion.questProgress + progressAmount,
       quest.requiredProgress,

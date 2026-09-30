@@ -1,3 +1,4 @@
+import { validChampionQuestCondition } from '../../../../../lib/game-engine/src/champion-quest-conditions';
 import type {
   CardLineage,
   CardDefinition,
@@ -75,6 +76,8 @@ export function generateCardInstance(
     entranceAudioVolume: definition.entranceAudioVolume,
     entranceAudioEnabled: definition.entranceAudioEnabled,
     keywords: [...definition.keywords],
+    armor: typeof definition.effectConfig?.armor === 'number' ? Math.max(0, definition.effectConfig.armor) : 0,
+    ...(validChampionQuestCondition(definition.effectConfig?.playCondition) ? { playCondition: definition.effectConfig.playCondition } : {}),
     tags: definition.tags ? [...definition.tags] : [],
     abilities: [...definition.abilities],
     isSilenced: false,

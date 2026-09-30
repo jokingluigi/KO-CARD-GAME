@@ -1,3 +1,5 @@
+import { ChampionQuestConditionEditor } from './champion-quest-condition-editor';
+import { validChampionQuestCondition } from '@workspace/game-engine';
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useLocation } from "wouter";
 import { createPortal } from "react-dom";
@@ -43,7 +45,7 @@ type CardKeyword =
   | "SURPRISE"
   | "TAUNT"
   | "DODGE"
-  | "MULTI_STRIKE";
+  | "MULTI_STRIKE" | "IMMUNE" | "REGEN" | "ARMOR" | "CONDITION" | "DEFENSE" | "LIFESTEAL";
 
 type CardRecord = {
   id: string;
@@ -145,10 +147,12 @@ const KEYWORDS: CardKeyword[] = [
   "SURPRISE",
   "TAUNT",
   "DODGE",
-  "MULTI_STRIKE",
+  "MULTI_STRIKE", "IMMUNE", "REGEN", "ARMOR", "CONDITION", "DEFENSE", "LIFESTEAL",
 ];
 
 const KEYWORD_LABELS: Record<CardKeyword, string> = {
+  IMMUNE: '면역', REGEN: '치유', ARMOR: '아머', CONDITION: '조건', DEFENSE: '방어', LIFESTEAL: '흡혈',
+
   RUSH: "러쉬",
   SURPRISE: "기습",
   TAUNT: "도발",
@@ -367,6 +371,13 @@ export function AdminCardManager({
   const imageInputRef = useRef<HTMLInputElement>(null);
   const form = useForm<CardFormValues>({ defaultValues: EMPTY_CARD });
   const preview = form.watch();
+  let keywordConfig: Record<string, unknown> = {};
+  try { keywordConfig = JSON.parse(preview.effectConfig || '{}'); } catch {}
+  const updateKeywordConfig = (key: string, value: unknown) => {
+    let current: Record<string, unknown>;
+    try { current = JSON.parse(form.getValues('effectConfig') || '{}'); } catch { return; }
+    form.setValue('effectConfig', JSON.stringify({ ...current, [key]: value }, null, 2), { shouldDirty: true });
+  };
   const previewCardType = preview.cardType as CardType;
 
   useEffect(() => {
@@ -1268,6 +1279,9 @@ export function AdminCardManager({
                    onUnauthorized={onUnauthorized}
                  />
                <fieldset className="space-y-2 md:col-span-2"><legend className="text-xs font-bold text-neutral-400">키워드</legend><div className="flex flex-wrap gap-2">{KEYWORDS.map((keyword) => <label key={keyword} className="flex items-center gap-2 rounded border border-neutral-800 bg-neutral-900 px-3 py-2 text-xs"><input type="checkbox" value={keyword} {...form.register("keywords")} data-testid={`input-keyword-${keyword}`} />{KEYWORD_LABELS[keyword]}</label>)}</div></fieldset>
+               {preview.keywords.includes('ARMOR') && <label>아머 수치<input type="number" min={0} max={999} className="min-h-11 w-full rounded border bg-neutral-900 p-2" value={typeof keywordConfig.armor === 'number' ? keywordConfig.armor : 0} onChange={e=>updateKeywordConfig('armor',Number(e.target.value))}/></label>}
+               {preview.keywords.includes('CONDITION') && <fieldset className="md:col-span-2"><legend>카드 사용 조건</legend><ChampionQuestConditionEditor value={validChampionQuestCondition(keywordConfig.playCondition) ? keywordConfig.playCondition : {type:'TURN',turn:5}} onChange={v=>updateKeywordConfig('playCondition',v)}/>{!validChampionQuestCondition(keywordConfig.playCondition)&&<button type="button" className="min-h-11 p-2" onClick={()=>updateKeywordConfig('playCondition',{type:'TURN',turn:5})}>전체 5턴 이상 조건 적용</button>}</fieldset>}
+
                 <fieldset className="space-y-2 md:col-span-2">
                   <legend className="text-xs font-bold text-neutral-400">태그</legend>
                   <div className="flex flex-wrap gap-2">

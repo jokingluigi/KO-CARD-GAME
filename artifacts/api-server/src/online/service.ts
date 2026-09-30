@@ -473,7 +473,7 @@ async function hydrateRuntime(record: OnlineMatchRecord): Promise<OnlineMatchRun
       runRuntimeBackgroundTask(runtime, "gameplay-start", () => withRuntimeLock(runtime, async () => {
         if (runtime.state.status === "FINISHED" || !runtime.gameplayStartsAt || Date.now() < runtime.gameplayStartsAt) return;
         runtime.turnStartedAt = runtime.gameplayStartsAt;
-        runtime.turnDeadlineAt = runtime.gameplayStartsAt + (runtime.state.openingMulligan ? 75_000 : ONLINE_MATCH_CONFIG.turnTimeLimitSeconds * 1000);
+        runtime.turnDeadlineAt = runtime.gameplayStartsAt + (runtime.state.openingMulligan ? 20_000 : ONLINE_MATCH_CONFIG.turnTimeLimitSeconds * 1000);
         await persistRuntime(runtime);
         scheduleTurnTimer(runtime);
       }));
@@ -694,7 +694,7 @@ async function resolveTurnTimeoutLocked(runtime: OnlineMatchRuntime): Promise<vo
     return;
   }
   const playerId = runtime.state.activePlayerId;
-  const candidate = structuredClone(runtime.state);
+  const candidate = structuredClone(runtime.state.targetingState?.playRollback ?? runtime.state);
   candidate.targetingState = undefined;
   const result = executeAction(candidate, { type: "END_TURN", playerId });
   if (!result.success) return;
@@ -1055,7 +1055,7 @@ export async function startOnlineMatch(
   const startedAt = Date.now();
   const gameplayStartsAt = startedAt + 4500;
   const turnStartedAt = gameplayStartsAt;
-  const turnDeadlineAt = gameplayStartsAt + 75_000;
+  const turnDeadlineAt = gameplayStartsAt + 20_000;
 
   let record: OnlineMatchRecord | undefined;
   if (existingWaitingMatchId) {

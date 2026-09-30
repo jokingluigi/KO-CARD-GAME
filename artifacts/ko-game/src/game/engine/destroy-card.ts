@@ -27,7 +27,7 @@ export function destroyCard(
       '파괴할 수 없는 선수입니다.',
     );
   }
-  if (card.isChampionToken || card.isDirectDeployedChampion || card.isTrainingDummy) {
+  if (card.isTrainingDummy) {
     return actionFailure(
       state,
       'DIRECT_CHAMPION_CANNOT_BE_DESTROYED',

@@ -138,9 +138,9 @@ test('resolver covers board, hand/player ids, multiselect duplicates and champio
   assert.deepEqual(getValidTargets(state, 'player-1', source, { ...targeted('REDUCE_COST', 'SELF'), target: { zone: 'HAND', owner: 'SELF', cardType: 'WRESTLER', selection: 'PLAYER_CHOICE', count: 1 } }), ['hand']);
   assert.deepEqual(getValidTargets(state, 'player-1', source, { ...targeted('DAMAGE'), target: { zone: 'PLAYER', owner: 'ENEMY', selection: 'PLAYER_CHOICE', count: 1 } }), ['player-2']);
   state.players[1].board[1] = { ...card('token'), boardSlot: 1, isDirectDeployedChampion: true, isSilenceImmune: true };
-  assert.deepEqual(getValidTargets(state, 'player-1', source, targeted('DESTROY')), ['two']);
+  assert.deepEqual(getValidTargets(state, 'player-1', source, targeted('DESTROY')), ['two', 'token']);
   assert.deepEqual(getValidTargets(state, 'player-1', source, targeted('DAMAGE')).sort(), ['token', 'two']);
-  assert.deepEqual(getValidTargets(state, 'player-1', source, targeted('REMOVE_FROM_GAME')), ['two']);
+  assert.deepEqual(getValidTargets(state, 'player-1', source, targeted('REMOVE_FROM_GAME')), ['two', 'token']);
 
   const multi = card('multi', [{ ...targeted('STUN'), target: { zone: 'BOARD', owner: 'ENEMY', cardType: 'WRESTLER', selection: 'PLAYER_CHOICE', count: 2, minTargets: 2, maxTargets: 2 } }]);
   const multiPending = enterField(state, 'player-1', multi, 2);
@@ -482,13 +482,13 @@ test('ALL CHARACTER card-only actions affect wrestlers but never player ids', ()
   const championToken = { ...card('champion'), boardSlot: 1 as const, isDirectDeployedChampion: true };
   const state = createInitialGameState();
   state.players[1].board[0] = enemy; state.players[1].board[1] = championToken;
-  assert.deepEqual(getValidTargets(state, 'player-1', source, silenceAll), ['enemy']);
+  assert.deepEqual(getValidTargets(state, 'player-1', source, silenceAll), ['enemy', 'champion']);
   const resolved = enterField(state, 'player-1', source, 0);
   assert.equal(resolved.players[0].health, state.players[0].health);
   assert.equal(resolved.players[1].health, state.players[1].health);
   assert.equal(resolved.players[0].board[0]?.isSilenced, true);
   assert.equal(resolved.players[1].board[0]?.isSilenced, true);
-  assert.equal(resolved.players[1].board[1]?.isSilenced, false);
+  assert.equal(resolved.players[1].board[1]?.isSilenced, true);
 });
 
 test('pending targeting blocks end turn with the exact warning', () => {

@@ -15,15 +15,13 @@ export function isChampionProtectedByToken(
   state: GameState,
   playerId: string,
 ): boolean {
-  return Boolean(findDirectDeployedChampion(state, playerId));
+  return Boolean(state.players.find(p => p.id === playerId)?.board.some(card => card && (card.isChampionToken || card.isDirectDeployedChampion || state.cardPool?.find(d => d.id === card.definitionId)?.rarity === 'CHAMPION')));
 }
 
 export function getPlayerSurvivalHealth(
   state: GameState,
   playerId: string,
 ): number {
-  const directChampion = findDirectDeployedChampion(state, playerId);
-  if (directChampion) return directChampion.currentHealth;
   return (
     state.players.find((player) => player.id === playerId)?.health ?? 0
   );

@@ -195,3 +195,9 @@ test("targeting snapshots never expose hidden opponent ids", () => {
   assert.deepEqual(targeting.scriptContinuation.registers.selected.ids, []);
   assert.deepEqual(targeting.continuation.validTargetIds, []);
 });
+test('pending card-play undo snapshots never expose hidden authoritative state', () => {
+  const state = { players: [{id:'PLAYER_ONE',hand:[],deck:[]},{id:'PLAYER_TWO',hand:[],deck:[]}], events:[], targetingState:{ active:true,playerId:'PLAYER_ONE',sourceInstanceId:'source',effects:[],effectIndex:0,validTargetIds:[],selectedTargetIds:[],lastTargetIds:[],minTargets:0,maxTargets:0,mandatory:true,cancelable:false,playRollback:{randomSeed:987,players:[{hand:[{definitionId:'secret'}]}]} } } as unknown as GameState;
+  const view = sanitizeGameStateForViewer(state,'PLAYER_ONE') as {targetingState?:Record<string,unknown>};
+  assert.ok(view.targetingState);
+  assert.equal('playRollback' in view.targetingState,false);
+});

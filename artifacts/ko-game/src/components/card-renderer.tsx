@@ -1,3 +1,5 @@
+import { getCardDefinitions } from '../game/cards/test-cards';
+import { CardRulesText } from './card-rules-text';
 import { useEffect, useState, type CSSProperties, type KeyboardEvent, type ReactNode, type Ref } from "react";
 import { CardArtwork } from "./card-artwork";
 import { KEYWORD_DESCRIPTIONS } from './alt-inspector-utils';
@@ -192,10 +194,12 @@ export function CardRenderer({
     dodgeCharges,
   );
   const [keywordExplanation, setKeywordExplanation] = useState<string | null>(null);
-  const displayRulesText = getVisibleCardRulesText(
+  const displayRulesTextWithoutArmor = getVisibleCardRulesText(
     rulesText,
     visibleRuntimeKeywords,
   );
+  const armorValue = getCardDefinitions().find(card => card.name === name)?.effectConfig?.armor;
+  const displayRulesText = typeof armorValue === 'number' ? displayRulesTextWithoutArmor.replace(/아머(?!\s*\()/g, `아머(${armorValue})`) : displayRulesTextWithoutArmor;
   const normalizedRarity = isChampionToken
     ? "CHAMPION"
     : normalizeCardRarityForType(cardType, rarity);
@@ -371,13 +375,7 @@ export function CardRenderer({
             }}
           >
             <span className={`line-clamp-6 w-full font-bold drop-shadow-[0_1px_2px_rgba(0,0,0,0.95)] ${rulesClass}`}>
-              {(displayRulesText || "효과 없음").split(/(러쉬|기습|도발|회피)/g).map((part, index) => {
-                const key = ({ 러쉬: 'RUSH', 기습: 'SURPRISE', 도발: 'TAUNT', 회피: 'DODGE' } as Record<string, string>)[part];
-                return key ? <span key={index} className="pointer-events-auto cursor-help text-amber-200 underline decoration-dotted"
-                  onContextMenu={(event) => { event.preventDefault(); event.stopPropagation(); setKeywordExplanation(`${part}: ${KEYWORD_DESCRIPTIONS[key]}`); }}
-                  onClick={(event) => { event.stopPropagation(); setKeywordExplanation(`${part}: ${KEYWORD_DESCRIPTIONS[key]}`); }}>{part}</span>
-                  : <span key={index}>{part}</span>;
-              })}
+              <CardRulesText text={displayRulesText || "효과 없음"}/>
             </span>
           </div>
         )}

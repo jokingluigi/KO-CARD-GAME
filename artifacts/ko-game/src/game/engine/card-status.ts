@@ -31,7 +31,7 @@ export function silenceCard(
 ): GameState {
   const aura = state.tower?.auraStats?.[cardInstanceId];
   return refreshTowerAuras(updateBoardCard(state, cardInstanceId, (card) =>
-    card.isDirectDeployedChampion || card.isSilenceImmune
+    card.isSilenceImmune
       ? card
       : {
           ...removeGrantedCardText(card),

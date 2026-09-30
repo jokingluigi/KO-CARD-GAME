@@ -1,3 +1,4 @@
+import { CardRulesText } from './card-rules-text';
 import {
   createContext,
   type ReactNode,
@@ -427,7 +428,7 @@ export function CardInspectContent({ card }: { card: CardInstance }) {
       )}
       <InspectorSection title="효과 설명" tone="neutral">
         <p data-testid="inspector-card-rules" className="whitespace-pre-wrap break-words text-[clamp(0.9375rem,1.25vw,1.125rem)] leading-[1.55] text-neutral-100">
-          {rulesText}
+          <CardRulesText text={rulesText}/>
         </p>
       </InspectorSection>
       {card.isGenerated && card.lineage && (

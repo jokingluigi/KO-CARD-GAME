@@ -105,6 +105,7 @@ export interface GameState {
   targetingState?: {
     active: true;
      phase?: 'PRE_COMMIT' | 'POST_COMMIT';
+     playRollback?: GameState;
      pendingAction?: {
        type: 'PLAY_TECHNIQUE' | 'USE_ACTIVE' | 'USE_CHAMPION_ABILITY';
        cardInstanceId?: string;

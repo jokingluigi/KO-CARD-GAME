@@ -60,7 +60,7 @@ export function directDeployChampionToken(
   const directChampion: CardInstance = {
     ...card,
     isDirectDeployedChampion: true,
-    isSilenceImmune: true,
+    isSilenceImmune: false,
   };
   const generatedState: GameState = {
     ...state,

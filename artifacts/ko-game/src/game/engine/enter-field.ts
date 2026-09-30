@@ -33,6 +33,7 @@ export function enterField(
     ...applyTowerEntryStats(state, playerId, card),
     boardSlot,
     enteredThisTurn: true,
+    enteredOnTurn: state.turn,
     attacksUsedThisTurn: 0,
   };
   const event: EnterFieldEvent = {

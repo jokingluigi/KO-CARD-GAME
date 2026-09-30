@@ -171,7 +171,8 @@ export function executeAction(state: GameState, action: GameAction): ActionResul
       if (pending.phase === 'PRE_COMMIT') {
         return actionFailure(state, 'TARGET_SELECTION_PENDING', '사용을 확정한 뒤 대상을 선택하세요.');
       }
-      const selected = selectEffectTarget(state, action.targetId);
+      let selected = selectEffectTarget(state, action.targetId);
+      if (selected !== state && selected.targetingState?.active && pending.playRollback) selected = { ...selected, targetingState: { ...selected.targetingState, playRollback: pending.playRollback } };
       return selected === state
         ? actionFailure(state, 'NO_VALID_TARGET', '선택할 수 없는 대상입니다.')
         : actionSuccess(processChampionQuestEvents(state, selected));

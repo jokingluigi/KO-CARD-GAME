@@ -1,3 +1,5 @@
+import { ChampionQuestConditionEditor } from './champion-quest-condition-editor';
+import { validChampionQuestCondition } from '@workspace/game-engine';
 import { AdminEffectAiGenerator } from "./admin-effect-ai-generator";
 import { effectConfigEntryCount, mergeGeneratedEffectDraft } from "@/lib/admin-effect-config";
 import { useCallback, useEffect, useRef, useState, type Dispatch, type SetStateAction } from "react";
@@ -989,6 +991,7 @@ export function AdminChampionManager({ onUnauthorized }: { onUnauthorized: () =>
            });
          }}/> 퀘스트 있음</label>
          {form.hasQuest && <><label>퀘스트 이름<input className={input} value={form.questName??""} onChange={e=>update("questName",e.target.value)}/></label><label>필요 진행도<input type="number" className={input} value={form.questProgressRequired??1} onChange={e=>updateQuestProgress(e.target.value===""?null:Number(e.target.value))}/></label>
+           <fieldset className="space-y-3 md:col-span-2"><legend>퀘스트 달성 조건 설정</legend><select className={input} value={form.questCondition?.event === 'STATE_CONDITION' ? 'advanced' : 'legacy'} onChange={e=>{ if(e.target.value==='advanced') { update('questCondition',{event:'STATE_CONDITION',required:form.questProgressRequired??1,condition:{type:'TURN',turn:5}}); } else update('questCondition',{event:'CARD_PLAYED',progress:1,required:form.questProgressRequired??1}); }}><option value="legacy">기존 이벤트 진행도</option><option value="advanced">턴·체력·행동 누적·복합 조건</option></select>{form.questCondition?.event === 'STATE_CONDITION' && validChampionQuestCondition(form.questCondition.condition) && <ChampionQuestConditionEditor value={form.questCondition.condition} onChange={condition=>update('questCondition',{...formRef.current.questCondition,condition})}/>}<p className="text-xs text-neutral-400">복합 조건은 누적 행동과 현재 턴·체력을 함께 평가합니다. 퀘스트 보상은 최초 달성 시 한 번만 적용합니다.</p></fieldset>
            <QuestConditionField
              value={form.questText??""}
              onChange={v=>update("questText",v)}

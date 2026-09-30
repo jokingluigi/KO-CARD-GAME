@@ -1,3 +1,4 @@
+import { keywordDamage, hasEntryDefense } from '../engine/keyword-rules';
 import type { CardDefinition, CardInstance, CardStatHistoryEntry } from '../cards/types';
 import { matchesCardTagFilter } from '../cards/tags';
 import { towerOpenSlot, canEnterTowerField, preventTowerRetire, resolveTowerRemoval, towerIncomingDamage, refreshTowerAuras } from '../tower/relics';
@@ -55,7 +56,7 @@ export function getValidTargets(
   if (zones.length === 1 && zones[0] === 'PLAYER') {
     if (target.owner === 'ALL') return [];
     const owner = target.owner === 'SELF' ? playerId : state.players.find((p) => p.id !== playerId)?.id;
-    return owner && !isChampionProtectedByToken(state, owner) ? [owner] : [];
+    return owner && (effect.action === 'HEAL' || !isChampionProtectedByToken(state, owner)) ? [owner] : [];
   }
   const owners = target.owner === 'ALL'
     ? state.players.map((player) => player.id)
@@ -68,6 +69,7 @@ export function getValidTargets(
     if (!player) return [];
     const cards = cardsInZones(player, zones);
     const filteredCards = cards.filter((card) => {
+      if (['PLAYER_CHOICE', 'RANDOM', 'SAME_TARGET'].includes(target.selection ?? '') && getActiveCardKeywords(card).includes('IMMUNE')) return false;
       if (zones.length === 1 && zones[0] === 'CHARACTER' && card.cardType !== 'WRESTLER') return false;
       if (target.cardType && card.cardType !== target.cardType) return false;
       if (target.filter?.isGenerated !== undefined && card.isGenerated !== target.filter.isGenerated) return false;
@@ -88,7 +90,7 @@ export function getValidTargets(
       if (target.selection === 'PLAYER_CHOICE' && card.instanceId === sourceCard.instanceId) return false;
       // Directly deployed champion tokens remain damageable, but not silence,
       // destroy, or remove-from-game targets.
-      if ((card.isChampionToken || card.isDirectDeployedChampion || card.isTrainingDummy) && (
+      if ((card.isTrainingDummy) && (
         effect.action === 'SILENCE' ||
         effect.action === 'DESTROY' ||
         effect.action === 'RETIRE' ||
@@ -104,7 +106,7 @@ export function getValidTargets(
       : filteredCards;
     const orderedCards = sortAndTakeTargetCards(adjacentCards, target);
     const cardIds = orderedCards.map((card) => card.instanceId);
-    return canTargetPlayer && !isChampionProtectedByToken(state, owner) ? [owner, ...cardIds] : cardIds;
+    return canTargetPlayer && (effect.action === 'HEAL' || !isChampionProtectedByToken(state, owner)) ? [owner, ...cardIds] : cardIds;
   });
 }
 
@@ -193,6 +195,7 @@ function scriptTargetCards(
       : playerId))].filter((player): player is GameState['players'][number] => Boolean(player));
   const zones = scriptZones(target);
   const candidates = owners.flatMap((owner) => cardsInZones(owner, zones)).filter((card) => {
+    if (['PLAYER_CHOICE', 'RANDOM', 'SAME_TARGET'].includes(target.selection ?? '') && getActiveCardKeywords(card).includes('IMMUNE')) return false;
     if (target.cardType && card.cardType !== target.cardType) return false;
     const filter = target.filter;
     if (filter?.isGenerated !== undefined && card.isGenerated !== filter.isGenerated) return false;
@@ -1739,6 +1742,7 @@ export function selectEffectTarget(state: GameState, targetId: string): GameStat
 export function cancelEffectTargeting(state: GameState): GameState {
   const pending = state.targetingState;
   if (!pending) return state;
+  if (pending.playRollback) return pending.playRollback;
   if (pending.phase === 'PRE_COMMIT') return { ...state, targetingState: undefined };
   // Optional structured effects retain their normal continuation semantics.
   if (pending.cancelable) {
@@ -2138,7 +2142,7 @@ export function applyEffect(
         const selectedIds = chosenTargetInstanceIds ?? [];
         return selectedIds.reduce((nextState, selectedId) => {
           const owner = nextState.players.find((player) =>
-            player.board.some((card) => card?.instanceId === selectedId),
+            player.id === selectedId || player.board.some((card) => card?.instanceId === selectedId),
           );
           if (!owner) return nextState;
           return applyEffect(
@@ -2162,8 +2166,7 @@ export function applyEffect(
           const selectedIds = getValidTargets(state, playerId, sourceCard, effect);
           return selectedIds.reduce((nextState, selectedId) => {
             const owner = nextState.players.find((player) =>
-              player.id === selectedId ||
-              player.board.some((card) => card?.instanceId === selectedId),
+              player.id === selectedId || player.board.some((card) => card?.instanceId === selectedId),
             );
             if (!owner) return nextState;
             const isPlayerTarget = owner.id === selectedId;
@@ -2248,22 +2251,7 @@ export function applyEffect(
       }, afterPlayers);
     }
     if (zones.length === 1 && zones[0] === 'PLAYER' && effect.action === 'HEAL') {
-      const directChampion = candidatePlayer.board.find((card) => card?.isDirectDeployedChampion);
-      return {
-        ...state,
-        players: state.players.map((player) => player.id !== targetOwner ? player : directChampion
-          ? {
-              ...player,
-              board: player.board.map((card) => card?.instanceId === directChampion.instanceId
-                ? { ...card, currentHealth: Math.min(card.maxHealth, card.currentHealth + amount) }
-                : card) as typeof player.board,
-            }
-          : {
-              ...player,
-              health: Math.min(player.maxHealth, player.health + amount),
-              champion: player.champion ? { ...player.champion, health: Math.min(player.maxHealth, player.health + amount) } : null,
-            }),
-      };
+      return { ...state, players: state.players.map(p => p.id !== targetOwner ? p : { ...p, health: Math.min(p.maxHealth, p.health + amount), champion: p.champion ? { ...p.champion, health: Math.min(p.maxHealth, p.health + amount) } : null }) };
     }
     if (zones.length === 1 && zones[0] === 'PLAYER') {
       if (isChampionProtectedByToken(state, targetOwner)) return state;
@@ -2302,7 +2290,8 @@ export function applyEffect(
     }
     const candidates = cardsInZones(candidatePlayer, zones);
     const eligibleCandidates = candidates.filter((card) => {
-      if ((card.isChampionToken || card.isDirectDeployedChampion || card.isTrainingDummy) && (
+      if (['PLAYER_CHOICE', 'RANDOM', 'SAME_TARGET'].includes(target.selection ?? '') && getActiveCardKeywords(card).includes('IMMUNE')) return false;
+      if ((card.isTrainingDummy) && (
         effect.action === 'SILENCE' ||
         effect.action === 'DESTROY' ||
         effect.action === 'RETIRE' ||
@@ -2404,7 +2393,7 @@ export function applyEffect(
       return targets.reduce((nextState, selected) => {
         const owner = nextState.players.find((player) => player.id === targetOwner);
         const current = owner?.board.find((card) => card?.instanceId === selected.instanceId);
-        if (!current || current.isDirectDeployedChampion || current.isTrainingDummy) return nextState;
+        if (!current || current.isTrainingDummy) return nextState;
         const replacement = generateCard(targetDefinition, {
           instanceId: current.instanceId,
           playerId: targetOwner,
@@ -2596,7 +2585,7 @@ export function applyEffect(
       return targets.reduce((nextState, targetCard) => {
         const owner = nextState.players.find((player) => player.id === targetOwner);
         const current = owner?.board.find((card) => card?.instanceId === targetCard.instanceId);
-        if (!owner || !current || current.isChampionToken || current.isDirectDeployedChampion || current.isTrainingDummy) return nextState;
+        if (!owner || !current || current.isTrainingDummy) return nextState;
         const protectedState = preventTowerRetire(nextState, targetOwner, current);
         if (protectedState !== nextState) return { ...protectedState, preventedRetireTargetIds: protectedState.preventedRetireTargetIds?.filter(id => id !== current.instanceId) };
         const attribution = sourceContextFor(
@@ -2696,7 +2685,7 @@ export function applyEffect(
       return targets.reduce((nextState, target) => {
         const owner = nextState.players.find((player) => player.id === targetOwner);
         const current = owner?.board.find((card) => card?.instanceId === target.instanceId);
-        if (!owner || !current || current.isDirectDeployedChampion) return nextState;
+        if (!owner || !current) return nextState;
         return {
           ...nextState,
           players: nextState.players.map((player) => player.id !== targetOwner ? player : {
@@ -2716,9 +2705,10 @@ export function applyEffect(
       return targets.reduce((nextState, target) => {
         const owner = nextState.players.find((player) => player.id === targetOwner);
         const current = owner?.board.find((card) => card?.instanceId === target.instanceId);
-        if (!owner || !current || current.isDirectDeployedChampion) return nextState;
+        if (!owner || !current) return nextState;
         const snapshot = {
           definitionId: current.definitionId, cardType: current.cardType,
+          armor: current.armor, playCondition: current.playCondition,
           currentCost: current.baseCost ?? current.currentCost,
           currentAttack: current.baseAttack ?? current.currentAttack,
           currentHealth: current.baseHealth ?? current.maxHealth,
@@ -2755,7 +2745,7 @@ export function applyEffect(
           triggerContext,
           preparedState.events.length,
         );
-        const preventedDamage = preparedState.preventedDamageTargetIds?.includes(current.instanceId) ?? false;
+        const preventedDamage = (preparedState.preventedDamageTargetIds?.includes(current.instanceId) ?? false) || (hasEntryDefense(preparedCurrent, preparedState.turn));
         const clearDamageMarker = (stateWithMarker: GameState): GameState => ({
           ...stateWithMarker,
           preventedDamageTargetIds: stateWithMarker.preventedDamageTargetIds?.filter((id) => id !== current.instanceId),
@@ -2788,7 +2778,7 @@ export function applyEffect(
         }
         const reduced = towerIncomingDamage(preparedState, targetOwner, preparedCurrent, damageAmount);
         preparedState = reduced.state;
-        const effectiveDamage = reduced.amount;
+        const effectiveDamage = keywordDamage(preparedCurrent, reduced.amount, preparedState.turn);
         const health = preparedCurrent.isTrainingDummy ? 1 : preparedCurrent.currentHealth - effectiveDamage;
         if (health > 0) {
           const damagedState: GameState = {

@@ -1,6 +1,6 @@
 import type { GameState, PlayerState } from '../types/game-state';
 import { MAX_HAND_SIZE } from '../rules/constants';
-import { findDirectDeployedChampion } from './direct-champion';
+import { isChampionProtectedByToken } from './direct-champion';
 import { resolveCardRetiredListeners, resolveTriggeredAbilities } from '../effects/effect-engine';
 import { normalizeCardForZone, resetCardForGraveyard } from '../cards/zone-state';
 
@@ -31,76 +31,7 @@ export function drawCard(state: GameState, playerId: string): GameState {
 
   if (drawingPlayer.deck.length === 0) {
     const fatigueCount = drawingPlayer.fatigueCount + 1;
-    const directChampion = findDirectDeployedChampion(state, playerId);
-    if (directChampion) {
-      const currentHealth = directChampion.currentHealth - fatigueCount;
-      const defeated = currentHealth <= 0;
-      const fatigueState: GameState = {
-        ...state,
-        players: state.players.map((player) => {
-          if (player.id !== playerId) return player;
-          const board = player.board.map((card) =>
-            card?.instanceId === directChampion.instanceId
-              ? defeated
-                ? null
-                : { ...card, currentHealth }
-              : card,
-          ) as typeof player.board;
-          return {
-            ...player,
-            fatigueCount,
-            board,
-            graveyard: defeated
-              ? [
-                  ...player.graveyard,
-                   resetCardForGraveyard(directChampion),
-                ]
-              : player.graveyard,
-          };
-        }),
-        events: [
-          ...state.events,
-          {
-            type: 'DAMAGE_DEALT',
-            playerId,
-            source: { type: 'SYSTEM' },
-            target: {
-              type: 'CARD',
-              cardInstanceId: directChampion.instanceId,
-            },
-            reason: 'FATIGUE',
-            amount: fatigueCount,
-          },
-          ...(defeated
-            ? [
-                {
-                  type: 'CARD_RETIRED' as const,
-                  playerId,
-                  cardInstanceId: directChampion.instanceId,
-                  cardType: directChampion.cardType,
-                  source: { type: 'SYSTEM' as const },
-                  target: {
-                    type: 'CARD' as const,
-                    cardInstanceId: directChampion.instanceId,
-                  },
-                  reason: 'RETIRE',
-                  boardSlot: directChampion.boardSlot!,
-                },
-              ]
-            : []),
-        ],
-      };
-      if (!defeated) return fatigueState;
-      const withLeaveEffect = resolveTriggeredAbilities(
-        fatigueState,
-        playerId,
-        directChampion,
-        'LEAVE_FIELD',
-        { leaveReason: 'RETIRE' },
-      );
-      return resolveCardRetiredListeners(withLeaveEffect, playerId, directChampion);
-    }
-    const health = drawingPlayer.health - fatigueCount;
+    const health = drawingPlayer.health - (isChampionProtectedByToken(state, playerId) ? 0 : fatigueCount);
     const fatiguedPlayer = {
       ...drawingPlayer,
       health,
@@ -126,7 +57,7 @@ export function drawCard(state: GameState, playerId: string): GameState {
           source: { type: 'SYSTEM' },
           target: { type: 'PLAYER', playerId },
           reason: 'FATIGUE',
-          amount: fatigueCount,
+          amount: isChampionProtectedByToken(state, playerId) ? 0 : fatigueCount,
         },
       ],
     };

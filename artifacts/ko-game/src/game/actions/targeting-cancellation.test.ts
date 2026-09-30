@@ -343,7 +343,7 @@ test('Active ability PRE_COMMIT cancel leaves use flag unset and confirm consume
   assert.equal(confirmed.state.players[1].board[0]?.currentHealth, 1);
 });
 
-test('post-commit ENTER_FIELD cancellation preserves the played card and payment', () => {
+test('ENTER_FIELD cancellation returns the card and refunds its complete play', () => {
   const state = playableState();
   const wrestler = targetedEntryWrestler();
   state.players[0].hand = [generateCardInstance(wrestler, { instanceId: 'entry-1' })];
@@ -373,11 +373,7 @@ test('post-commit ENTER_FIELD cancellation preserves the played card and payment
     playerId: 'player-1',
   });
   assert.equal(cancelled.success, true);
-  assert.equal(cancelled.state.targetingState, undefined);
-  assert.equal(cancelled.state.players[0].currentGold, 2);
-  assert.equal(cancelled.state.players[0].board[1]?.instanceId, 'entry-1');
-  assert.equal(cancelled.state.players[1].board[0]?.currentHealth, 2);
-  assert.equal(cancelled.state.events.filter((event) => event.type === 'CARD_PLAYED').length, 1);
+  assert.deepEqual(cancelled.state, state);
 });
 
 test('zero-target ENTER_FIELD choice resolves as a no-op without opening cancel mode', () => {

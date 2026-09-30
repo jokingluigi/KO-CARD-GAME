@@ -204,9 +204,9 @@ test('KO mechanisms: 발단 destroys generated board cards, sums current stats, 
   const zombie = owner.board.find((entry) => entry?.definitionId === 'zombie-token');
   assert.equal(owner.graveyard.some((entry) => entry.instanceId === generatedA.instanceId), false);
   assert.equal(owner.graveyard.some((entry) => entry.instanceId === generatedB.instanceId), false);
-  assert.equal(owner.board[3]?.instanceId, directChampion.instanceId);
-  assert.equal(zombie?.currentAttack, 7);
-  assert.equal(zombie?.currentHealth, 7);
+  assert.equal(owner.board[3], null);
+  assert.equal(zombie?.currentAttack, generatedA.currentAttack + generatedB.currentAttack + directChampion.currentAttack);
+  assert.equal(zombie?.currentHealth, generatedA.currentHealth + generatedB.currentHealth + directChampion.currentHealth);
   assert.deepEqual(zombie?.keywords, ['TAUNT']);
 });
 

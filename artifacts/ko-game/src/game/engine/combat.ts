@@ -1,3 +1,4 @@
+import { keywordDamage, healLifesteal, hasEntryDefense } from './keyword-rules';
 import type { CardInstanceId } from '../cards/types';
 import type { ActionErrorCode, ActionResult } from '../actions/types';
 import { actionFailure, actionSuccess } from '../actions/types';
@@ -251,10 +252,14 @@ export function attack(
   const defendingPlayer = state.players.find(
     (player) => player.id === target.playerId,
   );
+  if (target.type === 'WRESTLER') {
+    const selected = defendingPlayer?.board.find(c => c?.instanceId === target.cardInstanceId);
+    if (selected && hasEntryDefense(selected, state.turn)) return actionFailure(state, 'INVALID_ATTACK_TARGET', '등장한 턴의 방어 선수는 공격할 수 없습니다.');
+  }
   const tauntCards =
     defendingPlayer?.board.filter(
       (card): card is NonNullable<typeof card> =>
-        card !== null && hasKeyword(card, 'TAUNT'),
+        card !== null && hasKeyword(card, 'TAUNT') && !(hasEntryDefense(card, state.turn)),
     ) ?? [];
   if (
     tauntCards.length > 0 &&
@@ -313,7 +318,7 @@ export function attack(
     const remainingHealth = damagedDirectChampion
       ? damagedDirectChampion.currentHealth
       : defendingPlayer.health - attackerDamage;
-    const attackedState: GameState = {
+    const attackedState: GameState = healLifesteal({
       ...preDamageState,
       players: state.players.map((player) => {
         if (player.id === attackingPlayerId) {
@@ -398,7 +403,7 @@ export function attack(
            amount: directChampionDodges || preventedChampionDamage ? 0 : attackerDamage,
         },
       ],
-    };
+    }, attackingPlayerId, attacker, preventedChampionDamage || directChampionDodges ? 0 : attackerDamage);
 
     const selfAttackResolved = resolveSelfAttackTrigger(
       attackedState, attackingPlayerId, attackerInstanceId,
@@ -474,8 +479,8 @@ export function attack(
     : attackerBeforeDamage;
   const attackerPrepared = findBoardCard(preDamageState, attackingPlayerId, attackerInstanceId)?.card ?? attackerCurrent;
   const defenderPreparedCard = findBoardCard(preDamageState, target.playerId, defender.instanceId)?.card ?? defenderCurrent;
-  const preventedAttackerDamage = Boolean(preDamageState.preventedDamageTargetIds?.includes(defender.instanceId));
-  const preventedDefenderDamage = Boolean(preDamageState.preventedDamageTargetIds?.includes(attackerInstanceId));
+  const preventedAttackerDamage = Boolean(preDamageState.preventedDamageTargetIds?.includes(defender.instanceId)) || (hasEntryDefense(defenderPreparedCard, preDamageState.turn));
+  const preventedDefenderDamage = Boolean(preDamageState.preventedDamageTargetIds?.includes(attackerInstanceId)) || (hasEntryDefense(attackerPrepared, preDamageState.turn));
   const attackerDodges =
     !preventedDefenderDamage && attackerPrepared.dodgeAvailable && hasKeyword(attackerPrepared, 'DODGE');
   const defenderDodges =
@@ -496,6 +501,8 @@ export function attack(
     const reduced = towerIncomingDamage(preDamageState, attackingPlayerId, attackerPrepared, defenderDamage, attackingHighest);
     preDamageState = reduced.state; defenderDamage = reduced.amount;
   }
+  attackerDamage = keywordDamage(defenderPreparedCard, attackerDamage, preDamageState.turn);
+  defenderDamage = keywordDamage(attackerPrepared, defenderDamage, preDamageState.turn);
   const damageEventStartIndex = preDamageState.events.length;
   const combatEventId = `combat:${state.gameId}:${state.turn}:${damageEventStartIndex}`;
   const attackerAttribution: EventAttribution = {
@@ -512,7 +519,7 @@ export function attack(
     rootSourceEventId: combatEventId,
     causationId: `${combatEventId}:${defenderPreparedCard.instanceId}`,
   };
-  const damagedState: GameState = {
+  const damagedState: GameState = healLifesteal({
     ...preDamageState,
     players: preDamageState.players.map((player) => ({
       ...player,
@@ -584,7 +591,7 @@ export function attack(
         sourceContext: defenderAttribution,
       },
     ],
-  };
+  }, attackingPlayerId, attackerPrepared, preventedAttackerDamage || defenderDodges ? 0 : attackerDamage);
 
   const firstAttackedResolved = resolveTriggeredAbilities(
     damagedState,

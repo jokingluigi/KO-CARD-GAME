@@ -67,6 +67,8 @@ function sanitizeTargetingState(
   hiddenCardIds: Set<string>,
 ): NonNullable<GameState["targetingState"]> {
   const safe = { ...targetingState };
+  // Undo snapshots are authoritative server state, including hidden zones.
+  delete safe.playRollback;
   safe.validTargetIds = targetingState.validTargetIds.filter((id) => !hiddenCardIds.has(id));
   safe.selectedTargetIds = targetingState.selectedTargetIds.filter((id) => !hiddenCardIds.has(id));
   safe.lastTargetIds = targetingState.lastTargetIds.filter((id) => !hiddenCardIds.has(id));

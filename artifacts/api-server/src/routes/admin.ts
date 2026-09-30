@@ -1,3 +1,4 @@
+import { validChampionQuestCondition } from '@workspace/game-engine';
 import { createHmac, randomUUID, timingSafeEqual } from "node:crypto";
 import { and, asc, desc, eq, ilike, inArray, or, sql } from "drizzle-orm";
 import {
@@ -99,7 +100,7 @@ const CARD_KEYWORDS = [
   "SURPRISE",
   "TAUNT",
   "DODGE",
-  "MULTI_STRIKE",
+  "MULTI_STRIKE", "IMMUNE", "REGEN", "ARMOR", "CONDITION", "DEFENSE", "LIFESTEAL",
 ] as const;
 const IMAGE_DISPLAY_MODES = ["COVER", "CONTAIN", "CUSTOM"] as const;
 const GAME_MEDIA_TYPES = [
@@ -337,6 +338,7 @@ function parseChampionInput(value: unknown): ChampionInput | null {
     (questCompleteAudioUrl !== null &&
       !questCompleteAudioUrl.startsWith("/api/storage/objects/"))
   ) return null;
+  if (rawQuestCondition?.event === "STATE_CONDITION" && !validChampionQuestCondition(rawQuestCondition.condition)) return null;
   if (hasQuest && (!text("questName", true) || !text("questText", true) ||
        !questCondition || typeof questCondition.event !== "string" || !questCondition.event.trim() ||
        questProgressRequired === null ||
@@ -938,6 +940,8 @@ function parseCardInput(value: unknown): CardInput | null {
     !input.effectConfig ||
     typeof input.effectConfig !== "object" ||
     Array.isArray(input.effectConfig)
+     || ((input.effectConfig as Record<string, unknown>).armor !== undefined && (!Number.isSafeInteger((input.effectConfig as Record<string, unknown>).armor) || Number((input.effectConfig as Record<string, unknown>).armor) < 0 || Number((input.effectConfig as Record<string, unknown>).armor) > 999))
+     || ((input.keywords as string[]).includes('CONDITION') && !validChampionQuestCondition((input.effectConfig as Record<string, unknown>).playCondition))
      || (effectId === "STRUCTURED_EFFECTS_V1" && !isStructuredEffects(input.effectConfig))
      || (effectId === "SCRIPT_V1" && !isEffectScriptConfig(input.effectConfig))
     || (imageAssetId === null) !== (imageUrl === null)

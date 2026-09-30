@@ -1,3 +1,4 @@
+import { canPlayConditionalCard } from './keyword-rules';
 import type { ActionResult } from '../actions/types';
 import { actionFailure, actionSuccess } from '../actions/types';
 import type { CardInstanceId } from '../cards/types';
@@ -17,6 +18,7 @@ export function playTechniqueFromHand(
   const player = state.players.find((candidate) => candidate.id === playerId);
   const card = player?.hand.find((candidate) => candidate.instanceId === cardInstanceId);
   if (!player || !card || card.cardType !== 'TECHNIQUE') return actionFailure(state, 'CARD_NOT_IN_HAND', '사용할 수 없는 기술입니다.');
+  if (!canPlayConditionalCard(state, playerId, card)) return actionFailure(state, 'NO_VALID_TARGET', '카드 사용 조건을 충족하지 않았습니다.');
   if (player.currentGold < card.currentCost) return actionFailure(state, 'NOT_ENOUGH_GOLD', '골드가 부족합니다.');
   const queuedState = resolveQueuedEffectsForPlayedTechnique(state, playerId, cardInstanceId);
   const queuedPlayer = queuedState.players.find((candidate) => candidate.id === playerId);

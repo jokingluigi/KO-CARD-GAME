@@ -175,3 +175,7 @@ export function createDeckFromDefinitionIds(
     } satisfies CardInstance];
   });
 }
+
+export function getCardDefinitions(): CardDefinition[] {
+  return [...new Map([...runtimeCardDefinitions, ...TEST_CARD_DEFINITIONS, ...KEYWORD_TEST_CARD_DEFINITIONS, TEST_CHAMPION_TOKEN_DEFINITION].map(card => [card.id, card])).values()];
+}

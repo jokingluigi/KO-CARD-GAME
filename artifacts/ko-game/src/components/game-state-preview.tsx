@@ -159,7 +159,23 @@ export function GameStatePreview({
   const spokenTimerRef = React.useRef<number | null>(null);
   React.useEffect(() => () => { if (spokenTimerRef.current !== null) window.clearTimeout(spokenTimerRef.current); }, []);
   const [tutorialStep, setTutorialStep] = React.useState<number | null>(null);
+  const [mulliganSeconds, setMulliganSeconds] = React.useState(20);
+  const mulliganSubmitRef = React.useRef(onMulligan);
+  mulliganSubmitRef.current = onMulligan;
+  const mulliganSelectionRef = React.useRef<string[]>([]);
+  React.useEffect(() => {
+    if (!onMulligan || introActive || !canMulligan(state, state.players[0].id)) return;
+    const deadline = Date.now() + 20_000;
+    setMulliganSeconds(20);
+    const timer = window.setInterval(() => {
+      const remaining = Math.max(0, Math.ceil((deadline - Date.now()) / 1000));
+      setMulliganSeconds(remaining);
+      if (!remaining) { window.clearInterval(timer); mulliganSubmitRef.current?.(mulliganSelectionRef.current); }
+    }, 200);
+    return () => window.clearInterval(timer);
+  }, [state.gameId, state.openingMulligan, state.players[0].mulliganUsed, introActive, Boolean(onMulligan)]);
   const [mulliganSelection, setMulliganSelection] = React.useState<string[]>([]);
+  mulliganSelectionRef.current = mulliganSelection;
   const [coachStage, setCoachStage] = React.useState(0);
   const [coachDismissed, setCoachDismissed] = React.useState(() => {
     try { return localStorage.getItem("ko-match-coach-v1") === "done"; } catch { return false; }
@@ -228,6 +244,7 @@ export function GameStatePreview({
   const effectFinisherTimerRef = React.useRef<number | null>(null);
   const processedEventCountRef = React.useRef<number | null>(null);
   const processedEventKeysRef = React.useRef(new Set<string>());
+  const presentedQuestCompletionsRef = React.useRef(new Set<string>());
   const lastCardPositionsRef = React.useRef(new Map<string, { left: number; top: number; width: number; height: number }>());
   const previousCardStatsRef = React.useRef(new Map<string, { attack: number; health: number }>());
   const previousCardsRef = React.useRef(new Map<string, CardInstance>());
@@ -604,10 +621,17 @@ export function GameStatePreview({
       }
     }
     if (cues.length) {
-      setPresentationQueue((current) => {
-        const existingIds = new Set(current.map((cue) => cue.id));
-        const freshCues = cues.filter((cue) => !existingIds.has(cue.id));
-        return freshCues.length ? [...current.slice(-18), ...freshCues] : current;
+      const onceCues = cues.filter(cue => {
+        if (cue.kind !== 'QUEST_COMPLETE') return true;
+        const key = `${state.gameId}:${cue.playerId ?? ''}:${cue.championId ?? ''}`;
+        if (presentedQuestCompletionsRef.current.has(key)) return false;
+        presentedQuestCompletionsRef.current.add(key);
+        return true;
+      });
+      setPresentationQueue(current => {
+        const existingIds = new Set(current.map(cue => cue.id));
+        const fresh = onceCues.filter(cue => !existingIds.has(cue.id));
+        return fresh.length ? [...current.slice(-18), ...fresh] : current;
       });
     }
   }, [autoPresentOwnActions, onOpponentAttackPresentation, onSelfPlayPresentation, state.events, state.players]);
@@ -1307,7 +1331,7 @@ export function GameStatePreview({
           {onMulligan && !introActive && canMulligan(state, state.players[0].id) && (
             <div className="fixed inset-0 z-[205] flex items-center justify-center bg-black/85 p-4" role="dialog" aria-label="시작 손패 교체">
               <div className="max-h-[90vh] w-full max-w-3xl overflow-y-auto rounded-xl border border-amber-500 bg-neutral-950 p-5 text-white shadow-2xl">
-                <h2 className="text-lg font-black text-amber-300">시작 손패 교체</h2>
+                <h2 className="text-lg font-black text-amber-300">시작 손패 교체 · {mulliganSeconds}초</h2>
                 <p className="my-3 text-sm text-neutral-300">첫 턴 행동 전, 바꿀 카드를 선택하세요. 선택한 카드만 덱의 카드와 교체합니다.</p>
                 <div className="mx-auto grid w-full max-w-[660px] grid-cols-2 justify-items-center gap-3 sm:grid-cols-4">
                   {state.players[0].hand.map((card) => <button key={card.instanceId} type="button"

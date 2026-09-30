@@ -129,6 +129,8 @@ export interface CardDefinition {
 }
 
 export interface CardInstance {
+  armor?: number;
+  playCondition?: import('../../../../../lib/game-engine/src/champion-quest-conditions').ChampionQuestCondition;
   instanceId: CardInstanceId;
   definitionId: CardDefinitionId;
   cardType?: 'WRESTLER' | 'TECHNIQUE';
@@ -144,6 +146,7 @@ export interface CardInstance {
   maxHealth: number;
   boardSlot: 0 | 1 | 2 | 3 | null;
   enteredThisTurn: boolean;
+  enteredOnTurn?: number;
   attacksUsedThisTurn: number;
   isGenerated: boolean;
   isToken: boolean;
@@ -176,6 +179,8 @@ export interface CardInstance {
   lastRetiredStats?: { attack: number; health: number };
   /** Executable text copied from a published match CardDefinition. */
   grantedText?: {
+    armor?: number;
+    playCondition?: import('../../../../../lib/game-engine/src/champion-quest-conditions').ChampionQuestCondition;
     donorDefinitionId: string;
     rulesText: string;
     keywords: CardKeyword[];
@@ -194,5 +199,5 @@ export interface CardLineage {
 
 export interface CapturedCard {
   definitionId: CardDefinitionId;
-  baseSnapshot: Pick<CardInstance, 'definitionId' | 'cardType' | 'currentCost' | 'currentAttack' | 'currentHealth' | 'maxHealth' | 'isGenerated' | 'isToken' | 'isChampionToken' | 'keywords' | 'abilities' | 'tags' | 'dodgeCharges' | 'grantedText'>;
+  baseSnapshot: Pick<CardInstance, 'definitionId' | 'cardType' | 'currentCost' | 'currentAttack' | 'currentHealth' | 'maxHealth' | 'isGenerated' | 'isToken' | 'isChampionToken' | 'keywords' | 'abilities' | 'tags' | 'dodgeCharges' | 'grantedText' | 'armor' | 'playCondition'>;
 }

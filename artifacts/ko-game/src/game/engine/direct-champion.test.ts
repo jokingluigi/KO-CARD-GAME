@@ -112,12 +112,12 @@ test('챔피언 자신의 효과로만 직접 출전 상태를 만든다', () =>
   assert.ok(card);
   assert.equal(card.isChampionToken, true);
   assert.equal(card.isDirectDeployedChampion, true);
-  assert.equal(card.isSilenceImmune, true);
+  assert.equal(card.isSilenceImmune, false);
   assert.equal(card.isGenerated, true);
   assert.equal(card.currentCost, 0);
 });
 
-test('챔피언 등급 토큰은 직접 출전 여부와 무관하게 효과 파괴 면역이다', () => {
+test('챔피언 등급 토큰도 일반 선수처럼 효과로 제거할 수 있다', () => {
   const state = linkedChampionState();
   const definition = TEST_CHAMPION_TOKEN_DEFINITION;
   const token = generateCard(definition, {
@@ -126,14 +126,14 @@ test('챔피언 등급 토큰은 직접 출전 여부와 무관하게 효과 파
   }).card;
   state.players[1].board[0] = { ...token, boardSlot: 0 };
   const destroyed = destroyCard(state, 'player-2', token.instanceId);
-  assert.equal(destroyed.success, false);
-  assert.equal(destroyed.state.players[1].board[0]?.instanceId, token.instanceId);
+  assert.equal(destroyed.success, true);
+  assert.equal(destroyed.state.players[1].board[0], null);
   const source = state.players[0].hand[0]!;
   const retire = { type: 'STRUCTURED' as const, action: 'RETIRE' as const,
     target: { zone: 'BOARD' as const, owner: 'ENEMY' as const, cardType: 'WRESTLER' as const, selection: 'PLAYER_CHOICE' as const, count: 1 } };
-  assert.deepEqual(getValidTargets(state, 'player-1', source, retire), []);
+  assert.deepEqual(getValidTargets(state, 'player-1', source, retire), [token.instanceId]);
   const afterRetire = applyEffect(state, 'player-1', source, retire, [token.instanceId]);
-  assert.equal(afterRetire.players[1].board[0]?.instanceId, token.instanceId);
+  assert.equal(afterRetire.players[1].board[0], null);
 });
 
 test('필드가 가득 찬 Champion Token은 손패로 보존된다', () => {
@@ -149,7 +149,7 @@ test('필드가 가득 찬 Champion Token은 손패로 보존된다', () => {
 
   assert.ok(token);
   assert.equal(token.isDirectDeployedChampion, true);
-  assert.equal(token.isSilenceImmune, true);
+  assert.equal(token.isSilenceImmune, false);
   assert.equal(token.boardSlot, null);
   assert.equal(result.players[0].board.every(Boolean), true);
 });
@@ -208,12 +208,12 @@ test('직접 출전 토큰은 Champion 현재 체력을 합산하지 않고 카�
   assert.equal(result.success, true);
   assert.equal(findDirectDeployedChampion(result.state, 'player-1')?.currentHealth, 20);
   assert.equal(findDirectDeployedChampion(result.state, 'player-1')?.maxHealth, 20);
-  assert.equal(getPlayerSurvivalHealth(result.state, 'player-1'), 20);
+  assert.equal(getPlayerSurvivalHealth(result.state, 'player-1'), 7);
   assert.equal(result.state.players[0].health, 7);
   assert.equal(result.state.players[0].champion?.health, 7);
 });
 
-test('직접 출전 챔피언은 침묵되지 않는다', () => {
+test('직접 출전 챔피언도 침묵되며 본체 보호는 등급으로 유지된다', () => {
   const state = deployDirectChampion();
   const card = findDirectDeployedChampion(state, 'player-1');
   assert.ok(card);
@@ -221,19 +221,17 @@ test('직접 출전 챔피언은 침묵되지 않는다', () => {
   const silenced = silenceCard(state, card.instanceId);
   assert.equal(
     findDirectDeployedChampion(silenced, 'player-1')?.isSilenced,
-    false,
+    true,
   );
 });
 
-test('직접 출전 챔피언은 효과로 DESTROY할 수 없다', () => {
+test('직접 출전 챔피언도 효과로 DESTROY할 수 있다', () => {
   const state = deployDirectChampion();
-  const card = findDirectDeployedChampion(state, 'player-1');
-  assert.ok(card);
-
+  const card = findDirectDeployedChampion(state, 'player-1')!;
   const result = destroyCard(state, 'player-1', card.instanceId);
-  assert.equal(result.success, false);
-  assert.equal(result.errorCode, 'DIRECT_CHAMPION_CANNOT_BE_DESTROYED');
-  assert.equal(result.state, state);
+  assert.equal(result.success, true);
+  assert.equal(findDirectDeployedChampion(result.state, 'player-1'), null);
+  assert.equal(result.state.players[0].health, state.players[0].health);
 });
 
 test('직접 출전 토큰은 필드 선수로 공격할 수 있고 Champion 본체는 공격할 수 없다', () => {
@@ -258,7 +256,7 @@ test('직접 출전 토큰은 필드 선수로 공격할 수 있고 Champion 본
   assert.equal(result.state.players[0].health, 20);
   assert.equal(
     getPlayerSurvivalHealth(result.state, 'player-1'),
-    directChampion.currentHealth - attacker.currentAttack,
+    result.state.players[0].health,
   );
   const damageEvent = [...result.state.events]
     .reverse()
@@ -370,7 +368,7 @@ test('일반 피해로 직접 출전 토큰이 RETIRE되어도 플레이어는 �
   );
 });
 
-test('피로 피해로 직접 출전 토큰이 RETIRE되어도 플레이어는 패배하지 않는다', () => {
+test('챔피언 등급 카드가 있는 동안 본체와 필드 카드는 피로 피해로 손상되지 않는다', () => {
   const deployed = deployDirectChampion();
   const exhausted = {
     ...deployed,
@@ -393,10 +391,11 @@ test('피로 피해로 직접 출전 토큰이 RETIRE되어도 플레이어는 �
   assert.equal(result.status, 'IN_PROGRESS');
   assert.equal(result.loserId, null);
   assert.equal(result.winnerId, null);
-  assert.equal(findDirectDeployedChampion(result, 'player-1'), null);
+  assert.equal(findDirectDeployedChampion(result, 'player-1')?.currentHealth, 1);
+  assert.equal(result.players[0].health, exhausted.players[0].health);
   assert.equal(
     result.events.some((event) => event.type === 'CARD_RETIRED'),
-    true,
+    false,
   );
 });
 

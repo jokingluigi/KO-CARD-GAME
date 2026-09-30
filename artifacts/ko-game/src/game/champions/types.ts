@@ -1,3 +1,4 @@
+import type { ChampionQuestCondition } from '../../../../../lib/game-engine/src/champion-quest-conditions';
 import type { GameEventType } from '../events/types';
 import type { CardEffect } from '../effects/types';
 import type { ImageDisplayMode } from '../cards/types';
@@ -36,6 +37,7 @@ export type ChampionQuestReward =
     };
 
 export interface ChampionQuest {
+  condition?: ChampionQuestCondition;
   id: string;
   name: string;
   description: string;
@@ -88,6 +90,7 @@ export interface ChampionState {
   ability: ChampionAbility;
   quest: ChampionQuest | null;
   questProgress: number;
+  questConditionCounts?: Record<string, number>;
   questCompleted: boolean;
   imageUrl?: string | null;
   imageDisplayMode?: ImageDisplayMode;

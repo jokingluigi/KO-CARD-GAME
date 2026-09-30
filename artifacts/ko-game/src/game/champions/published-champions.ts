@@ -1,3 +1,4 @@
+import { validChampionQuestCondition } from '../../../../../lib/game-engine/src/champion-quest-conditions';
 import type { ChampionAbility, ChampionDefinition, ChampionEffect, ChampionQuest, ChampionQuestCardType, ChampionPresentationLines } from "./types";
 import type { CardEffect } from "../effects/types";
 import type { ImageDisplayMode } from "../cards/types";
@@ -14,7 +15,7 @@ export type PublishedChampionRecord = {
   questCompletedPortraitAssetId?: string | null; questCompletedPortraitUrl?: string | null;
   maxHealth: number; abilityName: string; abilityCost: number; abilityText: string; abilityEffects: Structured;
   hasQuest: boolean; questName: string | null; questText: string | null;
-  questCondition: { event?: string; cardType?: ChampionQuestCardType; sourceActionType?: string; progress?: number; required?: number } | null; questProgressRequired: number | null;
+  questCondition: { condition?: unknown; event?: string; cardType?: ChampionQuestCardType; sourceActionType?: string; progress?: number; required?: number } | null; questProgressRequired: number | null;
   questRewardText: string | null; questRewardEffects: Structured | null;
   upgradedAbilityName: string | null; upgradedAbilityCost: number | null;
   upgradedAbilityText: string | null; upgradedAbilityEffects: Structured | null;
@@ -78,6 +79,7 @@ export function championRecordToDefinition(record: PublishedChampionRecord): Cha
     ? {
         id: `${record.id}-quest`, name: record.questName, description: record.questText ?? "",
         rewardText: record.questRewardText?.trim() || undefined,
+        ...(validChampionQuestCondition(record.questCondition.condition) ? { condition: record.questCondition.condition } : {}),
         trackedEvent: abilityRetireQuest ? 'CARD_RETIRED' : record.questCondition.event as ChampionQuest["trackedEvent"],
          ...(abilityRetireQuest ? { cardType: 'WRESTLER' as const } : record.questCondition.cardType ? { cardType: record.questCondition.cardType } : {}),
          ...(abilityRetireQuest ? { sourceActionType: 'USE_CHAMPION_ABILITY' } : record.questCondition.sourceActionType ? { sourceActionType: record.questCondition.sourceActionType } : {}),

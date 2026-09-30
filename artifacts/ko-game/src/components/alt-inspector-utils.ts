@@ -4,6 +4,12 @@ import { getCardRuntimeRulesText, getVisibleCardKeywords, getVisibleCardRulesTex
 import { getActiveCardKeywords } from '../game/cards/granted-text';
 
 export const KEYWORD_DESCRIPTIONS: Record<string, string> = {
+  IMMUNE: '카드나 챔피언의 효과로 직접 지정할 수 없습니다.',
+  REGEN: '턴이 끝날 때 체력을 2 회복합니다. 최대 체력을 넘지 않습니다.',
+  ARMOR: '피해를 받을 때 설정된 아머 수치만큼 피해를 줄입니다. 최소 피해는 0입니다.',
+  CONDITION: '설정된 사용 조건을 달성했을 때만 낼 수 있습니다.',
+  DEFENSE: '등장한 턴에는 피해를 받지 않으며 공격 대상으로 지정할 수 없습니다.',
+  LIFESTEAL: '자신의 공격으로 준 피해만큼 아군 챔피언의 체력을 회복합니다.',
   RUSH: '등장한 턴에도 선수 또는 상대 챔피언을 공격할 수 있습니다.',
   SURPRISE: '등장한 턴에도 상대 선수 카드를 공격할 수 있습니다.',
   TAUNT: '상대는 가능한 경우 이 선수를 먼저 공격해야 합니다.',
@@ -14,6 +20,8 @@ export const KEYWORD_DESCRIPTIONS: Record<string, string> = {
 };
 
 export const KEYWORD_LABELS: Record<string, string> = {
+  IMMUNE: '면역', REGEN: '치유', ARMOR: '아머', CONDITION: '조건', DEFENSE: '방어', LIFESTEAL: '흡혈',
+
   RUSH: '러쉬',
   SURPRISE: '기습',
   TAUNT: '도발',
@@ -65,8 +73,8 @@ export function getCardInspectorMetadata(card: CardInstance) {
     .filter((keyword) => !['SILENCE', 'STUN', 'DISABLED'].includes(keyword))
     .map((keyword) => ({
       key: keyword,
-      label: KEYWORD_LABELS[keyword] ?? keyword,
-      description: KEYWORD_DESCRIPTIONS[keyword] ?? '특수 키워드입니다.',
+      label: keyword === 'ARMOR' ? `아머(${card.armor ?? 0})` : KEYWORD_LABELS[keyword] ?? keyword,
+      description: keyword === 'ARMOR' ? `받는 피해를 ${card.armor ?? 0} 줄입니다. 최소 피해는 0입니다.` : KEYWORD_DESCRIPTIONS[keyword] ?? '특수 키워드입니다.',
     }));
   const statuses = [
     card.isSilenced ? { key: 'SILENCE', label: '침묵', description: KEYWORD_DESCRIPTIONS.SILENCE } : null,

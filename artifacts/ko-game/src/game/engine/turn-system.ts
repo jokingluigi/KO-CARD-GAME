@@ -2,7 +2,7 @@ import type { GameState, PlayerState } from '../types/game-state';
 import type { CardInstance } from '../cards/types';
 import { expireTowerOpponentTurnBuffs, expireTowerTurnEndBuffs, towerTurnStart } from '../tower/relics';
 import { normalizeCardForZone } from '../cards/zone-state';
-import { getActiveCardAbilities } from '../cards/granted-text';
+import { getActiveCardAbilities, getActiveCardKeywords } from '../cards/granted-text';
 import type { GameMediaCatalog } from '../media';
 import type { ActionResult } from '../actions/types';
 import { actionFailure, actionSuccess } from '../actions/types';
@@ -264,14 +264,15 @@ export function endTurn(
           ...player,
           currentGold: 0,
            board: player.board.map((card) =>
-             card ? { ...expireTemporaryModifiers(card, 'BOARD'), isStunned: false } : null,
+             card ? (() => { const expired = expireTemporaryModifiers(card, 'BOARD'); return { ...expired, isStunned: false, enteredThisTurn: false, currentHealth: Math.min(expired.maxHealth, expired.currentHealth + (getActiveCardKeywords(expired).includes('REGEN') ? 2 : 0)) }; })() : null,
           ) as typeof player.board,
            hand: player.hand.map((card) => expireTemporaryModifiers(card, 'HAND')),
            deck: player.deck.map((card) => expireTemporaryModifiers(card, 'DECK')),
         };
       }
 
-      return expireTowerOpponentTurnBuffs(state, player);
+      const expired = expireTowerOpponentTurnBuffs(state, player);
+      return { ...expired, board: expired.board.map(card => card && getActiveCardKeywords(card).includes('REGEN') ? { ...card, currentHealth: Math.min(card.maxHealth, card.currentHealth + 2) } : card) as typeof player.board };
     }),
     events: [
       ...state.events,
