@@ -36,6 +36,7 @@ export interface RandomCardPoolOptions {
     maxCost?: number;
     isToken?: boolean;
     isChampionToken?: boolean;
+    excludeChampionRarity?: boolean;
   } & CardTagFilter;
 }
 
@@ -136,6 +137,7 @@ export function getRandomCardGenerationCandidates(
       return false;
     }
     if (options.filter?.isToken !== undefined && definition.isToken !== options.filter.isToken) return false;
+    if (options.filter?.excludeChampionRarity && definition.rarity === 'CHAMPION') return false;
     if (options.filter?.isChampionToken !== undefined && definition.isChampionToken !== options.filter.isChampionToken) return false;
     if (!matchesCardTagFilter(definition, options.filter)) return false;
     return isEligibleForRandomPool(definition, randomScope);

@@ -1085,12 +1085,12 @@ function repairedKnownPublishedEffect(card: { id: string; name: string; text: st
   const name = card.name.replace(/\s+/gu, "");
   if (name === "도금구슬마스터" || card.id === "99514068-68c8-46ca-b9f5-7f16b2ea4253") {
     return { effectId: "STRUCTURED_EFFECTS_V1", effectConfig: { effects: [{ trigger: "ENTER_FIELD", action: "REDUCE_COST",
-      target: { zones: ["HAND", "DECK"], owner: "SELF", filter: { minCost: 6 }, selection: "ALL", count: 100 },
+      target: { zones: !card.text.trim() || card.text.includes("덱") ? ["HAND", "DECK"] : ["HAND"], owner: "SELF", filter: { minCost: 6 }, selection: "ALL", count: 1 },
       values: { amount: 1 } }] } };
   }
   if (name === "오젠" || card.id === "dc43dc88-38d7-499b-ad89-6b83f773fe62") {
     return { effectId: "STRUCTURED_EFFECTS_V1", effectConfig: { effects: [{ trigger: "ENTER_FIELD", action: "RETIRE",
-      target: { zone: "BOARD", owner: "ENEMY", cardType: "WRESTLER", filter: { maxCost: 1, isChampionToken: false },
+      target: { zone: "BOARD", owner: "ENEMY", cardType: "WRESTLER", filter: { maxCost: 1, isChampionToken: false, excludeChampionRarity: true },
         selection: "RANDOM", count: 1 } }] } };
   }
   return null;
@@ -3048,6 +3048,10 @@ router.get("/cards/:id/test", async (request, response): Promise<void> => {
   const allCards = await db.select().from(cardsTable);
   const requiredIds = new Set([card.id]);
   expandNamedCardReferences(allCards, requiredIds);
+  // These entrance effects need real catalog targets in their isolated admin test.
+  if (["오젠", "도금구슬마스터"].includes(card.name.replace(/\s+/gu, ""))) {
+    for (const candidate of allCards) if (candidate.status === "PUBLISHED") requiredIds.add(candidate.id);
+  }
   response.json({ card, relatedCards: allCards.filter((candidate) => candidate.id !== card.id && requiredIds.has(candidate.id)) });
 });
 

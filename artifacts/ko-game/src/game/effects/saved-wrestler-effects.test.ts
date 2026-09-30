@@ -976,3 +976,17 @@ test('조킹루이지·퍼플레인·아비터·플래티넘 구슬 마스터의
   assert.equal(gold.players[0].board[0]?.currentAttack, 7);
   assert.equal(gold.players[0].board[0]?.currentHealth, 7);
 });
+
+ test('현재 손패 전용 도금구슬 문구는 덱과 비용 5 이하 카드를 할인하지 않는다', () => {
+  const master=definition('도금구슬 마스터',{effects:[]},{rulesText:'등장:내 손에 있는 6 비용 이상의 카드들의 비용을 전부 1 감소 시킵니다.'});
+  const high=definition('고비용',{effects:[]},{cost:6}); const low=definition('저비용',{effects:[]},{cost:5});
+  const state=stateWithPool([master,high,low]); state.players[0].hand=[card(high,'high'),card(low,'low')];state.players[0].deck=[card(high,'deck')];
+  const result=enterField(state,'player-1',card(master,'master'),0);
+  assert.deepEqual(result.players[0].hand.map(c=>c.currentCost),[5,5]);assert.equal(result.players[0].deck[0].currentCost,6);
+ });
+ test('오젠은 토큰 플래그가 없는 챔피언 등급 선수도 제외한다',()=>{
+  const ozen=definition('오젠',{effects:[]}); const champion=definition('챔피언 등급',{effects:[]},{cost:1,rarity:'CHAMPION',isChampionToken:false});
+  const cheap=definition('대상',{effects:[]},{cost:1}); const state=stateWithPool([ozen,champion,cheap]);
+  state.players[1].board[0]={...card(champion,'champion'),boardSlot:0};state.players[1].board[1]={...card(cheap,'cheap'),boardSlot:1};
+  const result=enterField(state,'player-1',card(ozen,'ozen'),0);assert.equal(result.players[1].board[0]?.instanceId,'champion');assert.equal(result.players[1].board[1],null);
+ });

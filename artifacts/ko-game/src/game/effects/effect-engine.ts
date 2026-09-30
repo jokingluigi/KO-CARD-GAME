@@ -78,6 +78,7 @@ export function getValidTargets(
       if (target.filter?.maxCost !== undefined && card.currentCost > target.filter.maxCost) return false;
       if (target.filter?.isToken !== undefined && card.isToken !== target.filter.isToken) return false;
       if (target.filter?.isChampionToken !== undefined && card.isChampionToken !== target.filter.isChampionToken) return false;
+      if (target.filter?.excludeChampionRarity && (card.isDirectDeployedChampion || state.cardPool?.find(definition => definition.id === card.definitionId)?.rarity === 'CHAMPION')) return false;
       if (target.filter?.excludeSource && card.instanceId === sourceCard.instanceId) return false;
       if (target.filter?.isVanilla && !isVanillaCard(card)) return false;
       if (target.filter?.definitionRef && !matchesDefinitionRef(state, card, target.filter.definitionRef)) return false;
@@ -205,6 +206,7 @@ function scriptTargetCards(
     if (filter?.definitionRef && !matchesDefinitionRef(state, card, filter.definitionRef)) return false;
     if (filter?.isToken !== undefined && card.isToken !== filter.isToken) return false;
     if (filter?.isChampionToken !== undefined && card.isChampionToken !== filter.isChampionToken) return false;
+    if (filter?.excludeChampionRarity && (card.isDirectDeployedChampion || state.cardPool?.find(definition => definition.id === card.definitionId)?.rarity === 'CHAMPION')) return false;
     if (filter?.excludeSource && card.instanceId === sourceCard.instanceId) return false;
     if (filter?.isVanilla && !isVanillaCard(card)) return false;
     if (filter?.keyword !== undefined && !getActiveCardKeywords(card).includes(filter.keyword)) return false;
@@ -2337,6 +2339,7 @@ export function applyEffect(
       if (target.filter?.maxCost !== undefined && card.currentCost > target.filter.maxCost) return false;
       if (target.filter?.isToken !== undefined && card.isToken !== target.filter.isToken) return false;
       if (target.filter?.isChampionToken !== undefined && card.isChampionToken !== target.filter.isChampionToken) return false;
+      if (target.filter?.excludeChampionRarity && (card.isDirectDeployedChampion || state.cardPool?.find(definition => definition.id === card.definitionId)?.rarity === 'CHAMPION')) return false;
       if (target.filter?.excludeSource && card.instanceId === sourceCard.instanceId) return false;
       if (target.filter?.isVanilla && !isVanillaCard(card)) return false;
       if (target.filter?.keyword !== undefined && !getActiveCardKeywords(card).includes(target.filter.keyword)) return false;

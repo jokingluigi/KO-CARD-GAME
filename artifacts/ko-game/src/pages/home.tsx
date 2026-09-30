@@ -444,6 +444,24 @@ export default function Home() {
             }
             started.players[0] = { ...started.players[0]!, currentGold: Math.max(10, started.players[0]!.currentGold) };
           }
+          // Isolated card tests include real catalog targets for entrance-rule verification.
+          const testName = definition.name.replace(/\s+/gu, '');
+          if (testName === '도금구슬마스터') {
+            const high = relatedDefinitions.find(d => d.cost >= 6 && !d.isToken && !d.isChampionToken);
+            const low = relatedDefinitions.find(d => d.cost === 5 && !d.isToken && !d.isChampionToken);
+            if (high) {
+              started.players[0]!.hand = [generateCardInstance(definition, {instanceId:'admin-master'}), generateCardInstance(high, {instanceId:'admin-high-hand'}), ...(low ? [generateCardInstance(low, {instanceId:'admin-low-hand'})] : [])];
+              started.players[0]!.deck[0] = generateCardInstance(high, {instanceId:'admin-high-deck'});
+              started.players[0]!.currentGold = 10;
+            }
+          }
+          if (testName === '오젠') {
+            const eligible = relatedDefinitions.filter(d => d.cardType === 'WRESTLER' && !d.isToken && !d.isChampionToken && d.rarity !== 'CHAMPION');
+            const cheap = eligible.find(d => d.cost <= 1 && d.abilities.length === 0) ?? eligible.find(d => d.cost <= 1);
+            const expensive = eligible.find(d => d.cost > 1 && d.abilities.length === 0) ?? eligible.find(d => d.cost > 1);
+            for (const [slot, target] of [cheap, expensive].entries()) if (target) started.players[1]!.board[slot] = {...generateCardInstance(target, {instanceId:`admin-ozen-target-${slot}`}), boardSlot:slot as 0 | 1};
+            started.players[0]!.currentGold = 10;
+          }
           setGameState(started);
           setIsAdminTestMatch(true);
           setSelectedCardId(null);

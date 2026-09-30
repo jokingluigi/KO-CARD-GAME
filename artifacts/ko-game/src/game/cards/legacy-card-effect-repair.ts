@@ -25,13 +25,13 @@ export function repairedLegacyCardAbilities(card: PublishedCardRecord): CardAbil
   }
   if (card.name.replace(/\s+/gu, '') === '도금구슬마스터' || card.id === '99514068-68c8-46ca-b9f5-7f16b2ea4253') {
     return [{ trigger: 'ENTER_FIELD', effects: [{ type: 'STRUCTURED', action: 'REDUCE_COST',
-      target: { zones: ['HAND', 'DECK'], owner: 'SELF', filter: { minCost: 6 }, selection: 'ALL', count: 100 }, values: { amount: 1 } }] }];
+      target: { zones: !text || text.includes('덱') ? ['HAND', 'DECK'] : ['HAND'], owner: 'SELF', filter: { minCost: 6 }, selection: 'ALL', count: 1 }, values: { amount: 1 } }] }];
   }
   // The old Ozen record may carry an empty or stale effect config. Identify
   // this published card by its stable definition ID as well as its name.
   if (card.name.trim() === '오젠' || card.id === 'dc43dc88-38d7-499b-ad89-6b83f773fe62') {
     return [{ trigger: 'ENTER_FIELD', effects: [{ type: 'STRUCTURED', action: 'RETIRE',
-      target: { zone: 'BOARD', owner: 'ENEMY', cardType: 'WRESTLER', filter: { maxCost: 1, isChampionToken: false }, selection: 'RANDOM', count: 1 } }] }];
+      target: { zone: 'BOARD', owner: 'ENEMY', cardType: 'WRESTLER', filter: { maxCost: 1, isChampionToken: false, excludeChampionRarity: true }, selection: 'RANDOM', count: 1 } }] }];
   }
   if (card.name === '불록스' && (!text || /턴\s*종료.*손.*빈\s*공간.*소환/u.test(text))) {
     return [{ trigger: 'TURN_END', condition: { type: 'SOURCE_IN_HAND' },

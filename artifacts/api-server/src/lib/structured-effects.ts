@@ -2031,7 +2031,7 @@ export function isStructuredEffects(value: unknown): value is { effects: Structu
          typeof target.filter !== "object" ||
          target.filter === null ||
           Object.keys(target.filter).some((key) => ![
-            "isGenerated", "minCost", "maxCost", "isToken", "isChampionToken", "excludeSource", "isVanilla",
+            "isGenerated", "minCost", "maxCost", "isToken", "isChampionToken", "excludeChampionRarity", "excludeSource", "isVanilla",
             "keyword", "cost", "attack", "health", "tagsAny", "tagsAll", "tagsNone", "definitionRef",
           ].includes(key)) ||
          target.filter.isGenerated !== undefined && typeof target.filter.isGenerated !== "boolean" ||
@@ -2039,6 +2039,7 @@ export function isStructuredEffects(value: unknown): value is { effects: Structu
           target.filter.maxCost !== undefined && (!Number.isInteger(target.filter.maxCost) || target.filter.maxCost < 0 || target.filter.maxCost > 999) ||
           target.filter.isToken !== undefined && typeof target.filter.isToken !== "boolean" ||
           target.filter.isChampionToken !== undefined && typeof target.filter.isChampionToken !== "boolean" ||
+          target.filter.excludeChampionRarity !== undefined && typeof target.filter.excludeChampionRarity !== "boolean" ||
           target.filter.excludeSource !== undefined && typeof target.filter.excludeSource !== "boolean" ||
           target.filter.isVanilla !== undefined && typeof target.filter.isVanilla !== "boolean" ||
            target.filter.keyword !== undefined && !KEYWORDS.includes(target.filter.keyword as Keyword) ||
@@ -2077,7 +2078,7 @@ export function isStructuredEffects(value: unknown): value is { effects: Structu
          target.filter && (
            typeof target.filter !== "object" ||
            Object.keys(target.filter).some((key) => ![
-              "isGenerated", "minCost", "maxCost", "isToken", "isChampionToken", "excludeSource", "isVanilla",
+              "isGenerated", "minCost", "maxCost", "isToken", "isChampionToken", "excludeChampionRarity", "excludeSource", "isVanilla",
              "keyword", "cost", "attack", "health", "tagsAny", "tagsAll", "tagsNone", "definitionRef",
            ].includes(key)) ||
            target.filter.tagsAny !== undefined && !validTagFilterValues(target.filter.tagsAny) ||
