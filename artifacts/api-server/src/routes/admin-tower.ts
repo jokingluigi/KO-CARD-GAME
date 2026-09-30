@@ -27,13 +27,13 @@ router.get('/test/home', async (_request, response, next) => {
 function diagnosticView(run: TowerRun, battle: GameState | null, snapshot?: TowerSnapshot) {
   const { seed, encounter, ...visible } = run; const { seed: battleSeed, ...enemy } = encounter;
   return { run: { ...visible, encounter: enemy }, battle: battle ? sanitizeGameStateForViewer(battle, 'player-1') : null,
-    ...(snapshot ? { cards: snapshot.cards.filter(c => c.status === 'PUBLISHED'), champions: snapshot.champions, relics: snapshot.catalog.relics, scenes: snapshot.catalog.scenes, characters: snapshot.catalog.characters,
+    ...(snapshot ? { cards: snapshot.cards.filter(c => c.status === 'PUBLISHED'), champions: snapshot.champions, relics: snapshot.catalog.relics, scenes: snapshot.catalog.scenes, characters: snapshot.catalog.characters, music: snapshot.catalog.season.music,
       rewardPreview: run.encounter.bossSlot ? snapshot.catalog.season.bosses[run.encounter.bossSlot] : null } : {}) };
 }
 router.post('/test/runs', async (request, response, next) => {
   try {
     const input = request.body;
-    if (typeof input?.starterId !== 'string' || typeof input.seed !== 'string' || !Array.isArray(input.relicIds) || !input.relicIds.every((id: unknown) => typeof id === 'string') || (input.hidden !== undefined && typeof input.hidden !== 'boolean') || (input.deck !== undefined && (!Array.isArray(input.deck) || !input.deck.every((id: unknown) => typeof id === 'string'))) || (input.presetId !== undefined && typeof input.presetId !== 'string')) throw new TowerRuleError('INVALID_CONFIG', '테스트 설정을 확인해 주세요.');
+    if (typeof input?.starterId !== 'string' || typeof input.seed !== 'string' || !Array.isArray(input.relicIds) || !input.relicIds.every((id: unknown) => typeof id === 'string') || (input.fullMode !== undefined && typeof input.fullMode !== 'boolean') || (input.hidden !== undefined && typeof input.hidden !== 'boolean') || (input.deck !== undefined && (!Array.isArray(input.deck) || !input.deck.every((id: unknown) => typeof id === 'string'))) || (input.presetId !== undefined && typeof input.presetId !== 'string')) throw new TowerRuleError('INVALID_CONFIG', '테스트 설정을 확인해 주세요.');
     const snapshot = await loadTowerSnapshot(); const run = await createTowerDiagnostic(request.authUser!.id, input, snapshot);
     response.status(201).json(diagnosticView(run, null, snapshot));
   } catch (error) { next(error); }

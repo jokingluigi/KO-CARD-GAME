@@ -45,7 +45,7 @@ export async function towerHistory(tx: Transaction, userId: string, seasonId: st
   return { clearCount: completed.length, normalEnding: completed.length > 0, bossSlots: clears.map(row => row.slot), unlockedRelicIds: unlocks.filter(r => r.kind === 'RELIC').map(r => r.targetId), unlockedStarterIds: unlocks.filter(r => r.kind === 'STARTER').map(r => r.targetId) };
 }
 async function runHistory(tx: Transaction, userId: string, run: TowerRun, snapshot: TowerSnapshot): Promise<History> {
-  if (!run.isTest) return towerHistory(tx, userId, run.seasonId);
+  if (!run.isTest || run.fullModeTest) return towerHistory(tx, userId, run.seasonId);
   return { clearCount: 0, normalEnding: false, bossSlots: [], unlockedRelicIds: snapshot.catalog.relics.map(r => r.id), unlockedStarterIds: snapshot.catalog.starters.map(s => s.id) };
 }
 async function saveRun(tx: Transaction, row: RunRow, run: TowerRun, battle: GameState | null, initial: GameState | null = null) {
@@ -130,15 +130,18 @@ export async function closeTowerRun(runId: string, database: typeof db = db) {
 }
 
 /** Administrator diagnostics are separate rows and never enter account progress or grant rewards. */
-export async function createTowerDiagnostic(userId: string, input: { starterId: string; seed: string; floor: number; hidden?: boolean; relicIds: string[]; deck?: string[]; presetId?: string }, snapshot: TowerSnapshot, database: typeof db = db) {
+export async function createTowerDiagnostic(userId: string, input: { starterId: string; seed: string; floor: number; fullMode?: boolean; hidden?: boolean; relicIds: string[]; deck?: string[]; presetId?: string }, snapshot: TowerSnapshot, database: typeof db = db) {
   if (!Number.isInteger(input.floor) || input.floor < 1 || input.floor > 16 || !input.seed || input.seed.length > 200 || new Set(input.relicIds).size !== input.relicIds.length || input.relicIds.length > 3)
     throw new TowerRuleError('INVALID_CONFIG', '테스트 층·Seed·유물 선택을 확인해 주세요.');
+  if (input.fullMode && (input.floor !== 1 || input.hidden || input.relicIds.length || input.deck || input.presetId)) throw new TowerRuleError('INVALID_CONFIG', '전체 모드 테스트는 기본 스타터 덱으로 1층부터 진행합니다.');
   const starter = snapshot.catalog.starters.find(item => item.id === input.starterId);
   if (!starter) throw new TowerRuleError('INVALID_STARTER', '스타터 덱을 선택해 주세요.');
   for (const id of input.relicIds) if (!snapshot.catalog.relics.some(item => item.id === id && item.enabled)) throw new TowerRuleError('INVALID_RELIC_OPTION', '활성 유물을 선택해 주세요.');
-  const history: History = { clearCount: 0, normalEnding: false, bossSlots: [], unlockedRelicIds: snapshot.catalog.relics.map(r => r.id), unlockedStarterIds: [starter.id] };
+  const history: History = input.fullMode ? await database.transaction(tx => towerHistory(tx, userId, snapshot.catalog.season.id)) : { clearCount: 0, normalEnding: false, bossSlots: [], unlockedRelicIds: snapshot.catalog.relics.map(r => r.id), unlockedStarterIds: [starter.id] };
+  // The chosen starter is available for QA; subsequent relic and hidden-boss conditions use normal account history.
+  history.unlockedStarterIds = [...new Set([...history.unlockedStarterIds, starter.id])];
   let run = newTowerRun({ id: randomUUID(), seed: input.seed, championId: starter.championId, starterId: starter.id, ownedChampionIds: [starter.championId], isTest: true }, snapshot.catalog, history);
-  run = { ...run, floor: input.hidden ? 16 : input.floor, relicIds: [...input.relicIds], deck: input.deck ? [...input.deck] : run.deck };
+  run = { ...run, ...(input.fullMode ? { fullModeTest: true } : {}), floor: input.hidden ? 16 : input.floor, relicIds: [...input.relicIds], deck: input.deck ? [...input.deck] : run.deck };
   validateTowerDeck(run.deck, snapshot.catalog);
   run.encounter = encounterFor(run, snapshot.catalog, input.hidden === true);
   if (input.presetId) {

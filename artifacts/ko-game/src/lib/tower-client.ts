@@ -1,9 +1,9 @@
 import { projectOnlineGameState } from './online-game-state';
-import type { AccountReward, TowerRun, Starter, Relic, Scene, StoryCharacter, RunCommand } from '../../../../lib/game-engine/src/tower/types';
+import type { AccountReward, TowerRun, Starter, Relic, Scene, StoryCharacter, RunCommand, Season } from '../../../../lib/game-engine/src/tower/types';
 import type { CardDefinition, ChampionDefinition, GameState } from '@/game';
 export type VisibleTowerRun = Omit<TowerRun, 'seed' | 'encounter'> & { encounter: Omit<TowerRun['encounter'], 'seed'> };
 export interface TowerHomeData { season: { id: string; name: string; description: string }; champions: ChampionDefinition[]; starters: Starter[]; cards: CardDefinition[] }
-export interface TowerView { run: VisibleTowerRun | null; battle?: GameState | null; cards?: CardDefinition[]; champions?: ChampionDefinition[]; relics?: Relic[]; scenes?: Scene[]; characters?: StoryCharacter[]; rewardReceipts?: Array<{ slot: string; firstClear: boolean; reward: AccountReward }>; rewardPreview?: { firstReward: AccountReward; repeatReward: AccountReward } | null }
+export interface TowerView { music?: Season['music']; run: VisibleTowerRun | null; battle?: GameState | null; cards?: CardDefinition[]; champions?: ChampionDefinition[]; relics?: Relic[]; scenes?: Scene[]; characters?: StoryCharacter[]; rewardReceipts?: Array<{ slot: string; firstClear: boolean; reward: AccountReward }>; rewardPreview?: { firstReward: AccountReward; repeatReward: AccountReward } | null }
 export const towerDiagnostic = new URLSearchParams(window.location.search).get('towerTest') === '1';
 const base = `${import.meta.env.BASE_URL.replace(/\/$/, '')}/api/${towerDiagnostic ? 'admin/tower/test' : 'tower'}`;
 export class TowerRequestError extends Error { constructor(message: string, public code: string, public status: number) { super(message); } }

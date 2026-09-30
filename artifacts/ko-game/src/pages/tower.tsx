@@ -1,3 +1,5 @@
+import { towerMusicFor } from '@/lib/tower-music';
+import { TowerDialogueView } from '@/components/tower-dialogue-view';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useLocation } from 'wouter';
 import { CardRenderer } from '@/components/card-renderer';
@@ -40,6 +42,15 @@ export default function Tower() {
     return () => window.clearTimeout(timer);
   }, [settlement, presentationBusy, attackQueue.length]);
   const run = view.run;
+  useEffect(() => {
+    const scene = view.scenes?.find(item => item.id === run?.encounter.sceneId);
+    const track = towerMusicFor(run?.phase, run?.encounter.bossSlot, view.music, scene);
+    if (track) audioManager.playMatchBgm(track.assetUrl, track.volume);
+    else audioManager.stopBgm();
+  }, [run?.phase, run?.encounter.bossSlot, run?.encounter.sceneId, view.music, view.scenes]);
+  useEffect(() => { audioManager.setBgmMuted(bgmMuted); audioManager.setBgmVolume(bgmVolume); }, [bgmMuted, bgmVolume]);
+  useEffect(() => () => audioManager.stopGameAudio(), []);
+
   const cards = view.cards ?? home?.cards ?? [];
   const champion = (view.champions ?? home?.champions)?.find(c => c.id === run?.championId);
   async function loadRun(id?: string, restart = false) {
@@ -121,13 +132,6 @@ export default function Tower() {
       onPresentationBusyChange={setPresentationBusy} onReturnToMainMenu={() => navigate('/')} />
   </>;
   const scene = view.scenes?.find(s => s.id === run?.encounter.sceneId);
-  const line = scene?.lines[run?.dialogueIndex ?? 0];
-  const speaker = view.characters?.find(c => c.id === line?.speakerId);
-  const actors = (['LEFT', 'RIGHT'] as const).map(side => {
-    const lastLine = scene?.lines.slice(0, (run?.dialogueIndex ?? 0) + 1).filter(item => item.side === side).at(-1);
-    const character = view.characters?.find(c => c.id === lastLine?.speakerId);
-    return { side, character, sprite: lastLine ? character?.sprites[lastLine.expression] ?? character?.sprites.NEUTRAL : undefined, speaking: line?.side === side };
-  });
   return <main className="min-h-dvh min-w-0 bg-neutral-950 px-4 pb-[max(2rem,env(safe-area-inset-bottom))] pt-[max(1rem,env(safe-area-inset-top))] text-white">
     <div className="mx-auto max-w-4xl space-y-6"><header className="flex flex-wrap items-center justify-between gap-3"><h1 className="text-2xl font-black">TOWER</h1><button className={button} onClick={() => navigate('/')}>메인 메뉴</button></header>
       {towerDiagnostic && <p className="rounded border border-amber-500 p-3 text-amber-200">관리자 테스트 · 실제 보상과 계정 클리어 기록은 지급되지 않습니다.{view.rewardPreview && <span className="block break-words">보상 미리보기: 첫 클리어 {rewardText(view.rewardPreview.firstReward)} · 반복 클리어 {rewardText(view.rewardPreview.repeatReward)}</span>}</p>}
@@ -136,7 +140,7 @@ export default function Tower() {
         {choosing && <section className="space-y-4"><h2 className="text-xl font-bold">보유 챔피언 · 스타터 덱 선택</h2>{!home.starters.length && <p>보유 챔피언에게 사용 가능한 스타터 덱이 없습니다. 운영자에게 문의해 주세요.</p>}<select aria-label="챔피언과 스타터 덱" className="min-h-12 w-full min-w-0 rounded border border-neutral-600 bg-neutral-900 p-3 text-base" value={starterId} onChange={e => setStarterId(e.target.value)}>{home.starters.map(s => <option key={s.id} value={s.id}>{home.champions.find(c => c.id === s.championId)?.name} · {s.name}</option>)}</select>{deckList}<button className={`${button} w-full border-primary`} disabled={busy || !starterId} onClick={() => { const starter = home.starters.find(s => s.id === starterId); if (starter) void operate(() => towerRequest('/runs', { championId: starter.championId, starterId }), true); }}>25장으로 도전 시작</button></section>}</>}
       {run && <><div className="flex flex-wrap items-center justify-between gap-3"><h2 className="text-xl font-bold">{run.encounter.bossSlot === 'hiddenBoss' ? '히든 보스' : `FLOOR ${run.floor} / 16`}</h2><span>{champion?.name} · 덱 {run.deck.length}장 · 유물 {run.relicIds.length}/3</span></div>
         {run.phase === 'HUB' && <section className="space-y-4"><p>다음 대전 · {run.encounter.bossSlot ? '보스' : '일반 전투'} · {run.encounter.difficulty}</p><button className={`${button} w-full border-primary`} disabled={busy} onClick={() => command({ type: 'CHALLENGE' })}>도전</button><button className={button} onClick={() => setShowDeck(value => !value)}>현재 덱 {showDeck ? '닫기' : '보기'}</button>{showDeck && deckList}</section>}
-        {run.phase === 'DIALOGUE' && <section className="space-y-5"><div className="grid grid-cols-2 items-end gap-3">{actors.map(actor => <div key={actor.side} className={`min-w-0 transition-opacity ${actor.speaking ? 'opacity-100' : 'opacity-50'}`}>{actor.sprite ? <img src={actor.sprite} alt={actor.character?.displayName ?? ''} className="mx-auto max-h-[38dvh] max-w-full object-contain" /> : actor.character ? <div className="flex min-h-40 items-center justify-center rounded border border-neutral-700 text-neutral-400">{actor.character.displayName} · 이미지 없음</div> : null}</div>)}</div><div className="rounded border border-neutral-700 p-4"><h3 className="font-bold">{speaker?.displayName ?? '이야기'}</h3><p className="mt-3 whitespace-pre-wrap break-words text-lg leading-8">{line?.text ?? '대화를 불러오지 못했습니다.'}</p></div><div className="flex gap-3"><button className={`${button} flex-1`} disabled={busy} onClick={() => command({ type: 'DIALOGUE_NEXT' })}>다음</button><button className={button} disabled={busy} onClick={() => command({ type: 'DIALOGUE_SKIP' })}>건너뛰기</button></div></section>}
+        {run.phase === 'DIALOGUE' && <section className="space-y-5"><div className="flex flex-wrap gap-3"><button className={button} onClick={() => { const value = !bgmMuted; setBgmMuted(value); localStorage.setItem(BGM_MUTE_STORAGE_KEY, String(value)); }}>{bgmMuted ? '대화 OST 음소거 해제' : '대화 OST 음소거'}</button><label>음악 음량<input aria-label="대화 OST 전체 음량" type="range" min={0} max={100} value={bgmVolume} onChange={e => { const value = Number(e.target.value); setBgmVolume(value); localStorage.setItem(BGM_VOLUME_STORAGE_KEY, String(value)); }} /></label></div><TowerDialogueView scene={scene} characters={view.characters ?? []} index={run.dialogueIndex} /><div className="flex gap-3"><button className={`${button} flex-1`} disabled={busy} onClick={() => command({ type: 'DIALOGUE_NEXT' })}>다음</button><button className={button} disabled={busy} onClick={() => command({ type: 'DIALOGUE_SKIP' })}>건너뛰기</button></div></section>}
         {run.phase === 'CARD_REWARD' && <section className="space-y-5"><h3 className="text-xl font-bold">승리 · 카드 1장 선택</h3><div className="grid justify-items-center gap-6 sm:grid-cols-3">{run.cardOptions.map(id => <div key={id} className="min-w-0 space-y-3">{cardDisplay(id)}<button className={`${button} w-full`} disabled={busy} onClick={() => command({ type: 'SELECT_CARD', cardId: id })}>선택</button></div>)}</div><button className={button} disabled={busy} onClick={() => command({ type: 'SKIP_CARD' })}>보상 건너뛰기</button></section>}
         {run.phase === 'REPLACE' && <section className="space-y-4"><h3 className="text-xl font-bold">교체할 카드 선택</h3><p>새 카드: {cards.find(c => c.id === run.selectedCardId)?.name}</p>{deckList}<button className={`${button} sticky bottom-3 w-full border-primary bg-neutral-950`} disabled={busy || replaceIndex === null} onClick={() => { if (replaceIndex !== null) command({ type: 'REPLACE_CARD', deckIndex: replaceIndex }); }}>선택한 카드 교체 확정</button></section>}
         {run.phase === 'RELIC_REWARD' && <section className="space-y-4"><h3 className="text-xl font-bold">보스 격파 · 유물 선택</h3>{run.relicOptions.map(id => { const relic = view.relics?.find(r => r.id === id); return <article key={id} className="space-y-3 rounded border border-neutral-700 p-4">{relic?.imageUrl && <img src={relic.imageUrl} alt="" className="h-16 w-16 object-contain" />}<h4 className="text-lg font-bold">{relic?.name ?? id}</h4><p className="break-words leading-7 text-neutral-300">{relic?.description}</p><button className={`${button} w-full`} disabled={busy} onClick={() => command({ type: 'SELECT_RELIC', relicId: id })}>이 유물 선택</button></article>; })}</section>}

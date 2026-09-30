@@ -242,3 +242,46 @@ test('catalog validation rejects an insufficient relic pool and unresolved condi
     await assert.rejects(load.loadTowerSnapshot(productionType()), /조건이 참조/);
   } finally { await database.update(schema.towerSeasonsTable).set({ data: season!.data }).where(eq(schema.towerSeasonsTable.id, 'qa-season')); }
 });
+
+for (const hidden of [false, true]) test(`full-mode test plays all floors and story with natural hidden branch ${hidden}`, async () => {
+  const userId = `full-diagnostic-${hidden}`;
+  const original = await user(userId);
+  const configured = structuredClone(snapshot);
+  configured.catalog.scenes = [{ id: 'full-story', name: 'Full story', lines: [
+    { speakerId: 'actor', expression: 'NEUTRAL', side: 'LEFT', text: '보스 등장', order: 0 },
+    { speakerId: 'actor', expression: 'SERIOUS', side: 'RIGHT', text: '대결 시작', order: 1 },
+  ] }];
+  configured.catalog.characters = [{ id: 'actor', displayName: '이야기 화자', sprites: { NEUTRAL: '/qa-neutral.png' } }];
+  for (const boss of Object.values(configured.catalog.season.bosses)) if (boss) boss.commonSceneId = 'full-story';
+  configured.catalog.season.hiddenCondition = { type: 'CHAMPION', id: hidden ? 'hero' : 'enemy' };
+  let run = await store.createTowerDiagnostic(userId, { starterId: 'starter', fullMode: true, floor: 1, seed: `full-diagnostic-${hidden}`, hidden: false, relicIds: [] }, configured, productionType());
+  assert.equal(run.floor, 1); assert.equal(run.fullModeTest, true);
+  let dialogues = 0;
+  for (let battleIndex = 0; battleIndex < (hidden ? 17 : 16); battleIndex++) {
+    assert.equal(run.phase, 'HUB'); assert.equal(run.deck.length, 25);
+    let started = await store.applyTowerCommand(userId, run.id, run.version, { type: 'CHALLENGE' }, productionType());
+    if (started.run.encounter.bossSlot) {
+      dialogues++;
+      assert.equal(started.run.phase, 'DIALOGUE'); assert.notEqual(started.battle?.status, 'IN_PROGRESS');
+      assert.equal(started.run.encounter.sceneId, 'full-story');
+      started = await store.applyTowerCommand(userId, run.id, started.run.version, { type: 'DIALOGUE_NEXT' }, productionType());
+      assert.equal(started.run.phase, 'DIALOGUE'); assert.equal(started.run.dialogueIndex, 1);
+      started = await store.applyTowerCommand(userId, run.id, started.run.version, { type: 'DIALOGUE_NEXT' }, productionType());
+    }
+    assert.equal(started.run.phase, 'BATTLE'); assert.ok(started.battle);
+    run = (await store.saveTowerBattle(userId, run.id, started.run.version, win(started.battle), productionType())).run;
+    if (run.phase === 'CARD_REWARD') run = (await store.applyTowerCommand(userId, run.id, run.version, { type: 'SKIP_CARD' }, productionType())).run;
+    else if (run.phase === 'RELIC_REWARD') {
+      const relicId = run.relicOptions.find(id => !['MAX_FIELD_ONE', 'MAX_FIELD_TWO', 'FIRST_SUMMON_COST_DOWN_NO_ATTACK'].includes(id)) ?? run.relicOptions[0]!;
+      run = (await store.applyTowerCommand(userId, run.id, run.version, { type: 'SELECT_RELIC', relicId }, productionType())).run;
+    }
+  }
+  assert.equal(dialogues, hidden ? 5 : 4);
+  assert.equal(run.phase, 'RESULT'); assert.equal(run.regularClear, true); assert.equal(run.hiddenClear, hidden);
+  assert.equal(run.defeatedBossSlots.includes('hiddenBoss'), hidden); assert.equal(run.relicIds.length, 3);
+  assert.equal((await database.select().from(schema.rewardGrantsTable).where(eq(schema.rewardGrantsTable.userId, userId))).length, 0);
+  assert.equal((await database.select().from(schema.towerBossClearsTable).where(eq(schema.towerBossClearsTable.userId, userId))).length, 0);
+  assert.equal((await database.select().from(schema.towerBossReceiptsTable).where(eq(schema.towerBossReceiptsTable.runId, run.id))).length, 0);
+  assert.equal((await database.select().from(schema.towerUnlocksTable).where(eq(schema.towerUnlocksTable.userId, userId))).length, 0);
+  assert.deepEqual((await database.select().from(schema.towerRunsTable).where(eq(schema.towerRunsTable.id, original.id)))[0]!.state, original);
+});

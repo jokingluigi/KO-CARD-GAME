@@ -124,6 +124,34 @@ const server = app.listen(4173, '0.0.0.0', async () => {
     assert.equal(diagnosticResponse.status, 201); const diagnostic = await diagnosticResponse.json();
     assert.equal(diagnostic.run.isTest, true); assert.equal(diagnostic.run.encounter.bossSlot, 'hiddenBoss');
     await call(`/runs/${diagnostic.run.id}`, undefined, 404);
+    // The management shortcut starts the complete diagnostic flow even with the player mode OFF.
+    await database.update(schema.towerSettingsTable).set({ enabled: false });
+    async function fullTest(path: string, body?: unknown, expected = 200) {
+      const response = await fetch(`${origin}/api/admin/tower/test/runs${path}`, { headers: { Cookie: cookie, ...(body ? { 'Content-Type': 'application/json' } : {}) }, ...(body ? { method: 'POST', body: JSON.stringify(body) } : {}) });
+      const data = await response.json(); assert.equal(response.status, expected, JSON.stringify(data)); return data;
+    }
+    let full = await fullTest('', { starterId: 'starter', fullMode: true, floor: 1, seed: 'full-mode-from-first-floor', hidden: false, relicIds: [] }, 201);
+    const fullId = full.run.id;
+    assert.equal(full.run.floor, 1); assert.equal(full.run.isTest, true); assert.equal(full.run.fullModeTest, true);
+    assert.deepEqual(full.run.relicIds, []); assert.equal(full.run.encounter.bossSlot, undefined);
+    assert.equal((await call('/availability')).enabled, false);
+    assert.deepEqual((await fullTest(`/${fullId}`)).run, full.run);
+    full = await fullTest(`/${fullId}/command`, { version: full.run.version, command: { type: 'CHALLENGE' } });
+    for (let step = 0; step < 30 && full.run.phase === 'BATTLE'; step++) {
+      const projected = projectOnlineGameState(full.battle, 'player-1'); assert.ok(projected);
+      const actions = getLegalActions(projected, 'player-1');
+      const action = actions.find(a => a.type === 'MULLIGAN') ?? actions.find(a => a.type === 'ATTACK' && a.target.type === 'PLAYER') ?? actions.find(a => a.type === 'PLAY_WRESTLER') ?? actions.find(a => a.type === 'END_TURN');
+      assert.ok(action);
+      full = await fullTest(`/${fullId}/action`, { version: full.run.version, action: towerActionPayload(action) });
+    }
+    assert.equal(full.run.phase, 'CARD_REWARD'); assert.equal(full.run.cardOptions.length, 3);
+    full = await fullTest(`/${fullId}/command`, { version: full.run.version, command: { type: 'SKIP_CARD' } });
+    assert.equal(full.run.floor, 2); assert.equal(full.run.phase, 'HUB'); assert.equal(full.run.deck.length, 25);
+    assert.equal((await fullTest(`/${fullId}`)).run.floor, 2);
+    assert.equal((await call('/availability')).enabled, false);
+    assert.equal((await database.select().from(schema.towerUnlocksTable)).length, 0);
+    assert.equal((await database.select().from(schema.towerBossReceiptsTable)).length, 0);
+    console.log('Full-mode diagnostic HTTP QA PASS: mode OFF, first-floor start, reconnect, real battle, card rewards, second-floor continuation, isolated progression');
     console.log('HTTP QA PASS: session, availability, owned starter, creation, challenge, stale conflict, deterministic restart, auth isolation, real battle actions + AI + reward offers, admin hidden diagnostic isolation');
     if (process.argv.includes('--smoke')) { server.close(); await pg.close(); }
     else console.log('Tower disposable QA ready: http://localhost:4173/qa/session');

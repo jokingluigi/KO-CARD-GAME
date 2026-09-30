@@ -49,3 +49,11 @@ test('relic configuration uses explicit V1 defaults and rejects unused numeric f
   assert.throws(() => parseRelic({ ...base, effectType: 'FIRST_RETIRE_SURVIVE', values: { health: 20 } }));
   assert.deepEqual(parseRelic({ ...base, effectType: 'FIRST_RETIRE_SURVIVE', values: {} }).values, {});
 });
+
+test('dialogue placement and OST settings round-trip with bounded values and legacy defaults', () => {
+  const scene = { id: 'scene', name: 'Story', music: { name: 'Dialogue OST', assetUrl: 'https://assets.example.invalid/story.mp3', volume: 65 }, lines: [{ speakerId: 'actor', expression: 'NEUTRAL', side: 'LEFT', text: 'Hello', order: 0, spriteScale: 1.2, spriteOffsetX: -10, spriteOffsetY: 8 }] };
+  assert.deepEqual(parseScene(scene), scene);
+  for (const invalid of [{ spriteScale: 2 }, { spriteOffsetX: -31 }, { spriteOffsetY: NaN }]) assert.throws(() => parseScene({ ...scene, lines: [{ ...scene.lines[0], ...invalid }] }));
+  assert.throws(() => parseScene({ ...scene, music: { ...scene.music, volume: 101 } }));
+  assert.throws(() => parseScene({ ...scene, music: { ...scene.music, assetUrl: 'javascript:alert(1)' } }));
+});

@@ -67,10 +67,18 @@ function boss(value: unknown): BossConfig {
   return { presetId: text(b.presetId), firstReward: parseReward(b.firstReward), repeatReward: parseReward(b.repeatReward),
     ...(b.commonSceneId ? { commonSceneId: text(b.commonSceneId) } : {}), ...(b.protagonistSceneId ? { protagonistSceneId: text(b.protagonistSceneId) } : {}) };
 }
+function musicTrack(value: unknown) {
+  const track = object(value); const assetUrl = text(track.assetUrl, 2000);
+  let valid = false;
+  try { valid = ['http:', 'https:'].includes(new URL(assetUrl, 'https://tower.invalid').protocol); } catch {}
+  if (!valid) throw new TowerRuleError('INVALID_CONFIG', 'OST 주소를 확인해 주세요.');
+  return { name: text(track.name), assetUrl, volume: number(track.volume, 0, 100) };
+}
 export function parseSeason(value: unknown): Season {
   const s = object(value); const b = object(s.bosses); const weights = object(s.synergyWeights);
   return { id: text(s.id), name: text(s.name), description: typeof s.description === 'string' ? s.description.slice(0, 2000) : '',
     protagonistChampionId: text(s.protagonistChampionId),
+    ...(s.music ? { music: Object.fromEntries(['normal', 'midBoss', 'boss', 'hiddenBoss'].filter(key => object(s.music)[key] !== undefined).map(key => [key, musicTrack(object(s.music)[key])])) } : {}),
     bosses: { boss1: boss(b.boss1), boss2: boss(b.boss2), boss3: boss(b.boss3), finalBoss: boss(b.finalBoss), ...(b.hiddenBoss ? { hiddenBoss: boss(b.hiddenBoss) } : {}) },
     ...(s.hiddenCondition ? { hiddenCondition: parseCondition(s.hiddenCondition) } : {}),
     synergyWeights: { deckTag: number(weights.deckTag, 0, 100), supportTag: number(weights.supportTag, 0, 100), championTag: number(weights.championTag, 0, 100) } };
@@ -114,10 +122,17 @@ export function parseCharacter(value: unknown): StoryCharacter {
 export function parseScene(value: unknown): Scene {
   const s = object(value);
   if (!Array.isArray(s.lines) || s.lines.length > 200) throw new TowerRuleError('INVALID_SCENE', '대사는 최대 200줄입니다.');
-  return { id: text(s.id), name: text(s.name), lines: s.lines.map((value, order) => {
+  return { id: text(s.id), name: text(s.name), ...(s.music ? { music: musicTrack(s.music) } : {}), lines: s.lines.map((value, order) => {
     const l = object(value);
     if (!EXPRESSIONS.includes(l.expression as typeof EXPRESSIONS[number]) || (l.side !== 'LEFT' && l.side !== 'RIGHT')) throw new TowerRuleError('INVALID_SCENE', '표정과 위치를 확인해 주세요.');
-    return { speakerId: text(l.speakerId), expression: l.expression as typeof EXPRESSIONS[number], side: l.side as 'LEFT' | 'RIGHT', text: text(l.text, 2000), order };
+    const placement: Record<string, number> = {};
+    for (const [key, min, max] of [['spriteScale', 0.5, 1.5], ['spriteOffsetX', -30, 30], ['spriteOffsetY', -30, 30]] as const) {
+      if (l[key] !== undefined) {
+        if (typeof l[key] !== 'number' || !Number.isFinite(l[key]) || l[key] < min || l[key] > max) throw new TowerRuleError('INVALID_SCENE', '인물 크기와 위치 범위를 확인해 주세요.');
+        placement[key] = l[key];
+      }
+    }
+    return { speakerId: text(l.speakerId), expression: l.expression as typeof EXPRESSIONS[number], side: l.side as 'LEFT' | 'RIGHT', text: text(l.text, 2000), order, ...placement };
   }) };
 }
 export function parseMetadata(value: unknown): { synergyTags: string[]; supportsTags: string[]; preferredSynergyTags: string[]; excluded: boolean } {

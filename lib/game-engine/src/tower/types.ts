@@ -31,7 +31,9 @@ export interface Season {
   bosses: Record<Exclude<BossSlot, 'hiddenBoss'>, BossConfig> & { hiddenBoss?: BossConfig };
   hiddenCondition?: Condition;
   synergyWeights: { deckTag: number; supportTag: number; championTag: number };
+  music?: Partial<Record<'normal' | 'midBoss' | 'boss' | 'hiddenBoss', TowerMusicTrack>>;
 }
+export interface TowerMusicTrack { name: string; assetUrl: string; volume: number }
 export interface TowerCard {
   id: string; status: string; cost: number; cardType: 'WRESTLER' | 'TECHNIQUE'; rarity: string;
   isToken: boolean; isChampionToken: boolean; excluded?: boolean;
@@ -54,8 +56,8 @@ export interface StoryCharacter {
   id: string; displayName: string; championId?: string;
   sprites: Partial<Record<Expression, string>>;
 }
-export interface DialogueLine { speakerId: string; expression: Expression; side: 'LEFT' | 'RIGHT'; text: string; order: number }
-export interface Scene { id: string; name: string; lines: DialogueLine[] }
+export interface DialogueLine { speakerId: string; expression: Expression; side: 'LEFT' | 'RIGHT'; text: string; order: number; spriteScale?: number; spriteOffsetX?: number; spriteOffsetY?: number }
+export interface Scene { id: string; name: string; lines: DialogueLine[]; music?: TowerMusicTrack }
 export interface TowerCatalog {
   season: Season; cards: TowerCard[]; presets: Preset[]; starters: Starter[]; relics: Relic[];
   preferredTags: Record<string, string[]>; scenes: Scene[]; characters: StoryCharacter[];
@@ -69,7 +71,7 @@ export interface TowerRun {
   offeredRelicIds: string[]; floor: number; phase: RunPhase; encounter: Encounter;
   previousNormalPresetId?: string; cardOptions: string[]; relicOptions: string[]; selectedCardId?: string;
   dialogueIndex: number; defeatedBossSlots: BossSlot[]; regularClear: boolean; hiddenClear: boolean;
-  hiddenEvaluated: boolean; losses: number; isTest: boolean; ended: boolean;
+  hiddenEvaluated: boolean; losses: number; isTest: boolean; fullModeTest?: boolean; ended: boolean;
 }
 export type RunCommand =
   | { type: 'CHALLENGE' }

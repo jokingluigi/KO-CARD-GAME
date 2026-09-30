@@ -72,7 +72,7 @@ router.get('/runs/current', async (request, response, next) => {
     const snapshot = row.snapshot as unknown as TowerSnapshot;
     response.setHeader('Cache-Control', 'no-store');
     response.json({ ...view(row.state as unknown as TowerRun, row.currentBattle as unknown as GameState | null),
-      cards: snapshot.cards.filter(c => c.status === 'PUBLISHED'), champions: snapshot.champions, relics: snapshot.catalog.relics, scenes: snapshot.catalog.scenes, characters: snapshot.catalog.characters, rewardReceipts: await receipts(row.id) });
+      cards: snapshot.cards.filter(c => c.status === 'PUBLISHED'), champions: snapshot.champions, relics: snapshot.catalog.relics, scenes: snapshot.catalog.scenes, characters: snapshot.catalog.characters, music: snapshot.catalog.season.music, rewardReceipts: await receipts(row.id) });
   } catch (error) { next(error); }
 });
 router.get('/runs/:id', async (request, response, next) => {
@@ -84,7 +84,7 @@ router.get('/runs/:id', async (request, response, next) => {
     response.setHeader('Cache-Control', 'no-store');
     response.json({ ...view({ ...run, ended: row.ended, ...(row.ended ? { phase: 'RESULT' as const } : {}) }, row.currentBattle as unknown as GameState | null),
       cards: snapshot.cards.filter(c => c.status === 'PUBLISHED'), champions: snapshot.champions, relics: snapshot.catalog.relics,
-      scenes: snapshot.catalog.scenes, characters: snapshot.catalog.characters, rewardReceipts: await receipts(row.id) });
+      scenes: snapshot.catalog.scenes, characters: snapshot.catalog.characters, music: snapshot.catalog.season.music, rewardReceipts: await receipts(row.id) });
   } catch (error) { next(error); }
 });
 for (const operation of ['command', 'action', 'restart'] as const) router.post(`/runs/:id/${operation}`, async (request, response, next) => {
