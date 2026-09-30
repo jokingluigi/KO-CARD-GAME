@@ -53,6 +53,7 @@ function readPayload(value: unknown): {
   description: string;
   championDefinitionId: string | null;
   cardDefinitionIds: string[];
+  difficulty: "NORMAL" | "HARD" | "BOSS";
   enabled: boolean;
   displayOrder: number;
 } | null {
@@ -60,6 +61,7 @@ function readPayload(value: unknown): {
   const body = value as Record<string, unknown>;
   const cardDefinitionIds = readCardIds(body.cardDefinitionIds);
   if (!cardDefinitionIds) return null;
+  if (body.difficulty !== undefined && (typeof body.difficulty !== "string" || !["NORMAL", "HARD", "BOSS"].includes(body.difficulty))) return null;
   const displayOrder = typeof body.displayOrder === "number" && Number.isFinite(body.displayOrder)
     ? Math.trunc(body.displayOrder)
     : 0;
@@ -70,6 +72,7 @@ function readPayload(value: unknown): {
       ? body.championDefinitionId.trim()
       : null,
     cardDefinitionIds,
+    difficulty: (body.difficulty ?? "NORMAL") as "NORMAL" | "HARD" | "BOSS",
     enabled: readBoolean(body.enabled, false),
     displayOrder,
   };
@@ -132,6 +135,7 @@ router.patch("/:id", async (request, response): Promise<void> => {
   }
   const [deck] = await db.update(aiDecksTable).set({
     ...payload!,
+    difficulty: request.body.difficulty === undefined ? existing.difficulty : payload!.difficulty,
     updatedAt: new Date(),
   }).where(eq(aiDecksTable.id, id)).returning();
   response.json({ deck: deck ? await resolveAIDeck(deck) : null });
@@ -149,6 +153,7 @@ router.post("/:id/duplicate", async (request, response): Promise<void> => {
     description: source.description,
     championDefinitionId: source.championDefinitionId,
     cardDefinitionIds: source.cardDefinitionIds,
+    difficulty: source.difficulty,
     enabled: false,
     displayOrder: source.displayOrder,
   }).returning();

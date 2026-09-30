@@ -1,3 +1,4 @@
+import { chooseBestAction as chooseLegacyAction } from './legacy-ai-evaluator';
 import type { CardEffect } from '../effects/types';
 import type { CardInstance } from '../cards/types';
 import type { GameState, PlayerState } from '../types/game-state';
@@ -120,6 +121,28 @@ export function aiInformationState(state: GameState, playerId: string): GameStat
   })) };
 }
 
+/** Estimate visible next-turn attack exposure, including cheap attacks clearing fragile guards. */
+function visibleAttackExposure(own: PlayerState, enemy: PlayerState): number {
+  const guards = own.board.filter((card): card is CardInstance => Boolean(card && getActiveCardKeywords(card).includes('TAUNT')))
+    .map(card => ({ health: card.currentHealth, attack: card.currentAttack, dodge: card.dodgeAvailable }));
+  const attackers = enemy.board.filter((card): card is CardInstance => Boolean(card && !card.isStunned && card.currentAttack > 0))
+    .sort((left, right) => left.currentAttack - right.currentAttack);
+  let exposure = 0;
+  for (const attacker of attackers) {
+    let health = attacker.currentHealth;
+    const strikes = getActiveCardKeywords(attacker).includes('MULTI_STRIKE') ? 2 : 1;
+    for (let strike = 0; strike < strikes && health > 0; strike++) {
+      guards.sort((left, right) => left.health - right.health || left.attack - right.attack);
+      const guard = guards[0];
+      if (!guard) { exposure += attacker.currentAttack; continue; }
+      if (guard.dodge) { guard.dodge = false; continue; }
+      guard.health -= attacker.currentAttack; health -= guard.attack;
+      if (guard.health <= 0) guards.shift();
+    }
+  }
+  return exposure;
+}
+
 export function evaluateAction(state: GameState, action: GameAction, playerId: string): number {
   const visible = aiInformationState(state, playerId);
   const result = executeAction(visible, action);
@@ -134,10 +157,9 @@ export function evaluateAction(state: GameState, action: GameAction, playerId: s
   const drawBonus = Math.max(0, ownAfter.hand.length - ownBefore.hand.length) * Math.max(0, 5 - ownBefore.hand.length);
   const spent = Math.max(0, ownBefore.currentGold - ownAfter.currentGold);
   const enemyThreat = result.state.players.find(p => p.id !== playerId)!.board.reduce((n, c) => n + (c && !c.isStunned ? c.currentAttack : 0), 0);
-  const hasGuard = ownAfter.board.some(card => card && getActiveCardKeywords(card).includes('TAUNT'));
-  // Public, immediately visible attack damage outranks optional nonlethal damage.
-  // Guards require a fuller trade search; do not assume their destruction here.
-  const exposedLethal = !hasGuard && enemyThreat >= ownAfter.health && enemyThreat > 0 ? -5000 : 0;
+  const exposure = visibleAttackExposure(ownAfter, result.state.players.find(p => p.id !== playerId)!);
+  // Visible next-turn lethal outranks optional nonlethal face damage.
+  const exposedLethal = exposure >= ownAfter.health && exposure > 0 ? -5000 : 0;
   const survival = exposedLethal + (ownAfter.health <= enemyThreat ? (ownAfter.health - ownBefore.health) * 3 - enemyThreat * 0.5 : 0);
   return after - before + questBonus + drawBonus - spent * 0.25 + survival + (action.type === 'END_TURN' ? -0.5 : 0);
 }
@@ -149,7 +171,8 @@ export const AI_SEARCH_PROFILES = {
   BOSS: { depth: 3, width: 6, budget: 120 },
 } as const;
 /** Bounded same-turn beam search. Every candidate goes through the shared legal-action engine. */
-export function chooseBestAction(state: GameState, actions: GameAction[], playerId: string, difficulty: AIDifficulty = 'HARD'): GameAction {
+export function chooseBestAction(state: GameState, actions: GameAction[], playerId: string, difficulty?: AIDifficulty): GameAction {
+  if (!difficulty) return chooseLegacyAction(state, actions, playerId);
   const visible = aiInformationState(state, playerId);
   const profile = AI_SEARCH_PROFILES[difficulty];
   const root = actions.map((action, index) => ({ action, index, score: evaluateAction(visible, action, playerId) }))

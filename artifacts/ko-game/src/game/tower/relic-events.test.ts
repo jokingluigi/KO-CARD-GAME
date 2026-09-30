@@ -142,3 +142,23 @@ test('폭군의 명령서: highest base ATK tie uses leftmost; recomputation doe
   assert.deepEqual(refreshTowerAuras(state), state);
   const removed = destroyCard(state, 'player-1', 'a').state; assert.equal(removed.players[0]!.board[1]!.currentAttack, 4);
 });
+
+test('live relic aura remains after SILENCE removes card text and ordinary buffs', () => {
+  const state = setup(['SOLO_BUFF']);
+  const silenced = processChampionQuestEvents(state, applyEffect(state, 'player-1', state.players[0]!.board[0]!, {
+    type: 'STRUCTURED', action: 'SILENCE', target: { zone: 'BOARD', owner: 'SELF', selection: 'PLAYER_CHOICE', count: 1 },
+  }, ['a']));
+  const card = silenced.players[0]!.board[0]!;
+  assert.equal(card.isSilenced, true); assert.equal(card.currentAttack, 5); assert.equal(card.currentHealth, 8); assert.equal(card.maxHealth, 8);
+  assert.deepEqual(refreshTowerAuras(silenced), silenced);
+});
+
+test('SET_STATS keeps live relic bonuses while temporary attack replacement expires without stacking', () => {
+  const state = setup(['SOLO_BUFF']);
+  const changed = applyEffect(state, 'player-1', state.players[0]!.board[0]!, { type: 'STRUCTURED', action: 'SET_STATS', target: { zone: 'BOARD', owner: 'SELF', selection: 'PLAYER_CHOICE', count: 1 }, values: { attack: 1, duration: 'THIS_TURN' } }, ['a']);
+  assert.equal(changed.players[0]!.board[0]!.currentAttack, 4);
+  assert.deepEqual(refreshTowerAuras(changed), changed);
+  const expired = endTurn(changed, 'player-1'); assert.ok(expired.success); assert.equal(expired.state.players[0]!.board[0]!.currentAttack, 5);
+  const second = enterField(changed, 'player-1', make('b'), 1); assert.equal(second.players[0]!.board[0]!.currentAttack, 1);
+  const expiredWithoutAura = endTurn(second, 'player-1'); assert.ok(expiredWithoutAura.success); assert.equal(expiredWithoutAura.state.players[0]!.board[0]!.currentAttack, 2);
+});

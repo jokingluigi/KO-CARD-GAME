@@ -92,3 +92,21 @@ test("AI match reward replay follows the AI actions actually shown to the player
   assert.equal(result.winnerId, aiId);
   assert.equal(result.status, "FINISHED");
 });
+
+for (const difficulty of ['NORMAL', 'HARD', 'BOSS'] as const) {
+  test(`AI match client scheduler and server replay agree at ${difficulty} difficulty`, async () => {
+    const started = startedEmptyMatch();
+    const userId = started.players[0]!.id;
+    const aiId = started.players[1]!.id;
+    const ended = executeAction(started, { type: 'END_TURN', playerId: userId });
+    assert.equal(ended.success, true);
+    const transcript: Array<GameAction & { actor?: 'AI' }> = [{ type: 'END_TURN', playerId: userId }];
+    const after = await runAITurn(ended.state, aiId, {
+      difficulty, wait: async () => {}, waitForPresentationIdle: async () => {}, isCancelled: () => false,
+      actionDelayMs: 0, onState: () => {}, onAction: action => transcript.push({ ...action, actor: 'AI' }),
+    });
+    assert.equal(after.activePlayerId, userId);
+    transcript.push({ type: 'SURRENDER', playerId: userId });
+    assert.equal(replayAIMatch(started, transcript, userId, aiId, difficulty).winnerId, aiId);
+  });
+}

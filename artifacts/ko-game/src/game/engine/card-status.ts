@@ -5,6 +5,7 @@ import { getActiveAbility, hasMandatoryPlayerChoice, resolveActiveAbility } from
 import type { GameState } from '../types/game-state';
 import { validateCurrentPlayer } from './turn-system';
 import { processChampionQuestEvents } from '../champions/quests';
+import { refreshTowerAuras } from '../tower/relics';
 import { removeGrantedCardText } from '../cards/granted-text';
 
 function updateBoardCard(
@@ -28,20 +29,21 @@ export function silenceCard(
   state: GameState,
   cardInstanceId: CardInstanceId,
 ): GameState {
-  return updateBoardCard(state, cardInstanceId, (card) =>
+  const aura = state.tower?.auraStats?.[cardInstanceId];
+  return refreshTowerAuras(updateBoardCard(state, cardInstanceId, (card) =>
     card.isDirectDeployedChampion || card.isSilenceImmune
       ? card
       : {
           ...removeGrantedCardText(card),
           isSilenced: true,
-          currentAttack: card.baseAttack ?? card.currentAttack,
-          maxHealth: card.baseHealth ?? card.maxHealth,
-          currentHealth: Math.min(card.currentHealth, card.baseHealth ?? card.maxHealth),
+          currentAttack: card.baseAttack !== undefined ? card.baseAttack + (aura?.attack ?? 0) : card.currentAttack,
+          maxHealth: card.baseHealth !== undefined ? card.baseHealth + (aura?.health ?? 0) : card.maxHealth,
+          currentHealth: Math.min(card.currentHealth, card.baseHealth !== undefined ? card.baseHealth + (aura?.health ?? 0) : card.maxHealth),
           keywords: [],
           dodgeAvailable: false,
           dodgeCharges: 0,
         },
-  );
+  ));
 }
 
 export function setCardStunned(

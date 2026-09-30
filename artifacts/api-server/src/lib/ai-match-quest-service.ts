@@ -52,7 +52,7 @@ function stripClientPlayerId(value: unknown): unknown {
   return payload;
 }
 
-export function advanceAIOpponent(state: GameState, aiPlayerId: string, difficulty: "NORMAL" | "HARD" | "BOSS" = "HARD"): GameState {
+export function advanceAIOpponent(state: GameState, aiPlayerId: string, difficulty?: "NORMAL" | "HARD" | "BOSS"): GameState {
   let next = state;
   const greet = next.status !== "IN_PROGRESS" || next.activePlayerId !== aiPlayerId || next.targetingState?.active
     ? null : situationalAiEmote(next, aiPlayerId, next.events.length);
@@ -100,6 +100,7 @@ export function replayAIMatch(
   userActions: unknown[],
   userPlayerId: string,
   aiPlayerId: string,
+  difficulty?: "NORMAL" | "HARD" | "BOSS",
 ): GameState {
   if (userActions.some((action) => isRecord(action) && action.actor === "AI")) {
     let state = initialState;
@@ -115,11 +116,11 @@ export function replayAIMatch(
       }
       if (isAI && action.type === "END_TURN" && aiDecisions < AI_DECISIONS_PER_TURN &&
           getLegalActions(state, aiPlayerId).length > 0 &&
-          chooseBestAction(state, getLegalActions(state, aiPlayerId), aiPlayerId).type !== "END_TURN") {
+          chooseBestAction(state, getLegalActions(state, aiPlayerId), aiPlayerId, difficulty).type !== "END_TURN") {
         throw new Error("AI 행동을 완료하기 전에 턴을 끝낼 수 없습니다.");
       }
       if (isAI && action.type !== "EMOTE" && action.type !== "END_TURN") {
-        const expected = chooseBestAction(state, getLegalActions(state, aiPlayerId), aiPlayerId);
+        const expected = chooseBestAction(state, getLegalActions(state, aiPlayerId), aiPlayerId, difficulty);
         if (JSON.stringify(action) !== JSON.stringify(expected)) throw new Error("AI 경기 행동을 확인할 수 없습니다.");
       }
       const result = executeAction(state, action);
@@ -137,7 +138,7 @@ export function replayAIMatch(
       throw new Error("경기가 끝난 뒤 추가 행동이 포함되어 있습니다.");
     }
     const isOutOfTurnAction = isRecord(rawAction) && (rawAction.type === "SURRENDER" || rawAction.type === "EMOTE");
-    if (!isOutOfTurnAction) state = advanceAIOpponent(state, aiPlayerId);
+    if (!isOutOfTurnAction) state = advanceAIOpponent(state, aiPlayerId, difficulty);
     if (state.status !== "IN_PROGRESS") {
       throw new Error("AI 행동으로 경기가 먼저 끝났습니다.");
     }
@@ -155,7 +156,7 @@ export function replayAIMatch(
     state = result.state;
   }
 
-  state = advanceAIOpponent(state, aiPlayerId);
+  state = advanceAIOpponent(state, aiPlayerId, difficulty);
   if (state.status !== "FINISHED") {
     throw new Error("완료된 AI 경기 기록이 아닙니다.");
   }
@@ -279,7 +280,7 @@ export async function completeAIMatchQuestProgress(input: {
   const userPlayerId = startedState.players[0]?.id;
   const aiPlayerId = startedState.players[1]?.id;
   if (!userPlayerId || !aiPlayerId) throw new Error("경기 참가자 데이터를 만들 수 없습니다.");
-  const finalState = replayAIMatch(startedState, input.actions, userPlayerId, aiPlayerId);
+  const finalState = replayAIMatch(startedState, input.actions, userPlayerId, aiPlayerId, aiDeck.difficulty === "HARD" || aiDeck.difficulty === "BOSS" ? aiDeck.difficulty : "NORMAL");
 
   await db.transaction(async (tx) => {
     await processMatchEventsForDailyQuests(

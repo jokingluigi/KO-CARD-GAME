@@ -229,3 +229,16 @@ test('earned relic and alternative starter unlocks persist after conditions chan
   await store.applyTowerCommand('unlock-admin', diagnostic.id, diagnostic.version, { type: 'ABANDON' }, productionType());
   assert.equal((await database.select().from(schema.towerUnlocksTable).where(eq(schema.towerUnlocksTable.userId, 'unlock-admin'))).length, 0);
 });
+
+test('catalog validation rejects an insufficient relic pool and unresolved condition references before enabling', async () => {
+  const saved = await database.select().from(schema.towerRelicsTable);
+  try {
+    for (const row of saved.slice(0, 16)) await database.update(schema.towerRelicsTable).set({ data: { ...row.data, enabled: false } }).where(eq(schema.towerRelicsTable.id, row.id));
+    await assert.rejects(load.loadTowerSnapshot(productionType()), /유물 9종/);
+  } finally { for (const row of saved) await database.update(schema.towerRelicsTable).set({ data: row.data }).where(eq(schema.towerRelicsTable.id, row.id)); }
+  const [season] = await database.select().from(schema.towerSeasonsTable).where(eq(schema.towerSeasonsTable.id, 'qa-season'));
+  try {
+    await database.update(schema.towerSeasonsTable).set({ data: { ...season!.data, hiddenCondition: { type: 'CARD', id: 'missing-condition-card' } } }).where(eq(schema.towerSeasonsTable.id, 'qa-season'));
+    await assert.rejects(load.loadTowerSnapshot(productionType()), /조건이 참조/);
+  } finally { await database.update(schema.towerSeasonsTable).set({ data: season!.data }).where(eq(schema.towerSeasonsTable.id, 'qa-season')); }
+});

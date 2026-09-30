@@ -40,3 +40,12 @@ test('preset and relic values cannot bypass limits with malformed admin input', 
   assert.throws(() => parseRelic({ ...relic, values: { infiniteDraw: 1 } }));
   assert.throws(() => parseRelic({ ...relic, values: { attack: 0.5 } }));
 });
+
+test('relic configuration uses explicit V1 defaults and rejects unused numeric fields for its effect', () => {
+  const base = { id: 'default', name: 'Default', description: 'Effect', enabled: true, initiallyUnlocked: true };
+  assert.deepEqual(parseRelic({ ...base, effectType: 'MAX_FIELD_ONE', values: {} }).values, { attack: 4, health: 4 });
+  assert.deepEqual(parseRelic({ ...base, effectType: 'SOLO_BUFF', values: { attack: 5 } }).values, { attack: 5, health: 3 });
+  assert.throws(() => parseRelic({ ...base, effectType: 'MAX_FIELD_ONE', values: { amount: 4 } }));
+  assert.throws(() => parseRelic({ ...base, effectType: 'FIRST_RETIRE_SURVIVE', values: { health: 20 } }));
+  assert.deepEqual(parseRelic({ ...base, effectType: 'FIRST_RETIRE_SURVIVE', values: {} }).values, {});
+});

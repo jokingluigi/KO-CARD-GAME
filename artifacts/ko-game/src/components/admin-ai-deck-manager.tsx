@@ -24,6 +24,7 @@ type Draft = {
   description: string;
   championDefinitionId: string | null;
   cardDefinitionIds: string[];
+  difficulty: AIDeck["difficulty"];
   enabled: boolean;
   displayOrder: number;
 };
@@ -33,6 +34,7 @@ const emptyDraft: Draft = {
   description: "",
   championDefinitionId: null,
   cardDefinitionIds: [],
+  difficulty: "NORMAL",
   enabled: false,
   displayOrder: 0,
 };
@@ -44,6 +46,7 @@ function draftFromDeck(deck: AIDeck): Draft {
     description: deck.description,
     championDefinitionId: deck.championDefinitionId,
     cardDefinitionIds: deck.cardDefinitionIds,
+    difficulty: deck.difficulty ?? "NORMAL",
     enabled: deck.enabled,
     displayOrder: deck.displayOrder,
   };
@@ -217,7 +220,7 @@ export function AdminAIDeckManager({ onUnauthorized }: Props) {
                 <span className="font-black">{deck.name}</span>
                 <span className={`text-[10px] font-black ${deck.enabled ? "text-emerald-300" : "text-neutral-500"}`}>{deck.enabled ? "활성" : "비활성"}</span>
               </div>
-              <p className="mt-2 text-xs text-neutral-500">{deck.champion?.name ?? "Champion 없음"} · {deck.cardDefinitionIds.length}장</p>
+              <p className="mt-2 text-xs text-neutral-500">{deck.champion?.name ?? "Champion 없음"} · {deck.cardDefinitionIds.length}장 · {{ NORMAL: "일반", HARD: "어려움", BOSS: "보스" }[deck.difficulty ?? "NORMAL"]}</p>
               {!deck.isValid && <p className="mt-2 text-xs font-bold text-red-300">INVALID · {deck.invalidReasons[0]}</p>}
             </button>
           ))}
@@ -235,6 +238,7 @@ export function AdminAIDeckManager({ onUnauthorized }: Props) {
               <select value={draft.championDefinitionId ?? ""} onChange={(event) => setDraft({ ...draft, championDefinitionId: event.target.value || null })} className="mt-1 w-full rounded border border-neutral-700 bg-neutral-950 px-3 py-2.5"><option value="">Champion 선택</option>{filteredChampions.map((champion) => <option key={champion.id} value={champion.id}>{champion.name}{champion.status === "DRAFT" ? " [DRAFT]" : ""}</option>)}</select>
             </label>
           </div>
+          <label className="block text-sm font-bold">AI 난이도<select value={draft.difficulty} onChange={(event) => setDraft({ ...draft, difficulty: event.target.value as AIDeck["difficulty"] })} className="mt-1 min-h-11 w-full rounded border border-neutral-700 bg-neutral-950 px-3 py-2.5"><option value="NORMAL">일반</option><option value="HARD">어려움</option><option value="BOSS">보스</option></select></label>
           <div className="grid gap-4 md:grid-cols-[1fr_120px]">
             <label className="text-sm font-bold">설명<textarea value={draft.description} onChange={(event) => setDraft({ ...draft, description: event.target.value })} className="mt-1 min-h-20 w-full rounded border border-neutral-700 bg-neutral-950 px-3 py-2.5" /></label>
             <label className="text-sm font-bold">순서<input type="number" value={draft.displayOrder} onChange={(event) => setDraft({ ...draft, displayOrder: Number(event.target.value) || 0 })} className="mt-1 w-full rounded border border-neutral-700 bg-neutral-950 px-3 py-2.5" /></label>

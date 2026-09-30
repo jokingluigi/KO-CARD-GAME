@@ -104,3 +104,30 @@ Original branch and commits preserved with `backup/tower-resume-987e41d`. Remote
 - PASS: isolated PostgreSQL integration now 12/12, including both migrations twice, earned starter reuse after a changed condition, and no diagnostic unlock records. API/shared DB declaration type checks passed.
 - Deployment requires both Tower migrations. Neither has been applied to production here.
 - Remote backup push of checkpoint `4b77cf7` was rejected by automatic approval review because a new remote branch/source transfer lacked explicit authorization. No retry/bypass performed. Local commits remain intact; remote preservation is BLOCKED pending authorization.
+
+### Authorized remote backup and expanded AI QA
+
+- User approved remote backup of local `d4f1d1d`. Git CLI push lacked credentials, so the connected GitHub tool stored the exact snapshot on `backup/tower-resume-20260930` at remote commit `49c8ac63cceb40fc140dfab77dd13487d606559c`. Local and remote tree SHA both equal `109a641dcd3d73f35efcc0dafe9a95f8ad1b775b`. Existing main/Tower refs were not moved. API-generated backup commit SHA differs; source contents match exactly.
+- Automatic review briefly misclassified included documentation from ancestor `4b77cf7` as later unauthorized work. Read-only ancestry/blob proof confirmed that the file belongs to approved `d4f1d1d`; retry succeeded within that exact scope.
+- PASS: 14 dedicated actual shared-engine AI tests. Added NORMAL/HARD/BOSS cost efficiency, cheap weak-enemy removal while retaining strong removal, low-hand draw, actual Champion quest completion; HARD/BOSS buff-before-attack same-turn lethal. Actual browser/mobile QA and guard/counterplay edge scenarios remain unverified; release is IN PROGRESS.
+
+- Further AI survival regression reproduced a fragile-TAUNT error. Visible exposure now considers cheap attackers clearing guards and multiple strikes; AI scenario suite 15/15 and full existing game/Tower suite 378/378 PASS. Frontend/shared DB/API type checks and HTTP engine/AI smoke PASS.
+- Administrator diagnostics now expose custom 25-card editing independently of account decks. Mobile emote geometry accounts for measured menu height/visual viewport and constrains remaining scroll height; this is mathematical QA only, not a substitute for the still-blocked actual browser/mobile acceptance.
+
+### Configuration and live-aura interaction checkpoint
+
+- Effect-specific relic numeric fields prevent saved but unused parameters; absent fields use explicit V1 defaults to preserve older configuration compatibility.
+- Catalog validation rejects fewer than nine enabled relics, no active starter, and unresolved enabled unlock/hidden-condition references. Configuration tests 6/6 and isolated PostgreSQL tests 13/13 PASS.
+- Reproduced and fixed SILENCE removing live external relic aura. SET_STATS now preserves the independent Tower overlay; temporary attack replacement expires correctly with the aura either active or removed. Outside-Tower branches retain existing behavior.
+- PASS: full existing game + Tower + mobile geometry suite 386/386, frontend/shared-engine/DB/API type checks. Mobile geometry alone is 5 cases; actual browser/mobile interaction and rendering remain UNVERIFIED (WORK_BROWSER_FAILURE), and release remains IN PROGRESS.
+
+## Interim integration and AI deck difficulty (2026-09-30 UTC)
+- Integrated current main c7a279e without discarding original card effects, match rewards or mobile fixes. Six overlapping Tower hooks were resolved additively.
+- User requested difficulty selection for existing AI decks. Added NORMAL/HARD/BOSS admin selection, create/update/reload/clone preservation, scheduler and server replay propagation. Existing decks default NORMAL through additive migration 0028; old clients preserve an existing saved difficulty. Test matches without a configured difficulty retain the prior evaluator.
+- PASS: frontend/API/shared engine/DB typechecks, web/API builds; 386 engine/Tower/geometry tests, 14 isolated PostgreSQL tests, 8 AI replay tests, actual HTTP Tower flows and AI deck CRUD/difficulty validation.
+- Production DB modification explicitly authorized by user on 2026-10-01 KST. Deployment and additive migrations pending at this checkpoint. Tower flag remains OFF until configuration is valid; real browser/mobile inspection remains UNVERIFIED (WORK_BROWSER_FAILURE). This is an interim patch, not final acceptance.
+
+## Authorized deploy-time additive installation
+- Direct production connection from Work still fails at DNS with EAI_AGAIN; no SQL reached production. New attached credentials were not printed or committed.
+- Added bundled startup installer for migrations 0026/0027/0028, before the API begins serving. One transaction, serialized advisory lock, 15s DDL lock timeout, individual statements, no destructive operations. First install defaults Tower OFF; restarting preserves an already configured flag and AI difficulty.
+- PASS: actual bundled installer on isolated PostgreSQL preserves existing user/deck rows, installs all storage, survives a repeat startup and preserves the enabled flag; a final-migration failure rolls back all new tables. API build and typecheck pass. Production execution remains pending deployment; actual browser/mobile acceptance is still UNVERIFIED.

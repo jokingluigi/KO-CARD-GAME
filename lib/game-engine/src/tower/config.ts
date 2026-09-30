@@ -1,3 +1,4 @@
+import { TOWER_RELIC_DEFINITIONS } from './relic-definitions';
 import { TowerRuleError } from './domain';
 import { EXPRESSIONS, RELIC_TYPES, type AccountReward, type BossConfig, type Condition, type Preset, type Relic, type RunCommand, type Scene, type Season, type Starter, type StoryCharacter } from './types';
 
@@ -89,8 +90,9 @@ export function parseRelic(value: unknown): Relic {
   const r = object(value);
   if (!RELIC_TYPES.includes(r.effectType as Relic['effectType'])) throw new TowerRuleError('INVALID_RELIC', '유물 효과 종류를 확인해 주세요.');
   const values = object(r.values);
-  const allowedKeys = ['attack', 'health', 'amount', 'reduction', 'threshold', 'heal', 'penalty'];
-  const normalized: Record<string, number> = {};
+  const definition = TOWER_RELIC_DEFINITIONS.find(definition => definition.type === r.effectType)!;
+  const allowedKeys = Object.keys(definition.values);
+  const normalized: Record<string, number> = { ...definition.values };
   for (const [key, value] of Object.entries(values)) {
     if (!allowedKeys.includes(key)) throw new TowerRuleError('INVALID_RELIC', '지원되지 않는 유물 수치입니다.');
     normalized[key] = number(value, 0, 25);

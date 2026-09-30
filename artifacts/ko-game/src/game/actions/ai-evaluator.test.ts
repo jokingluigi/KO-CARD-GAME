@@ -47,7 +47,7 @@ test('healing target selection prefers missing health instead of wasting healing
   state.targetingState = { active: true, playerId: 'player-1', sourceInstanceId: source.instanceId, sourceCard: source,
     effects: [{ type: 'STRUCTURED', action: 'HEAL', target: { zone: 'BOARD', owner: 'SELF', selection: 'PLAYER_CHOICE', count: 1 }, values: { amount: 4 } }],
     effectIndex: 0, selectedTargetIds: [], lastTargetIds: [], validTargetIds: ['a:0', 'a:1'], minTargets: 1, maxTargets: 1, mandatory: true, cancelable: false };
-  const selected = chooseBestAction(state, getLegalActions(state, 'player-1'), 'player-1');
+  const selected = chooseBestAction(state, getLegalActions(state, 'player-1'), 'player-1', 'HARD');
   assert.equal(selected.type, 'SELECT_EFFECT_TARGET');
   assert.equal('targetId' in selected ? selected.targetId : '', 'a:1');
 });
@@ -92,5 +92,70 @@ test('all AI profiles respect Tower field cap in actual legal actions', () => {
   for (const difficulty of ['NORMAL', 'HARD', 'BOSS'] as const) {
     const actions = getLegalActions(state, 'player-1'); assert.ok(actions.every(action => action.type !== 'PLAY_WRESTLER'));
     const chosen = chooseBestAction(state, actions, 'player-1', difficulty); assert.ok(actions.includes(chosen)); assert.ok(executeAction(state, chosen).success);
+  }
+});
+
+test('all AI profiles prefer the cheaper wrestler when board stats are identical', () => {
+  const state = setup(); state.players[0]!.board = [null, null, null, null]; state.players[0]!.currentGold = 3;
+  state.players[0]!.hand = [generateCardInstance({ ...card, cost: 3 }, { instanceId: 'expensive' }), generateCardInstance(card, { instanceId: 'efficient' })];
+  for (const difficulty of ['NORMAL', 'HARD', 'BOSS'] as const) {
+    const chosen = chooseBestAction(state, getLegalActions(state, 'player-1'), 'player-1', difficulty);
+    assert.equal(chosen.type, 'PLAY_WRESTLER'); assert.equal('cardInstanceId' in chosen ? chosen.cardInstanceId : '', 'efficient');
+    const result = executeAction(state, chosen); assert.ok(result.success); assert.equal(result.state.players[0]!.currentGold, 2);
+  }
+});
+test('all AI profiles save expensive destruction when cheap damage already removes the weak enemy', () => {
+  const state = setup(); state.players[0]!.board = [null, null, null, null]; state.players[0]!.currentGold = 3;
+  state.players[1]!.board[0] = { ...generateCardInstance({ ...card, attack: 1, health: 1 }, { instanceId: 'weak-enemy' }), boardSlot: 0 };
+  state.players[0]!.hand = [generateCardInstance({ ...card, id: 'destroy', cardType: 'TECHNIQUE', cost: 3, abilities: [{ trigger: 'ACTIVE', effects: [{ type: 'STRUCTURED', action: 'DESTROY', target: { zone: 'BOARD', owner: 'OPPONENT', selection: 'ALL' } }] }] }, { instanceId: 'strong-removal' }),
+    generateCardInstance({ ...card, id: 'damage', cardType: 'TECHNIQUE', cost: 1, abilities: [{ trigger: 'ACTIVE', effects: [{ type: 'STRUCTURED', action: 'DAMAGE', target: { zone: 'BOARD', owner: 'OPPONENT', selection: 'ALL' }, values: { amount: 1 } }] }] }, { instanceId: 'small-removal' })];
+  for (const difficulty of ['NORMAL', 'HARD', 'BOSS'] as const) {
+    const chosen = chooseBestAction(state, getLegalActions(state, 'player-1'), 'player-1', difficulty);
+    assert.equal(chosen.type, 'PLAY_TECHNIQUE'); assert.equal('cardInstanceId' in chosen ? chosen.cardInstanceId : '', 'small-removal');
+    const result = executeAction(state, chosen); assert.ok(result.success); assert.equal(result.state.players[1]!.board[0], null);
+    assert.ok(result.state.players[0]!.hand.some(card => card.instanceId === 'strong-removal'));
+  }
+});
+test('all AI profiles value real draw with low hand instead of ending the turn', () => {
+  const state = setup(); state.players[0]!.board = [null, null, null, null]; state.players[0]!.currentGold = 1;
+  state.players[0]!.hand = [generateCardInstance({ ...card, id: 'draw', cardType: 'TECHNIQUE', abilities: [{ trigger: 'ACTIVE', effects: [{ type: 'STRUCTURED', action: 'DRAW', values: { amount: 2 } }] }] }, { instanceId: 'draw-card' })];
+  for (const difficulty of ['NORMAL', 'HARD', 'BOSS'] as const) {
+    const chosen = chooseBestAction(state, getLegalActions(state, 'player-1'), 'player-1', difficulty);
+    assert.equal(chosen.type, 'PLAY_TECHNIQUE');
+    const result = executeAction(state, chosen); assert.ok(result.success); assert.equal(result.state.players[0]!.hand.length, 2);
+  }
+});
+
+test('all AI profiles complete an available champion quest through a real card play', () => {
+  const state = setup(); state.players[0]!.currentGold = 1; state.players[0]!.champion!.questProgress = 1;
+  state.players[0]!.hand = [generateCardInstance({ ...card, attack: 0, health: 1 }, { instanceId: 'quest-finisher' })];
+  for (const difficulty of ['NORMAL', 'HARD', 'BOSS'] as const) {
+    const chosen = chooseBestAction(state, getLegalActions(state, 'player-1'), 'player-1', difficulty);
+    assert.equal(chosen.type, 'PLAY_WRESTLER');
+    const result = executeAction(state, chosen); assert.ok(result.success);
+    assert.equal(result.state.players[0]!.champion!.questCompleted, true); assert.equal(result.state.players[0]!.champion!.questProgress, 2);
+    assert.ok(result.state.events.some(event => event.type === 'CHAMPION_QUEST_COMPLETED'));
+  }
+});
+test('HARD/BOSS use an attack buff before combat to find same-turn lethal', () => {
+  const state = setup(); state.players[0]!.board[1] = null; state.players[0]!.currentGold = 1;
+  state.players[1]!.health = 5; state.players[1]!.champion!.health = 5;
+  state.players[0]!.hand = [generateCardInstance({ ...card, id: 'buff', cardType: 'TECHNIQUE', abilities: [{ trigger: 'ACTIVE', effects: [{ type: 'STRUCTURED', action: 'BUFF', target: { zone: 'BOARD', owner: 'SELF', selection: 'ALL' }, values: { attack: 2 } }] }] }, { instanceId: 'lethal-buff' })];
+  for (const difficulty of ['HARD', 'BOSS'] as const) {
+    const first = chooseBestAction(state, getLegalActions(state, 'player-1'), 'player-1', difficulty); assert.equal(first.type, 'PLAY_TECHNIQUE');
+    const buffed = executeAction(state, first); assert.ok(buffed.success);
+    const second = chooseBestAction(buffed.state, getLegalActions(buffed.state, 'player-1'), 'player-1', difficulty);
+    assert.equal(executeAction(buffed.state, second).state.winnerId, 'player-1');
+  }
+});
+
+test('all AI profiles do not assume a fragile taunt blocks multiple visible lethal attackers', () => {
+  const state = setup(); state.players[0]!.board[1] = null; state.players[0]!.board[0]!.keywords = ['TAUNT'];
+  state.players[0]!.board[0]!.currentHealth = 1; state.players[0]!.health = 8; state.players[0]!.champion!.health = 8;
+  for (const [slot, attack, health] of [[0, 1, 1], [1, 9, 2]] as const)
+    state.players[1]!.board[slot] = { ...generateCardInstance({ ...card, attack, health }, { instanceId: `guard-enemy:${slot}` }), boardSlot: slot, enteredThisTurn: false };
+  for (const difficulty of ['NORMAL', 'HARD', 'BOSS'] as const) {
+    const chosen = chooseBestAction(state, getLegalActions(state, 'player-1'), 'player-1', difficulty);
+    assert.equal(chosen.type, 'ATTACK'); assert.equal(chosen.type === 'ATTACK' && chosen.target.type === 'WRESTLER' ? chosen.target.cardInstanceId : '', 'guard-enemy:1');
   }
 });

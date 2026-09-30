@@ -64,6 +64,7 @@ app.get('/qa/session', async (_request, response, next) => { try { await auth.cr
 app.get('/api/auth/me', async (request, response) => { const user = await auth.getAuthenticatedUser(request); response.json({ authenticated: Boolean(user), user }); });
 app.get('/api/game-media', (_request, response) => response.json({ items: [] }));
 app.use('/api/tower', (await import('../../../artifacts/api-server/src/routes/tower')).default);
+app.use('/api/admin/ai-decks', (await import('../../../artifacts/api-server/src/routes/admin-ai-decks')).default);
 app.use('/api/admin/tower', (await import('../../../artifacts/api-server/src/routes/admin-tower')).default);
 app.use(express.static(new URL('../../../artifacts/ko-game/dist/public', import.meta.url).pathname));
 app.get('/{*path}', (_request, response) => response.sendFile(new URL('../../../artifacts/ko-game/dist/public/index.html', import.meta.url).pathname));
@@ -78,6 +79,24 @@ const server = app.listen(4173, '0.0.0.0', async () => {
       const response = await fetch(`${origin}/api/tower${path}`, { headers: { Cookie: cookie, ...(body ? { 'Content-Type': 'application/json' } : {}) }, ...(body ? { method: 'POST', body: JSON.stringify(body) } : {}) });
       const data = await response.json(); assert.equal(response.status, expected, JSON.stringify(data)); return data;
     }
+    async function adminDeck(path: string, method = 'GET', body?: unknown, expected = 200) {
+      const response = await fetch(`${origin}/api/admin/ai-decks${path}`, { method, headers: { Cookie: cookie, 'Content-Type': 'application/json' }, ...(body ? { body: JSON.stringify(body) } : {}) });
+      const result = await response.json(); assert.equal(response.status, expected, JSON.stringify(result)); return result;
+    }
+    const deckPayload = { name: 'QA difficulty', description: '', championDefinitionId: 'hero', cardDefinitionIds: ['qa-card-0'], enabled: false, displayOrder: 0 };
+    const defaultDeck = (await adminDeck('', 'POST', deckPayload, 201)).deck;
+    assert.equal(defaultDeck.difficulty, 'NORMAL');
+    for (const difficulty of ['NORMAL', 'HARD', 'BOSS']) {
+      const saved = (await adminDeck(`/${defaultDeck.id}`, 'PATCH', { ...deckPayload, difficulty })).deck;
+      assert.equal(saved.difficulty, difficulty);
+      const copied = (await adminDeck(`/${saved.id}/duplicate`, 'POST', {}, 201)).deck;
+      assert.equal(copied.difficulty, difficulty);
+      assert.deepEqual(copied.cardDefinitionIds, saved.cardDefinitionIds);
+    }
+    assert.equal((await adminDeck(`/${defaultDeck.id}`, 'PATCH', deckPayload)).deck.difficulty, 'BOSS');
+    await adminDeck(`/${defaultDeck.id}`, 'PATCH', { ...deckPayload, difficulty: 'INVALID' }, 422);
+    assert.equal((await adminDeck('')).decks.find((d: { id: string }) => d.id === defaultDeck.id).difficulty, 'BOSS');
+    console.log('AI deck HTTP QA PASS: default, all difficulties, update, reload, clone, old-client preservation, invalid rejection');
     assert.equal((await call('/availability')).enabled, true);
     assert.equal((await call('/home')).starters.length, 1);
     const created = await call('/runs', { championId: 'hero', starterId: 'starter' }, 201);

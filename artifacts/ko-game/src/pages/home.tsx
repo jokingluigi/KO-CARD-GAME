@@ -185,7 +185,7 @@ export default function Home() {
   const [aiOpening, setAiOpening] = useState<AiMatchOpening | null>(null);
   const [aiOpeningNow, setAiOpeningNow] = useState(() => Date.now());
   const [aiOpeningSkipped, setAiOpeningSkipped] = useState(false);
-  const aiMatchQuestContextRef = useRef<{ deckId: string; aiDeckId: string; matchId: string } | null>(null);
+  const aiMatchQuestContextRef = useRef<{ deckId: string; aiDeckId: string; matchId: string; difficulty: AIDeck["difficulty"] } | null>(null);
   const aiMatchActionsRef = useRef<Array<GameAction & { actor?: 'AI' }>>([]);
   const submittedAIMatchRef = useRef<string | null>(null);
   const [aiMatchData, setAiMatchData] = useState<{
@@ -619,6 +619,7 @@ export default function Home() {
     aiMatchQuestContextRef.current = {
       deckId: deck.id,
       aiDeckId: aiDeck.id,
+      difficulty: aiDeck.difficulty ?? "NORMAL",
       matchId,
     };
     aiMatchActionsRef.current = [];
@@ -672,6 +673,7 @@ export default function Home() {
     };
 
     void runAITurn(gameState, gameState.players[1]!.id, {
+      difficulty: aiMatchQuestContextRef.current?.difficulty,
       wait,
       waitForPresentationIdle,
       isCancelled: () => cancelled || aiSchedulerGenerationRef.current !== schedulerGeneration,

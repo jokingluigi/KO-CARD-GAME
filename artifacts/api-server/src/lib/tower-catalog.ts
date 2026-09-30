@@ -1,7 +1,7 @@
 import { eq } from 'drizzle-orm';
 import { db, cardsTable, championsTable, towerSeasonsTable, towerStartersTable, towerPresetsTable, towerRelicsTable, towerCharactersTable, towerScenesTable, towerMetadataTable } from '@workspace/db';
 import { TowerRuleError, cardRecordToDefinition, championRecordToDefinition, parseSeason, parseStarter, parsePreset, parseRelic, parseCharacter, parseScene, parseMetadata,
-  eligibleRewardCard, validateTowerDeck, type TowerSnapshot, type TowerCatalog } from '@workspace/game-engine';
+  eligibleRewardCard, validateTowerDeck, type Condition, type TowerSnapshot, type TowerCatalog } from '@workspace/game-engine';
 import { validateRewardTarget } from './reward-service';
 
 /** A repeatable-read snapshot prevents mixed admin revisions in a newly created run. */
@@ -29,6 +29,21 @@ export async function loadTowerSnapshot(database: typeof db = db): Promise<Tower
       validateTowerDeck(deck.cardIds, catalog);
       if (!championIds.has(deck.championId)) throw new TowerRuleError('CHAMPION_MISSING', `${deck.name}: 공개된 챔피언이 필요합니다.`);
     }
+    if (!catalog.starters.some(starter => starter.enabled)) throw new TowerRuleError('EMPTY_POOL', '활성 스타터 덱이 필요합니다.');
+    if (catalog.relics.filter(relic => relic.enabled).length < 9) throw new TowerRuleError('RELIC_POOL_TOO_SMALL', '중복 없는 보스 유물 후보를 위해 활성 유물 9종 이상이 필요합니다.');
+    const validateCondition = (condition: Condition | undefined): void => {
+      if (!condition) return;
+      if (condition.type === 'ALL' || condition.type === 'ANY') { condition.conditions.forEach(validateCondition); return; }
+      let valid = true;
+      if (condition.type === 'CHAMPION') valid = championIds.has(condition.id);
+      else if (condition.type === 'CARD') valid = catalog.cards.some(card => card.id === condition.id && eligibleRewardCard(card));
+      else if (condition.type === 'RELIC') valid = catalog.relics.some(relic => relic.id === condition.id);
+      else if (condition.type === 'STARTER') valid = catalog.starters.some(starter => starter.id === condition.id);
+      else if (condition.type === 'BOSS_CLEARED') valid = Object.hasOwn(catalog.season.bosses, condition.id);
+      if (!valid) throw new TowerRuleError('INVALID_CONDITION', '조건이 참조하는 챔피언·카드·유물·스타터·보스를 확인해 주세요.');
+    };
+    validateCondition(catalog.season.hiddenCondition);
+    for (const item of [...catalog.starters, ...catalog.relics].filter(item => item.enabled)) validateCondition(item.unlockCondition);
     if (catalog.cards.filter(eligibleRewardCard).length < 3) throw new TowerRuleError('EMPTY_POOL', '카드 보상 후보가 부족합니다.');
     for (let act = 1; act <= 4; act++) {
       if (catalog.presets.filter(preset => preset.enabled && preset.weight > 0 && preset.acts.includes(act)).length < 2)

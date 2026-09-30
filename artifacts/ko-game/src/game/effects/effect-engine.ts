@@ -3026,12 +3026,14 @@ export function applyEffect(
                }, effect.values?.duration);
              }
            if (effect.action === 'SET_STATS') {
+              const aura = zone === 'BOARD' ? state.tower?.auraStats?.[card.instanceId] : undefined;
+              // Card stat replacement leaves the independent, live Tower overlay intact.
               return finish({
                ...card,
-               ...(effect.values?.attack !== undefined ? { currentAttack: effect.values.attack } : {}),
+               ...(effect.values?.attack !== undefined ? { currentAttack: effect.values.attack + (aura?.attack ?? 0) } : {}),
                ...(effect.values?.health !== undefined ? {
-                 currentHealth: effect.values.health,
-                 maxHealth: Math.max(card.maxHealth, effect.values.health),
+                 currentHealth: effect.values.health + (aura?.health ?? 0),
+                 maxHealth: Math.max(card.maxHealth, effect.values.health + (aura?.health ?? 0)),
                } : {}),
                }, effect.values?.duration);
            }
@@ -3053,13 +3055,14 @@ export function applyEffect(
          return { ...player, deck: updatedDeck, hand: updatedHand, board: updatedBoard };
       }),
     };
+    const finalUpdatedState = effect.action === 'SET_STATS' ? refreshTowerAuras(updatedState) : updatedState;
     const sourceContext = sourceContextFor(playerId, sourceCard, triggerContext);
-    const changes = statChangeEvents(state, updatedState, sourceCard, sourceContext, effect.values?.duration);
+    const changes = statChangeEvents(state, finalUpdatedState, sourceCard, sourceContext, effect.values?.duration);
     return resolveStatChangeListeners(
       state,
       {
-        ...updatedState,
-        events: changes.length ? [...updatedState.events, ...changes] : updatedState.events,
+        ...finalUpdatedState,
+        events: changes.length ? [...finalUpdatedState.events, ...changes] : finalUpdatedState.events,
       },
       sourceContext,
     );
