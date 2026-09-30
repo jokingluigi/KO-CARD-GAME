@@ -35,6 +35,7 @@ function Router() {
     <RoutedErrorBoundary>
       <Switch>
         <Route path="/admin" component={Admin} />
+        <Route path="/admin/tower-test" component={Admin} />
         <Route path="/admin/packs" component={Admin} />
         <Route path="/admin/shop" component={Admin} />
         <Route path="/admin/prism" component={Admin} />

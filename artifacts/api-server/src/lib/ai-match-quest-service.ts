@@ -52,7 +52,7 @@ function stripClientPlayerId(value: unknown): unknown {
   return payload;
 }
 
-function advanceAIOpponent(state: GameState, aiPlayerId: string): GameState {
+export function advanceAIOpponent(state: GameState, aiPlayerId: string): GameState {
   let next = state;
   const greet = next.status !== "IN_PROGRESS" || next.activePlayerId !== aiPlayerId || next.targetingState?.active
     ? null : situationalAiEmote(next, aiPlayerId, next.events.length);

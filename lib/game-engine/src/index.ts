@@ -94,6 +94,10 @@ export {
   type QuestConditionNode,
 } from "./quest-conditions";
 export type { GameMediaCatalog } from "../../../artifacts/ko-game/src/game/media";
+export * from './tower/types';
+export * from './tower/domain';
+export * from './tower/config';
+export * from './tower/battle';
 export {
   isOnlineActionPayload,
   type OnlineActionPayload,

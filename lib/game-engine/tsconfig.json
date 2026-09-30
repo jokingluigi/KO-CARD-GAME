@@ -38,6 +38,7 @@
     }
   ],
   "exclude": [
+    "src/**/*.test.ts",
     "../../artifacts/ko-game/src/**/*.test.ts",
     "../../artifacts/ko-game/src/game/match-assets.ts"
   ]
