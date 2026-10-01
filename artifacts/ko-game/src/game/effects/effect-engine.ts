@@ -81,7 +81,7 @@ export function getValidTargets(
       if (target.filter?.maxCost !== undefined && card.currentCost > target.filter.maxCost) return false;
       if (target.filter?.isToken !== undefined && card.isToken !== target.filter.isToken) return false;
       if (target.filter?.isChampionToken !== undefined && card.isChampionToken !== target.filter.isChampionToken) return false;
-      if (target.filter?.excludeChampionRarity && (card.isDirectDeployedChampion || state.cardPool?.find(definition => definition.id === card.definitionId)?.rarity === 'CHAMPION')) return false;
+      if (target.filter?.excludeChampionRarity && (card.isDirectDeployedChampion || (state.cardPool?.find(definition => definition.id === card.definitionId) ?? state.minionACardPool?.find(definition => definition.id === card.definitionId))?.rarity === 'CHAMPION')) return false;
       if (target.filter?.excludeSource && card.instanceId === sourceCard.instanceId) return false;
       if (target.filter?.isVanilla && !isVanillaCard(card)) return false;
       if (target.filter?.definitionRef && !matchesDefinitionRef(state, card, target.filter.definitionRef)) return false;
@@ -142,7 +142,7 @@ function matchesStateCardTagFilter(
   filter: Parameters<typeof matchesCardTagFilter>[1] | null | undefined,
 ): boolean {
   if (!filter || (!filter.tagsAny && !filter.tagsAll && !filter.tagsNone)) return true;
-  const definition = state.cardPool?.find((candidate) => candidate.id === card.definitionId);
+  const definition = (state.cardPool?.find((candidate) => candidate.id === card.definitionId) ?? state.minionACardPool?.find(candidate => candidate.id === card.definitionId));
   if (!definition) return false;
   return matchesCardTagFilter(definition, filter);
 }
@@ -154,7 +154,7 @@ function matchesDefinitionRef(
 ): boolean {
   if (reference.id && card.definitionId !== reference.id) return false;
   if (reference.name) {
-    const definition = state.cardPool?.find((candidate) => candidate.id === card.definitionId);
+    const definition = (state.cardPool?.find((candidate) => candidate.id === card.definitionId) ?? state.minionACardPool?.find(candidate => candidate.id === card.definitionId));
     if (!definition || definition.name !== reference.name) return false;
   }
   return Boolean(reference.id || reference.name);
@@ -209,7 +209,7 @@ function scriptTargetCards(
     if (filter?.definitionRef && !matchesDefinitionRef(state, card, filter.definitionRef)) return false;
     if (filter?.isToken !== undefined && card.isToken !== filter.isToken) return false;
     if (filter?.isChampionToken !== undefined && card.isChampionToken !== filter.isChampionToken) return false;
-    if (filter?.excludeChampionRarity && (card.isDirectDeployedChampion || state.cardPool?.find(definition => definition.id === card.definitionId)?.rarity === 'CHAMPION')) return false;
+    if (filter?.excludeChampionRarity && (card.isDirectDeployedChampion || (state.cardPool?.find(definition => definition.id === card.definitionId) ?? state.minionACardPool?.find(definition => definition.id === card.definitionId))?.rarity === 'CHAMPION')) return false;
     if (filter?.excludeSource && card.instanceId === sourceCard.instanceId) return false;
     if (filter?.isVanilla && !isVanillaCard(card)) return false;
     if (filter?.keyword !== undefined && !getActiveCardKeywords(card).includes(filter.keyword)) return false;
@@ -1312,8 +1312,6 @@ function applyRandomCardCreation(
       const overflow = isMinionA && nextState.players.find(p => p.id === playerId)!.hand.length >= MAX_HAND_SIZE;
       return {
         ...nextState,
-        ...(isMinionA && !nextState.cardPool?.some(d => d.id === definition.id)
-          ? { cardPool: [...(nextState.cardPool ?? []), definition] } : {}),
         players: nextState.players.map((player) => player.id === playerId
           ? effect.values?.destination === 'DECK'
             ? effect.values.deckPosition === 'TOP'
@@ -1898,7 +1896,7 @@ export function applyEffect(
           : effect.values?.definitionRef?.id
           ? card.definitionId === effect.values.definitionRef.id
           : effect.values?.definitionRef?.name
-            ? state.cardPool?.find((definition) => definition.id === card.definitionId)?.name === effect.values.definitionRef.name
+            ? (state.cardPool?.find((definition) => definition.id === card.definitionId) ?? state.minionACardPool?.find(definition => definition.id === card.definitionId))?.name === effect.values.definitionRef.name
             : false,
       );
       const slot = towerOpenSlot(state, playerId);
@@ -2343,7 +2341,7 @@ export function applyEffect(
       if (target.filter?.maxCost !== undefined && card.currentCost > target.filter.maxCost) return false;
       if (target.filter?.isToken !== undefined && card.isToken !== target.filter.isToken) return false;
       if (target.filter?.isChampionToken !== undefined && card.isChampionToken !== target.filter.isChampionToken) return false;
-      if (target.filter?.excludeChampionRarity && (card.isDirectDeployedChampion || state.cardPool?.find(definition => definition.id === card.definitionId)?.rarity === 'CHAMPION')) return false;
+      if (target.filter?.excludeChampionRarity && (card.isDirectDeployedChampion || (state.cardPool?.find(definition => definition.id === card.definitionId) ?? state.minionACardPool?.find(definition => definition.id === card.definitionId))?.rarity === 'CHAMPION')) return false;
       if (target.filter?.excludeSource && card.instanceId === sourceCard.instanceId) return false;
       if (target.filter?.isVanilla && !isVanillaCard(card)) return false;
       if (target.filter?.keyword !== undefined && !getActiveCardKeywords(card).includes(target.filter.keyword)) return false;
