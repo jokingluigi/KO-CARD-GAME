@@ -1,4 +1,4 @@
-import {createAdminTestDeckState} from '@/lib/admin-test-deck';
+import {startAdminTestDeckGame} from '@/lib/admin-test-deck';
 import {AdminTestDeck} from '@/components/admin-test-deck';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useLocation } from 'wouter';
@@ -1511,8 +1511,9 @@ export default function Home() {
     {isAdminTestMatch && !isTowerSandbox && testDeckOpen && <AdminTestDeck onClose={()=>setTestDeckOpen(false)} onStart={async(cards,decks)=>{
       try {
         const champions=[...TEST_CHAMPIONS,...await fetchAiTestChampions()];
-        const state=createAdminTestDeckState(cards,champions,[gameState.players[0].champion!.id,gameState.players[1].champion!.id],decks);
-        setRuntimeCardDefinitions(cards);setGameState(startGame(state,undefined,mediaCatalog));
+        setRuntimeCardDefinitions(cards);
+        const state=startAdminTestDeckGame(cards,champions,[gameState.players[0].champion!.id,gameState.players[1].champion!.id],decks,mediaCatalog);
+        setGameState(state);
         setPlayAnimation(null);setAttackAnimation(null);pendingEntranceAudioRef.current=null;
         setSelectedCardId(null);setSelectedAttackerId(null);setPlayError(null);setTestDeckOpen(false);
       } catch {throw new Error('테스트 덱으로 경기를 시작하지 못했습니다. 다시 시도해 주세요.');}

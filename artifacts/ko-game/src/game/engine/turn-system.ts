@@ -100,10 +100,10 @@ function drawOpeningHand(
 export function prepareDecks(
   state: GameState,
   random?: RandomSource,
-  options: { flexibleDeckPlayerId?: string } = {},
+  options: { flexibleDeckPlayerId?: string; flexibleDeckPlayerIds?: readonly string[] } = {},
 ): GameState {
   for (const player of state.players) {
-    if (player.id === options.flexibleDeckPlayerId && player.deck.length >= 1 && player.deck.length <= 100) continue;
+    if ((player.id === options.flexibleDeckPlayerId || options.flexibleDeckPlayerIds?.includes(player.id)) && player.deck.length >= 1 && player.deck.length <= 100) continue;
     if (
       player.deck.length < MIN_DECK_SIZE ||
       player.deck.length > MAX_DECK_SIZE
@@ -168,7 +168,7 @@ export function startGame(
   state: GameState,
   random?: RandomSource,
   mediaCatalog?: GameMediaCatalog,
-  options: { flexibleDeckPlayerId?: string } = {},
+  options: { flexibleDeckPlayerId?: string; flexibleDeckPlayerIds?: readonly string[] } = {},
 ): GameState {
   if (state.players.length !== 2) {
     throw new Error('게임을 시작하려면 플레이어가 정확히 2명이어야 합니다.');
