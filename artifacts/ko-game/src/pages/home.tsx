@@ -1497,7 +1497,7 @@ export default function Home() {
           </div>
         ) : (
           <MatchIntroOverlay
-            key={aiOpening.gameId}
+            key={`intro:${aiOpening.gameId}`}
             self={aiOpening.self}
             opponent={aiOpening.opponent}
             firstSpeaker={aiOpening.firstSpeaker}
@@ -1526,7 +1526,7 @@ export default function Home() {
       } catch {throw new Error('테스트 덱으로 경기를 시작하지 못했습니다. 다시 시도해 주세요.');}
     }}/>}
     <GameStatePreview
-      key={gameState.gameId}
+      key={`game:${gameState.gameId}`}
       state={gameState}
       selectedCardId={selectedCardId}
       selectedAttackerId={selectedAttackerId}

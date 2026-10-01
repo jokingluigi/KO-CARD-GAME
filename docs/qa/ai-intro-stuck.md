@@ -1,0 +1,5 @@
+# AI intro stuck: reproduction and repair
+
+On production, Pandora vs Calavera AI match reproduced a persistent intro overlay. The underlying mulligan counted down and the turn timer ran, so game initialization and loading had already succeeded. The actual DOM retained one match-intro-overlay after the 4.5-second deadline. The intro and GameStatePreview were sibling elements with the identical match gameId as React key. The custom admin deck restart change introduced the game screen key; the AI intro already used that ID. Namespace keys as intro:<gameId> and game:<gameId> so reconciliation can remove the intro without confusing the board. Ordinary online match has no such duplicate sibling keys; its server clock path is unchanged.
+
+10 existing opening, admin custom deck and AI scheduler tests passed. Frontend build passed. Live post-deploy recheck remains pending; do not claim the runtime issue resolved until the overlay disappears and real actions succeed. Minion A implementation is preserved.
