@@ -1,3 +1,4 @@
+import {ServerMaintenanceGate} from '@/components/server-maintenance';
 import Tower from '@/pages/tower';
 import { type ReactNode, useEffect } from 'react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
@@ -118,9 +119,11 @@ function App() {
     <QueryClientProvider client={queryClient}>
       <TooltipProvider>
         <WouterRouter base={import.meta.env.BASE_URL.replace(/\/$/, '')}>
+          <ServerMaintenanceGate>
           <GlobalAudioBridge />
           <Router />
           <GamepadNavigation />
+          </ServerMaintenanceGate>
         </WouterRouter>
         <Toaster />
       </TooltipProvider>

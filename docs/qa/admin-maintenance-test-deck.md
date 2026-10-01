@@ -1,0 +1,9 @@
+# Maintenance switch and in-match test deck builder
+
+User requested an admin ON/OFF server maintenance switch with an explicit notice, and a quick deck builder on the admin test game screen.
+
+Migration 0033 adds a single persistent server settings row, default OFF, without overwriting its state/notice on restart. Admin-only GET/PUT settings validate boolean state and a 1–300 character notice. Public no-cache status endpoint reports whether the current session may enter. General API middleware returns explicit SERVER_MAINTENANCE 503 for non-admins when ON, including already authenticated players; health and auth recovery remain accessible. Online upgrades and established socket messages also check maintenance. Frontend checks at entry and every five seconds, replacing game/menu with a server maintenance notice and admin login access. Actual production maintenance must remain OFF during verification; blocking behavior is tested in isolated fixtures.
+
+Admin test matches have an in-screen deck modal for both players, search, per-card add/remove, duplicates up to sixty cards, quick fill, deck copy, and new test start. Draft/disabled cards and techniques are included; summoned tokens remain outside decks. Runtime catalog and original Champion definitions reload; unique test ID, cleared animations and fresh quest/mulligan state prevent carry-over. Opening the editor pauses the test turn timer. No saved decks, collections, rewards or original cards are mutated. Tower sandbox deck editor is intentionally excluded to preserve its scenario configuration.
+
+Passed: six targeted maintenance access, store persistence, failure handling, test deck and startup tests; 475 shared regression tests; frontend/API typechecks/builds. Pending real production UI verification. No production maintenance activation authorized or performed for QA.

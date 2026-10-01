@@ -1,3 +1,4 @@
+import {readMaintenance,maintenanceAllows} from '../lib/maintenance';
 import type { IncomingMessage, Server as HttpServer } from "node:http";
 import type { Duplex } from "node:stream";
 import { randomUUID } from "node:crypto";
@@ -79,7 +80,7 @@ export function attachOnlineMatchWebSocket(server: HttpServer): void {
 
     runWebSocketBackgroundTask("upgrade", async () => {
       const user = await authenticateUpgrade(request);
-      if (!user) {
+      if (!user || !maintenanceAllows((await readMaintenance()).enabled,user.role)) {
         rejectUpgrade(socket);
         return;
       }
@@ -131,9 +132,11 @@ function handleConnection(socket: WebSocket, user: PublicUser): void {
   socket.on("message", (raw) => {
     runWebSocketBackgroundTask(
       "message",
-      () => handleMessage(raw.toString(), socket, connection, () => subscribedRuntime, (runtime) => {
+      async () => {
+        if (!maintenanceAllows((await readMaintenance()).enabled,user.role)) {send(socket,{type:"ERROR",code:"MATCH_UNAVAILABLE",message:"서버 점검 중입니다."});socket.close(1013,"서버 점검");return;}
+        return handleMessage(raw.toString(), socket, connection, () => subscribedRuntime, (runtime) => {
         subscribedRuntime = runtime;
-      }),
+      });},
       subscribedRuntime?.matchId,
       () => send(socket, {
         type: "ERROR",

@@ -1,3 +1,5 @@
+import {createAdminTestDeckState} from '@/lib/admin-test-deck';
+import {AdminTestDeck} from '@/components/admin-test-deck';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useLocation } from 'wouter';
 import { generateCardInstance } from '@/game/cards/generation';
@@ -131,6 +133,7 @@ export default function Home() {
   const testCardId = searchParams.get('testCardId');
   const testChampionId = searchParams.get('testChampionId');
   const isAdminSource = searchParams.get('source') === 'admin';
+  const [testDeckOpen,setTestDeckOpen]=useState(false);
   const [isAdminTestMatch, setIsAdminTestMatch] = useState(isAdminSource);
   const [authStatus, setAuthStatus] = useState<'loading' | 'authenticated' | 'unauthenticated' | 'error'>('loading');
   const [authUser, setAuthUser] = useState<AuthUser | null>(null);
@@ -206,7 +209,7 @@ export default function Home() {
   const turnKey = `${gameState.turn}:${gameState.activePlayerId ?? 'none'}`;
   const aiOpeningActive = isAiMatch && aiMatchStarted &&
     isAiMatchOpeningActive(aiOpening, gameState.gameId, aiOpeningNow);
-  const gameplayReady = matchReady && !aiOpeningActive;
+  const gameplayReady = matchReady && !aiOpeningActive && !testDeckOpen;
   const turnStartedAtRef = useRef(Date.now());
   const timeoutHandledTurnRef = useRef<string | null>(null);
   const processedAudioEventsRef = useRef(new Set<string>());
@@ -1499,12 +1502,23 @@ export default function Home() {
         )
       )}
       {isAdminTestMatch && <div className="fixed left-1/2 top-2 z-[100] flex max-w-[calc(100vw-16px)] flex-wrap items-center justify-center gap-2 rounded border border-amber-600 bg-amber-950 px-3 py-1 text-xs font-bold text-amber-200">
+        {!isTowerSandbox && <button type="button" onClick={()=>setTestDeckOpen(true)} className="min-h-11 rounded bg-amber-300 px-3 text-black">테스트 덱 구성</button>}
         <span>{isTowerSandbox ? '타워 단일 전투 테스트 · 보상 없음' : '관리자 DRAFT 테스트'}</span>
         {isTowerSandbox && <button type="button" onClick={() => navigate('/admin/tower-test')} className="min-h-11 rounded border border-amber-500 px-2">테스트 설정</button>}
         <button type="button" onClick={() => addTrainingDummy(true)} className="rounded bg-amber-300 px-2 py-1 text-black">안 죽는 샌드백</button>
         <button type="button" onClick={() => addTrainingDummy(false)} className="rounded bg-amber-300 px-2 py-1 text-black">체력 1 샌드백</button>
       </div>}
+    {isAdminTestMatch && !isTowerSandbox && testDeckOpen && <AdminTestDeck onClose={()=>setTestDeckOpen(false)} onStart={async(cards,decks)=>{
+      try {
+        const champions=[...TEST_CHAMPIONS,...await fetchAiTestChampions()];
+        const state=createAdminTestDeckState(cards,champions,[gameState.players[0].champion!.id,gameState.players[1].champion!.id],decks);
+        setRuntimeCardDefinitions(cards);setGameState(startGame(state,undefined,mediaCatalog));
+        setPlayAnimation(null);setAttackAnimation(null);pendingEntranceAudioRef.current=null;
+        setSelectedCardId(null);setSelectedAttackerId(null);setPlayError(null);setTestDeckOpen(false);
+      } catch {throw new Error('테스트 덱으로 경기를 시작하지 못했습니다. 다시 시도해 주세요.');}
+    }}/>}
     <GameStatePreview
+      key={gameState.gameId}
       state={gameState}
       selectedCardId={selectedCardId}
       selectedAttackerId={selectedAttackerId}
@@ -1513,7 +1527,7 @@ export default function Home() {
       turnSecondsRemaining={turnSecondsRemaining}
       onEndTurn={handleEndTurn}
       onMulligan={handleMulligan}
-      introActive={aiOpeningActive}
+      introActive={aiOpeningActive || testDeckOpen}
       canEndTurn={Boolean(
         gameplayReady &&
         gameState.activePlayerId === gameState.players[0].id &&

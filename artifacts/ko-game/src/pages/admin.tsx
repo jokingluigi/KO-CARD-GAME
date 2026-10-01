@@ -1,3 +1,4 @@
+import {AdminServerMaintenance} from '@/components/server-maintenance';
 import { AdminTowerManager } from '@/components/admin-tower-manager';
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Bot, CalendarCheck2, Frame, Gamepad2, Image, ListChecks, LogOut, Megaphone, Music2, Package, ShieldCheck, ShoppingBag, Sparkles, Spade } from "lucide-react";
@@ -226,6 +227,7 @@ export default function Admin() {
         </nav>
 
         <section className="min-w-0 flex-1">
+          <AdminServerMaintenance />
            {section === "tower" ? <AdminTowerManager onUnauthorized={() => setStatus("forbidden")} /> : section === "tower-test"
              ? <AdminTowerTest onUnauthorized={() => setStatus("forbidden")} />
              : section === "notices"
