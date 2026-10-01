@@ -1,3 +1,4 @@
+import { fallbackZombieToken } from '../engine/zombie-token';
 import { existingZombie, isZombieToken, mergeZombie, normalizeZombieDefinition, ZOMBIE_RULES } from '../engine/zombie-token';
 import { keywordDamage, hasEntryDefense } from '../engine/keyword-rules';
 import type { CardDefinition, CardInstance, CardStatHistoryEntry } from '../cards/types';
@@ -31,6 +32,8 @@ import { destroyCard } from '../engine/destroy-card';
 import { drawCard } from '../engine/draw-card';
 import { silenceCard } from '../engine/card-status';
 import { enterField } from '../engine/enter-field';
+import { MAX_HAND_SIZE } from '../rules/constants';
+import { MINION_A_ID } from '../champions/minion-a';
 import { generateCard, generateCardInstance, getRandomCardGenerationCandidates, isEligibleForRandomPool } from '../cards/generation';
 import { getAdjacentSlots } from '../engine/board-position';
 import { deployLinkedChampionToken } from '../engine/champion-token';
@@ -821,7 +824,7 @@ function resolveCardDefinition(
   allowName = false,
 ): CardDefinition | undefined {
   if (definition) return definition;
-  if (reference?.id) return state.cardPool?.find((candidate) => candidate.id === reference.id);
+  if (reference?.id) return state.cardPool?.find((candidate) => candidate.id === reference.id) ?? state.minionACardPool?.find(candidate => candidate.id === reference.id);
   const name = reference?.name?.trim();
   if (!allowName || !name) return undefined;
   if (name === '좀비') {
@@ -832,18 +835,14 @@ function resolveCardDefinition(
   // Older saved effects carry only the quoted part of a card name (for example
   // "늑대인간" for "늑대인간 판도라"). Prefer an exact name; accept a longer
   // name only when it identifies exactly one card in the match's allowed pool.
-  const exact = state.cardPool?.filter((candidate) => candidate.name === name) ?? [];
+  const exact = [...new Map([...(state.cardPool ?? []), ...(state.minionACardPool ?? [])].map(d => [d.id,d])).values()].filter(candidate => candidate.name === name);
   if (exact.length === 1) return exact[0];
   if (exact.length) return undefined;
   const matches = state.cardPool?.filter((candidate) => candidate.name.startsWith(`${name} `)) ?? [];
   return matches.length === 1 ? matches[0] : undefined;
 }
 
-const fallbackZombieToken: CardDefinition = {
-  id: 'ko-fallback-zombie-token', name: '좀비', cardType: 'WRESTLER',
-  cost: 1, attack: 1, health: 1, rulesText: ZOMBIE_RULES, rarity: 'TOKEN',
-  isToken: true, isChampionToken: false, keywords: [], abilities: [],
-};
+
 
 type TriggerContext = NonNullable<GameState['targetingState']>['triggerContext'];
 
@@ -1271,8 +1270,9 @@ function applyRandomCardCreation(
 ): GameState {
   const target = effect.target;
   if (!target || target.selection !== 'RANDOM') return state;
+  const isMinionA = effect.action === 'GENERATE' && sourceCard.definitionId === `champion-${MINION_A_ID}`;
   const definitions = getRandomCardGenerationCandidates(
-    state.cardPool ?? definitionsFromState(state),
+    isMinionA ? state.minionACardPool ?? [] : state.cardPool ?? definitionsFromState(state),
     {
       randomScope: target.randomScope,
       cardType: target.cardType,
@@ -1309,16 +1309,20 @@ function applyRandomCardCreation(
         generated.card,
         effect.values?.destination === 'DECK' ? 'DECK' : 'HAND',
       );
+      const overflow = isMinionA && nextState.players.find(p => p.id === playerId)!.hand.length >= MAX_HAND_SIZE;
       return {
         ...nextState,
+        ...(isMinionA && !nextState.cardPool?.some(d => d.id === definition.id)
+          ? { cardPool: [...(nextState.cardPool ?? []), definition] } : {}),
         players: nextState.players.map((player) => player.id === playerId
           ? effect.values?.destination === 'DECK'
             ? effect.values.deckPosition === 'TOP'
               ? { ...player, deck: [generatedCard, ...player.deck] }
               : { ...player, deck: [...player.deck, generatedCard] }
-            : { ...player, hand: [...player.hand, generatedCard] }
+            : overflow ? { ...player, removedFromGame: [...player.removedFromGame, generatedCard] }
+              : { ...player, hand: [...player.hand, generatedCard] }
           : player),
-        events: [...nextState.events, generated.event],
+        events: [...nextState.events, generated.event, ...(overflow ? [{ type: 'CARD_REMOVED' as const, playerId, cardInstanceId: generatedCard.instanceId, source: { type: 'SYSTEM' as const }, target: { type: 'CARD' as const, cardInstanceId: generatedCard.instanceId }, reason: 'OVERDRAW' }] : [])],
       };
     }
     const owner = nextState.players.find((player) => player.id === playerId);

@@ -14,6 +14,7 @@ import {
   type OnlineMatchRecord,
 } from "@workspace/db";
 import {
+  MINION_A_ID, completeMinionACatalog,
   cardRecordToDefinition,
   championRecordToDefinition,
   createDeterministicRandom,
@@ -982,6 +983,8 @@ export async function startOnlineMatch(
     db.select().from(championIntroInteractionsTable),
   ]);
   const cardDefinitions = cards.map(toCardDefinition);
+  const minionACardPool = [firstDeck.championDefinitionId, secondDeck.championDefinitionId].includes(MINION_A_ID)
+    ? completeMinionACatalog(await db.select().from(cardsTable)) : undefined;
   const championDefinitions = champions.map(toChampionDefinition);
   const users = await db.select({ id: usersTable.id, nickname: usersTable.nickname })
     .from(usersTable)
@@ -1008,7 +1011,7 @@ export async function startOnlineMatch(
     player2UserId,
     player1DeckId,
     player2DeckId,
-    cardDefinitions,
+    cardDefinitions: [...new Map([...(minionACardPool ?? []), ...cardDefinitions].map(d => [d.id, d])).values()],
     championDefinitions,
     publicPlayers: [
       {
@@ -1036,6 +1039,7 @@ export async function startOnlineMatch(
     cardDefinitions,
     championDefinitions,
     [firstDeck.cardDefinitionIds, secondDeck.cardDefinitionIds],
+    { minionACardPool },
   );
   const state: GameState = {
     ...initial,

@@ -103,6 +103,8 @@ export {
   type OnlineActionPayload,
 } from "./online-action-payload";
 
+export { MINION_A_ID, minionACatalog, completeMinionACatalog } from '../../../artifacts/ko-game/src/game/champions/minion-a';
+
 export { TOWER_RELIC_DEFINITIONS } from './tower/relic-definitions';
 
 export { validChampionQuestCondition, evaluateChampionQuestCondition } from './champion-quest-conditions';

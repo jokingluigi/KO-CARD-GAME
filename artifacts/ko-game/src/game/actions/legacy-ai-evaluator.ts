@@ -1,3 +1,5 @@
+import { isMinionAAbility } from '../champions/minion-a';
+import { canUseChampionAbility } from '../engine/champion-system';
 import type { CardEffect } from '../effects/types';
 import type { CardInstance } from '../cards/types';
 import type { GameState, PlayerState } from '../types/game-state';
@@ -117,6 +119,7 @@ function targetValue(state: GameState, targetId: string, playerId: string): numb
 }
 
 export function evaluateAction(state: GameState, action: GameAction, playerId: string): number {
+  if (isMinionAAbility(state, action)) return canUseChampionAbility(state, playerId) ? 3 : -Infinity;
   const result = executeAction(state, action);
   if (!result.success) return -Infinity;
   const before = evaluateState(state, playerId);

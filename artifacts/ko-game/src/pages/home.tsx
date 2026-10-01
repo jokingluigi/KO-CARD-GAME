@@ -1,3 +1,4 @@
+import { completeMinionACatalog } from '../game/champions/minion-a';
 import {startAdminTestDeckGame} from '@/lib/admin-test-deck';
 import {AdminTestDeck} from '@/components/admin-test-deck';
 import { useCallback, useEffect, useRef, useState } from 'react';
@@ -22,6 +23,7 @@ import {
   type ChampionDefinition,
   runAITurn,
   fetchPublishedWrestlerCards,
+  fetchMinionACardDefinitions,
   fetchPublishedCardDefinitions,
   fetchAiTestCardDefinitions,
   cardRecordToDefinition,
@@ -193,6 +195,7 @@ export default function Home() {
   const submittedAIMatchRef = useRef<string | null>(null);
   const [aiMatchData, setAiMatchData] = useState<{
     definitions: CardDefinition[];
+    minionACardPool: CardDefinition[];
     champions: ChampionDefinition[];
     media: GameMediaCatalog;
   } | null>(null);
@@ -379,15 +382,16 @@ export default function Home() {
         isAdminSource ? fetchAiTestCardDefinitions() : fetchPublishedCardDefinitions(),
         isAdminSource ? fetchAiTestChampions() : fetchPublishedChampions(),
         fetchGameMedia(),
-      ]).then(([decks, aiDeckResult, definitions, champions, media]) => {
+        fetchMinionACardDefinitions().catch(() => []),
+      ]).then(([decks, aiDeckResult, definitions, champions, media, minionACardPool]) => {
         if (cancelled) return;
         setAiDecks(decks);
         setAvailableAIDecks(aiDeckResult.decks);
         const mergedDefinitions = [...new Map([...definitions, ...aiDeckResult.extraCards.map(cardRecordToDefinition)].map((item) => [item.id, item])).values()];
         const mergedChampions = [...new Map([...champions, ...aiDeckResult.extraChampions.map(championRecordToDefinition)].map((item) => [item.id, item])).values()];
-        setAiMatchData({ definitions: mergedDefinitions, champions: mergedChampions, media });
+        setAiMatchData({ definitions: mergedDefinitions, champions: mergedChampions, media, minionACardPool });
         setMediaCatalog(media);
-        setRuntimeCardDefinitions(mergedDefinitions);
+        setRuntimeCardDefinitions([...minionACardPool, ...mergedDefinitions]);
         preloadMatchAssets(mergedDefinitions, mergedChampions);
         setPlayError(null);
       }).catch((reason) => {
@@ -507,13 +511,15 @@ export default function Home() {
           .map(cardRecordToDefinition);
         if (runtimeDefinitions.length === 0) throw new Error('테스트용 카드가 없습니다.');
         setMediaCatalog(media);
-        setRuntimeCardDefinitions(runtimeDefinitions);
+        const minionACardPool = completeMinionACatalog(cards);
+        setRuntimeCardDefinitions([...minionACardPool, ...runtimeDefinitions]);
         preloadMatchAssets(runtimeDefinitions, [testChampion, opponent]);
         setGameState(startGame(
           createInitialGameState(
             [testChampion.id, opponent.id],
             runtimeDefinitions,
             [testChampion, opponent],
+            undefined, { minionACardPool },
           ),
           undefined,
           media,
@@ -534,11 +540,12 @@ export default function Home() {
     }
     Promise.all([
       fetchPublishedWrestlerCards(),
+      fetchMinionACardDefinitions().catch(() => []),
       fetchPublishedCardDefinitions(),
       fetchPublishedChampions(),
       fetchGameMedia(),
     ])
-      .then(([definitions, publishedDefinitions, champions, media]) => {
+      .then(([definitions, minionACardPool, publishedDefinitions, champions, media]) => {
         if (cancelled) return;
         if (definitions.length === 0) {
           setPlayError('공개된 카드가 없어 게임을 시작할 수 없습니다.');
@@ -554,13 +561,13 @@ export default function Home() {
         }
         setMediaCatalog(media);
         const runtimeDefinitions = publishedDefinitions;
-        setRuntimeCardDefinitions(runtimeDefinitions);
+        setRuntimeCardDefinitions([...minionACardPool, ...runtimeDefinitions]);
         preloadMatchAssets(runtimeDefinitions, champions);
         const selected = champions.length >= 2
           ? [champions[0]!.id, champions[1]!.id] as [string, string]
           : undefined;
         setGameState(startGame(createInitialGameState(selected, runtimeDefinitions,
-          selected ? champions : undefined), undefined, media));
+          selected ? champions : undefined, undefined, { minionACardPool }), undefined, media));
         setSelectedCardId(null);
         setSelectedAttackerId(null);
         setPlayError(null);
@@ -631,7 +638,7 @@ export default function Home() {
          matchDefinitions,
          matchChampions,
         [deck.cardDefinitionIds, aiDeckDefinitionIds],
-        { gameId: matchId, randomSeed: seedForAIMatch(matchId) },
+        { gameId: matchId, randomSeed: seedForAIMatch(matchId), minionACardPool: data.minionACardPool },
       ),
       createDeterministicRandom(matchId),
       data.media,

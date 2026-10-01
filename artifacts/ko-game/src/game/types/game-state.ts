@@ -78,6 +78,8 @@ export interface GameState {
   randomSeed?: number;
   /** Published definitions available to random generation effects. */
   cardPool?: CardDefinition[];
+  /** Complete validated catalog, used only by Minion A; serialized with the match. */
+  minionACardPool?: CardDefinition[];
   backgroundId: string | null;
   bgmId: string | null;
   /** The most recent completed champion controls the persistent quest music base. */

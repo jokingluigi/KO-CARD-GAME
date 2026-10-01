@@ -1,6 +1,6 @@
 import { eq } from 'drizzle-orm';
 import { db, cardsTable, championsTable, towerSeasonsTable, towerStartersTable, towerPresetsTable, towerRelicsTable, towerCharactersTable, towerScenesTable, towerMetadataTable } from '@workspace/db';
-import { TowerRuleError, cardRecordToDefinition, championRecordToDefinition, parseSeason, parseStarter, parsePreset, parseRelic, parseCharacter, parseScene, parseMetadata,
+import { completeMinionACatalog, TowerRuleError, cardRecordToDefinition, championRecordToDefinition, parseSeason, parseStarter, parsePreset, parseRelic, parseCharacter, parseScene, parseMetadata,
   eligibleRewardCard, validateTowerDeck, type Condition, type TowerSnapshot, type TowerCatalog } from '@workspace/game-engine';
 import { validateRewardTarget } from './reward-service';
 
@@ -60,7 +60,7 @@ export async function loadTowerSnapshot(database: typeof db = db): Promise<Tower
     }
     // Include non-disabled token definitions for existing summon/transform effects;
     // eligibility is independently enforced for starters and rewards above.
-    return { catalog,
+    return { catalog, minionACardPool: completeMinionACatalog(cards),
       cards: cards.filter(card => card.status !== 'DISABLED').map(card => cardRecordToDefinition(card as unknown as Parameters<typeof cardRecordToDefinition>[0])),
       champions: champions.filter(champion => championIds.has(champion.id)).map(champion => championRecordToDefinition(champion as unknown as Parameters<typeof championRecordToDefinition>[0])),
     };

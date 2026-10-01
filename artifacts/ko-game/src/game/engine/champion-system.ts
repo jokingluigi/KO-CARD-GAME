@@ -1,3 +1,4 @@
+import { MINION_A_ID } from '../champions/minion-a';
 import type { ActionResult } from '../actions/types';
 import { actionFailure, actionSuccess } from '../actions/types';
 import type {
@@ -104,6 +105,7 @@ export function canUseChampionAbility(
     state.status === 'IN_PROGRESS' &&
       state.activePlayerId === playerId &&
       player?.champion &&
+      (player.champion.id !== MINION_A_ID || Boolean(state.minionACardPool?.length)) &&
       !player.championAbilityUsedThisTurn &&
       cost !== null &&
       player.currentGold >= cost,
@@ -135,6 +137,7 @@ export function useChampionAbility(
       '사용할 수 있는 챔피언 능력이 없습니다.',
     );
   }
+  if (player.champion.id === MINION_A_ID && !state.minionACardPool?.length) return actionFailure(state, 'CHAMPION_ABILITY_UNAVAILABLE', '전체 카드 후보 목록이 없습니다.');
   const abilityCost = ability.cost ?? player.champion.abilityCost;
   if (player.championAbilityUsedThisTurn) {
     return actionFailure(

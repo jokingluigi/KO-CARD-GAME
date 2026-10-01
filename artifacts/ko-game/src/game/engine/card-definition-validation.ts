@@ -29,6 +29,11 @@ export function validateCardDefinitionReferences(state: GameState): void {
     definitionIds.add(definition.id);
   }
 
+  for (const definition of state.minionACardPool ?? []) {
+    if (!definition?.id) throw new Error('저장된 미니언 A 전체 카드 목록이 유효하지 않습니다.');
+    definitionIds.add(definition.id);
+  }
+
   for (const card of allCards(state)) {
     if (!definitionIds.has(card.definitionId)) {
       throw new Error(`저장된 매치의 CardInstance가 알 수 없는 CardDefinition을 참조합니다: ${card.definitionId}`);

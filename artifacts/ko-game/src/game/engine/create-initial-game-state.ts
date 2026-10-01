@@ -2,6 +2,7 @@ import type { GameState, PlayerState } from '../types/game-state';
 import type { CardDefinition } from '../cards/types';
 import { createDeckFromDefinitionIds, createTestDeck } from '../cards/test-cards';
 import { createChampionState } from '../champions/test-champions';
+import { MINION_A_ID, completeMinionACatalog } from '../champions/minion-a';
 import type { ChampionDefinition } from '../champions/types';
 
 function createEmptyPlayer(
@@ -43,12 +44,14 @@ export function createInitialGameState(
   cardDefinitions?: readonly CardDefinition[],
   championDefinitions?: readonly ChampionDefinition[],
   deckDefinitionIds?: readonly [readonly string[], readonly string[]],
-  options?: { gameId?: string; randomSeed?: number },
+  options?: { gameId?: string; randomSeed?: number; minionACardPool?: readonly CardDefinition[] },
 ): GameState {
+  const randomSeed = options?.randomSeed ?? (championIds.includes(MINION_A_ID) ? crypto.getRandomValues(new Uint32Array(1))[0] : undefined);
   return {
     gameId: options?.gameId ?? 'local-prototype',
-    ...(options?.randomSeed === undefined ? {} : { randomSeed: options.randomSeed }),
+    ...(randomSeed === undefined ? {} : { randomSeed }),
     cardPool: cardDefinitions ? [...cardDefinitions] : undefined,
+    ...(championIds.includes(MINION_A_ID) ? { minionACardPool: [...(options?.minionACardPool ?? completeMinionACatalog((cardDefinitions ?? []).map(d => ({ ...d, text: d.rulesText, effectConfig: d.effectConfig ?? {} }))))] } : {}),
     backgroundId: null,
     bgmId: null,
     latestQuestCompletedChampionId: null,

@@ -1,3 +1,4 @@
+import { isMinionAAbility } from '../champions/minion-a';
 import type { AttackTarget } from '../engine/combat';
 import { attack } from '../engine/combat';
 import { canUseActiveAbility, useActiveAbility } from '../engine/card-status';
@@ -101,7 +102,7 @@ export function getLegalActions(state: GameState, playerId: string): GameAction[
 
   if (canUseChampionAbility(state, playerId)) {
     const action: GameAction = { type: 'USE_CHAMPION_ABILITY', playerId };
-    if (probe(state, action)) actions.push(action);
+    if (isMinionAAbility(state, action) || probe(state, action)) actions.push(action);
   }
 
   player.board.forEach((card) => {

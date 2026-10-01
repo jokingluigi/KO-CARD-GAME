@@ -1,3 +1,5 @@
+import { isMinionAAbility } from '../champions/minion-a';
+import { canUseChampionAbility } from '../engine/champion-system';
 import { chooseBestAction as chooseLegacyAction } from './legacy-ai-evaluator';
 import type { CardEffect } from '../effects/types';
 import type { CardInstance } from '../cards/types';
@@ -144,6 +146,7 @@ function visibleAttackExposure(own: PlayerState, enemy: PlayerState): number {
 }
 
 export function evaluateAction(state: GameState, action: GameAction, playerId: string): number {
+  if (isMinionAAbility(state, action)) return canUseChampionAbility(state, playerId) ? 3 : -Infinity;
   const visible = aiInformationState(state, playerId);
   const result = executeAction(visible, action);
   if (!result.success) return -Infinity;
@@ -181,6 +184,7 @@ export function chooseBestAction(state: GameState, actions: GameAction[], player
   if (root[0]?.score === 100000 || profile.depth === 1) return fallback;
   let best = { action: fallback, score: root[0]?.score ?? -Infinity };
   let beam = root.slice(0, profile.width).flatMap(candidate => {
+    if (isMinionAAbility(visible, candidate.action)) return [];
     const result = executeAction(visible, candidate.action);
     return result.success ? [{ first: candidate.action, state: result.state, score: candidate.score }] : [];
   });
@@ -193,6 +197,11 @@ export function chooseBestAction(state: GameState, actions: GameAction[], player
         .slice(0, 80).map(action => ({ action, score: evaluateAction(node.state, action, playerId) })).sort((a, b) => b.score - a.score).slice(0, profile.width);
       for (const candidate of candidates) {
         if (--budget < 0) break;
+        if (isMinionAAbility(node.state, candidate.action)) {
+          const score = node.score + candidate.score * Math.pow(0.9, depth);
+          if (score > best.score) best = { action: node.first, score };
+          continue;
+        }
         const result = executeAction(node.state, candidate.action);
         if (!result.success) continue;
         if (result.state.status === 'FINISHED' && result.state.winnerId === playerId) return node.first;

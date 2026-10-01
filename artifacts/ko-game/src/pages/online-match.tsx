@@ -274,6 +274,7 @@ function OnlineMatchPage() {
         if (message.type === "MATCH_SNAPSHOT") {
           console.info("[KO online match]", { event: "snapshot-accepted", matchId, seat: nextSeat, version: message.version, ...client.diagnostics });
         }
+        if (projected.minionACardPool) setRuntimeCardDefinitions([...projected.minionACardPool, ...(projected.cardPool ?? [])]);
         setHasAuthoritativeSnapshot(true);
         const previous = stateRef.current;
         if (message.type === "ACTION_ACCEPTED") {

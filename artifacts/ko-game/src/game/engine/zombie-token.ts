@@ -26,3 +26,9 @@ export function mergeZombie(state: GameState, playerId: string, incoming: CardIn
     }) as typeof p.board,
   }) };
 }
+
+export const fallbackZombieToken: CardDefinition = {
+  id: 'ko-fallback-zombie-token', name: '좀비', cardType: 'WRESTLER',
+  cost: 1, attack: 1, health: 1, rulesText: ZOMBIE_RULES, rarity: 'TOKEN',
+  isToken: true, isChampionToken: false, keywords: [], abilities: [],
+};

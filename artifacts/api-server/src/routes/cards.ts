@@ -2,7 +2,17 @@ import { and, asc, eq } from "drizzle-orm";
 import { db, cardsTable, cardFrameDefinitionsTable, championsTable } from "@workspace/db";
 import { Router, type IRouter } from "express";
 
+import { completeMinionACatalog } from "@workspace/game-engine";
+import { getAuthenticatedUser } from "../lib/auth";
+
 const router: IRouter = Router();
+
+router.get("/minion-a/cards", async (request, response): Promise<void> => {
+  if (!await getAuthenticatedUser(request)) { response.status(401).json({ message: "로그인이 필요합니다." }); return; }
+  const cards = await db.select().from(cardsTable);
+  response.setHeader("Cache-Control", "no-store");
+  response.json({ definitions: completeMinionACatalog(cards) });
+});
 
 router.get("/cards", async (_request, response): Promise<void> => {
   const cards = await db

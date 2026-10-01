@@ -1,6 +1,7 @@
 import { db, cardsTable, championsTable, rewardSettingsTable } from "@workspace/db";
 import { inArray } from "drizzle-orm";
 import {
+  completeMinionACatalog,
   cardRecordToDefinition,
   championRecordToDefinition,
   chooseBestAction,
@@ -274,7 +275,7 @@ export async function completeAIMatchQuestProgress(input: {
     cardDefinitions,
     championDefinitions,
     [userDeck.cardDefinitionIds, aiDeck.cardDefinitionIds],
-    { gameId: input.matchId, randomSeed: seedForMatchId(input.matchId) },
+    { gameId: input.matchId, randomSeed: seedForMatchId(input.matchId), minionACardPool: completeMinionACatalog(cardRecords) },
   );
   const startedState = startGame(initialState, createDeterministicRandom(input.matchId), undefined, { flexibleDeckPlayerId: 'player-2' });
   const userPlayerId = startedState.players[0]?.id;
