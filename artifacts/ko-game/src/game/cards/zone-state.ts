@@ -60,7 +60,7 @@ export function resetCardAfterLeavingBoard(card: CardInstance): CardInstance {
     enteredThisTurn: false,
     attacksUsedThisTurn: 0,
     dodgeAvailable: hasDodge,
-    dodgeCharges: hasDodge ? card.grantedText?.dodgeCharges ?? configuredDodgeCharges(definition?.effectConfig) : 0,
+    dodgeCharges: hasDodge ? card.grantedText?.dodgeCharges ?? (definition ? configuredDodgeCharges(definition.effectConfig) : card.baseDodgeCharges ?? 1) : 0,
     isStunned: false,
     activeUsedThisTurn: false,
     statHistory: [],

@@ -141,6 +141,7 @@ export interface CardInstance {
   baseCost?: number;
   baseAttack?: number;
   baseHealth?: number;
+  baseDodgeCharges?: number;
   currentAttack: number;
   currentHealth: number;
   maxHealth: number;

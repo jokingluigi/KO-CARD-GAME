@@ -1,3 +1,4 @@
+import { resetCardAfterLeavingBoard } from '../cards/zone-state';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { createInitialGameState } from './create-initial-game-state';
@@ -71,4 +72,9 @@ test('configured dodge count absorbs exactly that many damage events',()=>{
  assert.equal(state.players[1].board[0]!.dodgeCharges,3);
  for(let remaining=2;remaining>=0;remaining--){state=applyEffect(state,'player-1',state.players[0].board[0]!,damage,['b']);assert.equal(state.players[1].board[0]!.currentHealth,8);assert.equal(state.players[1].board[0]!.dodgeCharges,remaining);}
  state=applyEffect(state,'player-1',state.players[0].board[0]!,damage,['b']);assert.equal(state.players[1].board[0]!.currentHealth,4);
+});
+
+test('configured dodge count survives draw and resets on zone movement without a registered catalog',()=>{
+ const instance=generateCardInstance(definition('unregistered-counted-dodge',{keywords:['DODGE'],effectConfig:{dodgeCharges:4}}),{instanceId:'counted'});
+ assert.equal(resetCardAfterLeavingBoard({...instance,dodgeCharges:1}).dodgeCharges,4);
 });

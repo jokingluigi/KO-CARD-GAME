@@ -67,6 +67,7 @@ export function generateCardInstance(
     baseCost: definition.cost,
     baseAttack: definition.attack,
     baseHealth: definition.health,
+    baseDodgeCharges: definition.keywords.includes('DODGE') ? configuredDodgeCharges(definition.effectConfig) : 0,
     currentAttack: Math.max(0, attack),
     currentHealth: Math.max(1, health),
     maxHealth: Math.max(1, health),
