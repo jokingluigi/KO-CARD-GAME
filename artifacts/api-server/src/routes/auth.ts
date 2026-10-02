@@ -1,3 +1,4 @@
+import { readMaintenance, maintenanceAllows } from '../lib/maintenance';
 import { randomUUID } from "node:crypto";
 import { Router } from "express";
 import { eq, or } from "drizzle-orm";
@@ -128,6 +129,11 @@ router.post("/login", async (request, response) => {
     return;
   }
 
+  const maintenance = await readMaintenance();
+  if (!maintenanceAllows(maintenance.enabled, user.role)) {
+    response.status(503).json({ code: 'SERVER_MAINTENANCE', message: `${maintenance.message} 관리자 계정만 로그인할 수 있습니다.` });
+    return;
+  }
   clearLoginRateLimit(request, email);
   await ensureStarterCollection(user.id);
   await createAuthSession(user.id, response);

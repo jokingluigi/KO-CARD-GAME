@@ -92,10 +92,12 @@ export const claimAttendance = () => request<{ attendance: AttendanceData; rewar
 export const fetchRewardAdminData = () => request<RewardAdminData>("/admin/rewards");
 export type RewardCatalogCard = { id: string; name: string; imageUrl: string | null; status: string; isToken: boolean; isChampionToken: boolean };
 export type RewardCatalogPack = { id: string; name: string; imageUrl: string | null; status: string; deletedAt: string | null };
+export type RewardCatalogChampion = { id: string; name: string; imageUrl: string | null; status: string };
 export const fetchRewardCatalogs = () => Promise.all([
   request<{ cards: RewardCatalogCard[] }>("/cards"),
   request<{ packs: RewardCatalogPack[] }>("/packs"),
-]).then(([cards, packs]) => ({ cards: cards.cards, packs: packs.packs }));
+  request<{ champions: RewardCatalogChampion[] }>("/champions"),
+]).then(([cards, packs, champions]) => ({ cards: cards.cards, packs: packs.packs, champions: champions.champions }));
 export const saveMatchRewardSettings = (body: { winAmount: number; lossAmount: number; enabled: boolean }) => request<{ updated: boolean }>("/admin/rewards/match", { method: "PATCH", body: JSON.stringify(body) });
 export const createDailyQuest = (body: object) => request("/admin/rewards/daily-quests", { method: "POST", body: JSON.stringify(body) });
 export const updateDailyQuest = (id: string, body: object) => request(`/admin/rewards/daily-quests/${encodeURIComponent(id)}`, { method: "PATCH", body: JSON.stringify(body) });

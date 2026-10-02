@@ -10,6 +10,7 @@ import type { GameAction } from '../actions/types';
 import { applyEffect, resolveTriggeredAbilities } from '../effects/effect-engine';
 import { enterField } from '../engine/enter-field';
 import { endTurn } from '../engine/turn-system';
+import { drawCard } from '../engine/draw-card';
 import type { GameState } from '../types/game-state';
 
 // Actual 2026-10-02 production definitions. Published API plus read-only admin
@@ -56,11 +57,11 @@ test('current Deheon first field attack gain grants dodge once; health gain does
  const s=setup();const c=onBoard(s,'데헌');let n=buff(s,c,1,0);assert.equal(n.players[0].board[0]?.dodgeCharges,1);
  n.players[0].board[0]={...n.players[0].board[0]!,dodgeCharges:0};n=buff(n,n.players[0].board[0]!,0,1);assert.equal(n.players[0].board[0]?.dodgeCharges,0);n=buff(n,n.players[0].board[0]!,1,0);assert.equal(n.players[0].board[0]?.dodgeCharges,0);
 });
-test('current tag buffs apply to matching hand/deck/board/grave cards and not nonmatching cards',()=>{
- for(const [name,tag,atk,hp,grave] of [['아비터','기계',0,1,false],['아포스틸','실험체',0,1,true],['팬텀워커','스트리트',1,0,false],['매드 사이언티스트 퍼플레인','실험체',1,1,true]] as const){
+test('current anywhere tag buffs affect hand/deck/board but exclude graveyard and nonmatching cards',()=>{
+ for(const [name,tag,atk,hp] of [['아비터','기계',0,1],['아포스틸','실험체',0,1],['팬텀워커','스트리트',1,0],['매드 사이언티스트 퍼플레인','실험체',1,1]] as const){
  const s=setup();const targetName=definitions.find(d=>d.tags?.includes(tag)&&d.name!==name)!.name;const base=def(targetName);const c=instance(targetName,'tagged',{isGenerated:true});s.players[0].hand=[{...c,instanceId:'hand'}];s.players[0].deck=[{...c,instanceId:'deck'},instance('리버덩크','untagged')];s.players[0].graveyard=[{...c,instanceId:'grave'}];onBoard(s,targetName,1);const n=play(s,name);
  for(const got of [n.players[0].hand[0],n.players[0].deck[0],n.players[0].board[1]])assert.deepEqual([got?.currentAttack,got?.currentHealth],[base.attack+atk,Math.max(1,base.health)+hp],name);
- assert.equal(n.players[0].deck[1]?.currentAttack,2);assert.equal(n.players[0].graveyard[0]?.maxHealth,Math.max(1,base.health)+(grave?hp:0));
+ assert.equal(n.players[0].deck[1]?.currentAttack,2);assert.equal(n.players[0].graveyard[0]?.maxHealth,Math.max(1,base.health));
  }
 });
 test('current generated buffs and cost-one Question work across zones without affecting other cards',()=>{
@@ -119,7 +120,7 @@ test('current Bullocks summons from hand on own turn end, but cannot enter a ful
 test('current zombie Bellona damage summons/merges a zombie; zombie Deheon retirement adds max HP across both owners',()=>{
  let s=setup();let b=onBoard(s,'좀비 벨로나');let n=applyEffect(s,'player-1',b,{type:'STRUCTURED',action:'DAMAGE',target:{zone:'BOARD',owner:'SELF',selection:'SELF',count:1},values:{amount:1}});let z=n.players[0].board.find(c=>c?.definitionId===def('좀비').id);assert.deepEqual([z?.currentAttack,z?.currentHealth],[1,1]);
  n=applyEffect(n,'player-1',n.players[0].board[0]!,{type:'STRUCTURED',action:'DAMAGE',target:{zone:'BOARD',owner:'SELF',selection:'SELF',count:1},values:{amount:1}});assert.equal(n.players[0].board.filter(c=>c?.definitionId===def('좀비').id).length,1);z=n.players[0].board.find(c=>c?.definitionId===def('좀비').id);assert.deepEqual([z?.currentAttack,z?.currentHealth],[2,2]);
- s=setup();const d=onBoard(s,'좀비 데헌');for(const p of s.players){p.hand=[instance('좀비 벨로나','zh')];p.deck=[instance('좀비 벨로나','zd')];p.graveyard=[instance('좀비 벨로나','zg')];}onBoard(s,'좀비 벨로나',1,1);n=retire(s,d);for(const p of n.players)for(const c of [...p.hand,...p.deck,...p.graveyard.filter(c=>c.instanceId==='zg')]){assert.equal(c.maxHealth,5);assert.equal(c.currentHealth,3);}assert.equal(n.players[1].board[1]?.maxHealth,5);
+ s=setup();const d=onBoard(s,'좀비 데헌');for(const p of s.players){p.hand=[instance('좀비 벨로나','zh')];p.deck=[instance('좀비 벨로나','zd')];p.graveyard=[instance('좀비 벨로나','zg')];}onBoard(s,'좀비 벨로나',1,1);n=retire(s,d);for(const p of n.players)for(const c of [...p.hand,...p.deck]){assert.equal(c.maxHealth,5);assert.equal(c.currentHealth,3);}assert.equal(n.players[1].board[1]?.maxHealth,5);for(const p of n.players)assert.equal(p.graveyard.find(c=>c.instanceId==='zg')?.maxHealth,3);
 });
 test('current zombie Platinum absorbs strongest zombie or creates 2/2 when absent',()=>{
  let n=play(setup(),'좀비 플래티넘구슬 마스터');assert.deepEqual([source(n).currentAttack,source(n).currentHealth],[5,5]);assert.ok(n.players[0].board.some(c=>c?.definitionId===def('좀비').id&&c.currentAttack===2));
@@ -153,4 +154,22 @@ for(const name of ['레이븐','스카드','엘리트 용병','용병','위리�
 });
 test('current targeted entrance cancel returns exact card and refunds cost; no-target entrance still plays',()=>{
  const s=setup();onBoard(s,'로드',0,1);s.players[0].hand=[instance('흑구슬마스터','cancel')];const r=executeAction(s,{type:'PLAY_WRESTLER',playerId:'player-1',cardInstanceId:'cancel',boardSlot:0});assert.equal(r.success,true);assert.ok(r.state.targetingState?.active);const c=executeAction(r.state,{type:'CANCEL_EFFECT_TARGET',playerId:'player-1'});assert.equal(c.success,true);assert.equal(c.state.players[0].currentGold,120);assert.ok(c.state.players[0].hand.some(x=>x.instanceId==='cancel'));assert.equal(c.state.players[0].board[0],null);assert.ok(c.state.players[1].board[0]);const n=play(setup(),'흑구슬마스터');assert.ok(source(n));
+});
+
+// Revised zone rule: moving cards starts from original stats; graveyard cannot be buffed.
+test('zone reset: buffed deck card returns to original stats/cost when drawn',()=>{
+ const s=setup();s.players[0].deck=[instance('로드','draw-reset',{currentAttack:8,currentHealth:9,maxHealth:9,currentCost:1})];
+ const n=drawCard(s,'player-1');const c=n.players[0].hand[0];
+ assert.deepEqual([c.currentAttack,c.currentHealth,c.maxHealth,c.currentCost],[2,3,3,3]);
+});
+test('zone reset: buffed hand card sent to deck resets stats/cost',()=>{
+ const s=setup();const caster=onBoard(s,'리버덩크');s.players[0].hand=[instance('로드','return-reset',{currentAttack:8,currentHealth:9,maxHealth:9,currentCost:1})];
+ const n=applyEffect(s,'player-1',caster,{type:'STRUCTURED',action:'MOVE_TO_DECK',target:{zone:'HAND',owner:'SELF',selection:'ALL',count:1},values:{deckPosition:'TOP'}});
+ const c=n.players[0].deck[0];assert.deepEqual([c.currentAttack,c.currentHealth,c.maxHealth,c.currentCost],[2,3,3,3]);assert.equal(n.players[0].hand.length,0);
+});
+test('zone reset: retirement clears buffs and graveyard rejects later stat buffs',()=>{
+ const s=setup();const c=onBoard(s,'로드',0,0,{currentAttack:8,currentHealth:9,maxHealth:9,currentCost:1});let n=retire(s,c);
+ let g=n.players[0].graveyard[0];assert.deepEqual([g.currentAttack,g.currentHealth,g.maxHealth,g.currentCost],[2,3,3,3]);
+ n=applyEffect(n,'player-1',instance('아포스틸','caster'),{type:'STRUCTURED',action:'BUFF',target:{zones:['HAND','DECK','BOARD','GRAVEYARD'],owner:'SELF',selection:'ALL',count:100},values:{attack:2,health:2}});
+ g=n.players[0].graveyard[0];assert.deepEqual([g.currentAttack,g.currentHealth,g.maxHealth],[2,3,3]);
 });

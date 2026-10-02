@@ -31,7 +31,7 @@ export function AuthRecovery({ message, onRetry }: { message?: string; onRetry: 
   );
 }
 
-export function AuthPage({ onAuthenticated }: { onAuthenticated: (user: AuthUser) => void }) {
+export function AuthPage({ onAuthenticated, loginOnly = false }: { onAuthenticated: (user: AuthUser) => void; loginOnly?: boolean }) {
   const [mode, setMode] = useState<"login" | "register">("login");
   const [email, setEmail] = useState("");
   const [nickname, setNickname] = useState("");
@@ -52,7 +52,7 @@ export function AuthPage({ onAuthenticated }: { onAuthenticated: (user: AuthUser
     setErrorMessage("");
     setIsSubmitting(true);
     try {
-      const user = await submitAuth(mode, {
+      const user = await submitAuth(loginOnly ? "login" : mode, {
         email,
         ...(mode === "register" ? { nickname, passwordConfirmation } : {}),
         password,
@@ -81,15 +81,16 @@ export function AuthPage({ onAuthenticated }: { onAuthenticated: (user: AuthUser
           >
             로그인
           </button>
-          <button
+          {!loginOnly && <button
             type="button"
             onClick={() => switchMode("register")}
             className={`ko-auth-tab ${mode === "register" ? "ko-auth-tab--active" : ""}`}
           >
             회원가입
-          </button>
+          </button>}
         </div>
 
+        {loginOnly && <p className="mb-4 text-sm text-amber-300">서버 점검 중에는 관리자 계정만 로그인할 수 있습니다.</p>}
         <form className="space-y-4" onSubmit={handleSubmit}>
           <label className="ko-auth-field">
             <span>이메일</span>

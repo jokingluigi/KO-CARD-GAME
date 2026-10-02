@@ -109,3 +109,5 @@ export { TOWER_RELIC_DEFINITIONS } from './tower/relic-definitions';
 
 export { validChampionQuestCondition, evaluateChampionQuestCondition } from './champion-quest-conditions';
 export type { ChampionQuestCondition } from './champion-quest-conditions';
+
+export { TOWER_VANILLA_CHAMPION_ID, towerVanillaChampion } from '../../../artifacts/ko-game/src/game/champions/tower-vanilla';

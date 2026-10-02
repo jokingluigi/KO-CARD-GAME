@@ -18,7 +18,7 @@ export type Condition =
   | { type: 'CHAMPION' | 'RELIC' | 'STARTER' | 'BOSS_CLEARED' | 'CARD'; id: string }
   | { type: 'CLEAR_COUNT'; count: number }
   | { type: 'SYNERGY_COUNT'; tag: string; count: number };
-export interface AccountReward { type: 'CARD' | 'PACK' | 'CURRENCY'; targetId?: string; amount: number }
+export interface AccountReward { type: 'CARD' | 'CHAMPION' | 'PACK' | 'CURRENCY'; targetId?: string; amount: number }
 export interface BossConfig {
   presetId: string;
   commonSceneId?: string;

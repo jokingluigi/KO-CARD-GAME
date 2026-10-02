@@ -57,7 +57,7 @@ export function parseCondition(value: unknown, depth = 0, budget = { left: 50 })
 }
 export function parseReward(value: unknown): AccountReward {
   const r = object(value);
-  if (r.type !== 'CARD' && r.type !== 'PACK' && r.type !== 'CURRENCY') throw new TowerRuleError('INVALID_REWARD', '보상 종류를 확인해 주세요.');
+  if (r.type !== 'CHAMPION' && r.type !== 'CARD' && r.type !== 'PACK' && r.type !== 'CURRENCY') throw new TowerRuleError('INVALID_REWARD', '보상 종류를 확인해 주세요.');
   const amount = number(r.amount, 1, 100000);
   if (!Number.isInteger(amount)) throw new TowerRuleError('INVALID_REWARD', '보상 수량은 정수여야 합니다.');
   return { type: r.type, amount, ...(r.type === 'CURRENCY' ? {} : { targetId: text(r.targetId) }) };

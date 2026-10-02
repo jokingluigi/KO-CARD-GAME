@@ -3,6 +3,7 @@ import { sql } from "drizzle-orm";
 import towerStorage from "../../../../lib/db/migrations/0026_tower_mode.sql";
 import towerUnlocks from "../../../../lib/db/migrations/0027_tower_unlocks.sql";
 import piStarSevenQuest from "../../../../lib/db/migrations/0030_pi-star-seven-quest.sql";
+import towerVanilla from "../../../../lib/db/migrations/0035_tower_vanilla_champion.sql";
 import minionA from "../../../../lib/db/migrations/0034_minion_a.sql";
 import maintenanceSchema from "../../../../lib/db/migrations/0033_server_maintenance.sql";
 import ozenGilded from "../../../../lib/db/migrations/0032_ozen_gilded_effects.sql";
@@ -31,6 +32,7 @@ export async function ensureTowerStorage(database = db): Promise<void> {
     await tx.execute(sql.raw(yeoulQuest));
     await tx.execute(sql.raw(ozenGilded));
     await tx.execute(sql.raw(minionA));
+    await tx.execute(sql.raw(towerVanilla));
     for (const statement of maintenanceSchema.split(";")) if(statement.trim()) await tx.execute(sql.raw(statement));
   });
 }

@@ -95,13 +95,14 @@ export async function validateAIDeckReferences(
   championDefinitionId: string | null,
   cardDefinitionIds: string[],
   context: DeckValidationContext = "AI_DECK",
+  database: Pick<typeof db, "select"> = db,
 ): Promise<AIDeckValidation> {
   const uniqueCardIds = [...new Set(cardDefinitionIds)];
   const [champion] = championDefinitionId
-    ? await db.select().from(championsTable).where(eq(championsTable.id, championDefinitionId)).limit(1)
+    ? await database.select().from(championsTable).where(eq(championsTable.id, championDefinitionId)).limit(1)
     : [undefined];
   const cards = uniqueCardIds.length
-    ? await db.select().from(cardsTable).where(inArray(cardsTable.id, uniqueCardIds))
+    ? await database.select().from(cardsTable).where(inArray(cardsTable.id, uniqueCardIds))
     : [];
   const cardsById = new Map(cards.map((card) => [card.id, card]));
   const invalidReasons: string[] = [];
@@ -169,7 +170,7 @@ export async function validateAIDeckReferences(
     pendingDependencyIds = pendingDependencyIds.filter((id) => !visitedDependencyIds.has(id));
     if (pendingDependencyIds.length === 0) break;
     pendingDependencyIds.forEach((id) => visitedDependencyIds.add(id));
-    const dependencies = await db.select().from(cardsTable).where(inArray(cardsTable.id, pendingDependencyIds));
+    const dependencies = await database.select().from(cardsTable).where(inArray(cardsTable.id, pendingDependencyIds));
     for (const id of pendingDependencyIds) {
       if (!dependencies.some((dependency) => dependency.id === id)) missingDependencyIds.add(id);
     }
@@ -216,16 +217,17 @@ export async function validateAIDeckReferences(
 export async function resolveAIDeck(
   deck: AIDeckRecord,
   context: DeckValidationContext = "AI_DECK",
+  database: Pick<typeof db, "select"> = db,
 ): Promise<AIDeckView> {
-  const validation = await validateAIDeckReferences(deck.championDefinitionId, deck.cardDefinitionIds, context);
+  const validation = await validateAIDeckReferences(deck.championDefinitionId, deck.cardDefinitionIds, context, database);
   return { ...deck, ...validation };
 }
 
-export async function listAIDecks(options?: { enabledOnly?: boolean; context?: DeckValidationContext }): Promise<AIDeckView[]> {
-  const decks = await db
+export async function listAIDecks(options?: { enabledOnly?: boolean; context?: DeckValidationContext }, database: Pick<typeof db, "select"> = db): Promise<AIDeckView[]> {
+  const decks = await database
     .select()
     .from(aiDecksTable)
     .where(options?.enabledOnly ? eq(aiDecksTable.enabled, true) : undefined)
     .orderBy(asc(aiDecksTable.displayOrder), asc(aiDecksTable.name));
-  return Promise.all(decks.map((deck) => resolveAIDeck(deck, options?.context)));
+  return Promise.all(decks.map((deck) => resolveAIDeck(deck, options?.context, database)));
 }

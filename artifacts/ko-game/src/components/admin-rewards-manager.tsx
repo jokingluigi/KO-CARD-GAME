@@ -9,6 +9,7 @@ import {
   upsertAttendanceReward,
   fetchRewardCatalogs,
   type RewardCatalogCard,
+  type RewardCatalogChampion,
   type RewardCatalogPack,
   type RewardAdminData,
 } from "@/lib/rewards-client";
@@ -43,7 +44,7 @@ export function AdminRewardsManager({ onUnauthorized }: { onUnauthorized: () => 
   const [attendanceEnabled, setAttendanceEnabled] = useState(true);
   const [attendanceRewardType, setAttendanceRewardType] = useState("CURRENCY");
   const [attendanceTargetId, setAttendanceTargetId] = useState("");
-  const [catalog, setCatalog] = useState<{ cards: RewardCatalogCard[]; packs: RewardCatalogPack[] }>({ cards: [], packs: [] });
+  const [catalog, setCatalog] = useState<{ cards: RewardCatalogCard[]; champions: RewardCatalogChampion[]; packs: RewardCatalogPack[] }>({ cards: [], champions: [], packs: [] });
   const eventRegistry = useMemo(() => questEventRegistry(), []);
   const conditionPreview = useMemo(() => {
     if (!quest.useConditionV2) return "기존 Quest 조건 (legacy)";
@@ -165,12 +166,13 @@ export function AdminRewardsManager({ onUnauthorized }: { onUnauthorized: () => 
 
   const rewardTargetOptions = quest.rewardType === "CARD"
     ? catalog.cards.filter((card) => !card.isToken && !card.isChampionToken)
-    : catalog.packs;
+    : quest.rewardType === "CHAMPION" ? catalog.champions : attendanceRewardType === "CHAMPION" ? catalog.champions : catalog.packs;
   const attendanceTargetOptions = attendanceRewardType === "CARD"
     ? catalog.cards.filter((card) => !card.isToken && !card.isChampionToken)
     : catalog.packs;
   const rewardLabel = (type: string, targetId: string | null, amount: number) => {
     if (type === "CARD") return `카드 ${catalog.cards.find((card) => card.id === targetId)?.name ?? targetId ?? "—"} ×${amount}`;
+    if (type === "CHAMPION") return `챔피언 ${catalog.champions.find(c => c.id === targetId)?.name ?? targetId ?? "—"}`;
     if (type === "PACK") return `팩 ${catalog.packs.find((pack) => pack.id === targetId)?.name ?? targetId ?? "—"} ×${amount}`;
     return `+${amount} 크레딧`;
   };
@@ -201,7 +203,7 @@ export function AdminRewardsManager({ onUnauthorized }: { onUnauthorized: () => 
            {quest.useConditionV2 && <><select value={quest.conditionEvent} onChange={(event) => setQuest({ ...quest, conditionEvent: event.target.value })} className="rounded border border-neutral-700 bg-black px-3 py-2 text-sm text-white">{Object.keys(eventRegistry).map((item) => <option key={item} value={item}>{item}</option>)}</select><select value={quest.progressMode} onChange={(event) => setQuest({ ...quest, progressMode: event.target.value })} className="rounded border border-neutral-700 bg-black px-3 py-2 text-sm text-white"><option value="COUNT">COUNT</option><option value="SUM">SUM</option></select>{quest.progressMode === "SUM" && <select value={quest.progressField} onChange={(event) => setQuest({ ...quest, progressField: event.target.value })} className="rounded border border-neutral-700 bg-black px-3 py-2 text-sm text-white"><option value="amount">amount</option><option value="delta">delta</option><option value="before">before</option><option value="after">after</option></select>}<input value={quest.tagsAny} onChange={(event) => setQuest({ ...quest, tagsAny: event.target.value })} placeholder="tagsAny (쉼표로 구분)" className="rounded border border-neutral-700 bg-black px-3 py-2 text-sm text-white" /><p className="text-xs text-amber-200 sm:col-span-2">미리보기: {conditionPreview}</p></>}
           {quest.objectiveType === "CARD_PLAYED" && <select value={quest.cardType} onChange={(event) => setQuest({ ...quest, cardType: event.target.value })} className="rounded border border-neutral-700 bg-black px-3 py-2 text-sm text-white"><option value="">모든 카드</option><option value="WRESTLER">WRESTLER</option><option value="TECHNIQUE">TECHNIQUE</option></select>}
           <input type="number" min="1" value={quest.targetValue} onChange={(event) => setQuest({ ...quest, targetValue: event.target.value })} placeholder="목표 수치" className="rounded border border-neutral-700 bg-black px-3 py-2 text-sm text-white" />
-           <select value={quest.rewardType} onChange={(event) => setQuest({ ...quest, rewardType: event.target.value, rewardTargetId: "" })} className="rounded border border-neutral-700 bg-black px-3 py-2 text-sm text-white"><option value="CURRENCY">CURRENCY</option><option value="CARD">CARD</option><option value="PACK">PACK</option></select>
+           <select value={quest.rewardType} onChange={(event) => setQuest({ ...quest, rewardType: event.target.value, rewardTargetId: "" })} className="rounded border border-neutral-700 bg-black px-3 py-2 text-sm text-white"><option value="CURRENCY">CURRENCY</option><option value="CARD">CARD</option><option value="CHAMPION">CHAMPION</option><option value="PACK">PACK</option></select>
            {quest.rewardType !== "CURRENCY" && <select value={quest.rewardTargetId} onChange={(event) => setQuest({ ...quest, rewardTargetId: event.target.value })} className="rounded border border-neutral-700 bg-black px-3 py-2 text-sm text-white"><option value="">보상 대상 선택</option>{rewardTargetOptions.map((item) => <option key={item.id} value={item.id}>{item.name}</option>)}</select>}
            <input type="number" min="1" value={quest.rewardAmount} onChange={(event) => setQuest({ ...quest, rewardAmount: event.target.value })} placeholder="보상 수량" className="rounded border border-neutral-700 bg-black px-3 py-2 text-sm text-white" />
           <label className="flex items-center gap-2 text-xs font-bold text-neutral-300"><input type="checkbox" checked={quest.enabled} onChange={(event) => setQuest({ ...quest, enabled: event.target.checked })} /> 활성화</label>
@@ -212,7 +214,7 @@ export function AdminRewardsManager({ onUnauthorized }: { onUnauthorized: () => 
 
       <section className="rounded-lg border border-neutral-800 bg-neutral-950/70 p-5">
         <div className="flex items-center gap-2"><CalendarCheck2 className="h-4 w-4 text-amber-400" /><h3 className="font-black">출석 보드 관리</h3></div>
-         <div className="mt-4 grid gap-3 sm:grid-cols-3"><input type="number" min="1" max="365" value={attendanceDay} onChange={(event) => setAttendanceDay(event.target.value)} placeholder="Day" className="rounded border border-neutral-700 bg-black px-3 py-2 text-sm text-white" /><select value={attendanceRewardType} onChange={(event) => { setAttendanceRewardType(event.target.value); setAttendanceTargetId(""); }} className="rounded border border-neutral-700 bg-black px-3 py-2 text-sm text-white"><option value="CURRENCY">CURRENCY</option><option value="CARD">CARD</option><option value="PACK">PACK</option></select>{attendanceRewardType !== "CURRENCY" ? <select value={attendanceTargetId} onChange={(event) => setAttendanceTargetId(event.target.value)} className="rounded border border-neutral-700 bg-black px-3 py-2 text-sm text-white"><option value="">보상 대상 선택</option>{attendanceTargetOptions.map((item) => <option key={item.id} value={item.id}>{item.name}</option>)}</select> : <span />}</div>
+         <div className="mt-4 grid gap-3 sm:grid-cols-3"><input type="number" min="1" max="365" value={attendanceDay} onChange={(event) => setAttendanceDay(event.target.value)} placeholder="Day" className="rounded border border-neutral-700 bg-black px-3 py-2 text-sm text-white" /><select value={attendanceRewardType} onChange={(event) => { setAttendanceRewardType(event.target.value); setAttendanceTargetId(""); }} className="rounded border border-neutral-700 bg-black px-3 py-2 text-sm text-white"><option value="CURRENCY">CURRENCY</option><option value="CARD">CARD</option><option value="CHAMPION">CHAMPION</option><option value="PACK">PACK</option></select>{attendanceRewardType !== "CURRENCY" ? <select value={attendanceTargetId} onChange={(event) => setAttendanceTargetId(event.target.value)} className="rounded border border-neutral-700 bg-black px-3 py-2 text-sm text-white"><option value="">보상 대상 선택</option>{attendanceTargetOptions.map((item) => <option key={item.id} value={item.id}>{item.name}</option>)}</select> : <span />}</div>
          <div className="mt-3 grid gap-3 sm:grid-cols-3"><input type="number" min="1" value={attendanceAmount} onChange={(event) => setAttendanceAmount(event.target.value)} placeholder="보상 수량" className="rounded border border-neutral-700 bg-black px-3 py-2 text-sm text-white" /><label className="flex items-center gap-2 text-xs font-bold text-neutral-300"><input type="checkbox" checked={attendanceEnabled} onChange={(event) => setAttendanceEnabled(event.target.checked)} /> 활성화</label></div>
         <button type="button" disabled={saving} onClick={() => void saveAttendance()} className="mt-4 rounded bg-amber-400 px-4 py-2.5 text-xs font-black text-black disabled:opacity-50">Day 저장</button>
          <div className="mt-5 grid gap-2 sm:grid-cols-4">{data?.attendance.map((item) => <button key={item.dayIndex} type="button" onClick={() => { setAttendanceDay(String(item.dayIndex)); setAttendanceAmount(String(item.rewardAmount)); setAttendanceRewardType(item.rewardType); setAttendanceTargetId(item.rewardTargetId ?? ""); setAttendanceEnabled(item.enabled); }} className="rounded border border-neutral-800 px-3 py-3 text-left hover:border-amber-700"><strong className="text-sm text-white">Day {item.dayIndex}</strong><p className="mt-1 text-xs text-amber-200">{rewardLabel(item.rewardType, item.rewardTargetId, item.rewardAmount)}</p><p className="mt-1 text-[10px] text-neutral-500">{item.enabled ? "활성" : "비활성"}</p></button>)}</div>

@@ -1,3 +1,4 @@
+import { TOWER_VANILLA_CHAMPION_ID } from '@/game/champions/tower-vanilla';
 import { ChampionEmoteMenu } from './champion-emote-menu';
 import React from 'react';
 import { towerSummonCost, canEnterTowerField } from '@/game/tower/relics';
@@ -1462,7 +1463,7 @@ export function GameStatePreview({
                  </Inspectable>
                )}
 
-               {me.champion && (
+               {me.champion && me.champion.id !== TOWER_VANILLA_CHAMPION_ID && (
                  <Inspectable
                    content={
                      <ChampionAbilityInspectContent

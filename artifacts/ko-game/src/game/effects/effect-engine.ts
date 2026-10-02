@@ -56,7 +56,8 @@ export function getValidTargets(
 ): string[] {
   if (effect.type !== 'STRUCTURED' || !effect.target) return [];
   const target = effect.target;
-  const zones = target.zones ?? (target.zone ? [target.zone] : []);
+  const statAction = ['BUFF', 'MODIFY_STAT', 'MODIFY_MAX_HEALTH', 'SET_STAT', 'SET_STATS', 'SWAP_STATS', 'HEAL', 'REDUCE_COST', 'INCREASE_COST', 'WEAKEN_TO_STUN_SILENCE'].includes(effect.action);
+  const zones = (target.zones ?? (target.zone ? [target.zone] : [])).filter(zone => !statAction || zone !== 'GRAVEYARD');
   if (zones.length === 1 && zones[0] === 'PLAYER') {
     if (target.owner === 'ALL') return [];
     const owner = target.owner === 'SELF' ? playerId : state.players.find((p) => p.id !== playerId)?.id;
@@ -2402,7 +2403,7 @@ export function applyEffect(
           cardPool: state.cardPool?.some((candidate) => candidate.id === zombieDefinition.id)
             ? state.cardPool : [...(state.cardPool ?? []), zombieDefinition],
           events: [...state.events, generated.event] }, playerId,
-          { ...generated.card, currentAttack: attack, baseAttack: attack, currentHealth: health, baseHealth: health, maxHealth: health },
+          { ...generated.card, currentAttack: attack, currentHealth: health, maxHealth: health },
           slot as 0 | 1 | 2 | 3, { type: 'CARD', cardInstanceId: sourceCard.instanceId }, undefined, 'SUMMON');
         return applyEffect(summoned, playerId, sourceCard, {
           type: 'STRUCTURED', action: 'BUFF', target: { zone: 'BOARD', owner: 'SELF', selection: 'SELF', count: 1 },
@@ -2550,8 +2551,7 @@ export function applyEffect(
           deck: zones.includes('DECK') ? player.deck.filter((card) => !ids.has(card.instanceId)) : player.deck,
           graveyard: zones.includes('GRAVEYARD') ? player.graveyard.filter((card) => !ids.has(card.instanceId)) : player.graveyard,
             hand: [...player.hand, ...moved.map((card) => normalizeCardForZone({
-              ...(zones.includes('GRAVEYARD') || zones.includes('BOARD')
-                ? resetCardAfterLeavingBoard(card) : { ...card, boardSlot: null }),
+              ...resetCardAfterLeavingBoard(card),
               ...temporaryCost,
             }, 'HAND'))],
         }),
@@ -2573,8 +2573,8 @@ export function applyEffect(
           : []),
       ];
       if (!moved.length) return state;
-      const normalized = moved.map(({ card, zone }) => normalizeCardForZone(
-        zone === 'GRAVEYARD' || zone === 'BOARD' ? resetCardAfterLeavingBoard(card) : { ...card, boardSlot: null },
+      const normalized = moved.map(({ card }) => normalizeCardForZone(
+        resetCardAfterLeavingBoard(card),
         'DECK',
       ));
       return {
@@ -2614,7 +2614,7 @@ export function applyEffect(
            }
           : player.id === playerId
               ? { ...player, hand: [...player.hand, ...stolen.map((card) => normalizeCardForZone(
-                zones.includes('GRAVEYARD') || zones.includes('BOARD') ? resetCardAfterLeavingBoard(card) : { ...card, boardSlot: null },
+                resetCardAfterLeavingBoard(card),
                 'HAND',
               ))] }
             : player),
@@ -2957,6 +2957,7 @@ export function applyEffect(
       players: state.players.map((player) => {
             const update = (card: CardInstance, zone: 'HAND' | 'DECK' | 'BOARD' | 'GRAVEYARD'): CardInstance => {
           if (!ids.has(card.instanceId)) return card;
+          if (zone === 'GRAVEYARD' && ['BUFF', 'MODIFY_STAT', 'MODIFY_MAX_HEALTH', 'SET_STAT', 'SET_STATS', 'SWAP_STATS', 'HEAL', 'REDUCE_COST', 'INCREASE_COST', 'WEAKEN_TO_STUN_SILENCE'].includes(effect.action)) return card;
               const finish = (next: CardInstance, duration = effect.values?.duration) =>
                 recordStatChanges(
                   card,

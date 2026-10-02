@@ -1,3 +1,5 @@
+import { listAIDecks } from './ai-deck-service';
+import { TOWER_VANILLA_CHAMPION_ID } from '@workspace/game-engine';
 import { eq } from 'drizzle-orm';
 import { db, cardsTable, championsTable, towerSeasonsTable, towerStartersTable, towerPresetsTable, towerRelicsTable, towerCharactersTable, towerScenesTable, towerMetadataTable } from '@workspace/db';
 import { completeMinionACatalog, TowerRuleError, cardRecordToDefinition, championRecordToDefinition, parseSeason, parseStarter, parsePreset, parseRelic, parseCharacter, parseScene, parseMetadata,
@@ -23,9 +25,19 @@ export async function loadTowerSnapshot(database: typeof db = db): Promise<Tower
       characters: characters.map(row => parseCharacter(row.data)), scenes: scenes.map(row => parseScene(row.data)),
       preferredTags: Object.fromEntries(metadata.filter(row => row.kind === 'CHAMPION').map(row => [row.id, parseMetadata(row.data).preferredSynergyTags])),
     };
+    const aiDecks = (await listAIDecks({ enabledOnly: true, context: 'AI_DECK' }, tx)).filter(deck => deck.isValid);
+    catalog.presets.push(...aiDecks.map(deck => ({ id: `ai-deck:${deck.id}`, name: deck.name, championId: deck.championDefinitionId!, cardIds: deck.cardDefinitionIds, enabled: true, acts: [], weight: 0, difficulty: 'BOSS' as const })));
+    for (const [index, boss] of Object.values(catalog.season.bosses).entries()) {
+      if (!boss.presetId.startsWith('ai-deck:')) {
+        const deck = aiDecks[index % aiDecks.length];
+        if (!deck) throw new TowerRuleError('INVALID_BOSS', '보스전에 사용할 활성 AI 매치 덱이 필요합니다.');
+        boss.presetId = `ai-deck:${deck.id}`;
+      }
+    }
+    const aiChampionIds = new Set(aiDecks.map(deck => deck.championDefinitionId));
     const championIds = new Set(champions.filter(champion => champion.status === 'PUBLISHED').map(champion => champion.id));
     if (!championIds.has(catalog.season.protagonistChampionId)) throw new TowerRuleError('CHAMPION_MISSING', '시즌 주인공 챔피언을 확인해 주세요.');
-    for (const deck of [...catalog.starters, ...catalog.presets].filter(deck => deck.enabled)) {
+    for (const deck of [...catalog.starters, ...catalog.presets].filter(deck => deck.enabled && !deck.id.startsWith('ai-deck:'))) {
       validateTowerDeck(deck.cardIds, catalog);
       if (!championIds.has(deck.championId)) throw new TowerRuleError('CHAMPION_MISSING', `${deck.name}: 공개된 챔피언이 필요합니다.`);
     }
@@ -62,7 +74,7 @@ export async function loadTowerSnapshot(database: typeof db = db): Promise<Tower
     // eligibility is independently enforced for starters and rewards above.
     return { catalog, minionACardPool: completeMinionACatalog(cards),
       cards: cards.filter(card => card.status !== 'DISABLED').map(card => cardRecordToDefinition(card as unknown as Parameters<typeof cardRecordToDefinition>[0])),
-      champions: champions.filter(champion => championIds.has(champion.id)).map(champion => championRecordToDefinition(champion as unknown as Parameters<typeof championRecordToDefinition>[0])),
+      champions: champions.filter(champion => championIds.has(champion.id) || aiChampionIds.has(champion.id) || champion.id === TOWER_VANILLA_CHAMPION_ID).map(champion => championRecordToDefinition(champion as unknown as Parameters<typeof championRecordToDefinition>[0])),
     };
   }, { isolationLevel: 'repeatable read', accessMode: 'read only' });
 }

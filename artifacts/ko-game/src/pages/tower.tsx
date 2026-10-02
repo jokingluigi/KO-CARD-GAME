@@ -112,7 +112,7 @@ export default function Tower() {
     const c = cards.find(c => c.id === id);
     return c ? <CardRenderer name={c.name} cardType={c.cardType} cost={c.cost} attack={c.attack} health={c.health} rulesText={c.rulesText} imageUrl={c.imageUrl} rarity={c.rarity} size="detail" /> : <p>카드 정보를 불러오지 못했습니다.</p>;
   }
-  const rewardText = (reward: { type: string; amount: number; targetId?: string }) => `${reward.type === 'CURRENCY' ? '크레딧' : reward.type === 'PACK' ? '팩' : cards.find(c => c.id === reward.targetId)?.name ?? '카드'} ${reward.amount}${reward.type === 'CURRENCY' ? '' : '개'}`;
+  const rewardText = (reward: { type: string; amount: number; targetId?: string }) => `${reward.type === 'CURRENCY' ? '크레딧' : reward.type === 'PACK' ? '팩' : reward.type === 'CHAMPION' ? '챔피언' : cards.find(c => c.id === reward.targetId)?.name ?? '카드'} ${reward.amount}${reward.type === 'CURRENCY' ? '' : '개'}`;
   const deck = run?.deck ?? home?.starters.find(s => s.id === starterId)?.cardIds ?? [];
   const deckList = <div className="grid min-w-0 gap-2">{deck.map((id, index) => <button key={`${id}:${index}`} className={`${button} flex min-w-0 items-center justify-between gap-3 text-left ${replaceIndex === index ? 'border-primary bg-primary/10' : ''}`} disabled={busy || run?.phase !== 'REPLACE'} onClick={() => setReplaceIndex(index)}><span className="min-w-0 break-words">{index + 1}. {cards.find(c => c.id === id)?.name ?? id}</span><span className="shrink-0 text-neutral-400">{cards.find(c => c.id === id)?.cost}G</span></button>)}</div>;
   if (loading) return <main className="p-6 text-white" role="status">타워 도전을 불러오는 중…</main>;

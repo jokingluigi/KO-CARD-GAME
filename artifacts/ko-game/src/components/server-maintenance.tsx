@@ -7,7 +7,7 @@ export function ServerMaintenanceGate({children}:{children:ReactNode}){
  async function refresh(){try{const r=await fetch(`${api}/server-status`,{credentials:'include',cache:'no-store'});if(!r.ok)throw Error();setStatus(await r.json());setError(false);}catch{setError(true);}}
  useEffect(()=>{void refresh();const timer=setInterval(()=>void refresh(),5000);return()=>clearInterval(timer);},[]);
  if(status?.allowed)return <>{children}</>;
- if(login)return <><button className="fixed right-3 top-3 z-[200] rounded bg-amber-400 p-3 text-black" onClick={()=>setLogin(false)}>점검 안내로</button><AuthPage onAuthenticated={()=>{setLogin(false);void refresh();}}/></>;
+ if(login)return <><button className="fixed right-3 top-3 z-[200] rounded bg-amber-400 p-3 text-black" onClick={()=>setLogin(false)}>점검 안내로</button><AuthPage loginOnly onAuthenticated={()=>{setLogin(false);void refresh();}}/></>;
  return <main className="flex min-h-screen items-center justify-center bg-neutral-950 px-5 text-white"><section className="max-w-md text-center"><p className="text-amber-400">KO CARD GAME</p><h1 className="mt-4 text-2xl font-black">{status?.enabled?'서버 점검 중':error?'서버 연결을 확인해 주세요':'서버 연결 중'}</h1><p className="mt-4 whitespace-pre-wrap text-neutral-300">{status?.enabled?status.message:error?'잠시 후 다시 시도해 주세요.':''}</p><button className="mt-6 rounded border border-neutral-600 px-4 py-3" onClick={()=>void refresh()}>다시 확인</button>{status?.enabled&&<button className="ml-3 rounded border border-amber-600 px-4 py-3" onClick={()=>setLogin(true)}>관리자 로그인</button>}</section></main>;
 }
 export function AdminServerMaintenance(){

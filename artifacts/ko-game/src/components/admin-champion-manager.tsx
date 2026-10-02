@@ -1,3 +1,4 @@
+import { TOWER_VANILLA_CHAMPION_ID } from '@/game/champions/tower-vanilla';
 import { ChampionQuestConditionEditor } from './champion-quest-condition-editor';
 import { validChampionQuestCondition } from '@workspace/game-engine';
 import { AdminEffectAiGenerator } from "./admin-effect-ai-generator";
@@ -755,6 +756,7 @@ export function AdminChampionManager({ onUnauthorized }: { onUnauthorized: () =>
     </article>)}</div>
     {open && <div className="fixed inset-0 z-50 overflow-y-auto bg-black/80 p-5"><div className="mx-auto max-w-4xl rounded-lg border border-neutral-700 bg-neutral-950 p-5">
         <div className="mb-4 flex items-start justify-between gap-3"><div><h3 className="text-xl font-black">{editing?"챔피언 수정":"새 챔피언"}</h3><p className="mt-1 text-xs text-neutral-500">분석과 프롬프트 생성은 현재 입력값을 별도 상태로 처리하며 폼을 초기화하지 않습니다.</p></div><button type="button" onClick={closeEditor}><X/></button></div>
+        {editing?.id === TOWER_VANILLA_CHAMPION_ID && <p className="mb-4 rounded border border-amber-700 p-3 text-sm text-amber-200">타워 일반 층 전용입니다. 초상화를 설정할 수 있으며, 전투에서는 체력 30·능력 없음·퀘스트 없음으로 적용됩니다.</p>}
         {editing && <section className="mb-4 rounded border border-neutral-800 bg-neutral-900/50 p-3">
           <div className="mb-2 flex items-center justify-between"><h4 className="text-sm font-black">이 Champion의 특수 Intro 관계</h4><button type="button" disabled={introBusy} onClick={() => setIntroDraft({ championOneId: editing.id, championTwoId: champions.find(c => c.id !== editing.id)?.id, lineOne: "", lineTwo: "", firstSpeaker: "ONE", status: "DRAFT" })} className="rounded bg-primary px-2 py-1 text-[11px] font-bold text-black">새 관계</button></div>
           {introError && <p className="mb-2 text-xs text-red-300">{introError}</p>}

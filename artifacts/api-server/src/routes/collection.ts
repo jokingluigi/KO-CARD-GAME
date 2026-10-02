@@ -49,6 +49,7 @@ router.use(async (request, response, next) => {
 router.get("/", async (request, response): Promise<void> => {
   const user = requireUser(request, response);
   if (!user) return;
+  const admin = user.role === "ADMIN";
   const [cardRows, championOwnershipRows, craftableCards, prismSettings, publishedTestCards, publishedChampions, championPrismSetting] = await Promise.all([
     db.select({
       quantity: userCardCollectionsTable.quantity,
@@ -58,7 +59,7 @@ router.get("/", async (request, response): Promise<void> => {
       .innerJoin(cardsTable, eq(cardsTable.id, userCardCollectionsTable.cardDefinitionId))
       .where(and(
         eq(userCardCollectionsTable.userId, user.id),
-        eq(cardsTable.status, "PUBLISHED"),
+        inArray(cardsTable.status, ["PUBLISHED", "DRAFT"]),
         eq(cardsTable.isToken, false),
         eq(cardsTable.isChampionToken, false),
       ))
@@ -81,28 +82,28 @@ router.get("/", async (request, response): Promise<void> => {
       .where(inArray(prismEconomySettingsTable.rarity, [...PRISM_RARITIES])),
     db.select().from(cardsTable)
       .where(and(
-        eq(cardsTable.status, "PUBLISHED"),
+        admin ? inArray(cardsTable.status, ["PUBLISHED", "DRAFT"]) : eq(cardsTable.status, "PUBLISHED"),
         eq(cardsTable.isToken, false),
         eq(cardsTable.isChampionToken, false),
       ))
       .orderBy(asc(cardsTable.cost), asc(cardsTable.name)),
     db.select().from(championsTable)
-      .where(eq(championsTable.status, "PUBLISHED"))
+      .where(inArray(championsTable.status, ["PUBLISHED", "DRAFT"]))
       .orderBy(asc(championsTable.name)),
     getChampionPrismSetting(),
   ]);
   const testAccount = isTestAccountUser(user);
-  const visibleCardRows = testAccount
-    ? publishedTestCards.filter(isEligibleTestCard).map((card) => ({
+  const visibleCardRows = admin || testAccount
+    ? publishedTestCards.filter(card => admin ? !card.isToken && !card.isChampionToken : isEligibleTestCard(card)).map((card) => ({
       quantity: TEST_ACCOUNT_UNLIMITED_QUANTITY,
       obtainedAt: null,
       card,
     }))
     : cardRows;
-  const visibleChampionRows = publishedChampions.map((champion) => {
+  const visibleChampionRows = publishedChampions.filter(champion => admin || champion.status === "PUBLISHED" || championOwnershipRows.some(row => row.championDefinitionId === champion.id && row.owned)).map((champion) => {
     const ownership = championOwnershipRows.find((row) => row.championDefinitionId === champion.id);
     return {
-      owned: testAccount || ownership?.owned === true,
+      owned: admin || testAccount && champion.status === "PUBLISHED" || ownership?.owned === true,
       obtainedAt: testAccount ? null : ownership?.obtainedAt ?? null,
       champion,
     };

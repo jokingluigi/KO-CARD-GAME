@@ -1,4 +1,4 @@
-import { normalizeCardForZone } from '../cards/zone-state';
+import { normalizeCardForZone, resetCardAfterLeavingBoard } from '../cards/zone-state';
 import type { GameState } from '../types/game-state';
 import { actionFailure, actionSuccess, type ActionResult } from '../actions/types';
 
@@ -24,12 +24,12 @@ export function mulligan(state: GameState, playerId: string, cardInstanceIds: st
     return actionFailure(state, 'CARD_NOT_IN_HAND', '교체할 카드를 다시 선택해 주세요.');
   }
   const exchanged = player.hand.filter((card) => selected.has(card.instanceId));
-  const replacements = player.deck.slice(0, exchanged.length).map((card) => normalizeCardForZone(card, 'HAND'));
+  const replacements = player.deck.slice(0, exchanged.length).map((card) => normalizeCardForZone(resetCardAfterLeavingBoard(card), 'HAND'));
   const players = state.players.map((candidate) => candidate.id !== playerId ? candidate : {
       ...candidate,
       mulliganUsed: true,
       hand: [...candidate.hand.filter((card) => !selected.has(card.instanceId)), ...replacements],
-      deck: [...candidate.deck.slice(exchanged.length), ...exchanged.map((card) => normalizeCardForZone(card, 'DECK'))],
+      deck: [...candidate.deck.slice(exchanged.length), ...exchanged.map((card) => normalizeCardForZone(resetCardAfterLeavingBoard(card), 'DECK'))],
     });
   return actionSuccess({
     ...state,

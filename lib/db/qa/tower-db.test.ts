@@ -37,6 +37,7 @@ before(async () => {
   await database.insert(schema.cardsTable).values(Array.from({ length: 12 }, (_, i) => ({ id: `qa-card-${i}`, name: `QA ${i}`, cardType: 'WRESTLER', cost: 1, attack: 10, health: 10, text: '', status: 'PUBLISHED', keywords: ['RUSH'] })));
   await database.insert(schema.packDefinitionsTable).values({ id: 'qa-pack', name: 'QA Pack', status: 'PUBLISHED' });
   const cardIds = Array.from({ length: 25 }, (_, i) => `qa-card-${i % 12}`);
+  await database.insert(schema.aiDecksTable).values({id:"qa-boss",name:"AI Match Boss",championDefinitionId:"enemy",cardDefinitionIds:cardIds,enabled:true});
   await database.insert(schema.towerPresetsTable).values(['normal-a', 'normal-b', 'boss'].map(id => ({ id, data: { id, name: id, championId: 'enemy', cardIds, acts: [1, 2, 3, 4], difficulty: id === 'boss' ? 'BOSS' : 'NORMAL', enabled: true, weight: 1 } })));
   await database.insert(schema.towerStartersTable).values({ id: 'starter', data: { id: 'starter', name: 'Starter', championId: 'hero', cardIds, enabled: true, isDefault: true, initiallyUnlocked: true } });
   await database.insert(schema.towerRelicsTable).values(TOWER_RELIC_DEFINITIONS.map(r => ({ id: r.type, data: { id: r.type, name: r.name, description: r.description, effectType: r.type, values: r.values, enabled: true, initiallyUnlocked: true } })));
@@ -91,7 +92,7 @@ test('battle reconnect restores identical opening and selected relic values from
   const started = await store.applyTowerCommand('restart', run.id, 0, { type: 'CHALLENGE' }, productionType());
   await database.update(schema.towerRelicsTable).set({ data: { ...snapshot.catalog.relics.find(r => r.id === 'MAX_FIELD_ONE')!, values: { attack: 20, health: 20 } } }).where(eq(schema.towerRelicsTable.id, 'MAX_FIELD_ONE'));
   const restarted = await store.restartTowerBattle('restart', run.id, started.run.version, productionType());
-  assert.deepEqual(restarted.battle, started.battle); assert.equal(restarted.battle!.tower!.relics[0]!.values.attack, 4);
+  assert.deepEqual(restarted.battle, JSON.parse(JSON.stringify(started.battle))); assert.equal(restarted.battle!.tower!.relics[0]!.values.attack, 4);
 });
 test('first/repeat currency, card and pack boss rewards really issue once across duplicate requests', async () => {
   for (const [id, floor] of [['currency', 4], ['card', 8], ['pack', 12]] as const) {
@@ -284,4 +285,42 @@ for (const hidden of [false, true]) test(`full-mode test plays all floors and st
   assert.equal((await database.select().from(schema.towerBossReceiptsTable).where(eq(schema.towerBossReceiptsTable.runId, run.id))).length, 0);
   assert.equal((await database.select().from(schema.towerUnlocksTable).where(eq(schema.towerUnlocksTable.userId, userId))).length, 0);
   assert.deepEqual((await database.select().from(schema.towerRunsTable).where(eq(schema.towerRunsTable.id, original.id)))[0]!.state, original);
+});
+
+test('draft card and champion rewards grant ownership once and become valid player deck references',async()=>{
+ const rewards=await import('../../../artifacts/api-server/src/lib/reward-service');
+ await database.insert(schema.usersTable).values({id:'draft-owner',email:'draft-owner@example.invalid',nickname:'draft-owner',passwordHash:'none'});
+ await database.insert(schema.championsTable).values({id:'draft-reward-champ',name:'Secret Champion',abilityName:'None',abilityEffects:{},status:'DRAFT',maxHealth:30});
+ await database.insert(schema.cardsTable).values({id:'draft-reward-card',name:'Secret Card',cardType:'WRESTLER',cost:1,attack:1,health:1,text:'',status:'DRAFT'});
+ const executor=productionType();
+ assert.equal(await rewards.validateRewardTarget('CARD','draft-reward-card',executor),true);
+ assert.equal(await rewards.validateRewardTarget('CHAMPION','draft-reward-champ',executor),true);
+ for(const rewardType of ['CARD','CHAMPION']){
+  const grant={userId:'draft-owner',sourceType:'QA_QUEST',sourceId:'draft',rewardType,rewardTargetId:rewardType==='CARD'?'draft-reward-card':'draft-reward-champ',amount:1};
+  const first=await database.transaction(tx=>rewards.grantReward(grant,tx as unknown as typeof executor));
+  const duplicate=await database.transaction(tx=>rewards.grantReward(grant,tx as unknown as typeof executor));
+  assert.equal(first.granted,true);assert.equal(duplicate.granted,false);
+ }
+ const [card]=await database.select().from(schema.userCardCollectionsTable).where(eq(schema.userCardCollectionsTable.userId,'draft-owner'));assert.equal(card.quantity,1);
+ const [champ]=await database.select().from(schema.userChampionCollectionsTable).where(eq(schema.userChampionCollectionsTable.userId,'draft-owner'));assert.equal(champ.owned,true);
+});
+
+test('new Tower boss encounters use the available AI match deck pool',()=>{
+ for(const boss of Object.values(snapshot.catalog.season.bosses)) assert.equal(boss.presetId,'ai-deck:qa-boss');
+ const aiPreset=snapshot.catalog.presets.find(p=>p.id==='ai-deck:qa-boss')!;
+ assert.deepEqual(aiPreset.acts,[]);assert.equal(aiPreset.championId,'enemy');assert.equal(aiPreset.weight,0);
+});
+
+test('player deck validation allows owned drafts, rejects unowned drafts and enforces owned copies; admin bypasses ownership',async()=>{
+ const {resolveDeck}=await import('../../../artifacts/api-server/src/routes/decks');
+ const publicCards=Array.from({length:24},(_,i)=>`qa-card-${i%12}`);
+ await database.insert(schema.userCardCollectionsTable).values(Array.from({length:12},(_,i)=>({userId:'draft-owner',cardDefinitionId:`qa-card-${i}`,quantity:2})));
+ const [deck]=await database.insert(schema.decksTable).values({id:'owned-draft-deck',userId:'draft-owner',name:'Owned secrets',championDefinitionId:'draft-reward-champ',cardDefinitionIds:['draft-reward-card',...publicCards]}).returning();
+ assert.equal((await resolveDeck(deck,'draft-owner',false,productionType())).isValid,true);
+ const overCopies=await resolveDeck({...deck,cardDefinitionIds:['draft-reward-card','draft-reward-card',...publicCards.slice(0,23)]},'draft-owner',false,productionType());
+ assert.equal(overCopies.isValid,false);assert.ok(overCopies.validationReasons.some(r=>r.reasonCode==='CARD_QUANTITY_EXCEEDED'));
+ await database.insert(schema.usersTable).values({id:'unowned-draft',email:'unowned-draft@example.invalid',nickname:'outsider',passwordHash:'none'});
+ const unowned=await resolveDeck(deck,'unowned-draft',false,productionType());assert.equal(unowned.isValid,false);assert.ok(unowned.validationReasons.some(r=>r.reasonCode==='CHAMPION_NOT_OWNED'));assert.ok(unowned.validationReasons.some(r=>r.reasonCode==='CARD_NOT_OWNED'));
+ await database.update(schema.usersTable).set({role:'ADMIN'}).where(eq(schema.usersTable.id,'unowned-draft'));
+ assert.equal((await resolveDeck(deck,'unowned-draft',false,productionType())).isValid,true);
 });

@@ -368,7 +368,7 @@ export default function Decks() {
   const localValidationReasons = useMemo(() => {
     const reasons: DeckValidationReason[] = [];
     if (!selectedChampion) reasons.push(validationReason("DECK", "CHAMPION_REQUIRED", "챔피언을 선택해야 합니다.", undefined, { count: 0, limit: 1 }));
-    else if (selectedChampion.status !== "PUBLISHED") reasons.push(validationReason("DECK", "CHAMPION_UNAVAILABLE", "챔피언이 현재 공개 상태가 아닙니다."));
+    else if ((selectedChampion.status !== "PUBLISHED" && !(selectedChampion.status === "DRAFT"))) reasons.push(validationReason("DECK", "CHAMPION_UNAVAILABLE", "챔피언이 현재 공개 상태가 아닙니다."));
     if (missingIds.length > 0) reasons.push(validationReason("CARD", "CARD_DEFINITION_MISSING", `확인할 수 없는 카드 참조 ${missingIds.length}개가 있습니다.`, missingIds));
     const tokenIds = unique(cardIds.filter((id) => {
       const card = cardById.get(id);
@@ -377,7 +377,7 @@ export default function Decks() {
     if (tokenIds.length > 0) reasons.push(validationReason("CARD", "TOKEN_CARD_NOT_ALLOWED", "Token 카드는 덱에 직접 편성할 수 없습니다.", tokenIds));
     const unavailableIds = unique(cardIds.filter((id) => {
       const card = cardById.get(id);
-      return Boolean(card && card.status !== "PUBLISHED" && !card.isToken && !card.isChampionToken);
+      return Boolean(card && (card.status !== "PUBLISHED" && !(card.status === "DRAFT" && (authUser?.role === "ADMIN" || (card.quantity ?? 0) > 0))) && !card.isToken && !card.isChampionToken);
     }));
     if (unavailableIds.length > 0) reasons.push(validationReason("CARD", "CARD_NOT_PLAYABLE", "공개된 일반 카드만 대표 덱에 사용할 수 있습니다.", unavailableIds));
     counts.forEach((count, id) => {
@@ -407,11 +407,11 @@ export default function Decks() {
        if (reason === "INVALID_CHAMPION_COUNT" && !selectedChampion) reasons.push(validationReason("DECK", "CHAMPION_REQUIRED", "챔피언을 선택해야 합니다.", undefined, { count: 0, limit: 1 }));
     }
      return uniqueValidationReasons(reasons);
-  }, [cardById, cardIds, counts, legendaryCount, missingIds.length, options.isTestAccount, selectedChampion]);
+  }, [authUser?.role, cardById, cardIds, counts, legendaryCount, missingIds.length, options.isTestAccount, selectedChampion]);
   const filteredCards = useMemo(() => {
     const normalizedSearch = search.trim().toLocaleLowerCase();
     return options.cards.filter((card) => {
-      if (card.status !== "PUBLISHED" || card.isToken || card.isChampionToken) return false;
+      if ((card.status !== "PUBLISHED" && !(card.status === "DRAFT" && (authUser?.role === "ADMIN" || (card.quantity ?? 0) > 0))) || card.isToken || card.isChampionToken) return false;
       if (filter !== "ALL" && card.cardType !== filter) return false;
       if (favoritesOnly && !favorites.includes(card.id)) return false;
       return !normalizedSearch || card.name.toLocaleLowerCase().includes(normalizedSearch);
@@ -469,7 +469,7 @@ export default function Decks() {
   function addCard(card: DeckCard) {
     const reason = cardLimitReason(card, counts.get(card.id) ?? 0, legendaryCount, MAX_LEGENDARY_CARDS);
     const ownershipReason = cardOwnershipReason(card, counts.get(card.id) ?? 0, options.isTestAccount === true);
-    if (cardIds.length >= DECK_SIZE || card.status !== "PUBLISHED" || card.isToken || card.isChampionToken || reason || ownershipReason) {
+    if (cardIds.length >= DECK_SIZE || (card.status !== "PUBLISHED" && !(card.status === "DRAFT" && (authUser?.role === "ADMIN" || (card.quantity ?? 0) > 0))) || card.isToken || card.isChampionToken || reason || ownershipReason) {
       if (cardIds.length >= DECK_SIZE) setErrorMessage(`덱은 정확히 ${DECK_SIZE}장까지 구성할 수 있습니다.`);
       else if (reason) setErrorMessage(reason);
       else if (ownershipReason) setErrorMessage(ownershipReason);
@@ -796,6 +796,7 @@ export default function Decks() {
                     legendaryCount,
                     maxLegendaryCards: MAX_LEGENDARY_CARDS,
                     isTestAccount: options.isTestAccount === true,
+                    isAdmin: authUser?.role === "ADMIN",
                   });
                   const unowned = action.kind === "CRAFT";
                   return (
@@ -864,7 +865,7 @@ export default function Decks() {
                     <div className="ko-decks__champion-copy min-w-0">
                       <h3>{selectedChampion.name}</h3>
                       <p>{selectedChampion.abilityName} · 비용 {selectedChampion.abilityCost} 골드</p>
-                      {selectedChampion.status !== "PUBLISHED" && (
+                      {(selectedChampion.status !== "PUBLISHED" && !(selectedChampion.status === "DRAFT")) && (
                         <p className="mt-2 flex items-center gap-1 text-[#de8e7f]"><AlertTriangle className="h-3 w-3" /> 공개되지 않은 챔피언</p>
                       )}
                     </div>
@@ -1134,7 +1135,7 @@ export default function Decks() {
           </DialogHeader>
           <div className="grid gap-3 sm:grid-cols-2">
             {Array.from(championById.values())
-              .filter((champion) => champion.status === "PUBLISHED")
+              .filter((champion) => champion.status === "PUBLISHED" || champion.status === "DRAFT")
               .map((champion) => (
                 <button
                   key={champion.id}

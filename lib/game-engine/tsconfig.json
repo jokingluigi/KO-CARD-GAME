@@ -25,6 +25,7 @@
     "../../artifacts/ko-game/src/game/champions/test-champions.ts",
     "../../artifacts/ko-game/src/game/champions/types.ts",
     "../../artifacts/ko-game/src/game/champions/minion-a.ts",
+    "../../artifacts/ko-game/src/game/champions/tower-vanilla.ts",
     "../../artifacts/ko-game/src/game/champions/published-champions.ts",
     "../../artifacts/ko-game/src/game/effects/**/*.ts",
     "../../artifacts/ko-game/src/game/engine/**/*.ts",

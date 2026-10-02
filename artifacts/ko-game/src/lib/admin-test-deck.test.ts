@@ -18,3 +18,10 @@ test('admin starts both 26-card and 60-card decks while ordinary matches keep th
  const ordinary=createAdminTestDeckState(TEST_CARD_DEFINITIONS,TEST_CHAMPIONS,ids,[Array(26).fill(TEST_CARD_DEFINITIONS[0].id),Array(26).fill(TEST_CARD_DEFINITIONS[1].id)]);
  assert.throws(()=>startGame(ordinary),/정확히/);
 });
+
+test('admin deck setup uses both explicitly selected champions and rejects missing selections',()=>{
+ const ids:[string,string]=[TEST_CHAMPIONS[1].id,TEST_CHAMPIONS[0].id];const decks:[string[],string[]]=[[TEST_CARD_DEFINITIONS[0].id],[TEST_CARD_DEFINITIONS[1].id]];
+ const state=startAdminTestDeckGame(TEST_CARD_DEFINITIONS,TEST_CHAMPIONS,ids,decks);
+ assert.equal(state.players[0].champion?.id,ids[0]);assert.equal(state.players[1].champion?.id,ids[1]);assert.equal(state.players[0].champion?.maxHealth,TEST_CHAMPIONS[1].maxHealth);
+ assert.throws(()=>createAdminTestDeckState(TEST_CARD_DEFINITIONS,TEST_CHAMPIONS,['missing',ids[1]],decks),/챔피언/);
+});

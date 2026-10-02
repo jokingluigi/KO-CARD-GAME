@@ -47,3 +47,13 @@ test("test-account quantities remain unlimited", () => {
   const result = getVisibleDeckOptionCards([card()], [], true, 1_000_000_000);
   assert.equal(result[0]?.quantity, 1_000_000_000);
 });
+test("admin options include draft cards with unlimited quantity, excluding tokens and disabled cards", () => {
+ const result=getVisibleDeckOptionCards([card(),card({id:'draft',status:'DRAFT'}),card({id:'disabled',status:'DISABLED'}),card({id:'token',status:'DRAFT',isToken:true})],[],true,999,true);
+ assert.deepEqual(result.map(c=>[c.id,c.quantity]),[['published-card',999],['draft',999]]);
+});
+
+test('ordinary accounts see draft options only when they own positive quantities',()=>{
+ const drafts=[card({id:'owned-draft',status:'DRAFT'}),card({id:'unowned-draft',status:'DRAFT'})];
+ assert.deepEqual(getVisibleDeckOptionCards(drafts,[{id:'owned-draft',quantity:1}],false,999).map(c=>[c.id,c.quantity]),[['owned-draft',1]]);
+ assert.equal(getVisibleDeckOptionCards(drafts,[],true,999).length,0);
+});

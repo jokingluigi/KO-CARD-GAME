@@ -1515,11 +1515,10 @@ export default function Home() {
         <button type="button" onClick={() => addTrainingDummy(true)} className="rounded bg-amber-300 px-2 py-1 text-black">안 죽는 샌드백</button>
         <button type="button" onClick={() => addTrainingDummy(false)} className="rounded bg-amber-300 px-2 py-1 text-black">체력 1 샌드백</button>
       </div>}
-    {isAdminTestMatch && !isTowerSandbox && testDeckOpen && <AdminTestDeck onClose={()=>setTestDeckOpen(false)} onStart={async(cards,decks)=>{
+    {isAdminTestMatch && !isTowerSandbox && testDeckOpen && <AdminTestDeck initialChampionIds={[gameState.players[0].champion!.id,gameState.players[1].champion!.id]} onClose={()=>setTestDeckOpen(false)} onStart={async(cards,decks,champions,championIds)=>{
       try {
-        const champions=[...TEST_CHAMPIONS,...await fetchAiTestChampions()];
         setRuntimeCardDefinitions(cards);
-        const state=startAdminTestDeckGame(cards,champions,[gameState.players[0].champion!.id,gameState.players[1].champion!.id],decks,mediaCatalog);
+        const state=startAdminTestDeckGame(cards,champions,championIds,decks,mediaCatalog);
         setGameState(state);
         setPlayAnimation(null);setAttackAnimation(null);pendingEntranceAudioRef.current=null;
         setSelectedCardId(null);setSelectedAttackerId(null);setPlayError(null);setTestDeckOpen(false);

@@ -101,3 +101,10 @@ test("AI-style cards without ownership limits do not borrow player counts", () =
   assert.deepEqual(getDeckCardCountView(card, 2), { ownedCount: undefined, deckCount: 2, availableToAdd: undefined });
   assert.deepEqual(getDeckCardAction(card, { ...args, count: 1 }), { kind: "ADD" });
 });
+
+test('draft card can be added only by its owner or an administrator',()=>{
+ assert.equal(getDeckCardAction(deckCard({status:'DRAFT',quantity:1}),args).kind,'ADD');
+ assert.equal(getDeckCardAction(deckCard({status:'DRAFT',quantity:0}),args).kind,'DISABLED');
+ assert.equal(getDeckCardAction(deckCard({status:'DRAFT',quantity:0}),{...args,isAdmin:true,isTestAccount:true}).kind,'ADD');
+ assert.equal(getDeckCardAction(deckCard({status:'DISABLED',quantity:1}),{...args,isAdmin:true}).kind,'DISABLED');
+});

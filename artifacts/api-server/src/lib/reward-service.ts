@@ -1,7 +1,9 @@
-import { and, eq, sql } from "drizzle-orm";
+import { and, eq, sql, inArray } from "drizzle-orm";
 import { randomUUID } from "node:crypto";
 import {
   cardsTable,
+  championsTable,
+  userChampionCollectionsTable,
   packDefinitionsTable,
   currencyTransactionsTable,
   db,
@@ -14,7 +16,7 @@ import {
 import { isTestAccountUser, TEST_ACCOUNT_UNLIMITED_BALANCE } from "./test-account";
 import { SHOP_CURRENCY } from "./shop-currency";
 
-export const REWARD_TYPES = ["CURRENCY", "CARD", "PACK"] as const;
+export const REWARD_TYPES = ["CURRENCY", "CARD", "CHAMPION", "PACK"] as const;
 export type RewardType = (typeof REWARD_TYPES)[number];
 export const REWARD_TYPE = "CURRENCY" as const;
 export type RewardExecutor = Pick<typeof db, "select" | "insert" | "update">;
@@ -57,12 +59,16 @@ export async function validateRewardTarget(
     const [card] = await executor.select({ id: cardsTable.id }).from(cardsTable)
       .where(and(
         eq(cardsTable.id, rewardTargetId),
-        eq(cardsTable.status, "PUBLISHED"),
+        inArray(cardsTable.status, ["PUBLISHED", "DRAFT"]),
         eq(cardsTable.isToken, false),
         eq(cardsTable.isChampionToken, false),
       ))
       .limit(1);
     return Boolean(card);
+  }
+  if (rewardType === "CHAMPION") {
+    const [champion] = await executor.select({id:championsTable.id}).from(championsTable).where(and(eq(championsTable.id,rewardTargetId),inArray(championsTable.status,["PUBLISHED","DRAFT"]))).limit(1);
+    return Boolean(champion);
   }
   const [pack] = await executor.select({ id: packDefinitionsTable.id }).from(packDefinitionsTable)
     .where(and(
@@ -180,6 +186,8 @@ export async function grantReward(
         quantity: sql`${userCardCollectionsTable.quantity} + ${grant.amount}`,
       },
     });
+  } else if (grant.rewardType === "CHAMPION") {
+    await executor.insert(userChampionCollectionsTable).values({userId:grant.userId,championDefinitionId:grant.rewardTargetId!,owned:true}).onConflictDoUpdate({target:[userChampionCollectionsTable.userId,userChampionCollectionsTable.championDefinitionId],set:{owned:true}});
   } else {
     await executor.insert(userPackInventoryTable).values({
       userId: grant.userId,

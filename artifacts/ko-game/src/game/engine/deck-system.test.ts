@@ -122,7 +122,9 @@ test('게임 시작 효과는 덱과 이미 놓인 손패에서 각각 한 번�
   for (const source of [deckSource, handSource]) {
     const updated = found.find((card) => card.instanceId === source.instanceId);
     assert.ok(updated);
-    assert.equal(updated.currentAttack, source.currentAttack + 2);
+    // Deck-to-hand movement resets the game-start deck buff under the zone rule.
+    assert.equal(updated.currentAttack, source === deckSource && player.hand.some(card => card.instanceId === source.instanceId)
+      ? source.baseAttack ?? source.currentAttack : source.currentAttack + 2);
   }
 });
 

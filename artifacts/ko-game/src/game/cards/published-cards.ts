@@ -193,6 +193,16 @@ export async function fetchAiTestCardDefinitions(): Promise<CardDefinition[]> {
     .map(cardRecordToDefinition);
 }
 
+/** Anywhere means live zones only: hand, deck and field. */
+function excludeGraveyardTargets<T>(value: T): T {
+  if (Array.isArray(value)) return value.map(excludeGraveyardTargets) as T;
+  if (!value || typeof value !== 'object') return value;
+  const result = Object.fromEntries(Object.entries(value).map(([key, child]) =>
+    [key, key === 'zones' && Array.isArray(child)
+      ? child.filter(zone => zone !== 'GRAVEYARD') : excludeGraveyardTargets(child)]));
+  return result as T;
+}
+
 export function cardRecordToDefinition(card: PublishedCardRecord): CardDefinition {
   if (card.isToken && card.name.trim() === '좀비') card = { ...card, cost: 1, attack: 1, health: 1, text: ZOMBIE_RULES, keywords: [], effectId: 'STRUCTURED_EFFECTS_V1', effectConfig: { effects: [] } };
   const zombieAbsorption = /필드에\s*있는\s*['‘]?좀비['’]?\s*중[^.!?]*가장\s*수치의\s*합/.test(card.text) &&
@@ -271,7 +281,7 @@ export function cardRecordToDefinition(card: PublishedCardRecord): CardDefinitio
         ability.trigger !== 'ENTER_FIELD' && ability.trigger !== 'ACTIVE' &&
         !('condition' in ability && ability.condition)
           ? { ...ability, condition: { type: 'SOURCE_IN_HAND' as const } }
-          : ability),
+          : ability).map((ability) => /어디에\s*있든/u.test(card.text) ? excludeGraveyardTargets(ability) : ability),
       status: card.status,
       version: card.version,
       effectId: card.effectId,

@@ -1,3 +1,4 @@
+import { towerVanillaChampion } from '../../../../artifacts/ko-game/src/game/champions/tower-vanilla';
 import { createInitialGameState } from '../../../../artifacts/ko-game/src/game/engine/create-initial-game-state';
 import { startGame } from '../../../../artifacts/ko-game/src/game/engine/turn-system';
 import { createDeterministicRandom } from '../../../../artifacts/ko-game/src/game/random/random';
@@ -9,22 +10,28 @@ import { TowerRuleError, validateTowerDeck } from './domain';
 import type { TowerCatalog, TowerRun } from './types';
 
 export interface TowerSnapshot { catalog: TowerCatalog; cards: CardDefinition[]; champions: ChampionDefinition[]; minionACardPool?: CardDefinition[] }
-export function initializeTowerBattle(input: { gameId: string; seed: number; championIds: [string, string]; decks: [string[], string[]]; tower?: TowerBattleContext; minionACardPool?: CardDefinition[] }, cards: CardDefinition[], champions: ChampionDefinition[]): GameState {
-  if (input.decks.some(deck => deck.length !== 25 || deck.some(id => !cards.some(card => card.id === id))))
+export function initializeTowerBattle(input: { gameId: string; seed: number; championIds: [string, string]; decks: [string[], string[]]; tower?: TowerBattleContext; minionACardPool?: CardDefinition[]; normalEnemy?: boolean; flexibleEnemyDeck?: boolean }, cards: CardDefinition[], champions: ChampionDefinition[]): GameState {
+  if (input.normalEnemy) {
+    const vanilla = towerVanillaChampion(champions);
+    champions = [...champions.filter(champion => champion.id !== vanilla.id), vanilla];
+    input = { ...input, championIds: [input.championIds[0], vanilla.id] };
+  }
+  if (input.decks.some((deck, index) => (index === 1 && input.flexibleEnemyDeck ? deck.length < 1 || deck.length > 100 : deck.length !== 25) || deck.some(id => !cards.some(card => card.id === id))))
     throw new TowerRuleError('INVALID_DECK', '전투 덱은 실제 카드 25장이어야 합니다.');
   if (input.championIds.some(id => !champions.some(champion => champion.id === id)))
     throw new TowerRuleError('CHAMPION_MISSING', '전투 챔피언 설정을 확인해 주세요.');
   const initial = createInitialGameState(input.championIds, cards, champions, input.decks, { gameId: input.gameId, randomSeed: input.seed, minionACardPool: input.minionACardPool });
-  return { ...startGame(input.tower ? { ...initial, tower: input.tower } : initial, createDeterministicRandom(input.seed)), openingMulligan: true };
+  return { ...startGame(input.tower ? { ...initial, tower: input.tower } : initial, createDeterministicRandom(input.seed), undefined, input.flexibleEnemyDeck ? { flexibleDeckPlayerId: "player-2" } : {}), openingMulligan: true };
 }
 /** Initializes the existing engine. Tower has no separate combat dispatcher. */
 export function createTowerBattle(run: TowerRun, snapshot: TowerSnapshot): GameState {
   const enemy = snapshot.catalog.presets.find(preset => preset.id === run.encounter.presetId);
   if (!enemy) throw new TowerRuleError('ENCOUNTER_MISSING', '상대 덱을 찾을 수 없습니다.');
-  validateTowerDeck(run.deck, snapshot.catalog); validateTowerDeck(enemy.cardIds, snapshot.catalog);
-  if (!snapshot.champions.some(champion => champion.id === run.championId) || !snapshot.champions.some(champion => champion.id === enemy.championId))
+  const flexibleEnemyDeck = Boolean(run.encounter.bossSlot) && enemy.id.startsWith('ai-deck:');
+  validateTowerDeck(run.deck, snapshot.catalog); if (!flexibleEnemyDeck) validateTowerDeck(enemy.cardIds, snapshot.catalog);
+  if (!snapshot.champions.some(champion => champion.id === run.championId) || (Boolean(run.encounter.bossSlot) && !snapshot.champions.some(champion => champion.id === enemy.championId)))
     throw new TowerRuleError('CHAMPION_MISSING', '전투 챔피언 설정을 확인해 주세요.');
-  return initializeTowerBattle({ minionACardPool: snapshot.minionACardPool, championIds: [run.championId, enemy.championId], decks: [run.deck, enemy.cardIds],
+  return initializeTowerBattle({ flexibleEnemyDeck, normalEnemy: !run.encounter.bossSlot, minionACardPool: snapshot.minionACardPool, championIds: [run.championId, enemy.championId], decks: [run.deck, enemy.cardIds],
     gameId: `${run.id}:${run.floor}:${run.encounter.bossSlot ?? 'normal'}`, seed: run.encounter.seed,
     tower: { playerId: 'player-1', relics: run.relicIds.map(id => {
       const relic = snapshot.catalog.relics.find(r => r.id === id);

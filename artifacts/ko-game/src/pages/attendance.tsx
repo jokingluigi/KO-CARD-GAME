@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { ArrowLeft, CalendarCheck2, Check } from "lucide-react";
 import { useLocation } from "wouter";
-import { claimAttendance, fetchAttendance, fetchRewardCatalogs, type AttendanceData, type RewardCatalogCard, type RewardCatalogPack } from "@/lib/rewards-client";
+import { claimAttendance, fetchAttendance, fetchRewardCatalogs, type AttendanceData, type RewardCatalogChampion, type RewardCatalogCard, type RewardCatalogPack } from "@/lib/rewards-client";
 import { ROUTES } from "@/lib/routes";
 import { CollectionActionAnimation, type CollectionActionScene } from "@/components/collection-action-animation";
 
@@ -12,7 +12,7 @@ export default function AttendancePage() {
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState("");
   const [rewardScene, setRewardScene] = useState<CollectionActionScene | null>(null);
-  const [catalog, setCatalog] = useState<{ cards: RewardCatalogCard[]; packs: RewardCatalogPack[] }>({ cards: [], packs: [] });
+  const [catalog, setCatalog] = useState<{ cards: RewardCatalogCard[]; champions: RewardCatalogChampion[]; packs: RewardCatalogPack[] }>({ cards: [], champions: [], packs: [] });
 
   async function load() {
     setLoading(true);
@@ -35,7 +35,7 @@ export default function AttendancePage() {
       if (!result.alreadyClaimed && claimed) {
         const item = claimed.rewardType === "CARD"
           ? catalog.cards.find((card) => card.id === claimed.rewardTargetId)
-          : claimed.rewardType === "PACK" ? catalog.packs.find((pack) => pack.id === claimed.rewardTargetId) : undefined;
+          : claimed.rewardType === "CHAMPION" ? catalog.champions.find(c=>c.id===claimed.rewardTargetId) : claimed.rewardType === "PACK" ? catalog.packs.find((pack) => pack.id === claimed.rewardTargetId) : undefined;
         setRewardScene({ id: Date.now(), kind: "REWARD", name: item?.name ?? (claimed.rewardType === "CURRENCY" ? `${claimed.rewardAmount.toLocaleString()} 크레딧` : "출석 보상"), imageUrl: item?.imageUrl });
       }
     } catch (error) { setMessage(error instanceof Error ? error.message : "출석 보상을 받을 수 없습니다."); } finally { setBusy(false); }
@@ -43,25 +43,26 @@ export default function AttendancePage() {
 
   function rewardText(day: AttendanceData["definitions"][number]) {
     if (day.rewardType === "CARD") return `카드 ${catalog.cards.find((card) => card.id === day.rewardTargetId)?.name ?? "보상 카드"} ×${day.rewardAmount}을 받았습니다.`;
+    if (day.rewardType === "CHAMPION") return `챔피언 ${catalog.champions.find(c=>c.id===day.rewardTargetId)?.name ?? "보상 챔피언"}을 받았습니다.`;
     if (day.rewardType === "PACK") return `팩 ${catalog.packs.find((pack) => pack.id === day.rewardTargetId)?.name ?? "보상 팩"} ×${day.rewardAmount}을 받았습니다.`;
     return `${day.rewardAmount.toLocaleString()} 크레딧을 받았습니다.`;
   }
 
   function rewardLabel(day: AttendanceData["definitions"][number]) {
-    if (day.rewardType === "CARD" || day.rewardType === "PACK") {
+    if (day.rewardType === "CARD" || day.rewardType === "CHAMPION" || day.rewardType === "PACK") {
       const item = day.rewardType === "CARD"
         ? catalog.cards.find((card) => card.id === day.rewardTargetId)
-        : catalog.packs.find((pack) => pack.id === day.rewardTargetId);
+        : day.rewardType === "CHAMPION" ? catalog.champions.find(c=>c.id===day.rewardTargetId) : catalog.packs.find((pack) => pack.id === day.rewardTargetId);
       return (
         <span className="flex min-h-12 items-center justify-center gap-2 text-left">
           {item?.imageUrl ? (
             <img src={item.imageUrl} alt="" className="h-10 w-10 shrink-0 rounded object-cover" />
           ) : (
             <span aria-hidden="true" className="flex h-10 w-10 shrink-0 items-center justify-center rounded bg-neutral-800 text-[9px] font-black text-neutral-400">
-              {day.rewardType === "CARD" ? "CARD" : "PACK"}
+              {day.rewardType}
             </span>
           )}
-          <span className="min-w-0 truncate">{day.rewardType === "CARD" ? "카드" : "팩"} · {item?.name ?? day.rewardTargetId ?? "알 수 없음"} ×{day.rewardAmount}</span>
+          <span className="min-w-0 truncate">{day.rewardType === "CARD" ? "카드" : day.rewardType === "CHAMPION" ? "챔피언" : "팩"} · {item?.name ?? day.rewardTargetId ?? "알 수 없음"} ×{day.rewardAmount}</span>
         </span>
       );
     }

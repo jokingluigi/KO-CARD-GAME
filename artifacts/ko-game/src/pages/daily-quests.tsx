@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { ArrowLeft, CheckCircle2, ListChecks } from "lucide-react";
 import { useLocation } from "wouter";
-import { fetchDailyQuests, claimDailyQuest, fetchRewardCatalogs, type DailyQuest, type RewardCatalogCard, type RewardCatalogPack } from "@/lib/rewards-client";
+import { fetchDailyQuests, claimDailyQuest, fetchRewardCatalogs, type DailyQuest, type RewardCatalogChampion, type RewardCatalogCard, type RewardCatalogPack } from "@/lib/rewards-client";
 import { ROUTES } from "@/lib/routes";
 import { CollectionActionAnimation, type CollectionActionScene } from "@/components/collection-action-animation";
 
@@ -23,7 +23,7 @@ export default function DailyQuestsPage() {
   const [busyId, setBusyId] = useState<string | null>(null);
   const [message, setMessage] = useState("");
   const [rewardScene, setRewardScene] = useState<CollectionActionScene | null>(null);
-  const [catalog, setCatalog] = useState<{ cards: RewardCatalogCard[]; packs: RewardCatalogPack[] }>({ cards: [], packs: [] });
+  const [catalog, setCatalog] = useState<{ cards: RewardCatalogCard[]; champions: RewardCatalogChampion[]; packs: RewardCatalogPack[] }>({ cards: [], champions: [], packs: [] });
 
   async function load() {
     setLoading(true);
@@ -62,7 +62,7 @@ export default function DailyQuestsPage() {
         const reward = result.assignment;
         const item = reward.rewardType === "CARD"
           ? catalog.cards.find((card) => card.id === reward.rewardTargetId)
-          : reward.rewardType === "PACK" ? catalog.packs.find((pack) => pack.id === reward.rewardTargetId) : undefined;
+          : reward.rewardType === "CHAMPION" ? catalog.champions.find(c => c.id === reward.rewardTargetId) : reward.rewardType === "PACK" ? catalog.packs.find((pack) => pack.id === reward.rewardTargetId) : undefined;
         setRewardScene({ id: Date.now(), kind: "REWARD", name: item?.name ?? (reward.rewardType === "CURRENCY" ? `${reward.rewardAmount.toLocaleString()} 크레딧` : "퀘스트 보상"), imageUrl: item?.imageUrl });
       }
     } catch (error) {
@@ -74,25 +74,26 @@ export default function DailyQuestsPage() {
 
   function rewardLabel(quest: DailyQuest) {
     if (quest.rewardType === "CARD") return `카드 ${catalog.cards.find((card) => card.id === quest.rewardTargetId)?.name ?? "보상 카드"} ×${quest.rewardAmount}을 받았습니다.`;
+    if (quest.rewardType === "CHAMPION") return `챔피언 ${catalog.champions.find(c=>c.id===quest.rewardTargetId)?.name ?? "보상 챔피언"}을 받았습니다.`;
     if (quest.rewardType === "PACK") return `팩 ${catalog.packs.find((pack) => pack.id === quest.rewardTargetId)?.name ?? "보상 팩"} ×${quest.rewardAmount}을 받았습니다.`;
     return `${quest.rewardAmount.toLocaleString()} 크레딧을 받았습니다.`;
   }
 
   function rewardDisplay(quest: DailyQuest) {
-    if (quest.rewardType === "CARD" || quest.rewardType === "PACK") {
+    if (quest.rewardType === "CARD" || quest.rewardType === "CHAMPION" || quest.rewardType === "PACK") {
       const item = quest.rewardType === "CARD"
         ? catalog.cards.find((card) => card.id === quest.rewardTargetId)
-        : catalog.packs.find((pack) => pack.id === quest.rewardTargetId);
+        : quest.rewardType === "CHAMPION" ? catalog.champions.find(c=>c.id===quest.rewardTargetId) : catalog.packs.find((pack) => pack.id === quest.rewardTargetId);
       return (
         <span className="flex min-w-0 items-center gap-2">
           {item?.imageUrl ? (
             <img src={item.imageUrl} alt="" className="h-9 w-9 shrink-0 rounded object-cover" />
           ) : (
             <span aria-hidden="true" className="flex h-9 w-9 shrink-0 items-center justify-center rounded bg-neutral-800 text-[10px] font-black text-neutral-400">
-              {quest.rewardType === "CARD" ? "CARD" : "PACK"}
+              {quest.rewardType}
             </span>
           )}
-          <span className="truncate">{quest.rewardType === "CARD" ? "카드" : "팩"} · {item?.name ?? quest.rewardTargetId ?? "알 수 없음"} ×{quest.rewardAmount}</span>
+          <span className="truncate">{quest.rewardType === "CARD" ? "카드" : quest.rewardType === "CHAMPION" ? "챔피언" : "팩"} · {item?.name ?? quest.rewardTargetId ?? "알 수 없음"} ×{quest.rewardAmount}</span>
         </span>
       );
     }

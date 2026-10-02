@@ -1,6 +1,7 @@
 import type { CardInstance } from './types';
 import type { GameState } from '../types/game-state';
 import { getActiveCardKeywords } from './granted-text';
+import { getCardDefinition } from './test-cards';
 
 export type CardZone = 'HAND' | 'DECK' | 'BOARD' | 'GRAVEYARD' | 'REMOVED';
 
@@ -39,18 +40,19 @@ export function resetCardForGraveyard(card: CardInstance): CardInstance {
   };
 }
 
-/** Clear board-only stat and cost changes before a card enters a new zone. */
+/** Restore original stats/cost when a card moves into hand, deck or graveyard. */
 export function resetCardAfterLeavingBoard(card: CardInstance): CardInstance {
-  const baseHealth = card.baseHealth ?? card.maxHealth;
+  const definition = getCardDefinition(card.definitionId);
+  const baseHealth = definition?.health ?? card.baseHealth ?? card.maxHealth;
   const hasDodge = getActiveCardKeywords(card).includes('DODGE');
 
   return {
     ...card,
     lastRetiredStats: undefined,
-    currentCost: card.baseCost ?? card.currentCost,
+    currentCost: definition?.cost ?? card.baseCost ?? card.currentCost,
     temporaryCostUntilTurn: undefined,
     temporaryStatModifiers: [],
-    currentAttack: card.baseAttack ?? card.currentAttack,
+    currentAttack: definition?.attack ?? card.baseAttack ?? card.currentAttack,
     currentHealth: baseHealth,
     maxHealth: baseHealth,
     boardSlot: null,

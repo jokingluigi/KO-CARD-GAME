@@ -5,6 +5,7 @@ import {
   championsTable,
   db,
   decksTable,
+  usersTable,
   onlineMatchesTable,
   userCardCollectionsTable,
   userChampionCollectionsTable,
@@ -136,9 +137,12 @@ export async function loadUserDeck(userId: string, deckId: string): Promise<Deck
   return deck ?? null;
 }
 
-export async function resolveDeck(deck: DeckRecord, userId: string, testAccount = false): Promise<ResolvedDeck> {
+export async function resolveDeck(deck: DeckRecord, userId: string, testAccount = false, database: Pick<typeof db, "select"> = db): Promise<ResolvedDeck> {
+  const [account] = await database.select({ role: usersTable.role }).from(usersTable).where(eq(usersTable.id, userId)).limit(1);
+  const admin = account?.role === "ADMIN";
+  testAccount ||= admin;
   const [champion] = deck.championDefinitionId
-    ? await db
+    ? await database
         .select()
         .from(championsTable)
         .where(eq(championsTable.id, deck.championDefinitionId))
@@ -147,7 +151,7 @@ export async function resolveDeck(deck: DeckRecord, userId: string, testAccount 
 
   const uniqueCardIds = [...new Set(deck.cardDefinitionIds)];
   const cards = uniqueCardIds.length
-    ? await db
+    ? await database
         .select()
         .from(cardsTable)
         .where(inArray(cardsTable.id, uniqueCardIds))
@@ -155,12 +159,12 @@ export async function resolveDeck(deck: DeckRecord, userId: string, testAccount 
   const cardById = new Map(cards.map((card) => [card.id, card]));
   const [ownedCardRows, ownedChampionRows] = await Promise.all([
     uniqueCardIds.length
-      ? db.select({ id: userCardCollectionsTable.cardDefinitionId, quantity: userCardCollectionsTable.quantity })
+      ? database.select({ id: userCardCollectionsTable.cardDefinitionId, quantity: userCardCollectionsTable.quantity })
         .from(userCardCollectionsTable)
         .where(and(eq(userCardCollectionsTable.userId, userId), inArray(userCardCollectionsTable.cardDefinitionId, uniqueCardIds), sql`${userCardCollectionsTable.quantity} > 0`))
       : [],
     champion
-      ? db.select({ id: userChampionCollectionsTable.championDefinitionId })
+      ? database.select({ id: userChampionCollectionsTable.championDefinitionId })
         .from(userChampionCollectionsTable)
         .where(and(eq(userChampionCollectionsTable.userId, userId), eq(userChampionCollectionsTable.championDefinitionId, champion.id), eq(userChampionCollectionsTable.owned, true)))
       : [],
@@ -168,7 +172,7 @@ export async function resolveDeck(deck: DeckRecord, userId: string, testAccount 
   const ownedCardIds = new Set(ownedCardRows.map((row) => row.id));
   const ownedCardQuantities = new Map(ownedCardRows.map((row) => [row.id, row.quantity]));
   if (testAccount) {
-    cards.filter(isEligibleTestCard).forEach((card) => {
+    cards.filter(card => admin ? !card.isToken && !card.isChampionToken : isEligibleTestCard(card)).forEach((card) => {
       ownedCardIds.add(card.id);
       ownedCardQuantities.set(card.id, TEST_ACCOUNT_UNLIMITED_QUANTITY);
     });
@@ -178,9 +182,9 @@ export async function resolveDeck(deck: DeckRecord, userId: string, testAccount 
 
   if (!champion) {
     validationReasons.push({ scope: "DECK", reasonCode: "CHAMPION_UNAVAILABLE", message: "사용할 수 없는 Champion이 포함되어 있습니다." });
-  } else if (champion.status !== "PUBLISHED") {
+  } else if ((champion.status !== "PUBLISHED" && champion.status !== "DRAFT")) {
     validationReasons.push({ scope: "DECK", reasonCode: "CHAMPION_UNAVAILABLE", message: "사용할 수 없는 Champion이 포함되어 있습니다." });
-  } else if (ownedChampionRows.length === 0 && !testAccount) {
+  } else if (ownedChampionRows.length === 0 && !admin && !(testAccount && champion.status === "PUBLISHED")) {
     validationReasons.push({ scope: "DECK", reasonCode: "CHAMPION_NOT_OWNED", message: "소유하지 않은 Champion이 포함되어 있습니다." });
   }
   for (const reason of validateDeckCounts({
@@ -235,14 +239,14 @@ export async function resolveDeck(deck: DeckRecord, userId: string, testAccount 
     });
   }
   const unavailableCardIds = cards.filter((card) =>
-    card.status !== "PUBLISHED" ||
+    (card.status !== "PUBLISHED" && card.status !== "DRAFT") ||
     !VALID_CARD_TYPES.has(card.cardType),
   ).map((card) => card.id);
   if (unavailableCardIds.length > 0) {
     validationReasons.push({
       scope: "CARD",
       reasonCode: "CARD_NOT_PLAYABLE",
-      message: "공개된 일반 카드만 덱에 넣을 수 있습니다.",
+      message: "사용 가능한 일반 카드만 덱에 넣을 수 있습니다.",
       cardDefinitionIds: unavailableCardIds,
     });
   }
@@ -322,19 +326,22 @@ async function parseDeckPayload(value: unknown): Promise<
 }
 
 async function validateReferences(payload: DeckPayload, userId: string, testAccount = false): Promise<string | null> {
+  const [account] = await db.select({ role: usersTable.role }).from(usersTable).where(eq(usersTable.id, userId)).limit(1);
+  const admin = account?.role === "ADMIN";
+  testAccount ||= admin;
   if (payload.championDefinitionId) {
     const [champion] = await db
       .select({ id: championsTable.id, status: championsTable.status })
       .from(championsTable)
       .where(eq(championsTable.id, payload.championDefinitionId))
       .limit(1);
-    if (!champion || champion.status !== "PUBLISHED") {
-      return "PUBLISHED 상태의 Champion만 선택할 수 있습니다.";
+    if (!champion || (champion.status !== "PUBLISHED" && champion.status !== "DRAFT")) {
+      return "사용 가능한 Champion만 선택할 수 있습니다.";
     }
     const [ownedChampion] = await db.select({ id: userChampionCollectionsTable.championDefinitionId })
       .from(userChampionCollectionsTable)
       .where(and(eq(userChampionCollectionsTable.userId, userId), eq(userChampionCollectionsTable.championDefinitionId, champion.id), eq(userChampionCollectionsTable.owned, true)));
-    if (!ownedChampion && !testAccount) return "소유한 Champion만 선택할 수 있습니다.";
+    if (!ownedChampion && !admin && !(testAccount && champion.status === "PUBLISHED")) return "소유한 Champion만 선택할 수 있습니다.";
   }
   const uniqueCardIds = [...new Set(payload.cardDefinitionIds)];
   if (uniqueCardIds.length === 0) return null;
@@ -352,13 +359,13 @@ async function validateReferences(payload: DeckPayload, userId: string, testAcco
   if (
     cards.length !== uniqueCardIds.length ||
     cards.some((card) =>
-      card.status !== "PUBLISHED" ||
+      (card.status !== "PUBLISHED" && card.status !== "DRAFT") ||
       card.isToken ||
       card.isChampionToken ||
       !VALID_CARD_TYPES.has(card.cardType)
     )
   ) {
-    return "PUBLISHED 일반 카드만 덱에 넣을 수 있습니다.";
+    return "사용 가능한 일반 카드만 덱에 넣을 수 있습니다.";
   }
   const ownedCards = await db.select({
     id: userCardCollectionsTable.cardDefinitionId,
@@ -366,19 +373,13 @@ async function validateReferences(payload: DeckPayload, userId: string, testAcco
   })
     .from(userCardCollectionsTable)
     .where(and(eq(userCardCollectionsTable.userId, userId), inArray(userCardCollectionsTable.cardDefinitionId, uniqueCardIds), sql`${userCardCollectionsTable.quantity} > 0`));
-  if (
-    !testAccount &&
-    ownedCards.length !== uniqueCardIds.length
-  ) return "소유한 카드만 덱에 넣을 수 있습니다.";
-  if (!testAccount) {
-    const ownedQuantities = new Map(ownedCards.map((card) => [card.id, card.quantity]));
-    const cardCopies = new Map<string, number>();
-    payload.cardDefinitionIds.forEach((id) => {
-      cardCopies.set(id, (cardCopies.get(id) ?? 0) + 1);
-    });
-    if ([...cardCopies].some(([id, count]) => count > (ownedQuantities.get(id) ?? 0))) {
-      return "현재 보유 수량보다 많은 카드는 덱에 넣을 수 없습니다.";
-    }
+  const ownedQuantities = new Map(ownedCards.map(card => [card.id, card.quantity]));
+  const cardCopies = new Map<string, number>();
+  payload.cardDefinitionIds.forEach(id => cardCopies.set(id, (cardCopies.get(id) ?? 0) + 1));
+  for (const card of cards) {
+    if (admin || testAccount && card.status === "PUBLISHED") continue;
+    if (!ownedQuantities.has(card.id)) return "소유한 카드만 덱에 넣을 수 있습니다.";
+    if ((cardCopies.get(card.id) ?? 0) > (ownedQuantities.get(card.id) ?? 0)) return "현재 보유 수량보다 많은 카드는 덱에 넣을 수 없습니다.";
   }
   const cardById = new Map(cards.map((card) => [card.id, card]));
   const ruleReasons = getCardRuleReasons(payload.cardDefinitionIds, cardById);
@@ -420,7 +421,7 @@ router.get("/options", async (request, response): Promise<void> => {
       .select()
       .from(cardsTable)
       .where(and(
-        eq(cardsTable.status, "PUBLISHED"),
+        inArray(cardsTable.status, ["PUBLISHED", "DRAFT"]),
         eq(cardsTable.isToken, false),
         eq(cardsTable.isChampionToken, false),
       ))
@@ -428,7 +429,7 @@ router.get("/options", async (request, response): Promise<void> => {
     db
       .select()
       .from(championsTable)
-      .where(eq(championsTable.status, "PUBLISHED"))
+      .where(inArray(championsTable.status, ["PUBLISHED", "DRAFT"]))
       .orderBy(asc(championsTable.name)),
   ]);
   const [ownedCards, ownedChampions] = await Promise.all([
@@ -441,11 +442,11 @@ router.get("/options", async (request, response): Promise<void> => {
   ]);
   const ownedChampionIds = new Set(ownedChampions.map((champion) => champion.id));
   response.setHeader("Cache-Control", "no-store");
-  const testAccount = isTestAccountUser(user);
-  const visibleChampions = testAccount ? champions : champions.filter((champion) => ownedChampionIds.has(champion.id));
+  const testAccount = isTestAccountUser(user) || user.role === "ADMIN";
+  const visibleChampions = champions.filter(champion => user.role === "ADMIN" || ownedChampionIds.has(champion.id) || testAccount && champion.status === "PUBLISHED");
   response.json({
     isTestAccount: testAccount,
-    cards: getVisibleDeckOptionCards(cards, ownedCards, testAccount, TEST_ACCOUNT_UNLIMITED_QUANTITY),
+    cards: getVisibleDeckOptionCards(cards, ownedCards, testAccount, TEST_ACCOUNT_UNLIMITED_QUANTITY, user.role === "ADMIN"),
     champions: visibleChampions,
   });
 });

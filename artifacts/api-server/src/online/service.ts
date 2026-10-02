@@ -1,3 +1,5 @@
+import { validateAIDeckReferences } from '../lib/ai-deck-service';
+import { expandNamedCardReferences } from '../lib/named-card-references';
 import { randomUUID } from "node:crypto";
 import { and, eq, inArray, isNull, or } from "drizzle-orm";
 import {
@@ -968,8 +970,8 @@ export async function startOnlineMatch(
   }
 
   const [cards, champions, media, interactions] = await Promise.all([
-    db.select().from(cardsTable).where(eq(cardsTable.status, "PUBLISHED")),
-    db.select().from(championsTable).where(eq(championsTable.status, "PUBLISHED")),
+    db.select().from(cardsTable),
+    db.select().from(championsTable),
     db.select({
       id: gameMediaTable.id,
       mediaType: gameMediaTable.mediaType,
@@ -982,10 +984,13 @@ export async function startOnlineMatch(
       .where(eq(gameMediaTable.gameEnabled, true)),
     db.select().from(championIntroInteractionsTable),
   ]);
-  const cardDefinitions = cards.map(toCardDefinition);
+  const dependencies = await Promise.all([firstDeck, secondDeck].map(deck => validateAIDeckReferences(deck.championDefinitionId, deck.cardDefinitionIds)));
+  const requiredIds = new Set([...firstDeck.cardDefinitionIds, ...secondDeck.cardDefinitionIds, ...dependencies.flatMap(deck => deck.requiredCardDefinitionIds)]);
+  expandNamedCardReferences(cards, requiredIds);
+  const cardDefinitions = cards.filter(card => card.status === "PUBLISHED" || card.status === "DRAFT" && requiredIds.has(card.id)).map(toCardDefinition);
   const minionACardPool = [firstDeck.championDefinitionId, secondDeck.championDefinitionId].includes(MINION_A_ID)
     ? completeMinionACatalog(await db.select().from(cardsTable)) : undefined;
-  const championDefinitions = champions.map(toChampionDefinition);
+  const championDefinitions = champions.filter(champion => champion.status === "PUBLISHED" || [firstDeck.championDefinitionId, secondDeck.championDefinitionId].includes(champion.id)).map(toChampionDefinition);
   const users = await db.select({ id: usersTable.id, nickname: usersTable.nickname })
     .from(usersTable)
     .where(or(eq(usersTable.id, player1UserId), eq(usersTable.id, player2UserId)));

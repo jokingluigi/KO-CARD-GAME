@@ -58,6 +58,7 @@ export function getDeckCardAction(
     legendaryCount,
     maxLegendaryCards,
     isTestAccount,
+    isAdmin = false,
   }: {
     count: number;
     deckCount: number;
@@ -65,9 +66,10 @@ export function getDeckCardAction(
     legendaryCount: number;
     maxLegendaryCards: number;
     isTestAccount: boolean;
+    isAdmin?: boolean;
   },
 ): DeckCardAction {
-  if (card.status !== "PUBLISHED" || card.isToken || card.isChampionToken) {
+  if ((card.status !== "PUBLISHED" && !(card.status === "DRAFT" && (isAdmin || (card.quantity ?? 0) > 0))) || card.isToken || card.isChampionToken) {
     return { kind: "DISABLED", reason: "공개된 일반 카드만 덱에 넣을 수 있습니다." };
   }
   if (!isTestAccount && card.quantity === 0) return { kind: "CRAFT" };

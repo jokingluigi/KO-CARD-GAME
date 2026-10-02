@@ -45,7 +45,7 @@ export function repairedLegacyCardAbilities(card: PublishedCardRecord): CardAbil
   }
   if (card.name === '좀비 데헌' && /퇴장.*언데드.*어디에\s*있든.*최대\s*체력\s*\+2/u.test(text)) {
     return [{ trigger: 'SELF_RETIRE', effects: [{ type: 'STRUCTURED', action: 'MODIFY_MAX_HEALTH',
-      target: { zones: ['HAND', 'DECK', 'BOARD', 'GRAVEYARD'], owner: 'ALL', selection: 'ALL', count: 100,
+      target: { zones: ['HAND', 'DECK', 'BOARD'], owner: 'ALL', selection: 'ALL', count: 100,
         filter: { tagsAny: ['언데드'] } }, values: { amount: 2 } }] }];
   }
   if (card.name === '좀비 벨로나' && /데미지를?\s*입으면.*1\s*\/\s*1.*좀비.*소환/u.test(text)) {

@@ -1,3 +1,4 @@
+import { TOWER_VANILLA_CHAMPION_ID } from '../champions/tower-vanilla';
 import { MINION_A_ID } from '../champions/minion-a';
 import type { ActionResult } from '../actions/types';
 import { actionFailure, actionSuccess } from '../actions/types';
@@ -105,6 +106,7 @@ export function canUseChampionAbility(
     state.status === 'IN_PROGRESS' &&
       state.activePlayerId === playerId &&
       player?.champion &&
+      player.champion.id !== TOWER_VANILLA_CHAMPION_ID &&
       (player.champion.id !== MINION_A_ID || Boolean(state.minionACardPool?.length)) &&
       !player.championAbilityUsedThisTurn &&
       cost !== null &&
@@ -130,7 +132,7 @@ export function useChampionAbility(
     );
   }
   const ability = currentAbility(state, playerId);
-  if (!ability) {
+  if (!ability || player.champion.id === TOWER_VANILLA_CHAMPION_ID) {
     return actionFailure(
       state,
       'CHAMPION_ABILITY_UNAVAILABLE',
