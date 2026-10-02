@@ -9,6 +9,11 @@ import type { RandomScope } from '@workspace/effect-registry';
 import type { EventAttribution, EventSubject, GameEvent } from '../events/types';
 import { matchesCardTagFilter, type CardTagFilter } from './tags';
 
+export function configuredDodgeCharges(config?: Record<string, unknown>): number {
+  const amount = config?.dodgeCharges;
+  return typeof amount === 'number' && Number.isSafeInteger(amount) && amount >= 1 ? Math.min(999, amount) : 1;
+}
+
 export interface GenerateCardOptions {
   instanceId: CardInstanceId;
   /** Existing deck/hand instances are not generated; creation effects opt in. */
@@ -85,7 +90,7 @@ export function generateCardInstance(
     isAbilityDisabled: false,
     isSilenceImmune: false,
     dodgeAvailable: definition.keywords.includes('DODGE'),
-    dodgeCharges: definition.keywords.includes('DODGE') ? 1 : 0,
+    dodgeCharges: definition.keywords.includes('DODGE') ? configuredDodgeCharges(definition.effectConfig) : 0,
     isStunned: false,
     activeUsedThisTurn: false,
     isDirectDeployedChampion: false,

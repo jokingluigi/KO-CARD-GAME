@@ -180,6 +180,7 @@ export interface CardInstance {
   /** Executable text copied from a published match CardDefinition. */
   grantedText?: {
     armor?: number;
+    dodgeCharges?: number;
     playCondition?: import('../../../../../lib/game-engine/src/champion-quest-conditions').ChampionQuestCondition;
     donorDefinitionId: string;
     rulesText: string;

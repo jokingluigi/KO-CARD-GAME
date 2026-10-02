@@ -1,9 +1,11 @@
+import { configuredDodgeCharges } from './generation';
 import { validChampionQuestCondition } from '../../../../../lib/game-engine/src/champion-quest-conditions';
 import type { CardAbility, CardKeyword } from '../effects/types';
 import type { CardInstance, CardDefinition } from './types';
 
 export interface GrantedCardText {
   armor?: number;
+  dodgeCharges?: number;
   playCondition?: CardInstance["playCondition"];
   donorDefinitionId: string;
   rulesText: string;
@@ -36,6 +38,7 @@ export function cloneGrantedCardText(
   definition: Pick<CardDefinition, 'id' | 'rulesText' | 'keywords' | 'abilities' | 'effectConfig'>,
 ): GrantedCardText {
   return {
+    dodgeCharges: configuredDodgeCharges(definition.effectConfig),
     ...(typeof definition.effectConfig?.armor === 'number' ? { armor: definition.effectConfig.armor } : {}),
     ...(validChampionQuestCondition(definition.effectConfig?.playCondition) ? { playCondition: structuredClone(definition.effectConfig.playCondition) } : {}),
     donorDefinitionId: definition.id,
@@ -55,7 +58,7 @@ export function grantCardText(
     ...card,
     grantedText,
     dodgeAvailable: keywords.includes('DODGE'),
-    dodgeCharges: keywords.includes('DODGE') ? Math.max(1, card.dodgeCharges ?? 0) : 0,
+    dodgeCharges: keywords.includes('DODGE') ? Math.max(grantedText.dodgeCharges ?? 1, card.dodgeCharges ?? 0) : 0,
   };
 }
 

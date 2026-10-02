@@ -941,6 +941,7 @@ function parseCardInput(value: unknown): CardInput | null {
     typeof input.effectConfig !== "object" ||
     Array.isArray(input.effectConfig)
      || ((input.effectConfig as Record<string, unknown>).armor !== undefined && (!Number.isSafeInteger((input.effectConfig as Record<string, unknown>).armor) || Number((input.effectConfig as Record<string, unknown>).armor) < 0 || Number((input.effectConfig as Record<string, unknown>).armor) > 999))
+     || ((input.effectConfig as Record<string, unknown>).dodgeCharges !== undefined && (!Number.isSafeInteger((input.effectConfig as Record<string, unknown>).dodgeCharges) || Number((input.effectConfig as Record<string, unknown>).dodgeCharges) < 1 || Number((input.effectConfig as Record<string, unknown>).dodgeCharges) > 999))
      || ((input.keywords as string[]).includes('CONDITION') && !validChampionQuestCondition((input.effectConfig as Record<string, unknown>).playCondition))
      || (effectId === "STRUCTURED_EFFECTS_V1" && !isStructuredEffects(input.effectConfig))
      || (effectId === "SCRIPT_V1" && !isEffectScriptConfig(input.effectConfig))

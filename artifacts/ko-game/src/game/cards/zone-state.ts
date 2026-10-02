@@ -1,3 +1,4 @@
+import { configuredDodgeCharges } from './generation';
 import type { CardInstance } from './types';
 import type { GameState } from '../types/game-state';
 import { getActiveCardKeywords } from './granted-text';
@@ -59,7 +60,7 @@ export function resetCardAfterLeavingBoard(card: CardInstance): CardInstance {
     enteredThisTurn: false,
     attacksUsedThisTurn: 0,
     dodgeAvailable: hasDodge,
-    dodgeCharges: hasDodge ? 1 : 0,
+    dodgeCharges: hasDodge ? card.grantedText?.dodgeCharges ?? configuredDodgeCharges(definition?.effectConfig) : 0,
     isStunned: false,
     activeUsedThisTurn: false,
     statHistory: [],

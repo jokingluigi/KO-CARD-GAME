@@ -65,3 +65,10 @@ test('state-driven champion quest reward completes once without a counted event 
  const once=processChampionQuestEvents(s,{...s,events:[...s.events]});assert.equal(once.players[0].champion!.questCompleted,true);assert.equal(once.players[0].currentGold,p.currentGold+3);
  const twice=processChampionQuestEvents(once,once);assert.equal(twice.events.filter(e=>e.type==='CHAMPION_QUEST_COMPLETED').length,1);assert.equal(twice.players[0].currentGold,once.players[0].currentGold);
 });
+
+test('configured dodge count absorbs exactly that many damage events',()=>{
+ let state=setup({keywords:['DODGE'],effectConfig:{dodgeCharges:3}});
+ assert.equal(state.players[1].board[0]!.dodgeCharges,3);
+ for(let remaining=2;remaining>=0;remaining--){state=applyEffect(state,'player-1',state.players[0].board[0]!,damage,['b']);assert.equal(state.players[1].board[0]!.currentHealth,8);assert.equal(state.players[1].board[0]!.dodgeCharges,remaining);}
+ state=applyEffect(state,'player-1',state.players[0].board[0]!,damage,['b']);assert.equal(state.players[1].board[0]!.currentHealth,4);
+});
