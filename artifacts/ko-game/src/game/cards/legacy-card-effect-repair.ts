@@ -9,6 +9,35 @@ const enemyResult = { zone: 'BOARD' as const, owner: 'ENEMY' as const, cardType:
 /** Repair published legacy configurations by the full meaning of their stored card text. */
 export function repairedLegacyCardAbilities(card: PublishedCardRecord): CardAbility[] | null {
   const text = card.text.replace(/\s+/gu, ' ').trim();
+  if (card.name === '디 오리진' && /선수(?: 카드)?\s*3\s*장당\s*1\s*씩.*공격력.*체력/u.test(text)) {
+    return [{ trigger: 'ENTER_FIELD', effects: [{ type: 'STRUCTURED', action: 'BUFF', target: self,
+      values: { attackReference: 'GRAVEYARD_WRESTLER_COUNT', healthReference: 'GRAVEYARD_WRESTLER_COUNT', referenceDivisor: 3 } }] }];
+  }
+  if (card.name === '도쿵' && /공격력이?\s*증가하면.*같은\s*수치.*체력/u.test(text)) {
+    return [{ trigger: 'STAT_CHANGED', condition: { type: 'ATTACK_GAIN' }, effects: [{ type: 'STRUCTURED', action: 'BUFF', target: self,
+      values: { attack: 0, healthReference: 'LAST_ATTACK_DELTA' } }] }];
+  }
+  if (card.name === '데헌' && /공격력이?\s*처음\s*증가.*회피/u.test(text) && !/(?:손패|손)에/u.test(text)) {
+    return [{ trigger: 'STAT_CHANGED', condition: { type: 'FIRST_ATTACK_GAIN' }, effects: [{ type: 'STRUCTURED', action: 'ADD_KEYWORD', target: self,
+      values: { keyword: 'DODGE' } }] }];
+  }
+  if (card.name === '만드릴쿤' && /공격력이?\s*증가.*공격력.*추가로\s*1/u.test(text)) {
+    return [{ trigger: 'STAT_CHANGED', condition: { type: 'ATTACK_GAIN' }, effects: [{ type: 'STRUCTURED', action: 'BUFF', target: self,
+      values: { attack: 1, health: 0 } }] }];
+  }
+  if (card.name === '프랑켄슈타인 만드릴쿤' && /체력이?\s*증가.*추가로\s*\+?1/u.test(text)) {
+    return [{ trigger: 'STAT_CHANGED', condition: { type: 'HEALTH_GAIN' }, effects: [{ type: 'STRUCTURED', action: 'BUFF', target: self,
+      values: { attack: 0, health: 1 } }] }];
+  }
+  if (card.name === '좀비 데헌' && /퇴장.*언데드.*어디에\s*있든.*최대\s*체력\s*\+2/u.test(text)) {
+    return [{ trigger: 'SELF_RETIRE', effects: [{ type: 'STRUCTURED', action: 'MODIFY_MAX_HEALTH',
+      target: { zones: ['HAND', 'DECK', 'BOARD', 'GRAVEYARD'], owner: 'ALL', selection: 'ALL', count: 100,
+        filter: { tagsAny: ['언데드'] } }, values: { amount: 2 } }] }];
+  }
+  if (card.name === '좀비 벨로나' && /데미지를?\s*입으면.*1\s*\/\s*1.*좀비.*소환/u.test(text)) {
+    return [{ trigger: 'SELF_DAMAGED', effects: [{ type: 'STRUCTURED', action: 'SUMMON',
+      values: { definitionRef: { name: '좀비' }, count: 1, generatedModifiers: { attack: 0, health: 0 } } }] }];
+  }
   if ((card.name.replace(/\s+/gu, '') === '챔피언판도라(폭주)' || card.id === 'eaefcf6c-575d-4482-aaad-98b54561b49a') &&
       /등장.*선택한\s*선수.*파괴/u.test(text) && /리타이어.*파괴.*선수.*공격력.*흡수|리타이어.*파괴.*선수.*공격력.*(?:더|추가)/u.test(text)) {
     return [

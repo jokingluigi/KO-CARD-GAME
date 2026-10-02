@@ -95,4 +95,6 @@ export type AbilityCondition =
   | { type: 'BOARD_COUNT'; compare: 'GTE' | 'LTE' | 'EQ'; amount: number }
   | { type: 'HAS_TAG'; tag: string }
   | { type: 'SOURCE_IN_HAND' }
-  | { type: 'FIRST_ATTACK_GAIN' };
+  | { type: 'FIRST_ATTACK_GAIN' }
+  | { type: 'ATTACK_GAIN' }
+  | { type: 'HEALTH_GAIN' };

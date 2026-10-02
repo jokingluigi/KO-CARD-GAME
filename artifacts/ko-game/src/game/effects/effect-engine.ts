@@ -2955,7 +2955,7 @@ export function applyEffect(
     const updatedState: GameState = {
       ...state,
       players: state.players.map((player) => {
-            const update = (card: CardInstance, zone: 'HAND' | 'DECK' | 'BOARD'): CardInstance => {
+            const update = (card: CardInstance, zone: 'HAND' | 'DECK' | 'BOARD' | 'GRAVEYARD'): CardInstance => {
           if (!ids.has(card.instanceId)) return card;
               const finish = (next: CardInstance, duration = effect.values?.duration) =>
                 recordStatChanges(
@@ -3081,7 +3081,8 @@ export function applyEffect(
          const updatedBoard = zones.includes('BOARD')
             ? player.board.map((card) => card ? update(card, 'BOARD') : null) as typeof player.board
            : player.board;
-         return { ...player, deck: updatedDeck, hand: updatedHand, board: updatedBoard };
+         const updatedGraveyard = zones.includes('GRAVEYARD') ? player.graveyard.map((card) => update(card, 'GRAVEYARD')) : player.graveyard;
+         return { ...player, deck: updatedDeck, hand: updatedHand, board: updatedBoard, graveyard: updatedGraveyard };
       }),
     };
     const finalUpdatedState = effect.action === 'SET_STATS' ? refreshTowerAuras(updatedState) : updatedState;
@@ -3377,8 +3378,10 @@ export function resolveTriggeredAbilities(
       if (condition.type === 'SOURCE_ON_LEFT_SIDE' && (card.boardSlot === null || card.boardSlot > 1)) return false;
       if (condition.type === 'SOURCE_ON_RIGHT_SIDE' && (card.boardSlot === null || card.boardSlot < 2)) return false;
       if (condition.type === 'BASE_COST_GTE' && (options.baseCost ?? 0) < condition.amount) return false;
+      if (condition.type === 'ATTACK_GAIN' && (options.attackDelta ?? 0) <= 0) return false;
+      if (condition.type === 'HEALTH_GAIN' && (options.healthDelta ?? 0) <= 0) return false;
        if (condition.type === 'FIRST_ATTACK_GAIN' &&
-         (card.statHistory ?? []).filter((entry) => entry.stat === 'attack' && entry.delta > 0).length !== 1) return false;
+         ((options.attackDelta ?? 0) <= 0 || (card.statHistory ?? []).filter((entry) => entry.stat === 'attack' && entry.delta > 0).length !== 1)) return false;
     }
     if (
       ability.trigger === 'POSITION' &&
