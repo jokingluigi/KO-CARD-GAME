@@ -171,7 +171,8 @@ export async function fetchPublishedChampions(): Promise<ChampionDefinition[]> {
   const response = await fetch(`${apiBase}/champions`);
   if (!response.ok) return [];
   const body = await response.json() as { champions?: PublishedChampionRecord[] };
-  return (body.champions ?? []).filter((item) => item.status === "PUBLISHED")
+  // Preserve authorized draft champions returned by the account-scoped API.
+  return (body.champions ?? []).filter((item) => item.status === "PUBLISHED" || item.status === "DRAFT")
     .map(championRecordToDefinition);
 }
 

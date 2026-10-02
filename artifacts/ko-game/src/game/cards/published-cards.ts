@@ -117,7 +117,8 @@ async function fetchPublishedCardRecords(): Promise<PublishedCardRecord[]> {
   if (!response.ok) return [];
 
   const body = (await response.json()) as { cards?: PublishedCardRecord[] };
-  return (body.cards ?? []).filter((card) => card.status === "PUBLISHED");
+  // The API already limits draft definitions to their owner or an ADMIN.
+  return (body.cards ?? []).filter((card) => card.status === "PUBLISHED" || card.status === "DRAFT");
 }
 
 let publicTagCatalogPromise: Promise<CardDefinition[]> | null = null;
