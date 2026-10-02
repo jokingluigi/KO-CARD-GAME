@@ -111,3 +111,5 @@ export { validChampionQuestCondition, evaluateChampionQuestCondition } from './c
 export type { ChampionQuestCondition } from './champion-quest-conditions';
 
 export { TOWER_VANILLA_CHAMPION_ID, towerVanillaChampion } from '../../../artifacts/ko-game/src/game/champions/tower-vanilla';
+
+export { ZOMBIE_RULES } from '../../../artifacts/ko-game/src/game/engine/zombie-token';

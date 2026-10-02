@@ -1836,7 +1836,9 @@ export function applyEffect(
           !damageCausedTargetRetire(state, sourceCard)) {
         return state;
       }
-      const definition = resolveCardDefinition(state, effect.values?.definition, effect.values?.definitionRef, true);
+      const definition = resolveCardDefinition(state, effect.values?.definition, effect.values?.definitionRef, true)
+        ?? (state.cardPool?.find(card => card.id === sourceCard.definitionId)?.name === '하녀 판도라'
+          ? resolveCardDefinition(state, undefined, { name: '늑대인간 판도라' }, true) : undefined);
       if (!definition) return state;
       const transformed = generateCard(definition, {
         instanceId: sourceCard.instanceId,
@@ -3442,7 +3444,7 @@ export function resolveCardRetiredListeners(
   if (relicEventIndex >= 0 && retiredCard.cardType === 'WRESTLER' && !state.zombieGrowthEventKeys?.includes(growthKey)) {
     state = { ...state, zombieGrowthEventKeys: [...(state.zombieGrowthEventKeys ?? []), growthKey],
       players: state.players.map(p => ({ ...p, board: p.board.map(card =>
-        card && card.instanceId !== retiredCard.instanceId && card.currentHealth > 0 && !card.isSilenced && isZombieToken(state, card) &&
+        p.id === playerId && card && card.instanceId !== retiredCard.instanceId && card.currentHealth > 0 && !card.isSilenced && isZombieToken(state, card) &&
         !state.events.slice(relicEventIndex + 1).some(e => e.type === 'ENTER_FIELD' && e.cardInstanceId === card.instanceId)
           ? { ...card, currentAttack: card.currentAttack + 1, currentHealth: card.currentHealth + 1, maxHealth: card.maxHealth + 1 }
           : card) as typeof p.board })) };

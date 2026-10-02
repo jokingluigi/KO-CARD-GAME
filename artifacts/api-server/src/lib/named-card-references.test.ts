@@ -34,3 +34,9 @@ test('ambiguous or disabled forms are never chosen by partial name', () => {
   ], required);
   assert.deepEqual([...required], ['maid']);
 });
+
+test('Maid Pandora stale form id loads its unique canonical wolf form', () => {
+ const required = new Set(['maid']);
+ expandNamedCardReferences([{ ...source, effectConfig: { effects: [{ action: 'TRANSFORM_SOURCE', values: { definitionRef: { id: 'obsolete-id' } } }] } }, { id: 'wolf', name: '늑대인간 판도라', status: 'DRAFT', effectConfig: {} }], required);
+ assert.deepEqual([...required], ['maid', 'wolf']);
+});

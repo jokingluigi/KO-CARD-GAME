@@ -676,8 +676,8 @@ test('독세아·블랙 마카롱·디 오리진·여울·피 스타 세븐의 �
   const sixGraves = stateWithPool([...Object.values(saved), migratedOrigin]);
   sixGraves.players[0].graveyard = Array.from({ length: 6 }, (_, index) => card(saved['여울']!, `migrated-grave-${index}`));
   const migrated = enterField(sixGraves, 'player-1', card(migratedOrigin, 'origin-six'), 0);
-  assert.equal(migrated.players[0].board[0]?.currentAttack, 3);
-  assert.equal(migrated.players[0].board[0]?.currentHealth, 3);
+  assert.equal(migrated.players[0].board[0]?.currentAttack, 4);
+  assert.equal(migrated.players[0].board[0]?.currentHealth, 4);
 
   const blackState = stateWithPool(Object.values(saved));
   blackState.players[0].hand = [card(saved['여울']!, 'hand-1'), card(saved['여울']!, 'hand-2')];

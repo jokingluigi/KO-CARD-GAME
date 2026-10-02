@@ -29,6 +29,7 @@ export function expandNamedCardReferences<T extends {
       const names = new Set<string>();
       const ids = new Set<string>();
       visit(source.effectConfig, names, ids);
+      if (source.name === '하녀 판도라' && [...ids].some(id => !byId.has(id))) names.add('늑대인간 판도라');
       for (const referenceId of ids) {
         if (eligible.some((candidate) => candidate.id === referenceId)) requiredIds.add(referenceId);
       }

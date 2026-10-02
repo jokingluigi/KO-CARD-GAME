@@ -23,9 +23,9 @@ export function repairedLegacyCardAbilities(card: PublishedCardRecord): CardAbil
       ...(/도발/u.test(text) ? [{ type: 'STRUCTURED' as const, action: 'ADD_KEYWORD' as const,
         target: { zone: 'BOARD' as const, owner: 'SELF' as const, selection: 'SAME_TARGET' as const, count: 1 }, values: { keyword: 'TAUNT' as const } }] : [])] }];
   }
-  if (card.name === '디 오리진' && /선수(?: 카드)?\s*3\s*장당\s*1\s*씩.*공격력.*체력/u.test(text)) {
+  if (card.name === '디 오리진') {
     return [{ trigger: 'ENTER_FIELD', effects: [{ type: 'STRUCTURED', action: 'BUFF', target: self,
-      values: { attackReference: 'GRAVEYARD_WRESTLER_COUNT', healthReference: 'GRAVEYARD_WRESTLER_COUNT', referenceDivisor: 3 } }] }];
+      values: { attackReference: 'GRAVEYARD_WRESTLER_COUNT', healthReference: 'GRAVEYARD_WRESTLER_COUNT', referenceDivisor: 2 } }] }];
   }
   if (card.name === '도쿵' && /공격력이?\s*증가하면.*같은\s*수치.*체력/u.test(text)) {
     return [{ trigger: 'STAT_CHANGED', condition: { type: 'ATTACK_GAIN' }, effects: [{ type: 'STRUCTURED', action: 'BUFF', target: self,

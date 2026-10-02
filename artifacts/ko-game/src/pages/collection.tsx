@@ -11,7 +11,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { craftCard, craftChampion, disenchantCard, fetchCollection, type ChampionPrismSetting, type Collection, type CollectionCard, type CollectionChampion, type PrismSetting } from "@/lib/collection-client";
+import { disenchantExtras, craftCard, craftChampion, disenchantCard, fetchCollection, type ChampionPrismSetting, type Collection, type CollectionCard, type CollectionChampion, type PrismSetting } from "@/lib/collection-client";
 import { useLocation } from "wouter";
 import { ROUTES } from "@/lib/routes";
 import { cardTypeLabel } from "@/lib/display-labels";
@@ -143,6 +143,7 @@ export default function CollectionPage() {
     | { type: "CHAMPION_CRAFT"; champion: CollectionChampion }
     | null
   >(null);
+  const [bulkConfirm, setBulkConfirm] = useState(false);
   const [isMutating, setIsMutating] = useState(false);
   const [actionScene, setActionScene] = useState<CollectionActionScene | null>(null);
   const [loadState, setLoadState] = useState<CollectionLoadState>("loading");
@@ -218,6 +219,23 @@ export default function CollectionPage() {
   const safeDisassemblyQuantity = selectedCard
     ? Math.min(Math.max(disassemblyQuantity, 1), Math.max(selectedCard.quantity, 1))
     : 1;
+
+  const excessCount = (collection?.craftableCards ?? []).reduce((sum, card) => sum + Math.max(0, card.quantity - 3), 0);
+  async function executeBulkDisenchant() {
+    if (isMutating) return;
+    setIsMutating(true);
+    let applied = false;
+    try {
+      const result = await disenchantExtras();
+      applied = true;
+      setBulkConfirm(false);
+      setCollection(await fetchCollection());
+      setSelectedCard(null);
+      setMessage(`${result.dismantledQuantity}장 일괄 분해 · ${result.reward.toLocaleString()} 프리즘 획득`);
+    } catch (error) {
+      setMessage(applied ? '분해는 완료됐지만 목록을 다시 불러오지 못했습니다. 컬렉션을 다시 열어 확인해 주세요.' : error instanceof Error ? error.message : '일괄 분해에 실패했습니다.');
+    } finally { setIsMutating(false); }
+  }
 
   async function executePendingAction() {
     if (!pendingAction || isMutating) return;
@@ -322,6 +340,14 @@ export default function CollectionPage() {
            </div>
         </header>
 
+        {tab !== 'champions' && <button type="button" disabled={isMutating || excessCount === 0} onClick={() => setBulkConfirm(true)} className="mb-4 rounded border border-emerald-700 px-4 py-3 font-black text-emerald-300 disabled:opacity-40">3장 남기고 일괄 분해 ({excessCount}장)</button>}
+        <Dialog open={bulkConfirm} onOpenChange={open => { if (!isMutating) setBulkConfirm(open); }}>
+          <DialogContent className="border-neutral-800 bg-neutral-950 text-white">
+            <DialogHeader><DialogTitle>일괄 분해 확인</DialogTitle><DialogDescription>각 카드 종류별로 3장을 남기고 초과분을 분해합니다. 총 {excessCount}장입니다. 검색·필터와 관계없이 전체 분해 가능한 카드에 적용됩니다.</DialogDescription></DialogHeader>
+            <button type="button" disabled={isMutating} onClick={() => setBulkConfirm(false)}>취소</button>
+            <button type="button" disabled={isMutating} onClick={() => void executeBulkDisenchant()}>{isMutating ? '처리 중...' : '일괄 분해'}</button>
+          </DialogContent>
+        </Dialog>
          {message && <p role="status" className="mb-6 rounded border border-amber-800/50 bg-amber-950/20 px-4 py-3 text-sm text-amber-200">{message}</p>}
 
          <div className="mb-6 grid grid-cols-3 rounded-lg border border-neutral-800 bg-black/30 p-1">

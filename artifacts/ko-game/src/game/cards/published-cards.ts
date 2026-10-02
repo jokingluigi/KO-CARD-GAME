@@ -205,6 +205,7 @@ function excludeGraveyardTargets<T>(value: T): T {
 }
 
 export function cardRecordToDefinition(card: PublishedCardRecord): CardDefinition {
+  if (card.name === '디 오리진') card = { ...card, text: card.text.replace(/선수(?:\s*카드)?\s*\d+\s*장당/u, '선수 2장당') };
   if (card.isToken && card.name.trim() === '좀비') card = { ...card, cost: 1, attack: 1, health: 1, text: ZOMBIE_RULES, keywords: [], effectId: 'STRUCTURED_EFFECTS_V1', effectConfig: { effects: [] } };
   const zombieAbsorption = /필드에\s*있는\s*['‘]?좀비['’]?\s*중[^.!?]*가장\s*수치의\s*합/.test(card.text) &&
     /좀비['’]?가\s*없다면[^.!?]*2\s*\/\s*2/.test(card.text);
@@ -230,8 +231,7 @@ export function cardRecordToDefinition(card: PublishedCardRecord): CardDefinitio
       ? { ...effect, values: { ...(effect.values as Record<string, unknown> | undefined), destroyInstead: true } }
       : effect) }
     : card.effectConfig;
-  const originGroupSize = card.name === '디 오리진'
-    ? Number(card.text.match(/선수(?:\s*카드)?\s*(\d+)\s*장당\s*1씩/u)?.[1] ?? 0) : 0;
+  const originGroupSize = card.name === '디 오리진' ? 2 : 0;
   const originEffect = { trigger: 'ENTER_FIELD', action: 'BUFF',
     target: { zone: 'BOARD', owner: 'SELF', selection: 'SELF', count: 1 },
     values: { attackReference: 'GRAVEYARD_WRESTLER_COUNT', healthReference: 'GRAVEYARD_WRESTLER_COUNT', referenceDivisor: originGroupSize } };

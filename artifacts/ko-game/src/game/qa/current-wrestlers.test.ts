@@ -40,9 +40,9 @@ for(const record of records)test(`current wrestler legal play/serialization: ${r
  const n=play(s,record.name,1);assert.ok(n.events.some(e=>e.type==='CARD_PLAYED'&&e.cardInstanceId==='source'));assert.ok(!n.players[0].hand.some(c=>c.instanceId==='source'));assert.ok(JSON.stringify(n));
 });
 
-test('current RM doubles actual stats; Origin counts groups of three even with null effectId',()=>{
+test('current RM doubles actual stats; Origin counts groups of two even with null effectId',()=>{
  let n=play(setup(),'RM우디르');assert.deepEqual([source(n).currentAttack,source(n).currentHealth],[6,6]);
- for(const count of [0,2,3,6]){const s=setup();s.players[0].graveyard=Array.from({length:count},(_,i)=>instance('리버덩크',`g${i}`));n=play(s,'디 오리진');assert.deepEqual([source(n).currentAttack,source(n).currentHealth],[2+Math.floor(count/3),2+Math.floor(count/3)]);}
+ for(const count of [0,2,3,6]){const s=setup();s.players[0].graveyard=Array.from({length:count},(_,i)=>instance('리버덩크',`g${i}`));n=play(s,'디 오리진');assert.deepEqual([source(n).currentAttack,source(n).currentHealth],[2+Math.floor(count/2),2+Math.floor(count/2)]);}
 });
 test('current Pi Star buffs other allies +2/+2; Black Macaron uses remaining hand count',()=>{
  const s=setup();onBoard(s,'리버덩크',1);let n=play(s,'피 스타 세븐');assert.deepEqual([source(n).currentAttack,source(n).currentHealth],[4,3]);assert.deepEqual([n.players[0].board[1]?.currentAttack,n.players[0].board[1]?.currentHealth],[4,4]);
@@ -172,4 +172,24 @@ test('zone reset: retirement clears buffs and graveyard rejects later stat buffs
  let g=n.players[0].graveyard[0];assert.deepEqual([g.currentAttack,g.currentHealth,g.maxHealth,g.currentCost],[2,3,3,3]);
  n=applyEffect(n,'player-1',instance('아포스틸','caster'),{type:'STRUCTURED',action:'BUFF',target:{zones:['HAND','DECK','BOARD','GRAVEYARD'],owner:'SELF',selection:'ALL',count:100},values:{attack:2,health:2}});
  g=n.players[0].graveyard[0];assert.deepEqual([g.currentAttack,g.currentHealth,g.maxHealth],[2,3,3]);
+});
+
+test('zombie grows only from allied RETIRE, never enemy RETIRE or DESTROY', () => {
+ for (const owner of [0, 1]) for (const mode of ['RETIRE', 'DESTROY'] as const) {
+  const s = setup(); onBoard(s, '좀비', 0, 0); const victim = onBoard(s, '리버덩크', 1, owner);
+  const n = applyEffect(s, s.players[owner].id, victim, { type: 'STRUCTURED', action: mode, target: { zone: 'BOARD', owner: 'SELF', selection: 'SELF', count: 1 } });
+  const expected = owner === 0 && mode === 'RETIRE' ? 2 : 1;
+  assert.deepEqual([n.players[0].board[0]?.currentAttack, n.players[0].board[0]?.maxHealth], [expected, expected]);
+ }
+});
+
+test('Maid Pandora transforms even when its stored form id is stale', () => {
+ const s = setup();
+ const maid = def('하녀 판도라');
+ const broken = { ...maid, abilities: maid.abilities.map(ability => ({ ...ability, effects: ability.effects.map(effect => effect.type === 'STRUCTURED' && effect.action === 'TRANSFORM_SOURCE' ? { ...effect, values: { ...effect.values, definitionRef: { id: 'obsolete-form-id' } } } : effect) })) };
+ s.cardPool = definitions.map(d => d.id === maid.id ? broken : d);
+ const victim = onBoard(s, '리버덩크', 0, 1, {currentHealth:1,maxHealth:1});
+ s.players[0].hand = [generateCardInstance(broken, {instanceId:'source',isGenerated:false})];
+ const n = action(s, {type:'PLAY_WRESTLER',playerId:'player-1',cardInstanceId:'source',boardSlot:0}, victim.instanceId);
+ assert.equal(source(n).definitionId, def('늑대인간 판도라').id);
 });

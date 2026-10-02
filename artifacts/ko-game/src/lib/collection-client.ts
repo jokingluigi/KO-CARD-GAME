@@ -118,7 +118,13 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
   }
   return response.status === 204 ? undefined as T : await response.json() as T;
 }
-export const fetchCollection = () => request<Collection>("/collection");
+export const fetchCollection = async () => {
+  const result = await request<Collection>("/collection");
+  const normalize = (card: CollectionCard) => card.name === '디 오리진'
+    ? { ...card, text: card.text.replace(/선수(?:\s*카드)?\s*\d+\s*장당/u, '선수 2장당') } : card;
+  return { ...result, cards: result.cards.map(normalize), craftableCards: result.craftableCards.map(normalize) };
+};
+export const disenchantExtras = () => request<{ dismantledQuantity: number; reward: number }>("/prism/disenchant-extras", { method: "POST" });
 export const craftCard = (cardDefinitionId: string) => request<{
   prismBalance: number;
   quantity: number;

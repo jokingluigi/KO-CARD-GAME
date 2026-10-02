@@ -215,6 +215,56 @@ router.post("/craft/:cardDefinitionId", async (request, response): Promise<void>
   }
 });
 
+// Lock each real ownership row and compute its excess server-side. A concurrent
+// request observes the committed remainder, so cards are never removed twice.
+router.post("/disenchant-extras", async (request, response): Promise<void> => {
+  const user = requireUser(request, response);
+  if (!user) return;
+  try {
+    const result = await db.transaction(async tx => {
+      const rows = await tx.select().from(userCardCollectionsTable)
+        .where(eq(userCardCollectionsTable.userId, user.id))
+        .orderBy(userCardCollectionsTable.cardDefinitionId).for('update');
+      let dismantledQuantity = 0;
+      let reward = 0;
+      const transactions: Array<{ cardId: string; rarity: string; quantity: number; amount: number }> = [];
+      for (const row of rows) {
+        const quantity = Math.max(0, row.quantity - 3);
+        if (!quantity) continue;
+        const card = await getCraftableCard(row.cardDefinitionId, tx);
+        if (!card) continue;
+        const setting = await getUsableSetting(card.rarity as PrismRarity, "분해", tx);
+        const amount = quantity * setting.disenchantReward;
+        if (!Number.isSafeInteger(amount) || !Number.isSafeInteger(reward + amount)) throw new PrismError(422, '분해 수량이 너무 큽니다.');
+        await tx.update(userCardCollectionsTable).set({ quantity: 3 }).where(and(
+          eq(userCardCollectionsTable.userId, user.id), eq(userCardCollectionsTable.cardDefinitionId, card.id)));
+        reward += amount;
+        dismantledQuantity += quantity;
+        transactions.push({ cardId: card.id, rarity: card.rarity, quantity, amount });
+      }
+      let finalBalance = TEST_ACCOUNT_UNLIMITED_BALANCE;
+      if (!isTestAccountUser(user)) {
+        const [updated] = await tx.update(usersTable).set({
+          prismBalance: sql`${usersTable.prismBalance} + ${reward}`, updatedAt: new Date(),
+        }).where(eq(usersTable.id, user.id)).returning({ balance: usersTable.prismBalance });
+        if (!updated) throw new PrismError(404, '사용자를 찾을 수 없습니다.');
+        finalBalance = updated.balance;
+      }
+      let balance = finalBalance - reward;
+      for (const item of transactions) {
+        balance += item.amount;
+        await tx.insert(prismTransactionsTable).values({ id: randomUUID(), userId: user.id,
+          type: 'DISENCHANT', amount: item.amount, balanceAfter: isTestAccountUser(user) ? finalBalance : balance,
+          cardDefinitionId: item.cardId, metadata: JSON.stringify({ rarity: item.rarity, quantity: item.quantity, keep: 3 }) });
+      }
+      return { dismantledQuantity, reward };
+    });
+    response.json(result);
+  } catch (error) {
+    response.status(error instanceof PrismError ? error.status : 500).json({ message: error instanceof Error ? error.message : '일괄 분해에 실패했습니다.' });
+  }
+});
+
 router.post("/disenchant/:cardDefinitionId", async (request, response): Promise<void> => {
   const user = requireUser(request, response);
   if (!user) return;

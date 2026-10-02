@@ -38,20 +38,20 @@ test('full field can merge into the existing zombie', () => {
   for (const slot of [1, 2, 3] as const) state.players[0].board[slot] = { ...state.players[0].deck[slot], instanceId: `ally-${slot}`, boardSlot: slot, keywords: [], abilities: [] };
   const result = summon(state); assert.equal(result.players[0].board[0]?.currentAttack, 2); assert.equal(result.players[0].board.filter(Boolean).length, 4);
 });
-test('both sides retirements grow zombies, only allied retirements advance the quest, DESTROY does neither', () => {
+test('only allied retirements grow zombies and advance the quest, DESTROY does neither', () => {
   let state = summon(setup());
   const enemy = { ...state.players[1].deck[0], instanceId: 'enemy', cardType: 'WRESTLER' as const, currentHealth: 1, maxHealth: 1, boardSlot: 0 as const, keywords: [], abilities: [] };
   state.players[1].board[0] = enemy;
-  state = damage(state, 'ENEMY'); assert.equal(state.players[0].board[0]?.currentAttack, 2); assert.equal(state.players[0].champion?.questProgress, 0);
+  state = damage(state, 'ENEMY'); assert.equal(state.players[0].board[0]?.currentAttack, 1); assert.equal(state.players[0].champion?.questProgress, 0);
   state.players[1].board[0] = { ...enemy, instanceId: 'destroyed' };
-  state = damage(state, 'ENEMY', 'DESTROY'); assert.equal(state.players[0].board[0]?.currentAttack, 2); assert.equal(state.players[0].champion?.questProgress, 0);
+  state = damage(state, 'ENEMY', 'DESTROY'); assert.equal(state.players[0].board[0]?.currentAttack, 1); assert.equal(state.players[0].champion?.questProgress, 0);
   state.players[0].board[1] = { ...enemy, instanceId: 'ally', boardSlot: 1 };
   const previous = state;
   state = applyEffect(state, 'player-1', state.players[0].deck[0], { type: 'STRUCTURED', action: 'DAMAGE', target: { zone: 'BOARD', owner: 'SELF', selection: 'PLAYER_CHOICE', count: 1 }, values: { amount: 1 } }, ['ally']);
   state = processChampionQuestEvents(previous, state);
-  assert.equal(state.players[0].board[0]?.currentAttack, 3); assert.equal(state.players[0].champion?.questProgress, 1);
+  assert.equal(state.players[0].board[0]?.currentAttack, 2); assert.equal(state.players[0].champion?.questProgress, 1);
   const replay = resolveCardRetiredListeners(state, 'player-1', previous.players[0].board[1]!);
-  assert.equal(replay.players[0].board[0]?.currentAttack, 3);
+  assert.equal(replay.players[0].board[0]?.currentAttack, 2);
 });
 test('tenth allied retirement upgrades once; dead zombie cannot grow itself', () => {
   const state = summon(setup()); state.players[0].champion!.questProgress = 9;
