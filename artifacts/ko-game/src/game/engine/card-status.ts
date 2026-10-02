@@ -30,20 +30,24 @@ export function silenceCard(
   cardInstanceId: CardInstanceId,
 ): GameState {
   const aura = state.tower?.auraStats?.[cardInstanceId];
-  return refreshTowerAuras(updateBoardCard(state, cardInstanceId, (card) =>
-    card.isSilenceImmune
-      ? card
-      : {
-          ...removeGrantedCardText(card),
-          isSilenced: true,
-          currentAttack: card.baseAttack !== undefined ? card.baseAttack + (aura?.attack ?? 0) : card.currentAttack,
-          maxHealth: card.baseHealth !== undefined ? card.baseHealth + (aura?.health ?? 0) : card.maxHealth,
-          currentHealth: Math.min(card.currentHealth, card.baseHealth !== undefined ? card.baseHealth + (aura?.health ?? 0) : card.maxHealth),
-          keywords: [],
-          dodgeAvailable: false,
-          dodgeCharges: 0,
-        },
-  ));
+  return refreshTowerAuras(updateBoardCard(state, cardInstanceId, (card) => {
+    if (card.isSilenceImmune) return card;
+    const definition = state.cardPool?.find(item => item.id === card.definitionId);
+    const attack = (definition?.attack ?? card.baseAttack ?? card.currentAttack) + (aura?.attack ?? 0);
+    const maxHealth = (definition?.health ?? card.baseHealth ?? card.maxHealth) + (aura?.health ?? 0);
+    return {
+      ...removeGrantedCardText(card),
+      isSilenced: true,
+      currentAttack: Math.max(0, attack),
+      maxHealth: Math.max(1, maxHealth),
+      currentHealth: Math.min(card.currentHealth, Math.max(1, maxHealth)),
+      temporaryStatModifiers: [],
+      statHistory: [],
+      keywords: [],
+      dodgeAvailable: false,
+      dodgeCharges: 0,
+    };
+  }));
 }
 
 export function setCardStunned(

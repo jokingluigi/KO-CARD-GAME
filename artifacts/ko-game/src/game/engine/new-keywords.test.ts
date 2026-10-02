@@ -1,3 +1,4 @@
+import { silenceCard } from './card-status';
 import { resetCardAfterLeavingBoard } from '../cards/zone-state';
 import test from 'node:test';
 import assert from 'node:assert/strict';
@@ -77,4 +78,12 @@ test('configured dodge count absorbs exactly that many damage events',()=>{
 test('configured dodge count survives draw and resets on zone movement without a registered catalog',()=>{
  const instance=generateCardInstance(definition('unregistered-counted-dodge',{keywords:['DODGE'],effectConfig:{dodgeCharges:4}}),{instanceId:'counted'});
  assert.equal(resetCardAfterLeavingBoard({...instance,dodgeCharges:1}).dodgeCharges,4);
+});
+
+test('silence restores original attack and maximum health without healing current health',()=>{
+ const state=setup();const target=state.players[1].board[0]!;
+ state.players[1].board[0]={...target,currentAttack:12,maxHealth:20,currentHealth:3,baseAttack:undefined,baseHealth:undefined,temporaryStatModifiers:[{stat:"attack",amount:8,untilTurn:4}]};
+ const result=silenceCard(state,'b').players[1].board[0]!;
+ assert.equal(result.currentAttack,4);assert.equal(result.maxHealth,8);assert.equal(result.currentHealth,3);assert.deepEqual(result.temporaryStatModifiers,[]);
+ state.players[1].board[0]!.currentHealth=15;assert.equal(silenceCard(state,'b').players[1].board[0]!.currentHealth,8);
 });
