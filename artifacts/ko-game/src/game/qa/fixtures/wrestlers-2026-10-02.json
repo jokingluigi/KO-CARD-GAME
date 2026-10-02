@@ -351,10 +351,10 @@
     "name": "라 칼라베라",
     "cardType": "WRESTLER",
     "rarity": "NORMAL",
-    "cost": 3,
+    "cost": 4,
     "attack": 3,
     "health": 2,
-    "text": "등장: 내 묘지에서 비용이 2 이하인 선수 카드들 중 하나를 무작위로 선정해서 부활시킵니다.그 카드에게 도발을 부여합니다.",
+    "text": "등장: 내 묘지에서 비용이 3 이하인 선수 카드들 중 하나를 무작위로 선정해서 부활시킵니다.",
     "keywords": [],
     "tags": [
       "언데드",
@@ -362,43 +362,12 @@
     ],
     "isToken": false,
     "isChampionToken": false,
-    "effectId": "STRUCTURED_EFFECTS_V1",
-    "effectConfig": {
-      "effects": [
-        {
-          "action": "REVIVE",
-          "target": {
-            "zone": "GRAVEYARD",
-            "count": 1,
-            "owner": "SELF",
-            "filter": {
-              "maxCost": 2
-            },
-            "cardType": "WRESTLER",
-            "selection": "RANDOM",
-            "randomScope": "STANDARD"
-          },
-          "trigger": "ENTER_FIELD"
-        },
-        {
-          "action": "ADD_KEYWORD",
-          "target": {
-            "zone": "BOARD",
-            "count": 1,
-            "owner": "SELF",
-            "selection": "SAME_TARGET"
-          },
-          "values": {
-            "keyword": "TAUNT"
-          },
-          "trigger": "ENTER_FIELD"
-        }
-      ]
-    },
+    "effectId": null,
+    "effectConfig": {},
     "status": "PUBLISHED",
-    "version": 9,
+    "version": 12,
     "createdAt": "2026-09-16T20:31:00.800Z",
-    "updatedAt": "2026-09-27T13:39:43.494Z"
+    "updatedAt": "2026-10-02T11:51:58.947Z"
   },
   {
     "id": "9478516b-5756-411d-8ba2-3ff300234c3b",
@@ -499,7 +468,7 @@
     "rarity": "NORMAL",
     "cost": 5,
     "attack": 2,
-    "health": 8,
+    "health": 7,
     "text": "이 카드를 처음으로 공격한 적 선수는 공격 이후 침묵됩니다. 이후 이 카드의 능력을 비활성화합니다.",
     "keywords": [
       "TAUNT"
@@ -538,9 +507,9 @@
       ]
     },
     "status": "PUBLISHED",
-    "version": 9,
+    "version": 10,
     "createdAt": "2026-09-15T02:02:31.848Z",
-    "updatedAt": "2026-09-28T11:55:47.765Z"
+    "updatedAt": "2026-10-02T11:50:50.082Z"
   },
   {
     "id": "a6efe85e-a76e-4c6c-a81e-2b6d91b19c56",
@@ -700,7 +669,7 @@
     "name": "발단",
     "cardType": "WRESTLER",
     "rarity": "NORMAL",
-    "cost": 3,
+    "cost": 2,
     "attack": 1,
     "health": 1,
     "text": "등장:묘지에 있는 비용이 3 이하인 무작위 카드 한장의 공격력과 체력이랑 똑같은 수치의 '좀비'를 하나 소환합니다.",
@@ -739,9 +708,9 @@
       ]
     },
     "status": "PUBLISHED",
-    "version": 13,
+    "version": 14,
     "createdAt": "2026-09-10T08:33:33.827Z",
-    "updatedAt": "2026-09-24T09:25:32.036Z"
+    "updatedAt": "2026-10-02T11:52:33.359Z"
   },
   {
     "id": "latest-wrestler-1",
@@ -1211,41 +1180,17 @@
     "cost": 3,
     "attack": 1,
     "health": 3,
-    "text": "등장: 내 손에 무작위 선수 카드 1장을 생성합니다. 그 카드에게 -1/-1/-1을 적용합니다.",
+    "text": "등장: 내 손에 무작위 선수 카드 1장을 생성합니다.",
     "keywords": [],
     "tags": [],
     "isToken": false,
     "isChampionToken": false,
-    "effectId": "STRUCTURED_EFFECTS_V1",
-    "effectConfig": {
-      "effects": [
-        {
-          "action": "GENERATE",
-          "target": {
-            "zone": "HAND",
-            "count": 1,
-            "owner": "SELF",
-            "cardType": "WRESTLER",
-            "selection": "RANDOM",
-            "randomScope": "STANDARD"
-          },
-          "values": {
-            "count": 1,
-            "destination": "HAND",
-            "generatedModifiers": {
-              "cost": -1,
-              "attack": -1,
-              "health": -1
-            }
-          },
-          "trigger": "ENTER_FIELD"
-        }
-      ]
-    },
+    "effectId": null,
+    "effectConfig": {},
     "status": "PUBLISHED",
-    "version": 7,
+    "version": 8,
     "createdAt": "2026-09-10T08:30:33.019Z",
-    "updatedAt": "2026-09-24T02:34:23.166Z"
+    "updatedAt": "2026-10-02T11:53:30.865Z"
   },
   {
     "id": "c3825a2a-8395-4f01-b1d8-4fd80627e339",

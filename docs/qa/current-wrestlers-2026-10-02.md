@@ -15,7 +15,7 @@ The current fixture is `artifacts/ko-game/src/game/qa/fixtures/wrestlers-2026-10
 - 좀비 벨로나: missing damage trigger summons 1/1 Zombie, using the existing single-Zombie merge/growth system.
 - Shared stat application: explicitly selected GRAVEYARD cards are now actually updated; previously targets could be selected but that zone was omitted from mutation. This also fixes the saved grave-inclusive 아포스틸/매드 사이언티스트 퍼플레인 configurations.
 
-## Verification before deployment
+## Verification
 
 99 new tests pass, including legal play/serialization for each of the 61 definitions. Full isolated engine/Tower/champion/AI/keyword/admin deck suite: 550 tests pass (includes the new 99). Shared, frontend and API TypeScript checks pass. Frontend build passes, bundle index-B3jSOEi7.js.
 
@@ -26,3 +26,7 @@ Old network-catalog QA was additionally run against the actual public snapshot: 
 WORK_BROWSER_FAILURE: direct navigation to authenticated /api/admin/cards was rejected with ERR_BLOCKED_BY_CLIENT. Actual admin UI remained accessible; dialog reading supplied the missing rows. An initial public catalog request timed out; one later request succeeded. No safeguard bypass was attempted.
 
 Live post-deployment browser proof is pending. Every current definition has engine tests; this does not claim every card has been independently played in browser, every mobile layout, every online reconnect, or every combination of cards has been tested. Production maintenance stays OFF.
+
+A later read during the same audit found four external catalog edits: Calavera v12 (cost 4, revive <=3 without Taunt, null effect), WarThunder v8 (generate an unmodified wrestler, null effect), Luna v10 (HP 7), Baldan v14 (cost 2). The fixture was refreshed and both missing revised effects were implemented. Original values/states were not overwritten. All 550 tests pass against the refreshed fixture; shared/frontend/API typechecks and build pass again.
+
+Actual production browser on index-B3jSOEi7.js: an unsaved 4-card admin test deck played Frankenstein Mandrill, Doqung, then Pi Star Seven. Frankenstein changed 3/2 -> 5/5, including its extra +1 HP. Doqung changed 3/4 -> 5/8, including the exact +2 HP from its attack gain. Pi Star retained 4/3. The actual event log showed the separate bonus events. No saved player decks were edited. Final revised Calavera/WarThunder deployment verification remains pending.

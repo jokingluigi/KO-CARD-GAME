@@ -9,6 +9,20 @@ const enemyResult = { zone: 'BOARD' as const, owner: 'ENEMY' as const, cardType:
 /** Repair published legacy configurations by the full meaning of their stored card text. */
 export function repairedLegacyCardAbilities(card: PublishedCardRecord): CardAbility[] | null {
   const text = card.text.replace(/\s+/gu, ' ').trim();
+  if (!card.effectId && card.name === '워썬더' && /등장.*손에\s*무작위\s*선수\s*카드\s*1장을\s*생성/u.test(text)) {
+    return [{ trigger: 'ENTER_FIELD', effects: [{ type: 'STRUCTURED', action: 'GENERATE',
+      target: { zone: 'HAND', owner: 'SELF', cardType: 'WRESTLER', selection: 'RANDOM', randomScope: 'STANDARD', count: 1 },
+      values: { destination: 'HAND', count: 1,
+        ...(/-1\s*\/\s*-1\s*\/\s*-1/u.test(text) ? { generatedModifiers: { cost: -1, attack: -1, health: -1 } } : {}) } }] }];
+  }
+  const calaveraLimit = text.match(/비용이\s*(\d+)\s*이하인\s*선수/u);
+  if (!card.effectId && card.name === '라 칼라베라' && calaveraLimit && /등장.*묘지.*무작위.*부활/u.test(text)) {
+    return [{ trigger: 'ENTER_FIELD', effects: [{ type: 'STRUCTURED', action: 'REVIVE',
+      target: { zone: 'GRAVEYARD', owner: 'SELF', cardType: 'WRESTLER', selection: 'RANDOM', randomScope: 'STANDARD', count: 1,
+        filter: { maxCost: Number(calaveraLimit[1]) } } },
+      ...(/도발/u.test(text) ? [{ type: 'STRUCTURED' as const, action: 'ADD_KEYWORD' as const,
+        target: { zone: 'BOARD' as const, owner: 'SELF' as const, selection: 'SAME_TARGET' as const, count: 1 }, values: { keyword: 'TAUNT' as const } }] : [])] }];
+  }
   if (card.name === '디 오리진' && /선수(?: 카드)?\s*3\s*장당\s*1\s*씩.*공격력.*체력/u.test(text)) {
     return [{ trigger: 'ENTER_FIELD', effects: [{ type: 'STRUCTURED', action: 'BUFF', target: self,
       values: { attackReference: 'GRAVEYARD_WRESTLER_COUNT', healthReference: 'GRAVEYARD_WRESTLER_COUNT', referenceDivisor: 3 } }] }];

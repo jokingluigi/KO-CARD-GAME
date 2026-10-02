@@ -71,12 +71,12 @@ test('current Platinum spends remaining gold for twice its amount; Red Range hur
  n=play(setup(),'레드 렌지');assert.equal(n.players[1].health,19);
  n=play(setup(),'로드');assert.equal(n.players[0].hand.length,1);assert.equal(n.players[0].deck.length,0);
 });
-test('current WarThunder makes a discounted weakened wrestler; Joker destroys top and replaces it',()=>{
- let n=play(setup(),'워썬더');assert.equal(n.players[0].hand.length,1);const c=n.players[0].hand[0];const d=definitions.find(x=>x.id===c.definitionId)!;assert.equal(c.isGenerated,true);assert.equal(c.currentCost,Math.max(1,d.cost-1));assert.equal(c.currentAttack,Math.max(1,d.attack-1));assert.equal(c.currentHealth,Math.max(1,d.health-1));
+test('current WarThunder makes a full-stat wrestler under its revised rule; Joker destroys top and replaces it',()=>{
+ let n=play(setup(),'워썬더');assert.equal(n.players[0].hand.length,1);const c=n.players[0].hand[0];const d=definitions.find(x=>x.id===c.definitionId)!;assert.equal(c.isGenerated,true);assert.equal(c.currentCost,d.cost);assert.equal(c.currentAttack,d.attack);assert.equal(c.currentHealth,Math.max(1,d.health));
  n=play(setup(),'아르카나 조커');assert.equal(n.players[0].deck.length,1);assert.equal(n.players[0].deck[0].isGenerated,true);assert.equal(n.players[0].graveyard.length,0);assert.ok(n.events.some(e=>e.type==='CARD_REMOVED'&&e.cardInstanceId==='player-1-draw'));
 });
-test('current Calavera revives cost <=2 and taunts revived card; Baldan copies grave stats into Zombie',()=>{
- const s=setup();s.players[0].graveyard=[instance('리버덩크','g'),instance('로드','too-high')];let n=play(s,'라 칼라베라');const revived=n.players[0].board.find(c=>c?.instanceId==='g');assert.ok(revived?.keywords.includes('TAUNT'));assert.ok(n.players[0].graveyard.some(c=>c.instanceId==='too-high'));
+test('current Calavera revives cost <=3 without obsolete Taunt; Baldan copies grave stats into Zombie',()=>{
+ const s=setup();s.players[0].graveyard=[instance('리버덩크','g'),instance('도쿵','too-high')];let n=play(s,'라 칼라베라');const revived=n.players[0].board.find(c=>c?.instanceId==='g');assert.ok(revived);assert.ok(!revived.keywords.includes('TAUNT'));assert.ok(n.players[0].graveyard.some(c=>c.instanceId==='too-high'));
  const b=setup();b.players[0].graveyard=[instance('리버덩크','b',{currentAttack:4,currentHealth:6,maxHealth:6})];n=play(b,'발단');const z=n.players[0].board.find(c=>c?.definitionId===def('좀비').id);assert.deepEqual([z?.currentAttack,z?.currentHealth],[4,6]);
 });
 test('current targeted destruction, cat reduction, heal and move-to-deck use actual selections',()=>{
