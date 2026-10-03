@@ -353,9 +353,6 @@ export function CardRenderer({
           />
         )}
 
-        <span className={`pointer-events-none absolute right-1 top-[17%] z-20 rounded px-1 text-[8px] font-black ${rarityBadgeColors[normalizedRarity]}`}>
-          {normalizedRarity}
-        </span>
         {showName && (
           <div
             className="pointer-events-none absolute z-20 flex items-center justify-center overflow-hidden px-[2%] text-center"
@@ -429,10 +426,14 @@ export function CardRenderer({
           </>
         )}
 
+        <div className="pointer-events-none absolute right-[5%] top-[15%] z-30 flex max-w-[52%] flex-col items-end gap-1">
+          <span className={`max-w-full break-all rounded px-1 text-[8px] font-black leading-tight ${rarityBadgeColors[normalizedRarity]}`}>
+            {normalizedRarity}
+          </span>
         {keywordBadges.length > 0 && (
              <div
             data-testid="card-keyword-badges"
-             className="pointer-events-none absolute right-[5%] top-[15%] z-30 flex max-w-[52%] flex-wrap justify-end gap-0.5"
+             className="flex max-w-full flex-wrap justify-end gap-0.5"
             aria-label={`키워드 ${keywordBadges.map((keyword) => keywordLabels[keyword] ?? keyword).join(", ")}`}
           >
             {keywordBadges.map((keyword) => (
@@ -455,6 +456,7 @@ export function CardRenderer({
             ))}
           </div>
         )}
+        </div>
 
         {overlay && <div className="pointer-events-none absolute inset-0 z-30">{overlay}</div>}
       </div>
