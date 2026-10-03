@@ -63,7 +63,7 @@ export function calculateInspectorPosition(
 
 export function getCardInspectorMetadata(card: CardInstance) {
   const definition = getCardDefinition(card.definitionId);
-  const tags = canonicalCardTags(definition?.tags ?? card.tags).slice(0, 3);
+  const tags = [...new Set(canonicalCardTags([...(definition?.tags ?? card.tags ?? []).slice(0, 3), ...(card.grantedTags ?? [])]))];
   const visibleKeywords = getVisibleCardKeywords(
     getActiveCardKeywords(card),
     card.isSilenced,

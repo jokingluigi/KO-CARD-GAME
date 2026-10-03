@@ -7,6 +7,7 @@ import { generateCardInstance } from '@/game/cards/generation';
 import { TOWER_SANDBOX_KEY, createTowerSandbox } from '@/lib/tower-sandbox';
 
 import { prepareAdminCardTest } from '@/game/engine/admin-card-test';
+import { enterField } from '@/game/engine/enter-field';
 import {
   attack,
   createInitialGameState,
@@ -427,7 +428,7 @@ export default function Home() {
           const testChampions = TEST_CHAMPIONS.map((champion) => ({ ...champion, quest: null }));
           const testState = isTechnique || definition.isToken || definition.isChampionToken
             ? createInitialGameState(undefined, [definition, filler], testChampions, [
-                Array.from({ length: 25 }, (_, index) => index === 0 ? definition.id : filler.id),
+                Array.from({ length: 25 }, (_, index) => index === 0 && !definition.isToken && !definition.isChampionToken ? definition.id : filler.id),
                 Array.from({ length: 25 }, () => filler.id),
               ])
             : createInitialGameState(undefined, [definition], testChampions);
@@ -471,6 +472,11 @@ export default function Home() {
             started.players[0]!.currentGold = 10;
           }
           if (!['오젠', '도금구슬마스터'].includes(testName)) started = prepareAdminCardTest(started, definition);
+          if (definition.isChampionToken) {
+            const token = started.players[0]!.hand.find(card => card.definitionId === definition.id)!;
+            started.players[0]!.hand = started.players[0]!.hand.filter(card => card.instanceId !== token.instanceId);
+            started = enterField(started, started.players[0]!.id, token, 0, undefined, undefined, 'CHAMPION_DEPLOY');
+          }
           setRuntimeCardDefinitions(started.cardPool ?? [definition]);
           setGameState(started);
           setIsAdminTestMatch(true);
