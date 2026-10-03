@@ -6,6 +6,7 @@ import { useLocation } from 'wouter';
 import { generateCardInstance } from '@/game/cards/generation';
 import { TOWER_SANDBOX_KEY, createTowerSandbox } from '@/lib/tower-sandbox';
 
+import { prepareAdminCardTest } from '@/game/engine/admin-card-test';
 import {
   attack,
   createInitialGameState,
@@ -434,7 +435,7 @@ export default function Home() {
           setMediaCatalog(media);
           setRuntimeCardDefinitions([definition, ...(isTechnique ? [filler] : []), ...relatedDefinitions]);
           preloadMatchAssets([definition], []);
-          const started = startGame(testState, undefined, media);
+          let started = startGame(testState, undefined, media);
           if (isTechnique || definition.isToken || definition.isChampionToken) {
             const owner = started.players[0]!;
             if (!owner.hand.some((card) => card.definitionId === definition.id)) {
@@ -469,6 +470,8 @@ export default function Home() {
             for (const [slot, target] of [cheap, expensive].entries()) if (target) started.players[1]!.board[slot] = {...generateCardInstance(target, {instanceId:`admin-ozen-target-${slot}`}), boardSlot:slot as 0 | 1};
             started.players[0]!.currentGold = 10;
           }
+          if (!['오젠', '도금구슬마스터'].includes(testName)) started = prepareAdminCardTest(started, definition);
+          setRuntimeCardDefinitions(started.cardPool ?? [definition]);
           setGameState(started);
           setIsAdminTestMatch(true);
           setSelectedCardId(null);

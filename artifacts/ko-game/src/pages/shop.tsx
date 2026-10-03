@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { ArrowLeft, Coins, Gift, ShoppingBag } from "lucide-react";
 import { fetchShop, purchaseShopListing, type ShopListing } from "@/lib/collection-client";
 import { useToast } from "@/hooks/use-toast";
@@ -6,6 +6,7 @@ import { PackDetailDialog } from "@/components/pack-detail-dialog";
 import { CollectionActionAnimation, type CollectionActionScene } from "@/components/collection-action-animation";
 import { useLocation } from "wouter";
 import { ROUTES } from "@/lib/routes";
+import { MAX_SHOP_PURCHASE_QUANTITY } from "../../../../lib/game-engine/src/shop-purchase";
 
 export default function ShopPage() {
   const [, navigate] = useLocation();
@@ -18,6 +19,8 @@ export default function ShopPage() {
   const [success, setSuccess] = useState("");
   const [rewardScene, setRewardScene] = useState<CollectionActionScene | null>(null);
   const [selectedListing, setSelectedListing] = useState<ShopListing | null>(null);
+  const [quantities, setQuantities] = useState<Record<string, number>>({});
+  const purchasingRef = useRef(false);
   const { toast } = useToast();
 
   async function refresh() {
@@ -43,14 +46,18 @@ export default function ShopPage() {
   const hasListings = useMemo(() => listings.length > 0, [listings]);
 
   async function handlePurchase(listing: ShopListing) {
-    if (purchasingId) return;
-    const confirmed = window.confirm(`${listing.name || listing.pack.name} ×${listing.packQuantity}를\n${listing.price.toLocaleString()} ${currencyDisplayName}으로 구매하시겠습니까?`);
+    if (purchasingRef.current) return;
+    const quantity = quantities[listing.id] ?? 1;
+    const total = listing.price * quantity;
+    const packQuantity = listing.packQuantity * quantity;
+    const confirmed = window.confirm(`${listing.name || listing.pack.name} ${quantity}묶음 (팩 ${packQuantity}개)을\n총 ${total.toLocaleString()} ${currencyDisplayName}으로 구매하시겠습니까?`);
     if (!confirmed) return;
+    purchasingRef.current = true;
     setPurchasingId(listing.id);
     setSuccess("");
     setMessage("");
     try {
-      const result = await purchaseShopListing(listing.id);
+      const result = await purchaseShopListing(listing.id, quantity);
       setCurrency(result.currencyBalance);
       setListings((current) => current.map((item) => item.id === listing.id
         ? { ...item, ownedQuantity: result.ownedQuantity }
@@ -65,6 +72,7 @@ export default function ShopPage() {
         toast({ title: "구매 실패", description: "크레딧이 부족합니다.", variant: "destructive" });
       }
     } finally {
+      purchasingRef.current = false;
       setPurchasingId(null);
     }
   }
@@ -89,7 +97,9 @@ export default function ShopPage() {
         {!message && !hasListings && <div className="rounded-xl border border-dashed border-neutral-800 px-5 py-16 text-center text-sm text-neutral-500">현재 판매 중인 카드팩이 없습니다.</div>}
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {listings.map((listing) => {
-             const canAfford = isTestAccount || currency >= listing.price;
+            const quantity = quantities[listing.id] ?? 1;
+            const total = listing.price * quantity;
+            const canAfford = isTestAccount || currency >= total;
             const busy = purchasingId === listing.id;
             return (
               <article key={listing.id} className="overflow-hidden rounded-xl border border-neutral-800 bg-black/40">
@@ -102,11 +112,17 @@ export default function ShopPage() {
                     <span className="shrink-0 rounded bg-neutral-800 px-2 py-1 text-xs font-bold text-neutral-300">보유 ×{listing.ownedQuantity}</span>
                   </div>
                   <p className="mt-4 text-xs text-neutral-400">{listing.pack.name} · 팩 {listing.packQuantity}개 · {listing.pack.cardsPerPack}장</p>
+                  <div className="mt-4 flex flex-wrap items-center gap-2">
+                    <label htmlFor={`purchase-${listing.id}`} className="text-sm font-bold text-neutral-300">구매 수량</label>
+                    <input id={`purchase-${listing.id}`} type="number" inputMode="numeric" min={1} max={MAX_SHOP_PURCHASE_QUANTITY} step={1} value={quantity} disabled={Boolean(purchasingId)} onChange={event => setQuantities(current => ({ ...current, [listing.id]: Math.max(1, Math.min(MAX_SHOP_PURCHASE_QUANTITY, Math.floor(Number(event.target.value) || 1))) }))} className="w-20 min-w-0 rounded border border-neutral-700 bg-neutral-900 px-3 py-2 text-base text-white" />
+                    {[1, 5, 10].map(amount => <button key={amount} type="button" disabled={Boolean(purchasingId)} aria-pressed={quantity === amount} onClick={() => setQuantities(current => ({ ...current, [listing.id]: amount }))} className={`rounded border px-3 py-2 text-sm font-bold ${quantity === amount ? "border-amber-500 text-amber-300" : "border-neutral-700 text-neutral-400"}`}>{amount}</button>)}
+                  </div>
+                  <p className="mt-2 text-sm text-amber-200">팩 {listing.packQuantity * quantity}개 · 총 {total.toLocaleString()} {currencyDisplayName}</p>
                    <button type="button" onClick={() => setSelectedListing(listing)} className="mt-5 w-full rounded border border-neutral-700 px-4 py-2.5 text-sm font-black text-neutral-200 transition hover:border-amber-500 hover:text-amber-300">
                      구성품 및 확률 보기
                    </button>
                    <button type="button" disabled={Boolean(purchasingId) || !canAfford} onClick={() => void handlePurchase(listing)} className="mt-3 flex w-full items-center justify-center gap-2 rounded bg-primary px-4 py-3 text-sm font-black text-black transition hover:bg-yellow-400 disabled:cursor-not-allowed disabled:opacity-50">
-                    <Coins className="h-4 w-4" /> {busy ? "구매 중..." : canAfford ? `${listing.price.toLocaleString()} ${currencyDisplayName}로 구매` : "크레딧 부족"}
+                    <Coins className="h-4 w-4" /> {busy ? "구매 중..." : canAfford ? `${quantity}묶음 구매 · ${total.toLocaleString()} ${currencyDisplayName}` : "크레딧 부족"}
                   </button>
                 </div>
               </article>

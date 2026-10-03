@@ -3053,7 +3053,8 @@ router.get("/cards/:id/test", async (request, response): Promise<void> => {
   if (["오젠", "도금구슬마스터"].includes(card.name.replace(/\s+/gu, ""))) {
     for (const candidate of allCards) if (candidate.status === "PUBLISHED") requiredIds.add(candidate.id);
   }
-  response.json({ card, relatedCards: allCards.filter((candidate) => candidate.id !== card.id && requiredIds.has(candidate.id)) });
+  // Admin-only, in-memory tests need the real random/tag pool as well as named dependencies.
+  response.json({ card, relatedCards: allCards.filter((candidate) => candidate.id !== card.id && (candidate.status !== 'DISABLED' || requiredIds.has(candidate.id))) });
 });
 
 router.post("/cards", async (request, response): Promise<void> => {

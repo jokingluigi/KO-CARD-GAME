@@ -12,6 +12,7 @@ import {
 import { getAuthenticatedUser } from "../lib/auth";
 import { SHOP_CURRENCY, SHOP_CURRENCY_DISPLAY_NAME } from "../lib/shop-currency";
 import { isTestAccountUser, TEST_ACCOUNT_UNLIMITED_BALANCE } from "../lib/test-account";
+import { shopPurchaseQuantity, shopPurchaseTotals } from "../../../../lib/game-engine/src/shop-purchase";
 
 const router: IRouter = Router();
 
@@ -68,6 +69,7 @@ router.get("/", async (request, response): Promise<void> => {
 
 router.post("/:listingId/purchase", async (request, response): Promise<void> => {
   try {
+    const quantity = shopPurchaseQuantity(request.body?.quantity);
     const result = await db.transaction(async (tx) => {
       const [listing] = await tx
         .select({ listing: shopListingsTable, pack: packDefinitionsTable })
@@ -85,7 +87,7 @@ router.post("/:listingId/purchase", async (request, response): Promise<void> => 
         .limit(1);
       if (!listing) throw new ShopError(404, "판매 중인 팩을 찾을 수 없습니다.");
 
-      const total = listing.listing.price;
+      const { total, packQuantity } = shopPurchaseTotals(listing.listing.price, listing.listing.quantity, quantity);
       const testAccount = isTestAccountUser(request.authUser);
       let currencyBalance = request.authUser!.currencyBalance;
       if (!testAccount) {
@@ -108,13 +110,13 @@ router.post("/:listingId/purchase", async (request, response): Promise<void> => 
         .values({
           userId: request.authUser!.id,
           packDefinitionId: listing.pack.id,
-          quantity: listing.listing.quantity,
+          quantity: packQuantity,
           updatedAt: new Date(),
         })
         .onConflictDoUpdate({
           target: [userPackInventoryTable.userId, userPackInventoryTable.packDefinitionId],
           set: {
-            quantity: sql`${userPackInventoryTable.quantity} + ${listing.listing.quantity}`,
+            quantity: sql`${userPackInventoryTable.quantity} + ${packQuantity}`,
             updatedAt: new Date(),
           },
         })
@@ -128,19 +130,19 @@ router.post("/:listingId/purchase", async (request, response): Promise<void> => 
         relatedListingId: listing.listing.id,
         currencyType: SHOP_CURRENCY,
         type: "SHOP_PURCHASE",
-        metadata: { listingId: listing.listing.id, packDefinitionId: listing.pack.id, packQuantity: listing.listing.quantity },
+        metadata: { listingId: listing.listing.id, packDefinitionId: listing.pack.id, packQuantity, quantity },
       });
 
       return {
         currencyBalance,
-        packQuantity: listing.listing.quantity,
-        ownedQuantity: inventory?.quantity ?? listing.listing.quantity,
+        packQuantity,
+        ownedQuantity: inventory?.quantity ?? packQuantity,
         pack: listing.pack,
       };
     });
     response.json(result);
   } catch (error) {
-    const status = error instanceof ShopError ? error.status : 500;
+    const status = error instanceof ShopError ? error.status : error instanceof RangeError ? 422 : 500;
     response.status(status).json({ message: error instanceof Error ? error.message : "구매에 실패했습니다." });
   }
 });

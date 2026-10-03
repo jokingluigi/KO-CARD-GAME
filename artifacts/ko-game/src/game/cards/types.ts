@@ -96,6 +96,7 @@ export function normalizeImageDisplaySettings(
 }
 
 export interface CardDefinition {
+  contentRule?: import("./new-card-effects").NewCardRule;
   id: CardDefinitionId;
   name: string;
   cardType?: 'WRESTLER' | 'TECHNIQUE';
@@ -130,6 +131,9 @@ export interface CardDefinition {
 }
 
 export interface CardInstance {
+  /** Tags granted by an effect; printed catalog tags are never rewritten. */
+  grantedTags?: string[];
+  contentRule?: import("./new-card-effects").NewCardRule;
   armor?: number;
   playCondition?: import('../../../../../lib/game-engine/src/champion-quest-conditions').ChampionQuestCondition;
   instanceId: CardInstanceId;
@@ -181,6 +185,7 @@ export interface CardInstance {
   lastRetiredStats?: { attack: number; health: number };
   /** Executable text copied from a published match CardDefinition. */
   grantedText?: {
+    contentRule?: import("./new-card-effects").NewCardRule;
     armor?: number;
     dodgeCharges?: number;
     playCondition?: import('../../../../../lib/game-engine/src/champion-quest-conditions').ChampionQuestCondition;

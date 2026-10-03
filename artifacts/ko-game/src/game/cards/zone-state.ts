@@ -49,6 +49,7 @@ export function resetCardAfterLeavingBoard(card: CardInstance, printedDefinition
   return {
     ...card,
     lastRetiredStats: undefined,
+    contentRule: definition ? definition.contentRule : card.contentRule,
     currentCost: definition?.cost ?? card.baseCost ?? card.currentCost,
     temporaryCostUntilTurn: undefined,
     temporaryStatModifiers: [],
@@ -67,6 +68,7 @@ export function resetCardAfterLeavingBoard(card: CardInstance, printedDefinition
     armor: definition ? Math.max(0, Number(definition.effectConfig?.armor ?? 0)) : card.armor,
     playCondition: definition ? definition.effectConfig?.playCondition as CardInstance['playCondition'] : card.playCondition,
     grantedText: undefined,
+    grantedTags: undefined,
     keywords: definition ? [...definition.keywords] : card.keywords,
     abilities: definition ? structuredClone(definition.abilities) : card.abilities,
     activeUsedThisTurn: false,

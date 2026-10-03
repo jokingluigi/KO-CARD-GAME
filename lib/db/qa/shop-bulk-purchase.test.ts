@@ -1,0 +1,28 @@
+import {before,after,test} from 'node:test';
+import assert from 'node:assert/strict';
+import {readFile} from 'node:fs/promises';
+import {PGlite} from '@electric-sql/pglite';
+import {drizzle} from 'drizzle-orm/pglite';
+import {generateDrizzleJson,generateMigration} from 'drizzle-kit/api';
+import * as schema from '../src/schema';
+import {shopPurchaseQuantity,shopPurchaseTotals} from '../../game-engine/src/shop-purchase';
+process.env.DATABASE_URL='postgresql://unused:unused@127.0.0.1:1/unused';
+const pg=new PGlite(),database=drizzle(pg,{schema});
+let server:import('node:http').Server,origin:string,cookie:string;
+before(async()=>{
+ for(const ddl of await generateMigration(generateDrizzleJson({}),generateDrizzleJson(schema)))await pg.exec(ddl);
+ await pg.exec(await readFile(new URL('../migrations/0033_server_maintenance.sql',import.meta.url),'utf8'));
+ const {db}=await import('../src/index');for(const method of ['select','insert','update','delete','transaction','execute'] as const)Object.assign(db,{[method]:database[method].bind(database)});
+ const {hashPassword}=await import('../../../artifacts/api-server/src/lib/auth');
+ await database.insert(schema.usersTable).values({id:'bulk-shop-qa',email:'bulk-shop@example.invalid',nickname:'QA',passwordHash:await hashPassword('IsolatedShopQA123'),role:'USER',currencyBalance:2000,shopCurrencyStarterGrantedAt:new Date()});
+ await database.insert(schema.packDefinitionsTable).values({id:'pack',name:'격리 테스트 팩',status:'PUBLISHED'});
+ await database.insert(schema.shopListingsTable).values({id:'listing',packDefinitionId:'pack',quantity:2,price:100});
+ const {default:app}=await import('../../../artifacts/api-server/src/app');server=app.listen(0,'127.0.0.1');await new Promise<void>(resolve=>server.on('listening',resolve));const addr=server.address();assert.ok(addr&&typeof addr==='object');origin=`http://127.0.0.1:${addr.port}`;
+ const login=await fetch(origin+'/api/auth/login',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({email:'bulk-shop@example.invalid',password:'IsolatedShopQA123'})});assert.equal(login.status,200);cookie=login.headers.get('set-cookie')!.split(';')[0];
+});
+after(async()=>{await new Promise<void>(r=>server.close(()=>r()));await pg.close();const {pool}=await import('../src/index');await pool.end();});
+const buy=(payload:unknown)=>fetch(origin+'/api/shop/listing/purchase',{method:'POST',headers:{Cookie:cookie,'Content-Type':'application/json'},body:JSON.stringify(payload)});
+test('quantity validation and integer overflow protection',()=>{assert.equal(shopPurchaseQuantity(undefined),1);assert.deepEqual(shopPurchaseTotals(100,2,5),{total:500,packQuantity:10});for(const q of [0,-1,1.5,101,'2',null,NaN,Infinity])assert.throws(()=>shopPurchaseQuantity(q));assert.throws(()=>shopPurchaseTotals(2147483647,2,2));});
+test('legacy single purchase and bulk purchase debit once and grant exact multiplied pack count',async()=>{let r=await buy({});assert.equal(r.status,200);assert.deepEqual(await r.json().then(b=>[b.currencyBalance,b.packQuantity,b.ownedQuantity]),[1900,2,2]);r=await buy({quantity:5});assert.equal(r.status,200);assert.deepEqual(await r.json().then(b=>[b.currencyBalance,b.packQuantity,b.ownedQuantity]),[1400,10,12]);const tx=await database.select().from(schema.currencyTransactionsTable);assert.equal(tx.length,2);assert.equal(tx[1].amount,-500);assert.equal((tx[1].metadata as {quantity:number}).quantity,5);});
+test('invalid quantities and insufficient funds leave inventory/balance/history unchanged',async()=>{for(const quantity of [0,-1,2.5,101,'5',null])assert.equal((await buy({quantity})).status,422);assert.equal((await buy({quantity:100})).status,422);assert.equal((await database.select().from(schema.usersTable))[0].currencyBalance,1400);assert.equal((await database.select().from(schema.userPackInventoryTable))[0].quantity,12);assert.equal((await database.select().from(schema.currencyTransactionsTable)).length,2);});
+test('concurrent bulk requests cannot overspend; successful debit and inventory remain atomic',async()=>{const results=await Promise.all([buy({quantity:10}),buy({quantity:10})]);assert.deepEqual(results.map(r=>r.status).sort(),[200,422]);assert.equal((await database.select().from(schema.usersTable))[0].currencyBalance,400);assert.equal((await database.select().from(schema.userPackInventoryTable))[0].quantity,32);assert.equal((await database.select().from(schema.currencyTransactionsTable)).length,3);});

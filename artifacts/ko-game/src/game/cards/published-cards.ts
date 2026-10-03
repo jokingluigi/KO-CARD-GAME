@@ -1,3 +1,4 @@
+import { newCardImplementation } from './new-card-effects';
 import { ZOMBIE_RULES } from '../engine/zombie-token';
 import type { CardAbility, CardEffect } from "../effects/types";
 import type { CardDefinition, CardRarity } from "./types";
@@ -206,6 +207,7 @@ function excludeGraveyardTargets<T>(value: T): T {
 }
 
 export function cardRecordToDefinition(card: PublishedCardRecord): CardDefinition {
+  const implementation = newCardImplementation(card);
   if (card.name === '디 오리진') card = { ...card, text: card.text.replace(/선수(?:\s*카드)?\s*\d+\s*장당/u, '선수 2장당') };
   if (card.isToken && card.name.trim() === '좀비') card = { ...card, cost: 1, attack: 1, health: 1, text: ZOMBIE_RULES, keywords: [], effectId: 'STRUCTURED_EFFECTS_V1', effectConfig: { effects: [] } };
   const zombieAbsorption = /필드에\s*있는\s*['‘]?좀비['’]?\s*중[^.!?]*가장\s*수치의\s*합/.test(card.text) &&
@@ -270,7 +272,8 @@ export function cardRecordToDefinition(card: PublishedCardRecord): CardDefinitio
       isChampionToken: card.isChampionToken,
       keywords: card.keywords,
        tags: Array.isArray(card.tags) ? [...card.tags] : [],
-      abilities: (repairedLegacyCardAbilities(card) ?? (zombieAbsorption
+      ...(implementation ? {contentRule: implementation.rule} : {}),
+      abilities: (implementation?.abilities ?? repairedLegacyCardAbilities(card) ?? (zombieAbsorption
         ? [{ trigger: 'ENTER_FIELD' as const, effects: [{ type: 'STRUCTURED' as const,
             action: 'COPY_BEST_STATS' as const,
             target: { zone: 'BOARD' as const, owner: 'SELF' as const, cardType: 'WRESTLER' as const,

@@ -15,7 +15,7 @@ import type { GameState } from '../types/game-state';
 
 // Actual 2026-10-02 production definitions. Published API plus read-only admin
 // dialogs for the ten unpublished wrestlers; media and account data omitted.
-const records = JSON.parse(readFileSync(new URL('./fixtures/wrestlers-2026-10-02.json', import.meta.url), 'utf8')) as PublishedCardRecord[];
+const records = JSON.parse(readFileSync(new URL('./fixtures/cards-2026-10-04.json', import.meta.url), 'utf8')) as PublishedCardRecord[];
 const definitions = records.map(cardRecordToDefinition);
 const def = (name: string) => { const d=definitions.find(x=>x.name===name); assert.ok(d,name); return d; };
 const instance = (name: string, id=name, patch: Partial<CardInstance>={}) => ({...generateCardInstance(def(name),{instanceId:id,isGenerated:false}),...patch});
@@ -35,13 +35,13 @@ const source=(s:GameState)=>s.players[0].board.find(c=>c?.instanceId==='source')
 const buff=(s:GameState,c:CardInstance,attack=0,health=0)=>applyEffect(s,'player-1',c,{type:'STRUCTURED',action:'BUFF',target:{zone:'BOARD',owner:'SELF',selection:'SELF',count:1},values:{attack,health}});
 const retire=(s:GameState,c:CardInstance,owner='player-1')=>applyEffect(s,owner,c,{type:'STRUCTURED',action:'RETIRE',target:{zone:'BOARD',owner:'SELF',selection:'SELF',count:1}});
 
-for(const record of records)test(`current wrestler legal play/serialization: ${record.name}`,()=>{
+for(const record of records.filter(r=>r.cardType==='WRESTLER'))test(`current wrestler legal play/serialization: ${record.name}`,()=>{
  const s=setup();onBoard(s,'리버덩크',0,1);s.players[0].graveyard=[instance('리버덩크','grave')];
  const n=play(s,record.name,1);assert.ok(n.events.some(e=>e.type==='CARD_PLAYED'&&e.cardInstanceId==='source'));assert.ok(!n.players[0].hand.some(c=>c.instanceId==='source'));assert.ok(JSON.stringify(n));
 });
 
 test('current RM doubles actual stats; Origin counts groups of two even with null effectId',()=>{
- let n=play(setup(),'RM우디르');assert.deepEqual([source(n).currentAttack,source(n).currentHealth],[6,6]);
+ let n=play(setup(),'RM우디르');assert.deepEqual([source(n).currentAttack,source(n).currentHealth],[4,4]);
  for(const count of [0,2,3,6]){const s=setup();s.players[0].graveyard=Array.from({length:count},(_,i)=>instance('리버덩크',`g${i}`));n=play(s,'디 오리진');assert.deepEqual([source(n).currentAttack,source(n).currentHealth],[2+Math.floor(count/2),2+Math.floor(count/2)]);}
 });
 test('current Pi Star buffs other allies +2/+2; Black Macaron uses remaining hand count',()=>{
@@ -82,12 +82,12 @@ test('current Calavera revives cost <=3 without obsolete Taunt; Baldan copies gr
 });
 test('current targeted destruction, cat reduction, heal and move-to-deck use actual selections',()=>{
  let s=setup();onBoard(s,'리버덩크',0,1);let n=play(s,'흑구슬마스터',0,'1-리버덩크-0');assert.equal(n.players[1].board[0],null);assert.ok(n.events.some(e=>e.type==='CARD_DESTROYED'&&e.cardInstanceId==='1-리버덩크-0'));assert.equal(n.players[1].graveyard.length,0);
- s=setup();onBoard(s,'로드',0,1,{currentAttack:5,currentHealth:8,maxHealth:8});n=play(s,'떼껄룩',0,'1-로드-0');assert.equal(n.players[1].board[0]?.currentAttack,1);assert.equal(n.players[1].board[0]?.isStunned,true);assert.equal(source(n).currentHealth,10);
- s=setup();s.players[0].health=15;n=play(s,'휴먼쿠커',0,'player-1');assert.equal(n.players[0].health,17);
+ s=setup();onBoard(s,'로드',0,1,{currentAttack:5,currentHealth:8,maxHealth:8});n=play(s,'떼껄룩',0,'1-로드-0');assert.equal(n.players[1].board[0]?.currentAttack,1);assert.equal(n.players[1].board[0]?.isStunned,true);assert.equal(source(n).currentHealth,9);
+ s=setup();s.players[0].health=15;n=play(s,'휴먼쿠커',0,'player-1');assert.equal(n.players[0].health,18);
  s=setup();onBoard(s,'로드',0,1);n=play(s,'작은 하마',0,'1-로드-0');assert.equal(n.players[1].board[0],null);assert.equal(n.players[1].deck[0].instanceId,'1-로드-0');
 });
 test('current Pandora gains +2/+2 only when target ends at exactly one health; Pumpkin returns and discounts this turn',()=>{
- for(const hp of [2,3]){const s=setup();onBoard(s,'로드',0,1,{currentHealth:hp,maxHealth:hp});const n=play(s,'판도라',0,'1-로드-0');assert.equal(source(n).currentAttack,hp===2?4:2);}
+ for(const hp of [2,3]){const s=setup();onBoard(s,'로드',0,1,{currentHealth:hp,maxHealth:hp});const n=play(s,'판도라',0,'1-로드-0');assert.equal(source(n).currentAttack,hp===2?5:3);}
  const s=setup();onBoard(s,'로드',1);let n=play(s,'매드 펌킨',0,'0-로드-1');assert.equal(n.players[0].board[1],null);assert.equal(n.players[0].hand[0].currentCost,2);n=endTurn(n,'player-1').state;assert.equal(n.players[0].hand[0].currentCost,3);
 });
 test('current Mandang summons one copy; Luigi buffs only its adjacent summoned cards; cleanup queue buffs next play',()=>{
@@ -144,8 +144,7 @@ test('current Pandora champion token quest deployment destroys target and absorb
  onBoard(n,'로드',0,1,{currentAttack:3,currentHealth:1,maxHealth:1});n=action(n,{type:'ATTACK',playerId:'player-1',attackerInstanceId:'rampage',target:{type:'WRESTLER',playerId:'player-2',cardInstanceId:'1-로드-0'}});assert.equal(n.players[0].board[0]?.currentAttack,13);
 });
 test('current Zombie grows on other retirements, merges summons, and ignores destroy',()=>{
- for(const mode of ['RETIRE','DESTROY'] as const){const s=setup();onBoard(s,'좀비');const c=onBoard(s,'리버덩크',1,1);const n=applyEffect(s,'player-2',c,{type:'STRUCTURED',action:mode,target:{zone:'BOARD',owner:'SELF',selection:'SELF',count:1}});assert.equal(n.players[0].board[0]?.currentAttack,1) // Enemy retirement never grows an allied zombie.
-;}
+ for(const mode of ['RETIRE','DESTROY'] as const){const s=setup();onBoard(s,'좀비');const c=onBoard(s,'리버덩크',1,1);const n=applyEffect(s,'player-2',c,{type:'STRUCTURED',action:mode,target:{zone:'BOARD',owner:'SELF',selection:'SELF',count:1}});assert.equal(n.players[0].board[0]?.currentAttack,1);}
 });
 for(const name of ['레이븐','스카드','엘리트 용병','용병','위리녀','하스이','벨로나','황소할배','여울의 보디가드','리버덩크','보드바'])test(`current vanilla/keyword rules: ${name}`,()=>{
  let n=play(setup(),name);const c=source(n);assert.ok(c);for(const keyword of def(name).keywords)assert.ok(c.keywords.includes(keyword));
@@ -193,4 +192,12 @@ test('Maid Pandora transforms even when its stored form id is stale', () => {
  s.players[0].hand = [generateCardInstance(broken, {instanceId:'source',isGenerated:false})];
  const n = action(s, {type:'PLAY_WRESTLER',playerId:'player-1',cardInstanceId:'source',boardSlot:0}, victim.instanceId);
  assert.equal(source(n).definitionId, def('늑대인간 판도라').id);
+});
+
+// Every current catalog row is mapped without rewriting its original specification.
+for(const record of records)test(`current catalog contract: ${record.name} [${record.id}]`,()=>{
+ const raw=structuredClone(record),d=cardRecordToDefinition(raw);assert.deepEqual(raw,record);
+ assert.deepEqual([d.cost,d.attack,d.health],[record.cost,record.attack,record.health]);
+ assert.equal(d.rulesText,record.name==='좀비'?d.rulesText:record.text);assert.ok(JSON.parse(JSON.stringify(d)));
+ if(record.text.trim() && !['레이븐','스카드','벨로나','황소할배','좀비'].includes(record.name))assert.ok(d.abilities.length || d.contentRule,`effect-less nonvanilla ${record.name}`);
 });

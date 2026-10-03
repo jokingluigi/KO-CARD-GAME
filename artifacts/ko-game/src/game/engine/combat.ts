@@ -1,3 +1,4 @@
+import { hasNewCardRule, silenceDamageReduction } from './new-card-rules';
 import { keywordDamage, healLifesteal, hasEntryDefense } from './keyword-rules';
 import type { CardInstanceId } from '../cards/types';
 import type { ActionErrorCode, ActionResult } from '../actions/types';
@@ -6,6 +7,7 @@ import type { GameState } from '../types/game-state';
 import type { EventAttribution } from '../events/types';
 import { validateCurrentPlayer } from './turn-system';
 import {
+  applyEffect,
   getDamageModifierBonus,
   hasKeyword,
   resolveBoardListeners,
@@ -189,6 +191,13 @@ export function attack(
   if (state.targetingState?.active) {
     return actionFailure(state, 'TARGET_SELECTION_PENDING', '먼저 대상을 선택하세요.');
   }
+  const retireAfterAttack = state.players.find(p=>p.id===attackingPlayerId)?.board.some(c=>hasNewCardRule(c,'마도카와')) ?? false;
+  const finishNewAttack = (next:GameState):GameState => {
+    const c=findBoardCard(next,attackingPlayerId,attackerInstanceId)?.card;
+    if(!retireAfterAttack || !c || c.cardType!=='WRESTLER') return next;
+    const retired=applyEffect(next,attackingPlayerId,c,{type:'STRUCTURED',action:'RETIRE',target:{zone:'BOARD',owner:'SELF',selection:'SELF',count:1}});
+    return retired.targetingState?.active ? resolvePendingEffects(retired) : retired;
+  };
   const turnFailure = validateCurrentPlayer(state, attackingPlayerId);
   if (turnFailure) {
     return turnFailure;
@@ -423,24 +432,24 @@ export function attack(
       return actionSuccess(
         processChampionQuestEvents(
           state,
-          resolved,
+          finishNewAttack(resolved),
         ),
       );
     }
     if (remainingHealth > 0) {
       return actionSuccess(
-        processChampionQuestEvents(state, damageListenersResolved),
+        processChampionQuestEvents(state, finishNewAttack(damageListenersResolved)),
       );
     }
 
     return actionSuccess(
-      processChampionQuestEvents(state, {
+      processChampionQuestEvents(state, finishNewAttack({
         ...damageListenersResolved,
         status: 'FINISHED',
         activePlayerId: null,
         winnerId: attackingPlayerId,
         loserId: target.playerId,
-      }),
+      })),
     );
   }
 
@@ -501,8 +510,8 @@ export function attack(
     const reduced = towerIncomingDamage(preDamageState, attackingPlayerId, attackerPrepared, defenderDamage, attackingHighest);
     preDamageState = reduced.state; defenderDamage = reduced.amount;
   }
-  attackerDamage = keywordDamage(defenderPreparedCard, attackerDamage, preDamageState.turn);
-  defenderDamage = keywordDamage(attackerPrepared, defenderDamage, preDamageState.turn);
+  attackerDamage = keywordDamage(defenderPreparedCard, Math.max(0, attackerDamage - silenceDamageReduction(defenderPreparedCard, attackerPrepared)), preDamageState.turn);
+  defenderDamage = keywordDamage(attackerPrepared, Math.max(0, defenderDamage - silenceDamageReduction(attackerPrepared, defenderPreparedCard)), preDamageState.turn);
   const damageEventStartIndex = preDamageState.events.length;
   const combatEventId = `combat:${state.gameId}:${state.turn}:${damageEventStartIndex}`;
   const attackerAttribution: EventAttribution = {
@@ -593,8 +602,16 @@ export function attack(
     ],
   }, attackingPlayerId, attackerPrepared, preventedAttackerDamage || defenderDodges ? 0 : attackerDamage);
 
+  let afterNewDamage = damagedState;
+  for (const [ownerId, before] of [[attackingPlayerId,attackerPrepared],[target.playerId,defenderPreparedCard]] as const) {
+    const current=findBoardCard(afterNewDamage,ownerId,before.instanceId)?.card;
+    if (current && hasNewCardRule(current,'블랙 아웃') && current.currentHealth<before.currentHealth) {
+      afterNewDamage=resolveTriggeredAbilities(afterNewDamage,ownerId,current,'SELF_DAMAGED',{healthBefore:before.currentHealth,healthAfter:current.currentHealth});
+      if(afterNewDamage.targetingState?.active) afterNewDamage=resolvePendingEffects(afterNewDamage);
+    }
+  }
   const firstAttackedResolved = resolveTriggeredAbilities(
-    damagedState,
+    afterNewDamage,
     target.playerId,
     defenderPreparedCard,
     'FIRST_ATTACKED',
@@ -629,5 +646,5 @@ export function attack(
     damageListenersResolved,
     damageEventStartIndex,
   );
-  return actionSuccess(processChampionQuestEvents(state, resolved));
+  return actionSuccess(processChampionQuestEvents(state, finishNewAttack(resolved)));
 }

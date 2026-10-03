@@ -9,6 +9,10 @@ const enemyResult = { zone: 'BOARD' as const, owner: 'ENEMY' as const, cardType:
 /** Repair published legacy configurations by the full meaning of their stored card text. */
 export function repairedLegacyCardAbilities(card: PublishedCardRecord): CardAbility[] | null {
   const text = card.text.replace(/\s+/gu, ' ').trim();
+  if (!card.effectId && card.name === '휴먼쿠커' && /등장.*선택한\s*아군\s*대상.*체력을\s*3\s*회복/u.test(text)) {
+    return [{ trigger: 'ENTER_FIELD', effects: [{ type: 'STRUCTURED', action: 'HEAL',
+      target: { zone: 'CHARACTER', owner: 'SELF', selection: 'PLAYER_CHOICE', count: 1 }, values: { amount: 3 } }] }];
+  }
   if (!card.effectId && card.name === '워썬더' && /등장.*손에\s*무작위\s*선수\s*카드\s*1장을\s*생성/u.test(text)) {
     return [{ trigger: 'ENTER_FIELD', effects: [{ type: 'STRUCTURED', action: 'GENERATE',
       target: { zone: 'HAND', owner: 'SELF', cardType: 'WRESTLER', selection: 'RANDOM', randomScope: 'STANDARD', count: 1 },

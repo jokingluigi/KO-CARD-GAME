@@ -72,6 +72,8 @@ export interface PlayerState {
 }
 
 export interface GameState {
+  consumedNewCardEventKeys?: string[];
+  overhealByTurn?: Record<string, number>;
   zombieGrowthEventKeys?: string[];
   /** Absent in all existing modes; only a Tower battle may carry relic rules. */
   tower?: TowerBattleContext;

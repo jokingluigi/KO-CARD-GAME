@@ -294,5 +294,5 @@ export const purchaseShopListing = (listingId: string, quantity = 1) => request<
   pack: Pack;
 }>(`/shop/${encodeURIComponent(listingId)}/purchase`, {
   method: "POST",
-  body: JSON.stringify({}),
+  body: JSON.stringify({ quantity }),
 });

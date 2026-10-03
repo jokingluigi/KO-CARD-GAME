@@ -1,3 +1,5 @@
+import { newCardTargetAllowed } from '../cards/new-card-effects';
+import { hasNewCardRule, healNewCardAware, silenceDamageReduction, healingTurn } from '../engine/new-card-rules';
 import { fallbackZombieToken } from '../engine/zombie-token';
 import { existingZombie, isZombieToken, mergeZombie, normalizeZombieDefinition, ZOMBIE_RULES } from '../engine/zombie-token';
 import { keywordDamage, hasEntryDefense } from '../engine/keyword-rules';
@@ -74,6 +76,7 @@ export function getValidTargets(
     if (!player) return [];
     const cards = cardsInZones(player, zones);
     const filteredCards = cards.filter((card) => {
+      if (!newCardTargetAllowed(sourceCard, card, effect.action)) return false;
       if ((effect.action !== 'MOVE_TO_DECK' || !zones.every(zone => zone === 'GRAVEYARD')) && ['PLAYER_CHOICE', 'RANDOM', 'SAME_TARGET'].includes(target.selection ?? '') && getActiveCardKeywords(card).includes('IMMUNE')) return false;
       if (zones.length === 1 && zones[0] === 'CHARACTER' && card.cardType !== 'WRESTLER') return false;
       if (target.cardType && card.cardType !== target.cardType) return false;
@@ -145,7 +148,7 @@ function matchesStateCardTagFilter(
   if (!filter || (!filter.tagsAny && !filter.tagsAll && !filter.tagsNone)) return true;
   const definition = (state.cardPool?.find((candidate) => candidate.id === card.definitionId) ?? state.minionACardPool?.find(candidate => candidate.id === card.definitionId));
   if (!definition) return false;
-  return matchesCardTagFilter(definition, filter);
+  return matchesCardTagFilter({ tags: [...(definition.tags ?? []), ...(card.grantedTags ?? [])] }, filter);
 }
 
 function matchesDefinitionRef(
@@ -202,6 +205,15 @@ function scriptTargetCards(
       : playerId))].filter((player): player is GameState['players'][number] => Boolean(player));
   const zones = scriptZones(target);
   const candidates = owners.flatMap((owner) => cardsInZones(owner, zones)).filter((card) => {
+    if (hasNewCardRule(sourceCard, '태그 체인지')) {
+      const owner = state.players.find(player => player.id === playerId);
+      if (zones.includes('BOARD') && !owner?.hand.some(hand => hand.cardType === 'WRESTLER' && hand.currentCost <= card.currentCost && !getActiveCardKeywords(hand).includes('IMMUNE'))) return false;
+      if (zones.includes('HAND')) {
+        const selected = registers?.get('swapField');
+        const field = owner?.board.filter((entry): entry is CardInstance => Boolean(entry)).filter(entry => selected && 'ids' in selected && selected.ids.includes(entry.instanceId));
+        if (!field?.some(entry => card.currentCost <= entry.currentCost)) return false;
+      }
+    }
     if (!zones.every(zone => zone === 'GRAVEYARD') && ['PLAYER_CHOICE', 'RANDOM', 'SAME_TARGET'].includes(target.selection ?? '') && getActiveCardKeywords(card).includes('IMMUNE')) return false;
     const result = target.resultId ? registers?.get(target.resultId) : undefined;
     if (target.resultId && (!result || !('ids' in result) || !result.ids.includes(card.instanceId))) return false;
@@ -494,6 +506,11 @@ function applyScriptSteps(
       continue;
     }
     const { target, selectedIds } = scriptEffectTarget(step.effect.target, registers);
+    if (hasNewCardRule(sourceCard, '태그 체인지') && step.effect.action === 'SUMMON_FROM_HAND') {
+      const field = registers.get('swapField'), hand = registers.get('swapHand');
+      if (field && 'ids' in field && hand && 'ids' in hand) next = applyTagChange(next, playerId, sourceCard, field.ids[0]!, hand.ids[0]!);
+      continue;
+    }
     const values = scriptEffectValues(step.effect.values, registers);
     if (values && ACTION_SCHEMAS[step.effect.action].amount && !ACTION_SCHEMAS[step.effect.action].signedAmount &&
       typeof values.amount === 'number') values.amount = Math.max(0, values.amount);
@@ -541,6 +558,7 @@ export function getDamageModifierBonus(
 
   return owner.board.reduce((bonus, card) => {
     if (!card || card.isSilenced) return bonus;
+    if ((card.contentRule === '마도카와' || card.grantedText?.contentRule === '마도카와') && (!hasNewCardRule(card,'마도카와') || sourceCard.cardType !== 'WRESTLER')) return bonus;
     const aura = getActiveCardAbilities(card)
       .flatMap((ability) => ability.effects)
       .filter((effect): effect is Extract<CardEffect, { type: 'STRUCTURED' }> =>
@@ -1695,6 +1713,27 @@ export function resolvePendingEffects(state: GameState): GameState {
   return resolveStateBasedDeaths(settled, pending.triggerContext?.sourceContext);
 }
 
+/** The disabled legacy spell remains disabled; its admin test uses the same legal swap. */
+function applyTagChange(state: GameState, playerId: string, source: CardInstance, fieldId: string, handId: string): GameState {
+  const owner = state.players.find(player => player.id === playerId);
+  const field = owner?.board.find(card => card?.instanceId === fieldId);
+  const hand = owner?.hand.find(card => card.instanceId === handId);
+  if (!owner || !field || !hand || field.boardSlot === null || hand.cardType !== 'WRESTLER' || hand.currentCost > field.currentCost || getActiveCardKeywords(field).includes('IMMUNE') || getActiveCardKeywords(hand).includes('IMMUNE')) return state;
+  const slot = field.boardSlot;
+  let next: GameState = { ...state, players: state.players.map(player => player.id !== playerId ? player : {
+    ...player,
+    hand: player.hand.filter(card => card.instanceId !== handId),
+  }), events: [...state.events,
+    {type:'CARD_PLAYED',playerId,cardInstanceId:handId,cardType:'WRESTLER',source:{type:'PLAYER',playerId},target:{type:'CARD',cardInstanceId:handId},reason:'PLAY_FROM_HAND',tags:hand.tags??[]}] };
+  next = applyEffect(next, playerId, source, {type:'STRUCTURED',action:'MOVE_TO_HAND',target:{zone:'BOARD',owner:'SELF',selection:'SAME_TARGET',count:1}}, [fieldId]);
+  next = enterField(next, playerId, hand, slot, {type:'CARD',cardInstanceId:source.instanceId}, undefined, 'PLAY_FROM_HAND');
+  next = resolveQueuedEffectsForPlayedWrestler(next, playerId, handId);
+  next = resolveRegisteredRuleListeners(next, 'CARD_PLAYED', playerId, handId, 'WRESTLER');
+  for (const [zone, id] of [['HAND',fieldId],['BOARD',handId]] as const) next = applyEffect(next, playerId, source,
+    {type:'STRUCTURED',action:'BUFF',target:{zone,owner:'SELF',cardType:'WRESTLER',selection:'SAME_TARGET',count:1},values:{attack:1,health:0}}, [id]);
+  return next;
+}
+
 export function selectEffectTarget(state: GameState, targetId: string): GameState {
   const pending = state.targetingState;
   if (!pending) return state;
@@ -1773,6 +1812,10 @@ export function cancelEffectTargeting(state: GameState): GameState {
 }
 
 export function hasMandatoryPlayerChoice(state: GameState, playerId: string, source: CardInstance, effects: CardEffect[]): boolean {
+  if (hasNewCardRule(source, '태그 체인지')) {
+    const owner = state.players.find(player => player.id === playerId);
+    return !owner?.board.some(field => field && !getActiveCardKeywords(field).includes('IMMUNE') && owner.hand.some(hand => hand.cardType === 'WRESTLER' && !getActiveCardKeywords(hand).includes('IMMUNE') && hand.currentCost <= field.currentCost));
+  }
   return effects.some((effect) => {
     if (effect.type === 'STRUCTURED') return effect.target?.selection === 'PLAYER_CHOICE' &&
       !effect.target.optionalTarget && getValidTargets(state, playerId, source, effect).length < (effect.target.minTargets ?? effect.target.count);
@@ -2287,7 +2330,9 @@ export function applyEffect(
       const validIds = getValidTargets(state, playerId, sourceCard, effect);
       const selectedIds = target.selection === 'ALL'
         ? validIds
-        : chosenTargetInstanceIds?.filter((id) => validIds.includes(id)) ?? [];
+        : target.selection === 'RANDOM'
+          ? shuffle(validIds,randomForEffect(state,sourceCard,effect)).slice(0,target.count)
+          : chosenTargetInstanceIds?.filter((id) => validIds.includes(id)) ?? [];
       const playerIds = selectedIds.filter((id) => state.players.some((player) => player.id === id));
       const cardIds = selectedIds.filter((id) => !playerIds.includes(id));
       const afterPlayers = playerIds.reduce((nextState, owner) =>
@@ -2311,7 +2356,7 @@ export function applyEffect(
       }, afterPlayers);
     }
     if (zones.length === 1 && zones[0] === 'PLAYER' && effect.action === 'HEAL') {
-      return { ...state, players: state.players.map(p => p.id !== targetOwner ? p : { ...p, health: Math.min(p.maxHealth, p.health + amount), champion: p.champion ? { ...p.champion, health: Math.min(p.maxHealth, p.health + amount) } : null }) };
+      return healNewCardAware(state, targetOwner, amount);
     }
     if (zones.length === 1 && zones[0] === 'PLAYER') {
       if (isChampionProtectedByToken(state, targetOwner)) return state;
@@ -2351,6 +2396,7 @@ export function applyEffect(
     }
     const candidates = cardsInZones(candidatePlayer, zones);
     const eligibleCandidates = candidates.filter((card) => {
+      if (!newCardTargetAllowed(sourceCard, card, effect.action)) return false;
       if ((effect.action !== 'MOVE_TO_DECK' || !zones.every(zone => zone === 'GRAVEYARD')) && ['PLAYER_CHOICE', 'RANDOM', 'SAME_TARGET'].includes(target.selection ?? '') && getActiveCardKeywords(card).includes('IMMUNE')) return false;
       if ((card.isTrainingDummy) && (
         effect.action === 'SILENCE' ||
@@ -2449,6 +2495,12 @@ export function applyEffect(
           : state;
     }
     const ids = new Set(targets.map((card) => card.instanceId));
+    if (effect.action === 'HEAL' && zones.includes('BOARD')) {
+      const healed=targets.reduce((next,card)=>healNewCardAware(next,targetOwner,amount,card.instanceId),state);
+      const context=sourceContextFor(playerId,sourceCard,triggerContext);
+      const changes=statChangeEvents(state,healed,sourceCard,context,effect.values?.duration);
+      return resolveStatChangeListeners(state,{...healed,events:[...healed.events,...changes]},context);
+    }
     if (effect.action === 'TRANSFORM_TARGET') {
       const targetDefinition = resolveCardDefinition(state, effect.values?.definition, effect.values?.definitionRef, true);
       if (!targetDefinition || targetDefinition.cardType === 'TECHNIQUE') return state;
@@ -2839,7 +2891,7 @@ export function applyEffect(
         }
         const reduced = towerIncomingDamage(preparedState, targetOwner, preparedCurrent, damageAmount);
         preparedState = reduced.state;
-        const effectiveDamage = keywordDamage(preparedCurrent, reduced.amount, preparedState.turn);
+        const effectiveDamage = keywordDamage(preparedCurrent, Math.max(0, reduced.amount - silenceDamageReduction(preparedCurrent, sourceCard)), preparedState.turn);
         const health = preparedCurrent.isTrainingDummy ? 1 : preparedCurrent.currentHealth - effectiveDamage;
         if (health > 0) {
           const damagedState: GameState = {
@@ -3070,6 +3122,7 @@ export function applyEffect(
                    : effect.values?.amountReference !== undefined ? Math.floor(legacyDynamic / referenceDivisor) : 0);
                return finish({
                  ...card,
+                 ...(hasNewCardRule(sourceCard, '마개조') ? { grantedTags: [...new Set([...(card.grantedTags ?? []), '실험체'])] } : {}),
                  currentAttack: card.currentAttack * attackMultiplier + attackDelta +
                    (effect.values?.referenceStat === 'CURRENT_ATTACK' ? referenceAmount : 0),
                  maxHealth: card.maxHealth * healthMultiplier + healthDelta +
@@ -3382,6 +3435,29 @@ export function resolveTriggeredAbilities(
   }
   if (card.isAbilityDisabled || (card.isSilenced && !card.grantedText)) return state;
 
+  const run = (next:GameState, effect:CardEffect) => applyEffect(next,playerId,card,effect,undefined,options);
+  const selfTarget = {zone:'BOARD' as const,owner:'SELF' as const,selection:'SELF' as const,count:1};
+  if (trigger === 'TURN_END' && state.players.find(p=>p.id===playerId)?.hand.some(c=>c.instanceId===card.instanceId)) {
+    if (hasNewCardRule(card,'DEATH')) return {...state,status:'FINISHED',activePlayerId:null,winnerId:state.players.find(p=>p.id!==playerId)?.id??null,loserId:playerId};
+    if (hasNewCardRule(card,'지뢰닷!!!')) {
+      const damaged=run(state,{type:'STRUCTURED',action:'DAMAGE',target:{zone:'PLAYER',owner:'SELF',selection:'SELF',count:1},values:{amount:5}});
+      return {...damaged,players:damaged.players.map(p=>p.id!==playerId?p:{...p,hand:p.hand.filter(c=>c.instanceId!==card.instanceId),removedFromGame:[...p.removedFromGame,card]}),events:[...damaged.events,{type:'CARD_REMOVED',playerId,cardInstanceId:card.instanceId,reason:'REMOVE_FROM_GAME'}]};
+    }
+  }
+  if (trigger==='ENTER_FIELD' && hasNewCardRule(card,'뱀파이어 왕자 MPG')) {
+    const start=state.events.length;
+    const next=run(state,{type:'STRUCTURED',action:'DAMAGE',target:{zone:'BOARD',owner:'ENEMY',cardType:'WRESTLER',selection:'ALL',count:4},values:{amount:1}});
+    const damage=next.events.slice(start).filter(e=>e.type==='DAMAGE_DEALT' && e.source?.type==='CARD' && e.source.cardInstanceId===card.instanceId).reduce((sum,e)=>sum+(e.amount??0),0);
+    return run(next,{type:'STRUCTURED',action:'BUFF',target:selfTarget,values:{attack:damage,health:0}});
+  }
+  if (trigger==='TURN_START' && hasNewCardRule(card,'헬퍼')) {
+    if ((state.overhealByTurn?.[`${state.turn-1}:${playerId}`]??0)<=5) return state;
+    const token=state.cardPool?.find(d=>d.name==='냥냥 펀치' && d.isToken && d.cardType==='TECHNIQUE');
+    if(!token)return state;
+    return run(state,{type:'STRUCTURED',action:'GENERATE',values:{definitionRef:{id:token.id},destination:'HAND',count:1}});
+  }
+  if (trigger==='SELF_DAMAGED' && hasNewCardRule(card,'블랙 아웃') && (options.healthBefore??0)<=(options.healthAfter??0)) return state;
+
   const compare = (actual: number, condition: 'GTE' | 'LTE' | 'EQ', expected: number) =>
     condition === 'GTE' ? actual >= expected : condition === 'LTE' ? actual <= expected : actual === expected;
   const abilities = getActiveCardAbilities(card).filter((ability) => {
@@ -3469,6 +3545,15 @@ export function resolveCardRetiredListeners(
         !state.events.slice(relicEventIndex + 1).some(e => e.type === 'ENTER_FIELD' && e.cardInstanceId === card.instanceId)
           ? { ...card, currentAttack: card.currentAttack + 1, currentHealth: card.currentHealth + 1, maxHealth: card.maxHealth + 1 }
           : card) as typeof p.board })) };
+  }
+  if (relicEventIndex >= 0) {
+    const event=state.events[relicEventIndex]!;
+    const sourceId=event.source?.type==='CARD'?event.source.cardInstanceId:undefined;
+    const owner=state.players.find(p=>p.id!==playerId && p.board.some(c=>c?.instanceId===sourceId && hasNewCardRule(c,'힐빌')));
+    const key=`hillbil:${relicEventIndex}:${retiredCard.instanceId}`;
+    if(owner && retiredCard.cardType==='WRESTLER' && !state.consumedNewCardEventKeys?.includes(key)) {
+      state=healNewCardAware({...state,consumedNewCardEventKeys:[...(state.consumedNewCardEventKeys??[]),key]},owner.id,2,sourceId);
+    }
   }
   if (relicEventIndex >= 0) state = resolveTowerRemoval(state, state.events[relicEventIndex]!, relicEventIndex);
   const hand = state.players.find((player) => player.id === playerId)?.hand ?? [];

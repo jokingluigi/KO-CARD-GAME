@@ -4,6 +4,7 @@ import type { CardAbility, CardKeyword } from '../effects/types';
 import type { CardInstance, CardDefinition } from './types';
 
 export interface GrantedCardText {
+  contentRule?: import("./new-card-effects").NewCardRule;
   armor?: number;
   dodgeCharges?: number;
   playCondition?: CardInstance["playCondition"];
@@ -31,17 +32,19 @@ export function getActiveCardKeywords(card: CardInstance): CardKeyword[] {
 export function isVanillaCard(card: CardInstance): boolean {
   return card.cardType === 'WRESTLER' &&
     getActiveCardAbilities(card).length === 0 &&
+    ((!card.contentRule || Boolean(card.isSilenced || card.isAbilityDisabled)) && !card.grantedText?.contentRule) &&
     getActiveCardKeywords(card).length === 0;
 }
 
 export function cloneGrantedCardText(
-  definition: Pick<CardDefinition, 'id' | 'rulesText' | 'keywords' | 'abilities' | 'effectConfig'>,
+  definition: Pick<CardDefinition, 'id' | 'rulesText' | 'keywords' | 'abilities' | 'effectConfig' | 'contentRule'>,
 ): GrantedCardText {
   return {
     dodgeCharges: configuredDodgeCharges(definition.effectConfig),
     ...(typeof definition.effectConfig?.armor === 'number' ? { armor: definition.effectConfig.armor } : {}),
     ...(validChampionQuestCondition(definition.effectConfig?.playCondition) ? { playCondition: structuredClone(definition.effectConfig.playCondition) } : {}),
     donorDefinitionId: definition.id,
+    ...(definition.contentRule ? {contentRule: definition.contentRule} : {}),
     rulesText: definition.rulesText,
     keywords: [...definition.keywords],
     abilities: structuredClone(definition.abilities),
@@ -50,7 +53,7 @@ export function cloneGrantedCardText(
 
 export function grantCardText(
   card: CardInstance,
-  definition: Pick<CardDefinition, 'id' | 'rulesText' | 'keywords' | 'abilities' | 'effectConfig'>,
+  definition: Pick<CardDefinition, 'id' | 'rulesText' | 'keywords' | 'abilities' | 'effectConfig' | 'contentRule'>,
 ): CardInstance {
   const grantedText = cloneGrantedCardText(definition);
   const keywords = getActiveCardKeywords({ ...card, grantedText });

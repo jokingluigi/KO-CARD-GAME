@@ -1,3 +1,4 @@
+import { healNewCardAware } from './new-card-rules';
 import type { GameState, PlayerState } from '../types/game-state';
 import type { CardInstance } from '../cards/types';
 import { expireTowerOpponentTurnBuffs, expireTowerTurnEndBuffs, towerTurnStart } from '../tower/relics';
@@ -264,7 +265,7 @@ export function endTurn(
           ...player,
           currentGold: 0,
            board: player.board.map((card) =>
-             card ? (() => { const expired = expireTemporaryModifiers(card, 'BOARD'); return { ...expired, isStunned: false, enteredThisTurn: false, currentHealth: Math.min(expired.maxHealth, expired.currentHealth + (getActiveCardKeywords(expired).includes('REGEN') ? 2 : 0)) }; })() : null,
+             card ? (() => { const expired = expireTemporaryModifiers(card, 'BOARD'); return { ...expired, isStunned: false, enteredThisTurn: false, currentHealth: expired.currentHealth }; })() : null,
           ) as typeof player.board,
            hand: player.hand.map((card) => expireTemporaryModifiers(card, 'HAND')),
            deck: player.deck.map((card) => expireTemporaryModifiers(card, 'DECK')),
@@ -272,7 +273,7 @@ export function endTurn(
       }
 
       const expired = expireTowerOpponentTurnBuffs(state, player);
-      return { ...expired, board: expired.board.map(card => card && getActiveCardKeywords(card).includes('REGEN') ? { ...card, currentHealth: Math.min(card.maxHealth, card.currentHealth + 2) } : card) as typeof player.board };
+      return expired;
     }),
     events: [
       ...state.events,
@@ -301,6 +302,7 @@ export function endTurn(
       ...(owner?.hand.filter((card) => getActiveCardAbilities(card).some((ability) => ability.trigger === 'TURN_END' && ability.condition?.type === 'SOURCE_IN_HAND')) ?? []),
     ];
     return cards.reduce((nextState, card) => {
+        if(nextState.status==='FINISHED')return nextState;
         const currentPlayer = nextState.players.find((player) => player.id === actingPlayerId);
         const currentCard = currentPlayer?.board.find((candidate) => candidate?.instanceId === card.instanceId)
           ?? currentPlayer?.hand.find((candidate) => candidate.instanceId === card.instanceId);
@@ -309,7 +311,11 @@ export function endTurn(
         return triggered !== nextState && triggered.targetingState?.active ? resolvePendingEffects(triggered) : triggered;
       }, passState);
   };
-  const afterTurnEnd = resolveTurnEndPass(turnedState);
+  let regenerated = turnedState;
+  for (const owner of turnedState.players) for (const card of owner.board) {
+    if (card && getActiveCardKeywords(card).includes('REGEN')) regenerated = healNewCardAware(regenerated, owner.id, 2, card.instanceId);
+  }
+  const afterTurnEnd = resolveTurnEndPass(regenerated);
   const repeatCount = afterTurnEnd.players
     .find((player) => player.id === actingPlayerId)
     ?.board
@@ -325,6 +331,7 @@ export function endTurn(
   }
 
   const scheduled = expireTowerTurnEndBuffs(resolveDueDelayedEffects(afterRepeated, 'TURN_END', actingPlayerId), state.turn);
+  if (scheduled.status === 'FINISHED') return actionSuccess(scheduled);
   const afterScheduled = { ...scheduled, pendingCardEffects: scheduled.pendingCardEffects?.filter(effect => effect.expiresAtTurn === undefined || effect.expiresAtTurn > state.turn) };
   return actionSuccess(
     processChampionQuestEvents(

@@ -1,3 +1,4 @@
+import { healNewCardAware } from './new-card-rules';
 import type { CardInstance } from '../cards/types';
 import type { GameState } from '../types/game-state';
 import { getActiveCardKeywords } from '../cards/granted-text';
@@ -17,5 +18,5 @@ export function canPlayConditionalCard(state:GameState,playerId:string,card:Card
 }
 export function healLifesteal(state:GameState,playerId:string,card:CardInstance,amount:number):GameState {
  if(amount<=0||!getActiveCardKeywords(card).includes('LIFESTEAL'))return state;
- return {...state,players:state.players.map(p=>p.id!==playerId?p:{...p,health:Math.min(p.maxHealth,p.health+amount),champion:p.champion?{...p.champion,health:Math.min(p.maxHealth,p.health+amount)}:null})};
+ return healNewCardAware(state,playerId,amount);
 }

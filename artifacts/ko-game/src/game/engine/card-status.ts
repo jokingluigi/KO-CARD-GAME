@@ -37,6 +37,7 @@ export function silenceCard(
     const maxHealth = (definition?.health ?? card.baseHealth ?? card.maxHealth) + (aura?.health ?? 0);
     return {
       ...removeGrantedCardText(card),
+      grantedTags: undefined,
       isSilenced: true,
       currentAttack: Math.max(0, attack),
       maxHealth: Math.max(1, maxHealth),

@@ -62,6 +62,7 @@ export function generateCardInstance(
   return {
     instanceId: options.instanceId,
     definitionId: definition.id,
+    ...(definition.contentRule ? {contentRule: definition.contentRule} : {}),
     cardType: definition.cardType ?? 'WRESTLER',
     currentCost: Math.max(0, definition.cost + (options.statModifiers?.cost ?? 0)),
     baseCost: definition.cost,

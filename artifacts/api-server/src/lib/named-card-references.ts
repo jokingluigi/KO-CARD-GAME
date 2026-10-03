@@ -4,6 +4,8 @@ export function expandNamedCardReferences<T extends {
   name: string;
   status: string;
   effectConfig: unknown;
+  effectId?: string | null;
+  text?: string;
 }>(cards: readonly T[], requiredIds: Set<string>): void {
   const byId = new Map(cards.map((card) => [card.id, card]));
   const visit = (value: unknown, names: Set<string>, ids: Set<string>): void => {
@@ -29,6 +31,9 @@ export function expandNamedCardReferences<T extends {
       const names = new Set<string>();
       const ids = new Set<string>();
       visit(source.effectConfig, names, ids);
+      // Newly implemented Helfer has no authored DSL yet. Its named token is
+      // still a dependency in owned-draft, AI and online catalogs.
+      if (source.name === '헬퍼' && !source.effectId && /냥냥 펀치/u.test(source.text ?? '')) names.add('냥냥 펀치');
       if (source.name === '하녀 판도라' && [...ids].some(id => !byId.has(id))) names.add('늑대인간 판도라');
       for (const referenceId of ids) {
         if (eligible.some((candidate) => candidate.id === referenceId)) requiredIds.add(referenceId);
