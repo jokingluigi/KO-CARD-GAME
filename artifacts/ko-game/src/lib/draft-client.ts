@@ -44,6 +44,7 @@ export type DraftSettings = {
   cards: CardDefinition[];
   champions: ChampionDefinition[];
   poolError: string | null;
+  poolWarning?: string | null;
   currentId: string | null;
 };
 export async function draftRequest<T>(

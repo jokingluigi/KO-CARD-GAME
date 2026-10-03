@@ -1,6 +1,7 @@
 import { MatchRecapPanel } from "./match-recap-panel";
 import { KEYWORD_LABELS } from "./alt-inspector-utils";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
+import { DraftConfigFields } from "./draft-config-fields";
 import { useLocation } from "wouter";
 import {
   draftRequest,
@@ -19,14 +20,19 @@ export function AdminDraftManager() {
     [error, setError] = useState<string | null>(null),
     [busy, setBusy] = useState(false),
     [room, setRoom] = useState(""),
-    [advanced, setAdvanced] = useState(""),
     [showConfig, setShowConfig] = useState(false),
     [serverOffset, setServerOffset] = useState(0),
     [clock, setClock] = useState(Date.now());
+  const errorRef = useRef<HTMLParagraphElement>(null);
+  useEffect(() => {
+    if (error) {
+      errorRef.current?.scrollIntoView({ block: "center", behavior: "smooth" });
+      errorRef.current?.focus({ preventScroll: true });
+    }
+  }, [error]);
   async function load() {
     const data = await draftRequest<DraftSettings>("");
     setSettings(data);
-    setAdvanced(JSON.stringify(data.config, null, 2));
     const id =
       data.currentId ??
       new URLSearchParams(window.location.search).get("session");
@@ -160,116 +166,26 @@ export function AdminDraftManager() {
       {error && (
         <p
           role="alert"
+          tabIndex={-1}
+          ref={errorRef}
           className="break-words rounded border border-red-500/50 p-3 text-red-300"
         >
           {error}
+        </p>
+      )}
+      {settings?.poolWarning && (
+        <p className="break-words rounded border border-amber-600/40 p-3 text-sm text-amber-200">
+          {settings.poolWarning}
         </p>
       )}
       {settings?.poolError && (
         <p className="break-words text-amber-300">{settings.poolError}</p>
       )}
       {!settings && <p>드래프트 설정을 불러오는 중…</p>}
-      {settings && (
-        <>
-          <button className={button} onClick={() => setShowConfig((v) => !v)}>
-            카드 풀 / 선택 규칙 설정
-          </button>
-          {showConfig && (
-            <div className="space-y-3 rounded border border-neutral-700 p-3">
-              <p className="text-sm text-neutral-400">
-                공개 카드와 챔피언만 후보로 나옵니다. 선택 해제하면 다음
-                드래프트부터 제외됩니다.
-              </p>
-              <div className="grid gap-4 md:grid-cols-2">
-                <div className="max-h-60 overflow-y-auto">
-                  <h3 className="font-bold">카드 풀</h3>
-                  {settings.cards.map((c) => (
-                    <label key={c.id} className="flex gap-2 py-1 text-sm">
-                      <input
-                        type="checkbox"
-                        checked={
-                          !settings.config.excludedCardIds.includes(c.id)
-                        }
-                        onChange={(e) => {
-                          const config = {
-                            ...settings.config,
-                            excludedCardIds: e.target.checked
-                              ? settings.config.excludedCardIds.filter(
-                                  (id) => id !== c.id,
-                                )
-                              : [...settings.config.excludedCardIds, c.id],
-                          };
-                          setSettings({ ...settings, config });
-                          setAdvanced(JSON.stringify(config, null, 2));
-                        }}
-                      />
-                      <span className="break-words">
-                        {c.name} ({CARD_RARITY_LABELS[c.rarity ?? "NORMAL"]})
-                      </span>
-                    </label>
-                  ))}
-                </div>
-                <div className="max-h-60 overflow-y-auto">
-                  <h3 className="font-bold">챔피언 풀</h3>
-                  {settings.champions.map((c) => (
-                    <label key={c.id} className="flex gap-2 py-1 text-sm">
-                      <input
-                        type="checkbox"
-                        checked={
-                          !settings.config.excludedChampionIds.includes(c.id)
-                        }
-                        onChange={(e) => {
-                          const config = {
-                            ...settings.config,
-                            excludedChampionIds: e.target.checked
-                              ? settings.config.excludedChampionIds.filter(
-                                  (id) => id !== c.id,
-                                )
-                              : [...settings.config.excludedChampionIds, c.id],
-                          };
-                          setSettings({ ...settings, config });
-                          setAdvanced(JSON.stringify(config, null, 2));
-                        }}
-                      />
-                      <span className="break-words">{c.name}</span>
-                    </label>
-                  ))}
-                </div>
-              </div>
-              <details>
-                <summary className="cursor-pointer text-sm">
-                  세부 규칙·AI 점수·태그 가중치
-                </summary>
-                <p className="my-2 text-xs text-neutral-400">
-                  techniquePicks: 기술 선택 순서 / legendaryPicks: 레전더리 우선
-                  순서 / costTargets: 0~2, 3~4, 5+ 비용 목표 / cardScores: 카드
-                  ID별 AI 점수 / championTags: 챔피언 ID별 선호 태그. 기존
-                  진행에는 적용되지 않습니다.
-                </p>
-                <textarea
-                  aria-label="드래프트 세부 설정"
-                  value={advanced}
-                  onChange={(e) => setAdvanced(e.target.value)}
-                  className="min-h-72 w-full min-w-0 rounded bg-black p-2 font-mono text-base"
-                />
-              </details>
-              <button
-                disabled={busy}
-                className={button}
-                onClick={() =>
-                  void run(() => save(settings.enabled, JSON.parse(advanced)))
-                }
-              >
-                설정 저장
-              </button>
-            </div>
-          )}
-        </>
-      )}
       {settings?.enabled && !view && (
         <div className="flex flex-wrap gap-3">
           <button
-            disabled={busy}
+            disabled={busy || Boolean(settings.poolError)}
             className={button}
             onClick={() =>
               void run(async () =>
@@ -284,7 +200,7 @@ export function AdminDraftManager() {
             AI 드래프트 시작
           </button>
           <button
-            disabled={busy}
+            disabled={busy || Boolean(settings.poolError)}
             className={button}
             onClick={() =>
               void run(async () =>
@@ -337,6 +253,90 @@ export function AdminDraftManager() {
           OFF 상태입니다. ON으로 설정하면 관리자만 드래프트에 입장할 수
           있습니다.
         </p>
+      )}
+      {settings && (
+        <>
+          <button className={button} onClick={() => setShowConfig((v) => !v)}>
+            카드 풀 / 선택 규칙 설정
+          </button>
+          {showConfig && (
+            <div className="space-y-3 rounded border border-neutral-700 p-3">
+              <p className="text-sm text-neutral-400">
+                공개 카드와 챔피언만 후보로 나옵니다. 선택 해제하면 다음
+                드래프트부터 제외됩니다.
+              </p>
+              <div className="grid gap-4 md:grid-cols-2">
+                <div className="max-h-60 overflow-y-auto">
+                  <h3 className="font-bold">카드 풀</h3>
+                  {settings.cards.map((c) => (
+                    <label key={c.id} className="flex gap-2 py-1 text-sm">
+                      <input
+                        type="checkbox"
+                        checked={
+                          !settings.config.excludedCardIds.includes(c.id)
+                        }
+                        onChange={(e) => {
+                          const config = {
+                            ...settings.config,
+                            excludedCardIds: e.target.checked
+                              ? settings.config.excludedCardIds.filter(
+                                  (id) => id !== c.id,
+                                )
+                              : [...settings.config.excludedCardIds, c.id],
+                          };
+                          setSettings({ ...settings, config });
+                        }}
+                      />
+                      <span className="break-words">
+                        {c.name} ({CARD_RARITY_LABELS[c.rarity ?? "NORMAL"]})
+                      </span>
+                    </label>
+                  ))}
+                </div>
+                <div className="max-h-60 overflow-y-auto">
+                  <h3 className="font-bold">챔피언 풀</h3>
+                  {settings.champions.map((c) => (
+                    <label key={c.id} className="flex gap-2 py-1 text-sm">
+                      <input
+                        type="checkbox"
+                        checked={
+                          !settings.config.excludedChampionIds.includes(c.id)
+                        }
+                        onChange={(e) => {
+                          const config = {
+                            ...settings.config,
+                            excludedChampionIds: e.target.checked
+                              ? settings.config.excludedChampionIds.filter(
+                                  (id) => id !== c.id,
+                                )
+                              : [...settings.config.excludedChampionIds, c.id],
+                          };
+                          setSettings({ ...settings, config });
+                        }}
+                      />
+                      <span className="break-words">{c.name}</span>
+                    </label>
+                  ))}
+                </div>
+              </div>
+              <DraftConfigFields
+                config={settings.config}
+                cards={settings.cards}
+                champions={settings.champions}
+                onChange={(config) => setSettings({ ...settings, config })}
+              />
+              <button
+                disabled={busy}
+                className={button}
+                onClick={() =>
+                  void run(() => save(settings.enabled, settings.config))
+                }
+              >
+                설정 저장
+              </button>
+            </div>
+          )}
+        </>
       )}
       {view && settings?.enabled && (
         <div className="space-y-4">

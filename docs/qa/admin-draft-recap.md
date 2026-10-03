@@ -1,13 +1,13 @@
 # Admin draft, match highlights and MVP
 
-Status: UNVERIFIED (browser/mobile interaction and production deployment pending). No production settings, account collections, or card/champion catalog rows were changed. Existing EPIC work at 049efba is preserved.
+Status: Deployed on 2026-10-03 at commit 5131d4069a2170f769a544133a01edfceab17791. Browser/mobile interaction and signed-in production draft play remain UNVERIFIED. No account collections or card/champion catalog rows were manually changed. Existing EPIC work at 049efba is preserved. Additive startup migrations are included in the deployment.
 
 ## Implemented behavior
 
 - `/admin/draft` is accessible only to ADMIN. Every `/api/admin/draft` route independently checks the authenticated role. The ordinary main menu has no draft entry.
 - Global ON/OFF is stored in `draft_settings`; default OFF. ON still admits only admins. OFF refuses session/gameplay operations while preserving session data.
 - Champion 1-of-3, then 25 card selections from up to three distinct legal candidates. Published definitions only; tokens/champion tokens and excluded definitions never appear as offers. When a nearly exhausted pool has fewer than three distinct legal candidates, it uses the available candidates without duplicating offers or trapping the last picks.
-- Fixed technique slots default to 5/10/15/20/25; legendary preference slots 8/18 fall back when three eligible legends are unavailable. Existing NORMAL 3 / EPIC 2 / LEGENDARY 1 and legendary total 3 rules come from the shared helper. EPIC has no total limit. Remaining type/copy capacity is checked for every offer.
+- Preferred technique slots default to 5/10/15/20/25; the session freezes a reduced schedule when published technique copy capacity is insufficient, using wrestler slots for the remainder without rewriting saved settings; legendary preference slots 8/18 fall back when three eligible legends are unavailable. Existing NORMAL 3 / EPIC 2 / LEGENDARY 1 and legendary total 3 rules come from the shared helper. EPIC has no total limit. Remaining type/copy capacity is checked for every offer.
 - AI independently drafts from the same offers using configured card scores, stats, champion/deck tags and cost curve. It does not use existing AI deck presets. AI drafting has no time limit.
 - PvP uses an invitation room ID between two admins, pairs before independent simultaneous selection, hides opponent selections and reveals only progress. Default timers: champion 45s, card 25s, review 30s. Timeout auto-picks via draft AI and auto-readies. There is no public matchmaking queue in this admin-only release.
 - A persisted catalog/config/seed/history/offers snapshot prevents rerolling or live admin catalog edits from changing an existing draft. Advisory transaction lock, expectedVersion, request IDs and the participant primary key prevent double picks and multiple active drafts.
@@ -41,8 +41,19 @@ Online terminal snapshots/messages carry a server-calculated recap. Both seats r
 | Original NORMAL/EPIC/LEGENDARY data | PASS | Existing rows preserved in isolated migration/regression tests |
 | Administrator and ordinary account API authorization | PASS | 401 anonymous / 403 non-admin, including direct gameplay requests |
 | Browser interaction, actual mobile layout and animations | UNVERIFIED | WORK_BROWSER_FAILURE: work browser blocked localhost preview with net::ERR_BLOCKED_BY_CLIENT; automated API/type/build checks do not replace visual QA |
-| Deployment and live administrator draft play | UNVERIFIED | This patch is not deployed; mode defaults OFF |
+| Production deployment | PASS | Main commit 5131d406; live JS index-CHQOIkSn.js and CSS index-D7WO8zRx.css return 200; JS includes EPIC, draft API and MVP |
+| Live administrator draft play | UNVERIFIED | No authenticated production gameplay check; default OFF is configured in the additive migration |
 
 Operational check during implementation: production `/`, `/api/healthz`, `/api/cards`, `/api/auth/me` returned 200; `/api/server-status` returned enabled=false, allowed=true. No production mutation was made.
 
 Earlier full-suite baseline failures are documented in `epic-rarity-patch.md`; unrelated game behavior was not changed to satisfy them.
+
+Deployment verification: new HTML asset matched the local build on three consecutive requests. `/api/healthz`, `/api/auth/me`, `/api/server-status` and `/api/cards` returned 200. Maintenance remained OFF. Actual browser and mobile QA remains UNVERIFIED.
+
+## Draft start hotfix (2026-10-03)
+
+Production browser confirmed OFF with the error requiring a 25-card pool. Read-only published catalog inspection found 51 wrestler records and zero technique records. The original default required five techniques, so enabling and starting were blocked: FAIL → FIXED → PASS in domain/isolated HTTP tests. New sessions resolve technique-preferred slots against legal published capacity, preserve 25 cards and all rarity limits, and snapshot the resolved schedule. Admin settings remain unchanged. A warning explains the fallback; hidden cards remain excluded. A truly insufficient total pool is still rejected.
+
+Removed raw JSON editing. Admin controls now use numbered selection checkboxes, numeric timers/cost targets/weights, card-name score fields and champion-name tag fields. Start controls appear above pool settings. Request errors receive focus and scroll into view.
+
+Validation: 16 domain/HTTP/transport tests PASS, including a pool without published techniques; 25 complete drafts using the read-only live catalog PASS; shared build, API/frontend typechecks and both production bundles PASS. Production browser verification of the hotfix is pending at this checkpoint; mobile gameplay remains UNVERIFIED. No production settings, original catalog or collection rows were manually edited.

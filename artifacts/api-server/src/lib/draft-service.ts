@@ -18,6 +18,7 @@ import {
   DEFAULT_DRAFT_CONFIG,
   parseDraftConfig,
   validateDraftPool,
+  prepareDraftSnapshot,
   selectableCards,
   selectableChampions,
   draftOffers,
@@ -394,7 +395,7 @@ export async function startDraft(
 ) {
   await enabled();
   const settings = await draftSettings(),
-    snapshot = await draftCatalog(settings.config);
+    snapshot = prepareDraftSnapshot(await draftCatalog(settings.config));
   validateDraftPool(snapshot);
   return db.transaction(async (tx) => {
     await tx.execute(

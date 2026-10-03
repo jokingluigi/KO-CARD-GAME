@@ -339,7 +339,7 @@ test("admin-only API and default OFF, pool validation and persistent ON", async 
         enabled: true,
         config: {
           ...DEFAULT_DRAFT_CONFIG,
-          excludedCardIds: ["t0", "t1", "t2", "t3"],
+          excludedCardIds: [...cards.map((c) => c.id), "t0", "t1", "t2", "t3"],
         },
       })
     ).status,
@@ -363,6 +363,46 @@ test("admin-only API and default OFF, pool validation and persistent ON", async 
       (c: any) => !["hidden", "disabled", "token"].includes(c.id),
     ),
   );
+});
+test("no published techniques can enable and finish draft selection with frozen wrestler fallback", async () => {
+  const { eq } = await import("drizzle-orm");
+  await database
+    .update(schema.cardsTable)
+    .set({ status: "DRAFT" })
+    .where(eq(schema.cardsTable.cardType, "TECHNIQUE"));
+  try {
+    const settings = await request("admin", "/admin/draft");
+    assert.equal(settings.body.poolError, null);
+    assert.match(settings.body.poolWarning, /기술 카드/);
+    assert.deepEqual(settings.body.config.techniquePicks, [5, 10, 15, 20, 25]);
+    assert.equal(
+      (
+        await request("admin", "/admin/draft/settings", "PUT", {
+          enabled: true,
+        })
+      ).status,
+      200,
+    );
+    const started = await request("admin", "/admin/draft/sessions", "POST", {
+      mode: "AI",
+    });
+    assert.equal(started.status, 201, JSON.stringify(started.body));
+    assert.deepEqual(started.body.config.techniquePicks, []);
+    const v = await completeDraft("admin", started.body.id);
+    assert.equal(v.own.deck.length, 25);
+    assert.ok(v.own.deck.every((id: string) => !id.startsWith("t")));
+    assert.ok(
+      (await stored(v.id)).state.seats[1].deck.every(
+        (id: string) => !id.startsWith("t"),
+      ),
+    );
+    assert.equal((await command("admin", v, "ABORT")).status, 200);
+  } finally {
+    await database
+      .update(schema.cardsTable)
+      .set({ status: "PUBLISHED" })
+      .where(eq(schema.cardsTable.cardType, "TECHNIQUE"));
+  }
 });
 test("AI draft persists offers, guards illegal/stale/duplicate commands and does not grant cards", async () => {
   const normalDecks = await database.select().from(schema.decksTable),

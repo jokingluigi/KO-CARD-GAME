@@ -183,6 +183,20 @@ export function canComplete(s: DraftSnapshot, deck: string[]): boolean {
   }
   return requiredLegends <= MAX_LEGENDARY_CARDS - legendary;
 }
+// Technique slots are preferred slots. A published pool without enough legal
+// techniques still drafts 25 cards, using wrestlers in the remaining slots.
+// Freeze the resolved schedule in the session, without rewriting admin settings.
+export function prepareDraftSnapshot(s: DraftSnapshot): DraftSnapshot {
+  const slots = [...s.config.techniquePicks].sort((a, b) => a - b);
+  for (let n = slots.length; n >= 0; n--) {
+    const candidate = {
+      ...s,
+      config: { ...s.config, techniquePicks: slots.slice(0, n) },
+    };
+    if (canComplete(candidate, [])) return candidate;
+  }
+  return s;
+}
 export function validateDraftPool(s: DraftSnapshot) {
   if (selectableChampions(s).length < 3)
     throw new Error("공개된 선택 가능 챔피언이 최소 3명 필요합니다.");
@@ -194,7 +208,7 @@ export function validateDraftPool(s: DraftSnapshot) {
       if (!token || token.status === "DISABLED" || !token.isChampionToken)
         throw new Error(`${champion.name}: 챔피언 토큰 참조를 확인해 주세요.`);
     }
-  if (!canComplete(s, []))
+  if (!canComplete(prepareDraftSnapshot(s), []))
     throw new Error(
       "중복/등급 제한과 카드 종류별 선택 횟수를 충족하는 25장 카드 풀이 필요합니다.",
     );

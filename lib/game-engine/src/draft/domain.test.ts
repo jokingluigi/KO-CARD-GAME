@@ -7,6 +7,7 @@ import {
   canComplete,
   validateDraftPool,
   parseDraftConfig,
+  prepareDraftSnapshot,
   type DraftSnapshot,
   type DraftSeat,
 } from "./domain";
@@ -60,6 +61,39 @@ const seat = (): DraftSeat => ({
   deadline: null,
   ready: false,
   history: [],
+});
+test("missing published techniques resolve to legal wrestler slots without changing saved rules", () => {
+  for (const available of [0, 1, 2]) {
+    const s = structuredClone(snapshot);
+    s.cards = s.cards.filter((c) => c.cardType !== "TECHNIQUE");
+    s.cards.push(
+      ...snapshot.cards
+        .filter((c) => c.cardType === "TECHNIQUE")
+        .slice(0, available),
+    );
+    const prepared = prepareDraftSnapshot(s);
+    assert.deepEqual(s.config.techniquePicks, [5, 10, 15, 20, 25]);
+    assert.equal(
+      prepared.config.techniquePicks.length,
+      Math.min(5, available * 3),
+    );
+    validateDraftPool(s);
+    for (let seed = 0; seed < 20; seed++) {
+      const p = seat();
+      for (let i = 1; i <= 25; i++) {
+        const offers = draftOffers(prepared, p, `${seed}:${i}`);
+        assert.ok(offers.length > 0);
+        const card = prepared.cards.find((c) => c.id === offers[0])!;
+        assert.equal(
+          card.cardType,
+          prepared.config.techniquePicks.includes(i) ? "TECHNIQUE" : "WRESTLER",
+        );
+        p.deck.push(card.id);
+      }
+      assert.ok(canComplete(prepared, p.deck));
+    }
+  }
+  assert.deepEqual(prepareDraftSnapshot(snapshot).config, snapshot.config);
 });
 test("published-only pool excludes tokens, champion tokens and excluded definitions", () => {
   const s = structuredClone(snapshot);
