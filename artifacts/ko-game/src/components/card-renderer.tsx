@@ -27,6 +27,14 @@ const frameAssetNames: Partial<Record<CardRarity, string>> = {
   CHAMPION: "card-frame-champion.png",
 };
 
+const rarityBadgeColors: Record<CardRarity, string> = {
+  NORMAL: "bg-neutral-900 text-neutral-200",
+  EPIC: "bg-violet-950 text-violet-200",
+  LEGENDARY: "bg-amber-950 text-amber-200",
+  CHAMPION: "bg-red-950 text-red-200",
+  TOKEN: "bg-emerald-950 text-emerald-200",
+};
+
 type FrameLayout = {
   scale: number;
   name: {
@@ -345,7 +353,10 @@ export function CardRenderer({
           />
         )}
 
-        {normalizedRarity === "EPIC" && <div className="pointer-events-none absolute inset-0 z-20 rounded border-2 border-violet-400"><span className="absolute right-1 top-[17%] rounded bg-violet-950 px-1 text-[8px] font-black text-violet-200">EPIC</span></div>}
+        {normalizedRarity === "EPIC" && <div className="pointer-events-none absolute inset-0 z-20 rounded border-2 border-violet-400" />}
+        <span className={`pointer-events-none absolute right-1 top-[17%] z-20 rounded px-1 text-[8px] font-black ${rarityBadgeColors[normalizedRarity]}`}>
+          {normalizedRarity}
+        </span>
         {showName && (
           <div
             className="pointer-events-none absolute z-20 flex items-center justify-center overflow-hidden px-[2%] text-center"
