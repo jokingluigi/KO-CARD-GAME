@@ -1,4 +1,5 @@
 import draftStorage from '../../../../lib/db/migrations/0037_admin_draft.sql';
+import techniqueRarities from '../../../../lib/db/migrations/0038_technique_rarities.sql';
 import { db } from "@workspace/db";
 import { sql } from "drizzle-orm";
 import epicPackConfiguration from "../../../../lib/db/migrations/0036_epic_pack_configuration.sql";
@@ -35,6 +36,7 @@ export async function ensureTowerStorage(database = db): Promise<void> {
     await tx.execute(sql.raw(ozenGilded));
     await tx.execute(sql.raw(minionA));
     await tx.execute(sql.raw(towerVanilla));
+    await tx.execute(sql.raw(techniqueRarities));
     for (const statement of maintenanceSchema.split(";")) if(statement.trim()) await tx.execute(sql.raw(statement));
   });
 }

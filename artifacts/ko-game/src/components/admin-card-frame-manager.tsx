@@ -2,12 +2,11 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { Image as ImageIcon, RotateCcw, Save, Trash2, Upload } from "lucide-react";
 import { CardRenderer } from "./card-renderer";
 import { refreshCardFrames, type CardFrameCardType, type CardFrameDefinition } from "../lib/card-frames-client";
-import type { CardRarity } from "../game/cards/types";
+import { allowedCardRarities, type CardRarity } from "../game/cards/types";
 
 const adminBase = `${import.meta.env.BASE_URL.replace(/\/$/, "")}/api/admin`;
 const imageAccept = ".png,.jpg,.jpeg,.webp,image/png,image/jpeg,image/webp";
 const cardTypes: CardFrameCardType[] = ["WRESTLER", "TECHNIQUE"];
-const rarities: CardRarity[] = ["NORMAL", "EPIC", "LEGENDARY", "CHAMPION", "TOKEN"];
 const defaultScale = 1.1;
 
 type StoredFrame = CardFrameDefinition & { id: string; frameAssetId: string | null; frameUrl: string | null };
@@ -69,7 +68,7 @@ export function AdminCardFrameManager({ onUnauthorized }: { onUnauthorized: () =
   const selectedRarity = selectedKey.split(":")[1] as CardRarity;
   const selectedFrame = frames.find((frame) => key(frame.cardType, frame.rarity) === selectedKey);
   const availableKeys = useMemo(
-    () => cardTypes.flatMap((cardType) => rarities.map((rarity) => key(cardType, rarity))),
+    () => cardTypes.flatMap((cardType) => allowedCardRarities(cardType).map((rarity) => key(cardType, rarity))),
     [],
   );
 

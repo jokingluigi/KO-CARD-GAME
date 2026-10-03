@@ -13,6 +13,7 @@ import {
 } from "@workspace/db";
 import express, { Router, type IRouter, type Request, type Response } from "express";
 import { parseCardTags } from "@workspace/api-zod";
+import { normalizeCardRarityForType, allowedCardRarities } from "@workspace/game-engine";
 import { expandNamedCardReferences } from '../lib/named-card-references';
 import {
   AudioStorage,
@@ -871,10 +872,9 @@ export function parseCardInput(value: unknown): CardInput | null {
   const requestedRarity = CARD_RARITIES.includes(input.rarity as (typeof CARD_RARITIES)[number])
     ? input.rarity as (typeof CARD_RARITIES)[number]
     : "NORMAL";
-  const rarity = cardType === "TECHNIQUE" &&
-    (requestedRarity === "LEGENDARY" || requestedRarity === "CHAMPION")
-    ? input.isToken === true ? "TOKEN" : "NORMAL"
-    : requestedRarity;
+  const rarity = normalizeCardRarityForType(cardType,
+    cardType === "TECHNIQUE" && (input.isToken === true || input.isChampionToken === true)
+      ? "TOKEN" : requestedRarity);
   const explicitEffectId =
     typeof input.effectId === "string" && input.effectId.trim()
       ? input.effectId.trim()
@@ -2634,7 +2634,7 @@ router.get("/card-frames", async (request, response): Promise<void> => {
 router.put("/card-frames/:cardType/:rarity", async (request, response): Promise<void> => {
   if (!requireAdmin(request, response)) return;
   const { cardType, rarity } = request.params;
-  if (!isCardFrameType(cardType) || !isCardFrameRarity(rarity)) {
+  if (!isCardFrameType(cardType) || !isCardFrameRarity(rarity) || !allowedCardRarities(cardType).includes(rarity)) {
     response.status(400).json({ message: "카드 종류 또는 희귀도가 올바르지 않습니다." });
     return;
   }

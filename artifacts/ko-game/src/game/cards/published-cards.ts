@@ -1,6 +1,7 @@
 import { ZOMBIE_RULES } from '../engine/zombie-token';
 import type { CardAbility, CardEffect } from "../effects/types";
 import type { CardDefinition, CardRarity } from "./types";
+import { normalizeCardRarityForType } from "./types";
 import { ACTIONS, TRIGGERS, isEffectScript, type EffectScript } from "@workspace/effect-registry";
 import { repairedLegacyCardAbilities } from './legacy-card-effect-repair';
 
@@ -248,7 +249,8 @@ export function cardRecordToDefinition(card: PublishedCardRecord): CardDefinitio
       id: card.id,
       name: card.name,
       cardType: card.cardType,
-       rarity: card.rarity,
+       rarity: normalizeCardRarityForType(card.cardType,
+         card.cardType === 'TECHNIQUE' && (card.isToken || card.isChampionToken) ? 'TOKEN' : card.rarity),
       cost: card.cost,
       attack: card.attack,
       health: card.health,

@@ -21,7 +21,7 @@ import {
 
 const frameAssetNames: Partial<Record<CardRarity, string>> = {
   NORMAL: "card-frame-normal.png",
-  // Temporary base artwork; the EPIC outline/badge below distinguishes this grade.
+  // Temporary base artwork; the rarity badge distinguishes EPIC.
   EPIC: "card-frame-normal.png",
   LEGENDARY: "card-frame-legendary.png",
   CHAMPION: "card-frame-champion.png",
@@ -218,7 +218,7 @@ export function CardRenderer({
   const armorValue = getCardDefinitions().find(card => card.name === name)?.effectConfig?.armor;
   const displayRulesText = typeof armorValue === 'number' ? displayRulesTextWithoutArmor.replace(/아머(?!\s*\()/g, `아머(${armorValue})`) : displayRulesTextWithoutArmor;
   const normalizedRarity = isChampionToken
-    ? "CHAMPION"
+    ? cardType === "TECHNIQUE" ? "TOKEN" : "CHAMPION"
     : normalizeCardRarityForType(cardType, rarity);
   const normalizedCardType = cardType ?? "WRESTLER";
   // Content coordinates are canonical for every WRESTLER frame. Only the
@@ -353,7 +353,6 @@ export function CardRenderer({
           />
         )}
 
-        {normalizedRarity === "EPIC" && <div className="pointer-events-none absolute inset-0 z-20 rounded border-2 border-violet-400" />}
         <span className={`pointer-events-none absolute right-1 top-[17%] z-20 rounded px-1 text-[8px] font-black ${rarityBadgeColors[normalizedRarity]}`}>
           {normalizedRarity}
         </span>

@@ -19,7 +19,7 @@ export function normalizeCardRarity(value?: unknown): CardRarity {
 
 export function allowedCardRarities(cardType: 'WRESTLER' | 'TECHNIQUE'): CardRarity[] {
   return cardType === 'TECHNIQUE'
-    ? ['NORMAL', 'EPIC', 'TOKEN']
+    ? ['EPIC', 'TOKEN']
     : ['NORMAL', 'EPIC', 'LEGENDARY', 'CHAMPION', 'TOKEN'];
 }
 
@@ -28,8 +28,8 @@ export function normalizeCardRarityForType(
   value?: unknown,
 ): CardRarity {
   const rarity = normalizeCardRarity(value);
-  if (cardType === 'TECHNIQUE' && (rarity === 'LEGENDARY' || rarity === 'CHAMPION')) {
-    return 'NORMAL';
+  if (cardType === 'TECHNIQUE' && rarity !== 'TOKEN') {
+    return 'EPIC';
   }
   return rarity;
 }

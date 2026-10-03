@@ -122,3 +122,33 @@ test('AI exceptions, test deck and actual engine match start retain EPIC',async(
  assert.equal(getDeckCardAction(epic,args).kind,'ADD');assert.equal(getDeckCardAction(epic,{...args,count:2}).kind,'DISABLED');
  assert.deepEqual(validateDeckCounts({cardCount:24,legendaryCount:0,championCount:1}),['INVALID_CARD_COUNT']);
 });
+
+test('technique grades normalize to EPIC/TOKEN in admin, runtime and idempotent migration', async()=>{
+ assert.deepEqual(allowedCardRarities('TECHNIQUE'),['EPIC','TOKEN']);
+ const base={name:'Technique grade QA',cardType:'TECHNIQUE',cost:1,attack:0,health:0,text:'unchanged',isToken:false,isChampionToken:false,keywords:[],tags:[],effectConfig:{},status:'DRAFT'};
+ for(const rarity of ['NORMAL','EPIC','LEGENDARY','CHAMPION','TOKEN'] as const){
+  const expected=rarity==='TOKEN'?'TOKEN':'EPIC';
+  assert.equal(admin.parseCardInput({...base,rarity})?.rarity,expected);
+  assert.equal(normalizeCardRarityForType('TECHNIQUE',rarity),expected);
+  assert.equal(cardRecordToDefinition({...base,id:'qa',rarity} as never).rarity,expected);
+  await database.insert(schema.cardsTable).values({...base,id:`tech-grade-${rarity}`,rarity});
+ }
+ assert.equal(admin.parseCardInput({...base,rarity:'NORMAL',isToken:true})?.rarity,'TOKEN');
+ await database.insert(schema.cardsTable).values({...base,id:'tech-grade-flagged-token',isToken:true,rarity:'NORMAL'});
+ const decksBefore=await database.select().from(schema.decksTable);
+ const wrestlersBefore=(await database.select().from(schema.cardsTable)).filter(c=>c.cardType==='WRESTLER');
+ const packsBefore=await database.select().from(schema.packDefinitionsTable);
+ const migration=await readFile(new URL('../migrations/0038_technique_rarities.sql',import.meta.url),'utf8');
+ await pg.exec(migration);
+ const techniques=(await database.select().from(schema.cardsTable)).filter(c=>c.cardType==='TECHNIQUE');
+ assert.equal(techniques.length,6);
+ for(const c of techniques){
+  assert.equal(c.rarity,c.id.endsWith('TOKEN')||c.isToken?'TOKEN':'EPIC');
+  assert.equal(c.status,'DRAFT');assert.equal(c.text,'unchanged');
+ }
+ await pg.exec(migration);
+ assert.deepEqual((await database.select().from(schema.cardsTable)).filter(c=>c.cardType==='TECHNIQUE'),techniques);
+ assert.deepEqual((await database.select().from(schema.cardsTable)).filter(c=>c.cardType==='WRESTLER'),wrestlersBefore);
+ assert.deepEqual(await database.select().from(schema.decksTable),decksBefore);
+ assert.deepEqual(await database.select().from(schema.packDefinitionsTable),packsBefore);
+});

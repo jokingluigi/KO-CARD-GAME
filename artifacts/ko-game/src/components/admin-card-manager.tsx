@@ -28,6 +28,7 @@ import {
   DEFAULT_IMAGE_DISPLAY_SETTINGS,
   normalizeImageDisplaySettings,
   normalizeCardRarity,
+  normalizeCardRarityForType,
   allowedCardRarities,
   type CardRarity,
   type ImageDisplayMode,
@@ -383,10 +384,9 @@ export function AdminCardManager({
   useEffect(() => {
     if (previewCardType !== "TECHNIQUE") return;
     const rarity = form.getValues("rarity");
-    if (rarity === "LEGENDARY" || rarity === "CHAMPION") {
-      form.setValue("rarity", "NORMAL", { shouldDirty: true });
-    }
-  }, [form, previewCardType]);
+    const next = normalizeCardRarityForType("TECHNIQUE", preview.isToken || preview.isChampionToken ? "TOKEN" : rarity);
+    if (rarity !== next) form.setValue("rarity", next, { shouldDirty: true });
+  }, [form, previewCardType, preview.isToken, preview.isChampionToken]);
 
   const loadCards = useCallback(async () => {
     setIsLoading(true);
@@ -492,7 +492,7 @@ export function AdminCardManager({
     form.reset({
       name: card.name,
       cardType: card.cardType,
-      rarity: normalizeCardRarity(card.cardType === "TECHNIQUE" && card.isToken ? "TOKEN" : card.rarity),
+      rarity: normalizeCardRarityForType(card.cardType, card.cardType === "TECHNIQUE" && (card.isToken || card.isChampionToken) ? "TOKEN" : card.rarity),
       cost: card.cost,
       attack: card.attack,
       health: card.health,
@@ -999,17 +999,17 @@ export function AdminCardManager({
             className="w-full rounded border border-neutral-700 bg-neutral-900 py-2 pl-9 pr-3 text-sm outline-none focus:border-primary"
           />
         </label>
-        <select value={cardType} onChange={(event) => setCardType(event.target.value)} data-testid="select-card-type" className="rounded border border-neutral-700 bg-neutral-900 px-3 py-2 text-sm">
+        <select value={cardType} onChange={(event) => {
+          setCardType(event.target.value);
+          if (event.target.value === "TECHNIQUE" && rarity !== "EPIC" && rarity !== "TOKEN") setRarity("");
+        }} data-testid="select-card-type" className="rounded border border-neutral-700 bg-neutral-900 px-3 py-2 text-sm">
           <option value="">모든 종류</option>
           <option value="WRESTLER">선수</option>
           <option value="TECHNIQUE">기술</option>
         </select>
         <select value={rarity} onChange={(event) => setRarity(event.target.value)} data-testid="select-card-rarity" className="rounded border border-neutral-700 bg-neutral-900 px-3 py-2 text-sm">
           <option value="">모든 등급</option>
-          <option value="NORMAL">NORMAL</option>
-          <option value="EPIC">EPIC</option><option value="LEGENDARY">LEGENDARY</option>
-          <option value="CHAMPION">CHAMPION</option>
-          <option value="TOKEN">TOKEN</option>
+          {allowedCardRarities(cardType === "TECHNIQUE" ? "TECHNIQUE" : "WRESTLER").map((grade) => <option key={grade} value={grade}>{grade}</option>)}
         </select>
         <select value={tokenKind} onChange={(event) => setTokenKind(event.target.value)} data-testid="select-token-kind" className="rounded border border-neutral-700 bg-neutral-900 px-3 py-2 text-sm">
           <option value="">모든 카드</option>
