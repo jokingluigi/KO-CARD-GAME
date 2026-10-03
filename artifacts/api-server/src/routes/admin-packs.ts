@@ -23,6 +23,8 @@ type PackInput = {
   cardsPerPack: number;
   starterRewardQuantity: number;
   normalRate: number;
+  epicRate: number;
+  epicCardPool: string[];
   legendaryRate: number;
   championRate: number;
   skinChance: number;
@@ -73,6 +75,8 @@ function parseInput(value: unknown): PackInput | null {
     cardsPerPack: integer("cardsPerPack", 1),
     starterRewardQuantity,
     normalRate: integer("normalRate", 90),
+    epicRate: integer("epicRate", 0),
+    epicCardPool: ids("epicCardPool"),
     legendaryRate: integer("legendaryRate", 7),
     championRate: integer("championRate", 3),
     skinChance: integer("skinChance", 0),
@@ -83,7 +87,7 @@ function parseInput(value: unknown): PackInput | null {
   };
   if (!name || name.length > 120 || inputData.cardsPerPack < 1 || inputData.cardsPerPack > 100 ||
       inputData.starterRewardQuantity < 0 || inputData.starterRewardQuantity > 999 ||
-      [inputData.normalRate, inputData.legendaryRate, inputData.championRate, inputData.skinChance].some((rate) => rate < 0 || rate > 100)) {
+      [inputData.normalRate, inputData.epicRate, inputData.legendaryRate, inputData.championRate, inputData.skinChance].some((rate) => rate < 0 || rate > 100)) {
     return null;
   }
   return inputData;
@@ -93,12 +97,16 @@ async function validationErrors(pack: PackInput | typeof packDefinitionsTable.$i
   const errors: string[] = [];
   if (!pack.name.trim()) errors.push("팩 이름을 입력해 주세요.");
   if (pack.cardsPerPack < 1) errors.push("cardsPerPack은 1 이상이어야 합니다.");
-  if (pack.normalRate + pack.legendaryRate + pack.championRate !== 100) errors.push("등급별 확률 합계는 100%여야 합니다.");
+  if (pack.normalRate + pack.epicRate + pack.legendaryRate + pack.championRate !== 100) errors.push("등급별 확률 합계는 100%여야 합니다.");
   if (pack.skinChance < 0 || pack.skinChance > 100) errors.push("Skin Chance는 0~100%여야 합니다.");
-  const [normal, legendary, champions] = await Promise.all([
+  const [normal, epic, legendary, champions] = await Promise.all([
     pack.normalCardPool.length ? db.select({ id: cardsTable.id }).from(cardsTable).where(and(
       inArray(cardsTable.id, pack.normalCardPool), eq(cardsTable.status, "PUBLISHED"),
       eq(cardsTable.rarity, "NORMAL"), eq(cardsTable.isToken, false), eq(cardsTable.isChampionToken, false),
+    )) : [],
+    pack.epicCardPool.length ? db.select({ id: cardsTable.id }).from(cardsTable).where(and(
+      inArray(cardsTable.id, pack.epicCardPool), eq(cardsTable.status, "PUBLISHED"),
+      eq(cardsTable.rarity, "EPIC"), eq(cardsTable.isToken, false), eq(cardsTable.isChampionToken, false),
     )) : [],
     pack.legendaryCardPool.length ? db.select({ id: cardsTable.id }).from(cardsTable).where(and(
       inArray(cardsTable.id, pack.legendaryCardPool), eq(cardsTable.status, "PUBLISHED"),
@@ -118,6 +126,7 @@ async function validationErrors(pack: PackInput | typeof packDefinitionsTable.$i
       eq(cardsTable.isChampionToken, false),
     )) : [];
   if (pack.normalRate > 0 && normal.length === 0) errors.push("NORMAL 확률이 0보다 크면 공개된 NORMAL Pool이 필요합니다.");
+  if (pack.epicRate > 0 && epic.length === 0) errors.push("EPIC 확률이 0보다 크면 공개된 EPIC Pool이 필요합니다.");
   if (pack.legendaryRate > 0 && legendary.length === 0) errors.push("LEGENDARY 확률이 0보다 크면 공개된 LEGENDARY Pool이 필요합니다.");
   if (pack.championRate > 0 && champions.length === 0) errors.push("CHAMPION 확률이 0보다 크면 공개된 Champion Pool이 필요합니다.");
   if (pack.skinChance > 0 && skins.length === 0) errors.push("Skin Chance가 0보다 크면 공개된 Skin Pool이 필요합니다.");
@@ -272,11 +281,11 @@ router.post("/:id/preview/forced", async (request, response): Promise<void> => {
   for (const slot of slots) {
     const type = slot && typeof slot.type === "string" ? slot.type : "";
     const id = slot && typeof slot.id === "string" ? slot.id : "";
-    if (type === "NORMAL_CARD" || type === "LEGENDARY_CARD") {
-      const pool = type === "NORMAL_CARD" ? pack.normalCardPool : pack.legendaryCardPool;
+    if (type === "NORMAL_CARD" || type === "EPIC_CARD" || type === "LEGENDARY_CARD") {
+      const pool = type === "NORMAL_CARD" ? pack.normalCardPool : type === "EPIC_CARD" ? pack.epicCardPool : pack.legendaryCardPool;
       const [card] = await db.select().from(cardsTable).where(and(
         eq(cardsTable.id, id), inArray(cardsTable.id, pool), eq(cardsTable.status, "PUBLISHED"),
-        eq(cardsTable.rarity, type === "NORMAL_CARD" ? "NORMAL" : "LEGENDARY"),
+        eq(cardsTable.rarity, type === "NORMAL_CARD" ? "NORMAL" : type === "EPIC_CARD" ? "EPIC" : "LEGENDARY"),
         eq(cardsTable.isToken, false), eq(cardsTable.isChampionToken, false),
       )).limit(1);
       if (!card) { response.status(422).json({ message: "강제 지정 카드가 현재 팩 Pool에 없습니다." }); return; }

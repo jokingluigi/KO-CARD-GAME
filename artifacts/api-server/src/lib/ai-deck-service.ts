@@ -8,11 +8,11 @@ import {
   type CardRecord,
   type ChampionRecord,
 } from "@workspace/db";
-import { DECK_SIZE, MAX_LEGENDARY_CARDS, validateDeckCounts } from "@workspace/game-engine";
+import { DECK_SIZE, MAX_LEGENDARY_CARDS, maxCardCopies, cardCopyLimitMessage, validateDeckCounts } from "@workspace/game-engine";
 
 export const AI_DECK_MIN_SIZE = 1;
 export const AI_DECK_MAX_SIZE = 100;
-export const AI_DECK_MAX_CARD_COPIES = 2;
+export const AI_DECK_MAX_CARD_COPIES = maxCardCopies("NORMAL");
 export const AI_DECK_MAX_LEGENDARY_CARDS = MAX_LEGENDARY_CARDS;
 export const AI_DECK_ALLOWED_STATUSES = ["PUBLISHED", "DRAFT"] as const;
 export const AI_DECK_BLOCKED_STATUSES = ["DISABLED"] as const;
@@ -75,8 +75,8 @@ function cardRuleReasons(cardDefinitionIds: string[], cardsById: Map<string, Car
     if (card.rarity === "LEGENDARY") {
       legendaryCount += count;
       legendaryDefinitionCounts.push(count);
-    } else if (count > AI_DECK_MAX_CARD_COPIES) {
-      reasons.push(`같은 카드는 최대 ${AI_DECK_MAX_CARD_COPIES}장까지 넣을 수 있습니다.`);
+    } else if (count > maxCardCopies(card.rarity)) {
+      reasons.push(cardCopyLimitMessage(card.rarity));
     }
   }
   for (const reason of validateDeckCounts({

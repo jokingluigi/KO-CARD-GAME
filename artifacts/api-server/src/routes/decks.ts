@@ -13,7 +13,7 @@ import {
   type ChampionRecord,
   type DeckRecord,
 } from "@workspace/db";
-import { DECK_SIZE, MAX_LEGENDARY_CARDS, validateDeckCounts } from "@workspace/game-engine";
+import { DECK_SIZE, MAX_LEGENDARY_CARDS, maxCardCopies, cardCopyLimitMessage, validateDeckCounts } from "@workspace/game-engine";
 import { getAuthenticatedUser } from "../lib/auth";
 import { deleteOwnedDeck } from "../lib/deck-delete-service";
 import { getVisibleDeckOptionCards } from "./deck-options";
@@ -25,7 +25,6 @@ import {
 
 const router: IRouter = Router();
 const MAX_NAME_LENGTH = 30;
-const MAX_CARD_COPIES = 2;
 const VALID_CARD_TYPES = new Set(["WRESTLER", "TECHNIQUE"]);
 type CardRuleRecord = Pick<CardRecord, "id" | "rarity">;
 
@@ -78,14 +77,14 @@ function getCardRuleReasons(cardDefinitionIds: string[], cardsById: Map<string, 
       legendaryCount += count;
       legendaryDefinitionCounts.push(count);
       legendaryIds.push(id);
-    } else if (count > MAX_CARD_COPIES) {
+    } else if (count > maxCardCopies(card.rarity)) {
       reasons.push({
         scope: "CARD",
         reasonCode: "DUPLICATE_CARD",
-        message: `같은 카드는 최대 ${MAX_CARD_COPIES}장까지 넣을 수 있습니다.`,
+        message: cardCopyLimitMessage(card.rarity),
         cardDefinitionIds: [id],
         count,
-        limit: MAX_CARD_COPIES,
+        limit: maxCardCopies(card.rarity),
       });
     }
   });
@@ -102,7 +101,7 @@ function getCardRuleReasons(cardDefinitionIds: string[], cardsById: Map<string, 
           reasons.push({
             scope: "CARD",
             reasonCode: "DUPLICATE_LEGENDARY",
-            message: "레전더리 카드는 같은 카드를 1장만 넣을 수 있습니다.",
+            message: cardCopyLimitMessage("LEGENDARY"),
             cardDefinitionIds: [id],
             count,
             limit: 1,
@@ -325,12 +324,12 @@ async function parseDeckPayload(value: unknown): Promise<
   };
 }
 
-async function validateReferences(payload: DeckPayload, userId: string, testAccount = false): Promise<string | null> {
-  const [account] = await db.select({ role: usersTable.role }).from(usersTable).where(eq(usersTable.id, userId)).limit(1);
+export async function validateReferences(payload: DeckPayload, userId: string, testAccount = false, database: Pick<typeof db, "select"> = db): Promise<string | null> {
+  const [account] = await database.select({ role: usersTable.role }).from(usersTable).where(eq(usersTable.id, userId)).limit(1);
   const admin = account?.role === "ADMIN";
   testAccount ||= admin;
   if (payload.championDefinitionId) {
-    const [champion] = await db
+    const [champion] = await database
       .select({ id: championsTable.id, status: championsTable.status })
       .from(championsTable)
       .where(eq(championsTable.id, payload.championDefinitionId))
@@ -338,14 +337,14 @@ async function validateReferences(payload: DeckPayload, userId: string, testAcco
     if (!champion || (champion.status !== "PUBLISHED" && champion.status !== "DRAFT")) {
       return "사용 가능한 Champion만 선택할 수 있습니다.";
     }
-    const [ownedChampion] = await db.select({ id: userChampionCollectionsTable.championDefinitionId })
+    const [ownedChampion] = await database.select({ id: userChampionCollectionsTable.championDefinitionId })
       .from(userChampionCollectionsTable)
       .where(and(eq(userChampionCollectionsTable.userId, userId), eq(userChampionCollectionsTable.championDefinitionId, champion.id), eq(userChampionCollectionsTable.owned, true)));
     if (!ownedChampion && !admin && !(testAccount && champion.status === "PUBLISHED")) return "소유한 Champion만 선택할 수 있습니다.";
   }
   const uniqueCardIds = [...new Set(payload.cardDefinitionIds)];
   if (uniqueCardIds.length === 0) return null;
-  const cards = await db
+  const cards = await database
     .select({
       id: cardsTable.id,
       cardType: cardsTable.cardType,
@@ -367,7 +366,7 @@ async function validateReferences(payload: DeckPayload, userId: string, testAcco
   ) {
     return "사용 가능한 일반 카드만 덱에 넣을 수 있습니다.";
   }
-  const ownedCards = await db.select({
+  const ownedCards = await database.select({
     id: userCardCollectionsTable.cardDefinitionId,
     quantity: userCardCollectionsTable.quantity,
   })
@@ -383,7 +382,7 @@ async function validateReferences(payload: DeckPayload, userId: string, testAcco
   }
   const cardById = new Map(cards.map((card) => [card.id, card]));
   const ruleReasons = getCardRuleReasons(payload.cardDefinitionIds, cardById);
-  if (ruleReasons.length > 0) return ruleReasons.join(" ");
+  if (ruleReasons.length > 0) return ruleReasons.map(reason => reason.message).join(" ");
   return null;
 }
 

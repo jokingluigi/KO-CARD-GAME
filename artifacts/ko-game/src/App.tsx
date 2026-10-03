@@ -37,6 +37,8 @@ function Router() {
     <RoutedErrorBoundary>
       <Switch>
         <Route path="/admin" component={Admin} />
+        <Route path="/admin/draft" component={Admin} />
+        <Route path="/admin/draft/match/:matchId">{() => <OnlineMatch draft />}</Route>
         <Route path="/admin/tower" component={Admin} />
         <Route path="/admin/tower-test" component={Admin} />
         <Route path="/admin/packs" component={Admin} />
@@ -49,7 +51,7 @@ function Router() {
         <Route path="/admin/notices" component={Admin} />
         <Route path="/tower" component={Tower} />
         <Route path="/ai-match" component={Home} />
-        <Route path="/online/match/:matchId" component={OnlineMatch} />
+        <Route path="/online/match/:matchId">{() => <OnlineMatch />}</Route>
         <Route path="/daily-quests" component={DailyQuests} />
         <Route path="/attendance" component={Attendance} />
         <Route path="/online/quick" component={OnlineQuick} />

@@ -45,7 +45,7 @@ function toCardDetailRecord(card: BrowseableCardDefinition): CardDetailRecord {
 }
 
 function rarityLabel(rarity: string | undefined) {
-  return rarity === "LEGENDARY" ? "전설" : rarity === "CHAMPION" ? "챔피언" : "일반";
+  return rarity === "EPIC" ? "에픽" : rarity === "LEGENDARY" ? "전설" : rarity === "CHAMPION" ? "챔피언" : "일반";
 }
 
 function TagCardButton({

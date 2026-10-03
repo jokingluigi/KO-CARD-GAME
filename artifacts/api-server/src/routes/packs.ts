@@ -138,7 +138,7 @@ export async function openPackRequest(
         .where(and(eq(packDefinitionsTable.id, packId), eq(packDefinitionsTable.status, "PUBLISHED"), sql`${packDefinitionsTable.deletedAt} IS NULL`))
         .limit(1);
       if (!pack) throw new Error("공개된 팩을 찾을 수 없습니다.");
-      if (pack.normalRate + pack.legendaryRate + pack.championRate !== 100) {
+      if (pack.normalRate + pack.epicRate + pack.legendaryRate + pack.championRate !== 100) {
         throw new Error("팩 확률 설정이 올바르지 않습니다.");
       }
       const [spent] = await tx.update(userPackInventoryTable).set({
@@ -153,14 +153,14 @@ export async function openPackRequest(
 
       const openings = await rollPackOpenings(quantity, () => rollPack(pack, tx));
       const rolledCardIds = [...new Set(openings.flatMap(({ rewards }) => rewards.flatMap((reward) =>
-        reward.rewardType === 'NORMAL_CARD' || reward.rewardType === 'LEGENDARY_CARD' ? [reward.card.id] : [])))];
+        reward.rewardType === 'NORMAL_CARD' || reward.rewardType === 'EPIC_CARD' || reward.rewardType === 'LEGENDARY_CARD' ? [reward.card.id] : [])))];
       const ownedCards = rolledCardIds.length ? await tx.select({ id: userCardCollectionsTable.cardDefinitionId, quantity: userCardCollectionsTable.quantity })
         .from(userCardCollectionsTable)
         .where(and(eq(userCardCollectionsTable.userId, request.authUser!.id), inArray(userCardCollectionsTable.cardDefinitionId, rolledCardIds))) : [];
       const ownedCardQuantities = new Map(ownedCards.map((entry) => [entry.id, entry.quantity]));
       for (const opening of openings) {
         for (const reward of opening.rewards) {
-          if (reward.rewardType === "NORMAL_CARD" || reward.rewardType === "LEGENDARY_CARD") {
+          if (reward.rewardType === "NORMAL_CARD" || reward.rewardType === "EPIC_CARD" || reward.rewardType === "LEGENDARY_CARD") {
             const card = reward.card;
             reward.alreadyOwned = (ownedCardQuantities.get(card.id) ?? 0) > 0;
             ownedCardQuantities.set(card.id, (ownedCardQuantities.get(card.id) ?? 0) + 1);

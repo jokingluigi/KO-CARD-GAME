@@ -1,3 +1,5 @@
+import type { MatchRecap, CardDefinition, ChampionDefinition } from '@workspace/game-engine';
+import { DraftBattleClient, draftRequest, abandonDraft } from '@/lib/draft-client';
 import { useEffect, useRef, useState } from "react";
 import { CircleAlert, LoaderCircle } from "lucide-react";
 import { useLocation, useParams } from "wouter";
@@ -98,16 +100,19 @@ function actualDamage(
   return Math.max(0, damage?.amount ?? 0);
 }
 
-function OnlineMatchPage() {
+function OnlineMatchPage({ draft = false }: { draft?: boolean }) {
   const { matchId } = useParams<{ matchId: string }>();
   const [, navigate] = useLocation();
-  const client = getOnlineLobbyClient();
+  const [draftClient] = useState(() => new DraftBattleClient());
+  const client = draft ? draftClient : getOnlineLobbyClient();
+  const returnRoute = draft ? `/admin/draft?session=${matchId}` : ROUTES.MAIN_MENU;
   const [connection, setConnection] = useState<OnlineLobbyConnectionState>(client.state);
   const [hasAuthoritativeSnapshot, setHasAuthoritativeSnapshot] = useState(false);
   const [showRecoveryActions, setShowRecoveryActions] = useState(false);
   const [abandoningMatch, setAbandoningMatch] = useState(false);
   const [seat, setSeat] = useState<"PLAYER_ONE" | "PLAYER_TWO" | null>(null);
   const [state, setState] = useState<GameState | null>(null);
+  const [recap, setRecap] = useState<MatchRecap | null>(null);
   const [version, setVersion] = useState<number | null>(null);
   const [mediaCatalog, setMediaCatalog] = useState<GameMediaCatalog>(emptyGameMediaCatalog);
   const [resourcesReady, setResourcesReady] = useState(false);
@@ -161,11 +166,10 @@ function OnlineMatchPage() {
 
   useEffect(() => {
     let cancelled = false;
-    Promise.all([
-      fetchPublishedCardDefinitions(),
-      fetchPublishedChampions(),
-      fetchGameMedia(),
-    ]).then(([definitions, champions, media]) => {
+    const resources = draft
+      ? draftRequest<{cards:CardDefinition[];champions:ChampionDefinition[];media:GameMediaCatalog}>(`/sessions/${matchId}/resources`).then(r=>[r.cards,r.champions,r.media] as const)
+      : Promise.all([fetchPublishedCardDefinitions(),fetchPublishedChampions(),fetchGameMedia()]);
+    resources.then(([definitions, champions, media]) => {
       if (cancelled) return;
       setRuntimeCardDefinitions(definitions);
       preloadMatchAssets(definitions, champions);
@@ -241,6 +245,7 @@ function OnlineMatchPage() {
           pendingActionInFlightRef.current = false;
           setPendingAction(false);
         }
+        setRecap(message.recap ?? null);
         setTurnDeadlineAt(message.turnDeadlineAt);
         setGameplayStartsAt(message.gameplayStartsAt);
         setPublicPlayers(message.publicPlayers);
@@ -255,7 +260,7 @@ function OnlineMatchPage() {
           Boolean(event && typeof event === "object" && typeof (event as { sequenceNumber?: unknown }).sequenceNumber === "number"),
         );
         if (
-          message.type !== "MATCH_SNAPSHOT" &&
+          !draft && message.type !== "MATCH_SNAPSHOT" &&
           message.type !== "RESYNC_REQUIRED" &&
           sequencedEvents.some((event) => event.sequenceNumber > lastEventSequence.current + 1)
         ) {
@@ -402,7 +407,7 @@ function OnlineMatchPage() {
     void (async () => {
       for (let attempt = 0; attempt < 6 && !cancelled; attempt += 1) {
         try {
-          const result = await fetchOnlineMatchRewards(matchId);
+          const result = draft ? await draftRequest<Awaited<ReturnType<typeof fetchOnlineMatchRewards>>>(`/sessions/${matchId}/rewards`) : await fetchOnlineMatchRewards(matchId);
           if (cancelled) return;
           const grant = result.grants[0];
           if (grant) {
@@ -626,9 +631,9 @@ function OnlineMatchPage() {
     setAbandoningMatch(true);
     setPlayError(null);
     try {
-      await abandonOnlineMatch(matchId);
+      await (draft ? abandonDraft(matchId) : abandonOnlineMatch(matchId));
       client.send({ type: "UNSUBSCRIBE", matchId });
-      navigate(ROUTES.MAIN_MENU);
+      navigate(returnRoute);
     } catch (reason) {
       setPlayError(reason instanceof Error ? reason.message : "매치를 종료하지 못했습니다. 다시 시도해 주세요.");
       setShowRecoveryActions(true);
@@ -639,7 +644,7 @@ function OnlineMatchPage() {
 
   function returnToMainWithMatchSaved() {
     if (matchId) client.send({ type: "UNSUBSCRIBE", matchId });
-    navigate(ROUTES.MAIN_MENU);
+    navigate(returnRoute);
   }
 
   function clearRejectedActionMessage() {
@@ -1040,11 +1045,11 @@ function OnlineMatchPage() {
         playerChampionName={selfPublicPlayer?.championName}
         opponentNickname={opponentPublicPlayer?.displayName}
         opponentChampionName={opponentPublicPlayer?.championName}
-        onReturnToMainMenu={() => navigate(ROUTES.MAIN_MENU)}
+        onReturnToMainMenu={() => navigate(returnRoute)}
       />
       {matchResultVisible && (
-        <MatchResultOverlay state={state} reward={matchReward} rewardStatus={rewardStatus} rewardError={rewardError}
-          onRetryReward={() => setRewardRetry((count) => count + 1)} onReturnToMainMenu={() => navigate(ROUTES.MAIN_MENU)} />
+        <MatchResultOverlay state={state} recap={recap} reward={matchReward} rewardStatus={rewardStatus} rewardError={rewardError}
+          onRetryReward={() => setRewardRetry((count) => count + 1)} onReturnToMainMenu={() => navigate(returnRoute)} />
       )}
     </>
   );
@@ -1054,6 +1059,6 @@ function nextSeatForIntro(seat: "PLAYER_ONE" | "PLAYER_TWO" | null): "PLAYER_ONE
   return seat ?? "PLAYER_ONE";
 }
 
-export default function OnlineMatch() {
-  return <OnlineAuthGate>{() => <OnlineMatchPage />}</OnlineAuthGate>;
+export default function OnlineMatch({ draft = false }: { draft?: boolean }) {
+  return <OnlineAuthGate>{user => draft && user.role !== "ADMIN" ? <main className="flex min-h-screen items-center justify-center p-6 text-white">관리자만 드래프트에 접근할 수 있습니다.</main> : <OnlineMatchPage draft={draft} />}</OnlineAuthGate>;
 }

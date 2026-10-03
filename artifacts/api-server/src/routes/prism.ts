@@ -81,7 +81,7 @@ async function getCraftableCard(cardDefinitionId: string, executor: QueryExecuto
   const [card] = await executor.select().from(cardsTable).where(and(
     eq(cardsTable.id, cardDefinitionId),
     eq(cardsTable.status, "PUBLISHED"),
-    inArray(cardsTable.rarity, ["NORMAL", "LEGENDARY"]),
+    inArray(cardsTable.rarity, ["NORMAL", "EPIC", "LEGENDARY"]),
     eq(cardsTable.isToken, false),
     eq(cardsTable.isChampionToken, false),
   )).limit(1);

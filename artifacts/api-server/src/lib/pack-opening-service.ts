@@ -4,7 +4,7 @@ export type PackOpenMode = "single" | "bulk";
 export type PackOpenings = Array<{ rewards: Array<Record<string, unknown>> }>;
 
 const BULK_CLAIM_MARKER = "__packBulkOpening";
-const VALID_REWARD_TYPES = new Set(["NORMAL_CARD", "LEGENDARY_CARD", "CHAMPION_UNLOCK", "SKIN"]);
+const VALID_REWARD_TYPES = new Set(["NORMAL_CARD", "EPIC_CARD", "LEGENDARY_CARD", "CHAMPION_UNLOCK", "SKIN"]);
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
@@ -19,7 +19,7 @@ function isValidStoredReward(value: unknown): value is Record<string, unknown> {
     return false;
   }
 
-  if (value.rewardType === "NORMAL_CARD" || value.rewardType === "LEGENDARY_CARD") {
+  if (value.rewardType === "NORMAL_CARD" || value.rewardType === "EPIC_CARD" || value.rewardType === "LEGENDARY_CARD") {
     return isNonEmptyString(value.cardDefinitionId) && isRecord(value.card);
   }
   if (value.rewardType === "CHAMPION_UNLOCK") {

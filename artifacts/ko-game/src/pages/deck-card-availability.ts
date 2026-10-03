@@ -1,6 +1,7 @@
 import type { DeckCard } from "@/lib/decks-client";
 
-export const MAX_CARD_COPIES = 2;
+import { maxCardCopies, cardCopyLimitMessage } from "@workspace/game-engine/rules";
+export const MAX_CARD_COPIES = maxCardCopies("NORMAL");
 
 export type DeckCardCountView = {
   ownedCount: number | undefined;
@@ -31,8 +32,8 @@ export function cardLimitReason(
   if (card.rarity === "LEGENDARY") {
     if (count >= 1) return "레전더리 동일 카드 1장 제한";
     if (legendaryCount >= maxLegendaryCards) return `레전더리 총 ${maxLegendaryCards}장 제한`;
-  } else if (count >= MAX_CARD_COPIES) {
-    return "동일 카드 최대 2장";
+  } else if (count >= maxCardCopies(card.rarity)) {
+    return cardCopyLimitMessage(card.rarity);
   }
   return undefined;
 }

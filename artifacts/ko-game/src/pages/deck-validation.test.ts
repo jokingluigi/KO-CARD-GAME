@@ -17,7 +17,7 @@ function card(quantity: number, rarity: string = "NORMAL", id = "first-card"): D
 
 const actionArgs = {
   count: 0, deckCount: 0, deckSize: 25, legendaryCount: 0,
-  maxLegendaryCards: 5, isTestAccount: false,
+  maxLegendaryCards: 3, isTestAccount: false,
 };
 
 test("existing normal cards are legal at the owned limit; adding one more is disabled", () => {
@@ -51,15 +51,15 @@ test("legendary equality is legal, while a second copy exceeds the separate dupl
   }), ["DUPLICATE_LEGENDARY"]);
 });
 
-test("a 25-card owned deck allows exactly five distinct legendaries, not six or 24/26 cards", () => {
-  const ownedCards = Array.from({ length: 25 }, (_, i) => card(1, i < 5 ? "LEGENDARY" : "NORMAL", `card-${i}`));
+test("a 25-card owned deck allows exactly three distinct legendaries, not four or 24/26 cards", () => {
+  const ownedCards = Array.from({ length: 25 }, (_, i) => card(1, i < 3 ? "LEGENDARY" : "NORMAL", `card-${i}`));
   assert.ok(ownedCards.every((entry) => cardOwnershipValidationReason(entry, 1, false) === null));
   assert.deepEqual(validateDeckCounts({
-    cardCount: ownedCards.length, legendaryCount: 5, legendaryDefinitionCounts: [1, 1, 1, 1, 1], championCount: 1,
+    cardCount: ownedCards.length, legendaryCount: 3, legendaryDefinitionCounts: [1, 1, 1], championCount: 1,
   }), []);
-  assert.deepEqual(validateDeckCounts({ cardCount: 24, legendaryCount: 5, championCount: 1 }), ["INVALID_CARD_COUNT"]);
-  assert.deepEqual(validateDeckCounts({ cardCount: 26, legendaryCount: 5, championCount: 1 }), ["INVALID_CARD_COUNT"]);
-  assert.deepEqual(validateDeckCounts({ cardCount: 25, legendaryCount: 6, championCount: 1 }), ["TOO_MANY_LEGENDARIES"]);
+  assert.deepEqual(validateDeckCounts({ cardCount: 24, legendaryCount: 3, championCount: 1 }), ["INVALID_CARD_COUNT"]);
+  assert.deepEqual(validateDeckCounts({ cardCount: 26, legendaryCount: 3, championCount: 1 }), ["INVALID_CARD_COUNT"]);
+  assert.deepEqual(validateDeckCounts({ cardCount: 25, legendaryCount: 4, championCount: 1 }), ["TOO_MANY_LEGENDARIES"]);
   assert.equal(cardOwnershipValidationReason(card(1), 1, true), null);
 });
 

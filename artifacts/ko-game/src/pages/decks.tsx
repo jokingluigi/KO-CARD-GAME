@@ -29,8 +29,8 @@ import {
   type DeckValidationReason,
 } from "@/lib/decks-client";
 import { cardTypeLabel, deckValidityLabel, normalizeCardRulesText } from "@/lib/display-labels";
-import { DECK_SIZE, MAX_LEGENDARY_CARDS, validateDeckCounts } from "@workspace/game-engine";
-import { cardLimitReason, cardOwnershipReason, getDeckCardAction, getDeckCardCountView, MAX_CARD_COPIES } from "./deck-card-availability";
+import { DECK_SIZE, MAX_LEGENDARY_CARDS, maxCardCopies, cardCopyLimitMessage, validateDeckCounts } from "@workspace/game-engine";
+import { cardLimitReason, cardOwnershipReason, getDeckCardAction, getDeckCardCountView } from "./deck-card-availability";
 import { cardOwnershipValidationReason, formatDeckValidationReason, mergeDeckValidationReasons, uniqueValidationReasons } from "./deck-validation";
 
 type AuthStatus = "checking" | "authenticated" | "unauthenticated" | "error";
@@ -113,7 +113,7 @@ function DeckCardVisual({
               health={card.health}
               rulesText={card.text}
               imageUrl={card.imageUrl}
-              rarity={card.rarity as "NORMAL" | "LEGENDARY" | "CHAMPION"}
+              rarity={card.rarity as "NORMAL" | "EPIC" | "LEGENDARY" | "CHAMPION"}
               imageDisplaySettings={cardSettings(card)}
               size="detail"
               className="mx-auto w-64 max-w-full"
@@ -144,7 +144,7 @@ function DeckCardVisual({
             health={card.health}
             rulesText={card.text}
             imageUrl={card.imageUrl}
-            rarity={card.rarity as "NORMAL" | "LEGENDARY" | "CHAMPION"}
+            rarity={card.rarity as "NORMAL" | "EPIC" | "LEGENDARY" | "CHAMPION"}
             imageDisplaySettings={cardSettings(card)}
             size="admin"
             showRules={false}
@@ -383,8 +383,8 @@ export default function Decks() {
     counts.forEach((count, id) => {
       const card = cardById.get(id);
       if (!card) return;
-      if (card.rarity !== "LEGENDARY" && count > MAX_CARD_COPIES) {
-        reasons.push(validationReason("CARD", "DUPLICATE_CARD", `같은 카드는 최대 ${MAX_CARD_COPIES}장까지 넣을 수 있습니다.`, [id], { count, limit: MAX_CARD_COPIES }));
+      if (card.rarity !== "LEGENDARY" && count > maxCardCopies(card.rarity)) {
+        reasons.push(validationReason("CARD", "DUPLICATE_CARD", cardCopyLimitMessage(card.rarity), [id], { count, limit: maxCardCopies(card.rarity) }));
       } else if (card.rarity === "LEGENDARY" && count > 1) {
         reasons.push(validationReason("CARD", "DUPLICATE_LEGENDARY", "레전더리 카드는 같은 카드를 1장만 넣을 수 있습니다.", [id], { count, limit: 1 }));
       }
@@ -914,9 +914,9 @@ export default function Decks() {
                 </div>
               )}
 
-              <div className="mt-5 flex items-center justify-between gap-3">
+              <div className="mt-5 flex flex-wrap items-center justify-between gap-3">
                 <p className="ko-decks__section-label">Cards in plan</p>
-                  <span className="text-[0.62rem] font-bold text-[#706b65]">일반 동일 카드 2장 · 레전더리 카드별 1장 / 총 {MAX_LEGENDARY_CARDS}장</span>
+                  <span className="text-[0.62rem] font-bold text-[#706b65]">노멀 동일 {maxCardCopies("NORMAL")}장 · 에픽 동일 {maxCardCopies("EPIC")}장 · 레전더리 카드별 1장 / 총 {MAX_LEGENDARY_CARDS}장</span>
               </div>
               {selectedRows.length === 0 ? (
                 <div className="ko-decks__empty mt-3" data-testid="empty-selected-cards">
@@ -942,7 +942,7 @@ export default function Decks() {
                               health={card.health}
                               rulesText={card.text}
                               imageUrl={card.imageUrl}
-                              rarity={card.rarity as "NORMAL" | "LEGENDARY" | "CHAMPION"}
+                              rarity={card.rarity as "NORMAL" | "EPIC" | "LEGENDARY" | "CHAMPION"}
                               imageDisplaySettings={cardSettings(card)}
                               size="detail"
                               className="mx-auto w-64 max-w-full"
@@ -1034,7 +1034,7 @@ export default function Decks() {
                     health={craftInfoCard?.health ?? craftTarget.health}
                     rulesText={craftInfoCard?.text ?? craftTarget.text}
                     imageUrl={craftInfoCard?.imageUrl ?? craftTarget.imageUrl}
-                    rarity={craftTarget.rarity as "NORMAL" | "LEGENDARY" | "CHAMPION"}
+                    rarity={craftTarget.rarity as "NORMAL" | "EPIC" | "LEGENDARY" | "CHAMPION"}
                     imageDisplaySettings={craftInfoCard ? {
                       imageDisplayMode: craftInfoCard.imageDisplayMode,
                       imageScale: craftInfoCard.imageScale,

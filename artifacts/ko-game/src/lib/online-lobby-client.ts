@@ -1,3 +1,4 @@
+import type {MatchRecap} from '@workspace/game-engine';
 import type { OnlineActionPayload } from "./online-match-protocol";
 import {
   ONLINE_WS_TICKET_PATH,
@@ -24,6 +25,7 @@ export type OnlineLobbyMessage =
 
 type MatchPayload = {
   matchId: string; version: number; state: unknown; events: unknown[];
+  recap?:MatchRecap|null;
   serverTime: number; turnStartedAt: number | null; turnDeadlineAt: number | null;
   gameplayStartsAt: number | null;
   publicPlayers: Array<{

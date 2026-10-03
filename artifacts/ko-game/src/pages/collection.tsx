@@ -18,12 +18,12 @@ import { cardTypeLabel } from "@/lib/display-labels";
 
 type CollectionTab = "cards" | "crafting" | "champions";
 type CardTypeFilter = "ALL" | "WRESTLER" | "TECHNIQUE";
-type RarityFilter = "ALL" | "NORMAL" | "LEGENDARY";
+type RarityFilter = "ALL" | "NORMAL" | "EPIC" | "LEGENDARY";
 type CardSort = "COST" | "NAME" | "RARITY";
 type CollectionLoadState = "loading" | "ready" | "error";
 
 function rarityLabel(rarity: string) {
-  return rarity === "LEGENDARY" ? "LEGENDARY" : "NORMAL";
+  return rarity === "EPIC" ? "EPIC" : rarity === "LEGENDARY" ? "LEGENDARY" : "NORMAL";
 }
 
 function CardCollectionItem({ card, onOpen, showCraftable = false, unlimited = false, favorite = false, onFavorite }: { card: CollectionCard; onOpen: () => void; showCraftable?: boolean; unlimited?: boolean; favorite?: boolean; onFavorite: () => void }) {
@@ -53,7 +53,7 @@ function CardCollectionItem({ card, onOpen, showCraftable = false, unlimited = f
           rulesText={card.text}
           imageUrl={card.imageUrl}
           artworkLoading="lazy"
-          rarity={card.rarity as "NORMAL" | "LEGENDARY"}
+          rarity={card.rarity as "NORMAL" | "EPIC" | "LEGENDARY"}
           imageDisplaySettings={{
             imageDisplayMode: card.imageDisplayMode,
             imageScale: card.imageScale,
@@ -189,7 +189,7 @@ export default function CollectionPage() {
       })
       .sort((left, right) => {
         if (sort === "NAME") return left.name.localeCompare(right.name, "ko");
-        if (sort === "RARITY") return rarityLabel(left.rarity).localeCompare(rarityLabel(right.rarity)) || left.name.localeCompare(right.name, "ko");
+        if (sort === "RARITY") return (["NORMAL", "EPIC", "LEGENDARY"].indexOf(left.rarity) - ["NORMAL", "EPIC", "LEGENDARY"].indexOf(right.rarity)) || left.name.localeCompare(right.name, "ko");
         return left.cost - right.cost || left.name.localeCompare(right.name, "ko");
       });
   }, [cardType, collection?.cards, rarity, search, sort, favorites, favoritesOnly]);
@@ -205,7 +205,7 @@ export default function CollectionPage() {
       })
       .sort((left, right) => {
         if (sort === "NAME") return left.name.localeCompare(right.name, "ko");
-        if (sort === "RARITY") return rarityLabel(left.rarity).localeCompare(rarityLabel(right.rarity)) || left.name.localeCompare(right.name, "ko");
+        if (sort === "RARITY") return (["NORMAL", "EPIC", "LEGENDARY"].indexOf(left.rarity) - ["NORMAL", "EPIC", "LEGENDARY"].indexOf(right.rarity)) || left.name.localeCompare(right.name, "ko");
         return left.cost - right.cost || left.name.localeCompare(right.name, "ko");
       });
   }, [cardType, collection?.craftableCards, rarity, search, sort, favorites, favoritesOnly]);
@@ -372,7 +372,7 @@ export default function CollectionPage() {
                   {search && <button type="button" aria-label="검색어 지우기" onClick={() => setSearch("")} className="absolute right-2 top-1/2 -translate-y-1/2 text-neutral-500 hover:text-white"><X className="h-4 w-4" /></button>}
                 </label>
                 <FilterSelect label="카드 종류" value={cardType} onChange={(value) => setCardType(value as CardTypeFilter)} options={[["ALL", "전체 종류"], ["WRESTLER", "선수"], ["TECHNIQUE", "기술"]]} />
-                <FilterSelect label="희귀도" value={rarity} onChange={(value) => setRarity(value as RarityFilter)} options={[["ALL", "전체 희귀도"], ["NORMAL", "NORMAL"], ["LEGENDARY", "LEGENDARY"]]} />
+                <FilterSelect label="희귀도" value={rarity} onChange={(value) => setRarity(value as RarityFilter)} options={[["ALL", "전체 희귀도"], ["NORMAL", "NORMAL"], ["EPIC", "EPIC"], ["LEGENDARY", "LEGENDARY"]]} />
                 <FilterSelect label="정렬" value={sort} onChange={(value) => setSort(value as CardSort)} options={[["COST", "비용"], ["NAME", "이름"], ["RARITY", "희귀도"]]} />
               </div>
               <button type="button" aria-pressed={favoritesOnly} onClick={() => setFavoritesOnly((value) => !value)}
@@ -381,7 +381,7 @@ export default function CollectionPage() {
               </button>
                <p className="mt-3 text-xs text-neutral-500">
                  <span className="font-bold text-neutral-300">{tab === "cards" ? filteredCards.length : filteredCraftableCards.length}</span>
-                 {tab === "cards" ? "장의 카드 · 소유 카드만 표시" : "장의 카드 · PUBLISHED NORMAL/LEGENDARY만 표시"}
+                 {tab === "cards" ? "장의 카드 · 소유 카드만 표시" : "장의 카드 · PUBLISHED NORMAL/EPIC/LEGENDARY만 표시"}
                </p>
             </section>
 

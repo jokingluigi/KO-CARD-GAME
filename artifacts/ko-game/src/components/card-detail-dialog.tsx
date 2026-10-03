@@ -29,7 +29,7 @@ export type CardDetailRecord = {
 };
 
 function rarityLabel(rarity: string) {
-  return rarity === "LEGENDARY" ? "LEGENDARY" : rarity === "CHAMPION" ? "CHAMPION" : "NORMAL";
+  return rarity === "EPIC" ? "EPIC" : rarity === "LEGENDARY" ? "LEGENDARY" : rarity === "CHAMPION" ? "CHAMPION" : "NORMAL";
 }
 
 export function CardDetailDialog({
@@ -86,7 +86,7 @@ export function CardDetailDialog({
                 health={card.health}
                 rulesText={card.text}
                 imageUrl={card.imageUrl}
-                rarity={card.rarity as "NORMAL" | "LEGENDARY" | "CHAMPION"}
+                rarity={card.rarity as "NORMAL" | "EPIC" | "LEGENDARY" | "CHAMPION"}
                 imageDisplaySettings={{
                   imageDisplayMode: card.imageDisplayMode as "COVER" | "CONTAIN" | "CUSTOM",
                   imageScale: card.imageScale,

@@ -24,7 +24,7 @@ function DetailCard({ card }: { card: PackDetailCard }) {
         health={card.health}
         rulesText={card.text}
         imageUrl={card.imageUrl}
-        rarity={card.rarity as "NORMAL" | "LEGENDARY" | "CHAMPION"}
+        rarity={card.rarity as "NORMAL" | "EPIC" | "LEGENDARY" | "CHAMPION"}
         imageDisplaySettings={card}
         size="detail"
         className="w-full"
@@ -115,6 +115,7 @@ export function PackDetailDialog({
             <Section title="등장 확률">
               <div className="grid gap-2 sm:grid-cols-3">
                 <Probability label="일반 카드" value={pack.normalRate} />
+                <Probability label="에픽 카드" value={pack.epicRate ?? 0} />
                 <Probability label="레전더리 카드" value={pack.legendaryRate} />
                 <Probability label="챔피언" value={pack.championRate} />
               </div>
@@ -133,6 +134,7 @@ export function PackDetailDialog({
                 <Section title="포함 카드" probability={pack.normalRate}>
                   <ContentRow items={details.normalCards} empty="일반 카드가 없습니다." />
                 </Section>
+                <Section title="에픽 카드" probability={pack.epicRate ?? 0}><ContentRow items={details.epicCards ?? []} empty="에픽 확률 및 카드 풀이 설정되지 않았습니다." /></Section>
                 <Section title="레전더리 카드" probability={pack.legendaryRate}>
                   <ContentRow items={details.legendaryCards} empty="레전더리 카드가 없습니다." />
                 </Section>

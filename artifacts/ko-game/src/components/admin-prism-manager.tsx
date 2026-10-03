@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { Save, Sparkles } from "lucide-react";
 
 const base = `${import.meta.env.BASE_URL.replace(/\/$/, "")}/api/admin/prism`;
-type Rarity = "NORMAL" | "LEGENDARY";
+type Rarity = "NORMAL" | "EPIC" | "LEGENDARY";
 type Setting = {
   rarity: Rarity;
   craftCost: number | null;
@@ -29,6 +29,7 @@ export function AdminPrismManager({ onUnauthorized }: { onUnauthorized: () => vo
   const [users, setUsers] = useState<User[]>([]);
   const [forms, setForms] = useState<Record<Rarity, FormValues>>({
     NORMAL: { craftCost: "", disenchantReward: "" },
+    EPIC: { craftCost: "", disenchantReward: "" },
     LEGENDARY: { craftCost: "", disenchantReward: "" },
   });
   const [userId, setUserId] = useState("");
@@ -55,6 +56,7 @@ export function AdminPrismManager({ onUnauthorized }: { onUnauthorized: () => vo
           craftCost: result.settings.find((setting) => setting.rarity === "NORMAL")?.craftCost?.toString() ?? "",
           disenchantReward: result.settings.find((setting) => setting.rarity === "NORMAL")?.disenchantReward?.toString() ?? "",
         },
+        EPIC: { craftCost: result.settings.find((setting) => setting.rarity === "EPIC")?.craftCost?.toString() ?? "", disenchantReward: result.settings.find((setting) => setting.rarity === "EPIC")?.disenchantReward?.toString() ?? "" },
         LEGENDARY: {
           craftCost: result.settings.find((setting) => setting.rarity === "LEGENDARY")?.craftCost?.toString() ?? "",
           disenchantReward: result.settings.find((setting) => setting.rarity === "LEGENDARY")?.disenchantReward?.toString() ?? "",
@@ -135,7 +137,7 @@ export function AdminPrismManager({ onUnauthorized }: { onUnauthorized: () => vo
         </div>
         {message && <p role="status" className="mb-4 rounded border border-amber-800/50 bg-amber-950/20 px-3 py-2 text-sm text-amber-200">{message}</p>}
         <div className="grid gap-4 lg:grid-cols-2">
-          {(["NORMAL", "LEGENDARY"] as Rarity[]).map((rarity) => {
+          {(["NORMAL", "EPIC", "LEGENDARY"] as Rarity[]).map((rarity) => {
             const setting = settings.find((item) => item.rarity === rarity);
             return (
               <section key={rarity} className="rounded-lg border border-neutral-800 bg-neutral-950/70 p-4">

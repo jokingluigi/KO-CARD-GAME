@@ -19,7 +19,7 @@ export type CollectionCard = {
   quantity: number;
   status: string;
 };
-export type PrismRarity = "NORMAL" | "LEGENDARY";
+export type PrismRarity = "NORMAL" | "EPIC" | "LEGENDARY";
 export type PrismSetting = {
   rarity: PrismRarity;
   craftCost: number | null;
@@ -71,7 +71,7 @@ export type ChampionPrismSetting = {
 };
 export type Pack = {
   id: string; name: string; description: string; cardsPerPack: number;
-  normalRate: number; legendaryRate: number; championRate: number; skinChance: number;
+  normalRate: number; epicRate: number; legendaryRate: number; championRate: number; skinChance: number;
   imageUrl: string | null; quantity: number;
 };
 export type PackDetailCard = Pick<CollectionCard, "id" | "name" | "cardType" | "cost" | "attack" | "health" | "text" | "rarity" | "imageUrl" | "imageDisplayMode" | "imageScale" | "imagePositionX" | "imagePositionY"> & {
@@ -96,6 +96,7 @@ export type PackDetails = {
   valid: boolean;
   invalidReasons: string[];
   normalCards: PackDetailCard[];
+  epicCards: PackDetailCard[];
   legendaryCards: PackDetailCard[];
   champions: PackDetailChampion[];
   skins: PackDetailSkin[];
@@ -147,7 +148,7 @@ export const disenchantCard = (cardDefinitionId: string, quantity = 1) => reques
 });
 export const fetchPacks = () => request<{ packs: Pack[] }>("/packs");
 export type PackReward = {
-  rewardType: "NORMAL_CARD" | "LEGENDARY_CARD" | "CHAMPION_UNLOCK" | "SKIN";
+  rewardType: "NORMAL_CARD" | "EPIC_CARD" | "LEGENDARY_CARD" | "CHAMPION_UNLOCK" | "SKIN";
   cardDefinitionId?: string;
   championDefinitionId?: string;
   card?: CollectionCard;

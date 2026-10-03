@@ -7,7 +7,7 @@ export type DeckCard = {
   health: number;
   text: string;
   tags?: string[];
-  rarity: "NORMAL" | "LEGENDARY" | "CHAMPION" | string;
+  rarity: "NORMAL" | "EPIC" | "LEGENDARY" | "CHAMPION" | string;
   imageUrl: string | null;
   imageDisplayMode: "COVER" | "CONTAIN" | "CUSTOM" | string;
   imageScale: number;

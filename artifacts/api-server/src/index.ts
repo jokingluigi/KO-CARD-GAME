@@ -1,3 +1,4 @@
+import {startDraftWorker} from './lib/draft-service';
 import { createServer } from "node:http";
 import app from "./app";
 import { logger } from "./lib/logger";
@@ -25,6 +26,7 @@ async function start(): Promise<void> {
   await db.execute(sql`ALTER TABLE "decks" ADD COLUMN IF NOT EXISTS "deleted_at" timestamptz`);
   await ensureTowerStorage();
   await ensureProductionAdmin();
+  startDraftWorker();
 
   const server = createServer(app);
   attachOnlineMatchWebSocket(server);

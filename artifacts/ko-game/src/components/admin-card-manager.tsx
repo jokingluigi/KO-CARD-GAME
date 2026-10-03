@@ -1007,7 +1007,7 @@ export function AdminCardManager({
         <select value={rarity} onChange={(event) => setRarity(event.target.value)} data-testid="select-card-rarity" className="rounded border border-neutral-700 bg-neutral-900 px-3 py-2 text-sm">
           <option value="">모든 등급</option>
           <option value="NORMAL">NORMAL</option>
-          <option value="LEGENDARY">LEGENDARY</option>
+          <option value="EPIC">EPIC</option><option value="LEGENDARY">LEGENDARY</option>
           <option value="CHAMPION">CHAMPION</option>
           <option value="TOKEN">TOKEN</option>
         </select>
@@ -1085,7 +1085,7 @@ export function AdminCardManager({
                     health={card.health}
                     rulesText={card.text}
                     imageUrl={card.imageUrl}
-                    rarity={normalizeCardRarity(card.rarity) as "NORMAL" | "LEGENDARY" | "CHAMPION"}
+                    rarity={normalizeCardRarity(card.rarity) as "NORMAL" | "EPIC" | "LEGENDARY" | "CHAMPION"}
                     imageDisplaySettings={{
                       imageDisplayMode: card.imageDisplayMode ?? "COVER",
                       imageScale: card.imageScale ?? 1,

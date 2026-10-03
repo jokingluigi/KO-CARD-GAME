@@ -31,12 +31,21 @@ export async function getPackDetails(
   pack: PackDefinitionRecord,
   executor: PackDetailExecutor = db,
 ) {
-  const [normalCards, legendaryCards, champions, skins] = await Promise.all([
+  const [normalCards, epicCards, legendaryCards, champions, skins] = await Promise.all([
     pack.normalCardPool.length
       ? executor.select().from(cardsTable).where(and(
         inArray(cardsTable.id, pack.normalCardPool),
         eq(cardsTable.status, "PUBLISHED"),
         eq(cardsTable.rarity, "NORMAL"),
+        eq(cardsTable.isToken, false),
+        eq(cardsTable.isChampionToken, false),
+      ))
+      : [],
+    pack.epicCardPool.length
+      ? executor.select().from(cardsTable).where(and(
+        inArray(cardsTable.id, pack.epicCardPool),
+        eq(cardsTable.status, "PUBLISHED"),
+        eq(cardsTable.rarity, "EPIC"),
         eq(cardsTable.isToken, false),
         eq(cardsTable.isChampionToken, false),
       ))
@@ -74,20 +83,22 @@ export async function getPackDetails(
 
   const invalidReasons = [
     pack.normalRate > 0 && normalCards.length === 0 ? "일반 카드 풀이 비어 있습니다." : null,
+    pack.epicRate > 0 && epicCards.length === 0 ? "에픽 카드 풀이 비어 있습니다." : null,
     pack.legendaryRate > 0 && legendaryCards.length === 0 ? "레전더리 카드 풀이 비어 있습니다." : null,
     pack.championRate > 0 && champions.length === 0 ? "Champion 풀이 비어 있습니다." : null,
     pack.skinChance > 0 && skins.length === 0 ? "스킨 풀이 비어 있습니다." : null,
   ].filter((reason): reason is string => Boolean(reason));
 
   return {
-    valid: invalidReasons.length === 0 && pack.normalRate + pack.legendaryRate + pack.championRate === 100,
-    invalidReasons: pack.normalRate + pack.legendaryRate + pack.championRate !== 100
+    valid: invalidReasons.length === 0 && pack.normalRate + pack.epicRate + pack.legendaryRate + pack.championRate === 100,
+    invalidReasons: pack.normalRate + pack.epicRate + pack.legendaryRate + pack.championRate !== 100
       ? ["카드 보상 확률 합계가 100%가 아닙니다.", ...invalidReasons]
       : invalidReasons,
     normalCards: normalCards.map((card) => ({
       ...cardView(card),
       individualProbability: normalCards.length ? pack.normalRate / normalCards.length : 0,
     })),
+    epicCards: epicCards.map((card) => ({ ...cardView(card), individualProbability: epicCards.length ? pack.epicRate / epicCards.length : 0 })),
     legendaryCards: legendaryCards.map((card) => ({
       ...cardView(card),
       individualProbability: legendaryCards.length ? pack.legendaryRate / legendaryCards.length : 0,

@@ -34,3 +34,4 @@ export * from "./online-matches";
 export * from "./rewards";
 export * from "./notices";
 export * from "./tower";
+export * from './draft';

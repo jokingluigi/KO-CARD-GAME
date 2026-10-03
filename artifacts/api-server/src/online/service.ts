@@ -1,3 +1,4 @@
+import { buildMatchRecap } from '@workspace/game-engine';
 import { validateAIDeckReferences } from '../lib/ai-deck-service';
 import { expandNamedCardReferences } from '../lib/named-card-references';
 import { randomUUID } from "node:crypto";
@@ -1322,6 +1323,7 @@ export function messageForViewer(
     requestId: execution.requestId,
     version: execution.version,
     state: sanitizeGameStateForViewer(state, viewerId),
+    recap: state.status === 'FINISHED' ? buildMatchRecap(state) : null,
     events: sequencedEventsForViewer(
       state,
       viewerId,
@@ -1348,6 +1350,7 @@ export function snapshotMessage(runtime: OnlineMatchRuntime, userId: string): On
     seat,
     version: runtime.version,
     state: sanitizeGameStateForViewer(runtime.state, viewerId),
+    recap: runtime.state.status === 'FINISHED' ? buildMatchRecap(runtime.state) : null,
     events: sequencedEventsForViewer(runtime.state, viewerId, runtime.state.events),
     serverTime: Date.now(),
     turnStartedAt: runtime.turnStartedAt,
@@ -1385,6 +1388,7 @@ export function endedMessageForViewer(
     matchId: execution.runtime.matchId,
     version: execution.version,
     state: sanitizeGameStateForViewer(state, viewerId),
+    recap: state.status === 'FINISHED' ? buildMatchRecap(state) : null,
     events: sequencedEventsForViewer(
       state,
       viewerId,

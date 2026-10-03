@@ -1,6 +1,6 @@
 import type { PrismEconomySettingRecord } from "@workspace/db";
 
-export const PRISM_RARITIES = ["NORMAL", "LEGENDARY"] as const;
+export const PRISM_RARITIES = ["NORMAL", "EPIC", "LEGENDARY"] as const;
 export type PrismRarity = (typeof PRISM_RARITIES)[number];
 
 export type PrismSettingView = {

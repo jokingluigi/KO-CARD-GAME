@@ -130,6 +130,7 @@ router.get("/", async (request, response): Promise<void> => {
 
 type Reward =
   | { rewardType: "NORMAL_CARD"; cardDefinitionId: string; card: typeof cardsTable.$inferSelect; alreadyOwned?: boolean }
+  | { rewardType: "EPIC_CARD"; cardDefinitionId: string; card: typeof cardsTable.$inferSelect; alreadyOwned?: boolean }
   | { rewardType: "LEGENDARY_CARD"; cardDefinitionId: string; card: typeof cardsTable.$inferSelect; alreadyOwned?: boolean }
   | { rewardType: "CHAMPION_UNLOCK"; championDefinitionId: string; champion: typeof championsTable.$inferSelect; alreadyOwned?: boolean; championPrismReward?: number }
   | { rewardType: "SKIN"; skinDefinitionId: string; skin: typeof cardSkinDefinitionsTable.$inferSelect; card: typeof cardsTable.$inferSelect; alreadyOwned?: boolean };
@@ -137,11 +138,18 @@ type Reward =
 type QueryExecutor = { select: typeof db.select };
 
 async function rollPack(pack: typeof packDefinitionsTable.$inferSelect, executor: QueryExecutor = db): Promise<Reward[]> {
-  const [normalCards, legendaryCards, champions, skins] = await Promise.all([
+  const [normalCards, epicCards, legendaryCards, champions, skins] = await Promise.all([
     pack.normalCardPool.length ? executor.select().from(cardsTable).where(and(
       inArray(cardsTable.id, pack.normalCardPool),
       eq(cardsTable.status, "PUBLISHED"),
       eq(cardsTable.rarity, "NORMAL"),
+      eq(cardsTable.isToken, false),
+      eq(cardsTable.isChampionToken, false),
+    )) : [],
+    pack.epicCardPool.length ? executor.select().from(cardsTable).where(and(
+      inArray(cardsTable.id, pack.epicCardPool),
+      eq(cardsTable.status, "PUBLISHED"),
+      eq(cardsTable.rarity, "EPIC"),
       eq(cardsTable.isToken, false),
       eq(cardsTable.isChampionToken, false),
     )) : [],
@@ -170,6 +178,7 @@ async function rollPack(pack: typeof packDefinitionsTable.$inferSelect, executor
       )) : [],
   ]);
   if (pack.normalRate > 0 && normalCards.length === 0) throw new Error("NORMAL 카드 풀이 비어 있어 팩을 열 수 없습니다.");
+  if (pack.epicRate > 0 && epicCards.length === 0) throw new Error("EPIC 카드 풀이 비어 있어 팩을 열 수 없습니다.");
   if (pack.legendaryRate > 0 && legendaryCards.length === 0) throw new Error("LEGENDARY 카드 풀이 비어 있어 팩을 열 수 없습니다.");
   if (pack.championRate > 0 && champions.length === 0) throw new Error("Champion 풀이 비어 있어 팩을 열 수 없습니다.");
   if (pack.skinChance > 0 && skins.length === 0) throw new Error("Skin 풀이 비어 있어 팩을 열 수 없습니다.");
@@ -184,11 +193,16 @@ async function rollPack(pack: typeof packDefinitionsTable.$inferSelect, executor
     }
     const category = roll < pack.normalRate
       ? "NORMAL_CARD"
-      : roll < pack.normalRate + pack.legendaryRate
+      : roll < pack.normalRate + pack.epicRate
+        ? "EPIC_CARD"
+        : roll < pack.normalRate + pack.epicRate + pack.legendaryRate
         ? "LEGENDARY_CARD"
         : "CHAMPION_UNLOCK";
     if (category === "NORMAL_CARD") {
       const card = normalCards[randomInt(0, normalCards.length)];
+      if (card) rewards.push({ rewardType: category, cardDefinitionId: card.id, card });
+    } else if (category === "EPIC_CARD") {
+      const card = epicCards[randomInt(0, epicCards.length)];
       if (card) rewards.push({ rewardType: category, cardDefinitionId: card.id, card });
     } else if (category === "LEGENDARY_CARD") {
       const card = legendaryCards[randomInt(0, legendaryCards.length)];

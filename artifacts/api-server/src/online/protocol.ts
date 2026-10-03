@@ -1,3 +1,4 @@
+import type {MatchRecap} from '@workspace/game-engine';
 import type { GameAction } from "@workspace/game-engine";
 import { isOnlineActionPayload } from "@workspace/game-engine/online-action";
 import type { OnlineActionPayload } from "@workspace/game-engine/online-action";
@@ -78,6 +79,7 @@ export type OnlineServerMessage =
       seat: "PLAYER_ONE" | "PLAYER_TWO";
       version: number;
       state: unknown;
+      recap?:MatchRecap|null;
       events: unknown[];
       serverTime: number;
       turnStartedAt: number | null;
@@ -93,6 +95,7 @@ export type OnlineServerMessage =
       requestId: string;
       version: number;
       state: unknown;
+      recap?:MatchRecap|null;
       events: unknown[];
       serverTime: number;
       turnStartedAt: number | null;
@@ -115,6 +118,7 @@ export type OnlineServerMessage =
       matchId: string;
       version: number;
       state: unknown;
+      recap?:MatchRecap|null;
       events: unknown[];
       serverTime: number;
       turnStartedAt: number | null;
@@ -129,6 +133,7 @@ export type OnlineServerMessage =
       matchId: string;
       version: number;
       state: unknown;
+      recap?:MatchRecap|null;
       events: unknown[];
       serverTime: number;
       turnStartedAt: number | null;

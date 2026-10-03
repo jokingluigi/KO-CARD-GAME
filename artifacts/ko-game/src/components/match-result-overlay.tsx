@@ -1,3 +1,5 @@
+import { buildMatchRecap, type MatchRecap } from '../../../../lib/game-engine/src/match-recap';
+import { MatchRecapPanel } from './match-recap-panel';
 import { useEffect, useState } from 'react';
 import { getCardDefinition, type GameState } from "@/game";
 import { matchEndReason, matchSummary } from '@/lib/match-summary';
@@ -11,7 +13,9 @@ export function MatchResultOverlay({
   rewardStatus,
   rewardError,
   onRetryReward,
+  recap,
 }: {
+  recap?: MatchRecap | null;
   state: GameState;
   onReturnToMainMenu: () => void;
   reward?: { amount: number; sourceType: string } | null;
@@ -28,9 +32,10 @@ export function MatchResultOverlay({
   const [ownSummary, opponentSummary] = matchSummary(state);
   const winner = state.players.find((candidate) => candidate.id === state.winnerId);
   const loser = state.players.find((candidate) => candidate.id === state.loserId);
-  const lethal = state.events.some((event) => event.type === 'DAMAGE_DEALT' && event.target?.type === 'PLAYER' && event.target.playerId === state.loserId && (event.amount ?? 0) > 0);
-  const finishingHit = [...state.events].reverse().find((event) => event.type === 'DAMAGE_DEALT' &&
-    event.target?.type === 'PLAYER' && event.target.playerId === state.loserId && (event.amount ?? 0) > 0);
+  const resolvedRecap = recap ?? buildMatchRecap(state);
+  const finisher = resolvedRecap.highlights.find(h => h.kind === 'FINISHER');
+  const lethal = Boolean(finisher);
+  const finishingHit = finisher ? state.events[finisher.eventIndex] : undefined;
   const finishingSourceId = finishingHit?.source?.type === 'CARD' ? finishingHit.source.cardInstanceId : null;
   const finishingCard = finishingSourceId
     ? state.players.flatMap((participant) => [...participant.board, ...participant.graveyard, ...participant.removedFromGame, ...participant.hand])
@@ -78,7 +83,7 @@ export function MatchResultOverlay({
           {reason}
         </p>
         {finishingHit && <p className="mt-3 text-sm font-black text-amber-200">
-          마지막 일격 · {finishingName ?? winner?.champion?.name ?? '효과'} · {finishingHit.amount ?? 0} 피해
+          마지막 일격 · {finisher?.sourceName ?? finishingName ?? winner?.champion?.name ?? '효과'} · {finishingHit.amount ?? 0} 피해
         </p>}
         {winnerLine && <p className="mt-4 text-base font-bold text-amber-200">{winner?.champion?.name}: “{winnerLine}”</p>}
         {loserLine && <p className="mt-2 text-sm text-neutral-300">{loser?.champion?.name}: “{loserLine}”</p>}
@@ -102,14 +107,15 @@ export function MatchResultOverlay({
             </div>
           </section>
         )}
+        <MatchRecapPanel recap={resolvedRecap} viewerId={player?.id ?? ""} />
         {reward && (
           <p className="mt-5 rounded border border-amber-300/30 bg-black/30 px-4 py-3 text-sm font-black text-amber-200">
             +{reward.amount.toLocaleString()} 크레딧 지급
           </p>
         )}
-        {rewardStatus === 'pending' && <p role="status" className="mt-5 text-sm text-amber-200">AI 경기 결과와 크레딧 지급을 확인하는 중입니다…</p>}
+        {rewardStatus === 'pending' && <p role="status" className="mt-5 text-sm text-amber-200">경기 결과와 크레딧 지급을 확인하는 중입니다…</p>}
         {rewardStatus === 'error' && <div role="alert" className="mt-5 rounded border border-red-400/40 p-3 text-sm text-red-200">
-          <p>AI 경기 보상 지급에 실패했습니다. {rewardError}</p>
+          <p>경기 보상 지급에 실패했습니다. {rewardError}</p>
           {onRetryReward && <button type="button" onClick={onRetryReward} className="mt-2 rounded border border-red-300 px-3 py-1 font-bold">다시 시도</button>}
         </div>}
         <button

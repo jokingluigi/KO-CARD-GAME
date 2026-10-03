@@ -3,23 +3,24 @@ export type { CardKeyword } from '../effects/types';
 
 export type CardDefinitionId = string;
 export type CardInstanceId = string;
-export type CardRarity = 'NORMAL' | 'LEGENDARY' | 'CHAMPION' | 'TOKEN';
+export type CardRarity = 'NORMAL' | 'EPIC' | 'LEGENDARY' | 'CHAMPION' | 'TOKEN';
 
 export const CARD_RARITY_LABELS: Record<CardRarity, string> = {
   NORMAL: '일반',
+  EPIC: '에픽',
   LEGENDARY: '레전더리',
   CHAMPION: '챔피언',
   TOKEN: '토큰',
 };
 
 export function normalizeCardRarity(value?: unknown): CardRarity {
-  return value === 'LEGENDARY' || value === 'CHAMPION' || value === 'TOKEN' ? value : 'NORMAL';
+  return value === 'EPIC' || value === 'LEGENDARY' || value === 'CHAMPION' || value === 'TOKEN' ? value : 'NORMAL';
 }
 
 export function allowedCardRarities(cardType: 'WRESTLER' | 'TECHNIQUE'): CardRarity[] {
   return cardType === 'TECHNIQUE'
-    ? ['NORMAL', 'TOKEN']
-    : ['NORMAL', 'LEGENDARY', 'CHAMPION', 'TOKEN'];
+    ? ['NORMAL', 'EPIC', 'TOKEN']
+    : ['NORMAL', 'EPIC', 'LEGENDARY', 'CHAMPION', 'TOKEN'];
 }
 
 export function normalizeCardRarityForType(

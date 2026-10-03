@@ -21,6 +21,8 @@ import {
 
 const frameAssetNames: Partial<Record<CardRarity, string>> = {
   NORMAL: "card-frame-normal.png",
+  // Temporary base artwork; the EPIC outline/badge below distinguishes this grade.
+  EPIC: "card-frame-normal.png",
   LEGENDARY: "card-frame-legendary.png",
   CHAMPION: "card-frame-champion.png",
 };
@@ -63,6 +65,13 @@ const frameLayouts: Record<CardRarity, FrameLayout> = {
   NORMAL: {
     scale: 1.1,
     name: { left: 20, right: 7, top: 5.5, height: 7.8 },
+    cost: { centerX: 13.68, centerY: 10.04, size: 14 },
+    rules: { left: 12, right: 12, top: 68.5, bottom: 10.5 },
+    attack: { centerX: 12.26, centerY: 86.52, size: 14 },
+    health: { centerX: 87.66, centerY: 86.52, size: 14 },
+  },
+  EPIC: {
+    scale: 1.1, name: { left: 20, right: 7, top: 5.5, height: 7.8 },
     cost: { centerX: 13.68, centerY: 10.04, size: 14 },
     rules: { left: 12, right: 12, top: 68.5, bottom: 10.5 },
     attack: { centerX: 12.26, centerY: 86.52, size: 14 },
@@ -288,6 +297,7 @@ export function CardRenderer({
   return (
     <div
       className={`relative aspect-[1060/1484] overflow-visible select-none ${className}`}
+      data-rarity={normalizedRarity}
       style={style}
       ref={containerRef}
              onClick={onClick}
@@ -335,6 +345,7 @@ export function CardRenderer({
           />
         )}
 
+        {normalizedRarity === "EPIC" && <div className="pointer-events-none absolute inset-0 z-20 rounded border-2 border-violet-400"><span className="absolute right-1 top-[17%] rounded bg-violet-950 px-1 text-[8px] font-black text-violet-200">EPIC</span></div>}
         {showName && (
           <div
             className="pointer-events-none absolute z-20 flex items-center justify-center overflow-hidden px-[2%] text-center"

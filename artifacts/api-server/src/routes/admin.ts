@@ -92,7 +92,7 @@ type AdminSessionPayload = {
 };
 
 const CARD_TYPES = ["WRESTLER", "TECHNIQUE"] as const;
-const CARD_RARITIES = ["NORMAL", "LEGENDARY", "CHAMPION", "TOKEN"] as const;
+const CARD_RARITIES = ["NORMAL", "EPIC", "LEGENDARY", "CHAMPION", "TOKEN"] as const;
 const CARD_STATUSES = ["DRAFT", "PUBLISHED", "DISABLED"] as const;
 const CHAMPION_STATUSES = ["DRAFT", "PUBLISHED", "DISABLED"] as const;
 const CARD_KEYWORDS = [
@@ -859,7 +859,7 @@ export function requireAdmin(request: Request, response: Response): boolean {
   return false;
 }
 
-function parseCardInput(value: unknown): CardInput | null {
+export function parseCardInput(value: unknown): CardInput | null {
   if (!value || typeof value !== "object" || Array.isArray(value)) {
     return null;
   }

@@ -2638,3 +2638,5 @@
 @media (prefers-reduced-motion: reduce) { .ko-stat-pop { animation: none; } }
 @media (prefers-reduced-motion: reduce) { .ko-draw-flight { animation-duration: 40ms; } }
 @media (prefers-reduced-motion: reduce) { .ko-destroy-burst { animation-duration: 120ms; } }
+
+.ko-decks__compact-row[data-rarity="EPIC"] .ko-decks__compact-name { color: #c4b5fd; }

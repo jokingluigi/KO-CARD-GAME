@@ -1,3 +1,4 @@
+import adminDraftRouter from './admin-draft';
 import maintenanceRouter from './maintenance';
 import {maintenanceGate} from '../lib/maintenance';
 import towerRouter from './tower';
@@ -34,6 +35,7 @@ router.use(maintenanceGate);
 router.use(healthRouter);
 router.use('/tower', towerRouter);
 router.use('/admin/tower', adminTowerRouter);
+router.use('/admin/draft', adminDraftRouter);
 router.use(storageRouter);
 router.use(cardsRouter);
 router.use(gameMediaRouter);

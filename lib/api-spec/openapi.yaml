@@ -154,7 +154,7 @@ components:
       properties:
         rewardType:
           type: string
-          enum: [NORMAL_CARD, LEGENDARY_CARD, CHAMPION_UNLOCK, SKIN]
+          enum: [NORMAL_CARD, EPIC_CARD, LEGENDARY_CARD, CHAMPION_UNLOCK, SKIN]
       required: [rewardType]
       additionalProperties: true
 

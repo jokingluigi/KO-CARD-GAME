@@ -68,7 +68,7 @@ export const OpenBulkPackResponse = zod.object({
   "quantity": zod.number().int(),
   "openings": zod.array(zod.object({
   "rewards": zod.array(zod.object({
-  "rewardType": zod.enum(['NORMAL_CARD', 'LEGENDARY_CARD', 'CHAMPION_UNLOCK', 'SKIN'])
+  "rewardType": zod.enum(['NORMAL_CARD', 'EPIC_CARD', 'LEGENDARY_CARD', 'CHAMPION_UNLOCK', 'SKIN'])
 }))
 }))
 })

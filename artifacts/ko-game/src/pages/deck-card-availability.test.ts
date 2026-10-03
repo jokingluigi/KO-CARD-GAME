@@ -32,7 +32,7 @@ const args = {
   deckCount: 0,
   deckSize: 25,
   legendaryCount: 0,
-  maxLegendaryCards: 5,
+  maxLegendaryCards: 3,
   isTestAccount: false,
 };
 
@@ -47,8 +47,8 @@ test("owned card remains addable but owned-copy limits still apply", () => {
     { kind: "DISABLED", reason: "보유 수량 1장에 도달했습니다." },
   );
   assert.deepEqual(
-    getDeckCardAction(deckCard({ quantity: 3 }), { ...args, count: 2 }),
-    { kind: "DISABLED", reason: "동일 카드 최대 2장" },
+    getDeckCardAction(deckCard({ quantity: 4 }), { ...args, count: 3 }),
+    { kind: "DISABLED", reason: "노멀 카드는 동일 카드 최대 3장까지 넣을 수 있습니다." },
   );
 });
 

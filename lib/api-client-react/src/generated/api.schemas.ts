@@ -43,6 +43,7 @@ export type PackRewardRewardType = typeof PackRewardRewardType[keyof typeof Pack
 
 export const PackRewardRewardType = {
   NORMAL_CARD: 'NORMAL_CARD',
+  EPIC_CARD: 'EPIC_CARD',
   LEGENDARY_CARD: 'LEGENDARY_CARD',
   CHAMPION_UNLOCK: 'CHAMPION_UNLOCK',
   SKIN: 'SKIN',
