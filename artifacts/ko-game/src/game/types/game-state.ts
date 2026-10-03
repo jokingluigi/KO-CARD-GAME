@@ -20,6 +20,8 @@ export interface PendingCardEffect {
   effect: QueuedStructuredEffect;
   /** Event index at registration; the registering play must not consume itself. */
   registeredEventIndex?: number;
+  /** Optional reservation expiry; existing permanent reservations remain unchanged. */
+  expiresAtTurn?: number;
 }
 
 export interface PendingDelayedEffect {

@@ -12,6 +12,16 @@ import { resolveBoardListeners, resolveQueuedEffectsForPlayedWrestler, resolveRe
 import { getActiveCardAbilities } from '../cards/granted-text';
 import { canEnterTowerField, towerSummonCost } from '../tower/relics';
 
+/** Costs reserved for a hand play are evaluated before payment, never on summons. */
+export function wrestlerPlayCost(state: GameState, playerId: string, card: import('../cards/types').CardInstance): number {
+  const free = state.pendingCardEffects?.some(pending => pending.playerId === playerId &&
+    pending.trigger === 'NEXT_ALLY_WRESTLER_PLAYED' &&
+    (pending.expiresAtTurn === undefined || pending.expiresAtTurn >= state.turn) &&
+    pending.effect.target?.zone === 'HAND' && pending.effect.action === 'SET_STAT' &&
+    pending.effect.values?.stat === 'COST' && pending.effect.values.amount === 0);
+  return free ? 0 : towerSummonCost(state, playerId, card.currentCost);
+}
+
 export function playWrestlerFromHand(
   state: GameState,
   playerId: string,
@@ -57,7 +67,7 @@ export function playWrestlerFromHand(
   }
 
   if (!canPlayConditionalCard(state, playerId, card)) return actionFailure(state, 'NO_VALID_TARGET', '카드 사용 조건을 충족하지 않았습니다.');
-  const payableCost = towerSummonCost(state, playerId, card.currentCost);
+  const payableCost = wrestlerPlayCost(state, playerId, card);
   if (player.currentGold < payableCost) {
     return actionFailure(state, 'NOT_ENOUGH_GOLD', '골드가 부족합니다.');
   }

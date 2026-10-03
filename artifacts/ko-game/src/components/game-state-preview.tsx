@@ -1,7 +1,8 @@
+import { wrestlerPlayCost } from '@/game/engine/play-wrestler';
 import { TOWER_VANILLA_CHAMPION_ID } from '@/game/champions/tower-vanilla';
 import { ChampionEmoteMenu } from './champion-emote-menu';
 import React from 'react';
-import { towerSummonCost, canEnterTowerField } from '@/game/tower/relics';
+import { canEnterTowerField } from '@/game/tower/relics';
 import { EntranceVolumeControl, SfxVolumeControl } from './sfx-volume-control';
 import { CardRenderer } from './card-renderer';
 import { CardArtwork } from './card-artwork';
@@ -1368,7 +1369,7 @@ export function GameStatePreview({
                 : selectedAttackerId ? '상대 선수나 챔피언을 눌러 공격하세요.'
                 : state.players[0].board.some((card) => card && !card.enteredThisTurn && card.attacksUsedThisTurn === 0)
                   ? '필드의 내 선수를 눌러 공격 대상을 지정해 보세요.'
-                  : state.players[0].hand.some((card) => card.cardType === 'WRESTLER' && (!state.tower || canEnterTowerField(state, state.players[0].id)) && towerSummonCost(state, state.players[0].id, card.currentCost) <= state.players[0].currentGold)
+                  : state.players[0].hand.some((card) => card.cardType === 'WRESTLER' && (!state.tower || canEnterTowerField(state, state.players[0].id)) && wrestlerPlayCost(state, state.players[0].id, card) <= state.players[0].currentGold)
                     ? '손패에서 비용을 낼 수 있는 선수를 눌러 보세요.'
                     : '지금은 턴 종료를 눌러 다음 턴으로 넘어가세요.'}</p>
             </div>
@@ -1376,7 +1377,14 @@ export function GameStatePreview({
           {tutorialStep !== null && (
             <MatchTutorial step={tutorialStep} onStepChange={setTutorialStep} onClose={() => setTutorialStep(null)} />
           )}
-          {openGraveyardPlayerId && (
+          {effectTargeting && me.graveyard.some(card => validEffectTargetIds.has(card.instanceId)) && (
+            <GraveyardModal
+              player={{ ...me, graveyard: me.graveyard.filter(card => validEffectTargetIds.has(card.instanceId)) }}
+              onClose={onCancelEffectTargeting}
+              onSelect={onEffectTarget}
+            />
+          )}
+          {openGraveyardPlayerId && !effectTargeting && (
             <GraveyardModal
               player={state.players.find((player) => player.id === openGraveyardPlayerId)!}
               onClose={() => setOpenGraveyardPlayerId(null)}
@@ -1496,7 +1504,7 @@ export function GameStatePreview({
                  ) : (
                     me.hand.map((card, i) => {
                       const isSelected = selectedCardId === card.instanceId;
-                      const payableCost = card.cardType === 'WRESTLER' ? towerSummonCost(state, me.id, card.currentCost) : card.currentCost;
+                      const payableCost = card.cardType === 'WRESTLER' ? wrestlerPlayCost(state, me.id, card) : card.currentCost;
                       const canAfford = isMyTurn && me.currentGold >= payableCost && (!state.tower || card.cardType !== 'WRESTLER' || canEnterTowerField(state, me.id));
                      const density =
                        me.hand.length >= 7 ? 'small' : me.hand.length >= 5 ? 'medium' : 'regular';
@@ -1887,9 +1895,11 @@ function ZoneStack({
 function GraveyardModal({
   player,
   onClose,
+  onSelect,
 }: {
   player: GameState['players'][number];
   onClose: () => void;
+  onSelect?: (targetId: string) => void;
 }) {
   return (
     <div className="fixed inset-0 z-[180] flex items-center justify-center bg-black/60 p-4">
@@ -1904,7 +1914,7 @@ function GraveyardModal({
             <div className="text-[10px] font-bold tracking-widest text-neutral-500">
                {player.id === 'player-1' ? '내 묘지' : '상대 묘지'}
             </div>
-            <h2 className="text-lg font-black text-white">묘지 카드 {player.graveyard.length}장</h2>
+            <h2 className="text-lg font-black text-white">{onSelect ? `복귀할 선수 선택 (${player.graveyard.length}장 중 1장)` : `묘지 카드 ${player.graveyard.length}장`}</h2>
           </div>
           <button
             type="button"
@@ -1927,16 +1937,19 @@ function GraveyardModal({
                   <Inspectable key={card.instanceId} content={<CardInspectContent card={card} />}>
                     <div
                       tabIndex={0}
-                      className="flex min-h-28 cursor-help flex-col justify-between rounded border border-neutral-700 bg-neutral-900 p-2 text-left transition-colors hover:border-primary"
+                      role={onSelect ? 'button' : undefined}
+                      onClick={onSelect ? () => onSelect(card.instanceId) : undefined}
+                      onKeyDown={onSelect ? event => { if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); onSelect(card.instanceId); } } : undefined}
+                      className="flex min-h-28 cursor-pointer flex-col justify-between rounded border border-neutral-700 bg-neutral-900 p-2 text-left transition-colors hover:border-primary"
                     >
-                      <div className="text-[9px] text-neutral-500">리타이어/파괴 카드</div>
+                      <div className="text-[9px] text-neutral-500">{onSelect ? '무덤 선수 · 선택하여 덱으로 복귀' : '리타이어/파괴 카드'}</div>
                       <div className="text-xs font-black text-neutral-100">
                         {definition?.name ?? '알 수 없는 카드'}
                       </div>
-                      <div className="flex justify-between font-display text-xs">
+                      {card.cardType === 'WRESTLER' && <div className="flex justify-between font-display text-xs">
                         <span className="text-primary">{card.currentAttack}</span>
                         <span className="text-red-300">{card.currentHealth}</span>
-                      </div>
+                      </div>}
                     </div>
                   </Inspectable>
                 );

@@ -1,3 +1,4 @@
+import epicTechniques from '../../../../lib/db/migrations/0039_epic_techniques.sql';
 import draftStorage from '../../../../lib/db/migrations/0037_admin_draft.sql';
 import techniqueRarities from '../../../../lib/db/migrations/0038_technique_rarities.sql';
 import { db } from "@workspace/db";
@@ -37,6 +38,7 @@ export async function ensureTowerStorage(database = db): Promise<void> {
     await tx.execute(sql.raw(minionA));
     await tx.execute(sql.raw(towerVanilla));
     await tx.execute(sql.raw(techniqueRarities));
+    await tx.execute(sql.raw(epicTechniques));
     for (const statement of maintenanceSchema.split(";")) if(statement.trim()) await tx.execute(sql.raw(statement));
   });
 }

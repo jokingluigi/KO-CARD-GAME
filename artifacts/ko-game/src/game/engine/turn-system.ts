@@ -324,7 +324,8 @@ export function endTurn(
     afterRepeated = resolveTurnEndPass(afterRepeated);
   }
 
-  const afterScheduled = expireTowerTurnEndBuffs(resolveDueDelayedEffects(afterRepeated, 'TURN_END', actingPlayerId), state.turn);
+  const scheduled = expireTowerTurnEndBuffs(resolveDueDelayedEffects(afterRepeated, 'TURN_END', actingPlayerId), state.turn);
+  const afterScheduled = { ...scheduled, pendingCardEffects: scheduled.pendingCardEffects?.filter(effect => effect.expiresAtTurn === undefined || effect.expiresAtTurn > state.turn) };
   return actionSuccess(
     processChampionQuestEvents(
       afterScheduled,

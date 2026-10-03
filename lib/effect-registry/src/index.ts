@@ -223,6 +223,8 @@ export type StructuredEffectValues = {
   amount?: number;
   stat?: StatName;
   duration?: EffectDuration;
+  /** Set current HP while preserving its existing maximum. */
+  currentHealthOnly?: boolean;
   keyword?: Keyword;
   damageSource?: DamageSource;
   reference?: Reference;
@@ -277,7 +279,7 @@ const SCRIPT_HISTORY_KEYS = new Set(["scope", "eventType", "owner", "cardType", 
 const SCRIPT_EFFECT_KEYS = new Set(["action", "target", "values"]);
 const SCRIPT_EFFECT_VALUE_KEYS = new Set([
   "amount", "amountExpression", "attack", "attackExpression", "health", "healthExpression", "countExpression",
-  "attackMultiplier", "healthMultiplier", "stat", "duration",
+  "attackMultiplier", "healthMultiplier", "stat", "duration", "currentHealthOnly",
   "keyword", "damageSource", "reference", "referenceStat", "amountReference", "minimum", "temporaryCost",
   "generatedModifiers", "deckPosition", "count", "destination", "definitionRef", "queuedTrigger", "queuedEffect", "delayed", "listener", "prevention", "captureStats",
 ]);
@@ -498,7 +500,7 @@ export const ACTION_SCHEMAS: Record<Action, EffectActionSchema> = {
   RETIRE: { target: true, captureStats: true }, DISABLE_ABILITY: { target: true }, WEAKEN_TO_STUN_SILENCE: { target: true, amount: true },
   SILENCE: { target: true }, DESTROY: { target: true }, ADD_KEYWORD: { target: true, keyword: true }, REMOVE_KEYWORD: { target: true, keyword: true },
   SWAP_STATS: { target: true }, ADD_DAMAGE_MODIFIER: { target: false, amount: true, damageSource: true }, SUMMON: { target: false, cardDefinition: true, cardCount: true, aggregateStats: true, generatedModifiers: true }, SUMMON_FROM_HAND: { target: false, cardDefinition: true, cardCount: true }, REVIVE: { target: true }, GENERATE: { target: false, cardDefinition: true, cardCount: true, destination: true, generatedModifiers: true }, MOVE_TO_HAND: { target: true }, MOVE_TO_DECK: { target: true, destination: true }, MILL: { target: true }, SPEND_GOLD_BUFF_SELF: { target: true, dynamicValue: true }, DEPLOY_CHAMPION_TOKEN: { target: false }, CAPTURE: { target: true }, RELEASE_CAPTURED: { target: false },
-  REMOVE_FROM_GAME: { target: true }, SWITCH_EFFECT_BRANCH: { target: false, branches: true }, QUEUE_EFFECT: { target: false, queuedEffect: true }, ADD_AGGREGATED_ATTACK: { target: true, aggregateStats: true }, COPY_BEST_STATS: { target: true }, REPEAT_TURN_END: { target: false }, TRANSFORM_SOURCE: { target: false, cardDefinition: true }, TRANSFORM_TARGET: { target: true, cardDefinition: true }, STEAL: { target: true },
+  REMOVE_FROM_GAME: { target: true }, SWITCH_EFFECT_BRANCH: { target: false, branches: true }, QUEUE_EFFECT: { target: false, queuedEffect: true, duration: true }, ADD_AGGREGATED_ATTACK: { target: true, aggregateStats: true }, COPY_BEST_STATS: { target: true }, REPEAT_TURN_END: { target: false }, TRANSFORM_SOURCE: { target: false, cardDefinition: true }, TRANSFORM_TARGET: { target: true, cardDefinition: true }, STEAL: { target: true },
   REGISTER_DELAYED: { target: false, delayed: true }, REGISTER_LISTENER: { target: false, listener: true }, PREVENT_DAMAGE: { target: false, prevention: true }, PREVENT_RETIRE: { target: false, prevention: true },
   GRANT_RANDOM_CARD_TEXT: { target: true },
 };
@@ -548,6 +550,7 @@ function validScriptEffectValues(action: Action, rawValues: unknown, depth = 0):
     healthMultiplier: Boolean(schema.statMultiplier),
     stat: Boolean(schema.stat),
     duration: Boolean(schema.duration),
+    currentHealthOnly: action === "SET_STAT",
     keyword: Boolean(schema.keyword),
     damageSource: Boolean(schema.damageSource),
     reference: Boolean(schema.referenceStat),
@@ -608,6 +611,7 @@ function validScriptEffectValues(action: Action, rawValues: unknown, depth = 0):
     if (!explicitStats && !multiplierStats && !referencedStats && !dynamicStats) return false;
   }
   if (schema.stat && values.stat !== undefined && !STAT_NAMES.includes(values.stat as StatName)) return false;
+  if (values.currentHealthOnly !== undefined && typeof values.currentHealthOnly !== "boolean") return false;
   if (schema.duration && values.duration !== undefined &&
     !EFFECT_DURATIONS.includes(values.duration as EffectDuration)) return false;
   if (schema.keyword && !KEYWORDS.includes(values.keyword as Keyword)) return false;

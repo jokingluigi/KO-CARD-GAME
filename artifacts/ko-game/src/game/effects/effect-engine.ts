@@ -74,7 +74,7 @@ export function getValidTargets(
     if (!player) return [];
     const cards = cardsInZones(player, zones);
     const filteredCards = cards.filter((card) => {
-      if (['PLAYER_CHOICE', 'RANDOM', 'SAME_TARGET'].includes(target.selection ?? '') && getActiveCardKeywords(card).includes('IMMUNE')) return false;
+      if ((effect.action !== 'MOVE_TO_DECK' || !zones.every(zone => zone === 'GRAVEYARD')) && ['PLAYER_CHOICE', 'RANDOM', 'SAME_TARGET'].includes(target.selection ?? '') && getActiveCardKeywords(card).includes('IMMUNE')) return false;
       if (zones.length === 1 && zones[0] === 'CHARACTER' && card.cardType !== 'WRESTLER') return false;
       if (target.cardType && card.cardType !== target.cardType) return false;
       if (target.filter?.isGenerated !== undefined && card.isGenerated !== target.filter.isGenerated) return false;
@@ -193,6 +193,7 @@ function scriptTargetCards(
   playerId: string,
   sourceCard: CardInstance,
   target: ScriptTarget,
+  registers?: ScriptRegisters,
 ): CardInstance[] {
   const owners = target.owner === 'ALL'
     ? state.players
@@ -201,7 +202,9 @@ function scriptTargetCards(
       : playerId))].filter((player): player is GameState['players'][number] => Boolean(player));
   const zones = scriptZones(target);
   const candidates = owners.flatMap((owner) => cardsInZones(owner, zones)).filter((card) => {
-    if (['PLAYER_CHOICE', 'RANDOM', 'SAME_TARGET'].includes(target.selection ?? '') && getActiveCardKeywords(card).includes('IMMUNE')) return false;
+    if (!zones.every(zone => zone === 'GRAVEYARD') && ['PLAYER_CHOICE', 'RANDOM', 'SAME_TARGET'].includes(target.selection ?? '') && getActiveCardKeywords(card).includes('IMMUNE')) return false;
+    const result = target.resultId ? registers?.get(target.resultId) : undefined;
+    if (target.resultId && (!result || !('ids' in result) || !result.ids.includes(card.instanceId))) return false;
     if (target.cardType && card.cardType !== target.cardType) return false;
     const filter = target.filter;
     if (filter?.isGenerated !== undefined && card.isGenerated !== filter.isGenerated) return false;
@@ -406,7 +409,7 @@ function applyScriptSteps(
         const validTargetIds = scriptTargetCards(next, playerId, sourceCard, {
           ...step.target,
           selection: 'ALL',
-        }).map((card) => card.instanceId).filter((id) => id !== sourceCard.instanceId);
+        }, registers).filter((card) => scriptZones(step.target).every(zone => zone === 'GRAVEYARD') || !getActiveCardKeywords(card).includes('IMMUNE')).map((card) => card.instanceId).filter((id) => id !== sourceCard.instanceId);
         const minimum = step.target.count ?? 1;
         if (validTargetIds.length < minimum) continue;
         const registerObject = Object.fromEntries(registers.entries());
@@ -436,7 +439,7 @@ function applyScriptSteps(
           },
         };
       }
-      registers.set(step.id, { ids: scriptTargetCards(next, playerId, sourceCard, step.target).map((card) => card.instanceId) });
+      registers.set(step.id, { ids: scriptTargetCards(next, playerId, sourceCard, step.target, registers).map((card) => card.instanceId) });
       continue;
     }
     if (step.type === 'AGGREGATE') {
@@ -1770,8 +1773,24 @@ export function cancelEffectTargeting(state: GameState): GameState {
 }
 
 export function hasMandatoryPlayerChoice(state: GameState, playerId: string, source: CardInstance, effects: CardEffect[]): boolean {
-  return effects.some((effect) => effect.type === 'STRUCTURED' && effect.target?.selection === 'PLAYER_CHOICE' &&
-    !effect.target.optionalTarget && getValidTargets(state, playerId, source, effect).length < (effect.target.minTargets ?? effect.target.count));
+  return effects.some((effect) => {
+    if (effect.type === 'STRUCTURED') return effect.target?.selection === 'PLAYER_CHOICE' &&
+      !effect.target.optionalTarget && getValidTargets(state, playerId, source, effect).length < (effect.target.minTargets ?? effect.target.count);
+    if (effect.type !== 'SCRIPT' || source.cardType !== 'TECHNIQUE') return false;
+    // Only leading selectors can be validated before execution; later choices may
+    // depend on changes made by earlier effects. Preserve those continuations.
+    const registers: ScriptRegisters = new Map();
+    for (const step of effect.script.steps) {
+      if (step.type !== 'SELECT') break;
+      if (step.target.selection === 'PLAYER_CHOICE') {
+        const candidates = scriptTargetCards(state, playerId, source, { ...step.target, selection: 'ALL' }, registers)
+          .filter(card => card.instanceId !== source.instanceId && (scriptZones(step.target).every(zone => zone === 'GRAVEYARD') || !getActiveCardKeywords(card).includes('IMMUNE')));
+        if (candidates.length < (step.target.count ?? 1)) return true;
+        registers.set(step.id, { ids: candidates.map(card => card.instanceId) });
+      } else registers.set(step.id, { ids: scriptTargetCards(state, playerId, source, step.target, registers).map(card => card.instanceId) });
+    }
+    return false;
+  });
 }
 
 export function hasKeyword(
@@ -2048,6 +2067,7 @@ export function applyEffect(
             trigger: effect.values.queuedTrigger,
             effect: queuedEffect,
             registeredEventIndex: state.events.length - 1,
+            expiresAtTurn: effect.values.duration === 'THIS_TURN' ? state.turn : undefined,
           },
         ],
       };
@@ -2331,7 +2351,7 @@ export function applyEffect(
     }
     const candidates = cardsInZones(candidatePlayer, zones);
     const eligibleCandidates = candidates.filter((card) => {
-      if (['PLAYER_CHOICE', 'RANDOM', 'SAME_TARGET'].includes(target.selection ?? '') && getActiveCardKeywords(card).includes('IMMUNE')) return false;
+      if ((effect.action !== 'MOVE_TO_DECK' || !zones.every(zone => zone === 'GRAVEYARD')) && ['PLAYER_CHOICE', 'RANDOM', 'SAME_TARGET'].includes(target.selection ?? '') && getActiveCardKeywords(card).includes('IMMUNE')) return false;
       if ((card.isTrainingDummy) && (
         effect.action === 'SILENCE' ||
         effect.action === 'DESTROY' ||
@@ -2553,7 +2573,7 @@ export function applyEffect(
           deck: zones.includes('DECK') ? player.deck.filter((card) => !ids.has(card.instanceId)) : player.deck,
           graveyard: zones.includes('GRAVEYARD') ? player.graveyard.filter((card) => !ids.has(card.instanceId)) : player.graveyard,
             hand: [...player.hand, ...moved.map((card) => normalizeCardForZone({
-              ...resetCardAfterLeavingBoard(card),
+              ...resetCardAfterLeavingBoard(card, state.cardPool?.find(definition => definition.id === card.definitionId)),
               ...temporaryCost,
             }, 'HAND'))],
         }),
@@ -2576,7 +2596,7 @@ export function applyEffect(
       ];
       if (!moved.length) return state;
       const normalized = moved.map(({ card }) => normalizeCardForZone(
-        resetCardAfterLeavingBoard(card),
+        resetCardAfterLeavingBoard(card, state.cardPool?.find(definition => definition.id === card.definitionId)),
         'DECK',
       ));
       return {
@@ -3010,6 +3030,7 @@ export function applyEffect(
              if (effect.action === 'SET_STAT' && effect.values?.stat && effect.values.amount !== undefined) {
                if (effect.values.stat === 'COST') return finish({ ...card, currentCost: Math.max(0, effect.values.amount) });
                if (effect.values.stat === 'ATTACK') return finish({ ...card, currentAttack: effect.values.amount });
+               if (effect.values.currentHealthOnly) return finish({ ...card, currentHealth: Math.min(card.maxHealth, effect.values.amount) });
                return finish({
                  ...card,
                  currentHealth: effect.values.amount,

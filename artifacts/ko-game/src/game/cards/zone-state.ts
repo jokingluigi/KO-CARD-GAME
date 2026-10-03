@@ -1,7 +1,6 @@
 import { configuredDodgeCharges } from './generation';
-import type { CardInstance } from './types';
+import type { CardInstance, CardDefinition } from './types';
 import type { GameState } from '../types/game-state';
-import { getActiveCardKeywords } from './granted-text';
 import { getCardDefinition } from './test-cards';
 
 export type CardZone = 'HAND' | 'DECK' | 'BOARD' | 'GRAVEYARD' | 'REMOVED';
@@ -42,10 +41,10 @@ export function resetCardForGraveyard(card: CardInstance): CardInstance {
 }
 
 /** Restore original stats/cost when a card moves into hand, deck or graveyard. */
-export function resetCardAfterLeavingBoard(card: CardInstance): CardInstance {
-  const definition = getCardDefinition(card.definitionId);
+export function resetCardAfterLeavingBoard(card: CardInstance, printedDefinition?: CardDefinition): CardInstance {
+  const definition = printedDefinition ?? getCardDefinition(card.definitionId);
   const baseHealth = definition?.health ?? card.baseHealth ?? card.maxHealth;
-  const hasDodge = getActiveCardKeywords(card).includes('DODGE');
+  const hasDodge = (definition?.keywords ?? card.keywords).includes('DODGE');
 
   return {
     ...card,
@@ -60,8 +59,16 @@ export function resetCardAfterLeavingBoard(card: CardInstance): CardInstance {
     enteredThisTurn: false,
     attacksUsedThisTurn: 0,
     dodgeAvailable: hasDodge,
-    dodgeCharges: hasDodge ? card.grantedText?.dodgeCharges ?? (definition ? configuredDodgeCharges(definition.effectConfig) : card.baseDodgeCharges ?? 1) : 0,
+    dodgeCharges: hasDodge ? (definition ? configuredDodgeCharges(definition.effectConfig) : card.baseDodgeCharges ?? 1) : 0,
     isStunned: false,
+    isSilenced: false,
+    isAbilityDisabled: false,
+    isSilenceImmune: false,
+    armor: definition ? Math.max(0, Number(definition.effectConfig?.armor ?? 0)) : card.armor,
+    playCondition: definition ? definition.effectConfig?.playCondition as CardInstance['playCondition'] : card.playCondition,
+    grantedText: undefined,
+    keywords: definition ? [...definition.keywords] : card.keywords,
+    abilities: definition ? structuredClone(definition.abilities) : card.abilities,
     activeUsedThisTurn: false,
     statHistory: [],
   };
