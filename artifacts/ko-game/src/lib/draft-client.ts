@@ -78,6 +78,8 @@ export class DraftBattleClient {
   private timer: ReturnType<typeof setInterval> | null = null;
   private matchId: string | null = null;
   private busy = false;
+  private actionBusy = false;
+  private revision = 0;
   private generation = 0;
   private lastVersion: number | null = null;
   private statuses: string | null = null;
@@ -119,12 +121,13 @@ export class DraftBattleClient {
     if (!this.matchId || this.busy) return;
     this.busy = true;
     const id = this.matchId,
-      generation = this.generation;
+      generation = this.generation,
+      revision = this.revision;
     try {
       const result = await draftRequest<OnlineServerMessage>(
         `/sessions/${id}/battle`,
       );
-      if (generation === this.generation && result.type === "MATCH_SNAPSHOT") {
+      if (generation === this.generation && revision === this.revision && !this.actionBusy && result.type === "MATCH_SNAPSHOT") {
         if (this.state === "error") {
           this.lastVersion = null;
           this.connection("open");
@@ -158,6 +161,7 @@ export class DraftBattleClient {
         }
       }
     } catch (e) {
+      if (generation !== this.generation || revision !== this.revision || this.actionBusy) return;
       this.emit({
         type: "ERROR",
         code: "DRAFT_UNAVAILABLE",
@@ -190,8 +194,9 @@ export class DraftBattleClient {
       return true;
     }
     if (message.type === "MATCH_ACTION") {
-      if (this.busy) return false;
-      this.busy = true;
+      if (this.actionBusy) return false;
+      this.actionBusy = true;
+      this.revision++;
       void draftRequest<OnlineServerMessage>(
         `/sessions/${message.matchId}/actions`,
         "POST",
@@ -218,7 +223,7 @@ export class DraftBattleClient {
           });
         })
         .finally(() => {
-          this.busy = false;
+          this.actionBusy = false;
           void this.poll();
         });
       return true;

@@ -614,7 +614,7 @@ function OnlineMatchPage({ draft = false }: { draft?: boolean }) {
   }
 
   function requestMatchResync() {
-    if (!matchId) return;
+    if (!matchId || client.state !== "open") return;
     pendingActionInFlightRef.current = true;
     setPendingAction(true);
     if (!client.send({ type: "RESYNC", matchId })) {

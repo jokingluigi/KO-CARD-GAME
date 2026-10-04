@@ -66,3 +66,11 @@ AI 덱에 챔피언 라 칼라베라가 없는 이유는 관리자 전체 챔피
 - PASS: production health HTTP 200 and live quick-match UI showed server connected at 2026-10-05 00:05 KST. User's individual interrupted PvP session cause remains UNVERIFIED.
 - PASS: suite 1,043 tests, zero failures/skips; six additional current-catalog armor tests PASS (219 catalog tests total). Luna armor 2; Luna MK, Blackout, Silence, Arbiter and Frankenstein Mandrill armor 1. Effect damage, combat damage, zero floor, serialization and silence removal checked against current fixture without original specification changes.
 - UNVERIFIED: two-account production PvP, actual mobile device and live queue pairing. No production test matches or account/catalog writes were made.
+
+## Repeated connection notice follow-up
+
+- FAIL → FIXED → PASS: DraftBattleClient incorrectly returned false for a player action while its periodic GET was pending, which the page reported as an offline server. Separate action and polling flags; revision invalidates stale in-flight GET after action submission. Real deferred-fetch transport test sends the action while GET is pending and verifies accepted state cannot regress.
+- PASS: background resync/unsubscribe during disconnection no longer emits repeated action errors; one failed gameplay request still reports failure and schedules reconnect. No silent action replay.
+- PASS: live browser showed active draft PvP with SERVER CONNECTED and current cards named correctly. No actions, reload, abandonment or mutation were performed in the observed ongoing game.
+- PASS: deployed ceb9a6c web bundle index-BUVbANaw.js SHA256 matches local 94d3fb1060f076130d4b5d1639f717dc3243975bdd7543c35f361ef322a0f62d. Additional polling repair deployment follows.
+- UNVERIFIED: the user's repeating-error session after this repair; actual phone network behavior.

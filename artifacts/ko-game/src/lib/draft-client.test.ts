@@ -106,3 +106,26 @@ test("draft transport preserves animations, recovers connection and retains fini
     globalThis.clearInterval = originalClear;
   }
 });
+
+test("draft action is sent during slow polling and stale poll cannot replace accepted version", async () => {
+ const originalFetch = globalThis.fetch, originalInterval = globalThis.setInterval, originalClear = globalThis.clearInterval;
+ let resolvePoll: ((response: Response) => void) | undefined; const messages: OnlineServerMessage[] = [];
+ const snapshot = (version: number) => ({type:'MATCH_SNAPSHOT',matchId:'room',seat:'PLAYER_ONE',version,state:{status:'IN_PROGRESS'},events:[],serverTime:1,turnStartedAt:1,turnDeadlineAt:90000,gameplayStartsAt:0,publicPlayers:[],introFirstSpeaker:null,connectionStates:{PLAYER_ONE:'CONNECTED',PLAYER_TWO:'CONNECTED'}});
+ globalThis.setInterval = (() => 1) as unknown as typeof setInterval; globalThis.clearInterval = (() => {}) as typeof clearInterval;
+ globalThis.fetch = (async (_url: unknown, init?: RequestInit) => {
+   if (init?.method === 'POST') return new Response(JSON.stringify({...snapshot(2),type:'ACTION_ACCEPTED',requestId:'action'}));
+   return new Promise<Response>(resolve => { resolvePoll = resolve; });
+ }) as typeof fetch;
+ const client = new DraftBattleClient(); client.onMessage(message => messages.push(message));
+ try {
+  client.connect(); client.send({type:'SUBSCRIBE',matchId:'room'});
+  assert.ok(resolvePoll);
+  assert.equal(client.send({type:'MATCH_ACTION',matchId:'room',requestId:'action',expectedVersion:1,action:{type:'END_TURN'}}),true);
+  await new Promise<void>(resolve => setImmediate(resolve));
+  assert.equal(messages.at(-1)?.type,'ACTION_ACCEPTED');
+  resolvePoll!(new Response(JSON.stringify(snapshot(1))));
+  await new Promise<void>(resolve => setImmediate(resolve));
+  assert.equal(messages.filter(message => message.type === 'MATCH_SNAPSHOT').length,0);
+  assert.equal(messages.at(-1)?.type,'ACTION_ACCEPTED');
+ } finally {client.close();globalThis.fetch=originalFetch;globalThis.setInterval=originalInterval;globalThis.clearInterval=originalClear;}
+});

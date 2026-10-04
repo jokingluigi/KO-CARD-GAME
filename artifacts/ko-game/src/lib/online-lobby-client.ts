@@ -120,6 +120,7 @@ class OnlineLobbyClient {
   private shouldReconnect = true;
   private openingSocket = false;
   private socketGeneration = 0;
+  private offlineNoticeSent = false;
 
   get state() {
     return this.connectionState;
@@ -214,6 +215,7 @@ class OnlineLobbyClient {
       }
       this.trace("socket-open");
       this.reconnectAttempt = 0;
+      this.offlineNoticeSent = false;
       this.setConnectionState("open");
     });
     socket.addEventListener("message", (event) => {
@@ -268,7 +270,16 @@ class OnlineLobbyClient {
   }
   send(message: OnlineLobbyClientMessage) {
     if (this.socket?.readyState !== WebSocket.OPEN) {
-      this.listeners.forEach((listener) => listener({ type: "LOBBY_ERROR", code: "OFFLINE", message: "온라인 서버에 연결할 수 없습니다." }));
+      // Background resync/cleanup uses the connection banner, not repeated action errors.
+      const background = ["SUBSCRIBE", "UNSUBSCRIBE", "RESYNC"].includes(message.type);
+      if (!background && !this.offlineNoticeSent) {
+        this.offlineNoticeSent = true;
+        this.listeners.forEach((listener) => listener({ type: "LOBBY_ERROR", code: "OFFLINE", message: "연결이 끊겨 요청을 보내지 못했습니다. 재연결 후 다시 시도해 주세요." }));
+      }
+      if (this.shouldReconnect) {
+        this.setConnectionState("connecting");
+        this.scheduleReconnect();
+      }
       return false;
     }
     this.socket.send(JSON.stringify(message)); return true;

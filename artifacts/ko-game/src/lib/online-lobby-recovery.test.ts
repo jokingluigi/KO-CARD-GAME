@@ -18,8 +18,16 @@ test("socket error reconnects even when close event is delayed; stale events do 
   }
   const module = { exports: {} as any };
   new Function('module', 'exports', 'WebSocket', 'window', 'setTimeout', 'clearTimeout', 'console', code)(module, module.exports, Socket, { location: { protocol: 'http:', host: 'test' } }, (fn: () => void) => { retry = fn; return 1; }, () => {}, { info() {} });
-  const client = module.exports.getOnlineLobbyClient(); client.connect(); sockets[0].emit('open'); assert.equal(client.state, 'open');
+  const client = module.exports.getOnlineLobbyClient();
+  const errors: any[] = []; client.onMessage((message: any) => errors.push(message));
+  client.connect(); sockets[0].emit('open'); assert.equal(client.state, 'open');
   sockets[0].emit('error'); assert.equal(client.state, 'error'); assert.equal(sockets[0].closed, true); assert.ok(retry);
+  for (let i = 0; i < 3; i++) {
+    assert.equal(client.send({type: 'RESYNC', matchId: 'match'}), false);
+    assert.equal(client.send({type: 'UNSUBSCRIBE', matchId: 'match'}), false);
+  }
+  assert.equal(errors.length, 0);
+  client.send({type: 'MATCH_ACTION'}); client.send({type: 'MATCH_ACTION'}); assert.equal(errors.length, 1);
   retry!(); assert.equal(sockets.length, 2); sockets[1].emit('open'); assert.equal(client.state, 'open');
   sockets[0].emit('close'); assert.equal(client.state, 'open'); client.close();
 });
