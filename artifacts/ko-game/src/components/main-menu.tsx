@@ -173,6 +173,7 @@ export function MainMenu({ onComingSoon, onDeckEdit, onAiMatch, user, onLogout, 
           style={{ backgroundImage: `linear-gradient(rgba(8, 8, 8, 0.72), rgba(8, 8, 8, 0.9)), url(${JSON.stringify(backgroundUrl)})` }}
         />
       )}
+      <div aria-hidden="true" className="pointer-events-none absolute inset-0 z-[1] bg-black/[0.08]" />
       <div className="ko-main-menu__content relative z-10 mx-auto flex min-h-[calc(100vh-5rem)] w-full max-w-4xl flex-col justify-center">
         <header className="ko-main-menu__header text-center">
           <h1 className="ko-main-menu__logo font-display font-black text-white">KO</h1>
