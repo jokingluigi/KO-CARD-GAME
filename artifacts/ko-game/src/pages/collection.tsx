@@ -45,6 +45,8 @@ function CardCollectionItem({ card, onOpen, showCraftable = false, unlimited = f
     >
       <div className="relative">
         <CardRenderer
+          keywords={card.keywords}
+          keywordConfig={card.effectConfig}
           name={card.name}
           cardType={card.cardType as "WRESTLER" | "TECHNIQUE"}
           cost={card.cost}

@@ -1,4 +1,6 @@
 export type DeckCard = {
+  keywords?: import('../game/effects/types').CardKeyword[];
+  effectConfig?: Record<string, unknown> | null;
   id: string;
   name: string;
   cardType: "WRESTLER" | "TECHNIQUE";

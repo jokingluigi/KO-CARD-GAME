@@ -53,7 +53,7 @@ export async function draftRequest<T>(
   body?: unknown,
 ): Promise<T> {
   const base = (import.meta.env?.BASE_URL ?? "/").replace(/\/$/, "");
-  const r = await fetch(`${base}/api/admin/draft${path}`, {
+  const r = await fetch(`${base}/api/draft${path}`, {
     method,
     credentials: "include",
     headers: { "Content-Type": "application/json" },

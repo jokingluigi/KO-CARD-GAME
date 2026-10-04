@@ -12,6 +12,8 @@ import {
 import { cardTypeLabel, normalizeCardRulesText } from "@/lib/display-labels";
 
 export type CardDetailRecord = {
+  keywords?: import('../game/effects/types').CardKeyword[];
+  effectConfig?: Record<string, unknown> | null;
   id: string;
   name: string;
   cardType: string;
@@ -79,6 +81,8 @@ export function CardDetailDialog({
             <div className="grid gap-5 sm:grid-cols-[minmax(220px,320px)_1fr] sm:items-start">
               <FullCardArtwork name={card.name} imageUrl={card.imageUrl}>
               <CardRenderer
+                keywords={card.keywords}
+                keywordConfig={card.effectConfig}
                 name={card.name}
                 cardType={card.cardType as "WRESTLER" | "TECHNIQUE"}
                 cost={card.cost}

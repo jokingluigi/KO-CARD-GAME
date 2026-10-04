@@ -36,6 +36,7 @@ router.use(healthRouter);
 router.use('/tower', towerRouter);
 router.use('/admin/tower', adminTowerRouter);
 router.use('/admin/draft', adminDraftRouter);
+router.use('/draft', adminDraftRouter);
 router.use(storageRouter);
 router.use(cardsRouter);
 router.use(gameMediaRouter);

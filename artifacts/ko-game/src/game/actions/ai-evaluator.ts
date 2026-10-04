@@ -175,6 +175,13 @@ export const AI_SEARCH_PROFILES = {
 } as const;
 /** Bounded same-turn beam search. Every candidate goes through the shared legal-action engine. */
 export function chooseBestAction(state: GameState, actions: GameAction[], playerId: string, difficulty?: AIDifficulty): GameAction {
+  // Cancelling a pre-commit choice restores the hand and gold. Evaluating that
+  // refund as a gain can make the AI replay/cancel the same card indefinitely.
+  // Once it has chosen to play, complete a valid target instead.
+  if (state.targetingState?.active && actions.some(action =>
+    action.type === 'SELECT_EFFECT_TARGET' || action.type === 'CONFIRM_PRECOMMIT_TARGET')) {
+    actions = actions.filter(action => action.type !== 'CANCEL_EFFECT_TARGET');
+  }
   if (!difficulty) return chooseLegacyAction(state, actions, playerId);
   const visible = aiInformationState(state, playerId);
   const profile = AI_SEARCH_PROFILES[difficulty];
@@ -193,7 +200,7 @@ export function chooseBestAction(state: GameState, actions: GameAction[], player
     const expanded: typeof beam = [];
     for (const node of beam) {
       if (node.state.status !== 'IN_PROGRESS' || node.state.activePlayerId !== playerId || node.first.type === 'END_TURN') continue;
-      const candidates = getLegalActions(node.state, playerId).filter(a => a.type !== 'END_TURN' && a.type !== 'EMOTE')
+      const candidates = getLegalActions(node.state, playerId).filter(a => a.type !== 'END_TURN' && a.type !== 'EMOTE' && a.type !== 'CANCEL_EFFECT_TARGET')
         .slice(0, 80).map(action => ({ action, score: evaluateAction(node.state, action, playerId) })).sort((a, b) => b.score - a.score).slice(0, profile.width);
       for (const candidate of candidates) {
         if (--budget < 0) break;

@@ -1,0 +1,1643 @@
+✔ owned/unpublished Helfer includes its named token without exposing unrelated drafts (3.185344ms)
+✔ unowned Helfer and disabled tokens are not exposed (0.376478ms)
+✔ existing explicitly authored configurations retain their dependency policy (0.232285ms)
+✔ older name-only transformation loads a unique DRAFT form used by an AI deck (0.286647ms)
+✔ test matches include the referenced DRAFT form by id without putting it in the deck (0.359778ms)
+✔ ambiguous or disabled forms are never chosen by partial name (0.294912ms)
+✔ Maid Pandora stale form id loads its unique canonical wolf form (0.305869ms)
+✔ main BGM is eligible on direct non-battle route loads (1.51972ms)
+✔ match routes suppress main BGM and use the battle context (0.224449ms)
+✔ 상세창은 원래 태그와 효과로 얻은 태그를 함께 표시한다 (4.156445ms)
+✔ 상단 카드는 아래쪽에 표시한다 (2.655457ms)
+✔ 하단 손패는 패널을 카드 위쪽으로 올린다 (0.261936ms)
+✔ 좌우 끝 카드는 패널을 viewport 안으로 clamp한다 (0.331017ms)
+✔ 긴 패널도 viewport 여백 안에서 clamp한다 (0.214664ms)
+✔ 카드 수치 변경은 기본값 대비 before/after와 delta를 만든다 (0.916322ms)
+✔ all AI profiles prefer immediate lethal over quest, summon and END_TURN (22.992896ms)
+✔ HARD/BOSS find same-turn multi-action lethal through real actions (14.909578ms)
+✔ changing hidden hands, deck identities, deck order and seed does not change the AI decision (16.659691ms)
+✔ healing target selection prefers missing health instead of wasting healing on full HP (9.230912ms)
+✔ all AI profiles avoid a losing trade when a safe face attack is available (15.002907ms)
+✔ all AI profiles remove visible lethal threat instead of taking nonlethal face damage (10.312088ms)
+✔ RETIRE: all AI profiles spend targeted removal on the strong visible threat (16.947274ms)
+✔ DESTROY: all AI profiles spend targeted removal on the strong visible threat (17.610594ms)
+✔ all AI profiles respect Tower field cap in actual legal actions (5.747277ms)
+✔ all AI profiles prefer the cheaper wrestler when board stats are identical (7.918652ms)
+✔ all AI profiles save expensive destruction when cheap damage already removes the weak enemy (16.693243ms)
+✔ all AI profiles value real draw with low hand instead of ending the turn (3.630426ms)
+✔ all AI profiles complete an available champion quest through a real card play (13.304057ms)
+✔ HARD/BOSS use an attack buff before combat to find same-turn lethal (8.675077ms)
+✔ all AI profiles do not assume a fragile taunt blocks multiple visible lethal attackers (14.820884ms)
+✔ AI 감정표현은 퀘스트 완료와 막타 피해 상황에 반응하고 같은 턴 반복하지 않는다 (8.02942ms)
+✔ AI auto-ends a turn with no action beyond END_TURN without waiting for timeout (4.569693ms)
+✔ AI scheduler keeps using the post-action state and presentation pause does not cancel the turn (3.769848ms)
+✔ AI never auto-ends while an unresolved target selection is pending (0.932374ms)
+✔ 같은 턴에 챔피언 감정표현을 세 번 이상 사용할 수 있다 (3.413743ms)
+✔ 동일한 immutable GameState의 legal actions는 다시 probe하지 않고 재사용한다 (4.762705ms)
+✔ 도발이 있으면 공격 미리보기 대상도 도발 선수로만 제한된다 (3.034729ms)
+✔ technique PRE_COMMIT probes a clone, cancel is canonical no-op, confirm commits once (16.336281ms)
+✔ optional PRE_COMMIT cancel abandons the action and empty optional choices auto-skip (3.455223ms)
+✔ Champion Ability PRE_COMMIT cancel is a no-op and reconnect confirm commits once (8.53358ms)
+✔ Active ability PRE_COMMIT cancel leaves use flag unset and confirm consumes it once (3.749912ms)
+✔ ENTER_FIELD cancellation returns the card and refunds its complete play (2.986448ms)
+✔ zero-target ENTER_FIELD choice resolves as a no-op without opening cancel mode (2.568102ms)
+✔ mandatory and script cancellation clears only the authoritative continuation (0.402415ms)
+✔ 시작 덱 카드는 생성 카드가 아니다 (2.039165ms)
+✔ 생성 카드는 isGenerated가 true이고 CARD_GENERATED 이벤트를 만든다 (1.633444ms)
+✔ 존재하지 않는 덱 CardDefinition은 다른 카드로 조용히 대체하지 않는다 (0.825873ms)
+✔ 일반 토큰과 챔피언 토큰을 따로 관리한다 (0.276998ms)
+✔ 일반 인스턴스 생성은 기본적으로 기존 카드 인스턴스로 남는다 (0.183065ms)
+✔ 기본 비용 0인 generated/token 카드는 0G를 유지한다 (0.135279ms)
+✔ generatedModifiers.cost가 0이면 generated 카드도 0G가 된다 (0.144956ms)
+✔ 음수 비용 보정은 0G 아래로 내려가지 않는다 (0.158566ms)
+✔ 표준 무작위 카드 생성 후보에서는 일반 토큰과 챔피언 토큰을 제외한다 (1.580092ms)
+✔ 완전히 무작위 카드 생성 후보에서는 토큰과 챔피언 토큰을 허용한다 (0.355892ms)
+✔ 무작위 생성 Pool은 카드 타입 필터와 randomScope를 함께 적용한다 (0.241214ms)
+✔ 무작위 생성 Pool은 최소 코스트 필터를 적용한다 (0.161304ms)
+✔ 무작위 생성 Pool은 CardDefinition 태그 필터를 적용하고 토큰 태그를 유지한다 (0.349342ms)
+✔ sharesCardTag detects at least one identical canonical tag (1.233113ms)
+✔ card tag filters support any, all, and none semantics (0.602707ms)
+✔ card tag comparison normalizes NFC and whitespace without fuzzy matching (0.333498ms)
+✔ 시작 덱의 테스트 선수 종류마다 효과가 하나씩 배정된다 (2.719519ms)
+✔ Calavera base summons and merges exact stats (9.908614ms)
+✔ Calavera upgraded summons and merges exact stats (1.349425ms)
+✔ full field can merge into the existing zombie (0.916738ms)
+✔ only allied retirements grow zombies and advance the quest, DESTROY does neither (5.522642ms)
+✔ tenth allied retirement upgrades once; dead zombie cannot grow itself (1.500837ms)
+✔ silence suppresses zombie retirement growth (0.840312ms)
+✔ Minion A has exact text, cost 2 and no quest/reward/upgrade (0.999618ms)
+✔ legal actions and actual engine reject 0/1 gold, wrong turn, empty catalog; pay exactly 2 once (17.400084ms)
+✔ actual generation and play: published (7.452568ms)
+✔ actual generation and play: unpublished (1.450372ms)
+✔ actual generation and play: disabled (1.410123ms)
+✔ actual generation and play: token (1.761894ms)
+✔ actual generation and play: championToken (1.346965ms)
+✔ actual generation and play: deckIneligible (1.357475ms)
+✔ actual generation and play: spellToken (1.570083ms)
+✔ pool excludes only invalid records, deduplicates stable ids, keeps all valid categories (10.549937ms)
+✔ all valid ids reachable with same uniform shuffle algorithm; no category weights (657.264334ms)
+✔ full hand follows 7-card overflow removal, distinct generated instances and deterministic reconnect (6.51746ms)
+✔ AI decisions never preview random outcome and do not change state or catalog (8.685649ms)
+✔ no Minion A: initial state has no complete pool and ordinary generation remains unchanged (2.6861ms)
+✔ complete catalog includes actual built-in Zombie, and its generated card plays with Zombie rules (1.644996ms)
+✔ generated special card resolves an unpublished summon dependency and reconnect validates it (2.776869ms)
+✔ generation never leaks the hidden choice by changing the ordinary catalog (0.380533ms)
+✔ real AI turn scheduler uses Minion A, generates a card and finishes its turn at every difficulty (4.564931ms)
+✔ 상대 챔피언별 승리 대사는 퀘스트 전후를 구분하고 미설정 상대는 기본 대사로 돌아간다 (1.545887ms)
+✔ 필드 소환 능력은 손패 생성 설정을 필드 소환으로 정규화한다 (1.215256ms)
+✔ 판도라 퀘스트는 다른 카드의 리타이어를 고유 능력 킬로 세지 않는다 (0.734572ms)
+✔ DB 챔피언을 직렬화 가능한 매치 스냅샷 정의로 변환한다 (1.604421ms)
+✔ 직접 전개는 연결된 명시적 Champion Token ID만 사용한다 (0.418752ms)
+✔ Quest 보상도 연결된 Champion Token ID를 직접 전개 보상으로 보존한다 (0.314489ms)
+✔ 구조화된 Champion Token 보상은 현재 챔피언 연결을 사용하는 전개 effect로 변환한다 (0.508458ms)
+✔ Purple Rain portrait 1: damage, draw and discount only the drawn card (14.827022ms)
+✔ Purple Rain wrestler 1: damage and attack buff (6.88506ms)
+✔ Purple Rain portrait 2: damage, draw and discount only the drawn card (1.036687ms)
+✔ Purple Rain wrestler 2: damage and attack buff (1.331088ms)
+✔ self card damage counts recipients, not damage amount; eighth hit upgrades once (1.171007ms)
+✔ enemy effects, combat, fatigue and zero damage are excluded (0.441861ms)
+✔ empty deck discounts no existing card and fatigue is not another quest hit (0.715264ms)
+✔ immune allies cannot be chosen; defense blocks quest damage but still grants the buff (1.419506ms)
+✔ lethal portrait damage ends the game without drawing; lethal ally damage counts once (4.488599ms)
+✔ a full hand burns the drawn card without discounting another card (1.351957ms)
+✔ 등장 효과로 상대 챔피언에게 피해를 준다 (8.832705ms)
+✔ delayed rules execute at the bounded schedule and remain serializable (13.313418ms)
+✔ generic listeners skip the event that registered them and fire on the next match (4.079409ms)
+✔ before-damage replacement prevents lethal combat damage without leaving the card (2.441394ms)
+✔ before-retire replacement changes lethal state to one health (0.869572ms)
+✔ card-effect damage uses the same prevention and replacement pipeline as combat (0.394544ms)
+✔ SCRIPT_V1 history queries are bounded and feed a later effect amount (1.802926ms)
+✔ 도금구슬 마스터는 손패와 덱의 비용 6 이상 카드만 1 할인한다 (25.974315ms)
+✔ 오젠은 챔피언 토큰을 제외한 비용 1 이하의 적 선수 하나만 리타이어시킨다 (4.521843ms)
+✔ 오젠과 도금구슬 마스터는 손패에서 비용을 내고 실제 플레이해도 적용된다 (3.306938ms)
+✔ 불록스는 손패에 있을 때만 턴 종료에 빈 필드로 소환된다 (2.755601ms)
+✔ 작은 하마는 선택한 상대 선수만 상대 덱 맨 위로 보낸다 (2.180333ms)
+✔ 만당은 빈 아군 필드에 자신을 한 장 소환하고 소환된 카드가 재소환하지 않는다 (2.414839ms)
+✔ 마로쓰 2세가 리타이어하면 무작위 적 선수 하나만 침묵시킨다 (1.204415ms)
+✔ 퀘스쳔은 어디에 있든 비용 2 이하인 아군 카드만 +1/+1 강화한다 (1.017553ms)
+✔ 떼껄룩은 선택한 적의 줄어든 공격력만큼 자신 체력을 올리고 기절시킨다 (3.594554ms)
+✔ 마로쓰 2세가 필드에 있으면 아군 턴 종료 효과가 정확히 한 번 더 발동한다 (1.858884ms)
+✔ 마로쓰 2세의 퇴장형 문구는 손패에서 가장 비싼 카드 한 장만 할인한다 (1.420753ms)
+✔ 저장된 17개 WRESTLER 정의가 runtime abilities로 모두 변환된다 (3.063735ms)
+✔ authoritative 뒷정리맨 정의는 자신이 아닌 다음 아군 선수에게 체력 +2를 한 번 적용한다 (1.339595ms)
+✔ authoritative 매드 펌킨은 같은 CardInstance를 손패로 되돌리고 이번 턴 비용을 1 줄인다 (1.23375ms)
+✔ 씨 몬스터는 손패 조건이 문구에 있으면 아군 리타이어에 반응한다 (3.299174ms)
+✔ 설정이 누락된 좀비 흡수 카드는 가장 강한 좀비를 흡수하고 없으면 2/2 좀비를 소환한다 (1.828128ms)
+✔ 기존 GENERATE 설정이 자기 자신을 가리켜도 좀비 토큰만 소환한다 (1.050249ms)
+✔ 다른 선수의 이름 참조 좀비 소환은 토큰만 찾아 필드에 놓는다 (0.958491ms)
+✔ 챔피언의 이름 참조 좀비 소환도 자기 이름에 좀비가 있어도 토큰을 소환한다 (0.533769ms)
+✔ 좀비를 손패에 생성하는 카드도 실제 좀비 토큰을 생성한다 (4.368772ms)
+✔ 아르카나 조커가 파괴한 덱 맨 위 카드는 묘지에 가지 않고 다음 턴에는 한 장만 뽑는다 (2.217421ms)
+✔ 과거 판도라 토큰 설정은 대상 파괴와 이후 퇴장 공격력 흡수를 함께 실행한다 (9.40335ms)
+✔ 판도라 폭주가 퀘스트 보상으로 등장하면 대상을 파괴하고 이후 전투 리타이어도 흡수한다 (3.011889ms)
+✔ 퀘스트 보상의 일반 SUMMON도 등장 효과를 명시한 판도라에게만 등장 효과를 발동한다 (4.840577ms)
+✔ 판도라 폭주의 등장 대상은 아군 선수도 가능하며 자신은 대상에서 제외된다 (0.385672ms)
+✔ 매드 펌킨 비용 감소는 최소 1을 지키고 WRESTLER가 아닌 카드는 선택 대상이 아니다 (0.616561ms)
+✔ 독세아·블랙 마카롱·디 오리진·여울·피 스타 세븐의 보드 효과가 실제 상태를 변경한다 (7.74436ms)
+✔ 루나·씨 몬스터·아르카나 조커·워썬더의 전투/퇴장/덱 흐름이 실제 매치에서 동작한다 (1.30343ms)
+✔ 뒷정리맨·오심정정·위리놈·저지먼트의 선택/continuation 흐름이 실제 매치에서 동작한다 (5.452236ms)
+✔ 뒷정리맨 queue는 자기 자신을 제외하고 다음 아군 선수에게 한 번만 적용된다 (1.182929ms)
+✔ 뒷정리맨 queue는 상대 선수와 기술 카드 플레이로 소비되지 않는다 (1.481889ms)
+✔ 뒷정리맨 queue는 SUMMON·REVIVE·Champion Token 전개로 소비되지 않는다 (8.84068ms)
+✔ 조킹루이지·퍼플레인·아비터·플래티넘 구슬 마스터의 지속/조건부 효과가 실제 매치에서 동작한다 (2.186013ms)
+✔ 현재 손패 전용 도금구슬 문구는 덱과 비용 5 이하 카드를 할인하지 않는다 (3.229239ms)
+✔ 오젠은 토큰 플래그가 없는 챔피언 등급 선수도 제외한다 (0.747293ms)
+✔ SCRIPT_V1 반복 규칙은 피해를 합산하지 않고 독립된 이벤트로 적용한다 (8.060367ms)
+✔ SCRIPT_V1 반복 횟수는 경기 중 필드 카드 수를 읽되 8회로 제한한다 (2.40973ms)
+✔ SCRIPT_V1은 선택 수의 두 배를 계산해 경기 규칙으로 실행한다 (0.70796ms)
+✔ SCRIPT_V1 selects and aggregates live board cards before applying a typed value (3.368416ms)
+✔ SCRIPT_V1 tag selection reads CardDefinition tags across board and hidden zones (2.439861ms)
+✔ SCRIPT_V1 PLAYER_CHOICE pauses in GameState and resumes into a later result-referenced effect (4.213503ms)
+✔ SCRIPT_V1 filters, sorts, and takes a deterministic highest-cost hidden-zone card (1.028619ms)
+✔ SCRIPT_V1 resolves adjacent empty slots, records successful summons, and applies a follow-up keyword (2.20233ms)
+✔ SCRIPT_V1 filters a graveyard and deterministically revives one eligible wrestler (1.644057ms)
+✔ SCRIPT_V1 copies the best named Zombie stats or generates an exact 2/2 Zombie (3.861048ms)
+✔ SCRIPT_V1 transfers only the actual attack reduction after the chosen enemy is set to one and stunned (1.971777ms)
+✔ 등장 시 자신에게 +2/+2를 부여한다 (21.823882ms)
+✔ source-excluding ALL targets buff allied Wrestlers without buffing the source (1.254266ms)
+✔ La Calavera revives only an eligible graveyard Wrestler and taunts that same instance (3.065712ms)
+✔ 선택한 선수에게 피해를 준 뒤 체력이 정확히 1이면 자신을 강화한다 (4.001849ms)
+✔ ALL 범위의 선택 대상은 아군과 상대 WRESTLER를 모두 대상으로 하고 아군도 정상 퇴장시킨다 (4.341384ms)
+✔ 인접한 아군 카드만 선택하는 범용 대상 선택이 양 옆의 점유 슬롯을 강화한다 (1.30054ms)
+✔ 무덤의 비용 상한을 지키고 선택 카드를 옮기지 않은 채 좀비가 현재 스탯을 복사한다 (1.623134ms)
+✔ 무덤 스탯을 복사하는 이름 참조 좀비 소환은 토큰을 필드에 놓는다 (0.861415ms)
+✔ 소환 오라는 태그가 맞는 아군 소환 카드에만 같은 대상 강화 효과를 적용한다 (1.810353ms)
+✔ 아군 필드 진입 오라는 플레이와 소환 양쪽에서 새 카드만 같은 대상으로 강화한다 (1.618537ms)
+✔ 아군 턴 종료 반복은 전체 보드를 한 번만 더 실행하고 반복 표식은 재귀하지 않는다 (3.774009ms)
+✔ STEAL은 선언된 상대 손패 영역에서 무작위 카드를 내 손으로 이동한다 (1.18397ms)
+✔ STEAL은 선언된 상대 덱 영역에서 무작위 카드를 내 손으로 이동한다 (0.489519ms)
+✔ MOVE_TO_HAND의 임시 비용 감소는 최소 비용과 턴 만료를 보존한다 (6.999733ms)
+✔ 필드에서 손패로 돌아간 선수는 공격력·체력·코스트가 초기화된다 (0.589721ms)
+✔ MOVE_TO_DECK는 선택한 카드를 원래 소유자의 덱 맨 위로 이동한다 (0.655835ms)
+✔ 콤보는 마지막으로 공격한 아군의 공격력을 자기 공격력에 더하고 턴 종료에 0으로 설정한다 (2.411484ms)
+✔ 자신 공격 Trigger는 공격할 때마다 다음 턴 골드 보너스를 누적한다 (9.251226ms)
+✔ 자신 공격 Trigger는 다른 아군이나 상대 카드의 공격에는 발동하지 않는다 (1.049843ms)
+✔ 예약된 체력 강화는 턴이 넘어가도 다음 손패 선수에게 한 번만 적용된다 (2.069641ms)
+✔ 기본 1/1 카드의 현재 공격과 체력을 2배로 변경한다 (2.344832ms)
+✔ 액티브로 현재 공격력과 체력을 서로 교환한다 (0.740654ms)
+✔ 피해가 정확한 대상을 퇴장시킨 경우에만 causal 변신을 실행한다 (2.990406ms)
+✔ 선택한 상대 선수를 현재 공격력과 체력 그대로 다른 카드로 변신시킨다 (0.799797ms)
+✔ 저장된 하녀 판도라의 이름 참조도 퇴장시킨 상대 카드가 있을 때 변신한다 (0.914876ms)
+✔ HAND/DECK WRESTLER 체력은 1 아래로 내려가지 않고 FIELD는 lethal을 허용한다 (16.427776ms)
+✔ HAND/DECK의 -1·-5와 생성 카드 체력 변경은 floor 적용 후 실제 delta를 기록한다 (1.927665ms)
+✔ FIELD lethal damage retires a WRESTLER instead of applying the hidden-zone floor (0.399413ms)
+✔ queued and delayed effects also clamp hidden-zone WRESTLER health (2.870252ms)
+✔ 복원 시 손패·덱 WRESTLER만 보정하고 필드 lethal과 Technique은 유지한다 (0.487599ms)
+✔ 등장 시 자신의 양옆 빈 슬롯에 표준 무작위 선수를 각각 소환한다 (6.954215ms)
+✔ 인접 무작위 소환 결과를 같은 resolution에서 모두 참조해 도발을 부여한다 (0.904143ms)
+✔ generic ADJACENT selection includes existing adjacent allies and generated cards but excludes its source (2.393653ms)
+✔ 인접 슬롯마다 독립적으로 무작위 선택해 같은 definition도 허용한다 (0.499139ms)
+✔ 한쪽 인접 슬롯만 비었으면 그쪽만 소환하고 결과도 한 장만 참조한다 (0.697082ms)
+✔ 양쪽 인접 슬롯이 차 있으면 소환과 후속 키워드 부여를 안전하게 건너뛴다 (0.500301ms)
+✔ 보드 가장자리에서는 존재하는 한쪽 인접 슬롯만 검사한다 (0.518506ms)
+✔ 무작위 선수 풀은 기술 카드를 제외하고 같은 seed에서 같은 결과를 낸다 (4.778638ms)
+✔ 무작위 소환은 소환된 카드 자신의 ENTER_FIELD 효과를 재발동하지 않는다 (0.508756ms)
+✔ 필드에 있는 카드가 생성 카드의 전투 피해를 보정하고 퇴장하면 만료된다 (1.816806ms)
+✔ 이미 3/4인 카드의 현재 공격과 체력을 2배로 변경한다 (4.92922ms)
+✔ 선택한 손패 선수 한 장에게 +1/+1을 부여한다 (0.688584ms)
+✔ 선택한 적 선수에게 피해를 주고 체력이 소진되면 리타이어시킨다 (4.104229ms)
+✔ 손패의 무작위 선수 카드 중 최대 3장에게 +1/+1을 부여한다 (0.678896ms)
+✔ 표준 RANDOM은 일반 카드만 선택하고 Token과 Champion Token을 제외한다 (0.625575ms)
+✔ FULL_RANDOM은 일반 카드, Token, Champion Token을 모두 선택 후보로 허용한다 (1.235234ms)
+✔ FULL_RANDOM GENERATE로 나온 Champion Token은 직접 전개 보호를 얻지 않는다 (1.079441ms)
+✔ 명시적 CardDefinition ID SUMMON/GENERATE는 cardPool에서만 resolve하고 직접 전개 보호를 주지 않는다 (6.017057ms)
+✔ 같은 GameState와 Action, Seed의 RANDOM 결과는 deterministic하다 (1.138278ms)
+✔ 선택한 적 선수를 침묵시킨 뒤 같은 대상을 파괴한다 (1.021682ms)
+✔ 자신이 선택해 파괴한 선수의 현재 공격력을 토큰 자신에게 더한다 (4.991758ms)
+✔ 리타이어된 선수도 같은 공격력 합산 경로를 사용한다 (1.049249ms)
+✔ source-caused removal listener grants current attack once per distinct victim and only for its source (1.321555ms)
+✔ source-caused retirement snapshots the victim attack and does not add health (5.527324ms)
+✔ combat retirement attributes its damage to the exact attacker for removal listeners (0.99173ms)
+✔ persistent removal listener absorbs current attack from lethal effect damage only (0.709905ms)
+✔ 구조화 DRAW는 기존 drawCard 규칙과 이벤트를 사용한다 (0.341066ms)
+✔ 구조화 키워드 부여는 카드 키워드만 안전하게 변경한다 (0.351897ms)
+✔ generic stat 변경은 비용·공격력·체력과 STAT_CHANGED history를 함께 기록한다 (6.177393ms)
+✔ dynamic BUFF references change only their selected stat channel and survive serialization (26.911037ms)
+✔ generic stat duration은 이번 턴 종료 시 원래 수치로 되돌아간다 (1.168343ms)
+✔ 구조화 회피 부여는 첫 효과 피해를 무효화하고 소모한다 (0.663986ms)
+✔ 다음 턴 골드, 비용과 기절 구조화 효과를 적용한다 (0.619772ms)
+✔ 생성된 카드만 손패·덱·필드의 공통 범위에서 필터링한다 (9.723427ms)
+✔ 생성 상태는 덱에서 손패와 필드로 이동해도 유지한다 (0.302076ms)
+✔ 생성 상태는 DESTROY되어도 묘지로 이동하지 않는다 (0.222581ms)
+✔ 기존 덱 인스턴스와 새 생성 인스턴스를 구분한다 (0.133213ms)
+✔ PLAYER_CHOICE pauses post-enter damage, validates stale/invalid clicks, then resolves (14.244196ms)
+✔ a manually chosen ally excludes the card producing the effect (0.622084ms)
+✔ mandatory Technique PLAYER_CHOICE preflights before payment when no target exists (0.503223ms)
+✔ SAME_TARGET uses one click; SELF, RANDOM and ALL never open targeting (4.803643ms)
+✔ resolver covers board, hand/player ids, multiselect duplicates and champion token protection (3.887559ms)
+✔ tag filters compose with zone, owner, and card type without hardcoded tag names (1.514891ms)
+✔ structured tag targets sort and take the highest matching card before applying (3.506928ms)
+✔ tag filters treat missing definition tags as empty but reject a missing definition (0.826421ms)
+✔ authoritative tags buff live zones; drawing resets deck buffs before play (3.810929ms)
+✔ CHARACTER targeting offers the owner id and wrestlers, then applies player and card damage/healing separately (3.252529ms)
+✔ generic CHARACTER damage includes a champion and wrestlers, but protected champions are excluded (0.460557ms)
+✔ a triggered PLAYER_CHOICE with no candidates resolves without leaving targeting stuck (1.511593ms)
+✔ ALL CHARACTER resolves both champions and every eligible wrestler without targeting (9.287438ms)
+✔ ALL CHARACTER card-only actions affect wrestlers but never player ids (0.518719ms)
+✔ pending targeting blocks end turn with the exact warning (1.932104ms)
+✔ ALL BOARD WRESTLERS targeting includes both players but excludes both Champions (0.999911ms)
+✔ mandatory ENTER_FIELD choice with no targets skips and commits the play (3.760798ms)
+✔ active and champion abilities use pending effects once, with payment/use timing (15.862338ms)
+✔ printed and silenced vanilla cards are targetable, while active text and keywords are not (4.389577ms)
+✔ grants executable existing text from the authoritative pool and rebinds SELF (10.511448ms)
+✔ synthetic ENTER_FIELD runs only the newly granted entry clause (5.486118ms)
+✔ a granted PLAYER_CHOICE effect uses the existing continuation and no target leaves no stale choice (3.888271ms)
+✔ the same seed and match snapshot select the same donor without Math.random (18.810122ms)
+✔ silence removes the granted layer without restoring printed text (0.730603ms)
+✔ 골드 부족 실패는 원래 게임 상태를 그대로 유지한다 (5.193677ms)
+✔ 상대 턴 행동은 상태를 변경하지 않는다 (0.927214ms)
+✔ 잘못된 공격 대상은 상태를 변경하지 않는다 (1.508356ms)
+✔ 존재하지 않는 플레이어의 카드 플레이는 throw 대신 실패하고 상태를 유지한다 (0.42916ms)
+✔ admin token initialization: 1972년 11월 21일 (11.982658ms)
+✔ admin token initialization: 냥냥 펀치 (1.8657ms)
+✔ admin token initialization: 반으로 갈라져 죽어! (1.269278ms)
+✔ admin token initialization: 어셈블!!! (0.955552ms)
+✔ admin token initialization: 엘리트 용병 (1.184166ms)
+✔ admin token initialization: 여울의 보디가드 (0.739494ms)
+✔ admin token initialization: 용병 (4.934751ms)
+✔ admin token initialization: 위리녀 (1.510547ms)
+✔ admin token initialization: 좀비 (1.552572ms)
+✔ admin token initialization: 지뢰닷!!! (2.093057ms)
+✔ admin token initialization: 챔피언 판도라(폭주) (2.375596ms)
+✔ admin scenario legal use: 1972년 11월 21일 (7.707598ms)
+✔ admin scenario legal use: MPG (22.540661ms)
+✔ admin scenario legal use: RM우디르 (9.158217ms)
+✔ admin scenario legal use: 강제 교환 (14.048856ms)
+✔ admin scenario legal use: 강제 침묵 (10.511977ms)
+✔ admin scenario legal use: 그레이트 챤 (4.155636ms)
+✔ admin scenario legal use: 금구슬 마스터 (8.021365ms)
+✔ admin scenario legal use: 금지된 계약 (6.636853ms)
+✔ admin scenario legal use: 나토마토 (4.357275ms)
+✔ admin scenario legal use: 냥냥 펀치 (10.128669ms)
+✔ admin scenario legal use: 늑대인간 판도라 (4.118585ms)
+✔ admin scenario legal use: 데헌 (3.924162ms)
+✔ admin scenario legal use: 도금구슬 마스터 (4.487965ms)
+✔ admin scenario legal use: 도쿵 (4.361213ms)
+✔ admin scenario legal use: 독세아 (4.130526ms)
+✔ admin scenario legal use: 뒷정리맨 (5.734431ms)
+✔ admin scenario legal use: 디 오리진 (7.261456ms)
+✔ admin scenario legal use: 떼껄룩 (7.015115ms)
+✔ admin scenario legal use: 라 칼라베라 (11.177662ms)
+✔ admin scenario legal use: 레드 렌지 (4.653057ms)
+✔ admin scenario legal use: 레이븐 (2.032833ms)
+✔ admin scenario legal use: 로드 (3.111755ms)
+✔ admin scenario legal use: 루나 (11.562113ms)
+✔ admin scenario legal use: 루나 MK.사일런스 (8.050827ms)
+✔ admin scenario legal use: 루브 (5.499075ms)
+✔ admin scenario legal use: 루이나 (3.409204ms)
+✔ admin scenario legal use: 리버덩크 (2.50821ms)
+✔ admin scenario legal use: 마개조 (14.330434ms)
+✔ admin scenario legal use: 마도카와 (2.656137ms)
+✔ admin scenario legal use: 마로쓰 2세 (3.894716ms)
+✔ admin scenario legal use: 만당 (8.544135ms)
+✔ admin scenario legal use: 만드릴쿤 (3.828259ms)
+✔ admin scenario legal use: 만찬 (3.368282ms)
+✔ admin scenario legal use: 매드 사이언티스트 퍼플레인 (4.051978ms)
+✔ admin scenario legal use: 매드 펌킨 (3.375918ms)
+✔ admin scenario legal use: 밀쳐내기 (3.219738ms)
+✔ admin scenario legal use: 반으로 갈라져 죽어! (10.485611ms)
+✔ admin scenario legal use: 발단 (3.370292ms)
+✔ admin scenario legal use: 뱀파이어 왕자 MPG (15.214688ms)
+✔ admin scenario legal use: 벨로나 (16.139683ms)
+✔ admin scenario legal use: 보드바 (4.183229ms)
+✔ admin scenario legal use: 복귀 (5.714413ms)
+✔ admin scenario legal use: 불록스 (4.117361ms)
+✔ admin scenario legal use: 블랙 마카롱 (6.653056ms)
+✔ admin scenario legal use: 블랙 아웃 (3.776902ms)
+✔ admin scenario legal use: 사일런스 (5.793437ms)
+✔ admin scenario legal use: 생명의 교환 (5.983951ms)
+✔ admin scenario legal use: 스카드 (4.449284ms)
+✔ admin scenario legal use: 씨 몬스터 (3.748759ms)
+✔ admin scenario legal use: 아르카나 조커 (5.075346ms)
+✔ admin scenario legal use: 아비터 (5.12774ms)
+✔ admin scenario legal use: 아포스틸 (4.054312ms)
+✔ admin scenario legal use: 어셈블!!! (4.937845ms)
+✔ admin scenario legal use: 엘리트 용병 (3.695857ms)
+✔ admin scenario legal use: 여울 (3.597317ms)
+✔ admin scenario legal use: 여울의 보디가드 (2.470922ms)
+✔ admin scenario legal use: 예거 (5.71459ms)
+✔ admin scenario legal use: 오젠 (4.037428ms)
+✔ admin scenario legal use: 용병 (4.109394ms)
+✔ admin scenario legal use: 워썬더 (2.764617ms)
+✔ admin scenario legal use: 위리녀 (3.931741ms)
+✔ admin scenario legal use: 위리놈 (4.016809ms)
+✔ admin scenario legal use: 작은 하마 (5.787842ms)
+✔ admin scenario legal use: 절멸 (4.435709ms)
+✔ admin scenario legal use: 조킹루이지 (4.705944ms)
+✔ admin scenario legal use: 좀비 (2.403496ms)
+✔ admin scenario legal use: 좀비 감염 (5.460399ms)
+✔ admin scenario legal use: 좀비 데헌 (2.703314ms)
+✔ admin scenario legal use: 좀비 벨로나 (2.349409ms)
+✔ admin scenario legal use: 좀비 플래티넘구슬 마스터 (6.575098ms)
+✔ admin scenario legal use: 지뢰닷!!! (0.610424ms)
+✔ admin scenario legal use: 챔피언 판도라(폭주) (8.1353ms)
+✔ admin scenario legal use: 처형 (7.716354ms)
+✔ admin scenario legal use: 침묵의 장막 (7.495146ms)
+✔ admin scenario legal use: 카미사토르 (6.988074ms)
+✔ admin scenario legal use: 카산드라 (8.456576ms)
+✔ admin scenario legal use: 카스토 (10.41741ms)
+✔ admin scenario legal use: 퀘스쳔 (9.198754ms)
+✔ admin scenario legal use: 탈출 (8.449491ms)
+✔ admin scenario legal use: 태그 체인지 (10.253145ms)
+✔ admin scenario legal use: 판도라 (7.338494ms)
+✔ admin scenario legal use: 팬텀워커 (4.612875ms)
+✔ admin scenario legal use: 퍼플레인 (8.136181ms)
+✔ admin scenario legal use: 프랑켄슈타인 만드릴쿤 (3.534606ms)
+✔ admin scenario legal use: 플래티넘 구슬 마스터 (8.152347ms)
+✔ admin scenario legal use: 피 스타 세븐 (2.536546ms)
+✔ admin scenario legal use: 하녀 판도라 (3.546317ms)
+✔ admin scenario legal use: 하스이 (2.587248ms)
+✔ admin scenario legal use: 헬뻑 (2.813998ms)
+✔ admin scenario legal use: 헬퍼 (2.218525ms)
+✔ admin scenario legal use: 황소할배 (2.24435ms)
+✔ admin scenario legal use: 휴먼쿠커 (3.275382ms)
+✔ admin scenario legal use: 흑구슬마스터 (4.891356ms)
+✔ admin scenario legal use: 힐빌 (4.410308ms)
+✔ persisted state with an unknown CardDefinition fails explicitly (2.655669ms)
+✔ valid persisted state keeps its exact CardDefinition references (0.576275ms)
+✔ unrestricted Champion PLAYER_CHOICE damages an ally or enemy wrestler and ignores invalid clicks (7.556184ms)
+✔ unrestricted upgraded CHARACTER PLAYER_CHOICE can damage one own or enemy wrestler (1.265978ms)
+✔ Champion maxHealth가 매치 시작 HP와 최대 HP에 반영된다 (5.969557ms)
+✔ Champion maxHealth 15가 회복 상한으로 사용된다 (9.511729ms)
+✔ 게임 시작 상태에서 각 플레이어가 선택한 챔피언을 가진다 (1.43637ms)
+✔ 퀘스트가 없는 챔피언도 정상적으로 생성된다 (0.272232ms)
+✔ 챔피언 능력은 비용을 지불하고 직접 사용한다 (3.272563ms)
+✔ Pandora-style ALL WRESTLER ability can retire an ally and advance its attributed quest (8.498662ms)
+✔ 퀘스트 없는 Champion의 구조화된 다음 턴 골드 능력이 다음 자기 턴에 적용된다 (1.374471ms)
+✔ authoritative 챔피언 여울은 비용 2를 지불하고 다음 자기 턴에 골드 +1을 한 번 적용한다 (1.770593ms)
+✔ Champion의 구조화된 무작위 손패 BUFF가 선수 카드 한 장의 공격력과 체력을 함께 변경한다 (2.399711ms)
+✔ 챔피언 능력은 같은 턴에 두 번 사용할 수 없고 다음 턴에 다시 사용할 수 있다 (0.9261ms)
+✔ Champion의 SUMMON 능력과 카드 유형 Quest 조건 및 강화 능력이 실제 게임에서 연결된다 (2.629801ms)
+✔ 골드가 부족하면 챔피언 능력을 사용할 수 없다 (6.560842ms)
+✔ 퀘스트는 지정된 게임 이벤트를 감지해 진행되고 완료된다 (0.553247ms)
+✔ 퀘스트 완료 후 강화된 챔피언 능력을 사용한다 (0.451945ms)
+✔ DB 기반 강화 능력은 기본 능력과 다른 비용을 사용할 수 있다 (0.566132ms)
+✔ 퀘스트 완료 보상으로 특별 보상을 지급할 수 있다 (0.483731ms)
+✔ 퀘스트 완료 시 연결된 Champion Token을 직접 전개하고 ENTER_FIELD를 실행한다 (2.021677ms)
+✔ 구조화 퀘스트 보상도 연결된 Champion Token을 전개하고 등장 효과를 실행한다 (7.652871ms)
+✔ 강화와 Champion Token 전개를 함께 포함한 퀘스트 보상을 모두 실행한다 (1.122889ms)
+✔ 분석기의 WRESTLER_RETIRED 조건은 런타임 CARD_RETIRED 이벤트로 진행된다 (0.385769ms)
+✔ Champion Ability 귀속 RETIRE만 sourceActionType 퀘스트를 진행한다 (0.901936ms)
+✔ one Champion ability retirement advances once when the same event suffix is replayed (0.826053ms)
+✔ stable event identity deduplicates a repeated retirement but counts distinct targets (0.56962ms)
+✔ replayed progress at the completion threshold grants the reward once (0.687686ms)
+✔ administrator training dummy remains available after lethal combat damage (15.496014ms)
+✔ 각 선수는 자기 턴에 한 번만 공격할 수 있다 (5.053117ms)
+✔ 서로 다른 선수는 각각 한 번씩 공격할 수 있다 (1.553611ms)
+✔ 소환된 턴에는 공격할 수 없다 (0.805194ms)
+✔ 다음 자기 턴 시작 시 공격 가능 상태가 된다 (3.011548ms)
+✔ 선수 전투는 서로 동시에 피해를 준다 (0.974629ms)
+✔ 체력이 0 이하인 선수는 RETIRE되고 묘지로 이동한다 (2.241756ms)
+✔ 선수는 상대 플레이어 본체를 공격할 수 있다 (1.224541ms)
+✔ 본체 체력이 0 이하가 되면 승패가 결정된다 (1.227294ms)
+✔ 공식 덱 크기와 Legendary 제한을 공통 validator가 적용한다 (1.662723ms)
+✔ 각 플레이어는 25장짜리 테스트 덱으로 시작한다 (1.475289ms)
+✔ 시작 손패는 선공 3장, 후공 4장이다 (1.491069ms)
+✔ 선공은 첫 자기 턴 시작에도 1장을 드로우한다 (2.753334ms)
+✔ 후공 턴 시작 시 1장을 드로우하고 덱이 1장 감소한다 (2.408285ms)
+✔ 턴 시작 드로우로 손패는 7장을 넘지 않는다 (0.968697ms)
+✔ 게임 시작 효과는 초기 손패를 나누기 전에 덱의 정확한 카드를 손으로 옮긴다 (3.376823ms)
+✔ 게임 시작 효과는 덱과 이미 놓인 손패에서 각각 한 번만 발동한다 (2.649692ms)
+✔ AI 전용 옵션은 상대 덱 장수 제한만 완화한다 (1.030843ms)
+✔ 일반 DESTROY는 카드 파괴 이벤트만 기록하고 카드를 묘지로 보내지 않는다 (3.15256ms)
+✔ 챔피언 자신의 효과로만 직접 출전 상태를 만든다 (6.490149ms)
+✔ 챔피언 등급 토큰도 일반 선수처럼 효과로 제거할 수 있다 (7.266817ms)
+✔ 필드가 가득 찬 Champion Token은 손패로 보존된다 (0.618087ms)
+✔ 필드와 손패가 가득 찬 Champion Token은 덱 맨 위에 보존되고 빈자리가 생기면 뽑힌다 (0.701383ms)
+✔ 직접 출전 토큰은 Champion 현재 체력을 합산하지 않고 카드 기본 체력으로 전개한다 (0.715611ms)
+✔ 직접 출전 챔피언도 침묵되며 본체 보호는 등급으로 유지된다 (1.200959ms)
+✔ 직접 출전 챔피언도 효과로 DESTROY할 수 있다 (0.861674ms)
+✔ 직접 출전 토큰은 필드 선수로 공격할 수 있고 Champion 본체는 공격할 수 없다 (3.941979ms)
+✔ 구조화 DEPLOY_CHAMPION_TOKEN은 현재 챔피언 연결을 사용하고 등장 효과를 실행한다 (3.206101ms)
+✔ 구조화 Champion Token 전개는 연결이 없거나 잘못되면 비용을 지불하지 않고 실패한다 (1.299998ms)
+✔ 일반 피해로 직접 출전 토큰이 RETIRE되어도 플레이어는 패배하지 않는다 (1.841831ms)
+✔ 챔피언 등급 카드가 있는 동안 본체와 필드 카드는 피로 피해로 손상되지 않는다 (3.2102ms)
+✔ 효과 피해로 직접 출전 토큰이 RETIRE되어도 플레이어는 패배하지 않는다 (3.06761ms)
+✔ 손패가 7장일 때 드로우한 카드는 removedFromGame으로 이동한다 (5.114136ms)
+✔ 오버드로우 카드의 준비(CARD_DRAWN)는 제거 전에 처리된다 (4.103687ms)
+✔ 오버드로우된 카드는 묘지에 들어가지 않는다 (0.411962ms)
+✔ 빈 덱 드로우의 피로 피해는 1, 2, 3으로 증가한다 (0.540162ms)
+✔ 피로 피해로 체력이 0 이하가 되면 게임이 종료된다 (0.388798ms)
+✔ 11 catalog entries serialize as EPIC techniques with active effects and no combat stats (10.94629ms)
+✔ 처형 destroys enemy without graveyard or retire effects (13.97889ms)
+✔ 만찬 permanently adds current and maximum HP to every ally only (11.398625ms)
+✔ 침묵의 장막 silences every enemy, including already silenced, preserving allies (2.389984ms)
+✔ 복귀 samples at most 3 of 1, moves only choice and resets (2.888857ms)
+✔ 복귀 samples at most 3 of 2, moves only choice and resets (6.256434ms)
+✔ 복귀 samples at most 3 of 3, moves only choice and resets (5.702906ms)
+✔ 복귀 samples at most 3 of 5, moves only choice and resets (4.591244ms)
+✔ 금지된 계약 deals 5 and reserves one free wrestler only during this turn (8.374492ms)
+✔ life-exchange selects both factions, snapshots and swaps currentHealth, stuns both (7.332221ms)
+✔ forced-exchange selects both factions, snapshots and swaps currentAttack, stuns both (3.282591ms)
+✔ 생명의 교환 respects existing max HP without modifying maximum (8.140085ms)
+✔ 절멸 snapshots current ATK <=3 on both sides, no retire (1.179238ms)
+✔ 탈출 resets original stats/cost/status without retire and does not affect enemy (3.525794ms)
+✔ 강제 침묵 accepts an already silenced enemy and resets original specs (0.782521ms)
+✔ 밀쳐내기 uses existing stun flag and owner-turn expiry (1.558701ms)
+✔ execution no target rejects before payment and AI has no illegal cast (2.335494ms)
+✔ return no target rejects before payment and AI has no illegal cast (0.730914ms)
+✔ life-exchange no target rejects before payment and AI has no illegal cast (0.80437ms)
+✔ forced-exchange no target rejects before payment and AI has no illegal cast (0.688908ms)
+✔ escape no target rejects before payment and AI has no illegal cast (0.913926ms)
+✔ forced-silence no target rejects before payment and AI has no illegal cast (0.698651ms)
+✔ push no target rejects before payment and AI has no illegal cast (1.074615ms)
+✔ life-exchange missing either faction cannot start a selection (3.044723ms)
+✔ forced-exchange missing either faction cannot start a selection (1.940296ms)
+✔ 복귀 includes token wrestlers and graveyard immunity is not a field state (0.953483ms)
+✔ field IMMUNE remains excluded from targeted new spells (2.887362ms)
+✔ every spell is present in AI legal actions with its required targets (41.023684ms)
+✔ precommit paired exchange pays once and resolves after both targets (3.717875ms)
+✔ 러쉬는 소환된 턴에 선수와 상대 플레이어를 공격할 수 있다 (15.520209ms)
+✔ 기습은 소환된 턴에 선수만 공격할 수 있다 (2.49982ms)
+✔ 도발 선수가 있으면 도발 선수만 공격할 수 있다 (1.24637ms)
+✔ 회피는 처음 받는 피해를 무효화한 뒤 사라진다 (2.323383ms)
+✔ 기절한 선수는 공격할 수 없다 (0.998451ms)
+✔ 연타 선수만 한 턴에 두 번 공격할 수 있다 (0.605521ms)
+✔ 침묵은 키워드와 능력을 막지만 침묵 면역은 보존한다 (3.495184ms)
+✔ 침묵과 회피 소비는 현재 키워드와 키워드 전용 텍스트를 함께 숨긴다 (1.593472ms)
+✔ 공격 legality는 선택 불가 사유를 제공하고 소환된 일반 선수를 차단한다 (0.96893ms)
+✔ 묘지 진입은 변경된 스탯/비용을 원본으로 되돌리고 부활과 손패 이동도 reset 상태를 사용한다 (5.62691ms)
+✔ 등장과 포지션 효과는 ENTER_FIELD 처리에서 실행된다 (0.874981ms)
+✔ 퇴장 효과는 지정된 필드 이탈 조건에 반응한다 (2.527597ms)
+✔ 액티브 효과는 직접 실행하며 한 턴에 한 번만 사용할 수 있다 (0.828644ms)
+✔ absorbing a retired ally adds attack to attack and health to health separately (14.209831ms)
+✔ fourth board slot resolves entry and ally-entry effects (2.079636ms)
+✔ the fourth field entry in sequence still resolves its own effect (0.984936ms)
+✔ the fourth played wrestler fires its effect through the match action (3.718309ms)
+✔ KO mechanisms: generated summons enter without replaying the summoned card entry effect (2.002458ms)
+✔ KO mechanisms: REVIVE moves the existing graveyard instance, restores health, and skips entry effects (1.443636ms)
+✔ KO mechanisms: prepare occurs before deterministic overdraw removal (1.239653ms)
+✔ KO mechanisms: SUMMON/GENERATE require serializable definitions and switch selects current side (1.606054ms)
+✔ KO mechanisms: 발단 destroys generated board cards, sums current stats, and taunts the summoned zombie (3.794465ms)
+✔ KO mechanisms: an aggregate summon uses zero stats when no generated board cards exist (6.049375ms)
+✔ KO mechanisms: silence resets base state and dodge charges are represented compatibly (0.353827ms)
+✔ opening exchange replaces only selected cards without draw triggers or revealing the hand (6.793168ms)
+✔ opening exchange validates ownership, duplicates and first-turn timing (2.289858ms)
+✔ 온라인 시작 손패는 양쪽이 같은 턴에 선택하고 두 선택이 끝나야 행동한다 (1.865402ms)
+✔ all current new records serialize without changing original cost/ATK/HP; explicit DSL wins (8.885653ms)
+✔ MPG selects an enemy and transfers 1 attack (9.396353ms)
+✔ 금구슬 uses current attack strictly below source; invalid targets rejected; DESTROY no grave (2.281988ms)
+✔ MK destroys only silenced enemies on owner turn start (1.509604ms)
+✔ 루브 grows and gains taunt only when alone (2.39249ms)
+✔ 루이나 generates authority wrestler and grants ally lifesteal only (2.588247ms)
+✔ 99 damage token wins against opponent champion (1.324699ms)
+✔ 냥냥 펀치 distributes exactly 5 damage; deterministic and safe with no enemy wrestlers (8.414833ms)
+✔ vampire gains only damage actually dealt; armor/defense do not grant attack (1.775239ms)
+✔ 블랙 아웃 gains once per positive effect and combat damage, not armor-blocked damage (6.616216ms)
+✔ 사일런스 reduces incoming damage by 2 only from silenced sources (1.623202ms)
+✔ 어셈블 fills only available slots without replacing existing cards (2.653019ms)
+✔ 좀비 감염 transforms selected card while retaining current ATK/HP (1.801461ms)
+✔ 카산드라 buffs authority cards on both sides, grants regen and heals allied champion/field (16.141945ms)
+✔ 헬뻑 damages all field wrestlers and no champions (1.124543ms)
+✔ DEATH in hand loses without advancing turn; mine deals 5 and removes itself without retire (3.378663ms)
+✔ Casto converts only overflow to max HP and works for champion, field, lifesteal/regen; silence disables (4.952827ms)
+✔ 헬퍼 requires last turn overflow strictly greater than 5 and creates named token (1.392ms)
+✔ 힐빌 heals when it causally retires enemy, not destroy (3.183795ms)
+✔ Madokawa adds 3 wrestler damage then retires attacker with ordinary retire triggers (1.190522ms)
+✔ copied new passive text remains executable after serialization and silence (1.504829ms)
+✔ AI sees legal new casts and rejects missing transform target (13.770799ms)
+✔ all usable new techniques execute through actual hand cast and pay exact original cost (3.917469ms)
+✔ renamed defeat token keeps stable card ID binding and actual hand turn-end loss (3.671758ms)
+✔ 마개조 selects only ally, buffs +1/+1 and grants real experiment-tag synergy without changing definition (1.335221ms)
+✔ 태그 체인지 enforces two legal allied selections, swaps at same slot, pays only spell and buffs both cards (26.990795ms)
+✔ immune blocks manual effect selection but permits ordinary attacks and area damage (11.352969ms)
+✔ armor subtracts configured amount on effects and combat; lifesteal heals by reduced attack damage only (0.784612ms)
+✔ entry defense rejects attacks, blocks damage without consuming dodge and expires after its owner turn (2.086442ms)
+✔ healing at turn end applies to both sides and caps at max health (1.122798ms)
+✔ conditional cards reject forged plays until their configured state condition is true (1.497459ms)
+✔ any Champion rarity card protects its portrait only while present and is itself removable (1.043787ms)
+✔ ALL-owner character damage reaches selected enemy portrait (Pandora upgraded ability path) (0.468444ms)
+✔ state-driven champion quest reward completes once without a counted event and survives repeated actions (0.60071ms)
+✔ configured dodge count absorbs exactly that many damage events (1.028995ms)
+✔ configured dodge count survives draw and resets on zone movement without a registered catalog (0.341462ms)
+✔ silence restores original attack and maximum health without healing current health (0.591688ms)
+✔ using a saved ENTER_FIELD technique resolves its effect and progresses a technique quest (10.153987ms)
+✔ 손패의 선수를 고정 슬롯에 내고 비용을 지불한다 (8.206575ms)
+✔ 필드 진입은 ENTER_FIELD 이벤트를 발생시킨다 (2.559371ms)
+✔ 골드가 부족하면 선수를 낼 수 없다 (1.055651ms)
+✔ 보드가 가득 차면 선수를 낼 수 없다 (0.626166ms)
+✔ 보드 인접 위치 helper가 경계를 지킨다 (0.211513ms)
+✔ combat lethal retires to graveyard and fires LEAVE_FIELD exactly once (16.035786ms)
+✔ effect damage lethal uses the same RETIRE and LEAVE_FIELD semantics (4.652339ms)
+✔ self damage lethal retires the source instead of destroying it (1.86699ms)
+✔ direct RETIRE sends the card to graveyard and fires its leave effect once (2.448268ms)
+✔ DESTROY removes from the match without graveyard or RETIRE effects (0.90116ms)
+✔ REMOVE_FROM_GAME has no graveyard or RETIRE side effects (1.215755ms)
+✔ simultaneous combat lethal retires both cards and fires both leave effects (2.095769ms)
+✔ SILENCE removes a RETIRE effect before state-based lethal resolution (1.44817ms)
+✔ granted RETIRE text survives lethal resolution but not DESTROY (7.417816ms)
+✔ retire event and graveyard state survive JSON round-trip without replaying effects (2.647ms)
+✔ 항복한 플레이어는 패배하고 상대는 승리한다 (1.057403ms)
+✔ 종료된 게임에서는 항복할 수 없다 (0.250351ms)
+✔ 존재하지 않는 플레이어는 상대 대신 항복할 수 없다 (0.203554ms)
+✔ ACTIVE spell deals damage once and pays/removes exactly one card (11.733664ms)
+✔ ENTER_FIELD spell deals damage once and pays/removes exactly one card (1.404415ms)
+✔ heal caps at max HP and buff applies only to intended side (8.085231ms)
+✔ destroy removes a card entirely, lethal damage retires to graveyard (1.918341ms)
+✔ targeted spell precommit cancellation leaves hand, gold and health unchanged (3.386309ms)
+✔ no valid target, wrong turn and insufficient gold reject without consuming a spell (1.203763ms)
+✔ next-spell reservation preserves its gold event and is consumed exactly once (0.708258ms)
+✔ draw and summon spells execute in order and never place the technique itself on the field (1.93099ms)
+✔ spell damage can finish a match through an unprotected enemy champion (3.415697ms)
+✔ queued cost increases cannot create negative gold and failed casts preserve the reservation (1.149067ms)
+✔ queued cost reduction permits a spell affordable only after its reservation (2.941913ms)
+✔ Jaeger quest completion is one-shot and leaves no pending resolution frame (9.064154ms)
+✔ Jaeger ability resolution completes without a stale frame and END_TURN works immediately (6.840228ms)
+✔ AI can choose and execute a legal action after Jaeger quest completion (7.74744ms)
+✔ AI resumes after a completed Jaeger quest without presentation or timeout recovery (7.241686ms)
+✔ turn transition preserves board and hand membership for timeout END_TURN semantics (8.024771ms)
+✔ lethal Champion damage finishes the match without restoring the loser to one HP (4.381169ms)
+✔ result and board HP display clamp only the user-facing value (0.266113ms)
+✔ P1 첫 턴은 1G로 시작한다 (6.115363ms)
+✔ P2 첫 턴은 1G로 시작한다 (2.689924ms)
+✔ 필드 카드의 턴 종료와 다음 자기 턴 시작 효과가 실제로 발동한다 (5.908145ms)
+✔ 손에 있는 카드의 턴 종료 효과는 빈 필드에 같은 카드를 소환한다 (1.824922ms)
+✔ 손패 발동 조건이 없는 턴 종료 효과는 손패에서 발동하지 않는다 (0.853556ms)
+✔ 손패 발동 조건은 턴 시작 효과에도 동일하게 적용된다 (0.947467ms)
+✔ P1 두 번째 턴은 2G로 시작한다 (0.796143ms)
+✔ 기본 턴 골드는 개인 6번째 턴부터 6G로 유지된다 (2.505763ms)
+✔ 기본 골드가 6G여도 다음 턴 보너스는 제한 없이 더해진다 (1.842579ms)
+✔ 6G를 초과한 보너스 골드도 적용 후 0으로 초기화된다 (1.276764ms)
+✔ 6번째 턴 이후에도 남은 골드는 다음 개인 턴에 이월되지 않는다 (0.551015ms)
+✔ 남은 골드는 다음 개인 턴으로 이월되지 않는다 (0.672221ms)
+✔ nextTurnGoldBonus는 적용된 직후 0으로 초기화된다 (0.820994ms)
+✔ 관리자 테스트 게임의 두 단계 턴 전환은 Turn 4까지 상태를 보존한다 (5.923138ms)
+✔ 게임 시작과 턴 종료 흐름이 턴, 골드, 드로우 이벤트를 기록한다 (9.171588ms)
+✔ 카드 사용은 CARD_PLAYED, GOLD_CHANGED, ENTER_FIELD를 기록한다 (10.958513ms)
+✔ 기본 공격은 선언과 피해 이벤트에 source와 target을 기록한다 (6.981789ms)
+✔ current card continues through AI actions and turn triggers: 1972년 11월 21일 (213.337249ms)
+✔ current card continues through AI actions and turn triggers: MPG (244.254243ms)
+✔ current card continues through AI actions and turn triggers: RM우디르 (181.974678ms)
+✔ current card continues through AI actions and turn triggers: 강제 교환 (160.006196ms)
+✔ current card continues through AI actions and turn triggers: 강제 침묵 (101.218239ms)
+✔ current card continues through AI actions and turn triggers: 그레이트 챤 (116.464367ms)
+✔ current card continues through AI actions and turn triggers: 금구슬 마스터 (96.924681ms)
+✔ current card continues through AI actions and turn triggers: 금지된 계약 (87.046217ms)
+✔ current card continues through AI actions and turn triggers: 나토마토 (113.795623ms)
+✔ current card continues through AI actions and turn triggers: 냥냥 펀치 (78.523206ms)
+✔ current card continues through AI actions and turn triggers: 늑대인간 판도라 (97.422773ms)
+✔ current card continues through AI actions and turn triggers: 데헌 (140.032447ms)
+✔ current card continues through AI actions and turn triggers: 도금구슬 마스터 (113.489645ms)
+✔ current card continues through AI actions and turn triggers: 도쿵 (105.161439ms)
+✔ current card continues through AI actions and turn triggers: 독세아 (104.936199ms)
+✔ current card continues through AI actions and turn triggers: 뒷정리맨 (126.607116ms)
+✔ current card continues through AI actions and turn triggers: 디 오리진 (187.435382ms)
+✔ current card continues through AI actions and turn triggers: 떼껄룩 (141.242671ms)
+✔ current card continues through AI actions and turn triggers: 라 칼라베라 (176.932918ms)
+✔ current card continues through AI actions and turn triggers: 레드 렌지 (129.967776ms)
+✔ current card continues through AI actions and turn triggers: 레이븐 (137.92183ms)
+✔ current card continues through AI actions and turn triggers: 로드 (149.566943ms)
+✔ current card continues through AI actions and turn triggers: 루나 (126.000987ms)
+✔ current card continues through AI actions and turn triggers: 루나 MK.사일런스 (130.118572ms)
+✔ current card continues through AI actions and turn triggers: 루브 (114.98362ms)
+✔ current card continues through AI actions and turn triggers: 루이나 (165.62736ms)
+✔ current card continues through AI actions and turn triggers: 리버덩크 (126.842443ms)
+✔ current card continues through AI actions and turn triggers: 마개조 (132.390204ms)
+✔ current card continues through AI actions and turn triggers: 마도카와 (111.367763ms)
+✔ current card continues through AI actions and turn triggers: 마로쓰 2세 (128.059851ms)
+✔ current card continues through AI actions and turn triggers: 만당 (140.199854ms)
+✔ current card continues through AI actions and turn triggers: 만드릴쿤 (122.151844ms)
+✔ current card continues through AI actions and turn triggers: 만찬 (114.760193ms)
+✔ current card continues through AI actions and turn triggers: 매드 사이언티스트 퍼플레인 (149.637578ms)
+✔ current card continues through AI actions and turn triggers: 매드 펌킨 (139.153126ms)
+✔ current card continues through AI actions and turn triggers: 밀쳐내기 (124.280337ms)
+✔ current card continues through AI actions and turn triggers: 반으로 갈라져 죽어! (0.475899ms)
+✔ current card continues through AI actions and turn triggers: 발단 (129.15807ms)
+✔ current card continues through AI actions and turn triggers: 뱀파이어 왕자 MPG (131.928498ms)
+✔ current card continues through AI actions and turn triggers: 벨로나 (112.081047ms)
+✔ current card continues through AI actions and turn triggers: 보드바 (158.507705ms)
+✔ current card continues through AI actions and turn triggers: 복귀 (114.46554ms)
+✔ current card continues through AI actions and turn triggers: 불록스 (150.373107ms)
+✔ current card continues through AI actions and turn triggers: 블랙 마카롱 (146.547533ms)
+✔ current card continues through AI actions and turn triggers: 블랙 아웃 (140.853643ms)
+✔ current card continues through AI actions and turn triggers: 사일런스 (148.07381ms)
+✔ current card continues through AI actions and turn triggers: 생명의 교환 (124.315261ms)
+✔ current card continues through AI actions and turn triggers: 스카드 (139.605637ms)
+✔ current card continues through AI actions and turn triggers: 씨 몬스터 (134.790213ms)
+✔ current card continues through AI actions and turn triggers: 아르카나 조커 (136.671845ms)
+✔ current card continues through AI actions and turn triggers: 아비터 (133.123264ms)
+✔ current card continues through AI actions and turn triggers: 아포스틸 (126.347452ms)
+✔ current card continues through AI actions and turn triggers: 어셈블!!! (125.279195ms)
+✔ current card continues through AI actions and turn triggers: 엘리트 용병 (144.978337ms)
+✔ current card continues through AI actions and turn triggers: 여울 (123.095725ms)
+✔ current card continues through AI actions and turn triggers: 여울의 보디가드 (136.339209ms)
+✔ current card continues through AI actions and turn triggers: 예거 (142.164074ms)
+✔ current card continues through AI actions and turn triggers: 오젠 (150.174808ms)
+✔ current card continues through AI actions and turn triggers: 용병 (131.927648ms)
+✔ current card continues through AI actions and turn triggers: 워썬더 (122.845173ms)
+✔ current card continues through AI actions and turn triggers: 위리녀 (119.615325ms)
+✔ current card continues through AI actions and turn triggers: 위리놈 (150.099706ms)
+✔ current card continues through AI actions and turn triggers: 작은 하마 (100.281788ms)
+✔ current card continues through AI actions and turn triggers: 절멸 (96.307103ms)
+✔ current card continues through AI actions and turn triggers: 조킹루이지 (72.020795ms)
+✔ current card continues through AI actions and turn triggers: 좀비 (77.547038ms)
+✔ current card continues through AI actions and turn triggers: 좀비 감염 (73.635698ms)
+✔ current card continues through AI actions and turn triggers: 좀비 데헌 (76.622007ms)
+✔ current card continues through AI actions and turn triggers: 좀비 벨로나 (89.610238ms)
+✔ current card continues through AI actions and turn triggers: 좀비 플래티넘구슬 마스터 (92.8005ms)
+✔ current card continues through AI actions and turn triggers: 지뢰닷!!! (86.846015ms)
+✔ current card continues through AI actions and turn triggers: 챔피언 판도라(폭주) (28.217062ms)
+✔ current card continues through AI actions and turn triggers: 처형 (110.823549ms)
+✔ current card continues through AI actions and turn triggers: 침묵의 장막 (92.727843ms)
+✔ current card continues through AI actions and turn triggers: 카미사토르 (150.821093ms)
+✔ current card continues through AI actions and turn triggers: 카산드라 (107.993914ms)
+✔ current card continues through AI actions and turn triggers: 카스토 (87.59109ms)
+✔ current card continues through AI actions and turn triggers: 퀘스쳔 (118.297254ms)
+✔ current card continues through AI actions and turn triggers: 탈출 (91.651852ms)
+✔ current card continues through AI actions and turn triggers: 태그 체인지 (122.817762ms)
+✔ current card continues through AI actions and turn triggers: 판도라 (112.62946ms)
+✔ current card continues through AI actions and turn triggers: 팬텀워커 (100.402838ms)
+✔ current card continues through AI actions and turn triggers: 퍼플레인 (87.758773ms)
+✔ current card continues through AI actions and turn triggers: 프랑켄슈타인 만드릴쿤 (106.583828ms)
+✔ current card continues through AI actions and turn triggers: 플래티넘 구슬 마스터 (17.391891ms)
+✔ current card continues through AI actions and turn triggers: 피 스타 세븐 (99.797821ms)
+✔ current card continues through AI actions and turn triggers: 하녀 판도라 (86.578018ms)
+✔ current card continues through AI actions and turn triggers: 하스이 (74.951527ms)
+✔ current card continues through AI actions and turn triggers: 헬뻑 (86.614861ms)
+✔ current card continues through AI actions and turn triggers: 헬퍼 (90.633305ms)
+✔ current card continues through AI actions and turn triggers: 황소할배 (97.370718ms)
+✔ current card continues through AI actions and turn triggers: 휴먼쿠커 (91.783959ms)
+✔ current card continues through AI actions and turn triggers: 흑구슬마스터 (95.637555ms)
+✔ current card continues through AI actions and turn triggers: 힐빌 (84.731407ms)
+✔ AI finishes 매드 펌킨 target instead of replay/refund loop: legacy (1.470517ms)
+✔ AI finishes 매드 펌킨 target instead of replay/refund loop: NORMAL (0.622402ms)
+✔ AI finishes 매드 펌킨 target instead of replay/refund loop: HARD (1.759511ms)
+✔ AI finishes 매드 펌킨 target instead of replay/refund loop: BOSS (1.526373ms)
+✔ AI finishes 하녀 판도라 target instead of replay/refund loop: legacy (0.958494ms)
+✔ AI finishes 하녀 판도라 target instead of replay/refund loop: NORMAL (0.551051ms)
+✔ AI finishes 하녀 판도라 target instead of replay/refund loop: HARD (2.1996ms)
+✔ AI finishes 하녀 판도라 target instead of replay/refund loop: BOSS (3.486001ms)
+✔ current wrestler legal play/serialization: MPG (31.719673ms)
+✔ current wrestler legal play/serialization: RM우디르 (2.308252ms)
+✔ current wrestler legal play/serialization: 그레이트 챤 (1.509083ms)
+✔ current wrestler legal play/serialization: 금구슬 마스터 (2.651755ms)
+✔ current wrestler legal play/serialization: 나토마토 (4.195154ms)
+✔ current wrestler legal play/serialization: 늑대인간 판도라 (2.378499ms)
+✔ current wrestler legal play/serialization: 데헌 (1.776554ms)
+✔ current wrestler legal play/serialization: 도금구슬 마스터 (1.88664ms)
+✔ current wrestler legal play/serialization: 도쿵 (2.656223ms)
+✔ current wrestler legal play/serialization: 독세아 (3.870219ms)
+✔ current wrestler legal play/serialization: 뒷정리맨 (5.476242ms)
+✔ current wrestler legal play/serialization: 디 오리진 (1.011813ms)
+✔ current wrestler legal play/serialization: 떼껄룩 (3.271727ms)
+✔ current wrestler legal play/serialization: 라 칼라베라 (2.107604ms)
+✔ current wrestler legal play/serialization: 레드 렌지 (1.999844ms)
+✔ current wrestler legal play/serialization: 레이븐 (1.165797ms)
+✔ current wrestler legal play/serialization: 로드 (2.066302ms)
+✔ current wrestler legal play/serialization: 루나 (5.678814ms)
+✔ current wrestler legal play/serialization: 루나 MK.사일런스 (1.653081ms)
+✔ current wrestler legal play/serialization: 루브 (2.633215ms)
+✔ current wrestler legal play/serialization: 루이나 (3.870245ms)
+✔ current wrestler legal play/serialization: 리버덩크 (3.070578ms)
+✔ current wrestler legal play/serialization: 마도카와 (2.195638ms)
+✔ current wrestler legal play/serialization: 마로쓰 2세 (1.560238ms)
+✔ current wrestler legal play/serialization: 만당 (1.998491ms)
+✔ current wrestler legal play/serialization: 만드릴쿤 (1.319579ms)
+✔ current wrestler legal play/serialization: 매드 사이언티스트 퍼플레인 (1.253339ms)
+✔ current wrestler legal play/serialization: 매드 펌킨 (1.507765ms)
+✔ current wrestler legal play/serialization: 발단 (1.737499ms)
+✔ current wrestler legal play/serialization: 뱀파이어 왕자 MPG (2.216024ms)
+✔ current wrestler legal play/serialization: 벨로나 (1.616999ms)
+✔ current wrestler legal play/serialization: 보드바 (1.367761ms)
+✔ current wrestler legal play/serialization: 불록스 (2.037676ms)
+✔ current wrestler legal play/serialization: 블랙 마카롱 (1.756357ms)
+✔ current wrestler legal play/serialization: 블랙 아웃 (1.865645ms)
+✔ current wrestler legal play/serialization: 사일런스 (1.838699ms)
+✔ current wrestler legal play/serialization: 스카드 (1.717992ms)
+✔ current wrestler legal play/serialization: 씨 몬스터 (2.80655ms)
+✔ current wrestler legal play/serialization: 아르카나 조커 (2.743171ms)
+✔ current wrestler legal play/serialization: 아비터 (2.018392ms)
+✔ current wrestler legal play/serialization: 아포스틸 (1.416263ms)
+✔ current wrestler legal play/serialization: 엘리트 용병 (1.668921ms)
+✔ current wrestler legal play/serialization: 여울 (1.307826ms)
+✔ current wrestler legal play/serialization: 여울의 보디가드 (1.231378ms)
+✔ current wrestler legal play/serialization: 예거 (1.419184ms)
+✔ current wrestler legal play/serialization: 오젠 (2.441109ms)
+✔ current wrestler legal play/serialization: 용병 (1.129122ms)
+✔ current wrestler legal play/serialization: 워썬더 (1.451503ms)
+✔ current wrestler legal play/serialization: 위리녀 (1.346484ms)
+✔ current wrestler legal play/serialization: 위리놈 (2.12933ms)
+✔ current wrestler legal play/serialization: 작은 하마 (2.384922ms)
+✔ current wrestler legal play/serialization: 조킹루이지 (3.073664ms)
+✔ current wrestler legal play/serialization: 좀비 (1.293522ms)
+✔ current wrestler legal play/serialization: 좀비 데헌 (1.779415ms)
+✔ current wrestler legal play/serialization: 좀비 벨로나 (1.953138ms)
+✔ current wrestler legal play/serialization: 좀비 플래티넘구슬 마스터 (2.471871ms)
+✔ current wrestler legal play/serialization: 챔피언 판도라(폭주) (3.740134ms)
+✔ current wrestler legal play/serialization: 카미사토르 (1.470659ms)
+✔ current wrestler legal play/serialization: 카산드라 (2.437933ms)
+✔ current wrestler legal play/serialization: 카스토 (1.913399ms)
+✔ current wrestler legal play/serialization: 퀘스쳔 (1.460899ms)
+✔ current wrestler legal play/serialization: 판도라 (1.914168ms)
+✔ current wrestler legal play/serialization: 팬텀워커 (1.451535ms)
+✔ current wrestler legal play/serialization: 퍼플레인 (0.979032ms)
+✔ current wrestler legal play/serialization: 프랑켄슈타인 만드릴쿤 (15.12629ms)
+✔ current wrestler legal play/serialization: 플래티넘 구슬 마스터 (1.603359ms)
+✔ current wrestler legal play/serialization: 피 스타 세븐 (1.238344ms)
+✔ current wrestler legal play/serialization: 하녀 판도라 (1.551543ms)
+✔ current wrestler legal play/serialization: 하스이 (6.566382ms)
+✔ current wrestler legal play/serialization: 헬뻑 (11.590564ms)
+✔ current wrestler legal play/serialization: 헬퍼 (1.496233ms)
+✔ current wrestler legal play/serialization: 황소할배 (1.306788ms)
+✔ current wrestler legal play/serialization: 휴먼쿠커 (2.424049ms)
+✔ current wrestler legal play/serialization: 흑구슬마스터 (1.929133ms)
+✔ current wrestler legal play/serialization: 힐빌 (1.663875ms)
+✔ current RM doubles actual stats; Origin counts groups of two even with null effectId (4.383831ms)
+✔ current Pi Star buffs other allies +2/+2; Black Macaron uses remaining hand count (1.614064ms)
+✔ current Doqung copies attack delta to health; Mandrill only triggers attack; Frankenstein only health (1.25155ms)
+✔ current Deheon first field attack gain grants dodge once; health gain does not retrigger (0.572842ms)
+✔ current anywhere tag buffs affect hand/deck/board but exclude graveyard and nonmatching cards (2.981525ms)
+✔ current generated buffs and cost-one Question work across zones without affecting other cards (1.176737ms)
+✔ current Platinum spends remaining gold for twice its amount; Red Range hurts opponent; Lord draws one (1.068875ms)
+✔ current WarThunder makes a full-stat wrestler under its revised rule; Joker destroys top and replaces it (1.449893ms)
+✔ current Calavera revives cost <=3 without obsolete Taunt; Baldan copies grave stats into Zombie (1.899389ms)
+✔ current targeted destruction, cat reduction, heal and move-to-deck use actual selections (2.642664ms)
+✔ current Pandora gains +2/+2 only when target ends at exactly one health; Pumpkin returns and discounts this turn (6.099778ms)
+✔ current Mandang summons one copy; Luigi buffs only its adjacent summoned cards; cleanup queue buffs next play (2.505615ms)
+✔ current Wiri creates equal-stat female then summons her on retire; Maros silence does not run on destroy (2.019189ms)
+✔ current Sea Monster discounts only in hand on allied RETIRE; Destroy and opposing retire excluded (2.181455ms)
+✔ current Yeager buffs allied Soldier on play/summon; Yeoul turn-start gold; Great Chan swaps stats (2.223222ms)
+✔ current Purple Rain reduces all enemy attack and stuns/silences zero attack (2.295328ms)
+✔ current Ozen selects cost-one nonchampion only; Gilded discounts every qualifying hand card, not deck (0.945917ms)
+✔ current Bullocks summons from hand on own turn end, but cannot enter a full board (1.258811ms)
+✔ current zombie Bellona damage summons/merges a zombie; zombie Deheon retirement adds max HP across both owners (2.708633ms)
+✔ current zombie Platinum absorbs strongest zombie or creates 2/2 when absent (1.150355ms)
+✔ current Maid Pandora transforms only after her own damage retires selected card (2.163464ms)
+✔ current wolf turn start absorbs retired ally attack and health (1.011759ms)
+✔ current Natoma combo adds attacking ally attack and own turn end sets attack to zero (3.390453ms)
+✔ current Luna silences its first attacker only; Kamisator steals one actual enemy deck card per attack (1.451401ms)
+✔ current Pandora champion token quest deployment destroys target and absorbs its attack; later combat also absorbs (1.550696ms)
+✔ current Zombie grows on other retirements, merges summons, and ignores destroy (0.85046ms)
+✔ current vanilla/keyword rules: 레이븐 (0.616505ms)
+✔ current vanilla/keyword rules: 스카드 (0.469591ms)
+✔ current vanilla/keyword rules: 엘리트 용병 (0.764474ms)
+✔ current vanilla/keyword rules: 용병 (0.456231ms)
+✔ current vanilla/keyword rules: 위리녀 (0.456779ms)
+✔ current vanilla/keyword rules: 하스이 (0.484869ms)
+✔ current vanilla/keyword rules: 벨로나 (0.521471ms)
+✔ current vanilla/keyword rules: 황소할배 (0.323008ms)
+✔ current vanilla/keyword rules: 여울의 보디가드 (0.439737ms)
+✔ current vanilla/keyword rules: 리버덩크 (0.478388ms)
+✔ current vanilla/keyword rules: 보드바 (0.300417ms)
+✔ current targeted entrance cancel returns exact card and refunds cost; no-target entrance still plays (1.019376ms)
+✔ zone reset: buffed deck card returns to original stats/cost when drawn (0.484993ms)
+✔ zone reset: buffed hand card sent to deck resets stats/cost (0.751364ms)
+✔ zone reset: retirement clears buffs and graveyard rejects later stat buffs (0.849976ms)
+✔ zombie grows only from allied RETIRE, never enemy RETIRE or DESTROY (1.06728ms)
+✔ Maid Pandora transforms even when its stored form id is stale (1.387122ms)
+✔ current catalog contract: 1972년 11월 21일 [40cbf9ea-d2e1-4929-b6cc-2d366a72016f] (0.604052ms)
+✔ current catalog contract: MPG [5d568663-55e8-4ad9-88b3-3afadae538d0] (0.443832ms)
+✔ current catalog contract: RM우디르 [1e0bbdb3-9304-46b0-81b8-d30bb9954fc3] (0.347644ms)
+✔ current catalog contract: 강제 교환 [epic-spell-forced-exchange] (0.402203ms)
+✔ current catalog contract: 강제 침묵 [epic-spell-forced-silence] (0.160344ms)
+✔ current catalog contract: 그레이트 챤 [2519b37a-74ea-4b26-afe2-2227f40a03bc] (0.134103ms)
+✔ current catalog contract: 금구슬 마스터 [4dba4dcd-d07f-41b0-b546-ac011a73d927] (0.126163ms)
+✔ current catalog contract: 금지된 계약 [epic-spell-forbidden-contract] (0.344635ms)
+✔ current catalog contract: 나토마토 [12a86603-4412-409c-a5a2-ec361f57863c] (0.254425ms)
+✔ current catalog contract: 냥냥 펀치 [e584c34e-d640-4c41-a148-cfb70389f08a] (0.258535ms)
+✔ current catalog contract: 늑대인간 판도라 [b6b6247d-4e98-4cfb-8fa6-5479afec48f3] (0.344253ms)
+✔ current catalog contract: 데헌 [latest-wrestler-10] (0.375206ms)
+✔ current catalog contract: 도금구슬 마스터 [99514068-68c8-46ca-b9f5-7f16b2ea4253] (0.277755ms)
+✔ current catalog contract: 도쿵 [latest-wrestler-3] (0.310191ms)
+✔ current catalog contract: 독세아 [a68c743b-8752-4bbf-817a-397e71d41569] (0.255842ms)
+✔ current catalog contract: 뒷정리맨 [855e87f9-1769-4036-ad49-491ab4b2058a] (0.273553ms)
+✔ current catalog contract: 디 오리진 [8be831d2-6e56-4f77-985e-3860d6eaa2d3] (0.382645ms)
+✔ current catalog contract: 떼껄룩 [b2eb2ae3-5808-4f9d-994d-efa22c988955] (0.548227ms)
+✔ current catalog contract: 라 칼라베라 [latest-wrestler-14] (0.30418ms)
+✔ current catalog contract: 레드 렌지 [9478516b-5756-411d-8ba2-3ff300234c3b] (0.191559ms)
+✔ current catalog contract: 레이븐 [latest-wrestler-9] (0.186862ms)
+✔ current catalog contract: 로드 [latest-wrestler-8] (0.300921ms)
+✔ current catalog contract: 루나 [9b7c0e52-2184-4ec1-8d68-39a4d5981d2a] (0.240544ms)
+✔ current catalog contract: 루나 MK.사일런스 [94a8dc96-6856-4460-9128-c487c0189dd9] (0.162954ms)
+✔ current catalog contract: 루브 [62a10600-5a0e-4aec-b959-f0f15cd8c012] (0.205106ms)
+✔ current catalog contract: 루이나 [4e28e957-1148-44c3-8f8b-b6fe8f40e3a9] (0.161744ms)
+✔ current catalog contract: 리버덩크 [a6efe85e-a76e-4c6c-a81e-2b6d91b19c56] (0.128298ms)
+✔ current catalog contract: 마개조 [079e04c3-faa7-43c9-b15e-f60b71d87620] (0.125126ms)
+✔ current catalog contract: 마도카와 [0ee31b68-9c4a-434f-a17b-01294e9cdf71] (0.125532ms)
+✔ current catalog contract: 마로쓰 2세 [5ff4d145-d194-432d-8893-6e8150f83fd1] (0.43724ms)
+✔ current catalog contract: 만당 [8a351c20-b7b0-4305-8bd4-4430fc6e7276] (0.277593ms)
+✔ current catalog contract: 만드릴쿤 [latest-wrestler-6] (0.310805ms)
+✔ current catalog contract: 만찬 [epic-spell-feast] (0.584504ms)
+✔ current catalog contract: 매드 사이언티스트 퍼플레인 [102e8061-c3b8-44a5-a11c-56379996fee7] (0.292731ms)
+✔ current catalog contract: 매드 펌킨 [latest-wrestler-12] (0.300024ms)
+✔ current catalog contract: 밀쳐내기 [epic-spell-push] (2.685933ms)
+✔ current catalog contract: 반으로 갈라져 죽어! [d31b5465-ac88-4647-ac56-aed191a1672f] (0.234912ms)
+✔ current catalog contract: 발단 [75863228-ae51-48cb-afec-43cc391672a8] (0.271002ms)
+✔ current catalog contract: 뱀파이어 왕자 MPG [f6061f3c-531a-4000-bc8e-a7d2e23e45bc] (0.13782ms)
+✔ current catalog contract: 벨로나 [latest-wrestler-1] (0.170697ms)
+✔ current catalog contract: 보드바 [888a12bd-e1e2-41b3-9f22-abbc36af8544] (0.184946ms)
+✔ current catalog contract: 복귀 [epic-spell-return] (0.309468ms)
+✔ current catalog contract: 불록스 [6188d881-ac7e-465e-ab86-feaa4dd48863] (0.264067ms)
+✔ current catalog contract: 블랙 마카롱 [8c120069-e0c7-4461-bed3-2dc586c50f7b] (0.175043ms)
+✔ current catalog contract: 블랙 아웃 [3ea8c9fa-f0a1-4d3e-8769-6a5d366f938b] (0.135514ms)
+✔ current catalog contract: 사일런스 [55e36a1b-9b1d-4ab1-ba42-f097ba4449b5] (0.141872ms)
+✔ current catalog contract: 생명의 교환 [epic-spell-life-exchange] (0.490056ms)
+✔ current catalog contract: 스카드 [latest-wrestler-15] (0.237885ms)
+✔ current catalog contract: 씨 몬스터 [6b0c3be8-6972-46de-a02b-c14019c33992] (0.493367ms)
+✔ current catalog contract: 아르카나 조커 [8a09fec1-16d8-452b-85c3-a38c7a3a03f6] (0.774481ms)
+✔ current catalog contract: 아비터 [7653f417-ea62-4924-8605-3d88a435d728] (0.403482ms)
+✔ current catalog contract: 아포스틸 [4ecf3a8f-b344-421f-b524-27ec5c28eeeb] (0.422046ms)
+✔ current catalog contract: 어셈블!!! [0785ff4f-ce7c-4ab0-83e7-197249767543] (0.438302ms)
+✔ current catalog contract: 엘리트 용병 [f3b46674-c658-4e03-b5b4-ced71547768e] (0.16423ms)
+✔ current catalog contract: 여울 [a2ab5577-0072-4425-a117-fd6f7df05d00] (0.163409ms)
+✔ current catalog contract: 여울의 보디가드 [acdbe25d-f066-4c91-ae22-f612749ee20f] (0.151714ms)
+✔ current catalog contract: 예거 [latest-wrestler-5] (0.2957ms)
+✔ current catalog contract: 오젠 [dc43dc88-38d7-499b-ad89-6b83f773fe62] (0.176093ms)
+✔ current catalog contract: 용병 [ff6f154d-a675-4a6b-bb12-50af8d227d15] (0.103044ms)
+✔ current catalog contract: 워썬더 [39dfe786-e95b-417b-94d1-edc2cdf3880e] (0.320551ms)
+✔ current catalog contract: 위리녀 [c3825a2a-8395-4f01-b1d8-4fd80627e339] (0.185477ms)
+✔ current catalog contract: 위리놈 [5c050d4e-1e91-4d8b-9bab-8d315c4e21ab] (0.269337ms)
+✔ current catalog contract: 작은 하마 [eb87bf4d-c43b-4f2c-94d2-86e31eacd9fe] (0.384324ms)
+✔ current catalog contract: 절멸 [epic-spell-annihilation] (0.246957ms)
+✔ current catalog contract: 조킹루이지 [df532c95-0e4d-4b17-8200-a86e6a682341] (0.580312ms)
+✔ current catalog contract: 좀비 [66143efe-2eec-450a-8570-9a4c4d92330e] (0.178543ms)
+✔ current catalog contract: 좀비 감염 [792082db-3844-48f1-97d2-50c03c70c9db] (0.140823ms)
+✔ current catalog contract: 좀비 데헌 [8a0b8b65-5d67-4f23-894e-6103219e41c8] (0.269778ms)
+✔ current catalog contract: 좀비 벨로나 [20251372-b1a0-485e-9158-d82bf05f7371] (0.291566ms)
+✔ current catalog contract: 좀비 플래티넘구슬 마스터 [bcf2ac9b-1afd-41a3-a653-5f9af1e033bf] (0.449133ms)
+✔ current catalog contract: 지뢰닷!!! [64478cf0-d8be-4990-a4fc-c5732d41a7d0] (0.150607ms)
+✔ current catalog contract: 챔피언 판도라(폭주) [eaefcf6c-575d-4482-aaad-98b54561b49a] (0.427056ms)
+✔ current catalog contract: 처형 [epic-spell-execution] (0.216048ms)
+✔ current catalog contract: 침묵의 장막 [epic-spell-veil-of-silence] (0.191991ms)
+✔ current catalog contract: 카미사토르 [latest-wrestler-11] (0.582315ms)
+✔ current catalog contract: 카산드라 [9716aeaa-cbc4-4374-bedc-2f40054b72de] (0.165331ms)
+✔ current catalog contract: 카스토 [2e2d2c9d-1586-49cc-9b06-b3d8174c961f] (0.108286ms)
+✔ current catalog contract: 퀘스쳔 [828969e2-363a-4cc2-8156-5de5ed86b822] (0.315843ms)
+✔ current catalog contract: 탈출 [epic-spell-escape] (0.300004ms)
+✔ current catalog contract: 태그 체인지 [db6c775a-0933-4e55-9fdc-a94861c6e10a] (0.16147ms)
+✔ current catalog contract: 판도라 [393dbf7c-7f61-418a-ba1a-4726500ab0aa] (0.214537ms)
+✔ current catalog contract: 팬텀워커 [latest-wrestler-7] (0.248225ms)
+✔ current catalog contract: 퍼플레인 [21e9e816-4d5f-461d-8cf8-b57749a33753] (0.171287ms)
+✔ current catalog contract: 프랑켄슈타인 만드릴쿤 [2e99f465-4bc7-461f-ad45-674a3ed04b10] (0.220861ms)
+✔ current catalog contract: 플래티넘 구슬 마스터 [683e07f7-d9f8-47f7-8142-779cab01e9b8] (0.162229ms)
+✔ current catalog contract: 피 스타 세븐 [5361339a-fd72-47e2-bbcb-f5a193a64ea3] (0.168467ms)
+✔ current catalog contract: 하녀 판도라 [4ad681e3-6ed6-4651-8107-4b24adddd753] (0.229267ms)
+✔ current catalog contract: 하스이 [49f79c04-41b4-4d2c-83df-10541a7eceef] (4.235164ms)
+✔ current catalog contract: 헬뻑 [0710e9b3-a8ef-4f09-9e63-c0b872c18068] (0.548116ms)
+✔ current catalog contract: 헬퍼 [5f1fd584-7129-4f39-91a4-22f02ba677e5] (0.875477ms)
+✔ current catalog contract: 황소할배 [latest-wrestler-2] (0.162139ms)
+✔ current catalog contract: 휴먼쿠커 [latest-wrestler-4] (0.251412ms)
+✔ current catalog contract: 흑구슬마스터 [b723c7e6-c668-4afb-b77d-da0d16f16c31] (0.161989ms)
+✔ current catalog contract: 힐빌 [a6b7689a-0468-48cd-a216-7e9fe22dec47] (0.103895ms)
+✔ current wrestler legal play/serialization: RM우디르 (13.571753ms)
+✔ current wrestler legal play/serialization: 그레이트 챤 (0.864058ms)
+✔ current wrestler legal play/serialization: 나토마토 (0.954752ms)
+✔ current wrestler legal play/serialization: 데헌 (0.907785ms)
+✔ current wrestler legal play/serialization: 도쿵 (0.830899ms)
+✔ current wrestler legal play/serialization: 독세아 (1.245679ms)
+✔ current wrestler legal play/serialization: 뒷정리맨 (1.800967ms)
+✔ current wrestler legal play/serialization: 디 오리진 (1.10678ms)
+✔ current wrestler legal play/serialization: 떼껄룩 (6.657628ms)
+✔ current wrestler legal play/serialization: 라 칼라베라 (4.927687ms)
+✔ current wrestler legal play/serialization: 레드 렌지 (2.064547ms)
+✔ current wrestler legal play/serialization: 레이븐 (0.944503ms)
+✔ current wrestler legal play/serialization: 로드 (1.207947ms)
+✔ current wrestler legal play/serialization: 루나 (1.334887ms)
+✔ current wrestler legal play/serialization: 리버덩크 (0.994463ms)
+✔ current wrestler legal play/serialization: 마로쓰 2세 (0.765458ms)
+✔ current wrestler legal play/serialization: 만당 (1.663933ms)
+✔ current wrestler legal play/serialization: 만드릴쿤 (13.678043ms)
+✔ current wrestler legal play/serialization: 매드 펌킨 (1.066717ms)
+✔ current wrestler legal play/serialization: 발단 (1.124976ms)
+✔ current wrestler legal play/serialization: 벨로나 (0.482257ms)
+✔ current wrestler legal play/serialization: 보드바 (0.571656ms)
+✔ current wrestler legal play/serialization: 블랙 마카롱 (0.617156ms)
+✔ current wrestler legal play/serialization: 스카드 (0.407243ms)
+✔ current wrestler legal play/serialization: 씨 몬스터 (0.472757ms)
+✔ current wrestler legal play/serialization: 아르카나 조커 (2.636124ms)
+✔ current wrestler legal play/serialization: 아비터 (1.215069ms)
+✔ current wrestler legal play/serialization: 아포스틸 (0.941956ms)
+✔ current wrestler legal play/serialization: 엘리트 용병 (0.762278ms)
+✔ current wrestler legal play/serialization: 여울 (0.739319ms)
+✔ current wrestler legal play/serialization: 여울의 보디가드 (0.733297ms)
+✔ current wrestler legal play/serialization: 예거 (0.752594ms)
+✔ current wrestler legal play/serialization: 용병 (0.785819ms)
+✔ current wrestler legal play/serialization: 워썬더 (0.950637ms)
+✔ current wrestler legal play/serialization: 위리녀 (0.773331ms)
+✔ current wrestler legal play/serialization: 위리놈 (1.016637ms)
+✔ current wrestler legal play/serialization: 작은 하마 (1.16925ms)
+✔ current wrestler legal play/serialization: 조킹루이지 (1.503784ms)
+✔ current wrestler legal play/serialization: 좀비 (0.68581ms)
+✔ current wrestler legal play/serialization: 챔피언 판도라(폭주) (1.860158ms)
+✔ current wrestler legal play/serialization: 카미사토르 (0.713748ms)
+✔ current wrestler legal play/serialization: 퀘스쳔 (1.03003ms)
+✔ current wrestler legal play/serialization: 판도라 (1.391082ms)
+✔ current wrestler legal play/serialization: 팬텀워커 (0.857664ms)
+✔ current wrestler legal play/serialization: 퍼플레인 (0.694504ms)
+✔ current wrestler legal play/serialization: 플래티넘 구슬 마스터 (0.787696ms)
+✔ current wrestler legal play/serialization: 피 스타 세븐 (0.895115ms)
+✔ current wrestler legal play/serialization: 하스이 (0.561574ms)
+✔ current wrestler legal play/serialization: 황소할배 (0.530564ms)
+✔ current wrestler legal play/serialization: 휴먼쿠커 (1.194862ms)
+✔ current wrestler legal play/serialization: 흑구슬마스터 (1.663932ms)
+✔ current wrestler legal play/serialization: 하녀 판도라 (0.7251ms)
+✔ current wrestler legal play/serialization: 늑대인간 판도라 (0.695744ms)
+✔ current wrestler legal play/serialization: 매드 사이언티스트 퍼플레인 (0.771609ms)
+✔ current wrestler legal play/serialization: 프랑켄슈타인 만드릴쿤 (0.548924ms)
+✔ current wrestler legal play/serialization: 도금구슬 마스터 (0.485795ms)
+✔ current wrestler legal play/serialization: 불록스 (0.515526ms)
+✔ current wrestler legal play/serialization: 오젠 (1.198207ms)
+✔ current wrestler legal play/serialization: 좀비 데헌 (0.431864ms)
+✔ current wrestler legal play/serialization: 좀비 벨로나 (0.455825ms)
+✔ current wrestler legal play/serialization: 좀비 플래티넘구슬 마스터 (0.913863ms)
+✔ current RM doubles actual stats; Origin counts groups of two even with null effectId (2.224483ms)
+✔ current Pi Star buffs other allies +2/+2; Black Macaron uses remaining hand count (0.996954ms)
+✔ current Doqung copies attack delta to health; Mandrill only triggers attack; Frankenstein only health (1.421843ms)
+✔ current Deheon first field attack gain grants dodge once; health gain does not retrigger (0.695145ms)
+✔ current anywhere tag buffs affect hand/deck/board but exclude graveyard and nonmatching cards (2.971448ms)
+✔ current generated buffs and cost-one Question work across zones without affecting other cards (2.046157ms)
+✔ current Platinum spends remaining gold for twice its amount; Red Range hurts opponent; Lord draws one (0.601924ms)
+✔ current WarThunder makes a full-stat wrestler under its revised rule; Joker destroys top and replaces it (0.835876ms)
+✔ current Calavera revives cost <=3 without obsolete Taunt; Baldan copies grave stats into Zombie (0.69957ms)
+✔ current targeted destruction, cat reduction, heal and move-to-deck use actual selections (1.397835ms)
+✔ current Pandora gains +2/+2 only when target ends at exactly one health; Pumpkin returns and discounts this turn (2.351555ms)
+✔ current Mandang summons one copy; Luigi buffs only its adjacent summoned cards; cleanup queue buffs next play (1.749923ms)
+✔ current Wiri creates equal-stat female then summons her on retire; Maros silence does not run on destroy (1.961935ms)
+✔ current Sea Monster discounts only in hand on allied RETIRE; Destroy and opposing retire excluded (1.288668ms)
+✔ current Yeager buffs allied Soldier on play/summon; Yeoul turn-start gold; Great Chan swaps stats (1.678395ms)
+✔ current Purple Rain reduces all enemy attack and stuns/silences zero attack (0.505251ms)
+✔ current Ozen selects cost-one nonchampion only; Gilded discounts every qualifying hand card, not deck (0.923988ms)
+✔ current Bullocks summons from hand on own turn end, but cannot enter a full board (0.926963ms)
+✔ current zombie Bellona damage summons/merges a zombie; zombie Deheon retirement adds max HP across both owners (5.094544ms)
+✔ current zombie Platinum absorbs strongest zombie or creates 2/2 when absent (0.900506ms)
+✔ current Maid Pandora transforms only after her own damage retires selected card (1.555744ms)
+✔ current wolf turn start absorbs retired ally attack and health (0.729909ms)
+✔ current Natoma combo adds attacking ally attack and own turn end sets attack to zero (2.106ms)
+✔ current Luna silences its first attacker only; Kamisator steals one actual enemy deck card per attack (1.020289ms)
+✔ current Pandora champion token quest deployment destroys target and absorbs its attack; later combat also absorbs (0.989813ms)
+✔ current Zombie grows on other retirements, merges summons, and ignores destroy (0.466342ms)
+✔ current vanilla/keyword rules: 레이븐 (0.486749ms)
+✔ current vanilla/keyword rules: 스카드 (0.413748ms)
+✔ current vanilla/keyword rules: 엘리트 용병 (0.406358ms)
+✔ current vanilla/keyword rules: 용병 (0.446069ms)
+✔ current vanilla/keyword rules: 위리녀 (0.385617ms)
+✔ current vanilla/keyword rules: 하스이 (0.336516ms)
+✔ current vanilla/keyword rules: 벨로나 (0.301045ms)
+✔ current vanilla/keyword rules: 황소할배 (0.227245ms)
+✔ current vanilla/keyword rules: 여울의 보디가드 (0.220639ms)
+✔ current vanilla/keyword rules: 리버덩크 (0.253397ms)
+✔ current vanilla/keyword rules: 보드바 (0.21214ms)
+✔ current targeted entrance cancel returns exact card and refunds cost; no-target entrance still plays (2.224662ms)
+✔ zone reset: buffed deck card returns to original stats/cost when drawn (0.447521ms)
+✔ zone reset: buffed hand card sent to deck resets stats/cost (0.412466ms)
+✔ zone reset: retirement clears buffs and graveyard rejects later stat buffs (0.531297ms)
+✔ zombie grows only from allied RETIRE, never enemy RETIRE or DESTROY (3.87859ms)
+✔ Maid Pandora transforms even when its stored form id is stale (0.689845ms)
+✔ 강철 심장: lethal structured damage survives at 1 once, even silenced; DESTROY bypasses it (27.048288ms)
+✔ 강철 심장: explicit RETIRE and state-based lethal share the one-use replacement (2.350163ms)
+✔ 복수의 메달: retirement buffs the next entry only; destruction grants no revenge (2.724796ms)
+✔ 망자의 종 + 전우의 유품: once-per-turn draw and deterministic other-ally buff, no duplicated event (7.243772ms)
+✔ 파괴자의 인장: actual DESTROY draws two once and RETIRE draws none (1.270316ms)
+✔ 승자의 벨트: the surviving attacking wrestler gets +2 only for its RETIRE kill (1.924488ms)
+✔ ATTACK_HIGHER_ATK_BUFF: combat-only attack and no lasting stat change (0.624252ms)
+✔ ATTACK_LOWER_ATK_BUFF: combat-only attack and no lasting stat change (0.544269ms)
+✔ 최후의 투사: aura enters/leaves without stacking; HP aura removal cannot retire (0.746152ms)
+✔ 무대 독점권: own turn only, heal capped at max and permanent attack +1 (3.280438ms)
+✔ 철벽의 증표: first damage per wrestler per turn, positive fully reduced hit consumes protection (2.365268ms)
+✔ 역전의 휘장: live field counts, combined with two-slot restriction, restores base attack (0.425958ms)
+✔ 관중의 함성: two enemy RETIRE kills draw two once; DESTROY does not contribute (0.796142ms)
+✔ 챔피언의 표식 + 완주의 왕관: quest bonus once, completion buffs current field once (0.924089ms)
+✔ 도전자 벨트: highest enemy ATK ties qualify; only incoming damage to attacking wrestler reduced (0.585593ms)
+✔ 폭군의 명령서: highest base ATK tie uses leftmost; recomputation does not switch or stack (0.44401ms)
+✔ live relic aura remains after SILENCE removes card text and ordinary buffs (0.877144ms)
+✔ SET_STATS keeps live relic bonuses while temporary attack replacement expires without stacking (2.634367ms)
+✔ 왕의 자리 applies entry stats and rejects second play in real legal actions before paying (7.332297ms)
+✔ 소수 정예 caps effect summons and combines with the stricter one-slot relic (4.048439ms)
+✔ field restriction never consumes a blocked hand summon or graveyard revival (1.49102ms)
+✔ absent Tower context preserves four slots and normal card stats (0.94607ms)
+✔ relic health penalties centrally stop at one without mutating the input (0.518693ms)
+✔ 입장권 discount makes the first play legal and enforces its turn summon limit (9.098929ms)
+✔ 선봉장의 깃발 buffs only first entry and expires at turn end (0.830313ms)
+✔ 폭주 티켓 blocks a Rush attack without blocking unrelated active abilities (4.210074ms)
+✔ first-entry temporary attack also expires when summoned during the opponent turn (1.578255ms)
+✔ turn-end summons do not carry this-turn relic attack into the next turn (2.14133ms)
+✔ 빈자리의 왕관 applies first-entry buff and prohibits additional summons for that turn (0.726973ms)
+[09:38:23.459] [32mINFO[39m (1014): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 1,
+      "method": "POST",
+      "url": "/api/auth/login"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 119
+[09:38:23.550] [32mINFO[39m (1014): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 2,
+      "method": "POST",
+      "url": "/api/auth/login"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 81
+[09:38:23.648] [32mINFO[39m (1014): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 3,
+      "method": "POST",
+      "url": "/api/auth/login"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 94
+[09:38:23.656] [32mINFO[39m (1014): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 4,
+      "method": "GET",
+      "url": "/api/draft"
+    }
+    [35mres[39m: {
+      "statusCode": 401
+    }
+    [35mresponseTime[39m: 3
+[09:38:23.693] [32mINFO[39m (1014): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 5,
+      "method": "GET",
+      "url": "/api/draft"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 34
+[09:38:23.705] [32mINFO[39m (1014): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 6,
+      "method": "GET",
+      "url": "/api/admin/draft"
+    }
+    [35mres[39m: {
+      "statusCode": 403
+    }
+    [35mresponseTime[39m: 9
+✔ draft still requires login and admin management still requires ADMIN (5151.06281ms)
+[09:38:23.730] [32mINFO[39m (1014): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 7,
+      "method": "GET",
+      "url": "/api/admin/draft"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 22
+[09:38:23.746] [32mINFO[39m (1014): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 8,
+      "method": "PUT",
+      "url": "/api/draft/settings"
+    }
+    [35mres[39m: {
+      "statusCode": 403
+    }
+    [35mresponseTime[39m: 10
+[09:38:23.760] [32mINFO[39m (1014): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 9,
+      "method": "PUT",
+      "url": "/api/admin/draft/settings"
+    }
+    [35mres[39m: {
+      "statusCode": 403
+    }
+    [35mresponseTime[39m: 8
+[09:38:23.779] [32mINFO[39m (1014): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 10,
+      "method": "GET",
+      "url": "/api/draft/availability"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 16
+✔ ordinary users cannot change ON/OFF through either settings URL (49.825774ms)
+[09:38:23.797] [32mINFO[39m (1014): [36mrequest errored[39m
+    [35mreq[39m: {
+      "id": 11,
+      "method": "POST",
+      "url": "/api/draft/sessions"
+    }
+    [35mres[39m: {
+      "statusCode": 503
+    }
+    [35mresponseTime[39m: 11
+    err: {
+      "type": "Error",
+      "message": "failed with status code 503",
+      "stack":
+          Error: failed with status code 503
+              at onResFinished (/workspace/scratch/e84071811a26/ko-card-game/node_modules/.pnpm/pino-http@10.5.0/node_modules/pino-http/logger.js:115:39)
+              at ServerResponse.onResponseComplete (/workspace/scratch/e84071811a26/ko-card-game/node_modules/.pnpm/pino-http@10.5.0/node_modules/pino-http/logger.js:178:14)
+              at ServerResponse.emit (node:events:521:24)
+              at onFinish (node:_http_outgoing:1079:10)
+              at callback (node:internal/streams/writable:764:21)
+              at afterWrite (node:internal/streams/writable:708:5)
+              at afterWriteTick (node:internal/streams/writable:694:10)
+              at process.processTicksAndRejections (node:internal/process/task_queues:89:21)
+    }
+[09:38:23.828] [32mINFO[39m (1014): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 12,
+      "method": "PUT",
+      "url": "/api/draft/settings"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 26
+[09:38:23.841] [32mINFO[39m (1014): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 13,
+      "method": "GET",
+      "url": "/api/draft/availability"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 11
+✔ OFF rejects new regular-user sessions; admin ON allows them (110.950377ms)
+[09:38:23.892] [32mINFO[39m (1014): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 14,
+      "method": "POST",
+      "url": "/api/draft/sessions"
+    }
+    [35mres[39m: {
+      "statusCode": 201
+    }
+    [35mresponseTime[39m: 47
+[09:38:23.912] [32mINFO[39m (1014): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 15,
+      "method": "GET",
+      "url": "/api/draft/sessions/cc6528e8-5583-4bd8-83d9-733081264347"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 16
+[09:38:23.933] [32mINFO[39m (1014): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 16,
+      "method": "POST",
+      "url": "/api/draft/sessions/cc6528e8-5583-4bd8-83d9-733081264347/commands"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 17
+[09:38:23.950] [32mINFO[39m (1014): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 17,
+      "method": "GET",
+      "url": "/api/draft/sessions/cc6528e8-5583-4bd8-83d9-733081264347"
+    }
+    [35mres[39m: {
+      "statusCode": 403
+    }
+    [35mresponseTime[39m: 13
+✔ regular-user selection advances, persists and rejects nonparticipant access (78.881298ms)
+[09:38:23.972] [32mINFO[39m (1014): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 18,
+      "method": "GET",
+      "url": "/api/draft"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 20
+[09:38:23.988] [32mINFO[39m (1014): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 19,
+      "method": "GET",
+      "url": "/api/draft/sessions/cc6528e8-5583-4bd8-83d9-733081264347"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 13
+[09:38:24.007] [32mINFO[39m (1014): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 20,
+      "method": "POST",
+      "url": "/api/draft/sessions/cc6528e8-5583-4bd8-83d9-733081264347/commands"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 15
+[09:38:24.041] [32mINFO[39m (1014): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 21,
+      "method": "POST",
+      "url": "/api/draft/sessions/cc6528e8-5583-4bd8-83d9-733081264347/commands"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 18
+[09:38:24.059] [32mINFO[39m (1014): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 22,
+      "method": "POST",
+      "url": "/api/draft/sessions/cc6528e8-5583-4bd8-83d9-733081264347/commands"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 16
+[09:38:24.077] [32mINFO[39m (1014): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 23,
+      "method": "POST",
+      "url": "/api/draft/sessions/cc6528e8-5583-4bd8-83d9-733081264347/commands"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 14
+[09:38:24.095] [32mINFO[39m (1014): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 24,
+      "method": "POST",
+      "url": "/api/draft/sessions/cc6528e8-5583-4bd8-83d9-733081264347/commands"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 15
+[09:38:24.114] [32mINFO[39m (1014): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 25,
+      "method": "POST",
+      "url": "/api/draft/sessions/cc6528e8-5583-4bd8-83d9-733081264347/commands"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 15
+[09:38:24.132] [32mINFO[39m (1014): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 26,
+      "method": "POST",
+      "url": "/api/draft/sessions/cc6528e8-5583-4bd8-83d9-733081264347/commands"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 14
+[09:38:24.148] [32mINFO[39m (1014): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 27,
+      "method": "POST",
+      "url": "/api/draft/sessions/cc6528e8-5583-4bd8-83d9-733081264347/commands"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 13
+[09:38:24.165] [32mINFO[39m (1014): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 28,
+      "method": "POST",
+      "url": "/api/draft/sessions/cc6528e8-5583-4bd8-83d9-733081264347/commands"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 14
+[09:38:24.183] [32mINFO[39m (1014): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 29,
+      "method": "POST",
+      "url": "/api/draft/sessions/cc6528e8-5583-4bd8-83d9-733081264347/commands"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 15
+[09:38:24.202] [32mINFO[39m (1014): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 30,
+      "method": "POST",
+      "url": "/api/draft/sessions/cc6528e8-5583-4bd8-83d9-733081264347/commands"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 16
+[09:38:24.222] [32mINFO[39m (1014): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 31,
+      "method": "POST",
+      "url": "/api/draft/sessions/cc6528e8-5583-4bd8-83d9-733081264347/commands"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 16
+[09:38:24.240] [32mINFO[39m (1014): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 32,
+      "method": "POST",
+      "url": "/api/draft/sessions/cc6528e8-5583-4bd8-83d9-733081264347/commands"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 15
+[09:38:24.257] [32mINFO[39m (1014): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 33,
+      "method": "POST",
+      "url": "/api/draft/sessions/cc6528e8-5583-4bd8-83d9-733081264347/commands"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 15
+[09:38:24.275] [32mINFO[39m (1014): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 34,
+      "method": "POST",
+      "url": "/api/draft/sessions/cc6528e8-5583-4bd8-83d9-733081264347/commands"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 15
+[09:38:24.292] [32mINFO[39m (1014): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 35,
+      "method": "POST",
+      "url": "/api/draft/sessions/cc6528e8-5583-4bd8-83d9-733081264347/commands"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 13
+[09:38:24.310] [32mINFO[39m (1014): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 36,
+      "method": "POST",
+      "url": "/api/draft/sessions/cc6528e8-5583-4bd8-83d9-733081264347/commands"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 16
+[09:38:24.330] [32mINFO[39m (1014): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 37,
+      "method": "POST",
+      "url": "/api/draft/sessions/cc6528e8-5583-4bd8-83d9-733081264347/commands"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 16
+[09:38:24.350] [32mINFO[39m (1014): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 38,
+      "method": "POST",
+      "url": "/api/draft/sessions/cc6528e8-5583-4bd8-83d9-733081264347/commands"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 16
+[09:38:24.374] [32mINFO[39m (1014): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 39,
+      "method": "POST",
+      "url": "/api/draft/sessions/cc6528e8-5583-4bd8-83d9-733081264347/commands"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 10
+[09:38:24.385] [32mINFO[39m (1014): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 40,
+      "method": "POST",
+      "url": "/api/draft/sessions/cc6528e8-5583-4bd8-83d9-733081264347/commands"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 9
+[09:38:24.397] [32mINFO[39m (1014): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 41,
+      "method": "POST",
+      "url": "/api/draft/sessions/cc6528e8-5583-4bd8-83d9-733081264347/commands"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 9
+[09:38:24.417] [32mINFO[39m (1014): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 42,
+      "method": "POST",
+      "url": "/api/draft/sessions/cc6528e8-5583-4bd8-83d9-733081264347/commands"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 17
+[09:38:24.436] [32mINFO[39m (1014): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 43,
+      "method": "POST",
+      "url": "/api/draft/sessions/cc6528e8-5583-4bd8-83d9-733081264347/commands"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 15
+[09:38:24.453] [32mINFO[39m (1014): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 44,
+      "method": "POST",
+      "url": "/api/draft/sessions/cc6528e8-5583-4bd8-83d9-733081264347/commands"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 14
+[09:38:24.518] [32mINFO[39m (1014): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 45,
+      "method": "POST",
+      "url": "/api/draft/sessions/cc6528e8-5583-4bd8-83d9-733081264347/commands"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 62
+[09:38:24.542] [32mINFO[39m (1014): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 46,
+      "method": "GET",
+      "url": "/api/draft/sessions/cc6528e8-5583-4bd8-83d9-733081264347/battle"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 21
+✔ regular user completes 25 picks and starts a real persisted draft battle (584.770372ms)
+[09:38:24.558] [32mINFO[39m (1014): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 47,
+      "method": "GET",
+      "url": "/api/draft/sessions/cc6528e8-5583-4bd8-83d9-733081264347/battle"
+    }
+    [35mres[39m: {
+      "statusCode": 403
+    }
+    [35mresponseTime[39m: 14
+✔ quantity validation and integer overflow protection (4038.664723ms)
+✔ legacy single purchase and bulk purchase debit once and grant exact multiplied pack count (61.439373ms)
+[09:38:21.547] [32mINFO[39m (1026): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 1,
+      "method": "POST",
+      "url": "/api/auth/login"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 93
+[09:38:21.584] [32mINFO[39m (1026): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 2,
+      "method": "POST",
+      "url": "/api/shop/listing/purchase"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 23
+[09:38:21.614] [32mINFO[39m (1026): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 3,
+      "method": "POST",
+      "url": "/api/shop/listing/purchase"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 21
+[09:38:21.630] [32mINFO[39m (1026): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 4,
+      "method": "POST",
+      "url": "/api/shop/listing/purchase"
+    }
+    [35mres[39m: {
+      "statusCode": 422
+    }
+    [35mresponseTime[39m: 9
+[09:38:21.643] [32mINFO[39m (1026): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 5,
+      "method": "POST",
+      "url": "/api/shop/listing/purchase"
+    }
+    [35mres[39m: {
+      "statusCode": 422
+    }
+    [35mresponseTime[39m: 9
+[09:38:21.659] [32mINFO[39m (1026): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 6,
+      "method": "POST",
+      "url": "/api/shop/listing/purchase"
+    }
+    [35mres[39m: {
+      "statusCode": 422
+    }
+    [35mresponseTime[39m: 12
+[09:38:21.674] [32mINFO[39m (1026): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 7,
+      "method": "POST",
+      "url": "/api/shop/listing/purchase"
+    }
+    [35mres[39m: {
+      "statusCode": 422
+    }
+    [35mresponseTime[39m: 10
+[09:38:21.689] [32mINFO[39m (1026): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 8,
+      "method": "POST",
+      "url": "/api/shop/listing/purchase"
+    }
+    [35mres[39m: {
+      "statusCode": 422
+    }
+    [35mresponseTime[39m: 10
+[09:38:21.705] [32mINFO[39m (1026): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 9,
+      "method": "POST",
+      "url": "/api/shop/listing/purchase"
+    }
+    [35mres[39m: {
+      "statusCode": 422
+    }
+    [35mresponseTime[39m: 13
+[09:38:21.726] [32mINFO[39m (1026): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 10,
+      "method": "POST",
+      "url": "/api/shop/listing/purchase"
+    }
+    [35mres[39m: {
+      "statusCode": 422
+    }
+    [35mresponseTime[39m: 17
+✔ invalid quantities and insufficient funds leave inventory/balance/history unchanged (112.655514ms)
+[09:38:21.755] [32mINFO[39m (1026): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 11,
+      "method": "POST",
+      "url": "/api/shop/listing/purchase"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 20
+[09:38:21.768] [32mINFO[39m (1026): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 12,
+      "method": "POST",
+      "url": "/api/shop/listing/purchase"
+    }
+    [35mres[39m: {
+      "statusCode": 422
+    }
+    [35mresponseTime[39m: 11
+✔ concurrent bulk requests cannot overspend; successful debit and inventory remain atomic (39.875117ms)
+✔ missing published techniques resolve to legal wrestler slots without changing saved rules (776.758629ms)
+✔ published-only pool excludes tokens, champion tokens and excluded definitions (0.506332ms)
+✔ NORMAL 3 / EPIC 2 / LEGENDARY 1 and legendary total 3 are authoritative offer caps (0.537654ms)
+✔ 1000 deterministic drafts complete without dead ends, correct slot types and limits (13567.26351ms)
+✔ scarce pools retain enough capacity to finish; missing technique/champions reject enable (1.855976ms)
+✔ configuration validates duplicate slots, cost totals, clocks and malformed scores (0.652953ms)
+✔ legendary slots prefer three distinct legends and fall back when total cap is reached (1.30882ms)
+✔ champion token dependency is validated while remaining outside the selection pool (1.498933ms)
+ℹ tests 1031
+ℹ suites 0
+ℹ pass 1031
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 19832.664862

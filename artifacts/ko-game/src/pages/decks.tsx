@@ -106,6 +106,8 @@ function DeckCardVisual({
               {cardTypeLabel(card.cardType)} · {card.rarity}
             </p>
             <CardRenderer
+              keywords={card.keywords}
+              keywordConfig={card.effectConfig}
               name={card.name}
               cardType={card.cardType}
               cost={card.cost}
@@ -137,6 +139,8 @@ function DeckCardVisual({
           }}
         >
           <CardRenderer
+            keywords={card.keywords}
+            keywordConfig={card.effectConfig}
             name={card.name}
             cardType={card.cardType}
             cost={card.cost}
@@ -935,6 +939,8 @@ export default function Decks() {
                               {cardTypeLabel(card.cardType)} · {card.rarity}
                             </p>
                             <CardRenderer
+                              keywords={card.keywords}
+                              keywordConfig={card.effectConfig}
                               name={card.name}
                               cardType={card.cardType}
                               cost={card.cost}
@@ -1027,6 +1033,8 @@ export default function Decks() {
               <div className="grid gap-4 sm:grid-cols-[minmax(160px,240px)_1fr] sm:items-start">
                 <div className="min-w-0">
                   <CardRenderer
+                    keywords={craftInfoCard?.keywords ?? craftTarget.keywords}
+                    keywordConfig={craftInfoCard?.effectConfig ?? craftTarget.effectConfig}
                     name={craftInfoCard?.name ?? craftTarget.name}
                     cardType={craftTarget.cardType}
                     cost={craftInfoCard?.cost ?? craftTarget.cost}

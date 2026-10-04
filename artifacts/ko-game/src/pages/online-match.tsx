@@ -105,7 +105,7 @@ function OnlineMatchPage({ draft = false }: { draft?: boolean }) {
   const [, navigate] = useLocation();
   const [draftClient] = useState(() => new DraftBattleClient());
   const client = draft ? draftClient : getOnlineLobbyClient();
-  const returnRoute = draft ? `/admin/draft?session=${matchId}` : ROUTES.MAIN_MENU;
+  const returnRoute = draft ? `/draft?session=${matchId}` : ROUTES.MAIN_MENU;
   const [connection, setConnection] = useState<OnlineLobbyConnectionState>(client.state);
   const [hasAuthoritativeSnapshot, setHasAuthoritativeSnapshot] = useState(false);
   const [showRecoveryActions, setShowRecoveryActions] = useState(false);
@@ -1060,5 +1060,5 @@ function nextSeatForIntro(seat: "PLAYER_ONE" | "PLAYER_TWO" | null): "PLAYER_ONE
 }
 
 export default function OnlineMatch({ draft = false }: { draft?: boolean }) {
-  return <OnlineAuthGate>{user => draft && user.role !== "ADMIN" ? <main className="flex min-h-screen items-center justify-center p-6 text-white">관리자만 드래프트에 접근할 수 있습니다.</main> : <OnlineMatchPage draft={draft} />}</OnlineAuthGate>;
+  return <OnlineAuthGate>{() => <OnlineMatchPage draft={draft} />}</OnlineAuthGate>;
 }

@@ -6,6 +6,7 @@ import { KEYWORD_DESCRIPTIONS } from './alt-inspector-utils';
 import {
   getVisibleCardKeywords,
   getVisibleCardRulesText,
+  KEYWORD_RULE_LABELS,
 } from "@/lib/card-display-state";
 import {
   normalizeCardRarityForType,
@@ -159,11 +160,13 @@ export function CardRenderer({
   onImagePositionChange,
   overlay,
   highlight,
-  runtimeKeywords = [],
+  runtimeKeywords,
+  keywords = [],
+  keywordConfig,
   isSilenced = false,
   isStunned = false,
   isAbilityDisabled = false,
-  dodgeCharges = 0,
+  dodgeCharges,
   isChampionToken = false,
   onClick,
   onKeyDown,
@@ -195,6 +198,8 @@ export function CardRenderer({
   overlay?: ReactNode;
   highlight?: CardHighlight;
   runtimeKeywords?: CardKeyword[];
+  keywords?: CardKeyword[];
+  keywordConfig?: Record<string, unknown> | null;
   isSilenced?: boolean;
   isStunned?: boolean;
   isAbilityDisabled?: boolean;
@@ -205,17 +210,20 @@ export function CardRenderer({
   tabIndex?: number;
   containerRef?: Ref<HTMLDivElement>;
 }) {
+  const visibleDodgeCharges = dodgeCharges ?? (runtimeKeywords === undefined
+    ? typeof keywordConfig?.dodgeCharges === 'number' ? keywordConfig.dodgeCharges : 1
+    : 0);
   const visibleRuntimeKeywords = getVisibleCardKeywords(
-    runtimeKeywords,
+    runtimeKeywords ?? keywords,
     isSilenced,
-    dodgeCharges,
+    visibleDodgeCharges,
   );
   const [keywordExplanation, setKeywordExplanation] = useState<string | null>(null);
   const displayRulesTextWithoutArmor = getVisibleCardRulesText(
     rulesText,
     visibleRuntimeKeywords,
   );
-  const armorValue = getCardDefinitions().find(card => card.name === name)?.effectConfig?.armor;
+  const armorValue = keywordConfig?.armor ?? getCardDefinitions().find(card => card.name === name)?.effectConfig?.armor;
   const displayRulesText = typeof armorValue === 'number' ? displayRulesTextWithoutArmor.replace(/아머(?!\s*\()/g, `아머(${armorValue})`) : displayRulesTextWithoutArmor;
   const normalizedRarity = isChampionToken
     ? cardType === "TECHNIQUE" ? "TOKEN" : "CHAMPION"
@@ -251,10 +259,12 @@ export function CardRenderer({
     ...(isAbilityDisabled ? ["DISABLED" as CardKeyword] : []),
   ].filter((keyword, index, all) => all.indexOf(keyword) === index);
   const keywordLabels: Record<string, string> = {
+    ...KEYWORD_RULE_LABELS,
     TAUNT: "도발",
     RUSH: "러쉬",
     SURPRISE: "기습",
-    DODGE: dodgeCharges > 1 ? `회피 ×${dodgeCharges}` : "회피",
+    DODGE: visibleDodgeCharges > 1 ? `회피 ×${visibleDodgeCharges}` : "회피",
+    ARMOR: typeof armorValue === 'number' ? `아머(${armorValue})` : '아머',
     STUN: "기절",
     SILENCE: "침묵",
     DISABLED: "봉인",

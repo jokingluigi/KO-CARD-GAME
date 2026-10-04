@@ -1,5 +1,6 @@
 import {ServerMaintenanceGate} from '@/components/server-maintenance';
 import Tower from '@/pages/tower';
+import Draft from '@/pages/draft';
 import { type ReactNode, useEffect } from 'react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { ErrorBoundary } from '@/components/error-boundary';
@@ -50,6 +51,8 @@ function Router() {
         <Route path="/admin/rewards" component={Admin} />
         <Route path="/admin/notices" component={Admin} />
         <Route path="/tower" component={Tower} />
+        <Route path="/draft" component={Draft} />
+        <Route path="/draft/match/:matchId">{() => <OnlineMatch draft />}</Route>
         <Route path="/ai-match" component={Home} />
         <Route path="/online/match/:matchId">{() => <OnlineMatch />}</Route>
         <Route path="/daily-quests" component={DailyQuests} />

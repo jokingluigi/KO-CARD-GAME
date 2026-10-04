@@ -13,7 +13,7 @@ import { type DraftConfig, type CardDefinition } from "@workspace/game-engine";
 import { CARD_RARITY_LABELS } from "@/game/cards/types";
 const button =
   "min-h-11 rounded border border-primary/60 bg-primary/10 px-4 py-2 text-sm font-bold disabled:opacity-40";
-export function AdminDraftManager() {
+export function AdminDraftManager({ administration = true }: { administration?: boolean }) {
   const [, navigate] = useLocation();
   const [settings, setSettings] = useState<DraftSettings | null>(null),
     [view, setView] = useState<DraftView | null>(null),
@@ -71,7 +71,7 @@ export function AdminDraftManager() {
     if (view) setServerOffset(view.serverTime - Date.now());
   }, [view?.serverTime]);
   useEffect(() => {
-    if (view?.phase === "BATTLE") navigate(`/admin/draft/match/${view.id}`);
+    if (view?.phase === "BATTLE") navigate(`/draft/match/${view.id}`);
   }, [view?.phase, view?.id]);
   async function run(fn: () => Promise<void>) {
     if (busy) return;
@@ -149,10 +149,10 @@ export function AdminDraftManager() {
         <div>
           <h2 className="text-xl font-black">드래프트 모드</h2>
           <p className="mt-1 text-sm text-neutral-400">
-            관리자 전용 · 챔피언 선택 후 25장 편성 · 한 번의 대전
+            챔피언 선택 후 25장 편성 · 한 번의 대전
           </p>
         </div>
-        <button
+        {administration && <button
           type="button"
           role="switch"
           aria-checked={settings?.enabled ?? false}
@@ -161,7 +161,7 @@ export function AdminDraftManager() {
           className={button}
         >
           {settings?.enabled ? "ON" : "OFF"}
-        </button>
+        </button>}
       </div>
       {error && (
         <p
@@ -250,11 +250,10 @@ export function AdminDraftManager() {
       )}
       {!settings?.enabled && settings && (
         <p className="text-neutral-400">
-          OFF 상태입니다. ON으로 설정하면 관리자만 드래프트에 입장할 수
-          있습니다.
+          드래프트 모드는 현재 OFF 상태입니다.
         </p>
       )}
-      {settings && (
+      {administration && settings && (
         <>
           <button className={button} onClick={() => setShowConfig((v) => !v)}>
             카드 풀 / 선택 규칙 설정
@@ -354,7 +353,7 @@ export function AdminDraftManager() {
           </div>
           {view.phase === "WAITING" ? (
             <p>
-              다른 관리자에게 방 ID를 전달해 주세요. 참가하면 동시에 선택을
+              다른 플레이어에게 방 ID를 전달해 주세요. 참가하면 동시에 선택을
               시작합니다.
             </p>
           ) : (
@@ -500,7 +499,7 @@ export function AdminDraftManager() {
                     className={button}
                     onClick={() => {
                       setView(null);
-                      navigate("/admin/draft");
+                      navigate(administration ? "/admin/draft" : "/draft");
                       void load();
                     }}
                   >

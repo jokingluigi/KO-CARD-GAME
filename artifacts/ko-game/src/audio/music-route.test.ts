@@ -10,7 +10,7 @@ test("main BGM is eligible on direct non-battle route loads", () => {
 });
 
 test("match routes suppress main BGM and use the battle context", () => {
-  for (const path of ["/ai-match", "/online/match/match-123", "/admin/draft/match/draft-123", "/tower"]) {
+  for (const path of ["/ai-match", "/online/match/match-123", "/admin/draft/match/draft-123", "/draft/match/draft-123", "/tower"]) {
     assert.equal(musicContextForPath(path), "BATTLE", path);
     assert.equal(shouldLoadMainBgm(path), false, path);
   }

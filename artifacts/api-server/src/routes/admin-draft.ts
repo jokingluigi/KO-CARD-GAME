@@ -28,7 +28,7 @@ router.use(async (req, res, next) => {
       res.status(401).json({ message: "로그인이 필요합니다." });
       return;
     }
-    if (user.role !== "ADMIN") {
+    if (req.baseUrl.endsWith("/admin/draft") && user.role !== "ADMIN") {
       res.status(403).json({ message: "관리자만 접근할 수 있습니다." });
       return;
     }
@@ -38,6 +38,10 @@ router.use(async (req, res, next) => {
   } catch (e) {
     next(e);
   }
+});
+router.get("/availability", async (_req, res, next) => {
+  try { res.json({ enabled: (await draftSettings()).enabled }); }
+  catch (error) { next(error); }
 });
 router.get("/", async (req, res, next) => {
   try {
@@ -73,6 +77,10 @@ router.get("/", async (req, res, next) => {
 });
 router.put("/settings", async (req, res, next) => {
   try {
+    if (req.authUser?.role !== "ADMIN") {
+      res.status(403).json({ message: "설정은 관리자만 변경할 수 있습니다." });
+      return;
+    }
     if (typeof req.body?.enabled !== "boolean")
       throw new DraftError("INVALID_CONFIG", "ON/OFF 설정을 확인해 주세요.");
     const config = parseDraftConfig(
