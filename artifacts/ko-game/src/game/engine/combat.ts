@@ -605,7 +605,7 @@ export function attack(
   let afterNewDamage = damagedState;
   for (const [ownerId, before] of [[attackingPlayerId,attackerPrepared],[target.playerId,defenderPreparedCard]] as const) {
     const current=findBoardCard(afterNewDamage,ownerId,before.instanceId)?.card;
-    if (current && hasNewCardRule(current,'블랙 아웃') && current.currentHealth<before.currentHealth) {
+    if (current && current.currentHealth<before.currentHealth) {
       afterNewDamage=resolveTriggeredAbilities(afterNewDamage,ownerId,current,'SELF_DAMAGED',{healthBefore:before.currentHealth,healthAfter:current.currentHealth});
       if(afterNewDamage.targetingState?.active) afterNewDamage=resolvePendingEffects(afterNewDamage);
     }

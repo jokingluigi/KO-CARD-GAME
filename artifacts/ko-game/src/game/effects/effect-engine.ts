@@ -3451,7 +3451,17 @@ export function resolveTriggeredAbilities(
     return run(next,{type:'STRUCTURED',action:'BUFF',target:selfTarget,values:{attack:damage,health:0}});
   }
   if (trigger==='TURN_START' && hasNewCardRule(card,'헬퍼')) {
-    if ((state.overhealByTurn?.[`${state.turn-1}:${playerId}`]??0)<=5) return state;
+    // Global turns alternate players; find the owner's last completed turn.
+    let previousTurn = state.turn - 1;
+    let eventTurn = state.turn;
+    for (let i = state.events.length - 1; i >= 0; i--) {
+      const event = state.events[i]!;
+      if (event.type !== 'TURN_ENDED') continue;
+      eventTurn--;
+      if (event.playerId === playerId) { previousTurn = eventTurn; break; }
+    }
+    const overflow = state.overhealByTurn?.[`${previousTurn}:${playerId}`] ?? 0;
+    if (overflow <= 5) return state;
     const token=state.cardPool?.find(d=>d.name==='냥냥 펀치' && d.isToken && d.cardType==='TECHNIQUE');
     if(!token)return state;
     return run(state,{type:'STRUCTURED',action:'GENERATE',values:{definitionRef:{id:token.id},destination:'HAND',count:1}});
