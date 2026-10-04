@@ -6,6 +6,13 @@ const self = { zone: 'BOARD' as const, owner: 'SELF' as const, selection: 'SELF'
 const enemyChoice = { zone: 'BOARD' as const, owner: 'ENEMY' as const, cardType: 'WRESTLER' as const, selection: 'PLAYER_CHOICE' as const, count: 1 };
 const enemyResult = { zone: 'BOARD' as const, owner: 'ENEMY' as const, cardType: 'WRESTLER' as const, resultId: 'target' };
 
+/** The current Yeager record prints Dodge but omitted it from its keyword array. */
+export function repairedLegacyCardKeywords(card: Pick<PublishedCardRecord, 'id' | 'text' | 'keywords'>): PublishedCardRecord['keywords'] {
+  return card.id === 'latest-wrestler-5' && /^회피(?:[.,，]|\s|$)/u.test(card.text.trim())
+    ? [...new Set([...card.keywords, 'DODGE' as const])]
+    : card.keywords;
+}
+
 /** Repair published legacy configurations by the full meaning of their stored card text. */
 export function repairedLegacyCardAbilities(card: PublishedCardRecord): CardAbility[] | null {
   const text = card.text.replace(/\s+/gu, ' ').trim();

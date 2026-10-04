@@ -1,7 +1,9 @@
+import { silenceCard } from '../engine/card-status';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import test from 'node:test';
 import { cardRecordToDefinition, type PublishedCardRecord } from '../cards/published-cards';
+import { repairedLegacyCardKeywords } from '../cards/legacy-card-effect-repair';
 import { generateCardInstance } from '../cards/generation';
 import type { CardInstance } from '../cards/types';
 import { createInitialGameState } from '../engine/create-initial-game-state';
@@ -13,8 +15,7 @@ import { endTurn } from '../engine/turn-system';
 import { drawCard } from '../engine/draw-card';
 import type { GameState } from '../types/game-state';
 
-// Actual 2026-10-02 production definitions. Published API plus read-only admin
-// dialogs for the ten unpublished wrestlers; media and account data omitted.
+// Current 94-card snapshot: published API plus read-only admin dialogs.
 const records = JSON.parse(readFileSync(new URL('./fixtures/cards-2026-10-04.json', import.meta.url), 'utf8')) as PublishedCardRecord[];
 const definitions = records.map(cardRecordToDefinition);
 const def = (name: string) => { const d=definitions.find(x=>x.name===name); assert.ok(d,name); return d; };
@@ -106,6 +107,17 @@ test('current Yeager buffs allied Soldier on play/summon; Yeoul turn-start gold;
  const s=setup();onBoard(s,'예거');const n=play(s,'용병',1);assert.deepEqual([n.players[0].board[1]?.currentAttack,n.players[0].board[1]?.currentHealth],[2,2]);
  let y=play(setup(),'여울');const before=y.players[0].currentGold;y=resolveTriggeredAbilities(y,'player-1',source(y),'TURN_START');assert.equal(y.players[0].currentGold,before+1);
  let g=play(setup(),'그레이트 챤');g=action(g,{type:'USE_ACTIVE',playerId:'player-1',cardInstanceId:'source'});assert.deepEqual([source(g).currentAttack,source(g).currentHealth],[4,2]);
+});
+test('current Yeager printed Dodge avoids the first attack, consumes one charge and leaves source data unchanged', () => {
+ const record=records.find(card=>card.id==='latest-wrestler-5')!,before=structuredClone(record);
+ assert.deepEqual(repairedLegacyCardKeywords(record),['DODGE']);assert.deepEqual(def('예거').keywords,['DODGE']);
+ assert.deepEqual(repairedLegacyCardKeywords({...record,text:'등장: 아군에게 회피를 부여합니다.'}),[]);
+ const s=setup();s.activePlayerId='player-2';const target=onBoard(s,'예거');
+ const first=onBoard(s,'로드',0,1,{currentAttack:1,currentHealth:12,maxHealth:12});const second=onBoard(s,'로드',1,1,{currentAttack:1,currentHealth:12,maxHealth:12});
+ let n=action(s,{type:'ATTACK',playerId:'player-2',attackerInstanceId:first.instanceId,target:{type:'WRESTLER',playerId:'player-1',cardInstanceId:target.instanceId}});
+ assert.equal(n.players[0].board[0]!.currentHealth,3);assert.equal(n.players[0].board[0]!.dodgeCharges,0);
+ n=action(n,{type:'ATTACK',playerId:'player-2',attackerInstanceId:second.instanceId,target:{type:'WRESTLER',playerId:'player-1',cardInstanceId:target.instanceId}});
+ assert.equal(n.players[0].board[0]!.currentHealth,2);assert.deepEqual(record,before);assert.deepEqual([def('예거').cost,def('예거').attack,def('예거').health],[4,4,3]);
 });
 test('current Purple Rain reduces all enemy attack and stuns/silences zero attack',()=>{
  const s=setup();onBoard(s,'로드',0,1,{currentAttack:2});onBoard(s,'루나',1,1,{currentAttack:5});const n=play(s,'퍼플레인');assert.deepEqual([n.players[1].board[0]?.currentAttack,n.players[1].board[0]?.isStunned,n.players[1].board[0]?.isSilenced],[0,true,true]);assert.equal(n.players[1].board[1]?.currentAttack,3);
@@ -200,4 +212,23 @@ for(const record of records)test(`current catalog contract: ${record.name} [${re
  assert.deepEqual([d.cost,d.attack,d.health],[record.cost,record.attack,record.health]);
  assert.equal(d.rulesText,record.name==='좀비'?d.rulesText:record.text);assert.ok(JSON.parse(JSON.stringify(d)));
  if(record.text.trim() && !['레이븐','스카드','벨로나','황소할배','좀비'].includes(record.name))assert.ok(d.abilities.length || d.contentRule,`effect-less nonvanilla ${record.name}`);
+});
+
+for (const definition of definitions.filter(d => d.keywords.includes('ARMOR'))) test(`current armor combat/effect/silence: ${definition.name}`, () => {
+ const original = JSON.stringify(definition), armor = definition.effectConfig!.armor as number;
+ for (const amount of [0, 1, armor + 1]) {
+  const s = setup(); const attacker = onBoard(s, '리버덩크', 0, 0, {currentAttack: amount}); const target = onBoard(s, definition.name, 0, 1);
+  assert.equal(target.armor, armor);
+  const damaged = applyEffect(s, 'player-1', attacker, {type:'STRUCTURED',action:'DAMAGE',target:{zone:'BOARD',owner:'ENEMY',selection:'PLAYER_CHOICE',count:1},values:{amount}}, [target.instanceId]);
+  assert.equal(damaged.players[1].board[0]!.currentHealth, target.currentHealth - Math.max(0, amount - armor));
+  if (amount > 0) {
+   const result = executeAction(JSON.parse(JSON.stringify(s)), {type:'ATTACK',playerId:'player-1',attackerInstanceId:attacker.instanceId,target:{type:'WRESTLER',playerId:'player-2',cardInstanceId:target.instanceId}});
+   assert.equal(result.success, true); assert.equal(result.state.players[1].board[0]!.currentHealth, target.currentHealth - Math.max(0, amount - armor));
+  }
+ }
+ const s = setup(); const attacker = onBoard(s, '리버덩크', 0); const target = onBoard(s, definition.name, 0, 1);
+ const silenced = silenceCard(s, target.instanceId);
+ const damaged = applyEffect(silenced, 'player-1', attacker, {type:'STRUCTURED',action:'DAMAGE',target:{zone:'BOARD',owner:'ENEMY',selection:'PLAYER_CHOICE',count:1},values:{amount:1}}, [target.instanceId]);
+ assert.equal(damaged.players[1].board[0]!.currentHealth, target.currentHealth - 1);
+ assert.equal(JSON.stringify(definition), original);
 });

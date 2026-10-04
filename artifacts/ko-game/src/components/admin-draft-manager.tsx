@@ -19,7 +19,6 @@ export function AdminDraftManager({ administration = true }: { administration?: 
     [view, setView] = useState<DraftView | null>(null),
     [error, setError] = useState<string | null>(null),
     [busy, setBusy] = useState(false),
-    [room, setRoom] = useState(""),
     [showConfig, setShowConfig] = useState(false),
     [serverOffset, setServerOffset] = useState(0),
     [clock, setClock] = useState(Date.now());
@@ -130,9 +129,9 @@ export function AdminDraftManager({ administration = true }: { administration?: 
           />
         )}
         <h3 className="break-words text-lg font-black">{c.name}</h3>
-        <p className="mt-2 text-sm">
+        {c.cardType !== "TECHNIQUE" && <p className="mt-2 text-sm">
           공격 {c.attack} / 체력 {c.health}
-        </p>
+        </p>}
         <p className="mt-2 whitespace-pre-wrap break-words text-sm text-neutral-300">
           {c.rulesText}
         </p>
@@ -173,11 +172,6 @@ export function AdminDraftManager({ administration = true }: { administration?: 
           {error}
         </p>
       )}
-      {settings?.poolWarning && (
-        <p className="break-words rounded border border-amber-600/40 p-3 text-sm text-amber-200">
-          {settings.poolWarning}
-        </p>
-      )}
       {settings?.poolError && (
         <p className="break-words text-amber-300">{settings.poolError}</p>
       )}
@@ -205,46 +199,12 @@ export function AdminDraftManager({ administration = true }: { administration?: 
             onClick={() =>
               void run(async () =>
                 setView(
-                  await draftRequest<DraftView>("/sessions", "POST", {
-                    mode: "PVP",
-                  }),
+                  await draftRequest<DraftView>("/matchmaking", "POST"),
                 ),
               )
             }
           >
-            PvP 방 만들기
-          </button>
-          <input
-            aria-label="드래프트 방 ID"
-            value={room}
-            onChange={(e) => setRoom(e.target.value)}
-            placeholder="다른 관리자의 방 ID"
-            className="min-h-11 min-w-0 rounded border bg-black px-3 text-base"
-          />
-          <button
-            disabled={busy || !room.trim()}
-            className={button}
-            onClick={() =>
-              void run(async () => {
-                const invitation = await draftRequest<{
-                  id: string;
-                  version: number;
-                }>(`/sessions/${encodeURIComponent(room.trim())}/invitation`);
-                setView(
-                  await draftRequest<DraftView>(
-                    `/sessions/${invitation.id}/commands`,
-                    "POST",
-                    {
-                      type: "JOIN",
-                      version: invitation.version,
-                      requestId: crypto.randomUUID(),
-                    },
-                  ),
-                );
-              })
-            }
-          >
-            방 참가
+            빠른 대전
           </button>
         </div>
       )}
@@ -341,20 +301,19 @@ export function AdminDraftManager({ administration = true }: { administration?: 
         <div className="space-y-4">
           <div className="flex flex-wrap justify-between gap-2">
             <p className="break-all text-sm">
-              {view.mode} · 방 ID: {view.id}
+              {view.mode === "PVP" ? "플레이어 대전" : "AI 대전"}
             </p>
             <button
               disabled={busy}
               className={button}
               onClick={() => void run(() => command("ABORT"))}
             >
-              드래프트 종료
+              {view.phase === "WAITING" ? "매칭 취소" : "드래프트 종료"}
             </button>
           </div>
           {view.phase === "WAITING" ? (
             <p>
-              다른 플레이어에게 방 ID를 전달해 주세요. 참가하면 동시에 선택을
-              시작합니다.
+              상대를 찾는 중입니다… 매칭되면 챔피언 선택을 시작합니다.
             </p>
           ) : (
             <>

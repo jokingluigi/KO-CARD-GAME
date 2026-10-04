@@ -239,7 +239,10 @@ class OnlineLobbyClient {
     socket.addEventListener("error", () => {
       if (this.socket === socket && generation === this.socketGeneration) {
         this.trace("socket-error", { eventGeneration: generation });
+        this.socket = null;
         this.setConnectionState("error");
+        socket.close();
+        this.scheduleReconnect();
       } else {
         this.trace("stale-error-ignored", { eventGeneration: generation });
       }

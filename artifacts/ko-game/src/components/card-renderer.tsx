@@ -1,4 +1,5 @@
 import { getCardDefinitions } from '../game/cards/test-cards';
+import { repairedLegacyCardKeywords } from '../game/cards/legacy-card-effect-repair';
 import { CardRulesText } from './card-rules-text';
 import { useEffect, useState, type CSSProperties, type KeyboardEvent, type ReactNode, type Ref } from "react";
 import { CardArtwork } from "./card-artwork";
@@ -138,6 +139,7 @@ export type CardRendererSize = "hand" | "board" | "detail" | "admin";
 export type CardHighlight = "selected" | "target" | "attack";
 
 export function CardRenderer({
+  cardId,
   name,
   cardType,
   cost,
@@ -173,6 +175,7 @@ export function CardRenderer({
   tabIndex,
   containerRef,
 }: {
+  cardId?: string;
   name: string;
   cardType?: CardFrameCardType;
   cost: number;
@@ -214,7 +217,7 @@ export function CardRenderer({
     ? typeof keywordConfig?.dodgeCharges === 'number' ? keywordConfig.dodgeCharges : 1
     : 0);
   const visibleRuntimeKeywords = getVisibleCardKeywords(
-    runtimeKeywords ?? keywords,
+    runtimeKeywords ?? repairedLegacyCardKeywords({ id: cardId ?? '', text: rulesText, keywords }),
     isSilenced,
     visibleDodgeCharges,
   );

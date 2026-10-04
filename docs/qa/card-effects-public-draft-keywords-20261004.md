@@ -8,7 +8,7 @@
 - 현재 94장 설명별 효과/직렬화 및 기존 회귀: PASS.
 - 새 검사: 각 카드 사용 후 실제 AI 액션·대상 선택·턴 트리거를 6턴 진행, 액션 사이 직렬화: 94/94 PASS.
 - 매드 펌킨/하녀 판도라 대상 선택 반복: FAIL → FIXED → PASS. AI가 취소 환불을 이득으로 평가하여 재사용/취소를 반복했다. 유효 대상이 있으면 선택을 끝내도록 수정했다. legacy/NORMAL/HARD/BOSS 8개 검사 PASS. 사람의 취소 기능은 유지된다.
-- 합산 자동 검사: 1,031 PASS / FAIL 0 / skipped 0 (19.8초).
+- 합산 자동 검사: 1,032 PASS / FAIL 0 / skipped 0 (20.25초).
 - 프런트엔드/API 타입 검사 및 각각 production build: PASS.
 
 ## 일반 유저 드래프트
@@ -23,7 +23,7 @@
 
 ## 남은 실환경 검사
 
-배포 후 새 운영 JS 확인 및 컬렉션/드래프트 페이지 직접 확인: 배포 대기.
+배포 main 6fd2d4c7281e0e610f6bfd4ec6dbfd3eb930d2b5: PASS. 운영 JS index-B-hswHNm.js SHA256 addc8afbef9afc35ad35cdf61c600eb1ed9bec84dca464d853fcd433026b330b가 로컬 빌드와 같다. 실제 운영 컬렉션과 상세 루나 아머(2)/도발, MK 아머(1), 치유/회피 등 배지를 확인했다. 메인 드래프트 버튼과 /draft의 AI/PvP 진입 및 관리자 설정 미노출을 확인했다.
 실제 휴대전화 UI 및 두 계정 운영 PvP: UNVERIFIED. 엔진/격리 HTTP 검사를 실제 휴대전화/운영 두 계정 검사로 보고하지 않는다.
 전체 실환경 QA 완료라고 주장하지 않는다.
 
@@ -50,3 +50,19 @@
 - `artifacts/ko-game/src/game/qa/current-card-action-continuation.test.ts`
 - `artifacts/ko-game/src/pages/draft.tsx`
 - `lib/db/qa/public-draft-access.test.ts`
+
+## 후속 발견
+
+예거(latest-wrestler-5)의 설명은 회피를 명시하지만 DB keywords=[]이었다. 원본 데이터/ATK/HP/비용 변경 없이 기존 변환 경로에서 해당 ID와 회피 시작 문구를 확인하여 DODGE를 보완했다. 같은 함수를 정적 카드 표시에도 사용한다. 실제 첫 공격 회피/횟수 소모/두 번째 피해 및 원본 불변 검사 PASS. 조건부 미래 회피 문구에는 적용하지 않는다. 후속 전체 1,032 PASS.
+
+AI 덱에 챔피언 라 칼라베라가 없는 이유는 관리자 전체 챔피언 화면의 DISABLED v22로 직접 확인했다. AI 옵션은 DISABLED를 제외하고 DRAFT를 허용한다. 챔피언 공개 상태나 원본 데이터, 기존 AI 덱을 변경하지 않았다.
+
+## 2026-10-05 urgent follow-up
+
+- PASS: authenticated PvP draft matchmaking endpoint pairs waiting players under the existing database advisory lock. Repeated requests restore the same session; third players enter another queue; cancellation releases participation; OFF and login restrictions remain.
+- PASS: removed technique pool warning and room ID UI; waiting state polls, cancellation is available. Technique offers do not show ATK/HP.
+- FAIL → FIXED → PASS: normal online snapshots previously registered cardPool only when Minion A was present. Register the match-authorized pool for every snapshot and retain it if account resources arrive later. Both arrival orders and unpublished opponent definition lookup are covered. No catalog publication or collection access changes.
+- FAIL → FIXED → PASS: socket errors previously depended on a later close event to reconnect. Error now closes the failed socket and schedules retry; delayed stale events cannot overwrite the recovered socket.
+- PASS: production health HTTP 200 and live quick-match UI showed server connected at 2026-10-05 00:05 KST. User's individual interrupted PvP session cause remains UNVERIFIED.
+- PASS: suite 1,043 tests, zero failures/skips; six additional current-catalog armor tests PASS (219 catalog tests total). Luna armor 2; Luna MK, Blackout, Silence, Arbiter and Frankenstein Mandrill armor 1. Effect damage, combat damage, zero floor, serialization and silence removal checked against current fixture without original specification changes.
+- UNVERIFIED: two-account production PvP, actual mobile device and live queue pairing. No production test matches or account/catalog writes were made.

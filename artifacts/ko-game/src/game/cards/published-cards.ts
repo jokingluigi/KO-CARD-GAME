@@ -4,7 +4,7 @@ import type { CardAbility, CardEffect } from "../effects/types";
 import type { CardDefinition, CardRarity } from "./types";
 import { normalizeCardRarityForType } from "./types";
 import { ACTIONS, TRIGGERS, isEffectScript, type EffectScript } from "@workspace/effect-registry";
-import { repairedLegacyCardAbilities } from './legacy-card-effect-repair';
+import { repairedLegacyCardAbilities, repairedLegacyCardKeywords } from './legacy-card-effect-repair';
 
 type StructuredCardEffect = Extract<CardEffect, { type: "STRUCTURED" }>;
 
@@ -270,7 +270,7 @@ export function cardRecordToDefinition(card: PublishedCardRecord): CardDefinitio
        summonLine: card.summonLine ?? null,
       isToken: card.isToken,
       isChampionToken: card.isChampionToken,
-      keywords: card.keywords,
+      keywords: repairedLegacyCardKeywords(card),
        tags: Array.isArray(card.tags) ? [...card.tags] : [],
       ...(implementation ? {contentRule: implementation.rule} : {}),
       abilities: (implementation?.abilities ?? repairedLegacyCardAbilities(card) ?? (zombieAbsorption

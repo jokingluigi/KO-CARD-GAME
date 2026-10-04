@@ -1078,6 +1078,7 @@ export function AdminCardManager({
               >
                 <div className="relative overflow-hidden rounded-lg bg-neutral-900">
                   <CardRenderer
+                    cardId={card.id}
                     keywords={card.keywords}
                     keywordConfig={card.effectConfig}
                     name={card.name}

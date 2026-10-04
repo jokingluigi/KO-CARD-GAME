@@ -1,7 +1,7 @@
 import { buildMatchRecap } from "@workspace/game-engine";
 import { isDeepStrictEqual } from "node:util";
 import { randomUUID } from "node:crypto";
-import { and, eq, inArray, sql } from "drizzle-orm";
+import { and, asc, eq, inArray, sql } from "drizzle-orm";
 import {
   db,
   cardsTable,
@@ -392,6 +392,7 @@ export async function startDraft(
   userId: string,
   name: string,
   mode: "AI" | "PVP",
+  matchmaking = false,
 ) {
   await enabled();
   const settings = await draftSettings(),
@@ -405,12 +406,29 @@ export async function startDraft(
       .select()
       .from(draftParticipantsTable)
       .where(eq(draftParticipantsTable.userId, userId));
+    if (existing && matchmaking) return existing.sessionId;
     if (existing)
       throw new DraftError(
         "ACTIVE_DRAFT",
         "진행 중인 드래프트를 먼저 이어서 진행하거나 종료해 주세요.",
         409,
       );
+    if (matchmaking && mode === "PVP") {
+      const waiting = await tx.select().from(draftSessionsTable)
+        .where(sql`${draftSessionsTable.state}->>'phase' = 'WAITING'`)
+        .orderBy(asc(draftSessionsTable.createdAt));
+      for (const row of waiting) {
+        const candidate = structuredClone(row.state) as unknown as DraftState;
+        if (candidate.mode !== "PVP" || candidate.seats[1].userId ||
+            Date.now() - row.updatedAt.getTime() > 60000) continue;
+        candidate.seats[1] = emptySeat(userId, name);
+        beginDraft(candidate, row.snapshot as unknown as DraftSnapshot, Date.now());
+        await tx.insert(draftParticipantsTable).values({ userId, sessionId: row.id });
+        await tx.update(draftSessionsTable).set({ state: record(candidate), version: row.version + 1, updatedAt: new Date() })
+          .where(eq(draftSessionsTable.id, row.id));
+        return row.id;
+      }
+    }
     const s: DraftState = {
       id: randomUUID(),
       mode,
@@ -656,7 +674,7 @@ export async function mutateDraft(
     const changed = before !== JSON.stringify({ ...s, lastSeen: undefined }),
       version = row.version + (changed ? 1 : 0);
     if (heartbeat && s.phase === "BATTLE" && s.lastSeen) s.lastSeen[seat] = now;
-    if (changed || (heartbeat && s.phase === "BATTLE"))
+    if (changed || (heartbeat && (s.phase === "BATTLE" || s.phase === "WAITING")))
       await tx
         .update(draftSessionsTable)
         .set({ state: record(s), version, updatedAt: new Date() })

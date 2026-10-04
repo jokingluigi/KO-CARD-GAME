@@ -4,7 +4,6 @@ import { db, draftSettingsTable } from "@workspace/db";
 import {
   parseDraftConfig,
   validateDraftPool,
-  prepareDraftSnapshot,
   selectableCards,
   selectableChampions,
 } from "@workspace/game-engine";
@@ -64,11 +63,6 @@ router.get("/", async (req, res, next) => {
         config: { ...settings.config, excludedChampionIds: [] },
       }),
       poolError,
-      poolWarning:
-        prepareDraftSnapshot(catalog).config.techniquePicks.length <
-        settings.config.techniquePicks.length
-          ? "공개된 기술 카드 풀이 부족합니다. 가능한 만큼 기술 카드를 선택하고, 나머지 기술 우선 순서는 선수 카드로 대체합니다."
-          : null,
       currentId: await currentDraft(req.authUser!.id),
     });
   } catch (e) {
@@ -106,6 +100,12 @@ router.put("/settings", async (req, res, next) => {
   } catch (e) {
     next(e);
   }
+});
+router.post("/matchmaking", async (req, res, next) => {
+  try {
+    const id = await startDraft(req.authUser!.id, req.authUser!.nickname, "PVP", true);
+    res.json(draftView(await mutateDraft(req.authUser!.id, id)));
+  } catch (error) { next(error); }
 });
 router.post("/sessions", async (req, res, next) => {
   try {

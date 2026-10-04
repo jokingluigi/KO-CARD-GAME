@@ -88,3 +88,23 @@ test('regular user completes 25 picks and starts a real persisted draft battle',
   assert.equal(battle.status, 200); const snapshot = await battle.json(); assert.equal(snapshot.type, 'MATCH_SNAPSHOT'); assert.equal(snapshot.state.status, 'IN_PROGRESS');
   assert.equal((await request(`/api/draft/sessions/${sessionId}/battle`, 'other')).status, 403);
 });
+
+test('PvP queue automatically pairs users, restores repeat requests and permits cancellation', async () => {
+  const abort = async (user: string, view: any) => request(`/api/draft/sessions/${view.id}/commands`, user, 'POST', { version: view.version, requestId: `abort-${user}-${view.id}`, type: 'ABORT' });
+  await abort('user', await (await request(`/api/draft/sessions/${sessionId}`, 'user')).json());
+  const firstResponse = await request('/api/draft/matchmaking', 'user', 'POST');
+  assert.equal(firstResponse.status, 200); const first = await firstResponse.json(); assert.equal(first.phase, 'WAITING');
+  const repeated = await (await request('/api/draft/matchmaking', 'user', 'POST')).json(); assert.equal(repeated.id, first.id);
+  const secondResponse = await request('/api/draft/matchmaking', 'other', 'POST');
+  assert.equal(secondResponse.status, 200); const second = await secondResponse.json(); assert.equal(second.id, first.id); assert.equal(second.phase, 'DRAFT');
+  const restored = await (await request(`/api/draft/sessions/${first.id}`, 'user')).json(); assert.equal(restored.phase, 'DRAFT'); assert.equal(restored.own.offers.length, 3);
+  const third = await (await request('/api/draft/matchmaking', 'admin', 'POST')).json(); assert.notEqual(third.id, first.id); assert.equal(third.phase, 'WAITING');
+  assert.equal((await abort('admin', third)).status, 200);
+  assert.equal((await (await request('/api/draft', 'admin')).json()).currentId, null);
+  assert.equal((await (await request('/api/draft', 'user')).json()).poolWarning, undefined);
+});
+test('queue requires login and respects admin OFF switch', async () => {
+  assert.equal((await request('/api/draft/matchmaking', undefined, 'POST')).status, 401);
+  assert.equal((await request('/api/draft/settings', 'admin', 'PUT', { enabled: false })).status, 200);
+  assert.equal((await request('/api/draft/matchmaking', 'admin', 'POST')).status, 503);
+});

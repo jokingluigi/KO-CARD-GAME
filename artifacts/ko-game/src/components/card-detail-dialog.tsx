@@ -81,6 +81,7 @@ export function CardDetailDialog({
             <div className="grid gap-5 sm:grid-cols-[minmax(220px,320px)_1fr] sm:items-start">
               <FullCardArtwork name={card.name} imageUrl={card.imageUrl}>
               <CardRenderer
+                cardId={card.id}
                 keywords={card.keywords}
                 keywordConfig={card.effectConfig}
                 name={card.name}

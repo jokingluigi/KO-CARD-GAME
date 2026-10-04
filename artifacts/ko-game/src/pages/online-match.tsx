@@ -1,3 +1,4 @@
+import { mergeOnlineCardCatalog, type MatchCardCatalog } from "@/lib/online-card-catalog";
 import type { MatchRecap, CardDefinition, ChampionDefinition } from '@workspace/game-engine';
 import { DraftBattleClient, draftRequest, abandonDraft } from '@/lib/draft-client';
 import { useEffect, useRef, useState } from "react";
@@ -146,6 +147,8 @@ function OnlineMatchPage({ draft = false }: { draft?: boolean }) {
   const lastEventSequence = useRef(-1);
   const seatRef = useRef<typeof seat>(null);
   const stateRef = useRef<GameState | null>(null);
+  const accountCardsRef = useRef<CardDefinition[]>([]);
+  const matchCardsRef = useRef<MatchCardCatalog | undefined>(undefined);
   const versionRef = useRef<number | null>(null);
   const pendingActionIdRef = useRef<string | null>(null);
   const pendingActionInFlightRef = useRef(false);
@@ -171,7 +174,8 @@ function OnlineMatchPage({ draft = false }: { draft?: boolean }) {
       : Promise.all([fetchPublishedCardDefinitions(),fetchPublishedChampions(),fetchGameMedia()]);
     resources.then(([definitions, champions, media]) => {
       if (cancelled) return;
-      setRuntimeCardDefinitions(definitions);
+      accountCardsRef.current = definitions;
+      setRuntimeCardDefinitions(mergeOnlineCardCatalog(definitions, matchCardsRef.current));
       preloadMatchAssets(definitions, champions);
       setMediaCatalog(media);
       setResourcesReady(true);
@@ -279,7 +283,8 @@ function OnlineMatchPage({ draft = false }: { draft?: boolean }) {
         if (message.type === "MATCH_SNAPSHOT") {
           console.info("[KO online match]", { event: "snapshot-accepted", matchId, seat: nextSeat, version: message.version, ...client.diagnostics });
         }
-        if (projected.minionACardPool) setRuntimeCardDefinitions([...projected.minionACardPool, ...(projected.cardPool ?? [])]);
+        matchCardsRef.current = projected;
+        setRuntimeCardDefinitions(mergeOnlineCardCatalog(accountCardsRef.current, projected));
         setHasAuthoritativeSnapshot(true);
         const previous = stateRef.current;
         if (message.type === "ACTION_ACCEPTED") {
