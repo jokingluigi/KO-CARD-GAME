@@ -66,7 +66,7 @@ export const EPIC_TECHNIQUES: PublishedCardRecord[] = [
     "cost": 4,
     "attack": 0,
     "health": 0,
-    "text": "모든 아군 선수에게 HP +3을 부여합니다.",
+    "text": "모든 아군 선수와 아군 챔피언의 현재 및 최대 HP를 3 증가시킵니다.",
     "keywords": [],
     "tags": [],
     "isToken": false,
@@ -87,6 +87,21 @@ export const EPIC_TECHNIQUES: PublishedCardRecord[] = [
                   "owner": "SELF",
                   "cardType": "WRESTLER",
                   "selection": "ALL",
+                  "count": 1
+                },
+                "values": {
+                  "health": 3
+                }
+              }
+            },
+            {
+              "type": "EFFECT",
+              "effect": {
+                "action": "BUFF",
+                "target": {
+                  "zone": "PLAYER",
+                  "owner": "SELF",
+                  "selection": "SELF",
                   "count": 1
                 },
                 "values": {

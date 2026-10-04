@@ -1,3 +1,4 @@
+import { EPIC_TECHNIQUES } from './epic-techniques';
 import { newCardImplementation } from './new-card-effects';
 import { ZOMBIE_RULES } from '../engine/zombie-token';
 import type { CardAbility, CardEffect } from "../effects/types";
@@ -207,6 +208,10 @@ function excludeGraveyardTargets<T>(value: T): T {
 }
 
 export function cardRecordToDefinition(card: PublishedCardRecord): CardDefinition {
+  if (card.id === 'epic-spell-feast') {
+    const feast = EPIC_TECHNIQUES.find(entry => entry.id === card.id)!;
+    card = { ...card, text: feast.text, effectId: feast.effectId, effectConfig: feast.effectConfig };
+  }
   const implementation = newCardImplementation(card);
   if (card.name === '디 오리진') card = { ...card, text: card.text.replace(/선수(?:\s*카드)?\s*\d+\s*장당/u, '선수 2장당') };
   if (card.isToken && card.name.trim() === '좀비') card = { ...card, cost: 1, attack: 1, health: 1, text: ZOMBIE_RULES, keywords: [], effectId: 'STRUCTURED_EFFECTS_V1', effectConfig: { effects: [] } };

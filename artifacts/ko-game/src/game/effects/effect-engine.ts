@@ -63,7 +63,7 @@ export function getValidTargets(
   if (zones.length === 1 && zones[0] === 'PLAYER') {
     if (target.owner === 'ALL') return [];
     const owner = target.owner === 'SELF' ? playerId : state.players.find((p) => p.id !== playerId)?.id;
-    return owner && (effect.action === 'HEAL' || !isChampionProtectedByToken(state, owner)) ? [owner] : [];
+    return owner && (effect.action === 'HEAL' || (effect.action === 'BUFF' && target.owner === 'SELF' && (effect.values?.health ?? 0) > 0) || !isChampionProtectedByToken(state, owner)) ? [owner] : [];
   }
   const owners = target.owner === 'ALL'
     ? state.players.map((player) => player.id)
@@ -2359,6 +2359,24 @@ export function applyEffect(
       return healNewCardAware(state, targetOwner, amount);
     }
     if (zones.length === 1 && zones[0] === 'PLAYER') {
+      if (effect.action === 'BUFF' && target.owner === 'SELF' && (effect.values?.health ?? 0) > 0) {
+        const healthGain = effect.values!.health!;
+        return { ...state,
+          players: state.players.map(player => player.id !== targetOwner ? player : {
+            ...player, health: player.health + healthGain, maxHealth: player.maxHealth + healthGain,
+            champion: player.champion ? { ...player.champion,
+              health: player.health + healthGain, maxHealth: player.maxHealth + healthGain } : null,
+          }),
+          events: [...state.events, ...(['maxHealth', 'currentHealth'] as const).map(stat => ({
+            type: 'STAT_CHANGED' as const, playerId: targetOwner,
+            source: { type: 'CARD' as const, cardInstanceId: sourceCard.instanceId },
+            target: { type: 'PLAYER' as const, playerId: targetOwner }, reason: 'STAT_CHANGED', stat,
+            before: stat === 'maxHealth' ? candidatePlayer.maxHealth : candidatePlayer.health,
+            after: (stat === 'maxHealth' ? candidatePlayer.maxHealth : candidatePlayer.health) + healthGain,
+            delta: healthGain, sourceContext: sourceContextFor(playerId, sourceCard, triggerContext),
+          }))],
+        };
+      }
       if (isChampionProtectedByToken(state, targetOwner)) return state;
       if (target.owner === 'SELF' && effect.action === 'HEAL') return state;
       if (target.owner === 'SELF' && effect.action === 'DAMAGE') {

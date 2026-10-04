@@ -210,7 +210,7 @@ test('Maid Pandora transforms even when its stored form id is stale', () => {
 for(const record of records)test(`current catalog contract: ${record.name} [${record.id}]`,()=>{
  const raw=structuredClone(record),d=cardRecordToDefinition(raw);assert.deepEqual(raw,record);
  assert.deepEqual([d.cost,d.attack,d.health],[record.cost,record.attack,record.health]);
- assert.equal(d.rulesText,record.name==='좀비'?d.rulesText:record.text);assert.ok(JSON.parse(JSON.stringify(d)));
+ assert.equal(d.rulesText,record.id==='epic-spell-feast'?'모든 아군 선수와 아군 챔피언의 현재 및 최대 HP를 3 증가시킵니다.':record.name==='좀비'?d.rulesText:record.text);assert.ok(JSON.parse(JSON.stringify(d)));
  if(record.text.trim() && !['레이븐','스카드','벨로나','황소할배','좀비'].includes(record.name))assert.ok(d.abilities.length || d.contentRule,`effect-less nonvanilla ${record.name}`);
 });
 
