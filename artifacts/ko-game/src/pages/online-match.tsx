@@ -1,3 +1,4 @@
+import { advanceOnlineEventSequence } from '@/lib/online-event-sequence';
 import { mergeOnlineCardCatalog, type MatchCardCatalog } from "@/lib/online-card-catalog";
 import type { MatchRecap, CardDefinition, ChampionDefinition } from '@workspace/game-engine';
 import { DraftBattleClient, draftRequest, abandonDraft } from '@/lib/draft-client';
@@ -266,12 +267,12 @@ function OnlineMatchPage({ draft = false }: { draft?: boolean }) {
         if (
           !draft && message.type !== "MATCH_SNAPSHOT" &&
           message.type !== "RESYNC_REQUIRED" &&
-          sequencedEvents.some((event) => event.sequenceNumber > lastEventSequence.current + 1)
+          advanceOnlineEventSequence(lastEventSequence.current, sequencedEvents).gap
         ) {
           requestMatchResync();
           return;
         }
-        if (sequencedEvents.length) lastEventSequence.current = sequencedEvents.at(-1)!.sequenceNumber;
+        if (sequencedEvents.length) lastEventSequence.current = Math.max(lastEventSequence.current, sequencedEvents.at(-1)!.sequenceNumber);
 
         const projected = projectOnlineGameState(message.state, nextSeat);
         if (!projected) {

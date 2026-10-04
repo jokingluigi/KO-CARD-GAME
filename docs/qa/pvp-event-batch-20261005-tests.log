@@ -1,0 +1,46 @@
+✔ online ingress accepts supported base actions and targetless Champion ability (1.590714ms)
+✔ online ingress accepts nested targeted actions, cancellation, and target confirmation (0.507767ms)
+✔ online ingress safely rejects malformed and unknown nested payloads (0.521792ms)
+✔ client ingress distinguishes malformed actions, malformed known messages, and unknown types (0.837706ms)
+✔ action parser translates supported payloads and rejects malformed or unknown actions (0.372958ms)
+✔ online mulligan accepts only unique card identifiers and binds the authenticated player (0.28187ms)
+✔ unwrapped card and ability actions cannot commit while they start targeting (1.2482ms)
+✔ only contextually invalid selections or an otherwise-valid attack target map to INVALID_TARGET (0.38649ms)
+✔ reports a nested PostgreSQL schema error without propagating query details (2.239179ms)
+✔ reports non-PostgreSQL failures as background errors (0.230426ms)
+✔ canonical pair normalization rejects self-pairs (1.723419ms)
+✔ canonical dialogue lines and first speaker map to match seats (0.343623ms)
+✔ intro statuses round-trip without coercion (0.698623ms)
+✔ Admin intro reference summaries preserve disabled and deleted states (0.31628ms)
+✔ online intro prefers an enabled exact canonical pair over defaults (0.289357ms)
+✔ online intro falls back to defaults and permits no dialogue (0.453762ms)
+✔ online intro ignores disabled and non-exact pairs (0.21324ms)
+✔ only active matches with an in-progress game state can be resumed (0.933228ms)
+✔ persisted waiting and terminal statuses are not active resumable matches (0.151783ms)
+✔ both online seats and terminal snapshots receive the same server-calculated recap without hidden cards (4.567199ms)
+✔ terminal match cleanup clears only stale active-match presence (0.904325ms)
+✔ preserves public catalog while hiding random seed and opponent zones (1.983954ms)
+✔ keeps public definition tags but hides tagged opponent instances and pending source records (0.53784ms)
+✔ historical opponent draw and generation events stay redacted (0.324837ms)
+✔ effects that modify a hidden opponent hand card do not expose its identity (0.376691ms)
+✔ hidden card-text grants redact donor metadata while public board grants remain inspectable (0.304891ms)
+✔ targeting snapshots never expose hidden opponent ids (0.420849ms)
+✔ pending card-play undo snapshots never expose hidden authoritative state (0.294849ms)
+✔ WebSocket auth tickets are random, short-lived, and single-use (2.376054ms)
+✔ expired WebSocket auth tickets cannot be consumed (0.335871ms)
+✔ draft transport preserves animations, recovers connection and retains finished snapshot (10.147417ms)
+✔ draft action is sent during slow polling and stale poll cannot replace accepted version (3.299551ms)
+✔ owned unpublished opponent card renders without Minion A: snapshot-first (1.560441ms)
+✔ owned unpublished opponent card renders without Minion A: resources-first (0.235563ms)
+✔ match definitions take precedence while Minion A definitions remain available (0.440908ms)
+✔ actual server multi-event action is contiguous and must not force RESYNC (1.976809ms)
+✔ duplicate/empty batches do not regress sequence and true missing events still require resync (0.24664ms)
+✔ socket error reconnects even when close event is delayed; stale events do not replace recovered connection (174.500806ms)
+ℹ tests 38
+ℹ suites 0
+ℹ pass 38
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 2595.882806
