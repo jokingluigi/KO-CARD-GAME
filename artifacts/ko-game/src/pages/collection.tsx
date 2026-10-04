@@ -556,11 +556,11 @@ function ChampionDetail({
                   <>
                     <button
                       type="button"
-                      disabled={isMutating || (!unlimited && balance < setting.craftCost!)}
+                      disabled={isMutating || champion.isCraftable === false || (!unlimited && balance < setting.craftCost!)}
                       onClick={onCraft}
                       className="mt-3 flex w-full items-center justify-center gap-2 rounded bg-rose-400 px-3 py-2.5 font-black text-black disabled:cursor-not-allowed disabled:opacity-40"
                     >
-                      <Hammer className="h-4 w-4" /> 챔피언 제작
+                      <Hammer className="h-4 w-4" /> {champion.isCraftable === false ? "제작 불가" : "챔피언 제작"}
                     </button>
                     {!unlimited && balance < setting.craftCost! && <p className="mt-2 text-[11px] text-red-300">챔피언 프리즘이 부족합니다.</p>}
                   </>

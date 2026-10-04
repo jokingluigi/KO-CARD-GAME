@@ -1,3 +1,4 @@
+import { ensureDraftParticipationQuest } from "../lib/draft-participation-quest";
 import { and, asc, eq } from "drizzle-orm";
 import { Router, type IRouter, type Request, type Response } from "express";
 import { CompleteAIMatchQuestProgressBody } from "@workspace/api-zod";
@@ -30,7 +31,8 @@ router.use(async (request, response, next) => {
 router.get("/", async (request, response): Promise<void> => {
   const assignments = await ensureDailyQuestAssignments(request.authUser!.id);
   response.setHeader("Cache-Control", "no-store");
-  response.json({ assignments: assignments.map(publicDailyQuest) });
+  const draftQuest = await ensureDraftParticipationQuest(request.authUser!.id);
+  response.json({ assignments: [...assignments, draftQuest].map(publicDailyQuest) });
 });
 
 router.post("/ai-match-progress", async (request, response): Promise<void> => {

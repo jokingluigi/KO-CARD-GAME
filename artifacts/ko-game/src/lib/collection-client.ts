@@ -29,6 +29,7 @@ export type PrismSetting = {
   configured: boolean;
 };
 export type CollectionChampion = {
+  isCraftable?: boolean;
   id: string;
   name: string;
   description: string;

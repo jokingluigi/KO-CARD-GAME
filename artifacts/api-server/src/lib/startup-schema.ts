@@ -1,3 +1,4 @@
+import championCraftPermission from "../../../../lib/db/migrations/0040_champion_craft_permission.sql";
 import epicTechniques from '../../../../lib/db/migrations/0039_epic_techniques.sql';
 import draftStorage from '../../../../lib/db/migrations/0037_admin_draft.sql';
 import techniqueRarities from '../../../../lib/db/migrations/0038_technique_rarities.sql';
@@ -39,6 +40,7 @@ export async function ensureTowerStorage(database = db): Promise<void> {
     await tx.execute(sql.raw(towerVanilla));
     await tx.execute(sql.raw(techniqueRarities));
     await tx.execute(sql.raw(epicTechniques));
+    await tx.execute(sql.raw(championCraftPermission));
     for (const statement of maintenanceSchema.split(";")) if(statement.trim()) await tx.execute(sql.raw(statement));
   });
 }

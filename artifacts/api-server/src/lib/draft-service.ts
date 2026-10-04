@@ -1,3 +1,4 @@
+import { recordCompletedDraft } from "./draft-participation-quest";
 import { buildMatchRecap } from "@workspace/game-engine";
 import { isDeepStrictEqual } from "node:util";
 import { randomUUID } from "node:crypto";
@@ -363,6 +364,7 @@ async function settle(
   for (let i = 0; i < 2; i++) {
     const seat = s.seats[i];
     if (!seat.userId) continue;
+    await recordCompletedDraft(seat.userId, s.id, tx);
     const won = s.battle.winnerId === (i === 0 ? "PLAYER_ONE" : "PLAYER_TWO");
     const key = `${prefix}_${won ? "WIN" : "LOSS"}`;
     const setting = settings.find((r) => r.key === key);

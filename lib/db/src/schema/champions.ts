@@ -44,6 +44,7 @@ export const championsTable = pgTable("champions", {
   introLineTwo: text("intro_line_two"),
   presentationLines: jsonb("presentation_lines").$type<Record<string, unknown>>().notNull().default({}),
   status: text("status").notNull().default("DRAFT"),
+  isCraftable: boolean("is_craftable").notNull().default(true),
   isStarterGrant: boolean("is_starter_grant").notNull().default(false),
   version: integer("version").notNull().default(1),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),

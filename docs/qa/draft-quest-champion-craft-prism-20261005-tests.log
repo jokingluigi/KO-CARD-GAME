@@ -1,0 +1,796 @@
+[10:43:43.909] [32mINFO[39m (13): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 1,
+      "method": "POST",
+      "url": "/api/auth/login"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 120
+[10:43:43.995] [32mINFO[39m (13): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 2,
+      "method": "POST",
+      "url": "/api/auth/login"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 75
+[10:43:44.058] [32mINFO[39m (13): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 3,
+      "method": "POST",
+      "url": "/api/auth/login"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 59
+[10:43:44.065] [32mINFO[39m (13): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 4,
+      "method": "GET",
+      "url": "/api/draft"
+    }
+    [35mres[39m: {
+      "statusCode": 401
+    }
+    [35mresponseTime[39m: 2
+[10:43:44.087] [32mINFO[39m (13): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 5,
+      "method": "GET",
+      "url": "/api/draft"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 20
+[10:43:44.095] [32mINFO[39m (13): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 6,
+      "method": "GET",
+      "url": "/api/admin/draft"
+    }
+    [35mres[39m: {
+      "statusCode": 403
+    }
+    [35mresponseTime[39m: 5
+✔ draft still requires login and admin management still requires ADMIN (5942.51261ms)
+[10:43:44.119] [32mINFO[39m (13): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 7,
+      "method": "GET",
+      "url": "/api/admin/draft"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 21
+[10:43:44.133] [32mINFO[39m (13): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 8,
+      "method": "PUT",
+      "url": "/api/draft/settings"
+    }
+    [35mres[39m: {
+      "statusCode": 403
+    }
+    [35mresponseTime[39m: 7
+[10:43:44.143] [32mINFO[39m (13): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 9,
+      "method": "PUT",
+      "url": "/api/admin/draft/settings"
+    }
+    [35mres[39m: {
+      "statusCode": 403
+    }
+    [35mresponseTime[39m: 7
+[10:43:44.157] [32mINFO[39m (13): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 10,
+      "method": "GET",
+      "url": "/api/draft/availability"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 11
+✔ ordinary users cannot change ON/OFF through either settings URL (41.61507ms)
+[10:43:44.173] [32mINFO[39m (13): [36mrequest errored[39m
+    [35mreq[39m: {
+      "id": 11,
+      "method": "POST",
+      "url": "/api/draft/sessions"
+    }
+    [35mres[39m: {
+      "statusCode": 503
+    }
+    [35mresponseTime[39m: 7
+    err: {
+      "type": "Error",
+      "message": "failed with status code 503",
+      "stack":
+          Error: failed with status code 503
+              at onResFinished (/workspace/scratch/e84071811a26/ko-card-game/node_modules/.pnpm/pino-http@10.5.0/node_modules/pino-http/logger.js:115:39)
+              at ServerResponse.onResponseComplete (/workspace/scratch/e84071811a26/ko-card-game/node_modules/.pnpm/pino-http@10.5.0/node_modules/pino-http/logger.js:178:14)
+              at ServerResponse.emit (node:events:521:24)
+              at onFinish (node:_http_outgoing:1079:10)
+              at callback (node:internal/streams/writable:764:21)
+              at afterWrite (node:internal/streams/writable:708:5)
+              at afterWriteTick (node:internal/streams/writable:694:10)
+              at process.processTicksAndRejections (node:internal/process/task_queues:89:21)
+    }
+[10:43:44.192] [32mINFO[39m (13): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 12,
+      "method": "PUT",
+      "url": "/api/draft/settings"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 16
+[10:43:44.200] [32mINFO[39m (13): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 13,
+      "method": "GET",
+      "url": "/api/draft/availability"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 6
+✔ OFF rejects new regular-user sessions; admin ON allows them (77.536543ms)
+[10:43:44.239] [32mINFO[39m (13): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 14,
+      "method": "POST",
+      "url": "/api/draft/sessions"
+    }
+    [35mres[39m: {
+      "statusCode": 201
+    }
+    [35mresponseTime[39m: 36
+[10:43:44.254] [32mINFO[39m (13): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 15,
+      "method": "GET",
+      "url": "/api/draft/sessions/911b59f5-1532-4b53-872c-772ce851b1c2"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 10
+[10:43:44.273] [32mINFO[39m (13): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 16,
+      "method": "POST",
+      "url": "/api/draft/sessions/911b59f5-1532-4b53-872c-772ce851b1c2/commands"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 16
+[10:43:44.288] [32mINFO[39m (13): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 17,
+      "method": "GET",
+      "url": "/api/draft/sessions/911b59f5-1532-4b53-872c-772ce851b1c2"
+    }
+    [35mres[39m: {
+      "statusCode": 403
+    }
+    [35mresponseTime[39m: 12
+✔ regular-user selection advances, persists and rejects nonparticipant access (61.480198ms)
+[10:43:44.301] [32mINFO[39m (13): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 18,
+      "method": "GET",
+      "url": "/api/draft"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 11
+[10:43:44.313] [32mINFO[39m (13): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 19,
+      "method": "GET",
+      "url": "/api/draft/sessions/911b59f5-1532-4b53-872c-772ce851b1c2"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 8
+[10:43:44.327] [32mINFO[39m (13): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 20,
+      "method": "POST",
+      "url": "/api/draft/sessions/911b59f5-1532-4b53-872c-772ce851b1c2/commands"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 12
+[10:43:44.348] [32mINFO[39m (13): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 21,
+      "method": "POST",
+      "url": "/api/draft/sessions/911b59f5-1532-4b53-872c-772ce851b1c2/commands"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 11
+[10:43:44.360] [32mINFO[39m (13): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 22,
+      "method": "POST",
+      "url": "/api/draft/sessions/911b59f5-1532-4b53-872c-772ce851b1c2/commands"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 9
+[10:43:44.372] [32mINFO[39m (13): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 23,
+      "method": "POST",
+      "url": "/api/draft/sessions/911b59f5-1532-4b53-872c-772ce851b1c2/commands"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 9
+[10:43:44.387] [32mINFO[39m (13): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 24,
+      "method": "POST",
+      "url": "/api/draft/sessions/911b59f5-1532-4b53-872c-772ce851b1c2/commands"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 13
+[10:43:44.405] [32mINFO[39m (13): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 25,
+      "method": "POST",
+      "url": "/api/draft/sessions/911b59f5-1532-4b53-872c-772ce851b1c2/commands"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 14
+[10:43:44.421] [32mINFO[39m (13): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 26,
+      "method": "POST",
+      "url": "/api/draft/sessions/911b59f5-1532-4b53-872c-772ce851b1c2/commands"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 12
+[10:43:44.434] [32mINFO[39m (13): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 27,
+      "method": "POST",
+      "url": "/api/draft/sessions/911b59f5-1532-4b53-872c-772ce851b1c2/commands"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 11
+[10:43:44.446] [32mINFO[39m (13): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 28,
+      "method": "POST",
+      "url": "/api/draft/sessions/911b59f5-1532-4b53-872c-772ce851b1c2/commands"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 9
+[10:43:44.461] [32mINFO[39m (13): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 29,
+      "method": "POST",
+      "url": "/api/draft/sessions/911b59f5-1532-4b53-872c-772ce851b1c2/commands"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 12
+[10:43:44.473] [32mINFO[39m (13): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 30,
+      "method": "POST",
+      "url": "/api/draft/sessions/911b59f5-1532-4b53-872c-772ce851b1c2/commands"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 10
+[10:43:44.485] [32mINFO[39m (13): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 31,
+      "method": "POST",
+      "url": "/api/draft/sessions/911b59f5-1532-4b53-872c-772ce851b1c2/commands"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 9
+[10:43:44.500] [32mINFO[39m (13): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 32,
+      "method": "POST",
+      "url": "/api/draft/sessions/911b59f5-1532-4b53-872c-772ce851b1c2/commands"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 11
+[10:43:44.512] [32mINFO[39m (13): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 33,
+      "method": "POST",
+      "url": "/api/draft/sessions/911b59f5-1532-4b53-872c-772ce851b1c2/commands"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 10
+[10:43:44.525] [32mINFO[39m (13): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 34,
+      "method": "POST",
+      "url": "/api/draft/sessions/911b59f5-1532-4b53-872c-772ce851b1c2/commands"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 10
+[10:43:44.536] [32mINFO[39m (13): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 35,
+      "method": "POST",
+      "url": "/api/draft/sessions/911b59f5-1532-4b53-872c-772ce851b1c2/commands"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 9
+[10:43:44.547] [32mINFO[39m (13): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 36,
+      "method": "POST",
+      "url": "/api/draft/sessions/911b59f5-1532-4b53-872c-772ce851b1c2/commands"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 9
+[10:43:44.559] [32mINFO[39m (13): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 37,
+      "method": "POST",
+      "url": "/api/draft/sessions/911b59f5-1532-4b53-872c-772ce851b1c2/commands"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 9
+[10:43:44.571] [32mINFO[39m (13): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 38,
+      "method": "POST",
+      "url": "/api/draft/sessions/911b59f5-1532-4b53-872c-772ce851b1c2/commands"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 9
+[10:43:44.594] [32mINFO[39m (13): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 39,
+      "method": "POST",
+      "url": "/api/draft/sessions/911b59f5-1532-4b53-872c-772ce851b1c2/commands"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 9
+[10:43:44.615] [32mINFO[39m (13): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 40,
+      "method": "POST",
+      "url": "/api/draft/sessions/911b59f5-1532-4b53-872c-772ce851b1c2/commands"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 17
+[10:43:44.631] [32mINFO[39m (13): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 41,
+      "method": "POST",
+      "url": "/api/draft/sessions/911b59f5-1532-4b53-872c-772ce851b1c2/commands"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 13
+[10:43:44.648] [32mINFO[39m (13): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 42,
+      "method": "POST",
+      "url": "/api/draft/sessions/911b59f5-1532-4b53-872c-772ce851b1c2/commands"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 14
+[10:43:44.665] [32mINFO[39m (13): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 43,
+      "method": "POST",
+      "url": "/api/draft/sessions/911b59f5-1532-4b53-872c-772ce851b1c2/commands"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 14
+[10:43:44.677] [32mINFO[39m (13): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 44,
+      "method": "POST",
+      "url": "/api/draft/sessions/911b59f5-1532-4b53-872c-772ce851b1c2/commands"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 8
+[10:43:44.716] [32mINFO[39m (13): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 45,
+      "method": "POST",
+      "url": "/api/draft/sessions/911b59f5-1532-4b53-872c-772ce851b1c2/commands"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 36
+[10:43:44.733] [32mINFO[39m (13): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 46,
+      "method": "GET",
+      "url": "/api/draft/sessions/911b59f5-1532-4b53-872c-772ce851b1c2/battle"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 14
+[10:43:44.745] [32mINFO[39m (13): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 47,
+      "method": "GET",
+      "url": "/api/draft/sessions/911b59f5-1532-4b53-872c-772ce851b1c2/battle"
+    }
+    [35mres[39m: {
+      "statusCode": 403
+    }
+    [35mresponseTime[39m: 10
+✔ regular user completes 25 picks and starts a real persisted draft battle (443.49375ms)
+[10:43:44.763] [32mINFO[39m (13): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 48,
+      "method": "GET",
+      "url": "/api/draft/sessions/911b59f5-1532-4b53-872c-772ce851b1c2"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 14
+[10:43:44.790] [32mINFO[39m (13): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 49,
+      "method": "POST",
+      "url": "/api/draft/sessions/911b59f5-1532-4b53-872c-772ce851b1c2/commands"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 24
+[10:43:44.811] [32mINFO[39m (13): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 50,
+      "method": "POST",
+      "url": "/api/draft/matchmaking"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 19
+[10:43:44.832] [32mINFO[39m (13): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 51,
+      "method": "POST",
+      "url": "/api/draft/matchmaking"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 18
+[10:43:44.857] [32mINFO[39m (13): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 52,
+      "method": "POST",
+      "url": "/api/draft/matchmaking"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 23
+[10:43:44.880] [32mINFO[39m (13): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 53,
+      "method": "GET",
+      "url": "/api/draft/sessions/8778c6df-b119-4090-9f0e-bfd97f59aed7"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 12
+[10:43:44.904] [32mINFO[39m (13): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 54,
+      "method": "POST",
+      "url": "/api/draft/matchmaking"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 22
+[10:43:44.916] [32mINFO[39m (13): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 55,
+      "method": "POST",
+      "url": "/api/draft/sessions/877c561a-94fd-4eff-8f1d-7222c3c17151/commands"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 9
+[10:43:44.930] [32mINFO[39m (13): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 56,
+      "method": "GET",
+      "url": "/api/draft"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 12
+✔ PvP queue automatically pairs users, restores repeat requests and permits cancellation (198.631238ms)
+[10:43:44.944] [32mINFO[39m (13): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 57,
+      "method": "GET",
+      "url": "/api/draft"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 11
+[10:43:44.949] [32mINFO[39m (13): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 58,
+      "method": "POST",
+      "url": "/api/draft/matchmaking"
+    }
+    [35mres[39m: {
+      "statusCode": 401
+    }
+    [35mresponseTime[39m: 2
+[10:43:44.959] [32mINFO[39m (13): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 59,
+      "method": "PUT",
+      "url": "/api/draft/settings"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 7
+[10:43:44.968] [32mINFO[39m (13): [36mrequest errored[39m
+    [35mreq[39m: {
+      "id": 60,
+      "method": "POST",
+      "url": "/api/draft/matchmaking"
+    }
+    [35mres[39m: {
+      "statusCode": 503
+    }
+    [35mresponseTime[39m: 6
+    err: {
+      "type": "Error",
+      "message": "failed with status code 503",
+      "stack":
+          Error: failed with status code 503
+              at onResFinished (/workspace/scratch/e84071811a26/ko-card-game/node_modules/.pnpm/pino-http@10.5.0/node_modules/pino-http/logger.js:115:39)
+              at ServerResponse.onResponseComplete (/workspace/scratch/e84071811a26/ko-card-game/node_modules/.pnpm/pino-http@10.5.0/node_modules/pino-http/logger.js:178:14)
+              at ServerResponse.emit (node:events:521:24)
+              at onFinish (node:_http_outgoing:1079:10)
+              at callback (node:internal/streams/writable:764:21)
+              at afterWrite (node:internal/streams/writable:708:5)
+              at afterWriteTick (node:internal/streams/writable:694:10)
+              at process.processTicksAndRejections (node:internal/process/task_queues:89:21)
+    }
+✔ queue requires login and respects admin OFF switch (23.746981ms)
+✔ persistent draft quest counts five AI/PvP completions once each and grants unpublished Minion A once (94.577946ms)
+[10:43:45.062] [32mINFO[39m (13): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 61,
+      "method": "GET",
+      "url": "/api/daily-quests"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 12
+[10:43:45.077] [32mINFO[39m (13): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 62,
+      "method": "PATCH",
+      "url": "/api/admin/champions/champion-0"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 11
+[10:43:45.091] [32mINFO[39m (13): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 63,
+      "method": "POST",
+      "url": "/api/prism/champion/craft/champion-0"
+    }
+    [35mres[39m: {
+      "statusCode": 404
+    }
+    [35mresponseTime[39m: 8
+[10:43:45.119] [32mINFO[39m (13): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 64,
+      "method": "PATCH",
+      "url": "/api/admin/champions/champion-0"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 11
+[10:43:45.136] [32mINFO[39m (13): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 65,
+      "method": "POST",
+      "url": "/api/prism/champion/craft/champion-0"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 14
+✔ champion craft permission persists through admin save, blocks direct craft, and allows quest rewards (73.895622ms)
+[10:43:45.146] [32mINFO[39m (13): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 66,
+      "method": "POST",
+      "url": "/api/admin/prism/revoke"
+    }
+    [35mres[39m: {
+      "statusCode": 403
+    }
+    [35mresponseTime[39m: 6
+[10:43:45.150] [32mINFO[39m (13): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 67,
+      "method": "POST",
+      "url": "/api/admin/prism/revoke"
+    }
+    [35mres[39m: {
+      "statusCode": 401
+    }
+    [35mresponseTime[39m: 1
+[10:43:45.162] [32mINFO[39m (13): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 68,
+      "method": "POST",
+      "url": "/api/admin/prism/revoke"
+    }
+    [35mres[39m: {
+      "statusCode": 400
+    }
+    [35mresponseTime[39m: 10
+[10:43:45.178] [32mINFO[39m (13): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 69,
+      "method": "POST",
+      "url": "/api/admin/prism/revoke"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 14
+[10:43:45.192] [32mINFO[39m (13): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 70,
+      "method": "POST",
+      "url": "/api/admin/prism/revoke"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 11
+[10:43:45.205] [32mINFO[39m (13): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 71,
+      "method": "POST",
+      "url": "/api/admin/prism/revoke"
+    }
+    [35mres[39m: {
+      "statusCode": 409
+    }
+    [35mresponseTime[39m: 11
+[10:43:45.219] [32mINFO[39m (13): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 72,
+      "method": "POST",
+      "url": "/api/admin/prism/revoke"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 12
+[10:43:45.236] [32mINFO[39m (13): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 73,
+      "method": "POST",
+      "url": "/api/admin/prism/revoke"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 13
+[10:43:45.249] [32mINFO[39m (13): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 74,
+      "method": "POST",
+      "url": "/api/admin/prism/revoke"
+    }
+    [35mres[39m: {
+      "statusCode": 409
+    }
+    [35mresponseTime[39m: 12
+✔ prism revoke is admin-only, validated, atomic, logged and idempotent for both currencies (112.766783ms)
+ℹ tests 10
+ℹ suites 0
+ℹ pass 10
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 11259.174935
+
+FULL SUITE SUMMARY
+ℹ tests 1054
+ℹ suites 0
+ℹ pass 1054
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 15825.875182

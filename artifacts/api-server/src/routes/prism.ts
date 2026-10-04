@@ -92,6 +92,7 @@ async function getCraftableChampion(championDefinitionId: string, executor: Quer
   const [champion] = await executor.select().from(championsTable).where(and(
     eq(championsTable.id, championDefinitionId),
     eq(championsTable.status, "PUBLISHED"),
+    eq(championsTable.isCraftable, true),
   )).limit(1);
   return champion ?? null;
 }

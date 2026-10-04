@@ -160,6 +160,7 @@ type ChampionInput = {
   questRewardEffects: Record<string, unknown> | null; upgradedAbilityName: string | null;
   upgradedAbilityCost: number | null; upgradedAbilityText: string | null;
   upgradedAbilityEffects: Record<string, unknown> | null; championTokenDefinitionId: string | null;
+  isCraftable: boolean;
   isStarterGrant: boolean;
   abilityAudioAssetId: string | null; abilityAudioUrl: string | null; abilityAudioVolume: number;
   questCompleteAudioAssetId: string | null; questCompleteAudioUrl: string | null;
@@ -311,6 +312,8 @@ function parseChampionInput(value: unknown): ChampionInput | null {
   const questCompletedPortraitUrl = completedPortraitPair.url;
   const questCompletedPortraitUploadToken = text("questCompletedPortraitUploadToken");
   const isStarterGrant = input.isStarterGrant === true;
+  if (input.isCraftable !== undefined && typeof input.isCraftable !== "boolean") return null;
+  const isCraftable = input.isCraftable !== false;
   const validEffects = (effects: Record<string, unknown> | null | undefined, championReward = false) =>
     effects === null || effects === undefined || !("effects" in effects) ||
     isEffectScriptConfig(effects) ||
@@ -361,7 +364,7 @@ function parseChampionInput(value: unknown): ChampionInput | null {
     upgradedAbilityCost, upgradedAbilityText: text("upgradedAbilityText"),
     upgradedAbilityEffects: object("upgradedAbilityEffects", true) ?? null,
     championTokenDefinitionId: text("championTokenDefinitionId"),
-     isStarterGrant,
+     isStarterGrant, isCraftable,
     abilityAudioAssetId: text("abilityAudioAssetId"), abilityAudioUrl: text("abilityAudioUrl"),
     abilityAudioVolume, questCompleteAudioAssetId, questCompleteAudioUrl,
     questCompleteAudioVolume, questCompleteAudioEnabled, questCompleteAudioUploadToken,
@@ -2033,7 +2036,7 @@ router.patch("/champions/:id", async (request, response): Promise<void> => {
     ...championValues
   } = input;
   const [champion] = await db.update(championsTable).set({
-    ...championValues, version: sql`${championsTable.version} + 1`, updatedAt: new Date(),
+    ...championValues, isCraftable: request.body.isCraftable === undefined ? existing.isCraftable : input.isCraftable, version: sql`${championsTable.version} + 1`, updatedAt: new Date(),
   }).where(and(eq(championsTable.id, id), eq(championsTable.version, expectedVersion))).returning();
   if (!champion) {
     response.status(409).json({

@@ -31,6 +31,7 @@ type TokenCard = {
   imageUrl: string | null;
   status: Status;
   isChampionToken: boolean;
+   isCraftable?: boolean;
    isStarterGrant?: boolean;
 };
 type Champion = {
@@ -49,6 +50,7 @@ type Champion = {
   questRewardEffects: Record<string, unknown> | null; upgradedAbilityName: string | null;
   upgradedAbilityCost: number | null; upgradedAbilityText: string | null;
   upgradedAbilityEffects: Record<string, unknown> | null; championTokenDefinitionId: string | null;
+   isCraftable: boolean;
    isStarterGrant: boolean;
   abilityAudioAssetId: string | null; abilityAudioUrl: string | null; abilityAudioVolume: number;
   questCompleteAudioAssetId: string | null; questCompleteAudioUrl: string | null;
@@ -98,6 +100,7 @@ const empty: Form = {
   questProgressRequired: null, questRewardText: null, questRewardEffects: null,
   upgradedAbilityName: null, upgradedAbilityCost: null, upgradedAbilityText: null,
   upgradedAbilityEffects: null, championTokenDefinitionId: null,
+   isCraftable: true,
    isStarterGrant: false,
   abilityAudioAssetId: null, abilityAudioUrl: null, abilityAudioVolume: 100,
   questCompleteAudioAssetId: null, questCompleteAudioUrl: null,
@@ -555,6 +558,7 @@ export function AdminChampionManager({ onUnauthorized }: { onUnauthorized: () =>
       upgradedAbilityName: champion.upgradedAbilityName, upgradedAbilityCost: champion.upgradedAbilityCost,
       upgradedAbilityText: champion.upgradedAbilityText, upgradedAbilityEffects: champion.upgradedAbilityEffects,
        championTokenDefinitionId: champion.championTokenDefinitionId,
+        isCraftable: champion.isCraftable !== false,
         isStarterGrant: champion.isStarterGrant ?? false,
        abilityAudioAssetId: champion.abilityAudioAssetId,
       abilityAudioUrl: champion.abilityAudioUrl, abilityAudioVolume: champion.abilityAudioVolume,
@@ -1094,6 +1098,10 @@ export function AdminChampionManager({ onUnauthorized }: { onUnauthorized: () =>
              </div>
            )}
          </div>
+          <label className="flex items-center gap-2 text-sm">
+            <input type="checkbox" checked={form.isCraftable} onChange={e=>update("isCraftable", e.target.checked)} />
+            프리즘 제작 허용 (해제해도 퀘스트·보상 획득은 가능)
+          </label>
           <label className="md:col-span-2 flex items-center gap-2 rounded border border-amber-900/60 bg-amber-950/20 p-3 text-sm">
             <input type="checkbox" checked={form.isStarterGrant} onChange={e=>update("isStarterGrant", e.target.checked)} />
             신규 계정 Starter Champion

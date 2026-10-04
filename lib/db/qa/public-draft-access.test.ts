@@ -1,6 +1,7 @@
 import { before, after, test } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
+import { eq } from 'drizzle-orm';
 import { PGlite } from '@electric-sql/pglite';
 import { drizzle } from 'drizzle-orm/pglite';
 import { generateDrizzleJson, generateMigration } from 'drizzle-kit/api';
@@ -107,4 +108,64 @@ test('queue requires login and respects admin OFF switch', async () => {
   assert.equal((await request('/api/draft/matchmaking', undefined, 'POST')).status, 401);
   assert.equal((await request('/api/draft/settings', 'admin', 'PUT', { enabled: false })).status, 200);
   assert.equal((await request('/api/draft/matchmaking', 'admin', 'POST')).status, 503);
+});
+
+test('persistent draft quest counts five AI/PvP completions once each and grants unpublished Minion A once', async () => {
+ const { ensureDraftParticipationQuest, recordCompletedDraft } = await import('../../../artifacts/api-server/src/lib/draft-participation-quest');
+ const { claimDailyQuest } = await import('../../../artifacts/api-server/src/lib/daily-quest-service');
+ const aiHookQuest = await ensureDraftParticipationQuest('user',database as any);assert.equal(aiHookQuest.progress,1);
+ assert.equal((await ensureDraftParticipationQuest('admin',database as any)).progress,0);
+ await database.insert(schema.dailyQuestDefinitionsTable).values({id:'normal-daily-quest',title:'일반 대전',description:'일반 대전 3회',objectiveType:'PLAY_MATCH',targetValue:3,rewardType:'CURRENCY',rewardAmount:10,enabled:true});
+ await database.insert(schema.championsTable).values({id:'champion-minion-a',name:'챔피언 미니언 A',abilityName:'무작위',abilityEffects:{},status:'DRAFT'});
+ let assignment = await ensureDraftParticipationQuest('other', database as any);
+ assert.equal(assignment.progress, 0); assert.equal(assignment.assignmentDate,'LIFETIME');
+ assert.equal(assignment.targetValue,5); assert.equal(assignment.rewardTargetId,'champion-minion-a');
+ await assert.rejects(() => claimDailyQuest('other',assignment.id));
+ for (const id of ['ai-1','pvp-1','ai-2','pvp-2','ai-3']) {
+  await recordCompletedDraft('other',id,database as any); await recordCompletedDraft('other',id,database as any);
+ }
+ assignment = await ensureDraftParticipationQuest('other',database as any); assert.equal(assignment.progress,5);assert.equal(assignment.status,'COMPLETED');
+ await database.update(schema.championsTable).set({status:'DISABLED'}).where(eq(schema.championsTable.id,'champion-minion-a'));
+ await assert.rejects(() => claimDailyQuest('other',assignment.id), /보상 대상/);
+ assert.equal((await ensureDraftParticipationQuest('other',database as any)).status,'COMPLETED');
+ await database.update(schema.championsTable).set({status:'DRAFT'}).where(eq(schema.championsTable.id,'champion-minion-a'));
+ const claimed = await claimDailyQuest('other',assignment.id); assert.equal(claimed.reward?.granted,true);
+ const repeated = await claimDailyQuest('other',assignment.id);assert.equal(repeated.alreadyClaimed,true);
+ const collection = await database.select().from(schema.userChampionCollectionsTable);assert.ok(collection.some(c=>c.userId==='other' && c.championDefinitionId==='champion-minion-a' && c.owned));
+ await recordCompletedDraft('other','pvp-3',database as any);
+ assert.equal((await ensureDraftParticipationQuest('other',database as any)).status,'CLAIMED');
+ const response = await request('/api/daily-quests','other');assert.equal(response.status,200);const view=await response.json();assert.ok(view.assignments.some((q:any)=>q.id===assignment.id&&q.status==='CLAIMED'));
+ assert.equal(view.assignments.filter((q:any)=>q.assignmentDate==='LIFETIME').length,1);assert.equal(view.assignments.find((q:any)=>q.definitionId==='normal-daily-quest').progress,0);
+});
+
+test('champion craft permission persists through admin save, blocks direct craft, and allows quest rewards', async () => {
+ let [champion] = await database.select().from(schema.championsTable).where(eq(schema.championsTable.id,'champion-0'));
+ const originalStats = [champion!.maxHealth,champion!.abilityCost];
+ const saved = await request('/api/admin/champions/champion-0','admin','PATCH',{...champion,isCraftable:false});
+ assert.equal(saved.status,200,JSON.stringify(await saved.clone().json()));
+ [champion] = await database.select().from(schema.championsTable).where(eq(schema.championsTable.id,'champion-0'));assert.equal(champion!.isCraftable,false);assert.deepEqual([champion!.maxHealth,champion!.abilityCost],originalStats);
+ await database.insert(schema.championPrismEconomySettingsTable).values({id:'default',craftCost:20,duplicateReward:5});
+ await database.update(schema.usersTable).set({championPrismBalance:50}).where(eq(schema.usersTable.id,'user'));
+ assert.equal((await request('/api/prism/champion/craft/champion-0','user','POST')).status,404);
+ const {grantReward} = await import('../../../artifacts/api-server/src/lib/reward-service');
+ const rewarded = await database.transaction(tx=>grantReward({userId:'admin',sourceType:'ISOLATED_QUEST',sourceId:'craft-disabled',rewardType:'CHAMPION',amount:1,rewardTargetId:'champion-0'},tx as any));assert.equal(rewarded.granted,true);
+ const allowed = await request('/api/admin/champions/champion-0','admin','PATCH',{...champion,isCraftable:true});assert.equal(allowed.status,200);
+ assert.equal((await request('/api/prism/champion/craft/champion-0','user','POST')).status,200);
+ const [user] = await database.select().from(schema.usersTable).where(eq(schema.usersTable.id,'user'));assert.equal(user!.championPrismBalance,30);
+});
+test('prism revoke is admin-only, validated, atomic, logged and idempotent for both currencies', async () => {
+ await database.update(schema.usersTable).set({prismBalance:200,championPrismBalance:100}).where(eq(schema.usersTable.id,'other'));
+ const payload = {userId:'other',amount:50,reason:'격리 QA',requestId:'revoke-card-qa-1',kind:'CARD'};
+ assert.equal((await request('/api/admin/prism/revoke','user','POST',payload)).status,403);
+ assert.equal((await request('/api/admin/prism/revoke',undefined,'POST',payload)).status,401);
+ assert.equal((await request('/api/admin/prism/revoke','admin','POST',{...payload,amount:-1})).status,400);
+ const first = await request('/api/admin/prism/revoke','admin','POST',payload);assert.equal(first.status,200);assert.equal((await first.json()).balanceAfter,150);
+ const repeat = await request('/api/admin/prism/revoke','admin','POST',payload);assert.equal(repeat.status,200);assert.equal((await repeat.json()).alreadyRevoked,true);
+ assert.equal((await request('/api/admin/prism/revoke','admin','POST',{...payload,amount:151,requestId:'revoke-too-much'})).status,409);
+ const champion = await request('/api/admin/prism/revoke','admin','POST',{...payload,kind:'CHAMPION',requestId:'revoke-champion-qa-1'});assert.equal(champion.status,200);assert.equal((await champion.json()).balanceAfter,50);
+ const logs = await database.select().from(schema.prismTransactionsTable);const log=logs.find(item=>item.type==='ADMIN_REVOKE')!;assert.equal(log.amount,-50);assert.equal(JSON.parse(log.metadata!).revokedBy,'admin');assert.equal(JSON.parse(log.metadata!).reason,'격리 QA');
+ const [user] = await database.select().from(schema.usersTable).where(eq(schema.usersTable.id,'other'));assert.deepEqual([user!.prismBalance,user!.championPrismBalance],[150,50]);
+ const competing = await Promise.all(['revoke-race-1','revoke-race-2'].map(requestId=>request('/api/admin/prism/revoke','admin','POST',{...payload,amount:100,requestId})));
+ assert.deepEqual(competing.map(r=>r.status).sort(),[200,409]);
+ const [after] = await database.select().from(schema.usersTable).where(eq(schema.usersTable.id,'other'));assert.equal(after!.prismBalance,50);
 });

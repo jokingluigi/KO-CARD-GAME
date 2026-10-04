@@ -6,6 +6,7 @@ import {
   championPrismEconomySettingsTable,
   prismEconomySettingsTable,
   prismTransactionsTable,
+  championPrismTransactionsTable,
   usersTable,
 } from "@workspace/db";
 import { getAuthenticatedUser } from "../lib/auth";
@@ -50,6 +51,7 @@ router.get("/", async (request, response): Promise<void> => {
       email: usersTable.email,
       nickname: usersTable.nickname,
       prismBalance: usersTable.prismBalance,
+      championPrismBalance: usersTable.championPrismBalance,
     }).from(usersTable).orderBy(asc(usersTable.nickname)),
     getChampionPrismSetting(),
   ]);
@@ -132,6 +134,44 @@ router.post("/grant", async (request, response): Promise<void> => {
     return;
   }
   response.json({ user: result });
+});
+
+router.post("/revoke", async (request, response): Promise<void> => {
+  if (!requireAdmin(request, response)) return;
+  const { userId, amount, reason, requestId } = request.body ?? {};
+  const kind = request.body?.kind ?? "CARD";
+  if (typeof userId !== "string" || !userId || !isValidPrismValue(amount) || amount < 1 || amount > 1_000_000 ||
+      typeof reason !== "string" || !reason.trim() || reason.length > 300 ||
+      typeof requestId !== "string" || !/^[a-zA-Z0-9-]{8,80}$/.test(requestId) || !["CARD","CHAMPION"].includes(kind)) {
+    response.status(400).json({message:"사용자, 프리즘 종류, 회수량(1~1,000,000), 사유와 요청 ID를 확인해 주세요."}); return;
+  }
+  const table = kind === "CHAMPION" ? championPrismTransactionsTable : prismTransactionsTable;
+  const balance = kind === "CHAMPION" ? usersTable.championPrismBalance : usersTable.prismBalance;
+  const balanceKey = kind === "CHAMPION" ? "championPrismBalance" : "prismBalance";
+  class RevokeError extends Error { constructor(public status: number, message: string) {super(message);} }
+  try {
+    const result = await db.transaction(async tx => {
+      const [user] = await tx.select({id:usersTable.id}).from(usersTable).where(eq(usersTable.id,userId));
+      if (!user) throw new RevokeError(404,"사용자를 찾을 수 없습니다.");
+      const id = `admin-revoke-${requestId}`;
+      const [reserved] = await tx.insert(table).values({id,userId,type:"ADMIN_REVOKE",amount:-amount,balanceAfter:0,metadata:JSON.stringify({revokedBy:request.authUser!.id,reason:reason.trim(),kind,requestId})})
+        .onConflictDoNothing({target:table.id}).returning({id:table.id});
+      if (!reserved) {
+        const [previous] = await tx.select().from(table).where(eq(table.id,id));
+        if (!previous || previous.userId !== userId || previous.type !== "ADMIN_REVOKE" || previous.amount !== -amount) throw new RevokeError(409,"다른 회수 요청에 사용된 ID입니다.");
+        return {balanceAfter:previous.balanceAfter,alreadyRevoked:true};
+      }
+      const [updated] = await tx.update(usersTable).set({[balanceKey]:sql`${balance} - ${amount}`,updatedAt:new Date()})
+        .where(and(eq(usersTable.id,userId),sql`${balance} >= ${amount}`)).returning({balanceAfter:balance});
+      if (!updated) throw new RevokeError(409,"보유 프리즘보다 많이 회수할 수 없습니다.");
+      await tx.update(table).set({balanceAfter:updated.balanceAfter}).where(eq(table.id,id));
+      return {...updated,alreadyRevoked:false};
+    });
+    response.json(result);
+  } catch(error) {
+    if (error instanceof RevokeError) {response.status(error.status).json({message:error.message}); return;}
+    throw error;
+  }
 });
 
 export default router;
