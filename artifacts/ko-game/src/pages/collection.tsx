@@ -15,6 +15,7 @@ import { disenchantExtras, craftCard, craftChampion, disenchantCard, fetchCollec
 import { useLocation } from "wouter";
 import { ROUTES } from "@/lib/routes";
 import { cardTypeLabel } from "@/lib/display-labels";
+import { maxCardCopies } from "@workspace/game-engine/rules";
 
 type CollectionTab = "cards" | "crafting" | "champions";
 type CardTypeFilter = "ALL" | "WRESTLER" | "TECHNIQUE";
@@ -142,7 +143,7 @@ export default function CollectionPage() {
   const [selectedChampion, setSelectedChampion] = useState<CollectionChampion | null>(null);
   const [pendingAction, setPendingAction] = useState<
     | { type: "CRAFT"; card: CollectionCard; quantity: number }
-    | { type: "DISENCHANT"; card: CollectionCard; quantity: number }
+    | { type: "DISENCHANT"; card: CollectionCard; quantity: number; keepPlayableCopies?: boolean }
     | { type: "CHAMPION_CRAFT"; champion: CollectionChampion }
     | null
   >(null);
@@ -223,7 +224,8 @@ export default function CollectionPage() {
     ? Math.min(Math.max(disassemblyQuantity, 1), Math.max(selectedCard.quantity, 1))
     : 1;
 
-  const excessCount = (collection?.craftableCards ?? []).reduce((sum, card) => sum + Math.max(0, card.quantity - 3), 0);
+  const selectedExcess = selectedCard ? Math.max(0, selectedCard.quantity - maxCardCopies(selectedCard.rarity)) : 0;
+  const excessCount = (collection?.craftableCards ?? []).reduce((sum, card) => sum + Math.max(0, card.quantity - maxCardCopies(card.rarity)), 0);
   async function executeBulkDisenchant() {
     if (isMutating) return;
     setIsMutating(true);
@@ -251,7 +253,7 @@ export default function CollectionPage() {
       if (action.type === "CRAFT") {
         await craftCard(action.card.id);
       } else if (action.type === "DISENCHANT") {
-         earnedPrism = (await disenchantCard(action.card.id, action.quantity)).reward;
+         earnedPrism = (await disenchantCard(action.card.id, action.quantity, action.keepPlayableCopies)).reward;
       } else {
         await craftChampion(action.champion.id);
       }
@@ -343,10 +345,10 @@ export default function CollectionPage() {
            </div>
         </header>
 
-        {tab !== 'champions' && <button type="button" disabled={isMutating || excessCount === 0} onClick={() => setBulkConfirm(true)} className="mb-4 rounded border border-emerald-700 px-4 py-3 font-black text-emerald-300 disabled:opacity-40">3장 남기고 일괄 분해 ({excessCount}장)</button>}
+        {tab !== 'champions' && <button type="button" disabled={isMutating || excessCount === 0} onClick={() => setBulkConfirm(true)} className="mb-4 rounded border border-emerald-700 px-4 py-3 font-black text-emerald-300 disabled:opacity-40">초과 카드 일괄 분해 ({excessCount}장)</button>}
         <Dialog open={bulkConfirm} onOpenChange={open => { if (!isMutating) setBulkConfirm(open); }}>
           <DialogContent className="border-neutral-800 bg-neutral-950 text-white">
-            <DialogHeader><DialogTitle>일괄 분해 확인</DialogTitle><DialogDescription>각 카드 종류별로 3장을 남기고 초과분을 분해합니다. 총 {excessCount}장입니다. 검색·필터와 관계없이 전체 분해 가능한 카드에 적용됩니다.</DialogDescription></DialogHeader>
+            <DialogHeader><DialogTitle>일괄 분해 확인</DialogTitle><DialogDescription>일반 3장, 에픽 2장, 레전더리 1장을 남기고 초과분을 분해합니다. 총 {excessCount}장입니다. 검색·필터와 관계없이 전체 분해 가능한 카드에 적용됩니다.</DialogDescription></DialogHeader>
             <button type="button" disabled={isMutating} onClick={() => setBulkConfirm(false)}>취소</button>
             <button type="button" disabled={isMutating} onClick={() => void executeBulkDisenchant()}>{isMutating ? '처리 중...' : '일괄 분해'}</button>
           </DialogContent>
@@ -421,9 +423,9 @@ export default function CollectionPage() {
                 <p>제작 비용: <strong className="text-amber-200">{selectedSetting.craftCost!.toLocaleString()} 프리즘</strong></p>
                 <p>분해 획득량: <strong className="text-emerald-300">{selectedSetting.disenchantReward!.toLocaleString()} 프리즘</strong></p>
                 <div className="grid gap-2 sm:grid-cols-2">
-                  <button type="button" disabled={isMutating || (!collection?.isTestAccount && prismBalance < selectedSetting.craftCost!)} onClick={() => setPendingAction({ type: "CRAFT", card: selectedCard, quantity: 1 })} className="flex items-center justify-center gap-2 rounded bg-amber-400 px-3 py-2.5 font-black text-black disabled:cursor-not-allowed disabled:opacity-40"><Hammer className="h-4 w-4" /> 제작</button>
+                  <button type="button" disabled={isMutating || selectedCard.quantity >= maxCardCopies(selectedCard.rarity) || (!collection?.isTestAccount && prismBalance < selectedSetting.craftCost!)} onClick={() => setPendingAction({ type: "CRAFT", card: selectedCard, quantity: 1 })} className="flex items-center justify-center gap-2 rounded bg-amber-400 px-3 py-2.5 font-black text-black disabled:cursor-not-allowed disabled:opacity-40"><Hammer className="h-4 w-4" /> {selectedCard.quantity >= maxCardCopies(selectedCard.rarity) ? "제작 한도 도달" : "제작"}</button>
                    <button type="button" disabled={isMutating || selectedCard.quantity < 1} onClick={() => setPendingAction({ type: "DISENCHANT", card: selectedCard, quantity: 1 })} className="rounded border border-emerald-700 px-3 py-2.5 font-black text-emerald-300 disabled:cursor-not-allowed disabled:opacity-40">1장 분해</button>
-                   <button type="button" disabled={isMutating || selectedCard.quantity < 1} onClick={() => setPendingAction({ type: "DISENCHANT", card: selectedCard, quantity: selectedCard.quantity })} className="rounded border border-emerald-700 px-3 py-2.5 font-black text-emerald-300 disabled:cursor-not-allowed disabled:opacity-40">최대 분해</button>
+                   <button type="button" disabled={isMutating || selectedExcess === 0} onClick={() => setPendingAction({ type: "DISENCHANT", card: selectedCard, quantity: selectedExcess, keepPlayableCopies: true })} className="rounded border border-emerald-700 px-3 py-2.5 font-black text-emerald-300 disabled:cursor-not-allowed disabled:opacity-40">최대 분해 ({maxCardCopies(selectedCard.rarity)}장 유지)</button>
                    <div className="sm:col-span-2 flex items-center gap-2 rounded border border-neutral-700 bg-neutral-950/70 px-3 py-2">
                      <label htmlFor="disassembly-quantity" className="shrink-0 text-[11px] font-bold text-neutral-400">수량</label>
                      <input

@@ -1,7 +1,38 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { DraftBattleClient } from "./draft-client";
+import { DraftBattleClient, draftCommand, type DraftView } from "./draft-client";
 import type { OnlineServerMessage } from "./online-lobby-client";
+test("selection retries an opponent-only version change with the same request identifier", async () => {
+  const original = globalThis.fetch;
+  const view = { id: "room", phase: "DRAFT", seat: 0, version: 1, own: { deck: [], offers: ["a", "b"], deadline: 999999 } } as unknown as DraftView;
+  const bodies: any[] = [];
+  globalThis.fetch = (async (_url, init) => {
+    if (init?.method === "POST") {
+      bodies.push(JSON.parse(String(init.body)));
+      return bodies.length === 1 ? new Response(JSON.stringify({ code: "STALE_VERSION", message: "stale" }), { status: 409 }) : new Response(JSON.stringify({ ...view, version: 3 }));
+    }
+    return new Response(JSON.stringify({ ...view, version: 2, opponent: { picks: 1 } }));
+  }) as typeof fetch;
+  try {
+    assert.equal((await draftCommand(view, "PICK", "a")).version, 3);
+    assert.equal(bodies.length, 2);
+    assert.equal(bodies[0].requestId, bodies[1].requestId);
+    assert.equal(bodies[1].version, 2);
+    assert.equal(bodies[1].pickId, "a");
+  } finally { globalThis.fetch = original; }
+});
+test("expired or advanced own selection never retries an old click", async () => {
+  const original = globalThis.fetch;
+  const view = { id: "room", phase: "DRAFT", seat: 0, version: 1, own: { deck: [], offers: ["a"] } } as unknown as DraftView;
+  let posts = 0;
+  globalThis.fetch = (async (_url, init) => {
+    if (init?.method === "POST") { posts++; return new Response(JSON.stringify({ code: "STALE_VERSION", message: "stale" }), { status: 409 }); }
+    return new Response(JSON.stringify({ ...view, version: 2, own: { deck: ["b"], offers: ["a"] } }));
+  }) as typeof fetch;
+  try { await assert.rejects(draftCommand(view, "PICK", "a"), /stale/); assert.equal(posts, 1); }
+  finally { globalThis.fetch = original; }
+});
+
 test("draft transport preserves animations, recovers connection and retains finished snapshot", async () => {
   const originalFetch = globalThis.fetch,
     originalInterval = globalThis.setInterval,

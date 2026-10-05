@@ -957,3 +957,37 @@ test("both PvP participants mutate separate copies and reconnect to the same aut
   );
   await command("admin", await latest("admin", first.id), "ABORT");
 });
+
+test("crafting caps at 3/2/1 and maximum/bulk disassembly preserves playable copies", async () => {
+  const { eq, and } = await import("drizzle-orm");
+  await database.update(schema.usersTable).set({ prismBalance: 10000 }).where(eq(schema.usersTable.id, "user"));
+  for (const rarity of ["NORMAL", "EPIC", "LEGENDARY"]) await database.insert(schema.prismEconomySettingsTable).values({ rarity, craftCost: 10, disenchantReward: 3 }).onConflictDoUpdate({ target: schema.prismEconomySettingsTable.rarity, set: { craftCost: 10, disenchantReward: 3 } });
+  for (const [id, cap] of [["n0", 3], ["e0", 2], ["l0", 1]] as const) {
+    const ownedWhere = and(eq(schema.userCardCollectionsTable.userId, "user"), eq(schema.userCardCollectionsTable.cardDefinitionId, id));
+    await database.update(schema.userCardCollectionsTable).set({ quantity: 0 }).where(ownedWhere);
+    for (let quantity = 1; quantity <= cap; quantity++) {
+      const result = await request("user", `/prism/craft/${id}`, "POST");
+      assert.equal(result.status, 200, JSON.stringify(result.body));
+      assert.equal(result.body.quantity, quantity);
+    }
+    const balance = (await database.select().from(schema.usersTable).where(eq(schema.usersTable.id, "user")))[0].prismBalance;
+    const ledgerBefore = (await database.select().from(schema.prismTransactionsTable)).length;
+    assert.equal((await request("user", `/prism/craft/${id}`, "POST")).status, 422);
+    assert.equal((await database.select().from(schema.usersTable).where(eq(schema.usersTable.id, "user")))[0].prismBalance, balance);
+    assert.equal((await database.select().from(schema.prismTransactionsTable)).length, ledgerBefore);
+    await database.update(schema.userCardCollectionsTable).set({ quantity: cap + 4 }).where(ownedWhere);
+    const maximum = await request("user", `/prism/disenchant/${id}`, "POST", { quantity: 99, keepPlayableCopies: true });
+    assert.equal(maximum.status, 200);
+    assert.equal(maximum.body.quantity, cap);
+    assert.equal(maximum.body.dismantledQuantity, 4);
+    assert.equal(maximum.body.reward, 12);
+    assert.equal((await request("user", `/prism/disenchant/${id}`, "POST", { keepPlayableCopies: true })).status, 422);
+    await database.update(schema.userCardCollectionsTable).set({ quantity: cap + 2 }).where(ownedWhere);
+  }
+  assert.equal((await request("user", "/prism/disenchant-extras", "POST")).status, 200);
+  for (const [id, cap] of [["n0", 3], ["e0", 2], ["l0", 1]] as const) {
+    const [owned] = await database.select().from(schema.userCardCollectionsTable).where(and(eq(schema.userCardCollectionsTable.userId, "user"), eq(schema.userCardCollectionsTable.cardDefinitionId, id)));
+    assert.equal(owned.quantity, cap);
+  }
+  assert.equal((await request("user", "/prism/disenchant-extras", "POST")).body.dismantledQuantity, 0);
+});
