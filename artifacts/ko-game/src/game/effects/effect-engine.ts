@@ -385,6 +385,7 @@ function scriptEffectValues(
     ['amount', 'amountExpression'],
     ['attack', 'attackExpression'],
     ['health', 'healthExpression'],
+    ['maxHealth', 'maxHealthExpression'],
     ['count', 'countExpression'],
   ] as const) {
     const expression = resolved[expressionKey];
@@ -463,7 +464,7 @@ function applyScriptSteps(
         continue;
       }
       const values = cards.map((card) =>
-        step.stat === 'COST' ? card.currentCost : step.stat === 'HEALTH' ? card.currentHealth : card.currentAttack,
+        step.stat === 'COST' ? card.currentCost : step.stat === 'HEALTH' ? card.currentHealth : step.stat === 'MAX_HEALTH' ? card.maxHealth : card.currentAttack,
       );
       const value = step.operation === 'SUM'
         ? values.reduce((sum, item) => sum + item, 0)
@@ -1326,6 +1327,10 @@ function applyRandomCardCreation(
           }
         : undefined,
     });
+    if (sourceCard.definitionId === '8a09fec1-16d8-452b-85c3-a38c7a3a03f6') {
+      generated.card = { ...generated.card, currentCost: Math.max(1, generated.card.currentCost),
+        currentAttack: Math.max(1, generated.card.currentAttack), currentHealth: Math.max(1, generated.card.currentHealth), maxHealth: Math.max(1, generated.card.maxHealth) };
+    }
     if (effect.action === 'GENERATE') {
       const generatedCard = normalizeCardForZone(
         generated.card,
@@ -2798,6 +2803,16 @@ export function applyEffect(
           triggerContext,
           nextState.events.length,
         );
+        const graveyardCard = zones.includes('GRAVEYARD') && nextState.players.find(p => p.id === targetOwner)?.graveyard.find(c => c.instanceId === target.instanceId);
+        if (graveyardCard) {
+          const removed: GameState = { ...nextState,
+            players: nextState.players.map(p => p.id !== targetOwner ? p : { ...p, graveyard: p.graveyard.filter(c => c.instanceId !== target.instanceId) }),
+            events: [...nextState.events, { type: 'CARD_DESTROYED', playerId: targetOwner, cardInstanceId: target.instanceId,
+              cardType: target.cardType, source: { type: 'CARD', cardInstanceId: sourceCard.instanceId },
+              target: { type: 'CARD', cardInstanceId: target.instanceId }, reason: 'GRAVEYARD_DESTROY', sourceContext: attribution }],
+          };
+          return resolveCardDestroyedListeners(removed, targetOwner, target);
+        }
         const result = destroyCard(nextState, targetOwner, target.instanceId, {
           sourceInstanceId: sourceCard.instanceId,
           sourceContext: attribution,
@@ -3100,6 +3115,7 @@ export function applyEffect(
              if (effect.action === 'SET_STAT' && effect.values?.stat && effect.values.amount !== undefined) {
                if (effect.values.stat === 'COST') return finish({ ...card, currentCost: Math.max(0, effect.values.amount) });
                if (effect.values.stat === 'ATTACK') return finish({ ...card, currentAttack: effect.values.amount });
+               if (effect.values.maxHealth !== undefined) return finish({ ...card, currentHealth: effect.values.amount, maxHealth: Math.max(1, effect.values.maxHealth) });
                if (effect.values.currentHealthOnly) return finish({ ...card, currentHealth: Math.min(card.maxHealth, effect.values.amount) });
                return finish({
                  ...card,
@@ -3166,6 +3182,7 @@ export function applyEffect(
                ...card,
                currentAttack: card.currentHealth,
                currentHealth: card.currentAttack,
+               maxHealth: Math.max(card.maxHealth, card.currentAttack, 1),
               });
            }
           return card;

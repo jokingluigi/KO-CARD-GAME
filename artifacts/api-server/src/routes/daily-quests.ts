@@ -42,12 +42,13 @@ router.post("/ai-match-progress", async (request, response): Promise<void> => {
     return;
   }
   try {
-    const reward = await completeAIMatchQuestProgress({
+    const result = await completeAIMatchQuestProgress({
       ...parsed.data,
       userId: request.authUser!.id,
       isTestAccount: isTestAccountUser(request.authUser!),
     });
-    response.json({ completed: true, reward: reward ? { amount: reward.amount, sourceType: "MATCH_AI_RESULT" } : null });
+    response.json({ completed: result.completed, message: result.message,
+      reward: result.reward ? { amount: result.reward.amount, sourceType: "MATCH_AI_RESULT" } : null });
   } catch (error) {
     response.status(422).json({
       message: error instanceof Error ? error.message : "AI 경기 Quest 진행을 저장할 수 없습니다.",

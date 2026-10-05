@@ -1,0 +1,649 @@
+{
+  "cards": [
+    {
+      "id": "99514068-68c8-46ca-b9f5-7f16b2ea4253",
+      "name": "도금구슬 마스터",
+      "cardType": "WRESTLER",
+      "cost": 2,
+      "attack": 1,
+      "health": 1,
+      "text": "등장:내 손에 있는 6 비용 이상의 카드들의 비용을 전부 1 감소 시킵니다.",
+      "rarity": "EPIC",
+      "isStarterGrant": false,
+      "keywords": [
+        "DEFENSE"
+      ],
+      "tags": [
+        "구슬마스터"
+      ],
+      "isToken": false,
+      "isChampionToken": false,
+      "effectId": "STRUCTURED_EFFECTS_V1",
+      "effectConfig": {
+        "effects": [
+          {
+            "action": "REDUCE_COST",
+            "target": {
+              "count": 1,
+              "owner": "SELF",
+              "zones": [
+                "HAND"
+              ],
+              "filter": {
+                "minCost": 6
+              },
+              "selection": "ALL"
+            },
+            "values": {
+              "amount": 1
+            },
+            "trigger": "ENTER_FIELD"
+          }
+        ]
+      },
+      "imageAssetId": "/objects/uploads/card-images/d10f277c-35ff-4988-afb7-7bb70d97a331.png",
+      "imageUrl": "/api/storage/objects/uploads/card-images/d10f277c-35ff-4988-afb7-7bb70d97a331.png",
+      "imageDisplayMode": "COVER",
+      "imageScale": 0.58,
+      "imagePositionX": 50,
+      "imagePositionY": 50,
+      "entranceAudioAssetId": null,
+      "entranceAudioUrl": null,
+      "entranceAudioVolume": 100,
+      "entranceAudioEnabled": false,
+      "summonLine": null,
+      "status": "PUBLISHED",
+      "version": 14,
+      "createdAt": "2026-09-23T16:11:19.575Z",
+      "updatedAt": "2026-10-03T13:08:08.621Z"
+    },
+    {
+      "id": "latest-wrestler-14",
+      "name": "라 칼라베라",
+      "cardType": "WRESTLER",
+      "cost": 4,
+      "attack": 3,
+      "health": 2,
+      "text": "등장: 내 묘지에서 비용이 3 이하인 선수 카드들 중 하나를 무작위로 선정해서 부활시킵니다.",
+      "rarity": "EPIC",
+      "isStarterGrant": false,
+      "keywords": [
+        "LIFESTEAL"
+      ],
+      "tags": [
+        "언데드",
+        "레이디"
+      ],
+      "isToken": false,
+      "isChampionToken": false,
+      "effectId": null,
+      "effectConfig": {},
+      "imageAssetId": "/objects/uploads/card-images/c6e7518d-3e26-4a14-8483-0cddf9002d7b.png",
+      "imageUrl": "/api/storage/objects/uploads/card-images/c6e7518d-3e26-4a14-8483-0cddf9002d7b.png",
+      "imageDisplayMode": "COVER",
+      "imageScale": 0.76,
+      "imagePositionX": 50,
+      "imagePositionY": 50,
+      "entranceAudioAssetId": null,
+      "entranceAudioUrl": null,
+      "entranceAudioVolume": 100,
+      "entranceAudioEnabled": false,
+      "summonLine": null,
+      "status": "PUBLISHED",
+      "version": 14,
+      "createdAt": "2026-09-16T20:31:00.800Z",
+      "updatedAt": "2026-10-03T11:06:52.769Z"
+    },
+    {
+      "id": "9b7c0e52-2184-4ec1-8d68-39a4d5981d2a",
+      "name": "루나",
+      "cardType": "WRESTLER",
+      "cost": 5,
+      "attack": 2,
+      "health": 6,
+      "text": "이 카드를 처음으로 공격한 적 선수는 공격 이후 침묵됩니다. 이후 이 카드의 능력을 비활성화합니다.",
+      "rarity": "EPIC",
+      "isStarterGrant": false,
+      "keywords": [
+        "TAUNT",
+        "ARMOR"
+      ],
+      "tags": [
+        "기계",
+        "디 어쏘리티",
+        "레이디"
+      ],
+      "isToken": false,
+      "isChampionToken": false,
+      "effectId": "STRUCTURED_EFFECTS_V1",
+      "effectConfig": {
+        "armor": 1,
+        "effects": [
+          {
+            "action": "SILENCE",
+            "target": {
+              "zone": "BOARD",
+              "count": 1,
+              "owner": "ENEMY",
+              "cardType": "WRESTLER",
+              "selection": "SAME_TARGET"
+            },
+            "trigger": "FIRST_ATTACKED"
+          },
+          {
+            "action": "DISABLE_ABILITY",
+            "target": {
+              "zone": "BOARD",
+              "count": 1,
+              "owner": "SELF",
+              "selection": "SELF"
+            },
+            "trigger": "FIRST_ATTACKED"
+          }
+        ]
+      },
+      "imageAssetId": "/objects/uploads/card-images/7371f678-4a31-41da-84de-cdd118061cd4.png",
+      "imageUrl": "/api/storage/objects/uploads/card-images/7371f678-4a31-41da-84de-cdd118061cd4.png",
+      "imageDisplayMode": "CONTAIN",
+      "imageScale": 0.83,
+      "imagePositionX": 50,
+      "imagePositionY": 58,
+      "entranceAudioAssetId": null,
+      "entranceAudioUrl": null,
+      "entranceAudioVolume": 100,
+      "entranceAudioEnabled": false,
+      "summonLine": null,
+      "status": "PUBLISHED",
+      "version": 16,
+      "createdAt": "2026-09-15T02:02:31.848Z",
+      "updatedAt": "2026-10-05T13:51:58.817Z"
+    },
+    {
+      "id": "75863228-ae51-48cb-afec-43cc391672a8",
+      "name": "발단",
+      "cardType": "WRESTLER",
+      "cost": 2,
+      "attack": 1,
+      "health": 1,
+      "text": "등장:묘지에 있는 카드 한장을 파괴하고 '좀비'를 하나 소환합니다.",
+      "rarity": "NORMAL",
+      "isStarterGrant": false,
+      "keywords": [
+        "LIFESTEAL"
+      ],
+      "tags": [
+        "언데드"
+      ],
+      "isToken": false,
+      "isChampionToken": false,
+      "effectId": null,
+      "effectConfig": {},
+      "imageAssetId": "/objects/uploads/card-images/8c0b8be0-e73f-4f3c-9681-9350902e3939.png",
+      "imageUrl": "/api/storage/objects/uploads/card-images/8c0b8be0-e73f-4f3c-9681-9350902e3939.png",
+      "imageDisplayMode": "CONTAIN",
+      "imageScale": 0.82,
+      "imagePositionX": 35,
+      "imagePositionY": 47,
+      "entranceAudioAssetId": null,
+      "entranceAudioUrl": null,
+      "entranceAudioVolume": 100,
+      "entranceAudioEnabled": false,
+      "summonLine": null,
+      "status": "PUBLISHED",
+      "version": 16,
+      "createdAt": "2026-09-10T08:33:33.827Z",
+      "updatedAt": "2026-10-05T14:25:21.503Z"
+    },
+    {
+      "id": "epic-spell-life-exchange",
+      "name": "생명의 교환",
+      "cardType": "TECHNIQUE",
+      "cost": 3,
+      "attack": 0,
+      "health": 0,
+      "text": "아군 선수 1장과 상대 선수 1장을 선택하여 현재 HP를 서로 교환합니다. 기존 최대 HP 상한을 적용하며, 두 선수 모두 기절합니다.",
+      "rarity": "EPIC",
+      "isStarterGrant": false,
+      "keywords": [],
+      "tags": [],
+      "isToken": false,
+      "isChampionToken": false,
+      "effectId": "SCRIPT_V1",
+      "effectConfig": {
+        "scripts": [
+          {
+            "steps": [
+              {
+                "id": "ally",
+                "type": "SELECT",
+                "target": {
+                  "zone": "BOARD",
+                  "count": 1,
+                  "owner": "SELF",
+                  "cardType": "WRESTLER",
+                  "selection": "PLAYER_CHOICE"
+                }
+              },
+              {
+                "id": "enemy",
+                "type": "SELECT",
+                "target": {
+                  "zone": "BOARD",
+                  "count": 1,
+                  "owner": "ENEMY",
+                  "cardType": "WRESTLER",
+                  "selection": "PLAYER_CHOICE"
+                }
+              },
+              {
+                "id": "allyStat",
+                "stat": "HEALTH",
+                "type": "AGGREGATE",
+                "operation": "SUM",
+                "selectionId": "ally"
+              },
+              {
+                "id": "enemyStat",
+                "stat": "HEALTH",
+                "type": "AGGREGATE",
+                "operation": "SUM",
+                "selectionId": "enemy"
+              },
+              {
+                "type": "EFFECT",
+                "effect": {
+                  "action": "SET_STAT",
+                  "target": {
+                    "zone": "BOARD",
+                    "count": 1,
+                    "owner": "SELF",
+                    "cardType": "WRESTLER",
+                    "resultId": "ally",
+                    "selection": "ALL"
+                  },
+                  "values": {
+                    "stat": "HEALTH",
+                    "amountExpression": {
+                      "kind": "RESULT_VALUE",
+                      "resultId": "enemyStat"
+                    },
+                    "currentHealthOnly": true
+                  }
+                }
+              },
+              {
+                "type": "EFFECT",
+                "effect": {
+                  "action": "SET_STAT",
+                  "target": {
+                    "zone": "BOARD",
+                    "count": 1,
+                    "owner": "ENEMY",
+                    "cardType": "WRESTLER",
+                    "resultId": "enemy",
+                    "selection": "ALL"
+                  },
+                  "values": {
+                    "stat": "HEALTH",
+                    "amountExpression": {
+                      "kind": "RESULT_VALUE",
+                      "resultId": "allyStat"
+                    },
+                    "currentHealthOnly": true
+                  }
+                }
+              },
+              {
+                "type": "EFFECT",
+                "effect": {
+                  "action": "STUN",
+                  "target": {
+                    "zone": "BOARD",
+                    "count": 1,
+                    "owner": "SELF",
+                    "cardType": "WRESTLER",
+                    "resultId": "ally",
+                    "selection": "ALL"
+                  }
+                }
+              },
+              {
+                "type": "EFFECT",
+                "effect": {
+                  "action": "STUN",
+                  "target": {
+                    "zone": "BOARD",
+                    "count": 1,
+                    "owner": "ENEMY",
+                    "cardType": "WRESTLER",
+                    "resultId": "enemy",
+                    "selection": "ALL"
+                  }
+                }
+              }
+            ],
+            "trigger": "ACTIVE",
+            "version": "SCRIPT_V1"
+          }
+        ]
+      },
+      "imageAssetId": "/objects/uploads/card-images/89153d17-dd10-490a-a2b5-63d28f55cade.png",
+      "imageUrl": "/api/storage/objects/uploads/card-images/89153d17-dd10-490a-a2b5-63d28f55cade.png",
+      "imageDisplayMode": "COVER",
+      "imageScale": 0.91,
+      "imagePositionX": 50.4395,
+      "imagePositionY": 67.4561,
+      "entranceAudioAssetId": null,
+      "entranceAudioUrl": null,
+      "entranceAudioVolume": 100,
+      "entranceAudioEnabled": false,
+      "summonLine": null,
+      "status": "PUBLISHED",
+      "version": 5,
+      "createdAt": "2026-10-03T13:13:50.273Z",
+      "updatedAt": "2026-10-05T14:27:20.758Z"
+    },
+    {
+      "id": "8a09fec1-16d8-452b-85c3-a38c7a3a03f6",
+      "name": "아르카나 조커",
+      "cardType": "WRESTLER",
+      "cost": 2,
+      "attack": 3,
+      "health": 1,
+      "text": "등장:내 덱 맨 위에 있는 카드를 파괴하고, 비용/체력/공격을 1씩 깎은 무작위 카드를 덱 맨 위에 추가합니다.(챔피언 토큰 제외)(비용/체력/공격 수치는 최소 1)",
+      "rarity": "NORMAL",
+      "isStarterGrant": false,
+      "keywords": [
+        "DODGE"
+      ],
+      "tags": [],
+      "isToken": false,
+      "isChampionToken": false,
+      "effectId": "STRUCTURED_EFFECTS_V1",
+      "effectConfig": {
+        "effects": [
+          {
+            "action": "MILL",
+            "target": {
+              "zone": "DECK",
+              "count": 1,
+              "owner": "SELF",
+              "selection": "TOP"
+            },
+            "trigger": "ENTER_FIELD"
+          },
+          {
+            "action": "GENERATE",
+            "target": {
+              "count": 1,
+              "owner": "SELF",
+              "zones": [
+                "DECK"
+              ],
+              "filter": {
+                "isChampionToken": false
+              },
+              "cardType": "WRESTLER",
+              "selection": "RANDOM",
+              "randomScope": "FULL"
+            },
+            "values": {
+              "destination": "DECK",
+              "deckPosition": "TOP",
+              "generatedModifiers": {
+                "cost": -1,
+                "attack": -1,
+                "health": -1
+              }
+            },
+            "trigger": "ENTER_FIELD"
+          }
+        ]
+      },
+      "imageAssetId": "/objects/uploads/card-images/a7a4eb55-42b2-42f9-ac93-9096f307a46c.png",
+      "imageUrl": "/api/storage/objects/uploads/card-images/a7a4eb55-42b2-42f9-ac93-9096f307a46c.png",
+      "imageDisplayMode": "CUSTOM",
+      "imageScale": 0.84,
+      "imagePositionX": 11,
+      "imagePositionY": 0,
+      "entranceAudioAssetId": null,
+      "entranceAudioUrl": null,
+      "entranceAudioVolume": 100,
+      "entranceAudioEnabled": false,
+      "summonLine": null,
+      "status": "PUBLISHED",
+      "version": 7,
+      "createdAt": "2026-09-10T08:41:21.544Z",
+      "updatedAt": "2026-09-25T13:15:18.570Z"
+    },
+    {
+      "id": "dc43dc88-38d7-499b-ad89-6b83f773fe62",
+      "name": "오젠",
+      "cardType": "WRESTLER",
+      "cost": 2,
+      "attack": 2,
+      "health": 2,
+      "text": "등장:상대 필드에 비용이 1 이하인 선수 카드가 있다면 그 카드들 중 무작위 한장을 파괴 시킵니다.(챔피언 등급 제외)",
+      "rarity": "EPIC",
+      "isStarterGrant": false,
+      "keywords": [
+        "MULTI_STRIKE"
+      ],
+      "tags": [],
+      "isToken": false,
+      "isChampionToken": false,
+      "effectId": null,
+      "effectConfig": {},
+      "imageAssetId": "/objects/uploads/card-images/1e0c7828-020b-42d8-a0fa-3d6db81d2e64.png",
+      "imageUrl": "/api/storage/objects/uploads/card-images/1e0c7828-020b-42d8-a0fa-3d6db81d2e64.png",
+      "imageDisplayMode": "COVER",
+      "imageScale": 0.8,
+      "imagePositionX": 50,
+      "imagePositionY": 57,
+      "entranceAudioAssetId": null,
+      "entranceAudioUrl": null,
+      "entranceAudioVolume": 100,
+      "entranceAudioEnabled": false,
+      "summonLine": null,
+      "status": "PUBLISHED",
+      "version": 15,
+      "createdAt": "2026-09-23T16:10:50.069Z",
+      "updatedAt": "2026-10-05T14:25:40.539Z"
+    },
+    {
+      "id": "66143efe-2eec-450a-8570-9a4c4d92330e",
+      "name": "좀비",
+      "cardType": "WRESTLER",
+      "cost": 1,
+      "attack": 1,
+      "health": 1,
+      "text": "아군 필드에는 좀비를 1장만 둘 수 있습니다. 이미 아군 좀비가 있다면 새 좀비를 소환하지 않고 소환될 좀비의 능력치만큼 기존 좀비에게 부여합니다. 필드에 있는 동안 다른 아군 선수가 리타이어할 때마다 +1/+1을 얻습니다.",
+      "rarity": "TOKEN",
+      "isStarterGrant": false,
+      "keywords": [],
+      "tags": [],
+      "isToken": true,
+      "isChampionToken": false,
+      "effectId": "STRUCTURED_EFFECTS_V1",
+      "effectConfig": {
+        "effects": []
+      },
+      "imageAssetId": "/objects/uploads/card-images/dee32884-620d-4a33-86ba-9254bd5018a2.png",
+      "imageUrl": "/api/storage/objects/uploads/card-images/dee32884-620d-4a33-86ba-9254bd5018a2.png",
+      "imageDisplayMode": "CONTAIN",
+      "imageScale": 0.86,
+      "imagePositionX": 40,
+      "imagePositionY": 55,
+      "entranceAudioAssetId": null,
+      "entranceAudioUrl": null,
+      "entranceAudioVolume": 100,
+      "entranceAudioEnabled": false,
+      "summonLine": "으어......",
+      "status": "PUBLISHED",
+      "version": 12,
+      "createdAt": "2026-09-10T08:34:04.745Z",
+      "updatedAt": "2026-09-30T22:18:32.735Z"
+    },
+    {
+      "id": "828969e2-363a-4cc2-8156-5de5ed86b822",
+      "name": "퀘스쳔",
+      "cardType": "WRESTLER",
+      "cost": 3,
+      "attack": 3,
+      "health": 1,
+      "text": "등장:어디에 있든 비용이 1이하인 아군 선수 카드들에게 +1/+1을 부여합니다.",
+      "rarity": "LEGENDARY",
+      "isStarterGrant": false,
+      "keywords": [
+        "DODGE",
+        "DEFENSE"
+      ],
+      "tags": [
+        "엔젤"
+      ],
+      "isToken": false,
+      "isChampionToken": false,
+      "effectId": "STRUCTURED_EFFECTS_V1",
+      "effectConfig": {
+        "effects": [
+          {
+            "action": "MODIFY_STAT",
+            "target": {
+              "count": 20,
+              "owner": "SELF",
+              "zones": [
+                "HAND",
+                "DECK",
+                "BOARD"
+              ],
+              "filter": {
+                "maxCost": 1
+              },
+              "cardType": "WRESTLER",
+              "selection": "ALL"
+            },
+            "values": {
+              "stat": "ATTACK",
+              "amount": 1
+            },
+            "trigger": "ENTER_FIELD"
+          },
+          {
+            "action": "MODIFY_STAT",
+            "target": {
+              "count": 20,
+              "owner": "SELF",
+              "zones": [
+                "HAND",
+                "DECK",
+                "BOARD"
+              ],
+              "filter": {
+                "maxCost": 1
+              },
+              "cardType": "WRESTLER",
+              "selection": "ALL"
+            },
+            "values": {
+              "stat": "HEALTH",
+              "amount": 1
+            },
+            "trigger": "ENTER_FIELD"
+          }
+        ]
+      },
+      "imageAssetId": "/objects/uploads/card-images/dd67facc-cf22-4e44-bdc5-42fee68189d6.png",
+      "imageUrl": "/api/storage/objects/uploads/card-images/dd67facc-cf22-4e44-bdc5-42fee68189d6.png",
+      "imageDisplayMode": "COVER",
+      "imageScale": 0.74,
+      "imagePositionX": 50,
+      "imagePositionY": 50,
+      "entranceAudioAssetId": "/objects/uploads/audio/4eb2974d-1d89-4f35-92bb-ed28b72cea97.mp3",
+      "entranceAudioUrl": "/api/storage/objects/uploads/audio/4eb2974d-1d89-4f35-92bb-ed28b72cea97.mp3",
+      "entranceAudioVolume": 100,
+      "entranceAudioEnabled": true,
+      "summonLine": null,
+      "status": "PUBLISHED",
+      "version": 14,
+      "createdAt": "2026-09-23T16:11:55.483Z",
+      "updatedAt": "2026-10-03T11:10:40.692Z"
+    }
+  ],
+  "champions": [
+    {
+      "id": "champion-minion-a",
+      "name": "챔피언 미니언 A",
+      "description": "",
+      "imageAssetId": "/objects/uploads/card-images/728a0384-9355-4ad0-8d3b-f5adf5e541ac.png",
+      "imageUrl": "/api/storage/objects/uploads/card-images/728a0384-9355-4ad0-8d3b-f5adf5e541ac.png",
+      "imageDisplayMode": "COVER",
+      "imageScale": 1.11,
+      "imagePositionX": 50,
+      "imagePositionY": 50,
+      "questCompletedPortraitEnabled": false,
+      "questCompletedPortraitAssetId": null,
+      "questCompletedPortraitUrl": null,
+      "maxHealth": 20,
+      "abilityName": "완전히 무작위",
+      "abilityCost": 2,
+      "abilityText": "완전히 무작위 카드 비용을 1 감소시켜서 1장을 내 손에 생성합니다.",
+      "abilityEffects": {
+        "effects": [
+          {
+            "action": "GENERATE",
+            "target": {
+              "zone": "HAND",
+              "count": 1,
+              "owner": "SELF",
+              "selection": "RANDOM",
+              "randomScope": "FULL"
+            },
+            "trigger": "ACTIVE"
+          }
+        ]
+      },
+      "hasQuest": false,
+      "questName": null,
+      "questText": null,
+      "questCondition": null,
+      "questProgressRequired": null,
+      "questRewardText": null,
+      "questRewardEffects": null,
+      "upgradedAbilityName": null,
+      "upgradedAbilityCost": null,
+      "upgradedAbilityText": null,
+      "upgradedAbilityEffects": null,
+      "championTokenDefinitionId": null,
+      "championTokenEffectText": null,
+      "championTokenEffectEffects": null,
+      "abilityAudioAssetId": null,
+      "abilityAudioUrl": null,
+      "abilityAudioVolume": 100,
+      "questCompleteAudioAssetId": null,
+      "questCompleteAudioUrl": null,
+      "questCompleteAudioVolume": 100,
+      "questCompleteAudioEnabled": false,
+      "introLineOne": "전 여기 있으면 안될거 같은데요!?!?",
+      "introLineTwo": "살려주세요! 전 여기가 어딘지도 모른다고요!",
+      "presentationLines": {
+        "AFTER_QUEST": {},
+        "BEFORE_QUEST": {
+          "OOPS": "끄아아악!",
+          "HELLO": "안녕하세요...? 저 좀 내버려 두실래요....?",
+          "SORRY": "내가 지금 뭐하는거지?! 미안해요!",
+          "DEFEAT": "(https://www.youtube.com/watch?v=PP7WJL2JtLs)",
+          "THANKS": "진짜 진짜 고마워요! 진짜로!!!",
+          "VICTORY": "어떻게 이긴거야?!",
+          "THREATEN": "계속 이러시면 제가 뭘 꺼낼지 감도 안올거에요........",
+          "WELL_PLAYED": "대단해요! 진짜로! 이제 저 좀 보내주실래요....?"
+        }
+      },
+      "status": "PUBLISHED",
+      "isCraftable": false,
+      "isStarterGrant": true,
+      "version": 10,
+      "createdAt": "2026-10-01T01:06:53.594Z",
+      "updatedAt": "2026-10-05T13:13:45.790Z"
+    }
+  ]
+}

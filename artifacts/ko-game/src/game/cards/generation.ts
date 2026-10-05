@@ -150,3 +150,8 @@ export function getRandomCardGenerationCandidates(
     return isEligibleForRandomPool(definition, randomScope);
   });
 }
+
+/** Database query order must not change deterministic AI replay outcomes. */
+export function canonicalCardCatalog(cards: readonly CardDefinition[]): CardDefinition[] {
+  return [...cards].sort((a, b) => a.id < b.id ? -1 : a.id > b.id ? 1 : 0);
+}
