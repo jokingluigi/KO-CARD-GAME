@@ -201,14 +201,14 @@ export async function processMatchEventsForDailyQuests(
   }
 }
 
-export async function claimDailyQuest(userId: string, assignmentId: string) {
-  return db.transaction(async (tx) => {
+export async function claimDailyQuest(userId: string, assignmentId: string, database: Pick<typeof db, 'transaction'> = db) {
+  return database.transaction(async (tx) => {
     const [assignment] = await tx.select().from(dailyQuestAssignmentsTable)
       .where(and(
         eq(dailyQuestAssignmentsTable.id, assignmentId),
         eq(dailyQuestAssignmentsTable.userId, userId),
       ))
-      .limit(1);
+      .limit(1).for('update');
     if (!assignment) throw new Error("일일 퀘스트를 찾을 수 없습니다.");
     if (assignment.status === "CLAIMED") {
       return { assignment, reward: null, alreadyClaimed: true };

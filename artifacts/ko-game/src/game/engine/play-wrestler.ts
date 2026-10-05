@@ -46,7 +46,7 @@ export function playWrestlerFromHand(
     (candidate) => candidate.instanceId === cardInstanceId,
   );
 
-  if (!card) {
+  if (!card || card.cardType === 'TECHNIQUE') {
     return actionFailure(
       state,
       'CARD_NOT_IN_HAND',

@@ -1,4 +1,5 @@
 import { EPIC_TECHNIQUES } from './epic-techniques';
+import { lifeExchangeConfig } from './life-exchange';
 import { newCardImplementation } from './new-card-effects';
 import { ZOMBIE_RULES } from '../engine/zombie-token';
 import type { CardAbility, CardEffect } from "../effects/types";
@@ -219,6 +220,13 @@ export function cardRecordToDefinition(card: PublishedCardRecord): CardDefinitio
     const feast = EPIC_TECHNIQUES.find(entry => entry.id === card.id)!;
     card = { ...card, text: feast.text, effectId: feast.effectId, effectConfig: feast.effectConfig };
   }
+  if (card.name === '아르카나 조커' && /무작위\s*카드/u.test(card.text) && Array.isArray(card.effectConfig.effects)) {
+    card = { ...card, effectConfig: { ...card.effectConfig, effects: (card.effectConfig.effects as Array<Record<string, unknown>>).map(effect => {
+      if (effect.action !== 'GENERATE' || !effect.target || typeof effect.target !== 'object') return effect;
+      const { cardType: _obsoleteWrestlerOnly, ...target } = effect.target as Record<string, unknown>;
+      return { ...effect, target };
+    }) } };
+  }
   const implementation = newCardImplementation(card);
   if (card.name === '디 오리진') card = { ...card, text: card.text.replace(/선수(?:\s*카드)?\s*\d+\s*장당/u, '선수 2장당') };
   if (card.isToken && card.name.trim() === '좀비') card = { ...card, cost: 1, attack: 1, health: 1, text: ZOMBIE_RULES, keywords: [], effectId: 'STRUCTURED_EFFECTS_V1', effectConfig: { effects: [] } };
@@ -246,6 +254,7 @@ export function cardRecordToDefinition(card: PublishedCardRecord): CardDefinitio
       ? { ...effect, values: { ...(effect.values as Record<string, unknown> | undefined), destroyInstead: true } }
       : effect) }
     : card.effectConfig;
+  const exchangeRuntimeConfig = card.id === 'epic-spell-life-exchange' ? lifeExchangeConfig(runtimeConfig) : runtimeConfig;
   const originGroupSize = card.name === '디 오리진' ? 2 : 0;
   const originEffect = { trigger: 'ENTER_FIELD', action: 'BUFF',
     target: { zone: 'BOARD', owner: 'SELF', selection: 'SELF', count: 1 },
@@ -258,7 +267,7 @@ export function cardRecordToDefinition(card: PublishedCardRecord): CardDefinitio
               (effect.values as Record<string, unknown> | undefined)?.[key] === 'GRAVEYARD_WRESTLER_COUNT'))),
         originEffect,
       ] }
-    : runtimeConfig;
+    : exchangeRuntimeConfig;
   return {
       id: card.id,
       name: card.name,

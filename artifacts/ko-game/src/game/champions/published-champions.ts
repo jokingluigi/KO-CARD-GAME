@@ -53,7 +53,11 @@ function effects(config: Structured | null, tokenId?: string | null): ChampionEf
 function ability(id: string, name: string, cost: number, description: string, config: Structured | null,
   tokenId?: string | null): ChampionAbility {
   const ontoField = /(?:필드에|필드로)[^.!?]{0,35}(?:생성|소환|전개)/.test(description);
+  const generatedDiscount = id.startsWith('champion-minion-a-') ? Number(description.match(/비용(?:을|이)?\s*(\d+)\s*감소/u)?.[1] ?? 0) : 0;
   return { id, name, cost, description, effects: effects(config, tokenId).map((effect) =>
+    generatedDiscount && effect.type === 'STRUCTURED' && effect.action === 'GENERATE'
+      ? { ...effect, values: { ...effect.values, generatedModifiers: { ...effect.values?.generatedModifiers, cost: -generatedDiscount } } }
+      :
     ontoField && effect.type === 'STRUCTURED' && effect.action === 'GENERATE'
       ? { ...effect, action: 'SUMMON' as const }
       : effect) };

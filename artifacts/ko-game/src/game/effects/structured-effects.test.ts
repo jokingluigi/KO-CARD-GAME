@@ -747,6 +747,16 @@ test('액티브로 현재 공격력과 체력을 서로 교환한다', () => {
   assert.equal(result.players[0].board[0]?.maxHealth, 9);
 });
 
+test('stat swap expands maximum HP when attack exceeds the exchanged HP cap', () => {
+  const source = { ...instance('active-high-attack-swap', [structured('SWAP_STATS',
+    { zone: 'BOARD', owner: 'SELF', selection: 'SELF', count: 1 })]),
+    currentAttack: 7, currentHealth: 1, maxHealth: 1 };
+  const entered = enterField(createInitialGameState(), 'player-1', source, 0);
+  const result = resolveActiveAbility(entered, 'player-1', entered.players[0].board[0]!);
+  assert.deepEqual([result.players[0].board[0]?.currentAttack, result.players[0].board[0]?.currentHealth,
+    result.players[0].board[0]?.maxHealth], [1, 7, 7]);
+});
+
 test('피해가 정확한 대상을 퇴장시킨 경우에만 causal 변신을 실행한다', () => {
   const transformed = definition('wolf-form', []);
   const effects: CardEffect[] = [

@@ -35,17 +35,17 @@ const source=(s:GameState)=>s.players[0].board.find(c=>c?.instanceId==='source')
 const buff=(s:GameState,c:CardInstance,attack=0,health=0)=>applyEffect(s,'player-1',c,{type:'STRUCTURED',action:'BUFF',target:{zone:'BOARD',owner:'SELF',selection:'SELF',count:1},values:{attack,health}});
 const retire=(s:GameState,c:CardInstance,owner='player-1')=>applyEffect(s,owner,c,{type:'STRUCTURED',action:'RETIRE',target:{zone:'BOARD',owner:'SELF',selection:'SELF',count:1}});
 
-for(const record of records)test(`current wrestler legal play/serialization: ${record.name}`,()=>{
+for(const record of records.filter(r=>r.cardType==='WRESTLER'))test(`current wrestler legal play/serialization: ${record.name}`,()=>{
  const s=setup();onBoard(s,'리버덩크',0,1);s.players[0].graveyard=[instance('리버덩크','grave')];
  const n=play(s,record.name,1);assert.ok(n.events.some(e=>e.type==='CARD_PLAYED'&&e.cardInstanceId==='source'));assert.ok(!n.players[0].hand.some(c=>c.instanceId==='source'));assert.ok(JSON.stringify(n));
 });
 
 test('current RM doubles actual stats; Origin counts groups of two even with null effectId',()=>{
- let n=play(setup(),'RM우디르');assert.deepEqual([source(n).currentAttack,source(n).currentHealth],[6,6]);
+ let n=play(setup(),'RM우디르');assert.deepEqual([source(n).currentAttack,source(n).currentHealth],[def('RM우디르').attack*2,def('RM우디르').health*2]);
  for(const count of [0,2,3,6]){const s=setup();s.players[0].graveyard=Array.from({length:count},(_,i)=>instance('리버덩크',`g${i}`));n=play(s,'디 오리진');assert.deepEqual([source(n).currentAttack,source(n).currentHealth],[2+Math.floor(count/2),2+Math.floor(count/2)]);}
 });
 test('current Pi Star buffs other allies as described; Black Macaron uses remaining hand count',()=>{
- const s=setup();onBoard(s,'리버덩크',1);let n=play(s,'피 스타 세븐');assert.deepEqual([source(n).currentAttack,source(n).currentHealth],[def('피 스타 세븐').attack,def('피 스타 세븐').health]);const hpBonus=def('피 스타 세븐').rulesText.includes('+2/+2')?2:0;assert.deepEqual([n.players[0].board[1]?.currentAttack,n.players[0].board[1]?.currentHealth],[4,2+hpBonus]);
+ const s=setup();onBoard(s,'리버덩크',1);let n=play(s,'피 스타 세븐');assert.deepEqual([source(n).currentAttack,source(n).currentHealth],[def('피 스타 세븐').attack,def('피 스타 세븐').health]);const hpBonus=def('피 스타 세븐').rulesText.includes('+2/+2')?2:0;assert.deepEqual([n.players[0].board[1]?.currentAttack,n.players[0].board[1]?.currentHealth],[def('리버덩크').attack+2,def('리버덩크').health+hpBonus]);
  const b=setup();b.players[0].hand=[instance('리버덩크','h1'),instance('리버덩크','h2')];n=play(b,'블랙 마카롱');assert.equal(source(n).currentAttack,4);assert.equal(source(n).currentHealth,5);
 });
 test('current Doqung copies attack delta to health; Mandrill only triggers attack; Frankenstein only health',()=>{
@@ -61,11 +61,11 @@ test('current anywhere tag buffs affect hand/deck/board but exclude graveyard an
  for(const [name,tag,atk,hp] of [['아비터','기계',0,1],['아포스틸','실험체',0,1],['팬텀워커','스트리트',1,0],['매드 사이언티스트 퍼플레인','실험체',1,1]] as const){
  const s=setup();const targetName=definitions.find(d=>d.tags?.includes(tag)&&d.name!==name)!.name;const base=def(targetName);const c=instance(targetName,'tagged',{isGenerated:true});s.players[0].hand=[{...c,instanceId:'hand'}];s.players[0].deck=[{...c,instanceId:'deck'},instance('리버덩크','untagged')];s.players[0].graveyard=[{...c,instanceId:'grave'}];onBoard(s,targetName,1);const n=play(s,name);
  for(const got of [n.players[0].hand[0],n.players[0].deck[0],n.players[0].board[1]])assert.deepEqual([got?.currentAttack,got?.currentHealth],[base.attack+atk,Math.max(1,base.health)+hp],name);
- assert.equal(n.players[0].deck[1]?.currentAttack,2);assert.equal(n.players[0].graveyard[0]?.maxHealth,Math.max(1,base.health));
+ assert.equal(n.players[0].deck[1]?.currentAttack,def('리버덩크').attack);assert.equal(n.players[0].graveyard[0]?.maxHealth,Math.max(1,base.health));
  }
 });
 test('current generated buffs and cost-one Question work across zones without affecting other cards',()=>{
- for(const name of ['독세아','퀘스쳔']){const s=setup();s.players[0].hand=[instance('리버덩크','g',{isGenerated:true}),instance('로드','no')];s.players[0].deck=[instance('리버덩크','d',{isGenerated:true})];onBoard(s,'리버덩크',1,0,{isGenerated:true});const n=play(s,name);for(const c of [n.players[0].hand[0],n.players[0].deck[0],n.players[0].board[1]])assert.deepEqual([c?.currentAttack,c?.currentHealth],[3,3]);assert.equal(n.players[0].hand[1]?.currentAttack,2);}
+ for(const name of ['독세아','퀘스쳔']){const s=setup();s.players[0].hand=[instance('리버덩크','g',{isGenerated:true}),instance('로드','no')];s.players[0].deck=[instance('리버덩크','d',{isGenerated:true})];onBoard(s,'리버덩크',1,0,{isGenerated:true});const n=play(s,name);for(const c of [n.players[0].hand[0],n.players[0].deck[0],n.players[0].board[1]])assert.deepEqual([c?.currentAttack,c?.currentHealth],[def('리버덩크').attack+1,def('리버덩크').health+1]);assert.equal(n.players[0].hand[1]?.currentAttack,2);}
 });
 test('current Platinum spends remaining gold for twice its amount; Red Range hurts opponent; Lord draws one',()=>{
  const s=setup();s.players[0].currentGold=5;let n=play(s,'플래티넘 구슬 마스터');assert.equal(n.players[0].currentGold,0);assert.deepEqual([source(n).currentAttack,source(n).currentHealth],[9,9]);
@@ -78,16 +78,16 @@ test('current WarThunder makes a full-stat wrestler under its revised rule; Joke
 });
 test('current Calavera revives cost <=3 without obsolete Taunt; Baldan copies grave stats into Zombie',()=>{
  const s=setup();s.players[0].graveyard=[instance('리버덩크','g'),instance('도쿵','too-high')];let n=play(s,'라 칼라베라');const revived=n.players[0].board.find(c=>c?.instanceId==='g');assert.ok(revived);assert.ok(!revived.keywords.includes('TAUNT'));assert.ok(n.players[0].graveyard.some(c=>c.instanceId==='too-high'));
- const b=setup();b.players[0].graveyard=[instance('리버덩크','b',{currentAttack:4,currentHealth:6,maxHealth:6})];n=play(b,'발단');const z=n.players[0].board.find(c=>c?.definitionId===def('좀비').id);assert.deepEqual([z?.currentAttack,z?.currentHealth],[4,6]);
+ const b=setup();b.players[0].graveyard=[instance('리버덩크','b',{currentAttack:4,currentHealth:6,maxHealth:6})];n=play(b,'발단');const z=n.players[0].board.find(c=>c?.definitionId===def('좀비').id);assert.deepEqual([z?.currentAttack,z?.currentHealth],def('발단').rulesText.includes('파괴')?[1,1]:[4,6]);
 });
 test('current targeted destruction, cat reduction, heal and move-to-deck use actual selections',()=>{
  let s=setup();onBoard(s,'리버덩크',0,1);let n=play(s,'흑구슬마스터',0,'1-리버덩크-0');assert.equal(n.players[1].board[0],null);assert.ok(n.events.some(e=>e.type==='CARD_DESTROYED'&&e.cardInstanceId==='1-리버덩크-0'));assert.equal(n.players[1].graveyard.length,0);
- s=setup();onBoard(s,'로드',0,1,{currentAttack:5,currentHealth:8,maxHealth:8});n=play(s,'떼껄룩',0,'1-로드-0');assert.equal(n.players[1].board[0]?.currentAttack,1);assert.equal(n.players[1].board[0]?.isStunned,true);assert.equal(source(n).currentHealth,10);
- s=setup();s.players[0].health=15;n=play(s,'휴먼쿠커',0,'player-1');assert.equal(n.players[0].health,17);
+ s=setup();onBoard(s,'로드',0,1,{currentAttack:5,currentHealth:8,maxHealth:8});n=play(s,'떼껄룩',0,'1-로드-0');assert.equal(n.players[1].board[0]?.currentAttack,1);assert.equal(n.players[1].board[0]?.isStunned,true);assert.equal(source(n).currentHealth,def('떼껄룩').health+4);
+ s=setup();s.players[0].health=15;n=play(s,'휴먼쿠커',0,'player-1');assert.equal(n.players[0].health,15+Number(def('휴먼쿠커').rulesText.match(/(?:체력|HP).*?(\d+)/)?.[1]));
  s=setup();onBoard(s,'로드',0,1);n=play(s,'작은 하마',0,'1-로드-0');assert.equal(n.players[1].board[0],null);assert.equal(n.players[1].deck[0].instanceId,'1-로드-0');
 });
 test('current Pandora gains +2/+2 only when target ends at exactly one health; Pumpkin returns and discounts this turn',()=>{
- for(const hp of [2,3]){const s=setup();onBoard(s,'로드',0,1,{currentHealth:hp,maxHealth:hp});const n=play(s,'판도라',0,'1-로드-0');assert.equal(source(n).currentAttack,hp===2?4:2);}
+ for(const hp of [2,3]){const s=setup();onBoard(s,'로드',0,1,{currentHealth:hp,maxHealth:hp});const n=play(s,'판도라',0,'1-로드-0');assert.equal(source(n).currentAttack,def('판도라').attack+(hp===2?2:0));}
  const s=setup();onBoard(s,'로드',1);let n=play(s,'매드 펌킨',0,'0-로드-1');assert.equal(n.players[0].board[1],null);assert.equal(n.players[0].hand[0].currentCost,2);n=endTurn(n,'player-1').state;assert.equal(n.players[0].hand[0].currentCost,3);
 });
 test('current Mandang summons one copy; Luigi buffs only its adjacent summoned cards; cleanup queue buffs next play',()=>{

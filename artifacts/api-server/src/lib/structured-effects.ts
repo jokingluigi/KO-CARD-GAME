@@ -245,8 +245,9 @@ function targetCountFrom(text: string) {
 }
 function targetFilterFor(text: string, availableTags: readonly string[] = []): Target["filter"] | undefined {
   const generated = GENERATED_FILTER_PATTERN.test(text);
-  const minCost = Number(text.match(MIN_COST_PATTERN)?.[1] ?? text.match(/(?:코스트|비용)(?:이)?\s*(\d+)\s*이상/)?.[1]);
-  const maxCost = Number(text.match(/(\d+)\s*(?:코스트|비용)\s*이하/)?.[1] ?? text.match(/(?:코스트|비용)(?:이)?\s*(\d+)\s*이하/)?.[1]);
+  const costBoundary = text.match(/(?:코스트|비용)(?:이|은|을)?\s*(\d+)\s*(이하|미만|이상|초과)/) ?? text.match(/(\d+)\s*(?:코스트|비용)\s*(이하|미만|이상|초과)/);
+  const minCost = costBoundary && ['이상','초과'].includes(costBoundary[2]) ? Number(costBoundary[1]) + (costBoundary[2] === '초과' ? 1 : 0) : Number(text.match(MIN_COST_PATTERN)?.[1] ?? text.match(/(?:코스트|비용)(?:이)?\s*(\d+)\s*이상/)?.[1]);
+  const maxCost = costBoundary && ['이하','미만'].includes(costBoundary[2]) ? Number(costBoundary[1]) - (costBoundary[2] === '미만' ? 1 : 0) : NaN;
   const token = /토큰/.test(text) && !/챔피언\s*토큰/.test(text);
   const nonChampionToken = /챔피언\s*토큰\s*제외/.test(text);
   const excludeSource = /자신을\s*제외/.test(text);
@@ -1188,7 +1189,7 @@ function expandedMechanicAnalysis(
         zone: "BOARD",
         owner: "ENEMY",
         cardType: "WRESTLER",
-        filter: { maxCost: 1, isChampionToken: false },
+        filter: { maxCost: /1\s*미만/.test(text) ? 0 : 1, isChampionToken: false },
         selection: "RANDOM",
         count: 1,
         randomScope: "STANDARD",

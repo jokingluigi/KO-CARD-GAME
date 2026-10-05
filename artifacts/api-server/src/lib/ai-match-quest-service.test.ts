@@ -3,6 +3,23 @@ import { test } from "node:test";
 import { createInitialGameState, startGame, executeAction, type GameAction } from "@workspace/game-engine";
 import { runAITurn } from "../../../ko-game/src/game/actions/ai-turn-scheduler";
 import { replayAIMatch } from "./ai-match-quest-service";
+import { canonicalCardCatalog, cardRecordToDefinition } from '@workspace/game-engine';
+import { readFileSync } from 'node:fs';
+import { generateCardInstance } from '../../../ko-game/src/game/cards/generation';
+
+test('random card effects replay identically despite reversed database catalog order',()=>{
+ const records=JSON.parse(readFileSync(new URL('../../../ko-game/src/game/qa/fixtures/card-audit-2026-10-05.json',import.meta.url),'utf8')).cards;
+ const definitions=records.map(cardRecordToDefinition);
+ const joker=definitions.find((d:any)=>d.name==='아르카나 조커');
+ const initial=(pool:any[])=>{const s=startGame(createInitialGameState(),()=>0.5);s.cardPool=canonicalCardCatalog(pool);s.randomSeed=71;for(const p of s.players){p.mulliganUsed=true;p.board=[null,null,null,null];p.hand=[];p.deck=[];}s.players[0].currentGold=100;s.players[0].hand=[generateCardInstance(joker,{instanceId:'joker'})];return s;};
+ const client=initial(definitions),server=initial([...definitions].reverse());
+ const action:GameAction={type:'PLAY_WRESTLER',playerId:'player-1',cardInstanceId:'joker',boardSlot:0};
+ const played=executeAction(client,action);assert.ok(played.success);
+ const finished=executeAction(played.state,{type:'SURRENDER',playerId:'player-1'});assert.ok(finished.success);
+ const replayed=replayAIMatch(server,[action,{type:'SURRENDER',playerId:'player-1'}],'player-1','player-2');
+ assert.deepEqual(replayed,finished.state);
+ assert.deepEqual(definitions.map((d:any)=>d.id),records.map((r:any)=>r.id));
+});
 
 function startedEmptyMatch() {
   return startGame(createInitialGameState());

@@ -2,6 +2,7 @@ import { db, cardsTable, championsTable, rewardSettingsTable } from "@workspace/
 import { inArray } from "drizzle-orm";
 import {
   completeMinionACatalog,
+  canonicalCardCatalog,
   cardRecordToDefinition,
   championRecordToDefinition,
   chooseBestAction,
@@ -172,7 +173,7 @@ export async function completeAIMatchQuestProgress(input: {
   matchId: string;
   outcome: "WIN" | "LOSS";
   actions: unknown[];
-}): Promise<RewardGrantResult | null> {
+}): Promise<{ reward: RewardGrantResult | null; completed: boolean; message?: string }> {
   if (!/^ai-[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(input.matchId)) {
     throw new Error("AI 경기 식별자가 올바르지 않습니다.");
   }
@@ -272,7 +273,7 @@ export async function completeAIMatchQuestProgress(input: {
 
   const initialState = createInitialGameState(
     [userChampion.id, aiChampion.id],
-    cardDefinitions,
+    canonicalCardCatalog(cardDefinitions),
     championDefinitions,
     [userDeck.cardDefinitionIds, aiDeck.cardDefinitionIds],
     { gameId: input.matchId, randomSeed: seedForMatchId(input.matchId), minionACardPool: completeMinionACatalog(cardRecords) },
@@ -293,8 +294,10 @@ export async function completeAIMatchQuestProgress(input: {
       tx,
     );
   });
-  } catch {
-    // Quest replay is best effort; reward eligibility depends on win/loss.
+  } catch (error) {
+    const reason = error instanceof Error ? error.message : '알 수 없는 오류';
+    console.error('[KO daily quest replay]', input.matchId, reason);
+    return { reward, completed: false, message: `퀘스트 진행도를 저장하지 못했습니다: ${reason}` };
   }
-  return reward;
+  return { reward, completed: true };
 }

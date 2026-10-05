@@ -115,7 +115,7 @@ export type ScriptEffect = {
 };
 export type ScriptStep =
   | { type: "SELECT"; id: string; target: ScriptTarget }
-  | { type: "AGGREGATE"; id: string; selectionId: string; operation: ScriptOperation; stat?: ScriptStat }
+  | { type: "AGGREGATE"; id: string; selectionId: string; operation: ScriptOperation; stat?: ScriptStat | "MAX_HEALTH" }
   | { type: "HISTORY"; id: string; query: ScriptHistoryQuery }
   | { type: "EFFECT"; id?: string; effect: ScriptEffect }
   | { type: "REPEAT"; count: ScriptValue; steps: Array<{ type: "EFFECT"; effect: ScriptEffect }> }
@@ -225,6 +225,8 @@ export type StructuredEffectValues = {
   duration?: EffectDuration;
   /** Set current HP while preserving its existing maximum. */
   currentHealthOnly?: boolean;
+  maxHealth?: number;
+  maxHealthExpression?: ScriptValue;
   keyword?: Keyword;
   damageSource?: DamageSource;
   reference?: Reference;
@@ -279,7 +281,7 @@ const SCRIPT_HISTORY_KEYS = new Set(["scope", "eventType", "owner", "cardType", 
 const SCRIPT_EFFECT_KEYS = new Set(["action", "target", "values"]);
 const SCRIPT_EFFECT_VALUE_KEYS = new Set([
   "amount", "amountExpression", "attack", "attackExpression", "health", "healthExpression", "countExpression",
-  "attackMultiplier", "healthMultiplier", "stat", "duration", "currentHealthOnly",
+  "attackMultiplier", "healthMultiplier", "stat", "duration", "currentHealthOnly", "maxHealth", "maxHealthExpression",
   "keyword", "damageSource", "reference", "referenceStat", "amountReference", "minimum", "temporaryCost",
   "generatedModifiers", "deckPosition", "count", "destination", "definitionRef", "queuedTrigger", "queuedEffect", "delayed", "listener", "prevention", "captureStats",
 ]);
@@ -379,7 +381,7 @@ function validScriptSteps(value: unknown, depth: number, seen: Set<string>): val
       if (typeof raw.id !== "string" || !/^[A-Za-z][A-Za-z0-9_-]{0,31}$/.test(raw.id) || seen.has(raw.id) ||
         typeof raw.selectionId !== "string" || !seen.has(raw.selectionId) ||
         !SCRIPT_OPERATIONS.includes(raw.operation as ScriptOperation)) return false;
-      if (raw.stat !== undefined && !["COST", "ATTACK", "HEALTH"].includes(raw.stat as string)) return false;
+      if (raw.stat !== undefined && !["COST", "ATTACK", "HEALTH", "MAX_HEALTH"].includes(raw.stat as string)) return false;
       seen.add(raw.id);
       continue;
     }
@@ -435,7 +437,7 @@ function validScriptSteps(value: unknown, depth: number, seen: Set<string>): val
           "DEPLOY_CHAMPION_TOKEN", "CAPTURE", "RELEASE_CAPTURED", "REMOVE_FROM_GAME",
           "COPY_BEST_STATS", "GRANT_RANDOM_CARD_TEXT"].includes(action) &&
           Object.keys(raw.effect.values).length > 0) return false;
-        for (const expressionKey of ["amountExpression", "attackExpression", "healthExpression", "countExpression"]) {
+        for (const expressionKey of ["amountExpression", "attackExpression", "healthExpression", "maxHealthExpression", "countExpression"]) {
           const expression = raw.effect.values[expressionKey];
           if (expression !== undefined && (!validScriptValue(expression) || !scriptValueReferencesExist(expression, seen))) return false;
         }
@@ -551,6 +553,8 @@ function validScriptEffectValues(action: Action, rawValues: unknown, depth = 0):
     stat: Boolean(schema.stat),
     duration: Boolean(schema.duration),
     currentHealthOnly: action === "SET_STAT",
+    maxHealth: action === "SET_STAT",
+    maxHealthExpression: action === "SET_STAT",
     keyword: Boolean(schema.keyword),
     damageSource: Boolean(schema.damageSource),
     reference: Boolean(schema.referenceStat),
@@ -612,6 +616,8 @@ function validScriptEffectValues(action: Action, rawValues: unknown, depth = 0):
   }
   if (schema.stat && values.stat !== undefined && !STAT_NAMES.includes(values.stat as StatName)) return false;
   if (values.currentHealthOnly !== undefined && typeof values.currentHealthOnly !== "boolean") return false;
+  if (values.maxHealth !== undefined && (action !== "SET_STAT" || !finiteScriptNumber(values.maxHealth, 1, 999))) return false;
+  if (values.maxHealthExpression !== undefined && (action !== "SET_STAT" || !validScriptValue(values.maxHealthExpression))) return false;
   if (schema.duration && values.duration !== undefined &&
     !EFFECT_DURATIONS.includes(values.duration as EffectDuration)) return false;
   if (schema.keyword && !KEYWORDS.includes(values.keyword as Keyword)) return false;

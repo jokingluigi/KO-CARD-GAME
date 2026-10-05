@@ -3,6 +3,14 @@ import test from "node:test";
 
 import { analyzeEffectText, effectLibrary, isEffectScriptConfig, isStructuredEffects, statChannelsFromText } from "./structured-effects";
 
+test('cost comparisons preserve inclusive and exclusive boundaries',()=>{
+ for(const [word,field,value] of [['이하','maxCost',3],['미만','maxCost',2],['이상','minCost',3],['초과','minCost',4]] as const){
+  const result=analyzeEffectText(`등장:비용이 3 ${word}인 아군 선수들에게 +1/+1을 부여합니다.`);
+  assert.equal(result.outcome,'supported');
+  assert.equal(result.effects[0]?.target?.filter?.[field],value);
+ }
+});
+
 test("최신 보고서의 10개 원문은 공용 Analyzer에서 완전한 효과로 탈출한다", () => {
   const texts = [
     "1/1 '좀비'를 생성합니다.",

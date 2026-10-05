@@ -1,3 +1,4 @@
+import cardTextAudit from '../../../../lib/db/migrations/0044_card_text_audit.sql';
 import piStarAttackOnly from '../../../../lib/db/migrations/0043_pi_star_attack_only.sql';
 import jaegerQuest from '../../../../lib/db/migrations/0042_jaeger_quest_eight_generations.sql';
 import feastChampionHealth from '../../../../lib/db/migrations/0041_feast_champion_health.sql';
@@ -47,6 +48,7 @@ export async function ensureTowerStorage(database = db): Promise<void> {
     await tx.execute(sql.raw(feastChampionHealth));
     await tx.execute(sql.raw(jaegerQuest));
     await tx.execute(sql.raw(piStarAttackOnly));
+    await tx.execute(sql.raw(cardTextAudit));
     for (const statement of maintenanceSchema.split(";")) if(statement.trim()) await tx.execute(sql.raw(statement));
   });
 }

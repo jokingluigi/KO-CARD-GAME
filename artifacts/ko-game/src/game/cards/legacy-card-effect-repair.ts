@@ -84,8 +84,14 @@ export function repairedLegacyCardAbilities(card: PublishedCardRecord): CardAbil
   // The old Ozen record may carry an empty or stale effect config. Identify
   // this published card by its stable definition ID as well as its name.
   if (card.name.trim() === '오젠' || card.id === 'dc43dc88-38d7-499b-ad89-6b83f773fe62') {
-    return [{ trigger: 'ENTER_FIELD', effects: [{ type: 'STRUCTURED', action: 'RETIRE',
+    return [{ trigger: 'ENTER_FIELD', effects: [{ type: 'STRUCTURED', action: /파괴/u.test(text) ? 'DESTROY' : 'RETIRE',
       target: { zone: 'BOARD', owner: 'ENEMY', cardType: 'WRESTLER', filter: { maxCost: 1, isChampionToken: false, excludeChampionRarity: true }, selection: 'RANDOM', count: 1 } }] }];
+  }
+  if (card.name.trim() === '발단' && /묘지.*카드\s*한\s*장.*파괴.*좀비.*소환/u.test(text)) {
+    return [{ trigger: 'ENTER_FIELD', effects: [
+      { type: 'STRUCTURED', action: 'DESTROY', target: { zone: 'GRAVEYARD', owner: 'SELF', selection: 'RANDOM', count: 1 } },
+      { type: 'STRUCTURED', action: 'SUMMON', values: { definitionRef: { name: '좀비' }, count: 1 } },
+    ] }];
   }
   if (card.name === '불록스' && (!text || /턴\s*종료.*손.*빈\s*공간.*소환/u.test(text))) {
     return [{ trigger: 'TURN_END', condition: { type: 'SOURCE_IN_HAND' },

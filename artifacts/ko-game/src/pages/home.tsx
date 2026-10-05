@@ -3,7 +3,7 @@ import {startAdminTestDeckGame} from '@/lib/admin-test-deck';
 import {AdminTestDeck} from '@/components/admin-test-deck';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useLocation } from 'wouter';
-import { generateCardInstance } from '@/game/cards/generation';
+import { generateCardInstance, canonicalCardCatalog } from '@/game/cards/generation';
 import { TOWER_SANDBOX_KEY, createTowerSandbox } from '@/lib/tower-sandbox';
 
 import { prepareAdminCardTest } from '@/game/engine/admin-card-test';
@@ -644,7 +644,7 @@ export default function Home() {
     const nextState = startGame(
       createInitialGameState(
         [userChampion.id, aiChampion.id],
-         matchDefinitions,
+         canonicalCardCatalog(matchDefinitions),
          matchChampions,
         [deck.cardDefinitionIds, aiDeckDefinitionIds],
         { gameId: matchId, randomSeed: seedForAIMatch(matchId), minionACardPool: data.minionACardPool },
@@ -756,6 +756,7 @@ export default function Home() {
             actions: aiMatchActionsRef.current.slice(0, 2000) as unknown as Array<Record<string, unknown>>,
           });
           setAiMatchReward(result.reward);
+          if (!result.completed) throw new Error(result.message ?? '퀘스트 진행도를 저장하지 못했습니다. 다시 시도해 주세요.');
           setAiRewardStatus('success');
           return;
         } catch (error) {
