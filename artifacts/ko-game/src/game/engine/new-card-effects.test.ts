@@ -28,6 +28,34 @@ test('all current new records serialize without changing original cost/ATK/HP; e
 test('MPG selects an enemy and transfers 1 attack',()=>{const a=trigger('MPG');assert.equal(a.players[0].board[0]!.currentAttack,3);assert.equal(a.players[1].board[0]!.currentAttack,1);});
 test('금구슬 uses current attack strictly below source; invalid targets rejected; DESTROY no grave',()=>{let s=setup('금구슬 마스터');const c=s.players[0].board[0]!,effect=c.abilities[0].effects[0];assert.deepEqual(getValidTargets(s,'player-1',c,effect),['enemy']);s.players[1].board[0]!.currentAttack=3;assert.deepEqual(getValidTargets(s,'player-1',c,effect),[]);s.players[1].board[0]!.currentAttack=2;const a=settle(resolveTriggeredAbilities(s,'player-1',c,'ENTER_FIELD'));assert.equal(a.players[1].board[0],null);assert.equal(a.players[1].graveyard.length,0);});
 test('MK destroys only silenced enemies on owner turn start',()=>{const a=trigger('루나 MK.사일런스','TURN_START',s=>{s.players[1].board[0]!.isSilenced=true;s.players[1].board[1]={...generateCardInstance(unit,{instanceId:'safe'}),boardSlot:1};});assert.equal(a.players[1].board[0],null);assert.ok(a.players[1].board[1]);assert.equal(a.players[1].graveyard.length,0);});
+
+test('MK updated description silences the chosen enemy on play, then destroys only that enemy at turn start',()=>{
+ const raw=record('루나 MK.사일런스');raw.effectId=null;
+ raw.text='등장:지정한 상대 선수 카드를 침묵시킵니다.\n턴 시작:상대 필드에 있는 침묵된 선수 카드들을 파괴합니다.';
+ const def=cardRecordToDefinition(raw);
+ assert.deepEqual([def.cost,def.attack,def.health],[raw.cost,raw.attack,raw.health]);
+ assert.equal(def.rulesText,raw.text);
+ const s=setup('루나 MK.사일런스');s.cardPool=s.cardPool!.map(d=>d.id===def.id?def:d);
+ s.players[0].board[0]=null;s.players[0].hand=[generateCardInstance(def,{instanceId:'source'})];
+ s.players[1].board[1]={...generateCardInstance(unit,{instanceId:'safe'}),boardSlot:1};
+ let r=executeAction(s,{type:'PLAY_WRESTLER',playerId:'player-1',cardInstanceId:'source',boardSlot:0});assert.ok(r.success);
+ assert.deepEqual(r.state.targetingState?.validTargetIds,['enemy','safe']);
+ assert.equal(executeAction(r.state,{type:'SELECT_EFFECT_TARGET',playerId:'player-1',targetId:'source'}).success,false);
+ r=executeAction(r.state,{type:'SELECT_EFFECT_TARGET',playerId:'player-1',targetId:'enemy'});assert.ok(r.success);
+ assert.equal(r.state.players[1].board[0]!.isSilenced,true);assert.equal(r.state.players[1].board[1]!.isSilenced,false);
+ const next=resolveTriggeredAbilities(r.state,'player-1',r.state.players[0].board[0]!,'TURN_START');
+ assert.equal(next.players[1].board[0],null);assert.ok(next.players[1].board[1]);
+});
+
+test('MK old description adds no entrance effect and updated entrance with no enemies still permits play',()=>{
+ const raw=record('루나 MK.사일런스');raw.effectId=null;raw.text='턴시작:상대 필드에 있는 침묵된 선수 카드들을 파괴합니다.';
+ assert.equal(cardRecordToDefinition(raw).abilities.some(a=>a.trigger==='ENTER_FIELD'),false);
+ raw.text='등장:지정한 상대 선수 카드를 침묵시킵니다.\n'+raw.text;const def=cardRecordToDefinition(raw);
+ const s=setup('루나 MK.사일런스');s.cardPool=s.cardPool!.map(d=>d.id===def.id?def:d);
+ s.players[0].board[0]=null;s.players[0].hand=[generateCardInstance(def,{instanceId:'source'})];s.players[1].board=[null,null,null,null];
+ const r=executeAction(s,{type:'PLAY_WRESTLER',playerId:'player-1',cardInstanceId:'source',boardSlot:0});assert.ok(r.success);
+ assert.ok(r.state.players[0].board[0]);assert.equal(r.state.targetingState?.active??false,false);
+});
 test('루브 grows and gains taunt only when alone',()=>{const a=trigger('루브','TURN_END');assert.equal(a.players[0].board[0]!.currentAttack,3);assert.equal(a.players[0].board[0]!.maxHealth,4);assert.ok(a.players[0].board[0]!.keywords.includes('TAUNT'));const b=trigger('루브','TURN_END',s=>{s.players[0].board[1]=generateCardInstance(unit,{instanceId:'ally'});});assert.equal(b.players[0].board[0]!.currentAttack,2);});
 test('루이나 generates authority wrestler and grants ally lifesteal only',()=>{const a=trigger('루이나');assert.equal(a.players[0].hand.length,1);assert.ok(a.players[0].hand[0].tags?.includes('디 어쏘리티'));assert.ok(a.players[0].board[0]!.keywords.includes('LIFESTEAL'));assert.ok(!a.players[1].board[0]!.keywords.includes('LIFESTEAL'));});
 test('99 damage token wins against opponent champion',()=>{const a=trigger('반으로 갈라져 죽어!');assert.equal(a.status,'FINISHED');assert.equal(a.winnerId,'player-1');});
