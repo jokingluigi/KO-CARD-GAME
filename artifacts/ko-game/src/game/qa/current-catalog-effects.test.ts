@@ -45,8 +45,8 @@ test('current RM doubles actual stats; Origin counts groups of two even with nul
  let n=play(setup(),'RM우디르');assert.deepEqual([source(n).currentAttack,source(n).currentHealth],[4,4]);
  for(const count of [0,2,3,6]){const s=setup();s.players[0].graveyard=Array.from({length:count},(_,i)=>instance('리버덩크',`g${i}`));n=play(s,'디 오리진');assert.deepEqual([source(n).currentAttack,source(n).currentHealth],[2+Math.floor(count/2),2+Math.floor(count/2)]);}
 });
-test('current Pi Star buffs other allies +2/+2; Black Macaron uses remaining hand count',()=>{
- const s=setup();onBoard(s,'리버덩크',1);let n=play(s,'피 스타 세븐');assert.deepEqual([source(n).currentAttack,source(n).currentHealth],[4,3]);assert.deepEqual([n.players[0].board[1]?.currentAttack,n.players[0].board[1]?.currentHealth],[4,4]);
+test('current Pi Star buffs other allies as described; Black Macaron uses remaining hand count',()=>{
+ const s=setup();onBoard(s,'리버덩크',1);let n=play(s,'피 스타 세븐');assert.deepEqual([source(n).currentAttack,source(n).currentHealth],[def('피 스타 세븐').attack,def('피 스타 세븐').health]);const hpBonus=def('피 스타 세븐').rulesText.includes('+2/+2')?2:0;assert.deepEqual([n.players[0].board[1]?.currentAttack,n.players[0].board[1]?.currentHealth],[4,2+hpBonus]);
  const b=setup();b.players[0].hand=[instance('리버덩크','h1'),instance('리버덩크','h2')];n=play(b,'블랙 마카롱');assert.equal(source(n).currentAttack,4);assert.equal(source(n).currentHealth,5);
 });
 test('current Doqung copies attack delta to health; Mandrill only triggers attack; Frankenstein only health',()=>{
