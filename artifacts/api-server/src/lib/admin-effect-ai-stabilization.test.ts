@@ -268,7 +268,7 @@ test("malformed EFFECT wrappers fail instead of being guessed", () => {
   );
 });
 
-test("one Generate request makes one provider call and does not retry invalid output", async () => {
+test("invalid output gets one validation retry and is rejected after two provider calls", async () => {
   const originalFetch = globalThis.fetch;
   const originalKey = process.env.OPENAI_API_KEY;
   const originalBaseUrl = process.env.OPENAI_BASE_URL;
@@ -286,7 +286,7 @@ test("one Generate request makes one provider call and does not retry invalid ou
       generateEffectDraft("등장: 잘못된 구조", context, catalog),
       (error: unknown) => error instanceof EffectAiError && error.code === "INVALID_DRAFT",
     );
-    assert.equal(calls, 1);
+    assert.equal(calls, 2);
   } finally {
     globalThis.fetch = originalFetch;
     if (originalKey === undefined) delete process.env.OPENAI_API_KEY;

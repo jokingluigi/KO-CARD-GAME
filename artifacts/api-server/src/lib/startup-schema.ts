@@ -1,3 +1,4 @@
+import jaegerQuest from '../../../../lib/db/migrations/0042_jaeger_quest_eight_generations.sql';
 import feastChampionHealth from '../../../../lib/db/migrations/0041_feast_champion_health.sql';
 import championCraftPermission from "../../../../lib/db/migrations/0040_champion_craft_permission.sql";
 import epicTechniques from '../../../../lib/db/migrations/0039_epic_techniques.sql';
@@ -43,6 +44,7 @@ export async function ensureTowerStorage(database = db): Promise<void> {
     await tx.execute(sql.raw(epicTechniques));
     await tx.execute(sql.raw(championCraftPermission));
     await tx.execute(sql.raw(feastChampionHealth));
+    await tx.execute(sql.raw(jaegerQuest));
     for (const statement of maintenanceSchema.split(";")) if(statement.trim()) await tx.execute(sql.raw(statement));
   });
 }

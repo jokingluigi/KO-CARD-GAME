@@ -1,3 +1,4 @@
+- [Card effect fix policy](card-effect-fix-policy.md) — preserve base cost, health and attack; fix effects to match the existing description.
 - [TypeScript engine tests](typescript-engine-tests.md) — use local tsx when available; DB-backed esbuild bundles must resolve packages from lib/db.
 - [Rule-only engine imports](rule-only-engine-imports.md) — import shared deck-rule helpers through the rules subpath to avoid cycles through the aggregate engine entrypoint.
 - [Structured card effects](structured-card-effects.md) — new admin effects are validated data; partial parses never apply and gameplay never reparses display text.

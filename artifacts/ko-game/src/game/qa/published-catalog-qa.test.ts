@@ -481,7 +481,7 @@ function runChampionQa(definition: ChampionDefinition): ChampionQaResult {
     const required = definition.quest.requiredProgress;
     const expected =
       normalized(definition.name) === normalized("챔피언 예거")
-        ? 7
+        ? 8
         : normalized(definition.name) === normalized("챔피언 판도라")
           ? 5
           : required;

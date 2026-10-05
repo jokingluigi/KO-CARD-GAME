@@ -51,7 +51,7 @@ test('current Pi Star buffs other allies +2/+2; Black Macaron uses remaining han
 test('current Doqung copies attack delta to health; Mandrill only triggers attack; Frankenstein only health',()=>{
  const s=setup();const c=onBoard(s,'도쿵');let n=buff(s,c,3,0);assert.deepEqual([n.players[0].board[0]?.currentAttack,n.players[0].board[0]?.currentHealth],[6,7]);
  const m=setup();const mc=onBoard(m,'만드릴쿤');n=buff(m,mc,0,2);assert.equal(n.players[0].board[0]?.currentAttack,2);n=buff(n,n.players[0].board[0]!,2,0);assert.equal(n.players[0].board[0]?.currentAttack,5);
- const f=setup();const fc=onBoard(f,'프랑켄슈타인 만드릴쿤');n=buff(f,fc,2,0);assert.equal(n.players[0].board[0]?.currentHealth,2);n=buff(n,n.players[0].board[0]!,0,2);assert.equal(n.players[0].board[0]?.currentHealth,5);
+ const f=setup();const fc=onBoard(f,'프랑켄슈타인 만드릴쿤');n=buff(f,fc,2,0);assert.equal(n.players[0].board[0]?.currentHealth,fc.currentHealth);n=buff(n,n.players[0].board[0]!,0,2);assert.equal(n.players[0].board[0]?.currentHealth,fc.currentHealth+3);
 });
 test('current Deheon first field attack gain grants dodge once; health gain does not retrigger',()=>{
  const s=setup();const c=onBoard(s,'데헌');let n=buff(s,c,1,0);assert.equal(n.players[0].board[0]?.dodgeCharges,1);
@@ -157,11 +157,11 @@ test('current targeted entrance cancel returns exact card and refunds cost; no-t
  const s=setup();onBoard(s,'로드',0,1);s.players[0].hand=[instance('흑구슬마스터','cancel')];const r=executeAction(s,{type:'PLAY_WRESTLER',playerId:'player-1',cardInstanceId:'cancel',boardSlot:0});assert.equal(r.success,true);assert.ok(r.state.targetingState?.active);const c=executeAction(r.state,{type:'CANCEL_EFFECT_TARGET',playerId:'player-1'});assert.equal(c.success,true);assert.equal(c.state.players[0].currentGold,120);assert.ok(c.state.players[0].hand.some(x=>x.instanceId==='cancel'));assert.equal(c.state.players[0].board[0],null);assert.ok(c.state.players[1].board[0]);const n=play(setup(),'흑구슬마스터');assert.ok(source(n));
 });
 
-// Revised zone rule: moving cards starts from original stats; graveyard cannot be buffed.
-test('zone reset: buffed deck card returns to original stats/cost when drawn',()=>{
+// Draw preserves deck modifiers; explicit zone returns reset stats, and graveyard cannot be buffed.
+test('drawing preserves buffs and cost changes applied in the deck',()=>{
  const s=setup();s.players[0].deck=[instance('로드','draw-reset',{currentAttack:8,currentHealth:9,maxHealth:9,currentCost:1})];
  const n=drawCard(s,'player-1');const c=n.players[0].hand[0];
- assert.deepEqual([c.currentAttack,c.currentHealth,c.maxHealth,c.currentCost],[2,3,3,3]);
+ assert.deepEqual([c.currentAttack,c.currentHealth,c.maxHealth,c.currentCost],[8,9,9,1]);
 });
 test('zone reset: buffed hand card sent to deck resets stats/cost',()=>{
  const s=setup();const caster=onBoard(s,'리버덩크');s.players[0].hand=[instance('로드','return-reset',{currentAttack:8,currentHealth:9,maxHealth:9,currentCost:1})];
