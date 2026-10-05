@@ -1,12 +1,24 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 
-import { runAITurn, situationalAiEmote } from './ai-turn-scheduler';
+import { runAITurn, situationalAiEmote, AI_ACTION_DELAY_MS } from './ai-turn-scheduler';
 import { createInitialGameState } from '../engine/create-initial-game-state';
 import { startGame } from '../engine/turn-system';
 import type { GameState } from '../types/game-state';
 
 const fixedRandom = () => 0.5;
+
+test('default AI pauses after presentation before executing its decision', async () => {
+  const order: string[] = [];
+  await runAITurn(aiOnlyTurn(), 'player-2', {
+    wait: async ms => { if (ms) { assert.equal(ms, AI_ACTION_DELAY_MS); assert.ok(ms >= 1000); order.push('think'); } },
+    waitForPresentationIdle: async () => { order.push('presentation'); },
+    isCancelled: () => false,
+    onState: () => {},
+    onAction: action => { if (action.type !== 'EMOTE') order.push('action'); },
+  });
+  assert.deepEqual(order.slice(0, 3), ['presentation', 'think', 'action']);
+});
 
 test('AI 감정표현은 퀘스트 완료와 막타 피해 상황에 반응하고 같은 턴 반복하지 않는다', () => {
   const state = aiOnlyTurn();
