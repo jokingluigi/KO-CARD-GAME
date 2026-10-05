@@ -45,3 +45,15 @@ export function landingImpactLevel(baseCost: number | undefined, currentCost: nu
   if (cost <= 5) return "HEAVY";
   return "VERY_HEAVY";
 }
+
+export function techniqueRevealRect(source: CardAnimationRect): CardAnimationRect {
+  // Hidden opponent hands expose a wide row, not an individual card rectangle.
+  const width = Math.min(180, Math.max(120, source.width));
+  const height = width * (1484 / 1060);
+  return {
+    left: source.left + (source.width - width) / 2,
+    top: source.top + (source.height - height) / 2,
+    width,
+    height,
+  };
+}
