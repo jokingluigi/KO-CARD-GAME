@@ -11,6 +11,8 @@
   },
   "include": [
     "src",
+    "../../artifacts/ko-game/src/game/cards/draft-mutation.ts",
+    "../../artifacts/ko-game/src/game/cards/epic-techniques.ts",
     "../../artifacts/ko-game/src/game/tower/**/*.ts",
     "../../artifacts/ko-game/src/game/actions/**/*.ts",
     "../../artifacts/ko-game/src/game/cards/generation.ts",

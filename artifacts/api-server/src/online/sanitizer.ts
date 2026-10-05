@@ -143,13 +143,11 @@ export function sequencedEventsForViewer(
   events: readonly GameEvent[],
   startSequence = 0,
 ): unknown[] {
+  // One hidden-zone lookup per batch, rather than per event.
+  const hiddenCardIds = new Set(state.players.filter(player => player.id !== viewerId)
+    .flatMap(player => [...player.hand, ...player.deck]).map(card => card.instanceId));
   return events.map((event, index) => ({
     sequenceNumber: startSequence + index,
-    event: sanitizeEvent(event, new Set(
-      state.players
-        .filter((player) => player.id !== viewerId)
-        .flatMap((player) => [...player.hand, ...player.deck])
-        .map((card) => card.instanceId),
-    ), isLegacyHiddenEvent(event, viewerId)),
+    event: sanitizeEvent(event, hiddenCardIds, isLegacyHiddenEvent(event, viewerId)),
   }));
 }

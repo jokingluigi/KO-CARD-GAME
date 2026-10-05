@@ -21,8 +21,17 @@ import {
   validateDraftPool,
   prepareDraftSnapshot,
   selectableCards,
+  chaosCards,
   selectableChampions,
   draftOffers,
+  specialDraftPick,
+  ensureDraftCopies,
+  beginDraftMutation,
+  chooseMutationTarget,
+  chooseDraftMutation,
+  mutationTargets,
+  applyDraftMutation,
+  generateCardInstance,
   bestDraftPick,
   cardRecordToDefinition,
   championRecordToDefinition,
@@ -127,6 +136,12 @@ function refresh(
   now: number,
 ) {
   const seat = s.seats[i];
+  seat.specialPick = specialDraftPick(
+    snapshot,
+    seat,
+    `${s.seed}:${i}:special:${seat.deck.length}`,
+  );
+  seat.lockedOfferId = null;
   seat.offers =
     seat.deck.length === 25
       ? []
@@ -158,16 +173,39 @@ function pick(
   if (seat.ready || seat.deck.length === 25 || !seat.offers.includes(id))
     throw new DraftError("INVALID_PICK", "현재 후보에서 카드를 선택해 주세요.");
   if (!seat.championId) seat.championId = id;
-  else seat.deck.push(id);
+  else {
+    ensureDraftCopies(seat, `${s.id}:${i}`);
+    seat.cards!.push({
+      instanceId: `${s.id}:${i}:${seat.deck.length}`,
+      definitionId: id,
+    });
+    seat.deck.push(id);
+  }
   seat.history.push({ id, automatic });
   refresh(s, snapshot, i, now);
+  if (seat.championId && seat.deck.length)
+    beginDraftMutation(snapshot, seat, `${s.seed}:${i}:${seat.deck.length}`);
 }
 function beginDraft(s: DraftState, snapshot: DraftSnapshot, now: number) {
   s.phase = "DRAFT";
   for (let i = 0; i < 2; i++) refresh(s, snapshot, i, now);
   if (s.mode === "AI") {
-    while (s.seats[1].deck.length < 25)
+    while (s.seats[1].deck.length < 25) {
       pick(s, snapshot, 1, bestDraftPick(snapshot, s.seats[1]), true, now);
+      const bot = s.seats[1];
+      if (bot.mutationEvent) {
+        const target = mutationTargets(snapshot, bot)[0];
+        chooseMutationTarget(
+          snapshot,
+          bot,
+          target.instanceId,
+          `${s.seed}:1:${bot.deck.length}`,
+        );
+        if (bot.mutationEvent?.offers[0])
+          chooseDraftMutation(bot, bot.mutationEvent.offers[0]);
+        else bot.mutationEvent = null;
+      }
+    }
     s.seats[1].ready = true;
   }
 }
@@ -229,7 +267,10 @@ function beginBattle(s: DraftState, snapshot: DraftSnapshot, now: number) {
     [s.seats[0].championId!, s.seats[1].championId!],
     battleCards,
     snapshot.champions,
-    [s.seats[0].deck, s.seats[1].deck],
+    [
+      s.seats[0].cards ? [] : s.seats[0].deck,
+      s.seats[1].cards ? [] : s.seats[1].deck,
+    ],
     {
       gameId: s.id,
       randomSeed: parseInt(s.seed.replaceAll("-", "").slice(0, 8), 16),
@@ -244,6 +285,15 @@ function beginBattle(s: DraftState, snapshot: DraftSnapshot, now: number) {
   );
   initial.players = initial.players.map((p, i) => ({
     ...p,
+    deck:
+      s.seats[i].cards?.map((copy) => {
+        const definition = battleCards.find((c) => c.id === copy.definitionId)!;
+        const card = generateCardInstance(definition, {
+          instanceId: copy.instanceId,
+          isGenerated: false,
+        });
+        return copy.mutation ? applyDraftMutation(card, copy.mutation) : card;
+      }) ?? p.deck,
     id: i === 0 ? "PLAYER_ONE" : "PLAYER_TWO",
   }));
   s.battle = startGame(
@@ -281,6 +331,9 @@ function advance(s: DraftState, snapshot: DraftSnapshot, now: number) {
         if (seat.deck.length === 25) {
           seat.ready = true;
           seat.deadline = null;
+        } else if (seat.mutationEvent) {
+          seat.mutationEvent = null;
+          refresh(s, snapshot, i, deadline);
         } else
           pick(s, snapshot, i, bestDraftPick(snapshot, seat), true, deadline);
       }
@@ -416,17 +469,36 @@ export async function startDraft(
         409,
       );
     if (matchmaking && mode === "PVP") {
-      const waiting = await tx.select().from(draftSessionsTable)
+      const waiting = await tx
+        .select()
+        .from(draftSessionsTable)
         .where(sql`${draftSessionsTable.state}->>'phase' = 'WAITING'`)
-        .orderBy(asc(draftSessionsTable.createdAt));
+        .orderBy(asc(draftSessionsTable.createdAt))
+        .for("update");
       for (const row of waiting) {
         const candidate = structuredClone(row.state) as unknown as DraftState;
-        if (candidate.mode !== "PVP" || candidate.seats[1].userId ||
-            Date.now() - row.updatedAt.getTime() > 60000) continue;
+        if (
+          candidate.mode !== "PVP" ||
+          candidate.seats[1].userId ||
+          Date.now() - row.updatedAt.getTime() > 60000
+        )
+          continue;
         candidate.seats[1] = emptySeat(userId, name);
-        beginDraft(candidate, row.snapshot as unknown as DraftSnapshot, Date.now());
-        await tx.insert(draftParticipantsTable).values({ userId, sessionId: row.id });
-        await tx.update(draftSessionsTable).set({ state: record(candidate), version: row.version + 1, updatedAt: new Date() })
+        beginDraft(
+          candidate,
+          row.snapshot as unknown as DraftSnapshot,
+          Date.now(),
+        );
+        await tx
+          .insert(draftParticipantsTable)
+          .values({ userId, sessionId: row.id });
+        await tx
+          .update(draftSessionsTable)
+          .set({
+            state: record(candidate),
+            version: row.version + 1,
+            updatedAt: new Date(),
+          })
           .where(eq(draftSessionsTable.id, row.id));
         return row.id;
       }
@@ -475,17 +547,20 @@ export async function mutateDraft(
 ) {
   await enabled();
   return db.transaction(async (tx) => {
+    // Independent rooms no longer serialize all polls/actions on one global lock.
     await tx.execute(
-      sql`SELECT pg_advisory_xact_lock(hashtext('ko:admin-draft'))`,
+      sql`SELECT pg_advisory_xact_lock(hashtext(${`ko:draft:${id}`}))`,
     );
     const [row] = await tx
       .select()
       .from(draftSessionsTable)
-      .where(eq(draftSessionsTable.id, id));
+      .where(eq(draftSessionsTable.id, id))
+      .for("update");
     if (!row)
       throw new DraftError("NOT_FOUND", "드래프트를 찾을 수 없습니다.", 404);
     const s = structuredClone(row.state) as unknown as DraftState,
       snapshot = row.snapshot as unknown as DraftSnapshot;
+    snapshot.config = parseDraftConfig(snapshot.config);
     let seat = s.seats.findIndex((p) => p.userId === userId);
     if (input?.type === "JOIN" && s.phase === "WAITING" && seat < 0) {
       const [active] = await tx
@@ -546,9 +621,18 @@ export async function mutateDraft(
       const commandMulligan = s.battle?.openingMulligan;
       advance(s, snapshot, now);
       if (
-        input.type === "PICK" &&
+        [
+          "PICK",
+          "REROLL",
+          "LOCK",
+          "MUTATION_TARGET",
+          "MUTATION_PICK",
+          "MUTATION_SKIP",
+        ].includes(input.type) &&
         (commandSeat.deck.length !== s.seats[seat].deck.length ||
-          commandSeat.championId !== s.seats[seat].championId)
+          commandSeat.championId !== s.seats[seat].championId ||
+          Boolean(commandSeat.mutationEvent) !==
+            Boolean(s.seats[seat].mutationEvent))
       )
         throw new DraftError(
           "PICK_EXPIRED",
@@ -576,11 +660,76 @@ export async function mutateDraft(
           .insert(draftParticipantsTable)
           .values({ userId, sessionId: id });
         beginDraft(s, snapshot, now);
+      } else if (
+        [
+          "REROLL",
+          "LOCK",
+          "MUTATION_TARGET",
+          "MUTATION_PICK",
+          "MUTATION_SKIP",
+        ].includes(input.type)
+      ) {
+        const own = s.seats[seat];
+        if (
+          s.phase !== "DRAFT" ||
+          !own.championId ||
+          own.ready ||
+          own.deck.length === 25
+        )
+          throw new DraftError("INVALID_PHASE", "현재 선택 단계가 아닙니다.");
+        ensureDraftCopies(own, `${s.id}:${seat}`);
+        if (input.type === "MUTATION_TARGET")
+          chooseMutationTarget(
+            snapshot,
+            own,
+            input.pickId ?? "",
+            `${s.seed}:${seat}:${own.deck.length}`,
+          );
+        else if (input.type === "MUTATION_PICK") {
+          chooseDraftMutation(own, input.pickId ?? "");
+          refresh(s, snapshot, seat, now);
+        } else if (input.type === "MUTATION_SKIP") {
+          if (!own.mutationEvent)
+            throw new DraftError("INVALID_PHASE", "개조 단계가 아닙니다.");
+          own.mutationEvent = null;
+          refresh(s, snapshot, seat, now);
+        } else {
+          if (own.mutationEvent)
+            throw new DraftError(
+              "INVALID_PHASE",
+              "카드 개조를 먼저 마쳐 주세요.",
+            );
+          if (input.type === "LOCK") {
+            if (input.pickId && !own.offers.includes(input.pickId))
+              throw new DraftError(
+                "INVALID_PICK",
+                "잠금 후보를 확인해 주세요.",
+              );
+            own.lockedOfferId =
+              own.lockedOfferId === input.pickId
+                ? null
+                : (input.pickId ?? null);
+          } else {
+            if ((own.rerollsUsed ?? 0) >= snapshot.config.rerollCount)
+              throw new DraftError("NO_REROLLS", "남은 리롤이 없습니다.");
+            own.rerollsUsed = (own.rerollsUsed ?? 0) + 1;
+            own.offers = draftOffers(
+              snapshot,
+              own,
+              `${s.seed}:${seat}:${own.deck.length}:reroll:${own.rerollsUsed}`,
+            );
+          }
+        }
       } else if (input.type === "PICK") {
         if (s.phase !== "DRAFT")
           throw new DraftError(
             "INVALID_PHASE",
             "카드를 선택할 단계가 아닙니다.",
+          );
+        if (s.seats[seat].mutationEvent)
+          throw new DraftError(
+            "INVALID_PHASE",
+            "카드 개조를 먼저 마쳐 주세요.",
           );
         pick(s, snapshot, seat, input.pickId ?? "", false, now);
       } else if (input.type === "READY") {
@@ -676,10 +825,21 @@ export async function mutateDraft(
     const changed = before !== JSON.stringify({ ...s, lastSeen: undefined }),
       version = row.version + (changed ? 1 : 0);
     if (heartbeat && s.phase === "BATTLE" && s.lastSeen) s.lastSeen[seat] = now;
-    if (changed || (heartbeat && (s.phase === "BATTLE" || s.phase === "WAITING")))
+    if (
+      changed ||
+      (heartbeat && (s.phase === "BATTLE" || s.phase === "WAITING"))
+    )
       await tx
         .update(draftSessionsTable)
         .set({ state: record(s), version, updatedAt: new Date() })
+        .where(eq(draftSessionsTable.id, id));
+    else if (heartbeat && s.phase === "BATTLE" && s.lastSeen)
+      await tx
+        .update(draftSessionsTable)
+        .set({
+          state: sql`jsonb_set(${draftSessionsTable.state}, '{lastSeen}', ${JSON.stringify(s.lastSeen)}::jsonb)`,
+          updatedAt: new Date(),
+        })
         .where(eq(draftSessionsTable.id, id));
     if (s.phase === "FINISHED" || s.phase === "ABORTED")
       await tx
@@ -707,7 +867,19 @@ export function draftView(r: DraftResult) {
       ready: enemy.ready,
       ...(ended ? { deck: enemy.deck, championId: enemy.championId } : {}),
     },
-    cards: selectableCards(r.snapshot),
+    cards: [
+      ...new Map(
+        [
+          ...selectableCards(r.snapshot),
+          ...chaosCards(r.snapshot).filter(
+            (c) =>
+              own.deck.includes(c.id) ||
+              own.offers.includes(c.id) ||
+              (ended && enemy.deck.includes(c.id)),
+          ),
+        ].map((c) => [c.id, c]),
+      ).values(),
+    ],
     champions: selectableChampions(r.snapshot),
     config: r.snapshot.config,
     recap: ended && r.state.battle ? buildMatchRecap(r.state.battle) : null,

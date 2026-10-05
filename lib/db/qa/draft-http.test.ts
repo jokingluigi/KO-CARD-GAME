@@ -308,7 +308,9 @@ async function replaceState(id: string, fn: (s: any) => void) {
 async function completeDraft(role: string, id: string) {
   let v = await latest(role, id);
   while (v.own.deck.length < 25) {
-    const response = await command(role, v, "PICK", v.own.offers[0]);
+    const response = v.own.mutationEvent
+      ? await command(role, v, "MUTATION_SKIP")
+      : await command(role, v, "PICK", v.own.offers[0]);
     assert.equal(response.status, 200, JSON.stringify(response.body));
     v = response.body;
   }
@@ -373,7 +375,11 @@ test("no published techniques can enable and finish draft selection with frozen 
   try {
     const settings = await request("admin", "/admin/draft");
     assert.equal(settings.body.poolError, null);
-    assert.match(settings.body.poolWarning, /기술 카드/);
+    assert.equal(
+      settings.body.poolWarning,
+      undefined,
+      "sparse-technique fallback stays silent in the player UI",
+    );
     assert.deepEqual(settings.body.config.techniquePicks, [5, 10, 15, 20, 25]);
     assert.equal(
       (
@@ -767,4 +773,163 @@ test("additive draft migration is repeatable and preserves ON settings, sessions
     sessions,
   );
   assert.deepEqual(await database.select().from(schema.decksTable), decks);
+});
+
+test("Draft 2.0 HTTP saves reroll/lock/special/mutation and transfers exact copies to authoritative battle", async () => {
+  const beforeCards = await database.select().from(schema.cardsTable);
+  let v = (
+    await request("admin", "/admin/draft/sessions", "POST", { mode: "AI" })
+  ).body;
+  v = (await command("admin", v, "PICK", v.own.offers[0])).body;
+  const locked = v.own.offers[1];
+  v = (await command("admin", v, "LOCK", locked)).body;
+  const stale = v;
+  const key = crypto.randomUUID();
+  let r = await command("admin", v, "REROLL", undefined, key);
+  assert.equal(r.status, 200, JSON.stringify(r.body));
+  v = r.body;
+  assert.equal(v.own.rerollsUsed, 1);
+  assert.ok(v.own.offers.includes(locked));
+  assert.equal(
+    (await command("admin", stale, "REROLL", undefined, key)).body.own
+      .rerollsUsed,
+    1,
+  );
+  let reloaded = await latest("admin", v.id);
+  assert.deepEqual(reloaded.own, v.own);
+  v = (await command("admin", v, "REROLL")).body;
+  assert.equal(v.own.rerollsUsed, 2);
+  assert.equal((await command("admin", v, "REROLL")).status, 400);
+  while (v.own.deck.length < 5) {
+    if (v.own.deck.length === 4) assert.ok(v.own.specialPick);
+    r = await command("admin", v, "PICK", v.own.offers[0]);
+    assert.equal(r.status, 200, JSON.stringify(r.body));
+    v = r.body;
+  }
+  assert.ok(v.own.mutationEvent);
+  assert.equal(v.own.cards.length, 5);
+  assert.equal(
+    (await command("admin", v, "PICK", v.own.offers[0])).status,
+    400,
+  );
+  const target = v.own.cards.find(
+    (c: any) =>
+      v.cards.find((d: any) => d.id === c.definitionId)?.cardType !==
+      "TECHNIQUE",
+  );
+  v = (await command("admin", v, "MUTATION_TARGET", target.instanceId)).body;
+  assert.equal(v.own.mutationEvent.offers.length, 3);
+  reloaded = await latest("admin", v.id);
+  assert.deepEqual(reloaded.own.mutationEvent, v.own.mutationEvent);
+  assert.equal(
+    (await command("admin", v, "MUTATION_TARGET", v.own.cards[1].instanceId))
+      .status,
+    400,
+  );
+  v = (
+    await command("admin", v, "MUTATION_PICK", v.own.mutationEvent.offers[0])
+  ).body;
+  const mutated = v.own.cards.find(
+    (c: any) => c.instanceId === target.instanceId,
+  );
+  assert.ok(mutated.mutation);
+  assert.equal((await latest("admin", v.id)).own.rerollsUsed, 2);
+  v = await completeDraft("admin", v.id);
+  assert.equal(v.own.mutationEvent, null);
+  v = (await command("admin", v, "READY")).body;
+  assert.equal(v.phase, "BATTLE");
+  const state = (await stored(v.id)).state as any;
+  const copies = [
+    ...state.battle.players[0].hand,
+    ...state.battle.players[0].deck,
+  ];
+  const actual = copies.find((c: any) => c.instanceId === target.instanceId);
+  assert.ok(actual);
+  assert.deepEqual(actual.draftMutation, mutated.mutation);
+  const def = beforeCards.find((c) => c.id === target.definitionId)!;
+  assert.equal(
+    actual.currentCost,
+    Math.max(0, def.cost + mutated.mutation.cost),
+  );
+  assert.equal(actual.currentAttack, def.attack + mutated.mutation.attack);
+  assert.equal(actual.maxHealth, def.health + mutated.mutation.health);
+  assert.deepEqual(
+    await database.select().from(schema.cardsTable),
+    beforeCards,
+  );
+  await command("admin", await latest("admin", v.id), "ABORT");
+});
+
+test("both PvP participants mutate separate copies and reconnect to the same authoritative battle", async () => {
+  const first = (
+    await request("admin", "/admin/draft/sessions", "POST", { mode: "PVP" })
+  ).body;
+  const invite = (
+    await request("opponent", `/admin/draft/sessions/${first.id}/invitation`)
+  ).body;
+  assert.equal((await command("opponent", invite, "JOIN")).status, 200);
+  const copies: { role: string; id: string; mutation: any }[] = [];
+  for (const role of ["admin", "opponent"]) {
+    let v = await latest(role, first.id);
+    while (v.own.deck.length < 5) {
+      const r = await command(role, v, "PICK", v.own.offers[0]);
+      assert.equal(r.status, 200, JSON.stringify(r.body));
+      v = r.body;
+    }
+    const copy = v.own.cards.find(
+      (c: any) =>
+        v.cards.find((d: any) => d.id === c.definitionId)?.cardType !==
+        "TECHNIQUE",
+    );
+    v = (await command(role, v, "MUTATION_TARGET", copy.instanceId)).body;
+    v = (await command(role, v, "MUTATION_PICK", v.own.mutationEvent.offers[0]))
+      .body;
+    copies.push({
+      role,
+      id: copy.instanceId,
+      mutation: v.own.cards.find((c: any) => c.instanceId === copy.instanceId)
+        .mutation,
+    });
+    const other = await latest(
+      role === "admin" ? "opponent" : "admin",
+      first.id,
+    );
+    assert.equal(other.opponent.cards, undefined);
+    assert.equal(other.opponent.mutationEvent, undefined);
+    v = await completeDraft(role, first.id);
+    assert.equal((await command(role, v, "READY")).status, 200);
+  }
+  const state = (await stored(first.id)).state as any;
+  assert.equal(state.phase, "BATTLE");
+  for (const [seat, copy] of copies.entries()) {
+    const cards = [
+      ...state.battle.players[seat].hand,
+      ...state.battle.players[seat].deck,
+    ];
+    assert.deepEqual(
+      cards.find((c: any) => c.instanceId === copy.id)?.draftMutation,
+      copy.mutation,
+    );
+    const resumed = (
+      await request(copy.role, `/admin/draft/sessions/${first.id}/battle`)
+    ).body;
+    const own = resumed.state.players[seat];
+    assert.ok(
+      [...own.hand, ...own.deck].some((c: any) => c.instanceId === copy.id),
+    );
+    const hidden = resumed.state.players[1 - seat];
+    assert.equal(hidden.hand.hidden, true);
+    assert.equal(hidden.deck.hidden, true);
+  }
+  const version = (await latest("admin", first.id)).version;
+  const response = await request(
+    "admin",
+    `/admin/draft/sessions/${first.id}/battle`,
+  );
+  assert.equal(
+    response.body.version,
+    version,
+    "heartbeat must not create a false gameplay version",
+  );
+  await command("admin", await latest("admin", first.id), "ABORT");
 });

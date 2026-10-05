@@ -9,11 +9,19 @@ import {
   type DraftSettings,
   type DraftView,
 } from "@/lib/draft-client";
-import { type DraftConfig, type CardDefinition } from "@workspace/game-engine";
+import {
+  DRAFT_MUTATIONS,
+  type DraftConfig,
+  type CardDefinition,
+} from "@workspace/game-engine";
 import { CARD_RARITY_LABELS } from "@/game/cards/types";
 const button =
   "min-h-11 rounded border border-primary/60 bg-primary/10 px-4 py-2 text-sm font-bold disabled:opacity-40";
-export function AdminDraftManager({ administration = true }: { administration?: boolean }) {
+export function AdminDraftManager({
+  administration = true,
+}: {
+  administration?: boolean;
+}) {
   const [, navigate] = useLocation();
   const [settings, setSettings] = useState<DraftSettings | null>(null),
     [view, setView] = useState<DraftView | null>(null),
@@ -23,6 +31,8 @@ export function AdminDraftManager({ administration = true }: { administration?: 
     [serverOffset, setServerOffset] = useState(0),
     [clock, setClock] = useState(Date.now());
   const errorRef = useRef<HTMLParagraphElement>(null);
+  const commandRevision = useRef(0);
+  const commandRunning = useRef(false);
   useEffect(() => {
     if (error) {
       errorRef.current?.scrollIntoView({ block: "center", behavior: "smooth" });
@@ -51,14 +61,27 @@ export function AdminDraftManager({ administration = true }: { administration?: 
     )
       return;
     let cancelled = false;
+    let pollRunning = false;
     const timer = setInterval(() => {
       setClock(Date.now());
+      if (pollRunning || commandRunning.current) return;
+      pollRunning = true;
+      const revision = commandRevision.current;
       void draftRequest<DraftView>(`/sessions/${view.id}`)
         .then((v) => {
-          if (!cancelled) setView(v);
+          if (!cancelled && revision === commandRevision.current)
+            setView((previous) =>
+              previous && previous.id === v.id && previous.version > v.version
+                ? previous
+                : v,
+            );
         })
         .catch((e) => {
-          if (!cancelled) setError(e.message);
+          if (!cancelled && revision === commandRevision.current)
+            setError(e.message);
+        })
+        .finally(() => {
+          pollRunning = false;
         });
     }, 1000);
     return () => {
@@ -73,14 +96,24 @@ export function AdminDraftManager({ administration = true }: { administration?: 
     if (view?.phase === "BATTLE") navigate(`/draft/match/${view.id}`);
   }, [view?.phase, view?.id]);
   async function run(fn: () => Promise<void>) {
-    if (busy) return;
+    if (commandRunning.current) return;
+    commandRunning.current = true;
+    commandRevision.current++;
     setBusy(true);
     setError(null);
     try {
       await fn();
     } catch (e) {
       setError(e instanceof Error ? e.message : "요청에 실패했습니다.");
+      if (view) {
+        try {
+          setView(await draftRequest<DraftView>(`/sessions/${view.id}`));
+        } catch {
+          /* Preserve the original action error; the periodic read can retry. */
+        }
+      }
     } finally {
+      commandRunning.current = false;
       setBusy(false);
     }
   }
@@ -129,9 +162,11 @@ export function AdminDraftManager({ administration = true }: { administration?: 
           />
         )}
         <h3 className="break-words text-lg font-black">{c.name}</h3>
-        {c.cardType !== "TECHNIQUE" && <p className="mt-2 text-sm">
-          공격 {c.attack} / 체력 {c.health}
-        </p>}
+        {c.cardType !== "TECHNIQUE" && (
+          <p className="mt-2 text-sm">
+            공격 {c.attack} / 체력 {c.health}
+          </p>
+        )}
         <p className="mt-2 whitespace-pre-wrap break-words text-sm text-neutral-300">
           {c.rulesText}
         </p>
@@ -151,16 +186,18 @@ export function AdminDraftManager({ administration = true }: { administration?: 
             챔피언 선택 후 25장 편성 · 한 번의 대전
           </p>
         </div>
-        {administration && <button
-          type="button"
-          role="switch"
-          aria-checked={settings?.enabled ?? false}
-          disabled={busy || !settings}
-          onClick={() => void run(() => save(!settings!.enabled))}
-          className={button}
-        >
-          {settings?.enabled ? "ON" : "OFF"}
-        </button>}
+        {administration && (
+          <button
+            type="button"
+            role="switch"
+            aria-checked={settings?.enabled ?? false}
+            disabled={busy || !settings}
+            onClick={() => void run(() => save(!settings!.enabled))}
+            className={button}
+          >
+            {settings?.enabled ? "ON" : "OFF"}
+          </button>
+        )}
       </div>
       {error && (
         <p
@@ -198,9 +235,7 @@ export function AdminDraftManager({ administration = true }: { administration?: 
             className={button}
             onClick={() =>
               void run(async () =>
-                setView(
-                  await draftRequest<DraftView>("/matchmaking", "POST"),
-                ),
+                setView(await draftRequest<DraftView>("/matchmaking", "POST")),
               )
             }
           >
@@ -209,9 +244,7 @@ export function AdminDraftManager({ administration = true }: { administration?: 
         </div>
       )}
       {!settings?.enabled && settings && (
-        <p className="text-neutral-400">
-          드래프트 모드는 현재 OFF 상태입니다.
-        </p>
+        <p className="text-neutral-400">드래프트 모드는 현재 OFF 상태입니다.</p>
       )}
       {administration && settings && (
         <>
@@ -312,9 +345,7 @@ export function AdminDraftManager({ administration = true }: { administration?: 
             </button>
           </div>
           {view.phase === "WAITING" ? (
-            <p>
-              상대를 찾는 중입니다… 매칭되면 챔피언 선택을 시작합니다.
-            </p>
+            <p>상대를 찾는 중입니다… 매칭되면 챔피언 선택을 시작합니다.</p>
           ) : (
             <>
               <div className="flex flex-wrap gap-3">
@@ -337,45 +368,197 @@ export function AdminDraftManager({ administration = true }: { administration?: 
                   </span>
                 )}
               </div>
-              {own && own.deck.length < 25 && (
+              {own?.championId &&
+                own.deck.length < 25 &&
+                !own.mutationEvent && (
+                  <div className="flex flex-wrap items-center gap-3">
+                    {own.specialPick && (
+                      <span className="rounded border border-amber-400 px-3 py-2 font-bold">
+                        특수 픽 ·{" "}
+                        {
+                          {
+                            EPIC: "에픽",
+                            HIGH_COST: "고코스트",
+                            LOW_COST: "저코스트",
+                            SYNERGY: "시너지",
+                            CHAOS: "카오스",
+                          }[own.specialPick]
+                        }
+                      </span>
+                    )}
+                    <button
+                      disabled={
+                        busy ||
+                        (own.rerollsUsed ?? 0) >= view.config.rerollCount
+                      }
+                      className={button}
+                      onClick={() => void run(() => command("REROLL"))}
+                    >
+                      리롤 · 남은{" "}
+                      {Math.max(
+                        0,
+                        view.config.rerollCount - (own.rerollsUsed ?? 0),
+                      )}
+                      회
+                    </button>
+                    <span className="text-xs text-neutral-400">
+                      잠근 후보 1장은 리롤해도 유지됩니다.
+                    </span>
+                  </div>
+                )}
+              {own?.mutationEvent && (
+                <div className="space-y-3 rounded border border-primary p-3">
+                  <h3 className="font-black">
+                    {own.mutationEvent.grand ? "대변이" : "카드 개조"} ·{" "}
+                    {own.mutationEvent.targetId
+                      ? "개조를 선택하세요"
+                      : "선수 카드 한 장을 선택하세요"}
+                  </h3>
+                  <button
+                    className={button}
+                    disabled={busy}
+                    onClick={() => void run(() => command("MUTATION_SKIP"))}
+                  >
+                    개조 건너뛰기
+                  </button>
+                  <div className="grid gap-3 sm:grid-cols-3">
+                    {!own.mutationEvent.targetId
+                      ? own.cards
+                          ?.filter(
+                            (copy) =>
+                              !copy.mutation &&
+                              cardMap.get(copy.definitionId)?.cardType !==
+                                "TECHNIQUE",
+                          )
+                          .map((copy) => (
+                            <button
+                              key={copy.instanceId}
+                              disabled={busy}
+                              className="min-h-11 min-w-0 rounded border border-neutral-600 p-3 text-left"
+                              onClick={() =>
+                                void run(() =>
+                                  command("MUTATION_TARGET", copy.instanceId),
+                                )
+                              }
+                            >
+                              {cardContent(cardMap.get(copy.definitionId)!)}
+                            </button>
+                          ))
+                      : own.mutationEvent.offers.map((id) => {
+                          const m = DRAFT_MUTATIONS.find((m) => m.id === id)!;
+                          return (
+                            <button
+                              key={id}
+                              disabled={busy}
+                              className="min-h-11 min-w-0 rounded border border-primary p-3 text-left"
+                              onClick={() =>
+                                void run(() => command("MUTATION_PICK", id))
+                              }
+                            >
+                              <h4 className="font-bold">{m.name}</h4>
+                              <p>
+                                ATK {m.attack >= 0 ? "+" : ""}
+                                {m.attack} · HP {m.health >= 0 ? "+" : ""}
+                                {m.health} · 비용 {m.cost >= 0 ? "+" : ""}
+                                {m.cost}
+                              </p>
+                              <p>
+                                {m.keywords
+                                  .map((k) => KEYWORD_LABELS[k])
+                                  .join(" · ")}
+                                {m.armor ? "(1)" : ""}
+                              </p>
+                            </button>
+                          );
+                        })}
+                  </div>
+                </div>
+              )}
+              {own && own.deck.length < 25 && !own.mutationEvent && (
                 <div className="grid gap-3 sm:grid-cols-3">
                   {own.offers.map((id) => {
                     const c = cardMap.get(id),
                       champ = view.champions.find((c) => c.id === id);
                     return (
-                      <button
-                        disabled={busy}
-                        className="min-w-0 rounded border border-primary/50 bg-neutral-900 p-3 text-left hover:border-primary disabled:opacity-40"
-                        key={id}
-                        onClick={() => void run(() => command("PICK", id))}
-                      >
-                        {c ? (
-                          cardContent(c)
-                        ) : (
-                          <>
-                            {champ?.imageUrl && (
-                              <img
-                                src={champ.imageUrl}
-                                alt=""
-                                className="mx-auto h-40 max-w-full object-contain"
-                              />
-                            )}
-                            <h3 className="text-lg font-black">
-                              {champ?.name}
-                            </h3>
-                            <p className="text-sm">체력 {champ?.maxHealth}</p>
-                            <p className="mt-2 whitespace-pre-wrap break-words text-sm">
-                              {champ?.ability.description}
-                            </p>
-                          </>
+                      <div key={id} className="min-w-0 space-y-2">
+                        <button
+                          disabled={busy}
+                          className="min-h-11 w-full min-w-0 rounded border border-primary/50 bg-neutral-900 p-3 text-left hover:border-primary disabled:opacity-40"
+                          key={id}
+                          onClick={() => void run(() => command("PICK", id))}
+                        >
+                          {c ? (
+                            cardContent(c)
+                          ) : (
+                            <>
+                              {champ?.imageUrl && (
+                                <img
+                                  src={champ.imageUrl}
+                                  alt=""
+                                  className="mx-auto h-40 max-w-full object-contain"
+                                />
+                              )}
+                              <h3 className="text-lg font-black">
+                                {champ?.name}
+                              </h3>
+                              <p className="text-sm">체력 {champ?.maxHealth}</p>
+                              <p className="mt-2 whitespace-pre-wrap break-words text-sm">
+                                {champ?.ability.description}
+                              </p>
+                            </>
+                          )}
+                        </button>
+                        {c && (
+                          <button
+                            className={`${button} w-full`}
+                            aria-pressed={own.lockedOfferId === id}
+                            disabled={busy}
+                            onClick={() => void run(() => command("LOCK", id))}
+                          >
+                            {own.lockedOfferId === id
+                              ? "잠금 해제"
+                              : "이 후보 잠금"}
+                          </button>
                         )}
-                      </button>
+                      </div>
                     );
                   })}
                 </div>
               )}
               {own && own.deck.length === 25 && view.phase === "DRAFT" && (
                 <div className="space-y-3">
+                  <p className="text-sm">
+                    덱 요약 · {own.deck.length}장 · 평균 비용{" "}
+                    {(
+                      own.deck.reduce(
+                        (n, id, index) =>
+                          n +
+                          Math.max(
+                            0,
+                            (cardMap.get(id)?.cost ?? 0) +
+                              (own.cards?.[index]?.mutation?.cost ?? 0),
+                          ),
+                        0,
+                      ) / 25
+                    ).toFixed(2)}{" "}
+                    · 변이 {own.cards?.filter((c) => c.mutation).length ?? 0}장
+                  </p>
+                  <p className="text-sm">
+                    {(
+                      [
+                        "NORMAL",
+                        "EPIC",
+                        "LEGENDARY",
+                        "TOKEN",
+                        "CHAMPION",
+                      ] as const
+                    )
+                      .map(
+                        (r) =>
+                          `${CARD_RARITY_LABELS[r]} ${own.deck.filter((id) => cardMap.get(id)?.rarity === r).length}장`,
+                      )
+                      .join(" · ")}
+                  </p>
                   <p>
                     편성을 확인하고 준비해 주세요. PvP는 양쪽 모두 준비하면
                     시작합니다.
@@ -423,7 +606,35 @@ export function AdminDraftManager({ administration = true }: { administration?: 
                       ),
                     ).join(" · ") || "없음"}
                   </p>
-                  <ul className="mt-2">{deck(own.deck)}</ul>
+                  <ul className="mt-2">
+                    {own.cards
+                      ? own.cards.map((copy) => {
+                          const c = cardMap.get(copy.definitionId)!;
+                          const m = copy.mutation;
+                          return (
+                            <li
+                              key={copy.instanceId}
+                              className="border-t border-neutral-800 py-2 text-sm"
+                            >
+                              <span>
+                                {c.name} ·{" "}
+                                {Math.max(0, c.cost + (m?.cost ?? 0))} 코스트
+                              </span>
+                              {m && (
+                                <p className="text-primary">
+                                  🔧 Draft Mutation · {m.name} · ATK{" "}
+                                  {c.attack + m.attack} / HP{" "}
+                                  {c.health + m.health} ·{" "}
+                                  {m.keywords
+                                    .map((k) => KEYWORD_LABELS[k])
+                                    .join(" · ")}
+                                </p>
+                              )}
+                            </li>
+                          );
+                        })
+                      : deck(own.deck)}
+                  </ul>
                 </div>
               )}
               {view.phase === "FINISHED" && (
