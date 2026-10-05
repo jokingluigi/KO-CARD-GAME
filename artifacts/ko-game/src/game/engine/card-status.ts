@@ -1,3 +1,4 @@
+import { draftBaseline } from '../cards/draft-mutation';
 import type { ActionResult } from '../actions/types';
 import { actionFailure, actionSuccess } from '../actions/types';
 import type { CardInstanceId } from '../cards/types';
@@ -33,8 +34,9 @@ export function silenceCard(
   return refreshTowerAuras(updateBoardCard(state, cardInstanceId, (card) => {
     if (card.isSilenceImmune) return card;
     const definition = state.cardPool?.find(item => item.id === card.definitionId);
-    const attack = (definition?.attack ?? card.baseAttack ?? card.currentAttack) + (aura?.attack ?? 0);
-    const maxHealth = (definition?.health ?? card.baseHealth ?? card.maxHealth) + (aura?.health ?? 0);
+    const draft = card.draftMutation ? draftBaseline(card, definition) : undefined;
+    const attack = (draft?.attack ?? definition?.attack ?? card.baseAttack ?? card.currentAttack) + (aura?.attack ?? 0);
+    const maxHealth = (draft?.health ?? definition?.health ?? card.baseHealth ?? card.maxHealth) + (aura?.health ?? 0);
     return {
       ...removeGrantedCardText(card),
       grantedTags: undefined,

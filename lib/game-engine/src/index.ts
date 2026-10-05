@@ -117,3 +117,6 @@ export { TOWER_VANILLA_CHAMPION_ID, towerVanillaChampion } from '../../../artifa
 export { ZOMBIE_RULES } from '../../../artifacts/ko-game/src/game/engine/zombie-token';
 export * from './draft/domain';
 export * from './match-recap';
+
+export * from './draft/mutations';
+export * from '../../../artifacts/ko-game/src/game/cards/draft-mutation';

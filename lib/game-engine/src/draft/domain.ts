@@ -1,6 +1,13 @@
 import type { CardDefinition, ChampionDefinition } from "../index";
 import { DECK_SIZE, MAX_LEGENDARY_CARDS, maxCardCopies } from "../rules";
 export type DraftConfig = {
+  mutationEnabled: boolean;
+  specialPickEnabled: boolean;
+  synergyPickEnabled: boolean;
+  rerollCount: number;
+  mutationInterval: number;
+  grandMutationEnabled: boolean;
+  grandMutationChance: number;
   excludedCardIds: string[];
   excludedChampionIds: string[];
   techniquePicks: number[];
@@ -16,6 +23,13 @@ export type DraftConfig = {
   championTags: Record<string, string[]>;
 };
 export const DEFAULT_DRAFT_CONFIG: DraftConfig = {
+  mutationEnabled: true,
+  specialPickEnabled: true,
+  synergyPickEnabled: true,
+  rerollCount: 2,
+  mutationInterval: 5,
+  grandMutationEnabled: true,
+  grandMutationChance: 0.1,
   excludedCardIds: [],
   excludedChampionIds: [],
   techniquePicks: [5, 10, 15, 20, 25],
@@ -44,7 +58,24 @@ export type DraftSnapshot = {
     status: string;
   }[];
 };
+export type SpecialPick =
+  "EPIC" | "HIGH_COST" | "LOW_COST" | "SYNERGY" | "CHAOS";
+export type DraftCardCopy = {
+  instanceId: string;
+  definitionId: string;
+  mutation?: import("../../../../artifacts/ko-game/src/game/cards/draft-mutation").DraftMutation;
+};
 export type DraftSeat = {
+  cards?: DraftCardCopy[];
+  rerollsUsed?: number;
+  lockedOfferId?: string | null;
+  specialPick?: SpecialPick | null;
+  grandMutationUsed?: boolean;
+  mutationEvent?: {
+    targetId: string | null;
+    offers: string[];
+    grand: boolean;
+  } | null;
   userId: string | null;
   name: string;
   championId: string | null;
@@ -120,6 +151,26 @@ export function parseDraftConfig(value: unknown): DraftConfig {
     )
   )
     throw new Error("챔피언 태그를 확인해 주세요.");
+  for (const key of [
+    "mutationEnabled",
+    "specialPickEnabled",
+    "synergyPickEnabled",
+    "grandMutationEnabled",
+  ] as const)
+    if (typeof c[key] !== "boolean")
+      throw new Error("드래프트 기능 설정을 확인해 주세요.");
+  if (
+    !Number.isInteger(c.rerollCount) ||
+    c.rerollCount < 0 ||
+    c.rerollCount > 10 ||
+    !Number.isInteger(c.mutationInterval) ||
+    c.mutationInterval < 1 ||
+    c.mutationInterval > 25 ||
+    !Number.isFinite(c.grandMutationChance) ||
+    c.grandMutationChance < 0 ||
+    c.grandMutationChance > 1
+  )
+    throw new Error("리롤/개조/대변이 설정을 확인해 주세요.");
   return structuredClone(c);
 }
 export function selectableCards(s: DraftSnapshot) {
@@ -132,6 +183,24 @@ export function selectableCards(s: DraftSnapshot) {
       !s.config.excludedCardIds.includes(c.id),
   );
 }
+/** Wider published, playable catalog only: private drafts and invalid records stay hidden. */
+export function chaosCards(s: DraftSnapshot) {
+  return s.cards.filter(
+    (c) =>
+      c.status === "PUBLISHED" &&
+      !s.config.excludedCardIds.includes(c.id) &&
+      Number.isFinite(c.cost) &&
+      c.cost >= 0 &&
+      c.cost <= 6 &&
+      Number.isFinite(c.attack) &&
+      c.attack >= 0 &&
+      Number.isFinite(c.health) &&
+      (c.cardType === "TECHNIQUE" || c.health >= 1) &&
+      Array.isArray(c.keywords) &&
+      Array.isArray(c.abilities) &&
+      !/training-dummy|admin-dummy/i.test(c.id),
+  );
+}
 export function selectableChampions(s: DraftSnapshot) {
   return s.champions.filter(
     (c) =>
@@ -142,7 +211,11 @@ const count = (deck: string[], id: string) =>
   deck.filter((d) => d === id).length;
 export function canComplete(s: DraftSnapshot, deck: string[]): boolean {
   const pool = selectableCards(s),
-    map = new Map(pool.map((c) => [c.id, c]));
+    map = new Map(
+      [...pool, ...chaosCards(s).filter((c) => deck.includes(c.id))].map(
+        (c) => [c.id, c],
+      ),
+    );
   if (
     deck.length > DECK_SIZE ||
     deck.some(
@@ -249,65 +322,110 @@ export function cardDraftScore(
     (s.config.costTargets[group] - used) * 0.5
   );
 }
+export function specialDraftPick(
+  s: DraftSnapshot,
+  seat: DraftSeat,
+  seed: string,
+): SpecialPick | null {
+  if (
+    !seat.championId ||
+    !s.config.specialPickEnabled ||
+    (seat.deck.length + 1) % 5
+  )
+    return null;
+  return (["EPIC", "HIGH_COST", "LOW_COST", "SYNERGY", "CHAOS"] as const)[
+    Math.floor(draftRandom(seed)() * 5)
+  ];
+}
 export function draftOffers(
   s: DraftSnapshot,
   seat: DraftSeat,
   seed: string,
 ): string[] {
   const random = draftRandom(seed);
-  let pool: { id: string; weight: number }[];
-  if (!seat.championId)
-    pool = selectableChampions(s).map((c) => ({ id: c.id, weight: 1 }));
-  else {
-    const pick = seat.deck.length + 1,
-      type = s.config.techniquePicks.includes(pick) ? "TECHNIQUE" : "WRESTLER";
-    let cards = selectableCards(s).filter(
-      (c) =>
-        (c.cardType ?? "WRESTLER") === type &&
-        canComplete(s, [...seat.deck, c.id]),
-    );
-    const legends = cards.filter((c) => c.rarity === "LEGENDARY");
-    if (s.config.legendaryPicks.includes(pick) && legends.length >= 3)
-      cards = legends;
-    const map = new Map(s.cards.map((c) => [c.id, c]));
-    const championTags = s.config.championTags[seat.championId] ?? [];
-    pool = cards.map((c) => {
-      const group = c.cost <= 2 ? 0 : c.cost <= 4 ? 1 : 2;
-      const used = seat.deck.filter((id) => {
-        const cost = map.get(id)?.cost ?? 0;
-        return (cost <= 2 ? 0 : cost <= 4 ? 1 : 2) === group;
-      }).length;
-      let w = 1;
-      if (c.tags?.some((t) => championTags.includes(t)))
-        w *= s.config.championTagWeight;
-      if (
-        c.tags?.some(
-          (t) =>
-            seat.deck.filter((id) => map.get(id)?.tags?.includes(t)).length >=
-            3,
-        )
-      )
-        w *= s.config.deckTagWeight;
-      if (c.cardType === "TECHNIQUE") w *= s.config.supportWeight;
-      return {
-        id: c.id,
-        weight:
-          Math.min(3, w) *
-          Math.max(
-            0.25,
-            1 +
-              (s.config.costTargets[group] - used) /
-                Math.max(1, s.config.costTargets[group]),
-          ),
-      };
-    });
+  if (!seat.championId) {
+    const pool = selectableChampions(s).map((c) => c.id),
+      result: string[] = [];
+    while (pool.length && result.length < 3)
+      result.push(pool.splice(Math.floor(random() * pool.length), 1)[0]);
+    return result;
   }
+  const pick = seat.deck.length + 1;
+  const type = s.config.techniquePicks.includes(pick)
+    ? "TECHNIQUE"
+    : "WRESTLER";
+  let pool = (
+    seat.specialPick === "CHAOS" ? chaosCards(s) : selectableCards(s)
+  ).filter(
+    (c) =>
+      (c.cardType ?? "WRESTLER") === type &&
+      canComplete(s, [...seat.deck, c.id]),
+  );
+  const legends = pool.filter((c) => c.rarity === "LEGENDARY");
+  if (s.config.legendaryPicks.includes(pick) && legends.length >= 3)
+    pool = legends;
+  const map = new Map(s.cards.map((c) => [c.id, c]));
+  const tags = seat.deck.flatMap((id) => map.get(id)?.tags ?? []);
+  const championTags = s.config.championTags[seat.championId] ?? [];
+  const weight = (c: CardDefinition) => {
+    const group = c.cost <= 2 ? 0 : c.cost <= 4 ? 1 : 2;
+    const used = seat.deck.filter((id) => {
+      const n = map.get(id)?.cost ?? 0;
+      return (n <= 2 ? 0 : n <= 4 ? 1 : 2) === group;
+    }).length;
+    const overlap = (c.tags ?? []).reduce(
+      (n, t) => n + tags.filter((tag) => tag === t).length,
+      0,
+    );
+    return (
+      (1 +
+        Math.min(6, overlap) * s.config.deckTagWeight +
+        (c.tags?.some((t) => championTags.includes(t))
+          ? (s.config.championTagWeight - 1) * 0.5
+          : 0)) *
+      Math.max(
+        0.25,
+        1 +
+          (s.config.costTargets[group] - used) /
+            Math.max(1, s.config.costTargets[group]),
+      )
+    );
+  };
+  const special = seat.specialPick;
   const result: string[] = [];
-  while (pool.length && result.length < 3) {
-    let p = random() * pool.reduce((n, c) => n + c.weight, 0),
-      i = 0;
-    while (i < pool.length - 1 && (p -= pool[i].weight) > 0) i++;
-    result.push(pool.splice(i, 1)[0].id);
+  if (seat.lockedOfferId && pool.some((c) => c.id === seat.lockedOfferId))
+    result.push(seat.lockedOfferId);
+  const take = (eligible: CardDefinition[], weighted: boolean) => {
+    const available = eligible.filter((c) => !result.includes(c.id));
+    if (!available.length) return false;
+    let cursor =
+        random() *
+        available.reduce((n, c) => n + (weighted ? weight(c) : 1), 0),
+      index = 0;
+    while (
+      index < available.length - 1 &&
+      (cursor -= weighted ? weight(available[index]) : 1) > 0
+    )
+      index++;
+    result.push(available[index].id);
+    return true;
+  };
+  while (result.length < 3) {
+    let preferred = pool;
+    if (
+      special === "EPIC" &&
+      !result.some((id) => map.get(id)?.rarity === "EPIC")
+    )
+      preferred = pool.filter((c) => c.rarity === "EPIC");
+    if (special === "HIGH_COST")
+      preferred = pool.filter((c) => c.cost >= 4 && c.cost <= 6);
+    if (special === "LOW_COST")
+      preferred = pool.filter((c) => c.cost >= 1 && c.cost <= 2);
+    // Chaos widens rarity/token eligibility while preserving slot type and copy caps.
+    const weighted =
+      special === "SYNERGY" ||
+      (!special && s.config.synergyPickEnabled && result.length === 2);
+    if (!take(preferred, weighted) && !take(pool, weighted)) break;
   }
   return result;
 }

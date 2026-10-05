@@ -1,0 +1,17 @@
+✔ admin-only API and default OFF, pool validation and persistent ON (417.602618ms)
+✔ no published techniques can enable and finish draft selection with frozen wrestler fallback (574.338975ms)
+✔ AI draft persists offers, guards illegal/stale/duplicate commands and does not grant cards (851.22888ms)
+✔ PvP joins before selection, hides opponent picks, timers and worker recover after disconnect (412.411175ms)
+✔ OFF persists existing drafts and prevents operations; re-enable restores identical offers (106.579644ms)
+✔ five full AI draft matches execute legal actions through HTTP and reach terminal rewards (6751.873185ms)
+✔ additive draft migration is repeatable and preserves ON settings, sessions and original decks (47.619352ms)
+✔ Draft 2.0 HTTP saves reroll/lock/special/mutation and transfers exact copies to authoritative battle (605.526189ms)
+✔ both PvP participants mutate separate copies and reconnect to the same authoritative battle (1379.570995ms)
+ℹ tests 9
+ℹ suites 0
+ℹ pass 9
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 17399.351964

@@ -220,7 +220,7 @@ router.use(
         .json({ code: error.code, message: error.message });
     else if (
       error instanceof Error &&
-      /설정|필요|확인|목록|숫자|가중치|제한 시간|목표/.test(error.message)
+      /설정|필요|확인|목록|숫자|가중치|제한 시간|목표|개조|리롤/.test(error.message)
     )
       res.status(400).json({ code: "INVALID_CONFIG", message: error.message });
     else next(error);

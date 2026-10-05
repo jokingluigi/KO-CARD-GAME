@@ -19,6 +19,9 @@ export function DraftConfigFields({
 }) {
   const numberField = (
     key:
+      | "rerollCount"
+      | "mutationInterval"
+      | "grandMutationChance"
       | "championSeconds"
       | "pickSeconds"
       | "reviewSeconds"
@@ -76,6 +79,32 @@ export function DraftConfigFields({
       <p className="text-sm text-neutral-400">
         저장한 규칙은 새 드래프트부터 적용됩니다.
       </p>
+      <fieldset className="grid gap-3 sm:grid-cols-2">
+        <legend className="mb-2 font-bold">Draft 2.0</legend>
+        {(
+          [
+            "mutationEnabled",
+            "specialPickEnabled",
+            "synergyPickEnabled",
+            "grandMutationEnabled",
+          ] as const
+        ).map((key, i) => (
+          <label
+            key={key}
+            className="flex min-h-11 items-center gap-3 rounded border border-neutral-700 px-3"
+          >
+            <input
+              type="checkbox"
+              checked={config[key]}
+              onChange={(e) => onChange({ ...config, [key]: e.target.checked })}
+            />
+            {["카드 개조", "특수 픽", "시너지 후보", "대변이"][i]}
+          </label>
+        ))}
+        {numberField("rerollCount", "전체 리롤 횟수", 0, 10)}
+        {numberField("mutationInterval", "개조 간격 (픽)", 1, 25)}
+        {numberField("grandMutationChance", "대변이 확률 (0~1)", 0, 1, 0.01)}
+      </fieldset>
       <details>
         <summary className="min-h-11 cursor-pointer py-2 text-sm font-bold">
           선택 순서 설정

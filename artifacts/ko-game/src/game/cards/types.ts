@@ -131,6 +131,8 @@ export interface CardDefinition {
 }
 
 export interface CardInstance {
+  draftMutation?: import("./draft-mutation").DraftMutation;
+  draftCatalogBase?: { cost: number; attack: number; health: number; keywords: CardKeyword[]; armor: number };
   /** Tags granted by an effect; printed catalog tags are never rewritten. */
   grantedTags?: string[];
   contentRule?: import("./new-card-effects").NewCardRule;
