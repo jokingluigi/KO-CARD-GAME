@@ -1,15 +1,10 @@
-import { useLocation } from 'wouter';
 import { AdminDraftManager } from '@/components/admin-draft-manager';
-import { OnlineAuthGate } from '@/components/online-lobby-ui';
+import { OnlineAuthGate, OnlineShell } from '@/components/online-lobby-ui';
 
 export default function Draft() {
-  const [, navigate] = useLocation();
   return <OnlineAuthGate>{() => (
-    <main className="min-h-screen bg-neutral-950 px-4 py-6 text-white sm:px-8">
-      <div className="mx-auto max-w-5xl space-y-6">
-        <button className="min-h-11 rounded border border-neutral-600 px-4 py-2" onClick={() => navigate('/')}>메인 메뉴</button>
+    <OnlineShell eyebrow="DRAFT MATCH" title="드래프트 대전" description="챔피언과 25장의 카드를 선택해 나만의 덱을 완성하세요. 준비가 끝나면 한 판의 대전이 시작됩니다." backHref="/">
         <AdminDraftManager administration={false} />
-      </div>
-    </main>
+    </OnlineShell>
   )}</OnlineAuthGate>;
 }

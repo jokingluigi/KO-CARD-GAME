@@ -1,4 +1,5 @@
 import { MatchRecapPanel } from "./match-recap-panel";
+import { DraftReadyPanel } from "./draft-ready-panel";
 import { KEYWORD_LABELS } from "./alt-inspector-utils";
 import { useEffect, useRef, useState } from "react";
 import { DraftConfigFields } from "./draft-config-fields";
@@ -214,7 +215,7 @@ export function AdminDraftManager({
       )}
       {!settings && <p>드래프트 설정을 불러오는 중…</p>}
       {settings?.enabled && !view && (
-        <div className="flex flex-wrap gap-3">
+        <div className="ko-online-panel flex flex-wrap gap-3 rounded-xl p-6">
           <button
             disabled={busy || Boolean(settings.poolError)}
             className={button}
@@ -345,7 +346,7 @@ export function AdminDraftManager({
             </button>
           </div>
           {view.phase === "WAITING" ? (
-            <p>상대를 찾는 중입니다… 매칭되면 챔피언 선택을 시작합니다.</p>
+            <div className="ko-online-panel rounded-xl px-6 py-10 text-center" role="status"><div className="mx-auto h-9 w-9 animate-spin rounded-full border-2 border-neutral-800 border-t-amber-400" /><h3 className="mt-5 text-xl font-black">상대를 찾고 있습니다</h3><p className="mt-3 text-sm leading-6 text-neutral-400">매칭되면 챔피언과 카드를 선택합니다.</p></div>
           ) : (
             <>
               <div className="flex flex-wrap gap-3">
@@ -525,55 +526,9 @@ export function AdminDraftManager({
                   })}
                 </div>
               )}
-              {own && own.deck.length === 25 && view.phase === "DRAFT" && (
-                <div className="space-y-3">
-                  <p className="text-sm">
-                    덱 요약 · {own.deck.length}장 · 평균 비용{" "}
-                    {(
-                      own.deck.reduce(
-                        (n, id, index) =>
-                          n +
-                          Math.max(
-                            0,
-                            (cardMap.get(id)?.cost ?? 0) +
-                              (own.cards?.[index]?.mutation?.cost ?? 0),
-                          ),
-                        0,
-                      ) / 25
-                    ).toFixed(2)}{" "}
-                    · 변이 {own.cards?.filter((c) => c.mutation).length ?? 0}장
-                  </p>
-                  <p className="text-sm">
-                    {(
-                      [
-                        "NORMAL",
-                        "EPIC",
-                        "LEGENDARY",
-                        "TOKEN",
-                        "CHAMPION",
-                      ] as const
-                    )
-                      .map(
-                        (r) =>
-                          `${CARD_RARITY_LABELS[r]} ${own.deck.filter((id) => cardMap.get(id)?.rarity === r).length}장`,
-                      )
-                      .join(" · ")}
-                  </p>
-                  <p>
-                    편성을 확인하고 준비해 주세요. PvP는 양쪽 모두 준비하면
-                    시작합니다.
-                  </p>
-                  <button
-                    disabled={busy || own.ready}
-                    className={button}
-                    onClick={() => void run(() => command("READY"))}
-                  >
-                    {own.ready ? "상대 준비 대기 중" : "이 덱으로 대전 시작"}
-                  </button>
-                </div>
-              )}
+              {own && own.deck.length === 25 && view.phase === "DRAFT" && <DraftReadyPanel view={view} busy={busy} onReady={() => void run(() => command("READY"))} />}
               {own && (
-                <div className="rounded border border-neutral-700 p-3">
+                <div className="ko-online-panel rounded-xl p-5 sm:p-6">
                   <h3 className="font-black">
                     내 드래프트 덱 ·{" "}
                     {view.champions.find((c) => c.id === own.championId)?.name}
@@ -606,7 +561,7 @@ export function AdminDraftManager({
                       ),
                     ).join(" · ") || "없음"}
                   </p>
-                  <ul className="mt-2">
+                  <ul className="mt-4 grid max-h-[28rem] gap-x-6 overflow-y-auto sm:grid-cols-2">
                     {own.cards
                       ? own.cards.map((copy) => {
                           const c = cardMap.get(copy.definitionId)!;
