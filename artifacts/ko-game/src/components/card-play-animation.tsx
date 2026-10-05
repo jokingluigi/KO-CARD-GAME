@@ -6,6 +6,7 @@ import { getCardDefinition } from "@/game";
 import { getActiveCardKeywords } from "../game/cards/granted-text";
 import { getCardRuntimeRulesText } from "../lib/card-display-state";
 import type { CardPlayAnimationState } from "./card-play-animation-utils";
+import { techniqueRevealRect } from "./card-play-animation-utils";
 import { PRESENTATION_CONFIG, prefersReducedMotion } from "./presentation-config";
 import { audioManager } from '../audio/audio-manager';
 
@@ -36,7 +37,9 @@ export function CardPlayAnimation({
   const onCompleteRef = useRef(onComplete);
   onCompleteRef.current = onComplete;
   const definition = getCardDefinition(animation.card.definitionId);
-  const source = animation.geometry.source;
+  const source = animation.kind === "TECHNIQUE"
+    ? techniqueRevealRect(animation.geometry.source)
+    : animation.geometry.source;
   const target = animation.kind === "WRESTLER" ? animation.geometry.target : undefined;
   const targetScale = animation.kind === "TECHNIQUE"
     ? Math.min(1.9, Math.max(1.45, (window.innerWidth - 32) / Math.max(source.width, 1)))
