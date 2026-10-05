@@ -49,7 +49,11 @@ export function newCardImplementation(card: PublishedCardRecord): {rule:NewCardR
     case '마개조': return {rule,abilities:enter(fx('BUFF',board('SELF','PLAYER_CHOICE'),{attack:1,health:1}))};
     case 'MPG': return {rule,abilities:enter(fx('MODIFY_STAT',board('ENEMY','PLAYER_CHOICE'),{stat:'ATTACK',amount:-1}),fx('BUFF',self,{attack:1,health:0}))};
     case '금구슬 마스터': return {rule,abilities:enter(fx('DESTROY',board('ENEMY','PLAYER_CHOICE')))};
-    case '루나 MK.사일런스': return {rule,abilities:[{trigger:'TURN_START',effects:[fx('DESTROY',board('ENEMY'))]}]};
+    case '루나 MK.사일런스': return {rule,abilities:[
+      ...(/등장\s*:[^\n]*상대[^\n]*침묵/u.test(card.text)
+        ? enter(fx('SILENCE',board('ENEMY','PLAYER_CHOICE'))) : []),
+      {trigger:'TURN_START',effects:[fx('DESTROY',board('ENEMY'))]},
+    ]};
     case '루브': return {rule,abilities:[{trigger:'TURN_END',condition:{type:'BOARD_COUNT',compare:'EQ',amount:1},effects:[fx('BUFF',self,{attack:1,health:1}),fx('ADD_KEYWORD',self,{keyword:'TAUNT'})]}]};
     case '루이나': return {rule,abilities:enter(fx('GENERATE',{zone:'HAND',owner:'SELF',selection:'RANDOM',count:1,filter:{tagsAny:['디 어쏘리티']}},{count:1,destination:'HAND'}),fx('ADD_KEYWORD',{...authority,owner:'SELF'},{keyword:'LIFESTEAL'}))};
     case '반으로 갈라져 죽어!': return {rule,abilities:enter(fx('DAMAGE',{zone:'PLAYER',owner:'ENEMY',selection:'SELF',count:1},{amount:99}))};
