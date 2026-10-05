@@ -1,0 +1,5835 @@
+[19:43:21.503] [32mINFO[39m (12): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 1,
+      "method": "POST",
+      "url": "/api/auth/login"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 144
+[19:43:21.580] [32mINFO[39m (12): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 2,
+      "method": "POST",
+      "url": "/api/auth/login"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 63
+[19:43:21.660] [32mINFO[39m (12): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 3,
+      "method": "POST",
+      "url": "/api/auth/login"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 76
+[19:43:21.737] [32mINFO[39m (12): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 4,
+      "method": "POST",
+      "url": "/api/auth/login"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 74
+[19:43:21.745] [32mINFO[39m (12): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 5,
+      "method": "GET",
+      "url": "/api/admin/draft"
+    }
+    [35mres[39m: {
+      "statusCode": 401
+    }
+    [35mresponseTime[39m: 2
+[19:43:21.756] [32mINFO[39m (12): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 6,
+      "method": "GET",
+      "url": "/api/admin/draft"
+    }
+    [35mres[39m: {
+      "statusCode": 403
+    }
+    [35mresponseTime[39m: 7
+[19:43:21.783] [32mINFO[39m (12): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 7,
+      "method": "GET",
+      "url": "/api/admin/draft"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 24
+[19:43:21.798] [32mINFO[39m (12): [36mrequest errored[39m
+    [35mreq[39m: {
+      "id": 8,
+      "method": "POST",
+      "url": "/api/admin/draft/sessions"
+    }
+    [35mres[39m: {
+      "statusCode": 503
+    }
+    [35mresponseTime[39m: 10
+    err: {
+      "type": "Error",
+      "message": "failed with status code 503",
+      "stack":
+          Error: failed with status code 503
+              at onResFinished (/workspace/scratch/e84071811a26/ko-card-game/node_modules/.pnpm/pino-http@10.5.0/node_modules/pino-http/logger.js:115:39)
+              at ServerResponse.onResponseComplete (/workspace/scratch/e84071811a26/ko-card-game/node_modules/.pnpm/pino-http@10.5.0/node_modules/pino-http/logger.js:178:14)
+              at ServerResponse.emit (node:events:521:24)
+              at onFinish (node:_http_outgoing:1079:10)
+              at callback (node:internal/streams/writable:764:21)
+              at afterWrite (node:internal/streams/writable:708:5)
+              at afterWriteTick (node:internal/streams/writable:694:10)
+              at process.processTicksAndRejections (node:internal/process/task_queues:89:21)
+    }
+[19:43:21.816] [32mINFO[39m (12): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 9,
+      "method": "PUT",
+      "url": "/api/admin/draft/settings"
+    }
+    [35mres[39m: {
+      "statusCode": 400
+    }
+    [35mresponseTime[39m: 16
+[19:43:21.854] [32mINFO[39m (12): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 10,
+      "method": "PUT",
+      "url": "/api/admin/draft/settings"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 29
+[19:43:21.865] [32mINFO[39m (12): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 11,
+      "method": "POST",
+      "url": "/api/admin/draft/sessions"
+    }
+    [35mres[39m: {
+      "statusCode": 403
+    }
+    [35mresponseTime[39m: 8
+[19:43:21.888] [32mINFO[39m (12): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 12,
+      "method": "GET",
+      "url": "/api/admin/draft"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 20
+✔ admin-only API and default OFF, pool validation and persistent ON (596.791473ms)
+[19:43:21.926] [32mINFO[39m (12): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 13,
+      "method": "GET",
+      "url": "/api/admin/draft"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 24
+[19:43:21.954] [32mINFO[39m (12): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 14,
+      "method": "PUT",
+      "url": "/api/admin/draft/settings"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 24
+[19:43:22.014] [32mINFO[39m (12): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 15,
+      "method": "POST",
+      "url": "/api/admin/draft/sessions"
+    }
+    [35mres[39m: {
+      "statusCode": 201
+    }
+    [35mresponseTime[39m: 58
+[19:43:22.040] [32mINFO[39m (12): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 16,
+      "method": "GET",
+      "url": "/api/admin/draft/sessions/2ced1492-571a-456c-be4b-16bc2f743cc8"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 15
+[19:43:22.057] [32mINFO[39m (12): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 17,
+      "method": "POST",
+      "url": "/api/admin/draft/sessions/2ced1492-571a-456c-be4b-16bc2f743cc8/commands"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 13
+[19:43:22.070] [32mINFO[39m (12): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 18,
+      "method": "POST",
+      "url": "/api/admin/draft/sessions/2ced1492-571a-456c-be4b-16bc2f743cc8/commands"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 12
+[19:43:22.083] [32mINFO[39m (12): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 19,
+      "method": "POST",
+      "url": "/api/admin/draft/sessions/2ced1492-571a-456c-be4b-16bc2f743cc8/commands"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 10
+[19:43:22.097] [32mINFO[39m (12): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 20,
+      "method": "POST",
+      "url": "/api/admin/draft/sessions/2ced1492-571a-456c-be4b-16bc2f743cc8/commands"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 11
+[19:43:22.110] [32mINFO[39m (12): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 21,
+      "method": "POST",
+      "url": "/api/admin/draft/sessions/2ced1492-571a-456c-be4b-16bc2f743cc8/commands"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 11
+[19:43:22.123] [32mINFO[39m (12): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 22,
+      "method": "POST",
+      "url": "/api/admin/draft/sessions/2ced1492-571a-456c-be4b-16bc2f743cc8/commands"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 11
+[19:43:22.147] [32mINFO[39m (12): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 23,
+      "method": "POST",
+      "url": "/api/admin/draft/sessions/2ced1492-571a-456c-be4b-16bc2f743cc8/commands"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 21
+[19:43:22.162] [32mINFO[39m (12): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 24,
+      "method": "POST",
+      "url": "/api/admin/draft/sessions/2ced1492-571a-456c-be4b-16bc2f743cc8/commands"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 13
+[19:43:22.177] [32mINFO[39m (12): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 25,
+      "method": "POST",
+      "url": "/api/admin/draft/sessions/2ced1492-571a-456c-be4b-16bc2f743cc8/commands"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 12
+[19:43:22.191] [32mINFO[39m (12): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 26,
+      "method": "POST",
+      "url": "/api/admin/draft/sessions/2ced1492-571a-456c-be4b-16bc2f743cc8/commands"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 12
+[19:43:22.204] [32mINFO[39m (12): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 27,
+      "method": "POST",
+      "url": "/api/admin/draft/sessions/2ced1492-571a-456c-be4b-16bc2f743cc8/commands"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 10
+[19:43:22.224] [32mINFO[39m (12): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 28,
+      "method": "POST",
+      "url": "/api/admin/draft/sessions/2ced1492-571a-456c-be4b-16bc2f743cc8/commands"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 17
+[19:43:22.246] [32mINFO[39m (12): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 29,
+      "method": "POST",
+      "url": "/api/admin/draft/sessions/2ced1492-571a-456c-be4b-16bc2f743cc8/commands"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 18
+[19:43:22.262] [32mINFO[39m (12): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 30,
+      "method": "POST",
+      "url": "/api/admin/draft/sessions/2ced1492-571a-456c-be4b-16bc2f743cc8/commands"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 13
+[19:43:22.280] [32mINFO[39m (12): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 31,
+      "method": "POST",
+      "url": "/api/admin/draft/sessions/2ced1492-571a-456c-be4b-16bc2f743cc8/commands"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 15
+[19:43:22.301] [32mINFO[39m (12): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 32,
+      "method": "POST",
+      "url": "/api/admin/draft/sessions/2ced1492-571a-456c-be4b-16bc2f743cc8/commands"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 11
+[19:43:22.315] [32mINFO[39m (12): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 33,
+      "method": "POST",
+      "url": "/api/admin/draft/sessions/2ced1492-571a-456c-be4b-16bc2f743cc8/commands"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 11
+[19:43:22.330] [32mINFO[39m (12): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 34,
+      "method": "POST",
+      "url": "/api/admin/draft/sessions/2ced1492-571a-456c-be4b-16bc2f743cc8/commands"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 12
+[19:43:22.351] [32mINFO[39m (12): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 35,
+      "method": "POST",
+      "url": "/api/admin/draft/sessions/2ced1492-571a-456c-be4b-16bc2f743cc8/commands"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 18
+[19:43:22.365] [32mINFO[39m (12): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 36,
+      "method": "POST",
+      "url": "/api/admin/draft/sessions/2ced1492-571a-456c-be4b-16bc2f743cc8/commands"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 12
+[19:43:22.380] [32mINFO[39m (12): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 37,
+      "method": "POST",
+      "url": "/api/admin/draft/sessions/2ced1492-571a-456c-be4b-16bc2f743cc8/commands"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 13
+[19:43:22.399] [32mINFO[39m (12): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 38,
+      "method": "POST",
+      "url": "/api/admin/draft/sessions/2ced1492-571a-456c-be4b-16bc2f743cc8/commands"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 16
+[19:43:22.414] [32mINFO[39m (12): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 39,
+      "method": "POST",
+      "url": "/api/admin/draft/sessions/2ced1492-571a-456c-be4b-16bc2f743cc8/commands"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 12
+[19:43:22.428] [32mINFO[39m (12): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 40,
+      "method": "POST",
+      "url": "/api/admin/draft/sessions/2ced1492-571a-456c-be4b-16bc2f743cc8/commands"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 12
+[19:43:22.450] [32mINFO[39m (12): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 41,
+      "method": "POST",
+      "url": "/api/admin/draft/sessions/2ced1492-571a-456c-be4b-16bc2f743cc8/commands"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 19
+[19:43:22.463] [32mINFO[39m (12): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 42,
+      "method": "POST",
+      "url": "/api/admin/draft/sessions/2ced1492-571a-456c-be4b-16bc2f743cc8/commands"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 11
+[19:43:22.477] [32mINFO[39m (12): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 43,
+      "method": "POST",
+      "url": "/api/admin/draft/sessions/2ced1492-571a-456c-be4b-16bc2f743cc8/commands"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 11
+[19:43:22.492] [32mINFO[39m (12): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 44,
+      "method": "POST",
+      "url": "/api/admin/draft/sessions/2ced1492-571a-456c-be4b-16bc2f743cc8/commands"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 13
+[19:43:22.507] [32mINFO[39m (12): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 45,
+      "method": "POST",
+      "url": "/api/admin/draft/sessions/2ced1492-571a-456c-be4b-16bc2f743cc8/commands"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 13
+[19:43:22.522] [32mINFO[39m (12): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 46,
+      "method": "POST",
+      "url": "/api/admin/draft/sessions/2ced1492-571a-456c-be4b-16bc2f743cc8/commands"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 12
+[19:43:22.551] [32mINFO[39m (12): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 47,
+      "method": "POST",
+      "url": "/api/admin/draft/sessions/2ced1492-571a-456c-be4b-16bc2f743cc8/commands"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 17
+✔ no published techniques can enable and finish draft selection with frozen wrestler fallback (659.379257ms)
+[19:43:22.596] [32mINFO[39m (12): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 48,
+      "method": "POST",
+      "url": "/api/admin/draft/sessions"
+    }
+    [35mres[39m: {
+      "statusCode": 201
+    }
+    [35mresponseTime[39m: 38
+[19:43:22.605] [32mINFO[39m (12): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 49,
+      "method": "GET",
+      "url": "/api/admin/draft/sessions/fdf3ddc6-edb6-4e5f-97b2-caff3f32ab5e"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 7
+[19:43:22.622] [32mINFO[39m (12): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 50,
+      "method": "POST",
+      "url": "/api/admin/draft/sessions"
+    }
+    [35mres[39m: {
+      "statusCode": 409
+    }
+    [35mresponseTime[39m: 14
+[19:43:22.633] [32mINFO[39m (12): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 51,
+      "method": "GET",
+      "url": "/api/admin/draft/sessions/fdf3ddc6-edb6-4e5f-97b2-caff3f32ab5e"
+    }
+    [35mres[39m: {
+      "statusCode": 403
+    }
+    [35mresponseTime[39m: 8
+[19:43:22.654] [32mINFO[39m (12): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 52,
+      "method": "POST",
+      "url": "/api/admin/draft/sessions/fdf3ddc6-edb6-4e5f-97b2-caff3f32ab5e/commands"
+    }
+    [35mres[39m: {
+      "statusCode": 400
+    }
+    [35mresponseTime[39m: 18
+[19:43:22.667] [32mINFO[39m (12): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 53,
+      "method": "POST",
+      "url": "/api/admin/draft/sessions/fdf3ddc6-edb6-4e5f-97b2-caff3f32ab5e/commands"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 10
+[19:43:22.677] [32mINFO[39m (12): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 54,
+      "method": "POST",
+      "url": "/api/admin/draft/sessions/fdf3ddc6-edb6-4e5f-97b2-caff3f32ab5e/commands"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 8
+[19:43:22.689] [32mINFO[39m (12): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 55,
+      "method": "POST",
+      "url": "/api/admin/draft/sessions/fdf3ddc6-edb6-4e5f-97b2-caff3f32ab5e/commands"
+    }
+    [35mres[39m: {
+      "statusCode": 409
+    }
+    [35mresponseTime[39m: 9
+[19:43:22.704] [32mINFO[39m (12): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 56,
+      "method": "POST",
+      "url": "/api/admin/draft/sessions/fdf3ddc6-edb6-4e5f-97b2-caff3f32ab5e/commands"
+    }
+    [35mres[39m: {
+      "statusCode": 409
+    }
+    [35mresponseTime[39m: 13
+[19:43:22.716] [32mINFO[39m (12): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 57,
+      "method": "POST",
+      "url": "/api/admin/draft/sessions/fdf3ddc6-edb6-4e5f-97b2-caff3f32ab5e/commands"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 10
+[19:43:22.725] [32mINFO[39m (12): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 58,
+      "method": "POST",
+      "url": "/api/admin/draft/sessions/fdf3ddc6-edb6-4e5f-97b2-caff3f32ab5e/commands"
+    }
+    [35mres[39m: {
+      "statusCode": 409
+    }
+    [35mresponseTime[39m: 8
+[19:43:22.737] [32mINFO[39m (12): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 59,
+      "method": "GET",
+      "url": "/api/admin/draft/sessions/fdf3ddc6-edb6-4e5f-97b2-caff3f32ab5e"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 9
+[19:43:22.759] [32mINFO[39m (12): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 60,
+      "method": "POST",
+      "url": "/api/admin/draft/sessions/fdf3ddc6-edb6-4e5f-97b2-caff3f32ab5e/commands"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 9
+[19:43:22.771] [32mINFO[39m (12): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 61,
+      "method": "POST",
+      "url": "/api/admin/draft/sessions/fdf3ddc6-edb6-4e5f-97b2-caff3f32ab5e/commands"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 9
+[19:43:22.782] [32mINFO[39m (12): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 62,
+      "method": "POST",
+      "url": "/api/admin/draft/sessions/fdf3ddc6-edb6-4e5f-97b2-caff3f32ab5e/commands"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 9
+[19:43:22.796] [32mINFO[39m (12): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 63,
+      "method": "POST",
+      "url": "/api/admin/draft/sessions/fdf3ddc6-edb6-4e5f-97b2-caff3f32ab5e/commands"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 12
+[19:43:22.808] [32mINFO[39m (12): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 64,
+      "method": "POST",
+      "url": "/api/admin/draft/sessions/fdf3ddc6-edb6-4e5f-97b2-caff3f32ab5e/commands"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 9
+[19:43:22.820] [32mINFO[39m (12): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 65,
+      "method": "POST",
+      "url": "/api/admin/draft/sessions/fdf3ddc6-edb6-4e5f-97b2-caff3f32ab5e/commands"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 10
+[19:43:22.831] [32mINFO[39m (12): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 66,
+      "method": "POST",
+      "url": "/api/admin/draft/sessions/fdf3ddc6-edb6-4e5f-97b2-caff3f32ab5e/commands"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 10
+[19:43:22.849] [32mINFO[39m (12): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 67,
+      "method": "POST",
+      "url": "/api/admin/draft/sessions/fdf3ddc6-edb6-4e5f-97b2-caff3f32ab5e/commands"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 17
+[19:43:22.863] [32mINFO[39m (12): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 68,
+      "method": "POST",
+      "url": "/api/admin/draft/sessions/fdf3ddc6-edb6-4e5f-97b2-caff3f32ab5e/commands"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 11
+[19:43:22.877] [32mINFO[39m (12): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 69,
+      "method": "POST",
+      "url": "/api/admin/draft/sessions/fdf3ddc6-edb6-4e5f-97b2-caff3f32ab5e/commands"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 11
+[19:43:22.895] [32mINFO[39m (12): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 70,
+      "method": "POST",
+      "url": "/api/admin/draft/sessions/fdf3ddc6-edb6-4e5f-97b2-caff3f32ab5e/commands"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 16
+[19:43:22.909] [32mINFO[39m (12): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 71,
+      "method": "POST",
+      "url": "/api/admin/draft/sessions/fdf3ddc6-edb6-4e5f-97b2-caff3f32ab5e/commands"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 11
+[19:43:22.928] [32mINFO[39m (12): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 72,
+      "method": "POST",
+      "url": "/api/admin/draft/sessions/fdf3ddc6-edb6-4e5f-97b2-caff3f32ab5e/commands"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 16
+[19:43:22.946] [32mINFO[39m (12): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 73,
+      "method": "POST",
+      "url": "/api/admin/draft/sessions/fdf3ddc6-edb6-4e5f-97b2-caff3f32ab5e/commands"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 15
+[19:43:22.959] [32mINFO[39m (12): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 74,
+      "method": "POST",
+      "url": "/api/admin/draft/sessions/fdf3ddc6-edb6-4e5f-97b2-caff3f32ab5e/commands"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 9
+[19:43:22.972] [32mINFO[39m (12): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 75,
+      "method": "POST",
+      "url": "/api/admin/draft/sessions/fdf3ddc6-edb6-4e5f-97b2-caff3f32ab5e/commands"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 10
+[19:43:22.991] [32mINFO[39m (12): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 76,
+      "method": "POST",
+      "url": "/api/admin/draft/sessions/fdf3ddc6-edb6-4e5f-97b2-caff3f32ab5e/commands"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 10
+[19:43:23.003] [32mINFO[39m (12): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 77,
+      "method": "POST",
+      "url": "/api/admin/draft/sessions/fdf3ddc6-edb6-4e5f-97b2-caff3f32ab5e/commands"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 9
+[19:43:23.019] [32mINFO[39m (12): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 78,
+      "method": "POST",
+      "url": "/api/admin/draft/sessions/fdf3ddc6-edb6-4e5f-97b2-caff3f32ab5e/commands"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 13
+[19:43:23.034] [32mINFO[39m (12): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 79,
+      "method": "POST",
+      "url": "/api/admin/draft/sessions/fdf3ddc6-edb6-4e5f-97b2-caff3f32ab5e/commands"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 12
+[19:43:23.053] [32mINFO[39m (12): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 80,
+      "method": "POST",
+      "url": "/api/admin/draft/sessions/fdf3ddc6-edb6-4e5f-97b2-caff3f32ab5e/commands"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 16
+[19:43:23.065] [32mINFO[39m (12): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 81,
+      "method": "POST",
+      "url": "/api/admin/draft/sessions/fdf3ddc6-edb6-4e5f-97b2-caff3f32ab5e/commands"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 9
+[19:43:23.078] [32mINFO[39m (12): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 82,
+      "method": "POST",
+      "url": "/api/admin/draft/sessions/fdf3ddc6-edb6-4e5f-97b2-caff3f32ab5e/commands"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 10
+[19:43:23.090] [32mINFO[39m (12): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 83,
+      "method": "POST",
+      "url": "/api/admin/draft/sessions/fdf3ddc6-edb6-4e5f-97b2-caff3f32ab5e/commands"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 10
+[19:43:23.104] [32mINFO[39m (12): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 84,
+      "method": "POST",
+      "url": "/api/admin/draft/sessions/fdf3ddc6-edb6-4e5f-97b2-caff3f32ab5e/commands"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 11
+[19:43:23.117] [32mINFO[39m (12): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 85,
+      "method": "POST",
+      "url": "/api/admin/draft/sessions/fdf3ddc6-edb6-4e5f-97b2-caff3f32ab5e/commands"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 11
+[19:43:23.129] [32mINFO[39m (12): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 86,
+      "method": "POST",
+      "url": "/api/admin/draft/sessions/fdf3ddc6-edb6-4e5f-97b2-caff3f32ab5e/commands"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 10
+[19:43:23.153] [32mINFO[39m (12): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 87,
+      "method": "POST",
+      "url": "/api/admin/draft/sessions/fdf3ddc6-edb6-4e5f-97b2-caff3f32ab5e/commands"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 21
+[19:43:23.169] [32mINFO[39m (12): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 88,
+      "method": "GET",
+      "url": "/api/admin/draft/sessions/fdf3ddc6-edb6-4e5f-97b2-caff3f32ab5e"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 8
+[19:43:23.214] [32mINFO[39m (12): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 89,
+      "method": "POST",
+      "url": "/api/admin/draft/sessions/fdf3ddc6-edb6-4e5f-97b2-caff3f32ab5e/commands"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 41
+[19:43:23.231] [32mINFO[39m (12): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 90,
+      "method": "GET",
+      "url": "/api/admin/draft/sessions/fdf3ddc6-edb6-4e5f-97b2-caff3f32ab5e/resources"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 14
+[19:43:23.255] [32mINFO[39m (12): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 91,
+      "method": "GET",
+      "url": "/api/admin/draft/sessions/fdf3ddc6-edb6-4e5f-97b2-caff3f32ab5e"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 22
+[19:43:23.282] [32mINFO[39m (12): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 92,
+      "method": "GET",
+      "url": "/api/admin/draft/sessions/fdf3ddc6-edb6-4e5f-97b2-caff3f32ab5e/battle"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 15
+[19:43:23.289] [32mINFO[39m (12): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 93,
+      "method": "GET",
+      "url": "/api/admin/draft/sessions/fdf3ddc6-edb6-4e5f-97b2-caff3f32ab5e/battle"
+    }
+    [35mres[39m: {
+      "statusCode": 403
+    }
+    [35mresponseTime[39m: 4
+[19:43:23.314] [32mINFO[39m (12): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 94,
+      "method": "GET",
+      "url": "/api/admin/draft/sessions/fdf3ddc6-edb6-4e5f-97b2-caff3f32ab5e/battle"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 15
+[19:43:23.334] [32mINFO[39m (12): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 95,
+      "method": "POST",
+      "url": "/api/admin/draft/sessions/fdf3ddc6-edb6-4e5f-97b2-caff3f32ab5e/actions"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 17
+[19:43:23.374] [32mINFO[39m (12): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 96,
+      "method": "POST",
+      "url": "/api/admin/draft/sessions/fdf3ddc6-edb6-4e5f-97b2-caff3f32ab5e/actions"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 37
+[19:43:23.396] [32mINFO[39m (12): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 97,
+      "method": "POST",
+      "url": "/api/admin/draft/sessions/fdf3ddc6-edb6-4e5f-97b2-caff3f32ab5e/actions"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 19
+[19:43:23.418] [32mINFO[39m (12): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 98,
+      "method": "GET",
+      "url": "/api/admin/draft/sessions/fdf3ddc6-edb6-4e5f-97b2-caff3f32ab5e/rewards"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 20
+[19:43:23.432] [32mINFO[39m (12): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 99,
+      "method": "GET",
+      "url": "/api/admin/draft"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 12
+✔ AI draft persists offers, guards illegal/stale/duplicate commands and does not grant cards (906.147782ms)
+[19:43:23.457] [32mINFO[39m (12): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 100,
+      "method": "GET",
+      "url": "/api/admin/draft/sessions/fdf3ddc6-edb6-4e5f-97b2-caff3f32ab5e"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 22
+[19:43:23.482] [32mINFO[39m (12): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 101,
+      "method": "POST",
+      "url": "/api/admin/draft/sessions"
+    }
+    [35mres[39m: {
+      "statusCode": 201
+    }
+    [35mresponseTime[39m: 21
+[19:43:23.493] [32mINFO[39m (12): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 102,
+      "method": "GET",
+      "url": "/api/admin/draft/sessions/824f37b0-1ee2-48bc-a7b1-6c62e55e3020/invitation"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 8
+[19:43:23.507] [32mINFO[39m (12): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 103,
+      "method": "POST",
+      "url": "/api/admin/draft/sessions/824f37b0-1ee2-48bc-a7b1-6c62e55e3020/commands"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 11
+[19:43:23.518] [32mINFO[39m (12): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 104,
+      "method": "POST",
+      "url": "/api/admin/draft/sessions/824f37b0-1ee2-48bc-a7b1-6c62e55e3020/commands"
+    }
+    [35mres[39m: {
+      "statusCode": 403
+    }
+    [35mresponseTime[39m: 8
+[19:43:23.531] [32mINFO[39m (12): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 105,
+      "method": "GET",
+      "url": "/api/admin/draft/sessions/824f37b0-1ee2-48bc-a7b1-6c62e55e3020"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 10
+[19:43:23.552] [32mINFO[39m (12): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 106,
+      "method": "GET",
+      "url": "/api/admin/draft/sessions/824f37b0-1ee2-48bc-a7b1-6c62e55e3020"
+    }
+    [35mres[39m: {
+      "statusCode": 403
+    }
+    [35mresponseTime[39m: 9
+[19:43:23.622] [32mINFO[39m (12): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 107,
+      "method": "GET",
+      "url": "/api/admin/draft/sessions/824f37b0-1ee2-48bc-a7b1-6c62e55e3020"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 14
+[19:43:23.643] [32mINFO[39m (12): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 108,
+      "method": "GET",
+      "url": "/api/admin/draft/sessions/824f37b0-1ee2-48bc-a7b1-6c62e55e3020/battle"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 17
+[19:43:23.667] [32mINFO[39m (12): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 109,
+      "method": "GET",
+      "url": "/api/admin/draft/sessions/824f37b0-1ee2-48bc-a7b1-6c62e55e3020/battle"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 19
+[19:43:23.690] [32mINFO[39m (12): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 110,
+      "method": "GET",
+      "url": "/api/admin/draft/sessions/824f37b0-1ee2-48bc-a7b1-6c62e55e3020"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 15
+[19:43:23.711] [32mINFO[39m (12): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 111,
+      "method": "POST",
+      "url": "/api/admin/draft/sessions/824f37b0-1ee2-48bc-a7b1-6c62e55e3020/actions"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 18
+[19:43:23.726] [32mINFO[39m (12): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 112,
+      "method": "GET",
+      "url": "/api/admin/draft/sessions/824f37b0-1ee2-48bc-a7b1-6c62e55e3020"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 13
+[19:43:23.749] [32mINFO[39m (12): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 113,
+      "method": "POST",
+      "url": "/api/admin/draft/sessions/824f37b0-1ee2-48bc-a7b1-6c62e55e3020/actions"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 21
+[19:43:23.775] [32mINFO[39m (12): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 114,
+      "method": "GET",
+      "url": "/api/admin/draft/sessions/824f37b0-1ee2-48bc-a7b1-6c62e55e3020"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 15
+[19:43:23.787] [32mINFO[39m (12): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 115,
+      "method": "POST",
+      "url": "/api/admin/draft/sessions/824f37b0-1ee2-48bc-a7b1-6c62e55e3020/actions"
+    }
+    [35mres[39m: {
+      "statusCode": 400
+    }
+    [35mresponseTime[39m: 10
+[19:43:23.878] [32mINFO[39m (12): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 116,
+      "method": "GET",
+      "url": "/api/admin/draft/sessions/824f37b0-1ee2-48bc-a7b1-6c62e55e3020"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 45
+[19:43:23.936] [32mINFO[39m (12): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 117,
+      "method": "GET",
+      "url": "/api/admin/draft/sessions/824f37b0-1ee2-48bc-a7b1-6c62e55e3020/rewards"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 53
+✔ PvP joins before selection, hides opponent picks, timers and worker recover after disconnect (514.7594ms)
+[19:43:23.973] [32mINFO[39m (12): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 118,
+      "method": "GET",
+      "url": "/api/admin/draft/sessions/824f37b0-1ee2-48bc-a7b1-6c62e55e3020/rewards"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 32
+[19:43:24.008] [32mINFO[39m (12): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 119,
+      "method": "POST",
+      "url": "/api/admin/draft/sessions"
+    }
+    [35mres[39m: {
+      "statusCode": 201
+    }
+    [35mresponseTime[39m: 32
+[19:43:24.020] [32mINFO[39m (12): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 120,
+      "method": "PUT",
+      "url": "/api/admin/draft/settings"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 7
+[19:43:24.028] [32mINFO[39m (12): [36mrequest errored[39m
+    [35mreq[39m: {
+      "id": 121,
+      "method": "GET",
+      "url": "/api/admin/draft/sessions/397a30d7-4c59-40d7-b618-088ce1980ed5"
+    }
+    [35mres[39m: {
+      "statusCode": 503
+    }
+    [35mresponseTime[39m: 6
+    err: {
+      "type": "Error",
+      "message": "failed with status code 503",
+      "stack":
+          Error: failed with status code 503
+              at onResFinished (/workspace/scratch/e84071811a26/ko-card-game/node_modules/.pnpm/pino-http@10.5.0/node_modules/pino-http/logger.js:115:39)
+              at ServerResponse.onResponseComplete (/workspace/scratch/e84071811a26/ko-card-game/node_modules/.pnpm/pino-http@10.5.0/node_modules/pino-http/logger.js:178:14)
+              at ServerResponse.emit (node:events:521:24)
+              at onFinish (node:_http_outgoing:1079:10)
+              at callback (node:internal/streams/writable:764:21)
+              at afterWrite (node:internal/streams/writable:708:5)
+              at afterWriteTick (node:internal/streams/writable:694:10)
+              at process.processTicksAndRejections (node:internal/process/task_queues:89:21)
+    }
+[19:43:24.060] [32mINFO[39m (12): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 122,
+      "method": "PUT",
+      "url": "/api/admin/draft/settings"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 18
+[19:43:24.071] [32mINFO[39m (12): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 123,
+      "method": "GET",
+      "url": "/api/admin/draft/sessions/397a30d7-4c59-40d7-b618-088ce1980ed5"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 8
+[19:43:24.082] [32mINFO[39m (12): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 124,
+      "method": "POST",
+      "url": "/api/admin/draft/sessions/397a30d7-4c59-40d7-b618-088ce1980ed5/commands"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 9
+✔ OFF persists existing drafts and prevents operations; re-enable restores identical offers (121.160576ms)
+[19:43:24.094] [32mINFO[39m (12): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 125,
+      "method": "GET",
+      "url": "/api/admin/draft/sessions/397a30d7-4c59-40d7-b618-088ce1980ed5/rewards"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 9
+[19:43:24.132] [32mINFO[39m (12): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 126,
+      "method": "POST",
+      "url": "/api/admin/draft/sessions"
+    }
+    [35mres[39m: {
+      "statusCode": 201
+    }
+    [35mresponseTime[39m: 35
+[19:43:24.143] [32mINFO[39m (12): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 127,
+      "method": "GET",
+      "url": "/api/admin/draft/sessions/08951ef5-c9ae-407b-b57d-70e743923b44"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 10
+[19:43:24.167] [32mINFO[39m (12): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 128,
+      "method": "POST",
+      "url": "/api/admin/draft/sessions/08951ef5-c9ae-407b-b57d-70e743923b44/commands"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 16
+[19:43:24.180] [32mINFO[39m (12): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 129,
+      "method": "POST",
+      "url": "/api/admin/draft/sessions/08951ef5-c9ae-407b-b57d-70e743923b44/commands"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 11
+[19:43:24.192] [32mINFO[39m (12): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 130,
+      "method": "POST",
+      "url": "/api/admin/draft/sessions/08951ef5-c9ae-407b-b57d-70e743923b44/commands"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 11
+[19:43:24.205] [32mINFO[39m (12): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 131,
+      "method": "POST",
+      "url": "/api/admin/draft/sessions/08951ef5-c9ae-407b-b57d-70e743923b44/commands"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 11
+[19:43:24.217] [32mINFO[39m (12): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 132,
+      "method": "POST",
+      "url": "/api/admin/draft/sessions/08951ef5-c9ae-407b-b57d-70e743923b44/commands"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 9
+[19:43:24.229] [32mINFO[39m (12): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 133,
+      "method": "POST",
+      "url": "/api/admin/draft/sessions/08951ef5-c9ae-407b-b57d-70e743923b44/commands"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 10
+[19:43:24.242] [32mINFO[39m (12): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 134,
+      "method": "POST",
+      "url": "/api/admin/draft/sessions/08951ef5-c9ae-407b-b57d-70e743923b44/commands"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 10
+[19:43:24.266] [32mINFO[39m (12): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 135,
+      "method": "POST",
+      "url": "/api/admin/draft/sessions/08951ef5-c9ae-407b-b57d-70e743923b44/commands"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 13
+[19:43:24.276] [32mINFO[39m (12): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 136,
+      "method": "POST",
+      "url": "/api/admin/draft/sessions/08951ef5-c9ae-407b-b57d-70e743923b44/commands"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 9
+[19:43:24.288] [32mINFO[39m (12): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 137,
+      "method": "POST",
+      "url": "/api/admin/draft/sessions/08951ef5-c9ae-407b-b57d-70e743923b44/commands"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 10
+[19:43:24.300] [32mINFO[39m (12): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 138,
+      "method": "POST",
+      "url": "/api/admin/draft/sessions/08951ef5-c9ae-407b-b57d-70e743923b44/commands"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 9
+[19:43:24.312] [32mINFO[39m (12): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 139,
+      "method": "POST",
+      "url": "/api/admin/draft/sessions/08951ef5-c9ae-407b-b57d-70e743923b44/commands"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 10
+[19:43:24.324] [32mINFO[39m (12): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 140,
+      "method": "POST",
+      "url": "/api/admin/draft/sessions/08951ef5-c9ae-407b-b57d-70e743923b44/commands"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 10
+[19:43:24.336] [32mINFO[39m (12): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 141,
+      "method": "POST",
+      "url": "/api/admin/draft/sessions/08951ef5-c9ae-407b-b57d-70e743923b44/commands"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 9
+[19:43:24.351] [32mINFO[39m (12): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 142,
+      "method": "POST",
+      "url": "/api/admin/draft/sessions/08951ef5-c9ae-407b-b57d-70e743923b44/commands"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 13
+[19:43:24.368] [32mINFO[39m (12): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 143,
+      "method": "POST",
+      "url": "/api/admin/draft/sessions/08951ef5-c9ae-407b-b57d-70e743923b44/commands"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 13
+[19:43:24.383] [32mINFO[39m (12): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 144,
+      "method": "POST",
+      "url": "/api/admin/draft/sessions/08951ef5-c9ae-407b-b57d-70e743923b44/commands"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 12
+[19:43:24.404] [32mINFO[39m (12): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 145,
+      "method": "POST",
+      "url": "/api/admin/draft/sessions/08951ef5-c9ae-407b-b57d-70e743923b44/commands"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 19
+[19:43:24.418] [32mINFO[39m (12): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 146,
+      "method": "POST",
+      "url": "/api/admin/draft/sessions/08951ef5-c9ae-407b-b57d-70e743923b44/commands"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 11
+[19:43:24.431] [32mINFO[39m (12): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 147,
+      "method": "POST",
+      "url": "/api/admin/draft/sessions/08951ef5-c9ae-407b-b57d-70e743923b44/commands"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 10
+[19:43:24.444] [32mINFO[39m (12): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 148,
+      "method": "POST",
+      "url": "/api/admin/draft/sessions/08951ef5-c9ae-407b-b57d-70e743923b44/commands"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 10
+[19:43:24.463] [32mINFO[39m (12): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 149,
+      "method": "POST",
+      "url": "/api/admin/draft/sessions/08951ef5-c9ae-407b-b57d-70e743923b44/commands"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 17
+[19:43:24.475] [32mINFO[39m (12): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 150,
+      "method": "POST",
+      "url": "/api/admin/draft/sessions/08951ef5-c9ae-407b-b57d-70e743923b44/commands"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 10
+[19:43:24.494] [32mINFO[39m (12): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 151,
+      "method": "POST",
+      "url": "/api/admin/draft/sessions/08951ef5-c9ae-407b-b57d-70e743923b44/commands"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 10
+[19:43:24.507] [32mINFO[39m (12): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 152,
+      "method": "POST",
+      "url": "/api/admin/draft/sessions/08951ef5-c9ae-407b-b57d-70e743923b44/commands"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 10
+[19:43:24.520] [32mINFO[39m (12): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 153,
+      "method": "POST",
+      "url": "/api/admin/draft/sessions/08951ef5-c9ae-407b-b57d-70e743923b44/commands"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 10
+[19:43:24.532] [32mINFO[39m (12): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 154,
+      "method": "POST",
+      "url": "/api/admin/draft/sessions/08951ef5-c9ae-407b-b57d-70e743923b44/commands"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 9
+[19:43:24.544] [32mINFO[39m (12): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 155,
+      "method": "POST",
+      "url": "/api/admin/draft/sessions/08951ef5-c9ae-407b-b57d-70e743923b44/commands"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 11
+[19:43:24.564] [32mINFO[39m (12): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 156,
+      "method": "POST",
+      "url": "/api/admin/draft/sessions/08951ef5-c9ae-407b-b57d-70e743923b44/commands"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 17
+[19:43:24.579] [32mINFO[39m (12): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 157,
+      "method": "POST",
+      "url": "/api/admin/draft/sessions/08951ef5-c9ae-407b-b57d-70e743923b44/commands"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 13
+[19:43:24.602] [32mINFO[39m (12): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 158,
+      "method": "POST",
+      "url": "/api/admin/draft/sessions/08951ef5-c9ae-407b-b57d-70e743923b44/commands"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 21
+[19:43:24.629] [32mINFO[39m (12): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 159,
+      "method": "GET",
+      "url": "/api/admin/draft/sessions/08951ef5-c9ae-407b-b57d-70e743923b44/battle"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 16
+[19:43:24.651] [32mINFO[39m (12): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 160,
+      "method": "POST",
+      "url": "/api/admin/draft/sessions/08951ef5-c9ae-407b-b57d-70e743923b44/actions"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 21
+[19:43:24.694] [32mINFO[39m (12): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 161,
+      "method": "POST",
+      "url": "/api/admin/draft/sessions/08951ef5-c9ae-407b-b57d-70e743923b44/actions"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 28
+[19:43:24.733] [32mINFO[39m (12): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 162,
+      "method": "POST",
+      "url": "/api/admin/draft/sessions/08951ef5-c9ae-407b-b57d-70e743923b44/actions"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 24
+[19:43:24.764] [32mINFO[39m (12): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 163,
+      "method": "POST",
+      "url": "/api/admin/draft/sessions/08951ef5-c9ae-407b-b57d-70e743923b44/actions"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 23
+[19:43:24.796] [32mINFO[39m (12): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 164,
+      "method": "POST",
+      "url": "/api/admin/draft/sessions/08951ef5-c9ae-407b-b57d-70e743923b44/actions"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 22
+[19:43:24.826] [32mINFO[39m (12): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 165,
+      "method": "POST",
+      "url": "/api/admin/draft/sessions/08951ef5-c9ae-407b-b57d-70e743923b44/actions"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 16
+[19:43:24.859] [32mINFO[39m (12): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 166,
+      "method": "POST",
+      "url": "/api/admin/draft/sessions/08951ef5-c9ae-407b-b57d-70e743923b44/actions"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 28
+[19:43:24.887] [32mINFO[39m (12): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 167,
+      "method": "POST",
+      "url": "/api/admin/draft/sessions/08951ef5-c9ae-407b-b57d-70e743923b44/actions"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 18
+[19:43:24.919] [32mINFO[39m (12): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 168,
+      "method": "POST",
+      "url": "/api/admin/draft/sessions/08951ef5-c9ae-407b-b57d-70e743923b44/actions"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 24
+[19:43:24.951] [32mINFO[39m (12): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 169,
+      "method": "POST",
+      "url": "/api/admin/draft/sessions/08951ef5-c9ae-407b-b57d-70e743923b44/actions"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 23
+[19:43:24.977] [32mINFO[39m (12): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 170,
+      "method": "POST",
+      "url": "/api/admin/draft/sessions/08951ef5-c9ae-407b-b57d-70e743923b44/actions"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 17
+[19:43:25.016] [32mINFO[39m (12): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 171,
+      "method": "POST",
+      "url": "/api/admin/draft/sessions/08951ef5-c9ae-407b-b57d-70e743923b44/actions"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 32
+[19:43:25.075] [32mINFO[39m (12): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 172,
+      "method": "POST",
+      "url": "/api/admin/draft/sessions/08951ef5-c9ae-407b-b57d-70e743923b44/actions"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 51
+[19:43:25.123] [32mINFO[39m (12): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 173,
+      "method": "POST",
+      "url": "/api/admin/draft/sessions/08951ef5-c9ae-407b-b57d-70e743923b44/actions"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 37
+[19:43:25.175] [32mINFO[39m (12): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 174,
+      "method": "POST",
+      "url": "/api/admin/draft/sessions/08951ef5-c9ae-407b-b57d-70e743923b44/actions"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 32
+[19:43:25.202] [32mINFO[39m (12): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 175,
+      "method": "POST",
+      "url": "/api/admin/draft/sessions/08951ef5-c9ae-407b-b57d-70e743923b44/actions"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 19
+[19:43:25.227] [32mINFO[39m (12): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 176,
+      "method": "POST",
+      "url": "/api/admin/draft/sessions/08951ef5-c9ae-407b-b57d-70e743923b44/actions"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 17
+[19:43:25.253] [32mINFO[39m (12): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 177,
+      "method": "POST",
+      "url": "/api/admin/draft/sessions/08951ef5-c9ae-407b-b57d-70e743923b44/actions"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 20
+[19:43:25.288] [32mINFO[39m (12): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 178,
+      "method": "POST",
+      "url": "/api/admin/draft/sessions/08951ef5-c9ae-407b-b57d-70e743923b44/actions"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 26
+[19:43:25.313] [32mINFO[39m (12): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 179,
+      "method": "POST",
+      "url": "/api/admin/draft/sessions/08951ef5-c9ae-407b-b57d-70e743923b44/actions"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 18
+[19:43:25.339] [32mINFO[39m (12): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 180,
+      "method": "POST",
+      "url": "/api/admin/draft/sessions/08951ef5-c9ae-407b-b57d-70e743923b44/actions"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 19
+[19:43:25.372] [32mINFO[39m (12): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 181,
+      "method": "POST",
+      "url": "/api/admin/draft/sessions/08951ef5-c9ae-407b-b57d-70e743923b44/actions"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 24
+[19:43:25.399] [32mINFO[39m (12): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 182,
+      "method": "POST",
+      "url": "/api/admin/draft/sessions/08951ef5-c9ae-407b-b57d-70e743923b44/actions"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 20
+[19:43:25.429] [32mINFO[39m (12): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 183,
+      "method": "POST",
+      "url": "/api/admin/draft/sessions/08951ef5-c9ae-407b-b57d-70e743923b44/actions"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 22
+[19:43:25.474] [32mINFO[39m (12): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 184,
+      "method": "POST",
+      "url": "/api/admin/draft/sessions/08951ef5-c9ae-407b-b57d-70e743923b44/actions"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 31
+[19:43:25.505] [32mINFO[39m (12): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 185,
+      "method": "POST",
+      "url": "/api/admin/draft/sessions/08951ef5-c9ae-407b-b57d-70e743923b44/actions"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 21
+[19:43:25.531] [32mINFO[39m (12): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 186,
+      "method": "POST",
+      "url": "/api/admin/draft/sessions/08951ef5-c9ae-407b-b57d-70e743923b44/actions"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 18
+[19:43:25.576] [32mINFO[39m (12): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 187,
+      "method": "POST",
+      "url": "/api/admin/draft/sessions/08951ef5-c9ae-407b-b57d-70e743923b44/actions"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 37
+[19:43:25.604] [32mINFO[39m (12): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 188,
+      "method": "GET",
+      "url": "/api/admin/draft/sessions/08951ef5-c9ae-407b-b57d-70e743923b44/battle"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 19
+[19:43:25.625] [32mINFO[39m (12): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 189,
+      "method": "GET",
+      "url": "/api/admin/draft/sessions/08951ef5-c9ae-407b-b57d-70e743923b44"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 17
+[19:43:25.647] [32mINFO[39m (12): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 190,
+      "method": "GET",
+      "url": "/api/admin/draft/sessions/08951ef5-c9ae-407b-b57d-70e743923b44/rewards"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 19
+[19:43:25.692] [32mINFO[39m (12): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 191,
+      "method": "POST",
+      "url": "/api/admin/draft/sessions"
+    }
+    [35mres[39m: {
+      "statusCode": 201
+    }
+    [35mresponseTime[39m: 42
+[19:43:25.708] [32mINFO[39m (12): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 192,
+      "method": "GET",
+      "url": "/api/admin/draft/sessions/3b0d812b-6d2a-40bd-a04b-5a5d6ae9c59c"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 8
+[19:43:25.718] [32mINFO[39m (12): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 193,
+      "method": "POST",
+      "url": "/api/admin/draft/sessions/3b0d812b-6d2a-40bd-a04b-5a5d6ae9c59c/commands"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 8
+[19:43:25.730] [32mINFO[39m (12): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 194,
+      "method": "POST",
+      "url": "/api/admin/draft/sessions/3b0d812b-6d2a-40bd-a04b-5a5d6ae9c59c/commands"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 9
+[19:43:25.744] [32mINFO[39m (12): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 195,
+      "method": "POST",
+      "url": "/api/admin/draft/sessions/3b0d812b-6d2a-40bd-a04b-5a5d6ae9c59c/commands"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 9
+[19:43:25.760] [32mINFO[39m (12): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 196,
+      "method": "POST",
+      "url": "/api/admin/draft/sessions/3b0d812b-6d2a-40bd-a04b-5a5d6ae9c59c/commands"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 13
+[19:43:25.772] [32mINFO[39m (12): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 197,
+      "method": "POST",
+      "url": "/api/admin/draft/sessions/3b0d812b-6d2a-40bd-a04b-5a5d6ae9c59c/commands"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 10
+[19:43:25.784] [32mINFO[39m (12): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 198,
+      "method": "POST",
+      "url": "/api/admin/draft/sessions/3b0d812b-6d2a-40bd-a04b-5a5d6ae9c59c/commands"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 9
+[19:43:25.796] [32mINFO[39m (12): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 199,
+      "method": "POST",
+      "url": "/api/admin/draft/sessions/3b0d812b-6d2a-40bd-a04b-5a5d6ae9c59c/commands"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 9
+[19:43:25.809] [32mINFO[39m (12): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 200,
+      "method": "POST",
+      "url": "/api/admin/draft/sessions/3b0d812b-6d2a-40bd-a04b-5a5d6ae9c59c/commands"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 10
+[19:43:25.821] [32mINFO[39m (12): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 201,
+      "method": "POST",
+      "url": "/api/admin/draft/sessions/3b0d812b-6d2a-40bd-a04b-5a5d6ae9c59c/commands"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 10
+[19:43:25.832] [32mINFO[39m (12): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 202,
+      "method": "POST",
+      "url": "/api/admin/draft/sessions/3b0d812b-6d2a-40bd-a04b-5a5d6ae9c59c/commands"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 9
+[19:43:25.844] [32mINFO[39m (12): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 203,
+      "method": "POST",
+      "url": "/api/admin/draft/sessions/3b0d812b-6d2a-40bd-a04b-5a5d6ae9c59c/commands"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 10
+[19:43:25.860] [32mINFO[39m (12): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 204,
+      "method": "POST",
+      "url": "/api/admin/draft/sessions/3b0d812b-6d2a-40bd-a04b-5a5d6ae9c59c/commands"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 13
+[19:43:25.876] [32mINFO[39m (12): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 205,
+      "method": "POST",
+      "url": "/api/admin/draft/sessions/3b0d812b-6d2a-40bd-a04b-5a5d6ae9c59c/commands"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 10
+[19:43:25.888] [32mINFO[39m (12): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 206,
+      "method": "POST",
+      "url": "/api/admin/draft/sessions/3b0d812b-6d2a-40bd-a04b-5a5d6ae9c59c/commands"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 10
+[19:43:25.907] [32mINFO[39m (12): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 207,
+      "method": "POST",
+      "url": "/api/admin/draft/sessions/3b0d812b-6d2a-40bd-a04b-5a5d6ae9c59c/commands"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 17
+[19:43:25.921] [32mINFO[39m (12): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 208,
+      "method": "POST",
+      "url": "/api/admin/draft/sessions/3b0d812b-6d2a-40bd-a04b-5a5d6ae9c59c/commands"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 11
+[19:43:25.947] [32mINFO[39m (12): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 209,
+      "method": "POST",
+      "url": "/api/admin/draft/sessions/3b0d812b-6d2a-40bd-a04b-5a5d6ae9c59c/commands"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 13
+[19:43:25.963] [32mINFO[39m (12): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 210,
+      "method": "POST",
+      "url": "/api/admin/draft/sessions/3b0d812b-6d2a-40bd-a04b-5a5d6ae9c59c/commands"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 14
+[19:43:25.975] [32mINFO[39m (12): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 211,
+      "method": "POST",
+      "url": "/api/admin/draft/sessions/3b0d812b-6d2a-40bd-a04b-5a5d6ae9c59c/commands"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 9
+[19:43:25.987] [32mINFO[39m (12): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 212,
+      "method": "POST",
+      "url": "/api/admin/draft/sessions/3b0d812b-6d2a-40bd-a04b-5a5d6ae9c59c/commands"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 9
+[19:43:25.999] [32mINFO[39m (12): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 213,
+      "method": "POST",
+      "url": "/api/admin/draft/sessions/3b0d812b-6d2a-40bd-a04b-5a5d6ae9c59c/commands"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 9
+[19:43:26.012] [32mINFO[39m (12): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 214,
+      "method": "POST",
+      "url": "/api/admin/draft/sessions/3b0d812b-6d2a-40bd-a04b-5a5d6ae9c59c/commands"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 11
+[19:43:26.025] [32mINFO[39m (12): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 215,
+      "method": "POST",
+      "url": "/api/admin/draft/sessions/3b0d812b-6d2a-40bd-a04b-5a5d6ae9c59c/commands"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 11
+[19:43:26.038] [32mINFO[39m (12): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 216,
+      "method": "POST",
+      "url": "/api/admin/draft/sessions/3b0d812b-6d2a-40bd-a04b-5a5d6ae9c59c/commands"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 11
+[19:43:26.051] [32mINFO[39m (12): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 217,
+      "method": "POST",
+      "url": "/api/admin/draft/sessions/3b0d812b-6d2a-40bd-a04b-5a5d6ae9c59c/commands"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 10
+[19:43:26.068] [32mINFO[39m (12): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 218,
+      "method": "POST",
+      "url": "/api/admin/draft/sessions/3b0d812b-6d2a-40bd-a04b-5a5d6ae9c59c/commands"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 15
+[19:43:26.080] [32mINFO[39m (12): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 219,
+      "method": "POST",
+      "url": "/api/admin/draft/sessions/3b0d812b-6d2a-40bd-a04b-5a5d6ae9c59c/commands"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 9
+[19:43:26.094] [32mINFO[39m (12): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 220,
+      "method": "POST",
+      "url": "/api/admin/draft/sessions/3b0d812b-6d2a-40bd-a04b-5a5d6ae9c59c/commands"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 11
+[19:43:26.108] [32mINFO[39m (12): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 221,
+      "method": "POST",
+      "url": "/api/admin/draft/sessions/3b0d812b-6d2a-40bd-a04b-5a5d6ae9c59c/commands"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 11
+[19:43:26.120] [32mINFO[39m (12): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 222,
+      "method": "POST",
+      "url": "/api/admin/draft/sessions/3b0d812b-6d2a-40bd-a04b-5a5d6ae9c59c/commands"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 9
+[19:43:26.137] [32mINFO[39m (12): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 223,
+      "method": "POST",
+      "url": "/api/admin/draft/sessions/3b0d812b-6d2a-40bd-a04b-5a5d6ae9c59c/commands"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 14
+[19:43:26.170] [32mINFO[39m (12): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 224,
+      "method": "GET",
+      "url": "/api/admin/draft/sessions/3b0d812b-6d2a-40bd-a04b-5a5d6ae9c59c/battle"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 24
+[19:43:26.194] [32mINFO[39m (12): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 225,
+      "method": "POST",
+      "url": "/api/admin/draft/sessions/3b0d812b-6d2a-40bd-a04b-5a5d6ae9c59c/actions"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 15
+[19:43:26.216] [32mINFO[39m (12): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 226,
+      "method": "POST",
+      "url": "/api/admin/draft/sessions/3b0d812b-6d2a-40bd-a04b-5a5d6ae9c59c/actions"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 16
+[19:43:26.237] [32mINFO[39m (12): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 227,
+      "method": "POST",
+      "url": "/api/admin/draft/sessions/3b0d812b-6d2a-40bd-a04b-5a5d6ae9c59c/actions"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 16
+[19:43:26.264] [32mINFO[39m (12): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 228,
+      "method": "POST",
+      "url": "/api/admin/draft/sessions/3b0d812b-6d2a-40bd-a04b-5a5d6ae9c59c/actions"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 21
+[19:43:26.289] [32mINFO[39m (12): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 229,
+      "method": "POST",
+      "url": "/api/admin/draft/sessions/3b0d812b-6d2a-40bd-a04b-5a5d6ae9c59c/actions"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 17
+[19:43:26.311] [32mINFO[39m (12): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 230,
+      "method": "POST",
+      "url": "/api/admin/draft/sessions/3b0d812b-6d2a-40bd-a04b-5a5d6ae9c59c/actions"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 16
+[19:43:26.335] [32mINFO[39m (12): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 231,
+      "method": "POST",
+      "url": "/api/admin/draft/sessions/3b0d812b-6d2a-40bd-a04b-5a5d6ae9c59c/actions"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 19
+[19:43:26.361] [32mINFO[39m (12): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 232,
+      "method": "POST",
+      "url": "/api/admin/draft/sessions/3b0d812b-6d2a-40bd-a04b-5a5d6ae9c59c/actions"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 20
+[19:43:26.387] [32mINFO[39m (12): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 233,
+      "method": "POST",
+      "url": "/api/admin/draft/sessions/3b0d812b-6d2a-40bd-a04b-5a5d6ae9c59c/actions"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 17
+[19:43:26.414] [32mINFO[39m (12): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 234,
+      "method": "POST",
+      "url": "/api/admin/draft/sessions/3b0d812b-6d2a-40bd-a04b-5a5d6ae9c59c/actions"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 21
+[19:43:26.436] [32mINFO[39m (12): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 235,
+      "method": "POST",
+      "url": "/api/admin/draft/sessions/3b0d812b-6d2a-40bd-a04b-5a5d6ae9c59c/actions"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 15
+[19:43:26.463] [32mINFO[39m (12): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 236,
+      "method": "POST",
+      "url": "/api/admin/draft/sessions/3b0d812b-6d2a-40bd-a04b-5a5d6ae9c59c/actions"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 21
+[19:43:26.502] [32mINFO[39m (12): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 237,
+      "method": "POST",
+      "url": "/api/admin/draft/sessions/3b0d812b-6d2a-40bd-a04b-5a5d6ae9c59c/actions"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 22
+[19:43:26.528] [32mINFO[39m (12): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 238,
+      "method": "POST",
+      "url": "/api/admin/draft/sessions/3b0d812b-6d2a-40bd-a04b-5a5d6ae9c59c/actions"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 18
+[19:43:26.552] [32mINFO[39m (12): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 239,
+      "method": "POST",
+      "url": "/api/admin/draft/sessions/3b0d812b-6d2a-40bd-a04b-5a5d6ae9c59c/actions"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 18
+[19:43:26.582] [32mINFO[39m (12): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 240,
+      "method": "POST",
+      "url": "/api/admin/draft/sessions/3b0d812b-6d2a-40bd-a04b-5a5d6ae9c59c/actions"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 21
+[19:43:26.611] [32mINFO[39m (12): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 241,
+      "method": "POST",
+      "url": "/api/admin/draft/sessions/3b0d812b-6d2a-40bd-a04b-5a5d6ae9c59c/actions"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 21
+[19:43:26.637] [32mINFO[39m (12): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 242,
+      "method": "POST",
+      "url": "/api/admin/draft/sessions/3b0d812b-6d2a-40bd-a04b-5a5d6ae9c59c/actions"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 19
+[19:43:26.676] [32mINFO[39m (12): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 243,
+      "method": "POST",
+      "url": "/api/admin/draft/sessions/3b0d812b-6d2a-40bd-a04b-5a5d6ae9c59c/actions"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 33
+[19:43:26.706] [32mINFO[39m (12): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 244,
+      "method": "POST",
+      "url": "/api/admin/draft/sessions/3b0d812b-6d2a-40bd-a04b-5a5d6ae9c59c/actions"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 20
+[19:43:26.732] [32mINFO[39m (12): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 245,
+      "method": "POST",
+      "url": "/api/admin/draft/sessions/3b0d812b-6d2a-40bd-a04b-5a5d6ae9c59c/actions"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 19
+[19:43:26.772] [32mINFO[39m (12): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 246,
+      "method": "POST",
+      "url": "/api/admin/draft/sessions/3b0d812b-6d2a-40bd-a04b-5a5d6ae9c59c/actions"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 25
+[19:43:26.796] [32mINFO[39m (12): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 247,
+      "method": "POST",
+      "url": "/api/admin/draft/sessions/3b0d812b-6d2a-40bd-a04b-5a5d6ae9c59c/actions"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 18
+[19:43:26.822] [32mINFO[39m (12): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 248,
+      "method": "POST",
+      "url": "/api/admin/draft/sessions/3b0d812b-6d2a-40bd-a04b-5a5d6ae9c59c/actions"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 20
+[19:43:26.854] [32mINFO[39m (12): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 249,
+      "method": "POST",
+      "url": "/api/admin/draft/sessions/3b0d812b-6d2a-40bd-a04b-5a5d6ae9c59c/actions"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 25
+[19:43:26.891] [32mINFO[39m (12): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 250,
+      "method": "POST",
+      "url": "/api/admin/draft/sessions/3b0d812b-6d2a-40bd-a04b-5a5d6ae9c59c/actions"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 23
+[19:43:26.929] [32mINFO[39m (12): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 251,
+      "method": "POST",
+      "url": "/api/admin/draft/sessions/3b0d812b-6d2a-40bd-a04b-5a5d6ae9c59c/actions"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 30
+[19:43:26.978] [32mINFO[39m (12): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 252,
+      "method": "POST",
+      "url": "/api/admin/draft/sessions/3b0d812b-6d2a-40bd-a04b-5a5d6ae9c59c/actions"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 40
+[19:43:27.002] [32mINFO[39m (12): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 253,
+      "method": "GET",
+      "url": "/api/admin/draft/sessions/3b0d812b-6d2a-40bd-a04b-5a5d6ae9c59c/battle"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 18
+[19:43:27.026] [32mINFO[39m (12): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 254,
+      "method": "GET",
+      "url": "/api/admin/draft/sessions/3b0d812b-6d2a-40bd-a04b-5a5d6ae9c59c"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 20
+[19:43:27.053] [32mINFO[39m (12): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 255,
+      "method": "GET",
+      "url": "/api/admin/draft/sessions/3b0d812b-6d2a-40bd-a04b-5a5d6ae9c59c/rewards"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 18
+[19:43:27.093] [32mINFO[39m (12): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 256,
+      "method": "POST",
+      "url": "/api/admin/draft/sessions"
+    }
+    [35mres[39m: {
+      "statusCode": 201
+    }
+    [35mresponseTime[39m: 37
+[19:43:27.103] [32mINFO[39m (12): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 257,
+      "method": "GET",
+      "url": "/api/admin/draft/sessions/fcb148d8-ead0-482d-a6c0-1408f8e5f7b0"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 8
+[19:43:27.117] [32mINFO[39m (12): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 258,
+      "method": "POST",
+      "url": "/api/admin/draft/sessions/fcb148d8-ead0-482d-a6c0-1408f8e5f7b0/commands"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 11
+[19:43:27.131] [32mINFO[39m (12): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 259,
+      "method": "POST",
+      "url": "/api/admin/draft/sessions/fcb148d8-ead0-482d-a6c0-1408f8e5f7b0/commands"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 10
+[19:43:27.144] [32mINFO[39m (12): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 260,
+      "method": "POST",
+      "url": "/api/admin/draft/sessions/fcb148d8-ead0-482d-a6c0-1408f8e5f7b0/commands"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 10
+[19:43:27.159] [32mINFO[39m (12): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 261,
+      "method": "POST",
+      "url": "/api/admin/draft/sessions/fcb148d8-ead0-482d-a6c0-1408f8e5f7b0/commands"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 12
+[19:43:27.177] [32mINFO[39m (12): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 262,
+      "method": "POST",
+      "url": "/api/admin/draft/sessions/fcb148d8-ead0-482d-a6c0-1408f8e5f7b0/commands"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 14
+[19:43:27.189] [32mINFO[39m (12): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 263,
+      "method": "POST",
+      "url": "/api/admin/draft/sessions/fcb148d8-ead0-482d-a6c0-1408f8e5f7b0/commands"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 9
+[19:43:27.201] [32mINFO[39m (12): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 264,
+      "method": "POST",
+      "url": "/api/admin/draft/sessions/fcb148d8-ead0-482d-a6c0-1408f8e5f7b0/commands"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 10
+[19:43:27.213] [32mINFO[39m (12): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 265,
+      "method": "POST",
+      "url": "/api/admin/draft/sessions/fcb148d8-ead0-482d-a6c0-1408f8e5f7b0/commands"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 10
+[19:43:27.224] [32mINFO[39m (12): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 266,
+      "method": "POST",
+      "url": "/api/admin/draft/sessions/fcb148d8-ead0-482d-a6c0-1408f8e5f7b0/commands"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 9
+[19:43:27.242] [32mINFO[39m (12): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 267,
+      "method": "POST",
+      "url": "/api/admin/draft/sessions/fcb148d8-ead0-482d-a6c0-1408f8e5f7b0/commands"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 9
+[19:43:27.254] [32mINFO[39m (12): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 268,
+      "method": "POST",
+      "url": "/api/admin/draft/sessions/fcb148d8-ead0-482d-a6c0-1408f8e5f7b0/commands"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 9
+[19:43:27.272] [32mINFO[39m (12): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 269,
+      "method": "POST",
+      "url": "/api/admin/draft/sessions/fcb148d8-ead0-482d-a6c0-1408f8e5f7b0/commands"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 16
+[19:43:27.283] [32mINFO[39m (12): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 270,
+      "method": "POST",
+      "url": "/api/admin/draft/sessions/fcb148d8-ead0-482d-a6c0-1408f8e5f7b0/commands"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 9
+[19:43:27.295] [32mINFO[39m (12): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 271,
+      "method": "POST",
+      "url": "/api/admin/draft/sessions/fcb148d8-ead0-482d-a6c0-1408f8e5f7b0/commands"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 9
+[19:43:27.306] [32mINFO[39m (12): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 272,
+      "method": "POST",
+      "url": "/api/admin/draft/sessions/fcb148d8-ead0-482d-a6c0-1408f8e5f7b0/commands"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 8
+[19:43:27.318] [32mINFO[39m (12): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 273,
+      "method": "POST",
+      "url": "/api/admin/draft/sessions/fcb148d8-ead0-482d-a6c0-1408f8e5f7b0/commands"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 10
+[19:43:27.330] [32mINFO[39m (12): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 274,
+      "method": "POST",
+      "url": "/api/admin/draft/sessions/fcb148d8-ead0-482d-a6c0-1408f8e5f7b0/commands"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 9
+[19:43:27.340] [32mINFO[39m (12): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 275,
+      "method": "POST",
+      "url": "/api/admin/draft/sessions/fcb148d8-ead0-482d-a6c0-1408f8e5f7b0/commands"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 9
+[19:43:27.352] [32mINFO[39m (12): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 276,
+      "method": "POST",
+      "url": "/api/admin/draft/sessions/fcb148d8-ead0-482d-a6c0-1408f8e5f7b0/commands"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 10
+[19:43:27.366] [32mINFO[39m (12): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 277,
+      "method": "POST",
+      "url": "/api/admin/draft/sessions/fcb148d8-ead0-482d-a6c0-1408f8e5f7b0/commands"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 13
+[19:43:27.380] [32mINFO[39m (12): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 278,
+      "method": "POST",
+      "url": "/api/admin/draft/sessions/fcb148d8-ead0-482d-a6c0-1408f8e5f7b0/commands"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 11
+[19:43:27.393] [32mINFO[39m (12): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 279,
+      "method": "POST",
+      "url": "/api/admin/draft/sessions/fcb148d8-ead0-482d-a6c0-1408f8e5f7b0/commands"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 10
+[19:43:27.405] [32mINFO[39m (12): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 280,
+      "method": "POST",
+      "url": "/api/admin/draft/sessions/fcb148d8-ead0-482d-a6c0-1408f8e5f7b0/commands"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 10
+[19:43:27.421] [32mINFO[39m (12): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 281,
+      "method": "POST",
+      "url": "/api/admin/draft/sessions/fcb148d8-ead0-482d-a6c0-1408f8e5f7b0/commands"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 14
+[19:43:27.433] [32mINFO[39m (12): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 282,
+      "method": "POST",
+      "url": "/api/admin/draft/sessions/fcb148d8-ead0-482d-a6c0-1408f8e5f7b0/commands"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 9
+[19:43:27.452] [32mINFO[39m (12): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 283,
+      "method": "POST",
+      "url": "/api/admin/draft/sessions/fcb148d8-ead0-482d-a6c0-1408f8e5f7b0/commands"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 9
+[19:43:27.470] [32mINFO[39m (12): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 284,
+      "method": "POST",
+      "url": "/api/admin/draft/sessions/fcb148d8-ead0-482d-a6c0-1408f8e5f7b0/commands"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 15
+[19:43:27.483] [32mINFO[39m (12): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 285,
+      "method": "POST",
+      "url": "/api/admin/draft/sessions/fcb148d8-ead0-482d-a6c0-1408f8e5f7b0/commands"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 10
+[19:43:27.495] [32mINFO[39m (12): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 286,
+      "method": "POST",
+      "url": "/api/admin/draft/sessions/fcb148d8-ead0-482d-a6c0-1408f8e5f7b0/commands"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 10
+[19:43:27.507] [32mINFO[39m (12): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 287,
+      "method": "POST",
+      "url": "/api/admin/draft/sessions/fcb148d8-ead0-482d-a6c0-1408f8e5f7b0/commands"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 9
+[19:43:27.524] [32mINFO[39m (12): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 288,
+      "method": "POST",
+      "url": "/api/admin/draft/sessions/fcb148d8-ead0-482d-a6c0-1408f8e5f7b0/commands"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 14
+[19:43:27.546] [32mINFO[39m (12): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 289,
+      "method": "GET",
+      "url": "/api/admin/draft/sessions/fcb148d8-ead0-482d-a6c0-1408f8e5f7b0/battle"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 14
+[19:43:27.567] [32mINFO[39m (12): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 290,
+      "method": "POST",
+      "url": "/api/admin/draft/sessions/fcb148d8-ead0-482d-a6c0-1408f8e5f7b0/actions"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 18
+[19:43:27.588] [32mINFO[39m (12): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 291,
+      "method": "POST",
+      "url": "/api/admin/draft/sessions/fcb148d8-ead0-482d-a6c0-1408f8e5f7b0/actions"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 15
+[19:43:27.610] [32mINFO[39m (12): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 292,
+      "method": "POST",
+      "url": "/api/admin/draft/sessions/fcb148d8-ead0-482d-a6c0-1408f8e5f7b0/actions"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 17
+[19:43:27.637] [32mINFO[39m (12): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 293,
+      "method": "POST",
+      "url": "/api/admin/draft/sessions/fcb148d8-ead0-482d-a6c0-1408f8e5f7b0/actions"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 19
+[19:43:27.666] [32mINFO[39m (12): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 294,
+      "method": "POST",
+      "url": "/api/admin/draft/sessions/fcb148d8-ead0-482d-a6c0-1408f8e5f7b0/actions"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 22
+[19:43:27.692] [32mINFO[39m (12): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 295,
+      "method": "POST",
+      "url": "/api/admin/draft/sessions/fcb148d8-ead0-482d-a6c0-1408f8e5f7b0/actions"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 16
+[19:43:27.717] [32mINFO[39m (12): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 296,
+      "method": "POST",
+      "url": "/api/admin/draft/sessions/fcb148d8-ead0-482d-a6c0-1408f8e5f7b0/actions"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 20
+[19:43:27.751] [32mINFO[39m (12): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 297,
+      "method": "POST",
+      "url": "/api/admin/draft/sessions/fcb148d8-ead0-482d-a6c0-1408f8e5f7b0/actions"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 21
+[19:43:27.783] [32mINFO[39m (12): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 298,
+      "method": "POST",
+      "url": "/api/admin/draft/sessions/fcb148d8-ead0-482d-a6c0-1408f8e5f7b0/actions"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 24
+[19:43:27.807] [32mINFO[39m (12): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 299,
+      "method": "POST",
+      "url": "/api/admin/draft/sessions/fcb148d8-ead0-482d-a6c0-1408f8e5f7b0/actions"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 18
+[19:43:27.831] [32mINFO[39m (12): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 300,
+      "method": "POST",
+      "url": "/api/admin/draft/sessions/fcb148d8-ead0-482d-a6c0-1408f8e5f7b0/actions"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 17
+[19:43:27.857] [32mINFO[39m (12): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 301,
+      "method": "POST",
+      "url": "/api/admin/draft/sessions/fcb148d8-ead0-482d-a6c0-1408f8e5f7b0/actions"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 19
+[19:43:27.889] [32mINFO[39m (12): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 302,
+      "method": "POST",
+      "url": "/api/admin/draft/sessions/fcb148d8-ead0-482d-a6c0-1408f8e5f7b0/actions"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 23
+[19:43:27.927] [32mINFO[39m (12): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 303,
+      "method": "POST",
+      "url": "/api/admin/draft/sessions/fcb148d8-ead0-482d-a6c0-1408f8e5f7b0/actions"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 32
+[19:43:27.962] [32mINFO[39m (12): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 304,
+      "method": "POST",
+      "url": "/api/admin/draft/sessions/fcb148d8-ead0-482d-a6c0-1408f8e5f7b0/actions"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 25
+[19:43:28.012] [32mINFO[39m (12): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 305,
+      "method": "POST",
+      "url": "/api/admin/draft/sessions/fcb148d8-ead0-482d-a6c0-1408f8e5f7b0/actions"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 27
+[19:43:28.042] [32mINFO[39m (12): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 306,
+      "method": "POST",
+      "url": "/api/admin/draft/sessions/fcb148d8-ead0-482d-a6c0-1408f8e5f7b0/actions"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 22
+[19:43:28.091] [32mINFO[39m (12): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 307,
+      "method": "POST",
+      "url": "/api/admin/draft/sessions/fcb148d8-ead0-482d-a6c0-1408f8e5f7b0/actions"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 31
+[19:43:28.116] [32mINFO[39m (12): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 308,
+      "method": "POST",
+      "url": "/api/admin/draft/sessions/fcb148d8-ead0-482d-a6c0-1408f8e5f7b0/actions"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 18
+[19:43:28.146] [32mINFO[39m (12): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 309,
+      "method": "POST",
+      "url": "/api/admin/draft/sessions/fcb148d8-ead0-482d-a6c0-1408f8e5f7b0/actions"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 22
+[19:43:28.190] [32mINFO[39m (12): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 310,
+      "method": "POST",
+      "url": "/api/admin/draft/sessions/fcb148d8-ead0-482d-a6c0-1408f8e5f7b0/actions"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 36
+[19:43:28.220] [32mINFO[39m (12): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 311,
+      "method": "POST",
+      "url": "/api/admin/draft/sessions/fcb148d8-ead0-482d-a6c0-1408f8e5f7b0/actions"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 21
+[19:43:28.255] [32mINFO[39m (12): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 312,
+      "method": "POST",
+      "url": "/api/admin/draft/sessions/fcb148d8-ead0-482d-a6c0-1408f8e5f7b0/actions"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 27
+[19:43:28.304] [32mINFO[39m (12): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 313,
+      "method": "POST",
+      "url": "/api/admin/draft/sessions/fcb148d8-ead0-482d-a6c0-1408f8e5f7b0/actions"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 40
+[19:43:28.339] [32mINFO[39m (12): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 314,
+      "method": "POST",
+      "url": "/api/admin/draft/sessions/fcb148d8-ead0-482d-a6c0-1408f8e5f7b0/actions"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 27
+[19:43:28.394] [32mINFO[39m (12): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 315,
+      "method": "POST",
+      "url": "/api/admin/draft/sessions/fcb148d8-ead0-482d-a6c0-1408f8e5f7b0/actions"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 47
+[19:43:28.458] [32mINFO[39m (12): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 316,
+      "method": "POST",
+      "url": "/api/admin/draft/sessions/fcb148d8-ead0-482d-a6c0-1408f8e5f7b0/actions"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 47
+[19:43:28.581] [32mINFO[39m (12): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 317,
+      "method": "POST",
+      "url": "/api/admin/draft/sessions/fcb148d8-ead0-482d-a6c0-1408f8e5f7b0/actions"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 83
+[19:43:28.647] [32mINFO[39m (12): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 318,
+      "method": "GET",
+      "url": "/api/admin/draft/sessions/fcb148d8-ead0-482d-a6c0-1408f8e5f7b0/battle"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 50
+[19:43:28.706] [32mINFO[39m (12): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 319,
+      "method": "GET",
+      "url": "/api/admin/draft/sessions/fcb148d8-ead0-482d-a6c0-1408f8e5f7b0"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 50
+[19:43:28.754] [32mINFO[39m (12): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 320,
+      "method": "GET",
+      "url": "/api/admin/draft/sessions/fcb148d8-ead0-482d-a6c0-1408f8e5f7b0/rewards"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 44
+[19:43:28.797] [32mINFO[39m (12): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 321,
+      "method": "POST",
+      "url": "/api/admin/draft/sessions"
+    }
+    [35mres[39m: {
+      "statusCode": 201
+    }
+    [35mresponseTime[39m: 39
+[19:43:28.808] [32mINFO[39m (12): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 322,
+      "method": "GET",
+      "url": "/api/admin/draft/sessions/f75f19c5-d4ab-4381-a6fc-a1e2cad1c0de"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 8
+[19:43:28.818] [32mINFO[39m (12): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 323,
+      "method": "POST",
+      "url": "/api/admin/draft/sessions/f75f19c5-d4ab-4381-a6fc-a1e2cad1c0de/commands"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 9
+[19:43:28.830] [32mINFO[39m (12): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 324,
+      "method": "POST",
+      "url": "/api/admin/draft/sessions/f75f19c5-d4ab-4381-a6fc-a1e2cad1c0de/commands"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 9
+[19:43:28.842] [32mINFO[39m (12): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 325,
+      "method": "POST",
+      "url": "/api/admin/draft/sessions/f75f19c5-d4ab-4381-a6fc-a1e2cad1c0de/commands"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 10
+[19:43:28.862] [32mINFO[39m (12): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 326,
+      "method": "POST",
+      "url": "/api/admin/draft/sessions/f75f19c5-d4ab-4381-a6fc-a1e2cad1c0de/commands"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 10
+[19:43:28.878] [32mINFO[39m (12): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 327,
+      "method": "POST",
+      "url": "/api/admin/draft/sessions/f75f19c5-d4ab-4381-a6fc-a1e2cad1c0de/commands"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 13
+[19:43:28.891] [32mINFO[39m (12): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 328,
+      "method": "POST",
+      "url": "/api/admin/draft/sessions/f75f19c5-d4ab-4381-a6fc-a1e2cad1c0de/commands"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 10
+[19:43:28.903] [32mINFO[39m (12): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 329,
+      "method": "POST",
+      "url": "/api/admin/draft/sessions/f75f19c5-d4ab-4381-a6fc-a1e2cad1c0de/commands"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 10
+[19:43:28.918] [32mINFO[39m (12): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 330,
+      "method": "POST",
+      "url": "/api/admin/draft/sessions/f75f19c5-d4ab-4381-a6fc-a1e2cad1c0de/commands"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 13
+[19:43:28.934] [32mINFO[39m (12): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 331,
+      "method": "POST",
+      "url": "/api/admin/draft/sessions/f75f19c5-d4ab-4381-a6fc-a1e2cad1c0de/commands"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 15
+[19:43:28.950] [32mINFO[39m (12): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 332,
+      "method": "POST",
+      "url": "/api/admin/draft/sessions/f75f19c5-d4ab-4381-a6fc-a1e2cad1c0de/commands"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 14
+[19:43:28.962] [32mINFO[39m (12): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 333,
+      "method": "POST",
+      "url": "/api/admin/draft/sessions/f75f19c5-d4ab-4381-a6fc-a1e2cad1c0de/commands"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 10
+[19:43:28.978] [32mINFO[39m (12): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 334,
+      "method": "POST",
+      "url": "/api/admin/draft/sessions/f75f19c5-d4ab-4381-a6fc-a1e2cad1c0de/commands"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 13
+[19:43:28.991] [32mINFO[39m (12): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 335,
+      "method": "POST",
+      "url": "/api/admin/draft/sessions/f75f19c5-d4ab-4381-a6fc-a1e2cad1c0de/commands"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 11
+[19:43:29.002] [32mINFO[39m (12): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 336,
+      "method": "POST",
+      "url": "/api/admin/draft/sessions/f75f19c5-d4ab-4381-a6fc-a1e2cad1c0de/commands"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 9
+[19:43:29.014] [32mINFO[39m (12): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 337,
+      "method": "POST",
+      "url": "/api/admin/draft/sessions/f75f19c5-d4ab-4381-a6fc-a1e2cad1c0de/commands"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 10
+[19:43:29.028] [32mINFO[39m (12): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 338,
+      "method": "POST",
+      "url": "/api/admin/draft/sessions/f75f19c5-d4ab-4381-a6fc-a1e2cad1c0de/commands"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 11
+[19:43:29.039] [32mINFO[39m (12): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 339,
+      "method": "POST",
+      "url": "/api/admin/draft/sessions/f75f19c5-d4ab-4381-a6fc-a1e2cad1c0de/commands"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 9
+[19:43:29.052] [32mINFO[39m (12): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 340,
+      "method": "POST",
+      "url": "/api/admin/draft/sessions/f75f19c5-d4ab-4381-a6fc-a1e2cad1c0de/commands"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 10
+[19:43:29.064] [32mINFO[39m (12): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 341,
+      "method": "POST",
+      "url": "/api/admin/draft/sessions/f75f19c5-d4ab-4381-a6fc-a1e2cad1c0de/commands"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 10
+[19:43:29.087] [32mINFO[39m (12): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 342,
+      "method": "POST",
+      "url": "/api/admin/draft/sessions/f75f19c5-d4ab-4381-a6fc-a1e2cad1c0de/commands"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 11
+[19:43:29.099] [32mINFO[39m (12): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 343,
+      "method": "POST",
+      "url": "/api/admin/draft/sessions/f75f19c5-d4ab-4381-a6fc-a1e2cad1c0de/commands"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 10
+[19:43:29.110] [32mINFO[39m (12): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 344,
+      "method": "POST",
+      "url": "/api/admin/draft/sessions/f75f19c5-d4ab-4381-a6fc-a1e2cad1c0de/commands"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 9
+[19:43:29.122] [32mINFO[39m (12): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 345,
+      "method": "POST",
+      "url": "/api/admin/draft/sessions/f75f19c5-d4ab-4381-a6fc-a1e2cad1c0de/commands"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 9
+[19:43:29.134] [32mINFO[39m (12): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 346,
+      "method": "POST",
+      "url": "/api/admin/draft/sessions/f75f19c5-d4ab-4381-a6fc-a1e2cad1c0de/commands"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 10
+[19:43:29.146] [32mINFO[39m (12): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 347,
+      "method": "POST",
+      "url": "/api/admin/draft/sessions/f75f19c5-d4ab-4381-a6fc-a1e2cad1c0de/commands"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 10
+[19:43:29.163] [32mINFO[39m (12): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 348,
+      "method": "POST",
+      "url": "/api/admin/draft/sessions/f75f19c5-d4ab-4381-a6fc-a1e2cad1c0de/commands"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 14
+[19:43:29.187] [32mINFO[39m (12): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 349,
+      "method": "POST",
+      "url": "/api/admin/draft/sessions/f75f19c5-d4ab-4381-a6fc-a1e2cad1c0de/commands"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 20
+[19:43:29.199] [32mINFO[39m (12): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 350,
+      "method": "POST",
+      "url": "/api/admin/draft/sessions/f75f19c5-d4ab-4381-a6fc-a1e2cad1c0de/commands"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 10
+[19:43:29.210] [32mINFO[39m (12): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 351,
+      "method": "POST",
+      "url": "/api/admin/draft/sessions/f75f19c5-d4ab-4381-a6fc-a1e2cad1c0de/commands"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 9
+[19:43:29.222] [32mINFO[39m (12): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 352,
+      "method": "POST",
+      "url": "/api/admin/draft/sessions/f75f19c5-d4ab-4381-a6fc-a1e2cad1c0de/commands"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 9
+[19:43:29.243] [32mINFO[39m (12): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 353,
+      "method": "POST",
+      "url": "/api/admin/draft/sessions/f75f19c5-d4ab-4381-a6fc-a1e2cad1c0de/commands"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 19
+[19:43:29.268] [32mINFO[39m (12): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 354,
+      "method": "GET",
+      "url": "/api/admin/draft/sessions/f75f19c5-d4ab-4381-a6fc-a1e2cad1c0de/battle"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 15
+[19:43:29.290] [32mINFO[39m (12): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 355,
+      "method": "POST",
+      "url": "/api/admin/draft/sessions/f75f19c5-d4ab-4381-a6fc-a1e2cad1c0de/actions"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 20
+[19:43:29.312] [32mINFO[39m (12): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 356,
+      "method": "POST",
+      "url": "/api/admin/draft/sessions/f75f19c5-d4ab-4381-a6fc-a1e2cad1c0de/actions"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 16
+[19:43:29.341] [32mINFO[39m (12): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 357,
+      "method": "POST",
+      "url": "/api/admin/draft/sessions/f75f19c5-d4ab-4381-a6fc-a1e2cad1c0de/actions"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 17
+[19:43:29.363] [32mINFO[39m (12): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 358,
+      "method": "POST",
+      "url": "/api/admin/draft/sessions/f75f19c5-d4ab-4381-a6fc-a1e2cad1c0de/actions"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 17
+[19:43:29.387] [32mINFO[39m (12): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 359,
+      "method": "POST",
+      "url": "/api/admin/draft/sessions/f75f19c5-d4ab-4381-a6fc-a1e2cad1c0de/actions"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 19
+[19:43:29.410] [32mINFO[39m (12): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 360,
+      "method": "POST",
+      "url": "/api/admin/draft/sessions/f75f19c5-d4ab-4381-a6fc-a1e2cad1c0de/actions"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 17
+[19:43:29.440] [32mINFO[39m (12): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 361,
+      "method": "POST",
+      "url": "/api/admin/draft/sessions/f75f19c5-d4ab-4381-a6fc-a1e2cad1c0de/actions"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 22
+[19:43:29.465] [32mINFO[39m (12): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 362,
+      "method": "POST",
+      "url": "/api/admin/draft/sessions/f75f19c5-d4ab-4381-a6fc-a1e2cad1c0de/actions"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 17
+[19:43:29.505] [32mINFO[39m (12): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 363,
+      "method": "POST",
+      "url": "/api/admin/draft/sessions/f75f19c5-d4ab-4381-a6fc-a1e2cad1c0de/actions"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 24
+[19:43:29.529] [32mINFO[39m (12): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 364,
+      "method": "POST",
+      "url": "/api/admin/draft/sessions/f75f19c5-d4ab-4381-a6fc-a1e2cad1c0de/actions"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 17
+[19:43:29.551] [32mINFO[39m (12): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 365,
+      "method": "POST",
+      "url": "/api/admin/draft/sessions/f75f19c5-d4ab-4381-a6fc-a1e2cad1c0de/actions"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 16
+[19:43:29.575] [32mINFO[39m (12): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 366,
+      "method": "POST",
+      "url": "/api/admin/draft/sessions/f75f19c5-d4ab-4381-a6fc-a1e2cad1c0de/actions"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 17
+[19:43:29.601] [32mINFO[39m (12): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 367,
+      "method": "POST",
+      "url": "/api/admin/draft/sessions/f75f19c5-d4ab-4381-a6fc-a1e2cad1c0de/actions"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 17
+[19:43:29.636] [32mINFO[39m (12): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 368,
+      "method": "POST",
+      "url": "/api/admin/draft/sessions/f75f19c5-d4ab-4381-a6fc-a1e2cad1c0de/actions"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 23
+[19:43:29.665] [32mINFO[39m (12): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 369,
+      "method": "POST",
+      "url": "/api/admin/draft/sessions/f75f19c5-d4ab-4381-a6fc-a1e2cad1c0de/actions"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 19
+[19:43:29.704] [32mINFO[39m (12): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 370,
+      "method": "POST",
+      "url": "/api/admin/draft/sessions/f75f19c5-d4ab-4381-a6fc-a1e2cad1c0de/actions"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 22
+[19:43:29.729] [32mINFO[39m (12): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 371,
+      "method": "POST",
+      "url": "/api/admin/draft/sessions/f75f19c5-d4ab-4381-a6fc-a1e2cad1c0de/actions"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 18
+[19:43:29.753] [32mINFO[39m (12): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 372,
+      "method": "POST",
+      "url": "/api/admin/draft/sessions/f75f19c5-d4ab-4381-a6fc-a1e2cad1c0de/actions"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 17
+[19:43:29.780] [32mINFO[39m (12): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 373,
+      "method": "POST",
+      "url": "/api/admin/draft/sessions/f75f19c5-d4ab-4381-a6fc-a1e2cad1c0de/actions"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 21
+[19:43:29.810] [32mINFO[39m (12): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 374,
+      "method": "POST",
+      "url": "/api/admin/draft/sessions/f75f19c5-d4ab-4381-a6fc-a1e2cad1c0de/actions"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 23
+[19:43:29.837] [32mINFO[39m (12): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 375,
+      "method": "POST",
+      "url": "/api/admin/draft/sessions/f75f19c5-d4ab-4381-a6fc-a1e2cad1c0de/actions"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 20
+[19:43:29.882] [32mINFO[39m (12): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 376,
+      "method": "POST",
+      "url": "/api/admin/draft/sessions/f75f19c5-d4ab-4381-a6fc-a1e2cad1c0de/actions"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 25
+[19:43:29.913] [32mINFO[39m (12): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 377,
+      "method": "POST",
+      "url": "/api/admin/draft/sessions/f75f19c5-d4ab-4381-a6fc-a1e2cad1c0de/actions"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 22
+[19:43:29.953] [32mINFO[39m (12): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 378,
+      "method": "POST",
+      "url": "/api/admin/draft/sessions/f75f19c5-d4ab-4381-a6fc-a1e2cad1c0de/actions"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 29
+[19:43:29.984] [32mINFO[39m (12): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 379,
+      "method": "POST",
+      "url": "/api/admin/draft/sessions/f75f19c5-d4ab-4381-a6fc-a1e2cad1c0de/actions"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 24
+[19:43:30.011] [32mINFO[39m (12): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 380,
+      "method": "POST",
+      "url": "/api/admin/draft/sessions/f75f19c5-d4ab-4381-a6fc-a1e2cad1c0de/actions"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 20
+[19:43:30.044] [32mINFO[39m (12): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 381,
+      "method": "POST",
+      "url": "/api/admin/draft/sessions/f75f19c5-d4ab-4381-a6fc-a1e2cad1c0de/actions"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 26
+[19:43:30.075] [32mINFO[39m (12): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 382,
+      "method": "POST",
+      "url": "/api/admin/draft/sessions/f75f19c5-d4ab-4381-a6fc-a1e2cad1c0de/actions"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 22
+[19:43:30.108] [32mINFO[39m (12): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 383,
+      "method": "POST",
+      "url": "/api/admin/draft/sessions/f75f19c5-d4ab-4381-a6fc-a1e2cad1c0de/actions"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 20
+[19:43:30.153] [32mINFO[39m (12): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 384,
+      "method": "POST",
+      "url": "/api/admin/draft/sessions/f75f19c5-d4ab-4381-a6fc-a1e2cad1c0de/actions"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 37
+[19:43:30.221] [32mINFO[39m (12): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 385,
+      "method": "GET",
+      "url": "/api/admin/draft/sessions/f75f19c5-d4ab-4381-a6fc-a1e2cad1c0de/battle"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 47
+[19:43:30.242] [32mINFO[39m (12): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 386,
+      "method": "GET",
+      "url": "/api/admin/draft/sessions/f75f19c5-d4ab-4381-a6fc-a1e2cad1c0de"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 17
+[19:43:30.263] [32mINFO[39m (12): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 387,
+      "method": "GET",
+      "url": "/api/admin/draft/sessions/f75f19c5-d4ab-4381-a6fc-a1e2cad1c0de/rewards"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 19
+[19:43:30.303] [32mINFO[39m (12): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 388,
+      "method": "POST",
+      "url": "/api/admin/draft/sessions"
+    }
+    [35mres[39m: {
+      "statusCode": 201
+    }
+    [35mresponseTime[39m: 38
+[19:43:30.312] [32mINFO[39m (12): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 389,
+      "method": "GET",
+      "url": "/api/admin/draft/sessions/60ac7e77-2989-4124-bcff-c72bfaaadd2e"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 7
+[19:43:30.324] [32mINFO[39m (12): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 390,
+      "method": "POST",
+      "url": "/api/admin/draft/sessions/60ac7e77-2989-4124-bcff-c72bfaaadd2e/commands"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 9
+[19:43:30.337] [32mINFO[39m (12): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 391,
+      "method": "POST",
+      "url": "/api/admin/draft/sessions/60ac7e77-2989-4124-bcff-c72bfaaadd2e/commands"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 10
+[19:43:30.348] [32mINFO[39m (12): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 392,
+      "method": "POST",
+      "url": "/api/admin/draft/sessions/60ac7e77-2989-4124-bcff-c72bfaaadd2e/commands"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 9
+[19:43:30.360] [32mINFO[39m (12): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 393,
+      "method": "POST",
+      "url": "/api/admin/draft/sessions/60ac7e77-2989-4124-bcff-c72bfaaadd2e/commands"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 10
+[19:43:30.374] [32mINFO[39m (12): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 394,
+      "method": "POST",
+      "url": "/api/admin/draft/sessions/60ac7e77-2989-4124-bcff-c72bfaaadd2e/commands"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 12
+[19:43:30.390] [32mINFO[39m (12): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 395,
+      "method": "POST",
+      "url": "/api/admin/draft/sessions/60ac7e77-2989-4124-bcff-c72bfaaadd2e/commands"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 14
+[19:43:30.421] [32mINFO[39m (12): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 396,
+      "method": "POST",
+      "url": "/api/admin/draft/sessions/60ac7e77-2989-4124-bcff-c72bfaaadd2e/commands"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 17
+[19:43:30.438] [32mINFO[39m (12): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 397,
+      "method": "POST",
+      "url": "/api/admin/draft/sessions/60ac7e77-2989-4124-bcff-c72bfaaadd2e/commands"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 14
+[19:43:30.450] [32mINFO[39m (12): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 398,
+      "method": "POST",
+      "url": "/api/admin/draft/sessions/60ac7e77-2989-4124-bcff-c72bfaaadd2e/commands"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 10
+[19:43:30.462] [32mINFO[39m (12): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 399,
+      "method": "POST",
+      "url": "/api/admin/draft/sessions/60ac7e77-2989-4124-bcff-c72bfaaadd2e/commands"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 10
+[19:43:30.474] [32mINFO[39m (12): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 400,
+      "method": "POST",
+      "url": "/api/admin/draft/sessions/60ac7e77-2989-4124-bcff-c72bfaaadd2e/commands"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 11
+[19:43:30.490] [32mINFO[39m (12): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 401,
+      "method": "POST",
+      "url": "/api/admin/draft/sessions/60ac7e77-2989-4124-bcff-c72bfaaadd2e/commands"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 13
+[19:43:30.503] [32mINFO[39m (12): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 402,
+      "method": "POST",
+      "url": "/api/admin/draft/sessions/60ac7e77-2989-4124-bcff-c72bfaaadd2e/commands"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 11
+[19:43:30.516] [32mINFO[39m (12): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 403,
+      "method": "POST",
+      "url": "/api/admin/draft/sessions/60ac7e77-2989-4124-bcff-c72bfaaadd2e/commands"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 10
+[19:43:30.527] [32mINFO[39m (12): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 404,
+      "method": "POST",
+      "url": "/api/admin/draft/sessions/60ac7e77-2989-4124-bcff-c72bfaaadd2e/commands"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 9
+[19:43:30.539] [32mINFO[39m (12): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 405,
+      "method": "POST",
+      "url": "/api/admin/draft/sessions/60ac7e77-2989-4124-bcff-c72bfaaadd2e/commands"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 10
+[19:43:30.549] [32mINFO[39m (12): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 406,
+      "method": "POST",
+      "url": "/api/admin/draft/sessions/60ac7e77-2989-4124-bcff-c72bfaaadd2e/commands"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 9
+[19:43:30.561] [32mINFO[39m (12): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 407,
+      "method": "POST",
+      "url": "/api/admin/draft/sessions/60ac7e77-2989-4124-bcff-c72bfaaadd2e/commands"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 9
+[19:43:30.574] [32mINFO[39m (12): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 408,
+      "method": "POST",
+      "url": "/api/admin/draft/sessions/60ac7e77-2989-4124-bcff-c72bfaaadd2e/commands"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 10
+[19:43:30.590] [32mINFO[39m (12): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 409,
+      "method": "POST",
+      "url": "/api/admin/draft/sessions/60ac7e77-2989-4124-bcff-c72bfaaadd2e/commands"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 13
+[19:43:30.602] [32mINFO[39m (12): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 410,
+      "method": "POST",
+      "url": "/api/admin/draft/sessions/60ac7e77-2989-4124-bcff-c72bfaaadd2e/commands"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 10
+[19:43:30.614] [32mINFO[39m (12): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 411,
+      "method": "POST",
+      "url": "/api/admin/draft/sessions/60ac7e77-2989-4124-bcff-c72bfaaadd2e/commands"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 9
+[19:43:30.635] [32mINFO[39m (12): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 412,
+      "method": "POST",
+      "url": "/api/admin/draft/sessions/60ac7e77-2989-4124-bcff-c72bfaaadd2e/commands"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 10
+[19:43:30.647] [32mINFO[39m (12): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 413,
+      "method": "POST",
+      "url": "/api/admin/draft/sessions/60ac7e77-2989-4124-bcff-c72bfaaadd2e/commands"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 10
+[19:43:30.660] [32mINFO[39m (12): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 414,
+      "method": "POST",
+      "url": "/api/admin/draft/sessions/60ac7e77-2989-4124-bcff-c72bfaaadd2e/commands"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 10
+[19:43:30.674] [32mINFO[39m (12): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 415,
+      "method": "POST",
+      "url": "/api/admin/draft/sessions/60ac7e77-2989-4124-bcff-c72bfaaadd2e/commands"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 12
+[19:43:30.693] [32mINFO[39m (12): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 416,
+      "method": "POST",
+      "url": "/api/admin/draft/sessions/60ac7e77-2989-4124-bcff-c72bfaaadd2e/commands"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 16
+[19:43:30.708] [32mINFO[39m (12): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 417,
+      "method": "POST",
+      "url": "/api/admin/draft/sessions/60ac7e77-2989-4124-bcff-c72bfaaadd2e/commands"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 12
+[19:43:30.721] [32mINFO[39m (12): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 418,
+      "method": "POST",
+      "url": "/api/admin/draft/sessions/60ac7e77-2989-4124-bcff-c72bfaaadd2e/commands"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 11
+[19:43:30.732] [32mINFO[39m (12): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 419,
+      "method": "POST",
+      "url": "/api/admin/draft/sessions/60ac7e77-2989-4124-bcff-c72bfaaadd2e/commands"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 9
+[19:43:30.749] [32mINFO[39m (12): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 420,
+      "method": "POST",
+      "url": "/api/admin/draft/sessions/60ac7e77-2989-4124-bcff-c72bfaaadd2e/commands"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 14
+[19:43:30.772] [32mINFO[39m (12): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 421,
+      "method": "GET",
+      "url": "/api/admin/draft/sessions/60ac7e77-2989-4124-bcff-c72bfaaadd2e/battle"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 15
+[19:43:30.792] [32mINFO[39m (12): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 422,
+      "method": "POST",
+      "url": "/api/admin/draft/sessions/60ac7e77-2989-4124-bcff-c72bfaaadd2e/actions"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 18
+[19:43:30.813] [32mINFO[39m (12): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 423,
+      "method": "POST",
+      "url": "/api/admin/draft/sessions/60ac7e77-2989-4124-bcff-c72bfaaadd2e/actions"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 16
+[19:43:30.833] [32mINFO[39m (12): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 424,
+      "method": "POST",
+      "url": "/api/admin/draft/sessions/60ac7e77-2989-4124-bcff-c72bfaaadd2e/actions"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 16
+[19:43:30.856] [32mINFO[39m (12): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 425,
+      "method": "POST",
+      "url": "/api/admin/draft/sessions/60ac7e77-2989-4124-bcff-c72bfaaadd2e/actions"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 17
+[19:43:30.879] [32mINFO[39m (12): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 426,
+      "method": "POST",
+      "url": "/api/admin/draft/sessions/60ac7e77-2989-4124-bcff-c72bfaaadd2e/actions"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 18
+[19:43:30.913] [32mINFO[39m (12): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 427,
+      "method": "POST",
+      "url": "/api/admin/draft/sessions/60ac7e77-2989-4124-bcff-c72bfaaadd2e/actions"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 19
+[19:43:30.948] [32mINFO[39m (12): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 428,
+      "method": "POST",
+      "url": "/api/admin/draft/sessions/60ac7e77-2989-4124-bcff-c72bfaaadd2e/actions"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 29
+[19:43:30.975] [32mINFO[39m (12): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 429,
+      "method": "POST",
+      "url": "/api/admin/draft/sessions/60ac7e77-2989-4124-bcff-c72bfaaadd2e/actions"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 18
+[19:43:31.001] [32mINFO[39m (12): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 430,
+      "method": "POST",
+      "url": "/api/admin/draft/sessions/60ac7e77-2989-4124-bcff-c72bfaaadd2e/actions"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 20
+[19:43:31.024] [32mINFO[39m (12): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 431,
+      "method": "POST",
+      "url": "/api/admin/draft/sessions/60ac7e77-2989-4124-bcff-c72bfaaadd2e/actions"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 17
+[19:43:31.049] [32mINFO[39m (12): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 432,
+      "method": "POST",
+      "url": "/api/admin/draft/sessions/60ac7e77-2989-4124-bcff-c72bfaaadd2e/actions"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 19
+[19:43:31.071] [32mINFO[39m (12): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 433,
+      "method": "POST",
+      "url": "/api/admin/draft/sessions/60ac7e77-2989-4124-bcff-c72bfaaadd2e/actions"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 17
+[19:43:31.099] [32mINFO[39m (12): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 434,
+      "method": "POST",
+      "url": "/api/admin/draft/sessions/60ac7e77-2989-4124-bcff-c72bfaaadd2e/actions"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 22
+[19:43:31.125] [32mINFO[39m (12): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 435,
+      "method": "POST",
+      "url": "/api/admin/draft/sessions/60ac7e77-2989-4124-bcff-c72bfaaadd2e/actions"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 20
+[19:43:31.151] [32mINFO[39m (12): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 436,
+      "method": "POST",
+      "url": "/api/admin/draft/sessions/60ac7e77-2989-4124-bcff-c72bfaaadd2e/actions"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 18
+[19:43:31.194] [32mINFO[39m (12): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 437,
+      "method": "POST",
+      "url": "/api/admin/draft/sessions/60ac7e77-2989-4124-bcff-c72bfaaadd2e/actions"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 28
+[19:43:31.222] [32mINFO[39m (12): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 438,
+      "method": "POST",
+      "url": "/api/admin/draft/sessions/60ac7e77-2989-4124-bcff-c72bfaaadd2e/actions"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 20
+[19:43:31.248] [32mINFO[39m (12): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 439,
+      "method": "POST",
+      "url": "/api/admin/draft/sessions/60ac7e77-2989-4124-bcff-c72bfaaadd2e/actions"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 19
+[19:43:31.273] [32mINFO[39m (12): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 440,
+      "method": "POST",
+      "url": "/api/admin/draft/sessions/60ac7e77-2989-4124-bcff-c72bfaaadd2e/actions"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 20
+[19:43:31.308] [32mINFO[39m (12): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 441,
+      "method": "POST",
+      "url": "/api/admin/draft/sessions/60ac7e77-2989-4124-bcff-c72bfaaadd2e/actions"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 28
+[19:43:31.335] [32mINFO[39m (12): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 442,
+      "method": "POST",
+      "url": "/api/admin/draft/sessions/60ac7e77-2989-4124-bcff-c72bfaaadd2e/actions"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 19
+[19:43:31.361] [32mINFO[39m (12): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 443,
+      "method": "POST",
+      "url": "/api/admin/draft/sessions/60ac7e77-2989-4124-bcff-c72bfaaadd2e/actions"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 19
+[19:43:31.390] [32mINFO[39m (12): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 444,
+      "method": "POST",
+      "url": "/api/admin/draft/sessions/60ac7e77-2989-4124-bcff-c72bfaaadd2e/actions"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 22
+[19:43:31.417] [32mINFO[39m (12): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 445,
+      "method": "POST",
+      "url": "/api/admin/draft/sessions/60ac7e77-2989-4124-bcff-c72bfaaadd2e/actions"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 21
+[19:43:31.452] [32mINFO[39m (12): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 446,
+      "method": "POST",
+      "url": "/api/admin/draft/sessions/60ac7e77-2989-4124-bcff-c72bfaaadd2e/actions"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 19
+[19:43:31.484] [32mINFO[39m (12): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 447,
+      "method": "POST",
+      "url": "/api/admin/draft/sessions/60ac7e77-2989-4124-bcff-c72bfaaadd2e/actions"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 25
+[19:43:31.517] [32mINFO[39m (12): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 448,
+      "method": "POST",
+      "url": "/api/admin/draft/sessions/60ac7e77-2989-4124-bcff-c72bfaaadd2e/actions"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 22
+[19:43:31.544] [32mINFO[39m (12): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 449,
+      "method": "POST",
+      "url": "/api/admin/draft/sessions/60ac7e77-2989-4124-bcff-c72bfaaadd2e/actions"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 19
+[19:43:31.583] [32mINFO[39m (12): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 450,
+      "method": "POST",
+      "url": "/api/admin/draft/sessions/60ac7e77-2989-4124-bcff-c72bfaaadd2e/actions"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 32
+[19:43:31.610] [32mINFO[39m (12): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 451,
+      "method": "GET",
+      "url": "/api/admin/draft/sessions/60ac7e77-2989-4124-bcff-c72bfaaadd2e/battle"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 18
+[19:43:31.629] [32mINFO[39m (12): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 452,
+      "method": "GET",
+      "url": "/api/admin/draft/sessions/60ac7e77-2989-4124-bcff-c72bfaaadd2e"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 16
+✔ five full AI draft matches execute legal actions through HTTP and reach terminal rewards (7554.966718ms)
+[19:43:31.650] [32mINFO[39m (12): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 453,
+      "method": "GET",
+      "url": "/api/admin/draft/sessions/60ac7e77-2989-4124-bcff-c72bfaaadd2e/rewards"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 19
+[19:43:31.688] [32mINFO[39m (12): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 454,
+      "method": "GET",
+      "url": "/api/admin/draft"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 18
+✔ additive draft migration is repeatable and preserves ON settings, sessions and original decks (68.916422ms)
+[19:43:31.759] [32mINFO[39m (12): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 455,
+      "method": "POST",
+      "url": "/api/admin/draft/sessions"
+    }
+    [35mres[39m: {
+      "statusCode": 201
+    }
+    [35mresponseTime[39m: 33
+[19:43:31.770] [32mINFO[39m (12): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 456,
+      "method": "POST",
+      "url": "/api/admin/draft/sessions/d5961826-439c-41c7-bede-114492792ba7/commands"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 9
+[19:43:31.781] [32mINFO[39m (12): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 457,
+      "method": "POST",
+      "url": "/api/admin/draft/sessions/d5961826-439c-41c7-bede-114492792ba7/commands"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 9
+[19:43:31.796] [32mINFO[39m (12): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 458,
+      "method": "POST",
+      "url": "/api/admin/draft/sessions/d5961826-439c-41c7-bede-114492792ba7/commands"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 12
+[19:43:31.807] [32mINFO[39m (12): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 459,
+      "method": "POST",
+      "url": "/api/admin/draft/sessions/d5961826-439c-41c7-bede-114492792ba7/commands"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 9
+[19:43:31.817] [32mINFO[39m (12): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 460,
+      "method": "GET",
+      "url": "/api/admin/draft/sessions/d5961826-439c-41c7-bede-114492792ba7"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 8
+[19:43:31.828] [32mINFO[39m (12): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 461,
+      "method": "POST",
+      "url": "/api/admin/draft/sessions/d5961826-439c-41c7-bede-114492792ba7/commands"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 9
+[19:43:31.838] [32mINFO[39m (12): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 462,
+      "method": "POST",
+      "url": "/api/admin/draft/sessions/d5961826-439c-41c7-bede-114492792ba7/commands"
+    }
+    [35mres[39m: {
+      "statusCode": 400
+    }
+    [35mresponseTime[39m: 7
+[19:43:31.848] [32mINFO[39m (12): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 463,
+      "method": "POST",
+      "url": "/api/admin/draft/sessions/d5961826-439c-41c7-bede-114492792ba7/commands"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 9
+[19:43:31.862] [32mINFO[39m (12): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 464,
+      "method": "POST",
+      "url": "/api/admin/draft/sessions/d5961826-439c-41c7-bede-114492792ba7/commands"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 12
+[19:43:31.875] [32mINFO[39m (12): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 465,
+      "method": "POST",
+      "url": "/api/admin/draft/sessions/d5961826-439c-41c7-bede-114492792ba7/commands"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 10
+[19:43:31.899] [32mINFO[39m (12): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 466,
+      "method": "POST",
+      "url": "/api/admin/draft/sessions/d5961826-439c-41c7-bede-114492792ba7/commands"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 12
+[19:43:31.912] [32mINFO[39m (12): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 467,
+      "method": "POST",
+      "url": "/api/admin/draft/sessions/d5961826-439c-41c7-bede-114492792ba7/commands"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 10
+[19:43:31.923] [32mINFO[39m (12): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 468,
+      "method": "POST",
+      "url": "/api/admin/draft/sessions/d5961826-439c-41c7-bede-114492792ba7/commands"
+    }
+    [35mres[39m: {
+      "statusCode": 400
+    }
+    [35mresponseTime[39m: 9
+[19:43:31.941] [32mINFO[39m (12): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 469,
+      "method": "POST",
+      "url": "/api/admin/draft/sessions/d5961826-439c-41c7-bede-114492792ba7/commands"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 16
+[19:43:31.958] [32mINFO[39m (12): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 470,
+      "method": "GET",
+      "url": "/api/admin/draft/sessions/d5961826-439c-41c7-bede-114492792ba7"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 15
+[19:43:31.968] [32mINFO[39m (12): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 471,
+      "method": "POST",
+      "url": "/api/admin/draft/sessions/d5961826-439c-41c7-bede-114492792ba7/commands"
+    }
+    [35mres[39m: {
+      "statusCode": 400
+    }
+    [35mresponseTime[39m: 9
+[19:43:31.980] [32mINFO[39m (12): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 472,
+      "method": "POST",
+      "url": "/api/admin/draft/sessions/d5961826-439c-41c7-bede-114492792ba7/commands"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 9
+[19:43:31.994] [32mINFO[39m (12): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 473,
+      "method": "GET",
+      "url": "/api/admin/draft/sessions/d5961826-439c-41c7-bede-114492792ba7"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 11
+[19:43:32.005] [32mINFO[39m (12): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 474,
+      "method": "GET",
+      "url": "/api/admin/draft/sessions/d5961826-439c-41c7-bede-114492792ba7"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 9
+[19:43:32.018] [32mINFO[39m (12): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 475,
+      "method": "POST",
+      "url": "/api/admin/draft/sessions/d5961826-439c-41c7-bede-114492792ba7/commands"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 10
+[19:43:32.029] [32mINFO[39m (12): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 476,
+      "method": "POST",
+      "url": "/api/admin/draft/sessions/d5961826-439c-41c7-bede-114492792ba7/commands"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 9
+[19:43:32.044] [32mINFO[39m (12): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 477,
+      "method": "POST",
+      "url": "/api/admin/draft/sessions/d5961826-439c-41c7-bede-114492792ba7/commands"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 12
+[19:43:32.056] [32mINFO[39m (12): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 478,
+      "method": "POST",
+      "url": "/api/admin/draft/sessions/d5961826-439c-41c7-bede-114492792ba7/commands"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 9
+[19:43:32.067] [32mINFO[39m (12): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 479,
+      "method": "POST",
+      "url": "/api/admin/draft/sessions/d5961826-439c-41c7-bede-114492792ba7/commands"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 10
+[19:43:32.079] [32mINFO[39m (12): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 480,
+      "method": "POST",
+      "url": "/api/admin/draft/sessions/d5961826-439c-41c7-bede-114492792ba7/commands"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 10
+[19:43:32.094] [32mINFO[39m (12): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 481,
+      "method": "POST",
+      "url": "/api/admin/draft/sessions/d5961826-439c-41c7-bede-114492792ba7/commands"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 13
+[19:43:32.107] [32mINFO[39m (12): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 482,
+      "method": "POST",
+      "url": "/api/admin/draft/sessions/d5961826-439c-41c7-bede-114492792ba7/commands"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 11
+[19:43:32.118] [32mINFO[39m (12): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 483,
+      "method": "POST",
+      "url": "/api/admin/draft/sessions/d5961826-439c-41c7-bede-114492792ba7/commands"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 9
+[19:43:32.137] [32mINFO[39m (12): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 484,
+      "method": "POST",
+      "url": "/api/admin/draft/sessions/d5961826-439c-41c7-bede-114492792ba7/commands"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 9
+[19:43:32.148] [32mINFO[39m (12): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 485,
+      "method": "POST",
+      "url": "/api/admin/draft/sessions/d5961826-439c-41c7-bede-114492792ba7/commands"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 8
+[19:43:32.160] [32mINFO[39m (12): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 486,
+      "method": "POST",
+      "url": "/api/admin/draft/sessions/d5961826-439c-41c7-bede-114492792ba7/commands"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 9
+[19:43:32.174] [32mINFO[39m (12): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 487,
+      "method": "POST",
+      "url": "/api/admin/draft/sessions/d5961826-439c-41c7-bede-114492792ba7/commands"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 11
+[19:43:32.195] [32mINFO[39m (12): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 488,
+      "method": "POST",
+      "url": "/api/admin/draft/sessions/d5961826-439c-41c7-bede-114492792ba7/commands"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 18
+[19:43:32.208] [32mINFO[39m (12): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 489,
+      "method": "POST",
+      "url": "/api/admin/draft/sessions/d5961826-439c-41c7-bede-114492792ba7/commands"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 10
+[19:43:32.219] [32mINFO[39m (12): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 490,
+      "method": "POST",
+      "url": "/api/admin/draft/sessions/d5961826-439c-41c7-bede-114492792ba7/commands"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 10
+[19:43:32.240] [32mINFO[39m (12): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 491,
+      "method": "POST",
+      "url": "/api/admin/draft/sessions/d5961826-439c-41c7-bede-114492792ba7/commands"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 17
+[19:43:32.255] [32mINFO[39m (12): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 492,
+      "method": "POST",
+      "url": "/api/admin/draft/sessions/d5961826-439c-41c7-bede-114492792ba7/commands"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 12
+[19:43:32.268] [32mINFO[39m (12): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 493,
+      "method": "POST",
+      "url": "/api/admin/draft/sessions/d5961826-439c-41c7-bede-114492792ba7/commands"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 11
+[19:43:32.281] [32mINFO[39m (12): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 494,
+      "method": "POST",
+      "url": "/api/admin/draft/sessions/d5961826-439c-41c7-bede-114492792ba7/commands"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 12
+[19:43:32.297] [32mINFO[39m (12): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 495,
+      "method": "POST",
+      "url": "/api/admin/draft/sessions/d5961826-439c-41c7-bede-114492792ba7/commands"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 14
+[19:43:32.310] [32mINFO[39m (12): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 496,
+      "method": "POST",
+      "url": "/api/admin/draft/sessions/d5961826-439c-41c7-bede-114492792ba7/commands"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 10
+[19:43:32.321] [32mINFO[39m (12): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 497,
+      "method": "POST",
+      "url": "/api/admin/draft/sessions/d5961826-439c-41c7-bede-114492792ba7/commands"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 9
+[19:43:32.341] [32mINFO[39m (12): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 498,
+      "method": "POST",
+      "url": "/api/admin/draft/sessions/d5961826-439c-41c7-bede-114492792ba7/commands"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 17
+[19:43:32.361] [32mINFO[39m (12): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 499,
+      "method": "GET",
+      "url": "/api/admin/draft/sessions/d5961826-439c-41c7-bede-114492792ba7"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 14
+✔ Draft 2.0 HTTP saves reroll/lock/special/mutation and transfers exact copies to authoritative battle (680.242719ms)
+[19:43:32.399] [32mINFO[39m (12): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 500,
+      "method": "POST",
+      "url": "/api/admin/draft/sessions/d5961826-439c-41c7-bede-114492792ba7/commands"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 28
+[19:43:32.421] [32mINFO[39m (12): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 501,
+      "method": "POST",
+      "url": "/api/admin/draft/sessions"
+    }
+    [35mres[39m: {
+      "statusCode": 201
+    }
+    [35mresponseTime[39m: 20
+[19:43:32.431] [32mINFO[39m (12): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 502,
+      "method": "GET",
+      "url": "/api/admin/draft/sessions/6d918469-29e2-4846-b97d-19d39989ff06/invitation"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 8
+[19:43:32.446] [32mINFO[39m (12): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 503,
+      "method": "POST",
+      "url": "/api/admin/draft/sessions/6d918469-29e2-4846-b97d-19d39989ff06/commands"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 14
+[19:43:32.456] [32mINFO[39m (12): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 504,
+      "method": "GET",
+      "url": "/api/admin/draft/sessions/6d918469-29e2-4846-b97d-19d39989ff06"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 8
+[19:43:32.467] [32mINFO[39m (12): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 505,
+      "method": "POST",
+      "url": "/api/admin/draft/sessions/6d918469-29e2-4846-b97d-19d39989ff06/commands"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 9
+[19:43:32.479] [32mINFO[39m (12): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 506,
+      "method": "POST",
+      "url": "/api/admin/draft/sessions/6d918469-29e2-4846-b97d-19d39989ff06/commands"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 10
+[19:43:32.492] [32mINFO[39m (12): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 507,
+      "method": "POST",
+      "url": "/api/admin/draft/sessions/6d918469-29e2-4846-b97d-19d39989ff06/commands"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 11
+[19:43:32.508] [32mINFO[39m (12): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 508,
+      "method": "POST",
+      "url": "/api/admin/draft/sessions/6d918469-29e2-4846-b97d-19d39989ff06/commands"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 12
+[19:43:32.519] [32mINFO[39m (12): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 509,
+      "method": "POST",
+      "url": "/api/admin/draft/sessions/6d918469-29e2-4846-b97d-19d39989ff06/commands"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 9
+[19:43:32.530] [32mINFO[39m (12): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 510,
+      "method": "POST",
+      "url": "/api/admin/draft/sessions/6d918469-29e2-4846-b97d-19d39989ff06/commands"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 9
+[19:43:32.543] [32mINFO[39m (12): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 511,
+      "method": "POST",
+      "url": "/api/admin/draft/sessions/6d918469-29e2-4846-b97d-19d39989ff06/commands"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 9
+[19:43:32.555] [32mINFO[39m (12): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 512,
+      "method": "POST",
+      "url": "/api/admin/draft/sessions/6d918469-29e2-4846-b97d-19d39989ff06/commands"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 9
+[19:43:32.566] [32mINFO[39m (12): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 513,
+      "method": "GET",
+      "url": "/api/admin/draft/sessions/6d918469-29e2-4846-b97d-19d39989ff06"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 8
+[19:43:32.576] [32mINFO[39m (12): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 514,
+      "method": "GET",
+      "url": "/api/admin/draft/sessions/6d918469-29e2-4846-b97d-19d39989ff06"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 8
+[19:43:32.599] [32mINFO[39m (12): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 515,
+      "method": "POST",
+      "url": "/api/admin/draft/sessions/6d918469-29e2-4846-b97d-19d39989ff06/commands"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 16
+[19:43:32.623] [32mINFO[39m (12): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 516,
+      "method": "POST",
+      "url": "/api/admin/draft/sessions/6d918469-29e2-4846-b97d-19d39989ff06/commands"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 10
+[19:43:32.636] [32mINFO[39m (12): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 517,
+      "method": "POST",
+      "url": "/api/admin/draft/sessions/6d918469-29e2-4846-b97d-19d39989ff06/commands"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 10
+[19:43:32.648] [32mINFO[39m (12): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 518,
+      "method": "POST",
+      "url": "/api/admin/draft/sessions/6d918469-29e2-4846-b97d-19d39989ff06/commands"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 10
+[19:43:32.660] [32mINFO[39m (12): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 519,
+      "method": "POST",
+      "url": "/api/admin/draft/sessions/6d918469-29e2-4846-b97d-19d39989ff06/commands"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 10
+[19:43:32.674] [32mINFO[39m (12): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 520,
+      "method": "POST",
+      "url": "/api/admin/draft/sessions/6d918469-29e2-4846-b97d-19d39989ff06/commands"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 11
+[19:43:32.695] [32mINFO[39m (12): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 521,
+      "method": "POST",
+      "url": "/api/admin/draft/sessions/6d918469-29e2-4846-b97d-19d39989ff06/commands"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 19
+[19:43:32.707] [32mINFO[39m (12): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 522,
+      "method": "POST",
+      "url": "/api/admin/draft/sessions/6d918469-29e2-4846-b97d-19d39989ff06/commands"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 10
+[19:43:32.719] [32mINFO[39m (12): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 523,
+      "method": "POST",
+      "url": "/api/admin/draft/sessions/6d918469-29e2-4846-b97d-19d39989ff06/commands"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 10
+[19:43:32.731] [32mINFO[39m (12): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 524,
+      "method": "POST",
+      "url": "/api/admin/draft/sessions/6d918469-29e2-4846-b97d-19d39989ff06/commands"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 10
+[19:43:32.744] [32mINFO[39m (12): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 525,
+      "method": "POST",
+      "url": "/api/admin/draft/sessions/6d918469-29e2-4846-b97d-19d39989ff06/commands"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 12
+[19:43:32.757] [32mINFO[39m (12): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 526,
+      "method": "POST",
+      "url": "/api/admin/draft/sessions/6d918469-29e2-4846-b97d-19d39989ff06/commands"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 12
+[19:43:32.771] [32mINFO[39m (12): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 527,
+      "method": "POST",
+      "url": "/api/admin/draft/sessions/6d918469-29e2-4846-b97d-19d39989ff06/commands"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 10
+[19:43:32.784] [32mINFO[39m (12): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 528,
+      "method": "POST",
+      "url": "/api/admin/draft/sessions/6d918469-29e2-4846-b97d-19d39989ff06/commands"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 10
+[19:43:32.800] [32mINFO[39m (12): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 529,
+      "method": "POST",
+      "url": "/api/admin/draft/sessions/6d918469-29e2-4846-b97d-19d39989ff06/commands"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 13
+[19:43:32.812] [32mINFO[39m (12): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 530,
+      "method": "POST",
+      "url": "/api/admin/draft/sessions/6d918469-29e2-4846-b97d-19d39989ff06/commands"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 10
+[19:43:32.824] [32mINFO[39m (12): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 531,
+      "method": "POST",
+      "url": "/api/admin/draft/sessions/6d918469-29e2-4846-b97d-19d39989ff06/commands"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 10
+[19:43:32.844] [32mINFO[39m (12): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 532,
+      "method": "POST",
+      "url": "/api/admin/draft/sessions/6d918469-29e2-4846-b97d-19d39989ff06/commands"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 10
+[19:43:32.856] [32mINFO[39m (12): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 533,
+      "method": "POST",
+      "url": "/api/admin/draft/sessions/6d918469-29e2-4846-b97d-19d39989ff06/commands"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 10
+[19:43:32.869] [32mINFO[39m (12): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 534,
+      "method": "POST",
+      "url": "/api/admin/draft/sessions/6d918469-29e2-4846-b97d-19d39989ff06/commands"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 10
+[19:43:32.882] [32mINFO[39m (12): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 535,
+      "method": "POST",
+      "url": "/api/admin/draft/sessions/6d918469-29e2-4846-b97d-19d39989ff06/commands"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 11
+[19:43:32.897] [32mINFO[39m (12): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 536,
+      "method": "POST",
+      "url": "/api/admin/draft/sessions/6d918469-29e2-4846-b97d-19d39989ff06/commands"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 13
+[19:43:32.911] [32mINFO[39m (12): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 537,
+      "method": "POST",
+      "url": "/api/admin/draft/sessions/6d918469-29e2-4846-b97d-19d39989ff06/commands"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 11
+[19:43:32.926] [32mINFO[39m (12): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 538,
+      "method": "POST",
+      "url": "/api/admin/draft/sessions/6d918469-29e2-4846-b97d-19d39989ff06/commands"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 13
+[19:43:32.940] [32mINFO[39m (12): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 539,
+      "method": "GET",
+      "url": "/api/admin/draft/sessions/6d918469-29e2-4846-b97d-19d39989ff06"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 12
+[19:43:32.960] [32mINFO[39m (12): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 540,
+      "method": "POST",
+      "url": "/api/admin/draft/sessions/6d918469-29e2-4846-b97d-19d39989ff06/commands"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 17
+[19:43:32.972] [32mINFO[39m (12): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 541,
+      "method": "POST",
+      "url": "/api/admin/draft/sessions/6d918469-29e2-4846-b97d-19d39989ff06/commands"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 10
+[19:43:32.984] [32mINFO[39m (12): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 542,
+      "method": "POST",
+      "url": "/api/admin/draft/sessions/6d918469-29e2-4846-b97d-19d39989ff06/commands"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 9
+[19:43:33.000] [32mINFO[39m (12): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 543,
+      "method": "POST",
+      "url": "/api/admin/draft/sessions/6d918469-29e2-4846-b97d-19d39989ff06/commands"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 13
+[19:43:33.012] [32mINFO[39m (12): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 544,
+      "method": "POST",
+      "url": "/api/admin/draft/sessions/6d918469-29e2-4846-b97d-19d39989ff06/commands"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 10
+[19:43:33.025] [32mINFO[39m (12): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 545,
+      "method": "POST",
+      "url": "/api/admin/draft/sessions/6d918469-29e2-4846-b97d-19d39989ff06/commands"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 9
+[19:43:33.036] [32mINFO[39m (12): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 546,
+      "method": "POST",
+      "url": "/api/admin/draft/sessions/6d918469-29e2-4846-b97d-19d39989ff06/commands"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 9
+[19:43:33.050] [32mINFO[39m (12): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 547,
+      "method": "POST",
+      "url": "/api/admin/draft/sessions/6d918469-29e2-4846-b97d-19d39989ff06/commands"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 10
+[19:43:33.061] [32mINFO[39m (12): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 548,
+      "method": "GET",
+      "url": "/api/admin/draft/sessions/6d918469-29e2-4846-b97d-19d39989ff06"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 9
+[19:43:33.078] [32mINFO[39m (12): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 549,
+      "method": "GET",
+      "url": "/api/admin/draft/sessions/6d918469-29e2-4846-b97d-19d39989ff06"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 8
+[19:43:33.090] [32mINFO[39m (12): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 550,
+      "method": "POST",
+      "url": "/api/admin/draft/sessions/6d918469-29e2-4846-b97d-19d39989ff06/commands"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 10
+[19:43:33.104] [32mINFO[39m (12): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 551,
+      "method": "POST",
+      "url": "/api/admin/draft/sessions/6d918469-29e2-4846-b97d-19d39989ff06/commands"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 12
+[19:43:33.117] [32mINFO[39m (12): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 552,
+      "method": "POST",
+      "url": "/api/admin/draft/sessions/6d918469-29e2-4846-b97d-19d39989ff06/commands"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 10
+[19:43:33.129] [32mINFO[39m (12): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 553,
+      "method": "POST",
+      "url": "/api/admin/draft/sessions/6d918469-29e2-4846-b97d-19d39989ff06/commands"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 10
+[19:43:33.141] [32mINFO[39m (12): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 554,
+      "method": "POST",
+      "url": "/api/admin/draft/sessions/6d918469-29e2-4846-b97d-19d39989ff06/commands"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 10
+[19:43:33.153] [32mINFO[39m (12): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 555,
+      "method": "POST",
+      "url": "/api/admin/draft/sessions/6d918469-29e2-4846-b97d-19d39989ff06/commands"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 10
+[19:43:33.165] [32mINFO[39m (12): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 556,
+      "method": "POST",
+      "url": "/api/admin/draft/sessions/6d918469-29e2-4846-b97d-19d39989ff06/commands"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 10
+[19:43:33.179] [32mINFO[39m (12): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 557,
+      "method": "POST",
+      "url": "/api/admin/draft/sessions/6d918469-29e2-4846-b97d-19d39989ff06/commands"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 12
+[19:43:33.200] [32mINFO[39m (12): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 558,
+      "method": "POST",
+      "url": "/api/admin/draft/sessions/6d918469-29e2-4846-b97d-19d39989ff06/commands"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 18
+[19:43:33.213] [32mINFO[39m (12): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 559,
+      "method": "POST",
+      "url": "/api/admin/draft/sessions/6d918469-29e2-4846-b97d-19d39989ff06/commands"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 11
+[19:43:33.226] [32mINFO[39m (12): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 560,
+      "method": "POST",
+      "url": "/api/admin/draft/sessions/6d918469-29e2-4846-b97d-19d39989ff06/commands"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 10
+[19:43:33.238] [32mINFO[39m (12): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 561,
+      "method": "POST",
+      "url": "/api/admin/draft/sessions/6d918469-29e2-4846-b97d-19d39989ff06/commands"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 10
+[19:43:33.251] [32mINFO[39m (12): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 562,
+      "method": "POST",
+      "url": "/api/admin/draft/sessions/6d918469-29e2-4846-b97d-19d39989ff06/commands"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 11
+[19:43:33.265] [32mINFO[39m (12): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 563,
+      "method": "POST",
+      "url": "/api/admin/draft/sessions/6d918469-29e2-4846-b97d-19d39989ff06/commands"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 12
+[19:43:33.281] [32mINFO[39m (12): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 564,
+      "method": "POST",
+      "url": "/api/admin/draft/sessions/6d918469-29e2-4846-b97d-19d39989ff06/commands"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 13
+[19:43:33.305] [32mINFO[39m (12): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 565,
+      "method": "POST",
+      "url": "/api/admin/draft/sessions/6d918469-29e2-4846-b97d-19d39989ff06/commands"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 13
+[19:43:33.317] [32mINFO[39m (12): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 566,
+      "method": "POST",
+      "url": "/api/admin/draft/sessions/6d918469-29e2-4846-b97d-19d39989ff06/commands"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 10
+[19:43:33.329] [32mINFO[39m (12): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 567,
+      "method": "POST",
+      "url": "/api/admin/draft/sessions/6d918469-29e2-4846-b97d-19d39989ff06/commands"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 10
+[19:43:33.341] [32mINFO[39m (12): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 568,
+      "method": "POST",
+      "url": "/api/admin/draft/sessions/6d918469-29e2-4846-b97d-19d39989ff06/commands"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 10
+[19:43:33.352] [32mINFO[39m (12): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 569,
+      "method": "POST",
+      "url": "/api/admin/draft/sessions/6d918469-29e2-4846-b97d-19d39989ff06/commands"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 9
+[19:43:33.365] [32mINFO[39m (12): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 570,
+      "method": "POST",
+      "url": "/api/admin/draft/sessions/6d918469-29e2-4846-b97d-19d39989ff06/commands"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 11
+[19:43:33.377] [32mINFO[39m (12): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 571,
+      "method": "POST",
+      "url": "/api/admin/draft/sessions/6d918469-29e2-4846-b97d-19d39989ff06/commands"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 9
+[19:43:33.388] [32mINFO[39m (12): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 572,
+      "method": "POST",
+      "url": "/api/admin/draft/sessions/6d918469-29e2-4846-b97d-19d39989ff06/commands"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 9
+[19:43:33.411] [32mINFO[39m (12): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 573,
+      "method": "POST",
+      "url": "/api/admin/draft/sessions/6d918469-29e2-4846-b97d-19d39989ff06/commands"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 20
+[19:43:33.431] [32mINFO[39m (12): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 574,
+      "method": "GET",
+      "url": "/api/admin/draft/sessions/6d918469-29e2-4846-b97d-19d39989ff06/battle"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 15
+[19:43:33.452] [32mINFO[39m (12): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 575,
+      "method": "GET",
+      "url": "/api/admin/draft/sessions/6d918469-29e2-4846-b97d-19d39989ff06/battle"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 18
+[19:43:33.467] [32mINFO[39m (12): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 576,
+      "method": "GET",
+      "url": "/api/admin/draft/sessions/6d918469-29e2-4846-b97d-19d39989ff06"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 13
+[19:43:33.485] [32mINFO[39m (12): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 577,
+      "method": "GET",
+      "url": "/api/admin/draft/sessions/6d918469-29e2-4846-b97d-19d39989ff06/battle"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 16
+[19:43:33.504] [32mINFO[39m (12): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 578,
+      "method": "GET",
+      "url": "/api/admin/draft/sessions/6d918469-29e2-4846-b97d-19d39989ff06"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 18
+✔ both PvP participants mutate separate copies and reconnect to the same authoritative battle (1150.810766ms)
+[19:43:33.542] [32mINFO[39m (12): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 579,
+      "method": "POST",
+      "url": "/api/admin/draft/sessions/6d918469-29e2-4846-b97d-19d39989ff06/commands"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 35
+ℹ tests 9
+ℹ suites 0
+ℹ pass 9
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 21277.407504

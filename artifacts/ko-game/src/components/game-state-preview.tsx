@@ -44,7 +44,7 @@ import {
   Inspectable,
 } from './alt-inspector';
 import { PresentationFeedback, type PresentationCue } from './presentation-feedback';
-import { presentationCueDrafts, presentationEventKey } from './presentation-feedback-utils';
+import { presentationCueDrafts, presentationEventKey, presentationBlocksActions, visibleStatFeedback } from './presentation-feedback-utils';
 import { canMulligan } from '../game/engine/mulligan';
 import { QuestPresentation } from './quest-presentation';
 import { audioManager } from '../audio/audio-manager';
@@ -260,7 +260,7 @@ export function GameStatePreview({
       attackAnimation ||
       generatedPlayAnimations.length ||
       cardLeaveAnimations.length ||
-      presentationQueue.length ||
+      presentationBlocksActions(presentationQueue) ||
       pendingEffectFinisher ||
       effectFinisher,
     ));
@@ -270,7 +270,7 @@ export function GameStatePreview({
     generatedPlayAnimations.length,
     onPresentationBusyChange,
     playAnimation,
-    presentationQueue.length,
+    presentationQueue,
     pendingEffectFinisher,
     effectFinisher,
   ]);
@@ -623,7 +623,12 @@ export function GameStatePreview({
       }
     }
     if (cues.length) {
+      const visibleCardIds = new Set(state.players.flatMap(player => [
+        ...player.board.filter((card): card is CardInstance => card !== null),
+        ...(player.id === state.players[0]?.id ? player.hand : []),
+      ]).map(card => card.instanceId));
       const onceCues = cues.filter(cue => {
+        if (!visibleStatFeedback(cue, visibleCardIds)) return false;
         if (cue.kind !== 'QUEST_COMPLETE') return true;
         const key = `${state.gameId}:${cue.playerId ?? ''}:${cue.championId ?? ''}`;
         if (presentedQuestCompletionsRef.current.has(key)) return false;
