@@ -366,6 +366,30 @@ test("admin-only API and default OFF, pool validation and persistent ON", async 
     ),
   );
 });
+test("card selection exclusion is admin-only and preserves cards and other draft settings", async () => {
+  const { eq } = await import("drizzle-orm");
+  const path = "/admin/draft/cards/n0/selection";
+  const before = (await database.select().from(schema.cardsTable).where(eq(schema.cardsTable.id, "n0")))[0];
+  const settings = (await request("admin", "/admin/draft")).body;
+  assert.equal((await request("anon", path, "PATCH", { excluded: true })).status, 401);
+  assert.equal((await request("user", "/draft/cards/n0/selection", "PATCH", { excluded: true })).status, 403);
+  assert.equal((await request("admin", path, "PATCH", { excluded: "true" })).status, 400);
+  assert.equal((await request("admin", "/admin/draft/cards/missing/selection", "PATCH", { excluded: true })).status, 404);
+  try {
+    const hidden = await request("admin", path, "PATCH", { excluded: true });
+    assert.equal(hidden.status, 200);
+    assert.ok(hidden.body.excludedCardIds.includes("n0"));
+    const changed = (await request("admin", "/admin/draft")).body;
+    assert.deepEqual(changed.config, { ...settings.config, excludedCardIds: [...new Set([...settings.config.excludedCardIds, "n0"])] });
+    assert.equal(changed.enabled, settings.enabled);
+    assert.deepEqual((await database.select().from(schema.cardsTable).where(eq(schema.cardsTable.id, "n0")))[0], before);
+    assert.ok((await request("admin", "/admin/draft/card-selection")).body.excludedCardIds.includes("n0"));
+  } finally {
+    assert.equal((await request("admin", path, "PATCH", { excluded: false })).status, 200);
+  }
+  assert.deepEqual((await request("admin", "/admin/draft/card-selection")).body.excludedCardIds, settings.config.excludedCardIds);
+});
+
 test("no published techniques can enable and finish draft selection with frozen wrestler fallback", async () => {
   const { eq } = await import("drizzle-orm");
   await database

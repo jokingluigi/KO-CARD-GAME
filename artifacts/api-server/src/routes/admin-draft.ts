@@ -1,8 +1,9 @@
 import { Router, type IRouter } from "express";
 import { eq } from "drizzle-orm";
-import { db, draftSettingsTable } from "@workspace/db";
+import { db, cardsTable, draftSettingsTable } from "@workspace/db";
 import {
   parseDraftConfig,
+  DEFAULT_DRAFT_CONFIG,
   validateDraftPool,
   selectableCards,
   selectableChampions,
@@ -68,6 +69,33 @@ router.get("/", async (req, res, next) => {
   } catch (e) {
     next(e);
   }
+});
+router.get("/card-selection", async (req, res, next) => {
+  try {
+    if (req.authUser?.role !== "ADMIN") { res.status(403).json({ message: "관리자만 접근할 수 있습니다." }); return; }
+    res.json({ excludedCardIds: (await draftSettings()).config.excludedCardIds });
+  } catch (error) { next(error); }
+});
+router.patch("/cards/:cardId/selection", async (req, res, next) => {
+  try {
+    if (req.authUser?.role !== "ADMIN") { res.status(403).json({ message: "관리자만 접근할 수 있습니다." }); return; }
+    if (typeof req.body?.excluded !== "boolean")
+      throw new DraftError("INVALID_CONFIG", "카드 선택 제외 설정을 확인해 주세요.");
+    const cardId = String(req.params.cardId);
+    const [card] = await db.select({ id: cardsTable.id }).from(cardsTable).where(eq(cardsTable.id, cardId));
+    if (!card) throw new DraftError("NOT_FOUND", "카드를 찾을 수 없습니다.", 404);
+    const excludedCardIds = await db.transaction(async (tx) => {
+      await tx.insert(draftSettingsTable).values({ id: "global", enabled: false, config: DEFAULT_DRAFT_CONFIG as unknown as Record<string, unknown> }).onConflictDoNothing();
+      const [settings] = await tx.select().from(draftSettingsTable).where(eq(draftSettingsTable.id, "global")).for("update");
+      const config = parseDraftConfig(settings.config);
+      const ids = new Set(config.excludedCardIds);
+      if (req.body.excluded) ids.add(cardId); else ids.delete(cardId);
+      config.excludedCardIds = [...ids];
+      await tx.update(draftSettingsTable).set({ config: config as unknown as Record<string, unknown>, updatedAt: new Date() }).where(eq(draftSettingsTable.id, "global"));
+      return config.excludedCardIds;
+    });
+    res.json({ excludedCardIds });
+  } catch (error) { next(error); }
 });
 router.put("/settings", async (req, res, next) => {
   try {

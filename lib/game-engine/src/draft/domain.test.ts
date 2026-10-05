@@ -4,6 +4,7 @@ import {
   DEFAULT_DRAFT_CONFIG,
   draftOffers,
   selectableCards,
+  chaosCards,
   canComplete,
   validateDraftPool,
   parseDraftConfig,
@@ -62,6 +63,18 @@ const seat = (): DraftSeat => ({
   ready: false,
   history: [],
 });
+test("selection exclusion preserves runtime definitions and removes normal and special offers", () => {
+  const s = structuredClone(snapshot);
+  s.config.excludedCardIds = ["n0"];
+  const prepared = prepareDraftSnapshot(s);
+  assert.deepEqual(prepared.cards.find(c => c.id === "n0"), snapshot.cards.find(c => c.id === "n0"));
+  assert.ok(!selectableCards(prepared).some(c => c.id === "n0"));
+  assert.ok(!chaosCards(prepared).some(c => c.id === "n0"));
+  for (let seed = 0; seed < 100; seed++) assert.ok(!draftOffers(prepared, seat(), String(seed)).includes("n0"));
+  s.config.excludedCardIds = [];
+  assert.ok(selectableCards(s).some(c => c.id === "n0"));
+});
+
 test("missing published techniques resolve to legal wrestler slots without changing saved rules", () => {
   for (const available of [0, 1, 2]) {
     const s = structuredClone(snapshot);

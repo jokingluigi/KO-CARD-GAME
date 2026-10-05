@@ -327,6 +327,7 @@ export function AdminCardManager({
   const [, navigate] = useLocation();
   const { toast } = useToast();
   const [cards, setCards] = useState<CardRecord[]>([]);
+  const [excludedDraftCardIds, setExcludedDraftCardIds] = useState<string[] | null>(null);
   const [search, setSearch] = useState("");
   const [cardType, setCardType] = useState("");
   const [rarity, setRarity] = useState("");
@@ -410,12 +411,37 @@ export function AdminCardManager({
       if (!response.ok) throw new Error(await responseMessage(response));
       const body = (await response.json()) as { cards: CardRecord[] };
       setCards(body.cards);
+      const selection = await fetch(`${adminApiBase}/draft/card-selection`, { credentials: "include" });
+      if (selection.status === 401) { onUnauthorized(); return; }
+      if (!selection.ok) throw new Error(await responseMessage(selection));
+      setExcludedDraftCardIds((await selection.json()).excludedCardIds);
     } catch (loadError) {
       setError(loadError instanceof Error ? loadError.message : "카드 목록을 불러오지 못했습니다.");
     } finally {
       setIsLoading(false);
     }
   }, [cardType, onUnauthorized, rarity, search, status, tokenKind]);
+
+  async function toggleDraftSelection(card: CardRecord) {
+    if (excludedDraftCardIds === null) return;
+    const excluded = !excludedDraftCardIds.includes(card.id);
+    setBusyId(card.id);
+    setError("");
+    setActionErrorCardId(null);
+    try {
+      const response = await fetch(`${adminApiBase}/draft/cards/${encodeURIComponent(card.id)}/selection`, {
+        method: "PATCH", credentials: "include", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ excluded }),
+      });
+      if (response.status === 401) { onUnauthorized(); return; }
+      if (!response.ok) throw new Error(await responseMessage(response));
+      setExcludedDraftCardIds((await response.json()).excludedCardIds);
+      setMessage(excluded ? "새 드래프트의 카드 선택에서만 숨겼습니다." : "새 드래프트의 카드 선택에 다시 표시합니다.");
+    } catch (error) {
+      setActionErrorCardId(card.id);
+      setError(error instanceof Error ? error.message : "드래프트 선택 설정을 변경하지 못했습니다.");
+    } finally { setBusyId(null); }
+  }
 
   async function runEffectAudit() {
     setAuditing(true);
@@ -1115,6 +1141,7 @@ export function AdminCardManager({
                   {actionErrorCardId === card.id && error && <p role="alert" className="mt-2 whitespace-pre-line rounded border border-red-900 bg-red-950/50 p-2 text-xs text-red-200">{error}</p>}
                 </div>
                 <div className="mt-3 flex flex-wrap gap-1.5" onClick={(event) => event.stopPropagation()}>
+                  <button type="button" disabled={busyId !== null || isLoading || excludedDraftCardIds === null} aria-pressed={excludedDraftCardIds?.includes(card.id) ?? false} title="새 드래프트의 카드 선택 후보에서만 제외합니다. 기존 경기와 카드 생성 효과에는 영향을 주지 않습니다." onClick={() => void toggleDraftSelection(card)} data-testid={`button-draft-selection-${card.id}`} className="rounded border border-amber-800 px-2 py-1.5 text-[10px] font-bold text-amber-300 disabled:opacity-40">{excludedDraftCardIds?.includes(card.id) ? "드래프트 선택에 다시 표시" : "드래프트 선택에서 숨기기"}</button>
                   <button type="button" onClick={() => openEdit(card)} data-testid={`button-edit-card-${card.id}`} className="flex items-center gap-1 rounded border border-neutral-700 px-2 py-1.5 text-[10px] font-bold hover:border-primary hover:text-primary"><FilePenLine className="h-3 w-3" /> 수정</button>
                   <button type="button" onClick={() => navigate(`${ROUTES.MAIN_MENU}?source=admin&testCardId=${encodeURIComponent(card.id)}`)} data-testid={`button-test-card-${card.id}`} className="rounded border border-sky-700 px-2 py-1.5 text-[10px] font-bold text-sky-300">테스트 게임</button>
                   <button type="button" disabled={busyId === card.id} onClick={() => mutateCard(`/cards/${card.id}/duplicate`, `${card.name} Copy를 생성했습니다.`, card.id)} data-testid={`button-duplicate-card-${card.id}`} className="flex items-center gap-1 rounded border border-neutral-700 px-2 py-1.5 text-[10px] font-bold hover:border-primary hover:text-primary disabled:opacity-40"><Copy className="h-3 w-3" /> 복제</button>

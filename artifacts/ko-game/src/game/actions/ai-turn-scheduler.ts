@@ -4,7 +4,7 @@ import type { GameAction } from './types';
 import type { GameState } from '../types/game-state';
 import type { ChampionEmote } from '../champions/types';
 
-export const AI_ACTION_DELAY_MS = 320;
+export const AI_ACTION_DELAY_MS = 1100;
 export const AI_MAX_DECISIONS_PER_TURN = 50;
 
 export function situationalAiEmote(state: GameState, playerId: string, eventStart = 0): ChampionEmote | null {
