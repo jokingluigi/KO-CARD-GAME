@@ -493,17 +493,17 @@ test('QA2 published Great Chan exposes legal USE_ACTIVE and swaps canonical stat
   assert.equal(boardCard(result.state, 'player-1', great.instanceId).currentHealth, 2);
 });
 
-test('QA2 production quest source is data-driven and Jaeger progress is exactly seven', async () => {
+test('QA2 production quest source is data-driven and Jaeger progress matches the advertised eight generations', async () => {
   const championResponse = await fetch(`${apiOrigin}/api/champions`);
   assert.equal(championResponse.ok, true);
   const championRecords = ((await championResponse.json()) as { champions?: Array<Record<string, unknown>> }).champions ?? [];
   const jaeger = championRecords.find((record) => record.name === '챔피언 예거');
   assert.ok(jaeger);
-  assert.equal(jaeger.questProgressRequired, 7);
-  assert.equal((jaeger.questCondition as Record<string, unknown>).required, 7);
+  assert.equal(jaeger.questProgressRequired, 8);
+  assert.equal((jaeger.questCondition as Record<string, unknown>).required, 8);
 });
 
-test('QA2 Jaeger records every CARD_GENERATED step from 0/7 through 7/7 and activates upgrade', async () => {
+test('QA2 Jaeger records every CARD_GENERATED step from 0/8 through 8/8 and activates upgrade', async () => {
   const championResponse = await fetch(`${apiOrigin}/api/champions`);
   assert.equal(championResponse.ok, true);
   const championRecords = ((await championResponse.json()) as { champions?: PublishedChampionRecord[] }).champions ?? [];
@@ -513,7 +513,7 @@ test('QA2 Jaeger records every CARD_GENERATED step from 0/7 through 7/7 and acti
   const jaeger = championDefinitions.find((definition) => definition.name === '챔피언 예거');
   assert.ok(jaeger);
   assert.ok(jaeger.quest);
-  assert.equal(jaeger.quest.requiredProgress, 7);
+  assert.equal(jaeger.quest.requiredProgress, 8);
   const other = championDefinitions.find((definition) => definition.id !== jaeger.id);
   const state = createInitialGameState(
     [jaeger.id, other?.id ?? jaeger.id],
@@ -528,7 +528,7 @@ test('QA2 Jaeger records every CARD_GENERATED step from 0/7 through 7/7 and acti
   state.players[0].hand = [];
 
   let current = state;
-  for (let count = 1; count <= 7; count += 1) {
+  for (let count = 1; count <= 8; count += 1) {
     const generatedId = `qa2-jaeger-generated-${count}`;
     const event = {
       type: 'CARD_GENERATED',
@@ -545,10 +545,10 @@ test('QA2 Jaeger records every CARD_GENERATED step from 0/7 through 7/7 and acti
     });
     const champion = current.players[0].champion;
     assert.ok(champion);
-    assert.equal(champion.questProgress, count, `${count}/7`);
-    assert.equal(champion.questCompleted, count === 7, `${count}/7 completion`);
+    assert.equal(champion.questProgress, count, `${count}/8`);
+    assert.equal(champion.questCompleted, count === 8, `${count}/8 completion`);
     assert.ok(current.events.some((item) => item.type === 'CHAMPION_QUEST_PROGRESS' && item.amount === 1));
-    if (count < 7) {
+    if (count < 8) {
       assert.equal(current.events.some((item) => item.type === 'CHAMPION_QUEST_COMPLETED'), false);
     }
   }
