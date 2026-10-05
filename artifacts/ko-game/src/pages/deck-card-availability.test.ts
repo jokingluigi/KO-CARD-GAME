@@ -44,7 +44,7 @@ test("owned card remains addable but owned-copy limits still apply", () => {
   assert.deepEqual(getDeckCardAction(deckCard({ quantity: 2 }), args), { kind: "ADD" });
   assert.deepEqual(
     getDeckCardAction(deckCard({ quantity: 1 }), { ...args, count: 1 }),
-    { kind: "DISABLED", reason: "보유 수량 1장에 도달했습니다." },
+    { kind: "CRAFT" },
   );
   assert.deepEqual(
     getDeckCardAction(deckCard({ quantity: 4 }), { ...args, count: 3 }),
@@ -88,7 +88,7 @@ test("a single owned copy cannot be added twice and full decks stay blocked", ()
   assert.deepEqual(getDeckCardAction(card, args), { kind: "ADD" });
   assert.deepEqual(
     getDeckCardAction(card, { ...args, count: 1 }),
-    { kind: "DISABLED", reason: "보유 수량 1장에 도달했습니다." },
+    { kind: "CRAFT" },
   );
   assert.deepEqual(
     getDeckCardAction(card, { ...args, deckCount: args.deckSize }),

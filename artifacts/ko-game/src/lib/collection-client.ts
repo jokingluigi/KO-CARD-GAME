@@ -139,7 +139,7 @@ export const craftChampion = (championDefinitionId: string) => request<{
   owned: true;
   champion: CollectionChampion;
 }>(`/prism/champion/craft/${encodeURIComponent(championDefinitionId)}`, { method: "POST" });
-export const disenchantCard = (cardDefinitionId: string, quantity = 1) => request<{
+export const disenchantCard = (cardDefinitionId: string, quantity = 1, keepPlayableCopies = false) => request<{
   prismBalance: number;
   quantity: number;
   dismantledQuantity: number;
@@ -147,7 +147,7 @@ export const disenchantCard = (cardDefinitionId: string, quantity = 1) => reques
   card: CollectionCard;
 }>(`/prism/disenchant/${encodeURIComponent(cardDefinitionId)}`, {
   method: "POST",
-  body: JSON.stringify({ quantity }),
+  body: JSON.stringify({ quantity, keepPlayableCopies }),
 });
 export const fetchPacks = () => request<{ packs: Pack[] }>("/packs");
 export type PackReward = {

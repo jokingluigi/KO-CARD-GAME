@@ -1,5 +1,6 @@
 import { and, eq, inArray, sql } from "drizzle-orm";
 import { randomUUID } from "node:crypto";
+import { maxCardCopies } from "@workspace/game-engine/rules";
 import { Router, type IRouter, type Request, type Response } from "express";
 import {
   cardsTable,
@@ -196,8 +197,10 @@ router.post("/craft/:cardDefinitionId", async (request, response): Promise<void>
           set: {
             quantity: sql`${userCardCollectionsTable.quantity} + 1`,
           },
+          setWhere: sql`${userCardCollectionsTable.quantity} < ${maxCardCopies(card.rarity)}`,
         })
         .returning({ quantity: userCardCollectionsTable.quantity });
+      if (!collection) throw new PrismError(422, `이 카드는 최대 ${maxCardCopies(card.rarity)}장까지 제작할 수 있습니다.`);
       await tx.insert(prismTransactionsTable).values({
         id: randomUUID(),
         userId: user.id,
@@ -230,14 +233,15 @@ router.post("/disenchant-extras", async (request, response): Promise<void> => {
       let reward = 0;
       const transactions: Array<{ cardId: string; rarity: string; quantity: number; amount: number }> = [];
       for (const row of rows) {
-        const quantity = Math.max(0, row.quantity - 3);
-        if (!quantity) continue;
         const card = await getCraftableCard(row.cardDefinitionId, tx);
         if (!card) continue;
+        const keep = maxCardCopies(card.rarity);
+        const quantity = Math.max(0, row.quantity - keep);
+        if (!quantity) continue;
         const setting = await getUsableSetting(card.rarity as PrismRarity, "분해", tx);
         const amount = quantity * setting.disenchantReward;
         if (!Number.isSafeInteger(amount) || !Number.isSafeInteger(reward + amount)) throw new PrismError(422, '분해 수량이 너무 큽니다.');
-        await tx.update(userCardCollectionsTable).set({ quantity: 3 }).where(and(
+        await tx.update(userCardCollectionsTable).set({ quantity: keep }).where(and(
           eq(userCardCollectionsTable.userId, user.id), eq(userCardCollectionsTable.cardDefinitionId, card.id)));
         reward += amount;
         dismantledQuantity += quantity;
@@ -256,7 +260,7 @@ router.post("/disenchant-extras", async (request, response): Promise<void> => {
         balance += item.amount;
         await tx.insert(prismTransactionsTable).values({ id: randomUUID(), userId: user.id,
           type: 'DISENCHANT', amount: item.amount, balanceAfter: isTestAccountUser(user) ? finalBalance : balance,
-          cardDefinitionId: item.cardId, metadata: JSON.stringify({ rarity: item.rarity, quantity: item.quantity, keep: 3 }) });
+          cardDefinitionId: item.cardId, metadata: JSON.stringify({ rarity: item.rarity, quantity: item.quantity, keep: maxCardCopies(item.rarity) }) });
       }
       return { dismantledQuantity, reward };
     });
@@ -292,6 +296,11 @@ router.post("/disenchant/:cardDefinitionId", async (request, response): Promise<
       const card = await getCraftableCard(request.params.cardDefinitionId, tx);
       if (!card) throw new PrismError(404, "분해할 수 없는 카드입니다.");
       const setting = await getUsableSetting(card.rarity as PrismRarity, "분해", tx);
+      if (request.body?.keepPlayableCopies === true) {
+        const [owned] = await tx.select().from(userCardCollectionsTable).where(and(eq(userCardCollectionsTable.userId, user.id), eq(userCardCollectionsTable.cardDefinitionId, card.id))).for("update");
+        quantity = Math.max(0, (owned?.quantity ?? 0) - maxCardCopies(card.rarity));
+        if (!quantity) throw new PrismError(422, "유지 수량을 초과한 카드가 없습니다.");
+      }
       const [collection] = await tx.update(userCardCollectionsTable)
         .set({
           quantity: sql`${userCardCollectionsTable.quantity} - ${quantity}`,

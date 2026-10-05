@@ -811,7 +811,7 @@ export default function Decks() {
                       card={card}
                       selectedCount={counts.get(card.id) ?? 0}
                       disabled={action.kind === "DISABLED"}
-                      disabledReason={unowned ? "미보유 · 선택하여 제작" : action.kind === "DISABLED" ? action.reason : undefined}
+                      disabledReason={unowned ? "선택하여 카드 제작" : action.kind === "DISABLED" ? action.reason : undefined}
                       unowned={unowned}
                       onCraft={() => void openCraftFlow(card)}
                       onAdd={() => addCard(card)}
@@ -1082,13 +1082,13 @@ export default function Decks() {
                           </p>
                           {craftInfoCard && craftInfoCard.quantity > 0 && (
                             <p className="mt-2 rounded border border-emerald-800/60 bg-emerald-950/30 px-3 py-2 text-xs font-bold text-emerald-300">
-                              이미 보유한 카드입니다. 제작 전 덱에 자동으로 추가되지 않습니다.
+                              보유 {craftInfoCard.quantity}장 / 제작 한도 {maxCardCopies(craftInfoCard.rarity)}장
                             </p>
                           )}
-                          {!craftInfoCard?.quantity && !isCraftable && (
+                          {!isCraftable && (
                             <p className="mt-2 text-xs text-amber-200">제작할 수 없는 카드입니다.</p>
                           )}
-                          {!craftInfoCard?.quantity && isCraftable && !craftCollection.isTestAccount && craftCollection.prismBalance < craftSetting.craftCost && (
+                          {isCraftable && !craftCollection.isTestAccount && craftCollection.prismBalance < craftSetting.craftCost && (
                             <p className="mt-2 text-xs text-red-300">프리즘이 부족합니다.</p>
                           )}
                         </>
@@ -1120,14 +1120,14 @@ export default function Decks() {
                         !isCraftable ||
                         !craftSetting?.configured ||
                         craftSetting.craftCost === null ||
-                        (Boolean(craftInfoCard.quantity > 0)) ||
+                        craftInfoCard.quantity >= maxCardCopies(craftInfoCard.rarity) ||
                         (!craftCollection?.isTestAccount && Boolean(craftCollection && craftSetting && craftCollection.prismBalance < (craftSetting.craftCost ?? 0)))
                       }
                       onClick={() => void handleCraftCard()}
                     >
                       <span className="inline-flex items-center justify-center gap-2">
                         <Hammer className="h-4 w-4" aria-hidden="true" />
-                        {craftMutating ? "제작 중..." : craftInfoCard?.quantity ? "이미 보유 중" : "카드 제작"}
+                        {craftMutating ? "제작 중..." : craftInfoCard && craftInfoCard.quantity >= maxCardCopies(craftInfoCard.rarity) ? "제작 한도 도달" : "카드 제작"}
                       </span>
                     </button>
                   </div>

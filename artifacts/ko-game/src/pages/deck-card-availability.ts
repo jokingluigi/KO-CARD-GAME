@@ -75,8 +75,10 @@ export function getDeckCardAction(
   }
   if (!isTestAccount && card.quantity === 0) return { kind: "CRAFT" };
 
+  const limit = cardLimitReason(card, count, legendaryCount, maxLegendaryCards) ?? (deckCount >= deckSize ? `덱은 정확히 ${deckSize}장까지 구성할 수 있습니다.` : undefined);
+  if (!limit && card.status === "PUBLISHED" && !isTestAccount && card.quantity !== undefined && count >= card.quantity && card.quantity < maxCardCopies(card.rarity)) return { kind: "CRAFT" };
   const reason =
-    cardLimitReason(card, count, legendaryCount, maxLegendaryCards) ??
+    limit ??
     cardOwnershipReason(card, count, isTestAccount) ??
     (deckCount >= deckSize ? `덱은 정확히 ${deckSize}장까지 구성할 수 있습니다.` : undefined);
   return reason ? { kind: "DISABLED", reason } : { kind: "ADD" };

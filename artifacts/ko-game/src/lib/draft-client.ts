@@ -47,6 +47,9 @@ export type DraftSettings = {
   poolWarning?: string | null;
   currentId: string | null;
 };
+export class DraftRequestError extends Error {
+  constructor(message: string, public readonly code?: string) { super(message); }
+}
 export async function draftRequest<T>(
   path: string,
   method = "GET",
@@ -60,16 +63,26 @@ export async function draftRequest<T>(
     ...(body === undefined ? {} : { body: JSON.stringify(body) }),
   });
   const data = await r.json();
-  if (!r.ok) throw new Error(data.message ?? "드래프트 요청에 실패했습니다.");
+  if (!r.ok) throw new DraftRequestError(data.message ?? "드래프트 요청에 실패했습니다.", data.code);
   return data;
 }
-export const draftCommand = (view: DraftView, type: string, pickId?: string) =>
-  draftRequest<DraftView>(`/sessions/${view.id}/commands`, "POST", {
+export const draftCommand = async (view: DraftView, type: string, pickId?: string): Promise<DraftView> => {
+  const path = `/sessions/${view.id}/commands`;
+  const body = {
     version: view.version,
     requestId: crypto.randomUUID(),
     type,
     pickId,
-  });
+  };
+  try { return await draftRequest<DraftView>(path, "POST", body); }
+  catch (error) {
+    if (!(error instanceof DraftRequestError) || error.code !== "STALE_VERSION" || view.phase !== "DRAFT" || !["CHAMPION", "PICK", "REROLL", "LOCK", "MUTATION_TARGET", "MUTATION_PICK", "MUTATION_SKIP"].includes(type)) throw error;
+    const latest = await draftRequest<DraftView>(`/sessions/${view.id}`);
+    // Retry only when the opponent changed the room; never apply an old click to a new pick.
+    if (latest.phase !== view.phase || latest.seat !== view.seat || JSON.stringify(latest.own) !== JSON.stringify(view.own)) throw error;
+    return draftRequest<DraftView>(path, "POST", { ...body, version: latest.version });
+  }
+};
 export class DraftBattleClient {
   state: OnlineLobbyConnectionState = "idle";
   readonly diagnostics = { transport: "draft-http" };
