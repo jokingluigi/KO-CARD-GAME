@@ -30,6 +30,16 @@ export type PresentationCueDraft = {
   duration: number;
 };
 
+/** Cosmetic feedback must not hold the AI turn or legal player input. */
+export function presentationBlocksActions(cues: PresentationCueDraft[]): boolean {
+  return cues.some(cue => cue.kind === 'QUEST_COMPLETE' || cue.kind === 'TRANSFORM');
+}
+
+/** Deck buffs still resolve, but offscreen stat popups have no visible target. */
+export function visibleStatFeedback(cue: PresentationCueDraft, visibleCardIds: Set<string>): boolean {
+  return !cue.cardInstanceId || !['BUFF', 'HEAL', 'DEBUFF'].includes(cue.kind) || visibleCardIds.has(cue.cardInstanceId);
+}
+
 /** Stable within a match even when the same event payload occurs more than once. */
 export function presentationEventKey(event: GameEvent, index: number, _events: GameEvent[]): string {
   const subjectKey = (subject: EventSubject | undefined) => {

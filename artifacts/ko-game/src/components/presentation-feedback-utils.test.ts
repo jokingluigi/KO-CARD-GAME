@@ -1,7 +1,20 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 
-import { presentationCueDrafts, presentationEventKey } from "./presentation-feedback-utils";
+import { presentationCueDrafts, presentationEventKey, presentationBlocksActions, visibleStatFeedback } from "./presentation-feedback-utils";
+
+test('whole-deck stat feedback does not block actions or present hidden-card flashes', () => {
+  const events = Array.from({ length: 25 }, (_, index) => ({
+    type: 'STAT_CHANGED' as const, stat: 'attack' as const, delta: 1,
+    target: { type: 'CARD' as const, cardInstanceId: `copy-${index}` },
+  }));
+  const cues = presentationCueDrafts(events, 0);
+  assert.equal(cues.length, 25);
+  assert.equal(presentationBlocksActions(cues), false);
+  assert.deepEqual(cues.filter(cue => visibleStatFeedback(cue, new Set(['copy-0']))).map(cue => cue.cardInstanceId), ['copy-0']);
+  assert.equal(presentationBlocksActions(presentationCueDrafts([{ type: 'CHAMPION_QUEST_COMPLETED' }], 0)), true);
+  assert.equal(presentationBlocksActions(presentationCueDrafts([{ type: 'CARD_TRANSFORMED' }], 0)), true);
+});
 
 test("이벤트 순서대로 피해, 퇴장, 퀘스트 완료 피드백을 만든다", () => {
   const cues = presentationCueDrafts([

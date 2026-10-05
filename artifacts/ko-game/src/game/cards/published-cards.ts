@@ -198,12 +198,19 @@ export async function fetchAiTestCardDefinitions(): Promise<CardDefinition[]> {
 }
 
 /** Anywhere means live zones only: hand, deck and field. */
-function excludeGraveyardTargets<T>(value: T): T {
-  if (Array.isArray(value)) return value.map(excludeGraveyardTargets) as T;
+function normalizeAnywhereTargets<T>(value: T): T {
+  if (Array.isArray(value)) return value.map(normalizeAnywhereTargets) as T;
   if (!value || typeof value !== 'object') return value;
   const result = Object.fromEntries(Object.entries(value).map(([key, child]) =>
     [key, key === 'zones' && Array.isArray(child)
-      ? child.filter(zone => zone !== 'GRAVEYARD') : excludeGraveyardTargets(child)]));
+      ? child.filter(zone => zone !== 'GRAVEYARD') : normalizeAnywhereTargets(child)]));
+  // Saved ALL-card selectors sometimes omitted DECK. Keep SELF/choice,
+  // character targets and generation destinations unchanged.
+  const zones = Array.isArray(result.zones) ? result.zones : result.zone ? [result.zone] : [];
+  if (result.selection === 'ALL' && zones.length && zones.every(zone => ['HAND', 'DECK', 'BOARD'].includes(String(zone)))) {
+    result.zones = ['HAND', 'DECK', 'BOARD'];
+    delete result.zone;
+  }
   return result as T;
 }
 
@@ -292,7 +299,7 @@ export function cardRecordToDefinition(card: PublishedCardRecord): CardDefinitio
         ability.trigger !== 'ENTER_FIELD' && ability.trigger !== 'ACTIVE' &&
         !('condition' in ability && ability.condition)
           ? { ...ability, condition: { type: 'SOURCE_IN_HAND' as const } }
-          : ability).map((ability) => /어디에\s*있든/u.test(card.text) ? excludeGraveyardTargets(ability) : ability),
+          : ability).map((ability) => /어디에\s*있든/u.test(card.text) ? normalizeAnywhereTargets(ability) : ability),
       status: card.status,
       version: card.version,
       effectId: card.effectId,

@@ -2,7 +2,7 @@ import type { GameState, PlayerState } from '../types/game-state';
 import { MAX_HAND_SIZE } from '../rules/constants';
 import { isChampionProtectedByToken } from './direct-champion';
 import { resolveCardRetiredListeners, resolveTriggeredAbilities } from '../effects/effect-engine';
-import { normalizeCardForZone, resetCardAfterLeavingBoard } from '../cards/zone-state';
+import { normalizeCardForZone } from '../cards/zone-state';
 
 function finishGameFromFatigue(
   state: GameState,
@@ -71,7 +71,9 @@ export function drawCard(state: GameState, playerId: string): GameState {
     ...state,
     players: state.players.map((player) =>
       player.id === playerId
-        ? { ...player, deck: remainingDeck, hand: [...player.hand, normalizeCardForZone(resetCardAfterLeavingBoard(drawnCard), 'HAND')] }
+        // Leaving the field already resets a returning card. Drawing is not
+        // another reset: preserve buffs/cost changes explicitly applied in deck.
+        ? { ...player, deck: remainingDeck, hand: [...player.hand, normalizeCardForZone(drawnCard, 'HAND')] }
         : player,
     ),
     events: [

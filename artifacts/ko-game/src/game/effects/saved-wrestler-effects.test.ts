@@ -11,6 +11,7 @@ import type { PublishedCardRecord } from '../cards/published-cards';
 import { createInitialGameState } from '../engine/create-initial-game-state';
 import { destroyCard } from '../engine/destroy-card';
 import { enterField } from '../engine/enter-field';
+import { drawCard } from '../engine/draw-card';
 import { attack } from '../engine/combat';
 import { endTurn } from '../engine/turn-system';
 import { directDeployChampionToken } from '../engine/champion-token';
@@ -225,6 +226,42 @@ test('퀘스쳔은 어디에 있든 비용 2 이하인 아군 카드만 +1/+1 �
   assert.equal(result.players[0].deck[0]?.currentHealth, 2);
   assert.equal(result.players[0].deck[1]?.currentAttack, 1);
   assert.equal(result.players[0].board[1]?.currentHealth, 2);
+});
+
+test('어디에 있든 legacy HAND/BOARD selector includes the full deck and survives draw', () => {
+  const config = { effects: [effect('ENTER_FIELD', 'BUFF', {
+    zones: ['HAND', 'BOARD', 'GRAVEYARD'], owner: 'SELF', cardType: 'WRESTLER', selection: 'ALL', count: 20,
+    filter: { tagsAny: ['기계'] },
+  }, { attack: 1, health: 2 })] };
+  const original = structuredClone(config);
+  const source = definition('범위 강화', config, { rulesText: "등장:어디에 있든 모든 아군 '기계' 선수에게 +1/+2." });
+  const machine = { ...definition('기계 선수', { effects: [] }), tags: ['기계'] };
+  const other = definition('다른 선수', { effects: [] });
+  const state = stateWithPool([source, machine, other]);
+  state.players[0].hand = [card(machine, 'scope-hand')];
+  state.players[0].deck = Array.from({ length: 25 }, (_, i) => card(machine, `scope-deck-${i}`));
+  state.players[0].board[1] = { ...card(machine, 'scope-board'), boardSlot: 1 };
+  state.players[0].graveyard = [card(machine, 'scope-grave')];
+  state.players[1].deck = [card(machine, 'scope-enemy')];
+  state.players[0].hand.push(card(other, 'scope-other'));
+  const resolved = enterField(state, 'player-1', card(source, 'scope-source'), 0);
+  for (const buffed of [resolved.players[0].hand[0]!, ...resolved.players[0].deck, resolved.players[0].board[1]!]) {
+    assert.deepEqual([buffed.currentAttack, buffed.currentHealth, buffed.maxHealth], [2, 3, 3]);
+  }
+  for (const unchanged of [resolved.players[0].graveyard[0]!, resolved.players[1].deck[0]!, resolved.players[0].hand[1]!]) {
+    assert.deepEqual([unchanged.currentAttack, unchanged.currentHealth], [1, 1]);
+  }
+  const drawn = drawCard(resolved, 'player-1');
+  assert.deepEqual([drawn.players[0].hand.at(-1)!.currentAttack, drawn.players[0].hand.at(-1)!.currentHealth], [2, 3]);
+  assert.deepEqual(config, original);
+});
+
+test('draw preserves cost changes and uses modified CARD_DRAWN abilities from the deck', () => {
+  const low = definition('덱 비용 강화', { effects: [] }, { cost: 4 });
+  const state = stateWithPool([low]);
+  state.players[0].hand = [];
+  state.players[0].deck = [{ ...card(low, 'deck-cost-copy'), currentCost: 2 }];
+  assert.equal(drawCard(state, 'player-1').players[0].hand[0]?.currentCost, 2);
 });
 
 test('떼껄룩은 선택한 적의 줄어든 공격력만큼 자신 체력을 올리고 기절시킨다', () => {

@@ -281,7 +281,7 @@ test('tag filters treat missing definition tags as empty but reject a missing de
   );
 });
 
-test('authoritative tags buff live zones; drawing resets deck buffs before play', () => {
+test('authoritative tags buff live zones; drawing and playing preserve deck buffs', () => {
   const source = card('authoritative-source');
   const taggedDefinition = definitionFor(card('authoritative-tagged', [], ['실험체']));
   const untaggedDefinition = definitionFor(card('authoritative-untagged'));
@@ -348,12 +348,12 @@ test('authoritative tags buff live zones; drawing resets deck buffs before play'
 
   const restored = structuredClone(buffed);
   const drawn = drawCard(restored, 'player-1');
-  assert.equal(drawn.players[0].hand.find((entry) => entry.instanceId === 'authoritative-deck')?.currentAttack, 1);
+  assert.equal(drawn.players[0].hand.find((entry) => entry.instanceId === 'authoritative-deck')?.currentAttack, 2);
   const played = playWrestlerFromHand(drawn, 'player-1', 'authoritative-deck', 1);
   assert.equal(played.success, true);
   if (played.success) {
-    assert.equal(played.state.players[0].board[1]?.currentAttack, 1);
-    assert.equal(played.state.players[0].board[1]?.currentHealth, 2);
+    assert.equal(played.state.players[0].board[1]?.currentAttack, 2);
+    assert.equal(played.state.players[0].board[1]?.currentHealth, 3);
   }
 });
 
