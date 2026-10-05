@@ -13,7 +13,7 @@ Draft 2.0은 기존 Draft를 확장했다. 시너지/특수 pick, 전체 공유 
 - Draft 기존 회귀: 90개 파일 781개 PASS. 관련 최종 변경 mutation/keyword/sanitizer 44개, 격리 HTTP 9개 PASS.
 - 후속 engine/effects/AI + presentation + Draft mutation: 547개 PASS. TypeScript engine/frontend/server와 Vite build PASS.
 - 기존 draw-buff 소실을 기대하던 테스트 두 개는 사용자가 요청한 새로운 규칙에 맞춰 기대값을 변경했다.
-- 모바일 실제 조작, 전체 원격 PvP 경기/체감 지연, 모든 영향을 받은 화면은 UNVERIFIED. 자동 테스트만으로 실제 화면 PASS라 하지 않는다.
+- 후속 코드 main 151b156에서 운영 JS 해시 일치 및 health 정상 확인. 실제 AI 기본 손패 클릭/소환은 PASS. 대량 버프 도중 입력의 정확한 상황, 모바일 실제 조작, 전체 원격 PvP 경기/체감 지연, 모든 영향을 받은 화면은 UNVERIFIED. 자동 테스트만으로 실제 화면 PASS라 하지 않는다.
 - 상세 Draft QA: `docs/qa/draft-v2-resume-20261005.md`.
 - 후속 QA: `docs/qa/ai-input-anywhere-20261005.md`.
 
