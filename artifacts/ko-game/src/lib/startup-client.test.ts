@@ -104,7 +104,10 @@ test('separate HTML script connects before the game module and is adopted withou
   try {
     startServerConnection();
     assert.equal(pageWindow.__koStartupConnection, undefined);
-    assert.deepEqual(await requestServerStatus(), status);
+    const gate = requestServerStatus();
+    const manualRetry = requestServerStatus();
+    assert.deepEqual(await gate, status);
+    assert.deepEqual(await manualRetry, status);
     assert.deepEqual(await fetchCurrentUser(), guest);
   } finally {
     if (originalWindow) runtime.window = originalWindow;

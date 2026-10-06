@@ -29,7 +29,10 @@ async function requestJson<T>(path: string): Promise<T> {
 export function requestServerStatus(): Promise<ServerStatus> {
   const initial = startupStatus;
   startupStatus = null;
-  if (initial && Date.now() <= initial.expiresAt) return initial.request;
+  if (initial && Date.now() <= initial.expiresAt) {
+    statusRequest = initial.request.finally(() => { statusRequest = null; });
+    return statusRequest;
+  }
   if (!statusRequest) {
     statusRequest = requestJson<ServerStatus>('/server-status').finally(() => {
       statusRequest = null;
