@@ -2,6 +2,7 @@ import { wrestlerPlayCost } from '@/game/engine/play-wrestler';
 import { TOWER_VANILLA_CHAMPION_ID } from '@/game/champions/tower-vanilla';
 import { ChampionEmoteMenu } from './champion-emote-menu';
 import React from 'react';
+import { matchTurnNumber } from '@workspace/game-engine/rules';
 import { canEnterTowerField } from '@/game/tower/relics';
 import { EntranceVolumeControl, SfxVolumeControl } from './sfx-volume-control';
 import { CardRenderer } from './card-renderer';
@@ -1146,9 +1147,9 @@ export function GameStatePreview({
                  <button type="button" onClick={onCancelEffectTargeting} className="mt-1 block w-full rounded border border-amber-600 px-1 py-0.5 text-[9px]">취소</button>
                </div>
              )}
-             <div className="flex items-center justify-between gap-2 border-b border-neutral-800 pb-2">
-               <div className="text-right">
-                 <div className="text-[9px] font-bold text-neutral-500 md:text-[10px]">현재 턴 {state.turn}</div>
+             <div className="flex items-center justify-between gap-2 border-b border-neutral-800 pb-2 md:flex-col md:items-stretch">
+               <div className="text-right md:text-center">
+                 <div className="whitespace-nowrap text-base font-black text-amber-300 md:text-xl" data-testid="match-turn-number" aria-label={`현재 ${matchTurnNumber(state.turn)}턴`} title="내 턴과 상대 턴을 한 묶음으로 계산합니다.">제 {matchTurnNumber(state.turn)}턴</div>
                  <div className={`text-xs font-black md:text-base ${isMyTurn ? 'text-primary' : 'text-red-400'}`}>
                    {isMyTurn ? '내 턴' : '상대 턴'}
                  </div>

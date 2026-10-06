@@ -6,7 +6,7 @@ import { getActiveCardKeywords } from '../game/cards/granted-text';
 export const KEYWORD_DESCRIPTIONS: Record<string, string> = {
   IMMUNE: '카드나 챔피언의 효과로 직접 지정할 수 없습니다.',
   REGEN: '양쪽 플레이어의 턴이 끝날 때마다 체력을 2 회복합니다. 기본 회복은 최대 체력을 넘지 않습니다.',
-  ARMOR: '피해를 받을 때 설정된 아머 수치만큼 피해를 줄입니다. 최소 피해는 0입니다.',
+  ARMOR: '공격과 반격으로 받는 피해를 아머 수치만큼 줄입니다. 카드 효과 피해는 줄이지 않습니다. 최소 피해는 0입니다.',
   CONDITION: '설정된 사용 조건을 달성했을 때만 낼 수 있습니다.',
   DEFENSE: '등장 후 다음 자기 턴 시작까지 피해를 받지 않으며 공격 대상으로 지정할 수 없습니다.',
   LIFESTEAL: '자신의 공격으로 준 피해만큼 아군 챔피언의 체력을 회복합니다.',
@@ -74,7 +74,7 @@ export function getCardInspectorMetadata(card: CardInstance) {
     .map((keyword) => ({
       key: keyword,
       label: keyword === 'ARMOR' ? `아머(${card.armor ?? 0})` : KEYWORD_LABELS[keyword] ?? keyword,
-      description: keyword === 'ARMOR' ? `받는 피해를 ${card.armor ?? 0} 줄입니다. 최소 피해는 0입니다.` : KEYWORD_DESCRIPTIONS[keyword] ?? '특수 키워드입니다.',
+      description: keyword === 'ARMOR' ? `공격과 반격으로 받는 피해를 ${card.armor ?? 0} 줄입니다. 카드 효과 피해는 줄이지 않습니다. 최소 피해는 0입니다.` : KEYWORD_DESCRIPTIONS[keyword] ?? '특수 키워드입니다.',
     }));
   const statuses = [
     card.isSilenced ? { key: 'SILENCE', label: '침묵', description: KEYWORD_DESCRIPTIONS.SILENCE } : null,

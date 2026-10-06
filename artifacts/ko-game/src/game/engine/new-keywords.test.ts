@@ -28,13 +28,13 @@ test('immune blocks manual effect selection but permits ordinary attacks and are
  assert.equal(area.players[1].board[0]!.currentHealth,4);
  assert.equal(executeAction(s,{type:'ATTACK',playerId:'player-1',attackerInstanceId:'a',target:{type:'WRESTLER',playerId:'player-2',cardInstanceId:'b'}}).success,true);
 });
-test('armor subtracts configured amount on effects and combat; lifesteal heals by reduced attack damage only',()=>{
+test('armor reduces combat only; lifesteal heals by reduced attack damage',()=>{
  const s=setup({keywords:['ARMOR'],effectConfig:{armor:2}});
- assert.equal(applyEffect(s,'player-1',s.players[0].board[0]!,damage,['b']).players[1].board[0]!.currentHealth,6);
+ assert.equal(applyEffect(s,'player-1',s.players[0].board[0]!,damage,['b']).players[1].board[0]!.currentHealth,4);
  const result=executeAction(s,{type:'ATTACK',playerId:'player-1',attackerInstanceId:'a',target:{type:'WRESTLER',playerId:'player-2',cardInstanceId:'b'}});
  assert.equal(result.success,true);assert.equal(result.state.players[1].board[0]!.currentHealth,6);assert.equal(result.state.players[0].health,12);
  const blocked=setup({keywords:['ARMOR'],effectConfig:{armor:9}});
- assert.equal(applyEffect(blocked,'player-1',blocked.players[0].board[0]!,damage,['b']).players[1].board[0]!.currentHealth,8);
+ assert.equal(applyEffect(blocked,'player-1',blocked.players[0].board[0]!,damage,['b']).players[1].board[0]!.currentHealth,4);
 });
 test('entry defense rejects attacks, blocks damage without consuming dodge and expires after its owner turn',()=>{
  const s=setup({keywords:['DEFENSE','DODGE']});s.players[1].board[0]!.enteredThisTurn=true;
@@ -50,7 +50,7 @@ test('conditional cards reject forged plays until their configured state conditi
  const s=setup();const d=definition('conditional',{keywords:['CONDITION'],effectConfig:{playCondition:{type:'TURN',turn:5}}});
  s.players[0].hand=[generateCardInstance(d,{instanceId:'c'})];s.players[0].currentGold=10;
  const play={type:'PLAY_WRESTLER' as const,playerId:'player-1',cardInstanceId:'c',boardSlot:1 as const};
- assert.equal(executeAction(s,play).success,false);s.turn=5;assert.equal(executeAction(s,play).success,true);
+ assert.equal(executeAction(s,play).success,false);s.turn=9;assert.equal(executeAction(s,play).success,true);
 });
 test('any Champion rarity card protects its portrait only while present and is itself removable',()=>{
  const s=setup({rarity:'CHAMPION'});assert.equal(isChampionProtectedByToken(s,'player-2'),true);

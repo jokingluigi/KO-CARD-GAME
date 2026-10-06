@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import test from 'node:test';
 import { cardRecordToDefinition, type PublishedCardRecord } from '../cards/published-cards';
+import { LUNA_ID, LUNA_RULES_TEXT } from '../cards/luna';
 import { repairedLegacyCardKeywords } from '../cards/legacy-card-effect-repair';
 import { generateCardInstance } from '../cards/generation';
 import type { CardInstance } from '../cards/types';
@@ -106,7 +107,7 @@ test('current Sea Monster discounts only in hand on allied RETIRE; Destroy and o
 test('current Yeager buffs allied Soldier on play/summon; Yeoul turn-start gold; Great Chan swaps stats',()=>{
  const s=setup();onBoard(s,'예거');const n=play(s,'용병',1);assert.deepEqual([n.players[0].board[1]?.currentAttack,n.players[0].board[1]?.currentHealth],[2,2]);
  let y=play(setup(),'여울');const before=y.players[0].currentGold;y=resolveTriggeredAbilities(y,'player-1',source(y),'TURN_START');assert.equal(y.players[0].currentGold,before+1);
- let g=play(setup(),'그레이트 챤');g=action(g,{type:'USE_ACTIVE',playerId:'player-1',cardInstanceId:'source'});assert.deepEqual([source(g).currentAttack,source(g).currentHealth],[4,2]);
+ let g=play(setup(),'그레이트 챤');g=action(g,{type:'END_TURN',playerId:'player-1'});g=action(g,{type:'END_TURN',playerId:'player-2'});g=action(g,{type:'USE_ACTIVE',playerId:'player-1',cardInstanceId:'source'});assert.deepEqual([source(g).currentAttack,source(g).currentHealth],[4,2]);
 });
 test('current Yeager printed Dodge avoids the first attack, consumes one charge and leaves source data unchanged', () => {
  const record=records.find(card=>card.id==='latest-wrestler-5')!,before=structuredClone(record);
@@ -147,8 +148,8 @@ test('current wolf turn start absorbs retired ally attack and health',()=>{
 test('current Natoma combo adds attacking ally attack and own turn end sets attack to zero',()=>{
  const s=setup();onBoard(s,'나토마토');const a=onBoard(s,'로드',1);onBoard(s,'루나',0,1,{currentHealth:30,maxHealth:30,isAbilityDisabled:true});let n=action(s,{type:'ATTACK',playerId:'player-1',attackerInstanceId:a.instanceId,target:{type:'WRESTLER',playerId:'player-2',cardInstanceId:'1-루나-0'}});assert.equal(n.players[0].board[0]?.currentAttack,2);n=endTurn(n,'player-1').state;assert.equal(n.players[0].board[0]?.currentAttack,0);
 });
-test('current Luna silences its first attacker only; Kamisator steals one actual enemy deck card per attack',()=>{
- let s=setup();const a=onBoard(s,'로드');onBoard(s,'루나',0,1);let n=action(s,{type:'ATTACK',playerId:'player-1',attackerInstanceId:a.instanceId,target:{type:'WRESTLER',playerId:'player-2',cardInstanceId:'1-루나-0'}});assert.equal(n.players[0].board[0]?.isSilenced,true);assert.equal(n.players[1].board[0]?.isAbilityDisabled,true);
+test('current Luna silences its first attacker and herself; Kamisator steals one actual enemy deck card per attack',()=>{
+ let s=setup();const a=onBoard(s,'로드');onBoard(s,'루나',0,1);let n=action(s,{type:'ATTACK',playerId:'player-1',attackerInstanceId:a.instanceId,target:{type:'WRESTLER',playerId:'player-2',cardInstanceId:'1-루나-0'}});assert.equal(n.players[0].board[0]?.isSilenced,true);assert.equal(n.players[1].board[0]?.isSilenced,true);assert.equal(Boolean(n.players[1].board[0]?.isAbilityDisabled),false);
  s=setup();const k=onBoard(s,'카미사토르');onBoard(s,'리버덩크',0,1,{currentHealth:20,maxHealth:20});n=action(s,{type:'ATTACK',playerId:'player-1',attackerInstanceId:k.instanceId,target:{type:'WRESTLER',playerId:'player-2',cardInstanceId:'1-리버덩크-0'}});assert.equal(n.players[1].deck.length,0);assert.equal(n.players[0].hand[0]?.instanceId,'player-2-draw');
 });
 test('current Pandora champion token quest deployment destroys target and absorbs its attack; later combat also absorbs',()=>{
@@ -210,7 +211,7 @@ test('Maid Pandora transforms even when its stored form id is stale', () => {
 for(const record of records.filter(r=>r.cardType==='WRESTLER'))test(`current catalog contract: ${record.name} [${record.id}]`,()=>{
  const raw=structuredClone(record),d=cardRecordToDefinition(raw);assert.deepEqual(raw,record);
  assert.deepEqual([d.cost,d.attack,d.health],[record.cost,record.attack,record.health]);
- assert.equal(d.rulesText,record.id==='epic-spell-feast'?'모든 아군 선수와 아군 챔피언의 현재 및 최대 HP를 3 증가시킵니다.':record.name==='좀비'?d.rulesText:record.text);assert.ok(JSON.parse(JSON.stringify(d)));
+ assert.equal(d.rulesText,record.id===LUNA_ID?LUNA_RULES_TEXT:record.id==='epic-spell-feast'?'모든 아군 선수와 아군 챔피언의 현재 및 최대 HP를 3 증가시킵니다.':record.name==='좀비'?d.rulesText:record.text);assert.ok(JSON.parse(JSON.stringify(d)));
  if(record.text.trim() && !['레이븐','스카드','벨로나','황소할배','좀비'].includes(record.name))assert.ok(d.abilities.length || d.contentRule,`effect-less nonvanilla ${record.name}`);
 });
 
@@ -220,7 +221,10 @@ for (const definition of definitions.filter(d => d.keywords.includes('ARMOR'))) 
   const s = setup(); const attacker = onBoard(s, '리버덩크', 0, 0, {currentAttack: amount}); const target = onBoard(s, definition.name, 0, 1);
   assert.equal(target.armor, armor);
   const damaged = applyEffect(s, 'player-1', attacker, {type:'STRUCTURED',action:'DAMAGE',target:{zone:'BOARD',owner:'ENEMY',selection:'PLAYER_CHOICE',count:1},values:{amount}}, [target.instanceId]);
-  assert.equal(damaged.players[1].board[0]!.currentHealth, target.currentHealth - Math.max(0, amount - armor));
+  if (amount >= target.currentHealth) {
+   assert.equal(damaged.players[1].board[0], null);
+   assert.ok(damaged.players[1].graveyard.some(c=>c.instanceId===target.instanceId));
+  } else assert.equal(damaged.players[1].board[0]!.currentHealth, target.currentHealth - amount);
   if (amount > 0) {
    const result = executeAction(JSON.parse(JSON.stringify(s)), {type:'ATTACK',playerId:'player-1',attackerInstanceId:attacker.instanceId,target:{type:'WRESTLER',playerId:'player-2',cardInstanceId:target.instanceId}});
    assert.equal(result.success, true); assert.equal(result.state.players[1].board[0]!.currentHealth, target.currentHealth - Math.max(0, amount - armor));

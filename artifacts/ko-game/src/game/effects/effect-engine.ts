@@ -2924,7 +2924,7 @@ export function applyEffect(
         }
         const reduced = towerIncomingDamage(preparedState, targetOwner, preparedCurrent, damageAmount);
         preparedState = reduced.state;
-        const effectiveDamage = keywordDamage(preparedCurrent, Math.max(0, reduced.amount - silenceDamageReduction(preparedCurrent, sourceCard)), preparedState.turn);
+        const effectiveDamage = keywordDamage(preparedCurrent, Math.max(0, reduced.amount - silenceDamageReduction(preparedCurrent, sourceCard)), preparedState.turn, 'EFFECT');
         const health = preparedCurrent.isTrainingDummy ? 1 : preparedCurrent.currentHealth - effectiveDamage;
         if (health > 0) {
           const damagedState: GameState = {

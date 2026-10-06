@@ -78,6 +78,7 @@ test("damage and enemy kills produce deterministic MVP, deduplicate deaths and s
   assert.equal(recap.playerMvps[0].kills, 0);
   assert.equal(recap.highlights.length, 3);
   assert.equal(recap.highlights[0].kind, "FINISHER");
+  assert.equal(recap.highlights[0].turn, 2);
   assert.ok(recap.highlights.some((h) => h.kind === "QUEST"));
   assert.ok(recap.highlights.some((h) => h.kind === "BIG_HIT"));
   assert.equal(new Set(recap.highlights.map((h) => h.eventIndex)).size, 3);
@@ -250,4 +251,17 @@ test("previously played cards returned to a hidden zone never disclose transform
   assert.equal(r.mvp?.imageUrl, null);
   assert.ok(!JSON.stringify(r).includes("SECRET"));
   assert.ok(!JSON.stringify(r).includes("/secret"));
+});
+
+test('recap shares one turn number across both players and increments after the pair', () => {
+  const s = fixture(); s.turn = 9;
+  s.events = [
+    ...Array.from({length:8},()=>({type:'TURN_STARTED' as const})),
+    {type:'CHAMPION_QUEST_COMPLETED',playerId:'player-2'},
+    {type:'TURN_STARTED'},
+    {type:'CHAMPION_QUEST_COMPLETED',playerId:'player-1'},
+    {type:'SURRENDER',playerId:'player-2'},
+  ];
+  const recap = buildMatchRecap(s);
+  assert.deepEqual(recap.highlights.map(h=>h.turn),[5,4,5]);
 });

@@ -105,7 +105,7 @@ test('current Sea Monster discounts only in hand on allied RETIRE; Destroy and o
 test('current Yeager buffs allied Soldier on play/summon; Yeoul turn-start gold; Great Chan swaps stats',()=>{
  const s=setup();onBoard(s,'예거');const n=play(s,'용병',1);assert.deepEqual([n.players[0].board[1]?.currentAttack,n.players[0].board[1]?.currentHealth],[2,2]);
  let y=play(setup(),'여울');const before=y.players[0].currentGold;y=resolveTriggeredAbilities(y,'player-1',source(y),'TURN_START');assert.equal(y.players[0].currentGold,before+1);
- let g=play(setup(),'그레이트 챤');g=action(g,{type:'USE_ACTIVE',playerId:'player-1',cardInstanceId:'source'});assert.deepEqual([source(g).currentAttack,source(g).currentHealth],[4,2]);
+ let g=play(setup(),'그레이트 챤');g=action(g,{type:'END_TURN',playerId:'player-1'});g=action(g,{type:'END_TURN',playerId:'player-2'});g=action(g,{type:'USE_ACTIVE',playerId:'player-1',cardInstanceId:'source'});assert.deepEqual([source(g).currentAttack,source(g).currentHealth],[4,2]);
 });
 test('current Purple Rain reduces all enemy attack and stuns/silences zero attack',()=>{
  const s=setup();onBoard(s,'로드',0,1,{currentAttack:2});onBoard(s,'루나',1,1,{currentAttack:5});const n=play(s,'퍼플레인');assert.deepEqual([n.players[1].board[0]?.currentAttack,n.players[1].board[0]?.isStunned,n.players[1].board[0]?.isSilenced],[0,true,true]);assert.equal(n.players[1].board[1]?.currentAttack,3);
@@ -135,8 +135,8 @@ test('current wolf turn start absorbs retired ally attack and health',()=>{
 test('current Natoma combo adds attacking ally attack and own turn end sets attack to zero',()=>{
  const s=setup();onBoard(s,'나토마토');const a=onBoard(s,'로드',1);onBoard(s,'루나',0,1,{currentHealth:30,maxHealth:30,isAbilityDisabled:true});let n=action(s,{type:'ATTACK',playerId:'player-1',attackerInstanceId:a.instanceId,target:{type:'WRESTLER',playerId:'player-2',cardInstanceId:'1-루나-0'}});assert.equal(n.players[0].board[0]?.currentAttack,2);n=endTurn(n,'player-1').state;assert.equal(n.players[0].board[0]?.currentAttack,0);
 });
-test('current Luna silences its first attacker only; Kamisator steals one actual enemy deck card per attack',()=>{
- let s=setup();const a=onBoard(s,'로드');onBoard(s,'루나',0,1);let n=action(s,{type:'ATTACK',playerId:'player-1',attackerInstanceId:a.instanceId,target:{type:'WRESTLER',playerId:'player-2',cardInstanceId:'1-루나-0'}});assert.equal(n.players[0].board[0]?.isSilenced,true);assert.equal(n.players[1].board[0]?.isAbilityDisabled,true);
+test('current Luna silences its first attacker and herself; Kamisator steals one actual enemy deck card per attack',()=>{
+ let s=setup();const a=onBoard(s,'로드');onBoard(s,'루나',0,1);let n=action(s,{type:'ATTACK',playerId:'player-1',attackerInstanceId:a.instanceId,target:{type:'WRESTLER',playerId:'player-2',cardInstanceId:'1-루나-0'}});assert.equal(n.players[0].board[0]?.isSilenced,true);assert.equal(n.players[1].board[0]?.isSilenced,true);assert.equal(Boolean(n.players[1].board[0]?.isAbilityDisabled),false);
  s=setup();const k=onBoard(s,'카미사토르');onBoard(s,'리버덩크',0,1,{currentHealth:20,maxHealth:20});n=action(s,{type:'ATTACK',playerId:'player-1',attackerInstanceId:k.instanceId,target:{type:'WRESTLER',playerId:'player-2',cardInstanceId:'1-리버덩크-0'}});assert.equal(n.players[1].deck.length,0);assert.equal(n.players[0].hand[0]?.instanceId,'player-2-draw');
 });
 test('current Pandora champion token quest deployment destroys target and absorbs its attack; later combat also absorbs',()=>{

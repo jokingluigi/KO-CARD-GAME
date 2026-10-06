@@ -85,7 +85,7 @@ test('선봉장의 깃발 buffs only first entry and expires at turn end', () =>
   const ended = endTurn(second.state, 'player-1');
   assert.equal(ended.success, true); assert.equal(ended.state.players[0]!.board[0]!.currentAttack, 2);
 });
-test('폭주 티켓 blocks a Rush attack without blocking unrelated active abilities', () => {
+test('폭주 티켓 blocks a Rush attack; active obeys entry cooldown and is usable next own turn', () => {
   const initial = setup([{ id: 'rush-ticket', effectType: 'FIRST_SUMMON_COST_DOWN_NO_ATTACK', values: {} }]);
   const rush = { ...initial.players[0]!.hand[0]!, keywords: ['RUSH' as const], abilities: [{ trigger: 'ACTIVE' as const, effects: [{ type: 'GAIN_GOLD' as const, amount: 1 }] }] };
   const state = { ...initial, players: initial.players.map((p, i) => i === 0 ? { ...p, hand: [rush, ...p.hand.slice(1)] } : p) };
@@ -94,8 +94,12 @@ test('폭주 티켓 blocks a Rush attack without blocking unrelated active abili
   const attack = executeAction(played.state, { type: 'ATTACK', playerId: 'player-1', attackerInstanceId: rush.instanceId, target: { type: 'PLAYER', playerId: 'player-2' } });
   assert.equal(attack.success, false);
   assert.ok(getLegalActions(played.state, 'player-1').every(action => action.type !== 'ATTACK'));
-  const active = executeAction(played.state, { type: 'USE_ACTIVE', playerId: 'player-1', cardInstanceId: rush.instanceId });
-  assert.equal(active.success, true); assert.equal(active.state.players[0]!.currentGold, 7);
+  const action = { type: 'USE_ACTIVE' as const, playerId: 'player-1', cardInstanceId: rush.instanceId };
+  assert.equal(executeAction(played.state, action).success, false);
+  const opponent = endTurn(played.state, 'player-1'); assert.ok(opponent.success);
+  const ready = endTurn(opponent.state, 'player-2'); assert.ok(ready.success);
+  const active = executeAction(ready.state, action);
+  assert.equal(active.success, true); assert.equal(active.state.players[0]!.currentGold, ready.state.players[0]!.currentGold + 1);
 });
 test('first-entry temporary attack also expires when summoned during the opponent turn', () => {
   const initial = setup([{ id: 'flag', effectType: 'FIRST_SUMMON_TEMP_ATK', values: {} }]);

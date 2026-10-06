@@ -4,6 +4,7 @@ import type {
 } from "../../../artifacts/ko-game/src/game/cards/types";
 import type { GameEvent } from "../../../artifacts/ko-game/src/game/events/types";
 import type { GameState } from "../../../artifacts/ko-game/src/game/types/game-state";
+import { matchTurnNumber } from './rules';
 export type MatchMvp = {
   playerId: string;
   instanceId: string;
@@ -161,7 +162,7 @@ export function buildMatchRecap(
         if (row) row.damage += event.amount!;
         damageHighlights.push({
           eventIndex: index,
-          turn,
+          turn: matchTurnNumber(turn),
           kind: "BIG_HIT",
           playerId: owner,
           sourceName: name(event),
@@ -200,7 +201,7 @@ export function buildMatchRecap(
     if (event.type === "CHAMPION_QUEST_COMPLETED")
       highlights.push({
         eventIndex: index,
-        turn,
+        turn: matchTurnNumber(turn),
         kind: "QUEST",
         playerId: event.playerId ?? null,
         sourceName:
@@ -239,7 +240,7 @@ export function buildMatchRecap(
     if (kind)
       highlights.unshift({
         eventIndex: terminal.index,
-        turn: state.turn,
+        turn: matchTurnNumber(state.turn),
         kind,
         playerId:
           kind === "FINISHER" ? (sourceOwner(e) ?? null) : (e.playerId ?? null),

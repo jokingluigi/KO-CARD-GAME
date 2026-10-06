@@ -1,4 +1,5 @@
 import { EPIC_TECHNIQUES } from './epic-techniques';
+import { lunaSelfSilenceRecord } from './luna';
 import { lifeExchangeConfig, LIFE_EXCHANGE_OLD_TEXT, LIFE_EXCHANGE_RULES_TEXT } from './life-exchange';
 import { newCardImplementation } from './new-card-effects';
 import { ZOMBIE_RULES } from '../engine/zombie-token';
@@ -216,6 +217,7 @@ function normalizeAnywhereTargets<T>(value: T): T {
 }
 
 export function cardRecordToDefinition(card: PublishedCardRecord): CardDefinition {
+  card = lunaSelfSilenceRecord(card);
   if (card.id === 'epic-spell-life-exchange' && card.text === LIFE_EXCHANGE_OLD_TEXT) {
     card = { ...card, text: LIFE_EXCHANGE_RULES_TEXT };
   }
