@@ -1,0 +1,389 @@
+/* Battle presentation only. No selector changes card stats, targeting or board layout. */
+.battle-vfx {
+  position: fixed;
+  z-index: 235;
+  pointer-events: none;
+  transform: translate(-50%, -50%);
+  width: 360px;
+  height: 360px;
+}
+.attack-animation--cinematic .attack-animation__attacker {
+  animation: none;
+  will-change: transform;
+  filter: drop-shadow(0 12px 12px #0009);
+}
+.attack-animation--cinematic .attack-animation__target {
+  animation: none;
+  opacity: 1;
+}
+.attack-animation__champion-impact {
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+}
+.attack-animation--impacted .attack-animation__champion-impact {
+  box-shadow: inset 0 0 24px #ffc58a66;
+}
+.attack-animation--cinematic.attack-animation--impacted
+  .attack-animation__target {
+  animation: ko-cinematic-recoil 240ms ease-out both;
+}
+.attack-animation--cinematic .attack-animation__impact-flash {
+  animation: ko-cinematic-flash 220ms ease-out both;
+}
+.attack-animation--cinematic .attack-animation__shockwave {
+  animation: ko-cinematic-ring 300ms ease-out both;
+  border-width: 1px;
+}
+.attack-animation__trail {
+  position: fixed;
+  left: calc(var(--attack-source-x) + var(--attack-source-width) / 2);
+  top: calc(var(--attack-source-y) + var(--attack-source-height) / 2);
+  width: var(--attack-travel-length);
+  height: 28px;
+  transform-origin: left center;
+  border-radius: 100%;
+  background: linear-gradient(90deg, transparent, #ebb47133 45%, #ffdf9c99);
+  transform: rotate(var(--attack-travel-angle));
+  animation: ko-cinematic-trail var(--attack-duration) linear both;
+}
+@keyframes ko-cinematic-trail {
+  0%,
+  27% {
+    opacity: 0;
+    scale: 0.15 1;
+  }
+  35% {
+    opacity: 0.55;
+    scale: 0.55 1;
+  }
+  46% {
+    opacity: 0.8;
+    scale: 1 1;
+  }
+  55%,
+  100% {
+    opacity: 0;
+    scale: 1 0.2;
+  }
+}
+@keyframes ko-cinematic-recoil {
+  0% {
+    opacity: 0.85;
+    transform: scale(1.025) rotate(-1deg);
+  }
+  35% {
+    opacity: 0.6;
+    transform: scale(0.97) rotate(1deg);
+  }
+  100% {
+    opacity: 0;
+    transform: scale(1);
+  }
+}
+@keyframes ko-cinematic-flash {
+  0% {
+    opacity: 0.55;
+    transform: translate(-50%, -50%) scale(0.55);
+  }
+  100% {
+    opacity: 0;
+    transform: translate(-50%, -50%) scale(1.25);
+  }
+}
+@keyframes ko-cinematic-ring {
+  0% {
+    opacity: 0.65;
+    transform: translate(-50%, -50%) scale(0.3);
+  }
+  100% {
+    opacity: 0;
+    transform: translate(-50%, -50%) scale(1.65);
+  }
+}
+
+.card-play-animation .card-play-animation__card,
+.card-play-animation .card-play-animation__dim,
+.card-play-animation .card-play-animation__label,
+.card-play-animation .card-play-animation__flash,
+.card-play-animation .card-play-animation__shockwave {
+  animation-duration: var(--play-duration);
+}
+.card-play-animation__card {
+  filter: drop-shadow(0 18px 20px #000b);
+  backface-visibility: hidden;
+}
+.card-play-animation--technique .card-play-animation__card {
+  filter: drop-shadow(0 0 1px #d6b6ff) drop-shadow(0 18px 24px #000b);
+}
+.card-play-animation__dim {
+  background: radial-gradient(ellipse at center, #140e2355, #06060bb3);
+}
+.card-play-animation__label {
+  white-space: nowrap;
+  max-width: calc(100vw - 24px);
+  font-size: clamp(0.65rem, 2vw, 0.9rem);
+  top: max(
+    16px,
+    calc(var(--play-stage-y) - var(--play-stage-height) / 2 - 45px)
+  );
+  padding: 9px 22px;
+  border-top: 1px solid #dfbd8244;
+  border-bottom: 1px solid #dfbd8244;
+  background: linear-gradient(90deg, transparent, #181422dd, transparent);
+  font-size: clamp(0.7rem, 2vw, 0.9rem);
+  letter-spacing: 0.16em;
+}
+.card-play-animation__sigil {
+  position: absolute;
+  left: var(--play-stage-x);
+  top: var(--play-stage-y);
+  width: min(75vw, 480px);
+  aspect-ratio: 1;
+  border: 1px solid #b99ce855;
+  border-radius: 50%;
+  background:
+    repeating-conic-gradient(
+      from 0deg,
+      transparent 0deg 28deg,
+      #b292dc44 29deg 30deg
+    ),
+    radial-gradient(circle, transparent 56%, #a17ddc22 57%, transparent 59%);
+  box-shadow:
+    0 0 45px #8461c933,
+    inset 0 0 45px #8461c922;
+  animation: ko-cinematic-sigil var(--play-duration) ease both;
+}
+@keyframes ko-cinematic-sigil {
+  0%,
+  12% {
+    opacity: 0;
+    transform: translate(-50%, -50%) scale(0.6) rotate(-18deg);
+  }
+  28%,
+  78% {
+    opacity: 0.65;
+    transform: translate(-50%, -50%) scale(1) rotate(4deg);
+  }
+  100% {
+    opacity: 0;
+    transform: translate(-50%, -50%) scale(1.1) rotate(12deg);
+  }
+}
+.card-play-animation--wrestler .card-play-animation__flash {
+  box-shadow:
+    0 0 10px 2px #ffd7a466,
+    0 0 25px 5px #c5975433;
+}
+.card-play-animation--rarity-legendary .card-play-animation__card,
+.card-play-animation--rarity-champion .card-play-animation__card {
+  filter: drop-shadow(0 0 3px #edc885) drop-shadow(0 15px 22px #000b);
+}
+
+.presentation-feedback {
+  letter-spacing: -0.035em;
+  text-shadow:
+    0 3px 0 #211319,
+    0 5px 10px #000b;
+  max-width: calc(100vw - 24px);
+}
+.presentation-feedback--damage {
+  color: #fff0d9;
+  font-size: clamp(1.8rem, 4vw, 3rem);
+  font-variant-numeric: tabular-nums;
+}
+.presentation-feedback--damage[data-impact="heavy"] {
+  color: #ffca99;
+  font-size: clamp(2.4rem, 5vw, 3.8rem);
+}
+.presentation-feedback--heal {
+  color: #a9f9d3;
+}
+.presentation-feedback--buff {
+  color: #d9f8bb;
+}
+.presentation-feedback--gold {
+  color: #ffe3a1;
+}
+.presentation-feedback__label {
+  position: relative;
+  display: inline-block;
+}
+.presentation-feedback--damage .presentation-feedback__label {
+  animation: ko-cinematic-number var(--presentation-duration) ease-out both;
+}
+.presentation-feedback--heal .presentation-feedback__label,
+.presentation-feedback--buff .presentation-feedback__label {
+  padding: 5px 10px;
+  border-radius: 20px;
+  background: linear-gradient(90deg, transparent, #123226cc, transparent);
+  font-size: 0.8em;
+}
+.presentation-feedback--dodge {
+  color: #cbebff;
+}
+.presentation-feedback__transfer {
+  width: 7px;
+  height: 7px;
+  box-shadow:
+    0 0 7px currentColor,
+    0 0 18px currentColor;
+}
+@keyframes ko-cinematic-number {
+  0% {
+    transform: scale(1.5) rotate(-6deg);
+  }
+  20% {
+    transform: scale(0.93) rotate(2deg);
+  }
+  45%,
+  100% {
+    transform: scale(1) rotate(0);
+  }
+}
+
+.card-leave-animation {
+  backface-visibility: hidden;
+  transform-origin: 50% 70%;
+}
+.card-leave-animation--retire {
+  animation-name: ko-cinematic-retire;
+}
+.card-leave-animation--destroy {
+  animation-name: ko-cinematic-destroy;
+}
+.card-leave-animation--remove {
+  animation-name: ko-cinematic-remove;
+}
+@keyframes ko-cinematic-retire {
+  0% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  20% {
+    opacity: 1;
+    transform: scale(0.97) rotate(-3deg);
+    filter: grayscale(0.5);
+  }
+  100% {
+    opacity: 0;
+    transform: translateY(22px) scale(0.7) rotate(-12deg);
+    filter: grayscale(1);
+  }
+}
+@keyframes ko-cinematic-destroy {
+  0% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  22% {
+    opacity: 1;
+    transform: scale(1.04);
+    filter: brightness(1.6) saturate(0.5);
+  }
+  40% {
+    clip-path: inset(0 0 0 0);
+    opacity: 0.8;
+  }
+  100% {
+    clip-path: inset(48% 48% 48% 48%);
+    opacity: 0;
+    transform: scale(0.8);
+    filter: brightness(0.5);
+  }
+}
+@keyframes ko-cinematic-remove {
+  0% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  40% {
+    opacity: 0.6;
+    transform: scale(0.95);
+    filter: saturate(0.3);
+  }
+  100% {
+    opacity: 0;
+    transform: translateY(-14px) scale(0.78);
+    filter: saturate(0);
+  }
+}
+.ko-quest-chapter {
+  position: relative;
+  padding: 28px;
+}
+.ko-quest-chapter::before {
+  content: "";
+  position: absolute;
+  inset: -30px;
+  z-index: -1;
+  background: radial-gradient(ellipse, #d4a05033, transparent 68%);
+}
+.ko-quest-chapter h2 {
+  letter-spacing: -0.05em;
+}
+
+@media (pointer: coarse) {
+  .attack-animation__trail {
+    height: 18px;
+  }
+  .card-play-animation__sigil {
+    width: min(86vw, 340px);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .battle-vfx,
+  .attack-animation__trail,
+  .card-play-animation__sigil {
+    display: none;
+  }
+  .attack-animation--cinematic .attack-animation__target {
+    animation: none !important;
+  }
+  .attack-animation--cinematic .attack-animation__impact-flash {
+    animation: none;
+    opacity: 0.15;
+  }
+  .attack-animation--cinematic .attack-animation__shockwave {
+    display: none;
+  }
+  .card-play-animation .card-play-animation__card {
+    animation: ko-cinematic-card-reduced 180ms linear both !important;
+  }
+  .card-play-animation .card-play-animation__dim,
+  .card-play-animation .card-play-animation__label {
+    animation-duration: 180ms;
+  }
+  .card-leave-animation {
+    animation-name: ko-cinematic-reduced;
+    animation-duration: 140ms;
+    animation-delay: 0ms;
+  }
+  .presentation-feedback__label {
+    animation: none !important;
+  }
+  .presentation-feedback {
+    animation-name: ko-cinematic-reduced;
+    transform: translateX(-50%);
+  }
+  @keyframes ko-cinematic-reduced {
+    from {
+      opacity: 1;
+    }
+    to {
+      opacity: 0;
+    }
+  }
+  @keyframes ko-cinematic-card-reduced {
+    from {
+      opacity: 0;
+      transform: translate(var(--play-target-x), var(--play-target-y))
+        scale(var(--play-target-scale));
+    }
+    to {
+      opacity: 1;
+      transform: translate(var(--play-target-x), var(--play-target-y))
+        scale(var(--play-target-scale));
+    }
+  }
+}

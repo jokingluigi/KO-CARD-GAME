@@ -14,6 +14,12 @@ export type CardPlayGeometry = {
 
 export type LandingImpactLevel = "LIGHT" | "NORMAL" | "HEAVY" | "VERY_HEAVY";
 
+/** Keep public spell art and rules fully inside narrow and landscape viewports. */
+export function techniqueStageGeometry(source: CardAnimationRect, viewport: {width:number;height:number}) {
+  const scale=Math.max(.2,Math.min(1.8,(viewport.width-40)/Math.max(1,source.width),(viewport.height*.66)/Math.max(1,source.height)));
+  return {scale,left:(viewport.width-source.width*scale)/2,top:(viewport.height-source.height*scale)/2};
+}
+
 export type CardPlayAnimationState =
   | {
       kind: "WRESTLER";

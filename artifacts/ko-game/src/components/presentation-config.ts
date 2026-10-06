@@ -25,5 +25,5 @@ export const PRESENTATION_CONFIG = {
 export type PresentationDamageTier = keyof typeof PRESENTATION_CONFIG.attackHitStopMs;
 
 export function prefersReducedMotion() {
-  return window.matchMedia?.("(prefers-reduced-motion: reduce)").matches ?? false;
+  return typeof window !== 'undefined' && (window.matchMedia?.("(prefers-reduced-motion: reduce)").matches ?? false);
 }

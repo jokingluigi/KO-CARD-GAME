@@ -1,37 +1,40 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import type { CSSProperties } from "react";
 import { CardRenderer } from "./card-renderer";
 import { getCardDefinition } from "@/game";
 import { getActiveCardKeywords } from "../game/cards/granted-text";
 import { getCardRuntimeRulesText } from "../lib/card-display-state";
 import type { AttackAnimationState } from "./attack-animation-utils";
-import { attackAnimationDuration } from "./attack-animation-utils";
+import { combatTimeline, attackFrames, attackBurstKind } from './battle-vfx-model';
+import { BattleVfx } from './battle-vfx';
 import { prefersReducedMotion } from "./presentation-config";
 
 export function AttackAnimation({
   animation,
   onImpact,
   onComplete,
+  hapticsEnabled = false,
 }: {
   animation: AttackAnimationState;
   onImpact: () => void;
   onComplete: () => void;
+  hapticsEnabled?: boolean;
 }) {
   const impactedRef = useRef(false);
   const completedRef = useRef(false);
   const onImpactRef = useRef(onImpact);
   const onCompleteRef = useRef(onComplete);
-  const impactTimerRef = useRef<number | null>(null);
+  const attackerRef = useRef<HTMLDivElement>(null);
+  const hapticsRef=useRef(hapticsEnabled);
+  hapticsRef.current=hapticsEnabled;
+  const [impacted,setImpacted] = useState(false);
   onImpactRef.current = onImpact;
   onCompleteRef.current = onComplete;
   const definition = getCardDefinition(animation.attacker.definitionId);
   const { source, target } = animation.geometry;
-  const duration = prefersReducedMotion()
-    ? 140
-    : attackAnimationDuration(animation.currentAttack) + (animation.finishingBlow ? 350 : 0);
-  const impactDelay = prefersReducedMotion()
-    ? 70
-    : Math.round(duration * 0.56);
+  const reduced = prefersReducedMotion();
+  const timeline = combatTimeline(animation.currentAttack,animation.damage,animation.finishingBlow,reduced);
+  const {duration,impact:impactDelay} = timeline;
   const dx = target.left + target.width / 2 - (source.left + source.width / 2);
   const dy = target.top + target.height / 2 - (source.top + source.height / 2);
   const style = {
@@ -47,27 +50,52 @@ export function AttackAnimation({
     "--attack-target-y": `${target.top}px`,
     "--attack-target-width": `${target.width}px`,
     "--attack-target-height": `${target.height}px`,
+    "--attack-travel-angle": `${Math.atan2(dy,dx)*180/Math.PI}deg`,
+    "--attack-travel-length": `${Math.hypot(dx,dy)}px`,
   } as CSSProperties;
 
   useEffect(() => {
     impactedRef.current = false;
     completedRef.current = false;
-    const impactTimer = window.setTimeout(() => {
+    setImpacted(false);
+    const impact = () => {
       if (impactedRef.current) return;
       impactedRef.current = true;
+      setImpacted(true);
+      if(hapticsRef.current && animation.damage>0 && !reduced && window.matchMedia?.('(pointer: coarse)').matches && typeof navigator.vibrate==='function') {
+        navigator.vibrate(animation.damage>=10?[36,28,55]:animation.damage>=6?35:12);
+      }
       onImpactRef.current();
-    }, impactDelay + 60);
-    impactTimerRef.current = impactTimer;
-    const completeTimer = window.setTimeout(() => {
+    };
+    const complete = () => {
       if (completedRef.current) return;
+      impact();
       completedRef.current = true;
       onCompleteRef.current();
-    }, duration + 100);
+    };
+    const element=attackerRef.current;
+    const motion=element?.animate?.(attackFrames(dx,dy,timeline,reduced),{duration,fill:'both',easing:'linear'});
+    const origin=performance.now();
+    let frame=0;
+    const tick=(now:number)=>{
+      // Read the same animation clock used by the moving card, including hit stop.
+      if(Number(motion?.currentTime ?? now-origin)>=impactDelay) impact();
+      if(!completedRef.current) frame=requestAnimationFrame(tick);
+    };
+    frame=requestAnimationFrame(tick);
+    if(motion) motion.onfinish=complete;
+    const completeTimer = window.setTimeout(complete,duration+120);
+    const hidden=()=>{if(document.hidden) complete();};
+    document.addEventListener('visibilitychange',hidden);
+    window.addEventListener('resize',complete);
     return () => {
-      if (impactTimerRef.current !== null) window.clearTimeout(impactTimerRef.current);
+      cancelAnimationFrame(frame);
+      if(motion){motion.onfinish=null;motion.cancel();}
+      document.removeEventListener('visibilitychange',hidden);
+      window.removeEventListener('resize',complete);
       window.clearTimeout(completeTimer);
     };
-  }, [duration, impactDelay]);
+  }, [animation.soundKey,duration,impactDelay,timeline.release,dx,dy,reduced]);
 
   const impactClass = `attack-animation--${animation.impactLevel.toLowerCase()}`;
   const rarity = definition?.rarity ?? "NORMAL";
@@ -75,11 +103,12 @@ export function AttackAnimation({
   return (
     <div
       aria-hidden="true"
-      className={`attack-animation ${impactClass} attack-animation--rarity-${rarity.toLowerCase()} ${animation.target && animation.damage >= animation.target.currentHealth + 3 ? 'attack-animation--overkill' : ''} ${animation.finishingBlow ? "attack-animation--finisher" : ""}`}
+      className={`attack-animation attack-animation--cinematic ${impacted?'attack-animation--impacted':''} ${impactClass} attack-animation--rarity-${rarity.toLowerCase()} ${animation.target && animation.damage >= animation.target.currentHealth + 3 ? 'attack-animation--overkill' : ''} ${animation.finishingBlow ? "attack-animation--finisher" : ""}`}
       style={style}
     >
       {animation.finishingBlow && <div className="attack-animation__finisher"><div className="attack-animation__finisher-slash" /><span>K.O.!</span></div>}
       <div className="attack-animation__windup" />
+      {!reduced && <div className="attack-animation__trail" />}
       <div className="attack-animation__target">
         {animation.targetKind === "CARD" && animation.target ? (
           <CardRenderer
@@ -100,20 +129,10 @@ export function AttackAnimation({
             className="h-full w-full"
           />
         ) : (
-          <div className="flex h-full w-full items-center justify-center rounded border-2 border-red-400/80 bg-red-950/80 text-[10px] font-black text-red-100 md:text-sm">
-            챔피언
-          </div>
+          <div className="attack-animation__champion-impact" />
         )}
       </div>
-      <div className="attack-animation__attacker" onAnimationStart={(event) => {
-        if (event.animationName !== 'ko-attack-card' || impactedRef.current) return;
-        if (impactTimerRef.current !== null) window.clearTimeout(impactTimerRef.current);
-        impactTimerRef.current = window.setTimeout(() => {
-          if (impactedRef.current) return;
-          impactedRef.current = true;
-          onImpactRef.current();
-        }, impactDelay);
-      }}>
+      <div className="attack-animation__attacker" ref={attackerRef}>
         <CardRenderer
           name={definition?.name ?? "공격 카드"}
           cardType={animation.attacker.cardType}
@@ -132,8 +151,12 @@ export function AttackAnimation({
           className="h-full w-full"
         />
       </div>
-      {animation.damage >= 3 && <div className="attack-animation__shockwave" />}
-      <div className="attack-animation__impact-flash" />
+      {impacted && <>
+        <BattleVfx kind={attackBurstKind(animation)} left={target.left+target.width/2} top={target.top+target.height/2}
+          strength={animation.damage} seed={animation.soundKey} duration={Math.min(500,duration-impactDelay)} />
+        {animation.damage>=3 && <div className="attack-animation__shockwave" />}
+        <div className="attack-animation__impact-flash" />
+      </>}
     </div>
   );
 }

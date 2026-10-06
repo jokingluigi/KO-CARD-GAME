@@ -2,6 +2,7 @@ import { useEffect, useRef } from "react";
 import type { CSSProperties } from "react";
 
 import type { PresentationCueDraft } from "./presentation-feedback-utils";
+import { BattleVfx } from './battle-vfx';
 
 export type PresentationCue = PresentationCueDraft & {
   left: number;
@@ -34,16 +35,22 @@ const toneClass: Record<PresentationCue["kind"], string> = {
 export function PresentationFeedback({
   cue,
   onComplete,
+  onStart,
 }: {
   cue: PresentationCue;
   onComplete: () => void;
+  onStart?: (cue: PresentationCue) => void;
 }) {
   const completedRef = useRef(false);
   const onCompleteRef = useRef(onComplete);
+  const onStartRef=useRef(onStart);
+  const startedCueRef=useRef('');
+  onStartRef.current=onStart;
   onCompleteRef.current = onComplete;
 
   useEffect(() => {
     completedRef.current = false;
+    if(startedCueRef.current!==cue.id){startedCueRef.current=cue.id;onStartRef.current?.(cue);}
     const timeoutId = window.setTimeout(() => {
       if (completedRef.current) return;
       completedRef.current = true;
@@ -61,9 +68,14 @@ export function PresentationFeedback({
   } as CSSProperties;
 
   return (
+    <>
+    {['HEAL','BUFF','GOLD','DESTROY','BLOCK','GENERATE'].includes(cue.kind) &&
+      <BattleVfx kind={cue.kind==='HEAL'||cue.kind==='BUFF'?'HEAL':cue.kind==='GOLD'?'GOLD':cue.kind==='BLOCK'?'BLOCK':cue.kind==='DESTROY'?'DESTROY':'MAGIC'}
+        left={cue.left} top={cue.top} strength={Math.abs(cue.value??3)} seed={cue.id} duration={cue.duration} />}
     <div
       aria-hidden="true"
       className={`presentation-feedback ${toneClass[cue.kind]}`}
+      data-impact={cue.kind==='DAMAGE' ? (cue.value??0)>=8?'heavy':'normal' : undefined}
       style={style}
       onAnimationEnd={(event) => {
         if (event.target !== event.currentTarget) return;
@@ -80,8 +92,9 @@ export function PresentationFeedback({
           <img src={cue.previousArtwork} alt="" className="presentation-feedback__morph-before" />
           <img src={cue.nextArtwork} alt="" className="presentation-feedback__morph-after" />
         </span>}
-      <span>{cue.label}</span>
+      <span className="presentation-feedback__label">{cue.label}</span>
       {cue.kind === "QUEST_PROGRESS" && cue.value ? <small>+{cue.value}</small> : null}
     </div>
+    </>
   );
 }

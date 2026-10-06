@@ -255,6 +255,23 @@ export function GameStatePreview({
   const handlePresentationQueueComplete = React.useCallback(() => {
     setPresentationQueue((current) => current.slice(1));
   }, []);
+  const startedDamageCueRef=React.useRef('');
+  const handlePresentationCueStart=React.useCallback((cue:PresentationCue)=>{
+    if(cue.kind!=='DAMAGE'||cue.combat) return;
+    const key=`${state.gameId}:${cue.id}`;
+    if(startedDamageCueRef.current===key) return;
+    startedDamageCueRef.current=key;
+    const damage=cue.value??0;
+    if(state.status!=='FINISHED'){
+      const sound=combatHitSound(damage);
+      if(sound) audioManager.playAttack(sound,86);
+    }
+    if(prefersReducedMotion()) return;
+    if(hapticsEnabled && window.matchMedia?.('(pointer: coarse)').matches && typeof navigator.vibrate==='function') navigator.vibrate(damage>=6?35:12);
+    setScreenShakeLevel(attackDamageImpactLevel(damage));
+    if(screenShakeTimerRef.current!==null) window.clearTimeout(screenShakeTimerRef.current);
+    screenShakeTimerRef.current=window.setTimeout(()=>{setScreenShakeLevel('NONE');screenShakeTimerRef.current=null;},220);
+  },[state.gameId,state.status,hapticsEnabled]);
 
   React.useEffect(() => {
     onPresentationBusyChange(Boolean(
@@ -381,31 +398,10 @@ export function GameStatePreview({
     previousCardStatsRef.current = currentCardStats;
     previousCardsRef.current = currentCards(state);
 
-    const largestDamage = newEvents.reduce(
-      (largest, event) => event.type === "DAMAGE_DEALT"
-        ? Math.max(largest, event.amount ?? 0)
-        : largest,
-      0,
-    );
     if (hapticsEnabled && typeof navigator.vibrate === 'function' &&
         window.matchMedia?.('(pointer: coarse)').matches && !prefersReducedMotion()) {
       if (newEvents.some((event) => event.type === 'CHAMPION_QUEST_COMPLETED')) navigator.vibrate([28, 40, 58]);
-      else if (largestDamage >= 6) navigator.vibrate(largestDamage >= 10 ? [36, 28, 55] : 35);
       else if (newEvents.some((event) => event.type === 'ENTER_FIELD')) navigator.vibrate(12);
-    }
-    if (largestDamage > 0 && !newEvents.some((event) => event.type === "ATTACK_DECLARED")) {
-      if (state.status !== 'FINISHED') {
-        const hitSound = combatHitSound(largestDamage);
-        if (hitSound) audioManager.playAttack(hitSound, 86);
-      }
-      setScreenShakeLevel(attackDamageImpactLevel(largestDamage));
-      if (screenShakeTimerRef.current !== null) {
-        window.clearTimeout(screenShakeTimerRef.current);
-      }
-      screenShakeTimerRef.current = window.setTimeout(() => {
-        setScreenShakeLevel("NONE");
-        screenShakeTimerRef.current = null;
-      }, 220);
     }
     const animations: CardPlayAnimationState[] = [];
     const leaveAnimations: CardLeaveAnimationState[] = [];
@@ -1558,7 +1554,7 @@ export function GameStatePreview({
           }}
         />
       )}
-      {cardLeaveAnimations.map((animation) => (
+      {(!attackAnimation || attackImpactTriggered) && !playAnimation && !generatedPlayAnimations.length && cardLeaveAnimations.map((animation) => (
         <CardLeaveAnimation
           key={animation.id}
           animation={animation}
@@ -1576,6 +1572,7 @@ export function GameStatePreview({
         <AttackAnimation
           animation={attackAnimation}
           onImpact={onAttackImpact}
+          hapticsEnabled={hapticsEnabled}
           onComplete={onAttackAnimationComplete}
         />
       )}
@@ -1595,7 +1592,7 @@ export function GameStatePreview({
         (!attackAnimation || attackImpactTriggered) && (
         presentationQueue[0].kind === "QUEST_COMPLETE"
           ? <QuestPresentation cue={presentationQueue[0]} state={state} viewerPlayerId={presentationPlayerId ?? me.id} onComplete={handlePresentationQueueComplete} />
-          : <PresentationFeedback cue={presentationQueue[0]} onComplete={handlePresentationQueueComplete} />
+          : <PresentationFeedback cue={presentationQueue[0]} onStart={handlePresentationCueStart} onComplete={handlePresentationQueueComplete} />
       )}
     </div>
     </AltInspectProvider>
