@@ -263,7 +263,7 @@ export function attack(
   );
   if (target.type === 'WRESTLER') {
     const selected = defendingPlayer?.board.find(c => c?.instanceId === target.cardInstanceId);
-    if (selected && hasEntryDefense(selected, state.turn)) return actionFailure(state, 'INVALID_ATTACK_TARGET', '등장한 턴의 방어 선수는 공격할 수 없습니다.');
+    if (selected && hasEntryDefense(selected, state.turn)) return actionFailure(state, 'INVALID_ATTACK_TARGET', '방어 중인 선수는 다음 자기 턴 시작까지 공격할 수 없습니다.');
   }
   const tauntCards =
     defendingPlayer?.board.filter(

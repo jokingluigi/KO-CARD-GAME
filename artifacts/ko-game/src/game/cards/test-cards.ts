@@ -1,3 +1,4 @@
+import { generateCardInstance } from './generation';
 import type { CardDefinition, CardInstance } from './types';
 
 export const TEST_CARD_DEFINITIONS: CardDefinition[] = [
@@ -106,33 +107,7 @@ export function createTestDeck(
   return Array.from({ length: 25 }, (_, index) => {
     const definition = deckDefinitions[index % deckDefinitions.length];
 
-    return {
-      instanceId: `${playerId}-card-${index + 1}`,
-      definitionId: definition.id,
-      cardType: definition.cardType ?? 'WRESTLER',
-      currentCost: definition.cost,
-      currentAttack: definition.attack,
-      currentHealth: definition.health,
-      maxHealth: definition.health,
-      boardSlot: null,
-      enteredThisTurn: false,
-      attacksUsedThisTurn: 0,
-      isGenerated: false,
-      isToken: definition.isToken,
-      isChampionToken: definition.isChampionToken,
-       entranceAudioAssetId: definition.entranceAudioAssetId,
-       entranceAudioUrl: definition.entranceAudioUrl,
-       entranceAudioVolume: definition.entranceAudioVolume,
-       entranceAudioEnabled: definition.entranceAudioEnabled,
-      keywords: [...definition.keywords],
-      abilities: [...definition.abilities],
-      isSilenced: false,
-      isSilenceImmune: false,
-      dodgeAvailable: definition.keywords.includes('DODGE'),
-      isStunned: false,
-      activeUsedThisTurn: false,
-      isDirectDeployedChampion: false,
-    };
+    return generateCardInstance(definition, { instanceId: `${playerId}-card-${index + 1}`, isGenerated: false });
   });
 }
 
@@ -146,33 +121,7 @@ export function createDeckFromDefinitionIds(
     if (!definition) {
       throw new Error(`덱에 필요한 CardDefinition을 찾을 수 없습니다: ${definitionId}`);
     }
-    return [{
-      instanceId: `${playerId}-card-${index + 1}`,
-      definitionId: definition.id,
-      cardType: definition.cardType ?? 'WRESTLER',
-      currentCost: definition.cost,
-      currentAttack: definition.attack,
-      currentHealth: definition.health,
-      maxHealth: definition.health,
-      boardSlot: null,
-      enteredThisTurn: false,
-      attacksUsedThisTurn: 0,
-      isGenerated: false,
-      isToken: definition.isToken,
-      isChampionToken: definition.isChampionToken,
-      entranceAudioAssetId: definition.entranceAudioAssetId,
-      entranceAudioUrl: definition.entranceAudioUrl,
-      entranceAudioVolume: definition.entranceAudioVolume,
-      entranceAudioEnabled: definition.entranceAudioEnabled,
-      keywords: [...definition.keywords],
-      abilities: [...definition.abilities],
-      isSilenced: false,
-      isSilenceImmune: false,
-      dodgeAvailable: definition.keywords.includes('DODGE'),
-      isStunned: false,
-      activeUsedThisTurn: false,
-      isDirectDeployedChampion: false,
-    } satisfies CardInstance];
+    return [generateCardInstance(definition, { instanceId: `${playerId}-card-${index + 1}`, isGenerated: false })];
   });
 }
 

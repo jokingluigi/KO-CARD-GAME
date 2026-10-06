@@ -39,6 +39,7 @@ function beginPlayerTurn(state: GameState, playerId: string): GameState {
                 ? {
                     ...card,
                     enteredThisTurn: false,
+                    entryDefenseActive: false,
                     attacksUsedThisTurn: 0,
                      activeUsedThisTurn: false,
                   }

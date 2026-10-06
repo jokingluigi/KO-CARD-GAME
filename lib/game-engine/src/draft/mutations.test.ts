@@ -141,6 +141,10 @@ test("mutation keywords execute existing armor, lifesteal, defense and regenerat
   );
   assert.equal(
     hasEntryDefense({ ...build("defense"), enteredOnTurn: 3 }, 4),
+    true,
+  );
+  assert.equal(
+    hasEntryDefense({ ...build("defense"), enteredOnTurn: 3 }, 5),
     false,
   );
   let s = createInitialGameState();
