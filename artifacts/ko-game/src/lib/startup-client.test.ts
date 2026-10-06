@@ -98,8 +98,8 @@ test('separate HTML script connects before the game module and is adopted withou
   });
   assert.deepEqual(calls, ['https://game.invalid/sub/api/server-status', 'https://game.invalid/sub/api/auth/me']);
   const runtime = globalThis as typeof globalThis & { window?: Window };
-  const originalWindow = runtime.window;
-  runtime.window = pageWindow;
+  const originalWindow = Object.getOwnPropertyDescriptor(runtime, 'window');
+  Object.defineProperty(runtime, 'window', { configurable: true, writable: true, value: pageWindow });
   globalThis.fetch = async () => { throw new Error('duplicate startup fetch'); };
   try {
     startServerConnection();
@@ -110,7 +110,7 @@ test('separate HTML script connects before the game module and is adopted withou
     assert.deepEqual(await manualRetry, status);
     assert.deepEqual(await fetchCurrentUser(), guest);
   } finally {
-    if (originalWindow) runtime.window = originalWindow;
+    if (originalWindow) Object.defineProperty(runtime, 'window', originalWindow);
     else Reflect.deleteProperty(runtime, 'window');
   }
 });

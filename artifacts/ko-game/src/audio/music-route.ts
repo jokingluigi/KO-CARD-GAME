@@ -1,7 +1,8 @@
-export type MusicContext = "NON_BATTLE" | "BATTLE";
+export type MusicContext = "NON_BATTLE" | "BATTLE" | "SILENT";
 
 export function musicContextForPath(pathname: string): MusicContext {
-  return pathname === "/ai-match" || pathname === "/tower" || pathname.startsWith("/online/match/") || pathname.startsWith("/admin/draft/match/") || pathname.startsWith("/draft/match/")
+  if (pathname === "/admin" || pathname.startsWith("/admin/")) return "SILENT";
+  return pathname === "/ai-match" || pathname === "/tower" || pathname.startsWith("/online/match/") || pathname.startsWith("/draft/match/")
     ? "BATTLE"
     : "NON_BATTLE";
 }
