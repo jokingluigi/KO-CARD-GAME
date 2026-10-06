@@ -5,7 +5,7 @@ import { getActiveCardKeywords } from '../game/cards/granted-text';
 
 export const KEYWORD_DESCRIPTIONS: Record<string, string> = {
   IMMUNE: '카드나 챔피언의 효과로 직접 지정할 수 없습니다.',
-  REGEN: '턴이 끝날 때 체력을 2 회복합니다. 최대 체력을 넘지 않습니다.',
+  REGEN: '양쪽 플레이어의 턴이 끝날 때마다 체력을 2 회복합니다. 기본 회복은 최대 체력을 넘지 않습니다.',
   ARMOR: '피해를 받을 때 설정된 아머 수치만큼 피해를 줄입니다. 최소 피해는 0입니다.',
   CONDITION: '설정된 사용 조건을 달성했을 때만 낼 수 있습니다.',
   DEFENSE: '등장 후 다음 자기 턴 시작까지 피해를 받지 않으며 공격 대상으로 지정할 수 없습니다.',
@@ -14,7 +14,7 @@ export const KEYWORD_DESCRIPTIONS: Record<string, string> = {
   SURPRISE: '등장한 턴에도 상대 선수 카드를 공격할 수 있습니다.',
   TAUNT: '상대는 가능한 경우 이 선수를 먼저 공격해야 합니다.',
   DODGE: '처음 받는 피해 1회를 완전히 무효화합니다.',
-  STUN: '기절한 동안 공격할 수 없습니다.',
+  STUN: '기절한 동안 공격할 수 없습니다. 기절한 선수의 자기 턴 종료 시 해제됩니다.',
   MULTI_STRIKE: '한 턴에 두 번 공격할 수 있습니다.',
   SILENCE: '카드의 키워드와 능력을 비활성화합니다.',
 };

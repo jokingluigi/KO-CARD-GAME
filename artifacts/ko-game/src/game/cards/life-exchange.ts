@@ -1,5 +1,8 @@
 import type { EffectScript, ScriptStep } from '@workspace/effect-registry';
 
+export const LIFE_EXCHANGE_OLD_TEXT = '아군 선수 1장과 상대 선수 1장을 선택하여 현재 HP를 서로 교환합니다. 기존 최대 HP 상한을 적용하며, 두 선수 모두 기절합니다.';
+export const LIFE_EXCHANGE_RULES_TEXT = '아군 선수 1장과 상대 선수 1장을 선택하여 현재 체력과 최대 체력을 각각 서로 교환합니다. 두 선수 모두 기절합니다.';
+
 /** Both current and maximum HP are captured before either selected wrestler changes. */
 export function lifeExchangeConfig(config: Record<string, unknown>): Record<string, unknown> {
   if (!Array.isArray(config.scripts)) return config;

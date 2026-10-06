@@ -1,5 +1,5 @@
 import { EPIC_TECHNIQUES } from './epic-techniques';
-import { lifeExchangeConfig } from './life-exchange';
+import { lifeExchangeConfig, LIFE_EXCHANGE_OLD_TEXT, LIFE_EXCHANGE_RULES_TEXT } from './life-exchange';
 import { newCardImplementation } from './new-card-effects';
 import { ZOMBIE_RULES } from '../engine/zombie-token';
 import type { CardAbility, CardEffect } from "../effects/types";
@@ -216,6 +216,9 @@ function normalizeAnywhereTargets<T>(value: T): T {
 }
 
 export function cardRecordToDefinition(card: PublishedCardRecord): CardDefinition {
+  if (card.id === 'epic-spell-life-exchange' && card.text === LIFE_EXCHANGE_OLD_TEXT) {
+    card = { ...card, text: LIFE_EXCHANGE_RULES_TEXT };
+  }
   if (card.id === 'epic-spell-feast') {
     const feast = EPIC_TECHNIQUES.find(entry => entry.id === card.id)!;
     card = { ...card, text: feast.text, effectId: feast.effectId, effectConfig: feast.effectConfig };

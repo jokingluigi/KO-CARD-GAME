@@ -718,7 +718,7 @@ export const RUNTIME_HANDLER_ACTIONS = ACTIONS;
 
 const triggerDescriptions: Record<Trigger, string> = {
   GAME_START: "초기 손패를 나누기 전에 덱 또는 손패에 있는 카드에서 각각 한 번 발동합니다.",
-  ENTER_FIELD: "선수가 어떤 정상 경로로든 필드에 들어올 때 발동합니다.", LEAVE_FIELD: "카드가 필드를 떠날 때 발동합니다.", SELF_RETIRE: "이 카드가 RETIRE로 필드를 떠날 때 발동합니다.", CARD_SUMMONED: "선수가 소환으로 필드에 들어올 때 아군 보드에서 발동합니다.", CARD_ENTERED: "아군 카드가 플레이, 소환 등으로 필드에 들어올 때 아군 보드에서 발동합니다.",
+  ENTER_FIELD: "선수를 손패에서 직접 내거나 챔피언을 특별 전개할 때 발동합니다. 일반 소환·부활에는 자동 발동하지 않습니다.", LEAVE_FIELD: "카드가 리타이어로 필드를 떠날 때 발동합니다. 파괴·제거에는 발동하지 않습니다.", SELF_RETIRE: "이 카드가 RETIRE로 필드를 떠날 때 발동합니다.", CARD_SUMMONED: "선수가 소환으로 필드에 들어올 때 아군 보드에서 발동합니다.", CARD_ENTERED: "아군 카드가 플레이, 소환 등으로 필드에 들어올 때 아군 보드에서 발동합니다.",
   ACTIVE: "액티브 능력을 사용할 때 발동합니다.", CARD_DRAWN: "카드가 덱에서 드로우될 때 발동합니다.", CARD_RETIRED: "아군 선수가 퇴장할 때 발동합니다.", FIRST_ATTACKED: "이 카드가 처음 공격받을 때 발동합니다.",
   SELF_ATTACK: "이 카드가 공격할 때 발동합니다.", OTHER_ALLY_ATTACK: "다른 아군 선수가 공격할 때 발동합니다.", ATTACK_SURVIVED: "적 선수를 공격하고 생존했을 때 발동합니다.", SELF_DAMAGED: "이 카드가 실제 피해를 받아 체력이 감소했을 때 발동합니다.", STAT_CHANGED: "효과로 스탯이 증가했을 때 발동합니다.", TECHNIQUE_CAST: "1G 이상 기본 비용의 기술을 손에서 사용할 때 발동합니다.",
   EXACT_ZERO_DAMAGE: "이 카드가 다른 선수의 체력을 정확히 0으로 만들 때 발동합니다.",
