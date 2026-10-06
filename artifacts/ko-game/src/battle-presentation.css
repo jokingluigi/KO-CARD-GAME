@@ -192,6 +192,24 @@
   font-size: clamp(1.8rem, 4vw, 3rem);
   font-variant-numeric: tabular-nums;
 }
+.presentation-feedback__effect-hit {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 64px;
+  height: 64px;
+  border: 3px solid #ffb080;
+  border-radius: 50%;
+  box-shadow: 0 0 12px #ff653580;
+  animation: ko-effect-hit 260ms ease-out both;
+}
+@keyframes ko-effect-hit {
+  from { opacity: 1; transform: translate(-50%, -50%) scale(.4); }
+  to { opacity: 0; transform: translate(-50%, -50%) scale(1.5); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .presentation-feedback__effect-hit { display: none; }
+}
 .presentation-feedback--damage[data-impact="heavy"] {
   color: #ffca99;
   font-size: clamp(2.4rem, 5vw, 3.8rem);

@@ -17,6 +17,10 @@ on:
       - artifacts/ko-game/src/components/card-detail-dialog.tsx
       - artifacts/ko-game/src/components/ui/dialog.tsx
       - artifacts/ko-game/src/pages/decks.tsx
+      - artifacts/ko-game/src/pages/home.tsx
+      - artifacts/ko-game/src/components/match-result-overlay.tsx
+      - artifacts/ko-game/src/index.css
+      - artifacts/api-server/src/lib/ai-match-quest-service*
       - artifacts/ko-game/src/lib/card-display-state.ts
       - artifacts/api-server/src/routes/admin.ts
       - artifacts/api-server/src/lib/structured-effects*
@@ -49,6 +53,8 @@ jobs:
       - run: pnpm install --frozen-lockfile --ignore-scripts
       - run: pnpm run build
       - name: Startup, auth, quest and database regressions
+        env:
+          DATABASE_URL: postgresql://unused:unused@127.0.0.1:1/unused
         run: >-
           node --import ./docs/qa/checkpoints/20261006/qa-loader.mjs --test --test-isolation=none
           artifacts/ko-game/src/lib/startup-client.test.ts
@@ -66,4 +72,5 @@ jobs:
           artifacts/ko-game/src/components/attack-animation-utils.test.ts
           artifacts/ko-game/src/components/card-play-animation-utils.test.ts
           artifacts/ko-game/src/components/presentation-feedback-utils.test.ts
+          artifacts/api-server/src/lib/ai-match-quest-service.test.ts
           lib/db/qa/awakening-http.test.ts

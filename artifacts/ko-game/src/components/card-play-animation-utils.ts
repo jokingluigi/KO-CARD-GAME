@@ -63,3 +63,11 @@ export function techniqueRevealRect(source: CardAnimationRect): CardAnimationRec
     height,
   };
 }
+
+/** A hidden hand is a row, so animate a portrait card centred in that row. */
+export function wrestlerPlayRect(source: CardAnimationRect): CardAnimationRect {
+  const width = Math.min(180, Math.max(72, source.height / (1484 / 1060)));
+  const height = width * (1484 / 1060);
+  return { left: source.left + (source.width - width) / 2,
+    top: source.top + (source.height - height) / 2, width, height };
+}

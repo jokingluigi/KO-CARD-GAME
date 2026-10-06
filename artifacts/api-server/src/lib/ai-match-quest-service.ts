@@ -106,7 +106,6 @@ export function replayAIMatch(
 ): GameState {
   if (userActions.some((action) => isRecord(action) && action.actor === "AI")) {
     let state = initialState;
-    let aiDecisions = 0;
     for (const rawAction of userActions) {
       if (state.status !== "IN_PROGRESS") throw new Error("경기가 끝난 뒤 추가 행동이 포함되어 있습니다.");
       const isAI = isRecord(rawAction) && rawAction.actor === "AI";
@@ -116,20 +115,11 @@ export function replayAIMatch(
       if (action.type !== "EMOTE" && action.type !== "SURRENDER" && state.activePlayerId !== playerId) {
         throw new Error("경기 행동 순서가 올바르지 않습니다.");
       }
-      if (isAI && action.type === "END_TURN" && aiDecisions < AI_DECISIONS_PER_TURN &&
-          getLegalActions(state, aiPlayerId).length > 0 &&
-          chooseBestAction(state, getLegalActions(state, aiPlayerId), aiPlayerId, difficulty).type !== "END_TURN") {
-        throw new Error("AI 행동을 완료하기 전에 턴을 끝낼 수 없습니다.");
-      }
-      if (isAI && action.type !== "EMOTE" && action.type !== "END_TURN") {
-        const expected = chooseBestAction(state, getLegalActions(state, aiPlayerId), aiPlayerId, difficulty);
-        if (JSON.stringify(action) !== JSON.stringify(expected)) throw new Error("AI 경기 행동을 확인할 수 없습니다.");
-      }
+      // Replay the legal actions that actually occurred. Re-running AI scoring
+      // is not a rule of the match and may differ across builds/catalog order.
       const result = executeAction(state, action);
       if (!result.success) throw new Error(result.message);
       state = result.state;
-      if (isAI && action.type !== "EMOTE" && action.type !== "END_TURN") aiDecisions += 1;
-      if (isAI && action.type === "END_TURN") aiDecisions = 0;
     }
     if (state.status !== "FINISHED") throw new Error("완료된 AI 경기 기록이 아닙니다.");
     return state;

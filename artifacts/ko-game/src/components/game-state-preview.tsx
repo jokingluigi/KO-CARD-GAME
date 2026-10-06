@@ -626,6 +626,9 @@ export function GameStatePreview({
         ...(player.id === state.players[0]?.id ? player.hand : []),
       ]).map(card => card.instanceId));
       const onceCues = cues.filter(cue => {
+        // These already update their HUD/quest bar or draw flight. Repeated
+        // cosmetic notices delayed damage feedback and lit up whole cards.
+        if (['GOLD', 'DRAW', 'QUEST_PROGRESS'].includes(cue.kind)) return false;
         if (!visibleStatFeedback(cue, visibleCardIds)) return false;
         if (cue.kind !== 'QUEST_COMPLETE') return true;
         const key = `${state.gameId}:${cue.playerId ?? ''}:${cue.championId ?? ''}`;

@@ -62,6 +62,12 @@ for (const [name, width, height, reduced] of [
       if (output && (name === "mobile" || name === "landscape"))
         await page.screenshot({ path: `${output}/${name}-spell.png` });
     }
+    if(action==='landing'&&!reduced) {
+      await page.locator('.card-play-animation__card').waitFor();
+      const ratio=await page.locator('.card-play-animation__card').evaluate(el=>el.offsetHeight/el.offsetWidth);
+      if(Math.abs(ratio-1484/1060)>.025) failures.push(`${name}:flattened wrestler ${ratio}`);
+      if(output&&name==='mobile') await page.screenshot({path:`${output}/mobile-wrestler.png`});
+    }
     if (output && action === "attack" && name === "desktop") {
       await page.waitForTimeout(330);
       await page.screenshot({ path: `${output}/desktop-attack.png` });
@@ -105,6 +111,21 @@ for (const [name, width, height, reduced] of [
     .getByTestId("counts")
     .filter({ hasText: "complete:10" })
     .waitFor({ timeout: 6000 });
+  await page.getByTestId('damage').click();
+  await page.locator('.presentation-feedback--damage').waitFor();
+  if(await page.locator('.presentation-feedback__label').textContent()!=='-6') failures.push(`${name}:missing effect damage amount`);
+  if(!reduced && await page.locator('.presentation-feedback__effect-hit').count()!==1) failures.push(`${name}:missing effect impact`);
+  if(output&&(name==='mobile'||name==='desktop')) {await page.waitForTimeout(100);await page.screenshot({path:`${output}/${name}-effect-damage.png`});}
+  await page.getByTestId('counts').filter({hasText:'complete:11'}).waitFor({timeout:6000});
+  const pulse=await page.evaluate(()=>{const el=document.createElement('div');el.className='presentation-card-pulse';document.body.append(el);const name=getComputedStyle(el).animationName;el.remove();return name;});
+  if(pulse!=='none') failures.push(`${name}:card still flashes ${pulse}`);
+  await page.getByTestId('reward').click();
+  await page.getByText('+200 크레딧 지급',{exact:true}).waitFor();
+  if(await page.getByRole('alert').count()) failures.push(`${name}:paid credits incorrectly shown as reward failure`);
+  await page.getByTestId('button-return-to-main-menu').click();
+  await page.getByTestId('reward-error').click();
+  await page.getByRole('alert').waitFor();
+  await page.getByTestId('button-return-to-main-menu').click();
   const active = await page
     .locator(
       ".attack-animation,.card-play-animation,.card-leave-animation,.presentation-feedback,.quest-presentation",
