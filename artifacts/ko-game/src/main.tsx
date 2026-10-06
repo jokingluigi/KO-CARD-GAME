@@ -5,6 +5,7 @@ import { ErrorBoundary } from '@/components/error-boundary';
 import { startAppInstallation } from '@/lib/install-app';
 
 import './index.css';
+import './battle-presentation.css';
 
 startAppInstallation();
 

@@ -1,4 +1,4 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import type { CSSProperties } from "react";
 
 import { CardRenderer } from "./card-renderer";
@@ -6,9 +6,10 @@ import { getCardDefinition } from "@/game";
 import { getActiveCardKeywords } from "../game/cards/granted-text";
 import { getCardRuntimeRulesText } from "../lib/card-display-state";
 import type { CardPlayAnimationState } from "./card-play-animation-utils";
-import { techniqueRevealRect } from "./card-play-animation-utils";
+import { techniqueRevealRect, techniqueStageGeometry } from "./card-play-animation-utils";
 import { PRESENTATION_CONFIG, prefersReducedMotion } from "./presentation-config";
 import { audioManager } from '../audio/audio-manager';
+import { BattleVfx } from './battle-vfx';
 
 export const TECHNIQUE_REVEAL_HOLD_MS = 1600;
 export const TECHNIQUE_REVEAL_TOTAL_MS = PRESENTATION_CONFIG.techniqueRevealMs;
@@ -34,6 +35,12 @@ export function CardPlayAnimation({
   viewerPlayerId?: string;
 }) {
   const completedRef = useRef(false);
+  const [viewport,setViewport]=useState(()=>({width:window.innerWidth,height:window.innerHeight}));
+  useEffect(()=>{
+    const resize=()=>setViewport({width:window.innerWidth,height:window.innerHeight});
+    window.addEventListener('resize',resize);
+    return()=>window.removeEventListener('resize',resize);
+  },[]);
   const onCompleteRef = useRef(onComplete);
   onCompleteRef.current = onComplete;
   const definition = getCardDefinition(animation.card.definitionId);
@@ -41,14 +48,16 @@ export function CardPlayAnimation({
     ? techniqueRevealRect(animation.geometry.source)
     : animation.geometry.source;
   const target = animation.kind === "WRESTLER" ? animation.geometry.target : undefined;
+  const reveal=techniqueStageGeometry(source,viewport);
+  const duration=animationDuration(animation);
   const targetScale = animation.kind === "TECHNIQUE"
-    ? Math.min(1.9, Math.max(1.45, (window.innerWidth - 32) / Math.max(source.width, 1)))
-    : target ? Math.max(0.75, target.width / Math.max(source.width, 1)) : 1;
+    ? reveal.scale
+    : target ? Math.min(target.width/Math.max(source.width,1),target.height/Math.max(source.height,1)) : 1;
   const targetLeft = animation.kind === "TECHNIQUE"
-    ? window.innerWidth / 2 - (source.width * targetScale) / 2
+    ? reveal.left
     : target?.left ?? window.innerWidth / 2 - source.width / 2;
   const targetTop = animation.kind === "TECHNIQUE"
-    ? window.innerHeight * 0.43 - (source.height * targetScale) / 2
+    ? reveal.top
     : target?.top ?? window.innerHeight / 2 - source.height / 2;
   const travelX = targetLeft - source.left;
   const travelY = targetTop - source.top;
@@ -62,14 +71,21 @@ export function CardPlayAnimation({
     "--play-target-scale": String(targetScale),
     "--play-source-width": `${source.width}px`,
     "--play-source-height": `${source.height}px`,
+    "--play-duration": `${duration}ms`,
+    "--play-stage-x": `${targetLeft+source.width*targetScale/2}px`,
+    "--play-stage-y": `${targetTop+source.height*targetScale/2}px`,
+    "--play-stage-width": `${source.width*targetScale}px`,
+    "--play-stage-height": `${source.height*targetScale}px`,
   } as CSSProperties;
 
   useEffect(() => {
     completedRef.current = false;
-    const legendary = animation.kind === 'WRESTLER' && getCardDefinition(animation.card.definitionId)?.rarity === 'LEGENDARY';
-    const impactId = legendary ? window.setTimeout(() => {
-      audioManager.playAttack(`${import.meta.env.BASE_URL}sfx/combat-hit-6-9.wav?v=1`, 68);
-    }, prefersReducedMotion() ? 0 : 700) : null;
+    const isUnit=animation.kind==='WRESTLER';
+    const weight=isUnit ? animation.impactLevel : 'LIGHT';
+    const impactId = isUnit ? window.setTimeout(() => {
+      const file=weight==='VERY_HEAVY'?'very-heavy':weight==='HEAVY'?'heavy':weight==='LIGHT'?'light':'normal';
+      audioManager.playImpactOverlay(`${import.meta.env.BASE_URL}sfx/impact-${file}.wav`,weight==='LIGHT'?28:45);
+    }, prefersReducedMotion() ? 70 : duration*.76) : null;
     const timeoutId = window.setTimeout(() => {
       if (completedRef.current) return;
       completedRef.current = true;
@@ -80,7 +96,7 @@ export function CardPlayAnimation({
 
   function complete(event: React.AnimationEvent<HTMLDivElement>) {
     if (event.target !== event.currentTarget ||
-        event.animationName !== (animation.kind === "TECHNIQUE" ? "ko-card-play-technique" : "ko-card-play-wrestler")) return;
+        ![animation.kind === "TECHNIQUE" ? "ko-card-play-technique" : "ko-card-play-wrestler",'ko-cinematic-card-reduced'].includes(event.animationName)) return;
     if (completedRef.current) return;
     completedRef.current = true;
     onCompleteRef.current();
@@ -100,6 +116,7 @@ export function CardPlayAnimation({
       {animation.kind === "TECHNIQUE" && (
         <>
           <div className="card-play-animation__dim" />
+          <div className="card-play-animation__sigil" />
           <p className="card-play-animation__label">
             {animation.playerId === undefined || animation.playerId === viewerPlayerId
               ? "주문 사용"
@@ -107,6 +124,10 @@ export function CardPlayAnimation({
           </p>
         </>
       )}
+      <BattleVfx kind={animation.kind==='TECHNIQUE'?'MAGIC':rarity==='LEGENDARY'||rarity==='CHAMPION'?'GOLD':'IMPACT'}
+        left={targetLeft+source.width*targetScale/2} top={targetTop+source.height*targetScale/2}
+        seed={`play:${animation.card.instanceId}`} strength={animation.kind==='TECHNIQUE'?5:animation.card.currentCost}
+        delay={prefersReducedMotion()?0:duration*(animation.kind==='TECHNIQUE' ? .28 : .76)} duration={animation.kind==='TECHNIQUE'?1500:Math.max(120,duration*.24)} />
       <div
         className="card-play-animation__card"
         onAnimationEnd={complete}

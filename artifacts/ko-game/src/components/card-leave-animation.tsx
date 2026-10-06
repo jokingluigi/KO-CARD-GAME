@@ -6,6 +6,7 @@ import { CardRenderer } from "./card-renderer";
 import { getActiveCardKeywords } from "../game/cards/granted-text";
 import { getCardRuntimeRulesText } from "../lib/card-display-state";
 import { PRESENTATION_CONFIG, prefersReducedMotion } from "./presentation-config";
+import { BattleVfx } from './battle-vfx';
 
 export type CardLeaveKind = "RETIRE" | "DESTROY" | "REMOVE";
 
@@ -64,6 +65,10 @@ export function CardLeaveAnimation({
   }, [animation.delay, animation.id, duration]);
 
   return (
+    <>
+    <BattleVfx kind={animation.kind==='DESTROY'?'DESTROY':animation.kind==='RETIRE'?'RETIRE':'MAGIC'}
+      left={animation.geometry.left+animation.geometry.width/2} top={animation.geometry.top+animation.geometry.height/2}
+      seed={animation.id} strength={animation.kind==='DESTROY'?8:3} delay={prefersReducedMotion()?0:animation.delay+duration*.25} duration={duration*.7} />
     <div
       aria-hidden="true"
       className={`card-leave-animation card-leave-animation--${animation.kind.toLowerCase()}`}
@@ -93,5 +98,6 @@ export function CardLeaveAnimation({
         className="h-full w-full"
       />
     </div>
+    </>
   );
 }
