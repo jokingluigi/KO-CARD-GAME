@@ -6,6 +6,8 @@ import {audioManager} from '@/audio/audio-manager';
 import {prefersReducedMotion} from './presentation-config';
 import {cameraLevel,cinematicDuration,emptyCinematicState,finishCinematic,offerCinematic,type CinematicRequest,type CinematicEvent} from './cinematic-policy';
 import './cinematic-presentation.css';
+import {ScreenImpactContext,useScreenImpactManager,ScreenImpactScene} from './screen-impact';
+import {specialImpact} from './screen-impact-policy';
 const noop=(_event:CinematicRequest)=>{};
 const CinematicContext=createContext<(event:CinematicRequest)=>void>(noop);
 export const useCinematic=()=>useContext(CinematicContext);
@@ -18,6 +20,9 @@ export function useCinematicEvent(event:CinematicRequest|null){
 export function CinematicProvider({children,speed='NORMAL'}:{children:ReactNode;speed?:'NORMAL'|'FAST'}){
  const [state,setState]=useState(emptyCinematicState);
  const container=useRef<HTMLDivElement>(null);
+ const cameraMotions=useRef<Animation[]>([]);
+ const cancelCamera=useCallback(()=>{cameraMotions.current.forEach(a=>a.cancel());cameraMotions.current=[];},[]);
+ const screen=useScreenImpactManager(container,cancelCamera);
  const request=useCallback((event:CinematicRequest)=>{
   setState(s=>offerCinematic(s,{...event,createdAt:performance.now(),duration:cinematicDuration(event,prefersReducedMotion(),speed,s.pending.length)}));
  },[speed]);
@@ -32,7 +37,7 @@ export function CinematicProvider({children,speed='NORMAL'}:{children:ReactNode;
  useEffect(()=>{
   if(!event)return;
   const motions:Animation[]=[];
-  if(!prefersReducedMotion()){
+  if(!prefersReducedMotion()&&!screen.api.isActive()){
    const level=cameraLevel(event),x=Math.max(-6,Math.min(6,((event.focus?.x??innerWidth/2)/innerWidth-.5)*level*3));
    const y=Math.max(-4,Math.min(4,((event.focus?.y??innerHeight/2)/innerHeight-.5)*level*2));
    const stage=container.current?.querySelector('.ko-game-stage');
@@ -44,13 +49,15 @@ export function CinematicProvider({children,speed='NORMAL'}:{children:ReactNode;
     }
    }
   }
+  cameraMotions.current=motions;
+  const special=['AWAKENING','BOSS','HIDDEN_BOSS'].includes(event.kind)?window.setTimeout(()=>screen.api.request({id:'special:'+event.id,profile:specialImpact(event.kind as 'AWAKENING'|'BOSS'|'HIDDEN_BOSS'),x:innerWidth/2,y:innerHeight*.4,radial:true,nearby:true}),Math.round(event.duration*.35)):null;
   if(cameraLevel(event)>=3)audioManager.duckForPresentation(event.kind==='FINISHER'?.4:.6,Math.min(650,event.duration));
   const finish=()=>setState(s=>finishCinematic(s,event.id,performance.now()));
   const fallback=window.setTimeout(finish,event.duration+80);
-  return()=>{clearTimeout(fallback);motions.forEach(m=>m.cancel());};
+  return()=>{clearTimeout(fallback);if(special!==null)clearTimeout(special);motions.forEach(m=>m.cancel());};
  },[event?.id]);
- return <CinematicContext.Provider value={request}><div ref={container} style={{display:'contents'}}>{children}</div>
- {event&&createPortal(<CinematicScene key={event.id} event={event} />,document.body)}</CinematicContext.Provider>;
+ return <ScreenImpactContext.Provider value={screen.api}><CinematicContext.Provider value={request}><div ref={container} style={{display:'contents'}}>{children}</div>
+ {event&&createPortal(<CinematicScene key={event.id} event={event} />,document.body)}{screen.impact&&createPortal(<ScreenImpactScene key={screen.impact.id} impact={screen.impact}/>,document.body)}</CinematicContext.Provider></ScreenImpactContext.Provider>;
 }
 export function CinematicScene({event}:{event:CinematicEvent}){
  const major=!['ATTACK','SUMMON'].includes(event.kind),level=cameraLevel(event);

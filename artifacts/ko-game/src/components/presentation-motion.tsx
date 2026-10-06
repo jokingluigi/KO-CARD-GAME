@@ -1,13 +1,10 @@
 import { useCallback, useEffect, useLayoutEffect, useRef, useState, type RefObject } from 'react';
 import { prefersReducedMotion } from './presentation-config';
-import { MOTION_EASING, strongerShake, type ShakeLevel } from './presentation-policy';
+import { MOTION_EASING } from './presentation-policy';
 
 /** One finite owner for element reactions and competing shake requests. */
 export function useBattleMotion() {
  const animations=useRef(new Map<HTMLElement,Animation>());
- const [shake,setShake]=useState<ShakeLevel>('NONE');
- const shakeUntil=useRef(0);const shakeLevel=useRef<ShakeLevel>('NONE');
- const timer=useRef<ReturnType<typeof setTimeout>|null>(null);
  const react=useCallback((element:HTMLElement|null|undefined,kind:'EFFECT'|'HIT'|'SILENCE'|'ZONE',strength=1)=>{
   if(!element||prefersReducedMotion()||!element.animate)return;
   animations.current.get(element)?.cancel();
@@ -19,16 +16,8 @@ export function useBattleMotion() {
   animations.current.set(element,animation);
   animation.onfinish=()=>{if(animations.current.get(element)===animation)animations.current.delete(element);};
  },[]);
- const requestShake=useCallback((level:ShakeLevel,duration=160)=>{
-  if(prefersReducedMotion())return;
-  const now=performance.now();
-  const chosen=now<shakeUntil.current?strongerShake(shakeLevel.current,level):level;
-  shakeLevel.current=chosen;shakeUntil.current=now+Math.min(250,Math.max(80,duration));setShake(chosen);
-  if(timer.current!==null)clearTimeout(timer.current);
-  timer.current=setTimeout(()=>{shakeLevel.current='NONE';setShake('NONE');timer.current=null;},Math.min(250,Math.max(80,duration)));
- },[]);
- useEffect(()=>()=>{for(const a of animations.current.values())a.cancel();animations.current.clear();if(timer.current!==null)clearTimeout(timer.current);},[]);
- return {react,requestShake,shake};
+ useEffect(()=>()=>{for(const a of animations.current.values())a.cancel();animations.current.clear();},[]);
+ return {react};
 }
 
 /** FLIP uses individual translate, preserving the selected card's own transform. */
