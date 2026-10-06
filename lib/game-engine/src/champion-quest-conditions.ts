@@ -1,6 +1,7 @@
 import type { GameState } from '../../../artifacts/ko-game/src/game/types/game-state';
 import type { GameEvent } from '../../../artifacts/ko-game/src/game/events/types';
 import { questEventRegistry } from './quest-conditions';
+import { matchTurnNumber } from './rules';
 
 export type ChampionQuestCondition =
   | { type: 'EVENT'; event: string; owner: 'SELF' | 'ENEMY'; required: number; cardType?: 'WRESTLER' | 'TECHNIQUE' }
@@ -27,7 +28,7 @@ export function evaluateChampionQuestCondition(condition: ChampionQuestCondition
       const results = node.conditions.map((child, index) => visit(child, `${path}.${index}`));
       return node.type === 'ALL' ? results.every(Boolean) : results.some(Boolean);
     }
-    if (node.type === 'TURN') return state.turn >= node.turn;
+    if (node.type === 'TURN') return matchTurnNumber(state.turn) >= node.turn;
     if (node.type === 'HEALTH') {
       const player = state.players.find(p => node.owner === 'SELF' ? p.id === playerId : p.id !== playerId);
       if (!player) return false;

@@ -34,16 +34,16 @@ test('both owned and implicit decks preserve published runtime rules, armor, dod
  const conditional={...unit,id:'deck-condition',keywords:['CONDITION','ARMOR','DODGE'] as CardDefinition['keywords'],effectConfig:{playCondition:{type:'TURN',turn:5},armor:2,dodgeCharges:3}};
  for(const factory of [()=>createDeckFromDefinitionIds('player-1',[conditional.id],[conditional]),()=>createTestDeck('player-1',[conditional])]){
   const s=createInitialGameState();s.status='IN_PROGRESS';s.activePlayerId='player-1';s.turn=3;s.cardPool=[conditional];s.players[0].currentGold=100;s.players[0].hand=[factory()[0]];
-  assert.equal(play(s).success,false);s.turn=5;const r=play(s);assert.ok(r.success);const c=r.state.players[0].board[0]!;assert.equal(c.armor,2);assert.equal(c.dodgeCharges,3);
+  assert.equal(play(s).success,false);s.turn=9;const r=play(s);assert.ok(r.success);const c=r.state.players[0].board[0]!;assert.equal(c.armor,2);assert.equal(c.dodgeCharges,3);
  }
 });
-test('owned-deck vampire entrance deals actual damage and gains attack, including armor/defense exclusions',()=>{
+test('owned-deck vampire effect bypasses armor but excludes defense from actual damage and attack gain',()=>{
  const {state,definition,source}=setup('뱀파이어 왕자 MPG');
  assert.equal(source.contentRule,'뱀파이어 왕자 MPG');
  state.players[1].board=[enemy('ordinary',{currentHealth:1}),enemy('armor',{boardSlot:1,keywords:['ARMOR'],armor:1}),enemy('defense',{boardSlot:2,keywords:['DEFENSE'],entryDefenseActive:true}),enemy('ordinary2',{boardSlot:3})];
  const result=play(state);assert.ok(result.success);
- const after=result.state;assert.equal(after.players[0].board[0]!.currentAttack,definition.attack+2);
- assert.equal(after.players[1].board[0],null);assert.equal(after.players[1].board[1]!.currentHealth,8);assert.equal(after.players[1].board[2]!.currentHealth,8);assert.equal(after.players[1].board[3]!.currentHealth,7);
+ const after=result.state;assert.equal(after.players[0].board[0]!.currentAttack,definition.attack+3);
+ assert.equal(after.players[1].board[0],null);assert.equal(after.players[1].board[1]!.currentHealth,7);assert.equal(after.players[1].board[2]!.currentHealth,8);assert.equal(after.players[1].board[3]!.currentHealth,7);
  assert.equal(after.players[0].board[0]!.baseAttack,definition.attack);
 });
 test('owned-deck Hillbil heals itself after causally retiring an enemy through the dispatcher',()=>{

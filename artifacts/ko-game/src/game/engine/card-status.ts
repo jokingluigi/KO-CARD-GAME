@@ -92,6 +92,9 @@ export function useActiveAbility(
       '이번 턴에는 이미 액티브 능력을 사용했습니다.',
     );
   }
+  if (card.enteredThisTurn || card.enteredOnTurn === state.turn) {
+    return actionFailure(state, 'SUMMONED_THIS_TURN', '등장한 턴에는 액티브 능력을 사용할 수 없습니다. 다음 자기 턴부터 사용할 수 있습니다.');
+  }
 
   const active = getActiveAbility(card)!;
   if (hasMandatoryPlayerChoice(state, playerId, card, active.effects)) {
@@ -123,6 +126,7 @@ export function canUseActiveAbility(
   );
   return Boolean(
     card &&
+      !card.enteredThisTurn && card.enteredOnTurn !== state.turn &&
       !card.activeUsedThisTurn &&
       getActiveAbility(card),
   );

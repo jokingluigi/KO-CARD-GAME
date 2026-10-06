@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { evaluateChampionQuestCondition, validChampionQuestCondition } from './champion-quest-conditions';
 import { createInitialGameState } from './index';
-const state = () => ({...createInitialGameState(),turn:5});
+const state = () => ({...createInitialGameState(),turn:9});
 test('turn and health thresholds use current match state and distinguish players',()=>{
  const s=state();s.players[0]!.health=10;s.players[1]!.health=20;
  assert.equal(evaluateChampionQuestCondition({type:'TURN',turn:5},s,s.players[0]!.id,[]).completed,true);
@@ -15,7 +15,7 @@ test('AND accumulates independent event leaves even when another branch is false
  const condition={type:'ALL' as const,conditions:[{type:'EVENT' as const,event:'CARD_PLAYED',owner:'SELF' as const,required:2},{type:'TURN' as const,turn:6}]};
  const first=evaluateChampionQuestCondition(condition,s,id,[{type:'CARD_PLAYED',playerId:id}]);
  const second=evaluateChampionQuestCondition(condition,s,id,[{type:'CARD_PLAYED',playerId:id}],first.counts);
- assert.equal(second.completed,false);s.turn=6;
+ assert.equal(second.completed,false);s.turn=11;
  assert.equal(evaluateChampionQuestCondition(condition,s,id,[],second.counts).completed,true);
  assert.equal(evaluateChampionQuestCondition({...condition,type:'ANY'},s,id,[]).completed,true);
 });

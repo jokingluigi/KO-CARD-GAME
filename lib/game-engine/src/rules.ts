@@ -2,6 +2,11 @@
 export const DECK_SIZE = 25 as const;
 export const MAX_LEGENDARY_CARDS = 3 as const;
 
+/** One match turn contains both players' consecutive action turns. */
+export function matchTurnNumber(actionTurn: number): number {
+  return Math.max(1, Math.ceil(actionTurn / 2));
+}
+
 export function validateDeckCounts(input: {
   cardCount: number;
   legendaryCount: number;
