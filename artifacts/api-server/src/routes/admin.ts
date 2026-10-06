@@ -103,7 +103,7 @@ const CARD_KEYWORDS = [
   "SURPRISE",
   "TAUNT",
   "DODGE",
-  "MULTI_STRIKE", "IMMUNE", "REGEN", "ARMOR", "CONDITION", "DEFENSE", "LIFESTEAL", "COUNTDOWN",
+  "MULTI_STRIKE", "IMMUNE", "REGEN", "ARMOR", "CONDITION", "DEFENSE", "LIFESTEAL", "COUNTDOWN", "WANTED",
 ] as const;
 const IMAGE_DISPLAY_MODES = ["COVER", "CONTAIN", "CUSTOM"] as const;
 const GAME_MEDIA_TYPES = [
@@ -3277,7 +3277,7 @@ router.post("/cards/:id/apply-mechanic-request", async (request, response): Prom
       if (!decision.ok) throw new Error(decision.reason);
       const {effects: _oldEffects, scripts: _oldScripts, ...keywordSettings} = card.effectConfig;
       const effectConfig = {...keywordSettings,...decision.values.effectConfig};
-      const keywords = validation.analysis.keywords.includes('COUNTDOWN') ? [...new Set([...card.keywords,'COUNTDOWN'])] : card.keywords;
+      const keywords = [...new Set([...card.keywords, ...validation.analysis.keywords])];
       if (!validCountdownCardSettings(card.cardType,keywords,effectConfig)) throw new Error('REVALIDATION_FAILED');
       const [updatedCard] = await tx.update(cardsTable).set({
         text: decision.values.text,

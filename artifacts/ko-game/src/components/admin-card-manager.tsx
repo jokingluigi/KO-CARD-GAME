@@ -46,7 +46,7 @@ type CardKeyword =
   | "SURPRISE"
   | "TAUNT"
   | "DODGE"
-  | "MULTI_STRIKE" | "IMMUNE" | "REGEN" | "ARMOR" | "CONDITION" | "DEFENSE" | "LIFESTEAL" | "COUNTDOWN";
+  | "MULTI_STRIKE" | "IMMUNE" | "REGEN" | "ARMOR" | "CONDITION" | "DEFENSE" | "LIFESTEAL" | "COUNTDOWN" | "WANTED";
 
 type CardRecord = {
   id: string;
@@ -149,10 +149,11 @@ const KEYWORDS: CardKeyword[] = [
   "SURPRISE",
   "TAUNT",
   "DODGE",
-  "MULTI_STRIKE", "IMMUNE", "REGEN", "ARMOR", "CONDITION", "DEFENSE", "LIFESTEAL", "COUNTDOWN",
+  "MULTI_STRIKE", "IMMUNE", "REGEN", "ARMOR", "CONDITION", "DEFENSE", "LIFESTEAL", "COUNTDOWN", "WANTED",
 ];
 
 const KEYWORD_LABELS: Record<CardKeyword, string> = {
+  WANTED: '수배',
   COUNTDOWN: '카운트다운', IMMUNE: '면역', REGEN: '치유', ARMOR: '아머', CONDITION: '조건', DEFENSE: '방어', LIFESTEAL: '흡혈',
 
   RUSH: "러쉬",
