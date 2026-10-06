@@ -2,6 +2,8 @@ name: Startup and awakening registration
 on:
   pull_request:
     paths:
+      - artifacts/ko-game/**
+      - docs/qa/entry-browser.mjs
       - artifacts/ko-game/src/game/**
       - artifacts/ko-game/src/components/*animation*
       - artifacts/ko-game/src/components/battle-vfx*
@@ -58,6 +60,8 @@ jobs:
         run: >-
           node --import ./docs/qa/checkpoints/20261006/qa-loader.mjs --test --test-isolation=none
           artifacts/ko-game/src/lib/startup-client.test.ts
+          artifacts/ko-game/src/lib/entry-state.test.ts
+          artifacts/api-server/src/lib/maintenance.test.ts
           artifacts/ko-game/src/lib/auth-client.test.ts
           artifacts/ko-game/src/audio/music-route.test.ts
           artifacts/ko-game/src/audio/audio-manager.test.ts
@@ -76,3 +80,20 @@ jobs:
           artifacts/ko-game/src/components/presentation-event-feedback.test.ts
           artifacts/api-server/src/lib/ai-match-quest-service.test.ts
           lib/db/qa/awakening-http.test.ts
+
+      - name: First-entry browser regression guard
+        env:
+          KO_QA_ORIGIN: http://127.0.0.1:4173
+          PORT: '4173'
+          BASE_PATH: /
+        run: |
+          npm install --no-save --prefix "$RUNNER_TEMP/ko-entry-qa" playwright@1.62.1
+          "$RUNNER_TEMP/ko-entry-qa/node_modules/.bin/playwright" install --with-deps chromium
+          pnpm --filter @workspace/ko-game exec vite preview --config vite.config.ts --port 4173 --host 127.0.0.1 > "$RUNNER_TEMP/ko-entry-preview.log" 2>&1 &
+          preview_pid=$!
+          trap 'kill "$preview_pid" 2>/dev/null || true' EXIT
+          for attempt in $(seq 1 30); do
+            if curl --fail --silent "$KO_QA_ORIGIN/" > /dev/null; then break; fi
+            sleep 1
+          done
+          KO_QA_PLAYWRIGHT="$RUNNER_TEMP/ko-entry-qa/node_modules/playwright/index.mjs" node docs/qa/entry-browser.mjs

@@ -7,7 +7,7 @@ export function AuthLoading() {
     <main className="ko-auth-screen flex min-h-screen items-center justify-center px-5 text-white">
       <div className="ko-auth-loading text-center">
         <p className="font-display text-xs font-bold tracking-[0.45em] text-amber-400">KO</p>
-        <p className="mt-4 text-xs font-bold tracking-[0.2em] text-neutral-500">서버 연결 중 · 잠시만 기다려 주세요</p>
+        <p className="mt-4 text-xs font-bold tracking-[0.2em] text-neutral-500">CARD BATTLE</p>
       </div>
     </main>
   );
@@ -31,7 +31,7 @@ export function AuthRecovery({ message, onRetry }: { message?: string; onRetry: 
   );
 }
 
-export function AuthPage({ onAuthenticated, loginOnly = false }: { onAuthenticated: (user: AuthUser) => void; loginOnly?: boolean }) {
+export function AuthPage({ onAuthenticated, loginOnly = false, recoveryMessage, onRetry }: { onAuthenticated: (user: AuthUser) => void; loginOnly?: boolean; recoveryMessage?: string | null; onRetry?: () => void }) {
   const [mode, setMode] = useState<"login" | "register">("login");
   const [email, setEmail] = useState("");
   const [nickname, setNickname] = useState("");
@@ -91,6 +91,7 @@ export function AuthPage({ onAuthenticated, loginOnly = false }: { onAuthenticat
         </div>
 
         {loginOnly && <p className="mb-4 text-sm text-amber-300">서버 점검 중에는 관리자 계정만 로그인할 수 있습니다.</p>}
+        {recoveryMessage && <div role="status" className="mb-4 text-sm text-neutral-400"><p>{recoveryMessage}</p>{onRetry && <button type="button" onClick={onRetry} className="mt-2 text-amber-400">다시 확인</button>}</div>}
         <form className="space-y-4" onSubmit={handleSubmit}>
           <label className="ko-auth-field">
             <span>이메일</span>
