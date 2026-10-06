@@ -330,7 +330,7 @@ export function cardRecordToDefinition(card: PublishedCardRecord): CardDefinitio
 
 export async function fetchMinionACardDefinitions(): Promise<CardDefinition[]> {
   const response = await fetch(`${import.meta.env.BASE_URL.replace(/\/$/, '')}/api/minion-a/cards`, { credentials: 'include' });
-  if (!response.ok) throw new Error('미니언 A의 전체 카드 목록을 불러오지 못했습니다.');
+  if (!response.ok) throw new Error('완전 무작위 효과의 전체 카드 목록을 불러오지 못했습니다.');
   const body = await response.json();
   if (!Array.isArray(body.definitions)) throw new Error('전체 카드 목록 형식이 올바르지 않습니다.');
   return body.definitions;

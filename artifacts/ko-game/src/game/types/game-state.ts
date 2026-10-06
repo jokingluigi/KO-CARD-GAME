@@ -80,7 +80,7 @@ export interface GameState {
   gameId: string;
   /** Seed used by deterministic random effect resolution. */
   randomSeed?: number;
-  /** Published definitions available to random generation effects. */
+  /** Complete effect catalog; STANDARD random filters public non-token cards. */
   cardPool?: CardDefinition[];
   /** Complete validated catalog, used only by Minion A; serialized with the match. */
   minionACardPool?: CardDefinition[];

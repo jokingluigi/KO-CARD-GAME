@@ -384,7 +384,7 @@ export default function Home() {
         isAdminSource ? fetchAiTestCardDefinitions() : fetchPublishedCardDefinitions(),
         isAdminSource ? fetchAiTestChampions() : fetchPublishedChampions(),
         fetchGameMedia(),
-        fetchMinionACardDefinitions().catch(() => []),
+        fetchMinionACardDefinitions(),
       ]).then(([decks, aiDeckResult, definitions, champions, media, minionACardPool]) => {
         if (cancelled) return;
         setAiDecks(decks);
@@ -419,7 +419,8 @@ export default function Home() {
           return (await response.json()) as { card: Parameters<typeof cardRecordToDefinition>[0]; relatedCards?: Array<Parameters<typeof cardRecordToDefinition>[0]> };
         }),
         fetchGameMedia(),
-      ]).then(([{ card, relatedCards }, media]) => {
+        fetchMinionACardDefinitions(),
+      ]).then(([{ card, relatedCards }, media, fullCatalog]) => {
           if (cancelled) return;
           const definition = cardRecordToDefinition(card);
           const relatedDefinitions = (relatedCards ?? []).map(cardRecordToDefinition);
@@ -432,9 +433,9 @@ export default function Home() {
                 Array.from({ length: 25 }, () => filler.id),
               ])
             : createInitialGameState(undefined, [definition], testChampions);
-          testState.cardPool = [...(testState.cardPool ?? []), ...relatedDefinitions.filter((entry) => !testState.cardPool?.some((existing) => existing.id === entry.id))];
+          testState.cardPool = [...new Map([...fullCatalog, ...relatedDefinitions, ...(testState.cardPool ?? [])].map(entry => [entry.id, entry])).values()];
           setMediaCatalog(media);
-          setRuntimeCardDefinitions([definition, ...(isTechnique ? [filler] : []), ...relatedDefinitions]);
+          setRuntimeCardDefinitions(testState.cardPool);
           preloadMatchAssets([definition], []);
           let started = startGame(testState, undefined, media);
           if (isTechnique || definition.isToken || definition.isChampionToken) {
@@ -549,7 +550,7 @@ export default function Home() {
     }
     Promise.all([
       fetchPublishedWrestlerCards(),
-      fetchMinionACardDefinitions().catch(() => []),
+      fetchMinionACardDefinitions(),
       fetchPublishedCardDefinitions(),
       fetchPublishedChampions(),
       fetchGameMedia(),

@@ -51,6 +51,12 @@ import {
   removeGrantedCardText,
 } from '../cards/granted-text';
 
+function eligibleStateRandomCard(state: GameState, card: CardInstance, scope?: import('@workspace/effect-registry').RandomScope): boolean {
+  const definition = state.cardPool?.find(item => item.id === card.definitionId)
+    ?? state.minionACardPool?.find(item => item.id === card.definitionId);
+  return isEligibleForRandomPool({ ...card, status: definition?.status ?? card.status }, scope);
+}
+
 /** The single authoritative target resolver.  UI must only display these ids. */
 export function getValidTargets(
   state: GameState,
@@ -96,7 +102,7 @@ export function getValidTargets(
       if (target.filter?.attack && !scriptCompare(card.currentAttack, target.filter.attack.compare, target.filter.attack.value)) return false;
       if (target.filter?.health && !scriptCompare(card.currentHealth, target.filter.health.compare, target.filter.health.value)) return false;
       if (!matchesStateCardTagFilter(state, card, target.filter)) return false;
-      if (target.selection === 'RANDOM' && !isEligibleForRandomPool(card, target.randomScope)) return false;
+      if (target.selection === 'RANDOM' && !eligibleStateRandomCard(state, card, target.randomScope)) return false;
       if (target.selection === 'SELF' && card.instanceId !== sourceCard.instanceId) return false;
       if (target.selection === 'PLAYER_CHOICE' && card.instanceId === sourceCard.instanceId) return false;
       // Directly deployed champion tokens remain damageable, but not silence,
@@ -207,6 +213,7 @@ function scriptTargetCards(
       : playerId))].filter((player): player is GameState['players'][number] => Boolean(player));
   const zones = scriptZones(target);
   const candidates = owners.flatMap((owner) => cardsInZones(owner, zones)).filter((card) => {
+    if (target.selection === 'RANDOM' && !eligibleStateRandomCard(state, card, target.randomScope)) return false;
     if (hasNewCardRule(sourceCard, '태그 체인지')) {
       const owner = state.players.find(player => player.id === playerId);
       if (zones.includes('BOARD') && !owner?.hand.some(hand => hand.cardType === 'WRESTLER' && hand.currentCost <= card.currentCost && !getActiveCardKeywords(hand).includes('IMMUNE'))) return false;
@@ -260,7 +267,7 @@ function scriptTargetCards(
   }
   if (selection === 'RANDOM') {
     return shuffle(
-      taken.filter((card) => isEligibleForRandomPool(card, target.randomScope)),
+      taken,
       createDeterministicRandom(JSON.stringify({
         seed: state.randomSeed ?? 0,
         events: state.events.length,
@@ -359,6 +366,7 @@ function scriptEffectTarget(
         filter: target.filter,
         selection: 'SAME_TARGET',
         count: selectedIds?.length ?? target.count ?? 1,
+        randomScope: target.randomScope,
       },
       selectedIds,
     };
@@ -1184,6 +1192,7 @@ function definitionsFromState(state: GameState): CardDefinition[] {
       rulesText: '',
       isToken: card.isToken,
       isChampionToken: card.isChampionToken,
+      status: card.status,
       keywords: [...card.keywords],
       abilities: [...card.abilities],
       tags: card.tags ? [...card.tags] : [],
@@ -1209,11 +1218,11 @@ function containsGrantAction(value: unknown): boolean {
   return Object.values(record).some(containsGrantAction);
 }
 
-function randomTextDonorCandidates(state: GameState): CardDefinition[] {
+function randomTextDonorCandidates(state: GameState, scope: import('@workspace/effect-registry').RandomScope = 'STANDARD'): CardDefinition[] {
   return (state.cardPool ?? [])
     .filter((definition) =>
       definition.cardType === 'WRESTLER' &&
-      (definition.status ?? 'PUBLISHED') === 'PUBLISHED' &&
+      isEligibleForRandomPool(definition, scope) &&
       (definition.keywords.length > 0 || definition.abilities.length > 0) &&
       !containsGrantAction(definition.abilities),
     )
@@ -1227,7 +1236,7 @@ function grantRandomCardText(
   targets: readonly CardInstance[],
   effect: Extract<CardEffect, { type: 'STRUCTURED' }>,
 ): GameState {
-  const donors = randomTextDonorCandidates(state);
+  const donors = randomTextDonorCandidates(state, effect.target?.randomScope);
   if (!donors.length) return state;
   const random = createDeterministicRandom(JSON.stringify({
     seed: state.randomSeed ?? 0,
@@ -2449,7 +2458,7 @@ export function applyEffect(
     });
     const scopedCandidates = sortAndTakeTargetCards(eligibleCandidates, target);
     const randomCandidates = scopedCandidates.filter((card) =>
-      target.selection !== 'RANDOM' || isEligibleForRandomPool(card, target.randomScope),
+      target.selection !== 'RANDOM' || eligibleStateRandomCard(state, card, target.randomScope),
     );
     const targets = target.selection === 'SELF'
       ? scopedCandidates.filter((card) => card.instanceId === sourceCard.instanceId)

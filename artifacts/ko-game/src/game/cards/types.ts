@@ -131,6 +131,8 @@ export interface CardDefinition {
 }
 
 export interface CardInstance {
+  /** Original definition publication state, preserved across game zones. */
+  status?: CardDefinition['status'];
   draftMutation?: import("./draft-mutation").DraftMutation;
   draftCatalogBase?: { cost: number; attack: number; health: number; keywords: CardKeyword[]; armor: number };
   /** Tags granted by an effect; printed catalog tags are never rewritten. */
