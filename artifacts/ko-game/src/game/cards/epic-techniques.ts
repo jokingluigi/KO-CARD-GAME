@@ -1,4 +1,5 @@
 import type { PublishedCardRecord } from './published-cards';
+import { LIFE_EXCHANGE_RULES_TEXT } from './life-exchange';
 
 /** Additive catalog, installed as drafts for admin testing before publication. */
 export const EPIC_TECHNIQUES: PublishedCardRecord[] = [
@@ -311,7 +312,7 @@ export const EPIC_TECHNIQUES: PublishedCardRecord[] = [
     "cost": 4,
     "attack": 0,
     "health": 0,
-    "text": "아군 선수 1장과 상대 선수 1장을 선택하여 현재 HP를 서로 교환합니다. 기존 최대 HP 상한을 적용하며, 두 선수 모두 기절합니다.",
+    "text": LIFE_EXCHANGE_RULES_TEXT,
     "keywords": [],
     "tags": [],
     "isToken": false,
