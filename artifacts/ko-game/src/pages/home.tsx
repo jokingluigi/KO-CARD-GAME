@@ -49,7 +49,7 @@ import {
 import { GameStatePreview } from '@/components/game-state-preview';
 import { MatchResultOverlay } from '@/components/match-result-overlay';
 import { MainMenu } from '@/components/main-menu';
-import { AuthLoading, AuthPage, AuthRecovery } from '@/components/auth-page';
+import { AuthPage } from '@/components/auth-page';
 import { AuthRequestError, fetchCurrentUser, logout, type AuthUser } from '@/lib/auth-client';
 import { audioManager } from '@/audio/audio-manager';
 import { combatHitSound } from '@/audio/combat-hit-sound';
@@ -297,7 +297,7 @@ export default function Home() {
     setAuthError(null);
     void (async () => {
       // A cold server can take longer than several request timeouts to wake.
-      // Keep the loading screen active and retry transient failures until it responds.
+      // Restore the session in the background while the entry form remains usable.
       for (let attempt = 0; generation === authRequestGeneration.current; attempt += 1) {
         try {
           const result = await fetchCurrentUser();
@@ -1403,18 +1403,14 @@ export default function Home() {
     setMatchReady(false);
   }
 
-  if (authStatus === 'loading') {
-    return <AuthLoading />;
-  }
-
-  if (authStatus === 'error') {
-    return <AuthRecovery message={authError ?? undefined} onRetry={checkAuthentication} />;
-  }
-
-  if (authStatus === 'unauthenticated') {
+  if (authStatus !== 'authenticated') {
     return (
       <AuthPage
+        recoveryMessage={authError}
+        onRetry={checkAuthentication}
         onAuthenticated={(user) => {
+          // A late pre-login response must never replace the successful login.
+          authRequestGeneration.current += 1;
           setAuthUser(user);
           setAuthError(null);
           setAuthStatus('authenticated');
