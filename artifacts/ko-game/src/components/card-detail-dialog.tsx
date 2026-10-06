@@ -1,5 +1,6 @@
 import { useEffect, useState, type ReactNode } from "react";
 import { CardRenderer } from "@/components/card-renderer";
+import { CardRulesText } from "@/components/card-rules-text";
 import { FullCardArtwork } from "@/components/full-card-artwork";
 import { CardTagExplorerDialog } from "@/components/card-tag-explorer-dialog";
 import {
@@ -67,6 +68,7 @@ export function CardDetailDialog({
     <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogContent
         overlayClassName="!z-[220]"
+        overlayProps={{ onClick: (event) => { event.stopPropagation(); handleOpenChange(false); } }}
         className="!z-[230] max-h-[90dvh] max-w-[min(620px,calc(100vw-24px))] overflow-y-auto border-neutral-800 bg-neutral-950 text-white"
       >
         {card && (
@@ -135,7 +137,7 @@ export function CardDetailDialog({
                 <div>
                   <p className="text-[10px] font-black tracking-wider text-neutral-500">카드 효과</p>
                   <p className="mt-2 whitespace-pre-wrap leading-6 text-neutral-200">
-                    {normalizeCardRulesText(card.text) || "효과 없음"}
+                    <CardRulesText text={normalizeCardRulesText(card.text) || "효과 없음"} />
                   </p>
                 </div>
                 {children}

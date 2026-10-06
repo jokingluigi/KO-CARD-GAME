@@ -12,6 +12,11 @@ on:
       - artifacts/ko-game/src/main.tsx
       - artifacts/ko-game/src/components/admin-card-manager.tsx
       - artifacts/ko-game/src/components/alt-inspector-utils.ts
+      - artifacts/ko-game/src/components/alt-inspector.tsx
+      - artifacts/ko-game/src/components/card-rules-text.tsx
+      - artifacts/ko-game/src/components/card-detail-dialog.tsx
+      - artifacts/ko-game/src/components/ui/dialog.tsx
+      - artifacts/ko-game/src/pages/decks.tsx
       - artifacts/ko-game/src/lib/card-display-state.ts
       - artifacts/api-server/src/routes/admin.ts
       - artifacts/api-server/src/lib/structured-effects*
@@ -55,6 +60,9 @@ jobs:
           artifacts/ko-game/src/game/engine/wanted.test.ts
           artifacts/ko-game/src/game/engine/retire-destroy-semantics.test.ts
           artifacts/ko-game/src/components/battle-vfx-model.test.ts
+          artifacts/ko-game/src/components/alt-inspector.test.ts
+          artifacts/ko-game/src/components/alt-inspector-keyboard.test.ts
+          artifacts/ko-game/src/components/alt-inspector-tags.test.ts
           artifacts/ko-game/src/components/attack-animation-utils.test.ts
           artifacts/ko-game/src/components/card-play-animation-utils.test.ts
           artifacts/ko-game/src/components/presentation-feedback-utils.test.ts
