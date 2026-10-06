@@ -110,6 +110,22 @@ const input = {
     },
   },
 };
+test("startup registers editable awakening drafts without overwriting existing owner data", async () => {
+  const { ensureAwakeningContent, AWAKENING_CHAMPION_ID } = await import("../../../artifacts/api-server/src/lib/awakening-card-service");
+  await ensureAwakeningContent();
+  const rows = (await pg.query<any>("SELECT * FROM champions WHERE id=$1", [AWAKENING_CHAMPION_ID])).rows;
+  assert.equal(rows.length, 1);
+  assert.equal(rows[0].name, "AWAKEN_CHAMPION");
+  assert.equal(rows[0].status, "DRAFT");
+  assert.equal(rows[0].max_health, 20);
+  assert.deepEqual(rows[0].quest_condition, input.questCondition);
+  assert.equal((await pg.query<any>("SELECT * FROM cards")).rows.length, 3);
+  await pg.query("UPDATE champions SET name=$1,max_health=31 WHERE id=$2", ["소유자 지정 이름", AWAKENING_CHAMPION_ID]);
+  await pg.query("UPDATE cards SET name=$1 WHERE id=$2", ["소유자 지정 탱커", AWAKENING_CARD_IDS.TANK]);
+  await ensureAwakeningContent();
+  assert.equal((await pg.query<any>("SELECT * FROM champions WHERE id=$1", [AWAKENING_CHAMPION_ID])).rows[0].max_health, 31);
+  assert.equal((await pg.query<any>("SELECT * FROM cards WHERE id=$1", [AWAKENING_CARD_IDS.TANK])).rows[0].name, "소유자 지정 탱커");
+});
 test("admin explicit opt-in creates champion and three exclusive draft cards atomically", async () => {
   assert.equal(
     (

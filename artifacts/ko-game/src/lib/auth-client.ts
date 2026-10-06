@@ -1,3 +1,5 @@
+import { invalidateStartupAuth, takeStartupAuth } from './startup-client';
+
 export type AuthUser = {
   id: string;
   email: string;
@@ -39,6 +41,10 @@ async function readResponseMessage(response: Response, fallback: string): Promis
 }
 
 export async function fetchCurrentUser(options: { timeoutMs?: number } = {}): Promise<AuthResponse> {
+  const startup = takeStartupAuth();
+  if (startup) {
+    try { return await startup; } catch { /* Retry with the regular bounded request below. */ }
+  }
   const timeoutMs = options.timeoutMs ?? AUTH_REQUEST_TIMEOUT_MS;
   const controller = new AbortController();
   const timer = globalThis.setTimeout(() => controller.abort(), timeoutMs);
@@ -68,6 +74,7 @@ export async function fetchCurrentUser(options: { timeoutMs?: number } = {}): Pr
 }
 
 export async function logout(): Promise<void> {
+  invalidateStartupAuth();
   await fetch(`${authApiBase}/logout`, {
     method: "POST",
     credentials: "include",
@@ -75,6 +82,7 @@ export async function logout(): Promise<void> {
 }
 
 export async function changeNickname(nickname: string): Promise<AuthUser> {
+  invalidateStartupAuth();
   const response = await fetch(`${authApiBase}/nickname`, {
     method: "PATCH",
     credentials: "include",
@@ -91,6 +99,7 @@ export async function submitAuth(
   mode: "login" | "register",
   values: Record<string, string>,
 ): Promise<AuthUser> {
+  invalidateStartupAuth();
   const response = await fetch(`${authApiBase}/${mode}`, {
     method: "POST",
     credentials: "include",
@@ -108,6 +117,7 @@ export async function submitAuth(
 }
 
 export async function submitTestAuth(role: "USER" | "ADMIN"): Promise<AuthUser> {
+  invalidateStartupAuth();
   const response = await fetch(`${import.meta.env.BASE_URL.replace(/\/$/, "")}/api/test-auth/login`, {
     method: "POST",
     credentials: "include",
