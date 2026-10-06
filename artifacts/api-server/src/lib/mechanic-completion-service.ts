@@ -13,7 +13,7 @@ export type CompletionValidation = {
   checks: CompletionCheck[];
   supportedCapabilities: string[];
   unsupportedParts: string[];
-  structuredEffect?: { effects: StructuredEffect[] };
+  structuredEffect?: { effects: StructuredEffect[]; countdownTurns?: number };
 };
 type CompletionDependencies = {
   analyze: (text: string) => Analysis;
@@ -64,7 +64,7 @@ export function validateMechanicCompletion(
     ...analysis.keywords,
   ])];
   if (analysis.outcome === "supported" && checks.slice(0, 6).every((check) => check.passed)) {
-    return { status: "recognized", message: "✓ 새 메커니즘이 정상적으로 인식되었습니다.", analysis, checks, supportedCapabilities, unsupportedParts: [], structuredEffect: { effects: analysis.effects } };
+    return { status: "recognized", message: "✓ 새 메커니즘이 정상적으로 인식되었습니다.", analysis, checks, supportedCapabilities, unsupportedParts: [], structuredEffect: { effects: analysis.effects, ...(analysis.countdownTurns!==undefined ? {countdownTurns:analysis.countdownTurns} : {}) } };
   }
   if (analysis.status === "partial" && analysis.effects.length > 0) {
     return { status: "partial", message: "⚠ 일부 기능은 추가되었지만 아직 효과 전체를 구현할 수 없습니다.", analysis, checks, supportedCapabilities, unsupportedParts: analysis.unsupportedSegments };
@@ -73,7 +73,7 @@ export function validateMechanicCompletion(
 }
 
 export type CompletionApplyDecision =
-  | { ok: true; values: { text: string; effectId: "STRUCTURED_EFFECTS_V1"; effectConfig: { effects: StructuredEffect[] }; resolvedEffectIds: string[]; status: "APPROVED" } }
+  | { ok: true; values: { text: string; effectId: "STRUCTURED_EFFECTS_V1"; effectConfig: { effects: StructuredEffect[]; countdownTurns?: number }; resolvedEffectIds: string[]; status: "APPROVED" } }
   | { ok: false; reason: "CARD_NOT_DRAFT" | "SOURCE_TEXT_CHANGED" | "REVALIDATION_FAILED" };
 
 /** Pure guard used immediately before the route's transaction writes anything. */

@@ -358,6 +358,9 @@ export function CardInspectContent({ card }: { card: CardInstance }) {
          isStunned={card.isStunned}
          isAbilityDisabled={card.isAbilityDisabled}
          dodgeCharges={card.dodgeCharges ?? (card.dodgeAvailable ? 1 : 0)}
+         countdownTurns={card.grantedText?.countdownTurns ?? card.countdownTurns}
+         countdownRemaining={card.countdownRemaining}
+         countdownResolved={card.countdownResolved}
          isChampionToken={card.isChampionToken}
       />
       </FullCardArtwork>

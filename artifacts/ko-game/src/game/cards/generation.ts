@@ -1,4 +1,5 @@
 import { validChampionQuestCondition } from '../../../../../lib/game-engine/src/champion-quest-conditions';
+import { configuredCountdownTurns } from '@workspace/effect-registry';
 import type {
   CardLineage,
   CardDefinition,
@@ -85,6 +86,7 @@ export function generateCardInstance(
     entranceAudioEnabled: definition.entranceAudioEnabled,
     keywords: [...definition.keywords],
     armor: typeof definition.effectConfig?.armor === 'number' ? Math.max(0, definition.effectConfig.armor) : 0,
+    ...(definition.keywords.includes('COUNTDOWN') ? {countdownTurns:configuredCountdownTurns(definition.effectConfig)} : {}),
     ...(validChampionQuestCondition(definition.effectConfig?.playCondition) ? { playCondition: definition.effectConfig.playCondition } : {}),
     tags: definition.tags ? [...definition.tags] : [],
     abilities: [...definition.abilities],

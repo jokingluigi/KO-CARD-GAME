@@ -21,7 +21,7 @@ import { CardRenderer } from "./card-renderer";
 import { AdminAudioField } from "./admin-audio-field";
 import { AdminUnifiedEffectPrompt } from "./admin-unified-effect-prompt";
 import { AdminEffectAiGenerator } from "./admin-effect-ai-generator";
-import { effectConfigEntryCount, mergeGeneratedEffectDraft } from "@/lib/admin-effect-config";
+import { effectConfigEntryCount, mergeGeneratedEffectDraft, keywordSettingsAfterTextEdit } from "@/lib/admin-effect-config";
 import { useToast } from "../hooks/use-toast";
 import {
   CARD_RARITY_LABELS,
@@ -46,7 +46,7 @@ type CardKeyword =
   | "SURPRISE"
   | "TAUNT"
   | "DODGE"
-  | "MULTI_STRIKE" | "IMMUNE" | "REGEN" | "ARMOR" | "CONDITION" | "DEFENSE" | "LIFESTEAL";
+  | "MULTI_STRIKE" | "IMMUNE" | "REGEN" | "ARMOR" | "CONDITION" | "DEFENSE" | "LIFESTEAL" | "COUNTDOWN";
 
 type CardRecord = {
   id: string;
@@ -103,6 +103,7 @@ type EffectAnalysis = {
   outcome: "supported" | "mechanism_required" | "analysis_failure";
   effects: Array<{ trigger: string; action: string; target?: { zone?: string; zones?: string[]; owner: string; filter?: { isGenerated?: boolean; minCost?: number }; selection: string; count: number }; conditions?: Array<{ type: string; expression?: string }>; values?: { attack?: number; health?: number; amount?: number; keyword?: CardKeyword; destination?: "HAND" | "DECK"; definitionRef?: { id?: string; name?: string } } }>;
   keywords: CardKeyword[];
+  countdownTurns?: number;
   unsupportedSegments: string[];
   summaries: string[];
   reason?: string;
@@ -148,11 +149,11 @@ const KEYWORDS: CardKeyword[] = [
   "SURPRISE",
   "TAUNT",
   "DODGE",
-  "MULTI_STRIKE", "IMMUNE", "REGEN", "ARMOR", "CONDITION", "DEFENSE", "LIFESTEAL",
+  "MULTI_STRIKE", "IMMUNE", "REGEN", "ARMOR", "CONDITION", "DEFENSE", "LIFESTEAL", "COUNTDOWN",
 ];
 
 const KEYWORD_LABELS: Record<CardKeyword, string> = {
-  IMMUNE: '면역', REGEN: '치유', ARMOR: '아머', CONDITION: '조건', DEFENSE: '방어', LIFESTEAL: '흡혈',
+  COUNTDOWN: '카운트다운', IMMUNE: '면역', REGEN: '치유', ARMOR: '아머', CONDITION: '조건', DEFENSE: '방어', LIFESTEAL: '흡혈',
 
   RUSH: "러쉬",
   SURPRISE: "기습",
@@ -711,7 +712,7 @@ export function AdminCardManager({
     }
     if (analysis.effects.length) {
       form.setValue("effectId", "STRUCTURED_EFFECTS_V1", { shouldDirty: true });
-      form.setValue("effectConfig", JSON.stringify({ effects: analysis.effects }, null, 2), { shouldDirty: true });
+      form.setValue("effectConfig", JSON.stringify(mergeGeneratedEffectDraft(form.getValues("effectId"), form.getValues("effectConfig"), {effectId:"STRUCTURED_EFFECTS_V1",effects:analysis.effects,scripts:[],effectConfig:{countdownTurns:analysis.countdownTurns}}, "replace").effectConfig, null, 2), { shouldDirty: true });
     }
     setMessage("분석 결과를 적용했습니다. 카드 저장을 눌러 DRAFT에 저장하세요.");
   }
@@ -721,7 +722,7 @@ export function AdminCardManager({
       effectId: "STRUCTURED_EFFECTS_V1" | "SCRIPT_V1";
       effects: unknown[];
       scripts: unknown[];
-      effectConfig: { effects?: unknown[]; scripts?: unknown[] };
+      effectConfig: { effects?: unknown[]; scripts?: unknown[]; countdownTurns?: number };
       keywords: string[];
     },
     mode: "replace" | "append",
@@ -787,7 +788,7 @@ export function AdminCardManager({
       if (!response.ok) throw new Error(await responseMessage(response));
       const body = await response.json() as { card: CardRecord; mechanicRequest: MechanicRequest };
       setEditingCard(body.card); setCreatedMechanicRequest(body.mechanicRequest);
-      form.setValue("text", body.card.text); form.setValue("effectId", "STRUCTURED_EFFECTS_V1"); form.setValue("effectConfig", JSON.stringify(body.card.effectConfig, null, 2));
+      form.setValue("keywords", body.card.keywords); form.setValue("text", body.card.text); form.setValue("effectId", "STRUCTURED_EFFECTS_V1"); form.setValue("effectConfig", JSON.stringify(body.card.effectConfig, null, 2));
       setMechanicRequests((current) => current.map((item) => item.id === body.mechanicRequest.id ? body.mechanicRequest : item));
       setMessage("카드 효과를 DRAFT에 적용하고 메커니즘 요청을 완료했습니다.");
       setAuditResults(null); setAuditFilter("");
@@ -1298,7 +1299,7 @@ export function AdminCardManager({
               <div className="grid grid-cols-3 gap-2">
                 {(["cost", "attack", "health"] as const).map((field) => <label key={field} className="space-y-1.5"><span className="text-xs font-bold text-neutral-400">{{ cost: "비용", attack: "공격력", health: "체력" }[field]}</span><input type="number" min={0} max={999} {...form.register(field, { required: true, valueAsNumber: true })} data-testid={`input-card-${field}`} className="w-full rounded border border-neutral-700 bg-neutral-900 px-2 py-2 outline-none focus:border-primary" /></label>)}
               </div>
-                <label className="space-y-1.5 md:col-span-2"><span className="text-xs font-bold text-neutral-400">카드 효과 설명</span><textarea {...form.register("text", { onChange: () => { setAnalysis(null); setCompletion(null); setCreatedMechanicRequest(null); setReplitPrompt(""); form.setValue("effectId", ""); form.setValue("effectConfig", "{}"); } })} rows={3} data-testid="input-card-text" className="w-full rounded border border-neutral-700 bg-neutral-900 px-3 py-2 outline-none focus:border-primary" /></label>
+                <label className="space-y-1.5 md:col-span-2"><span className="text-xs font-bold text-neutral-400">카드 효과 설명</span><textarea {...form.register("text", { onChange: () => { setAnalysis(null); setCompletion(null); setCreatedMechanicRequest(null); setReplitPrompt(""); form.setValue("effectId", ""); form.setValue("effectConfig", JSON.stringify(keywordSettingsAfterTextEdit(form.getValues("effectConfig")))); } })} rows={3} data-testid="input-card-text" className="w-full rounded border border-neutral-700 bg-neutral-900 px-3 py-2 outline-none focus:border-primary" /></label>
                  <AdminEffectAiGenerator
                    defaultText={preview.text}
                    sourceType="CARD"
@@ -1308,7 +1309,12 @@ export function AdminCardManager({
                    onApply={(draft, mode) => applyAiDraft(draft, mode)}
                    onUnauthorized={onUnauthorized}
                  />
-               <fieldset className="space-y-2 md:col-span-2"><legend className="text-xs font-bold text-neutral-400">키워드</legend><div className="flex flex-wrap gap-2">{KEYWORDS.map((keyword) => <div key={keyword} className="flex flex-wrap items-center gap-2 rounded border border-neutral-800 bg-neutral-900 px-3 py-2 text-xs"><label className="flex min-h-11 items-center gap-2"><input type="checkbox" value={keyword} {...form.register("keywords", { onChange: event => { if (event.target.checked && (keyword === 'ARMOR' || keyword === 'DODGE')) { const key = keyword === 'ARMOR' ? 'armor' : 'dodgeCharges'; if (keywordConfig[key] === undefined) updateKeywordConfig(key, 1); } } })} data-testid={`input-keyword-${keyword}`} />{KEYWORD_LABELS[keyword]}</label>{preview.keywords.includes(keyword) && (keyword === 'ARMOR' || keyword === 'DODGE') && <label className="flex items-center gap-2"><span>{keyword === 'ARMOR' ? '피해 감소량' : '회피 횟수'}</span><input aria-label={keyword === 'ARMOR' ? '아머 피해 감소량' : '회피 가능 횟수'} data-testid={`input-keyword-${keyword}-amount`} type="number" min={keyword === 'ARMOR' ? 0 : 1} max={999} step={1} className="min-h-11 w-20 rounded border border-neutral-700 bg-black px-2" value={Number.isSafeInteger(keywordConfig[keyword === 'ARMOR' ? 'armor' : 'dodgeCharges']) ? Number(keywordConfig[keyword === 'ARMOR' ? 'armor' : 'dodgeCharges']) : keyword === 'ARMOR' ? 0 : 1} onChange={event => { const value = Number(event.target.value); if (Number.isSafeInteger(value)) updateKeywordConfig(keyword === 'ARMOR' ? 'armor' : 'dodgeCharges', Math.min(999, Math.max(keyword === 'ARMOR' ? 0 : 1, value))); }} /></label>}</div>)}</div></fieldset>
+               <fieldset className="space-y-2 md:col-span-2"><legend className="text-xs font-bold text-neutral-400">키워드</legend><div className="flex flex-wrap gap-2">{KEYWORDS.map((keyword) => {
+                 const numeric = keyword === 'ARMOR' ? {key:'armor',label:'피해 감소량',aria:'아머 피해 감소량',min:0}
+                   : keyword === 'DODGE' ? {key:'dodgeCharges',label:'회피 횟수',aria:'회피 가능 횟수',min:1}
+                   : keyword === 'COUNTDOWN' ? {key:'countdownTurns',label:'생존 턴 수',aria:'카운트다운 생존 턴 수',min:1} : undefined;
+                 return <div key={keyword} className="flex flex-wrap items-center gap-2 rounded border border-neutral-800 bg-neutral-900 px-3 py-2 text-xs"><label className="flex min-h-11 items-center gap-2"><input type="checkbox" value={keyword} {...form.register("keywords", { onChange:event=>{if(event.target.checked && numeric && keywordConfig[numeric.key]===undefined) updateKeywordConfig(numeric.key,1);} })} data-testid={`input-keyword-${keyword}`} />{KEYWORD_LABELS[keyword]}</label>{preview.keywords.includes(keyword) && numeric && <label className="flex items-center gap-2"><span>{numeric.label}</span><input aria-label={numeric.aria} data-testid={`input-keyword-${keyword}-amount`} type="number" min={numeric.min} max={999} step={1} className="min-h-11 w-20 rounded border border-neutral-700 bg-black px-2" value={Number.isSafeInteger(keywordConfig[numeric.key]) ? Number(keywordConfig[numeric.key]) : numeric.min} onChange={event=>{const value=Number(event.target.value);if(Number.isSafeInteger(value))updateKeywordConfig(numeric.key,Math.min(999,Math.max(numeric.min,value)));}} /></label>}</div>;
+               })}</div>{preview.keywords.includes('COUNTDOWN') && <p className="text-xs text-neutral-400">다음 자기 턴 시작부터 1씩 감소하고, 0이 되면 한 번 발동합니다. 효과 설명에 “카운트다운(N): 효과”를 입력하고 분석 결과를 적용하거나, 효과 발동 시점을 카운트다운으로 설정하세요.</p>}</fieldset>
                {preview.keywords.includes('CONDITION') && <fieldset className="md:col-span-2"><legend>카드 사용 조건</legend><ChampionQuestConditionEditor value={validChampionQuestCondition(keywordConfig.playCondition) ? keywordConfig.playCondition : {type:'TURN',turn:5}} onChange={v=>updateKeywordConfig('playCondition',v)}/>{!validChampionQuestCondition(keywordConfig.playCondition)&&<button type="button" className="min-h-11 p-2" onClick={()=>updateKeywordConfig('playCondition',{type:'TURN',turn:5})}>전체 5턴 이상 조건 적용</button>}</fieldset>}
 
                 <fieldset className="space-y-2 md:col-span-2">

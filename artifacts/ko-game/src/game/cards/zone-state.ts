@@ -1,4 +1,5 @@
 import { draftBaseline } from './draft-mutation';
+import { configuredCountdownTurns } from '@workspace/effect-registry';
 import { configuredDodgeCharges } from './generation';
 import type { CardInstance, CardDefinition } from './types';
 import type { GameState } from '../types/game-state';
@@ -62,6 +63,10 @@ export function resetCardAfterLeavingBoard(card: CardInstance, printedDefinition
     enteredThisTurn: false,
     enteredOnTurn: undefined,
     entryDefenseActive: false,
+    countdownTurns: definition ? (definition.keywords.includes('COUNTDOWN') ? configuredCountdownTurns(definition.effectConfig) : undefined) : card.countdownTurns,
+    countdownRemaining: undefined,
+    countdownResolved: undefined,
+    countdownLastTickTurn: undefined,
     attacksUsedThisTurn: 0,
     dodgeAvailable: hasDodge,
     dodgeCharges: hasDodge ? (definition ? configuredDodgeCharges(definition.effectConfig) : card.baseDodgeCharges ?? 1) : 0,
@@ -73,7 +78,8 @@ export function resetCardAfterLeavingBoard(card: CardInstance, printedDefinition
     playCondition: definition ? definition.effectConfig?.playCondition as CardInstance['playCondition'] : card.playCondition,
     grantedText: undefined,
     grantedTags: undefined,
-    keywords: draft?.keywords ?? (definition ? [...definition.keywords] : card.keywords),
+    keywords: draft?.keywords ?? (definition ? [...definition.keywords] : card.countdownTurns !== undefined && !card.keywords.includes('COUNTDOWN')
+      ? [...card.keywords, 'COUNTDOWN'] : card.keywords),
     abilities: definition ? structuredClone(definition.abilities) : card.abilities,
     activeUsedThisTurn: false,
     statHistory: [],

@@ -1,3 +1,4 @@
+import { validCountdownTurns } from '@workspace/effect-registry';
 import {
   ACTION_SCHEMAS, ACTIONS, CONDITIONS, DAMAGE_SOURCES, DEFAULT_CARD_TARGET_SCOPE, DYNAMIC_VALUES, EFFECT_CAPABILITIES, EFFECT_LIBRARY, KEYWORDS, REFERENCES, RULE_LISTENER_TRIGGERS, TARGET_OWNERS,
   RANDOM_SCOPES, TARGET_SELECTIONS, TARGET_ZONES, TRIGGERS,
@@ -115,6 +116,7 @@ export type Analysis = {
   outcome: AnalysisOutcome;
   effects: StructuredEffect[];
   scripts?: EffectScript[];
+  countdownTurns?: number;
   keywords: Keyword[];
   unsupportedSegments: string[];
   summaries: string[];
@@ -1956,6 +1958,15 @@ function analyzeEffectTextCore(input: string, options: EffectAnalysisOptions = {
 
 /** Hand activation is opt-in for every trigger, never inferred from TURN_END alone. */
 export function analyzeEffectText(input: string, options: EffectAnalysisOptions = {}): Analysis {
+  const countdown = input.trim().match(/^(?:카운트다운|COUNTDOWN)\s*(?:\(\s*([^)]*)\s*\)|([+-]?[\d.]+)\s*턴)?\s*[:：]\s*([\s\S]+)$/i);
+  if (countdown) {
+    const turns=Number(countdown[1] ?? countdown[2] ?? 1);
+    const result=analyzeEffectTextCore(countdown[3],{...options,defaultTrigger:'COUNTDOWN'});
+    if (!validCountdownTurns(turns) || result.effects.some(effect=>effect.trigger!=='COUNTDOWN') || /손(?:패)?에\s*있/.test(countdown[3])) {
+      return {status:'failure',outcome:'analysis_failure',effects:[],keywords:[],unsupportedSegments:[input],summaries:[],reason:'카운트다운은 1~999의 정수와 필드에서 발동할 효과로 설정해 주세요.'};
+    }
+    return {...result,countdownTurns:turns,keywords:[...new Set([...result.keywords,'COUNTDOWN' as Keyword])]};
+  }
   const handClause = /(?:이\s*카드|자신)(?:가|이)?\s*손(?:패)?에\s*있(?:을\s*때|으면|는\s*동안)/g;
   const hasHandClause = handClause.test(input);
   const result = analyzeEffectTextCore(hasHandClause ? input.replace(handClause, "") : input, options);

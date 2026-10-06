@@ -51,7 +51,7 @@ export type EffectAiDraft = {
   effectId: "STRUCTURED_EFFECTS_V1" | "SCRIPT_V1";
   effects: StructuredEffect[];
   scripts: EffectScript[];
-  effectConfig: { effects: StructuredEffect[] } | { scripts: EffectScript[] };
+  effectConfig: ({ effects: StructuredEffect[] } | { scripts: EffectScript[] }) & {countdownTurns?: number};
   keywords: Keyword[];
   preview: Array<{ label: string; value: string }>;
   mechanicPlan: MechanicPlan;
@@ -1217,6 +1217,17 @@ export async function generateEffectDraft(
 ): Promise<EffectAiResult> {
   const normalization = normalizeEffectLanguage(text);
   const ambiguities = detectEffectSemanticAmbiguities(text);
+  // A numeric countdown is compiled locally so its clock cannot be lost in a provider draft.
+  if (/^(?:카운트다운|COUNTDOWN)\s*(?:\(|[\d+-]|[:：])/i.test(text.trim())) {
+    if (context.sourceType !== 'CARD' || context.cardType !== 'WRESTLER') throw new EffectAiError('INVALID_DRAFT','카운트다운은 필드에 남는 선수 카드에만 설정할 수 있습니다.');
+    if (ambiguities.length) return {status:'NEEDS_CLARIFICATION',questions:ambiguities.map(item=>item.question).slice(0,5),normalization,ambiguities};
+    const countdown=analyzeEffectText(text,{cardCatalog:catalog,availableTags:context.availableTags});
+    if(countdown.status==='success' && countdown.effects.length && countdown.countdownTurns!==undefined){
+      const draft=canonicalizeGeneratedEffectDraft({status:'READY',effectId:'STRUCTURED_EFFECTS_V1',effects:countdown.effects,keywords:countdown.keywords},context,catalog);
+      if(draft.status==='READY') return {...draft,effectConfig:{...draft.effectConfig,countdownTurns:countdown.countdownTurns},normalization,semanticPlan:buildEffectSemanticPlan(text,context,draft,catalog)};
+    }
+    if(countdown.status==='failure') throw new EffectAiError('INVALID_DRAFT',countdown.reason ?? '카운트다운 효과를 해석할 수 없습니다.');
+  }
   let raw = await callProvider(text, normalization, context, catalog);
   diagnostics?.onDiagnostic(describeProviderEnvelope(raw, diagnostics.requestId));
   const compileLocalIfFullySupported = (): EffectAiDraft | undefined => {

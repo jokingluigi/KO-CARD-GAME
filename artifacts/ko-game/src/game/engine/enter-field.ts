@@ -1,4 +1,5 @@
 import { mergeZombie } from './zombie-token';
+import { startCountdown } from '../cards/countdown';
 import type { CardInstance } from '../cards/types';
 import type { EnterFieldEvent, EntryCause, EventSubject } from '../events/types';
 import type { GameState } from '../types/game-state';
@@ -33,14 +34,14 @@ export function enterField(
   }
   if (!canEnterTowerField(state, playerId)) return state;
 
-  const enteredCard: CardInstance = {
+  const enteredCard: CardInstance = startCountdown({
     ...applyTowerEntryStats(state, playerId, card),
     boardSlot,
     enteredThisTurn: true,
     enteredOnTurn: state.turn,
     entryDefenseActive: true,
     attacksUsedThisTurn: 0,
-  };
+  }, state.turn);
   const event: EnterFieldEvent = {
     type: 'ENTER_FIELD',
     playerId,

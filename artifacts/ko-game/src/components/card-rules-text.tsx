@@ -19,7 +19,7 @@ export function CardRulesText({text}:{text:string}) {
  return <>{parts.map((part,index)=>{
   const card=cards.find(c=>c.name===part),keyword=labels.find(([,label])=>label===part);
   if(!card&&!keyword)return <span key={index}>{part}</span>;
-  const open=()=>setDetail(card?{title:card.name,text:card.rulesText,card}:{title:part,text:keyword![0] === 'ARMOR' && /아머\s*\(\d+\)/.test(text) ? `공격과 반격으로 받는 피해를 ${text.match(/아머\s*\((\d+)\)/)?.[1]} 줄입니다. 카드 효과 피해는 줄이지 않습니다. 최소 피해는 0입니다.` : KEYWORD_DESCRIPTIONS[keyword![0]]!});
+  const open=()=>setDetail(card?{title:card.name,text:card.rulesText,card}:{title:part,text:keyword![0] === 'ARMOR' && /아머\s*\(\d+\)/.test(text) ? `공격과 반격으로 받는 피해를 ${text.match(/아머\s*\((\d+)\)/)?.[1]} 줄입니다. 카드 효과 피해는 줄이지 않습니다. 최소 피해는 0입니다.` : keyword![0] === 'COUNTDOWN' && /카운트다운\s*\(\d+\)/.test(text) ? `남은 카운트다운: ${text.match(/카운트다운\s*\((\d+)\)/)?.[1]}. 다음 자기 턴 시작마다 1씩 감소하며 0이 되면 한 번 발동합니다. 침묵하면 해제되고, 재등장하면 처음부터 시작합니다.` : KEYWORD_DESCRIPTIONS[keyword![0]]!});
   return <span key={index} role="button" tabIndex={0} className="pointer-events-auto cursor-help text-amber-200 underline decoration-dotted" aria-label={`${part} 정보 보기`}
    onPointerDown={e=>{e.stopPropagation();clear();holdOrigin.current={x:e.clientX,y:e.clientY};hold.current=setTimeout(open,500);}}
    onPointerUp={e=>{e.stopPropagation();clear();}} onPointerCancel={clear} onPointerMove={e=>{if(Math.hypot(e.clientX-holdOrigin.current.x,e.clientY-holdOrigin.current.y)>10)clear();}}

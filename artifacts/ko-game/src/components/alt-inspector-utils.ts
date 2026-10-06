@@ -1,9 +1,11 @@
+import { configuredCountdownTurns } from '@workspace/effect-registry';
 import { getCardDefinition, type CardInstance } from '../game';
 import { canonicalCardTags } from '../game/cards/tags';
 import { getCardRuntimeRulesText, getVisibleCardKeywords, getVisibleCardRulesText } from '../lib/card-display-state';
 import { getActiveCardKeywords } from '../game/cards/granted-text';
 
 export const KEYWORD_DESCRIPTIONS: Record<string, string> = {
+  COUNTDOWN: '다음 자기 턴 시작부터 1씩 감소합니다. 0이 될 때 살아 있으면 한 번 발동합니다. 침묵하면 해제되며, 재등장하면 처음부터 시작합니다.',
   IMMUNE: '카드나 챔피언의 효과로 직접 지정할 수 없습니다.',
   REGEN: '양쪽 플레이어의 턴이 끝날 때마다 체력을 2 회복합니다. 기본 회복은 최대 체력을 넘지 않습니다.',
   ARMOR: '공격과 반격으로 받는 피해를 아머 수치만큼 줄입니다. 카드 효과 피해는 줄이지 않습니다. 최소 피해는 0입니다.',
@@ -20,7 +22,7 @@ export const KEYWORD_DESCRIPTIONS: Record<string, string> = {
 };
 
 export const KEYWORD_LABELS: Record<string, string> = {
-  IMMUNE: '면역', REGEN: '치유', ARMOR: '아머', CONDITION: '조건', DEFENSE: '방어', LIFESTEAL: '흡혈',
+  COUNTDOWN: '카운트다운', IMMUNE: '면역', REGEN: '치유', ARMOR: '아머', CONDITION: '조건', DEFENSE: '방어', LIFESTEAL: '흡혈',
 
   RUSH: '러쉬',
   SURPRISE: '기습',
@@ -73,7 +75,7 @@ export function getCardInspectorMetadata(card: CardInstance) {
     .filter((keyword) => !['SILENCE', 'STUN', 'DISABLED'].includes(keyword))
     .map((keyword) => ({
       key: keyword,
-      label: keyword === 'ARMOR' ? `아머(${card.armor ?? 0})` : KEYWORD_LABELS[keyword] ?? keyword,
+      label: keyword === 'ARMOR' ? `아머(${card.armor ?? 0})` : keyword === 'COUNTDOWN' ? card.countdownResolved ? '카운트다운 · 발동 완료' : `카운트다운(${card.countdownRemaining ?? configuredCountdownTurns({countdownTurns:card.grantedText?.countdownTurns ?? card.countdownTurns})})` : KEYWORD_LABELS[keyword] ?? keyword,
       description: keyword === 'ARMOR' ? `공격과 반격으로 받는 피해를 ${card.armor ?? 0} 줄입니다. 카드 효과 피해는 줄이지 않습니다. 최소 피해는 0입니다.` : KEYWORD_DESCRIPTIONS[keyword] ?? '특수 키워드입니다.',
     }));
   const statuses = [

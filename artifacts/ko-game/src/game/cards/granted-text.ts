@@ -1,4 +1,5 @@
 import { configuredDodgeCharges } from './generation';
+import { configuredCountdownTurns } from '@workspace/effect-registry';
 import { validChampionQuestCondition } from '../../../../../lib/game-engine/src/champion-quest-conditions';
 import type { CardAbility, CardKeyword } from '../effects/types';
 import type { CardInstance, CardDefinition } from './types';
@@ -7,6 +8,7 @@ export interface GrantedCardText {
   contentRule?: import("./new-card-effects").NewCardRule;
   armor?: number;
   dodgeCharges?: number;
+  countdownTurns?: number;
   playCondition?: CardInstance["playCondition"];
   donorDefinitionId: string;
   rulesText: string;
@@ -41,6 +43,7 @@ export function cloneGrantedCardText(
 ): GrantedCardText {
   return {
     dodgeCharges: configuredDodgeCharges(definition.effectConfig),
+    ...(definition.keywords.includes('COUNTDOWN') ? {countdownTurns:configuredCountdownTurns(definition.effectConfig)} : {}),
     ...(typeof definition.effectConfig?.armor === 'number' ? { armor: definition.effectConfig.armor } : {}),
     ...(validChampionQuestCondition(definition.effectConfig?.playCondition) ? { playCondition: structuredClone(definition.effectConfig.playCondition) } : {}),
     donorDefinitionId: definition.id,
@@ -54,12 +57,15 @@ export function cloneGrantedCardText(
 export function grantCardText(
   card: CardInstance,
   definition: Pick<CardDefinition, 'id' | 'rulesText' | 'keywords' | 'abilities' | 'effectConfig' | 'contentRule'>,
+  turn?: number,
 ): CardInstance {
   const grantedText = cloneGrantedCardText(definition);
   const keywords = getActiveCardKeywords({ ...card, grantedText });
   return {
     ...card,
     grantedText,
+    ...(grantedText.keywords.includes('COUNTDOWN') ? {countdownRemaining:grantedText.countdownTurns,countdownResolved:false,countdownLastTickTurn:turn}
+      : card.grantedText?.keywords.includes('COUNTDOWN') ? {countdownRemaining:card.keywords.includes('COUNTDOWN') ? card.countdownTurns : undefined,countdownResolved:false,countdownLastTickTurn:turn} : {}),
     dodgeAvailable: keywords.includes('DODGE'),
     dodgeCharges: keywords.includes('DODGE') ? Math.max(grantedText.dodgeCharges ?? 1, card.dodgeCharges ?? 0) : 0,
   };

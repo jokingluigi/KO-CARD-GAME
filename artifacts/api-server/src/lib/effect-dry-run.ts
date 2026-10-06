@@ -41,7 +41,7 @@ export function dryRunCardEffect(draft: EffectAiDraft): EffectDryRun[] {
   const definition: CardDefinition = {
     id: "dry-run-source", name: "효과 시험 카드", cardType: draft.sourceContext.cardType ?? "WRESTLER",
     cost: 1, attack: 1, health: 3, rulesText: "", isToken: false, isChampionToken: false,
-    keywords: draft.keywords,
+    keywords: draft.keywords, effectConfig:draft.effectConfig,
     abilities: abilitiesFor(draft.effectId, draft.effectConfig),
   };
   const source = generateCardInstance(definition, { instanceId: "dry-run-card" });
@@ -55,10 +55,11 @@ export function dryRunCardEffect(draft: EffectAiDraft): EffectDryRun[] {
       trigger, status: "NOT_SIMULATED" as const, eventTypes: [], enemyHealthDelta: 0,
       note: "이 기술 카드 발동 조건은 기본 시험 경기에서 재현되지 않습니다.",
     };
-    if (!["GAME_START", "TURN_START", "TURN_END", "ENTER_FIELD", "ACTIVE"].includes(trigger)) return {
+    if (!["GAME_START", "TURN_START", "TURN_END", "ENTER_FIELD", "ACTIVE", "COUNTDOWN"].includes(trigger)) return {
       trigger, status: "NOT_SIMULATED" as const, eventTypes: [], enemyHealthDelta: 0,
       note: "이 발동 조건은 기본 시험 경기에서 재현되지 않습니다.",
     };
+    if(trigger==='COUNTDOWN' && (source.countdownTurns ?? 1)>10) return {trigger,status:'NOT_SIMULATED' as const,eventTypes:[],enemyHealthDelta:0,note:'10턴을 넘는 카운트다운은 실제 테스트 경기에서 확인해 주세요.'};
     try {
       const before = initial();
       let after: GameState;
@@ -76,6 +77,15 @@ export function dryRunCardEffect(draft: EffectAiDraft): EffectDryRun[] {
       } else if (trigger === "TURN_START") {
         before.players[0]!.board[0] = { ...source, boardSlot: 0 };
         after = startGame(before, () => 0.5);
+      } else if (trigger === "COUNTDOWN") {
+        after=enterField(startGame(before,()=>0.5),'player-1',source,0);
+        const turns=source.countdownTurns ?? 1;
+        for(let step=0;step<turns*2 && after.status==='IN_PROGRESS' && !after.targetingState?.active;step++) {
+          const ended=endTurn(after,after.activePlayerId!);
+          if(!ended.success) throw new Error('카운트다운 턴 진행 실패');
+          after=ended.state;
+        }
+        if(!after.players[0].board[0]?.countdownResolved && after.status==='IN_PROGRESS') throw new Error('카운트다운 완료 전에 시험 카드가 필드를 떠났습니다.');
       } else if (trigger === "TURN_END") {
         const started = startGame(before, () => 0.5);
         started.players[0]!.board[0] = { ...source, boardSlot: 0 };

@@ -3,7 +3,7 @@ import type { CardKeyword } from "../game/effects/types";
 import type { CardInstance } from "../game/cards/types";
 
 export const KEYWORD_RULE_LABELS: Partial<Record<CardKeyword, string>> = {
-  IMMUNE: '면역', REGEN: '치유', ARMOR: '아머', CONDITION: '조건', DEFENSE: '방어', LIFESTEAL: '흡혈',
+  COUNTDOWN: '카운트다운', IMMUNE: '면역', REGEN: '치유', ARMOR: '아머', CONDITION: '조건', DEFENSE: '방어', LIFESTEAL: '흡혈',
 
   TAUNT: "도발",
   RUSH: "러쉬",

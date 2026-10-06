@@ -1,3 +1,4 @@
+import { configuredCountdownTurns } from '@workspace/effect-registry';
 import { getCardDefinitions } from '../game/cards/test-cards';
 import { repairedLegacyCardKeywords } from '../game/cards/legacy-card-effect-repair';
 import { CardRulesText } from './card-rules-text';
@@ -169,6 +170,9 @@ export function CardRenderer({
   isStunned = false,
   isAbilityDisabled = false,
   dodgeCharges,
+  countdownRemaining,
+  countdownResolved = false,
+  countdownTurns,
   isChampionToken = false,
   onClick,
   onKeyDown,
@@ -207,6 +211,9 @@ export function CardRenderer({
   isStunned?: boolean;
   isAbilityDisabled?: boolean;
   dodgeCharges?: number;
+  countdownRemaining?: number;
+  countdownResolved?: boolean;
+  countdownTurns?: number;
   isChampionToken?: boolean;
   onClick?: () => void;
   onKeyDown?: (event: KeyboardEvent<HTMLDivElement>) => void;
@@ -227,7 +234,9 @@ export function CardRenderer({
     visibleRuntimeKeywords,
   );
   const armorValue = keywordConfig?.armor ?? getCardDefinitions().find(card => card.name === name)?.effectConfig?.armor;
-  const displayRulesText = typeof armorValue === 'number' ? displayRulesTextWithoutArmor.replace(/아머(?!\s*\()/g, `아머(${armorValue})`) : displayRulesTextWithoutArmor;
+  const countdownValue = countdownRemaining ?? configuredCountdownTurns({countdownTurns:countdownTurns ?? keywordConfig?.countdownTurns ?? getCardDefinitions().find(card=>card.name===name)?.effectConfig?.countdownTurns});
+  const armoredRulesText = typeof armorValue === 'number' ? displayRulesTextWithoutArmor.replace(/아머(?!\s*\()/g, `아머(${armorValue})`) : displayRulesTextWithoutArmor;
+  const displayRulesText = visibleRuntimeKeywords.includes('COUNTDOWN') ? armoredRulesText.replace(/카운트다운(?:\s*\(\d+\)|\s+\d+\s*턴)?/g, `카운트다운(${countdownValue})`) : armoredRulesText;
   const normalizedRarity = isChampionToken
     ? cardType === "TECHNIQUE" ? "TOKEN" : "CHAMPION"
     : normalizeCardRarityForType(cardType, rarity);
@@ -268,6 +277,7 @@ export function CardRenderer({
     SURPRISE: "기습",
     DODGE: visibleDodgeCharges > 1 ? `회피 ×${visibleDodgeCharges}` : "회피",
     ARMOR: typeof armorValue === 'number' ? `아머(${armorValue})` : '아머',
+    COUNTDOWN: countdownResolved ? '카운트다운 · 발동 완료' : `카운트다운(${countdownValue})`,
     STUN: "기절",
     SILENCE: "침묵",
     DISABLED: "봉인",

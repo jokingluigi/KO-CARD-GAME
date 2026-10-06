@@ -4,10 +4,15 @@ export type GeneratedEffectDraft = {
   effectId: EffectExecutionId;
   effects: unknown[];
   scripts: unknown[];
+  effectConfig?: { countdownTurns?: number };
 };
 export type StoredEffectConfig = {
   effects?: unknown[];
   scripts?: unknown[];
+  armor?: number;
+  dodgeCharges?: number;
+  playCondition?: unknown;
+  countdownTurns?: number;
 };
 
 export class EffectConfigApplyError extends Error {
@@ -36,7 +41,7 @@ function parseConfig(value: unknown): StoredEffectConfig {
     throw new EffectConfigApplyError("현재 효과 설정이 객체가 아니어서 추가할 수 없습니다.");
   }
   for (const key of Object.keys(parsed)) {
-    if (key !== "effects" && key !== "scripts") {
+    if (!["effects", "scripts", "armor", "dodgeCharges", "playCondition", "countdownTurns"].includes(key)) {
       throw new EffectConfigApplyError(`현재 효과 설정의 '${key}' 필드를 안전하게 보존할 수 없어 추가를 중단했습니다.`);
     }
   }
@@ -90,8 +95,20 @@ export function mergeGeneratedEffectDraft(
 
   const key = draft.effectId === "SCRIPT_V1" ? "scripts" : "effects";
   const incoming = draft.effectId === "SCRIPT_V1" ? draft.scripts : draft.effects;
+  let savedConfig: StoredEffectConfig = {};
+  try { savedConfig = parseConfig(existingConfig); } catch (error) { if (mode !== 'replace') throw error; }
+  const {effects: _effects, scripts: _scripts, ...settings} = savedConfig;
+  const countdownTurns = draft.effectConfig?.countdownTurns;
+  if (countdownTurns !== undefined) {
+    if (!Number.isSafeInteger(countdownTurns) || countdownTurns < 1 || countdownTurns > 999) throw new EffectConfigApplyError('카운트다운 생존 턴 수는 1~999의 정수여야 합니다.');
+    if (mode === 'append' && settings.countdownTurns !== undefined && settings.countdownTurns !== countdownTurns &&
+      [...(savedConfig.effects ?? []), ...(savedConfig.scripts ?? [])].some(effect => effect && typeof effect === 'object' && 'trigger' in effect && effect.trigger === 'COUNTDOWN')) {
+      throw new EffectConfigApplyError('한 카드의 카운트다운 효과는 같은 생존 턴 수를 사용해야 합니다.');
+    }
+    settings.countdownTurns = countdownTurns;
+  }
   if (mode === "replace") {
-    return { effectId: draft.effectId, effectConfig: { [key]: incoming } };
+    return { effectId: draft.effectId, effectConfig: { ...settings, [key]: incoming } };
   }
 
   if (existingEffectId && existingEffectId !== draft.effectId) {
@@ -111,6 +128,14 @@ export function mergeGeneratedEffectDraft(
   const current = currentConfig[key] ?? [];
   return {
     effectId: draft.effectId,
-    effectConfig: { [key]: [...current, ...incoming] },
+    effectConfig: { ...settings, [key]: [...current, ...incoming] },
   };
+}
+
+/** Editing effect wording invalidates its compiled actions, but keeps keyword numbers. */
+export function keywordSettingsAfterTextEdit(value: unknown): StoredEffectConfig {
+  try {
+    const {effects: _effects, scripts: _scripts, ...settings} = parseConfig(value);
+    return settings;
+  } catch { return {}; }
 }

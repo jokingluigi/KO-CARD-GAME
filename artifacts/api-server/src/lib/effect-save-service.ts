@@ -1,3 +1,4 @@
+import { validCountdownCardSettings } from '@workspace/effect-registry';
 import { and, eq, sql } from "drizzle-orm";
 import { cardsTable, championsTable, db } from "@workspace/db";
 import {
@@ -99,7 +100,7 @@ export async function saveCardEffectFields(input: {
     return { ok: false, status: 422, message: "카드 효과 형식을 확인해 주세요." };
   }
 
-  const [existing] = await db.select({ version: cardsTable.version })
+  const [existing] = await db.select({ version: cardsTable.version, cardType:cardsTable.cardType, keywords:cardsTable.keywords })
     .from(cardsTable)
     .where(eq(cardsTable.id, input.id))
     .limit(1);
@@ -108,6 +109,7 @@ export async function saveCardEffectFields(input: {
     return { ok: false, status: 409, message: "카드가 변경되었습니다. 최신 버전을 다시 불러와 주세요." };
   }
 
+  if(!validCountdownCardSettings(existing.cardType,existing.keywords,input.effectConfig)) return {ok:false,status:422,message:'카운트다운 키워드와 생존 턴 수를 카드 관리에서 먼저 설정해 주세요.'};
   const [card] = await db.update(cardsTable)
     .set({
       effectId: input.effectId as string | null,

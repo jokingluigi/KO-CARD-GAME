@@ -137,6 +137,10 @@ export interface CardInstance {
   grantedTags?: string[];
   contentRule?: import("./new-card-effects").NewCardRule;
   armor?: number;
+  countdownTurns?: number;
+  countdownRemaining?: number;
+  countdownResolved?: boolean;
+  countdownLastTickTurn?: number;
   playCondition?: import('../../../../../lib/game-engine/src/champion-quest-conditions').ChampionQuestCondition;
   instanceId: CardInstanceId;
   definitionId: CardDefinitionId;
@@ -190,6 +194,7 @@ export interface CardInstance {
   grantedText?: {
     contentRule?: import("./new-card-effects").NewCardRule;
     armor?: number;
+    countdownTurns?: number;
     dodgeCharges?: number;
     playCondition?: import('../../../../../lib/game-engine/src/champion-quest-conditions').ChampionQuestCondition;
     donorDefinitionId: string;
@@ -210,5 +215,5 @@ export interface CardLineage {
 
 export interface CapturedCard {
   definitionId: CardDefinitionId;
-  baseSnapshot: Pick<CardInstance, 'definitionId' | 'cardType' | 'currentCost' | 'currentAttack' | 'currentHealth' | 'maxHealth' | 'isGenerated' | 'isToken' | 'isChampionToken' | 'keywords' | 'abilities' | 'tags' | 'dodgeCharges' | 'grantedText' | 'armor' | 'playCondition'>;
+  baseSnapshot: Pick<CardInstance, 'definitionId' | 'cardType' | 'currentCost' | 'currentAttack' | 'currentHealth' | 'maxHealth' | 'isGenerated' | 'isToken' | 'isChampionToken' | 'keywords' | 'abilities' | 'tags' | 'dodgeCharges' | 'grantedText' | 'armor' | 'playCondition' | 'countdownTurns'>;
 }
