@@ -161,6 +161,43 @@ test("effect volume changes attack sounds independently of the BGM", () => {
   });
 });
 
+test("admin silence cancels playing and pending music and ignores late background loads", () => {
+  withFakeAudio(advance => {
+    audioManager.setBgmMuted(false);
+    audioManager.setMusicContext("NON_BATTLE");
+    audioManager.playBgm("/menu.mp3", 80);
+    advance(600);
+    const previous = (audioManager as any).bgm.audio as FakeAudio;
+    audioManager.playBgm("/next-menu.mp3", 80);
+    audioManager.setMusicContext("SILENT");
+    assert.equal(previous.paused, true);
+    assert.equal((audioManager as any).bgm, null);
+    audioManager.playBgm("/late-menu.mp3", 80);
+    audioManager.playMatchBgm("/late-battle.mp3", 80);
+    audioManager.unlockAudio();
+    advance(2000);
+    assert.equal((audioManager as any).bgm, null);
+    assert.equal((audioManager as any).pendingBaseMusic, null);
+    audioManager.setMusicContext("NON_BATTLE");
+    audioManager.playBgm("/return-menu.mp3", 80);
+    advance(600);
+    assert.equal((audioManager as any).bgm.audio.paused, false);
+  });
+});
+
+test("admin explicit audio preview works without restoring automatic background music", () => {
+  withFakeAudio(advance => {
+    audioManager.setMusicContext("SILENT");
+    audioManager.previewBgm("/preview.mp3", 80);
+    assert.equal((audioManager as any).current.audio.paused, false);
+    assert.equal((audioManager as any).bgm, null);
+    advance(11000);
+    assert.equal((audioManager as any).bgm, null);
+    audioManager.stopBgm();
+    audioManager.setMusicContext("NON_BATTLE");
+  });
+});
+
 test("음소거 상태에서 모드가 바뀌고 새 배경음이 로드되어도 음악이 들리지 않는다", () => {
   withFakeAudio(() => {
     audioManager.setMusicContext("NON_BATTLE");

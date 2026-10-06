@@ -1,3 +1,5 @@
+import type { MusicContext } from './music-route';
+
 export const AUDIO_STINGER_DURATION = 10;
 export const AUDIO_FADE_IN_DURATION = 0.5;
 export const AUDIO_FADE_OUT_DURATION = 0.8;
@@ -57,7 +59,7 @@ class AudioManager {
   private sfxVolume = 100;
   private entranceVolume = 100;
   private needsAudioUnlock = false;
-  private musicContext: "NON_BATTLE" | "BATTLE" = "NON_BATTLE";
+  private musicContext: MusicContext = "NON_BATTLE";
   private attackAudio: HTMLAudioElement | null = null;
   private cachedAttackAudio = new Map<string, HTMLAudioElement>();
   private attackBaseVolume = 100;
@@ -147,6 +149,10 @@ class AudioManager {
   }
 
   previewBgm(url: string, volume: number) {
+    if (this.musicContext === "SILENT") {
+      this.preview(url, volume);
+      return;
+    }
     this.playBgm(url, volume);
   }
 
@@ -257,8 +263,12 @@ class AudioManager {
     return this.bgmVolume;
   }
 
-  setMusicContext(context: "NON_BATTLE" | "BATTLE") {
+  setMusicContext(context: MusicContext) {
     this.musicContext = context;
+    if (context === "SILENT") {
+      this.stopGameAudio();
+      return;
+    }
     if (this.bgm && this.bgm.scope !== context) {
       this.bgm?.audio.pause();
       return;
@@ -299,7 +309,7 @@ class AudioManager {
     volume: number,
     scope: "NON_BATTLE" | "BATTLE",
   ) {
-    if (!hasBrowserAudio() || !url) return;
+    if (this.musicContext === "SILENT" || !hasBrowserAudio() || !url) return;
     if (this.bgm?.url === url) {
       this.bgm.volume = volume;
       this.bgm.scope = scope;

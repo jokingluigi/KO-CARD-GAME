@@ -7,6 +7,8 @@ on:
       - artifacts/ko-game/src/lib/startup-client*
       - artifacts/ko-game/src/lib/auth-client*
       - artifacts/ko-game/src/components/server-maintenance.tsx
+      - artifacts/ko-game/src/audio/music-route*
+      - artifacts/ko-game/src/audio/audio-manager*
       - artifacts/api-server/src/index.ts
       - artifacts/api-server/src/lib/awakening-card-service.ts
       - lib/db/qa/awakening-http.test.ts
@@ -32,6 +34,8 @@ jobs:
           node --import ./docs/qa/checkpoints/20261006/qa-loader.mjs --test --test-isolation=none
           artifacts/ko-game/src/lib/startup-client.test.ts
           artifacts/ko-game/src/lib/auth-client.test.ts
+          artifacts/ko-game/src/audio/music-route.test.ts
+          artifacts/ko-game/src/audio/audio-manager.test.ts
           artifacts/ko-game/src/game/champions/awakening.test.ts
           artifacts/ko-game/src/game/champions/opponent-turn-quest.test.ts
           lib/db/qa/awakening-http.test.ts
