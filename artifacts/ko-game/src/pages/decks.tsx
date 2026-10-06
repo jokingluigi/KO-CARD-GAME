@@ -29,6 +29,7 @@ import {
   type DeckValidationReason,
 } from "@/lib/decks-client";
 import { cardTypeLabel, deckValidityLabel, normalizeCardRulesText } from "@/lib/display-labels";
+import { CardRulesText } from "@/components/card-rules-text";
 import { DECK_SIZE, MAX_LEGENDARY_CARDS, maxCardCopies, cardCopyLimitMessage, validateDeckCounts } from "@workspace/game-engine";
 import { cardLimitReason, cardOwnershipReason, getDeckCardAction, getDeckCardCountView } from "./deck-card-availability";
 import { cardOwnershipValidationReason, formatDeckValidationReason, mergeDeckValidationReasons, uniqueValidationReasons } from "./deck-validation";
@@ -121,7 +122,7 @@ function DeckCardVisual({
               size="detail"
               className="mx-auto w-64 max-w-full"
             />
-            <p className="whitespace-pre-wrap text-xs leading-5 text-neutral-300">{normalizeCardRulesText(card.text) || "효과 없음"}</p>
+            <p className="whitespace-pre-wrap text-xs leading-5 text-neutral-300"><CardRulesText text={normalizeCardRulesText(card.text) || "효과 없음"} /></p>
           </div>
         }
       >
@@ -956,7 +957,7 @@ export default function Decks() {
                               size="detail"
                               className="mx-auto w-64 max-w-full"
                             />
-                            <p className="whitespace-pre-wrap text-xs leading-5 text-neutral-300">{normalizeCardRulesText(card.text) || "효과 없음"}</p>
+                            <p className="whitespace-pre-wrap text-xs leading-5 text-neutral-300"><CardRulesText text={normalizeCardRulesText(card.text) || "효과 없음"} /></p>
                           </div>
                         ) : (
                           <p className="text-xs text-neutral-400">알 수 없는 카드</p>
@@ -1062,7 +1063,7 @@ export default function Decks() {
                     <h3 className="font-black text-amber-200">{craftInfoCard?.name ?? craftTarget.name}</h3>
                     <p className="mt-1 text-xs font-bold text-neutral-400">{craftTarget.rarity} · 카드 비용 {craftTarget.cost}</p>
                     <p className="mt-3 text-sm leading-6 text-neutral-300">
-                      {normalizeCardRulesText(craftInfoCard?.text ?? craftTarget.text) || "효과 없음"}
+                      <CardRulesText text={normalizeCardRulesText(craftInfoCard?.text ?? craftTarget.text) || "효과 없음"} />
                     </p>
                   </div>
                   {craftLoading ? (

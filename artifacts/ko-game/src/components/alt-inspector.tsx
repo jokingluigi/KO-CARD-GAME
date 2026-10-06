@@ -113,6 +113,9 @@ export function AltInspectProvider({ children }: { children: ReactNode }) {
   useEffect(() => cancelClear, [cancelClear]);
   const clear = useCallback(() => {
     cancelClear();
+    // The portalled explanation belongs to this inspector. Keep its source
+    // mounted while mouse/focus moves into the modal on desktop.
+    if (document.querySelector('[data-card-rules-dialog]')) return;
     setTarget(null);
     setIsTouchInspecting(false);
   }, [cancelClear]);
@@ -122,6 +125,7 @@ export function AltInspectProvider({ children }: { children: ReactNode }) {
   }, [cancelClear, clear]);
   const inspect = useCallback((nextTarget: InspectTarget) => {
     cancelClear();
+    if (document.querySelector('[data-card-rules-dialog]')) return;
     setTarget(nextTarget);
     setIsTouchInspecting(false);
   }, [cancelClear]);
