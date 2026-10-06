@@ -1,5 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import type { CSSProperties } from "react";
+import {useScreenImpact} from './screen-impact';
+import {damageImpact} from './screen-impact-policy';
 import { useCinematicEvent } from './cinematic-layer';
 import { CardRenderer } from "./card-renderer";
 import { getCardDefinition } from "@/game";
@@ -22,6 +24,7 @@ export function AttackAnimation({
   onComplete: () => void;
   hapticsEnabled?: boolean;
 }) {
+  const screen=useScreenImpact(),screenRef=useRef(screen);screenRef.current=screen;
   const impactedRef = useRef(false);
   const completedRef = useRef(false);
   const onImpactRef = useRef(onImpact);
@@ -33,7 +36,9 @@ export function AttackAnimation({
   onImpactRef.current = onImpact;
   onCompleteRef.current = onComplete;
   const definition = getCardDefinition(animation.attacker.definitionId);
-  const { source, target } = animation.geometry;
+  const geometryRef=useRef({id:animation.soundKey,value:animation.geometry});
+  if(geometryRef.current.id!==animation.soundKey)geometryRef.current={id:animation.soundKey,value:animation.geometry};
+  const { source, target } = geometryRef.current.value;
   useCinematicEvent({id:`attack:${animation.soundKey}`,kind:animation.finishingBlow || animation.damage>=10 ? 'FINISHER' : 'ATTACK',title:definition?.name ?? 'KO',art:definition?.imageUrl,strength:animation.damage,focus:{x:target.left+target.width/2,y:target.top+target.height/2}});
   const reduced = prefersReducedMotion();
   const timeline = combatTimeline(animation.currentAttack,animation.damage,animation.finishingBlow,reduced);
@@ -66,8 +71,9 @@ export function AttackAnimation({
       if (impactedRef.current) return;
       impactedRef.current = true;
       setImpacted(true);
+      screenRef.current.request({id:'attack-impact:'+animation.soundKey,profile:damageImpact(animation.damage,Boolean(animation.finishingBlow)),x:target.left+target.width/2,y:target.top+target.height/2,direction:{x:dx,y:dy}});
       if(hapticsRef.current && animation.damage>0 && !reduced && window.matchMedia?.('(pointer: coarse)').matches && typeof navigator.vibrate==='function') {
-        navigator.vibrate(animation.damage>=10?[36,28,55]:animation.damage>=6?35:12);
+        navigator.vibrate(animation.finishingBlow?70:animation.damage>=10?55:animation.damage>=6?35:12);
       }
       onImpactRef.current();
     };

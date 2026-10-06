@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState, useId } from "react";
 import type { CSSProperties } from "react";
 
-import { useCinematicEvent } from './cinematic-layer';
+import { useCinematicEvent, useCinematicAvailable } from './cinematic-layer';
 import { CardRenderer } from "./card-renderer";
 import { getCardDefinition } from "@/game";
 import { getActiveCardKeywords } from "../game/cards/granted-text";
@@ -11,6 +11,8 @@ import { techniqueRevealRect, techniqueStageGeometry, wrestlerPlayRect } from ".
 import { PRESENTATION_CONFIG, prefersReducedMotion } from "./presentation-config";
 import { audioManager } from '../audio/audio-manager';
 import { BattleVfx } from './battle-vfx';
+import {useScreenImpact} from './screen-impact';
+import {impactRank,summonImpact,summonTimeline,summonFrames,hasBoardWideImpact} from './screen-impact-policy';
 
 export const TECHNIQUE_REVEAL_HOLD_MS = 160;
 export const TECHNIQUE_REVEAL_TOTAL_MS = PRESENTATION_CONFIG.techniqueRevealMs;
@@ -30,13 +32,19 @@ export function CardPlayAnimation({
   animation,
   onComplete,
   viewerPlayerId,
+  hapticsEnabled=true,
 }: {
   animation: CardPlayAnimationState;
   onComplete: () => void;
   viewerPlayerId?: string;
+  hapticsEnabled?: boolean;
 }) {
   const occurrenceId = useId();
   const completedRef = useRef(false);
+  const cardRef=useRef<HTMLDivElement>(null),landedRef=useRef(false);
+  const [landed,setLanded]=useState(false);
+  const screen=useScreenImpact(),screenRef=useRef(screen);screenRef.current=screen;
+  const managed=useCinematicAvailable();
   const [viewport,setViewport]=useState(()=>({width:window.innerWidth,height:window.innerHeight}));
   useEffect(()=>{
     const resize=()=>setViewport({width:window.innerWidth,height:window.innerHeight});
@@ -46,13 +54,23 @@ export function CardPlayAnimation({
   const onCompleteRef = useRef(onComplete);
   onCompleteRef.current = onComplete;
   const definition = getCardDefinition(animation.card.definitionId);
-  useCinematicEvent(animation.kind==='TECHNIQUE' && animation.card.currentCost<4 ? null : {id:`play:${animation.card.instanceId}:${animation.kind}:${occurrenceId}`,kind:animation.kind==='TECHNIQUE'?'BIG_SPELL':definition?.rarity==='CHAMPION'?'CHAMPION':definition?.rarity==='LEGENDARY'?'LEGENDARY':'SUMMON',title:definition?.name ?? 'KO',art:definition?.imageUrl,strength:animation.card.currentCost});
+
+  // Capture viewport geometry once per play; camera recoil must not restart the flight.
+  const geometryRef=useRef({id:animation.card.instanceId,kind:animation.kind,value:animation.geometry});
+  if(geometryRef.current.id!==animation.card.instanceId||geometryRef.current.kind!==animation.kind)geometryRef.current={id:animation.card.instanceId,kind:animation.kind,value:animation.geometry};
+  const geometry=geometryRef.current.value;
   const source = animation.kind === "TECHNIQUE"
-    ? techniqueRevealRect(animation.geometry.source)
-    : wrestlerPlayRect(animation.geometry.source);
-  const target = animation.kind === "WRESTLER" ? animation.geometry.target : undefined;
+    ? techniqueRevealRect(geometry.source)
+    : wrestlerPlayRect(geometry.source);
+  const target = animation.kind === "WRESTLER" ? geometry.target : undefined;
   const reveal=techniqueStageGeometry(source,viewport);
-  const duration=animationDuration(animation);
+  const reduced=prefersReducedMotion();
+  const impactCost=definition?.cost??animation.card.currentCost;
+  const profile=summonImpact(impactCost,animation.card.isChampionToken?'CHAMPION':definition?.rarity);
+  const timing=summonTimeline(impactCost,profile.rarity,reduced);
+  const duration=animation.kind==='WRESTLER'?timing.duration:animationDuration(animation);
+  useCinematicEvent(animation.kind==='TECHNIQUE'&&animation.card.currentCost<4?null:{id:`play:${animation.card.instanceId}:${animation.kind}:${occurrenceId}`,kind:animation.kind==='TECHNIQUE'?'BIG_SPELL':profile.rarity==='CHAMPION'?'CHAMPION':profile.rarity==='LEGENDARY'?'LEGENDARY':'SUMMON',title:definition?.name??'KO',art:definition?.imageUrl,strength:impactCost,duration:profile.rarity==='LEGENDARY'||profile.rarity==='CHAMPION'?Math.max(200,timing.landing-50):undefined});
+
   const targetScale = animation.kind === "TECHNIQUE"
     ? reveal.scale
     : target ? Math.min(target.width/Math.max(source.width,1),target.height/Math.max(source.height,1)) : 1;
@@ -82,20 +100,42 @@ export function CardPlayAnimation({
   } as CSSProperties;
 
   useEffect(() => {
-    completedRef.current = false;
-    const isUnit=animation.kind==='WRESTLER';
-    const weight=isUnit ? animation.impactLevel : 'LIGHT';
-    const impactId = isUnit ? window.setTimeout(() => {
-      const file=weight==='VERY_HEAVY'?'very-heavy':weight==='HEAVY'?'heavy':weight==='LIGHT'?'light':'normal';
-      audioManager.playImpactOverlay(`${import.meta.env.BASE_URL}sfx/impact-${file}.wav`,weight==='LIGHT'?28:45);
-    }, prefersReducedMotion() ? 70 : duration*.76) : null;
-    const timeoutId = window.setTimeout(() => {
-      if (completedRef.current) return;
-      completedRef.current = true;
-      onCompleteRef.current();
-    }, animationDuration(animation) + 120);
-    return () => { window.clearTimeout(timeoutId); if (impactId !== null) window.clearTimeout(impactId); };
-  }, [animation]);
+    completedRef.current=false;landedRef.current=false;setLanded(false);
+    let frame=0;let motion:Animation|undefined;const origin=performance.now();
+    const finish=()=>{
+      if(completedRef.current)return;completedRef.current=true;onCompleteRef.current();
+    };
+    const land=()=>{
+      if(landedRef.current||document.hidden)return;
+      landedRef.current=true;setLanded(true);
+      const x=targetLeft+source.width*targetScale/2,y=targetTop+source.height*targetScale/2;
+      const accepted=screenRef.current.request({id:'landing:'+occurrenceId+':'+animation.card.instanceId,profile,x,y,direction:{x:0,y:1},nearby:impactRank(profile)>=3});
+      if(!accepted&&screenRef.current.isActive())return;
+      const file=impactRank(profile)>=4?'very-heavy':impactRank(profile)>=3?'heavy':impactRank(profile)>=2?'normal':'light';
+      const priority=profile.rarity==='CHAMPION'?8:profile.rarity==='LEGENDARY'?7:impactRank(profile)>=3?6:4;
+      audioManager.playImpactOverlay(`${import.meta.env.BASE_URL}sfx/impact-${file}.wav`,impactRank(profile)>=3?65:36,priority);
+      if(profile.bass)audioManager.playImpactOverlay(`${import.meta.env.BASE_URL}sfx/summon-bass-${profile.bass}.wav`,profile.rarity==='CHAMPION'?78:profile.rarity==='LEGENDARY'?70:60,priority);
+      if(impactRank(profile)>=3)audioManager.duckForPresentation(.55,profile.duration+100);
+      if(hapticsEnabled&&!reduced&&window.matchMedia('(pointer: coarse)').matches&&typeof navigator.vibrate==='function'&&(impactCost>=5||profile.rarity==='LEGENDARY'||profile.rarity==='CHAMPION'))navigator.vibrate(impactRank(profile)>=4?55:30);
+    };
+    if(animation.kind==='WRESTLER'){
+      if(profile.bass)audioManager.preloadAttackSounds([`${import.meta.env.BASE_URL}sfx/summon-bass-${profile.bass}.wav`]);
+      try{motion=cardRef.current?.animate(summonFrames(source,{left:targetLeft,top:targetTop},targetScale,profile,timing.landing,duration,reduced),{duration,easing:'linear',fill:'both'});}catch{/* Time-based visual fallback only. */}
+      const tick=(now:number)=>{
+        if(Number(motion?.currentTime??now-origin)>=timing.landing)land();
+        if(!completedRef.current)frame=requestAnimationFrame(tick);
+      };
+      frame=requestAnimationFrame(tick);
+      if(motion)motion.onfinish=()=>{land();finish();};
+    }
+    const spellImpact=animation.kind==='TECHNIQUE'&&hasBoardWideImpact(definition?.abilities)?window.setTimeout(()=>screenRef.current.request({id:'spell-impact:'+occurrenceId,profile:summonImpact(Math.max(5,impactCost)),x:innerWidth/2,y:innerHeight*.45,radial:true,nearby:true}),Math.round(duration*.28)):null;
+    const fallback=window.setTimeout(finish,duration+120);
+    const resized=()=>{if(animation.kind==='WRESTLER')finish();};
+    const hidden=()=>{if(document.hidden)finish();};
+    window.addEventListener('resize',resized);document.addEventListener('visibilitychange',hidden);
+    return()=>{clearTimeout(fallback);if(spellImpact!==null)clearTimeout(spellImpact);cancelAnimationFrame(frame);if(motion){motion.onfinish=null;motion.cancel();}window.removeEventListener('resize',resized);document.removeEventListener('visibilitychange',hidden);};
+  },[animation.card.instanceId,occurrenceId,animation.kind,duration,targetLeft,targetTop,targetScale]);
+
 
   function complete(event: React.AnimationEvent<HTMLDivElement>) {
     if (event.target !== event.currentTarget ||
@@ -113,7 +153,7 @@ export function CardPlayAnimation({
   return (
     <div
       aria-hidden={animation.kind === "WRESTLER"}
-      className={`card-play-animation ${animation.kind==='WRESTLER'&&(animation.card.currentCost>=6||definition?.rarity==='CHAMPION'||definition?.rarity==='LEGENDARY')?'ko-summon-heavy':''} ${animationClass} card-play-animation--rarity-${rarity.toLowerCase()}`}
+      className={`card-play-animation ${animation.kind==='WRESTLER'?'ko-summon-motion':''} ${animation.kind==='WRESTLER'&&(animation.card.currentCost>=6||definition?.rarity==='CHAMPION'||definition?.rarity==='LEGENDARY')?'ko-summon-heavy':''} ${animationClass} card-play-animation--rarity-${rarity.toLowerCase()}`}
       style={style}
     >
       {animation.kind === "TECHNIQUE" && (
@@ -127,11 +167,12 @@ export function CardPlayAnimation({
           </p>
         </>
       )}
-      <BattleVfx kind={animation.kind==='TECHNIQUE'?'MAGIC':rarity==='LEGENDARY'||rarity==='CHAMPION'?'GOLD':'IMPACT'}
+      {(animation.kind==='TECHNIQUE'||landed)&&<BattleVfx kind={animation.kind==='TECHNIQUE'?'MAGIC':rarity==='LEGENDARY'?'GOLD':'IMPACT'}
         left={targetLeft+source.width*targetScale/2} top={targetTop+source.height*targetScale/2}
         seed={`play:${animation.card.instanceId}`} strength={animation.kind==='TECHNIQUE'?5:animation.card.currentCost}
-        delay={prefersReducedMotion()?0:duration*(animation.kind==='TECHNIQUE' ? .28 : .76)} duration={animation.kind==='TECHNIQUE'?250:Math.max(120,duration*.24)} />
+        delay={animation.kind==='TECHNIQUE'&&!reduced?duration*.28:0} duration={animation.kind==='TECHNIQUE'?250:Math.max(120,duration*.24)} />}
       <div
+        ref={cardRef}
         className="card-play-animation__card"
         onAnimationEnd={complete}
       >
@@ -153,15 +194,7 @@ export function CardPlayAnimation({
           className="h-full w-full"
         />
       </div>
-      {animation.kind === "WRESTLER" && (
-        <>
-          {rarity === 'LEGENDARY' && <><div className="legendary-entrance__focus" /><div className="legendary-entrance__ring" /><div className="legendary-entrance__title">{definition?.name}</div></>}
-          <div className="card-play-animation__flash" />
-          {(animation.impactLevel === "HEAVY" || animation.impactLevel === "VERY_HEAVY") && (
-            <div className="card-play-animation__shockwave" />
-          )}
-        </>
-      )}
+      {animation.kind==='WRESTLER'&&!managed&&rarity==='LEGENDARY'&&<><div className="legendary-entrance__focus"/><div className="legendary-entrance__title">{definition?.name}</div></>}
     </div>
   );
 }

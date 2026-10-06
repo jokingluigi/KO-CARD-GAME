@@ -10,7 +10,7 @@ export function damageNumberDuration(damage:number) {return damage>=10?400:damag
 export const SHAKE_LEVELS=['NONE','VERY_LIGHT','LIGHT','MEDIUM','HEAVY','VERY_HEAVY'] as const;
 export type ShakeLevel=typeof SHAKE_LEVELS[number];
 export function strongerShake(a:ShakeLevel,b:ShakeLevel):ShakeLevel {return SHAKE_LEVELS[Math.max(SHAKE_LEVELS.indexOf(a),SHAKE_LEVELS.indexOf(b))];}
-export function shakePixels(level:ShakeLevel) {return [0,.5,1,2,3,4][SHAKE_LEVELS.indexOf(level)];}
+export function shakePixels(level:ShakeLevel) {return [0,3,5.5,9.5,14,20][SHAKE_LEVELS.indexOf(level)];}
 export type QueueEntry={id:string;kind:string;duration:number};
 export function enqueuePresentation<T extends QueueEntry>(pending:T[],incoming:T[]):T[] {
  const ids=new Set(pending.map(c=>c.id));

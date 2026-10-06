@@ -799,8 +799,8 @@
   0%, 20% { transform: scale(1); filter: saturate(.7) brightness(.8); }
   45% { transform: scale(1.065); filter: saturate(1) brightness(1); }
   53% { transform: scale(1.13); filter: saturate(1.25) brightness(1.1); }
-  57% { transform: translate(-7px, 3px) scale(1.17); filter: saturate(1.8) brightness(1.6); }
-  62% { transform: translate(6px, -2px) scale(1.16); filter: saturate(1.4) brightness(1.15); }
+  57% { transform: scale(1.17); filter: saturate(1.8) brightness(1.6); }
+  62% { transform: scale(1.16); filter: saturate(1.4) brightness(1.15); }
   72% { transform: scale(1.12); filter: saturate(1.1) brightness(1); }
   100% { transform: scale(1); filter: none; }
 }

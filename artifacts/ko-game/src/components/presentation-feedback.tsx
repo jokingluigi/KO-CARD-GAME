@@ -1,3 +1,5 @@
+import {useScreenImpact} from './screen-impact';
+import {damageImpact} from './screen-impact-policy';
 import { useEffect, useRef } from "react";
 import type { CSSProperties } from "react";
 
@@ -40,11 +42,14 @@ export function PresentationFeedback({
   cue,
   onComplete,
   onStart,
+  lethal=false,
 }: {
   cue: PresentationCue;
   onComplete: () => void;
   onStart?: (cue: PresentationCue) => void;
+  lethal?:boolean;
 }) {
+  const screen=useScreenImpact(),screenRef=useRef(screen);screenRef.current=screen;
   const completedRef = useRef(false);
   const onCompleteRef = useRef(onComplete);
   const onStartRef=useRef(onStart);
@@ -54,6 +59,7 @@ export function PresentationFeedback({
 
   useEffect(() => {
     completedRef.current = false;
+    if(cue.kind==='DAMAGE'&&!cue.combat)screenRef.current.request({id:'effect-impact:'+cue.id,profile:damageImpact(cue.value??0,lethal),x:cue.left,y:cue.top,radial:true});
     if(startedCueRef.current!==cue.id){startedCueRef.current=cue.id;onStartRef.current?.(cue);}
     const timeoutId = window.setTimeout(() => {
       if (completedRef.current) return;

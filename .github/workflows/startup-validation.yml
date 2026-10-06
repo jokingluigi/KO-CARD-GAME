@@ -78,6 +78,7 @@ jobs:
           artifacts/ko-game/src/components/presentation-feedback-utils.test.ts
           artifacts/ko-game/src/components/presentation-policy.test.ts
           artifacts/ko-game/src/components/cinematic-policy.test.ts
+          artifacts/ko-game/src/components/screen-impact-policy.test.ts
           artifacts/ko-game/src/components/presentation-event-feedback.test.ts
           artifacts/api-server/src/lib/ai-match-quest-service.test.ts
           lib/db/qa/awakening-http.test.ts
@@ -114,6 +115,7 @@ jobs:
             sleep 1
           done
           export KO_QA_PLAYWRIGHT="$RUNNER_TEMP/ko-entry-qa/node_modules/playwright/index.mjs"
+          node docs/qa/heavy-impact-browser.mjs
           node docs/qa/cinematic-overhaul-browser.mjs
           node docs/qa/cinematic-browser.mjs
           node docs/qa/presentation-master-browser.mjs

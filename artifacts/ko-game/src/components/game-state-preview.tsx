@@ -35,7 +35,6 @@ import type { EnterFieldEvent } from '@/game/events/types';
 import {
   attackDamageImpactLevel,
   attackImpactLevel,
-  attackScreenShakeLevel,
   attackAnimationDuration,
 } from './attack-animation-utils';
 import {
@@ -47,10 +46,11 @@ import {
 } from './alt-inspector';
 import { useBattleMotion, useHandMotion, MotionNumber } from './presentation-motion';
 import { withEffectSources, statusPresentation, mergeStatusPresentation } from './presentation-event-feedback';
-import { enqueuePresentation, strongerShake } from './presentation-policy';
+import { enqueuePresentation } from './presentation-policy';
 import { PresentationFeedback, type PresentationCue } from './presentation-feedback';
 import { presentationCueDrafts, presentationEventKey, presentationBlocksActions, visibleStatFeedback } from './presentation-feedback-utils';
 import { canMulligan } from '../game/engine/mulligan';
+import {ScreenShakeSetting} from './screen-impact';
 import { CinematicProvider, CinematicCue, CinematicIntro } from './cinematic-layer';
 import { QuestPresentation } from './quest-presentation';
 import { audioManager } from '../audio/audio-manager';
@@ -278,8 +278,8 @@ export function GameStatePreview({
     }
     if(prefersReducedMotion()) return;
     if(hapticsEnabled && window.matchMedia?.('(pointer: coarse)').matches && typeof navigator.vibrate==='function') navigator.vibrate(damage>=6?35:12);
-    motion.requestShake(attackDamageImpactLevel(damage));
-  },[state.gameId,state.status,hapticsEnabled,motion.react,motion.requestShake]);
+
+  },[state.gameId,state.status,hapticsEnabled,motion.react]);
 
   React.useEffect(() => {
     onPresentationBusyChange(Boolean(
@@ -882,15 +882,7 @@ export function GameStatePreview({
           ? "attack-finisher-zoom"
           : effectFinisher
             ? "effect-finisher-zoom"
-          : attackImpactTriggered && attackAnimation && attackAnimation.damage > 0
-            ? `attack-screen-shake--${strongerShake(attackScreenShakeLevel(attackAnimation.currentAttack, attackAnimation.damage), motion.shake).toLowerCase()}`
-          : motion.shake !== "NONE"
-            ? `attack-screen-shake--${motion.shake.toLowerCase()}`
-            : playAnimation?.kind === "WRESTLER"
-              ? getCardDefinition(playAnimation.card.definitionId)?.rarity === 'LEGENDARY'
-                ? 'card-landing-shake--legendary'
-                : `card-landing-shake--${playAnimation.impactLevel.toLowerCase()}`
-            : ""
+          : ""
       }`} style={attackAnimation?.finishingBlow ? {
         "--finisher-duration": `${attackAnimationDuration(attackAnimation.currentAttack) + 350}ms`,
         transformOrigin: `${Math.max(0, attackAnimation.geometry.target.left + attackAnimation.geometry.target.width / 2 - Math.max(0, (window.innerWidth - 1024) / 2))}px ${attackAnimation.geometry.target.top + attackAnimation.geometry.target.height / 2}px`,
@@ -1312,6 +1304,7 @@ export function GameStatePreview({
                            try { window.localStorage.setItem('ko-match-haptics', event.target.checked ? 'on' : 'off'); } catch { /* optional */ }
                          }} />
                      </label>
+                     <ScreenShakeSetting />
                      <button
                        type="button"
                        disabled={state.status === 'FINISHED'}
@@ -1558,6 +1551,7 @@ export function GameStatePreview({
       {playAnimation && (
         <CardPlayAnimation
           animation={playAnimation}
+          hapticsEnabled={hapticsEnabled}
           onComplete={onPlayAnimationComplete}
           viewerPlayerId={me.id}
         />
@@ -1566,6 +1560,7 @@ export function GameStatePreview({
         <CardPlayAnimation
           key={`generated-play-${generatedPlayAnimations[0].card.instanceId}-${generatedPlayAnimations[0].kind}`}
           animation={generatedPlayAnimations[0]}
+          hapticsEnabled={hapticsEnabled}
           viewerPlayerId={me.id}
           onComplete={() => {
             const completed = generatedPlayAnimations[0];
@@ -1611,7 +1606,7 @@ export function GameStatePreview({
         (!attackAnimation || attackImpactTriggered) && (
         presentationQueue[0].kind === "QUEST_COMPLETE"
           ? <QuestPresentation cue={presentationQueue[0]} state={state} viewerPlayerId={presentationPlayerId ?? me.id} onComplete={handlePresentationQueueComplete} />
-          : <PresentationFeedback cue={presentationQueue[0]} onStart={handlePresentationCueStart} onComplete={handlePresentationQueueComplete} />
+          : <PresentationFeedback lethal={state.status==='FINISHED' && presentationQueue[0].playerId===state.loserId} cue={presentationQueue[0]} onStart={handlePresentationCueStart} onComplete={handlePresentationQueueComplete} />
       )}
     </div>
     </AltInspectProvider></CinematicProvider>

@@ -67,3 +67,22 @@
 .ko-portrait-fragment{position:absolute;inset:0;background-image:inherit;background-position:inherit;background-size:inherit;pointer-events:none;animation:ko-fragment-collapse 1500ms both}
 @keyframes ko-fragment-collapse{0%,44%{opacity:0;transform:none}45%{opacity:1;transform:none}75%,100%{opacity:0;transform:translate(var(--fragment-x),var(--fragment-y)) rotate(var(--fragment-angle))}}
 @media(prefers-reduced-motion:reduce){.ko-portrait-fragment{display:none}}
+
+/* One finite owner for board kick, wave, debris and aftershock. */
+.ko-summon-motion .card-play-animation__card{animation:none!important}
+.ko-summon-motion.ko-summon-heavy .card-play-animation__card>.ko-card-depth{animation:none!important}
+.ko-screen-impact{position:fixed;inset:0;z-index:245;overflow:hidden;pointer-events:none;contain:layout paint;isolation:isolate}
+.ko-screen-impact__wave{position:absolute;left:var(--impact-x);top:var(--impact-y);width:var(--impact-wave);aspect-ratio:2.6;border:3px solid var(--impact-accent);border-radius:50%;box-shadow:0 0 9px #0008,inset 0 0 8px #0004;animation:ko-heavy-wave var(--impact-duration) ease-out both}
+.ko-screen-impact--champion .ko-screen-impact__wave{border-color:#d85543;border-width:4px;box-shadow:0 0 0 2px #d9ac5b66}
+.ko-screen-impact__wave--after{animation-delay:100ms;border-width:1px;opacity:.5}
+.ko-screen-impact__ink{position:absolute;left:var(--impact-x);top:var(--impact-y);width:min(var(--impact-wave),80vw);height:150px;background:#070709c9;clip-path:polygon(0 36%,31% 35%,20% 0,46% 27%,60% 1%,66% 35%,100% 22%,77% 53%,100% 85%,69% 76%,57% 100%,43% 75%,5% 98%,24% 60%);animation:ko-impact-ink 190ms both}
+.ko-screen-impact__edge{position:absolute;inset:0;box-shadow:inset 0 0 35px 16px #080808aa;animation:ko-edge-kick 180ms both}
+.ko-screen-impact--champion .ko-screen-impact__edge{box-shadow:inset 0 0 40px 16px #37151299}
+.ko-screen-impact__debris{position:absolute;left:var(--impact-x);top:var(--impact-y);width:10px;height:5px;background:var(--impact-accent);box-shadow:2px 2px #0008;animation:ko-heavy-debris var(--impact-duration) ease-out both}
+.ko-screen-impact__debris:nth-of-type(even){width:6px;height:3px;background:#1d1412}
+@keyframes ko-heavy-wave{0%{transform:translate(-50%,-50%) scale(.15);opacity:.9}35%{opacity:.65}100%{transform:translate(-50%,-50%) scale(1);opacity:0}}
+@keyframes ko-impact-ink{0%{transform:translate(-50%,-50%) scale(.2,.3);opacity:.7}18%{transform:translate(-50%,-50%) scale(.8,.6);opacity:.45}100%{transform:translate(-50%,-50%) scale(1.12,.85);opacity:0}}
+@keyframes ko-edge-kick{0%{opacity:.7}100%{opacity:0}}
+@keyframes ko-heavy-debris{0%{transform:translate(0,0) rotate(0);opacity:.85}100%{transform:translate(var(--debris-x),var(--debris-y)) rotate(var(--debris-rotation));opacity:0}}
+@media(max-width:480px){.ko-screen-impact__wave{max-width:130vw}.ko-screen-impact__debris{width:8px;height:4px}}
+@media(prefers-reduced-motion:reduce){.ko-screen-impact__debris,.ko-screen-impact__edge,.ko-screen-impact__ink,.ko-screen-impact__wave--after{display:none}.ko-screen-impact__wave{animation:ko-cinema-fade 160ms both;transform:translate(-50%,-50%) scale(.45)}}
