@@ -8,7 +8,7 @@ if (output) mkdirSync(output, { recursive: true });
 const browser = await chromium.launch({
   ...(process.env.KO_QA_CHROME
     ? { executablePath: process.env.KO_QA_CHROME }
-    : { channel: "chrome" }),
+    : process.env.KO_QA_CHROME_CHANNEL==='chromium'?{}:{ channel: "chrome" }),
   headless: true,
 });
 const failures = [];

@@ -3,6 +3,7 @@ import React, { useState } from "react";
 import { createRoot } from "react-dom/client";
 import "../src/index.css";
 import "../src/battle-presentation.css";
+import { CinematicProvider } from '../src/components/cinematic-layer';
 import { AttackAnimation } from "../src/components/attack-animation";
 import { CardPlayAnimation } from "../src/components/card-play-animation";
 import { CardLeaveAnimation } from "../src/components/card-leave-animation";
@@ -17,6 +18,7 @@ import {
   type CardDefinition,
 } from "../src/game";
 const definition: CardDefinition = {
+  imageUrl:"/icons/ko-512.png",
   id: "qa-fighter",
   name: "링의 수호자",
   cardType: "WRESTLER",
@@ -274,6 +276,6 @@ function Scene() {
 }
 createRoot(document.getElementById("root")!).render(
   <React.StrictMode>
-    <Scene />
+    <CinematicProvider><Scene /></CinematicProvider>
   </React.StrictMode>,
 );

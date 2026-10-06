@@ -1,6 +1,7 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, useId } from "react";
 import type { CSSProperties } from "react";
 
+import { useCinematicEvent } from './cinematic-layer';
 import { CardRenderer } from "./card-renderer";
 import { getCardDefinition } from "@/game";
 import { getActiveCardKeywords } from "../game/cards/granted-text";
@@ -34,6 +35,7 @@ export function CardPlayAnimation({
   onComplete: () => void;
   viewerPlayerId?: string;
 }) {
+  const occurrenceId = useId();
   const completedRef = useRef(false);
   const [viewport,setViewport]=useState(()=>({width:window.innerWidth,height:window.innerHeight}));
   useEffect(()=>{
@@ -44,6 +46,7 @@ export function CardPlayAnimation({
   const onCompleteRef = useRef(onComplete);
   onCompleteRef.current = onComplete;
   const definition = getCardDefinition(animation.card.definitionId);
+  useCinematicEvent(animation.kind==='TECHNIQUE' && animation.card.currentCost<4 ? null : {id:`play:${animation.card.instanceId}:${animation.kind}:${occurrenceId}`,kind:animation.kind==='TECHNIQUE'?'BIG_SPELL':definition?.rarity==='CHAMPION'?'CHAMPION':definition?.rarity==='LEGENDARY'?'LEGENDARY':'SUMMON',title:definition?.name ?? 'KO',art:definition?.imageUrl,strength:animation.card.currentCost});
   const source = animation.kind === "TECHNIQUE"
     ? techniqueRevealRect(animation.geometry.source)
     : wrestlerPlayRect(animation.geometry.source);
@@ -110,7 +113,7 @@ export function CardPlayAnimation({
   return (
     <div
       aria-hidden={animation.kind === "WRESTLER"}
-      className={`card-play-animation ${animationClass} card-play-animation--rarity-${rarity.toLowerCase()}`}
+      className={`card-play-animation ${animation.kind==='WRESTLER'&&(animation.card.currentCost>=6||definition?.rarity==='CHAMPION'||definition?.rarity==='LEGENDARY')?'ko-summon-heavy':''} ${animationClass} card-play-animation--rarity-${rarity.toLowerCase()}`}
       style={style}
     >
       {animation.kind === "TECHNIQUE" && (

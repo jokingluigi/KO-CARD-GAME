@@ -77,6 +77,7 @@ jobs:
           artifacts/ko-game/src/components/card-play-animation-utils.test.ts
           artifacts/ko-game/src/components/presentation-feedback-utils.test.ts
           artifacts/ko-game/src/components/presentation-policy.test.ts
+          artifacts/ko-game/src/components/cinematic-policy.test.ts
           artifacts/ko-game/src/components/presentation-event-feedback.test.ts
           artifacts/api-server/src/lib/ai-match-quest-service.test.ts
           lib/db/qa/awakening-http.test.ts
@@ -97,3 +98,22 @@ jobs:
             sleep 1
           done
           KO_QA_PLAYWRIGHT="$RUNNER_TEMP/ko-entry-qa/node_modules/playwright/index.mjs" node docs/qa/entry-browser.mjs
+
+      - name: Cinematic and shared battle browser regression guard
+        env:
+          KO_QA_ORIGIN: http://127.0.0.1:5173
+          KO_QA_CHROME_CHANNEL: chromium
+          PORT: '5173'
+          BASE_PATH: /
+        run: |
+          pnpm --filter @workspace/ko-game exec vite --config vite.config.ts --port 5173 --host 127.0.0.1 > "$RUNNER_TEMP/ko-cinematic-qa.log" 2>&1 &
+          qa_pid=$!
+          trap 'kill "$qa_pid" 2>/dev/null || true' EXIT
+          for attempt in $(seq 1 30); do
+            if curl --fail --silent "$KO_QA_ORIGIN/qa/overhaul.html" > /dev/null; then break; fi
+            sleep 1
+          done
+          export KO_QA_PLAYWRIGHT="$RUNNER_TEMP/ko-entry-qa/node_modules/playwright/index.mjs"
+          node docs/qa/cinematic-overhaul-browser.mjs
+          node docs/qa/cinematic-browser.mjs
+          node docs/qa/presentation-master-browser.mjs
