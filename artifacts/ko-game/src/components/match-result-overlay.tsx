@@ -1,10 +1,11 @@
 import { buildMatchRecap, type MatchRecap } from '../../../../lib/game-engine/src/match-recap';
 import { MatchRecapPanel } from './match-recap-panel';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, type CSSProperties } from 'react';
 import { getCardDefinition, type GameState } from "@/game";
 import { matchEndReason, matchSummary } from '@/lib/match-summary';
 import { championVoiceLine } from '@/game/champions/types';
 import { audioManager } from '@/audio/audio-manager';
+import './cinematic-presentation.css';
 import { prefersReducedMotion } from './presentation-config';
 
 export function MatchResultOverlay({
@@ -72,7 +73,13 @@ export function MatchResultOverlay({
       {cinematic && loser ? <div className="champion-defeat-cinematic" role="status" aria-label={`${loser.champion?.name} 패배`}>
         <div className="champion-defeat-cinematic__portrait" style={{ backgroundImage: `url(${loser.champion?.questCompleted && loser.champion?.questCompletedPortraitUrl ? loser.champion?.questCompletedPortraitUrl : loser.champion?.imageUrl ?? ''})` }}>
           <div className="champion-defeat-cinematic__fracture" />
+          {[0,1,2,3,4,5].map(i=><span key={i} className="ko-portrait-fragment" style={{'--fragment-x':`${(i%3-1)*28}px`,'--fragment-y':`${18+(i%2)*18}px`,'--fragment-angle':`${(i%2?1:-1)*12}deg`,clipPath:`polygon(${i%3*33}% ${i<3?0:50}%,${i%3*33+34}% ${i<3?0:50}%,${i%3*33+34}% ${i<3?50:100}%,${i%3*33}% ${i<3?50:100}%)`} as CSSProperties} />)}
+
         </div>
+        {winner && <div className="champion-defeat-cinematic__winner" aria-hidden="true">
+          {winner.champion?.imageUrl && <img src={winner.champion.questCompleted&&winner.champion.questCompletedPortraitUrl?winner.champion.questCompletedPortraitUrl:winner.champion.imageUrl} alt="" onError={e=>{e.currentTarget.style.visibility='hidden';}} />}
+          <strong>{winner.champion?.name}</strong><span>VICTORY</span>
+        </div>}
         <strong className="champion-defeat-cinematic__ko">K.O.</strong>
         {loserLine && <p className="champion-defeat-cinematic__line">“{loserLine}”</p>}
         {winnerLine && <p className="champion-defeat-cinematic__victory">{winner.champion?.name}: “{winnerLine}”</p>}

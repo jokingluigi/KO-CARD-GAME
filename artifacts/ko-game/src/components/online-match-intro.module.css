@@ -617,3 +617,9 @@
     transform: none;
   }
 }
+
+/* A single comic reveal preserves server-controlled intro and dialogue timing. */
+.overlay::after{background:#080909;clip-path:polygon(0 0,100% 0,100% 23%,0 40%);animation:comicReveal 650ms cubic-bezier(.16,1,.3,1) both}
+.portraitFrame{box-shadow:0 12px 20px #0007;transform:perspective(900px) rotateY(3deg)}
+@keyframes comicReveal{0%{transform:translateX(-100%);opacity:.8}45%{transform:translateX(0);opacity:.5}100%{transform:translateX(100%);opacity:0}}
+@media(prefers-reduced-motion:reduce){.overlay::after{animation:none;display:none}.portraitFrame{transform:none}}

@@ -51,6 +51,7 @@ import { enqueuePresentation, strongerShake } from './presentation-policy';
 import { PresentationFeedback, type PresentationCue } from './presentation-feedback';
 import { presentationCueDrafts, presentationEventKey, presentationBlocksActions, visibleStatFeedback } from './presentation-feedback-utils';
 import { canMulligan } from '../game/engine/mulligan';
+import { CinematicProvider, CinematicCue, CinematicIntro } from './cinematic-layer';
 import { QuestPresentation } from './quest-presentation';
 import { audioManager } from '../audio/audio-manager';
 import { combatHitSound } from '../audio/combat-hit-sound';
@@ -73,6 +74,7 @@ interface GameStatePreviewProps {
   onEndTurn: () => void;
   onMulligan?: (cardInstanceIds: string[]) => void;
   introActive?: boolean;
+  cinematicIntro?: {id:string;kind:'BOSS'|'HIDDEN_BOSS';title:string;subtitle:string;art?:string|null};
   guidedTutorial?: boolean;
   canEndTurn?: boolean;
   bgmMuted: boolean;
@@ -121,6 +123,7 @@ export function GameStatePreview({
   onEndTurn,
   onMulligan,
   introActive = false,
+  cinematicIntro,
   guidedTutorial = false,
   canEndTurn: canEndTurnOverride,
   bgmMuted,
@@ -857,12 +860,14 @@ export function GameStatePreview({
   }
   
   return (
-    <AltInspectProvider>
+    <CinematicProvider key={state.gameId}><AltInspectProvider>
      <div className={`ko-game-shell flex min-h-[100dvh] w-full flex-col overflow-x-hidden overflow-y-auto bg-neutral-950 font-sans text-neutral-100 selection:bg-primary selection:text-black md:overflow-hidden ${me.champion?.questCompleted ? 'ko-quest-awakened--mine' : ''} ${opp.champion?.questCompleted ? 'ko-quest-awakened--theirs' : ''}`}>
+      {cinematicIntro && <CinematicIntro event={cinematicIntro} />}
+      {activePresentationCue && <CinematicCue cue={activePresentationCue} state={state} />}
       <ActionHistory state={state} viewerPlayerId={presentationPlayerId ?? me.id} />
       
       {/* Background Ambience */}
-      <div className="pointer-events-none absolute inset-0 z-0 bg-neutral-950">
+      <div className="ko-cinematic-background pointer-events-none absolute inset-0 z-0 bg-neutral-950">
         {selectedBackground && (
           <div
             className="absolute inset-0 bg-cover bg-center bg-no-repeat"
@@ -994,6 +999,7 @@ export function GameStatePreview({
                 >
                   <div tabIndex={0} className={`rounded border px-2 py-1 text-[8px] font-bold md:text-[10px] ${opp.champion.questCompleted ? 'border-rose-400 bg-rose-950/90 text-rose-100' : 'border-purple-900 bg-purple-950/70 text-purple-200'}`}>
                     퀘스트 {opp.champion.questCompleted ? '완료' : `${opp.champion.questProgress}/${opp.champion.quest.requiredProgress}`}
+                     <span className="ko-quest-meter" aria-hidden="true"><i style={{transform:`scaleX(${Math.max(0,Math.min(1,opp.champion.questProgress/Math.max(1,opp.champion.quest.requiredProgress)))})`}} /></span>
                     <AwakeningStatus champion={opp.champion} />
                     {!opp.champion.questCompleted && opp.champion.questProgress === opp.champion.quest.requiredProgress - 1 && <span className="ml-1 text-amber-300">· 달성 임박</span>}
                   </div>
@@ -1479,6 +1485,7 @@ export function GameStatePreview({
                  <Inspectable content={<ChampionQuestInspectContent champion={me.champion} />}>
                   <div tabIndex={0} className={`rounded border px-2 py-1 text-[8px] font-bold md:text-[10px] ${me.champion.questCompleted ? 'border-amber-400 bg-amber-950/90 text-amber-100' : 'border-purple-900 bg-purple-950/70 text-purple-200'} ${activePresentationCue?.kind === "QUEST_PROGRESS" || activePresentationCue?.kind === "QUEST_COMPLETE" ? "presentation-card-pulse" : ""}`}>
                      퀘스트 {me.champion.questCompleted ? '완료' : `${me.champion.questProgress}/${me.champion.quest.requiredProgress}`}
+                     <span className="ko-quest-meter" aria-hidden="true"><i style={{transform:`scaleX(${Math.max(0,Math.min(1,me.champion.questProgress/Math.max(1,me.champion.quest.requiredProgress)))})`}} /></span>
                      <AwakeningStatus champion={me.champion} />
                      {!me.champion.questCompleted && me.champion.questProgress === me.champion.quest.requiredProgress - 1 && <span className="ml-1 text-amber-300">· 다음 1회!</span>}
                      {activePresentationCue?.kind === 'QUEST_PROGRESS' && activePresentationCue.playerId === me.id && (
@@ -1607,7 +1614,7 @@ export function GameStatePreview({
           : <PresentationFeedback cue={presentationQueue[0]} onStart={handlePresentationCueStart} onComplete={handlePresentationQueueComplete} />
       )}
     </div>
-    </AltInspectProvider>
+    </AltInspectProvider></CinematicProvider>
   );
 }
 

@@ -1,6 +1,6 @@
 import {mkdirSync} from 'node:fs';
 const {chromium}=await import(process.env.KO_QA_PLAYWRIGHT??'playwright');
-const browser=await chromium.launch({channel:'chrome',headless:true});
+const browser=await chromium.launch({...(process.env.KO_QA_CHROME_CHANNEL==='chromium'?{}:{channel:'chrome'}),headless:true});
 const failures=[],results=[];
 const output=process.env.KO_QA_SCREENSHOTS;if(output)mkdirSync(output,{recursive:true});
 for(const [name,width,height,reduced] of [['desktop',1280,800,false],['mobile',390,844,false],['small',320,568,false],['mobile-throttled',390,844,false],['reduced',390,844,true]]){

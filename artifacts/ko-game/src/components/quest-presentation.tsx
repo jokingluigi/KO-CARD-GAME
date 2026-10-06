@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import { useCinematicAvailable, useCinematicEvent } from './cinematic-layer';
 import { BattleVfx } from './battle-vfx';
 import { audioManager } from '@/audio/audio-manager';
 import { prefersReducedMotion } from './presentation-config';
@@ -48,6 +49,9 @@ export function QuestPresentation({
     };
   }, [cue.id,bannerDuration,rewardDuration]);
 
+  const managed=useCinematicAvailable();
+  useCinematicEvent({id:cue.id,kind:'AWAKENING',title:champion?.name??'Champion',subtitle:'QUEST COMPLETE · AWAKENING',art:champion?.questCompletedPortraitEnabled&&champion.questCompletedPortraitUrl?champion.questCompletedPortraitUrl:champion?.imageUrl,duration:bannerDuration});
+  if(managed && phase==='BANNER')return <div className="quest-presentation" aria-hidden="true"/>;
   return (
     <div className="quest-presentation fixed inset-0 z-[360] flex items-center justify-center bg-black/25 px-4 pointer-events-none">
       <BattleVfx kind="GOLD" seed={cue.id} left={window.innerWidth/2} top={window.innerHeight*.42} strength={10} duration={bannerDuration} />

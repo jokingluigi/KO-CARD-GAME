@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import type { CSSProperties } from "react";
+import { useCinematicEvent } from './cinematic-layer';
 import { CardRenderer } from "./card-renderer";
 import { getCardDefinition } from "@/game";
 import { getActiveCardKeywords } from "../game/cards/granted-text";
@@ -33,6 +34,7 @@ export function AttackAnimation({
   onCompleteRef.current = onComplete;
   const definition = getCardDefinition(animation.attacker.definitionId);
   const { source, target } = animation.geometry;
+  useCinematicEvent({id:`attack:${animation.soundKey}`,kind:animation.finishingBlow || animation.damage>=10 ? 'FINISHER' : 'ATTACK',title:definition?.name ?? 'KO',art:definition?.imageUrl,strength:animation.damage,focus:{x:target.left+target.width/2,y:target.top+target.height/2}});
   const reduced = prefersReducedMotion();
   const timeline = combatTimeline(animation.currentAttack,animation.damage,animation.finishingBlow,reduced);
   const {duration,impact:impactDelay} = timeline;
@@ -134,7 +136,10 @@ export function AttackAnimation({
           <div className="attack-animation__champion-impact" />
         )}
       </div>
+      {!reduced && animation.damage>=6 && definition?.imageUrl && [0,1].map(i=><div key={i} className="ko-attack-ghost" style={{backgroundImage:`url("${definition.imageUrl}")`,animationDelay:`${i*25}ms`}} />)}
       <div className="attack-animation__attacker" ref={attackerRef}>
+        {!reduced && animation.damage>=6 && definition?.imageUrl && <img className="ko-attack-breakout" src={definition.imageUrl} alt="" onError={e=>{e.currentTarget.style.visibility='hidden';}} />}
+
         <CardRenderer
           name={definition?.name ?? "공격 카드"}
           cardType={animation.attacker.cardType}
@@ -154,6 +159,8 @@ export function AttackAnimation({
         />
       </div>
       {impacted && <>
+        {!reduced && animation.damage>=6 && <div className={`ko-impact-frame ${animation.finishingBlow?'ko-impact-frame--finisher':''}`} />}
+
         <BattleVfx kind={attackBurstKind(animation)} left={target.left+target.width/2} top={target.top+target.height/2}
           strength={animation.damage} seed={animation.soundKey} duration={Math.min(500,duration-impactDelay)} />
         {animation.damage>=3 && <div className="attack-animation__shockwave" />}

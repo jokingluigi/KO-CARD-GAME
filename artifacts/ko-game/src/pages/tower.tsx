@@ -34,6 +34,7 @@ export default function Tower() {
   const [presentationBusy, setPresentationBusy] = useState(false);
   const [attackQueue, setAttackQueue] = useState<AttackAnimationState[]>([]);
   const [attackImpactTriggered, setAttackImpactTriggered] = useState(false);
+  const [bossIntroGameId, setBossIntroGameId] = useState<string | null>(null);
   const [settlement, setSettlement] = useState<TowerView | null>(null);
   const enqueueAttack = useCallback((animation: AttackAnimationState) => setAttackQueue(queue => [...queue, animation]), []);
   useEffect(() => {
@@ -90,6 +91,7 @@ export default function Tower() {
     busyRef.current = true; setBusy(true); setError('');
     try {
       const result = await work();
+      if(run?.phase!=='BATTLE' && result.run?.phase==='BATTLE' && result.battle) setBossIntroGameId(result.battle.gameId);
       if (detail && result.run) await loadRun(result.run.id);
       else if (run?.phase === 'BATTLE' && result.run?.phase !== 'BATTLE' && result.battle?.status === 'FINISHED') {
         setSettlement(result); setView(previous => ({ ...previous, battle: result.battle }));
@@ -118,7 +120,7 @@ export default function Tower() {
   if (loading) return <main className="p-6 text-white" role="status">타워 도전을 불러오는 중…</main>;
   if (run?.phase === 'BATTLE' && view.battle) return <>
     <div className="fixed left-2 top-2 z-[220] max-w-[calc(100%-1rem)] rounded bg-neutral-950/95 px-3 py-2 text-sm text-white"><span>{towerDiagnostic && '관리자 테스트 · '}{run.encounter.bossSlot === 'hiddenBoss' ? '히든 보스' : `${run.floor}/16층`} · 유물 {run.relicIds.length}/3</span>{busy && <span role="status"> · 저장 중…</span>}{error && <p role="alert" className="break-words text-red-300">{error}</p>}</div>
-    <GameStatePreview state={view.battle} mediaCatalog={media} selectedCardId={selectedCardId} selectedAttackerId={selectedAttackerId} playError={error || null} turnSecondsRemaining={60} showTurnTimer={false} autoPresentOwnActions canEndTurn={!busy && !presentationBusy && !settlement && !attackQueue.length} guidedTutorial={false}
+    <GameStatePreview cinematicIntro={run.encounter.bossSlot && bossIntroGameId===view.battle.gameId ? {id:run.id+":"+view.battle.gameId,kind:run.encounter.bossSlot==='hiddenBoss'?'HIDDEN_BOSS':'BOSS',title:view.battle.players[1]?.champion?.name??'BOSS',subtitle:'FLOOR '+run.floor,art:view.battle.players[1]?.champion?.imageUrl}:undefined} state={view.battle} mediaCatalog={media} selectedCardId={selectedCardId} selectedAttackerId={selectedAttackerId} playError={error || null} turnSecondsRemaining={60} showTurnTimer={false} autoPresentOwnActions canEndTurn={!busy && !presentationBusy && !settlement && !attackQueue.length} guidedTutorial={false}
       onEndTurn={() => action({ type: 'END_TURN', playerId: 'player-1' })} onMulligan={cardInstanceIds => action({ type: 'MULLIGAN', playerId: 'player-1', cardInstanceIds })}
       bgmMuted={bgmMuted} bgmVolume={bgmVolume} onBgmMutedChange={value => { setBgmMuted(value); localStorage.setItem(BGM_MUTE_STORAGE_KEY, String(value)); audioManager.setBgmMuted(value); }} onBgmVolumeChange={value => { setBgmVolume(value); localStorage.setItem(BGM_VOLUME_STORAGE_KEY, String(value)); audioManager.setBgmVolume(value); }}
       onSurrender={() => action({ type: 'SURRENDER', playerId: 'player-1' })} onEmote={emote => action({ type: 'EMOTE', playerId: 'player-1', emote })}

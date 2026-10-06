@@ -328,7 +328,7 @@ export function CardRenderer({
 
   return (
     <div
-      className={`relative aspect-[1060/1484] overflow-visible select-none ${className}`}
+      className={`ko-card-depth relative aspect-[1060/1484] overflow-visible select-none ${className}`}
       data-rarity={normalizedRarity}
       data-targetable={highlight === "target"}
       style={style}
