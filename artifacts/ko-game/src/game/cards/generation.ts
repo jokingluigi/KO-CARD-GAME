@@ -47,11 +47,11 @@ export interface RandomCardPoolOptions {
 }
 
 export function isEligibleForRandomPool(
-  card: Pick<CardDefinition, 'isToken' | 'isChampionToken' | 'status'>,
+  card: Pick<CardDefinition, 'isToken' | 'isChampionToken' | 'status' | 'questExclusive'>,
   randomScope: RandomScope = 'STANDARD',
 ): boolean {
   // Legacy built-in definitions have no publication metadata and are public.
-  return randomScope === 'FULL' || ((card.status ?? 'PUBLISHED') === 'PUBLISHED' && !card.isToken && !card.isChampionToken);
+  return !card.questExclusive && (randomScope === 'FULL' || ((card.status ?? 'PUBLISHED') === 'PUBLISHED' && !card.isToken && !card.isChampionToken));
 }
 
 export function generateCardInstance(
@@ -64,6 +64,8 @@ export function generateCardInstance(
   return {
     instanceId: options.instanceId,
     definitionId: definition.id,
+    ...(definition.questExclusive ? {questExclusive:true} : {}),
+    ...(definition.awakeningStage ? {awakeningStage:definition.awakeningStage} : {}),
     ...(definition.status ? { status: definition.status } : {}),
     ...(definition.contentRule ? {contentRule: definition.contentRule} : {}),
     cardType: definition.cardType ?? 'WRESTLER',

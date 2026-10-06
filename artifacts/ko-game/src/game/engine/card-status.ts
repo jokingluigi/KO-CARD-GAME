@@ -35,8 +35,8 @@ export function silenceCard(
     if (card.isSilenceImmune) return card;
     const definition = state.cardPool?.find(item => item.id === card.definitionId);
     const draft = card.draftMutation ? draftBaseline(card, definition) : undefined;
-    const attack = (draft?.attack ?? definition?.attack ?? card.baseAttack ?? card.currentAttack) + (aura?.attack ?? 0);
-    const maxHealth = (draft?.health ?? definition?.health ?? card.baseHealth ?? card.maxHealth) + (aura?.health ?? 0);
+    const attack = (card.awakening?.baseAttack ?? draft?.attack ?? definition?.attack ?? card.baseAttack ?? card.currentAttack) + (aura?.attack ?? 0);
+    const maxHealth = (card.awakening?.baseHealth ?? draft?.health ?? definition?.health ?? card.baseHealth ?? card.maxHealth) + (aura?.health ?? 0);
     return {
       ...removeGrantedCardText(card),
       grantedTags: undefined,

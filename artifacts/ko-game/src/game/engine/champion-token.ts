@@ -24,7 +24,7 @@ export function validateLinkedChampionToken(
   const definition = state.cardPool?.find(
     (candidate) => candidate.id === champion.championTokenDefinitionId,
   );
-  if (!definition?.isChampionToken) {
+  if (!definition?.isChampionToken || definition.questExclusive) {
     return {
       ok: false,
       errorCode: 'CHAMPION_TOKEN_REFERENCE_INVALID',
@@ -46,7 +46,7 @@ export function directDeployChampionToken(
   if (
     !player?.champion ||
     player.champion.id !== championId ||
-    !definition?.isChampionToken
+    !definition?.isChampionToken || definition.questExclusive
   ) {
     throw new Error('유효한 챔피언 토큰을 직접 출전시킬 수 없습니다.');
   }

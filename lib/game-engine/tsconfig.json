@@ -28,6 +28,7 @@
     "../../artifacts/ko-game/src/game/cards/tags.ts",
     "../../artifacts/ko-game/src/game/cards/published-cards.ts",
     "../../artifacts/ko-game/src/game/champions/quests.ts",
+    "../../artifacts/ko-game/src/game/champions/awakening*.ts",
     "../../artifacts/ko-game/src/game/champions/test-champions.ts",
     "../../artifacts/ko-game/src/game/champions/types.ts",
     "../../artifacts/ko-game/src/game/champions/minion-a.ts",

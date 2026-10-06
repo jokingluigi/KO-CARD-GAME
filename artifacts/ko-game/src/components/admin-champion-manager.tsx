@@ -1,4 +1,5 @@
 import { TOWER_VANILLA_CHAMPION_ID } from '@/game/champions/tower-vanilla';
+import { AWAKENING_CARD_IDS, AWAKENING_QUEST_TEXT } from '@/game/champions/awakening-definitions';
 import { ChampionQuestConditionEditor } from './champion-quest-condition-editor';
 import { validChampionQuestCondition } from '@workspace/game-engine';
 import { AdminEffectAiGenerator } from "./admin-effect-ai-generator";
@@ -222,7 +223,7 @@ export function AdminChampionManager({ onUnauthorized }: { onUnauthorized: () =>
     const response = await fetch(`${adminApiBase}/cards?tokenKind=CHAMPION_TOKEN`, { credentials: "include" });
     if (response.status === 401) { onUnauthorized(); return; }
     if (!response.ok) { setError(await message(response)); return; }
-    setTokenCards(((await response.json()) as { cards: TokenCard[] }).cards);
+    setTokenCards(((await response.json()) as { cards: TokenCard[] }).cards.filter(card => !Object.values(AWAKENING_CARD_IDS).some(id => id === card.id)));
   }, [onUnauthorized]);
   useEffect(() => { void loadTokenCards(); }, [loadTokenCards]);
 
@@ -996,6 +997,13 @@ export function AdminChampionManager({ onUnauthorized }: { onUnauthorized: () =>
                : current.questCondition,
            });
          }}/> 퀘스트 있음</label>
+         <div className="md:col-span-2"><button type="button" className="rounded border border-amber-500 px-3 py-2 text-sm text-amber-200" onClick={() => setForm(current => ({ ...current,
+           hasQuest: true, questName: '위기 각성', questText: AWAKENING_QUEST_TEXT, questProgressRequired: 1,
+           questCondition: { event: 'STATE_CONDITION', required: 1, condition: { type: 'ALL', conditions: [
+             { type: 'HEALTH', owner: 'SELF', op: 'GTE', value: 1 }, { type: 'HEALTH', owner: 'SELF', op: 'LTE', value: 5 },
+           ] }, awakening: { stageCardIds: { ...AWAKENING_CARD_IDS }, fullBoardPolicy: 'WAIT_WITHOUT_INVULNERABILITY' } },
+           questRewardEffects: null, questRewardText: '각성 수치를 확정하고 탱커 → 힐러 → 딜러를 연쇄 소환합니다. 각성 선수가 필드에 있는 동안 내 챔피언은 무적입니다. 소환 대기 중에는 무적이 보류됩니다.',
+         }))}>위기 각성 · 3단계 연쇄 소환 적용</button>{form.questCondition?.awakening != null && <p className="mt-2 text-xs text-amber-200">저장하면 전용 초안 선수 3장이 생성됩니다. 이름과 이미지는 카드 관리에서 설정하세요. 챔피언 이름·체력·고유 능력은 위 설정을 사용합니다.</p>}</div>
          {form.hasQuest && <><label>퀘스트 이름<input className={input} value={form.questName??""} onChange={e=>update("questName",e.target.value)}/></label><label>필요 진행도<input type="number" className={input} value={form.questProgressRequired??1} onChange={e=>updateQuestProgress(e.target.value===""?null:Number(e.target.value))}/></label>
            <fieldset className="space-y-3 md:col-span-2"><legend>퀘스트 달성 조건 설정</legend><select className={input} value={form.questCondition?.event === 'STATE_CONDITION' ? 'advanced' : 'legacy'} onChange={e=>{ if(e.target.value==='advanced') { update('questCondition',{event:'STATE_CONDITION',required:form.questProgressRequired??1,condition:{type:'TURN',turn:5}}); } else update('questCondition',{event:'CARD_PLAYED',progress:1,required:form.questProgressRequired??1}); }}><option value="legacy">기존 이벤트 진행도</option><option value="advanced">턴·체력·행동 누적·복합 조건</option></select>{form.questCondition?.event === 'STATE_CONDITION' && validChampionQuestCondition(form.questCondition.condition) && <ChampionQuestConditionEditor value={form.questCondition.condition} onChange={condition=>update('questCondition',{...formRef.current.questCondition,condition})}/>}<p className="text-xs text-neutral-400">복합 조건은 누적 행동과 현재 턴·체력을 함께 평가합니다. 퀘스트 보상은 최초 달성 시 한 번만 적용합니다.</p></fieldset>
            <QuestConditionField

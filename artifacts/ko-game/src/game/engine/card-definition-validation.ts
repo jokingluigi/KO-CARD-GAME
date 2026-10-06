@@ -1,5 +1,6 @@
 import type { CardInstance } from '../cards/types';
 import type { GameState } from '../types/game-state';
+import { validAwakeningQuestConfig } from '../champions/awakening-types';
 
 function allCards(state: GameState): CardInstance[] {
   return state.players.flatMap((player) => [
@@ -46,6 +47,16 @@ export function validateCardDefinitionReferences(state: GameState): void {
   }
 
   for (const player of state.players) {
+    const config = player.champion?.quest?.awakening;
+    if (config) {
+      if (!validAwakeningQuestConfig(config)) throw new Error('저장된 각성 퀘스트 설정이 유효하지 않습니다.');
+      for (const stage of ['TANK', 'HEALER', 'DEALER'] as const) {
+        const definition = state.cardPool.find(card => card.id === config.stageCardIds[stage]);
+        if (!definition?.questExclusive || definition.awakeningStage !== stage || definition.cardType !== 'WRESTLER' || definition.rarity !== 'CHAMPION') {
+          throw new Error('저장된 각성 퀘스트에 전용 선수 정의가 없습니다.');
+        }
+      }
+    }
     const tokenId = player.champion?.championTokenDefinitionId;
     if (tokenId && !definitionIds.has(tokenId)) {
       throw new Error(`저장된 Champion이 알 수 없는 Champion Token을 참조합니다: ${tokenId}`);

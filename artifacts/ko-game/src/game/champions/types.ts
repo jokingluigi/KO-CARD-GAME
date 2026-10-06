@@ -37,6 +37,7 @@ export type ChampionQuestReward =
     };
 
 export interface ChampionQuest {
+  awakening?: import('./awakening-types').AwakeningQuestConfig;
   goldSpent?: boolean;
   selfEffectDamage?: boolean;
   strictEventCount?: boolean;
@@ -84,6 +85,7 @@ export interface ChampionDefinition {
 }
 
 export interface ChampionState {
+  awakening?: import('./awakening-types').AwakeningState;
   id: string;
   presentationLines?: ChampionPresentationLines;
   name: string;

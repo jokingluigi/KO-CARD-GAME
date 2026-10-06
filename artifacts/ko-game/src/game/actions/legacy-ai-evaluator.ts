@@ -1,4 +1,5 @@
 import { isMinionAAbility } from '../champions/minion-a';
+import { hasAwakeningInvulnerability } from '../champions/awakening';
 import { canUseChampionAbility } from '../engine/champion-system';
 import type { CardEffect } from '../effects/types';
 import type { CardInstance } from '../cards/types';
@@ -131,7 +132,8 @@ export function evaluateAction(state: GameState, action: GameAction, playerId: s
       .find((candidate) => candidate.instanceId === action.cardInstanceId);
     bonus += card ? estimateCardValue(card) : 0;
   } else if (action.type === 'ATTACK') {
-    bonus += action.target.type === 'PLAYER' ? 8 : 3;
+    bonus += action.target.type === 'PLAYER' ? hasAwakeningInvulnerability(state, action.target.playerId) ? -12 : 8 : 3;
+    if (action.target.type === 'WRESTLER' && state.players.find(p => p.id === action.target.playerId)?.champion?.awakening?.activeStageInstanceId === action.target.cardInstanceId) bonus += 6;
     if (action.target.type === 'WRESTLER') bonus += Math.max(0, targetValue(state, action.target.cardInstanceId, playerId));
     const opponent = result.state.players.find((player) => player.id !== playerId);
     if ((opponent && opponent.health <= 0) || opponent?.champion?.health === 0) bonus += 100;
