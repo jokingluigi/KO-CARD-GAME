@@ -4,7 +4,7 @@ import type { GameState } from '../types/game-state';
 import { getActiveCardKeywords } from '../cards/granted-text';
 import { evaluateChampionQuestCondition, validChampionQuestCondition } from '../../../../../lib/game-engine/src/champion-quest-conditions';
 export function hasEntryDefense(card: CardInstance, turn: number): boolean {
- return getActiveCardKeywords(card).includes('DEFENSE') && (card.enteredOnTurn !== undefined ? card.enteredOnTurn === turn : card.enteredThisTurn);
+ return getActiveCardKeywords(card).includes('DEFENSE') && (card.entryDefenseActive ?? (card.enteredOnTurn !== undefined ? turn <= card.enteredOnTurn + 1 : card.enteredThisTurn));
 }
 export function keywordDamage(card: CardInstance, amount: number, turn: number): number {
  const keywords=getActiveCardKeywords(card);

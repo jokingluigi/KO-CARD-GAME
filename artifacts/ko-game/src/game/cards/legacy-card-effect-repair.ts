@@ -85,7 +85,7 @@ export function repairedLegacyCardAbilities(card: PublishedCardRecord): CardAbil
   // this published card by its stable definition ID as well as its name.
   if (card.name.trim() === '오젠' || card.id === 'dc43dc88-38d7-499b-ad89-6b83f773fe62') {
     return [{ trigger: 'ENTER_FIELD', effects: [{ type: 'STRUCTURED', action: /파괴/u.test(text) ? 'DESTROY' : 'RETIRE',
-      target: { zone: 'BOARD', owner: 'ENEMY', cardType: 'WRESTLER', filter: { maxCost: 1, isChampionToken: false, excludeChampionRarity: true }, selection: 'RANDOM', count: 1 } }] }];
+        target: { zone: 'BOARD', owner: 'ENEMY', cardType: 'WRESTLER', filter: { maxCost: 1, isChampionToken: false, excludeChampionRarity: true }, selection: 'RANDOM', randomScope: 'FULL', count: 1 } }] }];
   }
   if (card.name.trim() === '발단' && /묘지.*카드\s*한\s*장.*파괴.*좀비.*소환/u.test(text)) {
     return [{ trigger: 'ENTER_FIELD', effects: [

@@ -155,6 +155,7 @@ export interface CardInstance {
   boardSlot: 0 | 1 | 2 | 3 | null;
   enteredThisTurn: boolean;
   enteredOnTurn?: number;
+  entryDefenseActive?: boolean;
   attacksUsedThisTurn: number;
   isGenerated: boolean;
   isToken: boolean;

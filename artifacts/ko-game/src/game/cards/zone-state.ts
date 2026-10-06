@@ -60,6 +60,8 @@ export function resetCardAfterLeavingBoard(card: CardInstance, printedDefinition
     maxHealth: baseHealth,
     boardSlot: null,
     enteredThisTurn: false,
+    enteredOnTurn: undefined,
+    entryDefenseActive: false,
     attacksUsedThisTurn: 0,
     dodgeAvailable: hasDodge,
     dodgeCharges: hasDodge ? (definition ? configuredDodgeCharges(definition.effectConfig) : card.baseDodgeCharges ?? 1) : 0,

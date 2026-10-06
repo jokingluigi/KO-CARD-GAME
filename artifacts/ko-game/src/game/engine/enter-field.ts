@@ -38,6 +38,7 @@ export function enterField(
     boardSlot,
     enteredThisTurn: true,
     enteredOnTurn: state.turn,
+    entryDefenseActive: true,
     attacksUsedThisTurn: 0,
   };
   const event: EnterFieldEvent = {
