@@ -49,6 +49,9 @@ export function silenceCard(
       keywords: [],
       dodgeAvailable: false,
       dodgeCharges: 0,
+      countdownRemaining: undefined,
+      countdownResolved: undefined,
+      countdownLastTickTurn: undefined,
     };
   }));
 }

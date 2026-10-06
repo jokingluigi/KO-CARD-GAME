@@ -1,11 +1,33 @@
 /** The content-facing Effect DSL contract. Card and Champion administration use
  * this exact registry; English identifiers are stable implementation aliases. */
-export const TRIGGERS = ["GAME_START", "ENTER_FIELD", "LEAVE_FIELD", "SELF_RETIRE", "ACTIVE", "CARD_DRAWN", "CARD_RETIRED", "CARD_SUMMONED", "CARD_ENTERED", "FIRST_ATTACKED", "SELF_ATTACK", "OTHER_ALLY_ATTACK", "ATTACK_SURVIVED", "SELF_DAMAGED", "STAT_CHANGED", "TECHNIQUE_CAST", "EXACT_ZERO_DAMAGE", "TURN_START", "TURN_END", "BEFORE_DAMAGE", "BEFORE_RETIRE"] as const;
+export const TRIGGERS = ["GAME_START", "ENTER_FIELD", "LEAVE_FIELD", "SELF_RETIRE", "ACTIVE", "CARD_DRAWN", "CARD_RETIRED", "CARD_SUMMONED", "CARD_ENTERED", "FIRST_ATTACKED", "SELF_ATTACK", "OTHER_ALLY_ATTACK", "ATTACK_SURVIVED", "SELF_DAMAGED", "STAT_CHANGED", "TECHNIQUE_CAST", "EXACT_ZERO_DAMAGE", "TURN_START", "TURN_END", "BEFORE_DAMAGE", "BEFORE_RETIRE", "COUNTDOWN"] as const;
 export const RULE_LISTENER_TRIGGERS = ["CARD_PLAYED", "TECHNIQUE_PLAYED", "CARD_RETIRED", "DAMAGE_TAKEN", "SOURCE_CAUSED_TARGET_REMOVAL"] as const;
 export const CONDITIONS = ["NEED_CONDITION", "BASE_COST_GTE", "SOURCE_ON_LEFT_SIDE", "SOURCE_ON_RIGHT_SIDE", "SOURCE_IS_ONLY_WRESTLER", "SOURCE_IN_HAND", "FIRST_ATTACK_GAIN"] as const;
 export const REFERENCES = ["SOURCE", "LAST_TARGET", "LAST_DRAWN_CARD", "LAST_ATTACKER", "LAST_DAMAGED_TARGET", "CAPTURED_CARD", "CURRENT_SLOT"] as const;
 export const ACTIONS = ["BUFF", "SET_STATS", "MODIFY_STAT", "MODIFY_MAX_HEALTH", "SET_STAT", "DAMAGE", "HEAL", "SILENCE", "DESTROY", "RETIRE", "ADD_GOLD", "ADD_NEXT_TURN_GOLD", "DRAW", "REDUCE_COST", "INCREASE_COST", "STUN", "DISABLE_ABILITY", "WEAKEN_TO_STUN_SILENCE", "ADD_KEYWORD", "REMOVE_KEYWORD", "SWAP_STATS", "ADD_DAMAGE_MODIFIER", "SUMMON", "SUMMON_FROM_HAND", "REVIVE", "GENERATE", "MOVE_TO_HAND", "MOVE_TO_DECK", "STEAL", "MILL", "SPEND_GOLD_BUFF_SELF", "DEPLOY_CHAMPION_TOKEN", "CAPTURE", "RELEASE_CAPTURED", "REMOVE_FROM_GAME", "SWITCH_EFFECT_BRANCH", "QUEUE_EFFECT", "ADD_AGGREGATED_ATTACK", "COPY_BEST_STATS", "REPEAT_TURN_END", "TRANSFORM_SOURCE", "TRANSFORM_TARGET", "REGISTER_DELAYED", "REGISTER_LISTENER", "PREVENT_DAMAGE", "PREVENT_RETIRE", "GRANT_RANDOM_CARD_TEXT"] as const;
-export const KEYWORDS = ["RUSH", "SURPRISE", "TAUNT", "DODGE", "MULTI_STRIKE", "IMMUNE", "REGEN", "ARMOR", "CONDITION", "DEFENSE", "LIFESTEAL"] as const;
+export const KEYWORDS = ["RUSH", "SURPRISE", "TAUNT", "DODGE", "MULTI_STRIKE", "IMMUNE", "REGEN", "ARMOR", "CONDITION", "DEFENSE", "LIFESTEAL", "COUNTDOWN"] as const;
+
+export function validCountdownTurns(value: unknown): value is number {
+  return typeof value === 'number' && Number.isSafeInteger(value) && value >= 1 && value <= 999;
+}
+export function configuredCountdownTurns(config?: Record<string, unknown>): number {
+  return validCountdownTurns(config?.countdownTurns) ? config.countdownTurns : 1;
+}
+
+/** Countdown is a board lifecycle, so techniques and hand-only triggers cannot use it. */
+export function validCountdownCardSettings(cardType: unknown, keywords: readonly string[], config: Record<string, unknown>): boolean {
+  if (config.countdownTurns !== undefined && !validCountdownTurns(config.countdownTurns)) return false;
+  const entries = Array.isArray(config.effects) ? config.effects : Array.isArray(config.scripts) ? config.scripts : [];
+  const countdown = entries.filter(entry => entry && typeof entry === 'object' && entry.trigger === 'COUNTDOWN');
+  if (keywords.includes('COUNTDOWN') && cardType !== 'WRESTLER') return false;
+  if (!countdown.length) return true;
+  return cardType === 'WRESTLER' && keywords.includes('COUNTDOWN') && countdown.every(entry => {
+    if (entry.conditions === undefined) return true;
+    if (!Array.isArray(entry.conditions)) return false;
+    return !entry.conditions.some((condition: unknown) =>
+      condition && typeof condition === 'object' && 'type' in condition && condition.type === 'SOURCE_IN_HAND');
+  });
+}
 export const TARGET_ZONES = ["BOARD", "HAND", "DECK", "GRAVEYARD", "PLAYER", "CHARACTER"] as const;
 /** The default card scope for Korean phrases such as "어디에 있든". */
 export const DEFAULT_CARD_TARGET_SCOPE = ["HAND", "DECK", "BOARD"] as const;
@@ -267,8 +289,8 @@ export type StructuredEffect = {
   conditions?: StructuredEffectCondition[];
   values?: StructuredEffectValues;
 };
-export type StructuredEffectConfig = { effects: StructuredEffect[] };
-export type EffectScriptConfig = { scripts: EffectScript[] };
+export type StructuredEffectConfig = { effects: StructuredEffect[]; countdownTurns?: number };
+export type EffectScriptConfig = { scripts: EffectScript[]; countdownTurns?: number };
 export type MechanicCompilerProviderOutput =
   | { status: "READY"; effectId: "STRUCTURED_EFFECTS_V1"; effects: StructuredEffect[]; keywords?: Keyword[] }
   | { status: "READY"; effectId: "SCRIPT_V1"; scripts: EffectScript[]; keywords?: Keyword[] }
@@ -481,7 +503,7 @@ export const DISPLAY_LABELS = {
   GAME_START: "게임 시작", ENTER_FIELD: "등장", CARD_DRAWN: "준비", SELF_RETIRE: "자기 퇴장", SELF_ATTACK: "자신 공격", OTHER_ALLY_ATTACK: "콤보", ATTACK_SURVIVED: "공격 생존", SELF_DAMAGED: "자기 피해", STAT_CHANGED: "스탯 변경", TECHNIQUE_CAST: "주문",
   CARD_RETIRED: "아군 퇴장", CARD_SUMMONED: "아군 소환", CARD_ENTERED: "아군 진입", FIRST_ATTACKED: "첫 공격",
   EXACT_ZERO_DAMAGE: "핀폴",
-  LEAVE_FIELD: "퇴장", ACTIVE: "액티브", TURN_START: "턴 시작", TURN_END: "턴 종료",
+  COUNTDOWN: "카운트다운", LEAVE_FIELD: "퇴장", ACTIVE: "액티브", TURN_START: "턴 시작", TURN_END: "턴 종료",
   NEED_CONDITION: "조건",
   SOURCE_ON_LEFT_SIDE: "스위치(왼쪽)", SOURCE_ON_RIGHT_SIDE: "스위치(오른쪽)", FIRST_ATTACK_GAIN: "첫 공격력 증가",
   BUFF: "강화", SET_STATS: "스탯 설정", MODIFY_STAT: "스탯 변경", MODIFY_MAX_HEALTH: "최대 체력 변경", SET_STAT: "스탯 설정", DAMAGE: "피해", HEAL: "회복", DESTROY: "파괴", RETIRE: "리타이어", DRAW: "드로우",
@@ -717,6 +739,7 @@ export const EFFECT_CAPABILITIES: Record<Action, { description: string; status: 
 export const RUNTIME_HANDLER_ACTIONS = ACTIONS;
 
 const triggerDescriptions: Record<Trigger, string> = {
+  COUNTDOWN: "필드에서 자기 턴 시작마다 카운트다운이 1 감소합니다. 0이 되면 살아 있는 카드에서 한 번 발동합니다. 재등장하면 설정한 수치부터 다시 시작합니다.",
   GAME_START: "초기 손패를 나누기 전에 덱 또는 손패에 있는 카드에서 각각 한 번 발동합니다.",
   ENTER_FIELD: "선수를 손패에서 직접 내거나 챔피언을 특별 전개할 때 발동합니다. 일반 소환·부활에는 자동 발동하지 않습니다.", LEAVE_FIELD: "카드가 리타이어로 필드를 떠날 때 발동합니다. 파괴·제거에는 발동하지 않습니다.", SELF_RETIRE: "이 카드가 RETIRE로 필드를 떠날 때 발동합니다.", CARD_SUMMONED: "선수가 소환으로 필드에 들어올 때 아군 보드에서 발동합니다.", CARD_ENTERED: "아군 카드가 플레이, 소환 등으로 필드에 들어올 때 아군 보드에서 발동합니다.",
   ACTIVE: "등장한 턴에는 사용할 수 없으며, 다음 자기 턴부터 액티브 능력을 사용할 때 발동합니다.", CARD_DRAWN: "카드가 덱에서 드로우될 때 발동합니다.", CARD_RETIRED: "아군 선수가 퇴장할 때 발동합니다.", FIRST_ATTACKED: "이 카드가 처음 공격받을 때 발동합니다.",

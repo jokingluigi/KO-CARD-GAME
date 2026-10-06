@@ -1,4 +1,5 @@
 import { healNewCardAware } from './new-card-rules';
+import { resumeCountdownTurnStart } from './countdown';
 import type { GameState, PlayerState } from '../types/game-state';
 import type { CardInstance } from '../cards/types';
 import { expireTowerOpponentTurnBuffs, expireTowerTurnEndBuffs, towerTurnStart } from '../tower/relics';
@@ -75,7 +76,15 @@ function beginPlayerTurn(state: GameState, playerId: string): GameState {
     ...(turnStartPlayer?.board.filter((card): card is CardInstance => card !== null) ?? []),
     ...(turnStartPlayer?.hand.filter((card) => getActiveCardAbilities(card).some((ability) => ability.trigger === 'TURN_START' && ability.condition?.type === 'SOURCE_IN_HAND')) ?? []),
   ];
+  if (turnStartCards.some(card=>getActiveCardKeywords(card).includes('COUNTDOWN'))) {
+    return resumeCountdownTurnStart({...afterDelayed,pendingCountdownTurnStart:{turn:state.turn,playerId,
+      steps:turnStartCards.flatMap(card=>[
+        {instanceId:card.instanceId,trigger:'COUNTDOWN' as const},
+        {instanceId:card.instanceId,trigger:'TURN_START' as const},
+      ])}});
+  }
   return turnStartCards.reduce((nextState, card) => {
+      if (nextState.status !== 'IN_PROGRESS') return nextState;
       const currentPlayer = nextState.players.find((player) => player.id === playerId);
       const currentCard = currentPlayer?.board.find((candidate) => candidate?.instanceId === card.instanceId)
         ?? currentPlayer?.hand.find((candidate) => candidate.instanceId === card.instanceId);

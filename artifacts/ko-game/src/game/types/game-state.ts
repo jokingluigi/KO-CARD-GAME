@@ -162,5 +162,10 @@ export interface GameState {
     };
   };
   /** Resolution-local snapshot used by chained retirement/stat effects. */
+  pendingCountdownTurnStart?: {
+    turn: number;
+    playerId: string;
+    steps: Array<{instanceId: string; trigger: 'COUNTDOWN' | 'TURN_START'}>;
+  };
   lastAggregatedStats?: { attack: number; health: number };
 }

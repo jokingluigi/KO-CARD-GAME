@@ -10,7 +10,7 @@ type EffectAiDraft = {
   scripts: unknown[];
   keywords: string[];
   preview: Array<{ label: string; value: string }>;
-  effectConfig: { effects?: unknown[]; scripts?: unknown[] };
+  effectConfig: { effects?: unknown[]; scripts?: unknown[]; countdownTurns?: number };
   structuredEffect: { effects?: unknown[]; scripts?: unknown[] };
   dryRun?: Array<{
     trigger: string;

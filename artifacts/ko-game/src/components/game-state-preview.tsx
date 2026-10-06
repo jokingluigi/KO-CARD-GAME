@@ -1666,6 +1666,9 @@ function HandCard({
        isStunned={card.isStunned}
        isAbilityDisabled={card.isAbilityDisabled}
        dodgeCharges={card.dodgeCharges ?? (card.dodgeAvailable ? 1 : 0)}
+         countdownTurns={card.grantedText?.countdownTurns ?? card.countdownTurns}
+         countdownRemaining={card.countdownRemaining}
+         countdownResolved={card.countdownResolved}
        isChampionToken={card.isChampionToken}
        highlight={isSelected ? "selected" : targetable ? "target" : undefined}
       onClick={onClick}
@@ -1825,6 +1828,9 @@ function BoardSlot({
           isStunned={card.isStunned}
           isAbilityDisabled={card.isAbilityDisabled}
           dodgeCharges={card.dodgeCharges ?? (card.dodgeAvailable ? 1 : 0)}
+         countdownTurns={card.grantedText?.countdownTurns ?? card.countdownTurns}
+         countdownRemaining={card.countdownRemaining}
+         countdownResolved={card.countdownResolved}
           isChampionToken={card.isChampionToken}
          highlight={selected ? "selected" : targetable ? "target" : attackReady ? "attack" : undefined}
           containerRef={cardRef}

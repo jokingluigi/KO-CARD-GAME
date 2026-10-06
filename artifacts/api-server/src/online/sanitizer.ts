@@ -97,6 +97,7 @@ export function sanitizeGameStateForViewer(state: GameState, viewerId: string): 
     randomSeed: _randomSeed,
     championQuestEventCursorByPlayer: _questEventCursors,
     championQuestProcessedEventIdentitiesByPlayer: _processedQuestEventIdentities,
+    pendingCountdownTurnStart: _countdownTurnStartQueue,
     ...publicState
   } = state;
   const hiddenCardIds = new Set(

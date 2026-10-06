@@ -1,3 +1,4 @@
+import { validCountdownCardSettings } from '@workspace/effect-registry';
 import { validChampionQuestCondition } from '@workspace/game-engine';
 import { createHmac, randomUUID, timingSafeEqual } from "node:crypto";
 import { and, asc, desc, eq, ilike, inArray, or, sql } from "drizzle-orm";
@@ -101,7 +102,7 @@ const CARD_KEYWORDS = [
   "SURPRISE",
   "TAUNT",
   "DODGE",
-  "MULTI_STRIKE", "IMMUNE", "REGEN", "ARMOR", "CONDITION", "DEFENSE", "LIFESTEAL",
+  "MULTI_STRIKE", "IMMUNE", "REGEN", "ARMOR", "CONDITION", "DEFENSE", "LIFESTEAL", "COUNTDOWN",
 ] as const;
 const IMAGE_DISPLAY_MODES = ["COVER", "CONTAIN", "CUSTOM"] as const;
 const GAME_MEDIA_TYPES = [
@@ -946,6 +947,7 @@ export function parseCardInput(value: unknown): CardInput | null {
      || ((input.effectConfig as Record<string, unknown>).armor !== undefined && (!Number.isSafeInteger((input.effectConfig as Record<string, unknown>).armor) || Number((input.effectConfig as Record<string, unknown>).armor) < 0 || Number((input.effectConfig as Record<string, unknown>).armor) > 999))
      || ((input.effectConfig as Record<string, unknown>).dodgeCharges !== undefined && (!Number.isSafeInteger((input.effectConfig as Record<string, unknown>).dodgeCharges) || Number((input.effectConfig as Record<string, unknown>).dodgeCharges) < 1 || Number((input.effectConfig as Record<string, unknown>).dodgeCharges) > 999))
      || ((input.keywords as string[]).includes('CONDITION') && !validChampionQuestCondition((input.effectConfig as Record<string, unknown>).playCondition))
+     || !validCountdownCardSettings(input.cardType, input.keywords as string[], input.effectConfig as Record<string, unknown>)
      || (effectId === "STRUCTURED_EFFECTS_V1" && !isStructuredEffects(input.effectConfig))
      || (effectId === "SCRIPT_V1" && !isEffectScriptConfig(input.effectConfig))
     || (imageAssetId === null) !== (imageUrl === null)
@@ -3247,10 +3249,15 @@ router.post("/cards/:id/apply-mechanic-request", async (request, response): Prom
       const validation = validateMechanicCompletion(mechanicRequest.originalCardText);
       const decision = prepareCompletionApply(card, mechanicRequest.originalCardText, validation);
       if (!decision.ok) throw new Error(decision.reason);
+      const {effects: _oldEffects, scripts: _oldScripts, ...keywordSettings} = card.effectConfig;
+      const effectConfig = {...keywordSettings,...decision.values.effectConfig};
+      const keywords = validation.analysis.keywords.includes('COUNTDOWN') ? [...new Set([...card.keywords,'COUNTDOWN'])] : card.keywords;
+      if (!validCountdownCardSettings(card.cardType,keywords,effectConfig)) throw new Error('REVALIDATION_FAILED');
       const [updatedCard] = await tx.update(cardsTable).set({
         text: decision.values.text,
         effectId: decision.values.effectId,
-        effectConfig: decision.values.effectConfig,
+        effectConfig,
+        keywords,
         version: sql`${cardsTable.version} + 1`,
         updatedAt: new Date(),
       }).where(eq(cardsTable.id, id)).returning();

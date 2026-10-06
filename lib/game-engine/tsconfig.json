@@ -15,6 +15,7 @@
     "../../artifacts/ko-game/src/game/cards/epic-techniques.ts",
     "../../artifacts/ko-game/src/game/cards/life-exchange.ts",
     "../../artifacts/ko-game/src/game/cards/luna.ts",
+    "../../artifacts/ko-game/src/game/cards/countdown.ts",
     "../../artifacts/ko-game/src/game/tower/**/*.ts",
     "../../artifacts/ko-game/src/game/actions/**/*.ts",
     "../../artifacts/ko-game/src/game/cards/generation.ts",

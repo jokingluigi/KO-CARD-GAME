@@ -1,3 +1,5 @@
+import { startCountdown, clearCountdown } from '../cards/countdown';
+import { resumeCountdownTurnStart } from '../engine/countdown';
 import { newCardTargetAllowed } from '../cards/new-card-effects';
 import { hasNewCardRule, healNewCardAware, silenceDamageReduction, healingTurn } from '../engine/new-card-rules';
 import { fallbackZombieToken } from '../engine/zombie-token';
@@ -1244,7 +1246,7 @@ function grantRandomCardText(
       player.graveyard.some((card) => card.instanceId === target.instanceId),
     );
     if (!owner) continue;
-    const updated = grantCardText(target, donor);
+    const updated = grantCardText(target, donor, state.turn);
     const isOnBoard = target.boardSlot !== null;
     next = {
       ...next,
@@ -1637,6 +1639,8 @@ export function resolveStateBasedDeaths(
 export function resolvePendingEffects(state: GameState): GameState {
   const pending = state.targetingState;
   if (!pending) return state;
+  // A script SELECT is already suspended; only selectEffectTarget may resume its program.
+  if (pending.scriptContinuation) return state;
   // Keep this frame visible while automatic effects execute: a lethal/destroy
   // trigger can then install itself as a child continuation.
   let next: GameState = { ...state, targetingState: pending };
@@ -1715,7 +1719,7 @@ export function resolvePendingEffects(state: GameState): GameState {
   const settled = pending.continuation
     ? resolvePendingEffects({ ...next, targetingState: pending.continuation })
     : { ...next, targetingState: undefined };
-  return resolveStateBasedDeaths(settled, pending.triggerContext?.sourceContext);
+  return resumeCountdownTurnStart(resolveStateBasedDeaths(settled, pending.triggerContext?.sourceContext));
 }
 
 /** The disabled legacy spell remains disabled; its admin test uses the same legal swap. */
@@ -1773,7 +1777,7 @@ export function selectEffectTarget(state: GameState, targetId: string): GameStat
       resumed = { ...resumed, targetingState: completedFrame };
     }
     if (pending.continuation) return resolvePendingEffects({ ...resumed, targetingState: pending.continuation });
-    return { ...resumed, targetingState: undefined };
+    return resumeCountdownTurnStart({ ...resumed, targetingState: undefined });
   }
   const effect = pending.effects[pending.effectIndex];
   const source = pending.sourceCard ?? sourceInState(state, pending.sourceInstanceId);
@@ -1916,7 +1920,7 @@ export function applyEffect(
         creationEventIndex: state.events.length,
       }).card;
       const replacement = {
-        ...transformed,
+        ...startCountdown(transformed, state.turn),
         instanceId: sourceCard.instanceId,
         boardSlot: sourceCard.boardSlot,
         enteredThisTurn: sourceCard.enteredThisTurn,
@@ -2544,7 +2548,7 @@ export function applyEffect(
           players: nextState.players.map((player) => player.id !== targetOwner ? player : {
             ...player,
             board: player.board.map((card) => card?.instanceId === current.instanceId ? {
-              ...replacement,
+              ...startCountdown(replacement, nextState.turn),
               instanceId: current.instanceId,
               boardSlot: current.boardSlot,
               enteredThisTurn: current.enteredThisTurn,
@@ -2854,7 +2858,7 @@ export function applyEffect(
         if (!owner || !current) return nextState;
         const snapshot = {
           definitionId: current.definitionId, cardType: current.cardType,
-          armor: current.armor, playCondition: current.playCondition,
+          armor: current.armor, playCondition: current.playCondition, countdownTurns: current.countdownTurns,
           currentCost: current.baseCost ?? current.currentCost,
           currentAttack: current.baseAttack ?? current.currentAttack,
           currentHealth: current.baseHealth ?? current.maxHealth,
@@ -3084,9 +3088,11 @@ export function applyEffect(
                  return { ...card, dodgeAvailable: true, dodgeCharges: charges };
                }
                if (!getActiveCardKeywords(card).includes(effect.values.keyword)) {
-                 return { ...card, keywords: [...card.keywords, effect.values.keyword], dodgeAvailable: effect.values.keyword === 'DODGE' ? true : card.dodgeAvailable, dodgeCharges: effect.values.keyword === 'DODGE' ? Math.max(1, card.dodgeCharges ?? 0) : card.dodgeCharges };
+                 const updated = { ...card, keywords: [...card.keywords, effect.values.keyword], dodgeAvailable: effect.values.keyword === 'DODGE' ? true : card.dodgeAvailable, dodgeCharges: effect.values.keyword === 'DODGE' ? Math.max(1, card.dodgeCharges ?? 0) : card.dodgeCharges };
+                 return effect.values.keyword === 'COUNTDOWN' ? startCountdown(updated, state.turn) : updated;
                }
              }
+            if (effect.action === 'REMOVE_KEYWORD' && effect.values?.keyword === 'COUNTDOWN') return clearCountdown({...card,keywords:card.keywords.filter(k=>k!=='COUNTDOWN'),grantedText:card.grantedText ? {...card.grantedText,keywords:card.grantedText.keywords.filter(k=>k!=='COUNTDOWN')} : undefined});
             if (effect.action === 'REMOVE_KEYWORD' && effect.values?.keyword) return { ...card, keywords: card.keywords.filter((keyword) => keyword !== effect.values?.keyword), dodgeAvailable: effect.values.keyword === 'DODGE' ? false : card.dodgeAvailable, dodgeCharges: effect.values.keyword === 'DODGE' ? 0 : card.dodgeCharges };
            if (effect.action === 'STUN') return { ...card, isStunned: true };
              if (effect.action === 'REDUCE_COST') return finish({ ...card, currentCost: Math.max(effect.values?.minimum ?? 0, card.currentCost - amount) });
@@ -3446,7 +3452,7 @@ export function resolveTriggeredAbilities(
   state: GameState,
   playerId: string,
   card: CardInstance,
-  trigger: 'GAME_START' | 'ENTER_FIELD' | 'LEAVE_FIELD' | 'SELF_RETIRE' | 'POSITION' | 'ACTIVE' | 'CARD_DRAWN' | 'CARD_RETIRED' | 'CARD_SUMMONED' | 'CARD_ENTERED' | 'FIRST_ATTACKED' | 'SELF_ATTACK' | 'OTHER_ALLY_ATTACK' | 'ATTACK_SURVIVED' | 'SELF_DAMAGED' | 'STAT_CHANGED' | 'TECHNIQUE_CAST' | 'EXACT_ZERO_DAMAGE' | 'TURN_START' | 'TURN_END' | 'BEFORE_DAMAGE' | 'BEFORE_RETIRE',
+  trigger: 'GAME_START' | 'ENTER_FIELD' | 'LEAVE_FIELD' | 'SELF_RETIRE' | 'POSITION' | 'ACTIVE' | 'CARD_DRAWN' | 'CARD_RETIRED' | 'CARD_SUMMONED' | 'CARD_ENTERED' | 'FIRST_ATTACKED' | 'SELF_ATTACK' | 'OTHER_ALLY_ATTACK' | 'ATTACK_SURVIVED' | 'SELF_DAMAGED' | 'STAT_CHANGED' | 'TECHNIQUE_CAST' | 'EXACT_ZERO_DAMAGE' | 'COUNTDOWN' | 'TURN_START' | 'TURN_END' | 'BEFORE_DAMAGE' | 'BEFORE_RETIRE',
   options: {
     boardSlot?: 0 | 1 | 2 | 3;
     leaveReason?: LeaveReason;
