@@ -42,6 +42,7 @@ import { generateCard, generateCardInstance, getRandomCardGenerationCandidates, 
 import { getAdjacentSlots } from '../engine/board-position';
 import { deployLinkedChampionToken } from '../engine/champion-token';
 import { isChampionProtectedByToken } from '../engine/direct-champion';
+import { checkpointAwakening, hasAwakeningInvulnerability, hasAwakeningPassive, reconcileAwakeningSequences } from '../champions/awakening';
 import { normalizeCardForZone, resetCardAfterLeavingBoard, resetCardForGraveyard } from '../cards/zone-state';
 import {
   getActiveCardAbilities,
@@ -54,7 +55,8 @@ import {
 function eligibleStateRandomCard(state: GameState, card: CardInstance, scope?: import('@workspace/effect-registry').RandomScope): boolean {
   const definition = state.cardPool?.find(item => item.id === card.definitionId)
     ?? state.minionACardPool?.find(item => item.id === card.definitionId);
-  return isEligibleForRandomPool({ ...card, status: definition?.status ?? card.status }, scope);
+  // Exclusivity restricts creating definitions, not targeting an existing wrestler.
+  return isEligibleForRandomPool({ ...card, questExclusive: false, status: definition?.status ?? card.status }, scope);
 }
 
 /** The single authoritative target resolver.  UI must only display these ids. */
@@ -1642,7 +1644,7 @@ export function resolveStateBasedDeaths(
     });
     next = resolveCardRetiredListeners(next, entry.playerId, entry.card, retirementContext);
   }
-  return next;
+  return reconcileAwakeningSequences(next);
 }
 
 export function resolvePendingEffects(state: GameState): GameState {
@@ -1880,6 +1882,17 @@ export function applyEffect(
   chosenTargetInstanceIds?: string[],
   triggerContext?: TriggerContext,
 ): GameState {
+  return checkpointAwakening(state, applyEffectInternal(state, playerId, sourceCard, effect, chosenTargetInstanceIds, triggerContext));
+}
+
+function applyEffectInternal(
+  state: GameState,
+  playerId: string,
+  sourceCard: CardInstance,
+  effect: CardEffect,
+  chosenTargetInstanceIds?: string[],
+  triggerContext?: TriggerContext,
+): GameState {
   if (effect.type === 'SCRIPT') {
     return applyScript(state, playerId, sourceCard, effect.script);
   }
@@ -1999,6 +2012,7 @@ export function applyEffect(
       }, undefined, 'SUMMON');
     }
     if (effect.action === 'SUMMON' || effect.action === 'GENERATE') {
+      if (definition?.questExclusive) return state;
       // These actions require a data-only definition; an absent/malformed
       // reference is a rejected effect, never an advertised silent no-op.
       if (!validDefinition) throw new Error(`${effect.action} requires a serializable card definition.`);
@@ -2395,6 +2409,7 @@ export function applyEffect(
           }))],
         };
       }
+      if (effect.action === 'DAMAGE' && hasAwakeningInvulnerability(state, targetOwner)) return state;
       if (isChampionProtectedByToken(state, targetOwner)) return state;
       if (target.owner === 'SELF' && effect.action === 'HEAL') return state;
       if (target.owner === 'SELF' && effect.action === 'DAMAGE') {
@@ -3254,6 +3269,7 @@ export function applyEffect(
   if (effect.type === 'DAMAGE_OPPONENT_CHAMPION') {
     const opponent = state.players.find((player) => player.id !== playerId);
     if (!opponent) return state;
+    if (hasAwakeningInvulnerability(state, opponent.id)) return state;
     if (isChampionProtectedByToken(state, opponent.id)) {
       return {
         ...state,
@@ -3486,6 +3502,9 @@ export function resolveTriggeredAbilities(
   if (card.isAbilityDisabled || (card.isSilenced && !card.grantedText)) return state;
 
   const run = (next:GameState, effect:CardEffect) => applyEffect(next,playerId,card,effect,undefined,options);
+  if (trigger === 'TURN_END' && hasAwakeningPassive(card, 'HEALER') && state.players.find(p => p.id === playerId)?.board.some(c => c?.instanceId === card.instanceId)) {
+    return run(state, { type: 'STRUCTURED', action: 'HEAL', target: { zone: 'CHARACTER', owner: 'SELF', selection: 'ALL', count: 20 }, values: { amount: 3 } });
+  }
   const selfTarget = {zone:'BOARD' as const,owner:'SELF' as const,selection:'SELF' as const,count:1};
   if (trigger === 'TURN_END' && state.players.find(p=>p.id===playerId)?.hand.some(c=>c.instanceId===card.instanceId)) {
     if (hasNewCardRule(card,'DEATH')) return {...state,status:'FINISHED',activePlayerId:null,winnerId:state.players.find(p=>p.id!==playerId)?.id??null,loserId:playerId};

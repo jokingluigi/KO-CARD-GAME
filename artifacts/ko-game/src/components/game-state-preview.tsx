@@ -1,4 +1,5 @@
 import { wrestlerPlayCost } from '@/game/engine/play-wrestler';
+import { AwakeningStatus } from './awakening-status';
 import { TOWER_VANILLA_CHAMPION_ID } from '@/game/champions/tower-vanilla';
 import { ChampionEmoteMenu } from './champion-emote-menu';
 import React from 'react';
@@ -682,8 +683,8 @@ export function GameStatePreview({
   const opponentSurvivalHealth = getPlayerSurvivalHealth(state, opp.id);
   const myMaxGold = Math.min(Math.max(me.personalTurn, 1), 6);
   const opponentMaxGold = Math.min(Math.max(opp.personalTurn, 1), 6);
-  const opponentChampionProtected = opp.board.some((card) => card?.isChampionToken);
-  const playerChampionProtected = me.board.some((card) => card?.isChampionToken);
+  const opponentChampionProtected = opp.board.some((card) => card?.isChampionToken && !card.questExclusive);
+  const playerChampionProtected = me.board.some((card) => card?.isChampionToken && !card.questExclusive);
   const activePresentationCue = presentationQueue[0];
   const activePresentationCardId = activePresentationCue?.cardInstanceId;
   const activePresentationChampionId = activePresentationCue?.championId;
@@ -983,6 +984,7 @@ export function GameStatePreview({
                 >
                   <div tabIndex={0} className={`rounded border px-2 py-1 text-[8px] font-bold md:text-[10px] ${opp.champion.questCompleted ? 'border-rose-400 bg-rose-950/90 text-rose-100' : 'border-purple-900 bg-purple-950/70 text-purple-200'}`}>
                     퀘스트 {opp.champion.questCompleted ? '완료' : `${opp.champion.questProgress}/${opp.champion.quest.requiredProgress}`}
+                    <AwakeningStatus champion={opp.champion} />
                     {!opp.champion.questCompleted && opp.champion.questProgress === opp.champion.quest.requiredProgress - 1 && <span className="ml-1 text-amber-300">· 달성 임박</span>}
                   </div>
                 </Inspectable>
@@ -1469,6 +1471,7 @@ export function GameStatePreview({
                  <Inspectable content={<ChampionQuestInspectContent champion={me.champion} />}>
                   <div tabIndex={0} className={`rounded border px-2 py-1 text-[8px] font-bold md:text-[10px] ${me.champion.questCompleted ? 'border-amber-400 bg-amber-950/90 text-amber-100' : 'border-purple-900 bg-purple-950/70 text-purple-200'} ${activePresentationCue?.kind === "QUEST_PROGRESS" || activePresentationCue?.kind === "QUEST_COMPLETE" ? "presentation-card-pulse" : ""}`}>
                      퀘스트 {me.champion.questCompleted ? '완료' : `${me.champion.questProgress}/${me.champion.quest.requiredProgress}`}
+                     <AwakeningStatus champion={me.champion} />
                      {!me.champion.questCompleted && me.champion.questProgress === me.champion.quest.requiredProgress - 1 && <span className="ml-1 text-amber-300">· 다음 1회!</span>}
                      {activePresentationCue?.kind === 'QUEST_PROGRESS' && activePresentationCue.playerId === me.id && (
                        <span className="mt-1 block max-w-40 text-[9px] leading-tight text-purple-100">{activePresentationCue.label} +{activePresentationCue.value}</span>

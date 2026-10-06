@@ -1,5 +1,6 @@
 import { validCountdownCardSettings } from '@workspace/effect-registry';
-import { validChampionQuestCondition } from '@workspace/game-engine';
+import { validChampionQuestCondition, validAwakeningQuestConfig, validAwakeningHealthCondition, AWAKENING_CARD_IDS, createAwakeningCards } from '@workspace/game-engine';
+import { ensureAwakeningCards } from '../lib/awakening-card-service';
 import { createHmac, randomUUID, timingSafeEqual } from "node:crypto";
 import { and, asc, desc, eq, ilike, inArray, or, sql } from "drizzle-orm";
 import {
@@ -260,11 +261,19 @@ function parseChampionInput(value: unknown): ChampionInput | null {
   const abilityEffects = object("abilityEffects");
   const hasQuest = input.hasQuest === true;
   const rawQuestCondition = object("questCondition", true);
+  if (rawQuestCondition?.awakening !== undefined) {
+    const config = rawQuestCondition.awakening;
+    if (!hasQuest || !validAwakeningQuestConfig(config) ||
+      (['TANK', 'HEALER', 'DEALER'] as const).some(stage => config.stageCardIds[stage] !== AWAKENING_CARD_IDS[stage]) ||
+      rawQuestCondition.event !== 'STATE_CONDITION' ||
+      !validAwakeningHealthCondition(rawQuestCondition.condition)) return null;
+  }
   const questProgressInput = integer("questProgressRequired", 1, 999, true);
   const conditionRequired = rawQuestCondition && typeof rawQuestCondition.required === "number" &&
     Number.isInteger(rawQuestCondition.required) && rawQuestCondition.required >= 1 &&
     rawQuestCondition.required <= 999 ? rawQuestCondition.required : null;
   const questProgressRequired = questProgressInput ?? conditionRequired;
+  if (rawQuestCondition?.awakening && questProgressRequired !== 1) return null;
   const questCondition = hasQuest && rawQuestCondition && questProgressRequired !== null
     ? { ...rawQuestCondition, required: questProgressRequired }
     : hasQuest ? rawQuestCondition : null;
@@ -430,6 +439,7 @@ async function validateChampionTokenReference(
   championTokenDefinitionId: string | null,
 ): Promise<{ ok: true } | { ok: false; message: string }> {
   if (!championTokenDefinitionId) return { ok: true };
+  if (Object.values(AWAKENING_CARD_IDS).some(id => id === championTokenDefinitionId)) return { ok: false, message: '각성 전용 선수는 위기 각성 퀘스트에서만 소환됩니다.' };
   const [card] = await db
     .select({
       id: cardsTable.id,
@@ -1962,9 +1972,13 @@ router.post("/champions", async (request, response): Promise<void> => {
     questCompletedPortraitUploadToken: _questCompletedPortraitUploadToken,
     ...championValues
   } = input;
-  const [champion] = await db.insert(championsTable).values({
-    id: randomUUID(), ...championValues, status: "DRAFT", version: 1,
-  }).returning();
+  const champion = await db.transaction(async transaction => {
+    if (input.questCondition?.awakening) await ensureAwakeningCards(transaction);
+    const [created] = await transaction.insert(championsTable).values({
+      id: randomUUID(), ...championValues, status: "DRAFT", version: 1,
+    }).returning();
+    return created;
+  });
   response.status(201).json({ champion });
 });
 
@@ -2037,9 +2051,13 @@ router.patch("/champions/:id", async (request, response): Promise<void> => {
     questCompletedPortraitUploadToken: _questCompletedPortraitUploadToken,
     ...championValues
   } = input;
-  const [champion] = await db.update(championsTable).set({
-    ...championValues, isCraftable: request.body.isCraftable === undefined ? existing.isCraftable : input.isCraftable, version: sql`${championsTable.version} + 1`, updatedAt: new Date(),
-  }).where(and(eq(championsTable.id, id), eq(championsTable.version, expectedVersion))).returning();
+  const champion = await db.transaction(async transaction => {
+    const [updated] = await transaction.update(championsTable).set({
+      ...championValues, isCraftable: request.body.isCraftable === undefined ? existing.isCraftable : input.isCraftable, version: sql`${championsTable.version} + 1`, updatedAt: new Date(),
+    }).where(and(eq(championsTable.id, id), eq(championsTable.version, expectedVersion))).returning();
+    if (updated && input.questCondition?.awakening) await ensureAwakeningCards(transaction);
+    return updated;
+  });
   if (!champion) {
     response.status(409).json({
       message: "다른 관리자 변경이 있어 최신 버전을 다시 불러온 뒤 저장해 주세요.",
@@ -3148,6 +3166,10 @@ router.patch("/cards/:id", async (request, response): Promise<void> => {
     .update(cardsTable)
     .set({
       ...cardValues,
+      ...(createAwakeningCards().find(definition => definition.id === id) ? {
+        cardType: 'WRESTLER', rarity: 'CHAMPION', isToken: true, isChampionToken: true, isStarterGrant: false,
+        effectConfig: { ...cardValues.effectConfig, ...createAwakeningCards().find(definition => definition.id === id)!.effectConfig },
+      } : {}),
       version: sql`${cardsTable.version} + 1`,
       updatedAt: new Date(),
     })
@@ -3215,6 +3237,10 @@ router.delete("/cards/:id", async (request, response): Promise<void> => {
   if (!requireAdmin(request, response)) return;
   const id = firstParam(request.params.id);
   if (!id) { response.status(400).json({ message: "카드 ID가 올바르지 않습니다." }); return; }
+  if (Object.values(AWAKENING_CARD_IDS).some(cardId => cardId === id)) {
+    response.status(409).json({ message: '위기 각성 연쇄 소환에 필요한 전용 선수는 삭제할 수 없습니다. 이름과 이미지는 카드 관리에서 변경할 수 있습니다.' });
+    return;
+  }
   const [existing] = await db.select().from(cardsTable).where(eq(cardsTable.id, id)).limit(1);
   if (!existing) { response.status(404).json({ message: "카드를 찾을 수 없습니다." }); return; }
   const dependents = await publishedCardDependents(id);

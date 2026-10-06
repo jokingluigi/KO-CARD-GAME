@@ -96,6 +96,8 @@ export function normalizeImageDisplaySettings(
 }
 
 export interface CardDefinition {
+  questExclusive?: boolean;
+  awakeningStage?: import('../champions/awakening-types').AwakeningStage;
   contentRule?: import("./new-card-effects").NewCardRule;
   id: CardDefinitionId;
   name: string;
@@ -131,6 +133,9 @@ export interface CardDefinition {
 }
 
 export interface CardInstance {
+  questExclusive?: boolean;
+  awakeningStage?: import('../champions/awakening-types').AwakeningStage;
+  awakening?: import('../champions/awakening-types').AwakeningCardState;
   /** Original definition publication state, preserved across game zones. */
   status?: CardDefinition['status'];
   draftMutation?: import("./draft-mutation").DraftMutation;

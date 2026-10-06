@@ -3,6 +3,7 @@ import { MAX_HAND_SIZE } from '../rules/constants';
 import { isChampionProtectedByToken } from './direct-champion';
 import { resolveCardRetiredListeners, resolveTriggeredAbilities } from '../effects/effect-engine';
 import { normalizeCardForZone } from '../cards/zone-state';
+import { checkpointAwakening, hasAwakeningInvulnerability } from '../champions/awakening';
 
 function finishGameFromFatigue(
   state: GameState,
@@ -31,7 +32,8 @@ export function drawCard(state: GameState, playerId: string): GameState {
 
   if (drawingPlayer.deck.length === 0) {
     const fatigueCount = drawingPlayer.fatigueCount + 1;
-    const health = drawingPlayer.health - (isChampionProtectedByToken(state, playerId) ? 0 : fatigueCount);
+    const awakeningPrevented = hasAwakeningInvulnerability(state, playerId);
+    const health = drawingPlayer.health - (awakeningPrevented || isChampionProtectedByToken(state, playerId) ? 0 : fatigueCount);
     const fatiguedPlayer = {
       ...drawingPlayer,
       health,
@@ -41,7 +43,7 @@ export function drawCard(state: GameState, playerId: string): GameState {
         : null,
     };
 
-    return {
+    const fatiguedState: GameState = {
       ...state,
       ...(health <= 0
         ? finishGameFromFatigue(state, fatiguedPlayer)
@@ -61,6 +63,7 @@ export function drawCard(state: GameState, playerId: string): GameState {
         },
       ],
     };
+    return checkpointAwakening(state, awakeningPrevented ? { ...fatiguedState, events: state.events } : fatiguedState);
   }
 
   const [drawnCard, ...remainingDeck] = drawingPlayer.deck;

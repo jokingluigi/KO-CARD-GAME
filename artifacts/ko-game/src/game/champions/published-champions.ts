@@ -1,4 +1,5 @@
 import { validChampionQuestCondition } from '../../../../../lib/game-engine/src/champion-quest-conditions';
+import { validAwakeningQuestConfig } from './awakening-types';
 import type { ChampionAbility, ChampionDefinition, ChampionEffect, ChampionQuest, ChampionQuestCardType, ChampionPresentationLines } from "./types";
 import type { CardEffect } from "../effects/types";
 import type { ImageDisplayMode } from "../cards/types";
@@ -15,7 +16,7 @@ export type PublishedChampionRecord = {
   questCompletedPortraitAssetId?: string | null; questCompletedPortraitUrl?: string | null;
   maxHealth: number; abilityName: string; abilityCost: number; abilityText: string; abilityEffects: Structured;
   hasQuest: boolean; questName: string | null; questText: string | null;
-  questCondition: { condition?: unknown; goldSpent?: boolean; selfEffectDamage?: boolean; strictEventCount?: boolean; event?: string; cardType?: ChampionQuestCardType; sourceActionType?: string; progress?: number; required?: number } | null; questProgressRequired: number | null;
+  questCondition: { awakening?: unknown; condition?: unknown; goldSpent?: boolean; selfEffectDamage?: boolean; strictEventCount?: boolean; event?: string; cardType?: ChampionQuestCardType; sourceActionType?: string; progress?: number; required?: number } | null; questProgressRequired: number | null;
   questRewardText: string | null; questRewardEffects: Structured | null;
   upgradedAbilityName: string | null; upgradedAbilityCost: number | null;
   upgradedAbilityText: string | null; upgradedAbilityEffects: Structured | null;
@@ -83,6 +84,7 @@ export function championRecordToDefinition(record: PublishedChampionRecord): Cha
     ? {
         id: `${record.id}-quest`, name: record.questName, description: record.questText ?? "",
         rewardText: record.questRewardText?.trim() || undefined,
+        ...(validAwakeningQuestConfig(record.questCondition.awakening) ? { awakening: record.questCondition.awakening } : {}),
         ...(validChampionQuestCondition(record.questCondition.condition) ? { condition: record.questCondition.condition } : {}),
         trackedEvent: abilityRetireQuest ? 'CARD_RETIRED' : record.questCondition.event as ChampionQuest["trackedEvent"],
          ...(abilityRetireQuest ? { cardType: 'WRESTLER' as const } : record.questCondition.cardType ? { cardType: record.questCondition.cardType } : {}),
@@ -132,7 +134,7 @@ export function championRecordToDefinition(record: PublishedChampionRecord): Cha
     questCompleteAudioEnabled: record.questCompleteAudioEnabled,
     status: record.status, version: record.version,
   };
-  if (!record.questCondition?.selfEffectDamage && /^(?:챔피언)?퍼플레인$/u.test(record.name.replace(/\s+/gu, ''))) {
+  if (!definition.quest?.awakening && !record.questCondition?.selfEffectDamage && /^(?:챔피언)?퍼플레인$/u.test(record.name.replace(/\s+/gu, ''))) {
     const makeAbility = (amount: number, upgraded: boolean): ChampionAbility => ({
       id: `${record.id}-ability${upgraded ? '-upgraded' : ''}`,
       name: (upgraded ? record.upgradedAbilityName : record.abilityName) || '퍼플레인',
@@ -149,7 +151,7 @@ export function championRecordToDefinition(record: PublishedChampionRecord): Cha
       rewardText: '고유 능력이 강화됩니다.', trackedEvent: 'DAMAGE_DEALT', selfEffectDamage: true,
       requiredProgress: 8, reward: { type: 'UPGRADE_ABILITY' } };
   }
-  if (record.questProgressRequired !== 10 && /^(?:챔피언)?라칼라베라$/u.test(record.name.replace(/\s+/gu, ''))) {
+  if (!definition.quest?.awakening && record.questProgressRequired !== 10 && /^(?:챔피언)?라칼라베라$/u.test(record.name.replace(/\s+/gu, ''))) {
     const summon = (amount: number, upgraded: boolean): ChampionAbility => ({
       id: `${record.id}-ability${upgraded ? '-upgraded' : ''}`,
       name: (upgraded ? record.upgradedAbilityName : record.abilityName) || '좀비 소환',

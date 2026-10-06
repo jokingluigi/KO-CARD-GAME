@@ -46,7 +46,7 @@ export function resetCardForGraveyard(card: CardInstance): CardInstance {
 export function resetCardAfterLeavingBoard(card: CardInstance, printedDefinition?: CardDefinition): CardInstance {
   const definition = printedDefinition ?? getCardDefinition(card.definitionId);
   const draft = card.draftMutation ? draftBaseline(card, definition) : undefined;
-  const baseHealth = draft?.health ?? definition?.health ?? card.baseHealth ?? card.maxHealth;
+  const baseHealth = card.awakening?.baseHealth ?? draft?.health ?? definition?.health ?? card.baseHealth ?? card.maxHealth;
   const hasDodge = (definition?.keywords ?? card.keywords).includes('DODGE');
 
   return {
@@ -56,7 +56,7 @@ export function resetCardAfterLeavingBoard(card: CardInstance, printedDefinition
     currentCost: draft?.cost ?? definition?.cost ?? card.baseCost ?? card.currentCost,
     temporaryCostUntilTurn: undefined,
     temporaryStatModifiers: [],
-    currentAttack: draft?.attack ?? definition?.attack ?? card.baseAttack ?? card.currentAttack,
+    currentAttack: card.awakening?.baseAttack ?? draft?.attack ?? definition?.attack ?? card.baseAttack ?? card.currentAttack,
     currentHealth: baseHealth,
     maxHealth: baseHealth,
     boardSlot: null,

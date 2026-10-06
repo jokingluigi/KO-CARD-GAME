@@ -17,6 +17,7 @@ import {
   resolveRegisteredRuleListeners,
 } from '../effects/effect-engine';
 import { processChampionQuestEvents } from '../champions/quests';
+import { checkpointAwakening, hasAwakeningInvulnerability, hasAwakeningPassive, prepareAwakeningCounter, resolveAwakeningCounter } from '../champions/awakening';
 import { findDirectDeployedChampion, isChampionProtectedByToken } from './direct-champion';
 import { towerAttackBlocked, towerCombatAttackBonus, towerIncomingDamage } from '../tower/relics';
 
@@ -188,6 +189,7 @@ export function attack(
   attackerInstanceId: CardInstanceId,
   target: AttackTarget,
 ): ActionResult {
+  const actionStartState = state;
   if (state.targetingState?.active) {
     return actionFailure(state, 'TARGET_SELECTION_PENDING', '먼저 대상을 선택하세요.');
   }
@@ -304,7 +306,8 @@ export function attack(
       state,
       target.playerId,
     );
-    const attackerDamage = attacker.currentAttack +
+    const awakeningPrevented = hasAwakeningInvulnerability(state, target.playerId);
+    const attackerDamage = awakeningPrevented ? 0 : attacker.currentAttack +
       getDamageModifierBonus(state, attackingPlayerId, attacker);
     const preDamageTriggered = directChampion
       ? resolveTriggeredAbilities(state, target.playerId, directChampion, 'BEFORE_DAMAGE')
@@ -414,13 +417,16 @@ export function attack(
       ],
     }, attackingPlayerId, attacker, preventedChampionDamage || directChampionDodges ? 0 : attackerDamage);
 
+    const recordedAttack = awakeningPrevented
+      ? { ...attackedState, events: attackedState.events.filter((event, index) => index < preDamageState.events.length || event.type !== 'DAMAGE_DEALT') }
+      : attackedState;
     const selfAttackResolved = resolveSelfAttackTrigger(
-      attackedState, attackingPlayerId, attackerInstanceId,
+      checkpointAwakening(state, recordedAttack), attackingPlayerId, attackerInstanceId,
     );
     const listenersResolved = resolveBoardListeners(
       selfAttackResolved, attackingPlayerId, 'OTHER_ALLY_ATTACK', { attackerInstanceId },
     );
-    const damageListenersResolved = resolveRegisteredRuleListeners(
+    const damageListenersResolved = awakeningPrevented ? listenersResolved : resolveRegisteredRuleListeners(
       { ...listenersResolved, preventedDamageTargetIds: undefined },
       'DAMAGE_TAKEN',
       target.playerId,
@@ -453,6 +459,27 @@ export function attack(
     );
   }
 
+  const piercingAttack = hasAwakeningPassive(attacker, 'DEALER');
+  if (piercingAttack) {
+    const pierceTarget = findBoardCard(state, target.playerId, target.cardInstanceId)?.card;
+    if (!pierceTarget) return actionFailure(state, 'INVALID_ATTACK_TARGET', '해당 대상을 공격할 수 없습니다.');
+    state = { ...state, events: [...state.events, { type: 'ATTACK_DECLARED', playerId: attackingPlayerId,
+      cardInstanceId: attackerInstanceId, source: { type: 'CARD', cardInstanceId: attackerInstanceId },
+      target: { type: 'CARD', cardInstanceId: target.cardInstanceId }, reason: 'BASIC_ATTACK',
+      sourceSnapshot: { playerId: attackingPlayerId, cardInstanceId: attackerInstanceId, cardType: attacker.cardType ?? 'WRESTLER', boardSlot: attacker.boardSlot, currentAttack: attacker.currentAttack, currentHealth: attacker.currentHealth },
+      targetSnapshot: { playerId: target.playerId, cardInstanceId: pierceTarget.instanceId, cardType: pierceTarget.cardType ?? 'WRESTLER', boardSlot: pierceTarget.boardSlot, currentAttack: pierceTarget.currentAttack, currentHealth: pierceTarget.currentHealth },
+    }] };
+    state = applyEffect(state, attackingPlayerId, attacker, { type: 'STRUCTURED', action: 'DAMAGE',
+      target: { zone: 'BOARD', owner: 'ENEMY', selection: 'SAME_TARGET', count: 1 },
+      values: { amount: 1 + attacker.awakening!.awakeningPower } }, [target.cardInstanceId]);
+    state = resolveStateBasedDeaths(state);
+    if (state.status === 'FINISHED' || !findBoardCard(state, target.playerId, target.cardInstanceId) || !findBoardCard(state, attackingPlayerId, attackerInstanceId)) {
+      state = { ...state, players: state.players.map(p => p.id !== attackingPlayerId ? p : { ...p,
+        board: p.board.map(c => c?.instanceId === attackerInstanceId ? { ...c, attacksUsedThisTurn: c.attacksUsedThisTurn + 1 } : c) as typeof p.board }) };
+      const selfAttack = resolveSelfAttackTrigger(state, attackingPlayerId, attackerInstanceId);
+      return actionSuccess(processChampionQuestEvents(actionStartState, finishNewAttack(resolveBoardListeners(selfAttack, attackingPlayerId, 'OTHER_ALLY_ATTACK', { attackerInstanceId }))));
+    }
+  }
   const defenderEntry = findBoardCard(
     state,
     target.playerId,
@@ -602,7 +629,8 @@ export function attack(
     ],
   }, attackingPlayerId, attackerPrepared, preventedAttackerDamage || defenderDodges ? 0 : attackerDamage);
 
-  let afterNewDamage = damagedState;
+  const recordedCombat = piercingAttack ? { ...damagedState, events: damagedState.events.filter((event, index) => index < preDamageState.events.length || event.type !== 'ATTACK_DECLARED') } : damagedState;
+  let afterNewDamage = prepareAwakeningCounter(recordedCombat, target.playerId, defenderPreparedCard, combatEventId);
   for (const [ownerId, before] of [[attackingPlayerId,attackerPrepared],[target.playerId,defenderPreparedCard]] as const) {
     const current=findBoardCard(afterNewDamage,ownerId,before.instanceId)?.card;
     if (current && current.currentHealth<before.currentHealth) {
@@ -643,8 +671,8 @@ export function attack(
     defender.cardType,
   );
   const resolved = retireDefeatedWrestlers(
-    damageListenersResolved,
+    resolveAwakeningCounter(damageListenersResolved, target.playerId, defenderPreparedCard, attackerInstanceId, combatEventId),
     damageEventStartIndex,
   );
-  return actionSuccess(processChampionQuestEvents(state, finishNewAttack(resolved)));
+  return actionSuccess(processChampionQuestEvents(actionStartState, finishNewAttack(resolved)));
 }

@@ -6,6 +6,7 @@ import type { ChampionQuest } from './types';
 import { tryDirectDeployChampionToken } from '../engine/champion-token';
 import type { CardInstance } from '../cards/types';
 import { applyEffect, resolvePendingEffects } from '../effects/effect-engine';
+import { beginAwakeningSequence, reconcileAwakeningSequences } from './awakening';
 
 function matchesQuestEvent(
   event: GameEvent,
@@ -48,7 +49,7 @@ function stableQuestEventIdentity(event: GameEvent): string | null {
   ]);
 }
 
-export function processChampionQuestEvents(
+function processChampionQuestEventPass(
   previousState: GameState,
   nextState: GameState,
 ): GameState {
@@ -186,6 +187,7 @@ export function processChampionQuestEvents(
         : resolvedState.latestQuestCompletedChampionId,
     };
     if (questCompleted) resolvedState = towerQuestComplete(resolvedState, originalPlayer.id);
+    if (questCompleted && quest.awakening) resolvedState = beginAwakeningSequence(resolvedState, originalPlayer.id);
     if (questCompleted && quest.reward.type === 'DIRECT_DEPLOY_CHAMPION_TOKEN') {
       resolvedState = tryDirectDeployChampionToken(
         resolvedState,
@@ -261,5 +263,18 @@ export function processChampionQuestEvents(
     }
   }
 
-  return refreshTowerAuras(resolvedState);
+  return reconcileAwakeningSequences(refreshTowerAuras(resolvedState));
+}
+
+/** Both champions qualify on either turn, including events caused by rewards. */
+export function processChampionQuestEvents(previousState: GameState, nextState: GameState): GameState {
+  let resolved = nextState;
+  // A champion completes once. Allow each reward to qualify the other
+  // champion, then consume the remaining notification/reward events.
+  for (let pass = 0; pass < nextState.players.length + 2; pass += 1) {
+    const before = resolved;
+    resolved = processChampionQuestEventPass(previousState, resolved);
+    if (resolved.events.length === before.events.length) break;
+  }
+  return resolved;
 }

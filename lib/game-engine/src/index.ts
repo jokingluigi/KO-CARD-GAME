@@ -120,3 +120,6 @@ export * from './match-recap';
 
 export * from './draft/mutations';
 export * from '../../../artifacts/ko-game/src/game/cards/draft-mutation';
+export * from '../../../artifacts/ko-game/src/game/champions/awakening-types';
+export * from '../../../artifacts/ko-game/src/game/champions/awakening-definitions';
+export { hasAwakeningInvulnerability } from '../../../artifacts/ko-game/src/game/champions/awakening';

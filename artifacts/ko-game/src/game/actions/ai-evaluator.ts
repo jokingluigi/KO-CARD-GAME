@@ -1,4 +1,5 @@
 import { isMinionAAbility } from '../champions/minion-a';
+import { hasAwakeningInvulnerability } from '../champions/awakening';
 import { canUseChampionAbility } from '../engine/champion-system';
 import { chooseBestAction as chooseLegacyAction } from './legacy-ai-evaluator';
 import type { CardEffect } from '../effects/types';
@@ -160,11 +161,14 @@ export function evaluateAction(state: GameState, action: GameAction, playerId: s
   const drawBonus = Math.max(0, ownAfter.hand.length - ownBefore.hand.length) * Math.max(0, 5 - ownBefore.hand.length);
   const spent = Math.max(0, ownBefore.currentGold - ownAfter.currentGold);
   const enemyThreat = result.state.players.find(p => p.id !== playerId)!.board.reduce((n, c) => n + (c && !c.isStunned ? c.currentAttack : 0), 0);
-  const exposure = visibleAttackExposure(ownAfter, result.state.players.find(p => p.id !== playerId)!);
+  const exposure = hasAwakeningInvulnerability(result.state, playerId) ? 0 : visibleAttackExposure(ownAfter, result.state.players.find(p => p.id !== playerId)!);
   // Visible next-turn lethal outranks optional nonlethal face damage.
   const exposedLethal = exposure >= ownAfter.health && exposure > 0 ? -5000 : 0;
-  const survival = exposedLethal + (ownAfter.health <= enemyThreat ? (ownAfter.health - ownBefore.health) * 3 - enemyThreat * 0.5 : 0);
-  return after - before + questBonus + drawBonus - spent * 0.25 + survival + (action.type === 'END_TURN' ? -0.5 : 0);
+  const survival = exposedLethal + (!hasAwakeningInvulnerability(result.state, playerId) && ownAfter.health <= enemyThreat ? (ownAfter.health - ownBefore.health) * 3 - enemyThreat * 0.5 : 0);
+  const awakeningTargetBonus = action.type === 'ATTACK' ? action.target.type === 'PLAYER'
+    ? hasAwakeningInvulnerability(visible, action.target.playerId) ? -12 : 0
+    : visible.players.find(p => p.id === action.target.playerId)?.champion?.awakening?.activeStageInstanceId === action.target.cardInstanceId ? 6 : 0 : 0;
+  return after - before + questBonus + drawBonus - spent * 0.25 + survival + awakeningTargetBonus + (action.type === 'END_TURN' ? -0.5 : 0);
 }
 
 export type AIDifficulty = 'NORMAL' | 'HARD' | 'BOSS';

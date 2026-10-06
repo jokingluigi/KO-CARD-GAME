@@ -1,4 +1,5 @@
 import { EPIC_TECHNIQUES } from './epic-techniques';
+import { createAwakeningCards } from '../champions/awakening-definitions';
 import { lunaSelfSilenceRecord } from './luna';
 import { lifeExchangeConfig, LIFE_EXCHANGE_OLD_TEXT, LIFE_EXCHANGE_RULES_TEXT } from './life-exchange';
 import { newCardImplementation } from './new-card-effects';
@@ -217,6 +218,14 @@ function normalizeAnywhereTargets<T>(value: T): T {
 }
 
 export function cardRecordToDefinition(card: PublishedCardRecord): CardDefinition {
+  const awakening = createAwakeningCards().find(definition => definition.id === card.id);
+  if (awakening) {
+    // Administrator-chosen names must not select another card's legacy rules.
+    return { ...awakening, ...card, cardType: 'WRESTLER', rarity: 'CHAMPION',
+      isToken: true, isChampionToken: true, questExclusive: true, awakeningStage: awakening.awakeningStage,
+      rulesText: card.text, keywords: [], abilities: [], effectId: null,
+      effectConfig: { ...card.effectConfig, ...awakening.effectConfig } };
+  }
   card = lunaSelfSilenceRecord(card);
   if (card.id === 'epic-spell-life-exchange' && card.text === LIFE_EXCHANGE_OLD_TEXT) {
     card = { ...card, text: LIFE_EXCHANGE_RULES_TEXT };
@@ -301,6 +310,8 @@ export function cardRecordToDefinition(card: PublishedCardRecord): CardDefinitio
        summonLine: card.summonLine ?? null,
       isToken: card.isToken,
       isChampionToken: card.isChampionToken,
+      ...(card.effectConfig.questExclusive === true ? { questExclusive: true } : {}),
+      ...(['TANK', 'HEALER', 'DEALER'].includes(String(card.effectConfig.awakeningStage)) ? { awakeningStage: card.effectConfig.awakeningStage as 'TANK' | 'HEALER' | 'DEALER' } : {}),
       keywords: repairedLegacyCardKeywords(card),
        tags: Array.isArray(card.tags) ? [...card.tags] : [],
       ...(implementation ? {contentRule: implementation.rule} : {}),

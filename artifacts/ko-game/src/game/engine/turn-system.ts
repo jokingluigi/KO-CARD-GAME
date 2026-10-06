@@ -341,11 +341,11 @@ export function endTurn(
   }
 
   const scheduled = expireTowerTurnEndBuffs(resolveDueDelayedEffects(afterRepeated, 'TURN_END', actingPlayerId), state.turn);
-  if (scheduled.status === 'FINISHED') return actionSuccess(scheduled);
+  if (scheduled.status === 'FINISHED') return actionSuccess(processChampionQuestEvents(state, scheduled));
   const afterScheduled = { ...scheduled, pendingCardEffects: scheduled.pendingCardEffects?.filter(effect => effect.expiresAtTurn === undefined || effect.expiresAtTurn > state.turn) };
   return actionSuccess(
     processChampionQuestEvents(
-      afterScheduled,
+      state,
       beginPlayerTurn(afterScheduled, nextPlayer.id),
     ),
   );
