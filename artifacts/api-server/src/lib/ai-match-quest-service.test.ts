@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import { createInitialGameState, startGame, executeAction, type GameAction } from "@workspace/game-engine";
+import { createInitialGameState, startGame, executeAction, getLegalActions, chooseBestAction, type GameAction } from "@workspace/game-engine";
 import { runAITurn } from "../../../ko-game/src/game/actions/ai-turn-scheduler";
 import { replayAIMatch } from "./ai-match-quest-service";
 import { canonicalCardCatalog, cardRecordToDefinition } from '@workspace/game-engine';
@@ -24,6 +24,19 @@ test('random card effects replay identically despite reversed database catalog o
 function startedEmptyMatch() {
   return startGame(createInitialGameState());
 }
+
+test('legal recorded AI turn ending is not rejected for differing from a new AI decision',()=>{
+ const started=startedEmptyMatch();const userId=started.players[0]!.id, aiId=started.players[1]!.id;
+ const ended=executeAction(started,{type:'END_TURN',playerId:userId});assert.ok(ended.success);
+ const before=ended.state;
+ before.players[1]!.hand=[generateCardInstance({id:'replay-unit',name:'Replay unit',cost:0,attack:5,health:5,rulesText:'',keywords:[],abilities:[],isToken:false,isChampionToken:false},{instanceId:'ai-unit'})];
+ const catalog=before.players[1]!.hand[0]!;
+ assert.notEqual(chooseBestAction(before,getLegalActions(before,aiId),aiId).type,'END_TURN');
+ const final=replayAIMatch(before,[{type:'END_TURN',actor:'AI'},{type:'SURRENDER'}],userId,aiId);
+ assert.equal(final.status,'FINISHED');assert.equal(final.winnerId,aiId);
+ assert.equal(final.players[1]!.hand.some(card=>card.instanceId===catalog.instanceId),true);
+ assert.throws(()=>replayAIMatch(before,[{type:'PLAY_WRESTLER',cardInstanceId:'missing',boardSlot:0,actor:'AI'}],userId,aiId));
+});
 
 test("AI match replay binds surrender to the authenticated player, not client playerId", () => {
   const state = startedEmptyMatch();

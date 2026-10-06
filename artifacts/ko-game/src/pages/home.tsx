@@ -757,7 +757,8 @@ export default function Home() {
             actions: aiMatchActionsRef.current.slice(0, 2000) as unknown as Array<Record<string, unknown>>,
           });
           setAiMatchReward(result.reward);
-          if (!result.completed) throw new Error(result.message ?? '퀘스트 진행도를 저장하지 못했습니다. 다시 시도해 주세요.');
+          // Credits are settled independently of optional daily-quest replay.
+          // A successful response must never retry or report paid credits as failed.
           setAiRewardStatus('success');
           return;
         } catch (error) {

@@ -1179,14 +1179,8 @@
   text-shadow: 0 3px 6px rgba(0, 0, 0, .95), 0 0 28px rgba(250, 204, 21, .8);
 }
 
-@keyframes ko-presentation-card-pulse {
-  0% { filter: brightness(1); }
-  35% { filter: brightness(1.35) saturate(1.25); }
-  100% { filter: brightness(1); }
-}
-
 .presentation-card-pulse {
-  animation: ko-presentation-card-pulse 320ms ease-out both;
+  animation: none;
 }
 
 @keyframes ko-stat-change {

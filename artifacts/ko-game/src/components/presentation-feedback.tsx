@@ -69,8 +69,8 @@ export function PresentationFeedback({
 
   return (
     <>
-    {['HEAL','BUFF','GOLD','DESTROY','BLOCK','GENERATE'].includes(cue.kind) &&
-      <BattleVfx kind={cue.kind==='HEAL'||cue.kind==='BUFF'?'HEAL':cue.kind==='GOLD'?'GOLD':cue.kind==='BLOCK'?'BLOCK':cue.kind==='DESTROY'?'DESTROY':'MAGIC'}
+    {(cue.kind==='DAMAGE'&&!cue.combat || cue.kind==='DESTROY' || cue.kind==='BLOCK') &&
+      <BattleVfx kind={cue.kind==='DAMAGE'?'IMPACT':cue.kind==='BLOCK'?'BLOCK':'DESTROY'}
         left={cue.left} top={cue.top} strength={Math.abs(cue.value??3)} seed={cue.id} duration={cue.duration} />}
     <div
       aria-hidden="true"
@@ -84,6 +84,7 @@ export function PresentationFeedback({
         onCompleteRef.current();
       }}
     >
+      {cue.kind==='DAMAGE'&&!cue.combat&&<i className="presentation-feedback__effect-hit"/>}
       {cue.sourceLeft !== undefined && cue.sourceTop !== undefined &&
         (Math.abs(cue.sourceLeft - cue.left) + Math.abs(cue.sourceTop - cue.top) > 30) &&
         <i className="presentation-feedback__transfer" />}

@@ -6,7 +6,7 @@ import { getCardDefinition } from "@/game";
 import { getActiveCardKeywords } from "../game/cards/granted-text";
 import { getCardRuntimeRulesText } from "../lib/card-display-state";
 import type { CardPlayAnimationState } from "./card-play-animation-utils";
-import { techniqueRevealRect, techniqueStageGeometry } from "./card-play-animation-utils";
+import { techniqueRevealRect, techniqueStageGeometry, wrestlerPlayRect } from "./card-play-animation-utils";
 import { PRESENTATION_CONFIG, prefersReducedMotion } from "./presentation-config";
 import { audioManager } from '../audio/audio-manager';
 import { BattleVfx } from './battle-vfx';
@@ -46,7 +46,7 @@ export function CardPlayAnimation({
   const definition = getCardDefinition(animation.card.definitionId);
   const source = animation.kind === "TECHNIQUE"
     ? techniqueRevealRect(animation.geometry.source)
-    : animation.geometry.source;
+    : wrestlerPlayRect(animation.geometry.source);
   const target = animation.kind === "WRESTLER" ? animation.geometry.target : undefined;
   const reveal=techniqueStageGeometry(source,viewport);
   const duration=animationDuration(animation);
@@ -55,10 +55,10 @@ export function CardPlayAnimation({
     : target ? Math.min(target.width/Math.max(source.width,1),target.height/Math.max(source.height,1)) : 1;
   const targetLeft = animation.kind === "TECHNIQUE"
     ? reveal.left
-    : target?.left ?? window.innerWidth / 2 - source.width / 2;
+    : target ? target.left + (target.width - source.width * targetScale) / 2 : window.innerWidth / 2 - source.width / 2;
   const targetTop = animation.kind === "TECHNIQUE"
     ? reveal.top
-    : target?.top ?? window.innerHeight / 2 - source.height / 2;
+    : target ? target.top + (target.height - source.height * targetScale) / 2 : window.innerHeight / 2 - source.height / 2;
   const travelX = targetLeft - source.left;
   const travelY = targetTop - source.top;
   const style = {

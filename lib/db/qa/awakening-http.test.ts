@@ -110,6 +110,21 @@ const input = {
     },
   },
 };
+
+test('AI result credits succeed and are granted once even when optional quest replay cannot load a deck',async()=>{
+ await database.insert(schema.rewardSettingsTable).values({key:'MATCH_ONLINE_WIN',enabled:true,rewardType:'CURRENCY',amount:200}).onConflictDoUpdate({target:schema.rewardSettingsTable.key,set:{enabled:true,rewardType:'CURRENCY',amount:200}});
+ assert.equal((await request('/auth/login','POST',{email:'admin@awakening.invalid',password:'AwakeningLocalQA123'})).status,200);
+ const before=(await pg.query<any>('SELECT currency_balance FROM users WHERE id=$1',['awakening-admin'])).rows[0].currency_balance;
+ const matchId='ai-11111111-1111-4111-8111-111111111111';
+ for(let retry=0;retry<2;retry++) {
+  const result=await request('/daily-quests/ai-match-progress','POST',{deckId:'deleted-deck',aiDeckId:'unavailable-ai',matchId,outcome:'WIN',actions:[]});
+  assert.equal(result.status,200);assert.equal(result.body.completed,false);
+  assert.equal(result.body.reward.amount,200);
+ }
+ const after=(await pg.query<any>('SELECT currency_balance FROM users WHERE id=$1',['awakening-admin'])).rows[0].currency_balance;
+ assert.equal(after-before,200);
+ assert.equal((await pg.query<any>('SELECT count(*)::int AS count FROM reward_grants WHERE source_id=$1',[matchId])).rows[0].count,1);
+});
 test("startup registers editable awakening drafts without overwriting existing owner data", async () => {
   const { ensureAwakeningContent, AWAKENING_CHAMPION_ID } = await import("../../../artifacts/api-server/src/lib/awakening-card-service");
   await ensureAwakeningContent();

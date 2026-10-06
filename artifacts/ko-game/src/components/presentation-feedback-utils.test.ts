@@ -3,6 +3,16 @@ import test from "node:test";
 
 import { presentationCueDrafts, presentationEventKey, presentationBlocksActions, visibleStatFeedback } from "./presentation-feedback-utils";
 
+test('effect damage has the actual amount and target, stays readable and skips prevented damage',()=>{
+ const cues=presentationCueDrafts([
+  {type:'DAMAGE_DEALT',amount:4,reason:'EFFECT',source:{type:'CARD',cardInstanceId:'caster'},target:{type:'CARD',cardInstanceId:'victim'}},
+  {type:'DAMAGE_DEALT',amount:3,reason:'EFFECT',target:{type:'PLAYER',playerId:'opponent'}},
+  {type:'DAMAGE_DEALT',amount:0,reason:'EFFECT',target:{type:'PLAYER',playerId:'opponent'}},
+ ],0);
+ assert.deepEqual(cues.map(c=>[c.label,c.cardInstanceId,c.playerId,c.combat]),[['-4','victim',undefined,false],['-3',undefined,'opponent',false]]);
+ assert.ok(cues.every(c=>c.duration>=500));
+});
+
 test('whole-deck stat feedback does not block actions or present hidden-card flashes', () => {
   const events = Array.from({ length: 25 }, (_, index) => ({
     type: 'STAT_CHANGED' as const, stat: 'attack' as const, delta: 1,

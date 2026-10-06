@@ -9,6 +9,7 @@ import { CardLeaveAnimation } from "../src/components/card-leave-animation";
 import { PresentationFeedback } from "../src/components/presentation-feedback";
 import { CardRenderer } from "../src/components/card-renderer";
 import { QuestPresentation } from "../src/components/quest-presentation";
+import { MatchResultOverlay } from "../src/components/match-result-overlay";
 import {
   setRuntimeCardDefinitions,
   generateCardInstance,
@@ -90,10 +91,13 @@ function Scene() {
           "blocked",
           "spell",
           "landing",
+          "damage",
           "heal",
           "destroy",
           "retire",
           "quest",
+          "reward",
+          "reward-error",
         ].map((value) => (
           <button
             key={value}
@@ -207,7 +211,7 @@ function Scene() {
           animation={{
             kind: "WRESTLER",
             card,
-            geometry: { source, target: destination },
+            geometry: { source: { left: 20, top: 40, width: Math.min(600, window.innerWidth - 40), height: 60 }, target: destination },
             impactLevel: "HEAVY",
           }}
           onComplete={finish}
@@ -228,6 +232,8 @@ function Scene() {
           onComplete={finish}
         />
       )}
+      {kind === 'damage' && <PresentationFeedback key={counter} cue={{id:`effect-${counter}`,kind:'DAMAGE',combat:false,label:'-6',value:6,left:destination.left+destination.width/2,top:destination.top+destination.height/2,duration:560}} onComplete={finish}/>}
+      {(kind==='reward'||kind==='reward-error')&&<MatchResultOverlay state={{...questState,status:'FINISHED',winnerId:questState.players[0].id,loserId:questState.players[1].id}} reward={kind==='reward'?{amount:200,sourceType:'MATCH_AI_RESULT'}:null} rewardStatus="error" rewardError="퀘스트 진행도를 저장하지 못했습니다: AI 경기 행동을 확인할 수 없습니다." onReturnToMainMenu={finish}/>}
       {(kind === "destroy" || kind === "retire") && (
         <CardLeaveAnimation
           key={counter}

@@ -109,7 +109,7 @@ export function presentationCueDrafts(
             value: event.amount,
             sourceCardInstanceId: event.source?.type === 'CARD' ? event.source.cardInstanceId : undefined,
             ...target,
-            duration: 320,
+            duration: 560,
           });
         }
         break;
