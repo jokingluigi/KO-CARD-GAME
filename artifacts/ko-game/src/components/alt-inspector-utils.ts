@@ -5,6 +5,7 @@ import { getCardRuntimeRulesText, getVisibleCardKeywords, getVisibleCardRulesTex
 import { getActiveCardKeywords } from '../game/cards/granted-text';
 
 export const KEYWORD_DESCRIPTIONS: Record<string, string> = {
+  WANTED: '상대방이 이 카드를 리타이어하거나 파괴하면, 상대방은 다음 자기 턴에 골드를 1 더 받습니다.',
   COUNTDOWN: '다음 자기 턴 시작부터 1씩 감소합니다. 0이 될 때 살아 있으면 한 번 발동합니다. 침묵하면 해제되며, 재등장하면 처음부터 시작합니다.',
   IMMUNE: '카드나 챔피언의 효과로 직접 지정할 수 없습니다.',
   REGEN: '양쪽 플레이어의 턴이 끝날 때마다 체력을 2 회복합니다. 기본 회복은 최대 체력을 넘지 않습니다.',
@@ -22,6 +23,7 @@ export const KEYWORD_DESCRIPTIONS: Record<string, string> = {
 };
 
 export const KEYWORD_LABELS: Record<string, string> = {
+  WANTED: '수배',
   COUNTDOWN: '카운트다운', IMMUNE: '면역', REGEN: '치유', ARMOR: '아머', CONDITION: '조건', DEFENSE: '방어', LIFESTEAL: '흡혈',
 
   RUSH: '러쉬',

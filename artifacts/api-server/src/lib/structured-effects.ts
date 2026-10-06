@@ -1962,6 +1962,12 @@ function analyzeEffectTextCore(input: string, options: EffectAnalysisOptions = {
 
 /** Hand activation is opt-in for every trigger, never inferred from TURN_END alone. */
 export function analyzeEffectText(input: string, options: EffectAnalysisOptions = {}): Analysis {
+  const wanted = input.trim().match(/^(?:수배|WANTED)(?:\s*[:：]\s*(?:이 키워드를 가진 카드를 상대방이 리타이어\/파괴하면 상대방은 다음턴에 1 골드를 더 받습니다\.?))?(?:\r?\n([\s\S]+))?$/i);
+  if (wanted) {
+    const result: Analysis = wanted[1] ? analyzeEffectText(wanted[1], options)
+      : {status:'success',outcome:'supported',effects:[],keywords:[],unsupportedSegments:[],summaries:[]};
+    return {...result,keywords:[...new Set([...result.keywords,'WANTED' as Keyword])],summaries:['수배 · 상대방이 리타이어/파괴하면 다음 자기 턴 골드 +1',...result.summaries]};
+  }
   const countdown = input.trim().match(/^(?:카운트다운|COUNTDOWN)\s*(?:\(\s*([^)]*)\s*\)|([+-]?[\d.]+)\s*턴)?\s*[:：]\s*([\s\S]+)$/i);
   if (countdown) {
     const turns=Number(countdown[1] ?? countdown[2] ?? 1);

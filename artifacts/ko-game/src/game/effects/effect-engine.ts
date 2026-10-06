@@ -1,4 +1,5 @@
 import { startCountdown, clearCountdown } from '../cards/countdown';
+import { queueWantedReward, wantedRemovalActor } from '../engine/wanted';
 import { resumeCountdownTurnStart } from '../engine/countdown';
 import { newCardTargetAllowed } from '../cards/new-card-effects';
 import { hasNewCardRule, healNewCardAware, silenceDamageReduction, healingTurn } from '../engine/new-card-rules';
@@ -1525,6 +1526,7 @@ export function resolveStateBasedDeaths(
   state: GameState,
   sourceContext?: EventAttribution,
   causeEventStartIndex?: number,
+  removingPlayerId?: string,
 ): GameState {
   // Resolve all BEFORE_RETIRE replacements against the live board before
   // taking the lethal snapshot. This keeps state-based lethal damage
@@ -1629,6 +1631,8 @@ export function resolveStateBasedDeaths(
     ],
   };
   for (const entry of retired) {
+    next = queueWantedReward(next, entry.card, entry.playerId, wantedRemovalActor(preparedState, entry.card,
+      removingPlayerId ?? entry.sourceContext?.sourcePlayerId, causeEventStartIndex));
     const retirementContext = entry.sourceContext ?? sourceContext;
     const beforeSelfRetire = next;
     next = resolveTriggeredAbilities(next, entry.playerId, entry.card, 'SELF_RETIRE', {
@@ -1730,7 +1734,7 @@ export function resolvePendingEffects(state: GameState): GameState {
   const settled = pending.continuation
     ? resolvePendingEffects({ ...next, targetingState: pending.continuation })
     : { ...next, targetingState: undefined };
-  return resumeCountdownTurnStart(resolveStateBasedDeaths(settled, pending.triggerContext?.sourceContext));
+  return resumeCountdownTurnStart(resolveStateBasedDeaths(settled, pending.triggerContext?.sourceContext, undefined, pending.playerId));
 }
 
 /** The disabled legacy spell remains disabled; its admin test uses the same legal swap. */
@@ -2786,12 +2790,13 @@ function applyEffectInternal(
             health: current.currentHealth,
           })
           : retiredState;
-        const selfRetired = resolveTriggeredAbilities(withSnapshot, targetOwner, current, 'SELF_RETIRE', {
+        const rewardedState = queueWantedReward(withSnapshot, current, targetOwner, playerId);
+        const selfRetired = resolveTriggeredAbilities(rewardedState, targetOwner, current, 'SELF_RETIRE', {
           leaveReason: 'RETIRE',
           sourceContext: attribution,
         });
         const legacyLeave = resolveTriggeredAbilities(
-          selfRetired !== withSnapshot && selfRetired.targetingState?.active
+          selfRetired !== rewardedState && selfRetired.targetingState?.active
             ? resolvePendingEffects(selfRetired)
             : selfRetired,
           targetOwner,
@@ -2842,6 +2847,7 @@ function applyEffectInternal(
           return resolveCardDestroyedListeners(removed, targetOwner, target);
         }
         const result = destroyCard(nextState, targetOwner, target.instanceId, {
+          sourcePlayerId: playerId,
           sourceInstanceId: sourceCard.instanceId,
           sourceContext: attribution,
         });
@@ -3034,7 +3040,9 @@ function applyEffectInternal(
             { type: 'CARD_RETIRED', playerId: targetOwner, cardInstanceId: current.instanceId, cardType: current.cardType ?? 'WRESTLER', boardSlot: current.boardSlot!, source: { type: 'CARD', cardInstanceId: sourceCard.instanceId }, target: { type: 'CARD', cardInstanceId: current.instanceId }, targetSnapshot: { playerId: targetOwner, cardInstanceId: current.instanceId, cardType: current.cardType ?? 'WRESTLER', boardSlot: current.boardSlot!, currentAttack: current.currentAttack, currentHealth: current.currentHealth }, reason: 'RETIRE', sourceContext: attribution },
           ],
         };
-        const retiredWithAggregate = withLastAggregatedStats(retiredState, {
+        const removedWanted = protectedState.players.find(player => player.id === targetOwner)?.board.find(card => card?.instanceId === current.instanceId);
+        const rewardedState = removedWanted ? queueWantedReward(retiredState, removedWanted, targetOwner, playerId) : retiredState;
+        const retiredWithAggregate = withLastAggregatedStats(rewardedState, {
           attack: current.currentAttack,
           health: Math.max(0, current.currentHealth),
         });

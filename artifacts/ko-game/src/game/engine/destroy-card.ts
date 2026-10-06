@@ -1,4 +1,5 @@
 import { resolveTowerRemoval } from '../tower/relics';
+import { queueWantedReward, wantedSourceOwner } from './wanted';
 import type { ActionResult } from '../actions/types';
 import { actionFailure, actionSuccess } from '../actions/types';
 import type { CardInstanceId } from '../cards/types';
@@ -6,6 +7,7 @@ import type { EventAttribution } from '../events/types';
 import type { GameState } from '../types/game-state';
 
 export interface DestroyCardProvenance {
+  sourcePlayerId?: string;
   sourceInstanceId?: CardInstanceId;
   sourceContext?: EventAttribution;
 }
@@ -75,5 +77,7 @@ export function destroyCard(
     ],
   };
 
-  return actionSuccess(resolveTowerRemoval(destroyedState, destroyedState.events[destroyedState.events.length - 1]!, destroyedState.events.length - 1));
+  const rewarded = queueWantedReward(destroyedState, card, playerId, provenance.sourcePlayerId
+    ?? wantedSourceOwner(state, provenance.sourceInstanceId) ?? provenance.sourceContext?.sourcePlayerId);
+  return actionSuccess(resolveTowerRemoval(rewarded, destroyedState.events[destroyedState.events.length - 1]!, destroyedState.events.length - 1));
 }
