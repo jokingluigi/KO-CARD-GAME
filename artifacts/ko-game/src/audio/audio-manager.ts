@@ -1,4 +1,5 @@
 import type { MusicContext } from './music-route';
+import { acceptsSound } from '../components/presentation-policy';
 
 export const AUDIO_STINGER_DURATION = 10;
 export const AUDIO_FADE_IN_DURATION = 0.5;
@@ -34,6 +35,9 @@ function hasBrowserAudio() {
 }
 
 class AudioManager {
+  private soundPriority = 0;
+  private soundUntil = 0;
+  private overlays = new Set<HTMLAudioElement>();
   private current: {
     audio: HTMLAudioElement;
     request: AudioRequest;
@@ -63,7 +67,8 @@ class AudioManager {
   private attackAudio: HTMLAudioElement | null = null;
   private cachedAttackAudio = new Map<string, HTMLAudioElement>();
   private attackBaseVolume = 100;
-  private impactDuckTimer: ReturnType<typeof setTimeout> | null = null;
+  private impactDuckTimer: number | null = null;
+  private impactDuckUntil = 0;
   private packReveal: {
     audio: HTMLAudioElement;
     volume: number;
@@ -158,7 +163,10 @@ class AudioManager {
 
   playAttack(url: string, volume: number, pitch = 1) {
     if (!hasBrowserAudio() || !url) return;
+    const priority = url.includes("finisher") ? 9 : url.includes("heavy") ? 7 : 5;
+    if (!acceptsSound(this.soundPriority, this.soundUntil, priority, Date.now())) return;
     this.stopAttack();
+    this.soundPriority = priority; this.soundUntil = Date.now() + (priority === 9 ? 650 : 180);
     this.duckBgmForImpact(url.includes('combat-finisher') ? 0.28 : 0.66, url.includes('combat-finisher') ? 650 : 270);
     try {
       const audio = this.cachedAttackAudio.get(url) ?? new Audio(url);
@@ -195,14 +203,25 @@ class AudioManager {
   }
 
   /** One-shot layer that does not cut off the ongoing finishing blow. */
-  playImpactOverlay(url: string, volume: number) {
-    if (!hasBrowserAudio() || !url) return;
+  playImpactOverlay(url: string, volume: number, priority = 4) {
+    if (!hasBrowserAudio() || !url || !acceptsSound(this.soundPriority, this.soundUntil, priority, Date.now())) return;
+    if (this.overlays.size >= 4) { const oldest = this.overlays.values().next().value; oldest?.pause(); if (oldest) this.overlays.delete(oldest); }
     const audio = new Audio(url);
+    this.overlays.add(audio);
+    const release = () => this.overlays.delete(audio);
+    audio.addEventListener('ended', release, { once: true });
+    audio.addEventListener('error', release, { once: true });
     audio.volume = safeVolume(volume * this.sfxVolume / 100);
-    void audio.play().catch(() => undefined);
+    void audio.play().catch(release);
+  }
+
+  duckForPresentation(factor: number, durationMs: number) {
+    this.duckBgmForImpact(Math.max(.2, Math.min(1, factor)), Math.max(80, Math.min(1500, durationMs)));
   }
 
   stopAttack() {
+    this.soundPriority = 0; this.soundUntil = 0;
+    for (const audio of this.overlays) audio.pause(); this.overlays.clear();
     if (!this.attackAudio) return;
     this.attackAudio.pause();
     this.attackAudio.currentTime = 0;
@@ -218,14 +237,15 @@ class AudioManager {
   private impactDuckFactor = 1;
   private duckBgmForImpact(factor: number, durationMs: number) {
     if (!this.bgm || this.bgmMuted || this.bgm.audio.paused) return;
-    if (this.impactDuckTimer) clearTimeout(this.impactDuckTimer);
-    this.impactDuckFactor = factor;
-    this.bgm.audio.volume = safeVolume(this.bgm.volume * this.bgmVolume / 100) * factor;
-    this.impactDuckTimer = setTimeout(() => {
+    if (this.impactDuckTimer) window.clearTimeout(this.impactDuckTimer);
+    this.impactDuckFactor = Math.min(this.impactDuckFactor, factor);
+    this.bgm.audio.volume = safeVolume(this.bgm.volume * this.bgmVolume / 100) * this.impactDuckFactor;
+    this.impactDuckUntil = Math.max(this.impactDuckUntil, Date.now() + durationMs);
+    this.impactDuckTimer = window.setTimeout(() => {
       this.impactDuckTimer = null;
       this.impactDuckFactor = 1;
       if (this.bgm && !this.bgmMuted && !this.bgm.audio.paused) this.setBgmVolume(this.bgmVolume);
-    }, durationMs);
+    }, this.impactDuckUntil - Date.now());
   }
 
   setSfxVolume(volume: number) {
@@ -531,8 +551,9 @@ class AudioManager {
   }
 
   private stopBaseMusic() {
-    if (this.impactDuckTimer) clearTimeout(this.impactDuckTimer);
+    if (this.impactDuckTimer) window.clearTimeout(this.impactDuckTimer);
     this.impactDuckTimer = null;
+    this.impactDuckUntil = 0;
     this.impactDuckFactor = 1;
     this.baseTransitionId += 1;
     this.pendingBaseMusic = null;

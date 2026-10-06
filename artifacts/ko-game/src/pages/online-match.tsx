@@ -59,7 +59,7 @@ import {
 } from "@/lib/online-connection-notice";
 
 const TURN_TIME_LIMIT_SECONDS = 90;
-const RESULT_SCREEN_SETTLE_DELAY_MS = 320;
+const RESULT_SCREEN_SETTLE_DELAY_MS = 650;
 type ConnectionStatus = "CONNECTED" | "DISCONNECTED_GRACE" | "FORFEITED";
 
 type PendingPlay = {

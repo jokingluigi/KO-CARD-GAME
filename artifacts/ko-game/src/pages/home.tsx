@@ -77,7 +77,7 @@ import {
 
 const TURN_TIME_LIMIT_SECONDS = 90;
 const ENTRANCE_EFFECT_DELAY_MS = 180;
-const RESULT_SCREEN_SETTLE_DELAY_MS = 320;
+const RESULT_SCREEN_SETTLE_DELAY_MS = 650;
 function actualAttackDamage(
   before: GameState,
   after: GameState,

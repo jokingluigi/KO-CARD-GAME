@@ -45,6 +45,9 @@ import {
   ChampionQuestInspectContent,
   Inspectable,
 } from './alt-inspector';
+import { useBattleMotion, useHandMotion, MotionNumber } from './presentation-motion';
+import { withEffectSources, statusPresentation, mergeStatusPresentation } from './presentation-event-feedback';
+import { enqueuePresentation, strongerShake } from './presentation-policy';
 import { PresentationFeedback, type PresentationCue } from './presentation-feedback';
 import { presentationCueDrafts, presentationEventKey, presentationBlocksActions, visibleStatFeedback } from './presentation-feedback-utils';
 import { canMulligan } from '../game/engine/mulligan';
@@ -217,6 +220,8 @@ export function GameStatePreview({
     if (coachStage === 3 && state.events.some((event) => event.type === 'CHAMPION_QUEST_PROGRESS' && event.playerId === state.players[0]?.id)) setCoachStage(4);
   }, [state.events, state.players, guidedTutorial, coachDismissed, coachStage]);
   const handCardRefs = React.useRef(new Map<string, HTMLDivElement>());
+  useHandMotion(handCardRefs, state.players[0]?.hand.map(card=>card.instanceId).join(':') ?? '');
+  const motion = useBattleMotion();
   const playerHandRef = React.useRef<HTMLDivElement | null>(null);
   const playerDeckRef = React.useRef<HTMLDivElement | null>(null);
   const opponentDeckRef = React.useRef<HTMLDivElement | null>(null);
@@ -241,10 +246,8 @@ export function GameStatePreview({
     return () => window.clearTimeout(timer);
   }, [drawFlights]);
   const [presentationQueue, setPresentationQueue] = React.useState<PresentationCue[]>([]);
-  const [screenShakeLevel, setScreenShakeLevel] = React.useState<AttackDamageImpactLevel>("NONE");
   const [pendingEffectFinisher, setPendingEffectFinisher] = React.useState(false);
   const [effectFinisher, setEffectFinisher] = React.useState(false);
-  const screenShakeTimerRef = React.useRef<number | null>(null);
   const effectFinisherTimerRef = React.useRef<number | null>(null);
   const processedEventCountRef = React.useRef<number | null>(null);
   const processedEventKeysRef = React.useRef(new Set<string>());
@@ -257,6 +260,10 @@ export function GameStatePreview({
   }, []);
   const startedDamageCueRef=React.useRef('');
   const handlePresentationCueStart=React.useCallback((cue:PresentationCue)=>{
+    const target=cue.cardInstanceId ? boardCardRefs.current.get(cue.cardInstanceId) ?? handCardRefs.current.get(cue.cardInstanceId) : (cue.playerId===state.players[0]?.id || cue.championId===state.players[0]?.champion?.id) ? playerChampionRef.current : championRef.current;
+    if(cue.kind==='EFFECT'){motion.react(target,'EFFECT');return;}
+    if(cue.kind==='SILENCE'){motion.react(target,'SILENCE');return;}
+    if(cue.kind==='DAMAGE'&&!cue.combat)motion.react(target,'HIT',Math.min(3,(cue.value??1)/3));
     if(cue.kind!=='DAMAGE'||cue.combat) return;
     const key=`${state.gameId}:${cue.id}`;
     if(startedDamageCueRef.current===key) return;
@@ -268,10 +275,8 @@ export function GameStatePreview({
     }
     if(prefersReducedMotion()) return;
     if(hapticsEnabled && window.matchMedia?.('(pointer: coarse)').matches && typeof navigator.vibrate==='function') navigator.vibrate(damage>=6?35:12);
-    setScreenShakeLevel(attackDamageImpactLevel(damage));
-    if(screenShakeTimerRef.current!==null) window.clearTimeout(screenShakeTimerRef.current);
-    screenShakeTimerRef.current=window.setTimeout(()=>{setScreenShakeLevel('NONE');screenShakeTimerRef.current=null;},220);
-  },[state.gameId,state.status,hapticsEnabled]);
+    motion.requestShake(attackDamageImpactLevel(damage));
+  },[state.gameId,state.status,hapticsEnabled,motion.react,motion.requestShake]);
 
   React.useEffect(() => {
     onPresentationBusyChange(Boolean(
@@ -307,9 +312,6 @@ export function GameStatePreview({
   }, [pendingEffectFinisher, playAnimation, generatedPlayAnimations.length, attackAnimation]);
 
   React.useEffect(() => () => {
-    if (screenShakeTimerRef.current !== null) {
-      window.clearTimeout(screenShakeTimerRef.current);
-    }
     if (effectFinisherTimerRef.current !== null) window.clearTimeout(effectFinisherTimerRef.current);
   }, []);
 
@@ -355,14 +357,16 @@ export function GameStatePreview({
       if (event.type !== 'CARD_DRAWN' || !event.playerId) return [];
       const opponent = event.playerId !== state.players[0]?.id;
       const from = (opponent ? opponentDeckRef : playerDeckRef).current?.getBoundingClientRect();
-      const to = (opponent ? opponentHandRef : playerHandRef).current?.getBoundingClientRect();
+      const destination = !opponent && event.cardInstanceId ? handCardRefs.current.get(event.cardInstanceId) ?? playerHandRef.current : opponentHandRef.current;
+      const to = destination?.getBoundingClientRect();
+      motion.react((opponent ? opponentDeckRef : playerDeckRef).current,"ZONE");
       return [{ id: key, fromX: from ? from.left + from.width / 2 : window.innerWidth * .9,
         fromY: from ? from.top + from.height / 2 : window.innerHeight * .45,
         toX: to ? to.left + to.width / 2 : window.innerWidth * .4,
         toY: to ? to.top + to.height / 2 : opponent ? window.innerHeight * .1 : window.innerHeight * .85,
         opponent }];
     });
-    if (flights.length) setDrawFlights(flights);
+    if (flights.length) setDrawFlights(current=>[...current,...flights].slice(-12));
     for (const event of newEvents) {
       let line: string | null = null;
       let speaker = state.players.find((player) => player.id === event.playerId)?.champion?.name ?? '챔피언';
@@ -473,11 +477,16 @@ export function GameStatePreview({
               candidate.target.cardInstanceId === event.cardInstanceId &&
               newEvents.indexOf(candidate) < newEvents.indexOf(event),
           );
+          const graveyard = (event.playerId === state.players[0]?.id ? playerDeckRef : opponentDeckRef).current?.parentElement?.querySelector("button");
+          const graveyardRect = graveyard?.getBoundingClientRect();
+          if(event.type === "CARD_RETIRED") motion.react(graveyard as HTMLElement | null, "ZONE");
           leaveAnimations.push({
             id: `leave:${state.events.length}:${event.cardInstanceId}:${event.type}`,
             card,
             kind: event.type === "CARD_RETIRED" ? "RETIRE" : event.type === "CARD_DESTROYED" ? "DESTROY" : "REMOVE",
             geometry,
+            effectTriggered: event.type === "CARD_RETIRED" && newEvents.some(candidate => candidate.source?.type === "CARD" && candidate.source.cardInstanceId === event.cardInstanceId && candidate.type !== "CARD_RETIRED"),
+            destination: event.type === "CARD_RETIRED" && graveyardRect ? { left:graveyardRect.left+graveyardRect.width/2,top:graveyardRect.top+graveyardRect.height/2 } : undefined,
             delay: precedingDamage ? 220 : 0,
           });
         } else if (event.type === 'CARD_DESTROYED' && event.boardSlot !== undefined) {
@@ -568,7 +577,9 @@ export function GameStatePreview({
         ...leaveAnimations,
       ]);
     }
-    const cues = presentationCueDrafts(newEvents, 0, newEventKeys, presentationPlayerId).map((draft) => {
+    const drafts = withEffectSources(presentationCueDrafts(newEvents, 0, newEventKeys, presentationPlayerId));
+    const statusCues = statusPresentation(newEvents, previousCards, currentCards(state), `${state.gameId}:${state.events.length}`);
+    const cues = mergeStatusPresentation(drafts, statusCues, newEventKeys).map((draft) => {
       const source = draft.sourceCardInstanceId
         ? boardCardRefs.current.get(draft.sourceCardInstanceId) ?? handCardRefs.current.get(draft.sourceCardInstanceId)
         : null;
@@ -639,7 +650,7 @@ export function GameStatePreview({
       setPresentationQueue(current => {
         const existingIds = new Set(current.map(cue => cue.id));
         const fresh = onceCues.filter(cue => !existingIds.has(cue.id));
-        return fresh.length ? [...current.slice(-18), ...fresh] : current;
+        return fresh.length ? enqueuePresentation(current, fresh) : current;
       });
     }
   }, [autoPresentOwnActions, onOpponentAttackPresentation, onSelfPlayPresentation, state.events, state.players]);
@@ -755,7 +766,7 @@ export function GameStatePreview({
       const rect = lastCardPositionsRef.current.get(cue.cardInstanceId);
       if (rect) return { left: rect.left + rect.width / 2, top: rect.top + rect.height * 0.35 };
     }
-    if (cue.playerId === me.id) {
+    if (cue.playerId === me.id || cue.championId === me.champion?.id) {
       const rect = playerChampionRef.current?.getBoundingClientRect();
       if (rect) return { left: rect.left + rect.width / 2, top: rect.top + rect.height * 0.35 };
     }
@@ -861,15 +872,15 @@ export function GameStatePreview({
         <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,_rgba(26,26,36,0.08)_0%,_rgba(5,5,5,0.18)_100%)]" />
       </div>
 
-      <div className={`ko-game-stage relative mx-auto flex min-h-[100dvh] w-full max-w-5xl flex-1 flex-col justify-between pb-0 pt-2 md:h-[100dvh] md:min-h-0 md:pt-4 ${
+      <div data-active-side={isMyTurn ? "player" : "opponent"} data-targeting={Boolean(effectTargeting || selectedAttackerId)} data-critical={me.health > 0 && me.health <= 5} className={`ko-game-stage relative mx-auto flex min-h-[100dvh] w-full max-w-5xl flex-1 flex-col justify-between pb-0 pt-2 md:h-[100dvh] md:min-h-0 md:pt-4 ${
         attackAnimation?.finishingBlow
           ? "attack-finisher-zoom"
           : effectFinisher
             ? "effect-finisher-zoom"
           : attackImpactTriggered && attackAnimation && attackAnimation.damage > 0
-            ? `attack-screen-shake--${attackScreenShakeLevel(attackAnimation.currentAttack, attackAnimation.damage).toLowerCase()}`
-          : screenShakeLevel !== "NONE"
-            ? `attack-screen-shake--${screenShakeLevel.toLowerCase()}`
+            ? `attack-screen-shake--${strongerShake(attackScreenShakeLevel(attackAnimation.currentAttack, attackAnimation.damage), motion.shake).toLowerCase()}`
+          : motion.shake !== "NONE"
+            ? `attack-screen-shake--${motion.shake.toLowerCase()}`
             : playAnimation?.kind === "WRESTLER"
               ? getCardDefinition(playAnimation.card.definitionId)?.rarity === 'LEGENDARY'
                 ? 'card-landing-shake--legendary'
@@ -971,7 +982,7 @@ export function GameStatePreview({
                   <div className="w-full rounded border border-red-800 bg-red-950/80 px-2 py-1 text-right">
                     <div className="text-[7px] font-bold text-red-300 md:text-[9px]">챔피언 체력</div>
                     <div className="font-display text-sm font-black text-white md:text-lg">
-                      <span key={opponentSurvivalHealth} className="presentation-stat-change">{displayHealth(opponentSurvivalHealth)}</span> / {opp.champion?.maxHealth ?? 20}
+                      <MotionNumber value={opponentSurvivalHealth} format={displayHealth} /> / {opp.champion?.maxHealth ?? 20}
                     </div>
                   </div>
                 </div>
@@ -1014,9 +1025,7 @@ export function GameStatePreview({
                     targetingActive={!!effectTargeting}
                     presentationActive={activePresentationCardId === card?.instanceId || (!!effectTargeting && state.targetingState?.sourceInstanceId === card?.instanceId)}
                      targetable={!!card && (effectTargeting ? validEffectTargetIds.has(card.instanceId) : !!selectedAttackerId && legalAttackTargets.has(card.instanceId))}
-                    attackPreview={!!card && !!selectedAttackerId && !effectTargeting && legalAttackTargets.has(card.instanceId)
-                      ? `피해 ${attackBaseDamage} · ${card.dodgeAvailable || (card.dodgeCharges ?? 0) > 0 ? '회피 가능' : card.currentHealth <= attackBaseDamage ? '리타이어' : `잔여 ${card.currentHealth - attackBaseDamage}`} · 반격 ${Math.max(0, card.currentAttack)}`
-                      : undefined}
+                    attackPreview={undefined}
                     activeReady={false}
                     activeUsable={false}
                     onUseActive={() => undefined}
@@ -1460,7 +1469,7 @@ export function GameStatePreview({
                 <div className="rounded border border-blue-800 bg-blue-950/80 px-2 py-1">
                  <div className="text-[7px] font-bold text-blue-300 md:text-[9px]">챔피언 체력</div>
                   <div className="font-display text-sm font-black text-white md:text-xl">
-                    <span key={mySurvivalHealth} className="presentation-stat-change">{displayHealth(mySurvivalHealth)}</span> / {me.champion?.maxHealth ?? 20}
+                    <MotionNumber value={mySurvivalHealth} format={displayHealth} /> / {me.champion?.maxHealth ?? 20}
                  </div>
                 </div>
                </div>
@@ -1518,7 +1527,7 @@ export function GameStatePreview({
                        me.hand.length >= 7 ? 'small' : me.hand.length >= 5 ? 'medium' : 'regular';
                      return (
                         <HandCard
-                          key={`hand-${card.instanceId}-${i}`}
+                          key={`hand-${card.instanceId}`}
                           card={payableCost === card.currentCost ? card : { ...card, currentCost: payableCost }}
                           isSelected={isSelected}
                           canAfford={canAfford}
@@ -1568,9 +1577,9 @@ export function GameStatePreview({
       ))}
       {destroyBursts.map((burst) => <div key={burst.id} aria-hidden="true" className="ko-destroy-burst"
         style={{ left: burst.left, top: burst.top, width: burst.width, height: burst.height }} />)}
-      {drawFlights.map((flight) => <div key={flight.id} aria-hidden="true" className={`ko-draw-flight ${flight.opponent ? 'ko-draw-flight--opponent' : ''}`}
+      {drawFlights.map((flight,index) => <div key={flight.id} aria-hidden="true" className={`ko-draw-flight ${flight.opponent ? 'ko-draw-flight--opponent' : ''}`}
         style={{ '--draw-from-x': `${flight.fromX}px`, '--draw-from-y': `${flight.fromY}px`,
-          '--draw-to-x': `${flight.toX}px`, '--draw-to-y': `${flight.toY}px` } as React.CSSProperties} />)}
+          '--draw-to-x': `${flight.toX}px`, '--draw-to-y': `${flight.toY}px`, '--draw-mid-x': `${(flight.fromX+flight.toX)/2}px`, '--draw-mid-y': `${(flight.fromY+flight.toY)/2-28}px`, '--draw-delay': `${(index%4)*35}ms` } as React.CSSProperties} />)}
       {attackAnimation && (
         <AttackAnimation
           animation={attackAnimation}

@@ -72,5 +72,7 @@ jobs:
           artifacts/ko-game/src/components/attack-animation-utils.test.ts
           artifacts/ko-game/src/components/card-play-animation-utils.test.ts
           artifacts/ko-game/src/components/presentation-feedback-utils.test.ts
+          artifacts/ko-game/src/components/presentation-policy.test.ts
+          artifacts/ko-game/src/components/presentation-event-feedback.test.ts
           artifacts/api-server/src/lib/ai-match-quest-service.test.ts
           lib/db/qa/awakening-http.test.ts

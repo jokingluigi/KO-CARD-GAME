@@ -10,7 +10,7 @@ test('effect damage has the actual amount and target, stays readable and skips p
   {type:'DAMAGE_DEALT',amount:0,reason:'EFFECT',target:{type:'PLAYER',playerId:'opponent'}},
  ],0);
  assert.deepEqual(cues.map(c=>[c.label,c.cardInstanceId,c.playerId,c.combat]),[['-4','victim',undefined,false],['-3',undefined,'opponent',false]]);
- assert.ok(cues.every(c=>c.duration>=500));
+ assert.ok(cues.every(c=>c.duration>=260&&c.duration<=400));
 });
 
 test('whole-deck stat feedback does not block actions or present hidden-card flashes', () => {

@@ -7,6 +7,7 @@ import { getCardRuntimeRulesText } from "../lib/card-display-state";
 import type { AttackAnimationState } from "./attack-animation-utils";
 import { combatTimeline, attackFrames, attackBurstKind } from './battle-vfx-model';
 import { BattleVfx } from './battle-vfx';
+import { audioManager } from '../audio/audio-manager';
 import { prefersReducedMotion } from "./presentation-config";
 
 export function AttackAnimation({
@@ -58,6 +59,7 @@ export function AttackAnimation({
     impactedRef.current = false;
     completedRef.current = false;
     setImpacted(false);
+    if (animation.finishingBlow) audioManager.duckForPresentation(.4, 500);
     const impact = () => {
       if (impactedRef.current) return;
       impactedRef.current = true;

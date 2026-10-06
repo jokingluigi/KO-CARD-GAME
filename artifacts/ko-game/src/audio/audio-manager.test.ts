@@ -526,3 +526,35 @@ test("오래된 Legendary callback은 새 override를 종료하거나 persistent
     assert.equal(manager.current?.audio.url, "/legendary-b.mp3");
   });
 });
+
+test('finisher sound keeps priority until expiry and overlays remain bounded',()=>{
+ withFakeAudio(advance=>{
+  const manager=audioManager as unknown as {attackAudio:FakeAudio|null;overlays:Set<FakeAudio>};
+  audioManager.playAttack('/combat-finisher.wav',80);
+  const finishing=manager.attackAudio;
+  audioManager.playAttack('/impact-light.wav',80);
+  audioManager.playImpactOverlay('/ui.wav',50);
+  assert.equal(manager.attackAudio,finishing);assert.equal(manager.overlays.size,0);
+  audioManager.playImpactOverlay('/glass.wav',80,9);
+  assert.equal(manager.overlays.size,1);
+  advance(700);
+  audioManager.playAttack('/impact-light.wav',80);
+  assert.notEqual(manager.attackAudio,finishing);
+  advance(200);
+  for(let i=0;i<9;i++)audioManager.playImpactOverlay('/overlay-'+i,50);
+  assert.equal(manager.overlays.size,4);
+  audioManager.stopAttack();assert.equal(manager.overlays.size,0);
+ });
+});
+test('weaker duck never lifts a finisher early and restores the same music position',()=>{
+ withFakeAudio(advance=>{
+  audioManager.setMusicContext('BATTLE');audioManager.setBgmMuted(false);audioManager.setBgmVolume(100);
+  audioManager.playMatchBgm('/duck-match.mp3',80);advance(1000);
+  const manager=audioManager as unknown as {bgm:{audio:FakeAudio}};
+  const audio=manager.bgm.audio;audio.currentTime=42;
+  audioManager.duckForPresentation(.3,700);assert.equal(audio.volume,.24);
+  advance(100);audioManager.duckForPresentation(.7,100);assert.equal(audio.volume,.24);
+  advance(150);assert.equal(audio.volume,.24);
+  advance(500);assert.equal(audio.volume,.8);assert.equal(audio.currentTime,42);assert.equal(audio.paused,false);
+ });
+});

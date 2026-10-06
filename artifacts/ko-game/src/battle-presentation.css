@@ -285,7 +285,7 @@
   }
   100% {
     opacity: 0;
-    transform: translateY(22px) scale(0.7) rotate(-12deg);
+    transform: translate(var(--leave-dx,0px),var(--leave-dy,22px)) scale(0.25) rotate(-12deg);
     filter: grayscale(1);
   }
 }
@@ -405,3 +405,81 @@
     }
   }
 }
+
+/* Shared finite presentation grammar. Ordinary reactions never persist. */
+.ko-draw-flight { animation-duration:320ms; animation-delay:var(--draw-delay,0ms); }
+@keyframes ko-draw-flight {
+  0% { opacity:0; transform:translate(calc(var(--draw-from-x) - 50%),calc(var(--draw-from-y) - 50%)) scale(.7) rotate(-8deg); }
+  15% { opacity:1; }
+  48% { opacity:1; transform:translate(calc(var(--draw-mid-x) - 50%),calc(var(--draw-mid-y) - 50%)) scale(1.02) rotate(0deg); }
+  88% { opacity:1; }
+  100% { opacity:0; transform:translate(calc(var(--draw-to-x) - 50%),calc(var(--draw-to-y) - 50%)) scale(.92) rotate(2deg); }
+}
+.presentation-feedback[data-impact="light"] { font-size:22px; }
+.presentation-feedback[data-impact="medium"] { font-size:28px; }
+.presentation-feedback[data-impact="heavy"] { font-size:36px; }
+.presentation-feedback[data-impact="finisher"] { font-size:44px; }
+.presentation-feedback--effect { color:#ffe5af; font-size:13px; }
+.presentation-feedback--silence { color:#c9bfe8; font-size:17px; }
+.presentation-feedback--armor { color:#b5e5ff; font-size:17px; }
+.presentation-feedback__shield,.presentation-feedback__silence-ring {
+  position:absolute; inset:-25px -18px; border:2px solid currentColor;
+  border-radius:45%; opacity:0; animation:ko-status-ring var(--presentation-duration) ease-out both;
+}
+.presentation-feedback__shield { border-radius:40% 40% 50% 50%; box-shadow:inset 0 0 12px #8ac7ff55; }
+.presentation-feedback__silence-ring { animation-name:ko-silence-ring; border-style:dashed; }
+@keyframes ko-status-ring { 0%{opacity:0;scale:.75} 25%{opacity:1;scale:1.1} 100%{opacity:0;scale:1.25} }
+@keyframes ko-silence-ring { 0%{opacity:.8;scale:1.25} 65%{opacity:.6;scale:.5} 100%{opacity:0;scale:.1} }
+.ko-hand-card { transition:transform 180ms cubic-bezier(.16,1,.3,1),filter 180ms ease; }
+.ko-hand-card--selected { filter:drop-shadow(0 10px 10px #0009); z-index:30; }
+.ko-game-stage button:not(:disabled) { transition:scale 100ms ease,filter 140ms ease; }
+.ko-game-stage button:not(:disabled):active { scale:.96; }
+.ko-game-stage button:disabled { cursor:default; }
+@media(hover:hover) { .ko-game-stage button:not(:disabled):hover { filter:brightness(1.08); } }
+.ko-game-stage[data-targeting="true"] [data-targetable="true"] { outline:2px solid #ffd787; outline-offset:2px; }
+.ko-game-stage[data-targeting="true"] [data-targetable="false"] { opacity:.83; }
+.ko-game-stage[data-critical="true"]::before {
+  content:"";pointer-events:none;position:absolute;inset:65% 0 0;z-index:0;
+  background:linear-gradient(transparent,#27061144);
+}
+.ko-game-stage { isolation:isolate; }
+.attack-screen-shake--very_light { --shake-px:.5px; }
+.attack-screen-shake--light { --shake-px:1px; }
+.attack-screen-shake--medium { --shake-px:2px; }
+.attack-screen-shake--heavy { --shake-px:3px; }
+.attack-screen-shake--very_heavy { --shake-px:4px; }
+.ko-game-stage[class*="attack-screen-shake--"] { animation-name:ko-bounded-shake; }
+@keyframes ko-bounded-shake {
+  0%,100% { translate:0 0; }
+  25% { translate:var(--shake-px) calc(var(--shake-px) * -.5); }
+  50% { translate:calc(var(--shake-px) * -1) 0; }
+  75% { translate:calc(var(--shake-px) * .5) calc(var(--shake-px) * .5); }
+}
+@media(prefers-reduced-motion:reduce) {
+  .ko-draw-flight { animation-duration:40ms; animation-delay:0ms; }
+  .ko-game-stage[class*="attack-screen-shake--"] { animation:none; }
+  .presentation-feedback__shield,.presentation-feedback__silence-ring { animation:none;opacity:.5; }
+  .ko-hand-card,.ko-game-stage button { transition:none; }
+}
+
+/* Landing shake follows the same 76% impact point as sound and canvas. */
+.card-landing-shake--light { animation-delay:198ms; }
+.card-landing-shake--normal { animation-delay:243ms; }
+.card-landing-shake--heavy { animation-delay:274ms; }
+.card-landing-shake--very_heavy { animation-delay:304ms; }
+.card-landing-shake--legendary { animation-delay:714ms; }
+@media(prefers-reduced-motion:reduce) {
+ .ko-draw-flight { animation-name:ko-draw-reduced; }
+}
+@keyframes ko-draw-reduced { from{opacity:0;transform:translate(calc(var(--draw-to-x) - 50%),calc(var(--draw-to-y) - 50%))} to{opacity:1;transform:translate(calc(var(--draw-to-x) - 50%),calc(var(--draw-to-y) - 50%))} }
+
+.ko-opponent-header,.ko-player-info { transition:opacity 180ms ease; }
+.ko-game-stage[data-active-side="player"] .ko-opponent-header { opacity:.88; }
+.ko-game-stage[data-active-side="opponent"] .ko-player-info { opacity:.88; }
+@media(prefers-reduced-motion:reduce) { .ko-opponent-header,.ko-player-info { transition:none; } }
+
+@media(prefers-reduced-motion:reduce) { .champion-defeat-cinematic__portrait,.champion-defeat-cinematic__fracture,.champion-defeat-cinematic__ko { animation-duration:240ms; } }
+
+.presentation-leave-effect { animation:ko-leave-effect 150ms ease-out both; }
+@keyframes ko-leave-effect { 0%,100%{box-shadow:none} 40%{box-shadow:0 0 0 2px #ffdc91,0 0 12px #ffcc6655} }
+@media(prefers-reduced-motion:reduce) { .presentation-leave-effect { animation:none;outline:1px solid #ffdc91; } }

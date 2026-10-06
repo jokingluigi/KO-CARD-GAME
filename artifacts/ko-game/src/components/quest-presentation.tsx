@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { BattleVfx } from './battle-vfx';
+import { audioManager } from '@/audio/audio-manager';
 import { prefersReducedMotion } from './presentation-config';
 import { CardRenderer } from "./card-renderer";
 import { CardArtwork } from "./card-artwork";
@@ -7,8 +8,8 @@ import { championQuestRewardText } from "./champion-quest-reward-text";
 import { getCardDefinition, type GameState } from "@/game";
 import type { PresentationCue } from "./presentation-feedback";
 
-export const QUEST_BANNER_DURATION_MS = 1200;
-export const QUEST_REWARD_DURATION_MS = 2100;
+export const QUEST_BANNER_DURATION_MS = 700;
+export const QUEST_REWARD_DURATION_MS = 1100;
 
 export function QuestPresentation({
   cue,
@@ -38,6 +39,7 @@ export function QuestPresentation({
 
   useEffect(() => {
     setPhase('BANNER');
+    audioManager.duckForPresentation(.5, 500);
     const bannerTimer = window.setTimeout(() => setPhase("REWARD"), bannerDuration);
     const completeTimer = window.setTimeout(()=>completeRef.current(), bannerDuration + rewardDuration);
     return () => {

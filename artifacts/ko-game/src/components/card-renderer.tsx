@@ -1,6 +1,7 @@
 import { configuredCountdownTurns } from '@workspace/effect-registry';
 import { getCardDefinitions } from '../game/cards/test-cards';
 import { repairedLegacyCardKeywords } from '../game/cards/legacy-card-effect-repair';
+import { MotionNumber } from './presentation-motion';
 import { CardRulesText } from './card-rules-text';
 import { useEffect, useState, type CSSProperties, type KeyboardEvent, type ReactNode, type Ref } from "react";
 import { CardArtwork } from "./card-artwork";
@@ -329,6 +330,7 @@ export function CardRenderer({
     <div
       className={`relative aspect-[1060/1484] overflow-visible select-none ${className}`}
       data-rarity={normalizedRarity}
+      data-targetable={highlight === "target"}
       style={style}
       ref={containerRef}
              onClick={onClick}
@@ -401,7 +403,7 @@ export function CardRenderer({
               width: `${scaleSize(frameLayout.cost.size, frameScale)}%`,
             }}
           >
-            <span className={statClass}>{cost}</span>
+            <MotionNumber className={statClass} value={cost} />
           </div>
         )}
 
@@ -434,7 +436,7 @@ export function CardRenderer({
                 width: `${scaleSize(frameLayout.attack.size, frameScale)}%`,
               }}
             >
-            <span key={`attack-${attack}`} className={`${statClass} ko-stat-pop text-amber-300`}>{attack}</span>
+            <MotionNumber className={`${statClass} text-amber-300`} value={attack} />
             </div>
             <div
               className="pointer-events-none absolute z-20 flex aspect-square -translate-x-1/2 -translate-y-1/2 items-center justify-center font-display font-black text-white drop-shadow-[0_1px_2px_rgba(0,0,0,0.95)]"
@@ -444,7 +446,7 @@ export function CardRenderer({
                 width: `${scaleSize(frameLayout.health.size, frameScale)}%`,
               }}
             >
-              <span key={`health-${health}`} className={`${statClass} ko-stat-pop text-red-400`}>{health}</span>
+              <MotionNumber className={`${statClass} text-red-400`} value={health} />
             </div>
           </>
         )}

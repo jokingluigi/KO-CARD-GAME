@@ -20,6 +20,8 @@ export type CardLeaveAnimationState = {
     width: number;
     height: number;
   };
+  effectTriggered?: boolean;
+  destination?: { left: number; top: number };
   delay: number;
 };
 
@@ -51,6 +53,8 @@ export function CardLeaveAnimation({
     "--leave-width": `${animation.geometry.width}px`,
     "--leave-height": `${animation.geometry.height}px`,
     "--leave-delay": `${animation.delay}ms`,
+    "--leave-dx": `${animation.destination ? animation.destination.left-animation.geometry.left-animation.geometry.width/2 : 0}px`,
+    "--leave-dy": `${animation.destination ? animation.destination.top-animation.geometry.top-animation.geometry.height/2 : 22}px`,
     "--leave-duration": `${duration}ms`,
   } as CSSProperties;
 
@@ -95,7 +99,7 @@ export function CardLeaveAnimation({
         isSilenced={animation.card.isSilenced}
         isStunned={animation.card.isStunned}
         isAbilityDisabled={animation.card.isAbilityDisabled}
-        className="h-full w-full"
+        className={`h-full w-full ${animation.effectTriggered ? "presentation-leave-effect" : ""}`}
       />
     </div>
     </>
