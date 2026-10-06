@@ -939,6 +939,7 @@ function buildSystemPrompt(
       owners: TARGET_OWNERS,
       selections: TARGET_SELECTIONS,
       randomScopes: RANDOM_SCOPES,
+      randomScopeRules: { STANDARD: "공개(PUBLISHED)된 비토큰 카드만. 일반 토큰·챔피언 토큰·DRAFT·DISABLED 제외.", FULL: "완전/완전히 무작위: 미공개·DRAFT·DISABLED·일반 토큰·챔피언 토큰까지 모두 포함. 명시된 유형·태그·수치·대상 제한은 유지." },
       stats: STAT_NAMES,
       durations: EFFECT_DURATIONS,
       references: REFERENCES,

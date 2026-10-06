@@ -35,6 +35,10 @@ export const TARGET_FILTERS = ["GENERATED", "MIN_COST", "MAX_COST", "TOKEN", "NO
 export const TARGET_OWNERS = ["SELF", "ENEMY", "ALL"] as const;
 export const TARGET_SELECTIONS = ["SELF", "PLAYER_CHOICE", "RANDOM", "TOP", "ADJACENT", "ADJACENT_EMPTY_SLOTS", "SAME_TARGET", "ALL"] as const;
 export const RANDOM_SCOPES = ["STANDARD", "FULL"] as const;
+export const RANDOM_SCOPE_RULES = {
+  STANDARD: "무작위: 공개(PUBLISHED)된 비토큰 카드만. 초안·비활성·일반 토큰·챔피언 토큰 제외.",
+  FULL: "완전 무작위: 미공개·초안(DRAFT)·비활성(DISABLED)·일반 토큰·챔피언 토큰까지 포함. 명시된 대상·유형·태그·수치 조건은 유지.",
+} as const;
 export const DAMAGE_SOURCES = ["GENERATED", "ALL"] as const;
 
 export type Trigger = typeof TRIGGERS[number];
@@ -787,6 +791,7 @@ export const EFFECT_LIBRARY = {
    conditions: CONDITIONS.map((name) => ({ name, label: DISPLAY_LABELS[name as keyof typeof DISPLAY_LABELS] ?? name, description: name === "SOURCE_IS_ONLY_WRESTLER" ? "이 카드가 내 필드의 유일한 선수인지 확인합니다." : "구조화된 조건을 확인합니다.", status: "ACTIVE" as const, version: 1 })),
     targetResolvers: [{ name: "ZONE_OWNER_SELECTION", description: "영역(여러 영역 포함), 소유자, 카드 유형, 단일 filter 객체, 선택 방식 및 수로 대상을 해석합니다.", config: { zone: [...TARGET_ZONES], zones: "TargetZone[]", defaultCardScope: [...DEFAULT_CARD_TARGET_SCOPE], owner: [...TARGET_OWNERS], filter: { isGenerated: "boolean", minCost: "integer", maxCost: "integer", isToken: "boolean", isChampionToken: "boolean", excludeChampionRarity: "boolean", excludeSource: "boolean", isVanilla: "boolean", keyword: [...KEYWORDS], cost: "{ compare, value }", attack: "{ compare, value }", health: "{ compare, value }", tagsAny: "string[]", tagsAll: "string[]", tagsNone: "string[]" }, selection: [...TARGET_SELECTIONS], randomScope: [...RANDOM_SCOPES], count: "integer (1..20)" }, status: "ACTIVE" as const, version: 1 }],
     valueResolvers: [
+      { name: "RANDOM_SCOPE", description: "무작위와 완전 무작위의 후보 범위를 구별합니다.", config: RANDOM_SCOPE_RULES, status: "ACTIVE" as const, version: 1 },
       { name: "AMOUNT", description: "골드, 피해, 회복, 드로우 및 비용 수치를 해석합니다.", status: "ACTIVE" as const, version: 1 },
       { name: "STAT_PAIR", description: "+공격력/+체력 수치를 해석합니다.", status: "ACTIVE" as const, version: 1 },
       { name: "STAT_MULTIPLIER", description: "대상의 현재 공격력과 체력을 배수로 변경합니다.", config: { attackMultiplier: "number (0..10)", healthMultiplier: "number (0..10)" }, status: "ACTIVE" as const, version: 1 },

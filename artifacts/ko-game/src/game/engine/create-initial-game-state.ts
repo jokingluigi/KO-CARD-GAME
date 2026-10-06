@@ -44,13 +44,17 @@ export function createInitialGameState(
   cardDefinitions?: readonly CardDefinition[],
   championDefinitions?: readonly ChampionDefinition[],
   deckDefinitionIds?: readonly [readonly string[], readonly string[]],
-  options?: { gameId?: string; randomSeed?: number; minionACardPool?: readonly CardDefinition[] },
+  options?: { gameId?: string; randomSeed?: number; /** Complete effect catalog; retained name for saved-match compatibility. */ minionACardPool?: readonly CardDefinition[] },
 ): GameState {
   const randomSeed = options?.randomSeed ?? (championIds.includes(MINION_A_ID) ? crypto.getRandomValues(new Uint32Array(1))[0] : undefined);
   return {
     gameId: options?.gameId ?? 'local-prototype',
     ...(randomSeed === undefined ? {} : { randomSeed }),
-    cardPool: cardDefinitions ? [...cardDefinitions] : undefined,
+    // The complete catalog is for effects only; initial decks still use the
+    // separately authorized cardDefinitions/deckDefinitionIds below.
+    cardPool: cardDefinitions || options?.minionACardPool
+      ? [...new Map([...(options?.minionACardPool ?? []), ...(cardDefinitions ?? [])].map(card => [card.id, card])).values()]
+      : undefined,
     ...(championIds.includes(MINION_A_ID) ? { minionACardPool: [...(options?.minionACardPool ?? completeMinionACatalog((cardDefinitions ?? []).map(d => ({ ...d, text: d.rulesText, effectConfig: d.effectConfig ?? {} }))))] } : {}),
     backgroundId: null,
     bgmId: null,

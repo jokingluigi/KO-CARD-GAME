@@ -338,6 +338,10 @@ function validTagFilterValues(value: unknown): value is string[] {
   const parsed = cardTagsSchema.safeParse(value);
   return parsed.success && parsed.data.length > 0;
 }
+function randomScopeForText(text: string): "STANDARD" | "FULL" {
+  return /완전히?\s*(?:무작위|랜덤)/.test(text) ? "FULL" : "STANDARD";
+}
+
 function baseTargetFor(text: string, randomPool = false, availableTags: readonly string[] = []): Target {
   const hand = /손(?:패)?/.test(text);
   const graveyard = /(?:무덤|묘지)/.test(text);
@@ -381,7 +385,7 @@ function baseTargetFor(text: string, randomPool = false, availableTags: readonly
       selection: /무작위|랜덤/.test(text) ? "RANDOM" : "PLAYER_CHOICE",
       count: targetCountFrom(text),
       ...(/무작위|랜덤/.test(text)
-        ? { randomScope: /완전히\s*(?:무작위|랜덤)|완전\s*(?:무작위|랜덤)/.test(text) ? "FULL" as const : "STANDARD" as const }
+        ? { randomScope: randomScopeForText(text) }
         : {}),
     };
   }
@@ -402,9 +406,7 @@ function baseTargetFor(text: string, randomPool = false, availableTags: readonly
     : /기술/.test(text)
       ? "TECHNIQUE" as const
       : undefined;
-  const randomScope = /완전히\s*(?:무작위|랜덤)|완전\s*(?:무작위|랜덤)/.test(text)
-    ? "FULL" as const
-    : "STANDARD" as const;
+  const randomScope = randomScopeForText(text);
   const randomTarget = random && !all;
   const adjacentEmptySlots = /양\s*옆\s*(?:의\s*)?빈\s*슬롯/.test(text);
   const summonEnd = text.search(/(?:소환|SUMMON)/i);
@@ -418,6 +420,7 @@ function baseTargetFor(text: string, randomPool = false, availableTags: readonly
       ...(filter ? { filter } : {}),
       selection: all ? "ALL" : random ? "RANDOM" : "PLAYER_CHOICE",
       count: all ? 20 : targetCountFrom(text),
+      ...(random && !all ? { randomScope } : {}),
     };
   }
   if (randomPool && adjacentEmptySlots && randomTarget) {
@@ -1194,7 +1197,7 @@ function expandedMechanicAnalysis(
         filter: { maxCost: /1\s*미만/.test(text) ? 0 : 1, isChampionToken: false },
         selection: "RANDOM",
         count: 1,
-        randomScope: "STANDARD",
+        randomScope: randomScopeForText(text),
       },
     }]);
   }
@@ -1225,7 +1228,7 @@ function expandedMechanicAnalysis(
         cardType: "WRESTLER",
         selection: "RANDOM",
         count: 1,
-        randomScope: "STANDARD",
+        randomScope: randomScopeForText(text),
       },
       values: {
         destination: "HAND",
@@ -1309,7 +1312,8 @@ function expandedMechanicAnalysis(
     return result([{
       trigger: triggerFor(),
       action: "GRANT_RANDOM_CARD_TEXT",
-      target: { zone: "BOARD", owner: "SELF", cardType: "WRESTLER", filter: { isVanilla: true }, selection: "PLAYER_CHOICE", count: 1 },
+      target: { zone: "BOARD", owner: "SELF", cardType: "WRESTLER", filter: { isVanilla: true }, selection: "PLAYER_CHOICE", count: 1,
+        randomScope: randomScopeForText(text) },
     }]);
   }
 
@@ -1452,7 +1456,7 @@ function expandedMechanicAnalysis(
     return result([{ trigger: "TURN_START", action: "ADD_GOLD", conditions: [{ type: "SOURCE_IS_ONLY_WRESTLER" }], values: { amount: 1 } }]);
   }
   if (/손패의\s*무작위\s*선수\s*카드\s*3장/.test(text) && /3장\s*미만/.test(text)) {
-    return result([{ trigger: triggerFor(), action: "BUFF", target: { zone: "HAND", owner: "SELF", cardType: "WRESTLER", selection: "RANDOM", count: 3, randomScope: "STANDARD" }, values: { attack: 1, health: 1 } }]);
+    return result([{ trigger: triggerFor(), action: "BUFF", target: { zone: "HAND", owner: "SELF", cardType: "WRESTLER", selection: "RANDOM", count: 3, randomScope: randomScopeForText(text) }, values: { attack: 1, health: 1 } }]);
   }
   if (/(?:묘지|무덤)에서\s*선수\s*1장/.test(text) && /패로\s*되돌/.test(text)) {
     return result([{ trigger: triggerFor(), action: "MOVE_TO_HAND", target: { zone: "GRAVEYARD", owner: "SELF", cardType: "WRESTLER", selection: "PLAYER_CHOICE", count: 1 } }]);
@@ -1563,7 +1567,7 @@ function expandedMechanicAnalysis(
           ...(adjacentFilter ? { filter: adjacentFilter } : {}),
           selection: "ADJACENT_EMPTY_SLOTS",
           count: 2,
-          randomScope: "STANDARD",
+          randomScope: randomScopeForText(text),
         },
       },
       ...( /도발/.test(text)
@@ -1658,7 +1662,7 @@ function expandedMechanicAnalysis(
   }
   if (/(?:상대|적)\s*(?:덱|손패|무덤|묘지)에서\s*무작위\s*카드\s*1장.*손으로\s*훔쳐/.test(text)) {
     const zone = /덱/.test(text) ? "DECK" as const : /(?:무덤|묘지)/.test(text) ? "GRAVEYARD" as const : "HAND" as const;
-    return result([{ trigger: triggerFor(), action: "STEAL", target: { zone, owner: "ENEMY", selection: "RANDOM", count: 1, randomScope: "STANDARD" } }]);
+    return result([{ trigger: triggerFor(), action: "STEAL", target: { zone, owner: "ENEMY", selection: "RANDOM", count: 1, randomScope: randomScopeForText(text) } }]);
   }
   if (/러쉬\s*[,，]\s*회피/.test(text)) {
     return { ...result([]), keywords: ["RUSH", "DODGE"], summaries: ["기본 키워드 · RUSH", "기본 키워드 · DODGE"] };
@@ -2073,7 +2077,7 @@ export function isStructuredEffects(value: unknown): value is { effects: Structu
             (!target.filter.definitionRef.id && !target.filter.definitionRef.name)
           )
        )) return false;
-      if (target.randomScope !== undefined && (!RANDOM_SCOPES.includes(target.randomScope) || !["RANDOM", "ADJACENT_EMPTY_SLOTS"].includes(target.selection))) return false;
+      if (target.randomScope !== undefined && (!RANDOM_SCOPES.includes(target.randomScope) || (item.action !== "GRANT_RANDOM_CARD_TEXT" && !["RANDOM", "ADJACENT_EMPTY_SLOTS"].includes(target.selection)))) return false;
        if (item.action === "STEAL" && (
          target.owner !== "ENEMY" ||
          zones.some((zone) => !["HAND", "DECK", "GRAVEYARD"].includes(zone)) ||

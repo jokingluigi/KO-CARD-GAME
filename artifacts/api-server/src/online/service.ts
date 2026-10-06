@@ -17,7 +17,7 @@ import {
   type OnlineMatchRecord,
 } from "@workspace/db";
 import {
-  MINION_A_ID, completeMinionACatalog,
+  completeMinionACatalog,
   cardRecordToDefinition,
   championRecordToDefinition,
   createDeterministicRandom,
@@ -989,8 +989,7 @@ export async function startOnlineMatch(
   const requiredIds = new Set([...firstDeck.cardDefinitionIds, ...secondDeck.cardDefinitionIds, ...dependencies.flatMap(deck => deck.requiredCardDefinitionIds)]);
   expandNamedCardReferences(cards, requiredIds);
   const cardDefinitions = cards.filter(card => card.status === "PUBLISHED" || card.status === "DRAFT" && requiredIds.has(card.id)).map(toCardDefinition);
-  const minionACardPool = [firstDeck.championDefinitionId, secondDeck.championDefinitionId].includes(MINION_A_ID)
-    ? completeMinionACatalog(await db.select().from(cardsTable)) : undefined;
+  const minionACardPool = completeMinionACatalog(cards);
   const championDefinitions = champions.filter(champion => champion.status === "PUBLISHED" || [firstDeck.championDefinitionId, secondDeck.championDefinitionId].includes(champion.id)).map(toChampionDefinition);
   const users = await db.select({ id: usersTable.id, nickname: usersTable.nickname })
     .from(usersTable)
