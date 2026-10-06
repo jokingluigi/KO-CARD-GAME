@@ -1,6 +1,5 @@
 import type { AttackAnimationState } from "./attack-animation-utils";
-import { attackAnimationDuration } from "./attack-animation-utils";
-import { PRESENTATION_CONFIG } from "./presentation-config";
+import { damageHitStop } from './presentation-policy';
 
 export type BattleVfxKind =
   "IMPACT" | "BLOCK" | "HEAL" | "MAGIC" | "GOLD" | "DESTROY" | "RETIRE";
@@ -13,26 +12,9 @@ export function combatTimeline(
   reduced = false,
 ) {
   if (reduced) return { duration: 140, impact: 70, release: 70 };
-  const duration = attackAnimationDuration(attack) + (finisher ? 180 : 0);
-  const impact = Math.round(duration * 0.46);
-  const tier =
-    damage <= 0
-      ? "NONE"
-      : damage === 1
-        ? "VERY_LIGHT"
-        : damage <= 3
-          ? "LIGHT"
-          : damage <= 5
-            ? "MEDIUM"
-            : damage <= 7
-              ? "HEAVY"
-              : "VERY_HEAVY";
-  return {
-    duration,
-    impact,
-    release:
-      impact + (finisher ? 90 : PRESENTATION_CONFIG.attackHitStopMs[tier]),
-  };
+  const duration=finisher?760:damage>=6?560:damage>=3?520:480;
+  const impact=finisher?370:damage>=6?270:damage>=3?250:230;
+  return {duration,impact,release:impact+(finisher?130:damageHitStop(damage))};
 }
 
 export function attackFrames(
@@ -54,7 +36,7 @@ export function attackFrames(
     { offset: 0, opacity: 0, transform: pose(0, 0, 1) },
     { offset: 0.1, opacity: 1, transform: pose(0, 0, 1.03) },
     {
-      offset: 0.27,
+      offset: (timeline.duration >= 700 ? 200 : 100) / timeline.duration,
       transform: pose(-dx * 0.06, -dy * 0.06, 1.08, -tilt),
       easing: "cubic-bezier(.7,0,.95,.65)",
     },

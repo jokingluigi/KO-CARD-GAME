@@ -2,6 +2,7 @@ import { useEffect, useRef } from "react";
 import type { CSSProperties } from "react";
 
 import type { PresentationCueDraft } from "./presentation-feedback-utils";
+import { damageNumberTier } from './presentation-policy';
 import { BattleVfx } from './battle-vfx';
 
 export type PresentationCue = PresentationCueDraft & {
@@ -14,6 +15,9 @@ export type PresentationCue = PresentationCueDraft & {
 };
 
 const toneClass: Record<PresentationCue["kind"], string> = {
+  EFFECT: "presentation-feedback--effect",
+  SILENCE: "presentation-feedback--silence",
+  ARMOR: "presentation-feedback--armor",
   DAMAGE: "presentation-feedback--damage",
   DODGE: "presentation-feedback--dodge",
   BLOCK: "presentation-feedback--dodge",
@@ -75,7 +79,7 @@ export function PresentationFeedback({
     <div
       aria-hidden="true"
       className={`presentation-feedback ${toneClass[cue.kind]}`}
-      data-impact={cue.kind==='DAMAGE' ? (cue.value??0)>=8?'heavy':'normal' : undefined}
+      data-impact={cue.kind==='DAMAGE' ? damageNumberTier(cue.value??0) : undefined}
       style={style}
       onAnimationEnd={(event) => {
         if (event.target !== event.currentTarget) return;
@@ -85,6 +89,8 @@ export function PresentationFeedback({
       }}
     >
       {cue.kind==='DAMAGE'&&!cue.combat&&<i className="presentation-feedback__effect-hit"/>}
+      {cue.kind==='ARMOR'&&<i className="presentation-feedback__shield"/>}
+      {cue.kind==='SILENCE'&&<i className="presentation-feedback__silence-ring"/>}
       {cue.sourceLeft !== undefined && cue.sourceTop !== undefined &&
         (Math.abs(cue.sourceLeft - cue.left) + Math.abs(cue.sourceTop - cue.top) > 30) &&
         <i className="presentation-feedback__transfer" />}

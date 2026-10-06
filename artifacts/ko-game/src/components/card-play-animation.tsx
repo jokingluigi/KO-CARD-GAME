@@ -11,7 +11,7 @@ import { PRESENTATION_CONFIG, prefersReducedMotion } from "./presentation-config
 import { audioManager } from '../audio/audio-manager';
 import { BattleVfx } from './battle-vfx';
 
-export const TECHNIQUE_REVEAL_HOLD_MS = 1600;
+export const TECHNIQUE_REVEAL_HOLD_MS = 160;
 export const TECHNIQUE_REVEAL_TOTAL_MS = PRESENTATION_CONFIG.techniqueRevealMs;
 
 function animationDuration(animation: CardPlayAnimationState) {
@@ -127,7 +127,7 @@ export function CardPlayAnimation({
       <BattleVfx kind={animation.kind==='TECHNIQUE'?'MAGIC':rarity==='LEGENDARY'||rarity==='CHAMPION'?'GOLD':'IMPACT'}
         left={targetLeft+source.width*targetScale/2} top={targetTop+source.height*targetScale/2}
         seed={`play:${animation.card.instanceId}`} strength={animation.kind==='TECHNIQUE'?5:animation.card.currentCost}
-        delay={prefersReducedMotion()?0:duration*(animation.kind==='TECHNIQUE' ? .28 : .76)} duration={animation.kind==='TECHNIQUE'?1500:Math.max(120,duration*.24)} />
+        delay={prefersReducedMotion()?0:duration*(animation.kind==='TECHNIQUE' ? .28 : .76)} duration={animation.kind==='TECHNIQUE'?250:Math.max(120,duration*.24)} />
       <div
         className="card-play-animation__card"
         onAnimationEnd={complete}

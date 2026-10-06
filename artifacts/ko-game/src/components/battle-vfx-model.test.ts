@@ -18,7 +18,7 @@ for (const damage of [0, 1, 3, 5, 7, 12])
     assert.ok(
       time.impact < time.duration && time.release < time.duration * 0.82,
     );
-    assert.equal(time.release > time.impact, damage >= 4);
+    assert.equal(time.release > time.impact, damage > 0);
     const frames = attackFrames(110, -250, time);
     const offsets = frames.map((frame) => frame.offset as number);
     assert.deepEqual(

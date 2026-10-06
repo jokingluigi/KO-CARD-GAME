@@ -1,6 +1,10 @@
+import { damageNumberDuration } from './presentation-policy';
 import type { EventSubject, GameEvent } from "@/game/events/types";
 
 export type PresentationCueKind =
+  | "EFFECT"
+  | "SILENCE"
+  | "ARMOR"
   | "DAMAGE"
   | "DODGE"
   | "BLOCK"
@@ -38,7 +42,7 @@ export function presentationBlocksActions(cues: PresentationCueDraft[]): boolean
 
 /** Deck buffs still resolve, but offscreen stat popups have no visible target. */
 export function visibleStatFeedback(cue: PresentationCueDraft, visibleCardIds: Set<string>): boolean {
-  return !cue.cardInstanceId || !['BUFF', 'HEAL', 'DEBUFF'].includes(cue.kind) || visibleCardIds.has(cue.cardInstanceId);
+  return !cue.cardInstanceId || !['BUFF', 'HEAL', 'DEBUFF', 'EFFECT', 'SILENCE', 'ARMOR'].includes(cue.kind) || visibleCardIds.has(cue.cardInstanceId);
 }
 
 /** Stable within a match even when the same event payload occurs more than once. */
@@ -109,9 +113,12 @@ export function presentationCueDrafts(
             value: event.amount,
             sourceCardInstanceId: event.source?.type === 'CARD' ? event.source.cardInstanceId : undefined,
             ...target,
-            duration: 560,
+            duration: damageNumberDuration(event.amount ?? 0),
           });
         }
+        break;
+      case "CHAMPION_ABILITY_USED":
+        drafts.push({id,kind:"EFFECT",label:"능력",championId:event.championId,playerId:event.playerId,duration:180});
         break;
       case "STAT_CHANGED":
         if ((event.delta ?? 0) !== 0) {
@@ -119,7 +126,7 @@ export function presentationCueDrafts(
           drafts.push({
             id,
             kind: delta > 0
-              ? event.stat === "health" || event.stat === "maxHealth" ? "HEAL" : "BUFF"
+              ? event.stat === "health" || event.stat === "currentHealth" ? "HEAL" : "BUFF"
               : "DEBUFF",
             label: `${event.stat === "attack" ? "공격력" : event.stat === "cost" ? "비용" : "체력"} ${delta > 0 ? "+" : ""}${delta}`,
             value: delta,

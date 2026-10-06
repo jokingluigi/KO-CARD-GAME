@@ -43,6 +43,7 @@ setRuntimeCardDefinitions([definition, spell]);
 const card = generateCardInstance(definition, { instanceId: "qa-attacker" });
 const target = { ...card, instanceId: "qa-defender" };
 const questState = createInitialGameState();
+const defeatState = {...questState,status:'FINISHED' as const,winnerId:questState.players[0].id,loserId:questState.players[1].id,players:questState.players.map((p,i)=>i===1?{...p,health:0}:p),events:[{type:'DAMAGE_DEALT' as const,reason:'COMBAT',amount:1,source:{type:'CARD' as const,cardInstanceId:card.instanceId},target:{type:'PLAYER' as const,playerId:questState.players[1].id}}]};
 function Scene() {
   const [kind, setKind] = useState("");
   const [counter, setCounter] = useState(0);
@@ -98,6 +99,8 @@ function Scene() {
           "quest",
           "reward",
           "reward-error",
+          "defeat",
+          "finisher",
         ].map((value) => (
           <button
             key={value}
@@ -174,7 +177,7 @@ function Scene() {
           className="h-full w-full"
         />
       </div>
-      {(kind === "attack" || kind === "blocked") && (
+      {(kind === "attack" || kind === "blocked" || kind === "finisher") && (
         <AttackAnimation
           key={counter}
           animation={{
@@ -182,9 +185,10 @@ function Scene() {
             target,
             targetKind: "CARD",
             geometry: { source, target: destination },
-            currentAttack: 8,
+            currentAttack: kind === "finisher" ? 12 : 8,
+            finishingBlow: kind === "finisher",
             impactLevel: "VERY_HEAVY",
-            damage: kind === "blocked" ? 0 : 8,
+            damage: kind === "blocked" ? 0 : kind === "finisher" ? 12 : 8,
             damageImpactLevel: kind === "blocked" ? "NONE" : "VERY_HEAVY",
             soundKey: `qa-${counter}`,
           }}
@@ -234,6 +238,7 @@ function Scene() {
       )}
       {kind === 'damage' && <PresentationFeedback key={counter} cue={{id:`effect-${counter}`,kind:'DAMAGE',combat:false,label:'-6',value:6,left:destination.left+destination.width/2,top:destination.top+destination.height/2,duration:560}} onComplete={finish}/>}
       {(kind==='reward'||kind==='reward-error')&&<MatchResultOverlay state={{...questState,status:'FINISHED',winnerId:questState.players[0].id,loserId:questState.players[1].id}} reward={kind==='reward'?{amount:200,sourceType:'MATCH_AI_RESULT'}:null} rewardStatus="error" rewardError="퀘스트 진행도를 저장하지 못했습니다: AI 경기 행동을 확인할 수 없습니다." onReturnToMainMenu={finish}/>}
+      {kind === "defeat" && <MatchResultOverlay state={defeatState} onReturnToMainMenu={finish}/>}
       {(kind === "destroy" || kind === "retire") && (
         <CardLeaveAnimation
           key={counter}

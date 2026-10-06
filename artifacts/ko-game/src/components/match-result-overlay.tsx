@@ -5,6 +5,7 @@ import { getCardDefinition, type GameState } from "@/game";
 import { matchEndReason, matchSummary } from '@/lib/match-summary';
 import { championVoiceLine } from '@/game/champions/types';
 import { audioManager } from '@/audio/audio-manager';
+import { prefersReducedMotion } from './presentation-config';
 
 export function MatchResultOverlay({
   state,
@@ -34,8 +35,8 @@ export function MatchResultOverlay({
   const loser = state.players.find((candidate) => candidate.id === state.loserId);
   const resolvedRecap = recap ?? buildMatchRecap(state);
   const finisher = resolvedRecap.highlights.find(h => h.kind === 'FINISHER');
-  const lethal = Boolean(finisher);
-  const finishingHit = finisher ? state.events[finisher.eventIndex] : undefined;
+  const finishingHit = finisher ? state.events[finisher.eventIndex] : [...state.events].reverse().find(event => event.type === "DAMAGE_DEALT" && event.target?.type === "PLAYER" && event.target.playerId === state.loserId && event.reason !== "FATIGUE");
+  const lethal = Boolean(finishingHit && loser && loser.health <= 0);
   const finishingSourceId = finishingHit?.source?.type === 'CARD' ? finishingHit.source.cardInstanceId : null;
   const finishingCard = finishingSourceId
     ? state.players.flatMap((participant) => [...participant.board, ...participant.graveyard, ...participant.removedFromGame, ...participant.hand])
@@ -46,10 +47,11 @@ export function MatchResultOverlay({
   const [cinematic, setCinematic] = useState(lethal);
   useEffect(() => {
     if (!lethal) return;
-    audioManager.playAttack('/sfx/combat-finisher.wav?v=1', 92);
-    audioManager.playImpactOverlay('/sfx/champion-glass-shatter.wav?v=1', 95);
-    const timeout = window.setTimeout(() => setCinematic(false), 1650);
-    return () => window.clearTimeout(timeout);
+    const reduced = prefersReducedMotion();
+    audioManager.duckForPresentation(0.4, reduced ? 250 : 750);
+    const fractureSound = window.setTimeout(() => audioManager.playImpactOverlay('/sfx/champion-glass-shatter.wav?v=1', 95, 9), reduced ? 108 : 675);
+    const timeout = window.setTimeout(() => setCinematic(false), reduced ? 380 : 1650);
+    return () => { window.clearTimeout(timeout); window.clearTimeout(fractureSound); };
   }, [lethal]);
   const winnerLine = winner && championVoiceLine(winner.champion?.presentationLines, Boolean(winner.champion?.questCompleted), 'VICTORY', loser?.champion?.id);
   const loserLine = loser && championVoiceLine(loser.champion?.presentationLines, Boolean(loser.champion?.questCompleted), 'DEFEAT', winner?.champion?.id);

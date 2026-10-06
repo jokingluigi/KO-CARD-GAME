@@ -47,7 +47,7 @@ for (const [name, width, height, reduced] of [
   ]) {
     await page.getByTestId(action).click();
     if (action === "spell" && !reduced) {
-      await page.waitForTimeout(850);
+      await page.waitForTimeout(150);
       const bounds = await page
         .locator(".card-play-animation__card")
         .boundingBox();
@@ -94,7 +94,7 @@ for (const [name, width, height, reduced] of [
   await page.getByTestId("spell").click();
   await page.setViewportSize({ width: height, height: width });
   if (!reduced) {
-    await page.waitForTimeout(850);
+    await page.waitForTimeout(150);
     const bounds = await page
       .locator(".card-play-animation__card")
       .boundingBox();
@@ -126,6 +126,14 @@ for (const [name, width, height, reduced] of [
   await page.getByTestId('reward-error').click();
   await page.getByRole('alert').waitFor();
   await page.getByTestId('button-return-to-main-menu').click();
+  await page.getByTestId("defeat").click();
+  await page.locator(".champion-defeat-cinematic").waitFor();
+  await page.getByTestId("button-return-to-main-menu").waitFor({timeout:4000});
+  await page.getByTestId("button-return-to-main-menu").click();
+  const beforeFinish=await page.getByTestId("counts").textContent();
+  await page.getByTestId("finisher").click();
+  await page.waitForFunction(previous=>document.querySelector('[data-testid="counts"]')?.textContent!==previous,beforeFinish);
+  await page.locator(".attack-animation").waitFor({state:"detached"});
   const active = await page
     .locator(
       ".attack-animation,.card-play-animation,.card-leave-animation,.presentation-feedback,.quest-presentation",
