@@ -1,3 +1,4 @@
+import { AdminTagManager } from "../src/components/admin-tag-manager";
 // Development-only: real shared engine and battle view; never included in production.
 import { AdminChampionManager } from '../src/components/admin-champion-manager';
 import { AdminCardManager } from '../src/components/admin-card-manager';
@@ -67,4 +68,4 @@ function Scene(){
  </>;
 }
 const admin=new URLSearchParams(location.search).get('admin');
-createRoot(document.getElementById('root')!).render(admin ? <main className="bg-black p-3 text-white">{admin==='champion'?<AdminChampionManager onUnauthorized={()=>{throw Error('unauthorized')}}/>:<AdminCardManager onUnauthorized={()=>{throw Error('unauthorized')}}/>}</main>:<Scene/>);
+createRoot(document.getElementById('root')!).render(admin ? <main className="bg-black p-3 text-white">{admin==='tags'?<AdminTagManager onUnauthorized={()=>{throw Error('unauthorized')}}/>:admin==='champion'?<AdminChampionManager onUnauthorized={()=>{throw Error('unauthorized')}}/>:<AdminCardManager onUnauthorized={()=>{throw Error('unauthorized')}}/>}</main>:<Scene/>);
