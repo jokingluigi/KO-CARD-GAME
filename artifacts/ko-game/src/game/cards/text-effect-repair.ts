@@ -49,6 +49,13 @@ export function textCardAbilities(card: PublishedCardRecord): CardAbility[] | nu
       fx('ADD_KEYWORD',self,{keyword:'RUSH'})
     ]));
   }
+  const fusionTag=text.match(/필드에 있는 모든 ['‘]([^'’]+)['’] 카드.*이 카드에 합체/u)?.[1];
+  if(fusionTag && /카운트다운\s*\((\d+)\)/u.test(text))result.push(ability('COUNTDOWN',[
+    fx('REMOVE_KEYWORD',self,{keyword:'CANNOT_ATTACK'}),
+    fx('FUSION',{...board('ALL'),filter:{tagsAny:[fusionTag],excludeSource:true}},{fusionIntoSource:true}),
+    fx('ADD_KEYWORD',self,{keyword:'RUSH'}),
+    ...(/도발.*무시.*챔피언.*공격/u.test(text)?[fx('BUFF',self,{ignoreTauntToChampion:true})]:[])
+  ]));
   if(/데미지를 입을때마다 카운트.*기록/u.test(text)&&/카운트다운\s*\((\d+)\)/u.test(text)){
     const damage=Number(text.match(/(\d+)\s*데미지/u)?.[1]??0);
     if(damage>0)result.push(ability('COUNTDOWN',[fx('DAMAGE',board('ENEMY'),{amount:damage})]));

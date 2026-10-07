@@ -1,4 +1,4 @@
-import { fusionTargets, commitFusion, resumeFusion, vanishCard, hasCommittedFusion } from '../engine/fusion';
+import { fusionTargets, queueForcedFusion, commitFusion, resumeFusion, vanishCard, hasCommittedFusion } from '../engine/fusion';
 import { startCountdown, clearCountdown } from '../cards/countdown';
 import { queueWantedReward, wantedRemovalActor } from '../engine/wanted';
 import { awaitChampionRewardSpace, selectChampionRewardReplacement } from '../engine/champion-reward-replacement';
@@ -70,7 +70,7 @@ export function getValidTargets(
   effect: CardEffect,
 ): string[] {
   if (effect.type !== 'STRUCTURED' || !effect.target) return [];
-  if (effect.action === 'FUSION') return fusionTargets(state, playerId, sourceCard.instanceId);
+  if (effect.action === 'FUSION' && !effect.values?.fusionIntoSource) return fusionTargets(state, playerId, sourceCard.instanceId);
   const target = effect.target;
   const statAction = ['BUFF', 'MODIFY_STAT', 'MODIFY_MAX_HEALTH', 'SET_STAT', 'SET_STATS', 'SWAP_STATS', 'HEAL', 'REDUCE_COST', 'INCREASE_COST', 'WEAKEN_TO_STUN_SILENCE'].includes(effect.action);
   const zones = (target.zones ?? (target.zone ? [target.zone] : [])).filter(zone => !statAction || zone !== 'GRAVEYARD');
@@ -1731,6 +1731,8 @@ export function resolvePendingEffects(state: GameState): GameState {
       ids,
       pending.triggerContext,
     );
+    // Forced fusion owns its serialized continuation until every material finishes.
+    if (effect.type === 'STRUCTURED' && effect.action === 'FUSION' && effect.values?.fusionIntoSource) return next;
     lastAggregatedStats = next.lastAggregatedStats ?? next.targetingState?.lastAggregatedStats ?? lastAggregatedStats;
     if (next.targetingState?.continuation &&
       next.targetingState.continuation.sourceInstanceId === pending.sourceInstanceId &&
@@ -2324,6 +2326,7 @@ function applyEffectInternal(
     // effect can select a card on either side, so resolve each selected id
     // against its actual owner before entering the normal owner-specific path.
     // This keeps damage/retire/move semantics identical for SELF and ENEMY.
+    if (effect.action === 'FUSION' && effect.values?.fusionIntoSource) return queueForcedFusion(state, playerId, sourceCard, getValidTargets(state, playerId, sourceCard, effect));
     if (target.owner === 'ALL') {
       if (
         target.selection === 'PLAYER_CHOICE' ||
@@ -2410,7 +2413,8 @@ function applyEffectInternal(
         );
       }
     }
-    const targetOwner = target.owner === 'SELF' ? playerId : state.players.find((player) => player.id !== playerId)?.id;
+    const fusionHostOwner = target.selection === 'FUSION_TARGET' ? state.players.find(p => p.board.some(c => c?.instanceId === triggerContext?.fusionTargetInstanceId))?.id : undefined;
+    const targetOwner = fusionHostOwner ?? (target.owner === 'SELF' ? playerId : state.players.find((player) => player.id !== playerId)?.id);
     if (!targetOwner) return state;
     const candidatePlayer = state.players.find((player) => player.id === targetOwner);
     if (!candidatePlayer) return state;

@@ -248,6 +248,7 @@ export type StructuredPrevention = { uses?: number; setHealth?: number };
 export type StructuredEffectValues = {
   /** Purple Rain: chosen own character takes damage, then branches by target kind. */
   purpleRainFollowup?: boolean;
+  fusionIntoSource?: boolean;
   ignoreTauntToChampion?: boolean;
   spillExcessToEnemyChampion?: boolean;
   resolveByName?: boolean;
@@ -627,6 +628,7 @@ function validScriptEffectValues(action: Action, rawValues: unknown, depth = 0):
     !finiteScriptNumber(values.amount, amountIsSigned ? -999 : 0, 999)) return false;
   if (values.resolveByName !== undefined && typeof values.resolveByName !== "boolean") return false;
   if (schema.statChannelReference && (values.attackReference !== undefined && !DYNAMIC_VALUES.includes(values.attackReference as DynamicValue) || values.healthReference !== undefined && !DYNAMIC_VALUES.includes(values.healthReference as DynamicValue))) return false;
+  if (values.fusionIntoSource !== undefined && typeof values.fusionIntoSource !== "boolean") return false;
   if (values.ignoreTauntToChampion !== undefined && typeof values.ignoreTauntToChampion !== "boolean") return false;
   if (values.spillExcessToEnemyChampion !== undefined && typeof values.spillExcessToEnemyChampion !== "boolean") return false;
   if (schema.amount && values.amount === undefined && values.amountExpression === undefined && values.amountReference === undefined) return false;
