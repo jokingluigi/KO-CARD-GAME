@@ -1,3 +1,4 @@
+import { isAutomaticChampionStartConfig } from '../../../../../lib/game-engine/src/champion-game-start';
 import { validChampionQuestCondition } from '../../../../../lib/game-engine/src/champion-quest-conditions';
 import { validAwakeningQuestConfig } from './awakening-types';
 import type { ChampionAbility, ChampionDefinition, ChampionEffect, ChampionQuest, ChampionQuestCardType, ChampionPresentationLines } from "./types";
@@ -71,7 +72,7 @@ export function championRecordToDefinition(record: PublishedChampionRecord): Cha
   const maxHealth = Number.isInteger(record.maxHealth) && record.maxHealth >= 1
     ? record.maxHealth
     : 20;
-  const rewardActions = record.questRewardEffects?.effects ?? [];
+  const rewardActions = Array.isArray(record.questRewardEffects?.effects) ? record.questRewardEffects.effects.filter(item => item && typeof item === "object" && !Array.isArray(item)) : [];
   const tokenId = record.championTokenDefinitionId;
   const directTokenReward = typeof tokenId === "string" &&
     (rewardActions.some((item) => item.action === "DIRECT_DEPLOY_CHAMPION_TOKEN") ||
@@ -124,7 +125,7 @@ export function championRecordToDefinition(record: PublishedChampionRecord): Cha
       record.abilityEffects, record.championTokenDefinitionId),
     gameStartAbility: record.gameStartAbilityName?.trim() || record.gameStartAbilityText?.trim() || record.gameStartAbilityEffects
       ? ability(record.id + '-game-start', record.gameStartAbilityName?.trim() || '게임 시작 능력', 0,
-          record.gameStartAbilityText ?? '', record.gameStartAbilityEffects ?? null, record.championTokenDefinitionId) : null,
+          record.gameStartAbilityText ?? '', isAutomaticChampionStartConfig(record.gameStartAbilityEffects) ? record.gameStartAbilityEffects ?? null : null, record.championTokenDefinitionId) : null,
     quest,
     upgradedAbility: record.upgradedAbilityName
       ? ability(`${record.id}-ability-upgraded`, record.upgradedAbilityName,
