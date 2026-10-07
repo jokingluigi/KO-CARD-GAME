@@ -16,6 +16,14 @@ export function repairedLegacyCardKeywords(card: Pick<PublishedCardRecord, 'id' 
 /** Repair published legacy configurations by the full meaning of their stored card text. */
 export function repairedLegacyCardAbilities(card: PublishedCardRecord): CardAbility[] | null {
   const text = card.text.replace(/\s+/gu, ' ').trim();
+  if (/턴 시작.*선택한 아군 선수.*리타이어.*체력과 공격력.*흡수/u.test(text)) {
+    return [{ trigger: 'TURN_START', effects: [
+      { type: 'STRUCTURED', action: 'RETIRE', target: { zone: 'BOARD', owner: 'SELF', cardType: 'WRESTLER', selection: 'PLAYER_CHOICE', count: 1, filter: { excludeSource: true } }, values: { captureStats: true } },
+      { type: 'STRUCTURED', action: 'BUFF', target: self, values: { attack: 0, health: 0, reference: 'LAST_TARGET', referenceStat: 'CURRENT_ATTACK' } },
+      { type: 'STRUCTURED', action: 'BUFF', target: self, values: { attack: 0, health: 0, reference: 'LAST_TARGET', referenceStat: 'CURRENT_HEALTH' } },
+      ...(/회피.*1.*얻/u.test(text) ? [{ type: 'STRUCTURED' as const, action: 'ADD_KEYWORD' as const, target: self, values: { keyword: 'DODGE' as const } }] : []),
+    ] }];
+  }
   if (!card.effectId && card.name === '휴먼쿠커' && /등장.*선택한\s*아군\s*대상.*체력을\s*3\s*회복/u.test(text)) {
     return [{ trigger: 'ENTER_FIELD', effects: [{ type: 'STRUCTURED', action: 'HEAL',
       target: { zone: 'CHARACTER', owner: 'SELF', selection: 'PLAYER_CHOICE', count: 1 }, values: { amount: 3 } }] }];
