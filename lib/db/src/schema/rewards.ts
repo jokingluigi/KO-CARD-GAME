@@ -106,3 +106,12 @@ export type DailyQuestDefinitionRecord = typeof dailyQuestDefinitionsTable.$infe
 export type DailyQuestAssignmentRecord = typeof dailyQuestAssignmentsTable.$inferSelect;
 export type AttendanceRewardDefinitionRecord = typeof attendanceRewardDefinitionsTable.$inferSelect;
 export type AttendanceClaimRecord = typeof attendanceClaimsTable.$inferSelect;
+// Immutable server-built starting state used by daily quest replay.
+export const aiQuestMatchesTable = pgTable('ai_quest_matches', {
+ id: text('id').primaryKey(),
+ userId: text('user_id').notNull().references(() => usersTable.id, { onDelete: 'cascade' }),
+ deckId: text('deck_id').notNull(), aiDeckId: text('ai_deck_id').notNull(), difficulty: text('difficulty').notNull(),
+ initialState: jsonb('initial_state').$type<Record<string, unknown>>().notNull(),
+ questDate: text('quest_date').notNull(), processedAt: timestamp('processed_at', { withTimezone: true }),
+ createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+}, (table) => ({ userIdx: index('ai_quest_matches_user_idx').on(table.userId) }));

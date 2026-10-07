@@ -1,8 +1,9 @@
+import {saveAIQuestStart,storedAIQuestMatch} from '../lib/ai-quest-match-storage';
 import { ensureDraftParticipationQuest } from "../lib/draft-participation-quest";
 import { and, asc, eq } from "drizzle-orm";
 import { Router, type IRouter, type Request, type Response } from "express";
 import { CompleteAIMatchQuestProgressBody } from "@workspace/api-zod";
-import { dailyQuestAssignmentsTable, dailyQuestDefinitionsTable, rewardGrantsTable, db } from "@workspace/db";
+import { dailyQuestAssignmentsTable, dailyQuestDefinitionsTable, rewardGrantsTable, aiQuestMatchesTable, db } from "@workspace/db";
 import { getAuthenticatedUser } from "../lib/auth";
 import { isTestAccountUser } from "../lib/test-account";
 import { completeAIMatchQuestProgress } from "../lib/ai-match-quest-service";
@@ -44,7 +45,20 @@ router.get('/ai-match-progress/:matchId/reward', async (request, response): Prom
   const [grant] = await db.select({ amount: rewardGrantsTable.amount, sourceType: rewardGrantsTable.sourceType })
     .from(rewardGrantsTable).where(and(eq(rewardGrantsTable.userId, request.authUser!.id), eq(rewardGrantsTable.sourceId, matchId), eq(rewardGrantsTable.sourceType, 'MATCH_AI_RESULT'))).limit(1);
   response.setHeader('Cache-Control', 'no-store');
-  response.json({ reward: grant ?? null });
+  const [saved]=await db.select({processedAt:aiQuestMatchesTable.processedAt}).from(aiQuestMatchesTable).where(and(eq(aiQuestMatchesTable.userId,request.authUser!.id),eq(aiQuestMatchesTable.id,matchId))).limit(1);
+  response.json({ reward: grant ?? null, completed: Boolean(saved?.processedAt) });
+});
+
+router.post('/ai-match-start',async(request,response):Promise<void>=>{
+ const {deckId,aiDeckId,matchId}=request.body??{};
+ if(typeof deckId!=='string'||typeof aiDeckId!=='string'||typeof matchId!=='string'){response.status(400).json({message:'Match and deck IDs are required'});return;}
+ const identity={userId:request.authUser!.id,deckId,aiDeckId,matchId};
+ try {
+  const existing=await storedAIQuestMatch(identity);
+  if(existing){response.json({state:existing.initialState,difficulty:existing.difficulty});return;}
+  const prepared=await completeAIMatchQuestProgress({...identity,isTestAccount:isTestAccountUser(request.authUser!),outcome:'LOSS',actions:[],prepareOnly:true});
+  response.json(await saveAIQuestStart(identity,prepared.state,prepared.difficulty));
+ }catch(error){response.status(422).json({message:error instanceof Error?error.message:'Could not prepare AI match'});}
 });
 
 router.post("/ai-match-progress", async (request, response): Promise<void> => {

@@ -1,3 +1,4 @@
+import {processStoredAIQuestMatch} from './ai-quest-match-storage';
 import { db, cardsTable, championsTable, rewardSettingsTable } from "@workspace/db";
 import { inArray } from "drizzle-orm";
 import {
@@ -155,6 +156,10 @@ export function replayAIMatch(
   return state;
 }
 
+type AIQuestInput = {userId:string;isTestAccount:boolean;deckId:string;aiDeckId:string;matchId:string;outcome:'WIN'|'LOSS';actions:unknown[]};
+type AIQuestStart = {state:GameState;difficulty:'NORMAL'|'HARD'|'BOSS'};
+export function completeAIMatchQuestProgress(input:AIQuestInput & {prepareOnly:true}):Promise<AIQuestStart>;
+export function completeAIMatchQuestProgress(input:AIQuestInput):Promise<{reward:RewardGrantResult|null;completed:boolean;message?:string}>;
 export async function completeAIMatchQuestProgress(input: {
   userId: string;
   isTestAccount: boolean;
@@ -163,14 +168,15 @@ export async function completeAIMatchQuestProgress(input: {
   matchId: string;
   outcome: "WIN" | "LOSS";
   actions: unknown[];
-}): Promise<{ reward: RewardGrantResult | null; completed: boolean; message?: string }> {
+  prepareOnly?: boolean;
+}): Promise<AIQuestStart | { reward: RewardGrantResult | null; completed: boolean; message?: string }> {
   if (!/^ai-[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(input.matchId)) {
     throw new Error("AI 경기 식별자가 올바르지 않습니다.");
   }
   const settings = await db.select().from(rewardSettingsTable)
     .where(inArray(rewardSettingsTable.key, ["MATCH_ONLINE_WIN", "MATCH_ONLINE_LOSS"]));
   const rewardSetting = settings.find((setting) => setting.key === (input.outcome === "WIN" ? "MATCH_ONLINE_WIN" : "MATCH_ONLINE_LOSS"));
-  const reward = rewardSetting?.enabled && rewardSetting.rewardType === "CURRENCY" && rewardSetting.amount > 0
+  const reward = !input.prepareOnly && rewardSetting?.enabled && rewardSetting.rewardType === "CURRENCY" && rewardSetting.amount > 0
     ? await db.transaction((tx) => grantReward({
         userId: input.userId,
         sourceType: "MATCH_AI_RESULT",
@@ -184,6 +190,8 @@ export async function completeAIMatchQuestProgress(input: {
   // Daily quests may inspect the action transcript. A desynchronized replay
   // must not undo the match result reward that was already granted above.
   try {
+
+  if (!input.prepareOnly && await processStoredAIQuestMatch(input, replayAIMatch)) return { reward, completed: true };
 
   const userDeck = await loadUserDeck(input.userId, input.deckId);
   if (!userDeck) throw new Error("사용할 수 있는 덱을 찾을 수 없습니다.");
@@ -269,6 +277,7 @@ export async function completeAIMatchQuestProgress(input: {
     { gameId: input.matchId, randomSeed: seedForMatchId(input.matchId), minionACardPool: completeMinionACatalog(cardRecords) },
   );
   const startedState = startGame(initialState, createDeterministicRandom(input.matchId), undefined, { flexibleDeckPlayerId: 'player-2' });
+  if(input.prepareOnly) return {state:startedState,difficulty:aiDeck.difficulty === 'HARD' || aiDeck.difficulty === 'BOSS' ? aiDeck.difficulty : 'NORMAL'};
   const userPlayerId = startedState.players[0]?.id;
   const aiPlayerId = startedState.players[1]?.id;
   if (!userPlayerId || !aiPlayerId) throw new Error("경기 참가자 데이터를 만들 수 없습니다.");
@@ -285,6 +294,7 @@ export async function completeAIMatchQuestProgress(input: {
     );
   });
   } catch (error) {
+    if(input.prepareOnly) throw error;
     const reason = error instanceof Error ? error.message : '알 수 없는 오류';
     console.error('[KO daily quest replay]', input.matchId, reason);
     return { reward, completed: false, message: `퀘스트 진행도를 저장하지 못했습니다: ${reason}` };

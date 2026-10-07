@@ -29,9 +29,10 @@ export default function DailyQuestsPage() {
   async function load() {
     setLoading(true);
     try {
-      const [result, nextCatalog] = await Promise.all([fetchDailyQuests(), fetchRewardCatalogs()]);
+      // Reward artwork must not block progress or claiming.
+      void fetchRewardCatalogs().then(setCatalog).catch(() => {});
+      const result = await fetchDailyQuests();
       setQuests(result.assignments);
-      setCatalog(nextCatalog);
     } catch (error) {
       setMessage(error instanceof Error ? error.message : "일일 퀘스트를 불러오지 못했습니다.");
     } finally {

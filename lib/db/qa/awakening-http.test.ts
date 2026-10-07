@@ -30,6 +30,8 @@ await pg.exec(
     "utf8",
   ),
 );
+await pg.exec(await readFile(new URL("../migrations/0038_ai_quest_matches.sql", import.meta.url), "utf8"));
+await pg.exec(await readFile(new URL("../migrations/0038_ai_quest_matches.sql", import.meta.url), "utf8"));
 const { db, pool } = await import("../src/index");
 for (const method of [
   "select",
@@ -483,4 +485,71 @@ test("authoritative PvP attack, concurrent retry, stale packet and database rehy
       1,
     );
   }
+});
+
+test('daily quest saved AI state survives catalog edits and duplicate completion; claim grants once',async()=>{
+ const {saveAIQuestStart,storedAIQuestMatch,processStoredAIQuestMatch}=await import('../../../artifacts/api-server/src/lib/ai-quest-match-storage');
+ const {replayAIMatch}=await import('../../../artifacts/api-server/src/lib/ai-match-quest-service');
+ const {claimDailyQuest,dailyDate}=await import('../../../artifacts/api-server/src/lib/daily-quest-service');
+ const {startGame}=await import('../../game-engine/src');
+ await database.insert(schema.usersTable).values({id:'daily-replay-user',email:'daily-replay@qa.invalid',nickname:'Daily Replay',passwordHash:'local-only'});
+ await database.insert(schema.dailyQuestDefinitionsTable).values({id:'daily-play',title:'Play one match',description:'',objectiveType:'PLAY_MATCH',targetValue:1,rewardAmount:77,enabled:true});
+ const initial=startGame(createInitialGameState(),()=>0.5);const identity={userId:'daily-replay-user',deckId:'deck-at-start',aiDeckId:'ai-at-start',matchId:'ai-33333333-3333-4333-8333-333333333333'};
+ const prepared=await saveAIQuestStart(identity,initial,'NORMAL');
+ const altered=JSON.parse(JSON.stringify(initial));altered.players[0].health=1;
+ const retried=await saveAIQuestStart(identity,altered,'BOSS');assert.deepEqual(retried,prepared);
+ await assert.rejects(storedAIQuestMatch({...identity,userId:'awakening-admin'}));
+ await assert.rejects(storedAIQuestMatch({...identity,deckId:'different-deck'}));
+ const input={...identity,actions:[{type:'SURRENDER',playerId:initial.players[0].id}]};
+ assert.equal(await processStoredAIQuestMatch(input,replayAIMatch),true);
+ assert.equal(await processStoredAIQuestMatch(input,replayAIMatch),true);
+ const assignments=await database.select().from(schema.dailyQuestAssignmentsTable);const assignment=assignments.find(a=>a.userId===identity.userId&&a.definitionId==='daily-play')!;
+ assert.equal(assignment.progress,1);assert.equal(assignment.status,'COMPLETED');assert.equal(assignment.assignmentDate,dailyDate());
+ const events=(await pg.query<any>('SELECT count(*)::int AS n FROM daily_quest_progress_events WHERE assignment_id=$1',[assignment.id])).rows[0].n;assert.equal(events,1);
+ const first=await claimDailyQuest(identity.userId,assignment.id);const again=await claimDailyQuest(identity.userId,assignment.id);
+ assert.equal(first.reward?.amount,77);assert.equal(again.alreadyClaimed,true);assert.equal(again.reward,null);
+});
+
+test('AI start HTTP validates live decks and completion uses the saved snapshot after a deck is deleted',async()=>{
+ const cardIds=Array.from({length:9},(_,i)=>'daily-start-card-'+i);
+ await database.insert(schema.cardsTable).values(cardIds.map(cardId=>({id:cardId,name:cardId,cardType:'WRESTLER',cost:1,attack:1,health:1,text:'',status:'PUBLISHED',rarity:'NORMAL'})));
+ const deckCards=cardIds.flatMap(cardId=>[cardId,cardId,cardId]).slice(0,25);
+ await database.insert(schema.championsTable).values({id:'daily-start-champion',name:'Daily champion',maxHealth:20,abilityName:'Ability',abilityCost:1,abilityText:'',abilityEffects:{},status:'PUBLISHED'});
+ await database.insert(schema.decksTable).values({id:'daily-start-deck',userId:'awakening-admin',name:'Start deck',championDefinitionId:'daily-start-champion',cardDefinitionIds:deckCards});
+ await database.insert(schema.userCardCollectionsTable).values(cardIds.map(cardDefinitionId=>({userId:'awakening-admin',cardDefinitionId,quantity:3})));
+ await database.insert(schema.userChampionCollectionsTable).values({userId:'awakening-admin',championDefinitionId:'daily-start-champion',owned:true});
+ await database.insert(schema.aiDecksTable).values({id:'daily-start-ai',name:'Start AI',championDefinitionId:'daily-start-champion',cardDefinitionIds:deckCards,enabled:true});
+ assert.equal((await request('/auth/login','POST',{email:'admin@awakening.invalid',password:'AwakeningLocalQA123'})).status,200);
+ const matchId='ai-44444444-4444-4444-8444-444444444444';const body={deckId:'daily-start-deck',aiDeckId:'daily-start-ai',matchId};
+ const start=await request('/daily-quests/ai-match-start','POST',body);assert.equal(start.status,200,JSON.stringify(start.body));assert.equal(start.body.state.gameId,matchId);
+ assert.equal((await pg.query<any>('SELECT count(*)::int AS n FROM reward_grants WHERE source_id=$1',[matchId])).rows[0].n,0,'preparation must not pay');
+ await pg.query('UPDATE decks SET deleted_at=now() WHERE id=$1',['daily-start-deck']);await pg.query('UPDATE ai_decks SET enabled=false WHERE id=$1',['daily-start-ai']);
+ const repeated=await request('/daily-quests/ai-match-start','POST',body);assert.deepEqual(repeated.body,start.body);
+ const result=await request('/daily-quests/ai-match-progress','POST',{...body,outcome:'LOSS',actions:[{type:'SURRENDER',playerId:start.body.state.players[0].id}]});
+ assert.equal(result.status,200);assert.equal(result.body.completed,true,JSON.stringify(result.body));
+ const repeatedCompletion=await request('/daily-quests/ai-match-progress','POST',{...body,outcome:'LOSS',actions:[{type:'SURRENDER',playerId:start.body.state.players[0].id}]});assert.equal(repeatedCompletion.body.completed,true);
+});
+
+test('daily assignments fill available slots without changing existing progress; event tags survive field removal',async()=>{
+ const {ensureDailyQuestAssignments,processMatchEventsForDailyQuests}=await import('../../../artifacts/api-server/src/lib/daily-quest-service');
+ const {QUEST_CONDITION_SCHEMA_VERSION}=await import('../../game-engine/src');
+ await database.insert(schema.usersTable).values({id:'daily-fill-user',email:'fill@qa.invalid',nickname:'Daily Fill',passwordHash:'local-only'});
+ const first=await ensureDailyQuestAssignments('daily-fill-user');assert.equal(first.length,1);
+ await database.insert(schema.dailyQuestDefinitionsTable).values({id:'daily-tag',title:'Tagged cards',description:'',objectiveType:'PLAY_MATCH',targetValue:2,rewardAmount:30,enabled:true,schemaVersion:QUEST_CONDITION_SCHEMA_VERSION,condition:{schemaVersion:QUEST_CONDITION_SCHEMA_VERSION,condition:{event:'CARD_PLAYED',filters:{tagsAny:['zombie']}},progress:{mode:'COUNT'},required:2}});
+ const after=await ensureDailyQuestAssignments('daily-fill-user');assert.equal(after.length,2);assert.equal(after.find(a=>a.definitionId==='daily-play')!.id,first[0].id);
+ const state=createInitialGameState();state.status='FINISHED';state.winnerId=state.players[0].id;state.events=[{type:'CARD_PLAYED',playerId:state.players[0].id,cardInstanceId:'removed-card',cardType:'WRESTLER',tags:['zombie']}];
+ await db.transaction(tx=>processMatchEventsForDailyQuests('daily-fill-user',state.players[0].id,'tag-match',state,0,tx));
+ await db.transaction(tx=>processMatchEventsForDailyQuests('daily-fill-user',state.players[0].id,'tag-match',state,0,tx));
+ const current=await ensureDailyQuestAssignments('daily-fill-user');assert.equal(current.find(a=>a.definitionId==='daily-tag')!.progress,1);
+});
+
+test('admin can repair only untouched current assignments, preserving in-progress, completed and claimed snapshots',async()=>{
+ const {dailyDate}=await import('../../../artifacts/api-server/src/lib/daily-quest-service');
+ const base={title:'Repair quest',description:'',objectiveType:'PLAY_MATCH',targetValue:3,rewardType:'CURRENCY',rewardAmount:10,rewardTargetId:null,enabled:true};
+ const created=await request('/admin/rewards/daily-quests','POST',base);assert.equal(created.status,201);const definitionId=created.body.definition.id;
+ for(const [index,status,progress] of [[0,'ASSIGNED',0],[1,'IN_PROGRESS',1],[2,'COMPLETED',3],[3,'CLAIMED',3]] as const){const userId='repair-user-'+index;await database.insert(schema.usersTable).values({id:userId,email:userId+'@qa.invalid',nickname:userId,passwordHash:'local-only'});await database.insert(schema.dailyQuestAssignmentsTable).values({...base,id:'repair-assignment-'+index,userId,definitionId,assignmentDate:dailyDate(),slot:0,status,progress});}
+ const changed=await request('/admin/rewards/daily-quests/'+definitionId,'PATCH',{...base,title:'Fixed quest',targetValue:2,rewardAmount:20,applyToUnstartedAssignments:true});assert.equal(changed.status,200);assert.equal(changed.body.updatedAssignments,1);
+ const rows=(await pg.query<any>('SELECT id,title,progress,status,target_value,reward_amount FROM daily_quest_assignments WHERE definition_id=$1 ORDER BY id',[definitionId])).rows;
+ assert.equal(rows[0].title,'Fixed quest');assert.equal(rows[0].progress,0);assert.equal(rows[0].target_value,2);assert.equal(rows[0].reward_amount,20);
+ for(const row of rows.slice(1)){assert.equal(row.title,'Repair quest');assert.equal(row.target_value,3);assert.equal(row.reward_amount,10);}
 });

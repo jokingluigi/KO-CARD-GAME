@@ -7,11 +7,12 @@ type AiMatchSetupProps = {
   decks: Deck[] | null;
   aiDecks: AIDeck[] | null;
   error?: string | null;
+  starting?: boolean;
   onStart: (deckId: string) => void;
   onBack: () => void;
 };
 
-export function AiMatchSetup({ decks, aiDecks, error, onStart, onBack }: AiMatchSetupProps) {
+export function AiMatchSetup({ decks, aiDecks, error, onStart, onBack, starting = false }: AiMatchSetupProps) {
   const validDecks = decks?.filter((deck) => deck.isValid) ?? [];
   const validAIDecks = aiDecks?.filter((deck) => deck.isValid && deck.enabled) ?? [];
   const [selectedDeckId, setSelectedDeckId] = useState<string | null>(null);
@@ -54,7 +55,7 @@ export function AiMatchSetup({ decks, aiDecks, error, onStart, onBack }: AiMatch
                 <div className="flex items-center gap-3"><Dices className="h-5 w-5 text-amber-300" /><div><h2 className="text-sm font-black tracking-wider text-neutral-300">2. AI 상대</h2><p className="mt-2 text-sm leading-6 text-neutral-400">활성화된 AI 덱 {validAIDecks.length}개 중 하나를 매치 생성 시 자동 선택합니다. 상대 덱은 시작 후 바뀌지 않습니다.</p></div></div>
               </section>
             </div>
-            <div className="mt-7 flex flex-wrap justify-center gap-3"><button type="button" onClick={onBack} className="rounded-lg border border-neutral-700 px-5 py-3 text-sm font-black text-neutral-300 hover:border-neutral-500">메인 메뉴</button><button type="button" disabled={!selectedDeckId} onClick={start} className="flex items-center gap-2 rounded-lg bg-amber-400 px-6 py-3 text-sm font-black text-black hover:bg-amber-300 disabled:cursor-not-allowed disabled:opacity-40"><Bot className="h-4 w-4" /> 매치 시작 <ArrowRight className="h-4 w-4" /></button></div>
+            <div className="mt-7 flex flex-wrap justify-center gap-3"><button type="button" onClick={onBack} className="rounded-lg border border-neutral-700 px-5 py-3 text-sm font-black text-neutral-300 hover:border-neutral-500">메인 메뉴</button><button type="button" disabled={!selectedDeckId || starting} onClick={start} className="flex items-center gap-2 rounded-lg bg-amber-400 px-6 py-3 text-sm font-black text-black hover:bg-amber-300 disabled:cursor-not-allowed disabled:opacity-40"><Bot className="h-4 w-4" /> {starting ? "경기 준비 중…" : "매치 시작"} <ArrowRight className="h-4 w-4" /></button></div>
           </>
         )}
       </section>
