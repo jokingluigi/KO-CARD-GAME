@@ -37,6 +37,7 @@ function Scene(){
  const run=(kind:string)=>{
   let next=state;const p=next.players[0],enemy=next.players[1],source=p.board.find(Boolean)!;
   if(kind==='reward'||kind==='reward-full'){next=initial();next.activePlayerId='player-2';next.cardPool=[def,TEST_CHAMPION_TOKEN_DEFINITION];for(const i of [0,1,2,3] as const)next.players[0].board[i]={...generateCardInstance(def,{instanceId:'replace-'+i}),boardSlot:i};if(kind==='reward-full')next.players[0].hand=Array.from({length:MAX_HAND_SIZE},(_,i)=>generateCardInstance(def,{instanceId:'hand-'+i}));next=directDeployChampionToken(next,'player-1',next.players[0].champion!.id,TEST_CHAMPION_TOKEN_DEFINITION.id,'CHAMPION_QUEST_REWARD');update(next);return;}
+  if(kind==='fusion'){next=initial();const material:CardDefinition={...def,id:'fusion-qa',name:'합체 검증 재료',attack:0,health:1,keywords:['FUSION'],rulesText:'합체. 이 카드가 합체하면: 카드 1장을 드로우합니다.',abilities:[{trigger:'ON_FUSION',effects:[{type:'STRUCTURED',action:'DRAW',values:{amount:1}}]}]};next.cardPool=[def,material];next.players[0].hand=[generateCardInstance(material,{instanceId:'fusion-material'})];next=executeAction(next,{type:'PLAY_WRESTLER',playerId:'player-1',cardInstanceId:'fusion-material',boardSlot:2}).state;update(next);return;}
   if(kind==='reset'){update(initial());return;}
   if(kind==='draw'){for(let i=0;i<3;i++)next=drawCard(next,p.id);}
   if(kind==='damage')next=applyEffect(next,p.id,source,{type:'DAMAGE_OPPONENT_CHAMPION',amount:6});
@@ -55,8 +56,8 @@ function Scene(){
  };
  return <>
  <div style={{position:'fixed',top:0,left:0,zIndex:1000,background:'#121212',padding:4,fontSize:10,color:'white'}}>
- {['reset','reward','reward-full','destroy','retire','restore'].map(k=><button data-testid={k} key={k} onClick={()=>run(k)} style={{padding:4}}>{k}</button>)}
- <output data-testid="board-check">tokens:{state.players[0].board.filter(c=>c?.isChampionToken).length} decktop:{state.players[0].deck[0]?.instanceId} selected:{String(Boolean(state.targetingState))}</output>
+ {['reset','fusion','reward','reward-full','destroy','retire','restore'].map(k=><button data-testid={k} key={k} onClick={()=>run(k)} style={{padding:4}}>{k}</button>)}
+ <output data-testid="board-check">fusion:{state.events.filter(e=>e.type==='FUSION').length} vanished:{state.events.filter(e=>e.type==='CARD_VANISHED').length} hp:{state.players[0].board[0]?.currentHealth} gold:{state.players[0].currentGold} tokens:{state.players[0].board.filter(c=>c?.isChampionToken).length} decktop:{state.players[0].deck[0]?.instanceId} selected:{String(Boolean(state.targetingState))}</output>
  <output data-testid="state-check">{JSON.stringify(state)===expected?'UNCHANGED':'MUTATED'} busy:{String(busy)} events:{state.events.length} hand:{state.players[0].hand.length} {failure}</output>
  </div>
  <GameStatePreview state={state} mediaCatalog={emptyGameMediaCatalog} selectedCardId={selected} selectedAttackerId={null} playError={null} turnSecondsRemaining={60}
@@ -64,7 +65,7 @@ function Scene(){
   onEndTurn={()=>run('turn')} onSelectSlot={noop} onUseTechnique={noop} playAnimation={null} onPlayAnimationComplete={noop}
   attackAnimation={null} attackImpactTriggered={false} onAttackImpact={noop} onAttackAnimationComplete={noop}
   onSelectAttacker={id=>{if(state.targetingState)update(executeAction(state,{type:'SELECT_EFFECT_TARGET',playerId:state.targetingState.playerId,targetId:id}).state);}} onAttackWrestler={noop} onAttackPlayer={noop} onUseActive={noop} onUseChampionAbility={noop}
-  onCancelEffectTargeting={noop} onEffectTarget={id=>update(executeAction(state,{type:'SELECT_EFFECT_TARGET',playerId:state.targetingState!.playerId,targetId:id}).state)} onPresentationBusyChange={setBusy} />
+  onCancelEffectTargeting={()=>update(executeAction(state,{type:'CANCEL_EFFECT_TARGET',playerId:state.targetingState!.playerId}).state)} onEffectTarget={id=>update(executeAction(state,{type:'SELECT_EFFECT_TARGET',playerId:state.targetingState!.playerId,targetId:id}).state)} onPresentationBusyChange={setBusy} />
  </>;
 }
 const admin=new URLSearchParams(location.search).get('admin');
