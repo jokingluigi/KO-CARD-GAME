@@ -144,7 +144,7 @@ test('current Pandora champion token quest deployment destroys target and absorb
  onBoard(n,'로드',0,1,{currentAttack:3,currentHealth:1,maxHealth:1});n=action(n,{type:'ATTACK',playerId:'player-1',attackerInstanceId:'rampage',target:{type:'WRESTLER',playerId:'player-2',cardInstanceId:'1-로드-0'}});assert.equal(n.players[0].board[0]?.currentAttack,13);
 });
 test('current Zombie grows on other retirements, merges summons, and ignores destroy',()=>{
- for(const mode of ['RETIRE','DESTROY'] as const){const s=setup();onBoard(s,'좀비');const c=onBoard(s,'리버덩크',1,1);const n=applyEffect(s,'player-2',c,{type:'STRUCTURED',action:mode,target:{zone:'BOARD',owner:'SELF',selection:'SELF',count:1}});assert.equal(n.players[0].board[0]?.currentAttack,1) // Enemy retirement never grows an allied zombie.
+ for(const mode of ['RETIRE','DESTROY'] as const){const s=setup();onBoard(s,'좀비');const c=onBoard(s,'리버덩크',1,1);const n=applyEffect(s,'player-2',c,{type:'STRUCTURED',action:mode,target:{zone:'BOARD',owner:'SELF',selection:'SELF',count:1}});assert.equal(n.players[0].board[0]?.currentAttack,mode === 'RETIRE' ? 2 : 1)
 ;}
 });
 for(const name of ['레이븐','스카드','엘리트 용병','용병','위리녀','하스이','벨로나','황소할배','여울의 보디가드','리버덩크','보드바'])test(`current vanilla/keyword rules: ${name}`,()=>{
@@ -175,11 +175,11 @@ test('zone reset: retirement clears buffs and graveyard rejects later stat buffs
  g=n.players[0].graveyard[0];assert.deepEqual([g.currentAttack,g.currentHealth,g.maxHealth],[2,3,3]);
 });
 
-test('zombie grows only from allied RETIRE, never enemy RETIRE or DESTROY', () => {
+test('zombie grows from allied and enemy RETIRE, never DESTROY', () => {
  for (const owner of [0, 1]) for (const mode of ['RETIRE', 'DESTROY'] as const) {
   const s = setup(); onBoard(s, '좀비', 0, 0); const victim = onBoard(s, '리버덩크', 1, owner);
   const n = applyEffect(s, s.players[owner].id, victim, { type: 'STRUCTURED', action: mode, target: { zone: 'BOARD', owner: 'SELF', selection: 'SELF', count: 1 } });
-  const expected = owner === 0 && mode === 'RETIRE' ? 2 : 1;
+  const expected = mode === 'RETIRE' ? 2 : 1;
   assert.deepEqual([n.players[0].board[0]?.currentAttack, n.players[0].board[0]?.maxHealth], [expected, expected]);
  }
 });
