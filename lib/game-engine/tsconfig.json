@@ -20,6 +20,7 @@
     "../../artifacts/ko-game/src/game/actions/**/*.ts",
     "../../artifacts/ko-game/src/game/cards/generation.ts",
     "../../artifacts/ko-game/src/game/cards/new-card-effects.ts",
+    "../../artifacts/ko-game/src/game/cards/text-effect-repair.ts",
     "../../artifacts/ko-game/src/game/cards/legacy-card-effect-repair.ts",
     "../../artifacts/ko-game/src/game/cards/granted-text.ts",
     "../../artifacts/ko-game/src/game/cards/zone-state.ts",
