@@ -79,6 +79,7 @@ export function resetCardAfterLeavingBoard(card: CardInstance, printedDefinition
     playCondition: definition ? definition.effectConfig?.playCondition as CardInstance['playCondition'] : card.playCondition,
     grantedText: undefined,
     grantedTags: undefined,
+    ignoreTauntToChampion: undefined,
     keywords: draft?.keywords ?? (definition ? [...definition.keywords] : card.countdownTurns !== undefined && !card.keywords.includes('COUNTDOWN')
       ? [...card.keywords, 'COUNTDOWN'] : card.keywords),
     abilities: definition ? structuredClone(definition.abilities) : card.abilities,
