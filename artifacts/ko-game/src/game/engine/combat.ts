@@ -276,6 +276,7 @@ export function attack(
     ) ?? [];
   if (
     tauntCards.length > 0 &&
+    !(target.type === 'PLAYER' && attacker.ignoreTauntToChampion && !attacker.isSilenced && !attacker.isAbilityDisabled) &&
     (target.type !== 'WRESTLER' ||
       !tauntCards.some(
         (card) => card.instanceId === target.cardInstanceId,

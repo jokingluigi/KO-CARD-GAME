@@ -8,14 +8,14 @@ import { refreshTowerAuras } from '../tower/relics';
 export function fusionTargets(state: GameState, playerId: string, sourceId: string): string[] {
   const owner = state.players.find(p => p.id === playerId);
   if (!owner?.board.some(c => c?.instanceId === sourceId)) return [];
-  return owner.board.flatMap(c => c && c.instanceId !== sourceId && c.currentHealth > 0 && c.cardType !== 'TECHNIQUE' && !getActiveCardKeywords(c).includes('IMMUNE') ? [c.instanceId] : []);
+  return owner.board.flatMap(c => c && c.instanceId !== sourceId && c.currentHealth > 0 && c.cardType !== 'TECHNIQUE' ? [c.instanceId] : []);
 }
 export function hasCommittedFusion(frame: GameState["targetingState"]): boolean {
   for (let current = frame; current; current = current.continuation) if (current.fusion && current.fusion.stage !== "CHOOSE") return true;
   return false;
 }
 export function canPlayFusion(state: GameState, playerId: string, card: CardInstance): boolean {
-  return !getActiveCardKeywords(card).includes('FUSION') || Boolean(state.players.find(p => p.id === playerId)?.board.some(c => c && c.currentHealth > 0 && c.cardType !== 'TECHNIQUE' && !getActiveCardKeywords(c).includes('IMMUNE')));
+  return !getActiveCardKeywords(card).includes('FUSION') || Boolean(state.players.find(p => p.id === playerId)?.board.some(c => c && c.currentHealth > 0 && c.cardType !== 'TECHNIQUE'));
 }
 /** Vanish has no retirement, destruction, graveyard or leave dispatch. */
 export function vanishCard(state: GameState, instanceId: string): GameState {
@@ -75,7 +75,7 @@ export function resumeFusion(state: GameState): GameState {
   const snapshot = fusion.stage === 'SOURCE' ? fusion.source! : fusion.target!;
   const live = state.players.flatMap(p => p.board).find(c => c?.instanceId === snapshot.instanceId) ?? snapshot;
   const advanced = { ...state, targetingState: { ...frame, fusion: { ...fusion, stage: fusion.stage === 'SOURCE' ? 'TARGET' as const : 'VANISH' as const } } };
-  const triggered = resolveTriggeredAbilities(advanced, frame.playerId, live, 'ON_FUSION');
+  const triggered = resolveTriggeredAbilities(advanced, frame.playerId, live, 'ON_FUSION', { fusionTargetInstanceId: fusion.target!.instanceId });
   return triggered === advanced ? resolvePendingEffects(advanced) : triggered;
 }
 

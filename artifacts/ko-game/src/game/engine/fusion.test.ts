@@ -56,8 +56,8 @@ test('fusion stat transfer invokes existing attack and health gain listeners bef
  s.players[0].board[0]!.abilities=[{trigger:'STAT_CHANGED',condition:{type:'ATTACK_GAIN'},effects:[{type:'STRUCTURED',action:'BUFF',target:{zone:'BOARD',owner:'SELF',selection:'SELF',count:1},values:{healthReference:'LAST_ATTACK_DELTA'}}]}];
  const done=select(play(s).state);assert.equal(done.players[0].board[0]?.currentAttack,4);assert.equal(done.players[0].board[0]?.currentHealth,8);assert.equal(done.players[0].board[0]?.maxHealth,8);assert.equal(done.players[0].board[1],null);
 });
-test('immune ally does not appear in hand or generic fusion target selection',()=>{
- const s=setup();s.players[0].board[0]!.keywords=['IMMUNE'];assert.equal(play(s).success,false);
+test('fusion accepts an immune ally without weakening normal effect targeting',()=>{
+ const s=setup();s.players[0].board[0]!.keywords=['IMMUNE'];const played=play(s);assert.ok(played.success);const done=select(played.state);assert.equal(done.players[0].board[0]?.currentHealth,4);assert.equal(done.players[0].board[1],null);
 });
 test('permanent regrant does not expire with an earlier temporary attack restriction',()=>{
  let s=setup();const c=s.players[0].board[0]!;

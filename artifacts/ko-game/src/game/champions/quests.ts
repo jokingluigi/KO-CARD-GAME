@@ -19,6 +19,8 @@ function matchesQuestEvent(
   const eventMatches = quest.trackedEvent === 'WRESTLER_RETIRED'
     ? event.type === 'CARD_RETIRED'
     : event.type === quest.trackedEvent;
+  // Both participants receive FUSION, while a quest counts one completed fusion.
+  if (quest.trackedEvent === 'FUSION' && event.reason !== 'FUSION_SOURCE') return false;
   if (!eventMatches || (quest.cardType && event.cardType !== quest.cardType)) return false;
   if (quest.sourceActionType) {
     const sourceMatches = event.sourceContext?.sourceActionType === quest.sourceActionType &&

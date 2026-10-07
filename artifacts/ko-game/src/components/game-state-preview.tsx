@@ -1110,7 +1110,7 @@ export function GameStatePreview({
                     targetingActive={!!effectTargeting}
                     presentationActive={activePresentationCardId === card?.instanceId || (!!effectTargeting && state.targetingState?.sourceInstanceId === card?.instanceId)}
                     targetable={!!card && !!effectTargeting && validEffectTargetIds.has(card.instanceId)}
-                     activeReady={!!card && legalActiveCardIds.has(card.instanceId)}
+                     activeReady={!!card && !card.isSilenced && !card.isAbilityDisabled && card.abilities.some(ability => ability.trigger === 'ACTIVE')}
                      activeUsable={!!card && legalActiveCardIds.has(card.instanceId)}
                      onUseActive={() => onUseActive(card!.instanceId)}
                    onClick={(idOrIdx) => {
@@ -1834,6 +1834,7 @@ function BoardSlot({
         <button
           type="button"
           disabled={!activeUsable}
+          title={!activeUsable ? (card.enteredThisTurn ? "다음 자기 턴부터 사용할 수 있습니다." : "지금은 액티브를 사용할 수 없습니다.") : "액티브 사용"}
           onClick={(event) => {
             event.stopPropagation();
             onUseActive();
