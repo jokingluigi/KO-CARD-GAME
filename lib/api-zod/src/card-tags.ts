@@ -3,7 +3,6 @@ import { z } from "zod";
 /** Canonical card tags accepted by card create/update APIs. */
 export const cardTagsSchema = z
   .array(z.string())
-  .max(3)
   .transform((tags) => tags.map((tag) => tag.trim()))
   .superRefine((tags, context) => {
     if (tags.some((tag) => tag.length === 0)) {

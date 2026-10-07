@@ -1,3 +1,4 @@
+import { availableCardTags } from "../lib/card-tag-catalog";
 import { validCountdownCardSettings } from '@workspace/effect-registry';
 import { validChampionQuestCondition, validAwakeningQuestConfig, AWAKENING_CARD_IDS, createAwakeningCards } from '@workspace/game-engine';
 import { ensureAwakeningCards } from '../lib/awakening-card-service';
@@ -848,11 +849,6 @@ async function trustedEffectContext(
     sourceName: champion.name,
     ...(effectContext ? { effectContext } : {}),
   };
-}
-async function availableCardTags(): Promise<string[]> {
-  const cards = await db.select({ tags: cardsTable.tags }).from(cardsTable);
-  return [...new Set(cards.flatMap((card) => card.tags.map((tag) => tag.trim()).filter(Boolean)))]
-    .sort((left, right) => left.localeCompare(right));
 }
 
 function repairedKnownPublishedEffect(card: { id: string; name: string; text: string }):

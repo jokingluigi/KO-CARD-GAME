@@ -11,7 +11,7 @@ test("card tags trim values and preserve input order", () => {
 });
 
 test("card tags reject four values, blanks, and duplicates", () => {
-  assert.equal(parseCardTags(["a", "b", "c", "d"]), null);
+  assert.deepEqual(parseCardTags(["a", "b", "c", "d"]), ["a", "b", "c", "d"]);
   assert.equal(parseCardTags(["a", " "]), null);
   assert.equal(parseCardTags(["a", "a"]), null);
   assert.equal(parseCardTags("a"), null);

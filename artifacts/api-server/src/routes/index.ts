@@ -1,3 +1,4 @@
+import adminTagsRouter from "./admin-tags";
 import adminDraftRouter from './admin-draft';
 import maintenanceRouter from './maintenance';
 import {maintenanceGate} from '../lib/maintenance';
@@ -41,6 +42,7 @@ router.use(storageRouter);
 router.use(cardsRouter);
 router.use(gameMediaRouter);
 router.use(mainContentRouter);
+router.use("/admin/tags", adminTagsRouter);
 router.use("/admin", adminRouter);
 router.use("/auth", authRouter);
 router.use("/test-auth", testAuthRouter);

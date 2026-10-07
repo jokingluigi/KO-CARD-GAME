@@ -1,3 +1,4 @@
+import { AdminTagManager } from "@/components/admin-tag-manager";
 import {AdminDraftManager} from '@/components/admin-draft-manager';
 import {AdminServerMaintenance} from '@/components/server-maintenance';
 import { AdminTowerManager } from '@/components/admin-tower-manager';
@@ -27,8 +28,8 @@ export default function Admin() {
   const [status, setStatus] = useState<AdminStatus>("checking");
   const [authError, setAuthError] = useState<string | null>(null);
   const authRequestGeneration = useRef(0);
-  const [section, setSection] = useState<"draft" | "tower" | "tower-test" | "cards" | "champions" | "packs" | "skins" | "frames" | "shop" | "prism" | "media" | "notices" | "test" | "ai-decks" | "rewards">(
-    location.split("?")[0].endsWith("/draft") ? "draft" : location.endsWith("/tower") ? "tower" : location.endsWith("/tower-test") ? "tower-test" : location.endsWith("/packs") ? "packs" : location.endsWith("/shop") ? "shop" : location.endsWith("/prism") ? "prism" : location.endsWith("/skins") ? "skins" : location.endsWith("/card-frames") ? "frames" : location.endsWith("/ai-decks") ? "ai-decks" : location.endsWith("/rewards") ? "rewards" : location.endsWith("/notices") ? "notices" : "cards",
+  const [section, setSection] = useState<"tags" | "draft" | "tower" | "tower-test" | "cards" | "champions" | "packs" | "skins" | "frames" | "shop" | "prism" | "media" | "notices" | "test" | "ai-decks" | "rewards">(
+    location.split("?")[0].endsWith("/tags") ? "tags" : location.split("?")[0].endsWith("/draft") ? "draft" : location.endsWith("/tower") ? "tower" : location.endsWith("/tower-test") ? "tower-test" : location.endsWith("/packs") ? "packs" : location.endsWith("/shop") ? "shop" : location.endsWith("/prism") ? "prism" : location.endsWith("/skins") ? "skins" : location.endsWith("/card-frames") ? "frames" : location.endsWith("/ai-decks") ? "ai-decks" : location.endsWith("/rewards") ? "rewards" : location.endsWith("/notices") ? "notices" : "cards",
   );
 
   const checkAuthentication = useCallback(() => {
@@ -135,6 +136,7 @@ export default function Admin() {
             <Spade className="h-4 w-4" />
             카드 관리
           </button>
+          <button type="button" onClick={() => setSection("tags")} className={"mt-2 flex min-h-11 w-full items-center gap-3 rounded border px-3 py-3 text-left text-sm font-black " + (section === "tags" ? "border-primary/60 bg-primary/10 text-primary" : "border-transparent text-neutral-400")}>태그 관리</button>
           <button
             type="button"
             onClick={() => setSection("champions")}
@@ -230,7 +232,7 @@ export default function Admin() {
 
         <section className="min-w-0 flex-1">
           <AdminServerMaintenance />
-           {section === "draft" ? <AdminDraftManager /> : section === "tower" ? <AdminTowerManager onUnauthorized={() => setStatus("forbidden")} /> : section === "tower-test"
+           {section === "tags" ? <AdminTagManager onUnauthorized={() => setStatus("forbidden")} /> : section === "draft" ? <AdminDraftManager /> : section === "tower" ? <AdminTowerManager onUnauthorized={() => setStatus("forbidden")} /> : section === "tower-test"
              ? <AdminTowerTest onUnauthorized={() => setStatus("forbidden")} />
              : section === "notices"
              ? <AdminNoticesManager onUnauthorized={() => setStatus("forbidden")} />

@@ -626,7 +626,7 @@ export function AdminCardManager({
   function addTag() {
     const tag = tagDraft.trim();
     const tags = form.getValues("tags") ?? [];
-    if (!tag || tags.includes(tag) || tags.length >= 3) return;
+    if (!tag || tags.includes(tag)) return;
     form.setValue("tags", [...tags, tag], { shouldDirty: true });
     setTagDraft("");
   }
@@ -1347,17 +1347,16 @@ export function AdminCardManager({
                             addTag();
                           }
                         }}
-                        disabled={(preview.tags ?? []).length >= 3}
-                        placeholder={(preview.tags ?? []).length >= 3 ? "최대 3개" : "태그 입력"}
+                        placeholder="태그 입력"
                         data-testid="input-card-tag"
                         className="min-w-0 flex-1 rounded border border-neutral-700 bg-neutral-900 px-3 py-2 text-xs outline-none focus:border-primary disabled:opacity-40"
                       />
-                      <button type="button" onClick={addTag} disabled={!tagDraft.trim() || (preview.tags ?? []).length >= 3} data-testid="button-add-card-tag" className="rounded border border-neutral-700 px-3 py-2 text-xs font-bold hover:border-primary hover:text-primary disabled:opacity-40">
+                      <button type="button" onClick={addTag} disabled={!tagDraft.trim()} data-testid="button-add-card-tag" className="rounded border border-neutral-700 px-3 py-2 text-xs font-bold hover:border-primary hover:text-primary disabled:opacity-40">
                         <Plus className="mr-1 inline h-3 w-3" /> 추가
                       </button>
                     </div>
                   </div>
-                  <p className="text-[10px] text-neutral-600">최대 3개 · 앞뒤 공백은 저장 시 제거됩니다.</p>
+                  <p className="text-[10px] text-neutral-600">개수 제한 없음 · 앞뒤 공백은 저장 시 제거됩니다.</p>
                 </fieldset>
               <label className="flex items-center gap-2 rounded border border-neutral-800 bg-neutral-900 p-3 text-sm"><input type="checkbox" {...form.register("isToken")} data-testid="input-card-token" /> 토큰 카드</label>
               <label className="flex items-center gap-2 rounded border border-neutral-800 bg-neutral-900 p-3 text-sm"><input type="checkbox" {...form.register("isChampionToken")} data-testid="input-card-champion-token" /> 챔피언 토큰</label>
