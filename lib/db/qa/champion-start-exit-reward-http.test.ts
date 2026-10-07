@@ -150,3 +150,13 @@ test('champion selection toggle affects only future draft picks and preserves ca
  const show=await request('/admin/draft/champions/'+championId+'/selection','PATCH',{excluded:false});assert.equal(show.status,200);assert.ok(!show.body.excludedChampionIds.includes(championId));
  const restored=await draftCatalog((await draftSettings()).config);assert.ok(selectableChampions(restored).some(c=>c.id===championId));assert.ok(!selectableChampions(snapshot).some(c=>c.id===championId),'existing draft snapshots remain unchanged');
 });
+
+test('champion can become private independently of disabled state and be published again',async()=>{
+ const created=await request('/admin/champions','POST',{...championInput,name:'Privacy toggle'});assert.equal(created.status,201);const id=created.body.champion.id;
+ for(const status of ['PUBLISHED','DRAFT','PUBLISHED','DISABLED','DRAFT']){
+  const result=await request('/admin/champions/'+id+'/status','POST',{status});assert.equal(result.status,200,JSON.stringify(result.body));assert.equal(result.body.champion.status,status);
+  assert.equal(result.body.champion.name,'Privacy toggle');assert.deepEqual(result.body.champion.gameStartAbilityEffects,championInput.gameStartAbilityEffects);
+ }
+ const list=await request('/admin/champions');assert.equal(list.body.champions.find((c:any)=>c.id===id).status,'DRAFT');
+ const {draftSettings,draftCatalog}=await import('../../../artifacts/api-server/src/lib/draft-service');const {selectableChampions}=await import('../../game-engine/src/draft/domain');assert.ok(!selectableChampions(await draftCatalog((await draftSettings()).config)).some(c=>c.id===id));
+});
