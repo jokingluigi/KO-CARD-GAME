@@ -167,3 +167,27 @@ test('uncertified malformed effect containers are preserved without crashing cha
   const result=await request('/admin/champions','POST',{...championInput,name:'Incomplete configuration',abilityEffects:config,upgradedAbilityName:'Upgrade',upgradedAbilityEffects:config,gameStartAbilityEffects:null});assert.equal(result.status,201,JSON.stringify(result.body));assert.deepEqual(result.body.champion.abilityEffects,config);assert.doesNotThrow(()=>championRecordToDefinition(result.body.champion));
  }
 });
+
+test('administrator saves fusion and cannot-attack keywords without effect certification',async()=>{
+ const created=await request('/admin/cards','POST',{name:'Fusion Contract',cardType:'WRESTLER',rarity:'NORMAL',cost:1,attack:0,health:1,text:'합체. 공격불가.',keywords:['FUSION','CANNOT_ATTACK'],tags:[],isToken:false,isChampionToken:false,effectId:null,effectConfig:{}});
+ assert.equal(created.status,201,JSON.stringify(created.body));assert.deepEqual(created.body.card.keywords,['FUSION','CANNOT_ATTACK']);
+});
+test('authoritative fusion accepts duplicate packets exactly once and restores the resulting state',async()=>{
+ const {applyMatchAction,getRuntime,cleanupMatchRuntime}=await import('../../../artifacts/api-server/src/online/service');
+ const champion=championRecordToDefinition(record);const state=createInitialGameState([champion.id,champion.id],undefined,[champion]);state.status='IN_PROGRESS';state.activePlayerId='PLAYER_ONE';
+ state.players[0].id='PLAYER_ONE';state.players[1].id='PLAYER_TWO';state.players[0].currentGold=6;
+ const material=cardRecordToDefinition({id:'http-fusion',name:'material',cardType:'WRESTLER',rarity:'NORMAL',cost:1,attack:0,health:1,text:'합체',keywords:['FUSION'],tags:[],isToken:false,isChampionToken:false,effectId:'STRUCTURED_EFFECTS_V1',effectConfig:{effects:[{trigger:'ON_FUSION',action:'DRAW',values:{amount:1}}]},status:'PUBLISHED',version:1} as any);
+ const host={...material,id:'http-host',name:'host',attack:2,health:3,keywords:[],abilities:[{trigger:'ON_FUSION',effects:[{type:'DAMAGE_OPPONENT_CHAMPION',amount:1}]}]} as any;
+ state.cardPool=[material,host];state.players[0].hand=[generateCardInstance(material,{instanceId:'http-material'})];state.players[0].board=[{...generateCardInstance(host,{instanceId:'http-host'}),boardSlot:0},null,null,null];state.players[0].deck=[generateCardInstance(host,{instanceId:'http-draw'})];state.players[1].board=[null,null,null,null];state.players[1].hand=[];state.players[1].deck=[];for(const player of state.players){player.graveyard=[];player.removedFromGame=[];}
+ const matchId='feature-fusion-pvp';
+ await database.insert(schema.onlineMatchesTable).values({id:matchId,status:'ACTIVE',player1UserId:'feature-admin',player2UserId:'feature-opponent',player1DeckId:'feature-deck1',player2DeckId:'feature-deck2',stateVersion:0,serializedGameState:state,serializedSnapshot:{player1UserId:'feature-admin',player2UserId:'feature-opponent',player1DeckId:'feature-deck1',player2DeckId:'feature-deck2',cardDefinitions:state.cardPool,championDefinitions:[champion],publicPlayers:[{seat:'PLAYER_ONE',nickname:'QA1'},{seat:'PLAYER_TWO',nickname:'QA2'}],introFirstSpeaker:null}});
+ try{
+ let runtime=await getRuntime(matchId);assert.ok(runtime);
+ const play=await applyMatchAction(matchId,'feature-admin','fusion-play',runtime.version,{type:'PLAY_WRESTLER',cardInstanceId:'http-material',boardSlot:1} as any);assert.ok(play.ok,JSON.stringify(play));
+ assert.equal(runtime.state.players[0].board[1]?.instanceId,'http-material');const before=JSON.stringify(runtime.state);cleanupMatchRuntime(matchId);runtime=await getRuntime(matchId);assert.ok(runtime);assert.deepEqual(runtime.state,JSON.parse(before));
+ const version=runtime.version,payload={type:'SELECT_EFFECT_TARGET',targetId:'http-host'} as any;
+ const results=await Promise.all([applyMatchAction(matchId,'feature-admin','fusion-select',version,payload),applyMatchAction(matchId,'feature-admin','fusion-select',version,payload)]);assert.ok(results.every(r=>r.ok),JSON.stringify(results));assert.equal(runtime.version,version+1);
+ assert.equal(runtime.state.players[0].board[0]?.currentHealth,4);assert.equal(runtime.state.players[1].health,19);assert.equal(runtime.state.events.filter(e=>e.type==='CARD_VANISHED').length,1);assert.equal(runtime.state.players[0].hand.filter(c=>c.instanceId==='http-draw').length,1);assert.equal(runtime.state.players[0].graveyard.length,0);
+ const snapshot=JSON.stringify(runtime.state);cleanupMatchRuntime(matchId);runtime=await getRuntime(matchId);assert.ok(runtime);assert.deepEqual(runtime.state,JSON.parse(snapshot));
+ }finally{const runtime=await getRuntime(matchId);if(runtime){await runtime.queue;runtime.state={...runtime.state,status:'FINISHED'};cleanupMatchRuntime(matchId);}}
+});
