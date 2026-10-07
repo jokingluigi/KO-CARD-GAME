@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { mkdirSync, writeFileSync } from "node:fs";
+import { mkdirSync, writeFileSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import test from "node:test";
 
@@ -16,12 +16,18 @@ import type { GameAction } from "../actions/types";
 import type { CardDefinition } from "../cards/types";
 import type { GameState } from "../types/game-state";
 
-const apiOrigin = process.env.KO_QA_API_ORIGIN ?? "http://127.0.0.1:8080";
+const apiOrigin = process.env.KO_QA_CURRENT_FIXTURE === '1' ? 'current public snapshot 2026-10-07' : process.env.KO_QA_API_ORIGIN ?? "http://127.0.0.1:8080";
 const reportPath = process.env.KO_AI_QA_REPORT ?? "qa-results/ko-ai-match-qa.md";
 const MATCH_COUNT = 100;
 const MAX_ACTIONS_PER_MATCH = 400;
 
 async function loadCatalog() {
+  if (process.env.KO_QA_CURRENT_FIXTURE === '1') {
+    const cards = JSON.parse(readFileSync(new URL('./fixtures/cards-2026-10-07-public.json', import.meta.url), 'utf8')) as PublishedCardRecord[];
+    const champions = JSON.parse(readFileSync(new URL('./fixtures/champions-2026-10-07-public.json', import.meta.url), 'utf8')) as PublishedChampionRecord[];
+    return { cards: cards.filter(c=>c.status==='PUBLISHED').map(cardRecordToDefinition),
+      champions: champions.filter(c=>c.status==='PUBLISHED').map(championRecordToDefinition) };
+  }
   const [cardsResponse, championsResponse] = await Promise.all([
     fetch(`${apiOrigin}/api/cards`),
     fetch(`${apiOrigin}/api/champions`),
@@ -114,7 +120,7 @@ function assertStateInvariants(state: GameState, previousEventCount: number): vo
   }
 
   for (const card of allCards(state)) {
-    assert.equal(instanceIds.has(card.instanceId), false, `duplicate card instance: ${card.instanceId}`);
+    assert.equal(instanceIds.has(card.instanceId), false, `duplicate card instance: ${card.instanceId}; ${state.players.flatMap(p=>["hand","deck","board","graveyard","removedFromGame"].flatMap(zone=>(p[zone]??[]).filter(c=>c?.instanceId===card.instanceId).map(c=>p.id+":"+zone+":"+c.definitionId))).join(",")}; recent=${JSON.stringify(state.events.slice(-12))}`);
     instanceIds.add(card.instanceId);
   }
   for (const player of state.players) {

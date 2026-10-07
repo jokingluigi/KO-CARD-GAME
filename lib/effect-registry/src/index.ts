@@ -88,6 +88,7 @@ export type ScriptStat = "COST" | "ATTACK" | "HEALTH";
 export type ScriptFilter = {
   isGenerated?: boolean;
   minCost?: number;
+  minBaseCost?: number;
   maxCost?: number;
   cost?: { compare: ScriptComparator; value: number };
   attack?: { compare: ScriptComparator; value: number };
@@ -164,6 +165,7 @@ export type StructuredTarget = {
   filter?: {
     isGenerated?: boolean;
     minCost?: number;
+    minBaseCost?: number;
     maxCost?: number;
     isToken?: boolean;
     isChampionToken?: boolean;
@@ -301,7 +303,7 @@ export type MechanicCompilerProviderOutput =
   | { status: "NEEDS_CLARIFICATION"; questions: string[] };
 
 const SCRIPT_TARGET_KEYS = new Set(["zone", "zones", "owner", "cardType", "filter", "selection", "count", "randomScope", "resultId", "sort", "take"]);
-const SCRIPT_FILTER_KEYS = new Set(["isGenerated", "minCost", "maxCost", "cost", "attack", "health", "isToken", "isChampionToken", "excludeChampionRarity", "excludeSource", "isVanilla", "keyword", "tagsAny", "tagsAll", "tagsNone", "definitionRef"]);
+const SCRIPT_FILTER_KEYS = new Set(["isGenerated", "minBaseCost", "minCost", "maxCost", "cost", "attack", "health", "isToken", "isChampionToken", "excludeChampionRarity", "excludeSource", "isVanilla", "keyword", "tagsAny", "tagsAll", "tagsNone", "definitionRef"]);
 const SCRIPT_VALUE_KEYS = new Set(["kind", "value", "resultId", "offset", "left", "right"]);
 const SCRIPT_HISTORY_KEYS = new Set(["scope", "eventType", "owner", "cardType", "tag", "operation", "stat"]);
 const SCRIPT_EFFECT_KEYS = new Set(["action", "target", "values"]);
@@ -351,7 +353,7 @@ function validScriptTarget(value: unknown): value is ScriptTarget {
         !SCRIPT_COMPARATORS.includes(comparison.compare as ScriptComparator) ||
         typeof comparison.value !== "number" || !Number.isFinite(comparison.value))) return false;
     }
-    for (const key of ["minCost", "maxCost"]) {
+    for (const key of ["minCost", "maxCost", "minBaseCost"]) {
       if (filter[key] !== undefined && (!Number.isInteger(filter[key]) || Number(filter[key]) < 0 || Number(filter[key]) > 999)) return false;
     }
     for (const key of ["tagsAny", "tagsAll", "tagsNone"]) {
@@ -789,7 +791,7 @@ export const EFFECT_LIBRARY = {
   }),
     triggers: TRIGGERS.map((name) => ({ name, label: DISPLAY_LABELS[name as keyof typeof DISPLAY_LABELS] ?? name, description: triggerDescriptions[name], status: "ACTIVE" as const, version: 1 })),
    conditions: CONDITIONS.map((name) => ({ name, label: DISPLAY_LABELS[name as keyof typeof DISPLAY_LABELS] ?? name, description: name === "SOURCE_IS_ONLY_WRESTLER" ? "이 카드가 내 필드의 유일한 선수인지 확인합니다." : "구조화된 조건을 확인합니다.", status: "ACTIVE" as const, version: 1 })),
-    targetResolvers: [{ name: "ZONE_OWNER_SELECTION", description: "영역(여러 영역 포함), 소유자, 카드 유형, 단일 filter 객체, 선택 방식 및 수로 대상을 해석합니다.", config: { zone: [...TARGET_ZONES], zones: "TargetZone[]", defaultCardScope: [...DEFAULT_CARD_TARGET_SCOPE], owner: [...TARGET_OWNERS], filter: { isGenerated: "boolean", minCost: "integer", maxCost: "integer", isToken: "boolean", isChampionToken: "boolean", excludeChampionRarity: "boolean", excludeSource: "boolean", isVanilla: "boolean", keyword: [...KEYWORDS], cost: "{ compare, value }", attack: "{ compare, value }", health: "{ compare, value }", tagsAny: "string[]", tagsAll: "string[]", tagsNone: "string[]" }, selection: [...TARGET_SELECTIONS], randomScope: [...RANDOM_SCOPES], count: "integer (1..20)" }, status: "ACTIVE" as const, version: 1 }],
+    targetResolvers: [{ name: "ZONE_OWNER_SELECTION", description: "영역(여러 영역 포함), 소유자, 카드 유형, 단일 filter 객체, 선택 방식 및 수로 대상을 해석합니다.", config: { zone: [...TARGET_ZONES], zones: "TargetZone[]", defaultCardScope: [...DEFAULT_CARD_TARGET_SCOPE], owner: [...TARGET_OWNERS], filter: { isGenerated: "boolean", minCost: "integer", minBaseCost: "integer", maxCost: "integer", isToken: "boolean", isChampionToken: "boolean", excludeChampionRarity: "boolean", excludeSource: "boolean", isVanilla: "boolean", keyword: [...KEYWORDS], cost: "{ compare, value }", attack: "{ compare, value }", health: "{ compare, value }", tagsAny: "string[]", tagsAll: "string[]", tagsNone: "string[]" }, selection: [...TARGET_SELECTIONS], randomScope: [...RANDOM_SCOPES], count: "integer (1..20)" }, status: "ACTIVE" as const, version: 1 }],
     valueResolvers: [
       { name: "RANDOM_SCOPE", description: "무작위와 완전 무작위의 후보 범위를 구별합니다.", config: RANDOM_SCOPE_RULES, status: "ACTIVE" as const, version: 1 },
       { name: "AMOUNT", description: "골드, 피해, 회복, 드로우 및 비용 수치를 해석합니다.", status: "ACTIVE" as const, version: 1 },

@@ -28,3 +28,10 @@ export function healNewCardAware(state:GameState,playerId:string,amount:number,t
   const turn=healingTurn(state),key=`${turn}:${playerId}`;
   return {...state,overhealByTurn:{...state.overhealByTurn,[key]:(state.overhealByTurn?.[key]??0)+overflow},players:state.players.map(owner=>owner.id!==playerId?owner:c?{...owner,board:owner.board.map(card=>card?.instanceId===targetId?{...card,currentHealth:nextHealth,maxHealth:nextMax}:card) as typeof owner.board}:{...owner,health:nextHealth,maxHealth:nextMax,champion:owner.champion?{...owner.champion,health:nextHealth,maxHealth:nextMax}:null})};
 }
+
+/** Incoming vulnerability is a field aura, independent of temporary damage modifiers. */
+export function madokawaIncomingBonus(state:GameState,playerId:string,target:CardInstance):number {
+  return state.players.find(p=>p.id===playerId)?.board.reduce((sum,c)=>sum+(
+    c && c.instanceId!==target.instanceId && hasNewCardRule(c,'마도카와') && /받는\s*데미지가/u.test(c.grantedText?.rulesText ?? state.cardPool?.find(d=>d.id===c.definitionId)?.rulesText ?? '')
+      ? Number((c.grantedText?.rulesText ?? state.cardPool?.find(d=>d.id===c.definitionId)?.rulesText ?? '').match(/받는\s*데미지가\s*(\d+)/u)?.[1] ?? 0) : 0),0) ?? 0;
+}

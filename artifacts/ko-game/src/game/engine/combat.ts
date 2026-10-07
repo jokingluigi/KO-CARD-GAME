@@ -1,4 +1,4 @@
-import { hasNewCardRule, silenceDamageReduction } from './new-card-rules';
+import { hasNewCardRule, silenceDamageReduction, madokawaIncomingBonus } from './new-card-rules';
 import { keywordDamage, healLifesteal, hasEntryDefense } from './keyword-rules';
 import type { CardInstanceId } from '../cards/types';
 import type { ActionErrorCode, ActionResult } from '../actions/types';
@@ -193,7 +193,7 @@ export function attack(
   if (state.targetingState?.active) {
     return actionFailure(state, 'TARGET_SELECTION_PENDING', '먼저 대상을 선택하세요.');
   }
-  const retireAfterAttack = state.players.find(p=>p.id===attackingPlayerId)?.board.some(c=>hasNewCardRule(c,'마도카와')) ?? false;
+  const retireAfterAttack = state.players.find(p=>p.id===attackingPlayerId)?.board.some(c=>hasNewCardRule(c,'마도카와') && /공격\s*이후.*리타이어/u.test((c!.grantedText?.rulesText ?? state.cardPool?.find(d=>d.id===c!.definitionId)?.rulesText ?? ''))) ?? false;
   const finishNewAttack = (next:GameState):GameState => {
     const c=findBoardCard(next,attackingPlayerId,attackerInstanceId)?.card;
     if(!retireAfterAttack || !c || c.cardType!=='WRESTLER') return next;
@@ -537,8 +537,8 @@ export function attack(
     const reduced = towerIncomingDamage(preDamageState, attackingPlayerId, attackerPrepared, defenderDamage, attackingHighest);
     preDamageState = reduced.state; defenderDamage = reduced.amount;
   }
-  attackerDamage = keywordDamage(defenderPreparedCard, Math.max(0, attackerDamage - silenceDamageReduction(defenderPreparedCard, attackerPrepared)), preDamageState.turn);
-  defenderDamage = keywordDamage(attackerPrepared, Math.max(0, defenderDamage - silenceDamageReduction(attackerPrepared, defenderPreparedCard)), preDamageState.turn);
+  attackerDamage = keywordDamage(defenderPreparedCard, Math.max(0, attackerDamage + (attackerDamage > 0 ? madokawaIncomingBonus(preDamageState, target.playerId, defenderPreparedCard) : 0) - silenceDamageReduction(defenderPreparedCard, attackerPrepared)), preDamageState.turn);
+  defenderDamage = keywordDamage(attackerPrepared, Math.max(0, defenderDamage + (defenderDamage > 0 ? madokawaIncomingBonus(preDamageState, attackingPlayerId, attackerPrepared) : 0) - silenceDamageReduction(attackerPrepared, defenderPreparedCard)), preDamageState.turn);
   const damageEventStartIndex = preDamageState.events.length;
   const combatEventId = `combat:${state.gameId}:${state.turn}:${damageEventStartIndex}`;
   const attackerAttribution: EventAttribution = {

@@ -52,7 +52,7 @@ export function newCardImplementation(card: PublishedCardRecord): {rule:NewCardR
     case '루나 MK.사일런스': return {rule,abilities:[
       ...(/등장\s*:[^\n]*상대[^\n]*침묵/u.test(card.text)
         ? enter(fx('SILENCE',board('ENEMY','PLAYER_CHOICE'))) : []),
-      {trigger:'TURN_START',effects:[fx('DESTROY',board('ENEMY'))]},
+      {trigger:/턴\s*종료/u.test(card.text)?'TURN_END':'TURN_START',effects:[fx('DESTROY',board('ENEMY'))]},
     ]};
     case '루브': return {rule,abilities:[{trigger:'TURN_END',condition:{type:'BOARD_COUNT',compare:'EQ',amount:1},effects:[fx('BUFF',self,{attack:1,health:1}),fx('ADD_KEYWORD',self,{keyword:'TAUNT'})]}]};
     case '루이나': return {rule,abilities:enter(fx('GENERATE',{zone:'HAND',owner:'SELF',selection:'RANDOM',count:1,filter:{tagsAny:['디 어쏘리티']}},{count:1,destination:'HAND'}),fx('ADD_KEYWORD',{...authority,owner:'SELF'},{keyword:'LIFESTEAL'}))};
@@ -60,14 +60,14 @@ export function newCardImplementation(card: PublishedCardRecord): {rule:NewCardR
     case '블랙 아웃': return {rule,abilities:[{trigger:'SELF_DAMAGED',effects:[fx('BUFF',self,{attack:1,health:0})]}]};
     case '어셈블!!!': return {rule,abilities:enter(...Array.from({length:4},()=>fx('SUMMON',{zone:'BOARD',owner:'SELF',cardType:'WRESTLER',selection:'RANDOM',count:1},{count:1})))};
     case '좀비 감염': return {rule,abilities:enter(fx('TRANSFORM_TARGET',board('ALL','PLAYER_CHOICE'),{definitionRef:{name:'좀비'}}))};
-    case '카산드라': return {rule,abilities:[...enter(fx('BUFF',authority,{attack:0,health:1}),fx('ADD_KEYWORD',authority,{keyword:'REGEN'})),...end(fx('HEAL',{zone:'CHARACTER',owner:'SELF',selection:'ALL',count:5},{amount:1}))]};
+    case '카산드라': { const scope: StructuredTarget = /내\s*손과\s*필드/u.test(card.text) ? {...authority,zones:['HAND','BOARD'],zone:undefined,owner:'SELF',count:100} : authority; return {rule,abilities:[...enter(fx('BUFF',scope,{attack:0,health:1}),fx('ADD_KEYWORD',scope,{keyword:'REGEN'})),...end(fx('HEAL',{zone:'CHARACTER',owner:'SELF',selection:'ALL',count:5},{amount:1}))]}; }
     case '헬뻑': return {rule,abilities:end(fx('DAMAGE',board('ALL'),{amount:1}))};
-    case '마도카와': return {rule,abilities:[{trigger:'ENTER_FIELD',effects:[fx('ADD_DAMAGE_MODIFIER',undefined,{amount:3,damageSource:'ALL'})]}]};
+    case '마도카와': return {rule,abilities:[{trigger:'ENTER_FIELD',effects:[fx('ADD_DAMAGE_MODIFIER',undefined,{amount:Number(card.text.match(/데미지가\s*(\d+)\s*증가/u)?.[1] ?? 3),damageSource:'ALL'})]}]};
     // These use small runtime hooks around the existing damage/retire/generation executors.
     case 'DEATH': case '지뢰닷!!!': return {rule,abilities:[{trigger:'TURN_END',condition:{type:'SOURCE_IN_HAND'},effects:[]}]};
     case '냥냥 펀치': return {rule,abilities:enter({type:'SCRIPT',script:{version:'SCRIPT_V1',trigger:'ENTER_FIELD',steps:[{type:'REPEAT',count:{kind:'CONSTANT',value:5},steps:[{type:'EFFECT',effect:{action:'DAMAGE',target:{zone:'CHARACTER',owner:'ENEMY',selection:'RANDOM',randomScope:'FULL',count:1},values:{amount:1}}}]}]}})};
     case '뱀파이어 왕자 MPG': return {rule,abilities:enter()};
-    case '헬퍼': return {rule,abilities:[{trigger:'TURN_START',effects:[]}]};
+    case '헬퍼': return {rule,abilities:[...(/등장/u.test(card.text)?enter(fx('GENERATE',undefined,{definitionRef:{id:'e584c34e-d640-4c41-a148-cfb70389f08a'},destination:'HAND',count:1})):[]),{trigger:'TURN_START',effects:[]}]};
     case '힐빌': case '사일런스': case '카스토': return {rule,abilities:[]};
   }
 }
