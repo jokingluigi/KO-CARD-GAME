@@ -33,7 +33,7 @@ export const TARGET_ZONES = ["BOARD", "HAND", "DECK", "GRAVEYARD", "PLAYER", "CH
 export const DEFAULT_CARD_TARGET_SCOPE = ["HAND", "DECK", "BOARD"] as const;
 export const TARGET_FILTERS = ["GENERATED", "MIN_COST", "MAX_COST", "TOKEN", "NON_CHAMPION_TOKEN", "EXCLUDE_SOURCE", "VANILLA", "TAGS_ANY", "TAGS_ALL", "TAGS_NONE"] as const;
 export const TARGET_OWNERS = ["SELF", "ENEMY", "ALL"] as const;
-export const TARGET_SELECTIONS = ["SELF", "PLAYER_CHOICE", "RANDOM", "TOP", "ADJACENT", "ADJACENT_EMPTY_SLOTS", "SAME_TARGET", "ALL"] as const;
+export const TARGET_SELECTIONS = ["SELF", "PLAYER_CHOICE", "RANDOM", "TOP", "ADJACENT", "ADJACENT_EMPTY_SLOTS", "SAME_TARGET", "FUSION_TARGET", "LAST_ATTACKER", "ALL"] as const;
 export const RANDOM_SCOPES = ["STANDARD", "FULL"] as const;
 export const RANDOM_SCOPE_RULES = {
   STANDARD: "무작위: 공개(PUBLISHED)된 비토큰 카드만. 초안·비활성·일반 토큰·챔피언 토큰 제외.",
@@ -55,6 +55,10 @@ export type DamageSource = typeof DAMAGE_SOURCES[number];
 export const DYNAMIC_VALUES = [
   "HAND_COUNT",
   "GRAVEYARD_WRESTLER_COUNT",
+  "ALLIED_REMOVED_WRESTLER_COUNT",
+  "SOURCE_MAX_HEALTH",
+  "SOURCE_DAMAGE_HIT_COUNT",
+  "LAST_CAPTURED_ATTACK",
   "REMAINING_GOLD",
   "BOARD_WRESTLER_COUNT",
   "LAST_ATTACK_DELTA",
@@ -244,6 +248,9 @@ export type StructuredPrevention = { uses?: number; setHealth?: number };
 export type StructuredEffectValues = {
   /** Purple Rain: chosen own character takes damage, then branches by target kind. */
   purpleRainFollowup?: boolean;
+  ignoreTauntToChampion?: boolean;
+  spillExcessToEnemyChampion?: boolean;
+  resolveByName?: boolean;
   attack?: number;
   health?: number;
   attackMultiplier?: number;
@@ -526,13 +533,13 @@ export const DISPLAY_LABELS = {
 export const ACTION_SCHEMAS: Record<Action, EffectActionSchema> = {
   ADD_GOLD: { target: false, amount: true }, ADD_NEXT_TURN_GOLD: { target: false, amount: true }, DRAW: { target: false, amount: true },
   MODIFY_STAT: { target: true, amount: true, signedAmount: true, stat: true, duration: true, minimum: true }, MODIFY_MAX_HEALTH: { target: true, amount: true, signedAmount: true }, SET_STAT: { target: true, amount: true, stat: true, duration: true },
-  DAMAGE: { target: true, amount: true }, BUFF: { target: true, stats: true, statMultiplier: true, referenceStat: true, dynamicValue: true, statChannelReference: true }, SET_STATS: { target: true, stats: true }, HEAL: { target: true, amount: true },
+  DAMAGE: { target: true, amount: true, dynamicValue: true }, BUFF: { target: true, stats: true, statMultiplier: true, referenceStat: true, dynamicValue: true, statChannelReference: true }, SET_STATS: { target: true, stats: true }, HEAL: { target: true, amount: true },
   REDUCE_COST: { target: true, amount: true, minimum: true }, INCREASE_COST: { target: true, amount: true }, STUN: { target: true },
   RETIRE: { target: true, captureStats: true }, DISABLE_ABILITY: { target: true }, WEAKEN_TO_STUN_SILENCE: { target: true, amount: true },
   FUSION: { target: true }, VANISH: { target: true },
   SILENCE: { target: true }, DESTROY: { target: true }, ADD_KEYWORD: { target: true, keyword: true, duration: true }, REMOVE_KEYWORD: { target: true, keyword: true },
   SWAP_STATS: { target: true }, ADD_DAMAGE_MODIFIER: { target: false, amount: true, damageSource: true }, SUMMON: { target: false, cardDefinition: true, cardCount: true, aggregateStats: true, generatedModifiers: true }, SUMMON_FROM_HAND: { target: false, cardDefinition: true, cardCount: true }, REVIVE: { target: true }, GENERATE: { target: false, cardDefinition: true, cardCount: true, destination: true, generatedModifiers: true }, MOVE_TO_HAND: { target: true }, MOVE_TO_DECK: { target: true, destination: true }, MILL: { target: true }, SPEND_GOLD_BUFF_SELF: { target: true, dynamicValue: true }, DEPLOY_CHAMPION_TOKEN: { target: false }, CAPTURE: { target: true }, RELEASE_CAPTURED: { target: false },
-  REMOVE_FROM_GAME: { target: true }, SWITCH_EFFECT_BRANCH: { target: false, branches: true }, QUEUE_EFFECT: { target: false, queuedEffect: true, duration: true }, ADD_AGGREGATED_ATTACK: { target: true, aggregateStats: true }, COPY_BEST_STATS: { target: true }, REPEAT_TURN_END: { target: false }, TRANSFORM_SOURCE: { target: false, cardDefinition: true }, TRANSFORM_TARGET: { target: true, cardDefinition: true }, STEAL: { target: true },
+  REMOVE_FROM_GAME: { target: true }, SWITCH_EFFECT_BRANCH: { target: false, branches: true }, QUEUE_EFFECT: { target: false, queuedEffect: true, duration: true }, ADD_AGGREGATED_ATTACK: { target: true, aggregateStats: true }, COPY_BEST_STATS: { target: true }, REPEAT_TURN_END: { target: false }, TRANSFORM_SOURCE: { target: false, cardDefinition: true, statChannelReference:true }, TRANSFORM_TARGET: { target: true, cardDefinition: true }, STEAL: { target: true },
   REGISTER_DELAYED: { target: false, delayed: true }, REGISTER_LISTENER: { target: false, listener: true }, PREVENT_DAMAGE: { target: false, prevention: true }, PREVENT_RETIRE: { target: false, prevention: true },
   GRANT_RANDOM_CARD_TEXT: { target: true },
 };
@@ -586,9 +593,15 @@ function validScriptEffectValues(action: Action, rawValues: unknown, depth = 0):
     maxHealth: action === "SET_STAT",
     maxHealthExpression: action === "SET_STAT",
     keyword: Boolean(schema.keyword),
+    ignoreTauntToChampion: action === "BUFF",
+    spillExcessToEnemyChampion: action === "DAMAGE",
     damageSource: Boolean(schema.damageSource),
     reference: Boolean(schema.referenceStat),
     referenceStat: Boolean(schema.referenceStat),
+    resolveByName: Boolean(schema.cardDefinition),
+    attackReference: Boolean(schema.statChannelReference),
+    healthReference: Boolean(schema.statChannelReference),
+    referenceDivisor: Boolean(schema.statChannelReference),
     amountReference: Boolean(schema.dynamicValue),
     minimum: Boolean(schema.minimum || action === "MOVE_TO_HAND"),
     temporaryCost: action === "MOVE_TO_HAND",
@@ -612,7 +625,11 @@ function validScriptEffectValues(action: Action, rawValues: unknown, depth = 0):
   const amountIsSigned = Boolean(schema.signedAmount);
   if (values.amount !== undefined &&
     !finiteScriptNumber(values.amount, amountIsSigned ? -999 : 0, 999)) return false;
-  if (schema.amount && values.amount === undefined && values.amountExpression === undefined) return false;
+  if (values.resolveByName !== undefined && typeof values.resolveByName !== "boolean") return false;
+  if (schema.statChannelReference && (values.attackReference !== undefined && !DYNAMIC_VALUES.includes(values.attackReference as DynamicValue) || values.healthReference !== undefined && !DYNAMIC_VALUES.includes(values.healthReference as DynamicValue))) return false;
+  if (values.ignoreTauntToChampion !== undefined && typeof values.ignoreTauntToChampion !== "boolean") return false;
+  if (values.spillExcessToEnemyChampion !== undefined && typeof values.spillExcessToEnemyChampion !== "boolean") return false;
+  if (schema.amount && values.amount === undefined && values.amountExpression === undefined && values.amountReference === undefined) return false;
   if (values.amountExpression !== undefined && (!validScriptValue(values.amountExpression) ||
     (!amountIsSigned && values.amountExpression.kind === "CONSTANT" && values.amountExpression.value < 0) ||
     (!amountIsSigned && (values.amountExpression.kind === "RESULT_COUNT" || values.amountExpression.kind === "RESULT_VALUE") &&
@@ -630,6 +647,7 @@ function validScriptEffectValues(action: Action, rawValues: unknown, depth = 0):
   if (values.healthMultiplier !== undefined &&
     !finiteScriptNumber(values.healthMultiplier, 0, 10)) return false;
   if (schema.stats) {
+    const channelStats = Boolean(schema.statChannelReference) && (DYNAMIC_VALUES.includes(values.attackReference as DynamicValue) || DYNAMIC_VALUES.includes(values.healthReference as DynamicValue));
     const explicitStats = values.attack !== undefined || values.health !== undefined ||
       values.attackExpression !== undefined || values.healthExpression !== undefined;
     const multiplierStats = Boolean(schema.statMultiplier) &&
@@ -639,10 +657,10 @@ function validScriptEffectValues(action: Action, rawValues: unknown, depth = 0):
       values.reference !== undefined && REFERENCES.includes(values.reference as Reference) &&
       ["CURRENT_ATTACK", "CURRENT_HEALTH"].includes(values.referenceStat as string);
     const dynamicStats = Boolean(schema.dynamicValue) &&
-      ["HAND_COUNT", "GRAVEYARD_WRESTLER_COUNT", "REMAINING_GOLD", "BOARD_WRESTLER_COUNT",
+      ["HAND_COUNT", "GRAVEYARD_WRESTLER_COUNT", "ALLIED_REMOVED_WRESTLER_COUNT", "SOURCE_MAX_HEALTH", "REMAINING_GOLD", "BOARD_WRESTLER_COUNT",
         "LAST_ATTACK_DELTA", "CURRENT_TURN_RETIRED_WRESTLER_COUNT", "CURRENT_TURN_DAMAGE_TAKEN"]
         .includes(values.amountReference as string);
-    if (!explicitStats && !multiplierStats && !referencedStats && !dynamicStats) return false;
+    if (!explicitStats && !multiplierStats && !referencedStats && !dynamicStats && !channelStats) return false;
   }
   if (schema.stat && values.stat !== undefined && !STAT_NAMES.includes(values.stat as StatName)) return false;
   if (values.currentHealthOnly !== undefined && typeof values.currentHealthOnly !== "boolean") return false;
