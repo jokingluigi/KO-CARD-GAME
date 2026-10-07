@@ -72,11 +72,11 @@ async function request(path: string, method = "GET", body?: unknown) {
 }
 after(async () => { const {getRuntime,cleanupMatchRuntime}=await import('../../../artifacts/api-server/src/online/service');const runtime=await getRuntime('feature-reward-pvp');if(runtime){await runtime.queue;runtime.state={...runtime.state,status:'FINISHED'};cleanupMatchRuntime('feature-reward-pvp');}await new Promise<void>(resolve=>server.close(()=>resolve()));await pg.close();await pool.end(); });
 const championInput={name:'Feature Champion',maxHealth:20,abilityName:'Ability',abilityCost:0,abilityText:'',abilityEffects:{},hasQuest:false,gameStartAbilityName:'사전 준비',gameStartAbilityText:'상대 챔피언에게 2 피해',gameStartAbilityEffects:{effects:[{trigger:'GAME_START',action:'DAMAGE',target:{zone:'CHARACTER',owner:'ENEMY',selection:'ALL',count:1},values:{amount:2}}]}};
-test('administrator saves separate game-start ability, roundtrips it, and rejects manual targets',async()=>{
+test('administrator saves separate game-start ability, roundtrips it, and preserves manual targets without blocking battle start',async()=>{
  assert.equal((await request('/auth/login','POST',{email:'admin@feature.invalid',password:'AwakeningLocalQA123'})).status,200);
  const created=await request('/admin/champions','POST',championInput);assert.equal(created.status,201,JSON.stringify(created.body));record=created.body.champion;id=record.id;
  assert.equal(record.gameStartAbilityName,championInput.gameStartAbilityName);assert.equal(championRecordToDefinition(record).gameStartAbility?.effects.length,1);
- const invalid=await request('/admin/champions/'+id,'PATCH',{...championInput,version:record.version,gameStartAbilityEffects:{effects:[{trigger:'GAME_START',action:'DAMAGE',target:{zone:'CHARACTER',owner:'ENEMY',selection:'PLAYER_CHOICE',count:1},values:{amount:1}}]}});assert.equal(invalid.status,400);assert.match(invalid.body.message,/자동/);
+ const invalid=await request('/admin/champions/'+id,'PATCH',{...championInput,version:record.version,gameStartAbilityEffects:{effects:[{trigger:'GAME_START',action:'DAMAGE',target:{zone:'CHARACTER',owner:'ENEMY',selection:'PLAYER_CHOICE',count:1},values:{amount:1}}]}});assert.equal(invalid.status,200,JSON.stringify(invalid.body));record=invalid.body.champion;assert.equal(championRecordToDefinition(record).gameStartAbility?.effects.length,0);
  const saved=await request('/admin/champions/'+id,'PATCH',{...championInput,version:record.version,gameStartAbilityName:'개정 시작 능력'});assert.equal(saved.status,200,JSON.stringify(saved.body));record=saved.body.champion;
  const fetched=await request('/admin/champions');assert.equal(fetched.body.champions.find((c:any)=>c.id===id).gameStartAbilityName,'개정 시작 능력');assert.deepEqual(record.abilityEffects,{});
 });
@@ -124,12 +124,13 @@ test('champion saves preserve uncertified ability, upgrade and reward configurat
  const updated=await request('/admin/champions/'+created.body.champion.id,'PATCH',{...input,abilityEffects:changed,version:created.body.champion.version});assert.equal(updated.status,200,JSON.stringify(updated.body));assert.deepEqual(updated.body.champion.abilityEffects,changed);
  const fetched=await request('/admin/champions');assert.deepEqual(fetched.body.champions.find((c:any)=>c.id===created.body.champion.id).abilityEffects,changed);
 });
-test('save still rejects non-object effect payloads without discarding existing data',async()=>{
- const config={effects:[{action:'MANUAL_EFFECT'}]};
- const input={...championInput,name:'Shape validation',abilityEffects:config};
- const created=await request('/admin/champions','POST',input);assert.equal(created.status,201,JSON.stringify(created.body));
- for(const invalid of [[], 'broken JSON'])assert.equal((await request('/admin/champions/'+created.body.champion.id,'PATCH',{...input,abilityEffects:invalid,version:created.body.champion.version})).status,400);
- const fetched=await request('/admin/champions');assert.deepEqual(fetched.body.champions.find((c:any)=>c.id===created.body.champion.id).abilityEffects,config);
+test('saving incomplete champions preserves configuration and existing numbers without certification',async()=>{
+ const created=await request('/admin/champions','POST',{name:'Incomplete',maxHealth:31,abilityCost:4,abilityName:'',abilityText:'text',hasQuest:true,questName:'',questText:'',questCondition:{event:'STATE_CONDITION',condition:{unfinished:true}},questProgressRequired:0,questRewardEffects:{effects:{unfinished:true}},championTokenDefinitionId:'not-created-yet',introLineOne:'x'.repeat(200)});
+ assert.equal(created.status,201,JSON.stringify(created.body));let champion=created.body.champion;assert.equal(champion.maxHealth,31);assert.equal(champion.abilityCost,4);assert.equal(champion.questProgressRequired,0);assert.equal(champion.championTokenDefinitionId,'not-created-yet');assert.doesNotThrow(()=>championRecordToDefinition(champion));
+ for(const config of [[], 'unfinished JSON', {scripts:[null],effects:[null,42]}]) {
+  const saved=await request('/admin/champions/'+champion.id,'PATCH',{abilityEffects:config,questRewardEffects:config,maxHealth:'invalid',abilityCost:''});assert.equal(saved.status,200,JSON.stringify(saved.body));champion=saved.body.champion;assert.deepEqual(champion.abilityEffects,config);assert.equal(champion.maxHealth,31);assert.equal(champion.abilityCost,4);assert.equal(champion.name,'Incomplete');assert.doesNotThrow(()=>championRecordToDefinition(champion));
+ }
+ const stale=await request('/admin/champions/'+champion.id,'PATCH',{name:'stale',version:1});assert.equal(stale.status,409);const fetched=await request('/admin/champions');assert.equal(fetched.body.champions.find((c:any)=>c.id===champion.id).name,'Incomplete');
 });
 
 test('champion selection toggle affects only future draft picks and preserves card exclusions',async()=>{
