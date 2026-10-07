@@ -65,6 +65,7 @@ export function generateCardInstance(
     instanceId: options.instanceId,
     definitionId: definition.id,
     ...(definition.questExclusive ? {questExclusive:true} : {}),
+    ...(definition.awakeningLegacyPassives === undefined ? {} : {awakeningLegacyPassives:definition.awakeningLegacyPassives}),
     ...(definition.awakeningStage ? {awakeningStage:definition.awakeningStage} : {}),
     ...(definition.status ? { status: definition.status } : {}),
     ...(definition.contentRule ? {contentRule: definition.contentRule} : {}),
