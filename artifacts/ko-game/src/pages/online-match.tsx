@@ -578,7 +578,7 @@ function OnlineMatchPage({ draft = false }: { draft?: boolean }) {
   }, [awaitingAuthoritativeMatch, matchId, state?.status]);
   const isMyTurn = Boolean(me && state?.status === "IN_PROGRESS" && state.activePlayerId === me.id);
   const introFinished = gameplayStartsAt === null || clock + serverOffset >= gameplayStartsAt;
-  const canAct = Boolean(isConnected && introFinished && isMyTurn && !state?.openingMulligan && !pendingAction && !presentationBusy);
+  const canAct = Boolean(isConnected && introFinished && (state?.targetingState?.active ? state.targetingState.playerId === me?.id : isMyTurn) && !state?.openingMulligan && !pendingAction && !presentationBusy);
   const secondsRemaining = turnDeadlineAt === null
     ? TURN_TIME_LIMIT_SECONDS
     : Math.max(0, Math.ceil((turnDeadlineAt - (clock + serverOffset)) / 1000));
@@ -727,7 +727,7 @@ function OnlineMatchPage({ draft = false }: { draft?: boolean }) {
     }
     // An entrance animation may still be playing while the authoritative
     // target picker is already open. Never discard the player's tap silently.
-    sendAction(effectTargetAction(targeting.phase, targetId), { allowDuringPresentation: true });
+    sendAction(effectTargetAction(targeting.phase, targetId), { allowDuringPresentation: true, allowOffTurn: targeting.playerId === me?.id });
   }
 
   function handleUseChampionAbility() {

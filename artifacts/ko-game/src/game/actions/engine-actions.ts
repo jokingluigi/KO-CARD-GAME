@@ -61,8 +61,6 @@ export function getLegalActions(state: GameState, playerId: string): GameAction[
   if (state.status !== 'IN_PROGRESS') return [];
   if (state.openingMulligan) return canMulligan(state, playerId)
     ? [{ type: 'MULLIGAN', playerId, cardInstanceIds: [] }] : [];
-  if (state.activePlayerId !== playerId) return [];
-
   if (state.targetingState?.active) {
     if (state.targetingState.playerId !== playerId) return [];
     const actions: GameAction[] = state.targetingState.validTargetIds.map((targetId) =>
@@ -70,12 +68,13 @@ export function getLegalActions(state: GameState, playerId: string): GameAction[
         ? { type: 'CONFIRM_PRECOMMIT_TARGET' as const, playerId, targetId }
         : { type: 'SELECT_EFFECT_TARGET' as const, playerId, targetId },
     );
-    actions.push({ type: 'CANCEL_EFFECT_TARGET', playerId });
+    if (!state.targetingState.championRewardReplacement) actions.push({ type: 'CANCEL_EFFECT_TARGET', playerId });
     if (cachedByPlayer) cachedByPlayer.set(playerId, actions);
     else legalActionsCache.set(state, new Map([[playerId, actions]]));
     return actions;
   }
 
+  if (state.activePlayerId !== playerId) return [];
   const player = state.players.find((candidate) => candidate.id === playerId);
   const opponent = state.players.find((candidate) => candidate.id !== playerId);
   if (!player || !opponent) return [];

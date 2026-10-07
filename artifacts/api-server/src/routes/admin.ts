@@ -1,3 +1,4 @@
+import { isAutomaticChampionStartConfig } from '../../../../lib/game-engine/src/champion-game-start';
 import { validCountdownCardSettings } from '@workspace/effect-registry';
 import { validChampionQuestCondition, validAwakeningQuestConfig, validAwakeningHealthCondition, AWAKENING_CARD_IDS, createAwakeningCards } from '@workspace/game-engine';
 import { ensureAwakeningCards } from '../lib/awakening-card-service';
@@ -145,6 +146,7 @@ type CardInput = {
   entranceAudioEnabled: boolean;
   entranceAudioUploadToken: string | null;
   summonLine: string | null;
+  retireLine: string | null; destroyLine: string | null;
 };
 
 type ChampionInput = {
@@ -156,6 +158,7 @@ type ChampionInput = {
   questCompletedPortraitAssetId: string | null; questCompletedPortraitUrl: string | null;
   questCompletedPortraitUploadToken: string | null;
   maxHealth: number; abilityName: string; abilityCost: number; abilityText: string;
+  gameStartAbilityName: string | null; gameStartAbilityText: string | null; gameStartAbilityEffects: Record<string, unknown> | null;
   abilityEffects: Record<string, unknown>; hasQuest: boolean; questName: string | null;
   questText: string | null; questCondition: Record<string, unknown> | null;
   questProgressRequired: number | null; questRewardText: string | null;
@@ -259,6 +262,9 @@ function parseChampionInput(value: unknown): ChampionInput | null {
   const questCompleteAudioUploadToken = typeof input.questCompleteAudioUploadToken === "string"
     ? input.questCompleteAudioUploadToken : null;
   const abilityEffects = object("abilityEffects");
+  if (input.gameStartAbilityEffects != null && (!input.gameStartAbilityEffects || typeof input.gameStartAbilityEffects !== 'object' || Array.isArray(input.gameStartAbilityEffects))) return null;
+  const gameStartAbilityEffects = object('gameStartAbilityEffects', true) ?? null;
+  if (!isAutomaticChampionStartConfig(gameStartAbilityEffects)) return null;
   const hasQuest = input.hasQuest === true;
   const rawQuestCondition = object("questCondition", true);
   if (rawQuestCondition?.awakening !== undefined) {
@@ -333,7 +339,7 @@ function parseChampionInput(value: unknown): ChampionInput | null {
       questCompleteAudioVolume == null ||
       !abilityEffects || typeof input.hasQuest !== "boolean" ||
       questProgressRequired === undefined || upgradedAbilityCost === undefined ||
-       !validEffects(abilityEffects) || !validEffects(object("questRewardEffects", true), true) ||
+       !validEffects(gameStartAbilityEffects) || !validEffects(abilityEffects) || !validEffects(object("questRewardEffects", true), true) ||
         !validEffects(object("upgradedAbilityEffects", true))) return null;
   if (
     (imageAssetId === null) !== (imageUrl === null) ||
@@ -363,6 +369,7 @@ function parseChampionInput(value: unknown): ChampionInput | null {
      questCompletedPortraitEnabled,
      questCompletedPortraitAssetId, questCompletedPortraitUrl,
      questCompletedPortraitUploadToken, maxHealth, abilityName, abilityCost,
+    gameStartAbilityName: text('gameStartAbilityName'), gameStartAbilityText: text('gameStartAbilityText'), gameStartAbilityEffects,
     abilityText: text("abilityText") ?? "", abilityEffects, hasQuest,
     questName: hasQuest ? text("questName", true) : null,
     questText: hasQuest ? text("questText", true) : null,
@@ -407,6 +414,8 @@ function championInputError(value: unknown): string {
   if (input.hasQuest !== true && input.hasQuest !== false) return "퀘스트 사용 여부를 확인해 주세요.";
   const effectObject = (key: string) => input[key] === null || input[key] === undefined ||
     (typeof input[key] === "object" && !Array.isArray(input[key]));
+  if (!isAutomaticChampionStartConfig(input.gameStartAbilityEffects)) return '게임 시작 능력은 대상 직접 선택 없이 자동으로 완료되는 효과만 사용할 수 있습니다.';
+  if (!effectObject("gameStartAbilityEffects")) return '게임 시작 능력 효과 형식을 확인해 주세요.';
   if (!effectObject("abilityEffects")) return "고유 능력 효과 형식을 확인해 주세요.";
   if (input.abilityEffects && typeof input.abilityEffects === "object" &&
       "effects" in input.abilityEffects &&
@@ -915,6 +924,13 @@ export function parseCardInput(value: unknown): CardInput | null {
   const entranceAudioVolume = boundedNumber(input.entranceAudioVolume, 100, 0, 100);
   const entranceAudioEnabled = input.entranceAudioEnabled === true;
   const summonLine = typeof input.summonLine === "string" ? input.summonLine.trim() : "";
+  const exitLines: Record<'retireLine' | 'destroyLine', string | null> = { retireLine: null, destroyLine: null };
+  for (const key of ['retireLine', 'destroyLine'] as const) {
+    if (input[key] != null && typeof input[key] !== 'string') return null;
+    const line = typeof input[key] === 'string' ? (input[key] as string).trim() : '';
+    if (line.length > 140 || /<[^>]*>|javascript:/i.test(line)) return null;
+    exitLines[key] = line || null;
+  }
   if (summonLine.length > 140 || /<[^>]*>|javascript:/i.test(summonLine)) return null;
   const entranceAudioUploadToken =
     typeof input.entranceAudioUploadToken === "string" ? input.entranceAudioUploadToken : null;
@@ -1001,6 +1017,7 @@ export function parseCardInput(value: unknown): CardInput | null {
     entranceAudioEnabled,
     entranceAudioUploadToken,
     summonLine: summonLine || null,
+    ...exitLines,
   };
 }
 
@@ -1261,6 +1278,7 @@ type FullPromptInput = {
   abilityCost: unknown;
   abilityText: string;
   abilityEffects?: Record<string, unknown>;
+  gameStartAbilityName?: string; gameStartAbilityText?: string; gameStartAbilityEffects?: Record<string, unknown>;
   hasQuest: boolean;
   questName: string;
   questText: string;
@@ -1290,6 +1308,7 @@ function fullPromptInput(value: unknown): FullPromptInput | null {
     abilityCost: input.abilityCost,
     abilityText: stringValue("abilityText"),
     abilityEffects: fullPromptObject(input.abilityEffects),
+    gameStartAbilityName: stringValue("gameStartAbilityName"), gameStartAbilityText: stringValue("gameStartAbilityText"), gameStartAbilityEffects: fullPromptObject(input.gameStartAbilityEffects),
     hasQuest: input.hasQuest === true,
     questName: stringValue("questName"),
     questText: stringValue("questText"),
@@ -1339,6 +1358,7 @@ async function buildChampionFullPromptData(input: FullPromptInput): Promise<Cham
   };
 
   addSection("CHAMPION_ABILITY", "기본 Champion Ability", input.abilityText, input.abilityEffects, "CHAMPION_ABILITY");
+  if (input.gameStartAbilityText || hasStructuredPayload(input.gameStartAbilityEffects)) addSection("CHAMPION_GAME_START", "게임 시작 능력", input.gameStartAbilityText ?? "", input.gameStartAbilityEffects, "CHAMPION_ABILITY");
   if (input.hasQuest) {
     addSection("QUEST_CONDITION", "Quest Condition", input.questText, input.questCondition, "QUEST_CONDITION");
     addSection("QUEST_REWARD", "Quest Reward", input.questRewardText, input.questRewardEffects, "QUEST_REWARD");

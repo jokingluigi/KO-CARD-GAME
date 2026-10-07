@@ -699,6 +699,12 @@ async function resolveTurnTimeoutLocked(runtime: OnlineMatchRuntime): Promise<vo
   }
   const playerId = runtime.state.activePlayerId;
   const candidate = structuredClone(runtime.state.targetingState?.playRollback ?? runtime.state);
+  if (candidate.targetingState?.championRewardReplacement) {
+    const pending = candidate.targetingState;
+    const replacement = executeAction(candidate, { type: 'SELECT_EFFECT_TARGET', playerId: pending.playerId, targetId: pending.validTargetIds[0]! });
+    if (!replacement.success) return;
+    Object.assign(candidate, replacement.state);
+  }
   candidate.targetingState = undefined;
   const result = executeAction(candidate, { type: "END_TURN", playerId });
   if (!result.success) return;
@@ -1248,8 +1254,7 @@ export async function applyMatchAction(
     }
     if (
       action.type !== "SURRENDER" && action.type !== "EMOTE" && action.type !== "MULLIGAN" &&
-      (runtime.state.activePlayerId !== playerId ||
-        (runtime.state.targetingState?.active && runtime.state.targetingState.playerId !== playerId))
+      (runtime.state.targetingState?.active ? runtime.state.targetingState.playerId !== playerId : runtime.state.activePlayerId !== playerId)
     ) {
       return { ok: false, runtime, requestId, code: "NOT_YOUR_TURN", message: "현재 행동할 수 있는 턴이 아닙니다." };
     }

@@ -42,6 +42,7 @@ export type CollectionChampion = {
   abilityName: string;
   abilityCost: number;
   abilityText: string;
+  gameStartAbilityName?: string | null; gameStartAbilityText?: string | null;
   hasQuest: boolean;
   questName: string | null;
   questText: string | null;

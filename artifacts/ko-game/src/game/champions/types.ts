@@ -77,6 +77,8 @@ export interface ChampionDefinition {
   maxHealth: number;
   abilityCost: number;
   ability: ChampionAbility;
+  gameStartAbility?: ChampionAbility | null;
+  gameStartAbilityResolved?: boolean;
   quest: ChampionQuest | null;
   upgradedAbility: ChampionAbility | null;
   championTokenDefinitionId?: string | null;
@@ -93,6 +95,8 @@ export interface ChampionState {
   maxHealth: number;
   abilityCost: number;
   ability: ChampionAbility;
+  gameStartAbility?: ChampionAbility | null;
+  gameStartAbilityResolved?: boolean;
   quest: ChampionQuest | null;
   questProgress: number;
   questConditionCounts?: Record<string, number>;

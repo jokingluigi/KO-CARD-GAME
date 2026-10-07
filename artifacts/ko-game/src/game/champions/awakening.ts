@@ -1,3 +1,4 @@
+import { awaitChampionRewardSpace, findAwakeningRewardFrame, removeRewardFrame } from '../engine/champion-reward-replacement';
 import type { GameState } from "../types/game-state";
 import type { CardInstance } from "../cards/types";
 import type {
@@ -153,7 +154,10 @@ export function reconcileAwakeningSequences(state: GameState): GameState {
         next = putSequence(next, p.id, sequence);
       }
       const slot = towerOpenSlot(next, p.id);
-      if (slot < 0 || !canEnterTowerField(next, p.id)) break;
+      if (slot < 0 && (!p.board.every(Boolean) || !canEnterTowerField({ ...next, players: next.players.map(candidate => candidate.id !== p.id ? candidate : { ...candidate, board: [null, ...candidate.board.slice(1)] as typeof candidate.board }) }, p.id))) break;
+      const rewardFrame = findAwakeningRewardFrame(next.targetingState, sequence.sequenceId, sequence.stage);
+      const pendingCard = rewardFrame?.championRewardReplacement?.token;
+      if (slot < 0 && pendingCard) break;
       p = next.players.find((candidate) => candidate.id === original.id)!;
       const definition = next.cardPool?.find(
         (d) => d.id === config.stageCardIds[sequence!.stage as AwakeningStage],
@@ -192,8 +196,13 @@ export function reconcileAwakeningSequences(state: GameState): GameState {
           baseHealth,
         },
       };
+      if (slot < 0) {
+        next = awaitChampionRewardSpace({ ...next, events: [...next.events, generated.event] }, p.id, p.champion!.id, card);
+        break;
+      }
       next = putSequence(
-        { ...next, events: [...next.events, generated.event] },
+        { ...next, ...(pendingCard ? { targetingState: removeRewardFrame(next.targetingState, rewardFrame) } : {}),
+          events: pendingCard ? next.events : [...next.events, generated.event] },
         p.id,
         {
           ...sequence,
@@ -205,7 +214,7 @@ export function reconcileAwakeningSequences(state: GameState): GameState {
       next = enterField(
         next,
         p.id,
-        card,
+        pendingCard ?? card,
         slot as 0 | 1 | 2 | 3,
         { type: "CHAMPION", championId: p.champion!.id },
         undefined,

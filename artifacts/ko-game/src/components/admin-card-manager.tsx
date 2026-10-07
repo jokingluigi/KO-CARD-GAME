@@ -79,6 +79,7 @@ type CardRecord = {
   entranceAudioVolume: number;
   entranceAudioEnabled: boolean;
   summonLine: string | null;
+  retireLine: string | null; destroyLine: string | null;
 };
 
 type CardFormValues = {
@@ -95,6 +96,7 @@ type CardFormValues = {
   isChampionToken: boolean;
   isStarterGrant: boolean;
   summonLine: string;
+  retireLine: string; destroyLine: string;
   effectId: string;
   effectConfig: string;
 };
@@ -139,7 +141,7 @@ const EMPTY_CARD: CardFormValues = {
   isToken: false,
   isChampionToken: false,
   isStarterGrant: false,
-  summonLine: "",
+  summonLine: "", retireLine: "", destroyLine: "",
   effectId: "",
   effectConfig: "{}",
 };
@@ -531,6 +533,7 @@ export function AdminCardManager({
       isChampionToken: card.isChampionToken,
       isStarterGrant: card.isStarterGrant ?? false,
       summonLine: card.summonLine ?? "",
+      retireLine: card.retireLine ?? "", destroyLine: card.destroyLine ?? "",
       effectId: card.effectId ?? "",
       effectConfig: JSON.stringify(card.effectConfig, null, 2),
     });
@@ -1177,6 +1180,11 @@ export function AdminCardManager({
                    placeholder="레전더리·토큰 등에 대사를 넣어 주세요" className="w-full rounded border border-neutral-700 bg-neutral-900 px-3 py-2" />
                  <small className="text-neutral-500">손에서 내거나 효과로 필드에 등장할 때 표시됩니다.</small>
                </label>}
+               {preview.cardType === "WRESTLER" && (['retireLine', 'destroyLine'] as const).map(key => <label key={key} className="space-y-1.5">
+                 <span className="text-xs font-bold text-amber-200">{key === 'retireLine' ? '리타이어 대사' : '파괴 대사'} (선택)</span>
+                 <input {...form.register(key, { maxLength: 140 })} data-testid={key + '-input'} maxLength={140} className="w-full rounded border border-neutral-700 bg-neutral-900 px-3 py-2" />
+                 <small className="text-neutral-500">{key === 'retireLine' ? '리타이어되어 퇴장할 때 표시됩니다.' : '파괴되어 퇴장할 때 표시됩니다. 비워두면 리타이어 대사를 사용합니다.'}</small>
+               </label>)}
                <AdminAudioField
                  title="고유 등장 음악"
                  value={entranceAudio}

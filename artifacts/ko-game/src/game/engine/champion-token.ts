@@ -1,3 +1,4 @@
+import { awaitChampionRewardSpace } from './champion-reward-replacement';
 import { generateCard } from '../cards/generation';
 import type { CardInstance } from '../cards/types';
 import { normalizeCardForZone } from '../cards/zone-state';
@@ -67,6 +68,9 @@ export function directDeployChampionToken(
     events: [...state.events, event],
   };
   const boardSlot = towerOpenSlot(state, playerId);
+  if (boardSlot < 0 && reason === 'CHAMPION_QUEST_REWARD') {
+    return awaitChampionRewardSpace(generatedState, playerId, championId, directChampion);
+  }
   if (boardSlot < 0) {
     return {
       ...generatedState,
@@ -106,7 +110,7 @@ export function deployLinkedChampionToken(
     !champion ||
     !tokenId ||
     !definition?.isChampionToken ||
-    findDirectDeployedChampion(state, playerId)
+    (reason !== 'CHAMPION_QUEST_REWARD' && findDirectDeployedChampion(state, playerId))
   ) {
     return state;
   }

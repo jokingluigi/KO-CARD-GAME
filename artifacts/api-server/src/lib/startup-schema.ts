@@ -1,3 +1,4 @@
+import championStartAndExitLines from '../../../../lib/db/migrations/0048_champion_start_and_exit_lines.sql';
 import aiQuestMatches from '../../../../lib/db/migrations/0038_ai_quest_matches.sql';
 import cardTextAudit from '../../../../lib/db/migrations/0044_card_text_audit.sql';
 import ozenTokenTargets from '../../../../lib/db/migrations/0045_ozen_ordinary_token_targets.sql';
@@ -57,6 +58,7 @@ export async function ensureTowerStorage(database = db): Promise<void> {
     await tx.execute(sql.raw(ozenTokenTargets));
     await tx.execute(sql.raw(lifeExchangeRulesText));
     await tx.execute(sql.raw(lunaSelfSilence));
+    for (const statement of championStartAndExitLines.split(";")) if (statement.trim()) await tx.execute(sql.raw(statement));
     for (const statement of maintenanceSchema.split(";")) if(statement.trim()) await tx.execute(sql.raw(statement));
   });
 }

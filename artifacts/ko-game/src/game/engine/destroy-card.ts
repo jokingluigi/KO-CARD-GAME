@@ -53,6 +53,7 @@ export function destroyCard(
       ...state.events,
       {
         type: 'CARD_DESTROYED',
+        cardDefinitionId: card.definitionId,
         playerId,
         cardInstanceId,
         cardType: card.cardType ?? 'WRESTLER',

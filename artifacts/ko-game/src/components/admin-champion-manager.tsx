@@ -45,6 +45,7 @@ type Champion = {
   questCompletedPortraitUploadToken: string | null;
   questCompletedPortraitFileName: string | null;
   maxHealth: number; abilityName: string; abilityCost: number; abilityText: string;
+  gameStartAbilityName: string | null; gameStartAbilityText: string | null; gameStartAbilityEffects: Record<string, unknown> | null;
   abilityEffects: Record<string, unknown>; hasQuest: boolean; questName: string | null;
   questText: string | null; questCondition: Record<string, unknown> | null;
   questProgressRequired: number | null; questRewardText: string | null;
@@ -63,7 +64,7 @@ type Champion = {
   status: Status; version: number;
 };
 type Form = Omit<Champion, "id" | "status" | "version">;
-type EffectAnalysisKey = "abilityText" | "questRewardText" | "upgradedAbilityText";
+type EffectAnalysisKey = "gameStartAbilityText" | "abilityText" | "questRewardText" | "upgradedAbilityText";
 type EffectSlot = "ABILITY" | "QUEST_REWARD" | "UPGRADED_ABILITY";
 type EffectAnalysis = {
   status?: "success" | "partial" | "failure";
@@ -96,6 +97,7 @@ const empty: Form = {
   ...DEFAULT_IMAGE_DISPLAY_SETTINGS, maxHealth: 20,
   questCompletedPortraitEnabled: false, questCompletedPortraitAssetId: null, questCompletedPortraitUrl: null,
   questCompletedPortraitUploadToken: null, questCompletedPortraitFileName: null,
+  gameStartAbilityName: null, gameStartAbilityText: null, gameStartAbilityEffects: null,
   abilityName: "", abilityCost: 0, abilityText: "", abilityEffects: {},
   hasQuest: false, questName: null, questText: null, questCondition: null,
   questProgressRequired: null, questRewardText: null, questRewardEffects: null,
@@ -270,7 +272,7 @@ export function AdminChampionManager({ onUnauthorized }: { onUnauthorized: () =>
   }
 
   function applyEffect(textKey: EffectAnalysisKey,
-    effectsKey: "abilityEffects" | "questRewardEffects" | "upgradedAbilityEffects") {
+    effectsKey: "gameStartAbilityEffects" | "abilityEffects" | "questRewardEffects" | "upgradedAbilityEffects") {
     const analysis = analysisResults[textKey];
     if (!analysis || analysis.outcome !== "supported") return;
     update(effectsKey, { effects: analysis.effects ?? [] } as Form[typeof effectsKey]);
@@ -279,7 +281,7 @@ export function AdminChampionManager({ onUnauthorized }: { onUnauthorized: () =>
   }
 
   function applyAiEffect(
-    effectsKey: "abilityEffects" | "questRewardEffects" | "upgradedAbilityEffects",
+    effectsKey: "gameStartAbilityEffects" | "abilityEffects" | "questRewardEffects" | "upgradedAbilityEffects",
     draft: { effectId: "STRUCTURED_EFFECTS_V1" | "SCRIPT_V1"; effects: unknown[]; scripts: unknown[] },
     mode: "replace" | "append",
   ) {
@@ -550,6 +552,7 @@ export function AdminChampionManager({ onUnauthorized }: { onUnauthorized: () =>
        questCompletedPortraitUrl: champion.questCompletedPortraitUrl ?? null,
        questCompletedPortraitUploadToken: null,
        questCompletedPortraitFileName: null,
+      gameStartAbilityName: champion.gameStartAbilityName ?? null, gameStartAbilityText: champion.gameStartAbilityText ?? null, gameStartAbilityEffects: champion.gameStartAbilityEffects ?? null,
       abilityCost: champion.abilityCost, abilityText: champion.abilityText, abilityEffects: champion.abilityEffects,
       hasQuest: champion.hasQuest, questName: champion.questName, questText: champion.questText,
         introLineOne: champion.introLineOne ?? null, introLineTwo: champion.introLineTwo ?? null,
@@ -977,6 +980,27 @@ export function AdminChampionManager({ onUnauthorized }: { onUnauthorized: () =>
             effectContext="CHAMPION_ABILITY"
             existingEffectCount={effectConfigEntryCount(form.abilityEffects)}
             onApplyAi={(effects, mode) => applyAiEffect("abilityEffects", effects, mode)}
+            onUnauthorized={onUnauthorized}
+          />
+         <label className="md:col-span-2">게임 시작 능력 이름 (선택)<input data-testid="champion-start-name" className={input} value={form.gameStartAbilityName ?? ''} onChange={e=>update('gameStartAbilityName',e.target.value)}/></label>
+         <p className="md:col-span-2 text-xs text-neutral-400">초기 손패를 나누기 전에 챔피언당 한 번 자동 발동합니다. 비용이나 고유 능력 사용 횟수를 소모하지 않습니다. 직접 대상 선택이 필요한 효과는 사용할 수 없습니다.</p>
+          <EffectField
+            title="게임 시작 능력 효과"
+            value={form.gameStartAbilityText ?? ""}
+            onChange={v=>update("gameStartAbilityText",v)}
+            onAnalyze={()=>void analyze("gameStartAbilityText","ABILITY")}
+            onApply={()=>applyEffect("gameStartAbilityText","gameStartAbilityEffects")}
+            onPrompt={()=>void generatePrompt("gameStartAbilityText","CHAMPION_ABILITY")}
+            onReanalyze={()=>void analyze("gameStartAbilityText","ABILITY")}
+            analysis={analysisResults.gameStartAbilityText}
+            prompt={prompts.gameStartAbilityText}
+            onCopyPrompt={()=>void copyPrompt("gameStartAbilityText")}
+            analyzing={analyzingKey === "gameStartAbilityText"}
+            prompting={promptingKey === "gameStartAbilityText"}
+            sourceId={editing?.id}
+            effectContext="CHAMPION_ABILITY"
+            existingEffectCount={effectConfigEntryCount(form.gameStartAbilityEffects)}
+            onApplyAi={(effects, mode) => applyAiEffect("gameStartAbilityEffects", effects, mode)}
             onUnauthorized={onUnauthorized}
           />
          <label className="flex items-center gap-2"><input type="checkbox" checked={form.hasQuest} onChange={e=>{

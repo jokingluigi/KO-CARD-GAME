@@ -58,7 +58,7 @@ export async function runAITurn(
     if (
       options.isCancelled() ||
       workingState.status !== 'IN_PROGRESS' ||
-      workingState.activePlayerId !== playerId
+      (workingState.targetingState?.active ? workingState.targetingState.playerId !== playerId : workingState.activePlayerId !== playerId)
     ) {
       break;
     }
