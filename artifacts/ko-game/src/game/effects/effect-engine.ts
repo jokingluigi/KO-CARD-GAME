@@ -1,3 +1,4 @@
+import { fusionTargets, commitFusion, resumeFusion, vanishCard, hasCommittedFusion } from '../engine/fusion';
 import { startCountdown, clearCountdown } from '../cards/countdown';
 import { queueWantedReward, wantedRemovalActor } from '../engine/wanted';
 import { awaitChampionRewardSpace, selectChampionRewardReplacement } from '../engine/champion-reward-replacement';
@@ -69,6 +70,7 @@ export function getValidTargets(
   effect: CardEffect,
 ): string[] {
   if (effect.type !== 'STRUCTURED' || !effect.target) return [];
+  if (effect.action === 'FUSION') return fusionTargets(state, playerId, sourceCard.instanceId);
   const target = effect.target;
   const statAction = ['BUFF', 'MODIFY_STAT', 'MODIFY_MAX_HEALTH', 'SET_STAT', 'SET_STATS', 'SWAP_STATS', 'HEAL', 'REDUCE_COST', 'INCREASE_COST', 'WEAKEN_TO_STUN_SILENCE'].includes(effect.action);
   const zones = (target.zones ?? (target.zone ? [target.zone] : [])).filter(zone => !statAction || zone !== 'GRAVEYARD');
@@ -1032,7 +1034,7 @@ function statListenerCards(state: GameState): Array<{ ownerId: string; card: Car
   ].map((card) => ({ ownerId: player.id, card })));
 }
 
-function resolveStatChangeListeners(
+export function resolveStatChangeListeners(
   beforeState: GameState,
   afterState: GameState,
   sourceContext?: EventAttribution,
@@ -1308,6 +1310,7 @@ function applyRandomCardCreation(
   sourceCard: CardInstance,
   effect: Extract<CardEffect, { type: 'STRUCTURED' }>,
 ): GameState {
+
   const target = effect.target;
   if (!target || target.selection !== 'RANDOM') return state;
   const isMinionA = effect.action === 'GENERATE' && sourceCard.definitionId === `champion-${MINION_A_ID}`;
@@ -1394,6 +1397,7 @@ function applyAdjacentRandomCardCreation(
   sourceCard: CardInstance,
   effect: Extract<CardEffect, { type: 'STRUCTURED' }>,
 ): GameState {
+
   const target = effect.target;
   const owner = state.players.find((player) => player.id === playerId);
   if (!target || target.selection !== 'ADJACENT_EMPTY_SLOTS' || !owner || sourceCard.boardSlot === null) return state;
@@ -1445,6 +1449,7 @@ function applyRandomTargetSummon(
   sourceCard: CardInstance,
   effect: Extract<CardEffect, { type: 'STRUCTURED' }>,
 ): GameState {
+
   const target = effect.target;
   const definition = resolveCardDefinition(state, effect.values?.definition, effect.values?.definitionRef,
     effect.values?.definitionRef?.name?.trim() === '좀비');
@@ -1661,6 +1666,7 @@ export function resolveStateBasedDeaths(
 export function resolvePendingEffects(state: GameState): GameState {
   const pending = state.targetingState;
   if (!pending) return state;
+  if (pending.fusion) return resumeFusion(state);
   // A script SELECT is already suspended; only selectEffectTarget may resume its program.
   if (pending.scriptContinuation || pending.championRewardReplacement) return state;
   // Keep this frame visible while automatic effects execute: a lethal/destroy
@@ -1768,6 +1774,10 @@ function applyTagChange(state: GameState, playerId: string, source: CardInstance
 export function selectEffectTarget(state: GameState, targetId: string): GameState {
   const pending = state.targetingState;
   if (!pending) return state;
+  if (pending.fusion?.stage === "CHOOSE") {
+    if (!fusionTargets(state, pending.playerId, pending.sourceInstanceId).includes(targetId)) return state;
+    return commitFusion(state, pending.playerId, pending.sourceInstanceId, targetId, pending.continuation);
+  }
   if (pending.championRewardReplacement) {
     const selected = selectChampionRewardReplacement(state, targetId);
     return selected === state ? state : resolvePendingEffects(selected);
@@ -1825,7 +1835,8 @@ export function selectEffectTarget(state: GameState, targetId: string): GameStat
 export function cancelEffectTargeting(state: GameState): GameState {
   const pending = state.targetingState;
   if (!pending) return state;
-  if (pending.championRewardReplacement) return state;
+  if (pending.championRewardReplacement || (pending.fusion && pending.fusion.stage !== 'CHOOSE')) return state;
+  if (hasCommittedFusion(pending) && !pending.cancelable) return state;
   if (pending.playRollback) return pending.playRollback;
   if (pending.phase === 'PRE_COMMIT') return { ...state, targetingState: undefined };
   // Optional structured effects retain their normal continuation semantics.
@@ -2281,7 +2292,8 @@ function applyEffectInternal(
       return enterField(withoutCaptured, playerId, released, slot as 0 | 1 | 2 | 3, { type: 'CARD', cardInstanceId: sourceCard.instanceId }, undefined, 'SUMMON');
     }
     if (!effect.target) return state;
-    const target = effect.target;
+
+  const target = effect.target;
     // Costs belong to cards in hand, never to a character (which can include a
     // champion/player id). Keep malformed legacy payloads from changing board
     // cards through this broader target zone.
@@ -2563,6 +2575,8 @@ function applyEffectInternal(
           }, undefined, triggerContext)
         : state;
     }
+    if (effect.action === 'FUSION') return targets.length === 1 ? commitFusion(state, playerId, sourceCard.instanceId, targets[0].instanceId, state.targetingState) : state;
+    if (effect.action === 'VANISH') return targets.reduce((next, card) => vanishCard(next, card.instanceId), state);
     if (!targets.length) {
       return effect.action === 'DESTROY'
         ? withLastAggregatedStats(state, { attack: 0, health: 0 })
@@ -3149,17 +3163,25 @@ function applyEffectInternal(
                 );
            if (effect.action === 'SILENCE') return card; // resolved centrally below
              if (effect.action === 'ADD_KEYWORD' && effect.values?.keyword) {
-               if (effect.values.keyword === 'DODGE' && getActiveCardKeywords(card).includes('DODGE')) {
-                 const charges = Math.max(0, card.dodgeCharges ?? (card.dodgeAvailable ? 1 : 0)) + 1;
-                 return { ...card, dodgeAvailable: true, dodgeCharges: charges };
-               }
-               if (!getActiveCardKeywords(card).includes(effect.values.keyword)) {
-                 const updated = { ...card, keywords: [...card.keywords, effect.values.keyword], dodgeAvailable: effect.values.keyword === 'DODGE' ? true : card.dodgeAvailable, dodgeCharges: effect.values.keyword === 'DODGE' ? Math.max(1, card.dodgeCharges ?? 0) : card.dodgeCharges };
-                 return effect.values.keyword === 'COUNTDOWN' ? startCountdown(updated, state.turn) : updated;
-               }
+               const keyword = effect.values.keyword;
+               const active = getActiveCardKeywords(card).includes(keyword);
+               const duration = effect.values.duration;
+               const grants = card.temporaryKeywordGrants ?? [];
+               const existing = grants.find(grant => grant.keyword === keyword);
+               const temporary = duration && duration !== 'PERMANENT';
+               const untilTurn = state.turn + (duration === 'THIS_TURN' ? 0 : 1);
+               // A temporary regrant extends expiry; a permanent regrant clears it.
+               // Printed/permanent keywords never acquire an expiry from a temporary grant.
+               const temporaryKeywordGrants = grants.filter(grant => grant.keyword !== keyword);
+               if (temporary && (!active || existing)) temporaryKeywordGrants.push({ keyword, untilTurn: Math.max(untilTurn, existing?.untilTurn ?? untilTurn) });
+               const updated = { ...card, temporaryKeywordGrants,
+                 keywords: active ? card.keywords : [...card.keywords, keyword],
+                 dodgeAvailable: keyword === 'DODGE' ? true : card.dodgeAvailable,
+                 dodgeCharges: keyword === 'DODGE' ? Math.max(0, card.dodgeCharges ?? (card.dodgeAvailable ? 1 : 0)) + 1 : card.dodgeCharges };
+               return keyword === 'COUNTDOWN' && !active ? startCountdown(updated, state.turn) : updated;
              }
             if (effect.action === 'REMOVE_KEYWORD' && effect.values?.keyword === 'COUNTDOWN') return clearCountdown({...card,keywords:card.keywords.filter(k=>k!=='COUNTDOWN'),grantedText:card.grantedText ? {...card.grantedText,keywords:card.grantedText.keywords.filter(k=>k!=='COUNTDOWN')} : undefined});
-            if (effect.action === 'REMOVE_KEYWORD' && effect.values?.keyword) return { ...card, keywords: card.keywords.filter((keyword) => keyword !== effect.values?.keyword), dodgeAvailable: effect.values.keyword === 'DODGE' ? false : card.dodgeAvailable, dodgeCharges: effect.values.keyword === 'DODGE' ? 0 : card.dodgeCharges };
+            if (effect.action === 'REMOVE_KEYWORD' && effect.values?.keyword) return { ...card, temporaryKeywordGrants: card.temporaryKeywordGrants?.filter(g => g.keyword !== effect.values?.keyword), grantedText: card.grantedText ? { ...card.grantedText, keywords: card.grantedText.keywords.filter(k => k !== effect.values?.keyword) } : undefined, keywords: card.keywords.filter((keyword) => keyword !== effect.values?.keyword), dodgeAvailable: effect.values.keyword === 'DODGE' ? false : card.dodgeAvailable, dodgeCharges: effect.values.keyword === 'DODGE' ? 0 : card.dodgeCharges };
            if (effect.action === 'STUN') return { ...card, isStunned: true };
              if (effect.action === 'REDUCE_COST') return finish({ ...card, currentCost: Math.max(effect.values?.minimum ?? 0, card.currentCost - amount) });
             if (effect.action === 'INCREASE_COST') return finish({ ...card, currentCost: card.currentCost + amount });
@@ -3520,7 +3542,7 @@ export function resolveTriggeredAbilities(
   state: GameState,
   playerId: string,
   card: CardInstance,
-  trigger: 'GAME_START' | 'ENTER_FIELD' | 'LEAVE_FIELD' | 'SELF_RETIRE' | 'POSITION' | 'ACTIVE' | 'CARD_DRAWN' | 'CARD_RETIRED' | 'CARD_SUMMONED' | 'CARD_ENTERED' | 'FIRST_ATTACKED' | 'SELF_ATTACK' | 'OTHER_ALLY_ATTACK' | 'ATTACK_SURVIVED' | 'SELF_DAMAGED' | 'STAT_CHANGED' | 'TECHNIQUE_CAST' | 'EXACT_ZERO_DAMAGE' | 'COUNTDOWN' | 'TURN_START' | 'TURN_END' | 'BEFORE_DAMAGE' | 'BEFORE_RETIRE',
+  trigger: 'GAME_START' | 'ENTER_FIELD' | 'LEAVE_FIELD' | 'SELF_RETIRE' | 'POSITION' | 'ACTIVE' | 'CARD_DRAWN' | 'CARD_RETIRED' | 'CARD_SUMMONED' | 'CARD_ENTERED' | 'FIRST_ATTACKED' | 'SELF_ATTACK' | 'OTHER_ALLY_ATTACK' | 'ATTACK_SURVIVED' | 'SELF_DAMAGED' | 'STAT_CHANGED' | 'TECHNIQUE_CAST' | 'EXACT_ZERO_DAMAGE' | 'ON_FUSION' | 'COUNTDOWN' | 'TURN_START' | 'TURN_END' | 'BEFORE_DAMAGE' | 'BEFORE_RETIRE',
   options: {
     boardSlot?: 0 | 1 | 2 | 3;
     leaveReason?: LeaveReason;
