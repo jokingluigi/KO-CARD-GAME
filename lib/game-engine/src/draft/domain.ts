@@ -201,6 +201,22 @@ export function chaosCards(s: DraftSnapshot) {
       !/training-dummy|admin-dummy/i.test(c.id),
   );
 }
+/** Rare draft-only pool; exclusion toggles and disabled records remain authoritative. */
+export function rareDraftCards(s: DraftSnapshot) {
+  const normal = new Set(selectableCards(s).map(c => c.id));
+  return s.cards.filter(c => !normal.has(c.id) &&
+    (c.status === "PUBLISHED" || c.status === "DRAFT") &&
+    !s.config.excludedCardIds.includes(c.id) &&
+    Number.isFinite(c.cost) && c.cost >= 0 && c.cost <= 6 &&
+    Number.isFinite(c.attack) && c.attack >= 0 && Number.isFinite(c.health) &&
+    (c.cardType === "TECHNIQUE" || c.health >= 1) &&
+    Array.isArray(c.keywords) && Array.isArray(c.abilities) &&
+    !/training-dummy|admin-dummy/i.test(c.id));
+}
+export const RARE_DRAFT_CHANCE = 0.05;
+export function rareDraftChampions(s: DraftSnapshot) {
+  return s.champions.filter(c => c.status === "DRAFT" && !s.config.excludedChampionIds.includes(c.id));
+}
 export function selectableChampions(s: DraftSnapshot) {
   return s.champions.filter(
     (c) =>
@@ -212,7 +228,7 @@ const count = (deck: string[], id: string) =>
 export function canComplete(s: DraftSnapshot, deck: string[]): boolean {
   const pool = selectableCards(s),
     map = new Map(
-      [...pool, ...chaosCards(s).filter((c) => deck.includes(c.id))].map(
+      [...pool, ...chaosCards(s).filter((c) => deck.includes(c.id)), ...rareDraftCards(s).filter(c => deck.includes(c.id))].map(
         (c) => [c.id, c],
       ),
     );
@@ -344,8 +360,11 @@ export function draftOffers(
 ): string[] {
   const random = draftRandom(seed);
   if (!seat.championId) {
+    const rare = rareDraftChampions(s);
+    const surprise = rare.length > 0 && random() < RARE_DRAFT_CHANCE;
     const pool = selectableChampions(s).map((c) => c.id),
       result: string[] = [];
+    if (surprise) result.push(rare[Math.floor(random() * rare.length)].id);
     while (pool.length && result.length < 3)
       result.push(pool.splice(Math.floor(random() * pool.length), 1)[0]);
     return result;
@@ -355,7 +374,7 @@ export function draftOffers(
     ? "TECHNIQUE"
     : "WRESTLER";
   let pool = (
-    seat.specialPick === "CHAOS" ? chaosCards(s) : selectableCards(s)
+    seat.specialPick === "CHAOS" ? chaosCards(s).filter(c => !rareDraftCards(s).some(rare => rare.id === c.id)) : selectableCards(s)
   ).filter(
     (c) =>
       (c.cardType ?? "WRESTLER") === type &&
@@ -392,9 +411,11 @@ export function draftOffers(
     );
   };
   const special = seat.specialPick;
+  const rare = rareDraftCards(s).filter(c => (c.cardType ?? "WRESTLER") === type && canComplete(s, [...seat.deck, c.id]));
   const result: string[] = [];
-  if (seat.lockedOfferId && pool.some((c) => c.id === seat.lockedOfferId))
+  if (seat.lockedOfferId && !result.includes(seat.lockedOfferId) && [...pool, ...rare].some((c) => c.id === seat.lockedOfferId))
     result.push(seat.lockedOfferId);
+  if (!result.some(id => rare.some(c => c.id === id)) && rare.length && random() < RARE_DRAFT_CHANCE) result.push(rare[Math.floor(random() * rare.length)].id);
   const take = (eligible: CardDefinition[], weighted: boolean) => {
     const available = eligible.filter((c) => !result.includes(c.id));
     if (!available.length) return false;

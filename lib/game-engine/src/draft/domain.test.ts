@@ -225,3 +225,25 @@ test("champion token dependency is validated while remaining outside the selecti
   s.cards.at(-1)!.status = "DISABLED";
   assert.throws(() => validateDraftPool(s));
 });
+
+test("rare draft surprises use a seeded five-percent roll and never offer disabled or excluded entries", () => {
+ const s=structuredClone(snapshot);
+ s.cards.push({...s.cards[0],id:"private",status:"DRAFT"}, {...s.cards[0],id:"token",isToken:true}, {...s.cards[0],id:"champ-token",rarity:"CHAMPION",isChampionToken:true}, {...s.cards[0],id:"disabled",status:"DISABLED"});
+ s.champions.push({...s.champions[0],id:"private-champ",status:"DRAFT"}, {...s.champions[0],id:"disabled-champ",status:"DISABLED"});
+ let cardHits=0,champHits=0;const rareIds=["private","token","champ-token"];const seen=new Set<string>();
+ for(let i=0;i<10000;i++){
+  const offers=draftOffers(s,seat(),"rare:"+i);
+  assert.deepEqual(offers,draftOffers(s,seat(),"rare:"+i));
+  const unusual=offers.filter(id=>rareIds.includes(id));assert.ok(unusual.length<=1);
+  if(unusual.length)cardHits++;unusual.forEach(id=>seen.add(id));
+  assert.ok(!offers.includes("disabled"));
+  for(const id of offers)assert.ok(canComplete(s,[id]));
+  const champs=draftOffers(s,{...seat(),championId:null},"champ-rare:"+i);
+  if(champs.includes("private-champ"))champHits++;
+  assert.ok(!champs.includes("disabled-champ"));assert.equal(champs.length,3);
+ }
+ assert.ok(cardHits>400&&cardHits<600, String(cardHits));assert.ok(champHits>400&&champHits<600,String(champHits));
+ assert.deepEqual([...seen].sort(),rareIds.sort());
+ s.config.excludedCardIds=rareIds;s.config.excludedChampionIds=["private-champ"];
+ for(let i=0;i<200;i++){assert.ok(draftOffers(s,seat(),"excluded:"+i).every(id=>!rareIds.includes(id)));assert.ok(!draftOffers(s,{...seat(),championId:null},"excluded:"+i).includes("private-champ"));}
+});

@@ -367,7 +367,7 @@ test("actual play/cost, bounce, deck-return, draw, RETIRE and DESTROY use the pe
   assert.equal(s.players[0].board[0], null);
 });
 
-test("Chaos may offer a playable published token but ordinary picks keep tokens/private/invalid rows out", () => {
+test("Chaos and ordinary picks may rarely offer private tokens but invalid rows stay out", () => {
   const s = snapshot(),
     own = seat();
   const token = {
@@ -386,10 +386,10 @@ test("Chaos may offer a playable published token but ordinary picks keep tokens/
   for (let n = 0; n < 100; n++) {
     own.specialPick = "CHAOS";
     const chaos = draftOffers(s, own, `chaos:${n}`);
-    assert.ok(!chaos.includes("private") && !chaos.includes("invalid"));
+    assert.ok(!chaos.includes("invalid"));
     if (chaos.includes(token.id)) found = true;
     own.specialPick = null;
-    assert.ok(!draftOffers(s, own, `ordinary:${n}`).includes(token.id));
+    assert.ok(!draftOffers(s, own, `ordinary:${n}`).includes("invalid"));
   }
   assert.ok(found);
   own.deck = [token.id];

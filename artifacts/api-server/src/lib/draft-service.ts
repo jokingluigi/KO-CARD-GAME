@@ -23,6 +23,8 @@ import {
   selectableCards,
   chaosCards,
   selectableChampions,
+  rareDraftCards,
+  rareDraftChampions,
   draftOffers,
   specialDraftPick,
   ensureDraftCopies,
@@ -871,7 +873,7 @@ export function draftView(r: DraftResult) {
       ...new Map(
         [
           ...selectableCards(r.snapshot),
-          ...chaosCards(r.snapshot).filter(
+          ...[...chaosCards(r.snapshot), ...rareDraftCards(r.snapshot)].filter(
             (c) =>
               own.deck.includes(c.id) ||
               own.offers.includes(c.id) ||
@@ -880,7 +882,7 @@ export function draftView(r: DraftResult) {
         ].map((c) => [c.id, c]),
       ).values(),
     ],
-    champions: selectableChampions(r.snapshot),
+    champions: [...selectableChampions(r.snapshot), ...rareDraftChampions(r.snapshot).filter(c => own.offers.includes(c.id) || own.championId === c.id || (ended && enemy.championId === c.id))],
     config: r.snapshot.config,
     recap: ended && r.state.battle ? buildMatchRecap(r.state.battle) : null,
     result:

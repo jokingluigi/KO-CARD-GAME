@@ -39,33 +39,44 @@ export function queueHandFusion(state: GameState, rollback: GameState, playerId:
     mandatory: true, cancelable: true, playRollback: rollback, fusion: { stage: 'CHOOSE' },
   }));
 }
-export function commitFusion(state: GameState, playerId: string, sourceId: string, targetId: string, continuation?: GameState["targetingState"]): GameState {
-  if (!fusionTargets(state, playerId, sourceId).includes(targetId)) return state;
+export function commitFusion(state: GameState, playerId: string, sourceId: string, targetId: string, continuation?: GameState["targetingState"], forced = false): GameState {
+  if (!forced && !fusionTargets(state, playerId, sourceId).includes(targetId)) return state;
   const owner = state.players.find(p => p.id === playerId)!;
-  const source = owner.board.find(c => c?.instanceId === sourceId)!;
+  const sourceOwner = forced ? state.players.find(p => p.board.some(c => c?.instanceId === sourceId)) : owner;
+  const source = sourceOwner?.board.find(c => c?.instanceId === sourceId);
   const target = owner.board.find(c => c?.instanceId === targetId)!;
+  if (!source || !target || sourceId === targetId || source.currentHealth <= 0 || target.currentHealth <= 0 || source.cardType !== "WRESTLER" || target.cardType !== "WRESTLER") return resolvePendingEffects({ ...state, targetingState: continuation });
   const attack = source.currentAttack, health = source.currentHealth;
   const changed = { ...target, currentAttack: target.currentAttack + attack, currentHealth: target.currentHealth + health, maxHealth: target.maxHealth + health,
     fusionCount: (target.fusionCount ?? 0) + 1, fusionSourceIds: [...(target.fusionSourceIds ?? []), source.instanceId],
     statHistory: [...(target.statHistory ?? []), ...(['attack', 'currentHealth', 'maxHealth'] as const).map(stat => ({ stat,
       before: stat === 'attack' ? target.currentAttack : target[stat], after: (stat === 'attack' ? target.currentAttack : target[stat]) + (stat === 'attack' ? attack : health),
       delta: stat === 'attack' ? attack : health, sourceInstanceId: sourceId, sourceDefinitionId: source.definitionId, turnNumber: state.turn, duration: 'PERMANENT' as const }))] };
-  const events = [source, target].map(card => ({ type: 'FUSION' as const, playerId, cardInstanceId: card.instanceId, cardDefinitionId: card.definitionId,
+  const events = [source, target].map(card => ({ type: 'FUSION' as const, playerId: card === source ? sourceOwner!.id : playerId, cardInstanceId: card.instanceId, cardDefinitionId: card.definitionId,
     boardSlot: card.boardSlot ?? undefined, reason: card === source ? 'FUSION_SOURCE' : 'FUSION_TARGET', source: { type: 'CARD' as const, cardInstanceId: sourceId },
-    target: { type: 'CARD' as const, cardInstanceId: targetId }, sourceSnapshot: { playerId, cardInstanceId: sourceId, cardType: 'WRESTLER' as const, boardSlot: source.boardSlot, currentAttack: attack, currentHealth: health },
+    target: { type: 'CARD' as const, cardInstanceId: targetId }, sourceSnapshot: { playerId: sourceOwner!.id, cardInstanceId: sourceId, cardType: 'WRESTLER' as const, boardSlot: source.boardSlot, currentAttack: attack, currentHealth: health },
     targetSnapshot: { playerId, cardInstanceId: targetId, cardType: 'WRESTLER' as const, boardSlot: target.boardSlot } }));
-  const transferred: GameState = { ...state, players: state.players.map(p => p.id !== playerId ? p : { ...p,
-    board: p.board.map(c => c?.instanceId === targetId ? changed : c?.instanceId === sourceId ? { ...c, fusionCount: (c.fusionCount ?? 0) + 1 } : c) as typeof p.board }),
+  const transferred: GameState = { ...state, players: state.players.map(p => ({ ...p,
+    board: p.board.map(c => c?.instanceId === targetId ? changed : c?.instanceId === sourceId ? { ...c, fusionCount: (c.fusionCount ?? 0) + 1 } : c) as typeof p.board })),
     events: [...state.events, ...(['attack', 'currentHealth', 'maxHealth'] as const).map(stat => ({ type: 'STAT_CHANGED' as const, playerId, cardInstanceId: targetId, source: { type: 'CARD' as const, cardInstanceId: sourceId }, target: { type: 'CARD' as const, cardInstanceId: targetId }, stat, before: stat === 'attack' ? target.currentAttack : target[stat], after: stat === 'attack' ? changed.currentAttack : changed[stat], delta: stat === 'attack' ? attack : health, reason: 'FUSION_STAT_TRANSFER' })), ...events], targetingState: {
-      active: true, playerId, sourceInstanceId: "fusion:" + sourceId + ":" + changed.fusionCount, sourceCard: source, effects: [], effectIndex: 0,
+      active: true, playerId: sourceOwner!.id, sourceInstanceId: "fusion:" + sourceId + ":" + changed.fusionCount, sourceCard: source, effects: [], effectIndex: 0,
       selectedTargetIds: [], lastTargetIds: [], validTargetIds: [], minTargets: 0, maxTargets: 0, mandatory: true, cancelable: false,
-      continuation, fusion: { stage: 'SOURCE', source, target: changed },
+      continuation, fusion: { stage: 'SOURCE', source, target: changed, sourcePlayerId: sourceOwner!.id, targetPlayerId: playerId },
     } };
   return resolvePendingEffects(resolveStatChangeListeners(state, transferred, { sourcePlayerId: playerId, sourceActionType: 'CARD_EFFECT' }));
 }
 /** Serialized program counter lets nested/manual triggers finish before material removal. */
 export function resumeFusion(state: GameState): GameState {
   const frame = state.targetingState!, fusion = frame.fusion!;
+  if (fusion.stage === 'BATCH') {
+    const [sourceId, ...remainingSourceIds] = fusion.remainingSourceIds ?? [];
+    const target = state.players.find(p => p.id === frame.playerId)?.board.find(c => c?.instanceId === fusion.targetInstanceId);
+    if (!sourceId || !target || target.currentHealth <= 0) return resolvePendingEffects({ ...state, targetingState: frame.continuation });
+    const advanced = { ...frame, fusion: { ...fusion, remainingSourceIds } };
+    const source = state.players.flatMap(p => p.board).find(c => c?.instanceId === sourceId && c.currentHealth > 0);
+    return source ? commitFusion(state, frame.playerId, sourceId, target.instanceId, advanced, true)
+      : resolvePendingEffects({ ...state, targetingState: advanced });
+  }
   if (fusion.stage === 'CHOOSE') {
     const ids = fusionTargets(state, frame.playerId, frame.sourceInstanceId);
     if (!ids.length) return frame.playRollback ?? resolvePendingEffects({ ...state, targetingState: frame.continuation });
@@ -74,8 +85,19 @@ export function resumeFusion(state: GameState): GameState {
   if (fusion.stage === 'VANISH') return resolvePendingEffects(vanishCard({ ...state, targetingState: frame.continuation }, fusion.source!.instanceId));
   const snapshot = fusion.stage === 'SOURCE' ? fusion.source! : fusion.target!;
   const live = state.players.flatMap(p => p.board).find(c => c?.instanceId === snapshot.instanceId) ?? snapshot;
-  const advanced = { ...state, targetingState: { ...frame, fusion: { ...fusion, stage: fusion.stage === 'SOURCE' ? 'TARGET' as const : 'VANISH' as const } } };
-  const triggered = resolveTriggeredAbilities(advanced, frame.playerId, live, 'ON_FUSION', { fusionTargetInstanceId: fusion.target!.instanceId });
+  const advanced = { ...state, targetingState: { ...frame, playerId: fusion.stage === 'SOURCE' ? (fusion.targetPlayerId ?? frame.playerId) : frame.playerId, fusion: { ...fusion, stage: fusion.stage === 'SOURCE' ? 'TARGET' as const : 'VANISH' as const } } };
+  const triggered = resolveTriggeredAbilities(advanced, fusion.stage === 'SOURCE' ? (fusion.sourcePlayerId ?? frame.playerId) : (fusion.targetPlayerId ?? frame.playerId), live, 'ON_FUSION', { fusionTargetInstanceId: fusion.target!.instanceId });
   return triggered === advanced ? resolvePendingEffects(advanced) : triggered;
 }
 
+
+/** Effect-only batch: materials already occupy real board slots; hand-fusion legality is unchanged. */
+export function queueForcedFusion(state: GameState, playerId: string, target: CardInstance, sourceIds: string[]): GameState {
+  return resolvePendingEffects({ ...state, targetingState: {
+    active: true, playerId, sourceInstanceId: 'fusion-batch:' + target.instanceId + ':' + state.events.length, sourceCard: target,
+    effects: [], effectIndex: 0, selectedTargetIds: [], lastTargetIds: [], validTargetIds: [], minTargets: 0, maxTargets: 0,
+    mandatory: true, cancelable: false, fusion: { stage: 'BATCH', targetInstanceId: target.instanceId,
+      remainingSourceIds: [...new Set(sourceIds)].filter(id => id !== target.instanceId) },
+    continuation: state.targetingState,
+  } });
+}
