@@ -186,6 +186,7 @@ export function chooseBestAction(state: GameState, actions: GameAction[], player
     action.type === 'SELECT_EFFECT_TARGET' || action.type === 'CONFIRM_PRECOMMIT_TARGET')) {
     actions = actions.filter(action => action.type !== 'CANCEL_EFFECT_TARGET');
   }
+  if (state.targetingState?.fusion?.stage === 'CHOOSE') return rankActions(state, actions, playerId)[0]?.action ?? { type: 'END_TURN', playerId };
   if (!difficulty) return chooseLegacyAction(state, actions, playerId);
   const visible = aiInformationState(state, playerId);
   const profile = AI_SEARCH_PROFILES[difficulty];

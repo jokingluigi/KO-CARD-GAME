@@ -161,4 +161,5 @@ jobs:
           node docs/qa/mobile-history-browser.mjs
           node docs/qa/daily-quests-browser.mjs
           node docs/qa/champion-features-browser.mjs
+          node docs/qa/fusion-browser.mjs
           node docs/qa/tag-manager-browser.mjs

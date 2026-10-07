@@ -1,11 +1,11 @@
 /** The content-facing Effect DSL contract. Card and Champion administration use
  * this exact registry; English identifiers are stable implementation aliases. */
-export const TRIGGERS = ["GAME_START", "ENTER_FIELD", "LEAVE_FIELD", "SELF_RETIRE", "ACTIVE", "CARD_DRAWN", "CARD_RETIRED", "CARD_SUMMONED", "CARD_ENTERED", "FIRST_ATTACKED", "SELF_ATTACK", "OTHER_ALLY_ATTACK", "ATTACK_SURVIVED", "SELF_DAMAGED", "STAT_CHANGED", "TECHNIQUE_CAST", "EXACT_ZERO_DAMAGE", "TURN_START", "TURN_END", "BEFORE_DAMAGE", "BEFORE_RETIRE", "COUNTDOWN"] as const;
+export const TRIGGERS = ["GAME_START", "ENTER_FIELD", "LEAVE_FIELD", "SELF_RETIRE", "ACTIVE", "CARD_DRAWN", "CARD_RETIRED", "CARD_SUMMONED", "CARD_ENTERED", "FIRST_ATTACKED", "SELF_ATTACK", "OTHER_ALLY_ATTACK", "ATTACK_SURVIVED", "SELF_DAMAGED", "STAT_CHANGED", "TECHNIQUE_CAST", "EXACT_ZERO_DAMAGE", "TURN_START", "TURN_END", "BEFORE_DAMAGE", "BEFORE_RETIRE", "COUNTDOWN", "ON_FUSION"] as const;
 export const RULE_LISTENER_TRIGGERS = ["CARD_PLAYED", "TECHNIQUE_PLAYED", "CARD_RETIRED", "DAMAGE_TAKEN", "SOURCE_CAUSED_TARGET_REMOVAL"] as const;
 export const CONDITIONS = ["NEED_CONDITION", "BASE_COST_GTE", "SOURCE_ON_LEFT_SIDE", "SOURCE_ON_RIGHT_SIDE", "SOURCE_IS_ONLY_WRESTLER", "SOURCE_IN_HAND", "FIRST_ATTACK_GAIN"] as const;
 export const REFERENCES = ["SOURCE", "LAST_TARGET", "LAST_DRAWN_CARD", "LAST_ATTACKER", "LAST_DAMAGED_TARGET", "CAPTURED_CARD", "CURRENT_SLOT"] as const;
-export const ACTIONS = ["BUFF", "SET_STATS", "MODIFY_STAT", "MODIFY_MAX_HEALTH", "SET_STAT", "DAMAGE", "HEAL", "SILENCE", "DESTROY", "RETIRE", "ADD_GOLD", "ADD_NEXT_TURN_GOLD", "DRAW", "REDUCE_COST", "INCREASE_COST", "STUN", "DISABLE_ABILITY", "WEAKEN_TO_STUN_SILENCE", "ADD_KEYWORD", "REMOVE_KEYWORD", "SWAP_STATS", "ADD_DAMAGE_MODIFIER", "SUMMON", "SUMMON_FROM_HAND", "REVIVE", "GENERATE", "MOVE_TO_HAND", "MOVE_TO_DECK", "STEAL", "MILL", "SPEND_GOLD_BUFF_SELF", "DEPLOY_CHAMPION_TOKEN", "CAPTURE", "RELEASE_CAPTURED", "REMOVE_FROM_GAME", "SWITCH_EFFECT_BRANCH", "QUEUE_EFFECT", "ADD_AGGREGATED_ATTACK", "COPY_BEST_STATS", "REPEAT_TURN_END", "TRANSFORM_SOURCE", "TRANSFORM_TARGET", "REGISTER_DELAYED", "REGISTER_LISTENER", "PREVENT_DAMAGE", "PREVENT_RETIRE", "GRANT_RANDOM_CARD_TEXT"] as const;
-export const KEYWORDS = ["RUSH", "SURPRISE", "TAUNT", "DODGE", "MULTI_STRIKE", "IMMUNE", "REGEN", "ARMOR", "CONDITION", "DEFENSE", "LIFESTEAL", "COUNTDOWN", "WANTED"] as const;
+export const ACTIONS = ["BUFF", "SET_STATS", "MODIFY_STAT", "MODIFY_MAX_HEALTH", "SET_STAT", "DAMAGE", "HEAL", "SILENCE", "DESTROY", "RETIRE", "ADD_GOLD", "ADD_NEXT_TURN_GOLD", "DRAW", "REDUCE_COST", "INCREASE_COST", "STUN", "DISABLE_ABILITY", "WEAKEN_TO_STUN_SILENCE", "ADD_KEYWORD", "REMOVE_KEYWORD", "SWAP_STATS", "ADD_DAMAGE_MODIFIER", "SUMMON", "SUMMON_FROM_HAND", "REVIVE", "GENERATE", "MOVE_TO_HAND", "MOVE_TO_DECK", "STEAL", "MILL", "SPEND_GOLD_BUFF_SELF", "DEPLOY_CHAMPION_TOKEN", "CAPTURE", "RELEASE_CAPTURED", "REMOVE_FROM_GAME", "SWITCH_EFFECT_BRANCH", "QUEUE_EFFECT", "ADD_AGGREGATED_ATTACK", "COPY_BEST_STATS", "REPEAT_TURN_END", "TRANSFORM_SOURCE", "TRANSFORM_TARGET", "REGISTER_DELAYED", "REGISTER_LISTENER", "PREVENT_DAMAGE", "PREVENT_RETIRE", "GRANT_RANDOM_CARD_TEXT", "FUSION", "VANISH"] as const;
+export const KEYWORDS = ["RUSH", "SURPRISE", "TAUNT", "DODGE", "MULTI_STRIKE", "IMMUNE", "REGEN", "ARMOR", "CONDITION", "DEFENSE", "LIFESTEAL", "COUNTDOWN", "WANTED", "FUSION", "CANNOT_ATTACK"] as const;
 
 export function validCountdownTurns(value: unknown): value is number {
   return typeof value === 'number' && Number.isSafeInteger(value) && value >= 1 && value <= 999;
@@ -509,6 +509,7 @@ export const DISPLAY_LABELS = {
   GAME_START: "게임 시작", ENTER_FIELD: "등장", CARD_DRAWN: "준비", SELF_RETIRE: "자기 퇴장", SELF_ATTACK: "자신 공격", OTHER_ALLY_ATTACK: "콤보", ATTACK_SURVIVED: "공격 생존", SELF_DAMAGED: "자기 피해", STAT_CHANGED: "스탯 변경", TECHNIQUE_CAST: "주문",
   CARD_RETIRED: "아군 퇴장", CARD_SUMMONED: "아군 소환", CARD_ENTERED: "아군 진입", FIRST_ATTACKED: "첫 공격",
   EXACT_ZERO_DAMAGE: "핀폴",
+  FUSION: "합체", VANISH: "소멸", CANNOT_ATTACK: "공격불가", ON_FUSION: "이 카드가 합체하면",
   COUNTDOWN: "카운트다운", LEAVE_FIELD: "퇴장", ACTIVE: "액티브", TURN_START: "턴 시작", TURN_END: "턴 종료",
   NEED_CONDITION: "조건",
   SOURCE_ON_LEFT_SIDE: "스위치(왼쪽)", SOURCE_ON_RIGHT_SIDE: "스위치(오른쪽)", FIRST_ATTACK_GAIN: "첫 공격력 증가",
@@ -528,7 +529,8 @@ export const ACTION_SCHEMAS: Record<Action, EffectActionSchema> = {
   DAMAGE: { target: true, amount: true }, BUFF: { target: true, stats: true, statMultiplier: true, referenceStat: true, dynamicValue: true, statChannelReference: true }, SET_STATS: { target: true, stats: true }, HEAL: { target: true, amount: true },
   REDUCE_COST: { target: true, amount: true, minimum: true }, INCREASE_COST: { target: true, amount: true }, STUN: { target: true },
   RETIRE: { target: true, captureStats: true }, DISABLE_ABILITY: { target: true }, WEAKEN_TO_STUN_SILENCE: { target: true, amount: true },
-  SILENCE: { target: true }, DESTROY: { target: true }, ADD_KEYWORD: { target: true, keyword: true }, REMOVE_KEYWORD: { target: true, keyword: true },
+  FUSION: { target: true }, VANISH: { target: true },
+  SILENCE: { target: true }, DESTROY: { target: true }, ADD_KEYWORD: { target: true, keyword: true, duration: true }, REMOVE_KEYWORD: { target: true, keyword: true },
   SWAP_STATS: { target: true }, ADD_DAMAGE_MODIFIER: { target: false, amount: true, damageSource: true }, SUMMON: { target: false, cardDefinition: true, cardCount: true, aggregateStats: true, generatedModifiers: true }, SUMMON_FROM_HAND: { target: false, cardDefinition: true, cardCount: true }, REVIVE: { target: true }, GENERATE: { target: false, cardDefinition: true, cardCount: true, destination: true, generatedModifiers: true }, MOVE_TO_HAND: { target: true }, MOVE_TO_DECK: { target: true, destination: true }, MILL: { target: true }, SPEND_GOLD_BUFF_SELF: { target: true, dynamicValue: true }, DEPLOY_CHAMPION_TOKEN: { target: false }, CAPTURE: { target: true }, RELEASE_CAPTURED: { target: false },
   REMOVE_FROM_GAME: { target: true }, SWITCH_EFFECT_BRANCH: { target: false, branches: true }, QUEUE_EFFECT: { target: false, queuedEffect: true, duration: true }, ADD_AGGREGATED_ATTACK: { target: true, aggregateStats: true }, COPY_BEST_STATS: { target: true }, REPEAT_TURN_END: { target: false }, TRANSFORM_SOURCE: { target: false, cardDefinition: true }, TRANSFORM_TARGET: { target: true, cardDefinition: true }, STEAL: { target: true },
   REGISTER_DELAYED: { target: false, delayed: true }, REGISTER_LISTENER: { target: false, listener: true }, PREVENT_DAMAGE: { target: false, prevention: true }, PREVENT_RETIRE: { target: false, prevention: true },
@@ -729,6 +731,7 @@ function validScriptEffectValues(action: Action, rawValues: unknown, depth = 0):
 }
 
 const ACTION_DESCRIPTIONS: Record<Action, string> = {
+  FUSION: "필드의 원본 선수와 다른 아군 선수가 합체합니다. 현재 공격력·체력을 이전하고 양쪽 합체 효과 후 재료가 소멸합니다.", VANISH: "리타이어·파괴·묘지와 무관하게 현재 전투에서 완전히 제거합니다.",
   BUFF: "명시된 공격력/체력 채널만 변경합니다.", SET_STATS: "대상의 공격력과 체력을 지정한 값으로 설정합니다.", MODIFY_STAT: "대상의 비용, 공격력 또는 체력을 변경합니다.", MODIFY_MAX_HEALTH: "대상의 최대 체력만 변경합니다.", SET_STAT: "대상의 비용, 공격력 또는 체력을 지정한 값으로 설정합니다.", DAMAGE: "대상에게 피해를 줍니다.", HEAL: "대상의 체력을 회복합니다.",
   SILENCE: "대상의 효과와 키워드를 침묵시킵니다.", DESTROY: "대상을 파괴합니다.", RETIRE: "대상을 무덤으로 보냅니다.", ADD_GOLD: "현재 골드를 획득합니다.",
   ADD_NEXT_TURN_GOLD: "다음 내 턴의 골드를 증가시킵니다.", DRAW: "카드를 드로우합니다.", REDUCE_COST: "대상의 비용을 감소시킵니다.",
@@ -745,6 +748,7 @@ export const EFFECT_CAPABILITIES: Record<Action, { description: string; status: 
 export const RUNTIME_HANDLER_ACTIONS = ACTIONS;
 
 const triggerDescriptions: Record<Trigger, string> = {
+  ON_FUSION: "이 카드가 합체 재료 또는 대상이 되면 발동합니다. 재료 효과 → 대상 효과 → 재료 소멸 순서입니다.",
   COUNTDOWN: "필드에서 자기 턴 시작마다 카운트다운이 1 감소합니다. 0이 되면 살아 있는 카드에서 한 번 발동합니다. 재등장하면 설정한 수치부터 다시 시작합니다.",
   GAME_START: "초기 손패를 나누기 전에 덱 또는 손패에 있는 카드에서 각각 한 번 발동합니다.",
   ENTER_FIELD: "선수를 손패에서 직접 내거나 챔피언을 특별 전개할 때 발동합니다. 일반 소환·부활에는 자동 발동하지 않습니다.", LEAVE_FIELD: "카드가 리타이어로 필드를 떠날 때 발동합니다. 파괴·제거에는 발동하지 않습니다.", SELF_RETIRE: "이 카드가 RETIRE로 필드를 떠날 때 발동합니다.", CARD_SUMMONED: "선수가 소환으로 필드에 들어올 때 아군 보드에서 발동합니다.", CARD_ENTERED: "아군 카드가 플레이, 소환 등으로 필드에 들어올 때 아군 보드에서 발동합니다.",

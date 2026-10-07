@@ -52,7 +52,7 @@ const ACTION_VALUE_KEYS: Partial<Record<Action, readonly string[]>> = {
   REDUCE_COST: ["amount", "minimum"],
   INCREASE_COST: ["amount"],
   WEAKEN_TO_STUN_SILENCE: ["amount"],
-  ADD_KEYWORD: ["keyword"],
+  ADD_KEYWORD: ["keyword", "duration"],
   REMOVE_KEYWORD: ["keyword"],
   SWAP_STATS: [],
   ADD_DAMAGE_MODIFIER: ["amount", "damageSource"],
@@ -134,6 +134,7 @@ export type EffectAnalysisOptions = {
 
 const aliases = {
   trigger: [
+    ["ON_FUSION", /^(?:이\s*카드가\s*합체하면|합체할\s*때|ON_FUSION)\s*[:：]?/i],
     ["GAME_START", /^(?:게임|경기)(?:이|가)?\s*시작(?:\s*(?:시|할\s*때|하면|될\s*때))?\s*[:：]?/i],
     ["ENTER_FIELD", /^(?:필드에\s*)?(?:등장|출현|MAGIC)(?:할\s*때|하면)?\s*[:：]?/i],
     ["SELF_RETIRE", /^(?:필드에서\s*)?(?:퇴장|리타이어)(?:할\s*때|하면)?\s*[:：]?/],
@@ -150,6 +151,7 @@ const aliases = {
     ["TURN_END", /^턴(?:이|이\s*되면)?\s*종료(?:\s*(?:시|할\s*때|하면|될\s*때))?\s*[:：]?/i],
   ] as const,
   keyword: [
+    ["CANNOT_ATTACK", /공격불가|CANNOT_ATTACK/i], ["FUSION", /합체(?:를|을)?\s*(?:부여|제거|얻|잃)/],
     ["RUSH", /(?:러쉬|RUSH|CHARGE)/i], ["SURPRISE", /(?:기습|HASTE)/i], ["TAUNT", /(?:도발|TAUNT)/i],
   ["DODGE", /(?:회피(?:\(\d+\))?|DODGE)/i], ["MULTI_STRIKE", /연타/],
   ] as const,
@@ -185,7 +187,7 @@ function normalize(input: string) {
   const normalized = normalizeEffectLanguage(input).normalizedText.replace(/[：:]/g, ":");
   // Admin exports can include the source card name on the line before a
   // colon-prefixed ability. It is presentation metadata, not effect text.
-  const beginsWithTrigger = /^(?:필드에\s*)?(?:등장|출현|퇴장|리타이어|액티브|준비|콤보|주문|핀폴|(?:게임|경기)\s*시작|턴\s*시작|턴\s*종료|MAGIC|TURBO|SELF_ATTACK|SUPPORT|SHOCK|BULLSEYE)\s*:/i.test(normalized);
+  const beginsWithTrigger = /^(?:필드에\s*)?(?:등장|출현|퇴장|리타이어|액티브|준비|콤보|주문|핀폴|(?:게임|경기)\s*시작|턴\s*시작|턴\s*종료|MAGIC|TURBO|SELF_ATTACK|SUPPORT|SHOCK|BULLSEYE|이\s*카드가\s*합체하면|ON_FUSION)\s*:/i.test(normalized);
   return (beginsWithTrigger ? normalized : normalized.replace(/^.*?\s+(?=(?:퇴장|리타이어)\s*:)/, ""))
     // Card exports and compact Korean input frequently omit the boundaries
     // around the canonical tag/zone vocabulary. Restore only unambiguous
@@ -1704,7 +1706,7 @@ function analyzeEffectTextCore(input: string, options: EffectAnalysisOptions = {
       reason: "태그 조건을 서버 태그 어휘와 정확히 일치시킬 수 없습니다.",
     };
   }
-  const triggerMarkers = [...text.matchAll(/(?:^|\s)(?=(?:필드에\s*)?(?:등장|출현|퇴장|액티브|준비|콤보|주문|핀폴|(?:게임|경기)(?:이|가)?\s*시작|턴(?:이)?\s*시작|턴(?:이)?\s*종료|(?:이\s*카드가|자신이)\s*공격할\s*때마다|ATTACK_SURVIVED|MAGIC|TURBO|SELF_ATTACK|SUPPORT|SHOCK|BULLSEYE)\s*[:：])/gi)]
+  const triggerMarkers = [...text.matchAll(/(?:^|\s)(?=(?:필드에\s*)?(?:등장|출현|퇴장|액티브|준비|콤보|주문|핀폴|(?:게임|경기)(?:이|가)?\s*시작|턴(?:이)?\s*시작|턴(?:이)?\s*종료|(?:이\s*카드가|자신이)\s*공격할\s*때마다|ATTACK_SURVIVED|MAGIC|TURBO|SELF_ATTACK|SUPPORT|SHOCK|BULLSEYE|이\s*카드가\s*합체하면|ON_FUSION)\s*[:：])/gi)]
     .map((match) => (match.index ?? 0) + (match[0].startsWith(" ") ? 1 : 0));
   if (triggerMarkers.length > 1) {
     const analyses = triggerMarkers.map((start, index) =>
@@ -1812,15 +1814,15 @@ function analyzeEffectTextCore(input: string, options: EffectAnalysisOptions = {
     ["REDUCE_COST", /(?:비용|코스트)(?:을|를)?\s*(?:(?:전부|모두|모든)\s*)?(?:-\d+|\d+\s*(?:감소|낮))/],
     ["INCREASE_COST", /(?:비용|코스트)(?:을|를)?\s*(?:[+]\d+|\d+\s*증가)/],
     ["STUN", /(?:기절|PARALYZE)(?:시키)?/i],
-    ["SILENCE", /침묵(?:시키(?:고|니다)?|)/], ["DESTROY", /파괴/],
+    ["VANISH", /소멸/], ["SILENCE", /침묵(?:시키(?:고|니다)?|)/], ["DESTROY", /파괴/],
     ["RELEASE_CAPTURED", /(?:포획.*(?:해방|풀)|해방.*포획)/], ["CAPTURE", /포획/],
      ["REMOVE_FROM_GAME", /(?:제거|ERASE)/i],
       ["ADD_AGGREGATED_ATTACK", AGGREGATED_ATTACK_PATTERN],
       ["DEPLOY_CHAMPION_TOKEN", /(?:내\s*)?챔피언(?:을|를)?\s*소환(?:합니다|한다|해요|하세요)?/i],
       ["REVIVE", /(?:부활|소생|되살(?:립|아)|REVIVE|RESURRECT)/i],
      ["SUMMON", /(?:소환|SUMMON)/i], ["GENERATE", /(?:생성(?!된)|GENERATE)/i],
-    ["REMOVE_KEYWORD", /(?:러쉬|기습|도발|회피|연타)(?:를|을)?\s*(?:제거|잃)/],
-    ["ADD_KEYWORD", /(?:러쉬|기습|도발|회피|연타)(?:를|을)?\s*(?:부여|얻)/],
+    ["REMOVE_KEYWORD", /(?:러쉬|기습|도발|회피|연타|공격불가|합체)(?:를|을)?\s*(?:제거|잃)/],
+    ["ADD_KEYWORD", /(?:러쉬|기습|도발|회피|연타|공격불가|합체)(?:를|을)?\s*(?:부여|얻)/],
   ];
   const effects: StructuredEffect[] = [];
   const hasSourceCausedRemovalAttack = SOURCE_CAUSED_REMOVAL_ATTACK_PATTERN.test(body);
@@ -1920,7 +1922,7 @@ function analyzeEffectTextCore(input: string, options: EffectAnalysisOptions = {
      if (/모든\s*생성된\s*카드.*합산.*소환.*도발/.test(text)) remainder = "";
    }
    // Action endings remain after matcher only for Korean conjugations.
-     remainder = remainder.replace(/(합니다|시키고|시킵니다|시킨다|증가시킨다|올린다|강화한다|부여|획득|얻음|얻습니다|줍니다|준다|주|드로우|뽑습니다|뽑기|포획|제거|소환|생성|해방|감소|증가|선택하여|선택해서|선택하고|(?:러쉬|기습|도발|회피|연타)(?:를|을)?)/g, "");
+     remainder = remainder.replace(/(합니다|시키고|시킵니다|시킨다|증가시킨다|올린다|강화한다|부여|획득|얻음|얻습니다|줍니다|준다|주|드로우|뽑습니다|뽑기|포획|제거|소환|생성|해방|감소|증가|선택하여|선택해서|선택하고|(?:러쉬|기습|도발|회피|연타|공격불가|합체)(?:를|을)?)/g, "");
      remainder = remainder.replace(/하?그들/g, "");
    const remainderUnsupported = remainder
      .replace(unsupportedMechanic, "")
@@ -1962,6 +1964,12 @@ function analyzeEffectTextCore(input: string, options: EffectAnalysisOptions = {
 
 /** Hand activation is opt-in for every trigger, never inferred from TURN_END alone. */
 export function analyzeEffectText(input: string, options: EffectAnalysisOptions = {}): Analysis {
+  const added: Keyword[] = [];
+  const remainder = input.replace(/^(?:합체|FUSION|공격불가|CANNOT_ATTACK)\s*$/gim, line => { added.push(/합체|FUSION/i.test(line) ? "FUSION" : "CANNOT_ATTACK"); return ""; }).trim();
+  if (added.length) {
+    const result: Analysis = remainder ? analyzeEffectText(remainder, options) : { status: "success", outcome: "supported", effects: [], keywords: [], unsupportedSegments: [], summaries: [] };
+    return { ...result, keywords: [...new Set([...result.keywords, ...added])], summaries: [...added.map(k => k === "FUSION" ? "합체" : "공격불가"), ...result.summaries] };
+  }
   const wanted = input.trim().match(/^(?:수배|WANTED)(?:\s*[:：]\s*(?:이 키워드를 가진 카드를 상대방이 리타이어\/파괴하면 상대방은 다음턴에 1 골드를 더 받습니다\.?))?(?:\r?\n([\s\S]+))?$/i);
   if (wanted) {
     const result: Analysis = wanted[1] ? analyzeEffectText(wanted[1], options)

@@ -5,6 +5,9 @@ import { getCardRuntimeRulesText, getVisibleCardKeywords, getVisibleCardRulesTex
 import { getActiveCardKeywords } from '../game/cards/granted-text';
 
 export const KEYWORD_DESCRIPTIONS: Record<string, string> = {
+  FUSION: '빈 필드 슬롯과 다른 아군 선수가 있어야 손에서 낼 수 있습니다. 등장 후 아군에게 현재 공격력·체력을 더하고 양쪽 합체 효과를 처리한 뒤 재료가 소멸합니다. 취소하면 카드와 골드를 복원합니다.',
+  VANISH: '리타이어·파괴가 아니며 묘지에 가지 않고 현재 전투에서 완전히 제거됩니다.',
+  CANNOT_ATTACK: '공격을 선언할 수 없습니다. 카드 효과와 반격은 정상 작동합니다. 침묵하면 제거됩니다.',
   WANTED: '상대방이 이 카드를 리타이어하거나 파괴하면, 상대방은 다음 자기 턴에 골드를 1 더 받습니다.',
   COUNTDOWN: '다음 자기 턴 시작부터 1씩 감소합니다. 0이 될 때 살아 있으면 한 번 발동합니다. 침묵하면 해제되며, 재등장하면 처음부터 시작합니다.',
   IMMUNE: '카드나 챔피언의 효과로 직접 지정할 수 없습니다.',
@@ -23,6 +26,7 @@ export const KEYWORD_DESCRIPTIONS: Record<string, string> = {
 };
 
 export const KEYWORD_LABELS: Record<string, string> = {
+  FUSION: '합체', VANISH: '소멸', CANNOT_ATTACK: '공격불가',
   WANTED: '수배',
   COUNTDOWN: '카운트다운', IMMUNE: '면역', REGEN: '치유', ARMOR: '아머', CONDITION: '조건', DEFENSE: '방어', LIFESTEAL: '흡혈',
 

@@ -17,7 +17,7 @@ import { drawCard } from '../engine/draw-card';
 import type { GameState } from '../types/game-state';
 
 // Current 85-card public snapshot, with exact engine outcomes for the live descriptions.
-const records = JSON.parse(readFileSync(new URL('./fixtures/cards-2026-10-07-public.json', import.meta.url), 'utf8')) as PublishedCardRecord[];
+const records = JSON.parse(readFileSync(new URL('./fixtures/cards-2026-10-08-public.json', import.meta.url), 'utf8')) as PublishedCardRecord[];
 const definitions = records.map(cardRecordToDefinition);
 const def = (name: string) => { const d=definitions.find(x=>x.name===name); assert.ok(d,name); return d; };
 const instance = (name: string, id=name, patch: Partial<CardInstance>={}) => ({...generateCardInstance(def(name),{instanceId:id,isGenerated:false}),...patch});
@@ -144,6 +144,8 @@ test('current Maid Pandora transforms only after her own damage retires selected
 });
 test('current wolf turn start absorbs retired ally attack and health',()=>{
  const s=setup();const w=onBoard(s,'늑대인간 판도라');const victim=onBoard(s,'로드',1,0,{currentAttack:4,currentHealth:7,maxHealth:7});let n=resolveTriggeredAbilities(s,'player-1',w,'TURN_START');n=action(n,{type:'SELECT_EFFECT_TARGET',playerId:'player-1',targetId:victim.instanceId});assert.deepEqual([n.players[0].board[0]?.currentAttack,n.players[0].board[0]?.currentHealth],[6,13]);assert.equal(n.players[0].board[1],null);
+ assert.equal(n.players[0].board[0]?.dodgeCharges,2);assert.equal(n.players[0].board[0]?.maxHealth,13);
+ assert.ok(!n.targetingState);assert.equal(n.players[0].graveyard.filter(c=>c.instanceId===victim.instanceId).length,1);
 });
 test('current Natoma combo adds attacking ally attack and own turn end sets attack to zero',()=>{
  const s=setup();onBoard(s,'나토마토');const a=onBoard(s,'로드',1);onBoard(s,'루나',0,1,{currentHealth:30,maxHealth:30,isAbilityDisabled:true});let n=action(s,{type:'ATTACK',playerId:'player-1',attackerInstanceId:a.instanceId,target:{type:'WRESTLER',playerId:'player-2',cardInstanceId:'1-루나-0'}});assert.equal(n.players[0].board[0]?.currentAttack,2);n=endTurn(n,'player-1').state;assert.equal(n.players[0].board[0]?.currentAttack,0);

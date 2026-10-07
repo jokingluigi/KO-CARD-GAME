@@ -83,6 +83,7 @@ export function getAttackLegality(
       message: '공격할 수 없는 선수입니다.',
     };
   }
+  if (hasKeyword(entry.card, "CANNOT_ATTACK")) return { allowed: false, reasonCode: "CARD_CANNOT_ATTACK", message: "공격불가 키워드를 가진 선수는 공격을 선언할 수 없습니다." };
   if (entry.card.isStunned) {
     return {
       allowed: false,
@@ -236,6 +237,7 @@ export function attack(
   const { card: attacker } = attackerEntry;
   if (towerAttackBlocked(state, attackingPlayerId, attackerInstanceId)) return actionFailure(state, 'SUMMONED_THIS_TURN', '폭주 티켓으로 소환한 선수는 이번 턴에 공격할 수 없습니다.');
 
+  if (hasKeyword(attacker, "CANNOT_ATTACK")) return actionFailure(state, "CARD_CANNOT_ATTACK", "공격불가 키워드를 가진 선수는 공격을 선언할 수 없습니다.");
   if (attacker.isStunned) {
     return actionFailure(state, 'CARD_STUNNED', '기절한 선수는 공격할 수 없습니다.');
   }

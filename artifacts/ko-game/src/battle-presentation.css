@@ -483,3 +483,9 @@
 .presentation-leave-effect { animation:ko-leave-effect 150ms ease-out both; }
 @keyframes ko-leave-effect { 0%,100%{box-shadow:none} 40%{box-shadow:0 0 0 2px #ffdc91,0 0 12px #ffcc6655} }
 @media(prefers-reduced-motion:reduce) { .presentation-leave-effect { animation:none;outline:1px solid #ffdc91; } }
+
+.card-leave-animation--fusion { animation-name: ko-fusion-absorb; }
+.card-leave-animation--vanish { animation-name: ko-vanish; }
+@keyframes ko-fusion-absorb { 0%,20% { opacity:1; transform:scale(1); } 70% { opacity:.9; transform:translate(calc(var(--leave-dx) * .75),calc(var(--leave-dy) * .75)) scale(.65); } 100% { opacity:0; transform:translate(var(--leave-dx),var(--leave-dy)) scale(.1); } }
+@keyframes ko-vanish { 0% { opacity:1; transform:scale(1); } 100% { opacity:0; transform:scale(.65); } }
+@media (prefers-reduced-motion: reduce) { .card-leave-animation--fusion,.card-leave-animation--vanish { animation-name:ko-vanish; } }

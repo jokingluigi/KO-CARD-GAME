@@ -45,6 +45,7 @@ export function silenceCard(
       maxHealth: Math.max(1, maxHealth),
       currentHealth: Math.min(card.currentHealth, Math.max(1, maxHealth)),
       temporaryStatModifiers: [],
+      temporaryKeywordGrants: [],
       statHistory: [],
       keywords: [],
       dodgeAvailable: false,

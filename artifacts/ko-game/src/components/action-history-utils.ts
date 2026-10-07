@@ -8,7 +8,7 @@ const VISIBLE_EVENT_TYPES = new Set<GameEvent['type']>([
   'CARD_TRANSFORMED',
   'CARD_DESTROYED',
   'CARD_RETIRED',
-  'CARD_REMOVED',
+  'CARD_REMOVED', 'FUSION', 'CARD_VANISHED',
   'ATTACK_DECLARED',
   'DAMAGE_DEALT',
   'STAT_CHANGED',
@@ -69,6 +69,8 @@ export function eventTitle(state: GameState, event: GameEvent, viewerPlayerId = 
       return `${event.source?.type === 'CARD' ? `${cardName(state, event.source.cardInstanceId)} → ` : ''}${cardName(state, event.cardInstanceId)} 파괴`;
     case 'CARD_RETIRED':
       return `${cardName(state, event.cardInstanceId)} 리타이어`;
+    case 'FUSION': return (state.cardPool?.find(d => d.id === event.cardDefinitionId)?.name ?? '선수') + (event.reason === 'FUSION_SOURCE' ? ' 합체 재료' : ' 합체 대상');
+    case 'CARD_VANISHED': return (state.cardPool?.find(d => d.id === event.cardDefinitionId)?.name ?? '선수') + ' 소멸';
     case 'CARD_REMOVED':
       return `${cardName(state, event.cardInstanceId)} 경기에서 제외`;
     case 'DAMAGE_DEALT':

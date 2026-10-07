@@ -26,6 +26,7 @@ import {
   CardPlayAnimation,
 } from './card-play-animation';
 import { AttackAnimation } from './attack-animation';
+import { hasCommittedFusion } from '../game/engine/fusion';
 import { CardLeaveAnimation, type CardLeaveAnimationState } from './card-leave-animation';
 import { landingImpactLevel, rectSnapshot, type CardAnimationRect, type CardPlayAnimationState } from './card-play-animation-utils';
 import type {
@@ -469,6 +470,17 @@ export function GameStatePreview({
             soundKey: `opponent:${state.events.length}:${event.cardInstanceId}:${targetId ?? state.players[0]?.id}`,
           });
         }
+      }
+      if (event.type === 'FUSION' && event.reason === 'FUSION_SOURCE' && event.source?.type === 'CARD' && event.target?.type === 'CARD') {
+        const card = previousCards.get(event.source.cardInstanceId);
+        const slots = event.playerId === state.players[0]?.id ? boardSlotRefs : opponentBoardSlotRefs;
+        const from = event.sourceSnapshot?.boardSlot !== null && event.sourceSnapshot?.boardSlot !== undefined ? slots.current.get(event.sourceSnapshot.boardSlot)?.getBoundingClientRect() : undefined;
+        const to = boardCardRefs.current.get(event.target.cardInstanceId)?.getBoundingClientRect();
+        if (card && from && to) leaveAnimations.push({ id: 'fusion:' + newEventKeys[newEvents.indexOf(event)], card, kind: 'FUSION', geometry: { left: from.left, top: from.top, width: from.width, height: from.height }, destination: { left: to.left + to.width / 2, top: to.top + to.height / 2 }, effectTriggered: true, delay: 0 });
+      }
+      if (event.type === 'CARD_VANISHED' && event.cardInstanceId && !newEvents.some(e => e.type === 'FUSION' && e.reason === 'FUSION_SOURCE' && e.cardInstanceId === event.cardInstanceId)) {
+        const card = previousCards.get(event.cardInstanceId), geometry = lastCardPositionsRef.current.get(event.cardInstanceId);
+        if (card && geometry) leaveAnimations.push({ id: 'vanish:' + newEventKeys[newEvents.indexOf(event)], card, kind: 'VANISH', geometry, delay: 0 });
       }
       if (
         (event.type === "CARD_RETIRED" || event.type === "CARD_DESTROYED" || event.type === "CARD_REMOVED") &&
@@ -1007,7 +1019,7 @@ export function GameStatePreview({
          {/* BOARDS AREA */}
           <div className="ko-board-area relative flex min-h-0 flex-1 flex-col items-center justify-center gap-4 py-2 md:gap-6 md:py-4">
             {effectTargeting && <div role="status" className="pointer-events-none absolute left-1/2 top-0 z-[115] max-w-[74vw] -translate-x-1/2 rounded border border-amber-400/70 bg-black/90 px-3 py-1 text-center text-[11px] font-bold text-amber-100 shadow-lg md:text-sm">
-              {state.targetingState?.championRewardReplacement ? '토큰 소환: 돌려보낼 아군 선수 1장을 선택하세요.' : <>{state.targetingState?.pendingAction?.type === 'USE_CHAMPION_ABILITY' ? me.champion?.name : state.cardPool?.find((card) => card.id === state.targetingState?.sourceCard?.definitionId)?.name ?? getCardDefinition(state.targetingState?.sourceCard?.definitionId ?? '')?.name ?? '선수'} 효과의 대상을 선택하세요</>}
+              {state.targetingState?.fusion?.stage === 'CHOOSE' ? '합체할 다른 아군 선수 1장을 선택하세요.' : state.targetingState?.championRewardReplacement ? '토큰 소환: 돌려보낼 아군 선수 1장을 선택하세요.' : <>{state.targetingState?.pendingAction?.type === 'USE_CHAMPION_ABILITY' ? me.champion?.name : state.cardPool?.find((card) => card.id === state.targetingState?.sourceCard?.definitionId)?.name ?? getCardDefinition(state.targetingState?.sourceCard?.definitionId ?? '')?.name ?? '선수'} 효과의 대상을 선택하세요</>}
             </div>}
             
              {/* Opponent Board + Zones */}
@@ -1154,10 +1166,10 @@ export function GameStatePreview({
                    : state.targetingState!.sourceCard?.definitionId
                      ? `${state.cardPool?.find((card) => card.id === state.targetingState!.sourceCard!.definitionId)?.name ?? getCardDefinition(state.targetingState!.sourceCard!.definitionId)?.name ?? '선수'}의 효과`
                      : '효과'} 발동 중</strong>
-                 {state.targetingState!.championRewardReplacement ? '퀘스트 토큰 소환: 돌려보낼 아군 선수 1장을 선택하세요' : <>대상 선택 ({state.targetingState!.selectedTargetIds.length}/{state.targetingState!.minTargets})</>}
+                 {state.targetingState!.fusion?.stage === 'CHOOSE' ? '합체 대상 선택 · 취소하면 카드와 골드 복원' : state.targetingState!.championRewardReplacement ? '퀘스트 토큰 소환: 돌려보낼 아군 선수 1장을 선택하세요' : <>대상 선택 ({state.targetingState!.selectedTargetIds.length}/{state.targetingState!.minTargets})</>}
                  {state.targetingState!.championRewardReplacement && <span className="block">손패가 가득 차면 덱 맨 위로 보냅니다.</span>}
                  <span className="mt-1 block text-[9px] text-amber-200/80">금색으로 강조된 대상만 선택 가능</span>
-                 {!state.targetingState!.championRewardReplacement && <button type="button" onClick={onCancelEffectTargeting} className="mt-1 block w-full rounded border border-amber-600 px-1 py-0.5 text-[9px]">취소</button>}
+                 {!state.targetingState!.championRewardReplacement && (!hasCommittedFusion(state.targetingState) || state.targetingState!.cancelable) && <button type="button" onClick={onCancelEffectTargeting} className="mt-1 block w-full rounded border border-amber-600 px-1 py-0.5 text-[9px]">취소</button>}
                </div>
              )}
              <div className="flex items-center justify-between gap-2 border-b border-neutral-800 pb-2 md:flex-col md:items-stretch">

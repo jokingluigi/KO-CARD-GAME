@@ -56,6 +56,7 @@ export function resetCardAfterLeavingBoard(card: CardInstance, printedDefinition
     currentCost: draft?.cost ?? definition?.cost ?? card.baseCost ?? card.currentCost,
     temporaryCostUntilTurn: undefined,
     temporaryStatModifiers: [],
+    temporaryKeywordGrants: [],
     currentAttack: card.awakening?.baseAttack ?? draft?.attack ?? definition?.attack ?? card.baseAttack ?? card.currentAttack,
     currentHealth: baseHealth,
     maxHealth: baseHealth,

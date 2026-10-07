@@ -8,7 +8,7 @@ import { getCardRuntimeRulesText } from "../lib/card-display-state";
 import { PRESENTATION_CONFIG, prefersReducedMotion } from "./presentation-config";
 import { BattleVfx } from './battle-vfx';
 
-export type CardLeaveKind = "RETIRE" | "DESTROY" | "REMOVE";
+export type CardLeaveKind = "RETIRE" | "DESTROY" | "REMOVE" | "FUSION" | "VANISH";
 
 export type CardLeaveAnimationState = {
   id: string;
@@ -28,6 +28,8 @@ export type CardLeaveAnimationState = {
 function durationFor(kind: CardLeaveKind) {
   const reducedMotion = prefersReducedMotion();
   if (reducedMotion) return 140;
+  if (kind === "FUSION") return 400;
+  if (kind === "VANISH") return 220;
   return kind === "DESTROY"
     ? PRESENTATION_CONFIG.destroyMs
     : kind === "REMOVE"

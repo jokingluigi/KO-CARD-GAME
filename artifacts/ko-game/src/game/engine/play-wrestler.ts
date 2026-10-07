@@ -1,3 +1,5 @@
+import { canPlayFusion, queueHandFusion } from './fusion';
+import { getActiveCardKeywords } from '../cards/granted-text';
 import { canPlayConditionalCard } from './keyword-rules';
 import type { GameState } from '../types/game-state';
 import type { ActionResult } from '../actions/types';
@@ -67,6 +69,7 @@ export function playWrestlerFromHand(
   }
 
   if (!canPlayConditionalCard(state, playerId, card)) return actionFailure(state, 'NO_VALID_TARGET', '카드 사용 조건을 충족하지 않았습니다.');
+  if (!canPlayFusion(state, playerId, card)) return actionFailure(state, "NO_VALID_TARGET", "합체할 다른 아군 선수가 필요합니다.");
   const payableCost = wrestlerPlayCost(state, playerId, card);
   if (player.currentGold < payableCost) {
     return actionFailure(state, 'NOT_ENOUGH_GOLD', '골드가 부족합니다.');
@@ -122,6 +125,8 @@ export function playWrestlerFromHand(
     cardInstanceId,
     'WRESTLER',
   );
-  const completed = processChampionQuestEvents(state, resolvedState);
+  const fusionState = getActiveCardKeywords(card).includes("FUSION") ? queueHandFusion(resolvedState, state, playerId, card) : resolvedState;
+  if (fusionState === state) return actionSuccess(state);
+  const completed = processChampionQuestEvents(state, fusionState);
   return actionSuccess(completed.targetingState?.active ? { ...completed, targetingState: { ...completed.targetingState, playRollback: state } } : completed);
 }

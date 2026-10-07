@@ -247,6 +247,11 @@ export function endTurn(
     turn: state.turn + 1,
     activePlayerId: nextPlayer.id,
     players: state.players.map((player) => {
+      const expireKeywords = (card: CardInstance): CardInstance => {
+        const expired = card.temporaryKeywordGrants?.filter(g => g.untilTurn <= state.turn) ?? [];
+        return expired.length ? { ...card, keywords: card.keywords.filter(k => !expired.some(g => g.keyword === k)), temporaryKeywordGrants: card.temporaryKeywordGrants?.filter(g => g.untilTurn > state.turn) } : card;
+      };
+      player = { ...player, board: player.board.map(c => c ? expireKeywords(c) : c) as typeof player.board, hand: player.hand.map(expireKeywords), deck: player.deck.map(expireKeywords) };
       if (player.id === actingPlayerId) {
         const expireTemporaryStats = (card: CardInstance, zone: 'HAND' | 'DECK' | 'BOARD'): CardInstance => {
           const modifiers = card.temporaryStatModifiers ?? [];
