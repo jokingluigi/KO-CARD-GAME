@@ -114,3 +114,12 @@ test('separate HTML script connects before the game module and is adopted withou
     else Reflect.deleteProperty(runtime, 'window');
   }
 });
+
+test('production HTML wakes the existing API without sending authentication cookies', async () => {
+ const calls: Array<{url:string;credentials:unknown}> = [];
+ const fetcher=async (url:any,init:any)=>{calls.push({url:String(url),credentials:init.credentials});return json(guest);};
+ runInNewContext(await readFile(new URL('../../public/server-connection.js',import.meta.url),'utf8'),{document:{currentScript:{src:'https://ko-card-game-vr69.onrender.com/server-connection.js'}},window:{location:{hostname:'ko-card-game-vr69.onrender.com'}},fetch:fetcher,URL,AbortController,AbortSignal,setTimeout,clearTimeout,Date});
+ assert.equal(calls[0].url,'https://ko-card-game.onrender.com/api/healthz');
+ assert.equal(calls[0].credentials,'omit');
+ assert.deepEqual(calls.slice(1).map(c=>c.credentials),['include','include']);
+});
