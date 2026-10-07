@@ -1,6 +1,6 @@
 import { Router, type IRouter } from "express";
 import { eq } from "drizzle-orm";
-import { db, cardsTable, draftSettingsTable } from "@workspace/db";
+import { db, cardsTable, championsTable, draftSettingsTable } from "@workspace/db";
 import {
   parseDraftConfig,
   DEFAULT_DRAFT_CONFIG,
@@ -95,6 +95,33 @@ router.patch("/cards/:cardId/selection", async (req, res, next) => {
       return config.excludedCardIds;
     });
     res.json({ excludedCardIds });
+  } catch (error) { next(error); }
+});
+router.get("/champion-selection", async (req, res, next) => {
+  try {
+    if (req.authUser?.role !== "ADMIN") { res.status(403).json({ message: "관리자만 접근할 수 있습니다." }); return; }
+    res.json({ excludedChampionIds: (await draftSettings()).config.excludedChampionIds });
+  } catch (error) { next(error); }
+});
+router.patch("/champions/:championId/selection", async (req, res, next) => {
+  try {
+    if (req.authUser?.role !== "ADMIN") { res.status(403).json({ message: "관리자만 접근할 수 있습니다." }); return; }
+    if (typeof req.body?.excluded !== "boolean")
+      throw new DraftError("INVALID_CONFIG", "챔피언 선택 제외 설정을 확인해 주세요.");
+    const championId = String(req.params.championId);
+    const [champion] = await db.select({ id: championsTable.id }).from(championsTable).where(eq(championsTable.id, championId));
+    if (!champion) throw new DraftError("NOT_FOUND", "챔피언을 찾을 수 없습니다.", 404);
+    const excludedChampionIds = await db.transaction(async (tx) => {
+      await tx.insert(draftSettingsTable).values({ id: "global", enabled: false, config: DEFAULT_DRAFT_CONFIG as unknown as Record<string, unknown> }).onConflictDoNothing();
+      const [settings] = await tx.select().from(draftSettingsTable).where(eq(draftSettingsTable.id, "global")).for("update");
+      const config = parseDraftConfig(settings.config);
+      const ids = new Set(config.excludedChampionIds);
+      if (req.body.excluded) ids.add(championId); else ids.delete(championId);
+      config.excludedChampionIds = [...ids];
+      await tx.update(draftSettingsTable).set({ config: config as unknown as Record<string, unknown>, updatedAt: new Date() }).where(eq(draftSettingsTable.id, "global"));
+      return config.excludedChampionIds;
+    });
+    res.json({ excludedChampionIds });
   } catch (error) { next(error); }
 });
 router.put("/settings", async (req, res, next) => {
