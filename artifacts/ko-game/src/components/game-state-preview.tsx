@@ -1185,7 +1185,7 @@ export function GameStatePreview({
                 setConfirmEndTurn(false);
                 onEndTurn();
               }}
-              className={`rounded px-2 py-2 text-[10px] font-black transition-all md:py-3 md:text-sm ${
+              className={`ko-turn-end rounded px-2 py-2 text-[10px] font-black transition-all md:py-3 md:text-sm ${
                 canEndTurn
                   ? 'bg-primary text-black shadow-[0_0_12px_rgba(234,179,8,0.3)] hover:bg-yellow-400'
                   : 'cursor-not-allowed bg-neutral-800 text-neutral-600'
@@ -1347,7 +1347,7 @@ export function GameStatePreview({
 
           {onMulligan && !introActive && canMulligan(state, state.players[0].id) && (
             <div className="fixed inset-0 z-[205] flex items-center justify-center bg-black/85 p-4" role="dialog" aria-label="시작 손패 교체">
-              <div className="max-h-[90vh] w-full max-w-3xl overflow-y-auto rounded-xl border border-amber-500 bg-neutral-950 p-5 text-white shadow-2xl">
+              <div className="ko-mulligan-sheet max-h-[90vh] w-full max-w-3xl overflow-y-auto rounded-xl border border-amber-500 bg-neutral-950 p-5 text-white shadow-2xl">
                 <h2 className="text-lg font-black text-amber-300">시작 손패 교체 · {mulliganSeconds}초</h2>
                 <p className="my-3 text-sm text-neutral-300">첫 턴 행동 전, 바꿀 카드를 선택하세요. 선택한 카드만 덱의 카드와 교체합니다.</p>
                 <div className="mx-auto grid w-full max-w-[660px] grid-cols-2 justify-items-center gap-3 sm:grid-cols-4">
@@ -1501,7 +1501,7 @@ export function GameStatePreview({
                    <button
                      disabled={!canUseChampion}
                      onClick={onUseChampionAbility}
-                     className={`w-full rounded border py-1.5 text-[9px] font-bold uppercase tracking-wider transition-all md:py-2 md:text-[11px] ${
+                     className={`ko-champion-ability w-full rounded border py-1.5 text-[9px] font-bold uppercase tracking-wider transition-all md:py-2 md:text-[11px] ${
                        canUseChampion
                        ? me.champion?.questCompleted ? 'cursor-pointer border-amber-400 bg-amber-900/70 text-amber-100 shadow-[0_0_12px_rgba(251,191,36,0.4)] hover:bg-amber-800' : 'cursor-pointer border-blue-500 bg-blue-900/50 text-blue-200 shadow-[0_0_10px_rgba(59,130,246,0.3)] hover:bg-blue-800 hover:text-white'
                        : 'cursor-not-allowed border-neutral-800 bg-neutral-900 text-neutral-600'

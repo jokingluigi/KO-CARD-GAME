@@ -330,6 +330,7 @@ export function CardRenderer({
     <div
       className={`ko-card-depth relative aspect-[1060/1484] overflow-visible select-none ${className}`}
       data-rarity={normalizedRarity}
+      data-card-highlight={highlight}
       data-targetable={highlight === "target"}
       style={style}
       ref={containerRef}
@@ -360,7 +361,7 @@ export function CardRenderer({
             src={frameUrl}
             alt=""
             aria-hidden="true"
-            className="pointer-events-none absolute inset-0 z-10 h-full w-full"
+            className="ko-card-frame pointer-events-none absolute inset-0 z-10 h-full w-full"
             style={{
               transform: `translate(${frameOffsetX}%, ${frameOffsetY}%) scale(${frameScale})`,
               transformOrigin: "center",
@@ -452,7 +453,7 @@ export function CardRenderer({
         )}
 
         <div className="pointer-events-none absolute right-[5%] top-[15%] z-30 flex max-w-[52%] flex-col items-end gap-1">
-          <span className={`max-w-full break-all rounded px-1 text-[8px] font-black leading-tight ${rarityBadgeColors[normalizedRarity]}`}>
+          <span className={`ko-card-rarity max-w-full break-all rounded px-1 text-[8px] font-black leading-tight ${rarityBadgeColors[normalizedRarity]}`}>
             {normalizedRarity}
           </span>
         {keywordBadges.length > 0 && (

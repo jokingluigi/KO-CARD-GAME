@@ -134,7 +134,7 @@ export default function Tower() {
       onPresentationBusyChange={setPresentationBusy} onReturnToMainMenu={() => navigate('/')} />
   </>;
   const scene = view.scenes?.find(s => s.id === run?.encounter.sceneId);
-  return <main className="min-h-dvh min-w-0 bg-neutral-950 px-4 pb-[max(2rem,env(safe-area-inset-bottom))] pt-[max(1rem,env(safe-area-inset-top))] text-white">
+  return <main className="ko-tower min-h-dvh min-w-0 bg-neutral-950 px-4 pb-[max(2rem,env(safe-area-inset-bottom))] pt-[max(1rem,env(safe-area-inset-top))] text-white">
     <div className="mx-auto max-w-4xl space-y-6"><header className="flex flex-wrap items-center justify-between gap-3"><h1 className="text-2xl font-black">TOWER</h1><button className={button} onClick={() => navigate('/')}>메인 메뉴</button></header>
       {towerDiagnostic && <p className="rounded border border-amber-500 p-3 text-amber-200">관리자 테스트 · 실제 보상과 계정 클리어 기록은 지급되지 않습니다.{view.rewardPreview && <span className="block break-words">보상 미리보기: 첫 클리어 {rewardText(view.rewardPreview.firstReward)} · 반복 클리어 {rewardText(view.rewardPreview.repeatReward)}</span>}</p>}
       {error && <p role="alert" className="break-words rounded border border-red-500/50 p-3 text-red-300">{error}</p>}{busy && <p role="status">저장 중…</p>}

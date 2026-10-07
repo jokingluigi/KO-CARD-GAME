@@ -1,0 +1,194 @@
+/* KO art direction: black / gold, matte ink, character art. Quiet at rest; impact remains event-driven.
+   Layout and visual styling only. Registered card art/frame crop settings remain authoritative. */
+body :is(.ko-main-menu,.ko-online-shell,.ko-prep-screen,.ko-decks,.ko-collection,.ko-tower,.ko-game-shell,.ko-result-sheet,.ko-mulligan-sheet){
+ --ko-ink:#000000;--ko-surface:#101010;--ko-paper:#d6b867;--ko-muted:#a5a29a;--ko-rule:#3e3527;
+ --primary:43 58% 62%;--primary-foreground:0 0% 0%;
+ color:#ece8df;font-variant-numeric:tabular-nums lining-nums;
+}
+body :is(.ko-main-menu,.ko-online-shell,.ko-prep-screen,.ko-collection,.ko-tower) :is(h1,h2,h3){word-break:keep-all;overflow-wrap:break-word;letter-spacing:-.035em;text-wrap:balance}
+body :is(.ko-main-menu,.ko-online-shell,.ko-prep-screen,.ko-decks,.ko-collection,.ko-tower) :is(button,a,input,select){border-radius:2px;transition-property:background-color,color,border-color,transform;transition-duration:140ms}
+body :is(.ko-main-menu,.ko-online-shell,.ko-prep-screen,.ko-decks,.ko-collection,.ko-tower,.ko-game-shell) :is(button,a):focus-visible{outline:2px solid #d6b867;outline-offset:3px}
+body :is(.ko-main-menu,.ko-online-shell,.ko-prep-screen,.ko-decks,.ko-collection,.ko-tower,.ko-game-shell) button:not(:disabled):active{translate:0 1px}
+body :is(.ko-main-menu,.ko-online-shell,.ko-prep-screen,.ko-decks,.ko-collection,.ko-tower) button:disabled{cursor:not-allowed}
+body .ko-main-menu{background:#000000;padding:72px clamp(24px,6vw,100px) 48px;isolation:isolate}
+.ko-main-menu .ko-main-menu__art{background-position:64% center;opacity:.85}
+.ko-main-menu .ko-main-menu__shade{background:linear-gradient(90deg,#000000f5 0%,#000000ed 38%,#00000070 66%,#00000018 100%)}
+.ko-main-menu .ko-main-menu__content{max-width:570px;min-height:calc(100dvh - 120px);margin:0;justify-content:center}
+.ko-main-menu .ko-main-menu__header{text-align:left;margin-bottom:24px}
+.ko-main-menu .ko-main-menu__logo{font-size:clamp(96px,10vw,144px);line-height:.88;letter-spacing:-.055em;text-indent:0;transform:skew(-7deg);transform-origin:left bottom}
+.ko-main-menu .ko-main-menu__tagline{margin-top:14px;font-size:12px;letter-spacing:.3em;text-indent:0;color:#b4a98c}
+.ko-main-menu .ko-main-menu__user{display:flex;flex-wrap:wrap;justify-content:flex-start;gap:8px 16px;margin-top:24px;max-width:100%;line-height:1.7}
+.ko-main-menu .ko-main-menu__user :is(.text-amber-300,.text-violet-300){color:#d6b867}
+.ko-main-menu .ko-main-menu__user button{min-height:32px;border:0;border-bottom:1px solid #494034;background:transparent}
+.ko-main-menu .ko-main-menu__content>section:not(.ko-main-menu__grid){border:0;border-block:1px solid #3c3326;border-radius:0;background:#000000;box-shadow:none;padding:12px 0;margin-bottom:18px}
+.ko-main-menu .ko-main-menu__grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:0 24px}
+.ko-main-menu .ko-main-menu__item{min-height:60px;padding:12px 0;border:0;border-bottom:1px solid #3c3326;box-shadow:none;animation:none;flex-direction:row;align-items:center;gap:12px;border-radius:0;background:transparent}
+.ko-main-menu .ko-main-menu__item:hover{background:#d6b8670b;transform:none}
+.ko-main-menu .ko-main-menu__item[data-menu-tier=battle]{min-height:100px;padding:20px;margin-bottom:12px;background:#d6b867;color:#000000;border:1px solid #d6b867}
+.ko-main-menu .ko-main-menu__item[data-menu-tier=battle]:nth-child(2){background:#101010;color:#d6b867;border-color:#a18954}
+.ko-main-menu .ko-main-menu__item[data-menu-tier=battle]:first-child .ko-main-menu__copy>span{color:#000000}
+.ko-main-menu .ko-main-menu__item[data-menu-tier=battle]:first-child .ko-main-menu__icon{color:#000000}
+.ko-main-menu .ko-main-menu__icon{margin:0;color:#c6ae73}
+.ko-main-menu .ko-main-menu__item[data-menu-tier=utility] .ko-main-menu__icon{display:none}
+.ko-main-menu .ko-main-menu__copy>span:first-child{font-size:15px;line-height:1.4;font-weight:700}
+.ko-main-menu .ko-main-menu__item[data-menu-tier=battle] .ko-main-menu__copy>span:first-child{font-size:22px;font-weight:900}
+.ko-main-menu .ko-main-menu__copy>span:last-child{font-size:11px;line-height:1.65;word-break:keep-all;margin-top:3px;color:#b1a99a}
+.ko-main-menu .ko-main-menu__item[data-menu-tier=utility]{align-self:start}
+.ko-main-menu>button{border:0;border-bottom:1px solid #494034;background:#000000;color:#c6ae73;box-shadow:none}
+body .ko-online-shell{background:#000000}
+.ko-online-shell .ko-online-grid{display:none}
+.ko-online-shell h1{font-size:clamp(32px,4.5vw,56px);line-height:1.18;max-width:850px}
+.ko-online-shell section:has(>h1){max-width:850px;margin-top:56px}
+.ko-online-shell .ko-online-panel{background:#101010;border:0;border-top:3px solid #9a7b36;border-bottom:1px solid #3c3326;box-shadow:none;border-radius:0}
+.ko-online-shell .ko-online-panel:hover{border-color:#d6b867;transform:none;background:#171717}
+.ko-online-shell .ko-online-action{min-height:44px}
+.ko-online-shell .ko-online-code{text-shadow:none;color:#d6b867}
+.ko-online-shell footer{color:#a59d8e;letter-spacing:.1em}
+body .ko-prep-screen{background:#000000}
+.ko-prep-screen>section{max-width:1000px;justify-content:flex-start;padding-top:32px}
+.ko-prep-screen>section>div:first-child{text-align:left;max-width:700px}
+.ko-prep-screen h1{font-size:clamp(28px,4vw,46px);line-height:1.25}
+.ko-prep-screen :is(button,section) {box-shadow:none}
+.ko-prep-screen button{border-radius:0;min-height:44px}
+.ko-prep-screen button.border-amber-400{background:#17130b;border-left-width:4px}
+.ko-prep-screen button.bg-amber-400{background:#d6b867}
+.ko-prep-screen .rounded-xl{border-radius:0;background:#101010}
+body .ko-decks{background:#000000}
+.ko-decks .ko-decks__grain{display:none}
+.ko-decks .ko-decks__wrap{max-width:1480px}
+.ko-decks .ko-decks__title{color:#d6b867;letter-spacing:-.035em}
+.ko-decks :is(.ko-decks__rail,.ko-decks__library,.ko-decks__editor){background:#101010;box-shadow:none;border:0;border-top:2px solid #8a7038}
+.ko-decks .ko-decks__library{background:transparent}
+.ko-decks .ko-decks__deck-item--active{background:#17130b;border-left-color:#d6b867;color:#d6b867}
+.ko-decks .ko-decks__section-label{color:#b9a36d;letter-spacing:.14em}
+.ko-decks :is(.ko-decks__toolbar,.ko-decks__filters){border-color:#39332a;box-shadow:none}
+.ko-decks .ko-decks__collection-card{border-radius:0;box-shadow:none;background:transparent}
+.ko-decks .ko-decks__card-label{font-size:12px;line-height:1.45;color:#d6b867}
+.ko-decks .ko-decks__card-type{color:#a6a096}
+.ko-decks .ko-decks__card-action{min-width:32px;min-height:32px;border-radius:2px}
+.ko-decks .ko-decks__compact-row{animation:none}
+body .ko-collection{background:#000000}
+.ko-collection header{align-items:flex-end}
+.ko-collection h1{font-size:clamp(28px,4vw,44px);line-height:1.2}
+.ko-collection .ko-collection-item{border:0;border-radius:0;background:transparent;padding:0;box-shadow:none;transition:transform 140ms ease-out}
+.ko-collection .ko-collection-item:hover{transform:translateY(-2px);background:transparent;outline:1px solid #a18954;outline-offset:4px}
+.ko-collection .ko-collection-item .text-neutral-500{color:#aaa59b}
+.ko-collection header .rounded-full{border:0;border-radius:0;background:transparent;box-shadow:none;color:#c7ac6b;padding:0}
+.ko-collection .bg-amber-400{background:#d6b867}
+.ko-collection .rounded-lg{border-radius:0;box-shadow:none}
+body .ko-tower{background:#000000;padding-top:32px}
+.ko-tower>div{max-width:1040px}
+.ko-tower header{padding-bottom:24px;border-bottom:1px solid #51432c}
+.ko-tower header h1{font-family:var(--app-font-display);font-size:clamp(38px,7vw,72px);line-height:1}
+.ko-tower button{min-height:48px;box-shadow:none;background:#101010;border-color:#776037}
+.ko-tower button.border-primary{background:#d6b867;color:#000000;border-color:#d6b867}
+body .ko-game-shell{background:#000000}
+.ko-game-shell .ko-cinematic-background{background:#000000}
+.ko-game-shell .ko-cinematic-background>div{opacity:.65}
+.ko-game-shell .ko-board-area{isolation:isolate}
+.ko-game-shell .ko-board-area::before{content:"";position:absolute;inset:4% 0;background:#000000;border-block:1px solid #2d261b;box-shadow:inset 0 14px 18px #0003;z-index:-1;pointer-events:none}
+.ko-game-shell .ko-board-slot.border-dashed{border:1px dashed #535748;background:#15171260;color:#a2a58f;animation:none}
+.ko-game-shell .ko-board-slot.border-dashed.cursor-pointer{border:2px dashed #d6b867;background:#d6b86712}
+.ko-game-shell .ko-board-slot [data-card-highlight=attack],.ko-game-shell [data-card-highlight=attack]{outline:1px solid #d5d2bb;outline-offset:2px}
+.ko-game-shell [data-card-highlight=attack] .ko-card-frame{filter:none!important}
+.ko-game-shell [data-card-highlight=selected]{outline:3px solid #d6b867;outline-offset:2px}
+.ko-game-shell [data-card-highlight=target]{outline:3px dashed #efb08d;outline-offset:3px}
+.ko-game-shell :is([data-card-highlight=selected],[data-card-highlight=target]) .ko-card-frame{filter:none!important}
+.ko-game-shell .ko-game-stage .ko-card-depth{filter:drop-shadow(0 4px 2px #0008)}
+.ko-game-shell .ko-card-rarity{background:#000000e8;color:#c7c5b9;border:0;border-bottom:1px solid currentColor;border-radius:0;font-size:7px;letter-spacing:.04em}
+.ko-game-shell [data-rarity=EPIC] .ko-card-rarity{color:#b6a9c6}
+.ko-game-shell [data-rarity=LEGENDARY] .ko-card-rarity{color:#d8bd7e}
+.ko-game-shell [data-rarity=CHAMPION] .ko-card-rarity{color:#e3a496}
+.ko-game-shell :is(.ko-opponent-champion,.ko-player-champion){box-shadow:0 4px 6px #0006;border:1px solid #7c6842;border-radius:0;background:#000000}
+.ko-game-shell .ko-opponent-champion{border-bottom:3px solid #a76c5e}
+.ko-game-shell .ko-player-champion{border-bottom:3px solid #d6b867}
+.ko-game-shell :is(.ko-opponent-stats,.ko-player-stats)>div{background:#0d0d0d;border:0;border-left:2px solid #a18954;border-radius:0;padding:5px 8px}
+.ko-game-shell :is(.ko-opponent-stats,.ko-player-stats) :is(.text-blue-300,.text-red-300){color:#e5d9ba}
+.ko-game-shell .ko-player-info [tabindex="0"]{background:#111111;border:0;border-left:2px solid #b68e3d;border-radius:0;color:#e5d9ba;box-shadow:none}
+.ko-game-shell .ko-quest-meter{height:3px;border-radius:0;background:#3d3422}
+.ko-game-shell .ko-quest-meter i{background:#d6b867}
+.ko-game-shell .ko-champion-ability{border:1px solid #b68e3d;background:#17130b;color:#ead8aa;box-shadow:none!important;border-radius:0;letter-spacing:0;min-height:36px;padding:8px 6px;line-height:1.4}
+.ko-game-shell .ko-champion-ability:disabled{background:#111111;border-color:#39332a;color:#938b7b}
+.ko-game-shell .ko-game-controls{background:#090909;border:1px solid #63502d;border-radius:0;box-shadow:none;backdrop-filter:none;padding:8px}
+.ko-game-shell .ko-game-controls button{border-radius:0;min-height:40px}
+.ko-game-shell .ko-turn-end:not(:disabled){background:#d6b867;box-shadow:0 2px 0 #876a2e;color:#000000}
+.ko-game-shell .ko-turn-end:not(:disabled):hover{background:#e4c77a}
+.ko-game-shell .ko-turn-end:disabled{background:#151515;color:#938b7b;box-shadow:none}
+.ko-game-shell .ko-game-controls [data-testid=match-turn-number]{font-size:clamp(14px,1.8vw,20px);line-height:1.5;color:#d6b867}
+.ko-game-shell .ko-game-controls .border-neutral-700{box-shadow:none;background:#101010;border-color:#63502d}
+.ko-game-shell .ko-settings-dialog{background:#0d0d0d;border-radius:2px;border-color:#a18954;box-shadow:0 8px 18px #0006;backdrop-filter:none}
+.ko-game-shell .ko-hand-cards{padding-top:4px}
+.ko-game-shell .ko-zone-stack :is(button,div){border-radius:0;box-shadow:none}
+.ko-game-shell .ko-zone-stack button{border-color:#8b733f}
+.ko-result-sheet.ko-result-sheet{background:#090909;color:#d6b867;border:0;border-top:4px solid #d6b867;border-radius:0;box-shadow:0 12px 32px #0008;padding:32px;text-align:left}
+.ko-result-sheet.ko-result-sheet[data-result=defeat]{border-top-color:#b58070}
+.ko-result-sheet h1{font-size:clamp(42px,7vw,72px);line-height:1;letter-spacing:-.06em}
+.ko-result-sheet>p{max-width:100%;overflow-wrap:anywhere}
+.ko-result-sheet>p:nth-of-type(3){font-size:14px;letter-spacing:.18em;color:#c8b480}
+.ko-result-sheet section{border:0;border-top:1px solid #50432c;border-radius:0;background:transparent;box-shadow:none;padding:18px 0;margin-top:20px}
+.ko-result-sheet h2{color:#d6b867;font-size:12px;letter-spacing:.03em}
+.ko-result-sheet .bg-primary{background:#d6b867}
+.ko-result-sheet .text-amber-200{color:#d8d4bc}
+.ko-result-sheet .text-blue-200{color:#d9c690}
+.ko-result-sheet .text-red-200{color:#d5b5a6}
+.match-result-enter:has(.ko-result-sheet){background:#000000ed;backdrop-filter:none}
+.ko-mulligan-sheet.ko-mulligan-sheet{background:#0d0d0d;border:0;border-top:3px solid #d6b867;border-radius:0;box-shadow:0 10px 24px #0008;padding:24px}
+.ko-mulligan-sheet h2{color:#d6b867}
+.ko-mulligan-sheet button{border-radius:0}
+.ko-mulligan-sheet button[aria-pressed=false]{background:transparent}
+.ko-mulligan-sheet button[aria-pressed=true]{background:#d6b867}
+.ko-mulligan-sheet button.bg-amber-400{background:#d6b867}
+.ko-cinematic.ko-cinematic--major .ko-cinematic__panel{background:#000000;border-block-width:3px;box-shadow:none}
+.ko-cinematic.ko-cinematic--major .ko-cinematic__art{right:2%;width:60%;filter:none}
+.ko-cinematic.ko-cinematic--major .ko-cinematic__copy{max-width:43%;left:7%;text-shadow:0 2px #000}
+.ko-cinematic.ko-cinematic--major .ko-cinematic__copy strong{font-family:var(--app-font-sans);font-size:clamp(22px,3.7vw,44px);font-weight:900;letter-spacing:-.04em;word-break:keep-all;overflow-wrap:anywhere;line-height:1.15}
+.ko-cinematic.ko-cinematic--major .ko-cinematic__copy span{letter-spacing:.12em;font-family:var(--app-font-display)}
+.ko-cinematic.ko-cinematic--big_spell .ko-cinematic__spell-seal{display:none}
+.ko-cinematic.ko-cinematic--champion .ko-cinematic__panel{border-left:8px solid #d0c5a6;clip-path:polygon(0 0,100% 0,97% 100%,0 100%)}
+.ko-cinematic.ko-cinematic--legendary .ko-cinematic__panel{border-block-color:#c8ad6b}
+@media(min-width:1024px){.ko-game-shell .ko-game-stage{max-width:1120px}.ko-decks .ko-decks__columns{grid-template-columns:180px minmax(420px,1fr) minmax(340px,.8fr);gap:24px}}
+@media(max-width:767px){
+ body .ko-main-menu{padding:88px 20px 32px}.ko-main-menu .ko-main-menu__content{max-width:none;min-height:calc(100dvh - 120px)}.ko-main-menu .ko-main-menu__shade{background:#000000d9}.ko-main-menu .ko-main-menu__art{background-position:62% center;opacity:.9}.ko-main-menu .ko-main-menu__logo{font-size:100px}.ko-main-menu .ko-main-menu__grid{gap:0 16px}.ko-main-menu .ko-main-menu__item[data-menu-tier=battle]{flex-direction:column;align-items:flex-start;min-height:126px;padding:16px}.ko-main-menu .ko-main-menu__item[data-menu-tier=battle] .ko-main-menu__copy>span:first-child{font-size:20px}.ko-main-menu .ko-main-menu__item[data-menu-tier=utility]{min-height:76px;padding-block:12px}.ko-main-menu .ko-main-menu__user{gap:6px 12px;font-size:11px}
+ .ko-online-shell section:has(>h1){margin-top:40px}.ko-online-shell h1{font-size:32px;line-height:1.25}.ko-online-shell .ko-online-panel{padding:24px}.ko-online-shell .ko-online-panel>div{margin-bottom:24px}
+ .ko-prep-screen>section{padding-top:28px}.ko-prep-screen>section>div:first-child{text-align:left}.ko-prep-screen>section>div:first-child p{margin-inline:0}
+ .ko-decks .ko-decks__card-action{min-width:36px;min-height:36px}
+ .ko-collection header{align-items:flex-start;gap:16px}.ko-collection header .rounded-full{font-size:10px}.ko-collection .ko-collection-item{padding:0}
+ .ko-game-shell .ko-opponent-header{min-height:96px;height:96px}
+ .ko-game-shell .ko-opponent-champion{width:56px;height:78px}
+ .ko-game-shell .ko-player-champion{width:60px;height:84px}
+ .ko-game-shell .ko-player-info{width:94px}
+ .ko-game-shell .ko-player-footer{grid-template-columns:96px minmax(0,1fr);height:264px;min-height:264px;gap:4px}
+ .ko-game-shell .ko-player-stats{width:80px}
+ .ko-game-shell .ko-player-info :is(.ko-champion-ability,[tabindex="0"]){line-height:1.35;font-size:9px}
+ .ko-game-shell .ko-champion-ability{min-height:42px}
+ .ko-game-shell .ko-game-controls{padding:6px;gap:6px}
+ .ko-game-shell .ko-game-controls>button{min-height:42px}
+ .ko-game-shell .ko-board-area{gap:12px;padding-block:8px}
+ .ko-game-shell .ko-board-area::before{inset:0}
+ .ko-result-sheet.ko-result-sheet{padding:24px;max-height:calc(100dvh - 32px)}
+ .ko-mulligan-sheet.ko-mulligan-sheet{padding:18px}
+ .ko-cinematic.ko-cinematic--major .ko-cinematic__art{right:-6%;width:72%}
+ .ko-cinematic.ko-cinematic--major .ko-cinematic__copy{max-width:51%}
+ .ko-cinematic.ko-cinematic--major .ko-cinematic__copy strong{font-size:clamp(18px,5.5vw,26px)}
+}
+@media(prefers-reduced-motion:reduce){body :is(.ko-main-menu,.ko-online-shell,.ko-prep-screen,.ko-decks,.ko-collection,.ko-tower,.ko-game-shell) button{transition:none}.ko-collection .ko-collection-item:hover{transform:none}}
+
+/* Short portrait phones scroll as a single scene instead of cropping field cards. */
+@media(max-width:767px) and (orientation:portrait) and (max-height:680px){
+ .ko-game-shell.ko-game-shell{height:auto;min-height:100dvh;overflow:visible}
+ .ko-game-shell .ko-game-stage{height:auto;min-height:100dvh;overflow:visible;grid-template-rows:auto auto auto auto}
+ .ko-game-shell .ko-board-area{min-height:calc((100vw - 12px) * .7 + 70px);overflow:visible}
+ .ko-game-shell .ko-player-footer{height:264px;min-height:264px}
+}
+@media(max-width:767px){.ko-main-menu .ko-main-menu__art{opacity:1;background-size:auto 680px;background-position:66% top;background-repeat:no-repeat}.ko-main-menu .ko-main-menu__shade{background:linear-gradient(180deg,#00000060 0,#000000a8 240px,#000000f5 380px,#000000 500px)}}
+
+/* User-directed theme: the field and registered card art share a pure-black ground. */
+body .ko-game-shell,.ko-game-shell .ko-cinematic-background{background:#000}
+.ko-game-shell .ko-cinematic-background>div{display:none}
+.ko-game-shell .ko-board-area::before{background:#000;inset:0;border:0;box-shadow:none}
+.ko-game-shell :is(.ko-player-stats,.ko-opponent-stats) .font-display{white-space:nowrap}
+.ko-game-shell [data-card-highlight=attack] span.border-sky-300{background:#120f08;color:#e5ca83;border-color:#a18954;box-shadow:none;border-radius:0}
+.ko-game-shell [data-card-highlight=target] span.border-amber-300{box-shadow:none;border-radius:0}
+@media(min-width:769px){.ko-game-shell .ko-player-hand{padding-top:12px}.ko-game-shell .ko-board-slot{height:clamp(160px,21vh,220px)!important;width:clamp(128px,9.5vw,170px)!important}.ko-game-shell .ko-board-area{gap:18px;padding-block:6px}.ko-game-shell .ko-player-stats{min-width:88px}.ko-game-shell .ko-player-stats .font-display{font-size:20px}}
+
+@media(min-width:769px){.ko-game-shell .ko-player-info{width:224px}}

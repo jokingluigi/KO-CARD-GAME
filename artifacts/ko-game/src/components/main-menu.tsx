@@ -169,11 +169,11 @@ export function MainMenu({ onComingSoon, onDeckEdit, onAiMatch, user, onLogout, 
       {backgroundUrl && (
         <div
           aria-hidden="true"
-          className="pointer-events-none absolute inset-0 bg-cover bg-center"
-          style={{ backgroundImage: `linear-gradient(rgba(8, 8, 8, 0.72), rgba(8, 8, 8, 0.9)), url(${JSON.stringify(backgroundUrl)})` }}
+          className="ko-main-menu__art pointer-events-none absolute inset-0 bg-cover bg-center"
+          style={{ backgroundImage: `url(${JSON.stringify(backgroundUrl)})` }}
         />
       )}
-      <div aria-hidden="true" className="pointer-events-none absolute inset-0 z-[1] bg-black/[0.08]" />
+      <div aria-hidden="true" className="ko-main-menu__shade pointer-events-none absolute inset-0 z-[1]" />
       <div className="ko-main-menu__content relative z-10 mx-auto flex min-h-[calc(100vh-5rem)] w-full max-w-4xl flex-col justify-center">
         <header className="ko-main-menu__header text-center">
           <h1 className="ko-main-menu__logo font-display font-black text-white">KO</h1>
@@ -246,9 +246,11 @@ export function MainMenu({ onComingSoon, onDeckEdit, onAiMatch, user, onLogout, 
         )}
 
         <section aria-label="메인 메뉴" className="ko-main-menu__grid grid gap-4 sm:grid-cols-2">
-          {[...menuItems, ...(towerEnabled ? [{ label: '타워 모드', description: '16층 도전에서 덱을 성장시킵니다', icon: Layers3 }] : []), ...(draftEnabled ? [{ label: '드래프트 모드', description: '챔피언과 카드를 선택해 AI 또는 다른 유저와 대결합니다', icon: Layers3 }] : [])].map(({ label, description, icon: Icon }) => (
+          {[...menuItems, ...(towerEnabled ? [{ label: '타워 모드', description: '16층 도전에서 덱을 성장시킵니다', icon: Layers3 }] : []), ...(draftEnabled ? [{ label: '드래프트 모드', description: '챔피언과 카드를 선택해 AI 또는 다른 유저와 대결합니다', icon: Layers3 }] : [])].map(({ label, description, icon: Icon }, index) => (
             <button
               key={label}
+              data-menu-tier={index < 2 ? "battle" : "utility"}
+              data-menu-index={index+1}
               type="button"
               data-testid={`button-main-menu-${label === "온라인 매치" ? "online" : label === "AI 매치" ? "ai" : label}`}
               onClick={() => {

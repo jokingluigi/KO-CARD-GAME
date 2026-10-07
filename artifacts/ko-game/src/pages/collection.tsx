@@ -41,7 +41,7 @@ function CardCollectionItem({ card, onOpen, showCraftable = false, unlimited = f
       tabIndex={0}
       onClick={onOpen}
       onKeyDown={handleKeyDown}
-      className="group min-w-0 cursor-pointer rounded-xl border border-neutral-800 bg-black/35 p-2 text-left transition hover:-translate-y-1 hover:border-amber-500/70 hover:bg-amber-950/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-400"
+      className="ko-collection-item group min-w-0 cursor-pointer rounded-xl border border-neutral-800 bg-black/35 p-2 text-left transition hover:-translate-y-1 hover:border-amber-500/70 hover:bg-amber-950/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-400"
       aria-label={`${card.name} 카드 상세 보기`}
     >
       <div className="relative">
@@ -316,7 +316,7 @@ export default function CollectionPage() {
   }
 
   return (
-    <main className="ko-page-enter min-h-screen bg-neutral-950 px-4 py-6 text-neutral-100 sm:px-8 sm:py-8">
+    <main className="ko-collection ko-page-enter min-h-screen bg-neutral-950 px-4 py-6 text-neutral-100 sm:px-8 sm:py-8">
       <div className="mx-auto max-w-6xl">
         <div className="mb-6 flex items-center justify-between gap-3">
           <button type="button" onClick={() => navigate(ROUTES.MAIN_MENU)} className="flex items-center gap-2 text-sm font-bold text-neutral-400 hover:text-white">

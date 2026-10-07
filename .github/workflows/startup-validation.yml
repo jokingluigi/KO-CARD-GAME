@@ -4,6 +4,7 @@ on:
     paths:
       - artifacts/ko-game/**
       - docs/qa/entry-browser.mjs
+      - docs/qa/art-direction-browser.mjs
       - artifacts/ko-game/src/game/**
       - artifacts/ko-game/src/components/*animation*
       - artifacts/ko-game/src/components/battle-vfx*
@@ -119,3 +120,4 @@ jobs:
           node docs/qa/cinematic-overhaul-browser.mjs
           node docs/qa/cinematic-browser.mjs
           node docs/qa/presentation-master-browser.mjs
+          KO_QA_NO_REMOTE_ART=1 node docs/qa/art-direction-browser.mjs
