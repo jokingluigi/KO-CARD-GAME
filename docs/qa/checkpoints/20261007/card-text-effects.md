@@ -19,7 +19,7 @@ AI 100-match run reproduced 4 interrupted games with duplicate graveyard instanc
 
 ## Validation
 - PASS: current-card descriptions and base stats, hand plays/casts for all 85 public cards; focused zone, trigger, damage, silence, armor, defense and duplicate-retirement assertions.
-- PASS: 1269 offline game-engine tests before the last additional regression assertions; final focused suite re-run separately.
+- PASS: 1274 full engine/current-fixture/AI tests; 99 focused current-description checks; 196 additional exact-output public-catalog semantic checks (retire/destroy/revive, generation, passives, spell results, lifesteal, armor, silence and attack triggers).
 - PASS: 312 startup/backend/current-card tests before additional regression assertions.
 - FAIL -> FIXED -> PASS: AI 100-match stress test (96/100 ->100/100).
 - PASS: TypeScript/server/client production build.
@@ -27,6 +27,6 @@ AI 100-match run reproduced 4 interrupted games with duplicate graveyard instanc
 - PASS: current champion abilities smoke: 14 executions, no failure/unverified ability.
 
 ## Verification boundaries
-Older live-catalog tests published-effects-qa2, targeted-card-fixes and published-catalog-qa still include pre-existing obsolete expectations (e.g. Origin +1 per card instead of per two, Calavera revival without TAUNT, Deheon hand-only, old Champion quest/reward schema). Initial live combined run recorded 19 such failures after excluding the subsequently fixed AI duplicate defect. These suites are retained rather than weakening their assertions; do not count them as PASS. The current fixture/behavior suite and full offline engine suite are the regression gates for this patch.
+Older live-catalog tests published-effects-qa2, targeted-card-fixes and published-catalog-qa still include pre-existing obsolete expectations (e.g. Origin +1 per card instead of per two, Calavera revival without TAUNT, Deheon hand-only, old Champion quest/reward schema). Initial live combined run recorded 19 failures after excluding the subsequently fixed AI duplicate defect; these include obsolete fixtures and expectations and remain explicitly not passing. These suites are retained rather than weakening their assertions; do not count them as PASS. The current fixture/behavior suite and full offline engine suite are the regression gates for this patch.
 
 No authenticated production PvP two-client match or physical mobile session was available; those remain UNVERIFIED. Unpublished/unreferenced draft and disabled administrator cards are not returned by the public catalog and are outside the 85-card inventory. Successful hand play and AI stress are not proof of every conditional effect in every combination.
