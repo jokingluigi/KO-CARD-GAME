@@ -473,14 +473,6 @@ export function AdminChampionManager({ onUnauthorized }: { onUnauthorized: () =>
       questProgressRequired,
       questCondition,
     };
-    if ((imageAssetId === null) !== (imageUrl === null) ||
-        (completedPortraitAssetId === null) !== (completedPortraitUrl === null) ||
-        (questCompleteAudioAssetId === null) !== (questCompleteAudioUrl === null)) {
-      setError("초상화와 이미지 주소를 함께 확인해 주세요.");
-      saveInFlightRef.current = false;
-      setBusy(false);
-      return;
-    }
     try {
       const response = await fetch(editing ? `${adminApiBase}/champions/${editing.id}` : `${adminApiBase}/champions`, {
         method: editing ? "PATCH" : "POST", credentials: "include",
@@ -491,7 +483,7 @@ export function AdminChampionManager({ onUnauthorized }: { onUnauthorized: () =>
       if (response.status === 403) throw new Error("관리자 권한이 필요합니다.");
       if (response.status === 409) throw new Error(`충돌: ${await classifiedMessage(response)}`);
       if (response.status >= 500) throw new Error("서버 오류로 저장하지 못했습니다. 잠시 후 다시 시도해 주세요.");
-      if (!response.ok) throw new Error(`입력값을 확인해 주세요: ${await classifiedMessage(response)}`);
+      if (!response.ok) throw new Error(await classifiedMessage(response));
       setMessageText(editing ? "챔피언을 수정했습니다." : "새 챔피언을 DRAFT로 저장했습니다.");
       setOpen(false);
       await load();
