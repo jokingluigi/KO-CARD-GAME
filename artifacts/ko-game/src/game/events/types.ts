@@ -18,6 +18,8 @@ export type GameEventType =
   | 'CARD_DESTROYED'
   | 'CARD_RETIRED'
   | 'CARD_REMOVED'
+  | 'FUSION'
+  | 'CARD_VANISHED'
   | 'DAMAGE_DEALT'
   | 'ATTACK_DECLARED'
   | 'GOLD_CHANGED'
