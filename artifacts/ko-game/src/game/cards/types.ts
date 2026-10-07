@@ -157,6 +157,7 @@ export interface CardInstance {
   currentCost: number;
   temporaryCostUntilTurn?: number;
   temporaryStatModifiers?: TemporaryStatModifier[];
+  temporaryKeywordGrants?: Array<{ keyword: CardKeyword; untilTurn: number }>;
   /** Immutable values copied from the definition, retained for runtime checks. */
   baseCost?: number;
   baseAttack?: number;
@@ -196,6 +197,8 @@ export interface CardInstance {
   tags?: string[];
   /** Serializable base copies held by this card's CAPTURE action. */
   capturedCards?: CapturedCard[];
+  fusionCount?: number;
+  fusionSourceIds?: string[];
   statHistory?: CardStatHistoryEntry[];
   /** Snapshot retained only for chained effects that consume the last retirement. */
   lastRetiredStats?: { attack: number; health: number };
