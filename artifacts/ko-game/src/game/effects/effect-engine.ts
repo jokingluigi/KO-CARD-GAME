@@ -1556,11 +1556,14 @@ export function resolveStateBasedDeaths(
       : beforeRetire;
   }
 
-  const recentDamageCauses = causeEventStartIndex === undefined
-    ? []
-    : preparedState.events.slice(causeEventStartIndex).filter((event) =>
-        event.type === 'DAMAGE_DEALT' && (event.amount ?? 0) > 0,
-      );
+  // Nested damage triggers may settle a lethal target before the parent DAMAGE
+  // executor resumes. Its root event identifies this chain without reusing old hits.
+  const causeEvents = causeEventStartIndex === undefined
+    ? sourceContext?.rootSourceEventId
+      ? preparedState.events.filter(event => event.sourceContext?.rootSourceEventId === sourceContext.rootSourceEventId)
+      : []
+    : preparedState.events.slice(causeEventStartIndex);
+  const recentDamageCauses = causeEvents.filter(event => event.type === 'DAMAGE_DEALT' && (event.amount ?? 0) > 0);
   const causeByTarget = new Map<string, {
     sourceInstanceId: string;
     sourceContext?: EventAttribution;
@@ -3002,11 +3005,15 @@ function applyEffectInternal(
             }, undefined, triggerContext)
             : withDamageListeners;
         }
-        const lethalDamagedState = {
+        const lethalDamagedState: GameState = {
           ...clearDamageMarker(preparedState),
           players: preparedState.players.map((player) => player.id === targetOwner
             ? { ...player, board: player.board.map((card) => card?.instanceId === current.instanceId ? { ...card, currentHealth: health } : card) as typeof player.board }
             : player),
+          // Make damage causality available before SELF_DAMAGED can summon and settle deaths.
+          events: [...preparedState.events, { type: 'DAMAGE_DEALT', playerId, cardInstanceId: sourceCard.instanceId,
+            source: { type: 'CARD', cardInstanceId: sourceCard.instanceId }, target: { type: 'CARD', cardInstanceId: current.instanceId },
+            reason: 'CARD_EFFECT', amount: effectiveDamage, sourceContext: attribution }],
         };
         const selfDamaged = resolveTriggeredAbilities(
           lethalDamagedState,
@@ -3021,13 +3028,12 @@ function applyEffectInternal(
         const liveCurrent = afterSelfDamaged.players.find((player) => player.id === targetOwner)?.board
           .find((card) => card?.instanceId === current.instanceId);
         // Damage-trigger resolution may already settle lethal health and its leave effects.
-        // Record this hit once, but never append the same card to its graveyard again.
-        if (!liveCurrent) return resolveRegisteredRuleListeners({
-          ...clearDamageMarker(afterSelfDamaged),
-          events: [...afterSelfDamaged.events, { type: 'DAMAGE_DEALT', playerId, cardInstanceId: sourceCard.instanceId,
-            source: { type: 'CARD', cardInstanceId: sourceCard.instanceId }, target: { type: 'CARD', cardInstanceId: current.instanceId },
-            reason: 'CARD_EFFECT', amount: effectiveDamage, sourceContext: attribution }],
-        }, 'DAMAGE_TAKEN', targetOwner, current.instanceId, current.cardType);
+        if (!liveCurrent) {
+          const exactZero = health === 0 ? resolveTriggeredAbilities(afterSelfDamaged, playerId, sourceCard, 'EXACT_ZERO_DAMAGE', {
+            damagedTargetInstanceId: current.instanceId, healthBefore: preparedCurrent.currentHealth, healthAfter: health,
+          }) : afterSelfDamaged;
+          return resolveRegisteredRuleListeners(clearDamageMarker(exactZero), 'DAMAGE_TAKEN', targetOwner, current.instanceId, current.cardType);
+        }
         const beforeRetire = resolveTriggeredAbilities(afterSelfDamaged, targetOwner, liveCurrent, 'BEFORE_RETIRE');
         const protectedState = beforeRetire !== afterSelfDamaged && beforeRetire.targetingState?.active
           ? resolvePendingEffects(beforeRetire)
@@ -3036,7 +3042,7 @@ function applyEffectInternal(
           return resolveRegisteredRuleListeners({
             ...protectedState,
             preventedRetireTargetIds: protectedState.preventedRetireTargetIds.filter((id) => id !== current.instanceId),
-            events: [...protectedState.events, { type: 'DAMAGE_DEALT', playerId, cardInstanceId: sourceCard.instanceId, source: { type: 'CARD', cardInstanceId: sourceCard.instanceId }, target: { type: 'CARD', cardInstanceId: current.instanceId }, reason: 'CARD_EFFECT', amount: 0, tags: ['BLOCKED'], sourceContext: attribution }],
+            events: protectedState.events.map((event, index) => index === preparedState.events.length ? { ...event, amount: 0, tags: ['BLOCKED'] } : event),
           }, 'DAMAGE_TAKEN', targetOwner, current.instanceId, current.cardType);
         }
          const retired: CardInstance = resetCardForGraveyard({
@@ -3050,7 +3056,6 @@ function applyEffectInternal(
              ? { ...player, board: player.board.map((card) => card?.instanceId === current.instanceId ? null : card) as typeof player.board, graveyard: [...player.graveyard, retired] }
             : player),
           events: [...protectedState.events,
-            { type: 'DAMAGE_DEALT', playerId, cardInstanceId: sourceCard.instanceId, source: { type: 'CARD', cardInstanceId: sourceCard.instanceId }, target: { type: 'CARD', cardInstanceId: current.instanceId }, reason: 'CARD_EFFECT', amount: effectiveDamage, sourceContext: attribution },
             { type: 'CARD_RETIRED', playerId: targetOwner, cardInstanceId: current.instanceId, cardType: current.cardType ?? 'WRESTLER', boardSlot: current.boardSlot!, source: { type: 'CARD', cardInstanceId: sourceCard.instanceId }, target: { type: 'CARD', cardInstanceId: current.instanceId }, targetSnapshot: { playerId: targetOwner, cardInstanceId: current.instanceId, cardType: current.cardType ?? 'WRESTLER', boardSlot: current.boardSlot!, currentAttack: current.currentAttack, currentHealth: current.currentHealth }, reason: 'RETIRE', sourceContext: attribution },
           ],
         };

@@ -15,11 +15,11 @@ Source: live /api/cards (85 definitions) and /api/champions (7 champions). Publi
 Historical description snapshots retain their old behavior through text-based compatibility. Authored structured scripts continue to take precedence.
 
 ## Additional engine defect
-AI 100-match run reproduced 4 interrupted games with duplicate graveyard instances. Lethal SELF_DAMAGED trigger resolution could retire Zombie Bellona during its token summon, after which the damage executor retired its stale snapshot again. Revalidate field membership after damage preparation and lethal damage triggers. The same 100 seeded matches now all terminate successfully: 5667 actions, 20227 events, no interruption, duplicate instance, timeout or invalid action.
+AI 100-match run reproduced 4 interrupted games with duplicate graveyard instances. Lethal SELF_DAMAGED trigger resolution could retire Zombie Bellona during its token summon, after which the damage executor retired its stale snapshot again. Revalidate field membership after damage preparation and lethal damage triggers. Damage is recorded before nested SELF_DAMAGED resolution so state-based retirement retains its current root damage cause; this also fixes Hilbil kill healing against Zombie Bellona. Exact-zero and retirement prevention remain covered by regressions. The same 100 seeded matches now all terminate successfully: 5667 actions, 20227 events, no interruption, duplicate instance, timeout or invalid action.
 
 ## Validation
 - PASS: current-card descriptions and base stats, hand plays/casts for all 85 public cards; focused zone, trigger, damage, silence, armor, defense and duplicate-retirement assertions.
-- PASS: 1274 full engine/current-fixture/AI tests; 99 focused current-description checks; 196 additional exact-output public-catalog semantic checks (retire/destroy/revive, generation, passives, spell results, lifesteal, armor, silence and attack triggers).
+- PASS: 1471 full engine/current-fixture/AI tests; 100 focused current-description checks; 196 additional exact-output public-catalog semantic checks (retire/destroy/revive, generation, passives, spell results, lifesteal, armor, silence and attack triggers).
 - PASS: 312 startup/backend/current-card tests before additional regression assertions.
 - FAIL -> FIXED -> PASS: AI 100-match stress test (96/100 ->100/100).
 - PASS: TypeScript/server/client production build.
