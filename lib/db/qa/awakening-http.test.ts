@@ -198,7 +198,7 @@ test("saving again preserves stage artwork/name changes and creates no duplicate
     "사용자 지정 탱커",
   );
 });
-test("server rejects forged power, HP0 condition and unsupported full-board policies", async () => {
+test("server preserves incomplete awakening drafts but does not execute unsafe configurations", async () => {
   for (const questCondition of [
     {
       ...input.questCondition,
@@ -218,28 +218,19 @@ test("server rejects forged power, HP0 condition and unsupported full-board poli
       ...input.questCondition,
       condition: { type: "HEALTH", owner: "SELF", op: "LTE", value: 5 },
     },
-  ])
-    assert.equal(
-      (
-        await request(`/admin/champions/${id}`, "PATCH", {
-          ...input,
-          version: record.version,
-          questCondition,
-        })
-      ).status,
-      400,
-    );
-  assert.equal(
-    (
-      await request(`/admin/champions/${id}`, "PATCH", {
-        ...input,
-        version: record.version,
-        questProgressRequired: 2,
-      })
-    ).status,
-    400,
-  );
+  ]) {
+    const saved = await request("/admin/champions/" + id, "PATCH", { ...input, version: record.version, questCondition });
+    assert.equal(saved.status, 200, JSON.stringify(saved.body)); record = saved.body.champion;
+    assert.deepEqual(record.questCondition, questCondition);
+    assert.equal(championRecordToDefinition(record).quest, null);
+  }
+  const incomplete = await request("/admin/champions/" + id, "PATCH", { ...input, version: record.version, questProgressRequired: 2 });
+  assert.equal(incomplete.status,200,JSON.stringify(incomplete.body)); record=incomplete.body.champion;
+  assert.equal(championRecordToDefinition(record).quest,null);
+  const restored = await request("/admin/champions/" + id, "PATCH", { ...input, version: record.version });
+  assert.equal(restored.status,200);record=restored.body.champion;
 });
+
 test("exclusive cards keep quest-only rules under administrator name and metadata edits", async () => {
   const cards = (await request("/admin/cards")).body.cards;
   const tank = cards.find((c: any) => c.id === AWAKENING_CARD_IDS.TANK);
@@ -267,7 +258,7 @@ test("exclusive cards keep quest-only rules under administrator name and metadat
         championTokenDefinitionId: tank.id,
       })
     ).status,
-    400,
+    200,
   );
   assert.equal(
     (await request(`/admin/cards/${tank.id}`, "DELETE")).status,
