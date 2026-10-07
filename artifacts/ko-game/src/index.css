@@ -1,6 +1,7 @@
 @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;700;900&family=Oswald:wght@500;700&display=swap');
 @import 'tailwindcss';
 @import 'tw-animate-css';
+@import './premium-presentation.css';
 @plugin "@tailwindcss/typography";
 
 @custom-variant dark (&:is(.dark *));

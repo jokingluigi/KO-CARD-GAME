@@ -25,7 +25,7 @@ export function AiMatchSetup({ decks, aiDecks, error, onStart, onBack }: AiMatch
   }
 
   return (
-    <main className="min-h-screen bg-[#080808] px-5 py-10 text-white sm:px-8">
+    <main className="ko-prep-screen min-h-screen bg-[#080808] px-5 py-10 text-white sm:px-8">
       <section className="mx-auto flex min-h-[calc(100vh-5rem)] w-full max-w-6xl flex-col justify-center">
         <div className="mb-8 text-center">
           <p className="font-display text-xs font-black tracking-[0.45em] text-amber-400">KO · AI MATCH</p>

@@ -84,7 +84,7 @@ export function MatchResultOverlay({
         {loserLine && <p className="champion-defeat-cinematic__line">“{loserLine}”</p>}
         {winnerLine && <p className="champion-defeat-cinematic__victory">{winner.champion?.name}: “{winnerLine}”</p>}
       </div> :
-      <section className={`max-h-[90dvh] w-full max-w-lg overflow-y-auto rounded-2xl border p-6 text-center md:p-10 ${accentClass}`}>
+      <section data-result={isVictory ? "victory" : isDefeat ? "defeat" : "complete"} className={`ko-result-sheet max-h-[90dvh] w-full max-w-lg overflow-y-auto rounded-2xl border p-6 text-center md:p-10 ${accentClass}`}>
         <p className="font-display text-[10px] font-bold tracking-[0.5em] text-primary md:text-xs">KO MATCH RESULT</p>
         <h1 className="mt-6 text-5xl font-black tracking-tight md:text-7xl">{title}</h1>
         <p className="mt-3 font-display text-xl font-black tracking-[0.35em] md:text-2xl">{subtitle}</p>

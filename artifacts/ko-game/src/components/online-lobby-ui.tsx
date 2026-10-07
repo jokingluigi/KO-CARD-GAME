@@ -82,7 +82,7 @@ export function OnlineShell({
         </section>
         <div className="mt-10 flex-1 pb-8 sm:mt-14">{children}</div>
         <footer className="border-t border-neutral-900 py-5 text-[0.65rem] font-bold tracking-[0.12em] text-neutral-600">
-          SERVER-AUTHORITATIVE MATCHES · PRIVATE BY DEFAULT
+          KO CARD GAME / ONLINE BATTLE
         </footer>
       </div>
     </main>
