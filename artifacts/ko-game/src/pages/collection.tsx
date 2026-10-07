@@ -544,6 +544,7 @@ function ChampionDetail({
         </div>
         <div className="space-y-4">
           <InfoBlock icon={<Swords className="h-4 w-4" />} label={`${champion.abilityName}${champion.abilityCost > 0 ? ` · 비용 ${champion.abilityCost} 골드` : ""}`} text={champion.abilityText || champion.description} />
+          {champion.gameStartAbilityText && <InfoBlock label={`게임 시작 · ${champion.gameStartAbilityName || "시작 능력"}`} text={champion.gameStartAbilityText} />}
           {champion.hasQuest && <InfoBlock label={champion.questName || "Quest"} text={champion.questText || "Quest 정보가 없습니다."} />}
           {champion.hasQuest && champion.questRewardText && <InfoBlock label="Quest 보상 / 강화 능력" text={`${champion.questRewardText}${champion.upgradedAbilityText ? `\n\n강화 능력: ${champion.upgradedAbilityName || ""}\n${champion.upgradedAbilityText}` : ""}`} />}
           <section className="rounded-lg border border-rose-800/60 bg-rose-950/20 p-4">

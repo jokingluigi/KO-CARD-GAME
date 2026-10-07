@@ -39,6 +39,7 @@ test('일반 DESTROY는 카드 파괴 이벤트만 기록하고 카드를 묘지
     ),
     {
       type: 'CARD_DESTROYED',
+      cardDefinitionId: card.definitionId,
       playerId: 'player-1',
       cardInstanceId: card.instanceId,
       cardType: card.cardType ?? 'WRESTLER',

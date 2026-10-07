@@ -4,6 +4,7 @@ export type LeaveReason = 'RETIRE' | 'DESTROY' | 'REMOVE_FROM_GAME';
 export type EntryCause = 'PLAY_FROM_HAND' | 'SUMMON' | 'REVIVE' | 'CHAMPION_DEPLOY';
 
 export type GameEventType =
+  | 'CHAMPION_GAME_START_ABILITY'
   | 'CHAMPION_EMOTE'
   | 'MULLIGAN_COMPLETED'
   | 'TURN_STARTED'
@@ -47,6 +48,7 @@ export interface EventAttribution {
 
 export interface GameEvent {
   type: GameEventType;
+  cardDefinitionId?: string;
   playerId?: string;
   cardInstanceId?: CardInstanceId;
   cardType?: 'WRESTLER' | 'TECHNIQUE';

@@ -44,6 +44,7 @@ export function enterField(
   }, state.turn);
   const event: EnterFieldEvent = {
     type: 'ENTER_FIELD',
+    cardDefinitionId: card.definitionId,
     playerId,
     cardInstanceId: card.instanceId,
     boardSlot,

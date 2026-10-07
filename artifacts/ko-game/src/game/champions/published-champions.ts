@@ -15,6 +15,7 @@ export type PublishedChampionRecord = {
   questCompletedPortraitEnabled?: boolean;
   questCompletedPortraitAssetId?: string | null; questCompletedPortraitUrl?: string | null;
   maxHealth: number; abilityName: string; abilityCost: number; abilityText: string; abilityEffects: Structured;
+  gameStartAbilityName?: string | null; gameStartAbilityText?: string | null; gameStartAbilityEffects?: Structured | null;
   hasQuest: boolean; questName: string | null; questText: string | null;
   questCondition: { awakening?: unknown; condition?: unknown; goldSpent?: boolean; selfEffectDamage?: boolean; strictEventCount?: boolean; event?: string; cardType?: ChampionQuestCardType; sourceActionType?: string; progress?: number; required?: number } | null; questProgressRequired: number | null;
   questRewardText: string | null; questRewardEffects: Structured | null;
@@ -120,6 +121,9 @@ export function championRecordToDefinition(record: PublishedChampionRecord): Cha
     abilityCost: record.abilityCost,
     ability: ability(`${record.id}-ability`, record.abilityName, record.abilityCost, record.abilityText,
       record.abilityEffects, record.championTokenDefinitionId),
+    gameStartAbility: record.gameStartAbilityName?.trim() || record.gameStartAbilityText?.trim() || record.gameStartAbilityEffects
+      ? ability(record.id + '-game-start', record.gameStartAbilityName?.trim() || '게임 시작 능력', 0,
+          record.gameStartAbilityText ?? '', record.gameStartAbilityEffects ?? null, record.championTokenDefinitionId) : null,
     quest,
     upgradedAbility: record.upgradedAbilityName
       ? ability(`${record.id}-ability-upgraded`, record.upgradedAbilityName,

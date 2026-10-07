@@ -55,6 +55,7 @@ test('필드 진입은 ENTER_FIELD 이벤트를 발생시킨다', () => {
     state.events.find((event) => event.type === 'ENTER_FIELD'),
     {
     type: 'ENTER_FIELD',
+      cardDefinitionId: 'test-wrestler-1',
     playerId: 'player-1',
     cardInstanceId: card.instanceId,
     boardSlot: 0,

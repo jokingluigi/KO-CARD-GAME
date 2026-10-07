@@ -42,6 +42,8 @@ export type PublishedCardRecord = {
   entranceAudioVolume?: number;
   entranceAudioEnabled?: boolean;
   summonLine?: string | null;
+  retireLine?: string | null;
+  destroyLine?: string | null;
 };
 
 function amount(config: Record<string, unknown>): number {
@@ -308,6 +310,7 @@ export function cardRecordToDefinition(card: PublishedCardRecord): CardDefinitio
        entranceAudioVolume: card.entranceAudioVolume,
        entranceAudioEnabled: card.entranceAudioEnabled,
        summonLine: card.summonLine ?? null,
+       retireLine: card.retireLine ?? null, destroyLine: card.destroyLine ?? null,
       isToken: card.isToken,
       isChampionToken: card.isChampionToken,
       ...(card.effectConfig.questExclusive === true ? { questExclusive: true } : {}),

@@ -64,7 +64,7 @@ export function advanceAIOpponent(state: GameState, aiPlayerId: string, difficul
     if (spoken.success) next = spoken.state;
   }
   for (let decision = 0; decision < AI_DECISIONS_PER_TURN; decision += 1) {
-    if (next.status !== "IN_PROGRESS" || next.activePlayerId !== aiPlayerId) break;
+    if (next.status !== "IN_PROGRESS" || (next.targetingState?.active ? next.targetingState.playerId !== aiPlayerId : next.activePlayerId !== aiPlayerId)) break;
     const legalActions = getLegalActions(next, aiPlayerId);
     if (!legalActions.length) {
       if (next.targetingState?.active) break;
@@ -113,7 +113,7 @@ export function replayAIMatch(
       const playerId = isAI ? aiPlayerId : userPlayerId;
       const action = toServerAction(stripClientPlayerId(rawAction), playerId);
       if (!action || (isAI && action.type === "SURRENDER")) throw new Error("경기 행동 형식이 올바르지 않습니다.");
-      if (action.type !== "EMOTE" && action.type !== "SURRENDER" && state.activePlayerId !== playerId) {
+      if (action.type !== "EMOTE" && action.type !== "SURRENDER" && (state.targetingState?.active ? state.targetingState.playerId !== playerId : state.activePlayerId !== playerId)) {
         throw new Error("경기 행동 순서가 올바르지 않습니다.");
       }
       // Replay the legal actions that actually occurred. Re-running AI scoring
@@ -135,7 +135,7 @@ export function replayAIMatch(
     if (state.status !== "IN_PROGRESS") {
       throw new Error("AI 행동으로 경기가 먼저 끝났습니다.");
     }
-    if (state.activePlayerId !== userPlayerId && !isOutOfTurnAction) {
+    if ((state.targetingState?.active ? state.targetingState.playerId !== userPlayerId : state.activePlayerId !== userPlayerId) && !isOutOfTurnAction) {
       throw new Error("사용자 행동 순서가 올바르지 않습니다.");
     }
     const action = toServerAction(stripClientPlayerId(rawAction), userPlayerId);

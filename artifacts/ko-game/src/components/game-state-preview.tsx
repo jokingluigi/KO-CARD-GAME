@@ -1,3 +1,4 @@
+import { wrestlerEventLine } from './wrestler-event-line';
 import { wrestlerPlayCost } from '@/game/engine/play-wrestler';
 import { AwakeningStatus } from './awakening-status';
 import { TOWER_VANILLA_CHAMPION_ID } from '@/game/champions/tower-vanilla';
@@ -375,6 +376,10 @@ export function GameStatePreview({
     for (const event of newEvents) {
       let line: string | null = null;
       let speaker = state.players.find((player) => player.id === event.playerId)?.champion?.name ?? '챔피언';
+      if (event.type === 'CHAMPION_GAME_START_ABILITY') {
+        const start = state.players.find(p => p.id === event.playerId)?.champion?.gameStartAbility;
+        line = start ? start.name + ': ' + start.description : null;
+      }
       if (event.type === 'CHAMPION_EMOTE' && event.playerId) {
         const owner = state.players.find((player) => player.id === event.playerId);
         const emote = event.reason as ChampionEmote;
@@ -382,11 +387,8 @@ export function GameStatePreview({
           line = championVoiceLine(owner?.champion?.presentationLines, event.tags?.includes('AFTER_QUEST') ?? false, emote) ?? CHAMPION_EMOTE_LABELS[emote];
         }
       }
-      if (event.type === 'ENTER_FIELD' && event.cardInstanceId) {
-        const definition = state.cardPool?.find((card) => card.id === (currentCards(state).get(event.cardInstanceId!)?.definitionId));
-        line = definition?.summonLine ?? null;
-        speaker = definition?.name ?? speaker;
-      }
+      const wrestlerLine = wrestlerEventLine(event, state.cardPool ?? [], previousCardsRef.current, currentCards(state));
+      if (wrestlerLine) { line = wrestlerLine.text; speaker = wrestlerLine.speaker; }
       if (line && event.playerId) {
         setSpokenLine({ text: line, playerId: event.playerId, speaker, id: Date.now() });
         if (spokenTimerRef.current !== null) window.clearTimeout(spokenTimerRef.current);
@@ -667,7 +669,7 @@ export function GameStatePreview({
   const me = state.players[0];
   const opp = state.players[1];
   const effectTargeting = state.targetingState?.active;
-  const validEffectTargetIds = new Set(state.targetingState?.validTargetIds ?? []);
+  const validEffectTargetIds = new Set(state.targetingState?.playerId === me.id ? state.targetingState.validTargetIds : []);
   const selectedEffectTargetIds = new Set(state.targetingState?.selectedTargetIds ?? []);
   
   const isMyTurn = state.activePlayerId === me.id;
@@ -1005,7 +1007,7 @@ export function GameStatePreview({
          {/* BOARDS AREA */}
           <div className="ko-board-area relative flex min-h-0 flex-1 flex-col items-center justify-center gap-4 py-2 md:gap-6 md:py-4">
             {effectTargeting && <div role="status" className="pointer-events-none absolute left-1/2 top-0 z-[115] max-w-[74vw] -translate-x-1/2 rounded border border-amber-400/70 bg-black/90 px-3 py-1 text-center text-[11px] font-bold text-amber-100 shadow-lg md:text-sm">
-              {state.targetingState?.pendingAction?.type === 'USE_CHAMPION_ABILITY' ? me.champion?.name : state.cardPool?.find((card) => card.id === state.targetingState?.sourceCard?.definitionId)?.name ?? getCardDefinition(state.targetingState?.sourceCard?.definitionId ?? '')?.name ?? '선수'} 효과의 대상을 선택하세요
+              {state.targetingState?.championRewardReplacement ? '토큰 소환: 돌려보낼 아군 선수 1장을 선택하세요.' : <>{state.targetingState?.pendingAction?.type === 'USE_CHAMPION_ABILITY' ? me.champion?.name : state.cardPool?.find((card) => card.id === state.targetingState?.sourceCard?.definitionId)?.name ?? getCardDefinition(state.targetingState?.sourceCard?.definitionId ?? '')?.name ?? '선수'} 효과의 대상을 선택하세요</>}
             </div>}
             
              {/* Opponent Board + Zones */}
@@ -1152,9 +1154,10 @@ export function GameStatePreview({
                    : state.targetingState!.sourceCard?.definitionId
                      ? `${state.cardPool?.find((card) => card.id === state.targetingState!.sourceCard!.definitionId)?.name ?? getCardDefinition(state.targetingState!.sourceCard!.definitionId)?.name ?? '선수'}의 효과`
                      : '효과'} 발동 중</strong>
-                 대상 선택 ({state.targetingState!.selectedTargetIds.length}/{state.targetingState!.minTargets})
+                 {state.targetingState!.championRewardReplacement ? '퀘스트 토큰 소환: 돌려보낼 아군 선수 1장을 선택하세요' : <>대상 선택 ({state.targetingState!.selectedTargetIds.length}/{state.targetingState!.minTargets})</>}
+                 {state.targetingState!.championRewardReplacement && <span className="block">손패가 가득 차면 덱 맨 위로 보냅니다.</span>}
                  <span className="mt-1 block text-[9px] text-amber-200/80">금색으로 강조된 대상만 선택 가능</span>
-                 <button type="button" onClick={onCancelEffectTargeting} className="mt-1 block w-full rounded border border-amber-600 px-1 py-0.5 text-[9px]">취소</button>
+                 {!state.targetingState!.championRewardReplacement && <button type="button" onClick={onCancelEffectTargeting} className="mt-1 block w-full rounded border border-amber-600 px-1 py-0.5 text-[9px]">취소</button>}
                </div>
              )}
              <div className="flex items-center justify-between gap-2 border-b border-neutral-800 pb-2 md:flex-col md:items-stretch">

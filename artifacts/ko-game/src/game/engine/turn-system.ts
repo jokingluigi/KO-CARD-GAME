@@ -1,3 +1,4 @@
+import { resolveChampionGameStartAbility } from './champion-system';
 import { healNewCardAware } from './new-card-rules';
 import { resumeCountdownTurnStart } from './countdown';
 import type { GameState, PlayerState } from '../types/game-state';
@@ -144,6 +145,8 @@ export function dealOpeningHands(state: GameState): GameState {
 function resolveGameStartAbilities(state: GameState): GameState {
   let next = state;
   for (const startingPlayer of state.players) {
+    next = resolveChampionGameStartAbility(next, startingPlayer.id);
+    if (next.targetingState?.active) throw new Error('챔피언 게임 시작 능력은 자동으로 완료되어야 합니다.');
     const startingIds = [...startingPlayer.deck, ...startingPlayer.hand].map((card) => card.instanceId);
     for (const instanceId of startingIds) {
       const player = next.players.find((candidate) => candidate.id === startingPlayer.id);

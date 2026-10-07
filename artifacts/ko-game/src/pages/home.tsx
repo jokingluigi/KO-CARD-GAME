@@ -706,7 +706,7 @@ export default function Home({ initialAuthUser }: { initialAuthUser?: AuthUser }
       !matchReady ||
       aiOpeningActive ||
       gameState.status !== 'IN_PROGRESS' ||
-      gameState.activePlayerId !== gameState.players[1]?.id ||
+      (gameState.targetingState?.active ? gameState.targetingState.playerId !== gameState.players[1]?.id : gameState.activePlayerId !== gameState.players[1]?.id) ||
       aiActionRunningRef.current
     ) {
       return;
@@ -743,7 +743,7 @@ export default function Home({ initialAuthUser }: { initialAuthUser?: AuthUser }
         aiActionRunningRef.current = false;
       }
     };
-  }, [gameState.activePlayerId, gameState.status, isAiMatch, aiMatchStarted, matchReady, aiOpeningActive]);
+  }, [gameState.activePlayerId, gameState.status, gameState.targetingState?.playerId, isAiMatch, aiMatchStarted, matchReady, aiOpeningActive]);
 
   useEffect(() => {
     const match = aiMatchQuestContextRef.current;

@@ -260,3 +260,34 @@ export function useChampionAbility(
     : resolved;
   return actionSuccess(processChampionQuestEvents(state, afterNonStructured));
 }
+
+/** Authoritative, serialized once-only start effect, shared by every match mode. */
+export function resolveChampionGameStartAbility(state: GameState, playerId: string): GameState {
+  const player = state.players.find(p => p.id === playerId);
+  const champion = player?.champion, ability = champion?.gameStartAbility;
+  if (!player || !champion || !ability || champion.gameStartAbilityResolved) return state;
+  const effectSource: CardInstance = {
+    instanceId: `champion-${player.champion!.id}`,
+    definitionId: `champion-${player.champion!.id}`,
+    cardType: 'WRESTLER', currentCost: 0, currentAttack: 0, currentHealth: 1,
+    maxHealth: 1, keywords: [], abilities: [], boardSlot: null, enteredThisTurn: false,
+    attacksUsedThisTurn: 0, activeUsedThisTurn: false, isSilenced: false,
+    isStunned: false, dodgeAvailable: false, isChampionToken: false,
+    isDirectDeployedChampion: false, isSilenceImmune: false, isGenerated: true, isToken: false,
+  };
+  const sourceContext: EventAttribution = { sourcePlayerId: playerId, sourceActionType: 'CHAMPION_GAME_START',
+    sourceChampionDefinitionId: champion.id, sourceAbilityId: ability.id,
+    rootSourceEventId: 'champion-start:' + playerId + ':' + champion.id };
+  const marked: GameState = { ...state, players: state.players.map(p => p.id === playerId && p.champion
+    ? { ...p, champion: { ...p.champion, gameStartAbilityResolved: true } } : p),
+    events: [...state.events, { type: 'CHAMPION_GAME_START_ABILITY', playerId, championId: champion.id,
+      source: { type: 'CHAMPION', championId: champion.id }, reason: ability.id, sourceContext }],
+  };
+  const resolved = ability.effects.reduce((next, effect) => applyChampionEffect(next, playerId, champion.id, effect, sourceContext, effectSource), marked);
+  const structured = ability.effects.filter((e): e is Extract<ChampionEffect, { type: 'STRUCTURED' }> => e.type === 'STRUCTURED');
+  return structured.length ? resolvePendingEffects({ ...resolved, targetingState: {
+    active: true, playerId, sourceInstanceId: effectSource.instanceId, sourceCard: effectSource,
+    effects: structured, effectIndex: 0, selectedTargetIds: [], lastTargetIds: [], validTargetIds: [], minTargets: 0,
+    maxTargets: 0, mandatory: true, cancelable: false, triggerContext: { sourceContext },
+  } }) : resolved;
+}

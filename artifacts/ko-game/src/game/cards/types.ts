@@ -118,6 +118,8 @@ export interface CardDefinition {
   entranceAudioVolume?: number;
   entranceAudioEnabled?: boolean;
   summonLine?: string | null;
+  retireLine?: string | null;
+  destroyLine?: string | null;
   isToken: boolean;
   isChampionToken: boolean;
   keywords: CardKeyword[];

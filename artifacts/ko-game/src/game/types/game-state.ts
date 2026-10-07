@@ -111,6 +111,7 @@ export interface GameState {
   /** Effect resolution is deliberately part of game state, not UI state. */
   targetingState?: {
     active: true;
+    championRewardReplacement?: { championId: string; token: CardInstance };
      phase?: 'PRE_COMMIT' | 'POST_COMMIT';
      playRollback?: GameState;
      pendingAction?: {

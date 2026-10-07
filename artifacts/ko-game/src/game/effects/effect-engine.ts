@@ -1,5 +1,6 @@
 import { startCountdown, clearCountdown } from '../cards/countdown';
 import { queueWantedReward, wantedRemovalActor } from '../engine/wanted';
+import { awaitChampionRewardSpace, selectChampionRewardReplacement } from '../engine/champion-reward-replacement';
 import { resumeCountdownTurnStart } from '../engine/countdown';
 import { newCardTargetAllowed } from '../cards/new-card-effects';
 import { hasNewCardRule, healNewCardAware, silenceDamageReduction, madokawaIncomingBonus, healingTurn } from '../engine/new-card-rules';
@@ -1614,6 +1615,7 @@ export function resolveStateBasedDeaths(
       ...preparedState.events,
       ...retired.map(({ playerId, card, slot, sourceInstanceId, sourceContext: retirementContext }) => ({
         type: 'CARD_RETIRED' as const,
+        cardDefinitionId: card.definitionId,
         playerId,
         cardInstanceId: card.instanceId,
         cardType: card.cardType ?? 'WRESTLER',
@@ -1660,7 +1662,7 @@ export function resolvePendingEffects(state: GameState): GameState {
   const pending = state.targetingState;
   if (!pending) return state;
   // A script SELECT is already suspended; only selectEffectTarget may resume its program.
-  if (pending.scriptContinuation) return state;
+  if (pending.scriptContinuation || pending.championRewardReplacement) return state;
   // Keep this frame visible while automatic effects execute: a lethal/destroy
   // trigger can then install itself as a child continuation.
   let next: GameState = { ...state, targetingState: pending };
@@ -1766,6 +1768,10 @@ function applyTagChange(state: GameState, playerId: string, source: CardInstance
 export function selectEffectTarget(state: GameState, targetId: string): GameState {
   const pending = state.targetingState;
   if (!pending) return state;
+  if (pending.championRewardReplacement) {
+    const selected = selectChampionRewardReplacement(state, targetId);
+    return selected === state ? state : resolvePendingEffects(selected);
+  }
   if (pending.scriptContinuation) {
     if (!pending.validTargetIds.includes(targetId) || pending.selectedTargetIds.includes(targetId)) return state;
     const selected = [...pending.selectedTargetIds, targetId];
@@ -1819,6 +1825,7 @@ export function selectEffectTarget(state: GameState, targetId: string): GameStat
 export function cancelEffectTargeting(state: GameState): GameState {
   const pending = state.targetingState;
   if (!pending) return state;
+  if (pending.championRewardReplacement) return state;
   if (pending.playRollback) return pending.playRollback;
   if (pending.phase === 'PRE_COMMIT') return { ...state, targetingState: undefined };
   // Optional structured effects retain their normal continuation semantics.
@@ -1931,7 +1938,7 @@ function applyEffectInternal(
 
     if (effect.action === 'REPEAT_TURN_END') return state;
     if (effect.action === 'DEPLOY_CHAMPION_TOKEN') {
-      return deployLinkedChampionToken(state, playerId);
+      return deployLinkedChampionToken(state, playerId, sourceCard.tags?.includes('CHAMPION_QUEST_REWARD_SOURCE') ? 'CHAMPION_QUEST_REWARD' : 'CHAMPION_TOKEN_DEPLOY');
     }
     if (effect.action === 'TRANSFORM_SOURCE') {
       if (effect.values?.causal === 'DAMAGE_CAUSED_TARGET_RETIRE' &&
@@ -2033,6 +2040,14 @@ function applyEffectInternal(
       const aggregate = effect.action === 'SUMMON' && effect.values?.aggregateStats?.source === 'LAST_DESTROYED_TARGETS'
         ? state.targetingState?.lastAggregatedStats
         : undefined;
+      if (effect.action === 'SUMMON' && (effect.values?.count ?? 1) === 1 && definition.isChampionToken && sourceCard.tags?.includes('CHAMPION_QUEST_REWARD_SOURCE') && towerOpenSlot(state, playerId) < 0 && owner.champion) {
+        const generated = generateCard(definition, { instanceId: sourceCard.instanceId + ':reward:' + state.events.length,
+          playerId, source: { type: 'CHAMPION', championId: owner.champion.id }, reason: 'CHAMPION_QUEST_REWARD',
+          statModifiers: effect.values?.generatedModifiers ? { cost: effect.values.generatedModifiers.cost,
+            attack: effect.values.generatedModifiers.attack, health: effect.values.generatedModifiers.health,
+            ...(effect.values.generatedModifiers.copySourceStats ? { copySourceStats: { attack: sourceCard.currentAttack, health: sourceCard.currentHealth } } : {}) } : undefined, creationEventIndex: state.events.length });
+        return awaitChampionRewardSpace({ ...state, events: [...state.events, generated.event] }, playerId, owner.champion.id, generated.card);
+      }
       const generationCount = Math.max(1, Math.min(20, effect.values?.count ?? 1));
       const generatedCards = Array.from({ length: generationCount }, (_, index) => {
          const generated = generateCard(definition, {
@@ -2776,7 +2791,7 @@ function applyEffectInternal(
              graveyard: [...player.graveyard, resetCardForGraveyard(current)],
           }),
           events: [...nextState.events, {
-            type: 'CARD_RETIRED' as const, playerId: targetOwner, cardInstanceId: current.instanceId, cardType: current.cardType ?? 'WRESTLER',
+            type: 'CARD_RETIRED' as const, cardDefinitionId: current.definitionId, playerId: targetOwner, cardInstanceId: current.instanceId, cardType: current.cardType ?? 'WRESTLER',
             boardSlot: current.boardSlot!, source: { type: 'CARD' as const, cardInstanceId: sourceCard.instanceId },
             target: { type: 'CARD' as const, cardInstanceId: current.instanceId }, reason: 'RETIRE' as const,
             targetSnapshot: {
@@ -3056,7 +3071,7 @@ function applyEffectInternal(
              ? { ...player, board: player.board.map((card) => card?.instanceId === current.instanceId ? null : card) as typeof player.board, graveyard: [...player.graveyard, retired] }
             : player),
           events: [...protectedState.events,
-            { type: 'CARD_RETIRED', playerId: targetOwner, cardInstanceId: current.instanceId, cardType: current.cardType ?? 'WRESTLER', boardSlot: current.boardSlot!, source: { type: 'CARD', cardInstanceId: sourceCard.instanceId }, target: { type: 'CARD', cardInstanceId: current.instanceId }, targetSnapshot: { playerId: targetOwner, cardInstanceId: current.instanceId, cardType: current.cardType ?? 'WRESTLER', boardSlot: current.boardSlot!, currentAttack: current.currentAttack, currentHealth: current.currentHealth }, reason: 'RETIRE', sourceContext: attribution },
+            { type: 'CARD_RETIRED', cardDefinitionId: current.definitionId, playerId: targetOwner, cardInstanceId: current.instanceId, cardType: current.cardType ?? 'WRESTLER', boardSlot: current.boardSlot!, source: { type: 'CARD', cardInstanceId: sourceCard.instanceId }, target: { type: 'CARD', cardInstanceId: current.instanceId }, targetSnapshot: { playerId: targetOwner, cardInstanceId: current.instanceId, cardType: current.cardType ?? 'WRESTLER', boardSlot: current.boardSlot!, currentAttack: current.currentAttack, currentHealth: current.currentHealth }, reason: 'RETIRE', sourceContext: attribution },
           ],
         };
         const removedWanted = protectedState.players.find(player => player.id === targetOwner)?.board.find(card => card?.instanceId === current.instanceId);
@@ -3382,6 +3397,7 @@ function applyEffectInternal(
           ? [
               {
                 type: 'CARD_RETIRED' as const,
+                cardDefinitionId: directChampion.definitionId,
                 playerId: opponent.id,
                 cardInstanceId: directChampion.instanceId,
                 cardType: directChampion.cardType,
