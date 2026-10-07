@@ -3719,7 +3719,7 @@ export function resolveCardRetiredListeners(
   if (relicEventIndex >= 0 && retiredCard.cardType === 'WRESTLER' && !state.zombieGrowthEventKeys?.includes(growthKey)) {
     state = { ...state, zombieGrowthEventKeys: [...(state.zombieGrowthEventKeys ?? []), growthKey],
       players: state.players.map(p => ({ ...p, board: p.board.map(card =>
-        p.id === playerId && card && card.instanceId !== retiredCard.instanceId && card.currentHealth > 0 && !card.isSilenced && isZombieToken(state, card) &&
+        card && card.instanceId !== retiredCard.instanceId && card.currentHealth > 0 && !card.isSilenced && isZombieToken(state, card) &&
         !state.events.slice(relicEventIndex + 1).some(e => e.type === 'ENTER_FIELD' && e.cardInstanceId === card.instanceId)
           ? { ...card, currentAttack: card.currentAttack + 1, currentHealth: card.currentHealth + 1, maxHealth: card.maxHealth + 1 }
           : card) as typeof p.board })) };
