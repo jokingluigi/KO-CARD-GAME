@@ -145,6 +145,7 @@ export interface GameState {
       playedFromHand?: boolean;
       baseCost?: number;
       attackerInstanceId?: string;
+      fusionTargetInstanceId?: string;
       damagedTargetInstanceId?: string;
       attackDelta?: number;
       healthDelta?: number;
