@@ -1,3 +1,4 @@
+import { textCardAbilities } from './text-effect-repair';
 import { EPIC_TECHNIQUES } from './epic-techniques';
 import { createAwakeningCards } from '../champions/awakening-definitions';
 import { lunaSelfSilenceRecord } from './luna';
@@ -225,8 +226,9 @@ export function cardRecordToDefinition(card: PublishedCardRecord): CardDefinitio
     // Administrator-chosen names must not select another card's legacy rules.
     return { ...awakening, ...card, cardType: 'WRESTLER', rarity: 'CHAMPION',
       isToken: true, isChampionToken: true, questExclusive: true, awakeningStage: awakening.awakeningStage,
-      rulesText: card.text, keywords: [], abilities: [], effectId: null,
-      effectConfig: { ...card.effectConfig, ...awakening.effectConfig } };
+      rulesText: card.text, keywords: [...card.keywords], abilities: textCardAbilities(card) ?? abilitiesFor(card.effectId, card.effectConfig), effectId: card.effectId,
+      awakeningLegacyPassives: card.text === awakening.rulesText,
+      effectConfig: { ...awakening.effectConfig, ...card.effectConfig } };
   }
   card = lunaSelfSilenceRecord(card);
   if (card.id === 'epic-spell-life-exchange' && card.text === LIFE_EXCHANGE_OLD_TEXT) {
@@ -318,7 +320,7 @@ export function cardRecordToDefinition(card: PublishedCardRecord): CardDefinitio
       keywords: repairedLegacyCardKeywords(card),
        tags: Array.isArray(card.tags) ? [...card.tags] : [],
       ...(implementation ? {contentRule: implementation.rule} : {}),
-      abilities: (implementation?.abilities ?? repairedLegacyCardAbilities(card) ?? (zombieAbsorption
+      abilities: (textCardAbilities(card) ?? implementation?.abilities ?? repairedLegacyCardAbilities(card) ?? (zombieAbsorption
         ? [{ trigger: 'ENTER_FIELD' as const, effects: [{ type: 'STRUCTURED' as const,
             action: 'COPY_BEST_STATS' as const,
             target: { zone: 'BOARD' as const, owner: 'SELF' as const, cardType: 'WRESTLER' as const,
