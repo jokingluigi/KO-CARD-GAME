@@ -160,3 +160,9 @@ test('champion can become private independently of disabled state and be publish
  const list=await request('/admin/champions');assert.equal(list.body.champions.find((c:any)=>c.id===id).status,'DRAFT');
  const {draftSettings,draftCatalog}=await import('../../../artifacts/api-server/src/lib/draft-service');const {selectableChampions}=await import('../../game-engine/src/draft/domain');assert.ok(!selectableChampions(await draftCatalog((await draftSettings()).config)).some(c=>c.id===id));
 });
+
+test('uncertified malformed effect containers are preserved without crashing champion loading',async()=>{
+ for(const config of [{effects:{unfinished:true},scripts:{}},{effects:[null,42,{}, {action:'MANUAL_EFFECT'}],scripts:[null]}]){
+  const result=await request('/admin/champions','POST',{...championInput,name:'Incomplete configuration',abilityEffects:config,upgradedAbilityName:'Upgrade',upgradedAbilityEffects:config,gameStartAbilityEffects:null});assert.equal(result.status,201,JSON.stringify(result.body));assert.deepEqual(result.body.champion.abilityEffects,config);assert.doesNotThrow(()=>championRecordToDefinition(result.body.champion));
+ }
+});
