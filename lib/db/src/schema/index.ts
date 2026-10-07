@@ -35,3 +35,5 @@ export * from "./rewards";
 export * from "./notices";
 export * from "./tower";
 export * from './draft';
+
+export * from "./card-tags";
