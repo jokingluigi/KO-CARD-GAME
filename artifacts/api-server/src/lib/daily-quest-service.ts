@@ -30,6 +30,7 @@ export const DAILY_QUEST_STATUSES = ["ASSIGNED", "IN_PROGRESS", "COMPLETED", "CL
 type QuestConfigRecord = { schemaVersion?: string; condition?: unknown };
 
 function eventCardMetadata(state: GameState, event: GameEvent) {
+  if (event.tags) return { cardMetadataAvailable: true as const, cardTags: event.tags };
   const instanceId = event.cardInstanceId ?? event.sourceSnapshot?.cardInstanceId ?? event.targetSnapshot?.cardInstanceId;
   if (!instanceId || !state.cardPool) return { cardMetadataAvailable: false as const };
   const instance = state.players.flatMap((player) => [
@@ -85,7 +86,7 @@ export function objectiveIncrement(
     return event.type === "CARD_PLAYED" && event.cardType === "TECHNIQUE" ? 1 : 0;
   }
   if (objectiveType === "ATTACK_DECLARED") return event.type === "ATTACK_DECLARED" ? 1 : 0;
-  if (objectiveType === "DAMAGE_DEALT") return event.type === "DAMAGE_DEALT" ? 1 : 0;
+  if (objectiveType === "DAMAGE_DEALT") return event.type === "DAMAGE_DEALT" && Number.isSafeInteger(event.amount) && event.amount! > 0 ? event.amount! : 0;
   return 0;
 }
 
@@ -100,12 +101,13 @@ export async function ensureDailyQuestAssignments(
       eq(dailyQuestAssignmentsTable.assignmentDate, assignmentDate),
     ))
     .orderBy(asc(dailyQuestAssignmentsTable.slot));
-  if (existing.length > 0) return existing;
+  const availableSlots = [0, 1, 2].filter(slot => !existing.some(assignment => assignment.slot === slot));
+  if (!availableSlots.length) return existing;
 
   const definitions = await executor.select().from(dailyQuestDefinitionsTable)
     .where(eq(dailyQuestDefinitionsTable.enabled, true))
     .orderBy(asc(dailyQuestDefinitionsTable.createdAt), asc(dailyQuestDefinitionsTable.id));
-  const selected = selectDailyQuestDefinitions(definitions, userId, assignmentDate);
+  const selected = selectDailyQuestDefinitions(definitions.filter(definition => !existing.some(assignment => assignment.definitionId === definition.id)), userId, assignmentDate).slice(0, availableSlots.length);
   if (selected.length > 0) {
     await executor.insert(dailyQuestAssignmentsTable)
       .values(selected.map((definition, slot) => {
@@ -115,7 +117,7 @@ export async function ensureDailyQuestAssignments(
         userId,
         definitionId: definition.id,
         assignmentDate,
-        slot,
+        slot: availableSlots[slot]!,
         title: definition.title,
         description: definition.description,
         objectiveType: definition.objectiveType,
@@ -145,8 +147,8 @@ export async function processMatchEventsForDailyQuests(
   state: GameState,
   eventStart: number,
   executor: RewardExecutor,
+  assignmentDate = dailyDate(),
 ): Promise<void> {
-  const assignmentDate = dailyDate();
   const assignments = await ensureDailyQuestAssignments(userId, assignmentDate, executor);
   for (const assignment of assignments) {
     const config = assignment as typeof assignment & QuestConfigRecord;
@@ -155,10 +157,11 @@ export async function processMatchEventsForDailyQuests(
     const v2 = config.schemaVersion === QUEST_CONDITION_SCHEMA_VERSION
       ? validateQuestCondition(config.condition)
       : null;
-    if (state.status === "FINISHED" && assignment.objectiveType === "PLAY_MATCH") {
+    if (config.schemaVersion !== QUEST_CONDITION_SCHEMA_VERSION && state.status === "FINISHED" && assignment.objectiveType === "PLAY_MATCH") {
       increments.push({ occurrenceKey: `${assignment.id}:${matchId}:FINISHED:PLAY_MATCH`, increment: 1 });
     }
     if (
+      config.schemaVersion !== QUEST_CONDITION_SCHEMA_VERSION &&
       state.status === "FINISHED" &&
       assignment.objectiveType === "WIN_MATCH" &&
       state.winnerId === playerId
@@ -277,7 +280,8 @@ export function validateDailyQuestInput(value: unknown) {
     : null;
   const rewardAmount = typeof input.rewardAmount === "number" ? input.rewardAmount : Number.NaN;
   const enabled = input.enabled !== false;
-  const condition = input.condition === undefined ? null : validateQuestCondition(input.condition);
+  const condition = input.condition == null ? null : validateQuestCondition(input.condition);
+  if (input.condition != null && !condition) return null;
   const schemaVersion = input.schemaVersion ?? (condition ? QUEST_CONDITION_SCHEMA_VERSION : "QUEST_CONDITION_V1");
   if (
     !title || title.length > 120 ||

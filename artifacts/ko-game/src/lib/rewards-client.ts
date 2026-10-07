@@ -1,3 +1,4 @@
+import type { GameState } from '@/game';
 import { submitWithReceipt } from './reward-receipt';
 import type { AIMatchQuestProgressInput } from "@workspace/api-client-react";
 
@@ -67,6 +68,8 @@ export type RewardAdminData = {
     id: string;
     title: string;
     description: string;
+    schemaVersion?: string;
+    condition?: unknown;
     objectiveType: string;
     cardType: string | null;
     targetValue: number;
@@ -86,8 +89,8 @@ export const completeAIMatchQuestProgress = (body: AIMatchQuestProgressInput) =>
   submitWithReceipt(
     () => request<{ completed: boolean; message?: string; reward: { amount: number; sourceType: string } | null }>("/daily-quests/ai-match-progress", { method: "POST", body: JSON.stringify(body) }),
     async () => {
-      const receipt = await request<{ reward: { amount: number; sourceType: string } | null }>(`/daily-quests/ai-match-progress/${encodeURIComponent(body.matchId)}/reward`);
-      return receipt.reward ? { completed: false, reward: receipt.reward } : null;
+      const receipt = await request<{ completed?:boolean; reward: { amount: number; sourceType: string } | null }>(`/daily-quests/ai-match-progress/${encodeURIComponent(body.matchId)}/reward`);
+      return receipt.reward ? { completed: receipt.completed===true, reward: receipt.reward } : null;
     },
   );
 export const claimDailyQuest = (id: string) => request<{ assignment: DailyQuest; reward: { amount: number; balanceAfter: number } | null; alreadyClaimed: boolean }>(`/daily-quests/${encodeURIComponent(id)}/claim`, { method: "POST" });
@@ -113,3 +116,5 @@ export const fetchOnlineMatchRewards = (matchId: string) => request<{
   rewardEnabled: boolean;
   grants: Array<{ sourceType: string; amount: number; rewardType: string; balanceAfter: number; createdAt: string }>;
 }>(`/online-matches/${encodeURIComponent(matchId)}/rewards`);
+
+export const prepareAIMatchQuest = (body:{deckId:string;aiDeckId:string;matchId:string}) => request<{state:GameState;difficulty:'NORMAL'|'HARD'|'BOSS'}>('/daily-quests/ai-match-start',{method:'POST',body:JSON.stringify(body),signal:AbortSignal.timeout(15000)});

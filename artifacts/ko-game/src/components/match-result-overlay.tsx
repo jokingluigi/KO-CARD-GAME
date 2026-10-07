@@ -15,6 +15,8 @@ export function MatchResultOverlay({
   rewardStatus,
   rewardError,
   onRetryReward,
+  questError,
+  onRetryQuest,
   recap,
 }: {
   recap?: MatchRecap | null;
@@ -24,6 +26,8 @@ export function MatchResultOverlay({
   rewardStatus?: 'pending' | 'success' | 'error';
   rewardError?: string | null;
   onRetryReward?: () => void;
+  questError?: string | null;
+  onRetryQuest?: () => void;
 }) {
   const player = state.players[0];
   const isVictory = state.winnerId === player?.id;
@@ -122,6 +126,7 @@ export function MatchResultOverlay({
             +{reward.amount.toLocaleString()} 크레딧 지급
           </p>
         )}
+        {questError && <div role="alert" data-testid="quest-progress-error" className="mt-5 border border-amber-800 p-3 text-sm text-amber-200"><p>일반 퀘스트 진행도를 저장하지 못했습니다. {questError}</p>{onRetryQuest && <button type="button" onClick={onRetryQuest} className="mt-2 min-h-10 border border-amber-700 px-3 font-bold">퀘스트 다시 저장</button>}</div>}
         {rewardStatus === 'pending' && <p role="status" className="mt-5 text-sm text-amber-200">경기 결과와 크레딧 지급을 확인하는 중입니다…</p>}
         {rewardStatus === 'error' && !reward && <div role="alert" className="mt-5 rounded border border-red-400/40 p-3 text-sm text-red-200">
           <p>경기 보상 지급에 실패했습니다. {rewardError}</p>

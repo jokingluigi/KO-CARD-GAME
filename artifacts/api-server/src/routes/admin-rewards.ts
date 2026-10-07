@@ -1,15 +1,17 @@
-import { asc, eq } from "drizzle-orm";
+import { and, asc, eq } from "drizzle-orm";
 import { randomUUID } from "node:crypto";
 import { Router, type IRouter, type Request, type Response } from "express";
 import {
   attendanceRewardDefinitionsTable,
   dailyQuestDefinitionsTable,
+  dailyQuestAssignmentsTable,
   db,
   rewardSettingsTable,
 } from "@workspace/db";
 import { getAuthenticatedUser } from "../lib/auth";
 import {
   DAILY_QUEST_OBJECTIVES,
+  dailyDate,
   validateDailyQuestInput,
 } from "../lib/daily-quest-service";
 import { validateAttendanceInput } from "../lib/attendance-service";
@@ -95,15 +97,21 @@ router.patch("/daily-quests/:id", async (request, response): Promise<void> => {
     response.status(400).json({ message: "공개된 카드 또는 팩을 선택해 주세요." });
     return;
   }
-  const [definition] = await db.update(dailyQuestDefinitionsTable)
-    .set({ ...input, updatedAt: new Date() })
-    .where(eq(dailyQuestDefinitionsTable.id, request.params.id))
-    .returning();
+  const {definition,updatedAssignments}=await db.transaction(async tx=>{
+    const [definition]=await tx.update(dailyQuestDefinitionsTable).set({...input,updatedAt:new Date()}).where(eq(dailyQuestDefinitionsTable.id,request.params.id)).returning();
+    let updatedAssignments=0;
+    if(definition&&request.body?.applyToUnstartedAssignments===true){
+      const {enabled: _enabled,...snapshot}=input;
+      const changed=await tx.update(dailyQuestAssignmentsTable).set(snapshot).where(and(eq(dailyQuestAssignmentsTable.definitionId,definition.id),eq(dailyQuestAssignmentsTable.assignmentDate,dailyDate()),eq(dailyQuestAssignmentsTable.status,'ASSIGNED'),eq(dailyQuestAssignmentsTable.progress,0))).returning({id:dailyQuestAssignmentsTable.id});
+      updatedAssignments=changed.length;
+    }
+    return {definition,updatedAssignments};
+  });
   if (!definition) {
     response.status(404).json({ message: "일일 퀘스트를 찾을 수 없습니다." });
     return;
   }
-  response.json({ definition });
+  response.json({ definition,updatedAssignments });
 });
 
 router.post("/attendance", async (request, response): Promise<void> => {

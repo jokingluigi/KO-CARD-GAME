@@ -66,7 +66,7 @@ import { createLocalAIMatchId, seedForAIMatch, selectAIOpponentDeck } from '@/li
 import { AiMatchSetup } from '@/components/ai-match-setup';
 import { MatchIntroOverlay } from '@/components/online-match-intro';
 import { createAiMatchOpening, isAiMatchOpeningActive, type AiMatchOpening } from '@/lib/ai-match-opening';
-import { completeAIMatchQuestProgress } from '@/lib/rewards-client';
+import { completeAIMatchQuestProgress, prepareAIMatchQuest } from '@/lib/rewards-client';
 import type { CardPlayAnimationState, CardPlayGeometry } from '@/components/card-play-animation-utils';
 import { landingImpactLevel } from '@/components/card-play-animation-utils';
 import type { AttackAnimationState } from '@/components/attack-animation-utils';
@@ -193,6 +193,9 @@ export default function Home() {
   const [aiOpeningNow, setAiOpeningNow] = useState(() => Date.now());
   const [aiOpeningSkipped, setAiOpeningSkipped] = useState(false);
   const aiMatchQuestContextRef = useRef<{ deckId: string; aiDeckId: string; matchId: string; difficulty: AIDeck["difficulty"] } | null>(null);
+  const aiMatchStartingRef = useRef(false);
+  const [aiStarting,setAiStarting]=useState(false);
+  const [aiQuestError,setAiQuestError]=useState<string|null>(null);
   const aiMatchActionsRef = useRef<Array<GameAction & { actor?: 'AI' }>>([]);
   const submittedAIMatchRef = useRef<string | null>(null);
   const [aiMatchData, setAiMatchData] = useState<{
@@ -595,7 +598,8 @@ export default function Home() {
     };
   }, [authStatus, authUser?.role, isAdminSource, isAiMatch, isTowerSandbox, testCardId, testChampionId]);
 
-  function startAiMatch(deckId: string) {
+  async function startAiMatch(deckId: string) {
+    if (aiMatchStartingRef.current) return;
     const deck = aiDecks?.find((candidate) => candidate.id === deckId);
     const data = aiMatchData;
     if (!deck?.isValid || !deck.championDefinitionId || !data) return;
@@ -642,7 +646,7 @@ export default function Home() {
       setPlayError('AI 매치를 시작할 수 있는 공개 카드와 Champion이 부족합니다.');
       return;
     }
-    const nextState = startGame(
+    let nextState = startGame(
       createInitialGameState(
         [userChampion.id, aiChampion.id],
          canonicalCardCatalog(matchDefinitions),
@@ -654,6 +658,14 @@ export default function Home() {
       data.media,
       { flexibleDeckPlayerId: 'player-2' },
     );
+    aiMatchStartingRef.current=true;
+    setAiStarting(true);
+    try {
+      const prepared=await prepareAIMatchQuest({deckId:deck.id,aiDeckId:aiDeck.id,matchId});
+      nextState={...prepared.state,backgroundId:nextState.backgroundId,bgmId:nextState.bgmId};
+      setRuntimeCardDefinitions(nextState.cardPool??matchDefinitions);
+    }catch(error){setPlayError(error instanceof Error?error.message:'Could not start AI match');return;}
+    finally{aiMatchStartingRef.current=false;setAiStarting(false);}
     aiMatchQuestContextRef.current = {
       deckId: deck.id,
       aiDeckId: aiDeck.id,
@@ -665,6 +677,7 @@ export default function Home() {
     setAiMatchReward(null);
     setAiRewardStatus('pending');
     setAiRewardError(null);
+    setAiQuestError(null);
     const openingStartedAt = Date.now();
     setAiOpening(createAiMatchOpening(
       nextState.gameId,
@@ -760,6 +773,7 @@ export default function Home() {
           // Credits are settled independently of optional daily-quest replay.
           // A successful response must never retry or report paid credits as failed.
           setAiRewardStatus('success');
+          setAiQuestError(result.completed ? null : result.message ?? '일반 퀘스트 진행도를 확인하지 못했습니다. 다시 저장해 주세요.');
           return;
         } catch (error) {
           lastError = error;
@@ -1463,6 +1477,7 @@ export default function Home() {
         aiDecks={availableAIDecks}
         error={playError}
         onStart={startAiMatch}
+        starting={aiStarting}
         onBack={() => navigate(ROUTES.MAIN_MENU)}
       />
     );
@@ -1592,6 +1607,8 @@ export default function Home() {
          reward={isAiMatch ? aiMatchReward : null}
          rewardStatus={isAiMatch ? aiRewardStatus : undefined}
          rewardError={isAiMatch ? aiRewardError : undefined}
+         questError={isAiMatch ? aiQuestError : undefined}
+         onRetryQuest={isAiMatch ? () => {submittedAIMatchRef.current=null;setAiQuestError(null);setAiRewardRetry(count=>count+1);} : undefined}
          onRetryReward={isAiMatch ? () => setAiRewardRetry((count) => count + 1) : undefined}
          onReturnToMainMenu={() => navigate(ROUTES.MAIN_MENU)}
        />
