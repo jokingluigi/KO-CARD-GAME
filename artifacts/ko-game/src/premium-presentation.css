@@ -192,3 +192,6 @@ body .ko-game-shell,.ko-game-shell .ko-cinematic-background{background:#000}
 @media(min-width:769px){.ko-game-shell .ko-player-hand{padding-top:12px}.ko-game-shell .ko-board-slot{height:clamp(160px,21vh,220px)!important;width:clamp(128px,9.5vw,170px)!important}.ko-game-shell .ko-board-area{gap:18px;padding-block:6px}.ko-game-shell .ko-player-stats{min-width:88px}.ko-game-shell .ko-player-stats .font-display{font-size:20px}}
 
 @media(min-width:769px){.ko-game-shell .ko-player-info{width:224px}}
+
+body .ko-game-shell.ko-quest-awakened--mine .ko-game-stage,body .ko-game-shell.ko-quest-awakened--theirs .ko-game-stage{background:transparent;box-shadow:none}
+.ko-game-shell :is(.ko-player-champion,.ko-opponent-champion)>span{color:#d6b867}
