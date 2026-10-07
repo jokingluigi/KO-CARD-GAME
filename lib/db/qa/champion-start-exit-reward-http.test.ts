@@ -107,3 +107,46 @@ test('authoritative PvP allows reward selection on opposing turn, concurrent ret
 });
 
 test('additive migration preserves old rows and remains safe on repeated startup',async()=>{const legacy=new PGlite();try{await legacy.exec("CREATE TABLE cards(id text PRIMARY KEY,name text,cost int,attack int,health int); CREATE TABLE champions(id text PRIMARY KEY,name text,ability_effects jsonb); INSERT INTO cards VALUES ('old','unchanged',3,4,5); INSERT INTO champions VALUES ('old','unchanged','{}');");const migration=await readFile(new URL('../migrations/0048_champion_start_and_exit_lines.sql',import.meta.url),'utf8');await legacy.exec(migration);await legacy.exec("UPDATE cards SET retire_line='keep retire', destroy_line='keep destroy'; UPDATE champions SET game_start_ability_name='keep start',game_start_ability_effects='{}';");await legacy.exec(migration);assert.deepEqual((await legacy.query('SELECT cost,attack,health,retire_line,destroy_line FROM cards')).rows,[{cost:3,attack:4,health:5,retire_line:'keep retire',destroy_line:'keep destroy'}]);assert.equal((await legacy.query<any>('SELECT game_start_ability_name FROM champions')).rows[0].game_start_ability_name,'keep start');}finally{await legacy.close();}});
+
+test('card saves preserve uncertified effects without analysis or approval',async()=>{
+ const input={name:'Manual effect save',cardType:'WRESTLER',rarity:'NORMAL',cost:2,attack:2,health:3,text:'관리자가 직접 작성한 효과',keywords:[],tags:[],isToken:false,isChampionToken:false,effectId:'STRUCTURED_EFFECTS_V1',effectConfig:{effects:[{trigger:'ACTIVE',action:'DAMAGE',target:{zone:'CHARACTER',owner:'ENEMY',selection:'PLAYER_CHOICE',count:1},values:{amount:2}}]}};
+ const created=await request('/admin/cards','POST',input);assert.equal(created.status,201,JSON.stringify(created.body));assert.deepEqual(created.body.card.effectConfig,input.effectConfig);
+ const config={scripts:[{trigger:'ON_ENTER',steps:[{type:'UNRECOGNIZED_MANUAL_STEP',note:'보존해야 하는 미완료 설정'}]}]};
+ const saved=await request('/admin/cards/'+created.body.card.id,'PATCH',{...input,effectId:'SCRIPT_V1',effectConfig:config});assert.equal(saved.status,200,JSON.stringify(saved.body));assert.deepEqual(saved.body.card.effectConfig,config);assert.equal(saved.body.card.text,input.text);
+ const fetched=await request('/admin/cards');assert.deepEqual(fetched.body.cards.find((c:any)=>c.id===created.body.card.id).effectConfig,config);
+});
+test('champion saves preserve uncertified ability, upgrade and reward configurations',async()=>{
+ const config={effects:[{trigger:'ACTIVE',action:'MANUAL_UNRECOGNIZED_EFFECT',values:{note:'분석 없이 저장'}}]};
+ const input={...championInput,name:'Manual champion save',abilityEffects:config,hasQuest:true,questName:'수동 퀘스트',questText:'카드 사용',questCondition:{event:'CARD_PLAYED',required:1},questProgressRequired:1,questRewardText:'관리자 보상',questRewardEffects:config,upgradedAbilityName:'강화',upgradedAbilityEffects:config};
+ const created=await request('/admin/champions','POST',input);assert.equal(created.status,201,JSON.stringify(created.body));
+ for(const key of ['abilityEffects','questRewardEffects','upgradedAbilityEffects'])assert.deepEqual(created.body.champion[key],config);
+ const changed={effects:[{action:'ANOTHER_MANUAL_EFFECT'}]};
+ const updated=await request('/admin/champions/'+created.body.champion.id,'PATCH',{...input,abilityEffects:changed,version:created.body.champion.version});assert.equal(updated.status,200,JSON.stringify(updated.body));assert.deepEqual(updated.body.champion.abilityEffects,changed);
+ const fetched=await request('/admin/champions');assert.deepEqual(fetched.body.champions.find((c:any)=>c.id===created.body.champion.id).abilityEffects,changed);
+});
+test('save still rejects non-object effect payloads without discarding existing data',async()=>{
+ const config={effects:[{action:'MANUAL_EFFECT'}]};
+ const input={...championInput,name:'Shape validation',abilityEffects:config};
+ const created=await request('/admin/champions','POST',input);assert.equal(created.status,201,JSON.stringify(created.body));
+ for(const invalid of [[], 'broken JSON'])assert.equal((await request('/admin/champions/'+created.body.champion.id,'PATCH',{...input,abilityEffects:invalid,version:created.body.champion.version})).status,400);
+ const fetched=await request('/admin/champions');assert.deepEqual(fetched.body.champions.find((c:any)=>c.id===created.body.champion.id).abilityEffects,config);
+});
+
+test('champion selection toggle affects only future draft picks and preserves card exclusions',async()=>{
+ const created=await request('/admin/champions','POST',{...championInput,name:'Draft visibility'});
+ assert.equal(created.status,201,JSON.stringify(created.body));const championId=created.body.champion.id;
+ assert.equal((await request('/admin/champions/'+championId+'/status','POST',{status:'PUBLISHED'})).status,200);
+ const cards=await request('/admin/cards');const cardId=cards.body.cards[0].id;
+ assert.equal((await request('/admin/draft/cards/'+cardId+'/selection','PATCH',{excluded:true})).status,200);
+ const savedCookie=cookie;cookie='';assert.equal((await request('/admin/draft/champion-selection')).status,401);cookie=savedCookie;
+ const hide=await request('/admin/draft/champions/'+championId+'/selection','PATCH',{excluded:true});assert.equal(hide.status,200,JSON.stringify(hide.body));assert.ok(hide.body.excludedChampionIds.includes(championId));
+ const {draftSettings,draftCatalog}=await import('../../../artifacts/api-server/src/lib/draft-service');
+ const {selectableChampions}=await import('../../game-engine/src/draft/domain');
+ const settings=await draftSettings(),snapshot=await draftCatalog(settings.config);
+ assert.ok(settings.config.excludedCardIds.includes(cardId));assert.ok(!selectableChampions(snapshot).some(c=>c.id===championId));
+ assert.ok(snapshot.champions.some(c=>c.id===championId));const record=(await request('/admin/champions')).body.champions.find((c:any)=>c.id===championId);assert.equal(record.status,'PUBLISHED');assert.deepEqual(record.abilityEffects,championInput.abilityEffects);
+ assert.equal((await request('/admin/draft/champions/'+championId+'/selection','PATCH',{excluded:'yes'})).status,400);
+ assert.equal((await request('/admin/draft/champions/missing/selection','PATCH',{excluded:true})).status,404);
+ const show=await request('/admin/draft/champions/'+championId+'/selection','PATCH',{excluded:false});assert.equal(show.status,200);assert.ok(!show.body.excludedChampionIds.includes(championId));
+ const restored=await draftCatalog((await draftSettings()).config);assert.ok(selectableChampions(restored).some(c=>c.id===championId));assert.ok(!selectableChampions(snapshot).some(c=>c.id===championId),'existing draft snapshots remain unchanged');
+});
