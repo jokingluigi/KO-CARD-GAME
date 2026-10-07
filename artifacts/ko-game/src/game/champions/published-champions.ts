@@ -69,6 +69,16 @@ function ability(id: string, name: string, cost: number, description: string, co
 }
 
 export function championRecordToDefinition(record: PublishedChampionRecord): ChampionDefinition {
+  const fusionRequirement=record.questText?.match(/['‘]?합체['’]?\s*를?\s*총\s*(\d+)\s*번/u);
+  if(record.hasQuest && fusionRequirement)record={...record,questCondition:{event:'FUSION',progress:1,required:Number(fusionRequirement[1]),strictEventCount:true},questProgressRequired:Number(fusionRequirement[1])};
+  if(!record.abilityEffects?.effects?.length&&!record.abilityEffects?.scripts?.length){
+    const tokenTag=(record.abilityText??'').match(/['‘]([^'’]+)['’]\s*태그.*토큰.*무작위.*(?:손패|손)/u);
+    if(tokenTag)record={...record,abilityEffects:{effects:[{action:'GENERATE',target:{zone:'HAND',owner:'SELF',selection:'RANDOM',randomScope:'FULL',count:1,filter:{isToken:true,tagsAny:[tokenTag[1]]}},values:{count:1,destination:'HAND'}}]}};
+  }
+  if(!record.questRewardEffects?.effects?.length&&!record.questRewardEffects?.scripts?.length){
+    const summon=record.questRewardText?.match(/['‘]([^'’]+)['’].*필드.*소환/u);
+    if(summon)record={...record,questRewardEffects:{effects:[{action:'SUMMON',values:{definitionRef:{name:summon[1]},count:1,resolveByName:true}}]}};
+  }
   const abilityRetireQuest = /(?:자신의|본인의)\s*고유\s*능력으로[^.!?]{0,55}(?:선수|카드)[^.!?]{0,25}리타이어/.test(record.questText ?? '');
   const maxHealth = Number.isInteger(record.maxHealth) && record.maxHealth >= 1
     ? record.maxHealth
