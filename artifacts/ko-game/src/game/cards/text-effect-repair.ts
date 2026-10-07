@@ -70,7 +70,7 @@ export function textCardAbilities(card: PublishedCardRecord): CardAbility[] | nu
       const n=Number(text.match(/체력을\s*(\d+)\s*회복/u)![1]);
       result.push(ability('TURN_END',[fx('HEAL',{zone:'CHARACTER',owner:'SELF',selection:'ALL',count:20},{amount:n})]));
     }
-    if(/소환되면.*리타이어하거나 파괴.*수만큼 공격력/u.test(text))result.push(ability('ENTER_FIELD',[fx('BUFF',self,{attackReference:'ALLIED_REMOVED_WRESTLER_COUNT'})]));
+    if(/소환되면.*리타이어하거나 파괴.*수만큼 공격력/u.test(text))result.push(ability('SELF_ENTERED',[fx('BUFF',self,{attackReference:'ALLIED_REMOVED_WRESTLER_COUNT'})]));
     const next=text.match(/퇴장\s*:\s*['‘]([^'’]+)['’].*소환/u);
     if(next)result.push({trigger:'LEAVE_FIELD',reasons:['RETIRE'],effects:[fx('SUMMON',undefined,{definitionRef:{name:next[1]},count:1,resolveByName:true})]});
   }
