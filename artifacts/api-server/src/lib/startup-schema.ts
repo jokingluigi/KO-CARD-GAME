@@ -1,3 +1,4 @@
+import cardTagCatalog from "../../../../lib/db/migrations/0049_card_tag_catalog.sql";
 import championStartAndExitLines from '../../../../lib/db/migrations/0048_champion_start_and_exit_lines.sql';
 import aiQuestMatches from '../../../../lib/db/migrations/0038_ai_quest_matches.sql';
 import cardTextAudit from '../../../../lib/db/migrations/0044_card_text_audit.sql';
@@ -31,7 +32,7 @@ export async function ensureTowerStorage(database = db): Promise<void> {
     await tx.execute(sql`SET LOCAL lock_timeout = '15s'`);
     await tx.execute(sql`SET LOCAL statement_timeout = '30s'`);
     await tx.execute(sql`SELECT pg_advisory_xact_lock(hashtext('ko-card-tower-schema-v1'))`);
-    for (const migration of [towerStorage, towerUnlocks, aiDifficulty, epicPackConfiguration, draftStorage, aiQuestMatches]) {
+    for (const migration of [towerStorage, towerUnlocks, aiDifficulty, epicPackConfiguration, draftStorage, aiQuestMatches, cardTagCatalog]) {
       // Migration 0026 has standalone transaction delimiters. One outer
       // transaction must own all three migrations and the advisory lock.
       const statements = migration.replace(/^\s*(?:BEGIN|COMMIT);\s*$/gm, "").split(";");
