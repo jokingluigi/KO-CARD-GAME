@@ -91,7 +91,7 @@ export function getValidTargets(
     const cards = cardsInZones(player, zones);
     const filteredCards = cards.filter((card) => {
       if (!newCardTargetAllowed(sourceCard, card, effect.action)) return false;
-      if (effect.action !== 'FUSION' && (effect.action !== 'MOVE_TO_DECK' || !zones.every(zone => zone === 'GRAVEYARD')) && ['PLAYER_CHOICE', 'RANDOM', 'SAME_TARGET'].includes(target.selection ?? '') && getActiveCardKeywords(card).includes('IMMUNE')) return false;
+      if (!effect.values?.resolvedAutomaticTarget && effect.action !== 'FUSION' && (effect.action !== 'MOVE_TO_DECK' || !zones.every(zone => zone === 'GRAVEYARD')) && ['PLAYER_CHOICE', 'RANDOM', 'SAME_TARGET'].includes(target.selection ?? '') && getActiveCardKeywords(card).includes('IMMUNE')) return false;
       if (zones.length === 1 && zones[0] === 'CHARACTER' && card.cardType !== 'WRESTLER') return false;
       if (target.cardType && card.cardType !== target.cardType) return false;
       if (target.filter?.isGenerated !== undefined && card.isGenerated !== target.filter.isGenerated) return false;
@@ -2440,6 +2440,7 @@ function applyEffectInternal(
         return applyEffect(nextState, playerId, sourceCard, {
           ...effect,
           target: { ...target, zone: 'BOARD', zones: undefined, owner: owner === playerId ? 'SELF' : 'ENEMY', cardType: 'WRESTLER', selection: 'PLAYER_CHOICE', count: 1 },
+          values: {...effect.values,resolvedAutomaticTarget:target.selection==='ALL'},
         }, [cardId], triggerContext);
       }, afterPlayers);
     }
@@ -2504,7 +2505,7 @@ function applyEffectInternal(
     const candidates = cardsInZones(candidatePlayer, zones);
     const eligibleCandidates = candidates.filter((card) => {
       if (!newCardTargetAllowed(sourceCard, card, effect.action)) return false;
-      if (effect.action !== 'FUSION' && (effect.action !== 'MOVE_TO_DECK' || !zones.every(zone => zone === 'GRAVEYARD')) && ['PLAYER_CHOICE', 'RANDOM', 'SAME_TARGET'].includes(target.selection ?? '') && getActiveCardKeywords(card).includes('IMMUNE')) return false;
+      if (!effect.values?.resolvedAutomaticTarget && effect.action !== 'FUSION' && (effect.action !== 'MOVE_TO_DECK' || !zones.every(zone => zone === 'GRAVEYARD')) && ['PLAYER_CHOICE', 'RANDOM', 'SAME_TARGET'].includes(target.selection ?? '') && getActiveCardKeywords(card).includes('IMMUNE')) return false;
       if ((card.isTrainingDummy) && (
         effect.action === 'SILENCE' ||
         effect.action === 'DESTROY' ||
