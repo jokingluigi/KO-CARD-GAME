@@ -23,6 +23,10 @@ on:
       - artifacts/ko-game/src/pages/home.tsx
       - artifacts/ko-game/src/components/match-result-overlay.tsx
       - artifacts/ko-game/src/index.css
+      - artifacts/api-server/src/app.ts
+      - artifacts/api-server/src/lib/request-body*
+      - artifacts/api-server/src/routes/daily-quests.ts
+      - docs/qa/mobile-history-browser.mjs
       - artifacts/api-server/src/lib/ai-match-quest-service*
       - artifacts/ko-game/src/lib/card-display-state.ts
       - artifacts/api-server/src/routes/admin.ts
@@ -62,6 +66,8 @@ jobs:
           node --import ./docs/qa/checkpoints/20261006/qa-loader.mjs --test --test-isolation=none
           artifacts/ko-game/src/lib/startup-client.test.ts
           artifacts/ko-game/src/lib/entry-state.test.ts
+          artifacts/ko-game/src/lib/reward-receipt.test.ts
+          artifacts/api-server/src/lib/request-body.test.ts
           artifacts/api-server/src/lib/maintenance.test.ts
           artifacts/ko-game/src/lib/auth-client.test.ts
           artifacts/ko-game/src/audio/music-route.test.ts
@@ -121,3 +127,4 @@ jobs:
           node docs/qa/cinematic-browser.mjs
           node docs/qa/presentation-master-browser.mjs
           KO_QA_NO_REMOTE_ART=1 node docs/qa/art-direction-browser.mjs
+          node docs/qa/mobile-history-browser.mjs

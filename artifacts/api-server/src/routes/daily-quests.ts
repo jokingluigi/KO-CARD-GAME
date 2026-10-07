@@ -2,7 +2,7 @@ import { ensureDraftParticipationQuest } from "../lib/draft-participation-quest"
 import { and, asc, eq } from "drizzle-orm";
 import { Router, type IRouter, type Request, type Response } from "express";
 import { CompleteAIMatchQuestProgressBody } from "@workspace/api-zod";
-import { dailyQuestAssignmentsTable, dailyQuestDefinitionsTable, db } from "@workspace/db";
+import { dailyQuestAssignmentsTable, dailyQuestDefinitionsTable, rewardGrantsTable, db } from "@workspace/db";
 import { getAuthenticatedUser } from "../lib/auth";
 import { isTestAccountUser } from "../lib/test-account";
 import { completeAIMatchQuestProgress } from "../lib/ai-match-quest-service";
@@ -33,6 +33,18 @@ router.get("/", async (request, response): Promise<void> => {
   response.setHeader("Cache-Control", "no-store");
   const draftQuest = await ensureDraftParticipationQuest(request.authUser!.id);
   response.json({ assignments: [...assignments, draftQuest].map(publicDailyQuest) });
+});
+
+// Recover a committed credit grant when the result response was lost.
+router.get('/ai-match-progress/:matchId/reward', async (request, response): Promise<void> => {
+  const matchId = String(request.params.matchId);
+  if (!/^ai-[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(matchId)) {
+    response.status(400).json({ message: 'Invalid match ID' }); return;
+  }
+  const [grant] = await db.select({ amount: rewardGrantsTable.amount, sourceType: rewardGrantsTable.sourceType })
+    .from(rewardGrantsTable).where(and(eq(rewardGrantsTable.userId, request.authUser!.id), eq(rewardGrantsTable.sourceId, matchId), eq(rewardGrantsTable.sourceType, 'MATCH_AI_RESULT'))).limit(1);
+  response.setHeader('Cache-Control', 'no-store');
+  response.json({ reward: grant ?? null });
 });
 
 router.post("/ai-match-progress", async (request, response): Promise<void> => {
