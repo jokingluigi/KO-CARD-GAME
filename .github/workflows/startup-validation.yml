@@ -3,6 +3,7 @@ on:
   pull_request:
     paths:
       - artifacts/ko-game/**
+      - docs/qa/current-card-engine.mjs
       - docs/qa/entry-browser.mjs
       - docs/qa/art-direction-browser.mjs
       - artifacts/ko-game/src/game/**
@@ -99,7 +100,11 @@ jobs:
           artifacts/ko-game/src/components/screen-impact-policy.test.ts
           artifacts/ko-game/src/components/presentation-event-feedback.test.ts
           artifacts/api-server/src/lib/ai-match-quest-service.test.ts
+          artifacts/ko-game/src/game/qa/latest-card-text-20261007.test.ts
           lib/db/qa/awakening-http.test.ts
+
+      - name: Current card catalog, full engine and 100 AI matches
+        run: node docs/qa/current-card-engine.mjs
 
       - name: First-entry browser regression guard
         env:

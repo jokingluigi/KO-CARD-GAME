@@ -2,7 +2,7 @@ import { startCountdown, clearCountdown } from '../cards/countdown';
 import { queueWantedReward, wantedRemovalActor } from '../engine/wanted';
 import { resumeCountdownTurnStart } from '../engine/countdown';
 import { newCardTargetAllowed } from '../cards/new-card-effects';
-import { hasNewCardRule, healNewCardAware, silenceDamageReduction, healingTurn } from '../engine/new-card-rules';
+import { hasNewCardRule, healNewCardAware, silenceDamageReduction, madokawaIncomingBonus, healingTurn } from '../engine/new-card-rules';
 import { fallbackZombieToken } from '../engine/zombie-token';
 import { existingZombie, isZombieToken, mergeZombie, normalizeZombieDefinition, ZOMBIE_RULES } from '../engine/zombie-token';
 import { keywordDamage, hasEntryDefense } from '../engine/keyword-rules';
@@ -92,6 +92,7 @@ export function getValidTargets(
       if (zones.length === 1 && zones[0] === 'CHARACTER' && card.cardType !== 'WRESTLER') return false;
       if (target.cardType && card.cardType !== target.cardType) return false;
       if (target.filter?.isGenerated !== undefined && card.isGenerated !== target.filter.isGenerated) return false;
+      if (target.filter?.minBaseCost !== undefined && (card.baseCost ?? card.currentCost) < target.filter.minBaseCost) return false;
       if (target.filter?.minCost !== undefined && card.currentCost < target.filter.minCost) return false;
       if (target.filter?.maxCost !== undefined && card.currentCost > target.filter.maxCost) return false;
       if (target.filter?.isToken !== undefined && card.isToken !== target.filter.isToken) return false;
@@ -232,6 +233,7 @@ function scriptTargetCards(
     if (target.cardType && card.cardType !== target.cardType) return false;
     const filter = target.filter;
     if (filter?.isGenerated !== undefined && card.isGenerated !== filter.isGenerated) return false;
+    if (filter?.minBaseCost !== undefined && (card.baseCost ?? card.currentCost) < filter.minBaseCost) return false;
     if (filter?.minCost !== undefined && card.currentCost < filter.minCost) return false;
     if (filter?.maxCost !== undefined && card.currentCost > filter.maxCost) return false;
     if (filter?.definitionRef && !matchesDefinitionRef(state, card, filter.definitionRef)) return false;
@@ -2461,6 +2463,7 @@ function applyEffectInternal(
       )) return false;
       if (target.cardType && card.cardType !== target.cardType) return false;
       if (target.filter?.isGenerated !== undefined && card.isGenerated !== target.filter.isGenerated) return false;
+      if (target.filter?.minBaseCost !== undefined && (card.baseCost ?? card.currentCost) < target.filter.minBaseCost) return false;
       if (target.filter?.minCost !== undefined && card.currentCost < target.filter.minCost) return false;
       if (target.filter?.maxCost !== undefined && card.currentCost > target.filter.maxCost) return false;
       if (target.filter?.isToken !== undefined && card.isToken !== target.filter.isToken) return false;
@@ -2918,7 +2921,10 @@ function applyEffectInternal(
           : beforeDamage;
         const preparedCurrent = preparedState.players
           .find((player) => player.id === targetOwner)
-          ?.board.find((card) => card?.instanceId === target.instanceId) ?? current;
+          ?.board.find((card) => card?.instanceId === target.instanceId);
+        // BEFORE_DAMAGE may remove the target (for example a temporary HP buff expires).
+        // Never reuse the departed snapshot or retire the same instance a second time.
+        if (!preparedCurrent) return preparedState;
         const attribution = sourceContextFor(
           playerId,
           sourceCard,
@@ -2958,7 +2964,7 @@ function applyEffectInternal(
         }
         const reduced = towerIncomingDamage(preparedState, targetOwner, preparedCurrent, damageAmount);
         preparedState = reduced.state;
-        const effectiveDamage = keywordDamage(preparedCurrent, Math.max(0, reduced.amount - silenceDamageReduction(preparedCurrent, sourceCard)), preparedState.turn, 'EFFECT');
+        const effectiveDamage = keywordDamage(preparedCurrent, Math.max(0, reduced.amount + (reduced.amount > 0 ? madokawaIncomingBonus(preparedState, targetOwner, preparedCurrent) : 0) - silenceDamageReduction(preparedCurrent, sourceCard)), preparedState.turn, 'EFFECT');
         const health = preparedCurrent.isTrainingDummy ? 1 : preparedCurrent.currentHealth - effectiveDamage;
         if (health > 0) {
           const damagedState: GameState = {
@@ -3013,7 +3019,15 @@ function applyEffectInternal(
           ? resolvePendingEffects(selfDamaged)
           : selfDamaged;
         const liveCurrent = afterSelfDamaged.players.find((player) => player.id === targetOwner)?.board
-          .find((card) => card?.instanceId === current.instanceId) ?? preparedCurrent;
+          .find((card) => card?.instanceId === current.instanceId);
+        // Damage-trigger resolution may already settle lethal health and its leave effects.
+        // Record this hit once, but never append the same card to its graveyard again.
+        if (!liveCurrent) return resolveRegisteredRuleListeners({
+          ...clearDamageMarker(afterSelfDamaged),
+          events: [...afterSelfDamaged.events, { type: 'DAMAGE_DEALT', playerId, cardInstanceId: sourceCard.instanceId,
+            source: { type: 'CARD', cardInstanceId: sourceCard.instanceId }, target: { type: 'CARD', cardInstanceId: current.instanceId },
+            reason: 'CARD_EFFECT', amount: effectiveDamage, sourceContext: attribution }],
+        }, 'DAMAGE_TAKEN', targetOwner, current.instanceId, current.cardType);
         const beforeRetire = resolveTriggeredAbilities(afterSelfDamaged, targetOwner, liveCurrent, 'BEFORE_RETIRE');
         const protectedState = beforeRetire !== afterSelfDamaged && beforeRetire.targetingState?.active
           ? resolvePendingEffects(beforeRetire)
@@ -3538,7 +3552,8 @@ export function resolveTriggeredAbilities(
       if (event.playerId === playerId) { previousTurn = eventTurn; break; }
     }
     const overflow = state.overhealByTurn?.[`${previousTurn}:${playerId}`] ?? 0;
-    if (overflow <= 5) return state;
+    const threshold = Number((card.grantedText?.rulesText ?? state.cardPool?.find(d=>d.id===card.definitionId)?.rulesText ?? '').match(/총합이\s*(\d+)/u)?.[1] ?? 5);
+    if (overflow <= threshold) return state;
     const token=state.cardPool?.find(d=>d.name==='냥냥 펀치' && d.isToken && d.cardType==='TECHNIQUE');
     if(!token)return state;
     return run(state,{type:'STRUCTURED',action:'GENERATE',values:{definitionRef:{id:token.id},destination:'HAND',count:1}});

@@ -26,6 +26,12 @@ export function repairedLegacyCardAbilities(card: PublishedCardRecord): CardAbil
       values: { destination: 'HAND', count: 1,
         ...(/-1\s*\/\s*-1\s*\/\s*-1/u.test(text) ? { generatedModifiers: { cost: -1, attack: -1, health: -1 } } : {}) } }] }];
   }
+  if (['latest-wrestler-7', '102e8061-c3b8-44a5-a11c-56379996fee7'].includes(card.id) && /내\s*손과\s*필드/u.test(text)) {
+    const target = { zones: ['HAND' as const, 'BOARD' as const], owner: 'SELF' as const, selection: 'ALL' as const, count: 100,
+      filter: { tagsAny: [card.id === 'latest-wrestler-7' ? '스트리트' : '실험체'] } };
+    return [{ trigger: 'ENTER_FIELD', effects: [{ type: 'STRUCTURED', action: 'BUFF', target, values: { attack: 1, health: 1 } },
+      ...(/치유/u.test(text) ? [{ type: 'STRUCTURED' as const, action: 'ADD_KEYWORD' as const, target, values: { keyword: 'REGEN' as const } }] : [])] }];
+  }
   const calaveraLimit = text.match(/비용이\s*(\d+)\s*이하인\s*선수/u);
   if (!card.effectId && card.name === '라 칼라베라' && calaveraLimit && /등장.*묘지.*무작위.*부활/u.test(text)) {
     return [{ trigger: 'ENTER_FIELD', effects: [{ type: 'STRUCTURED', action: 'REVIVE',
@@ -79,7 +85,7 @@ export function repairedLegacyCardAbilities(card: PublishedCardRecord): CardAbil
   }
   if (card.name.replace(/\s+/gu, '') === '도금구슬마스터' || card.id === '99514068-68c8-46ca-b9f5-7f16b2ea4253') {
     return [{ trigger: 'ENTER_FIELD', effects: [{ type: 'STRUCTURED', action: 'REDUCE_COST',
-      target: { zones: !text || text.includes('덱') ? ['HAND', 'DECK'] : ['HAND'], owner: 'SELF', filter: { minCost: 6 }, selection: 'ALL', count: 1 }, values: { amount: 1 } }] }];
+      target: { zones: !text || text.includes('덱') ? ['HAND', 'DECK'] : ['HAND'], owner: 'SELF', filter: /기본\s*비용/u.test(text) ? { minBaseCost: 6 } : { minCost: 6 }, selection: 'ALL', count: 1 }, values: { amount: 1 } }] }];
   }
   // The old Ozen record may carry an empty or stale effect config. Identify
   // this published card by its stable definition ID as well as its name.
