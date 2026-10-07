@@ -16,11 +16,14 @@ try{for(const width of [1440,390,320]){
   const s=createInitialGameState(undefined,defs);s.cardPool=defs;s.status='IN_PROGRESS';s.turn=3;s.activePlayerId='player-1';s.events=[];
   for(const p of s.players){p.currentGold=10;p.hand=[];p.deck=[];p.board=[null,null,null,null];p.champion.quest=null;}
   s.players[0].board[0]={...generateCardInstance(base,{instanceId:'luna'}),boardSlot:0,enteredThisTurn:true};
+  for(let slot=1;slot<4;slot++)s.players[0].board[slot]={...generateCardInstance(base,{instanceId:'luna-'+slot}),boardSlot:slot,enteredThisTurn:true};
   window.__lunaQA={state:s,defs};window.dispatchEvent(new CustomEvent('ko-qa-load-state',{detail:{state:s,definitions:defs}}));
  },fixture);
  const active=page.getByRole('button',{name:'액티브',exact:true}).first();await active.waitFor();assert.equal(await active.isDisabled(),true);assert.match(await active.getAttribute('title'),/다음 자기 턴/);results.push(width+':summoning turn button visible and disabled:PASS');
- await page.evaluate(()=>{const {state:s,defs}=window.__lunaQA;s.players[0].board[0].enteredThisTurn=false;window.dispatchEvent(new CustomEvent('ko-qa-load-state',{detail:{state:structuredClone(s),definitions:defs}}));});
+ await page.evaluate(()=>{const {state:s,defs}=window.__lunaQA;for(const c of s.players[0].board)c.enteredThisTurn=false;window.dispatchEvent(new CustomEvent('ko-qa-load-state',{detail:{state:structuredClone(s),definitions:defs}}));});
  await page.waitForFunction(()=>[...document.querySelectorAll('button')].some(b=>b.textContent.trim()==='액티브'&&!b.disabled));
+ if(width<500){const hit=await active.boundingBox();assert.ok(hit.height>=44);assert.ok(await active.evaluate(el=>{const r=el.getBoundingClientRect(),target=document.elementFromPoint(r.x+r.width/2,r.y+r.height/2);return target===el||el.contains(target);}));}
  if(width<500)await active.tap();else await active.click();await page.getByRole('button',{name:'다이아몬드 군주 루나(캐논)',exact:true}).first().waitFor();assert.match(await page.getByTestId('state-check').innerText(),/UNCHANGED/);results.push(width+':usable active button transforms real card through engine:PASS');
+ assert.equal(await page.getByRole('button',{name:'액티브',exact:true}).count(),3);
  await context.close();
 }assert.deepEqual(errors,[]);console.log(JSON.stringify({results,errors},null,2));}finally{await browser.close();}

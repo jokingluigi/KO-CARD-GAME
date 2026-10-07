@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 const {chromium}=await import(process.env.KO_QA_PLAYWRIGHT??'playwright');
-const browser=await chromium.launch({headless:true,channel:'chrome'}),results=[],errors=[];
+const browser=await chromium.launch({headless:true,...(process.env.KO_QA_CHROME_CHANNEL==='chromium'?{}:{channel:'chrome'})}),results=[],errors=[];
 try {for(const width of [1440,390,320]){
 const context=await browser.newContext({viewport:{width,height:844},isMobile:width<500,hasTouch:width<500}),page=await context.newPage();
 page.on('pageerror',e=>errors.push(e.message));await page.route('**/api/**',r=>r.fulfill({json:{cards:[],champions:[]}}));

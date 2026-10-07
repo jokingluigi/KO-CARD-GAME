@@ -77,9 +77,9 @@ test('regular-user selection advances, persists and rejects nonparticipant acces
 });
 test('regular user completes 25 picks and starts a real persisted draft battle', async () => {
   let view = await (await request(`/api/draft/sessions/${sessionId}`, 'user')).json();
-  for (let index = 0; view.own.deck.length < 25; index++) {
-    assert.ok(index < 25); assert.ok(view.own.offers.length);
-    const response = await request(`/api/draft/sessions/${sessionId}/commands`, 'user', 'POST', { version: view.version, requestId: `isolated-card-${index}`, type: 'PICK', pickId: view.own.offers[0] });
+  for (let index = 0; view.own.deck.length < 25 || view.own.mutationEvent; index++) {
+    assert.ok(index < 40); assert.ok(view.own.offers.length || view.own.mutationEvent);
+    const response = await request(`/api/draft/sessions/${sessionId}/commands`, 'user', 'POST', { version: view.version, requestId: `isolated-card-${index}`, type: view.own.mutationEvent ? 'MUTATION_SKIP' : 'PICK', pickId: view.own.offers[0] });
     assert.equal(response.status, 200, JSON.stringify(await response.clone().json())); view = await response.json();
   }
   const ready = await request(`/api/draft/sessions/${sessionId}/commands`, 'user', 'POST', { version: view.version, requestId: 'isolated-ready', type: 'READY' });

@@ -118,6 +118,12 @@ jobs:
           node --import ./docs/qa/checkpoints/20261006/qa-loader.mjs --test --test-isolation=none
           lib/db/qa/tag-management-http.test.ts artifacts/api-server/src/lib/card-tags.test.ts
 
+      - name: Seeded rare draft eligibility and HTTP regressions
+        run: |
+          node --import ./docs/qa/checkpoints/20261006/qa-loader.mjs --test --test-isolation=none lib/game-engine/src/draft/domain.test.ts lib/game-engine/src/draft/mutations.test.ts
+          node --import ./docs/qa/checkpoints/20261006/qa-loader.mjs --test --test-isolation=none lib/db/qa/draft-http.test.ts
+          node --import ./docs/qa/checkpoints/20261006/qa-loader.mjs --test --test-isolation=none lib/db/qa/public-draft-access.test.ts
+
       - name: Current card catalog, full engine and 100 AI matches
         run: node docs/qa/current-card-engine.mjs
 
@@ -163,4 +169,5 @@ jobs:
           node docs/qa/champion-features-browser.mjs
           node docs/qa/fusion-browser.mjs
           node docs/qa/luna-active-browser.mjs
+          node docs/qa/machine-fusion-browser.mjs
           node docs/qa/tag-manager-browser.mjs
