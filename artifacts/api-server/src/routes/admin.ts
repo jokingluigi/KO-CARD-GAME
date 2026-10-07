@@ -261,7 +261,7 @@ function parseChampionInput(value: unknown): ChampionInput | null {
   }
   const questCompleteAudioUploadToken = typeof input.questCompleteAudioUploadToken === "string"
     ? input.questCompleteAudioUploadToken : null;
-  const abilityEffects = object("abilityEffects");
+  const abilityEffects = object("abilityEffects") ?? (input.abilityEffects == null ? {} : undefined);
   if (input.gameStartAbilityEffects != null && (!input.gameStartAbilityEffects || typeof input.gameStartAbilityEffects !== 'object' || Array.isArray(input.gameStartAbilityEffects))) return null;
   const gameStartAbilityEffects = object('gameStartAbilityEffects', true) ?? null;
   if (!isAutomaticChampionStartConfig(gameStartAbilityEffects)) return null;
@@ -330,17 +330,17 @@ function parseChampionInput(value: unknown): ChampionInput | null {
   const isStarterGrant = input.isStarterGrant === true;
   if (input.isCraftable !== undefined && typeof input.isCraftable !== "boolean") return null;
   const isCraftable = input.isCraftable !== false;
-  const validEffects = (effects: Record<string, unknown> | null | undefined, championReward = false) =>
-    effects === null || effects === undefined || !("effects" in effects) ||
-    isEffectScriptConfig(effects) ||
-    (championReward ? isChampionQuestRewardEffects(effects) : isStructuredEffects(effects));
+  // Saving an administrator draft does not require effect certification.
+  // Preserve supplied effects; analysis is optional and never a save prerequisite.
+  const validEffectObject = (key: string) => input[key] == null ||
+    (typeof input[key] === "object" && !Array.isArray(input[key]));
   if (!name || name.length > 120 || !abilityName || abilityName.length > 120 ||
       maxHealth == null || abilityCost == null || abilityAudioVolume == null ||
       questCompleteAudioVolume == null ||
       !abilityEffects || typeof input.hasQuest !== "boolean" ||
       questProgressRequired === undefined || upgradedAbilityCost === undefined ||
-       !validEffects(gameStartAbilityEffects) || !validEffects(abilityEffects) || !validEffects(object("questRewardEffects", true), true) ||
-        !validEffects(object("upgradedAbilityEffects", true))) return null;
+       !validEffectObject("gameStartAbilityEffects") || !validEffectObject("abilityEffects") ||
+       !validEffectObject("questRewardEffects") || !validEffectObject("upgradedAbilityEffects")) return null;
   if (
     (imageAssetId === null) !== (imageUrl === null) ||
     (imageAssetId !== null &&
@@ -417,12 +417,6 @@ function championInputError(value: unknown): string {
   if (!isAutomaticChampionStartConfig(input.gameStartAbilityEffects)) return '게임 시작 능력은 대상 직접 선택 없이 자동으로 완료되는 효과만 사용할 수 있습니다.';
   if (!effectObject("gameStartAbilityEffects")) return '게임 시작 능력 효과 형식을 확인해 주세요.';
   if (!effectObject("abilityEffects")) return "고유 능력 효과 형식을 확인해 주세요.";
-  if (input.abilityEffects && typeof input.abilityEffects === "object" &&
-      "effects" in input.abilityEffects &&
-      !isEffectScriptConfig(input.abilityEffects) &&
-      !isStructuredEffects(input.abilityEffects)) {
-    return "고유 능력 효과를 확인해 주세요.";
-  }
   if (input.hasQuest) {
     if (typeof input.questName !== "string" || !input.questName.trim()) return "Quest 이름을 확인해 주세요.";
     if (typeof input.questText !== "string" || !input.questText.trim()) return "Quest 설명을 확인해 주세요.";
@@ -974,8 +968,7 @@ export function parseCardInput(value: unknown): CardInput | null {
      || ((input.effectConfig as Record<string, unknown>).dodgeCharges !== undefined && (!Number.isSafeInteger((input.effectConfig as Record<string, unknown>).dodgeCharges) || Number((input.effectConfig as Record<string, unknown>).dodgeCharges) < 1 || Number((input.effectConfig as Record<string, unknown>).dodgeCharges) > 999))
      || ((input.keywords as string[]).includes('CONDITION') && !validChampionQuestCondition((input.effectConfig as Record<string, unknown>).playCondition))
      || !validCountdownCardSettings(input.cardType, input.keywords as string[], input.effectConfig as Record<string, unknown>)
-     || (effectId === "STRUCTURED_EFFECTS_V1" && !isStructuredEffects(input.effectConfig))
-     || (effectId === "SCRIPT_V1" && !isEffectScriptConfig(input.effectConfig))
+
     || (imageAssetId === null) !== (imageUrl === null)
     || (imageAssetId !== null &&
       !imageAssetId.startsWith("/objects/uploads/card-images/"))
