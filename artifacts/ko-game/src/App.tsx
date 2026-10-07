@@ -1,25 +1,11 @@
 import {ServerMaintenanceGate} from '@/components/server-maintenance';
-const Tower = lazy(() => import("@/pages/tower"));
-const Draft = lazy(() => import("@/pages/draft"));
 import { type ReactNode, useEffect, lazy, Suspense } from 'react';
 import { AuthLoading } from '@/components/auth-page';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { ErrorBoundary } from '@/components/error-boundary';
 import { Toaster } from '@/components/ui/toaster';
 import { TooltipProvider } from '@/components/ui/tooltip';
-const NotFound = lazy(() => import("@/pages/not-found"));
-const Admin = lazy(() => import("@/pages/admin"));
 import Home from '@/components/home-entry';
-const Decks = lazy(() => import("@/pages/decks"));
-const Collection = lazy(() => import("@/pages/collection"));
-const Packs = lazy(() => import("@/pages/packs"));
-const Shop = lazy(() => import("@/pages/shop"));
-const Online = lazy(() => import("@/pages/online"));
-const OnlineQuick = lazy(() => import("@/pages/online-quick"));
-const OnlineFriendly = lazy(() => import("@/pages/online-friendly"));
-const OnlineMatch = lazy(() => import("@/pages/online-match"));
-const DailyQuests = lazy(() => import("@/pages/daily-quests"));
-const Attendance = lazy(() => import("@/pages/attendance"));
 import {
   Route,
   Switch,
@@ -31,6 +17,21 @@ import { readStoredBgmMute, readStoredBgmVolume, readStoredSfxVolume, readStored
 import { musicContextForPath, shouldLoadMainBgm } from '@/audio/music-route';
 import { fetchMainContent } from '@/lib/main-content-client';
 import { GamepadNavigation } from '@/components/gamepad-navigation';
+
+const Tower = lazy(() => import("@/pages/tower"));
+const Draft = lazy(() => import("@/pages/draft"));
+const NotFound = lazy(() => import("@/pages/not-found"));
+const Admin = lazy(() => import("@/pages/admin"));
+const Decks = lazy(() => import("@/pages/decks"));
+const Collection = lazy(() => import("@/pages/collection"));
+const Packs = lazy(() => import("@/pages/packs"));
+const Shop = lazy(() => import("@/pages/shop"));
+const Online = lazy(() => import("@/pages/online"));
+const OnlineQuick = lazy(() => import("@/pages/online-quick"));
+const OnlineFriendly = lazy(() => import("@/pages/online-friendly"));
+const OnlineMatch = lazy(() => import("@/pages/online-match"));
+const DailyQuests = lazy(() => import("@/pages/daily-quests"));
+const Attendance = lazy(() => import("@/pages/attendance"));
 
 const queryClient = new QueryClient();
 
