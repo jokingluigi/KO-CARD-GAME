@@ -83,7 +83,8 @@ export function enterField(
       { boardSlot, chosenTargetInstanceIds },
     )
     : enteredState;
-  const afterEntryListeners = resolveCardEntryListeners(afterEnter, playerId, enteredCard);
+  const afterSelfEntry = resolveTriggeredAbilities(afterEnter, playerId, enteredCard, 'SELF_ENTERED', {boardSlot,chosenTargetInstanceIds});
+  const afterEntryListeners = resolveCardEntryListeners(afterSelfEntry, playerId, enteredCard);
   const afterSummonListeners = entryCause === 'SUMMON'
     ? resolveSummonListeners(afterEntryListeners, playerId, enteredCard)
     : afterEntryListeners;
