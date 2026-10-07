@@ -33,10 +33,11 @@ export type PublishedChampionRecord = {
 
 function effects(config: Structured | null, tokenId?: string | null): ChampionEffect[] {
   const result: ChampionEffect[] = [];
-  for (const script of config?.scripts ?? []) {
+  for (const script of Array.isArray(config?.scripts) ? config.scripts : []) {
     if (isEffectScript(script)) result.push({ type: "SCRIPT", script });
   }
-  for (const effect of config?.effects ?? []) {
+  for (const effect of Array.isArray(config?.effects) ? config.effects : []) {
+    if (!effect || typeof effect !== "object" || Array.isArray(effect)) continue;
     if (effect.action === "DIRECT_DEPLOY_CHAMPION_TOKEN" && tokenId) {
       result.push({ type: "DIRECT_DEPLOY_CHAMPION_TOKEN", cardDefinitionId: tokenId });
       continue;
