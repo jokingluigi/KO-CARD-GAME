@@ -117,13 +117,20 @@ test('AI result credits succeed and are granted once even when optional quest re
  const before=(await pg.query<any>('SELECT currency_balance FROM users WHERE id=$1',['awakening-admin'])).rows[0].currency_balance;
  const matchId='ai-11111111-1111-4111-8111-111111111111';
  for(let retry=0;retry<2;retry++) {
-  const result=await request('/daily-quests/ai-match-progress','POST',{deckId:'deleted-deck',aiDeckId:'unavailable-ai',matchId,outcome:'WIN',actions:[]});
+  const result=await request('/daily-quests/ai-match-progress','POST',{deckId:'deleted-deck',aiDeckId:'unavailable-ai',matchId,outcome:'WIN',actions:Array.from({length:2000},(_,i)=>({type:'PLAY_WRESTLER',playerId:'player-1',cardInstanceId:'long-transcript-instance-'+i,boardSlot:0}))});
   assert.equal(result.status,200);assert.equal(result.body.completed,false);
   assert.equal(result.body.reward.amount,200);
  }
  const after=(await pg.query<any>('SELECT currency_balance FROM users WHERE id=$1',['awakening-admin'])).rows[0].currency_balance;
  assert.equal(after-before,200);
  assert.equal((await pg.query<any>('SELECT count(*)::int AS count FROM reward_grants WHERE source_id=$1',[matchId])).rows[0].count,1);
+ const receipt=await request('/daily-quests/ai-match-progress/'+matchId+'/reward');assert.equal(receipt.status,200);assert.deepEqual(receipt.body.reward,{amount:200,sourceType:'MATCH_AI_RESULT'});
+ assert.equal((await request('/daily-quests/ai-match-progress/ai-22222222-2222-4222-8222-222222222222/reward')).body.reward,null);
+ assert.equal((await request('/daily-quests/ai-match-progress/invalid/reward')).status,400);
+ const unauthenticated=await fetch(origin+'/api/daily-quests/ai-match-progress/'+matchId+'/reward');assert.equal(unauthenticated.status,401);
+ const ownCookie=cookie;await database.insert(schema.usersTable).values({id:'receipt-other',email:'receipt-other@qa.invalid',nickname:'ReceiptOther',passwordHash:await hashPassword('ReceiptOther123'),role:'ADMIN'});assert.equal((await request('/auth/login','POST',{email:'receipt-other@qa.invalid',password:'ReceiptOther123'})).status,200);
+ assert.equal((await request('/daily-quests/ai-match-progress/'+matchId+'/reward')).body.reward,null,'another user cannot recover this grant');cookie=ownCookie;
+
 });
 test("startup registers editable awakening drafts without overwriting existing owner data", async () => {
   const { ensureAwakeningContent, AWAKENING_CHAMPION_ID } = await import("../../../artifacts/api-server/src/lib/awakening-card-service");

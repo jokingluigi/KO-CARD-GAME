@@ -1,0 +1,24 @@
+import assert from 'node:assert/strict';
+import {readFileSync,mkdirSync} from 'node:fs';
+const {chromium}=await import(process.env.KO_QA_PLAYWRIGHT??'playwright');
+const data=JSON.parse(readFileSync(new URL('../../artifacts/ko-game/qa/art-direction-data.json',import.meta.url),'utf8'));
+const cards=data.cards.cards.filter(c=>!c.isToken&&!c.isChampionToken).map(c=>({...c,quantity:3}));
+const champions=data.champions.champions.map(c=>({...c,owned:true}));const champion=champions[0];const selected=cards.filter(c=>c.cost<=6&&!['TOKEN','CHAMPION'].includes(c.rarity)).flatMap(c=>Array(c.rarity==='NORMAL'?3:c.rarity==='EPIC'?2:1).fill(c)).slice(0,25);
+const deck={id:'visual-deck',name:'KO / FIRST TEAM',championDefinitionId:champion.id,cardDefinitionIds:selected.map(c=>c.id),cards:selected,champion,isValid:true,isSelected:true,missingCardDefinitionIds:[],invalidReasons:[],validationReasons:[]};
+const user={id:'visual-qa',nickname:'KO PLAYER',role:'USER',currencyBalance:4200,prismBalance:480,championPrismBalance:100,currency:4200,isTestAccount:false};
+const browser=await chromium.launch({headless:true,...(process.env.KO_QA_CHROME_CHANNEL==='chromium'?{}:{channel:'chrome'})});
+for(const [name,width,height] of [['mobile',390,844],['small',320,568],['desktop',1440,900]]){
+ const context=await browser.newContext({viewport:{width,height},reducedMotion:'reduce'}),page=await context.newPage();const errors=[];page.on('pageerror',e=>errors.push(e.message));
+ await page.route('**/api/**',route=>{const path=new URL(route.request().url()).pathname;const key=path.split('/').pop();return route.fulfill({json:data[key]??{}});});
+ await page.route('**/storage/**',route=>route.fulfill({contentType:'image/png',body:Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+jRZkAAAAASUVORK5CYII=','base64')}));
+ await page.goto((process.env.KO_QA_ORIGIN??'http://127.0.0.1:5173')+'/qa/art-direction.html');await page.getByTestId('visual-state').waitFor();await page.waitForTimeout(500);
+ const before=await page.getByTestId('visual-state').textContent();assert.equal(await page.getByTestId('button-open-match-history').isVisible(),false);assert.equal(await page.locator('.fixed.left-2.top-24').count(),0,'no floating log launcher');
+ if(name!=='desktop'){
+ await page.getByRole('button',{name:'설정 열기',exact:true}).click();await page.getByTestId('button-open-match-history').click();const dialog=page.getByRole('dialog');await dialog.waitFor();
+ await page.waitForTimeout(350);const r=await dialog.boundingBox();console.log(name,r);assert.ok(r&&r.x>=0&&r.y>=0&&r.x+r.width<=width&&r.y+r.height<=height,'dialog fits viewport');
+ await dialog.getByRole('button',{name:'전체 기록 보기',exact:true}).click();await page.keyboard.press('Escape');await dialog.waitFor({state:'hidden'});
+ await page.getByRole('button',{name:'설정 열기',exact:true}).click();await page.getByTestId('button-open-match-history').click();await dialog.waitFor();await page.setViewportSize({width:1024,height:768});await dialog.waitFor({state:'hidden'});await page.setViewportSize({width,height});
+ await page.locator('.ko-hand-card').first().click();assert.equal(await page.getByTestId('visual-state').textContent(),before);
+ }else{assert.equal(await page.locator('aside').first().isVisible(),true);}
+ assert.equal(errors.length,0,errors.join(';'));assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth+1),false);console.log(name+': PASS (log placement, modal bounds, close, input and state)');await context.close();
+}await browser.close();

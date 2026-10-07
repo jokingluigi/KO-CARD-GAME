@@ -1,4 +1,5 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
+import { Dialog, DialogContent, DialogTitle, DialogDescription } from './ui/dialog';
 import { getCardDefinition, type CardInstance, type GameState } from '@/game';
 import { eventTitle, findCard, historyEvents, playerLabel } from './action-history-utils';
 import { CardInspectContent, Inspectable } from './alt-inspector';
@@ -85,10 +86,16 @@ function HistoryList({ state, viewerPlayerId, expanded = false }: { state: GameS
   );
 }
 
-export function ActionHistory({ state, viewerPlayerId = state.players[0].id }: { state: GameState; viewerPlayerId?: string }) {
-  const [isMobileOpen, setIsMobileOpen] = useState(false);
+export function ActionHistory({ state, viewerPlayerId = state.players[0].id, mobileOpen = false, onMobileClose }: { state: GameState; viewerPlayerId?: string; mobileOpen?: boolean; onMobileClose?: () => void }) {
   const [showAll, setShowAll] = useState(false);
-  const latestEvent = historyEvents(state)[0];
+  useEffect(() => {
+    if (!mobileOpen) return;
+    const desktop = window.matchMedia('(min-width: 768px)');
+    const closeOnDesktop = () => { if (desktop.matches) onMobileClose?.(); };
+    closeOnDesktop();
+    desktop.addEventListener('change', closeOnDesktop);
+    return () => desktop.removeEventListener('change', closeOnDesktop);
+  }, [mobileOpen, onMobileClose]);
 
   return (
     <>
@@ -99,23 +106,14 @@ export function ActionHistory({ state, viewerPlayerId = state.players[0].id }: {
         <div className={showAll ? 'max-h-[65dvh] overflow-y-auto' : 'max-h-[48dvh] overflow-y-auto'}><HistoryList state={state} viewerPlayerId={viewerPlayerId} expanded={showAll} /></div>
       </aside>
 
-      <div className="fixed left-2 top-24 z-50 md:hidden">
-        <button
-          type="button"
-          aria-expanded={isMobileOpen}
-          onClick={() => setIsMobileOpen((open) => !open)}
-          className="flex max-w-44 flex-col rounded border border-neutral-700 bg-black/90 px-2 py-1.5 text-left text-[10px] font-black text-neutral-200 shadow-xl"
-        >
-          <span>경기 로그 {isMobileOpen ? '닫기' : '보기'}</span>
-          {!isMobileOpen && latestEvent && <span className="mt-0.5 line-clamp-2 text-[9px] font-medium text-neutral-300">{eventTitle(state, latestEvent, viewerPlayerId)}</span>}
-        </button>
-        {isMobileOpen && (
-          <div className="mt-1 w-48 rounded border border-neutral-800 bg-black/95 p-1.5 shadow-2xl">
-            <button type="button" className="mb-1 text-[10px] font-bold text-amber-300" onClick={() => setShowAll((open) => !open)}>{showAll ? '최근 12개만 보기' : '전체 경기 기록 보기'}</button>
-            <HistoryList state={state} viewerPlayerId={viewerPlayerId} expanded={showAll} />
-          </div>
-        )}
-      </div>
+      <Dialog open={mobileOpen} onOpenChange={(open) => { if (!open) onMobileClose?.(); }}>
+        <DialogContent overlayClassName="!z-[160] md:hidden" className="!z-[170] w-[calc(100vw-24px)] max-h-[80dvh] rounded-none border border-amber-700 bg-black text-neutral-100 md:hidden">
+          <DialogTitle className="text-left text-base font-black text-amber-300">경기 기록</DialogTitle>
+          <DialogDescription className="text-left text-xs text-neutral-400">원할 때만 열어 확인하세요.</DialogDescription>
+          <button type="button" className="min-h-10 text-left text-xs font-bold text-amber-300" onClick={() => setShowAll((open) => !open)}>{showAll ? '최근 12개만 보기' : '전체 기록 보기'}</button>
+          <HistoryList state={state} viewerPlayerId={viewerPlayerId} expanded={showAll} />
+        </DialogContent>
+      </Dialog>
     </>
   );
 }

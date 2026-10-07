@@ -2,6 +2,7 @@ import express, { type Express } from "express";
 import cors from "cors";
 import pinoHttp from "pino-http";
 import router from "./routes";
+import { configureJsonBodyParsing } from "./lib/request-body";
 import { logger } from "./lib/logger";
 
 const app: Express = express();
@@ -55,7 +56,7 @@ app.use(
     },
   }),
 );
-app.use(express.json());
+configureJsonBodyParsing(app);
 app.use(express.urlencoded({ extended: true }));
 
 app.get(

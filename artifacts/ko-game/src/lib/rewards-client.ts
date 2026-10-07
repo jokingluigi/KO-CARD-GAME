@@ -1,3 +1,4 @@
+import { submitWithReceipt } from './reward-receipt';
 import type { AIMatchQuestProgressInput } from "@workspace/api-client-react";
 
 const base = `${import.meta.env.BASE_URL.replace(/\/$/, "")}/api`;
@@ -82,10 +83,13 @@ export type RewardAdminData = {
 
 export const fetchDailyQuests = () => request<{ assignments: DailyQuest[] }>("/daily-quests");
 export const completeAIMatchQuestProgress = (body: AIMatchQuestProgressInput) =>
-  request<{ completed: boolean; message?: string; reward: { amount: number; sourceType: string } | null }>("/daily-quests/ai-match-progress", {
-    method: "POST",
-    body: JSON.stringify(body),
-  });
+  submitWithReceipt(
+    () => request<{ completed: boolean; message?: string; reward: { amount: number; sourceType: string } | null }>("/daily-quests/ai-match-progress", { method: "POST", body: JSON.stringify(body) }),
+    async () => {
+      const receipt = await request<{ reward: { amount: number; sourceType: string } | null }>(`/daily-quests/ai-match-progress/${encodeURIComponent(body.matchId)}/reward`);
+      return receipt.reward ? { completed: false, reward: receipt.reward } : null;
+    },
+  );
 export const claimDailyQuest = (id: string) => request<{ assignment: DailyQuest; reward: { amount: number; balanceAfter: number } | null; alreadyClaimed: boolean }>(`/daily-quests/${encodeURIComponent(id)}/claim`, { method: "POST" });
 export const fetchAttendance = () => request<AttendanceData>("/attendance");
 export const claimAttendance = () => request<{ attendance: AttendanceData; reward: { amount: number; balanceAfter: number } | null; alreadyClaimed: boolean }>("/attendance/claim", { method: "POST" });

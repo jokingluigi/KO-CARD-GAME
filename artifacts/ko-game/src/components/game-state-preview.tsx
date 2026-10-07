@@ -168,6 +168,8 @@ export function GameStatePreview({
   const [spokenLine, setSpokenLine] = React.useState<{ text: string; playerId: string; speaker: string; id: number } | null>(null);
   const spokenTimerRef = React.useRef<number | null>(null);
   React.useEffect(() => () => { if (spokenTimerRef.current !== null) window.clearTimeout(spokenTimerRef.current); }, []);
+  const [historyOpen, setHistoryOpen] = React.useState(false);
+  React.useEffect(() => { setHistoryOpen(false); }, [state.gameId, state.status]);
   const [tutorialStep, setTutorialStep] = React.useState<number | null>(null);
   const [mulliganSeconds, setMulliganSeconds] = React.useState(20);
   const mulliganSubmitRef = React.useRef(onMulligan);
@@ -864,7 +866,7 @@ export function GameStatePreview({
      <div className={`ko-game-shell flex min-h-[100dvh] w-full flex-col overflow-x-hidden overflow-y-auto bg-neutral-950 font-sans text-neutral-100 selection:bg-primary selection:text-black md:overflow-hidden ${me.champion?.questCompleted ? 'ko-quest-awakened--mine' : ''} ${opp.champion?.questCompleted ? 'ko-quest-awakened--theirs' : ''}`}>
       {cinematicIntro && <CinematicIntro event={cinematicIntro} />}
       {activePresentationCue && <CinematicCue cue={activePresentationCue} state={state} />}
-      <ActionHistory state={state} viewerPlayerId={presentationPlayerId ?? me.id} />
+      <ActionHistory state={state} viewerPlayerId={presentationPlayerId ?? me.id} mobileOpen={historyOpen} onMobileClose={() => setHistoryOpen(false)} />
       
       {/* Background Ambience */}
       <div className="ko-cinematic-background pointer-events-none absolute inset-0 z-0 bg-neutral-950">
@@ -1294,6 +1296,7 @@ export function GameStatePreview({
                          aria-label="배경 음악 볼륨"
                        />
                      </label>
+                     <button type="button" data-testid="button-open-match-history" className="min-h-10 w-full border border-amber-700 bg-black px-3 text-left text-xs font-bold text-amber-300 md:hidden" onClick={() => { setSettingsOpen(false); setHistoryOpen(true); }}>경기 로그 보기</button>
                      <SfxVolumeControl />
                      <EntranceVolumeControl />
                      <label className="flex items-center justify-between gap-2 text-xs font-bold text-neutral-300">
