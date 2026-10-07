@@ -5,7 +5,7 @@ import { AdminCardManager } from '../src/components/admin-card-manager';
 import { directDeployChampionToken } from '../src/game/engine/champion-token';
 import { TEST_CHAMPION_TOKEN_DEFINITION } from '../src/game/cards/test-cards';
 import { MAX_HAND_SIZE } from '../src/game/rules/constants';
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {createRoot} from 'react-dom/client';
 import '../src/index.css';
 import '../src/battle-presentation.css';
@@ -34,6 +34,10 @@ function Scene(){
  const [busy,setBusy]=useState(false),[failure,setFailure]=useState('');
  const [expected,setExpected]=useState(()=>JSON.stringify(state));
  const update=(s:GameState)=>{setExpected(JSON.stringify(s));setState(s);};
+ useEffect(()=>{
+  const load=(event:Event)=>{const {state,definitions}=(event as CustomEvent<{state:GameState,definitions:CardDefinition[]}>).detail;setRuntimeCardDefinitions(definitions);update(state);};
+  window.addEventListener('ko-qa-load-state',load);return()=>window.removeEventListener('ko-qa-load-state',load);
+ },[]);
  const run=(kind:string)=>{
   let next=state;const p=next.players[0],enemy=next.players[1],source=p.board.find(Boolean)!;
   if(kind==='reward'||kind==='reward-full'){next=initial();next.activePlayerId='player-2';next.cardPool=[def,TEST_CHAMPION_TOKEN_DEFINITION];for(const i of [0,1,2,3] as const)next.players[0].board[i]={...generateCardInstance(def,{instanceId:'replace-'+i}),boardSlot:i};if(kind==='reward-full')next.players[0].hand=Array.from({length:MAX_HAND_SIZE},(_,i)=>generateCardInstance(def,{instanceId:'hand-'+i}));next=directDeployChampionToken(next,'player-1',next.players[0].champion!.id,TEST_CHAMPION_TOKEN_DEFINITION.id,'CHAMPION_QUEST_REWARD');update(next);return;}
@@ -64,7 +68,7 @@ function Scene(){
   bgmMuted={true} bgmVolume={0} onBgmMutedChange={noop} onBgmVolumeChange={noop} onSurrender={noop} onSelectCard={setSelected}
   onEndTurn={()=>run('turn')} onSelectSlot={noop} onUseTechnique={noop} playAnimation={null} onPlayAnimationComplete={noop}
   attackAnimation={null} attackImpactTriggered={false} onAttackImpact={noop} onAttackAnimationComplete={noop}
-  onSelectAttacker={id=>{if(state.targetingState)update(executeAction(state,{type:'SELECT_EFFECT_TARGET',playerId:state.targetingState.playerId,targetId:id}).state);}} onAttackWrestler={noop} onAttackPlayer={noop} onUseActive={noop} onUseChampionAbility={noop}
+  onSelectAttacker={id=>{if(state.targetingState)update(executeAction(state,{type:'SELECT_EFFECT_TARGET',playerId:state.targetingState.playerId,targetId:id}).state);}} onAttackWrestler={noop} onAttackPlayer={noop} onUseActive={id=>{const result=executeAction(state,{type:'USE_ACTIVE',playerId:state.players[0].id,cardInstanceId:id});if(!result.success)setFailure(result.message);update(result.state);}} onUseChampionAbility={noop}
   onCancelEffectTargeting={()=>update(executeAction(state,{type:'CANCEL_EFFECT_TARGET',playerId:state.targetingState!.playerId}).state)} onEffectTarget={id=>update(executeAction(state,{type:'SELECT_EFFECT_TARGET',playerId:state.targetingState!.playerId,targetId:id}).state)} onPresentationBusyChange={setBusy} />
  </>;
 }
