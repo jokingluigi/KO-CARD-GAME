@@ -64,7 +64,7 @@ test('champion counts ten fusions once each and restores serialized progress; fu
 });
 test('admin stage card keywords and configured stats survive mapping; changed text disables obsolete dealer pierce',()=>{
  const d=cardRecordToDefinition(raw('이 카드가 필드에 소환되면 이 카드에게 이번 게임에서 리타이어하거나 파괴 된 아군 선수의 수만큼 공격력을 증가시킵니다.',{id:'crisis-awakening-dealer',cost:2,attack:0,health:3,keywords:['RUSH','DODGE','IMMUNE'],effectConfig:{awakeningStage:'DEALER',questExclusive:true,dodgeCharges:3}}));
- assert.deepEqual([d.cost,d.attack,d.health],[2,0,3]);assert.deepEqual(d.keywords,['RUSH','DODGE','IMMUNE']);assert.equal(d.awakeningLegacyPassives,false);assert.equal(d.abilities[0].trigger,'ENTER_FIELD');
+ assert.deepEqual([d.cost,d.attack,d.health],[2,0,3]);assert.deepEqual(d.keywords,['RUSH','DODGE','IMMUNE']);assert.equal(d.awakeningLegacyPassives,false);assert.equal(d.abilities[0].trigger,'SELF_ENTERED');
 });
 
 test('countdown uses current max HP, grants rush and ignores taunt only for champion targeting',()=>{
@@ -97,4 +97,13 @@ test('all-character heal includes immune allies and self, while manual targeting
  assert.equal(done.players[0].board[0]?.currentHealth,4);assert.equal(done.players[0].board[1]?.currentHealth,3);assert.equal(done.players[0].health,13);
  const blocked=applyEffect(s,s.players[0].id,source,{type:'STRUCTURED',action:'HEAL',target:{zone:'BOARD',owner:'SELF',selection:'PLAYER_CHOICE',count:1},values:{amount:3}},['immune-ally']);
  assert.equal(blocked.players[0].board[1]?.currentHealth,1);
+});
+
+test('self-entry removal-count attack runs for hand, summon and revival without broadening battlecry rules',async()=>{
+ const {enterField}=await import('./enter-field');
+ const d=cardRecordToDefinition(raw('이 카드가 필드에 소환되면 이 카드에게 이번 게임에서 리타이어하거나 파괴 된 아군 선수의 수만큼 공격력을 증가시킵니다.',{id:'crisis-awakening-dealer',effectConfig:{awakeningStage:'DEALER',questExclusive:true}}));
+ for(const cause of ['PLAY_FROM_HAND','SUMMON','REVIVE','CHAMPION_DEPLOY'] as const){
+ const s=setup(d);s.players[0].hand=[];s.events=[{type:'CARD_RETIRED',playerId:s.players[0].id,cardType:'WRESTLER',cardInstanceId:'old-1'},{type:'CARD_DESTROYED',playerId:s.players[0].id,cardType:'WRESTLER',cardInstanceId:'old-2'},{type:'CARD_VANISHED',playerId:s.players[0].id,cardType:'WRESTLER',cardInstanceId:'vanished'}];
+ const c=generateCardInstance(d,{instanceId:'source'});const done=enterField(s,s.players[0].id,c,1,undefined,undefined,cause);assert.equal(done.players[0].board[1]?.currentAttack,2,cause);
+ }
 });
