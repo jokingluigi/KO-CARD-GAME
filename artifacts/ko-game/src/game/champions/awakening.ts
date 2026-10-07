@@ -52,6 +52,7 @@ export function hasAwakeningPassive(
 ): boolean {
   return Boolean(
     card?.awakening?.stage === stage &&
+    card.awakeningLegacyPassives !== false &&
     !card.isSilenced &&
     !card.isAbilityDisabled,
   );
