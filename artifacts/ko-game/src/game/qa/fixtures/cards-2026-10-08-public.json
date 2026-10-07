@@ -1,0 +1,2786 @@
+[
+  {
+    "id": "40cbf9ea-d2e1-4929-b6cc-2d366a72016f",
+    "name": "1972년 11월 21일",
+    "cardType": "TECHNIQUE",
+    "cost": 99,
+    "attack": 0,
+    "health": 0,
+    "text": "턴 종료:이 카드가 손패에 남아있었다면 당신의 패배입니다!",
+    "rarity": "TOKEN",
+    "keywords": [],
+    "tags": [],
+    "isToken": true,
+    "isChampionToken": false,
+    "effectId": null,
+    "effectConfig": {},
+    "status": "PUBLISHED",
+    "version": 5
+  },
+  {
+    "id": "5d568663-55e8-4ad9-88b3-3afadae538d0",
+    "name": "MPG",
+    "cardType": "WRESTLER",
+    "cost": 3,
+    "attack": 2,
+    "health": 4,
+    "text": "등장: 상대 선수 1장의 공격력을 1 감소시키고, 이 카드의 공격력을 1 증가시킵니다.",
+    "rarity": "NORMAL",
+    "keywords": [],
+    "tags": [],
+    "isToken": false,
+    "isChampionToken": false,
+    "effectId": null,
+    "effectConfig": {},
+    "status": "PUBLISHED",
+    "version": 3
+  },
+  {
+    "id": "1e0bbdb3-9304-46b0-81b8-d30bb9954fc3",
+    "name": "RM우디르",
+    "cardType": "WRESTLER",
+    "cost": 5,
+    "attack": 2,
+    "health": 2,
+    "text": "등장:자신의 현재 공격과 체력의 수치를 2배로 만듭니다.",
+    "rarity": "LEGENDARY",
+    "keywords": [
+      "MULTI_STRIKE"
+    ],
+    "tags": [],
+    "isToken": false,
+    "isChampionToken": false,
+    "effectId": "STRUCTURED_EFFECTS_V1",
+    "effectConfig": {
+      "effects": [
+        {
+          "action": "BUFF",
+          "target": {
+            "zone": "BOARD",
+            "count": 1,
+            "owner": "SELF",
+            "selection": "SELF"
+          },
+          "values": {
+            "attackMultiplier": 2,
+            "healthMultiplier": 2
+          },
+          "trigger": "ENTER_FIELD"
+        }
+      ]
+    },
+    "status": "PUBLISHED",
+    "version": 27
+  },
+  {
+    "id": "epic-spell-forced-silence",
+    "name": "강제 침묵",
+    "cardType": "TECHNIQUE",
+    "cost": 3,
+    "attack": 0,
+    "health": 0,
+    "text": "상대 선수 1장을 선택하여 침묵시킵니다.",
+    "rarity": "EPIC",
+    "keywords": [],
+    "tags": [],
+    "isToken": false,
+    "isChampionToken": false,
+    "effectId": "SCRIPT_V1",
+    "effectConfig": {
+      "scripts": [
+        {
+          "steps": [
+            {
+              "id": "chosen",
+              "type": "SELECT",
+              "target": {
+                "zone": "BOARD",
+                "count": 1,
+                "owner": "ENEMY",
+                "cardType": "WRESTLER",
+                "selection": "PLAYER_CHOICE"
+              }
+            },
+            {
+              "type": "EFFECT",
+              "effect": {
+                "action": "SILENCE",
+                "target": {
+                  "zone": "BOARD",
+                  "count": 1,
+                  "owner": "ENEMY",
+                  "cardType": "WRESTLER",
+                  "resultId": "chosen",
+                  "selection": "ALL"
+                }
+              }
+            }
+          ],
+          "trigger": "ACTIVE",
+          "version": "SCRIPT_V1"
+        }
+      ]
+    },
+    "status": "PUBLISHED",
+    "version": 5
+  },
+  {
+    "id": "2519b37a-74ea-4b26-afe2-2227f40a03bc",
+    "name": "그레이트 챤",
+    "cardType": "WRESTLER",
+    "cost": 2,
+    "attack": 2,
+    "health": 4,
+    "text": "액티브:자신의 현재 공격과 체력을의 수치 서로 교환합니다.",
+    "rarity": "NORMAL",
+    "keywords": [],
+    "tags": [],
+    "isToken": false,
+    "isChampionToken": false,
+    "effectId": "STRUCTURED_EFFECTS_V1",
+    "effectConfig": {
+      "effects": [
+        {
+          "action": "SWAP_STATS",
+          "target": {
+            "zone": "BOARD",
+            "count": 1,
+            "owner": "SELF",
+            "selection": "SELF"
+          },
+          "values": {},
+          "trigger": "ACTIVE",
+          "conditions": []
+        }
+      ]
+    },
+    "status": "PUBLISHED",
+    "version": 8
+  },
+  {
+    "id": "4dba4dcd-d07f-41b0-b546-ac011a73d927",
+    "name": "금구슬 마스터",
+    "cardType": "WRESTLER",
+    "cost": 5,
+    "attack": 3,
+    "health": 6,
+    "text": "등장:자신보다 공격력이 낮은 상대 선수 1장을 선택해서 파괴합니다.",
+    "rarity": "EPIC",
+    "keywords": [],
+    "tags": [
+      "구슬 마스터"
+    ],
+    "isToken": false,
+    "isChampionToken": false,
+    "effectId": null,
+    "effectConfig": {},
+    "status": "PUBLISHED",
+    "version": 4
+  },
+  {
+    "id": "12a86603-4412-409c-a5a2-ec361f57863c",
+    "name": "나토마토",
+    "cardType": "WRESTLER",
+    "cost": 3,
+    "attack": 0,
+    "health": 5,
+    "text": "콤보:공격한 아군 선수의 공격력만큼 자신의 공격력을 증가시킵니다.\n턴종료:자신의 공격력을 0으로 만듭니다.",
+    "rarity": "EPIC",
+    "keywords": [],
+    "tags": [
+      "슈퍼스타"
+    ],
+    "isToken": false,
+    "isChampionToken": false,
+    "effectId": "STRUCTURED_EFFECTS_V1",
+    "effectConfig": {
+      "effects": [
+        {
+          "action": "BUFF",
+          "target": {
+            "zone": "BOARD",
+            "count": 1,
+            "owner": "SELF",
+            "selection": "SELF"
+          },
+          "values": {
+            "reference": "LAST_ATTACKER",
+            "referenceStat": "CURRENT_ATTACK"
+          },
+          "trigger": "OTHER_ALLY_ATTACK"
+        },
+        {
+          "action": "SET_STATS",
+          "target": {
+            "zone": "BOARD",
+            "count": 1,
+            "owner": "SELF",
+            "selection": "SELF"
+          },
+          "values": {
+            "attack": 0
+          },
+          "trigger": "TURN_END"
+        }
+      ]
+    },
+    "status": "PUBLISHED",
+    "version": 12
+  },
+  {
+    "id": "e584c34e-d640-4c41-a148-cfb70389f08a",
+    "name": "냥냥 펀치",
+    "cardType": "TECHNIQUE",
+    "cost": 0,
+    "attack": 0,
+    "health": 0,
+    "text": "등장:상대 선수와 상대 챔피언에게 5 데미지를 무작위로 나눠서 가합니다.",
+    "rarity": "TOKEN",
+    "keywords": [],
+    "tags": [],
+    "isToken": true,
+    "isChampionToken": false,
+    "effectId": null,
+    "effectConfig": {},
+    "status": "PUBLISHED",
+    "version": 4
+  },
+  {
+    "id": "b6b6247d-4e98-4cfb-8fa6-5479afec48f3",
+    "name": "늑대인간 판도라",
+    "cardType": "WRESTLER",
+    "cost": 4,
+    "attack": 2,
+    "health": 6,
+    "text": "턴 시작:선택한 아군 선수 카드를 리타이어시키고 그 카드의 체력과 공격력을 흡수하고 '회피'를 1 얻습니다.",
+    "rarity": "TOKEN",
+    "keywords": [
+      "DODGE"
+    ],
+    "tags": [
+      "실험체",
+      "레이디"
+    ],
+    "isToken": false,
+    "isChampionToken": false,
+    "effectId": null,
+    "effectConfig": {},
+    "status": "PUBLISHED",
+    "version": 13
+  },
+  {
+    "id": "latest-wrestler-10",
+    "name": "데헌",
+    "cardType": "WRESTLER",
+    "cost": 3,
+    "attack": 2,
+    "health": 5,
+    "text": "이 카드의 공격력이 처음 증가할 때, 회피 1회를 얻습니다.",
+    "rarity": "NORMAL",
+    "keywords": [
+      "SURPRISE"
+    ],
+    "tags": [
+      "레이디"
+    ],
+    "isToken": false,
+    "isChampionToken": false,
+    "effectId": "STRUCTURED_EFFECTS_V1",
+    "effectConfig": {
+      "effects": [
+        {
+          "action": "ADD_KEYWORD",
+          "target": {
+            "count": 1,
+            "owner": "SELF",
+            "zones": [
+              "HAND"
+            ],
+            "selection": "SELF"
+          },
+          "values": {
+            "keyword": "DODGE"
+          },
+          "trigger": "STAT_CHANGED",
+          "conditions": [
+            {
+              "type": "FIRST_ATTACK_GAIN"
+            }
+          ]
+        }
+      ]
+    },
+    "status": "PUBLISHED",
+    "version": 10
+  },
+  {
+    "id": "99514068-68c8-46ca-b9f5-7f16b2ea4253",
+    "name": "도금구슬 마스터",
+    "cardType": "WRESTLER",
+    "cost": 2,
+    "attack": 1,
+    "health": 1,
+    "text": "등장:내 손에 있는 기본 비용이 6 이상의 카드들의 비용을 전부 1 감소 시킵니다.",
+    "rarity": "EPIC",
+    "keywords": [
+      "DEFENSE"
+    ],
+    "tags": [
+      "구슬마스터"
+    ],
+    "isToken": false,
+    "isChampionToken": false,
+    "effectId": null,
+    "effectConfig": {},
+    "status": "PUBLISHED",
+    "version": 17
+  },
+  {
+    "id": "latest-wrestler-3",
+    "name": "도쿵",
+    "cardType": "WRESTLER",
+    "cost": 4,
+    "attack": 3,
+    "health": 4,
+    "text": "이 카드의 공격력이 증가하면, 같은 수치만큼 체력의 수치를 증가시킵니다.",
+    "rarity": "NORMAL",
+    "keywords": [],
+    "tags": [
+      "로마니 마피아"
+    ],
+    "isToken": false,
+    "isChampionToken": false,
+    "effectId": "STRUCTURED_EFFECTS_V1",
+    "effectConfig": {
+      "effects": [
+        {
+          "action": "BUFF",
+          "target": {
+            "zone": "BOARD",
+            "count": 1,
+            "owner": "SELF",
+            "selection": "SELF"
+          },
+          "values": {
+            "attack": 0,
+            "health": 0,
+            "amountReference": "LAST_ATTACK_DELTA"
+          },
+          "trigger": "STAT_CHANGED"
+        }
+      ]
+    },
+    "status": "PUBLISHED",
+    "version": 8
+  },
+  {
+    "id": "a68c743b-8752-4bbf-817a-397e71d41569",
+    "name": "독세아",
+    "cardType": "WRESTLER",
+    "cost": 2,
+    "attack": 1,
+    "health": 1,
+    "text": "등장:어디에 있든 모든 생성된 아군 선수 카드에게 체력과 공격을 각각 1씩 증가시킵니다.",
+    "rarity": "EPIC",
+    "keywords": [
+      "DEFENSE"
+    ],
+    "tags": [
+      "레이디"
+    ],
+    "isToken": false,
+    "isChampionToken": false,
+    "effectId": "STRUCTURED_EFFECTS_V1",
+    "effectConfig": {
+      "effects": [
+        {
+          "action": "BUFF",
+          "target": {
+            "count": 20,
+            "owner": "SELF",
+            "zones": [
+              "HAND",
+              "DECK",
+              "BOARD"
+            ],
+            "filter": {
+              "isGenerated": true
+            },
+            "cardType": "WRESTLER",
+            "selection": "ALL"
+          },
+          "values": {
+            "attack": 1,
+            "health": 1
+          },
+          "trigger": "ENTER_FIELD"
+        }
+      ]
+    },
+    "status": "PUBLISHED",
+    "version": 8
+  },
+  {
+    "id": "855e87f9-1769-4036-ad49-491ab4b2058a",
+    "name": "뒷정리맨",
+    "cardType": "WRESTLER",
+    "cost": 2,
+    "attack": 1,
+    "health": 2,
+    "text": "출현:다음에 출현하는 카드에게 체력을 +2 부여합니다.",
+    "rarity": "NORMAL",
+    "keywords": [
+      "TAUNT"
+    ],
+    "tags": [],
+    "isToken": false,
+    "isChampionToken": false,
+    "effectId": "STRUCTURED_EFFECTS_V1",
+    "effectConfig": {
+      "effects": [
+        {
+          "action": "QUEUE_EFFECT",
+          "values": {
+            "queuedEffect": {
+              "action": "BUFF",
+              "target": {
+                "zone": "BOARD",
+                "count": 1,
+                "owner": "SELF",
+                "selection": "SELF"
+              },
+              "values": {
+                "attack": 0,
+                "health": 2
+              }
+            },
+            "queuedTrigger": "NEXT_ALLY_WRESTLER_PLAYED"
+          },
+          "trigger": "ENTER_FIELD"
+        }
+      ]
+    },
+    "status": "PUBLISHED",
+    "version": 11
+  },
+  {
+    "id": "8be831d2-6e56-4f77-985e-3860d6eaa2d3",
+    "name": "디 오리진",
+    "cardType": "WRESTLER",
+    "cost": 6,
+    "attack": 2,
+    "health": 2,
+    "text": "등장:자신의 무덤에 있는 선수 2장당 1 씩 공격력과 체력이 증가합니다.",
+    "rarity": "LEGENDARY",
+    "keywords": [
+      "IMMUNE"
+    ],
+    "tags": [
+      "기계"
+    ],
+    "isToken": false,
+    "isChampionToken": false,
+    "effectId": null,
+    "effectConfig": {},
+    "status": "PUBLISHED",
+    "version": 15
+  },
+  {
+    "id": "b2eb2ae3-5808-4f9d-994d-efa22c988955",
+    "name": "떼껄룩",
+    "cardType": "WRESTLER",
+    "cost": 6,
+    "attack": 2,
+    "health": 5,
+    "text": "등장:상대 선수 카드 1장을 선택해서 그 카드의 공격력을 1로 줄이고 기절을 걸고, 공격력을 줄인 만큼 자신의 체력을 증가시킵니다.",
+    "rarity": "LEGENDARY",
+    "keywords": [
+      "TAUNT"
+    ],
+    "tags": [
+      "레이디",
+      "스트리트"
+    ],
+    "isToken": false,
+    "isChampionToken": false,
+    "effectId": null,
+    "effectConfig": {},
+    "status": "PUBLISHED",
+    "version": 9
+  },
+  {
+    "id": "latest-wrestler-14",
+    "name": "라 칼라베라",
+    "cardType": "WRESTLER",
+    "cost": 4,
+    "attack": 3,
+    "health": 3,
+    "text": "등장: 내 묘지에서 비용이 3 이하인 선수 카드들 중 하나를 무작위로 선정해서 부활시키고 그 카드에게 도발을 부여합니다.",
+    "rarity": "EPIC",
+    "keywords": [
+      "LIFESTEAL"
+    ],
+    "tags": [
+      "언데드",
+      "레이디"
+    ],
+    "isToken": false,
+    "isChampionToken": false,
+    "effectId": null,
+    "effectConfig": {},
+    "status": "PUBLISHED",
+    "version": 15
+  },
+  {
+    "id": "9478516b-5756-411d-8ba2-3ff300234c3b",
+    "name": "레드 렌지",
+    "cardType": "WRESTLER",
+    "cost": 1,
+    "attack": 1,
+    "health": 1,
+    "text": "등장:상대 챔피언에게 데미지 1 줍니다.",
+    "rarity": "NORMAL",
+    "keywords": [
+      "DODGE"
+    ],
+    "tags": [
+      "스트리트"
+    ],
+    "isToken": false,
+    "isChampionToken": false,
+    "effectId": "STRUCTURED_EFFECTS_V1",
+    "effectConfig": {
+      "effects": [
+        {
+          "action": "DAMAGE",
+          "target": {
+            "zone": "PLAYER",
+            "count": 1,
+            "owner": "ENEMY",
+            "selection": "SELF"
+          },
+          "values": {
+            "amount": 1
+          },
+          "trigger": "ENTER_FIELD"
+        }
+      ]
+    },
+    "status": "PUBLISHED",
+    "version": 6
+  },
+  {
+    "id": "latest-wrestler-9",
+    "name": "레이븐",
+    "cardType": "WRESTLER",
+    "cost": 2,
+    "attack": 2,
+    "health": 1,
+    "text": "러쉬",
+    "rarity": "NORMAL",
+    "keywords": [
+      "RUSH"
+    ],
+    "tags": [],
+    "isToken": false,
+    "isChampionToken": false,
+    "effectId": null,
+    "effectConfig": {},
+    "status": "PUBLISHED",
+    "version": 6
+  },
+  {
+    "id": "latest-wrestler-8",
+    "name": "로드",
+    "cardType": "WRESTLER",
+    "cost": 3,
+    "attack": 2,
+    "health": 3,
+    "text": "등장: 카드를 1장 뽑습니다.",
+    "rarity": "NORMAL",
+    "keywords": [],
+    "tags": [],
+    "isToken": false,
+    "isChampionToken": false,
+    "effectId": "STRUCTURED_EFFECTS_V1",
+    "effectConfig": {
+      "effects": [
+        {
+          "action": "DRAW",
+          "values": {
+            "amount": 1
+          },
+          "trigger": "ENTER_FIELD"
+        }
+      ]
+    },
+    "status": "PUBLISHED",
+    "version": 8
+  },
+  {
+    "id": "9b7c0e52-2184-4ec1-8d68-39a4d5981d2a",
+    "name": "루나",
+    "cardType": "WRESTLER",
+    "cost": 5,
+    "attack": 2,
+    "health": 6,
+    "text": "이 카드를 처음으로 공격한 적 선수는 공격 이후 침묵됩니다. 이후 이 카드도 침묵됩니다.",
+    "rarity": "EPIC",
+    "keywords": [
+      "TAUNT",
+      "ARMOR"
+    ],
+    "tags": [
+      "기계",
+      "디 어쏘리티",
+      "레이디"
+    ],
+    "isToken": false,
+    "isChampionToken": false,
+    "effectId": "STRUCTURED_EFFECTS_V1",
+    "effectConfig": {
+      "armor": 1,
+      "effects": [
+        {
+          "action": "SILENCE",
+          "target": {
+            "zone": "BOARD",
+            "count": 1,
+            "owner": "ENEMY",
+            "cardType": "WRESTLER",
+            "selection": "SAME_TARGET"
+          },
+          "trigger": "FIRST_ATTACKED"
+        },
+        {
+          "action": "SILENCE",
+          "target": {
+            "zone": "BOARD",
+            "count": 1,
+            "owner": "SELF",
+            "selection": "SELF"
+          },
+          "trigger": "FIRST_ATTACKED"
+        }
+      ]
+    },
+    "status": "PUBLISHED",
+    "version": 17
+  },
+  {
+    "id": "94a8dc96-6856-4460-9128-c487c0189dd9",
+    "name": "루나 MK.사일런스",
+    "cardType": "WRESTLER",
+    "cost": 5,
+    "attack": 2,
+    "health": 7,
+    "text": "등장:지정한 상대 선수 카드를 침묵시킵니다.\n턴 종료:상대 필드에 있는 침묵된 선수 카드들을 파괴합니다.",
+    "rarity": "LEGENDARY",
+    "keywords": [
+      "ARMOR"
+    ],
+    "tags": [],
+    "isToken": false,
+    "isChampionToken": false,
+    "effectId": null,
+    "effectConfig": {
+      "armor": 1
+    },
+    "status": "PUBLISHED",
+    "version": 9
+  },
+  {
+    "id": "62a10600-5a0e-4aec-b959-f0f15cd8c012",
+    "name": "루브",
+    "cardType": "WRESTLER",
+    "cost": 2,
+    "attack": 2,
+    "health": 3,
+    "text": "턴 종료:아군 필드에 이 카드만 있다면, 이 카드에게 +1/+1을 부여하고 '도발'을 부여합니다.",
+    "rarity": "NORMAL",
+    "keywords": [],
+    "tags": [
+      "스트리트"
+    ],
+    "isToken": false,
+    "isChampionToken": false,
+    "effectId": null,
+    "effectConfig": {},
+    "status": "PUBLISHED",
+    "version": 4
+  },
+  {
+    "id": "4e28e957-1148-44c3-8f8b-b6fe8f40e3a9",
+    "name": "루이나",
+    "cardType": "WRESTLER",
+    "cost": 3,
+    "attack": 1,
+    "health": 3,
+    "text": "등장:'디 어쏘리티' 태그가 있는 무작위 카드 1장을 생성하고, 아군 필드에 있는 '디 어쏘리티' 카드들에게 '흡혈'을 부여합니다.",
+    "rarity": "EPIC",
+    "keywords": [
+      "LIFESTEAL"
+    ],
+    "tags": [
+      "디 어쏘리티",
+      "레이디"
+    ],
+    "isToken": false,
+    "isChampionToken": false,
+    "effectId": null,
+    "effectConfig": {},
+    "status": "PUBLISHED",
+    "version": 4
+  },
+  {
+    "id": "a6efe85e-a76e-4c6c-a81e-2b6d91b19c56",
+    "name": "리버덩크",
+    "cardType": "WRESTLER",
+    "cost": 1,
+    "attack": 1,
+    "health": 2,
+    "text": "",
+    "rarity": "NORMAL",
+    "keywords": [],
+    "tags": [
+      "솔져",
+      "스트리트"
+    ],
+    "isToken": false,
+    "isChampionToken": false,
+    "effectId": null,
+    "effectConfig": {},
+    "status": "PUBLISHED",
+    "version": 12
+  },
+  {
+    "id": "0ee31b68-9c4a-434f-a17b-01294e9cdf71",
+    "name": "마도카와",
+    "cardType": "WRESTLER",
+    "cost": 3,
+    "attack": 1,
+    "health": 5,
+    "text": "이 카드가 필드에 있을때 아군 선수 카드가 주는 데미지가 2 증가하지만, 자신을 제외한 아군 선수 카드가 받는 데미지가 1 증가합니다.",
+    "rarity": "LEGENDARY",
+    "keywords": [
+      "REGEN"
+    ],
+    "tags": [
+      "레이디"
+    ],
+    "isToken": false,
+    "isChampionToken": false,
+    "effectId": null,
+    "effectConfig": {},
+    "status": "PUBLISHED",
+    "version": 7
+  },
+  {
+    "id": "5ff4d145-d194-432d-8893-6e8150f83fd1",
+    "name": "마로쓰 2세",
+    "cardType": "WRESTLER",
+    "cost": 3,
+    "attack": 2,
+    "health": 4,
+    "text": "퇴장:상대 필드에 있는 선수 카드 중 무작위로 1장을 침묵시킨다.",
+    "rarity": "NORMAL",
+    "keywords": [],
+    "tags": [
+      "솔져",
+      "레이디"
+    ],
+    "isToken": false,
+    "isChampionToken": false,
+    "effectId": null,
+    "effectConfig": {},
+    "status": "PUBLISHED",
+    "version": 11
+  },
+  {
+    "id": "8a351c20-b7b0-4305-8bd4-4430fc6e7276",
+    "name": "만당",
+    "cardType": "WRESTLER",
+    "cost": 1,
+    "attack": 1,
+    "health": 1,
+    "text": "등장:'만당'을 소환합니다.",
+    "rarity": "NORMAL",
+    "keywords": [],
+    "tags": [
+      "스트리트"
+    ],
+    "isToken": false,
+    "isChampionToken": false,
+    "effectId": "STRUCTURED_EFFECTS_V1",
+    "effectConfig": {
+      "effects": [
+        {
+          "action": "SUMMON",
+          "values": {
+            "count": 1,
+            "definitionRef": {
+              "id": "8a351c20-b7b0-4305-8bd4-4430fc6e7276"
+            }
+          },
+          "trigger": "ENTER_FIELD"
+        }
+      ]
+    },
+    "status": "PUBLISHED",
+    "version": 9
+  },
+  {
+    "id": "latest-wrestler-6",
+    "name": "만드릴쿤",
+    "cardType": "WRESTLER",
+    "cost": 4,
+    "attack": 2,
+    "health": 5,
+    "text": "이 카드의 공격력이 증가할때마다, 공격력을 추가로 1 얻습니다.",
+    "rarity": "NORMAL",
+    "keywords": [],
+    "tags": [],
+    "isToken": false,
+    "isChampionToken": false,
+    "effectId": "STRUCTURED_EFFECTS_V1",
+    "effectConfig": {
+      "effects": [
+        {
+          "action": "BUFF",
+          "target": {
+            "zone": "BOARD",
+            "count": 1,
+            "owner": "SELF",
+            "selection": "SELF"
+          },
+          "values": {
+            "attack": 1,
+            "health": 0
+          },
+          "trigger": "STAT_CHANGED"
+        }
+      ]
+    },
+    "status": "PUBLISHED",
+    "version": 9
+  },
+  {
+    "id": "epic-spell-feast",
+    "name": "만찬",
+    "cardType": "TECHNIQUE",
+    "cost": 3,
+    "attack": 0,
+    "health": 0,
+    "text": "모든 아군 선수와 아군 챔피언의 현재 및 최대 HP를 3 증가시킵니다.",
+    "rarity": "EPIC",
+    "keywords": [],
+    "tags": [],
+    "isToken": false,
+    "isChampionToken": false,
+    "effectId": "SCRIPT_V1",
+    "effectConfig": {
+      "scripts": [
+        {
+          "steps": [
+            {
+              "type": "EFFECT",
+              "effect": {
+                "action": "BUFF",
+                "target": {
+                  "zone": "BOARD",
+                  "count": 1,
+                  "owner": "SELF",
+                  "cardType": "WRESTLER",
+                  "selection": "ALL"
+                },
+                "values": {
+                  "health": 3
+                }
+              }
+            },
+            {
+              "type": "EFFECT",
+              "effect": {
+                "action": "BUFF",
+                "target": {
+                  "zone": "PLAYER",
+                  "count": 1,
+                  "owner": "SELF",
+                  "selection": "SELF"
+                },
+                "values": {
+                  "health": 3
+                }
+              }
+            }
+          ],
+          "trigger": "ACTIVE",
+          "version": "SCRIPT_V1"
+        }
+      ]
+    },
+    "status": "PUBLISHED",
+    "version": 5
+  },
+  {
+    "id": "102e8061-c3b8-44a5-a11c-56379996fee7",
+    "name": "매드 사이언티스트 퍼플레인",
+    "cardType": "WRESTLER",
+    "cost": 3,
+    "attack": 2,
+    "health": 2,
+    "text": "등장:현재 내 손과 필드에 있는 '실험체' 태그가 달려있는 모든 아군 카드들에게 +1/+1을 부여하고, '치유'를 부여합니다.",
+    "rarity": "EPIC",
+    "keywords": [],
+    "tags": [],
+    "isToken": false,
+    "isChampionToken": false,
+    "effectId": null,
+    "effectConfig": {},
+    "status": "PUBLISHED",
+    "version": 9
+  },
+  {
+    "id": "latest-wrestler-12",
+    "name": "매드 펌킨",
+    "cardType": "WRESTLER",
+    "cost": 3,
+    "attack": 2,
+    "health": 1,
+    "text": "등장:필드에 있는 아군 선수 하나를 선택하여 손으로 되돌립니다. 그 카드의 비용은 이번 턴에 1 감소합니다. (최소 1)",
+    "rarity": "EPIC",
+    "keywords": [],
+    "tags": [
+      "레이디"
+    ],
+    "isToken": false,
+    "isChampionToken": false,
+    "effectId": "STRUCTURED_EFFECTS_V1",
+    "effectConfig": {
+      "effects": [
+        {
+          "action": "MOVE_TO_HAND",
+          "target": {
+            "zone": "BOARD",
+            "count": 1,
+            "owner": "SELF",
+            "cardType": "WRESTLER",
+            "selection": "PLAYER_CHOICE"
+          },
+          "values": {
+            "amount": 1,
+            "minimum": 1,
+            "temporaryCost": true
+          },
+          "trigger": "ENTER_FIELD"
+        }
+      ]
+    },
+    "status": "PUBLISHED",
+    "version": 14
+  },
+  {
+    "id": "epic-spell-push",
+    "name": "밀쳐내기",
+    "cardType": "TECHNIQUE",
+    "cost": 1,
+    "attack": 0,
+    "health": 0,
+    "text": "상대 선수 1장을 선택하여 기절을 부여합니다.",
+    "rarity": "EPIC",
+    "keywords": [],
+    "tags": [],
+    "isToken": false,
+    "isChampionToken": false,
+    "effectId": "SCRIPT_V1",
+    "effectConfig": {
+      "scripts": [
+        {
+          "steps": [
+            {
+              "id": "chosen",
+              "type": "SELECT",
+              "target": {
+                "zone": "BOARD",
+                "count": 1,
+                "owner": "ENEMY",
+                "cardType": "WRESTLER",
+                "selection": "PLAYER_CHOICE"
+              }
+            },
+            {
+              "type": "EFFECT",
+              "effect": {
+                "action": "STUN",
+                "target": {
+                  "zone": "BOARD",
+                  "count": 1,
+                  "owner": "ENEMY",
+                  "cardType": "WRESTLER",
+                  "resultId": "chosen",
+                  "selection": "ALL"
+                }
+              }
+            }
+          ],
+          "trigger": "ACTIVE",
+          "version": "SCRIPT_V1"
+        }
+      ]
+    },
+    "status": "PUBLISHED",
+    "version": 3
+  },
+  {
+    "id": "d31b5465-ac88-4647-ac56-aed191a1672f",
+    "name": "반으로 갈라져 죽어!",
+    "cardType": "TECHNIQUE",
+    "cost": 0,
+    "attack": 0,
+    "health": 0,
+    "text": "등장:상대 챔피언에게 99데미지를 줍니다!",
+    "rarity": "TOKEN",
+    "keywords": [],
+    "tags": [],
+    "isToken": true,
+    "isChampionToken": false,
+    "effectId": null,
+    "effectConfig": {},
+    "status": "PUBLISHED",
+    "version": 3
+  },
+  {
+    "id": "75863228-ae51-48cb-afec-43cc391672a8",
+    "name": "발단",
+    "cardType": "WRESTLER",
+    "cost": 2,
+    "attack": 1,
+    "health": 1,
+    "text": "등장:묘지에 있는 카드 한장을 파괴하고 '좀비'를 하나 소환합니다.",
+    "rarity": "NORMAL",
+    "keywords": [
+      "LIFESTEAL"
+    ],
+    "tags": [
+      "언데드"
+    ],
+    "isToken": false,
+    "isChampionToken": false,
+    "effectId": "STRUCTURED_EFFECTS_V1",
+    "effectConfig": {
+      "effects": [
+        {
+          "action": "DESTROY",
+          "target": {
+            "zone": "GRAVEYARD",
+            "count": 1,
+            "owner": "SELF",
+            "selection": "RANDOM"
+          },
+          "trigger": "ENTER_FIELD"
+        },
+        {
+          "action": "SUMMON",
+          "values": {
+            "count": 1,
+            "definitionRef": {
+              "name": "좀비"
+            }
+          },
+          "trigger": "ENTER_FIELD"
+        }
+      ]
+    },
+    "status": "PUBLISHED",
+    "version": 17
+  },
+  {
+    "id": "f6061f3c-531a-4000-bc8e-a7d2e23e45bc",
+    "name": "뱀파이어 왕자 MPG",
+    "cardType": "WRESTLER",
+    "cost": 4,
+    "attack": 2,
+    "health": 5,
+    "text": "등장: 모든 상대 선수에게 1 피해를 준다. 이 효과로 실제로 준 총 피해량만큼 이 카드의 공격력을 증가시킨다.",
+    "rarity": "EPIC",
+    "keywords": [
+      "LIFESTEAL"
+    ],
+    "tags": [],
+    "isToken": false,
+    "isChampionToken": false,
+    "effectId": null,
+    "effectConfig": {},
+    "status": "PUBLISHED",
+    "version": 3
+  },
+  {
+    "id": "latest-wrestler-1",
+    "name": "벨로나",
+    "cardType": "WRESTLER",
+    "cost": 2,
+    "attack": 1,
+    "health": 4,
+    "text": "도발",
+    "rarity": "NORMAL",
+    "keywords": [
+      "TAUNT"
+    ],
+    "tags": [
+      "로마니 마피아",
+      "레이디",
+      "스트리트"
+    ],
+    "isToken": false,
+    "isChampionToken": false,
+    "effectId": null,
+    "effectConfig": {},
+    "status": "PUBLISHED",
+    "version": 7
+  },
+  {
+    "id": "888a12bd-e1e2-41b3-9f22-abbc36af8544",
+    "name": "보드바",
+    "cardType": "WRESTLER",
+    "cost": 3,
+    "attack": 3,
+    "health": 4,
+    "text": "",
+    "rarity": "NORMAL",
+    "keywords": [],
+    "tags": [
+      "스트리트"
+    ],
+    "isToken": false,
+    "isChampionToken": false,
+    "effectId": null,
+    "effectConfig": {},
+    "status": "PUBLISHED",
+    "version": 10
+  },
+  {
+    "id": "6188d881-ac7e-465e-ab86-feaa4dd48863",
+    "name": "불록스",
+    "cardType": "WRESTLER",
+    "cost": 1,
+    "attack": 1,
+    "health": 2,
+    "text": "턴 종료:이 카드가 손에 있고, 자신의 필드에 빈 공간이 있다면 그 곳으로 소환됩니다,",
+    "rarity": "NORMAL",
+    "keywords": [],
+    "tags": [],
+    "isToken": false,
+    "isChampionToken": false,
+    "effectId": null,
+    "effectConfig": {},
+    "status": "PUBLISHED",
+    "version": 7
+  },
+  {
+    "id": "8c120069-e0c7-4461-bed3-2dc586c50f7b",
+    "name": "블랙 마카롱",
+    "cardType": "WRESTLER",
+    "cost": 5,
+    "attack": 2,
+    "health": 5,
+    "text": "등장:현재 내 손패에 있는 카드의 수만큼 공격을 +1씩 증가시킵니다.",
+    "rarity": "LEGENDARY",
+    "keywords": [],
+    "tags": [
+      "로마니 마피아"
+    ],
+    "isToken": false,
+    "isChampionToken": false,
+    "effectId": "STRUCTURED_EFFECTS_V1",
+    "effectConfig": {
+      "effects": [
+        {
+          "action": "BUFF",
+          "target": {
+            "zone": "BOARD",
+            "count": 1,
+            "owner": "SELF",
+            "selection": "SELF"
+          },
+          "values": {
+            "attackReference": "HAND_COUNT"
+          },
+          "trigger": "ENTER_FIELD"
+        }
+      ]
+    },
+    "status": "PUBLISHED",
+    "version": 20
+  },
+  {
+    "id": "55e36a1b-9b1d-4ab1-ba42-f097ba4449b5",
+    "name": "사일런스",
+    "cardType": "WRESTLER",
+    "cost": 4,
+    "attack": 3,
+    "health": 5,
+    "text": "이 카드는 침묵당한 카드들에게 입는 데미지를 2 감소해서 받습니다.",
+    "rarity": "EPIC",
+    "keywords": [
+      "TAUNT",
+      "ARMOR"
+    ],
+    "tags": [],
+    "isToken": false,
+    "isChampionToken": false,
+    "effectId": null,
+    "effectConfig": {
+      "armor": 1
+    },
+    "status": "PUBLISHED",
+    "version": 6
+  },
+  {
+    "id": "epic-spell-life-exchange",
+    "name": "생명의 교환",
+    "cardType": "TECHNIQUE",
+    "cost": 3,
+    "attack": 0,
+    "health": 0,
+    "text": "아군 선수 1장과 상대 선수 1장을 선택하여 현재 체력과 최대 체력을 각각 서로 교환합니다. 두 선수 모두 기절합니다.",
+    "rarity": "EPIC",
+    "keywords": [],
+    "tags": [],
+    "isToken": false,
+    "isChampionToken": false,
+    "effectId": "SCRIPT_V1",
+    "effectConfig": {
+      "scripts": [
+        {
+          "steps": [
+            {
+              "id": "ally",
+              "type": "SELECT",
+              "target": {
+                "zone": "BOARD",
+                "count": 1,
+                "owner": "SELF",
+                "cardType": "WRESTLER",
+                "selection": "PLAYER_CHOICE"
+              }
+            },
+            {
+              "id": "enemy",
+              "type": "SELECT",
+              "target": {
+                "zone": "BOARD",
+                "count": 1,
+                "owner": "ENEMY",
+                "cardType": "WRESTLER",
+                "selection": "PLAYER_CHOICE"
+              }
+            },
+            {
+              "id": "allyStat",
+              "stat": "HEALTH",
+              "type": "AGGREGATE",
+              "operation": "SUM",
+              "selectionId": "ally"
+            },
+            {
+              "id": "enemyStat",
+              "stat": "HEALTH",
+              "type": "AGGREGATE",
+              "operation": "SUM",
+              "selectionId": "enemy"
+            },
+            {
+              "id": "allyMax",
+              "stat": "MAX_HEALTH",
+              "type": "AGGREGATE",
+              "operation": "SUM",
+              "selectionId": "ally"
+            },
+            {
+              "id": "enemyMax",
+              "stat": "MAX_HEALTH",
+              "type": "AGGREGATE",
+              "operation": "SUM",
+              "selectionId": "enemy"
+            },
+            {
+              "type": "EFFECT",
+              "effect": {
+                "action": "SET_STAT",
+                "target": {
+                  "zone": "BOARD",
+                  "count": 1,
+                  "owner": "SELF",
+                  "cardType": "WRESTLER",
+                  "resultId": "ally",
+                  "selection": "ALL"
+                },
+                "values": {
+                  "stat": "HEALTH",
+                  "amountExpression": {
+                    "kind": "RESULT_VALUE",
+                    "resultId": "enemyStat"
+                  },
+                  "currentHealthOnly": false,
+                  "maxHealthExpression": {
+                    "kind": "RESULT_VALUE",
+                    "resultId": "enemyMax"
+                  }
+                }
+              }
+            },
+            {
+              "type": "EFFECT",
+              "effect": {
+                "action": "SET_STAT",
+                "target": {
+                  "zone": "BOARD",
+                  "count": 1,
+                  "owner": "ENEMY",
+                  "cardType": "WRESTLER",
+                  "resultId": "enemy",
+                  "selection": "ALL"
+                },
+                "values": {
+                  "stat": "HEALTH",
+                  "amountExpression": {
+                    "kind": "RESULT_VALUE",
+                    "resultId": "allyStat"
+                  },
+                  "currentHealthOnly": false,
+                  "maxHealthExpression": {
+                    "kind": "RESULT_VALUE",
+                    "resultId": "allyMax"
+                  }
+                }
+              }
+            },
+            {
+              "type": "EFFECT",
+              "effect": {
+                "action": "STUN",
+                "target": {
+                  "zone": "BOARD",
+                  "count": 1,
+                  "owner": "SELF",
+                  "cardType": "WRESTLER",
+                  "resultId": "ally",
+                  "selection": "ALL"
+                }
+              }
+            },
+            {
+              "type": "EFFECT",
+              "effect": {
+                "action": "STUN",
+                "target": {
+                  "zone": "BOARD",
+                  "count": 1,
+                  "owner": "ENEMY",
+                  "cardType": "WRESTLER",
+                  "resultId": "enemy",
+                  "selection": "ALL"
+                }
+              }
+            }
+          ],
+          "trigger": "ACTIVE",
+          "version": "SCRIPT_V1"
+        }
+      ]
+    },
+    "status": "PUBLISHED",
+    "version": 7
+  },
+  {
+    "id": "latest-wrestler-15",
+    "name": "스카드",
+    "cardType": "WRESTLER",
+    "cost": 3,
+    "attack": 3,
+    "health": 1,
+    "text": "러쉬, 회피",
+    "rarity": "NORMAL",
+    "keywords": [
+      "RUSH",
+      "DODGE"
+    ],
+    "tags": [
+      "스트리트"
+    ],
+    "isToken": false,
+    "isChampionToken": false,
+    "effectId": null,
+    "effectConfig": {},
+    "status": "PUBLISHED",
+    "version": 8
+  },
+  {
+    "id": "6b0c3be8-6972-46de-a02b-c14019c33992",
+    "name": "씨 몬스터",
+    "cardType": "WRESTLER",
+    "cost": 10,
+    "attack": 8,
+    "health": 8,
+    "text": "손패에 있을 때 아군 선수가 리타이어할 때마다 비용이 -1G 씩 감소한다. (최소 비용 1G)",
+    "rarity": "LEGENDARY",
+    "keywords": [
+      "IMMUNE"
+    ],
+    "tags": [
+      "실험체"
+    ],
+    "isToken": false,
+    "isChampionToken": false,
+    "effectId": "STRUCTURED_EFFECTS_V1",
+    "effectConfig": {
+      "effects": [
+        {
+          "action": "REDUCE_COST",
+          "target": {
+            "zone": "HAND",
+            "count": 1,
+            "owner": "SELF",
+            "selection": "SELF"
+          },
+          "values": {
+            "amount": 1,
+            "minimum": 1
+          },
+          "trigger": "CARD_RETIRED"
+        }
+      ]
+    },
+    "status": "PUBLISHED",
+    "version": 14
+  },
+  {
+    "id": "8a09fec1-16d8-452b-85c3-a38c7a3a03f6",
+    "name": "아르카나 조커",
+    "cardType": "WRESTLER",
+    "cost": 2,
+    "attack": 3,
+    "health": 1,
+    "text": "등장:내 덱 맨 위에 있는 카드를 파괴하고, 비용/체력/공격을 1씩 깎은 무작위 카드를 덱 맨 위에 추가합니다.(챔피언 토큰 제외)(비용/체력/공격 수치는 최소 1)",
+    "rarity": "NORMAL",
+    "keywords": [
+      "DODGE"
+    ],
+    "tags": [],
+    "isToken": false,
+    "isChampionToken": false,
+    "effectId": "STRUCTURED_EFFECTS_V1",
+    "effectConfig": {
+      "effects": [
+        {
+          "action": "MILL",
+          "target": {
+            "zone": "DECK",
+            "count": 1,
+            "owner": "SELF",
+            "selection": "TOP"
+          },
+          "trigger": "ENTER_FIELD"
+        },
+        {
+          "action": "GENERATE",
+          "target": {
+            "count": 1,
+            "owner": "SELF",
+            "zones": [
+              "DECK"
+            ],
+            "filter": {
+              "isChampionToken": false
+            },
+            "selection": "RANDOM",
+            "randomScope": "FULL"
+          },
+          "values": {
+            "destination": "DECK",
+            "deckPosition": "TOP",
+            "generatedModifiers": {
+              "cost": -1,
+              "attack": -1,
+              "health": -1
+            }
+          },
+          "trigger": "ENTER_FIELD"
+        }
+      ]
+    },
+    "status": "PUBLISHED",
+    "version": 8
+  },
+  {
+    "id": "7653f417-ea62-4924-8605-3d88a435d728",
+    "name": "아비터",
+    "cardType": "WRESTLER",
+    "cost": 3,
+    "attack": 2,
+    "health": 3,
+    "text": "등장:어디에 있든 '기계' 태그가 달려있는 모든 아군 카드들에게 체력을 +1을 부여합니다.",
+    "rarity": "EPIC",
+    "keywords": [
+      "ARMOR"
+    ],
+    "tags": [
+      "기계",
+      "실험체"
+    ],
+    "isToken": false,
+    "isChampionToken": false,
+    "effectId": "STRUCTURED_EFFECTS_V1",
+    "effectConfig": {
+      "armor": 1,
+      "effects": [
+        {
+          "action": "BUFF",
+          "target": {
+            "count": 20,
+            "owner": "SELF",
+            "zones": [
+              "HAND",
+              "DECK",
+              "BOARD"
+            ],
+            "filter": {
+              "tagsAny": [
+                "기계"
+              ]
+            },
+            "selection": "ALL"
+          },
+          "values": {
+            "attack": 0,
+            "health": 1
+          },
+          "trigger": "ENTER_FIELD"
+        }
+      ]
+    },
+    "status": "PUBLISHED",
+    "version": 12
+  },
+  {
+    "id": "4ecf3a8f-b344-421f-b524-27ec5c28eeeb",
+    "name": "아포스틸",
+    "cardType": "WRESTLER",
+    "cost": 2,
+    "attack": 2,
+    "health": 1,
+    "text": "등장:어디에 있든 '실험체' 태그가 달려있는 모든 아군 카드들에게 체력을 +1을 부여합니다",
+    "rarity": "EPIC",
+    "keywords": [
+      "DEFENSE"
+    ],
+    "tags": [
+      "실험체"
+    ],
+    "isToken": false,
+    "isChampionToken": false,
+    "effectId": "STRUCTURED_EFFECTS_V1",
+    "effectConfig": {
+      "effects": [
+        {
+          "action": "BUFF",
+          "target": {
+            "count": 20,
+            "owner": "SELF",
+            "zones": [
+              "BOARD",
+              "HAND",
+              "DECK",
+              "GRAVEYARD"
+            ],
+            "filter": {
+              "tagsAny": [
+                "실험체"
+              ]
+            },
+            "cardType": "WRESTLER",
+            "selection": "ALL"
+          },
+          "values": {
+            "attack": 0,
+            "health": 1
+          },
+          "trigger": "ENTER_FIELD"
+        }
+      ]
+    },
+    "status": "PUBLISHED",
+    "version": 9
+  },
+  {
+    "id": "0785ff4f-ce7c-4ab0-83e7-197249767543",
+    "name": "어셈블!!!",
+    "cardType": "TECHNIQUE",
+    "cost": 0,
+    "attack": 0,
+    "health": 0,
+    "text": "등장:자신의 필드를 완전히 무작위 선수 카드들로 채웁니다.",
+    "rarity": "TOKEN",
+    "keywords": [],
+    "tags": [],
+    "isToken": true,
+    "isChampionToken": false,
+    "effectId": null,
+    "effectConfig": {},
+    "status": "PUBLISHED",
+    "version": 3
+  },
+  {
+    "id": "f3b46674-c658-4e03-b5b4-ced71547768e",
+    "name": "엘리트 용병",
+    "cardType": "WRESTLER",
+    "cost": 0,
+    "attack": 2,
+    "health": 2,
+    "text": "",
+    "rarity": "TOKEN",
+    "keywords": [
+      "RUSH"
+    ],
+    "tags": [
+      "솔져"
+    ],
+    "isToken": true,
+    "isChampionToken": false,
+    "effectId": null,
+    "effectConfig": {},
+    "status": "PUBLISHED",
+    "version": 8
+  },
+  {
+    "id": "a2ab5577-0072-4425-a117-fd6f7df05d00",
+    "name": "여울",
+    "cardType": "WRESTLER",
+    "cost": 4,
+    "attack": 2,
+    "health": 4,
+    "text": "턴 시작:골드를 추가로 1 더 받습니다.",
+    "rarity": "EPIC",
+    "keywords": [],
+    "tags": [
+      "레이디"
+    ],
+    "isToken": false,
+    "isChampionToken": false,
+    "effectId": "STRUCTURED_EFFECTS_V1",
+    "effectConfig": {
+      "effects": [
+        {
+          "action": "ADD_GOLD",
+          "values": {
+            "amount": 1
+          },
+          "trigger": "TURN_START"
+        }
+      ]
+    },
+    "status": "PUBLISHED",
+    "version": 12
+  },
+  {
+    "id": "acdbe25d-f066-4c91-ae22-f612749ee20f",
+    "name": "여울의 보디가드",
+    "cardType": "WRESTLER",
+    "cost": 1,
+    "attack": 1,
+    "health": 4,
+    "text": "",
+    "rarity": "CHAMPION",
+    "keywords": [
+      "IMMUNE"
+    ],
+    "tags": [],
+    "isToken": true,
+    "isChampionToken": true,
+    "effectId": null,
+    "effectConfig": {},
+    "status": "PUBLISHED",
+    "version": 3
+  },
+  {
+    "id": "latest-wrestler-5",
+    "name": "예거",
+    "cardType": "WRESTLER",
+    "cost": 4,
+    "attack": 4,
+    "health": 3,
+    "text": "회피. 이 카드가 필드에 있는 동안 '솔져' 태그가 있는 카드들이 등장 혹은 소환 될때 +1/+1을 받습니다.",
+    "rarity": "EPIC",
+    "keywords": [],
+    "tags": [
+      "솔져"
+    ],
+    "isToken": false,
+    "isChampionToken": false,
+    "effectId": "STRUCTURED_EFFECTS_V1",
+    "effectConfig": {
+      "effects": [
+        {
+          "action": "BUFF",
+          "target": {
+            "zone": "BOARD",
+            "count": 1,
+            "owner": "SELF",
+            "filter": {
+              "tagsAny": [
+                "솔져"
+              ]
+            },
+            "cardType": "WRESTLER",
+            "selection": "SAME_TARGET"
+          },
+          "values": {
+            "attack": 1,
+            "health": 1
+          },
+          "trigger": "CARD_ENTERED"
+        }
+      ]
+    },
+    "status": "PUBLISHED",
+    "version": 12
+  },
+  {
+    "id": "dc43dc88-38d7-499b-ad89-6b83f773fe62",
+    "name": "오젠",
+    "cardType": "WRESTLER",
+    "cost": 2,
+    "attack": 2,
+    "health": 2,
+    "text": "등장:상대 필드에 비용이 1 이하인 선수 카드가 있다면 그 카드들 중 무작위 한장을 파괴 시킵니다.(챔피언 등급 제외)",
+    "rarity": "EPIC",
+    "keywords": [
+      "MULTI_STRIKE"
+    ],
+    "tags": [
+      "레이디"
+    ],
+    "isToken": false,
+    "isChampionToken": false,
+    "effectId": "STRUCTURED_EFFECTS_V1",
+    "effectConfig": {
+      "effects": [
+        {
+          "action": "DESTROY",
+          "target": {
+            "zone": "BOARD",
+            "count": 1,
+            "owner": "ENEMY",
+            "filter": {
+              "maxCost": 1,
+              "isChampionToken": false,
+              "excludeChampionRarity": true
+            },
+            "cardType": "WRESTLER",
+            "selection": "RANDOM",
+            "randomScope": "FULL"
+          },
+          "trigger": "ENTER_FIELD"
+        }
+      ]
+    },
+    "status": "PUBLISHED",
+    "version": 18
+  },
+  {
+    "id": "ff6f154d-a675-4a6b-bb12-50af8d227d15",
+    "name": "용병",
+    "cardType": "WRESTLER",
+    "cost": 0,
+    "attack": 1,
+    "health": 1,
+    "text": "",
+    "rarity": "TOKEN",
+    "keywords": [
+      "SURPRISE"
+    ],
+    "tags": [
+      "솔져"
+    ],
+    "isToken": true,
+    "isChampionToken": false,
+    "effectId": null,
+    "effectConfig": {},
+    "status": "PUBLISHED",
+    "version": 8
+  },
+  {
+    "id": "39dfe786-e95b-417b-94d1-edc2cdf3880e",
+    "name": "워썬더",
+    "cardType": "WRESTLER",
+    "cost": 3,
+    "attack": 1,
+    "health": 3,
+    "text": "등장: 내 손에 무작위 선수 카드 1장을 생성합니다.",
+    "rarity": "NORMAL",
+    "keywords": [],
+    "tags": [],
+    "isToken": false,
+    "isChampionToken": false,
+    "effectId": null,
+    "effectConfig": {},
+    "status": "PUBLISHED",
+    "version": 8
+  },
+  {
+    "id": "c3825a2a-8395-4f01-b1d8-4fd80627e339",
+    "name": "위리녀",
+    "cardType": "WRESTLER",
+    "cost": 5,
+    "attack": 0,
+    "health": 0,
+    "text": "",
+    "rarity": "TOKEN",
+    "keywords": [
+      "SURPRISE"
+    ],
+    "tags": [
+      "악마",
+      "레이디"
+    ],
+    "isToken": true,
+    "isChampionToken": false,
+    "effectId": null,
+    "effectConfig": {},
+    "status": "PUBLISHED",
+    "version": 9
+  },
+  {
+    "id": "5c050d4e-1e91-4d8b-9bab-8d315c4e21ab",
+    "name": "위리놈",
+    "cardType": "WRESTLER",
+    "cost": 5,
+    "attack": 4,
+    "health": 4,
+    "text": "등장:자신의 손패에 '위리녀'를 생성하고, 그 카드의 공격/체력을 이 카드의 현재 공격/체력과 같은 수치로 맞춥니다.\n퇴장:자신의 손패에 있는 '위리녀' 1장을 필드에 소환합니다.",
+    "rarity": "EPIC",
+    "keywords": [
+      "TAUNT"
+    ],
+    "tags": [
+      "악마"
+    ],
+    "isToken": false,
+    "isChampionToken": false,
+    "effectId": "STRUCTURED_EFFECTS_V1",
+    "effectConfig": {
+      "effects": [
+        {
+          "action": "GENERATE",
+          "values": {
+            "count": 1,
+            "destination": "HAND",
+            "definitionRef": {
+              "id": "c3825a2a-8395-4f01-b1d8-4fd80627e339"
+            },
+            "generatedModifiers": {
+              "copySourceStats": true
+            }
+          },
+          "trigger": "ENTER_FIELD"
+        },
+        {
+          "action": "SUMMON_FROM_HAND",
+          "values": {
+            "count": 1,
+            "definitionRef": {
+              "id": "c3825a2a-8395-4f01-b1d8-4fd80627e339"
+            }
+          },
+          "trigger": "LEAVE_FIELD"
+        }
+      ]
+    },
+    "status": "PUBLISHED",
+    "version": 13
+  },
+  {
+    "id": "eb87bf4d-c43b-4f2c-94d2-86e31eacd9fe",
+    "name": "작은 하마",
+    "cardType": "WRESTLER",
+    "cost": 4,
+    "attack": 3,
+    "health": 4,
+    "text": "등장:상대 필드에 있는 선수 카드 한장을 선택해서 상대의 덱 맨 위로 보냅니다.",
+    "rarity": "EPIC",
+    "keywords": [],
+    "tags": [],
+    "isToken": false,
+    "isChampionToken": false,
+    "effectId": "STRUCTURED_EFFECTS_V1",
+    "effectConfig": {
+      "effects": [
+        {
+          "action": "MOVE_TO_DECK",
+          "target": {
+            "zone": "BOARD",
+            "count": 1,
+            "owner": "ENEMY",
+            "cardType": "WRESTLER",
+            "selection": "PLAYER_CHOICE"
+          },
+          "values": {
+            "deckPosition": "TOP"
+          },
+          "trigger": "ENTER_FIELD"
+        }
+      ]
+    },
+    "status": "PUBLISHED",
+    "version": 12
+  },
+  {
+    "id": "df532c95-0e4d-4b17-8200-a86e6a682341",
+    "name": "조킹루이지",
+    "cardType": "WRESTLER",
+    "cost": 5,
+    "attack": 4,
+    "health": 2,
+    "text": "등장: 자신에 양 옆에 무작위 선수 카드를 생성하고 자신을 제외한 생성한 그 선수카드들에게 도발을 부여합니다.",
+    "rarity": "LEGENDARY",
+    "keywords": [],
+    "tags": [
+      "디 어쏘리티"
+    ],
+    "isToken": false,
+    "isChampionToken": false,
+    "effectId": "STRUCTURED_EFFECTS_V1",
+    "effectConfig": {
+      "effects": [
+        {
+          "action": "SUMMON",
+          "target": {
+            "zone": "BOARD",
+            "count": 2,
+            "owner": "SELF",
+            "cardType": "WRESTLER",
+            "selection": "ADJACENT_EMPTY_SLOTS",
+            "randomScope": "STANDARD"
+          },
+          "trigger": "ENTER_FIELD"
+        },
+        {
+          "action": "ADD_KEYWORD",
+          "target": {
+            "zone": "BOARD",
+            "count": 2,
+            "owner": "SELF",
+            "cardType": "WRESTLER",
+            "selection": "SAME_TARGET"
+          },
+          "values": {
+            "keyword": "TAUNT"
+          },
+          "trigger": "ENTER_FIELD"
+        }
+      ]
+    },
+    "status": "PUBLISHED",
+    "version": 29
+  },
+  {
+    "id": "66143efe-2eec-450a-8570-9a4c4d92330e",
+    "name": "좀비",
+    "cardType": "WRESTLER",
+    "cost": 1,
+    "attack": 1,
+    "health": 1,
+    "text": "아군 필드에는 좀비를 1장만 둘 수 있습니다. 이미 아군 좀비가 있다면 새 좀비를 소환하지 않고 소환될 좀비의 능력치만큼 기존 좀비에게 부여합니다. 필드에 있는 동안 다른 아군 선수가 리타이어할 때마다 +1/+1을 얻습니다.",
+    "rarity": "TOKEN",
+    "keywords": [],
+    "tags": [],
+    "isToken": true,
+    "isChampionToken": false,
+    "effectId": "STRUCTURED_EFFECTS_V1",
+    "effectConfig": {
+      "effects": []
+    },
+    "status": "PUBLISHED",
+    "version": 12
+  },
+  {
+    "id": "8a0b8b65-5d67-4f23-894e-6103219e41c8",
+    "name": "좀비 데헌",
+    "cardType": "WRESTLER",
+    "cost": 3,
+    "attack": 3,
+    "health": 1,
+    "text": "퇴장:'언데드' 태그가 있는 카드들에게 어디에 있든 최대 체력 +2를 부여합니다",
+    "rarity": "NORMAL",
+    "keywords": [
+      "TAUNT"
+    ],
+    "tags": [
+      "언데드",
+      "레이디"
+    ],
+    "isToken": false,
+    "isChampionToken": false,
+    "effectId": null,
+    "effectConfig": {},
+    "status": "PUBLISHED",
+    "version": 6
+  },
+  {
+    "id": "20251372-b1a0-485e-9158-d82bf05f7371",
+    "name": "좀비 벨로나",
+    "cardType": "WRESTLER",
+    "cost": 2,
+    "attack": 0,
+    "health": 4,
+    "text": "이 카드가 데미지를 입으면 1/1인 '좀비'를 소환합니다.",
+    "rarity": "EPIC",
+    "keywords": [
+      "TAUNT"
+    ],
+    "tags": [
+      "언데드",
+      "레이디",
+      "스트리트"
+    ],
+    "isToken": false,
+    "isChampionToken": false,
+    "effectId": null,
+    "effectConfig": {},
+    "status": "PUBLISHED",
+    "version": 10
+  },
+  {
+    "id": "bcf2ac9b-1afd-41a3-a653-5f9af1e033bf",
+    "name": "좀비 플래티넘구슬 마스터",
+    "cardType": "WRESTLER",
+    "cost": 5,
+    "attack": 3,
+    "health": 3,
+    "text": "등장:필드에 있는 '좀비' 중 가장 수치의 합이 높은 '좀비'의 체력과 공격력을 자신에게 더합니다. '좀비'가 없다면 2/2 '좀비'를 생성하고 그 '좀비'의 체력과 공격력을 자신에게 더합니다.",
+    "rarity": "LEGENDARY",
+    "keywords": [],
+    "tags": [
+      "언데드",
+      "슈퍼스타",
+      "구슬마스터"
+    ],
+    "isToken": false,
+    "isChampionToken": false,
+    "effectId": null,
+    "effectConfig": {},
+    "status": "PUBLISHED",
+    "version": 12
+  },
+  {
+    "id": "eaefcf6c-575d-4482-aaad-98b54561b49a",
+    "name": "챔피언 판도라(폭주)",
+    "cardType": "WRESTLER",
+    "cost": 6,
+    "attack": 6,
+    "health": 8,
+    "text": "이 카드가 챔피언 퀘스트 보상 효과로 소환되면 등장 효과를 발동시킵니다. \n등장:선택한 선수를 파괴시킵니다. \n이 카드는 자신이 리타이어 혹은 파괴 시킨 선수의 공격력을 흡수합니다.",
+    "rarity": "CHAMPION",
+    "keywords": [
+      "RUSH"
+    ],
+    "tags": [
+      "레이디",
+      "실험체"
+    ],
+    "isToken": true,
+    "isChampionToken": true,
+    "effectId": null,
+    "effectConfig": {},
+    "status": "PUBLISHED",
+    "version": 26
+  },
+  {
+    "id": "epic-spell-veil-of-silence",
+    "name": "침묵의 장막",
+    "cardType": "TECHNIQUE",
+    "cost": 5,
+    "attack": 0,
+    "health": 0,
+    "text": "모든 상대 선수를 침묵시킵니다.",
+    "rarity": "EPIC",
+    "keywords": [],
+    "tags": [],
+    "isToken": false,
+    "isChampionToken": false,
+    "effectId": "SCRIPT_V1",
+    "effectConfig": {
+      "scripts": [
+        {
+          "steps": [
+            {
+              "type": "EFFECT",
+              "effect": {
+                "action": "SILENCE",
+                "target": {
+                  "zone": "BOARD",
+                  "count": 1,
+                  "owner": "ENEMY",
+                  "cardType": "WRESTLER",
+                  "selection": "ALL"
+                }
+              }
+            }
+          ],
+          "trigger": "ACTIVE",
+          "version": "SCRIPT_V1"
+        }
+      ]
+    },
+    "status": "PUBLISHED",
+    "version": 3
+  },
+  {
+    "id": "latest-wrestler-11",
+    "name": "카미사토르",
+    "cardType": "WRESTLER",
+    "cost": 4,
+    "attack": 4,
+    "health": 2,
+    "text": "이 카드가 공격할때마다 상대 덱에서 무작위 카드 1장을 내 손으로 훔쳐옵니다.",
+    "rarity": "EPIC",
+    "keywords": [
+      "SURPRISE",
+      "DODGE"
+    ],
+    "tags": [
+      "레이디",
+      "디 어쏘리티"
+    ],
+    "isToken": false,
+    "isChampionToken": false,
+    "effectId": "SCRIPT_V1",
+    "effectConfig": {
+      "scripts": [
+        {
+          "steps": [
+            {
+              "id": "stolenCard",
+              "type": "SELECT",
+              "target": {
+                "zone": "DECK",
+                "count": 1,
+                "owner": "ENEMY",
+                "selection": "RANDOM",
+                "randomScope": "STANDARD"
+              }
+            },
+            {
+              "type": "EFFECT",
+              "effect": {
+                "action": "STEAL",
+                "target": {
+                  "zone": "DECK",
+                  "count": 1,
+                  "owner": "ENEMY",
+                  "resultId": "stolenCard",
+                  "selection": "ALL"
+                }
+              }
+            }
+          ],
+          "trigger": "SELF_ATTACK",
+          "version": "SCRIPT_V1"
+        }
+      ]
+    },
+    "status": "PUBLISHED",
+    "version": 11
+  },
+  {
+    "id": "9716aeaa-cbc4-4374-bedc-2f40054b72de",
+    "name": "카산드라",
+    "cardType": "WRESTLER",
+    "cost": 2,
+    "attack": 1,
+    "health": 3,
+    "text": "등장:내 손과 필드에 있는 '디 어쏘리티' 태그가 달려 있는 카드들에게 체력을 1 증가시키고 '치유'를 부여합니다.\n턴 종료:아군 선수와 챔피언의 체력을 1 회복한다.",
+    "rarity": "EPIC",
+    "keywords": [
+      "REGEN"
+    ],
+    "tags": [],
+    "isToken": false,
+    "isChampionToken": false,
+    "effectId": null,
+    "effectConfig": {},
+    "status": "PUBLISHED",
+    "version": 4
+  },
+  {
+    "id": "2e2d2c9d-1586-49cc-9b06-b3d8174c961f",
+    "name": "카스토",
+    "cardType": "WRESTLER",
+    "cost": 3,
+    "attack": 1,
+    "health": 5,
+    "text": "이 카드가 필드에 있는 동안, 아군 선수와 챔피언의 초과 회복량만큼 최대 체력이 증가합니다.",
+    "rarity": "EPIC",
+    "keywords": [],
+    "tags": [],
+    "isToken": false,
+    "isChampionToken": false,
+    "effectId": null,
+    "effectConfig": {},
+    "status": "PUBLISHED",
+    "version": 3
+  },
+  {
+    "id": "828969e2-363a-4cc2-8156-5de5ed86b822",
+    "name": "퀘스쳔",
+    "cardType": "WRESTLER",
+    "cost": 3,
+    "attack": 3,
+    "health": 1,
+    "text": "등장:어디에 있든 비용이 1이하인 아군 선수 카드들에게 +1/+1을 부여합니다.",
+    "rarity": "LEGENDARY",
+    "keywords": [
+      "DODGE",
+      "DEFENSE"
+    ],
+    "tags": [
+      "엔젤"
+    ],
+    "isToken": false,
+    "isChampionToken": false,
+    "effectId": "STRUCTURED_EFFECTS_V1",
+    "effectConfig": {
+      "effects": [
+        {
+          "action": "MODIFY_STAT",
+          "target": {
+            "count": 20,
+            "owner": "SELF",
+            "zones": [
+              "HAND",
+              "DECK",
+              "BOARD"
+            ],
+            "filter": {
+              "maxCost": 1
+            },
+            "cardType": "WRESTLER",
+            "selection": "ALL"
+          },
+          "values": {
+            "stat": "ATTACK",
+            "amount": 1
+          },
+          "trigger": "ENTER_FIELD"
+        },
+        {
+          "action": "MODIFY_STAT",
+          "target": {
+            "count": 20,
+            "owner": "SELF",
+            "zones": [
+              "HAND",
+              "DECK",
+              "BOARD"
+            ],
+            "filter": {
+              "maxCost": 1
+            },
+            "cardType": "WRESTLER",
+            "selection": "ALL"
+          },
+          "values": {
+            "stat": "HEALTH",
+            "amount": 1
+          },
+          "trigger": "ENTER_FIELD"
+        }
+      ]
+    },
+    "status": "PUBLISHED",
+    "version": 15
+  },
+  {
+    "id": "epic-spell-escape",
+    "name": "탈출",
+    "cardType": "TECHNIQUE",
+    "cost": 2,
+    "attack": 0,
+    "health": 0,
+    "text": "아군 선수 1장을 선택하여 원래 카드 상태로 내 손으로 되돌립니다.",
+    "rarity": "EPIC",
+    "keywords": [],
+    "tags": [],
+    "isToken": false,
+    "isChampionToken": false,
+    "effectId": "SCRIPT_V1",
+    "effectConfig": {
+      "scripts": [
+        {
+          "steps": [
+            {
+              "id": "chosen",
+              "type": "SELECT",
+              "target": {
+                "zone": "BOARD",
+                "count": 1,
+                "owner": "SELF",
+                "cardType": "WRESTLER",
+                "selection": "PLAYER_CHOICE"
+              }
+            },
+            {
+              "type": "EFFECT",
+              "effect": {
+                "action": "MOVE_TO_HAND",
+                "target": {
+                  "zone": "BOARD",
+                  "count": 1,
+                  "owner": "SELF",
+                  "cardType": "WRESTLER",
+                  "resultId": "chosen",
+                  "selection": "ALL"
+                }
+              }
+            }
+          ],
+          "trigger": "ACTIVE",
+          "version": "SCRIPT_V1"
+        }
+      ]
+    },
+    "status": "PUBLISHED",
+    "version": 4
+  },
+  {
+    "id": "db6c775a-0933-4e55-9fdc-a94861c6e10a",
+    "name": "태그 체인지",
+    "cardType": "TECHNIQUE",
+    "cost": 3,
+    "attack": 0,
+    "health": 0,
+    "text": "필드의 선수 1장을 자신의 손패에 있는 그 카드의 코스트보다 낮거나 같은 선수와 교체해서 냅니다. 교체 된 카드 2장의 공격력에 1을 부여합니다.",
+    "rarity": "EPIC",
+    "keywords": [],
+    "tags": [],
+    "isToken": false,
+    "isChampionToken": false,
+    "effectId": null,
+    "effectConfig": {},
+    "status": "PUBLISHED",
+    "version": 7
+  },
+  {
+    "id": "393dbf7c-7f61-418a-ba1a-4726500ab0aa",
+    "name": "판도라",
+    "cardType": "WRESTLER",
+    "cost": 3,
+    "attack": 3,
+    "health": 3,
+    "text": "등장: 선택한 적 선수에게 1 피해를 줍니다. 그 효과로 대상의 체력이 정확히 1이 되면 자신에게 체력과 공격을 각각 2씩 부여합니다.",
+    "rarity": "EPIC",
+    "keywords": [],
+    "tags": [
+      "레이디",
+      "실험체",
+      "디 어쏘리티"
+    ],
+    "isToken": false,
+    "isChampionToken": false,
+    "effectId": "STRUCTURED_EFFECTS_V1",
+    "effectConfig": {
+      "effects": [
+        {
+          "action": "DAMAGE",
+          "target": {
+            "zone": "BOARD",
+            "count": 1,
+            "owner": "ENEMY",
+            "cardType": "WRESTLER",
+            "selection": "PLAYER_CHOICE"
+          },
+          "values": {
+            "amount": 1,
+            "conditionalBuff": {
+              "attack": 2,
+              "health": 2,
+              "healthEquals": 1
+            }
+          },
+          "trigger": "ENTER_FIELD"
+        }
+      ]
+    },
+    "status": "PUBLISHED",
+    "version": 10
+  },
+  {
+    "id": "latest-wrestler-7",
+    "name": "팬텀워커",
+    "cardType": "WRESTLER",
+    "cost": 3,
+    "attack": 2,
+    "health": 2,
+    "text": "등장:내 손과 필드에 있는 '스트리트' 태그가 달려있는 모든 아군 카드들에게 +1/+1을 부여합니다.",
+    "rarity": "EPIC",
+    "keywords": [
+      "RUSH"
+    ],
+    "tags": [
+      "스트리트"
+    ],
+    "isToken": false,
+    "isChampionToken": false,
+    "effectId": null,
+    "effectConfig": {},
+    "status": "PUBLISHED",
+    "version": 12
+  },
+  {
+    "id": "21e9e816-4d5f-461d-8cf8-b57749a33753",
+    "name": "퍼플레인",
+    "cardType": "WRESTLER",
+    "cost": 5,
+    "attack": 1,
+    "health": 5,
+    "text": "등장:모든 적 선수의 공격력을 2 감소시킵니다. 이 카드가 필드에 있을때 공격력이 0이 된 적 선수는 기절당하고 침묵당합니다.",
+    "rarity": "LEGENDARY",
+    "keywords": [],
+    "tags": [],
+    "isToken": false,
+    "isChampionToken": false,
+    "effectId": "STRUCTURED_EFFECTS_V1",
+    "effectConfig": {
+      "effects": [
+        {
+          "action": "WEAKEN_TO_STUN_SILENCE",
+          "target": {
+            "zone": "BOARD",
+            "count": 20,
+            "owner": "ENEMY",
+            "cardType": "WRESTLER",
+            "selection": "ALL"
+          },
+          "values": {
+            "amount": 2
+          },
+          "trigger": "ENTER_FIELD"
+        }
+      ]
+    },
+    "status": "PUBLISHED",
+    "version": 11
+  },
+  {
+    "id": "2e99f465-4bc7-461f-ad45-674a3ed04b10",
+    "name": "프랑켄슈타인 만드릴쿤",
+    "cardType": "WRESTLER",
+    "cost": 3,
+    "attack": 3,
+    "health": 3,
+    "text": "이 카드의 체력이 증가하면 추가로 +1 증가합니다",
+    "rarity": "NORMAL",
+    "keywords": [
+      "TAUNT"
+    ],
+    "tags": [
+      "실험체",
+      "악마"
+    ],
+    "isToken": false,
+    "isChampionToken": false,
+    "effectId": null,
+    "effectConfig": {
+      "armor": 1
+    },
+    "status": "PUBLISHED",
+    "version": 11
+  },
+  {
+    "id": "683e07f7-d9f8-47f7-8142-779cab01e9b8",
+    "name": "플래티넘 구슬 마스터",
+    "cardType": "WRESTLER",
+    "cost": 1,
+    "attack": 1,
+    "health": 1,
+    "text": "등장:이 카드 비용을 지불하고 남은 Gold를 전부 소비합니다. 이때 소비한 1G마다 체력과 공격을 각각 +2씩 증가시킵니다",
+    "rarity": "LEGENDARY",
+    "keywords": [],
+    "tags": [
+      "슈퍼스타",
+      "구슬마스터"
+    ],
+    "isToken": false,
+    "isChampionToken": false,
+    "effectId": "STRUCTURED_EFFECTS_V1",
+    "effectConfig": {
+      "effects": [
+        {
+          "action": "SPEND_GOLD_BUFF_SELF",
+          "target": {
+            "zone": "BOARD",
+            "count": 1,
+            "owner": "SELF",
+            "selection": "SELF"
+          },
+          "values": {
+            "amountReference": "REMAINING_GOLD"
+          },
+          "trigger": "ENTER_FIELD"
+        }
+      ]
+    },
+    "status": "PUBLISHED",
+    "version": 13
+  },
+  {
+    "id": "5361339a-fd72-47e2-bbcb-f5a193a64ea3",
+    "name": "피 스타 세븐",
+    "cardType": "WRESTLER",
+    "cost": 4,
+    "attack": 3,
+    "health": 5,
+    "text": "등장:자신을 제외한 필드에 나와있는 아군 선수들에게 공격력을 +2 부여합니다.",
+    "rarity": "LEGENDARY",
+    "keywords": [],
+    "tags": [
+      "솔져"
+    ],
+    "isToken": false,
+    "isChampionToken": false,
+    "effectId": "STRUCTURED_EFFECTS_V1",
+    "effectConfig": {
+      "effects": [
+        {
+          "action": "BUFF",
+          "target": {
+            "zone": "BOARD",
+            "count": 4,
+            "owner": "SELF",
+            "filter": {
+              "excludeSource": true
+            },
+            "cardType": "WRESTLER",
+            "selection": "ALL"
+          },
+          "values": {
+            "attack": 2,
+            "health": 0
+          },
+          "trigger": "ENTER_FIELD"
+        }
+      ]
+    },
+    "status": "PUBLISHED",
+    "version": 16
+  },
+  {
+    "id": "4ad681e3-6ed6-4651-8107-4b24adddd753",
+    "name": "하녀 판도라",
+    "cardType": "WRESTLER",
+    "cost": 4,
+    "attack": 1,
+    "health": 1,
+    "text": "등장:선택한 선수에게 데미지를 1 줍니다. 이 효과로 선수가 리타이어했다면 '늑대인간 판도라'로 변신합니다.",
+    "rarity": "LEGENDARY",
+    "keywords": [],
+    "tags": [
+      "실험체",
+      "레이디"
+    ],
+    "isToken": false,
+    "isChampionToken": false,
+    "effectId": "STRUCTURED_EFFECTS_V1",
+    "effectConfig": {
+      "effects": [
+        {
+          "action": "DAMAGE",
+          "target": {
+            "zone": "BOARD",
+            "count": 1,
+            "owner": "ALL",
+            "cardType": "WRESTLER",
+            "selection": "PLAYER_CHOICE"
+          },
+          "values": {
+            "amount": 1
+          },
+          "trigger": "ENTER_FIELD"
+        },
+        {
+          "action": "TRANSFORM_SOURCE",
+          "values": {
+            "causal": "DAMAGE_CAUSED_TARGET_RETIRE",
+            "definitionRef": {
+              "id": "b6b6247d-4e98-4cfb-8fa6-5479afec48f3"
+            }
+          },
+          "trigger": "ENTER_FIELD"
+        }
+      ]
+    },
+    "status": "PUBLISHED",
+    "version": 13
+  },
+  {
+    "id": "49f79c04-41b4-4d2c-83df-10541a7eceef",
+    "name": "하스이",
+    "cardType": "WRESTLER",
+    "cost": 1,
+    "attack": 1,
+    "health": 1,
+    "text": "",
+    "rarity": "NORMAL",
+    "keywords": [
+      "SURPRISE",
+      "DODGE",
+      "MULTI_STRIKE"
+    ],
+    "tags": [
+      "스트리트"
+    ],
+    "isToken": false,
+    "isChampionToken": false,
+    "effectId": null,
+    "effectConfig": {},
+    "status": "PUBLISHED",
+    "version": 10
+  },
+  {
+    "id": "0710e9b3-a8ef-4f09-9e63-c0b872c18068",
+    "name": "헬뻑",
+    "cardType": "WRESTLER",
+    "cost": 3,
+    "attack": 0,
+    "health": 5,
+    "text": "턴 종료:모든 선수카드에게 데미지를 1 줍니다.",
+    "rarity": "EPIC",
+    "keywords": [
+      "DEFENSE"
+    ],
+    "tags": [],
+    "isToken": false,
+    "isChampionToken": false,
+    "effectId": null,
+    "effectConfig": {},
+    "status": "PUBLISHED",
+    "version": 4
+  },
+  {
+    "id": "5f1fd584-7129-4f39-91a4-22f02ba677e5",
+    "name": "헬퍼",
+    "cardType": "WRESTLER",
+    "cost": 4,
+    "attack": 2,
+    "health": 5,
+    "text": "등장:손패에 '냥냥 펀치'를 추가합니다.\n턴 시작:지난 턴에 아군 선수 카드와 챔피언이 자신의 최대 체력을 초과한 회복량의 총합이 3를 넘으면 '냥냥 펀치'를 손에 생성합니다.",
+    "rarity": "LEGENDARY",
+    "keywords": [
+      "REGEN",
+      "DEFENSE"
+    ],
+    "tags": [
+      "레이디"
+    ],
+    "isToken": false,
+    "isChampionToken": false,
+    "effectId": null,
+    "effectConfig": {},
+    "status": "PUBLISHED",
+    "version": 8
+  },
+  {
+    "id": "latest-wrestler-2",
+    "name": "황소할배",
+    "cardType": "WRESTLER",
+    "cost": 3,
+    "attack": 2,
+    "health": 4,
+    "text": "도발",
+    "rarity": "NORMAL",
+    "keywords": [
+      "TAUNT"
+    ],
+    "tags": [],
+    "isToken": false,
+    "isChampionToken": false,
+    "effectId": null,
+    "effectConfig": {},
+    "status": "PUBLISHED",
+    "version": 8
+  },
+  {
+    "id": "latest-wrestler-4",
+    "name": "휴먼쿠커",
+    "cardType": "WRESTLER",
+    "cost": 2,
+    "attack": 1,
+    "health": 3,
+    "text": "등장: 선택한 아군 대상의 체력을 3 회복합니다.",
+    "rarity": "NORMAL",
+    "keywords": [
+      "REGEN"
+    ],
+    "tags": [
+      "디 어쏘리티"
+    ],
+    "isToken": false,
+    "isChampionToken": false,
+    "effectId": null,
+    "effectConfig": {},
+    "status": "PUBLISHED",
+    "version": 7
+  },
+  {
+    "id": "b723c7e6-c668-4afb-b77d-da0d16f16c31",
+    "name": "흑구슬마스터",
+    "cardType": "WRESTLER",
+    "cost": 6,
+    "attack": 5,
+    "health": 5,
+    "text": "등장:선택한 적 선수 하나를 파괴합니다.",
+    "rarity": "EPIC",
+    "keywords": [],
+    "tags": [
+      "구슬마스터"
+    ],
+    "isToken": false,
+    "isChampionToken": false,
+    "effectId": "STRUCTURED_EFFECTS_V1",
+    "effectConfig": {
+      "effects": [
+        {
+          "action": "DESTROY",
+          "target": {
+            "zone": "BOARD",
+            "count": 1,
+            "owner": "ENEMY",
+            "cardType": "WRESTLER",
+            "selection": "PLAYER_CHOICE"
+          },
+          "trigger": "ENTER_FIELD"
+        }
+      ]
+    },
+    "status": "PUBLISHED",
+    "version": 11
+  },
+  {
+    "id": "a6b7689a-0468-48cd-a216-7e9fe22dec47",
+    "name": "힐빌",
+    "cardType": "WRESTLER",
+    "cost": 2,
+    "attack": 2,
+    "health": 4,
+    "text": "이 카드가 상대 선수를 리타이어시킬 때마다 체력을 2 회복한다.",
+    "rarity": "NORMAL",
+    "keywords": [],
+    "tags": [],
+    "isToken": false,
+    "isChampionToken": false,
+    "effectId": null,
+    "effectConfig": {},
+    "status": "PUBLISHED",
+    "version": 3
+  }
+]
