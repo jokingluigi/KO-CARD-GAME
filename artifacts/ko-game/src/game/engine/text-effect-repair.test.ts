@@ -89,3 +89,12 @@ test('retire self snapshots current attack, hits both fields and spills only rea
  const done=resolveTriggeredAbilities(s,s.players[0].id,s.players[0].board[1]!,'ACTIVE');
  assert.equal(done.players[1].health,s.players[1].health-5);assert.equal(done.players[0].board[0],null);assert.equal(done.players[1].board[0],null);assert.equal(done.players[0].board[2]?.currentHealth,3);assert.ok(done.players[0].graveyard.some(c=>c.instanceId==='source'));
 });
+
+test('all-character heal includes immune allies and self, while manual targeting retains immunity',()=>{
+ const s=setup();s.players[0].hand=[];const source=s.players[0].board[0]!;source.keywords=['IMMUNE'];source.currentHealth=1;source.maxHealth=5;
+ s.players[0].board[1]={...generateCardInstance({...unit,keywords:['IMMUNE']},{instanceId:'immune-ally'}),boardSlot:1,currentHealth:1};s.players[0].health=10;
+ const done=applyEffect(s,s.players[0].id,source,{type:'STRUCTURED',action:'HEAL',target:{zone:'CHARACTER',owner:'SELF',selection:'ALL',count:20},values:{amount:3}});
+ assert.equal(done.players[0].board[0]?.currentHealth,4);assert.equal(done.players[0].board[1]?.currentHealth,3);assert.equal(done.players[0].health,13);
+ const blocked=applyEffect(s,s.players[0].id,source,{type:'STRUCTURED',action:'HEAL',target:{zone:'BOARD',owner:'SELF',selection:'PLAYER_CHOICE',count:1},values:{amount:3}},['immune-ally']);
+ assert.equal(blocked.players[0].board[1]?.currentHealth,1);
+});
