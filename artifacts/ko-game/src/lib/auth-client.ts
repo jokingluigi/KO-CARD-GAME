@@ -20,6 +20,8 @@ export type AuthResponse = {
 const authBasePath = (import.meta.env?.BASE_URL ?? "/").replace(/\/$/, "");
 const authApiBase = `${authBasePath}/api/auth`;
 export const AUTH_REQUEST_TIMEOUT_MS = 8_000;
+export const AUTH_SUBMIT_TIMEOUT_MS = 20_000;
+let authRevision = 0;
 
 export class AuthRequestError extends Error {
   constructor(
@@ -41,9 +43,10 @@ async function readResponseMessage(response: Response, fallback: string): Promis
 }
 
 export async function fetchCurrentUser(options: { timeoutMs?: number } = {}): Promise<AuthResponse> {
+  const revision = authRevision;
   const startup = takeStartupAuth();
   if (startup) {
-    try { return await startup; } catch { /* Retry with the regular bounded request below. */ }
+    try { const result = await startup; return revision === authRevision ? result : await fetchCurrentUser(options); } catch { /* Retry with the regular bounded request below. */ }
   }
   const timeoutMs = options.timeoutMs ?? AUTH_REQUEST_TIMEOUT_MS;
   const controller = new AbortController();
@@ -53,6 +56,7 @@ export async function fetchCurrentUser(options: { timeoutMs?: number } = {}): Pr
     try {
       response = await fetch(`${authApiBase}/me`, {
         credentials: "include",
+        cache: "no-store",
         signal: controller.signal,
       });
     } catch (error) {
@@ -67,13 +71,15 @@ export async function fetchCurrentUser(options: { timeoutMs?: number } = {}): Pr
         response.status,
       );
     }
-    return (await response.json()) as AuthResponse;
+    const result = (await response.json()) as AuthResponse;
+    return revision === authRevision ? result : await fetchCurrentUser(options);
   } finally {
     globalThis.clearTimeout(timer);
   }
 }
 
 export async function logout(): Promise<void> {
+  authRevision += 1;
   invalidateStartupAuth();
   await fetch(`${authApiBase}/logout`, {
     method: "POST",
@@ -82,6 +88,7 @@ export async function logout(): Promise<void> {
 }
 
 export async function changeNickname(nickname: string): Promise<AuthUser> {
+  authRevision += 1;
   invalidateStartupAuth();
   const response = await fetch(`${authApiBase}/nickname`, {
     method: "PATCH",
@@ -98,14 +105,21 @@ export async function changeNickname(nickname: string): Promise<AuthUser> {
 export async function submitAuth(
   mode: "login" | "register",
   values: Record<string, string>,
+  options: { timeoutMs?: number } = {},
 ): Promise<AuthUser> {
+  authRevision += 1;
   invalidateStartupAuth();
-  const response = await fetch(`${authApiBase}/${mode}`, {
+  let response: Response;
+  try { response = await fetch(`${authApiBase}/${mode}`, {
     method: "POST",
     credentials: "include",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(values),
-  });
+    cache: "no-store",
+    signal: AbortSignal.timeout(options.timeoutMs ?? AUTH_SUBMIT_TIMEOUT_MS),
+  }); } catch {
+    throw new AuthRequestError("서버 응답이 지연되고 있습니다. 잠시 후 다시 로그인해 주세요.");
+  }
   if (!response.ok) {
     throw new Error(await readResponseMessage(response, "요청을 처리하지 못했습니다."));
   }
@@ -113,10 +127,13 @@ export async function submitAuth(
   if (!body.authenticated || !body.user) {
     throw new Error("로그인 상태를 확인하지 못했습니다.");
   }
+  authRevision += 1;
+  invalidateStartupAuth();
   return body.user;
 }
 
 export async function submitTestAuth(role: "USER" | "ADMIN"): Promise<AuthUser> {
+  authRevision += 1;
   invalidateStartupAuth();
   const response = await fetch(`${import.meta.env.BASE_URL.replace(/\/$/, "")}/api/test-auth/login`, {
     method: "POST",

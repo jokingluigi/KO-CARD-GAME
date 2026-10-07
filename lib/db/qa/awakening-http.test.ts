@@ -553,3 +553,17 @@ test('admin can repair only untouched current assignments, preserving in-progres
  assert.equal(rows[0].title,'Fixed quest');assert.equal(rows[0].progress,0);assert.equal(rows[0].target_value,2);assert.equal(rows[0].reward_amount,20);
  for(const row of rows.slice(1)){assert.equal(row.title,'Repair quest');assert.equal(row.target_value,3);assert.equal(row.reward_amount,10);}
 });
+
+test('login cookie survives repeated session reads and initialized accounts do not write during authentication', async () => {
+  const login = await fetch(origin+'/api/auth/login',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({email:'admin@awakening.invalid',password:'AwakeningLocalQA123'})});
+  assert.equal(login.status,200);
+  const token=login.headers.get('set-cookie')!;
+  assert.match(token,/HttpOnly/); assert.match(token,/Max-Age=2592000/);
+  assert.match(login.headers.get('cache-control')!,/no-store/);
+  for(let i=0;i<3;i++){const me=await fetch(origin+'/api/auth/me',{headers:{Cookie:token.split(';')[0]}});assert.equal(me.status,200);assert.equal((await me.json()).user.id,'awakening-admin');assert.match(me.headers.get('cache-control')!,/no-store/);assert.match(me.headers.get('vary')!,/Cookie/);}
+  const [stored]=await database.select().from(schema.usersTable).where((await import('drizzle-orm')).eq(schema.usersTable.id,'awakening-admin'));
+  assert.ok(stored.shopCurrencyStarterGrantedAt);
+  const original=db.transaction;let writes=0;
+  Object.assign(db,{transaction:(...args:any[])=>{writes++;return (original as any)(...args);}});
+  try{const publicUser=await (await import('../../../artifacts/api-server/src/lib/auth')).getPublicUser(stored);assert.equal(publicUser.id,stored.id);assert.equal(writes,0);}finally{Object.assign(db,{transaction:original});}
+});

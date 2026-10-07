@@ -30,6 +30,9 @@ on:
       - artifacts/api-server/src/routes/admin-rewards.ts
       - lib/db/src/schema/rewards.ts
       - lib/db/migrations/0038_ai_quest_matches.sql
+      - artifacts/api-server/src/lib/auth.ts
+      - artifacts/api-server/src/routes/auth.ts
+      - lib/db/src/index.ts
       - artifacts/api-server/src/app.ts
       - artifacts/api-server/src/lib/request-body*
       - artifacts/api-server/src/routes/daily-quests.ts

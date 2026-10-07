@@ -129,7 +129,7 @@ function actualAttackDamage(
   return Math.max(0, damageEvent?.amount ?? 0);
 }
 
-export default function Home() {
+export default function Home({ initialAuthUser }: { initialAuthUser?: AuthUser } = {}) {
   const [, navigate] = useLocation();
   const searchParams = new URLSearchParams(window.location.search);
   const isTowerSandbox = searchParams.get('source') === 'admin' && searchParams.get('towerTest') === '1';
@@ -139,8 +139,8 @@ export default function Home() {
   const isAdminSource = searchParams.get('source') === 'admin';
   const [testDeckOpen,setTestDeckOpen]=useState(false);
   const [isAdminTestMatch, setIsAdminTestMatch] = useState(isAdminSource);
-  const [authStatus, setAuthStatus] = useState<'loading' | 'authenticated' | 'unauthenticated' | 'error'>('loading');
-  const [authUser, setAuthUser] = useState<AuthUser | null>(null);
+  const [authStatus, setAuthStatus] = useState<'loading' | 'authenticated' | 'unauthenticated' | 'error'>(initialAuthUser ? 'authenticated' : 'loading');
+  const [authUser, setAuthUser] = useState<AuthUser | null>(initialAuthUser ?? null);
   const [authError, setAuthError] = useState<string | null>(null);
   const authRequestGeneration = useRef(0);
   const [mediaCatalog, setMediaCatalog] = useState<GameMediaCatalog>(emptyGameMediaCatalog);
@@ -326,11 +326,12 @@ export default function Home() {
   }, []);
 
   useEffect(() => {
+    if (initialAuthUser) return;
     checkAuthentication();
     return () => {
       authRequestGeneration.current += 1;
     };
-  }, [checkAuthentication]);
+  }, [checkAuthentication, initialAuthUser]);
 
   useEffect(() => {
     let cancelled = false;

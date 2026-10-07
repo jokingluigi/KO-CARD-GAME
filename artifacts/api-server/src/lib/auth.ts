@@ -61,7 +61,9 @@ function publicUser(user: UserRecord, currencyBalance = user.currencyBalance): P
 }
 
 export async function getPublicUser(user: UserRecord): Promise<PublicUser> {
-  const currencyBalance = await ensureStartingShopCurrency(user.id);
+  const currencyBalance = user.shopCurrencyStarterGrantedAt
+    ? user.currencyBalance
+    : await ensureStartingShopCurrency(user.id);
   return publicUser(user, currencyBalance ?? user.currencyBalance);
 }
 

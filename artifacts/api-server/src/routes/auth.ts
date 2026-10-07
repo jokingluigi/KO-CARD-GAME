@@ -29,6 +29,12 @@ import { logger } from "../lib/logger";
 import { grantAccountStarterPacks, StarterPackConfigurationError } from "../lib/starter-pack-rewards";
 
 const router = Router();
+router.use((_request, response, next) => {
+  response.setHeader("Cache-Control", "private, no-store, max-age=0");
+  response.setHeader("Pragma", "no-cache");
+  response.vary("Cookie");
+  next();
+});
 const STARTING_CURRENCY = Math.max(0, Number.parseInt(process.env["STARTING_CURRENCY"] ?? "1000", 10) || 1000);
 
 function readString(value: unknown): string {
@@ -135,9 +141,11 @@ router.post("/login", async (request, response) => {
     return;
   }
   clearLoginRateLimit(request, email);
-  await ensureStarterCollection(user.id);
+  const publicUser = await getPublicUser(user);
   await createAuthSession(user.id, response);
-  response.json({ authenticated: true, user: await getPublicUser(user) });
+  response.json({ authenticated: true, user: publicUser });
+  // Provisioning is idempotent and must not prevent a valid account from logging in.
+  void ensureStarterCollection(user.id).catch(error => request.log.error({ err: error }, "Login starter collection provisioning failed"));
 });
 
 router.post("/logout", async (request, response) => {

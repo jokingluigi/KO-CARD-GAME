@@ -1,24 +1,11 @@
 import {ServerMaintenanceGate} from '@/components/server-maintenance';
-import Tower from '@/pages/tower';
-import Draft from '@/pages/draft';
-import { type ReactNode, useEffect } from 'react';
+import { type ReactNode, useEffect, lazy, Suspense } from 'react';
+import { AuthLoading } from '@/components/auth-page';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { ErrorBoundary } from '@/components/error-boundary';
 import { Toaster } from '@/components/ui/toaster';
 import { TooltipProvider } from '@/components/ui/tooltip';
-import NotFound from '@/pages/not-found';
-import Admin from '@/pages/admin';
-import Home from '@/pages/home';
-import Decks from '@/pages/decks';
-import Collection from '@/pages/collection';
-import Packs from '@/pages/packs';
-import Shop from '@/pages/shop';
-import Online from '@/pages/online';
-import OnlineQuick from '@/pages/online-quick';
-import OnlineFriendly from '@/pages/online-friendly';
-import OnlineMatch from '@/pages/online-match';
-import DailyQuests from '@/pages/daily-quests';
-import Attendance from '@/pages/attendance';
+import Home from '@/components/home-entry';
 import {
   Route,
   Switch,
@@ -31,12 +18,27 @@ import { musicContextForPath, shouldLoadMainBgm } from '@/audio/music-route';
 import { fetchMainContent } from '@/lib/main-content-client';
 import { GamepadNavigation } from '@/components/gamepad-navigation';
 
+const Tower = lazy(() => import("@/pages/tower"));
+const Draft = lazy(() => import("@/pages/draft"));
+const NotFound = lazy(() => import("@/pages/not-found"));
+const Admin = lazy(() => import("@/pages/admin"));
+const Decks = lazy(() => import("@/pages/decks"));
+const Collection = lazy(() => import("@/pages/collection"));
+const Packs = lazy(() => import("@/pages/packs"));
+const Shop = lazy(() => import("@/pages/shop"));
+const Online = lazy(() => import("@/pages/online"));
+const OnlineQuick = lazy(() => import("@/pages/online-quick"));
+const OnlineFriendly = lazy(() => import("@/pages/online-friendly"));
+const OnlineMatch = lazy(() => import("@/pages/online-match"));
+const DailyQuests = lazy(() => import("@/pages/daily-quests"));
+const Attendance = lazy(() => import("@/pages/attendance"));
+
 const queryClient = new QueryClient();
 
 function Router() {
   return (
     <RoutedErrorBoundary>
-      <Switch>
+      <Suspense fallback={<AuthLoading />}><Switch>
         <Route path="/admin" component={Admin} />
         <Route path="/admin/draft" component={Admin} />
         <Route path="/admin/draft/match/:matchId">{() => <OnlineMatch draft />}</Route>
@@ -66,7 +68,7 @@ function Router() {
         <Route path="/shop" component={Shop} />
         <Route path="/" component={Home} />
         <Route component={NotFound} />
-      </Switch>
+      </Switch></Suspense>
     </RoutedErrorBoundary>
   );
 }

@@ -10,7 +10,14 @@ if (!process.env.DATABASE_URL) {
   );
 }
 
-export const pool = new Pool({ connectionString: process.env.DATABASE_URL });
+export const pool = new Pool({
+  connectionString: process.env.DATABASE_URL,
+  connectionTimeoutMillis: 10_000,
+  idleTimeoutMillis: 30_000,
+  keepAlive: true,
+});
+// An idle connection can be closed by the host; discard it without crashing the API.
+pool.on("error", (error) => console.error("[KO database] idle connection lost", (error as { code?: string }).code ?? "unknown"));
 export const db = drizzle(pool, { schema });
 
 export * from "./schema";

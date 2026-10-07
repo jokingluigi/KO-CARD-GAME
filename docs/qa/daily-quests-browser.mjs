@@ -252,7 +252,7 @@ for (const mode of ["success", "quest-failure", "start-failure"]) {
     await route.fulfill({ json });
   });
   await page.goto(origin + "/ai-match");
-  await page.getByRole("button", { name: /매치 시작/ }).click();
+  try { await page.getByRole("button", { name: /매치 시작/ }).click(); } catch (error) { console.error({pageErrors:errors,screen:await page.locator("body").innerText()}); throw error; }
   if (mode === "start-failure") {
     await page.getByText("준비 실패 테스트").waitFor();
     assert.equal(await page.locator(".ko-game-shell").count(), 0);
