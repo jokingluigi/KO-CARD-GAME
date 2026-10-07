@@ -59,6 +59,7 @@ export interface GameEvent {
   target?: EventSubject;
   reason?: string;
   amount?: number;
+  excessDamage?: number;
   boardSlot?: 0 | 1 | 2 | 3;
   tags?: string[];
   stat?: 'cost' | 'attack' | 'health' | 'maxHealth' | 'currentHealth';
