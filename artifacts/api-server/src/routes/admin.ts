@@ -1,6 +1,5 @@
-import { isAutomaticChampionStartConfig } from '../../../../lib/game-engine/src/champion-game-start';
 import { validCountdownCardSettings } from '@workspace/effect-registry';
-import { validChampionQuestCondition, validAwakeningQuestConfig, validAwakeningHealthCondition, AWAKENING_CARD_IDS, createAwakeningCards } from '@workspace/game-engine';
+import { validChampionQuestCondition, validAwakeningQuestConfig, AWAKENING_CARD_IDS, createAwakeningCards } from '@workspace/game-engine';
 import { ensureAwakeningCards } from '../lib/awakening-card-service';
 import { createHmac, randomUUID, timingSafeEqual } from "node:crypto";
 import { and, asc, desc, eq, ilike, inArray, or, sql } from "drizzle-orm";
@@ -175,286 +174,38 @@ type ChampionInput = {
   questCompleteAudioUploadToken: string | null;
 };
 
-function parseChampionInput(value: unknown): ChampionInput | null {
-  if (!value || typeof value !== "object" || Array.isArray(value)) return null;
-  const input = value as Record<string, unknown>;
-  const text = (key: string, required = false) => {
-    const result = typeof input[key] === "string" ? input[key].trim() : "";
-    return required || result ? result : null;
-  };
-  const integer = (key: string, min: number, max: number, nullable = false) => {
-    const rawValue = input[key];
-    if (nullable && (rawValue === null || rawValue === "" || rawValue === undefined)) return null;
-    const value = typeof rawValue === "number"
-      ? rawValue
-      : typeof rawValue === "string" && rawValue.trim() ? Number(rawValue) : Number.NaN;
-    return Number.isInteger(value) && value >= min && value <= max ? value : undefined;
-  };
-  const object = (key: string, nullable = false) => {
-    const value = input[key];
-    if (nullable && (value === null || value === undefined)) return null;
-    return value && typeof value === "object" && !Array.isArray(value) ? value as Record<string, unknown> : undefined;
-  };
-  const name = text("name", true);
-  const abilityName = text("abilityName", true);
-  const maxHealth = integer("maxHealth", 1, 999);
-  const abilityCost = integer("abilityCost", 0, 999);
-  // Audio volume was added after the first Champion records. Missing legacy
-  // values are safe to default, but present invalid values must still reject.
-  const defaultedInteger = (key: string, min: number, max: number, fallback: number) =>
-    input[key] === undefined || input[key] === null || input[key] === ""
-      ? fallback
-      : integer(key, min, max);
-  const abilityAudioVolume = defaultedInteger("abilityAudioVolume", 0, 100, 100);
-  const questCompleteAudioVolume = defaultedInteger("questCompleteAudioVolume", 0, 100, 100);
-  const questCompleteAudioAssetId = text("questCompleteAudioAssetId");
-  const questCompleteAudioUrl = text("questCompleteAudioUrl");
-  const questCompleteAudioEnabled = input.questCompleteAudioEnabled === true;
-  const introLine = (key: string) => {
-    const value = text(key);
-    return value && value.length <= 80 && !/<[^>]*>|javascript:/i.test(value) ? value : value ? undefined : null;
-  };
-  const introLineOne = introLine("introLineOne");
-  const introLineTwo = introLine("introLineTwo");
-  if (introLineOne === undefined || introLineTwo === undefined) return null;
-  const rawLines = object("presentationLines") ?? {};
-  const allowedLineKeys = ["HELLO", "THANKS", "WELL_PLAYED", "SORRY", "OOPS", "THREATEN", "VICTORY", "DEFEAT"];
-  const presentationLines: Record<string, unknown> = {};
-  for (const phase of ["BEFORE_QUEST", "AFTER_QUEST"]) {
-    const candidate = rawLines[phase];
-    if (candidate !== undefined && (!candidate || typeof candidate !== "object" || Array.isArray(candidate))) return null;
-    const lines = candidate as Record<string, unknown> | undefined;
-    if (lines && Object.keys(lines).some((key) => !allowedLineKeys.includes(key))) return null;
-    const cleanedLines: Record<string, string> = {};
-    for (const key of allowedLineKeys) {
-      const line = lines?.[key];
-      if (line === undefined || line === null || line === "") continue;
-      if (typeof line !== "string" || line.trim().length > 120 || /<[^>]*>|javascript:/i.test(line)) return null;
-      cleanedLines[key] = line.trim();
-    }
-    presentationLines[phase] = cleanedLines;
-  }
-  const matchups = rawLines.MATCHUPS;
-  if (matchups !== undefined) {
-    if (!matchups || typeof matchups !== 'object' || Array.isArray(matchups) || Object.keys(matchups).length > 50) return null;
-    const cleanedMatchups: Record<string, Record<string, Record<string, string>>> = {};
-    for (const [opponentId, value] of Object.entries(matchups)) {
-      if (!opponentId.trim() || opponentId.length > 128 || !value || typeof value !== 'object' || Array.isArray(value)) return null;
-      const matchup = value as Record<string, unknown>;
-      if (Object.keys(matchup).some((phase) => !['BEFORE_QUEST', 'AFTER_QUEST'].includes(phase))) return null;
-      cleanedMatchups[opponentId] = {};
-      for (const phase of ['BEFORE_QUEST', 'AFTER_QUEST']) {
-        const entries = matchup[phase];
-        if (entries !== undefined && (!entries || typeof entries !== 'object' || Array.isArray(entries))) return null;
-        const lines = entries as Record<string, unknown> | undefined;
-        if (lines && Object.keys(lines).some((key) => key !== 'VICTORY' && key !== 'DEFEAT')) return null;
-        cleanedMatchups[opponentId][phase] = {};
-        for (const key of ['VICTORY', 'DEFEAT']) {
-          const line = lines?.[key];
-          if (line === undefined || line === null || line === '') continue;
-          if (typeof line !== 'string' || line.trim().length > 120 || /<[^>]*>|javascript:/i.test(line)) return null;
-          cleanedMatchups[opponentId][phase][key] = line.trim();
-        }
-      }
-    }
-    presentationLines.MATCHUPS = cleanedMatchups;
-  }
-  const questCompleteAudioUploadToken = typeof input.questCompleteAudioUploadToken === "string"
-    ? input.questCompleteAudioUploadToken : null;
-  const abilityEffects = object("abilityEffects") ?? (input.abilityEffects == null ? {} : undefined);
-  if (input.gameStartAbilityEffects != null && (!input.gameStartAbilityEffects || typeof input.gameStartAbilityEffects !== 'object' || Array.isArray(input.gameStartAbilityEffects))) return null;
-  const gameStartAbilityEffects = object('gameStartAbilityEffects', true) ?? null;
-  if (!isAutomaticChampionStartConfig(gameStartAbilityEffects)) return null;
-  const hasQuest = input.hasQuest === true;
-  const rawQuestCondition = object("questCondition", true);
-  if (rawQuestCondition?.awakening !== undefined) {
-    const config = rawQuestCondition.awakening;
-    if (!hasQuest || !validAwakeningQuestConfig(config) ||
-      (['TANK', 'HEALER', 'DEALER'] as const).some(stage => config.stageCardIds[stage] !== AWAKENING_CARD_IDS[stage]) ||
-      rawQuestCondition.event !== 'STATE_CONDITION' ||
-      !validAwakeningHealthCondition(rawQuestCondition.condition)) return null;
-  }
-  const questProgressInput = integer("questProgressRequired", 1, 999, true);
-  const conditionRequired = rawQuestCondition && typeof rawQuestCondition.required === "number" &&
-    Number.isInteger(rawQuestCondition.required) && rawQuestCondition.required >= 1 &&
-    rawQuestCondition.required <= 999 ? rawQuestCondition.required : null;
-  const questProgressRequired = questProgressInput ?? conditionRequired;
-  if (rawQuestCondition?.awakening && questProgressRequired !== 1) return null;
-  const questCondition = hasQuest && rawQuestCondition && questProgressRequired !== null
-    ? { ...rawQuestCondition, required: questProgressRequired }
-    : hasQuest ? rawQuestCondition : null;
-  const upgradedAbilityCost = integer("upgradedAbilityCost", 0, 999, true);
-  const questCompletedPortraitEnabled = input.questCompletedPortraitEnabled === true;
-  const normalizeAssetPair = (
-    assetId: string | null,
-    url: string | null,
-    assetPrefix: string,
-  ) => {
-    if (assetId?.startsWith(assetPrefix)) {
-      return { assetId, url: `/api/storage${assetId}` };
-    }
-    if (url?.startsWith("/api/storage/objects/")) {
-      return { assetId: url.slice("/api/storage".length), url };
-    }
-    return { assetId, url };
-  };
-  const imagePair = normalizeAssetPair(
-    text("imageAssetId"),
-    text("imageUrl"),
-    "/objects/uploads/card-images/",
-  );
-  const imageAssetId = imagePair.assetId;
-  const imageUrl = imagePair.url;
-  const imageUploadToken = text("imageUploadToken");
-  const imageDisplayMode = IMAGE_DISPLAY_MODES.includes(input.imageDisplayMode as (typeof IMAGE_DISPLAY_MODES)[number])
-    ? input.imageDisplayMode as (typeof IMAGE_DISPLAY_MODES)[number]
-    : "COVER";
-  const decimal = (key: string, fallback: number, min: number, max: number) => {
-    const rawValue = input[key];
-    const value = typeof rawValue === "number"
-      ? rawValue
-      : typeof rawValue === "string" && rawValue.trim() ? Number(rawValue) : Number.NaN;
-    return Number.isFinite(value) ? Math.min(max, Math.max(min, value)) : fallback;
-  };
-  const imageScale = decimal("imageScale", 1, 0.5, 2);
-  const imagePositionX = decimal("imagePositionX", 50, 0, 100);
-  const imagePositionY = decimal("imagePositionY", 50, 0, 100);
-  const completedPortraitPair = normalizeAssetPair(
-    text("questCompletedPortraitAssetId"),
-    text("questCompletedPortraitUrl"),
-    "/objects/uploads/card-images/",
-  );
-  const questCompletedPortraitAssetId = completedPortraitPair.assetId;
-  const questCompletedPortraitUrl = completedPortraitPair.url;
-  const questCompletedPortraitUploadToken = text("questCompletedPortraitUploadToken");
-  const isStarterGrant = input.isStarterGrant === true;
-  if (input.isCraftable !== undefined && typeof input.isCraftable !== "boolean") return null;
-  const isCraftable = input.isCraftable !== false;
-  // Saving an administrator draft does not require effect certification.
-  // Preserve supplied effects; analysis is optional and never a save prerequisite.
-  const validEffectObject = (key: string) => input[key] == null ||
-    (typeof input[key] === "object" && !Array.isArray(input[key]));
-  if (!name || name.length > 120 || !abilityName || abilityName.length > 120 ||
-      maxHealth == null || abilityCost == null || abilityAudioVolume == null ||
-      questCompleteAudioVolume == null ||
-      !abilityEffects || typeof input.hasQuest !== "boolean" ||
-      questProgressRequired === undefined || upgradedAbilityCost === undefined ||
-       !validEffectObject("gameStartAbilityEffects") || !validEffectObject("abilityEffects") ||
-       !validEffectObject("questRewardEffects") || !validEffectObject("upgradedAbilityEffects")) return null;
-  if (
-    (imageAssetId === null) !== (imageUrl === null) ||
-    (imageAssetId !== null &&
-      !imageAssetId.startsWith("/objects/uploads/card-images/")) ||
-    (imageUrl !== null &&
-      !imageUrl.startsWith("/api/storage/objects/")) ||
-    (questCompletedPortraitAssetId === null) !== (questCompletedPortraitUrl === null) ||
-    (questCompletedPortraitAssetId !== null &&
-      !questCompletedPortraitAssetId.startsWith("/objects/uploads/card-images/")) ||
-    (questCompletedPortraitUrl !== null &&
-      !questCompletedPortraitUrl.startsWith("/api/storage/objects/")) ||
-    (questCompleteAudioAssetId === null) !== (questCompleteAudioUrl === null) ||
-    (questCompleteAudioAssetId !== null &&
-      !questCompleteAudioAssetId.startsWith("/objects/uploads/audio/")) ||
-    (questCompleteAudioUrl !== null &&
-      !questCompleteAudioUrl.startsWith("/api/storage/objects/"))
-  ) return null;
-  if (rawQuestCondition?.event === "STATE_CONDITION" && !validChampionQuestCondition(rawQuestCondition.condition)) return null;
-  if (hasQuest && (!text("questName", true) || !text("questText", true) ||
-       !questCondition || typeof questCondition.event !== "string" || !questCondition.event.trim() ||
-       questProgressRequired === null ||
-       !text("questRewardText", true))) return null;
-  return {
-     name, description: text("description") ?? "", imageAssetId, imageUrl, imageUploadToken,
-     imageDisplayMode, imageScale, imagePositionX, imagePositionY,
-     questCompletedPortraitEnabled,
-     questCompletedPortraitAssetId, questCompletedPortraitUrl,
-     questCompletedPortraitUploadToken, maxHealth, abilityName, abilityCost,
-    gameStartAbilityName: text('gameStartAbilityName'), gameStartAbilityText: text('gameStartAbilityText'), gameStartAbilityEffects,
-    abilityText: text("abilityText") ?? "", abilityEffects, hasQuest,
-    questName: hasQuest ? text("questName", true) : null,
-    questText: hasQuest ? text("questText", true) : null,
-      questCondition: hasQuest ? questCondition ?? null : null,
-    questProgressRequired: hasQuest ? questProgressRequired : null,
-    questRewardText: hasQuest ? text("questRewardText", true) : null,
-    questRewardEffects: hasQuest ? object("questRewardEffects", true)! : null,
-    upgradedAbilityName: text("upgradedAbilityName"),
-    upgradedAbilityCost, upgradedAbilityText: text("upgradedAbilityText"),
-    upgradedAbilityEffects: object("upgradedAbilityEffects", true) ?? null,
-    championTokenDefinitionId: text("championTokenDefinitionId"),
-     isStarterGrant, isCraftable,
-    abilityAudioAssetId: text("abilityAudioAssetId"), abilityAudioUrl: text("abilityAudioUrl"),
-    abilityAudioVolume, questCompleteAudioAssetId, questCompleteAudioUrl,
-    questCompleteAudioVolume, questCompleteAudioEnabled, questCompleteAudioUploadToken,
-     introLineOne, introLineTwo, presentationLines,
-  };
-}
-
-function championInputError(value: unknown): string {
-  if (!value || typeof value !== "object" || Array.isArray(value)) return "챔피언 입력값이 객체여야 합니다.";
-  const input = value as Record<string, unknown>;
-  const isIntegerInRange = (key: string, min: number, max: number) => {
+function parseChampionInput(value: unknown, existing: Record<string, unknown> = {}): ChampionInput | null {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) return null;
+  const input: Record<string, unknown> = { ...existing, ...value as Record<string, unknown> };
+  // Incomplete administrator drafts are saved; battle execution validates effects separately.
+  const result: Record<string, unknown> = {};
+  for (const key of ['name', 'description', 'abilityName', 'abilityText']) result[key] = typeof input[key] === 'string' ? input[key] : '';
+  for (const key of ['imageAssetId','imageUrl','imageUploadToken','questCompletedPortraitAssetId','questCompletedPortraitUrl','questCompletedPortraitUploadToken','gameStartAbilityName','gameStartAbilityText','questName','questText','questRewardText','upgradedAbilityName','upgradedAbilityText','championTokenDefinitionId','abilityAudioAssetId','abilityAudioUrl','questCompleteAudioAssetId','questCompleteAudioUrl','questCompleteAudioUploadToken','introLineOne','introLineTwo']) result[key] = typeof input[key] === 'string' && input[key] !== '' ? input[key] : null;
+  const number = (key: keyof ChampionInput, fallback: number | null, integer = true) => {
     const raw = input[key];
-    const parsed = typeof raw === "number" ? raw : typeof raw === "string" && raw.trim() ? Number(raw) : Number.NaN;
-    return Number.isInteger(parsed) && parsed >= min && parsed <= max;
+    if (raw == null || raw === '') return existing[key] ?? fallback;
+    const parsed = typeof raw === 'number' ? raw : typeof raw === 'string' ? Number(raw) : NaN;
+    return Number.isFinite(parsed) && (!integer || (Number.isInteger(parsed) && parsed >= -2147483648 && parsed <= 2147483647)) ? parsed : existing[key] ?? fallback;
   };
-  if (typeof input.name !== "string" || !input.name.trim() || input.name.trim().length > 120) {
-    return "챔피언 이름을 확인해 주세요.";
+  for (const [key, fallback] of Object.entries({maxHealth:20,abilityCost:0,abilityAudioVolume:100,questCompleteAudioVolume:100,questProgressRequired:null,upgradedAbilityCost:null})) result[key] = number(key as keyof ChampionInput, fallback);
+  for (const [key, fallback] of Object.entries({imageScale:1,imagePositionX:50,imagePositionY:50})) result[key] = number(key as keyof ChampionInput, fallback, false);
+  for (const key of ['hasQuest','isStarterGrant','questCompletedPortraitEnabled','questCompleteAudioEnabled']) result[key] = input[key] === true;
+  result.isCraftable = input.isCraftable !== false;
+  result.imageDisplayMode = IMAGE_DISPLAY_MODES.includes(input.imageDisplayMode as (typeof IMAGE_DISPLAY_MODES)[number]) ? input.imageDisplayMode : 'COVER';
+  for (const key of ['abilityEffects','gameStartAbilityEffects','questCondition','questRewardEffects','upgradedAbilityEffects','presentationLines']) result[key] = input[key] ?? (key === 'abilityEffects' || key === 'presentationLines' ? {} : null);
+  if (result.questProgressRequired == null && result.questCondition && typeof result.questCondition === 'object') {
+    const required = (result.questCondition as Record<string, unknown>).required;
+    if (typeof required === 'number' && Number.isInteger(required) && required >= -2147483648 && required <= 2147483647) result.questProgressRequired = required;
   }
-  if (typeof input.abilityName !== "string" || !input.abilityName.trim() || input.abilityName.trim().length > 120) {
-    return "고유 능력 이름을 확인해 주세요.";
+  for (const [assetKey, urlKey] of [['imageAssetId','imageUrl'],['questCompletedPortraitAssetId','questCompletedPortraitUrl'],['questCompleteAudioAssetId','questCompleteAudioUrl']]) {
+    const asset = result[assetKey], url = result[urlKey];
+    if (typeof asset === 'string' && asset.startsWith('/objects/uploads/')) result[urlKey] = '/api/storage' + asset;
+    else if (typeof url === 'string' && url.startsWith('/api/storage/objects/')) result[assetKey] = url.slice('/api/storage'.length);
   }
-  if (!isIntegerInRange("maxHealth", 1, 999)) return "최대 체력은 1~999 정수여야 합니다.";
-  if (!isIntegerInRange("abilityCost", 0, 999)) return "고유 능력 비용은 0~999 정수여야 합니다.";
-  if (input.abilityAudioVolume !== undefined && !isIntegerInRange("abilityAudioVolume", 0, 100)) {
-    return "고유 능력 음악 볼륨은 0~100 정수여야 합니다.";
-  }
-  if (input.questCompleteAudioVolume !== undefined && !isIntegerInRange("questCompleteAudioVolume", 0, 100)) {
-    return "퀘스트 완료 음악 볼륨은 0~100 정수여야 합니다.";
-  }
-  if (input.hasQuest !== true && input.hasQuest !== false) return "퀘스트 사용 여부를 확인해 주세요.";
-  const effectObject = (key: string) => input[key] === null || input[key] === undefined ||
-    (typeof input[key] === "object" && !Array.isArray(input[key]));
-  if (!isAutomaticChampionStartConfig(input.gameStartAbilityEffects)) return '게임 시작 능력은 대상 직접 선택 없이 자동으로 완료되는 효과만 사용할 수 있습니다.';
-  if (!effectObject("gameStartAbilityEffects")) return '게임 시작 능력 효과 형식을 확인해 주세요.';
-  if (!effectObject("abilityEffects")) return "고유 능력 효과 형식을 확인해 주세요.";
-  if (input.hasQuest) {
-    if (typeof input.questName !== "string" || !input.questName.trim()) return "Quest 이름을 확인해 주세요.";
-    if (typeof input.questText !== "string" || !input.questText.trim()) return "Quest 설명을 확인해 주세요.";
-    if (!effectObject("questCondition") || !input.questCondition) return "Quest Condition을 확인해 주세요.";
-    const condition = input.questCondition as Record<string, unknown>;
-    if (typeof condition.event !== "string" || !condition.event.trim()) return "Quest Condition 이벤트를 확인해 주세요.";
-    if (!isIntegerInRange("questProgressRequired", 1, 999) &&
-        !(typeof condition.required === "number" && Number.isInteger(condition.required) && condition.required >= 1 && condition.required <= 999)) {
-      return "Quest 필요 진행도는 1~999 정수여야 합니다.";
-    }
-    if (typeof input.questRewardText !== "string" || !input.questRewardText.trim()) return "Quest Reward 설명을 확인해 주세요.";
-  }
-  if (input.questRewardEffects !== null && input.questRewardEffects !== undefined && !effectObject("questRewardEffects")) {
-    return "Quest Reward 효과 형식을 확인해 주세요.";
-  }
-  if (input.upgradedAbilityEffects !== null && input.upgradedAbilityEffects !== undefined && !effectObject("upgradedAbilityEffects")) {
-    return "업그레이드 능력 효과 형식을 확인해 주세요.";
-  }
-  return "챔피언 입력값을 확인해 주세요.";
+  return result as ChampionInput;
 }
 
-async function validateChampionTokenReference(
-  championTokenDefinitionId: string | null,
-): Promise<{ ok: true } | { ok: false; message: string }> {
-  if (!championTokenDefinitionId) return { ok: true };
-  if (Object.values(AWAKENING_CARD_IDS).some(id => id === championTokenDefinitionId)) return { ok: false, message: '각성 전용 선수는 위기 각성 퀘스트에서만 소환됩니다.' };
-  const [card] = await db
-    .select({
-      id: cardsTable.id,
-      isChampionToken: cardsTable.isChampionToken,
-    })
-    .from(cardsTable)
-    .where(eq(cardsTable.id, championTokenDefinitionId))
-    .limit(1);
-  if (!card) return { ok: false, message: "연결할 Champion Token 카드를 찾을 수 없습니다." };
-  if (!card.isChampionToken) return { ok: false, message: "isChampionToken 카드만 Champion Token으로 연결할 수 있습니다." };
-  return { ok: true };
-}
+function championInputError(_value: unknown): string { return '저장할 챔피언 데이터가 객체여야 합니다.'; }
 
 async function validatePublishedChampionToken(
   championTokenDefinitionId: string | null,
@@ -959,7 +710,6 @@ export function parseCardInput(value: unknown): CardInput | null {
       CARD_KEYWORDS.includes(keyword as (typeof CARD_KEYWORDS)[number]),
     ) ||
     tags === null ||
-    tags.length > 3 ||
     tags.some((tag) => tag.length === 0) ||
     !input.effectConfig ||
     typeof input.effectConfig !== "object" ||
@@ -1060,12 +810,6 @@ async function cardReferenceCatalog(): Promise<CardReferenceCandidate[]> {
   }));
 }
 
-async function availableCardTags(): Promise<string[]> {
-  const cards = await db.select({ tags: cardsTable.tags }).from(cardsTable);
-  return [...new Set(cards.flatMap((card) => card.tags.map((tag) => tag.trim()).filter(Boolean)))]
-    .sort((left, right) => left.localeCompare(right));
-}
-
 async function trustedEffectContext(
   sourceType: "CARD" | "CHAMPION",
   sourceId: string | undefined,
@@ -1104,6 +848,11 @@ async function trustedEffectContext(
     sourceName: champion.name,
     ...(effectContext ? { effectContext } : {}),
   };
+}
+async function availableCardTags(): Promise<string[]> {
+  const cards = await db.select({ tags: cardsTable.tags }).from(cardsTable);
+  return [...new Set(cards.flatMap((card) => card.tags.map((tag) => tag.trim()).filter(Boolean)))]
+    .sort((left, right) => left.localeCompare(right));
 }
 
 function repairedKnownPublishedEffect(card: { id: string; name: string; text: string }):
@@ -1953,8 +1702,6 @@ router.post("/champions", async (request, response): Promise<void> => {
   if (!requireAdmin(request, response)) return;
   const input = parseChampionInput(request.body);
   if (!input) { response.status(400).json({ message: championInputError(request.body) }); return; }
-  const tokenValidation = await validateChampionTokenReference(input.championTokenDefinitionId);
-  if (!tokenValidation.ok) { response.status(400).json({ message: tokenValidation.message }); return; }
   if (
     input.imageAssetId &&
     !(await validNewImageAsset(input.imageAssetId, input.imageUploadToken))
@@ -1986,7 +1733,7 @@ router.post("/champions", async (request, response): Promise<void> => {
     ...championValues
   } = input;
   const champion = await db.transaction(async transaction => {
-    if (input.questCondition?.awakening) await ensureAwakeningCards(transaction);
+    if (validAwakeningQuestConfig(input.questCondition?.awakening)) await ensureAwakeningCards(transaction);
     const [created] = await transaction.insert(championsTable).values({
       id: randomUUID(), ...championValues, status: "DRAFT", version: 1,
     }).returning();
@@ -1998,27 +1745,23 @@ router.post("/champions", async (request, response): Promise<void> => {
 router.patch("/champions/:id", async (request, response): Promise<void> => {
   if (!requireAdmin(request, response)) return;
   const id = firstParam(request.params.id);
+  if (!id) { response.status(400).json({message:"챔피언 ID가 필요합니다."}); return; }
   const rawVersion = request.body && typeof request.body === "object"
     ? (request.body as Record<string, unknown>).version
     : undefined;
-  const expectedVersion = typeof rawVersion === "number" && Number.isInteger(rawVersion)
+  let expectedVersion = typeof rawVersion === "number" && Number.isInteger(rawVersion)
     ? rawVersion
     : typeof rawVersion === "string" && rawVersion.trim() && Number.isInteger(Number(rawVersion))
       ? Number(rawVersion)
       : null;
-  const input = parseChampionInput(request.body);
+  const [existing] = await db.select().from(championsTable).where(eq(championsTable.id, id)).limit(1);
+  if (!existing) { response.status(404).json({ message: "챔피언을 찾을 수 없습니다." }); return; }
+  const input = parseChampionInput(request.body, existing);
   if (!id || !input) {
     response.status(400).json({ message: id ? championInputError(request.body) : "챔피언 ID를 확인해 주세요." });
     return;
   }
-  const tokenValidation = await validateChampionTokenReference(input.championTokenDefinitionId);
-  if (!tokenValidation.ok) { response.status(400).json({ message: tokenValidation.message }); return; }
-  const [existing] = await db.select().from(championsTable).where(eq(championsTable.id, id)).limit(1);
-  if (!existing) { response.status(404).json({ message: "챔피언을 찾을 수 없습니다." }); return; }
-  if (expectedVersion === null) {
-    response.status(400).json({ message: "저장할 챔피언 버전이 필요합니다.", field: "version" });
-    return;
-  }
+  expectedVersion ??= existing.version;
   const versionCheck = expectedVersion === null
     ? null
     : compareAndAdvanceChampionVersion(existing.version, expectedVersion);
@@ -2068,7 +1811,7 @@ router.patch("/champions/:id", async (request, response): Promise<void> => {
     const [updated] = await transaction.update(championsTable).set({
       ...championValues, isCraftable: request.body.isCraftable === undefined ? existing.isCraftable : input.isCraftable, version: sql`${championsTable.version} + 1`, updatedAt: new Date(),
     }).where(and(eq(championsTable.id, id), eq(championsTable.version, expectedVersion))).returning();
-    if (updated && input.questCondition?.awakening) await ensureAwakeningCards(transaction);
+    if (updated && validAwakeningQuestConfig(input.questCondition?.awakening)) await ensureAwakeningCards(transaction);
     return updated;
   });
   if (!champion) {
