@@ -40,6 +40,8 @@ export type CardEffect =
          /** Serializable card definition supplied by the runtime card pool. */
          definition?: CardDefinition;
          purpleRainFollowup?: boolean;
+         /** Internal continuation of an already validated automatic area target. */
+         resolvedAutomaticTarget?: boolean;
          leftEffects?: CardEffect[];
          rightEffects?: CardEffect[];
        };
