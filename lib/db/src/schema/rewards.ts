@@ -38,6 +38,7 @@ export const dailyQuestDefinitionsTable = pgTable("daily_quest_definitions", {
   rewardTargetId: text("reward_target_id"),
   schemaVersion: text("schema_version").notNull().default("QUEST_CONDITION_V1"),
   condition: jsonb("condition"),
+  platform: jsonb("platform"),
   enabled: boolean("enabled").notNull().default(true),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
@@ -59,6 +60,7 @@ export const dailyQuestAssignmentsTable = pgTable("daily_quest_assignments", {
   rewardTargetId: text("reward_target_id"),
   schemaVersion: text("schema_version").notNull().default("QUEST_CONDITION_V1"),
   condition: jsonb("condition"),
+  platform: jsonb("platform"),
   progress: integer("progress").notNull().default(0),
   status: text("status").notNull().default("ASSIGNED"),
   claimedAt: timestamp("claimed_at", { withTimezone: true }),
@@ -115,3 +117,21 @@ export const aiQuestMatchesTable = pgTable('ai_quest_matches', {
  questDate: text('quest_date').notNull(), processedAt: timestamp('processed_at', { withTimezone: true }),
  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
 }, (table) => ({ userIdx: index('ai_quest_matches_user_idx').on(table.userId) }));
+
+export const questSeasonsTable = pgTable("quest_seasons", {
+ id: text("id").primaryKey(), name: text("name").notNull(),
+ startsAt: timestamp("starts_at", { withTimezone: true }).notNull(),
+ endsAt: timestamp("ends_at", { withTimezone: true }).notNull(),
+ status: text("status").notNull().default("ACTIVE"),
+ updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+});
+export const questPlatformSettingsTable = pgTable("quest_platform_settings", {
+ id: text("id").primaryKey(), dailyCount: integer("daily_count").notNull().default(3),
+ timezone: text("timezone").notNull().default("Asia/Seoul"),
+ updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+});
+export const questAdminAuditTable = pgTable("quest_admin_audit", {
+ id: text("id").primaryKey(), adminId: text("admin_id").notNull().references(() => usersTable.id),
+ action: text("action").notNull(), entityId: text("entity_id").notNull(),
+ configuration: jsonb("configuration"), createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+});

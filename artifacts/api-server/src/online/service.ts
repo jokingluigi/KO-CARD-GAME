@@ -225,6 +225,7 @@ async function persistRuntime(runtime: OnlineMatchRuntime, eventStart?: number):
         runtime.state,
         eventStart,
         tx,
+        undefined, "PVP",
       );
       await processMatchEventsForDailyQuests(
         runtime.snapshot.player2UserId,
@@ -233,6 +234,7 @@ async function persistRuntime(runtime: OnlineMatchRuntime, eventStart?: number):
         runtime.state,
         eventStart,
         tx,
+        undefined, "PVP",
       );
     }
     return true;

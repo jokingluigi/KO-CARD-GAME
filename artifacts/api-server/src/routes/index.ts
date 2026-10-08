@@ -1,3 +1,4 @@
+import adminQuestsRouter from "./admin-quests";
 import adminTagsRouter from "./admin-tags";
 import adminDraftRouter from './admin-draft';
 import maintenanceRouter from './maintenance';
@@ -61,6 +62,7 @@ router.use("/online-matches", onlineMatchesRouter);
 router.use("/daily-quests", dailyQuestsRouter);
 router.use("/attendance", attendanceRouter);
 router.use("/admin/rewards", adminRewardsRouter);
+router.use("/admin/quests", adminQuestsRouter);
 router.use("/admin/notices", adminNoticesRouter);
 
 export default router;

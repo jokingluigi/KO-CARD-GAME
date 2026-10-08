@@ -21,6 +21,7 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
 }
 
 export type DailyQuest = {
+  platform?: {questType:"DAILY"|"SEASON";seasonId:string|null;version:number;rewards:Array<{rewardType:string;rewardAmount:number;rewardTargetId:string|null}>};
   id: string;
   definitionId: string;
   assignmentDate: string;
@@ -84,7 +85,7 @@ export type RewardAdminData = {
   objectiveTypes: string[];
 };
 
-export const fetchDailyQuests = () => request<{ assignments: DailyQuest[] }>("/daily-quests");
+export const fetchDailyQuests = () => request<{ assignments: DailyQuest[]; seasons?: Array<{id:string;name:string;endsAt:string}>; timezone?:string }>("/daily-quests");
 export const completeAIMatchQuestProgress = (body: AIMatchQuestProgressInput) =>
   submitWithReceipt(
     () => request<{ completed: boolean; message?: string; reward: { amount: number; sourceType: string } | null }>("/daily-quests/ai-match-progress", { method: "POST", body: JSON.stringify(body) }),

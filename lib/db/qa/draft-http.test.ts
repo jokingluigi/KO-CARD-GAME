@@ -420,10 +420,11 @@ test("no published techniques can enable and finish draft selection with frozen 
     assert.deepEqual(started.body.config.techniquePicks, []);
     const v = await completeDraft("admin", started.body.id);
     assert.equal(v.own.deck.length, 25);
-    assert.ok(v.own.deck.every((id: string) => !id.startsWith("t")));
+    const frozenTypes = new Map<string, string>(((await stored(v.id)).snapshot as any).cards.map((card: any) => [card.id, card.cardType]));
+    assert.ok(v.own.deck.every((id: string) => frozenTypes.get(id) !== "TECHNIQUE"));
     assert.ok(
       (await stored(v.id)).state.seats[1].deck.every(
-        (id: string) => !id.startsWith("t"),
+        (id: string) => frozenTypes.get(id) !== "TECHNIQUE",
       ),
     );
     assert.equal((await command("admin", v, "ABORT")).status, 200);
@@ -474,11 +475,12 @@ test("AI draft persists offers, guards illegal/stale/duplicate commands and does
   assert.deepEqual([a.status, b.status].sort(), [200, 409]);
   v = await completeDraft("admin", v.id);
   assert.equal(v.own.deck.length, 25);
-  assert.equal(v.own.deck.filter((id: string) => id.startsWith("t")).length, 5);
   const state = (await stored(v.id)).state as any;
   assert.equal(state.seats[1].deck.length, 25);
   // Private cards and tokens are now eligible rare offers; disabled cards never are.
   const awaitedSnapshot = (await stored(v.id)).snapshot;
+  const frozenTypes = new Map<string, string>((awaitedSnapshot as any).cards.map((card: any) => [card.id, card.cardType]));
+  assert.equal(v.own.deck.filter((id: string) => frozenTypes.get(id) === "TECHNIQUE").length, 5);
   const draftedIds = state.seats.flatMap((s: any) => s.deck);
   assert.ok(!draftedIds.includes("disabled"));
   assert.ok(draftedIds.every((id: string) => ((awaitedSnapshot as any).cards).some((card: any) => card.id === id)));

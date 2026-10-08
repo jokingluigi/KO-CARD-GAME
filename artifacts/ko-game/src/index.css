@@ -1637,16 +1637,18 @@
 @media (min-width: 769px) {
   .ko-game-shell {
     min-height: 100dvh;
-    height: 100dvh;
-    overflow: hidden;
+    height: auto;
+    overflow-x: hidden;
+    overflow-y: auto;
   }
 
   .ko-game-stage {
     width: 95vw;
     max-width: none;
-    min-height: 92dvh;
-    height: 96dvh;
+    min-height: 100dvh;
+    height: auto;
     padding-top: clamp(12px, 1.8vh, 24px);
+    padding-right: 152px;
   }
 
   .ko-opponent-header {
@@ -1654,7 +1656,7 @@
   }
 
   .ko-board-area {
-    flex: 1 1 auto;
+    flex: 1 0 auto;
     min-height: 0;
     gap: clamp(18px, 3vh, 34px);
     padding-block: clamp(12px, 2vh, 24px);
@@ -1673,6 +1675,22 @@
     min-height: clamp(228px, 27vh, 292px);
     padding-bottom: clamp(10px, 1.5vh, 20px);
   }
+
+  /* Keep lifted cards and spell controls inside the hand scroll viewport. */
+  .ko-player-hand {
+    height: auto;
+    align-self: stretch;
+    min-height: calc(clamp(235px, 23vh, 276px) + 112px);
+    padding-top: 96px;
+    overflow-x: auto;
+    scrollbar-width: thin;
+    scrollbar-color: #a98635 #111;
+    scroll-padding-inline: 12px;
+  }
+
+  .ko-player-hand::-webkit-scrollbar { display: block; height: 10px; }
+  .ko-player-hand::-webkit-scrollbar-thumb { background: #a98635; border: 2px solid #111; }
+  .ko-hand-cards { flex-shrink: 0; padding-inline: 12px; padding-bottom: 16px; }
 
   .ko-hand-card--small {
     width: clamp(132px, 8.5vw, 160px);

@@ -1,10 +1,10 @@
-import { and, eq } from "drizzle-orm";
+import { and, eq, sql } from "drizzle-orm";
 import { db, aiQuestMatchesTable } from "@workspace/db";
 import type { GameState } from "@workspace/game-engine";
 import {
   dailyDate,
-  ensureDailyQuestAssignments,
-  processMatchEventsForDailyQuests,
+  ensureDailyQuestAssignments, ensureSeasonQuestAssignments,
+  processMatchEventsForDailyQuests, questSettings,
 } from "./daily-quest-service";
 type MatchIdentity = {
   userId: string;
@@ -38,9 +38,12 @@ export async function saveAIQuestStart(
       state: existing.initialState as unknown as GameState,
       difficulty: existing.difficulty,
     };
-  const questDate = dailyDate();
+  const settings = await questSettings();
+  const questDate = dailyDate(new Date(),settings.timezone);
   await db.transaction(async (tx) => {
+    await tx.execute(sql`SELECT pg_advisory_xact_lock(hashtext(${"quest:"+input.userId}))`);
     await ensureDailyQuestAssignments(input.userId, questDate, tx);
+    await ensureSeasonQuestAssignments(input.userId,tx);
     await tx
       .insert(aiQuestMatchesTable)
       .values({

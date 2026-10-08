@@ -3,13 +3,13 @@ import { ensureDraftParticipationQuest } from "../lib/draft-participation-quest"
 import { and, asc, eq } from "drizzle-orm";
 import { Router, type IRouter, type Request, type Response } from "express";
 import { CompleteAIMatchQuestProgressBody } from "@workspace/api-zod";
-import { dailyQuestAssignmentsTable, dailyQuestDefinitionsTable, rewardGrantsTable, aiQuestMatchesTable, db } from "@workspace/db";
+import { dailyQuestAssignmentsTable, dailyQuestDefinitionsTable, rewardGrantsTable, aiQuestMatchesTable, questSeasonsTable, db } from "@workspace/db";
 import { getAuthenticatedUser } from "../lib/auth";
 import { isTestAccountUser } from "../lib/test-account";
 import { completeAIMatchQuestProgress } from "../lib/ai-match-quest-service";
 import {
   claimDailyQuest,
-  ensureDailyQuestAssignments,
+  ensureDailyQuestAssignments, ensureAllQuestAssignments, questSettings,
   publicDailyQuest,
 } from "../lib/daily-quest-service";
 
@@ -30,10 +30,11 @@ router.use(async (request, response, next) => {
 });
 
 router.get("/", async (request, response): Promise<void> => {
-  const assignments = await ensureDailyQuestAssignments(request.authUser!.id);
+  const assignments = await ensureAllQuestAssignments(request.authUser!.id);
   response.setHeader("Cache-Control", "no-store");
   const draftQuest = await ensureDraftParticipationQuest(request.authUser!.id);
-  response.json({ assignments: [...assignments, draftQuest].map(publicDailyQuest) });
+  const [settings,seasons] = await Promise.all([questSettings(),db.select().from(questSeasonsTable)]);
+  response.json({ assignments: [...assignments, draftQuest].map(publicDailyQuest), timezone:settings.timezone, seasons:seasons.map(({id,name,endsAt})=>({id,name,endsAt})) });
 });
 
 // Recover a committed credit grant when the result response was lost.

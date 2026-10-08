@@ -96,7 +96,7 @@ export function AdminRewardsManager({ onUnauthorized }: { onUnauthorized: () => 
         <button type="button" disabled={saving} onClick={() => void saveMatch()} className="mt-4 flex items-center gap-2 rounded bg-amber-400 px-4 py-2.5 text-xs font-black text-black disabled:opacity-50"><Save className="h-3.5 w-3.5" /> 저장</button>
       </section>
 
-      <DailyQuestEditor definitions={data?.dailyQuests??[]} catalog={catalog} onSaved={load} />
+      <p className="text-sm text-neutral-400">일일·시즌 퀘스트는 관리자 메뉴의 퀘스트 관리에서 설정하세요.</p>
 
       <section className="rounded-lg border border-neutral-800 bg-neutral-950/70 p-5">
         <div className="flex items-center gap-2"><CalendarCheck2 className="h-4 w-4 text-amber-400" /><h3 className="font-black">출석 보드 관리</h3></div>

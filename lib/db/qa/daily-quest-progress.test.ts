@@ -13,7 +13,7 @@ test('reward quests progress from match events, ignore opponents/retries and pay
   await pg.exec(`CREATE TABLE users(id text PRIMARY KEY,email text,nickname text,password_hash text,role text,currency integer DEFAULT 0,currency_balance integer DEFAULT 0,shop_currency_starter_granted_at timestamptz,prism_balance integer DEFAULT 0,champion_prism_balance integer DEFAULT 0,created_at timestamptz DEFAULT now(),updated_at timestamptz DEFAULT now());
    INSERT INTO users(id,email)VALUES('quest-user','qa@example.test');
    CREATE TABLE currency_transactions(id text PRIMARY KEY,user_id text,related_listing_id text,amount integer,balance_after integer,currency_type text,type text,metadata jsonb,created_at timestamptz DEFAULT now());`);
-  for(const file of ['0017_rewards_daily_quests_attendance.sql','0018_reward_targets.sql','0023_daily_quest_condition_v2.sql'])await pg.exec(readFileSync(new URL('../migrations/'+file,import.meta.url),'utf8'));
+  for(const file of ['0017_rewards_daily_quests_attendance.sql','0018_reward_targets.sql','0023_daily_quest_condition_v2.sql','0050_daily_season_quest_platform.sql'])await pg.exec(readFileSync(new URL('../migrations/'+file,import.meta.url),'utf8'));
   const definitions=[
    {id:'play',objectiveType:'PLAY_MATCH',targetValue:1},
    {id:'win',objectiveType:'WIN_MATCH',targetValue:1},
