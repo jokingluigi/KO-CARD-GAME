@@ -451,7 +451,7 @@ test("AI draft persists offers, guards illegal/stale/duplicate commands and does
     409,
   );
   assert.equal((await latest("third", v.id)).code, "FORBIDDEN");
-  assert.equal((await command("admin", v, "PICK", "hidden")).status, 400);
+  assert.equal((await command("admin", v, "PICK", "not-a-card")).status, 400);
   const key = crypto.randomUUID(),
     picked = v.own.offers[0],
     old = v;
@@ -477,7 +477,11 @@ test("AI draft persists offers, guards illegal/stale/duplicate commands and does
   assert.equal(v.own.deck.filter((id: string) => id.startsWith("t")).length, 5);
   const state = (await stored(v.id)).state as any;
   assert.equal(state.seats[1].deck.length, 25);
-  assert.ok(!state.seats.flatMap((s: any) => s.deck).includes("hidden"));
+  // Private cards and tokens are now eligible rare offers; disabled cards never are.
+  const awaitedSnapshot = (await stored(v.id)).snapshot;
+  const draftedIds = state.seats.flatMap((s: any) => s.deck);
+  assert.ok(!draftedIds.includes("disabled"));
+  assert.ok(draftedIds.every((id: string) => ((awaitedSnapshot as any).cards).some((card: any) => card.id === id)));
   const size = (id: string) =>
     v.own.deck.filter((d: string) => d === id).length;
   for (const id of new Set<string>(v.own.deck))
@@ -517,10 +521,10 @@ test("AI draft persists offers, guards illegal/stale/duplicate commands and does
   assert.equal(resources.status, 200);
   assert.ok(Array.isArray(resources.body.media.backgrounds));
   assert.ok(resources.body.cards.some((c: any) => c.id === "support-token"));
-  assert.ok(
-    !(await latest("admin", v.id)).cards.some(
-      (c: any) => c.id === "support-token",
-    ),
+  assert.equal(
+    (await latest("admin", v.id)).cards.some((c: any) => c.id === "support-token"),
+    v.own.deck.includes("support-token"),
+    "rare token details are visible only when the owner drafted that token",
   );
   assert.ok(
     ((await stored(v.id)).state as any).battle.cardPool.some(
