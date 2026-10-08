@@ -534,14 +534,14 @@ test('daily assignments fill available slots without changing existing progress;
  const current=await ensureDailyQuestAssignments('daily-fill-user');assert.equal(current.find(a=>a.definitionId==='daily-tag')!.progress,1);
 });
 
-test('admin can repair only untouched current assignments, preserving in-progress, completed and claimed snapshots',async()=>{
+test('admin edits preserve every already assigned snapshot, including untouched assignments',async()=>{
  const {dailyDate}=await import('../../../artifacts/api-server/src/lib/daily-quest-service');
  const base={title:'Repair quest',description:'',objectiveType:'PLAY_MATCH',targetValue:3,rewardType:'CURRENCY',rewardAmount:10,rewardTargetId:null,enabled:true};
  const created=await request('/admin/rewards/daily-quests','POST',base);assert.equal(created.status,201);const definitionId=created.body.definition.id;
  for(const [index,status,progress] of [[0,'ASSIGNED',0],[1,'IN_PROGRESS',1],[2,'COMPLETED',3],[3,'CLAIMED',3]] as const){const userId='repair-user-'+index;await database.insert(schema.usersTable).values({id:userId,email:userId+'@qa.invalid',nickname:userId,passwordHash:'local-only'});await database.insert(schema.dailyQuestAssignmentsTable).values({...base,id:'repair-assignment-'+index,userId,definitionId,assignmentDate:dailyDate(),slot:0,status,progress});}
- const changed=await request('/admin/rewards/daily-quests/'+definitionId,'PATCH',{...base,title:'Fixed quest',targetValue:2,rewardAmount:20,applyToUnstartedAssignments:true});assert.equal(changed.status,200);assert.equal(changed.body.updatedAssignments,1);
+ const changed=await request('/admin/rewards/daily-quests/'+definitionId,'PATCH',{...base,title:'Fixed quest',targetValue:2,rewardAmount:20,applyToUnstartedAssignments:true});assert.equal(changed.status,200);assert.equal(changed.body.updatedAssignments,0);
  const rows=(await pg.query<any>('SELECT id,title,progress,status,target_value,reward_amount FROM daily_quest_assignments WHERE definition_id=$1 ORDER BY id',[definitionId])).rows;
- assert.equal(rows[0].title,'Fixed quest');assert.equal(rows[0].progress,0);assert.equal(rows[0].target_value,2);assert.equal(rows[0].reward_amount,20);
+ assert.equal(rows[0].title,'Repair quest');assert.equal(rows[0].progress,0);assert.equal(rows[0].target_value,3);assert.equal(rows[0].reward_amount,10);
  for(const row of rows.slice(1)){assert.equal(row.title,'Repair quest');assert.equal(row.target_value,3);assert.equal(row.reward_amount,10);}
 });
 

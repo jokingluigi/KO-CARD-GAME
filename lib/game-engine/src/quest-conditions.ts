@@ -38,7 +38,7 @@ const registry: Partial<Record<GameEventType, RegistryEntry>> = {};
 const eventTypes: GameEventType[] = [
   "TURN_STARTED", "TURN_ENDED", "TURN_TIMEOUT", "CARD_DRAWN", "CARD_PLAYED", "ENTER_FIELD",
   "CARD_GENERATED", "CARD_DESTROYED", "CARD_RETIRED", "CARD_REMOVED", "DAMAGE_DEALT",
-  "ATTACK_DECLARED", "GOLD_CHANGED", "CHAMPION_ABILITY_USED", "CHAMPION_QUEST_PROGRESS",
+  "FUSION", "ATTACK_DECLARED", "GOLD_CHANGED", "CHAMPION_ABILITY_USED", "CHAMPION_QUEST_PROGRESS",
   "CHAMPION_QUEST_COMPLETED", "STAT_CHANGED", "CARD_TEXT_GRANTED", "SURRENDER",
 ];
 for (const event of eventTypes) registry[event] = { fields: common, numeric: [] };

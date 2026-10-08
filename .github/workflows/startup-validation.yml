@@ -103,6 +103,11 @@ jobs:
           artifacts/ko-game/src/game/qa/latest-card-text-20261007.test.ts
           lib/db/qa/awakening-http.test.ts
 
+      - name: Daily and season quests with real ordinary-user auth and isolation
+        env:
+          DATABASE_URL: postgresql://unused:unused@127.0.0.1:1/unused
+        run: node --import ./docs/qa/checkpoints/20261006/qa-loader.mjs --test --test-isolation=none lib/db/qa/quest-platform-http.test.ts
+
       - name: Champion reward replacement, start abilities and wrestler exit dialogue
         env:
           DATABASE_URL: postgresql://unused:unused@127.0.0.1:1/unused
@@ -144,6 +149,12 @@ jobs:
           done
           KO_QA_PLAYWRIGHT="$RUNNER_TEMP/ko-entry-qa/node_modules/playwright/index.mjs" node docs/qa/entry-browser.mjs
 
+      - name: Quest platform desktop and mobile with clean ordinary-user sessions
+        env:
+          QUEST_PLAYWRIGHT_MODULE: ${{ runner.temp }}/ko-entry-qa/node_modules/playwright/index.mjs
+          KO_QA_CHROME_CHANNEL: chromium
+        run: node --import ./docs/qa/checkpoints/20261006/qa-loader.mjs --test --test-isolation=none lib/db/qa/quest-platform-http.test.ts
+
       - name: Cinematic and shared battle browser regression guard
         env:
           KO_QA_ORIGIN: http://127.0.0.1:5173
@@ -171,4 +182,5 @@ jobs:
           node docs/qa/luna-active-browser.mjs
           node docs/qa/machine-fusion-browser.mjs
           node docs/qa/mobile-input-browser.mjs
+          node docs/qa/desktop-hand-browser.mjs
           node docs/qa/tag-manager-browser.mjs

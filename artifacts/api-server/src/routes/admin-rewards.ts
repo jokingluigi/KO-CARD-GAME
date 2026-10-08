@@ -1,3 +1,4 @@
+import {readPlatform} from "../lib/quest-platform";
 import { and, asc, eq } from "drizzle-orm";
 import { randomUUID } from "node:crypto";
 import { Router, type IRouter, type Request, type Response } from "express";
@@ -6,7 +7,7 @@ import {
   dailyQuestDefinitionsTable,
   dailyQuestAssignmentsTable,
   db,
-  rewardSettingsTable,
+  rewardSettingsTable, questAdminAuditTable,
 } from "@workspace/db";
 import { getAuthenticatedUser } from "../lib/auth";
 import {
@@ -98,13 +99,11 @@ router.patch("/daily-quests/:id", async (request, response): Promise<void> => {
     return;
   }
   const {definition,updatedAssignments}=await db.transaction(async tx=>{
+    const [previous]=await tx.select().from(dailyQuestDefinitionsTable).where(eq(dailyQuestDefinitionsTable.id,request.params.id)).for("update");
+    input.platform.version=previous ? readPlatform(previous).version+1 : 1;
     const [definition]=await tx.update(dailyQuestDefinitionsTable).set({...input,updatedAt:new Date()}).where(eq(dailyQuestDefinitionsTable.id,request.params.id)).returning();
     let updatedAssignments=0;
-    if(definition&&request.body?.applyToUnstartedAssignments===true){
-      const {enabled: _enabled,...snapshot}=input;
-      const changed=await tx.update(dailyQuestAssignmentsTable).set(snapshot).where(and(eq(dailyQuestAssignmentsTable.definitionId,definition.id),eq(dailyQuestAssignmentsTable.assignmentDate,dailyDate()),eq(dailyQuestAssignmentsTable.status,'ASSIGNED'),eq(dailyQuestAssignmentsTable.progress,0))).returning({id:dailyQuestAssignmentsTable.id});
-      updatedAssignments=changed.length;
-    }
+    if(definition) await tx.insert(questAdminAuditTable).values({id:randomUUID(),adminId:request.authUser!.id,action:"QUEST_UPDATED",entityId:definition.id,configuration:definition});
     return {definition,updatedAssignments};
   });
   if (!definition) {

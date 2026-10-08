@@ -40,6 +40,7 @@ function Router() {
     <RoutedErrorBoundary>
       <Suspense fallback={<AuthLoading />}><Switch>
         <Route path="/admin" component={Admin} />
+        <Route path="/admin/quests" component={Admin} />
         <Route path="/admin/tags" component={Admin} />
         <Route path="/admin/draft" component={Admin} />
         <Route path="/admin/draft/match/:matchId">{() => <OnlineMatch draft />}</Route>

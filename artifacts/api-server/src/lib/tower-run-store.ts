@@ -1,3 +1,4 @@
+import { processMatchEventsForDailyQuests } from "./daily-quest-service";
 import { randomUUID } from 'node:crypto';
 import { and, eq, sql } from 'drizzle-orm';
 import { db, towerRunsTable, towerBossClearsTable, towerBossReceiptsTable, towerSettingsTable, towerUnlocksTable, userChampionCollectionsTable } from '@workspace/db';
@@ -98,6 +99,7 @@ export async function saveTowerBattle(userId: string, runId: string, expectedVer
     const { run, snapshot } = decode(row);
     if (run.phase !== 'BATTLE') throw new TowerRuleError('INVALID_PHASE', '진행 중인 전투가 없습니다.');
     if (battle.gameId !== (row.initialBattle as unknown as GameState | null)?.gameId) throw new TowerRuleError('INVALID_BATTLE', '전투가 일치하지 않습니다.');
+    if (!run.isTest) await processMatchEventsForDailyQuests(userId, 'player-1', battle.gameId, battle, (row.currentBattle as unknown as GameState | null)?.events.length ?? 0, tx, undefined, 'TOWER');
     if (battle.status !== 'FINISHED') return saveRun(tx, row, { ...run, version: run.version + 1 }, battle);
     const won = battle.winnerId === 'player-1';
     if (won) await settleBoss(tx, row, run, snapshot);

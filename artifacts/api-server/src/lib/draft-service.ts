@@ -822,6 +822,7 @@ export async function mutateDraft(
             s.battle,
             oldBattle?.events.length ?? 0,
             tx,
+            undefined, "DRAFT",
           );
       }
     const changed = before !== JSON.stringify({ ...s, lastSeen: undefined }),
