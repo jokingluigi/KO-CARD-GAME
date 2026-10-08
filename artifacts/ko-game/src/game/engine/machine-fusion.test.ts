@@ -5,10 +5,11 @@ import {generateCardInstance} from '../cards/generation';
 import {cardRecordToDefinition} from '../cards/published-cards';
 import {applyEffect,resolveTriggeredAbilities,resolvePendingEffects} from '../effects/effect-engine';
 import {executeAction} from '../actions/engine-actions';
+import {advanceCountdown} from './countdown';
 import type {CardDefinition} from '../cards/types';
 const text="카운트다운(3):'공격불가' 키워드를 제거하고, 필드에 있는 모든 '기계' 카드들을 전부 이 카드에 합체시킵니다! 그리고 '러쉬' 키워드를 추가합니다! 이 카드는 '도발'을 무시하고 상대 챔피언을 공격 할 수 있습니다!";
 const base:CardDefinition={id:'base',name:'base',cardType:'WRESTLER',cost:1,attack:2,health:3,rulesText:'',keywords:[],abilities:[],tags:['기계'],status:'DRAFT',isToken:false,isChampionToken:false};
-const rune=cardRecordToDefinition({id:'rune',name:'룬스달라이트 군주 루나',cardType:'WRESTLER',rarity:'CHAMPION',cost:6,attack:0,health:8,text,keywords:['IMMUNE','COUNTDOWN','CANNOT_ATTACK'],isToken:true,isChampionToken:true,effectId:null,effectConfig:{countdownTurns:3},status:'DRAFT',imageAssetId:null,imageUrl:null,version:1,createdAt:'',updatedAt:''});
+const rune=cardRecordToDefinition({id:'rune',name:'룬스달라이트 군주 루나',cardType:'WRESTLER',rarity:'CHAMPION',cost:6,attack:0,health:8,text,keywords:['IMMUNE','COUNTDOWN','CANNOT_ATTACK'],tags:['기계'],isToken:true,isChampionToken:true,effectId:null,effectConfig:{countdownTurns:3},status:'DRAFT',imageAssetId:null,imageUrl:null,version:1,createdAt:'',updatedAt:''});
 function setup(){const s=createInitialGameState(undefined,[base,rune]);s.status='IN_PROGRESS';s.turn=3;s.activePlayerId='player-1';s.events=[];s.cardPool=[base,rune];for(const p of s.players){p.champion!.quest=null;p.hand=[];p.deck=[];p.board=[null,null,null,null];p.graveyard=[];}s.players[0].board[0]={...generateCardInstance(rune,{instanceId:'rune'}),boardSlot:0,enteredThisTurn:false};return s;}
 const add=(s:ReturnType<typeof setup>,owner:number,slot:0|1|2|3,id:string,d=base)=>{const definition={...d,id:'definition:'+id};s.cardPool!.push(definition);return s.players[owner].board[slot]={...generateCardInstance(definition,{instanceId:id}),boardSlot:slot,enteredThisTurn:false};};
 const fire=(s:ReturnType<typeof setup>)=>resolveTriggeredAbilities(s,'player-1',s.players[0].board[0]!,'COUNTDOWN');
@@ -19,3 +20,18 @@ test('batch resumes after nested choice/reconnect exactly once and only then gra
 test('no machines is safe; ordinary hand fusion still rejects enemy and self',()=>{const n=fire(setup());assert.equal(n.players[0].board[0]!.currentAttack,0);assert.ok(n.players[0].board[0]!.keywords.includes('RUSH'));assert.equal(n.events.filter(e=>e.type==='FUSION').length,0);const s=setup();add(s,1,0,'enemy');const blocked=applyEffect(s,'player-1',s.players[0].board[0]!,{type:'STRUCTURED',action:'FUSION',target:{zone:'BOARD',owner:'ENEMY',selection:'PLAYER_CHOICE',count:1}},['enemy']);assert.equal(blocked.events.filter(e=>e.type==='FUSION').length,0);});
 test('silence disables countdown and removed collector stops the batch without touching remaining machines',()=>{const s=setup();s.players[0].board[0]!.isSilenced=true;add(s,1,0,'enemy');assert.equal(fire(s).players[1].board[0]!.instanceId,'enemy');const t=setup();add(t,0,1,'self-destruction',{...base,abilities:[{trigger:'ON_FUSION',effects:[{type:'STRUCTURED',action:'DESTROY',target:{zone:'BOARD',owner:'SELF',selection:'ALL',count:4}}]}]});add(t,1,0,'enemy');const n=fire(t);assert.equal(n.players[0].board[0],null);assert.ok(n.players[1].board[0]);assert.ok(!n.targetingState);});
 
+
+test('a machine-tagged countdown collector remains on board after its actual owner-turn tick',()=>{
+ const s=setup();s.turn=12;s.players[0].board[0]!.countdownRemaining=1;s.players[0].board[0]!.countdownLastTickTurn=1;s.players[0].board[0]!.enteredOnTurn=1;
+ add(s,0,1,'own');add(s,1,0,'enemy');
+ const n=advanceCountdown(s,'player-1','rune');
+ assert.equal(n.players[0].board[0]!.instanceId,'rune');assert.equal(n.players[0].board[0]!.countdownResolved,true);
+ assert.equal(n.events.filter(e=>e.type==='CARD_VANISHED'&&e.cardInstanceId==='rune').length,0);
+ assert.equal(n.events.filter(e=>e.type==='CARD_VANISHED').length,2);
+});
+test('serialized batch or vanish frames cannot consume their own fusion recipient',()=>{
+ for(const stage of ['BATCH','VANISH'] as const){const s=setup(),host=s.players[0].board[0]!;
+ s.targetingState={active:true,playerId:'player-1',sourceInstanceId:'retry',sourceCard:host,effects:[],effectIndex:0,selectedTargetIds:[],lastTargetIds:[],validTargetIds:[],minTargets:0,maxTargets:0,mandatory:true,cancelable:false,fusion:{stage,source:host,target:host,targetInstanceId:host.instanceId,remainingSourceIds:[host.instanceId]}};
+ const n=resolvePendingEffects(JSON.parse(JSON.stringify(s)));assert.equal(n.players[0].board[0]!.instanceId,'rune');assert.ok(!n.events.some(e=>e.type==='CARD_VANISHED'));assert.ok(!n.targetingState);
+ }
+});

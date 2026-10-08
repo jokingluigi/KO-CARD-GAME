@@ -65,8 +65,8 @@ function Scene(){
  <output data-testid="state-check">{JSON.stringify(state)===expected?'UNCHANGED':'MUTATED'} busy:{String(busy)} events:{state.events.length} hand:{state.players[0].hand.length} {failure}</output>
  </div>
  <GameStatePreview state={state} mediaCatalog={emptyGameMediaCatalog} selectedCardId={selected} selectedAttackerId={null} playError={null} turnSecondsRemaining={60}
-  bgmMuted={true} bgmVolume={0} onBgmMutedChange={noop} onBgmVolumeChange={noop} onSurrender={noop} onSelectCard={setSelected}
-  onEndTurn={()=>run('turn')} onSelectSlot={noop} onUseTechnique={noop} playAnimation={null} onPlayAnimationComplete={noop}
+  bgmMuted={true} bgmVolume={0} onBgmMutedChange={noop} onBgmVolumeChange={noop} onSurrender={noop} onEmote={noop} onSelectCard={setSelected}
+  onEndTurn={()=>run('turn')} onSelectSlot={noop} onUseTechnique={id=>{const r=executeAction(state,{type:'BEGIN_TARGETED_ACTION',playerId:state.players[0].id,action:{type:'PLAY_TECHNIQUE',cardInstanceId:id}});if(!r.success)setFailure(r.message);update(r.state);setSelected(null);}} playAnimation={null} onPlayAnimationComplete={noop}
   attackAnimation={null} attackImpactTriggered={false} onAttackImpact={noop} onAttackAnimationComplete={noop}
   onSelectAttacker={id=>{if(state.targetingState)update(executeAction(state,{type:'SELECT_EFFECT_TARGET',playerId:state.targetingState.playerId,targetId:id}).state);}} onAttackWrestler={noop} onAttackPlayer={noop} onUseActive={id=>{const result=executeAction(state,{type:'USE_ACTIVE',playerId:state.players[0].id,cardInstanceId:id});if(!result.success)setFailure(result.message);update(result.state);}} onUseChampionAbility={noop}
   onCancelEffectTargeting={()=>update(executeAction(state,{type:'CANCEL_EFFECT_TARGET',playerId:state.targetingState!.playerId}).state)} onEffectTarget={id=>update(executeAction(state,{type:'SELECT_EFFECT_TARGET',playerId:state.targetingState!.playerId,targetId:id}).state)} onPresentationBusyChange={setBusy} />

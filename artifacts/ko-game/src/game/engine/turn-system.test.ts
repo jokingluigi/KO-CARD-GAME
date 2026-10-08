@@ -256,3 +256,23 @@ test('관리자 테스트 게임의 두 단계 턴 전환은 Turn 4까지 상태
   }
   assert.equal(state.turn, 9);
 });
+
+test('Pandora target choice survives later owner-turn triggers and repeats next turn', async () => {
+  const {cardRecordToDefinition}=await import('../cards/published-cards');
+  const {generateCardInstance}=await import('../cards/generation');
+  const {selectEffectTarget}=await import('../effects/effect-engine');
+  const pandora=cardRecordToDefinition({id:'pandora-queue',name:'늑대인간 판도라',cardType:'WRESTLER',cost:4,attack:2,health:6,text:"턴 시작:선택한 아군 선수 카드를 리타이어시키고 그 카드의 체력과 공격력을 흡수하고 '회피'를 1 얻습니다.",keywords:[],isToken:false,isChampionToken:false,effectId:null,effectConfig:{},status:'PUBLISHED'} as import('../cards/published-cards').PublishedCardRecord);
+  const listener={...pandora,id:'later',name:'later',abilities:[{trigger:'TURN_START' as const,effects:[{type:'GAIN_GOLD' as const,amount:2}]}]};
+  let s=createInitialGameState(undefined,[pandora,listener]);s.status='IN_PROGRESS';s.turn=2;s.activePlayerId='player-2';
+  for(const p of s.players){p.champion.quest=null;p.board=[null,null,null,null];p.deck=Array.from({length:8},(_,i)=>generateCardInstance(listener,{instanceId:p.id+'deck'+i}));}
+  s.players[0].board=[{...generateCardInstance(pandora,{instanceId:'absorber'}),boardSlot:0},{...generateCardInstance(listener,{instanceId:'later'}),boardSlot:1},{...generateCardInstance({...listener,abilities:[],attack:3,health:4},{instanceId:'food'}),boardSlot:2},null];
+  for(const [iteration,foodId] of [[0,'food'],[1,'next-food']] as const){
+    if(iteration){s=successState(endTurn(s,'player-1'));s.players[0].board[2]={...generateCardInstance({...listener,abilities:[],attack:3,health:4},{instanceId:foodId}),boardSlot:2};}
+    s=successState(endTurn(s,'player-2'));
+    assert.equal(s.targetingState?.sourceInstanceId,'absorber');assert.ok(s.targetingState?.validTargetIds.includes(foodId));
+    const gold=s.players[0].currentGold;
+    s=selectEffectTarget(JSON.parse(JSON.stringify(s)),foodId);
+    assert.equal(s.players[0].board[0]?.currentAttack,2+3*(iteration+1));assert.equal(s.players[0].board[0]?.maxHealth,6+4*(iteration+1));
+    assert.equal(s.players[0].currentGold,gold+2);assert.equal(s.targetingState,undefined);assert.equal(s.pendingCountdownTurnStart,undefined);
+  }
+});

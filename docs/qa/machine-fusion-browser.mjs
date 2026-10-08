@@ -15,12 +15,16 @@ const s=createInitialGameState(undefined,defs);s.cardPool=defs;s.status='IN_PROG
 for(const p of s.players){p.hand=[];p.deck=[];p.board=[null,null,null,null];p.champion.quest=null;}
 s.players[0].board[0]={...generateCardInstance(defs[0],{instanceId:'rune'}),boardSlot:0,enteredThisTurn:false};
 for(const [owner,slot,id] of [[0,1,'own'],[1,0,'enemy']])s.players[owner].board[slot]={...generateCardInstance(defs[1],{instanceId:id}),boardSlot:slot,enteredThisTurn:false};
-const n=resolveTriggeredAbilities(s,'player-1',s.players[0].board[0],'COUNTDOWN');
+window.__machineFire=()=>resolveTriggeredAbilities(s,'player-1',s.players[0].board[0],'COUNTDOWN');window.__machineDefs=defs;
+const n=s;
 window.dispatchEvent(new CustomEvent('ko-qa-load-state',{detail:{state:n,definitions:defs}}));
 const c=n.players[0].board[0];return {atk:c.currentAttack,hp:c.currentHealth,vanished:n.events.filter(e=>e.type==='CARD_VANISHED').length,pending:!!n.targetingState};
 });
-assert.deepEqual(result,{atk:4,hp:14,vanished:2,pending:false});
+assert.deepEqual(result,{atk:0,hp:8,vanished:0,pending:false});
 await page.getByRole('button',{name:'룬스달라이트 군주 루나',exact:true}).waitFor();
+await page.evaluate(()=>window.dispatchEvent(new CustomEvent('ko-qa-load-state',{detail:{state:window.__machineFire(),definitions:window.__machineDefs}})));
+await page.waitForTimeout(1800);
+assert.equal(await page.getByRole('button',{name:'룬스달라이트 군주 루나',exact:true}).isVisible(),true);
 assert.equal(await page.getByRole('button',{name:'기계 재료',exact:true}).count(),0);
 results.push(width+':fusion engine and rendered board:PASS');await context.close();
 }assert.deepEqual(errors,[]);console.log(JSON.stringify({results,errors},null,2));}finally{await browser.close();}

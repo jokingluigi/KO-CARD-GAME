@@ -74,7 +74,7 @@ export function resumeFusion(state: GameState): GameState {
     if (!sourceId || !target || target.currentHealth <= 0) return resolvePendingEffects({ ...state, targetingState: frame.continuation });
     const advanced = { ...frame, fusion: { ...fusion, remainingSourceIds } };
     const source = state.players.flatMap(p => p.board).find(c => c?.instanceId === sourceId && c.currentHealth > 0);
-    return source ? commitFusion(state, frame.playerId, sourceId, target.instanceId, advanced, true)
+    return source && sourceId !== target.instanceId ? commitFusion(state, frame.playerId, sourceId, target.instanceId, advanced, true)
       : resolvePendingEffects({ ...state, targetingState: advanced });
   }
   if (fusion.stage === 'CHOOSE') {
@@ -82,7 +82,12 @@ export function resumeFusion(state: GameState): GameState {
     if (!ids.length) return frame.playRollback ?? resolvePendingEffects({ ...state, targetingState: frame.continuation });
     return { ...state, targetingState: { ...frame, validTargetIds: ids } };
   }
-  if (fusion.stage === 'VANISH') return resolvePendingEffects(vanishCard({ ...state, targetingState: frame.continuation }, fusion.source!.instanceId));
+  if (fusion.stage === 'VANISH') {
+    const resumed = { ...state, targetingState: frame.continuation };
+    // A persisted/retried frame must never consume its own fusion recipient.
+    return resolvePendingEffects(fusion.source!.instanceId === fusion.target!.instanceId
+      ? resumed : vanishCard(resumed, fusion.source!.instanceId));
+  }
   const snapshot = fusion.stage === 'SOURCE' ? fusion.source! : fusion.target!;
   const live = state.players.flatMap(p => p.board).find(c => c?.instanceId === snapshot.instanceId) ?? snapshot;
   const advanced = { ...state, targetingState: { ...frame, playerId: fusion.stage === 'SOURCE' ? (fusion.targetPlayerId ?? frame.playerId) : frame.playerId, fusion: { ...fusion, stage: fusion.stage === 'SOURCE' ? 'TARGET' as const : 'VANISH' as const } } };

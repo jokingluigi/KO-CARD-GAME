@@ -1679,7 +1679,7 @@ function HandCard({
   }
 
   return (
-    <Inspectable content={<CardInspectContent card={card} />} touchInspectTriggerOnly className="relative shrink-0">
+    <Inspectable content={<CardInspectContent card={card} />} touchInspectTriggerOnly className={`relative shrink-0 ${isSelected ? "z-50" : "z-0"}`}>
     <div className={`relative ${presentationActive ? "presentation-card-pulse" : ""}`}>
       <CardRenderer
       name={def?.name ?? '알 수 없는 카드'}
@@ -1719,7 +1719,9 @@ function HandCard({
     {card.cardType === "TECHNIQUE" && isSelected && (
       <button
         type="button"
-        className="absolute left-1/2 top-9 z-[130] -translate-x-1/2 whitespace-nowrap rounded border border-primary bg-primary px-3 py-1 text-[10px] font-black text-black shadow-[0_0_14px_rgba(234,179,8,0.5)] hover:bg-yellow-300 md:-top-11 md:px-4 md:py-1.5 md:text-xs"
+        onPointerDown={(event) => event.stopPropagation()}
+        onPointerUp={(event) => event.stopPropagation()}
+        className="ko-technique-use-button absolute left-1/2 top-9 z-[130] touch-manipulation min-h-11 min-w-[56px] md:min-h-0 -translate-x-1/2 whitespace-nowrap rounded border border-primary bg-primary px-3 py-1 text-[10px] font-black text-black shadow-[0_0_14px_rgba(234,179,8,0.5)] hover:bg-yellow-300 md:-top-11 md:px-4 md:py-1.5 md:text-xs"
         onClick={(event) => {
           event.stopPropagation();
           onUseTechnique();

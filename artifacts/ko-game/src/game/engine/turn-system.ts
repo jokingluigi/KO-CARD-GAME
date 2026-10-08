@@ -77,22 +77,13 @@ function beginPlayerTurn(state: GameState, playerId: string): GameState {
     ...(turnStartPlayer?.board.filter((card): card is CardInstance => card !== null) ?? []),
     ...(turnStartPlayer?.hand.filter((card) => getActiveCardAbilities(card).some((ability) => ability.trigger === 'TURN_START' && ability.condition?.type === 'SOURCE_IN_HAND')) ?? []),
   ];
-  if (turnStartCards.some(card=>getActiveCardKeywords(card).includes('COUNTDOWN'))) {
-    return resumeCountdownTurnStart({...afterDelayed,pendingCountdownTurnStart:{turn:state.turn,playerId,
-      steps:turnStartCards.flatMap(card=>[
-        {instanceId:card.instanceId,trigger:'COUNTDOWN' as const},
-        {instanceId:card.instanceId,trigger:'TURN_START' as const},
-      ])}});
-  }
-  return turnStartCards.reduce((nextState, card) => {
-      if (nextState.status !== 'IN_PROGRESS') return nextState;
-      const currentPlayer = nextState.players.find((player) => player.id === playerId);
-      const currentCard = currentPlayer?.board.find((candidate) => candidate?.instanceId === card.instanceId)
-        ?? currentPlayer?.hand.find((candidate) => candidate.instanceId === card.instanceId);
-      if (!currentCard) return nextState;
-      const triggered = resolveTriggeredAbilities(nextState, playerId, currentCard, 'TURN_START');
-      return triggered !== nextState && triggered.targetingState?.active ? resolvePendingEffects(triggered) : triggered;
-    }, afterDelayed);
+  // All owner-turn effects share the resumable queue. A later card must not
+  // replace an earlier card's mandatory target selection.
+  return resumeCountdownTurnStart({...afterDelayed,pendingCountdownTurnStart:{turn:state.turn,playerId,
+    steps:turnStartCards.flatMap(card=>[
+      {instanceId:card.instanceId,trigger:'COUNTDOWN' as const},
+      {instanceId:card.instanceId,trigger:'TURN_START' as const},
+    ])}});
 }
 
 function drawOpeningHand(

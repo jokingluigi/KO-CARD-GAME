@@ -934,6 +934,7 @@ export default function Decks() {
                   {selectedRows.map(({ id, count, card }) => (
                     <Inspectable
                       key={id}
+                      touchInspectTriggerOnly
                       showOnHover
                       content={
                         card ? (
@@ -988,6 +989,8 @@ export default function Decks() {
                           className="ko-decks__compact-remove"
                           aria-label={`${card?.name ?? id} 한 장 제거`}
                           data-testid={`button-remove-card-${id}`}
+                          onPointerDown={(e) => e.stopPropagation()}
+                          onPointerUp={(e) => e.stopPropagation()}
                           onClick={(e) => { e.stopPropagation(); removeCard(id); }}
                         >
                           <Minus className="h-3.5 w-3.5" aria-hidden="true" />

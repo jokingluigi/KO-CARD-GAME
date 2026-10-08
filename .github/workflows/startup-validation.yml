@@ -170,4 +170,5 @@ jobs:
           node docs/qa/fusion-browser.mjs
           node docs/qa/luna-active-browser.mjs
           node docs/qa/machine-fusion-browser.mjs
+          node docs/qa/mobile-input-browser.mjs
           node docs/qa/tag-manager-browser.mjs
