@@ -608,6 +608,7 @@ test("feature OFF preserves runs and blocks ordinary access while administrator 
     bossId: "final",
   });
   assert.equal(v.run.isTest, true);
+  assert.ok(v.cards.some((c:any)=>c.status==='DRAFT'));
   assert.equal(v.run.encounter.enemyId, "final");
   const [row] = await database
     .select()

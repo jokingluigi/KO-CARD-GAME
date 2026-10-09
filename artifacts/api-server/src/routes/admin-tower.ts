@@ -28,7 +28,7 @@ router.get('/test/home', async (_request, response, next) => {
 function diagnosticView(run: TowerRun, battle: GameState | null, snapshot?: TowerSnapshot) {
   const { seed, encounter, ...visible } = run; const { seed: battleSeed, ...enemy } = encounter;
   return { run: { ...visible, encounter: enemy }, battle: battle ? sanitizeGameStateForViewer(battle, 'player-1') : null,
-    ...(snapshot ? { cards: snapshot.cards.filter(c => c.status === 'PUBLISHED'), champions: snapshot.champions, relics: snapshot.catalog.relics, scenes: snapshot.catalog.scenes, characters: snapshot.catalog.characters, music: snapshot.catalog.season.music,
+    ...(snapshot ? { cards: snapshot.cards.filter(c => c.status !== 'DISABLED'), champions: snapshot.champions, relics: snapshot.catalog.relics, scenes: snapshot.catalog.scenes, characters: snapshot.catalog.characters, music: snapshot.catalog.season.music,
       rewardPreview: run.encounter.bossSlot ? snapshot.catalog.season.v2?.bosses.find(b=>b.id===(run.encounter.bossSlot==='hiddenBoss'?snapshot.catalog.season.v2?.hiddenBossId:run.encounter.bossSlot)) ?? snapshot.catalog.season.bosses[run.encounter.bossSlot] : null } : {}) };
 }
 router.post('/test/runs', async (request, response, next) => {
