@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import {readFileSync,mkdirSync} from 'node:fs';
+import {readFileSync,mkdirSync,readdirSync} from 'node:fs';
 const {chromium}=await import(process.env.KO_QA_PLAYWRIGHT??'playwright');
 const data=JSON.parse(readFileSync(new URL('../../artifacts/ko-game/qa/art-direction-data.json',import.meta.url),'utf8'));
 const cards=data.cards.cards.filter(c=>!c.isToken&&!c.isChampionToken).map(c=>({...c,quantity:3}));
@@ -12,6 +12,8 @@ for(const [name,width,height] of [['mobile',390,844],['small',320,568],['boundar
  await page.route('**/api/**',route=>{const path=new URL(route.request().url()).pathname;const key=path.split('/').pop();return route.fulfill({json:data[key]??{}});});
  await page.route('**/storage/**',route=>route.fulfill({contentType:'image/png',body:Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+jRZkAAAAASUVORK5CYII=','base64')}));
  await page.goto((process.env.KO_QA_ORIGIN??'http://127.0.0.1:5173')+'/qa/art-direction.html');await page.getByTestId('visual-state').waitFor();await page.waitForTimeout(500);
+ if(process.env.KO_QA_COMPILED_CSS==='1'){await page.evaluate(()=>document.querySelectorAll('style,link[rel=stylesheet]').forEach(e=>e.remove()));for(const file of readdirSync('artifacts/ko-game/dist/public/assets').filter(x=>x.endsWith('.css')&&(x.startsWith('index-')||x.startsWith('game-state-preview-'))))await page.addStyleTag({path:'artifacts/ko-game/dist/public/assets/'+file});}
+
  const before=await page.getByTestId('visual-state').textContent();assert.equal(await page.getByTestId('button-open-match-history').isVisible(),false);assert.equal(await page.locator('.fixed.left-2.top-24').count(),0,'no floating log launcher');
  {
  await page.getByRole('button',{name:'설정 열기',exact:true}).click();await page.getByTestId('button-open-match-history').click();const dialog=page.getByRole('dialog');await dialog.waitFor();
