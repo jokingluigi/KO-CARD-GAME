@@ -1,9 +1,10 @@
+import {randomUUID} from 'node:crypto';
 import { sanitizeGameStateForViewer } from '../online/sanitizer';
 import { executeTowerPlayerAction } from '../lib/tower-battle-actions';
 import { Router, type IRouter } from 'express';
 import { desc, eq, sql } from 'drizzle-orm';
-import { db, towerSettingsTable, towerSeasonsTable, towerStartersTable, towerPresetsTable, towerRelicsTable, towerCharactersTable, towerScenesTable, towerMetadataTable, towerRunsTable } from '@workspace/db';
-import { TowerRuleError, parseSeason, parseStarter, parsePreset, parseRelic, parseCharacter, parseScene, parseMetadata, TOWER_RELIC_DEFINITIONS, parseRunCommand, type TowerRun, type TowerSnapshot, type GameState } from '@workspace/game-engine';
+import { db, towerSettingsTable, towerSeasonsTable, towerStartersTable, towerPresetsTable, towerRelicsTable, towerCharactersTable, towerScenesTable, towerMetadataTable, towerRunsTable, towerVersionsTable } from '@workspace/db';
+import { TowerRuleError, parseSeason, parseStarter, parsePreset, parseRelic, parseCharacter, parseScene, parseMetadata, TOWER_RELIC_DEFINITIONS, TOWER_EFFECT_LIBRARY, parseRunCommand, type TowerRun, type TowerSnapshot, type GameState } from '@workspace/game-engine';
 import { getAuthenticatedUser } from '../lib/auth';
 import { loadTowerSnapshot } from '../lib/tower-catalog';
 import { closeTowerRun, createTowerDiagnostic, applyTowerCommand, restartTowerBattle } from '../lib/tower-run-store';
@@ -21,20 +22,20 @@ router.use(async (request, response, next) => {
 // Diagnostic endpoints use the same authoritative engine and persistence as player runs.
 router.get('/test/availability', (_request, response) => response.json({ enabled: true }));
 router.get('/test/home', async (_request, response, next) => {
-  try { const snapshot = await loadTowerSnapshot(); response.json({ season: snapshot.catalog.season, champions: snapshot.champions, starters: snapshot.catalog.starters.filter(s => s.enabled), cards: snapshot.cards.filter(c => c.status === 'PUBLISHED') }); }
+  try { const snapshot = await loadTowerSnapshot(); response.json({ season: snapshot.catalog.season, champions: snapshot.champions, starters: snapshot.catalog.starters.filter(s => s.enabled), cards: snapshot.cards.filter(c => c.status !== 'DISABLED') }); }
   catch (error) { next(error); }
 });
 function diagnosticView(run: TowerRun, battle: GameState | null, snapshot?: TowerSnapshot) {
   const { seed, encounter, ...visible } = run; const { seed: battleSeed, ...enemy } = encounter;
   return { run: { ...visible, encounter: enemy }, battle: battle ? sanitizeGameStateForViewer(battle, 'player-1') : null,
-    ...(snapshot ? { cards: snapshot.cards.filter(c => c.status === 'PUBLISHED'), champions: snapshot.champions, relics: snapshot.catalog.relics, scenes: snapshot.catalog.scenes, characters: snapshot.catalog.characters, music: snapshot.catalog.season.music,
-      rewardPreview: run.encounter.bossSlot ? snapshot.catalog.season.bosses[run.encounter.bossSlot] : null } : {}) };
+    ...(snapshot ? { cards: snapshot.cards.filter(c => c.status !== 'DISABLED'), champions: snapshot.champions, relics: snapshot.catalog.relics, scenes: snapshot.catalog.scenes, characters: snapshot.catalog.characters, music: snapshot.catalog.season.music,
+      rewardPreview: run.encounter.bossSlot ? snapshot.catalog.season.v2?.bosses.find(b=>b.id===(run.encounter.bossSlot==='hiddenBoss'?snapshot.catalog.season.v2?.hiddenBossId:run.encounter.bossSlot)) ?? snapshot.catalog.season.bosses[run.encounter.bossSlot] : null } : {}) };
 }
 router.post('/test/runs', async (request, response, next) => {
   try {
     const input = request.body;
     if (typeof input?.starterId !== 'string' || typeof input.seed !== 'string' || !Array.isArray(input.relicIds) || !input.relicIds.every((id: unknown) => typeof id === 'string') || (input.fullMode !== undefined && typeof input.fullMode !== 'boolean') || (input.hidden !== undefined && typeof input.hidden !== 'boolean') || (input.deck !== undefined && (!Array.isArray(input.deck) || !input.deck.every((id: unknown) => typeof id === 'string'))) || (input.presetId !== undefined && typeof input.presetId !== 'string')) throw new TowerRuleError('INVALID_CONFIG', '테스트 설정을 확인해 주세요.');
-    const snapshot = await loadTowerSnapshot(); const run = await createTowerDiagnostic(request.authUser!.id, input, snapshot);
+    const snapshot = await loadTowerSnapshot(db,typeof input.towerId==='string'?input.towerId:undefined,true); const run = await createTowerDiagnostic(request.authUser!.id, input, snapshot);
     response.status(201).json(diagnosticView(run, null, snapshot));
   } catch (error) { next(error); }
 });
@@ -62,13 +63,13 @@ router.get('/', async (_request, response, next) => {
       db.select().from(towerRelicsTable), db.select().from(towerCharactersTable), db.select().from(towerScenesTable), db.select().from(towerMetadataTable),
     ]);
     response.setHeader('Cache-Control', 'no-store');
-    response.json({ enabled: settings.some(s => s.id === 'global' && s.enabled), seasons, starters, presets, relics, characters, scenes, metadata, relicDefinitions: TOWER_RELIC_DEFINITIONS });
+    response.json({ enabled: settings.some(s => s.id === 'global' && s.enabled), seasons, starters, presets, relics, characters, scenes, metadata, effectLibrary:TOWER_EFFECT_LIBRARY, relicDefinitions: TOWER_RELIC_DEFINITIONS });
   } catch (error) { next(error); }
 });
 router.put('/settings', async (request, response, next) => {
   try {
     if (typeof request.body?.enabled !== 'boolean') throw new TowerRuleError('INVALID_CONFIG', '사용 여부를 확인해 주세요.');
-    if (request.body.enabled) await loadTowerSnapshot();
+    if (request.body.enabled) {const published=await db.select().from(towerVersionsTable).orderBy(desc(towerVersionsTable.createdAt));const definitions=await db.select().from(towerSeasonsTable);const available=published.find(v=>definitions.some(d=>d.id===v.towerId&&(d.data.v2 as TowerSnapshot["catalog"]["season"]["v2"])?.enabled&&(d.data.v2 as TowerSnapshot["catalog"]["season"]["v2"])?.visible));await loadTowerSnapshot(db,available?.towerId);}
     await db.insert(towerSettingsTable).values({ id: 'global', enabled: request.body.enabled }).onConflictDoUpdate({ target: towerSettingsTable.id, set: { enabled: request.body.enabled, updatedAt: new Date() } });
     response.json({ enabled: request.body.enabled });
   } catch (error) { next(error); }
@@ -107,9 +108,22 @@ router.put('/metadata/:kind/:id', async (request, response, next) => {
   } catch (error) { next(error); }
 });
 router.post('/validate', async (_request, response, next) => {
-  try { const snapshot = await loadTowerSnapshot(); response.json({ valid: true, season: snapshot.catalog.season.name }); }
+  try { const snapshot = await loadTowerSnapshot(db,typeof _request.body?.towerId==='string'?_request.body.towerId:undefined,true); response.json({ valid: true, season: snapshot.catalog.season.name }); }
   catch (error) { next(error); }
 });
+router.get('/v2/:id/versions',async(request,response,next)=>{try{response.json({versions:await db.select({id:towerVersionsTable.id,version:towerVersionsTable.version,createdAt:towerVersionsTable.createdAt,publishedBy:towerVersionsTable.publishedBy}).from(towerVersionsTable).where(eq(towerVersionsTable.towerId,String(request.params.id))).orderBy(desc(towerVersionsTable.version))});}catch(e){next(e);}});
+router.post('/v2/:id/publish',async(request,response,next)=>{try{
+ const id=String(request.params.id);const snapshot=await loadTowerSnapshot(db,id,true);
+ if(!snapshot.catalog.season.v2)throw new TowerRuleError('INVALID_CONFIG','V2 타워를 선택하세요.');
+ const published=await db.transaction(async tx=>{
+  await tx.execute(sql`SELECT pg_advisory_xact_lock(hashtext(${'tower:publish:'+id}))`);
+  const [row]=await tx.select().from(towerSeasonsTable).where(eq(towerSeasonsTable.id,id)).for('update');
+  if(!row||JSON.stringify(parseSeason(row.data))!==JSON.stringify(snapshot.catalog.season))throw new TowerRuleError('STALE_CONFIG','설정이 변경됐습니다. 다시 검증하고 공개하세요.');
+  const [last]=await tx.select().from(towerVersionsTable).where(eq(towerVersionsTable.towerId,id)).orderBy(desc(towerVersionsTable.version)).limit(1);
+  const version=(last?.version??0)+1;
+  await tx.insert(towerVersionsTable).values({id:randomUUID(),towerId:id,version,publishedBy:request.authUser!.id,snapshot:{...snapshot,contentVersion:version} as unknown as Record<string,unknown>});return version;
+ });response.status(201).json({published:true,version:published});
+}catch(e){next(e);}});
 router.post('/relic-defaults', async (_request, response, next) => {
   try {
     for (const definition of TOWER_RELIC_DEFINITIONS) {

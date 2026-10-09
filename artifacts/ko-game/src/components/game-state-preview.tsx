@@ -10,7 +10,7 @@ import { EntranceVolumeControl, SfxVolumeControl } from './sfx-volume-control';
 import { CardRenderer } from './card-renderer';
 import { CardArtwork } from './card-artwork';
 import {
-  getCardDefinition,
+  getCardDefinition as defaultCardDefinition,
   getLegalActions,
   getAttackLegality,
   isCurrentPlayer,
@@ -67,6 +67,7 @@ import { CHAMPION_EMOTES, CHAMPION_EMOTE_LABELS, championVoiceLine, type Champio
 interface GameStatePreviewProps {
   state: GameState;
   mediaCatalog: GameMediaCatalog;
+  backgroundAssetUrl?: string;
   selectedCardId: string | null;
   selectedAttackerId: string | null;
   playError: string | null;
@@ -84,6 +85,7 @@ interface GameStatePreviewProps {
   bgmVolume: number;
   onBgmVolumeChange: (volume: number) => void;
   onSurrender: () => void;
+  onBattleInfo?: () => void;
   onEmote?: (emote: ChampionEmote) => void;
   onSelectCard: (cardInstanceId: string) => void;
   onSelectSlot: (slot: BoardSlotIndex, geometry?: { source: CardAnimationRect; target: CardAnimationRect }) => void;
@@ -113,9 +115,11 @@ interface GameStatePreviewProps {
   onReturnToMainMenu?: () => void;
 }
 
+const RenderCardCatalog=React.createContext(defaultCardDefinition);
 export function GameStatePreview({
   state,
   mediaCatalog,
+  backgroundAssetUrl,
   selectedCardId,
   selectedAttackerId,
   playError,
@@ -133,6 +137,7 @@ export function GameStatePreview({
   bgmVolume,
   onBgmVolumeChange,
   onSurrender,
+  onBattleInfo,
   onEmote,
   onSelectCard,
   onSelectSlot,
@@ -161,6 +166,7 @@ export function GameStatePreview({
   onReturnToAdmin,
   onReturnToMainMenu,
 }: GameStatePreviewProps) {
+  const getCardDefinition=React.useCallback((id:string)=>state.cardPool?.find(c=>c.id===id)??defaultCardDefinition(id),[state.cardPool]);
   const [openGraveyardPlayerId, setOpenGraveyardPlayerId] = React.useState<string | null>(null);
   const [settingsOpen, setSettingsOpen] = React.useState(false);
   const [emoteOpen, setEmoteOpen] = React.useState(false);
@@ -876,7 +882,7 @@ export function GameStatePreview({
   }
   
   return (
-    <CinematicProvider key={state.gameId}><AltInspectProvider>
+    <RenderCardCatalog.Provider value={getCardDefinition}><CinematicProvider key={state.gameId}><AltInspectProvider>
      <div className={`ko-game-shell flex min-h-[100dvh] w-full flex-col overflow-x-hidden overflow-y-auto bg-neutral-950 font-sans text-neutral-100 selection:bg-primary selection:text-black md:overflow-hidden ${me.champion?.questCompleted ? 'ko-quest-awakened--mine' : ''} ${opp.champion?.questCompleted ? 'ko-quest-awakened--theirs' : ''}`}>
       {cinematicIntro && <CinematicIntro event={cinematicIntro} />}
       {activePresentationCue && <CinematicCue cue={activePresentationCue} state={state} />}
@@ -884,10 +890,10 @@ export function GameStatePreview({
       
       {/* Background Ambience */}
       <div className="ko-cinematic-background pointer-events-none absolute inset-0 z-0 bg-neutral-950">
-        {selectedBackground && (
+        {(backgroundAssetUrl || selectedBackground) && (
           <div
             className="absolute inset-0 bg-cover bg-center bg-no-repeat"
-            style={{ backgroundImage: `url("${selectedBackground.assetUrl}")` }}
+            style={{ backgroundImage: `url("${backgroundAssetUrl ?? selectedBackground?.assetUrl}")` }}
           />
         )}
         <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,_rgba(26,26,36,0.08)_0%,_rgba(5,5,5,0.18)_100%)]" />
@@ -1312,6 +1318,7 @@ export function GameStatePreview({
                        />
                      </label>
                      <button type="button" data-testid="button-open-match-history" className="min-h-10 w-full border border-amber-700 bg-black px-3 text-left text-xs font-bold text-amber-300 md:hidden" onClick={() => { setSettingsOpen(false); setHistoryOpen(true); }}>경기 로그 보기</button>
+                     {onBattleInfo&&<button type="button" className="min-h-12 w-full border border-primary bg-black px-3 text-primary" onClick={()=>{setSettingsOpen(false);onBattleInfo();}}>능력·유물 정보</button>}
                      <SfxVolumeControl />
                      <EntranceVolumeControl />
                      <label className="flex items-center justify-between gap-2 text-xs font-bold text-neutral-300">
@@ -1627,7 +1634,7 @@ export function GameStatePreview({
           : <PresentationFeedback lethal={state.status==='FINISHED' && presentationQueue[0].playerId===state.loserId} cue={presentationQueue[0]} onStart={handlePresentationCueStart} onComplete={handlePresentationQueueComplete} />
       )}
     </div>
-    </AltInspectProvider></CinematicProvider>
+    </AltInspectProvider></CinematicProvider></RenderCardCatalog.Provider>
   );
 }
 
@@ -1656,6 +1663,7 @@ function HandCard({
   density: 'small' | 'medium' | 'regular';
   style?: React.CSSProperties;
 }) {
+  const getCardDefinition=React.useContext(RenderCardCatalog);
   const def = getCardDefinition(card.definitionId);
   
   const sizeClass =
@@ -1679,7 +1687,7 @@ function HandCard({
   }
 
   return (
-    <Inspectable content={<CardInspectContent card={card} />} touchInspectTriggerOnly className={`relative shrink-0 ${isSelected ? "z-50" : "z-0"}`}>
+    <Inspectable content={<CardInspectContent card={card} definition={getCardDefinition(card.definitionId)} />} touchInspectTriggerOnly className={`relative shrink-0 ${isSelected ? "z-50" : "z-0"}`}>
     <div className={`relative ${presentationActive ? "presentation-card-pulse" : ""}`}>
       <CardRenderer
       name={def?.name ?? '알 수 없는 카드'}
@@ -1780,6 +1788,7 @@ function BoardSlot({
   hitImpactLevel?: AttackDamageImpactLevel;
   animating?: boolean;
 }) {
+  const getCardDefinition=React.useContext(RenderCardCatalog);
   const isEmpty = !card;
   
   let containerClass = "ko-board-slot w-[70px] h-[98px] md:w-[110px] md:h-[154px] relative flex flex-col transition-transform duration-200 select-none overflow-visible ";
@@ -1826,7 +1835,7 @@ function BoardSlot({
   const isDead = card.currentHealth <= 0;
 
   return (
-    <Inspectable content={<CardInspectContent card={card} />} touchInspectTriggerOnly className="ko-board-slot-wrapper relative shrink-0">
+    <Inspectable content={<CardInspectContent card={card} definition={getCardDefinition(card.definitionId)} />} touchInspectTriggerOnly className="ko-board-slot-wrapper relative shrink-0">
        <div
          ref={slotRef}
          title={attackSelectionActive && !attackReady ? attackReason : undefined}
@@ -1950,6 +1959,7 @@ function GraveyardModal({
   onClose: () => void;
   onSelect?: (targetId: string) => void;
 }) {
+  const getCardDefinition=React.useContext(RenderCardCatalog);
   return (
     <div className="fixed inset-0 z-[180] flex items-center justify-center bg-black/60 p-4">
       <div
@@ -1983,7 +1993,7 @@ function GraveyardModal({
               .map((card) => {
                 const definition = getCardDefinition(card.definitionId);
                 return (
-                  <Inspectable key={card.instanceId} content={<CardInspectContent card={card} />}>
+                  <Inspectable key={card.instanceId} content={<CardInspectContent card={card} definition={getCardDefinition(card.definitionId)} />}>
                     <div
                       tabIndex={0}
                       role={onSelect ? 'button' : undefined}

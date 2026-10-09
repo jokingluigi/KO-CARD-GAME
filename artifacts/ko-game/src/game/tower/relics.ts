@@ -6,6 +6,9 @@ import { createDeterministicRandom } from '../random/random';
 import type { GameEvent } from '../events/types';
 
 export interface TowerBattleContext {
+  inventoryRelicIds?: string[];
+  configuredRules?: import('./configured-effects').TowerEffectRule[];
+  configuredRuntime?: import('./configured-effects').TowerConfiguredRuntime;
   playerId: string;
   relics: Array<Pick<Relic, 'id' | 'effectType' | 'values'>>;
   emptyFieldLockEventIndex?: number;

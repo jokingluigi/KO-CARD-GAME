@@ -171,8 +171,9 @@ export function evaluateAction(state: GameState, action: GameAction, playerId: s
   return after - before + questBonus + drawBonus - spent * 0.25 + survival + awakeningTargetBonus + (action.type === 'END_TURN' ? -0.5 : 0);
 }
 
-export type AIDifficulty = 'NORMAL' | 'HARD' | 'BOSS';
+export type AIDifficulty = 'EASY' | 'NORMAL' | 'HARD' | 'BOSS';
 export const AI_SEARCH_PROFILES = {
+  EASY: { depth: 1, width: 1, budget: 8 },
   NORMAL: { depth: 1, width: 4, budget: 24 },
   HARD: { depth: 2, width: 5, budget: 60 },
   BOSS: { depth: 3, width: 6, budget: 120 },

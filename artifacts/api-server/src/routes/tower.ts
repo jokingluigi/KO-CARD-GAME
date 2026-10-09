@@ -1,6 +1,6 @@
 import { Router, type IRouter } from 'express';
 import { and, eq, desc } from 'drizzle-orm';
-import { db, towerSettingsTable, towerRunsTable, towerBossReceiptsTable, userChampionCollectionsTable } from '@workspace/db';
+import { db, towerSettingsTable, towerSeasonsTable, towerVersionsTable, towerRunsTable, towerBossReceiptsTable, userChampionCollectionsTable } from '@workspace/db';
 import { TowerRuleError, parseRunCommand, type GameState, type TowerRun, type TowerSnapshot, newTowerRun } from '@workspace/game-engine';
 import { getAuthenticatedUser } from '../lib/auth';
 import { loadTowerSnapshot } from '../lib/tower-catalog';
@@ -11,7 +11,7 @@ import { sanitizeGameStateForViewer } from '../online/sanitizer';
 const router: IRouter = Router();
 const publicRun = (run: TowerRun) => {
   const { seed: _seed, encounter, ...visible } = run;
-  const { seed: _battleSeed, ...enemy } = encounter;
+  const { seed: _battleSeed, cardIds:_enemyDeck, ...enemy } = encounter;
   return { ...visible, encounter: enemy };
 };
 const receipts = (id: string) => db.select({ slot: towerBossReceiptsTable.bossSlotId, firstClear: towerBossReceiptsTable.firstClear, reward: towerBossReceiptsTable.reward }).from(towerBossReceiptsTable).where(eq(towerBossReceiptsTable.runId, id));
@@ -40,28 +40,33 @@ router.use(async (request, response, next) => {
     next();
   } catch (error) { next(error); }
 });
+router.get('/towers',async(_request,response,next)=>{try{
+ const definitions=await db.select().from(towerSeasonsTable),versions=await db.select().from(towerVersionsTable).orderBy(desc(towerVersionsTable.version));
+ const towers=definitions.flatMap(d=>{const draft=d.data.v2 as TowerSnapshot["catalog"]["season"]["v2"];const published=versions.find(v=>v.towerId===d.id);if(draft&&(!draft.enabled||!draft.visible||!published))return [];if(!draft&&!d.active)return [];const season:TowerSnapshot["catalog"]["season"]=published?(published.snapshot as unknown as TowerSnapshot).catalog.season:({...d.data,id:d.id,name:d.name} as TowerSnapshot["catalog"]["season"]);const v=season.v2;return [{id:d.id,name:season.name,description:season.description,totalFloors:v?.floors.length??16,imageUrl:v?.selectionImageUrl??v?.imageUrl,recommendedDifficulty:v?.recommendedDifficulty,sortOrder:draft?.sortOrder??0}];}).sort((a,b)=>a.sortOrder-b.sortOrder);
+ response.json({towers});
+}catch(e){next(e);}});
 router.get('/home', async (request, response, next) => {
   try {
-    const snapshot = await loadTowerSnapshot();
+    const snapshot = await loadTowerSnapshot(db,typeof request.query.towerId==='string'?request.query.towerId:undefined);
     const userId = request.authUser!.id;
     const ownership = await db.select().from(userChampionCollectionsTable).where(and(eq(userChampionCollectionsTable.userId, userId), eq(userChampionCollectionsTable.owned, true)));
     const ownedIds = ownership.map(row => row.championDefinitionId);
     const history = await db.transaction(tx => towerHistory(tx, userId, snapshot.catalog.season.id));
     const starters = snapshot.catalog.starters.filter(starter => {
-      if (!ownedIds.includes(starter.championId) || !starter.enabled) return false;
-      try { newTowerRun({ id: 'preview', seed: 'preview', championId: starter.championId, starterId: starter.id, ownedChampionIds: ownedIds }, snapshot.catalog, history); return true; }
+      if ((!snapshot.catalog.season.v2&&!ownedIds.includes(starter.championId)) || !ownedIds.length || !starter.enabled) return false;
+      try { newTowerRun({ id: 'preview', seed: 'preview', championId: snapshot.catalog.season.v2?ownedIds[0]!:starter.championId, starterId: starter.id, ownedChampionIds: ownedIds }, snapshot.catalog, history); return true; }
       catch { return false; }
     });
     response.setHeader('Cache-Control', 'no-store');
-    response.json({ season: { id: snapshot.catalog.season.id, name: snapshot.catalog.season.name, description: snapshot.catalog.season.description },
-      champions: snapshot.champions.filter(c => ownedIds.includes(c.id)), starters, cards: snapshot.cards.filter(c => c.status === 'PUBLISHED') });
+    response.json({ season: { id: snapshot.catalog.season.id, name: snapshot.catalog.season.name, description: snapshot.catalog.season.description, totalFloors:snapshot.catalog.season.v2?.floors.length??16, v2:Boolean(snapshot.catalog.season.v2) },
+      champions: snapshot.champions.filter(c => ownedIds.includes(c.id)), starters, cards: snapshot.cards.filter(c => c.status !== 'DISABLED') });
   } catch (error) { next(error); }
 });
 router.post('/runs', async (request, response, next) => {
   try {
-    const { championId, starterId } = request.body ?? {};
+    const { championId, starterId, towerId } = request.body ?? {};
     if (typeof championId !== 'string' || typeof starterId !== 'string') throw new TowerRuleError('INVALID_CONFIG', '챔피언과 스타터 덱을 선택해 주세요.');
-    const run = await createPersistedTowerRun(request.authUser!.id, championId, starterId, await loadTowerSnapshot());
+    const run = await createPersistedTowerRun(request.authUser!.id, championId, starterId, await loadTowerSnapshot(db,typeof towerId==='string'?towerId:undefined));
     response.status(201).json(view(run, null));
   } catch (error) { next(error); }
 });
@@ -72,7 +77,7 @@ router.get('/runs/current', async (request, response, next) => {
     const snapshot = row.snapshot as unknown as TowerSnapshot;
     response.setHeader('Cache-Control', 'no-store');
     response.json({ ...view(row.state as unknown as TowerRun, row.currentBattle as unknown as GameState | null),
-      cards: snapshot.cards.filter(c => c.status === 'PUBLISHED'), champions: snapshot.champions, relics: snapshot.catalog.relics, scenes: snapshot.catalog.scenes, characters: snapshot.catalog.characters, music: snapshot.catalog.season.music, rewardReceipts: await receipts(row.id) });
+      cards: snapshot.cards.filter(c => c.status !== 'DISABLED'), champions: snapshot.champions, relics: snapshot.catalog.relics, scenes: snapshot.catalog.scenes, characters: snapshot.catalog.characters, music: snapshot.catalog.season.music, rewardReceipts: await receipts(row.id) });
   } catch (error) { next(error); }
 });
 router.get('/runs/:id', async (request, response, next) => {
@@ -83,7 +88,7 @@ router.get('/runs/:id', async (request, response, next) => {
     const run = row.state as unknown as TowerRun;
     response.setHeader('Cache-Control', 'no-store');
     response.json({ ...view({ ...run, ended: row.ended, ...(row.ended ? { phase: 'RESULT' as const } : {}) }, row.currentBattle as unknown as GameState | null),
-      cards: snapshot.cards.filter(c => c.status === 'PUBLISHED'), champions: snapshot.champions, relics: snapshot.catalog.relics,
+      cards: snapshot.cards.filter(c => c.status !== 'DISABLED'), champions: snapshot.champions, relics: snapshot.catalog.relics,
       scenes: snapshot.catalog.scenes, characters: snapshot.catalog.characters, music: snapshot.catalog.season.music, rewardReceipts: await receipts(row.id) });
   } catch (error) { next(error); }
 });

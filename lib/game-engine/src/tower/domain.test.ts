@@ -33,10 +33,11 @@ test('run requires actual champion ownership and isolated eligible 25-card start
   assert.equal(catalog.starters[0]!.cardIds[0], 'card-0');
   catalog.starters[0]!.cardIds.pop(); assert.throws(() => newRun(catalog), /25장/);
 });
-test('reward eligibility excludes token, champion, unpublished, disabled, internal and out-of-range cost', () => {
+test('reward eligibility excludes token, champion, disabled, internal and out-of-range cost', () => {
   const card = fixture().cards[0]!;
   assert.equal(eligibleRewardCard(card), true);
-  for (const patch of [{ isToken: true }, { isChampionToken: true }, { status: 'DRAFT' }, { status: 'DISABLED' },
+  assert.equal(eligibleRewardCard({ ...card, status: 'DRAFT' }), true);
+  for (const patch of [{ isToken: true }, { isChampionToken: true }, { status: 'DISABLED' },
     { id: 'test-card' }, { excluded: true }, { cost: 7 }, { cost: -1 }, { rarity: 'CHAMPION' }]) assert.equal(eligibleRewardCard({ ...card, ...patch }), false);
 });
 test('seeded encounter and three distinct reward choices survive serializing and repeated generation', () => {
