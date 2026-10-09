@@ -596,3 +596,7 @@ test("normal floor can grant configured relic after card reward or skip", () => 
   r = transitionRun(r, { type: "SKIP_CARD" }, catalog, history, r.version);
   assert.equal(r.phase, "RELIC_REWARD");
 });
+test('V2 normal, intermediate, final and hidden encounters inherit the correct global OST',()=>{
+ const {catalog}=fixture();const track=(name:string)=>({name,assetUrl:'https://example.invalid/'+name+'.mp3',volume:0.5});catalog.season.music={normal:track('normal'),midBoss:track('mid'),boss:track('final'),hiddenBoss:track('hidden')};const r=run(catalog);
+ assert.equal(encounterFor(r,catalog).music?.name,'normal');assert.equal(encounterFor({...r,floor:3},catalog).music?.name,'mid');assert.equal(encounterFor({...r,floor:6},catalog).music?.name,'final');catalog.season.v2!.hiddenBossId=catalog.season.v2!.bosses[0]!.id;assert.equal(encounterFor({...r,floor:6},catalog,true).music?.name,'hidden');
+});

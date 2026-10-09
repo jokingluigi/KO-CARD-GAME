@@ -171,7 +171,7 @@ export function encounterFor(
           boss.backgroundUrl ??
           floor.backgroundUrl ??
           catalog.season.v2.backgroundUrl,
-        music: boss.music ?? floor.music,
+        music: boss.music ?? floor.music ?? catalog.season.music?.[hidden ? "hiddenBoss" : run.floor === towerFloorCount(catalog) ? "boss" : "midBoss"],
       };
     }
     const enemy = weightedPick(
@@ -194,7 +194,7 @@ export function encounterFor(
       sceneId: floor.sceneId,
       contentVersion: run.contentVersion,
       backgroundUrl: floor.backgroundUrl ?? catalog.season.v2.backgroundUrl,
-      music: floor.music,
+      music: floor.music ?? catalog.season.music?.normal,
     };
   }
   const bossSlot = hidden ? "hiddenBoss" : bossByFloor[run.floor];
