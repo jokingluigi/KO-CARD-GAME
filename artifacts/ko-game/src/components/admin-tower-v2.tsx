@@ -1,4 +1,5 @@
-import { useState } from "react";
+import {AdminEditorSections,useAdminDraftGuard,confirmDiscardAdminDraft} from './admin-editor-sections';
+import { useEffect,useState } from "react";
 import type { Season } from "../../../../lib/game-engine/src/tower/types";
 import type {
   TowerFloor,
@@ -44,6 +45,9 @@ export function AdminTowerV2({
     [testBoss, setTestBoss] = useState(""),
     [testRelics, setTestRelics] = useState<string[]>([]),
     [testDeck, setTestDeck] = useState<string[]>([]);
+  const [selectedFloor,setSelectedFloor]=useState<string|null>(null),[selectedBoss,setSelectedBoss]=useState<string|null>(null);
+  const adminDraftDirty=useAdminDraftGuard(!!draft,draft,JSON.stringify(rows.find(r=>r.id===draft?.id)?.data));
+  useEffect(()=>{setSelectedFloor(null);setSelectedBoss(null);},[draft?.id]);
   const patch = (p: Partial<Season>) =>
     setDraft((d) => (d ? { ...d, ...p } : d));
   const update = (p: Partial<NonNullable<Season["v2"]>>) =>
@@ -62,6 +66,7 @@ export function AdminTowerV2({
     }
   };
   function create(copy?: Season) {
+    if(!confirmDiscardAdminDraft(adminDraftDirty))return;
     const id = crypto.randomUUID();
     setDraft(
       copy
@@ -336,11 +341,13 @@ export function AdminTowerV2({
         기존 V1 런은 보존됩니다. 저장은 초안, 공개는 전투 콘텐츠 전체의 불변
         버전을 만듭니다.
       </p>
+      <div className="admin-tower-card-list">{rows.filter(r=>r.data.v2).map(r=><button key={r.id} aria-pressed={draft?.id===r.id} onClick={()=>{if(!confirmDiscardAdminDraft(adminDraftDirty))return;setDraft(structuredClone(r.data));setVersions([]);}}><strong>{r.data.name}</strong><small>{r.data.v2.visible?"공개 표시":"비공개 표시"} · {r.data.v2.enabled?"사용":"비활성"} · {r.data.v2.floors.length}층 · 보스 {r.data.v2.bosses.length}</small></button>)}</div>
       <select
         className={input}
         aria-label="V2 타워 선택"
         value={draft?.id ?? ""}
         onChange={(e) => {
+          if(!confirmDiscardAdminDraft(adminDraftDirty))return;
           const row = rows.find((r) => r.id === e.target.value);
           if (row) {
             setDraft(structuredClone(row.data));
@@ -372,7 +379,8 @@ export function AdminTowerV2({
       </div>
       {draft?.v2 && (
         <>
-          <nav className="flex flex-wrap gap-2">
+          <div className="admin-tower-workspace-label"><strong>{draft.name}</strong><span>초안 편집 · 진행 중 런은 공개 버전 유지</span></div>
+          <nav className="admin-editor-tabs">
             {["기본", "층", "보스", "컷씬·히든", "확률", "공개·테스트"].map(
               (t) => (
                 <button
@@ -434,7 +442,7 @@ export function AdminTowerV2({
             </div>
           )}
           {tab === "층" && (
-            <div className="space-y-4">
+            <div className="admin-tower-outline"><nav aria-label="층 선택">{draft.v2.floors.map(f=><button key={f.id} aria-pressed={f.id===(draft.v2!.floors.find(f=>f.id===selectedFloor)?.id??draft.v2!.floors[0]?.id)} onClick={()=>setSelectedFloor(f.id)}>{f.number}층 · {f.type==="BOSS"?"보스":"일반 전투"}</button>)}</nav><div className="space-y-4">
               {draft.v2.floors.map((f, index) => {
                 const change = (p: Partial<TowerFloor>) =>
                   update({
@@ -445,6 +453,7 @@ export function AdminTowerV2({
                 return (
                   <fieldset
                     key={f.id}
+                    hidden={f.id!==(draft.v2!.floors.find(f=>f.id===selectedFloor)?.id??draft.v2!.floors[0]?.id)}
                     className="min-w-0 space-y-3 border border-neutral-700 p-3"
                   >
                     <legend>{f.number}층</legend>
@@ -640,10 +649,10 @@ export function AdminTowerV2({
               >
                 층 추가
               </button>
-            </div>
+            </div></div>
           )}
           {tab === "보스" && (
-            <div className="space-y-4">
+            <div className="admin-tower-outline"><nav aria-label="보스 선택">{draft.v2.bosses.map(b=><button key={b.id} aria-pressed={b.id===(draft.v2!.bosses.find(b=>b.id===selectedBoss)?.id??draft.v2!.bosses[0]?.id)} onClick={()=>setSelectedBoss(b.id)}>{b.name}</button>)}</nav><div className="space-y-4">
               {draft.v2.bosses.map((b, index) => {
                 const change = (p: Partial<TowerBoss>) =>
                   update({
@@ -654,11 +663,12 @@ export function AdminTowerV2({
                 return (
                   <fieldset
                     key={b.id}
+                    hidden={b.id!==(draft.v2!.bosses.find(b=>b.id===selectedBoss)?.id??draft.v2!.bosses[0]?.id)}
                     className="min-w-0 space-y-3 border border-neutral-700 p-3"
                   >
                     <legend>{b.name}</legend>
-                    {field("이름", b.name, (v) => change({ name: v }))}
-                    <select
+                    <AdminEditorSections panels={[{id:b.id+'-section-0',label:"기본 · 체력"},{id:b.id+'-section-1',label:"25장 덱"},{id:b.id+'-section-2',label:"특수 능력"},{id:b.id+'-section-3',label:"연출 · OST"},{id:b.id+'-section-4',label:"계정 보상"}]}>{[<>{field("이름", b.name, (v) => change({ name: v }))}
+<select
                       className={input}
                       value={b.championId}
                       onChange={(e) => change({ championId: e.target.value })}
@@ -669,45 +679,45 @@ export function AdminTowerV2({
                         </option>
                       ))}
                     </select>
-                    {difficulty(b.difficulty, (v) => change({ difficulty: v }))}
-                    {field(
+{difficulty(b.difficulty, (v) => change({ difficulty: v }))}
+{field(
                       "시작 체력",
                       b.startingHealth,
                       (v) => change({ startingHealth: v }),
                       "number",
                     )}
-                    {field(
+{field(
                       "최대 체력",
                       b.maxHealth,
                       (v) => change({ maxHealth: v }),
                       "number",
-                    )}
-                    {deck(b.cardIds, (cardIds) => change({ cardIds }))}
-                    {scene("등장 컷씬", b.sceneId, (v) =>
-                      change({ sceneId: v }),
-                    )}
-                    {field("배경 주소", b.backgroundUrl ?? "", (v) =>
-                      change({ backgroundUrl: v || undefined }),
-                    )}
-                    <TowerMusicEditor
-                      label="보스 OST"
-                      value={b.music}
-                      onChange={(music) => change({ music })}
-                    />
-                    <h4>특수 능력 · 등록 순서 / 우선순위</h4>
-                    <TowerEffectEditor
+                    )}</>,
+<>{deck(b.cardIds, (cardIds) => change({ cardIds }))}</>,
+<><h4>특수 능력 · 등록 순서 / 우선순위</h4>
+<TowerEffectEditor
                       cards={cards}
                       effects={b.abilities ?? []}
                       onChange={(abilities) => change({ abilities })}
-                    />
-                    <h4>최초 보상</h4>
-                    {rewards(b.firstRewards, (firstRewards) =>
+                    /></>,
+<>{scene("등장 컷씬", b.sceneId, (v) =>
+                      change({ sceneId: v }),
+                    )}
+{field("배경 주소", b.backgroundUrl ?? "", (v) =>
+                      change({ backgroundUrl: v || undefined }),
+                    )}
+<TowerMusicEditor
+                      label="보스 OST"
+                      value={b.music}
+                      onChange={(music) => change({ music })}
+                    /></>,
+<><h4>최초 보상</h4>
+{rewards(b.firstRewards, (firstRewards) =>
                       change({ firstRewards }),
                     )}
-                    <h4>반복 보상</h4>
-                    {rewards(b.repeatRewards, (repeatRewards) =>
+<h4>반복 보상</h4>
+{rewards(b.repeatRewards, (repeatRewards) =>
                       change({ repeatRewards }),
-                    )}
+                    )}</>]}</AdminEditorSections>
                     <button
                       className={input}
                       onClick={() =>
@@ -746,7 +756,7 @@ export function AdminTowerV2({
               >
                 보스 추가
               </button>
-            </div>
+            </div></div>
           )}
           {tab === "컷씬·히든" && (
             <div className="space-y-3">

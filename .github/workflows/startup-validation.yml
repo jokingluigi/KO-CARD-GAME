@@ -80,6 +80,7 @@ jobs:
           DATABASE_URL: postgresql://unused:unused@127.0.0.1:1/unused
         run: >-
           node --import ./docs/qa/checkpoints/20261006/qa-loader.mjs --test --test-isolation=none
+          artifacts/ko-game/src/lib/admin-navigation.test.ts
           artifacts/ko-game/src/lib/startup-client.test.ts
           artifacts/ko-game/src/lib/entry-state.test.ts
           artifacts/ko-game/src/lib/reward-receipt.test.ts
@@ -182,6 +183,7 @@ jobs:
             sleep 1
           done
           export KO_QA_PLAYWRIGHT="$RUNNER_TEMP/ko-entry-qa/node_modules/playwright/index.mjs"
+          node docs/qa/entry-audio-browser.mjs
           node docs/qa/heavy-impact-browser.mjs
           node docs/qa/cinematic-overhaul-browser.mjs
           node docs/qa/cinematic-browser.mjs
@@ -196,3 +198,25 @@ jobs:
           node docs/qa/mobile-input-browser.mjs
           node docs/qa/desktop-hand-browser.mjs
           node docs/qa/tag-manager-browser.mjs
+
+      - name: Full admin console navigation, saves, mobile and unsaved draft guards
+        env:
+          KO_ADMIN_QA_ORIGIN: http://127.0.0.1:17998
+          KO_QA_PLAYWRIGHT: ${{ runner.temp }}/ko-entry-qa/node_modules/playwright/index.mjs
+          KO_QA_CHROME_CHANNEL: chromium
+          PORT: '17998'
+          BASE_PATH: /
+        run: |
+          rm -f qa-results/tower-v2/fixture.json
+          KO_TOWER_BROWSER_MODE=1 node --import ./docs/qa/checkpoints/20261006/qa-loader.mjs --test --test-isolation=none lib/db/qa/tower-v2-http.test.ts > "$RUNNER_TEMP/ko-admin-fixture.log" 2>&1 &
+          fixture_pid=$!
+          pnpm --filter @workspace/ko-game exec vite --config vite.config.ts --port 17998 --host 127.0.0.1 > "$RUNNER_TEMP/ko-admin-preview.log" 2>&1 &
+          admin_pid=$!
+          trap 'kill "$fixture_pid" "$admin_pid" 2>/dev/null || true' EXIT
+          for attempt in $(seq 1 60); do
+            if test -f qa-results/tower-v2/fixture.json && curl --fail --silent "$KO_ADMIN_QA_ORIGIN/admin" > /dev/null; then break; fi
+            sleep 1
+          done
+          node --import ./docs/qa/checkpoints/20261006/qa-loader.mjs docs/qa/admin-console-menus-browser.mjs
+          node --import ./docs/qa/checkpoints/20261006/qa-loader.mjs docs/qa/admin-console-editors-browser.mjs
+          node --import ./docs/qa/checkpoints/20261006/qa-loader.mjs docs/qa/admin-console-guard-browser.mjs

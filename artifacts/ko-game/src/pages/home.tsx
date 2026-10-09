@@ -791,7 +791,7 @@ export default function Home({ initialAuthUser }: { initialAuthUser?: AuthUser }
 
   useEffect(() => {
     if (!matchReady || (isAiMatch && !aiMatchStarted)) {
-      audioManager.stopGameAudio();
+      audioManager.stopBattleAudio();
       return;
     }
     const champion = gameState.players.map((player) => player.champion)
@@ -826,10 +826,10 @@ export default function Home({ initialAuthUser }: { initialAuthUser?: AuthUser }
   }, []);
 
   useEffect(() => {
-    if (gameState.status === "FINISHED") {
-      audioManager.stopGameAudio();
+    if (matchReady && gameState.status === "FINISHED") {
+      audioManager.stopBattleAudio();
     }
-  }, [gameState.status]);
+  }, [gameState.status, matchReady]);
 
   useEffect(() => {
     if (lastAudioEventCountRef.current === null) {

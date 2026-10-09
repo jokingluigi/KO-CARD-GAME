@@ -1,3 +1,4 @@
+import {AdminEditorSections,useAdminDraftGuard,confirmDiscardAdminDraft} from './admin-editor-sections';
 import { TOWER_VANILLA_CHAMPION_ID } from '@/game/champions/tower-vanilla';
 import { AWAKENING_CARD_IDS, AWAKENING_QUEST_TEXT } from '@/game/champions/awakening-definitions';
 import { ChampionQuestConditionEditor } from './champion-quest-condition-editor';
@@ -133,6 +134,7 @@ export function AdminChampionManager({ onUnauthorized }: { onUnauthorized: () =>
   const [champions, setChampions] = useState<Champion[]>([]);
   const [excludedDraftChampionIds, setExcludedDraftChampionIds] = useState<string[] | null>(null);
   const [draftSelectionBusy, setDraftSelectionBusy] = useState(false);
+  const [listPage,setListPage]=useState(0);
   const [search, setSearch] = useState("");
   const [status, setStatus] = useState("");
   const [editing, setEditing] = useState<Champion | null>(null);
@@ -713,6 +715,7 @@ export function AdminChampionManager({ onUnauthorized }: { onUnauthorized: () =>
     }
 
     function closeEditor() {
+      if(!confirmDiscardAdminDraft(adminDraftDirty))return;
       void discardPendingBasicPortrait();
       void discardPendingCompletedPortrait();
       clearBasicPortraitLocalUrl();
@@ -732,6 +735,9 @@ export function AdminChampionManager({ onUnauthorized }: { onUnauthorized: () =>
     if (reference.state === "DRAFT") return `${reference.name ?? id} (DRAFT)`;
     return reference.name ?? id;
   };
+  useEffect(()=>setListPage(0),[search,status]);
+  useEffect(()=>setListPage(p=>Math.min(p,Math.max(0,Math.ceil(champions.length/20)-1))),[champions.length]);
+  const adminDraftDirty=useAdminDraftGuard(open,form);
   const brokenIntroInteractions = introInteractions.filter(hasBrokenIntroReference);
   const input = "w-full rounded border border-neutral-700 bg-neutral-900 px-3 py-2 text-sm";
   return <div>
@@ -760,7 +766,7 @@ export function AdminChampionManager({ onUnauthorized }: { onUnauthorized: () =>
     )}
     <div className="mb-4 flex gap-2"><label className="flex flex-1 items-center gap-2 rounded border border-neutral-800 px-3"><Search className="h-4 w-4"/><input value={search} onChange={(e)=>setSearch(e.target.value)} className="w-full bg-transparent py-2 outline-none" placeholder="챔피언 검색"/></label>
       <select value={status} onChange={(e)=>setStatus(e.target.value)} className={input}><option value="">모든 상태</option><option value="DRAFT">비공개 (DRAFT)</option><option>PUBLISHED</option><option>DISABLED</option></select></div>
-     <div className="grid gap-3 md:grid-cols-2">{champions.map((champion)=><article key={champion.id} className="rounded-lg border border-neutral-800 bg-neutral-950 p-4">
+     <div className="grid gap-3 md:grid-cols-2">{champions.slice(listPage*20,(listPage+1)*20).map((champion)=><article key={champion.id} className="rounded-lg border border-neutral-800 bg-neutral-950 p-4">
       <div className="flex gap-4">{champion.imageUrl ? (
         <CardArtwork
           src={champion.imageUrl}
@@ -775,7 +781,8 @@ export function AdminChampionManager({ onUnauthorized }: { onUnauthorized: () =>
         <div><div className="text-xs text-primary">{champion.status} · v{champion.version}</div><h3 className="text-lg font-black">{champion.name}</h3><p className="text-xs text-neutral-400">HP {champion.maxHealth} · {champion.abilityCost}G</p><p className="mt-1 text-sm">{champion.abilityName}</p>{champion.hasQuest && <p className="mt-1 text-xs text-amber-300">Quest: {champion.questName} (0/{champion.questProgressRequired})</p>}</div></div>
        <div className="mt-3 flex flex-wrap gap-2 text-xs"><button type="button" onClick={()=>editor(champion)} className="rounded border px-2 py-1"><FilePenLine className="mr-1 inline h-3 w-3"/>수정</button><button type="button" onClick={()=>void mutate(champion.id,"duplicate")} className="rounded border px-2 py-1"><Copy className="mr-1 inline h-3 w-3"/>복제</button><button type="button" disabled={busy} onClick={()=>void deleteChampion(champion)} data-testid={`button-delete-champion-${champion.id}`} className="rounded border border-red-900 px-2 py-1 text-red-400 disabled:opacity-40"><Trash2 className="mr-1 inline h-3 w-3"/>삭제</button><button type="button" disabled={draftSelectionBusy || excludedDraftChampionIds === null} aria-pressed={excludedDraftChampionIds?.includes(champion.id) ?? false} title="새 드래프트의 챔피언 선택에서만 제외합니다." onClick={()=>void toggleDraftSelection(champion)} data-testid={"button-draft-champion-selection-" + champion.id} className="rounded border border-amber-800 px-2 py-1 text-amber-300 disabled:opacity-40">{excludedDraftChampionIds?.includes(champion.id) ? "드래프트 선택에 다시 표시" : "드래프트 선택에서 숨기기"}</button>{champion.status!=="PUBLISHED"&&<button type="button" onClick={()=>void mutate(champion.id,"status",{status:"PUBLISHED"})} className="rounded border border-emerald-800 px-2 py-1 text-emerald-400"><CheckCircle2 className="mr-1 inline h-3 w-3"/>공개</button>}{champion.status!=="DRAFT"&&<button type="button" disabled={busy} onClick={()=>void mutate(champion.id,"status",{status:"DRAFT"})} data-testid={"button-private-champion-" + champion.id} className="rounded border border-neutral-600 px-2 py-1 text-neutral-200 disabled:opacity-40">비공개</button>}{champion.status!=="DISABLED"&&<button type="button" onClick={()=>void mutate(champion.id,"status",{status:"DISABLED"})} className="rounded border border-red-900 px-2 py-1 text-red-400"><Ban className="mr-1 inline h-3 w-3"/>비활성화</button>}</div>
     </article>)}</div>
-    {open && <div className="fixed inset-0 z-50 overflow-y-auto bg-black/80 p-5"><div className="mx-auto max-w-4xl rounded-lg border border-neutral-700 bg-neutral-950 p-5">
+<div className="admin-pagination"><button disabled={!listPage} onClick={()=>setListPage(p=>p-1)}>이전</button><span>{listPage+1} / {Math.max(1,Math.ceil(champions.length/20))} · {champions.length}명</span><button disabled={(listPage+1)*20>=champions.length} onClick={()=>setListPage(p=>p+1)}>다음</button></div>
+    {open && <div className="fixed inset-0 z-50 overflow-y-auto bg-black/80 p-5"><div className="admin-editor-dialog mx-auto max-w-4xl rounded-lg border border-neutral-700 bg-neutral-950 p-5">
         <div className="mb-4 flex items-start justify-between gap-3"><div><h3 className="text-xl font-black">{editing?"챔피언 수정":"새 챔피언"}</h3><p className="mt-1 text-xs text-neutral-500">분석과 프롬프트 생성은 현재 입력값을 별도 상태로 처리하며 폼을 초기화하지 않습니다.</p></div><button type="button" onClick={closeEditor}><X/></button></div>
         {editing?.id === TOWER_VANILLA_CHAMPION_ID && <p className="mb-4 rounded border border-amber-700 p-3 text-sm text-amber-200">타워 일반 층 전용입니다. 초상화를 설정할 수 있으며, 전투에서는 체력 30·능력 없음·퀘스트 없음으로 적용됩니다.</p>}
         {editing && <section className="mb-4 rounded border border-neutral-800 bg-neutral-900/50 p-3">
@@ -806,11 +813,216 @@ export function AdminChampionManager({ onUnauthorized }: { onUnauthorized: () =>
        </div>
        <FullAnalysisPanel analysis={fullAnalysis} prompt={fullPrompt} onCopyPrompt={()=>void copyFullPrompt()} />
       <div className="grid gap-4 md:grid-cols-2">
-        <label>이름<input className={input} value={form.name} onChange={e=>update("name",e.target.value)}/></label>
-        <label>최대 HP<input type="number" className={input} value={form.maxHealth} onChange={e=>update("maxHealth",Number(e.target.value))}/></label>
-         <label>기본 Intro 대사 1 (최대 80자)<input maxLength={80} className={input} value={form.introLineOne ?? ""} onChange={e=>update("introLineOne",e.target.value || null)}/></label>
-         <label>기본 Intro 대사 2 (최대 80자)<input maxLength={80} className={input} value={form.introLineTwo ?? ""} onChange={e=>update("introLineTwo",e.target.value || null)}/></label>
-        <div className="md:col-span-2 grid gap-3 lg:grid-cols-2">
+        <AdminEditorSections panels={[{"id":"admin-champion-manager-0","label":"기본 정보"},{"id":"admin-champion-manager-1","label":"고유 · 시작 능력"},{"id":"admin-champion-manager-2","label":"퀘스트 · 강화"},{"id":"admin-champion-manager-3","label":"챔피언 토큰"},{"id":"admin-champion-manager-4","label":"대사"},{"id":"admin-champion-manager-5","label":"이미지"}]}>{[<><label>이름<input className={input} value={form.name} onChange={e=>update("name",e.target.value)}/></label>
+<label>최대 HP<input type="number" className={input} value={form.maxHealth} onChange={e=>update("maxHealth",Number(e.target.value))}/></label>
+<label className="md:col-span-2">설명<textarea className={input} value={form.description} onChange={e=>update("description",e.target.value)}/></label>
+<label className="flex items-center gap-2 text-sm">
+            <input type="checkbox" checked={form.isCraftable} onChange={e=>update("isCraftable", e.target.checked)} />
+            프리즘 제작 허용 (해제해도 퀘스트·보상 획득은 가능)
+          </label>
+<label className="md:col-span-2 flex items-center gap-2 rounded border border-amber-900/60 bg-amber-950/20 p-3 text-sm">
+            <input type="checkbox" checked={form.isStarterGrant} onChange={e=>update("isStarterGrant", e.target.checked)} />
+            신규 계정 Starter Champion
+          </label></>,
+<><label>고유 능력 이름<input className={input} value={form.abilityName} onChange={e=>update("abilityName",e.target.value)}/></label>
+<label>Gold 비용<input type="number" className={input} value={form.abilityCost} onChange={e=>update("abilityCost",Number(e.target.value))}/></label>
+<EffectField
+            title="고유 능력 효과"
+            value={form.abilityText}
+            onChange={v=>update("abilityText",v)}
+            onAnalyze={()=>void analyze("abilityText","ABILITY")}
+            onApply={()=>applyEffect("abilityText","abilityEffects")}
+            onPrompt={()=>void generatePrompt("abilityText","CHAMPION_ABILITY")}
+            onReanalyze={()=>void analyze("abilityText","ABILITY")}
+            analysis={analysisResults.abilityText}
+            prompt={prompts.abilityText}
+            onCopyPrompt={()=>void copyPrompt("abilityText")}
+            analyzing={analyzingKey === "abilityText"}
+            prompting={promptingKey === "abilityText"}
+            sourceId={editing?.id}
+            effectContext="CHAMPION_ABILITY"
+            existingEffectCount={effectConfigEntryCount(form.abilityEffects)}
+            onApplyAi={(effects, mode) => applyAiEffect("abilityEffects", effects, mode)}
+            onUnauthorized={onUnauthorized}
+          />
+<label className="md:col-span-2">게임 시작 능력 이름 (선택)<input data-testid="champion-start-name" className={input} value={form.gameStartAbilityName ?? ''} onChange={e=>update('gameStartAbilityName',e.target.value)}/></label>
+<p className="md:col-span-2 text-xs text-neutral-400">초기 손패를 나누기 전에 챔피언당 한 번 자동 발동합니다. 비용이나 고유 능력 사용 횟수를 소모하지 않습니다. 직접 대상 선택이 필요한 효과는 사용할 수 없습니다.</p>
+<EffectField
+            title="게임 시작 능력 효과"
+            value={form.gameStartAbilityText ?? ""}
+            onChange={v=>update("gameStartAbilityText",v)}
+            onAnalyze={()=>void analyze("gameStartAbilityText","ABILITY")}
+            onApply={()=>applyEffect("gameStartAbilityText","gameStartAbilityEffects")}
+            onPrompt={()=>void generatePrompt("gameStartAbilityText","CHAMPION_ABILITY")}
+            onReanalyze={()=>void analyze("gameStartAbilityText","ABILITY")}
+            analysis={analysisResults.gameStartAbilityText}
+            prompt={prompts.gameStartAbilityText}
+            onCopyPrompt={()=>void copyPrompt("gameStartAbilityText")}
+            analyzing={analyzingKey === "gameStartAbilityText"}
+            prompting={promptingKey === "gameStartAbilityText"}
+            sourceId={editing?.id}
+            effectContext="CHAMPION_ABILITY"
+            existingEffectCount={effectConfigEntryCount(form.gameStartAbilityEffects)}
+            onApplyAi={(effects, mode) => applyAiEffect("gameStartAbilityEffects", effects, mode)}
+            onUnauthorized={onUnauthorized}
+          /></>,
+<><label className="flex items-center gap-2"><input type="checkbox" checked={form.hasQuest} onChange={e=>{
+           const current = formRef.current;
+           const enabled = e.target.checked;
+           replaceForm({
+             ...current,
+             hasQuest: enabled,
+             questProgressRequired: enabled
+               ? (current.questProgressRequired ?? (typeof current.questCondition?.required === "number" ? current.questCondition.required : 1))
+               : null,
+             questCondition: enabled && current.questCondition
+               ? {
+                   ...current.questCondition,
+                   required: current.questProgressRequired
+                     ?? (typeof current.questCondition.required === "number" ? current.questCondition.required : 1),
+                 }
+               : current.questCondition,
+           });
+         }}/> 퀘스트 있음</label>
+<div className="md:col-span-2"><button type="button" className="rounded border border-amber-500 px-3 py-2 text-sm text-amber-200" onClick={() => setForm(current => ({ ...current,
+           hasQuest: true, questName: '위기 각성', questText: AWAKENING_QUEST_TEXT, questProgressRequired: 1,
+           questCondition: { event: 'STATE_CONDITION', required: 1, condition: { type: 'ALL', conditions: [
+             { type: 'HEALTH', owner: 'SELF', op: 'GTE', value: 1 }, { type: 'HEALTH', owner: 'SELF', op: 'LTE', value: 5 },
+           ] }, awakening: { stageCardIds: { ...AWAKENING_CARD_IDS }, fullBoardPolicy: 'WAIT_WITHOUT_INVULNERABILITY' } },
+           questRewardEffects: null, questRewardText: '각성 수치를 확정하고 탱커 → 힐러 → 딜러를 연쇄 소환합니다. 각성 선수가 필드에 있는 동안 내 챔피언은 무적입니다. 소환 대기 중에는 무적이 보류됩니다.',
+         }))}>위기 각성 · 3단계 연쇄 소환 적용</button>{form.questCondition?.awakening != null && <p className="mt-2 text-xs text-amber-200">저장하면 전용 초안 선수 3장이 생성됩니다. 이름과 이미지는 카드 관리에서 설정하세요. 챔피언 이름·체력·고유 능력은 위 설정을 사용합니다.</p>}</div>
+{form.hasQuest && <><label>퀘스트 이름<input className={input} value={form.questName??""} onChange={e=>update("questName",e.target.value)}/></label><label>필요 진행도<input type="number" className={input} value={form.questProgressRequired??1} onChange={e=>updateQuestProgress(e.target.value===""?null:Number(e.target.value))}/></label>
+           <fieldset className="space-y-3 md:col-span-2"><legend>퀘스트 달성 조건 설정</legend><select className={input} value={form.questCondition?.event === 'STATE_CONDITION' ? 'advanced' : 'legacy'} onChange={e=>{ if(e.target.value==='advanced') { update('questCondition',{event:'STATE_CONDITION',required:form.questProgressRequired??1,condition:{type:'TURN',turn:5}}); } else update('questCondition',{event:'CARD_PLAYED',progress:1,required:form.questProgressRequired??1}); }}><option value="legacy">기존 이벤트 진행도</option><option value="advanced">턴·체력·행동 누적·복합 조건</option></select>{form.questCondition?.event === 'STATE_CONDITION' && validChampionQuestCondition(form.questCondition.condition) && <ChampionQuestConditionEditor value={form.questCondition.condition} onChange={condition=>update('questCondition',{...formRef.current.questCondition,condition})}/>}<p className="text-xs text-neutral-400">복합 조건은 누적 행동과 현재 턴·체력을 함께 평가합니다. 퀘스트 보상은 최초 달성 시 한 번만 적용합니다.</p></fieldset>
+           <QuestConditionField
+             value={form.questText??""}
+             onChange={v=>update("questText",v)}
+             onAnalyze={()=>void analyzeQuest()}
+             onApply={applyQuestAnalysis}
+             onPrompt={()=>void generatePrompt("questText","QUEST_CONDITION")}
+             onReanalyze={()=>void analyzeQuest()}
+             analysis={questAnalysis}
+             prompt={prompts.questText}
+             onCopyPrompt={()=>void copyPrompt("questText")}
+             analyzing={analyzingKey === "questText"}
+             prompting={promptingKey === "questText"}
+           />
+             <EffectField
+               title="퀘스트 보상"
+               value={form.questRewardText??""}
+               onChange={v=>update("questRewardText",v)}
+               onAnalyze={()=>void analyze("questRewardText","QUEST_REWARD")}
+               onApply={()=>applyEffect("questRewardText","questRewardEffects")}
+               onPrompt={()=>void generatePrompt("questRewardText","QUEST_REWARD")}
+               onReanalyze={()=>void analyze("questRewardText","QUEST_REWARD")}
+               analysis={analysisResults.questRewardText}
+               prompt={prompts.questRewardText}
+               onCopyPrompt={()=>void copyPrompt("questRewardText")}
+               analyzing={analyzingKey === "questRewardText"}
+               prompting={promptingKey === "questRewardText"}
+                sourceId={editing?.id}
+                effectContext="QUEST_REWARD"
+               existingEffectCount={effectConfigEntryCount(form.questRewardEffects)}
+                onApplyAi={(effects, mode) => applyAiEffect("questRewardEffects", effects, mode)}
+                onUnauthorized={onUnauthorized}
+             /></>}
+<label>강화 능력 이름<input className={input} value={form.upgradedAbilityName??""} onChange={e=>update("upgradedAbilityName",e.target.value||null)}/></label>
+<label>강화 능력 비용<input type="number" className={input} value={form.upgradedAbilityCost??""} onChange={e=>update("upgradedAbilityCost",e.target.value===""?null:Number(e.target.value))}/></label>
+<EffectField
+             title="강화 고유 능력"
+             value={form.upgradedAbilityText??""}
+             onChange={v=>update("upgradedAbilityText",v)}
+             onAnalyze={()=>void analyze("upgradedAbilityText","UPGRADED_ABILITY")}
+             onApply={()=>applyEffect("upgradedAbilityText","upgradedAbilityEffects")}
+             onPrompt={()=>void generatePrompt("upgradedAbilityText","UPGRADED_CHAMPION_ABILITY")}
+             onReanalyze={()=>void analyze("upgradedAbilityText","UPGRADED_ABILITY")}
+             analysis={analysisResults.upgradedAbilityText}
+             prompt={prompts.upgradedAbilityText}
+             onCopyPrompt={()=>void copyPrompt("upgradedAbilityText")}
+             analyzing={analyzingKey === "upgradedAbilityText"}
+             prompting={promptingKey === "upgradedAbilityText"}
+              sourceId={editing?.id}
+             effectContext="UPGRADED_CHAMPION_ABILITY"
+            existingEffectCount={effectConfigEntryCount(form.upgradedAbilityEffects)}
+             onApplyAi={(effects, mode) => applyAiEffect("upgradedAbilityEffects", effects, mode)}
+             onUnauthorized={onUnauthorized}
+           />
+<AdminAudioField
+           title="챔피언 퀘스트 완료 음악"
+           value={{
+             assetId: form.questCompleteAudioAssetId,
+             url: form.questCompleteAudioUrl,
+             volume: form.questCompleteAudioVolume,
+             enabled: form.questCompleteAudioEnabled,
+             uploadToken: form.questCompleteAudioUploadToken,
+             fileName: form.questCompleteAudioFileName,
+           }}
+           onChange={(value) => {
+             update("questCompleteAudioAssetId", value.assetId);
+             update("questCompleteAudioUrl", value.url);
+             update("questCompleteAudioVolume", value.volume);
+             update("questCompleteAudioEnabled", value.enabled);
+             update("questCompleteAudioUploadToken", value.uploadToken);
+             update("questCompleteAudioFileName", value.fileName);
+           }}
+           onError={(messageText) => {
+             setError(messageText);
+             if (messageText) toast({ title: "음악 업로드 실패", description: messageText, variant: "destructive" });
+           }}
+           onMessage={(messageText) => {
+             setError("");
+             setMessageText(messageText);
+           }}
+         /></>,
+<><div className="md:col-span-2 rounded border border-neutral-800 bg-neutral-900/40 p-3">
+           <div className="mb-2 text-xs font-bold text-neutral-400">연결할 Champion Token</div>
+           <input
+             className={input}
+             value={tokenSearch}
+             onChange={e=>setTokenSearch(e.target.value)}
+             placeholder="Champion Token 카드 검색"
+             aria-label="Champion Token 카드 검색"
+           />
+           <select
+             className={`${input} mt-2`}
+             value={form.championTokenDefinitionId ?? ""}
+             onChange={e=>update("championTokenDefinitionId", e.target.value || null)}
+             aria-label="연결할 Champion Token"
+           >
+             <option value="">연결하지 않음</option>
+             {visibleTokenCards.map((card) => (
+               <option key={card.id} value={card.id}>
+                 {card.name} · {card.cost}G · {card.attack}/{card.health} · {card.status}
+               </option>
+             ))}
+           </select>
+           {selectedTokenCard ? (
+             <div className="mt-3 flex items-center gap-3 rounded border border-primary/30 bg-black/30 p-3">
+               {selectedTokenCard.imageUrl
+                 ? <img src={selectedTokenCard.imageUrl} alt="" className="h-16 w-12 rounded object-cover" />
+                 : <div className="h-16 w-12 rounded bg-neutral-800" />}
+               <div className="min-w-0 text-xs">
+                 <div className="font-black text-primary">{selectedTokenCard.name}</div>
+                 <div className="mt-1 text-neutral-300">{selectedTokenCard.cost}G · {selectedTokenCard.attack}/{selectedTokenCard.health}</div>
+                 <div className="mt-1 text-neutral-500">Champion Token · {selectedTokenCard.status}</div>
+                 <div className="mt-2 text-neutral-400">카드 이름·스탯·효과·이미지는 선수 카드 관리자에서 편집합니다.</div>
+               </div>
+             </div>
+           ) : form.championTokenDefinitionId ? (
+             <div className="mt-3 rounded border border-amber-800 bg-amber-950/30 p-3 text-xs text-amber-200">
+               연결된 Champion Token 카드를 찾을 수 없습니다. 삭제되었거나 Champion Token이 아닌 카드일 수 있습니다.
+             </div>
+           ) : (
+             <div className="mt-2 text-xs text-neutral-500">Card Admin에서 `챔피언 토큰`으로 만든 카드만 선택할 수 있습니다.</div>
+           )}
+           {selectedTokenCard?.status === "DISABLED" && (
+             <div className="mt-2 rounded border border-amber-800 bg-amber-950/30 p-2 text-xs text-amber-200">
+               이 카드는 비활성 상태입니다. Champion을 공개하려면 Card Admin에서 먼저 공개 가능한 상태로 바꾸세요.
+             </div>
+           )}
+         </div></>,
+<><label>기본 Intro 대사 1 (최대 80자)<input maxLength={80} className={input} value={form.introLineOne ?? ""} onChange={e=>update("introLineOne",e.target.value || null)}/></label>
+<label>기본 Intro 대사 2 (최대 80자)<input maxLength={80} className={input} value={form.introLineTwo ?? ""} onChange={e=>update("introLineTwo",e.target.value || null)}/></label>
+<div className="md:col-span-2 grid gap-3 lg:grid-cols-2">
           {(["BEFORE_QUEST", "AFTER_QUEST"] as const).map((phase) => (
             <section key={phase} className="rounded-lg border border-amber-800/60 bg-neutral-900/70 p-3">
               <h4 className="mb-2 font-black text-amber-200">{phase === "BEFORE_QUEST" ? "퀘스트 완료 전 대사" : "퀘스트 완료 후 대사"}</h4>
@@ -851,9 +1063,8 @@ export function AdminChampionManager({ onUnauthorized }: { onUnauthorized: () =>
               </div>)}
             </div>}
           </section>
-        </div>
-        <label className="md:col-span-2">설명<textarea className={input} value={form.description} onChange={e=>update("description",e.target.value)}/></label>
-          <div className="md:col-span-2 grid gap-3 md:grid-cols-2">
+        </div></>,
+<><div className="md:col-span-2 grid gap-3 md:grid-cols-2">
             <div className="rounded border border-neutral-800 bg-neutral-900/40 p-3">
               <div className="text-xs font-bold text-neutral-300">기본 초상화</div>
               <p className="mt-1 text-[10px] text-neutral-500">게임 시작부터 표시됩니다. 퀘스트 완료 초상화가 없으면 이 이미지를 계속 사용합니다.</p>
@@ -973,214 +1184,11 @@ export function AdminChampionManager({ onUnauthorized }: { onUnauthorized: () =>
                 }}
               />
             </div>
-          </div>
-        <label>고유 능력 이름<input className={input} value={form.abilityName} onChange={e=>update("abilityName",e.target.value)}/></label>
-        <label>Gold 비용<input type="number" className={input} value={form.abilityCost} onChange={e=>update("abilityCost",Number(e.target.value))}/></label>
-          <EffectField
-            title="고유 능력 효과"
-            value={form.abilityText}
-            onChange={v=>update("abilityText",v)}
-            onAnalyze={()=>void analyze("abilityText","ABILITY")}
-            onApply={()=>applyEffect("abilityText","abilityEffects")}
-            onPrompt={()=>void generatePrompt("abilityText","CHAMPION_ABILITY")}
-            onReanalyze={()=>void analyze("abilityText","ABILITY")}
-            analysis={analysisResults.abilityText}
-            prompt={prompts.abilityText}
-            onCopyPrompt={()=>void copyPrompt("abilityText")}
-            analyzing={analyzingKey === "abilityText"}
-            prompting={promptingKey === "abilityText"}
-            sourceId={editing?.id}
-            effectContext="CHAMPION_ABILITY"
-            existingEffectCount={effectConfigEntryCount(form.abilityEffects)}
-            onApplyAi={(effects, mode) => applyAiEffect("abilityEffects", effects, mode)}
-            onUnauthorized={onUnauthorized}
-          />
-         <label className="md:col-span-2">게임 시작 능력 이름 (선택)<input data-testid="champion-start-name" className={input} value={form.gameStartAbilityName ?? ''} onChange={e=>update('gameStartAbilityName',e.target.value)}/></label>
-         <p className="md:col-span-2 text-xs text-neutral-400">초기 손패를 나누기 전에 챔피언당 한 번 자동 발동합니다. 비용이나 고유 능력 사용 횟수를 소모하지 않습니다. 직접 대상 선택이 필요한 효과는 사용할 수 없습니다.</p>
-          <EffectField
-            title="게임 시작 능력 효과"
-            value={form.gameStartAbilityText ?? ""}
-            onChange={v=>update("gameStartAbilityText",v)}
-            onAnalyze={()=>void analyze("gameStartAbilityText","ABILITY")}
-            onApply={()=>applyEffect("gameStartAbilityText","gameStartAbilityEffects")}
-            onPrompt={()=>void generatePrompt("gameStartAbilityText","CHAMPION_ABILITY")}
-            onReanalyze={()=>void analyze("gameStartAbilityText","ABILITY")}
-            analysis={analysisResults.gameStartAbilityText}
-            prompt={prompts.gameStartAbilityText}
-            onCopyPrompt={()=>void copyPrompt("gameStartAbilityText")}
-            analyzing={analyzingKey === "gameStartAbilityText"}
-            prompting={promptingKey === "gameStartAbilityText"}
-            sourceId={editing?.id}
-            effectContext="CHAMPION_ABILITY"
-            existingEffectCount={effectConfigEntryCount(form.gameStartAbilityEffects)}
-            onApplyAi={(effects, mode) => applyAiEffect("gameStartAbilityEffects", effects, mode)}
-            onUnauthorized={onUnauthorized}
-          />
-         <label className="flex items-center gap-2"><input type="checkbox" checked={form.hasQuest} onChange={e=>{
-           const current = formRef.current;
-           const enabled = e.target.checked;
-           replaceForm({
-             ...current,
-             hasQuest: enabled,
-             questProgressRequired: enabled
-               ? (current.questProgressRequired ?? (typeof current.questCondition?.required === "number" ? current.questCondition.required : 1))
-               : null,
-             questCondition: enabled && current.questCondition
-               ? {
-                   ...current.questCondition,
-                   required: current.questProgressRequired
-                     ?? (typeof current.questCondition.required === "number" ? current.questCondition.required : 1),
-                 }
-               : current.questCondition,
-           });
-         }}/> 퀘스트 있음</label>
-         <div className="md:col-span-2"><button type="button" className="rounded border border-amber-500 px-3 py-2 text-sm text-amber-200" onClick={() => setForm(current => ({ ...current,
-           hasQuest: true, questName: '위기 각성', questText: AWAKENING_QUEST_TEXT, questProgressRequired: 1,
-           questCondition: { event: 'STATE_CONDITION', required: 1, condition: { type: 'ALL', conditions: [
-             { type: 'HEALTH', owner: 'SELF', op: 'GTE', value: 1 }, { type: 'HEALTH', owner: 'SELF', op: 'LTE', value: 5 },
-           ] }, awakening: { stageCardIds: { ...AWAKENING_CARD_IDS }, fullBoardPolicy: 'WAIT_WITHOUT_INVULNERABILITY' } },
-           questRewardEffects: null, questRewardText: '각성 수치를 확정하고 탱커 → 힐러 → 딜러를 연쇄 소환합니다. 각성 선수가 필드에 있는 동안 내 챔피언은 무적입니다. 소환 대기 중에는 무적이 보류됩니다.',
-         }))}>위기 각성 · 3단계 연쇄 소환 적용</button>{form.questCondition?.awakening != null && <p className="mt-2 text-xs text-amber-200">저장하면 전용 초안 선수 3장이 생성됩니다. 이름과 이미지는 카드 관리에서 설정하세요. 챔피언 이름·체력·고유 능력은 위 설정을 사용합니다.</p>}</div>
-         {form.hasQuest && <><label>퀘스트 이름<input className={input} value={form.questName??""} onChange={e=>update("questName",e.target.value)}/></label><label>필요 진행도<input type="number" className={input} value={form.questProgressRequired??1} onChange={e=>updateQuestProgress(e.target.value===""?null:Number(e.target.value))}/></label>
-           <fieldset className="space-y-3 md:col-span-2"><legend>퀘스트 달성 조건 설정</legend><select className={input} value={form.questCondition?.event === 'STATE_CONDITION' ? 'advanced' : 'legacy'} onChange={e=>{ if(e.target.value==='advanced') { update('questCondition',{event:'STATE_CONDITION',required:form.questProgressRequired??1,condition:{type:'TURN',turn:5}}); } else update('questCondition',{event:'CARD_PLAYED',progress:1,required:form.questProgressRequired??1}); }}><option value="legacy">기존 이벤트 진행도</option><option value="advanced">턴·체력·행동 누적·복합 조건</option></select>{form.questCondition?.event === 'STATE_CONDITION' && validChampionQuestCondition(form.questCondition.condition) && <ChampionQuestConditionEditor value={form.questCondition.condition} onChange={condition=>update('questCondition',{...formRef.current.questCondition,condition})}/>}<p className="text-xs text-neutral-400">복합 조건은 누적 행동과 현재 턴·체력을 함께 평가합니다. 퀘스트 보상은 최초 달성 시 한 번만 적용합니다.</p></fieldset>
-           <QuestConditionField
-             value={form.questText??""}
-             onChange={v=>update("questText",v)}
-             onAnalyze={()=>void analyzeQuest()}
-             onApply={applyQuestAnalysis}
-             onPrompt={()=>void generatePrompt("questText","QUEST_CONDITION")}
-             onReanalyze={()=>void analyzeQuest()}
-             analysis={questAnalysis}
-             prompt={prompts.questText}
-             onCopyPrompt={()=>void copyPrompt("questText")}
-             analyzing={analyzingKey === "questText"}
-             prompting={promptingKey === "questText"}
-           />
-             <EffectField
-               title="퀘스트 보상"
-               value={form.questRewardText??""}
-               onChange={v=>update("questRewardText",v)}
-               onAnalyze={()=>void analyze("questRewardText","QUEST_REWARD")}
-               onApply={()=>applyEffect("questRewardText","questRewardEffects")}
-               onPrompt={()=>void generatePrompt("questRewardText","QUEST_REWARD")}
-               onReanalyze={()=>void analyze("questRewardText","QUEST_REWARD")}
-               analysis={analysisResults.questRewardText}
-               prompt={prompts.questRewardText}
-               onCopyPrompt={()=>void copyPrompt("questRewardText")}
-               analyzing={analyzingKey === "questRewardText"}
-               prompting={promptingKey === "questRewardText"}
-                sourceId={editing?.id}
-                effectContext="QUEST_REWARD"
-               existingEffectCount={effectConfigEntryCount(form.questRewardEffects)}
-                onApplyAi={(effects, mode) => applyAiEffect("questRewardEffects", effects, mode)}
-                onUnauthorized={onUnauthorized}
-             /></>}
-        <label>강화 능력 이름<input className={input} value={form.upgradedAbilityName??""} onChange={e=>update("upgradedAbilityName",e.target.value||null)}/></label>
-        <label>강화 능력 비용<input type="number" className={input} value={form.upgradedAbilityCost??""} onChange={e=>update("upgradedAbilityCost",e.target.value===""?null:Number(e.target.value))}/></label>
-           <EffectField
-             title="강화 고유 능력"
-             value={form.upgradedAbilityText??""}
-             onChange={v=>update("upgradedAbilityText",v)}
-             onAnalyze={()=>void analyze("upgradedAbilityText","UPGRADED_ABILITY")}
-             onApply={()=>applyEffect("upgradedAbilityText","upgradedAbilityEffects")}
-             onPrompt={()=>void generatePrompt("upgradedAbilityText","UPGRADED_CHAMPION_ABILITY")}
-             onReanalyze={()=>void analyze("upgradedAbilityText","UPGRADED_ABILITY")}
-             analysis={analysisResults.upgradedAbilityText}
-             prompt={prompts.upgradedAbilityText}
-             onCopyPrompt={()=>void copyPrompt("upgradedAbilityText")}
-             analyzing={analyzingKey === "upgradedAbilityText"}
-             prompting={promptingKey === "upgradedAbilityText"}
-              sourceId={editing?.id}
-             effectContext="UPGRADED_CHAMPION_ABILITY"
-            existingEffectCount={effectConfigEntryCount(form.upgradedAbilityEffects)}
-             onApplyAi={(effects, mode) => applyAiEffect("upgradedAbilityEffects", effects, mode)}
-             onUnauthorized={onUnauthorized}
-           />
-         <div className="md:col-span-2 rounded border border-neutral-800 bg-neutral-900/40 p-3">
-           <div className="mb-2 text-xs font-bold text-neutral-400">연결할 Champion Token</div>
-           <input
-             className={input}
-             value={tokenSearch}
-             onChange={e=>setTokenSearch(e.target.value)}
-             placeholder="Champion Token 카드 검색"
-             aria-label="Champion Token 카드 검색"
-           />
-           <select
-             className={`${input} mt-2`}
-             value={form.championTokenDefinitionId ?? ""}
-             onChange={e=>update("championTokenDefinitionId", e.target.value || null)}
-             aria-label="연결할 Champion Token"
-           >
-             <option value="">연결하지 않음</option>
-             {visibleTokenCards.map((card) => (
-               <option key={card.id} value={card.id}>
-                 {card.name} · {card.cost}G · {card.attack}/{card.health} · {card.status}
-               </option>
-             ))}
-           </select>
-           {selectedTokenCard ? (
-             <div className="mt-3 flex items-center gap-3 rounded border border-primary/30 bg-black/30 p-3">
-               {selectedTokenCard.imageUrl
-                 ? <img src={selectedTokenCard.imageUrl} alt="" className="h-16 w-12 rounded object-cover" />
-                 : <div className="h-16 w-12 rounded bg-neutral-800" />}
-               <div className="min-w-0 text-xs">
-                 <div className="font-black text-primary">{selectedTokenCard.name}</div>
-                 <div className="mt-1 text-neutral-300">{selectedTokenCard.cost}G · {selectedTokenCard.attack}/{selectedTokenCard.health}</div>
-                 <div className="mt-1 text-neutral-500">Champion Token · {selectedTokenCard.status}</div>
-                 <div className="mt-2 text-neutral-400">카드 이름·스탯·효과·이미지는 선수 카드 관리자에서 편집합니다.</div>
-               </div>
-             </div>
-           ) : form.championTokenDefinitionId ? (
-             <div className="mt-3 rounded border border-amber-800 bg-amber-950/30 p-3 text-xs text-amber-200">
-               연결된 Champion Token 카드를 찾을 수 없습니다. 삭제되었거나 Champion Token이 아닌 카드일 수 있습니다.
-             </div>
-           ) : (
-             <div className="mt-2 text-xs text-neutral-500">Card Admin에서 `챔피언 토큰`으로 만든 카드만 선택할 수 있습니다.</div>
-           )}
-           {selectedTokenCard?.status === "DISABLED" && (
-             <div className="mt-2 rounded border border-amber-800 bg-amber-950/30 p-2 text-xs text-amber-200">
-               이 카드는 비활성 상태입니다. Champion을 공개하려면 Card Admin에서 먼저 공개 가능한 상태로 바꾸세요.
-             </div>
-           )}
-         </div>
-          <label className="flex items-center gap-2 text-sm">
-            <input type="checkbox" checked={form.isCraftable} onChange={e=>update("isCraftable", e.target.checked)} />
-            프리즘 제작 허용 (해제해도 퀘스트·보상 획득은 가능)
-          </label>
-          <label className="md:col-span-2 flex items-center gap-2 rounded border border-amber-900/60 bg-amber-950/20 p-3 text-sm">
-            <input type="checkbox" checked={form.isStarterGrant} onChange={e=>update("isStarterGrant", e.target.checked)} />
-            신규 계정 Starter Champion
-          </label>
-         <AdminAudioField
-           title="챔피언 퀘스트 완료 음악"
-           value={{
-             assetId: form.questCompleteAudioAssetId,
-             url: form.questCompleteAudioUrl,
-             volume: form.questCompleteAudioVolume,
-             enabled: form.questCompleteAudioEnabled,
-             uploadToken: form.questCompleteAudioUploadToken,
-             fileName: form.questCompleteAudioFileName,
-           }}
-           onChange={(value) => {
-             update("questCompleteAudioAssetId", value.assetId);
-             update("questCompleteAudioUrl", value.url);
-             update("questCompleteAudioVolume", value.volume);
-             update("questCompleteAudioEnabled", value.enabled);
-             update("questCompleteAudioUploadToken", value.uploadToken);
-             update("questCompleteAudioFileName", value.fileName);
-           }}
-           onError={(messageText) => {
-             setError(messageText);
-             if (messageText) toast({ title: "음악 업로드 실패", description: messageText, variant: "destructive" });
-           }}
-           onMessage={(messageText) => {
-             setError("");
-             setMessageText(messageText);
-           }}
-         />
+          </div></>]}</AdminEditorSections>
        </div>
+       {error&&<p role="alert" className="mt-4 text-red-300">{error}</p>}
        <p className="mt-4 text-xs text-neutral-400">효과 분석·인증 없이 저장할 수 있습니다. 분석은 선택 사항이며, 저장한 효과의 실제 작동을 보증하지는 않습니다.</p>
-       <div className="mt-5 flex flex-wrap justify-end gap-2">
+       <div className="admin-editor-footer mt-5 flex flex-wrap justify-end gap-2">
          {editing && editing.status !== "DISABLED" && (
            <button
              type="button"

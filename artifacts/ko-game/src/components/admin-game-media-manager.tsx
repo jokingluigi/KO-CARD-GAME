@@ -1,3 +1,4 @@
+import {AdminEditorSections} from './admin-editor-sections';
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Image as ImageIcon, Music2, Play, Power, Square, Trash2, Upload } from "lucide-react";
 import { audioManager } from "../audio/audio-manager";
@@ -310,27 +311,7 @@ export function AdminGameMediaManager({ onUnauthorized }: Props) {
         <h2 className="mt-1 text-2xl font-black">백그라운드 관리</h2>
        <p className="mt-2 text-sm text-neutral-500">Title과 In-Game 미디어 선택을 독립적으로 관리합니다. Title 적용 항목은 배경과 BGM에서 각각 하나만 선택되며, In-Game 선택을 꺼도 Title 미디어는 유지됩니다.</p>
       </div>
-
-      <section className="rounded-lg border border-primary/30 bg-primary/5 p-4">
-        <h3 className="text-sm font-black text-primary">현재 게임 화면 기준 권장 배경 이미지 규격</h3>
-        <div className="mt-3 grid gap-3 text-xs text-neutral-300 md:grid-cols-2">
-          <p><strong className="text-neutral-500">게임 컨테이너</strong><br />전체 viewport `w-full min-h-[100dvh]`, desktop은 `md:h-[100dvh]`, 내부 플레이 영역은 `max-w-5xl`</p>
-          <p><strong className="text-neutral-500">현재 viewport / 비율</strong><br />{viewportRatioLabel}</p>
-          <p><strong className="text-neutral-500">권장 해상도</strong><br />{backgroundGuidance.recommended} 이상, 현재 브라우저 viewport와 같은 비율 권장</p>
-          <p><strong className="text-neutral-500">권장 aspect ratio</strong><br />{backgroundGuidance.ratio} — 고정 1920×1080 기준이 아니라 실제 viewport 기준</p>
-          <p><strong className="text-neutral-500">최소 권장 해상도</strong><br />현재 CSS는 고정 최소 해상도를 강제하지 않으며, 모바일 `100dvh` layout과 desktop `md` layout을 사용합니다.</p>
-          <p><strong className="text-neutral-500">모바일 safe area</strong><br />현재 게임 shell에는 별도 safe-area inset padding이 없으므로 주요 피사체는 이미지 가장자리 10% 안쪽을 비워두는 것을 권장합니다.</p>
-          <p className="md:col-span-2"><strong className="text-neutral-500">crop 방식</strong><br /><code>background-size: cover</code> 권장. 세로·가로 viewport 차이로 일부 crop되며, `contain`은 게임 배경에 빈 여백이 생길 수 있습니다.</p>
-        </div>
-      </section>
-
-      {(errorMessage || message) && (
-        <div className={`rounded border px-3 py-2 text-xs font-bold ${errorMessage ? "border-red-900 bg-red-950/50 text-red-300" : "border-emerald-900 bg-emerald-950/40 text-emerald-300"}`}>
-          {errorMessage || message}
-        </div>
-      )}
-
-      <MediaSection
+<AdminEditorSections panels={[{"id":"admin-game-media-manager-0","label":"배경 이미지"},{"id":"admin-game-media-manager-1","label":"배경 음악"},{"id":"admin-game-media-manager-2","label":"공격 타격음"},{"id":"admin-game-media-manager-3","label":"업로드 규격"}]}>{[<><MediaSection
         title="배경 이미지"
         description="PNG / JPG / JPEG / WEBP · 권장 비율이 달라도 업로드할 수 있으며 경고만 표시합니다."
         icon={<ImageIcon className="h-5 w-5" />}
@@ -344,9 +325,8 @@ export function AdminGameMediaManager({ onUnauthorized }: Props) {
         onDelete={deleteItem}
         ratioWarning={ratioWarning}
         viewportRatio={viewportRatio}
-      />
-
-      <MediaSection
+      /></>,
+<><MediaSection
         title="배경 음악"
         description="MP3 / OGG / WAV · 활성 BGM은 매치 시작 시 1개를 선택하고 매치 동안 반복 재생합니다."
         icon={<Music2 className="h-5 w-5" />}
@@ -360,9 +340,8 @@ export function AdminGameMediaManager({ onUnauthorized }: Props) {
         onDelete={deleteItem}
         ratioWarning={() => null}
         viewportRatio={viewportRatio}
-      />
-
-      <section className="space-y-4 rounded-lg border border-red-950/70 bg-red-950/10 p-4">
+      /></>,
+<><section className="space-y-4 rounded-lg border border-red-950/70 bg-red-950/10 p-4">
         <div>
           <h3 className="text-lg font-black text-red-200">공격 타격음</h3>
           <p className="mt-1 text-xs text-neutral-500">
@@ -387,9 +366,26 @@ export function AdminGameMediaManager({ onUnauthorized }: Props) {
             viewportRatio={viewportRatio}
           />
         ))}
-      </section>
+      </section></>,
+<><section className="rounded-lg border border-primary/30 bg-primary/5 p-4">
+        <h3 className="text-sm font-black text-primary">현재 게임 화면 기준 권장 배경 이미지 규격</h3>
+        <div className="mt-3 grid gap-3 text-xs text-neutral-300 md:grid-cols-2">
+          <p><strong className="text-neutral-500">게임 컨테이너</strong><br />전체 viewport `w-full min-h-[100dvh]`, desktop은 `md:h-[100dvh]`, 내부 플레이 영역은 `max-w-5xl`</p>
+          <p><strong className="text-neutral-500">현재 viewport / 비율</strong><br />{viewportRatioLabel}</p>
+          <p><strong className="text-neutral-500">권장 해상도</strong><br />{backgroundGuidance.recommended} 이상, 현재 브라우저 viewport와 같은 비율 권장</p>
+          <p><strong className="text-neutral-500">권장 aspect ratio</strong><br />{backgroundGuidance.ratio} — 고정 1920×1080 기준이 아니라 실제 viewport 기준</p>
+          <p><strong className="text-neutral-500">최소 권장 해상도</strong><br />현재 CSS는 고정 최소 해상도를 강제하지 않으며, 모바일 `100dvh` layout과 desktop `md` layout을 사용합니다.</p>
+          <p><strong className="text-neutral-500">모바일 safe area</strong><br />현재 게임 shell에는 별도 safe-area inset padding이 없으므로 주요 피사체는 이미지 가장자리 10% 안쪽을 비워두는 것을 권장합니다.</p>
+          <p className="md:col-span-2"><strong className="text-neutral-500">crop 방식</strong><br /><code>background-size: cover</code> 권장. 세로·가로 viewport 차이로 일부 crop되며, `contain`은 게임 배경에 빈 여백이 생길 수 있습니다.</p>
+        </div>
+      </section></>]}</AdminEditorSections>
+{(errorMessage || message) && (
+        <div className={`rounded border px-3 py-2 text-xs font-bold ${errorMessage ? "border-red-900 bg-red-950/50 text-red-300" : "border-emerald-900 bg-emerald-950/40 text-emerald-300"}`}>
+          {errorMessage || message}
+        </div>
+      )}
+{loading && <p className="text-xs text-neutral-500">게임 미디어를 불러오는 중...</p>}
 
-      {loading && <p className="text-xs text-neutral-500">게임 미디어를 불러오는 중...</p>}
     </div>
   );
 }

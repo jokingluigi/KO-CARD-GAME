@@ -210,6 +210,7 @@ export function AdminDraftManager({
           {error}
         </p>
       )}
+      {administration && settings && <aside className="border-y border-neutral-800 py-3 text-sm text-neutral-400">운영 설정과 전투 테스트를 구분해 사용하세요. 카드 풀·선택 규칙은 아래 설정에서 저장하고, 테스트는 기존 드래프트 엔진으로 실행합니다.</aside>}
       {settings?.poolError && (
         <p className="break-words text-amber-300">{settings.poolError}</p>
       )}

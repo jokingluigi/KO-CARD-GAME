@@ -1,3 +1,6 @@
+import {useAdminList,AdminListControls} from './admin-list-controls';
+import {AdminEditorSections} from './admin-editor-sections';
+import {useAdminMutableDraft} from './admin-editor-sections';
 import { useEffect, useMemo, useState } from "react";
 import { useLocation } from "wouter";
 import { Copy, Plus, Save, Search, Trash2, WandSparkles } from "lucide-react";
@@ -138,6 +141,7 @@ export function AdminAIDeckManager({ onUnauthorized }: Props) {
         const without = current.filter((deck) => deck.id !== result.deck.id);
         return [...without, result.deck].sort((left, right) => left.displayOrder - right.displayOrder || left.name.localeCompare(right.name));
       });
+      adminDraft.markSaved();
       setDraft(draftFromDeck(result.deck));
       setMessage(result.deck.isValid ? "AI 덱을 저장했습니다." : `저장했지만 유효하지 않습니다: ${result.deck.invalidReasons.join(" ")}`);
     } catch (error) {
@@ -199,7 +203,9 @@ export function AdminAIDeckManager({ onUnauthorized }: Props) {
     }
   }
 
-  return (
+  const adminDraft=useAdminMutableDraft(draft,draft.id);
+const listing=useAdminList(decks,(deck)=>deck.name+" "+(deck.enabled?"활성":"비활성"));
+return (
     <section className="space-y-6">
       <div>
         <p className="font-display text-xs font-bold tracking-[0.25em] text-primary">AI DECKS</p>
@@ -210,11 +216,11 @@ export function AdminAIDeckManager({ onUnauthorized }: Props) {
       {message && <p className="rounded border border-amber-800/60 bg-amber-950/30 px-4 py-3 text-sm text-amber-200">{message}</p>}
 
       <div className="grid gap-6 xl:grid-cols-[280px_minmax(0,1fr)]">
-        <div className="space-y-3">
+        <AdminListControls view={listing} label="AI 덱"/><div className="space-y-3">
           <button type="button" onClick={() => setDraft(emptyDraft)} className="flex w-full items-center justify-center gap-2 rounded bg-primary px-4 py-3 text-sm font-black text-black">
             <Plus className="h-4 w-4" /> 새 AI 덱
           </button>
-          {decks.map((deck) => (
+          {listing.records.map((deck) => (
             <button key={deck.id} type="button" onClick={() => setDraft(draftFromDeck(deck))} className={`w-full rounded border p-4 text-left ${draft.id === deck.id ? "border-primary bg-primary/10" : "border-neutral-800 bg-black/30"}`}>
               <div className="flex items-start justify-between gap-2">
                 <span className="font-black">{deck.name}</span>
@@ -228,7 +234,7 @@ export function AdminAIDeckManager({ onUnauthorized }: Props) {
         </div>
 
         <div className="space-y-5 rounded-xl border border-neutral-800 bg-black/30 p-5">
-          <div className="grid gap-4 md:grid-cols-2">
+          <AdminEditorSections panels={[{"id":"admin-ai-deck-manager-0","label":"기본 · 난이도"},{"id":"admin-ai-deck-manager-1","label":"25장 덱 구성"}]}>{[<><div className="grid gap-4 md:grid-cols-2">
             <label className="text-sm font-bold">이름<input value={draft.name} onChange={(event) => setDraft({ ...draft, name: event.target.value })} className="mt-1 w-full rounded border border-neutral-700 bg-neutral-950 px-3 py-2.5" placeholder="예: Rush Pressure" /></label>
             <label className="text-sm font-bold">Champion
               <div className="mt-1 flex gap-1">
@@ -238,26 +244,24 @@ export function AdminAIDeckManager({ onUnauthorized }: Props) {
               <select value={draft.championDefinitionId ?? ""} onChange={(event) => setDraft({ ...draft, championDefinitionId: event.target.value || null })} className="mt-1 w-full rounded border border-neutral-700 bg-neutral-950 px-3 py-2.5"><option value="">Champion 선택</option>{filteredChampions.map((champion) => <option key={champion.id} value={champion.id}>{champion.name}{champion.status === "DRAFT" ? " [DRAFT]" : ""}</option>)}</select>
             </label>
           </div>
-          <label className="block text-sm font-bold">AI 난이도<select value={draft.difficulty} onChange={(event) => setDraft({ ...draft, difficulty: event.target.value as AIDeck["difficulty"] })} className="mt-1 min-h-11 w-full rounded border border-neutral-700 bg-neutral-950 px-3 py-2.5"><option value="NORMAL">일반</option><option value="HARD">어려움</option><option value="BOSS">보스</option></select></label>
-          <div className="grid gap-4 md:grid-cols-[1fr_120px]">
+<label className="block text-sm font-bold">AI 난이도<select value={draft.difficulty} onChange={(event) => setDraft({ ...draft, difficulty: event.target.value as AIDeck["difficulty"] })} className="mt-1 min-h-11 w-full rounded border border-neutral-700 bg-neutral-950 px-3 py-2.5"><option value="NORMAL">일반</option><option value="HARD">어려움</option><option value="BOSS">보스</option></select></label>
+<div className="grid gap-4 md:grid-cols-[1fr_120px]">
             <label className="text-sm font-bold">설명<textarea value={draft.description} onChange={(event) => setDraft({ ...draft, description: event.target.value })} className="mt-1 min-h-20 w-full rounded border border-neutral-700 bg-neutral-950 px-3 py-2.5" /></label>
             <label className="text-sm font-bold">순서<input type="number" value={draft.displayOrder} onChange={(event) => setDraft({ ...draft, displayOrder: Number(event.target.value) || 0 })} className="mt-1 w-full rounded border border-neutral-700 bg-neutral-950 px-3 py-2.5" /></label>
-          </div>
-
-          <div className="flex flex-wrap items-center gap-2 rounded border border-neutral-800 bg-neutral-950 p-3">
+          </div></>,
+<><div className="flex flex-wrap items-center gap-2 rounded border border-neutral-800 bg-neutral-950 p-3">
             <div className="relative min-w-52 flex-1"><Search className="pointer-events-none absolute left-3 top-2.5 h-4 w-4 text-neutral-600" /><input value={search} onChange={(event) => setSearch(event.target.value)} placeholder="카드 이름 검색" className="w-full rounded border border-neutral-700 bg-black py-2 pl-9 pr-3 text-sm" /></div>
             <select value={filterType} onChange={(event) => setFilterType(event.target.value as FilterType)} className="rounded border border-neutral-700 bg-black px-3 py-2 text-sm"><option value="ALL">전체 타입</option><option value="WRESTLER">WRESTLER</option><option value="TECHNIQUE">TECHNIQUE</option></select>
             <select value={filterRarity} onChange={(event) => setFilterRarity(event.target.value)} className="rounded border border-neutral-700 bg-black px-3 py-2 text-sm"><option value="ALL">전체 등급</option><option value="NORMAL">NORMAL</option><option value="EPIC">EPIC</option><option value="LEGENDARY">LEGENDARY</option></select>
             <select value={filterStatus} onChange={(event) => setFilterStatus(event.target.value as StatusFilter)} className="rounded border border-neutral-700 bg-black px-3 py-2 text-sm"><option value="ALL">전체 상태</option><option value="PUBLISHED">공개</option><option value="DRAFT">미공개</option></select>
             <span className={`ml-auto text-sm font-black ${draft.cardDefinitionIds.length >= (options?.minCardCount ?? 20) && draft.cardDefinitionIds.length <= (options?.maxCardCount ?? 30) ? "text-emerald-300" : "text-amber-300"}`}>{draft.cardDefinitionIds.length}장 / {options?.minCardCount ?? 20}~{options?.maxCardCount ?? 30}</span>
           </div>
-
-          <div className="grid max-h-[480px] gap-2 overflow-y-auto pr-1 sm:grid-cols-2">
+<div className="grid max-h-[480px] gap-2 overflow-y-auto pr-1 sm:grid-cols-2">
             {filteredCards.map((card) => {
               const count = cardCounts.get(card.id) ?? 0;
               const canAdd = draft.cardDefinitionIds.length < (options?.maxCardCount ?? 100) &&
                 !card.isToken && !card.isChampionToken && card.status !== "DISABLED";
-              return (
+  return (
                 <div key={card.id} className={`rounded border p-3 transition ${count ? "border-primary bg-primary/10" : "border-neutral-800 bg-neutral-950"}`}>
                   <div className="flex items-center justify-between gap-2">
                     <span className="font-black">{card.name} {card.status === "DRAFT" && <span className="ml-1 rounded border border-amber-700 px-1 text-[10px] text-amber-300">DRAFT</span>}</span>
@@ -272,7 +276,7 @@ export function AdminAIDeckManager({ onUnauthorized }: Props) {
               );
             })}
           </div>
-          {draft.cardDefinitionIds.some((id) => !options?.cards.some((card) => card.id === id)) && (
+{draft.cardDefinitionIds.some((id) => !options?.cards.some((card) => card.id === id)) && (
             <div className="rounded border border-red-900/60 bg-red-950/20 p-3 text-xs text-red-200">
               삭제된 카드 Definition이 포함되어 있습니다. 저장하려면 아래 ID를 제거하세요.
               <div className="mt-2 flex flex-wrap gap-2">
@@ -282,19 +286,19 @@ export function AdminAIDeckManager({ onUnauthorized }: Props) {
               </div>
             </div>
           )}
-          {selectedDeck && selectedDeck.requiredCardDefinitionIds.some((id) => !options?.cards.some((card) => card.id === id)) && (
+{selectedDeck && selectedDeck.requiredCardDefinitionIds.some((id) => !options?.cards.some((card) => card.id === id)) && (
             <div className="rounded border border-red-900/60 bg-red-950/20 p-3 text-xs text-red-200">
               카드 효과 또는 Champion Token 참조가 누락되었습니다. 아래 ID를 확인하세요. 자동 대체하지 않습니다.
               <div className="mt-2 flex flex-wrap gap-2 font-mono">
                 {selectedDeck.requiredCardDefinitionIds.filter((id) => !options?.cards.some((card) => card.id === id)).map((id) => <span key={id} className="rounded border border-red-800 px-2 py-1">{id}</span>)}
               </div>
             </div>
-          )}
-
-          <div className="flex flex-wrap gap-2 border-t border-neutral-800 pt-4">
+          )}</>]}</AdminEditorSections>
+<div className="flex flex-wrap gap-2 border-t border-neutral-800 pt-4">
             <button type="button" disabled={busy} onClick={() => void save()} className="flex items-center gap-2 rounded bg-primary px-4 py-2.5 text-sm font-black text-black disabled:opacity-50"><Save className="h-4 w-4" /> 저장</button>
             {draft.id && <><button type="button" disabled={busy} onClick={() => { const deck = decks.find((item) => item.id === draft.id); if (deck) void test(deck); }} className="flex items-center gap-2 rounded border border-amber-600 px-4 py-2.5 text-sm font-black text-amber-300 disabled:opacity-50"><WandSparkles className="h-4 w-4" /> AI 테스트</button><button type="button" disabled={busy} onClick={() => { const deck = decks.find((item) => item.id === draft.id); if (deck) void toggleEnabled(deck); }} className="rounded border border-emerald-700 px-4 py-2.5 text-sm font-black text-emerald-300 disabled:opacity-50">{draft.enabled ? "비활성화" : "활성화"}</button><button type="button" disabled={busy} onClick={() => { const deck = decks.find((item) => item.id === draft.id); if (deck) void duplicate(deck); }} className="flex items-center gap-2 rounded border border-neutral-700 px-4 py-2.5 text-sm font-black text-neutral-300 disabled:opacity-50"><Copy className="h-4 w-4" /> 복제</button><button type="button" disabled={busy} onClick={() => { const deck = decks.find((item) => item.id === draft.id); if (deck) void remove(deck); }} className="flex items-center gap-2 rounded border border-red-900 px-4 py-2.5 text-sm font-black text-red-300 disabled:opacity-50"><Trash2 className="h-4 w-4" /> 삭제</button></>}
           </div>
+
         </div>
       </div>
     </section>

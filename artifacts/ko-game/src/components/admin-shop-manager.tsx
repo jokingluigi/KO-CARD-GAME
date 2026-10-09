@@ -1,3 +1,5 @@
+import {AdminEditorSections} from './admin-editor-sections';
+import {useAdminMutableDraft} from './admin-editor-sections';
 import { useEffect, useMemo, useState } from "react";
 import { Copy, ImagePlus, Package, Plus, Save, ShoppingBag, Trash2, X } from "lucide-react";
 
@@ -115,12 +117,14 @@ export function AdminShopManager({ onUnauthorized }: { onUnauthorized: () => voi
   useEffect(() => { void load(); }, []);
 
   function newListing() {
+    if(!adminDraft.confirm())return;
     setSelected(null);
     setForm({ ...emptyForm });
     setMessage("");
   }
 
   function editListing(listing: Listing) {
+    if(!adminDraft.confirm())return;
     setSelected(listing);
     setForm({
       name: listing.name,
@@ -165,6 +169,7 @@ export function AdminShopManager({ onUnauthorized }: { onUnauthorized: () => voi
         method: selected ? "PATCH" : "POST",
         body: JSON.stringify(payload),
       });
+      adminDraft.markSaved();
       await load();
       setMessage("상품을 저장했습니다.");
     } catch (error) {
@@ -289,13 +294,15 @@ export function AdminShopManager({ onUnauthorized }: { onUnauthorized: () => voi
     }
   }
 
+  const adminDraft=useAdminMutableDraft(form,selected?.id);
   if (!data) {
     return <section className="rounded-xl border border-neutral-800 bg-black/40 p-6 text-sm text-neutral-400">{message}</section>;
   }
 
-  return (
+
+return (
     <div className="space-y-6">
-      <section className="rounded-xl border border-neutral-800 bg-black/40 p-5 sm:p-7">
+      <AdminEditorSections panels={[{"id":"admin-shop-manager-0","label":"상품 목록"},{"id":"admin-shop-manager-1","label":"상품 편집"},{"id":"admin-shop-manager-2","label":"계정 재화 지급"}]}>{[<><section className="rounded-xl border border-neutral-800 bg-black/40 p-5 sm:p-7">
         <div className="mb-5 flex flex-wrap items-start justify-between gap-4">
           <div>
             <p className="font-display text-xs font-bold tracking-[0.25em] text-primary">SHOP ADMIN</p>
@@ -313,9 +320,8 @@ export function AdminShopManager({ onUnauthorized }: { onUnauthorized: () => voi
             <ListingRow key={listing.id} listing={listing} selected={selected?.id === listing.id} onEdit={() => editListing(listing)} onDuplicate={() => void duplicateListing(listing)} onToggle={() => void toggleListing(listing)} onDelete={() => void deleteListing(listing)} />
           ))}
         </div>
-      </section>
-
-      <section className="rounded-xl border border-neutral-800 bg-black/40 p-5 sm:p-7">
+      </section></>,
+<><section className="rounded-xl border border-neutral-800 bg-black/40 p-5 sm:p-7">
         <div className="mb-5 flex items-center gap-3">
           <Package className="h-5 w-5 text-primary" />
             <div><h2 className="text-xl font-black">{selected ? "상품 편집" : "새 상품 만들기"}</h2><p className="mt-1 text-sm text-neutral-500">현재는 PACK 상품만 지원합니다. 판매 중인 상품은 User Shop에서 실제 구매할 수 있습니다.</p></div>
@@ -332,9 +338,8 @@ export function AdminShopManager({ onUnauthorized }: { onUnauthorized: () => voi
           onCancel={newListing}
           onSave={() => void save()}
         />
-      </section>
-
-      <section className="rounded-xl border border-neutral-800 bg-black/40 p-5 sm:p-7">
+      </section></>,
+<><section className="rounded-xl border border-neutral-800 bg-black/40 p-5 sm:p-7">
         <div className="mb-5">
           <p className="font-display text-xs font-bold tracking-[0.25em] text-primary">SHOP CURRENCY</p>
           <h2 className="mt-2 text-xl font-black">유저 크레딧 지급</h2>
@@ -348,7 +353,8 @@ export function AdminShopManager({ onUnauthorized }: { onUnauthorized: () => voi
           <input type="number" min="1" max="1000000" step="1" value={grantAmount} onChange={(event) => setGrantAmount(event.target.value)} className="rounded border border-neutral-700 bg-neutral-900 px-3 py-2.5 text-sm" placeholder="지급량" />
           <button type="button" disabled={granting} onClick={() => void grantCurrency()} className="rounded bg-amber-400 px-4 py-2.5 text-sm font-black text-black disabled:opacity-50">{granting ? "지급 중..." : "크레딧 지급"}</button>
         </div>
-      </section>
+      </section></>]}</AdminEditorSections>
+
     </div>
   );
 }

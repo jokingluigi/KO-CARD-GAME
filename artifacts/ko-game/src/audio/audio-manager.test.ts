@@ -558,3 +558,49 @@ test('weaker duck never lifts a finisher early and restores the same music posit
   advance(500);assert.equal(audio.volume,.8);assert.equal(audio.currentTime,42);assert.equal(audio.paused,false);
  });
 });
+
+
+test("first-entry match cleanup preserves menu music and playback position", () => {
+  withFakeAudio(() => {
+    audioManager.setMusicContext("NON_BATTLE");
+    audioManager.setBgmMuted(false);
+    audioManager.playBgm("/menu-entry.mp3", 80);
+    const manager = audioManager as unknown as { bgm: { audio: FakeAudio } | null };
+    const menu = manager.bgm!.audio;
+    menu.currentTime = 12;
+    audioManager.stopBattleAudio();
+    assert.equal(manager.bgm?.audio, menu);
+    assert.equal(menu.paused, false);
+    assert.equal(menu.currentTime, 12);
+    audioManager.setMusicContext("BATTLE");
+    audioManager.playMatchBgm("/battle.mp3", 70);
+    audioManager.stopBattleAudio();
+    assert.equal(manager.bgm, null);
+  });
+});
+
+test("first-entry cleanup retains blocked menu audio for the first user gesture", async () => {
+  const previousAudio = globalThis.Audio;
+  const previousWindow = globalThis.window;
+  Object.defineProperty(globalThis, "Audio", { configurable: true, value: FakeAudio });
+  Object.defineProperty(globalThis, "window", { configurable: true, value: { setInterval, clearInterval, setTimeout, clearTimeout } });
+  try {
+    audioManager.setMusicContext("NON_BATTLE");
+    audioManager.setBgmMuted(false);
+    FakeAudio.rejectPlay = true;
+    audioManager.playBgm("/first-gesture.mp3", 80);
+    await Promise.resolve(); await Promise.resolve();
+    audioManager.stopBattleAudio();
+    assert.equal(audioManager.isAudioUnlockPending(), true);
+    FakeAudio.rejectPlay = false;
+    audioManager.unlockAudio();
+    await Promise.resolve();
+    const manager = audioManager as unknown as { bgm: { audio: FakeAudio } | null };
+    assert.equal(manager.bgm?.audio.paused, false);
+  } finally {
+    FakeAudio.rejectPlay = false;
+    audioManager.stopGameAudio();
+    Object.defineProperty(globalThis, "Audio", { configurable: true, value: previousAudio });
+    Object.defineProperty(globalThis, "window", { configurable: true, value: previousWindow });
+  }
+});

@@ -1,38 +1,120 @@
-import { AdminQuestManager } from "@/components/admin-quest-manager";
-import { AdminTagManager } from "@/components/admin-tag-manager";
-import {AdminDraftManager} from '@/components/admin-draft-manager';
-import {AdminServerMaintenance} from '@/components/server-maintenance';
-import { AdminTowerManager } from '@/components/admin-tower-manager';
-import { useCallback, useEffect, useRef, useState } from "react";
-import { Bot, CalendarCheck2, Frame, Gamepad2, Image, ListChecks, LogOut, Megaphone, Music2, Package, ShieldCheck, ShoppingBag, Sparkles, Spade } from "lucide-react";
+import {
+  lazy,
+  Suspense,
+  useCallback,
+  useEffect,
+  useRef,
+  useState,
+} from "react";
 import { useLocation } from "wouter";
-import { AdminCardManager } from "@/components/admin-card-manager";
-import { AdminChampionManager } from "@/components/admin-champion-manager";
-import { AdminGameMediaManager } from "@/components/admin-game-media-manager";
-import { AdminPackManager } from "@/components/admin-pack-manager";
-import { AdminShopManager } from "@/components/admin-shop-manager";
-import { AdminPrismManager } from "@/components/admin-prism-manager";
-import { AdminCardSkinManager } from "@/components/admin-card-skin-manager";
-import { AdminCardFrameManager } from "@/components/admin-card-frame-manager";
-import { AdminAIDeckManager } from "@/components/admin-ai-deck-manager";
-import { AdminRewardsManager } from "@/components/admin-rewards-manager";
-import { AdminNoticesManager } from "@/components/admin-notices-manager";
-import { AdminTowerTest } from "@/components/admin-tower-test";
+import { ShieldCheck } from "lucide-react";
 import { fetchCurrentUser, logout } from "@/lib/auth-client";
 import { AuthRecovery } from "@/components/auth-page";
 import { ROUTES } from "@/lib/routes";
-
+import { AdminLayout } from "@/components/admin-layout";
+import "@/styles/admin-console.css";
+const AdminDashboard = lazy(() =>
+  import("@/components/admin-dashboard").then((m) => ({
+    default: m.AdminDashboard,
+  })),
+);
+const AdminUserDirectory = lazy(() =>
+  import("@/components/admin-dashboard").then((m) => ({
+    default: m.AdminUserDirectory,
+  })),
+);
+const AdminServerMaintenance = lazy(() =>
+  import("@/components/server-maintenance").then((m) => ({
+    default: m.AdminServerMaintenance,
+  })),
+);
+const AdminQuestManager = lazy(() =>
+  import("@/components/admin-quest-manager").then((m) => ({
+    default: m.AdminQuestManager,
+  })),
+);
+const AdminTagManager = lazy(() =>
+  import("@/components/admin-tag-manager").then((m) => ({
+    default: m.AdminTagManager,
+  })),
+);
+const AdminDraftManager = lazy(() =>
+  import("@/components/admin-draft-manager").then((m) => ({
+    default: m.AdminDraftManager,
+  })),
+);
+const AdminTowerManager = lazy(() =>
+  import("@/components/admin-tower-manager").then((m) => ({
+    default: m.AdminTowerManager,
+  })),
+);
+const AdminTowerTest = lazy(() =>
+  import("@/components/admin-tower-test").then((m) => ({
+    default: m.AdminTowerTest,
+  })),
+);
+const AdminCardManager = lazy(() =>
+  import("@/components/admin-card-manager").then((m) => ({
+    default: m.AdminCardManager,
+  })),
+);
+const AdminChampionManager = lazy(() =>
+  import("@/components/admin-champion-manager").then((m) => ({
+    default: m.AdminChampionManager,
+  })),
+);
+const AdminPackManager = lazy(() =>
+  import("@/components/admin-pack-manager").then((m) => ({
+    default: m.AdminPackManager,
+  })),
+);
+const AdminCardSkinManager = lazy(() =>
+  import("@/components/admin-card-skin-manager").then((m) => ({
+    default: m.AdminCardSkinManager,
+  })),
+);
+const AdminCardFrameManager = lazy(() =>
+  import("@/components/admin-card-frame-manager").then((m) => ({
+    default: m.AdminCardFrameManager,
+  })),
+);
+const AdminShopManager = lazy(() =>
+  import("@/components/admin-shop-manager").then((m) => ({
+    default: m.AdminShopManager,
+  })),
+);
+const AdminPrismManager = lazy(() =>
+  import("@/components/admin-prism-manager").then((m) => ({
+    default: m.AdminPrismManager,
+  })),
+);
+const AdminGameMediaManager = lazy(() =>
+  import("@/components/admin-game-media-manager").then((m) => ({
+    default: m.AdminGameMediaManager,
+  })),
+);
+const AdminNoticesManager = lazy(() =>
+  import("@/components/admin-notices-manager").then((m) => ({
+    default: m.AdminNoticesManager,
+  })),
+);
+const AdminAIDeckManager = lazy(() =>
+  import("@/components/admin-ai-deck-manager").then((m) => ({
+    default: m.AdminAIDeckManager,
+  })),
+);
+const AdminRewardsManager = lazy(() =>
+  import("@/components/admin-rewards-manager").then((m) => ({
+    default: m.AdminRewardsManager,
+  })),
+);
 type AdminStatus = "checking" | "forbidden" | "error" | "authenticated";
-
 export default function Admin() {
-  const [location, navigate] = useLocation();
-  const [status, setStatus] = useState<AdminStatus>("checking");
-  const [authError, setAuthError] = useState<string | null>(null);
-  const authRequestGeneration = useRef(0);
-  const [section, setSection] = useState<"tags" | "draft" | "tower" | "tower-test" | "cards" | "champions" | "packs" | "skins" | "frames" | "shop" | "prism" | "media" | "notices" | "test" | "ai-decks" | "rewards" | "quests">(
-    location.split("?")[0].endsWith("/quests") ? "quests" : location.split("?")[0].endsWith("/tags") ? "tags" : location.split("?")[0].endsWith("/draft") ? "draft" : location.endsWith("/tower") ? "tower" : location.endsWith("/tower-test") ? "tower-test" : location.endsWith("/packs") ? "packs" : location.endsWith("/shop") ? "shop" : location.endsWith("/prism") ? "prism" : location.endsWith("/skins") ? "skins" : location.endsWith("/card-frames") ? "frames" : location.endsWith("/ai-decks") ? "ai-decks" : location.endsWith("/rewards") ? "rewards" : location.endsWith("/notices") ? "notices" : "cards",
-  );
-
+  const [, navigate] = useLocation(),
+    [status, setStatus] = useState<AdminStatus>("checking"),
+    [authError, setAuthError] = useState<string | null>(null),
+    authRequestGeneration = useRef(0);
+  const onUnauthorized = useCallback(() => setStatus("forbidden"), []);
   const checkAuthentication = useCallback(() => {
     const generation = ++authRequestGeneration.current;
     setStatus("checking");
@@ -40,11 +122,19 @@ export default function Admin() {
     fetchCurrentUser()
       .then((result) => {
         if (generation !== authRequestGeneration.current) return;
-        setStatus(result.authenticated && result.user?.role === "ADMIN" ? "authenticated" : "forbidden");
+        setStatus(
+          result.authenticated && result.user?.role === "ADMIN"
+            ? "authenticated"
+            : "forbidden",
+        );
       })
       .catch((error) => {
         if (generation !== authRequestGeneration.current) return;
-        setAuthError(error instanceof Error ? error.message : "인증 상태를 확인하지 못했습니다.");
+        setAuthError(
+          error instanceof Error
+            ? error.message
+            : "인증 상태를 확인하지 못했습니다.",
+        );
         setStatus("error");
       });
   }, []);
@@ -83,10 +173,13 @@ export default function Admin() {
       <main className="ko-auth-screen flex min-h-screen items-center justify-center px-5 text-neutral-100">
         <section className="w-full max-w-sm text-center">
           <ShieldCheck className="mx-auto h-10 w-10 text-amber-400" />
-          <p className="mt-5 font-display text-xs font-bold tracking-[0.3em] text-amber-400">KO ADMIN</p>
+          <p className="mt-5 font-display text-xs font-bold tracking-[0.3em] text-amber-400">
+            KO ADMIN
+          </p>
           <h1 className="mt-3 text-xl font-black">관리자 권한이 필요합니다</h1>
           <p className="mt-3 text-sm leading-6 text-neutral-500">
-            관리자 계정으로 로그인했거나 관리자 이메일로 가입한 경우에만 접근할 수 있습니다.
+            관리자 계정으로 로그인했거나 관리자 이메일로 가입한 경우에만 접근할
+            수 있습니다.
           </p>
           <button
             type="button"
@@ -101,189 +194,76 @@ export default function Admin() {
   }
 
   return (
-    <main className="min-h-screen bg-neutral-950 text-neutral-100">
-      <header className="border-b border-neutral-800 bg-black/70">
-        <div className="mx-auto flex max-w-6xl items-center justify-between px-5 py-4">
-          <div>
-            <div className="font-display text-xs font-bold tracking-[0.25em] text-primary">
-              DEVELOPER CONSOLE
+    <AdminLayout onLogout={() => void handleLogout()}>
+      {(go, page) => (
+        <Suspense
+          fallback={
+            <div className="admin-panel-loading" role="status">
+              관리 화면을 불러오는 중…
             </div>
-            <h1 className="text-2xl font-black">KO ADMIN</h1>
-          </div>
-          <button
-            type="button"
-            onClick={handleLogout}
-            className="flex items-center gap-2 rounded border border-neutral-700 px-3 py-2 text-xs font-bold text-neutral-300 transition-colors hover:border-red-800 hover:bg-red-950/40 hover:text-red-300"
-          >
-            <LogOut className="h-4 w-4" />
-            로그아웃
-          </button>
-        </div>
-      </header>
-
-      <div className="mx-auto flex max-w-6xl flex-col gap-6 px-5 py-8 md:flex-row">
-        <nav className="w-full shrink-0 md:w-52">
-<button type="button" onClick={()=>setSection("quests")} className="mb-2 min-h-11 w-full border border-amber-700 px-3 py-3 text-left text-sm font-black">퀘스트 관리</button>
-          <button type="button" onClick={() => setSection("draft")} className="mb-2 min-h-11 w-full rounded border border-primary/40 px-3 py-3 text-left text-sm font-black">드래프트 모드</button>
-          <button type="button" onClick={() => setSection("tower")} className={`mb-2 flex min-h-11 w-full items-center gap-3 rounded border px-3 py-3 text-left text-sm font-black ${section === 'tower' ? 'border-primary/60 bg-primary/10 text-primary' : 'border-transparent text-neutral-400'}`}>타워 관리</button>
-          <button type="button" onClick={() => setSection("tower-test")} className={`mb-2 flex min-h-11 w-full items-center gap-3 rounded border px-3 py-3 text-left text-sm font-black ${section === "tower-test" ? "border-primary/60 bg-primary/10 text-primary" : "border-transparent text-neutral-400"}`}><Gamepad2 className="h-4 w-4" />타워 전투 테스트</button>
-          <div className="mb-3 text-[10px] font-bold tracking-[0.2em] text-neutral-600">
-            ADMIN MENU
-          </div>
-          <button
-            type="button"
-            onClick={() => setSection("cards")}
-            className={`flex w-full items-center gap-3 rounded border px-3 py-3 text-left text-sm font-black ${section === "cards" ? "border-primary/60 bg-primary/10 text-primary" : "border-transparent text-neutral-400"}`}
-          >
-            <Spade className="h-4 w-4" />
-            카드 관리
-          </button>
-          <button type="button" onClick={() => setSection("tags")} className={"mt-2 flex min-h-11 w-full items-center gap-3 rounded border px-3 py-3 text-left text-sm font-black " + (section === "tags" ? "border-primary/60 bg-primary/10 text-primary" : "border-transparent text-neutral-400")}>태그 관리</button>
-          <button
-            type="button"
-            onClick={() => setSection("champions")}
-            className={`mt-2 flex w-full items-center gap-3 rounded border px-3 py-3 text-left text-sm font-black ${section === "champions" ? "border-primary/60 bg-primary/10 text-primary" : "border-transparent text-neutral-400"}`}
-          >
-            <ShieldCheck className="h-4 w-4" />
-            챔피언 관리
-          </button>
-          <button
-            type="button"
-            onClick={() => setSection("media")}
-            className={`mt-2 flex w-full items-center gap-3 rounded border px-3 py-3 text-left text-sm font-black ${section === "media" ? "border-primary/60 bg-primary/10 text-primary" : "border-transparent text-neutral-400"}`}
-          >
-            <span className="flex items-center gap-1">
-              <Image className="h-4 w-4" />
-              <Music2 className="h-3.5 w-3.5" />
-            </span>
-            백그라운드 관리
-          </button>
-          <button
-            type="button"
-            onClick={() => setSection("notices")}
-            className={`mt-2 flex w-full items-center gap-3 rounded border px-3 py-3 text-left text-sm font-black ${section === "notices" ? "border-primary/60 bg-primary/10 text-primary" : "border-transparent text-neutral-400"}`}
-          >
-            <Megaphone className="h-4 w-4" />
-            공지 관리
-          </button>
-          <button
-            type="button"
-            onClick={() => setSection("packs")}
-            className={`mt-2 flex w-full items-center gap-3 rounded border px-3 py-3 text-left text-sm font-black ${section === "packs" ? "border-primary/60 bg-primary/10 text-primary" : "border-transparent text-neutral-400"}`}
-          >
-            <Package className="h-4 w-4" />
-            카드팩 관리
-          </button>
-          <button
-            type="button"
-            onClick={() => setSection("skins")}
-            className={`mt-2 flex w-full items-center gap-3 rounded border px-3 py-3 text-left text-sm font-black ${section === "skins" ? "border-primary/60 bg-primary/10 text-primary" : "border-transparent text-neutral-400"}`}
-          >
-            <Package className="h-4 w-4" />
-            Card Skin 관리
-          </button>
-          <button
-            type="button"
-            onClick={() => setSection("frames")}
-            className={`mt-2 flex w-full items-center gap-3 rounded border px-3 py-3 text-left text-sm font-black ${section === "frames" ? "border-primary/60 bg-primary/10 text-primary" : "border-transparent text-neutral-400"}`}
-          >
-            <Frame className="h-4 w-4" />
-            카드 프레임 관리
-          </button>
-          <button
-            type="button"
-            onClick={() => setSection("test")}
-            className={`mt-2 flex w-full items-center gap-3 rounded border px-3 py-3 text-left text-sm font-black ${section === "test" ? "border-primary/60 bg-primary/10 text-primary" : "border-transparent text-neutral-400"}`}
-          >
-            <Gamepad2 className="h-4 w-4" />
-            게임 테스트
-          </button>
-          <button
-            type="button"
-            onClick={() => setSection("ai-decks")}
-            className={`mt-2 flex w-full items-center gap-3 rounded border px-3 py-3 text-left text-sm font-black ${section === "ai-decks" ? "border-primary/60 bg-primary/10 text-primary" : "border-transparent text-neutral-400"}`}
-          >
-            <Bot className="h-4 w-4" />
-            AI 덱 관리
-          </button>
-          <button
-            type="button"
-            onClick={() => setSection("shop")}
-            className={`mt-2 flex w-full items-center gap-3 rounded border px-3 py-3 text-left text-sm font-black ${section === "shop" ? "border-primary/60 bg-primary/10 text-primary" : "border-transparent text-neutral-400"}`}
-          >
-            <ShoppingBag className="h-4 w-4" />
-            상점 관리
-          </button>
-          <button
-            type="button"
-            onClick={() => setSection("prism")}
-            className={`mt-2 flex w-full items-center gap-3 rounded border px-3 py-3 text-left text-sm font-black ${section === "prism" ? "border-primary/60 bg-primary/10 text-primary" : "border-transparent text-neutral-400"}`}
-          >
-            <Sparkles className="h-4 w-4" />
-            카드 제작 설정
-          </button>
-          <button
-            type="button"
-            onClick={() => setSection("rewards")}
-            className={`mt-2 flex w-full items-center gap-3 rounded border px-3 py-3 text-left text-sm font-black ${section === "rewards" ? "border-primary/60 bg-primary/10 text-primary" : "border-transparent text-neutral-400"}`}
-          >
-            <span className="flex items-center gap-1"><ListChecks className="h-4 w-4" /><CalendarCheck2 className="h-3.5 w-3.5" /></span>
-            진행도·보상 관리
-          </button>
-        </nav>
-
-        <section className="min-w-0 flex-1">
-          <AdminServerMaintenance />
-           {section === "quests" ? <AdminQuestManager /> : section === "tags" ? <AdminTagManager onUnauthorized={() => setStatus("forbidden")} /> : section === "draft" ? <AdminDraftManager /> : section === "tower" ? <AdminTowerManager onUnauthorized={() => setStatus("forbidden")} /> : section === "tower-test"
-             ? <AdminTowerTest onUnauthorized={() => setStatus("forbidden")} />
-             : section === "notices"
-             ? <AdminNoticesManager onUnauthorized={() => setStatus("forbidden")} />
-             : section === "rewards"
-             ? <AdminRewardsManager onUnauthorized={() => setStatus("forbidden")} />
-             : section === "ai-decks"
-             ? <AdminAIDeckManager onUnauthorized={() => setStatus("forbidden")} />
-             : section === "cards"
-            ? <AdminCardManager onUnauthorized={() => setStatus("forbidden")} />
-             : section === "champions"
-               ? <AdminChampionManager onUnauthorized={() => setStatus("forbidden")} />
-               : section === "packs"
-                 ? <AdminPackManager onUnauthorized={() => setStatus("forbidden")} />
-                : section === "skins"
-                  ? <AdminCardSkinManager onUnauthorized={() => setStatus("forbidden")} />
-                 : section === "frames"
-                   ? <AdminCardFrameManager onUnauthorized={() => setStatus("forbidden")} />
-               : section === "media"
-                 ? <AdminGameMediaManager onUnauthorized={() => setStatus("forbidden")} />
-                  : section === "shop"
-                    ? <AdminShopManager onUnauthorized={() => setStatus("forbidden")} />
-                     : section === "prism"
-                       ? <AdminPrismManager onUnauthorized={() => setStatus("forbidden")} />
-                 : (
-                   <section className="rounded-xl border border-neutral-800 bg-black/40 p-5 sm:p-8">
-                     <div className="mb-6 flex items-start gap-4">
-                       <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg border border-amber-700/60 bg-amber-950/40 text-amber-300">
-                         <Gamepad2 className="h-5 w-5" />
-                       </div>
-                       <div>
-                         <h2 className="text-xl font-black text-white">게임 테스트</h2>
-                         <p className="mt-1 text-sm leading-6 text-neutral-500">
-                           현재 개발 중인 기존 테스트 게임 화면으로 이동합니다.
-                         </p>
-                       </div>
-                     </div>
-                     <button
-                       type="button"
-                       onClick={() => {
-                          navigate(`${ROUTES.MAIN_MENU}?source=admin`);
-                       }}
-                       className="w-full rounded-lg bg-primary px-4 py-3 text-sm font-black text-black transition-colors hover:bg-yellow-400 sm:w-auto"
-                     >
-                       기존 테스트 모드 열기
-                     </button>
-                   </section>
-                 )}
-        </section>
-      </div>
-    </main>
+          }
+        >
+          {page?.id === "dashboard" ? (
+            <AdminDashboard go={go} />
+          ) : page?.id === "users" ? (
+            <AdminUserDirectory go={go} />
+          ) : page?.id === "system" ? (
+            <AdminServerMaintenance />
+          ) : page?.id === "test" ? (
+            <section className="admin-test-launch">
+              <h2>실제 전투 엔진 테스트</h2>
+              <p>기존 테스트 게임에서 선수·주문·챔피언 효과를 확인합니다.</p>
+              <button
+                onClick={() => navigate(ROUTES.MAIN_MENU + "?source=admin")}
+              >
+                기존 테스트 모드 열기
+              </button>
+              <div className="admin-related-links">
+                <button onClick={() => go("cards")}>카드별 테스트</button>
+                <button onClick={() => go("champions")}>챔피언별 테스트</button>
+                <button onClick={() => go("tower")}>타워 콘텐츠 테스트</button>
+                <button onClick={() => go("tower-test")}>
+                  타워 전투 샌드박스
+                </button>
+              </div>
+            </section>
+          ) : page?.id === "quests" ? (
+            <AdminQuestManager />
+          ) : page?.id === "tags" ? (
+            <AdminTagManager onUnauthorized={onUnauthorized} />
+          ) : page?.id === "draft" ? (
+            <AdminDraftManager />
+          ) : page?.id === "tower" ? (
+            <AdminTowerManager onUnauthorized={onUnauthorized} />
+          ) : page?.id === "tower-test" ? (
+            <AdminTowerTest onUnauthorized={onUnauthorized} />
+          ) : page?.id === "cards" ? (
+            <AdminCardManager onUnauthorized={onUnauthorized} />
+          ) : page?.id === "champions" ? (
+            <AdminChampionManager onUnauthorized={onUnauthorized} />
+          ) : page?.id === "packs" ? (
+            <AdminPackManager onUnauthorized={onUnauthorized} />
+          ) : page?.id === "skins" ? (
+            <AdminCardSkinManager onUnauthorized={onUnauthorized} />
+          ) : page?.id === "frames" ? (
+            <AdminCardFrameManager onUnauthorized={onUnauthorized} />
+          ) : page?.id === "shop" ? (
+            <AdminShopManager onUnauthorized={onUnauthorized} />
+          ) : page?.id === "prism" ? (
+            <AdminPrismManager onUnauthorized={onUnauthorized} />
+          ) : page?.id === "media" ? (
+            <AdminGameMediaManager onUnauthorized={onUnauthorized} />
+          ) : page?.id === "notices" ? (
+            <AdminNoticesManager onUnauthorized={onUnauthorized} />
+          ) : page?.id === "ai-decks" ? (
+            <AdminAIDeckManager onUnauthorized={onUnauthorized} />
+          ) : page?.id === "rewards" ? (
+            <AdminRewardsManager onUnauthorized={onUnauthorized} />
+          ) : (
+            <button onClick={() => go("dashboard")}>운영 개요로 이동</button>
+          )}
+        </Suspense>
+      )}
+    </AdminLayout>
   );
 }

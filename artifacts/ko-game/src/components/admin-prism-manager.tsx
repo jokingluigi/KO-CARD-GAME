@@ -1,3 +1,5 @@
+import {useAdminDraftGuard} from './admin-editor-sections';
+import {AdminEditorSections} from './admin-editor-sections';
 import { useEffect, useRef, useState } from "react";
 import { Save, Sparkles } from "lucide-react";
 
@@ -46,6 +48,7 @@ export function AdminPrismManager({ onUnauthorized }: { onUnauthorized: () => vo
   const [savingChampion, setSavingChampion] = useState(false);
   const [granting, setGranting] = useState(false);
 
+  useAdminDraftGuard(settings.length>0,{forms,championForm},JSON.stringify([settings,championSetting]));
   async function load() {
     try {
       const result = await request<{ settings: Setting[]; users: User[]; championPrismSetting: ChampionSetting }>();
@@ -150,7 +153,7 @@ export function AdminPrismManager({ onUnauthorized }: { onUnauthorized: () => vo
 
   return (
     <div className="space-y-6">
-      <section className="rounded-xl border border-neutral-800 bg-black/40 p-5 sm:p-7">
+      <AdminEditorSections panels={[{"id":"admin-prism-manager-0","label":"카드 제작 · 분해"},{"id":"admin-prism-manager-1","label":"챔피언 제작"},{"id":"admin-prism-manager-2","label":"프리즘 지급"},{"id":"admin-prism-manager-3","label":"프리즘 회수"}]}>{[<><section className="rounded-xl border border-neutral-800 bg-black/40 p-5 sm:p-7">
         <div className="mb-5 flex items-start gap-3">
           <Sparkles className="mt-1 h-5 w-5 text-amber-400" />
           <div><p className="font-display text-xs font-bold tracking-[0.25em] text-primary">PRISM ECONOMY</p><h2 className="mt-2 text-xl font-black">카드 제작 설정</h2><p className="mt-2 text-sm text-neutral-500">제작과 분해 값이 설정되지 않았거나 유효하지 않으면 사용자 기능은 안전하게 비활성화됩니다.</p></div>
@@ -171,9 +174,8 @@ export function AdminPrismManager({ onUnauthorized }: { onUnauthorized: () => vo
             );
           })}
         </div>
-      </section>
-
-      <section className="rounded-xl border border-rose-900/60 bg-black/40 p-5 sm:p-7">
+      </section></>,
+<><section className="rounded-xl border border-rose-900/60 bg-black/40 p-5 sm:p-7">
         <div className="mb-5 flex items-start gap-3">
           <Sparkles className="mt-1 h-5 w-5 text-rose-300" />
           <div><p className="font-display text-xs font-bold tracking-[0.25em] text-rose-300">CHAMPION PRISM ECONOMY</p><h2 className="mt-2 text-xl font-black">챔피언 제작·중복 보상 설정</h2><p className="mt-2 text-sm text-neutral-500">챔피언 프리즘은 일반 카드 프리즘과 별도 재화입니다. 설정되지 않으면 해당 기능이 비활성화됩니다.</p></div>
@@ -186,9 +188,8 @@ export function AdminPrismManager({ onUnauthorized }: { onUnauthorized: () => vo
           <span className={`rounded px-2 py-1 text-[10px] font-black ${championSetting.configured ? "bg-emerald-950 text-emerald-300" : "bg-red-950 text-red-300"}`}>{championSetting.configured ? "설정됨" : "사용 중지"}</span>
           <button type="button" disabled={savingChampion} onClick={() => void saveChampionSetting()} className="flex items-center gap-2 rounded bg-rose-400 px-4 py-2.5 text-sm font-black text-black disabled:opacity-50"><Save className="h-4 w-4" /> {savingChampion ? "저장 중..." : "설정 저장"}</button>
         </div>
-      </section>
-
-      <section className="rounded-xl border border-neutral-800 bg-black/40 p-5 sm:p-7">
+      </section></>,
+<><section className="rounded-xl border border-neutral-800 bg-black/40 p-5 sm:p-7">
         <h2 className="text-xl font-black">사용자 프리즘 지급</h2>
         <p className="mt-2 text-sm text-neutral-500">관리자 테스트용 지급이며, 모든 지급은 프리즘 변동 로그에 기록됩니다.</p>
         <div className="mt-5 grid gap-3 sm:grid-cols-[minmax(0,1fr)_160px_auto]">
@@ -196,8 +197,8 @@ export function AdminPrismManager({ onUnauthorized }: { onUnauthorized: () => vo
           <input type="number" min="1" max="1000000" step="1" value={grantAmount} onChange={(event) => setGrantAmount(event.target.value)} placeholder="지급량" className="rounded border border-neutral-700 bg-neutral-900 px-3 py-2.5 text-sm" />
           <button type="button" disabled={granting} onClick={() => void grant()} className="rounded bg-amber-400 px-4 py-2.5 text-sm font-black text-black disabled:opacity-50">{granting ? "지급 중..." : "프리즘 지급"}</button>
         </div>
-      </section>
-      <section className="rounded-xl border border-red-900/50 bg-black/40 p-5 sm:p-7">
+      </section></>,
+<><section className="rounded-xl border border-red-900/50 bg-black/40 p-5 sm:p-7">
         <h2 className="text-xl font-black">사용자 프리즘 회수</h2>
         <p className="mt-2 text-sm text-neutral-500">대상 계정과 회수량을 확인하세요. 회수 내역과 사유가 기록됩니다.</p>
         <div className="mt-4 grid gap-3 sm:grid-cols-2">
@@ -207,7 +208,8 @@ export function AdminPrismManager({ onUnauthorized }: { onUnauthorized: () => vo
           <input aria-label="프리즘 회수 사유" maxLength={300} value={revokeReason} onChange={e=>setRevokeReason(e.target.value)} placeholder="회수 사유" className="min-w-0 rounded border bg-neutral-900 p-3 text-base" />
           <button type="button" disabled={revoking || !userId || !revokeAmount || !revokeReason.trim()} onClick={()=>void revoke()} className="min-h-11 rounded border border-red-600 px-4 py-2 font-bold text-red-300 disabled:opacity-40">{revoking ? "회수 중…" : "프리즘 회수"}</button>
         </div>
-      </section>
+      </section></>]}</AdminEditorSections>
+
     </div>
   );
 }

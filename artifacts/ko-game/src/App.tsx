@@ -39,21 +39,8 @@ function Router() {
   return (
     <RoutedErrorBoundary>
       <Suspense fallback={<AuthLoading />}><Switch>
-        <Route path="/admin" component={Admin} />
-        <Route path="/admin/quests" component={Admin} />
-        <Route path="/admin/tags" component={Admin} />
-        <Route path="/admin/draft" component={Admin} />
+        <Route path="/admin/:section?" component={Admin} />
         <Route path="/admin/draft/match/:matchId">{() => <OnlineMatch draft />}</Route>
-        <Route path="/admin/tower" component={Admin} />
-        <Route path="/admin/tower-test" component={Admin} />
-        <Route path="/admin/packs" component={Admin} />
-        <Route path="/admin/shop" component={Admin} />
-        <Route path="/admin/prism" component={Admin} />
-        <Route path="/admin/skins" component={Admin} />
-        <Route path="/admin/card-frames" component={Admin} />
-        <Route path="/admin/ai-decks" component={Admin} />
-        <Route path="/admin/rewards" component={Admin} />
-        <Route path="/admin/notices" component={Admin} />
         <Route path="/tower" component={Tower} />
         <Route path="/draft" component={Draft} />
         <Route path="/draft/match/:matchId">{() => <OnlineMatch draft />}</Route>
@@ -109,9 +96,11 @@ function GlobalAudioBridge() {
     const unlock = () => audioManager.unlockAudio();
     window.addEventListener('pointerdown', unlock, { passive: true });
     window.addEventListener('keydown', unlock);
+    window.addEventListener('touchend', unlock, { passive: true });
     return () => {
       window.removeEventListener('pointerdown', unlock);
       window.removeEventListener('keydown', unlock);
+      window.removeEventListener('touchend', unlock);
     };
   }, []);
 
