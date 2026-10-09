@@ -1,3 +1,6 @@
+import {AdminEditorSections} from './admin-editor-sections';
+import {useAdminList,AdminListControls} from './admin-list-controls';
+import {useAdminMutableDraft} from './admin-editor-sections';
 import { useEffect, useRef, useState } from "react";
 import { Plus, Save, Trash2 } from "lucide-react";
 
@@ -37,6 +40,7 @@ export function AdminCardSkinManager({ onUnauthorized }: { onUnauthorized: () =>
   useEffect(() => { void load(); }, []);
 
   function edit(skin: Skin) {
+    if(!adminDraft.confirm())return;
     setSelected(skin);
     setForm({
       cardDefinitionId: skin.cardDefinitionId,
@@ -113,13 +117,14 @@ export function AdminCardSkinManager({ onUnauthorized }: { onUnauthorized: () =>
       const result = await api<{ skin: Skin }>(selected ? `/${selected.id}` : "", { method: selected ? "PATCH" : "POST", body: JSON.stringify(form) });
       setSelected(result.skin);
       setMessage("Skin을 저장했습니다.");
-      await load();
+      adminDraft.markSaved(); await load();
     } catch (error) {
       setMessage(error instanceof Error ? error.message : "Skin을 저장하지 못했습니다.");
     }
   }
 
   async function action(path: string, init?: RequestInit) {
+    if(init?.method==="DELETE"&&!window.confirm("선택한 항목을 삭제할까요? 삭제 후에는 되돌릴 수 없습니다."))return;
     try {
       await api(path, init);
       setMessage("처리했습니다.");
@@ -131,20 +136,22 @@ export function AdminCardSkinManager({ onUnauthorized }: { onUnauthorized: () =>
     }
   }
 
-  return (
+  const adminDraft=useAdminMutableDraft(form,selected?.id);
+const listing=useAdminList(skins,(skin)=>skin.name+" "+skin.status);
+return (
     <section className="grid gap-5 lg:grid-cols-[260px_1fr]">
       <div className="rounded-xl border border-neutral-800 bg-black/30 p-4">
-        <div className="mb-3 flex items-center justify-between"><h2 className="font-black">Card Skins</h2><button type="button" onClick={() => { setSelected(null); setForm(blank); }} className="rounded bg-primary p-2 text-black"><Plus className="h-4 w-4" /></button></div>
-        <div className="space-y-2">{skins.map((skin) => <button type="button" key={skin.id} onClick={() => edit(skin)} className={`w-full rounded border px-3 py-3 text-left ${selected?.id === skin.id ? "border-primary bg-primary/10" : "border-neutral-800"}`}><div className="font-bold">{skin.name}</div><div className="mt-1 text-xs text-neutral-500">{skin.cardName} · {skin.status}</div></button>)}</div>
+        <div className="mb-3 flex items-center justify-between"><h2 className="font-black">Card Skins</h2><button type="button" onClick={() => { if(!adminDraft.confirm())return;setSelected(null); setForm(blank); }} className="rounded bg-primary p-2 text-black"><Plus className="h-4 w-4" /></button></div>
+        <AdminListControls view={listing} label="스킨"/><div className="space-y-2">{listing.records.map((skin) => <button type="button" key={skin.id} onClick={() => edit(skin)} className={`w-full rounded border px-3 py-3 text-left ${selected?.id === skin.id ? "border-primary bg-primary/10" : "border-neutral-800"}`}><div className="font-bold">{skin.name}</div><div className="mt-1 text-xs text-neutral-500">{skin.cardName} · {skin.status}</div></button>)}</div>
       </div>
       <div className="rounded-xl border border-neutral-800 bg-black/30 p-5">
         <h2 className="text-xl font-black">{selected ? "Skin 수정" : "새 Skin"}</h2>
         <p className="mt-2 text-sm text-neutral-500">공개된 일반 카드에 연결된 Skin만 팩 Pool에 추가할 수 있습니다.</p>
         <div className="mt-5 grid gap-3">
-          <label className="text-sm font-bold">기본 카드<select value={form.cardDefinitionId} onChange={(event) => setForm({ ...form, cardDefinitionId: event.target.value })} className="mt-1 w-full rounded border border-neutral-700 bg-neutral-900 px-3 py-2.5"><option value="">카드 선택</option>{cards.map((card) => <option key={card.id} value={card.id}>{card.name}</option>)}</select></label>
-          <label className="text-sm font-bold">Skin 이름<input value={form.name} onChange={(event) => setForm({ ...form, name: event.target.value })} className="mt-1 w-full rounded border border-neutral-700 bg-neutral-900 px-3 py-2.5" /></label>
-           <label className="text-sm font-bold">이미지 URL<input value={form.imageUrl} onChange={(event) => setForm({ ...form, imageAssetId: null, imageUploadToken: null, imageUrl: event.target.value })} placeholder="https://" className="mt-1 w-full rounded border border-neutral-700 bg-neutral-900 px-3 py-2.5" /></label>
-           <div className="rounded border border-neutral-800 bg-neutral-900/40 p-3">
+          <AdminEditorSections panels={[{id:"skin-basic",label:"기본 카드 · 설명"},{id:"skin-art",label:"이미지 · 미리보기"}]}>{[<><label className="text-sm font-bold">기본 카드<select value={form.cardDefinitionId} onChange={(event) => setForm({ ...form, cardDefinitionId: event.target.value })} className="mt-1 w-full rounded border border-neutral-700 bg-neutral-900 px-3 py-2.5"><option value="">카드 선택</option>{cards.map((card) => <option key={card.id} value={card.id}>{card.name}</option>)}</select></label>
+<label className="text-sm font-bold">Skin 이름<input value={form.name} onChange={(event) => setForm({ ...form, name: event.target.value })} className="mt-1 w-full rounded border border-neutral-700 bg-neutral-900 px-3 py-2.5" /></label>
+<label className="text-sm font-bold">설명<textarea value={form.description} onChange={(event) => setForm({ ...form, description: event.target.value })} className="mt-1 min-h-24 w-full rounded border border-neutral-700 bg-neutral-900 px-3 py-2.5" /></label></>,<><label className="text-sm font-bold">이미지 URL<input value={form.imageUrl} onChange={(event) => setForm({ ...form, imageAssetId: null, imageUploadToken: null, imageUrl: event.target.value })} placeholder="https://" className="mt-1 w-full rounded border border-neutral-700 bg-neutral-900 px-3 py-2.5" /></label>
+<div className="rounded border border-neutral-800 bg-neutral-900/40 p-3">
              <div className="flex flex-wrap items-center gap-3">
                {form.imageUrl && <img src={form.imageUrl} alt="" className="h-24 w-20 rounded border border-neutral-700 object-cover" />}
                <div className="flex flex-wrap gap-2">
@@ -156,11 +163,10 @@ export function AdminCardSkinManager({ onUnauthorized }: { onUnauthorized: () =>
              </div>
              <input ref={fileInputRef} type="file" accept=".png,.jpg,.jpeg,.webp,image/png,image/jpeg,image/webp" className="hidden" onChange={(event) => { const file = event.target.files?.[0]; if (file) void uploadImage(file); event.currentTarget.value = ""; }} />
              <p className="mt-2 text-xs text-neutral-500">PNG, JPG, JPEG, WEBP · 최대 5MB</p>
-           </div>
-          <label className="text-sm font-bold">설명<textarea value={form.description} onChange={(event) => setForm({ ...form, description: event.target.value })} className="mt-1 min-h-24 w-full rounded border border-neutral-700 bg-neutral-900 px-3 py-2.5" /></label>
+           </div></>]}</AdminEditorSections>
         </div>
         {message && <p role="status" className="mt-4 rounded border border-amber-800/50 bg-amber-950/20 p-3 text-sm text-amber-200">{message}</p>}
-        <div className="mt-5 flex flex-wrap gap-2"><button type="button" onClick={() => void save()} className="flex items-center gap-2 rounded bg-primary px-4 py-2 text-sm font-black text-black"><Save className="h-4 w-4" /> 저장</button>{selected && <><button type="button" onClick={() => void action(`/${selected.id}/status`, { method: "POST", body: JSON.stringify({ status: selected.status === "PUBLISHED" ? "DISABLED" : "PUBLISHED" }) })} className="rounded border border-emerald-700 px-4 py-2 text-sm font-bold text-emerald-300">{selected.status === "PUBLISHED" ? "DISABLE" : "PUBLISH"}</button><button type="button" onClick={() => void action(`/${selected.id}`, { method: "DELETE" })} className="flex items-center gap-2 rounded border border-red-900 px-4 py-2 text-sm font-bold text-red-300"><Trash2 className="h-4 w-4" /> 삭제</button></>}</div>
+        <div className="admin-editor-footer mt-5 flex flex-wrap gap-2"><button type="button" onClick={() => void save()} className="flex items-center gap-2 rounded bg-primary px-4 py-2 text-sm font-black text-black"><Save className="h-4 w-4" /> 저장</button>{selected && <><button type="button" onClick={() => void action(`/${selected.id}/status`, { method: "POST", body: JSON.stringify({ status: selected.status === "PUBLISHED" ? "DISABLED" : "PUBLISHED" }) })} className="rounded border border-emerald-700 px-4 py-2 text-sm font-bold text-emerald-300">{selected.status === "PUBLISHED" ? "DISABLE" : "PUBLISH"}</button><button type="button" onClick={() => void action(`/${selected.id}`, { method: "DELETE" })} className="flex items-center gap-2 rounded border border-red-900 px-4 py-2 text-sm font-bold text-red-300"><Trash2 className="h-4 w-4" /> 삭제</button></>}</div>
       </div>
     </section>
   );

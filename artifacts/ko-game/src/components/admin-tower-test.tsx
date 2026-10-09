@@ -58,10 +58,10 @@ export function AdminTowerTest({ onUnauthorized }: { onUnauthorized: () => void 
           </div>;
         })}
       </div>
-      <fieldset className="min-w-0 space-y-2"><legend className="mb-2 font-bold">강제 지급 유물 · {(setup.relicTypes ?? []).length}/3</legend>{TOWER_TEST_RELICS.map(relic => {
+      <details className="border-y border-neutral-800 py-3"><summary className="min-h-11 cursor-pointer py-2">유물 효과 선택 · {(setup.relicTypes ?? []).length}개 선택</summary><fieldset className="min-w-0 space-y-2"><legend className="mb-2 font-bold">강제 지급 유물 · {(setup.relicTypes ?? []).length}/3</legend>{TOWER_TEST_RELICS.map(relic => {
         const selected = setup.relicTypes?.includes(relic.type) ?? false;
         return <label key={relic.type} className="flex min-h-11 items-start gap-3 rounded border border-neutral-800 p-3"><input type="checkbox" className="mt-1 h-5 w-5 shrink-0" checked={selected} disabled={!selected && (setup.relicTypes?.length ?? 0) >= 3} onChange={() => setSetup(s => ({ ...s, relicTypes: selected ? (s.relicTypes ?? []).filter(type => type !== relic.type) : [...(s.relicTypes ?? []), relic.type] }))} /><span className="min-w-0"><strong className="block text-sm">{relic.name}</strong><span className="text-sm leading-6 text-neutral-400">{relic.description}</span></span></label>;
-      })}</fieldset>
+      })}</fieldset></details>
       <button type="button" onClick={start} disabled={setup.playerDeck.length !== 25 || setup.enemyDeck.length !== 25 || !setup.championId || !setup.enemyChampionId} className="min-h-12 w-full rounded bg-primary px-5 py-3 font-black text-black disabled:opacity-40 sm:w-auto">테스트 전투 시작</button>
     </>}
     {error && <p role="alert" className="break-words text-sm text-red-300">{error}</p>}

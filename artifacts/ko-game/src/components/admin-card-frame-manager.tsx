@@ -1,3 +1,5 @@
+import {useAdminMutableDraft} from './admin-editor-sections';
+import {AdminEditorSections} from './admin-editor-sections';
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Image as ImageIcon, RotateCcw, Save, Trash2, Upload } from "lucide-react";
 import { CardRenderer } from "./card-renderer";
@@ -72,6 +74,7 @@ export function AdminCardFrameManager({ onUnauthorized }: { onUnauthorized: () =
     [],
   );
 
+  const adminDraft=useAdminMutableDraft(form,selectedKey);
   async function load() {
     setLoading(true);
     try {
@@ -95,7 +98,7 @@ export function AdminCardFrameManager({ onUnauthorized }: { onUnauthorized: () =
   }, []);
 
   useEffect(() => {
-    setForm(formFromFrame(selectedFrame));
+    setForm(formFromFrame(selectedFrame));adminDraft.markSaved();
   }, [selectedKey, selectedFrame?.id, selectedFrame?.updatedAt]);
 
   async function discardPending() {
@@ -190,7 +193,7 @@ export function AdminCardFrameManager({ onUnauthorized }: { onUnauthorized: () =
         ...current.filter((frame) => key(frame.cardType, frame.rarity) !== selectedKey),
         body.frame,
       ]);
-      setForm(formFromFrame(body.frame));
+      setForm(formFromFrame(body.frame));adminDraft.markSaved();
       await refreshCardFrames();
       setMessage("카드 프레임을 저장했습니다. 게임과 모든 카드 화면에 반영됩니다.");
     } catch (reason) {
@@ -265,7 +268,7 @@ export function AdminCardFrameManager({ onUnauthorized }: { onUnauthorized: () =
                 <button
                   type="button"
                   key={frameKey}
-                  onClick={() => setSelectedKey(frameKey)}
+                  onClick={() => {if(!adminDraft.confirm())return;setSelectedKey(frameKey);}}
                   className={`w-full rounded border px-3 py-3 text-left transition-colors ${selectedKey === frameKey ? "border-primary bg-primary/10" : "border-neutral-800 hover:border-neutral-600"}`}
                 >
                   <div className="font-black">{cardType}</div>
@@ -295,8 +298,7 @@ export function AdminCardFrameManager({ onUnauthorized }: { onUnauthorized: () =
               활성화
             </label>
           </div>
-
-          <div className="mt-5 rounded-lg border border-neutral-800 bg-neutral-950/60 p-3">
+<AdminEditorSections panels={[{"id":"admin-card-frame-manager-0","label":"이미지 리소스"},{"id":"admin-card-frame-manager-1","label":"프레임 정렬"}]}>{[<><div className="mt-5 rounded-lg border border-neutral-800 bg-neutral-950/60 p-3">
             <div className="flex flex-wrap items-center gap-3">
               {form.frameUrl ? (
                 <img src={form.frameUrl} alt="" className="h-28 w-20 rounded border border-neutral-700 object-contain" />
@@ -316,15 +318,13 @@ export function AdminCardFrameManager({ onUnauthorized }: { onUnauthorized: () =
               </div>
             </div>
             <input ref={fileInputRef} type="file" accept={imageAccept} className="hidden" onChange={(event) => { const file = event.target.files?.[0]; if (file) void upload(file); event.currentTarget.value = ""; }} />
-          </div>
-
-          <div className="mt-5 grid gap-4 sm:grid-cols-3">
+          </div></>,
+<><div className="mt-5 grid gap-4 sm:grid-cols-3">
             <RangeField label="프레임 크기" value={form.frameScale} min={0.75} max={1.5} step={0.01} suffix={`${Math.round(form.frameScale * 100)}%`} onChange={(value) => setForm((current) => ({ ...current, frameScale: value }))} />
             <RangeField label="가로 위치" value={form.frameOffsetX} min={-15} max={15} step={0.5} suffix={`${form.frameOffsetX.toFixed(1)}%`} onChange={(value) => setForm((current) => ({ ...current, frameOffsetX: value }))} />
             <RangeField label="세로 위치" value={form.frameOffsetY} min={-15} max={15} step={0.5} suffix={`${form.frameOffsetY.toFixed(1)}%`} onChange={(value) => setForm((current) => ({ ...current, frameOffsetY: value }))} />
-          </div>
-
-          <div className="mt-5 flex flex-wrap gap-2">
+          </div></>]}</AdminEditorSections>
+<div className="mt-5 flex flex-wrap gap-2">
             <button type="button" disabled={busy || loading} onClick={() => void save()} className="flex items-center gap-2 rounded bg-primary px-4 py-2.5 text-sm font-black text-black disabled:opacity-50">
               <Save className="h-4 w-4" /> 저장
             </button>
@@ -332,6 +332,7 @@ export function AdminCardFrameManager({ onUnauthorized }: { onUnauthorized: () =
               <RotateCcw className="h-4 w-4" /> 기본값 복원
             </button>
           </div>
+
         </div>
 
         <aside className="rounded-xl border border-neutral-800 bg-black/30 p-4">

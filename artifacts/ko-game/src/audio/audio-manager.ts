@@ -319,6 +319,15 @@ class AudioManager {
     this.stopAttack();
   }
 
+  /** Match preparation must never discard the menu track or its autoplay retry. */
+  stopBattleAudio() {
+    this.stopTemporary(false);
+    this.queue = [];
+    if (this.pendingBaseMusic?.scope === "BATTLE") this.pendingBaseMusic = null;
+    if (this.bgm?.scope === "BATTLE") this.stopBaseMusic();
+    this.stopAttack();
+  }
+
   stop() {
     this.stopTemporary(false);
     this.queue = [];

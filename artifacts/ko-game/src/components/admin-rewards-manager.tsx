@@ -1,3 +1,4 @@
+import {AdminEditorSections} from './admin-editor-sections';
 import { DailyQuestEditor } from './daily-quest-editor';
 import { useEffect, useState } from "react";
 import { CalendarCheck2, Save, Settings2 } from "lucide-react";
@@ -83,9 +84,8 @@ export function AdminRewardsManager({ onUnauthorized }: { onUnauthorized: () => 
   return (
     <section className="space-y-6 rounded-xl border border-neutral-800 bg-black/40 p-5 sm:p-8">
       <div><p className="font-display text-xs font-bold tracking-[0.25em] text-primary">REWARDS & PROGRESS</p><h2 className="mt-2 text-2xl font-black">보상 · 일일 퀘스트 · 출석</h2><p className="mt-2 text-sm leading-6 text-neutral-500">모든 지급량은 서버가 검증하며, 이미 지급된 보상은 설정 변경으로 소급되지 않습니다.</p></div>
-      {message && <p role="status" className="rounded border border-amber-800/50 bg-amber-950/20 px-4 py-3 text-sm text-amber-200">{message}</p>}
-
-      <section className="rounded-lg border border-neutral-800 bg-neutral-950/70 p-5">
+{message && <p role="status" className="rounded border border-amber-800/50 bg-amber-950/20 px-4 py-3 text-sm text-amber-200">{message}</p>}
+<AdminEditorSections panels={[{"id":"admin-rewards-manager-0","label":"경기 보상"},{"id":"admin-rewards-manager-1","label":"출석 보상"}]}>{[<><section className="rounded-lg border border-neutral-800 bg-neutral-950/70 p-5">
         <div className="flex items-center gap-2"><Settings2 className="h-4 w-4 text-amber-400" /><h3 className="font-black">온라인 매치 보상</h3></div>
         <p className="mt-2 text-xs leading-5 text-neutral-500">온라인 매치의 canonical FINISHED 결과에만 적용됩니다. AI 로컬 매치는 서버 검증 결과가 없어 자동 지급하지 않습니다.</p>
         <div className="mt-4 grid gap-3 sm:grid-cols-3">
@@ -94,17 +94,16 @@ export function AdminRewardsManager({ onUnauthorized }: { onUnauthorized: () => 
           <label className="flex items-end gap-2 pb-2 text-xs font-bold text-neutral-300"><input type="checkbox" checked={match.enabled} onChange={(event) => setMatch({ ...match, enabled: event.target.checked })} /> 지급 활성화</label>
         </div>
         <button type="button" disabled={saving} onClick={() => void saveMatch()} className="mt-4 flex items-center gap-2 rounded bg-amber-400 px-4 py-2.5 text-xs font-black text-black disabled:opacity-50"><Save className="h-3.5 w-3.5" /> 저장</button>
-      </section>
-
-      <p className="text-sm text-neutral-400">일일·시즌 퀘스트는 관리자 메뉴의 퀘스트 관리에서 설정하세요.</p>
-
-      <section className="rounded-lg border border-neutral-800 bg-neutral-950/70 p-5">
+      </section></>,
+<><section className="rounded-lg border border-neutral-800 bg-neutral-950/70 p-5">
         <div className="flex items-center gap-2"><CalendarCheck2 className="h-4 w-4 text-amber-400" /><h3 className="font-black">출석 보드 관리</h3></div>
          <div className="mt-4 grid gap-3 sm:grid-cols-3"><input type="number" min="1" max="365" value={attendanceDay} onChange={(event) => setAttendanceDay(event.target.value)} placeholder="Day" className="rounded border border-neutral-700 bg-black px-3 py-2 text-sm text-white" /><select value={attendanceRewardType} onChange={(event) => { setAttendanceRewardType(event.target.value); setAttendanceTargetId(""); }} className="rounded border border-neutral-700 bg-black px-3 py-2 text-sm text-white"><option value="CURRENCY">CURRENCY</option><option value="CARD">CARD</option><option value="CHAMPION">CHAMPION</option><option value="PACK">PACK</option></select>{attendanceRewardType !== "CURRENCY" ? <select value={attendanceTargetId} onChange={(event) => setAttendanceTargetId(event.target.value)} className="rounded border border-neutral-700 bg-black px-3 py-2 text-sm text-white"><option value="">보상 대상 선택</option>{attendanceTargetOptions.map((item) => <option key={item.id} value={item.id}>{item.name}</option>)}</select> : <span />}</div>
          <div className="mt-3 grid gap-3 sm:grid-cols-3"><input type="number" min="1" value={attendanceAmount} onChange={(event) => setAttendanceAmount(event.target.value)} placeholder="보상 수량" className="rounded border border-neutral-700 bg-black px-3 py-2 text-sm text-white" /><label className="flex items-center gap-2 text-xs font-bold text-neutral-300"><input type="checkbox" checked={attendanceEnabled} onChange={(event) => setAttendanceEnabled(event.target.checked)} /> 활성화</label></div>
         <button type="button" disabled={saving} onClick={() => void saveAttendance()} className="mt-4 rounded bg-amber-400 px-4 py-2.5 text-xs font-black text-black disabled:opacity-50">Day 저장</button>
          <div className="mt-5 grid gap-2 sm:grid-cols-4">{data?.attendance.map((item) => <button key={item.dayIndex} type="button" onClick={() => { setAttendanceDay(String(item.dayIndex)); setAttendanceAmount(String(item.rewardAmount)); setAttendanceRewardType(item.rewardType); setAttendanceTargetId(item.rewardTargetId ?? ""); setAttendanceEnabled(item.enabled); }} className="rounded border border-neutral-800 px-3 py-3 text-left hover:border-amber-700"><strong className="text-sm text-white">Day {item.dayIndex}</strong><p className="mt-1 text-xs text-amber-200">{rewardLabel(item.rewardType, item.rewardTargetId, item.rewardAmount)}</p><p className="mt-1 text-[10px] text-neutral-500">{item.enabled ? "활성" : "비활성"}</p></button>)}</div>
-      </section>
+      </section></>]}</AdminEditorSections>
+<p className="text-sm text-neutral-400">일일·시즌 퀘스트는 관리자 메뉴의 퀘스트 관리에서 설정하세요.</p>
+
     </section>
   );
 }

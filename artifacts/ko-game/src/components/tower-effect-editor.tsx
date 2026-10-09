@@ -1,3 +1,4 @@
+import {AdminEditorSections} from './admin-editor-sections';
 import { useState, useEffect, useRef } from "react";
 import {
   ACTION_SCHEMAS,
@@ -81,7 +82,7 @@ export function TowerEffectEditor({
   const update = (index: number, patch: Partial<TowerConfiguredEffect>) =>
     onChange(effects.map((e, i) => (i === index ? { ...e, ...patch } : e)));
   return (
-    <div className="min-w-0 space-y-4" data-testid="tower-effect-editor">
+    <div className="admin-effect-list min-w-0 space-y-4" data-testid="tower-effect-editor">
       {effects.map((e, i) => {
         const schema = ACTION_SCHEMAS[e.action];
         return (
@@ -90,7 +91,7 @@ export function TowerEffectEditor({
             className="min-w-0 space-y-3 border border-neutral-700 p-3"
           >
             <legend>효과 {i + 1}</legend>
-            <label>
+            <AdminEditorSections panels={[{id:e.id+'-section-0',label:"기본 · 발동"},{id:e.id+'-section-1',label:"대상 · 효과"},{id:e.id+'-section-2',label:"조건"},{id:e.id+'-section-3',label:"지속 · 횟수"}]}>{[<><label>
               이름
               <input
                 className={control}
@@ -98,8 +99,8 @@ export function TowerEffectEditor({
                 onChange={(v) => update(i, { name: v.target.value })}
               />
             </label>
-            <label>아이콘 URL<input className={control} value={e.iconUrl??""} onChange={v=>update(i,{iconUrl:v.target.value||undefined})}/></label>
-            <label className="flex min-h-12 items-center gap-2">
+<label>아이콘 URL<input className={control} value={e.iconUrl??""} onChange={v=>update(i,{iconUrl:v.target.value||undefined})}/></label>
+<label className="flex min-h-12 items-center gap-2">
               <input
                 type="checkbox"
                 checked={e.enabled}
@@ -107,7 +108,7 @@ export function TowerEffectEditor({
               />
               활성화
             </label>
-            <label>
+<label>
               발동 시점
               <select
                 className={control}
@@ -119,7 +120,7 @@ export function TowerEffectEditor({
                 ))}
               </select>
             </label>
-            <label>
+<label>
               이벤트 주체
               <select
                 className={control}
@@ -132,8 +133,8 @@ export function TowerEffectEditor({
                 <option value="ENEMY">상대 이벤트</option>
                 <option value="ANY">양측</option>
               </select>
-            </label>
-            <label>
+            </label></>,
+<><label>
               효과 라이브러리
               <select
                 className={control}
@@ -169,7 +170,7 @@ export function TowerEffectEditor({
                 ))}
               </select>
             </label>
-            {schema.target && (
+{schema.target && (
               <>
                 <label>
                   대상 존
@@ -247,7 +248,7 @@ export function TowerEffectEditor({
                 </details>
               </>
             )}
-            {schema.amount && (
+{schema.amount && (
               <label>
                 수치
                 <input
@@ -262,7 +263,7 @@ export function TowerEffectEditor({
                 />
               </label>
             )}
-            {schema.stats &&
+{schema.stats &&
               ["attack", "health"].map((key) => (
                 <label key={key}>
                   {key === "attack" ? "공격력" : "체력"}
@@ -278,7 +279,7 @@ export function TowerEffectEditor({
                   />
                 </label>
               ))}
-            {schema.stat && (
+{schema.stat && (
               <label>
                 변경할 능력치
                 <select
@@ -294,7 +295,7 @@ export function TowerEffectEditor({
                 </select>
               </label>
             )}
-            {schema.cardDefinition && (
+{schema.cardDefinition && (
               <label>
                 대상 카드
                 <select
@@ -321,7 +322,7 @@ export function TowerEffectEditor({
                 </select>
               </label>
             )}
-            {schema.cardCount && (
+{schema.cardCount && (
               <label>
                 카드 수
                 <input
@@ -338,7 +339,7 @@ export function TowerEffectEditor({
                 />
               </label>
             )}
-            {schema.destination && (
+{schema.destination && (
               <label>
                 이동 위치
                 <select
@@ -356,7 +357,7 @@ export function TowerEffectEditor({
                 </select>
               </label>
             )}
-            {schema.keyword && (
+{schema.keyword && (
               <label>
                 키워드
                 <select
@@ -374,7 +375,7 @@ export function TowerEffectEditor({
                 </select>
               </label>
             )}
-            <details>
+<details>
               <summary>효과 파라미터</summary>
               <JsonField
                 key={e.action}
@@ -382,60 +383,8 @@ export function TowerEffectEditor({
                 value={e.values}
                 onChange={(values) => update(i, { values })}
               />
-            </details>
-            <label>
-              지속시간
-              <select
-                className={control}
-                value={e.duration}
-                onChange={(v) => update(i, { duration: v.target.value as any })}
-              >
-                <option value="BATTLE">해당 전투</option>
-                {["BUFF","MODIFY_STAT","MODIFY_MAX_HEALTH","REDUCE_COST","INCREASE_COST","SET_STAT","SET_STATS"].includes(e.action) && <option value="RUN">런 전체 · 내 덱 능력치/비용</option>}
-              </select>
-            </label>
-            <label>
-              발동 제한
-              <select
-                className={control}
-                value={e.limit.scope}
-                onChange={(v) =>
-                  update(i, {
-                    limit: { ...e.limit, scope: v.target.value as any },
-                  })
-                }
-              >
-                {["UNLIMITED", "TURN", "BATTLE", "RUN"].map((s) => (
-                  <option key={s}>{s}</option>
-                ))}
-              </select>
-            </label>
-            <label>
-              횟수
-              <input
-                className={control}
-                type="number"
-                min={1}
-                value={e.limit.count}
-                onChange={(v) =>
-                  update(i, {
-                    limit: { ...e.limit, count: Number(v.target.value) },
-                  })
-                }
-              />
-            </label>
-            <label>
-              우선순위
-              <input
-                className={control}
-                type="number"
-                value={e.priority}
-                onChange={(v) =>
-                  update(i, { priority: Number(v.target.value) })
-                }
-              />
-            </label>
-            <details>
+            </details></>,
+<><details>
               <summary>조건 · AND/OR</summary>
               <button
                 type="button"
@@ -466,7 +415,59 @@ export function TowerEffectEditor({
                   update(i, { condition: condition ?? undefined })
                 }
               />
-            </details>
+            </details></>,
+<><label>
+              지속시간
+              <select
+                className={control}
+                value={e.duration}
+                onChange={(v) => update(i, { duration: v.target.value as any })}
+              >
+                <option value="BATTLE">해당 전투</option>
+                {["BUFF","MODIFY_STAT","MODIFY_MAX_HEALTH","REDUCE_COST","INCREASE_COST","SET_STAT","SET_STATS"].includes(e.action) && <option value="RUN">런 전체 · 내 덱 능력치/비용</option>}
+              </select>
+            </label>
+<label>
+              발동 제한
+              <select
+                className={control}
+                value={e.limit.scope}
+                onChange={(v) =>
+                  update(i, {
+                    limit: { ...e.limit, scope: v.target.value as any },
+                  })
+                }
+              >
+                {["UNLIMITED", "TURN", "BATTLE", "RUN"].map((s) => (
+                  <option key={s}>{s}</option>
+                ))}
+              </select>
+            </label>
+<label>
+              횟수
+              <input
+                className={control}
+                type="number"
+                min={1}
+                value={e.limit.count}
+                onChange={(v) =>
+                  update(i, {
+                    limit: { ...e.limit, count: Number(v.target.value) },
+                  })
+                }
+              />
+            </label>
+<label>
+              우선순위
+              <input
+                className={control}
+                type="number"
+                value={e.priority}
+                onChange={(v) =>
+                  update(i, { priority: Number(v.target.value) })
+                }
+              />
+            </label></>]}</AdminEditorSections>
             <p className="break-words text-sm text-neutral-300">
               {describeTowerEffect(e)}
             </p>

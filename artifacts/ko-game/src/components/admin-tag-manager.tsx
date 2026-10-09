@@ -85,7 +85,7 @@ export function AdminTagManager({ onUnauthorized }: { onUnauthorized: () => void
             </select>
           </div>
           <p className="mt-2 text-xs text-neutral-500">체크하면 연결, 체크를 해제하면 해당 태그만 제거합니다. 공개·비공개·비활성 선수 모두 관리할 수 있습니다.</p>
-          <div className="mt-3 max-h-[65vh] divide-y divide-neutral-800 overflow-y-auto border-y border-neutral-800">
+          <p className="mt-3 text-xs text-neutral-400">현재 검색 결과 {visible.length}장 · 연결 {attached.length}장</p><div className="mt-3 max-h-[65vh] divide-y divide-neutral-800 overflow-y-auto border-y border-neutral-800">
             {visible.map(card => <label key={card.id} className="flex min-h-14 cursor-pointer items-start gap-3 px-2 py-3">
               <input type="checkbox" className="mt-1 h-5 w-5 shrink-0 accent-amber-400" aria-label={card.name + " 태그 연결"}
                 disabled={busy} checked={card.tags.includes(selected)} onChange={event => void change("/" + encodeURIComponent(selected) + "/cards/" + encodeURIComponent(card.id),
