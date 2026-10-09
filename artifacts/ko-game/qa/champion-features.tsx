@@ -31,11 +31,12 @@ function initial(){
 const noop=()=>{};
 function Scene(){
  const [state,setState]=useState(initial),[selected,setSelected]=useState<string|null>(null);
+ const [attacker,setAttacker]=useState<string|null>(null);
  const [busy,setBusy]=useState(false),[failure,setFailure]=useState('');
  const [expected,setExpected]=useState(()=>JSON.stringify(state));
  const update=(s:GameState)=>{setExpected(JSON.stringify(s));setState(s);};
  useEffect(()=>{
-  const load=(event:Event)=>{const {state,definitions}=(event as CustomEvent<{state:GameState,definitions:CardDefinition[]}>).detail;setRuntimeCardDefinitions(definitions);update(state);};
+  const load=(event:Event)=>{const {state,definitions}=(event as CustomEvent<{state:GameState,definitions:CardDefinition[]}>).detail;setRuntimeCardDefinitions(definitions);setSelected(null);setAttacker(null);update(state);};
   window.addEventListener('ko-qa-load-state',load);return()=>window.removeEventListener('ko-qa-load-state',load);
  },[]);
  const run=(kind:string)=>{
@@ -62,13 +63,14 @@ function Scene(){
  <div style={{position:'fixed',top:0,left:0,zIndex:1000,background:'#121212',padding:4,fontSize:10,color:'white'}}>
  {['reset','fusion','reward','reward-full','destroy','retire','restore'].map(k=><button data-testid={k} key={k} onClick={()=>run(k)} style={{padding:4}}>{k}</button>)}
  <output data-testid="board-check">fusion:{state.events.filter(e=>e.type==='FUSION').length} vanished:{state.events.filter(e=>e.type==='CARD_VANISHED').length} hp:{state.players[0].board[0]?.currentHealth} gold:{state.players[0].currentGold} tokens:{state.players[0].board.filter(c=>c?.isChampionToken).length} decktop:{state.players[0].deck[0]?.instanceId} selected:{String(Boolean(state.targetingState))}</output>
+ <output data-testid="state-json" className="sr-only">{JSON.stringify(state)}</output>
  <output data-testid="state-check">{JSON.stringify(state)===expected?'UNCHANGED':'MUTATED'} busy:{String(busy)} events:{state.events.length} hand:{state.players[0].hand.length} {failure}</output>
  </div>
- <GameStatePreview state={state} mediaCatalog={emptyGameMediaCatalog} selectedCardId={selected} selectedAttackerId={null} playError={null} turnSecondsRemaining={60}
+ <GameStatePreview state={state} mediaCatalog={emptyGameMediaCatalog} selectedCardId={selected} selectedAttackerId={attacker} playError={null} turnSecondsRemaining={60}
   bgmMuted={true} bgmVolume={0} onBgmMutedChange={noop} onBgmVolumeChange={noop} onSurrender={noop} onEmote={noop} onSelectCard={setSelected}
-  onEndTurn={()=>run('turn')} onSelectSlot={noop} onUseTechnique={id=>{const r=executeAction(state,{type:'BEGIN_TARGETED_ACTION',playerId:state.players[0].id,action:{type:'PLAY_TECHNIQUE',cardInstanceId:id}});if(!r.success)setFailure(r.message);update(r.state);setSelected(null);}} playAnimation={null} onPlayAnimationComplete={noop}
+  onEndTurn={()=>run('turn')} onSelectSlot={slot=>{if(selected){const r=executeAction(state,{type:'PLAY_WRESTLER',playerId:state.players[0].id,cardInstanceId:selected,boardSlot:slot});if(!r.success)setFailure(r.message);update(r.state);setSelected(null);}}} onUseTechnique={id=>{const r=executeAction(state,{type:'BEGIN_TARGETED_ACTION',playerId:state.players[0].id,action:{type:'PLAY_TECHNIQUE',cardInstanceId:id}});if(!r.success)setFailure(r.message);update(r.state);setSelected(null);}} playAnimation={null} onPlayAnimationComplete={noop}
   attackAnimation={null} attackImpactTriggered={false} onAttackImpact={noop} onAttackAnimationComplete={noop}
-  onSelectAttacker={id=>{if(state.targetingState)update(executeAction(state,{type:'SELECT_EFFECT_TARGET',playerId:state.targetingState.playerId,targetId:id}).state);}} onAttackWrestler={noop} onAttackPlayer={noop} onUseActive={id=>{const result=executeAction(state,{type:'USE_ACTIVE',playerId:state.players[0].id,cardInstanceId:id});if(!result.success)setFailure(result.message);update(result.state);}} onUseChampionAbility={noop}
+  onSelectAttacker={id=>{if(state.targetingState)update(executeAction(state,{type:'SELECT_EFFECT_TARGET',playerId:state.targetingState.playerId,targetId:id}).state);else setAttacker(id);}} onAttackWrestler={id=>{if(attacker){const r=executeAction(state,{type:'ATTACK',playerId:state.players[0].id,attackerInstanceId:attacker,target:{type:'WRESTLER',playerId:state.players[1].id,cardInstanceId:id}});if(!r.success)setFailure(r.message);update(r.state);setAttacker(null);}}} onAttackPlayer={()=>{if(attacker){const r=executeAction(state,{type:'ATTACK',playerId:state.players[0].id,attackerInstanceId:attacker,target:{type:'PLAYER',playerId:state.players[1].id}});if(!r.success)setFailure(r.message);update(r.state);setAttacker(null);}}} onUseActive={id=>{const result=executeAction(state,{type:'USE_ACTIVE',playerId:state.players[0].id,cardInstanceId:id});if(!result.success)setFailure(result.message);update(result.state);}} onUseChampionAbility={()=>{const r=executeAction(state,{type:'BEGIN_TARGETED_ACTION',playerId:state.players[0].id,action:{type:'USE_CHAMPION_ABILITY'}});if(!r.success)setFailure(r.message);update(r.state);}}
   onCancelEffectTargeting={()=>update(executeAction(state,{type:'CANCEL_EFFECT_TARGET',playerId:state.targetingState!.playerId}).state)} onEffectTarget={id=>update(executeAction(state,{type:'SELECT_EFFECT_TARGET',playerId:state.targetingState!.playerId,targetId:id}).state)} onPresentationBusyChange={setBusy} />
  </>;
 }

@@ -44,6 +44,8 @@ class AudioManager {
     fadeTimerId: number | null;
     fadeOutTimerId: number | null;
     timeoutId: number;
+    awaitingUnlock: boolean;
+    retryPlayback: () => void;
   } | null = null;
   private queue: AudioRequest[] = [];
   /**
@@ -297,12 +299,13 @@ class AudioManager {
   }
 
   unlockAudio() {
+    if (this.current?.awaitingUnlock) this.current.retryPlayback();
     if (this.bgmMuted) return;
     this.reconcileBgmPlayback();
   }
 
   isAudioUnlockPending() {
-    return this.needsAudioUnlock;
+    return this.needsAudioUnlock || Boolean(this.current?.awaitingUnlock);
   }
 
   /** Stops both the persistent base and any temporary entrance music. */
@@ -469,6 +472,8 @@ class AudioManager {
         fadeTimerId: null as number | null,
         fadeOutTimerId: null as number | null,
         timeoutId: 0,
+        awaitingUnlock: false,
+        retryPlayback: () => {},
       };
       this.current = current;
       if (options.pauseBase) {
@@ -477,19 +482,40 @@ class AudioManager {
       const durationMs = options.durationMs ?? AUDIO_STINGER_DURATION * 1000 + 100;
       const fadeOutMs = options.fadeOutMs ?? 0;
       const finish = () => this.fadeOutTemporary(audio, fadeOutMs, true);
-      current.timeoutId = window.setTimeout(
-        finish,
-        Math.max(0, durationMs - fadeOutMs),
-      );
-      this.startFade(audio, () => safeVolume(request.volume * (request.kind === 'PREVIEW' ? this.sfxVolume : this.entranceVolume) / 100), (timerId) => {
-        if (this.current?.audio === audio) this.current.fadeTimerId = timerId;
-      });
+      // Loading and autoplay permission must not consume the audible duration.
+      // A separate deadline releases the base if media never becomes playable.
+      current.timeoutId = window.setTimeout(() => this.finishTemporaryFor(audio, true), 30_000);
+      let started = false;
+      let playPending = false;
+      const startPlaybackClock = () => {
+        if (this.current !== current || started) return;
+        started = true;
+        current.awaitingUnlock = false;
+        window.clearTimeout(current.timeoutId);
+        current.timeoutId = window.setTimeout(finish, Math.max(0, durationMs - fadeOutMs));
+        this.startFade(audio, () => safeVolume(request.volume * (request.kind === 'PREVIEW' ? this.sfxVolume : this.entranceVolume) / 100), (timerId) => {
+          if (this.current === current) current.fadeTimerId = timerId;
+        });
+      };
+      audio.addEventListener("playing", startPlaybackClock, { once: true });
+      audio.addEventListener("error", () => this.finishTemporaryFor(audio, true), { once: true });
       audio.addEventListener("ended", () => {
-        if (this.current?.audio === audio) finish();
+        if (this.current === current) finish();
       }, { once: true });
-      audio.play().catch(() => {
-        if (this.current?.audio === audio) this.finishTemporaryFor(audio, false);
-      });
+      current.retryPlayback = () => {
+        if (this.current !== current || playPending || started) return;
+        playPending = true;
+        current.awaitingUnlock = false;
+        audio.play().then(startPlaybackClock).catch((error: unknown) => {
+          if (this.current !== current) return;
+          if (error instanceof DOMException && error.name === "NotAllowedError") {
+            current.awaitingUnlock = true;
+          } else {
+            this.finishTemporaryFor(audio, true);
+          }
+        }).finally(() => { playPending = false; });
+      };
+      current.retryPlayback();
     } catch {
       this.finishTemporaryFor(undefined, false);
     }
