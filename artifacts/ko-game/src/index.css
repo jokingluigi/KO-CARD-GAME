@@ -1269,8 +1269,8 @@
   }
 }
 
-/* The game keeps its existing layout everywhere except narrow portrait phones. */
-@media (max-width: 768px) and (orientation: portrait) {
+/* Narrow battle layouts must also work after rotating a phone. */
+@media (max-width: 768px) {
   .ko-game-shell {
     width: 100vw;
     min-width: 100vw;
@@ -2659,3 +2659,54 @@
 @media (prefers-reduced-motion: reduce) { .ko-destroy-burst { animation-duration: 120ms; } }
 
 .ko-decks__compact-row[data-rarity="EPIC"] .ko-decks__compact-name { color: #c4b5fd; }
+
+
+/* Battle geometry: HUD content owns its height; four slots always share available width. */
+@media (min-width: 769px) {
+  .ko-game-shell .ko-opponent-header { height: auto; min-height: 214px; }
+  .ko-game-shell .ko-opponent-hand { max-width: calc(100% - 220px); left: 0; transform: none; translate: none; justify-content: center; overflow: hidden; }
+  .ko-game-shell .ko-board-cards { display: grid; grid-template-columns: repeat(4,minmax(0,1fr)); flex: 1; min-width: 0; max-width: 780px; }
+  .ko-game-shell .ko-board-slot-wrapper { min-width: 0; width: 100%; }
+  .ko-game-shell .ko-board-slot { width: 100% !important; height: auto !important; aspect-ratio: 70 / 98; }
+}
+
+/* Short and touch landscape screens use a compact, scrollable battle rather than a cropped desktop. */
+@media (orientation: landscape) and (max-width: 1100px), (orientation: landscape) and (pointer: coarse) {
+  .ko-game-shell { height: auto; min-height: 100dvh; overflow-x: hidden; overflow-y: auto; }
+  .ko-game-shell .ko-game-stage { display: flex; width: 100%; min-width: 0; max-width: none; height: auto; min-height: 100dvh; overflow: visible; padding: max(8px,env(safe-area-inset-top)) max(12px,env(safe-area-inset-right)) max(8px,env(safe-area-inset-bottom)) max(12px,env(safe-area-inset-left)); gap: 12px; }
+  .ko-game-shell .ko-opponent-header { display: grid; grid-template-columns: minmax(0,1fr) 180px; height: auto; min-height: 116px; padding: 0; }
+  .ko-game-shell .ko-opponent-hand { position: relative; inset: auto; width: 100%; max-width: 100%; transform: none; translate: none; justify-content: center; overflow: hidden; }
+  .ko-game-shell .ko-opponent-hand > div { width: 36px; height: 50px; flex-shrink: 0; }
+  .ko-game-shell .ko-opponent-hud { width: 180px; gap: 2px; }
+  .ko-game-shell .ko-opponent-champion { width: 54px; height: 76px; }
+  .ko-game-shell .ko-opponent-stats { width: 94px; }
+  .ko-game-shell .ko-board-area { flex: none; overflow: visible; gap: 8px; padding: 0; }
+  .ko-game-shell .ko-opponent-board-row,.ko-game-shell .ko-player-board-row { flex-direction: row; width: 100%; gap: 8px; }
+  .ko-game-shell .ko-board-cards { display: grid; grid-template-columns: repeat(4,minmax(0,1fr)); flex: 1; width: auto; min-width: 0; max-width: 600px; gap: 8px; }
+  .ko-game-shell .ko-board-slot-wrapper { width: 100%; min-width: 0; }
+  .ko-game-shell .ko-board-slot { width: 100% !important; height: auto !important; aspect-ratio: 70 / 98; }
+  .ko-game-shell .ko-zone-stack { width: 42px; height: auto; flex-direction: column; align-self: center; }
+  .ko-game-shell .ko-zone-stack > div,.ko-game-shell .ko-zone-stack > button { width: 42px; height: 40px; }
+  .ko-game-shell .ko-game-controls { position: relative; inset: auto; transform: none; translate: none; display: grid; grid-template-columns: minmax(100px,1fr) auto minmax(100px,1fr); width: 100%; gap: 8px; }
+  .ko-game-shell .ko-game-controls > .flex { flex-direction: row; border: 0; padding: 0; align-items: center; }
+  .ko-game-shell .ko-game-controls > .border-amber-500,.ko-game-shell .ko-game-controls > [role=status] { grid-column: 1/-1; }
+  .ko-game-shell .ko-player-footer { display: grid; grid-template-columns: 142px minmax(0,1fr); height: auto; min-height: 210px; gap: 8px; align-items: end; padding: 0; }
+  .ko-game-shell .ko-player-info { width: 142px; }
+  .ko-game-shell .ko-player-info > div:first-child { flex-direction: row; }
+  .ko-game-shell .ko-player-champion { width: 54px; height: 76px; }
+  .ko-game-shell .ko-player-stats { width: 76px; }
+  .ko-game-shell .ko-player-hand { min-width: 0; min-height: 210px; height: auto; padding-top: 44px; overflow-x: auto; }
+  .ko-game-shell .ko-hand-cards { width: max-content; gap: 8px; padding-inline: 8px; }
+  .ko-game-shell .ko-hand-card { flex-shrink: 0; margin-left: 0; width: 96px; height: 134px; }
+  .ko-game-shell .ko-hand-card--selected { transform: translateY(-24px) scale(1.06); }
+  .ko-game-shell .ko-settings-dialog { position: fixed; left: 12px; right: 12px; top: 50%; width: auto; max-height: calc(100dvh - 24px); overflow-y: auto; transform: translateY(-50%); }
+}
+
+@media (max-width: 768px) and (orientation: portrait) {
+  .ko-game-shell .ko-opponent-header { height: auto; min-height: 104px; }
+}
+@media (max-width: 768px) and (orientation: portrait) and (max-height: 740px) {
+  .ko-game-shell { height: auto; overflow-y: auto; }
+  .ko-game-shell .ko-game-stage { height: auto; min-height: 100dvh; grid-template-rows: auto auto auto auto; overflow: visible; }
+  .ko-game-shell .ko-board-area { overflow: visible; }
+}
