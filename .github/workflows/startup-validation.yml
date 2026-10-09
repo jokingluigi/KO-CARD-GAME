@@ -189,7 +189,7 @@ jobs:
           node docs/qa/cinematic-browser.mjs
           node docs/qa/presentation-master-browser.mjs
           KO_QA_NO_REMOTE_ART=1 node docs/qa/art-direction-browser.mjs
-          node docs/qa/mobile-history-browser.mjs
+          KO_QA_COMPILED_CSS=1 node docs/qa/mobile-history-browser.mjs
           node docs/qa/daily-quests-browser.mjs
           node docs/qa/champion-features-browser.mjs
           node docs/qa/fusion-browser.mjs
