@@ -1317,7 +1317,7 @@ export function GameStatePreview({
                          aria-label="배경 음악 볼륨"
                        />
                      </label>
-                     <button type="button" data-testid="button-open-match-history" className="min-h-10 w-full border border-amber-700 bg-black px-3 text-left text-xs font-bold text-amber-300 md:hidden" onClick={() => { setSettingsOpen(false); setHistoryOpen(true); }}>경기 로그 보기</button>
+                     <button type="button" data-testid="button-open-match-history" className="min-h-10 w-full border border-amber-700 bg-black px-3 text-left text-xs font-bold text-amber-300" onClick={() => { setSettingsOpen(false); setHistoryOpen(true); }}>경기 로그 보기</button>
                      {onBattleInfo&&<button type="button" className="min-h-12 w-full border border-primary bg-black px-3 text-primary" onClick={()=>{setSettingsOpen(false);onBattleInfo();}}>능력·유물 정보</button>}
                      <SfxVolumeControl />
                      <EntranceVolumeControl />

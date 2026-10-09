@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { Dialog, DialogContent, DialogTitle, DialogDescription } from './ui/dialog';
 import { getCardDefinition, type CardInstance, type GameState } from '@/game';
 import { eventTitle, findCard, historyEvents, playerLabel } from './action-history-utils';
@@ -88,27 +88,12 @@ function HistoryList({ state, viewerPlayerId, expanded = false }: { state: GameS
 
 export function ActionHistory({ state, viewerPlayerId = state.players[0].id, mobileOpen = false, onMobileClose }: { state: GameState; viewerPlayerId?: string; mobileOpen?: boolean; onMobileClose?: () => void }) {
   const [showAll, setShowAll] = useState(false);
-  useEffect(() => {
-    if (!mobileOpen) return;
-    const desktop = window.matchMedia('(min-width: 768px)');
-    const closeOnDesktop = () => { if (desktop.matches) onMobileClose?.(); };
-    closeOnDesktop();
-    desktop.addEventListener('change', closeOnDesktop);
-    return () => desktop.removeEventListener('change', closeOnDesktop);
-  }, [mobileOpen, onMobileClose]);
-
   return (
     <>
-      <aside className="fixed left-3 top-1/2 z-50 hidden w-44 -translate-y-1/2 rounded border border-neutral-800 bg-black/85 p-1.5 shadow-2xl backdrop-blur-md md:block">
-        <div className="mb-1 flex items-center justify-between border-b border-neutral-800 pb-1.5 text-[10px] font-black tracking-[0.18em] text-neutral-300">
-          경기 기록 <button type="button" className="text-[9px] tracking-normal text-amber-300" onClick={() => setShowAll((open) => !open)}>{showAll ? '최근만' : '전체 보기'}</button>
-        </div>
-        <div className={showAll ? 'max-h-[65dvh] overflow-y-auto' : 'max-h-[48dvh] overflow-y-auto'}><HistoryList state={state} viewerPlayerId={viewerPlayerId} expanded={showAll} /></div>
-      </aside>
-
       <Dialog open={mobileOpen} onOpenChange={(open) => { if (!open) onMobileClose?.(); }}>
-        <DialogContent overlayClassName="!z-[160] md:hidden" className="!z-[170] w-[calc(100vw-24px)] max-h-[80dvh] rounded-none border border-amber-700 bg-black text-neutral-100 md:hidden">
+        <DialogContent overlayClassName="!z-[160]" className="!z-[170] w-[calc(100vw-24px)] max-h-[calc(100dvh-24px)] overflow-y-auto rounded-none border border-amber-700 bg-black text-neutral-100">
           <DialogTitle className="text-left text-base font-black text-amber-300">경기 기록</DialogTitle>
+          <button type="button" className="min-h-11 border border-amber-700 px-3 text-sm font-bold text-amber-300" onClick={onMobileClose}>경기 로그 닫기</button>
           <DialogDescription className="text-left text-xs text-neutral-400">원할 때만 열어 확인하세요.</DialogDescription>
           <button type="button" className="min-h-10 text-left text-xs font-bold text-amber-300" onClick={() => setShowAll((open) => !open)}>{showAll ? '최근 12개만 보기' : '전체 기록 보기'}</button>
           <HistoryList state={state} viewerPlayerId={viewerPlayerId} expanded={showAll} />
