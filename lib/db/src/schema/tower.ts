@@ -64,3 +64,8 @@ export const towerUnlocksTable = pgTable('tower_unlocks', {
   sourceRunId: text('source_run_id').notNull().references(() => towerRunsTable.id),
   createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
 }, table => [uniqueIndex('tower_permanent_unlock').on(table.userId, table.kind, table.targetId)]);
+
+/** Published versions are append-only complete snapshots. Existing run snapshots stay valid. */
+export const towerVersionsTable=pgTable('tower_versions',{
+ id:text('id').primaryKey(),towerId:text('tower_id').notNull().references(()=>towerSeasonsTable.id),version:integer('version').notNull(),snapshot:jsonb('snapshot').$type<Record<string,unknown>>().notNull(),publishedBy:text('published_by').notNull().references(()=>usersTable.id),createdAt:timestamp('created_at',{withTimezone:true}).notNull().defaultNow(),
+},t=>[uniqueIndex('tower_version_unique').on(t.towerId,t.version)]);

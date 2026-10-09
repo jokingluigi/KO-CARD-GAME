@@ -2,7 +2,7 @@ import { processMatchEventsForDailyQuests } from "./daily-quest-service";
 import { randomUUID } from 'node:crypto';
 import { and, eq, sql } from 'drizzle-orm';
 import { db, towerRunsTable, towerBossClearsTable, towerBossReceiptsTable, towerSettingsTable, towerUnlocksTable, userChampionCollectionsTable } from '@workspace/db';
-import { TowerRuleError, newTowerRun, transitionRun, createTowerBattle, type TowerRun, type TowerSnapshot, encounterFor, validateTowerDeck, conditionMatches, type History, type RunCommand, type GameState } from '@workspace/game-engine';
+import { TowerRuleError, newTowerRun, transitionRun, createTowerBattle, towerFloorCount, towerBoss, type TowerRun, type TowerSnapshot, encounterFor, validateTowerDeck, conditionMatches, type History, type RunCommand, type GameState } from '@workspace/game-engine';
 import { grantReward } from './reward-service';
 
 type Transaction = Parameters<Parameters<typeof db.transaction>[0]>[0];
@@ -19,8 +19,9 @@ export async function createPersistedTowerRun(userId: string, championId: string
     if (existing) throw new TowerRuleError('RUN_EXISTS', '진행 중인 도전을 이어 하거나 종료해 주세요.');
     const ownership = await tx.select({ id: userChampionCollectionsTable.championDefinitionId }).from(userChampionCollectionsTable)
       .where(and(eq(userChampionCollectionsTable.userId, userId), eq(userChampionCollectionsTable.owned, true)));
-    const run = newTowerRun({ id: randomUUID(), seed: randomUUID(), championId, starterId, ownedChampionIds: ownership.map(row => row.id) },
+    let run = newTowerRun({ id: randomUUID(), seed: randomUUID(), championId, starterId, ownedChampionIds: ownership.map(row => row.id) },
       snapshot.catalog, await towerHistory(tx, userId, snapshot.catalog.season.id));
+    if(snapshot.contentVersion!==undefined)run={...run,contentVersion:snapshot.contentVersion};
     await tx.insert(towerRunsTable).values({ id: run.id, userId, seasonId: run.seasonId, state: json(run), snapshot: json(snapshot) });
     return run;
   });
@@ -71,6 +72,7 @@ export async function applyTowerCommand(userId: string, runId: string, expectedV
     const row = await lockedRun(tx, userId, runId, expectedVersion);
     const { run, snapshot } = decode(row);
     const next = transitionRun(run, command, snapshot.catalog, await runHistory(tx, userId, run, snapshot), expectedVersion);
+    if(command.type==='REPLACE_CARD'&&next.runStatModifiers){next.runStatModifiers={...next.runStatModifiers};delete next.runStatModifiers[String(command.deckIndex)];}
     const starting = next.phase === 'BATTLE' && run.phase !== 'BATTLE';
     const battle = starting ? createTowerBattle(next, snapshot) : row.currentBattle as unknown as GameState | null;
     return saveRun(tx, row, next, battle, starting ? battle : null);
@@ -80,16 +82,22 @@ export async function applyTowerCommand(userId: string, runId: string, expectedV
 async function settleBoss(tx: Transaction, row: RunRow, run: TowerRun, snapshot: TowerSnapshot) {
   const slot = run.encounter.bossSlot;
   if (!slot || run.isTest) return;
-  const [receipt] = await tx.select().from(towerBossReceiptsTable).where(and(eq(towerBossReceiptsTable.runId, run.id), eq(towerBossReceiptsTable.bossSlotId, slot)));
+  const receiptSlot=snapshot.catalog.season.v2?slot+"@"+run.floor:slot;
+  const [receipt] = await tx.select().from(towerBossReceiptsTable).where(and(eq(towerBossReceiptsTable.runId, run.id), eq(towerBossReceiptsTable.bossSlotId, receiptSlot)));
   if (receipt) return;
   const [first] = await tx.insert(towerBossClearsTable).values({ id: randomUUID(), userId: row.userId, seasonId: run.seasonId, bossSlotId: slot, firstRunId: run.id })
     .onConflictDoNothing().returning({ id: towerBossClearsTable.id });
+  const v2Boss=towerBoss(snapshot.catalog,slot==='hiddenBoss'?snapshot.catalog.season.v2?.hiddenBossId??'hiddenBoss':slot);
   const boss = snapshot.catalog.season.bosses[slot];
-  if (!boss) throw new TowerRuleError('INVALID_BOSS', '보스 보상 설정을 찾을 수 없습니다.');
-  const reward = first ? boss.firstReward : boss.repeatReward;
-  const grant = await grantReward({ userId: row.userId, sourceType: 'TOWER_BOSS', sourceId: `${run.id}:${slot}`, rewardType: reward.type,
+  if (!boss&&!v2Boss) throw new TowerRuleError('INVALID_BOSS', '보스 보상 설정을 찾을 수 없습니다.');
+  const rewards=v2Boss?(first?v2Boss.firstRewards:v2Boss.repeatRewards):[first?boss!.firstReward:boss!.repeatReward];
+  const grants=[];
+  for(const [index,reward] of rewards.entries()){
+  const grant = await grantReward({ userId: row.userId, sourceType: 'TOWER_BOSS', sourceId: v2Boss ? `${run.id}:${run.floor}:${slot}:${index}` : `${run.id}:${slot}`, rewardType: reward.type,
     rewardTargetId: reward.targetId, amount: reward.amount, metadata: { seasonId: run.seasonId, bossSlotId: slot, firstClear: Boolean(first) } }, tx);
-  await tx.insert(towerBossReceiptsTable).values({ id: randomUUID(), runId: run.id, bossSlotId: slot, firstClear: Boolean(first), reward: json({ ...reward, grant }) });
+    grants.push({...reward,grant});
+  }
+  await tx.insert(towerBossReceiptsTable).values({ id: randomUUID(), runId: run.id, bossSlotId: receiptSlot, firstClear: Boolean(first), reward: json(grants.length===1?grants[0]:{type:'MULTIPLE',rewards:grants}) });
 }
 
 /** Called with a state produced server-side by executeAction; never expose as a result API. */
@@ -103,7 +111,9 @@ export async function saveTowerBattle(userId: string, runId: string, expectedVer
     if (battle.status !== 'FINISHED') return saveRun(tx, row, { ...run, version: run.version + 1 }, battle);
     const won = battle.winnerId === 'player-1';
     if (won) await settleBoss(tx, row, run, snapshot);
-    const next = transitionRun(run, { type: 'BATTLE_RESULT', won }, snapshot.catalog, await runHistory(tx, userId, run, snapshot), expectedVersion);
+    const persistedEffects=battle.tower?.configuredRuntime;
+    const finishedRun=persistedEffects?{...run,effectRunUses:persistedEffects.runUses,runStatModifiers:persistedEffects.runModifiers}:run;
+    const next = transitionRun(finishedRun, { type: 'BATTLE_RESULT', won }, snapshot.catalog, await runHistory(tx, userId, run, snapshot), expectedVersion);
     return saveRun(tx, row, next, battle);
   });
 }
@@ -132,8 +142,8 @@ export async function closeTowerRun(runId: string, database: typeof db = db) {
 }
 
 /** Administrator diagnostics are separate rows and never enter account progress or grant rewards. */
-export async function createTowerDiagnostic(userId: string, input: { starterId: string; seed: string; floor: number; fullMode?: boolean; hidden?: boolean; relicIds: string[]; deck?: string[]; presetId?: string }, snapshot: TowerSnapshot, database: typeof db = db) {
-  if (!Number.isInteger(input.floor) || input.floor < 1 || input.floor > 16 || !input.seed || input.seed.length > 200 || new Set(input.relicIds).size !== input.relicIds.length || input.relicIds.length > 3)
+export async function createTowerDiagnostic(userId: string, input: { starterId: string; seed: string; floor: number; fullMode?: boolean; hidden?: boolean; relicIds: string[]; deck?: string[]; presetId?: string; championId?: string; enemyId?: string; bossId?: string }, snapshot: TowerSnapshot, database: typeof db = db) {
+  if (!Number.isInteger(input.floor) || input.floor < 1 || input.floor > towerFloorCount(snapshot.catalog) || !input.seed || input.seed.length > 200 || new Set(input.relicIds).size !== input.relicIds.length || !snapshot.catalog.season.v2 && input.relicIds.length > 3)
     throw new TowerRuleError('INVALID_CONFIG', '테스트 층·Seed·유물 선택을 확인해 주세요.');
   if (input.fullMode && (input.floor !== 1 || input.hidden || input.relicIds.length || input.deck || input.presetId)) throw new TowerRuleError('INVALID_CONFIG', '전체 모드 테스트는 기본 스타터 덱으로 1층부터 진행합니다.');
   const starter = snapshot.catalog.starters.find(item => item.id === input.starterId);
@@ -142,10 +152,12 @@ export async function createTowerDiagnostic(userId: string, input: { starterId: 
   const history: History = input.fullMode ? await database.transaction(tx => towerHistory(tx, userId, snapshot.catalog.season.id)) : { clearCount: 0, normalEnding: false, bossSlots: [], unlockedRelicIds: snapshot.catalog.relics.map(r => r.id), unlockedStarterIds: [starter.id] };
   // The chosen starter is available for QA; subsequent relic and hidden-boss conditions use normal account history.
   history.unlockedStarterIds = [...new Set([...history.unlockedStarterIds, starter.id])];
-  let run = newTowerRun({ id: randomUUID(), seed: input.seed, championId: starter.championId, starterId: starter.id, ownedChampionIds: [starter.championId], isTest: true }, snapshot.catalog, history);
-  run = { ...run, ...(input.fullMode ? { fullModeTest: true } : {}), floor: input.hidden ? 16 : input.floor, relicIds: [...input.relicIds], deck: input.deck ? [...input.deck] : run.deck };
+  let run = newTowerRun({ id: randomUUID(), seed: input.seed, championId: input.championId ?? starter.championId, starterId: starter.id, ownedChampionIds: [input.championId ?? starter.championId], isTest: true }, snapshot.catalog, history);
+  run = { ...run, ...(input.fullMode ? { fullModeTest: true } : {}), floor: input.hidden ? towerFloorCount(snapshot.catalog) : input.floor, relicIds: [...input.relicIds], deck: input.deck ? [...input.deck] : run.deck };
   validateTowerDeck(run.deck, snapshot.catalog);
-  run.encounter = encounterFor(run, snapshot.catalog, input.hidden === true);
+  if (!input.fullMode) { run.phase="HUB";run.dialogueReturn=undefined;run.encounter = encounterFor(run, snapshot.catalog, input.hidden === true); }
+  if(input.championId&&!snapshot.champions.some(c=>c.id===input.championId))throw new TowerRuleError("CHAMPION_MISSING","테스트 챔피언을 선택하세요.");
+  if(snapshot.catalog.season.v2&&(input.enemyId||input.bossId)){const catalog=structuredClone(snapshot.catalog);const floor=catalog.season.v2!.floors.find(f=>f.number===run.floor)!;if(input.bossId){const boss=catalog.season.v2!.bosses.find(b=>b.id===input.bossId);if(!boss)throw new TowerRuleError("INVALID_BOSS","테스트 보스를 선택하세요.");floor.type="BOSS";floor.bossId=boss.id;}else{const enemy=floor.enemies.find(e=>e.id===input.enemyId);if(!enemy)throw new TowerRuleError("INVALID_PRESET","해당 층의 적 후보를 선택하세요.");floor.type="NORMAL";floor.enemies=[enemy];}run.encounter=encounterFor(run,catalog,input.hidden===true);}
   if (input.presetId) {
     const preset = snapshot.catalog.presets.find(p => p.id === input.presetId && p.enabled);
     if (!preset) throw new TowerRuleError('INVALID_PRESET', '활성 상대 덱을 선택해 주세요.');

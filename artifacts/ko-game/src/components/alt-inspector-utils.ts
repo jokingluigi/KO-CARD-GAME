@@ -69,8 +69,8 @@ export function calculateInspectorPosition(
   };
 }
 
-export function getCardInspectorMetadata(card: CardInstance) {
-  const definition = getCardDefinition(card.definitionId);
+export function getCardInspectorMetadata(card: CardInstance, override?:ReturnType<typeof getCardDefinition>) {
+  const definition = override ?? getCardDefinition(card.definitionId);
   const tags = [...new Set(canonicalCardTags([...(definition?.tags ?? card.tags ?? []), ...(card.grantedTags ?? [])]))];
   const visibleKeywords = getVisibleCardKeywords(
     getActiveCardKeywords(card),

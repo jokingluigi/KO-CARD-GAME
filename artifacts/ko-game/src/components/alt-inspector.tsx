@@ -329,9 +329,9 @@ export function Inspectable({
   );
 }
 
-export function CardInspectContent({ card }: { card: CardInstance }) {
+export function CardInspectContent({ card, definition:override }: { card: CardInstance; definition?:ReturnType<typeof getCardDefinition> }) {
   const altInspectContext = useContext(AltInspectContext);
-  const { definition, tags, keywords, statuses, rulesText } = getCardInspectorMetadata(card);
+  const { definition, tags, keywords, statuses, rulesText } = getCardInspectorMetadata(card,override);
   const numericChanges = getNumericChanges(card);
   return (
     <div className="ko-inspector-content space-y-4">

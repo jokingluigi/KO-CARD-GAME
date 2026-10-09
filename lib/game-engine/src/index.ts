@@ -123,3 +123,8 @@ export * from '../../../artifacts/ko-game/src/game/cards/draft-mutation';
 export * from '../../../artifacts/ko-game/src/game/champions/awakening-types';
 export * from '../../../artifacts/ko-game/src/game/champions/awakening-definitions';
 export { hasAwakeningInvulnerability } from '../../../artifacts/ko-game/src/game/champions/awakening';
+
+export * from './tower/types-v2';
+export * from './tower/v2';
+
+export * from './tower/effects';

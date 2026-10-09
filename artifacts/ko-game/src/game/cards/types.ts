@@ -136,6 +136,7 @@ export interface CardDefinition {
 }
 
 export interface CardInstance {
+  towerDeckIndex?: number;
   ignoreTauntToChampion?: boolean;
   questExclusive?: boolean;
   awakeningLegacyPassives?: boolean;

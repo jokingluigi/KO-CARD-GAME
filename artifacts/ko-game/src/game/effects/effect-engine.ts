@@ -3024,7 +3024,8 @@ function applyEffectInternal(
         }
         const reduced = towerIncomingDamage(preparedState, targetOwner, preparedCurrent, damageAmount);
         preparedState = reduced.state;
-        const effectiveDamage = keywordDamage(preparedCurrent, Math.max(0, reduced.amount + (reduced.amount > 0 ? madokawaIncomingBonus(preparedState, targetOwner, preparedCurrent) : 0) - silenceDamageReduction(preparedCurrent, sourceCard)), preparedState.turn, 'EFFECT');
+        let effectiveDamage = keywordDamage(preparedCurrent, Math.max(0, reduced.amount + (reduced.amount > 0 ? madokawaIncomingBonus(preparedState, targetOwner, preparedCurrent) : 0) - silenceDamageReduction(preparedCurrent, sourceCard)), preparedState.turn, 'EFFECT');
+        if(attribution.sourceActionType==='TOWER_RELIC')effectiveDamage=Math.min(effectiveDamage,Math.max(0,preparedCurrent.currentHealth-1));
         const health = preparedCurrent.isTrainingDummy ? 1 : preparedCurrent.currentHealth - effectiveDamage;
         if (health > 0) {
           const damagedState: GameState = {
