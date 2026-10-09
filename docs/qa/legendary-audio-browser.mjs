@@ -1,0 +1,31 @@
+import assert from 'node:assert/strict';
+import fs from 'node:fs/promises';
+const {chromium}=await import(process.env.KO_QA_PLAYWRIGHT ?? 'playwright');
+const browser=await chromium.launch({channel:process.env.KO_QA_CHROME_CHANNEL ?? 'chrome',headless:true,args:['--autoplay-policy=user-gesture-required']});
+const origin=process.env.KO_QA_ORIGIN ?? 'http://127.0.0.1:5173';
+const wav=Buffer.alloc(44+16000*2*2);
+wav.write('RIFF');wav.writeUInt32LE(wav.length-8,4);wav.write('WAVEfmt ',8);wav.writeUInt32LE(16,16);wav.writeUInt16LE(1,20);wav.writeUInt16LE(1,22);wav.writeUInt32LE(16000,24);wav.writeUInt32LE(32000,28);wav.writeUInt16LE(2,32);wav.writeUInt16LE(16,34);wav.write('data',36);wav.writeUInt32LE(wav.length-44,40);
+for(let i=0;i<(wav.length-44)/2;i++)wav.writeInt16LE(Math.round(Math.sin(i*2*Math.PI*220/16000)*2000),44+i*2);
+const results=[];
+try { for(const mobile of [false,true]) {
+ const context=await browser.newContext({viewport:mobile?{width:390,height:844}:{width:1280,height:800},isMobile:mobile,hasTouch:mobile});
+ await context.addInitScript(()=>{window.__audio=[];const Native=window.Audio;window.Audio=function(...args){const a=new Native(...args);window.__audio.push(a);return a};window.Audio.prototype=Native.prototype;});
+ const page=await context.newPage();await page.route('**/api/**',r=>r.fulfill({json:{cards:[],champions:[]}}));
+ await page.route('**/qa-base.wav',r=>r.fulfill({contentType:'audio/wav',body:wav}));
+ await page.route('**/qa-legendary.wav',async r=>{await new Promise(resolve=>setTimeout(resolve,12000));await r.fulfill({contentType:'audio/wav',body:wav});});
+ await page.goto(origin+'/qa/champion-features.html');
+ await page.evaluate(async()=>{window.__manager=(await import('/src/audio/audio-manager.ts')).audioManager;document.body.insertAdjacentHTML('beforeend','<button id="audio-start" style="position:fixed;top:0;left:0;z-index:9999">audio test</button>');document.querySelector('#audio-start').onclick=()=>{window.__manager.setMusicContext('BATTLE');window.__manager.playMatchBgm('/qa-base.wav',80);};});
+ await page.locator('#audio-start').click();await page.waitForFunction(()=>window.__audio.some(a=>a.src.endsWith('qa-base.wav')&&!a.paused&&a.currentTime>.2));
+ const before=await page.evaluate(()=>window.__audio.find(a=>a.src.endsWith('qa-base.wav')).currentTime);
+ await page.evaluate(()=>window.__manager.playLegendaryEntrance('/qa-legendary.wav',100));
+ await page.waitForTimeout(11000);
+ assert.equal(await page.evaluate(()=>window.__audio.find(a=>a.src.endsWith('qa-base.wav')).paused),true);
+ await page.waitForFunction(()=>window.__audio.some(a=>a.src.endsWith('qa-legendary.wav')&&!a.paused&&a.currentTime>.1));
+ await page.waitForTimeout(8500);
+ assert.equal(await page.evaluate(()=>window.__audio.find(a=>a.src.endsWith('qa-base.wav')).paused),true,'ten seconds start after playback, not the network request');
+ await page.waitForFunction(()=>!window.__audio.find(a=>a.src.endsWith('qa-base.wav')).paused,{},{timeout:5000});
+ const after=await page.evaluate(()=>({instances:window.__audio.filter(a=>a.src.endsWith('qa-base.wav')).length,time:window.__audio.find(a=>a.src.endsWith('qa-base.wav')).currentTime}));
+ assert.equal(after.instances,1);assert.ok(after.time>=before);
+ results.push({mobile,delayedMediaPlayback:true,preservedBase:true});await context.close();
+}await fs.mkdir('qa-results/legendary-audio',{recursive:true});await fs.writeFile('qa-results/legendary-audio/result.json',JSON.stringify(results,null,2));console.log(JSON.stringify(results));
+}finally{await browser.close();}

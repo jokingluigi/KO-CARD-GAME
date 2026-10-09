@@ -2710,3 +2710,5 @@
   .ko-game-shell .ko-game-stage { height: auto; min-height: 100dvh; grid-template-rows: auto auto auto auto; overflow: visible; }
   .ko-game-shell .ko-board-area { overflow: visible; }
 }
+
+@import './mobile-battle.css';

@@ -6,6 +6,7 @@ import { audioManager } from "./audio-manager";
 class FakeAudio {
   static rejectPlay = false;
   static failLoad = false;
+  static delayPlay = false;
   error: MediaError | null = null;
   volume = 1;
   muted = false;
@@ -37,7 +38,9 @@ class FakeAudio {
       this.paused = true;
       return Promise.reject(new DOMException("Autoplay blocked", "NotAllowedError"));
     }
+    if (FakeAudio.delayPlay) return new Promise<void>(() => {});
     this.paused = false;
+    this.emit("playing");
     return Promise.resolve();
   }
 
@@ -602,5 +605,69 @@ test("first-entry cleanup retains blocked menu audio for the first user gesture"
     audioManager.stopGameAudio();
     Object.defineProperty(globalThis, "Audio", { configurable: true, value: previousAudio });
     Object.defineProperty(globalThis, "window", { configurable: true, value: previousWindow });
+  }
+});
+
+
+test("slow legendary loading preserves a full ten seconds after playback starts", () => {
+  withFakeAudio(advance => {
+    const manager = audioManager as unknown as { current: { audio: FakeAudio } | null; bgm: {audio: FakeAudio} };
+    audioManager.setBgmMuted(false);
+    audioManager.playBgm('/slow-base.mp3', 80);
+    const base = manager.bgm.audio;
+    base.currentTime = 27;
+    FakeAudio.delayPlay = true;
+    try {
+      audioManager.playLegendaryEntrance('/slow-legendary.mp3', 100);
+      advance(12_000);
+      assert.ok(manager.current, 'loading must not exhaust the entrance duration');
+      manager.current.audio.paused = false;
+      manager.current.audio.emit('playing');
+      advance(9_900);
+      assert.ok(manager.current);
+      assert.equal(base.paused, true);
+      advance(100); advance(800);
+      assert.equal(manager.current, null);
+      assert.equal(base.currentTime, 27);
+    } finally { FakeAudio.delayPlay = false; }
+  });
+});
+
+test("unresponsive legendary media releases the paused base at the loading deadline", () => {
+  withFakeAudio(advance => {
+    const manager = audioManager as unknown as { current: unknown; bgm: {audio: FakeAudio} };
+    audioManager.playBgm('/fallback-base.mp3', 80);
+    FakeAudio.delayPlay = true;
+    try {
+      audioManager.playLegendaryEntrance('/never-loads.mp3', 100);
+      advance(30_000);
+      assert.equal(manager.current, null);
+      // The pending fake flag also blocks base replay; the base instance itself survives.
+      assert.equal(manager.bgm.audio.url, '/fallback-base.mp3');
+    } finally { FakeAudio.delayPlay = false; }
+  });
+});
+
+test("blocked legendary entrance retries the same media on the next user gesture", async () => {
+  const previousAudio = globalThis.Audio, previousWindow = globalThis.window;
+  Object.defineProperty(globalThis, 'Audio', {configurable:true,value:FakeAudio});
+  Object.defineProperty(globalThis, 'window', {configurable:true,value:{setInterval,clearInterval,setTimeout,clearTimeout}});
+  const manager = audioManager as unknown as {current: {audio: FakeAudio} | null};
+  try {
+    FakeAudio.rejectPlay = true;
+    audioManager.playLegendaryEntrance('/blocked-legendary.mp3', 100);
+    const original = manager.current!.audio;
+    await Promise.resolve(); await Promise.resolve(); await Promise.resolve();
+    assert.equal(audioManager.isAudioUnlockPending(), true);
+    assert.equal(manager.current?.audio, original);
+    FakeAudio.rejectPlay = false;
+    audioManager.unlockAudio();
+    await Promise.resolve();
+    assert.equal(original.paused, false);
+    assert.equal(audioManager.isAudioUnlockPending(), false);
+  } finally {
+    FakeAudio.rejectPlay = false; audioManager.stopGameAudio();
+    Object.defineProperty(globalThis, 'Audio', {configurable:true,value:previousAudio});
+    Object.defineProperty(globalThis, 'window', {configurable:true,value:previousWindow});
   }
 });

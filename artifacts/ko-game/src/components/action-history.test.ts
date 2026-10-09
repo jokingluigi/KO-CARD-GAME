@@ -43,3 +43,14 @@ test('변신 기록은 원래 카드와 변신 후 카드의 이름을 구분하
   assert.equal(historyEvents(state).length, 12);
   assert.equal(historyEvents(state, Number.POSITIVE_INFINITY).length, 15);
 });
+
+test('턴/드로우/퀘스트 진행은 기존 이벤트에서 표시하며 상대 드로우 이름은 숨긴다', () => {
+ const state=createInitialGameState();const id=state.players[1].deck[0].instanceId;
+ const drawn={type:'CARD_DRAWN' as const,playerId:state.players[1].id,cardInstanceId:id};
+ assert.equal(eventTitle(state,drawn,state.players[0].id),'카드 드로우');
+ state.events=[{type:'TURN_STARTED',playerId:state.players[0].id},drawn,{type:'CHAMPION_QUEST_PROGRESS',playerId:state.players[0].id,amount:1},{type:'TURN_ENDED',playerId:state.players[0].id}];
+ assert.equal(historyEvents(state).length,4);
+ assert.match(eventTitle(state,state.events[0]),/턴 시작/);
+ assert.match(eventTitle(state,state.events[2]),/퀘스트 진행/);
+ assert.match(eventTitle(state,state.events[3]),/턴 종료/);
+});

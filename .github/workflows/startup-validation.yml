@@ -64,7 +64,7 @@ permissions:
 jobs:
   validate:
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 20
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -184,12 +184,14 @@ jobs:
           done
           export KO_QA_PLAYWRIGHT="$RUNNER_TEMP/ko-entry-qa/node_modules/playwright/index.mjs"
           node docs/qa/entry-audio-browser.mjs
+          node docs/qa/legendary-audio-browser.mjs
           node docs/qa/heavy-impact-browser.mjs
           node docs/qa/cinematic-overhaul-browser.mjs
           node docs/qa/cinematic-browser.mjs
           node docs/qa/presentation-master-browser.mjs
           KO_QA_NO_REMOTE_ART=1 node docs/qa/art-direction-browser.mjs
           KO_QA_COMPILED_CSS=1 node docs/qa/mobile-history-browser.mjs
+          KO_QA_COMPILED_CSS=1 node docs/qa/mobile-portrait-battle-browser.mjs
           node docs/qa/daily-quests-browser.mjs
           node docs/qa/champion-features-browser.mjs
           node docs/qa/fusion-browser.mjs

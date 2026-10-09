@@ -689,11 +689,11 @@ export function GameStatePreview({
   const effectTargeting = state.targetingState?.active;
   const validEffectTargetIds = new Set(state.targetingState?.playerId === me.id ? state.targetingState.validTargetIds : []);
   const selectedEffectTargetIds = new Set(state.targetingState?.selectedTargetIds ?? []);
-  
+
   const isMyTurn = state.activePlayerId === me.id;
   const selectedHandCard = me.hand.find((card) => card.instanceId === selectedCardId);
   const attackerSelectionActive = isMyTurn && !selectedHandCard && !effectTargeting;
-    
+
   const canEndTurn = canEndTurnOverride ?? (
     isCurrentPlayer(state, me.id) && !effectTargeting
   );
@@ -880,14 +880,14 @@ export function GameStatePreview({
     if (!sourceElement) return;
     onUseTechnique(cardInstanceId, rectSnapshot(sourceElement.getBoundingClientRect()));
   }
-  
+
   return (
     <RenderCardCatalog.Provider value={getCardDefinition}><CinematicProvider key={state.gameId}><AltInspectProvider>
      <div className={`ko-game-shell flex min-h-[100dvh] w-full flex-col overflow-x-hidden overflow-y-auto bg-neutral-950 font-sans text-neutral-100 selection:bg-primary selection:text-black md:overflow-hidden ${me.champion?.questCompleted ? 'ko-quest-awakened--mine' : ''} ${opp.champion?.questCompleted ? 'ko-quest-awakened--theirs' : ''}`}>
       {cinematicIntro && <CinematicIntro event={cinematicIntro} />}
       {activePresentationCue && <CinematicCue cue={activePresentationCue} state={state} />}
       <ActionHistory state={state} viewerPlayerId={presentationPlayerId ?? me.id} mobileOpen={historyOpen} onMobileClose={() => setHistoryOpen(false)} />
-      
+
       {/* Background Ambience */}
       <div className="ko-cinematic-background pointer-events-none absolute inset-0 z-0 bg-neutral-950">
         {(backgroundAssetUrl || selectedBackground) && (
@@ -913,7 +913,7 @@ export function GameStatePreview({
           ? Math.sign(attackAnimation.geometry.target.left - attackAnimation.geometry.source.left) || 1
           : 1,
       } as React.CSSProperties}>
-         
+
          {/* TOP BAR: Opponent Info */}
          <div className="ko-opponent-header relative z-[90] h-24 shrink-0 px-2 md:h-32 md:px-4">
             {/* Opponent Hand: centered like the player's hand */}
@@ -935,10 +935,10 @@ export function GameStatePreview({
 
             {/* Mirrored opponent HUD */}
             <div className="ko-opponent-hud ml-auto flex w-[180px] flex-col items-end gap-1 md:w-48 md:gap-2">
-                  <span className="max-w-full truncate text-[11px] font-black text-white md:text-sm" data-testid="text-online-opponent-nickname">
-                   {opponentNickname || "상대"}
+                  <span className="ko-champion-heading max-w-full truncate text-[11px] font-black text-white md:text-sm" data-testid="text-online-opponent-nickname">
+                   {`${opponentNickname || "상대"} · ${opponentChampionName || opp.champion?.name || "챔피언"}`}
                  </span>
-                <div className="flex items-start gap-2 md:gap-3">
+                <div className="ko-champion-core flex items-start gap-2 md:gap-3">
                  <div
                     ref={championRef}
                     className={`ko-opponent-champion group relative flex h-28 w-20 flex-col items-center justify-center rounded-sm border-2 bg-neutral-900 md:h-40 md:w-28 ${
@@ -1027,12 +1027,12 @@ export function GameStatePreview({
             {effectTargeting && <div role="status" className="pointer-events-none absolute left-1/2 top-0 z-[115] max-w-[74vw] -translate-x-1/2 rounded border border-amber-400/70 bg-black/90 px-3 py-1 text-center text-[11px] font-bold text-amber-100 shadow-lg md:text-sm">
               {state.targetingState?.fusion?.stage === 'CHOOSE' ? '합체할 다른 아군 선수 1장을 선택하세요.' : state.targetingState?.championRewardReplacement ? '토큰 소환: 돌려보낼 아군 선수 1장을 선택하세요.' : <>{state.targetingState?.pendingAction?.type === 'USE_CHAMPION_ABILITY' ? me.champion?.name : state.cardPool?.find((card) => card.id === state.targetingState?.sourceCard?.definitionId)?.name ?? getCardDefinition(state.targetingState?.sourceCard?.definitionId ?? '')?.name ?? '선수'} 효과의 대상을 선택하세요</>}
             </div>}
-            
+
              {/* Opponent Board + Zones */}
               <div className="ko-opponent-board-row flex w-full items-center justify-center gap-2 md:gap-4">
                  <div className="ko-board-cards flex gap-2 md:gap-4">
                {opp.board.map((card, i) => (
-                 <BoardSlot 
+                 <BoardSlot
                    key={`opp-board-${i}`}
                    card={card}
                    isOpponent={true}
@@ -1078,80 +1078,6 @@ export function GameStatePreview({
                  />
             </div>
 
-             {/* My Board + Zones */}
-              <div className="ko-player-board-row flex w-full items-center justify-center gap-2 md:gap-4">
-                 <div className="ko-board-cards flex gap-2 md:gap-4">
-               {me.board.map((card, i) => (
-                 <BoardSlot 
-                   key={`me-board-${i}`}
-                   card={card}
-                   isOpponent={false}
-                   slotIndex={i as BoardSlotIndex}
-                    selectable={!!selectedHandCard && selectedHandCard.cardType !== "TECHNIQUE" && !card}
-                    slotRef={(element) => setBoardSlotRef(i, element)}
-                     cardRef={card ? (element) => setBoardCardRef(card.instanceId, element) : undefined}
-                     hit={Boolean(
-                       attackImpactTriggered &&
-                       attackAnimation && attackAnimation.damage > 0 &&
-                       attackAnimation?.targetKind === "CARD" &&
-                       attackAnimation.target?.instanceId === card?.instanceId,
-                     )}
-                    hitImpactLevel={attackAnimation?.damageImpactLevel}
-                    animating={
-                      (playAnimation?.kind === "WRESTLER" &&
-                        playAnimation.card.instanceId === card?.instanceId) ||
-                        generatedPlayAnimations.some((animation) => animation.card.instanceId === card?.instanceId) ||
-                         attackAnimation?.attacker.instanceId === card?.instanceId ||
-                         attackAnimation?.target?.instanceId === card?.instanceId
-                    }
-                     selected={card?.instanceId === selectedAttackerId || !!card && selectedEffectTargetIds.has(card.instanceId)}
-                    attackReady={!!card && getAttackLegality(state, me.id, card.instanceId).allowed}
-                    attackSelectionActive={attackerSelectionActive}
-                    attackReason={card
-                      ? (() => {
-                          const legality = getAttackLegality(state, me.id, card.instanceId);
-                          return legality.allowed ? undefined : legality.message;
-                        })()
-                      : undefined}
-                    targetingActive={!!effectTargeting}
-                    presentationActive={activePresentationCardId === card?.instanceId || (!!effectTargeting && state.targetingState?.sourceInstanceId === card?.instanceId)}
-                    targetable={!!card && !!effectTargeting && validEffectTargetIds.has(card.instanceId)}
-                     activeReady={!!card && !card.isSilenced && !card.isAbilityDisabled && card.abilities.some(ability => ability.trigger === 'ACTIVE')}
-                     activeUsable={!!card && legalActiveCardIds.has(card.instanceId)}
-                     onUseActive={() => onUseActive(card!.instanceId)}
-                   onClick={(idOrIdx) => {
-                      if (typeof idOrIdx === 'string') {
-                        if (effectTargeting) {
-                          onEffectTarget(idOrIdx);
-                        } else {
-                           if (
-                             attackerSelectionActive &&
-                             card &&
-                             !getAttackLegality(state, me.id, card.instanceId).allowed
-                           ) {
-                              const legality = getAttackLegality(state, me.id, card.instanceId);
-                              setAttackHint(legality.allowed ? null : legality.message);
-                             return;
-                           }
-                           setAttackHint(null);
-                           onSelectAttacker(idOrIdx);
-                        }
-                      }
-                      else handlePlaySlot(idOrIdx as BoardSlotIndex);
-                   }}
-                 />
-               ))}
-                </div>
-                  <ZoneStack
-                    className="ko-player-zones"
-                   deckRef={playerDeckRef}
-                   deckCount={me.deck.length}
-                   graveyardCount={me.graveyard.length}
-                   onGraveyardClick={() => setOpenGraveyardPlayerId(me.id)}
-                 />
-            </div>
-         </div>
-
            <aside className="ko-game-controls absolute right-2 top-36 z-[110] flex w-24 flex-col items-stretch gap-2 rounded border border-neutral-800 bg-black/85 p-2 shadow-2xl backdrop-blur-md md:fixed md:right-4 md:top-1/2 md:w-32 md:-translate-y-1/2 md:p-3">
               <button
                 type="button"
@@ -1165,6 +1091,7 @@ export function GameStatePreview({
               >
                 ⚙ 설정
               </button>
+              <button type="button" data-testid="button-battle-match-history" aria-label="경기 로그 열기" aria-expanded={historyOpen} onClick={() => setHistoryOpen(true)} className="ko-battle-log-button hidden border border-amber-700 bg-black text-amber-200">로그</button>
              {effectTargeting && (
                <div className="rounded border border-amber-500 bg-amber-950/90 px-2 py-2 text-center text-[10px] font-bold text-amber-100">
                  <strong className="block break-keep text-amber-200">{state.targetingState!.pendingAction?.type === 'USE_CHAMPION_ABILITY'
@@ -1234,6 +1161,81 @@ export function GameStatePreview({
                 </div>
               )}
           </aside>
+             {/* My Board + Zones */}
+              <div className="ko-player-board-row flex w-full items-center justify-center gap-2 md:gap-4">
+                 <div className="ko-board-cards flex gap-2 md:gap-4">
+               {me.board.map((card, i) => (
+                 <BoardSlot
+                   key={`me-board-${i}`}
+                   card={card}
+                   isOpponent={false}
+                   slotIndex={i as BoardSlotIndex}
+                    selectable={!!selectedHandCard && selectedHandCard.cardType !== "TECHNIQUE" && !card}
+                    slotRef={(element) => setBoardSlotRef(i, element)}
+                     cardRef={card ? (element) => setBoardCardRef(card.instanceId, element) : undefined}
+                     hit={Boolean(
+                       attackImpactTriggered &&
+                       attackAnimation && attackAnimation.damage > 0 &&
+                       attackAnimation?.targetKind === "CARD" &&
+                       attackAnimation.target?.instanceId === card?.instanceId,
+                     )}
+                    hitImpactLevel={attackAnimation?.damageImpactLevel}
+                    animating={
+                      (playAnimation?.kind === "WRESTLER" &&
+                        playAnimation.card.instanceId === card?.instanceId) ||
+                        generatedPlayAnimations.some((animation) => animation.card.instanceId === card?.instanceId) ||
+                         attackAnimation?.attacker.instanceId === card?.instanceId ||
+                         attackAnimation?.target?.instanceId === card?.instanceId
+                    }
+                     selected={card?.instanceId === selectedAttackerId || !!card && selectedEffectTargetIds.has(card.instanceId)}
+                    attackReady={!!card && getAttackLegality(state, me.id, card.instanceId).allowed}
+                    attackSelectionActive={attackerSelectionActive}
+                    attackReason={card
+                      ? (() => {
+                          const legality = getAttackLegality(state, me.id, card.instanceId);
+                          return legality.allowed ? undefined : legality.message;
+                        })()
+                      : undefined}
+                    targetingActive={!!effectTargeting}
+                    presentationActive={activePresentationCardId === card?.instanceId || (!!effectTargeting && state.targetingState?.sourceInstanceId === card?.instanceId)}
+                    targetable={!!card && !!effectTargeting && validEffectTargetIds.has(card.instanceId)}
+                     activeReady={!!card && !card.isSilenced && !card.isAbilityDisabled && card.abilities.some(ability => ability.trigger === 'ACTIVE')}
+                     activeUsable={!!card && legalActiveCardIds.has(card.instanceId)}
+                     onUseActive={() => onUseActive(card!.instanceId)}
+                   onClick={(idOrIdx) => {
+                      if (typeof idOrIdx === 'string') {
+                        if (effectTargeting) {
+                          onEffectTarget(idOrIdx);
+                        } else {
+                           if (
+                             attackerSelectionActive &&
+                             card &&
+                             !getAttackLegality(state, me.id, card.instanceId).allowed
+                           ) {
+                              const legality = getAttackLegality(state, me.id, card.instanceId);
+                              setAttackHint(legality.allowed ? null : legality.message);
+                             return;
+                           }
+                           setAttackHint(null);
+                           onSelectAttacker(idOrIdx);
+                        }
+                      }
+                      else handlePlaySlot(idOrIdx as BoardSlotIndex);
+                   }}
+                 />
+               ))}
+                </div>
+                  <ZoneStack
+                    className="ko-player-zones"
+                   deckRef={playerDeckRef}
+                   deckCount={me.deck.length}
+                   graveyardCount={me.graveyard.length}
+                   onGraveyardClick={() => setOpenGraveyardPlayerId(me.id)}
+                 />
+            </div>
+         </div>
+
+
 
            {settingsOpen && (
              <>
@@ -1433,15 +1435,11 @@ export function GameStatePreview({
 
          {/* BOTTOM BAR: Player info & Hand */}
            <div className="ko-player-footer relative z-[90] flex min-h-[160px] shrink-0 items-end justify-start px-2 pb-2 md:min-h-[220px] md:px-4 md:pb-4">
-            
+
             {/* Player Stats & Champion */}
              <div className="ko-player-info z-[95] flex w-[180px] shrink-0 flex-col gap-1 md:w-48 md:gap-2">
-               {playerNickname && (
-                 <span className="max-w-full truncate text-[11px] font-black text-white md:text-sm" data-testid="text-online-player-nickname">
-                   {playerNickname}
-                 </span>
-               )}
-              <div className="flex items-start gap-2 md:gap-3">
+               <span className="ko-champion-heading max-w-full truncate text-[11px] font-black text-white md:text-sm" data-testid="text-online-player-nickname">{`${playerNickname || "나"} · ${playerChampionName || me.champion?.name || "챔피언"}`}</span>
+              <div className="ko-champion-core flex items-start gap-2 md:gap-3">
                 <div className="relative shrink-0">
                   <div
                     ref={playerChampionRef}
@@ -1500,7 +1498,7 @@ export function GameStatePreview({
               </div>
 
                {me.champion?.quest && (
-                 <Inspectable content={<ChampionQuestInspectContent champion={me.champion} />}>
+                 <Inspectable className="ko-player-quest" content={<ChampionQuestInspectContent champion={me.champion} />}>
                   <div tabIndex={0} className={`rounded border px-2 py-1 text-[8px] font-bold md:text-[10px] ${me.champion.questCompleted ? 'border-amber-400 bg-amber-950/90 text-amber-100' : 'border-purple-900 bg-purple-950/70 text-purple-200'} ${activePresentationCue?.kind === "QUEST_PROGRESS" || activePresentationCue?.kind === "QUEST_COMPLETE" ? "presentation-card-pulse" : ""}`}>
                      퀘스트 {me.champion.questCompleted ? '완료' : `${me.champion.questProgress}/${me.champion.quest.requiredProgress}`}
                      <span className="ko-quest-meter" aria-hidden="true"><i style={{transform:`scaleX(${Math.max(0,Math.min(1,me.champion.questProgress/Math.max(1,me.champion.quest.requiredProgress)))})`}} /></span>
@@ -1514,7 +1512,7 @@ export function GameStatePreview({
                )}
 
                {me.champion && me.champion.id !== TOWER_VANILLA_CHAMPION_ID && (
-                 <Inspectable
+                 <Inspectable className="ko-player-ability"
                    content={
                      <ChampionAbilityInspectContent
                        champion={me.champion}
@@ -1665,7 +1663,7 @@ function HandCard({
 }) {
   const getCardDefinition=React.useContext(RenderCardCatalog);
   const def = getCardDefinition(card.definitionId);
-  
+
   const sizeClass =
     density === 'small'
       ? 'ko-hand-card--small w-[58px] h-[81px] md:w-[84px] md:h-[118px]'
@@ -1673,7 +1671,7 @@ function HandCard({
         ? 'ko-hand-card--medium w-[66px] h-[92px] md:w-[100px] md:h-[140px]'
         : 'ko-hand-card--regular w-[75px] h-[105px] md:w-[130px] md:h-[182px]';
   let containerClass = `${sizeClass} relative flex flex-col transition-all duration-200 select-none hover:z-40 group overflow-visible origin-bottom `;
-  
+
   if (isSelected) {
     containerClass += "-translate-y-8 scale-[1.04] md:-translate-y-12 md:scale-[1.04] z-50 cursor-pointer";
   } else if (targetable) {
@@ -1790,9 +1788,9 @@ function BoardSlot({
 }) {
   const getCardDefinition=React.useContext(RenderCardCatalog);
   const isEmpty = !card;
-  
+
   let containerClass = "ko-board-slot w-[70px] h-[98px] md:w-[110px] md:h-[154px] relative flex flex-col transition-transform duration-200 select-none overflow-visible ";
-  
+
   if (isEmpty) {
     containerClass += "border-2 border-dashed bg-neutral-900/30 items-center justify-center ";
     if (selectable) {
@@ -1928,7 +1926,8 @@ function ZoneStack({
 }) {
   return (
     <div className={`ko-zone-stack flex shrink-0 flex-col gap-2 md:gap-3 ${className}`}>
-      <div ref={deckRef} className="relative flex h-12 w-10 flex-col items-center justify-end overflow-hidden rounded border-2 border-neutral-600 bg-neutral-800 shadow md:h-16 md:w-14">
+      <div ref={deckRef} aria-label={`덱 ${deckCount}장`} className="relative flex h-12 w-10 flex-col items-center justify-end overflow-hidden rounded border-2 border-neutral-600 bg-neutral-800 shadow md:h-16 md:w-14">
+        <span className="ko-deck-label hidden">덱</span>
         <div className="absolute inset-1 border border-neutral-700/60" />
         <div className="h-4 w-4 rotate-45 border border-neutral-700/60 md:h-6 md:w-6" />
         <span className="relative z-10 mt-auto w-full bg-black/70 py-0.5 text-center text-[7px] font-bold text-neutral-300 md:text-[9px]">

@@ -1,6 +1,7 @@
 import { getCardDefinition, type CardInstance, type GameEvent, type GameState } from '../game';
 
 const VISIBLE_EVENT_TYPES = new Set<GameEvent['type']>([
+  'TURN_STARTED', 'TURN_ENDED', 'CARD_DRAWN', 'CHAMPION_GAME_START_ABILITY', 'CHAMPION_QUEST_PROGRESS',
   'CARD_PLAYED',
   'ENTER_FIELD',
   'CHAMPION_ABILITY_USED',
@@ -51,6 +52,11 @@ export function eventTitle(state: GameState, event: GameEvent, viewerPlayerId = 
     : target?.type === 'PLAYER' ? `${playerLabel(state, target.playerId, viewerPlayerId)} 챔피언`
       : '대상';
   switch (event.type) {
+    case 'TURN_STARTED': return '턴 시작';
+    case 'TURN_ENDED': return '턴 종료';
+    case 'CARD_DRAWN': return event.playerId === viewerPlayerId ? `${cardName(state,event.cardInstanceId)} 드로우` : '카드 드로우';
+    case 'CHAMPION_GAME_START_ABILITY': return '챔피언 게임 시작 능력';
+    case 'CHAMPION_QUEST_PROGRESS': return `챔피언 퀘스트 진행 +${event.amount ?? 1}`;
     case 'CARD_PLAYED':
       return `${cardName(state, event.cardInstanceId)} 플레이`;
     case 'ENTER_FIELD':

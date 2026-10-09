@@ -44,7 +44,7 @@ function CardMiniature({
 function HistoryList({ state, viewerPlayerId, expanded = false }: { state: GameState; viewerPlayerId: string; expanded?: boolean }) {
   const events = historyEvents(state, expanded ? Number.POSITIVE_INFINITY : 12);
   return (
-    <div className="max-h-[52dvh] space-y-0.5 overflow-y-auto pr-1 md:max-h-none md:overflow-visible">
+    <div className="ko-history-events max-h-[52dvh] space-y-0.5 overflow-y-auto pr-1 md:max-h-none md:overflow-visible">
       {events.length === 0 ? (
         <div className="py-4 text-center text-[9px] text-neutral-600">아직 기록이 없습니다</div>
       ) : (
@@ -91,7 +91,7 @@ export function ActionHistory({ state, viewerPlayerId = state.players[0].id, mob
   return (
     <>
       <Dialog open={mobileOpen} onOpenChange={(open) => { if (!open) onMobileClose?.(); }}>
-        <DialogContent overlayClassName="!z-[160]" className="!z-[170] w-[calc(100vw-24px)] max-h-[calc(100dvh-24px)] overflow-y-auto rounded-none border border-amber-700 bg-black text-neutral-100">
+        <DialogContent overlayClassName="!z-[160]" className="ko-history-sheet !z-[170] w-[calc(100vw-24px)] max-h-[calc(100dvh-24px)] overflow-y-auto rounded-none border border-amber-700 bg-black text-neutral-100">
           <DialogTitle className="text-left text-base font-black text-amber-300">경기 기록</DialogTitle>
           <button type="button" className="min-h-11 border border-amber-700 px-3 text-sm font-bold text-amber-300" onClick={onMobileClose}>경기 로그 닫기</button>
           <DialogDescription className="text-left text-xs text-neutral-400">원할 때만 열어 확인하세요.</DialogDescription>
