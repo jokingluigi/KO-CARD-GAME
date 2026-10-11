@@ -516,8 +516,8 @@ function applyScriptSteps(
       );
     }
     if (step.type === 'REPEAT') {
-      const count = Math.min(8, Math.max(0, Math.trunc(scriptValue(registers, step.count))));
-      for (let iteration = 0; iteration < count; iteration += 1) {
+      const count = Math.min(999, Math.max(0, Math.trunc(scriptValue(registers, step.count))));
+      for (let iteration = 0; iteration < count && next.status !== 'FINISHED'; iteration += 1) {
         const priorTargeting = next.targetingState;
         next = applyScriptSteps(next, playerId, sourceCard, step.steps, registers, depth + 1, script, parentContinuation);
         if (next.targetingState?.active && next.targetingState !== priorTargeting) {
@@ -1132,6 +1132,8 @@ function dynamicValue(
   if (reference === 'SOURCE_MAX_HEALTH') return sourceInState(state, source?.instanceId ?? state.targetingState?.sourceCard?.instanceId ?? state.targetingState?.sourceInstanceId ?? '')?.maxHealth ?? 0;
   if (!player || !reference) return 0;
   if (reference === 'ALLIED_REMOVED_WRESTLER_COUNT') return state.events.filter(event => ['CARD_RETIRED','CARD_DESTROYED'].includes(event.type) && event.playerId === playerId && event.cardType === 'WRESTLER').length;
+  if (reference === 'BOARD_WANTED_COUNT') return player.board.filter(card=>card && getActiveCardKeywords(card).includes('WANTED')).length;
+  if (reference === 'TURN_GOLD_BONUS') return player.turnGoldBonus ?? 0;
   if (reference === 'HAND_COUNT') return player.hand.length;
   if (reference === 'GRAVEYARD_WRESTLER_COUNT') return player.graveyard.filter((card) => card.cardType === 'WRESTLER').length;
   if (reference === 'BOARD_WRESTLER_COUNT') return player.board.filter((card) => card?.cardType === 'WRESTLER').length;
@@ -1252,7 +1254,7 @@ function grantRandomCardText(
   targets: readonly CardInstance[],
   effect: Extract<CardEffect, { type: 'STRUCTURED' }>,
 ): GameState {
-  const donors = randomTextDonorCandidates(state, effect.target?.randomScope);
+  const donors = effect.values?.definition ? [effect.values.definition] : randomTextDonorCandidates(state, effect.target?.randomScope);
   if (!donors.length) return state;
   const random = createDeterministicRandom(JSON.stringify({
     seed: state.randomSeed ?? 0,
@@ -1264,6 +1266,7 @@ function grantRandomCardText(
   let next = state;
   for (const target of targets) {
     const donor = donors[Math.floor(random() * donors.length)]!;
+    if(effect.values?.definition && target.grantedText?.donorDefinitionId===donor.id)continue;
     const owner = next.players.find((player) =>
       player.board.some((card) => card?.instanceId === target.instanceId) ||
       player.hand.some((card) => card.instanceId === target.instanceId) ||
@@ -1271,7 +1274,9 @@ function grantRandomCardText(
       player.graveyard.some((card) => card.instanceId === target.instanceId),
     );
     if (!owner) continue;
-    const updated = grantCardText(target, donor, state.turn);
+    const granted = grantCardText(target, donor, state.turn);
+    const updated = effect.values?.definition && target.grantedText && granted.grantedText
+      ? {...granted,grantedText:{...granted.grantedText,abilities:[...target.grantedText.abilities,...granted.grantedText.abilities],keywords:[...new Set([...target.grantedText.keywords,...granted.grantedText.keywords])],rulesText:target.grantedText.rulesText+'\n'+granted.grantedText.rulesText}} : granted;
     const isOnBoard = target.boardSlot !== null;
     next = {
       ...next,
@@ -2061,7 +2066,9 @@ function applyEffectInternal(
     }
     if (effect.action === 'SUMMON' || effect.action === 'GENERATE') {
       const nextAwakeningStage=sourceCard.awakeningStage==='TANK'?'HEALER':sourceCard.awakeningStage==='HEALER'?'DEALER':undefined;
-      if (definition?.questExclusive && !(sourceCard.questExclusive && nextAwakeningStage && definition.awakeningStage===nextAwakeningStage)) return state;
+      const questOwner=state.players.find(p=>p.id===playerId);
+      const questRewardSummon=sourceCard.tags?.includes('CHAMPION_QUEST_REWARD_SOURCE') && questOwner?.champion?.questCompleted && definition?.awakeningStage==='TANK';
+      if (definition?.questExclusive && !questRewardSummon && !(sourceCard.questExclusive && nextAwakeningStage && definition.awakeningStage===nextAwakeningStage)) return state;
       // These actions require a data-only definition; an absent/malformed
       // reference is a rejected effect, never an advertised silent no-op.
       if (!validDefinition) throw new Error(`${effect.action} requires a serializable card definition.`);
@@ -2563,6 +2570,17 @@ function applyEffectInternal(
     if (effect.action === 'GRANT_RANDOM_CARD_TEXT') {
       return grantRandomCardText(state, playerId, sourceCard, targets, effect);
     }
+    if (effect.action === 'MODIFY_STAT' && effect.values?.drainAttackFraction !== undefined) {
+      const fraction=Math.min(1,Math.max(0,effect.values.drainAttackFraction));
+      return targets.reduce((next,victim)=>{
+        const live=sourceInState(next,victim.instanceId);
+        if(!live)return next;
+        const taken=Math.max(0,live.currentAttack-Math.floor(live.currentAttack*(1-fraction)));
+        if(!taken)return next;
+        const reduced=applyEffect(next,playerId,sourceCard,{type:'STRUCTURED',action:'MODIFY_STAT',target:{zone:'BOARD',owner:target.owner,selection:'PLAYER_CHOICE',count:1},values:{stat:'ATTACK',amount:-taken}},[live.instanceId],triggerContext);
+        return applyEffect(reduced,playerId,sourceCard,{type:'STRUCTURED',action:'BUFF',target:{zone:'BOARD',owner:'SELF',selection:'SELF',count:1},values:{attack:taken,health:0}},undefined,triggerContext);
+      },state);
+    }
     if (effect.action === 'COPY_BEST_STATS') {
       const best = [...targets].sort((left, right) =>
         (right.currentAttack + right.currentHealth) - (left.currentAttack + left.currentHealth) ||
@@ -2766,25 +2784,19 @@ function applyEffectInternal(
       ];
       if (!moved.length) return state;
       const normalized = moved.map(({ card }) => normalizeCardForZone(
-        resetCardAfterLeavingBoard(card, state.cardPool?.find(definition => definition.id === card.definitionId)),
+        effect.values?.preserveStats ? card : resetCardAfterLeavingBoard(card, state.cardPool?.find(definition => definition.id === card.definitionId)),
         'DECK',
       ));
-      return {
-        ...state,
-        players: state.players.map((player) => player.id !== targetOwner ? player : {
-          ...player,
-          board: zones.includes('BOARD')
-            ? player.board.map((card) => card && ids.has(card.instanceId) ? null : card) as typeof player.board
-            : player.board,
-          hand: zones.includes('HAND') ? player.hand.filter((card) => !ids.has(card.instanceId)) : player.hand,
-          graveyard: zones.includes('GRAVEYARD') ? player.graveyard.filter((card) => !ids.has(card.instanceId)) : player.graveyard,
-          deck: [
-            ...(effect.values?.deckPosition === 'TOP' ? normalized : []),
-            ...(zones.includes('DECK') ? player.deck.filter((card) => !ids.has(card.instanceId)) : player.deck),
-            ...(effect.values?.deckPosition === 'TOP' ? [] : normalized),
-          ],
-        }),
-      };
+      const destinationOwner=effect.values?.destinationOwner === 'SELF' ? playerId : effect.values?.destinationOwner === 'ENEMY' ? state.players.find(p=>p.id!==playerId)!.id : targetOwner;
+      return {...state,players:state.players.map(player=>{
+        const origin=player.id===targetOwner,destination=player.id===destinationOwner;
+        return {...player,
+          board:origin&&zones.includes('BOARD')?player.board.map(card=>card&&ids.has(card.instanceId)?null:card) as typeof player.board:player.board,
+          hand:origin&&zones.includes('HAND')?player.hand.filter(card=>!ids.has(card.instanceId)):player.hand,
+          graveyard:origin&&zones.includes('GRAVEYARD')?player.graveyard.filter(card=>!ids.has(card.instanceId)):player.graveyard,
+          deck:[...(destination&&effect.values?.deckPosition==='TOP'?normalized:[]),...(origin&&zones.includes('DECK')?player.deck.filter(card=>!ids.has(card.instanceId)):player.deck),...(destination&&effect.values?.deckPosition!=='TOP'?normalized:[])],
+        };
+      })};
     }
     if (effect.action === 'STEAL') {
       const sourcePlayer = state.players.find((player) => player.id === targetOwner);
@@ -2817,6 +2829,8 @@ function applyEffectInternal(
         const owner = nextState.players.find((player) => player.id === targetOwner);
         const current = owner?.board.find((card) => card?.instanceId === targetCard.instanceId);
         if (!owner || !current || current.isTrainingDummy) return nextState;
+        const replaced=replaceRetirement(nextState,targetOwner,current,sourceContextFor(playerId,sourceCard,triggerContext,nextState.events.length));
+        if(replaced!==nextState)return effect.values?.captureStats ? withLastAggregatedStats(replaced,{attack:current.currentAttack,health:Math.max(0,current.currentHealth)}) : replaced;
         const protectedState = preventTowerRetire(nextState, targetOwner, current);
         if (protectedState !== nextState) return { ...protectedState, preventedRetireTargetIds: protectedState.preventedRetireTargetIds?.filter(id => id !== current.instanceId) };
         const attribution = sourceContextFor(
@@ -3096,6 +3110,7 @@ function applyEffectInternal(
         const protectedState = beforeRetire !== afterSelfDamaged && beforeRetire.targetingState?.active
           ? resolvePendingEffects(beforeRetire)
           : beforeRetire;
+        if(!protectedState.players.find(p=>p.id===targetOwner)?.board.some(card=>card?.instanceId===current.instanceId))return clearDamageMarker(protectedState);
         if (protectedState.preventedRetireTargetIds?.includes(current.instanceId)) {
           return resolveRegisteredRuleListeners({
             ...protectedState,
@@ -3572,7 +3587,7 @@ export function resolveTriggeredAbilities(
   state: GameState,
   playerId: string,
   card: CardInstance,
-  trigger: 'GAME_START' | 'ENTER_FIELD' | 'LEAVE_FIELD' | 'SELF_RETIRE' | 'POSITION' | 'ACTIVE' | 'CARD_DRAWN' | 'CARD_RETIRED' | 'CARD_SUMMONED' | 'CARD_ENTERED' | 'FIRST_ATTACKED' | 'SELF_ATTACK' | 'OTHER_ALLY_ATTACK' | 'ATTACK_SURVIVED' | 'SELF_DAMAGED' | 'STAT_CHANGED' | 'TECHNIQUE_CAST' | 'EXACT_ZERO_DAMAGE' | 'SELF_ENTERED' | 'ON_FUSION' | 'COUNTDOWN' | 'TURN_START' | 'TURN_END' | 'BEFORE_DAMAGE' | 'BEFORE_RETIRE',
+  trigger: 'GAME_START' | 'ENTER_FIELD' | 'LEAVE_FIELD' | 'SELF_RETIRE' | 'POSITION' | 'ACTIVE' | 'CARD_DRAWN' | 'CARD_RETIRED' | 'CARD_SUMMONED' | 'CARD_ENTERED' | 'FIRST_ATTACKED' | 'SELF_ATTACK' | 'OTHER_ALLY_ATTACK' | 'ATTACK_SURVIVED' | 'SELF_DAMAGED' | 'STAT_CHANGED' | 'TECHNIQUE_CAST' | 'EXACT_ZERO_DAMAGE' | 'CARD_DESTROYED' | 'SOURCE_RETIRED_TARGET' | 'ANY_BEFORE_RETIRE' | 'BEFORE_ATTACK' | 'SELF_ENTERED' | 'ON_FUSION' | 'COUNTDOWN' | 'TURN_START' | 'TURN_END' | 'BEFORE_DAMAGE' | 'BEFORE_RETIRE',
   options: {
     boardSlot?: 0 | 1 | 2 | 3;
     leaveReason?: LeaveReason;
@@ -3592,6 +3607,8 @@ export function resolveTriggeredAbilities(
   } = {},
 ): GameState {
   if (trigger === 'BEFORE_RETIRE') {
+    const replacement = replaceRetirement(state,playerId,card,options.sourceContext);
+    if(replacement !== state)return replacement;
     const protectedState = preventTowerRetire(state, playerId, card);
     if (protectedState !== state) return protectedState;
   }
@@ -3638,6 +3655,7 @@ export function resolveTriggeredAbilities(
     condition === 'GTE' ? actual >= expected : condition === 'LTE' ? actual <= expected : actual === expected;
   const abilities = getActiveCardAbilities(card).filter((ability) => {
     if (ability.trigger !== trigger) return false;
+    if(ability.oncePerTurn && state.consumedNewCardEventKeys?.includes(`trigger-used:${state.turn}:${card.instanceId}:${trigger}`))return false;
     if (trigger !== 'GAME_START' && trigger !== 'CARD_DRAWN' &&
       state.players.some((player) => player.hand.some((entry) => entry.instanceId === card.instanceId)) &&
       ability.condition?.type !== 'SOURCE_IN_HAND') return false;
@@ -3647,6 +3665,9 @@ export function resolveTriggeredAbilities(
     if (condition) {
       const owner = state.players.find((player) => player.id === playerId);
       if (!owner) return false;
+      const turnStart=state.events.map((event,index)=>({event,index})).filter(entry=>entry.event.type==='TURN_STARTED').at(-1)?.index ?? -1;
+      if(condition.type==='SOURCE_ATTACKED_CHAMPION_THIS_TURN' && !state.events.slice(turnStart+1).some(event=>event.type==='DAMAGE_DEALT'&&(event.amount??0)>0&&event.source?.type==='CARD'&&event.source.cardInstanceId===card.instanceId&&event.target?.type==='PLAYER'&&event.reason==='BASIC_ATTACK'))return false;
+      if(condition.type==='WRESTLER_DESTROYED_THIS_TURN' && !state.events.slice(turnStart+1).some(event=>event.type==='CARD_DESTROYED'&&(event.cardType??event.targetSnapshot?.cardType)==='WRESTLER'))return false;
       if (condition.type === 'HAND_COUNT' && !compare(owner.hand.length, condition.compare, condition.amount)) return false;
       if (condition.type === 'BOARD_COUNT' && !compare(owner.board.filter(Boolean).length, condition.compare, condition.amount)) return false;
       if (condition.type === 'HAS_TAG' && !owner.hand.some((entry) => entry.tags?.includes(condition.tag))) return false;
@@ -3686,6 +3707,10 @@ export function resolveTriggeredAbilities(
     return !nextStage || !ids || definition?.id !== ids[nextStage];
   });
   if (!effects.length) return state;
+  if(abilities.some(ability=>ability.oncePerTurn)) {
+    if(!effects.some(effect=>effect.type!=='STRUCTURED'||!effect.target||getValidTargets(state,playerId,card,effect).length>0))return state;
+    state={...state,consumedNewCardEventKeys:[...(state.consumedNewCardEventKeys??[]),`trigger-used:${state.turn}:${card.instanceId}:${trigger}`]};
+  }
   return beginResolution(state, {
     active: true, playerId, sourceInstanceId: card.instanceId, sourceCard: card, effects,
      effectIndex: 0, selectedTargetIds: [], lastTargetIds: options.chosenTargetInstanceIds ?? (trigger === 'FIRST_ATTACKED' && options.attackerInstanceId ? [options.attackerInstanceId] : []),
@@ -3739,6 +3764,17 @@ export function resolveCardRetiredListeners(
     }
   }
   if (relicEventIndex >= 0) state = resolveTowerRemoval(state, state.events[relicEventIndex]!, relicEventIndex);
+  if(relicEventIndex>=0){
+    const event=state.events[relicEventIndex]!;
+    const sourceId=event.source?.type==='CARD'?event.source.cardInstanceId:undefined;
+    const killerOwner=state.players.find(p=>p.id!==playerId && p.board.some(c=>c?.instanceId===sourceId));
+    const killer=killerOwner?.board.find(c=>c?.instanceId===sourceId);
+    const key=`causal-retire:${relicEventIndex}:${sourceId}`;
+    if(killerOwner&&killer && !state.consumedNewCardEventKeys?.includes(key)){
+      state={...state,consumedNewCardEventKeys:[...(state.consumedNewCardEventKeys??[]),key]};
+      state=resolveTriggeredAbilities(state,killerOwner.id,killer,'SOURCE_RETIRED_TARGET',{sourceContext});
+    }
+  }
   const hand = state.players.find((player) => player.id === playerId)?.hand ?? [];
   const withCardAbilities = hand
     .filter((card) => card.cardType === 'WRESTLER')
@@ -3872,4 +3908,27 @@ export function resolveBoardListeners(
   return player.board.filter((card): card is CardInstance => Boolean(card))
     .filter((card) => card.instanceId !== options.attackerInstanceId)
     .reduce((next, card) => resolveTriggeredAbilities(next, playerId, card, trigger, options), state);
+}
+
+/** Replacement before any retirement path; no RETIRE event or graveyard insertion. */
+function replaceRetirement(state:GameState,ownerId:string,victim:CardInstance,sourceContext?:EventAttribution):GameState {
+  const sourceOwner=state.players.find(p=>p.board.some(c=>c&&!c.isAbilityDisabled&&getActiveCardAbilities(c).some(a=>a.trigger==='ANY_BEFORE_RETIRE')));
+  const source=sourceOwner?.board.find(c=>c&&!c.isAbilityDisabled&&getActiveCardAbilities(c).some(a=>a.trigger==='ANY_BEFORE_RETIRE'));
+  if(!source||!sourceOwner||victim.isTrainingDummy)return state;
+  const result=destroyCard(state,ownerId,victim.instanceId,{sourcePlayerId:sourceContext?.sourcePlayerId,sourceInstanceId:source.instanceId,sourceContext});
+  return result.success?result.state:state;
+}
+/** Actual board destructions only, stable event key survives serialization and retries. */
+export function resolveBoardDestructionListeners(state:GameState,eventIndex:number):GameState {
+ const event=state.events[eventIndex];
+ if(!event||event.type!=='CARD_DESTROYED'||(event.cardType??event.targetSnapshot?.cardType)!=='WRESTLER')return state;
+ const key=`destroy-dispatch:${eventIndex}:${event.cardInstanceId}`;
+ if(state.consumedNewCardEventKeys?.includes(key))return state;
+ let next:GameState={...state,consumedNewCardEventKeys:[...(state.consumedNewCardEventKeys??[]),key]};
+ const sources=state.players.flatMap(p=>p.board.filter((c):c is CardInstance=>!!c).map(card=>({playerId:p.id,instanceId:card.instanceId})));
+ for(const source of sources){
+   const live=next.players.find(p=>p.id===source.playerId)?.board.find(c=>c?.instanceId===source.instanceId);
+   if(live&&live.currentHealth>0)next=resolveTriggeredAbilities(next,source.playerId,live,'CARD_DESTROYED',{sourceContext:event.sourceContext});
+ }
+ return next;
 }

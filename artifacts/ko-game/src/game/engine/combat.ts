@@ -495,7 +495,9 @@ export function attack(
       '해당 대상을 공격할 수 없습니다.',
     );
   }
-  const { card: defender } = defenderEntry;
+  state=resolveTriggeredAbilities(state,attackingPlayerId,attacker,'BEFORE_ATTACK',{chosenTargetInstanceIds:[target.cardInstanceId]});
+  if(state.targetingState?.active)state=resolvePendingEffects(state);
+  const defender=findBoardCard(state,target.playerId,target.cardInstanceId)?.card ?? defenderEntry.card;
   const defenderBeforeDamage = resolveTriggeredAbilities(
     state,
     target.playerId,

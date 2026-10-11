@@ -58,7 +58,7 @@ export function newCardImplementation(card: PublishedCardRecord): {rule:NewCardR
     case '루이나': return {rule,abilities:enter(fx('GENERATE',{zone:'HAND',owner:'SELF',selection:'RANDOM',count:1,filter:{tagsAny:['디 어쏘리티']}},{count:1,destination:'HAND'}),fx('ADD_KEYWORD',{...authority,owner:'SELF'},{keyword:'LIFESTEAL'}))};
     case '반으로 갈라져 죽어!': return {rule,abilities:enter(fx('DAMAGE',{zone:'PLAYER',owner:'ENEMY',selection:'SELF',count:1},{amount:99}))};
     case '블랙 아웃': return {rule,abilities:[{trigger:'SELF_DAMAGED',effects:[fx('BUFF',self,{attack:1,health:0})]}]};
-    case '어셈블!!!': return {rule,abilities:enter(...Array.from({length:4},()=>fx('SUMMON',{zone:'BOARD',owner:'SELF',cardType:'WRESTLER',selection:'RANDOM',count:1},{count:1})))};
+    case '어셈블!!!': return {rule,abilities:enter(...Array.from({length:4},()=>fx('SUMMON',{zone:'BOARD',owner:'SELF',cardType:'WRESTLER',selection:'RANDOM',randomScope:'FULL',count:1},{count:1})))};
     case '좀비 감염': return {rule,abilities:enter(fx('TRANSFORM_TARGET',board('ALL','PLAYER_CHOICE'),{definitionRef:{name:'좀비'}}))};
     case '카산드라': { const scope: StructuredTarget = /내\s*손과\s*필드/u.test(card.text) ? {...authority,zones:['HAND','BOARD'],zone:undefined,owner:'SELF',count:100} : authority; return {rule,abilities:[...enter(fx('BUFF',scope,{attack:0,health:1}),fx('ADD_KEYWORD',scope,{keyword:'REGEN'})),...end(fx('HEAL',{zone:'CHARACTER',owner:'SELF',selection:'ALL',count:5},{amount:1}))]}; }
     case '헬뻑': return {rule,abilities:end(fx('DAMAGE',board('ALL'),{amount:1}))};

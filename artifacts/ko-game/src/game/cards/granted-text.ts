@@ -66,8 +66,8 @@ export function grantCardText(
     grantedText,
     ...(grantedText.keywords.includes('COUNTDOWN') ? {countdownRemaining:grantedText.countdownTurns,countdownResolved:false,countdownLastTickTurn:turn}
       : card.grantedText?.keywords.includes('COUNTDOWN') ? {countdownRemaining:card.keywords.includes('COUNTDOWN') ? card.countdownTurns : undefined,countdownResolved:false,countdownLastTickTurn:turn} : {}),
-    dodgeAvailable: keywords.includes('DODGE'),
-    dodgeCharges: keywords.includes('DODGE') ? Math.max(grantedText.dodgeCharges ?? 1, card.dodgeCharges ?? 0) : 0,
+    dodgeAvailable: grantedText.keywords.includes('DODGE') || (keywords.includes('DODGE') && card.dodgeAvailable),
+    dodgeCharges: keywords.includes('DODGE') ? grantedText.keywords.includes('DODGE') ? Math.max(grantedText.dodgeCharges ?? 1, card.dodgeCharges ?? 0) : card.dodgeCharges ?? (card.dodgeAvailable ? 1 : 0) : 0,
   };
 }
 

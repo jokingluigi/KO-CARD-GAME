@@ -9,6 +9,7 @@ import React, { useState, useEffect } from 'react';
 import {createRoot} from 'react-dom/client';
 import '../src/index.css';
 import '../src/battle-presentation.css';
+import '../src/mobile-battle.css';
 import {GameStatePreview} from '../src/components/game-state-preview';
 import {createInitialGameState, generateCardInstance,setRuntimeCardDefinitions,type CardDefinition,type GameState} from '../src/game';
 import {emptyGameMediaCatalog} from '../src/game/media';
@@ -71,7 +72,7 @@ function Scene(){
   onEndTurn={()=>run('turn')} onSelectSlot={slot=>{if(selected){const r=executeAction(state,{type:'PLAY_WRESTLER',playerId:state.players[0].id,cardInstanceId:selected,boardSlot:slot});if(!r.success)setFailure(r.message);update(r.state);setSelected(null);}}} onUseTechnique={id=>{const r=executeAction(state,{type:'BEGIN_TARGETED_ACTION',playerId:state.players[0].id,action:{type:'PLAY_TECHNIQUE',cardInstanceId:id}});if(!r.success)setFailure(r.message);update(r.state);setSelected(null);}} playAnimation={null} onPlayAnimationComplete={noop}
   attackAnimation={null} attackImpactTriggered={false} onAttackImpact={noop} onAttackAnimationComplete={noop}
   onSelectAttacker={id=>{if(state.targetingState)update(executeAction(state,{type:'SELECT_EFFECT_TARGET',playerId:state.targetingState.playerId,targetId:id}).state);else setAttacker(id);}} onAttackWrestler={id=>{if(attacker){const r=executeAction(state,{type:'ATTACK',playerId:state.players[0].id,attackerInstanceId:attacker,target:{type:'WRESTLER',playerId:state.players[1].id,cardInstanceId:id}});if(!r.success)setFailure(r.message);update(r.state);setAttacker(null);}}} onAttackPlayer={()=>{if(attacker){const r=executeAction(state,{type:'ATTACK',playerId:state.players[0].id,attackerInstanceId:attacker,target:{type:'PLAYER',playerId:state.players[1].id}});if(!r.success)setFailure(r.message);update(r.state);setAttacker(null);}}} onUseActive={id=>{const result=executeAction(state,{type:'USE_ACTIVE',playerId:state.players[0].id,cardInstanceId:id});if(!result.success)setFailure(result.message);update(result.state);}} onUseChampionAbility={()=>{const r=executeAction(state,{type:'BEGIN_TARGETED_ACTION',playerId:state.players[0].id,action:{type:'USE_CHAMPION_ABILITY'}});if(!r.success)setFailure(r.message);update(r.state);}}
-  onCancelEffectTargeting={()=>update(executeAction(state,{type:'CANCEL_EFFECT_TARGET',playerId:state.targetingState!.playerId}).state)} onEffectTarget={id=>update(executeAction(state,{type:'SELECT_EFFECT_TARGET',playerId:state.targetingState!.playerId,targetId:id}).state)} onPresentationBusyChange={setBusy} />
+  onCancelEffectTargeting={()=>update(executeAction(state,{type:'CANCEL_EFFECT_TARGET',playerId:state.targetingState!.playerId}).state)} onEffectTarget={id=>update(executeAction(state,{type:state.targetingState?.phase==='PRE_COMMIT'?'CONFIRM_PRECOMMIT_TARGET':'SELECT_EFFECT_TARGET',playerId:state.targetingState!.playerId,targetId:id}).state)} onPresentationBusyChange={setBusy} />
  </>;
 }
 const admin=new URLSearchParams(location.search).get('admin');

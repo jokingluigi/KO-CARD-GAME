@@ -1,6 +1,6 @@
 /** The content-facing Effect DSL contract. Card and Champion administration use
  * this exact registry; English identifiers are stable implementation aliases. */
-export const TRIGGERS = ["GAME_START", "ENTER_FIELD", "LEAVE_FIELD", "SELF_RETIRE", "ACTIVE", "CARD_DRAWN", "CARD_RETIRED", "CARD_SUMMONED", "CARD_ENTERED", "FIRST_ATTACKED", "SELF_ATTACK", "OTHER_ALLY_ATTACK", "ATTACK_SURVIVED", "SELF_DAMAGED", "STAT_CHANGED", "TECHNIQUE_CAST", "EXACT_ZERO_DAMAGE", "TURN_START", "TURN_END", "BEFORE_DAMAGE", "BEFORE_RETIRE", "COUNTDOWN", "ON_FUSION", "SELF_ENTERED"] as const;
+export const TRIGGERS = ["GAME_START", "ENTER_FIELD", "LEAVE_FIELD", "SELF_RETIRE", "ACTIVE", "CARD_DRAWN", "CARD_RETIRED", "CARD_SUMMONED", "CARD_ENTERED", "FIRST_ATTACKED", "SELF_ATTACK", "OTHER_ALLY_ATTACK", "ATTACK_SURVIVED", "SELF_DAMAGED", "STAT_CHANGED", "TECHNIQUE_CAST", "EXACT_ZERO_DAMAGE", "TURN_START", "TURN_END", "BEFORE_DAMAGE", "BEFORE_RETIRE", "COUNTDOWN", "ON_FUSION", "SELF_ENTERED", "CARD_DESTROYED", "SOURCE_RETIRED_TARGET", "ANY_BEFORE_RETIRE", "BEFORE_ATTACK"] as const;
 export const RULE_LISTENER_TRIGGERS = ["CARD_PLAYED", "TECHNIQUE_PLAYED", "CARD_RETIRED", "DAMAGE_TAKEN", "SOURCE_CAUSED_TARGET_REMOVAL"] as const;
 export const CONDITIONS = ["NEED_CONDITION", "BASE_COST_GTE", "SOURCE_ON_LEFT_SIDE", "SOURCE_ON_RIGHT_SIDE", "SOURCE_IS_ONLY_WRESTLER", "SOURCE_IN_HAND", "FIRST_ATTACK_GAIN"] as const;
 export const REFERENCES = ["SOURCE", "LAST_TARGET", "LAST_DRAWN_CARD", "LAST_ATTACKER", "LAST_DAMAGED_TARGET", "CAPTURED_CARD", "CURRENT_SLOT"] as const;
@@ -59,6 +59,8 @@ export const DYNAMIC_VALUES = [
   "SOURCE_MAX_HEALTH",
   "SOURCE_DAMAGE_HIT_COUNT",
   "LAST_CAPTURED_ATTACK",
+  "BOARD_WANTED_COUNT",
+  "TURN_GOLD_BONUS",
   "REMAINING_GOLD",
   "BOARD_WRESTLER_COUNT",
   "LAST_ATTACK_DELTA",
@@ -229,7 +231,9 @@ export type StructuredQueuedEffect = {
     healthReference?: DynamicValue;
     minimum?: number;
     generatedModifiers?: { cost?: number; attack?: number; health?: number; copySourceStats?: boolean; copyTargetStats?: boolean };
-    deckPosition?: "TOP" | "BOTTOM";
+    preserveStats?: boolean;
+  destinationOwner?: "SELF" | "ENEMY";
+  deckPosition?: "TOP" | "BOTTOM";
     aggregateStats?: StructuredAggregateStats;
   };
 };
@@ -278,6 +282,8 @@ export type StructuredEffectValues = {
   conditionalBuff?: { healthEquals: number; attack: number; health: number };
   minimum?: number;
   generatedModifiers?: { cost?: number; attack?: number; health?: number; copySourceStats?: boolean; copyTargetStats?: boolean };
+  preserveStats?: boolean;
+  destinationOwner?: "SELF" | "ENEMY";
   deckPosition?: "TOP" | "BOTTOM";
   queuedTrigger?: "NEXT_ALLY_WRESTLER_PLAYED" | "NEXT_TECHNIQUE_PLAYED";
   queuedEffect?: StructuredQueuedEffect;
@@ -319,7 +325,7 @@ const SCRIPT_EFFECT_VALUE_KEYS = new Set([
   "amount", "amountExpression", "attack", "attackExpression", "health", "healthExpression", "countExpression",
   "attackMultiplier", "healthMultiplier", "stat", "duration", "currentHealthOnly", "maxHealth", "maxHealthExpression",
   "keyword", "damageSource", "reference", "referenceStat", "amountReference", "minimum", "temporaryCost",
-  "generatedModifiers", "deckPosition", "count", "destination", "definitionRef", "queuedTrigger", "queuedEffect", "delayed", "listener", "prevention", "captureStats",
+  "generatedModifiers", "preserveStats", "destinationOwner", "deckPosition", "count", "destination", "definitionRef", "queuedTrigger", "queuedEffect", "delayed", "listener", "prevention", "captureStats",
 ]);
 
 function isRecord(value: unknown): value is Record<string, unknown> {
@@ -607,6 +613,8 @@ function validScriptEffectValues(action: Action, rawValues: unknown, depth = 0):
     minimum: Boolean(schema.minimum || action === "MOVE_TO_HAND"),
     temporaryCost: action === "MOVE_TO_HAND",
     generatedModifiers: Boolean(schema.generatedModifiers),
+    preserveStats: action === "MOVE_TO_DECK",
+    destinationOwner: action === "MOVE_TO_DECK",
     deckPosition: action === "MOVE_TO_DECK",
     count: Boolean(schema.cardCount),
     destination: Boolean(schema.destination),
@@ -746,6 +754,8 @@ function validScriptEffectValues(action: Action, rawValues: unknown, depth = 0):
       (prevention.setHealth !== undefined &&
         (typeof prevention.setHealth !== "number" || !Number.isInteger(prevention.setHealth) || prevention.setHealth < 1 || prevention.setHealth > 999))) return false;
   }
+  if (values.preserveStats !== undefined && typeof values.preserveStats !== "boolean") return false;
+  if (values.destinationOwner !== undefined && !["SELF","ENEMY"].includes(values.destinationOwner as string)) return false;
   if (values.captureStats !== undefined && typeof values.captureStats !== "boolean") return false;
   return true;
 }
@@ -768,6 +778,10 @@ export const EFFECT_CAPABILITIES: Record<Action, { description: string; status: 
 export const RUNTIME_HANDLER_ACTIONS = ACTIONS;
 
 const triggerDescriptions: Record<Trigger, string> = {
+  CARD_DESTROYED: "양측 선수가 파괴되면 살아 있는 필드 카드에서 발동합니다.",
+  SOURCE_RETIRED_TARGET: "이 카드가 상대 선수를 리타이어시킨 경우 발동합니다. 파괴와 소멸은 제외합니다.",
+  ANY_BEFORE_RETIRE: "양측 선수의 리타이어 직전 대체 효과입니다.",
+  BEFORE_ATTACK: "상대 선수와 전투 피해를 교환하기 전에 발동합니다.",
   SELF_ENTERED: "이 카드가 플레이·소환·부활 등으로 필드에 들어오면 발동합니다.",
   ON_FUSION: "이 카드가 합체 재료 또는 대상이 되면 발동합니다. 재료 효과 → 대상 효과 → 재료 소멸 순서입니다.",
   COUNTDOWN: "필드에서 자기 턴 시작마다 카운트다운이 1 감소합니다. 0이 되면 살아 있는 카드에서 한 번 발동합니다. 재등장하면 설정한 수치부터 다시 시작합니다.",
