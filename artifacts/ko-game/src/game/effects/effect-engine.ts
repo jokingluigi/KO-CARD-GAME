@@ -1276,7 +1276,11 @@ function grantRandomCardText(
     if (!owner) continue;
     const granted = grantCardText(target, donor, state.turn);
     const updated = effect.values?.definition && target.grantedText && granted.grantedText
-      ? {...granted,grantedText:{...granted.grantedText,abilities:[...target.grantedText.abilities,...granted.grantedText.abilities],keywords:[...new Set([...target.grantedText.keywords,...granted.grantedText.keywords])],rulesText:target.grantedText.rulesText+'\n'+granted.grantedText.rulesText}} : granted;
+      ? {...granted,
+          ...(target.grantedText.keywords.includes('COUNTDOWN') && !granted.grantedText.keywords.includes('COUNTDOWN') ? {countdownRemaining:target.countdownRemaining,countdownResolved:target.countdownResolved,countdownLastTickTurn:target.countdownLastTickTurn} : {}),
+          grantedText:{...target.grantedText,...granted.grantedText,
+            dodgeCharges:granted.grantedText.keywords.includes('DODGE')?granted.grantedText.dodgeCharges:target.grantedText.dodgeCharges,
+            abilities:[...target.grantedText.abilities,...granted.grantedText.abilities],keywords:[...new Set([...target.grantedText.keywords,...granted.grantedText.keywords])],rulesText:target.grantedText.rulesText+'\n'+granted.grantedText.rulesText}} : granted;
     const isOnBoard = target.boardSlot !== null;
     next = {
       ...next,
