@@ -194,6 +194,7 @@ jobs:
           KO_QA_COMPILED_CSS=1 node docs/qa/mobile-portrait-battle-browser.mjs
           node docs/qa/daily-quests-browser.mjs
           node docs/qa/champion-features-browser.mjs
+          node docs/qa/current-content-browser-20261012.mjs
           node docs/qa/fusion-browser.mjs
           node docs/qa/luna-active-browser.mjs
           node docs/qa/machine-fusion-browser.mjs
