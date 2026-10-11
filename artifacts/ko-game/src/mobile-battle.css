@@ -19,9 +19,9 @@
  .ko-game-shell .ko-player-ability { grid-column:3; grid-row:2; min-width:0; }
  .ko-game-shell .ko-champion-ability { min-height:44px; padding:4px; font-size:10px; line-height:14px; white-space:normal; }
  .ko-game-shell .ko-board-area { display:grid; grid-template-columns:minmax(0,1fr); grid-template-rows:minmax(0,1fr) auto minmax(0,1fr); width:100%; gap:6px; height:100%; min-height:0; align-items:stretch; overflow:visible; padding:0; }
- .ko-game-shell .ko-board-area > [role=status] { position:relative; inset:auto; grid-column:1/-1; max-width:100%; width:100%; transform:none; --tw-translate-x:0px; --tw-translate-y:0px; }
+ .ko-game-shell .ko-board-area > [role=status] { position:absolute; inset:0 0 auto; min-height:0; padding:2px 4px; font-size:10px; line-height:14px; grid-column:1/-1; max-width:100%; width:100%; transform:none; --tw-translate-x:0px; --tw-translate-y:0px; }
  .ko-game-shell .ko-opponent-board-row,.ko-game-shell .ko-player-board-row { display:grid; grid-template-columns:minmax(0,1fr); grid-template-rows:minmax(0,1fr) 32px; justify-items:center; height:100%; min-height:0; gap:4px; width:100%; }
- .ko-game-shell .ko-board-cards { grid-template-columns:repeat(4,minmax(0,1fr)); gap:4px; height:100%; width:auto; aspect-ratio:20 / 7; max-width:100%; margin-inline:auto; align-items:center; }
+ .ko-game-shell .ko-board-cards { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:4px; height:100%; width:auto; aspect-ratio:20 / 7; max-width:100%; margin-inline:auto; align-items:center; }
  .ko-game-shell .ko-board-slot { aspect-ratio:70 / 98; height:auto!important; width:100%!important; }
  .ko-game-shell .ko-zone-stack { display:flex; flex-direction:row; width:auto; height:32px; gap:6px; align-self:end; justify-self:end; }
  .ko-game-shell .ko-zone-stack > div,.ko-game-shell .ko-zone-stack > button { display:flex; flex-direction:row; align-items:center; justify-content:center; gap:5px; width:76px; height:32px; border-width:1px; }
@@ -29,6 +29,10 @@
  .ko-game-shell .ko-zone-stack .ko-deck-label { display:inline; color:#a6a6a6; font-size:10px; }
  .ko-game-shell .ko-game-controls { position:relative; inset:auto; transform:none; translate:none; --tw-translate-x:0px; --tw-translate-y:0px; display:grid; grid-template-columns:50px 44px minmax(0,1fr) 76px; width:100%; gap:4px; padding:4px; border:1px solid #63502d; }
  .ko-game-shell .ko-battle-log-button { display:block; min-height:44px; font-size:11px; font-weight:800; }
+ .ko-game-shell .ko-game-controls > button:first-child { grid-column:1; grid-row:1; }
+ .ko-game-shell .ko-battle-log-button { grid-column:2; grid-row:1; }
+ .ko-game-shell .ko-game-controls > .flex { grid-column:3; grid-row:1; }
+ .ko-game-shell .ko-turn-end { grid-column:4; grid-row:1; }
  .ko-game-shell .ko-game-controls > button { min-height:44px; padding:4px; font-size:11px; }
  .ko-game-shell .ko-game-controls > .flex { display:flex; flex-direction:row; align-items:center; border:0; padding:0; gap:4px; min-width:0; }
  .ko-game-shell .ko-game-controls > .flex > div { padding:2px; }

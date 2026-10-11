@@ -9,7 +9,7 @@ export type RuntimeAction = Action | 'REMOVE_FROM_GAME' | 'CAPTURE' | 'RELEASE_C
 export type RuntimeTrigger =
    | 'GAME_START' | 'ENTER_FIELD' | 'LEAVE_FIELD' | 'SELF_RETIRE' | 'POSITION' | 'ACTIVE'
    | 'CARD_DRAWN' | 'CARD_RETIRED' | 'CARD_SUMMONED' | 'CARD_ENTERED' | 'FIRST_ATTACKED' | 'SELF_ATTACK' | 'OTHER_ALLY_ATTACK' | 'ATTACK_SURVIVED' | 'SELF_DAMAGED' | 'STAT_CHANGED' | 'TECHNIQUE_CAST' | 'EXACT_ZERO_DAMAGE'
-   | 'SELF_ENTERED' | 'ON_FUSION' | 'COUNTDOWN' | 'TURN_START' | 'TURN_END' | 'BEFORE_DAMAGE' | 'BEFORE_RETIRE';
+   | 'CARD_DESTROYED' | 'SOURCE_RETIRED_TARGET' | 'ANY_BEFORE_RETIRE' | 'BEFORE_ATTACK' | 'SELF_ENTERED' | 'ON_FUSION' | 'COUNTDOWN' | 'TURN_START' | 'TURN_END' | 'BEFORE_DAMAGE' | 'BEFORE_RETIRE';
 
 export type { StructuredTarget, StructuredQueuedEffect, StructuredListener, CardDefinitionReference };
 export type QueuedStructuredEffect = StructuredQueuedEffect;
@@ -36,10 +36,13 @@ export type CardEffect =
       type: 'STRUCTURED';
       action: RuntimeAction;
       target?: StructuredTarget;
-       values?: Omit<StructuredEffectValues, "leftEffects" | "rightEffects"> & {
+       values?: Omit<StructuredEffectValues, "leftEffects" | "rightEffects" | "definition"> & {
          /** Serializable card definition supplied by the runtime card pool. */
          definition?: CardDefinition;
          purpleRainFollowup?: boolean;
+         drainAttackFraction?: number;
+         preserveStats?: boolean;
+         destinationOwner?: 'SELF' | 'ENEMY';
          /** Internal continuation of an already validated automatic area target. */
          resolvedAutomaticTarget?: boolean;
          leftEffects?: CardEffect[];
@@ -53,39 +56,46 @@ export type CardAbility =
   | {
       trigger: 'ENTER_FIELD';
       effects: CardEffect[];
+      oncePerTurn?: boolean;
       condition?: AbilityCondition;
     }
   | {
       trigger: 'LEAVE_FIELD';
       effects: CardEffect[];
+      oncePerTurn?: boolean;
       reasons?: Array<'RETIRE' | 'DESTROY' | 'REMOVE_FROM_GAME'>;
       condition?: AbilityCondition;
     }
   | {
        trigger: 'SELF_RETIRE';
        effects: CardEffect[];
+      oncePerTurn?: boolean;
        condition?: AbilityCondition;
      }
    | {
       trigger: 'POSITION';
       boardSlots: Array<0 | 1 | 2 | 3>;
       effects: CardEffect[];
+      oncePerTurn?: boolean;
       condition?: AbilityCondition;
     }
   | {
       trigger: 'ACTIVE';
       effects: CardEffect[];
+      oncePerTurn?: boolean;
       condition?: AbilityCondition;
     }
    | {
-          trigger: 'GAME_START' | 'CARD_DRAWN' | 'CARD_RETIRED' | 'CARD_SUMMONED' | 'CARD_ENTERED' | 'FIRST_ATTACKED' | 'SELF_ATTACK' | 'OTHER_ALLY_ATTACK' | 'ATTACK_SURVIVED' | 'SELF_DAMAGED' | 'STAT_CHANGED' | 'TECHNIQUE_CAST' | 'EXACT_ZERO_DAMAGE' | 'SELF_ENTERED' | 'ON_FUSION' | 'COUNTDOWN' | 'TURN_START' | 'TURN_END' | 'BEFORE_DAMAGE' | 'BEFORE_RETIRE';
+          trigger: 'GAME_START' | 'CARD_DRAWN' | 'CARD_RETIRED' | 'CARD_SUMMONED' | 'CARD_ENTERED' | 'FIRST_ATTACKED' | 'SELF_ATTACK' | 'OTHER_ALLY_ATTACK' | 'ATTACK_SURVIVED' | 'SELF_DAMAGED' | 'STAT_CHANGED' | 'TECHNIQUE_CAST' | 'EXACT_ZERO_DAMAGE' | 'CARD_DESTROYED' | 'SOURCE_RETIRED_TARGET' | 'ANY_BEFORE_RETIRE' | 'BEFORE_ATTACK' | 'SELF_ENTERED' | 'ON_FUSION' | 'COUNTDOWN' | 'TURN_START' | 'TURN_END' | 'BEFORE_DAMAGE' | 'BEFORE_RETIRE';
       effects: CardEffect[];
+      oncePerTurn?: boolean;
       condition?: AbilityCondition;
     }
   | {
       /** A reusable condition around any normal triggered ability. */
       trigger: 'ENTER_FIELD';
       effects: CardEffect[];
+      oncePerTurn?: boolean;
       condition?: AbilityCondition;
     };
 
@@ -99,4 +109,6 @@ export type AbilityCondition =
   | { type: 'SOURCE_IN_HAND' }
   | { type: 'FIRST_ATTACK_GAIN' }
   | { type: 'ATTACK_GAIN' }
-  | { type: 'HEALTH_GAIN' };
+  | { type: 'HEALTH_GAIN' }
+  | { type: 'SOURCE_ATTACKED_CHAMPION_THIS_TURN' }
+  | { type: 'WRESTLER_DESTROYED_THIS_TURN' };

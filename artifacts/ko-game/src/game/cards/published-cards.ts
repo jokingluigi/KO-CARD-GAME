@@ -1,3 +1,4 @@
+import { reviewedContentAbilities } from './reviewed-content-20261012';
 import { textCardAbilities } from './text-effect-repair';
 import { EPIC_TECHNIQUES } from './epic-techniques';
 import { createAwakeningCards } from '../champions/awakening-definitions';
@@ -62,7 +63,7 @@ export function abilitiesFor(
       .map((script) => ({
         trigger: script.trigger as Exclude<CardAbility["trigger"], "POSITION" | "LEAVE_FIELD">,
         effects: [{ type: "SCRIPT" as const, script }],
-      }));
+      } as CardAbility));
   }
   if (effectId === "STRUCTURED_EFFECTS_V1" && Array.isArray(config.effects)) {
     const byTrigger = new Map<string, CardEffect[]>();
@@ -92,7 +93,7 @@ export function abilitiesFor(
             : undefined;
        return trigger === "LEAVE_FIELD"
          ? { trigger: "LEAVE_FIELD" as const, reasons: ["RETIRE" as const], effects, ...(condition ? { condition } : {}) }
-         : { trigger: trigger as Exclude<CardAbility["trigger"], "LEAVE_FIELD" | "POSITION">, effects, ...(condition ? { condition } : {}) };
+         : { trigger: trigger as Exclude<CardAbility["trigger"], "LEAVE_FIELD" | "POSITION">, effects, ...(condition ? { condition } : {}) } as CardAbility;
      });
   }
   if (effectId === "ACTIVE_GAIN_GOLD") {
@@ -226,7 +227,7 @@ export function cardRecordToDefinition(card: PublishedCardRecord): CardDefinitio
     // Administrator-chosen names must not select another card's legacy rules.
     return { ...awakening, ...card, cardType: 'WRESTLER', rarity: 'CHAMPION',
       isToken: true, isChampionToken: true, questExclusive: true, awakeningStage: awakening.awakeningStage,
-      rulesText: card.text, keywords: [...card.keywords], abilities: textCardAbilities(card) ?? abilitiesFor(card.effectId, card.effectConfig), effectId: card.effectId,
+      rulesText: card.text, keywords: [...card.keywords], abilities: reviewedContentAbilities(card) ?? textCardAbilities(card) ?? abilitiesFor(card.effectId, card.effectConfig), effectId: card.effectId,
       awakeningLegacyPassives: card.text === awakening.rulesText,
       effectConfig: { ...awakening.effectConfig, ...card.effectConfig } };
   }
@@ -320,7 +321,7 @@ export function cardRecordToDefinition(card: PublishedCardRecord): CardDefinitio
       keywords: repairedLegacyCardKeywords(card),
        tags: Array.isArray(card.tags) ? [...card.tags] : [],
       ...(implementation ? {contentRule: implementation.rule} : {}),
-      abilities: (textCardAbilities(card) ?? implementation?.abilities ?? repairedLegacyCardAbilities(card) ?? (zombieAbsorption
+      abilities: (reviewedContentAbilities(card) ?? textCardAbilities(card) ?? implementation?.abilities ?? repairedLegacyCardAbilities(card) ?? (zombieAbsorption
         ? [{ trigger: 'ENTER_FIELD' as const, effects: [{ type: 'STRUCTURED' as const,
             action: 'COPY_BEST_STATS' as const,
             target: { zone: 'BOARD' as const, owner: 'SELF' as const, cardType: 'WRESTLER' as const,

@@ -419,7 +419,7 @@ export function CardRenderer({
             }}
           >
             <span className={`line-clamp-6 w-full font-bold drop-shadow-[0_1px_2px_rgba(0,0,0,0.95)] ${rulesClass}`}>
-              <CardRulesText text={displayRulesText || "효과 없음"}/>
+              <CardRulesText text={displayRulesText || "효과 없음"} interactive={highlight !== "target"}/>
             </span>
           </div>
         )}

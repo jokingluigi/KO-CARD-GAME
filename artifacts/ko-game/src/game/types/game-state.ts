@@ -60,6 +60,7 @@ export interface PlayerState {
   personalTurn: number;
   mulliganUsed?: boolean;
   nextTurnGoldBonus: number;
+  turnGoldBonus?: number;
   deck: CardInstance[];
   hand: CardInstance[];
   board: Board;

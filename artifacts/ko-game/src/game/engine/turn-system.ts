@@ -34,6 +34,7 @@ function beginPlayerTurn(state: GameState, playerId: string): GameState {
             ...candidate,
             personalTurn,
             currentGold,
+            turnGoldBonus: player.nextTurnGoldBonus,
             nextTurnGoldBonus: 0,
              championAbilityUsedThisTurn: false,
             board: candidate.board.map((card) =>

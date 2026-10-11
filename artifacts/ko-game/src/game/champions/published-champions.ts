@@ -73,10 +73,11 @@ export function championRecordToDefinition(record: PublishedChampionRecord): Cha
   if(record.hasQuest && fusionRequirement)record={...record,questCondition:{event:'FUSION',progress:1,required:Number(fusionRequirement[1]),strictEventCount:true},questProgressRequired:Number(fusionRequirement[1])};
   if(!record.abilityEffects?.effects?.length&&!record.abilityEffects?.scripts?.length){
     const tokenTag=(record.abilityText??'').match(/['‘]([^'’]+)['’]\s*태그.*토큰.*무작위.*(?:손패|손)/u);
+    if(/무작위.*공격력.*1.*증가/u.test(record.abilityText??'') && /챔피언.*체력.*2.*회복/u.test(record.abilityText??''))record={...record,abilityEffects:{effects:[{action:'BUFF',target:{zone:'BOARD',owner:'SELF',cardType:'WRESTLER',selection:'RANDOM',randomScope:'FULL',count:1},values:{attack:1,health:0}},{action:'HEAL',target:{zone:'PLAYER',owner:'SELF',selection:'SELF',count:1},values:{amount:2}}]}};
     if(tokenTag)record={...record,abilityEffects:{effects:[{action:'GENERATE',target:{zone:'HAND',owner:'SELF',selection:'RANDOM',randomScope:'FULL',count:1,filter:{isToken:true,tagsAny:[tokenTag[1]]}},values:{count:1,destination:'HAND'}}]}};
   }
   if(!record.questRewardEffects?.effects?.length&&!record.questRewardEffects?.scripts?.length){
-    const summon=record.questRewardText?.match(/['‘]([^'’]+)['’].*필드.*소환/u);
+    const summon=/(?:필드|전장).*소환/u.test(record.questRewardText??'') ? record.questRewardText?.match(/['‘]([^'’]+)['’]/u) : null;
     if(summon)record={...record,questRewardEffects:{effects:[{action:'SUMMON',values:{definitionRef:{name:summon[1]},count:1,resolveByName:true}}]}};
   }
   const abilityRetireQuest = /(?:자신의|본인의)\s*고유\s*능력으로[^.!?]{0,55}(?:선수|카드)[^.!?]{0,25}리타이어/.test(record.questText ?? '');

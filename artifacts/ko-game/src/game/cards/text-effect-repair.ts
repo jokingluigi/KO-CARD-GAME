@@ -32,7 +32,7 @@ export function textCardAbilities(card: PublishedCardRecord): CardAbility[] | nu
       const effects:CardEffect[]=[];
       const values=/공격력/u.test(combo)?{attack:n,health:0}:{attack:0,health:n};
       if(/공격한 아군/u.test(combo))effects.push(fx('BUFF',board('SELF','LAST_ATTACKER'),values));
-      effects.push(fx('BUFF',self,values));
+      if(/자신|이 카드/u.test(combo))effects.push(fx('BUFF',self,values));
       if(/챔피언/u.test(combo))effects.push(fx('BUFF',{zone:'PLAYER',owner:'SELF',selection:'SELF',count:1},values));
       result.push(ability('OTHER_ALLY_ATTACK',effects));
     }
@@ -79,7 +79,7 @@ export function textCardAbilities(card: PublishedCardRecord): CardAbility[] | nu
     }
     if(/소환되면.*리타이어하거나 파괴.*수만큼 공격력/u.test(text))result.push(ability('SELF_ENTERED',[fx('BUFF',self,{attackReference:'ALLIED_REMOVED_WRESTLER_COUNT'})]));
     const next=text.match(/퇴장\s*:\s*['‘]([^'’]+)['’].*소환/u);
-    if(next)result.push({trigger:'LEAVE_FIELD',reasons:['RETIRE'],effects:[fx('SUMMON',undefined,{definitionRef:{name:next[1]},count:1,resolveByName:true})]});
+    if(next)result.push({trigger:'LEAVE_FIELD',reasons:['RETIRE'],effects:[fx('SUMMON',undefined,{definitionRef:{name:next[1]==='각성 리온'?'리온(각성)':next[1]},count:1,resolveByName:true})]});
   }
   return result.length?result:null;
 }

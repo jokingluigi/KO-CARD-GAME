@@ -1899,6 +1899,9 @@ function BoardSlot({
          type="button"
          data-touch-inspect-trigger
          className="ko-board-inspect-button hidden"
+         style={targetingActive && targetable ? { visibility: 'hidden', pointerEvents: 'none' } : undefined}
+         aria-hidden={targetingActive && targetable ? true : undefined}
+         tabIndex={targetingActive && targetable ? -1 : undefined}
          aria-label={`${def?.name ?? '카드'} 상세정보`}
          onClick={(event) => event.stopPropagation()}
        >
