@@ -1253,7 +1253,8 @@ export function GameStatePreview({
                  role="dialog"
                  aria-modal="true"
                  aria-label="게임 설정"
-                  className="ko-settings-dialog fixed right-2 top-36 z-[151] w-56 rounded-lg border border-neutral-700 bg-neutral-950 p-4 shadow-2xl md:right-40 md:top-1/2 md:-translate-y-1/2"
+                  className="ko-settings-dialog fixed right-2 z-[151] w-56 rounded-lg border border-neutral-700 bg-neutral-950 p-4 shadow-2xl md:right-40"
+                 style={{top:"50%",maxHeight:"calc(100dvh - 24px)",overflowY:"auto",transform:"translateY(-50%)",translate:"none"}}
                  onClick={(event) => event.stopPropagation()}
                >
                  <div className="mb-3 flex items-center justify-between border-b border-neutral-800 pb-2">
