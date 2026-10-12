@@ -1,5 +1,6 @@
 import {createContext,useCallback,useContext,useEffect,useRef,useState,type CSSProperties,type RefObject} from 'react';
 import {effectiveImpact,impactFrames,impactRank,parseShakeMode,SHAKE_STORAGE_KEY,type ScreenImpact,type ShakeMode} from './screen-impact-policy';
+import {readCombatPreferences,impactMultiplier} from './combat-preferences';
 import {prefersReducedMotion} from './presentation-config';
 type ImpactApi={request:(impact:ScreenImpact)=>boolean;mode:ShakeMode;setMode:(mode:ShakeMode)=>void;isActive:()=>boolean};
 const fallback:ImpactApi={request:()=>false,mode:'FULL',setMode:()=>{},isActive:()=>false};
@@ -29,7 +30,7 @@ export function useScreenImpactManager(container:RefObject<HTMLDivElement|null>,
   const active=current.current;
   if(active&&performance.now()<active.until&&(impactRank(active.event.profile)>impactRank(event.profile)||(impactRank(active.event.profile)===impactRank(event.profile)&&active.event.profile.amplitude>event.profile.amplitude)))return false;
   clear();
-  const reduced=prefersReducedMotion(),profile=effectiveImpact(event.profile,{width:innerWidth,height:innerHeight},modeRef.current,reduced);
+  const reduced=prefersReducedMotion(),multiplier=impactMultiplier(readCombatPreferences().intensity),profile=effectiveImpact({...event.profile,amplitude:event.profile.amplitude*multiplier,wave:event.profile.wave*multiplier},{width:innerWidth,height:innerHeight},modeRef.current,reduced);
   current.current={event,until:performance.now()+profile.duration};
   const stage=container.current?.querySelector<HTMLElement>('.ko-game-stage'),background=container.current?.querySelector<HTMLElement>('.ko-cinematic-background');
   const animate=(node:HTMLElement|null|undefined,frames:Keyframe[],duration:number)=>{
@@ -38,7 +39,7 @@ export function useScreenImpactManager(container:RefObject<HTMLDivElement|null>,
   if(stage){stage.dataset.screenImpactTier=profile.tier;stage.dataset.screenImpactAmplitude=String(profile.amplitude);stage.dataset.screenImpactStarted=String(performance.now());}
   if(profile.amplitude>0){
    cancelCamera();
-   animate(stage,impactFrames(profile,event.direction,event.radial),profile.duration);
+   for(const node of Array.from(container.current?.querySelectorAll<HTMLElement>('.ko-opponent-board-row,.ko-player-board-row')??[])) animate(node,impactFrames(profile,event.direction,event.radial),profile.duration);
    animate(background,impactFrames({...profile,amplitude:profile.amplitude*.3,rotation:profile.rotation*.25},event.direction,event.radial),profile.duration);
    if(event.nearby){
     const cards=container.current?.querySelectorAll<HTMLElement>('.ko-board-slot-wrapper [data-rarity]')??[];
@@ -59,8 +60,8 @@ export function useScreenImpactManager(container:RefObject<HTMLDivElement|null>,
   const reset=()=>clear(),hidden=()=>{if(document.hidden)clear();};
   const stored=(e:StorageEvent)=>{if(e.key===SHAKE_STORAGE_KEY){modeRef.current=parseShakeMode(e.newValue);setPreference(modeRef.current);clear();}};
   const media=window.matchMedia('(prefers-reduced-motion: reduce)');
-  window.addEventListener('resize',reset);window.addEventListener('storage',stored);document.addEventListener('visibilitychange',hidden);media.addEventListener('change',reset);
-  return()=>{clear(false);window.removeEventListener('resize',reset);window.removeEventListener('storage',stored);document.removeEventListener('visibilitychange',hidden);media.removeEventListener('change',reset);};
+  window.addEventListener('ko-combat-preferences',reset);window.addEventListener('resize',reset);window.addEventListener('storage',stored);document.addEventListener('visibilitychange',hidden);media.addEventListener('change',reset);
+  return()=>{clear(false);window.removeEventListener('ko-combat-preferences',reset);window.removeEventListener('resize',reset);window.removeEventListener('storage',stored);document.removeEventListener('visibilitychange',hidden);media.removeEventListener('change',reset);};
  },[clear]);
  const isActive=useCallback(()=>Boolean(current.current&&performance.now()<current.current.until),[]);
  return {api:{request,mode,setMode,isActive},impact};
@@ -75,7 +76,7 @@ export function ScreenImpactScene({impact}:{impact:ScreenImpact}){
  return <div className={`ko-screen-impact ko-screen-impact--${profile.rarity.toLowerCase()} ${heavy?'ko-screen-impact--heavy':''}`} data-screen-impact={profile.tier} data-shake-mode={profile.amplitude===0?'OFF':'ON'} aria-hidden="true" style={style}>
  <div className="ko-screen-impact__wave"/>
  {profile.aftershock&&<div className="ko-screen-impact__wave ko-screen-impact__wave--after"/>}
- {heavy&&<><div className="ko-screen-impact__ink"/>{Array.from({length:8},(_,i)=><i key={i} className="ko-screen-impact__debris" style={{'--debris-x':Math.cos(i*Math.PI/4)*(i%2?65:115)+'px','--debris-y':Math.sin(i*Math.PI/4)*55-35+'px','--debris-rotation':(i*37)+'deg'} as CSSProperties}/>)}</>}
+ {heavy&&<><div className="ko-screen-impact__ink"/>{Array.from({length:readCombatPreferences().quality==='LOW'?2:readCombatPreferences().quality==='MEDIUM'?4:8},(_,i)=><i key={i} className="ko-screen-impact__debris" style={{'--debris-x':Math.cos(i*Math.PI/4)*(i%2?65:115)+'px','--debris-y':Math.sin(i*Math.PI/4)*55-35+'px','--debris-rotation':(i*37)+'deg'} as CSSProperties}/>)}</>}
  {impactRank(profile)>=4&&<div className="ko-screen-impact__edge"/>}
  </div>;
 }
