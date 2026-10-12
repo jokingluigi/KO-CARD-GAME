@@ -130,6 +130,7 @@ export function AltInspectProvider({ children }: { children: ReactNode }) {
     setIsTouchInspecting(false);
   }, [cancelClear]);
   const toggleTouch = useCallback((nextTarget: InspectTarget) => {
+    cancelClear();
     setTarget((current) => {
       if (current?.anchor === nextTarget.anchor && isTouchInspecting) {
         setIsTouchInspecting(false);
@@ -138,7 +139,7 @@ export function AltInspectProvider({ children }: { children: ReactNode }) {
       setIsTouchInspecting(true);
       return nextTarget;
     });
-  }, [isTouchInspecting]);
+  }, [isTouchInspecting,cancelClear]);
   const openTagExplorer = useCallback((tag: string) => {
     setTagDetailCard(null);
     setTagExplorer(tag);
@@ -284,7 +285,7 @@ export function Inspectable({
   if (!context) return <>{children}</>;
 
   const inspect = (element: HTMLElement) =>
-    context.inspect({
+    !holdRef.current.held && context.inspect({
       content,
       anchor: element,
       rect: element.getBoundingClientRect(),
@@ -310,12 +311,12 @@ export function Inspectable({
         context.scheduleClear();
       }}
       onFocus={(event) => inspect(event.currentTarget)}
-      onBlur={context.clear}
+      onBlur={()=>{if(!holdRef.current.held)context.clear();}}
       onPointerDownCapture={(event)=>{
         clearHold();holdRef.current.held=false;
         if(event.pointerType!=='touch'||!touchInspectTriggerOnly||(event.target as Element).closest('button,[data-touch-inspect-trigger],input,select,a'))return;
         const element=event.currentTarget;holdRef.current.x=event.clientX;holdRef.current.y=event.clientY;
-        holdRef.current.timer=setTimeout(()=>{holdRef.current.held=true;lastTouchInspectAt.current=Date.now();window.dispatchEvent(new Event('ko-card-inspect-hold'));toggleTouch(element);},430);
+        holdRef.current.timer=setTimeout(()=>{holdRef.current.held=true;element.querySelector<HTMLElement>('[tabindex]')?.focus({preventScroll:true});lastTouchInspectAt.current=Date.now();window.dispatchEvent(new Event('ko-card-inspect-hold'));toggleTouch(element);},430);
       }}
       onPointerMoveCapture={(event)=>{if(Math.hypot(event.clientX-holdRef.current.x,event.clientY-holdRef.current.y)>8)clearHold();}}
       onPointerCancelCapture={()=>{clearHold();holdRef.current.held=false;}}

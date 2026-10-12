@@ -40,3 +40,7 @@
 
 .ko-attack-aim__estimate{font:900 14px sans-serif;paint-order:stroke;stroke:#080808;stroke-width:4px;stroke-linejoin:round}
 .ko-card-drop-rejected{filter:drop-shadow(0 0 5px #d95757)!important}
+
+/* Selection must fit the measured mobile hand rail rather than clip its top. */
+@media(max-width:700px) and (orientation:portrait){.ko-game-shell .ko-player-hand .ko-hand-card--selected{translate:0 0;scale:1;transform:translateY(-8px) scale(1.08)}}
+@media(max-width:700px) and (orientation:portrait) and (prefers-reduced-motion:reduce){.ko-game-shell .ko-player-hand .ko-hand-card--selected{transform:translateY(-4px) scale(1.03)}}

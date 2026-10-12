@@ -4,7 +4,7 @@
 
 The shared React battle view continues to use existing authoritative engine events. The existing cinematic policy, screen-impact manager, card motion and audio manager were extended; no new animation framework or database migration was introduced.
 
-- Drag and tap use existing legal-action callbacks. Mobile long-press (430ms) opens the existing inspector, consumes its tap and does not commit an attack. Beginning either drag clears the hold timer.
+- Drag and tap use existing legal-action callbacks. Mobile long-press (430ms) opens the existing inspector, consumes its tap and does not commit an attack. Beginning either drag clears the hold timer. Post-selection long-press survives touch-release focus changes; mobile selection fits the hand rail without combining a second hover transform.
 - Attack drag draws a directional arrow and target lock against current legal targets. The ~damage label is an estimate from visible attack and the existing armor/entry-defense calculator; later champion/card effects may change it.
 - The shared attacker/defender timeline uses attack force for motion and confirmed damage for numbers. Fully prevented damage receives no damaging hitstop. Existing camera ownership, priority, directional kick/recoil and motion accessibility remain.
 - Summon cost defines physical tier/bass. Rarity defines spectacle, with a bounded additional motion accent. A cost-1 Legendary remains LIGHT. Legendary wrestler and spell use a 1,180ms central reveal; no second character panel obscures the card.
@@ -30,6 +30,8 @@ Environment: Windows, Node 24, Chrome headless with genuine browser pointer/touc
 | Workspace TypeScript | PASS |
 | Frontend and API build | PASS (existing tooltip sourcemap warning remains) |
 | Focused cinematic/impact/zone/audio policies | 57/57 PASS |
+| Inspector metadata/keyboard regressions | 12/12 PASS |
+| Complete production styles: hand 1/2/3/5/10, champion/active/log/graveyard/emote/turn/rotation | PASS: four required portrait viewports |
 | Normal-user pack HTTP ownership, receipt retry and user-B/anonymous isolation | 2/2 PASS |
 | Current checked-in card/Champion/engine suite | 1,855/1,855 PASS |
 | Catalog AI matches | 100/100 finished; 0 failures/timeouts (checked-in public snapshot 2026-10-07) |
@@ -44,6 +46,8 @@ Environment: Windows, Node 24, Chrome headless with genuine browser pointer/touc
 | Champion token/deploy, fusion/vanish, full hand, retirement/destruction browser suite | PASS |
 
 Evidence is saved under qa-results/remaster*. Screenshots: qa-results/remaster/.
+
+An initial CI run failed because the new pack test asserted the special overlay before React committed its effect. The test now waits for the real overlay. A raw development-style diagnostic also showed an active-button overlap; the complete production stylesheet path passes the reachability test. CI rerun and live rollout are recorded after completion.
 
 ## Exact limitations
 
@@ -103,3 +107,5 @@ Branch: feat/visual-audio-remaster-20261013. No migration or new environment var
 - docs/qa/remaster-browser.mjs
 - docs/qa/remaster-cinematic-browser.mjs
 - lib/db/qa/pack-receipt-http.test.ts
+
+- docs/qa/mobile-portrait-battle-browser.mjs
