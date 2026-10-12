@@ -23,6 +23,7 @@ export function techniqueStageGeometry(source: CardAnimationRect, viewport: {wid
 export type CardPlayAnimationState =
   | {
       kind: "WRESTLER";
+      entryCause?:"PLAY_FROM_HAND"|"SUMMON"|"REVIVE"|"CHAMPION_DEPLOY";
       card: CardInstance;
       geometry: CardPlayGeometry & { target: CardAnimationRect };
       impactLevel: LandingImpactLevel;

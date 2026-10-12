@@ -17,21 +17,6 @@ export function CombatSettings() {
     <fieldset className="space-y-2 border-t border-neutral-700 pt-3 text-xs">
       <legend className="font-bold text-amber-200">전투 연출</legend>
       <label className="flex items-center justify-between gap-2">
-        그래픽 품질
-        <select
-          aria-label="그래픽 품질"
-          className={style}
-          value={value.quality}
-          onChange={(e) =>
-            update({ quality: e.target.value as CombatPreferences["quality"] })
-          }
-        >
-          <option value="LOW">낮음</option>
-          <option value="MEDIUM">보통</option>
-          <option value="HIGH">높음</option>
-        </select>
-      </label>
-      <label className="flex items-center justify-between gap-2">
         타격 연출 강도
         <select
           aria-label="타격 연출 강도"

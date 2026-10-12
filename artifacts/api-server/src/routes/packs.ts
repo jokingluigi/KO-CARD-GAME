@@ -164,12 +164,13 @@ export async function openPackRequest(
             const card = reward.card;
             reward.alreadyOwned = (ownedCardQuantities.get(card.id) ?? 0) > 0;
             ownedCardQuantities.set(card.id, (ownedCardQuantities.get(card.id) ?? 0) + 1);
-            await tx.insert(userCardCollectionsTable).values({
+            const [grantedCard] = await tx.insert(userCardCollectionsTable).values({
               userId: request.authUser!.id, cardDefinitionId: card.id, quantity: 1,
             }).onConflictDoUpdate({
               target: [userCardCollectionsTable.userId, userCardCollectionsTable.cardDefinitionId],
               set: { quantity: sql`${userCardCollectionsTable.quantity} + 1`, obtainedAt: new Date() },
-            });
+            }).returning({quantity:userCardCollectionsTable.quantity});
+            if(grantedCard){reward.ownedAfter=grantedCard.quantity;reward.ownedBefore=grantedCard.quantity-1;reward.alreadyOwned=reward.ownedBefore>0;ownedCardQuantities.set(card.id,grantedCard.quantity);}
           } else if (reward.rewardType === "CHAMPION_UNLOCK") {
             const champion = reward.champion;
             const [existingChampion] = await tx.select({ owned: userChampionCollectionsTable.owned })

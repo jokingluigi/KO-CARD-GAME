@@ -6,6 +6,7 @@ import {audioManager} from '@/audio/audio-manager';
 import {prefersReducedMotion} from './presentation-config';
 import {cameraLevel,cinematicDuration,emptyCinematicState,finishCinematic,offerCinematic,type CinematicRequest,type CinematicEvent} from './cinematic-policy';
 import './cinematic-presentation.css';
+import '../remaster-presentation.css';
 import {ScreenImpactContext,useScreenImpactManager,ScreenImpactScene} from './screen-impact';
 import {specialImpact} from './screen-impact-policy';
 const noop=(_event:CinematicRequest)=>{};
@@ -27,13 +28,18 @@ export function CinematicProvider({children,speed='NORMAL'}:{children:ReactNode;
   setState(s=>offerCinematic(s,{...event,createdAt:performance.now(),duration:cinematicDuration(event,prefersReducedMotion(),speed,s.pending.length)}));
  },[speed]);
  useEffect(()=>{
-  const reset=()=>setState(emptyCinematicState());
+  const reset=()=>{cancelCamera();screen.api.cancel();audioManager.cancelPresentationMusic();setState(s=>({...s,active:null,pending:[],compressed:[]}));};
   const hidden=()=>{if(document.hidden)reset();};
   window.addEventListener('ko-combat-preferences',reset);window.addEventListener('resize',reset);document.addEventListener('visibilitychange',hidden);
   const media=window.matchMedia('(prefers-reduced-motion: reduce)');media.addEventListener('change',reset);
   return()=>{window.removeEventListener('ko-combat-preferences',reset);window.removeEventListener('resize',reset);document.removeEventListener('visibilitychange',hidden);media.removeEventListener('change',reset);};
  },[]);
  const event=state.active;
+ useEffect(()=>{if(event&&['FINISHER','RESULT'].includes(event.kind)){window.dispatchEvent(new Event('ko-compress-quest'));window.dispatchEvent(new Event('ko-prioritize-conclusion'));}},[event?.id,state.compressed?.length]);
+ useEffect(()=>{
+  const skip=()=>{cancelCamera();screen.api.cancel();setState(s=>s.active?finishCinematic(s,s.active.id,performance.now()):s);audioManager.cancelPresentationMusic();};
+  window.addEventListener('ko-skip-cinematic',skip);return()=>window.removeEventListener('ko-skip-cinematic',skip);
+ },[cancelCamera,screen.api]);
  useEffect(()=>{
   if(!event)return;
   const motions:Animation[]=[];
@@ -55,9 +61,11 @@ export function CinematicProvider({children,speed='NORMAL'}:{children:ReactNode;
   const finish=()=>setState(s=>finishCinematic(s,event.id,performance.now()));
   const fallback=window.setTimeout(finish,event.duration+80);
   return()=>{clearTimeout(fallback);if(special!==null)clearTimeout(special);motions.forEach(m=>m.cancel());};
- },[event?.id]);
+ },[event?.id,event?.duration]);
  return <ScreenImpactContext.Provider value={screen.api}><CinematicContext.Provider value={request}><div ref={container} style={{display:'contents'}}>{children}</div>
- {event&&createPortal(<CinematicScene key={event.id} event={event} />,document.body)}{screen.impact&&createPortal(<ScreenImpactScene key={screen.impact.id} impact={screen.impact}/>,document.body)}</CinematicContext.Provider></ScreenImpactContext.Provider>;
+ {event&&createPortal(<><CinematicScene key={event.id} event={event} />
+ {['LEGENDARY','CHAMPION','AWAKENING','BOSS','HIDDEN_BOSS'].includes(event.kind)&&<button type="button" className="ko-cinematic-skip" onClick={()=>window.dispatchEvent(new Event('ko-skip-cinematic'))}>연출 건너뛰기</button>}
+ {(state.compressed??[]).length>0&&<div className="ko-cinematic-receipts" role="status">{state.compressed!.map(e=><p key={e.id}>{e.kind==='AWAKENING'?'퀘스트 완료 · ':''}{e.title}</p>)}</div>}</>,document.body)}{screen.impact&&createPortal(<ScreenImpactScene key={screen.impact.id} impact={screen.impact}/>,document.body)}</CinematicContext.Provider></ScreenImpactContext.Provider>;
 }
 export function CinematicScene({event}:{event:CinematicEvent}){
  const major=!['ATTACK','SUMMON'].includes(event.kind),level=cameraLevel(event);
@@ -65,7 +73,7 @@ export function CinematicScene({event}:{event:CinematicEvent}){
  return <div aria-hidden="true" data-cinematic-kind={event.kind} data-camera-level={level} className={`ko-cinematic ko-cinematic--${event.kind.toLowerCase()} ${major?'ko-cinematic--major':''}`} style={style}>
  <div className="ko-cinematic__environment"/><div className="ko-cinematic__ink"/>
  {level>=2&&<div className="ko-cinematic__speed"/>}
- {major&&<div className="ko-cinematic__panel"><div className="ko-cinematic__emblem">KO</div>
+ {major&&event.kind!=='FINISHER'&&!(event.kind==='LEGENDARY'&&!event.art)&&<div className="ko-cinematic__panel"><div className="ko-cinematic__emblem">KO</div>
  {event.art&&<img src={event.art} alt="" className="ko-cinematic__art" onError={e=>{e.currentTarget.style.visibility='hidden';}}/>}
  <div className="ko-cinematic__copy"><span>{event.subtitle??event.kind.replaceAll('_',' ')}</span><strong>{event.title}</strong></div></div>}
  {event.kind==='BIG_SPELL'&&<div className="ko-cinematic__spell-seal"/>}
@@ -79,7 +87,7 @@ export function CinematicCue({cue,state}:{cue:PresentationCue;state:GameState}){
  const champion=owner?.champion;
  const source=state.players.flatMap(p=>[...p.board,...p.hand,...p.graveyard,...p.removedFromGame]).find(c=>c?.instanceId===cue.sourceCardInstanceId);
  const definition=source&&(state.cardPool?.find(d=>d.id===source.definitionId)??getCardDefinition(source.definitionId));
- const kind=cue.kind==='EFFECT'&&cue.championId?'ABILITY':cue.kind==='DAMAGE'&&!cue.combat&&(cue.value??0)>=10?'FINISHER':null;
- useCinematicEvent(kind?{id:cue.id,kind,title:kind==='FINISHER'?definition?.name??'K.O. IMPACT':champion?.name??cue.label,subtitle:champion?.questCompleted?champion.upgradedAbility?.name??champion.ability.name:champion?.ability.name??'CHAMPION ABILITY',art:kind==='FINISHER'?definition?.imageUrl:champion?.questCompleted&&champion.questCompletedPortraitEnabled&&champion.questCompletedPortraitUrl?champion.questCompletedPortraitUrl:champion?.imageUrl,focus:{x:cue.left,y:cue.top}}:null);
+ const kind=cue.kind==='EFFECT'&&cue.championId?'ABILITY':cue.kind==='DAMAGE'&&!cue.combat&&(cue.value??0)>=10?'BIG_SPELL':null;
+ useCinematicEvent(kind?{id:cue.id,kind,title:kind==='BIG_SPELL'?definition?.name??'IMPACT':champion?.name??cue.label,subtitle:champion?.questCompleted?champion.upgradedAbility?.name??champion.ability.name:champion?.ability.name??'CHAMPION ABILITY',art:kind==='BIG_SPELL'?definition?.imageUrl:champion?.questCompleted&&champion.questCompletedPortraitEnabled&&champion.questCompletedPortraitUrl?champion.questCompletedPortraitUrl:champion?.imageUrl,focus:{x:cue.left,y:cue.top}}:null);
  return null;
 }

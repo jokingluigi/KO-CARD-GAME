@@ -2,8 +2,8 @@ import {createContext,useCallback,useContext,useEffect,useRef,useState,type CSSP
 import {effectiveImpact,impactFrames,impactRank,parseShakeMode,SHAKE_STORAGE_KEY,type ScreenImpact,type ShakeMode} from './screen-impact-policy';
 import {readCombatPreferences,impactMultiplier} from './combat-preferences';
 import {prefersReducedMotion} from './presentation-config';
-type ImpactApi={request:(impact:ScreenImpact)=>boolean;mode:ShakeMode;setMode:(mode:ShakeMode)=>void;isActive:()=>boolean};
-const fallback:ImpactApi={request:()=>false,mode:'FULL',setMode:()=>{},isActive:()=>false};
+type ImpactApi={request:(impact:ScreenImpact)=>boolean;mode:ShakeMode;setMode:(mode:ShakeMode)=>void;isActive:()=>boolean;cancel:()=>void};
+const fallback:ImpactApi={request:()=>false,mode:'FULL',setMode:()=>{},isActive:()=>false,cancel:()=>{}};
 export const ScreenImpactContext=createContext<ImpactApi>(fallback);
 export const useScreenImpact=()=>useContext(ScreenImpactContext);
 const readMode=()=>{try{return parseShakeMode(window.localStorage.getItem(SHAKE_STORAGE_KEY));}catch{return 'FULL' as const;}};
@@ -64,7 +64,7 @@ export function useScreenImpactManager(container:RefObject<HTMLDivElement|null>,
   return()=>{clear(false);window.removeEventListener('ko-combat-preferences',reset);window.removeEventListener('resize',reset);window.removeEventListener('storage',stored);document.removeEventListener('visibilitychange',hidden);media.removeEventListener('change',reset);};
  },[clear]);
  const isActive=useCallback(()=>Boolean(current.current&&performance.now()<current.current.until),[]);
- return {api:{request,mode,setMode,isActive},impact};
+ return {api:{request,mode,setMode,isActive,cancel:clear},impact};
 }
 export function ScreenShakeSetting(){
  const {mode,setMode}=useScreenImpact();
@@ -76,7 +76,7 @@ export function ScreenImpactScene({impact}:{impact:ScreenImpact}){
  return <div className={`ko-screen-impact ko-screen-impact--${profile.rarity.toLowerCase()} ${heavy?'ko-screen-impact--heavy':''}`} data-screen-impact={profile.tier} data-shake-mode={profile.amplitude===0?'OFF':'ON'} aria-hidden="true" style={style}>
  <div className="ko-screen-impact__wave"/>
  {profile.aftershock&&<div className="ko-screen-impact__wave ko-screen-impact__wave--after"/>}
- {heavy&&<><div className="ko-screen-impact__ink"/>{Array.from({length:readCombatPreferences().quality==='LOW'?2:readCombatPreferences().quality==='MEDIUM'?4:8},(_,i)=><i key={i} className="ko-screen-impact__debris" style={{'--debris-x':Math.cos(i*Math.PI/4)*(i%2?65:115)+'px','--debris-y':Math.sin(i*Math.PI/4)*55-35+'px','--debris-rotation':(i*37)+'deg'} as CSSProperties}/>)}</>}
+ {heavy&&<><div className="ko-screen-impact__ink"/>{Array.from({length:8},(_,i)=><i key={i} className="ko-screen-impact__debris" style={{'--debris-x':Math.cos(i*Math.PI/4)*(i%2?65:115)+'px','--debris-y':Math.sin(i*Math.PI/4)*55-35+'px','--debris-rotation':(i*37)+'deg'} as CSSProperties}/>)}</>}
  {impactRank(profile)>=4&&<div className="ko-screen-impact__edge"/>}
  </div>;
 }

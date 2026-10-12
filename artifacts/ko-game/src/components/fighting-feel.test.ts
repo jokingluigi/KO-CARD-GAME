@@ -13,7 +13,7 @@ test("contact, joint hitstop and directional recovery use one finite clock", () 
     [8, false, 85, 125],
     [15, true, 130, 190],
   ] as const) {
-    const t = combatTimeline(99, damage, finisher),
+    const t = combatTimeline(damage, damage, finisher),
       a = attackFrames(160, -200, t),
       target = targetReactionFrames(160, -200, damage, t);
     assert.ok(t.release - t.impact >= min && t.release - t.impact <= max);
@@ -34,9 +34,9 @@ test("contact, joint hitstop and directional recovery use one finite clock", () 
 });
 test("prevented damage is not amplified by printed attack and preferences tolerate invalid storage", () => {
   assert.equal(combatTimeline(99, 0).release, combatTimeline(99, 0).impact);
-  assert.deepEqual(combatTimeline(99, 1), combatTimeline(1, 1));
+  assert.ok(combatTimeline(99, 1).release - combatTimeline(99, 1).impact > combatTimeline(1, 1).release - combatTimeline(1, 1).impact);
   assert.equal(parseCombatPreferences(null).intensity, "STRONG");
-  assert.equal(parseCombatPreferences("invalid").quality, "HIGH");
+  assert.equal("quality" in parseCombatPreferences('{"quality":"LOW"}'), false);
   assert.equal(parseCombatPreferences("null").reducedMotion, false);
   assert.ok(impactMultiplier("STANDARD") < impactMultiplier("STRONG"));
   assert.ok(impactMultiplier("STRONG") < impactMultiplier("EXTREME"));

@@ -1,11 +1,9 @@
 export type CombatPreferences = {
-  quality: "LOW" | "MEDIUM" | "HIGH";
   intensity: "STANDARD" | "STRONG" | "EXTREME";
   reducedMotion: boolean;
 };
 export const COMBAT_PREFERENCES_KEY = "ko-combat-presentation-v1";
 export const DEFAULT_COMBAT_PREFERENCES: CombatPreferences = {
-  quality: "HIGH",
   intensity: "STRONG",
   reducedMotion: false,
 };
@@ -15,9 +13,6 @@ export function parseCombatPreferences(
   try {
     const p = JSON.parse(value ?? "{}");
     return {
-      quality: ["LOW", "MEDIUM", "HIGH"].includes(p.quality)
-        ? p.quality
-        : "HIGH",
       intensity: ["STANDARD", "STRONG", "EXTREME"].includes(p.intensity)
         ? p.intensity
         : "STRONG",

@@ -21,7 +21,7 @@ export function statusPresentation(events:GameEvent[],before:Map<string,CardInst
   if(old&&!old.isSilenced&&card.isSilenced)result.push({id:batch+':silence:'+id,kind:'SILENCE',label:'침묵',cardInstanceId:id,duration:240});
  }
  for(const [index,event] of events.entries()){
-  if(event.type!=='DAMAGE_DEALT'||event.reason!=='COMBAT'||event.target?.type!=='CARD'||event.tags?.some(tag=>['BLOCKED','DODGE'].includes(tag)))continue;
+  if(event.type!=='DAMAGE_DEALT'||!['COMBAT','BASIC_ATTACK'].includes(event.reason??'')||event.target?.type!=='CARD'||event.tags?.some(tag=>['BLOCKED','DODGE'].includes(tag)))continue;
   const id=event.target.cardInstanceId,card=before.get(id);
   if(card&&!(getActiveCardKeywords(card).includes('DEFENSE')&&(card.entryDefenseActive??card.enteredThisTurn))&&getActiveCardKeywords(card).includes('ARMOR')&&(card.grantedText?.armor??card.armor??0)>0)
    result.push({id:batch+':armor:'+index,kind:'ARMOR',label:'아머',cardInstanceId:id,duration:180,eventIndex:index});

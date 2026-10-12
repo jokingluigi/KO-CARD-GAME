@@ -72,9 +72,10 @@ export function CardLeaveAnimation({
 
   return (
     <>
-    <BattleVfx kind={animation.kind==='DESTROY'?'DESTROY':animation.kind==='RETIRE'?'RETIRE':'MAGIC'}
+    {animation.kind!=="VANISH"&&<BattleVfx kind={animation.kind==='DESTROY'?'DESTROY':animation.kind==='RETIRE'?'RETIRE':animation.kind==='FUSION'?'IMPACT':'MAGIC'}
       left={animation.geometry.left+animation.geometry.width/2} top={animation.geometry.top+animation.geometry.height/2}
-      seed={animation.id} strength={animation.kind==='DESTROY'?8:3} delay={prefersReducedMotion()?0:animation.delay+duration*.25} duration={duration*.7} />
+      seed={animation.id} strength={animation.kind==='DESTROY'?8:3} delay={prefersReducedMotion()?0:animation.delay+duration*.25} duration={duration*.7} />}
+    {animation.kind==="VANISH"&&<div aria-hidden="true" className="ko-vanish-vortex" style={style}/>}
     <div
       aria-hidden="true"
       className={`card-leave-animation card-leave-animation--${animation.kind.toLowerCase()}`}
@@ -86,6 +87,7 @@ export function CardLeaveAnimation({
         onCompleteRef.current();
       }}
     >
+      {animation.kind==="DESTROY"&&<div className="ko-leave-cracks"/>}
       <CardRenderer
         name={definition?.name ?? "카드"}
         cardType={animation.card.cardType === "TECHNIQUE" ? "TECHNIQUE" : "WRESTLER"}

@@ -1,5 +1,6 @@
+import '../remaster-presentation.css';
 import { useEffect, useRef, useState } from "react";
-import { Check, Gift, RotateCcw, Sparkles } from "lucide-react";
+import { Check, Gift, RotateCcw } from "lucide-react";
 import { CardRenderer } from "@/components/card-renderer";
 import { CardArtwork } from "@/components/card-artwork";
 import { audioManager } from "@/audio/audio-manager";
@@ -27,7 +28,7 @@ function playRevealMusic(reward: PackReward) {
   if (reward.rewardType === "LEGENDARY_CARD") {
     const card = reward.card;
     if (card?.entranceAudioEnabled && card.entranceAudioUrl) {
-      audioManager.playPackRevealMusic(card.entranceAudioUrl, card.entranceAudioVolume ?? 100);
+      audioManager.playPackRevealMusic(card.entranceAudioUrl, card.entranceAudioVolume ?? 100,{maxDuration:1500,fadeInMs:100,fadeOutMs:200});
     }
   } else if (reward.rewardType === "CHAMPION_UNLOCK") {
     const champion = reward.champion;
@@ -38,11 +39,14 @@ function playRevealMusic(reward: PackReward) {
 }
 
 export function PackOpening({ packName, rewards, packCount = 1, perPackRewards, notice, preview = false, onClose, onRepeat, onRegenerate }: PackOpeningProps) {
-  const [revealed, setRevealed] = useState(-1);
+  const [revealed, setRevealed] = useState<Set<number>>(()=>new Set());
+  const [opened,setOpened]=useState(false);
+  const tearRef=useRef<{x:number;active:boolean}>({x:0,active:false});
+  const envelopeRef=useRef<HTMLButtonElement>(null);
   const [detailsExpanded, setDetailsExpanded] = useState(false);
   const [specialQueue, setSpecialQueue] = useState<number[]>([]);
   const lastRewardsRef = useRef<PackReward[]>(rewards);
-  const announcedThroughRef = useRef(-1);
+  const announcedRef = useRef(new Set<number>());
   const bulkAnnouncedRef = useRef(false);
   const rewardsResetPendingRef = useRef(false);
   const aggregatedRewards = aggregatePackRewards(rewards);
@@ -52,10 +56,10 @@ export function PackOpening({ packName, rewards, packCount = 1, perPackRewards, 
     if (lastRewardsRef.current !== rewards) {
       lastRewardsRef.current = rewards;
       audioManager.stopPackRevealMusic();
-      setRevealed(-1);
+      setRevealed(new Set());setOpened(false);
       setDetailsExpanded(false);
       setSpecialQueue([]);
-      announcedThroughRef.current = -1;
+      announcedRef.current = new Set();
       bulkAnnouncedRef.current = false;
       rewardsResetPendingRef.current = true;
     }
@@ -73,24 +77,21 @@ export function PackOpening({ packName, rewards, packCount = 1, perPackRewards, 
       if (specials.length) setSpecialQueue(specials);
       bulkAnnouncedRef.current = true;
     }
-    if (revealed <= announcedThroughRef.current) return;
     if (!isBulkResult) {
-      const specials = rewards.flatMap((reward, index) =>
-        index > announcedThroughRef.current && index <= revealed &&
-        (reward.rewardType === "LEGENDARY_CARD" || reward.rewardType === "CHAMPION_UNLOCK") ? [index] : [],
-      );
-      if (specials.length) setSpecialQueue((current) => [...current, ...specials]);
+      const fresh=rewards.flatMap((reward,index)=>revealed.has(index)&&!announcedRef.current.has(index)?[index]:[]);
+      const specials=fresh.filter(index=>["LEGENDARY_CARD","CHAMPION_UNLOCK"].includes(rewards[index]!.rewardType));
+      if(specials.length)setSpecialQueue(current=>[...current,...specials]);
+      fresh.forEach(index=>announcedRef.current.add(index));
     }
-    announcedThroughRef.current = revealed;
   }, [isBulkResult, revealed, rewards]);
 
   const specialReward = specialQueue.length ? rewards[specialQueue[0]] : undefined;
   useEffect(() => {
     if (!specialReward) return;
     playRevealMusic(specialReward);
-    const timeout = window.setTimeout(() => setSpecialQueue((current) => current.slice(1)),
+    const timeout = window.setTimeout(() => {audioManager.stopPackRevealMusic();setSpecialQueue((current) => current.slice(1));},
       window.matchMedia?.("(prefers-reduced-motion: reduce)").matches ? 350
-        : specialReward.rewardType === 'CHAMPION_UNLOCK' ? 2300 : 1700);
+        : specialReward.rewardType === 'CHAMPION_UNLOCK' ? 2300 : 1300);
     return () => window.clearTimeout(timeout);
   }, [specialReward]);
 
@@ -98,13 +99,13 @@ export function PackOpening({ packName, rewards, packCount = 1, perPackRewards, 
     audioManager.stopPackRevealMusic();
   }, []);
 
-  const allRevealed = rewards.length === 0 || revealed >= rewards.length - 1;
+  const allRevealed = rewards.length === 0 || revealed.size >= rewards.length;
   const revealAll = () => {
     // Do not queue a series of entrance scenes when the player skips ahead.
-    announcedThroughRef.current = rewards.length - 1;
+    announcedRef.current = new Set(rewards.map((_,i)=>i));
     setSpecialQueue([]);
     audioManager.stopPackRevealMusic();
-    setRevealed(rewards.length - 1);
+    setRevealed(new Set(rewards.map((_,i)=>i)));
   };
 
   return (
@@ -116,9 +117,17 @@ export function PackOpening({ packName, rewards, packCount = 1, perPackRewards, 
           {isBulkResult ? (
             <p data-testid="text-bulk-open-summary" className="mt-2 text-sm text-neutral-300">{packCount}개 팩 개봉 완료 · 보상 {rewards.length}개</p>
           ) : <p className="mt-2 text-sm text-neutral-500">
-            {revealed < 0 ? "카드를 눌러 한 장씩 공개하세요." : `${Math.min(revealed + 1, rewards.length)} / ${rewards.length} 공개`}
+            {!opened ? "팩을 드래그하거나 눌러 개봉하세요." : revealed.size===0 ? "카드를 눌러 한 장씩 공개하세요." : `${revealed.size} / ${rewards.length} 공개`}
           </p>}
         </div>
+        {!isBulkResult&&!opened&&<button ref={envelopeRef} type="button" className="ko-pack-envelope" aria-label="팩 개봉" data-testid="button-open-pack-envelope"
+          onClick={()=>{setOpened(true);audioManager.playImpactOverlay('/sfx/impact-light.wav',42,4);}}
+          onPointerDown={e=>{tearRef.current={x:e.clientX,active:true};e.currentTarget.setPointerCapture(e.pointerId);}}
+          onPointerMove={e=>{if(!tearRef.current.active)return;const delta=e.clientX-tearRef.current.x;e.currentTarget.style.setProperty('--tear-offset',Math.max(-100,Math.min(100,delta))+'px');if(Math.abs(delta)>72){tearRef.current.active=false;setOpened(true);audioManager.playImpactOverlay('/sfx/impact-light.wav',42,4);}}}
+          onPointerUp={()=>{tearRef.current.active=false;envelopeRef.current?.style.setProperty('--tear-offset','0px');}}
+          onPointerCancel={()=>{tearRef.current.active=false;envelopeRef.current?.style.setProperty('--tear-offset','0px');}}>
+          <span className="ko-pack-envelope__seam"/><strong>KO</strong><span>{packName}</span><small>드래그 / 탭으로 개봉</small>
+        </button>}
         {isBulkResult && (
           <section className="mt-7 rounded-xl border border-amber-800/60 bg-amber-950/20 p-4 sm:p-6" aria-label="개봉 보상 요약">
             {notice && <p data-testid="status-pack-opening-notice" role="status" className="mb-4 rounded border border-amber-700/60 bg-amber-950/50 px-3 py-2 text-sm text-amber-200">{notice}</p>}
@@ -155,9 +164,9 @@ export function PackOpening({ packName, rewards, packCount = 1, perPackRewards, 
             </div>}
           </section>
         )}
-        {(!isBulkResult || detailsExpanded) && <div className="mt-8 grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-5">
+        {((!isBulkResult&&opened) || (isBulkResult&&detailsExpanded)) && <div className="mt-8 grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-5">
           {rewards.map((reward, index) => {
-            const isRevealed = revealed >= index;
+            const isRevealed = revealed.has(index);
             const card = reward.card;
             const champion = reward.champion;
             const skin = reward.skin;
@@ -166,22 +175,22 @@ export function PackOpening({ packName, rewards, packCount = 1, perPackRewards, 
               <button
                 type="button"
                 key={`${reward.rewardType}-${reward.cardDefinitionId ?? reward.championDefinitionId ?? reward.skinDefinitionId ?? index}-${index}`}
-                onClick={() => setRevealed((current) => Math.max(current, index))}
+                onClick={() => setRevealed(current=>current.has(index)?current:new Set([...current,index]))}
                 data-testid={`button-reveal-reward-${index}`}
                 className={`min-w-0 text-left transition-transform ${!isRevealed ? "hover:-translate-y-1" : ""}`}
                 aria-label={isRevealed ? rewardTitle(reward) : "보상 공개"}
               >
-                <div className={`relative flex aspect-[3/4] items-center justify-center overflow-hidden rounded-xl border ${
+                <div className={`relative flex aspect-[3/4] items-center justify-center overflow-hidden border ${
                   isRevealed && reward.rewardType === "LEGENDARY_CARD"
-                    ? "border-amber-300 shadow-[0_0_28px_rgba(251,191,36,0.55)]"
+                    ? "border-amber-300 "
                     : isRevealed && reward.rewardType === "CHAMPION_UNLOCK"
-                      ? "border-rose-400 shadow-[0_0_28px_rgba(251,113,133,0.45)]"
+                      ? "border-rose-400 "
                       : isRevealed && isSkin
-                        ? "border-cyan-300 shadow-[0_0_28px_rgba(103,232,249,0.45)]"
+                        ? "border-cyan-300 "
                         : "border-neutral-700"
                 } bg-neutral-900 ${isRevealed ? "animate-[card-flip_350ms_ease-out]" : ""}`}>
                   {!isRevealed ? (
-                    <div className="text-center"><Sparkles className="mx-auto h-8 w-8 text-amber-400" /><p className="mt-3 text-xs font-black text-neutral-400">REVEAL</p></div>
+                    <div className="ko-pack-card-back"><strong>KO</strong><p>공개</p></div>
                   ) : reward.rewardType === "CHAMPION_UNLOCK" ? (
                     <div className="p-3 text-center">
                       {champion?.imageUrl ? (
@@ -219,14 +228,16 @@ export function PackOpening({ packName, rewards, packCount = 1, perPackRewards, 
                 {isRevealed && <p className="mt-2 text-center text-xs font-bold text-neutral-300">
                   {reward.alreadyOwned === true ? <span className="mr-1 text-amber-300">중복 ·</span> : reward.alreadyOwned === false ? <span className="mr-1 text-emerald-300">신규 ·</span> : null}
                   {rewardTitle(reward)}
+                  {reward.ownedBefore!==undefined&&reward.ownedAfter!==undefined&&<span className="mt-1 block text-amber-200">보유 {reward.ownedBefore} → {reward.ownedAfter}</span>}
                 </p>}
               </button>
             );
           })}
         </div>}
         <div className="mt-8 flex flex-wrap justify-center gap-3">
+          {!isBulkResult&&!opened&&<button type="button" className="min-h-11 border border-neutral-700 px-4" onClick={()=>{setOpened(true);revealAll();}}>바로 결과 보기</button>}
           {isBulkResult && detailsExpanded && !allRevealed && <button type="button" data-testid="button-quick-reveal-all" onClick={revealAll} className="rounded border border-amber-700 px-5 py-3 text-sm font-black text-amber-300">빠르게 모두 공개</button>}
-          {!isBulkResult && !allRevealed && <button type="button" data-testid="button-reveal-all" onClick={revealAll} className="rounded border border-amber-700 px-5 py-3 text-sm font-black text-amber-300">연출 건너뛰고 모두 공개</button>}
+          {!isBulkResult && opened && !allRevealed && <button type="button" data-testid="button-reveal-all" onClick={revealAll} className="rounded border border-amber-700 px-5 py-3 text-sm font-black text-amber-300">연출 건너뛰고 모두 공개</button>}
           {!isBulkResult && allRevealed && onRegenerate && <button type="button" onClick={onRegenerate} className="flex items-center gap-2 rounded border border-amber-700 px-5 py-3 text-sm font-black text-amber-300"><RotateCcw className="h-4 w-4" /> 결과 다시 생성</button>}
           {!isBulkResult && allRevealed && onRepeat && <button type="button" onClick={onRepeat} className="flex items-center gap-2 rounded border border-neutral-700 px-5 py-3 text-sm font-black text-neutral-200"><RotateCcw className="h-4 w-4" /> 같은 팩 다시 테스트</button>}
           {(isBulkResult || allRevealed) && <button type="button" data-testid="button-close-pack-opening" onClick={onClose} className="flex items-center gap-2 rounded bg-primary px-6 py-3 text-sm font-black text-black"><Check className="h-4 w-4" /> {preview ? "팩 선택으로 돌아가기" : "확인"}</button>}
@@ -245,9 +256,9 @@ export function PackOpening({ packName, rewards, packCount = 1, perPackRewards, 
                   : <Gift className="h-20 w-20" />}
             </div>
             <p className="pack-special__name">{rewardTitle(specialReward)}</p>
-            {specialReward.alreadyOwned && <p className="text-sm font-bold">중복 획득 · 프리즘으로 전환</p>}
-            <button type="button" className="pack-special__continue" onClick={() => setSpecialQueue((current) => current.slice(1))}>계속</button>
-            {specialQueue.length > 1 && <button type="button" className="text-xs font-bold underline" onClick={() => setSpecialQueue([])}>나머지 연출 건너뛰기 ({specialQueue.length - 1}개)</button>}
+            {specialReward.alreadyOwned && <p className="text-sm font-bold">{specialReward.rewardType==="CHAMPION_UNLOCK"?"중복 챔피언 · 프리즘":specialReward.ownedBefore!==undefined?"보유 "+specialReward.ownedBefore+" → "+specialReward.ownedAfter:"중복 획득"}</p>}
+            <button type="button" className="pack-special__continue" onClick={() => {audioManager.stopPackRevealMusic();setSpecialQueue((current) => current.slice(1));}}>계속</button>
+            {specialQueue.length > 1 && <button type="button" className="text-xs font-bold underline" onClick={() => {audioManager.stopPackRevealMusic();setSpecialQueue([]);}}>나머지 연출 건너뛰기 ({specialQueue.length - 1}개)</button>}
           </div>
         </div>
       )}

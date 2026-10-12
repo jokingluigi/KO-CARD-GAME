@@ -11,6 +11,7 @@ return <div className="ko-game-shell" style={{overflowX:'hidden',minHeight:'100d
 {[1,2,3,4,5,6].map(c=><button data-testid={'cost-'+c} key={c} onClick={()=>launch(c)} style={{padding:5}}>cost {c}</button>)}
 {['EPIC','LEGENDARY','CHAMPION'].map(r=><button data-testid={r} key={r} onClick={()=>launch(6,r)} style={{padding:5}}>{r}</button>)}
 {[1,3,6,10].map(d=><button data-testid={'damage-'+d} key={d} onClick={()=>{setPlay(null);setAttack({damage:d,lethal:false,id:++sequence.current});}} style={{padding:5}}>hit {d}</button>)}
+<button data-testid="cheap-legendary" onClick={()=>launch(1,'LEGENDARY')}>cheap legendary</button>
 <button data-testid="lethal" onClick={()=>{setPlay(null);setAttack({damage:1,lethal:true,id:++sequence.current});}}>lethal</button>
 <button data-testid="awakening" onClick={()=>screen.request({id:'awakening'+ ++sequence.current,profile:specialImpact('AWAKENING'),x:innerWidth/2,y:innerHeight/2,radial:true,nearby:true})}>awakening</button>
 <button data-testid="priority" onClick={()=>{screen.request({id:'finisher'+ ++sequence.current,profile:damageImpact(10,true),x:innerWidth/2,y:innerHeight/2});screen.request({id:'weak'+ ++sequence.current,profile:damageImpact(1),x:0,y:0});}}>priority</button>

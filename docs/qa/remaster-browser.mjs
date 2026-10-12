@@ -1,0 +1,28 @@
+import assert from 'node:assert/strict';import fs from 'node:fs';
+const {chromium}=await import(process.env.KO_QA_PLAYWRIGHT);
+const browser=await chromium.launch({channel:process.env.KO_QA_CHROME_CHANNEL??'chrome',headless:true});const results=[];
+const origin=process.env.KO_QA_ORIGIN??'http://127.0.0.1:5174';fs.mkdirSync('qa-results/remaster',{recursive:true});
+try{for(const [width,height] of [[360,740],[375,812],[390,844],[412,915],[1440,900]]){
+const mobile=width<500,ctx=await browser.newContext({viewport:{width,height},isMobile:mobile,hasTouch:mobile}),page=await ctx.newPage(),errors=[];
+page.on('pageerror',e=>errors.push(e.message));await page.route('**/api/**',r=>r.fulfill({json:{frames:[],cards:[]}}));
+await page.goto(origin+'/qa/remaster.html');const pack=page.getByTestId('button-open-pack-envelope');await pack.waitFor();
+if(mobile){const cdp=await ctx.newCDPSession(page),r=await pack.boundingBox();await cdp.send('Input.dispatchTouchEvent',{type:'touchStart',touchPoints:[{x:r.x+r.width*.35,y:r.y+r.height*.5,id:1}]});for(let i=1;i<=6;i++)await cdp.send('Input.dispatchTouchEvent',{type:'touchMove',touchPoints:[{x:r.x+r.width*.35+i*15,y:r.y+r.height*.5,id:1}]});await cdp.send('Input.dispatchTouchEvent',{type:'touchEnd',touchPoints:[]});}else await pack.click();
+await page.getByTestId('button-reveal-reward-2').click();assert.equal(await page.locator('.ko-pack-card-back').count(),2,'later reveal must not reveal earlier cards');assert.equal(await page.locator('.pack-special').count(),1);
+await page.getByRole('button',{name:'계속',exact:true}).click();await page.getByTestId('button-reveal-reward-0').click();assert.equal(await page.locator('.ko-pack-card-back').count(),1);
+assert.equal(await page.getByText(/2.*→.*3/).count(),2);assert.equal(await page.getByTestId('button-close-pack-opening').count(),0);
+await page.getByTestId('button-reveal-all').click();assert.equal(await page.locator('.ko-pack-card-back').count(),0);assert.equal(await page.locator('.pack-special').count(),0);assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+1));
+await page.waitForTimeout(450);await page.screenshot({path:'qa-results/remaster/pack-'+width+'.png'});await page.getByTestId('button-close-pack-opening').click();await page.getByTestId('closed').waitFor();
+// Real shared engine and touch handlers; no server/account writes.
+await page.goto(origin+'/qa/champion-features.html');await page.getByTestId('state-json').waitFor({state:'attached'});await page.getByTestId('state-json').evaluate(e=>e.parentElement.style.display='none');
+await page.evaluate(async()=>{const {createInitialGameState,generateCardInstance}=await import('/src/game/index.ts');const d={id:'touch',name:'Touch Fighter',cardType:'WRESTLER',cost:1,attack:3,health:8,keywords:[],abilities:[],rulesText:'',rarity:'NORMAL'};const s=createInitialGameState(undefined,[d]);s.events=[];s.status='IN_PROGRESS';s.turn=3;s.activePlayerId=s.players[0].id;for(const p of s.players){p.board=[null,null,null,null];p.hand=[];p.currentGold=6;p.champion.quest=null;}for(const [i,p] of s.players.entries())p.board[0]={...generateCardInstance(d,{instanceId:'board-'+i}),boardSlot:0,enteredThisTurn:false,hasAttackedThisTurn:false};s.players[0].hand=[generateCardInstance(d,{instanceId:'hand'})];window.dispatchEvent(new CustomEvent('ko-qa-load-state',{detail:{state:s,definitions:[d]}}));});
+await page.waitForTimeout(200);const state=async()=>JSON.parse(await page.getByTestId('state-json').textContent());const before=await state();
+const attacker=page.locator('.ko-player-board-row .ko-board-slot').first(),victim=page.locator('.ko-opponent-board-row .ko-board-slot').first(),a=await attacker.boundingBox(),v=await victim.boundingBox();
+const start={x:a.x+a.width*.5,y:a.y+a.height*.5},end={x:v.x+v.width*.5,y:v.y+v.height*.5};
+const cdp=mobile?await ctx.newCDPSession(page):null;
+if(mobile){await cdp.send('Input.dispatchTouchEvent',{type:'touchStart',touchPoints:[{...start,id:1}]});await page.waitForTimeout(500);await cdp.send('Input.dispatchTouchEvent',{type:'touchEnd',touchPoints:[]});assert.equal(await page.locator('.ko-touch-inspector').count(),1);assert.deepEqual(await state(),before,'inspection changes no gameplay');await page.getByRole('button',{name:'상세정보 닫기'}).click();}
+if(cdp)await cdp.send('Input.dispatchTouchEvent',{type:'touchStart',touchPoints:[{...start,id:1}]});else{await page.mouse.move(start.x,start.y);await page.mouse.down();}
+for(let i=1;i<=12;i++){const pt={x:start.x+(end.x-start.x)*i/12,y:start.y+(end.y-start.y)*i/12};if(cdp)await cdp.send('Input.dispatchTouchEvent',{type:'touchMove',touchPoints:[{...pt,id:1}]});else await page.mouse.move(pt.x,pt.y);await page.waitForTimeout(24);}
+assert.equal(await page.locator('.ko-attack-aim ellipse').evaluate(e=>e.style.opacity),'1');if(cdp)await cdp.send('Input.dispatchTouchEvent',{type:'touchEnd',touchPoints:[]});else await page.mouse.up();
+await page.waitForTimeout(900);const after=await state();assert.equal(after.events.filter(e=>e.type==='ATTACK_DECLARED').length,1,'one real attack committed by drag');assert.equal(after.players[1].board[0].currentHealth,5);assert.deepEqual(errors,[]);results.push({width,packDragOrTap:true,individualReveal:true,ownership:true,skip:true,longPress:mobile?'PASS':'not applicable',attackDrag:true});await ctx.close();
+}console.log(JSON.stringify(results,null,2));}finally{await browser.close();}
+

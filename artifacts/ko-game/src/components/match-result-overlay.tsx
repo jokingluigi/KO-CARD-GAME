@@ -1,6 +1,6 @@
 import { buildMatchRecap, type MatchRecap } from '../../../../lib/game-engine/src/match-recap';
 import { MatchRecapPanel } from './match-recap-panel';
-import { useEffect, useState, type CSSProperties } from 'react';
+import { useEffect, useRef, useState, type CSSProperties } from 'react';
 import { getCardDefinition, type GameState } from "@/game";
 import { matchEndReason, matchSummary } from '@/lib/match-summary';
 import { championVoiceLine } from '@/game/champions/types';
@@ -51,13 +51,16 @@ export function MatchResultOverlay({
     : null;
   const finishingName = finishingCard &&
     (state.cardPool?.find((card) => card.id === finishingCard.definitionId) ?? getCardDefinition(finishingCard.definitionId))?.name;
+  const heroChampion=(isVictory?winner:loser)?.champion;
   const [cinematic, setCinematic] = useState(lethal);
+  const skipRef=useRef(()=>setCinematic(false));
   useEffect(() => {
     if (!lethal) return;
     const reduced = prefersReducedMotion();
     audioManager.duckForPresentation(0.4, reduced ? 250 : 750);
     const fractureSound = window.setTimeout(() => audioManager.playImpactOverlay('/sfx/champion-glass-shatter.wav?v=1', 95, 9), reduced ? 108 : 675);
-    const timeout = window.setTimeout(() => setCinematic(false), reduced ? 380 : 1650);
+    const timeout = window.setTimeout(() => setCinematic(false), reduced ? 380 : 1900);
+    skipRef.current=()=>{window.clearTimeout(timeout);window.clearTimeout(fractureSound);audioManager.cancelPresentationMusic();setCinematic(false);};
     return () => { window.clearTimeout(timeout); window.clearTimeout(fractureSound); };
   }, [lethal]);
   const winnerLine = winner && championVoiceLine(winner.champion?.presentationLines, Boolean(winner.champion?.questCompleted), 'VICTORY', loser?.champion?.id);
@@ -77,6 +80,7 @@ export function MatchResultOverlay({
       className="match-result-enter fixed inset-0 z-[300] flex min-h-screen items-center justify-center bg-black/90 px-4 py-5 backdrop-blur-sm"
     >
       {cinematic && loser ? <div className="champion-defeat-cinematic" role="status" aria-label={`${loser.champion?.name} 패배`}>
+        <button type="button" className="ko-cinematic-skip" onClick={()=>skipRef.current()}>연출 건너뛰기</button>
         <div className="champion-defeat-cinematic__portrait" style={{ backgroundImage: `url(${loser.champion?.questCompleted && loser.champion?.questCompletedPortraitUrl ? loser.champion?.questCompletedPortraitUrl : loser.champion?.imageUrl ?? ''})` }}>
           <div className="champion-defeat-cinematic__fracture" />
           {[0,1,2,3,4,5].map(i=><span key={i} className="ko-portrait-fragment" style={{'--fragment-x':`${(i%3-1)*28}px`,'--fragment-y':`${18+(i%2)*18}px`,'--fragment-angle':`${(i%2?1:-1)*12}deg`,clipPath:`polygon(${i%3*33}% ${i<3?0:50}%,${i%3*33+34}% ${i<3?0:50}%,${i%3*33+34}% ${i<3?50:100}%,${i%3*33}% ${i<3?50:100}%)`} as CSSProperties} />)}
@@ -86,12 +90,13 @@ export function MatchResultOverlay({
           {winner.champion?.imageUrl && <img src={winner.champion.questCompleted&&winner.champion.questCompletedPortraitUrl?winner.champion.questCompletedPortraitUrl:winner.champion.imageUrl} alt="" onError={e=>{e.currentTarget.style.visibility='hidden';}} />}
           <strong>{winner.champion?.name}</strong><span>VICTORY</span>
         </div>}
-        <strong className="champion-defeat-cinematic__ko">K.O.</strong>
+
         {loserLine && <p className="champion-defeat-cinematic__line">“{loserLine}”</p>}
         {winnerLine && <p className="champion-defeat-cinematic__victory">{winner.champion?.name}: “{winnerLine}”</p>}
       </div> :
       <section data-result={isVictory ? "victory" : isDefeat ? "defeat" : "complete"} className={`ko-result-sheet max-h-[90dvh] w-full max-w-lg overflow-y-auto rounded-2xl border p-6 text-center md:p-10 ${accentClass}`}>
-        <p className="font-display text-[10px] font-bold tracking-[0.5em] text-primary md:text-xs">KO MATCH RESULT</p>
+        {heroChampion?.imageUrl&&<img className="ko-result-hero" src={heroChampion.imageUrl} alt={heroChampion.name} />}
+         <p className="font-display text-[10px] font-bold tracking-[0.5em] text-primary md:text-xs">KO MATCH RESULT</p>
         <h1 className="mt-6 text-5xl font-black tracking-tight md:text-7xl">{title}</h1>
         <p className="mt-3 font-display text-xl font-black tracking-[0.35em] md:text-2xl">{subtitle}</p>
         <p className="mt-6 text-sm leading-6 text-neutral-300">

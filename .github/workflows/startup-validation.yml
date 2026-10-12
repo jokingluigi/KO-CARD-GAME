@@ -75,6 +75,8 @@ jobs:
           version: '11.19.0'
       - run: pnpm install --frozen-lockfile --ignore-scripts
       - run: pnpm run build
+      - name: Authenticated pack receipt and idempotency regression
+        run: node --import ./docs/qa/checkpoints/20261006/qa-loader.mjs --test --test-isolation=none lib/db/qa/pack-receipt-http.test.ts
       - name: Startup, auth, quest and database regressions
         env:
           DATABASE_URL: postgresql://unused:unused@127.0.0.1:1/unused
@@ -98,6 +100,7 @@ jobs:
           artifacts/ko-game/src/game/champions/opponent-turn-quest.test.ts
           artifacts/ko-game/src/game/engine/wanted.test.ts
           artifacts/ko-game/src/game/engine/retire-destroy-semantics.test.ts
+          artifacts/ko-game/src/components/zone-transfer-policy.test.ts
           artifacts/ko-game/src/components/battle-vfx-model.test.ts
           artifacts/ko-game/src/components/alt-inspector.test.ts
           artifacts/ko-game/src/components/alt-inspector-keyboard.test.ts
@@ -185,6 +188,9 @@ jobs:
           export KO_QA_PLAYWRIGHT="$RUNNER_TEMP/ko-entry-qa/node_modules/playwright/index.mjs"
           node docs/qa/entry-audio-browser.mjs
           node docs/qa/legendary-audio-browser.mjs
+          node docs/qa/remaster-browser.mjs
+          node docs/qa/remaster-cinematic-browser.mjs
+          node docs/qa/fighting-controls-browser.mjs
           node docs/qa/heavy-impact-browser.mjs
           node docs/qa/cinematic-overhaul-browser.mjs
           node docs/qa/cinematic-browser.mjs

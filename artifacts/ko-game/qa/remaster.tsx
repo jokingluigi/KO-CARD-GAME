@@ -1,0 +1,5 @@
+// Development-only: components use deterministic receipts, with no account writes.
+import React from 'react';import {createRoot} from 'react-dom/client';import '../src/index.css';import {PackOpening} from '../src/components/pack-opening';import type {PackReward} from '../src/lib/collection-client';
+const rewards=['NORMAL_CARD','EPIC_CARD','LEGENDARY_CARD'].map((rewardType,index)=>({rewardType,card:{id:'qa-'+index,name:'Receipt Card '+index,cardType:'WRESTLER',rarity:['NORMAL','EPIC','LEGENDARY'][index],cost:1,attack:2,health:3,text:'Confirmed fixture',imageUrl:'/icons/ko-512.png',imageDisplayMode:'COVER',imageScale:1,imagePositionX:50,imagePositionY:50},alreadyOwned:true,ownedBefore:2,ownedAfter:3})) as PackReward[];
+function Fixture(){const [closed,setClosed]=React.useState(false);return closed?<p data-testid="closed">Receipt acknowledged</p>:<PackOpening packName="REMASTER TEST" rewards={rewards} onClose={()=>setClosed(true)}/>;}
+createRoot(document.getElementById('root')!).render(<Fixture/>);

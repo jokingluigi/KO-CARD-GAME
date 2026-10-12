@@ -1,3 +1,8 @@
+import '../remaster-presentation.css';
+import {zoneTransfers} from './zone-transfer-policy';
+import {ZoneTransfer,type ZoneFlight} from './zone-transfer';
+import {TypedDialogue} from './typed-dialogue';
+import {keywordDamage} from '../game/engine/keyword-rules';
 import { AttackAim } from './attack-aim';
 import { BattleCardDrag } from './battle-card-drag';
 import { wrestlerEventLine } from './wrestler-event-line';
@@ -255,10 +260,13 @@ export function GameStatePreview({
     const timer = window.setTimeout(() => setDestroyBursts([]), 560);
     return () => window.clearTimeout(timer);
   }, [destroyBursts]);
+  const previousZoneStateRef=React.useRef<GameState|null>(null);
+  const [zoneFlights,setZoneFlights]=React.useState<ZoneFlight[]>([]);
+  React.useEffect(()=>{if(!zoneFlights.length)return;const timer=setTimeout(()=>setZoneFlights([]),900);return()=>clearTimeout(timer);},[zoneFlights]);
   const [drawFlights, setDrawFlights] = React.useState<Array<{ id: string; fromX: number; fromY: number; toX: number; toY: number; opponent: boolean }>>([]);
   React.useEffect(() => {
     if (!drawFlights.length) return;
-    const timer = window.setTimeout(() => setDrawFlights([]), 560);
+    const timer = window.setTimeout(() => setDrawFlights([]), 820);
     return () => window.clearTimeout(timer);
   }, [drawFlights]);
   const [presentationQueue, setPresentationQueue] = React.useState<PresentationCue[]>([]);
@@ -274,6 +282,10 @@ export function GameStatePreview({
   const handlePresentationQueueComplete = React.useCallback(() => {
     setPresentationQueue((current) => current.slice(1));
   }, []);
+  React.useEffect(()=>{
+    if(!playError)return;
+    audioManager.playImpactOverlay('/sfx/impact-light.wav',22,3);
+  },[playError]);
   const startedDamageCueRef=React.useRef('');
   const handlePresentationCueStart=React.useCallback((cue:PresentationCue)=>{
     const target=cue.cardInstanceId ? boardCardRefs.current.get(cue.cardInstanceId) ?? handCardRefs.current.get(cue.cardInstanceId) : (cue.playerId===state.players[0]?.id || cue.championId===state.players[0]?.champion?.id) ? playerChampionRef.current : championRef.current;
@@ -350,6 +362,7 @@ export function GameStatePreview({
       );
       previousCardStatsRef.current = currentCardStats;
       previousCardsRef.current = currentCards(state);
+      previousZoneStateRef.current=state;setZoneFlights([]);
       if (eventLogReset) {
         setGeneratedPlayAnimations([]);
         setCardLeaveAnimations([]);
@@ -369,6 +382,18 @@ export function GameStatePreview({
       .map((event, index) => ({ event, key: eventKeys[index]! }))
       .filter(({ key }) => !processedEventKeysRef.current.has(key));
     const newEvents = newEventEntries.map(({ event }) => event);
+    const transfers=zoneTransfers(previousZoneStateRef.current,state,presentationPlayerId ?? state.players[0].id);previousZoneStateRef.current=state;
+    if(transfers.length)setZoneFlights(current=>[...current,...transfers.map((transfer,index)=>{
+      const deck=playerDeckRef.current?.getBoundingClientRect();
+      const hand=playerHandRef.current?.getBoundingClientRect();
+      const grave=playerDeckRef.current?.parentElement?.querySelector('button')?.getBoundingClientRect();
+      const previous=lastCardPositionsRef.current.get(transfer.card.instanceId);
+      const from=transfer.from==='BOARD'?previous:transfer.from==='GRAVEYARD'?grave:hand;
+      const to=transfer.to==='DECK'?deck:handCardRefs.current.get(transfer.card.instanceId)?.getBoundingClientRect()??hand;
+      const art=transfer.to==='DECK'||transfer.opponent?undefined:(state.cardPool?.find(d=>d.id===transfer.card.definitionId)??defaultCardDefinition(transfer.card.definitionId))?.imageUrl??undefined;
+      return {id:transfer.id,kind:transfer.from as ZoneFlight['kind'],image:art,fromX:from?from.left+from.width/2:innerWidth/2,fromY:from?from.top+from.height/2:innerHeight*.5,toX:to?to.left+to.width/2:innerWidth/2,toY:to?to.top+to.height/2:innerHeight*.8,delay:Math.min(index,3)*90};
+    })].slice(-12));
+
     const flights = newEventEntries.flatMap(({ event, key }) => {
       if (event.type !== 'CARD_DRAWN' || !event.playerId) return [];
       const opponent = event.playerId !== state.players[0]?.id;
@@ -394,6 +419,12 @@ export function GameStatePreview({
         const owner = state.players.find((player) => player.id === event.playerId);
         const emote = event.reason as ChampionEmote;
         if (CHAMPION_EMOTES.includes(emote)) {
+          if(!prefersReducedMotion()){
+            const portrait=(event.playerId===state.players[0].id?playerChampionRef:championRef).current;
+            const dy=emote==='THANKS'||emote==='WELL_PLAYED'?-5:emote==='SORRY'?4:0;
+            const dx=emote==='THREATEN'?4:emote==='OOPS'?-3:0;
+            try{const reaction=portrait?.animate([{translate:'0px 0px'},{translate:dx+'px '+dy+'px',offset:.35},{translate:(-dx*.5)+'px '+(-dy*.25)+'px',offset:.65},{translate:'0px 0px'}],{duration:320,easing:'cubic-bezier(.2,.9,.3,1)'});reaction?.addEventListener('finish',()=>reaction.cancel(),{once:true});}catch{/* Presentation cannot affect emote delivery. */}
+          }
           line = championVoiceLine(owner?.champion?.presentationLines, event.tags?.includes('AFTER_QUEST') ?? false, emote) ?? CHAMPION_EMOTE_LABELS[emote];
         }
       }
@@ -549,7 +580,7 @@ export function GameStatePreview({
           });
         }
       }
-      if (event.type !== 'ENTER_FIELD' || !event.source || event.source.type !== 'CARD' || event.boardSlot === undefined) continue;
+      if (event.type !== 'ENTER_FIELD' || event.boardSlot === undefined) continue;
       const enterFieldEvent = event as EnterFieldEvent;
       const enteredCard = state.players
         .flatMap((player) => player.board)
@@ -565,7 +596,7 @@ export function GameStatePreview({
       const shouldAnimateOpponentPlay =
         (event.playerId === opp.id || (autoPresentOwnActions && event.playerId === me.id)) &&
         enterFieldEvent.entryCause === "PLAY_FROM_HAND";
-      if (!enteredCard || (!enteredCard.isGenerated && !shouldAnimateOpponentPlay)) continue;
+      if (!enteredCard || (!enteredCard.isGenerated && !shouldAnimateOpponentPlay && enterFieldEvent.entryCause==="PLAY_FROM_HAND")) continue;
 
       const targetElement = event.playerId === me.id
         ? boardSlotRefs.current.get(event.boardSlot)
@@ -575,9 +606,10 @@ export function GameStatePreview({
       const ownerHandElement = event.playerId === me.id && event.cardInstanceId
         ? handCardRefs.current.get(event.cardInstanceId)
         : opponentHandRef.current;
-      const sourceElement =
-        boardCardRefs.current.get(event.source.cardInstanceId) ??
-        ownerHandElement;
+      const graveElement=(event.playerId===me.id?playerDeckRef:opponentDeckRef).current?.parentElement?.querySelector('button');
+      const sourceElement = enterFieldEvent.entryCause==='REVIVE'?graveElement:
+        event.source?.type==='CHAMPION'?(event.playerId===me.id?playerChampionRef:championRef).current:
+        event.source?.type==='CARD'?boardCardRefs.current.get(event.source.cardInstanceId)??ownerHandElement:ownerHandElement;
       const source = sourceElement
         ? rectSnapshot(sourceElement.getBoundingClientRect())
         : {
@@ -590,6 +622,7 @@ export function GameStatePreview({
       animations.push({
         kind: 'WRESTLER',
         card: enteredCard,
+        entryCause:enterFieldEvent.entryCause,
         playerId: event.playerId,
         geometry: { source, target },
         impactLevel: landingImpactLevel(enteredCard.baseCost, enteredCard.currentCost),
@@ -888,7 +921,7 @@ export function GameStatePreview({
     <RenderCardCatalog.Provider value={getCardDefinition}><CinematicProvider key={state.gameId}><AltInspectProvider>
      <div className={`ko-game-shell flex min-h-[100dvh] w-full flex-col overflow-x-hidden overflow-y-auto bg-neutral-950 font-sans text-neutral-100 selection:bg-primary selection:text-black md:overflow-hidden ${me.champion?.questCompleted ? 'ko-quest-awakened--mine' : ''} ${opp.champion?.questCompleted ? 'ko-quest-awakened--theirs' : ''}`}>
       <BattleCardDrag state={state} enabled={isMyTurn && state.status === 'IN_PROGRESS' && !introActive && !effectTargeting && !settingsOpen && !playAnimation && !attackAnimation && canEndTurn} selectedCardId={selectedCardId} hand={handCardRefs} slots={boardSlotRefs} select={onSelectCard} cancel={id=>{if(selectedCardId===id)onSelectCard(id);}} summon={onSelectSlot} spell={onUseTechnique} />
-      {selectedAttackerId && !effectTargeting && !attackAnimation && <AttackAim source={boardCardRefs.current.get(selectedAttackerId)??null} targets={boardCardRefs} champion={championRef.current} championId={opp.id} valid={legalAttackTargets} />}
+      {!effectTargeting && !attackAnimation && <AttackAim selectedId={selectedAttackerId} enabled={isMyTurn&&canEndTurn&&!settingsOpen&&!introActive} source={selectedAttackerId?boardCardRefs.current.get(selectedAttackerId)??null:null} targets={boardCardRefs} champion={championRef.current} championId={opp.id} valid={legalAttackTargets} targetsFor={id=>new Set(getLegalActions(state,me.id).flatMap(a=>a.type==='ATTACK'&&a.attackerInstanceId===id?[a.target.type==='PLAYER'?a.target.playerId:a.target.cardInstanceId]:[]))} preview={(attacker,target)=>{const source=me.board.find(c=>c?.instanceId===attacker);if(!source)return null;const card=opp.board.find(c=>c?.instanceId===target);return card?keywordDamage(card,source.currentAttack,state.turn):Math.max(0,source.currentAttack);}} select={onSelectAttacker} commit={id=>id===opp.id?handleAttackChampion():handleAttackCardTarget(id)} />}
       {cinematicIntro && <CinematicIntro event={cinematicIntro} />}
       {activePresentationCue && <CinematicCue cue={activePresentationCue} state={state} />}
       <ActionHistory state={state} viewerPlayerId={presentationPlayerId ?? me.id} mobileOpen={historyOpen} onMobileClose={() => setHistoryOpen(false)} />
@@ -1608,9 +1641,10 @@ export function GameStatePreview({
       ))}
       {destroyBursts.map((burst) => <div key={burst.id} aria-hidden="true" className="ko-destroy-burst"
         style={{ left: burst.left, top: burst.top, width: burst.width, height: burst.height }} />)}
+      {zoneFlights.map(flight=><ZoneTransfer key={flight.id} flight={flight}/>)}
       {drawFlights.map((flight,index) => <div key={flight.id} aria-hidden="true" className={`ko-draw-flight ${flight.opponent ? 'ko-draw-flight--opponent' : ''}`}
         style={{ '--draw-from-x': `${flight.fromX}px`, '--draw-from-y': `${flight.fromY}px`,
-          '--draw-to-x': `${flight.toX}px`, '--draw-to-y': `${flight.toY}px`, '--draw-mid-x': `${(flight.fromX+flight.toX)/2}px`, '--draw-mid-y': `${(flight.fromY+flight.toY)/2-28}px`, '--draw-delay': `${(index%4)*35}ms` } as React.CSSProperties} />)}
+          '--draw-to-x': `${flight.toX}px`, '--draw-to-y': `${flight.toY}px`, '--draw-mid-x': `${(flight.fromX+flight.toX)/2}px`, '--draw-mid-y': `${(flight.fromY+flight.toY)/2-28}px`, '--draw-delay': `${Math.min(index,3)*90}ms` } as React.CSSProperties} />)}
       {attackAnimation && (
         <AttackAnimation
           animation={attackAnimation}
@@ -1619,12 +1653,12 @@ export function GameStatePreview({
           onComplete={onAttackAnimationComplete}
         />
       )}
-      {effectFinisher && !attackAnimation && (
-        <div className="effect-finisher" aria-hidden="true"><div className="attack-animation__finisher-slash" /><span>K.O.!</span></div>
+      {effectFinisher && !attackAnimation && <CinematicIntro event={{id:state.gameId+":effect-ko:"+state.events.length,kind:"FINISHER",title:"",duration:800}}/>}\n      {effectFinisher && !attackAnimation && (
+        <div className="effect-finisher" aria-hidden="true"><div className="attack-animation__finisher-slash" /></div>
       )}
       {spokenLine && <div key={spokenLine.id} role="status" className={`champion-spoken-line ${spokenLine.playerId === me.id ? 'champion-spoken-line--mine' : 'champion-spoken-line--theirs'}`}>
         <span className="block text-[10px] font-bold text-amber-300">{spokenLine.speaker}</span>
-        <span>{spokenLine.text}</span>
+        <TypedDialogue text={spokenLine.text}/>
       </div>}
       {presentationQueue[0] &&
         !introActive &&
@@ -1842,6 +1876,7 @@ function BoardSlot({
     <Inspectable content={<CardInspectContent card={card} definition={getCardDefinition(card.definitionId)} />} touchInspectTriggerOnly className="ko-board-slot-wrapper relative shrink-0">
        <div
          ref={slotRef}
+         data-attack-ready={attackReady||undefined}
          title={attackSelectionActive && !attackReady ? attackReason : undefined}
          className={`relative${animating ? " invisible" : ""}`}
        >

@@ -671,3 +671,5 @@ test("blocked legendary entrance retries the same media on the next user gesture
     Object.defineProperty(globalThis, 'window', {configurable:true,value:previousWindow});
   }
 });
+
+test('local cinematic skip clears legendary queue and restores the current battle music position',()=>{withFakeAudio(advance=>{audioManager.setBgmMuted(false);audioManager.playBgm('/skip-base.mp3',80);const manager=audioManager as unknown as {bgm:{audio:FakeAudio};current:{audio:FakeAudio}|null;queue:unknown[]};const base=manager.bgm.audio;base.currentTime=31;audioManager.playLegendaryEntrance('/skip-legendary.mp3',100);audioManager.playLegendaryEntrance('/queued-legendary.mp3',100);assert.ok(manager.current);audioManager.cancelPresentationMusic();advance(800);assert.equal(manager.current,null);assert.equal(base.currentTime,31);assert.equal(base.paused,false);advance(11000);assert.equal(manager.current,null);});});
