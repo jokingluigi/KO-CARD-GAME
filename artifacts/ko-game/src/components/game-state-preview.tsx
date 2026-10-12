@@ -1,3 +1,5 @@
+import { AttackAim } from './attack-aim';
+import { BattleCardDrag } from './battle-card-drag';
 import { wrestlerEventLine } from './wrestler-event-line';
 import { wrestlerPlayCost } from '@/game/engine/play-wrestler';
 import { AwakeningStatus } from './awakening-status';
@@ -52,6 +54,7 @@ import { enqueuePresentation } from './presentation-policy';
 import { PresentationFeedback, type PresentationCue } from './presentation-feedback';
 import { presentationCueDrafts, presentationEventKey, presentationBlocksActions, visibleStatFeedback } from './presentation-feedback-utils';
 import { canMulligan } from '../game/engine/mulligan';
+import {CombatSettings} from './combat-settings';
 import {ScreenShakeSetting} from './screen-impact';
 import { CinematicProvider, CinematicCue, CinematicIntro } from './cinematic-layer';
 import { QuestPresentation } from './quest-presentation';
@@ -884,6 +887,8 @@ export function GameStatePreview({
   return (
     <RenderCardCatalog.Provider value={getCardDefinition}><CinematicProvider key={state.gameId}><AltInspectProvider>
      <div className={`ko-game-shell flex min-h-[100dvh] w-full flex-col overflow-x-hidden overflow-y-auto bg-neutral-950 font-sans text-neutral-100 selection:bg-primary selection:text-black md:overflow-hidden ${me.champion?.questCompleted ? 'ko-quest-awakened--mine' : ''} ${opp.champion?.questCompleted ? 'ko-quest-awakened--theirs' : ''}`}>
+      <BattleCardDrag state={state} enabled={isMyTurn && state.status === 'IN_PROGRESS' && !introActive && !effectTargeting && !settingsOpen && !playAnimation && !attackAnimation && canEndTurn} selectedCardId={selectedCardId} hand={handCardRefs} slots={boardSlotRefs} select={onSelectCard} cancel={id=>{if(selectedCardId===id)onSelectCard(id);}} summon={onSelectSlot} spell={onUseTechnique} />
+      {selectedAttackerId && !effectTargeting && !attackAnimation && <AttackAim source={boardCardRefs.current.get(selectedAttackerId)??null} targets={boardCardRefs} champion={championRef.current} championId={opp.id} valid={legalAttackTargets} />}
       {cinematicIntro && <CinematicIntro event={cinematicIntro} />}
       {activePresentationCue && <CinematicCue cue={activePresentationCue} state={state} />}
       <ActionHistory state={state} viewerPlayerId={presentationPlayerId ?? me.id} mobileOpen={historyOpen} onMobileClose={() => setHistoryOpen(false)} />
@@ -1331,7 +1336,7 @@ export function GameStatePreview({
                            try { window.localStorage.setItem('ko-match-haptics', event.target.checked ? 'on' : 'off'); } catch { /* optional */ }
                          }} />
                      </label>
-                     <ScreenShakeSetting />
+                     <ScreenShakeSetting /><CombatSettings />
                      <button
                        type="button"
                        disabled={state.status === 'FINISHED'}

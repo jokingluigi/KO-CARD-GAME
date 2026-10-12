@@ -1,3 +1,4 @@
+import { readCombatPreferences } from './combat-preferences';
 export const PRESENTATION_CONFIG = {
   cardPlayMs: 320,
   lightLandingMs: 260,
@@ -10,9 +11,9 @@ export const PRESENTATION_CONFIG = {
     NONE: 0,
     VERY_LIGHT: 30,
     LIGHT: 30,
-    MEDIUM: 52,
-    HEAVY: 76,
-    VERY_HEAVY: 115,
+    MEDIUM: 65,
+    HEAVY: 105,
+    VERY_HEAVY: 120,
   },
   damageNumberMs: 320,
   retireMs: 360,
@@ -25,5 +26,5 @@ export const PRESENTATION_CONFIG = {
 export type PresentationDamageTier = keyof typeof PRESENTATION_CONFIG.attackHitStopMs;
 
 export function prefersReducedMotion() {
-  return typeof window !== 'undefined' && (window.matchMedia?.("(prefers-reduced-motion: reduce)").matches ?? false);
+  return typeof window !== 'undefined' && (readCombatPreferences().reducedMotion || (window.matchMedia?.("(prefers-reduced-motion: reduce)").matches ?? false));
 }

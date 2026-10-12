@@ -60,6 +60,11 @@ try {
     fullPage: true,
   });
   await page.locator(".ko-opponent-champion").click();
+  await page.locator(".champion-defeat-cinematic").waitFor();
+  if (await page.getByRole("heading", { name: "승리 · 카드 1장 선택" }).count()) throw new Error("Reward opened before KO finished");
+  await page.getByRole("button", { name: "타워 보상으로", exact: true }).waitFor();
+  await page.screenshot({path:"qa-results/tower-v2/mobile-ko-result.png"});
+  await page.getByRole("button", { name: "타워 보상으로", exact: true }).click();
   await page.getByRole("heading", { name: "승리 · 카드 1장 선택" }).waitFor();
   await page.screenshot({
     path: "qa-results/tower-v2/mobile-card-reward.png",
@@ -91,7 +96,8 @@ try {
       2,
     ),
   );
-  console.log(await page.getByRole("button").allTextContents());
+  if(errors.length) throw new Error(errors.join(";"));
+  console.log("PASS: mobile tower KO -> result -> reward -> 25-card swap");
 } finally {
   await browser.close();
 }

@@ -48,7 +48,8 @@
 .ko-impact-frame{position:fixed;left:var(--attack-target-x);top:var(--attack-target-y);width:var(--attack-target-width);height:var(--attack-target-height);background:#100b0a;clip-path:polygon(0 20%,30% 27%,15% 0,55% 17%,85% 0,72% 37%,100% 28%,84% 59%,100% 86%,58% 77%,45% 100%,28% 74%,0 91%,13% 53%);animation:ko-impact-once 45ms linear both}
 @keyframes ko-impact-once{0%{opacity:.65;transform:scale(1.5)}100%{opacity:0;transform:scale(1.65)}}
 .ko-impact-frame--finisher{filter:drop-shadow(2px 0 #cb3f41) drop-shadow(-2px 0 #58a3b0)}
-.attack-animation--cinematic.attack-animation--impacted .attack-animation__target{animation:ko-frame-deform 220ms ease-out both}
+/* AttackAnimation owns target compression, hold and recoil on its shared clock. */
+.attack-animation--cinematic.attack-animation--impacted .attack-animation__target{animation:none}
 @keyframes ko-frame-deform{0%{transform:perspective(700px) rotateY(-5deg) skewX(-2deg) scale(.97)}32%{transform:translateX(3px) rotate(1deg) scale(1.02)}100%{transform:none}}
 .card-play-animation--rarity-champion .card-play-animation__card{filter:drop-shadow(0 8px 12px #52192088)}
 .champion-defeat-cinematic__winner{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;background:radial-gradient(ellipse,#34271b,#070808);animation:ko-winner-focus 1650ms both}

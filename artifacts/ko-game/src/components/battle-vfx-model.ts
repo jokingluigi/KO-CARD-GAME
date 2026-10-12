@@ -1,4 +1,5 @@
 import type { AttackAnimationState } from "./attack-animation-utils";
+import { readCombatPreferences } from './combat-preferences';
 import { damageHitStop } from './presentation-policy';
 
 export type BattleVfxKind =
@@ -13,8 +14,8 @@ export function combatTimeline(
 ) {
   if (reduced) return { duration: 140, impact: 70, release: 70 };
   const duration=finisher?760:damage>=6?560:damage>=3?520:480;
-  const impact=finisher?370:damage>=6?270:damage>=3?250:230;
-  return {duration,impact,release:impact+(finisher?130:damageHitStop(damage))};
+  const impact=finisher?300:damage>=6?220:damage>=3?210:200;
+  return {duration,impact,release:impact+(finisher?165:damageHitStop(damage))};
 }
 
 export function attackFrames(
@@ -67,12 +68,13 @@ export function vfxBudget(
   strength: number,
 ) {
   if (reduced) return { particles: 0, dpr: 1, size: 160 };
+  const quality = readCombatPreferences().quality;
   return {
-    particles: Math.min(
+    particles: Math.round((quality==='LOW'?.25:quality==='MEDIUM'?.6:1)*Math.min(
       compact ? 20 : 36,
       10 + Math.max(0, Math.min(12, strength)) * 2,
-    ),
-    dpr: compact ? 1.5 : 2,
+    )),
+    dpr: quality==='LOW'?1:compact ? 1.5 : 2,
     size: compact ? 240 : 360,
   };
 }
@@ -94,4 +96,16 @@ export function vfxParticles(seed: string, count: number) {
     life: 0.5 + random() * 0.5,
     spin: random() * 6 - 3,
   }));
+}
+
+
+/** Target compression shares the attack clock: contact and hold precede directional recoil. */
+export function targetReactionFrames(dx:number,dy:number,damage:number,timeline:ReturnType<typeof combatTimeline>,reduced=false):Keyframe[] {
+ const length=Math.hypot(dx,dy)||1, amount=reduced?0:damage<=0?2:damage>=10?18:damage>=6?12:damage>=3?7:3;
+ const x=dx/length*amount,y=dy/length*amount,tilt=reduced?0:Math.sign(dx||1)*Math.min(4,amount/4);
+ const pose=(travel:number,scale:number,angle=0)=>({transform:`translate3d(${x*travel}px,${y*travel}px,0) scale(${scale}) rotate(${angle}deg)`});
+ const contact=timeline.impact/timeline.duration,release=timeline.release/timeline.duration;
+ return [{offset:0,...pose(0,1)},{offset:Math.max(0,contact-.01),...pose(0,1)},
+ {offset:contact,...pose(0,reduced?1:.94)},{offset:release,...pose(0,reduced?1:.94)},
+ {offset:release+(1-release)*.25,...pose(1,.98,tilt)},{offset:release+(1-release)*.6,...pose(-.15,1.01,-tilt*.2)},{offset:1,...pose(0,1)}];
 }

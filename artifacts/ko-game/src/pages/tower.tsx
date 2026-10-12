@@ -1,3 +1,4 @@
+import { MatchResultOverlay } from '@/components/match-result-overlay';
 import {describeTowerEffect} from '../../../../lib/game-engine/src/tower/effects';
 import { towerMusicFor } from '@/lib/tower-music';
 import { TowerDialogueView } from '@/components/tower-dialogue-view';
@@ -42,11 +43,24 @@ export default function Tower() {
   const [bossIntroGameId, setBossIntroGameId] = useState<string | null>(null);
   const [settlement, setSettlement] = useState<TowerView | null>(null);
   const enqueueAttack = useCallback((animation: AttackAnimationState) => setAttackQueue(queue => [...queue, animation]), []);
+  const [resultVisible, setResultVisible] = useState(false);
+  useEffect(() => {
+    setResultVisible(false);
+    if (!settlement) return;
+    // Result persistence has already completed on the server. Only the screen waits.
+    const fallback = window.setTimeout(() => setResultVisible(true), 8000);
+    return () => window.clearTimeout(fallback);
+  }, [settlement]);
   useEffect(() => {
     if (!settlement || presentationBusy || attackQueue.length) return;
-    const timer = window.setTimeout(() => { setView(previous => ({ ...previous, ...settlement })); setSettlement(null); }, 1500);
+    const timer = window.setTimeout(() => setResultVisible(true), 650);
     return () => window.clearTimeout(timer);
   }, [settlement, presentationBusy, attackQueue.length]);
+  const continueAfterResult = () => {
+    if (!settlement) return;
+    setView(previous => ({...previous,...settlement}));
+    setSettlement(null); setResultVisible(false); setAttackQueue([]); setAttackImpactTriggered(false);
+  };
   const run = view.run;
   useEffect(() => {
     const scene = view.scenes?.find(item => item.id === run?.encounter.sceneId);
@@ -134,7 +148,7 @@ export default function Tower() {
       onEndTurn={() => action({ type: 'END_TURN', playerId: 'player-1' })} onMulligan={cardInstanceIds => action({ type: 'MULLIGAN', playerId: 'player-1', cardInstanceIds })}
       bgmMuted={bgmMuted} bgmVolume={bgmVolume} onBgmMutedChange={value => { setBgmMuted(value); localStorage.setItem(BGM_MUTE_STORAGE_KEY, String(value)); audioManager.setBgmMuted(value); }} onBgmVolumeChange={value => { setBgmVolume(value); localStorage.setItem(BGM_VOLUME_STORAGE_KEY, String(value)); audioManager.setBgmVolume(value); }}
       onSurrender={() => action({ type: 'SURRENDER', playerId: 'player-1' })} onEmote={emote => action({ type: 'EMOTE', playerId: 'player-1', emote })}
-      onSelectCard={id => { if (!busy) setSelectedCardId(id); }} onSelectSlot={boardSlot => { if (selectedCardId) action({ type: 'PLAY_WRESTLER', playerId: 'player-1', cardInstanceId: selectedCardId, boardSlot }); }}
+      onSelectCard={id => { if (!busy) setSelectedCardId(previous=>previous===id?null:id); }} onSelectSlot={boardSlot => { if (selectedCardId) action({ type: 'PLAY_WRESTLER', playerId: 'player-1', cardInstanceId: selectedCardId, boardSlot }); }}
       onUseTechnique={cardInstanceId => action({ type: 'BEGIN_TARGETED_ACTION', playerId: 'player-1', action: { type: 'PLAY_TECHNIQUE', cardInstanceId } })}
       playAnimation={null} onPlayAnimationComplete={() => {}} attackAnimation={attackQueue[0] ?? null} attackImpactTriggered={attackImpactTriggered} onOpponentAttackPresentation={enqueueAttack} onAttackImpact={() => { setAttackImpactTriggered(true); const animation = attackQueue[0]; if (animation) { const sound = combatHitSound(animation.damage, animation.finishingBlow); if (sound) audioManager.playAttack(sound, 90, 1); } }} onAttackAnimationComplete={() => { setAttackQueue(queue => queue.slice(1)); setAttackImpactTriggered(false); }}
       onSelectAttacker={id => { if (!busy) setSelectedAttackerId(id); }} onAttackWrestler={cardInstanceId => { if (selectedAttackerId) action({ type: 'ATTACK', playerId: 'player-1', attackerInstanceId: selectedAttackerId, target: { type: 'WRESTLER', playerId: 'player-2', cardInstanceId } }); }}
@@ -142,6 +156,7 @@ export default function Tower() {
       onUseActive={cardInstanceId => action({ type: 'BEGIN_TARGETED_ACTION', playerId: 'player-1', action: { type: 'USE_ACTIVE', cardInstanceId } })} onUseChampionAbility={() => action({ type: 'BEGIN_TARGETED_ACTION', playerId: 'player-1', action: { type: 'USE_CHAMPION_ABILITY' } })}
       onCancelEffectTargeting={() => action({ type: 'CANCEL_EFFECT_TARGET', playerId: 'player-1' })} onEffectTarget={targetId => action({ type: view.battle!.targetingState?.phase === 'PRE_COMMIT' ? 'CONFIRM_PRECOMMIT_TARGET' : 'SELECT_EFFECT_TARGET', playerId: 'player-1', targetId })}
       onPresentationBusyChange={setPresentationBusy} onReturnToMainMenu={() => navigate('/')} />
+    {resultVisible && settlement && <MatchResultOverlay state={view.battle} continueLabel={view.battle.winnerId===view.battle.players[0]?.id ? "타워 보상으로" : "도전 결과 보기"} onReturnToMainMenu={continueAfterResult} />}
   </>;
   const scene = view.scenes?.find(s => s.id === run?.encounter.sceneId);
   return <main className="ko-tower min-h-dvh min-w-0 bg-neutral-950 px-4 pb-[max(2rem,env(safe-area-inset-bottom))] pt-[max(1rem,env(safe-area-inset-top))] text-white">

@@ -4,7 +4,7 @@ export const MOTION_EASING = { action:'cubic-bezier(.7,0,.95,.65)', recovery:'cu
 export function presentationDuration(ms:number,speed:PresentationSpeed='NORMAL',depth=0) {
  return Math.max(70,Math.round(ms*(speed==='FAST'?.7:1)*(depth>16?.4:depth>8?.65:1)));
 }
-export function damageHitStop(damage:number) {return damage<=0?0:damage<=2?30:damage<=5?52:damage<=9?76:115;}
+export function damageHitStop(damage:number) {return damage<=0?0:damage<=2?30:damage<=5?65:damage<=9?105:120;}
 export function damageNumberTier(damage:number) {return damage>=10?'finisher':damage>=6?'heavy':damage>=3?'medium':'light';}
 export function damageNumberDuration(damage:number) {return damage>=10?400:damage>=6?360:damage>=3?320:260;}
 export const SHAKE_LEVELS=['NONE','VERY_LIGHT','LIGHT','MEDIUM','HEAVY','VERY_HEAVY'] as const;

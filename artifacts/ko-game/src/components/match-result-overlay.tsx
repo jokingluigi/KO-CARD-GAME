@@ -18,7 +18,9 @@ export function MatchResultOverlay({
   questError,
   onRetryQuest,
   recap,
+  continueLabel = "메인 화면으로",
 }: {
+  continueLabel?: string;
   recap?: MatchRecap | null;
   state: GameState;
   onReturnToMainMenu: () => void;
@@ -138,7 +140,7 @@ export function MatchResultOverlay({
           data-testid="button-return-to-main-menu"
           className="mt-8 w-full rounded-lg bg-primary px-5 py-3.5 text-sm font-black text-black transition hover:bg-yellow-300 focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 focus:ring-offset-black md:w-auto md:min-w-52"
         >
-          메인 화면으로
+          {continueLabel}
         </button>
       </section>
       }

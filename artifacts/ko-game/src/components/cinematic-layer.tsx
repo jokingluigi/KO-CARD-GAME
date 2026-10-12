@@ -29,9 +29,9 @@ export function CinematicProvider({children,speed='NORMAL'}:{children:ReactNode;
  useEffect(()=>{
   const reset=()=>setState(emptyCinematicState());
   const hidden=()=>{if(document.hidden)reset();};
-  window.addEventListener('resize',reset);document.addEventListener('visibilitychange',hidden);
+  window.addEventListener('ko-combat-preferences',reset);window.addEventListener('resize',reset);document.addEventListener('visibilitychange',hidden);
   const media=window.matchMedia('(prefers-reduced-motion: reduce)');media.addEventListener('change',reset);
-  return()=>{window.removeEventListener('resize',reset);document.removeEventListener('visibilitychange',hidden);media.removeEventListener('change',reset);};
+  return()=>{window.removeEventListener('ko-combat-preferences',reset);window.removeEventListener('resize',reset);document.removeEventListener('visibilitychange',hidden);media.removeEventListener('change',reset);};
  },[]);
  const event=state.active;
  useEffect(()=>{
@@ -40,10 +40,10 @@ export function CinematicProvider({children,speed='NORMAL'}:{children:ReactNode;
   if(!prefersReducedMotion()&&!screen.api.isActive()){
    const level=cameraLevel(event),x=Math.max(-6,Math.min(6,((event.focus?.x??innerWidth/2)/innerWidth-.5)*level*3));
    const y=Math.max(-4,Math.min(4,((event.focus?.y??innerHeight/2)/innerHeight-.5)*level*2));
-   const stage=container.current?.querySelector('.ko-game-stage');
+   const boards=Array.from(container.current?.querySelectorAll('.ko-opponent-board-row,.ko-player-board-row')??[]);
    const background=container.current?.querySelector('.ko-cinematic-background');
    // Individual transform properties leave existing impact recoil transforms intact.
-   for(const [node,depth] of [[stage,1],[background,.35]] as const){
+   for(const [node,depth] of [...boards.map(node=>[node,1] as const),[background,.35] as const]){
     if(node instanceof HTMLElement&&typeof node.animate==='function'){
      try { motions.push(node.animate([{translate:'0px 0px',scale:'1'},{translate:`${x*depth}px ${y*depth}px`,scale:String(1+level*.003*depth),offset:.25},{translate:`${-x*.3*depth}px ${-y*.3*depth}px`,scale:String(1+level*.002*depth),offset:.55},{translate:'0px 0px',scale:'1'}],{duration:event.duration,easing:'cubic-bezier(.16,1,.3,1)'})); } catch { /* Unsupported animation APIs never stop a battle. */ }
     }
