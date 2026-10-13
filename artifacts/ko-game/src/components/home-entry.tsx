@@ -6,9 +6,11 @@ export default function HomeEntry() {
   const [user, setUser] = useState<AuthUser | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [retry, setRetry] = useState(0);
+  const [checking, setChecking] = useState(true);
   const generation = useRef(0);
   useEffect(() => {
     const current = ++generation.current;
+    setChecking(true);
     let timer: ReturnType<typeof setTimeout> | undefined;
     async function restore() {
       try {
@@ -21,12 +23,15 @@ export default function HomeEntry() {
         setError(failure instanceof Error ? failure.message : '로그인 상태를 확인하지 못했습니다.');
         if (failure instanceof AuthRequestError && (failure.status === undefined || failure.status >= 500))
           timer = setTimeout(() => void restore(), 2000);
+      } finally {
+        if (current === generation.current) setChecking(false);
       }
     }
     void restore();
     return () => { generation.current++; clearTimeout(timer); };
   }, [retry]);
   if (user) return <Suspense fallback={<AuthLoading />}><Home initialAuthUser={user} /></Suspense>;
+  if (checking) return <AuthLoading />;
   return <AuthPage recoveryMessage={error} onRetry={() => setRetry(value => value + 1)} onAuthenticated={next => {
     generation.current++;
     setError(null);

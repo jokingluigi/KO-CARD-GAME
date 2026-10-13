@@ -224,8 +224,10 @@ export async function getAuthenticatedUser(
       .select({
         userId: sessionsTable.userId,
         expiresAt: sessionsTable.expiresAt,
+        user: usersTable,
       })
       .from(sessionsTable)
+      .innerJoin(usersTable, eq(usersTable.id, sessionsTable.userId))
       .where(and(eq(sessionsTable.tokenHash, hashSessionToken(token)), gt(sessionsTable.expiresAt, new Date())))
       .limit(1),
     options,
@@ -234,10 +236,7 @@ export async function getAuthenticatedUser(
   if (!session) return null;
   return withAuthTimeout(
     "USER_LOOKUP",
-    async () => {
-      const [user] = await db.select().from(usersTable).where(eq(usersTable.id, session.userId)).limit(1);
-      return user ? await getPublicUser(user) : null;
-    },
+    () => getPublicUser(session.user),
     options,
   );
 }

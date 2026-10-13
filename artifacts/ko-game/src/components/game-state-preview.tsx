@@ -1098,7 +1098,7 @@ export function GameStatePreview({
               </button>
               <button type="button" data-testid="button-battle-match-history" aria-label="경기 로그 열기" aria-expanded={historyOpen} onClick={() => setHistoryOpen(true)} className="ko-battle-log-button hidden border border-amber-700 bg-black text-amber-200">로그</button>
              {effectTargeting && (
-               <div className="rounded border border-amber-500 bg-amber-950/90 px-2 py-2 text-center text-[10px] font-bold text-amber-100">
+               <div className="ko-effect-target-controls rounded border border-amber-500 bg-amber-950/90 px-2 py-2 text-center text-[10px] font-bold text-amber-100">
                  <strong className="block break-keep text-amber-200">{state.targetingState!.pendingAction?.type === 'USE_CHAMPION_ABILITY'
                    ? `${me.champion?.name ?? '챔피언'} 고유 능력`
                    : state.targetingState!.sourceCard?.definitionId
@@ -1109,6 +1109,9 @@ export function GameStatePreview({
                  <span className="mt-1 block text-[9px] text-amber-200/80">금색으로 강조된 대상만 선택 가능</span>
                  {!state.targetingState!.championRewardReplacement && (!hasCommittedFusion(state.targetingState) || state.targetingState!.cancelable) && <button type="button" onClick={onCancelEffectTargeting} className="mt-1 block w-full rounded border border-amber-600 px-1 py-0.5 text-[9px]">취소</button>}
                </div>
+             )}
+             {effectTargeting && !state.targetingState!.championRewardReplacement && (!hasCommittedFusion(state.targetingState) || state.targetingState!.cancelable) && (
+               <button type="button" onClick={onCancelEffectTargeting} className="ko-mobile-target-cancel hidden rounded border border-amber-600 text-amber-200">취소</button>
              )}
              <div className="flex items-center justify-between gap-2 border-b border-neutral-800 pb-2 md:flex-col md:items-stretch">
                <div className="text-right md:text-center">

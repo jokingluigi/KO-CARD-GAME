@@ -695,7 +695,10 @@ export default function Decks() {
                     setAuthUser(result.authenticated ? result.user : null);
                     setAuthStatus(result.authenticated ? "authenticated" : "unauthenticated");
                   })
-                  .catch(() => setAuthStatus("unauthenticated"));
+                  .catch((error) => {
+                    setAuthStatus("error");
+                    setErrorMessage(error instanceof Error ? error.message : "인증 상태를 확인하지 못했습니다.");
+                  });
               }}
             >
               <RefreshCw className="h-3.5 w-3.5" aria-hidden="true" />

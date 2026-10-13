@@ -22,6 +22,15 @@ const authApiBase = `${authBasePath}/api/auth`;
 export const AUTH_REQUEST_TIMEOUT_MS = 8_000;
 export const AUTH_SUBMIT_TIMEOUT_MS = 20_000;
 let authRevision = 0;
+let currentUserRequest: Promise<AuthResponse> | null = null;
+let confirmedAuth: { response: AuthResponse; expiresAt: number } | null = null;
+
+function invalidateAuth(): void {
+  authRevision += 1;
+  confirmedAuth = null;
+  currentUserRequest = null;
+  invalidateStartupAuth();
+}
 
 export class AuthRequestError extends Error {
   constructor(
@@ -43,17 +52,36 @@ async function readResponseMessage(response: Response, fallback: string): Promis
 }
 
 export async function fetchCurrentUser(options: { timeoutMs?: number } = {}): Promise<AuthResponse> {
+  if (confirmedAuth && Date.now() < confirmedAuth.expiresAt) return confirmedAuth.response;
+  if (currentUserRequest) return currentUserRequest;
+  const request = readCurrentUser(options);
+  currentUserRequest = request;
+  try { return await request; } finally {
+    if (currentUserRequest === request) currentUserRequest = null;
+  }
+}
+
+async function readCurrentUser(options: { timeoutMs?: number }): Promise<AuthResponse> {
   const revision = authRevision;
   const startup = takeStartupAuth();
-  if (startup) {
-    try { const result = await startup; return revision === authRevision ? result : await fetchCurrentUser(options); } catch { /* Retry with the regular bounded request below. */ }
-  }
   const timeoutMs = options.timeoutMs ?? AUTH_REQUEST_TIMEOUT_MS;
   const controller = new AbortController();
   const timer = globalThis.setTimeout(() => controller.abort(), timeoutMs);
   try {
     let response: Response;
     try {
+      if (startup) {
+        try {
+          const result = await Promise.race([
+            startup,
+            new Promise<never>((_, reject) => controller.signal.addEventListener('abort', () => reject(new AuthRequestError('인증 서버에 연결할 수 없습니다.')), { once: true })),
+          ]);
+          return rememberAuth(result, revision, options);
+        } catch (error) {
+          if (controller.signal.aborted) throw error;
+          // Retry a failed prefetch within the same overall request deadline.
+        }
+      }
       response = await fetch(`${authApiBase}/me`, {
         credentials: "include",
         cache: "no-store",
@@ -72,15 +100,20 @@ export async function fetchCurrentUser(options: { timeoutMs?: number } = {}): Pr
       );
     }
     const result = (await response.json()) as AuthResponse;
-    return revision === authRevision ? result : await fetchCurrentUser(options);
+    return rememberAuth(result, revision, options);
   } finally {
     globalThis.clearTimeout(timer);
   }
 }
 
+function rememberAuth(result: AuthResponse, revision: number, options: { timeoutMs?: number }): Promise<AuthResponse> | AuthResponse {
+  if (revision !== authRevision) return fetchCurrentUser(options);
+  confirmedAuth = result.authenticated && result.user ? { response: result, expiresAt: Date.now() + 30_000 } : null;
+  return result;
+}
+
 export async function logout(): Promise<void> {
-  authRevision += 1;
-  invalidateStartupAuth();
+  invalidateAuth();
   await fetch(`${authApiBase}/logout`, {
     method: "POST",
     credentials: "include",
@@ -88,8 +121,7 @@ export async function logout(): Promise<void> {
 }
 
 export async function changeNickname(nickname: string): Promise<AuthUser> {
-  authRevision += 1;
-  invalidateStartupAuth();
+  invalidateAuth();
   const response = await fetch(`${authApiBase}/nickname`, {
     method: "PATCH",
     credentials: "include",
@@ -107,8 +139,7 @@ export async function submitAuth(
   values: Record<string, string>,
   options: { timeoutMs?: number } = {},
 ): Promise<AuthUser> {
-  authRevision += 1;
-  invalidateStartupAuth();
+  invalidateAuth();
   let response: Response;
   try { response = await fetch(`${authApiBase}/${mode}`, {
     method: "POST",
@@ -127,14 +158,13 @@ export async function submitAuth(
   if (!body.authenticated || !body.user) {
     throw new Error("로그인 상태를 확인하지 못했습니다.");
   }
-  authRevision += 1;
-  invalidateStartupAuth();
+  invalidateAuth();
+  confirmedAuth = { response: body, expiresAt: Date.now() + 30_000 };
   return body.user;
 }
 
 export async function submitTestAuth(role: "USER" | "ADMIN"): Promise<AuthUser> {
-  authRevision += 1;
-  invalidateStartupAuth();
+  invalidateAuth();
   const response = await fetch(`${import.meta.env.BASE_URL.replace(/\/$/, "")}/api/test-auth/login`, {
     method: "POST",
     credentials: "include",

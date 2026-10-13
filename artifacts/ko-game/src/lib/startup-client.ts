@@ -14,7 +14,7 @@ let startupStatus: { request: Promise<ServerStatus>; expiresAt: number } | null 
 
 async function requestJson<T>(path: string): Promise<T> {
   const controller = new AbortController();
-  const timer = globalThis.setTimeout(() => controller.abort(), 60_000);
+  const timer = globalThis.setTimeout(() => controller.abort(), path === '/auth/me' ? 8_000 : 60_000);
   try {
     const response = await fetch(`${api}${path}`, {
       credentials: 'include', cache: 'no-store', signal: controller.signal,

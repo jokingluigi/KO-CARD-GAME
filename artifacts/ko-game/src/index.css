@@ -261,7 +261,7 @@
   background: rgba(10, 10, 10, 0.88);
   padding: 12px 13px;
   color: #fff;
-  font-size: 0.86rem;
+  font-size: 16px;
   outline: none;
   transition: border-color 160ms ease, box-shadow 160ms ease;
 }

@@ -1,10 +1,13 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { fetchCurrentUser, submitAuth, AuthRequestError } from "./auth-client";
+import { fetchCurrentUser, submitAuth, logout, AuthRequestError } from "./auth-client";
+import { startServerConnection, requestServerStatus } from './startup-client';
 
 const originalFetch = globalThis.fetch;
 
-test.afterEach(() => {
+test.afterEach(async () => {
+  globalThis.fetch = async () => new Response('{}');
+  await logout();
   globalThis.fetch = originalFetch;
 });
 
@@ -54,5 +57,37 @@ test('a late guest response from before login is replaced by current authenticat
   await submitAuth('login', {email:account.email,password:'test-only-password'});
   release(new Response(JSON.stringify({authenticated:false,user:null})));
   assert.equal((await pending).user?.id, account.id);
-  assert.equal(reads, 2);
+  assert.equal(reads, 1, 'successful login supplies the current session without another round trip');
+});
+
+test('pending startup authentication obeys the caller deadline instead of blocking for a minute', async () => {
+  globalThis.fetch = async (path, init) => String(path).endsWith('/me')
+    ? new Promise((_resolve, reject) => init?.signal?.addEventListener('abort', () => reject(new DOMException('aborted', 'AbortError'))))
+    : new Response(JSON.stringify({ enabled: false, allowed: true, message: '' }));
+  startServerConnection();
+  await requestServerStatus();
+  await assert.rejects(fetchCurrentUser({ timeoutMs: 5 }), AuthRequestError);
+});
+
+test('parallel session restores share one request; a network failure does not cache logout', async () => {
+  let reads = 0;
+  let release!: (response: Response) => void;
+  globalThis.fetch = async () => { reads++; return new Promise(resolve => { release = resolve; }); };
+  const first = fetchCurrentUser({ timeoutMs: 100 });
+  const second = fetchCurrentUser({ timeoutMs: 100 });
+  assert.equal(reads, 1);
+  release(new Response('', { status: 503 }));
+  await Promise.all([assert.rejects(first, AuthRequestError), assert.rejects(second, AuthRequestError)]);
+  globalThis.fetch = async () => { reads++; return new Response(JSON.stringify({ authenticated: true, user: account })); };
+  assert.equal((await fetchCurrentUser()).user?.id, account.id);
+  assert.equal((await fetchCurrentUser()).user?.id, account.id);
+  assert.equal(reads, 2, 'navigation reuses a recently confirmed user');
+});
+
+test('logout invalidates the navigation cache', async () => {
+  globalThis.fetch = async () => new Response(JSON.stringify({ authenticated: true, user: account }));
+  await fetchCurrentUser();
+  await logout();
+  globalThis.fetch = async () => new Response(JSON.stringify({ authenticated: false, user: null }));
+  assert.equal((await fetchCurrentUser()).authenticated, false);
 });
