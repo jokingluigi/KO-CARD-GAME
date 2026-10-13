@@ -1,0 +1,55 @@
+{
+  "generatedAt": "2026-10-13T17:17:01.780539+00:00",
+  "sourceOrigin": "https://ko-card-game.onrender.com",
+  "sourcePaths": [
+    "/api/admin/cards",
+    "/api/admin/champions",
+    "/api/admin/tags/",
+    "/api/admin/tower/"
+  ],
+  "access": "authenticated ADMIN GET; no content/account/history export",
+  "gitCommit": "271434f4e59cabda7b5e3b5c9cdaedc3d6ff7729",
+  "completeAdminCardsAndChampions": true,
+  "files": {
+    "cards": {
+      "sha256": "1a6d2f98704adb83c08895e07f2c091980ae3a1245b01a0ed7205b00ba31b273",
+      "count": 129,
+      "statuses": {
+        "PUBLISHED": 85,
+        "DRAFT": 44
+      },
+      "latestUpdatedAt": "2026-10-13T16:27:59.482Z",
+      "types": {
+        "TECHNIQUE": 23,
+        "WRESTLER": 106
+      },
+      "distinctTokens": 23
+    },
+    "champions": {
+      "sha256": "b967e64ed9e920af41ade741a10bf06b40d949d7fd210d651b706a42c0459ff3",
+      "count": 11,
+      "statuses": {
+        "DRAFT": 3,
+        "PUBLISHED": 7,
+        "DISABLED": 1
+      },
+      "latestUpdatedAt": "2026-10-13T16:53:44.731Z"
+    },
+    "tags": {
+      "sha256": "438c41e6d850d66402c8f4cfde45ccf2c32a8d0b468b289f5fe099f2a330eca2",
+      "count": 18
+    },
+    "tower": {
+      "sha256": "d94f18294b223756f0174e14cb260f0240650c2917db0a0961e7422e6caaf288"
+    }
+  },
+  "missing": [
+    "Published frozen Tower V2 snapshot is not exposed by the admin configuration endpoint; draft configuration is included"
+  ],
+  "clarifications": {
+    "8a0b8b65-5d67-4f23-894e-6103219e41c8": "User confirmed zombie creation destination is allied field",
+    "bcffab96-f61f-497e-b60b-de5a869837d3": "User confirmed base ability selects one wrestler; stored text says all selected wrestlers"
+  },
+  "towerCaptureNote": "Final recheck included effectLibrary and relicDefinitions previously omitted from the local export; card/champion revisions unchanged",
+  "lastReadOnlyRecheckAt": "2026-10-13T18:35:01.553632+00:00"
+}

@@ -159,6 +159,8 @@ export interface GameState {
     continuation?: GameState['targetingState'];
     /** Serializable SCRIPT_V1 program counter and registers while PLAYER_CHOICE is pending. */
     scriptContinuation?: {
+      /** Resume remaining steps automatically after a child trigger/quest resolves. */
+      autoResume?: boolean;
       selectedResultId: string;
       remainingSteps: ScriptStep[];
       registers: Record<string, { ids: string[] } | { slots: number[] } | { value: number }>;

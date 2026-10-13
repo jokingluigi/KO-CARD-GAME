@@ -1,3 +1,4 @@
+import { resolve } from 'node:path';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import test from 'node:test';
@@ -9,7 +10,7 @@ import { createInitialGameState } from '../engine/create-initial-game-state';
 import { enterField } from '../engine/enter-field';
 import type { GameState } from '../types/game-state';
 
-const records = JSON.parse(readFileSync(new URL('./fixtures/cards-2026-10-12-all.json', import.meta.url), 'utf8')) as PublishedCardRecord[];
+const records = JSON.parse(readFileSync(process.env.KO_QA_ADMIN_SNAPSHOT_DIR ? resolve(process.env.KO_QA_ADMIN_SNAPSHOT_DIR, 'cards.json') : new URL('./fixtures/cards-2026-10-12-all.json', import.meta.url), 'utf8')) as PublishedCardRecord[];
 const definitions = records.map(cardRecordToDefinition);
 
 function checkState(state: GameState) {

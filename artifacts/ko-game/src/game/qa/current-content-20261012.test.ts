@@ -1,3 +1,4 @@
+import { resolve } from 'node:path';
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import {readFileSync} from 'node:fs';
@@ -10,8 +11,8 @@ import {executeAction} from '../actions/engine-actions';
 import {destroyCard} from '../engine/destroy-card';
 import {getActiveCardAbilities} from '../cards/granted-text';
 import type {CardDefinition,CardInstance} from '../cards/types';
-const cards:PublishedCardRecord[]=JSON.parse(readFileSync(new URL('./fixtures/cards-2026-10-12-all.json',import.meta.url),'utf8'));
-const champions:PublishedChampionRecord[]=JSON.parse(readFileSync(new URL('./fixtures/champions-2026-10-12-all.json',import.meta.url),'utf8'));
+const cards:PublishedCardRecord[]=JSON.parse(readFileSync(process.env.KO_QA_ADMIN_SNAPSHOT_DIR ? resolve(process.env.KO_QA_ADMIN_SNAPSHOT_DIR, 'cards.json') : new URL('./fixtures/cards-2026-10-12-all.json', import.meta.url),'utf8'));
+const champions:PublishedChampionRecord[]=JSON.parse(readFileSync(process.env.KO_QA_ADMIN_SNAPSHOT_DIR ? resolve(process.env.KO_QA_ADMIN_SNAPSHOT_DIR, 'champions.json') : new URL('./fixtures/champions-2026-10-12-all.json', import.meta.url),'utf8'));
 const defs=cards.map(cardRecordToDefinition);
 const d=(name:string)=>{const v=defs.find(c=>c.name===name);assert.ok(v,name);return v;};
 const basic:CardDefinition={id:'basic',name:'basic',cardType:'WRESTLER',cost:1,attack:2,health:8,rulesText:'',keywords:[],abilities:[],isToken:false,isChampionToken:false,status:'PUBLISHED'};

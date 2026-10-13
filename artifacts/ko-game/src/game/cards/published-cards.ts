@@ -1,4 +1,5 @@
 import { reviewedContentAbilities } from './reviewed-content-20261012';
+import { reviewedAdminContentAbilities } from './reviewed-admin-content-20261013';
 import { textCardAbilities } from './text-effect-repair';
 import { EPIC_TECHNIQUES } from './epic-techniques';
 import { createAwakeningCards } from '../champions/awakening-definitions';
@@ -246,13 +247,13 @@ export function cardRecordToDefinition(card: PublishedCardRecord): CardDefinitio
       return { ...effect, target };
     }) } };
   }
-  const implementation = newCardImplementation(card);
+  const reviewedAdmin = reviewedAdminContentAbilities(card);
+  const implementation = reviewedAdmin ? null : newCardImplementation(card);
   if (card.id === 'dc43dc88-38d7-499b-ad89-6b83f773fe62' && Array.isArray(card.effectConfig.effects)) {
     card = { ...card, effectConfig: { ...card.effectConfig, effects: (card.effectConfig.effects as Array<Record<string, unknown>>).map(effect =>
       effect.action === 'DESTROY' && effect.trigger === 'ENTER_FIELD' && effect.target && typeof effect.target === 'object'
         ? { ...effect, target: { ...effect.target, randomScope: 'FULL' } } : effect) } };
   }
-  if (card.name === '디 오리진') card = { ...card, text: card.text.replace(/선수(?:\s*카드)?\s*\d+\s*장당/u, '선수 2장당') };
   if (card.isToken && card.name.trim() === '좀비') card = { ...card, cost: 1, attack: 1, health: 1, text: ZOMBIE_RULES, keywords: [], effectId: 'STRUCTURED_EFFECTS_V1', effectConfig: { effects: [] } };
   const zombieAbsorption = /필드에\s*있는\s*['‘]?좀비['’]?\s*중[^.!?]*가장\s*수치의\s*합/.test(card.text) &&
     /좀비['’]?가\s*없다면[^.!?]*2\s*\/\s*2/.test(card.text);
@@ -321,7 +322,7 @@ export function cardRecordToDefinition(card: PublishedCardRecord): CardDefinitio
       keywords: repairedLegacyCardKeywords(card),
        tags: Array.isArray(card.tags) ? [...card.tags] : [],
       ...(implementation ? {contentRule: implementation.rule} : {}),
-      abilities: (reviewedContentAbilities(card) ?? textCardAbilities(card) ?? implementation?.abilities ?? repairedLegacyCardAbilities(card) ?? (zombieAbsorption
+      abilities: (reviewedAdmin ?? reviewedContentAbilities(card) ?? textCardAbilities(card) ?? implementation?.abilities ?? repairedLegacyCardAbilities(card) ?? (zombieAbsorption
         ? [{ trigger: 'ENTER_FIELD' as const, effects: [{ type: 'STRUCTURED' as const,
             action: 'COPY_BEST_STATS' as const,
             target: { zone: 'BOARD' as const, owner: 'SELF' as const, cardType: 'WRESTLER' as const,

@@ -41,5 +41,9 @@ export function isMinionAAbility(state: import('../types/game-state').GameState,
 
 /** DB catalog plus the actual built-in special token; QA/training dummies are excluded. */
 export function completeMinionACatalog(records: readonly unknown[]): CardDefinition[] {
-  return [...new Map([...minionACatalog(records), fallbackZombieToken].map(d => [d.id, d])).values()].sort((a,b) => a.id.localeCompare(b.id));
+  const catalog = minionACatalog(records);
+  // An administrator-authored Zombie already provides the special token. Do not
+  // give it a second RNG slot through the empty-database compatibility fallback.
+  if (!catalog.some(card => card.isToken && card.name.trim() === fallbackZombieToken.name)) catalog.push(fallbackZombieToken);
+  return catalog.sort((a,b) => a.id.localeCompare(b.id));
 }

@@ -427,7 +427,9 @@ function applyScriptSteps(
 ): GameState {
   if (depth > 6 || steps.length > 32) throw new Error('SCRIPT_V1 execution budget exceeded.');
   let next = state;
-  for (const [stepIndex, step] of steps.entries()) {
+  for (let stepIndex = 0; stepIndex < steps.length; stepIndex += 1) {
+    if (next.status === 'FINISHED') return next;
+    const step = steps[stepIndex];
     if (step.type === 'SELECT') {
       if (step.target.selection === 'ADJACENT_EMPTY_SLOTS') {
         const slots = sourceCard.boardSlot === null
@@ -517,13 +519,13 @@ function applyScriptSteps(
     }
     if (step.type === 'REPEAT') {
       const count = Math.min(999, Math.max(0, Math.trunc(scriptValue(registers, step.count))));
-      for (let iteration = 0; iteration < count && next.status !== 'FINISHED'; iteration += 1) {
-        const priorTargeting = next.targetingState;
-        next = applyScriptSteps(next, playerId, sourceCard, step.steps, registers, depth + 1, script, parentContinuation);
-        if (next.targetingState?.active && next.targetingState !== priorTargeting) {
-          throw new Error('SCRIPT_V1 REPEAT cannot pause for a target selection.');
-        }
-      }
+      // Keep the unexecuted iterations in the serializable program counter.
+      // Damage can open another player's quest/reward choice midway through a loop.
+      const remaining: ScriptStep[] = count > 1
+        ? [{ ...step, count: { kind: 'CONSTANT', value: count - 1 } }]
+        : [];
+      steps = [...steps.slice(0, stepIndex), ...(count ? step.steps : []), ...remaining, ...steps.slice(stepIndex + 1)];
+      stepIndex -= 1;
       continue;
     }
     const { target, selectedIds } = scriptEffectTarget(step.effect.target, registers);
@@ -541,10 +543,28 @@ function applyScriptSteps(
       target,
       values,
     };
+    const priorTargeting = next.targetingState;
     next = applyEffect(next, playerId, sourceCard, effect, selectedIds);
     if (step.id) {
       const resultIds = next.targetingState?.lastTargetIds ?? [];
       registers.set(step.id, { ids: [...resultIds] });
+    }
+    const sameFrame = (frame: NonNullable<GameState['targetingState']>): boolean => Boolean(priorTargeting &&
+      frame.playerId === priorTargeting.playerId && frame.sourceInstanceId === priorTargeting.sourceInstanceId &&
+      (priorTargeting.scriptContinuation
+        ? frame.scriptContinuation === priorTargeting.scriptContinuation
+        : frame.effects === priorTargeting.effects));
+    if (next.targetingState?.active && !sameFrame(next.targetingState)) {
+      const resume: NonNullable<GameState['targetingState']> = {
+        active: true, playerId, sourceCard, sourceInstanceId: sourceCard.instanceId,
+        effects: [], effectIndex: 0, selectedTargetIds: [], lastTargetIds: [], validTargetIds: [],
+        minTargets: 0, maxTargets: 0, mandatory: true, cancelable: false,
+        continuation: parentContinuation,
+        scriptContinuation: { autoResume: true, selectedResultId: '__resume', remainingSteps: steps.slice(stepIndex + 1), registers: Object.fromEntries(registers), script: script! },
+      };
+      const attach = (frame: NonNullable<GameState['targetingState']>): NonNullable<GameState['targetingState']> =>
+        sameFrame(frame) ? resume : { ...frame, continuation: frame.continuation ? attach(frame.continuation) : resume };
+      return { ...next, targetingState: attach(next.targetingState) };
     }
   }
   return next;
@@ -1684,6 +1704,14 @@ export function resolvePendingEffects(state: GameState): GameState {
   const pending = state.targetingState;
   if (!pending) return state;
   if (pending.fusion) return resumeFusion(state);
+  if (pending.scriptContinuation?.autoResume) {
+    const source = pending.sourceCard ?? sourceInState(state, pending.sourceInstanceId);
+    if (!source) return state;
+    const registers = new Map(Object.entries(pending.scriptContinuation.registers) as Array<[string, ScriptRegister]>);
+    const resumed = applyScriptSteps({ ...state, targetingState: pending.continuation }, pending.playerId, source,
+      pending.scriptContinuation.remainingSteps, registers, 0, pending.scriptContinuation.script, pending.continuation);
+    return resolvePendingEffects(resumed);
+  }
   // A script SELECT is already suspended; only selectEffectTarget may resume its program.
   if (pending.scriptContinuation || pending.championRewardReplacement) return state;
   // Keep this frame visible while automatic effects execute: a lethal/destroy
@@ -1745,7 +1773,8 @@ export function resolvePendingEffects(state: GameState): GameState {
     lastAggregatedStats = next.lastAggregatedStats ?? next.targetingState?.lastAggregatedStats ?? lastAggregatedStats;
     if (next.targetingState?.continuation &&
       next.targetingState.continuation.sourceInstanceId === pending.sourceInstanceId &&
-      next.targetingState.continuation.effectIndex > pending.effectIndex) return next;
+      (next.targetingState.continuation.effectIndex > pending.effectIndex ||
+        next.targetingState.continuation.scriptContinuation?.autoResume)) return next;
     if (ids?.length) last = ids;
      if (next.targetingState?.sourceInstanceId === pending.sourceInstanceId) {
        last = next.targetingState.lastTargetIds;
@@ -1823,10 +1852,8 @@ export function selectEffectTarget(state: GameState, targetId: string): GameStat
       pending.scriptContinuation.script,
       pending.continuation,
     );
-    if (
-      resumed.targetingState?.scriptContinuation &&
-      resumed.targetingState.scriptContinuation !== pending.scriptContinuation
-    ) return resumed;
+    if (resumed.targetingState?.active && resumed.targetingState !== pending &&
+      (resumed.targetingState.scriptContinuation !== pending.scriptContinuation || resumed.targetingState.championRewardReplacement)) return resumed;
     if (resumed.targetingState) {
       const { scriptContinuation: _completedScript, ...completedFrame } = resumed.targetingState;
       resumed = { ...resumed, targetingState: completedFrame };
