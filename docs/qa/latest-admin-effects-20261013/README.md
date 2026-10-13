@@ -116,4 +116,4 @@ node docs/qa/current-admin-resources.browser.mjs
 
 ## G. GitHub 작업
 
-기준 저장소는 `jokingluigi/KO-CARD-GAME`, main의 정상 게임 커밋 `271434f4e59cabda7b5e3b5c9cdaedc3d6ff7729`. 실패한 리마스터 브랜치를 기준으로 하지 않았다. 작업 브랜치 `audit/latest-admin-effects-20261013`에 저장해 검토용 PR로 제출한다. main 푸시·머지·Render 배포는 수행하지 않는다. 남은 검증 때문에 전수 완료로 표시하지 않는다.
+기준 저장소는 `jokingluigi/KO-CARD-GAME`, main의 정상 게임 커밋 `271434f4e59cabda7b5e3b5c9cdaedc3d6ff7729`. 실패한 리마스터 브랜치를 기준으로 하지 않았다. 작업 브랜치 `audit/latest-admin-effects-20261013`에 저장하고 [Draft PR #50](https://github.com/jokingluigi/KO-CARD-GAME/pull/50)으로 제출했다. main 푸시·머지·Render 배포는 수행하지 않는다. 남은 검증 때문에 전수 완료로 표시하지 않는다.
