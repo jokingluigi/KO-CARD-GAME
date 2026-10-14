@@ -776,3 +776,15 @@ for(const fullHand of [false,true]) test('full-field awakening offers return cho
  assert.equal(stage(r.state).awakening?.stage,'TANK');assert.equal(stage(r.state).currentAttack,6);assert.equal(hasAwakeningInvulnerability(r.state,p.id),true);
  assert.equal(fullHand?owner(r.state).deck[0].instanceId:owner(r.state).hand.at(-1)?.instanceId,'choice-2');assert.ok(!r.state.targetingState);
 });
+
+test('full-field awakening places the reserved Tank before returned-card hand effects can checkpoint stages',()=>{
+ let s=fixture(2);const p=owner(s);
+ for(const i of [0,1,2,3] as const)p.board[i]={...generateCardInstance(basic,{instanceId:'reserved-'+i}),boardSlot:i};
+ p.board[1]!.abilities=[{trigger:'HAND_WRESTLER_ADDED',effects:[{type:'STRUCTURED',action:'BUFF',target:{zone:'BOARD',owner:'SELF',selection:'SELF',count:1},values:{attack:1,health:0}}]}];
+ s=checkpointAwakening(s,s);assert.ok(s.targetingState?.championRewardReplacement);
+ const r=executeAction(JSON.parse(JSON.stringify(s)),{type:'SELECT_EFFECT_TARGET',playerId:p.id,targetId:'reserved-0'});assert.ok(r.success);
+ assert.equal(stage(r.state).awakening?.stage,'TANK');assert.equal(stage(r.state).boardSlot,0);
+ assert.equal(owner(r.state).champion!.awakening!.stage,'TANK');assert.equal(owner(r.state).board[1]!.currentAttack,basic.attack+1);
+ assert.equal(owner(r.state).hand.at(-1)?.instanceId,'reserved-0');assert.equal(r.state.events.filter(e=>e.type==='CARD_GENERATED'&&e.reason==='AWAKENING_STAGE').length,1);
+ assert.equal(r.state.targetingState?.active??false,false);
+});

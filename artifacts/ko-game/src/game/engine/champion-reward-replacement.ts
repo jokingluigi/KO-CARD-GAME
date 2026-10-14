@@ -44,8 +44,11 @@ export function selectChampionRewardReplacement(state: GameState, targetId: stri
       boardSlot: card.boardSlot, source: { type: 'CHAMPION', championId: reward.championId },
       target: { type: 'CARD', cardInstanceId: targetId }, reason: 'CHAMPION_REWARD_RETURN_' + destination }],
   };
-  return enterField(destination==='HAND' ? resolveHandAdditionListeners(next,owner.id,[returned]) : next, owner.id, reward.token, card.boardSlot,
+  // Place the reserved reward before hand-addition effects run awakening checkpoints.
+  // Otherwise a checkpoint treats the not-yet-placed stage as gone and fills its slot.
+  const entered = enterField(next, owner.id, reward.token, card.boardSlot,
     { type: 'CHAMPION', championId: reward.championId }, undefined, 'CHAMPION_DEPLOY');
+  return destination === 'HAND' ? resolveHandAdditionListeners(entered, owner.id, [returned]) : entered;
 }
 
 export function findAwakeningRewardFrame(frame: GameState['targetingState'], sequenceId: string, stage: string): GameState['targetingState'] {

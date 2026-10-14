@@ -138,8 +138,8 @@ df532c95-0e4d-4b17-8200-a86e6a682341,조킹루이지,WRESTLER,등장: 자신에 
 8a0b8b65-5d67-4f23-894e-6103219e41c8,좀비 데헌,WRESTLER,이 카드가 상대 선수 카드를 리타이어시킬때마다 '좀비'를 생성합니다.,UNVERIFIED,전체 효과·예외·모드 교차 판정 보류,65개 명시적 ID 연결 및 공통 엔진 수정; 상세 소스 참조,165개 ID 사용 경로 스모크 실행; 이것만으로 효과 정상 판정하지 않음
 20251372-b1a0-485e-9158-d82bf05f7371,좀비 벨로나,WRESTLER,이 카드가 데미지를 입으면 1/1인 '좀비'를 소환합니다.,UNVERIFIED,전체 효과·예외·모드 교차 판정 보류,65개 명시적 ID 연결 및 공통 엔진 수정; 상세 소스 참조,165개 ID 사용 경로 스모크 실행; 이것만으로 효과 정상 판정하지 않음
 bcf2ac9b-1afd-41a3-a653-5f9af1e033bf,좀비 플래티넘구슬 마스터,WRESTLER,등장:필드에 있는 '좀비' 중 가장 수치의 합이 높은 '좀비'의 체력과 공격력을 자신에게 더합니다. '좀비'가 없다면 2/2 '좀비'를 생성하고 그 '좀비'의 체력과 공격력을 자신에게 더합니다.,UNVERIFIED,전체 효과·예외·모드 교차 판정 보류,65개 명시적 ID 연결 및 공통 엔진 수정; 상세 소스 참조,165개 ID 사용 경로 스모크 실행; 이것만으로 효과 정상 판정하지 않음
-eaefcf6c-575d-4482-aaad-98b54561b49a,챔피언 판도라(폭주),WRESTLER,"이 카드가 챔피언 퀘스트 보상 효과로 소환되면 등장 효과를 발동시킵니다. 
-등장:선택한 선수를 파괴시킵니다. 
+eaefcf6c-575d-4482-aaad-98b54561b49a,챔피언 판도라(폭주),WRESTLER,"이 카드가 챔피언 퀘스트 보상 효과로 소환되면 등장 효과를 발동시킵니다.
+등장:선택한 선수를 파괴시킵니다.
 이 카드는 자신이 리타이어 혹은 파괴 시킨 선수의 공격력을 흡수합니다.",UNVERIFIED,전체 효과·예외·모드 교차 판정 보류,65개 명시적 ID 연결 및 공통 엔진 수정; 상세 소스 참조,165개 ID 사용 경로 스모크 실행; 이것만으로 효과 정상 판정하지 않음
 epic-spell-execution,처형,TECHNIQUE,상대 선수 1장을 선택하여 DESTROY합니다.,UNVERIFIED,전체 효과·예외·모드 교차 판정 보류,65개 명시적 ID 연결 및 공통 엔진 수정; 상세 소스 참조,165개 ID 사용 경로 스모크 실행; 이것만으로 효과 정상 판정하지 않음
 3c93c0f1-2aa5-4dc6-9dac-01e048b86fb9,처형관,WRESTLER,등장:필드에 있는 공격력이 1 이하인 선수 카드 1장을 선택해서 파괴합니다.,UNVERIFIED,전체 효과·예외·모드 교차 판정 보류,65개 명시적 ID 연결 및 공통 엔진 수정; 상세 소스 참조,165개 ID 사용 경로 스모크 실행; 이것만으로 효과 정상 판정하지 않음
@@ -186,74 +186,74 @@ latest-wrestler-4,휴먼쿠커,WRESTLER,등장:손패에 '만찬'을 비용 1 �
 b723c7e6-c668-4afb-b77d-da0d16f16c31,흑구슬마스터,WRESTLER,등장:선택한 적 선수 하나를 파괴합니다.,UNVERIFIED,전체 효과·예외·모드 교차 판정 보류,65개 명시적 ID 연결 및 공통 엔진 수정; 상세 소스 참조,165개 ID 사용 경로 스모크 실행; 이것만으로 효과 정상 판정하지 않음
 3d8ca13c-6598-4f28-af99-652df1067263,흡혈 기관,WRESTLER,이 카드가 합체하면 합체된 카드에게 '흡혈'을 부여합니다.,UNVERIFIED,전체 효과·예외·모드 교차 판정 보류,65개 명시적 ID 연결 및 공통 엔진 수정; 상세 소스 참조,165개 ID 사용 경로 스모크 실행; 이것만으로 효과 정상 판정하지 않음
 a6b7689a-0468-48cd-a216-7e9fe22dec47,힐빌,WRESTLER,이 카드가 상대 선수를 리타이어시킬 때마다 체력을 완전히 회복합니다.,UNVERIFIED,전체 효과·예외·모드 교차 판정 보류,65개 명시적 ID 연결 및 공통 엔진 수정; 상세 소스 참조,165개 ID 사용 경로 스모크 실행; 이것만으로 효과 정상 판정하지 않음
-5e4a5a52-ef2c-4e1a-9b76-a4edc9f79e2c,챔피언 라 칼라베라,CHAMPION,"gameStartAbilityText: 
+5e4a5a52-ef2c-4e1a-9b76-a4edc9f79e2c,챔피언 라 칼라베라,CHAMPION,"gameStartAbilityText:
 abilityText: 1코스트 1/1 좀비를 소환합니다.
 questText: 이번 게임에서 아군 선수가 총 10회 리타이어하세요. DESTROY는 포함하지 않습니다.
 questRewardText: 고유 능력이 강화됩니다.
 upgradedAbilityText: 1코스트 2/2 좀비를 소환합니다.
 championTokenEffectText: ",UNVERIFIED,전체 효과·모드 교차 판정 보류,벨모르트 고유 능력·퀘스트 연결; 상세 소스 참조,최신 챔피언 시나리오 테스트 존재; DISABLED 챔피언 실전 미실행
-441260ed-63e5-442c-bdc2-8a22898f7090,챔피언 루나,CHAMPION,"gameStartAbilityText: 
+441260ed-63e5-442c-bdc2-8a22898f7090,챔피언 루나,CHAMPION,"gameStartAbilityText:
 abilityText: '파츠' 태그가 달려있는 토큰 카드들 중 무작위 한장을 손패에 넣습니다.
 questText: '합체'를 총 10번 이행한다.
 questRewardText: '룬스달라이트 군주 루나'를 필드에 소환한다.
-upgradedAbilityText: 
+upgradedAbilityText:
 championTokenEffectText: ",UNVERIFIED,전체 효과·모드 교차 판정 보류,벨모르트 고유 능력·퀘스트 연결; 상세 소스 참조,최신 챔피언 시나리오 테스트 존재; DISABLED 챔피언 실전 미실행
-f7b087d8-3148-43d5-a634-a81d15c81721,챔피언 마왕 벨모르트,CHAMPION,"gameStartAbilityText: 
+f7b087d8-3148-43d5-a634-a81d15c81721,챔피언 마왕 벨모르트,CHAMPION,"gameStartAbilityText:
 abilityText: 상대 선수 카드에게 1 데미지를 줍니다. 이 데미지로 상대 선수 카드가 리타이어 할 시 리타이어가 아니라 파괴시킵니다.
 questText: 선수 카드를 10번 파괴시킵니다.
 questRewardText: '마왕 벨모르트(강림)'을 내 필드에 소환합니다.
 upgradedAbilityText: 상대 선수 카드에게 2 데미지를 줍니다. 이 데미지로 상대 선수 카드가 리타이어 할 시 리타이어가 아니라 파괴시킵니다.
 championTokenEffectText: ",UNVERIFIED,전체 효과·모드 교차 판정 보류,벨모르트 고유 능력·퀘스트 연결; 상세 소스 참조,최신 챔피언 시나리오 테스트 존재; DISABLED 챔피언 실전 미실행
-champion-minion-a,챔피언 미니언 A,CHAMPION,"gameStartAbilityText: 
+champion-minion-a,챔피언 미니언 A,CHAMPION,"gameStartAbilityText:
 abilityText: 완전히 무작위 카드 비용을 1 감소시켜서 1장을 내 손에 생성합니다.
-questText: 
-questRewardText: 
-upgradedAbilityText: 
+questText:
+questRewardText:
+upgradedAbilityText:
 championTokenEffectText: ",UNVERIFIED,전체 효과·모드 교차 판정 보류,벨모르트 고유 능력·퀘스트 연결; 상세 소스 참조,최신 챔피언 시나리오 테스트 존재; DISABLED 챔피언 실전 미실행
-11ac192a-d48d-4119-a63d-f9102793fb9a,챔피언 여울,CHAMPION,"gameStartAbilityText: 
+11ac192a-d48d-4119-a63d-f9102793fb9a,챔피언 여울,CHAMPION,"gameStartAbilityText:
 abilityText: 다음 턴에 골드를 추가로 1 더 받습니다.
 questText: 이번 게임에서 골드를 총 30 소모하세요.
 questRewardText: 고유 능력이 강화됩니다.
 upgradedAbilityText: 다음 턴에 골드를 1 더 받습니다. 그리고 여울의 보디가드를 소환합니다.
 championTokenEffectText: ",UNVERIFIED,전체 효과·모드 교차 판정 보류,벨모르트 고유 능력·퀘스트 연결; 상세 소스 참조,최신 챔피언 시나리오 테스트 존재; DISABLED 챔피언 실전 미실행
-3cbb09c4-f8ac-4668-9378-5c01bfa9474b,챔피언 예거,CHAMPION,"gameStartAbilityText: 
+3cbb09c4-f8ac-4668-9378-5c01bfa9474b,챔피언 예거,CHAMPION,"gameStartAbilityText:
 abilityText: '용병'을 하나 소환한다.
 questText: 선수 카드를 8번 생성한다.(손패,덱,필드)
 questRewardText: 고유 능력을 강화시킨다.
 upgradedAbilityText: '엘리트 용병'을 하나 소환한다.
 championTokenEffectText: ",UNVERIFIED,전체 효과·모드 교차 판정 보류,벨모르트 고유 능력·퀘스트 연결; 상세 소스 참조,최신 챔피언 시나리오 테스트 존재; DISABLED 챔피언 실전 미실행
-c52da37b-5e7a-4223-bcf3-73824c677534,챔피언 크루세이더즈,CHAMPION,"gameStartAbilityText: 
+c52da37b-5e7a-4223-bcf3-73824c677534,챔피언 크루세이더즈,CHAMPION,"gameStartAbilityText:
 abilityText: 필드에 있는 아군 선수 카드들 중 무작위로 하나의 공격력을 1 증가시키고, 챔피언의 체력을 2 회복한다.
 questText: 자신의 챔피언의 체력이 5 이하가 된다.
 questRewardText: 필드에 '하늘을 떨구는 자(각성)'를 소환한다.
-upgradedAbilityText: 
+upgradedAbilityText:
 championTokenEffectText: ",UNVERIFIED,전체 효과·모드 교차 판정 보류,벨모르트 고유 능력·퀘스트 연결; 상세 소스 참조,최신 챔피언 시나리오 테스트 존재; DISABLED 챔피언 실전 미실행
-bcffab96-f61f-497e-b60b-de5a869837d3,챔피언 판도라,CHAMPION,"gameStartAbilityText: 
+bcffab96-f61f-497e-b60b-de5a869837d3,챔피언 판도라,CHAMPION,"gameStartAbilityText:
 abilityText: 자신이 선택한 모든 선수에게 1 데미지를 줍니다.
 questText: 자신의 고유 능력으로 선수 카드를 7번 리타이어 시킵니다.
 questRewardText: 고유 능력을 강화시키고, '챔피언 판도라(폭주)'를 필드에 소환합니다.
 upgradedAbilityText: 자신이 선택한 대상에게 2 데미지를 줍니다.
 championTokenEffectText: ",UNVERIFIED,전체 효과·모드 교차 판정 보류,벨모르트 고유 능력·퀘스트 연결; 상세 소스 참조,최신 챔피언 시나리오 테스트 존재; DISABLED 챔피언 실전 미실행
-0db142af-750e-4929-a464-5daf1bc75452,챔피언 퍼플레인,CHAMPION,"gameStartAbilityText: 
+0db142af-750e-4929-a464-5daf1bc75452,챔피언 퍼플레인,CHAMPION,"gameStartAbilityText:
 abilityText: 내 챔피언 또는 아군 선수 1장에게 1 피해를 줍니다. 챔피언이면 카드 1장을 뽑고 그 카드의 비용을 1 감소시킵니다. 선수이면 공격력 +1을 부여합니다.
 questText: 이번 게임에서 내 카드 또는 챔피언 효과로 내 챔피언 또는 아군 선수가 피해를 총 8회 받으세요. 상대 효과와 전투 피해는 제외합니다.
 questRewardText: 고유 능력이 강화됩니다.
 upgradedAbilityText: 내 챔피언 또는 아군 선수 1장에게 2 피해를 줍니다. 챔피언이면 카드 1장을 뽑고 그 카드의 비용을 2 감소시킵니다. 선수이면 공격력 +2을 부여합니다.
 championTokenEffectText: ",UNVERIFIED,전체 효과·모드 교차 판정 보류,벨모르트 고유 능력·퀘스트 연결; 상세 소스 참조,최신 챔피언 시나리오 테스트 존재; DISABLED 챔피언 실전 미실행
-0e9d8ab0-9af7-4db3-a03e-ff6ee3d5789f,챔피언 피 스타 세븐,CHAMPION,"gameStartAbilityText: 
+0e9d8ab0-9af7-4db3-a03e-ff6ee3d5789f,챔피언 피 스타 세븐,CHAMPION,"gameStartAbilityText:
 abilityText: 손패에 있는 선수 카드 중 무작위 한장의 체력과 공격을 1씩 증가시킨다.
 questText: 이번 게임에서 고유 능력을 7번 발동하세요.
 questRewardText: 고유 능력이 강화됩니다.
 upgradedAbilityText: 내 손에 있는 무작위 선수 카드 2장에게 +1/+1을 부여합니다.
 championTokenEffectText: ",UNVERIFIED,전체 효과·모드 교차 판정 보류,벨모르트 고유 능력·퀘스트 연결; 상세 소스 참조,최신 챔피언 시나리오 테스트 존재; DISABLED 챔피언 실전 미실행
-champion-tower-vanilla,타워 일반 상대,CHAMPION,"gameStartAbilityText: 
-abilityText: 
-questText: 
-questRewardText: 
-upgradedAbilityText: 
+champion-tower-vanilla,타워 일반 상대,CHAMPION,"gameStartAbilityText:
+abilityText:
+questText:
+questRewardText:
+upgradedAbilityText:
 championTokenEffectText: ",UNVERIFIED,전체 효과·모드 교차 판정 보류,벨모르트 고유 능력·퀘스트 연결; 상세 소스 참조,최신 챔피언 시나리오 테스트 존재; DISABLED 챔피언 실전 미실행
 epic-spell-forced-exchange,강제 교환,TECHNIQUE,아군 선수 1장과 상대 선수 1장을 선택하여 현재 공격력을 서로 교환합니다. 두 선수 모두 기절합니다.,UNVERIFIED,배포 전 다시 나타난 삭제 ID; 운영 행 자동 삭제 없음,재생성 경로 제거; 기존 구현 유지,역사 테스트 및 최신 AI 범위; 전수 완료 아님
-crisis-awakening-champion,AWAKEN_CHAMPION,CHAMPION,"abilityText: 
+crisis-awakening-champion,AWAKEN_CHAMPION,CHAMPION,"abilityText:
 questText: 내 Champion의 HP가 5 이하가 됩니다.
 questRewardText: 각성 수치를 확정하고 탱커 → 힐러 → 딜러를 연쇄 소환합니다. 소환된 각성 카드가 필드에 있는 동안 내 챔피언은 무적입니다.
 upgradedAbilityText: ",UNVERIFIED,배포 전 다시 나타난 삭제 ID; 운영 행 자동 삭제 없음,재생성 경로 제거; 기존 구현 유지,역사 테스트 및 최신 AI 범위; 전수 완료 아님
