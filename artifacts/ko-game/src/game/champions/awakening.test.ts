@@ -332,10 +332,10 @@ test("healer heals own champion, self and allies by three with ordinary maximums
   assert.equal(stage(r).currentHealth, 5);
   assert.equal(owner(r).board[1]?.currentHealth, 20);
 });
-test("dedicated cards cannot enter either random pool", () => {
+test("dedicated cards enter the owner-confirmed FULL pool but never STANDARD", () => {
   for (const c of createAwakeningCards()) {
     assert.equal(isEligibleForRandomPool(c, "STANDARD"), false);
-    assert.equal(isEligibleForRandomPool(c, "FULL"), false);
+    assert.equal(isEligibleForRandomPool(c, "FULL"), true);
   }
 });
 

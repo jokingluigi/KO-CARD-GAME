@@ -1,6 +1,7 @@
 import type { CardInstance } from '../cards/types';
 import { normalizeCardForZone, resetCardAfterLeavingBoard } from '../cards/zone-state';
 import type { GameState } from '../types/game-state';
+import { resolveHandAdditionListeners } from '../effects/effect-engine';
 import { MAX_HAND_SIZE } from '../rules/constants';
 import { canEnterTowerField } from '../tower/relics';
 import { enterField } from './enter-field';
@@ -10,9 +11,9 @@ export function awaitChampionRewardSpace(state: GameState, playerId: string, cha
   const owner = state.players.find(p => p.id === playerId)!;
   const validTargetIds = owner.board.flatMap(c => c && canEnterTowerField({ ...state, players: state.players.map(p => p.id !== playerId ? p : { ...p, board: p.board.map(card => card?.instanceId === c.instanceId ? null : card) as typeof p.board }) }, playerId) ? [c.instanceId] : []);
   // A tower relic can prohibit all entries this turn independently of field space.
-  if (!validTargetIds.length) return { ...state, players: state.players.map(p => p.id !== playerId ? p : p.hand.length < MAX_HAND_SIZE
+  if (!validTargetIds.length) {const returned:GameState={ ...state, players: state.players.map(p => p.id !== playerId ? p : p.hand.length < MAX_HAND_SIZE
     ? { ...p, hand: [...p.hand, normalizeCardForZone(token, 'HAND')] }
-    : { ...p, deck: [normalizeCardForZone(token, 'DECK'), ...p.deck] }) };
+    : { ...p, deck: [normalizeCardForZone(token, 'DECK'), ...p.deck] }) };return owner.hand.length<MAX_HAND_SIZE ? resolveHandAdditionListeners(returned,playerId,[token]) : returned;}
   return { ...state, targetingState: {
     active: true, phase: 'POST_COMMIT', playerId, sourceInstanceId: token.instanceId, sourceCard: token,
     effects: [], effectIndex: 0, selectedTargetIds: [], lastTargetIds: [],
@@ -43,7 +44,7 @@ export function selectChampionRewardReplacement(state: GameState, targetId: stri
       boardSlot: card.boardSlot, source: { type: 'CHAMPION', championId: reward.championId },
       target: { type: 'CARD', cardInstanceId: targetId }, reason: 'CHAMPION_REWARD_RETURN_' + destination }],
   };
-  return enterField(next, owner.id, reward.token, card.boardSlot,
+  return enterField(destination==='HAND' ? resolveHandAdditionListeners(next,owner.id,[returned]) : next, owner.id, reward.token, card.boardSlot,
     { type: 'CHAMPION', championId: reward.championId }, undefined, 'CHAMPION_DEPLOY');
 }
 

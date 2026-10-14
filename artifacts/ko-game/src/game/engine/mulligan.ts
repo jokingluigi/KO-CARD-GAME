@@ -1,3 +1,4 @@
+import { resolveTriggeredAbilities } from '../effects/effect-engine';
 import { normalizeCardForZone, resetCardAfterLeavingBoard } from '../cards/zone-state';
 import type { GameState } from '../types/game-state';
 import { actionFailure, actionSuccess, type ActionResult } from '../actions/types';
@@ -31,7 +32,7 @@ export function mulligan(state: GameState, playerId: string, cardInstanceIds: st
       hand: [...candidate.hand.filter((card) => !selected.has(card.instanceId)), ...replacements],
       deck: [...candidate.deck.slice(exchanged.length), ...exchanged.map((card) => normalizeCardForZone(resetCardAfterLeavingBoard(card), 'DECK'))],
     });
-  return actionSuccess({
+  const exchangedState: GameState = {
     ...state,
     openingMulligan: state.openingMulligan && !players.every((candidate) => candidate.mulliganUsed),
     players,
@@ -39,5 +40,7 @@ export function mulligan(state: GameState, playerId: string, cardInstanceIds: st
       type: 'MULLIGAN_COMPLETED', playerId, amount: exchanged.length,
       source: { type: 'PLAYER', playerId }, target: { type: 'PLAYER', playerId },
     }],
-  });
+  };
+  const next=exchangedState.players.find(player=>player.id===playerId)!.deck.reduce((current,card)=>resolveTriggeredAbilities(current,playerId,card,'AFTER_MULLIGAN'),exchangedState);
+  return actionSuccess(next);
 }

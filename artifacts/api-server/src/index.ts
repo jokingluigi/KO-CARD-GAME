@@ -7,7 +7,6 @@ import { attachOnlineMatchWebSocket } from "./online/websocket";
 import { db } from "@workspace/db";
 import { sql } from "drizzle-orm";
 import { ensureTowerStorage } from "./lib/startup-schema";
-import { ensureAwakeningContent } from "./lib/awakening-card-service";
 
 const rawPort = process.env["PORT"];
 
@@ -27,7 +26,6 @@ async function start(): Promise<void> {
   await db.execute(sql`ALTER TABLE "decks" ADD COLUMN IF NOT EXISTS "deleted_at" timestamptz`);
   await ensureTowerStorage();
   await ensureProductionAdmin();
-  await ensureAwakeningContent();
   startDraftWorker();
 
   const server = createServer(app);

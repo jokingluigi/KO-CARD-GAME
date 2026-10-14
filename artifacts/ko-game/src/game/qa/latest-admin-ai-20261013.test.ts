@@ -25,7 +25,7 @@ import type { CardDefinition } from "../cards/types";
 import type { GameState } from "../types/game-state";
 
 const snapshotDirectory = new URL(
-  "../../../../../docs/qa/snapshots/20261013-admin/",
+  `../../../../../${process.env.KO_QA_ADMIN_SNAPSHOT_DIR ?? 'docs/qa/snapshots/20261013-admin'}/`,
   import.meta.url,
 );
 const rawCards: PublishedCardRecord[] = JSON.parse(
@@ -246,6 +246,7 @@ function runMatch(
   firstPlayer: "player-1" | "player-2",
 ): MatchSummary {
   let state: GameState | undefined;
+  let lastTransition: {before: GameState; action: GameAction} | undefined;
   let actions = 0;
   const actionTypes = new Set<string>();
 
@@ -316,6 +317,7 @@ function runMatch(
         );
       }
 
+      lastTransition = {before: state, action: chosen};
       const result = executeAction(state, chosen);
       assert.equal(
         JSON.stringify(state),
@@ -389,6 +391,7 @@ function runMatch(
         : {}),
     };
   } catch (error) {
+    if (process.env.KO_QA_ADMIN_FAILURE_STATE) writeFileSync(process.env.KO_QA_ADMIN_FAILURE_STATE, JSON.stringify({match,seed,lastTransition,state}), {mode:0o600});
     return {
       match,
       seed,

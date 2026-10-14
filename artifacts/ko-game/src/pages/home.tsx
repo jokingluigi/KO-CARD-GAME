@@ -1,3 +1,4 @@
+import { canPresentBattleQuest } from '@/components/quest-presentation-policy';
 import { completeMinionACatalog } from '../game/champions/minion-a';
 import {startAdminTestDeckGame} from '@/lib/admin-test-deck';
 import {AdminTestDeck} from '@/components/admin-test-deck';
@@ -796,7 +797,7 @@ export default function Home({ initialAuthUser }: { initialAuthUser?: AuthUser }
     }
     const champion = gameState.players.map((player) => player.champion)
       .find((candidate) => candidate?.id === gameState.latestQuestCompletedChampionId);
-    if (champion?.questCompleted && champion.questCompleteAudioEnabled && champion.questCompleteAudioUrl) {
+    if (canPresentBattleQuest(gameState) && champion?.questCompleted && champion.questCompleteAudioEnabled && champion.questCompleteAudioUrl) {
       audioManager.playQuestComplete(champion.questCompleteAudioUrl, champion.questCompleteAudioVolume ?? 100);
     } else {
       const bgm = mediaCatalog.bgms.find((item) => item.id === gameState.bgmId);
@@ -806,7 +807,7 @@ export default function Home({ initialAuthUser }: { initialAuthUser?: AuthUser }
         audioManager.stopBgm();
       }
     }
-  }, [gameState.bgmId, gameState.latestQuestCompletedChampionId, gameState.players, mediaCatalog.bgms, isAiMatch, aiMatchStarted, matchReady]);
+  }, [gameState.status, gameState.bgmId, gameState.latestQuestCompletedChampionId, gameState.players, mediaCatalog.bgms, isAiMatch, aiMatchStarted, matchReady]);
 
   useEffect(() => {
     audioManager.setBgmVolume(bgmVolume);

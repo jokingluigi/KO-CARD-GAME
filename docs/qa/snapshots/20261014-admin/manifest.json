@@ -1,0 +1,31 @@
+{
+  "generatedAt": "2026-10-14T13:01:37.415965+00:00",
+  "sourceOrigin": "https://ko-card-game.onrender.com",
+  "sourcePaths": [
+    "/api/admin/cards",
+    "/api/admin/champions",
+    "/api/admin/tags/",
+    "/api/admin/tower/"
+  ],
+  "access": "authenticated GET only; existing external cookie jar",
+  "files": {
+    "cards": {
+      "sha256": "d778e658eb9d050e817df4d8162179e3895ba5f96366a8783ce903e7b340ca74",
+      "count": 165
+    },
+    "champions": {
+      "sha256": "fab1b92ee6b8c9a915dbb7a50d29247733e2fc658d377591e51161fcb3dd9d83",
+      "count": 11
+    },
+    "tags": {
+      "sha256": "438c41e6d850d66402c8f4cfde45ccf2c32a8d0b468b289f5fe099f2a330eca2",
+      "count": 18
+    },
+    "tower": {
+      "sha256": "d94f18294b223756f0174e14cb260f0240650c2917db0a0961e7422e6caaf288"
+    }
+  },
+  "missing": [
+    "Frozen published Tower V2 version not exposed by the content configuration endpoint"
+  ]
+}

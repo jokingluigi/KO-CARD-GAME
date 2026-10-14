@@ -10,7 +10,7 @@ import { beginAwakeningSequence, reconcileAwakeningSequences } from './awakening
 
 function matchesQuestEvent(
   event: GameEvent,
-  quest: Pick<ChampionQuest, 'trackedEvent' | 'cardType' | 'sourceActionType'>,
+  quest: Pick<ChampionQuest, 'trackedEvent' | 'cardType' | 'sourceActionType' | 'causedByOwner'>,
   playerId: string,
   championId: string,
 ): boolean {
@@ -22,6 +22,7 @@ function matchesQuestEvent(
   // Both participants receive FUSION, while a quest counts one completed fusion.
   if (quest.trackedEvent === 'FUSION' && event.reason !== 'FUSION_SOURCE') return false;
   if (!eventMatches || (quest.cardType && event.cardType !== quest.cardType)) return false;
+  if (quest.causedByOwner) return event.sourceContext?.sourcePlayerId === playerId;
   if (quest.sourceActionType) {
     const sourceMatches = event.sourceContext?.sourceActionType === quest.sourceActionType &&
       event.sourceContext.sourcePlayerId === playerId &&

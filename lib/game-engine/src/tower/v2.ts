@@ -163,7 +163,10 @@ export function validateTowerV2(config: TowerV2, catalog: TowerCatalog): void {
   if (new Set(config.bosses.map((b) => b.id)).size !== config.bosses.length)
     fail("보스 ID가 중복됩니다.");
   const allowed = new Set(
-    catalog.cards.filter(eligibleRewardCard).map((c) => c.id),
+    // Authored boss decks use the live content catalog, including private and
+    // token cards. Reward eligibility and its cost limit do not define this pool.
+    catalog.cards.filter(card => ["PUBLISHED", "DRAFT"].includes(card.status) &&
+      card.executable !== false && Number.isInteger(card.cost) && card.cost >= 0).map(card => card.id),
   );
   for (const b of config.bosses)
     if (b.cardIds.length !== 25 || b.cardIds.some((id) => !allowed.has(id)))

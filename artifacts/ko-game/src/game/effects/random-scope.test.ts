@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import { createInitialGameState } from '../engine/create-initial-game-state';
 import { generateCardInstance, getRandomCardGenerationCandidates } from '../cards/generation';
 import { completeMinionACatalog } from '../champions/minion-a';
+import { createAwakeningCards } from '../champions/awakening-definitions';
 import type { CardDefinition } from '../cards/types';
 import type { CardEffect } from './types';
 import { applyEffect, getValidTargets } from './effect-engine';
@@ -30,6 +31,17 @@ test('STANDARD filters publication and both token kinds; FULL includes all valid
   assert.deepEqual(getRandomCardGenerationCandidates(catalog,{randomScope:'FULL'}).map(d=>d.id), catalog.map(d=>d.id));
 });
 
+for (const action of ['GENERATE', 'SUMMON'] as const) test(`FULL ${action} includes every exclusive awakening token without completing a quest`, () => {
+  const pool = createAwakeningCards();
+  const state = fixture(pool); state.cardPool = pool;
+  const result = applyEffect(JSON.parse(JSON.stringify(state)), 'player-1', source, randomEffect('FULL', action));
+  const generated = action === 'GENERATE' ? result.players[0].hand : result.players[0].board.filter((c): c is NonNullable<typeof c> => Boolean(c));
+  assert.deepEqual(generated.map(c => c.definitionId).sort(), pool.map(c => c.id).sort());
+  assert.equal(result.events.some(e => e.type === 'CHAMPION_QUEST_COMPLETED'), false);
+  assert.equal(result.players[0].champion?.awakening?.sequenceActive ?? false, false);
+  assert.equal(getRandomCardGenerationCandidates(pool).length, 0);
+});
+
 test('ordinary champions receive the full effect catalog without adding hidden cards to initial decks', () => {
   const state=fixture();
   assert.equal(state.minionACardPool,undefined);
@@ -53,7 +65,7 @@ for(const scope of ['STANDARD','FULL'] as const) {
     const state=fixture(); const definitions=catalog.filter(d=>d.id!=='disabled');
     state.players[1].board=definitions.map((d,i)=>({...generateCardInstance(d,{instanceId:d.id}),status:undefined,boardSlot:i as 0|1|2|3})) as typeof state.players[1]['board'];
     const effect:CardEffect={type:'STRUCTURED',action:'BUFF',target:{zone:'BOARD',owner:'ENEMY',selection:'RANDOM',count:20,randomScope:scope},values:{attack:1,health:0}};
-    const expected=scope==='FULL'?definitions.map(d=>d.id):['public'];
+    const expected=definitions.map(d=>d.id); // Both scopes can target any existing field card.
     assert.deepEqual(getValidTargets(state,'player-1',source,effect).sort(),expected.sort());
     const result=applyEffect(state,'player-1',source,effect);
     assert.deepEqual(result.players[1].board.filter(c=>c?.currentAttack===3).map(c=>c!.definitionId).sort(),expected.sort());
@@ -66,7 +78,7 @@ for(const scope of ['STANDARD','FULL'] as const) {
       {type:'EFFECT',effect:{action:'BUFF',target:{zone:'HAND',owner:'SELF',resultId:'picked'},values:{attack:1,health:0}}},
     ]}};
     const result=applyEffect(state,'player-1',source,effect);
-    assert.equal(result.players[0].hand.find(c=>c.currentAttack===3)?.definitionId,scope==='FULL'?'draft':'public');
+    assert.equal(result.players[0].hand.find(c=>c.currentAttack===3)?.definitionId,'draft');
   });
 }
 

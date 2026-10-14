@@ -4,7 +4,7 @@ import React,{createContext,useCallback,useContext,useEffect,useRef,useState,typ
 import {createPortal} from 'react-dom';
 import {audioManager} from '@/audio/audio-manager';
 import {prefersReducedMotion} from './presentation-config';
-import {cameraLevel,cinematicDuration,emptyCinematicState,finishCinematic,offerCinematic,type CinematicRequest,type CinematicEvent} from './cinematic-policy';
+import {cameraLevel,cinematicDuration,emptyCinematicState,finishCinematic,offerCinematic,withoutQuestCompletions,type CinematicRequest,type CinematicEvent} from './cinematic-policy';
 import './cinematic-presentation.css';
 import {ScreenImpactContext,useScreenImpactManager,ScreenImpactScene} from './screen-impact';
 import {specialImpact} from './screen-impact-policy';
@@ -17,15 +17,21 @@ export function useCinematicEvent(event:CinematicRequest|null){
  useEffect(()=>{if(event)request(event);},[request,event?.id]);
 }
 /** Reset by match key. No callback from this provider can advance or block a battle. */
-export function CinematicProvider({children,speed='NORMAL'}:{children:ReactNode;speed?:'NORMAL'|'FAST'}){
+export function CinematicProvider({children,speed='NORMAL',allowQuestCompletion=true}:{children:ReactNode;speed?:'NORMAL'|'FAST';allowQuestCompletion?:boolean}){
  const [state,setState]=useState(emptyCinematicState);
  const container=useRef<HTMLDivElement>(null);
  const cameraMotions=useRef<Animation[]>([]);
  const cancelCamera=useCallback(()=>{cameraMotions.current.forEach(a=>a.cancel());cameraMotions.current=[];},[]);
  const screen=useScreenImpactManager(container,cancelCamera);
  const request=useCallback((event:CinematicRequest)=>{
+  if(event.questCompletion&&!allowQuestCompletion)return;
   setState(s=>offerCinematic(s,{...event,createdAt:performance.now(),duration:cinematicDuration(event,prefersReducedMotion(),speed,s.pending.length)}));
- },[speed]);
+ },[speed,allowQuestCompletion]);
+ useEffect(()=>{
+  if(allowQuestCompletion)return;
+  if(state.active?.questCompletion && screen.impact?.id==='cinematic-special:'+state.active.id)screen.clear();
+  setState(withoutQuestCompletions);
+ },[allowQuestCompletion,state.active?.id,screen.clear]);
  useEffect(()=>{
   const reset=()=>setState(emptyCinematicState());
   const hidden=()=>{if(document.hidden)reset();};
@@ -33,7 +39,7 @@ export function CinematicProvider({children,speed='NORMAL'}:{children:ReactNode;
   const media=window.matchMedia('(prefers-reduced-motion: reduce)');media.addEventListener('change',reset);
   return()=>{window.removeEventListener('ko-combat-preferences',reset);window.removeEventListener('resize',reset);document.removeEventListener('visibilitychange',hidden);media.removeEventListener('change',reset);};
  },[]);
- const event=state.active;
+ const event=state.active?.questCompletion&&!allowQuestCompletion?null:state.active;
  useEffect(()=>{
   if(!event)return;
   const motions:Animation[]=[];
@@ -81,5 +87,22 @@ export function CinematicCue({cue,state}:{cue:PresentationCue;state:GameState}){
  const definition=source&&(state.cardPool?.find(d=>d.id===source.definitionId)??getCardDefinition(source.definitionId));
  const kind=cue.kind==='EFFECT'&&cue.championId?'ABILITY':cue.kind==='DAMAGE'&&!cue.combat&&(cue.value??0)>=10?'FINISHER':null;
  useCinematicEvent(kind?{id:cue.id,kind,title:kind==='FINISHER'?definition?.name??'K.O. IMPACT':champion?.name??cue.label,subtitle:champion?.questCompleted?champion.upgradedAbility?.name??champion.ability.name:champion?.ability.name??'CHAMPION ABILITY',art:kind==='FINISHER'?definition?.imageUrl:champion?.questCompleted&&champion.questCompletedPortraitEnabled&&champion.questCompletedPortraitUrl?champion.questCompletedPortraitUrl:champion?.imageUrl,focus:{x:cue.left,y:cue.top}}:null);
+ return null;
+}
+
+/** The engine supplies only the intentionally revealed card's public face. */
+export function CardRevealPresentation({state}:{state:GameState}) {
+ const request=useContext(CinematicContext);
+ const cursor=useRef(state.events.length);
+ useEffect(()=>{
+  const start=cursor.current;cursor.current=state.events.length;
+  if(state.events.length<start)return;
+  for(let index=start;index<state.events.length;index++){
+   const event=state.events[index]!;const card=event.revealedCard;
+   if(event.type!=='CARD_REVEALED'||!card)continue;
+   request({id:`${state.gameId}:card-reveal:${index}`,kind:'BIG_SPELL',title:card.name,
+    subtitle:`덱 맨 위 카드 공개 · 비용 ${card.cost} · 공격력 ${card.attack} · 체력 ${card.health}`,art:card.imageUrl,duration:1500});
+  }
+ },[state.events,state.gameId,request]);
  return null;
 }

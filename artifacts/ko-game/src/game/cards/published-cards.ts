@@ -1,3 +1,4 @@
+import { reviewedCurrentAdminAbilities, reviewedCurrentAdminKeywords } from './reviewed-admin-content-20261014';
 import { reviewedContentAbilities } from './reviewed-content-20261012';
 import { reviewedAdminContentAbilities } from './reviewed-admin-content-20261013';
 import { textCardAbilities } from './text-effect-repair';
@@ -247,8 +248,9 @@ export function cardRecordToDefinition(card: PublishedCardRecord): CardDefinitio
       return { ...effect, target };
     }) } };
   }
+  const reviewedCurrent = reviewedCurrentAdminAbilities(card);
   const reviewedAdmin = reviewedAdminContentAbilities(card);
-  const implementation = reviewedAdmin ? null : newCardImplementation(card);
+  const implementation = reviewedCurrent || reviewedAdmin ? null : newCardImplementation(card);
   if (card.id === 'dc43dc88-38d7-499b-ad89-6b83f773fe62' && Array.isArray(card.effectConfig.effects)) {
     card = { ...card, effectConfig: { ...card.effectConfig, effects: (card.effectConfig.effects as Array<Record<string, unknown>>).map(effect =>
       effect.action === 'DESTROY' && effect.trigger === 'ENTER_FIELD' && effect.target && typeof effect.target === 'object'
@@ -319,10 +321,10 @@ export function cardRecordToDefinition(card: PublishedCardRecord): CardDefinitio
       isChampionToken: card.isChampionToken,
       ...(card.effectConfig.questExclusive === true ? { questExclusive: true } : {}),
       ...(['TANK', 'HEALER', 'DEALER'].includes(String(card.effectConfig.awakeningStage)) ? { awakeningStage: card.effectConfig.awakeningStage as 'TANK' | 'HEALER' | 'DEALER' } : {}),
-      keywords: repairedLegacyCardKeywords(card),
+      keywords: reviewedCurrentAdminKeywords(card) ?? repairedLegacyCardKeywords(card),
        tags: Array.isArray(card.tags) ? [...card.tags] : [],
       ...(implementation ? {contentRule: implementation.rule} : {}),
-      abilities: (reviewedAdmin ?? reviewedContentAbilities(card) ?? textCardAbilities(card) ?? implementation?.abilities ?? repairedLegacyCardAbilities(card) ?? (zombieAbsorption
+      abilities: (reviewedCurrent ?? reviewedAdmin ?? reviewedContentAbilities(card) ?? textCardAbilities(card) ?? implementation?.abilities ?? repairedLegacyCardAbilities(card) ?? (zombieAbsorption
         ? [{ trigger: 'ENTER_FIELD' as const, effects: [{ type: 'STRUCTURED' as const,
             action: 'COPY_BEST_STATS' as const,
             target: { zone: 'BOARD' as const, owner: 'SELF' as const, cardType: 'WRESTLER' as const,

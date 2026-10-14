@@ -19,7 +19,7 @@ import type { GameState } from "../types/game-state";
 import type { GameAction } from "../actions/types";
 import type { CardDefinition } from "../cards/types";
 const directory = new URL(
-  "../../../../../docs/qa/snapshots/20261013-admin/",
+  `../../../../../${process.env.KO_QA_ADMIN_SNAPSHOT_DIR ?? 'docs/qa/snapshots/20261013-admin'}/`,
   import.meta.url,
 );
 const records: PublishedChampionRecord[] = JSON.parse(

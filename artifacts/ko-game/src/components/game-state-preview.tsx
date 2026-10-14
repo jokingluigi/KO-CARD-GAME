@@ -56,8 +56,9 @@ import { presentationCueDrafts, presentationEventKey, presentationBlocksActions,
 import { canMulligan } from '../game/engine/mulligan';
 import {CombatSettings} from './combat-settings';
 import {ScreenShakeSetting} from './screen-impact';
-import { CinematicProvider, CinematicCue, CinematicIntro } from './cinematic-layer';
+import { CinematicProvider, CinematicCue, CinematicIntro, CardRevealPresentation } from './cinematic-layer';
 import { QuestPresentation } from './quest-presentation';
+import { canPresentBattleQuest } from './quest-presentation-policy';
 import { audioManager } from '../audio/audio-manager';
 import { combatHitSound } from '../audio/combat-hit-sound';
 import { MatchTutorial } from './match-tutorial';
@@ -268,6 +269,10 @@ export function GameStatePreview({
   const processedEventCountRef = React.useRef<number | null>(null);
   const processedEventKeysRef = React.useRef(new Set<string>());
   const presentedQuestCompletionsRef = React.useRef(new Set<string>());
+  const questPresentationAllowed = canPresentBattleQuest(state);
+  React.useEffect(() => {
+    if (!questPresentationAllowed) setPresentationQueue(current => current.filter(cue => !['QUEST_COMPLETE', 'QUEST_PROGRESS'].includes(cue.kind)));
+  }, [questPresentationAllowed]);
   const lastCardPositionsRef = React.useRef(new Map<string, { left: number; top: number; width: number; height: number }>());
   const previousCardStatsRef = React.useRef(new Map<string, { attack: number; health: number }>());
   const previousCardsRef = React.useRef(new Map<string, CardInstance>());
@@ -367,7 +372,8 @@ export function GameStatePreview({
     );
     const newEventEntries = state.events
       .map((event, index) => ({ event, key: eventKeys[index]! }))
-      .filter(({ key }) => !processedEventKeysRef.current.has(key));
+      .filter(({ key }) => !processedEventKeysRef.current.has(key))
+      .filter(({ event }) => questPresentationAllowed || (!['CHAMPION_QUEST_COMPLETED', 'CHAMPION_QUEST_PROGRESS'].includes(event.type) && event.reason !== 'CHAMPION_QUEST_REWARD' && !(event.type === 'ENTER_FIELD' && 'entryCause' in event && event.entryCause === 'CHAMPION_DEPLOY')));
     const newEvents = newEventEntries.map(({ event }) => event);
     const flights = newEventEntries.flatMap(({ event, key }) => {
       if (event.type !== 'CARD_DRAWN' || !event.playerId) return [];
@@ -670,6 +676,7 @@ export function GameStatePreview({
         if (['GOLD', 'DRAW', 'QUEST_PROGRESS'].includes(cue.kind)) return false;
         if (!visibleStatFeedback(cue, visibleCardIds)) return false;
         if (cue.kind !== 'QUEST_COMPLETE') return true;
+        if (!questPresentationAllowed) return false;
         const key = `${state.gameId}:${cue.playerId ?? ''}:${cue.championId ?? ''}`;
         if (presentedQuestCompletionsRef.current.has(key)) return false;
         presentedQuestCompletionsRef.current.add(key);
@@ -885,10 +892,11 @@ export function GameStatePreview({
   }
 
   return (
-    <RenderCardCatalog.Provider value={getCardDefinition}><CinematicProvider key={state.gameId}><AltInspectProvider>
-     <div className={`ko-game-shell flex min-h-[100dvh] w-full flex-col overflow-x-hidden overflow-y-auto bg-neutral-950 font-sans text-neutral-100 selection:bg-primary selection:text-black md:overflow-hidden ${me.champion?.questCompleted ? 'ko-quest-awakened--mine' : ''} ${opp.champion?.questCompleted ? 'ko-quest-awakened--theirs' : ''}`}>
+    <RenderCardCatalog.Provider value={getCardDefinition}><CinematicProvider key={state.gameId} allowQuestCompletion={questPresentationAllowed}><AltInspectProvider>
+     <div className={`ko-game-shell flex min-h-[100dvh] w-full flex-col overflow-x-hidden overflow-y-auto bg-neutral-950 font-sans text-neutral-100 selection:bg-primary selection:text-black md:overflow-hidden ${me.champion?.questCompleted && questPresentationAllowed ? 'ko-quest-awakened--mine' : ''} ${opp.champion?.questCompleted && questPresentationAllowed ? 'ko-quest-awakened--theirs' : ''}`}>
       <BattleCardDrag state={state} enabled={isMyTurn && state.status === 'IN_PROGRESS' && !introActive && !effectTargeting && !settingsOpen && !playAnimation && !attackAnimation && canEndTurn} selectedCardId={selectedCardId} hand={handCardRefs} slots={boardSlotRefs} select={onSelectCard} cancel={id=>{if(selectedCardId===id)onSelectCard(id);}} summon={onSelectSlot} spell={onUseTechnique} />
       {selectedAttackerId && !effectTargeting && !attackAnimation && <AttackAim source={boardCardRefs.current.get(selectedAttackerId)??null} targets={boardCardRefs} champion={championRef.current} championId={opp.id} valid={legalAttackTargets} />}
+      <CardRevealPresentation state={state} />
       {cinematicIntro && <CinematicIntro event={cinematicIntro} />}
       {activePresentationCue && <CinematicCue cue={activePresentationCue} state={state} />}
       <ActionHistory state={state} viewerPlayerId={presentationPlayerId ?? me.id} mobileOpen={historyOpen} onMobileClose={() => setHistoryOpen(false)} />
@@ -956,7 +964,7 @@ export function GameStatePreview({
                        (effectTargeting && validEffectTargetIds.has(opp.id)) || (selectedAttackerId && legalAttackTargets.has(opp.id))
                         ? 'cursor-crosshair border-red-500 shadow-[0_0_15px_rgba(239,68,68,0.4)]'
                         : 'border-red-900'
-                     } ${opp.champion?.questCompleted ? 'ko-quest-awakened-portrait ko-quest-awakened-portrait--enemy' : ''} ${activePresentationChampionId === opp.champion?.id || activePresentationCue?.playerId === opp.id ? 'presentation-card-pulse' : ''}`}
+                     } ${opp.champion?.questCompleted && questPresentationAllowed ? 'ko-quest-awakened-portrait ko-quest-awakened-portrait--enemy' : ''} ${activePresentationChampionId === opp.champion?.id || activePresentationCue?.playerId === opp.id ? 'presentation-card-pulse' : ''}`}
                        role="button"
                        tabIndex={0}
                        aria-label="상대 챔피언 대상"
@@ -1464,7 +1472,7 @@ export function GameStatePreview({
                         else if (onEmote && state.status === 'IN_PROGRESS') setEmoteOpen((open) => !open);
                       }
                     }}
-                    className={`ko-player-champion relative flex h-28 w-20 shrink-0 cursor-pointer flex-col items-center justify-center overflow-hidden rounded-sm border-2 bg-neutral-900 md:h-40 md:w-28 ${me.champion?.questCompleted ? 'ko-quest-awakened-portrait border-amber-400' : effectTargeting && validEffectTargetIds.has(me.id) ? 'cursor-crosshair border-amber-400 shadow-[0_0_15px_rgba(251,191,36,0.5)]' : 'border-blue-600 shadow-[0_0_15px_rgba(37,99,235,0.2)]'} ${activePresentationChampionId === me.champion?.id || activePresentationCue?.playerId === me.id ? 'presentation-card-pulse' : ''}`}
+                    className={`ko-player-champion relative flex h-28 w-20 shrink-0 cursor-pointer flex-col items-center justify-center overflow-hidden rounded-sm border-2 bg-neutral-900 md:h-40 md:w-28 ${me.champion?.questCompleted && questPresentationAllowed ? 'ko-quest-awakened-portrait border-amber-400' : effectTargeting && validEffectTargetIds.has(me.id) ? 'cursor-crosshair border-amber-400 shadow-[0_0_15px_rgba(251,191,36,0.5)]' : 'border-blue-600 shadow-[0_0_15px_rgba(37,99,235,0.2)]'} ${activePresentationChampionId === me.champion?.id || activePresentationCue?.playerId === me.id ? 'presentation-card-pulse' : ''}`}
                   >
                     {playerChampionPortrait && (
                       <CardArtwork
@@ -1630,6 +1638,7 @@ export function GameStatePreview({
         <span>{spokenLine.text}</span>
       </div>}
       {presentationQueue[0] &&
+        (presentationQueue[0].kind !== 'QUEST_COMPLETE' || questPresentationAllowed) &&
         !introActive &&
         !state.openingMulligan &&
         !canMulligan(state, me.id) &&

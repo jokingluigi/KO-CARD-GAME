@@ -26,7 +26,7 @@ for (const file of ["0033_server_maintenance.sql", "0038_ai_quest_matches.sql"])
     await readFile(new URL("../migrations/" + file, import.meta.url), "utf8"),
   );
 const folder = new URL(
-  "../../../docs/qa/snapshots/20261013-admin/",
+  `../../../${process.env.KO_QA_ADMIN_SNAPSHOT_DIR ?? 'docs/qa/snapshots/20261013-admin'}/`,
   import.meta.url,
 );
 const cards = JSON.parse(await readFile(new URL("cards.json", folder), "utf8"));

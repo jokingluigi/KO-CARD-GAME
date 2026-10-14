@@ -61,6 +61,7 @@ export type TemporaryStatModifier = {
   stat: 'cost' | 'attack' | 'health';
   amount: number;
   untilTurn: number;
+  untilOwnerTurnStart?: boolean;
 };
 
 export const DEFAULT_IMAGE_DISPLAY_SETTINGS: ImageDisplaySettings = {
@@ -175,6 +176,7 @@ export interface CardInstance {
   enteredOnTurn?: number;
   entryDefenseActive?: boolean;
   attacksUsedThisTurn: number;
+  extraWrestlerAttacksThisTurn?: number;
   isGenerated: boolean;
   isToken: boolean;
   isChampionToken: boolean;

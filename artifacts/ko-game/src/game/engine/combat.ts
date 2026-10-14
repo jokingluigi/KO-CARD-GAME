@@ -1,6 +1,6 @@
 import { hasNewCardRule, silenceDamageReduction, madokawaIncomingBonus } from './new-card-rules';
 import { keywordDamage, healLifesteal, hasEntryDefense } from './keyword-rules';
-import type { CardInstanceId } from '../cards/types';
+import type { CardInstance, CardInstanceId } from '../cards/types';
 import type { ActionErrorCode, ActionResult } from '../actions/types';
 import { actionFailure, actionSuccess } from '../actions/types';
 import type { GameState } from '../types/game-state';
@@ -94,7 +94,7 @@ export function getAttackLegality(
   if (towerAttackBlocked(state, playerId, cardInstanceId)) return { allowed: false, reasonCode: 'SUMMONED_THIS_TURN', message: '폭주 티켓으로 소환한 선수는 이번 턴에 공격할 수 없습니다.' };
 
   const maximumAttacks = hasKeyword(entry.card, 'MULTI_STRIKE') ? 2 : 1;
-  if (entry.card.attacksUsedThisTurn >= maximumAttacks) {
+  if (entry.card.attacksUsedThisTurn >= maximumAttacks && !(entry.card.extraWrestlerAttacksThisTurn??0)) {
     return {
       allowed: false,
       reasonCode: 'ATTACK_ALREADY_USED',
@@ -117,7 +117,7 @@ export function getAttackLegality(
   const opponent = state.players.find((player) => player.id !== playerId);
   const hasOpponentWrestler = Boolean(opponent?.board.some((card) => card !== null));
   const canAttackChampion = Boolean(
-    opponent &&
+    opponent && entry.card.attacksUsedThisTurn < maximumAttacks &&
       !isChampionProtectedByToken(state, opponent.id) &&
       (!entry.card.enteredThisTurn || !hasKeyword(entry.card, 'SURPRISE')),
   );
@@ -254,7 +254,8 @@ export function attack(
   }
 
   const maximumAttacks = hasKeyword(attacker, 'MULTI_STRIKE') ? 2 : 1;
-  if (attacker.attacksUsedThisTurn >= maximumAttacks) {
+  const usingExtraWrestlerAttack=attacker.attacksUsedThisTurn>=maximumAttacks;
+  if (usingExtraWrestlerAttack && !((attacker.extraWrestlerAttacksThisTurn??0)>0 && target.type==='WRESTLER')) {
     return actionFailure(
       state,
       'ATTACK_ALREADY_USED',
@@ -262,6 +263,7 @@ export function attack(
     );
   }
 
+  const attackUse=(card:CardInstance)=>({attacksUsedThisTurn:card.attacksUsedThisTurn+(usingExtraWrestlerAttack?0:1),extraWrestlerAttacksThisTurn:Math.max(0,(card.extraWrestlerAttacksThisTurn??0)-(usingExtraWrestlerAttack?1:0))});
   const defendingPlayer = state.players.find(
     (player) => player.id === target.playerId,
   );
@@ -310,8 +312,8 @@ export function attack(
       target.playerId,
     );
     const awakeningPrevented = hasAwakeningInvulnerability(state, target.playerId);
-    const attackerDamage = awakeningPrevented ? 0 : attacker.currentAttack +
-      getDamageModifierBonus(state, attackingPlayerId, attacker);
+    const attackerDamage = awakeningPrevented ? 0 : Math.max(0, attacker.currentAttack +
+      getDamageModifierBonus(state, attackingPlayerId, attacker));
     const preDamageTriggered = directChampion
       ? resolveTriggeredAbilities(state, target.playerId, directChampion, 'BEFORE_DAMAGE')
       : state;
@@ -343,7 +345,7 @@ export function attack(
               card?.instanceId === attackerInstanceId
                 ? {
                     ...card,
-                    attacksUsedThisTurn: card.attacksUsedThisTurn + 1,
+                    ...attackUse(card),
                   }
                 : card,
             ) as typeof player.board,
@@ -478,7 +480,7 @@ export function attack(
     state = resolveStateBasedDeaths(state);
     if (state.status === 'FINISHED' || !findBoardCard(state, target.playerId, target.cardInstanceId) || !findBoardCard(state, attackingPlayerId, attackerInstanceId)) {
       state = { ...state, players: state.players.map(p => p.id !== attackingPlayerId ? p : { ...p,
-        board: p.board.map(c => c?.instanceId === attackerInstanceId ? { ...c, attacksUsedThisTurn: c.attacksUsedThisTurn + 1 } : c) as typeof p.board }) };
+        board: p.board.map(c => c?.instanceId === attackerInstanceId ? { ...c, ...attackUse(c) } : c) as typeof p.board }) };
       const selfAttack = resolveSelfAttackTrigger(state, attackingPlayerId, attackerInstanceId);
       return actionSuccess(processChampionQuestEvents(actionStartState, finishNewAttack(resolveBoardListeners(selfAttack, attackingPlayerId, 'OTHER_ALLY_ATTACK', { attackerInstanceId }))));
     }
@@ -503,6 +505,7 @@ export function attack(
     target.playerId,
     defender,
     'BEFORE_DAMAGE',
+    { attackerInstanceId },
   );
   const defenderPrepared = defenderBeforeDamage !== state && defenderBeforeDamage.targetingState?.active
     ? resolvePendingEffects(defenderBeforeDamage)
@@ -542,8 +545,8 @@ export function attack(
     const reduced = towerIncomingDamage(preDamageState, attackingPlayerId, attackerPrepared, defenderDamage, attackingHighest);
     preDamageState = reduced.state; defenderDamage = reduced.amount;
   }
-  attackerDamage = keywordDamage(defenderPreparedCard, Math.max(0, attackerDamage + (attackerDamage > 0 ? madokawaIncomingBonus(preDamageState, target.playerId, defenderPreparedCard) : 0) - silenceDamageReduction(defenderPreparedCard, attackerPrepared)), preDamageState.turn);
-  defenderDamage = keywordDamage(attackerPrepared, Math.max(0, defenderDamage + (defenderDamage > 0 ? madokawaIncomingBonus(preDamageState, attackingPlayerId, attackerPrepared) : 0) - silenceDamageReduction(attackerPrepared, defenderPreparedCard)), preDamageState.turn);
+  attackerDamage = keywordDamage(defenderPreparedCard, Math.max(0, attackerDamage + (attackerDamage > 0 ? madokawaIncomingBonus(preDamageState, target.playerId, defenderPreparedCard) : 0) - silenceDamageReduction(defenderPreparedCard, attackerPrepared)), preDamageState.turn, 'COMBAT', preDamageState);
+  defenderDamage = keywordDamage(attackerPrepared, Math.max(0, defenderDamage + (defenderDamage > 0 ? madokawaIncomingBonus(preDamageState, attackingPlayerId, attackerPrepared) : 0) - silenceDamageReduction(attackerPrepared, defenderPreparedCard)), preDamageState.turn, 'COMBAT', preDamageState);
   const damageEventStartIndex = preDamageState.events.length;
   const combatEventId = `combat:${state.gameId}:${state.turn}:${damageEventStartIndex}`;
   const attackerAttribution: EventAttribution = {
@@ -568,7 +571,7 @@ export function attack(
         if (card?.instanceId === attackerInstanceId) {
           return {
             ...(preventedDefenderDamage ? card : receiveDamage(card, defenderDamage)),
-            attacksUsedThisTurn: card.attacksUsedThisTurn + 1,
+            ...attackUse(card),
           };
         }
 
@@ -675,8 +678,9 @@ export function attack(
     defender.instanceId,
     defender.cardType,
   );
+  const attackerDamageListenersResolved = resolveRegisteredRuleListeners(damageListenersResolved,'DAMAGE_TAKEN',attackingPlayerId,attackerInstanceId,attacker.cardType);
   const resolved = retireDefeatedWrestlers(
-    resolveAwakeningCounter(damageListenersResolved, target.playerId, defenderPreparedCard, attackerInstanceId, combatEventId),
+    resolveAwakeningCounter(attackerDamageListenersResolved, target.playerId, defenderPreparedCard, attackerInstanceId, combatEventId),
     damageEventStartIndex,
   );
   return actionSuccess(processChampionQuestEvents(actionStartState, finishNewAttack(resolved)));

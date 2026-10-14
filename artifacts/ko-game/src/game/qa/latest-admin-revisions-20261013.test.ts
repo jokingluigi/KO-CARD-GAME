@@ -16,7 +16,7 @@ import type { GameState } from "../types/game-state";
 const records: PublishedCardRecord[] = JSON.parse(
   readFileSync(
     new URL(
-      "../../../../../docs/qa/snapshots/20261013-admin/cards.json",
+      `../../../../../${process.env.KO_QA_ADMIN_SNAPSHOT_DIR ?? 'docs/qa/snapshots/20261013-admin'}/cards.json`,
       import.meta.url,
     ),
     "utf8",

@@ -12,6 +12,7 @@ export type CardZone = 'HAND' | 'DECK' | 'BOARD' | 'GRAVEYARD' | 'REMOVED';
  * Board cards intentionally remain unclamped so lethal damage can retire them.
  */
 export function normalizeCardForZone(card: CardInstance, zone: CardZone): CardInstance {
+  if (card.currentAttack < 0) card = { ...card, currentAttack: 0 };
   if (card.cardType !== 'WRESTLER' || (zone !== 'HAND' && zone !== 'DECK')) return card;
   const currentHealth = Math.max(1, card.currentHealth);
   const maxHealth = Math.max(currentHealth, card.maxHealth);
@@ -69,6 +70,7 @@ export function resetCardAfterLeavingBoard(card: CardInstance, printedDefinition
     countdownResolved: undefined,
     countdownLastTickTurn: undefined,
     attacksUsedThisTurn: 0,
+    extraWrestlerAttacksThisTurn:0,
     dodgeAvailable: hasDodge,
     dodgeCharges: hasDodge ? (definition ? configuredDodgeCharges(definition.effectConfig) : card.baseDodgeCharges ?? 1) : 0,
     isStunned: false,

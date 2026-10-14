@@ -64,7 +64,7 @@ export function useScreenImpactManager(container:RefObject<HTMLDivElement|null>,
   return()=>{clear(false);window.removeEventListener('ko-combat-preferences',reset);window.removeEventListener('resize',reset);window.removeEventListener('storage',stored);document.removeEventListener('visibilitychange',hidden);media.removeEventListener('change',reset);};
  },[clear]);
  const isActive=useCallback(()=>Boolean(current.current&&performance.now()<current.current.until),[]);
- return {api:{request,mode,setMode,isActive},impact};
+ return {api:{request,mode,setMode,isActive},impact,clear};
 }
 export function ScreenShakeSetting(){
  const {mode,setMode}=useScreenImpact();

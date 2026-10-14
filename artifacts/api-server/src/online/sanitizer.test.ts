@@ -201,3 +201,8 @@ test('pending card-play undo snapshots never expose hidden authoritative state',
   assert.ok(view.targetingState);
   assert.equal('playRollback' in view.targetingState,false);
 });
+
+test('explicit top-card reveal survives both viewer projections without revealing other hidden identities or cards',()=>{
+ const state={players:[{id:'one',hand:[],deck:[{instanceId:'revealed-instance',definitionId:'top-definition'},{instanceId:'secret-instance',definitionId:'secret-definition'}]},{id:'two',hand:[],deck:[]}],events:[{type:'CARD_REVEALED',playerId:'one',source:{type:'CARD',cardInstanceId:'public-guide'},reason:'DECK_TOP_REVEAL',revealedCard:{definitionId:'top-definition',name:'공개 카드',cost:2,attack:3,health:4,rulesText:'공개 효과'}}]} as unknown as GameState;
+ for(const viewer of ['one','two']){const projected=sanitizeGameStateForViewer(state,viewer) as GameState;assert.deepEqual(projected.events[0]!.revealedCard,state.events[0]!.revealedCard);if(viewer==='two'){assert.equal(JSON.stringify(projected).includes('secret-instance'),false);assert.equal(JSON.stringify(projected).includes('secret-definition'),false);assert.deepEqual(projected.players[0]!.deck,{hidden:true,count:2});}}
+});

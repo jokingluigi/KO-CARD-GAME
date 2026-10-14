@@ -1,12 +1,20 @@
 #!/usr/bin/env python3
-"""GET game content resources anonymously; cache outside tracked files for browser QA."""
-import argparse, concurrent.futures, hashlib, json, pathlib, urllib.error, urllib.parse, urllib.request
+"""GET game content resources with optional read-only administrator authentication; cache outside tracked files for browser QA."""
+import argparse, concurrent.futures, hashlib, http.cookiejar, json, pathlib, urllib.error, urllib.parse, urllib.request
 ORIGIN = 'https://ko-card-game.onrender.com'
 p = argparse.ArgumentParser(description=__doc__)
+p.add_argument('--cookie-file', type=pathlib.Path, help='Existing private administrator cookie; used only on the fixed content origin')
 p.add_argument('--snapshot', type=pathlib.Path, required=True)
 p.add_argument('--cache', type=pathlib.Path, default=pathlib.Path('.local/qa/current-admin-resources'))
 a = p.parse_args()
 a.cache.mkdir(parents=True, exist_ok=True)
+class NoRedirect(urllib.request.HTTPRedirectHandler):
+    def redirect_request(self, *args, **kwargs): return None
+opener = urllib.request.build_opener()
+if a.cookie_file:
+    jar = http.cookiejar.MozillaCookieJar(str(a.cookie_file))
+    jar.load(ignore_discard=True, ignore_expires=False)
+    opener = urllib.request.build_opener(urllib.request.HTTPCookieProcessor(jar), NoRedirect())
 urls = set()
 def collect(value):
     if isinstance(value, dict):
@@ -21,7 +29,7 @@ for name in ('cards', 'champions', 'tower'):
 def check(path):
     result = {'path': path}
     try:
-        with urllib.request.urlopen(ORIGIN + path, timeout=45) as response:
+        with opener.open(ORIGIN + path, timeout=45) as response:
             data = response.read(32 * 1024 * 1024 + 1)
             if len(data) > 32 * 1024 * 1024: raise ValueError('Resource too large')
             result.update(status=response.status, mime=response.headers.get_content_type(), bytes=len(data), sha256=hashlib.sha256(data).hexdigest())
@@ -34,7 +42,7 @@ def check(path):
     return result
 with concurrent.futures.ThreadPoolExecutor(max_workers=4) as executor:
     results = list(executor.map(check, sorted(urls)))
-report = {'sourceOrigin': ORIGIN, 'anonymousGetOnly': True, 'resourceCount': len(results),
+report = {'sourceOrigin': ORIGIN, 'anonymousGetOnly': not bool(a.cookie_file), 'authenticatedContentGetOnly': bool(a.cookie_file), 'resourceCount': len(results),
           'passed': sum(r.get('status') == 200 and r.get('validContentType', False) for r in results), 'results': results}
 (a.cache / 'report.json').write_text(json.dumps(report, ensure_ascii=False, indent=2) + '\n')
 print(json.dumps({k: v for k, v in report.items() if k != 'results'}))

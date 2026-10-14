@@ -23,6 +23,7 @@
     "../../artifacts/ko-game/src/game/cards/text-effect-repair.ts",
     "../../artifacts/ko-game/src/game/cards/reviewed-content-20261012.ts",
     "../../artifacts/ko-game/src/game/cards/reviewed-admin-content-20261013.ts",
+    "../../artifacts/ko-game/src/game/cards/reviewed-admin-content-20261014.ts",
     "../../artifacts/ko-game/src/game/cards/legacy-card-effect-repair.ts",
     "../../artifacts/ko-game/src/game/cards/granted-text.ts",
     "../../artifacts/ko-game/src/game/cards/zone-state.ts",
