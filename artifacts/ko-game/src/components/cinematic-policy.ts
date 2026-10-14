@@ -2,8 +2,8 @@ export type CinematicKind = 'ATTACK' | 'SUMMON' | 'ABILITY' | 'BIG_SPELL' | 'LEG
 export type CinematicRequest = {id:string;kind:CinematicKind;title:string;subtitle?:string;art?:string|null;strength?:number;focus?:{x:number;y:number};duration?:number};
 export type CinematicEvent = CinematicRequest & {createdAt:number;duration:number};
 export const CINEMATIC_PRIORITY:Record<CinematicKind,number>={SUMMON:1,ATTACK:2,ABILITY:3,BIG_SPELL:4,LEGENDARY:5,CHAMPION:6,AWAKENING:7,BOSS:8,HIDDEN_BOSS:8,FINISHER:9,RESULT:10};
-export const CINEMATIC_TIMING={quick:320,action:560,panel:650,reveal:760,awakening:1100,boss:1500,result:650};
-export type CinematicState={active:CinematicEvent|null;pending:CinematicEvent[];seen:string[]};
+export const CINEMATIC_TIMING={quick:320,action:560,panel:650,reveal:1180,awakening:1400,boss:1500,result:650};
+export type CinematicState={active:CinematicEvent|null;pending:CinematicEvent[];seen:string[];compressed?:CinematicEvent[]};
 export const emptyCinematicState=():CinematicState=>({active:null,pending:[],seen:[]});
 export function cameraLevel(e:CinematicRequest):0|1|2|3|4{
  if(['FINISHER','BOSS','HIDDEN_BOSS'].includes(e.kind))return 4;
@@ -21,15 +21,16 @@ export function offerCinematic(s:CinematicState,e:CinematicEvent):CinematicState
  const seen=[...s.seen,e.id].slice(-96);
  if(!s.active)return {active:e,pending:[],seen};
  const priority=CINEMATIC_PRIORITY[e.kind],current=CINEMATIC_PRIORITY[s.active.kind];
- if(priority>=9&&priority>current)return {active:e,pending:s.pending.filter(p=>CINEMATIC_PRIORITY[p.kind]>=5),seen};
+ if(priority>=9&&priority>current)return {active:e,pending:[],seen,compressed:[...(s.compressed??[]),s.active,...s.pending].filter(p=>CINEMATIC_PRIORITY[p.kind]>=5&&CINEMATIC_PRIORITY[p.kind]<9).slice(-4)};
+ if(current>=9&&priority<9)return {...s,seen,compressed:priority>=5?[...(s.compressed??[]),e].slice(-4):s.compressed};
  // A stale attack must not replay after an awakening or boss cut-in.
  if(priority<3&&current>=3)return {...s,seen};
  const pending=[...s.pending.filter(p=>e.createdAt-p.createdAt<1800),e]
   .sort((a,b)=>CINEMATIC_PRIORITY[b.kind]-CINEMATIC_PRIORITY[a.kind]||a.createdAt-b.createdAt).slice(0,6);
- return {...s,pending,seen};
+ return {...s,pending:pending.map(p=>CINEMATIC_PRIORITY[p.kind]>=5&&pending.length>1?{...p,duration:Math.min(600,p.duration)}:p),seen,active:priority>current&&priority>=5?{...s.active,duration:Math.min(500,s.active.duration)}:s.active};
 }
 export function finishCinematic(s:CinematicState,id:string,now:number):CinematicState{
  if(s.active?.id!==id)return s;
  const pending=s.pending.filter(p=>now-p.createdAt<1800);
- return {...s,active:pending[0]??null,pending:pending.slice(1)};
+ return {...s,active:pending[0]??null,pending:pending.slice(1),compressed:[]};
 }

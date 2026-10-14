@@ -1,0 +1,46 @@
+/* Event-driven ink, paper and physical motion. Existing keyword/status UI is untouched. */
+.ko-cinematic-skip{position:fixed;right:max(12px,env(safe-area-inset-right));bottom:max(16px,env(safe-area-inset-bottom));z-index:390;min-height:44px;padding:10px 16px;background:#080808;color:#e6ce8b;border:1px solid #a98b46;font-size:12px;font-weight:800;pointer-events:auto}
+.ko-cinematic-receipts{position:fixed;top:max(12px,env(safe-area-inset-top));left:12px;z-index:390;color:#e6ce8b;background:#080808;padding:8px 12px;font-size:12px;pointer-events:none;max-width:calc(100vw - 24px)}
+.ko-player-hand .ko-hand-card--selected{transform:translateY(-24px) scale(1.18);z-index:60}
+.ko-player-hand .ko-hand-cards{padding-inline:18px}
+.ko-board-slot-wrapper [data-attack-ready=true]{touch-action:none}
+.ko-pack-envelope{position:relative;display:flex;flex-direction:column;justify-content:center;align-items:center;gap:20px;width:min(280px,70vw);aspect-ratio:3/4;margin:32px auto;background:#080808;border:3px solid #c5a64c;box-shadow:6px 7px 0 #191919;color:#e9d08c;overflow:hidden;touch-action:pan-y}
+.ko-pack-envelope>strong{font-size:84px;font-weight:950;font-style:italic;line-height:1}
+.ko-pack-envelope>span:not(.ko-pack-envelope__seam){padding:0 16px;text-align:center;font-weight:900}
+.ko-pack-envelope__seam{position:absolute;top:12%;left:-4%;width:108%;height:16px;background:#c5a64c;clip-path:polygon(0 10%,8% 50%,16% 10%,24% 50%,32% 10%,40% 50%,48% 10%,56% 50%,64% 10%,72% 50%,80% 10%,88% 50%,100% 10%,100% 100%,0 100%);transform:translateX(var(--tear-offset,0px)) rotate(-3deg)}
+.ko-pack-card-back{display:grid;place-content:center;height:100%;width:100%;background:#080808;border:3px double #8d7437;text-align:center}
+.ko-pack-card-back>strong{font-size:clamp(28px,7vw,48px);font-weight:950;font-style:italic;color:#d4b658}
+.ko-pack-card-back p{font-size:12px;color:#b8aa85}
+.card-leave-animation--vanish{overflow:visible}
+.ko-vanish-vortex{position:fixed;left:var(--leave-left);top:var(--leave-top);width:var(--leave-width);height:var(--leave-height);z-index:228;background:#000;border:3px solid #cab16c;clip-path:polygon(8% 21%,30% 8%,69% 14%,93% 40%,83% 77%,53% 96%,15% 81%,0 45%);animation:ko-vortex-close var(--leave-duration) ease-in both;animation-delay:var(--leave-delay);pointer-events:none}
+@keyframes ko-vortex-close{0%{transform:scale(.2);opacity:0}30%{transform:scale(1.25);opacity:1}75%{transform:scale(.7) rotate(45deg);opacity:1}100%{transform:scale(0) rotate(75deg);opacity:0}}
+.ko-leave-cracks{position:absolute;inset:0;pointer-events:none;z-index:4;background:#000;clip-path:polygon(47% 0,53% 0,46% 36%,81% 24%,51% 48%,71% 100%,65% 100%,43% 53%,3% 77%,0 72%,37% 44%);animation:ko-crack-grow 180ms ease-in both}
+@keyframes ko-crack-grow{from{opacity:0;transform:scale(.3)}to{opacity:1;transform:scale(1)}}
+.ko-zone-flight{position:fixed;top:-23px;left:-16px;width:32px;height:46px;z-index:230;background-color:#080808;background-size:cover;border:1px solid #bd9b44;pointer-events:none;opacity:0;display:grid;place-items:center;color:#ddc482;font-size:12px}
+.ko-zone-flight--graveyard{box-shadow:0 -9px 0 -6px #e8d595,0 -18px 0 -12px #bca367}
+.ko-result-hero{width:120px;height:150px;margin:0 auto 12px;object-fit:cover;object-position:top;clip-path:polygon(7% 0,100% 0,93% 100%,0 100%);animation:ko-result-portrait 450ms cubic-bezier(.16,1,.3,1) both}
+@keyframes ko-result-portrait{from{transform:scale(.94) translateY(12px);opacity:0}to{transform:scale(1);opacity:1}}
+.champion-spoken-line{border-radius:12px;background:#111;border:1px solid #b7a779;box-shadow:none;clip-path:none;max-width:min(260px,calc(100vw - 24px))}
+.champion-spoken-line::after{content:"";position:absolute;bottom:-7px;left:18px;width:12px;height:12px;background:#111;border-right:1px solid #b7a779;border-bottom:1px solid #b7a779;transform:rotate(45deg)}
+.ko-draw-flight{animation-duration:400ms}
+@media(prefers-reduced-motion:reduce){.ko-result-hero,.ko-vanish-vortex,.ko-leave-cracks{animation:none}.ko-player-hand .ko-hand-card--selected{transform:translateY(-8px) scale(1.03)}}
+
+.ko-summon-origin{position:fixed;left:var(--play-stage-x);top:var(--play-stage-y);width:var(--play-stage-width);height:calc(var(--play-stage-height)*.35);background:#000;border:2px solid #b7a779;transform:translate(-50%,-50%);clip-path:ellipse(48% 45%);opacity:0;animation:ko-origin-rise var(--play-duration) ease-out both;pointer-events:none}
+.ko-summon-origin--revive{border-color:#ede3bc;box-shadow:0 -20px 0 -16px #e6d3a5}
+@keyframes ko-origin-rise{0%{opacity:0;scale:.2}25%,60%{opacity:1;scale:1}100%{opacity:0;scale:.6}}
+.presentation-feedback--generate::before{content:"";position:absolute;inset:-20px;background:#000;border:2px solid #ddc895;clip-path:ellipse(46% 42%);animation:ko-origin-rise var(--presentation-duration) ease-out both}
+.presentation-feedback--heal .presentation-feedback__transfer{background:#b85252;border-color:#e7917d}
+@media(prefers-reduced-motion:reduce){.ko-summon-origin{display:none}}
+
+.ko-action-rejection{display:block;animation:ko-action-reject 180ms ease-out}
+@keyframes ko-action-reject{0%,100%{translate:0 0}25%{translate:-3px 0}65%{translate:3px 0}}
+@media(prefers-reduced-motion:reduce){.ko-action-rejection{animation:none}}
+
+.card-play-animation--rarity-legendary{z-index:250}
+
+.ko-attack-aim__estimate{font:900 14px sans-serif;paint-order:stroke;stroke:#080808;stroke-width:4px;stroke-linejoin:round}
+.ko-card-drop-rejected{filter:drop-shadow(0 0 5px #d95757)!important}
+
+/* Selection must fit the measured mobile hand rail rather than clip its top. */
+@media(max-width:700px) and (orientation:portrait){.ko-game-shell .ko-player-hand .ko-hand-card--selected{translate:0 0;scale:1;transform:translateY(-8px) scale(1.08)}}
+@media(max-width:700px) and (orientation:portrait) and (prefers-reduced-motion:reduce){.ko-game-shell .ko-player-hand .ko-hand-card--selected{transform:translateY(-4px) scale(1.03)}}

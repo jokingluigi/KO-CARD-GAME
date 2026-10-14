@@ -166,13 +166,13 @@ try {
     );
     await page.getByRole("button", { name: "설정 열기" }).click();
     await page.getByLabel("타격 연출 강도").selectOption("EXTREME");
-    await page.getByLabel("그래픽 품질").selectOption("LOW");
+    assert.equal(await page.getByLabel("그래픽 품질").count(),0);
     await page.getByLabel("모션 감소", { exact: true }).check();
     assert.deepEqual(
       await page.evaluate(() =>
         JSON.parse(localStorage.getItem("ko-combat-presentation-v1")),
       ),
-      { quality: "LOW", intensity: "EXTREME", reducedMotion: true },
+      { intensity: "EXTREME", reducedMotion: true },
     );
     assert.equal(
       await page.evaluate(

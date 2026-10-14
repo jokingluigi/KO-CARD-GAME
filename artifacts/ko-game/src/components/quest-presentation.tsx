@@ -10,7 +10,7 @@ import { getCardDefinition, type GameState } from "@/game";
 import type { PresentationCue } from "./presentation-feedback";
 
 export const QUEST_BANNER_DURATION_MS = 700;
-export const QUEST_REWARD_DURATION_MS = 1100;
+export const QUEST_REWARD_DURATION_MS = 900;
 
 export function QuestPresentation({
   cue,
@@ -42,8 +42,13 @@ export function QuestPresentation({
     setPhase('BANNER');
     audioManager.duckForPresentation(.5, 500);
     const bannerTimer = window.setTimeout(() => setPhase("REWARD"), bannerDuration);
-    const completeTimer = window.setTimeout(()=>completeRef.current(), bannerDuration + rewardDuration);
+    let done=false;const finish=()=>{if(!done){done=true;completeRef.current();}};
+    const completeTimer = window.setTimeout(finish, bannerDuration + rewardDuration);
+    window.addEventListener("ko-skip-cinematic",finish);
+    window.addEventListener("ko-compress-quest",finish);
     return () => {
+      window.removeEventListener("ko-skip-cinematic",finish);
+      window.removeEventListener("ko-compress-quest",finish);
       window.clearTimeout(bannerTimer);
       window.clearTimeout(completeTimer);
     };

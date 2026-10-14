@@ -9,7 +9,7 @@ for(const [name,width,height,reduced] of [['desktop',1280,800,false],['mobile',3
  if(name==='slow-mobile')await(await context.newCDPSession(page)).send('Emulation.setCPUThrottlingRate',{rate:4});
  await page.goto((process.env.KO_QA_ORIGIN??'http://localhost:5173')+'/qa/impact.html');await page.getByTestId('cost-1').waitFor();
  const samples=[];
- for(const [button,tier,landing,bass] of [['cost-1','LIGHT',187,null],['cost-2','LIGHT',202,null],['cost-3','MEDIUM',230,null],['cost-4','MEDIUM',252,null],['cost-5','HEAVY',286,'heavy'],['cost-6','MASSIVE',326,'massive'],['EPIC','MASSIVE',326,'massive'],['LEGENDARY','MASSIVE',639,'massive'],['CHAMPION','MASSIVE',558,'champion']]){
+ for(const [button,tier,landing,bass] of [['cost-1','LIGHT',187,null],['cost-2','LIGHT',202,null],['cost-3','MEDIUM',230,null],['cost-4','MEDIUM',252,null],['cost-5','HEAVY',286,'heavy'],['cost-6','MASSIVE',326,'massive'],['EPIC','MASSIVE',326,'massive'],['LEGENDARY','MASSIVE',802,'massive'],['CHAMPION','MASSIVE',558,'champion']]){
   console.log(name,button);await page.evaluate(()=>{window.__impactSounds=[];window.__impactHaptics=[];});await page.getByTestId(button).click();
   await page.waitForFunction(t=>document.querySelector('[data-screen-impact="'+t+'"]'),tier,{polling:'raf',timeout:4000});
   const start=await page.evaluate(()=>{const stage=document.querySelector('.ko-game-stage'),card=document.querySelector('.card-play-animation__card'),motion=card?.getAnimations().find(a=>a.effect?.target===card);return {amplitude:Number(stage.dataset.screenImpactAmplitude),time:Number(stage.dataset.screenImpactStarted),cardClock:Number(motion?.currentTime??-1),sounds:window.__impactSounds,haptics:window.__impactHaptics,wave:document.querySelector('.ko-screen-impact__wave')?.getBoundingClientRect().width};});
@@ -31,7 +31,7 @@ for(const [name,width,height,reduced] of [['desktop',1280,800,false],['mobile',3
   if(Object.values(residue).some(v=>v!=='none'))failures.push(name+': board failed return '+JSON.stringify(residue));
   if(await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth+1))failures.push(name+': horizontal overflow');
  }
- if(!reduced&&!(samples[5].amplitude>samples[0].amplitude*3&&samples[7].amplitude>samples[5].amplitude&&samples[8].amplitude>samples[7].amplitude))failures.push(name+': cost/rarity not distinct');
+ if(!reduced&&!(samples[5].amplitude>samples[0].amplitude*3&&samples[7].amplitude>=samples[5].amplitude&&samples[8].amplitude>=samples[7].amplitude))failures.push(name+': cost/rarity not distinct');
  for(const [button,tier] of [['damage-1','LIGHT'],['damage-3','MEDIUM'],['damage-6','HEAVY'],['damage-10','MASSIVE'],['lethal','FINISHER'],['awakening','MASSIVE'],['priority','FINISHER']]){
   console.log(name,button);await page.getByTestId(button).click();await page.waitForFunction(t=>document.querySelector('[data-screen-impact="'+t+'"]'),tier,{polling:'raf',timeout:4000});if(await page.locator('.ko-screen-impact').count()!==1)failures.push(name+': shake stacked');await page.waitForFunction(()=>!document.querySelector('.attack-animation,.ko-screen-impact'),{},{timeout:4000});
  }

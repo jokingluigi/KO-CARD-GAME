@@ -121,6 +121,14 @@ class AudioManager {
     this.fadeOutPackReveal(previous, Math.min(options.fadeOutMs ?? PACK_REVEAL_FADE_OUT, 220), start);
   }
 
+  /** Local cinematic skip only; authoritative state and persistent music selection are untouched. */
+  cancelPresentationMusic() {
+    this.queue = [];
+    this.stopTemporary(false);
+    this.stopPackRevealMusic();
+    this.resumeBaseMusic();
+  }
+
   stopPackRevealMusic() {
     this.packRevealTransitionId += 1;
     const current = this.packReveal;

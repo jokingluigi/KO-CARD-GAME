@@ -8,7 +8,6 @@ import { getCardDefinition } from "@/game";
 import { getActiveCardKeywords } from "../game/cards/granted-text";
 import { getCardRuntimeRulesText } from "../lib/card-display-state";
 import type { AttackAnimationState } from "./attack-animation-utils";
-import { readCombatPreferences } from './combat-preferences';
 import { combatTimeline, attackFrames, targetReactionFrames, attackBurstKind } from './battle-vfx-model';
 import { BattleVfx } from './battle-vfx';
 import { audioManager } from '../audio/audio-manager';
@@ -45,6 +44,7 @@ export function AttackAnimation({
   const { source, target } = geometryRef.current.value;
   useCinematicEvent({id:`attack:${animation.soundKey}`,kind:animation.finishingBlow ? 'FINISHER' : 'ATTACK',title:definition?.name ?? 'KO',art:definition?.imageUrl,strength:animation.damage,focus:{x:target.left+target.width/2,y:target.top+target.height/2}});
   const reduced = prefersReducedMotion();
+  const force=animation.damage>0?Math.max(animation.currentAttack,animation.damage):0;
   const timeline = combatTimeline(animation.currentAttack,animation.damage,animation.finishingBlow,reduced);
   const {duration,impact:impactDelay} = timeline;
   const dx = target.left + target.width / 2 - (source.left + source.width / 2);
@@ -86,7 +86,7 @@ export function AttackAnimation({
     const release = () => {
       if(releasedOnce)return; releasedOnce=true; setReleased(true);
       if(phaseRef.current)phaseRef.current.dataset.attackPhase='REACTION';
-      screenRef.current.request({id:'attack-impact:'+animation.soundKey,profile:damageImpact(animation.damage,Boolean(animation.finishingBlow)),x:target.left+target.width/2,y:target.top+target.height/2,direction:{x:dx,y:dy}});
+      screenRef.current.request({id:'attack-impact:'+animation.soundKey,profile:damageImpact(force,Boolean(animation.finishingBlow)),x:target.left+target.width/2,y:target.top+target.height/2,direction:{x:dx,y:dy}});
       if(animation.damage>=6&&!document.hidden)audioManager.playImpactOverlay(import.meta.env.BASE_URL+'sfx/summon-bass-'+(animation.finishingBlow?'massive':'heavy')+'.wav',animation.finishingBlow?48:32,8);
     };
     const complete = () => {
@@ -99,7 +99,7 @@ export function AttackAnimation({
     const animate=(node:HTMLElement|null,frames:Keyframe[])=>{try{return node?.animate?.(frames,{duration,fill:'both',easing:'linear'});}catch{return undefined;}};
     const element=attackerRef.current;
     const motion=animate(element,attackFrames(dx,dy,timeline,reduced));
-    const targetMotion=animate(targetRef.current,targetReactionFrames(dx,dy,animation.damage,timeline,reduced));
+    const targetMotion=animate(targetRef.current,targetReactionFrames(dx,dy,force,timeline,reduced));
     const origin=performance.now();
     let frame=0;
     const tick=(now:number)=>{
@@ -165,7 +165,7 @@ export function AttackAnimation({
           <div className="attack-animation__champion-impact" />
         )}
       </div>
-      {!reduced && readCombatPreferences().quality!=='LOW' && animation.damage>=6 && definition?.imageUrl && [0,1].slice(0,readCombatPreferences().quality==='MEDIUM'?1:2).map(i=><div key={i} className="ko-attack-ghost" style={{backgroundImage:`url("${definition.imageUrl}")`,animationDelay:`${i*25}ms`}} />)}
+      {!reduced && animation.damage>=6 && definition?.imageUrl && [0,1].map(i=><div key={i} className="ko-attack-ghost" style={{backgroundImage:`url("${definition.imageUrl}")`,animationDelay:`${i*25}ms`}} />)}
       <div className="attack-animation__attacker" ref={attackerRef}>
         {!reduced && animation.damage>=6 && definition?.imageUrl && <img className="ko-attack-breakout" src={definition.imageUrl} alt="" onError={e=>{e.currentTarget.style.visibility='hidden';}} />}
 

@@ -1,5 +1,4 @@
 import type { AttackAnimationState } from "./attack-animation-utils";
-import { readCombatPreferences } from './combat-preferences';
 import { damageHitStop } from './presentation-policy';
 
 export type BattleVfxKind =
@@ -13,9 +12,10 @@ export function combatTimeline(
   reduced = false,
 ) {
   if (reduced) return { duration: 140, impact: 70, release: 70 };
-  const duration=finisher?760:damage>=6?560:damage>=3?520:480;
-  const impact=finisher?300:damage>=6?220:damage>=3?210:200;
-  return {duration,impact,release:impact+(finisher?165:damageHitStop(damage))};
+  const force=damage>0?Math.max(attack,damage):0;
+  const duration=finisher?760:force>=6?560:force>=3?520:480;
+  const impact=finisher?300:force>=6?220:force>=3?210:200;
+  return {duration,impact,release:impact+(finisher?165:damageHitStop(force))};
 }
 
 export function attackFrames(
@@ -68,13 +68,9 @@ export function vfxBudget(
   strength: number,
 ) {
   if (reduced) return { particles: 0, dpr: 1, size: 160 };
-  const quality = readCombatPreferences().quality;
   return {
-    particles: Math.round((quality==='LOW'?.25:quality==='MEDIUM'?.6:1)*Math.min(
-      compact ? 20 : 36,
-      10 + Math.max(0, Math.min(12, strength)) * 2,
-    )),
-    dpr: quality==='LOW'?1:compact ? 1.5 : 2,
+    particles: Math.min(28,10+Math.max(0,Math.min(12,strength))*2),
+    dpr: 2,
     size: compact ? 240 : 360,
   };
 }

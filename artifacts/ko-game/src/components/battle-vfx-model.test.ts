@@ -42,9 +42,9 @@ test("reduced motion has a short clock and no particles", () => {
   );
 });
 test("particle count and retina resolution are capped on mobile and desktop", () => {
-  assert.ok(vfxBudget(true, false, 999).particles <= 20);
+  assert.equal(vfxBudget(true, false, 999).particles, vfxBudget(false, false, 999).particles);
   assert.ok(vfxBudget(false, false, 999).particles <= 36);
-  assert.equal(vfxBudget(true, false, 999).dpr, 1.5);
+  assert.equal(vfxBudget(true, false, 999).dpr, 2);
   const particles = vfxParticles("same-event", 36);
   assert.deepEqual(particles, vfxParticles("same-event", 36));
   assert.ok(particles.every((p) => Object.values(p).every(Number.isFinite)));

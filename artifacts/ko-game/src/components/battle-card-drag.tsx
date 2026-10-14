@@ -4,6 +4,7 @@ import {
   rectSnapshot,
   type CardAnimationRect,
 } from "./card-play-animation-utils";
+import {audioManager} from "@/audio/audio-manager";
 import { prefersReducedMotion } from "./presentation-config";
 
 type Props = {
@@ -143,6 +144,7 @@ export function BattleCardDrag(props: Props) {
           return;
         }
         g.started = true;
+        window.dispatchEvent(new Event("ko-pointer-drag-start"));
         g.node.dataset.dragging = "true";
         const ghost = g.node.cloneNode(true) as HTMLElement;
         g.ghost = ghost;
@@ -254,6 +256,8 @@ export function BattleCardDrag(props: Props) {
         p.spell(g.id, source);
         return;
       }
+      g.ghost?.classList.add('ko-card-drop-rejected');
+      audioManager.playImpactOverlay('/sfx/impact-light.wav',22,3);
       cancel();
     };
     const click = (e: MouseEvent) => {
@@ -284,6 +288,7 @@ export function BattleCardDrag(props: Props) {
     document.addEventListener("visibilitychange", hidden);
     window.addEventListener("resize", cancel);
     window.addEventListener("ko-gamepad-cancel", cancel);
+    window.addEventListener("ko-card-inspect-hold",cancel);
     return () => {
       clean();
       returns.forEach((n) => n.remove());
@@ -298,6 +303,7 @@ export function BattleCardDrag(props: Props) {
       document.removeEventListener("visibilitychange", hidden);
       window.removeEventListener("resize", cancel);
       window.removeEventListener("ko-gamepad-cancel", cancel);
+      window.removeEventListener("ko-card-inspect-hold",cancel);
     };
   }, [props.state.gameId]);
   return null;

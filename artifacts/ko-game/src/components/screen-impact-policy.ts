@@ -13,9 +13,9 @@ export function summonImpact(cost:number,rarity:string='NORMAL'):ImpactProfile {
  const r:ImpactRarity=rarity==='CHAMPION'||rarity==='LEGENDARY'||rarity==='EPIC'?rarity:'NORMAL';
  const multiplier=r==='CHAMPION'?1.75:r==='LEGENDARY'?1.5:r==='EPIC'?1.2:1;
  const high=r==='CHAMPION'||r==='LEGENDARY';
- const tier=high?'MASSIVE':c===6?'MASSIVE':c===5?'HEAVY':c>=3?'MEDIUM':'LIGHT';
- const amplitude=Math.min(22,Math.max([2.7,3.8,5.2,6.8,9,13][c-1]!,r==='CHAMPION'?11:r==='LEGENDARY'?10:0)*multiplier);
- return {tier,amplitude,duration:Math.max([100,110,150,180,220,280][c-1]!,r==='CHAMPION'?330:r==='LEGENDARY'?300:0),rotation:high?.5:c>=5?.3:0,aftershock:tier==='MASSIVE',wave:Math.min(8,[1.5,1.8,2.4,3,4.3,5.8][c-1]!*multiplier),bass:r==='CHAMPION'?'champion':tier==='MASSIVE'?'massive':tier==='HEAVY'?'heavy':null,rarity:r};
+ const tier=c===6?'MASSIVE':c===5?'HEAVY':c>=3?'MEDIUM':'LIGHT';
+ const amplitude=Math.min(22,[2.7,3.8,5.2,6.8,9,13][c-1]!*Math.min(multiplier,1.2));
+ return {tier,amplitude,duration:[100,110,150,180,220,280][c-1]!,rotation:c>=6?.5:c>=5?.3:0,aftershock:tier==='MASSIVE',wave:Math.min(8,[1.5,1.8,2.4,3,4.3,5.8][c-1]!*multiplier),bass:c>=5&&r==='CHAMPION'?'champion':tier==='MASSIVE'?'massive':tier==='HEAVY'?'heavy':null,rarity:r};
 }
 export function damageImpact(damage:number,lethal=false):ImpactProfile {
  const tier:ImpactTier=damage<=0?'NONE':lethal?'FINISHER':damage>=10?'MASSIVE':damage>=6?'HEAVY':damage>=3?'MEDIUM':'LIGHT';
@@ -38,14 +38,16 @@ export function impactFrames(profile:ImpactProfile,direction={x:0,y:1},radial=fa
 }
 export function summonTimeline(cost:number,rarity:string,reduced=false){
  const c=Math.max(1,Math.min(6,Math.round(Number.isFinite(cost)?cost:1)));
- const p=summonImpact(c,rarity),duration=reduced?180:rarity==='LEGENDARY'?940:rarity==='CHAMPION'?820:[260,280,320,350,420,480][c-1]!;
+ const p=summonImpact(c,rarity),duration=reduced?180:rarity==='LEGENDARY'?1180:rarity==='CHAMPION'?820:[260,280,320,350,420,480][c-1]!;
  const landing=reduced?70:Math.round(duration*(c>=5||rarity==='LEGENDARY'||rarity==='CHAMPION'?.68:.72));
  return {duration,landing,end:reduced?duration:Math.max(duration,landing+p.duration+30)};
 }
-export function summonFrames(source:{left:number;top:number},target:{left:number;top:number},scale:number,profile:ImpactProfile,landing:number,duration:number,reduced=false):Keyframe[]{
+export function summonFrames(source:{left:number;top:number},target:{left:number;top:number},scale:number,profile:ImpactProfile,landing:number,duration:number,reduced=false,reveal?:{left:number;top:number;scale:number}):Keyframe[]{
  const position=(x:number,y:number,size:number,angle=0)=>`translate3d(${x}px,${y}px,0) scale(${size}) rotate(${angle}deg)`;
  if(reduced)return [{opacity:0,transform:position(target.left,target.top,scale)},{opacity:1,transform:position(target.left,target.top,scale)}];
  const heavy=impactRank(profile)>=3,front=heavy?1.18:1.07,t=landing/duration;
+ const prefix:Keyframe[]=reveal?[{offset:0,opacity:1,transform:position(source.left,source.top,1)},{offset:.16,transform:position(reveal.left,reveal.top,reveal.scale),easing:'cubic-bezier(.16,1,.3,1)'},{offset:Math.min(t-.2,.48),transform:position(reveal.left,reveal.top,reveal.scale*1.025)}]:[];
+ if(reveal)return [...prefix,{offset:t-.12,transform:position(target.left,target.top-48,scale*1.15),easing:'cubic-bezier(.75,0,1,.7)'},{offset:t,transform:position(target.left,target.top,scale*(heavy?.96:.99))},{offset:t+.11,transform:position(target.left,target.top-2,scale*1.03)},{offset:1,transform:position(target.left,target.top,scale)}];
  return [{offset:0,opacity:1,transform:position(source.left,source.top,1)},{offset:.14,transform:position(source.left,source.top-12,1.08,-2)},{offset:t-.16,transform:position(target.left,target.top-(heavy?48:22),scale*front),easing:'cubic-bezier(.75,0,1,.7)'},{offset:t,transform:position(target.left,target.top,scale*(heavy?.96:.99))},{offset:t+.11,transform:position(target.left,target.top-2,scale*1.03),easing:'cubic-bezier(.16,1,.3,1)'},{offset:1,transform:position(target.left,target.top,scale)}];
 }
 
