@@ -33,4 +33,3 @@
 
 - AI actions are selected from `getLegalActions` and evaluated through `executeAction`.
 - The evaluator receives the complete state object by design; this runner verifies action legality, but does not claim a complete information-flow proof.
-
