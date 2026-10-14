@@ -39,6 +39,9 @@ export interface PendingDelayedEffect {
 }
 
 export interface PendingRuleListener {
+  requiresActiveSource?: boolean;
+  damageTarget?: 'PLAYER' | 'CARD';
+  processedDamageEventIndices?: number[];
   id: string;
   playerId: string;
   sourceInstanceId: string;
@@ -75,6 +78,7 @@ export interface PlayerState {
 export interface GameState {
   consumedNewCardEventKeys?: string[];
   overhealByTurn?: Record<string, number>;
+  ownTurnHealing?: Record<string, {champion?: boolean; wrestler?: boolean}>;
   zombieGrowthEventKeys?: string[];
   /** Absent in all existing modes; only a Tower battle may carry relic rules. */
   tower?: TowerBattleContext;
@@ -159,6 +163,8 @@ export interface GameState {
     continuation?: GameState['targetingState'];
     /** Serializable SCRIPT_V1 program counter and registers while PLAYER_CHOICE is pending. */
     scriptContinuation?: {
+      /** Resume remaining steps automatically after a child trigger/quest resolves. */
+      autoResume?: boolean;
       selectedResultId: string;
       remainingSteps: ScriptStep[];
       registers: Record<string, { ids: string[] } | { slots: number[] } | { value: number }>;

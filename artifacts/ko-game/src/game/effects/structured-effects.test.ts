@@ -1444,7 +1444,7 @@ test('손패의 무작위 선수 카드 중 최대 3장에게 +1/+1을 부여한
   );
 });
 
-test('표준 RANDOM은 일반 카드만 선택하고 Token과 Champion Token을 제외한다', () => {
+test('기존 손패의 RANDOM 대상 선택은 Token과 Champion Token도 포함한다', () => {
   const source = instance('standard-random-source', [
     structured('BUFF', {
       zone: 'HAND',
@@ -1465,8 +1465,8 @@ test('표준 RANDOM은 일반 카드만 선택하고 Token과 Champion Token을 
 
   const result = enterField(state, 'player-1', source, 0);
   assert.equal(result.players[0].hand[0]?.currentAttack, 2);
-  assert.equal(result.players[0].hand[1]?.currentAttack, 1);
-  assert.equal(result.players[0].hand[2]?.currentAttack, 1);
+  assert.equal(result.players[0].hand[1]?.currentAttack, 2);
+  assert.equal(result.players[0].hand[2]?.currentAttack, 2);
 });
 
 test('FULL_RANDOM은 일반 카드, Token, Champion Token을 모두 선택 후보로 허용한다', () => {

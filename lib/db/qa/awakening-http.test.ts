@@ -1,5 +1,6 @@
 import { PGlite } from "@electric-sql/pglite";
 import { drizzle } from "drizzle-orm/pglite";
+import { eq } from "drizzle-orm";
 import { generateDrizzleJson, generateMigration } from "drizzle-kit/api";
 import * as schema from "../src/schema";
 import { test, after } from "node:test";
@@ -557,4 +558,40 @@ test('login cookie survives repeated session reads and initialized accounts do n
   const original=db.transaction;let writes=0;
   Object.assign(db,{transaction:(...args:any[])=>{writes++;return (original as any)(...args);}});
   try{const publicUser=await (await import('../../../artifacts/api-server/src/lib/auth')).getPublicUser(stored);assert.equal(publicUser.id,stored.id);assert.equal(writes,0);}finally{Object.assign(db,{transaction:original});}
+});
+
+test('admin DELETE of awakening champion and forced exchange survives repeated real startup installation', async () => {
+  const { createRequire } = await import('node:module');
+  const { build } = createRequire(new URL('../../../artifacts/api-server/package.json', import.meta.url))('esbuild');
+  const { fileURLToPath } = await import('node:url');
+  const entry = new URL('../../../artifacts/api-server/src/lib/startup-schema.ts', import.meta.url);
+  const output = new URL('../../../artifacts/api-server/dist/catalog-startup-http-qa.mjs', import.meta.url);
+  await build({entryPoints:[fileURLToPath(entry)],outfile:fileURLToPath(output),bundle:true,platform:'node',format:'esm',packages:'external',loader:{'.sql':'text'}});
+  const { ensureTowerStorage } = await import(output.href);
+  await database.insert(schema.cardsTable).values({id:'epic-spell-forced-exchange',name:'강제 교환',cardType:'TECHNIQUE',cost:4,attack:0,health:0,text:'삭제할 관리자 카드',rarity:'EPIC'}).onConflictDoNothing();
+  await database.insert(schema.championsTable).values({id:'crisis-awakening-champion',name:'각성 챔피언',abilityName:'관리자 정의',abilityEffects:{}}).onConflictDoNothing();
+  assert.equal((await request('/auth/login','POST',{email:'admin@awakening.invalid',password:'AwakeningLocalQA123'})).status,200);
+  for(const path of ['/admin/cards/epic-spell-forced-exchange','/admin/champions/crisis-awakening-champion']) {
+    const response = await fetch(origin+'/api'+path,{method:'DELETE',headers:{Cookie:cookie}});
+    assert.equal(response.status,204);
+  }
+  const beforeCards=(await pg.query('SELECT * FROM cards ORDER BY id')).rows;
+  const beforeChampions=(await pg.query('SELECT * FROM champions ORDER BY id')).rows;
+  for(let restart=0;restart<2;restart++) {
+    await ensureTowerStorage(database);
+    assert.deepEqual((await pg.query('SELECT * FROM cards ORDER BY id')).rows,beforeCards);
+    assert.deepEqual((await pg.query('SELECT * FROM champions ORDER BY id')).rows,beforeChampions);
+  }
+});
+
+test('editing an existing awakening champion does not restore a missing exclusive card',async()=>{
+ const champions=(await request('/admin/champions')).body.champions;
+ const champion=champions.find((c:any)=>c.questCondition?.awakening);
+ assert.ok(champion);
+ await database.delete(schema.cardsTable).where(eq(schema.cardsTable.id,AWAKENING_CARD_IDS.TANK));
+ const before=(await request('/admin/cards')).body.cards;
+ const updated=await request('/admin/champions/'+champion.id,'PATCH',{...champion,name:champion.name+' edited',version:champion.version});
+ assert.equal(updated.status,200,JSON.stringify(updated.body));
+ const after=(await request('/admin/cards')).body.cards;
+ assert.deepEqual(after,before);assert.equal(after.some((c:any)=>c.id===AWAKENING_CARD_IDS.TANK),false);
 });

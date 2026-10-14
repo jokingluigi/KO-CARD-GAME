@@ -14,7 +14,15 @@ import { MAX_DECK_SIZE, MIN_DECK_SIZE } from '../rules/constants';
 import { drawCard } from './draw-card';
 import { defaultRandom, shuffle } from '../random/random';
 import { processChampionQuestEvents } from '../champions/quests';
-import { resolveDueDelayedEffects, resolvePendingEffects, resolveTriggeredAbilities } from '../effects/effect-engine';
+import { resolveStateBasedDeaths, resolveDueDelayedEffects, resolvePendingEffects, resolveTriggeredAbilities } from '../effects/effect-engine';
+
+function expireOwnerStartHealth(card:CardInstance):CardInstance {
+ const expired=card.temporaryStatModifiers?.filter(modifier=>modifier.untilOwnerTurnStart) ?? [];
+ if(!expired.length)return card;
+ const health=expired.reduce((total,modifier)=>total+modifier.amount,0);
+ return {...card,currentHealth:card.currentHealth-health,maxHealth:Math.max(1,card.maxHealth-health),
+   temporaryStatModifiers:card.temporaryStatModifiers?.filter(modifier=>!modifier.untilOwnerTurnStart)};
+}
 
 function beginPlayerTurn(state: GameState, playerId: string): GameState {
   const player = state.players.find((candidate) => candidate.id === playerId);
@@ -40,10 +48,11 @@ function beginPlayerTurn(state: GameState, playerId: string): GameState {
             board: candidate.board.map((card) =>
               card
                 ? {
-                    ...card,
+                    ...expireOwnerStartHealth(card),
                     enteredThisTurn: false,
                     entryDefenseActive: false,
                     attacksUsedThisTurn: 0,
+                    extraWrestlerAttacksThisTurn:0,
                      activeUsedThisTurn: false,
                   }
                 : null,
@@ -71,7 +80,7 @@ function beginPlayerTurn(state: GameState, playerId: string): GameState {
     ],
   };
 
-  const afterDraw = drawCard(towerTurnStart(turnStartedState, playerId), playerId);
+  const afterDraw = drawCard(towerTurnStart(resolveStateBasedDeaths(turnStartedState), playerId), playerId);
   const afterDelayed = resolveDueDelayedEffects(afterDraw, 'TURN_START', playerId);
   const turnStartPlayer = afterDelayed.players.find((candidate) => candidate.id === playerId);
   const turnStartCards = [

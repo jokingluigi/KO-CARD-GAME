@@ -1,0 +1,50 @@
+{
+  "nodeTestRuns": [
+    {
+      "tests": 2226,
+      "pass": 2226,
+      "fail": 0,
+      "skipped": 0,
+      "suite": "shared-engine"
+    },
+    {
+      "tests": 2,
+      "pass": 2,
+      "fail": 0,
+      "skipped": 0,
+      "suite": "latest-admin-ai"
+    },
+    {
+      "tests": 2,
+      "pass": 2,
+      "fail": 0,
+      "skipped": 0,
+      "suite": "latest-admin-http"
+    },
+    {
+      "tests": 10,
+      "pass": 10,
+      "fail": 0,
+      "skipped": 0,
+      "suite": "tower-v2-regression"
+    }
+  ],
+  "total": 2240,
+  "passed": 2240,
+  "failed": 0,
+  "browserScenarios": 55,
+  "aiMatches": 100,
+  "resourceGets": 151,
+  "resourceBrowserDecodes": 151,
+  "build": "PASS",
+  "remainingUnverified": [
+    "독세아",
+    "아포스틸",
+    "퀘스쳔"
+  ],
+  "notRun": [
+    "Physical Android/iOS",
+    "Full production published Tower V2 and all floor save paths",
+    "Full WebSocket two-player soak and every-card PvP"
+  ]
+}

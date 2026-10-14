@@ -5,11 +5,11 @@ import type {
 import type { CardDefinition } from '../cards/types';
 
 export type CardKeyword = Keyword;
-export type RuntimeAction = Action | 'REMOVE_FROM_GAME' | 'CAPTURE' | 'RELEASE_CAPTURED';
+export type RuntimeAction = Action | 'REMOVE_FROM_GAME' | 'CAPTURE' | 'RELEASE_CAPTURED' | 'REVEAL_CARD';
 export type RuntimeTrigger =
-   | 'GAME_START' | 'ENTER_FIELD' | 'LEAVE_FIELD' | 'SELF_RETIRE' | 'POSITION' | 'ACTIVE'
-   | 'CARD_DRAWN' | 'CARD_RETIRED' | 'CARD_SUMMONED' | 'CARD_ENTERED' | 'FIRST_ATTACKED' | 'SELF_ATTACK' | 'OTHER_ALLY_ATTACK' | 'ATTACK_SURVIVED' | 'SELF_DAMAGED' | 'STAT_CHANGED' | 'TECHNIQUE_CAST' | 'EXACT_ZERO_DAMAGE'
-   | 'CARD_DESTROYED' | 'SOURCE_RETIRED_TARGET' | 'ANY_BEFORE_RETIRE' | 'BEFORE_ATTACK' | 'SELF_ENTERED' | 'ON_FUSION' | 'COUNTDOWN' | 'TURN_START' | 'TURN_END' | 'BEFORE_DAMAGE' | 'BEFORE_RETIRE';
+   | 'GAME_START' | 'AFTER_MULLIGAN' | 'ENTER_FIELD' | 'LEAVE_FIELD' | 'SELF_RETIRE' | 'POSITION' | 'ACTIVE'
+   | 'CARD_DRAWN' | 'HAND_WRESTLER_ADDED' | 'CARD_RETIRED' | 'CARD_SUMMONED' | 'CARD_ENTERED' | 'FIRST_ATTACKED' | 'SELF_ATTACK' | 'OTHER_ALLY_ATTACK' | 'ATTACK_SURVIVED' | 'SELF_DAMAGED' | 'STAT_CHANGED' | 'TECHNIQUE_CAST' | 'EXACT_ZERO_DAMAGE'
+   | 'CARD_DESTROYED' | 'SOURCE_RETIRED_TARGET' | 'ANY_BEFORE_RETIRE' | 'BEFORE_ATTACK' | 'SELF_ENTERED' | 'SELF_RETURNED_TO_HAND' | 'ON_FUSION' | 'COUNTDOWN' | 'TURN_START' | 'TURN_END' | 'BEFORE_DAMAGE' | 'BEFORE_RETIRE';
 
 export type { StructuredTarget, StructuredQueuedEffect, StructuredListener, CardDefinitionReference };
 export type QueuedStructuredEffect = StructuredQueuedEffect;
@@ -36,11 +36,27 @@ export type CardEffect =
       type: 'STRUCTURED';
       action: RuntimeAction;
       target?: StructuredTarget;
-       values?: Omit<StructuredEffectValues, "leftEffects" | "rightEffects" | "definition"> & {
+       values?: Omit<StructuredEffectValues, "leftEffects" | "rightEffects" | "definition" | "listener"> & {
          /** Serializable card definition supplied by the runtime card pool. */
          definition?: CardDefinition;
          purpleRainFollowup?: boolean;
          drainAttackFraction?: number;
+         drainAttackAmount?: number;
+         /** Explicit adjacent source copy; rounded up, never a catalog roll. */
+         adjacentCopyFraction?: number;
+         armorGain?: number;
+         healToFull?: boolean;
+         replacementLowerCostSummon?: boolean;
+         summonBoardSlot?: number;
+         additionalWrestlerAttack?: number;
+         drawSourceFromDeck?: boolean;
+         healthUntilOwnerTurnStart?: boolean;
+         targetDefinitionIds?: string[];
+         destroyOnLethal?: boolean;
+         listener?: StructuredEffectValues["listener"] & {requiresActiveSource?: boolean; damageTarget?: 'PLAYER' | 'CARD'};
+         targetAttackBelowSource?: boolean;
+         /** Check the physical deck top before applying type filters. */
+         topCardOnly?: boolean;
          preserveStats?: boolean;
          destinationOwner?: 'SELF' | 'ENEMY';
          /** Internal continuation of an already validated automatic area target. */
@@ -86,7 +102,13 @@ export type CardAbility =
       condition?: AbilityCondition;
     }
    | {
-          trigger: 'GAME_START' | 'CARD_DRAWN' | 'CARD_RETIRED' | 'CARD_SUMMONED' | 'CARD_ENTERED' | 'FIRST_ATTACKED' | 'SELF_ATTACK' | 'OTHER_ALLY_ATTACK' | 'ATTACK_SURVIVED' | 'SELF_DAMAGED' | 'STAT_CHANGED' | 'TECHNIQUE_CAST' | 'EXACT_ZERO_DAMAGE' | 'CARD_DESTROYED' | 'SOURCE_RETIRED_TARGET' | 'ANY_BEFORE_RETIRE' | 'BEFORE_ATTACK' | 'SELF_ENTERED' | 'ON_FUSION' | 'COUNTDOWN' | 'TURN_START' | 'TURN_END' | 'BEFORE_DAMAGE' | 'BEFORE_RETIRE';
+          trigger: 'GAME_START' | 'AFTER_MULLIGAN' | 'CARD_DRAWN' | 'HAND_WRESTLER_ADDED' | 'CARD_RETIRED' | 'CARD_SUMMONED' | 'CARD_ENTERED' | 'FIRST_ATTACKED' | 'SELF_ATTACK' | 'OTHER_ALLY_ATTACK' | 'ATTACK_SURVIVED' | 'SELF_DAMAGED' | 'STAT_CHANGED' | 'TECHNIQUE_CAST' | 'EXACT_ZERO_DAMAGE' | 'CARD_DESTROYED' | 'SOURCE_RETIRED_TARGET' | 'ANY_BEFORE_RETIRE' | 'BEFORE_ATTACK' | 'SELF_ENTERED' | 'SELF_RETURNED_TO_HAND' | 'ON_FUSION' | 'COUNTDOWN' | 'TURN_START' | 'TURN_END' | 'BEFORE_DAMAGE' | 'BEFORE_RETIRE';
+          /** Explicit implementation scope; no text interpretation at dispatch. */
+          sourceZones?: Array<'HAND' | 'BOARD'>;
+          eventOwner?: 'SELF' | 'ENEMY';
+          incomingDamageLimitPerTurn?: number;
+          retirementReplacementScope?: 'SOURCE_CAUSED_ENEMY';
+          forbiddenKeywords?: CardKeyword[];
       effects: CardEffect[];
       oncePerTurn?: boolean;
       condition?: AbilityCondition;
@@ -110,5 +132,9 @@ export type AbilityCondition =
   | { type: 'FIRST_ATTACK_GAIN' }
   | { type: 'ATTACK_GAIN' }
   | { type: 'HEALTH_GAIN' }
+  | { type: 'ACTUAL_DAMAGE' }
+  | { type: 'OWNER_TURN' }
+  | { type: 'OPPONENT_TURN' }
+  | { type: 'PREVIOUS_OWN_TURN_BOTH_HEALED' }
   | { type: 'SOURCE_ATTACKED_CHAMPION_THIS_TURN' }
   | { type: 'WRESTLER_DESTROYED_THIS_TURN' };

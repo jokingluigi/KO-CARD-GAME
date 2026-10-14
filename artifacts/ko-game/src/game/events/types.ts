@@ -10,6 +10,7 @@ export type GameEventType =
   | 'TURN_STARTED'
   | 'TURN_ENDED'
   | 'TURN_TIMEOUT'
+  | 'CARD_REVEALED'
   | 'CARD_DRAWN'
   | 'CARD_PLAYED'
   | 'ENTER_FIELD'
@@ -46,10 +47,14 @@ export interface EventAttribution {
   sourceEffectId?: string;
   rootSourceEventId?: string;
   causationId?: string;
+  /** One damage effect may replace only this target's resulting lethal retirement. */
+  retireAsDestroyTargetId?: string;
 }
 
 export interface GameEvent {
   type: GameEventType;
+  /** Deliberate public disclosure of exactly one card, without the rest of its zone. */
+  revealedCard?: {definitionId:string;name:string;cost:number;attack:number;health:number;rulesText:string;imageUrl?:string|null};
   cardDefinitionId?: string;
   playerId?: string;
   cardInstanceId?: CardInstanceId;

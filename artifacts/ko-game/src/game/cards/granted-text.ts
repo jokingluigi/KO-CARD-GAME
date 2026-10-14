@@ -60,6 +60,8 @@ export function grantCardText(
   turn?: number,
 ): CardInstance {
   const grantedText = cloneGrantedCardText(definition);
+  const forbidden=getActiveCardAbilities({...card,grantedText}).flatMap(ability=>'forbiddenKeywords' in ability ? ability.forbiddenKeywords??[] : []);
+  grantedText.keywords=grantedText.keywords.filter(keyword=>!forbidden.includes(keyword));
   const keywords = getActiveCardKeywords({ ...card, grantedText });
   return {
     ...card,

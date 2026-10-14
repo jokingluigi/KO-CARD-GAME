@@ -1,7 +1,7 @@
 import type { GameState, PlayerState } from '../types/game-state';
 import { MAX_HAND_SIZE } from '../rules/constants';
 import { isChampionProtectedByToken } from './direct-champion';
-import { resolveCardRetiredListeners, resolveTriggeredAbilities } from '../effects/effect-engine';
+import { resolveRegisteredRuleListeners, resolveCardRetiredListeners, resolveTriggeredAbilities } from '../effects/effect-engine';
 import { normalizeCardForZone } from '../cards/zone-state';
 import { checkpointAwakening, hasAwakeningInvulnerability } from '../champions/awakening';
 
@@ -63,7 +63,7 @@ export function drawCard(state: GameState, playerId: string): GameState {
         },
       ],
     };
-    return checkpointAwakening(state, awakeningPrevented ? { ...fatiguedState, events: state.events } : fatiguedState);
+    return checkpointAwakening(state, awakeningPrevented ? { ...fatiguedState, events: state.events } : resolveRegisteredRuleListeners(fatiguedState,'DAMAGE_TAKEN',playerId,undefined,undefined,state.events.length));
   }
 
   const [drawnCard, ...remainingDeck] = drawingPlayer.deck;

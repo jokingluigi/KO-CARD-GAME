@@ -8,11 +8,18 @@ import { CardArtwork } from "./card-artwork";
 import { championQuestRewardText } from "./champion-quest-reward-text";
 import { getCardDefinition, type GameState } from "@/game";
 import type { PresentationCue } from "./presentation-feedback";
+import { canPresentBattleQuest } from './quest-presentation-policy';
 
 export const QUEST_BANNER_DURATION_MS = 700;
 export const QUEST_REWARD_DURATION_MS = 1100;
 
-export function QuestPresentation({
+export function QuestPresentation(props: {
+  cue: PresentationCue; state: GameState; onComplete: () => void; viewerPlayerId: string;
+}) {
+  return canPresentBattleQuest(props.state) ? <ActiveQuestPresentation {...props} /> : null;
+}
+
+function ActiveQuestPresentation({
   cue,
   state,
   onComplete,
@@ -50,7 +57,7 @@ export function QuestPresentation({
   }, [cue.id,bannerDuration,rewardDuration]);
 
   const managed=useCinematicAvailable();
-  useCinematicEvent({id:cue.id,kind:'AWAKENING',title:champion?.name??'Champion',subtitle:'QUEST COMPLETE · AWAKENING',art:champion?.questCompletedPortraitEnabled&&champion.questCompletedPortraitUrl?champion.questCompletedPortraitUrl:champion?.imageUrl,duration:bannerDuration});
+  useCinematicEvent({id:cue.id,kind:'AWAKENING',questCompletion:true,title:champion?.name??'Champion',subtitle:'QUEST COMPLETE · AWAKENING',art:champion?.questCompletedPortraitEnabled&&champion.questCompletedPortraitUrl?champion.questCompletedPortraitUrl:champion?.imageUrl,duration:bannerDuration});
   if(managed && phase==='BANNER')return <div className="quest-presentation" aria-hidden="true"/>;
   return (
     <div className="quest-presentation fixed inset-0 z-[360] flex items-center justify-center bg-black/25 px-4 pointer-events-none">

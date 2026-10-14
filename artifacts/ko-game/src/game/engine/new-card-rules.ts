@@ -26,7 +26,10 @@ export function healNewCardAware(state:GameState,playerId:string,amount:number,t
   const grow=p.board.some(c=>hasNewCardRule(c,'카스토'))?overflow:0;
   const nextMax=max+grow,nextHealth=Math.min(nextMax,health+amount);
   const turn=healingTurn(state),key=`${turn}:${playerId}`;
-  return {...state,overhealByTurn:{...state.overhealByTurn,[key]:(state.overhealByTurn?.[key]??0)+overflow},players:state.players.map(owner=>owner.id!==playerId?owner:c?{...owner,board:owner.board.map(card=>card?.instanceId===targetId?{...card,currentHealth:nextHealth,maxHealth:nextMax}:card) as typeof owner.board}:{...owner,health:nextHealth,maxHealth:nextMax,champion:owner.champion?{...owner.champion,health:nextHealth,maxHealth:nextMax}:null})};
+  const turnOwner=[...state.events].reverse().find(event=>event.type==='TURN_STARTED'||event.type==='TURN_ENDED')?.playerId ?? state.activePlayerId;
+  const healed=nextHealth>health && turnOwner===playerId;
+  const category=!c || c.isDirectDeployedChampion ? 'champion' : 'wrestler';
+  return {...state,...(healed?{ownTurnHealing:{...state.ownTurnHealing,[key]:{...state.ownTurnHealing?.[key],[category]:true}}}:{}),overhealByTurn:{...state.overhealByTurn,[key]:(state.overhealByTurn?.[key]??0)+overflow},players:state.players.map(owner=>owner.id!==playerId?owner:c?{...owner,board:owner.board.map(card=>card?.instanceId===targetId?{...card,currentHealth:nextHealth,maxHealth:nextMax}:card) as typeof owner.board}:{...owner,health:nextHealth,maxHealth:nextMax,champion:owner.champion?{...owner.champion,health:nextHealth,maxHealth:nextMax}:null})};
 }
 
 /** Incoming vulnerability is a field aura, independent of temporary damage modifiers. */

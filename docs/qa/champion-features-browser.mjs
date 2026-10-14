@@ -18,7 +18,11 @@ for(const [name,width,height] of [['desktop',1440,900],['mobile',390,844],['smal
  const activate=async locator=>width<500?locator.tap():locator.click();
  await page.goto(origin+'/qa/champion-features.html');
  for(const mode of ['reward','reward-full']){
-  await activate(page.getByTestId(mode));await page.getByText(/퀘스트 토큰 소환:/).waitFor();
+  await activate(page.getByTestId(mode));
+  const rewardPrompt=page.getByText(/퀘스트 토큰 소환:/);await rewardPrompt.waitFor({state:'attached'});
+  // Portrait targeting hides this extra grid row to preserve field size.
+  assert.equal(await rewardPrompt.isVisible(),width>=500);
+  // The actual mandatory selection and resulting token placement are checked below.
   assert.equal(await page.getByRole('button',{name:'취소',exact:true}).count(),0);
   await activate(page.getByTestId('restore'));
   const target=page.locator('.ko-board-slot-wrapper').filter({has:page.getByText('효과 대상',{exact:true})}).first().getByRole('button',{name:'연출 검증 선수',exact:true});await activate(target);

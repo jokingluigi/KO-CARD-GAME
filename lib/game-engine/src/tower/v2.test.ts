@@ -600,3 +600,9 @@ test('V2 normal, intermediate, final and hidden encounters inherit the correct g
  const {catalog}=fixture();const track=(name:string)=>({name,assetUrl:'https://example.invalid/'+name+'.mp3',volume:0.5});catalog.season.music={normal:track('normal'),midBoss:track('mid'),boss:track('final'),hiddenBoss:track('hidden')};const r=run(catalog);
  assert.equal(encounterFor(r,catalog).music?.name,'normal');assert.equal(encounterFor({...r,floor:3},catalog).music?.name,'mid');assert.equal(encounterFor({...r,floor:6},catalog).music?.name,'final');catalog.season.v2!.hiddenBossId=catalog.season.v2!.bosses[0]!.id;assert.equal(encounterFor({...r,floor:6},catalog,true).music?.name,'hidden');
 });
+
+test('authored boss deck accepts active private tokens and cost above six while the reward pool remains unchanged',()=>{
+ const {catalog}=fixture();const special={...catalog.cards[0]!,id:'authored-private-token',status:'DRAFT' as const,cost:9,isToken:true,isChampionToken:true};catalog.cards.push(special);catalog.season.v2!.bosses[0]!.cardIds[0]=special.id;
+ assert.equal(eligibleRewardCard(special),false);assert.doesNotThrow(()=>validateTowerV2(catalog.season.v2!,catalog));
+ catalog.cards.pop();assert.throws(()=>validateTowerV2(catalog.season.v2!,catalog),/실제 사용 가능한 카드 25장/);
+});

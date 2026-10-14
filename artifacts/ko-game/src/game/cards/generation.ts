@@ -51,7 +51,8 @@ export function isEligibleForRandomPool(
   randomScope: RandomScope = 'STANDARD',
 ): boolean {
   // Legacy built-in definitions have no publication metadata and are public.
-  return !card.questExclusive && (randomScope === 'FULL' || ((card.status ?? 'PUBLISHED') === 'PUBLISHED' && !card.isToken && !card.isChampionToken));
+  // Owner-confirmed FULL includes awakening-exclusive champion tokens too.
+  return randomScope === 'FULL' || ((card.status ?? 'PUBLISHED') === 'PUBLISHED' && !card.isToken && !card.isChampionToken);
 }
 
 export function generateCardInstance(

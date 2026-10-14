@@ -49,6 +49,8 @@ export interface ChampionQuest {
   trackedEvent: ChampionTrackedEvent;
   cardType?: ChampionQuestCardType;
   sourceActionType?: string;
+  /** Count any owner-caused event, regardless of the removed card's owner. */
+  causedByOwner?: boolean;
   progressPerEvent?: number;
   requiredProgress: number;
   reward: ChampionQuestReward;

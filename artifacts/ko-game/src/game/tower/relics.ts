@@ -231,7 +231,7 @@ export function expireTowerOpponentTurnBuffs(state: GameState, player: PlayerSta
   const expire = (card: CardInstance): CardInstance => {
     const expired = card.temporaryStatModifiers?.filter(modifier => modifier.source === 'TOWER_RELIC' && modifier.untilTurn === state.turn) ?? [];
     if (!expired.length) return card;
-    return { ...card, currentAttack: card.currentAttack - expired.reduce((sum, modifier) => sum + (modifier.stat === 'attack' ? modifier.amount : 0), 0),
+    return { ...card, currentAttack: Math.max(0, card.currentAttack - expired.reduce((sum, modifier) => sum + (modifier.stat === 'attack' ? modifier.amount : 0), 0)),
       temporaryStatModifiers: card.temporaryStatModifiers?.filter(modifier => !expired.includes(modifier)) };
   };
   return { ...player, board: player.board.map(card => card ? expire(card) : null) as typeof player.board,

@@ -1,3 +1,4 @@
+import { canPresentBattleQuest } from '@/components/quest-presentation-policy';
 import { advanceOnlineEventSequence } from '@/lib/online-event-sequence';
 import { mergeOnlineCardCatalog, type MatchCardCatalog } from "@/lib/online-card-catalog";
 import type { MatchRecap, CardDefinition, ChampionDefinition } from '@workspace/game-engine';
@@ -481,6 +482,11 @@ function OnlineMatchPage({ draft = false }: { draft?: boolean }) {
   }, [matchResultVisible]);
 
   useEffect(() => {
+    if (!canPresentBattleQuest(state)) {
+      audioManager.stopBgm();
+      activeBgmKeyRef.current = null;
+      return;
+    }
     const champion = state?.players.map((player) => player.champion)
       .find((candidate) => candidate?.id === state.latestQuestCompletedChampionId);
     const questMusic = champion?.questCompleted && champion.questCompleteAudioEnabled && champion.questCompleteAudioUrl
@@ -498,7 +504,7 @@ function OnlineMatchPage({ draft = false }: { draft?: boolean }) {
     activeBgmKeyRef.current = key;
     if (questMusic) audioManager.playQuestComplete(selected.assetUrl, selected.volume);
     else audioManager.playMatchBgm(selected.assetUrl, selected.volume);
-  }, [mediaCatalog.bgms, state?.bgmId, state?.latestQuestCompletedChampionId, state?.players]);
+  }, [state?.status, mediaCatalog.bgms, state?.bgmId, state?.latestQuestCompletedChampionId, state?.players]);
 
   useEffect(() => {
     audioManager.setBgmVolume(bgmVolume);

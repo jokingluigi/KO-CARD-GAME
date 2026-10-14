@@ -1,4 +1,3 @@
-import { fallbackZombieToken } from '../engine/zombie-token';
 import { ACTIONS, TRIGGERS, KEYWORDS, isEffectScript } from '@workspace/effect-registry';
 import type { CardDefinition } from '../cards/types';
 import type { PublishedCardRecord } from '../cards/published-cards';
@@ -39,7 +38,7 @@ export function isMinionAAbility(state: import('../types/game-state').GameState,
   return action.type === 'USE_CHAMPION_ABILITY' && state.players.some(p => p.id === action.playerId && p.champion?.id === MINION_A_ID);
 }
 
-/** DB catalog plus the actual built-in special token; QA/training dummies are excluded. */
+/** The administrator catalog only: deleted content must not reappear as a fallback. */
 export function completeMinionACatalog(records: readonly unknown[]): CardDefinition[] {
-  return [...new Map([...minionACatalog(records), fallbackZombieToken].map(d => [d.id, d])).values()].sort((a,b) => a.id.localeCompare(b.id));
+  return minionACatalog(records);
 }

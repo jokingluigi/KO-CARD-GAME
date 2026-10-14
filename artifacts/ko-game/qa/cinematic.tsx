@@ -45,6 +45,9 @@ setRuntimeCardDefinitions([definition, spell]);
 const card = generateCardInstance(definition, { instanceId: "qa-attacker" });
 const target = { ...card, instanceId: "qa-defender" };
 const questState = createInitialGameState();
+// Completion presentation is a live-match fixture, not an unstarted game.
+questState.status = 'IN_PROGRESS';
+questState.activePlayerId = questState.players[0].id;
 const defeatState = {...questState,status:'FINISHED' as const,winnerId:questState.players[0].id,loserId:questState.players[1].id,players:questState.players.map((p,i)=>i===1?{...p,health:0}:p),events:[{type:'DAMAGE_DEALT' as const,reason:'COMBAT',amount:1,source:{type:'CARD' as const,cardInstanceId:card.instanceId},target:{type:'PLAYER' as const,playerId:questState.players[1].id}}]};
 function Scene() {
   const [kind, setKind] = useState("");

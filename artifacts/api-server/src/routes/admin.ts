@@ -1807,7 +1807,7 @@ router.patch("/champions/:id", async (request, response): Promise<void> => {
     const [updated] = await transaction.update(championsTable).set({
       ...championValues, isCraftable: request.body.isCraftable === undefined ? existing.isCraftable : input.isCraftable, version: sql`${championsTable.version} + 1`, updatedAt: new Date(),
     }).where(and(eq(championsTable.id, id), eq(championsTable.version, expectedVersion))).returning();
-    if (updated && validAwakeningQuestConfig(input.questCondition?.awakening)) await ensureAwakeningCards(transaction);
+    // Editing a champion must never recreate administrator-deleted card rows.
     return updated;
   });
   if (!champion) {
