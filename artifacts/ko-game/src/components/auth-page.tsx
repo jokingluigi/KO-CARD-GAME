@@ -1,4 +1,4 @@
-import { FormEvent, useState } from "react";
+import { FormEvent, useEffect, useRef, useState } from "react";
 import { ArrowRight, LockKeyhole, RefreshCw, UserRound } from "lucide-react";
 import { submitAuth, type AuthUser } from "@/lib/auth-client";
 
@@ -14,6 +14,27 @@ export function AuthLoading() {
 }
 
 export function AuthRecovery({ message, onRetry }: { message?: string; onRetry: () => void }) {
+  const retryRef = useRef(onRetry);
+  retryRef.current = onRetry;
+  useEffect(() => {
+    let timer: ReturnType<typeof setTimeout> | undefined;
+    const retry = () => {
+      clearTimeout(timer);
+      if (document.visibilityState === 'visible') retryRef.current();
+    };
+    const onVisibility = () => {
+      clearTimeout(timer);
+      if (document.visibilityState === 'visible') timer = setTimeout(retry, 2_000);
+    };
+    if (document.visibilityState === 'visible') timer = setTimeout(retry, 5_000);
+    window.addEventListener('online', retry);
+    document.addEventListener('visibilitychange', onVisibility);
+    return () => {
+      clearTimeout(timer);
+      window.removeEventListener('online', retry);
+      document.removeEventListener('visibilitychange', onVisibility);
+    };
+  }, []);
   return (
     <main className="ko-auth-screen flex min-h-screen items-center justify-center px-5 text-white">
       <section className="ko-auth-card w-full max-w-[380px] text-center">
@@ -21,6 +42,7 @@ export function AuthRecovery({ message, onRetry }: { message?: string; onRetry: 
         <h1 className="mt-5 text-xl font-black">인증 서버에 연결할 수 없습니다</h1>
         <p className="mt-3 text-sm leading-6 text-neutral-500">
           {message ?? "잠시 후 다시 시도해 주세요."}
+          <span className="mt-2 block">연결이 복구되면 자동으로 다시 확인합니다.</span>
         </p>
         <button type="button" onClick={onRetry} className="ko-auth-submit mt-7">
           <RefreshCw className="h-4 w-4" aria-hidden="true" />

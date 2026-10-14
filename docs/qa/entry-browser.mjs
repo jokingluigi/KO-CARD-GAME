@@ -47,7 +47,9 @@ for(const [name,width,height] of [['desktop',1280,800],['mobile',390,844]])for(c
    await page.getByText('ENTRY_QA',{exact:true}).waitFor({timeout:5000});
   }else{
    const email=page.locator('input[type="email"]');
-   await email.waitFor({timeout:5000});
+   // Existing-session restoration has an 8-second request deadline before
+   // showing the form on a stalled API; allow that deadline plus rendering.
+   await email.waitFor({timeout:10000});
    await email.fill('entry@example.invalid');
    if(mode==='login-timeout'){
     await page.locator('input[type="password"]').fill('test-only-password');
