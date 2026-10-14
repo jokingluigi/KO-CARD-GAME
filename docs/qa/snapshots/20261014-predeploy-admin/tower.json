@@ -1,0 +1,3238 @@
+{
+  "enabled": false,
+  "seasons": [
+    {
+      "id": "tower-v2-foundation-20261009",
+      "name": "KO 타워 · 기본 16층",
+      "active": true,
+      "data": {
+        "id": "tower-v2-foundation-20261009",
+        "v2": {
+          "bosses": [
+            {
+              "id": "boss-4",
+              "name": "챔피언 라 칼라베라",
+              "music": {
+                "name": "KO 배틀 음악 시즌 2 할로윈.mp3",
+                "volume": 83,
+                "assetUrl": "/api/storage/objects/uploads/game-bgm/6f202f8f-4453-4a6b-82ae-fc3e2162f217.mp3"
+              },
+              "cardIds": [
+                "683e07f7-d9f8-47f7-8142-779cab01e9b8",
+                "latest-wrestler-9",
+                "4ad681e3-6ed6-4651-8107-4b24adddd753",
+                "94a8dc96-6856-4460-9128-c487c0189dd9",
+                "b2eb2ae3-5808-4f9d-994d-efa22c988955",
+                "latest-wrestler-8",
+                "5f1fd584-7129-4f39-91a4-22f02ba677e5",
+                "dc43dc88-38d7-499b-ad89-6b83f773fe62",
+                "a2ab5577-0072-4425-a117-fd6f7df05d00",
+                "latest-wrestler-1",
+                "bcf2ac9b-1afd-41a3-a653-5f9af1e033bf",
+                "b101e673-1313-4e47-8782-5dce5d385080",
+                "latest-wrestler-5",
+                "9716aeaa-cbc4-4374-bedc-2f40054b72de",
+                "0710e9b3-a8ef-4f09-9e63-c0b872c18068",
+                "5f1fd584-7129-4f39-91a4-22f02ba677e5",
+                "2e2d2c9d-1586-49cc-9b06-b3d8174c961f",
+                "393dbf7c-7f61-418a-ba1a-4726500ab0aa",
+                "102e8061-c3b8-44a5-a11c-56379996fee7",
+                "epic-spell-forced-exchange",
+                "latest-wrestler-12",
+                "0ee31b68-9c4a-434f-a17b-01294e9cdf71",
+                "8be831d2-6e56-4f77-985e-3860d6eaa2d3",
+                "9716aeaa-cbc4-4374-bedc-2f40054b72de",
+                "latest-wrestler-11"
+              ],
+              "sceneId": "tower-v2-foundation-20261009-boss-4",
+              "abilities": [],
+              "maxHealth": 25,
+              "championId": "5e4a5a52-ef2c-4e1a-9b76-a4edc9f79e2c",
+              "difficulty": "NORMAL",
+              "firstRewards": [],
+              "repeatRewards": [],
+              "startingHealth": 25
+            },
+            {
+              "id": "boss-8",
+              "name": "챔피언 여울",
+              "music": {
+                "name": "KO 배틀 음악 시즌 2 할로윈.mp3",
+                "volume": 83,
+                "assetUrl": "/api/storage/objects/uploads/game-bgm/6f202f8f-4453-4a6b-82ae-fc3e2162f217.mp3"
+              },
+              "cardIds": [
+                "99514068-68c8-46ca-b9f5-7f16b2ea4253",
+                "8a09fec1-16d8-452b-85c3-a38c7a3a03f6",
+                "latest-wrestler-15",
+                "latest-wrestler-14",
+                "eb87bf4d-c43b-4f2c-94d2-86e31eacd9fe",
+                "b723c7e6-c668-4afb-b77d-da0d16f16c31",
+                "b2eb2ae3-5808-4f9d-994d-efa22c988955",
+                "9478516b-5756-411d-8ba2-3ff300234c3b",
+                "683e07f7-d9f8-47f7-8142-779cab01e9b8",
+                "5c050d4e-1e91-4d8b-9bab-8d315c4e21ab",
+                "0ee31b68-9c4a-434f-a17b-01294e9cdf71",
+                "df532c95-0e4d-4b17-8200-a86e6a682341",
+                "dc43dc88-38d7-499b-ad89-6b83f773fe62",
+                "0710e9b3-a8ef-4f09-9e63-c0b872c18068",
+                "4ecf3a8f-b344-421f-b524-27ec5c28eeeb",
+                "epic-spell-annihilation",
+                "latest-wrestler-14",
+                "20251372-b1a0-485e-9158-d82bf05f7371",
+                "epic-spell-push",
+                "8a0b8b65-5d67-4f23-894e-6103219e41c8",
+                "latest-wrestler-7",
+                "a2ab5577-0072-4425-a117-fd6f7df05d00",
+                "2e99f465-4bc7-461f-ad45-674a3ed04b10",
+                "latest-wrestler-12",
+                "20251372-b1a0-485e-9158-d82bf05f7371"
+              ],
+              "sceneId": "tower-v2-foundation-20261009-boss-8",
+              "abilities": [],
+              "maxHealth": 25,
+              "championId": "11ac192a-d48d-4119-a63d-f9102793fb9a",
+              "difficulty": "NORMAL",
+              "firstRewards": [],
+              "repeatRewards": [],
+              "startingHealth": 25
+            },
+            {
+              "id": "boss-12",
+              "name": "챔피언 예거",
+              "music": {
+                "name": "KO 배틀 음악 시즌 2 할로윈.mp3",
+                "volume": 83,
+                "assetUrl": "/api/storage/objects/uploads/game-bgm/6f202f8f-4453-4a6b-82ae-fc3e2162f217.mp3"
+              },
+              "cardIds": [
+                "20251372-b1a0-485e-9158-d82bf05f7371",
+                "20251372-b1a0-485e-9158-d82bf05f7371",
+                "855e87f9-1769-4036-ad49-491ab4b2058a",
+                "5f1fd584-7129-4f39-91a4-22f02ba677e5",
+                "f6061f3c-531a-4000-bc8e-a7d2e23e45bc",
+                "latest-wrestler-14",
+                "dc43dc88-38d7-499b-ad89-6b83f773fe62",
+                "62a10600-5a0e-4aec-b959-f0f15cd8c012",
+                "0ee31b68-9c4a-434f-a17b-01294e9cdf71",
+                "5f1fd584-7129-4f39-91a4-22f02ba677e5",
+                "df532c95-0e4d-4b17-8200-a86e6a682341",
+                "5d568663-55e8-4ad9-88b3-3afadae538d0",
+                "855e87f9-1769-4036-ad49-491ab4b2058a",
+                "4e28e957-1148-44c3-8f8b-b6fe8f40e3a9",
+                "4ad681e3-6ed6-4651-8107-4b24adddd753",
+                "latest-wrestler-11",
+                "828969e2-363a-4cc2-8156-5de5ed86b822",
+                "b2eb2ae3-5808-4f9d-994d-efa22c988955",
+                "8aeb73b2-f4be-44ad-837e-4ac66641ab62",
+                "a2ab5577-0072-4425-a117-fd6f7df05d00",
+                "b101e673-1313-4e47-8782-5dce5d385080",
+                "5ff4d145-d194-432d-8893-6e8150f83fd1",
+                "9b7c0e52-2184-4ec1-8d68-39a4d5981d2a",
+                "latest-wrestler-4",
+                "8a351c20-b7b0-4305-8bd4-4430fc6e7276"
+              ],
+              "sceneId": "tower-v2-foundation-20261009-boss-12",
+              "abilities": [],
+              "maxHealth": 25,
+              "championId": "3cbb09c4-f8ac-4668-9378-5c01bfa9474b",
+              "difficulty": "NORMAL",
+              "firstRewards": [],
+              "repeatRewards": [],
+              "startingHealth": 25
+            },
+            {
+              "id": "boss-16",
+              "name": "챔피언 판도라",
+              "music": {
+                "name": "KO 배틀 음악 시즌 2 할로윈.mp3",
+                "volume": 83,
+                "assetUrl": "/api/storage/objects/uploads/game-bgm/6f202f8f-4453-4a6b-82ae-fc3e2162f217.mp3"
+              },
+              "cardIds": [
+                "latest-wrestler-12",
+                "0710e9b3-a8ef-4f09-9e63-c0b872c18068",
+                "888a12bd-e1e2-41b3-9f22-abbc36af8544",
+                "828969e2-363a-4cc2-8156-5de5ed86b822",
+                "b2eb2ae3-5808-4f9d-994d-efa22c988955",
+                "b101e673-1313-4e47-8782-5dce5d385080",
+                "dc43dc88-38d7-499b-ad89-6b83f773fe62",
+                "dc43dc88-38d7-499b-ad89-6b83f773fe62",
+                "55e36a1b-9b1d-4ab1-ba42-f097ba4449b5",
+                "latest-wrestler-14",
+                "0710e9b3-a8ef-4f09-9e63-c0b872c18068",
+                "b101e673-1313-4e47-8782-5dce5d385080",
+                "5f1fd584-7129-4f39-91a4-22f02ba677e5",
+                "9b7c0e52-2184-4ec1-8d68-39a4d5981d2a",
+                "8a0b8b65-5d67-4f23-894e-6103219e41c8",
+                "b2eb2ae3-5808-4f9d-994d-efa22c988955",
+                "8c120069-e0c7-4461-bed3-2dc586c50f7b",
+                "latest-wrestler-11",
+                "20251372-b1a0-485e-9158-d82bf05f7371",
+                "079e04c3-faa7-43c9-b15e-f60b71d87620",
+                "bcf2ac9b-1afd-41a3-a653-5f9af1e033bf",
+                "latest-wrestler-12",
+                "69d757c0-4dad-4406-9126-9fc01426fc59",
+                "8be831d2-6e56-4f77-985e-3860d6eaa2d3",
+                "a68c743b-8752-4bbf-817a-397e71d41569"
+              ],
+              "sceneId": "tower-v2-foundation-20261009-boss-16",
+              "abilities": [],
+              "maxHealth": 25,
+              "championId": "bcffab96-f61f-497e-b60b-de5a869837d3",
+              "difficulty": "NORMAL",
+              "firstRewards": [],
+              "repeatRewards": [],
+              "startingHealth": 25
+            },
+            {
+              "id": "hidden",
+              "name": "챔피언 피 스타 세븐",
+              "music": {
+                "name": "KO 배틀 음악 시즌 2 할로윈.mp3",
+                "volume": 83,
+                "assetUrl": "/api/storage/objects/uploads/game-bgm/6f202f8f-4453-4a6b-82ae-fc3e2162f217.mp3"
+              },
+              "cardIds": [
+                "8aeb73b2-f4be-44ad-837e-4ac66641ab62",
+                "828969e2-363a-4cc2-8156-5de5ed86b822",
+                "69d757c0-4dad-4406-9126-9fc01426fc59",
+                "epic-spell-annihilation",
+                "1e0bbdb3-9304-46b0-81b8-d30bb9954fc3",
+                "199de5ac-4645-4f45-8996-bf3ae909dfce",
+                "2e99f465-4bc7-461f-ad45-674a3ed04b10",
+                "683e07f7-d9f8-47f7-8142-779cab01e9b8",
+                "b723c7e6-c668-4afb-b77d-da0d16f16c31",
+                "94a8dc96-6856-4460-9128-c487c0189dd9",
+                "5d568663-55e8-4ad9-88b3-3afadae538d0",
+                "5f1fd584-7129-4f39-91a4-22f02ba677e5",
+                "latest-wrestler-11",
+                "49f79c04-41b4-4d2c-83df-10541a7eceef",
+                "a68c743b-8752-4bbf-817a-397e71d41569",
+                "7653f417-ea62-4924-8605-3d88a435d728",
+                "4e28e957-1148-44c3-8f8b-b6fe8f40e3a9",
+                "393dbf7c-7f61-418a-ba1a-4726500ab0aa",
+                "df532c95-0e4d-4b17-8200-a86e6a682341",
+                "792082db-3844-48f1-97d2-50c03c70c9db",
+                "0ee31b68-9c4a-434f-a17b-01294e9cdf71",
+                "199de5ac-4645-4f45-8996-bf3ae909dfce",
+                "a2ab5577-0072-4425-a117-fd6f7df05d00",
+                "epic-spell-execution",
+                "393dbf7c-7f61-418a-ba1a-4726500ab0aa"
+              ],
+              "sceneId": "tower-v2-foundation-20261009-hidden",
+              "abilities": [],
+              "maxHealth": 25,
+              "championId": "0e9d8ab0-9af7-4db3-a03e-ff6ee3d5789f",
+              "difficulty": "NORMAL",
+              "firstRewards": [],
+              "repeatRewards": [],
+              "startingHealth": 25
+            }
+          ],
+          "floors": [
+            {
+              "id": "tower-v2-foundation-20261009-floor-1",
+              "type": "NORMAL",
+              "number": 1,
+              "enemies": [
+                {
+                  "id": "5e4a5a52-ef2c-4e1a-9b76-a4edc9f79e2c",
+                  "name": "챔피언 라 칼라베라",
+                  "weight": 100,
+                  "championId": "5e4a5a52-ef2c-4e1a-9b76-a4edc9f79e2c",
+                  "difficulty": "NORMAL"
+                },
+                {
+                  "id": "champion-minion-a",
+                  "name": "챔피언 미니언 A",
+                  "weight": 100,
+                  "championId": "champion-minion-a",
+                  "difficulty": "NORMAL"
+                },
+                {
+                  "id": "11ac192a-d48d-4119-a63d-f9102793fb9a",
+                  "name": "챔피언 여울",
+                  "weight": 100,
+                  "championId": "11ac192a-d48d-4119-a63d-f9102793fb9a",
+                  "difficulty": "NORMAL"
+                },
+                {
+                  "id": "3cbb09c4-f8ac-4668-9378-5c01bfa9474b",
+                  "name": "챔피언 예거",
+                  "weight": 100,
+                  "championId": "3cbb09c4-f8ac-4668-9378-5c01bfa9474b",
+                  "difficulty": "NORMAL"
+                },
+                {
+                  "id": "bcffab96-f61f-497e-b60b-de5a869837d3",
+                  "name": "챔피언 판도라",
+                  "weight": 100,
+                  "championId": "bcffab96-f61f-497e-b60b-de5a869837d3",
+                  "difficulty": "NORMAL"
+                },
+                {
+                  "id": "0db142af-750e-4929-a464-5daf1bc75452",
+                  "name": "챔피언 퍼플레인",
+                  "weight": 100,
+                  "championId": "0db142af-750e-4929-a464-5daf1bc75452",
+                  "difficulty": "NORMAL"
+                },
+                {
+                  "id": "0e9d8ab0-9af7-4db3-a03e-ff6ee3d5789f",
+                  "name": "챔피언 피 스타 세븐",
+                  "weight": 100,
+                  "championId": "0e9d8ab0-9af7-4db3-a03e-ff6ee3d5789f",
+                  "difficulty": "NORMAL"
+                }
+              ],
+              "relicReward": false
+            },
+            {
+              "id": "tower-v2-foundation-20261009-floor-2",
+              "type": "NORMAL",
+              "number": 2,
+              "enemies": [
+                {
+                  "id": "5e4a5a52-ef2c-4e1a-9b76-a4edc9f79e2c",
+                  "name": "챔피언 라 칼라베라",
+                  "weight": 100,
+                  "championId": "5e4a5a52-ef2c-4e1a-9b76-a4edc9f79e2c",
+                  "difficulty": "NORMAL"
+                },
+                {
+                  "id": "champion-minion-a",
+                  "name": "챔피언 미니언 A",
+                  "weight": 100,
+                  "championId": "champion-minion-a",
+                  "difficulty": "NORMAL"
+                },
+                {
+                  "id": "11ac192a-d48d-4119-a63d-f9102793fb9a",
+                  "name": "챔피언 여울",
+                  "weight": 100,
+                  "championId": "11ac192a-d48d-4119-a63d-f9102793fb9a",
+                  "difficulty": "NORMAL"
+                },
+                {
+                  "id": "3cbb09c4-f8ac-4668-9378-5c01bfa9474b",
+                  "name": "챔피언 예거",
+                  "weight": 100,
+                  "championId": "3cbb09c4-f8ac-4668-9378-5c01bfa9474b",
+                  "difficulty": "NORMAL"
+                },
+                {
+                  "id": "bcffab96-f61f-497e-b60b-de5a869837d3",
+                  "name": "챔피언 판도라",
+                  "weight": 100,
+                  "championId": "bcffab96-f61f-497e-b60b-de5a869837d3",
+                  "difficulty": "NORMAL"
+                },
+                {
+                  "id": "0db142af-750e-4929-a464-5daf1bc75452",
+                  "name": "챔피언 퍼플레인",
+                  "weight": 100,
+                  "championId": "0db142af-750e-4929-a464-5daf1bc75452",
+                  "difficulty": "NORMAL"
+                },
+                {
+                  "id": "0e9d8ab0-9af7-4db3-a03e-ff6ee3d5789f",
+                  "name": "챔피언 피 스타 세븐",
+                  "weight": 100,
+                  "championId": "0e9d8ab0-9af7-4db3-a03e-ff6ee3d5789f",
+                  "difficulty": "NORMAL"
+                }
+              ],
+              "relicReward": false
+            },
+            {
+              "id": "tower-v2-foundation-20261009-floor-3",
+              "type": "NORMAL",
+              "number": 3,
+              "enemies": [
+                {
+                  "id": "5e4a5a52-ef2c-4e1a-9b76-a4edc9f79e2c",
+                  "name": "챔피언 라 칼라베라",
+                  "weight": 100,
+                  "championId": "5e4a5a52-ef2c-4e1a-9b76-a4edc9f79e2c",
+                  "difficulty": "NORMAL"
+                },
+                {
+                  "id": "champion-minion-a",
+                  "name": "챔피언 미니언 A",
+                  "weight": 100,
+                  "championId": "champion-minion-a",
+                  "difficulty": "NORMAL"
+                },
+                {
+                  "id": "11ac192a-d48d-4119-a63d-f9102793fb9a",
+                  "name": "챔피언 여울",
+                  "weight": 100,
+                  "championId": "11ac192a-d48d-4119-a63d-f9102793fb9a",
+                  "difficulty": "NORMAL"
+                },
+                {
+                  "id": "3cbb09c4-f8ac-4668-9378-5c01bfa9474b",
+                  "name": "챔피언 예거",
+                  "weight": 100,
+                  "championId": "3cbb09c4-f8ac-4668-9378-5c01bfa9474b",
+                  "difficulty": "NORMAL"
+                },
+                {
+                  "id": "bcffab96-f61f-497e-b60b-de5a869837d3",
+                  "name": "챔피언 판도라",
+                  "weight": 100,
+                  "championId": "bcffab96-f61f-497e-b60b-de5a869837d3",
+                  "difficulty": "NORMAL"
+                },
+                {
+                  "id": "0db142af-750e-4929-a464-5daf1bc75452",
+                  "name": "챔피언 퍼플레인",
+                  "weight": 100,
+                  "championId": "0db142af-750e-4929-a464-5daf1bc75452",
+                  "difficulty": "NORMAL"
+                },
+                {
+                  "id": "0e9d8ab0-9af7-4db3-a03e-ff6ee3d5789f",
+                  "name": "챔피언 피 스타 세븐",
+                  "weight": 100,
+                  "championId": "0e9d8ab0-9af7-4db3-a03e-ff6ee3d5789f",
+                  "difficulty": "NORMAL"
+                }
+              ],
+              "relicReward": false
+            },
+            {
+              "id": "tower-v2-foundation-20261009-floor-4",
+              "type": "BOSS",
+              "bossId": "boss-4",
+              "number": 4,
+              "enemies": [
+                {
+                  "id": "5e4a5a52-ef2c-4e1a-9b76-a4edc9f79e2c",
+                  "name": "챔피언 라 칼라베라",
+                  "weight": 100,
+                  "championId": "5e4a5a52-ef2c-4e1a-9b76-a4edc9f79e2c",
+                  "difficulty": "NORMAL"
+                },
+                {
+                  "id": "champion-minion-a",
+                  "name": "챔피언 미니언 A",
+                  "weight": 100,
+                  "championId": "champion-minion-a",
+                  "difficulty": "NORMAL"
+                },
+                {
+                  "id": "11ac192a-d48d-4119-a63d-f9102793fb9a",
+                  "name": "챔피언 여울",
+                  "weight": 100,
+                  "championId": "11ac192a-d48d-4119-a63d-f9102793fb9a",
+                  "difficulty": "NORMAL"
+                },
+                {
+                  "id": "3cbb09c4-f8ac-4668-9378-5c01bfa9474b",
+                  "name": "챔피언 예거",
+                  "weight": 100,
+                  "championId": "3cbb09c4-f8ac-4668-9378-5c01bfa9474b",
+                  "difficulty": "NORMAL"
+                },
+                {
+                  "id": "bcffab96-f61f-497e-b60b-de5a869837d3",
+                  "name": "챔피언 판도라",
+                  "weight": 100,
+                  "championId": "bcffab96-f61f-497e-b60b-de5a869837d3",
+                  "difficulty": "NORMAL"
+                },
+                {
+                  "id": "0db142af-750e-4929-a464-5daf1bc75452",
+                  "name": "챔피언 퍼플레인",
+                  "weight": 100,
+                  "championId": "0db142af-750e-4929-a464-5daf1bc75452",
+                  "difficulty": "NORMAL"
+                },
+                {
+                  "id": "0e9d8ab0-9af7-4db3-a03e-ff6ee3d5789f",
+                  "name": "챔피언 피 스타 세븐",
+                  "weight": 100,
+                  "championId": "0e9d8ab0-9af7-4db3-a03e-ff6ee3d5789f",
+                  "difficulty": "NORMAL"
+                }
+              ],
+              "relicReward": true
+            },
+            {
+              "id": "tower-v2-foundation-20261009-floor-5",
+              "type": "NORMAL",
+              "number": 5,
+              "enemies": [
+                {
+                  "id": "5e4a5a52-ef2c-4e1a-9b76-a4edc9f79e2c",
+                  "name": "챔피언 라 칼라베라",
+                  "weight": 100,
+                  "championId": "5e4a5a52-ef2c-4e1a-9b76-a4edc9f79e2c",
+                  "difficulty": "NORMAL"
+                },
+                {
+                  "id": "champion-minion-a",
+                  "name": "챔피언 미니언 A",
+                  "weight": 100,
+                  "championId": "champion-minion-a",
+                  "difficulty": "NORMAL"
+                },
+                {
+                  "id": "11ac192a-d48d-4119-a63d-f9102793fb9a",
+                  "name": "챔피언 여울",
+                  "weight": 100,
+                  "championId": "11ac192a-d48d-4119-a63d-f9102793fb9a",
+                  "difficulty": "NORMAL"
+                },
+                {
+                  "id": "3cbb09c4-f8ac-4668-9378-5c01bfa9474b",
+                  "name": "챔피언 예거",
+                  "weight": 100,
+                  "championId": "3cbb09c4-f8ac-4668-9378-5c01bfa9474b",
+                  "difficulty": "NORMAL"
+                },
+                {
+                  "id": "bcffab96-f61f-497e-b60b-de5a869837d3",
+                  "name": "챔피언 판도라",
+                  "weight": 100,
+                  "championId": "bcffab96-f61f-497e-b60b-de5a869837d3",
+                  "difficulty": "NORMAL"
+                },
+                {
+                  "id": "0db142af-750e-4929-a464-5daf1bc75452",
+                  "name": "챔피언 퍼플레인",
+                  "weight": 100,
+                  "championId": "0db142af-750e-4929-a464-5daf1bc75452",
+                  "difficulty": "NORMAL"
+                },
+                {
+                  "id": "0e9d8ab0-9af7-4db3-a03e-ff6ee3d5789f",
+                  "name": "챔피언 피 스타 세븐",
+                  "weight": 100,
+                  "championId": "0e9d8ab0-9af7-4db3-a03e-ff6ee3d5789f",
+                  "difficulty": "NORMAL"
+                }
+              ],
+              "relicReward": false
+            },
+            {
+              "id": "tower-v2-foundation-20261009-floor-6",
+              "type": "NORMAL",
+              "number": 6,
+              "enemies": [
+                {
+                  "id": "5e4a5a52-ef2c-4e1a-9b76-a4edc9f79e2c",
+                  "name": "챔피언 라 칼라베라",
+                  "weight": 100,
+                  "championId": "5e4a5a52-ef2c-4e1a-9b76-a4edc9f79e2c",
+                  "difficulty": "NORMAL"
+                },
+                {
+                  "id": "champion-minion-a",
+                  "name": "챔피언 미니언 A",
+                  "weight": 100,
+                  "championId": "champion-minion-a",
+                  "difficulty": "NORMAL"
+                },
+                {
+                  "id": "11ac192a-d48d-4119-a63d-f9102793fb9a",
+                  "name": "챔피언 여울",
+                  "weight": 100,
+                  "championId": "11ac192a-d48d-4119-a63d-f9102793fb9a",
+                  "difficulty": "NORMAL"
+                },
+                {
+                  "id": "3cbb09c4-f8ac-4668-9378-5c01bfa9474b",
+                  "name": "챔피언 예거",
+                  "weight": 100,
+                  "championId": "3cbb09c4-f8ac-4668-9378-5c01bfa9474b",
+                  "difficulty": "NORMAL"
+                },
+                {
+                  "id": "bcffab96-f61f-497e-b60b-de5a869837d3",
+                  "name": "챔피언 판도라",
+                  "weight": 100,
+                  "championId": "bcffab96-f61f-497e-b60b-de5a869837d3",
+                  "difficulty": "NORMAL"
+                },
+                {
+                  "id": "0db142af-750e-4929-a464-5daf1bc75452",
+                  "name": "챔피언 퍼플레인",
+                  "weight": 100,
+                  "championId": "0db142af-750e-4929-a464-5daf1bc75452",
+                  "difficulty": "NORMAL"
+                },
+                {
+                  "id": "0e9d8ab0-9af7-4db3-a03e-ff6ee3d5789f",
+                  "name": "챔피언 피 스타 세븐",
+                  "weight": 100,
+                  "championId": "0e9d8ab0-9af7-4db3-a03e-ff6ee3d5789f",
+                  "difficulty": "NORMAL"
+                }
+              ],
+              "relicReward": false
+            },
+            {
+              "id": "tower-v2-foundation-20261009-floor-7",
+              "type": "NORMAL",
+              "number": 7,
+              "enemies": [
+                {
+                  "id": "5e4a5a52-ef2c-4e1a-9b76-a4edc9f79e2c",
+                  "name": "챔피언 라 칼라베라",
+                  "weight": 100,
+                  "championId": "5e4a5a52-ef2c-4e1a-9b76-a4edc9f79e2c",
+                  "difficulty": "NORMAL"
+                },
+                {
+                  "id": "champion-minion-a",
+                  "name": "챔피언 미니언 A",
+                  "weight": 100,
+                  "championId": "champion-minion-a",
+                  "difficulty": "NORMAL"
+                },
+                {
+                  "id": "11ac192a-d48d-4119-a63d-f9102793fb9a",
+                  "name": "챔피언 여울",
+                  "weight": 100,
+                  "championId": "11ac192a-d48d-4119-a63d-f9102793fb9a",
+                  "difficulty": "NORMAL"
+                },
+                {
+                  "id": "3cbb09c4-f8ac-4668-9378-5c01bfa9474b",
+                  "name": "챔피언 예거",
+                  "weight": 100,
+                  "championId": "3cbb09c4-f8ac-4668-9378-5c01bfa9474b",
+                  "difficulty": "NORMAL"
+                },
+                {
+                  "id": "bcffab96-f61f-497e-b60b-de5a869837d3",
+                  "name": "챔피언 판도라",
+                  "weight": 100,
+                  "championId": "bcffab96-f61f-497e-b60b-de5a869837d3",
+                  "difficulty": "NORMAL"
+                },
+                {
+                  "id": "0db142af-750e-4929-a464-5daf1bc75452",
+                  "name": "챔피언 퍼플레인",
+                  "weight": 100,
+                  "championId": "0db142af-750e-4929-a464-5daf1bc75452",
+                  "difficulty": "NORMAL"
+                },
+                {
+                  "id": "0e9d8ab0-9af7-4db3-a03e-ff6ee3d5789f",
+                  "name": "챔피언 피 스타 세븐",
+                  "weight": 100,
+                  "championId": "0e9d8ab0-9af7-4db3-a03e-ff6ee3d5789f",
+                  "difficulty": "NORMAL"
+                }
+              ],
+              "relicReward": false
+            },
+            {
+              "id": "tower-v2-foundation-20261009-floor-8",
+              "type": "BOSS",
+              "bossId": "boss-8",
+              "number": 8,
+              "enemies": [
+                {
+                  "id": "5e4a5a52-ef2c-4e1a-9b76-a4edc9f79e2c",
+                  "name": "챔피언 라 칼라베라",
+                  "weight": 100,
+                  "championId": "5e4a5a52-ef2c-4e1a-9b76-a4edc9f79e2c",
+                  "difficulty": "NORMAL"
+                },
+                {
+                  "id": "champion-minion-a",
+                  "name": "챔피언 미니언 A",
+                  "weight": 100,
+                  "championId": "champion-minion-a",
+                  "difficulty": "NORMAL"
+                },
+                {
+                  "id": "11ac192a-d48d-4119-a63d-f9102793fb9a",
+                  "name": "챔피언 여울",
+                  "weight": 100,
+                  "championId": "11ac192a-d48d-4119-a63d-f9102793fb9a",
+                  "difficulty": "NORMAL"
+                },
+                {
+                  "id": "3cbb09c4-f8ac-4668-9378-5c01bfa9474b",
+                  "name": "챔피언 예거",
+                  "weight": 100,
+                  "championId": "3cbb09c4-f8ac-4668-9378-5c01bfa9474b",
+                  "difficulty": "NORMAL"
+                },
+                {
+                  "id": "bcffab96-f61f-497e-b60b-de5a869837d3",
+                  "name": "챔피언 판도라",
+                  "weight": 100,
+                  "championId": "bcffab96-f61f-497e-b60b-de5a869837d3",
+                  "difficulty": "NORMAL"
+                },
+                {
+                  "id": "0db142af-750e-4929-a464-5daf1bc75452",
+                  "name": "챔피언 퍼플레인",
+                  "weight": 100,
+                  "championId": "0db142af-750e-4929-a464-5daf1bc75452",
+                  "difficulty": "NORMAL"
+                },
+                {
+                  "id": "0e9d8ab0-9af7-4db3-a03e-ff6ee3d5789f",
+                  "name": "챔피언 피 스타 세븐",
+                  "weight": 100,
+                  "championId": "0e9d8ab0-9af7-4db3-a03e-ff6ee3d5789f",
+                  "difficulty": "NORMAL"
+                }
+              ],
+              "relicReward": true
+            },
+            {
+              "id": "tower-v2-foundation-20261009-floor-9",
+              "type": "NORMAL",
+              "number": 9,
+              "enemies": [
+                {
+                  "id": "5e4a5a52-ef2c-4e1a-9b76-a4edc9f79e2c",
+                  "name": "챔피언 라 칼라베라",
+                  "weight": 100,
+                  "championId": "5e4a5a52-ef2c-4e1a-9b76-a4edc9f79e2c",
+                  "difficulty": "NORMAL"
+                },
+                {
+                  "id": "champion-minion-a",
+                  "name": "챔피언 미니언 A",
+                  "weight": 100,
+                  "championId": "champion-minion-a",
+                  "difficulty": "NORMAL"
+                },
+                {
+                  "id": "11ac192a-d48d-4119-a63d-f9102793fb9a",
+                  "name": "챔피언 여울",
+                  "weight": 100,
+                  "championId": "11ac192a-d48d-4119-a63d-f9102793fb9a",
+                  "difficulty": "NORMAL"
+                },
+                {
+                  "id": "3cbb09c4-f8ac-4668-9378-5c01bfa9474b",
+                  "name": "챔피언 예거",
+                  "weight": 100,
+                  "championId": "3cbb09c4-f8ac-4668-9378-5c01bfa9474b",
+                  "difficulty": "NORMAL"
+                },
+                {
+                  "id": "bcffab96-f61f-497e-b60b-de5a869837d3",
+                  "name": "챔피언 판도라",
+                  "weight": 100,
+                  "championId": "bcffab96-f61f-497e-b60b-de5a869837d3",
+                  "difficulty": "NORMAL"
+                },
+                {
+                  "id": "0db142af-750e-4929-a464-5daf1bc75452",
+                  "name": "챔피언 퍼플레인",
+                  "weight": 100,
+                  "championId": "0db142af-750e-4929-a464-5daf1bc75452",
+                  "difficulty": "NORMAL"
+                },
+                {
+                  "id": "0e9d8ab0-9af7-4db3-a03e-ff6ee3d5789f",
+                  "name": "챔피언 피 스타 세븐",
+                  "weight": 100,
+                  "championId": "0e9d8ab0-9af7-4db3-a03e-ff6ee3d5789f",
+                  "difficulty": "NORMAL"
+                }
+              ],
+              "relicReward": false
+            },
+            {
+              "id": "tower-v2-foundation-20261009-floor-10",
+              "type": "NORMAL",
+              "number": 10,
+              "enemies": [
+                {
+                  "id": "5e4a5a52-ef2c-4e1a-9b76-a4edc9f79e2c",
+                  "name": "챔피언 라 칼라베라",
+                  "weight": 100,
+                  "championId": "5e4a5a52-ef2c-4e1a-9b76-a4edc9f79e2c",
+                  "difficulty": "NORMAL"
+                },
+                {
+                  "id": "champion-minion-a",
+                  "name": "챔피언 미니언 A",
+                  "weight": 100,
+                  "championId": "champion-minion-a",
+                  "difficulty": "NORMAL"
+                },
+                {
+                  "id": "11ac192a-d48d-4119-a63d-f9102793fb9a",
+                  "name": "챔피언 여울",
+                  "weight": 100,
+                  "championId": "11ac192a-d48d-4119-a63d-f9102793fb9a",
+                  "difficulty": "NORMAL"
+                },
+                {
+                  "id": "3cbb09c4-f8ac-4668-9378-5c01bfa9474b",
+                  "name": "챔피언 예거",
+                  "weight": 100,
+                  "championId": "3cbb09c4-f8ac-4668-9378-5c01bfa9474b",
+                  "difficulty": "NORMAL"
+                },
+                {
+                  "id": "bcffab96-f61f-497e-b60b-de5a869837d3",
+                  "name": "챔피언 판도라",
+                  "weight": 100,
+                  "championId": "bcffab96-f61f-497e-b60b-de5a869837d3",
+                  "difficulty": "NORMAL"
+                },
+                {
+                  "id": "0db142af-750e-4929-a464-5daf1bc75452",
+                  "name": "챔피언 퍼플레인",
+                  "weight": 100,
+                  "championId": "0db142af-750e-4929-a464-5daf1bc75452",
+                  "difficulty": "NORMAL"
+                },
+                {
+                  "id": "0e9d8ab0-9af7-4db3-a03e-ff6ee3d5789f",
+                  "name": "챔피언 피 스타 세븐",
+                  "weight": 100,
+                  "championId": "0e9d8ab0-9af7-4db3-a03e-ff6ee3d5789f",
+                  "difficulty": "NORMAL"
+                }
+              ],
+              "relicReward": false
+            },
+            {
+              "id": "tower-v2-foundation-20261009-floor-11",
+              "type": "NORMAL",
+              "number": 11,
+              "enemies": [
+                {
+                  "id": "5e4a5a52-ef2c-4e1a-9b76-a4edc9f79e2c",
+                  "name": "챔피언 라 칼라베라",
+                  "weight": 100,
+                  "championId": "5e4a5a52-ef2c-4e1a-9b76-a4edc9f79e2c",
+                  "difficulty": "NORMAL"
+                },
+                {
+                  "id": "champion-minion-a",
+                  "name": "챔피언 미니언 A",
+                  "weight": 100,
+                  "championId": "champion-minion-a",
+                  "difficulty": "NORMAL"
+                },
+                {
+                  "id": "11ac192a-d48d-4119-a63d-f9102793fb9a",
+                  "name": "챔피언 여울",
+                  "weight": 100,
+                  "championId": "11ac192a-d48d-4119-a63d-f9102793fb9a",
+                  "difficulty": "NORMAL"
+                },
+                {
+                  "id": "3cbb09c4-f8ac-4668-9378-5c01bfa9474b",
+                  "name": "챔피언 예거",
+                  "weight": 100,
+                  "championId": "3cbb09c4-f8ac-4668-9378-5c01bfa9474b",
+                  "difficulty": "NORMAL"
+                },
+                {
+                  "id": "bcffab96-f61f-497e-b60b-de5a869837d3",
+                  "name": "챔피언 판도라",
+                  "weight": 100,
+                  "championId": "bcffab96-f61f-497e-b60b-de5a869837d3",
+                  "difficulty": "NORMAL"
+                },
+                {
+                  "id": "0db142af-750e-4929-a464-5daf1bc75452",
+                  "name": "챔피언 퍼플레인",
+                  "weight": 100,
+                  "championId": "0db142af-750e-4929-a464-5daf1bc75452",
+                  "difficulty": "NORMAL"
+                },
+                {
+                  "id": "0e9d8ab0-9af7-4db3-a03e-ff6ee3d5789f",
+                  "name": "챔피언 피 스타 세븐",
+                  "weight": 100,
+                  "championId": "0e9d8ab0-9af7-4db3-a03e-ff6ee3d5789f",
+                  "difficulty": "NORMAL"
+                }
+              ],
+              "relicReward": false
+            },
+            {
+              "id": "tower-v2-foundation-20261009-floor-12",
+              "type": "BOSS",
+              "bossId": "boss-12",
+              "number": 12,
+              "enemies": [
+                {
+                  "id": "5e4a5a52-ef2c-4e1a-9b76-a4edc9f79e2c",
+                  "name": "챔피언 라 칼라베라",
+                  "weight": 100,
+                  "championId": "5e4a5a52-ef2c-4e1a-9b76-a4edc9f79e2c",
+                  "difficulty": "NORMAL"
+                },
+                {
+                  "id": "champion-minion-a",
+                  "name": "챔피언 미니언 A",
+                  "weight": 100,
+                  "championId": "champion-minion-a",
+                  "difficulty": "NORMAL"
+                },
+                {
+                  "id": "11ac192a-d48d-4119-a63d-f9102793fb9a",
+                  "name": "챔피언 여울",
+                  "weight": 100,
+                  "championId": "11ac192a-d48d-4119-a63d-f9102793fb9a",
+                  "difficulty": "NORMAL"
+                },
+                {
+                  "id": "3cbb09c4-f8ac-4668-9378-5c01bfa9474b",
+                  "name": "챔피언 예거",
+                  "weight": 100,
+                  "championId": "3cbb09c4-f8ac-4668-9378-5c01bfa9474b",
+                  "difficulty": "NORMAL"
+                },
+                {
+                  "id": "bcffab96-f61f-497e-b60b-de5a869837d3",
+                  "name": "챔피언 판도라",
+                  "weight": 100,
+                  "championId": "bcffab96-f61f-497e-b60b-de5a869837d3",
+                  "difficulty": "NORMAL"
+                },
+                {
+                  "id": "0db142af-750e-4929-a464-5daf1bc75452",
+                  "name": "챔피언 퍼플레인",
+                  "weight": 100,
+                  "championId": "0db142af-750e-4929-a464-5daf1bc75452",
+                  "difficulty": "NORMAL"
+                },
+                {
+                  "id": "0e9d8ab0-9af7-4db3-a03e-ff6ee3d5789f",
+                  "name": "챔피언 피 스타 세븐",
+                  "weight": 100,
+                  "championId": "0e9d8ab0-9af7-4db3-a03e-ff6ee3d5789f",
+                  "difficulty": "NORMAL"
+                }
+              ],
+              "relicReward": true
+            },
+            {
+              "id": "tower-v2-foundation-20261009-floor-13",
+              "type": "NORMAL",
+              "number": 13,
+              "enemies": [
+                {
+                  "id": "5e4a5a52-ef2c-4e1a-9b76-a4edc9f79e2c",
+                  "name": "챔피언 라 칼라베라",
+                  "weight": 100,
+                  "championId": "5e4a5a52-ef2c-4e1a-9b76-a4edc9f79e2c",
+                  "difficulty": "NORMAL"
+                },
+                {
+                  "id": "champion-minion-a",
+                  "name": "챔피언 미니언 A",
+                  "weight": 100,
+                  "championId": "champion-minion-a",
+                  "difficulty": "NORMAL"
+                },
+                {
+                  "id": "11ac192a-d48d-4119-a63d-f9102793fb9a",
+                  "name": "챔피언 여울",
+                  "weight": 100,
+                  "championId": "11ac192a-d48d-4119-a63d-f9102793fb9a",
+                  "difficulty": "NORMAL"
+                },
+                {
+                  "id": "3cbb09c4-f8ac-4668-9378-5c01bfa9474b",
+                  "name": "챔피언 예거",
+                  "weight": 100,
+                  "championId": "3cbb09c4-f8ac-4668-9378-5c01bfa9474b",
+                  "difficulty": "NORMAL"
+                },
+                {
+                  "id": "bcffab96-f61f-497e-b60b-de5a869837d3",
+                  "name": "챔피언 판도라",
+                  "weight": 100,
+                  "championId": "bcffab96-f61f-497e-b60b-de5a869837d3",
+                  "difficulty": "NORMAL"
+                },
+                {
+                  "id": "0db142af-750e-4929-a464-5daf1bc75452",
+                  "name": "챔피언 퍼플레인",
+                  "weight": 100,
+                  "championId": "0db142af-750e-4929-a464-5daf1bc75452",
+                  "difficulty": "NORMAL"
+                },
+                {
+                  "id": "0e9d8ab0-9af7-4db3-a03e-ff6ee3d5789f",
+                  "name": "챔피언 피 스타 세븐",
+                  "weight": 100,
+                  "championId": "0e9d8ab0-9af7-4db3-a03e-ff6ee3d5789f",
+                  "difficulty": "NORMAL"
+                }
+              ],
+              "relicReward": false
+            },
+            {
+              "id": "tower-v2-foundation-20261009-floor-14",
+              "type": "NORMAL",
+              "number": 14,
+              "enemies": [
+                {
+                  "id": "5e4a5a52-ef2c-4e1a-9b76-a4edc9f79e2c",
+                  "name": "챔피언 라 칼라베라",
+                  "weight": 100,
+                  "championId": "5e4a5a52-ef2c-4e1a-9b76-a4edc9f79e2c",
+                  "difficulty": "NORMAL"
+                },
+                {
+                  "id": "champion-minion-a",
+                  "name": "챔피언 미니언 A",
+                  "weight": 100,
+                  "championId": "champion-minion-a",
+                  "difficulty": "NORMAL"
+                },
+                {
+                  "id": "11ac192a-d48d-4119-a63d-f9102793fb9a",
+                  "name": "챔피언 여울",
+                  "weight": 100,
+                  "championId": "11ac192a-d48d-4119-a63d-f9102793fb9a",
+                  "difficulty": "NORMAL"
+                },
+                {
+                  "id": "3cbb09c4-f8ac-4668-9378-5c01bfa9474b",
+                  "name": "챔피언 예거",
+                  "weight": 100,
+                  "championId": "3cbb09c4-f8ac-4668-9378-5c01bfa9474b",
+                  "difficulty": "NORMAL"
+                },
+                {
+                  "id": "bcffab96-f61f-497e-b60b-de5a869837d3",
+                  "name": "챔피언 판도라",
+                  "weight": 100,
+                  "championId": "bcffab96-f61f-497e-b60b-de5a869837d3",
+                  "difficulty": "NORMAL"
+                },
+                {
+                  "id": "0db142af-750e-4929-a464-5daf1bc75452",
+                  "name": "챔피언 퍼플레인",
+                  "weight": 100,
+                  "championId": "0db142af-750e-4929-a464-5daf1bc75452",
+                  "difficulty": "NORMAL"
+                },
+                {
+                  "id": "0e9d8ab0-9af7-4db3-a03e-ff6ee3d5789f",
+                  "name": "챔피언 피 스타 세븐",
+                  "weight": 100,
+                  "championId": "0e9d8ab0-9af7-4db3-a03e-ff6ee3d5789f",
+                  "difficulty": "NORMAL"
+                }
+              ],
+              "relicReward": false
+            },
+            {
+              "id": "tower-v2-foundation-20261009-floor-15",
+              "type": "NORMAL",
+              "number": 15,
+              "enemies": [
+                {
+                  "id": "5e4a5a52-ef2c-4e1a-9b76-a4edc9f79e2c",
+                  "name": "챔피언 라 칼라베라",
+                  "weight": 100,
+                  "championId": "5e4a5a52-ef2c-4e1a-9b76-a4edc9f79e2c",
+                  "difficulty": "NORMAL"
+                },
+                {
+                  "id": "champion-minion-a",
+                  "name": "챔피언 미니언 A",
+                  "weight": 100,
+                  "championId": "champion-minion-a",
+                  "difficulty": "NORMAL"
+                },
+                {
+                  "id": "11ac192a-d48d-4119-a63d-f9102793fb9a",
+                  "name": "챔피언 여울",
+                  "weight": 100,
+                  "championId": "11ac192a-d48d-4119-a63d-f9102793fb9a",
+                  "difficulty": "NORMAL"
+                },
+                {
+                  "id": "3cbb09c4-f8ac-4668-9378-5c01bfa9474b",
+                  "name": "챔피언 예거",
+                  "weight": 100,
+                  "championId": "3cbb09c4-f8ac-4668-9378-5c01bfa9474b",
+                  "difficulty": "NORMAL"
+                },
+                {
+                  "id": "bcffab96-f61f-497e-b60b-de5a869837d3",
+                  "name": "챔피언 판도라",
+                  "weight": 100,
+                  "championId": "bcffab96-f61f-497e-b60b-de5a869837d3",
+                  "difficulty": "NORMAL"
+                },
+                {
+                  "id": "0db142af-750e-4929-a464-5daf1bc75452",
+                  "name": "챔피언 퍼플레인",
+                  "weight": 100,
+                  "championId": "0db142af-750e-4929-a464-5daf1bc75452",
+                  "difficulty": "NORMAL"
+                },
+                {
+                  "id": "0e9d8ab0-9af7-4db3-a03e-ff6ee3d5789f",
+                  "name": "챔피언 피 스타 세븐",
+                  "weight": 100,
+                  "championId": "0e9d8ab0-9af7-4db3-a03e-ff6ee3d5789f",
+                  "difficulty": "NORMAL"
+                }
+              ],
+              "relicReward": false
+            },
+            {
+              "id": "tower-v2-foundation-20261009-floor-16",
+              "type": "BOSS",
+              "bossId": "boss-16",
+              "number": 16,
+              "enemies": [
+                {
+                  "id": "5e4a5a52-ef2c-4e1a-9b76-a4edc9f79e2c",
+                  "name": "챔피언 라 칼라베라",
+                  "weight": 100,
+                  "championId": "5e4a5a52-ef2c-4e1a-9b76-a4edc9f79e2c",
+                  "difficulty": "NORMAL"
+                },
+                {
+                  "id": "champion-minion-a",
+                  "name": "챔피언 미니언 A",
+                  "weight": 100,
+                  "championId": "champion-minion-a",
+                  "difficulty": "NORMAL"
+                },
+                {
+                  "id": "11ac192a-d48d-4119-a63d-f9102793fb9a",
+                  "name": "챔피언 여울",
+                  "weight": 100,
+                  "championId": "11ac192a-d48d-4119-a63d-f9102793fb9a",
+                  "difficulty": "NORMAL"
+                },
+                {
+                  "id": "3cbb09c4-f8ac-4668-9378-5c01bfa9474b",
+                  "name": "챔피언 예거",
+                  "weight": 100,
+                  "championId": "3cbb09c4-f8ac-4668-9378-5c01bfa9474b",
+                  "difficulty": "NORMAL"
+                },
+                {
+                  "id": "bcffab96-f61f-497e-b60b-de5a869837d3",
+                  "name": "챔피언 판도라",
+                  "weight": 100,
+                  "championId": "bcffab96-f61f-497e-b60b-de5a869837d3",
+                  "difficulty": "NORMAL"
+                },
+                {
+                  "id": "0db142af-750e-4929-a464-5daf1bc75452",
+                  "name": "챔피언 퍼플레인",
+                  "weight": 100,
+                  "championId": "0db142af-750e-4929-a464-5daf1bc75452",
+                  "difficulty": "NORMAL"
+                },
+                {
+                  "id": "0e9d8ab0-9af7-4db3-a03e-ff6ee3d5789f",
+                  "name": "챔피언 피 스타 세븐",
+                  "weight": 100,
+                  "championId": "0e9d8ab0-9af7-4db3-a03e-ff6ee3d5789f",
+                  "difficulty": "NORMAL"
+                }
+              ],
+              "relicReward": false
+            }
+          ],
+          "enabled": true,
+          "visible": true,
+          "imageUrl": "/api/storage/objects/uploads/card-images/e8b21e75-2352-47b9-ab04-1b39590937c8.png",
+          "sortOrder": 0,
+          "hiddenBossId": "hidden",
+          "endingSceneId": "tower-v2-foundation-20261009-ending",
+          "rarityWeights": {
+            "EPIC": 25,
+            "NORMAL": 70,
+            "LEGENDARY": 5
+          },
+          "schemaVersion": 2,
+          "openingSceneId": "tower-v2-foundation-20261009-opening",
+          "hiddenCondition": {
+            "id": "5e4a5a52-ef2c-4e1a-9b76-a4edc9f79e2c",
+            "type": "CHAMPION"
+          },
+          "hiddenEndingSceneId": "tower-v2-foundation-20261009-hidden-ending",
+          "recommendedDifficulty": "보통"
+        },
+        "name": "KO 타워 · 기본 16층",
+        "music": {
+          "boss": {
+            "name": "KO 배틀 음악 시즌 2 할로윈.mp3",
+            "volume": 83,
+            "assetUrl": "/api/storage/objects/uploads/game-bgm/6f202f8f-4453-4a6b-82ae-fc3e2162f217.mp3"
+          },
+          "normal": {
+            "name": "KO 배틀 음악 시즌 2 할로윈.mp3",
+            "volume": 83,
+            "assetUrl": "/api/storage/objects/uploads/game-bgm/6f202f8f-4453-4a6b-82ae-fc3e2162f217.mp3"
+          },
+          "midBoss": {
+            "name": "KO 배틀 음악 시즌 2 할로윈.mp3",
+            "volume": 83,
+            "assetUrl": "/api/storage/objects/uploads/game-bgm/6f202f8f-4453-4a6b-82ae-fc3e2162f217.mp3"
+          },
+          "hiddenBoss": {
+            "name": "KO 배틀 음악 시즌 2 할로윈.mp3",
+            "volume": 83,
+            "assetUrl": "/api/storage/objects/uploads/game-bgm/6f202f8f-4453-4a6b-82ae-fc3e2162f217.mp3"
+          }
+        },
+        "bosses": {},
+        "description": "직선형 16층 타워. 4·8·12층 유물, 16층 최종전. 모든 콘텐츠는 관리자에서 수정할 수 있습니다.",
+        "synergyWeights": {
+          "deckTag": 2,
+          "supportTag": 3,
+          "championTag": 2
+        },
+        "protagonistChampionId": ""
+      },
+      "updatedAt": "2026-10-09T03:16:11.024Z"
+    }
+  ],
+  "starters": [
+    {
+      "id": "tower-v2-foundation-20261009-starter-1",
+      "data": {
+        "id": "tower-v2-foundation-20261009-starter-1",
+        "name": "균형형 스타터",
+        "cardIds": [
+          "dc43dc88-38d7-499b-ad89-6b83f773fe62",
+          "4ad681e3-6ed6-4651-8107-4b24adddd753",
+          "5d568663-55e8-4ad9-88b3-3afadae538d0",
+          "epic-spell-forbidden-contract",
+          "4dba4dcd-d07f-41b0-b546-ac011a73d927",
+          "9478516b-5756-411d-8ba2-3ff300234c3b",
+          "0ee31b68-9c4a-434f-a17b-01294e9cdf71",
+          "epic-spell-escape",
+          "latest-wrestler-1",
+          "latest-wrestler-11",
+          "latest-wrestler-3",
+          "df532c95-0e4d-4b17-8200-a86e6a682341",
+          "bcf2ac9b-1afd-41a3-a653-5f9af1e033bf",
+          "20251372-b1a0-485e-9158-d82bf05f7371",
+          "5f1fd584-7129-4f39-91a4-22f02ba677e5",
+          "9b7c0e52-2184-4ec1-8d68-39a4d5981d2a",
+          "2e99f465-4bc7-461f-ad45-674a3ed04b10",
+          "199de5ac-4645-4f45-8996-bf3ae909dfce",
+          "99514068-68c8-46ca-b9f5-7f16b2ea4253",
+          "epic-spell-forced-silence",
+          "dc43dc88-38d7-499b-ad89-6b83f773fe62",
+          "55e36a1b-9b1d-4ab1-ba42-f097ba4449b5",
+          "b2eb2ae3-5808-4f9d-994d-efa22c988955",
+          "b101e673-1313-4e47-8782-5dce5d385080",
+          "latest-wrestler-12"
+        ],
+        "enabled": true,
+        "imageUrl": "/api/storage/objects/uploads/card-images/e8b21e75-2352-47b9-ab04-1b39590937c8.png",
+        "isDefault": true,
+        "championId": "5e4a5a52-ef2c-4e1a-9b76-a4edc9f79e2c",
+        "description": "타워 전용 25장 덱. 챔피언은 보유 목록에서 별도로 선택합니다.",
+        "difficultyLabel": "보통",
+        "initiallyUnlocked": true
+      },
+      "updatedAt": "2026-10-09T03:14:49.715Z"
+    },
+    {
+      "id": "tower-v2-foundation-20261009-starter-2",
+      "data": {
+        "id": "tower-v2-foundation-20261009-starter-2",
+        "name": "전개형 스타터",
+        "cardIds": [
+          "49f79c04-41b4-4d2c-83df-10541a7eceef",
+          "75863228-ae51-48cb-afec-43cc391672a8",
+          "df532c95-0e4d-4b17-8200-a86e6a682341",
+          "4e28e957-1148-44c3-8f8b-b6fe8f40e3a9",
+          "4e28e957-1148-44c3-8f8b-b6fe8f40e3a9",
+          "1e0bbdb3-9304-46b0-81b8-d30bb9954fc3",
+          "a2ab5577-0072-4425-a117-fd6f7df05d00",
+          "latest-wrestler-14",
+          "99514068-68c8-46ca-b9f5-7f16b2ea4253",
+          "0710e9b3-a8ef-4f09-9e63-c0b872c18068",
+          "5f1fd584-7129-4f39-91a4-22f02ba677e5",
+          "epic-spell-forbidden-contract",
+          "683e07f7-d9f8-47f7-8142-779cab01e9b8",
+          "9478516b-5756-411d-8ba2-3ff300234c3b",
+          "102e8061-c3b8-44a5-a11c-56379996fee7",
+          "epic-spell-forced-silence",
+          "4ad681e3-6ed6-4651-8107-4b24adddd753",
+          "b101e673-1313-4e47-8782-5dce5d385080",
+          "latest-wrestler-7",
+          "20251372-b1a0-485e-9158-d82bf05f7371",
+          "latest-wrestler-15",
+          "5f1fd584-7129-4f39-91a4-22f02ba677e5",
+          "4ad681e3-6ed6-4651-8107-4b24adddd753",
+          "epic-spell-annihilation",
+          "2519b37a-74ea-4b26-afe2-2227f40a03bc"
+        ],
+        "enabled": true,
+        "imageUrl": "/api/storage/objects/uploads/card-images/c6a67856-debb-4f5d-98e5-e0b5d931915e.png",
+        "isDefault": false,
+        "championId": "11ac192a-d48d-4119-a63d-f9102793fb9a",
+        "description": "타워 전용 25장 덱. 챔피언은 보유 목록에서 별도로 선택합니다.",
+        "difficultyLabel": "보통",
+        "initiallyUnlocked": true
+      },
+      "updatedAt": "2026-10-09T03:14:49.872Z"
+    },
+    {
+      "id": "tower-v2-foundation-20261009-starter-3",
+      "data": {
+        "id": "tower-v2-foundation-20261009-starter-3",
+        "name": "공격형 스타터",
+        "cardIds": [
+          "5f1fd584-7129-4f39-91a4-22f02ba677e5",
+          "75863228-ae51-48cb-afec-43cc391672a8",
+          "828969e2-363a-4cc2-8156-5de5ed86b822",
+          "db6c775a-0933-4e55-9fdc-a94861c6e10a",
+          "latest-wrestler-7",
+          "8be831d2-6e56-4f77-985e-3860d6eaa2d3",
+          "49f79c04-41b4-4d2c-83df-10541a7eceef",
+          "20251372-b1a0-485e-9158-d82bf05f7371",
+          "2e2d2c9d-1586-49cc-9b06-b3d8174c961f",
+          "21e9e816-4d5f-461d-8cf8-b57749a33753",
+          "69d757c0-4dad-4406-9126-9fc01426fc59",
+          "b723c7e6-c668-4afb-b77d-da0d16f16c31",
+          "latest-wrestler-11",
+          "0ee31b68-9c4a-434f-a17b-01294e9cdf71",
+          "12a86603-4412-409c-a5a2-ec361f57863c",
+          "9478516b-5756-411d-8ba2-3ff300234c3b",
+          "bcf2ac9b-1afd-41a3-a653-5f9af1e033bf",
+          "94a8dc96-6856-4460-9128-c487c0189dd9",
+          "4dba4dcd-d07f-41b0-b546-ac011a73d927",
+          "9478516b-5756-411d-8ba2-3ff300234c3b",
+          "db6c775a-0933-4e55-9fdc-a94861c6e10a",
+          "latest-wrestler-14",
+          "21e9e816-4d5f-461d-8cf8-b57749a33753",
+          "b101e673-1313-4e47-8782-5dce5d385080",
+          "20251372-b1a0-485e-9158-d82bf05f7371"
+        ],
+        "enabled": true,
+        "imageUrl": "/api/storage/objects/uploads/card-images/92935ecb-3595-42da-b3bb-9398d280e82a.png",
+        "isDefault": false,
+        "championId": "3cbb09c4-f8ac-4668-9378-5c01bfa9474b",
+        "description": "타워 전용 25장 덱. 챔피언은 보유 목록에서 별도로 선택합니다.",
+        "difficultyLabel": "보통",
+        "initiallyUnlocked": true
+      },
+      "updatedAt": "2026-10-09T03:14:50.164Z"
+    }
+  ],
+  "presets": [],
+  "relics": [
+    {
+      "id": "v1:MAX_FIELD_ONE",
+      "data": {
+        "id": "v1:MAX_FIELD_ONE",
+        "name": "왕의 자리",
+        "values": {
+          "attack": 4,
+          "health": 4
+        },
+        "enabled": true,
+        "effectType": "MAX_FIELD_ONE",
+        "description": "필드 최대 1명. 소환한 선수 +4/+4.",
+        "initiallyUnlocked": true
+      },
+      "updatedAt": "2026-09-30T15:46:08.679Z"
+    },
+    {
+      "id": "v1:MAX_FIELD_TWO",
+      "data": {
+        "id": "v1:MAX_FIELD_TWO",
+        "name": "소수 정예",
+        "values": {
+          "attack": 2,
+          "health": 2
+        },
+        "enabled": true,
+        "effectType": "MAX_FIELD_TWO",
+        "description": "필드 최대 2명. 소환한 선수 +2/+2.",
+        "initiallyUnlocked": true
+      },
+      "updatedAt": "2026-09-30T15:46:08.686Z"
+    },
+    {
+      "id": "v1:FIRST_SUMMON_TEMP_ATK",
+      "data": {
+        "id": "v1:FIRST_SUMMON_TEMP_ATK",
+        "name": "선봉장의 깃발",
+        "values": {
+          "attack": 3
+        },
+        "enabled": true,
+        "effectType": "FIRST_SUMMON_TEMP_ATK",
+        "description": "각 턴 첫 소환 선수의 공격력 +3. 그 턴 종료 시 해제.",
+        "initiallyUnlocked": true
+      },
+      "updatedAt": "2026-09-30T15:46:08.690Z"
+    },
+    {
+      "id": "v1:FIRST_RETIRE_SURVIVE",
+      "data": {
+        "id": "v1:FIRST_RETIRE_SURVIVE",
+        "name": "강철 심장",
+        "values": {},
+        "enabled": true,
+        "effectType": "FIRST_RETIRE_SURVIVE",
+        "description": "전투당 최초로 리타이어될 아군 선수는 체력 1로 생존. 파괴에는 적용되지 않음.",
+        "initiallyUnlocked": true
+      },
+      "updatedAt": "2026-09-30T15:46:08.693Z"
+    },
+    {
+      "id": "v1:ON_RETIRE_NEXT_BUFF",
+      "data": {
+        "id": "v1:ON_RETIRE_NEXT_BUFF",
+        "name": "복수의 메달",
+        "values": {
+          "attack": 2,
+          "health": 2
+        },
+        "enabled": true,
+        "effectType": "ON_RETIRE_NEXT_BUFF",
+        "description": "아군 선수 리타이어마다 다음에 소환하는 선수 +2/+2. 소환 전 누적 가능.",
+        "initiallyUnlocked": true
+      },
+      "updatedAt": "2026-09-30T15:46:08.696Z"
+    },
+    {
+      "id": "v1:ON_RETIRE_DRAW",
+      "data": {
+        "id": "v1:ON_RETIRE_DRAW",
+        "name": "망자의 종",
+        "values": {
+          "amount": 1
+        },
+        "enabled": true,
+        "effectType": "ON_RETIRE_DRAW",
+        "description": "아군 선수 리타이어 시 카드 1장 드로우. 턴당 1회.",
+        "initiallyUnlocked": true
+      },
+      "updatedAt": "2026-09-30T15:46:08.698Z"
+    },
+    {
+      "id": "v1:ON_DESTROY_DRAW",
+      "data": {
+        "id": "v1:ON_DESTROY_DRAW",
+        "name": "파괴자의 인장",
+        "values": {
+          "amount": 2
+        },
+        "enabled": true,
+        "effectType": "ON_DESTROY_DRAW",
+        "description": "상대 선수 파괴 시 카드 2장 드로우. 턴당 1회. 리타이어에는 발동하지 않음.",
+        "initiallyUnlocked": true
+      },
+      "updatedAt": "2026-09-30T15:46:08.702Z"
+    },
+    {
+      "id": "v1:ON_RETIRE_KILL_BUFF",
+      "data": {
+        "id": "v1:ON_RETIRE_KILL_BUFF",
+        "name": "승자의 벨트",
+        "values": {
+          "attack": 2
+        },
+        "enabled": true,
+        "effectType": "ON_RETIRE_KILL_BUFF",
+        "description": "상대 선수를 리타이어시킨 생존 아군 선수의 공격력 +2.",
+        "initiallyUnlocked": true
+      },
+      "updatedAt": "2026-09-30T15:46:08.704Z"
+    },
+    {
+      "id": "v1:ATTACK_HIGHER_ATK_BUFF",
+      "data": {
+        "id": "v1:ATTACK_HIGHER_ATK_BUFF",
+        "name": "거인 사냥꾼의 창",
+        "values": {
+          "attack": 3
+        },
+        "enabled": true,
+        "effectType": "ATTACK_HIGHER_ATK_BUFF",
+        "description": "자신보다 공격력이 높은 상대 공격 시 해당 전투 공격력 +3.",
+        "initiallyUnlocked": true
+      },
+      "updatedAt": "2026-09-30T15:46:08.707Z"
+    },
+    {
+      "id": "v1:ATTACK_LOWER_ATK_BUFF",
+      "data": {
+        "id": "v1:ATTACK_LOWER_ATK_BUFF",
+        "name": "약자 사냥의 문장",
+        "values": {
+          "attack": 2
+        },
+        "enabled": true,
+        "effectType": "ATTACK_LOWER_ATK_BUFF",
+        "description": "자신보다 공격력이 낮은 상대 공격 시 해당 전투 공격력 +2.",
+        "initiallyUnlocked": true
+      },
+      "updatedAt": "2026-09-30T15:46:08.710Z"
+    },
+    {
+      "id": "v1:SOLO_BUFF",
+      "data": {
+        "id": "v1:SOLO_BUFF",
+        "name": "최후의 투사",
+        "values": {
+          "attack": 3,
+          "health": 3
+        },
+        "enabled": true,
+        "effectType": "SOLO_BUFF",
+        "description": "필드에 아군 선수가 정확히 1명인 동안 +3/+3.",
+        "initiallyUnlocked": true
+      },
+      "updatedAt": "2026-09-30T15:46:08.713Z"
+    },
+    {
+      "id": "v1:ON_RETIRE_RANDOM_ALLY_BUFF",
+      "data": {
+        "id": "v1:ON_RETIRE_RANDOM_ALLY_BUFF",
+        "name": "전우의 유품",
+        "values": {
+          "attack": 1,
+          "health": 2
+        },
+        "enabled": true,
+        "effectType": "ON_RETIRE_RANDOM_ALLY_BUFF",
+        "description": "아군 선수 리타이어 시 다른 무작위 생존 아군 선수 1명 +1/+2.",
+        "initiallyUnlocked": true
+      },
+      "updatedAt": "2026-09-30T15:46:08.716Z"
+    },
+    {
+      "id": "v1:FIRST_SUMMON_COST_DOWN_LIMIT",
+      "data": {
+        "id": "v1:FIRST_SUMMON_COST_DOWN_LIMIT",
+        "name": "입장권",
+        "values": {
+          "amount": 1
+        },
+        "enabled": true,
+        "effectType": "FIRST_SUMMON_COST_DOWN_LIMIT",
+        "description": "각 턴 첫 소환 비용 -1. 그 턴 선수 1장만 소환 가능.",
+        "initiallyUnlocked": true
+      },
+      "updatedAt": "2026-09-30T15:46:08.719Z"
+    },
+    {
+      "id": "v1:FIRST_SUMMON_COST_DOWN_NO_ATTACK",
+      "data": {
+        "id": "v1:FIRST_SUMMON_COST_DOWN_NO_ATTACK",
+        "name": "폭주 티켓",
+        "values": {
+          "amount": 2
+        },
+        "enabled": true,
+        "effectType": "FIRST_SUMMON_COST_DOWN_NO_ATTACK",
+        "description": "각 턴 첫 소환 비용 -2. 그 선수는 그 턴 공격 불가.",
+        "initiallyUnlocked": true
+      },
+      "updatedAt": "2026-09-30T15:46:08.722Z"
+    },
+    {
+      "id": "v1:SOLO_TURN_START_HEAL_BUFF",
+      "data": {
+        "id": "v1:SOLO_TURN_START_HEAL_BUFF",
+        "name": "무대 독점권",
+        "values": {
+          "heal": 2,
+          "attack": 1
+        },
+        "enabled": true,
+        "effectType": "SOLO_TURN_START_HEAL_BUFF",
+        "description": "내 턴 시작 시 아군 선수가 정확히 1명이면 체력 2 회복, 공격력 +1.",
+        "initiallyUnlocked": true
+      },
+      "updatedAt": "2026-09-30T15:46:08.725Z"
+    },
+    {
+      "id": "v1:FIRST_DAMAGE_REDUCTION",
+      "data": {
+        "id": "v1:FIRST_DAMAGE_REDUCTION",
+        "name": "철벽의 증표",
+        "values": {
+          "reduction": 2
+        },
+        "enabled": true,
+        "effectType": "FIRST_DAMAGE_REDUCTION",
+        "description": "각 아군 선수가 매 턴 처음 받는 피해를 2 감소.",
+        "initiallyUnlocked": true
+      },
+      "updatedAt": "2026-09-30T15:46:08.728Z"
+    },
+    {
+      "id": "v1:OUTNUMBERED_ATK_BUFF",
+      "data": {
+        "id": "v1:OUTNUMBERED_ATK_BUFF",
+        "name": "역전의 휘장",
+        "values": {
+          "attack": 2
+        },
+        "enabled": true,
+        "effectType": "OUTNUMBERED_ATK_BUFF",
+        "description": "아군 선수 수가 상대보다 적은 동안 모든 아군 선수 공격력 +2.",
+        "initiallyUnlocked": true
+      },
+      "updatedAt": "2026-09-30T15:46:08.731Z"
+    },
+    {
+      "id": "v1:MULTI_RETIRE_DRAW",
+      "data": {
+        "id": "v1:MULTI_RETIRE_DRAW",
+        "name": "관중의 함성",
+        "values": {
+          "amount": 2,
+          "threshold": 2
+        },
+        "enabled": true,
+        "effectType": "MULTI_RETIRE_DRAW",
+        "description": "한 턴 동안 상대 선수 2명 이상을 리타이어시키면 카드 2장 드로우. 턴당 1회.",
+        "initiallyUnlocked": true
+      },
+      "updatedAt": "2026-09-30T15:46:08.733Z"
+    },
+    {
+      "id": "v1:QUEST_PROGRESS_BONUS",
+      "data": {
+        "id": "v1:QUEST_PROGRESS_BONUS",
+        "name": "챔피언의 표식",
+        "values": {
+          "amount": 1
+        },
+        "enabled": true,
+        "effectType": "QUEST_PROGRESS_BONUS",
+        "description": "전투당 처음 챔피언 퀘스트 진행 조건 만족 시 진행도 +1 추가.",
+        "initiallyUnlocked": true
+      },
+      "updatedAt": "2026-09-30T15:46:08.736Z"
+    },
+    {
+      "id": "v1:QUEST_COMPLETE_FIELD_BUFF",
+      "data": {
+        "id": "v1:QUEST_COMPLETE_FIELD_BUFF",
+        "name": "완주의 왕관",
+        "values": {
+          "attack": 2,
+          "health": 2
+        },
+        "enabled": true,
+        "effectType": "QUEST_COMPLETE_FIELD_BUFF",
+        "description": "챔피언 퀘스트 완료 순간 현재 필드의 모든 아군 선수 +2/+2.",
+        "initiallyUnlocked": true
+      },
+      "updatedAt": "2026-09-30T15:46:08.739Z"
+    },
+    {
+      "id": "v1:EMPTY_FIELD_FIRST_SUMMON_BUFF",
+      "data": {
+        "id": "v1:EMPTY_FIELD_FIRST_SUMMON_BUFF",
+        "name": "빈자리의 왕관",
+        "values": {
+          "attack": 3,
+          "health": 3
+        },
+        "enabled": true,
+        "effectType": "EMPTY_FIELD_FIRST_SUMMON_BUFF",
+        "description": "각 턴 첫 소환 시 필드가 비어 있으면 +3/+3. 그 턴 추가 소환 불가.",
+        "initiallyUnlocked": true
+      },
+      "updatedAt": "2026-09-30T15:46:08.742Z"
+    },
+    {
+      "id": "v1:ONE_HP_ATK_BUFF",
+      "data": {
+        "id": "v1:ONE_HP_ATK_BUFF",
+        "name": "생존자의 휘장",
+        "values": {
+          "attack": 3
+        },
+        "enabled": true,
+        "effectType": "ONE_HP_ATK_BUFF",
+        "description": "현재 체력이 1인 아군 선수의 공격력 +3.",
+        "initiallyUnlocked": true
+      },
+      "updatedAt": "2026-09-30T15:46:08.744Z"
+    },
+    {
+      "id": "v1:ATTACK_HIGHEST_DAMAGE_REDUCTION",
+      "data": {
+        "id": "v1:ATTACK_HIGHEST_DAMAGE_REDUCTION",
+        "name": "도전자 벨트",
+        "values": {
+          "reduction": 2
+        },
+        "enabled": true,
+        "effectType": "ATTACK_HIGHEST_DAMAGE_REDUCTION",
+        "description": "상대 필드 최고 공격력 선수 공격 시 받는 전투 피해 -2. 공동 최고도 적용.",
+        "initiallyUnlocked": true
+      },
+      "updatedAt": "2026-09-30T15:46:08.747Z"
+    },
+    {
+      "id": "v1:HIGHEST_ATK_LEADER_BUFF",
+      "data": {
+        "id": "v1:HIGHEST_ATK_LEADER_BUFF",
+        "name": "폭군의 명령서",
+        "values": {
+          "attack": 2,
+          "health": 2,
+          "penalty": 1
+        },
+        "enabled": true,
+        "effectType": "HIGHEST_ATK_LEADER_BUFF",
+        "description": "유물 보정 전 공격력이 가장 높은 아군 선수 +2/+2, 나머지 공격력 -1. 공동 1위는 가장 왼쪽 선수.",
+        "initiallyUnlocked": true
+      },
+      "updatedAt": "2026-09-30T15:46:08.759Z"
+    }
+  ],
+  "characters": [
+    {
+      "id": "fafec67f-7595-4489-b5c7-992ddb14d74c",
+      "data": {
+        "id": "fafec67f-7595-4489-b5c7-992ddb14d74c",
+        "sprites": {
+          "SAD": "/api/storage/objects/uploads/card-images/33e719ff-b8a9-4537-9e1b-99b15421c799.png",
+          "HURT": "/api/storage/objects/uploads/card-images/62b88aff-3b20-40cf-94dc-5a6a0ab96d2c.png",
+          "ANGRY": "/api/storage/objects/uploads/card-images/eeb189a8-ea15-4c45-a13f-40afd94755f4.png",
+          "HAPPY": "/api/storage/objects/uploads/card-images/ac6a3b3a-01f2-4fce-92dd-65f9dda94e29.png",
+          "AWKWARD": "/api/storage/objects/uploads/card-images/08d3e4d7-a24a-4b2d-96f5-766834aa17b6.png",
+          "NEUTRAL": "/api/storage/objects/uploads/card-images/07343123-ec95-4c1c-bf7b-89637e6d90fe.png",
+          "SERIOUS": "/api/storage/objects/uploads/card-images/167f3084-0517-4016-8dc8-5a8131f06c73.png",
+          "SURPRISED": "/api/storage/objects/uploads/card-images/6915a2d4-ecf0-4fd7-840d-e2b81bb32176.png"
+        },
+        "championId": "bcffab96-f61f-497e-b60b-de5a869837d3",
+        "displayName": "판도라"
+      },
+      "updatedAt": "2026-09-30T16:55:14.085Z"
+    },
+    {
+      "id": "4c517f40-dd6d-452a-8de9-64fbf51c9ef1",
+      "data": {
+        "id": "4c517f40-dd6d-452a-8de9-64fbf51c9ef1",
+        "sprites": {
+          "SAD": "/api/storage/objects/uploads/card-images/78b72d5a-8165-419b-939a-81eca6e806e9.png",
+          "HURT": "/api/storage/objects/uploads/card-images/fd0b49e8-67cb-4da8-a447-7de701713e3c.png",
+          "ANGRY": "/api/storage/objects/uploads/card-images/915dcce7-d5c1-489d-8bca-31f3347353a3.png",
+          "HAPPY": "/api/storage/objects/uploads/card-images/12ceb173-f811-43cb-9739-080b20d254d3.png",
+          "AWKWARD": "/api/storage/objects/uploads/card-images/1928b730-55fa-4625-9f8c-e4f6758d947a.png",
+          "NEUTRAL": "/api/storage/objects/uploads/card-images/22ed8f93-d85d-4a6b-90b5-de1a0808f7dc.png",
+          "SERIOUS": "/api/storage/objects/uploads/card-images/ef46cd97-63ae-44d3-8900-cade37c615dc.png",
+          "SURPRISED": "/api/storage/objects/uploads/card-images/951a18ff-a556-4477-a25e-5d3d73c25e3a.png"
+        },
+        "championId": "champion-minion-a",
+        "displayName": "미니언 A"
+      },
+      "updatedAt": "2026-10-02T13:57:24.421Z"
+    },
+    {
+      "id": "tower-v2-foundation-20261009-character-0",
+      "data": {
+        "id": "tower-v2-foundation-20261009-character-0",
+        "sprites": {
+          "NEUTRAL": "/api/storage/objects/uploads/card-images/e8b21e75-2352-47b9-ab04-1b39590937c8.png"
+        },
+        "championId": "5e4a5a52-ef2c-4e1a-9b76-a4edc9f79e2c",
+        "displayName": "챔피언 라 칼라베라"
+      },
+      "updatedAt": "2026-10-09T03:14:50.305Z"
+    },
+    {
+      "id": "tower-v2-foundation-20261009-character-1",
+      "data": {
+        "id": "tower-v2-foundation-20261009-character-1",
+        "sprites": {
+          "NEUTRAL": "/api/storage/objects/uploads/card-images/c6a67856-debb-4f5d-98e5-e0b5d931915e.png"
+        },
+        "championId": "11ac192a-d48d-4119-a63d-f9102793fb9a",
+        "displayName": "챔피언 여울"
+      },
+      "updatedAt": "2026-10-09T03:14:50.601Z"
+    },
+    {
+      "id": "tower-v2-foundation-20261009-character-2",
+      "data": {
+        "id": "tower-v2-foundation-20261009-character-2",
+        "sprites": {
+          "NEUTRAL": "/api/storage/objects/uploads/card-images/92935ecb-3595-42da-b3bb-9398d280e82a.png"
+        },
+        "championId": "3cbb09c4-f8ac-4668-9378-5c01bfa9474b",
+        "displayName": "챔피언 예거"
+      },
+      "updatedAt": "2026-10-09T03:14:50.893Z"
+    },
+    {
+      "id": "tower-v2-foundation-20261009-character-3",
+      "data": {
+        "id": "tower-v2-foundation-20261009-character-3",
+        "sprites": {
+          "NEUTRAL": "/api/storage/objects/uploads/card-images/407a1f82-cffb-4bea-8a76-fef57b054949.png"
+        },
+        "championId": "bcffab96-f61f-497e-b60b-de5a869837d3",
+        "displayName": "챔피언 판도라"
+      },
+      "updatedAt": "2026-10-09T03:14:51.204Z"
+    },
+    {
+      "id": "tower-v2-foundation-20261009-character-4",
+      "data": {
+        "id": "tower-v2-foundation-20261009-character-4",
+        "sprites": {
+          "NEUTRAL": "/api/storage/objects/uploads/card-images/748632ac-f336-4243-8742-2e2287f6d4bb.png"
+        },
+        "championId": "0e9d8ab0-9af7-4db3-a03e-ff6ee3d5789f",
+        "displayName": "챔피언 피 스타 세븐"
+      },
+      "updatedAt": "2026-10-09T03:14:51.498Z"
+    }
+  ],
+  "scenes": [
+    {
+      "id": "tower-v2-foundation-20261009-opening",
+      "data": {
+        "id": "tower-v2-foundation-20261009-opening",
+        "name": "타워 오프닝",
+        "lines": [
+          {
+            "fade": true,
+            "side": "LEFT",
+            "text": "열여섯 번의 대결이 기다린다. 덱을 다듬고 유물을 모아 정상에 도전하라.",
+            "order": 0,
+            "speakerId": "tower-v2-foundation-20261009-character-0",
+            "expression": "NEUTRAL"
+          }
+        ],
+        "music": {
+          "name": "KO 배틀 음악 시즌 2 할로윈.mp3",
+          "volume": 83,
+          "assetUrl": "/api/storage/objects/uploads/game-bgm/6f202f8f-4453-4a6b-82ae-fc3e2162f217.mp3"
+        }
+      },
+      "updatedAt": "2026-10-09T03:14:51.802Z"
+    },
+    {
+      "id": "tower-v2-foundation-20261009-boss-4",
+      "data": {
+        "id": "tower-v2-foundation-20261009-boss-4",
+        "name": "보스 4층 인트로",
+        "lines": [
+          {
+            "fade": true,
+            "side": "LEFT",
+            "text": "여기까지 올라왔군. 다음 층으로 가려면 나를 넘어야 한다.",
+            "order": 0,
+            "speakerId": "tower-v2-foundation-20261009-character-0",
+            "expression": "NEUTRAL"
+          }
+        ],
+        "music": {
+          "name": "KO 배틀 음악 시즌 2 할로윈.mp3",
+          "volume": 83,
+          "assetUrl": "/api/storage/objects/uploads/game-bgm/6f202f8f-4453-4a6b-82ae-fc3e2162f217.mp3"
+        }
+      },
+      "updatedAt": "2026-10-09T03:14:52.113Z"
+    },
+    {
+      "id": "tower-v2-foundation-20261009-boss-8",
+      "data": {
+        "id": "tower-v2-foundation-20261009-boss-8",
+        "name": "보스 8층 인트로",
+        "lines": [
+          {
+            "fade": true,
+            "side": "LEFT",
+            "text": "여기까지 올라왔군. 다음 층으로 가려면 나를 넘어야 한다.",
+            "order": 0,
+            "speakerId": "tower-v2-foundation-20261009-character-1",
+            "expression": "NEUTRAL"
+          }
+        ],
+        "music": {
+          "name": "KO 배틀 음악 시즌 2 할로윈.mp3",
+          "volume": 83,
+          "assetUrl": "/api/storage/objects/uploads/game-bgm/6f202f8f-4453-4a6b-82ae-fc3e2162f217.mp3"
+        }
+      },
+      "updatedAt": "2026-10-09T03:14:52.427Z"
+    },
+    {
+      "id": "tower-v2-foundation-20261009-boss-12",
+      "data": {
+        "id": "tower-v2-foundation-20261009-boss-12",
+        "name": "보스 12층 인트로",
+        "lines": [
+          {
+            "fade": true,
+            "side": "LEFT",
+            "text": "여기까지 올라왔군. 다음 층으로 가려면 나를 넘어야 한다.",
+            "order": 0,
+            "speakerId": "tower-v2-foundation-20261009-character-2",
+            "expression": "NEUTRAL"
+          }
+        ],
+        "music": {
+          "name": "KO 배틀 음악 시즌 2 할로윈.mp3",
+          "volume": 83,
+          "assetUrl": "/api/storage/objects/uploads/game-bgm/6f202f8f-4453-4a6b-82ae-fc3e2162f217.mp3"
+        }
+      },
+      "updatedAt": "2026-10-09T03:14:52.566Z"
+    },
+    {
+      "id": "tower-v2-foundation-20261009-boss-16",
+      "data": {
+        "id": "tower-v2-foundation-20261009-boss-16",
+        "name": "보스 16층 인트로",
+        "lines": [
+          {
+            "fade": true,
+            "side": "LEFT",
+            "text": "여기까지 올라왔군. 다음 층으로 가려면 나를 넘어야 한다.",
+            "order": 0,
+            "speakerId": "tower-v2-foundation-20261009-character-3",
+            "expression": "NEUTRAL"
+          }
+        ],
+        "music": {
+          "name": "KO 배틀 음악 시즌 2 할로윈.mp3",
+          "volume": 83,
+          "assetUrl": "/api/storage/objects/uploads/game-bgm/6f202f8f-4453-4a6b-82ae-fc3e2162f217.mp3"
+        }
+      },
+      "updatedAt": "2026-10-09T03:14:52.854Z"
+    },
+    {
+      "id": "tower-v2-foundation-20261009-ending",
+      "data": {
+        "id": "tower-v2-foundation-20261009-ending",
+        "name": "일반 엔딩",
+        "lines": [
+          {
+            "fade": true,
+            "side": "LEFT",
+            "text": "정상의 대결에서 승리했다. 이번 도전은 끝났지만 새로운 덱으로 다시 도전할 수 있다.",
+            "order": 0,
+            "speakerId": "tower-v2-foundation-20261009-character-3",
+            "expression": "NEUTRAL"
+          }
+        ],
+        "music": {
+          "name": "KO 배틀 음악 시즌 2 할로윈.mp3",
+          "volume": 83,
+          "assetUrl": "/api/storage/objects/uploads/game-bgm/6f202f8f-4453-4a6b-82ae-fc3e2162f217.mp3"
+        }
+      },
+      "updatedAt": "2026-10-09T03:14:53.169Z"
+    },
+    {
+      "id": "tower-v2-foundation-20261009-hidden",
+      "data": {
+        "id": "tower-v2-foundation-20261009-hidden",
+        "name": "히든 보스 인트로",
+        "lines": [
+          {
+            "fade": true,
+            "side": "LEFT",
+            "text": "끝이라고 생각했나? 마지막 대결이 하나 더 남아 있다.",
+            "order": 0,
+            "speakerId": "tower-v2-foundation-20261009-character-4",
+            "expression": "NEUTRAL"
+          }
+        ],
+        "music": {
+          "name": "KO 배틀 음악 시즌 2 할로윈.mp3",
+          "volume": 83,
+          "assetUrl": "/api/storage/objects/uploads/game-bgm/6f202f8f-4453-4a6b-82ae-fc3e2162f217.mp3"
+        }
+      },
+      "updatedAt": "2026-10-09T03:14:53.507Z"
+    },
+    {
+      "id": "tower-v2-foundation-20261009-hidden-ending",
+      "data": {
+        "id": "tower-v2-foundation-20261009-hidden-ending",
+        "name": "히든 보스 엔딩",
+        "lines": [
+          {
+            "fade": true,
+            "side": "LEFT",
+            "text": "숨겨진 마지막 대결까지 끝났다. 이 타워의 모든 시련을 넘어섰다.",
+            "order": 0,
+            "speakerId": "tower-v2-foundation-20261009-character-4",
+            "expression": "NEUTRAL"
+          }
+        ],
+        "music": {
+          "name": "KO 배틀 음악 시즌 2 할로윈.mp3",
+          "volume": 83,
+          "assetUrl": "/api/storage/objects/uploads/game-bgm/6f202f8f-4453-4a6b-82ae-fc3e2162f217.mp3"
+        }
+      },
+      "updatedAt": "2026-10-09T03:14:53.830Z"
+    }
+  ],
+  "metadata": [],
+  "effectLibrary": [
+    {
+      "effect_type": "BUFF",
+      "handler_id": "CARD_ENGINE:BUFF:v1",
+      "parameter_schema": {
+        "target": true,
+        "stats": true,
+        "statMultiplier": true,
+        "referenceStat": true,
+        "dynamicValue": true,
+        "statChannelReference": true
+      },
+      "supported_triggers": [
+        "BATTLE_START",
+        "TURN_STARTED",
+        "TURN_ENDED",
+        "CARD_PLAYED",
+        "ENTER_FIELD",
+        "ATTACK_DECLARED",
+        "CARD_RETIRED",
+        "CARD_DESTROYED",
+        "CARD_VANISHED",
+        "FUSION",
+        "DAMAGE_DEALT",
+        "CHAMPION_ABILITY_USED",
+        "CHAMPION_QUEST_COMPLETED"
+      ],
+      "supported_targets": [
+        "BOARD",
+        "HAND",
+        "DECK"
+      ],
+      "validation_rules": "SHARED_EFFECT_REGISTRY",
+      "description_template": "BUFF",
+      "execution_handler": "BUFF"
+    },
+    {
+      "effect_type": "SET_STATS",
+      "handler_id": "CARD_ENGINE:SET_STATS:v1",
+      "parameter_schema": {
+        "target": true,
+        "stats": true
+      },
+      "supported_triggers": [
+        "BATTLE_START",
+        "TURN_STARTED",
+        "TURN_ENDED",
+        "CARD_PLAYED",
+        "ENTER_FIELD",
+        "ATTACK_DECLARED",
+        "CARD_RETIRED",
+        "CARD_DESTROYED",
+        "CARD_VANISHED",
+        "FUSION",
+        "DAMAGE_DEALT",
+        "CHAMPION_ABILITY_USED",
+        "CHAMPION_QUEST_COMPLETED"
+      ],
+      "supported_targets": [
+        "BOARD",
+        "HAND",
+        "DECK"
+      ],
+      "validation_rules": "SHARED_EFFECT_REGISTRY",
+      "description_template": "SET_STATS",
+      "execution_handler": "SET_STATS"
+    },
+    {
+      "effect_type": "MODIFY_STAT",
+      "handler_id": "CARD_ENGINE:MODIFY_STAT:v1",
+      "parameter_schema": {
+        "target": true,
+        "amount": true,
+        "signedAmount": true,
+        "stat": true,
+        "duration": true,
+        "minimum": true
+      },
+      "supported_triggers": [
+        "BATTLE_START",
+        "TURN_STARTED",
+        "TURN_ENDED",
+        "CARD_PLAYED",
+        "ENTER_FIELD",
+        "ATTACK_DECLARED",
+        "CARD_RETIRED",
+        "CARD_DESTROYED",
+        "CARD_VANISHED",
+        "FUSION",
+        "DAMAGE_DEALT",
+        "CHAMPION_ABILITY_USED",
+        "CHAMPION_QUEST_COMPLETED"
+      ],
+      "supported_targets": [
+        "BOARD",
+        "HAND",
+        "DECK"
+      ],
+      "validation_rules": "SHARED_EFFECT_REGISTRY",
+      "description_template": "MODIFY_STAT",
+      "execution_handler": "MODIFY_STAT"
+    },
+    {
+      "effect_type": "MODIFY_MAX_HEALTH",
+      "handler_id": "CARD_ENGINE:MODIFY_MAX_HEALTH:v1",
+      "parameter_schema": {
+        "target": true,
+        "amount": true,
+        "signedAmount": true
+      },
+      "supported_triggers": [
+        "BATTLE_START",
+        "TURN_STARTED",
+        "TURN_ENDED",
+        "CARD_PLAYED",
+        "ENTER_FIELD",
+        "ATTACK_DECLARED",
+        "CARD_RETIRED",
+        "CARD_DESTROYED",
+        "CARD_VANISHED",
+        "FUSION",
+        "DAMAGE_DEALT",
+        "CHAMPION_ABILITY_USED",
+        "CHAMPION_QUEST_COMPLETED"
+      ],
+      "supported_targets": [
+        "BOARD",
+        "HAND",
+        "DECK"
+      ],
+      "validation_rules": "SHARED_EFFECT_REGISTRY",
+      "description_template": "MODIFY_MAX_HEALTH",
+      "execution_handler": "MODIFY_MAX_HEALTH"
+    },
+    {
+      "effect_type": "SET_STAT",
+      "handler_id": "CARD_ENGINE:SET_STAT:v1",
+      "parameter_schema": {
+        "target": true,
+        "amount": true,
+        "stat": true,
+        "duration": true
+      },
+      "supported_triggers": [
+        "BATTLE_START",
+        "TURN_STARTED",
+        "TURN_ENDED",
+        "CARD_PLAYED",
+        "ENTER_FIELD",
+        "ATTACK_DECLARED",
+        "CARD_RETIRED",
+        "CARD_DESTROYED",
+        "CARD_VANISHED",
+        "FUSION",
+        "DAMAGE_DEALT",
+        "CHAMPION_ABILITY_USED",
+        "CHAMPION_QUEST_COMPLETED"
+      ],
+      "supported_targets": [
+        "BOARD",
+        "HAND",
+        "DECK"
+      ],
+      "validation_rules": "SHARED_EFFECT_REGISTRY",
+      "description_template": "SET_STAT",
+      "execution_handler": "SET_STAT"
+    },
+    {
+      "effect_type": "DAMAGE",
+      "handler_id": "CARD_ENGINE:DAMAGE:v1",
+      "parameter_schema": {
+        "target": true,
+        "amount": true,
+        "dynamicValue": true
+      },
+      "supported_triggers": [
+        "BATTLE_START",
+        "TURN_STARTED",
+        "TURN_ENDED",
+        "CARD_PLAYED",
+        "ENTER_FIELD",
+        "ATTACK_DECLARED",
+        "CARD_RETIRED",
+        "CARD_DESTROYED",
+        "CARD_VANISHED",
+        "FUSION",
+        "DAMAGE_DEALT",
+        "CHAMPION_ABILITY_USED",
+        "CHAMPION_QUEST_COMPLETED"
+      ],
+      "supported_targets": [
+        "BOARD",
+        "PLAYER",
+        "CHARACTER"
+      ],
+      "validation_rules": "SHARED_EFFECT_REGISTRY",
+      "description_template": "DAMAGE",
+      "execution_handler": "DAMAGE"
+    },
+    {
+      "effect_type": "HEAL",
+      "handler_id": "CARD_ENGINE:HEAL:v1",
+      "parameter_schema": {
+        "target": true,
+        "amount": true
+      },
+      "supported_triggers": [
+        "BATTLE_START",
+        "TURN_STARTED",
+        "TURN_ENDED",
+        "CARD_PLAYED",
+        "ENTER_FIELD",
+        "ATTACK_DECLARED",
+        "CARD_RETIRED",
+        "CARD_DESTROYED",
+        "CARD_VANISHED",
+        "FUSION",
+        "DAMAGE_DEALT",
+        "CHAMPION_ABILITY_USED",
+        "CHAMPION_QUEST_COMPLETED"
+      ],
+      "supported_targets": [
+        "BOARD",
+        "PLAYER",
+        "CHARACTER"
+      ],
+      "validation_rules": "SHARED_EFFECT_REGISTRY",
+      "description_template": "HEAL",
+      "execution_handler": "HEAL"
+    },
+    {
+      "effect_type": "SILENCE",
+      "handler_id": "CARD_ENGINE:SILENCE:v1",
+      "parameter_schema": {
+        "target": true
+      },
+      "supported_triggers": [
+        "BATTLE_START",
+        "TURN_STARTED",
+        "TURN_ENDED",
+        "CARD_PLAYED",
+        "ENTER_FIELD",
+        "ATTACK_DECLARED",
+        "CARD_RETIRED",
+        "CARD_DESTROYED",
+        "CARD_VANISHED",
+        "FUSION",
+        "DAMAGE_DEALT",
+        "CHAMPION_ABILITY_USED",
+        "CHAMPION_QUEST_COMPLETED"
+      ],
+      "supported_targets": [
+        "BOARD"
+      ],
+      "validation_rules": "SHARED_EFFECT_REGISTRY",
+      "description_template": "SILENCE",
+      "execution_handler": "SILENCE"
+    },
+    {
+      "effect_type": "DESTROY",
+      "handler_id": "CARD_ENGINE:DESTROY:v1",
+      "parameter_schema": {
+        "target": true
+      },
+      "supported_triggers": [
+        "BATTLE_START",
+        "TURN_STARTED",
+        "TURN_ENDED",
+        "CARD_PLAYED",
+        "ENTER_FIELD",
+        "ATTACK_DECLARED",
+        "CARD_RETIRED",
+        "CARD_DESTROYED",
+        "CARD_VANISHED",
+        "FUSION",
+        "DAMAGE_DEALT",
+        "CHAMPION_ABILITY_USED",
+        "CHAMPION_QUEST_COMPLETED"
+      ],
+      "supported_targets": [
+        "BOARD"
+      ],
+      "validation_rules": "SHARED_EFFECT_REGISTRY",
+      "description_template": "DESTROY",
+      "execution_handler": "DESTROY"
+    },
+    {
+      "effect_type": "RETIRE",
+      "handler_id": "CARD_ENGINE:RETIRE:v1",
+      "parameter_schema": {
+        "target": true,
+        "captureStats": true
+      },
+      "supported_triggers": [
+        "BATTLE_START",
+        "TURN_STARTED",
+        "TURN_ENDED",
+        "CARD_PLAYED",
+        "ENTER_FIELD",
+        "ATTACK_DECLARED",
+        "CARD_RETIRED",
+        "CARD_DESTROYED",
+        "CARD_VANISHED",
+        "FUSION",
+        "DAMAGE_DEALT",
+        "CHAMPION_ABILITY_USED",
+        "CHAMPION_QUEST_COMPLETED"
+      ],
+      "supported_targets": [
+        "BOARD"
+      ],
+      "validation_rules": "SHARED_EFFECT_REGISTRY",
+      "description_template": "RETIRE",
+      "execution_handler": "RETIRE"
+    },
+    {
+      "effect_type": "ADD_GOLD",
+      "handler_id": "CARD_ENGINE:ADD_GOLD:v1",
+      "parameter_schema": {
+        "target": false,
+        "amount": true
+      },
+      "supported_triggers": [
+        "BATTLE_START",
+        "TURN_STARTED",
+        "TURN_ENDED",
+        "CARD_PLAYED",
+        "ENTER_FIELD",
+        "ATTACK_DECLARED",
+        "CARD_RETIRED",
+        "CARD_DESTROYED",
+        "CARD_VANISHED",
+        "FUSION",
+        "DAMAGE_DEALT",
+        "CHAMPION_ABILITY_USED",
+        "CHAMPION_QUEST_COMPLETED"
+      ],
+      "supported_targets": [],
+      "validation_rules": "SHARED_EFFECT_REGISTRY",
+      "description_template": "ADD_GOLD",
+      "execution_handler": "ADD_GOLD"
+    },
+    {
+      "effect_type": "ADD_NEXT_TURN_GOLD",
+      "handler_id": "CARD_ENGINE:ADD_NEXT_TURN_GOLD:v1",
+      "parameter_schema": {
+        "target": false,
+        "amount": true
+      },
+      "supported_triggers": [
+        "BATTLE_START",
+        "TURN_STARTED",
+        "TURN_ENDED",
+        "CARD_PLAYED",
+        "ENTER_FIELD",
+        "ATTACK_DECLARED",
+        "CARD_RETIRED",
+        "CARD_DESTROYED",
+        "CARD_VANISHED",
+        "FUSION",
+        "DAMAGE_DEALT",
+        "CHAMPION_ABILITY_USED",
+        "CHAMPION_QUEST_COMPLETED"
+      ],
+      "supported_targets": [],
+      "validation_rules": "SHARED_EFFECT_REGISTRY",
+      "description_template": "ADD_NEXT_TURN_GOLD",
+      "execution_handler": "ADD_NEXT_TURN_GOLD"
+    },
+    {
+      "effect_type": "DRAW",
+      "handler_id": "CARD_ENGINE:DRAW:v1",
+      "parameter_schema": {
+        "target": false,
+        "amount": true
+      },
+      "supported_triggers": [
+        "BATTLE_START",
+        "TURN_STARTED",
+        "TURN_ENDED",
+        "CARD_PLAYED",
+        "ENTER_FIELD",
+        "ATTACK_DECLARED",
+        "CARD_RETIRED",
+        "CARD_DESTROYED",
+        "CARD_VANISHED",
+        "FUSION",
+        "DAMAGE_DEALT",
+        "CHAMPION_ABILITY_USED",
+        "CHAMPION_QUEST_COMPLETED"
+      ],
+      "supported_targets": [],
+      "validation_rules": "SHARED_EFFECT_REGISTRY",
+      "description_template": "DRAW",
+      "execution_handler": "DRAW"
+    },
+    {
+      "effect_type": "REDUCE_COST",
+      "handler_id": "CARD_ENGINE:REDUCE_COST:v1",
+      "parameter_schema": {
+        "target": true,
+        "amount": true,
+        "minimum": true
+      },
+      "supported_triggers": [
+        "BATTLE_START",
+        "TURN_STARTED",
+        "TURN_ENDED",
+        "CARD_PLAYED",
+        "ENTER_FIELD",
+        "ATTACK_DECLARED",
+        "CARD_RETIRED",
+        "CARD_DESTROYED",
+        "CARD_VANISHED",
+        "FUSION",
+        "DAMAGE_DEALT",
+        "CHAMPION_ABILITY_USED",
+        "CHAMPION_QUEST_COMPLETED"
+      ],
+      "supported_targets": [
+        "BOARD",
+        "HAND",
+        "DECK"
+      ],
+      "validation_rules": "SHARED_EFFECT_REGISTRY",
+      "description_template": "REDUCE_COST",
+      "execution_handler": "REDUCE_COST"
+    },
+    {
+      "effect_type": "INCREASE_COST",
+      "handler_id": "CARD_ENGINE:INCREASE_COST:v1",
+      "parameter_schema": {
+        "target": true,
+        "amount": true
+      },
+      "supported_triggers": [
+        "BATTLE_START",
+        "TURN_STARTED",
+        "TURN_ENDED",
+        "CARD_PLAYED",
+        "ENTER_FIELD",
+        "ATTACK_DECLARED",
+        "CARD_RETIRED",
+        "CARD_DESTROYED",
+        "CARD_VANISHED",
+        "FUSION",
+        "DAMAGE_DEALT",
+        "CHAMPION_ABILITY_USED",
+        "CHAMPION_QUEST_COMPLETED"
+      ],
+      "supported_targets": [
+        "BOARD",
+        "HAND",
+        "DECK"
+      ],
+      "validation_rules": "SHARED_EFFECT_REGISTRY",
+      "description_template": "INCREASE_COST",
+      "execution_handler": "INCREASE_COST"
+    },
+    {
+      "effect_type": "STUN",
+      "handler_id": "CARD_ENGINE:STUN:v1",
+      "parameter_schema": {
+        "target": true
+      },
+      "supported_triggers": [
+        "BATTLE_START",
+        "TURN_STARTED",
+        "TURN_ENDED",
+        "CARD_PLAYED",
+        "ENTER_FIELD",
+        "ATTACK_DECLARED",
+        "CARD_RETIRED",
+        "CARD_DESTROYED",
+        "CARD_VANISHED",
+        "FUSION",
+        "DAMAGE_DEALT",
+        "CHAMPION_ABILITY_USED",
+        "CHAMPION_QUEST_COMPLETED"
+      ],
+      "supported_targets": [
+        "BOARD"
+      ],
+      "validation_rules": "SHARED_EFFECT_REGISTRY",
+      "description_template": "STUN",
+      "execution_handler": "STUN"
+    },
+    {
+      "effect_type": "DISABLE_ABILITY",
+      "handler_id": "CARD_ENGINE:DISABLE_ABILITY:v1",
+      "parameter_schema": {
+        "target": true
+      },
+      "supported_triggers": [
+        "BATTLE_START",
+        "TURN_STARTED",
+        "TURN_ENDED",
+        "CARD_PLAYED",
+        "ENTER_FIELD",
+        "ATTACK_DECLARED",
+        "CARD_RETIRED",
+        "CARD_DESTROYED",
+        "CARD_VANISHED",
+        "FUSION",
+        "DAMAGE_DEALT",
+        "CHAMPION_ABILITY_USED",
+        "CHAMPION_QUEST_COMPLETED"
+      ],
+      "supported_targets": [
+        "BOARD"
+      ],
+      "validation_rules": "SHARED_EFFECT_REGISTRY",
+      "description_template": "DISABLE_ABILITY",
+      "execution_handler": "DISABLE_ABILITY"
+    },
+    {
+      "effect_type": "WEAKEN_TO_STUN_SILENCE",
+      "handler_id": "CARD_ENGINE:WEAKEN_TO_STUN_SILENCE:v1",
+      "parameter_schema": {
+        "target": true,
+        "amount": true
+      },
+      "supported_triggers": [
+        "BATTLE_START",
+        "TURN_STARTED",
+        "TURN_ENDED",
+        "CARD_PLAYED",
+        "ENTER_FIELD",
+        "ATTACK_DECLARED",
+        "CARD_RETIRED",
+        "CARD_DESTROYED",
+        "CARD_VANISHED",
+        "FUSION",
+        "DAMAGE_DEALT",
+        "CHAMPION_ABILITY_USED",
+        "CHAMPION_QUEST_COMPLETED"
+      ],
+      "supported_targets": [
+        "BOARD"
+      ],
+      "validation_rules": "SHARED_EFFECT_REGISTRY",
+      "description_template": "WEAKEN_TO_STUN_SILENCE",
+      "execution_handler": "WEAKEN_TO_STUN_SILENCE"
+    },
+    {
+      "effect_type": "ADD_KEYWORD",
+      "handler_id": "CARD_ENGINE:ADD_KEYWORD:v1",
+      "parameter_schema": {
+        "target": true,
+        "keyword": true,
+        "duration": true
+      },
+      "supported_triggers": [
+        "BATTLE_START",
+        "TURN_STARTED",
+        "TURN_ENDED",
+        "CARD_PLAYED",
+        "ENTER_FIELD",
+        "ATTACK_DECLARED",
+        "CARD_RETIRED",
+        "CARD_DESTROYED",
+        "CARD_VANISHED",
+        "FUSION",
+        "DAMAGE_DEALT",
+        "CHAMPION_ABILITY_USED",
+        "CHAMPION_QUEST_COMPLETED"
+      ],
+      "supported_targets": [
+        "BOARD"
+      ],
+      "validation_rules": "SHARED_EFFECT_REGISTRY",
+      "description_template": "ADD_KEYWORD",
+      "execution_handler": "ADD_KEYWORD"
+    },
+    {
+      "effect_type": "REMOVE_KEYWORD",
+      "handler_id": "CARD_ENGINE:REMOVE_KEYWORD:v1",
+      "parameter_schema": {
+        "target": true,
+        "keyword": true
+      },
+      "supported_triggers": [
+        "BATTLE_START",
+        "TURN_STARTED",
+        "TURN_ENDED",
+        "CARD_PLAYED",
+        "ENTER_FIELD",
+        "ATTACK_DECLARED",
+        "CARD_RETIRED",
+        "CARD_DESTROYED",
+        "CARD_VANISHED",
+        "FUSION",
+        "DAMAGE_DEALT",
+        "CHAMPION_ABILITY_USED",
+        "CHAMPION_QUEST_COMPLETED"
+      ],
+      "supported_targets": [
+        "BOARD"
+      ],
+      "validation_rules": "SHARED_EFFECT_REGISTRY",
+      "description_template": "REMOVE_KEYWORD",
+      "execution_handler": "REMOVE_KEYWORD"
+    },
+    {
+      "effect_type": "SWAP_STATS",
+      "handler_id": "CARD_ENGINE:SWAP_STATS:v1",
+      "parameter_schema": {
+        "target": true
+      },
+      "supported_triggers": [
+        "BATTLE_START",
+        "TURN_STARTED",
+        "TURN_ENDED",
+        "CARD_PLAYED",
+        "ENTER_FIELD",
+        "ATTACK_DECLARED",
+        "CARD_RETIRED",
+        "CARD_DESTROYED",
+        "CARD_VANISHED",
+        "FUSION",
+        "DAMAGE_DEALT",
+        "CHAMPION_ABILITY_USED",
+        "CHAMPION_QUEST_COMPLETED"
+      ],
+      "supported_targets": [
+        "BOARD",
+        "HAND",
+        "DECK"
+      ],
+      "validation_rules": "SHARED_EFFECT_REGISTRY",
+      "description_template": "SWAP_STATS",
+      "execution_handler": "SWAP_STATS"
+    },
+    {
+      "effect_type": "ADD_DAMAGE_MODIFIER",
+      "handler_id": "CARD_ENGINE:ADD_DAMAGE_MODIFIER:v1",
+      "parameter_schema": {
+        "target": false,
+        "amount": true,
+        "damageSource": true
+      },
+      "supported_triggers": [
+        "BATTLE_START",
+        "TURN_STARTED",
+        "TURN_ENDED",
+        "CARD_PLAYED",
+        "ENTER_FIELD",
+        "ATTACK_DECLARED",
+        "CARD_RETIRED",
+        "CARD_DESTROYED",
+        "CARD_VANISHED",
+        "FUSION",
+        "DAMAGE_DEALT",
+        "CHAMPION_ABILITY_USED",
+        "CHAMPION_QUEST_COMPLETED"
+      ],
+      "supported_targets": [],
+      "validation_rules": "SHARED_EFFECT_REGISTRY",
+      "description_template": "ADD_DAMAGE_MODIFIER",
+      "execution_handler": "ADD_DAMAGE_MODIFIER"
+    },
+    {
+      "effect_type": "SUMMON",
+      "handler_id": "CARD_ENGINE:SUMMON:v1",
+      "parameter_schema": {
+        "target": false,
+        "cardDefinition": true,
+        "cardCount": true,
+        "aggregateStats": true,
+        "generatedModifiers": true
+      },
+      "supported_triggers": [
+        "BATTLE_START",
+        "TURN_STARTED",
+        "TURN_ENDED",
+        "CARD_PLAYED",
+        "ENTER_FIELD",
+        "ATTACK_DECLARED",
+        "CARD_RETIRED",
+        "CARD_DESTROYED",
+        "CARD_VANISHED",
+        "FUSION",
+        "DAMAGE_DEALT",
+        "CHAMPION_ABILITY_USED",
+        "CHAMPION_QUEST_COMPLETED"
+      ],
+      "supported_targets": [],
+      "validation_rules": "SHARED_EFFECT_REGISTRY",
+      "description_template": "SUMMON",
+      "execution_handler": "SUMMON"
+    },
+    {
+      "effect_type": "SUMMON_FROM_HAND",
+      "handler_id": "CARD_ENGINE:SUMMON_FROM_HAND:v1",
+      "parameter_schema": {
+        "target": false,
+        "cardDefinition": true,
+        "cardCount": true
+      },
+      "supported_triggers": [
+        "BATTLE_START",
+        "TURN_STARTED",
+        "TURN_ENDED",
+        "CARD_PLAYED",
+        "ENTER_FIELD",
+        "ATTACK_DECLARED",
+        "CARD_RETIRED",
+        "CARD_DESTROYED",
+        "CARD_VANISHED",
+        "FUSION",
+        "DAMAGE_DEALT",
+        "CHAMPION_ABILITY_USED",
+        "CHAMPION_QUEST_COMPLETED"
+      ],
+      "supported_targets": [],
+      "validation_rules": "SHARED_EFFECT_REGISTRY",
+      "description_template": "SUMMON_FROM_HAND",
+      "execution_handler": "SUMMON_FROM_HAND"
+    },
+    {
+      "effect_type": "REVIVE",
+      "handler_id": "CARD_ENGINE:REVIVE:v1",
+      "parameter_schema": {
+        "target": true
+      },
+      "supported_triggers": [
+        "BATTLE_START",
+        "TURN_STARTED",
+        "TURN_ENDED",
+        "CARD_PLAYED",
+        "ENTER_FIELD",
+        "ATTACK_DECLARED",
+        "CARD_RETIRED",
+        "CARD_DESTROYED",
+        "CARD_VANISHED",
+        "FUSION",
+        "DAMAGE_DEALT",
+        "CHAMPION_ABILITY_USED",
+        "CHAMPION_QUEST_COMPLETED"
+      ],
+      "supported_targets": [
+        "GRAVEYARD"
+      ],
+      "validation_rules": "SHARED_EFFECT_REGISTRY",
+      "description_template": "REVIVE",
+      "execution_handler": "REVIVE"
+    },
+    {
+      "effect_type": "GENERATE",
+      "handler_id": "CARD_ENGINE:GENERATE:v1",
+      "parameter_schema": {
+        "target": false,
+        "cardDefinition": true,
+        "cardCount": true,
+        "destination": true,
+        "generatedModifiers": true
+      },
+      "supported_triggers": [
+        "BATTLE_START",
+        "TURN_STARTED",
+        "TURN_ENDED",
+        "CARD_PLAYED",
+        "ENTER_FIELD",
+        "ATTACK_DECLARED",
+        "CARD_RETIRED",
+        "CARD_DESTROYED",
+        "CARD_VANISHED",
+        "FUSION",
+        "DAMAGE_DEALT",
+        "CHAMPION_ABILITY_USED",
+        "CHAMPION_QUEST_COMPLETED"
+      ],
+      "supported_targets": [],
+      "validation_rules": "SHARED_EFFECT_REGISTRY",
+      "description_template": "GENERATE",
+      "execution_handler": "GENERATE"
+    },
+    {
+      "effect_type": "MOVE_TO_HAND",
+      "handler_id": "CARD_ENGINE:MOVE_TO_HAND:v1",
+      "parameter_schema": {
+        "target": true
+      },
+      "supported_triggers": [
+        "BATTLE_START",
+        "TURN_STARTED",
+        "TURN_ENDED",
+        "CARD_PLAYED",
+        "ENTER_FIELD",
+        "ATTACK_DECLARED",
+        "CARD_RETIRED",
+        "CARD_DESTROYED",
+        "CARD_VANISHED",
+        "FUSION",
+        "DAMAGE_DEALT",
+        "CHAMPION_ABILITY_USED",
+        "CHAMPION_QUEST_COMPLETED"
+      ],
+      "supported_targets": [
+        "BOARD",
+        "HAND",
+        "DECK",
+        "GRAVEYARD"
+      ],
+      "validation_rules": "SHARED_EFFECT_REGISTRY",
+      "description_template": "MOVE_TO_HAND",
+      "execution_handler": "MOVE_TO_HAND"
+    },
+    {
+      "effect_type": "MOVE_TO_DECK",
+      "handler_id": "CARD_ENGINE:MOVE_TO_DECK:v1",
+      "parameter_schema": {
+        "target": true,
+        "destination": true
+      },
+      "supported_triggers": [
+        "BATTLE_START",
+        "TURN_STARTED",
+        "TURN_ENDED",
+        "CARD_PLAYED",
+        "ENTER_FIELD",
+        "ATTACK_DECLARED",
+        "CARD_RETIRED",
+        "CARD_DESTROYED",
+        "CARD_VANISHED",
+        "FUSION",
+        "DAMAGE_DEALT",
+        "CHAMPION_ABILITY_USED",
+        "CHAMPION_QUEST_COMPLETED"
+      ],
+      "supported_targets": [
+        "BOARD",
+        "HAND",
+        "DECK",
+        "GRAVEYARD"
+      ],
+      "validation_rules": "SHARED_EFFECT_REGISTRY",
+      "description_template": "MOVE_TO_DECK",
+      "execution_handler": "MOVE_TO_DECK"
+    },
+    {
+      "effect_type": "STEAL",
+      "handler_id": "CARD_ENGINE:STEAL:v1",
+      "parameter_schema": {
+        "target": true
+      },
+      "supported_triggers": [
+        "BATTLE_START",
+        "TURN_STARTED",
+        "TURN_ENDED",
+        "CARD_PLAYED",
+        "ENTER_FIELD",
+        "ATTACK_DECLARED",
+        "CARD_RETIRED",
+        "CARD_DESTROYED",
+        "CARD_VANISHED",
+        "FUSION",
+        "DAMAGE_DEALT",
+        "CHAMPION_ABILITY_USED",
+        "CHAMPION_QUEST_COMPLETED"
+      ],
+      "supported_targets": [
+        "BOARD"
+      ],
+      "validation_rules": "SHARED_EFFECT_REGISTRY",
+      "description_template": "STEAL",
+      "execution_handler": "STEAL"
+    },
+    {
+      "effect_type": "MILL",
+      "handler_id": "CARD_ENGINE:MILL:v1",
+      "parameter_schema": {
+        "target": true
+      },
+      "supported_triggers": [
+        "BATTLE_START",
+        "TURN_STARTED",
+        "TURN_ENDED",
+        "CARD_PLAYED",
+        "ENTER_FIELD",
+        "ATTACK_DECLARED",
+        "CARD_RETIRED",
+        "CARD_DESTROYED",
+        "CARD_VANISHED",
+        "FUSION",
+        "DAMAGE_DEALT",
+        "CHAMPION_ABILITY_USED",
+        "CHAMPION_QUEST_COMPLETED"
+      ],
+      "supported_targets": [
+        "DECK"
+      ],
+      "validation_rules": "SHARED_EFFECT_REGISTRY",
+      "description_template": "MILL",
+      "execution_handler": "MILL"
+    },
+    {
+      "effect_type": "DEPLOY_CHAMPION_TOKEN",
+      "handler_id": "CARD_ENGINE:DEPLOY_CHAMPION_TOKEN:v1",
+      "parameter_schema": {
+        "target": false
+      },
+      "supported_triggers": [
+        "BATTLE_START",
+        "TURN_STARTED",
+        "TURN_ENDED",
+        "CARD_PLAYED",
+        "ENTER_FIELD",
+        "ATTACK_DECLARED",
+        "CARD_RETIRED",
+        "CARD_DESTROYED",
+        "CARD_VANISHED",
+        "FUSION",
+        "DAMAGE_DEALT",
+        "CHAMPION_ABILITY_USED",
+        "CHAMPION_QUEST_COMPLETED"
+      ],
+      "supported_targets": [],
+      "validation_rules": "SHARED_EFFECT_REGISTRY",
+      "description_template": "DEPLOY_CHAMPION_TOKEN",
+      "execution_handler": "DEPLOY_CHAMPION_TOKEN"
+    },
+    {
+      "effect_type": "REMOVE_FROM_GAME",
+      "handler_id": "CARD_ENGINE:REMOVE_FROM_GAME:v1",
+      "parameter_schema": {
+        "target": true
+      },
+      "supported_triggers": [
+        "BATTLE_START",
+        "TURN_STARTED",
+        "TURN_ENDED",
+        "CARD_PLAYED",
+        "ENTER_FIELD",
+        "ATTACK_DECLARED",
+        "CARD_RETIRED",
+        "CARD_DESTROYED",
+        "CARD_VANISHED",
+        "FUSION",
+        "DAMAGE_DEALT",
+        "CHAMPION_ABILITY_USED",
+        "CHAMPION_QUEST_COMPLETED"
+      ],
+      "supported_targets": [
+        "BOARD",
+        "HAND",
+        "DECK",
+        "GRAVEYARD"
+      ],
+      "validation_rules": "SHARED_EFFECT_REGISTRY",
+      "description_template": "REMOVE_FROM_GAME",
+      "execution_handler": "REMOVE_FROM_GAME"
+    },
+    {
+      "effect_type": "TRANSFORM_TARGET",
+      "handler_id": "CARD_ENGINE:TRANSFORM_TARGET:v1",
+      "parameter_schema": {
+        "target": true,
+        "cardDefinition": true
+      },
+      "supported_triggers": [
+        "BATTLE_START",
+        "TURN_STARTED",
+        "TURN_ENDED",
+        "CARD_PLAYED",
+        "ENTER_FIELD",
+        "ATTACK_DECLARED",
+        "CARD_RETIRED",
+        "CARD_DESTROYED",
+        "CARD_VANISHED",
+        "FUSION",
+        "DAMAGE_DEALT",
+        "CHAMPION_ABILITY_USED",
+        "CHAMPION_QUEST_COMPLETED"
+      ],
+      "supported_targets": [
+        "BOARD"
+      ],
+      "validation_rules": "SHARED_EFFECT_REGISTRY",
+      "description_template": "TRANSFORM_TARGET",
+      "execution_handler": "TRANSFORM_TARGET"
+    },
+    {
+      "effect_type": "FUSION",
+      "handler_id": "CARD_ENGINE:FUSION:v1",
+      "parameter_schema": {
+        "target": true
+      },
+      "supported_triggers": [
+        "BATTLE_START",
+        "TURN_STARTED",
+        "TURN_ENDED",
+        "CARD_PLAYED",
+        "ENTER_FIELD",
+        "ATTACK_DECLARED",
+        "CARD_RETIRED",
+        "CARD_DESTROYED",
+        "CARD_VANISHED",
+        "FUSION",
+        "DAMAGE_DEALT",
+        "CHAMPION_ABILITY_USED",
+        "CHAMPION_QUEST_COMPLETED"
+      ],
+      "supported_targets": [
+        "BOARD"
+      ],
+      "validation_rules": "SHARED_EFFECT_REGISTRY",
+      "description_template": "FUSION",
+      "execution_handler": "FUSION"
+    },
+    {
+      "effect_type": "VANISH",
+      "handler_id": "CARD_ENGINE:VANISH:v1",
+      "parameter_schema": {
+        "target": true
+      },
+      "supported_triggers": [
+        "BATTLE_START",
+        "TURN_STARTED",
+        "TURN_ENDED",
+        "CARD_PLAYED",
+        "ENTER_FIELD",
+        "ATTACK_DECLARED",
+        "CARD_RETIRED",
+        "CARD_DESTROYED",
+        "CARD_VANISHED",
+        "FUSION",
+        "DAMAGE_DEALT",
+        "CHAMPION_ABILITY_USED",
+        "CHAMPION_QUEST_COMPLETED"
+      ],
+      "supported_targets": [
+        "BOARD",
+        "HAND",
+        "DECK",
+        "GRAVEYARD"
+      ],
+      "validation_rules": "SHARED_EFFECT_REGISTRY",
+      "description_template": "VANISH",
+      "execution_handler": "VANISH"
+    }
+  ],
+  "relicDefinitions": [
+    {
+      "type": "MAX_FIELD_ONE",
+      "name": "왕의 자리",
+      "description": "필드 최대 1명. 소환한 선수 +4/+4.",
+      "values": {
+        "attack": 4,
+        "health": 4
+      }
+    },
+    {
+      "type": "MAX_FIELD_TWO",
+      "name": "소수 정예",
+      "description": "필드 최대 2명. 소환한 선수 +2/+2.",
+      "values": {
+        "attack": 2,
+        "health": 2
+      }
+    },
+    {
+      "type": "FIRST_SUMMON_TEMP_ATK",
+      "name": "선봉장의 깃발",
+      "description": "각 턴 첫 소환 선수의 공격력 +3. 그 턴 종료 시 해제.",
+      "values": {
+        "attack": 3
+      }
+    },
+    {
+      "type": "FIRST_RETIRE_SURVIVE",
+      "name": "강철 심장",
+      "description": "전투당 최초로 리타이어될 아군 선수는 체력 1로 생존. 파괴에는 적용되지 않음.",
+      "values": {}
+    },
+    {
+      "type": "ON_RETIRE_NEXT_BUFF",
+      "name": "복수의 메달",
+      "description": "아군 선수 리타이어마다 다음에 소환하는 선수 +2/+2. 소환 전 누적 가능.",
+      "values": {
+        "attack": 2,
+        "health": 2
+      }
+    },
+    {
+      "type": "ON_RETIRE_DRAW",
+      "name": "망자의 종",
+      "description": "아군 선수 리타이어 시 카드 1장 드로우. 턴당 1회.",
+      "values": {
+        "amount": 1
+      }
+    },
+    {
+      "type": "ON_DESTROY_DRAW",
+      "name": "파괴자의 인장",
+      "description": "상대 선수 파괴 시 카드 2장 드로우. 턴당 1회. 리타이어에는 발동하지 않음.",
+      "values": {
+        "amount": 2
+      }
+    },
+    {
+      "type": "ON_RETIRE_KILL_BUFF",
+      "name": "승자의 벨트",
+      "description": "상대 선수를 리타이어시킨 생존 아군 선수의 공격력 +2.",
+      "values": {
+        "attack": 2
+      }
+    },
+    {
+      "type": "ATTACK_HIGHER_ATK_BUFF",
+      "name": "거인 사냥꾼의 창",
+      "description": "자신보다 공격력이 높은 상대 공격 시 해당 전투 공격력 +3.",
+      "values": {
+        "attack": 3
+      }
+    },
+    {
+      "type": "ATTACK_LOWER_ATK_BUFF",
+      "name": "약자 사냥의 문장",
+      "description": "자신보다 공격력이 낮은 상대 공격 시 해당 전투 공격력 +2.",
+      "values": {
+        "attack": 2
+      }
+    },
+    {
+      "type": "SOLO_BUFF",
+      "name": "최후의 투사",
+      "description": "필드에 아군 선수가 정확히 1명인 동안 +3/+3.",
+      "values": {
+        "attack": 3,
+        "health": 3
+      }
+    },
+    {
+      "type": "ON_RETIRE_RANDOM_ALLY_BUFF",
+      "name": "전우의 유품",
+      "description": "아군 선수 리타이어 시 다른 무작위 생존 아군 선수 1명 +1/+2.",
+      "values": {
+        "attack": 1,
+        "health": 2
+      }
+    },
+    {
+      "type": "FIRST_SUMMON_COST_DOWN_LIMIT",
+      "name": "입장권",
+      "description": "각 턴 첫 소환 비용 -1. 그 턴 선수 1장만 소환 가능.",
+      "values": {
+        "amount": 1
+      }
+    },
+    {
+      "type": "FIRST_SUMMON_COST_DOWN_NO_ATTACK",
+      "name": "폭주 티켓",
+      "description": "각 턴 첫 소환 비용 -2. 그 선수는 그 턴 공격 불가.",
+      "values": {
+        "amount": 2
+      }
+    },
+    {
+      "type": "SOLO_TURN_START_HEAL_BUFF",
+      "name": "무대 독점권",
+      "description": "내 턴 시작 시 아군 선수가 정확히 1명이면 체력 2 회복, 공격력 +1.",
+      "values": {
+        "heal": 2,
+        "attack": 1
+      }
+    },
+    {
+      "type": "FIRST_DAMAGE_REDUCTION",
+      "name": "철벽의 증표",
+      "description": "각 아군 선수가 매 턴 처음 받는 피해를 2 감소.",
+      "values": {
+        "reduction": 2
+      }
+    },
+    {
+      "type": "OUTNUMBERED_ATK_BUFF",
+      "name": "역전의 휘장",
+      "description": "아군 선수 수가 상대보다 적은 동안 모든 아군 선수 공격력 +2.",
+      "values": {
+        "attack": 2
+      }
+    },
+    {
+      "type": "MULTI_RETIRE_DRAW",
+      "name": "관중의 함성",
+      "description": "한 턴 동안 상대 선수 2명 이상을 리타이어시키면 카드 2장 드로우. 턴당 1회.",
+      "values": {
+        "threshold": 2,
+        "amount": 2
+      }
+    },
+    {
+      "type": "QUEST_PROGRESS_BONUS",
+      "name": "챔피언의 표식",
+      "description": "전투당 처음 챔피언 퀘스트 진행 조건 만족 시 진행도 +1 추가.",
+      "values": {
+        "amount": 1
+      }
+    },
+    {
+      "type": "QUEST_COMPLETE_FIELD_BUFF",
+      "name": "완주의 왕관",
+      "description": "챔피언 퀘스트 완료 순간 현재 필드의 모든 아군 선수 +2/+2.",
+      "values": {
+        "attack": 2,
+        "health": 2
+      }
+    },
+    {
+      "type": "EMPTY_FIELD_FIRST_SUMMON_BUFF",
+      "name": "빈자리의 왕관",
+      "description": "각 턴 첫 소환 시 필드가 비어 있으면 +3/+3. 그 턴 추가 소환 불가.",
+      "values": {
+        "attack": 3,
+        "health": 3
+      }
+    },
+    {
+      "type": "ONE_HP_ATK_BUFF",
+      "name": "생존자의 휘장",
+      "description": "현재 체력이 1인 아군 선수의 공격력 +3.",
+      "values": {
+        "attack": 3
+      }
+    },
+    {
+      "type": "ATTACK_HIGHEST_DAMAGE_REDUCTION",
+      "name": "도전자 벨트",
+      "description": "상대 필드 최고 공격력 선수 공격 시 받는 전투 피해 -2. 공동 최고도 적용.",
+      "values": {
+        "reduction": 2
+      }
+    },
+    {
+      "type": "HIGHEST_ATK_LEADER_BUFF",
+      "name": "폭군의 명령서",
+      "description": "유물 보정 전 공격력이 가장 높은 아군 선수 +2/+2, 나머지 공격력 -1. 공동 1위는 가장 왼쪽 선수.",
+      "values": {
+        "attack": 2,
+        "health": 2,
+        "penalty": 1
+      }
+    }
+  ]
+}

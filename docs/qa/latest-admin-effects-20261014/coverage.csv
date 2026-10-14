@@ -252,3 +252,8 @@ questText:
 questRewardText: 
 upgradedAbilityText: 
 championTokenEffectText: ",UNVERIFIED,전체 효과·모드 교차 판정 보류,벨모르트 고유 능력·퀘스트 연결; 상세 소스 참조,최신 챔피언 시나리오 테스트 존재; DISABLED 챔피언 실전 미실행
+epic-spell-forced-exchange,강제 교환,TECHNIQUE,아군 선수 1장과 상대 선수 1장을 선택하여 현재 공격력을 서로 교환합니다. 두 선수 모두 기절합니다.,UNVERIFIED,배포 전 다시 나타난 삭제 ID; 운영 행 자동 삭제 없음,재생성 경로 제거; 기존 구현 유지,역사 테스트 및 최신 AI 범위; 전수 완료 아님
+crisis-awakening-champion,AWAKEN_CHAMPION,CHAMPION,"abilityText: 
+questText: 내 Champion의 HP가 5 이하가 됩니다.
+questRewardText: 각성 수치를 확정하고 탱커 → 힐러 → 딜러를 연쇄 소환합니다. 소환된 각성 카드가 필드에 있는 동안 내 챔피언은 무적입니다.
+upgradedAbilityText: ",UNVERIFIED,배포 전 다시 나타난 삭제 ID; 운영 행 자동 삭제 없음,재생성 경로 제거; 기존 구현 유지,역사 테스트 및 최신 AI 범위; 전수 완료 아님
