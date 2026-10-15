@@ -1,0 +1,64 @@
+{
+  "candidateVersion": "1.020",
+  "candidateOfficialSha256": "b6b28ef07a91a889587b3f2485ad77d3cd116456f8bfbc50a271cbe90b39535d",
+  "glyphCoverage": [
+    {
+      "file": "neodgm-pro-1.020.woff2",
+      "glyphCount": 12505,
+      "missingFromFixtureAndProbe": [
+        "−"
+      ]
+    },
+    {
+      "file": "noto-sans-kr-korean-400-normal.woff2",
+      "glyphCount": 11541,
+      "missingFromFixtureAndProbe": []
+    }
+  ],
+  "fallback": {
+    "U+2212": "Noto Sans KR"
+  },
+  "artwork": [
+    {
+      "path": "assets/card-latest-wrestler-10.png",
+      "sha256": "c2d0539ee4f31faa9ce90fa7b08a62bedb8063e67156e92d5c06c9d446de5adb",
+      "status": "MATCHES_READ_ONLY_SOURCE_CACHE"
+    },
+    {
+      "path": "assets/card-102e8061-c3b8-44a5-a11c-56379996fee7.png",
+      "sha256": "e8f1283c9454688f066af2703dce4d207d4509f7013ecf72f3b4e03516268512",
+      "status": "MATCHES_READ_ONLY_SOURCE_CACHE"
+    },
+    {
+      "path": "assets/card-bcf2ac9b-1afd-41a3-a653-5f9af1e033bf.png",
+      "sha256": "6844e090879dbe4607db46b9d8c63452f39bc161abf21a8eb5ef066deb9b563e",
+      "status": "MATCHES_READ_ONLY_SOURCE_CACHE"
+    },
+    {
+      "path": "assets/card-epic-spell-veil-of-silence.png",
+      "sha256": "9f7ca4a53e2b06775d0cc63109c35a3a0952c15f73d7315f28228a2467b22fea",
+      "status": "MATCHES_READ_ONLY_SOURCE_CACHE"
+    },
+    {
+      "path": "assets/card-db6c775a-0933-4e55-9fdc-a94861c6e10a.png",
+      "sha256": "823b790a6e52866b8192bf5578616aa29f677ddf08b99b86fcb4418ef4f6209f",
+      "status": "MATCHES_READ_ONLY_SOURCE_CACHE"
+    },
+    {
+      "path": "assets/card-75863228-ae51-48cb-afec-43cc391672a8.png",
+      "sha256": "1084c8ea1b4d382a910b8ae81dd78db294b7521b22e7961fd975e2c992617f5f",
+      "status": "MATCHES_READ_ONLY_SOURCE_CACHE"
+    },
+    {
+      "path": "assets/champion-0db142af-750e-4929-a464-5daf1bc75452.png",
+      "sha256": "8dc9548d79764bd5a24911a67e3b7342ba10c36158a5e8db6f2b4be41656d507",
+      "status": "MATCHES_READ_ONLY_SOURCE_CACHE"
+    },
+    {
+      "path": "assets/champion-5e4a5a52-ef2c-4e1a-9b76-a4edc9f79e2c.png",
+      "sha256": "041b157eb7611b02a468e7228b74654dc462da4b779105c2b98c50f56c01d243",
+      "status": "MATCHES_READ_ONLY_SOURCE_CACHE"
+    }
+  ],
+  "officialGuide": "Official GitHub README reviewed; https://neodgm.dalgona.dev/guides.html returned 403 in cloud; 16px/32px preference follows user specification."
+}
