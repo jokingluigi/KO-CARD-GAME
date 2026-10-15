@@ -1,0 +1,5 @@
+{"checking":{"width":390,"height":844,"touch":true}}
+{"checking":{"width":320,"height":740,"touch":true}}
+{"checking":{"width":430,"height":932,"touch":true}}
+{"checking":{"width":1440,"height":900,"touch":false}}
+{"results":[{"width":390,"height":844,"touch":true,"passed":true},{"width":320,"height":740,"touch":true,"passed":true},{"width":430,"height":932,"touch":true,"passed":true},{"width":1440,"height":900,"touch":false,"passed":true}]}

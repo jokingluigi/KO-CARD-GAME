@@ -499,3 +499,7 @@
 [data-drag-hover=true] { outline:3px solid #f1cd76; background:#c9a65522 !important; }
 
 .ko-attack-aim { position:fixed; inset:0; width:100%; height:100%; z-index:180; pointer-events:none; }
+
+/* Field attack gestures must retain their pointer on touch screens. */
+.ko-player-board-row .ko-board-slot { touch-action:none; }
+[data-attack-drag-hover="true"] { outline:2px solid #e8c367; outline-offset:2px; }
