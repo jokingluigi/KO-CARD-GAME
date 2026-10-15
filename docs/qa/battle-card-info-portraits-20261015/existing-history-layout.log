@@ -1,0 +1,33 @@
+portrait360 { x: 8, y: 288, width: 344, height: 444 }
+portrait360 { w: 360, h: 740, coarse: true } relative
+portrait360: PASS (log placement, modal bounds, close, input and state)
+portrait375 { x: 8, y: 316.8125, width: 359, height: 487.1875 }
+portrait375 { w: 375, h: 812, coarse: true } relative
+portrait375: PASS (log placement, modal bounds, close, input and state)
+portrait412 { x: 8, y: 358, width: 396, height: 549 }
+portrait412 { w: 412, h: 915, coarse: true } relative
+portrait412: PASS (log placement, modal bounds, close, input and state)
+mobile { x: 8, y: 329.609375, width: 374, height: 506.390625 }
+mobile { w: 390, h: 844, coarse: true } relative
+mobile: PASS (log placement, modal bounds, close, input and state)
+small { x: 8, y: 219.203125, width: 304, height: 340.796875 }
+small { w: 320, h: 568, coarse: true } relative
+small: PASS (log placement, modal bounds, close, input and state)
+boundary { x: 128, y: 199.75, width: 512, height: 283.5 }
+boundary { w: 768, h: 683, coarse: true } relative
+boundary: PASS (log placement, modal bounds, close, input and state)
+landscape { x: 166, y: 53.25, width: 512, height: 283.5 }
+landscape { w: 844, h: 390, coarse: true } relative
+landscape: PASS (log placement, modal bounds, close, input and state)
+tablet { x: 256, y: 242.25, width: 512, height: 283.5 }
+tablet { w: 1024, h: 768, coarse: false } relative
+tablet: PASS (log placement, modal bounds, close, input and state)
+touch-wide { x: 384, y: 199.75, width: 512, height: 283.5 }
+touch-wide { w: 1280, h: 683, coarse: true } relative
+touch-wide: PASS (log placement, modal bounds, close, input and state)
+desktop-short { x: 384, y: 199.75, width: 512, height: 283.5 }
+desktop-short { w: 1280, h: 683, coarse: false } fixed
+desktop-short: PASS (log placement, modal bounds, close, input and state)
+desktop { x: 464, y: 308.25, width: 512, height: 283.5 }
+desktop { w: 1440, h: 900, coarse: false } fixed
+desktop: PASS (log placement, modal bounds, close, input and state)

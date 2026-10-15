@@ -1,0 +1,28 @@
+{
+  "results": [
+    "360:hand 1 reachable",
+    "360:hand 2 reachable",
+    "360:hand 3 reachable",
+    "360:hand 5 reachable",
+    "360:hand 10 reachable",
+    "360:summon/draw/quest/attack/champion/active/log/graveyard/emote/end-turn/rotate PASS",
+    "375:hand 1 reachable",
+    "375:hand 2 reachable",
+    "375:hand 3 reachable",
+    "375:hand 5 reachable",
+    "375:hand 10 reachable",
+    "375:summon/draw/quest/attack/champion/active/log/graveyard/emote/end-turn/rotate PASS",
+    "390:hand 1 reachable",
+    "390:hand 2 reachable",
+    "390:hand 3 reachable",
+    "390:hand 5 reachable",
+    "390:hand 10 reachable",
+    "390:summon/draw/quest/attack/champion/active/log/graveyard/emote/end-turn/rotate PASS",
+    "412:hand 1 reachable",
+    "412:hand 2 reachable",
+    "412:hand 3 reachable",
+    "412:hand 5 reachable",
+    "412:hand 10 reachable",
+    "412:summon/draw/quest/attack/champion/active/log/graveyard/emote/end-turn/rotate PASS"
+  ]
+}

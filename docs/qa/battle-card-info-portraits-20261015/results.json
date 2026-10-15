@@ -1,0 +1,69 @@
+{
+  "results": [
+    {
+      "width": 320,
+      "height": 740,
+      "status": "PASS",
+      "portraitNamesRemoved": true,
+      "infoThenArtwork": true,
+      "attackAndTargetingPreserved": true,
+      "emotesReachable": true
+    },
+    {
+      "width": 360,
+      "height": 740,
+      "status": "PASS",
+      "portraitNamesRemoved": true,
+      "infoThenArtwork": true,
+      "attackAndTargetingPreserved": true,
+      "emotesReachable": true
+    },
+    {
+      "width": 375,
+      "height": 812,
+      "status": "PASS",
+      "portraitNamesRemoved": true,
+      "infoThenArtwork": true,
+      "attackAndTargetingPreserved": true,
+      "emotesReachable": true
+    },
+    {
+      "width": 390,
+      "height": 844,
+      "status": "PASS",
+      "portraitNamesRemoved": true,
+      "infoThenArtwork": true,
+      "attackAndTargetingPreserved": true,
+      "emotesReachable": true
+    },
+    {
+      "width": 412,
+      "height": 915,
+      "status": "PASS",
+      "portraitNamesRemoved": true,
+      "infoThenArtwork": true,
+      "attackAndTargetingPreserved": true,
+      "emotesReachable": true
+    },
+    {
+      "width": 844,
+      "height": 390,
+      "status": "PASS",
+      "portraitNamesRemoved": true,
+      "infoThenArtwork": true,
+      "attackAndTargetingPreserved": true,
+      "emotesReachable": true
+    },
+    {
+      "width": 1440,
+      "height": 900,
+      "status": "PASS",
+      "portraitNamesRemoved": true,
+      "infoThenArtwork": true,
+      "attackAndTargetingPreserved": true,
+      "emotesReachable": true
+    }
+  ],
+  "physicalPhone": "NOT_RUN",
+  "operationalWrites": false
+}

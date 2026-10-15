@@ -6,6 +6,10 @@ import { evaluateChampionQuestCondition, validChampionQuestCondition } from '../
 export function hasEntryDefense(card: CardInstance, turn: number): boolean {
  return getActiveCardKeywords(card).includes('DEFENSE') && (card.entryDefenseActive ?? (card.enteredOnTurn !== undefined ? turn <= card.enteredOnTurn + 1 : card.enteredThisTurn));
 }
+/** Only live field cards have entry protection; a stale zone copy is not protected. */
+export function isEntryDefenseTargetProtected(state: GameState, card: CardInstance): boolean {
+ return hasEntryDefense(card, state.turn) && state.players.some(player => player.board.some(entry => entry?.instanceId === card.instanceId));
+}
 export function keywordDamage(card: CardInstance, amount: number, turn: number, source: 'COMBAT' | 'EFFECT' = 'COMBAT', state?:GameState): number {
  const keywords=getActiveCardKeywords(card);
  if(hasEntryDefense(card,turn))return 0;

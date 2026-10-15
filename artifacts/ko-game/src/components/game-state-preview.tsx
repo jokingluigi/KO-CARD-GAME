@@ -981,22 +981,20 @@ export function GameStatePreview({
                      <CardArtwork
                        src={opponentChampionPortrait}
                        alt=""
-                       className="absolute inset-0 h-full w-full"
-                       imageDisplayMode={opp.champion?.imageDisplayMode}
-                       imageScale={opp.champion?.imageScale}
-                       imagePositionX={opp.champion?.imagePositionX}
-                       imagePositionY={opp.champion?.imagePositionY}
+                       className="ko-champion-portrait-art absolute inset-0 h-full w-full"
+                       imageDisplayMode="CONTAIN"
+                       imageScale={1}
+                       imagePositionX={50}
+                       imagePositionY={50}
                      />
                    )}
-                   <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-black/20" />
+
                    {opponentChampionProtected && (
                      <span className="pointer-events-none absolute bottom-1 left-1/2 z-20 -translate-x-1/2 rounded border border-cyan-300/70 bg-cyan-950/90 px-1.5 py-0.5 text-[7px] font-black text-cyan-200 md:text-[9px]">
                        PROTECTED
                      </span>
                    )}
-                  <span className="px-1 text-center text-[9px] font-black leading-tight text-red-300 md:text-[11px]">
-                     {opponentChampionName || opp.champion?.name || '상대 챔피언'}
-                  </span>
+
                   {selectedAttackerId && (
                     <div className="pointer-events-none absolute inset-0 z-10 bg-red-500/15" />
                   )}
@@ -1478,22 +1476,20 @@ export function GameStatePreview({
                       <CardArtwork
                         src={playerChampionPortrait}
                         alt=""
-                        className="absolute inset-0 h-full w-full"
-                        imageDisplayMode={me.champion?.imageDisplayMode}
-                        imageScale={me.champion?.imageScale}
-                        imagePositionX={me.champion?.imagePositionX}
-                        imagePositionY={me.champion?.imagePositionY}
+                        className="ko-champion-portrait-art absolute inset-0 h-full w-full"
+                        imageDisplayMode="CONTAIN"
+                        imageScale={1}
+                        imagePositionX={50}
+                        imagePositionY={50}
                       />
                     )}
-                   <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-black/20" />
+
                    {playerChampionProtected && (
                      <span className="pointer-events-none absolute bottom-1 left-1/2 z-20 -translate-x-1/2 rounded border border-cyan-300/70 bg-cyan-950/90 px-1.5 py-0.5 text-[7px] font-black text-cyan-200 md:text-[9px]">
                        PROTECTED
                      </span>
                    )}
-                  <span className="px-1 text-center text-[9px] font-black leading-tight text-blue-400 md:text-[12px]">
-                     {playerChampionName || me.champion?.name || '내 챔피언'}
-                  </span>
+
                </div>
                 {onEmote && emoteOpen && !effectTargeting && <ChampionEmoteMenu anchor={playerChampionRef} onEmote={onEmote} onClose={() => setEmoteOpen(false)} />}
                 </div>
