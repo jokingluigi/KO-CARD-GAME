@@ -125,12 +125,14 @@ async function metrics(page) {
         loaded: e.complete && e.naturalWidth > 0,
         opacity: getComputedStyle(e).opacity,
       })),
-      clippedEffects: clipped(".line-clamp-6:not([data-qa-compact-rules])"),
+      clippedEffects: clipped(
+        ".line-clamp-6:not([data-qa-compact-rules]):not([data-qa-source-rules])",
+      ),
       intentionalTruncations: [
         ...document.querySelectorAll('[data-qa-truncated="true"]'),
       ].map((e) => ({
         text: e.textContent,
-        marker: getComputedStyle(e, "::after").content,
+        suffix: e.textContent.slice(-4),
       })),
       clippedNames: clipped(".line-clamp-2"),
       targets: Object.fromEntries(

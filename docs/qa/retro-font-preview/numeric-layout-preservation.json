@@ -1,5 +1,5 @@
 {
-  "comparison": "10px opaque marker → 8px transparent marker",
+  "comparison": "10px separate marker → 8px centered sentence with inline ....",
   "layouts": 20,
   "allNumericValuesFontsAndGeometryUnchanged": true,
   "before": [

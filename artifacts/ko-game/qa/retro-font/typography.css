@@ -211,18 +211,13 @@ html:not([data-font-mode="baseline"]) :is(.qa-readable, .qa-champion-copy p) {
 :has(> [data-qa-compact-rules]) {
   padding-block: 0 !important;
 }
-[data-qa-compact-rules][data-qa-truncated="true"] {
-  padding-inline-end: 2.25em;
+/* No suffix gutter or pseudo-element: dots are part of the centered sentence. */
+[data-qa-compact-rules] {
+  padding-inline: 0;
+  text-align: center;
 }
-[data-qa-compact-rules][data-qa-truncated="true"]::after {
-  content: "••••";
+[data-qa-source-rules] {
   position: absolute;
-  inset: auto 0 0 auto;
-  padding: 0;
-  width: 2em;
-  background: transparent;
-  color: inherit;
-  line-height: inherit;
-  text-align: right;
+  visibility: hidden;
   pointer-events: none;
 }

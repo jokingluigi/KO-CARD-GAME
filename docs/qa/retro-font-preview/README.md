@@ -16,7 +16,8 @@
 왼쪽 **기존 Noto Sans KR / Oswald**, 가운데 **FULL RETRO**, 오른쪽 **RETRO HYBRID**.
 
 - [확대 전 카드 효과 글씨 10px → 8px·생략 배경 제거](images/compact-font-size-comparison.png)
-- [긴 효과 •••• 생략 전후](images/ellipsis-before-after.png)
+- [문장 가운데 정렬·인라인 .... 수정 비교](images/inline-ellipsis-comparison.png)
+- [긴 효과 .... 생략 전후](images/ellipsis-before-after.png)
 - [연락표](images/contact-sheet.png) — 각 장면의 동일한 390×844 상단 뷰포트. 전체 높이는 아래 개별 비교 이미지에 보존했다.
 - [메인 메뉴](images/menu-comparison.png)
 - [선수·주문 카드](images/cards-comparison.png)
@@ -56,6 +57,9 @@ node docs/qa/retro-font-review-browser.mjs
 KO_QA_PLAYWRIGHT=/workspace/cloud-setup/browser-tools/node_modules/playwright/index.mjs \
 KO_QA_CHROMIUM_EXECUTABLE=/usr/bin/chromium \
 node docs/qa/retro-font-ellipsis-browser.mjs
+KO_QA_PLAYWRIGHT=/workspace/cloud-setup/browser-tools/node_modules/playwright/index.mjs \
+KO_QA_CHROMIUM_EXECUTABLE=/usr/bin/chromium \
+node docs/qa/retro-font-inline-browser.mjs
 python3 docs/qa/retro-font-preview-export.py
 ```
 
@@ -110,12 +114,12 @@ python3 docs/qa/retro-font-preview-export.py
 
 ### 시각적 실패와 승인 시 판단할 점
 
-- 최초 비교에서는 효과와 이름의 잘림이 29개 조합에 있었다. 이후 사용자 요청에 따라 **긴 효과는 온전한 줄까지만 보이고 끝에 **별도 배경 없는** `••••`를 표시**하는 미리보기 정책을 적용했다.
-- 생략 표시의 검은 배경을 제거했다. 글씨 끝에 투명한 여백을 확보해 점이 글자나 카드 아트를 덮지 않는다.
+- 최초 비교에서는 효과와 이름의 잘림이 29개 조합에 있었다. 이후 사용자 요청에 따라 긴 효과는 프레임에 맞는 길이로 줄이고 **문장 끝에 `....`을 직접 붙여 가운데 정렬**하는 미리보기 정책을 적용했다.
+- 생략 표시의 검은 배경을 제거했다. 별도 점 요소와 오른쪽 여백을 제거했다. 문장 자체의 끝에 `....`을 붙여 전체를 가운데 정렬하며, 점 전용 배경은 없다.
 - 카드 프레임의 너비·높이와 폰트에 맞춰 표시 줄 수를 다시 계산한다. 모든 카드에 2줄/3줄을 강제하지 않는다. 넘치지 않는 짧은 효과에는 점을 표시하지 않는다.
-- 카드 이미지의 효과 원문·키워드 DOM·게임 상태는 유지한다. 표시만 접으며 실제 `CardDetailDialog`의 별도 전체 효과 문단은 원문과 일치하는 것을 검사했다. 확대된 카드 이미지 안의 문구도 틀을 넘치면 생략하되, 정보창의 전체 설명 문단은 생략하지 않는다.
+- 카드 이미지의 원본 React DOM·게임 상태는 유지한다. QA 전용 형제 요소에 실제 `CardRulesText`로 생략 문구와 키워드를 렌더링하며 실제 `CardDetailDialog`의 별도 전체 효과 문단은 원문과 일치하는 것을 검사했다. 확대된 카드 이미지 안의 문구도 틀을 넘치면 생략하되, 정보창의 전체 설명 문단은 생략하지 않는다.
 - 갱신한 75개 렌더 조합에는 **19개 시각적 실패 관찰**이 남았다. Before 9개에는 기존 효과/이름 잘림이, 후보 10개에는 이름 잘림만 있다. 후보 효과의 의도적인 생략은 실패 수에서 제외해 별도 `intentionalTruncations`로 기록했다. 카드 이름의 작은 글씨 문제까지 해결했다고 주장하지 않는다.
-- 추가로 **10개 해상도·폰트 조합**에서 긴 효과의 `••••`, 카드 틀 경계, 짧은 효과의 생략 없음, 정보창 원문 보존을 확인했다. 실제 전투의 효과 영역 경계도 검사했다. 결과: [ellipsis-results.json](ellipsis-results.json).
+- 추가로 **10개 해상도·폰트 조합**에서 긴 효과의 `....`, 카드 틀 경계, 짧은 효과의 생략 없음, 정보창 원문 보존을 확인했다. 실제 전투의 효과 영역 경계도 검사했다. 결과: [ellipsis-results.json](ellipsis-results.json). 키워드 정보창과 1440→360→390 크기 변경 후 정렬·원문 보존도 확인했다: [inline-interaction-results.json](inline-interaction-results.json).
 - 기존 컴포넌트의 작은 카드 이름과 일부 HUD 글씨는 여전히 작은 크기다. 특히 6–9px에서 픽셀 폰트의 판독성을 **시각적으로 합격 처리하지 않는다**. DPR 확대 캡처를 포함했지만 사용자 눈으로 확인해야 한다.
 - 분리된 16px 장문 본문은 가로 넘침 없이 렌더링했다. 작은 카드의 전체 효과는 실제 상세 팝업에서 확인할 수 있다.
 - **권장 검토 방향은 HYBRID**지만 확정하지 않는다. 작은 프레임의 장문은 승인된 생략 방식으로 처리했다. 작은 이름의 가독성 정책은 추가 검토가 필요하다. 이번 단계에서 프레임을 재설계하지 않는다.

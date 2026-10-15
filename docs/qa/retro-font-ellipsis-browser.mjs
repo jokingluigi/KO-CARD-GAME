@@ -39,7 +39,12 @@ try {
               truncated: e.dataset.qaTruncated,
               marker: getComputedStyle(e, "::after").content,
               markerBackground: getComputedStyle(e, "::after").backgroundColor,
-              markerWidth: getComputedStyle(e, "::after").width,
+              alignment: getComputedStyle(e).textAlign,
+              original: e.dataset.qaOriginal,
+              left: r.left,
+              right: r.right,
+              boxLeft: b.left,
+              boxRight: b.right,
               markerGutter: getComputedStyle(e).paddingInlineEnd,
               top: r.top,
               bottom: r.bottom,
@@ -57,9 +62,15 @@ try {
           JSON.stringify(b),
         );
         if (b.truncated === "true") {
-          assert.equal(b.marker, '"••••"');
+          assert.ok(b.text.endsWith("...."));
+          assert.ok(b.original.startsWith(b.text.slice(0, -4)));
+          assert.equal(b.marker, "none");
           assert.equal(b.markerBackground, "rgba(0, 0, 0, 0)");
-          assert.ok(parseFloat(b.markerGutter) >= parseFloat(b.markerWidth));
+          assert.equal(parseFloat(b.markerGutter), 0);
+          assert.equal(b.alignment, "center");
+          assert.ok(
+            Math.abs((b.left + b.right) / 2 - (b.boxLeft + b.boxRight) / 2) < 1,
+          );
         }
       }
       await page
