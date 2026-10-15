@@ -1157,7 +1157,6 @@ function dynamicValue(
   if (!player || !reference) return 0;
   if (reference === 'ALLIED_REMOVED_WRESTLER_COUNT') return state.events.filter(event => ['CARD_RETIRED','CARD_DESTROYED'].includes(event.type) && event.playerId === playerId && event.cardType === 'WRESTLER').length;
   if (reference === 'BOARD_WANTED_COUNT') return player.board.filter(card=>card && getActiveCardKeywords(card).includes('WANTED')).length;
-  if (reference === 'NEXT_TURN_GOLD_BONUS') return player.nextTurnGoldBonus;
   if (reference === 'TURN_GOLD_BONUS') return player.turnGoldBonus ?? 0;
   if (reference === 'HAND_COUNT') return player.hand.length;
   if (reference === 'GRAVEYARD_WRESTLER_COUNT') return player.graveyard.filter((card) => card.cardType === 'WRESTLER').length;
@@ -1991,6 +1990,10 @@ export function applyEffect(
   triggerContext?: TriggerContext,
 ): GameState {
   state = refreshPersistentFieldGrants(state);
+  if (effect.type === 'STRUCTURED' && effect.action === 'BUFF' && effect.values?.buffFromReservedGold) {
+    const bonus = state.players.find(player => player.id === playerId)?.nextTurnGoldBonus ?? 0;
+    effect = {...effect,values:{...effect.values,attack:bonus,health:bonus}};
+  }
   if(effect.type === 'STRUCTURED' && effect.action === 'DAMAGE' && effect.values?.amount === undefined && effect.values?.amountReference){
     effect={...effect,values:{...effect.values,amount:dynamicValue(state,playerId,effect.values.amountReference,triggerContext,sourceCard)}};
   }

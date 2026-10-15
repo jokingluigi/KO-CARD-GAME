@@ -696,8 +696,7 @@ const bindings: Record<string, { text: string; abilities: CardAbility[] }> = {
               "count": 1
             },
             "values": {
-              "attackReference": "NEXT_TURN_GOLD_BONUS",
-              "healthReference": "NEXT_TURN_GOLD_BONUS"
+              "buffFromReservedGold": true
             }
           }
         ]

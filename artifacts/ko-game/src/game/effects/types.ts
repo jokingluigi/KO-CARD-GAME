@@ -46,6 +46,7 @@ export type CardEffect =
          adjacentCopyFraction?: number;
          armorGain?: number;
          generatedKeywords?: CardKeyword[];
+         buffFromReservedGold?: boolean;
          healToFull?: boolean;
          replacementLowerCostSummon?: boolean;
          summonBoardSlot?: number;
