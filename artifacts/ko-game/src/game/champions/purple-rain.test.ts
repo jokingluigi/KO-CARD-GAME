@@ -69,15 +69,16 @@ test('empty deck discounts no existing card and fatigue is not another quest hit
   assert.deepEqual(result.players[0].hand, state.players[0].hand);
   assert.equal(result.players[0].champion?.questProgress, 1);
 });
-test('immune allies cannot be chosen; defense blocks quest damage but still grants the buff', () => {
+test('immune and entry-defense allies cannot be chosen or receive a forged ability buff', () => {
   const state = fixture(); state.players[0].board[0]!.keywords = ['IMMUNE'];
   const immune = useChampionAbility(state, 'player-1'); assert.ok(immune.success); if (!immune.success) return;
   assert.deepEqual(immune.state.targetingState?.validTargetIds, ['player-1']);
   state.players[0].board[0]!.keywords = ['DEFENSE']; state.players[0].board[0]!.enteredOnTurn = state.turn;
   const start = useChampionAbility(state, 'player-1'); assert.ok(start.success); if (!start.success) return;
+  assert.deepEqual(start.state.targetingState?.validTargetIds, ['player-1']);
   const result = processChampionQuestEvents(state, selectEffectTarget(start.state, 'ally'));
   assert.equal(result.players[0].board[0]?.currentHealth, 10);
-  assert.equal(result.players[0].board[0]?.currentAttack, 4);
+  assert.equal(result.players[0].board[0]?.currentAttack, state.players[0].board[0]?.currentAttack);
   assert.equal(result.players[0].champion?.questProgress, 0);
 });
 test('lethal portrait damage ends the game without drawing; lethal ally damage counts once', () => {

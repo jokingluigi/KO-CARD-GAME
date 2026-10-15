@@ -982,10 +982,10 @@ export function GameStatePreview({
                        src={opponentChampionPortrait}
                        alt=""
                        className="ko-champion-portrait-art absolute inset-0 h-full w-full"
-                       imageDisplayMode="COVER"
-                       imageScale={Math.max(1.35, opp.champion?.imageScale ?? 1)}
-                       imagePositionX={opp.champion?.imagePositionX}
-                       imagePositionY={Math.min(35, opp.champion?.imagePositionY ?? 35)}
+                       imageDisplayMode="CONTAIN"
+                       imageScale={1}
+                       imagePositionX={50}
+                       imagePositionY={50}
                      />
                    )}
 
@@ -1477,10 +1477,10 @@ export function GameStatePreview({
                         src={playerChampionPortrait}
                         alt=""
                         className="ko-champion-portrait-art absolute inset-0 h-full w-full"
-                        imageDisplayMode="COVER"
-                        imageScale={Math.max(1.35, me.champion?.imageScale ?? 1)}
-                        imagePositionX={me.champion?.imagePositionX}
-                        imagePositionY={Math.min(35, me.champion?.imagePositionY ?? 35)}
+                        imageDisplayMode="CONTAIN"
+                        imageScale={1}
+                        imagePositionX={50}
+                        imagePositionY={50}
                       />
                     )}
 

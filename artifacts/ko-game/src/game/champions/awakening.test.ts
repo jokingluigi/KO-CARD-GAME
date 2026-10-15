@@ -265,7 +265,7 @@ for (const wanted of ["TANK", "HEALER", "DEALER"] as const)
       JSON.parse(JSON.stringify(s)),
     );
   });
-test("champion remains a legal attack target while invulnerable", () => {
+test("awakening champion token protects its champion from attack targeting", () => {
   const s = awaken();
   s.players[1].board[0] = {
     ...generateCardInstance(basic, { instanceId: "attacker" }),
@@ -277,7 +277,8 @@ test("champion remains a legal attack target while invulnerable", () => {
     attackerInstanceId: "attacker",
     target: { type: "PLAYER", playerId: "player-1" },
   });
-  assert.ok(r.success);
+  assert.equal(r.success, false);
+  assert.equal(r.state.players[1].board[0]?.attacksUsedThisTurn, s.players[1].board[0]?.attacksUsedThisTurn);
   assert.equal(owner(r.state).health, 2);
   assert.equal(
     r.state.events.filter((e) => e.type === "DAMAGE_DEALT").length,

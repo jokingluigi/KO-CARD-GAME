@@ -63,7 +63,7 @@
 /* The portrait is the visual anchor; its name remains in the separate HUD heading. */
 .ko-game-shell .ko-player-champion,
 .ko-game-shell .ko-opponent-champion {
- border-radius:42% 42% 12% 12%;
+ border-radius:8px;
 }
 .ko-touch-inspector-close {
  display:block;
@@ -84,8 +84,9 @@
  .ko-game-shell .ko-player-info { width:168px; }
 }
 
-/* Crop only the image, keeping combat labels below the opponent portrait visible. */
-.ko-game-shell .ko-champion-portrait-art { border-radius:inherit; }
+/* Contain the complete artwork, keeping combat labels below the opponent portrait visible. */
+.ko-game-shell .ko-champion-portrait-art { border-radius:0; }
+.ko-game-shell .ko-champion-portrait-art img { inset:4px; width:calc(100% - 8px); height:calc(100% - 8px); }
 /* Preserve a free card-tap area below the 44px active button on compact fields. */
 @media (max-width:768px) and (orientation:portrait) {
  .ko-game-shell .ko-card-active-button { top:28px; }

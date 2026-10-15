@@ -7,7 +7,7 @@ import { newCardTargetAllowed } from '../cards/new-card-effects';
 import { hasNewCardRule, healNewCardAware, silenceDamageReduction, madokawaIncomingBonus, healingTurn } from '../engine/new-card-rules';
 import { fallbackZombieToken } from '../engine/zombie-token';
 import { existingZombie, isZombieToken, mergeZombie, normalizeZombieDefinition, ZOMBIE_RULES } from '../engine/zombie-token';
-import { keywordDamage, hasEntryDefense } from '../engine/keyword-rules';
+import { keywordDamage, hasEntryDefense, isEntryDefenseTargetProtected } from '../engine/keyword-rules';
 import type { CardDefinition, CardInstance, CardStatHistoryEntry } from '../cards/types';
 import { matchesCardTagFilter } from '../cards/tags';
 import { towerOpenSlot, canEnterTowerField, preventTowerRetire, resolveTowerRemoval, towerIncomingDamage, refreshTowerAuras } from '../tower/relics';
@@ -86,6 +86,7 @@ export function getValidTargets(
       if (effect.values?.targetDefinitionIds && !effect.values.targetDefinitionIds.includes(card.definitionId)) return false;
       if (effect.values?.targetAttackBelowSource && card.currentAttack >= sourceCard.currentAttack) return false;
       if (!newCardTargetAllowed(sourceCard, card, effect.action)) return false;
+      if (!effect.values?.resolvedAutomaticTarget && target.selection === 'PLAYER_CHOICE' && isEntryDefenseTargetProtected(state, card)) return false;
       if (!effect.values?.resolvedAutomaticTarget && effect.action !== 'FUSION' && (effect.action !== 'MOVE_TO_DECK' || !zones.every(zone => zone === 'GRAVEYARD')) && ['PLAYER_CHOICE', 'RANDOM', 'SAME_TARGET'].includes(target.selection ?? '') && getActiveCardKeywords(card).includes('IMMUNE')) return false;
       if (zones.length === 1 && zones[0] === 'CHARACTER' && card.cardType !== 'WRESTLER') return false;
       if (target.cardType && card.cardType !== target.cardType) return false;
@@ -226,6 +227,7 @@ function scriptTargetCards(
       }
     }
     if (!zones.every(zone => zone === 'GRAVEYARD') && ['PLAYER_CHOICE', 'RANDOM', 'SAME_TARGET'].includes(target.selection ?? '') && getActiveCardKeywords(card).includes('IMMUNE')) return false;
+    if (target.selection === 'PLAYER_CHOICE' && isEntryDefenseTargetProtected(state, card)) return false;
     const result = target.resultId ? registers?.get(target.resultId) : undefined;
     if (target.resultId && (!result || !('ids' in result) || !result.ids.includes(card.instanceId))) return false;
     if (target.cardType && card.cardType !== target.cardType) return false;
@@ -437,7 +439,7 @@ function applyScriptSteps(
         const validTargetIds = scriptTargetCards(next, playerId, sourceCard, {
           ...step.target,
           selection: 'ALL',
-        }, registers).filter((card) => scriptZones(step.target).every(zone => zone === 'GRAVEYARD') || !getActiveCardKeywords(card).includes('IMMUNE')).map((card) => card.instanceId).filter((id) => id !== sourceCard.instanceId);
+        }, registers).filter((card) => !isEntryDefenseTargetProtected(next, card) && (scriptZones(step.target).every(zone => zone === 'GRAVEYARD') || !getActiveCardKeywords(card).includes('IMMUNE'))).map((card) => card.instanceId).filter((id) => id !== sourceCard.instanceId);
         const minimum = step.target.count ?? 1;
         if (validTargetIds.length < minimum) continue;
         const registerObject = Object.fromEntries(registers.entries());
@@ -1827,7 +1829,7 @@ function applyTagChange(state: GameState, playerId: string, source: CardInstance
   const owner = state.players.find(player => player.id === playerId);
   const field = owner?.board.find(card => card?.instanceId === fieldId);
   const hand = owner?.hand.find(card => card.instanceId === handId);
-  if (!owner || !field || !hand || field.boardSlot === null || hand.cardType !== 'WRESTLER' || hand.currentCost > field.currentCost || getActiveCardKeywords(field).includes('IMMUNE') || getActiveCardKeywords(hand).includes('IMMUNE')) return state;
+  if (!owner || !field || !hand || field.boardSlot === null || hand.cardType !== 'WRESTLER' || hand.currentCost > field.currentCost || isEntryDefenseTargetProtected(state, field) || getActiveCardKeywords(field).includes('IMMUNE') || getActiveCardKeywords(hand).includes('IMMUNE')) return state;
   const slot = field.boardSlot;
   let next: GameState = { ...state, players: state.players.map(player => player.id !== playerId ? player : {
     ...player,
@@ -1855,6 +1857,8 @@ export function selectEffectTarget(state: GameState, targetId: string): GameStat
     return selected === state ? state : resolvePendingEffects(selected);
   }
   if (pending.scriptContinuation) {
+    const liveTarget = state.players.flatMap(player => player.board).find(card => card?.instanceId === targetId);
+    if (liveTarget && isEntryDefenseTargetProtected(state, liveTarget)) return state;
     if (!pending.validTargetIds.includes(targetId) || pending.selectedTargetIds.includes(targetId)) return state;
     const selected = [...pending.selectedTargetIds, targetId];
     if (selected.length < pending.minTargets) {
@@ -1931,7 +1935,7 @@ export function cancelEffectTargeting(state: GameState): GameState {
 export function hasMandatoryPlayerChoice(state: GameState, playerId: string, source: CardInstance, effects: CardEffect[]): boolean {
   if (hasNewCardRule(source, '태그 체인지')) {
     const owner = state.players.find(player => player.id === playerId);
-    return !owner?.board.some(field => field && !getActiveCardKeywords(field).includes('IMMUNE') && owner.hand.some(hand => hand.cardType === 'WRESTLER' && !getActiveCardKeywords(hand).includes('IMMUNE') && hand.currentCost <= field.currentCost));
+    return !owner?.board.some(field => field && !isEntryDefenseTargetProtected(state, field) && !getActiveCardKeywords(field).includes('IMMUNE') && owner.hand.some(hand => hand.cardType === 'WRESTLER' && !getActiveCardKeywords(hand).includes('IMMUNE') && hand.currentCost <= field.currentCost));
   }
   return effects.some((effect) => {
     if (effect.type === 'STRUCTURED') return effect.target?.selection === 'PLAYER_CHOICE' &&
@@ -1944,7 +1948,7 @@ export function hasMandatoryPlayerChoice(state: GameState, playerId: string, sou
       if (step.type !== 'SELECT') break;
       if (step.target.selection === 'PLAYER_CHOICE') {
         const candidates = scriptTargetCards(state, playerId, source, { ...step.target, selection: 'ALL' }, registers)
-          .filter(card => card.instanceId !== source.instanceId && (scriptZones(step.target).every(zone => zone === 'GRAVEYARD') || !getActiveCardKeywords(card).includes('IMMUNE')));
+          .filter(card => card.instanceId !== source.instanceId && !isEntryDefenseTargetProtected(state, card) && (scriptZones(step.target).every(zone => zone === 'GRAVEYARD') || !getActiveCardKeywords(card).includes('IMMUNE')));
         if (candidates.length < (step.target.count ?? 1)) return true;
         registers.set(step.id, { ids: candidates.map(card => card.instanceId) });
       } else registers.set(step.id, { ids: scriptTargetCards(state, playerId, source, step.target, registers).map(card => card.instanceId) });
@@ -2007,6 +2011,7 @@ function applyEffectInternal(
     // resolution so armor, defense, deaths and damage attribution stay shared.
     if (effect.action === 'DAMAGE' && effect.values?.purpleRainFollowup && chosenTargetInstanceIds?.length === 1) {
       const targetId = chosenTargetInstanceIds[0];
+      if (!getValidTargets(state, playerId, sourceCard, effect).includes(targetId)) return state;
       const amount = effect.values.amount ?? 1;
       const { purpleRainFollowup: _branch, ...values } = effect.values;
       let next = applyEffect(state, playerId, sourceCard, { ...effect, values }, chosenTargetInstanceIds, triggerContext);
@@ -2611,6 +2616,7 @@ function applyEffectInternal(
       if (effect.values?.targetDefinitionIds && !effect.values.targetDefinitionIds.includes(card.definitionId)) return false;
       if (effect.values?.targetAttackBelowSource && card.currentAttack >= sourceCard.currentAttack) return false;
       if (!newCardTargetAllowed(sourceCard, card, effect.action)) return false;
+      if (!effect.values?.resolvedAutomaticTarget && target.selection === 'PLAYER_CHOICE' && isEntryDefenseTargetProtected(state, card)) return false;
       if (!effect.values?.resolvedAutomaticTarget && effect.action !== 'FUSION' && (effect.action !== 'MOVE_TO_DECK' || !zones.every(zone => zone === 'GRAVEYARD')) && ['PLAYER_CHOICE', 'RANDOM', 'SAME_TARGET'].includes(target.selection ?? '') && getActiveCardKeywords(card).includes('IMMUNE')) return false;
       if ((card.isTrainingDummy) && (
         effect.action === 'SILENCE' ||

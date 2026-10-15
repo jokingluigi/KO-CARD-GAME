@@ -98,6 +98,9 @@ try {
           generateCardInstance(d, { instanceId: p.id + "-deck-" + n }),
         );
         p.champion.name = fixture.champions[i].name;
+          p.champion.ability = { id: "info-action-test", name: "골드 획득", description: "골드를 2 얻습니다.", effects: [{ type: "GAIN_GOLD", amount: 2 }] };
+          p.champion.abilityCost = 1;
+          p.championAbilityUsedThisTurn = false;
         p.champion.imageUrl = fixture.champions[i].previewImageUrl;
         p.champion.imageDisplayMode = "CONTAIN";
         p.champion.imageScale = 0.7;
@@ -202,6 +205,9 @@ try {
         inspect.getByRole("button", { name: "상세정보 닫기", exact: true }),
       );
     }
+    await activate(page.locator(".ko-player-ability button"));
+    assert.equal(await inspect.count(), 0, "An action button must not open a covering inspector");
+    assert.ok(JSON.parse(await page.getByTestId("state-json").textContent()).events.some(e => e.type === "CHAMPION_ABILITY_USED"));
     for (const side of ["player", "opponent"]) {
       const portrait = page.locator(".ko-" + side + "-champion");
       const box = await portrait.boundingBox();
@@ -220,11 +226,11 @@ try {
         transform: getComputedStyle(e).transform,
       }));
       assert.equal(image.loaded, true);
-      assert.equal(image.fit, "cover");
+      assert.equal(image.fit, "contain");
       assert.equal(
         image.transform,
-        "matrix(1.35, 0, 0, 1.35, 0, 0)",
-        "Small administrator artwork scale must not leave an undersized portrait",
+        "matrix(1, 0, 0, 1, 0, 0)",
+        "Portrait must show the complete image without zoom cropping",
       );
     }
     const state = async () =>

@@ -321,9 +321,10 @@ export function Inspectable({
       onClickCapture={(event) => {
         const isInfoButton = Boolean((event.target as Element).closest('[data-touch-inspect-trigger]'));
         const isTouchClick = Date.now() - lastTouchAt.current <= 1000;
+        const isActionControl = Boolean((event.target as Element).closest('button, a, input, select, textarea, [role="button"], [contenteditable="true"]'));
         // Open after the tap's click is delivered. Opening on pointerup lets the
         // following compatibility click hit the new panel's artwork button.
-        if (isInfoButton || (isTouchClick && !touchInspectTriggerOnly)) {
+        if (isInfoButton || (isTouchClick && !touchInspectTriggerOnly && !isActionControl)) {
           toggleTouch(event.currentTarget);
           if (isInfoButton) {
             event.preventDefault();
