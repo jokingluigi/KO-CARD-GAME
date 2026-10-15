@@ -7,6 +7,7 @@ import "../../src/battle-presentation.css";
 import "../../src/mobile-battle.css";
 import "./typography.css";
 import fixtures from "./fixtures.json";
+import { CompactRulesPreview } from "./compact-rules-preview";
 import { MainMenu } from "../../src/components/main-menu";
 import { CardRenderer } from "../../src/components/card-renderer";
 import {
@@ -341,6 +342,7 @@ function Battle() {
 const memory = memoryLocation({ path: "/" });
 createRoot(document.getElementById("root")!).render(
   <Router hook={memory.hook}>
+    <CompactRulesPreview />
     {scene === "menu" ? (
       <MainMenu
         user={user}

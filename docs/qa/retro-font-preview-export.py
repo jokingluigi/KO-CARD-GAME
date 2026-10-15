@@ -37,15 +37,22 @@ for row, (scene, title) in enumerate(all_scenes):
     comparison.save(images / f'{scene}-comparison.png', optimize=True)
 contact.save(images / 'contact-sheet.png', optimize=True)
 shutil.copy2(root / 'results.json', published / 'browser-results.json')
-for name in ['feedback-results.json', 'review-results.json']:
+for name in ['feedback-results.json', 'review-results.json', 'ellipsis-results.json']:
     shutil.copy2(root / name, published / name)
 shutil.copy2(root / 'review-page.png', images / 'review-page.png')
 # A static, portable review document in the ZIP complements the interactive Vite page.
-static = '''<!doctype html><html lang="ko"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>KO 폰트 비교</title><style>body{background:#0b0b0d;color:#eee;font-family:system-ui;margin:16px}img{max-width:100%;height:auto}a{color:#edce8c}p{line-height:1.7}</style><h1>Neo둥근모 Pro 1.020 비교</h1><p>미리보기 전용 · 운영 반영 없음 · 왼쪽: 기존 / 가운데: FULL RETRO / 오른쪽: HYBRID<br>이미지는 실제 게임 컴포넌트의 브라우저 캡처야. 작은 카드 프레임의 잘림은 시각적 실패로 기록했어. 본문과 상세 PNG를 확대해서 비교해 봐.</p>'''
+static = '''<!doctype html><html lang="ko"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>KO 폰트 비교</title><style>body{background:#0b0b0d;color:#eee;font-family:system-ui;margin:16px}img{max-width:100%;height:auto}a{color:#edce8c}p{line-height:1.7}</style><h1>Neo둥근모 Pro 1.020 비교</h1><p>미리보기 전용 · 운영 반영 없음 · 왼쪽: 기존 / 가운데: FULL RETRO / 오른쪽: HYBRID<br>이미지는 실제 게임 컴포넌트의 브라우저 캡처야. 긴 효과는 넘칠 때 ••••로 생략하고 정보창에서는 원문을 보여줘. 작은 이름의 잘림은 별도 실패로 기록했어. 본문과 상세 PNG를 확대해서 비교해 봐.</p>'''
 for scene, title in all_scenes:
     static += f'<h2>{title}</h2><a href="images/{scene}-comparison.png"><img src="images/{scene}-comparison.png" alt="{title} 비교"></a>'
 static += '<p>기술 결과: browser-results.json · 상세 조사: README.md · 라이선스: licenses/</p></html>'
 (root / 'index.html').write_text(static, encoding='utf-8')
+before_after = [Image.open(root / 'individual' / f'ellipsis-{variant}-390.png').convert('RGB') for variant in ['before','after']]
+ellipsis = Image.new('RGB',(780,max(i.height for i in before_after)+70),background)
+ink = ImageDraw.Draw(ellipsis)
+for col,(image,label) in enumerate(zip(before_after,['Before: clipped text','After: overflow marked with dots'])):
+    ink.text((col*390+12,20),label,font=font,fill='#edce8c')
+    ellipsis.paste(image,(col*390,70))
+ellipsis.save(images / 'ellipsis-before-after.png',optimize=True)
 archive = root / 'KO-CARD-GAME-NeoDunggeunmo-Pro-preview.zip'
 with zipfile.ZipFile(archive, 'w', zipfile.ZIP_DEFLATED) as output:
     output.write(root / 'index.html', 'index.html')
@@ -53,6 +60,7 @@ with zipfile.ZipFile(archive, 'w', zipfile.ZIP_DEFLATED) as output:
     output.write(root / 'results.json', 'browser-results.json')
     output.write(root / 'feedback-results.json', 'feedback-results.json')
     output.write(root / 'review-results.json', 'review-results.json')
+    output.write(root / 'ellipsis-results.json', 'ellipsis-results.json')
     output.write(published / 'font-validation.json', 'font-validation.json')
     for file in images.glob('*.png'):
         output.write(file, 'images/' + file.name)

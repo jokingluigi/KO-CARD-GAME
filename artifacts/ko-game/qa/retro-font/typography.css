@@ -197,3 +197,30 @@ html:not([data-font-mode="baseline"]) :is(.qa-readable, .qa-champion-copy p) {
     grid-template-columns: minmax(0, 1fr);
   }
 }
+
+/* Approved preview policy: abbreviate card faces, preserve complete detail copy. */
+[data-qa-compact-rules] {
+  position: relative;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: var(--qa-rules-lines, 1);
+  line-clamp: var(--qa-rules-lines, 1);
+  flex-shrink: 0;
+  overflow: hidden;
+  max-height: calc(var(--qa-rules-lines, 1) * 1lh);
+}
+:has(> [data-qa-compact-rules]) {
+  padding-block: 0 !important;
+}
+[data-qa-compact-rules][data-qa-truncated="true"]::after {
+  content: "••••";
+  position: absolute;
+  inset: auto 0 0 auto;
+  padding-left: 0.2em;
+  min-width: 2em;
+  background: #090909;
+  color: inherit;
+  line-height: inherit;
+  text-align: right;
+  pointer-events: none;
+}

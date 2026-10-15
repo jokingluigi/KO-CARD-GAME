@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-10-15T01:38:46.460Z",
+  "generatedAt": "2026-10-15T01:55:22.993Z",
   "sourceCommit": "8d3f417ff062cc8d5390e27485d2b12cf0c9bf3d",
   "snapshot": "20261014-predeploy-admin",
   "technical": {
@@ -36,98 +36,6 @@
     {
       "width": 360,
       "height": 740,
-      "scene": "cards",
-      "mode": "full",
-      "status": "VISUAL_FAIL",
-      "reason": "Clipped text in fixed card frame",
-      "effects": [
-        {
-          "text": "기습\n이 카드가 상대 선수 카드를 리타이어 시킬때마다 +1/+1을 얻습니다.",
-          "font": "\"NeoDunggeunmo Pro\", \"Noto Sans KR\", sans-serif",
-          "fontSize": "12px"
-        },
-        {
-          "text": "등장:현재 내 손과 필드에 있는 '실험체' 태그가 달려있는 모든 아군 카드들에게 +1/+1을 부여하고, '치유'를 부여합니다.",
-          "font": "\"NeoDunggeunmo Pro\", \"Noto Sans KR\", sans-serif",
-          "fontSize": "12px"
-        },
-        {
-          "text": "등장:필드에 있는 '좀비' 중 가장 수치의 합이 높은 '좀비'의 체력과 공격력을 자신에게 더합니다. '좀비'가 없다면 2/2 '좀비'를 생성하고 그 '좀비'의 체력과 공격력을 자신에게 더합니다.",
-          "font": "\"NeoDunggeunmo Pro\", \"Noto Sans KR\", sans-serif",
-          "fontSize": "12px"
-        },
-        {
-          "text": "모든 상대 선수를 침묵시킵니다.",
-          "font": "\"NeoDunggeunmo Pro\", \"Noto Sans KR\", sans-serif",
-          "fontSize": "12px"
-        },
-        {
-          "text": "필드의 선수 1장을 자신의 손패에 있는 그 카드의 비용보다 낮거나 같은 선수와 교체해서 냅니다. 교체 된 카드 2장의 공격력에 1을 부여합니다.",
-          "font": "\"NeoDunggeunmo Pro\", \"Noto Sans KR\", sans-serif",
-          "fontSize": "12px"
-        },
-        {
-          "text": "회피\n등장:'좀비'를 하나 소환합니다.",
-          "font": "\"NeoDunggeunmo Pro\", \"Noto Sans KR\", sans-serif",
-          "fontSize": "12px"
-        },
-        {
-          "text": "등장:필드에 있는 '좀비' 중 가장 수치의 합이 높은 '좀비'의 체력과 공격력을 자신에게 더합니다. '좀비'가 없다면 2/2 '좀비'를 생성하고 그 '좀비'의 체력과 공격력을 자신에게 더합니다.",
-          "font": "\"NeoDunggeunmo Pro\", \"Noto Sans KR\", sans-serif",
-          "fontSize": "16px"
-        }
-      ],
-      "names": []
-    },
-    {
-      "width": 360,
-      "height": 740,
-      "scene": "cards",
-      "mode": "hybrid",
-      "status": "VISUAL_FAIL",
-      "reason": "Clipped text in fixed card frame",
-      "effects": [
-        {
-          "text": "기습\n이 카드가 상대 선수 카드를 리타이어 시킬때마다 +1/+1을 얻습니다.",
-          "font": "\"Noto Sans KR\", sans-serif",
-          "fontSize": "12px"
-        },
-        {
-          "text": "등장:현재 내 손과 필드에 있는 '실험체' 태그가 달려있는 모든 아군 카드들에게 +1/+1을 부여하고, '치유'를 부여합니다.",
-          "font": "\"Noto Sans KR\", sans-serif",
-          "fontSize": "12px"
-        },
-        {
-          "text": "등장:필드에 있는 '좀비' 중 가장 수치의 합이 높은 '좀비'의 체력과 공격력을 자신에게 더합니다. '좀비'가 없다면 2/2 '좀비'를 생성하고 그 '좀비'의 체력과 공격력을 자신에게 더합니다.",
-          "font": "\"Noto Sans KR\", sans-serif",
-          "fontSize": "12px"
-        },
-        {
-          "text": "모든 상대 선수를 침묵시킵니다.",
-          "font": "\"Noto Sans KR\", sans-serif",
-          "fontSize": "12px"
-        },
-        {
-          "text": "필드의 선수 1장을 자신의 손패에 있는 그 카드의 비용보다 낮거나 같은 선수와 교체해서 냅니다. 교체 된 카드 2장의 공격력에 1을 부여합니다.",
-          "font": "\"Noto Sans KR\", sans-serif",
-          "fontSize": "12px"
-        },
-        {
-          "text": "회피\n등장:'좀비'를 하나 소환합니다.",
-          "font": "\"Noto Sans KR\", sans-serif",
-          "fontSize": "12px"
-        },
-        {
-          "text": "등장:필드에 있는 '좀비' 중 가장 수치의 합이 높은 '좀비'의 체력과 공격력을 자신에게 더합니다. '좀비'가 없다면 2/2 '좀비'를 생성하고 그 '좀비'의 체력과 공격력을 자신에게 더합니다.",
-          "font": "\"Noto Sans KR\", sans-serif",
-          "fontSize": "16px"
-        }
-      ],
-      "names": []
-    },
-    {
-      "width": 360,
-      "height": 740,
       "scene": "battle",
       "mode": "baseline",
       "status": "VISUAL_FAIL",
@@ -199,48 +107,7 @@
       "mode": "full",
       "status": "VISUAL_FAIL",
       "reason": "Clipped text in fixed card frame",
-      "effects": [
-        {
-          "text": "등장:현재 내 손과 필드에 있는 '실험체' 태그가 달려있는 모든 아군 카드들에게 +1/+1을 부여하고, '치유'를 부여합니다.",
-          "font": "\"NeoDunggeunmo Pro\", \"Noto Sans KR\", sans-serif",
-          "fontSize": "12px"
-        },
-        {
-          "text": "등장:필드에 있는 '좀비' 중 가장 수치의 합이 높은 '좀비'의 체력과 공격력을 자신에게 더합니다. '좀비'가 없다면 2/2 '좀비'를 생성하고 그 '좀비'의 체력과 공격력을 자신에게 더합니다.",
-          "font": "\"NeoDunggeunmo Pro\", \"Noto Sans KR\", sans-serif",
-          "fontSize": "12px"
-        },
-        {
-          "text": "기습\n이 카드가 상대 선수 카드를 리타이어 시킬때마다 +1/+1을 얻습니다.",
-          "font": "\"NeoDunggeunmo Pro\", \"Noto Sans KR\", sans-serif",
-          "fontSize": "12px"
-        },
-        {
-          "text": "등장:현재 내 손과 필드에 있는 '실험체' 태그가 달려있는 모든 아군 카드들에게 +1/+1을 부여하고, '치유'를 부여합니다.",
-          "font": "\"NeoDunggeunmo Pro\", \"Noto Sans KR\", sans-serif",
-          "fontSize": "12px"
-        },
-        {
-          "text": "기습\n이 카드가 상대 선수 카드를 리타이어 시킬때마다 +1/+1을 얻습니다.",
-          "font": "\"NeoDunggeunmo Pro\", \"Noto Sans KR\", sans-serif",
-          "fontSize": "12px"
-        },
-        {
-          "text": "등장:현재 내 손과 필드에 있는 '실험체' 태그가 달려있는 모든 아군 카드들에게 +1/+1을 부여하고, '치유'를 부여합니다.",
-          "font": "\"NeoDunggeunmo Pro\", \"Noto Sans KR\", sans-serif",
-          "fontSize": "12px"
-        },
-        {
-          "text": "등장:필드에 있는 '좀비' 중 가장 수치의 합이 높은 '좀비'의 체력과 공격력을 자신에게 더합니다. '좀비'가 없다면 2/2 '좀비'를 생성하고 그 '좀비'의 체력과 공격력을 자신에게 더합니다.",
-          "font": "\"NeoDunggeunmo Pro\", \"Noto Sans KR\", sans-serif",
-          "fontSize": "12px"
-        },
-        {
-          "text": "모든 상대 선수를 침묵시킵니다.",
-          "font": "\"NeoDunggeunmo Pro\", \"Noto Sans KR\", sans-serif",
-          "fontSize": "12px"
-        }
-      ],
+      "effects": [],
       "names": [
         {
           "text": "매드 사이언티스트 퍼플레인",
@@ -276,48 +143,7 @@
       "mode": "hybrid",
       "status": "VISUAL_FAIL",
       "reason": "Clipped text in fixed card frame",
-      "effects": [
-        {
-          "text": "등장:현재 내 손과 필드에 있는 '실험체' 태그가 달려있는 모든 아군 카드들에게 +1/+1을 부여하고, '치유'를 부여합니다.",
-          "font": "\"Noto Sans KR\", sans-serif",
-          "fontSize": "12px"
-        },
-        {
-          "text": "등장:필드에 있는 '좀비' 중 가장 수치의 합이 높은 '좀비'의 체력과 공격력을 자신에게 더합니다. '좀비'가 없다면 2/2 '좀비'를 생성하고 그 '좀비'의 체력과 공격력을 자신에게 더합니다.",
-          "font": "\"Noto Sans KR\", sans-serif",
-          "fontSize": "12px"
-        },
-        {
-          "text": "기습\n이 카드가 상대 선수 카드를 리타이어 시킬때마다 +1/+1을 얻습니다.",
-          "font": "\"Noto Sans KR\", sans-serif",
-          "fontSize": "12px"
-        },
-        {
-          "text": "등장:현재 내 손과 필드에 있는 '실험체' 태그가 달려있는 모든 아군 카드들에게 +1/+1을 부여하고, '치유'를 부여합니다.",
-          "font": "\"Noto Sans KR\", sans-serif",
-          "fontSize": "12px"
-        },
-        {
-          "text": "기습\n이 카드가 상대 선수 카드를 리타이어 시킬때마다 +1/+1을 얻습니다.",
-          "font": "\"Noto Sans KR\", sans-serif",
-          "fontSize": "12px"
-        },
-        {
-          "text": "등장:현재 내 손과 필드에 있는 '실험체' 태그가 달려있는 모든 아군 카드들에게 +1/+1을 부여하고, '치유'를 부여합니다.",
-          "font": "\"Noto Sans KR\", sans-serif",
-          "fontSize": "12px"
-        },
-        {
-          "text": "등장:필드에 있는 '좀비' 중 가장 수치의 합이 높은 '좀비'의 체력과 공격력을 자신에게 더합니다. '좀비'가 없다면 2/2 '좀비'를 생성하고 그 '좀비'의 체력과 공격력을 자신에게 더합니다.",
-          "font": "\"Noto Sans KR\", sans-serif",
-          "fontSize": "12px"
-        },
-        {
-          "text": "모든 상대 선수를 침묵시킵니다.",
-          "font": "\"Noto Sans KR\", sans-serif",
-          "fontSize": "12px"
-        }
-      ],
+      "effects": [],
       "names": [
         {
           "text": "매드 사이언티스트 퍼플레인",
@@ -363,98 +189,6 @@
           "text": "필드의 선수 1장을 자신의 손패에 있는 그 카드의 비용보다 낮거나 같은 선수와 교체해서 냅니다. 교체 된 카드 2장의 공격력에 1을 부여합니다.",
           "font": "\"Noto Sans KR\", system-ui, sans-serif",
           "fontSize": "6px"
-        }
-      ],
-      "names": []
-    },
-    {
-      "width": 375,
-      "height": 812,
-      "scene": "cards",
-      "mode": "full",
-      "status": "VISUAL_FAIL",
-      "reason": "Clipped text in fixed card frame",
-      "effects": [
-        {
-          "text": "기습\n이 카드가 상대 선수 카드를 리타이어 시킬때마다 +1/+1을 얻습니다.",
-          "font": "\"NeoDunggeunmo Pro\", \"Noto Sans KR\", sans-serif",
-          "fontSize": "12px"
-        },
-        {
-          "text": "등장:현재 내 손과 필드에 있는 '실험체' 태그가 달려있는 모든 아군 카드들에게 +1/+1을 부여하고, '치유'를 부여합니다.",
-          "font": "\"NeoDunggeunmo Pro\", \"Noto Sans KR\", sans-serif",
-          "fontSize": "12px"
-        },
-        {
-          "text": "등장:필드에 있는 '좀비' 중 가장 수치의 합이 높은 '좀비'의 체력과 공격력을 자신에게 더합니다. '좀비'가 없다면 2/2 '좀비'를 생성하고 그 '좀비'의 체력과 공격력을 자신에게 더합니다.",
-          "font": "\"NeoDunggeunmo Pro\", \"Noto Sans KR\", sans-serif",
-          "fontSize": "12px"
-        },
-        {
-          "text": "모든 상대 선수를 침묵시킵니다.",
-          "font": "\"NeoDunggeunmo Pro\", \"Noto Sans KR\", sans-serif",
-          "fontSize": "12px"
-        },
-        {
-          "text": "필드의 선수 1장을 자신의 손패에 있는 그 카드의 비용보다 낮거나 같은 선수와 교체해서 냅니다. 교체 된 카드 2장의 공격력에 1을 부여합니다.",
-          "font": "\"NeoDunggeunmo Pro\", \"Noto Sans KR\", sans-serif",
-          "fontSize": "12px"
-        },
-        {
-          "text": "회피\n등장:'좀비'를 하나 소환합니다.",
-          "font": "\"NeoDunggeunmo Pro\", \"Noto Sans KR\", sans-serif",
-          "fontSize": "12px"
-        },
-        {
-          "text": "등장:필드에 있는 '좀비' 중 가장 수치의 합이 높은 '좀비'의 체력과 공격력을 자신에게 더합니다. '좀비'가 없다면 2/2 '좀비'를 생성하고 그 '좀비'의 체력과 공격력을 자신에게 더합니다.",
-          "font": "\"NeoDunggeunmo Pro\", \"Noto Sans KR\", sans-serif",
-          "fontSize": "16px"
-        }
-      ],
-      "names": []
-    },
-    {
-      "width": 375,
-      "height": 812,
-      "scene": "cards",
-      "mode": "hybrid",
-      "status": "VISUAL_FAIL",
-      "reason": "Clipped text in fixed card frame",
-      "effects": [
-        {
-          "text": "기습\n이 카드가 상대 선수 카드를 리타이어 시킬때마다 +1/+1을 얻습니다.",
-          "font": "\"Noto Sans KR\", sans-serif",
-          "fontSize": "12px"
-        },
-        {
-          "text": "등장:현재 내 손과 필드에 있는 '실험체' 태그가 달려있는 모든 아군 카드들에게 +1/+1을 부여하고, '치유'를 부여합니다.",
-          "font": "\"Noto Sans KR\", sans-serif",
-          "fontSize": "12px"
-        },
-        {
-          "text": "등장:필드에 있는 '좀비' 중 가장 수치의 합이 높은 '좀비'의 체력과 공격력을 자신에게 더합니다. '좀비'가 없다면 2/2 '좀비'를 생성하고 그 '좀비'의 체력과 공격력을 자신에게 더합니다.",
-          "font": "\"Noto Sans KR\", sans-serif",
-          "fontSize": "12px"
-        },
-        {
-          "text": "모든 상대 선수를 침묵시킵니다.",
-          "font": "\"Noto Sans KR\", sans-serif",
-          "fontSize": "12px"
-        },
-        {
-          "text": "필드의 선수 1장을 자신의 손패에 있는 그 카드의 비용보다 낮거나 같은 선수와 교체해서 냅니다. 교체 된 카드 2장의 공격력에 1을 부여합니다.",
-          "font": "\"Noto Sans KR\", sans-serif",
-          "fontSize": "12px"
-        },
-        {
-          "text": "회피\n등장:'좀비'를 하나 소환합니다.",
-          "font": "\"Noto Sans KR\", sans-serif",
-          "fontSize": "12px"
-        },
-        {
-          "text": "등장:필드에 있는 '좀비' 중 가장 수치의 합이 높은 '좀비'의 체력과 공격력을 자신에게 더합니다. '좀비'가 없다면 2/2 '좀비'를 생성하고 그 '좀비'의 체력과 공격력을 자신에게 더합니다.",
-          "font": "\"Noto Sans KR\", sans-serif",
-          "fontSize": "16px"
         }
       ],
       "names": []
@@ -518,48 +252,7 @@
       "mode": "full",
       "status": "VISUAL_FAIL",
       "reason": "Clipped text in fixed card frame",
-      "effects": [
-        {
-          "text": "등장:현재 내 손과 필드에 있는 '실험체' 태그가 달려있는 모든 아군 카드들에게 +1/+1을 부여하고, '치유'를 부여합니다.",
-          "font": "\"NeoDunggeunmo Pro\", \"Noto Sans KR\", sans-serif",
-          "fontSize": "12px"
-        },
-        {
-          "text": "등장:필드에 있는 '좀비' 중 가장 수치의 합이 높은 '좀비'의 체력과 공격력을 자신에게 더합니다. '좀비'가 없다면 2/2 '좀비'를 생성하고 그 '좀비'의 체력과 공격력을 자신에게 더합니다.",
-          "font": "\"NeoDunggeunmo Pro\", \"Noto Sans KR\", sans-serif",
-          "fontSize": "12px"
-        },
-        {
-          "text": "기습\n이 카드가 상대 선수 카드를 리타이어 시킬때마다 +1/+1을 얻습니다.",
-          "font": "\"NeoDunggeunmo Pro\", \"Noto Sans KR\", sans-serif",
-          "fontSize": "12px"
-        },
-        {
-          "text": "등장:현재 내 손과 필드에 있는 '실험체' 태그가 달려있는 모든 아군 카드들에게 +1/+1을 부여하고, '치유'를 부여합니다.",
-          "font": "\"NeoDunggeunmo Pro\", \"Noto Sans KR\", sans-serif",
-          "fontSize": "12px"
-        },
-        {
-          "text": "기습\n이 카드가 상대 선수 카드를 리타이어 시킬때마다 +1/+1을 얻습니다.",
-          "font": "\"NeoDunggeunmo Pro\", \"Noto Sans KR\", sans-serif",
-          "fontSize": "12px"
-        },
-        {
-          "text": "등장:현재 내 손과 필드에 있는 '실험체' 태그가 달려있는 모든 아군 카드들에게 +1/+1을 부여하고, '치유'를 부여합니다.",
-          "font": "\"NeoDunggeunmo Pro\", \"Noto Sans KR\", sans-serif",
-          "fontSize": "12px"
-        },
-        {
-          "text": "등장:필드에 있는 '좀비' 중 가장 수치의 합이 높은 '좀비'의 체력과 공격력을 자신에게 더합니다. '좀비'가 없다면 2/2 '좀비'를 생성하고 그 '좀비'의 체력과 공격력을 자신에게 더합니다.",
-          "font": "\"NeoDunggeunmo Pro\", \"Noto Sans KR\", sans-serif",
-          "fontSize": "12px"
-        },
-        {
-          "text": "모든 상대 선수를 침묵시킵니다.",
-          "font": "\"NeoDunggeunmo Pro\", \"Noto Sans KR\", sans-serif",
-          "fontSize": "12px"
-        }
-      ],
+      "effects": [],
       "names": [
         {
           "text": "매드 사이언티스트 퍼플레인",
@@ -595,48 +288,7 @@
       "mode": "hybrid",
       "status": "VISUAL_FAIL",
       "reason": "Clipped text in fixed card frame",
-      "effects": [
-        {
-          "text": "등장:현재 내 손과 필드에 있는 '실험체' 태그가 달려있는 모든 아군 카드들에게 +1/+1을 부여하고, '치유'를 부여합니다.",
-          "font": "\"Noto Sans KR\", sans-serif",
-          "fontSize": "12px"
-        },
-        {
-          "text": "등장:필드에 있는 '좀비' 중 가장 수치의 합이 높은 '좀비'의 체력과 공격력을 자신에게 더합니다. '좀비'가 없다면 2/2 '좀비'를 생성하고 그 '좀비'의 체력과 공격력을 자신에게 더합니다.",
-          "font": "\"Noto Sans KR\", sans-serif",
-          "fontSize": "12px"
-        },
-        {
-          "text": "기습\n이 카드가 상대 선수 카드를 리타이어 시킬때마다 +1/+1을 얻습니다.",
-          "font": "\"Noto Sans KR\", sans-serif",
-          "fontSize": "12px"
-        },
-        {
-          "text": "등장:현재 내 손과 필드에 있는 '실험체' 태그가 달려있는 모든 아군 카드들에게 +1/+1을 부여하고, '치유'를 부여합니다.",
-          "font": "\"Noto Sans KR\", sans-serif",
-          "fontSize": "12px"
-        },
-        {
-          "text": "기습\n이 카드가 상대 선수 카드를 리타이어 시킬때마다 +1/+1을 얻습니다.",
-          "font": "\"Noto Sans KR\", sans-serif",
-          "fontSize": "12px"
-        },
-        {
-          "text": "등장:현재 내 손과 필드에 있는 '실험체' 태그가 달려있는 모든 아군 카드들에게 +1/+1을 부여하고, '치유'를 부여합니다.",
-          "font": "\"Noto Sans KR\", sans-serif",
-          "fontSize": "12px"
-        },
-        {
-          "text": "등장:필드에 있는 '좀비' 중 가장 수치의 합이 높은 '좀비'의 체력과 공격력을 자신에게 더합니다. '좀비'가 없다면 2/2 '좀비'를 생성하고 그 '좀비'의 체력과 공격력을 자신에게 더합니다.",
-          "font": "\"Noto Sans KR\", sans-serif",
-          "fontSize": "12px"
-        },
-        {
-          "text": "모든 상대 선수를 침묵시킵니다.",
-          "font": "\"Noto Sans KR\", sans-serif",
-          "fontSize": "12px"
-        }
-      ],
+      "effects": [],
       "names": [
         {
           "text": "매드 사이언티스트 퍼플레인",
@@ -677,98 +329,6 @@
           "text": "등장:필드에 있는 '좀비' 중 가장 수치의 합이 높은 '좀비'의 체력과 공격력을 자신에게 더합니다. '좀비'가 없다면 2/2 '좀비'를 생성하고 그 '좀비'의 체력과 공격력을 자신에게 더합니다.",
           "font": "\"Noto Sans KR\", system-ui, sans-serif",
           "fontSize": "6px"
-        }
-      ],
-      "names": []
-    },
-    {
-      "width": 390,
-      "height": 844,
-      "scene": "cards",
-      "mode": "full",
-      "status": "VISUAL_FAIL",
-      "reason": "Clipped text in fixed card frame",
-      "effects": [
-        {
-          "text": "기습\n이 카드가 상대 선수 카드를 리타이어 시킬때마다 +1/+1을 얻습니다.",
-          "font": "\"NeoDunggeunmo Pro\", \"Noto Sans KR\", sans-serif",
-          "fontSize": "12px"
-        },
-        {
-          "text": "등장:현재 내 손과 필드에 있는 '실험체' 태그가 달려있는 모든 아군 카드들에게 +1/+1을 부여하고, '치유'를 부여합니다.",
-          "font": "\"NeoDunggeunmo Pro\", \"Noto Sans KR\", sans-serif",
-          "fontSize": "12px"
-        },
-        {
-          "text": "등장:필드에 있는 '좀비' 중 가장 수치의 합이 높은 '좀비'의 체력과 공격력을 자신에게 더합니다. '좀비'가 없다면 2/2 '좀비'를 생성하고 그 '좀비'의 체력과 공격력을 자신에게 더합니다.",
-          "font": "\"NeoDunggeunmo Pro\", \"Noto Sans KR\", sans-serif",
-          "fontSize": "12px"
-        },
-        {
-          "text": "모든 상대 선수를 침묵시킵니다.",
-          "font": "\"NeoDunggeunmo Pro\", \"Noto Sans KR\", sans-serif",
-          "fontSize": "12px"
-        },
-        {
-          "text": "필드의 선수 1장을 자신의 손패에 있는 그 카드의 비용보다 낮거나 같은 선수와 교체해서 냅니다. 교체 된 카드 2장의 공격력에 1을 부여합니다.",
-          "font": "\"NeoDunggeunmo Pro\", \"Noto Sans KR\", sans-serif",
-          "fontSize": "12px"
-        },
-        {
-          "text": "회피\n등장:'좀비'를 하나 소환합니다.",
-          "font": "\"NeoDunggeunmo Pro\", \"Noto Sans KR\", sans-serif",
-          "fontSize": "12px"
-        },
-        {
-          "text": "등장:필드에 있는 '좀비' 중 가장 수치의 합이 높은 '좀비'의 체력과 공격력을 자신에게 더합니다. '좀비'가 없다면 2/2 '좀비'를 생성하고 그 '좀비'의 체력과 공격력을 자신에게 더합니다.",
-          "font": "\"NeoDunggeunmo Pro\", \"Noto Sans KR\", sans-serif",
-          "fontSize": "16px"
-        }
-      ],
-      "names": []
-    },
-    {
-      "width": 390,
-      "height": 844,
-      "scene": "cards",
-      "mode": "hybrid",
-      "status": "VISUAL_FAIL",
-      "reason": "Clipped text in fixed card frame",
-      "effects": [
-        {
-          "text": "기습\n이 카드가 상대 선수 카드를 리타이어 시킬때마다 +1/+1을 얻습니다.",
-          "font": "\"Noto Sans KR\", sans-serif",
-          "fontSize": "12px"
-        },
-        {
-          "text": "등장:현재 내 손과 필드에 있는 '실험체' 태그가 달려있는 모든 아군 카드들에게 +1/+1을 부여하고, '치유'를 부여합니다.",
-          "font": "\"Noto Sans KR\", sans-serif",
-          "fontSize": "12px"
-        },
-        {
-          "text": "등장:필드에 있는 '좀비' 중 가장 수치의 합이 높은 '좀비'의 체력과 공격력을 자신에게 더합니다. '좀비'가 없다면 2/2 '좀비'를 생성하고 그 '좀비'의 체력과 공격력을 자신에게 더합니다.",
-          "font": "\"Noto Sans KR\", sans-serif",
-          "fontSize": "12px"
-        },
-        {
-          "text": "모든 상대 선수를 침묵시킵니다.",
-          "font": "\"Noto Sans KR\", sans-serif",
-          "fontSize": "12px"
-        },
-        {
-          "text": "필드의 선수 1장을 자신의 손패에 있는 그 카드의 비용보다 낮거나 같은 선수와 교체해서 냅니다. 교체 된 카드 2장의 공격력에 1을 부여합니다.",
-          "font": "\"Noto Sans KR\", sans-serif",
-          "fontSize": "12px"
-        },
-        {
-          "text": "회피\n등장:'좀비'를 하나 소환합니다.",
-          "font": "\"Noto Sans KR\", sans-serif",
-          "fontSize": "12px"
-        },
-        {
-          "text": "등장:필드에 있는 '좀비' 중 가장 수치의 합이 높은 '좀비'의 체력과 공격력을 자신에게 더합니다. '좀비'가 없다면 2/2 '좀비'를 생성하고 그 '좀비'의 체력과 공격력을 자신에게 더합니다.",
-          "font": "\"Noto Sans KR\", sans-serif",
-          "fontSize": "16px"
         }
       ],
       "names": []
@@ -832,48 +392,7 @@
       "mode": "full",
       "status": "VISUAL_FAIL",
       "reason": "Clipped text in fixed card frame",
-      "effects": [
-        {
-          "text": "등장:현재 내 손과 필드에 있는 '실험체' 태그가 달려있는 모든 아군 카드들에게 +1/+1을 부여하고, '치유'를 부여합니다.",
-          "font": "\"NeoDunggeunmo Pro\", \"Noto Sans KR\", sans-serif",
-          "fontSize": "12px"
-        },
-        {
-          "text": "등장:필드에 있는 '좀비' 중 가장 수치의 합이 높은 '좀비'의 체력과 공격력을 자신에게 더합니다. '좀비'가 없다면 2/2 '좀비'를 생성하고 그 '좀비'의 체력과 공격력을 자신에게 더합니다.",
-          "font": "\"NeoDunggeunmo Pro\", \"Noto Sans KR\", sans-serif",
-          "fontSize": "12px"
-        },
-        {
-          "text": "기습\n이 카드가 상대 선수 카드를 리타이어 시킬때마다 +1/+1을 얻습니다.",
-          "font": "\"NeoDunggeunmo Pro\", \"Noto Sans KR\", sans-serif",
-          "fontSize": "12px"
-        },
-        {
-          "text": "등장:현재 내 손과 필드에 있는 '실험체' 태그가 달려있는 모든 아군 카드들에게 +1/+1을 부여하고, '치유'를 부여합니다.",
-          "font": "\"NeoDunggeunmo Pro\", \"Noto Sans KR\", sans-serif",
-          "fontSize": "12px"
-        },
-        {
-          "text": "기습\n이 카드가 상대 선수 카드를 리타이어 시킬때마다 +1/+1을 얻습니다.",
-          "font": "\"NeoDunggeunmo Pro\", \"Noto Sans KR\", sans-serif",
-          "fontSize": "12px"
-        },
-        {
-          "text": "등장:현재 내 손과 필드에 있는 '실험체' 태그가 달려있는 모든 아군 카드들에게 +1/+1을 부여하고, '치유'를 부여합니다.",
-          "font": "\"NeoDunggeunmo Pro\", \"Noto Sans KR\", sans-serif",
-          "fontSize": "12px"
-        },
-        {
-          "text": "등장:필드에 있는 '좀비' 중 가장 수치의 합이 높은 '좀비'의 체력과 공격력을 자신에게 더합니다. '좀비'가 없다면 2/2 '좀비'를 생성하고 그 '좀비'의 체력과 공격력을 자신에게 더합니다.",
-          "font": "\"NeoDunggeunmo Pro\", \"Noto Sans KR\", sans-serif",
-          "fontSize": "12px"
-        },
-        {
-          "text": "모든 상대 선수를 침묵시킵니다.",
-          "font": "\"NeoDunggeunmo Pro\", \"Noto Sans KR\", sans-serif",
-          "fontSize": "12px"
-        }
-      ],
+      "effects": [],
       "names": [
         {
           "text": "매드 사이언티스트 퍼플레인",
@@ -909,48 +428,7 @@
       "mode": "hybrid",
       "status": "VISUAL_FAIL",
       "reason": "Clipped text in fixed card frame",
-      "effects": [
-        {
-          "text": "등장:현재 내 손과 필드에 있는 '실험체' 태그가 달려있는 모든 아군 카드들에게 +1/+1을 부여하고, '치유'를 부여합니다.",
-          "font": "\"Noto Sans KR\", sans-serif",
-          "fontSize": "12px"
-        },
-        {
-          "text": "등장:필드에 있는 '좀비' 중 가장 수치의 합이 높은 '좀비'의 체력과 공격력을 자신에게 더합니다. '좀비'가 없다면 2/2 '좀비'를 생성하고 그 '좀비'의 체력과 공격력을 자신에게 더합니다.",
-          "font": "\"Noto Sans KR\", sans-serif",
-          "fontSize": "12px"
-        },
-        {
-          "text": "기습\n이 카드가 상대 선수 카드를 리타이어 시킬때마다 +1/+1을 얻습니다.",
-          "font": "\"Noto Sans KR\", sans-serif",
-          "fontSize": "12px"
-        },
-        {
-          "text": "등장:현재 내 손과 필드에 있는 '실험체' 태그가 달려있는 모든 아군 카드들에게 +1/+1을 부여하고, '치유'를 부여합니다.",
-          "font": "\"Noto Sans KR\", sans-serif",
-          "fontSize": "12px"
-        },
-        {
-          "text": "기습\n이 카드가 상대 선수 카드를 리타이어 시킬때마다 +1/+1을 얻습니다.",
-          "font": "\"Noto Sans KR\", sans-serif",
-          "fontSize": "12px"
-        },
-        {
-          "text": "등장:현재 내 손과 필드에 있는 '실험체' 태그가 달려있는 모든 아군 카드들에게 +1/+1을 부여하고, '치유'를 부여합니다.",
-          "font": "\"Noto Sans KR\", sans-serif",
-          "fontSize": "12px"
-        },
-        {
-          "text": "등장:필드에 있는 '좀비' 중 가장 수치의 합이 높은 '좀비'의 체력과 공격력을 자신에게 더합니다. '좀비'가 없다면 2/2 '좀비'를 생성하고 그 '좀비'의 체력과 공격력을 자신에게 더합니다.",
-          "font": "\"Noto Sans KR\", sans-serif",
-          "fontSize": "12px"
-        },
-        {
-          "text": "모든 상대 선수를 침묵시킵니다.",
-          "font": "\"Noto Sans KR\", sans-serif",
-          "fontSize": "12px"
-        }
-      ],
+      "effects": [],
       "names": [
         {
           "text": "매드 사이언티스트 퍼플레인",
@@ -998,93 +476,6 @@
     {
       "width": 412,
       "height": 915,
-      "scene": "cards",
-      "mode": "full",
-      "status": "VISUAL_FAIL",
-      "reason": "Clipped text in fixed card frame",
-      "effects": [
-        {
-          "text": "기습\n이 카드가 상대 선수 카드를 리타이어 시킬때마다 +1/+1을 얻습니다.",
-          "font": "\"NeoDunggeunmo Pro\", \"Noto Sans KR\", sans-serif",
-          "fontSize": "12px"
-        },
-        {
-          "text": "등장:현재 내 손과 필드에 있는 '실험체' 태그가 달려있는 모든 아군 카드들에게 +1/+1을 부여하고, '치유'를 부여합니다.",
-          "font": "\"NeoDunggeunmo Pro\", \"Noto Sans KR\", sans-serif",
-          "fontSize": "12px"
-        },
-        {
-          "text": "등장:필드에 있는 '좀비' 중 가장 수치의 합이 높은 '좀비'의 체력과 공격력을 자신에게 더합니다. '좀비'가 없다면 2/2 '좀비'를 생성하고 그 '좀비'의 체력과 공격력을 자신에게 더합니다.",
-          "font": "\"NeoDunggeunmo Pro\", \"Noto Sans KR\", sans-serif",
-          "fontSize": "12px"
-        },
-        {
-          "text": "모든 상대 선수를 침묵시킵니다.",
-          "font": "\"NeoDunggeunmo Pro\", \"Noto Sans KR\", sans-serif",
-          "fontSize": "12px"
-        },
-        {
-          "text": "필드의 선수 1장을 자신의 손패에 있는 그 카드의 비용보다 낮거나 같은 선수와 교체해서 냅니다. 교체 된 카드 2장의 공격력에 1을 부여합니다.",
-          "font": "\"NeoDunggeunmo Pro\", \"Noto Sans KR\", sans-serif",
-          "fontSize": "12px"
-        },
-        {
-          "text": "회피\n등장:'좀비'를 하나 소환합니다.",
-          "font": "\"NeoDunggeunmo Pro\", \"Noto Sans KR\", sans-serif",
-          "fontSize": "12px"
-        },
-        {
-          "text": "등장:필드에 있는 '좀비' 중 가장 수치의 합이 높은 '좀비'의 체력과 공격력을 자신에게 더합니다. '좀비'가 없다면 2/2 '좀비'를 생성하고 그 '좀비'의 체력과 공격력을 자신에게 더합니다.",
-          "font": "\"NeoDunggeunmo Pro\", \"Noto Sans KR\", sans-serif",
-          "fontSize": "16px"
-        }
-      ],
-      "names": []
-    },
-    {
-      "width": 412,
-      "height": 915,
-      "scene": "cards",
-      "mode": "hybrid",
-      "status": "VISUAL_FAIL",
-      "reason": "Clipped text in fixed card frame",
-      "effects": [
-        {
-          "text": "기습\n이 카드가 상대 선수 카드를 리타이어 시킬때마다 +1/+1을 얻습니다.",
-          "font": "\"Noto Sans KR\", sans-serif",
-          "fontSize": "12px"
-        },
-        {
-          "text": "등장:현재 내 손과 필드에 있는 '실험체' 태그가 달려있는 모든 아군 카드들에게 +1/+1을 부여하고, '치유'를 부여합니다.",
-          "font": "\"Noto Sans KR\", sans-serif",
-          "fontSize": "12px"
-        },
-        {
-          "text": "등장:필드에 있는 '좀비' 중 가장 수치의 합이 높은 '좀비'의 체력과 공격력을 자신에게 더합니다. '좀비'가 없다면 2/2 '좀비'를 생성하고 그 '좀비'의 체력과 공격력을 자신에게 더합니다.",
-          "font": "\"Noto Sans KR\", sans-serif",
-          "fontSize": "12px"
-        },
-        {
-          "text": "필드의 선수 1장을 자신의 손패에 있는 그 카드의 비용보다 낮거나 같은 선수와 교체해서 냅니다. 교체 된 카드 2장의 공격력에 1을 부여합니다.",
-          "font": "\"Noto Sans KR\", sans-serif",
-          "fontSize": "12px"
-        },
-        {
-          "text": "회피\n등장:'좀비'를 하나 소환합니다.",
-          "font": "\"Noto Sans KR\", sans-serif",
-          "fontSize": "12px"
-        },
-        {
-          "text": "등장:필드에 있는 '좀비' 중 가장 수치의 합이 높은 '좀비'의 체력과 공격력을 자신에게 더합니다. '좀비'가 없다면 2/2 '좀비'를 생성하고 그 '좀비'의 체력과 공격력을 자신에게 더합니다.",
-          "font": "\"Noto Sans KR\", sans-serif",
-          "fontSize": "16px"
-        }
-      ],
-      "names": []
-    },
-    {
-      "width": 412,
-      "height": 915,
       "scene": "battle",
       "mode": "baseline",
       "status": "VISUAL_FAIL",
@@ -1120,48 +511,7 @@
       "mode": "full",
       "status": "VISUAL_FAIL",
       "reason": "Clipped text in fixed card frame",
-      "effects": [
-        {
-          "text": "등장:현재 내 손과 필드에 있는 '실험체' 태그가 달려있는 모든 아군 카드들에게 +1/+1을 부여하고, '치유'를 부여합니다.",
-          "font": "\"NeoDunggeunmo Pro\", \"Noto Sans KR\", sans-serif",
-          "fontSize": "12px"
-        },
-        {
-          "text": "등장:필드에 있는 '좀비' 중 가장 수치의 합이 높은 '좀비'의 체력과 공격력을 자신에게 더합니다. '좀비'가 없다면 2/2 '좀비'를 생성하고 그 '좀비'의 체력과 공격력을 자신에게 더합니다.",
-          "font": "\"NeoDunggeunmo Pro\", \"Noto Sans KR\", sans-serif",
-          "fontSize": "12px"
-        },
-        {
-          "text": "기습\n이 카드가 상대 선수 카드를 리타이어 시킬때마다 +1/+1을 얻습니다.",
-          "font": "\"NeoDunggeunmo Pro\", \"Noto Sans KR\", sans-serif",
-          "fontSize": "12px"
-        },
-        {
-          "text": "등장:현재 내 손과 필드에 있는 '실험체' 태그가 달려있는 모든 아군 카드들에게 +1/+1을 부여하고, '치유'를 부여합니다.",
-          "font": "\"NeoDunggeunmo Pro\", \"Noto Sans KR\", sans-serif",
-          "fontSize": "12px"
-        },
-        {
-          "text": "기습\n이 카드가 상대 선수 카드를 리타이어 시킬때마다 +1/+1을 얻습니다.",
-          "font": "\"NeoDunggeunmo Pro\", \"Noto Sans KR\", sans-serif",
-          "fontSize": "12px"
-        },
-        {
-          "text": "등장:현재 내 손과 필드에 있는 '실험체' 태그가 달려있는 모든 아군 카드들에게 +1/+1을 부여하고, '치유'를 부여합니다.",
-          "font": "\"NeoDunggeunmo Pro\", \"Noto Sans KR\", sans-serif",
-          "fontSize": "12px"
-        },
-        {
-          "text": "등장:필드에 있는 '좀비' 중 가장 수치의 합이 높은 '좀비'의 체력과 공격력을 자신에게 더합니다. '좀비'가 없다면 2/2 '좀비'를 생성하고 그 '좀비'의 체력과 공격력을 자신에게 더합니다.",
-          "font": "\"NeoDunggeunmo Pro\", \"Noto Sans KR\", sans-serif",
-          "fontSize": "12px"
-        },
-        {
-          "text": "모든 상대 선수를 침묵시킵니다.",
-          "font": "\"NeoDunggeunmo Pro\", \"Noto Sans KR\", sans-serif",
-          "fontSize": "12px"
-        }
-      ],
+      "effects": [],
       "names": [
         {
           "text": "매드 사이언티스트 퍼플레인",
@@ -1187,48 +537,7 @@
       "mode": "hybrid",
       "status": "VISUAL_FAIL",
       "reason": "Clipped text in fixed card frame",
-      "effects": [
-        {
-          "text": "등장:현재 내 손과 필드에 있는 '실험체' 태그가 달려있는 모든 아군 카드들에게 +1/+1을 부여하고, '치유'를 부여합니다.",
-          "font": "\"Noto Sans KR\", sans-serif",
-          "fontSize": "12px"
-        },
-        {
-          "text": "등장:필드에 있는 '좀비' 중 가장 수치의 합이 높은 '좀비'의 체력과 공격력을 자신에게 더합니다. '좀비'가 없다면 2/2 '좀비'를 생성하고 그 '좀비'의 체력과 공격력을 자신에게 더합니다.",
-          "font": "\"Noto Sans KR\", sans-serif",
-          "fontSize": "12px"
-        },
-        {
-          "text": "기습\n이 카드가 상대 선수 카드를 리타이어 시킬때마다 +1/+1을 얻습니다.",
-          "font": "\"Noto Sans KR\", sans-serif",
-          "fontSize": "12px"
-        },
-        {
-          "text": "등장:현재 내 손과 필드에 있는 '실험체' 태그가 달려있는 모든 아군 카드들에게 +1/+1을 부여하고, '치유'를 부여합니다.",
-          "font": "\"Noto Sans KR\", sans-serif",
-          "fontSize": "12px"
-        },
-        {
-          "text": "기습\n이 카드가 상대 선수 카드를 리타이어 시킬때마다 +1/+1을 얻습니다.",
-          "font": "\"Noto Sans KR\", sans-serif",
-          "fontSize": "12px"
-        },
-        {
-          "text": "등장:현재 내 손과 필드에 있는 '실험체' 태그가 달려있는 모든 아군 카드들에게 +1/+1을 부여하고, '치유'를 부여합니다.",
-          "font": "\"Noto Sans KR\", sans-serif",
-          "fontSize": "12px"
-        },
-        {
-          "text": "등장:필드에 있는 '좀비' 중 가장 수치의 합이 높은 '좀비'의 체력과 공격력을 자신에게 더합니다. '좀비'가 없다면 2/2 '좀비'를 생성하고 그 '좀비'의 체력과 공격력을 자신에게 더합니다.",
-          "font": "\"Noto Sans KR\", sans-serif",
-          "fontSize": "12px"
-        },
-        {
-          "text": "모든 상대 선수를 침묵시킵니다.",
-          "font": "\"Noto Sans KR\", sans-serif",
-          "fontSize": "12px"
-        }
-      ],
+      "effects": [],
       "names": [
         {
           "text": "매드 사이언티스트 퍼플레인",
@@ -1280,38 +589,7 @@
       "mode": "full",
       "status": "VISUAL_FAIL",
       "reason": "Clipped text in fixed card frame",
-      "effects": [
-        {
-          "text": "기습\n이 카드가 상대 선수 카드를 리타이어 시킬때마다 +1/+1을 얻습니다.",
-          "font": "\"NeoDunggeunmo Pro\", \"Noto Sans KR\", sans-serif",
-          "fontSize": "12px"
-        },
-        {
-          "text": "등장:현재 내 손과 필드에 있는 '실험체' 태그가 달려있는 모든 아군 카드들에게 +1/+1을 부여하고, '치유'를 부여합니다.",
-          "font": "\"NeoDunggeunmo Pro\", \"Noto Sans KR\", sans-serif",
-          "fontSize": "12px"
-        },
-        {
-          "text": "등장:필드에 있는 '좀비' 중 가장 수치의 합이 높은 '좀비'의 체력과 공격력을 자신에게 더합니다. '좀비'가 없다면 2/2 '좀비'를 생성하고 그 '좀비'의 체력과 공격력을 자신에게 더합니다.",
-          "font": "\"NeoDunggeunmo Pro\", \"Noto Sans KR\", sans-serif",
-          "fontSize": "12px"
-        },
-        {
-          "text": "필드의 선수 1장을 자신의 손패에 있는 그 카드의 비용보다 낮거나 같은 선수와 교체해서 냅니다. 교체 된 카드 2장의 공격력에 1을 부여합니다.",
-          "font": "\"NeoDunggeunmo Pro\", \"Noto Sans KR\", sans-serif",
-          "fontSize": "12px"
-        },
-        {
-          "text": "회피\n등장:'좀비'를 하나 소환합니다.",
-          "font": "\"NeoDunggeunmo Pro\", \"Noto Sans KR\", sans-serif",
-          "fontSize": "12px"
-        },
-        {
-          "text": "등장:필드에 있는 '좀비' 중 가장 수치의 합이 높은 '좀비'의 체력과 공격력을 자신에게 더합니다. '좀비'가 없다면 2/2 '좀비'를 생성하고 그 '좀비'의 체력과 공격력을 자신에게 더합니다.",
-          "font": "\"NeoDunggeunmo Pro\", \"Noto Sans KR\", sans-serif",
-          "fontSize": "16px"
-        }
-      ],
+      "effects": [],
       "names": [
         {
           "text": "매드 사이언티스트 퍼플레인",
@@ -1327,33 +605,7 @@
       "mode": "hybrid",
       "status": "VISUAL_FAIL",
       "reason": "Clipped text in fixed card frame",
-      "effects": [
-        {
-          "text": "기습\n이 카드가 상대 선수 카드를 리타이어 시킬때마다 +1/+1을 얻습니다.",
-          "font": "\"Noto Sans KR\", sans-serif",
-          "fontSize": "12px"
-        },
-        {
-          "text": "등장:현재 내 손과 필드에 있는 '실험체' 태그가 달려있는 모든 아군 카드들에게 +1/+1을 부여하고, '치유'를 부여합니다.",
-          "font": "\"Noto Sans KR\", sans-serif",
-          "fontSize": "12px"
-        },
-        {
-          "text": "등장:필드에 있는 '좀비' 중 가장 수치의 합이 높은 '좀비'의 체력과 공격력을 자신에게 더합니다. '좀비'가 없다면 2/2 '좀비'를 생성하고 그 '좀비'의 체력과 공격력을 자신에게 더합니다.",
-          "font": "\"Noto Sans KR\", sans-serif",
-          "fontSize": "12px"
-        },
-        {
-          "text": "필드의 선수 1장을 자신의 손패에 있는 그 카드의 비용보다 낮거나 같은 선수와 교체해서 냅니다. 교체 된 카드 2장의 공격력에 1을 부여합니다.",
-          "font": "\"Noto Sans KR\", sans-serif",
-          "fontSize": "12px"
-        },
-        {
-          "text": "등장:필드에 있는 '좀비' 중 가장 수치의 합이 높은 '좀비'의 체력과 공격력을 자신에게 더합니다. '좀비'가 없다면 2/2 '좀비'를 생성하고 그 '좀비'의 체력과 공격력을 자신에게 더합니다.",
-          "font": "\"Noto Sans KR\", sans-serif",
-          "fontSize": "16px"
-        }
-      ],
+      "effects": [],
       "names": [
         {
           "text": "매드 사이언티스트 퍼플레인",
@@ -1361,88 +613,6 @@
           "fontSize": "8px"
         }
       ]
-    },
-    {
-      "width": 1440,
-      "height": 900,
-      "scene": "battle",
-      "mode": "full",
-      "status": "VISUAL_FAIL",
-      "reason": "Clipped text in fixed card frame",
-      "effects": [
-        {
-          "text": "등장:현재 내 손과 필드에 있는 '실험체' 태그가 달려있는 모든 아군 카드들에게 +1/+1을 부여하고, '치유'를 부여합니다.",
-          "font": "\"NeoDunggeunmo Pro\", \"Noto Sans KR\", sans-serif",
-          "fontSize": "12px"
-        },
-        {
-          "text": "등장:필드에 있는 '좀비' 중 가장 수치의 합이 높은 '좀비'의 체력과 공격력을 자신에게 더합니다. '좀비'가 없다면 2/2 '좀비'를 생성하고 그 '좀비'의 체력과 공격력을 자신에게 더합니다.",
-          "font": "\"NeoDunggeunmo Pro\", \"Noto Sans KR\", sans-serif",
-          "fontSize": "12px"
-        },
-        {
-          "text": "등장:현재 내 손과 필드에 있는 '실험체' 태그가 달려있는 모든 아군 카드들에게 +1/+1을 부여하고, '치유'를 부여합니다.",
-          "font": "\"NeoDunggeunmo Pro\", \"Noto Sans KR\", sans-serif",
-          "fontSize": "12px"
-        },
-        {
-          "text": "기습\n이 카드가 상대 선수 카드를 리타이어 시킬때마다 +1/+1을 얻습니다.",
-          "font": "\"NeoDunggeunmo Pro\", \"Noto Sans KR\", sans-serif",
-          "fontSize": "12px"
-        },
-        {
-          "text": "등장:현재 내 손과 필드에 있는 '실험체' 태그가 달려있는 모든 아군 카드들에게 +1/+1을 부여하고, '치유'를 부여합니다.",
-          "font": "\"NeoDunggeunmo Pro\", \"Noto Sans KR\", sans-serif",
-          "fontSize": "12px"
-        },
-        {
-          "text": "등장:필드에 있는 '좀비' 중 가장 수치의 합이 높은 '좀비'의 체력과 공격력을 자신에게 더합니다. '좀비'가 없다면 2/2 '좀비'를 생성하고 그 '좀비'의 체력과 공격력을 자신에게 더합니다.",
-          "font": "\"NeoDunggeunmo Pro\", \"Noto Sans KR\", sans-serif",
-          "fontSize": "12px"
-        }
-      ],
-      "names": []
-    },
-    {
-      "width": 1440,
-      "height": 900,
-      "scene": "battle",
-      "mode": "hybrid",
-      "status": "VISUAL_FAIL",
-      "reason": "Clipped text in fixed card frame",
-      "effects": [
-        {
-          "text": "등장:현재 내 손과 필드에 있는 '실험체' 태그가 달려있는 모든 아군 카드들에게 +1/+1을 부여하고, '치유'를 부여합니다.",
-          "font": "\"Noto Sans KR\", sans-serif",
-          "fontSize": "12px"
-        },
-        {
-          "text": "등장:필드에 있는 '좀비' 중 가장 수치의 합이 높은 '좀비'의 체력과 공격력을 자신에게 더합니다. '좀비'가 없다면 2/2 '좀비'를 생성하고 그 '좀비'의 체력과 공격력을 자신에게 더합니다.",
-          "font": "\"Noto Sans KR\", sans-serif",
-          "fontSize": "12px"
-        },
-        {
-          "text": "등장:현재 내 손과 필드에 있는 '실험체' 태그가 달려있는 모든 아군 카드들에게 +1/+1을 부여하고, '치유'를 부여합니다.",
-          "font": "\"Noto Sans KR\", sans-serif",
-          "fontSize": "12px"
-        },
-        {
-          "text": "기습\n이 카드가 상대 선수 카드를 리타이어 시킬때마다 +1/+1을 얻습니다.",
-          "font": "\"Noto Sans KR\", sans-serif",
-          "fontSize": "12px"
-        },
-        {
-          "text": "등장:현재 내 손과 필드에 있는 '실험체' 태그가 달려있는 모든 아군 카드들에게 +1/+1을 부여하고, '치유'를 부여합니다.",
-          "font": "\"Noto Sans KR\", sans-serif",
-          "fontSize": "12px"
-        },
-        {
-          "text": "등장:필드에 있는 '좀비' 중 가장 수치의 합이 높은 '좀비'의 체력과 공격력을 자신에게 더합니다. '좀비'가 없다면 2/2 '좀비'를 생성하고 그 '좀비'의 체력과 공격력을 자신에게 더합니다.",
-          "font": "\"Noto Sans KR\", sans-serif",
-          "fontSize": "12px"
-        }
-      ],
-      "names": []
     }
   ],
   "results": [
@@ -1477,6 +647,7 @@
         ],
         "images": [],
         "clippedEffects": [],
+        "intentionalTruncations": [],
         "clippedNames": [],
         "targets": {
           ".ko-player-champion": [],
@@ -1523,6 +694,7 @@
         ],
         "images": [],
         "clippedEffects": [],
+        "intentionalTruncations": [],
         "clippedNames": [],
         "targets": {
           ".ko-player-champion": [],
@@ -1569,6 +741,7 @@
         ],
         "images": [],
         "clippedEffects": [],
+        "intentionalTruncations": [],
         "clippedNames": [],
         "targets": {
           ".ko-player-champion": [],
@@ -1684,6 +857,7 @@
             "fontSize": "6px"
           }
         ],
+        "intentionalTruncations": [],
         "clippedNames": [],
         "targets": {
           ".ko-player-champion": [],
@@ -1787,41 +961,35 @@
             "opacity": "1"
           }
         ],
-        "clippedEffects": [
+        "clippedEffects": [],
+        "intentionalTruncations": [
           {
             "text": "기습\n이 카드가 상대 선수 카드를 리타이어 시킬때마다 +1/+1을 얻습니다.",
-            "font": "\"NeoDunggeunmo Pro\", \"Noto Sans KR\", sans-serif",
-            "fontSize": "12px"
+            "marker": "\"••••\""
           },
           {
             "text": "등장:현재 내 손과 필드에 있는 '실험체' 태그가 달려있는 모든 아군 카드들에게 +1/+1을 부여하고, '치유'를 부여합니다.",
-            "font": "\"NeoDunggeunmo Pro\", \"Noto Sans KR\", sans-serif",
-            "fontSize": "12px"
+            "marker": "\"••••\""
           },
           {
             "text": "등장:필드에 있는 '좀비' 중 가장 수치의 합이 높은 '좀비'의 체력과 공격력을 자신에게 더합니다. '좀비'가 없다면 2/2 '좀비'를 생성하고 그 '좀비'의 체력과 공격력을 자신에게 더합니다.",
-            "font": "\"NeoDunggeunmo Pro\", \"Noto Sans KR\", sans-serif",
-            "fontSize": "12px"
+            "marker": "\"••••\""
           },
           {
             "text": "모든 상대 선수를 침묵시킵니다.",
-            "font": "\"NeoDunggeunmo Pro\", \"Noto Sans KR\", sans-serif",
-            "fontSize": "12px"
+            "marker": "\"••••\""
           },
           {
             "text": "필드의 선수 1장을 자신의 손패에 있는 그 카드의 비용보다 낮거나 같은 선수와 교체해서 냅니다. 교체 된 카드 2장의 공격력에 1을 부여합니다.",
-            "font": "\"NeoDunggeunmo Pro\", \"Noto Sans KR\", sans-serif",
-            "fontSize": "12px"
+            "marker": "\"••••\""
           },
           {
             "text": "회피\n등장:'좀비'를 하나 소환합니다.",
-            "font": "\"NeoDunggeunmo Pro\", \"Noto Sans KR\", sans-serif",
-            "fontSize": "12px"
+            "marker": "\"••••\""
           },
           {
             "text": "등장:필드에 있는 '좀비' 중 가장 수치의 합이 높은 '좀비'의 체력과 공격력을 자신에게 더합니다. '좀비'가 없다면 2/2 '좀비'를 생성하고 그 '좀비'의 체력과 공격력을 자신에게 더합니다.",
-            "font": "\"NeoDunggeunmo Pro\", \"Noto Sans KR\", sans-serif",
-            "fontSize": "16px"
+            "marker": "\"••••\""
           }
         ],
         "clippedNames": [],
@@ -1927,41 +1095,35 @@
             "opacity": "1"
           }
         ],
-        "clippedEffects": [
+        "clippedEffects": [],
+        "intentionalTruncations": [
           {
             "text": "기습\n이 카드가 상대 선수 카드를 리타이어 시킬때마다 +1/+1을 얻습니다.",
-            "font": "\"Noto Sans KR\", sans-serif",
-            "fontSize": "12px"
+            "marker": "\"••••\""
           },
           {
             "text": "등장:현재 내 손과 필드에 있는 '실험체' 태그가 달려있는 모든 아군 카드들에게 +1/+1을 부여하고, '치유'를 부여합니다.",
-            "font": "\"Noto Sans KR\", sans-serif",
-            "fontSize": "12px"
+            "marker": "\"••••\""
           },
           {
             "text": "등장:필드에 있는 '좀비' 중 가장 수치의 합이 높은 '좀비'의 체력과 공격력을 자신에게 더합니다. '좀비'가 없다면 2/2 '좀비'를 생성하고 그 '좀비'의 체력과 공격력을 자신에게 더합니다.",
-            "font": "\"Noto Sans KR\", sans-serif",
-            "fontSize": "12px"
+            "marker": "\"••••\""
           },
           {
             "text": "모든 상대 선수를 침묵시킵니다.",
-            "font": "\"Noto Sans KR\", sans-serif",
-            "fontSize": "12px"
+            "marker": "\"••••\""
           },
           {
             "text": "필드의 선수 1장을 자신의 손패에 있는 그 카드의 비용보다 낮거나 같은 선수와 교체해서 냅니다. 교체 된 카드 2장의 공격력에 1을 부여합니다.",
-            "font": "\"Noto Sans KR\", sans-serif",
-            "fontSize": "12px"
+            "marker": "\"••••\""
           },
           {
             "text": "회피\n등장:'좀비'를 하나 소환합니다.",
-            "font": "\"Noto Sans KR\", sans-serif",
-            "fontSize": "12px"
+            "marker": "\"••••\""
           },
           {
             "text": "등장:필드에 있는 '좀비' 중 가장 수치의 합이 높은 '좀비'의 체력과 공격력을 자신에게 더합니다. '좀비'가 없다면 2/2 '좀비'를 생성하고 그 '좀비'의 체력과 공격력을 자신에게 더합니다.",
-            "font": "\"Noto Sans KR\", sans-serif",
-            "fontSize": "16px"
+            "marker": "\"••••\""
           }
         ],
         "clippedNames": [],
@@ -2008,6 +1170,7 @@
           }
         ],
         "clippedEffects": [],
+        "intentionalTruncations": [],
         "clippedNames": [],
         "targets": {
           ".ko-player-champion": [],
@@ -2101,6 +1264,7 @@
           }
         ],
         "clippedEffects": [],
+        "intentionalTruncations": [],
         "clippedNames": [],
         "targets": {
           ".ko-player-champion": [],
@@ -2194,6 +1358,7 @@
           }
         ],
         "clippedEffects": [],
+        "intentionalTruncations": [],
         "clippedNames": [],
         "targets": {
           ".ko-player-champion": [],
@@ -2398,6 +1563,7 @@
             "fontSize": "6px"
           }
         ],
+        "intentionalTruncations": [],
         "clippedNames": [
           {
             "text": "매드 사이언티스트 퍼플레인",
@@ -2674,46 +1840,39 @@
             "opacity": "1"
           }
         ],
-        "clippedEffects": [
+        "clippedEffects": [],
+        "intentionalTruncations": [
           {
             "text": "등장:현재 내 손과 필드에 있는 '실험체' 태그가 달려있는 모든 아군 카드들에게 +1/+1을 부여하고, '치유'를 부여합니다.",
-            "font": "\"NeoDunggeunmo Pro\", \"Noto Sans KR\", sans-serif",
-            "fontSize": "12px"
+            "marker": "\"••••\""
           },
           {
             "text": "등장:필드에 있는 '좀비' 중 가장 수치의 합이 높은 '좀비'의 체력과 공격력을 자신에게 더합니다. '좀비'가 없다면 2/2 '좀비'를 생성하고 그 '좀비'의 체력과 공격력을 자신에게 더합니다.",
-            "font": "\"NeoDunggeunmo Pro\", \"Noto Sans KR\", sans-serif",
-            "fontSize": "12px"
+            "marker": "\"••••\""
           },
           {
             "text": "기습\n이 카드가 상대 선수 카드를 리타이어 시킬때마다 +1/+1을 얻습니다.",
-            "font": "\"NeoDunggeunmo Pro\", \"Noto Sans KR\", sans-serif",
-            "fontSize": "12px"
+            "marker": "\"••••\""
           },
           {
             "text": "등장:현재 내 손과 필드에 있는 '실험체' 태그가 달려있는 모든 아군 카드들에게 +1/+1을 부여하고, '치유'를 부여합니다.",
-            "font": "\"NeoDunggeunmo Pro\", \"Noto Sans KR\", sans-serif",
-            "fontSize": "12px"
+            "marker": "\"••••\""
           },
           {
             "text": "기습\n이 카드가 상대 선수 카드를 리타이어 시킬때마다 +1/+1을 얻습니다.",
-            "font": "\"NeoDunggeunmo Pro\", \"Noto Sans KR\", sans-serif",
-            "fontSize": "12px"
+            "marker": "\"••••\""
           },
           {
             "text": "등장:현재 내 손과 필드에 있는 '실험체' 태그가 달려있는 모든 아군 카드들에게 +1/+1을 부여하고, '치유'를 부여합니다.",
-            "font": "\"NeoDunggeunmo Pro\", \"Noto Sans KR\", sans-serif",
-            "fontSize": "12px"
+            "marker": "\"••••\""
           },
           {
             "text": "등장:필드에 있는 '좀비' 중 가장 수치의 합이 높은 '좀비'의 체력과 공격력을 자신에게 더합니다. '좀비'가 없다면 2/2 '좀비'를 생성하고 그 '좀비'의 체력과 공격력을 자신에게 더합니다.",
-            "font": "\"NeoDunggeunmo Pro\", \"Noto Sans KR\", sans-serif",
-            "fontSize": "12px"
+            "marker": "\"••••\""
           },
           {
             "text": "모든 상대 선수를 침묵시킵니다.",
-            "font": "\"NeoDunggeunmo Pro\", \"Noto Sans KR\", sans-serif",
-            "fontSize": "12px"
+            "marker": "\"••••\""
           }
         ],
         "clippedNames": [
@@ -2992,46 +2151,39 @@
             "opacity": "1"
           }
         ],
-        "clippedEffects": [
+        "clippedEffects": [],
+        "intentionalTruncations": [
           {
             "text": "등장:현재 내 손과 필드에 있는 '실험체' 태그가 달려있는 모든 아군 카드들에게 +1/+1을 부여하고, '치유'를 부여합니다.",
-            "font": "\"Noto Sans KR\", sans-serif",
-            "fontSize": "12px"
+            "marker": "\"••••\""
           },
           {
             "text": "등장:필드에 있는 '좀비' 중 가장 수치의 합이 높은 '좀비'의 체력과 공격력을 자신에게 더합니다. '좀비'가 없다면 2/2 '좀비'를 생성하고 그 '좀비'의 체력과 공격력을 자신에게 더합니다.",
-            "font": "\"Noto Sans KR\", sans-serif",
-            "fontSize": "12px"
+            "marker": "\"••••\""
           },
           {
             "text": "기습\n이 카드가 상대 선수 카드를 리타이어 시킬때마다 +1/+1을 얻습니다.",
-            "font": "\"Noto Sans KR\", sans-serif",
-            "fontSize": "12px"
+            "marker": "\"••••\""
           },
           {
             "text": "등장:현재 내 손과 필드에 있는 '실험체' 태그가 달려있는 모든 아군 카드들에게 +1/+1을 부여하고, '치유'를 부여합니다.",
-            "font": "\"Noto Sans KR\", sans-serif",
-            "fontSize": "12px"
+            "marker": "\"••••\""
           },
           {
             "text": "기습\n이 카드가 상대 선수 카드를 리타이어 시킬때마다 +1/+1을 얻습니다.",
-            "font": "\"Noto Sans KR\", sans-serif",
-            "fontSize": "12px"
+            "marker": "\"••••\""
           },
           {
             "text": "등장:현재 내 손과 필드에 있는 '실험체' 태그가 달려있는 모든 아군 카드들에게 +1/+1을 부여하고, '치유'를 부여합니다.",
-            "font": "\"Noto Sans KR\", sans-serif",
-            "fontSize": "12px"
+            "marker": "\"••••\""
           },
           {
             "text": "등장:필드에 있는 '좀비' 중 가장 수치의 합이 높은 '좀비'의 체력과 공격력을 자신에게 더합니다. '좀비'가 없다면 2/2 '좀비'를 생성하고 그 '좀비'의 체력과 공격력을 자신에게 더합니다.",
-            "font": "\"Noto Sans KR\", sans-serif",
-            "fontSize": "12px"
+            "marker": "\"••••\""
           },
           {
             "text": "모든 상대 선수를 침묵시킵니다.",
-            "font": "\"Noto Sans KR\", sans-serif",
-            "fontSize": "12px"
+            "marker": "\"••••\""
           }
         ],
         "clippedNames": [
@@ -3220,6 +2372,7 @@
         "logo": [],
         "images": [],
         "clippedEffects": [],
+        "intentionalTruncations": [],
         "clippedNames": [],
         "targets": {
           ".ko-player-champion": [],
@@ -3302,6 +2455,7 @@
         "logo": [],
         "images": [],
         "clippedEffects": [],
+        "intentionalTruncations": [],
         "clippedNames": [],
         "targets": {
           ".ko-player-champion": [],
@@ -3384,6 +2538,7 @@
         "logo": [],
         "images": [],
         "clippedEffects": [],
+        "intentionalTruncations": [],
         "clippedNames": [],
         "targets": {
           ".ko-player-champion": [],
@@ -3479,6 +2634,7 @@
         ],
         "images": [],
         "clippedEffects": [],
+        "intentionalTruncations": [],
         "clippedNames": [],
         "targets": {
           ".ko-player-champion": [],
@@ -3525,6 +2681,7 @@
         ],
         "images": [],
         "clippedEffects": [],
+        "intentionalTruncations": [],
         "clippedNames": [],
         "targets": {
           ".ko-player-champion": [],
@@ -3571,6 +2728,7 @@
         ],
         "images": [],
         "clippedEffects": [],
+        "intentionalTruncations": [],
         "clippedNames": [],
         "targets": {
           ".ko-player-champion": [],
@@ -3686,6 +2844,7 @@
             "fontSize": "6px"
           }
         ],
+        "intentionalTruncations": [],
         "clippedNames": [],
         "targets": {
           ".ko-player-champion": [],
@@ -3789,41 +2948,35 @@
             "opacity": "1"
           }
         ],
-        "clippedEffects": [
+        "clippedEffects": [],
+        "intentionalTruncations": [
           {
             "text": "기습\n이 카드가 상대 선수 카드를 리타이어 시킬때마다 +1/+1을 얻습니다.",
-            "font": "\"NeoDunggeunmo Pro\", \"Noto Sans KR\", sans-serif",
-            "fontSize": "12px"
+            "marker": "\"••••\""
           },
           {
             "text": "등장:현재 내 손과 필드에 있는 '실험체' 태그가 달려있는 모든 아군 카드들에게 +1/+1을 부여하고, '치유'를 부여합니다.",
-            "font": "\"NeoDunggeunmo Pro\", \"Noto Sans KR\", sans-serif",
-            "fontSize": "12px"
+            "marker": "\"••••\""
           },
           {
             "text": "등장:필드에 있는 '좀비' 중 가장 수치의 합이 높은 '좀비'의 체력과 공격력을 자신에게 더합니다. '좀비'가 없다면 2/2 '좀비'를 생성하고 그 '좀비'의 체력과 공격력을 자신에게 더합니다.",
-            "font": "\"NeoDunggeunmo Pro\", \"Noto Sans KR\", sans-serif",
-            "fontSize": "12px"
+            "marker": "\"••••\""
           },
           {
             "text": "모든 상대 선수를 침묵시킵니다.",
-            "font": "\"NeoDunggeunmo Pro\", \"Noto Sans KR\", sans-serif",
-            "fontSize": "12px"
+            "marker": "\"••••\""
           },
           {
             "text": "필드의 선수 1장을 자신의 손패에 있는 그 카드의 비용보다 낮거나 같은 선수와 교체해서 냅니다. 교체 된 카드 2장의 공격력에 1을 부여합니다.",
-            "font": "\"NeoDunggeunmo Pro\", \"Noto Sans KR\", sans-serif",
-            "fontSize": "12px"
+            "marker": "\"••••\""
           },
           {
             "text": "회피\n등장:'좀비'를 하나 소환합니다.",
-            "font": "\"NeoDunggeunmo Pro\", \"Noto Sans KR\", sans-serif",
-            "fontSize": "12px"
+            "marker": "\"••••\""
           },
           {
             "text": "등장:필드에 있는 '좀비' 중 가장 수치의 합이 높은 '좀비'의 체력과 공격력을 자신에게 더합니다. '좀비'가 없다면 2/2 '좀비'를 생성하고 그 '좀비'의 체력과 공격력을 자신에게 더합니다.",
-            "font": "\"NeoDunggeunmo Pro\", \"Noto Sans KR\", sans-serif",
-            "fontSize": "16px"
+            "marker": "\"••••\""
           }
         ],
         "clippedNames": [],
@@ -3929,41 +3082,35 @@
             "opacity": "1"
           }
         ],
-        "clippedEffects": [
+        "clippedEffects": [],
+        "intentionalTruncations": [
           {
             "text": "기습\n이 카드가 상대 선수 카드를 리타이어 시킬때마다 +1/+1을 얻습니다.",
-            "font": "\"Noto Sans KR\", sans-serif",
-            "fontSize": "12px"
+            "marker": "\"••••\""
           },
           {
             "text": "등장:현재 내 손과 필드에 있는 '실험체' 태그가 달려있는 모든 아군 카드들에게 +1/+1을 부여하고, '치유'를 부여합니다.",
-            "font": "\"Noto Sans KR\", sans-serif",
-            "fontSize": "12px"
+            "marker": "\"••••\""
           },
           {
             "text": "등장:필드에 있는 '좀비' 중 가장 수치의 합이 높은 '좀비'의 체력과 공격력을 자신에게 더합니다. '좀비'가 없다면 2/2 '좀비'를 생성하고 그 '좀비'의 체력과 공격력을 자신에게 더합니다.",
-            "font": "\"Noto Sans KR\", sans-serif",
-            "fontSize": "12px"
+            "marker": "\"••••\""
           },
           {
             "text": "모든 상대 선수를 침묵시킵니다.",
-            "font": "\"Noto Sans KR\", sans-serif",
-            "fontSize": "12px"
+            "marker": "\"••••\""
           },
           {
             "text": "필드의 선수 1장을 자신의 손패에 있는 그 카드의 비용보다 낮거나 같은 선수와 교체해서 냅니다. 교체 된 카드 2장의 공격력에 1을 부여합니다.",
-            "font": "\"Noto Sans KR\", sans-serif",
-            "fontSize": "12px"
+            "marker": "\"••••\""
           },
           {
             "text": "회피\n등장:'좀비'를 하나 소환합니다.",
-            "font": "\"Noto Sans KR\", sans-serif",
-            "fontSize": "12px"
+            "marker": "\"••••\""
           },
           {
             "text": "등장:필드에 있는 '좀비' 중 가장 수치의 합이 높은 '좀비'의 체력과 공격력을 자신에게 더합니다. '좀비'가 없다면 2/2 '좀비'를 생성하고 그 '좀비'의 체력과 공격력을 자신에게 더합니다.",
-            "font": "\"Noto Sans KR\", sans-serif",
-            "fontSize": "16px"
+            "marker": "\"••••\""
           }
         ],
         "clippedNames": [],
@@ -4010,6 +3157,7 @@
           }
         ],
         "clippedEffects": [],
+        "intentionalTruncations": [],
         "clippedNames": [],
         "targets": {
           ".ko-player-champion": [],
@@ -4103,6 +3251,7 @@
           }
         ],
         "clippedEffects": [],
+        "intentionalTruncations": [],
         "clippedNames": [],
         "targets": {
           ".ko-player-champion": [],
@@ -4196,6 +3345,7 @@
           }
         ],
         "clippedEffects": [],
+        "intentionalTruncations": [],
         "clippedNames": [],
         "targets": {
           ".ko-player-champion": [],
@@ -4395,6 +3545,7 @@
             "fontSize": "6px"
           }
         ],
+        "intentionalTruncations": [],
         "clippedNames": [
           {
             "text": "매드 사이언티스트 퍼플레인",
@@ -4661,46 +3812,39 @@
             "opacity": "1"
           }
         ],
-        "clippedEffects": [
+        "clippedEffects": [],
+        "intentionalTruncations": [
           {
             "text": "등장:현재 내 손과 필드에 있는 '실험체' 태그가 달려있는 모든 아군 카드들에게 +1/+1을 부여하고, '치유'를 부여합니다.",
-            "font": "\"NeoDunggeunmo Pro\", \"Noto Sans KR\", sans-serif",
-            "fontSize": "12px"
+            "marker": "\"••••\""
           },
           {
             "text": "등장:필드에 있는 '좀비' 중 가장 수치의 합이 높은 '좀비'의 체력과 공격력을 자신에게 더합니다. '좀비'가 없다면 2/2 '좀비'를 생성하고 그 '좀비'의 체력과 공격력을 자신에게 더합니다.",
-            "font": "\"NeoDunggeunmo Pro\", \"Noto Sans KR\", sans-serif",
-            "fontSize": "12px"
+            "marker": "\"••••\""
           },
           {
             "text": "기습\n이 카드가 상대 선수 카드를 리타이어 시킬때마다 +1/+1을 얻습니다.",
-            "font": "\"NeoDunggeunmo Pro\", \"Noto Sans KR\", sans-serif",
-            "fontSize": "12px"
+            "marker": "\"••••\""
           },
           {
             "text": "등장:현재 내 손과 필드에 있는 '실험체' 태그가 달려있는 모든 아군 카드들에게 +1/+1을 부여하고, '치유'를 부여합니다.",
-            "font": "\"NeoDunggeunmo Pro\", \"Noto Sans KR\", sans-serif",
-            "fontSize": "12px"
+            "marker": "\"••••\""
           },
           {
             "text": "기습\n이 카드가 상대 선수 카드를 리타이어 시킬때마다 +1/+1을 얻습니다.",
-            "font": "\"NeoDunggeunmo Pro\", \"Noto Sans KR\", sans-serif",
-            "fontSize": "12px"
+            "marker": "\"••••\""
           },
           {
             "text": "등장:현재 내 손과 필드에 있는 '실험체' 태그가 달려있는 모든 아군 카드들에게 +1/+1을 부여하고, '치유'를 부여합니다.",
-            "font": "\"NeoDunggeunmo Pro\", \"Noto Sans KR\", sans-serif",
-            "fontSize": "12px"
+            "marker": "\"••••\""
           },
           {
             "text": "등장:필드에 있는 '좀비' 중 가장 수치의 합이 높은 '좀비'의 체력과 공격력을 자신에게 더합니다. '좀비'가 없다면 2/2 '좀비'를 생성하고 그 '좀비'의 체력과 공격력을 자신에게 더합니다.",
-            "font": "\"NeoDunggeunmo Pro\", \"Noto Sans KR\", sans-serif",
-            "fontSize": "12px"
+            "marker": "\"••••\""
           },
           {
             "text": "모든 상대 선수를 침묵시킵니다.",
-            "font": "\"NeoDunggeunmo Pro\", \"Noto Sans KR\", sans-serif",
-            "fontSize": "12px"
+            "marker": "\"••••\""
           }
         ],
         "clippedNames": [
@@ -4979,46 +4123,39 @@
             "opacity": "1"
           }
         ],
-        "clippedEffects": [
+        "clippedEffects": [],
+        "intentionalTruncations": [
           {
             "text": "등장:현재 내 손과 필드에 있는 '실험체' 태그가 달려있는 모든 아군 카드들에게 +1/+1을 부여하고, '치유'를 부여합니다.",
-            "font": "\"Noto Sans KR\", sans-serif",
-            "fontSize": "12px"
+            "marker": "\"••••\""
           },
           {
             "text": "등장:필드에 있는 '좀비' 중 가장 수치의 합이 높은 '좀비'의 체력과 공격력을 자신에게 더합니다. '좀비'가 없다면 2/2 '좀비'를 생성하고 그 '좀비'의 체력과 공격력을 자신에게 더합니다.",
-            "font": "\"Noto Sans KR\", sans-serif",
-            "fontSize": "12px"
+            "marker": "\"••••\""
           },
           {
             "text": "기습\n이 카드가 상대 선수 카드를 리타이어 시킬때마다 +1/+1을 얻습니다.",
-            "font": "\"Noto Sans KR\", sans-serif",
-            "fontSize": "12px"
+            "marker": "\"••••\""
           },
           {
             "text": "등장:현재 내 손과 필드에 있는 '실험체' 태그가 달려있는 모든 아군 카드들에게 +1/+1을 부여하고, '치유'를 부여합니다.",
-            "font": "\"Noto Sans KR\", sans-serif",
-            "fontSize": "12px"
+            "marker": "\"••••\""
           },
           {
             "text": "기습\n이 카드가 상대 선수 카드를 리타이어 시킬때마다 +1/+1을 얻습니다.",
-            "font": "\"Noto Sans KR\", sans-serif",
-            "fontSize": "12px"
+            "marker": "\"••••\""
           },
           {
             "text": "등장:현재 내 손과 필드에 있는 '실험체' 태그가 달려있는 모든 아군 카드들에게 +1/+1을 부여하고, '치유'를 부여합니다.",
-            "font": "\"Noto Sans KR\", sans-serif",
-            "fontSize": "12px"
+            "marker": "\"••••\""
           },
           {
             "text": "등장:필드에 있는 '좀비' 중 가장 수치의 합이 높은 '좀비'의 체력과 공격력을 자신에게 더합니다. '좀비'가 없다면 2/2 '좀비'를 생성하고 그 '좀비'의 체력과 공격력을 자신에게 더합니다.",
-            "font": "\"Noto Sans KR\", sans-serif",
-            "fontSize": "12px"
+            "marker": "\"••••\""
           },
           {
             "text": "모든 상대 선수를 침묵시킵니다.",
-            "font": "\"Noto Sans KR\", sans-serif",
-            "fontSize": "12px"
+            "marker": "\"••••\""
           }
         ],
         "clippedNames": [
@@ -5207,6 +4344,7 @@
         "logo": [],
         "images": [],
         "clippedEffects": [],
+        "intentionalTruncations": [],
         "clippedNames": [],
         "targets": {
           ".ko-player-champion": [],
@@ -5289,6 +4427,7 @@
         "logo": [],
         "images": [],
         "clippedEffects": [],
+        "intentionalTruncations": [],
         "clippedNames": [],
         "targets": {
           ".ko-player-champion": [],
@@ -5371,6 +4510,7 @@
         "logo": [],
         "images": [],
         "clippedEffects": [],
+        "intentionalTruncations": [],
         "clippedNames": [],
         "targets": {
           ".ko-player-champion": [],
@@ -5466,6 +4606,7 @@
         ],
         "images": [],
         "clippedEffects": [],
+        "intentionalTruncations": [],
         "clippedNames": [],
         "targets": {
           ".ko-player-champion": [],
@@ -5512,6 +4653,7 @@
         ],
         "images": [],
         "clippedEffects": [],
+        "intentionalTruncations": [],
         "clippedNames": [],
         "targets": {
           ".ko-player-champion": [],
@@ -5558,6 +4700,7 @@
         ],
         "images": [],
         "clippedEffects": [],
+        "intentionalTruncations": [],
         "clippedNames": [],
         "targets": {
           ".ko-player-champion": [],
@@ -5668,6 +4811,7 @@
             "fontSize": "6px"
           }
         ],
+        "intentionalTruncations": [],
         "clippedNames": [],
         "targets": {
           ".ko-player-champion": [],
@@ -5771,41 +4915,35 @@
             "opacity": "1"
           }
         ],
-        "clippedEffects": [
+        "clippedEffects": [],
+        "intentionalTruncations": [
           {
             "text": "기습\n이 카드가 상대 선수 카드를 리타이어 시킬때마다 +1/+1을 얻습니다.",
-            "font": "\"NeoDunggeunmo Pro\", \"Noto Sans KR\", sans-serif",
-            "fontSize": "12px"
+            "marker": "\"••••\""
           },
           {
             "text": "등장:현재 내 손과 필드에 있는 '실험체' 태그가 달려있는 모든 아군 카드들에게 +1/+1을 부여하고, '치유'를 부여합니다.",
-            "font": "\"NeoDunggeunmo Pro\", \"Noto Sans KR\", sans-serif",
-            "fontSize": "12px"
+            "marker": "\"••••\""
           },
           {
             "text": "등장:필드에 있는 '좀비' 중 가장 수치의 합이 높은 '좀비'의 체력과 공격력을 자신에게 더합니다. '좀비'가 없다면 2/2 '좀비'를 생성하고 그 '좀비'의 체력과 공격력을 자신에게 더합니다.",
-            "font": "\"NeoDunggeunmo Pro\", \"Noto Sans KR\", sans-serif",
-            "fontSize": "12px"
+            "marker": "\"••••\""
           },
           {
             "text": "모든 상대 선수를 침묵시킵니다.",
-            "font": "\"NeoDunggeunmo Pro\", \"Noto Sans KR\", sans-serif",
-            "fontSize": "12px"
+            "marker": "\"••••\""
           },
           {
             "text": "필드의 선수 1장을 자신의 손패에 있는 그 카드의 비용보다 낮거나 같은 선수와 교체해서 냅니다. 교체 된 카드 2장의 공격력에 1을 부여합니다.",
-            "font": "\"NeoDunggeunmo Pro\", \"Noto Sans KR\", sans-serif",
-            "fontSize": "12px"
+            "marker": "\"••••\""
           },
           {
             "text": "회피\n등장:'좀비'를 하나 소환합니다.",
-            "font": "\"NeoDunggeunmo Pro\", \"Noto Sans KR\", sans-serif",
-            "fontSize": "12px"
+            "marker": "\"••••\""
           },
           {
             "text": "등장:필드에 있는 '좀비' 중 가장 수치의 합이 높은 '좀비'의 체력과 공격력을 자신에게 더합니다. '좀비'가 없다면 2/2 '좀비'를 생성하고 그 '좀비'의 체력과 공격력을 자신에게 더합니다.",
-            "font": "\"NeoDunggeunmo Pro\", \"Noto Sans KR\", sans-serif",
-            "fontSize": "16px"
+            "marker": "\"••••\""
           }
         ],
         "clippedNames": [],
@@ -5911,41 +5049,35 @@
             "opacity": "1"
           }
         ],
-        "clippedEffects": [
+        "clippedEffects": [],
+        "intentionalTruncations": [
           {
             "text": "기습\n이 카드가 상대 선수 카드를 리타이어 시킬때마다 +1/+1을 얻습니다.",
-            "font": "\"Noto Sans KR\", sans-serif",
-            "fontSize": "12px"
+            "marker": "\"••••\""
           },
           {
             "text": "등장:현재 내 손과 필드에 있는 '실험체' 태그가 달려있는 모든 아군 카드들에게 +1/+1을 부여하고, '치유'를 부여합니다.",
-            "font": "\"Noto Sans KR\", sans-serif",
-            "fontSize": "12px"
+            "marker": "\"••••\""
           },
           {
             "text": "등장:필드에 있는 '좀비' 중 가장 수치의 합이 높은 '좀비'의 체력과 공격력을 자신에게 더합니다. '좀비'가 없다면 2/2 '좀비'를 생성하고 그 '좀비'의 체력과 공격력을 자신에게 더합니다.",
-            "font": "\"Noto Sans KR\", sans-serif",
-            "fontSize": "12px"
+            "marker": "\"••••\""
           },
           {
             "text": "모든 상대 선수를 침묵시킵니다.",
-            "font": "\"Noto Sans KR\", sans-serif",
-            "fontSize": "12px"
+            "marker": "\"••••\""
           },
           {
             "text": "필드의 선수 1장을 자신의 손패에 있는 그 카드의 비용보다 낮거나 같은 선수와 교체해서 냅니다. 교체 된 카드 2장의 공격력에 1을 부여합니다.",
-            "font": "\"Noto Sans KR\", sans-serif",
-            "fontSize": "12px"
+            "marker": "\"••••\""
           },
           {
             "text": "회피\n등장:'좀비'를 하나 소환합니다.",
-            "font": "\"Noto Sans KR\", sans-serif",
-            "fontSize": "12px"
+            "marker": "\"••••\""
           },
           {
             "text": "등장:필드에 있는 '좀비' 중 가장 수치의 합이 높은 '좀비'의 체력과 공격력을 자신에게 더합니다. '좀비'가 없다면 2/2 '좀비'를 생성하고 그 '좀비'의 체력과 공격력을 자신에게 더합니다.",
-            "font": "\"Noto Sans KR\", sans-serif",
-            "fontSize": "16px"
+            "marker": "\"••••\""
           }
         ],
         "clippedNames": [],
@@ -5992,6 +5124,7 @@
           }
         ],
         "clippedEffects": [],
+        "intentionalTruncations": [],
         "clippedNames": [],
         "targets": {
           ".ko-player-champion": [],
@@ -6085,6 +5218,7 @@
           }
         ],
         "clippedEffects": [],
+        "intentionalTruncations": [],
         "clippedNames": [],
         "targets": {
           ".ko-player-champion": [],
@@ -6178,6 +5312,7 @@
           }
         ],
         "clippedEffects": [],
+        "intentionalTruncations": [],
         "clippedNames": [],
         "targets": {
           ".ko-player-champion": [],
@@ -6377,6 +5512,7 @@
             "fontSize": "6px"
           }
         ],
+        "intentionalTruncations": [],
         "clippedNames": [
           {
             "text": "매드 사이언티스트 퍼플레인",
@@ -6643,46 +5779,39 @@
             "opacity": "1"
           }
         ],
-        "clippedEffects": [
+        "clippedEffects": [],
+        "intentionalTruncations": [
           {
             "text": "등장:현재 내 손과 필드에 있는 '실험체' 태그가 달려있는 모든 아군 카드들에게 +1/+1을 부여하고, '치유'를 부여합니다.",
-            "font": "\"NeoDunggeunmo Pro\", \"Noto Sans KR\", sans-serif",
-            "fontSize": "12px"
+            "marker": "\"••••\""
           },
           {
             "text": "등장:필드에 있는 '좀비' 중 가장 수치의 합이 높은 '좀비'의 체력과 공격력을 자신에게 더합니다. '좀비'가 없다면 2/2 '좀비'를 생성하고 그 '좀비'의 체력과 공격력을 자신에게 더합니다.",
-            "font": "\"NeoDunggeunmo Pro\", \"Noto Sans KR\", sans-serif",
-            "fontSize": "12px"
+            "marker": "\"••••\""
           },
           {
             "text": "기습\n이 카드가 상대 선수 카드를 리타이어 시킬때마다 +1/+1을 얻습니다.",
-            "font": "\"NeoDunggeunmo Pro\", \"Noto Sans KR\", sans-serif",
-            "fontSize": "12px"
+            "marker": "\"••••\""
           },
           {
             "text": "등장:현재 내 손과 필드에 있는 '실험체' 태그가 달려있는 모든 아군 카드들에게 +1/+1을 부여하고, '치유'를 부여합니다.",
-            "font": "\"NeoDunggeunmo Pro\", \"Noto Sans KR\", sans-serif",
-            "fontSize": "12px"
+            "marker": "\"••••\""
           },
           {
             "text": "기습\n이 카드가 상대 선수 카드를 리타이어 시킬때마다 +1/+1을 얻습니다.",
-            "font": "\"NeoDunggeunmo Pro\", \"Noto Sans KR\", sans-serif",
-            "fontSize": "12px"
+            "marker": "\"••••\""
           },
           {
             "text": "등장:현재 내 손과 필드에 있는 '실험체' 태그가 달려있는 모든 아군 카드들에게 +1/+1을 부여하고, '치유'를 부여합니다.",
-            "font": "\"NeoDunggeunmo Pro\", \"Noto Sans KR\", sans-serif",
-            "fontSize": "12px"
+            "marker": "\"••••\""
           },
           {
             "text": "등장:필드에 있는 '좀비' 중 가장 수치의 합이 높은 '좀비'의 체력과 공격력을 자신에게 더합니다. '좀비'가 없다면 2/2 '좀비'를 생성하고 그 '좀비'의 체력과 공격력을 자신에게 더합니다.",
-            "font": "\"NeoDunggeunmo Pro\", \"Noto Sans KR\", sans-serif",
-            "fontSize": "12px"
+            "marker": "\"••••\""
           },
           {
             "text": "모든 상대 선수를 침묵시킵니다.",
-            "font": "\"NeoDunggeunmo Pro\", \"Noto Sans KR\", sans-serif",
-            "fontSize": "12px"
+            "marker": "\"••••\""
           }
         ],
         "clippedNames": [
@@ -6961,46 +6090,39 @@
             "opacity": "1"
           }
         ],
-        "clippedEffects": [
+        "clippedEffects": [],
+        "intentionalTruncations": [
           {
             "text": "등장:현재 내 손과 필드에 있는 '실험체' 태그가 달려있는 모든 아군 카드들에게 +1/+1을 부여하고, '치유'를 부여합니다.",
-            "font": "\"Noto Sans KR\", sans-serif",
-            "fontSize": "12px"
+            "marker": "\"••••\""
           },
           {
             "text": "등장:필드에 있는 '좀비' 중 가장 수치의 합이 높은 '좀비'의 체력과 공격력을 자신에게 더합니다. '좀비'가 없다면 2/2 '좀비'를 생성하고 그 '좀비'의 체력과 공격력을 자신에게 더합니다.",
-            "font": "\"Noto Sans KR\", sans-serif",
-            "fontSize": "12px"
+            "marker": "\"••••\""
           },
           {
             "text": "기습\n이 카드가 상대 선수 카드를 리타이어 시킬때마다 +1/+1을 얻습니다.",
-            "font": "\"Noto Sans KR\", sans-serif",
-            "fontSize": "12px"
+            "marker": "\"••••\""
           },
           {
             "text": "등장:현재 내 손과 필드에 있는 '실험체' 태그가 달려있는 모든 아군 카드들에게 +1/+1을 부여하고, '치유'를 부여합니다.",
-            "font": "\"Noto Sans KR\", sans-serif",
-            "fontSize": "12px"
+            "marker": "\"••••\""
           },
           {
             "text": "기습\n이 카드가 상대 선수 카드를 리타이어 시킬때마다 +1/+1을 얻습니다.",
-            "font": "\"Noto Sans KR\", sans-serif",
-            "fontSize": "12px"
+            "marker": "\"••••\""
           },
           {
             "text": "등장:현재 내 손과 필드에 있는 '실험체' 태그가 달려있는 모든 아군 카드들에게 +1/+1을 부여하고, '치유'를 부여합니다.",
-            "font": "\"Noto Sans KR\", sans-serif",
-            "fontSize": "12px"
+            "marker": "\"••••\""
           },
           {
             "text": "등장:필드에 있는 '좀비' 중 가장 수치의 합이 높은 '좀비'의 체력과 공격력을 자신에게 더합니다. '좀비'가 없다면 2/2 '좀비'를 생성하고 그 '좀비'의 체력과 공격력을 자신에게 더합니다.",
-            "font": "\"Noto Sans KR\", sans-serif",
-            "fontSize": "12px"
+            "marker": "\"••••\""
           },
           {
             "text": "모든 상대 선수를 침묵시킵니다.",
-            "font": "\"Noto Sans KR\", sans-serif",
-            "fontSize": "12px"
+            "marker": "\"••••\""
           }
         ],
         "clippedNames": [
@@ -7189,6 +6311,7 @@
         "logo": [],
         "images": [],
         "clippedEffects": [],
+        "intentionalTruncations": [],
         "clippedNames": [],
         "targets": {
           ".ko-player-champion": [],
@@ -7271,6 +6394,7 @@
         "logo": [],
         "images": [],
         "clippedEffects": [],
+        "intentionalTruncations": [],
         "clippedNames": [],
         "targets": {
           ".ko-player-champion": [],
@@ -7353,6 +6477,7 @@
         "logo": [],
         "images": [],
         "clippedEffects": [],
+        "intentionalTruncations": [],
         "clippedNames": [],
         "targets": {
           ".ko-player-champion": [],
@@ -7448,6 +6573,7 @@
         ],
         "images": [],
         "clippedEffects": [],
+        "intentionalTruncations": [],
         "clippedNames": [],
         "targets": {
           ".ko-player-champion": [],
@@ -7494,6 +6620,7 @@
         ],
         "images": [],
         "clippedEffects": [],
+        "intentionalTruncations": [],
         "clippedNames": [],
         "targets": {
           ".ko-player-champion": [],
@@ -7540,6 +6667,7 @@
         ],
         "images": [],
         "clippedEffects": [],
+        "intentionalTruncations": [],
         "clippedNames": [],
         "targets": {
           ".ko-player-champion": [],
@@ -7650,6 +6778,7 @@
             "fontSize": "6px"
           }
         ],
+        "intentionalTruncations": [],
         "clippedNames": [],
         "targets": {
           ".ko-player-champion": [],
@@ -7753,41 +6882,35 @@
             "opacity": "1"
           }
         ],
-        "clippedEffects": [
+        "clippedEffects": [],
+        "intentionalTruncations": [
           {
             "text": "기습\n이 카드가 상대 선수 카드를 리타이어 시킬때마다 +1/+1을 얻습니다.",
-            "font": "\"NeoDunggeunmo Pro\", \"Noto Sans KR\", sans-serif",
-            "fontSize": "12px"
+            "marker": "\"••••\""
           },
           {
             "text": "등장:현재 내 손과 필드에 있는 '실험체' 태그가 달려있는 모든 아군 카드들에게 +1/+1을 부여하고, '치유'를 부여합니다.",
-            "font": "\"NeoDunggeunmo Pro\", \"Noto Sans KR\", sans-serif",
-            "fontSize": "12px"
+            "marker": "\"••••\""
           },
           {
             "text": "등장:필드에 있는 '좀비' 중 가장 수치의 합이 높은 '좀비'의 체력과 공격력을 자신에게 더합니다. '좀비'가 없다면 2/2 '좀비'를 생성하고 그 '좀비'의 체력과 공격력을 자신에게 더합니다.",
-            "font": "\"NeoDunggeunmo Pro\", \"Noto Sans KR\", sans-serif",
-            "fontSize": "12px"
+            "marker": "\"••••\""
           },
           {
             "text": "모든 상대 선수를 침묵시킵니다.",
-            "font": "\"NeoDunggeunmo Pro\", \"Noto Sans KR\", sans-serif",
-            "fontSize": "12px"
+            "marker": "\"••••\""
           },
           {
             "text": "필드의 선수 1장을 자신의 손패에 있는 그 카드의 비용보다 낮거나 같은 선수와 교체해서 냅니다. 교체 된 카드 2장의 공격력에 1을 부여합니다.",
-            "font": "\"NeoDunggeunmo Pro\", \"Noto Sans KR\", sans-serif",
-            "fontSize": "12px"
+            "marker": "\"••••\""
           },
           {
             "text": "회피\n등장:'좀비'를 하나 소환합니다.",
-            "font": "\"NeoDunggeunmo Pro\", \"Noto Sans KR\", sans-serif",
-            "fontSize": "12px"
+            "marker": "\"••••\""
           },
           {
             "text": "등장:필드에 있는 '좀비' 중 가장 수치의 합이 높은 '좀비'의 체력과 공격력을 자신에게 더합니다. '좀비'가 없다면 2/2 '좀비'를 생성하고 그 '좀비'의 체력과 공격력을 자신에게 더합니다.",
-            "font": "\"NeoDunggeunmo Pro\", \"Noto Sans KR\", sans-serif",
-            "fontSize": "16px"
+            "marker": "\"••••\""
           }
         ],
         "clippedNames": [],
@@ -7893,36 +7016,31 @@
             "opacity": "1"
           }
         ],
-        "clippedEffects": [
+        "clippedEffects": [],
+        "intentionalTruncations": [
           {
             "text": "기습\n이 카드가 상대 선수 카드를 리타이어 시킬때마다 +1/+1을 얻습니다.",
-            "font": "\"Noto Sans KR\", sans-serif",
-            "fontSize": "12px"
+            "marker": "\"••••\""
           },
           {
             "text": "등장:현재 내 손과 필드에 있는 '실험체' 태그가 달려있는 모든 아군 카드들에게 +1/+1을 부여하고, '치유'를 부여합니다.",
-            "font": "\"Noto Sans KR\", sans-serif",
-            "fontSize": "12px"
+            "marker": "\"••••\""
           },
           {
             "text": "등장:필드에 있는 '좀비' 중 가장 수치의 합이 높은 '좀비'의 체력과 공격력을 자신에게 더합니다. '좀비'가 없다면 2/2 '좀비'를 생성하고 그 '좀비'의 체력과 공격력을 자신에게 더합니다.",
-            "font": "\"Noto Sans KR\", sans-serif",
-            "fontSize": "12px"
+            "marker": "\"••••\""
           },
           {
             "text": "필드의 선수 1장을 자신의 손패에 있는 그 카드의 비용보다 낮거나 같은 선수와 교체해서 냅니다. 교체 된 카드 2장의 공격력에 1을 부여합니다.",
-            "font": "\"Noto Sans KR\", sans-serif",
-            "fontSize": "12px"
+            "marker": "\"••••\""
           },
           {
             "text": "회피\n등장:'좀비'를 하나 소환합니다.",
-            "font": "\"Noto Sans KR\", sans-serif",
-            "fontSize": "12px"
+            "marker": "\"••••\""
           },
           {
             "text": "등장:필드에 있는 '좀비' 중 가장 수치의 합이 높은 '좀비'의 체력과 공격력을 자신에게 더합니다. '좀비'가 없다면 2/2 '좀비'를 생성하고 그 '좀비'의 체력과 공격력을 자신에게 더합니다.",
-            "font": "\"Noto Sans KR\", sans-serif",
-            "fontSize": "16px"
+            "marker": "\"••••\""
           }
         ],
         "clippedNames": [],
@@ -7969,6 +7087,7 @@
           }
         ],
         "clippedEffects": [],
+        "intentionalTruncations": [],
         "clippedNames": [],
         "targets": {
           ".ko-player-champion": [],
@@ -8062,6 +7181,7 @@
           }
         ],
         "clippedEffects": [],
+        "intentionalTruncations": [],
         "clippedNames": [],
         "targets": {
           ".ko-player-champion": [],
@@ -8155,6 +7275,7 @@
           }
         ],
         "clippedEffects": [],
+        "intentionalTruncations": [],
         "clippedNames": [],
         "targets": {
           ".ko-player-champion": [],
@@ -8349,6 +7470,7 @@
             "fontSize": "6px"
           }
         ],
+        "intentionalTruncations": [],
         "clippedNames": [],
         "targets": {
           ".ko-player-champion": [
@@ -8599,46 +7721,39 @@
             "opacity": "1"
           }
         ],
-        "clippedEffects": [
+        "clippedEffects": [],
+        "intentionalTruncations": [
           {
             "text": "등장:현재 내 손과 필드에 있는 '실험체' 태그가 달려있는 모든 아군 카드들에게 +1/+1을 부여하고, '치유'를 부여합니다.",
-            "font": "\"NeoDunggeunmo Pro\", \"Noto Sans KR\", sans-serif",
-            "fontSize": "12px"
+            "marker": "\"••••\""
           },
           {
             "text": "등장:필드에 있는 '좀비' 중 가장 수치의 합이 높은 '좀비'의 체력과 공격력을 자신에게 더합니다. '좀비'가 없다면 2/2 '좀비'를 생성하고 그 '좀비'의 체력과 공격력을 자신에게 더합니다.",
-            "font": "\"NeoDunggeunmo Pro\", \"Noto Sans KR\", sans-serif",
-            "fontSize": "12px"
+            "marker": "\"••••\""
           },
           {
             "text": "기습\n이 카드가 상대 선수 카드를 리타이어 시킬때마다 +1/+1을 얻습니다.",
-            "font": "\"NeoDunggeunmo Pro\", \"Noto Sans KR\", sans-serif",
-            "fontSize": "12px"
+            "marker": "\"••••\""
           },
           {
             "text": "등장:현재 내 손과 필드에 있는 '실험체' 태그가 달려있는 모든 아군 카드들에게 +1/+1을 부여하고, '치유'를 부여합니다.",
-            "font": "\"NeoDunggeunmo Pro\", \"Noto Sans KR\", sans-serif",
-            "fontSize": "12px"
+            "marker": "\"••••\""
           },
           {
             "text": "기습\n이 카드가 상대 선수 카드를 리타이어 시킬때마다 +1/+1을 얻습니다.",
-            "font": "\"NeoDunggeunmo Pro\", \"Noto Sans KR\", sans-serif",
-            "fontSize": "12px"
+            "marker": "\"••••\""
           },
           {
             "text": "등장:현재 내 손과 필드에 있는 '실험체' 태그가 달려있는 모든 아군 카드들에게 +1/+1을 부여하고, '치유'를 부여합니다.",
-            "font": "\"NeoDunggeunmo Pro\", \"Noto Sans KR\", sans-serif",
-            "fontSize": "12px"
+            "marker": "\"••••\""
           },
           {
             "text": "등장:필드에 있는 '좀비' 중 가장 수치의 합이 높은 '좀비'의 체력과 공격력을 자신에게 더합니다. '좀비'가 없다면 2/2 '좀비'를 생성하고 그 '좀비'의 체력과 공격력을 자신에게 더합니다.",
-            "font": "\"NeoDunggeunmo Pro\", \"Noto Sans KR\", sans-serif",
-            "fontSize": "12px"
+            "marker": "\"••••\""
           },
           {
             "text": "모든 상대 선수를 침묵시킵니다.",
-            "font": "\"NeoDunggeunmo Pro\", \"Noto Sans KR\", sans-serif",
-            "fontSize": "12px"
+            "marker": "\"••••\""
           }
         ],
         "clippedNames": [
@@ -8907,46 +8022,39 @@
             "opacity": "1"
           }
         ],
-        "clippedEffects": [
+        "clippedEffects": [],
+        "intentionalTruncations": [
           {
             "text": "등장:현재 내 손과 필드에 있는 '실험체' 태그가 달려있는 모든 아군 카드들에게 +1/+1을 부여하고, '치유'를 부여합니다.",
-            "font": "\"Noto Sans KR\", sans-serif",
-            "fontSize": "12px"
+            "marker": "\"••••\""
           },
           {
             "text": "등장:필드에 있는 '좀비' 중 가장 수치의 합이 높은 '좀비'의 체력과 공격력을 자신에게 더합니다. '좀비'가 없다면 2/2 '좀비'를 생성하고 그 '좀비'의 체력과 공격력을 자신에게 더합니다.",
-            "font": "\"Noto Sans KR\", sans-serif",
-            "fontSize": "12px"
+            "marker": "\"••••\""
           },
           {
             "text": "기습\n이 카드가 상대 선수 카드를 리타이어 시킬때마다 +1/+1을 얻습니다.",
-            "font": "\"Noto Sans KR\", sans-serif",
-            "fontSize": "12px"
+            "marker": "\"••••\""
           },
           {
             "text": "등장:현재 내 손과 필드에 있는 '실험체' 태그가 달려있는 모든 아군 카드들에게 +1/+1을 부여하고, '치유'를 부여합니다.",
-            "font": "\"Noto Sans KR\", sans-serif",
-            "fontSize": "12px"
+            "marker": "\"••••\""
           },
           {
             "text": "기습\n이 카드가 상대 선수 카드를 리타이어 시킬때마다 +1/+1을 얻습니다.",
-            "font": "\"Noto Sans KR\", sans-serif",
-            "fontSize": "12px"
+            "marker": "\"••••\""
           },
           {
             "text": "등장:현재 내 손과 필드에 있는 '실험체' 태그가 달려있는 모든 아군 카드들에게 +1/+1을 부여하고, '치유'를 부여합니다.",
-            "font": "\"Noto Sans KR\", sans-serif",
-            "fontSize": "12px"
+            "marker": "\"••••\""
           },
           {
             "text": "등장:필드에 있는 '좀비' 중 가장 수치의 합이 높은 '좀비'의 체력과 공격력을 자신에게 더합니다. '좀비'가 없다면 2/2 '좀비'를 생성하고 그 '좀비'의 체력과 공격력을 자신에게 더합니다.",
-            "font": "\"Noto Sans KR\", sans-serif",
-            "fontSize": "12px"
+            "marker": "\"••••\""
           },
           {
             "text": "모든 상대 선수를 침묵시킵니다.",
-            "font": "\"Noto Sans KR\", sans-serif",
-            "fontSize": "12px"
+            "marker": "\"••••\""
           }
         ],
         "clippedNames": [
@@ -9125,6 +8233,7 @@
         "logo": [],
         "images": [],
         "clippedEffects": [],
+        "intentionalTruncations": [],
         "clippedNames": [],
         "targets": {
           ".ko-player-champion": [],
@@ -9207,6 +8316,7 @@
         "logo": [],
         "images": [],
         "clippedEffects": [],
+        "intentionalTruncations": [],
         "clippedNames": [],
         "targets": {
           ".ko-player-champion": [],
@@ -9289,6 +8399,7 @@
         "logo": [],
         "images": [],
         "clippedEffects": [],
+        "intentionalTruncations": [],
         "clippedNames": [],
         "targets": {
           ".ko-player-champion": [],
@@ -9384,6 +8495,7 @@
         ],
         "images": [],
         "clippedEffects": [],
+        "intentionalTruncations": [],
         "clippedNames": [],
         "targets": {
           ".ko-player-champion": [],
@@ -9430,6 +8542,7 @@
         ],
         "images": [],
         "clippedEffects": [],
+        "intentionalTruncations": [],
         "clippedNames": [],
         "targets": {
           ".ko-player-champion": [],
@@ -9476,6 +8589,7 @@
         ],
         "images": [],
         "clippedEffects": [],
+        "intentionalTruncations": [],
         "clippedNames": [],
         "targets": {
           ".ko-player-champion": [],
@@ -9596,6 +8710,7 @@
             "fontSize": "8px"
           }
         ],
+        "intentionalTruncations": [],
         "clippedNames": [],
         "targets": {
           ".ko-player-champion": [],
@@ -9699,36 +8814,31 @@
             "opacity": "1"
           }
         ],
-        "clippedEffects": [
+        "clippedEffects": [],
+        "intentionalTruncations": [
           {
             "text": "기습\n이 카드가 상대 선수 카드를 리타이어 시킬때마다 +1/+1을 얻습니다.",
-            "font": "\"NeoDunggeunmo Pro\", \"Noto Sans KR\", sans-serif",
-            "fontSize": "12px"
+            "marker": "\"••••\""
           },
           {
             "text": "등장:현재 내 손과 필드에 있는 '실험체' 태그가 달려있는 모든 아군 카드들에게 +1/+1을 부여하고, '치유'를 부여합니다.",
-            "font": "\"NeoDunggeunmo Pro\", \"Noto Sans KR\", sans-serif",
-            "fontSize": "12px"
+            "marker": "\"••••\""
           },
           {
             "text": "등장:필드에 있는 '좀비' 중 가장 수치의 합이 높은 '좀비'의 체력과 공격력을 자신에게 더합니다. '좀비'가 없다면 2/2 '좀비'를 생성하고 그 '좀비'의 체력과 공격력을 자신에게 더합니다.",
-            "font": "\"NeoDunggeunmo Pro\", \"Noto Sans KR\", sans-serif",
-            "fontSize": "12px"
+            "marker": "\"••••\""
           },
           {
             "text": "필드의 선수 1장을 자신의 손패에 있는 그 카드의 비용보다 낮거나 같은 선수와 교체해서 냅니다. 교체 된 카드 2장의 공격력에 1을 부여합니다.",
-            "font": "\"NeoDunggeunmo Pro\", \"Noto Sans KR\", sans-serif",
-            "fontSize": "12px"
+            "marker": "\"••••\""
           },
           {
             "text": "회피\n등장:'좀비'를 하나 소환합니다.",
-            "font": "\"NeoDunggeunmo Pro\", \"Noto Sans KR\", sans-serif",
-            "fontSize": "12px"
+            "marker": "\"••••\""
           },
           {
             "text": "등장:필드에 있는 '좀비' 중 가장 수치의 합이 높은 '좀비'의 체력과 공격력을 자신에게 더합니다. '좀비'가 없다면 2/2 '좀비'를 생성하고 그 '좀비'의 체력과 공격력을 자신에게 더합니다.",
-            "font": "\"NeoDunggeunmo Pro\", \"Noto Sans KR\", sans-serif",
-            "fontSize": "16px"
+            "marker": "\"••••\""
           }
         ],
         "clippedNames": [
@@ -9840,31 +8950,27 @@
             "opacity": "1"
           }
         ],
-        "clippedEffects": [
+        "clippedEffects": [],
+        "intentionalTruncations": [
           {
             "text": "기습\n이 카드가 상대 선수 카드를 리타이어 시킬때마다 +1/+1을 얻습니다.",
-            "font": "\"Noto Sans KR\", sans-serif",
-            "fontSize": "12px"
+            "marker": "\"••••\""
           },
           {
             "text": "등장:현재 내 손과 필드에 있는 '실험체' 태그가 달려있는 모든 아군 카드들에게 +1/+1을 부여하고, '치유'를 부여합니다.",
-            "font": "\"Noto Sans KR\", sans-serif",
-            "fontSize": "12px"
+            "marker": "\"••••\""
           },
           {
             "text": "등장:필드에 있는 '좀비' 중 가장 수치의 합이 높은 '좀비'의 체력과 공격력을 자신에게 더합니다. '좀비'가 없다면 2/2 '좀비'를 생성하고 그 '좀비'의 체력과 공격력을 자신에게 더합니다.",
-            "font": "\"Noto Sans KR\", sans-serif",
-            "fontSize": "12px"
+            "marker": "\"••••\""
           },
           {
             "text": "필드의 선수 1장을 자신의 손패에 있는 그 카드의 비용보다 낮거나 같은 선수와 교체해서 냅니다. 교체 된 카드 2장의 공격력에 1을 부여합니다.",
-            "font": "\"Noto Sans KR\", sans-serif",
-            "fontSize": "12px"
+            "marker": "\"••••\""
           },
           {
             "text": "등장:필드에 있는 '좀비' 중 가장 수치의 합이 높은 '좀비'의 체력과 공격력을 자신에게 더합니다. '좀비'가 없다면 2/2 '좀비'를 생성하고 그 '좀비'의 체력과 공격력을 자신에게 더합니다.",
-            "font": "\"Noto Sans KR\", sans-serif",
-            "fontSize": "16px"
+            "marker": "\"••••\""
           }
         ],
         "clippedNames": [
@@ -9917,6 +9023,7 @@
           }
         ],
         "clippedEffects": [],
+        "intentionalTruncations": [],
         "clippedNames": [],
         "targets": {
           ".ko-player-champion": [],
@@ -10010,6 +9117,7 @@
           }
         ],
         "clippedEffects": [],
+        "intentionalTruncations": [],
         "clippedNames": [],
         "targets": {
           ".ko-player-champion": [],
@@ -10103,6 +9211,7 @@
           }
         ],
         "clippedEffects": [],
+        "intentionalTruncations": [],
         "clippedNames": [],
         "targets": {
           ".ko-player-champion": [],
@@ -10276,6 +9385,7 @@
           }
         ],
         "clippedEffects": [],
+        "intentionalTruncations": [],
         "clippedNames": [],
         "targets": {
           ".ko-player-champion": [
@@ -10526,36 +9636,35 @@
             "opacity": "1"
           }
         ],
-        "clippedEffects": [
+        "clippedEffects": [],
+        "intentionalTruncations": [
           {
             "text": "등장:현재 내 손과 필드에 있는 '실험체' 태그가 달려있는 모든 아군 카드들에게 +1/+1을 부여하고, '치유'를 부여합니다.",
-            "font": "\"NeoDunggeunmo Pro\", \"Noto Sans KR\", sans-serif",
-            "fontSize": "12px"
+            "marker": "\"••••\""
           },
           {
             "text": "등장:필드에 있는 '좀비' 중 가장 수치의 합이 높은 '좀비'의 체력과 공격력을 자신에게 더합니다. '좀비'가 없다면 2/2 '좀비'를 생성하고 그 '좀비'의 체력과 공격력을 자신에게 더합니다.",
-            "font": "\"NeoDunggeunmo Pro\", \"Noto Sans KR\", sans-serif",
-            "fontSize": "12px"
-          },
-          {
-            "text": "등장:현재 내 손과 필드에 있는 '실험체' 태그가 달려있는 모든 아군 카드들에게 +1/+1을 부여하고, '치유'를 부여합니다.",
-            "font": "\"NeoDunggeunmo Pro\", \"Noto Sans KR\", sans-serif",
-            "fontSize": "12px"
+            "marker": "\"••••\""
           },
           {
             "text": "기습\n이 카드가 상대 선수 카드를 리타이어 시킬때마다 +1/+1을 얻습니다.",
-            "font": "\"NeoDunggeunmo Pro\", \"Noto Sans KR\", sans-serif",
-            "fontSize": "12px"
+            "marker": "\"••••\""
           },
           {
             "text": "등장:현재 내 손과 필드에 있는 '실험체' 태그가 달려있는 모든 아군 카드들에게 +1/+1을 부여하고, '치유'를 부여합니다.",
-            "font": "\"NeoDunggeunmo Pro\", \"Noto Sans KR\", sans-serif",
-            "fontSize": "12px"
+            "marker": "\"••••\""
+          },
+          {
+            "text": "기습\n이 카드가 상대 선수 카드를 리타이어 시킬때마다 +1/+1을 얻습니다.",
+            "marker": "\"••••\""
+          },
+          {
+            "text": "등장:현재 내 손과 필드에 있는 '실험체' 태그가 달려있는 모든 아군 카드들에게 +1/+1을 부여하고, '치유'를 부여합니다.",
+            "marker": "\"••••\""
           },
           {
             "text": "등장:필드에 있는 '좀비' 중 가장 수치의 합이 높은 '좀비'의 체력과 공격력을 자신에게 더합니다. '좀비'가 없다면 2/2 '좀비'를 생성하고 그 '좀비'의 체력과 공격력을 자신에게 더합니다.",
-            "font": "\"NeoDunggeunmo Pro\", \"Noto Sans KR\", sans-serif",
-            "fontSize": "12px"
+            "marker": "\"••••\""
           }
         ],
         "clippedNames": [],
@@ -10808,36 +9917,31 @@
             "opacity": "1"
           }
         ],
-        "clippedEffects": [
+        "clippedEffects": [],
+        "intentionalTruncations": [
           {
             "text": "등장:현재 내 손과 필드에 있는 '실험체' 태그가 달려있는 모든 아군 카드들에게 +1/+1을 부여하고, '치유'를 부여합니다.",
-            "font": "\"Noto Sans KR\", sans-serif",
-            "fontSize": "12px"
+            "marker": "\"••••\""
           },
           {
             "text": "등장:필드에 있는 '좀비' 중 가장 수치의 합이 높은 '좀비'의 체력과 공격력을 자신에게 더합니다. '좀비'가 없다면 2/2 '좀비'를 생성하고 그 '좀비'의 체력과 공격력을 자신에게 더합니다.",
-            "font": "\"Noto Sans KR\", sans-serif",
-            "fontSize": "12px"
+            "marker": "\"••••\""
           },
           {
             "text": "등장:현재 내 손과 필드에 있는 '실험체' 태그가 달려있는 모든 아군 카드들에게 +1/+1을 부여하고, '치유'를 부여합니다.",
-            "font": "\"Noto Sans KR\", sans-serif",
-            "fontSize": "12px"
+            "marker": "\"••••\""
           },
           {
             "text": "기습\n이 카드가 상대 선수 카드를 리타이어 시킬때마다 +1/+1을 얻습니다.",
-            "font": "\"Noto Sans KR\", sans-serif",
-            "fontSize": "12px"
+            "marker": "\"••••\""
           },
           {
             "text": "등장:현재 내 손과 필드에 있는 '실험체' 태그가 달려있는 모든 아군 카드들에게 +1/+1을 부여하고, '치유'를 부여합니다.",
-            "font": "\"Noto Sans KR\", sans-serif",
-            "fontSize": "12px"
+            "marker": "\"••••\""
           },
           {
             "text": "등장:필드에 있는 '좀비' 중 가장 수치의 합이 높은 '좀비'의 체력과 공격력을 자신에게 더합니다. '좀비'가 없다면 2/2 '좀비'를 생성하고 그 '좀비'의 체력과 공격력을 자신에게 더합니다.",
-            "font": "\"Noto Sans KR\", sans-serif",
-            "fontSize": "12px"
+            "marker": "\"••••\""
           }
         ],
         "clippedNames": [],
@@ -11000,6 +10104,7 @@
         "logo": [],
         "images": [],
         "clippedEffects": [],
+        "intentionalTruncations": [],
         "clippedNames": [],
         "targets": {
           ".ko-player-champion": [],
@@ -11082,6 +10187,7 @@
         "logo": [],
         "images": [],
         "clippedEffects": [],
+        "intentionalTruncations": [],
         "clippedNames": [],
         "targets": {
           ".ko-player-champion": [],
@@ -11164,6 +10270,7 @@
         "logo": [],
         "images": [],
         "clippedEffects": [],
+        "intentionalTruncations": [],
         "clippedNames": [],
         "targets": {
           ".ko-player-champion": [],
