@@ -2644,7 +2644,7 @@ function applyEffectInternal(
     const scopedCandidates = sortAndTakeTargetCards(eligibleCandidates, target);
     const randomCandidates = scopedCandidates;
     const contextTargetId = target.selection === 'FUSION_TARGET' ? triggerContext?.fusionTargetInstanceId : target.selection === 'LAST_ATTACKER' ? triggerContext?.attackerInstanceId : undefined;
-    const targets = ['FUSION_TARGET', 'LAST_ATTACKER'].includes(target.selection ?? '')
+    const selectedTargets = ['FUSION_TARGET', 'LAST_ATTACKER'].includes(target.selection ?? '')
       ? scopedCandidates.filter(card => card.instanceId === contextTargetId).slice(0, 1)
       : target.selection === 'SELF'
       ? scopedCandidates.filter((card) => card.instanceId === sourceCard.instanceId)
@@ -2666,6 +2666,11 @@ function applyEffectInternal(
               randomCandidates,
               randomForEffect(state, sourceCard, effect),
             ).slice(0, Math.max(0, target.count));
+    // Defense prevents removal even when no player chose the target. Resolve
+    // random choices first: a protected hit fizzles instead of rerolling.
+    const targets = ['DESTROY', 'RETIRE', 'REMOVE_FROM_GAME', 'VANISH'].includes(effect.action)
+      ? selectedTargets.filter(card => !isEntryDefenseTargetProtected(state, card))
+      : selectedTargets;
     if (effect.action === 'GRANT_RANDOM_CARD_TEXT') {
       return grantRandomCardText(state, playerId, sourceCard, targets, effect);
     }

@@ -139,3 +139,69 @@ test('automatic SAME_TARGET follow-ups may grant another keyword after granting 
   assert.ok(result.players[1].board[0]!.keywords.includes('DEFENSE'));
   assert.ok(result.players[1].board[0]!.keywords.includes('TAUNT'));
 });
+
+for (const action of ['DESTROY', 'RETIRE', 'REMOVE_FROM_GAME', 'VANISH'] as const) {
+  for (const selection of ['ALL', 'RANDOM', 'SAME_TARGET', 'SELF'] as const) {
+    test(`entry defense prevents ${selection} ${action}, including removal events and rewards`, () => {
+      const state = setup({ keywords: ['DEFENSE'] });
+      const defended = state.players[1].board[0]!;
+      const effect: CardEffect = { type: 'STRUCTURED', action, target: { ...target, owner: selection === 'SELF' ? 'SELF' : 'ENEMY', selection } };
+      const source = selection === 'SELF' ? defended : state.players[0].board[0]!;
+      const playerId = selection === 'SELF' ? 'player-2' : 'player-1';
+      const blocked = applyEffect(state, playerId, source, effect, ['protected']);
+      assert.deepEqual(blocked.players, state.players);
+      assert.deepEqual(blocked.events, state.events);
+      state.players[1].board[0]!.entryDefenseActive = false;
+      const removed = applyEffect(state, playerId, source, effect, ['protected']);
+      assert.equal(removed.players[1].board[0], null);
+    });
+  }
+}
+
+test('area destruction still removes unprotected cards and leaves defended cards intact', () => {
+  const state = setup({ keywords: ['DEFENSE'] });
+  state.players[1].board[1] = { ...generateCardInstance(definition('ordinary'), { instanceId: 'ordinary' }), boardSlot: 1 };
+  const result = applyEffect(state, 'player-1', state.players[0].board[0]!, { type: 'STRUCTURED', action: 'DESTROY', target: { ...target, selection: 'ALL' } });
+  assert.ok(result.players[1].board[0]);
+  assert.equal(result.players[1].board[1], null);
+  assert.deepEqual(result.events.filter(event => event.type === 'CARD_DESTROYED').map(event => event.cardInstanceId), ['ordinary']);
+});
+
+test('defense survives the summon turn and opponent turn, then expires at the next owner turn start', () => {
+  const state = setup({ keywords: ['DEFENSE'] });
+  state.activePlayerId = 'player-2';
+  const effect: CardEffect = { type: 'STRUCTURED', action: 'DESTROY', target: { ...target, selection: 'ALL' } };
+  const ended = executeAction(state, { type: 'END_TURN', playerId: 'player-2' });
+  assert.ok(ended.success);
+  assert.equal(ended.state.activePlayerId, 'player-1');
+  assert.ok(applyEffect(ended.state, 'player-1', ended.state.players[0].board[0]!, effect).players[1].board[0]);
+  const resumed = executeAction(ended.state, { type: 'END_TURN', playerId: 'player-1' });
+  assert.ok(resumed.success);
+  assert.equal(resumed.state.activePlayerId, 'player-2');
+  assert.equal(resumed.state.players[1].board[0]!.entryDefenseActive, false);
+  assert.equal(applyEffect(resumed.state, 'player-1', resumed.state.players[0].board[0]!, effect).players[1].board[0], null);
+});
+
+test('random removal uses the seeded choice once and does not reroll a defended hit', () => {
+  let defendedHits = 0, ordinaryHits = 0;
+  for (let seed = 1; seed <= 20; seed++) {
+    const state = setup({ keywords: ['DEFENSE'] });
+    state.randomSeed = seed;
+    state.players[1].board[1] = { ...generateCardInstance(definition('ordinary'), { instanceId: 'ordinary' }), boardSlot: 1 };
+    const unprotected = structuredClone(state);
+    unprotected.players[1].board[0]!.entryDefenseActive = false;
+    const effect: CardEffect = { type: 'STRUCTURED', action: 'DESTROY', target: { ...target, selection: 'RANDOM' } };
+    const baseline = applyEffect(unprotected, 'player-1', unprotected.players[0].board[0]!, effect);
+    const result = applyEffect(state, 'player-1', state.players[0].board[0]!, effect);
+    if (!baseline.players[1].board[0]) {
+      defendedHits++;
+      assert.deepEqual(result.players[1].board, state.players[1].board);
+      assert.equal(result.events.filter(event => event.type === 'CARD_DESTROYED').length, 0);
+    } else {
+      ordinaryHits++;
+      assert.ok(result.players[1].board[0]);
+      assert.equal(result.players[1].board[1], null);
+    }
+  }
+  assert.ok(defendedHits > 0 && ordinaryHits > 0);
+});

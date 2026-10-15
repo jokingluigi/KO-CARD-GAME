@@ -1,23 +1,42 @@
-✔ entry defense excludes manual DAMAGE and rejects forged direct execution (5.100513ms)
-✔ entry defense excludes manual DESTROY and rejects forged direct execution (0.519073ms)
-✔ entry defense excludes manual RETIRE and rejects forged direct execution (0.421396ms)
-✔ entry defense excludes manual REMOVE_FROM_GAME and rejects forged direct execution (0.647667ms)
-✔ entry defense excludes manual SILENCE and rejects forged direct execution (0.545342ms)
-✔ entry defense excludes manual MOVE_TO_HAND and rejects forged direct execution (0.35757ms)
-✔ entry defense excludes manual BUFF and rejects forged direct execution (0.338831ms)
-✔ entry defense blocks attacks and area/random damage without consuming dodge (2.451231ms)
-✔ manual SCRIPT selectors exclude defense and cannot open an impossible mandatory choice (1.457898ms)
-✔ defense only protects a field card; hand and graveyard copies remain selectable (1.106218ms)
-✔ defense also prevents manual ally fusion selection (0.511451ms)
-✔ quest-exclusive champion token protects only its owner from attacks, effect and fatigue damage (2.26096ms)
-✔ champion token in hand or graveyard grants no champion protection (0.388346ms)
-✔ real spell selection rejects a defended target and resolves against another legal field card (2.90401ms)
-✔ automatic SAME_TARGET follow-ups may grant another keyword after granting defense (1.486352ms)
-ℹ tests 15
+✔ entry defense excludes manual DAMAGE and rejects forged direct execution (6.153147ms)
+✔ entry defense excludes manual DESTROY and rejects forged direct execution (0.476066ms)
+✔ entry defense excludes manual RETIRE and rejects forged direct execution (0.426001ms)
+✔ entry defense excludes manual REMOVE_FROM_GAME and rejects forged direct execution (0.520213ms)
+✔ entry defense excludes manual SILENCE and rejects forged direct execution (0.541405ms)
+✔ entry defense excludes manual MOVE_TO_HAND and rejects forged direct execution (0.41214ms)
+✔ entry defense excludes manual BUFF and rejects forged direct execution (0.444449ms)
+✔ entry defense blocks attacks and area/random damage without consuming dodge (2.377166ms)
+✔ manual SCRIPT selectors exclude defense and cannot open an impossible mandatory choice (1.777043ms)
+✔ defense only protects a field card; hand and graveyard copies remain selectable (1.102218ms)
+✔ defense also prevents manual ally fusion selection (0.624219ms)
+✔ quest-exclusive champion token protects only its owner from attacks, effect and fatigue damage (2.428723ms)
+✔ champion token in hand or graveyard grants no champion protection (0.342676ms)
+✔ real spell selection rejects a defended target and resolves against another legal field card (5.052961ms)
+✔ automatic SAME_TARGET follow-ups may grant another keyword after granting defense (1.479376ms)
+✔ entry defense prevents ALL DESTROY, including removal events and rewards (0.59834ms)
+✔ entry defense prevents RANDOM DESTROY, including removal events and rewards (0.385069ms)
+✔ entry defense prevents SAME_TARGET DESTROY, including removal events and rewards (2.472679ms)
+✔ entry defense prevents SELF DESTROY, including removal events and rewards (0.347413ms)
+✔ entry defense prevents ALL RETIRE, including removal events and rewards (0.88392ms)
+✔ entry defense prevents RANDOM RETIRE, including removal events and rewards (2.18005ms)
+✔ entry defense prevents SAME_TARGET RETIRE, including removal events and rewards (0.515265ms)
+✔ entry defense prevents SELF RETIRE, including removal events and rewards (0.310297ms)
+✔ entry defense prevents ALL REMOVE_FROM_GAME, including removal events and rewards (0.53156ms)
+✔ entry defense prevents RANDOM REMOVE_FROM_GAME, including removal events and rewards (0.317127ms)
+✔ entry defense prevents SAME_TARGET REMOVE_FROM_GAME, including removal events and rewards (0.291148ms)
+✔ entry defense prevents SELF REMOVE_FROM_GAME, including removal events and rewards (0.228684ms)
+✔ entry defense prevents ALL VANISH, including removal events and rewards (0.435615ms)
+✔ entry defense prevents RANDOM VANISH, including removal events and rewards (0.346001ms)
+✔ entry defense prevents SAME_TARGET VANISH, including removal events and rewards (0.264118ms)
+✔ entry defense prevents SELF VANISH, including removal events and rewards (0.277678ms)
+✔ area destruction still removes unprotected cards and leaves defended cards intact (0.422666ms)
+✔ defense survives the summon turn and opponent turn, then expires at the next owner turn start (1.5751ms)
+✔ random removal uses the seeded choice once and does not reroll a defended hit (8.604654ms)
+ℹ tests 34
 ℹ suites 0
-ℹ pass 15
+ℹ pass 34
 ℹ fail 0
 ℹ cancelled 0
 ℹ skipped 0
 ℹ todo 0
-ℹ duration_ms 1021.057494
+ℹ duration_ms 964.219197
