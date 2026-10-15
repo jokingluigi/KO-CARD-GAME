@@ -1,0 +1,64 @@
+{
+  "results": [
+    {
+      "width": 390,
+      "scene": "메인 메뉴",
+      "status": "PASS",
+      "framesRendered": 3
+    },
+    {
+      "width": 390,
+      "scene": "선수 · 주문 카드",
+      "status": "PASS",
+      "framesRendered": 3
+    },
+    {
+      "width": 390,
+      "scene": "챔피언 · 능력 · 퀘스트",
+      "status": "PASS",
+      "framesRendered": 3
+    },
+    {
+      "width": 390,
+      "scene": "전투 화면",
+      "status": "PASS",
+      "framesRendered": 3
+    },
+    {
+      "width": 390,
+      "scene": "작은 본문 · 긴 효과 비교",
+      "status": "PASS",
+      "framesRendered": 3
+    },
+    {
+      "width": 1440,
+      "scene": "메인 메뉴",
+      "status": "PASS",
+      "framesRendered": 3
+    },
+    {
+      "width": 1440,
+      "scene": "선수 · 주문 카드",
+      "status": "PASS",
+      "framesRendered": 3
+    },
+    {
+      "width": 1440,
+      "scene": "챔피언 · 능력 · 퀘스트",
+      "status": "PASS",
+      "framesRendered": 3
+    },
+    {
+      "width": 1440,
+      "scene": "전투 화면",
+      "status": "PASS",
+      "framesRendered": 3
+    },
+    {
+      "width": 1440,
+      "scene": "작은 본문 · 긴 효과 비교",
+      "status": "PASS",
+      "framesRendered": 3
+    }
+  ]
+}

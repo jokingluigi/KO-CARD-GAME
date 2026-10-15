@@ -1,0 +1,229 @@
+@font-face {
+  font-family: "NeoDunggeunmo Pro";
+  src: url("./assets/neodgm-pro-1.020.woff2") format("woff2");
+  font-style: normal;
+  font-weight: 400;
+  font-display: block;
+}
+@font-face {
+  font-family: "Noto Sans KR";
+  src: url("./assets/noto-sans-kr-korean-400-normal.woff2") format("woff2");
+  font-style: normal;
+  font-weight: 400;
+  font-display: block;
+}
+@font-face {
+  font-family: "Noto Sans KR";
+  src: url("./assets/noto-sans-kr-korean-700-normal.woff2") format("woff2");
+  font-style: normal;
+  font-weight: 700;
+  font-display: block;
+}
+@font-face {
+  font-family: "Noto Sans KR";
+  src: url("./assets/noto-sans-kr-korean-900-normal.woff2") format("woff2");
+  font-style: normal;
+  font-weight: 900;
+  font-display: block;
+}
+@font-face {
+  font-family: "Oswald";
+  src: url("./assets/oswald-latin-500-normal.woff2") format("woff2");
+  font-style: normal;
+  font-weight: 500;
+  font-display: block;
+}
+@font-face {
+  font-family: "Oswald";
+  src: url("./assets/oswald-latin-700-normal.woff2") format("woff2");
+  font-style: normal;
+  font-weight: 700;
+  font-display: block;
+}
+/* Imported only by the development QA document. Production never imports this file. */
+html[data-font-mode="full"],
+html[data-font-mode="hybrid"] {
+  --app-font-sans: "NeoDunggeunmo Pro", "Noto Sans KR", sans-serif;
+  --app-font-display: "NeoDunggeunmo Pro", "Noto Sans KR", sans-serif;
+}
+html[data-font-mode="full"] body,
+html[data-font-mode="hybrid"] body {
+  font-synthesis: none;
+}
+html[data-font-mode="full"] body *,
+html[data-font-mode="hybrid"] body * {
+  font-weight: 400 !important;
+  font-style: normal !important;
+  letter-spacing: normal !important;
+  font-synthesis: none;
+}
+/* Preserve both pieces of the existing logo, including its weight and tracking. */
+html[data-font-mode] .ko-main-menu__logo {
+  font-family: "Oswald", sans-serif;
+  font-weight: 900 !important;
+  letter-spacing: -0.055em !important;
+}
+html[data-font-mode] .ko-main-menu__tagline {
+  font-family: "Oswald", sans-serif;
+  font-weight: 700 !important;
+  letter-spacing: 0.3em !important;
+}
+html[data-font-mode="hybrid"]
+  :is(
+    .qa-readable,
+    .qa-readable *,
+    .qa-champion-copy p,
+    .qa-champion-copy p *,
+    .ko-inspector-content p,
+    .ko-inspector-content p *,
+    .line-clamp-6,
+    .line-clamp-6 *,
+    [role="dialog"] p,
+    [role="dialog"] p *,
+    input,
+    textarea
+  ) {
+  font-family: "Noto Sans KR", sans-serif;
+}
+/* Owner review: compact card effect copy 8px (numeric stats unchanged); expanded copy stays 16px. */
+html:not([data-font-mode="baseline"]) .qa-mini-card .line-clamp-6,
+html:not([data-font-mode="baseline"]) .ko-game-shell .line-clamp-6 {
+  font-size: 8px !important;
+  line-height: 1.25 !important;
+}
+html:not([data-font-mode="baseline"]) .qa-detail-card .line-clamp-6 {
+  font-size: 16px !important;
+  line-height: 1.25 !important;
+}
+html:not([data-font-mode="baseline"]) .qa-detail-card .line-clamp-2 {
+  font-size: 16px !important;
+  line-height: 1.1 !important;
+}
+html:not([data-font-mode="baseline"]) :is(.qa-readable, .qa-champion-copy p) {
+  font-size: 16px;
+  line-height: 1.5;
+}
+/* QA gallery only. No selectors below change production component internals. */
+.qa-gallery {
+  width: min(100%, 1040px);
+  margin: auto;
+  padding: 16px;
+  color: #eee;
+  background: #080808;
+}
+.qa-gallery h1 {
+  margin-bottom: 16px;
+  font-size: 32px;
+  line-height: 1.2;
+}
+.qa-card-gallery {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 14px 8px;
+}
+.qa-card-case {
+  min-width: 0;
+}
+.qa-card-case > p {
+  font-size: 12px;
+  margin-bottom: 4px;
+  overflow-wrap: anywhere;
+}
+.qa-mini-card {
+  width: 100%;
+  max-width: 130px;
+  margin: auto;
+}
+.qa-mini-card > [role="button"] {
+  width: 100% !important;
+  height: auto !important;
+}
+.qa-detail-card {
+  width: min(100%, 320px);
+  margin: 24px auto;
+}
+.qa-detail-card > div {
+  width: 100% !important;
+  height: auto !important;
+}
+.qa-gallery-button {
+  display: block;
+  margin: 16px auto;
+  padding: 12px;
+  border: 1px solid #b99243;
+  background: #19160e;
+  color: #f7db99;
+}
+.qa-champions {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 20px;
+}
+.qa-champion-copy {
+  min-width: 0;
+  border: 1px solid #393126;
+  padding: 16px;
+  background: #0b0b0b;
+}
+.qa-champion-copy h2 {
+  font-size: 24px;
+  line-height: 1.25;
+  margin: 8px 0;
+}
+.qa-champion-copy > img {
+  width: 112px;
+  height: 156px;
+  object-fit: contain;
+  margin: 0 auto 16px;
+}
+.qa-champion-copy > section {
+  margin-top: 20px;
+  border-top: 1px solid #302a23;
+  padding-top: 16px;
+}
+.qa-readable {
+  font-size: 16px;
+  line-height: 1.5;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+.qa-body-case {
+  margin-bottom: 24px;
+  border: 1px solid #393126;
+  padding: 16px;
+}
+@media (max-width: 600px) {
+  .qa-champions {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+/* Approved preview policy: abbreviate card faces, preserve complete detail copy. */
+[data-qa-compact-rules] {
+  position: relative;
+  display: block;
+  -webkit-line-clamp: unset;
+  line-clamp: unset;
+  flex-shrink: 0;
+  overflow: hidden;
+  max-height: calc(var(--qa-rules-lines, 1) * 1lh);
+}
+:has(> [data-qa-compact-rules]) {
+  padding-block: 0 !important;
+}
+/* No suffix gutter or pseudo-element: dots are part of the centered sentence. */
+[data-qa-compact-rules] {
+  padding-inline: 0;
+  text-align: center;
+}
+[data-qa-source-rules] {
+  position: absolute;
+  visibility: hidden;
+  pointer-events: none;
+}
+
+/* Historical Before comparison, even after the approved production font changes. */
+html[data-font-mode="baseline"] {
+  --app-font-sans: "Noto Sans KR", system-ui, sans-serif;
+  --app-font-display: "Oswald", sans-serif;
+}

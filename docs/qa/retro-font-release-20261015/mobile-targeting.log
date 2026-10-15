@@ -1,0 +1,16 @@
+320 {
+  before: { scale: 1, width: 320, scroll: 320, controls: 54, board: 164.15625 },
+  during: { scale: 1, width: 320, scroll: 320, controls: 54, board: 164.15625 }
+}
+360 {
+  before: { scale: 1, width: 360, scroll: 360, controls: 54, board: 164.15625 },
+  during: { scale: 1, width: 360, scroll: 360, controls: 54, board: 164.15625 }
+}
+390 {
+  before: { scale: 1, width: 390, scroll: 390, controls: 54, board: 164.15625 },
+  during: { scale: 1, width: 390, scroll: 390, controls: 54, board: 164.15625 }
+}
+412 {
+  before: { scale: 1, width: 412, scroll: 412, controls: 54, board: 164.15625 },
+  during: { scale: 1, width: 412, scroll: 412, controls: 54, board: 164.15625 }
+}

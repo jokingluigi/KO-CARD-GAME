@@ -1,0 +1,19 @@
+✔ black-orb revision 14 binds the exact administrator effect to one random enemy field wrestler (1.468914ms)
+✔ black-orb actual hand play destroys one enemy without target selection, retirement or graveyard placement (6.60096ms)
+✔ black-orb with no enemy completes normally and permits the next game action (1.571969ms)
+✔ black-orb field targeting includes ordinary and destroys it through the actual play path (0.581737ms)
+✔ black-orb field targeting includes draft and destroys it through the actual play path (0.547666ms)
+✔ black-orb field targeting includes token and destroys it through the actual play path (0.509898ms)
+✔ black-orb field targeting includes champion-token and destroys it through the actual play path (0.605572ms)
+✔ black-orb field targeting includes armor and destroys it through the actual play path (0.441615ms)
+✔ black-orb multiple enemies resolve exactly once using the shared deterministic seed (3.512635ms)
+✔ effect SUMMON and REVIVE do not execute black-orb entrance effects (0.896531ms)
+✔ black-orb reviewed binding respects authored effect config and does not guess future text (1.926624ms)
+ℹ tests 11
+ℹ suites 0
+ℹ pass 11
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 1004.400864

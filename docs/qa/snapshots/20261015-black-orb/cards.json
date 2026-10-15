@@ -1,0 +1,38 @@
+[
+  {
+    "id": "b723c7e6-c668-4afb-b77d-da0d16f16c31",
+    "name": "흑구슬마스터",
+    "cardType": "WRESTLER",
+    "cost": 5,
+    "attack": 5,
+    "health": 6,
+    "text": "등장:상대 필드에 있는 선수 카드들 중 무작위로 한장을 파괴합니다.",
+    "rarity": "EPIC",
+    "isStarterGrant": false,
+    "keywords": [],
+    "tags": [
+      "구슬마스터"
+    ],
+    "isToken": false,
+    "isChampionToken": false,
+    "effectId": null,
+    "effectConfig": {},
+    "imageAssetId": "/objects/uploads/card-images/ae6161e7-7cc1-4bcf-a253-b9ba7c56dc31.png",
+    "imageUrl": "/api/storage/objects/uploads/card-images/ae6161e7-7cc1-4bcf-a253-b9ba7c56dc31.png",
+    "imageDisplayMode": "COVER",
+    "imageScale": 0.84,
+    "imagePositionX": 63,
+    "imagePositionY": 59,
+    "entranceAudioAssetId": null,
+    "entranceAudioUrl": null,
+    "entranceAudioVolume": 100,
+    "entranceAudioEnabled": false,
+    "summonLine": null,
+    "retireLine": null,
+    "destroyLine": null,
+    "status": "PUBLISHED",
+    "version": 14,
+    "createdAt": "2026-09-15T02:03:06.539Z",
+    "updatedAt": "2026-10-14T22:48:45.192Z"
+  }
+]

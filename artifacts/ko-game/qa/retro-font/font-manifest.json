@@ -1,0 +1,49 @@
+{
+  "candidate": {
+    "family": "NeoDunggeunmo Pro",
+    "version": "1.020",
+    "repository": "https://github.com/neodgm/neodgm-pro-webfont",
+    "commit": "1751c2981808869750c7df391c1d2b486e978f12",
+    "sourcePath": "neodgm_pro/neodgm_pro.woff2",
+    "license": "SIL Open Font License 1.1",
+    "officialSha256": "b6b28ef07a91a889587b3f2485ad77d3cd116456f8bfbc50a271cbe90b39535d"
+  },
+  "baseline": {
+    "Noto Sans KR": "@fontsource/noto-sans-kr@5.2.9",
+    "Oswald": "@fontsource/oswald@5.2.8",
+    "source": "https://cdn.jsdelivr.net/npm/",
+    "license": "SIL Open Font License 1.1"
+  },
+  "files": [
+    {
+      "file": "neodgm-pro-1.020.woff2",
+      "bytes": 38144,
+      "sha256": "b6b28ef07a91a889587b3f2485ad77d3cd116456f8bfbc50a271cbe90b39535d"
+    },
+    {
+      "file": "noto-sans-kr-korean-400-normal.woff2",
+      "bytes": 541864,
+      "sha256": "3aa0d1d63f3b5b2a33053a41a34512eac63abfb1dc2112aeda04733656a1a6d9"
+    },
+    {
+      "file": "noto-sans-kr-korean-700-normal.woff2",
+      "bytes": 559192,
+      "sha256": "dab3d492daa687386292cff1499225db580f931f800ee0d124eb0636378c6020"
+    },
+    {
+      "file": "noto-sans-kr-korean-900-normal.woff2",
+      "bytes": 489252,
+      "sha256": "c4a87636aa7877afe1a0b952473bf61808a09daf97b3a55a25fa7a45d66b4e67"
+    },
+    {
+      "file": "oswald-latin-500-normal.woff2",
+      "bytes": 12704,
+      "sha256": "541b12882301dc44b73eaaed9e230709df1d299379c3594695870fc2f9e3ff0a"
+    },
+    {
+      "file": "oswald-latin-700-normal.woff2",
+      "bytes": 12672,
+      "sha256": "aae665c75af89ea7cb7d8ccc8b0911ea72267442ebcd84f6e3efa041ad3b3c16"
+    }
+  ]
+}

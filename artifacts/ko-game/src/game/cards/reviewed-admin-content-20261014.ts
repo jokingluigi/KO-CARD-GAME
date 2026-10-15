@@ -4,6 +4,28 @@ import type { PublishedCardRecord } from './published-cards';
 // Literal, reviewed administrator revisions. No runtime language interpretation.
 // User clarifications: effect summons skip entry effects; Blood Donor hits own champion.
 const bindings: Record<string, {text: string; abilities: CardAbility[]; keywords?:CardKeyword[]}> = {
+  // Administrator revision 14, verified by authenticated read on 2026-10-15.
+  "b723c7e6-c668-4afb-b77d-da0d16f16c31": {
+  "text": "등장:상대 필드에 있는 선수 카드들 중 무작위로 한장을 파괴합니다.",
+  "abilities": [
+    {
+      "trigger": "ENTER_FIELD",
+      "effects": [
+        {
+          "type": "STRUCTURED",
+          "action": "DESTROY",
+          "target": {
+            "zone": "BOARD",
+            "owner": "ENEMY",
+            "cardType": "WRESTLER",
+            "selection": "RANDOM",
+            "count": 1
+          }
+        }
+      ]
+    }
+  ]
+},
   "7653f417-ea62-4924-8605-3d88a435d728": {
     "text": "등장:상대 필드에 있는 선수 카드들 중에서 이 카드보다 공격력이 낮은 카드 1장을 침묵시킵니다.",
     "abilities": [

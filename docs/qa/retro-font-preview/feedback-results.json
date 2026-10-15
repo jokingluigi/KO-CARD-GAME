@@ -1,0 +1,19 @@
+{
+  "results": [
+    {
+      "mode": "baseline",
+      "status": "PASS",
+      "animation": "Actual PresentationFeedback, paused at identical 45% progress for capture"
+    },
+    {
+      "mode": "full",
+      "status": "PASS",
+      "animation": "Actual PresentationFeedback, paused at identical 45% progress for capture"
+    },
+    {
+      "mode": "hybrid",
+      "status": "PASS",
+      "animation": "Actual PresentationFeedback, paused at identical 45% progress for capture"
+    }
+  ]
+}

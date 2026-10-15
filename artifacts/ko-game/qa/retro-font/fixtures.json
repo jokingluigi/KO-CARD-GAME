@@ -1,0 +1,632 @@
+{
+  "cards": [
+    {
+      "id": "latest-wrestler-10",
+      "name": "데헌",
+      "cardType": "WRESTLER",
+      "cost": 3,
+      "attack": 1,
+      "health": 5,
+      "text": "이 카드가 상대 선수 카드를 리타이어 시킬때마다 +1/+1을 얻습니다.",
+      "rarity": "EPIC",
+      "isStarterGrant": false,
+      "keywords": [
+        "SURPRISE"
+      ],
+      "tags": [
+        "레이디"
+      ],
+      "isToken": false,
+      "isChampionToken": false,
+      "effectId": null,
+      "effectConfig": {},
+      "imageAssetId": "/objects/uploads/card-images/e63e3b7f-e58e-4b63-94a7-8521e640519b.png",
+      "imageUrl": "/api/storage/objects/uploads/card-images/e63e3b7f-e58e-4b63-94a7-8521e640519b.png",
+      "imageDisplayMode": "COVER",
+      "imageScale": 0.91,
+      "imagePositionX": 50,
+      "imagePositionY": 86,
+      "entranceAudioAssetId": null,
+      "entranceAudioUrl": null,
+      "entranceAudioVolume": 100,
+      "entranceAudioEnabled": false,
+      "summonLine": null,
+      "retireLine": null,
+      "destroyLine": null,
+      "status": "PUBLISHED",
+      "version": 12,
+      "createdAt": "2026-09-16T20:31:00.100Z",
+      "updatedAt": "2026-10-14T08:38:44.029Z",
+      "previewImageUrl": "/qa/retro-font/assets/card-latest-wrestler-10.png"
+    },
+    {
+      "id": "102e8061-c3b8-44a5-a11c-56379996fee7",
+      "name": "매드 사이언티스트 퍼플레인",
+      "cardType": "WRESTLER",
+      "cost": 3,
+      "attack": 2,
+      "health": 2,
+      "text": "등장:현재 내 손과 필드에 있는 '실험체' 태그가 달려있는 모든 아군 카드들에게 +1/+1을 부여하고, '치유'를 부여합니다.",
+      "rarity": "EPIC",
+      "isStarterGrant": false,
+      "keywords": [],
+      "tags": [],
+      "isToken": false,
+      "isChampionToken": false,
+      "effectId": null,
+      "effectConfig": {},
+      "imageAssetId": "/objects/uploads/card-images/602328df-8b61-4de8-a558-c595ecba34c5.png",
+      "imageUrl": "/api/storage/objects/uploads/card-images/602328df-8b61-4de8-a558-c595ecba34c5.png",
+      "imageDisplayMode": "COVER",
+      "imageScale": 0.84,
+      "imagePositionX": 50,
+      "imagePositionY": 61,
+      "entranceAudioAssetId": null,
+      "entranceAudioUrl": null,
+      "entranceAudioVolume": 100,
+      "entranceAudioEnabled": false,
+      "summonLine": null,
+      "retireLine": null,
+      "destroyLine": null,
+      "status": "PUBLISHED",
+      "version": 9,
+      "createdAt": "2026-09-23T16:51:28.099Z",
+      "updatedAt": "2026-10-07T08:15:32.270Z",
+      "previewImageUrl": "/qa/retro-font/assets/card-102e8061-c3b8-44a5-a11c-56379996fee7.png"
+    },
+    {
+      "id": "bcf2ac9b-1afd-41a3-a653-5f9af1e033bf",
+      "name": "좀비 플래티넘구슬 마스터",
+      "cardType": "WRESTLER",
+      "cost": 5,
+      "attack": 3,
+      "health": 3,
+      "text": "등장:필드에 있는 '좀비' 중 가장 수치의 합이 높은 '좀비'의 체력과 공격력을 자신에게 더합니다. '좀비'가 없다면 2/2 '좀비'를 생성하고 그 '좀비'의 체력과 공격력을 자신에게 더합니다.",
+      "rarity": "LEGENDARY",
+      "isStarterGrant": false,
+      "keywords": [],
+      "tags": [
+        "언데드",
+        "구슬마스터",
+        "히어로"
+      ],
+      "isToken": false,
+      "isChampionToken": false,
+      "effectId": null,
+      "effectConfig": {},
+      "imageAssetId": "/objects/uploads/card-images/05e8b4e7-7b5c-486d-9b6e-7a4550563d37.png",
+      "imageUrl": "/api/storage/objects/uploads/card-images/05e8b4e7-7b5c-486d-9b6e-7a4550563d37.png",
+      "imageDisplayMode": "COVER",
+      "imageScale": 0.87,
+      "imagePositionX": 46.5713,
+      "imagePositionY": 91.626,
+      "entranceAudioAssetId": null,
+      "entranceAudioUrl": null,
+      "entranceAudioVolume": 100,
+      "entranceAudioEnabled": false,
+      "summonLine": "으어........",
+      "retireLine": "크어얽.......!",
+      "destroyLine": null,
+      "status": "PUBLISHED",
+      "version": 14,
+      "createdAt": "2026-09-23T16:49:50.948Z",
+      "updatedAt": "2026-10-07T22:36:53.312Z",
+      "previewImageUrl": "/qa/retro-font/assets/card-bcf2ac9b-1afd-41a3-a653-5f9af1e033bf.png"
+    },
+    {
+      "id": "epic-spell-veil-of-silence",
+      "name": "침묵의 장막",
+      "cardType": "TECHNIQUE",
+      "cost": 5,
+      "attack": 0,
+      "health": 0,
+      "text": "모든 상대 선수를 침묵시킵니다.",
+      "rarity": "EPIC",
+      "isStarterGrant": false,
+      "keywords": [],
+      "tags": [],
+      "isToken": false,
+      "isChampionToken": false,
+      "effectId": "SCRIPT_V1",
+      "effectConfig": {
+        "scripts": [
+          {
+            "steps": [
+              {
+                "type": "EFFECT",
+                "effect": {
+                  "action": "SILENCE",
+                  "target": {
+                    "zone": "BOARD",
+                    "count": 1,
+                    "owner": "ENEMY",
+                    "cardType": "WRESTLER",
+                    "selection": "ALL"
+                  }
+                }
+              }
+            ],
+            "trigger": "ACTIVE",
+            "version": "SCRIPT_V1"
+          }
+        ]
+      },
+      "imageAssetId": "/objects/uploads/card-images/dc158801-7fec-4a0a-8972-c01c90da81ed.png",
+      "imageUrl": "/api/storage/objects/uploads/card-images/dc158801-7fec-4a0a-8972-c01c90da81ed.png",
+      "imageDisplayMode": "COVER",
+      "imageScale": 0.93,
+      "imagePositionX": 56.5552,
+      "imagePositionY": 88.3423,
+      "entranceAudioAssetId": null,
+      "entranceAudioUrl": null,
+      "entranceAudioVolume": 100,
+      "entranceAudioEnabled": false,
+      "summonLine": null,
+      "retireLine": null,
+      "destroyLine": null,
+      "status": "PUBLISHED",
+      "version": 3,
+      "createdAt": "2026-10-03T13:13:50.273Z",
+      "updatedAt": "2026-10-04T15:21:04.500Z",
+      "previewImageUrl": "/qa/retro-font/assets/card-epic-spell-veil-of-silence.png"
+    },
+    {
+      "id": "db6c775a-0933-4e55-9fdc-a94861c6e10a",
+      "name": "태그 체인지",
+      "cardType": "TECHNIQUE",
+      "cost": 3,
+      "attack": 0,
+      "health": 0,
+      "text": "필드의 선수 1장을 자신의 손패에 있는 그 카드의 코스트보다 낮거나 같은 선수와 교체해서 냅니다. 교체 된 카드 2장의 공격력에 1을 부여합니다.",
+      "rarity": "EPIC",
+      "isStarterGrant": false,
+      "keywords": [],
+      "tags": [],
+      "isToken": false,
+      "isChampionToken": false,
+      "effectId": null,
+      "effectConfig": {},
+      "imageAssetId": "/objects/uploads/card-images/0d313d5f-e8d2-45c7-a2ba-d13a584edf65.png",
+      "imageUrl": "/api/storage/objects/uploads/card-images/0d313d5f-e8d2-45c7-a2ba-d13a584edf65.png",
+      "imageDisplayMode": "COVER",
+      "imageScale": 0.93,
+      "imagePositionX": 50,
+      "imagePositionY": 20,
+      "entranceAudioAssetId": null,
+      "entranceAudioUrl": null,
+      "entranceAudioVolume": 100,
+      "entranceAudioEnabled": false,
+      "summonLine": null,
+      "retireLine": null,
+      "destroyLine": null,
+      "status": "PUBLISHED",
+      "version": 7,
+      "createdAt": "2026-09-11T13:29:47.544Z",
+      "updatedAt": "2026-10-05T13:28:28.352Z",
+      "previewImageUrl": "/qa/retro-font/assets/card-db6c775a-0933-4e55-9fdc-a94861c6e10a.png"
+    },
+    {
+      "id": "75863228-ae51-48cb-afec-43cc391672a8",
+      "name": "발단",
+      "cardType": "WRESTLER",
+      "cost": 1,
+      "attack": 1,
+      "health": 1,
+      "text": "등장:'좀비'를 하나 소환합니다.",
+      "rarity": "EPIC",
+      "isStarterGrant": false,
+      "keywords": [
+        "DODGE"
+      ],
+      "tags": [
+        "언데드"
+      ],
+      "isToken": false,
+      "isChampionToken": false,
+      "effectId": null,
+      "effectConfig": {},
+      "imageAssetId": "/objects/uploads/card-images/8c0b8be0-e73f-4f3c-9681-9350902e3939.png",
+      "imageUrl": "/api/storage/objects/uploads/card-images/8c0b8be0-e73f-4f3c-9681-9350902e3939.png",
+      "imageDisplayMode": "CONTAIN",
+      "imageScale": 0.82,
+      "imagePositionX": 35,
+      "imagePositionY": 47,
+      "entranceAudioAssetId": null,
+      "entranceAudioUrl": null,
+      "entranceAudioVolume": 100,
+      "entranceAudioEnabled": false,
+      "summonLine": null,
+      "retireLine": null,
+      "destroyLine": null,
+      "status": "PUBLISHED",
+      "version": 18,
+      "createdAt": "2026-09-10T08:33:33.827Z",
+      "updatedAt": "2026-10-14T08:30:31.526Z",
+      "previewImageUrl": "/qa/retro-font/assets/card-75863228-ae51-48cb-afec-43cc391672a8.png"
+    }
+  ],
+  "champions": [
+    {
+      "id": "0db142af-750e-4929-a464-5daf1bc75452",
+      "name": "챔피언 퍼플레인",
+      "description": "",
+      "imageAssetId": "/objects/uploads/card-images/e2e1a4d1-5b44-4b2e-866a-a8f410db7307.png",
+      "imageUrl": "/api/storage/objects/uploads/card-images/e2e1a4d1-5b44-4b2e-866a-a8f410db7307.png",
+      "imageDisplayMode": "COVER",
+      "imageScale": 1.4,
+      "imagePositionX": 65.6,
+      "imagePositionY": 16.4,
+      "questCompletedPortraitEnabled": false,
+      "questCompletedPortraitAssetId": null,
+      "questCompletedPortraitUrl": null,
+      "maxHealth": 25,
+      "abilityName": "의식",
+      "abilityCost": 1,
+      "abilityText": "내 챔피언 또는 아군 선수 1장에게 1 피해를 줍니다. 챔피언이면 카드 1장을 뽑고 그 카드의 비용을 1 감소시킵니다. 선수이면 공격력 +1을 부여합니다.",
+      "gameStartAbilityName": null,
+      "gameStartAbilityText": null,
+      "gameStartAbilityEffects": null,
+      "abilityEffects": {
+        "effects": [
+          {
+            "action": "DAMAGE",
+            "target": {
+              "zone": "CHARACTER",
+              "count": 1,
+              "owner": "SELF",
+              "selection": "PLAYER_CHOICE"
+            },
+            "values": {
+              "amount": 1,
+              "purpleRainFollowup": true
+            },
+            "trigger": "ACTIVE"
+          }
+        ]
+      },
+      "hasQuest": true,
+      "questName": "순례의 길",
+      "questText": "이번 게임에서 내 카드 또는 챔피언 효과로 내 챔피언 또는 아군 선수가 피해를 총 8회 받으세요. 상대 효과와 전투 피해는 제외합니다.",
+      "questCondition": {
+        "event": "DAMAGE_DEALT",
+        "required": 8,
+        "selfEffectDamage": true
+      },
+      "questProgressRequired": 8,
+      "questRewardText": "고유 능력이 강화됩니다.",
+      "questRewardEffects": {
+        "effects": [
+          {
+            "action": "UPGRADE_CHAMPION_ABILITY",
+            "trigger": "ENTER_FIELD"
+          }
+        ]
+      },
+      "upgradedAbilityName": "축복",
+      "upgradedAbilityCost": 1,
+      "upgradedAbilityText": "내 챔피언 또는 아군 선수 1장에게 2 피해를 줍니다. 챔피언이면 카드 1장을 뽑고 그 카드의 비용을 2 감소시킵니다. 선수이면 공격력 +2을 부여합니다.",
+      "upgradedAbilityEffects": {
+        "effects": [
+          {
+            "action": "DAMAGE",
+            "target": {
+              "zone": "CHARACTER",
+              "count": 1,
+              "owner": "SELF",
+              "selection": "PLAYER_CHOICE"
+            },
+            "values": {
+              "amount": 2,
+              "purpleRainFollowup": true
+            },
+            "trigger": "ACTIVE"
+          }
+        ]
+      },
+      "championTokenDefinitionId": null,
+      "championTokenEffectText": null,
+      "championTokenEffectEffects": null,
+      "abilityAudioAssetId": null,
+      "abilityAudioUrl": null,
+      "abilityAudioVolume": 100,
+      "questCompleteAudioAssetId": "/objects/uploads/audio/59861fbe-a8b7-4533-8eda-00d37746ea2d.mp3",
+      "questCompleteAudioUrl": null,
+      "questCompleteAudioVolume": 100,
+      "questCompleteAudioEnabled": true,
+      "introLineOne": "두려워하지 마십시오. 고통은 그대를 해치러 온 것이 아닙니다.",
+      "introLineTwo": "아아… 또 하나의 영혼이 스스로 제단을 찾아왔군요.",
+      "presentationLines": {
+        "AFTER_QUEST": {},
+        "BEFORE_QUEST": {
+          "OOPS": "흠… 고통조차 그대를 깨우지 못했다니.",
+          "HELLO": "평안이 함께하기를. 비록 잠시뿐일지라도.",
+          "SORRY": "미안합니다. 아직 그대가 견딜 준비가 되지 않았군요.",
+          "DEFEAT": "후후… 좋습니다. 아픔은 언제나 배울 것이 많지요.",
+          "THANKS": "이 은혜, 잊지 않겠습니다. 고통 없는 감사라니… 참으로 드문 일이군요.",
+          "VICTORY": "아아… 이제야 조용해졌군요. 깨달음이 찾아온 모양입니다.",
+          "THREATEN": "비명을 참지 마십시오. 그것 또한 기도의 한 형태입니다.",
+          "WELL_PLAYED": "흠… 아직 구원받을 가치가 있겠습니다."
+        }
+      },
+      "status": "PUBLISHED",
+      "isCraftable": true,
+      "isStarterGrant": false,
+      "version": 16,
+      "createdAt": "2026-09-23T17:01:39.572Z",
+      "updatedAt": "2026-10-07T23:24:23.937Z",
+      "previewImageUrl": "/qa/retro-font/assets/champion-0db142af-750e-4929-a464-5daf1bc75452.png"
+    },
+    {
+      "id": "5e4a5a52-ef2c-4e1a-9b76-a4edc9f79e2c",
+      "name": "챔피언 라 칼라베라",
+      "description": "",
+      "imageAssetId": "/objects/uploads/card-images/e8b21e75-2352-47b9-ab04-1b39590937c8.png",
+      "imageUrl": "/api/storage/objects/uploads/card-images/e8b21e75-2352-47b9-ab04-1b39590937c8.png",
+      "imageDisplayMode": "COVER",
+      "imageScale": 1.4,
+      "imagePositionX": 50,
+      "imagePositionY": 8.9,
+      "questCompletedPortraitEnabled": false,
+      "questCompletedPortraitAssetId": null,
+      "questCompletedPortraitUrl": null,
+      "maxHealth": 25,
+      "abilityName": "좀비 생성",
+      "abilityCost": 1,
+      "abilityText": "1코스트 1/1 좀비를 소환합니다.",
+      "gameStartAbilityName": null,
+      "gameStartAbilityText": null,
+      "gameStartAbilityEffects": null,
+      "abilityEffects": {
+        "effects": [
+          {
+            "action": "SUMMON",
+            "values": {
+              "count": 1,
+              "definitionRef": {
+                "name": "좀비"
+              },
+              "generatedModifiers": {
+                "attack": 0,
+                "health": 0
+              }
+            },
+            "trigger": "ACTIVE"
+          }
+        ]
+      },
+      "hasQuest": true,
+      "questName": "사령술 강화",
+      "questText": "이번 게임에서 아군 선수가 총 10회 리타이어하세요. DESTROY는 포함하지 않습니다.",
+      "questCondition": {
+        "event": "CARD_RETIRED",
+        "cardType": "WRESTLER",
+        "required": 10,
+        "strictEventCount": true
+      },
+      "questProgressRequired": 10,
+      "questRewardText": "고유 능력이 강화됩니다.",
+      "questRewardEffects": {
+        "effects": [
+          {
+            "action": "UPGRADE_CHAMPION_ABILITY",
+            "trigger": "ENTER_FIELD"
+          }
+        ]
+      },
+      "upgradedAbilityName": "좀비 생성 (강화)",
+      "upgradedAbilityCost": 1,
+      "upgradedAbilityText": "1코스트 2/2 좀비를 소환합니다.",
+      "upgradedAbilityEffects": {
+        "effects": [
+          {
+            "action": "SUMMON",
+            "values": {
+              "count": 1,
+              "definitionRef": {
+                "name": "좀비"
+              },
+              "generatedModifiers": {
+                "attack": 1,
+                "health": 1
+              }
+            },
+            "trigger": "ACTIVE"
+          }
+        ]
+      },
+      "championTokenDefinitionId": null,
+      "championTokenEffectText": null,
+      "championTokenEffectEffects": null,
+      "abilityAudioAssetId": null,
+      "abilityAudioUrl": null,
+      "abilityAudioVolume": 100,
+      "questCompleteAudioAssetId": "/objects/uploads/audio/9e2a7a92-9ff6-4707-885e-d6fb5b03cb22.mp3",
+      "questCompleteAudioUrl": null,
+      "questCompleteAudioVolume": 100,
+      "questCompleteAudioEnabled": true,
+      "introLineOne": "하하, 잘 왔어. 술 한잔할지 총 한발 받을지 골라.",
+      "introLineTwo": "어서 와, 친구. 관짝은 미리 골라뒀나?",
+      "presentationLines": {
+        "AFTER_QUEST": {},
+        "BEFORE_QUEST": {
+          "OOPS": "이거 참… 예상보다 질긴 놈이군",
+          "HELLO": "내 이름은 굳이 안 물어봐도 돼. 현상수배지에 적혀 있으니까.",
+          "SORRY": "이런, 손이 좀 빨랐군. 미안하게 됐어.",
+          "DEFEAT": "내 무덤에 흙 덮을 생각 마. 금방 다시 나올 테니까.",
+          "THANKS": "좋아. 오늘은 네 관짝 값은 아껴주마.",
+          "VICTORY": "자, 일어나. 죽었다고 일이 끝난 줄 알았나?",
+          "THREATEN": "죽으면 끝이라고 생각하지 마. 내 동네에선 거기서부터 취직이야.",
+          "WELL_PLAYED": "살아 있는 놈 중엔 꽤 쓸 만하군."
+        }
+      },
+      "status": "PUBLISHED",
+      "isCraftable": true,
+      "isStarterGrant": false,
+      "version": 25,
+      "createdAt": "2026-09-23T17:01:05.668Z",
+      "updatedAt": "2026-10-07T23:23:38.451Z",
+      "previewImageUrl": "/qa/retro-font/assets/champion-5e4a5a52-ef2c-4e1a-9b76-a4edc9f79e2c.png"
+    }
+  ],
+  "main": {
+    "notices": [
+      {
+        "id": "96d5d98a-b271-46c0-b64a-ef947b84a520",
+        "title": "공식 디코",
+        "body": "https://discord.gg/ZH8aPUdqn3\n패치노트, 이벤트, 피드백, 버그 리포트, 후원 전부 여기서 합니당\n무조건 필수로 들어와주세여\nVVIP로 모시겠읍니다",
+        "displayOrder": 99,
+        "enabled": true,
+        "createdAt": "2026-09-23T10:57:28.720Z",
+        "updatedAt": "2026-09-28T12:38:20.633Z"
+      },
+      {
+        "id": "8dd60d71-3af5-40fe-b215-22a16a22102e",
+        "title": "시즌 1 (베타 테스트)",
+        "body": "신규 챔피언\n피 스타 세븐/예거/여울/판도라",
+        "displayOrder": 98,
+        "enabled": true,
+        "createdAt": "2026-09-22T22:59:19.672Z",
+        "updatedAt": "2026-09-28T12:38:32.661Z"
+      },
+      {
+        "id": "0e1e8630-70ab-4598-a2c6-7b7ea9dbf173",
+        "title": "'어디든지' 키워드에 관하여",
+        "body": "현재 텍스트들을 대규모로 정리해야되서 카드 설명에 못적어놨지만 '어디든지'는 묘지를 제외한 덱, 손패, 필드를 말합니다",
+        "displayOrder": 0,
+        "enabled": true,
+        "createdAt": "2026-09-28T12:37:57.004Z",
+        "updatedAt": "2026-09-28T12:37:57.004Z"
+      },
+      {
+        "id": "99c636cd-a2c9-4809-b5cb-d977ccbab627",
+        "title": "챔피언 판도라 퀘스트 보상 버그",
+        "body": "챔피언 판도라 토큰 카드의 효과가 제대로 발동 안됨\n임시로 버프중",
+        "displayOrder": 0,
+        "enabled": true,
+        "createdAt": "2026-09-24T15:47:21.200Z",
+        "updatedAt": "2026-09-28T12:38:15.164Z"
+      },
+      {
+        "id": "96f5a168-c475-4dd1-b94a-890703ca51d8",
+        "title": "커스텀 카드 제작 이벤트",
+        "body": "현재 11월까지 디코 서버 들어오면 원하는 커스텀 카드 제작 이벤트 진행중!",
+        "displayOrder": 0,
+        "enabled": true,
+        "createdAt": "2026-09-23T10:35:29.360Z",
+        "updatedAt": "2026-09-24T15:14:13.082Z"
+      }
+    ],
+    "background": null,
+    "bgm": null
+  },
+  "frames": {
+    "frames": []
+  },
+  "assets": [
+    {
+      "path": "assets/card-latest-wrestler-10.png",
+      "source": "https://ko-card-game.onrender.com/api/storage/objects/uploads/card-images/e63e3b7f-e58e-4b63-94a7-8521e640519b.png",
+      "sha256": "c2d0539ee4f31faa9ce90fa7b08a62bedb8063e67156e92d5c06c9d446de5adb",
+      "bytes": 1252075
+    },
+    {
+      "path": "assets/card-102e8061-c3b8-44a5-a11c-56379996fee7.png",
+      "source": "https://ko-card-game.onrender.com/api/storage/objects/uploads/card-images/602328df-8b61-4de8-a558-c595ecba34c5.png",
+      "sha256": "e8f1283c9454688f066af2703dce4d207d4509f7013ecf72f3b4e03516268512",
+      "bytes": 1067416
+    },
+    {
+      "path": "assets/card-bcf2ac9b-1afd-41a3-a653-5f9af1e033bf.png",
+      "source": "https://ko-card-game.onrender.com/api/storage/objects/uploads/card-images/05e8b4e7-7b5c-486d-9b6e-7a4550563d37.png",
+      "sha256": "6844e090879dbe4607db46b9d8c63452f39bc161abf21a8eb5ef066deb9b563e",
+      "bytes": 1629786
+    },
+    {
+      "path": "assets/card-epic-spell-veil-of-silence.png",
+      "source": "https://ko-card-game.onrender.com/api/storage/objects/uploads/card-images/dc158801-7fec-4a0a-8972-c01c90da81ed.png",
+      "sha256": "9f7ca4a53e2b06775d0cc63109c35a3a0952c15f73d7315f28228a2467b22fea",
+      "bytes": 1552677
+    },
+    {
+      "path": "assets/card-db6c775a-0933-4e55-9fdc-a94861c6e10a.png",
+      "source": "https://ko-card-game.onrender.com/api/storage/objects/uploads/card-images/0d313d5f-e8d2-45c7-a2ba-d13a584edf65.png",
+      "sha256": "823b790a6e52866b8192bf5578616aa29f677ddf08b99b86fcb4418ef4f6209f",
+      "bytes": 1438343
+    },
+    {
+      "path": "assets/card-75863228-ae51-48cb-afec-43cc391672a8.png",
+      "source": "https://ko-card-game.onrender.com/api/storage/objects/uploads/card-images/8c0b8be0-e73f-4f3c-9681-9350902e3939.png",
+      "sha256": "1084c8ea1b4d382a910b8ae81dd78db294b7521b22e7961fd975e2c992617f5f",
+      "bytes": 1177358
+    },
+    {
+      "path": "assets/champion-0db142af-750e-4929-a464-5daf1bc75452.png",
+      "source": "https://ko-card-game.onrender.com/api/storage/objects/uploads/card-images/e2e1a4d1-5b44-4b2e-866a-a8f410db7307.png",
+      "sha256": "8dc9548d79764bd5a24911a67e3b7342ba10c36158a5e8db6f2b4be41656d507",
+      "bytes": 2680731
+    },
+    {
+      "path": "assets/champion-5e4a5a52-ef2c-4e1a-9b76-a4edc9f79e2c.png",
+      "source": "https://ko-card-game.onrender.com/api/storage/objects/uploads/card-images/e8b21e75-2352-47b9-ab04-1b39590937c8.png",
+      "sha256": "041b157eb7611b02a468e7228b74654dc462da4b779105c2b98c50f56c01d243",
+      "bytes": 2995689
+    }
+  ],
+  "sourceSnapshot": "20261014-predeploy-admin",
+  "sourceMainCommit": "8d3f417ff062cc8d5390e27485d2b12cf0c9bf3d",
+  "towerScene": {
+    "id": "tower-v2-foundation-20261009-ending",
+    "name": "일반 엔딩",
+    "lines": [
+      {
+        "side": "LEFT",
+        "text": "정상의 대결에서 승리했다. 이번 도전은 끝났지만 새로운 덱으로 다시 도전할 수 있다.",
+        "order": 0,
+        "speakerId": "tower-v2-foundation-20261009-character-3",
+        "expression": "NEUTRAL"
+      }
+    ],
+    "music": {
+      "name": "KO 배틀 음악 시즌 2 할로윈.mp3",
+      "volume": 83,
+      "assetUrl": "/api/storage/objects/uploads/game-bgm/6f202f8f-4453-4a6b-82ae-fc3e2162f217.mp3"
+    }
+  },
+  "towerCharacters": [
+    {
+      "id": "fafec67f-7595-4489-b5c7-992ddb14d74c",
+      "displayName": "판도라",
+      "sprites": {}
+    },
+    {
+      "id": "4c517f40-dd6d-452a-8de9-64fbf51c9ef1",
+      "displayName": "미니언 A",
+      "sprites": {}
+    },
+    {
+      "id": "tower-v2-foundation-20261009-character-0",
+      "displayName": "챔피언 라 칼라베라",
+      "sprites": {}
+    },
+    {
+      "id": "tower-v2-foundation-20261009-character-1",
+      "displayName": "챔피언 여울",
+      "sprites": {}
+    },
+    {
+      "id": "tower-v2-foundation-20261009-character-2",
+      "displayName": "챔피언 예거",
+      "sprites": {}
+    },
+    {
+      "id": "tower-v2-foundation-20261009-character-3",
+      "displayName": "챔피언 판도라",
+      "sprites": {}
+    },
+    {
+      "id": "tower-v2-foundation-20261009-character-4",
+      "displayName": "챔피언 피 스타 세븐",
+      "sprites": {}
+    }
+  ]
+}

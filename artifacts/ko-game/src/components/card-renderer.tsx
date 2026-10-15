@@ -3,7 +3,8 @@ import { getCardDefinitions } from '../game/cards/test-cards';
 import { repairedLegacyCardKeywords } from '../game/cards/legacy-card-effect-repair';
 import { MotionNumber } from './presentation-motion';
 import { CardRulesText } from './card-rules-text';
-import { useEffect, useState, type CSSProperties, type KeyboardEvent, type ReactNode, type Ref } from "react";
+import { FittedCardRules, FittedCardRulesContext } from './fitted-card-rules';
+import { useContext, useEffect, useState, type CSSProperties, type KeyboardEvent, type ReactNode, type Ref } from "react";
 import { CardArtwork } from "./card-artwork";
 import { KEYWORD_DESCRIPTIONS } from './alt-inspector-utils';
 import {
@@ -284,7 +285,9 @@ export function CardRenderer({
     DISABLED: "봉인",
     MULTI_STRIKE: "연타",
   };
+  const fitRules = useContext(FittedCardRulesContext);
   const nameClass =
+    fitRules && size === "detail" ? "text-[16px] leading-[1.1]" :
     name.length > 22
       ? size === "admin"
         ? "text-[9px]"
@@ -410,7 +413,7 @@ export function CardRenderer({
 
         {showRules && (
           <div
-            className="pointer-events-none absolute z-20 flex items-center justify-center overflow-hidden px-[5%] py-[3%] text-center text-neutral-100"
+            className={`pointer-events-none absolute z-20 flex items-center justify-center overflow-hidden px-[5%] text-center text-neutral-100 ${fitRules ? "py-0" : "py-[3%]"}`}
             style={{
               left: `${scaleInset(frameLayout.rules.left, frameScale, frameOffsetX)}%`,
               right: `${scaleInset(frameLayout.rules.right, frameScale, -frameOffsetX)}%`,
@@ -418,9 +421,12 @@ export function CardRenderer({
               bottom: `${scaleInset(frameLayout.rules.bottom, frameScale, -frameOffsetY)}%`,
             }}
           >
-            <span className={`line-clamp-6 w-full font-bold drop-shadow-[0_1px_2px_rgba(0,0,0,0.95)] ${rulesClass}`}>
+            {fitRules ? <FittedCardRules
+              text={displayRulesText || "효과 없음"} interactive={highlight !== "target"}
+              className={`w-full drop-shadow-[0_1px_2px_rgba(0,0,0,0.95)] ${size === "detail" ? "text-[16px]" : size === "admin" ? "text-[10px]" : "text-[8px]"} leading-tight`}
+            /> : <span className={`line-clamp-6 w-full font-bold drop-shadow-[0_1px_2px_rgba(0,0,0,0.95)] ${rulesClass}`}>
               <CardRulesText text={displayRulesText || "효과 없음"} interactive={highlight !== "target"}/>
-            </span>
+            </span>}
           </div>
         )}
 
