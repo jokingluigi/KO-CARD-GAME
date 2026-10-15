@@ -1,0 +1,20 @@
+✔ standalone Alt keydown toggles the card info mode (1.398981ms)
+✔ Alt key repeat and modifier shortcuts do not toggle the mode (0.181574ms)
+✔ Alt keyup never toggles the mode (0.084076ms)
+✔ Alt alone is ignored while an editable control has focus (0.123756ms)
+✔ wheel history suppression requires a physical Alt+wheel gesture (0.100331ms)
+✔ 상세창은 원래 태그와 효과로 얻은 태그를 함께 표시한다 (1.170225ms)
+✔ 상세창은 네 번째 이후의 모든 기본 태그도 보존한다 (0.245951ms)
+✔ 상단 카드는 아래쪽에 표시한다 (0.181905ms)
+✔ 하단 손패는 패널을 카드 위쪽으로 올린다 (0.09949ms)
+✔ 좌우 끝 카드는 패널을 viewport 안으로 clamp한다 (0.194052ms)
+✔ 긴 패널도 viewport 여백 안에서 clamp한다 (0.095084ms)
+✔ 카드 수치 변경은 기본값 대비 before/after와 delta를 만든다 (0.348115ms)
+ℹ tests 12
+ℹ suites 0
+ℹ pass 12
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 1138.083406

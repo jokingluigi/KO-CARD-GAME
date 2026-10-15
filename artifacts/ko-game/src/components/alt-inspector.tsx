@@ -276,7 +276,7 @@ export function Inspectable({
   className?: string;
 }) {
   const context = useContext(AltInspectContext);
-  const lastTouchInspectAt = useRef(0);
+  const lastTouchAt = useRef(0);
   if (!context) return <>{children}</>;
 
   const inspect = (element: HTMLElement) =>
@@ -299,28 +299,38 @@ export function Inspectable({
   return (
     <div
       className={className}
-      onMouseEnter={(event) => inspect(event.currentTarget)}
+      onMouseEnter={(event) => {
+        if (Date.now() - lastTouchAt.current > 1000) inspect(event.currentTarget);
+      }}
       onMouseLeave={(event) => {
         const next = event.relatedTarget;
         if (next instanceof Element && next.closest('[aria-label="상세정보"]')) return;
         context.scheduleClear();
       }}
-      onFocus={(event) => inspect(event.currentTarget)}
-      onBlur={context.clear}
-      onPointerUp={(event) => {
-        if (event.pointerType !== 'touch') return;
-        if (touchInspectTriggerOnly && !(event.target as Element).closest('[data-touch-inspect-trigger]')) {
-          context.clear();
-          return;
-        }
-        lastTouchInspectAt.current = Date.now();
-        toggleTouch(event.currentTarget);
+      onFocus={(event) => {
+        if (Date.now() - lastTouchAt.current > 1000) inspect(event.currentTarget);
+      }}
+      onPointerDown={(event) => {
+        if (event.pointerType === 'touch') lastTouchAt.current = Date.now();
+      }}
+      onBlur={(event) => {
+        const next = event.relatedTarget;
+        if (next instanceof Element && next.closest('[aria-label="상세정보"]')) return;
+        context.clear();
       }}
       onClickCapture={(event) => {
-        // Desktop clicks and gamepad buttons have no touch pointer event.
-        if (Date.now() - lastTouchInspectAt.current > 450 &&
-            (event.target as Element).closest('[data-touch-inspect-trigger]')) {
+        const isInfoButton = Boolean((event.target as Element).closest('[data-touch-inspect-trigger]'));
+        const isTouchClick = Date.now() - lastTouchAt.current <= 1000;
+        // Open after the tap's click is delivered. Opening on pointerup lets the
+        // following compatibility click hit the new panel's artwork button.
+        if (isInfoButton || (isTouchClick && !touchInspectTriggerOnly)) {
           toggleTouch(event.currentTarget);
+          if (isInfoButton) {
+            event.preventDefault();
+            event.stopPropagation();
+          }
+        } else if (isTouchClick) {
+          context.clear();
         }
       }}
     >
