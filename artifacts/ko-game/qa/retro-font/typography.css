@@ -85,10 +85,10 @@ html[data-font-mode="hybrid"]
   ) {
   font-family: "Noto Sans KR", sans-serif;
 }
-/* Do not shrink text to fit: expose overflow as a review finding instead. */
+/* Owner review: compact card copy 10px; expanded copy stays 16px. */
 html:not([data-font-mode="baseline"]) .qa-mini-card .line-clamp-6,
 html:not([data-font-mode="baseline"]) .ko-game-shell .line-clamp-6 {
-  font-size: 12px !important;
+  font-size: 10px !important;
   line-height: 1.25 !important;
 }
 html:not([data-font-mode="baseline"]) .qa-detail-card .line-clamp-6 {
