@@ -7,6 +7,7 @@ import "../../src/battle-presentation.css";
 import "../../src/mobile-battle.css";
 import "./typography.css";
 import fixtures from "./fixtures.json";
+import { FittedCardRulesContext } from "../../src/components/fitted-card-rules";
 import { CompactRulesPreview } from "./compact-rules-preview";
 import { MainMenu } from "../../src/components/main-menu";
 import { CardRenderer } from "../../src/components/card-renderer";
@@ -341,25 +342,27 @@ function Battle() {
 }
 const memory = memoryLocation({ path: "/" });
 createRoot(document.getElementById("root")!).render(
-  <Router hook={memory.hook}>
-    <CompactRulesPreview />
-    {scene === "menu" ? (
-      <MainMenu
-        user={user}
-        onLogout={noop}
-        onAiMatch={noop}
-        onDeckEdit={noop}
-      />
-    ) : scene === "cards" ? (
-      <Cards />
-    ) : scene === "champions" ? (
-      <Champions />
-    ) : scene === "readability" ? (
-      <Readability />
-    ) : (
-      <Battle />
-    )}
-  </Router>,
+  <FittedCardRulesContext.Provider value={params.get("production") === "1"}>
+    <Router hook={memory.hook}>
+      {params.get("production") !== "1" && <CompactRulesPreview />}
+      {scene === "menu" ? (
+        <MainMenu
+          user={user}
+          onLogout={noop}
+          onAiMatch={noop}
+          onDeckEdit={noop}
+        />
+      ) : scene === "cards" ? (
+        <Cards />
+      ) : scene === "champions" ? (
+        <Champions />
+      ) : scene === "readability" ? (
+        <Readability />
+      ) : (
+        <Battle />
+      )}
+    </Router>
+  </FittedCardRulesContext.Provider>,
 );
 Object.assign(window, {
   __fontReview: {

@@ -1,0 +1,13 @@
+{
+  "generatedAt": "2026-10-15T02:36:45.753701+00:00",
+  "sourceOrigin": "https://ko-card-game-vr69.onrender.com",
+  "sourcePath": "/api/admin/cards",
+  "access": "authenticated GET only, existing administrator session, official frontend proxy; no login",
+  "captureScope": "Only the requested black-orb card; not a full current catalog audit",
+  "sourceCardCount": 166,
+  "exportedCardCount": 1,
+  "version": 14,
+  "updatedAt": "2026-10-14T22:48:45.192Z",
+  "sha256": "88dcbf8fa43d508b072c3c57312e4b08d10fca5fc3a8e1f4bdf663ca731873b3",
+  "stableDoubleRead": true
+}

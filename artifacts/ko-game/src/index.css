@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;700;900&family=Oswald:wght@500;700&display=swap');
+@import './retro-typography.css';
 @import 'tailwindcss';
 @import 'tw-animate-css';
 @import './premium-presentation.css';
@@ -81,8 +81,8 @@
   --input: 240 10% 15%;
   --ring: 45 93% 47%;
 
-  --app-font-sans: 'Noto Sans KR', system-ui, sans-serif;
-  --app-font-display: 'Oswald', sans-serif;
+  --app-font-sans: 'NeoDunggeunmo Pro', 'Noto Sans KR', system-ui, sans-serif;
+  --app-font-display: 'NeoDunggeunmo Pro', 'Noto Sans KR', sans-serif;
   
   --radius: 0.5rem;
 }

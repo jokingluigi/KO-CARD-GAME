@@ -397,9 +397,12 @@ try {
     await page.evaluate(() =>
       [...document.fonts].some((f) => f.family === "NeoDunggeunmo Pro"),
     ),
-    false,
+    true,
   );
-  additional.push({ case: "normal-app-excludes-preview-font", status: "PASS" });
+  additional.push({
+    case: "normal-app-includes-approved-font",
+    status: "PASS",
+  });
   await context.close();
   assert.deepEqual(errors, []);
   assert.deepEqual(requests, []);
@@ -422,7 +425,7 @@ try {
       unexpectedRequests: requests,
     },
     physicalSmartphoneTest: "NOT_RUN",
-    visualApproval: "PENDING",
+    visualApproval: "APPROVED_FULL_RETRO",
     visualFailures: quality,
     results,
     additional,
@@ -436,7 +439,7 @@ try {
       matrix: results.length,
       additional: additional.length,
       visualFailures: quality.length,
-      visualApproval: "PENDING",
+      visualApproval: "APPROVED_FULL_RETRO",
     }),
   );
 } finally {

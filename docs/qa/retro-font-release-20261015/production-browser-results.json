@@ -1,0 +1,172 @@
+{
+  "results": [
+    {
+      "width": 360,
+      "height": 740,
+      "scene": "cards",
+      "status": "PASS",
+      "numericFontsValuesGeometryUnchanged": true
+    },
+    {
+      "width": 360,
+      "height": 740,
+      "scene": "battle",
+      "status": "PASS",
+      "numericFontsValuesGeometryUnchanged": true
+    },
+    {
+      "width": 360,
+      "height": 740,
+      "scene": "menu",
+      "status": "PASS",
+      "numericFontsValuesGeometryUnchanged": false
+    },
+    {
+      "width": 360,
+      "height": 740,
+      "scene": "champions",
+      "status": "PASS",
+      "numericFontsValuesGeometryUnchanged": false
+    },
+    {
+      "width": 360,
+      "scene": "actual-app-guest-entry",
+      "status": "PASS"
+    },
+    {
+      "width": 375,
+      "height": 812,
+      "scene": "cards",
+      "status": "PASS",
+      "numericFontsValuesGeometryUnchanged": true
+    },
+    {
+      "width": 375,
+      "height": 812,
+      "scene": "battle",
+      "status": "PASS",
+      "numericFontsValuesGeometryUnchanged": true
+    },
+    {
+      "width": 375,
+      "height": 812,
+      "scene": "menu",
+      "status": "PASS",
+      "numericFontsValuesGeometryUnchanged": false
+    },
+    {
+      "width": 375,
+      "height": 812,
+      "scene": "champions",
+      "status": "PASS",
+      "numericFontsValuesGeometryUnchanged": false
+    },
+    {
+      "width": 375,
+      "scene": "actual-app-guest-entry",
+      "status": "PASS"
+    },
+    {
+      "width": 390,
+      "height": 844,
+      "scene": "cards",
+      "status": "PASS",
+      "numericFontsValuesGeometryUnchanged": true
+    },
+    {
+      "width": 390,
+      "height": 844,
+      "scene": "battle",
+      "status": "PASS",
+      "numericFontsValuesGeometryUnchanged": true
+    },
+    {
+      "width": 390,
+      "height": 844,
+      "scene": "menu",
+      "status": "PASS",
+      "numericFontsValuesGeometryUnchanged": false
+    },
+    {
+      "width": 390,
+      "height": 844,
+      "scene": "champions",
+      "status": "PASS",
+      "numericFontsValuesGeometryUnchanged": false
+    },
+    {
+      "width": 390,
+      "scene": "actual-app-guest-entry",
+      "status": "PASS"
+    },
+    {
+      "width": 412,
+      "height": 915,
+      "scene": "cards",
+      "status": "PASS",
+      "numericFontsValuesGeometryUnchanged": true
+    },
+    {
+      "width": 412,
+      "height": 915,
+      "scene": "battle",
+      "status": "PASS",
+      "numericFontsValuesGeometryUnchanged": true
+    },
+    {
+      "width": 412,
+      "height": 915,
+      "scene": "menu",
+      "status": "PASS",
+      "numericFontsValuesGeometryUnchanged": false
+    },
+    {
+      "width": 412,
+      "height": 915,
+      "scene": "champions",
+      "status": "PASS",
+      "numericFontsValuesGeometryUnchanged": false
+    },
+    {
+      "width": 412,
+      "scene": "actual-app-guest-entry",
+      "status": "PASS"
+    },
+    {
+      "width": 1440,
+      "height": 900,
+      "scene": "cards",
+      "status": "PASS",
+      "numericFontsValuesGeometryUnchanged": true
+    },
+    {
+      "width": 1440,
+      "height": 900,
+      "scene": "battle",
+      "status": "PASS",
+      "numericFontsValuesGeometryUnchanged": true
+    },
+    {
+      "width": 1440,
+      "height": 900,
+      "scene": "menu",
+      "status": "PASS",
+      "numericFontsValuesGeometryUnchanged": false
+    },
+    {
+      "width": 1440,
+      "height": 900,
+      "scene": "champions",
+      "status": "PASS",
+      "numericFontsValuesGeometryUnchanged": false
+    },
+    {
+      "width": 1440,
+      "scene": "actual-app-guest-entry",
+      "status": "PASS"
+    }
+  ],
+  "physicalPhone": "NOT_RUN",
+  "mode": "approved FULL RETRO",
+  "productionCSSOnly": true
+}

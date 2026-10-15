@@ -221,3 +221,9 @@ html:not([data-font-mode="baseline"]) :is(.qa-readable, .qa-champion-copy p) {
   visibility: hidden;
   pointer-events: none;
 }
+
+/* Historical Before comparison, even after the approved production font changes. */
+html[data-font-mode="baseline"] {
+  --app-font-sans: "Noto Sans KR", system-ui, sans-serif;
+  --app-font-display: "Oswald", sans-serif;
+}

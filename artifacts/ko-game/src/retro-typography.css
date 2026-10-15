@@ -1,0 +1,68 @@
+@font-face {
+  font-family: "NeoDunggeunmo Pro";
+  src: url("./assets/fonts/neodgm-pro-1.020.woff2") format("woff2");
+  font-style: normal;
+  font-weight: 400;
+  font-display: block;
+}
+@font-face {
+  font-family: "Noto Sans KR";
+  src: url("./assets/fonts/noto-sans-kr-korean-400-normal.woff2") format("woff2");
+  font-style: normal;
+  font-weight: 400;
+  font-display: block;
+}
+@font-face {
+  font-family: "Noto Sans KR";
+  src: url("./assets/fonts/noto-sans-kr-korean-700-normal.woff2") format("woff2");
+  font-style: normal;
+  font-weight: 700;
+  font-display: block;
+}
+@font-face {
+  font-family: "Noto Sans KR";
+  src: url("./assets/fonts/noto-sans-kr-korean-900-normal.woff2") format("woff2");
+  font-style: normal;
+  font-weight: 900;
+  font-display: block;
+}
+@font-face {
+  font-family: "Oswald";
+  src: url("./assets/fonts/oswald-latin-500-normal.woff2") format("woff2");
+  font-style: normal;
+  font-weight: 500;
+  font-display: block;
+}
+@font-face {
+  font-family: "Oswald";
+  src: url("./assets/fonts/oswald-latin-700-normal.woff2") format("woff2");
+  font-style: normal;
+  font-weight: 700;
+  font-display: block;
+}
+/* Approved FULL RETRO: Regular face, with no synthetic weight or italic. */
+html:not([data-font-mode="baseline"]) body,
+html:not([data-font-mode="baseline"]) body * {
+  font-weight: 400 !important;
+  font-style: normal !important;
+  letter-spacing: normal !important;
+  font-synthesis: none;
+}
+/* Preserve the existing logo typography. */
+html .ko-main-menu__logo {
+  font-family: "Oswald", sans-serif;
+  font-weight: 900 !important;
+  letter-spacing: -0.055em !important;
+}
+html .ko-main-menu__tagline {
+  font-family: "Oswald", sans-serif;
+  font-weight: 700 !important;
+  letter-spacing: 0.3em !important;
+}
+.ko-card-rules-copy {
+  display: block;
+  flex-shrink: 0;
+  text-align: center;
+  padding-inline: 0;
+  overflow: hidden;
+}
