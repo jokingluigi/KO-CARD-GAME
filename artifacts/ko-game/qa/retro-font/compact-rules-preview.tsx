@@ -43,6 +43,8 @@ export function CompactRulesPreview() {
         if (!Number.isFinite(lineHeight) || available <= 0) continue;
         const lines = Math.max(1, Math.floor(available / lineHeight));
         text.style.setProperty("--qa-rules-lines", String(lines));
+        // Measure without the marker gutter, so a resize can restore full text.
+        text.dataset.qaTruncated = "false";
         text.dataset.qaTruncated = String(
           text.scrollHeight > lines * lineHeight + 1,
         );

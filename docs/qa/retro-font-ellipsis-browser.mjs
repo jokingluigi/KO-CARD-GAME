@@ -38,6 +38,9 @@ try {
               text: e.textContent,
               truncated: e.dataset.qaTruncated,
               marker: getComputedStyle(e, "::after").content,
+              markerBackground: getComputedStyle(e, "::after").backgroundColor,
+              markerWidth: getComputedStyle(e, "::after").width,
+              markerGutter: getComputedStyle(e).paddingInlineEnd,
               top: r.top,
               bottom: r.bottom,
               boxTop: b.top,
@@ -53,7 +56,11 @@ try {
           b.top >= b.boxTop - 1 && b.bottom <= b.boxBottom + 1,
           JSON.stringify(b),
         );
-        if (b.truncated === "true") assert.equal(b.marker, '"••••"');
+        if (b.truncated === "true") {
+          assert.equal(b.marker, '"••••"');
+          assert.equal(b.markerBackground, "rgba(0, 0, 0, 0)");
+          assert.ok(parseFloat(b.markerGutter) >= parseFloat(b.markerWidth));
+        }
       }
       await page
         .getByRole("button", { name: "카드 상세정보 열기", exact: true })

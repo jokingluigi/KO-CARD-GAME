@@ -85,10 +85,10 @@ html[data-font-mode="hybrid"]
   ) {
   font-family: "Noto Sans KR", sans-serif;
 }
-/* Owner review: compact card copy 10px; expanded copy stays 16px. */
+/* Owner review: compact card effect copy 8px (numeric stats unchanged); expanded copy stays 16px. */
 html:not([data-font-mode="baseline"]) .qa-mini-card .line-clamp-6,
 html:not([data-font-mode="baseline"]) .ko-game-shell .line-clamp-6 {
-  font-size: 10px !important;
+  font-size: 8px !important;
   line-height: 1.25 !important;
 }
 html:not([data-font-mode="baseline"]) .qa-detail-card .line-clamp-6 {
@@ -201,10 +201,9 @@ html:not([data-font-mode="baseline"]) :is(.qa-readable, .qa-champion-copy p) {
 /* Approved preview policy: abbreviate card faces, preserve complete detail copy. */
 [data-qa-compact-rules] {
   position: relative;
-  display: -webkit-box;
-  -webkit-box-orient: vertical;
-  -webkit-line-clamp: var(--qa-rules-lines, 1);
-  line-clamp: var(--qa-rules-lines, 1);
+  display: block;
+  -webkit-line-clamp: unset;
+  line-clamp: unset;
   flex-shrink: 0;
   overflow: hidden;
   max-height: calc(var(--qa-rules-lines, 1) * 1lh);
@@ -212,13 +211,16 @@ html:not([data-font-mode="baseline"]) :is(.qa-readable, .qa-champion-copy p) {
 :has(> [data-qa-compact-rules]) {
   padding-block: 0 !important;
 }
+[data-qa-compact-rules][data-qa-truncated="true"] {
+  padding-inline-end: 2.25em;
+}
 [data-qa-compact-rules][data-qa-truncated="true"]::after {
   content: "••••";
   position: absolute;
   inset: auto 0 0 auto;
-  padding-left: 0.2em;
-  min-width: 2em;
-  background: #090909;
+  padding: 0;
+  width: 2em;
+  background: transparent;
   color: inherit;
   line-height: inherit;
   text-align: right;

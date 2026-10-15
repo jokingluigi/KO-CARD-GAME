@@ -62,6 +62,8 @@ with zipfile.ZipFile(archive, 'w', zipfile.ZIP_DEFLATED) as output:
     output.write(root / 'review-results.json', 'review-results.json')
     output.write(root / 'ellipsis-results.json', 'ellipsis-results.json')
     output.write(published / 'font-validation.json', 'font-validation.json')
+    if (published / 'numeric-layout-preservation.json').exists():
+        output.write(published / 'numeric-layout-preservation.json', 'numeric-layout-preservation.json')
     for file in images.glob('*.png'):
         output.write(file, 'images/' + file.name)
     for file in (root / 'individual').glob('*.png'):
