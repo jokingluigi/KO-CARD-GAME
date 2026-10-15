@@ -369,6 +369,7 @@ export function CardInspectContent({ card, definition:override }: { card: CardIn
         showRules={false}
         imageDisplaySettings={definition}
           runtimeKeywords={getActiveCardKeywords(card)}
+          keywordConfig={{ ...definition?.effectConfig, armor: card.grantedText?.armor ?? card.armor }}
          isSilenced={card.isSilenced}
          isStunned={card.isStunned}
          isAbilityDisabled={card.isAbilityDisabled}

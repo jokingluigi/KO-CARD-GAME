@@ -1,0 +1,11 @@
+AI QA report written: /workspace/KO-CARD-GAME/qa-results/latest-wrestlers-20261015-ai-100.md
+✔ AI completes 100 varied deterministic full matches through legal engine actions (49245.244268ms)
+✔ AI choice is stable when opponent hand contents change but hidden-zone size stays constant (5.619379ms)
+ℹ tests 2
+ℹ suites 0
+ℹ pass 2
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 50297.790786

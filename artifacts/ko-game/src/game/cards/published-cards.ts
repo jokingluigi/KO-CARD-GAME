@@ -1,3 +1,4 @@
+import { reviewedLatestAdminAbilities } from './reviewed-admin-content-20261015';
 import { reviewedCurrentAdminAbilities, reviewedCurrentAdminKeywords } from './reviewed-admin-content-20261014';
 import { reviewedContentAbilities } from './reviewed-content-20261012';
 import { reviewedAdminContentAbilities } from './reviewed-admin-content-20261013';
@@ -229,7 +230,7 @@ export function cardRecordToDefinition(card: PublishedCardRecord): CardDefinitio
     // Administrator-chosen names must not select another card's legacy rules.
     return { ...awakening, ...card, cardType: 'WRESTLER', rarity: 'CHAMPION',
       isToken: true, isChampionToken: true, questExclusive: true, awakeningStage: awakening.awakeningStage,
-      rulesText: card.text, keywords: [...card.keywords], abilities: reviewedContentAbilities(card) ?? textCardAbilities(card) ?? abilitiesFor(card.effectId, card.effectConfig), effectId: card.effectId,
+      rulesText: card.text, keywords: [...card.keywords], abilities: reviewedLatestAdminAbilities(card) ?? reviewedContentAbilities(card) ?? textCardAbilities(card) ?? abilitiesFor(card.effectId, card.effectConfig), effectId: card.effectId,
       awakeningLegacyPassives: card.text === awakening.rulesText,
       effectConfig: { ...awakening.effectConfig, ...card.effectConfig } };
   }
@@ -248,7 +249,7 @@ export function cardRecordToDefinition(card: PublishedCardRecord): CardDefinitio
       return { ...effect, target };
     }) } };
   }
-  const reviewedCurrent = reviewedCurrentAdminAbilities(card);
+  const reviewedCurrent = reviewedLatestAdminAbilities(card) ?? reviewedCurrentAdminAbilities(card);
   const reviewedAdmin = reviewedAdminContentAbilities(card);
   const implementation = reviewedCurrent || reviewedAdmin ? null : newCardImplementation(card);
   if (card.id === 'dc43dc88-38d7-499b-ad89-6b83f773fe62' && Array.isArray(card.effectConfig.effects)) {

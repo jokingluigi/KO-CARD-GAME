@@ -44,6 +44,9 @@ on:
       - artifacts/api-server/src/routes/daily-quests.ts
       - docs/qa/mobile-history-browser.mjs
       - docs/qa/battle-card-info-portraits-browser.mjs
+      - docs/qa/latest-wrestler-revisions-browser.mjs
+      - docs/qa/snapshots/20261015-wrestler-revisions/**
+      - lib/game-engine/tsconfig.json
       - docs/qa/field-attack-drag-browser.mjs
       - docs/qa/mobile-deck-controls-browser.mjs
       - artifacts/api-server/src/lib/ai-match-quest-service*
@@ -148,6 +151,14 @@ jobs:
       - name: Current card catalog, full engine and 100 AI matches
         run: node docs/qa/current-card-engine.mjs
 
+      - name: Latest administrator content snapshot AI matches
+        env:
+          KO_QA_ADMIN_SNAPSHOT_DIR: docs/qa/snapshots/20261015-wrestler-revisions
+          KO_QA_ADMIN_AI_REPORT: qa-results/latest-wrestler-revisions-ai-100.md
+        run: |
+          node --import ./docs/qa/checkpoints/20261006/qa-loader.mjs --test --test-isolation=none artifacts/ko-game/src/game/qa/latest-admin-ai-20261013.test.ts
+          node --import ./docs/qa/checkpoints/20261006/qa-loader.mjs --test --test-isolation=none artifacts/ko-game/src/game/qa/current-content-ai-20261012.test.ts
+
       - name: First-entry browser regression guard
         env:
           KO_QA_ORIGIN: http://127.0.0.1:4173
@@ -213,6 +224,7 @@ jobs:
           KO_QA_COMPILED_CSS=1 run_browser docs/qa/mobile-history-browser.mjs
           KO_QA_COMPILED_CSS=1 run_browser docs/qa/mobile-portrait-battle-browser.mjs
           run_browser docs/qa/battle-card-info-portraits-browser.mjs
+          run_browser docs/qa/latest-wrestler-revisions-browser.mjs
           run_browser docs/qa/field-attack-drag-browser.mjs
           run_browser docs/qa/mobile-deck-controls-browser.mjs
           run_browser docs/qa/daily-quests-browser.mjs

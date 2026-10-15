@@ -1,0 +1,37 @@
+✔ latest pain musician deals 3 to own champion and adds exactly 2 attack at real turn end (9.855836ms)
+✔ latest fanatic gains attack only, once per actual champion damage event (1.541255ms)
+✔ latest immature alchemist excludes itself, including empty friendly field (1.691832ms)
+✔ latest small devil deals 2 before granting itself +1/+1 (2.664238ms)
+✔ latest Ruina excludes its own definition from generation and counts its tagged live zones (2.503055ms)
+✔ latest Cassandra generates another public authority wrestler and grants only that card regeneration (1.694236ms)
+✔ latest Pandora pinfall grants +1/+1 once to itself and other tagged allies only (2.590327ms)
+✔ latest destruction messenger replaces a sourced retirement and gains only +1/+1 (3.307749ms)
+✔ latest awakened dealer cannot attack champion until every opposing field slot is empty (4.261138ms)
+✔ latest administrator keyword flags load without stat overrides: 씨 몬스터 (0.670061ms)
+✔ latest administrator keyword flags load without stat overrides: 여울의 보디가드 (0.116396ms)
+✔ latest administrator keyword flags load without stat overrides: 황소할배 (0.074442ms)
+✔ Cassandra with no eligible other card never grants regeneration to an existing hand card (0.749952ms)
+✔ Cassandra large-hand generation grants regeneration only to the generated card (1.118967ms)
+✔ Pandora overkill does not trigger pinfall or buff tagged allies (0.885376ms)
+✔ latest bandit recruitment grants 2 attack and Wanted through actual spell use (1.198929ms)
+✔ latest bodyguard taunts attackers and remains immune to selected effects (0.704894ms)
+✔ latest bull retains armor 1, damage cap 3 and taunt prohibition (0.854549ms)
+✔ Luna acquires persistent armor and regeneration once when allies meet their conditions (1.203224ms)
+✔ Luna no longer gains armor every time it takes damage (0.728839ms)
+✔ Joking Luigi summons public authority wrestlers beside itself, buffs each other entry once and skips summoned entry effects (1.453893ms)
+✔ Kamisator gains a dodge charge on attack when a friendly authority tag exists (1.381745ms)
+✔ Human cooker uses the current friendly field tag condition for its additional feast discount (0.892786ms)
+✔ Briganda buffs immediately from total reserved gold: previous 2 plus 3 Wanted becomes +5/+5 (1.25961ms)
+✔ two Brigandas both gain the intercepted amount while opponent keeps only base turn gold (1.300572ms)
+✔ silenced Briganda does not cancel opponent bonus or gain stats (0.638954ms)
+✔ nested same-source entry buffs do not skip or replay the remaining summon sequence (1.262765ms)
+✔ nested pinfall resolves both buffs before continuing the original manually targeted effect sequence (1.491349ms)
+✔ latest Sea Monster discounts only in hand on an actual allied retirement and preserves cost minimum 1 (2.507422ms)
+ℹ tests 29
+ℹ suites 0
+ℹ pass 29
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 1058.377028

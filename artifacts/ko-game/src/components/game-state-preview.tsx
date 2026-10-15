@@ -1716,6 +1716,7 @@ function HandCard({
        className={`ko-hand-card ${isSelected ? "ko-hand-card--selected " : ""}${containerClass}`}
       imageDisplaySettings={def}
        runtimeKeywords={getActiveCardKeywords(card)}
+          keywordConfig={{ ...def?.effectConfig, armor: card.grantedText?.armor ?? card.armor }}
        isSilenced={card.isSilenced}
        isStunned={card.isStunned}
        isAbilityDisabled={card.isAbilityDisabled}
@@ -1884,6 +1885,7 @@ function BoardSlot({
          className={`${containerClass}${animating ? " opacity-0 pointer-events-none" : ""}${presentationActive ? " presentation-card-pulse" : ""}${hit ? ` attack-target-hit--${hitImpactLevel?.toLowerCase() ?? "light"}` : ""}`}
          imageDisplaySettings={def}
            runtimeKeywords={getActiveCardKeywords(card)}
+          keywordConfig={{ ...def?.effectConfig, armor: card.grantedText?.armor ?? card.armor }}
           isSilenced={card.isSilenced}
           isStunned={card.isStunned}
           isAbilityDisabled={card.isAbilityDisabled}

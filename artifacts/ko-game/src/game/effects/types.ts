@@ -45,6 +45,8 @@ export type CardEffect =
          /** Explicit adjacent source copy; rounded up, never a catalog roll. */
          adjacentCopyFraction?: number;
          armorGain?: number;
+         generatedKeywords?: CardKeyword[];
+         buffFromReservedGold?: boolean;
          healToFull?: boolean;
          replacementLowerCostSummon?: boolean;
          summonBoardSlot?: number;
@@ -109,6 +111,9 @@ export type CardAbility =
           incomingDamageLimitPerTurn?: number;
           retirementReplacementScope?: 'SOURCE_CAUSED_ENEMY';
           forbiddenKeywords?: CardKeyword[];
+          cannotAttackChampionWhileEnemyBoardOccupied?: boolean;
+          persistentFieldGrants?: { armorTag?: string; regenNameContains?: string };
+          interceptOpponentTurnBonusGold?: boolean;
       effects: CardEffect[];
       oncePerTurn?: boolean;
       condition?: AbilityCondition;
@@ -128,6 +133,7 @@ export type AbilityCondition =
   | { type: 'HAND_COUNT'; compare: 'GTE' | 'LTE' | 'EQ'; amount: number }
   | { type: 'BOARD_COUNT'; compare: 'GTE' | 'LTE' | 'EQ'; amount: number }
   | { type: 'HAS_TAG'; tag: string }
+  | { type: 'BOARD_HAS_TAG'; tag: string; present?: boolean }
   | { type: 'SOURCE_IN_HAND' }
   | { type: 'FIRST_ATTACK_GAIN' }
   | { type: 'ATTACK_GAIN' }
