@@ -1428,7 +1428,12 @@ function applyRandomCardCreation(
           : player),
         events: [...nextState.events, generated.event, ...(overflow ? [{ type: 'CARD_REMOVED' as const, playerId, cardInstanceId: generatedCard.instanceId, source: { type: 'SYSTEM' as const }, target: { type: 'CARD' as const, cardInstanceId: generatedCard.instanceId }, reason: 'OVERDRAW' }] : [])],
       };
-      return effect.values?.destination==='DECK'||overflow ? created : resolveHandAdditionListeners(created,playerId,[generatedCard]);
+      if (effect.values?.destination === 'DECK' || overflow) return created;
+      const added = resolveHandAdditionListeners(created, playerId, [generatedCard]);
+      return (effect.values?.generatedKeywords ?? []).reduce((next, keyword) => applyEffect(next, playerId, sourceCard, {
+        type: 'STRUCTURED', action: 'ADD_KEYWORD',
+        target: { zone: 'HAND', owner: 'SELF', selection: 'SAME_TARGET', count: 1 }, values: { keyword },
+      }, [generatedCard.instanceId]), added);
     }
     const owner = nextState.players.find((player) => player.id === playerId);
     const slot = towerOpenSlot(nextState, playerId);

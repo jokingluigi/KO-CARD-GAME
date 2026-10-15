@@ -45,6 +45,7 @@ export type CardEffect =
          /** Explicit adjacent source copy; rounded up, never a catalog roll. */
          adjacentCopyFraction?: number;
          armorGain?: number;
+         generatedKeywords?: CardKeyword[];
          healToFull?: boolean;
          replacementLowerCostSummon?: boolean;
          summonBoardSlot?: number;
@@ -109,6 +110,7 @@ export type CardAbility =
           incomingDamageLimitPerTurn?: number;
           retirementReplacementScope?: 'SOURCE_CAUSED_ENEMY';
           forbiddenKeywords?: CardKeyword[];
+          cannotAttackChampionWhileEnemyBoardOccupied?: boolean;
       effects: CardEffect[];
       oncePerTurn?: boolean;
       condition?: AbilityCondition;
