@@ -120,7 +120,7 @@ export function getAttackLegality(
   const canAttackChampion = Boolean(
     opponent && entry.card.attacksUsedThisTurn < maximumAttacks &&
       !isChampionProtectedByToken(state, opponent.id) &&
-      !(hasOpponentWrestler && getActiveCardAbilities(entry.card).some(ability => 'cannotAttackChampionWhileEnemyBoardOccupied' in ability && ability.cannotAttackChampionWhileEnemyBoardOccupied)) &&
+      !(hasOpponentWrestler && !entry.card.isAbilityDisabled && getActiveCardAbilities(entry.card).some(ability => 'cannotAttackChampionWhileEnemyBoardOccupied' in ability && ability.cannotAttackChampionWhileEnemyBoardOccupied)) &&
       (!entry.card.enteredThisTurn || !hasKeyword(entry.card, 'SURPRISE')),
   );
   if (!hasOpponentWrestler && !canAttackChampion) {
@@ -294,7 +294,7 @@ export function attack(
   }
 
   if (target.type === 'PLAYER') {
-    if (defendingPlayer?.board.some(Boolean) && getActiveCardAbilities(attacker).some(ability => 'cannotAttackChampionWhileEnemyBoardOccupied' in ability && ability.cannotAttackChampionWhileEnemyBoardOccupied)) return actionFailure(state, 'INVALID_ATTACK_TARGET', '상대 필드에 선수가 있는 동안에는 챔피언을 공격할 수 없습니다.');
+    if (defendingPlayer?.board.some(Boolean) && !attacker.isAbilityDisabled && getActiveCardAbilities(attacker).some(ability => 'cannotAttackChampionWhileEnemyBoardOccupied' in ability && ability.cannotAttackChampionWhileEnemyBoardOccupied)) return actionFailure(state, 'INVALID_ATTACK_TARGET', '상대 필드에 선수가 있는 동안에는 챔피언을 공격할 수 없습니다.');
     if (!defendingPlayer) {
       return actionFailure(
         state,

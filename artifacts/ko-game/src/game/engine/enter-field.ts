@@ -1,3 +1,4 @@
+import { refreshPersistentFieldGrants } from './reviewed-field-rules';
 import { mergeZombie } from './zombie-token';
 import { startCountdown } from '../cards/countdown';
 import type { CardInstance } from '../cards/types';
@@ -54,7 +55,7 @@ export function enterField(
     entryCause,
   };
 
-  const enteredState: GameState = refreshTowerAuras({
+  const fieldState: GameState = refreshTowerAuras({
     ...state,
     ...(state.tower ? { tower: towerContextAfterEntry(state, playerId) } : {}),
     players: state.players.map((candidate) => {
@@ -74,6 +75,7 @@ export function enterField(
     ...(state.tower?.playerId === playerId ? { tower: { ...towerContextAfterEntry(state, playerId)!, nextEntryBuffs: 0 } } : {}),
   });
 
+  const enteredState = refreshPersistentFieldGrants(fieldState);
   const afterEnter = entryCause === 'PLAY_FROM_HAND' || entryCause === 'CHAMPION_DEPLOY'
     ? resolveTriggeredAbilities(
       enteredState,

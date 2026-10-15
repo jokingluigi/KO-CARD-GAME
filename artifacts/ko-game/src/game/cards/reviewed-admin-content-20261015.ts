@@ -433,6 +433,281 @@ const bindings: Record<string, { text: string; abilities: CardAbility[] }> = {
         "cannotAttackChampionWhileEnemyBoardOccupied": true
       }
     ]
+  },
+  "29473daa-309c-41e0-bff4-c4b69b062d2f": {
+    "text": "내 필드에 있는 모든 선수 카드들에게 공격력을 2 부여하고 추가로 해당 선수 카드들에게 '수배'를 추가합니다.",
+    "abilities": [
+      {
+        "trigger": "ENTER_FIELD",
+        "effects": [
+          {
+            "type": "STRUCTURED",
+            "action": "BUFF",
+            "target": {
+              "zone": "BOARD",
+              "owner": "SELF",
+              "cardType": "WRESTLER",
+              "selection": "ALL",
+              "count": 4
+            },
+            "values": {
+              "attack": 2,
+              "health": 0
+            }
+          },
+          {
+            "type": "STRUCTURED",
+            "action": "ADD_KEYWORD",
+            "target": {
+              "zone": "BOARD",
+              "owner": "SELF",
+              "cardType": "WRESTLER",
+              "selection": "ALL",
+              "count": 4
+            },
+            "values": {
+              "keyword": "WANTED"
+            }
+          }
+        ]
+      }
+    ]
+  },
+  "df532c95-0e4d-4b17-8200-a86e6a682341": {
+    "text": "등장: 자신의 양 옆에 '디 어쏘리티' 태그가 있는 카드들 중에서 무작위로 소환하고 자신을 제외한 생성한 그 선수 카드들에게 '도발'을 부여합니다. 이 카드가 필드에 있을때 '디 어쏘리티' 카드가 소환되거나 등장할때 그 카드에게 +1/+1을 부여합니다.",
+    "abilities": [
+      {
+        "trigger": "ENTER_FIELD",
+        "effects": [
+          {
+            "type": "STRUCTURED",
+            "action": "SUMMON",
+            "target": {
+              "zone": "BOARD",
+              "count": 2,
+              "owner": "SELF",
+              "cardType": "WRESTLER",
+              "selection": "ADJACENT_EMPTY_SLOTS",
+              "randomScope": "STANDARD",
+              "filter": {
+                "tagsAny": [
+                  "디 어쏘리티"
+                ]
+              }
+            }
+          },
+          {
+            "type": "STRUCTURED",
+            "action": "ADD_KEYWORD",
+            "target": {
+              "zone": "BOARD",
+              "count": 2,
+              "owner": "SELF",
+              "cardType": "WRESTLER",
+              "selection": "SAME_TARGET"
+            },
+            "values": {
+              "keyword": "TAUNT",
+              "resolvedAutomaticTarget": true
+            }
+          }
+        ]
+      },
+      {
+        "trigger": "CARD_ENTERED",
+        "eventOwner": "SELF",
+        "effects": [
+          {
+            "type": "STRUCTURED",
+            "action": "BUFF",
+            "target": {
+              "zone": "BOARD",
+              "owner": "SELF",
+              "cardType": "WRESTLER",
+              "selection": "SAME_TARGET",
+              "count": 1,
+              "filter": {
+                "tagsAny": [
+                  "디 어쏘리티"
+                ]
+              }
+            },
+            "values": {
+              "attack": 1,
+              "health": 1,
+              "resolvedAutomaticTarget": true
+            }
+          }
+        ]
+      }
+    ]
+  },
+  "latest-wrestler-11": {
+    "text": "이 카드가 공격할때마다 상대 덱에서 무작위 카드 1장을 내 손으로 훔쳐옵니다. 이때 아군 필드에 '디 어쏘리티' 카드가 있었다면 '회피(1)'을 얻습니다.",
+    "abilities": [
+      {
+        "trigger": "SELF_ATTACK",
+        "effects": [
+          {
+            "type": "SCRIPT",
+            "script": {
+              "steps": [
+                {
+                  "id": "stolenCard",
+                  "type": "SELECT",
+                  "target": {
+                    "zone": "DECK",
+                    "count": 1,
+                    "owner": "ENEMY",
+                    "selection": "RANDOM",
+                    "randomScope": "STANDARD"
+                  }
+                },
+                {
+                  "type": "EFFECT",
+                  "effect": {
+                    "action": "STEAL",
+                    "target": {
+                      "zone": "DECK",
+                      "count": 1,
+                      "owner": "ENEMY",
+                      "resultId": "stolenCard",
+                      "selection": "ALL"
+                    }
+                  }
+                }
+              ],
+              "trigger": "SELF_ATTACK",
+              "version": "SCRIPT_V1"
+            }
+          }
+        ]
+      },
+      {
+        "trigger": "SELF_ATTACK",
+        "condition": {
+          "type": "BOARD_HAS_TAG",
+          "tag": "디 어쏘리티"
+        },
+        "effects": [
+          {
+            "type": "STRUCTURED",
+            "action": "ADD_KEYWORD",
+            "target": {
+              "zone": "BOARD",
+              "owner": "SELF",
+              "selection": "SELF",
+              "count": 1
+            },
+            "values": {
+              "keyword": "DODGE"
+            }
+          }
+        ]
+      }
+    ]
+  },
+  "latest-wrestler-4": {
+    "text": "등장:손패에 '만찬'을 비용 1 깍아서 한장 추가합니다. 만약에 필드에 '디 어쏘리티'가 있었다면 비용을 추가로 1 더 깍습니다.",
+    "abilities": [
+      {
+        "trigger": "ENTER_FIELD",
+        "effects": [
+          {
+            "type": "STRUCTURED",
+            "action": "GENERATE",
+            "values": {
+              "definitionRef": {
+                "id": "epic-spell-feast"
+              },
+              "destination": "HAND",
+              "count": 1,
+              "generatedModifiers": {
+                "cost": -1
+              }
+            }
+          }
+        ],
+        "condition": {
+          "type": "BOARD_HAS_TAG",
+          "tag": "디 어쏘리티",
+          "present": false
+        }
+      },
+      {
+        "trigger": "ENTER_FIELD",
+        "effects": [
+          {
+            "type": "STRUCTURED",
+            "action": "GENERATE",
+            "values": {
+              "definitionRef": {
+                "id": "epic-spell-feast"
+              },
+              "destination": "HAND",
+              "count": 1,
+              "generatedModifiers": {
+                "cost": -2
+              }
+            }
+          }
+        ],
+        "condition": {
+          "type": "BOARD_HAS_TAG",
+          "tag": "디 어쏘리티",
+          "present": true
+        }
+      }
+    ]
+  },
+  "9b7c0e52-2184-4ec1-8d68-39a4d5981d2a": {
+    "text": "아군 필드에 '디 어쏘리티' 태그가 있는 카드가 있다면 아머(1)을 얻습니다. 그리고 추가로 아군 필드에 이름에 '조킹루이지'라는 이름이 들어간 카드가 있다면 '치유'를 얻습니다.",
+    "abilities": [
+      {
+        "trigger": "SELF_ENTERED",
+        "effects": [],
+        "persistentFieldGrants": {
+          "armorTag": "디 어쏘리티",
+          "regenNameContains": "조킹루이지"
+        }
+      }
+    ]
+  },
+  "3d11ff5a-f21c-4e89-9c68-fc7bb8f2a6b9": {
+    "text": "턴 종료:자신의 필드에 있는 수배 키워드가 있는 선수 카드만큼 다음 턴에 추가 골드를 얻고, 다음턴에 얻는 추가 1 골드 당 이 카드에게 +1/+1을 부여합니다. \n이 카드가 필드에 있는 동안 상대방이 다음 턴에 기본 골드를 제외한 추가 골드를 얻을때마다 그걸 무효화하고 이 카드에게 +1/+1을 부여합니다.",
+    "abilities": [
+      {
+        "trigger": "TURN_END",
+        "effects": [
+          {
+            "type": "STRUCTURED",
+            "action": "ADD_NEXT_TURN_GOLD",
+            "values": {
+              "amountReference": "BOARD_WANTED_COUNT"
+            }
+          },
+          {
+            "type": "STRUCTURED",
+            "action": "BUFF",
+            "target": {
+              "zone": "BOARD",
+              "owner": "SELF",
+              "selection": "SELF",
+              "count": 1
+            },
+            "values": {
+              "attackReference": "NEXT_TURN_GOLD_BONUS",
+              "healthReference": "NEXT_TURN_GOLD_BONUS"
+            }
+          }
+        ]
+      },
+      {
+        "trigger": "SELF_ENTERED",
+        "effects": [],
+        "interceptOpponentTurnBonusGold": true
+      }
+    ]
   }
 };
 

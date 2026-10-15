@@ -1,3 +1,4 @@
+import { refreshPersistentFieldGrants } from '../engine/reviewed-field-rules';
 import { fusionTargets, queueForcedFusion, commitFusion, resumeFusion, vanishCard, hasCommittedFusion } from '../engine/fusion';
 import { startCountdown, clearCountdown } from '../cards/countdown';
 import { queueWantedReward, wantedRemovalActor } from '../engine/wanted';
@@ -1156,6 +1157,7 @@ function dynamicValue(
   if (!player || !reference) return 0;
   if (reference === 'ALLIED_REMOVED_WRESTLER_COUNT') return state.events.filter(event => ['CARD_RETIRED','CARD_DESTROYED'].includes(event.type) && event.playerId === playerId && event.cardType === 'WRESTLER').length;
   if (reference === 'BOARD_WANTED_COUNT') return player.board.filter(card=>card && getActiveCardKeywords(card).includes('WANTED')).length;
+  if (reference === 'NEXT_TURN_GOLD_BONUS') return player.nextTurnGoldBonus;
   if (reference === 'TURN_GOLD_BONUS') return player.turnGoldBonus ?? 0;
   if (reference === 'HAND_COUNT') return player.hand.length;
   if (reference === 'GRAVEYARD_WRESTLER_COUNT') return player.graveyard.filter((card) => card.cardType === 'WRESTLER').length;
@@ -1988,16 +1990,17 @@ export function applyEffect(
   chosenTargetInstanceIds?: string[],
   triggerContext?: TriggerContext,
 ): GameState {
+  state = refreshPersistentFieldGrants(state);
   if(effect.type === 'STRUCTURED' && effect.action === 'DAMAGE' && effect.values?.amount === undefined && effect.values?.amountReference){
     effect={...effect,values:{...effect.values,amount:dynamicValue(state,playerId,effect.values.amountReference,triggerContext,sourceCard)}};
   }
   if(effect.type === 'STRUCTURED' && effect.action === 'DAMAGE' && effect.values?.spillExcessToEnemyChampion && effect.target?.owner !== 'ALL'){
     const start=state.events.length;
-    const applied=checkpointAwakening(state,applyEffectInternal(state,playerId,sourceCard,effect,chosenTargetInstanceIds,triggerContext));
+    const applied=refreshPersistentFieldGrants(checkpointAwakening(state,applyEffectInternal(state,playerId,sourceCard,effect,chosenTargetInstanceIds,triggerContext)));
     const excess=applied.events.slice(start).filter(e=>e.type==='DAMAGE_DEALT' && e.source?.type==='CARD' && e.source.cardInstanceId===sourceCard.instanceId).reduce((n,e)=>n+(e.excessDamage??0),0);
     return excess>0 ? applyEffect(applied,playerId,sourceCard,{type:'DAMAGE_OPPONENT_CHAMPION',amount:excess},undefined,triggerContext):applied;
   }
-  return checkpointAwakening(state, applyEffectInternal(state, playerId, sourceCard, effect, chosenTargetInstanceIds, triggerContext));
+  return refreshPersistentFieldGrants(checkpointAwakening(state, applyEffectInternal(state, playerId, sourceCard, effect, chosenTargetInstanceIds, triggerContext)));
 }
 
 function applyEffectInternal(
@@ -3821,6 +3824,7 @@ export function resolveTriggeredAbilities(
       if(condition.type==='WRESTLER_DESTROYED_THIS_TURN' && !state.events.slice(turnStart+1).some(event=>event.type==='CARD_DESTROYED'&&(event.cardType??event.targetSnapshot?.cardType)==='WRESTLER'))return false;
       if (condition.type === 'HAND_COUNT' && !compare(owner.hand.length, condition.compare, condition.amount)) return false;
       if (condition.type === 'BOARD_COUNT' && !compare(owner.board.filter(Boolean).length, condition.compare, condition.amount)) return false;
+      if (condition.type === 'BOARD_HAS_TAG' && owner.board.some(entry => entry && matchesStateCardTagFilter(state, entry, {tagsAny:[condition.tag]})) !== (condition.present ?? true)) return false;
       if (condition.type === 'HAS_TAG' && !owner.hand.some((entry) => entry.tags?.includes(condition.tag))) return false;
       if (condition.type === 'SOURCE_IN_HAND' && !owner.hand.some((entry) => entry.instanceId === card.instanceId)) return false;
       if (condition.type === 'SOURCE_ON_LEFT_SIDE' && (card.boardSlot === null || card.boardSlot > 1)) return false;
@@ -3866,13 +3870,19 @@ export function resolveTriggeredAbilities(
     if(!effects.some(effect=>effect.type!=='STRUCTURED'||!effect.target||getValidTargets(state,playerId,card,effect).length>0))return state;
     state={...state,consumedNewCardEventKeys:[...(state.consumedNewCardEventKeys??[]),`trigger-used:${state.turn}:${card.instanceId}:${trigger}`]};
   }
-  return beginResolution(state, {
+  const parent = state.targetingState;
+  // These automatic buffs are part of the event currently being dispatched.
+  // Finish them without advancing or replacing the outer summon/damage frame.
+  const inlineBuffs = parent?.active && ['CARD_ENTERED', 'EXACT_ZERO_DAMAGE'].includes(trigger) && effects.every(effect => effect.type === 'STRUCTURED' && ['BUFF','ADD_KEYWORD'].includes(effect.action) && effect.target?.selection !== 'PLAYER_CHOICE');
+  const resolved = beginResolution(inlineBuffs ? {...state,targetingState:undefined} : state, {
     active: true, playerId, sourceInstanceId: card.instanceId, sourceCard: card, effects,
      effectIndex: 0, selectedTargetIds: [], lastTargetIds: options.chosenTargetInstanceIds ?? (trigger === 'FIRST_ATTACKED' && options.attackerInstanceId ? [options.attackerInstanceId] : []),
     validTargetIds: [], minTargets: 0, maxTargets: 0, mandatory: true, cancelable: false,
       triggerContext: { playedFromHand: options.playedFromHand, baseCost: options.baseCost, attackerInstanceId: options.attackerInstanceId, fusionTargetInstanceId: options.fusionTargetInstanceId, damagedTargetInstanceId: options.damagedTargetInstanceId, attackDelta: options.attackDelta, healthDelta: options.healthDelta, healthBefore: options.healthBefore, healthAfter: options.healthAfter, sourceContext: options.sourceContext },
      lastAggregatedStats: state.targetingState?.lastAggregatedStats,
   });
+  if (!inlineBuffs) return resolved;
+  return resolved.targetingState?.active ? appendEffectContinuation(resolved, parent!) : {...resolved,targetingState:parent};
 }
 
 /** Dispatches retirement listeners to cards that are still in hand. */

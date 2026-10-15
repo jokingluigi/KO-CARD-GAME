@@ -1,3 +1,4 @@
+import { bonusGoldInterceptors } from './reviewed-field-rules';
 import { resolveChampionGameStartAbility } from './champion-system';
 import { healNewCardAware } from './new-card-rules';
 import { resumeCountdownTurnStart } from './countdown';
@@ -14,7 +15,7 @@ import { MAX_DECK_SIZE, MIN_DECK_SIZE } from '../rules/constants';
 import { drawCard } from './draw-card';
 import { defaultRandom, shuffle } from '../random/random';
 import { processChampionQuestEvents } from '../champions/quests';
-import { resolveStateBasedDeaths, resolveDueDelayedEffects, resolvePendingEffects, resolveTriggeredAbilities } from '../effects/effect-engine';
+import { applyEffect, resolveStateBasedDeaths, resolveDueDelayedEffects, resolvePendingEffects, resolveTriggeredAbilities } from '../effects/effect-engine';
 
 function expireOwnerStartHealth(card:CardInstance):CardInstance {
  const expired=card.temporaryStatModifiers?.filter(modifier=>modifier.untilOwnerTurnStart) ?? [];
@@ -33,7 +34,9 @@ function beginPlayerTurn(state: GameState, playerId: string): GameState {
 
   const personalTurn = player.personalTurn + 1;
   const baseTurnGold = Math.min(personalTurn, 6);
-  const currentGold = baseTurnGold + player.nextTurnGoldBonus;
+  const interceptors = player.nextTurnGoldBonus > 0 ? bonusGoldInterceptors(state, playerId) : [];
+  const paidBonus = interceptors.length ? 0 : player.nextTurnGoldBonus;
+  const currentGold = baseTurnGold + paidBonus;
   const turnStartedState: GameState = {
     ...state,
     players: state.players.map((candidate) =>
@@ -42,7 +45,7 @@ function beginPlayerTurn(state: GameState, playerId: string): GameState {
             ...candidate,
             personalTurn,
             currentGold,
-            turnGoldBonus: player.nextTurnGoldBonus,
+            turnGoldBonus: paidBonus,
             nextTurnGoldBonus: 0,
              championAbilityUsedThisTurn: false,
             board: candidate.board.map((card) =>
@@ -80,7 +83,11 @@ function beginPlayerTurn(state: GameState, playerId: string): GameState {
     ],
   };
 
-  const afterDraw = drawCard(towerTurnStart(resolveStateBasedDeaths(turnStartedState), playerId), playerId);
+  const afterInterception = interceptors.reduce((next, interceptor) => {
+    const live = next.players.find(p=>p.id===interceptor.playerId)?.board.find(c=>c?.instanceId===interceptor.cardInstanceId);
+    return live ? applyEffect(next,interceptor.playerId,live,{type:'STRUCTURED',action:'BUFF',target:{zone:'BOARD',owner:'SELF',selection:'SELF',count:1},values:{attack:player.nextTurnGoldBonus,health:player.nextTurnGoldBonus}}) : next;
+  }, turnStartedState);
+  const afterDraw = drawCard(towerTurnStart(resolveStateBasedDeaths(afterInterception), playerId), playerId);
   const afterDelayed = resolveDueDelayedEffects(afterDraw, 'TURN_START', playerId);
   const turnStartPlayer = afterDelayed.players.find((candidate) => candidate.id === playerId);
   const turnStartCards = [

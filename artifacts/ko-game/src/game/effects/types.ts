@@ -111,6 +111,8 @@ export type CardAbility =
           retirementReplacementScope?: 'SOURCE_CAUSED_ENEMY';
           forbiddenKeywords?: CardKeyword[];
           cannotAttackChampionWhileEnemyBoardOccupied?: boolean;
+          persistentFieldGrants?: { armorTag?: string; regenNameContains?: string };
+          interceptOpponentTurnBonusGold?: boolean;
       effects: CardEffect[];
       oncePerTurn?: boolean;
       condition?: AbilityCondition;
@@ -130,6 +132,7 @@ export type AbilityCondition =
   | { type: 'HAND_COUNT'; compare: 'GTE' | 'LTE' | 'EQ'; amount: number }
   | { type: 'BOARD_COUNT'; compare: 'GTE' | 'LTE' | 'EQ'; amount: number }
   | { type: 'HAS_TAG'; tag: string }
+  | { type: 'BOARD_HAS_TAG'; tag: string; present?: boolean }
   | { type: 'SOURCE_IN_HAND' }
   | { type: 'FIRST_ATTACK_GAIN' }
   | { type: 'ATTACK_GAIN' }

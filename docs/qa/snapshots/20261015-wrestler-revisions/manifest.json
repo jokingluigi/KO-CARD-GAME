@@ -17,5 +17,15 @@
     "personal decks",
     "sessions",
     "credentials"
-  ]
+  ],
+  "champions": 11,
+  "championsRetrievedAt": "2026-10-15T10:40:04.136159+00:00",
+  "files": {
+    "cards": {
+      "sha256": "3707e8afe381104af4643a7a7db23a5628510c2995c28d895faa188b5c2e1187"
+    },
+    "champions": {
+      "sha256": "523e74f96093ff9ecebb7a7f200bcbb0c81770d878c21582c7095973543f3db0"
+    }
+  }
 }
