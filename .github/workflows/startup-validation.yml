@@ -29,6 +29,8 @@ on:
       - artifacts/ko-game/src/pages/home.tsx
       - artifacts/ko-game/src/components/match-result-overlay.tsx
       - artifacts/ko-game/src/index.css
+      - docs/qa/mobile-deck-controls-browser.mjs
+      - docs/qa/mobile-battle-inspection-browser.mjs
       - docs/qa/daily-quests-browser.mjs
       - artifacts/api-server/src/lib/daily-quest-service*
       - artifacts/api-server/src/lib/ai-quest-match-storage.ts
@@ -215,6 +217,8 @@ jobs:
           run_browser docs/qa/fusion-browser.mjs
           run_browser docs/qa/luna-active-browser.mjs
           run_browser docs/qa/machine-fusion-browser.mjs
+          run_browser docs/qa/mobile-deck-controls-browser.mjs
+          KO_QA_COMPILED_CSS=1 run_browser docs/qa/mobile-battle-inspection-browser.mjs
           run_browser docs/qa/mobile-input-browser.mjs
           run_browser docs/qa/desktop-hand-browser.mjs
           run_browser docs/qa/tag-manager-browser.mjs

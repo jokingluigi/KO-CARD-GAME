@@ -935,44 +935,45 @@ export default function Decks() {
               ) : (
                 <div className="ko-decks__compact-list" data-testid="list-selected-cards">
                   {selectedRows.map(({ id, count, card }) => (
-                    <Inspectable
+                    <div
                       key={id}
-                      touchInspectTriggerOnly
-                      showOnHover
-                      content={
-                        card ? (
-                          <div className="space-y-3">
-                            <p className="text-[0.62rem] font-black tracking-[0.18em] text-amber-300">
-                              {cardTypeLabel(card.cardType)} · {card.rarity}
-                            </p>
-                            <CardRenderer
-                              cardId={card.id}
-                              keywords={card.keywords}
-                              keywordConfig={card.effectConfig}
-                              name={card.name}
-                              cardType={card.cardType}
-                              cost={card.cost}
-                              attack={card.attack}
-                              health={card.health}
-                              rulesText={card.text}
-                              imageUrl={card.imageUrl}
-                              rarity={card.rarity as "NORMAL" | "EPIC" | "LEGENDARY" | "CHAMPION"}
-                              imageDisplaySettings={cardSettings(card)}
-                              size="detail"
-                              className="mx-auto w-64 max-w-full"
-                            />
-                            <p className="whitespace-pre-wrap text-xs leading-5 text-neutral-300"><CardRulesText text={normalizeCardRulesText(card.text) || "효과 없음"} /></p>
-                          </div>
-                        ) : (
-                          <p className="text-xs text-neutral-400">알 수 없는 카드</p>
-                        )
-                      }
+                      className={`ko-decks__compact-row ${problematicCardIds.has(id) ? "ko-decks__compact-row--invalid" : ""}`}
+                      data-testid={`row-selected-card-${id}`}
+                      data-invalid={problematicCardIds.has(id) ? "true" : undefined}
+                      data-rarity={card?.rarity}
                     >
-                      <div
-                        className={`ko-decks__compact-row ${problematicCardIds.has(id) ? "ko-decks__compact-row--invalid" : ""}`}
-                        data-testid={`row-selected-card-${id}`}
-                        data-invalid={problematicCardIds.has(id) ? "true" : undefined}
-                        data-rarity={card?.rarity}
+                      <Inspectable
+                        className="flex min-w-0 flex-1"
+                        touchInspectTriggerOnly
+                        showOnHover
+                        content={
+                          card ? (
+                            <div className="space-y-3">
+                              <p className="text-[0.62rem] font-black tracking-[0.18em] text-amber-300">
+                                {cardTypeLabel(card.cardType)} · {card.rarity}
+                              </p>
+                              <CardRenderer
+                                cardId={card.id}
+                                keywords={card.keywords}
+                                keywordConfig={card.effectConfig}
+                                name={card.name}
+                                cardType={card.cardType}
+                                cost={card.cost}
+                                attack={card.attack}
+                                health={card.health}
+                                rulesText={card.text}
+                                imageUrl={card.imageUrl}
+                                rarity={card.rarity as "NORMAL" | "EPIC" | "LEGENDARY" | "CHAMPION"}
+                                imageDisplaySettings={cardSettings(card)}
+                                size="detail"
+                                className="mx-auto w-64 max-w-full"
+                              />
+                              <p className="whitespace-pre-wrap text-xs leading-5 text-neutral-300"><CardRulesText text={normalizeCardRulesText(card.text) || "효과 없음"} /></p>
+                            </div>
+                          ) : (
+                            <p className="text-xs text-neutral-400">알 수 없는 카드</p>
+                          )
+                        }
                       >
                         <button
                           type="button"
@@ -987,19 +988,19 @@ export default function Decks() {
                           </span>
                           <span key={count} className="ko-decks__compact-qty" data-testid={`text-card-count-${id}`}>×{count}</span>
                         </button>
-                        <button
-                          type="button"
-                          className="ko-decks__compact-remove"
-                          aria-label={`${card?.name ?? id} 한 장 제거`}
-                          data-testid={`button-remove-card-${id}`}
-                          onPointerDown={(e) => e.stopPropagation()}
-                          onPointerUp={(e) => e.stopPropagation()}
-                          onClick={(e) => { e.stopPropagation(); removeCard(id); }}
-                        >
-                          <Minus className="h-3.5 w-3.5" aria-hidden="true" />
-                        </button>
-                      </div>
-                    </Inspectable>
+                      </Inspectable>
+                      <button
+                        type="button"
+                        className="ko-decks__compact-remove"
+                        aria-label={`${card?.name ?? id} 한 장 제거`}
+                        data-testid={`button-remove-card-${id}`}
+                        onPointerDown={(e) => e.stopPropagation()}
+                        onPointerUp={(e) => e.stopPropagation()}
+                        onClick={(e) => { e.stopPropagation(); removeCard(id); }}
+                      >
+                        <Minus className="h-3.5 w-3.5" aria-hidden="true" />
+                      </button>
+                    </div>
                   ))}
                 </div>
               )}

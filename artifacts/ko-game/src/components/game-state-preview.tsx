@@ -994,7 +994,7 @@ export function GameStatePreview({
                        PROTECTED
                      </span>
                    )}
-                  <span className="px-1 text-center text-[9px] font-black leading-tight text-red-300 md:text-[11px]">
+                  <span className="ko-champion-portrait-name px-1 text-center text-[9px] font-black leading-tight text-red-300 md:text-[11px]">
                      {opponentChampionName || opp.champion?.name || '상대 챔피언'}
                   </span>
                   {selectedAttackerId && (
@@ -1491,7 +1491,7 @@ export function GameStatePreview({
                        PROTECTED
                      </span>
                    )}
-                  <span className="px-1 text-center text-[9px] font-black leading-tight text-blue-400 md:text-[12px]">
+                  <span className="ko-champion-portrait-name px-1 text-center text-[9px] font-black leading-tight text-blue-400 md:text-[12px]">
                      {playerChampionName || me.champion?.name || '내 챔피언'}
                   </span>
                </div>
