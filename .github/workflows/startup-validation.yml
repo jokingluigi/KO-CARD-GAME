@@ -44,6 +44,8 @@ on:
       - artifacts/api-server/src/routes/daily-quests.ts
       - docs/qa/mobile-history-browser.mjs
       - docs/qa/battle-card-info-portraits-browser.mjs
+      - docs/qa/field-attack-drag-browser.mjs
+      - docs/qa/mobile-deck-controls-browser.mjs
       - artifacts/api-server/src/lib/ai-match-quest-service*
       - artifacts/ko-game/src/lib/card-display-state.ts
       - artifacts/api-server/src/routes/admin.ts
@@ -211,6 +213,8 @@ jobs:
           KO_QA_COMPILED_CSS=1 run_browser docs/qa/mobile-history-browser.mjs
           KO_QA_COMPILED_CSS=1 run_browser docs/qa/mobile-portrait-battle-browser.mjs
           run_browser docs/qa/battle-card-info-portraits-browser.mjs
+          run_browser docs/qa/field-attack-drag-browser.mjs
+          run_browser docs/qa/mobile-deck-controls-browser.mjs
           run_browser docs/qa/daily-quests-browser.mjs
           run_browser docs/qa/champion-features-browser.mjs
           run_browser docs/qa/current-content-browser-20261012.mjs
@@ -239,6 +243,22 @@ jobs:
             if test -f qa-results/tower-v2/fixture.json && curl --fail --silent "$KO_ADMIN_QA_ORIGIN/admin" > /dev/null; then break; fi
             sleep 1
           done
-          node --import ./docs/qa/checkpoints/20261006/qa-loader.mjs docs/qa/admin-console-menus-browser.mjs
-          node --import ./docs/qa/checkpoints/20261006/qa-loader.mjs docs/qa/admin-console-editors-browser.mjs
-          node --import ./docs/qa/checkpoints/20261006/qa-loader.mjs docs/qa/admin-console-guard-browser.mjs
+          run_admin_browser() {
+            local qa_log="$RUNNER_TEMP/$(basename "$1").log"
+            if node --import ./docs/qa/checkpoints/20261006/qa-loader.mjs "$@" > "$qa_log" 2>&1; then
+              cat "$qa_log"
+            else
+              local qa_status=$?
+              QA_ERROR_LOG="$qa_log" QA_ERROR_FILE="$1" node - <<'NODE'
+          const fs = require('node:fs');
+          const escape = value => value.replaceAll('%', '%25').replaceAll('\r', '%0D').replaceAll('\n', '%0A');
+          const detail = fs.readFileSync(process.env.QA_ERROR_LOG, 'utf8').slice(-3000);
+          console.log(`::error file=${process.env.QA_ERROR_FILE}::${escape(detail)}`);
+          NODE
+              cat "$qa_log"
+              return "$qa_status"
+            fi
+          }
+          run_admin_browser docs/qa/admin-console-menus-browser.mjs
+          run_admin_browser docs/qa/admin-console-editors-browser.mjs
+          run_admin_browser docs/qa/admin-console-guard-browser.mjs

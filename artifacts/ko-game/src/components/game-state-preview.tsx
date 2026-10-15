@@ -1,3 +1,4 @@
+import { BattleAttackDrag } from './battle-attack-drag';
 import { AttackAim } from './attack-aim';
 import { BattleCardDrag } from './battle-card-drag';
 import { wrestlerEventLine } from './wrestler-event-line';
@@ -895,6 +896,7 @@ export function GameStatePreview({
     <RenderCardCatalog.Provider value={getCardDefinition}><CinematicProvider key={state.gameId} allowQuestCompletion={questPresentationAllowed}><AltInspectProvider>
      <div className={`ko-game-shell flex min-h-[100dvh] w-full flex-col overflow-x-hidden overflow-y-auto bg-neutral-950 font-sans text-neutral-100 selection:bg-primary selection:text-black md:overflow-hidden ${me.champion?.questCompleted && questPresentationAllowed ? 'ko-quest-awakened--mine' : ''} ${opp.champion?.questCompleted && questPresentationAllowed ? 'ko-quest-awakened--theirs' : ''}`}>
       <BattleCardDrag state={state} enabled={isMyTurn && state.status === 'IN_PROGRESS' && !introActive && !effectTargeting && !settingsOpen && !playAnimation && !attackAnimation && canEndTurn} selectedCardId={selectedCardId} hand={handCardRefs} slots={boardSlotRefs} select={onSelectCard} cancel={id=>{if(selectedCardId===id)onSelectCard(id);}} summon={onSelectSlot} spell={onUseTechnique} />
+      <BattleAttackDrag state={state} enabled={isMyTurn && state.status === 'IN_PROGRESS' && !introActive && !effectTargeting && !settingsOpen && !playAnimation && !attackAnimation && canEndTurn} selectedAttackerId={selectedAttackerId} cards={boardCardRefs} champion={championRef} select={onSelectAttacker} attackCard={onAttackWrestler} attackChampion={onAttackPlayer} />
       {selectedAttackerId && !effectTargeting && !attackAnimation && <AttackAim source={boardCardRefs.current.get(selectedAttackerId)??null} targets={boardCardRefs} champion={championRef.current} championId={opp.id} valid={legalAttackTargets} />}
       <CardRevealPresentation state={state} />
       {cinematicIntro && <CinematicIntro event={cinematicIntro} />}
