@@ -126,6 +126,7 @@ export function generateCard(
     card: { ...card, lineage },
     event: {
       type: 'CARD_GENERATED',
+      cardDefinitionId: definition.id,
       playerId: options.playerId,
       cardInstanceId: card.instanceId,
       cardType: card.cardType,

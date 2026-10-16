@@ -158,7 +158,7 @@ router.put("/settings", async (req, res, next) => {
 });
 router.post("/matchmaking", async (req, res, next) => {
   try {
-    const id = await startDraft(req.authUser!.id, req.authUser!.nickname, "PVP", true);
+    const id = await startDraft(req.authUser!.id, req.authUser!.nickname, "PVP", true, req.baseUrl.endsWith("/admin/draft"));
     res.json(draftView(await mutateDraft(req.authUser!.id, id)));
   } catch (error) { next(error); }
 });
@@ -170,6 +170,8 @@ router.post("/sessions", async (req, res, next) => {
       req.authUser!.id,
       req.authUser!.nickname,
       req.body.mode,
+      false,
+      req.baseUrl.endsWith("/admin/draft"),
     );
     res.status(201).json(draftView(await mutateDraft(req.authUser!.id, id)));
   } catch (e) {

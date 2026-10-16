@@ -150,6 +150,7 @@ function processChampionQuestEventPass(
     if (questCompleted) {
       questEvents.push({
         type: 'CHAMPION_QUEST_COMPLETED',
+        turn: nextState.turn,
         playerId: originalPlayer.id,
         championId: champion.id,
         source: { type: 'SYSTEM' },

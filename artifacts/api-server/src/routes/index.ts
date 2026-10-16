@@ -1,3 +1,4 @@
+import adminUsageStatisticsRouter from './admin-usage-statistics';
 import adminQuestsRouter from "./admin-quests";
 import adminTagsRouter from "./admin-tags";
 import adminDraftRouter from './admin-draft';
@@ -43,6 +44,7 @@ router.use(storageRouter);
 router.use(cardsRouter);
 router.use(gameMediaRouter);
 router.use(mainContentRouter);
+router.use("/admin/usage-statistics", adminUsageStatisticsRouter);
 router.use("/admin/tags", adminTagsRouter);
 router.use("/admin", adminRouter);
 router.use("/auth", authRouter);

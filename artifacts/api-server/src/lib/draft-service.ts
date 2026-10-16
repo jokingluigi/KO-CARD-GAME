@@ -1,3 +1,4 @@
+import { executeUsageObservedAction as executeAction } from './usage-statistics-observer';
 import { recordCompletedDraft } from "./draft-participation-quest";
 import { buildMatchRecap } from "@workspace/game-engine";
 import { isDeepStrictEqual } from "node:util";
@@ -39,7 +40,6 @@ import {
   championRecordToDefinition,
   createInitialGameState,
   startGame,
-  executeAction,
   createDeterministicRandom,
   completeMinionACatalog,
   getLegalActions,
@@ -450,6 +450,7 @@ export async function startDraft(
   name: string,
   mode: "AI" | "PVP",
   matchmaking = false,
+  diagnostic = false,
 ) {
   await enabled();
   const settings = await draftSettings(),
@@ -498,6 +499,7 @@ export async function startDraft(
           .update(draftSessionsTable)
           .set({
             state: record(candidate),
+            usageDiagnostic:row.usageDiagnostic || diagnostic,
             version: row.version + 1,
             updatedAt: new Date(),
           })
@@ -522,7 +524,7 @@ export async function startDraft(
     if (mode === "AI") beginDraft(s, snapshot, Date.now());
     await tx
       .insert(draftSessionsTable)
-      .values({ id: s.id, state: record(s), snapshot: record(snapshot) });
+      .values({ id: s.id, state: record(s), snapshot: record(snapshot), usageDiagnostic:diagnostic });
     await tx.insert(draftParticipantsTable).values({ userId, sessionId: s.id });
     return s.id;
   });
@@ -834,7 +836,7 @@ export async function mutateDraft(
     )
       await tx
         .update(draftSessionsTable)
-        .set({ state: record(s), version, updatedAt: new Date() })
+        .set({ state: record(s), version, updatedAt: new Date(), ...(!row.usageStart && !oldBattle && s.battle ? {usageStart:{version:1,diagnostic:row.usageDiagnostic,startedAt:new Date(now).toISOString(),champions:{PLAYER_ONE:s.seats[0].championId!,PLAYER_TWO:s.seats[1].championId!},decks:{PLAYER_ONE:[...s.seats[0].deck],PLAYER_TWO:[...s.seats[1].deck]}}}: {}) })
         .where(eq(draftSessionsTable.id, id));
     else if (heartbeat && s.phase === "BATTLE" && s.lastSeen)
       await tx

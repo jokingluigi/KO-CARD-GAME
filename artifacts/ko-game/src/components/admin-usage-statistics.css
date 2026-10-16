@@ -1,0 +1,207 @@
+.usage-statistics {
+  min-width: 0;
+  color: #e5e5e5;
+}
+.usage-statistics button,
+.usage-statistics input,
+.usage-statistics select {
+  min-height: 44px;
+  border: 1px solid #525252;
+  background: #171717;
+  color: inherit;
+  padding: 8px 12px;
+  border-radius: 4px;
+}
+.usage-statistics button:hover {
+  border-color: #e7bb58;
+}
+.usage-statistics button:disabled {
+  opacity: 0.4;
+}
+.usage-controls {
+  display: flex;
+  align-items: end;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+.usage-controls label {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  max-width: 100%;
+}
+.usage-controls input {
+  width: 260px;
+  max-width: 100%;
+}
+.usage-policy,
+.usage-meta {
+  color: #a3a3a3;
+  font-size: 13px;
+  margin: 16px 0;
+  line-height: 1.7;
+}
+.usage-meta {
+  border-bottom: 1px solid #404040;
+  padding-bottom: 12px;
+}
+.usage-empty {
+  padding: 16px;
+  border: 1px solid #80682c;
+  margin: 16px 0;
+}
+.usage-table-scroll {
+  overflow-x: auto;
+  max-width: 100%;
+  margin-top: 16px;
+}
+.usage-statistics table {
+  border-collapse: collapse;
+  width: 100%;
+  min-width: 800px;
+  text-align: left;
+  font-size: 14px;
+}
+.usage-statistics caption {
+  text-align: left;
+  padding: 8px 0;
+}
+.usage-statistics th,
+.usage-statistics td {
+  padding: 12px;
+  border-bottom: 1px solid #404040;
+  vertical-align: middle;
+}
+.usage-statistics th {
+  white-space: nowrap;
+}
+.usage-statistics small {
+  display: block;
+  color: #a3a3a3;
+  font-size: 12px;
+  white-space: nowrap;
+}
+.usage-statistics .usage-sample {
+  color: #e7bb58;
+}
+.usage-content-button {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  text-align: left;
+  min-width: 190px;
+}
+.usage-content-button img {
+  width: 42px;
+  height: 58px;
+  object-fit: contain;
+}
+.usage-pagination {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  margin: 20px 0;
+}
+.usage-detail-header {
+  display: flex;
+  gap: 24px;
+  align-items: flex-start;
+  margin: 24px 0;
+}
+.usage-detail-header > img {
+  width: 160px;
+  max-height: 240px;
+  object-fit: contain;
+  flex-shrink: 0;
+}
+.usage-detail-header h2 {
+  font-size: 24px;
+  color: #e7bb58;
+  margin: 0 0 8px;
+}
+.usage-detail-header h3 {
+  margin-top: 16px;
+}
+.usage-detail-header p {
+  line-height: 1.7;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+.usage-id {
+  font-size: 12px;
+  color: #a3a3a3;
+}
+.usage-metrics {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 12px;
+  margin: 24px 0;
+}
+.usage-metric {
+  padding: 16px;
+  border: 1px solid #404040;
+  background: #171717;
+}
+.usage-metric dt {
+  font-size: 13px;
+  color: #a3a3a3;
+  margin-bottom: 8px;
+}
+.usage-metric dd {
+  font-size: 22px;
+  margin: 0;
+}
+.usage-metric small {
+  white-space: normal;
+}
+.usage-trend {
+  border: 1px solid #404040;
+  padding: 12px;
+  margin: 16px 0;
+}
+.usage-trend svg {
+  width: 100%;
+  height: auto;
+  min-height: 150px;
+}
+.usage-trend text {
+  fill: #a3a3a3;
+  font-size: 12px;
+}
+@media (max-width: 600px) {
+  .usage-detail-header {
+    flex-direction: column;
+    gap: 12px;
+  }
+  .usage-detail-header > img {
+    align-self: center;
+    width: 140px;
+  }
+  .usage-controls label {
+    flex: 1 1 140px;
+  }
+  .usage-controls input,
+  .usage-controls select {
+    width: 100%;
+  }
+  .usage-statistics table {
+    min-width: 760px;
+  }
+}
+
+@media (max-width: 600px) {
+  .usage-trend text {
+    font-size: 24px;
+  }
+}
+
+.usage-content-button span {
+  max-width: 240px;
+  overflow-wrap: anywhere;
+}
+
+.usage-statistics .usage-content-button,
+.usage-statistics .usage-content-button span {
+  white-space: normal;
+}

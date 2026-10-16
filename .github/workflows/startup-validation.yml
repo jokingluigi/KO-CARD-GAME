@@ -61,6 +61,12 @@ on:
       - artifacts/ko-game/src/components/server-maintenance.tsx
       - artifacts/ko-game/src/audio/music-route*
       - artifacts/ko-game/src/audio/audio-manager*
+      - artifacts/api-server/src/lib/usage-statistics-*.ts
+      - artifacts/api-server/src/routes/admin-usage-statistics.ts
+      - lib/db/migrations/0052_usage_statistics.sql
+      - lib/db/qa/usage-statistics.test.ts
+      - docs/qa/usage-statistics-browser.mjs
+      - docs/qa/admin-usage-statistics-20261016/**
       - artifacts/api-server/src/index.ts
       - artifacts/api-server/src/lib/awakening-card-service.ts
       - lib/db/qa/awakening-http.test.ts
@@ -147,6 +153,11 @@ jobs:
 
       - name: Tower V2 authenticated HTTP and immutable version validation
         run: node --import ./docs/qa/checkpoints/20261006/qa-loader.mjs --test --test-isolation=none lib/db/qa/tower-v2-http.test.ts
+
+      - name: Card and champion usage statistics database, real replay and authorization
+        env:
+          KO_STATS_PERF: '1'
+        run: node --import ./docs/qa/checkpoints/20261006/qa-loader.mjs --test --test-isolation=none lib/db/qa/usage-statistics.test.ts
 
       - name: Current card catalog, full engine and 100 AI matches
         run: node docs/qa/current-card-engine.mjs
@@ -274,3 +285,32 @@ jobs:
           run_admin_browser docs/qa/admin-console-menus-browser.mjs
           run_admin_browser docs/qa/admin-console-editors-browser.mjs
           run_admin_browser docs/qa/admin-console-guard-browser.mjs
+
+      - name: Usage statistics real administrator UI on desktop and mobile
+        env:
+          KO_STATS_QA_ORIGIN: http://127.0.0.1:17999
+          KO_QA_CHROME_CHANNEL: chromium
+          PORT: '17999'
+          BASE_PATH: /
+        run: |
+          rm -f qa-results/usage-statistics/fixture.json
+          KO_STATS_BROWSER_MODE=1 node --import ./docs/qa/checkpoints/20261006/qa-loader.mjs --test --test-isolation=none lib/db/qa/usage-statistics.test.ts > "$RUNNER_TEMP/ko-usage-fixture.log" 2>&1 &
+          fixture_pid=$!
+          pnpm --filter @workspace/ko-game exec vite --config vite.config.ts --port 17999 --host 127.0.0.1 > "$RUNNER_TEMP/ko-usage-vite.log" 2>&1 &
+          usage_pid=$!
+          trap 'kill "$fixture_pid" "$usage_pid" 2>/dev/null || true' EXIT
+          for attempt in $(seq 1 60); do
+            if test -f qa-results/usage-statistics/fixture.json && curl --fail --silent "$KO_STATS_QA_ORIGIN/admin" > /dev/null; then break; fi
+            sleep 1
+          done
+          export KO_QA_PLAYWRIGHT="$RUNNER_TEMP/ko-entry-qa/node_modules/playwright/index.mjs"
+          if ! node docs/qa/usage-statistics-browser.mjs > "$RUNNER_TEMP/ko-usage-browser.log" 2>&1; then
+            cat "$RUNNER_TEMP/ko-usage-browser.log"
+            QA_ERROR_LOG="$RUNNER_TEMP/ko-usage-browser.log" node - <<'NODE'
+          const fs=require('node:fs');
+          const detail=fs.readFileSync(process.env.QA_ERROR_LOG,'utf8').slice(-3000).replaceAll('%','%25').replaceAll('\r','%0D').replaceAll('\n','%0A');
+          console.log(`::error file=docs/qa/usage-statistics-browser.mjs::${detail}`);
+          NODE
+            exit 1
+          fi
+          cat "$RUNNER_TEMP/ko-usage-browser.log"

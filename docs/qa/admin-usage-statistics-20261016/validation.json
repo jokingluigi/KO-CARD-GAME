@@ -1,0 +1,41 @@
+{
+  "scope": "final local verification; production and CI evidence in PR",
+  "statisticsWithBenchmark": {
+    "pass": 36,
+    "fail": 0,
+    "skip": 0
+  },
+  "officialEngine": {
+    "pass": 2670,
+    "fail": 0,
+    "skip": 0
+  },
+  "towerHTTP": {
+    "pass": 11,
+    "fail": 0,
+    "skip": 0
+  },
+  "apiReplaySanitizerNavigation": {
+    "pass": 23,
+    "fail": 0,
+    "skip": 0
+  },
+  "draftHTTP": {
+    "pass": 11,
+    "fail": 0,
+    "skip": 0
+  },
+  "publicDraft": {
+    "pass": 10,
+    "fail": 0,
+    "skip": 0
+  },
+  "total": 2761,
+  "notRun": [
+    "physical mobile phone",
+    "two-browser PvP live match",
+    "production test game creation",
+    "production load test",
+    "historical backfill"
+  ]
+}

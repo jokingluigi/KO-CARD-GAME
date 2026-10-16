@@ -53,6 +53,8 @@ export interface EventAttribution {
 
 export interface GameEvent {
   type: GameEventType;
+  /** Server-observed occurrence turn; used by aggregate statistics. */
+  turn?: number;
   /** Deliberate public disclosure of exactly one card, without the rest of its zone. */
   revealedCard?: {definitionId:string;name:string;cost:number;attack:number;health:number;rulesText:string;imageUrl?:string|null};
   cardDefinitionId?: string;

@@ -1,5 +1,6 @@
 export const ADMIN_GROUPS = [
   { id: "home", label: "대시보드", icon: "LayoutDashboard" },
+  { id: "statistics", label: "사용 통계", icon: "BarChart3" },
   { id: "cards", label: "카드 관리", icon: "Layers" },
   { id: "champions", label: "챔피언 관리", icon: "Shield" },
   { id: "modes", label: "게임 모드", icon: "Swords" },
@@ -18,6 +19,8 @@ export const ADMIN_PAGES = [
     description: "현재 설정과 콘텐츠 상태를 확인하고 관리 작업을 시작합니다.",
     keywords: "홈 현황 통계 최근",
   },
+  {id:"card-statistics",group:"statistics",path:"/admin/card-statistics",label:"카드 통계",description:"실제 유저의 카드 채용·플레이·승률을 확인합니다.",keywords:"사용 통계 인기 채용률 사용률 승률"},
+  {id:"champion-statistics",group:"statistics",path:"/admin/champion-statistics",label:"챔피언 통계",description:"챔피언 선택·고유 능력·퀘스트 완료를 확인합니다.",keywords:"사용 통계 선택률 승률 퀘스트"},
   {
     id: "cards",
     group: "cards",
