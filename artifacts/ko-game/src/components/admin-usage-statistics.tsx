@@ -34,6 +34,10 @@ const time = (v: string | null | undefined) =>
     ? new Date(v).toLocaleString("ko-KR", { timeZone: "UTC", hour12: false }) +
       " UTC"
     : "아직 없음";
+const questRateLabel = (item: Item) =>
+  !item.quest_eligible && item.hasQuest === false
+    ? "퀘스트 없음"
+    : percent(item.questRate);
 function Win({ item }: { item: Item }) {
   return (
     <span>
@@ -399,11 +403,7 @@ export function AdminUsageStatistics({
                     />
                     <Metric
                       label="퀘스트 완료율"
-                      value={
-                        item.quest_eligible
-                          ? percent(item.questRate)
-                          : "퀘스트 없음"
-                      }
+                      value={questRateLabel(item)}
                       note={`적용 가능 표본 ${count(item.quest_eligible)}`}
                     />
                     <Metric
@@ -567,9 +567,7 @@ export function AdminUsageStatistics({
                             </td>
                             <td>{count(row.ability_uses)}</td>
                             <td>
-                              {row.quest_eligible
-                                ? percent(row.questRate)
-                                : "퀘스트 없음"}
+                              {questRateLabel(row)}
                               <small>
                                 {count(row.quest_completed)} /{" "}
                                 {count(row.quest_eligible)} 참가

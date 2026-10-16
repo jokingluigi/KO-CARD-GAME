@@ -188,7 +188,11 @@ await database.insert(schema.cardsTable).values(
   })),
 );
 await database.insert(schema.championsTable).values(
-  [hero, vanilla].map((c) => ({
+  [
+    hero,
+    vanilla,
+    { ...hero, id: "stats-unplayed-quest", name: "미선택 퀘스트 챔피언" },
+  ].map((c) => ({
     id: c.id,
     name: c.name,
     abilityName: c.ability.name,
@@ -419,6 +423,16 @@ test("no quest, no games and no baseline return null rather than invented percen
     database,
     now,
   );
+  const unplayed = await readUsageStatistics(
+    "champions",
+    statisticsQuery({}),
+    "stats-unplayed-quest",
+    database,
+    now,
+  );
+  assert.equal(unplayed.detail!.hasQuest, true);
+  assert.equal(unplayed.detail!.questRate, null);
+  assert.equal(unplayed.detail!.selections, 0);
   assert.equal(d.detail!.questRate, null);
   assert.equal(d.detail!.averageQuestTurn, null);
   assert.equal(d.detail!.winRate, 0);

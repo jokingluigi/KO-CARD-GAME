@@ -87,6 +87,17 @@ try {
         "no game-mode selector",
       );
       assert.ok((await root.locator("tbody tr").count()) > 0);
+      if (kind === "champion") {
+        const unplayed = root
+          .locator("tbody tr")
+          .filter({ hasText: "미선택 퀘스트 챔피언" });
+        assert.match(await unplayed.locator("td").last().innerText(), /^—/);
+        assert.doesNotMatch(
+          await unplayed.locator("td").last().innerText(),
+          /퀘스트 없음/,
+        );
+      }
+
       assert.equal(
         await page.evaluate(
           () => document.documentElement.scrollWidth > innerWidth,
