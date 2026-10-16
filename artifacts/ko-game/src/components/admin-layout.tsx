@@ -7,6 +7,7 @@ import {
 } from "react";
 import { useLocation } from "wouter";
 import {
+  BarChart3,
   LayoutDashboard,
   Layers,
   Shield,
@@ -38,6 +39,7 @@ import {
   confirmDiscardAdminDraft,
 } from "./admin-editor-sections";
 const icons = {
+  BarChart3,
   LayoutDashboard,
   Layers,
   Shield,

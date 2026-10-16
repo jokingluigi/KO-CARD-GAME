@@ -30,7 +30,7 @@ await pg.exec(
     "utf8",
   ),
 );
-for (const name of ["0033_server_maintenance.sql", "0038_ai_quest_matches.sql"])
+for (const name of ["0033_server_maintenance.sql", "0038_ai_quest_matches.sql", "0052_usage_statistics.sql"])
   await pg.exec(
     await readFile(new URL("../migrations/" + name, import.meta.url), "utf8"),
   );
@@ -467,6 +467,20 @@ test("opening skip persists; real battle restart restores seed, decks and relic 
   assert.ok(
     a.cardOptions.every((id: string) => Number(id.split("-").at(-1)) % 3 === 2),
   );
+});
+test("real tower HTTP battle end feeds administrator statistics once without NPC actions",async()=>{
+ const {collectUsageBatch,queryRows}=await import('../../../artifacts/api-server/src/lib/usage-statistics-store');
+ const {sql}=await import('drizzle-orm');
+ const [row]=await database.select().from(schema.towerRunsTable).where(eq(schema.towerRunsTable.id,a.id));
+ assert.equal(row!.usagePending.length,1);
+ const final=row!.currentBattle as unknown as GameState;
+ const expected=final.events.filter(e=>e.type==='CARD_PLAYED'&&e.playerId==='player-1').length;
+ assert.ok(expected>0);
+ await collectUsageBatch();
+ const [totals]=await queryRows(db,sql`SELECT SUM(c.plays)::int AS plays FROM usage_card_matches c JOIN usage_participations p ON p.id=c.participation_id WHERE p.source_key=${'tower:'+final.gameId}`);
+ assert.equal(totals!.plays,expected);
+ const admin=await ok('admin','/admin/usage-statistics/cards');assert.equal(admin.totals.participants,1);
+ await collectUsageBatch();const [count]=await queryRows(db,sql`SELECT COUNT(*)::int AS n FROM usage_participations`);assert.equal(count!.n,1);
 });
 test("reward reselection/cancel and atomic swap persist 25 cards and reject duplicated confirmation", async () => {
   const original = [...a.deck];

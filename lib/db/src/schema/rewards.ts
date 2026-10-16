@@ -1,3 +1,4 @@
+import {sql} from 'drizzle-orm';
 import { boolean, index, integer, jsonb, pgTable, text, timestamp, uniqueIndex } from "drizzle-orm/pg-core";
 import { usersTable } from "./users";
 
@@ -113,10 +114,13 @@ export const aiQuestMatchesTable = pgTable('ai_quest_matches', {
  id: text('id').primaryKey(),
  userId: text('user_id').notNull().references(() => usersTable.id, { onDelete: 'cascade' }),
  deckId: text('deck_id').notNull(), aiDeckId: text('ai_deck_id').notNull(), difficulty: text('difficulty').notNull(),
+ usageStart: jsonb('usage_start').$type<Record<string, unknown> | null>(),
+ usageSummary: jsonb('usage_summary').$type<Record<string, unknown> | null>(),
+  usageRecordedAt: timestamp("usage_recorded_at", {withTimezone:true}),
  initialState: jsonb('initial_state').$type<Record<string, unknown>>().notNull(),
  questDate: text('quest_date').notNull(), processedAt: timestamp('processed_at', { withTimezone: true }),
  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
-}, (table) => ({ userIdx: index('ai_quest_matches_user_idx').on(table.userId) }));
+}, (table) => ({ userIdx: index('ai_quest_matches_user_idx').on(table.userId),usageIdx:index('ai_quest_matches_usage_idx').on(table.createdAt).where(sql`${table.usageSummary} IS NOT NULL AND ${table.usageRecordedAt} IS NULL`) })).enableRLS();
 
 export const questSeasonsTable = pgTable("quest_seasons", {
  id: text("id").primaryKey(), name: text("name").notNull(),

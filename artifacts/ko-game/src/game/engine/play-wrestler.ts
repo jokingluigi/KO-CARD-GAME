@@ -94,6 +94,7 @@ export function playWrestlerFromHand(
       ...state.events,
       {
         type: 'CARD_PLAYED',
+        cardDefinitionId: card.definitionId,
         playerId,
         cardInstanceId,
         cardType: card.cardType,

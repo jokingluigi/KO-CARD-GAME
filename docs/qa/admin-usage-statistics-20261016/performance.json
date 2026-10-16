@@ -1,0 +1,209 @@
+{
+  "environment": "isolated PGlite, not production load test",
+  "participations": 1000,
+  "cardsPerParticipant": 25,
+  "ingestMs": 6635.457907999999,
+  "ingestStatements": 9000,
+  "listMs": 4.258712000000742,
+  "listStatements": 4,
+  "detailMs": 4.349158000000898,
+  "detailStatements": 6,
+  "sizes": [
+    {
+      "relname": "usage_card_daily",
+      "bytes": 90112
+    },
+    {
+      "relname": "usage_card_matches",
+      "bytes": 5365760
+    },
+    {
+      "relname": "usage_card_users_daily",
+      "bytes": 49152
+    },
+    {
+      "relname": "usage_champion_daily",
+      "bytes": 49152
+    },
+    {
+      "relname": "usage_champion_users_daily",
+      "bytes": 49152
+    },
+    {
+      "relname": "usage_collection",
+      "bytes": 32768
+    },
+    {
+      "relname": "usage_collection_failures",
+      "bytes": 32768
+    },
+    {
+      "relname": "usage_daily_totals",
+      "bytes": 24576
+    },
+    {
+      "relname": "usage_excluded_accounts",
+      "bytes": 32768
+    },
+    {
+      "relname": "usage_participations",
+      "bytes": 368640
+    },
+    {
+      "relname": "usage_processed_sources",
+      "bytes": 163840
+    },
+    {
+      "relname": "usage_source_rls_baseline",
+      "bytes": 32768
+    }
+  ],
+  "plan": [
+    {
+      "QUERY PLAN": [
+        {
+          "Plan": {
+            "Node Type": "Aggregate",
+            "Strategy": "Sorted",
+            "Partial Mode": "Simple",
+            "Parallel Aware": false,
+            "Async Capable": false,
+            "Startup Cost": 11.32,
+            "Total Cost": 11.38,
+            "Plan Rows": 3,
+            "Plan Width": 64,
+            "Actual Startup Time": 0.326,
+            "Actual Total Time": 0.443,
+            "Actual Rows": 25,
+            "Actual Loops": 1,
+            "Disabled": false,
+            "Group Key": [
+              "card_id"
+            ],
+            "Shared Hit Blocks": 4,
+            "Shared Read Blocks": 0,
+            "Shared Dirtied Blocks": 0,
+            "Shared Written Blocks": 0,
+            "Local Hit Blocks": 0,
+            "Local Read Blocks": 0,
+            "Local Dirtied Blocks": 0,
+            "Local Written Blocks": 0,
+            "Temp Read Blocks": 0,
+            "Temp Written Blocks": 0,
+            "Plans": [
+              {
+                "Node Type": "Sort",
+                "Parent Relationship": "Outer",
+                "Parallel Aware": false,
+                "Async Capable": false,
+                "Startup Cost": 11.32,
+                "Total Cost": 11.33,
+                "Plan Rows": 3,
+                "Plan Width": 40,
+                "Actual Startup Time": 0.309,
+                "Actual Total Time": 0.338,
+                "Actual Rows": 50,
+                "Actual Loops": 1,
+                "Disabled": false,
+                "Sort Key": [
+                  "card_id"
+                ],
+                "Sort Method": "quicksort",
+                "Sort Space Used": 18,
+                "Sort Space Type": "Memory",
+                "Shared Hit Blocks": 4,
+                "Shared Read Blocks": 0,
+                "Shared Dirtied Blocks": 0,
+                "Shared Written Blocks": 0,
+                "Local Hit Blocks": 0,
+                "Local Read Blocks": 0,
+                "Local Dirtied Blocks": 0,
+                "Local Written Blocks": 0,
+                "Temp Read Blocks": 0,
+                "Temp Written Blocks": 0,
+                "Plans": [
+                  {
+                    "Node Type": "Bitmap Heap Scan",
+                    "Parent Relationship": "Outer",
+                    "Parallel Aware": false,
+                    "Async Capable": false,
+                    "Relation Name": "usage_card_daily",
+                    "Alias": "usage_card_daily",
+                    "Startup Cost": 4.18,
+                    "Total Cost": 11.3,
+                    "Plan Rows": 3,
+                    "Plan Width": 40,
+                    "Actual Startup Time": 0.191,
+                    "Actual Total Time": 0.238,
+                    "Actual Rows": 50,
+                    "Actual Loops": 1,
+                    "Disabled": false,
+                    "Recheck Cond": "((day >= '2026-10-01'::date) AND (day <= '2026-10-31'::date))",
+                    "Rows Removed by Index Recheck": 0,
+                    "Exact Heap Blocks": 3,
+                    "Lossy Heap Blocks": 0,
+                    "Shared Hit Blocks": 4,
+                    "Shared Read Blocks": 0,
+                    "Shared Dirtied Blocks": 0,
+                    "Shared Written Blocks": 0,
+                    "Local Hit Blocks": 0,
+                    "Local Read Blocks": 0,
+                    "Local Dirtied Blocks": 0,
+                    "Local Written Blocks": 0,
+                    "Temp Read Blocks": 0,
+                    "Temp Written Blocks": 0,
+                    "Plans": [
+                      {
+                        "Node Type": "Bitmap Index Scan",
+                        "Parent Relationship": "Outer",
+                        "Parallel Aware": false,
+                        "Async Capable": false,
+                        "Index Name": "usage_card_daily_pkey",
+                        "Startup Cost": 0,
+                        "Total Cost": 4.18,
+                        "Plan Rows": 3,
+                        "Plan Width": 0,
+                        "Actual Startup Time": 0.16,
+                        "Actual Total Time": 0.161,
+                        "Actual Rows": 50,
+                        "Actual Loops": 1,
+                        "Disabled": false,
+                        "Index Cond": "((day >= '2026-10-01'::date) AND (day <= '2026-10-31'::date))",
+                        "Index Searches": 1,
+                        "Shared Hit Blocks": 1,
+                        "Shared Read Blocks": 0,
+                        "Shared Dirtied Blocks": 0,
+                        "Shared Written Blocks": 0,
+                        "Local Hit Blocks": 0,
+                        "Local Read Blocks": 0,
+                        "Local Dirtied Blocks": 0,
+                        "Local Written Blocks": 0,
+                        "Temp Read Blocks": 0,
+                        "Temp Written Blocks": 0
+                      }
+                    ]
+                  }
+                ]
+              }
+            ]
+          },
+          "Planning": {
+            "Shared Hit Blocks": 0,
+            "Shared Read Blocks": 0,
+            "Shared Dirtied Blocks": 0,
+            "Shared Written Blocks": 0,
+            "Local Hit Blocks": 0,
+            "Local Read Blocks": 0,
+            "Local Dirtied Blocks": 0,
+            "Local Written Blocks": 0,
+            "Temp Read Blocks": 0,
+            "Temp Written Blocks": 0
+          },
+          "Planning Time": 0.183,
+          "Triggers": [],
+          "Execution Time": 0.557
+        }
+      ]
+    }
+  ]
+}

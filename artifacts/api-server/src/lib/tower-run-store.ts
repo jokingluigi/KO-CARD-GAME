@@ -1,3 +1,4 @@
+import { summarizeUsage } from './usage-statistics-events';
 import { processMatchEventsForDailyQuests } from "./daily-quest-service";
 import { randomUUID } from 'node:crypto';
 import { and, eq, sql } from 'drizzle-orm';
@@ -52,7 +53,7 @@ async function runHistory(tx: Transaction, userId: string, run: TowerRun, snapsh
 }
 async function saveRun(tx: Transaction, row: RunRow, run: TowerRun, battle: GameState | null, initial: GameState | null = null) {
   await tx.update(towerRunsTable).set({ state: json(run), version: run.version, ended: run.ended, currentBattle: battle ? json(battle) : null,
-    initialBattle: initial ? json(initial) : row.initialBattle, updatedAt: new Date() }).where(eq(towerRunsTable.id, row.id));
+    initialBattle: initial ? json(initial) : row.initialBattle, usagePending:row.usagePending, usageBattleStartedAt:initial?new Date():row.usageBattleStartedAt, updatedAt: new Date() }).where(eq(towerRunsTable.id, row.id));
   if (!run.isTest) {
     const { snapshot } = decode(row);
     const history = await towerHistory(tx, row.userId, run.seasonId);
@@ -109,6 +110,8 @@ export async function saveTowerBattle(userId: string, runId: string, expectedVer
     if (battle.gameId !== (row.initialBattle as unknown as GameState | null)?.gameId) throw new TowerRuleError('INVALID_BATTLE', '전투가 일치하지 않습니다.');
     if (!run.isTest) await processMatchEventsForDailyQuests(userId, 'player-1', battle.gameId, battle, (row.currentBattle as unknown as GameState | null)?.events.length ?? 0, tx, undefined, 'TOWER');
     if (battle.status !== 'FINISHED') return saveRun(tx, row, { ...run, version: run.version + 1 }, battle);
+    const usage=summarizeUsage(battle,row.usageBattleStartedAt?{version:1,startedAt:row.usageBattleStartedAt.toISOString(),diagnostic:run.isTest,champions:{'player-1':run.championId},decks:{'player-1':[...run.deck]}}:null,new Date(),['player-1']);
+    if(usage && !run.isTest) row.usagePending=[...(row.usagePending??[]),json(usage)];
     const won = battle.winnerId === 'player-1';
     if (won) await settleBoss(tx, row, run, snapshot);
     const persistedEffects=battle.tower?.configuredRuntime;

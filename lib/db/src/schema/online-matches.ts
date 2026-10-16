@@ -1,3 +1,4 @@
+import {sql} from 'drizzle-orm';
 import { index, integer, jsonb, pgEnum, pgTable, text, timestamp } from "drizzle-orm/pg-core";
 import { decksTable } from "./decks";
 import { usersTable } from "./users";
@@ -18,6 +19,7 @@ export const onlineMatchesTable = pgTable("online_matches", {
   player2DeckId: text("player2_deck_id").references(() => decksTable.id, { onDelete: "restrict" }),
   serializedSnapshot: jsonb("serialized_snapshot").notNull(),
   serializedGameState: jsonb("serialized_game_state").notNull(),
+  usageRecordedAt: timestamp("usage_recorded_at", {withTimezone:true}),
   stateVersion: integer("state_version").notNull().default(0),
   turnStartedAt: timestamp("turn_started_at", { withTimezone: true }),
   turnDeadlineAt: timestamp("turn_deadline_at", { withTimezone: true }),
@@ -36,7 +38,8 @@ export const onlineMatchesTable = pgTable("online_matches", {
   player1UserIdIdx: index("online_matches_player1_user_id_idx").on(table.player1UserId),
   player2UserIdIdx: index("online_matches_player2_user_id_idx").on(table.player2UserId),
   statusIdx: index("online_matches_status_idx").on(table.status),
-}));
+  usageIdx:index("online_matches_usage_ended_idx").on(table.endedAt).where(sql`${table.status}='ENDED' AND ${table.usageRecordedAt} IS NULL AND ${table.serializedSnapshot}->'usageStart' IS NOT NULL`),
+})).enableRLS();
 
 export type OnlineMatchRecord = typeof onlineMatchesTable.$inferSelect;
 export type NewOnlineMatchRecord = typeof onlineMatchesTable.$inferInsert;

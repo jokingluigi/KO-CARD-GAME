@@ -1,3 +1,4 @@
+import { startUsageStatisticsWorker } from './lib/usage-statistics-store';
 import {startDraftWorker} from './lib/draft-service';
 import { createServer } from "node:http";
 import app from "./app";
@@ -27,6 +28,7 @@ async function start(): Promise<void> {
   await ensureTowerStorage();
   await ensureProductionAdmin();
   startDraftWorker();
+  startUsageStatisticsWorker();
 
   const server = createServer(app);
   attachOnlineMatchWebSocket(server);

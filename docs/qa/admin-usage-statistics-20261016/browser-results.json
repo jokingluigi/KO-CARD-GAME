@@ -1,0 +1,53 @@
+[
+  {
+    "viewport": {
+      "width": 1440,
+      "height": 1000
+    },
+    "result": "PASS",
+    "tested": [
+      "real admin list/detail",
+      "actual database API",
+      "30/7-day filters",
+      "empty search",
+      "mobile independent table scroll",
+      "no mode filter",
+      "console errors",
+      "loading / injected 503 / retry recovery"
+    ]
+  },
+  {
+    "viewport": {
+      "width": 390,
+      "height": 844
+    },
+    "result": "PASS",
+    "tested": [
+      "real admin list/detail",
+      "actual database API",
+      "30/7-day filters",
+      "empty search",
+      "mobile independent table scroll",
+      "no mode filter",
+      "console errors",
+      "loading / injected 503 / retry recovery"
+    ]
+  },
+  {
+    "viewport": {
+      "width": 320,
+      "height": 740
+    },
+    "result": "PASS",
+    "tested": [
+      "real admin list/detail",
+      "actual database API",
+      "30/7-day filters",
+      "empty search",
+      "mobile independent table scroll",
+      "no mode filter",
+      "console errors",
+      "loading / injected 503 / retry recovery"
+    ]
+  }
+]

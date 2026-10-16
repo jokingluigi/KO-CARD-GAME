@@ -40,6 +40,7 @@ function sanitizeEvent(
   };
   const safeEvent = { ...event } as Record<string, unknown>;
   delete safeEvent.cardInstanceId;
+  delete safeEvent.cardDefinitionId;
   if (redactEntireEvent) {
     delete safeEvent.source;
     delete safeEvent.target;
@@ -93,13 +94,14 @@ function sanitizeTargetingState(
 }
 
 export function sanitizeGameStateForViewer(state: GameState, viewerId: string): unknown {
+  const {usageObservation:_usageObservation,...withoutUsageObservation}=state as GameState & {usageObservation?:unknown};
   const {
     randomSeed: _randomSeed,
     championQuestEventCursorByPlayer: _questEventCursors,
     championQuestProcessedEventIdentitiesByPlayer: _processedQuestEventIdentities,
     pendingCountdownTurnStart: _countdownTurnStartQueue,
     ...publicState
-  } = state;
+  } = withoutUsageObservation;
   const hiddenCardIds = new Set(
     state.players
       .filter((player) => player.id !== viewerId)

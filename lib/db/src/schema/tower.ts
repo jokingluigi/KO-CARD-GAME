@@ -40,11 +40,14 @@ export const towerRunsTable = pgTable('tower_runs', {
   seasonId: text('season_id').notNull().references(() => towerSeasonsTable.id),
   version: integer('version').notNull().default(0), isTest: boolean('is_test').notNull().default(false), ended: boolean('ended').notNull().default(false),
   state: jsonb('state').$type<Record<string, unknown>>().notNull(), snapshot: jsonb('snapshot').$type<Record<string, unknown>>().notNull(),
+  usagePending: jsonb('usage_pending').$type<Record<string, unknown>[]>().notNull().default([]),
+  usageBattleStartedAt: timestamp('usage_battle_started_at', { withTimezone: true }),
   initialBattle: jsonb('initial_battle').$type<Record<string, unknown> | null>(),
   currentBattle: jsonb('current_battle').$type<Record<string, unknown> | null>(),
   createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
-}, table => [uniqueIndex('tower_one_live_run_per_user').on(table.userId).where(sql`${table.ended} = false AND ${table.isTest} = false`), index('tower_run_user_history').on(table.userId, table.createdAt)]);
+}, table => [uniqueIndex('tower_one_live_run_per_user').on(table.userId).where(sql`${table.ended} = false AND ${table.isTest} = false`), index('tower_run_user_history').on(table.userId, table.createdAt), index('tower_runs_usage_pending_idx').on(table.updatedAt).where(sql`${table.usagePending}<>'[]'::jsonb`)]).enableRLS();
+
 export const towerBossClearsTable = pgTable('tower_boss_clears', {
   id: text('id').primaryKey(), userId: text('user_id').notNull().references(() => usersTable.id),
   seasonId: text('season_id').notNull().references(() => towerSeasonsTable.id), bossSlotId: text('boss_slot_id').notNull(),

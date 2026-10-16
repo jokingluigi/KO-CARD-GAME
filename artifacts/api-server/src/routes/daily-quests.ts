@@ -58,7 +58,7 @@ router.post('/ai-match-start',async(request,response):Promise<void>=>{
   const existing=await storedAIQuestMatch(identity);
   if(existing){response.json({state:existing.initialState,difficulty:existing.difficulty});return;}
   const prepared=await completeAIMatchQuestProgress({...identity,isTestAccount:isTestAccountUser(request.authUser!),outcome:'LOSS',actions:[],prepareOnly:true});
-  response.json(await saveAIQuestStart(identity,prepared.state,prepared.difficulty));
+  response.json(await saveAIQuestStart(identity,prepared.state,prepared.difficulty,prepared.startingDeck));
  }catch(error){response.status(422).json({message:error instanceof Error?error.message:'Could not prepare AI match'});}
 });
 

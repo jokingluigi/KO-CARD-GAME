@@ -206,3 +206,10 @@ test('explicit top-card reveal survives both viewer projections without revealin
  const state={players:[{id:'one',hand:[],deck:[{instanceId:'revealed-instance',definitionId:'top-definition'},{instanceId:'secret-instance',definitionId:'secret-definition'}]},{id:'two',hand:[],deck:[]}],events:[{type:'CARD_REVEALED',playerId:'one',source:{type:'CARD',cardInstanceId:'public-guide'},reason:'DECK_TOP_REVEAL',revealedCard:{definitionId:'top-definition',name:'공개 카드',cost:2,attack:3,health:4,rulesText:'공개 효과'}}]} as unknown as GameState;
  for(const viewer of ['one','two']){const projected=sanitizeGameStateForViewer(state,viewer) as GameState;assert.deepEqual(projected.events[0]!.revealedCard,state.events[0]!.revealedCard);if(viewer==='two'){assert.equal(JSON.stringify(projected).includes('secret-instance'),false);assert.equal(JSON.stringify(projected).includes('secret-definition'),false);assert.deepEqual(projected.players[0]!.deck,{hidden:true,count:2});}}
 });
+
+
+test('usage metadata never reveals generated enemy definition IDs or server-only cancellation checkpoints',()=>{
+ const state={usageObservation:{cancelled:[7],pendingCommit:9},players:[{id:'PLAYER_ONE',hand:[],deck:[]},{id:'PLAYER_TWO',hand:[{instanceId:'hidden-generated',definitionId:'hidden-definition'}],deck:[]}],events:[{type:'CARD_GENERATED',playerId:'PLAYER_TWO',cardInstanceId:'hidden-generated',cardDefinitionId:'hidden-definition'},{type:'CARD_PLAYED',playerId:'PLAYER_ONE',cardInstanceId:'public-played',cardDefinitionId:'public-definition',reason:'PLAY_FROM_HAND'}]} as unknown as GameState;
+ const view=sanitizeGameStateForViewer(state,'PLAYER_ONE') as any;
+ assert.equal(view.usageObservation,undefined);assert.equal(view.events[0].cardDefinitionId,undefined);assert.equal(view.events[1].cardDefinitionId,'public-definition');assert.equal(state.events[0]!.cardDefinitionId,'hidden-definition');
+});

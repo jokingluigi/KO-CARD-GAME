@@ -28,6 +28,7 @@ const AdminServerMaintenance = lazy(() =>
     default: m.AdminServerMaintenance,
   })),
 );
+const AdminUsageStatistics = lazy(() => import('@/components/admin-usage-statistics').then(m=>({default:m.AdminUsageStatistics})));
 const AdminQuestManager = lazy(() =>
   import("@/components/admin-quest-manager").then((m) => ({
     default: m.AdminQuestManager,
@@ -227,6 +228,8 @@ export default function Admin() {
                 </button>
               </div>
             </section>
+          ) : page?.id === "card-statistics" || page?.id === "champion-statistics" ? (
+            <AdminUsageStatistics key={page.id} kind={page.id === "card-statistics" ? "cards" : "champions"} onUnauthorized={onUnauthorized} />
           ) : page?.id === "quests" ? (
             <AdminQuestManager />
           ) : page?.id === "tags" ? (

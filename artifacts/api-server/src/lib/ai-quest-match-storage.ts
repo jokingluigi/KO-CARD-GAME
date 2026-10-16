@@ -1,3 +1,4 @@
+import { summarizeUsage, type UsageStart } from './usage-statistics-events';
 import { and, eq, sql } from "drizzle-orm";
 import { db, aiQuestMatchesTable } from "@workspace/db";
 import type { GameState } from "@workspace/game-engine";
@@ -31,6 +32,7 @@ export async function saveAIQuestStart(
   input: MatchIdentity,
   state: GameState,
   difficulty: string,
+  startingDeck?: string[],
 ) {
   const existing = await storedAIQuestMatch(input);
   if (existing)
@@ -53,6 +55,7 @@ export async function saveAIQuestStart(
         aiDeckId: input.aiDeckId,
         difficulty,
         initialState: state as unknown as Record<string, unknown>,
+        usageStart: {version:1,startedAt:new Date().toISOString(),champions:{[state.players[0]!.id]:state.players[0]!.champion!.id},decks:{[state.players[0]!.id]:startingDeck??null}},
         questDate,
       })
       .onConflictDoNothing();
@@ -89,6 +92,11 @@ export async function processStoredAIQuestMatch(
       ? saved.difficulty
       : "NORMAL",
   );
+  const usage=summarizeUsage(final,saved.usageStart as UsageStart|null,new Date(),[user.id]);
+  // Retain the verified result before unrelated daily-quest work. A crash/retry cannot lose it.
+  if(usage)try{
+    await db.update(aiQuestMatchesTable).set({usageSummary:usage as unknown as Record<string,unknown>}).where(and(eq(aiQuestMatchesTable.id,input.matchId),eq(aiQuestMatchesTable.userId,input.userId),sql`usage_summary IS NULL AND usage_recorded_at IS NULL`));
+  }catch(error){console.error('[KO usage statistics] AI receipt checkpoint will retry in result transaction',{code:(error as {code?:string}).code??'CHECKPOINT_FAILED'});}
   await db.transaction(async (tx) => {
     const [locked] = await tx
       .select()
@@ -113,7 +121,7 @@ export async function processStoredAIQuestMatch(
     );
     await tx
       .update(aiQuestMatchesTable)
-      .set({ processedAt: new Date() })
+      .set({ processedAt: new Date(), usageSummary:usage?sql`CASE WHEN usage_recorded_at IS NULL THEN COALESCE(usage_summary,${JSON.stringify(usage)}::jsonb) ELSE usage_summary END`:null })
       .where(eq(aiQuestMatchesTable.id, input.matchId));
   });
   return true;

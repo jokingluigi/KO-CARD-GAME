@@ -1,3 +1,4 @@
+import { executeUsageObservedAction as executeAction } from '../lib/usage-statistics-observer';
 import { buildMatchRecap } from '@workspace/game-engine';
 import { validateAIDeckReferences } from '../lib/ai-deck-service';
 import { expandNamedCardReferences } from '../lib/named-card-references';
@@ -24,7 +25,6 @@ import {
   createInitialGameState,
   normalizeHiddenZoneCards,
   validateCardDefinitionReferences,
-  executeAction,
   getLegalActions,
   startGame,
   type CardDefinition,
@@ -66,6 +66,7 @@ export type OnlineMatchSnapshot = {
   championDefinitions: ChampionDefinition[];
   publicPlayers: OnlinePublicPlayerMetadata[];
   introFirstSpeaker: "PLAYER_ONE" | "PLAYER_TWO" | null;
+  usageStart?: import("../lib/usage-statistics-events").UsageStart;
 };
 
 export interface OnlineMatchConnection {
@@ -1020,6 +1021,7 @@ export async function startOnlineMatch(
   };
   const matchId = existingWaitingMatchId ?? randomUUID();
   const snapshot: OnlineMatchSnapshot = {
+    usageStart: {version:1,startedAt:new Date().toISOString(),champions:{PLAYER_ONE:firstDeck.championDefinitionId!,PLAYER_TWO:secondDeck.championDefinitionId!},decks:{PLAYER_ONE:[...firstDeck.cardDefinitionIds],PLAYER_TWO:[...secondDeck.cardDefinitionIds]}},
     player1UserId,
     player2UserId,
     player1DeckId,
