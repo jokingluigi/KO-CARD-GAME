@@ -146,7 +146,7 @@ export function MainMenu({ onComingSoon, onDeckEdit, onAiMatch, user, onLogout, 
   }
 
   return (
-    <main className="ko-main-menu relative min-h-screen overflow-hidden bg-[#080808] px-5 py-10 text-white sm:px-8">
+    <main className={`ko-main-menu ${backgroundUrl ? "ko-main-menu--illustrated" : ""} relative min-h-screen overflow-hidden bg-[#080808] px-5 py-10 text-white sm:px-8`}>
       <button type="button" onClick={toggleBgm} aria-label={bgmMuted ? "배경음 켜기" : "배경음 음소거"} aria-pressed={bgmMuted} className="absolute right-28 top-4 z-20 flex items-center gap-2 rounded border border-amber-500/50 bg-neutral-950/80 px-3 py-2 text-xs font-bold text-amber-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-400">
         {bgmMuted ? <VolumeX className="h-4 w-4" /> : <Volume2 className="h-4 w-4" />}
         {bgmMuted ? "음소거" : "배경음"}
@@ -167,11 +167,10 @@ export function MainMenu({ onComingSoon, onDeckEdit, onAiMatch, user, onLogout, 
         <div className="mt-3"><SfxVolumeControl /></div>
       </div>}
       {backgroundUrl && (
-        <div
-          aria-hidden="true"
-          className="ko-main-menu__art pointer-events-none absolute inset-0 bg-cover bg-center"
-          style={{ backgroundImage: `url(${JSON.stringify(backgroundUrl)})` }}
-        />
+        <div aria-hidden="true" className="ko-main-menu__art pointer-events-none">
+          <div className="ko-main-menu__art-fill" style={{ backgroundImage: `url(${JSON.stringify(backgroundUrl)})` }} />
+          <img className="ko-main-menu__art-original" src={backgroundUrl} alt="" decoding="async" />
+        </div>
       )}
       <div aria-hidden="true" className="ko-main-menu__shade pointer-events-none absolute inset-0 z-[1]" />
       <div className="ko-main-menu__content relative z-10 mx-auto flex min-h-[calc(100vh-5rem)] w-full max-w-4xl flex-col justify-center">
