@@ -164,7 +164,7 @@ jobs:
 
       - name: Latest administrator content snapshot AI matches
         env:
-          KO_QA_ADMIN_SNAPSHOT_DIR: docs/qa/snapshots/20261015-wrestler-revisions
+          KO_QA_ADMIN_SNAPSHOT_DIR: docs/qa/snapshots/20261019-admin
           KO_QA_ADMIN_AI_REPORT: qa-results/latest-wrestler-revisions-ai-100.md
         run: |
           node --import ./docs/qa/checkpoints/20261006/qa-loader.mjs --test --test-isolation=none artifacts/ko-game/src/game/qa/latest-admin-ai-20261013.test.ts
@@ -225,6 +225,7 @@ jobs:
               return "$qa_status"
             fi
           }
+          run_browser docs/qa/combat-crash-browser.mjs
           run_browser docs/qa/entry-audio-browser.mjs
           run_browser docs/qa/legendary-audio-browser.mjs
           run_browser docs/qa/heavy-impact-browser.mjs

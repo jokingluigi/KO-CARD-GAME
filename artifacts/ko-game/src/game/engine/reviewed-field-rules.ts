@@ -17,7 +17,8 @@ export function refreshPersistentFieldGrants(state: GameState): GameState {
     if (!condition) continue;
     const key = `persistent-field-grant:${card.instanceId}:${card.definitionId}:${entryIndex}:${kind}`;
     if (keys.has(key)) continue;
-    const met = player.board.some(ally => ally && ally.currentHealth > 0 && (kind === 'ARMOR'
+    // Field card/tag existence conditions never satisfy themselves.
+    const met = player.board.some(ally => ally && ally.instanceId !== card.instanceId && ally.currentHealth > 0 && (kind === 'ARMOR'
      ? hasCardTag({tags:[...(ally.tags??[]),...(ally.grantedTags??[])]},condition)
      : (state.cardPool?.find(d=>d.id===ally.definitionId)??state.minionACardPool?.find(d=>d.id===ally.definitionId))?.name.includes(condition)));
     if (!met) continue;
