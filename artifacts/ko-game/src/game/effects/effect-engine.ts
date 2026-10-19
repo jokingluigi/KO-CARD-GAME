@@ -3827,7 +3827,8 @@ export function resolveTriggeredAbilities(
       if(condition.type==='WRESTLER_DESTROYED_THIS_TURN' && !state.events.slice(turnStart+1).some(event=>event.type==='CARD_DESTROYED'&&(event.cardType??event.targetSnapshot?.cardType)==='WRESTLER'))return false;
       if (condition.type === 'HAND_COUNT' && !compare(owner.hand.length, condition.compare, condition.amount)) return false;
       if (condition.type === 'BOARD_COUNT' && !compare(owner.board.filter(Boolean).length, condition.compare, condition.amount)) return false;
-      if (condition.type === 'BOARD_HAS_TAG' && owner.board.some(entry => entry && matchesStateCardTagFilter(state, entry, {tagsAny:[condition.tag]})) !== (condition.present ?? true)) return false;
+      // A field-presence prerequisite requires another instance, including another copy of the same definition.
+      if (condition.type === 'BOARD_HAS_TAG' && owner.board.some(entry => entry && entry.instanceId !== card.instanceId && matchesStateCardTagFilter(state, entry, {tagsAny:[condition.tag]})) !== (condition.present ?? true)) return false;
       if (condition.type === 'HAS_TAG' && !owner.hand.some((entry) => entry.tags?.includes(condition.tag))) return false;
       if (condition.type === 'SOURCE_IN_HAND' && !owner.hand.some((entry) => entry.instanceId === card.instanceId)) return false;
       if (condition.type === 'SOURCE_ON_LEFT_SIDE' && (card.boardSlot === null || card.boardSlot > 1)) return false;

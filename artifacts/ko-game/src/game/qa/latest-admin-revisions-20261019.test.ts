@@ -11,6 +11,7 @@ import {
 } from "../champions/published-champions";
 import { generateCardInstance } from "../cards/generation";
 import { createInitialGameState } from "../engine/create-initial-game-state";
+import { applyEffect } from "../effects/effect-engine";
 import { executeAction } from "../actions/engine-actions";
 import type { CardDefinition } from "../cards/types";
 const records = JSON.parse(
@@ -109,7 +110,7 @@ for (const witness of [false, true])
     assert.equal(n.players[0].hand[0].definitionId, "epic-spell-feast");
     assert.equal(
       n.players[0].hand[0].currentCost,
-      Math.max(0, def("만찬").cost - 1),
+      Math.max(0, def("만찬").cost - (witness ? 1 : 0)),
     );
     assert.equal(n.players[0].board[0]!.maxHealth, 4);
   });
@@ -256,4 +257,130 @@ test("Cook zero-discount branch when no allied authority tag exists; enemy tags 
   assert.ok(r.success);
   assert.equal(r.state.players[0].hand.length, 1);
   assert.equal(r.state.players[0].hand[0].currentCost, def("만찬").cost);
+});
+
+test("Luna alone cannot satisfy its own tag condition; later ally grants armor once and leaving ally does not revoke it", () => {
+  const solo = play(setup(), "루나");
+  assert.ok(!solo.players[0].board[0]!.keywords.includes("ARMOR"));
+  assert.equal(
+    solo.players[0].board[0]!.armor,
+    generateCardInstance(def("루나"), { instanceId: "baseline-luna" }).armor,
+  );
+  solo.players[0].hand = [
+    generateCardInstance(tagged, { instanceId: "later-ally" }),
+  ];
+  const entered = executeAction(solo, {
+    type: "PLAY_WRESTLER",
+    playerId: "player-1",
+    cardInstanceId: "later-ally",
+    boardSlot: 1,
+  });
+  assert.ok(entered.success);
+  assert.equal(entered.state.players[0].board[0]!.armor, 1);
+  assert.ok(entered.state.players[0].board[0]!.keywords.includes("ARMOR"));
+  const retired = applyEffect(
+    entered.state,
+    "player-1",
+    entered.state.players[0].board[1]!,
+    {
+      type: "STRUCTURED",
+      action: "RETIRE",
+      target: { zone: "BOARD", owner: "SELF", selection: "SELF", count: 1 },
+    },
+  );
+  assert.equal(retired.players[0].board[1], null);
+  assert.equal(retired.players[0].board[0]!.armor, 1);
+});
+test("name and tag presence exclude the same instance, but a separate copy qualifies for both", () => {
+  const s = setup(),
+    luna = { ...def("루나"), name: "조킹루이지 조건 검증 루나" };
+  s.cardPool = [...s.cardPool!.filter((d) => d.id !== luna.id), luna];
+  s.minionACardPool = s.cardPool;
+  const first = play(s, "루나");
+  assert.ok(!first.players[0].board[0]!.keywords.includes("ARMOR"));
+  assert.ok(!first.players[0].board[0]!.keywords.includes("REGEN"));
+  first.players[0].hand = [
+    generateCardInstance(luna, { instanceId: "second-copy" }),
+  ];
+  const r = executeAction(first, {
+    type: "PLAY_WRESTLER",
+    playerId: "player-1",
+    cardInstanceId: "second-copy",
+    boardSlot: 1,
+  });
+  assert.ok(r.success);
+  for (const c of r.state.players[0].board.slice(0, 2)) {
+    assert.equal(c!.armor, 1);
+    assert.ok(c!.keywords.includes("REGEN"));
+  }
+});
+for (const ally of [false, true])
+  test(`Kamisator steals on actual attack but gets dodge only from another allied tag: ${ally}`, () => {
+    const s = setup(),
+      d = def("카미사토르");
+    s.players[0].board[0] = {
+      ...generateCardInstance(d, { instanceId: "kami" }),
+      boardSlot: 0,
+      enteredThisTurn: false,
+    };
+    s.players[1].board[0] = {
+      ...generateCardInstance(
+        { ...unit, attack: 0, health: 20 },
+        { instanceId: "enemy-target" },
+      ),
+      boardSlot: 0,
+    };
+    s.players[1].deck = [generateCardInstance(unit, { instanceId: "stolen" })];
+    // An enemy tagged card and a hand card never satisfy a friendly-field condition.
+    s.players[1].board[1] = {
+      ...generateCardInstance(tagged, { instanceId: "enemy-tag" }),
+      boardSlot: 1,
+    };
+    s.players[0].hand = [
+      generateCardInstance(tagged, { instanceId: "hand-tag" }),
+    ];
+    if (ally)
+      s.players[0].board[1] = {
+        ...generateCardInstance(d, { instanceId: "other-kami" }),
+        boardSlot: 1,
+        enteredThisTurn: false,
+      };
+    const r = executeAction(s, {
+      type: "ATTACK",
+      playerId: "player-1",
+      attackerInstanceId: "kami",
+      target: {
+        type: "WRESTLER",
+        playerId: "player-2",
+        cardInstanceId: "enemy-target",
+      },
+    });
+    assert.ok(r.success);
+    assert.equal(r.state.players[1].deck.length, 0);
+    assert.ok(r.state.players[0].hand.some((c) => c.instanceId === "stolen"));
+    assert.equal(r.state.players[0].board[0]!.dodgeCharges ?? 0, ally ? 1 : 0);
+  });
+test("Pandora still grants its own pinfall bonus exactly once without counting itself as another tagged ally", () => {
+  const s = setup(),
+    d = def("판도라");
+  s.players[0].hand = [generateCardInstance(d, { instanceId: "pandora" })];
+  s.players[1].board[0] = {
+    ...generateCardInstance({ ...unit, health: 1 }, { instanceId: "pinfall" }),
+    boardSlot: 0,
+  };
+  const start = executeAction(s, {
+    type: "PLAY_WRESTLER",
+    playerId: "player-1",
+    cardInstanceId: "pandora",
+    boardSlot: 0,
+  });
+  assert.ok(start.success);
+  const r = executeAction(start.state, {
+    type: "SELECT_EFFECT_TARGET",
+    playerId: "player-1",
+    targetId: "pinfall",
+  });
+  assert.ok(r.success);
+  assert.equal(r.state.players[0].board[0]!.currentAttack, d.attack + 1);
+  assert.equal(r.state.players[0].board[0]!.maxHealth, d.health + 1);
 });
