@@ -1,0 +1,47 @@
+{
+  "results": [
+    {
+      "width": 390,
+      "height": 844,
+      "touch": true,
+      "unsupported": false,
+      "rejected": 0,
+      "attacks": 1,
+      "retirements": 2,
+      "status": "PASS"
+    },
+    {
+      "width": 390,
+      "height": 844,
+      "touch": true,
+      "unsupported": true,
+      "rejected": 10,
+      "attacks": 1,
+      "retirements": 2,
+      "status": "PASS"
+    },
+    {
+      "width": 1440,
+      "height": 900,
+      "touch": false,
+      "unsupported": false,
+      "rejected": 0,
+      "attacks": 1,
+      "retirements": 2,
+      "status": "PASS"
+    },
+    {
+      "width": 1440,
+      "height": 900,
+      "touch": false,
+      "unsupported": true,
+      "rejected": 10,
+      "attacks": 1,
+      "retirements": 2,
+      "status": "PASS"
+    }
+  ],
+  "physicalDevice": "NOT_RUN",
+  "reportedProductionIncident": "UNCONFIRMED: no original stack trace",
+  "productionWrites": false
+}

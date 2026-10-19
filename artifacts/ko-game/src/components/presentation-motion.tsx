@@ -2,6 +2,12 @@ import { useCallback, useEffect, useLayoutEffect, useRef, useState, type RefObje
 import { prefersReducedMotion } from './presentation-config';
 import { MOTION_EASING } from './presentation-policy';
 
+/** Cosmetic Web Animations are optional, including implementations that exist but reject a property. */
+function animatePresentation(element: HTMLElement | null | undefined, frames: Keyframe[], options: KeyframeAnimationOptions): Animation | undefined {
+ try { return element?.animate?.(frames, options); }
+ catch { return undefined; } // Never unmount a live battle because an optional browser animation is unsupported.
+}
+
 /** One finite owner for element reactions and competing shake requests. */
 export function useBattleMotion() {
  const animations=useRef(new Map<HTMLElement,Animation>());
@@ -12,7 +18,8 @@ export function useBattleMotion() {
   const frames:Keyframe[]=kind==='SILENCE'?[{filter:'saturate(1)'},{filter:'saturate(0)',offset:.4},{filter:'saturate(1)'}]
    :kind==='HIT'?[{translate:'0px 0px',rotate:'0deg'},{translate:amount+'px '+amount+'px',rotate:'1deg',offset:.3},{translate:-amount+'px 0px',rotate:'-1deg',offset:.6},{translate:'0px 0px',rotate:'0deg'}]
    :[{scale:'1'},{scale:kind==='ZONE'?'1.025':'1.035',offset:.35},{scale:'1'}];
-  const animation=element.animate(frames,{duration:kind==='SILENCE'?240:180,easing:MOTION_EASING.recovery});
+  const animation=animatePresentation(element,frames,{duration:kind==='SILENCE'?240:180,easing:MOTION_EASING.recovery});
+  if(!animation)return;
   animations.current.set(element,animation);
   animation.onfinish=()=>{if(animations.current.get(element)===animation)animations.current.delete(element);};
  },[]);
@@ -34,10 +41,10 @@ export function useHandMotion(elements:RefObject<ReadonlyMap<string,HTMLElement>
     const before=previous.current.get(id),after=next.get(id)!;
     const dx=before?before.left-after.left:0,dy=before?before.top-after.top:0;
     if(before&&Math.hypot(dx,dy)>1) {
-     const animation=element.animate?.([{translate:dx+'px '+dy+'px'},{translate:'0px 0px'}],{duration:220,easing:MOTION_EASING.recovery});
+     const animation=animatePresentation(element,[{translate:dx+'px '+dy+'px'},{translate:'0px 0px'}],{duration:220,easing:MOTION_EASING.recovery});
      if(animation)running.current.push(animation);
     } else if(!before&&previous.current.size) {
-     const animation=element.animate?.([{opacity:0},{opacity:1}],{duration:180,easing:MOTION_EASING.ui});
+     const animation=animatePresentation(element,[{opacity:0},{opacity:1}],{duration:180,easing:MOTION_EASING.ui});
      if(animation)running.current.push(animation);
     }
    }
@@ -59,7 +66,7 @@ export function MotionNumber({value,className='',format=(n:number)=>String(n)}:{
    const t=Math.min(1,(now-origin)/260),next=Math.round(from+(value-from)*(1-Math.pow(1-t,3)));
    current.current=next;setDisplay(next);
    if(t<1)frame=requestAnimationFrame(tick);
-   else{current.current=value;setDisplay(value);animation=element.current?.animate?.([{scale:'.94'},{scale:'1.1',offset:.4},{scale:'1'}],{duration:140,easing:MOTION_EASING.recovery});}
+   else{current.current=value;setDisplay(value);animation=animatePresentation(element.current,[{scale:'.94'},{scale:'1.1',offset:.4},{scale:'1'}],{duration:140,easing:MOTION_EASING.recovery});}
   };
   frame=requestAnimationFrame(tick);
   return()=>{cancelAnimationFrame(frame);animation?.cancel();};

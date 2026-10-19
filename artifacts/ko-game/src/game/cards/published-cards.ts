@@ -1,3 +1,4 @@
+import { reviewedOctober19Abilities } from './reviewed-admin-content-20261019';
 import { reviewedLatestAdminAbilities } from './reviewed-admin-content-20261015';
 import { reviewedCurrentAdminAbilities, reviewedCurrentAdminKeywords } from './reviewed-admin-content-20261014';
 import { reviewedContentAbilities } from './reviewed-content-20261012';
@@ -238,7 +239,8 @@ export function cardRecordToDefinition(card: PublishedCardRecord): CardDefinitio
   if (card.id === 'epic-spell-life-exchange' && card.text === LIFE_EXCHANGE_OLD_TEXT) {
     card = { ...card, text: LIFE_EXCHANGE_RULES_TEXT };
   }
-  if (card.id === 'epic-spell-feast') {
+  // Compatibility is limited to the reviewed +3 wording; never overwrite a new administrator revision.
+  if (card.id === 'epic-spell-feast' && card.text === EPIC_TECHNIQUES.find(entry => entry.id === card.id)!.text) {
     const feast = EPIC_TECHNIQUES.find(entry => entry.id === card.id)!;
     card = { ...card, text: feast.text, effectId: feast.effectId, effectConfig: feast.effectConfig };
   }
@@ -249,7 +251,7 @@ export function cardRecordToDefinition(card: PublishedCardRecord): CardDefinitio
       return { ...effect, target };
     }) } };
   }
-  const reviewedCurrent = reviewedLatestAdminAbilities(card) ?? reviewedCurrentAdminAbilities(card);
+  const reviewedCurrent = reviewedOctober19Abilities(card) ?? reviewedLatestAdminAbilities(card) ?? reviewedCurrentAdminAbilities(card);
   const reviewedAdmin = reviewedAdminContentAbilities(card);
   const implementation = reviewedCurrent || reviewedAdmin ? null : newCardImplementation(card);
   if (card.id === 'dc43dc88-38d7-499b-ad89-6b83f773fe62' && Array.isArray(card.effectConfig.effects)) {
