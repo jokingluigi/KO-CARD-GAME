@@ -1,5 +1,5 @@
 import { FormEvent, useEffect, useRef, useState } from "react";
-import { ArrowRight, LockKeyhole, RefreshCw, UserRound } from "lucide-react";
+import { ArrowRight, LockKeyhole, UserRound } from "lucide-react";
 import { submitAuth, type AuthUser } from "@/lib/auth-client";
 
 export function AuthLoading() {
@@ -18,7 +18,6 @@ export function AuthLoading() {
 }
 
 export function AuthRecovery({
-  message,
   onRetry,
 }: {
   message?: string;
@@ -51,32 +50,11 @@ export function AuthRecovery({
     };
   }, []);
   return (
-    <main className="ko-auth-screen flex min-h-screen items-center justify-center px-5 text-white">
-      <section className="ko-auth-card w-full max-w-[380px] text-center">
-        <p className="font-display text-xs font-bold tracking-[0.45em] text-amber-400">
-          KO
-        </p>
-        <h1 className="mt-5 text-xl font-black">로그인 연결이 지연되고 있어</h1>
-        <p className="mt-3 text-sm leading-6 text-neutral-500">
-          {message
-            ? "서버 응답을 기다리고 있어. 로그인 정보는 지워지지 않았어."
-            : "서버에 다시 연결하고 있어."}
-          <span className="mt-2 block">
-            연결이 복구되면 자동으로 다시 확인합니다.
-          </span>
-        </p>
-        <button type="button" onClick={onRetry} className="ko-auth-submit mt-7">
-          <RefreshCw className="h-4 w-4" aria-hidden="true" />
-          다시 시도
-        </button>
-        <a
-          href={`${import.meta.env.BASE_URL}`}
-          className="mt-4 block min-h-11 py-3 text-sm text-amber-300"
-        >
-          로그인 화면으로
-        </a>
-      </section>
-    </main>
+    <AuthPage
+      recoveryMessage="서버 응답을 기다리고 있어. 기존 로그인은 자동으로 다시 확인하고, 아래에서 직접 로그인할 수도 있어."
+      onRetry={onRetry}
+      onAuthenticated={() => retryRef.current()}
+    />
   );
 }
 

@@ -19,7 +19,9 @@ export type AuthResponse = {
 
 const authBasePath = (import.meta.env?.BASE_URL ?? "/").replace(/\/$/, "");
 const authApiBase = `${authBasePath}/api/auth`;
-export const AUTH_REQUEST_TIMEOUT_MS = 8_000;
+// Session restoration may span a free-service cold start. The form is shown
+// independently after 1.2 seconds, so this does not block login input.
+export const AUTH_REQUEST_TIMEOUT_MS = 60_000;
 export const AUTH_SUBMIT_TIMEOUT_MS = 20_000;
 let authRevision = 0;
 let currentUserRequest: Promise<AuthResponse> | null = null;

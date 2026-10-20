@@ -74,6 +74,7 @@ try {
   };
   const scripts = process.env.KO_AUTH_QA_SCRIPTS?.split(",") ?? [
     "auth-startup-recovery-browser",
+    "auth-session-cold-browser",
     "auth-recovery-browser-20261014",
     "auth-restoration-browser",
     "entry-browser",
