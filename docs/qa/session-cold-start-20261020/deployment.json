@@ -1,0 +1,63 @@
+{
+  "checkedAt": "2026-10-20T15:15:43.492587+00:00",
+  "services": {
+    "web": [
+      {
+        "id": "dep-dbboakflk1mc73e2es9g",
+        "status": "live",
+        "trigger": "new_commit",
+        "createdAt": "2026-10-20T15:14:25.653796Z",
+        "startedAt": "2026-10-20T15:14:25.651689Z",
+        "finishedAt": "2026-10-20T15:14:54.671567Z",
+        "commit": "ac30343bab4758da185160df8dd6834008965e95"
+      },
+      {
+        "id": "dep-dbbhaq6k1f9s73brhubg",
+        "status": "deactivated",
+        "trigger": "new_commit",
+        "createdAt": "2026-10-20T07:16:56.407345Z",
+        "startedAt": "2026-10-20T07:16:56.40593Z",
+        "finishedAt": "2026-10-20T07:17:29.415797Z",
+        "commit": "f1890bd68f823bbda629d4670df7e14e635d540b"
+      },
+      {
+        "id": "dep-dbbcf87lk1mc73dknfp0",
+        "status": "deactivated",
+        "trigger": "new_commit",
+        "createdAt": "2026-10-20T01:45:04.678887Z",
+        "startedAt": "2026-10-20T01:45:04.677471Z",
+        "finishedAt": "2026-10-20T01:45:39.105385Z",
+        "commit": "853c76a3a5d44ea8721f2fb7c955fe37ee6d61ba"
+      }
+    ],
+    "api": [
+      {
+        "id": "dep-dbboakflk1mc73e2es1g",
+        "status": "live",
+        "trigger": "new_commit",
+        "createdAt": "2026-10-20T15:14:25.558277Z",
+        "startedAt": "2026-10-20T15:14:25.529126Z",
+        "finishedAt": "2026-10-20T15:15:39.376853Z",
+        "commit": "ac30343bab4758da185160df8dd6834008965e95"
+      },
+      {
+        "id": "dep-dbbhaq6k1f9s73brhu40",
+        "status": "deactivated",
+        "trigger": "new_commit",
+        "createdAt": "2026-10-20T07:16:56.375294Z",
+        "startedAt": "2026-10-20T07:16:56.35005Z",
+        "finishedAt": "2026-10-20T07:18:06.756653Z",
+        "commit": "f1890bd68f823bbda629d4670df7e14e635d540b"
+      },
+      {
+        "id": "dep-dbbcf87lk1mc73dknfh0",
+        "status": "deactivated",
+        "trigger": "new_commit",
+        "createdAt": "2026-10-20T01:45:04.638349Z",
+        "startedAt": "2026-10-20T01:45:04.60628Z",
+        "finishedAt": "2026-10-20T01:46:19.194552Z",
+        "commit": "853c76a3a5d44ea8721f2fb7c955fe37ee6d61ba"
+      }
+    ]
+  }
+}

@@ -1,0 +1,16 @@
+{
+  "checkedAt": "2026-10-20T15:16:50.937Z",
+  "viewport": [
+    390,
+    844
+  ],
+  "entryMs": 1670,
+  "initialAuthReads": 1,
+  "rootAndReloadReads": 2,
+  "existingSessionRestored": true,
+  "adminAccessible": true,
+  "deployedStartupDeadlineMs": 60000,
+  "pageErrors": [],
+  "apiWrites": [],
+  "physicalPhone": "NOT_RUN"
+}

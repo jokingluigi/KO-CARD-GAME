@@ -1,0 +1,16 @@
+[
+  {
+    "width": 390,
+    "delayMs": 25000,
+    "sessionReads": 1,
+    "writes": 0,
+    "passed": true
+  },
+  {
+    "width": 1440,
+    "delayMs": 9000,
+    "sessionReads": 1,
+    "writes": 0,
+    "passed": true
+  }
+]

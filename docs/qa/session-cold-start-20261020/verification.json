@@ -1,0 +1,20 @@
+{
+  "unit": {
+    "tests": 30,
+    "pass": 30,
+    "fail": 0
+  },
+  "typecheckAndBuild": "PASS",
+  "compiledBrowserScenarios": 28,
+  "compiledBrowserRunners": 8,
+  "physicalPhone": "NOT_RUN",
+  "production": "PASS",
+  "focusedCi": {
+    "run": 39445724350,
+    "result": "PASS"
+  },
+  "broadCi": {
+    "run": 39445724488,
+    "result": "IN_PROGRESS at report creation"
+  }
+}
