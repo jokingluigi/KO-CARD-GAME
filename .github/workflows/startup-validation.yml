@@ -53,6 +53,18 @@ on:
       - artifacts/ko-game/src/lib/card-display-state.ts
       - artifacts/api-server/src/routes/admin.ts
       - artifacts/api-server/src/lib/structured-effects*
+      - lib/cosmetics/**
+      - lib/db/src/schema/cosmetics.ts
+      - lib/db/migrations/0053_cosmetics.sql
+      - lib/db/qa/cosmetics.test.ts
+      - artifacts/api-server/src/lib/cosmeti*.ts
+      - artifacts/api-server/src/lib/draft-cosmetics.ts
+      - artifacts/api-server/src/lib/draft-service.ts
+      - artifacts/api-server/src/routes/admin-draft.ts
+      - lib/db/qa/draft-http.test.ts
+      - artifacts/api-server/src/routes/cosmetics.ts
+      - artifacts/api-server/src/online/**
+      - docs/qa/cosmetics*browser*.mjs
       - lib/effect-registry/**
       - artifacts/ko-game/index.html
       - artifacts/ko-game/public/server-connection.js
@@ -87,6 +99,8 @@ jobs:
           version: '11.19.0'
       - run: pnpm install --frozen-lockfile --ignore-scripts
       - run: pnpm run build
+      - name: Cosmetics ownership, storage, authoritative PvP and recovery integration
+        run: node --import ./docs/qa/checkpoints/20261006/qa-loader.mjs --test --test-isolation=none lib/db/qa/cosmetics.test.ts
       - name: Startup, auth, quest and database regressions
         env:
           DATABASE_URL: postgresql://unused:unused@127.0.0.1:1/unused
@@ -186,6 +200,13 @@ jobs:
             sleep 1
           done
           KO_QA_PLAYWRIGHT="$RUNNER_TEMP/ko-entry-qa/node_modules/playwright/index.mjs" node docs/qa/entry-browser.mjs
+
+      - name: Cosmetics two-account PvP, AI and mobile browser checks
+        env:
+          KO_QA_PLAYWRIGHT: ${{ runner.temp }}/ko-entry-qa/node_modules/playwright/index.mjs
+        run: |
+          node docs/qa/cosmetics-browser-runner.mjs
+          KO_COSMETICS_DRAFT=1 node docs/qa/cosmetics-browser-runner.mjs
 
       - name: Quest platform desktop and mobile with clean ordinary-user sessions
         env:

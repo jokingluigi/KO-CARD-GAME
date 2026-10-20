@@ -520,6 +520,10 @@ class ImageAssetStorage {
   }
 }
 
+export class CosmeticImageStorage extends ImageAssetStorage {
+  constructor() { super("cosmetics"); }
+}
+
 export class CardImageStorage extends ImageAssetStorage {
   constructor() {
     super("card-images");

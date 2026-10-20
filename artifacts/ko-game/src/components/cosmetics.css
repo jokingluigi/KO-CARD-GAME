@@ -1,0 +1,206 @@
+.cosmetics {
+  max-width: 1100px;
+  margin: auto;
+  padding: 20px;
+  color: #eee;
+  min-width: 0;
+}
+.cosmetics h1,
+.cosmetics h2 {
+  color: #dcc06c;
+  margin: 12px 0;
+}
+.cosmetics button,
+.cosmetics select,
+.cosmetics input,
+.cosmetics textarea {
+  font-size: 16px;
+  min-height: 44px;
+  border: 1px solid #544731;
+  background: #111;
+  color: #eee;
+  padding: 8px 12px;
+  max-width: 100%;
+  border-radius: 3px;
+}
+.cosmetics button {
+  cursor: pointer;
+  touch-action: manipulation;
+}
+.cosmetics button:disabled {
+  opacity: 0.45;
+  cursor: wait;
+}
+.cosmetics button[aria-pressed="true"] {
+  border-color: #efc34b;
+  background: #342b15;
+}
+.cosmetics label {
+  display: grid;
+  gap: 6px;
+}
+.cosmetics nav {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin: 16px 0;
+}
+.cosmetics-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+  gap: 12px;
+}
+.cosmetics-item {
+  border-bottom: 1px solid #544731;
+  padding: 12px;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.cosmetics-item > img {
+  width: 100%;
+  height: 170px;
+  object-fit: contain;
+}
+.cosmetics-editor {
+  display: grid;
+  grid-template-columns: 240px minmax(0, 1fr);
+  gap: 20px;
+}
+.cosmetics-form {
+  display: grid;
+  gap: 12px;
+}
+.cosmetics-preview {
+  width: 100%;
+  max-width: 250px;
+  margin: auto;
+}
+.cosmetics-assets {
+  display: grid;
+  gap: 12px;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+}
+.cosmetics [role="status"],
+.cosmetics [role="alert"] {
+  padding: 12px;
+  border: 1px solid #766239;
+  margin: 12px 0;
+}
+.cosmetic-emote-image {
+  width: 88px;
+  height: 88px;
+  object-fit: contain;
+  pointer-events: none;
+  animation: cosmetic-pop 2s both;
+  filter: drop-shadow(0 2px 4px #000);
+}
+.cosmetic-emote-overlay {
+  position: absolute;
+  z-index: 125;
+  pointer-events: none;
+  left: 105%;
+  top: 0;
+}
+.cosmetic-emote-tools {
+  position: relative;
+  z-index: 125;
+  flex-shrink: 0;
+}
+.cosmetic-emote-tools > button {
+  width: 44px;
+  height: 44px;
+  border: 1px solid #8b773e;
+  background: #111;
+  color: #f2d584;
+}
+.cosmetic-emote-picker {
+  position: absolute;
+  right: 0;
+  bottom: 48px;
+  background: #111;
+  border: 1px solid #8b773e;
+  padding: 8px;
+  display: grid;
+  grid-template-columns: repeat(2, 56px);
+  gap: 4px;
+  max-height: 250px;
+  overflow: auto;
+}
+.cosmetic-emote-picker button {
+  width: 56px;
+  height: 56px;
+}
+.cosmetic-emote-picker img {
+  height: 48px;
+  width: 48px;
+  object-fit: contain;
+}
+.cosmetic-emote-picker label {
+  grid-column: 1/-1;
+  font-size: 12px;
+  color: white;
+}
+.cosmetic-card-back {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  pointer-events: none;
+}
+@keyframes cosmetic-pop {
+  0% {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  10%,
+  85% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+  100% {
+    opacity: 0;
+    transform: translateY(-6px);
+  }
+}
+@media (max-width: 600px) {
+  .cosmetics {
+    padding: 12px;
+  }
+  .cosmetics-editor {
+    grid-template-columns: 1fr;
+  }
+  .cosmetics-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .cosmetics nav {
+    gap: 4px;
+  }
+  .cosmetic-emote-overlay {
+    left: auto;
+    right: -68px;
+  }
+  .cosmetic-emote-image {
+    width: 64px;
+    height: 64px;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .cosmetic-emote-image {
+    animation: none;
+  }
+}
+
+.cosmetics nav > div {
+  min-width: 0;
+  max-width: 100%;
+}
+
+/* Two 44px rows fit inside the existing 88px champion portrait. */
+@media (max-width: 768px) and (orientation: portrait) {
+  .ko-game-shell .ko-player-info:has(.cosmetic-emote-tools) {
+    row-gap: 0;
+  }
+}

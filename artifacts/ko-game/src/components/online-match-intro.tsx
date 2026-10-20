@@ -6,6 +6,7 @@ export interface MatchIntroPlayer {
   displayName: string;
   championName: string;
   portraitUrl: string | null;
+  originalPortraitUrl?:string|null;
   dialogueLine: string | null;
 }
 
@@ -52,10 +53,10 @@ function Portrait({ player, side }: PortraitProps) {
         <span className={styles.portraitFallback} aria-hidden="true">
           {getInitials(player.championName)}
         </span>
-        {player.portraitUrl && !portraitFailed ? (
+        {(player.portraitUrl && (!portraitFailed||player.originalPortraitUrl)) ? (
           <img
             className={styles.portraitImage}
-            src={player.portraitUrl}
+            src={portraitFailed?player.originalPortraitUrl??player.portraitUrl:player.portraitUrl}
             alt={`${player.championName} portrait`}
             data-testid={`img-champion-portrait-${side}`}
             onError={() => setPortraitFailed(true)}

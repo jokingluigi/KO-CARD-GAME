@@ -18,6 +18,7 @@ import { musicContextForPath, shouldLoadMainBgm } from '@/audio/music-route';
 import { fetchMainContent } from '@/lib/main-content-client';
 import { GamepadNavigation } from '@/components/gamepad-navigation';
 
+const Cosmetics = lazy(() => import("@/pages/cosmetics"));
 const Tower = lazy(() => import("@/pages/tower"));
 const Draft = lazy(() => import("@/pages/draft"));
 const NotFound = lazy(() => import("@/pages/not-found"));
@@ -41,6 +42,7 @@ function Router() {
       <Suspense fallback={<AuthLoading />}><Switch>
         <Route path="/admin/:section?" component={Admin} />
         <Route path="/admin/draft/match/:matchId">{() => <OnlineMatch draft />}</Route>
+        <Route path="/cosmetics" component={Cosmetics}/>
         <Route path="/tower" component={Tower} />
         <Route path="/draft" component={Draft} />
         <Route path="/draft/match/:matchId">{() => <OnlineMatch draft />}</Route>

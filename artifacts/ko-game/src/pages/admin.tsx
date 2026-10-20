@@ -1,3 +1,4 @@
+import {AdminCosmetics} from '@/components/admin-cosmetics';
 import {
   lazy,
   Suspense,
@@ -204,7 +205,7 @@ export default function Admin() {
             </div>
           }
         >
-          {page?.id === "dashboard" ? (
+          {page?.id === "cosmetics" ? <AdminCosmetics/> : page?.id === "dashboard" ? (
             <AdminDashboard go={go} />
           ) : page?.id === "users" ? (
             <AdminUserDirectory go={go} />

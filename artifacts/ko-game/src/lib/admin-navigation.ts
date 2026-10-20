@@ -19,6 +19,7 @@ export const ADMIN_PAGES = [
     description: "현재 설정과 콘텐츠 상태를 확인하고 관리 작업을 시작합니다.",
     keywords: "홈 현황 통계 최근",
   },
+  {id:"cosmetics",group:"content",path:"/admin/cosmetics",label:"꾸미기 관리",description:"스킨·이미지 이모티콘 등록과 계정 지급·회수를 관리합니다.",keywords:"스킨 이모티콘 외형 지급 회수"},
   {id:"card-statistics",group:"statistics",path:"/admin/card-statistics",label:"카드 통계",description:"실제 유저의 카드 채용·플레이·승률을 확인합니다.",keywords:"사용 통계 인기 채용률 사용률 승률"},
   {id:"champion-statistics",group:"statistics",path:"/admin/champion-statistics",label:"챔피언 통계",description:"챔피언 선택·고유 능력·퀘스트 완료를 확인합니다.",keywords:"사용 통계 선택률 승률 퀘스트"},
   {

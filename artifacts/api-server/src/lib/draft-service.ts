@@ -1,3 +1,5 @@
+import {loadMatchCosmetics} from './cosmetics';
+import {latestDraftCosmeticEmotes,type CosmeticDraftSnapshot} from './draft-cosmetics';
 import { executeUsageObservedAction as executeAction } from './usage-statistics-observer';
 import { recordCompletedDraft } from "./draft-participation-quest";
 import { buildMatchRecap } from "@workspace/game-engine";
@@ -454,7 +456,9 @@ export async function startDraft(
 ) {
   await enabled();
   const settings = await draftSettings(),
-    snapshot = prepareDraftSnapshot(await draftCatalog(settings.config));
+    snapshot:CosmeticDraftSnapshot = prepareDraftSnapshot(await draftCatalog(settings.config));
+  const loadout=await loadMatchCosmetics(userId);
+  snapshot.cosmetics={PLAYER_ONE:loadout};
   validateDraftPool(snapshot);
   return db.transaction(async (tx) => {
     await tx.execute(
@@ -487,6 +491,8 @@ export async function startDraft(
         )
           continue;
         candidate.seats[1] = emptySeat(userId, name);
+        const joinedSnapshot=row.snapshot as unknown as CosmeticDraftSnapshot;
+        joinedSnapshot.cosmetics={...joinedSnapshot.cosmetics,PLAYER_TWO:loadout};
         beginDraft(
           candidate,
           row.snapshot as unknown as DraftSnapshot,
@@ -498,6 +504,7 @@ export async function startDraft(
         await tx
           .update(draftSessionsTable)
           .set({
+            snapshot:record(joinedSnapshot),
             state: record(candidate),
             usageDiagnostic:row.usageDiagnostic || diagnostic,
             version: row.version + 1,
@@ -550,6 +557,7 @@ export async function mutateDraft(
   heartbeat = true,
 ) {
   await enabled();
+  const joinedCosmetics=input?.type==="JOIN"?await loadMatchCosmetics(userId):undefined;
   return db.transaction(async (tx) => {
     // Independent rooms no longer serialize all polls/actions on one global lock.
     await tx.execute(
@@ -563,7 +571,7 @@ export async function mutateDraft(
     if (!row)
       throw new DraftError("NOT_FOUND", "드래프트를 찾을 수 없습니다.", 404);
     const s = structuredClone(row.state) as unknown as DraftState,
-      snapshot = row.snapshot as unknown as DraftSnapshot;
+      snapshot = row.snapshot as unknown as CosmeticDraftSnapshot;
     snapshot.config = parseDraftConfig(snapshot.config);
     let seat = s.seats.findIndex((p) => p.userId === userId);
     if (input?.type === "JOIN" && s.phase === "WAITING" && seat < 0) {
@@ -660,6 +668,7 @@ export async function mutateDraft(
             "참가할 수 없는 드래프트입니다.",
           );
         s.seats[1] = emptySeat(userId, input.name ?? "관리자");
+        if(joinedCosmetics)snapshot.cosmetics={...snapshot.cosmetics,PLAYER_TWO:joinedCosmetics};
         await tx
           .insert(draftParticipantsTable)
           .values({ userId, sessionId: id });
@@ -836,7 +845,7 @@ export async function mutateDraft(
     )
       await tx
         .update(draftSessionsTable)
-        .set({ state: record(s), version, updatedAt: new Date(), ...(!row.usageStart && !oldBattle && s.battle ? {usageStart:{version:1,diagnostic:row.usageDiagnostic,startedAt:new Date(now).toISOString(),champions:{PLAYER_ONE:s.seats[0].championId!,PLAYER_TWO:s.seats[1].championId!},decks:{PLAYER_ONE:[...s.seats[0].deck],PLAYER_TWO:[...s.seats[1].deck]}}}: {}) })
+        .set({ ...(joinedCosmetics?{snapshot:record(snapshot)}:{}), state: record(s), version, updatedAt: new Date(), ...(!row.usageStart && !oldBattle && s.battle ? {usageStart:{version:1,diagnostic:row.usageDiagnostic,startedAt:new Date(now).toISOString(),champions:{PLAYER_ONE:s.seats[0].championId!,PLAYER_TWO:s.seats[1].championId!},decks:{PLAYER_ONE:[...s.seats[0].deck],PLAYER_TWO:[...s.seats[1].deck]}}}: {}) })
         .where(eq(draftSessionsTable.id, id));
     else if (heartbeat && s.phase === "BATTLE" && s.lastSeen)
       await tx
@@ -928,6 +937,8 @@ export function draftBattleView(r: DraftResult) {
     resolveChampionIntro(first, second, r.snapshot.interactions ?? []),
   );
   return {
+    cosmetics:(r.snapshot as CosmeticDraftSnapshot).cosmetics??{},
+    cosmeticEmotes:latestDraftCosmeticEmotes(s.id),
     recap: s.battle.status === "FINISHED" ? buildMatchRecap(s.battle) : null,
     type: "MATCH_SNAPSHOT",
     matchId: s.id,

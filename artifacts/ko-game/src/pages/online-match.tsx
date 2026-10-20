@@ -1,3 +1,4 @@
+import {cosmeticImage,type MatchCosmetics,type ImageEmoteEvent} from '@workspace/cosmetics';
 import { canPresentBattleQuest } from '@/components/quest-presentation-policy';
 import { advanceOnlineEventSequence } from '@/lib/online-event-sequence';
 import { mergeOnlineCardCatalog, type MatchCardCatalog } from "@/lib/online-card-catalog";
@@ -124,6 +125,8 @@ function OnlineMatchPage({ draft = false }: { draft?: boolean }) {
   const [playError, setPlayError] = useState<string | null>(null);
   const [turnDeadlineAt, setTurnDeadlineAt] = useState<number | null>(null);
   const [gameplayStartsAt, setGameplayStartsAt] = useState<number | null>(null);
+  const [cosmetics,setCosmetics]=useState<MatchCosmetics>({});
+  const [imageEmotes,setImageEmotes]=useState<Record<string,ImageEmoteEvent>>({});
   const [publicPlayers, setPublicPlayers] = useState<Array<{
     seat: "PLAYER_ONE" | "PLAYER_TWO"; displayName: string; championName: string; portraitUrl: string | null; dialogueLine: string | null;
   }>>([]);
@@ -230,6 +233,7 @@ function OnlineMatchPage({ draft = false }: { draft?: boolean }) {
         });
       }
       if ("matchId" in message && message.matchId !== matchId) return;
+      if(message.type==="IMAGE_EMOTE"){setImageEmotes(old=>({...old,[message.playerId]:{...message,expiresAt:Date.now()+2000}}));return;}
       if (
         message.type === "MATCH_SNAPSHOT" ||
         message.type === "ACTION_ACCEPTED" ||
@@ -255,6 +259,7 @@ function OnlineMatchPage({ draft = false }: { draft?: boolean }) {
         setTurnDeadlineAt(message.turnDeadlineAt);
         setGameplayStartsAt(message.gameplayStartsAt);
         setPublicPlayers(message.publicPlayers);
+        if(message.cosmetics)setCosmetics(message.cosmetics);
         setIntroFirstSpeaker(message.introFirstSpeaker);
         setServerOffset(message.serverTime - Date.now());
         setConnectionStates(message.connectionStates);
@@ -896,11 +901,12 @@ function OnlineMatchPage({ draft = false }: { draft?: boolean }) {
           self={{
             displayName: selfPublicPlayer?.displayName ?? "Player",
             championName: selfPublicPlayer?.championName ?? me.champion?.name ?? "Champion",
-            portraitUrl: selfPublicPlayer?.portraitUrl ?? me.champion?.imageUrl ?? null,
+            portraitUrl: cosmeticImage(cosmetics[me.id],"CHAMPION_SKIN",me.champion?.id??"","intro",selfPublicPlayer?.portraitUrl ?? me.champion?.imageUrl)??null,
+            originalPortraitUrl:selfPublicPlayer?.portraitUrl??me.champion?.imageUrl,
             dialogueLine: selfPublicPlayer?.dialogueLine ?? null,
           }}
           opponent={(() => {
-            return { displayName: opponentPublicPlayer?.displayName ?? "Opponent", championName: opponentPublicPlayer?.championName ?? opponent.champion?.name ?? "Champion", portraitUrl: opponentPublicPlayer?.portraitUrl ?? opponent.champion?.imageUrl ?? null, dialogueLine: opponentPublicPlayer?.dialogueLine ?? null };
+            return { displayName: opponentPublicPlayer?.displayName ?? "Opponent", championName: opponentPublicPlayer?.championName ?? opponent.champion?.name ?? "Champion", portraitUrl:cosmeticImage(cosmetics[opponent.id],"CHAMPION_SKIN",opponent.champion?.id??"","intro",opponentPublicPlayer?.portraitUrl??opponent.champion?.imageUrl)??null,originalPortraitUrl:opponentPublicPlayer?.portraitUrl??opponent.champion?.imageUrl, dialogueLine: opponentPublicPlayer?.dialogueLine ?? null };
           })()}
           firstSpeaker={introFirstSpeaker === viewerSeat ? "self" : introFirstSpeaker ? "opponent" : null}
           startedAt={gameplayStartsAt - 4500}
@@ -967,7 +973,7 @@ function OnlineMatchPage({ draft = false }: { draft?: boolean }) {
           </div>
         </section>
       )}
-      <GameStatePreview
+      <GameStatePreview cosmetics={cosmetics} imageEmotes={imageEmotes} onImageEmote={isConnected?(slot)=>{if(matchId)client.send({type:"IMAGE_EMOTE",matchId,requestId:crypto.randomUUID(),slot});}:undefined}
         state={state}
         selectedCardId={selectedCardId}
         selectedAttackerId={selectedAttackerId}

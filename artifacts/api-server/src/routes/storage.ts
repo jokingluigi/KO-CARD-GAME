@@ -1,5 +1,6 @@
 import { Router, type IRouter } from "express";
 import {
+  CosmeticImageStorage,
   AudioStorage,
   BackgroundImageStorage,
   CardImageStorage,
@@ -8,6 +9,7 @@ import {
 } from "../lib/object-storage";
 
 const router: IRouter = Router();
+const cosmeticStorage = new CosmeticImageStorage();
 const imageStorage = new CardImageStorage();
 const backgroundStorage = new BackgroundImageStorage();
 const audioStorage = new AudioStorage();
@@ -23,7 +25,7 @@ router.get(
     const isBgm = path.startsWith("uploads/game-bgm/");
     const isAttack = path.startsWith("uploads/game-attack/");
     const isBackground = path.startsWith("uploads/game-backgrounds/");
-    const storage = isAudio
+    const storage = path.startsWith("uploads/cosmetics/") ? cosmeticStorage : isAudio
       ? audioStorage
       : isBgm
         ? bgmStorage

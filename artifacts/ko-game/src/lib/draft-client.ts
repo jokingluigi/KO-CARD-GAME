@@ -1,3 +1,4 @@
+import type {ImageEmoteEvent} from '@workspace/cosmetics';
 import type {
   MatchRecap,
   DraftConfig,
@@ -94,6 +95,8 @@ export class DraftBattleClient {
   private actionBusy = false;
   private revision = 0;
   private generation = 0;
+  private seenCosmeticEmotes=new Set<string>();
+  private latestCosmeticExpiry=new Map<string,number>();
   private lastVersion: number | null = null;
   private statuses: string | null = null;
   onMessage(fn: OnlineLobbyListener) {
@@ -110,6 +113,12 @@ export class DraftBattleClient {
   }
   private emit(message: OnlineServerMessage) {
     for (const fn of this.listeners) fn(message);
+  }
+  private imageEmote(event:ImageEmoteEvent){
+    const key=event.playerId+':'+event.requestId;if(this.seenCosmeticEmotes.has(key)||(this.latestCosmeticExpiry.get(event.playerId)??0)>=event.expiresAt)return;
+    this.latestCosmeticExpiry.set(event.playerId,event.expiresAt);
+    this.seenCosmeticEmotes.add(key);if(this.seenCosmeticEmotes.size>256)this.seenCosmeticEmotes.delete(this.seenCosmeticEmotes.values().next().value!);
+    this.emit(event);
   }
   private connection(state: OnlineLobbyConnectionState) {
     this.state = state;
@@ -140,6 +149,7 @@ export class DraftBattleClient {
       const result = await draftRequest<OnlineServerMessage>(
         `/sessions/${id}/battle`,
       );
+      if(generation===this.generation&&result.type==='MATCH_SNAPSHOT')for(const event of result.cosmeticEmotes??[])if(event.expiresAt>result.serverTime)this.imageEmote(event);
       if (generation === this.generation && revision === this.revision && !this.actionBusy && result.type === "MATCH_SNAPSHOT") {
         if (this.state === "error") {
           this.lastVersion = null;
@@ -187,9 +197,16 @@ export class DraftBattleClient {
     }
   }
   send(message: OnlineLobbyClientMessage): boolean {
+    if(message.type==='IMAGE_EMOTE'){
+      if(this.matchId!==message.matchId)return false;
+      void draftRequest<{event:ImageEmoteEvent|null}>(`/sessions/${message.matchId}/image-emotes`,'POST',{requestId:message.requestId,slot:message.slot}).then(result=>{if(result.event)this.imageEmote(result.event);}).catch(()=>this.emit({type:'ERROR',code:'IMAGE_EMOTE_UNAVAILABLE',message:'이미지 이모티콘을 전송하지 못했습니다.'}));
+      return true;
+    }
     if (message.type === "SUBSCRIBE" || message.type === "RESYNC") {
       if (this.matchId !== message.matchId) {
         this.generation++;
+        this.seenCosmeticEmotes.clear();
+        this.latestCosmeticExpiry.clear();
         this.matchId = message.matchId;
         this.lastVersion = null;
         this.statuses = null;

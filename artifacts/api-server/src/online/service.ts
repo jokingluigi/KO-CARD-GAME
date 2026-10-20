@@ -1,3 +1,6 @@
+import {CosmeticEmoteChannel} from '../lib/cosmetic-emotes';
+import {loadMatchCosmetics} from '../lib/cosmetics';
+import type {MatchCosmetics} from '@workspace/cosmetics';
 import { executeUsageObservedAction as executeAction } from '../lib/usage-statistics-observer';
 import { buildMatchRecap } from '@workspace/game-engine';
 import { validateAIDeckReferences } from '../lib/ai-deck-service';
@@ -58,6 +61,7 @@ import type {
 export type OnlineSeat = "PLAYER_ONE" | "PLAYER_TWO";
 
 export type OnlineMatchSnapshot = {
+  cosmetics?:MatchCosmetics;
   player1UserId: string;
   player2UserId: string;
   player1DeckId: string;
@@ -1020,7 +1024,12 @@ export async function startOnlineMatch(
     ),
   };
   const matchId = existingWaitingMatchId ?? randomUUID();
+  const frozenCosmetics:MatchCosmetics = {};
+  await Promise.all(([player1UserId,player2UserId]).map(async(userId,index)=>{
+    frozenCosmetics[index===0?"PLAYER_ONE":"PLAYER_TWO"]=await loadMatchCosmetics(userId);
+  }));
   const snapshot: OnlineMatchSnapshot = {
+    cosmetics:frozenCosmetics,
     usageStart: {version:1,startedAt:new Date().toISOString(),champions:{PLAYER_ONE:firstDeck.championDefinitionId!,PLAYER_TWO:secondDeck.championDefinitionId!},decks:{PLAYER_ONE:[...firstDeck.cardDefinitionIds],PLAYER_TWO:[...secondDeck.cardDefinitionIds]}},
     player1UserId,
     player2UserId,
@@ -1364,6 +1373,7 @@ export function snapshotMessage(runtime: OnlineMatchRuntime, userId: string): On
     turnStartedAt: runtime.turnStartedAt,
     turnDeadlineAt: runtime.turnDeadlineAt,
     gameplayStartsAt: runtime.gameplayStartsAt,
+    cosmetics: runtime.snapshot.cosmetics ?? {},
     publicPlayers: runtime.snapshot.publicPlayers,
     introFirstSpeaker: runtime.snapshot.introFirstSpeaker,
     connectionStates: runtime.connectionStates,
@@ -1501,4 +1511,15 @@ export function cleanupMatchRuntime(matchId: string): void {
   runtime.primaryConnections.clear();
   runtime.requestIds.clear();
   runtimes.delete(matchId);
+}
+
+// Transient presentation channel: never changes combat state, version, RNG or action counters.
+const emoteChannels=new WeakMap<OnlineMatchRuntime,CosmeticEmoteChannel>();
+export function sendImageEmote(runtime:OnlineMatchRuntime,userId:string,requestId:string,slot:number){
+ const seat=matchSeat(runtime,userId);if(!seat||runtime.state.status==='FINISHED')return false;
+ let channel=emoteChannels.get(runtime);if(!channel){channel=new CosmeticEmoteChannel();emoteChannels.set(runtime,channel);}
+ const event=channel.send({matchId:runtime.matchId,userId,playerId:seat,requestId,slot,loadout:runtime.snapshot.cosmetics?.[seat]});
+ if(!event)return false;
+ for(const connection of runtime.connections)connection.send(event);
+ return true;
 }

@@ -39,3 +39,5 @@ export * from './draft';
 export * from "./card-tags";
 
 export * from "./usage-statistics";
+
+export * from './cosmetics';

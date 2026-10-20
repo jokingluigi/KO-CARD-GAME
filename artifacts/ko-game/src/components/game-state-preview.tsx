@@ -1,3 +1,7 @@
+import {optionalCosmetics} from '@/lib/cosmetics-client';
+import {cosmeticImage} from '@workspace/cosmetics';
+import {BattleCosmeticsContext,CosmeticBack,CosmeticEmoteTools,CosmeticEmoteOverlay,useHideCosmeticEmotes} from './cosmetic-battle';
+import type {MatchCosmetics,ImageEmoteEvent} from '@workspace/cosmetics';
 import { BattleAttackDrag } from './battle-attack-drag';
 import { AttackAim } from './attack-aim';
 import { BattleCardDrag } from './battle-card-drag';
@@ -70,6 +74,10 @@ import { getActiveCardKeywords } from '../game/cards/granted-text';
 import { CHAMPION_EMOTES, CHAMPION_EMOTE_LABELS, championVoiceLine, type ChampionEmote } from '../game/champions/types';
 
 interface GameStatePreviewProps {
+  localImageEmotes?:boolean;
+  cosmetics?:MatchCosmetics;
+  imageEmotes?:Record<string,ImageEmoteEvent>;
+  onImageEmote?:(slot:number)=>void;
   state: GameState;
   mediaCatalog: GameMediaCatalog;
   backgroundAssetUrl?: string;
@@ -122,6 +130,7 @@ interface GameStatePreviewProps {
 
 const RenderCardCatalog=React.createContext(defaultCardDefinition);
 export function GameStatePreview({
+  localImageEmotes=false,cosmetics:providedCosmetics,imageEmotes:providedImageEmotes,onImageEmote:providedOnImageEmote,
   state,
   mediaCatalog,
   backgroundAssetUrl,
@@ -172,6 +181,18 @@ export function GameStatePreview({
   onReturnToMainMenu,
 }: GameStatePreviewProps) {
   const getCardDefinition=React.useCallback((id:string)=>state.cardPool?.find(c=>c.id===id)??defaultCardDefinition(id),[state.cardPool]);
+  const [hideImageEmotes,setHideImageEmotes]=useHideCosmeticEmotes();
+  const [localCosmetics,setLocalCosmetics]=React.useState<MatchCosmetics>({});
+  const [localEmotes,setLocalEmotes]=React.useState<Record<string,ImageEmoteEvent>>({});
+  const localEmoteTime=React.useRef(0);
+  React.useEffect(()=>{let cancelled=false;setLocalCosmetics({});setLocalEmotes({});if(providedCosmetics===undefined)void optionalCosmetics().then(loadout=>{if(!cancelled)setLocalCosmetics({[state.players[0].id]:loadout});});return()=>{cancelled=true;};},[state.gameId,providedCosmetics===undefined]);
+  const cosmetics=providedCosmetics??localCosmetics;
+  const imageEmotes=providedImageEmotes??localEmotes;
+  const onImageEmote=providedOnImageEmote??((providedCosmetics===undefined||localImageEmotes)?(slot:number)=>{
+    const now=Date.now(),playerId=state.players[0].id,item=cosmetics[playerId]?.emotes[slot-1];
+    if(state.status==='FINISHED'||now-localEmoteTime.current<800||!item?.imageAssets.art)return;
+    localEmoteTime.current=now;setLocalEmotes(old=>({...old,[playerId]:{type:'IMAGE_EMOTE',matchId:state.gameId,playerId,requestId:crypto.randomUUID(),itemId:item.id,imageUrl:item.imageAssets.art!,name:item.name,expiresAt:now+2000}}));
+  }:undefined);
   const [openGraveyardPlayerId, setOpenGraveyardPlayerId] = React.useState<string | null>(null);
   const [settingsOpen, setSettingsOpen] = React.useState(false);
   const [emoteOpen, setEmoteOpen] = React.useState(false);
@@ -492,11 +513,11 @@ export function GameStatePreview({
         const slots = event.playerId === state.players[0]?.id ? boardSlotRefs : opponentBoardSlotRefs;
         const from = event.sourceSnapshot?.boardSlot !== null && event.sourceSnapshot?.boardSlot !== undefined ? slots.current.get(event.sourceSnapshot.boardSlot)?.getBoundingClientRect() : undefined;
         const to = boardCardRefs.current.get(event.target.cardInstanceId)?.getBoundingClientRect();
-        if (card && from && to) leaveAnimations.push({ id: 'fusion:' + newEventKeys[newEvents.indexOf(event)], card, kind: 'FUSION', geometry: { left: from.left, top: from.top, width: from.width, height: from.height }, destination: { left: to.left + to.width / 2, top: to.top + to.height / 2 }, effectTriggered: true, delay: 0 });
+        if (card && from && to) leaveAnimations.push({ id: 'fusion:' + newEventKeys[newEvents.indexOf(event)], card, cosmeticOwnerId:event.playerId, kind: 'FUSION', geometry: { left: from.left, top: from.top, width: from.width, height: from.height }, destination: { left: to.left + to.width / 2, top: to.top + to.height / 2 }, effectTriggered: true, delay: 0 });
       }
       if (event.type === 'CARD_VANISHED' && event.cardInstanceId && !newEvents.some(e => e.type === 'FUSION' && e.reason === 'FUSION_SOURCE' && e.cardInstanceId === event.cardInstanceId)) {
         const card = previousCards.get(event.cardInstanceId), geometry = lastCardPositionsRef.current.get(event.cardInstanceId);
-        if (card && geometry) leaveAnimations.push({ id: 'vanish:' + newEventKeys[newEvents.indexOf(event)], card, kind: 'VANISH', geometry, delay: 0 });
+        if (card && geometry) leaveAnimations.push({ id: 'vanish:' + newEventKeys[newEvents.indexOf(event)], card, cosmeticOwnerId:event.playerId, kind: 'VANISH', geometry, delay: 0 });
       }
       if (
         (event.type === "CARD_RETIRED" || event.type === "CARD_DESTROYED" || event.type === "CARD_REMOVED") &&
@@ -520,6 +541,7 @@ export function GameStatePreview({
             card,
             kind: event.type === "CARD_RETIRED" ? "RETIRE" : event.type === "CARD_DESTROYED" ? "DESTROY" : "REMOVE",
             geometry,
+            cosmeticOwnerId:event.playerId,
             effectTriggered: event.type === "CARD_RETIRED" && newEvents.some(candidate => candidate.source?.type === "CARD" && candidate.source.cardInstanceId === event.cardInstanceId && candidate.type !== "CARD_RETIRED"),
             destination: event.type === "CARD_RETIRED" && graveyardRect ? { left:graveyardRect.left+graveyardRect.width/2,top:graveyardRect.top+graveyardRect.height/2 } : undefined,
             delay: precedingDamage ? 220 : 0,
@@ -744,16 +766,19 @@ export function GameStatePreview({
   const selectedBackground = mediaCatalog.backgrounds.find(
     (item) => item.id === state.backgroundId,
   );
-  const opponentChampionPortrait = opp.champion?.questCompleted &&
+  const originalOpponentPortrait = opp.champion?.questCompleted &&
     opp.champion.questCompletedPortraitEnabled &&
     opp.champion.questCompletedPortraitUrl
     ? opp.champion.questCompletedPortraitUrl
     : opp.champion?.imageUrl;
-  const playerChampionPortrait = me.champion?.questCompleted &&
+  const originalPlayerPortrait = me.champion?.questCompleted &&
     me.champion.questCompletedPortraitEnabled &&
     me.champion.questCompletedPortraitUrl
     ? me.champion.questCompletedPortraitUrl
     : me.champion?.imageUrl;
+
+  const opponentChampionPortrait=cosmeticImage(cosmetics[opp.id],'CHAMPION_SKIN',opp.champion?.id??'',opp.champion?.questCompleted?'awakened':'portrait',originalOpponentPortrait);
+  const playerChampionPortrait=cosmeticImage(cosmetics[me.id],'CHAMPION_SKIN',me.champion?.id??'',me.champion?.questCompleted?'awakened':'portrait',originalPlayerPortrait);
 
   function closeSettings() {
     setSettingsOpen(false);
@@ -893,7 +918,7 @@ export function GameStatePreview({
   }
 
   return (
-    <RenderCardCatalog.Provider value={getCardDefinition}><CinematicProvider key={state.gameId} allowQuestCompletion={questPresentationAllowed}><AltInspectProvider>
+    <BattleCosmeticsContext.Provider value={cosmetics}><RenderCardCatalog.Provider value={getCardDefinition}><CinematicProvider key={state.gameId} allowQuestCompletion={questPresentationAllowed}><AltInspectProvider>
      <div className={`ko-game-shell flex min-h-[100dvh] w-full flex-col overflow-x-hidden overflow-y-auto bg-neutral-950 font-sans text-neutral-100 selection:bg-primary selection:text-black md:overflow-hidden ${me.champion?.questCompleted && questPresentationAllowed ? 'ko-quest-awakened--mine' : ''} ${opp.champion?.questCompleted && questPresentationAllowed ? 'ko-quest-awakened--theirs' : ''}`}>
       <BattleCardDrag state={state} enabled={isMyTurn && state.status === 'IN_PROGRESS' && !introActive && !effectTargeting && !settingsOpen && !playAnimation && !attackAnimation && canEndTurn} selectedCardId={selectedCardId} hand={handCardRefs} slots={boardSlotRefs} select={onSelectCard} cancel={id=>{if(selectedCardId===id)onSelectCard(id);}} summon={onSelectSlot} spell={onUseTechnique} />
       <BattleAttackDrag state={state} enabled={isMyTurn && state.status === 'IN_PROGRESS' && !introActive && !effectTargeting && !settingsOpen && !playAnimation && !attackAnimation && canEndTurn} selectedAttackerId={selectedAttackerId} cards={boardCardRefs} champion={championRef} select={onSelectAttacker} attackCard={onAttackWrestler} attackChampion={onAttackPlayer} />
@@ -941,7 +966,7 @@ export function GameStatePreview({
                ) : (
                  opp.hand.map((_, i) => (
                    <div key={`opp-hand-${i}`} className="relative flex h-14 w-10 rotate-2 transform items-center justify-center overflow-hidden rounded-sm border-2 border-neutral-600 bg-neutral-800 shadow-md transition-transform hover:-translate-y-1 hover:rotate-0 md:h-20 md:w-14">
-                     <div className="absolute inset-1 border border-neutral-700/50"></div>
+                     <CosmeticBack loadout={cosmetics[opp.id]}/><div className="absolute inset-1 border border-neutral-700/50"></div>
                      <div className="h-6 w-6 rotate-45 border border-neutral-700/50 md:h-8 md:w-8"></div>
                    </div>
                  ))
@@ -979,9 +1004,9 @@ export function GameStatePreview({
                          handleAttackChampion();
                        }}
                  >
-                   {opponentChampionPortrait && (
+                   <CosmeticEmoteOverlay anchor={championRef} playerId={opp.id} event={imageEmotes[opp.id]} hide={hideImageEmotes}/>{opponentChampionPortrait && (
                      <CardArtwork
-                       src={opponentChampionPortrait}
+                       src={opponentChampionPortrait} fallbackSrc={originalOpponentPortrait}
                        alt=""
                        className="ko-champion-portrait-art absolute inset-0 h-full w-full"
                        imageDisplayMode="CONTAIN"
@@ -1046,7 +1071,7 @@ export function GameStatePreview({
                  <div className="ko-board-cards flex gap-2 md:gap-4">
                {opp.board.map((card, i) => (
                  <BoardSlot
-                   key={`opp-board-${i}`}
+                   key={`opp-board-${i}`} cosmeticOwnerId={opp.id}
                    card={card}
                    isOpponent={true}
                    slotIndex={i as BoardSlotIndex}
@@ -1082,7 +1107,7 @@ export function GameStatePreview({
                ))}
                 </div>
                   <ZoneStack
-                    className="ko-opponent-zones"
+                    className="ko-opponent-zones" cosmeticLoadout={cosmetics[opp.id]}
                    deckRef={opponentDeckRef}
                    deckCount={opp.deck.length}
                    graveyardCount={opp.graveyard.length}
@@ -1184,7 +1209,7 @@ export function GameStatePreview({
                  <BoardSlot
                    key={`me-board-${i}`}
                    card={card}
-                   isOpponent={false}
+                   isOpponent={false} cosmeticOwnerId={me.id}
                    slotIndex={i as BoardSlotIndex}
                     selectable={!!selectedHandCard && selectedHandCard.cardType !== "TECHNIQUE" && !card}
                     slotRef={(element) => setBoardSlotRef(i, element)}
@@ -1242,7 +1267,7 @@ export function GameStatePreview({
                ))}
                 </div>
                   <ZoneStack
-                    className="ko-player-zones"
+                    className="ko-player-zones" cosmeticLoadout={cosmetics[me.id]}
                    deckRef={playerDeckRef}
                    deckCount={me.deck.length}
                    graveyardCount={me.graveyard.length}
@@ -1401,7 +1426,7 @@ export function GameStatePreview({
                       ? current.filter((id) => id !== card.instanceId) : [...current, card.instanceId])}
                     aria-label={`${getCardDefinition(card.definitionId)?.name ?? card.definitionId} ${mulliganSelection.includes(card.instanceId) ? '교체 선택됨' : '교체 선택'}`}
                     className={`relative w-full max-w-[150px] rounded-lg p-1 transition-transform hover:-translate-y-2 ${mulliganSelection.includes(card.instanceId) ? '-translate-y-3 bg-amber-500 ring-2 ring-amber-300' : 'bg-neutral-700'}`}>
-                    <CardRenderer name={getCardDefinition(card.definitionId)?.name ?? '카드'} cardType={card.cardType} cost={card.currentCost} attack={card.currentAttack} health={card.currentHealth} rulesText={getCardRuntimeRulesText(card, getCardDefinition(card.definitionId)?.rulesText ?? '')} imageUrl={getCardDefinition(card.definitionId)?.imageUrl} rarity={getCardDefinition(card.definitionId)?.rarity} size="hand" imageDisplaySettings={getCardDefinition(card.definitionId)} className="pointer-events-none w-full" />
+                    <CardRenderer name={getCardDefinition(card.definitionId)?.name ?? '카드'} cardType={card.cardType} cost={card.currentCost} attack={card.currentAttack} health={card.currentHealth} rulesText={getCardRuntimeRulesText(card, getCardDefinition(card.definitionId)?.rulesText ?? '')} cardId={card.definitionId} cosmeticOwnerId={me.id} imageUrl={getCardDefinition(card.definitionId)?.imageUrl} rarity={getCardDefinition(card.definitionId)?.rarity} size="hand" imageDisplaySettings={getCardDefinition(card.definitionId)} className="pointer-events-none w-full" />
                     {mulliganSelection.includes(card.instanceId) && <span className="absolute inset-x-1 bottom-1 rounded bg-amber-300/95 py-1 text-center text-xs font-black text-black">교체 선택</span>}
                   </button>)}
                 </div>
@@ -1455,7 +1480,7 @@ export function GameStatePreview({
 
             {/* Player Stats & Champion */}
              <div className="ko-player-info z-[95] flex w-[180px] shrink-0 flex-col gap-1 md:w-48 md:gap-2">
-               <span className="ko-champion-heading max-w-full truncate text-[11px] font-black text-white md:text-sm" data-testid="text-online-player-nickname">{`${playerNickname || "나"} · ${playerChampionName || me.champion?.name || "챔피언"}`}</span>
+               <span className="ko-champion-heading !flex min-w-0 items-center gap-1 text-[11px] font-black text-white md:text-sm"><span className="min-w-0 flex-1 truncate" data-testid="text-online-player-nickname">{`${playerNickname || "나"} · ${playerChampionName || me.champion?.name || "챔피언"}`}</span><CosmeticEmoteTools loadout={cosmetics[me.id]} onSend={onImageEmote} hide={hideImageEmotes} onHide={setHideImageEmotes}/></span>
               <div className="ko-champion-core flex items-start gap-2 md:gap-3">
                 <div className="relative shrink-0">
                   <div
@@ -1474,9 +1499,9 @@ export function GameStatePreview({
                     }}
                     className={`ko-player-champion relative flex h-28 w-20 shrink-0 cursor-pointer flex-col items-center justify-center overflow-hidden rounded-sm border-2 bg-neutral-900 md:h-40 md:w-28 ${me.champion?.questCompleted && questPresentationAllowed ? 'ko-quest-awakened-portrait border-amber-400' : effectTargeting && validEffectTargetIds.has(me.id) ? 'cursor-crosshair border-amber-400 shadow-[0_0_15px_rgba(251,191,36,0.5)]' : 'border-blue-600 shadow-[0_0_15px_rgba(37,99,235,0.2)]'} ${activePresentationChampionId === me.champion?.id || activePresentationCue?.playerId === me.id ? 'presentation-card-pulse' : ''}`}
                   >
-                    {playerChampionPortrait && (
+                    <CosmeticEmoteOverlay anchor={playerChampionRef} playerId={me.id} event={imageEmotes[me.id]}/>{playerChampionPortrait && (
                       <CardArtwork
-                        src={playerChampionPortrait}
+                        src={playerChampionPortrait} fallbackSrc={originalPlayerPortrait}
                         alt=""
                         className="ko-champion-portrait-art absolute inset-0 h-full w-full"
                         imageDisplayMode="CONTAIN"
@@ -1564,7 +1589,7 @@ export function GameStatePreview({
                      const density =
                        me.hand.length >= 7 ? 'small' : me.hand.length >= 5 ? 'medium' : 'regular';
                      return (
-                        <HandCard
+                        <HandCard cosmeticOwnerId={me.id}
                           key={`hand-${card.instanceId}`}
                           card={payableCost === card.currentCost ? card : { ...card, currentCost: payableCost }}
                           isSelected={isSelected}
@@ -1588,7 +1613,7 @@ export function GameStatePreview({
       </div>
       {playAnimation && (
         <CardPlayAnimation
-          animation={playAnimation}
+          animation={playAnimation.playerId?playAnimation:{...playAnimation,playerId:me.id}}
           hapticsEnabled={hapticsEnabled}
           onComplete={onPlayAnimationComplete}
           viewerPlayerId={me.id}
@@ -1648,11 +1673,12 @@ export function GameStatePreview({
           : <PresentationFeedback lethal={state.status==='FINISHED' && presentationQueue[0].playerId===state.loserId} cue={presentationQueue[0]} onStart={handlePresentationCueStart} onComplete={handlePresentationQueueComplete} />
       )}
     </div>
-    </AltInspectProvider></CinematicProvider></RenderCardCatalog.Provider>
+    </AltInspectProvider></CinematicProvider></RenderCardCatalog.Provider></BattleCosmeticsContext.Provider>
   );
 }
 
 function HandCard({
+  cosmeticOwnerId,
   card,
   isSelected,
   canAfford,
@@ -1665,6 +1691,7 @@ function HandCard({
   onUseTechnique,
   cardRef,
 }: {
+  cosmeticOwnerId?:string;
   card: CardInstance;
   isSelected: boolean;
   canAfford: boolean;
@@ -1701,9 +1728,9 @@ function HandCard({
   }
 
   return (
-    <Inspectable content={<CardInspectContent card={card} definition={getCardDefinition(card.definitionId)} />} touchInspectTriggerOnly className={`relative shrink-0 ${isSelected ? "z-50" : "z-0"}`}>
+    <Inspectable content={<CardInspectContent cosmeticOwnerId={cosmeticOwnerId} card={card} definition={getCardDefinition(card.definitionId)} />} touchInspectTriggerOnly className={`relative shrink-0 ${isSelected ? "z-50" : "z-0"}`}>
     <div className={`relative ${presentationActive ? "presentation-card-pulse" : ""}`}>
-      <CardRenderer
+      <CardRenderer cardId={card.definitionId} cosmeticOwnerId={!card.isToken&&!card.isChampionToken?cosmeticOwnerId:undefined}
       name={def?.name ?? '알 수 없는 카드'}
       cardType={card.cardType}
       cost={card.currentCost}
@@ -1759,6 +1786,7 @@ function HandCard({
 }
 
 function BoardSlot({
+  cosmeticOwnerId,
   card,
   isOpponent,
   slotIndex,
@@ -1781,6 +1809,7 @@ function BoardSlot({
   hitImpactLevel,
   animating = false,
 }: {
+  cosmeticOwnerId?:string;
   card: CardInstance | null;
   isOpponent: boolean;
   slotIndex: BoardSlotIndex;
@@ -1850,7 +1879,7 @@ function BoardSlot({
   const isDead = card.currentHealth <= 0;
 
   return (
-    <Inspectable content={<CardInspectContent card={card} definition={getCardDefinition(card.definitionId)} />} touchInspectTriggerOnly className="ko-board-slot-wrapper relative shrink-0">
+    <Inspectable content={<CardInspectContent cosmeticOwnerId={cosmeticOwnerId} card={card} definition={getCardDefinition(card.definitionId)} />} touchInspectTriggerOnly className="ko-board-slot-wrapper relative shrink-0">
        <div
          ref={slotRef}
          title={attackSelectionActive && !attackReady ? attackReason : undefined}
@@ -1872,7 +1901,7 @@ function BoardSlot({
           액티브
         </button>
       )}
-       <CardRenderer
+       <CardRenderer cardId={card.definitionId} cosmeticOwnerId={!card.isToken&&!card.isChampionToken?cosmeticOwnerId:undefined}
          name={def?.name ?? '알 수 없는 카드'}
          cardType={card.cardType}
          cost={card.currentCost}
@@ -1931,6 +1960,7 @@ function BoardSlot({
 }
 
 function ZoneStack({
+  cosmeticLoadout,
   deckCount,
   graveyardCount,
   isOpponent = false,
@@ -1938,6 +1968,7 @@ function ZoneStack({
   className = "",
   deckRef,
 }: {
+  cosmeticLoadout?:import("@workspace/cosmetics").CosmeticLoadout;
   deckCount: number;
   graveyardCount: number;
   isOpponent?: boolean;
@@ -1948,7 +1979,7 @@ function ZoneStack({
   return (
     <div className={`ko-zone-stack flex shrink-0 flex-col gap-2 md:gap-3 ${className}`}>
       <div ref={deckRef} aria-label={`덱 ${deckCount}장`} className="relative flex h-12 w-10 flex-col items-center justify-end overflow-hidden rounded border-2 border-neutral-600 bg-neutral-800 shadow md:h-16 md:w-14">
-        <span className="ko-deck-label hidden">덱</span>
+        <CosmeticBack loadout={cosmeticLoadout}/><span className="ko-deck-label hidden">덱</span>
         <div className="absolute inset-1 border border-neutral-700/60" />
         <div className="h-4 w-4 rotate-45 border border-neutral-700/60 md:h-6 md:w-6" />
         <span className="relative z-10 mt-auto w-full bg-black/70 py-0.5 text-center text-[7px] font-bold text-neutral-300 md:text-[9px]">
@@ -2013,7 +2044,7 @@ function GraveyardModal({
               .map((card) => {
                 const definition = getCardDefinition(card.definitionId);
                 return (
-                  <Inspectable key={card.instanceId} content={<CardInspectContent card={card} definition={getCardDefinition(card.definitionId)} />}>
+                  <Inspectable key={card.instanceId} content={<CardInspectContent cosmeticOwnerId={player.id} card={card} definition={getCardDefinition(card.definitionId)} />}>
                     <div
                       tabIndex={0}
                       role={onSelect ? 'button' : undefined}

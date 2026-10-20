@@ -6,6 +6,7 @@ import {
 
 export function CardArtwork({
   src,
+  fallbackSrc,
   alt,
   className = "",
   imageDisplayMode,
@@ -18,6 +19,7 @@ export function CardArtwork({
   loading = "eager",
 }: {
   src?: string | null;
+  fallbackSrc?: string | null;
   alt: string;
   className?: string;
   imageDisplayMode?: ImageDisplaySettings["imageDisplayMode"];
@@ -30,6 +32,8 @@ export function CardArtwork({
   loading?: "eager" | "lazy";
 }) {
   const [failed, setFailed] = useState(false);
+  const [fallbackFailed,setFallbackFailed]=useState(false);
+  const displaySrc=failed ? (fallbackSrc!==src?fallbackSrc:undefined) : src;
   const dragRef = useRef<{
     pointerId: number;
     startClientX: number;
@@ -44,7 +48,7 @@ export function CardArtwork({
     imagePositionY,
   });
 
-  useEffect(() => setFailed(false), [src]);
+  useEffect(() => {setFailed(false);setFallbackFailed(false);}, [src,fallbackSrc]);
 
   function handlePointerDown(event: PointerEvent<HTMLDivElement>) {
     if (!interactive || !onPositionChange || !src) return;
@@ -92,7 +96,7 @@ export function CardArtwork({
     transformOrigin: `${settings.imagePositionX}% ${settings.imagePositionY}%`,
   } as const;
 
-  if (!src || failed) {
+  if (!displaySrc || fallbackFailed) {
     return (
       <div
         className={`relative flex items-center justify-center overflow-hidden bg-neutral-950 ${className}`}
@@ -119,7 +123,7 @@ export function CardArtwork({
       style={interactive ? { touchAction: "none" } : undefined}
     >
       <img
-        src={src}
+        src={displaySrc}
         loading={loading}
         decoding="async"
         alt={alt}
@@ -127,7 +131,7 @@ export function CardArtwork({
         className="absolute inset-0 h-full w-full select-none"
         style={imageStyle}
         onDragStart={(event) => event.preventDefault()}
-        onError={() => setFailed(true)}
+        onError={() => failed?setFallbackFailed(true):setFailed(true)}
       />
       {showHint && (
         <span className="pointer-events-none absolute inset-x-2 bottom-2 z-10 rounded bg-black/65 px-2 py-1 text-center text-[10px] font-bold text-white">
