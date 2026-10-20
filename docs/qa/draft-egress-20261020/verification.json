@@ -1,0 +1,50 @@
+{
+  "suites": {
+    "after": {
+      "tests": 18,
+      "pass": 18,
+      "fail": 0,
+      "skipped": 0
+    },
+    "native": {
+      "tests": 17,
+      "pass": 17,
+      "fail": 0,
+      "skipped": 0
+    },
+    "unit": {
+      "tests": 16,
+      "pass": 16,
+      "fail": 0,
+      "skipped": 0
+    },
+    "engine": {
+      "tests": 2685,
+      "pass": 2685,
+      "fail": 0,
+      "skipped": 0
+    },
+    "public": {
+      "tests": 10,
+      "pass": 10,
+      "fail": 0,
+      "skipped": 0
+    },
+    "tower": {
+      "tests": 11,
+      "pass": 11,
+      "fail": 0,
+      "skipped": 0
+    },
+    "statistics": {
+      "tests": 35,
+      "pass": 35,
+      "fail": 0,
+      "skipped": 0
+    }
+  },
+  "totalTestExecutions": 2792,
+  "typecheckAndBuild": "PASS",
+  "browser": "PASS",
+  "productionModified": false
+}

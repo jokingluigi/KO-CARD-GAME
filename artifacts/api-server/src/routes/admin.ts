@@ -1,3 +1,4 @@
+import {AssetCleanupGate} from "../lib/asset-cleanup-gate";
 import { availableCardTags } from "../lib/card-tag-catalog";
 import { validCountdownCardSettings } from '@workspace/effect-registry';
 import { validChampionQuestCondition, validAwakeningQuestConfig, AWAKENING_CARD_IDS, createAwakeningCards } from '@workspace/game-engine';
@@ -416,6 +417,8 @@ async function removeImageIfUnreferenced(assetId: string) {
     .select({ count: sql<number>`count(*)::int` })
     .from(cardFrameDefinitionsTable)
     .where(eq(cardFrameDefinitionsTable.frameAssetId, assetId));
+  // Already referenced assets cannot be removed: avoid scanning Tower JSON for them.
+  if((cardReference?.count??0)>0||(championReference?.count??0)>0||(shopReference?.count??0)>0||(frameReference?.count??0)>0)return;
   let towerReferenced = false;
   try {
     const result = await db.execute(sql`SELECT EXISTS (
@@ -462,11 +465,14 @@ async function removeAudioIfUnreferenced(assetId: string) {
   }
 }
 
+const imageCleanupGate=new AssetCleanupGate();
 async function cleanupAbandonedImages() {
-  const stale = await cardImageStorage.staleUploads(
-    new Date(Date.now() - PENDING_IMAGE_TTL_MS),
-  );
-  await Promise.all(stale.map(removeImageIfUnreferenced));
+  return imageCleanupGate.run(async()=>{
+    const stale=await cardImageStorage.staleUploads(new Date(Date.now()-PENDING_IMAGE_TTL_MS));
+    // Bound concurrent JSON scans and deduplicate paths returned by the provider.
+    const assets=[...new Set(stale)];
+    for(let i=0;i<assets.length;i+=4)await Promise.all(assets.slice(i,i+4).map(removeImageIfUnreferenced));
+  });
 }
 
 router.use((request, response, next) => {

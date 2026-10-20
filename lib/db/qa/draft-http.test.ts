@@ -8,8 +8,16 @@ import { test, after } from "node:test";
 import assert from "node:assert/strict";
 process.env.DATABASE_URL = "postgresql://unused:unused@127.0.0.1:1/unused";
 process.env.NODE_ENV = "development";
-const pg = new PGlite();
-const database = drizzle(pg, { schema });
+const nativeMode=process.env.KO_DRAFT_EGRESS_NATIVE==='1';
+const nativeName='draft_egress_qa_'+process.pid;
+const {Pool}=await import('pg');
+const nativeAdmin=nativeMode?new Pool({connectionString:'postgresql://agent@127.0.0.1:55432/ko_cosmetics_qa'}):null;
+if(nativeAdmin)await nativeAdmin.query('CREATE DATABASE '+nativeName);
+const native=nativeMode?new Pool({connectionString:'postgresql://agent@127.0.0.1:55432/'+nativeName}):null;
+const pg:any=native??new PGlite();
+if(native){pg.exec=native.query.bind(native);pg.close=async()=>{await native.end();await nativeAdmin!.query('DROP DATABASE '+nativeName);await nativeAdmin!.end();};}
+const {drizzle:drizzlePg}=await import('drizzle-orm/node-postgres');
+const database:any=native?drizzlePg(native,{schema}):drizzle(pg,{schema});
 for (const ddl of await generateMigration(
   generateDrizzleJson({}),
   generateDrizzleJson(schema),
@@ -24,6 +32,7 @@ await pg.exec(
 const { db } = await import("../src/index");
 for (const method of [
   "select",
+  "selectDistinct",
   "insert",
   "update",
   "delete",
@@ -253,6 +262,23 @@ async function request(
   return { status: response.status, body: await response.json() };
 }
 after(async () => {
+  if(process.env.KO_DRAFT_EGRESS_BROWSER==='1'){
+    const {eq}=await import('drizzle-orm');
+    const [admin]=await database.select().from(schema.usersTable).where(eq(schema.usersTable.id,'admin'));
+    for(const id of ['egress-browser-a','egress-browser-b']){
+      await database.insert(schema.usersTable).values({id,email:id+'@epic.invalid',nickname:id,passwordHash:admin.passwordHash,role:'USER',currencyBalance:1000,shopCurrencyStarterGrantedAt:new Date()});
+      await request(id,'/auth/login','POST',{email:id+'@epic.invalid',password:'EpicLocalQA123'});
+    }
+    const v=(await request('egress-browser-a','/draft/sessions','POST',{mode:'PVP'})).body;
+    const invitation=(await request('egress-browser-b',`/draft/sessions/${v.id}/invitation`)).body;
+    assert.equal((await request('egress-browser-b',`/draft/sessions/${v.id}/commands`,'POST',{type:'JOIN',version:invitation.version,requestId:crypto.randomUUID()})).status,200);
+    await replaceState(v.id,s=>{for(const seat of s.seats)seat.deadline=Date.now()-800000;});await tickDraftSessions();
+    await replaceState(v.id,s=>{s.gameplayStartsAt=Date.now()+5000;s.turnDeadline=Date.now()+120000;s.lastSeen=[Date.now(),Date.now()];});
+    const fs=await import('node:fs/promises');await fs.mkdir('qa-results/draft-egress',{recursive:true});
+    await fs.writeFile('qa-results/draft-egress/fixture.json',JSON.stringify({origin,matchId:v.id,cookies:Object.fromEntries(cookies)}));
+    console.log('DRAFT_EGRESS_BROWSER_READY '+origin);
+    await new Promise<void>(resolve=>process.once('SIGTERM',resolve));
+  }
   const { getRuntime, cleanupMatchRuntime } =
     await import("../../../artifacts/api-server/src/online/service");
   for (const id of matches) {
@@ -997,3 +1023,81 @@ test("crafting caps at 3/2/1 and maximum/bulk disassembly preserves playable cop
   }
   assert.equal((await request("user", "/prism/disenchant-extras", "POST")).body.dismantledQuantity, 0);
 });
+
+if(process.env.KO_DRAFT_EGRESS_REPORT)test('measures idle draft database result traffic on a frozen archived catalog',async()=>{
+ const {runDraftEgressBenchmark}=await import('./draft-egress-benchmark');
+ await runDraftEgressBenchmark({database,pg,request,replaceState,stored});
+});
+
+if(process.env.KO_DRAFT_EGRESS_BASELINE!=='1'){
+let egressRoom='',egressVersion=0;
+test('same-version battle polling returns only authenticated presence without changing gameplay/version',async()=>{
+ const {eq}=await import('drizzle-orm');
+ const [admin]=await database.select().from(schema.usersTable).where(eq(schema.usersTable.id,'admin'));
+ for(const id of ['egress-owner','egress-opponent']){
+   await database.insert(schema.usersTable).values({id,email:id+'@epic.invalid',nickname:id,passwordHash:admin.passwordHash,role:'USER',currencyBalance:1000,shopCurrencyStarterGrantedAt:new Date()});
+   assert.equal((await request(id,'/auth/login','POST',{email:id+'@epic.invalid',password:'EpicLocalQA123'})).status,200);
+ }
+ let v=(await request('egress-owner','/draft/sessions','POST',{mode:'PVP'})).body;egressRoom=v.id;assert.ok(egressRoom);
+ const invite=(await request('egress-opponent',`/draft/sessions/${v.id}/invitation`)).body;
+ assert.equal((await request('egress-opponent',`/draft/sessions/${v.id}/commands`,'POST',{type:'JOIN',version:invite.version,requestId:crypto.randomUUID()})).status,200);
+ await replaceState(v.id,s=>{for(const seat of s.seats)seat.deadline=Date.now()-800000;});await tickDraftSessions();
+ await replaceState(v.id,s=>{s.gameplayStartsAt=Date.now()+3600000;s.turnDeadline=Date.now()+3600000;});
+ const before=await stored(v.id);egressVersion=before.version;
+ const responses=await Promise.all(['egress-owner','egress-opponent'].map(role=>request(role,`/draft/sessions/${v.id}/battle?version=${before.version}`)));
+ for(const r of responses){assert.equal(r.status,200);assert.equal(r.body.type,'DRAFT_HEARTBEAT');assert.equal(r.body.state,undefined);assert.equal(r.body.snapshot,undefined);assert.equal(r.body.version,before.version);assert.ok(JSON.stringify(r.body).length<400);}
+ const after=await stored(v.id);assert.equal(after.version,before.version);assert.deepEqual({...after.state,lastSeen:null},{...before.state,lastSeen:null});
+ assert.equal((await request('third',`/draft/sessions/${v.id}/battle?version=${before.version}`)).status,403);
+ assert.equal((await request('egress-owner',`/draft/sessions/${v.id}/battle?version=-1`)).status,400);
+});
+test('stale version and cache loss recover a full sanitized battle before subsequent heartbeats',async()=>{
+ const service=await import('../../../artifacts/api-server/src/lib/draft-service');service.clearDraftReadCaches();
+ const full=await request('egress-owner',`/draft/sessions/${egressRoom}/battle?version=${egressVersion-1}`);assert.equal(full.status,200);assert.equal(full.body.type,'MATCH_SNAPSHOT');assert.equal(full.body.state.players[1].hand.hidden,true);assert.equal(full.body.state.players[1].deck.hidden,true);
+ await replaceState(egressRoom,s=>{s.gameplayStartsAt=Date.now()-1;});
+ const action=await request('egress-owner',`/draft/sessions/${egressRoom}/actions`,'POST',{expectedVersion:egressVersion,requestId:crypto.randomUUID(),action:{type:'MULLIGAN',cardInstanceIds:[]}});assert.equal(action.status,200,JSON.stringify(action.body));
+ const updated=await request('egress-opponent',`/draft/sessions/${egressRoom}/battle?version=${egressVersion}`);assert.equal(updated.body.type,'MATCH_SNAPSHOT');assert.ok(updated.body.version>egressVersion);egressVersion=updated.body.version;
+ assert.equal((await request('egress-opponent',`/draft/sessions/${egressRoom}/battle?version=${egressVersion}`)).body.type,'DRAFT_HEARTBEAT');
+});
+test('expired presence bypasses the light response, commits forfeit and never duplicates rewards',async()=>{
+ await replaceState(egressRoom,s=>{s.lastSeen[0]=Date.now();s.lastSeen[1]=Date.now()-61000;});
+ const ended=await request('egress-owner',`/draft/sessions/${egressRoom}/battle?version=${egressVersion}`);assert.equal(ended.body.type,'MATCH_SNAPSHOT');assert.equal(ended.body.state.status,'FINISHED');
+ const grantsBefore=(await database.select().from(schema.rewardGrantsTable)).length;
+ await request('egress-owner',`/draft/sessions/${egressRoom}/battle?version=${ended.body.version}`);assert.equal((await database.select().from(schema.rewardGrantsTable)).length,grantsBefore);
+});
+}
+if(process.env.KO_DRAFT_EGRESS_BASELINE!=='1')test('upload bursts run one bounded cleanup; live and Tower-referenced images are never removed',async()=>{
+ const {CardImageStorage}=await import('../../../artifacts/api-server/src/lib/object-storage');
+ const {eq}=await import('drizzle-orm');
+ const live='/objects/uploads/card-images/egress-live.png',tower='/objects/uploads/card-images/egress-tower.png',unused='/objects/uploads/card-images/egress-unused.png';
+ await database.update(schema.cardsTable).set({imageAssetId:live}).where(eq(schema.cardsTable.id,'n0'));
+ await database.insert(schema.towerCharactersTable).values({id:'egress-tower-portrait',data:{portraitAssetId:tower}});
+ const prototype=CardImageStorage.prototype,originalStale=prototype.staleUploads,originalRemove=prototype.remove,originalQuery=pg.query.bind(pg);
+ const baselineAssets=process.env.KO_DRAFT_ASSET_BASELINE==='1';
+ let sweeps=0,towerQueries=0,towerResultBytes=0;const removed:string[]=[];
+ prototype.staleUploads=async()=>{sweeps++;return [live,tower,unused,unused];};prototype.remove=async(path:string)=>{removed.push(path);};
+ pg.query=async(...args:any[])=>{const query=typeof args[0]==='string'?args[0]:args[0].text;const result=await originalQuery(...args);if(/tower_characters/.test(query)){towerQueries++;towerResultBytes+=Buffer.byteLength(JSON.stringify(result.rows));}return result;};
+ try{
+  const results=await Promise.all(Array.from({length:20},()=>request('admin','/admin/cards/images/upload-url','POST',{})));
+  assert.ok(results.every(r=>r.status===400));
+  for(let i=0;i<300&&(towerQueries<(baselineAssets?80:2)||removed.length<(baselineAssets?40:1));i++)await new Promise(r=>setTimeout(r,10));
+  assert.equal(sweeps,baselineAssets?20:1);assert.equal(removed.length,baselineAssets?40:1);assert.ok(removed.every(path=>path===unused));assert.equal(towerQueries,baselineAssets?80:2);
+  if(process.env.KO_DRAFT_ASSET_REPORT)await (await import('node:fs/promises')).writeFile(process.env.KO_DRAFT_ASSET_REPORT,JSON.stringify({uploads:20,stalePathsPerSweep:4,distinctPaths:3,sweeps,towerQueries,towerResultBytes,storageRemoveAttempts:removed.length,storageWritesPerformed:false},null,2)+'\n');
+ }finally{prototype.staleUploads=originalStale;prototype.remove=originalRemove;pg.query=originalQuery;}
+});
+if(process.env.KO_DRAFT_EGRESS_BASELINE!=='1'){
+test('deadline worker recovers an AI mulligan and persisted AI turn without client polling',async()=>{
+ let v=(await request('egress-owner','/draft/sessions','POST',{mode:'AI'})).body;assert.ok(v.id);
+ while(v.own.deck.length<25){const r=await request('egress-owner',`/draft/sessions/${v.id}/commands`,'POST',{type:v.own.mutationEvent?'MUTATION_SKIP':'PICK',pickId:v.own.offers[0],version:v.version,requestId:crypto.randomUUID()});assert.equal(r.status,200);v=r.body;}
+ const ready=await request('egress-owner',`/draft/sessions/${v.id}/commands`,'POST',{type:'READY',version:v.version,requestId:crypto.randomUUID()});assert.equal(ready.status,200);
+ await replaceState(v.id,s=>{s.gameplayStartsAt=Date.now()-1;s.turnDeadline=Date.now()+3600000;});
+ await tickDraftSessions();assert.equal(((await stored(v.id)).state as any).battle.players[1].mulliganUsed,true);
+ await replaceState(v.id,s=>{s.battle.openingMulligan=false;s.battle.activePlayerId='PLAYER_TWO';s.battle.players[1].currentGold=3;s.battle.players[1].personalTurn=2;s.lastSeen=[Date.now(),Date.now()];});
+ const before=(await stored(v.id)).version;await tickDraftSessions();const after=await stored(v.id);
+ assert.ok(after.version>before);assert.ok((after.state as any).battle.status==='FINISHED'||(after.state as any).battle.activePlayerId==='PLAYER_ONE');
+});
+test('reinitializing the draft worker does not create duplicate process timers',async()=>{
+ const service=await import('../../../artifacts/api-server/src/lib/draft-service');const originalInterval=globalThis.setInterval,originalClear=globalThis.clearInterval;
+ let starts=0,stops=0;globalThis.setInterval=(()=>{starts++;return {unref(){}};}) as unknown as typeof setInterval;globalThis.clearInterval=(()=>{stops++;}) as typeof clearInterval;
+ try{const first=service.startDraftWorker(),second=service.startDraftWorker();assert.equal(first,second);assert.equal(starts,1);first();assert.equal(stops,1);}finally{globalThis.setInterval=originalInterval;globalThis.clearInterval=originalClear;}
+});
+}

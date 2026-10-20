@@ -1,0 +1,10 @@
+{
+  "uploads": 20,
+  "stalePathsPerSweep": 4,
+  "distinctPaths": 3,
+  "sweeps": 20,
+  "towerQueries": 80,
+  "towerResultBytes": 1740,
+  "storageRemoveAttempts": 40,
+  "storageWritesPerformed": false
+}

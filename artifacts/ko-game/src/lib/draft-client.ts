@@ -83,12 +83,16 @@ export const draftCommand = async (view: DraftView, type: string, pickId?: strin
     return draftRequest<DraftView>(path, "POST", { ...body, version: latest.version });
   }
 };
+type DraftHeartbeat={type:"DRAFT_HEARTBEAT";matchId:string;version:number;serverTime:number;connectionStates:Extract<OnlineServerMessage,{type:"MATCH_SNAPSHOT"}>["connectionStates"]};
 export class DraftBattleClient {
   state: OnlineLobbyConnectionState = "idle";
   readonly diagnostics = { transport: "draft-http" };
   private listeners = new Set<OnlineLobbyListener>();
   private connections = new Set<OnlineLobbyConnectionListener>();
   private timer: ReturnType<typeof setInterval> | null = null;
+  private failures=0;
+  private nextPollAt=0;
+  private stopPolling(){if(this.timer)clearInterval(this.timer);this.timer=null;}
   private matchId: string | null = null;
   private busy = false;
   private actionBusy = false;
@@ -119,6 +123,7 @@ export class DraftBattleClient {
     this.connection("open");
   }
   reconnectNow() {
+    this.failures=0;this.nextPollAt=0;
     this.lastVersion = null;
     this.connection("open");
     void this.poll();
@@ -130,21 +135,7 @@ export class DraftBattleClient {
     this.matchId = null;
     this.connection("closed");
   }
-  private async poll() {
-    if (!this.matchId || this.busy) return;
-    this.busy = true;
-    const id = this.matchId,
-      generation = this.generation,
-      revision = this.revision;
-    try {
-      const result = await draftRequest<OnlineServerMessage>(
-        `/sessions/${id}/battle`,
-      );
-      if (generation === this.generation && revision === this.revision && !this.actionBusy && result.type === "MATCH_SNAPSHOT") {
-        if (this.state === "error") {
-          this.lastVersion = null;
-          this.connection("open");
-        }
+  private emitConnectionStatuses(result:Pick<DraftHeartbeat,"connectionStates"|"serverTime">,id:string){
         const statuses = JSON.stringify(result.connectionStates);
         if (this.statuses !== statuses) {
           for (const playerId of ["PLAYER_ONE", "PLAYER_TWO"] as const)
@@ -158,6 +149,28 @@ export class DraftBattleClient {
             });
           this.statuses = statuses;
         }
+  }
+  private async poll() {
+    if (!this.matchId || this.busy || this.actionBusy || Date.now()<this.nextPollAt) return;
+    this.busy = true;
+    const id = this.matchId,
+      generation = this.generation,
+      revision = this.revision;
+    try {
+      const result = await draftRequest<OnlineServerMessage|DraftHeartbeat>(
+        `/sessions/${id}/battle${this.lastVersion===null?"":`?version=${this.lastVersion}`}`,
+      );
+      if(generation===this.generation&&revision===this.revision&&!this.actionBusy&&result.type==="DRAFT_HEARTBEAT"){
+        this.failures=0;this.nextPollAt=0;this.emitConnectionStatuses(result,id);return;
+      }
+      if (generation === this.generation && revision === this.revision && !this.actionBusy && result.type === "MATCH_SNAPSHOT") {
+        this.failures=0;this.nextPollAt=0;
+        if (this.state === "error") {
+          this.lastVersion = null;
+          this.connection("open");
+        }
+        if((result.state as {status?:string}).status==="FINISHED")this.stopPolling();
+        this.emitConnectionStatuses(result,id);
         if (this.lastVersion === null) {
           this.lastVersion = result.version;
           this.emit(result);
@@ -175,6 +188,9 @@ export class DraftBattleClient {
       }
     } catch (e) {
       if (generation !== this.generation || revision !== this.revision || this.actionBusy) return;
+      this.lastVersion=null;
+      this.failures++;
+      this.nextPollAt=Date.now()+(this.failures===1?0:Math.min(30_000,1000*2**Math.min(this.failures-1,5)));
       this.emit({
         type: "ERROR",
         code: "DRAFT_UNAVAILABLE",
@@ -190,6 +206,7 @@ export class DraftBattleClient {
     if (message.type === "SUBSCRIBE" || message.type === "RESYNC") {
       if (this.matchId !== message.matchId) {
         this.generation++;
+        this.failures=0;this.nextPollAt=0;
         this.matchId = message.matchId;
         this.lastVersion = null;
         this.statuses = null;
@@ -217,6 +234,7 @@ export class DraftBattleClient {
       )
         .then((r) => {
           if ("version" in r) this.lastVersion = r.version;
+          if("state" in r&&(r.state as {status?:string}).status==="FINISHED")this.stopPolling();
           this.emit(r);
           if (
             "state" in r &&

@@ -1,0 +1,64 @@
+name: Draft pooler traffic and consistency
+on:
+  pull_request:
+    paths:
+      - artifacts/api-server/src/lib/draft*.ts
+      - artifacts/api-server/src/lib/asset-cleanup-gate*.ts
+      - artifacts/api-server/src/routes/admin-draft.ts
+      - artifacts/api-server/src/routes/admin.ts
+      - artifacts/ko-game/src/lib/draft-client*.ts
+      - lib/db/qa/draft-http.test.ts
+      - lib/db/qa/draft-egress-benchmark.ts
+      - docs/qa/draft-egress*browser*.mjs
+      - .github/workflows/draft-egress-validation.yml
+permissions:
+  contents: read
+jobs:
+  draft-consistency:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_USER: agent
+          POSTGRES_DB: ko_cosmetics_qa
+          POSTGRES_HOST_AUTH_METHOD: trust
+        ports:
+          - 55432:5432
+        options: >-
+          --health-cmd "pg_isready -U agent -d ko_cosmetics_qa"
+          --health-interval 5s --health-timeout 5s --health-retries 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24.19.0'
+      - uses: pnpm/action-setup@v4
+        with:
+          version: '11.19.0'
+      - run: pnpm install --frozen-lockfile --ignore-scripts
+      - name: Cache expiry and invalidation, cleanup gate and polling transport
+        run: >-
+          node --import ./docs/qa/checkpoints/20261006/qa-loader.mjs --test --test-isolation=none
+          artifacts/api-server/src/lib/draft-read-cache.test.ts
+          artifacts/api-server/src/lib/asset-cleanup-gate.test.ts
+          artifacts/ko-game/src/lib/draft-client.test.ts
+          artifacts/api-server/src/lib/object-storage.test.ts
+      - name: Native PostgreSQL concurrency, expiry, recovery, AI and rewards
+        env:
+          KO_DRAFT_EGRESS_NATIVE: '1'
+        run: node --import ./docs/qa/checkpoints/20261006/qa-loader.mjs --test --test-isolation=none lib/db/qa/draft-http.test.ts
+      - name: Frozen catalog traffic measurement
+        env:
+          KO_DRAFT_EGRESS_REPORT: /tmp/draft-egress-after.json
+          KO_DRAFT_ASSET_REPORT: /tmp/draft-assets-after.json
+        run: node --import ./docs/qa/checkpoints/20261006/qa-loader.mjs --test --test-isolation=none lib/db/qa/draft-http.test.ts
+      - name: Browser tooling
+        run: |
+          npm install --no-save --prefix "$RUNNER_TEMP/ko-draft-browser" playwright@1.62.1
+          "$RUNNER_TEMP/ko-draft-browser/node_modules/.bin/playwright" install --with-deps chromium
+      - name: Two authenticated mobile browsers and finished-polling stop
+        env:
+          KO_QA_PLAYWRIGHT: ${{ runner.temp }}/ko-draft-browser/node_modules/playwright/index.mjs
+        run: node docs/qa/draft-egress-browser-runner.mjs

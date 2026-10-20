@@ -1,3 +1,5 @@
+import {draftSessionDue} from "./draft-due";
+import {DraftReadCache} from "./draft-read-cache";
 import { executeUsageObservedAction as executeAction } from './usage-statistics-observer';
 import { recordCompletedDraft } from "./draft-participation-quest";
 import { buildMatchRecap } from "@workspace/game-engine";
@@ -71,15 +73,26 @@ export class DraftError extends Error {
   }
 }
 const record = (value: unknown) => value as Record<string, unknown>;
+const settingsCache = new DraftReadCache<{enabled:boolean;config:ReturnType<typeof parseDraftConfig>}>(1000);
+// Existing session snapshots are immutable: all normal writes update state only.
+// A future snapshot writer MUST invalidate this cache after committing its write.
+const snapshotCache = new DraftReadCache<DraftSnapshot>(5*60_000,64,16*1024*1024);
+export function invalidateDraftSettings(){ settingsCache.clear(); }
+export function clearDraftReadCaches(){settingsCache.clear();snapshotCache.clear();}
 export async function draftSettings() {
-  const [row] = await db
-    .select()
-    .from(draftSettingsTable)
-    .where(eq(draftSettingsTable.id, "global"));
-  return {
-    enabled: row?.enabled ?? false,
-    config: parseDraftConfig(row?.config ?? DEFAULT_DRAFT_CONFIG),
-  };
+  return settingsCache.read("global",async()=>{
+    const [row] = await db.select({enabled:draftSettingsTable.enabled,config:draftSettingsTable.config})
+      .from(draftSettingsTable).where(eq(draftSettingsTable.id,"global"));
+    return {enabled:row?.enabled??false,config:parseDraftConfig(row?.config??DEFAULT_DRAFT_CONFIG)};
+  });
+}
+async function readDraftSnapshot(tx:Pick<typeof db,"select">,id:string):Promise<DraftSnapshot>{
+  return snapshotCache.read(id,async()=>{
+      const [catalog]=await tx.select({snapshot:draftSessionsTable.snapshot}).from(draftSessionsTable).where(eq(draftSessionsTable.id,id));
+      if(!catalog)throw new DraftError("NOT_FOUND","드래프트를 찾을 수 없습니다.",404);
+      const data=catalog.snapshot as unknown as DraftSnapshot;
+      return {...data,config:parseDraftConfig(data.config)};
+    });
 }
 export async function draftCatalog(
   config = DEFAULT_DRAFT_CONFIG,
@@ -472,12 +485,13 @@ export async function startDraft(
         409,
       );
     if (matchmaking && mode === "PVP") {
-      const waiting = await tx
-        .select()
-        .from(draftSessionsTable)
-        .where(sql`${draftSessionsTable.state}->>'phase' = 'WAITING'`)
-        .orderBy(asc(draftSessionsTable.createdAt))
-        .for("update");
+      const waiting=await tx.select({id:draftSessionsTable.id,state:draftSessionsTable.state,version:draftSessionsTable.version,updatedAt:draftSessionsTable.updatedAt,usageDiagnostic:draftSessionsTable.usageDiagnostic})
+        .from(draftSessionsTable).where(and(
+          sql`${draftSessionsTable.state}->>'phase'='WAITING'`,
+          sql`${draftSessionsTable.state}->>'mode'='PVP'`,
+          sql`${draftSessionsTable.state}->'seats'->1->>'userId' IS NULL`,
+          sql`${draftSessionsTable.updatedAt} >= ${new Date(Date.now()-60000)}`,
+        )).orderBy(asc(draftSessionsTable.createdAt)).limit(1).for("update");
       for (const row of waiting) {
         const candidate = structuredClone(row.state) as unknown as DraftState;
         if (
@@ -489,7 +503,7 @@ export async function startDraft(
         candidate.seats[1] = emptySeat(userId, name);
         beginDraft(
           candidate,
-          row.snapshot as unknown as DraftSnapshot,
+          await readDraftSnapshot(tx,row.id),
           Date.now(),
         );
         await tx
@@ -531,7 +545,7 @@ export async function startDraft(
 }
 export async function currentDraft(userId: string) {
   const [r] = await db
-    .select()
+    .select({sessionId:draftParticipantsTable.sessionId})
     .from(draftParticipantsTable)
     .where(eq(draftParticipantsTable.userId, userId));
   return r?.sessionId ?? null;
@@ -556,15 +570,13 @@ export async function mutateDraft(
       sql`SELECT pg_advisory_xact_lock(hashtext(${`ko:draft:${id}`}))`,
     );
     const [row] = await tx
-      .select()
+      .select({id:draftSessionsTable.id,state:draftSessionsTable.state,version:draftSessionsTable.version,usageStart:draftSessionsTable.usageStart,usageDiagnostic:draftSessionsTable.usageDiagnostic})
       .from(draftSessionsTable)
       .where(eq(draftSessionsTable.id, id))
       .for("update");
     if (!row)
       throw new DraftError("NOT_FOUND", "드래프트를 찾을 수 없습니다.", 404);
-    const s = structuredClone(row.state) as unknown as DraftState,
-      snapshot = row.snapshot as unknown as DraftSnapshot;
-    snapshot.config = parseDraftConfig(snapshot.config);
+    const s = structuredClone(row.state) as unknown as DraftState;
     let seat = s.seats.findIndex((p) => p.userId === userId);
     if (input?.type === "JOIN" && s.phase === "WAITING" && seat < 0) {
       const [active] = await tx
@@ -585,6 +597,7 @@ export async function mutateDraft(
         "이 드래프트의 참가자가 아닙니다.",
         403,
       );
+    const snapshot=await readDraftSnapshot(tx,id);
     const now = Date.now(),
       before = JSON.stringify({ ...s, lastSeen: undefined });
     const key = input ? `${userId}:${input.requestId}` : null;
@@ -830,22 +843,16 @@ export async function mutateDraft(
     const changed = before !== JSON.stringify({ ...s, lastSeen: undefined }),
       version = row.version + (changed ? 1 : 0);
     if (heartbeat && s.phase === "BATTLE" && s.lastSeen) s.lastSeen[seat] = now;
-    if (
-      changed ||
-      (heartbeat && (s.phase === "BATTLE" || s.phase === "WAITING"))
-    )
-      await tx
-        .update(draftSessionsTable)
-        .set({ state: record(s), version, updatedAt: new Date(), ...(!row.usageStart && !oldBattle && s.battle ? {usageStart:{version:1,diagnostic:row.usageDiagnostic,startedAt:new Date(now).toISOString(),champions:{PLAYER_ONE:s.seats[0].championId!,PLAYER_TWO:s.seats[1].championId!},decks:{PLAYER_ONE:[...s.seats[0].deck],PLAYER_TWO:[...s.seats[1].deck]}}}: {}) })
-        .where(eq(draftSessionsTable.id, id));
-    else if (heartbeat && s.phase === "BATTLE" && s.lastSeen)
-      await tx
-        .update(draftSessionsTable)
-        .set({
-          state: sql`jsonb_set(${draftSessionsTable.state}, '{lastSeen}', ${JSON.stringify(s.lastSeen)}::jsonb)`,
-          updatedAt: new Date(),
-        })
-        .where(eq(draftSessionsTable.id, id));
+    if (changed)
+      await tx.update(draftSessionsTable)
+        .set({state:record(s),version,updatedAt:new Date(),...(!row.usageStart&&!oldBattle&&s.battle?{usageStart:{version:1,diagnostic:row.usageDiagnostic,startedAt:new Date(now).toISOString(),champions:{PLAYER_ONE:s.seats[0].championId!,PLAYER_TWO:s.seats[1].championId!},decks:{PLAYER_ONE:[...s.seats[0].deck],PLAYER_TWO:[...s.seats[1].deck]}}}:{})})
+        .where(eq(draftSessionsTable.id,id));
+    else if(heartbeat&&s.phase==="BATTLE"&&s.lastSeen)
+      await tx.update(draftSessionsTable).set({
+        state:sql`jsonb_set(${draftSessionsTable.state}, ${`{lastSeen,${seat}}`}::text[], ${JSON.stringify(now)}::jsonb)`,updatedAt:new Date(),
+      }).where(eq(draftSessionsTable.id,id));
+    else if(heartbeat&&s.phase==="WAITING")
+      await tx.update(draftSessionsTable).set({updatedAt:new Date()}).where(eq(draftSessionsTable.id,id));
     if (s.phase === "FINISHED" || s.phase === "ABORTED")
       await tx
         .delete(draftParticipantsTable)
@@ -972,6 +979,42 @@ export function draftBattleView(r: DraftResult) {
     ),
   };
 }
+/** A same-version poll needs presence, not a 300KB battle/catalog transfer.
+ * Keep the original room advisory lock and row lock. Never cache mutable state.
+ */
+export async function pollDraftBattle(userId:string,id:string,knownVersion?:number){
+  if(knownVersion!==undefined){
+    await enabled();
+    const heartbeat=await db.transaction(async tx=>{
+      await tx.execute(sql`SELECT pg_advisory_xact_lock(hashtext(${`ko:draft:${id}`}))`);
+      const state=draftSessionsTable.state;
+      const [row]=await tx.select({version:draftSessionsTable.version,
+        phase:sql<string>`${state}->>'phase'`,due:draftSessionDue(),
+        owner:sql<string>`${state}->'seats'->0->>'userId'`,opponent:sql<string|null>`${state}->'seats'->1->>'userId'`,
+        lastSeen:sql<number[]|null>`${state}->'lastSeen'`,
+        gameplayStartsAt:sql<number|null>`(${state}->>'gameplayStartsAt')::bigint`,
+        turnDeadline:sql<number|null>`(${state}->>'turnDeadline')::bigint`,
+        aiPending:sql<boolean>`${state}->>'mode'='AI' AND ((coalesce((${state}->'battle'->>'openingMulligan')::boolean,false) AND NOT coalesce((${state}->'battle'->'players'->1->>'mulliganUsed')::boolean,false)) OR (NOT coalesce((${state}->'battle'->>'openingMulligan')::boolean,false) AND ${state}->'battle'->>'activePlayerId'='PLAYER_TWO'))`,
+      }).from(draftSessionsTable).where(eq(draftSessionsTable.id,id)).for("update");
+      if(!row)throw new DraftError("NOT_FOUND","드래프트를 찾을 수 없습니다.",404);
+      const seat=row.owner===userId?0:row.opponent===userId?1:-1;
+      if(seat<0)throw new DraftError("FORBIDDEN","이 드래프트의 참가자가 아닙니다.",403);
+      if(row.version!==knownVersion||row.phase!=="BATTLE"||row.due||!row.lastSeen)return null;
+      const now=Date.now();
+      // Recheck time after acquiring the DB row: crossing a deadline while the
+      // query waits must never refresh an already expired participant.
+      if(now-row.lastSeen[0]>60000 || (row.opponent&&now-row.lastSeen[1]>60000) ||
+        (now>=(row.gameplayStartsAt??0)&&((row.turnDeadline!==null&&now>=Number(row.turnDeadline))||row.aiPending)))return null;
+      const lastSeen=[...row.lastSeen];lastSeen[seat]=now;
+      await tx.update(draftSessionsTable).set({state:sql`jsonb_set(${state},${`{lastSeen,${seat}}`}::text[],${JSON.stringify(now)}::jsonb)`,updatedAt:new Date()}).where(eq(draftSessionsTable.id,id));
+      return {type:"DRAFT_HEARTBEAT" as const,matchId:id,version:row.version,serverTime:now,
+        connectionStates:{PLAYER_ONE:lastSeen[0]<now-10000?"DISCONNECTED_GRACE" as const:"CONNECTED" as const,
+          PLAYER_TWO:row.opponent&&lastSeen[1]<now-10000?"DISCONNECTED_GRACE" as const:"CONNECTED" as const}};
+    });
+    if(heartbeat)return heartbeat;
+  }
+  return draftBattleView(await mutateDraft(userId,id));
+}
 export async function draftRewards(userId: string, id: string) {
   const r = await mutateDraft(userId, id);
   const grants = await db
@@ -996,15 +1039,14 @@ export async function draftRewards(userId: string, id: string) {
 // Persisted deadlines are processed even when both draft clients are disconnected.
 export async function tickDraftSessions() {
   if (!(await draftSettings()).enabled) return;
-  const participants = await db.select().from(draftParticipantsTable);
-  const seen = new Set<string>();
-  for (const p of participants) {
-    if (seen.has(p.sessionId)) continue;
-    seen.add(p.sessionId);
-    await mutateDraft(p.userId, p.sessionId, undefined, false);
-  }
+  const state=draftSessionsTable.state,due=draftSessionDue();
+  const participants=await db.selectDistinct({sessionId:draftSessionsTable.id,userId:sql<string>`${state}->'seats'->0->>'userId'`})
+    .from(draftParticipantsTable).innerJoin(draftSessionsTable,eq(draftSessionsTable.id,draftParticipantsTable.sessionId)).where(due);
+  for(const p of participants)await mutateDraft(p.userId,p.sessionId,undefined,false);
 }
+let stopDraftWorker:(()=>void)|null=null;
 export function startDraftWorker() {
+  if(stopDraftWorker)return stopDraftWorker;
   let running = false;
   const timer = setInterval(() => {
     if (running) return;
@@ -1016,5 +1058,6 @@ export function startDraftWorker() {
       });
   }, 1000);
   timer.unref();
-  return () => clearInterval(timer);
+  stopDraftWorker=()=>{clearInterval(timer);stopDraftWorker=null;};
+  return stopDraftWorker;
 }
