@@ -27,8 +27,11 @@ function ready(child, needle) {
       () => no(Error("Readiness timeout: " + needle)),
       60000,
     );
+    let output = "";
     child.stdout.on("data", (x) => {
-      if (String(x).includes(needle)) {
+      output = (output + String(x)).slice(-16384);
+      const plain = output.replace(/\x1b\[[0-?]*[ -/]*[@-~]/g, "");
+      if (plain.includes(needle)) {
         clearTimeout(timer);
         yes();
       }
