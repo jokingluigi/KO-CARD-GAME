@@ -1,0 +1,34 @@
+{
+  "base": "ac30343bab4758da185160df8dd6834008965e95",
+  "typecheck": "PASS",
+  "qaEntryTypecheck": "PASS",
+  "productionBuild": "PASS",
+  "productionPreviewExcluded": true,
+  "buildFilesInspected": 140,
+  "unit": {
+    "tests": 60,
+    "pass": 60,
+    "fail": 0
+  },
+  "isolatedIntegration": {
+    "pvp": 14,
+    "draft": 18,
+    "tower": 11,
+    "pass": 43,
+    "fail": 0
+  },
+  "browserGroups": {
+    "preview": 36,
+    "pvpAndAi": 8,
+    "draft": 4,
+    "tower": 1,
+    "existingAttack": 4,
+    "existingTargeting": 4,
+    "pass": 57,
+    "fail": 0
+  },
+  "physicalPhone": "NOT_RUN",
+  "productionDeployment": false,
+  "productionDatabaseChanges": false,
+  "approval": "PENDING_DESIGN_REVIEW"
+}

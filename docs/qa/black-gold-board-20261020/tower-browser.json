@@ -1,0 +1,10 @@
+{
+  "status": "PASS",
+  "path": "challenge -> summon -> attack -> KO -> result -> reward -> 25-card replacement",
+  "pageErrors": [],
+  "viewport": {
+    "viewport": 390,
+    "document": 390
+  },
+  "timerShown": false
+}
