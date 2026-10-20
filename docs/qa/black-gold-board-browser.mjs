@@ -9,7 +9,7 @@ const { chromium } = await import(
 );
 const origin = process.env.KO_BOARD_ORIGIN ?? "http://127.0.0.1:5186";
 assert.ok(["localhost", "127.0.0.1"].includes(new URL(origin).hostname));
-const out = "qa-results/black-gold-board";
+const out = process.env.KO_BOARD_OUTPUT ?? "qa-results/black-gold-board";
 await mkdir(out, { recursive: true });
 const exec = promisify(execFile),
   results = [],

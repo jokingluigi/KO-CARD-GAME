@@ -24,6 +24,17 @@ export const chromium = new Proxy(base, {
                 });
                 return ctx;
               };
+            // Browser.newPage creates its context internally, so it needs the
+            // same opt-in as callers that explicitly create a context.
+            if (k === "newPage")
+              return async (opts) => {
+                const page = await b.newPage(opts);
+                await page.addInitScript(() => {
+                  if (["localhost", "127.0.0.1"].includes(location.hostname))
+                    sessionStorage.setItem("ko-dev-black-gold-board", "1");
+                });
+                return page;
+              };
             const value = Reflect.get(b, k);
             return typeof value === "function" ? value.bind(b) : value;
           },

@@ -1,7 +1,7 @@
 /* Development-only opt-in skin. Never imported by the production bundle. */
 .ko-game-shell.ko-board-preview {
-  --board-bg: #17181c;
-  --board-surface: #222329;
+  --board-bg: #38231b;
+  --board-surface: #121317;
   --board-panel: #121317;
   --board-gold: #b99a60;
   --board-bright: #d9bb7b;
@@ -9,7 +9,8 @@
   --board-portrait-w: 105px;
   --board-hud-h: 140px;
   --board-hand-h: clamp(140px, 22dvh, 190px);
-  background: var(--board-bg);
+  background: var(--board-bg) url("./battle-board-assets/walnut-table.svg")
+    center top / 960px 480px repeat;
   color: #f0e8d8;
   width: 100%;
   min-width: 0;
@@ -25,7 +26,7 @@
   grid-template-rows:
     16px var(--board-hud-h) auto 52px auto var(--board-hud-h)
     var(--board-hand-h);
-  gap: 4px;
+  gap: 10px;
   width: 100%;
   min-width: 0;
   max-width: 1024px;
@@ -38,12 +39,13 @@
   background: transparent;
 }
 .ko-board-preview .ko-cinematic-background {
-  background: var(--board-bg);
+  background: var(--board-bg) url("./battle-board-assets/walnut-table.svg")
+    center top / 960px 480px repeat;
 }
 .ko-board-preview .ko-cinematic-background > div:last-child {
   background: none;
 }
-/* Existing Tower/media backgrounds remain outside the opaque battle panels. */
+/* Existing Tower/media assets remain in their own cinematic layer. */
 .ko-board-preview .ko-opponent-header,
 .ko-board-preview .ko-board-area,
 .ko-board-preview .ko-player-footer {
@@ -478,13 +480,13 @@
     max-width: 1024px;
   }
 }
-/* Keep the board surface matte; special encounter backgrounds remain available. */
+/* One continuous table extends from the opponent HUD to the hand tray. */
 .ko-board-preview .ko-game-stage {
-  background-color: var(--board-bg);
+  background-color: transparent;
 }
 .ko-board-preview .ko-opponent-board-row,
 .ko-board-preview .ko-player-board-row {
-  background-color: var(--board-surface);
+  background-color: transparent;
 }
 .ko-board-preview
   .ko-game-controls
@@ -614,4 +616,73 @@ body:has(.ko-board-preview)
   .ko-board-preview .ko-player-quest {
     align-self: start;
   }
+}
+
+/* The mats are separate, non-interactive decoration. They extend outside the
+   grid instead of consuming card width or changing drag/drop geometry. */
+.ko-board-preview .ko-opponent-board-row,
+.ko-board-preview .ko-player-board-row {
+  position: relative;
+  isolation: isolate;
+}
+.ko-board-preview .ko-opponent-board-row::before,
+.ko-board-preview .ko-player-board-row::before {
+  content: "";
+  position: absolute;
+  inset: -8px -7px;
+  z-index: -1;
+  background: url("./battle-board-assets/linen-field.svg") center / 100% 100%
+    no-repeat;
+  pointer-events: none;
+}
+.ko-board-preview .ko-player-board-row::before {
+  transform: scaleX(-1);
+}
+.ko-board-preview .ko-board-slot:not(.group) {
+  border-color: var(--board-gold);
+  background: var(--board-panel);
+  box-shadow: 0 2px 0 #24171355;
+}
+.ko-board-preview .ko-board-slot:not(.group)::before {
+  width: 14px;
+  height: 14px;
+  left: calc(50% - 7px);
+  top: calc(50% - 7px);
+  opacity: 0.3;
+}
+.ko-board-preview .ko-board-slot:not(.group)::after {
+  content: "";
+  position: absolute;
+  inset: 4px;
+  background:
+    linear-gradient(var(--board-gold), var(--board-gold)) left top / 6px 1px,
+    linear-gradient(var(--board-gold), var(--board-gold)) left top / 1px 6px,
+    linear-gradient(var(--board-gold), var(--board-gold)) right bottom / 6px 1px,
+    linear-gradient(var(--board-gold), var(--board-gold)) right bottom / 1px 6px;
+  background-repeat: no-repeat;
+  pointer-events: none;
+}
+.ko-board-preview .ko-player-hand {
+  border: 1px solid var(--board-muted);
+  border-radius: 4px;
+  background: #121317eb;
+}
+/* On short phones allow vertical scrolling before reducing a single card.
+   Grid gaps expose the cloth hem; the hand renderer retains its original size. */
+@media (max-height: 760px) and (orientation: portrait) {
+  .ko-board-preview .ko-game-stage {
+    row-gap: 10px;
+  }
+}
+/* premium-presentation.css paints an absolute black ::before on the old
+   board-area. display:contents makes that decoration cover the new grid.
+   Remove its generated box rather than stacking another surface over it. */
+.ko-game-shell.ko-board-preview .ko-board-area::before {
+  content: none;
+  display: none;
+}
+/* The new board replaces the old ambience image/veil; animations live outside
+   this decoration-only element and remain enabled. CLASSIC is unaffected. */
+.ko-game-shell.ko-board-preview .ko-cinematic-background {
+  display: none;
 }

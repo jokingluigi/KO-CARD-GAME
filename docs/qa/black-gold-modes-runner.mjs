@@ -28,7 +28,10 @@ if (!["pvp", "draft", "tower"].includes(mode))
 const temp = await mkdtemp(join(tmpdir(), "ko-board-modes-")),
   tag = randomUUID(),
   draft = mode === "draft";
-const output = "qa-results/black-gold-modes/" + mode;
+const output =
+  (process.env.KO_BOARD_MODES_OUTPUT ?? "qa-results/black-gold-modes") +
+  "/" +
+  mode;
 await mkdir(output, { recursive: true });
 const fixtureSource =
   mode === "tower"

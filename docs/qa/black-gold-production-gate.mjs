@@ -15,6 +15,10 @@ await walk(root);
 assert.ok(files.some((f) => f.endsWith("/index.html")));
 for (const f of files) {
   assert.ok(!f.includes("/qa/black-gold"), "QA page excluded");
+  assert.ok(
+    !/walnut-table|linen-field/.test(f),
+    "Development-only textures excluded",
+  );
   if (/\.(?:js|css|html)$/.test(f)) {
     const text = await readFile(f, "utf8");
     for (const token of [

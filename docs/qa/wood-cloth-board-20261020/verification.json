@@ -1,0 +1,64 @@
+{
+  "baselineMain": "ac30343bab4758da185160df8dd6834008965e95",
+  "prototypeParent": "6e4bd1c",
+  "branch": "feat/wood-cloth-battle-board-preview",
+  "tests": {
+    "enginePresentationUnit": {
+      "pass": 60,
+      "fail": 0
+    },
+    "isolatedServer": {
+      "pvp": 14,
+      "draft": 18,
+      "tower": 11,
+      "fail": 0
+    },
+    "browserGroups": {
+      "board": 36,
+      "pvpAI": 8,
+      "draft": 4,
+      "tower": 1,
+      "attackDrag": 4,
+      "mobileTargetLayout": 4,
+      "fail": 0
+    },
+    "visual": {
+      "viewports": [
+        "360x740",
+        "375x812",
+        "390x844",
+        "412x915",
+        "1440x1000"
+      ],
+      "renders": 10,
+      "missingArtwork": 0,
+      "consoleErrors": 0
+    },
+    "appTypes": "PASS",
+    "qaTypes": "PASS",
+    "viteBuild": "PASS",
+    "productionPreviewExcluded": true
+  },
+  "resources": [
+    {
+      "file": "artifacts/ko-game/src/components/battle-board.css",
+      "bytes": 17210,
+      "gzipBytes": 3630
+    },
+    {
+      "file": "artifacts/ko-game/src/components/battle-board-assets/linen-field.svg",
+      "bytes": 1520,
+      "gzipBytes": 805
+    },
+    {
+      "file": "artifacts/ko-game/src/components/battle-board-assets/walnut-table.svg",
+      "bytes": 1565,
+      "gzipBytes": 821
+    }
+  ],
+  "productionDatabaseAccess": false,
+  "productionDeployment": false,
+  "physicalPhone": "NOT_RUN",
+  "timerExpiry": "NOT_RUN",
+  "persistentSlotDestruction": "NOT_VERIFIED"
+}
