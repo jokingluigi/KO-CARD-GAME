@@ -153,7 +153,6 @@ export function AdminCosmetics() {
         : [];
   return (
     <section className="cosmetics">
-      <h1 className="text-2xl">꾸미기 관리</h1>
       <p>
         원본 카드·챔피언과 기존 팩용 스킨은 변경하지 않아. 비활성 아이템은 새
         장착·지급에서 제외되고 소유 기록은 유지돼.
