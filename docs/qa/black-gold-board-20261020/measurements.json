@@ -1,0 +1,655 @@
+{
+  "results": [
+    {
+      "viewport": [
+        360,
+        740
+      ],
+      "theme": "new",
+      "width": 360,
+      "height": 740,
+      "scrollWidth": 360,
+      "scrollHeight": 740,
+      "scale": 1,
+      "portrait": {
+        "x": 133.5,
+        "y": 455.203125,
+        "w": 93,
+        "h": 124
+      },
+      "enemy": {
+        "x": 133.5,
+        "y": 22,
+        "w": 93,
+        "h": 124
+      },
+      "card": {
+        "x": 8,
+        "y": 150.203125,
+        "w": 83,
+        "h": 116.1875
+      },
+      "hand": {
+        "x": 8,
+        "y": 591.203125,
+        "w": 344,
+        "h": 146.796875
+      },
+      "handCard": {
+        "x": 16,
+        "y": 615.203125,
+        "w": 84.84375,
+        "h": 118.796875
+      },
+      "controls": {
+        "x": 8,
+        "y": 270.59375,
+        "w": 344,
+        "h": 52
+      },
+      "ability": {
+        "x": 232.5,
+        "y": 543.203125,
+        "w": 119.5,
+        "h": 44
+      },
+      "images": [
+        {
+          "loaded": true,
+          "fit": "contain"
+        },
+        {
+          "loaded": true,
+          "fit": "contain"
+        }
+      ],
+      "slots": 8
+    },
+    {
+      "viewport": [
+        360,
+        740
+      ],
+      "theme": "classic",
+      "width": 360,
+      "height": 740,
+      "scrollWidth": 360,
+      "scrollHeight": 740,
+      "scale": 1,
+      "portrait": {
+        "x": 8,
+        "y": 475.203125,
+        "w": 80,
+        "h": 88
+      },
+      "enemy": {
+        "x": 8,
+        "y": 30,
+        "w": 80,
+        "h": 88
+      },
+      "card": {
+        "x": 34.859375,
+        "y": 128.109375,
+        "w": 69.5625,
+        "h": 97.375
+      },
+      "hand": {
+        "x": 8,
+        "y": 569.203125,
+        "w": 344,
+        "h": 162.796875
+      },
+      "handCard": {
+        "x": 16,
+        "y": 593.203125,
+        "w": 84.84375,
+        "h": 118.796875
+      },
+      "controls": {
+        "x": 8,
+        "y": 269.59375,
+        "w": 344,
+        "h": 54
+      },
+      "ability": {
+        "x": 226,
+        "y": 519.203125,
+        "w": 126,
+        "h": 44
+      },
+      "images": [
+        {
+          "loaded": true,
+          "fit": "contain"
+        },
+        {
+          "loaded": true,
+          "fit": "contain"
+        }
+      ],
+      "slots": 8
+    },
+    {
+      "viewport": [
+        375,
+        812
+      ],
+      "theme": "new",
+      "width": 375,
+      "height": 812,
+      "scrollWidth": 375,
+      "scrollHeight": 812,
+      "scale": 1,
+      "portrait": {
+        "x": 135,
+        "y": 485.375,
+        "w": 105,
+        "h": 140
+      },
+      "enemy": {
+        "x": 135,
+        "y": 24,
+        "w": 105,
+        "h": 140
+      },
+      "card": {
+        "x": 8,
+        "y": 170.625,
+        "w": 86.75,
+        "h": 121.4375
+      },
+      "hand": {
+        "x": 8,
+        "y": 629.375,
+        "w": 359,
+        "h": 178.625
+      },
+      "handCard": {
+        "x": 16,
+        "y": 659,
+        "w": 92,
+        "h": 129
+      },
+      "controls": {
+        "x": 8,
+        "y": 298.6875,
+        "w": 359,
+        "h": 52
+      },
+      "ability": {
+        "x": 248,
+        "y": 581.375,
+        "w": 119,
+        "h": 44
+      },
+      "images": [
+        {
+          "loaded": true,
+          "fit": "contain"
+        },
+        {
+          "loaded": true,
+          "fit": "contain"
+        }
+      ],
+      "slots": 8
+    },
+    {
+      "viewport": [
+        375,
+        812
+      ],
+      "theme": "classic",
+      "width": 375,
+      "height": 812,
+      "scrollWidth": 375,
+      "scrollHeight": 812,
+      "scale": 1,
+      "portrait": {
+        "x": 8,
+        "y": 531.375,
+        "w": 80,
+        "h": 88
+      },
+      "enemy": {
+        "x": 8,
+        "y": 30,
+        "w": 80,
+        "h": 88
+      },
+      "card": {
+        "x": 8,
+        "y": 130.125,
+        "w": 86.75,
+        "h": 121.4375
+      },
+      "hand": {
+        "x": 8,
+        "y": 625.375,
+        "w": 359,
+        "h": 178.625
+      },
+      "handCard": {
+        "x": 16,
+        "y": 655,
+        "w": 92,
+        "h": 129
+      },
+      "controls": {
+        "x": 8,
+        "y": 297.6875,
+        "w": 359,
+        "h": 54
+      },
+      "ability": {
+        "x": 233.5,
+        "y": 575.375,
+        "w": 133.5,
+        "h": 44
+      },
+      "images": [
+        {
+          "loaded": true,
+          "fit": "contain"
+        },
+        {
+          "loaded": true,
+          "fit": "contain"
+        }
+      ],
+      "slots": 8
+    },
+    {
+      "viewport": [
+        390,
+        844
+      ],
+      "theme": "new",
+      "width": 390,
+      "height": 844,
+      "scrollWidth": 390,
+      "scrollHeight": 844,
+      "scale": 1,
+      "portrait": {
+        "x": 142.5,
+        "y": 510.328125,
+        "w": 105,
+        "h": 140
+      },
+      "enemy": {
+        "x": 142.5,
+        "y": 24,
+        "w": 105,
+        "h": 140
+      },
+      "card": {
+        "x": 8,
+        "y": 174.234375,
+        "w": 90.5,
+        "h": 126.6875
+      },
+      "hand": {
+        "x": 8,
+        "y": 654.328125,
+        "w": 374,
+        "h": 185.671875
+      },
+      "handCard": {
+        "x": 16,
+        "y": 691,
+        "w": 92,
+        "h": 129
+      },
+      "controls": {
+        "x": 8,
+        "y": 311.15625,
+        "w": 374,
+        "h": 52
+      },
+      "ability": {
+        "x": 255.5,
+        "y": 606.328125,
+        "w": 126.5,
+        "h": 44
+      },
+      "images": [
+        {
+          "loaded": true,
+          "fit": "contain"
+        },
+        {
+          "loaded": true,
+          "fit": "contain"
+        }
+      ],
+      "slots": 8
+    },
+    {
+      "viewport": [
+        390,
+        844
+      ],
+      "theme": "classic",
+      "width": 390,
+      "height": 844,
+      "scrollWidth": 390,
+      "scrollHeight": 844,
+      "scale": 1,
+      "portrait": {
+        "x": 8,
+        "y": 556.328125,
+        "w": 80,
+        "h": 88
+      },
+      "enemy": {
+        "x": 8,
+        "y": 30,
+        "w": 80,
+        "h": 88
+      },
+      "card": {
+        "x": 8,
+        "y": 133.734375,
+        "w": 90.5,
+        "h": 126.6875
+      },
+      "hand": {
+        "x": 8,
+        "y": 650.328125,
+        "w": 374,
+        "h": 185.671875
+      },
+      "handCard": {
+        "x": 16,
+        "y": 687,
+        "w": 92,
+        "h": 129
+      },
+      "controls": {
+        "x": 8,
+        "y": 310.15625,
+        "w": 374,
+        "h": 54
+      },
+      "ability": {
+        "x": 241,
+        "y": 600.328125,
+        "w": 141,
+        "h": 44
+      },
+      "images": [
+        {
+          "loaded": true,
+          "fit": "contain"
+        },
+        {
+          "loaded": true,
+          "fit": "contain"
+        }
+      ],
+      "slots": 8
+    },
+    {
+      "viewport": [
+        412,
+        915
+      ],
+      "theme": "new",
+      "width": 412,
+      "height": 915,
+      "scrollWidth": 412,
+      "scrollHeight": 915,
+      "scale": 1,
+      "portrait": {
+        "x": 149,
+        "y": 565,
+        "w": 114,
+        "h": 152
+      },
+      "enemy": {
+        "x": 149,
+        "y": 24,
+        "w": 114,
+        "h": 152
+      },
+      "card": {
+        "x": 8,
+        "y": 193.046875,
+        "w": 96,
+        "h": 134.390625
+      },
+      "hand": {
+        "x": 8,
+        "y": 721,
+        "w": 396,
+        "h": 190
+      },
+      "handCard": {
+        "x": 16,
+        "y": 762,
+        "w": 92,
+        "h": 129
+      },
+      "controls": {
+        "x": 8,
+        "y": 344.5,
+        "w": 396,
+        "h": 52
+      },
+      "ability": {
+        "x": 271,
+        "y": 673,
+        "w": 133,
+        "h": 44
+      },
+      "images": [
+        {
+          "loaded": true,
+          "fit": "contain"
+        },
+        {
+          "loaded": true,
+          "fit": "contain"
+        }
+      ],
+      "slots": 8
+    },
+    {
+      "viewport": [
+        412,
+        915
+      ],
+      "theme": "classic",
+      "width": 412,
+      "height": 915,
+      "scrollWidth": 412,
+      "scrollHeight": 915,
+      "scale": 1,
+      "portrait": {
+        "x": 8,
+        "y": 623,
+        "w": 80,
+        "h": 88
+      },
+      "enemy": {
+        "x": 8,
+        "y": 30,
+        "w": 80,
+        "h": 88
+      },
+      "card": {
+        "x": 8,
+        "y": 146.546875,
+        "w": 96,
+        "h": 134.390625
+      },
+      "hand": {
+        "x": 8,
+        "y": 717,
+        "w": 396,
+        "h": 190
+      },
+      "handCard": {
+        "x": 16,
+        "y": 758,
+        "w": 92,
+        "h": 129
+      },
+      "controls": {
+        "x": 8,
+        "y": 343.5,
+        "w": 396,
+        "h": 54
+      },
+      "ability": {
+        "x": 252,
+        "y": 667,
+        "w": 152,
+        "h": 44
+      },
+      "images": [
+        {
+          "loaded": true,
+          "fit": "contain"
+        },
+        {
+          "loaded": true,
+          "fit": "contain"
+        }
+      ],
+      "slots": 8
+    },
+    {
+      "viewport": [
+        1440,
+        1000
+      ],
+      "theme": "new",
+      "width": 1440,
+      "height": 1000,
+      "scrollWidth": 1440,
+      "scrollHeight": 1148,
+      "scale": 1,
+      "portrait": {
+        "x": 660,
+        "y": 760.1875,
+        "w": 120,
+        "h": 160
+      },
+      "enemy": {
+        "x": 660,
+        "y": 24,
+        "w": 120,
+        "h": 160
+      },
+      "card": {
+        "x": 333,
+        "y": 188,
+        "w": 181.5,
+        "h": 254.09375
+      },
+      "hand": {
+        "x": 216,
+        "y": 924.1875,
+        "w": 1008,
+        "h": 220
+      },
+      "handCard": {
+        "x": 224,
+        "y": 934.1875,
+        "w": 132,
+        "h": 190
+      },
+      "controls": {
+        "x": 216,
+        "y": 446.09375,
+        "w": 1008,
+        "h": 52
+      },
+      "ability": {
+        "x": 788,
+        "y": 876.1875,
+        "w": 212,
+        "h": 44
+      },
+      "images": [
+        {
+          "loaded": true,
+          "fit": "contain"
+        },
+        {
+          "loaded": true,
+          "fit": "contain"
+        }
+      ],
+      "slots": 8
+    },
+    {
+      "viewport": [
+        1440,
+        1000
+      ],
+      "theme": "classic",
+      "width": 1440,
+      "height": 1000,
+      "scrollWidth": 1440,
+      "scrollHeight": 1147,
+      "scale": 1,
+      "portrait": {
+        "x": 176,
+        "y": 889.1875,
+        "w": 112,
+        "h": 160
+      },
+      "enemy": {
+        "x": 912,
+        "y": 46,
+        "w": 112,
+        "h": 160
+      },
+      "card": {
+        "x": 218,
+        "y": 253,
+        "w": 181.5,
+        "h": 254.09375
+      },
+      "hand": {
+        "x": 400,
+        "y": 785.1875,
+        "w": 712,
+        "h": 347
+      },
+      "handCard": {
+        "x": 412,
+        "y": 926.1875,
+        "w": 132,
+        "h": 190
+      },
+      "controls": {
+        "x": 1296,
+        "y": 386.5,
+        "w": 128,
+        "h": 227
+      },
+      "ability": {
+        "x": 176,
+        "y": 1096.1875,
+        "w": 224,
+        "h": 36
+      },
+      "images": [
+        {
+          "loaded": true,
+          "fit": "contain"
+        },
+        {
+          "loaded": true,
+          "fit": "contain"
+        }
+      ],
+      "slots": 8
+    }
+  ],
+  "errors": []
+}

@@ -1,0 +1,14 @@
+{
+  "extends": "../tsconfig.json",
+  "include": [
+    "../src/**/*",
+    "./black-gold-board.tsx",
+    "./black-gold-fixture.ts"
+  ],
+  "compilerOptions": { "incremental": false },
+  "references": [
+    { "path": "../../../lib/api-client-react" },
+    { "path": "../../../lib/effect-registry" },
+    { "path": "../../../lib/cosmetics" }
+  ]
+}

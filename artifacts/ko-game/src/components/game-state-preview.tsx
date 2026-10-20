@@ -73,7 +73,11 @@ import { getCardRuntimeRulesText, getVisibleCardKeywords } from '../lib/card-dis
 import { getActiveCardKeywords } from '../game/cards/granted-text';
 import { CHAMPION_EMOTES, CHAMPION_EMOTE_LABELS, championVoiceLine, type ChampionEmote } from '../game/champions/types';
 
+// The optional theme is compiled out of production and has no URL or account switch.
+if (import.meta.env.DEV) void import("./battle-board.css");
+
 interface GameStatePreviewProps {
+  boardTheme?: "BLACK_GOLD" | "CLASSIC";
   localImageEmotes?:boolean;
   cosmetics?:MatchCosmetics;
   imageEmotes?:Record<string,ImageEmoteEvent>;
@@ -130,6 +134,7 @@ interface GameStatePreviewProps {
 
 const RenderCardCatalog=React.createContext(defaultCardDefinition);
 export function GameStatePreview({
+  boardTheme,
   localImageEmotes=false,cosmetics:providedCosmetics,imageEmotes:providedImageEmotes,onImageEmote:providedOnImageEmote,
   state,
   mediaCatalog,
@@ -180,6 +185,10 @@ export function GameStatePreview({
   onReturnToAdmin,
   onReturnToMainMenu,
 }: GameStatePreviewProps) {
+  let blackGold = import.meta.env.DEV && boardTheme === "BLACK_GOLD";
+  if (import.meta.env.DEV && boardTheme === undefined) {
+    try { blackGold = sessionStorage.getItem("ko-dev-black-gold-board") === "1"; } catch { /* Storage-disabled browsers keep the original board. */ }
+  }
   const getCardDefinition=React.useCallback((id:string)=>state.cardPool?.find(c=>c.id===id)??defaultCardDefinition(id),[state.cardPool]);
   const [hideImageEmotes,setHideImageEmotes]=useHideCosmeticEmotes();
   const [localCosmetics,setLocalCosmetics]=React.useState<MatchCosmetics>({});
@@ -917,9 +926,25 @@ export function GameStatePreview({
     onUseTechnique(cardInstanceId, rectSnapshot(sourceElement.getBoundingClientRect()));
   }
 
+  const opponentZones = (<ZoneStack
+                    className="ko-opponent-zones" cosmeticLoadout={cosmetics[opp.id]}
+                   deckRef={opponentDeckRef}
+                   deckCount={opp.deck.length}
+                   graveyardCount={opp.graveyard.length}
+                   isOpponent
+                   onGraveyardClick={() => setOpenGraveyardPlayerId(opp.id)}
+                 />);
+  const playerZones = (<ZoneStack
+                    className="ko-player-zones" cosmeticLoadout={cosmetics[me.id]}
+                   deckRef={playerDeckRef}
+                   deckCount={me.deck.length}
+                   graveyardCount={me.graveyard.length}
+                   onGraveyardClick={() => setOpenGraveyardPlayerId(me.id)}
+                 />);
+
   return (
     <BattleCosmeticsContext.Provider value={cosmetics}><RenderCardCatalog.Provider value={getCardDefinition}><CinematicProvider key={state.gameId} allowQuestCompletion={questPresentationAllowed}><AltInspectProvider>
-     <div className={`ko-game-shell flex min-h-[100dvh] w-full flex-col overflow-x-hidden overflow-y-auto bg-neutral-950 font-sans text-neutral-100 selection:bg-primary selection:text-black md:overflow-hidden ${me.champion?.questCompleted && questPresentationAllowed ? 'ko-quest-awakened--mine' : ''} ${opp.champion?.questCompleted && questPresentationAllowed ? 'ko-quest-awakened--theirs' : ''}`}>
+     <div className={`ko-game-shell ${blackGold ? `ko-board-preview${backgroundAssetUrl || selectedBackground ? " ko-board-preview--scenic" : ""}` : ""} flex min-h-[100dvh] w-full flex-col overflow-x-hidden overflow-y-auto bg-neutral-950 font-sans text-neutral-100 selection:bg-primary selection:text-black md:overflow-hidden ${me.champion?.questCompleted && questPresentationAllowed ? 'ko-quest-awakened--mine' : ''} ${opp.champion?.questCompleted && questPresentationAllowed ? 'ko-quest-awakened--theirs' : ''}`}>
       <BattleCardDrag state={state} enabled={isMyTurn && state.status === 'IN_PROGRESS' && !introActive && !effectTargeting && !settingsOpen && !playAnimation && !attackAnimation && canEndTurn} selectedCardId={selectedCardId} hand={handCardRefs} slots={boardSlotRefs} select={onSelectCard} cancel={id=>{if(selectedCardId===id)onSelectCard(id);}} summon={onSelectSlot} spell={onUseTechnique} />
       <BattleAttackDrag state={state} enabled={isMyTurn && state.status === 'IN_PROGRESS' && !introActive && !effectTargeting && !settingsOpen && !playAnimation && !attackAnimation && canEndTurn} selectedAttackerId={selectedAttackerId} cards={boardCardRefs} champion={championRef} select={onSelectAttacker} attackCard={onAttackWrestler} attackChampion={onAttackPlayer} />
       {selectedAttackerId && !effectTargeting && !attackAnimation && <AttackAim source={boardCardRefs.current.get(selectedAttackerId)??null} targets={boardCardRefs} champion={championRef.current} championId={opp.id} valid={legalAttackTargets} />}
@@ -975,6 +1000,7 @@ export function GameStatePreview({
 
             {/* Mirrored opponent HUD */}
             <div className="ko-opponent-hud ml-auto flex w-[180px] flex-col items-end gap-1 md:w-48 md:gap-2">
+                  {blackGold && opponentZones}
                   <span className="ko-champion-heading max-w-full truncate text-[11px] font-black text-white md:text-sm" data-testid="text-online-opponent-nickname">
                    {`${opponentNickname || "상대"} · ${opponentChampionName || opp.champion?.name || "챔피언"}`}
                  </span>
@@ -1106,14 +1132,7 @@ export function GameStatePreview({
                  />
                ))}
                 </div>
-                  <ZoneStack
-                    className="ko-opponent-zones" cosmeticLoadout={cosmetics[opp.id]}
-                   deckRef={opponentDeckRef}
-                   deckCount={opp.deck.length}
-                   graveyardCount={opp.graveyard.length}
-                   isOpponent
-                   onGraveyardClick={() => setOpenGraveyardPlayerId(opp.id)}
-                 />
+                  {!blackGold && opponentZones}
             </div>
 
            <aside className="ko-game-controls absolute right-2 top-36 z-[110] flex w-24 flex-col items-stretch gap-2 rounded border border-neutral-800 bg-black/85 p-2 shadow-2xl backdrop-blur-md md:fixed md:right-4 md:top-1/2 md:w-32 md:-translate-y-1/2 md:p-3">
@@ -1266,13 +1285,7 @@ export function GameStatePreview({
                  />
                ))}
                 </div>
-                  <ZoneStack
-                    className="ko-player-zones" cosmeticLoadout={cosmetics[me.id]}
-                   deckRef={playerDeckRef}
-                   deckCount={me.deck.length}
-                   graveyardCount={me.graveyard.length}
-                   onGraveyardClick={() => setOpenGraveyardPlayerId(me.id)}
-                 />
+                  {!blackGold && playerZones}
             </div>
          </div>
 
@@ -1480,6 +1493,7 @@ export function GameStatePreview({
 
             {/* Player Stats & Champion */}
              <div className="ko-player-info z-[95] flex w-[180px] shrink-0 flex-col gap-1 md:w-48 md:gap-2">
+               {blackGold && playerZones}
                <span className="ko-champion-heading !flex min-w-0 items-center gap-1 text-[11px] font-black text-white md:text-sm"><span className="min-w-0 flex-1 truncate" data-testid="text-online-player-nickname">{`${playerNickname || "나"} · ${playerChampionName || me.champion?.name || "챔피언"}`}</span><CosmeticEmoteTools loadout={cosmetics[me.id]} onSend={onImageEmote} hide={hideImageEmotes} onHide={setHideImageEmotes}/></span>
               <div className="ko-champion-core flex items-start gap-2 md:gap-3">
                 <div className="relative shrink-0">
@@ -1518,6 +1532,7 @@ export function GameStatePreview({
                    )}
 
                </div>
+
                 {onEmote && emoteOpen && !effectTargeting && <ChampionEmoteMenu anchor={playerChampionRef} onEmote={onEmote} onClose={() => setEmoteOpen(false)} />}
                 </div>
 
