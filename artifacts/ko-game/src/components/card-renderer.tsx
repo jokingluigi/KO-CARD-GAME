@@ -1,3 +1,4 @@
+import {useCosmeticImage} from './cosmetic-battle';
 import { configuredCountdownTurns } from '@workspace/effect-registry';
 import { getCardDefinitions } from '../game/cards/test-cards';
 import { repairedLegacyCardKeywords } from '../game/cards/legacy-card-effect-repair';
@@ -150,6 +151,8 @@ export function CardRenderer({
   health,
   rulesText,
   imageUrl,
+  fallbackImageUrl,
+  cosmeticOwnerId,
   rarity,
   frameOverride,
   imageDisplaySettings,
@@ -189,6 +192,8 @@ export function CardRenderer({
   health: number;
   rulesText: string;
   imageUrl?: string | null;
+  fallbackImageUrl?: string | null;
+  cosmeticOwnerId?: string;
   rarity?: CardRarity | null;
   frameOverride?: Partial<CardFrameDefinition>;
   imageDisplaySettings?: Partial<ImageDisplaySettings>;
@@ -222,6 +227,7 @@ export function CardRenderer({
   tabIndex?: number;
   containerRef?: Ref<HTMLDivElement>;
 }) {
+  const cosmetic = useCosmeticImage(cosmeticOwnerId,cardId,'CARD_SKIN',imageUrl);
   const visibleDodgeCharges = dodgeCharges ?? (runtimeKeywords === undefined
     ? typeof keywordConfig?.dodgeCharges === 'number' ? keywordConfig.dodgeCharges : 1
     : 0);
@@ -346,7 +352,7 @@ export function CardRenderer({
     >
       <div className="absolute inset-0 overflow-visible">
         <CardArtwork
-          src={imageUrl}
+          src={cosmetic.src} fallbackSrc={fallbackImageUrl ?? imageUrl}
           loading={artworkLoading}
           alt={name || "카드 이미지"}
           className="absolute inset-0 h-full w-full"

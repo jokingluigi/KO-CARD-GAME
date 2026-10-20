@@ -1,3 +1,5 @@
+import {optionalCosmetics} from '@/lib/cosmetics-client';
+import {cosmeticImage,type MatchCosmetics} from '@workspace/cosmetics';
 import { canPresentBattleQuest } from '@/components/quest-presentation-policy';
 import { completeMinionACatalog } from '../game/champions/minion-a';
 import {startAdminTestDeckGame} from '@/lib/admin-test-deck';
@@ -600,6 +602,7 @@ export default function Home({ initialAuthUser }: { initialAuthUser?: AuthUser }
     };
   }, [authStatus, authUser?.role, isAdminSource, isAiMatch, isTowerSandbox, testCardId, testChampionId]);
 
+  const [aiCosmetics,setAiCosmetics]=useState<MatchCosmetics|undefined>(undefined);
   async function startAiMatch(deckId: string) {
     if (aiMatchStartingRef.current) return;
     const deck = aiDecks?.find((candidate) => candidate.id === deckId);
@@ -680,12 +683,14 @@ export default function Home({ initialAuthUser }: { initialAuthUser?: AuthUser }
     setAiRewardStatus('pending');
     setAiRewardError(null);
     setAiQuestError(null);
+    const frozenLoadout=await optionalCosmetics();
+    setAiCosmetics({[nextState.players[0].id]:frozenLoadout});
     const openingStartedAt = Date.now();
     setAiOpening(createAiMatchOpening(
       nextState.gameId,
       authUser.nickname,
       aiDeck.name,
-      userChampion,
+      {...userChampion,originalPortraitUrl:userChampion.imageUrl,imageUrl:cosmeticImage(frozenLoadout,"CHAMPION_SKIN",userChampion.id,"intro",userChampion.imageUrl)},
       aiChampion,
       openingStartedAt,
     ));
@@ -1549,7 +1554,7 @@ export default function Home({ initialAuthUser }: { initialAuthUser?: AuthUser }
         setSelectedCardId(null);setSelectedAttackerId(null);setPlayError(null);setTestDeckOpen(false);
       } catch {throw new Error('테스트 덱으로 경기를 시작하지 못했습니다. 다시 시도해 주세요.');}
     }}/>}
-    <GameStatePreview
+    <GameStatePreview cosmetics={isAiMatch?aiCosmetics:undefined} localImageEmotes
       key={`game:${gameState.gameId}`}
       state={gameState}
       selectedCardId={selectedCardId}

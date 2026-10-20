@@ -1,0 +1,64 @@
+{
+  "source": "isolated PGlite / archived 2026-10-14 admin content plus existing fixture cards",
+  "archivedCards": 165,
+  "archivedChampions": 11,
+  "measurement": "UTF-8 serialized returned DB rows; excludes PostgreSQL/TLS/pooler framing, not Supabase billing",
+  "scenarios": {
+    "waiting": {
+      "snapshotSha256": "06d6f46bfcb0bf8c846ae670253ec08f8fc1715ed133d829c4c26a03829f6350",
+      "seconds": 60,
+      "users": 1,
+      "metrics": {
+        "settings": {
+          "calls": 60,
+          "rows": 60,
+          "resultBytes": 27480,
+          "requestBytes": 5460
+        },
+        "advisory_lock": {
+          "calls": 60,
+          "rows": 60,
+          "resultBytes": 1800,
+          "requestBytes": 5460
+        },
+        "sessions": {
+          "calls": 181,
+          "rows": 61,
+          "resultBytes": 300187,
+          "requestBytes": 136386
+        }
+      },
+      "snapshotBytes": 269643,
+      "stateBytes": 445,
+      "phase": "WAITING"
+    },
+    "battle": {
+      "snapshotSha256": "06d6f46bfcb0bf8c846ae670253ec08f8fc1715ed133d829c4c26a03829f6350",
+      "seconds": 60,
+      "users": 2,
+      "metrics": {
+        "settings": {
+          "calls": 60,
+          "rows": 60,
+          "resultBytes": 27480,
+          "requestBytes": 5460
+        },
+        "advisory_lock": {
+          "calls": 120,
+          "rows": 120,
+          "resultBytes": 3600,
+          "requestBytes": 10920
+        },
+        "sessions": {
+          "calls": 301,
+          "rows": 121,
+          "resultBytes": 899475,
+          "requestBytes": 376588
+        }
+      },
+      "snapshotBytes": 269643,
+      "stateBytes": 307096,
+      "phase": "BATTLE"
+    }
+  }
+}

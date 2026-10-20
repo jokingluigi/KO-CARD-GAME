@@ -160,3 +160,29 @@ test("draft action is sent during slow polling and stale poll cannot replace acc
   assert.equal(messages.at(-1)?.type,'ACTION_ACCEPTED');
  } finally {client.close();globalThis.fetch=originalFetch;globalThis.setInterval=originalInterval;globalThis.clearInterval=originalClear;}
 });
+
+test('finished snapshot or finished action stops background polling before unmount',async()=>{
+ const originalFetch=globalThis.fetch,originalInterval=globalThis.setInterval,originalClear=globalThis.clearInterval;
+ let interval:(()=>void)|undefined,calls=0;
+ globalThis.setInterval=((fn:()=>void)=>{interval=fn;return 1;}) as unknown as typeof setInterval;
+ globalThis.clearInterval=(()=>{interval=undefined;}) as typeof clearInterval;
+ globalThis.fetch=(async()=>{calls++;return new Response(JSON.stringify({type:'MATCH_SNAPSHOT',matchId:'room',version:1,state:{status:'FINISHED'},connectionStates:{PLAYER_ONE:'CONNECTED',PLAYER_TWO:'CONNECTED'}}));}) as typeof fetch;
+ const client=new DraftBattleClient();
+ try{client.send({type:'SUBSCRIBE',matchId:'room'});await new Promise(r=>setImmediate(r));assert.equal(calls,1);assert.equal(interval,undefined);}finally{client.close();globalThis.fetch=originalFetch;globalThis.setInterval=originalInterval;globalThis.clearInterval=originalClear;}
+});
+test('repeated failures back off, explicit reconnect bypasses delay and restores normal snapshots',async()=>{
+ const originalFetch=globalThis.fetch,originalInterval=globalThis.setInterval,originalClear=globalThis.clearInterval,originalNow=Date.now;
+ let interval:(()=>void)|undefined,calls=0,time=1000,offline=true;
+ Date.now=()=>time;globalThis.setInterval=((fn:()=>void)=>{interval=fn;return 1;}) as unknown as typeof setInterval;globalThis.clearInterval=(()=>{}) as typeof clearInterval;
+ globalThis.fetch=(async()=>{calls++;if(offline)throw new Error('offline');return new Response(JSON.stringify({type:'MATCH_SNAPSHOT',matchId:'room',version:1,state:{status:'IN_PROGRESS'},connectionStates:{PLAYER_ONE:'CONNECTED',PLAYER_TWO:'CONNECTED'}}));}) as typeof fetch;
+ const client=new DraftBattleClient(),drain=()=>new Promise(r=>setImmediate(r));
+ try{client.send({type:'SUBSCRIBE',matchId:'room'});await drain();interval!();await drain();assert.equal(calls,2);interval!();await drain();assert.equal(calls,2);time+=2000;interval!();await drain();assert.equal(calls,3);offline=false;client.reconnectNow();await drain();assert.equal(calls,4);assert.equal(client.state,'open');interval!();await drain();assert.equal(calls,5);}finally{client.close();globalThis.fetch=originalFetch;globalThis.setInterval=originalInterval;globalThis.clearInterval=originalClear;Date.now=originalNow;}
+});
+test('same-version heartbeat updates connection status without resetting battle; reconnect requests full state',async()=>{
+ const originalFetch=globalThis.fetch,originalInterval=globalThis.setInterval,originalClear=globalThis.clearInterval;
+ let interval:(()=>void)|undefined;const urls:string[]=[],messages:OnlineServerMessage[]=[];
+ globalThis.setInterval=((fn:()=>void)=>{interval=fn;return 1;}) as unknown as typeof setInterval;globalThis.clearInterval=(()=>{}) as typeof clearInterval;
+ globalThis.fetch=(async(url:any)=>{urls.push(String(url));return new Response(JSON.stringify(String(url).includes('?version=1')?{type:'DRAFT_HEARTBEAT',matchId:'room',version:1,serverTime:2,cosmeticEmotes:[{type:'IMAGE_EMOTE',matchId:'room',playerId:'PLAYER_TWO',requestId:'heartbeat-emote',imageUrl:'https://example.invalid/emote.png',expiresAt:2000}],connectionStates:{PLAYER_ONE:'CONNECTED',PLAYER_TWO:'DISCONNECTED_GRACE'}}:{type:'MATCH_SNAPSHOT',matchId:'room',version:1,state:{status:'IN_PROGRESS'},serverTime:1,connectionStates:{PLAYER_ONE:'CONNECTED',PLAYER_TWO:'CONNECTED'}}));}) as typeof fetch;
+ const client=new DraftBattleClient(),drain=()=>new Promise(r=>setImmediate(r));client.onMessage(m=>messages.push(m));
+ try{client.send({type:'SUBSCRIBE',matchId:'room'});await drain();interval!();await drain();assert.match(urls[1],/\?version=1$/);assert.equal(messages.filter(m=>'state' in m).length,1);assert.ok(messages.some(m=>m.type==='MATCH_CONNECTION_STATUS'&&m.status==='DISCONNECTED_GRACE'));assert.equal(messages.filter(m=>m.type==='IMAGE_EMOTE').length,1);interval!();await drain();assert.equal(messages.filter(m=>m.type==='IMAGE_EMOTE').length,1);client.reconnectNow();await drain();assert.ok(!urls[3].includes('?version='));assert.equal(messages.filter(m=>m.type==='MATCH_SNAPSHOT').length,2);}finally{client.close();globalThis.fetch=originalFetch;globalThis.setInterval=originalInterval;globalThis.clearInterval=originalClear;}
+});

@@ -1,5 +1,7 @@
+import {sendDraftCosmeticEmote} from '../lib/draft-cosmetics';
+import {CosmeticError} from '../lib/cosmetics';
 import { Router, type IRouter } from "express";
-import { eq } from "drizzle-orm";
+import { sql, eq } from "drizzle-orm";
 import { db, cardsTable, championsTable, draftSettingsTable } from "@workspace/db";
 import {
   parseDraftConfig,
@@ -12,12 +14,14 @@ import { getAuthenticatedUser } from "../lib/auth";
 import {
   DraftError,
   draftSettings,
+  invalidateDraftSettings,
   draftCatalog,
   startDraft,
   currentDraft,
   mutateDraft,
   draftView,
   draftBattleView,
+  pollDraftBattle,
   draftRewards,
 } from "../lib/draft-service";
 const router: IRouter = Router();
@@ -28,7 +32,7 @@ router.use(async (req, res, next) => {
       res.status(401).json({ message: "로그인이 필요합니다." });
       return;
     }
-    if (req.baseUrl.endsWith("/admin/draft") && user.role !== "ADMIN") {
+    if (req.baseUrl.toLowerCase().endsWith("/admin/draft") && user.role !== "ADMIN") {
       res.status(403).json({ message: "관리자만 접근할 수 있습니다." });
       return;
     }
@@ -94,6 +98,7 @@ router.patch("/cards/:cardId/selection", async (req, res, next) => {
       await tx.update(draftSettingsTable).set({ config: config as unknown as Record<string, unknown>, updatedAt: new Date() }).where(eq(draftSettingsTable.id, "global"));
       return config.excludedCardIds;
     });
+    invalidateDraftSettings();
     res.json({ excludedCardIds });
   } catch (error) { next(error); }
 });
@@ -121,6 +126,7 @@ router.patch("/champions/:championId/selection", async (req, res, next) => {
       await tx.update(draftSettingsTable).set({ config: config as unknown as Record<string, unknown>, updatedAt: new Date() }).where(eq(draftSettingsTable.id, "global"));
       return config.excludedChampionIds;
     });
+    invalidateDraftSettings();
     res.json({ excludedChampionIds });
   } catch (error) { next(error); }
 });
@@ -151,6 +157,7 @@ router.put("/settings", async (req, res, next) => {
           updatedAt: new Date(),
         },
       });
+    invalidateDraftSettings();
     res.json({ enabled: req.body.enabled, config });
   } catch (e) {
     next(e);
@@ -158,7 +165,7 @@ router.put("/settings", async (req, res, next) => {
 });
 router.post("/matchmaking", async (req, res, next) => {
   try {
-    const id = await startDraft(req.authUser!.id, req.authUser!.nickname, "PVP", true, req.baseUrl.endsWith("/admin/draft"));
+    const id = await startDraft(req.authUser!.id, req.authUser!.nickname, "PVP", true, req.baseUrl.toLowerCase().endsWith("/admin/draft"));
     res.json(draftView(await mutateDraft(req.authUser!.id, id)));
   } catch (error) { next(error); }
 });
@@ -171,7 +178,7 @@ router.post("/sessions", async (req, res, next) => {
       req.authUser!.nickname,
       req.body.mode,
       false,
-      req.baseUrl.endsWith("/admin/draft"),
+      req.baseUrl.toLowerCase().endsWith("/admin/draft"),
     );
     res.status(201).json(draftView(await mutateDraft(req.authUser!.id, id)));
   } catch (e) {
@@ -205,26 +212,26 @@ router.get("/sessions/:id/invitation", async (req, res, next) => {
       throw new DraftError("DRAFT_DISABLED", "드래프트 모드가 OFF입니다.", 503);
     const { draftSessionsTable } = await import("@workspace/db");
     const [r] = await db
-      .select()
+      .select({id:draftSessionsTable.id,version:draftSessionsTable.version,phase:sql<string>`${draftSessionsTable.state}->>'phase'`})
       .from(draftSessionsTable)
       .where(eq(draftSessionsTable.id, String(req.params.id)));
-    if (!r || (r.state as { phase?: string }).phase !== "WAITING")
+    if (!r || r.phase !== "WAITING")
       throw new DraftError("NOT_FOUND", "대기 중인 방이 없습니다.", 404);
     res.json({ id: r.id, version: r.version });
   } catch (e) {
     next(e);
   }
 });
-router.get("/sessions/:id/battle", async (req, res, next) => {
-  try {
-    res.json(
-      draftBattleView(
-        await mutateDraft(req.authUser!.id, String(req.params.id)),
-      ),
-    );
-  } catch (e) {
-    next(e);
-  }
+router.post('/sessions/:id/image-emotes',async(req,res,next)=>{
+ try{res.json({event:await sendDraftCosmeticEmote(req.authUser!.id,String(req.params.id),req.body)});}
+ catch(error){if(error instanceof CosmeticError){res.status(error.status).json({message:error.message});return;}next(error);}
+});
+router.get("/sessions/:id/battle", async (req,res,next)=>{
+  try{
+    const value=req.query.version;
+    if(value!==undefined&&(typeof value!=="string"||!/^\d{1,15}$/.test(value)||!Number.isSafeInteger(Number(value))))throw new DraftError("INVALID_VERSION","버전을 확인해 주세요.");
+    res.json(await pollDraftBattle(req.authUser!.id,String(req.params.id),value===undefined?undefined:Number(value)));
+  }catch(error){next(error);}
 });
 router.get("/sessions/:id/resources", async (req, res, next) => {
   try {

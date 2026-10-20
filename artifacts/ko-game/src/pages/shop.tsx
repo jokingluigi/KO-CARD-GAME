@@ -1,3 +1,4 @@
+import {ShopDecks} from "@/components/shop-decks";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { ArrowLeft, Coins, Gift, ShoppingBag } from "lucide-react";
 import { fetchShop, purchaseShopListing, type ShopListing } from "@/lib/collection-client";
@@ -10,6 +11,7 @@ import { MAX_SHOP_PURCHASE_QUANTITY } from "../../../../lib/game-engine/src/shop
 
 export default function ShopPage() {
   const [, navigate] = useLocation();
+  const [category,setCategory] = useState<"PACK"|"DECK">("PACK");
   const [currency, setCurrency] = useState(0);
   const [isTestAccount, setIsTestAccount] = useState(false);
   const [currencyDisplayName, setCurrencyDisplayName] = useState("크레딧");
@@ -89,9 +91,11 @@ export default function ShopPage() {
           </div>
         </div>
         <header className="mb-8 flex items-end justify-between border-b border-neutral-800 pb-6">
-          <div><p className="font-display text-xs font-bold tracking-[0.25em] text-primary">KO SHOP</p><h1 className="mt-2 text-3xl font-black">카드팩 상점</h1><p className="mt-2 text-sm text-neutral-500">크레딧으로 공개된 카드팩을 구매합니다.</p></div>
+          <div><p className="font-display text-xs font-bold tracking-[0.25em] text-primary">KO SHOP</p><h1 className="mt-2 text-3xl font-black">상점</h1><p className="mt-2 text-sm text-neutral-500">크레딧으로 카드팩과 완성 덱을 구매합니다.</p></div>
           <ShoppingBag className="h-8 w-8 text-amber-400" />
         </header>
+        <nav aria-label="상점 카테고리" className="mb-6 flex gap-3"><button type="button" aria-pressed={category==="PACK"} className="min-h-11 rounded border border-amber-800 px-5 aria-pressed:bg-amber-400 aria-pressed:text-black" onClick={()=>setCategory("PACK")}>카드팩</button><button type="button" aria-pressed={category==="DECK"} className="min-h-11 rounded border border-amber-800 px-5 aria-pressed:bg-amber-400 aria-pressed:text-black" onClick={()=>setCategory("DECK")}>완성 덱</button></nav>
+        {category==="DECK" ? <ShopDecks currency={currency} isTestAccount={isTestAccount} onBalance={setCurrency}/> : <>
         {message && <p className="mb-6 rounded border border-amber-800/50 bg-amber-950/20 px-4 py-3 text-sm text-amber-200">{message}</p>}
         {success && <p role="status" className="mb-6 rounded border border-emerald-800/50 bg-emerald-950/20 px-4 py-3 text-sm text-emerald-200">{success}</p>}
         {!message && !hasListings && <div className="rounded-xl border border-dashed border-neutral-800 px-5 py-16 text-center text-sm text-neutral-500">현재 판매 중인 카드팩이 없습니다.</div>}
@@ -129,6 +133,7 @@ export default function ShopPage() {
             );
           })}
         </div>
+        </>}
         <div className="mt-8 flex flex-wrap justify-center gap-3">
            <button type="button" onClick={() => navigate(ROUTES.PACKS)} className="rounded border border-neutral-700 px-5 py-3 text-sm font-black text-neutral-200 hover:border-amber-500 hover:text-amber-300">내 팩 / 팩 열기</button>
         </div>

@@ -1,0 +1,123 @@
+{
+  "createdAt": "2026-10-19T16:57:22.917820+00:00",
+  "baseCommit": "5b3e547f820f485699721f6d15d43b65a802d83e",
+  "branch": "feat/cosmetics-and-image-emotes",
+  "checks": {
+    "cosmetics": {
+      "passed": 14,
+      "failed": 0,
+      "skipped": 0
+    },
+    "engine": {
+      "passed": 2685,
+      "failed": 0,
+      "skipped": 0
+    },
+    "statistics": {
+      "passed": 35,
+      "failed": 0,
+      "skipped": 0
+    },
+    "tower": {
+      "passed": 11,
+      "failed": 0,
+      "skipped": 0
+    },
+    "auth_startup_protocol": {
+      "passed": 28,
+      "failed": 0,
+      "skipped": 0
+    },
+    "admin_navigation": {
+      "passed": 4,
+      "failed": 0,
+      "skipped": 0
+    },
+    "draft": {
+      "passed": 12,
+      "failed": 0,
+      "skipped": 0
+    },
+    "public_draft": {
+      "passed": 10,
+      "failed": 0,
+      "skipped": 0
+    }
+  },
+  "browser": {
+    "kind": "Chromium mobile emulation, not a physical phone",
+    "results": [
+      {
+        "name": "actual administrator cosmetics catalog, editor and account search",
+        "status": "PASS"
+      },
+      {
+        "name": "player actual skin preview, equip/default/reload persistence and four emote slots",
+        "status": "PASS"
+      },
+      {
+        "name": "two real authenticated browser sessions receive identical frozen PvP skins and opaque backs",
+        "status": "PASS"
+      },
+      {
+        "name": "A image emote appears on both actual PvP screens, then expires; B hide preference works",
+        "status": "PASS"
+      },
+      {
+        "name": "B image emote reaches A and client reload restores existing battle and both loadouts",
+        "status": "PASS"
+      },
+      {
+        "name": "mobile cosmetics/admin viewports have no horizontal overflow and usable touch targets",
+        "status": "PASS"
+      },
+      {
+        "name": "missing skin download falls back to original champion/card images and default back without blocking match",
+        "status": "PASS"
+      },
+      {
+        "name": "actual AI setup/start displays frozen equipped champion/back and locally usable image emotes",
+        "status": "PASS"
+      }
+    ],
+    "pageErrors": []
+  },
+  "migrationSha256": "0c567feadc01e69f44ab069af87f54b650a2443b1508d63e51c7a682248a5c54",
+  "browserRunnerSha256": "4d2125b41b2f5706d57880cbcb760760eac841d949399eb3c3461e9a228ac212",
+  "nativePostgres": {
+    "migrationApplyAndReapply": "PASS",
+    "rollbackToEmptyIsolatedDatabase": "PASS",
+    "equipmentPersistedAcrossConnections": "PASS",
+    "revocationCascade": "PASS"
+  },
+  "notExecuted": [
+    "Physical smartphone",
+    "Production Supabase migration and Storage upload/CORS",
+    "Tower cosmetic-specific equipment/reconnect scenario",
+    "Large concurrent production load"
+  ],
+  "productionChanged": false,
+  "draftBrowser": {
+    "kind": "two Chromium mobile emulations using actual local Draft HTTP APIs",
+    "results": [
+      {
+        "name": "Draft PvP both browsers use persisted seat-specific skins and different opaque card backs",
+        "status": "PASS"
+      },
+      {
+        "name": "Draft image emote ACK and existing polling deliver A to both screens once",
+        "status": "PASS"
+      },
+      {
+        "name": "Draft opponent image emote is delivered through the same independent transport",
+        "status": "PASS"
+      },
+      {
+        "name": "Draft reload restores frozen equipment despite unequip after room creation; mobile fits",
+        "status": "PASS"
+      }
+    ],
+    "pageErrors": []
+  },
+  "draftBrowserSha256": "8c6fd7ebcd7a1743e0bf9813d9a359adc649563f44d6f0a2e8cc4ca2a1c03b88"
+}

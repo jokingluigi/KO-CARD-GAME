@@ -1,0 +1,76 @@
+{
+  "source": "isolated PGlite / archived 2026-10-14 admin content plus existing fixture cards",
+  "archivedCards": 165,
+  "archivedChampions": 11,
+  "measurement": "UTF-8 serialized returned DB rows; excludes PostgreSQL/TLS/pooler framing, not Supabase billing",
+  "scenarios": {
+    "waiting": {
+      "snapshotSha256": "06d6f46bfcb0bf8c846ae670253ec08f8fc1715ed133d829c4c26a03829f6350",
+      "seconds": 60,
+      "users": 1,
+      "metrics": {
+        "settings": {
+          "calls": 180,
+          "rows": 180,
+          "resultBytes": 89280,
+          "requestBytes": 19980
+        },
+        "advisory_lock": {
+          "calls": 120,
+          "rows": 120,
+          "resultBytes": 3600,
+          "requestBytes": 10920
+        },
+        "sessions": {
+          "calls": 180,
+          "rows": 120,
+          "resultBytes": 32424946,
+          "requestBytes": 69300
+        },
+        "participants": {
+          "calls": 60,
+          "rows": 60,
+          "resultBytes": 3000,
+          "requestBytes": 3480
+        }
+      },
+      "snapshotBytes": 269643,
+      "stateBytes": 445,
+      "phase": "WAITING"
+    },
+    "battle": {
+      "snapshotSha256": "06d6f46bfcb0bf8c846ae670253ec08f8fc1715ed133d829c4c26a03829f6350",
+      "seconds": 60,
+      "users": 2,
+      "metrics": {
+        "settings": {
+          "calls": 240,
+          "rows": 240,
+          "resultBytes": 119040,
+          "requestBytes": 26640
+        },
+        "advisory_lock": {
+          "calls": 180,
+          "rows": 180,
+          "resultBytes": 5400,
+          "requestBytes": 16380
+        },
+        "sessions": {
+          "calls": 300,
+          "rows": 180,
+          "resultBytes": 104104835,
+          "requestBytes": 41317380
+        },
+        "participants": {
+          "calls": 60,
+          "rows": 120,
+          "resultBytes": 6120,
+          "requestBytes": 3480
+        }
+      },
+      "snapshotBytes": 269643,
+      "stateBytes": 307096,
+      "phase": "BATTLE"
+    }
+  }
+}

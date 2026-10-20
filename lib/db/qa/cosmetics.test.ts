@@ -1,0 +1,912 @@
+/** Isolated PostgreSQL-compatible integration fixture. Never connects to production. */
+import assert from "node:assert/strict";
+import { test, after } from "node:test";
+import { PGlite } from "@electric-sql/pglite";
+import { drizzle } from "drizzle-orm/pglite";
+import { generateDrizzleJson, generateMigration } from "drizzle-kit/api";
+import { readFile, mkdir, writeFile } from "node:fs/promises";
+import { createHash, randomUUID } from "node:crypto";
+import { createRequire } from "node:module";
+import * as schema from "../src/schema";
+import { eq, sql } from "drizzle-orm";
+process.env.DATABASE_URL = "postgresql://unused:unused@127.0.0.1:1/unused";
+process.env.NODE_ENV = "development";
+const pg = new PGlite(),
+  database = drizzle(pg, { schema });
+for (const ddl of await generateMigration(
+  generateDrizzleJson({}),
+  generateDrizzleJson(schema),
+))
+  await pg.exec(ddl);
+const migration = await readFile(
+  new URL("../migrations/0053_cosmetics.sql", import.meta.url),
+  "utf8",
+);
+await pg.exec(migration);
+await pg.exec(migration);
+await pg.exec(
+  await readFile(
+    new URL("../migrations/0033_server_maintenance.sql", import.meta.url),
+    "utf8",
+  ),
+);
+const { db, pool } = await import("../src/index");
+for (const method of [
+  "select",
+  "insert",
+  "update",
+  "delete",
+  "transaction",
+  "execute",
+] as const)
+  Object.assign(db, { [method]: database[method].bind(database) });
+const require = createRequire(
+  new URL("../../../artifacts/api-server/package.json", import.meta.url),
+);
+const express = require("express");
+const root = express();
+const assets = new Map<string, Buffer>();
+const server = root.listen(
+  process.env.KO_COSMETICS_BROWSER_MODE === "1"
+    ? Number(process.env.KO_COSMETICS_FIXTURE_PORT ?? 5186)
+    : 0,
+  "127.0.0.1",
+);
+await new Promise<void>((r) => server.once("listening", r));
+const connections = new Set<import("node:net").Socket>();
+server.on("connection", (socket: import("node:net").Socket) => {
+  connections.add(socket);
+  socket.on("close", () => connections.delete(socket));
+});
+const origin = "http://127.0.0.1:" + server.address().port;
+process.env.STORAGE_PROVIDER = "supabase";
+process.env.SUPABASE_URL = origin;
+process.env.SUPABASE_SECRET_KEY = "local-fixture-only";
+process.env.SUPABASE_STORAGE_BUCKET = "qa";
+// Real Supabase adapter over a local HTTP object-store fixture, not a production bucket.
+root.use("/storage", (req: any, res: any, next: any) => {
+  res.setHeader("Access-Control-Allow-Origin", "*");
+  res.setHeader("Access-Control-Allow-Methods", "GET,POST,PUT,OPTIONS");
+  res.setHeader(
+    "Access-Control-Allow-Headers",
+    "content-type,authorization,x-client-info,apikey",
+  );
+  if (req.method === "OPTIONS") {
+    res.sendStatus(204);
+    return;
+  }
+  next();
+});
+root.post("/storage/v1/object/upload/sign/*key", (_req: any, res: any) =>
+  res.json({
+    url:
+      "/object/upload/sign/" +
+      _req.params.key.join("/") +
+      "?token=local-fixture",
+  }),
+);
+root.put(
+  "/storage/v1/object/upload/sign/*key",
+  express.raw({ type: "*/*", limit: "6mb" }),
+  (req: any, res: any) => {
+    assets.set(req.params.key.join("/").replace(/^qa\//, ""), req.body);
+    res.json({ Key: req.params.key.join("/") });
+  },
+);
+root.get(
+  ["/storage/v1/object/authenticated/*key", "/storage/v1/object/*key"],
+  (req: any, res: any) => {
+    const bytes = assets.get(req.params.key.join("/").replace(/^qa\//, ""));
+    if (!bytes) return res.status(404).json({ message: "Object not found" });
+    res.type("png").send(bytes);
+  },
+);
+const { default: app } = await import("../../../artifacts/api-server/src/app");
+root.use(app);
+root.use((error: any, _req: any, res: any, _next: any) => {
+  console.error("QA DATABASE ERROR", error.cause ?? error);
+  res
+    .status(500)
+    .json({ message: String(error.cause?.message ?? error.message) });
+});
+const { attachOnlineMatchWebSocket } =
+  await import("../../../artifacts/api-server/src/online/websocket");
+attachOnlineMatchWebSocket(server);
+const { hashPassword } =
+  await import("../../../artifacts/api-server/src/lib/auth");
+const {
+  startOnlineMatch,
+  getRuntime,
+  cleanupMatchRuntime,
+  snapshotMessage,
+  applyMatchAction,
+} = await import("../../../artifacts/api-server/src/online/service");
+const { loadCosmetics, equipCosmetic } =
+  await import("../../../artifacts/api-server/src/lib/cosmetics");
+const { cosmeticImage } = await import("../../cosmetics/src/index");
+const password = "Local-only-fixture-123!";
+const hash = await hashPassword(password);
+const cookies: Record<string, string> = {};
+for (const id of ["admin", "player-a", "player-b"]) {
+  await database.insert(schema.usersTable).values({
+    id,
+    email: id + "@cosmetics.invalid",
+    nickname: id,
+    passwordHash: hash,
+    role: id === "admin" ? "ADMIN" : "USER",
+    shopCurrencyStarterGrantedAt: new Date(),
+  });
+  const token = "cosmetics-local-" + id;
+  cookies[id] = "ko_session=" + token;
+  await database.insert(schema.sessionsTable).values({
+    id: "session-" + id,
+    userId: id,
+    tokenHash: createHash("sha256").update(token).digest("hex"),
+    expiresAt: new Date(Date.now() + 24 * 3600000),
+  });
+}
+const sharp = require("sharp");
+const png = await sharp({
+  create: { width: 200, height: 280, channels: 4, background: "#9b67c1" },
+})
+  .png()
+  .toBuffer();
+const original = await sharp({
+  create: { width: 200, height: 280, channels: 4, background: "#34597a" },
+})
+  .png()
+  .toBuffer();
+root.get("/api/qa-cosmetics/:file", (req: any, res: any) =>
+  res.type("png").send(req.params.file === "original.png" ? original : png),
+);
+const cards = Array.from({ length: 9 }, (_, i) => ({
+  id: "cosmetic-unit-" + i,
+  name: i === 0 ? "꾸미기 검증 선수" : "검증 선수 " + i,
+  cardType: "WRESTLER",
+  cost: 0,
+  attack: 1,
+  health: 5,
+  text: "",
+  status: "PUBLISHED",
+  imageUrl: origin + "/api/qa-cosmetics/original.png",
+}));
+await database.insert(schema.cardsTable).values(cards);
+await database.insert(schema.cardsTable).values({
+  id: "unsupported-token",
+  name: "토큰",
+  cardType: "WRESTLER",
+  cost: 0,
+  attack: 1,
+  health: 1,
+  text: "",
+  isToken: true,
+});
+await database.insert(schema.championsTable).values({
+  id: "cosmetic-hero",
+  name: "꾸미기 검증 챔피언",
+  abilityName: "휴식",
+  abilityCost: 0,
+  abilityText: "효과 없음",
+  abilityEffects: {},
+  status: "PUBLISHED",
+  imageUrl: origin + "/api/qa-cosmetics/original.png",
+});
+const deck = cards.flatMap((c, i) => Array(i === 8 ? 1 : 3).fill(c.id));
+for (const userId of ["player-a", "player-b"]) {
+  await database.insert(schema.decksTable).values({
+    id: "deck-" + userId,
+    userId,
+    name: "꾸미기 검증 덱",
+    championDefinitionId: "cosmetic-hero",
+    cardDefinitionIds: deck,
+    isSelected: true,
+  });
+  await database
+    .insert(schema.userCardCollectionsTable)
+    .values(
+      cards.map((c) => ({ userId, cardDefinitionId: c.id, quantity: 3 })),
+    );
+  await database
+    .insert(schema.userChampionCollectionsTable)
+    .values({ userId, championDefinitionId: "cosmetic-hero", owned: true });
+}
+await database.insert(schema.aiDecksTable).values({
+  id: "cosmetic-ai",
+  name: "검증 AI",
+  enabled: true,
+  championDefinitionId: "cosmetic-hero",
+  cardDefinitionIds: deck,
+});
+async function api(
+  path: string,
+  user = "admin",
+  method = "GET",
+  body?: unknown,
+) {
+  const response = await fetch(origin + "/api" + path, {
+    method,
+    headers: {
+      cookie: cookies[user] ?? "",
+      "Content-Type": "application/json",
+    },
+    body: body === undefined ? undefined : JSON.stringify(body),
+  });
+  return {
+    status: response.status,
+    body: await response.json().catch(() => ({})),
+  };
+}
+const registered: Record<string, any> = {};
+let uploaded = "";
+let runtime: any;
+const prefix = "/admin/cosmetics";
+test("authentication: anonymous and ordinary accounts cannot manage or grant cosmetics", async () => {
+    assert.equal((await api('/COSMETICS','anonymous')).status,401);
+    assert.equal((await api('/Admin/Cosmetics','player-a')).status,403);
+
+  for (const [user, status] of [
+    ["anonymous", 401],
+    ["player-a", 403],
+  ])
+    for (const [path, method] of [
+      [prefix, "GET"],
+      [prefix + "/items", "POST"],
+      [prefix + "/users/player-a/grants", "POST"],
+      [prefix + "/uploads", "POST"],
+    ])
+      assert.equal((await api(path!, user, method)).status, Number(status));
+  assert.equal((await api("/cosmetics", "anonymous")).status, 401);
+});
+test("actual storage upload: signed PUT, decoded PNG verification, durable serving, invalid types rejected", async () => {
+  assert.equal(
+    (
+      await api(prefix + "/uploads", "admin", "POST", {
+        name: "bad.svg",
+        size: 10,
+        contentType: "image/svg+xml",
+      })
+    ).status,
+    400,
+  );
+  assert.equal(
+    (
+      await api(prefix + "/uploads", "admin", "POST", {
+        name: "big.png",
+        size: 6 * 1024 * 1024,
+        contentType: "image/png",
+      })
+    ).status,
+    400,
+  );
+  const requested = await api(prefix + "/uploads", "admin", "POST", {
+    name: "skin.png",
+    size: png.length,
+    contentType: "image/png",
+  });
+  assert.equal(requested.status, 200, JSON.stringify(requested.body));
+  const put = await fetch(requested.body.uploadURL, {
+    method: "PUT",
+    headers: { "Content-Type": "image/png" },
+    body: png,
+  });
+  assert.equal(put.status, 200);
+  const complete = await api(prefix + "/uploads/complete", "admin", "POST", {
+    objectPath: requested.body.objectPath,
+    contentType: "image/png",
+  });
+  assert.equal(complete.status, 200, JSON.stringify(complete.body));
+  uploaded = complete.body.imageUrl;
+  assert.equal((await fetch(origin + uploaded)).status, 200);
+  const bad = await api(prefix + "/uploads", "admin", "POST", {
+    name: "bad.png",
+    size: 4,
+    contentType: "image/png",
+  });
+  await fetch(bad.body.uploadURL, { method: "PUT", body: Buffer.from("fake") });
+  assert.equal(
+    (
+      await api(prefix + "/uploads/complete", "admin", "POST", {
+        objectPath: bad.body.objectPath,
+        contentType: "image/png",
+      })
+    ).status,
+    400,
+  );
+  assert.equal((await api(prefix+'/items','admin','POST',{type:'IMAGE_EMOTE',name:'위장 파일 등록 거부',description:'',targetId:null,imageAssets:{art:'/api/storage'+bad.body.objectPath},isActive:true,sortOrder:0})).status,400);
+});
+test("admin registers all four types, selects real DB targets, rejects unsupported tokens and unsafe assets", async () => {
+  for (const type of [
+    "CHAMPION_SKIN",
+    "CARD_SKIN",
+    "CARD_BACK",
+    "IMAGE_EMOTE",
+  ]) {
+    const input = {
+      type,
+      name: "검증 " + type,
+      description: "격리 DB 검증 아이템",
+      targetId:
+        type === "CHAMPION_SKIN"
+          ? "cosmetic-hero"
+          : type === "CARD_SKIN"
+            ? cards[0]!.id
+            : null,
+      imageAssets:
+        type === "CHAMPION_SKIN"
+          ? {
+              art: uploaded,
+              portrait: uploaded,
+              intro: uploaded,
+              awakened: uploaded,
+            }
+          : { art: uploaded },
+      isActive: true,
+      sortOrder: 0,
+    };
+    const created = await api(prefix + "/items", "admin", "POST", input);
+    assert.equal(created.status, 201, JSON.stringify(created.body));
+    registered[type] = created.body.item;
+  }
+  assert.equal((await api(prefix)).body.items.length, 4);
+  assert.equal(
+    (
+      await api(prefix + "/items", "admin", "POST", {
+        ...registered.CARD_SKIN,
+        targetId: "unsupported-token",
+      })
+    ).status,
+    422,
+  );
+  assert.equal(
+    (
+      await api(prefix + "/items", "admin", "POST", {
+        ...registered.CARD_BACK,
+        imageAssets: { art: "javascript:alert(1)" },
+      })
+    ).status,
+    400,
+  );
+});
+test("idempotent grants, own inventory isolation, authoritative equip and four distinct persistent emote slots", async () => {
+  for (const item of Object.values(registered) as any[])
+    for (let n = 0; n < 2; n++)
+      assert.equal(
+        (
+          await api(prefix + "/users/player-a/grants", "admin", "POST", {
+            cosmeticId: item.id,
+            action: "GRANT",
+          })
+        ).status,
+        200,
+      );
+  assert.equal((await api("/cosmetics", "player-a")).body.owned.length, 4);
+  assert.equal((await api("/cosmetics", "player-b")).body.owned.length, 0);
+  assert.equal(
+    (
+      await api("/cosmetics/equipment", "player-b", "PUT", {
+        slot: "back",
+        cosmeticId: registered.CARD_BACK.id,
+      })
+    ).status,
+    403,
+  );
+  for (const [type, slot] of [
+    ["CHAMPION_SKIN", "champion:cosmetic-hero"],
+    ["CARD_SKIN", "card:" + cards[0]!.id],
+    ["CARD_BACK", "back"],
+    ["IMAGE_EMOTE", "emote:1"],
+  ])
+    assert.equal(
+      (
+        await api("/cosmetics/equipment", "player-a", "PUT", {
+          slot,
+          cosmeticId: registered[type!].id,
+        })
+      ).status,
+      200,
+    );
+  assert.equal(
+    (
+      await api("/cosmetics/equipment", "player-a", "PUT", {
+        slot: "emote:5",
+        cosmeticId: registered.IMAGE_EMOTE.id,
+      })
+    ).status,
+    400,
+  );
+  assert.equal(
+    (
+      await api("/cosmetics/equipment", "player-a", "PUT", {
+        slot: "card:wrong",
+        cosmeticId: registered.CARD_SKIN.id,
+      })
+    ).status,
+    422,
+  );
+  await equipCosmetic("player-a", "emote:4", registered.IMAGE_EMOTE.id);
+  let loadout = await loadCosmetics("player-a");
+  assert.equal(loadout.emotes[0], null);
+  assert.equal(loadout.emotes[3]?.id, registered.IMAGE_EMOTE.id);
+  await equipCosmetic("player-a", "emote:1", registered.IMAGE_EMOTE.id);
+  for (let n = 2; n <= 4; n++) {
+    const item = (
+      await api(prefix + "/items", "admin", "POST", {
+        ...registered.IMAGE_EMOTE,
+        name: "검증 이모티콘 " + n,
+      })
+    ).body.item;
+    await api(prefix + "/users/player-a/grants", "admin", "POST", {
+      cosmeticId: item.id,
+      action: "GRANT",
+    });
+    await equipCosmetic("player-a", "emote:" + n, item.id);
+  }
+  loadout = await loadCosmetics("player-a");
+  assert.equal(new Set(loadout.emotes.map((i) => i!.id)).size, 4);
+  // Ownership composite FK rejects even direct accidental server inserts, independent of API.
+  await assert.rejects(() =>
+    database.insert(schema.equippedCosmeticsTable).values({
+      userId: "player-b",
+      slot: "back",
+      cosmeticId: registered.CARD_BACK.id,
+    }),
+  );
+});
+test("actual session logout/login preserves database equipment", async () => {
+  const before = await loadCosmetics("player-a");
+  await api("/auth/logout", "player-a", "POST");
+  const response = await fetch(origin + "/api/auth/login", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ email: "player-a@cosmetics.invalid", password }),
+  });
+  assert.equal(response.status, 200, await response.clone().text());
+  cookies["player-a"] = response.headers.get("set-cookie")!.split(";")[0]!;
+  assert.deepEqual(
+    (await api("/cosmetics", "player-a")).body.loadout,
+    JSON.parse(JSON.stringify(before)),
+  );
+});
+test("two-user actual PvP start freezes both loadouts without changing card/champion definitions or hidden state", async () => {
+  // Give B a distinct equipped back and emote too.
+  const signed = await api(prefix + "/uploads", "admin", "POST", {
+    name: "opponent.png",
+    size: original.length,
+    contentType: "image/png",
+  });
+  await fetch(signed.body.uploadURL, {
+    method: "PUT",
+    headers: { "Content-Type": "image/png" },
+    body: original,
+  });
+  const secondAsset = await api(prefix + "/uploads/complete", "admin", "POST", {
+    objectPath: signed.body.objectPath,
+    contentType: "image/png",
+  });
+  assert.equal(secondAsset.status, 200);
+  for (const type of ["CARD_BACK", "IMAGE_EMOTE"]) {
+    const created = await api(prefix + "/items", "admin", "POST", {
+      ...registered[type],
+      name: type === "CARD_BACK" ? "상대 검증 카드 뒷면" : "상대 검증 이모티콘",
+      imageAssets: { art: secondAsset.body.imageUrl },
+    });
+    assert.equal(created.status, 201);
+    registered["B_" + type] = created.body.item;
+    await api(prefix + "/users/player-b/grants", "admin", "POST", {
+      cosmeticId: created.body.item.id,
+      action: "GRANT",
+    });
+    await equipCosmetic(
+      "player-b",
+      type === "CARD_BACK" ? "back" : "emote:1",
+      created.body.item.id,
+    );
+  }
+  runtime = await startOnlineMatch(
+    "player-a",
+    "deck-player-a",
+    "player-b",
+    "deck-player-b",
+  );
+  const initial = structuredClone(runtime.state);
+  assert.equal(
+    runtime.snapshot.cosmetics.PLAYER_ONE.skins["card:" + cards[0]!.id].id,
+    registered.CARD_SKIN.id,
+  );
+  assert.equal(
+    runtime.snapshot.cosmetics.PLAYER_TWO.cardBack.id,
+    registered.B_CARD_BACK.id,
+  );
+  for (const userId of ["player-a", "player-b"]) {
+    const snapshot: any = snapshotMessage(runtime, userId);
+    assert.deepEqual(snapshot.cosmetics, runtime.snapshot.cosmetics);
+    const enemy = snapshot.state.players.find(
+      (p: any) =>
+        p.id !== (userId === "player-a" ? "PLAYER_ONE" : "PLAYER_TWO"),
+    );
+    assert.equal(enemy.hand.hidden, true);
+    assert.equal(enemy.deck.hidden, true);
+    assert.equal("userId" in snapshot.cosmetics.PLAYER_ONE, false);
+  }
+  await equipCosmetic("player-a", "back", null);
+  assert.equal(
+    runtime.snapshot.cosmetics.PLAYER_ONE.cardBack.id,
+    registered.CARD_BACK.id,
+  );
+  assert.deepEqual(runtime.state, initial);
+});
+test("WebSocket image emotes broadcast to both accounts, reject spoofed slots, dedupe and rate limit, leave RNG/turn/state/version untouched", async () => {
+  assert.ok(runtime);
+  const { WebSocket } = require("ws");
+  const sockets: any[] = [];
+  const messages: any[][] = [[], []];
+  for (let i = 0; i < 2; i++) {
+    const ws = new WebSocket(
+      origin.replace("http:", "ws:") + "/api/online-matches/ws",
+      { headers: { cookie: cookies[i ? "player-b" : "player-a"] } },
+    );
+    sockets.push(ws);
+    ws.on("message", (bytes: Buffer) =>
+      messages[i]!.push(JSON.parse(bytes.toString())),
+    );
+    await new Promise((r) => ws.once("open", r));
+    ws.send(JSON.stringify({ type: "SUBSCRIBE", matchId: runtime.matchId }));
+  }
+  const wait = async (check: () => boolean) => {
+    const end = Date.now() + 5000;
+    while (!check()) {
+      if (Date.now() > end) throw new Error("websocket fixture timeout");
+      await new Promise((r) => setTimeout(r, 20));
+    }
+  };
+  await wait(() =>
+    messages.every((m) => m.some((v) => v.type === "MATCH_SNAPSHOT")),
+  );
+  const before = JSON.stringify(runtime.state),
+    version = runtime.version;
+  const payload = {
+    type: "IMAGE_EMOTE",
+    matchId: runtime.matchId,
+    requestId: "qa-once",
+    slot: 1,
+  };
+  sockets[0].send(JSON.stringify(payload));
+  await wait(() =>
+    messages.every((m) => m.some((v) => v.type === "IMAGE_EMOTE")),
+  );
+  sockets[0].send(JSON.stringify(payload));
+  sockets[0].send(JSON.stringify({ ...payload, requestId: "too-soon" }));
+  sockets[0].send(
+    JSON.stringify({ ...payload, slot: 9, requestId: "invalid" }),
+  );
+  await new Promise((r) => setTimeout(r, 100));
+  for (const m of messages)
+    assert.equal(m.filter((v) => v.type === "IMAGE_EMOTE").length, 1);
+  sockets[1].send(JSON.stringify({ ...payload, requestId: "opponent" }));
+  await wait(() =>
+    messages.every(
+      (m) => m.filter((v) => v.type === "IMAGE_EMOTE").length === 2,
+    ),
+  );
+  assert.equal(JSON.stringify(runtime.state), before);
+  assert.equal(runtime.version, version);
+  for (const ws of sockets) ws.close();
+  await new Promise((r) => setTimeout(r, 100));
+});
+test("server runtime eviction/recovery restores frozen cosmetics and exact existing combat state", async () => {
+  const previous = JSON.stringify(runtime.state),
+    id = runtime.matchId,
+    cosmetics = structuredClone(runtime.snapshot.cosmetics);
+  cleanupMatchRuntime(id);
+  runtime.state.status = "FINISHED";
+  runtime = await getRuntime(id);
+  assert.ok(runtime);
+  assert.equal(JSON.stringify(runtime.state), previous);
+  assert.deepEqual(runtime.snapshot.cosmetics, cosmetics);
+});
+test("disable preserves ownership, prevents new grants/equipment, original fallback; re-targeting unequips and revocation cascades", async () => {
+  const item = registered.CARD_SKIN;
+  const key=uploaded.replace('/api/storage/objects/',''),savedAsset=assets.get(key)!;
+  assets.delete(key);
+  assert.equal(
+    (
+      await api(prefix + "/items/" + item.id, "admin", "PATCH", {
+        ...item,
+        isActive: false,
+      })
+    ).status,
+    200,
+  );
+  assets.set(key,savedAsset);
+  assert.ok(
+    (await api("/cosmetics", "player-a")).body.owned.some(
+      (o: any) => o.item.id === item.id,
+    ),
+  );
+  assert.equal(
+    (await loadCosmetics("player-a")).skins["card:" + cards[0]!.id],
+    undefined,
+  );
+  assert.equal(
+    cosmeticImage(
+      await loadCosmetics("player-a"),
+      "CARD_SKIN",
+      cards[0]!.id,
+      "art",
+      "original",
+    ),
+    "original",
+  );
+  assert.equal(
+    (
+      await api(prefix + "/users/player-b/grants", "admin", "POST", {
+        cosmeticId: item.id,
+        action: "GRANT",
+      })
+    ).status,
+    422,
+  );
+  assert.equal(
+    (
+      await api("/cosmetics/equipment", "player-a", "PUT", {
+        slot: "card:" + cards[0]!.id,
+        cosmeticId: item.id,
+      })
+    ).status,
+    403,
+  );
+  await api(prefix + "/items/" + item.id, "admin", "PATCH", item);
+  await equipCosmetic("player-a", "card:" + cards[0]!.id, item.id);
+  await api(prefix + "/items/" + item.id, "admin", "PATCH", {
+    ...item,
+    targetId: cards[1]!.id,
+  });
+  assert.equal(
+    (await loadCosmetics("player-a")).skins["card:" + cards[0]!.id],
+    undefined,
+  );
+  await api(prefix + "/items/" + item.id, "admin", "PATCH", item);
+  await equipCosmetic("player-a", "card:" + cards[0]!.id, item.id);
+  await api(prefix + "/users/player-a/grants", "admin", "POST", {
+    cosmeticId: item.id,
+    action: "REVOKE",
+  });
+  assert.equal(
+    (await loadCosmetics("player-a")).skins["card:" + cards[0]!.id],
+    undefined,
+  );
+  // Restore local fixture for the interactive browser checks only.
+  await api(prefix + "/users/player-a/grants", "admin", "POST", {
+    cosmeticId: item.id,
+    action: "GRANT",
+  });
+  await equipCosmetic("player-a", "card:" + cards[0]!.id, item.id);
+  await equipCosmetic("player-a", "back", registered.CARD_BACK.id);
+});
+test("slot image fallback and final-definition/controller resolution are independent from original combat definitions", () => {
+  const a = {
+    version: 1 as const,
+    skins: {
+      ["card:" + cards[0]!.id]: registered.CARD_SKIN,
+      ["champion:cosmetic-hero"]: registered.CHAMPION_SKIN,
+    },
+    emotes: [null, null, null, null],
+    cardBack: null,
+  };
+  assert.equal(
+    cosmeticImage(a, "CARD_SKIN", cards[0]!.id, "art", "original"),
+    uploaded,
+  );
+  assert.equal(
+    cosmeticImage(a, "CARD_SKIN", cards[1]!.id, "art", "transformed-original"),
+    "transformed-original",
+  );
+  assert.equal(
+    cosmeticImage(
+      undefined,
+      "CARD_SKIN",
+      cards[0]!.id,
+      "art",
+      "opponent-original",
+    ),
+    "opponent-original",
+  );
+  assert.equal(
+    cosmeticImage(
+      {
+        ...a,
+        skins: {
+          "champion:cosmetic-hero": {
+            ...registered.CHAMPION_SKIN,
+            imageAssets: { portrait: uploaded },
+          },
+        },
+      },
+      "CHAMPION_SKIN",
+      "cosmetic-hero",
+      "awakened",
+      "original-awakened",
+    ),
+    "original-awakened",
+  );
+  assert.equal(
+    cosmeticImage(a, "CARD_SKIN", "unsupported-token", "art", "original-token"),
+    "original-token",
+  );
+});
+test("malformed presentation metadata falls back without crashing combat rendering", () => {
+  assert.equal(
+    cosmeticImage({} as never, "CARD_SKIN", cards[0]!.id, "art", "original"),
+    "original",
+  );
+  assert.equal(
+    cosmeticImage(
+      {
+        skins: {
+          ["card:" + cards[0]!.id]: {
+            type: "CARD_SKIN",
+            targetId: cards[0]!.id,
+            imageAssets: null,
+          },
+        },
+      } as never,
+      "CARD_SKIN",
+      cards[0]!.id,
+      "art",
+      "original",
+    ),
+    "original",
+  );
+});
+test("cosmetic dependency failure or stalled read returns original defaults within a bounded match-start delay", async () => {
+  const { loadMatchCosmetics } =
+    await import("../../../artifacts/api-server/src/lib/cosmetics");
+  const start = performance.now();
+  const stalled = await loadMatchCosmetics(
+    "player-a",
+    () => new Promise(() => {}),
+    15,
+  );
+  assert.equal(stalled.cardBack, null);
+  assert.ok(performance.now() - start < 1000);
+  assert.deepEqual(
+    await loadMatchCosmetics("player-a", async () => {
+      throw new Error("isolated database outage");
+    }),
+    stalled,
+  );
+});
+test("RLS denies direct untrusted SQL clients; schema change is idempotent and original card catalog is untouched", async () => {
+  await pg.exec(
+    "CREATE ROLE cosmetic_anon; GRANT USAGE ON SCHEMA public TO cosmetic_anon; GRANT SELECT,INSERT,UPDATE,DELETE ON cosmetic_items,user_cosmetics,user_equipped_cosmetics,cosmetic_audit TO cosmetic_anon",
+  );
+  await pg.exec("SET ROLE cosmetic_anon");
+  try {
+    assert.equal(
+      (await pg.query("SELECT * FROM user_cosmetics")).rows.length,
+      0,
+    );
+    await assert.rejects(() =>
+      pg.exec(
+        "INSERT INTO cosmetic_items(id,type,name) VALUES('forged','IMAGE_EMOTE','forged')",
+      ),
+    );
+  } finally {
+    await pg.exec("RESET ROLE");
+  }
+  for (const c of cards) {
+    const [row] = await database
+      .select()
+      .from(schema.cardsTable)
+      .where(eq(schema.cardsTable.id, c.id));
+    for (const k of ["cost", "attack", "health", "text", "imageUrl"])
+      assert.equal((row as any)[k], (c as any)[k]);
+  }
+  await pg.exec(migration);
+  assert.ok(
+    (await database.select().from(schema.cosmeticItemsTable)).length >= 4,
+  );
+});
+after(async () => {
+  if (process.env.KO_COSMETICS_BROWSER_MODE === "1") {
+    // Start a fresh match, then use real accepted card actions to populate each board.
+    if (runtime) {
+      runtime.state.status = "FINISHED";
+      cleanupMatchRuntime(runtime.matchId);
+    }
+    for (const card of cards.slice(1)) {
+      const item = (
+        await api(prefix + "/items", "admin", "POST", {
+          ...registered.CARD_SKIN,
+          name: "QA " + card.name,
+          targetId: card.id,
+        })
+      ).body.item;
+      await api(prefix + "/users/player-a/grants", "admin", "POST", {
+        cosmeticId: item.id,
+        action: "GRANT",
+      });
+      await equipCosmetic("player-a", "card:" + card.id, item.id);
+    }
+    runtime = await startOnlineMatch(
+      "player-a",
+      "deck-player-a",
+      "player-b",
+      "deck-player-b",
+    );
+    await new Promise((r) => setTimeout(r, 4700));
+    for (const user of ["player-a", "player-b"]) {
+      const m = await applyMatchAction(
+        runtime.matchId,
+        user,
+        randomUUID(),
+        runtime.version,
+        { type: "MULLIGAN", cardInstanceIds: [] },
+      );
+      assert.equal(m.ok, true, m.ok ? "" : m.message);
+    }
+    for (let i = 0; i < 2; i++) {
+      const user =
+        runtime.state.activePlayerId === "PLAYER_ONE" ? "player-a" : "player-b";
+      const player = runtime.state.players.find(
+        (p: any) => p.id === runtime.state.activePlayerId,
+      );
+      const card = player.hand[0];
+      const action = await applyMatchAction(
+        runtime.matchId,
+        user,
+        randomUUID(),
+        runtime.version,
+        {
+          type: "PLAY_WRESTLER",
+          cardInstanceId: card.instanceId,
+          boardSlot: i,
+        },
+      );
+      assert.equal(action.ok, true, action.ok ? "" : action.message);
+      const ended = await applyMatchAction(
+        runtime.matchId,
+        user,
+        randomUUID(),
+        runtime.version,
+        { type: "END_TURN" },
+      );
+      assert.equal(ended.ok, true);
+    }
+    await mkdir("qa-results/cosmetics", { recursive: true });
+    await writeFile("qa-results/cosmetics/upload-fixture.png", png);
+    await writeFile(
+      "qa-results/cosmetics/fixture.json",
+      JSON.stringify({
+        origin,
+        cookies,
+        matchId: runtime.matchId,
+        cards,
+        championId: "cosmetic-hero",
+        registered,
+        password,
+      }),
+    );
+    console.log("COSMETICS_BROWSER_READY " + origin);
+    await new Promise(() => {});
+  }
+  if (runtime) {
+    runtime.state.status = "FINISHED";
+    cleanupMatchRuntime(runtime.matchId);
+  }
+  for (const socket of connections) socket.destroy();
+  server.closeAllConnections();
+  await new Promise<void>((r) => server.close(() => r()));
+  await pool.end();
+  await pg.close();
+});
+
+test("image emote throttling has no per-turn quota and replaces the previous image per player",async()=>{
+ const {CosmeticEmoteChannel}=await import('../../../artifacts/api-server/src/lib/cosmetic-emotes');
+ const channel=new CosmeticEmoteChannel(),loadout=await loadCosmetics('player-a');
+ const input={matchId:'same-turn',userId:'player-a',playerId:'PLAYER_ONE',requestId:'first',slot:1,loadout};
+ assert.ok(channel.send(input,0));assert.equal(channel.send({...input,requestId:'flood'},1),null);
+ for(let n=1;n<=20;n++)assert.ok(channel.send({...input,requestId:'same-turn-'+n},n*800));
+ assert.equal(channel.latest(16000).length,1);assert.equal(channel.latest(18001).length,0);
+ assert.equal(channel.send({...input,requestId:'same-turn-20'},20000),null);
+});

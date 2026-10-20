@@ -1,3 +1,4 @@
+import type {ImageEmoteEvent} from '@workspace/cosmetics';
 import type {
   MatchRecap,
   DraftConfig,
@@ -83,17 +84,23 @@ export const draftCommand = async (view: DraftView, type: string, pickId?: strin
     return draftRequest<DraftView>(path, "POST", { ...body, version: latest.version });
   }
 };
+type DraftHeartbeat={cosmeticEmotes?:ImageEmoteEvent[];type:"DRAFT_HEARTBEAT";matchId:string;version:number;serverTime:number;connectionStates:Extract<OnlineServerMessage,{type:"MATCH_SNAPSHOT"}>["connectionStates"]};
 export class DraftBattleClient {
   state: OnlineLobbyConnectionState = "idle";
   readonly diagnostics = { transport: "draft-http" };
   private listeners = new Set<OnlineLobbyListener>();
   private connections = new Set<OnlineLobbyConnectionListener>();
   private timer: ReturnType<typeof setInterval> | null = null;
+  private failures=0;
+  private nextPollAt=0;
+  private stopPolling(){if(this.timer)clearInterval(this.timer);this.timer=null;}
   private matchId: string | null = null;
   private busy = false;
   private actionBusy = false;
   private revision = 0;
   private generation = 0;
+  private seenCosmeticEmotes=new Set<string>();
+  private latestCosmeticExpiry=new Map<string,number>();
   private lastVersion: number | null = null;
   private statuses: string | null = null;
   onMessage(fn: OnlineLobbyListener) {
@@ -111,6 +118,12 @@ export class DraftBattleClient {
   private emit(message: OnlineServerMessage) {
     for (const fn of this.listeners) fn(message);
   }
+  private imageEmote(event:ImageEmoteEvent){
+    const key=event.playerId+':'+event.requestId;if(this.seenCosmeticEmotes.has(key)||(this.latestCosmeticExpiry.get(event.playerId)??0)>=event.expiresAt)return;
+    this.latestCosmeticExpiry.set(event.playerId,event.expiresAt);
+    this.seenCosmeticEmotes.add(key);if(this.seenCosmeticEmotes.size>256)this.seenCosmeticEmotes.delete(this.seenCosmeticEmotes.values().next().value!);
+    this.emit(event);
+  }
   private connection(state: OnlineLobbyConnectionState) {
     this.state = state;
     for (const fn of this.connections) fn(state);
@@ -119,6 +132,7 @@ export class DraftBattleClient {
     this.connection("open");
   }
   reconnectNow() {
+    this.failures=0;this.nextPollAt=0;
     this.lastVersion = null;
     this.connection("open");
     void this.poll();
@@ -130,21 +144,7 @@ export class DraftBattleClient {
     this.matchId = null;
     this.connection("closed");
   }
-  private async poll() {
-    if (!this.matchId || this.busy) return;
-    this.busy = true;
-    const id = this.matchId,
-      generation = this.generation,
-      revision = this.revision;
-    try {
-      const result = await draftRequest<OnlineServerMessage>(
-        `/sessions/${id}/battle`,
-      );
-      if (generation === this.generation && revision === this.revision && !this.actionBusy && result.type === "MATCH_SNAPSHOT") {
-        if (this.state === "error") {
-          this.lastVersion = null;
-          this.connection("open");
-        }
+  private emitConnectionStatuses(result:Pick<DraftHeartbeat,"connectionStates"|"serverTime">,id:string){
         const statuses = JSON.stringify(result.connectionStates);
         if (this.statuses !== statuses) {
           for (const playerId of ["PLAYER_ONE", "PLAYER_TWO"] as const)
@@ -158,6 +158,29 @@ export class DraftBattleClient {
             });
           this.statuses = statuses;
         }
+  }
+  private async poll() {
+    if (!this.matchId || this.busy || this.actionBusy || Date.now()<this.nextPollAt) return;
+    this.busy = true;
+    const id = this.matchId,
+      generation = this.generation,
+      revision = this.revision;
+    try {
+      const result = await draftRequest<OnlineServerMessage|DraftHeartbeat>(
+        `/sessions/${id}/battle${this.lastVersion===null?"":`?version=${this.lastVersion}`}`,
+      );
+      if(generation===this.generation&&(result.type==='MATCH_SNAPSHOT'||result.type==='DRAFT_HEARTBEAT'))for(const event of result.cosmeticEmotes??[])if(event.expiresAt>result.serverTime)this.imageEmote(event);
+      if(generation===this.generation&&revision===this.revision&&!this.actionBusy&&result.type==="DRAFT_HEARTBEAT"){
+        this.failures=0;this.nextPollAt=0;this.emitConnectionStatuses(result,id);return;
+      }
+      if (generation === this.generation && revision === this.revision && !this.actionBusy && result.type === "MATCH_SNAPSHOT") {
+        this.failures=0;this.nextPollAt=0;
+        if (this.state === "error") {
+          this.lastVersion = null;
+          this.connection("open");
+        }
+        if((result.state as {status?:string}).status==="FINISHED")this.stopPolling();
+        this.emitConnectionStatuses(result,id);
         if (this.lastVersion === null) {
           this.lastVersion = result.version;
           this.emit(result);
@@ -175,6 +198,9 @@ export class DraftBattleClient {
       }
     } catch (e) {
       if (generation !== this.generation || revision !== this.revision || this.actionBusy) return;
+      this.lastVersion=null;
+      this.failures++;
+      this.nextPollAt=Date.now()+(this.failures===1?0:Math.min(30_000,1000*2**Math.min(this.failures-1,5)));
       this.emit({
         type: "ERROR",
         code: "DRAFT_UNAVAILABLE",
@@ -187,9 +213,15 @@ export class DraftBattleClient {
     }
   }
   send(message: OnlineLobbyClientMessage): boolean {
+    if(message.type==='IMAGE_EMOTE'){
+      if(this.matchId!==message.matchId)return false;
+      void draftRequest<{event:ImageEmoteEvent|null}>(`/sessions/${message.matchId}/image-emotes`,'POST',{requestId:message.requestId,slot:message.slot}).then(result=>{if(result.event)this.imageEmote(result.event);}).catch(()=>this.emit({type:'ERROR',code:'IMAGE_EMOTE_UNAVAILABLE',message:'이미지 이모티콘을 전송하지 못했습니다.'}));
+      return true;
+    }
     if (message.type === "SUBSCRIBE" || message.type === "RESYNC") {
       if (this.matchId !== message.matchId) {
         this.generation++;
+        this.failures=0;this.nextPollAt=0;
         this.matchId = message.matchId;
         this.lastVersion = null;
         this.statuses = null;
@@ -217,6 +249,7 @@ export class DraftBattleClient {
       )
         .then((r) => {
           if ("version" in r) this.lastVersion = r.version;
+          if("state" in r&&(r.state as {status?:string}).status==="FINISHED")this.stopPolling();
           this.emit(r);
           if (
             "state" in r &&

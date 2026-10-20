@@ -1,0 +1,345 @@
+import { Router, type IRouter } from "express";
+import { randomUUID } from "node:crypto";
+import { and, eq, asc, ilike, or, inArray } from "drizzle-orm";
+import {
+  db,
+  cosmeticItemsTable as items,
+  userCosmeticsTable as owned,
+  equippedCosmeticsTable as equips,
+  cosmeticAuditTable as audit,
+  usersTable,
+  cardsTable,
+  championsTable,
+} from "@workspace/db";
+import { getAuthenticatedUser } from "../lib/auth";
+import {
+  COSMETIC_TYPES,
+  validImageUrl,
+  CosmeticError,
+  loadCosmetics,
+  listOwnedCosmetics,
+  equipCosmetic,
+  validateCosmeticTarget,
+  cosmeticsWriteLock,
+  type CosmeticItem,
+} from "../lib/cosmetics";
+import { CosmeticImageStorage } from "../lib/object-storage";
+const router: IRouter = Router();
+const storage = new CosmeticImageStorage();
+router.use(async (req, res, next) => {
+  if (!/^\/(?:cosmetics(?:\/|$)|admin\/cosmetics(?:\/|$))/i.test(req.path)) {
+    next();
+    return;
+  }
+  try {
+    req.authUser = (await getAuthenticatedUser(req)) ?? undefined;
+    if (!req.authUser) {
+      res.status(401).json({ message: "로그인이 필요합니다." });
+      return;
+    }
+    next();
+  } catch (e) {
+    next(e);
+  }
+});
+router.get("/cosmetics", async (req, res) => {
+  const inventory = await listOwnedCosmetics(req.authUser!.id);
+  const cardIds = inventory
+      .filter((o) => o.item.type === "CARD_SKIN")
+      .map((o) => o.item.targetId!)
+      .filter(Boolean),
+    championIds = inventory
+      .filter((o) => o.item.type === "CHAMPION_SKIN")
+      .map((o) => o.item.targetId!)
+      .filter(Boolean);
+  const [cards, champions] = await Promise.all([
+    cardIds.length
+      ? db.select().from(cardsTable).where(inArray(cardsTable.id, cardIds))
+      : [],
+    championIds.length
+      ? db
+          .select()
+          .from(championsTable)
+          .where(inArray(championsTable.id, championIds))
+      : [],
+  ]);
+  res.json({
+    owned: inventory,
+    loadout: await loadCosmetics(req.authUser!.id),
+    cards,
+    champions,
+  });
+});
+router.put("/cosmetics/equipment", async (req, res) => {
+  const { slot, cosmeticId } = req.body ?? {};
+  if (
+    typeof slot !== "string" ||
+    (cosmeticId !== null && typeof cosmeticId !== "string")
+  ) {
+    res.status(400).json({ message: "장착 입력값을 확인해 주세요." });
+    return;
+  }
+  res.json({
+    loadout: await equipCosmetic(req.authUser!.id, slot, cosmeticId),
+  });
+});
+router.use("/admin/cosmetics", (req, res, next) => {
+  if (req.authUser?.role !== "ADMIN") {
+    res.status(403).json({ message: "관리자 권한이 필요합니다." });
+    return;
+  }
+  next();
+});
+router.get("/admin/cosmetics", async (_req, res) => {
+  const [catalog, cards, champions] = await Promise.all([
+    db.select().from(items).orderBy(asc(items.sortOrder), asc(items.name)),
+    db
+      .select()
+      .from(cardsTable)
+      .where(
+        and(
+          eq(cardsTable.cardType, "WRESTLER"),
+          eq(cardsTable.isToken, false),
+          eq(cardsTable.isChampionToken, false),
+        ),
+      )
+      .orderBy(asc(cardsTable.name)),
+    db.select().from(championsTable).orderBy(asc(championsTable.name)),
+  ]);
+  res.json({ items: catalog, cards, champions });
+});
+function parseItem(body: unknown) {
+  if (!body || typeof body !== "object" || Array.isArray(body))
+    throw new CosmeticError(400, "입력값을 확인해 주세요.");
+  const b = body as Record<string, unknown>;
+  if (
+    !COSMETIC_TYPES.includes(b.type as CosmeticItem["type"]) ||
+    typeof b.name !== "string" ||
+    !b.name.trim() ||
+    b.name.length > 120 ||
+    typeof b.description !== "string" ||
+    b.description.length > 2000 ||
+    typeof b.isActive !== "boolean" ||
+    !Number.isInteger(b.sortOrder) ||
+    Math.abs(Number(b.sortOrder)) > 1000000
+  )
+    throw new CosmeticError(400, "이름·유형·정렬 순서를 확인해 주세요.");
+  const targetId =
+    typeof b.targetId === "string" && b.targetId.length <= 256 && b.targetId
+      ? b.targetId
+      : null;
+  const assets = b.imageAssets;
+  if (!assets || typeof assets !== "object" || Array.isArray(assets))
+    throw new CosmeticError(400, "이미지를 등록해 주세요.");
+  const imageAssets: Record<string, string> = {};
+  for (const [key, url] of Object.entries(assets)) {
+    if (
+      !["art", "portrait", "intro", "awakened"].includes(key) ||
+      !validImageUrl(url)
+    )
+      throw new CosmeticError(400, "이미지 주소가 올바르지 않습니다.");
+    imageAssets[key] = url;
+  }
+  if (
+    !Object.keys(imageAssets).length ||
+    (b.type !== "CHAMPION_SKIN" && !imageAssets.art)
+  )
+    throw new CosmeticError(400, "기본 이미지를 등록해 주세요.");
+  if (
+    b.type !== "CHAMPION_SKIN" &&
+    Object.keys(imageAssets).some((k) => k !== "art")
+  )
+    throw new CosmeticError(400, "챔피언 전용 이미지 슬롯입니다.");
+  return {
+    type: b.type as CosmeticItem["type"],
+    name: b.name.trim(),
+    description: b.description,
+    targetId,
+    imageAssets,
+    isActive: b.isActive,
+    sortOrder: Number(b.sortOrder),
+  };
+}
+async function verifyCatalogAssets(
+  assets: Record<string, string>,
+  known = new Set<string>(),
+) {
+  for (const url of new Set(Object.values(assets))) {
+    if (known.has(url)) continue;
+    if (!url.startsWith("/api/storage/objects/uploads/cosmetics/"))
+      throw new CosmeticError(
+        400,
+        "전용 저장소에 업로드한 이미지만 등록할 수 있습니다.",
+      );
+    const path = url.slice("/api/storage".length),
+      extension = path.toLowerCase().split(".").pop();
+    const contentType =
+      extension === "png"
+        ? "image/png"
+        : extension === "webp"
+          ? "image/webp"
+          : ["jpg", "jpeg"].includes(extension ?? "")
+            ? "image/jpeg"
+            : null;
+    if (
+      !contentType ||
+      !(await storage.verifyImage(path, contentType, 5 * 1024 * 1024))
+    )
+      throw new CosmeticError(
+        400,
+        "검증된 꾸미기 이미지만 저장할 수 있습니다.",
+      );
+  }
+}
+router.post("/admin/cosmetics/items", async (req, res) => {
+  const input = parseItem(req.body);
+  await validateCosmeticTarget(input.type, input.targetId);
+  await verifyCatalogAssets(input.imageAssets);
+  const [item] = await db
+    .insert(items)
+    .values({ id: randomUUID(), ...input })
+    .returning();
+  res.status(201).json({ item });
+});
+router.patch("/admin/cosmetics/items/:id", async (req, res) => {
+  const input = parseItem(req.body);
+  const [previous] = await db
+    .select()
+    .from(items)
+    .where(eq(items.id, req.params.id));
+  if (!previous) throw new CosmeticError(404, "아이템을 찾을 수 없습니다.");
+  if (input.isActive) await validateCosmeticTarget(input.type, input.targetId);
+  await verifyCatalogAssets(
+    input.imageAssets,
+    new Set(
+      previous.isActive || !input.isActive
+        ? Object.values(previous.imageAssets)
+        : [],
+    ),
+  );
+  const item = await db.transaction(async (tx) => {
+    await tx.execute(cosmeticsWriteLock);
+    const [old] = await tx
+      .select()
+      .from(items)
+      .where(eq(items.id, req.params.id));
+    if (!old) throw new CosmeticError(404, "아이템을 찾을 수 없습니다.");
+    if (old.type !== input.type || old.targetId !== input.targetId)
+      await tx.delete(equips).where(eq(equips.cosmeticId, old.id));
+    const [updated] = await tx
+      .update(items)
+      .set({ ...input, updatedAt: new Date() })
+      .where(eq(items.id, old.id))
+      .returning();
+    return updated;
+  });
+  res.json({ item });
+});
+router.get("/admin/cosmetics/users", async (req, res) => {
+  const q = typeof req.query.q === "string" ? req.query.q.trim() : "";
+  if (q.length < 2 || q.length > 100) {
+    res.json({ users: [] });
+    return;
+  }
+  const escaped = q.replace(/[\\%_]/g, "\\$&");
+  const users = await db
+    .select({ id: usersTable.id, nickname: usersTable.nickname })
+    .from(usersTable)
+    .where(or(ilike(usersTable.nickname, `%${escaped}%`), eq(usersTable.id, q)))
+    .limit(30);
+  res.json({ users });
+});
+router.get("/admin/cosmetics/users/:id", async (req, res) => {
+  res.json({
+    owned: await listOwnedCosmetics(req.params.id),
+    loadout: await loadCosmetics(req.params.id),
+  });
+});
+router.post("/admin/cosmetics/users/:id/grants", async (req, res) => {
+  const cosmeticId = req.body?.cosmeticId,
+    action = req.body?.action;
+  if (typeof cosmeticId !== "string" || !["GRANT", "REVOKE"].includes(action))
+    throw new CosmeticError(400, "지급 입력값을 확인해 주세요.");
+  await db.transaction(async (tx) => {
+    await tx.execute(cosmeticsWriteLock);
+    const [user] = await tx
+      .select({ id: usersTable.id })
+      .from(usersTable)
+      .where(eq(usersTable.id, req.params.id));
+    const [item] = await tx
+      .select()
+      .from(items)
+      .where(eq(items.id, cosmeticId));
+    if (!user || !item)
+      throw new CosmeticError(404, "계정 또는 아이템을 찾을 수 없습니다.");
+    if (action === "GRANT") {
+      if (!item.isActive)
+        throw new CosmeticError(422, "비활성 아이템은 지급할 수 없습니다.");
+      await tx
+        .insert(owned)
+        .values({ userId: user.id, cosmeticId })
+        .onConflictDoNothing();
+    } else
+      await tx
+        .delete(owned)
+        .where(
+          and(eq(owned.userId, user.id), eq(owned.cosmeticId, cosmeticId)),
+        );
+    await tx.insert(audit).values({
+      id: randomUUID(),
+      actorId: req.authUser!.id,
+      userId: user.id,
+      cosmeticId,
+      action,
+    });
+  });
+  res.json({ owned: await listOwnedCosmetics(req.params.id) });
+});
+const imageTypes: Record<string, readonly string[]> = {
+  "image/png": ["png"],
+  "image/webp": ["webp"],
+  "image/jpeg": ["jpg", "jpeg"],
+};
+router.post("/admin/cosmetics/uploads", async (req, res) => {
+  const { name, size, contentType } = req.body ?? {};
+  const extension =
+    typeof name === "string" ? (name.toLowerCase().split(".").pop() ?? "") : "";
+  if (
+    typeof contentType !== "string" ||
+    !Object.hasOwn(imageTypes, contentType) ||
+    !imageTypes[contentType]?.includes(extension) ||
+    !Number.isInteger(size) ||
+    size <= 0 ||
+    size > 5 * 1024 * 1024
+  )
+    throw new CosmeticError(400, "PNG·WebP·JPEG, 최대 5MB만 지원합니다.");
+  res.json(await storage.createUpload(extension));
+});
+router.post("/admin/cosmetics/uploads/complete", async (req, res) => {
+  const { objectPath, contentType } = req.body ?? {};
+  if (
+    typeof objectPath !== "string" ||
+    !/^\/objects\/uploads\/cosmetics\/[a-zA-Z0-9._-]+$/.test(objectPath) ||
+    typeof contentType !== "string" ||
+    !Object.hasOwn(imageTypes, contentType)
+  )
+    throw new CosmeticError(400, "이미지 경로가 올바르지 않습니다.");
+  if (!(await storage.verifyImage(objectPath, contentType, 5 * 1024 * 1024)))
+    throw new CosmeticError(400, "파일 내용·크기·형식 검증에 실패했습니다.");
+  res.json({ imageUrl: `/api/storage${objectPath}` });
+});
+router.use(
+  (
+    error: unknown,
+    _req: import("express").Request,
+    res: import("express").Response,
+    next: import("express").NextFunction,
+  ) => {
+    if (error instanceof CosmeticError) {
+      res.status(error.status).json({ message: error.message });
+      return;
+    }
+    next(error);
+  },
+);
+export default router;

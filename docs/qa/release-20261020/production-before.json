@@ -1,0 +1,22 @@
+{
+  "phase": "before",
+  "checkedAt": "2026-10-20T01:15:31Z",
+  "checks": {
+    "/healthz": {
+      "status": 200,
+      "seconds": 0.348
+    },
+    "/admin/cards": {
+      "status": 200,
+      "seconds": 0.602,
+      "count": 163,
+      "sha256": "ba099a0d71983a7993334b8a0ed69489943cf5e6ba695715c5edfe10045a6cfc"
+    },
+    "/admin/champions": {
+      "status": 200,
+      "seconds": 0.304,
+      "count": 11,
+      "sha256": "ec58507e32721de7adad730af1f901116e31e89b15bd92aaeef5fcbdf5a0e766"
+    }
+  }
+}

@@ -1,3 +1,5 @@
+import {AdminShopDecks} from "@/components/admin-shop-decks";
+import {AdminCosmetics} from '@/components/admin-cosmetics';
 import {
   lazy,
   Suspense,
@@ -204,7 +206,7 @@ export default function Admin() {
             </div>
           }
         >
-          {page?.id === "dashboard" ? (
+          {page?.id === "shop-decks" ? <AdminShopDecks/> : page?.id === "cosmetics" ? <AdminCosmetics/> : page?.id === "dashboard" ? (
             <AdminDashboard go={go} />
           ) : page?.id === "users" ? (
             <AdminUserDirectory go={go} />

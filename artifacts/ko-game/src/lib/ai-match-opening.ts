@@ -3,7 +3,7 @@ import type { ChampionDefinition } from "../game/champions/types";
 
 export const MATCH_OPENING_DURATION_MS = 4500;
 
-type IntroChampion = Pick<ChampionDefinition, "name" | "imageUrl" | "introLineOne">;
+type IntroChampion = Pick<ChampionDefinition, "name" | "imageUrl" | "introLineOne"> & {originalPortraitUrl?:string|null};
 
 export type AiMatchOpening = {
   gameId: string;
@@ -32,6 +32,7 @@ export function createAiMatchOpening(
       displayName: playerName,
       championName: playerChampion.name,
       portraitUrl: playerChampion.imageUrl ?? null,
+      originalPortraitUrl:playerChampion.originalPortraitUrl,
       dialogueLine: selfLine,
     },
     opponent: {
