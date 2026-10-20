@@ -1,0 +1,138 @@
+{
+  "viewports": [
+    [
+      390,
+      844
+    ]
+  ],
+  "users": 2,
+  "heartbeatCounts": [
+    {
+      "role": "egress-browser-a",
+      "count": 7
+    },
+    {
+      "role": "egress-browser-b",
+      "count": 5
+    }
+  ],
+  "changedSnapshots": 5,
+  "finishedPollingStopped": true,
+  "pageErrors": [],
+  "events": [
+    {
+      "role": "egress-browser-a",
+      "type": "MATCH_SNAPSHOT",
+      "version": 2,
+      "bytes": 46763
+    },
+    {
+      "role": "egress-browser-b",
+      "type": "MATCH_SNAPSHOT",
+      "version": 2,
+      "bytes": 46756
+    },
+    {
+      "role": "egress-browser-a",
+      "type": "DRAFT_HEARTBEAT",
+      "version": 2,
+      "bytes": 205
+    },
+    {
+      "role": "egress-browser-b",
+      "type": "DRAFT_HEARTBEAT",
+      "version": 2,
+      "bytes": 205
+    },
+    {
+      "role": "egress-browser-a",
+      "type": "DRAFT_HEARTBEAT",
+      "version": 2,
+      "bytes": 205
+    },
+    {
+      "role": "egress-browser-b",
+      "type": "DRAFT_HEARTBEAT",
+      "version": 2,
+      "bytes": 205
+    },
+    {
+      "role": "egress-browser-a",
+      "type": "DRAFT_HEARTBEAT",
+      "version": 2,
+      "bytes": 205
+    },
+    {
+      "role": "egress-browser-b",
+      "type": "DRAFT_HEARTBEAT",
+      "version": 2,
+      "bytes": 205
+    },
+    {
+      "role": "egress-browser-a",
+      "type": "DRAFT_HEARTBEAT",
+      "version": 2,
+      "bytes": 205
+    },
+    {
+      "role": "egress-browser-b",
+      "type": "DRAFT_HEARTBEAT",
+      "version": 2,
+      "bytes": 205
+    },
+    {
+      "role": "egress-browser-a",
+      "type": "DRAFT_HEARTBEAT",
+      "version": 2,
+      "bytes": 205
+    },
+    {
+      "role": "egress-browser-b",
+      "type": "DRAFT_HEARTBEAT",
+      "version": 2,
+      "bytes": 205
+    },
+    {
+      "role": "egress-browser-a",
+      "type": "DRAFT_HEARTBEAT",
+      "version": 2,
+      "bytes": 205
+    },
+    {
+      "role": "egress-browser-b",
+      "type": "MATCH_SNAPSHOT",
+      "version": 3,
+      "bytes": 47140
+    },
+    {
+      "role": "egress-browser-a",
+      "type": "MATCH_SNAPSHOT",
+      "version": 4,
+      "bytes": 47532
+    },
+    {
+      "role": "egress-browser-b",
+      "type": "MATCH_SNAPSHOT",
+      "version": 4,
+      "bytes": 47525
+    },
+    {
+      "role": "egress-browser-a",
+      "type": "DRAFT_HEARTBEAT",
+      "version": 4,
+      "bytes": 205
+    },
+    {
+      "role": "egress-browser-b",
+      "type": "MATCH_SNAPSHOT",
+      "version": 5,
+      "bytes": 48025
+    },
+    {
+      "role": "egress-browser-a",
+      "type": "MATCH_SNAPSHOT",
+      "version": 5,
+      "bytes": 48032
+    }
+  ]
+}

@@ -1,0 +1,52 @@
+{
+  "results": [
+    {
+      "name": "administrator builds, uploads and persists a real valid 25-card product through the editor",
+      "status": "PASS"
+    },
+    {
+      "name": "shop recipe and existing card detail show exact quantities and champion exclusion",
+      "status": "PASS"
+    },
+    {
+      "name": "mobile purchase deducts once, grants shortages and auto-registers an editable persistent deck",
+      "status": "PASS"
+    },
+    {
+      "name": "mobile layouts at 360, 375, 390 and 412 pixels preserve scroll and usable controls",
+      "status": "PASS"
+    },
+    {
+      "name": "purchased and selected deck enters actual AI intro and battle",
+      "status": "PASS"
+    },
+    {
+      "name": "both authenticated PvP browsers enter with independently purchased ordinary decks",
+      "status": "PASS"
+    }
+  ],
+  "pageErrors": [],
+  "viewports": [
+    [
+      360,
+      740
+    ],
+    [
+      375,
+      812
+    ],
+    [
+      390,
+      844
+    ],
+    [
+      412,
+      915
+    ],
+    [
+      1440,
+      1000
+    ]
+  ],
+  "kind": "Chromium mobile emulation, not a physical smartphone"
+}
