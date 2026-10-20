@@ -1,0 +1,23 @@
+{
+  "checkedAt": "2026-10-20T07:20:30.319Z",
+  "viewport": [
+    390,
+    844
+  ],
+  "loginMs": 2829,
+  "loginStatuses": [
+    200
+  ],
+  "frontHealth": [
+    200
+  ],
+  "sessionSurvivedReload": true,
+  "cosmeticMenuCount": 1,
+  "oldMenuCount": 0,
+  "legacySkinApiStatus": 200,
+  "legacyUrlSurvivedReload": true,
+  "horizontalOverflow": false,
+  "pageErrors": [],
+  "productionActions": "One explicitly authorized existing-account login including its previously allowed starter-provisioning side effect. Other navigation was read-only; no manual content edits, grants, purchases, rewards or test-account creation.",
+  "initialHarnessFailure": "Configured login ID was not an email; native form validation prevented submission. Resolved the same existing administrator account email via the existing authorized session, kept only in process memory, then submitted once."
+}

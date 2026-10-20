@@ -14,5 +14,14 @@
     "realLocalAdministratorRunners": 3
   },
   "physicalPhone": "NOT_RUN",
-  "productionLogin": "PENDING_DEPLOYMENT"
+  "productionLogin": "PASS",
+  "productionBrowser": "PASS: 390x844 emulation; one login POST, reload, unified menu and legacy tab",
+  "focusedCi": {
+    "run": 39384956150,
+    "result": "PASS"
+  },
+  "broadCi": {
+    "run": 39384955945,
+    "result": "IN_PROGRESS at report creation"
+  }
 }

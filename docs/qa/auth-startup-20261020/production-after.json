@@ -1,0 +1,56 @@
+{
+  "phase": "after",
+  "checkedAt": "2026-10-20T07:18:21Z",
+  "checks": {
+    "/healthz": {
+      "status": 200,
+      "seconds": 0.364
+    },
+    "/admin/cards": {
+      "status": 200,
+      "seconds": 0.419,
+      "count": 163,
+      "sha256": "ba099a0d71983a7993334b8a0ed69489943cf5e6ba695715c5edfe10045a6cfc"
+    },
+    "/admin/champions": {
+      "status": 200,
+      "seconds": 0.312,
+      "count": 11,
+      "sha256": "ec58507e32721de7adad730af1f901116e31e89b15bd92aaeef5fcbdf5a0e766"
+    },
+    "/admin/cosmetics": {
+      "status": 200,
+      "seconds": 0.579,
+      "items": 0
+    },
+    "/admin/shop-decks": {
+      "status": 200,
+      "seconds": 0.406,
+      "items": 0
+    },
+    "/cosmetics": {
+      "status": 200,
+      "seconds": 0.562
+    },
+    "/shop/decks": {
+      "status": 200,
+      "seconds": 0.308
+    },
+    "anonymous:/admin/cosmetics": {
+      "status": 401,
+      "seconds": 0.285
+    },
+    "anonymous:/admin/shop-decks": {
+      "status": 401,
+      "seconds": 0.397
+    },
+    "anonymous:/cosmetics": {
+      "status": 401,
+      "seconds": 1.398
+    },
+    "anonymous:/shop/decks": {
+      "status": 401,
+      "seconds": 0.297
+    }
+  }
+}
