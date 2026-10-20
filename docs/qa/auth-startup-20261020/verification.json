@@ -1,0 +1,18 @@
+{
+  "unit": {
+    "tests": 30,
+    "pass": 30,
+    "fail": 0,
+    "skipped": 0
+  },
+  "typecheckAndBuild": "PASS",
+  "compiledBrowserScenarios": {
+    "coldLoginAndUnifiedMenu": 4,
+    "automaticAndOnlineRecovery": 4,
+    "sessionRestoration": 1,
+    "entryRegressions": 14,
+    "realLocalAdministratorRunners": 3
+  },
+  "physicalPhone": "NOT_RUN",
+  "productionLogin": "PENDING_DEPLOYMENT"
+}

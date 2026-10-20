@@ -1,0 +1,26 @@
+[
+  {
+    "url": "https://ko-card-game.onrender.com/api/healthz",
+    "status": 200,
+    "seconds": 0.403,
+    "bytes": 15
+  },
+  {
+    "url": "https://ko-card-game.onrender.com/api/auth/me",
+    "status": 200,
+    "seconds": 0.403,
+    "bytes": 35
+  },
+  {
+    "url": "https://ko-card-game-vr69.onrender.com/api/auth/me",
+    "status": 200,
+    "seconds": 0.386,
+    "bytes": 35
+  },
+  {
+    "url": "https://ko-card-game-vr69.onrender.com/api/server-status",
+    "status": 200,
+    "seconds": 0.404,
+    "bytes": 119
+  }
+]

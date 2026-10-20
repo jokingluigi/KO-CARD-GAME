@@ -1,0 +1,25 @@
+{
+  "report": [
+    {
+      "width": 390,
+      "case": "slow session and server wake preserve input, post once, ignore late guest",
+      "status": "PASS"
+    },
+    {
+      "width": 1440,
+      "case": "slow session and server wake preserve input, post once, ignore late guest",
+      "status": "PASS"
+    },
+    {
+      "width": 390,
+      "case": "one cosmetic menu, legacy skin alias and dirty draft guard",
+      "status": "PASS"
+    },
+    {
+      "width": 1440,
+      "case": "one cosmetic menu, legacy skin alias and dirty draft guard",
+      "status": "PASS"
+    }
+  ],
+  "pageErrors": []
+}

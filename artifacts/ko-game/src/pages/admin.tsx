@@ -1,5 +1,5 @@
 import {AdminShopDecks} from "@/components/admin-shop-decks";
-import {AdminCosmetics} from '@/components/admin-cosmetics';
+import {AdminCosmeticsHub} from '@/components/admin-cosmetics-hub';
 import {
   lazy,
   Suspense,
@@ -71,11 +71,6 @@ const AdminPackManager = lazy(() =>
     default: m.AdminPackManager,
   })),
 );
-const AdminCardSkinManager = lazy(() =>
-  import("@/components/admin-card-skin-manager").then((m) => ({
-    default: m.AdminCardSkinManager,
-  })),
-);
 const AdminCardFrameManager = lazy(() =>
   import("@/components/admin-card-frame-manager").then((m) => ({
     default: m.AdminCardFrameManager,
@@ -120,7 +115,7 @@ export default function Admin() {
   const onUnauthorized = useCallback(() => setStatus("forbidden"), []);
   const checkAuthentication = useCallback(() => {
     const generation = ++authRequestGeneration.current;
-    setStatus("checking");
+    setStatus(previous => previous === "error" ? "error" : "checking");
     setAuthError(null);
     fetchCurrentUser()
       .then((result) => {
@@ -198,7 +193,7 @@ export default function Admin() {
 
   return (
     <AdminLayout onLogout={() => void handleLogout()}>
-      {(go, page) => (
+      {(go, page, displayPath, goPath) => (
         <Suspense
           fallback={
             <div className="admin-panel-loading" role="status">
@@ -206,7 +201,7 @@ export default function Admin() {
             </div>
           }
         >
-          {page?.id === "shop-decks" ? <AdminShopDecks/> : page?.id === "cosmetics" ? <AdminCosmetics/> : page?.id === "dashboard" ? (
+          {page?.id === "shop-decks" ? <AdminShopDecks/> : page?.id === "cosmetics" ? <AdminCosmeticsHub onNavigate={goPath} legacy={displayPath.replace(/\/$/,'')==='/admin/skins'} onUnauthorized={onUnauthorized}/> : page?.id === "dashboard" ? (
             <AdminDashboard go={go} />
           ) : page?.id === "users" ? (
             <AdminUserDirectory go={go} />
@@ -248,8 +243,7 @@ export default function Admin() {
             <AdminChampionManager onUnauthorized={onUnauthorized} />
           ) : page?.id === "packs" ? (
             <AdminPackManager onUnauthorized={onUnauthorized} />
-          ) : page?.id === "skins" ? (
-            <AdminCardSkinManager onUnauthorized={onUnauthorized} />
+
           ) : page?.id === "frames" ? (
             <AdminCardFrameManager onUnauthorized={onUnauthorized} />
           ) : page?.id === "shop" ? (

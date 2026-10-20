@@ -9,7 +9,7 @@ for(const [name,width,height] of [['desktop',1280,800],['mobile',390,844]])for(c
  const context=await browser.newContext({viewport:{width,height}});
  await context.addInitScript(()=>{
   window.__koEntryRegressions=[];
-  const observer=new MutationObserver(()=>{if(/서버\s*연결\s*중/.test(document.body?.innerText??''))window.__koEntryRegressions.push(true);});
+  const observer=new MutationObserver(()=>{if(/서버\s*연결\s*중/.test(document.body?.innerText??'')&&!document.querySelector('form'))window.__koEntryRegressions.push(true);});
   observer.observe(document,{childList:true,subtree:true,characterData:true});
  });
  const page=await context.newPage(),pending=[];let requests=0,checks=0,loginAttempts=0;
@@ -28,6 +28,7 @@ for(const [name,width,height] of [['desktop',1280,800],['mobile',390,844]])for(c
    if(mode==='pending'||mode==='login-race')return new Promise(resolve=>pending.push(async()=>{await route.fulfill({json:guest});resolve();}));
    return route.fulfill({json:mode==='restored-session'||mode==='admin'?{authenticated:true,user:{...account,role:mode==='admin'?'ADMIN':'USER'}}:guest});
   }
+  if(path.endsWith('/healthz'))return route.fulfill({json:{status:'ok'}});
   if(path.endsWith('/auth/login')){
    if(mode==='login-timeout'&&++loginAttempts===1)return new Promise(resolve=>pending.push(async()=>{try{await route.fulfill({json:guest});}catch{}resolve();}));
    return route.fulfill({json:{authenticated:true,user:account}});
@@ -47,8 +48,7 @@ for(const [name,width,height] of [['desktop',1280,800],['mobile',390,844]])for(c
    await page.getByText('ENTRY_QA',{exact:true}).waitFor({timeout:5000});
   }else{
    const email=page.locator('input[type="email"]');
-   // Existing-session restoration has an 8-second request deadline before
-   // showing the form on a stalled API; allow that deadline plus rendering.
+   // The entry form must stay usable while session restoration is pending.
    await email.waitFor({timeout:10000});
    await email.fill('entry@example.invalid');
    if(mode==='login-timeout'){

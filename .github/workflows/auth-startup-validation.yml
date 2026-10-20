@@ -1,0 +1,50 @@
+name: Login recovery and unified cosmetics menu
+on:
+  pull_request:
+    paths:
+      - artifacts/ko-game/src/lib/auth-client*
+      - artifacts/ko-game/src/lib/admin-navigation*
+      - artifacts/ko-game/src/components/auth-page.tsx
+      - artifacts/ko-game/src/components/home-entry.tsx
+      - artifacts/ko-game/src/components/admin-cosmetics*.tsx
+      - artifacts/ko-game/src/components/admin-layout.tsx
+      - artifacts/ko-game/src/pages/admin.tsx
+      - artifacts/ko-game/src/pages/decks.tsx
+      - docs/qa/auth*browser*.mjs
+      - docs/qa/entry-browser.mjs
+      - .github/workflows/auth-startup-validation.yml
+permissions:
+  contents: read
+jobs:
+  auth-and-menu:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - uses: pnpm/action-setup@v4
+        with:
+          version: '11.19.0'
+      - run: pnpm install --frozen-lockfile --ignore-scripts
+      - name: Session, deadline, credential replay and menu compatibility checks
+        env:
+          DATABASE_URL: postgresql://unused:unused@127.0.0.1:1/unused
+        run: >-
+          node --import ./docs/qa/checkpoints/20261006/qa-loader.mjs --test --test-isolation=none
+          artifacts/ko-game/src/lib/auth-client.test.ts
+          artifacts/ko-game/src/lib/startup-client.test.ts
+          artifacts/ko-game/src/lib/admin-navigation.test.ts
+          artifacts/ko-game/src/lib/entry-state.test.ts
+          artifacts/api-server/src/lib/auth-timeout.test.ts
+      - run: pnpm run build
+      - name: Browser tooling
+        run: |
+          npm install --no-save --prefix "$RUNNER_TEMP/ko-auth-browser" playwright@1.62.1
+          "$RUNNER_TEMP/ko-auth-browser/node_modules/.bin/playwright" install --with-deps chromium
+      - name: Compiled mobile/desktop login faults and real local administrator regression
+        env:
+          KO_QA_PLAYWRIGHT: ${{ runner.temp }}/ko-auth-browser/node_modules/playwright/index.mjs
+          KO_QA_CHROME_CHANNEL: chromium
+        run: node docs/qa/auth-startup-browser-runner.mjs

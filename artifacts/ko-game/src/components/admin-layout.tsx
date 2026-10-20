@@ -64,6 +64,8 @@ export function AdminLayout({
   children: (
     go: (id: AdminPageId) => void,
     page: ReturnType<typeof adminPageForPath>,
+    displayPath: string,
+    goPath: (path:string)=>void,
   ) => ReactNode;
   onLogout: () => void;
 }) {
@@ -94,19 +96,19 @@ export function AdminLayout({
   useEffect(() => {
     if (!dirtyRef.current) setDisplayLocation(location);
   }, [location, dirty]);
-  const go = useCallback(
-    (id: AdminPageId) => {
-      const p = ADMIN_PAGES.find((p) => p.id === id);
-      if (!p || p.path === location) return;
+  const goPath = useCallback(
+    (path:string) => {
+      if (path === location) return;
       if (!confirmDiscardAdminDraft(dirtyRef.current)) return;
       setDirty({});
       setDrawer(false);
       setQuery("");
       historyIndex.current++;
-      navigate(p.path, { state: { koAdminIndex: historyIndex.current } });
+      navigate(path, { state: { koAdminIndex: historyIndex.current } });
     },
     [location, navigate],
   );
+  const go = useCallback((id:AdminPageId)=>{const page=ADMIN_PAGES.find(p=>p.id===id);if(page)goPath(page.path);},[goPath]);
   useEffect(() => {
     if (!current) return;
     setExpanded((old) =>
@@ -470,7 +472,7 @@ export function AdminLayout({
                 </button>
               )}
             </div>
-            {children(go, current)}
+            {children(go, current, displayLocation, goPath)}
           </main>
         </div>
       </div>
