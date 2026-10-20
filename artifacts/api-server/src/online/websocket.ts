@@ -1,3 +1,4 @@
+import {sendImageEmote} from './service';
 import {readMaintenance,maintenanceAllows} from '../lib/maintenance';
 import type { IncomingMessage, Server as HttpServer } from "node:http";
 import type { Duplex } from "node:stream";
@@ -262,6 +263,10 @@ async function handleMessage(
     return;
   }
 
+  if(message.type === "IMAGE_EMOTE"){
+    if(isPrimaryConnection(runtime,connection))sendImageEmote(runtime,connection.userId,message.requestId,message.slot);
+    return;
+  }
   try {
     if (!isPrimaryConnection(runtime, connection)) {
       send(socket, {

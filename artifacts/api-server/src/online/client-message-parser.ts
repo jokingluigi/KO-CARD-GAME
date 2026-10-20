@@ -27,6 +27,8 @@ export function isOnlineClientMessage(value: unknown): value is OnlineClientMess
     case "UNSUBSCRIBE":
     case "RESYNC":
       return isNonEmptyString(value.matchId);
+    case "IMAGE_EMOTE":
+      return isNonEmptyString(value.matchId) && isNonEmptyString(value.requestId,128) && Number.isInteger(value.slot) && Number(value.slot)>=1 && Number(value.slot)<=4;
     case "MATCH_ACTION":
       return isNonEmptyString(value.matchId) &&
         isNonEmptyString(value.requestId, 128) &&
@@ -56,6 +58,7 @@ function isKnownClientMessageType(type: string): boolean {
     case "SUBSCRIBE":
     case "UNSUBSCRIBE":
     case "RESYNC":
+    case "IMAGE_EMOTE":
     case "MATCH_ACTION":
       return true;
     default:

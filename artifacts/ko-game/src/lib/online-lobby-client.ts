@@ -1,3 +1,4 @@
+import type {MatchCosmetics,ImageEmoteEvent} from '@workspace/cosmetics';
 import type {MatchRecap} from '@workspace/game-engine';
 import type { OnlineActionPayload } from "./online-match-protocol";
 import {
@@ -24,6 +25,8 @@ export type OnlineLobbyMessage =
   | { type: "LOBBY_ERROR" | "ERROR"; code: string; message: string };
 
 type MatchPayload = {
+ cosmetics?:MatchCosmetics;
+ cosmeticEmotes?:ImageEmoteEvent[];
   matchId: string; version: number; state: unknown; events: unknown[];
   recap?:MatchRecap|null;
   serverTime: number; turnStartedAt: number | null; turnDeadlineAt: number | null;
@@ -40,6 +43,7 @@ type MatchPayload = {
   connectionStates: Record<"PLAYER_ONE" | "PLAYER_TWO", "CONNECTED" | "DISCONNECTED_GRACE" | "FORFEITED">;
 };
 export type OnlineMatchMessage =
+ | ImageEmoteEvent
   | ({ type: "MATCH_SNAPSHOT"; seat: "PLAYER_ONE" | "PLAYER_TWO" } & MatchPayload)
   | ({ type: "ACTION_ACCEPTED"; requestId: string } & MatchPayload)
   | { type: "ACTION_REJECTED"; matchId: string; requestId?: string; code: string; message: string; currentVersion: number }
@@ -49,6 +53,7 @@ export type OnlineMatchMessage =
 export type OnlineServerMessage = OnlineLobbyMessage | OnlineMatchMessage;
 
 export type OnlineLobbyClientMessage =
+ | {type:"IMAGE_EMOTE";matchId:string;requestId:string;slot:number}
   | { type: "JOIN_QUICK_QUEUE"; deckId: string }
   | { type: "LEAVE_QUICK_QUEUE" }
   | { type: "CREATE_PRIVATE_ROOM"; deckId: string }

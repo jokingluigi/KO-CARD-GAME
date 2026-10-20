@@ -50,6 +50,7 @@ const menuItems = [
     description: "보유 카드와 챔피언을 확인합니다",
     icon: Library,
   },
+  {label:"꾸미기",description:"보유 스킨과 이미지 이모티콘을 장착합니다",icon:Layers3},
   {
     label: "내 팩",
     description: "보유한 팩을 열어 보상을 확인합니다",
@@ -255,6 +256,7 @@ export function MainMenu({ onComingSoon, onDeckEdit, onAiMatch, user, onLogout, 
               onClick={() => {
                 if (label === '타워 모드') { navigate('/tower'); return; }
                 if (label === '드래프트 모드') { navigate('/draft'); return; }
+                if (label === "꾸미기") { navigate("/cosmetics"); return; }
                 if (label === "덱 편집") {
                   onDeckEdit?.();
                   return;

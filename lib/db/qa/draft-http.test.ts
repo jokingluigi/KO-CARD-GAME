@@ -261,6 +261,7 @@ async function request(
   if (cookie) cookies.set(role, cookie.split(";")[0]);
   return { status: response.status, body: await response.json() };
 }
+let cosmeticDraftFixture:Record<string,unknown>|null=null;
 after(async () => {
   if(process.env.KO_DRAFT_EGRESS_BROWSER==='1'){
     const {eq}=await import('drizzle-orm');
@@ -278,6 +279,11 @@ after(async () => {
     await fs.writeFile('qa-results/draft-egress/fixture.json',JSON.stringify({origin,matchId:v.id,cookies:Object.fromEntries(cookies)}));
     console.log('DRAFT_EGRESS_BROWSER_READY '+origin);
     await new Promise<void>(resolve=>process.once('SIGTERM',resolve));
+  }
+  if(process.env.KO_DRAFT_COSMETICS_BROWSER_MODE==='1'){
+    const {mkdir,writeFile}=await import('node:fs/promises');await mkdir('qa-results/cosmetics',{recursive:true});
+    await writeFile('qa-results/cosmetics/draft-fixture.json',JSON.stringify({origin,cookies:Object.fromEntries(cookies),...cosmeticDraftFixture}));
+    console.log('DRAFT_COSMETICS_READY');await new Promise(()=>{});
   }
   const { getRuntime, cleanupMatchRuntime } =
     await import("../../../artifacts/api-server/src/online/service");
@@ -1101,3 +1107,55 @@ test('reinitializing the draft worker does not create duplicate process timers',
  try{const first=service.startDraftWorker(),second=service.startDraftWorker();assert.equal(first,second);assert.equal(starts,1);first();assert.equal(stops,1);}finally{globalThis.setInterval=originalInterval;globalThis.clearInterval=originalClear;}
 });
 }
+
+test("cosmetic snapshots and image emotes also use the real public Draft PvP transport without changing combat",async()=>{
+ assert.equal((await request('user','/ADMIN/DRAFT')).status,403);
+
+ const {eq}=await import('drizzle-orm');
+ const {equipCosmetic}=await import('../../../artifacts/api-server/src/lib/cosmetics');
+ await database.update(schema.draftSettingsTable).set({enabled:true}).where(eq(schema.draftSettingsTable.id,'global'));
+ for(const id of ['cos-a','cos-b']){
+  await database.insert(schema.usersTable).values({id,email:id+'@epic.invalid',nickname:id,role:'USER',passwordHash:await hashPassword('EpicLocalQA123'),shopCurrencyStarterGrantedAt:new Date()});
+  assert.equal((await request(id,'/auth/login','POST',{email:id+'@epic.invalid',password:'EpicLocalQA123'})).status,200);
+ }
+ const assetA='https://cosmetics-draft.invalid/a.webp',assetB='https://cosmetics-draft.invalid/b.webp';
+ const items=[...['hero','rival','third-hero'].map(id=>({id:'cos-skin-'+id,type:'CHAMPION_SKIN',name:'드래프트 스킨 '+id,targetId:id,imageAssets:{portrait:assetA,intro:assetA}})),
+ {id:'cos-back-a',type:'CARD_BACK',name:'드래프트 뒷면 A',targetId:null,imageAssets:{art:assetA}},
+ {id:'cos-back-b',type:'CARD_BACK',name:'드래프트 뒷면 B',targetId:null,imageAssets:{art:assetB}},
+ {id:'cos-emote-a',type:'IMAGE_EMOTE',name:'드래프트 이모티콘 A',targetId:null,imageAssets:{art:assetA}},
+ {id:'cos-emote-b',type:'IMAGE_EMOTE',name:'드래프트 이모티콘 B',targetId:null,imageAssets:{art:assetB}}];
+ await database.insert(schema.cosmeticItemsTable).values(items);
+ for(const item of items){const userId=item.id.endsWith('-b')?'cos-b':'cos-a';await database.insert(schema.userCosmeticsTable).values({userId,cosmeticId:item.id});await equipCosmetic(userId,item.type==='CHAMPION_SKIN'?'champion:'+item.targetId:item.type==='CARD_BACK'?'back':'emote:1',item.id);}
+ const created=await request('cos-a','/draft/sessions','POST',{mode:'PVP'});assert.equal(created.status,201,JSON.stringify(created.body));
+ const id=created.body.id;
+ // Warm the first player's catalog cache before JOIN; second-player cosmetics
+ // must still be read from the committed row on every process.
+ assert.equal((await request('cos-a',`/draft/sessions/${id}`)).status,200);
+ const invitation=(await request('cos-b',`/draft/sessions/${id}/invitation`)).body;
+ const joined=await request('cos-b',`/draft/sessions/${id}/commands`,'POST',{type:'JOIN',version:invitation.version,requestId:crypto.randomUUID()});assert.equal(joined.status,200,JSON.stringify(joined.body));
+ const frozen=(await stored(id)).snapshot as any;assert.equal(frozen.cosmetics.PLAYER_ONE.cardBack.id,'cos-back-a');assert.equal(frozen.cosmetics.PLAYER_TWO.cardBack.id,'cos-back-b');
+ await equipCosmetic('cos-a','back',null);
+ await replaceState(id,s=>{for(const seat of s.seats)seat.deadline=Date.now()-800000;});await tickDraftSessions();
+ const a=(await request('cos-a',`/draft/sessions/${id}/battle`)).body,b=(await request('cos-b',`/draft/sessions/${id}/battle`)).body;
+ assert.equal(a.type,'MATCH_SNAPSHOT');assert.equal(b.type,'MATCH_SNAPSHOT');assert.deepEqual(a.cosmetics,b.cosmetics);assert.equal(a.cosmetics.PLAYER_ONE.cardBack.id,'cos-back-a');assert.equal(a.cosmetics.PLAYER_TWO.cardBack.id,'cos-back-b');assert.equal(a.state.players[1].hand.hidden,true);assert.equal(b.state.players[0].hand.hidden,true);
+ const before=await stored(id);
+ const packet={slot:1,requestId:'cosmetic-draft-event'};
+ const sent=await request('cos-a',`/draft/sessions/${id}/image-emotes`,'POST',packet);assert.equal(sent.status,200,JSON.stringify(sent.body));assert.equal(sent.body.event.imageUrl,assetA);
+ assert.equal((await request('cos-a',`/draft/sessions/${id}/image-emotes`,'POST',packet)).body.event,null);
+ assert.equal((await request('cos-a',`/draft/sessions/${id}/image-emotes`,'POST',{slot:2,requestId:'unowned'})).body.event,null);
+ assert.equal((await request('third',`/draft/sessions/${id}/image-emotes`,'POST',packet)).status,403);
+ assert.equal((await request('cos-a',`/draft/sessions/${id}/image-emotes`,'POST',{...packet,slot:9})).status,400);
+ const reply=await request('cos-b',`/draft/sessions/${id}/image-emotes`,'POST',{slot:1,requestId:'reply'});assert.equal(reply.body.event.imageUrl,assetB);
+ const after=await stored(id);assert.deepEqual(after.state,before.state);assert.equal(after.version,before.version);
+ for(const role of ['cos-a','cos-b']){
+  const view=(await request(role,`/draft/sessions/${id}/battle?version=${after.version}`)).body;
+  assert.equal(view.type,'DRAFT_HEARTBEAT');
+  assert.equal(view.cosmeticEmotes.length,2);assert.deepEqual(new Set(view.cosmeticEmotes.map((e:any)=>e.playerId)),new Set(['PLAYER_ONE','PLAYER_TWO']));
+ }
+ // Keep a real, persisted match for the optional two-browser check. The normal suite aborts it below.
+ cosmeticDraftFixture={id,assetA,assetB};
+ if(process.env.KO_DRAFT_COSMETICS_BROWSER_MODE!=='1'){
+  const current=(await request('cos-a',`/draft/sessions/${id}`)).body;
+  assert.equal((await request('cos-a',`/draft/sessions/${id}/commands`,'POST',{type:'ABORT',version:current.version,requestId:crypto.randomUUID()})).status,200);
+ }
+});

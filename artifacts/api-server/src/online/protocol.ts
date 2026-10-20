@@ -1,3 +1,4 @@
+import type {MatchCosmetics,ImageEmoteEvent} from '@workspace/cosmetics';
 import type {MatchRecap} from '@workspace/game-engine';
 import type { GameAction } from "@workspace/game-engine";
 import { isOnlineActionPayload } from "@workspace/game-engine/online-action";
@@ -7,6 +8,7 @@ export { isOnlineActionPayload };
 export type { OnlineActionPayload };
 
 export type OnlineClientMessage =
+  | {type:"IMAGE_EMOTE";matchId:string;requestId:string;slot:number}
   | { type: "SUBSCRIBE"; matchId: string }
   | { type: "UNSUBSCRIBE"; matchId: string }
   | {
@@ -73,6 +75,7 @@ export type LobbyServerMessage =
   | { type: "LOBBY_ERROR"; code: string; message: string };
 
 export type OnlineServerMessage =
+  | ImageEmoteEvent
   | {
       type: "MATCH_SNAPSHOT";
       matchId: string;
@@ -85,6 +88,8 @@ export type OnlineServerMessage =
       turnStartedAt: number | null;
       turnDeadlineAt: number | null;
        gameplayStartsAt: number | null;
+       cosmetics?: MatchCosmetics;
+       cosmeticEmotes?:ImageEmoteEvent[];
        publicPlayers: OnlinePublicPlayerMetadata[];
        introFirstSpeaker: "PLAYER_ONE" | "PLAYER_TWO" | null;
       connectionStates: Record<"PLAYER_ONE" | "PLAYER_TWO", "CONNECTED" | "DISCONNECTED_GRACE" | "FORFEITED">;
@@ -101,6 +106,8 @@ export type OnlineServerMessage =
       turnStartedAt: number | null;
       turnDeadlineAt: number | null;
        gameplayStartsAt: number | null;
+       cosmetics?: MatchCosmetics;
+       cosmeticEmotes?:ImageEmoteEvent[];
        publicPlayers: OnlinePublicPlayerMetadata[];
        introFirstSpeaker: "PLAYER_ONE" | "PLAYER_TWO" | null;
       connectionStates: Record<"PLAYER_ONE" | "PLAYER_TWO", "CONNECTED" | "DISCONNECTED_GRACE" | "FORFEITED">;
@@ -124,6 +131,8 @@ export type OnlineServerMessage =
       turnStartedAt: number | null;
       turnDeadlineAt: number | null;
        gameplayStartsAt: number | null;
+       cosmetics?: MatchCosmetics;
+       cosmeticEmotes?:ImageEmoteEvent[];
        publicPlayers: OnlinePublicPlayerMetadata[];
        introFirstSpeaker: "PLAYER_ONE" | "PLAYER_TWO" | null;
       connectionStates: Record<"PLAYER_ONE" | "PLAYER_TWO", "CONNECTED" | "DISCONNECTED_GRACE" | "FORFEITED">;
@@ -139,6 +148,8 @@ export type OnlineServerMessage =
       turnStartedAt: number | null;
       turnDeadlineAt: number | null;
        gameplayStartsAt: number | null;
+       cosmetics?: MatchCosmetics;
+       cosmeticEmotes?:ImageEmoteEvent[];
        publicPlayers: OnlinePublicPlayerMetadata[];
        introFirstSpeaker: "PLAYER_ONE" | "PLAYER_TWO" | null;
       connectionStates: Record<"PLAYER_ONE" | "PLAYER_TWO", "CONNECTED" | "DISCONNECTED_GRACE" | "FORFEITED">;

@@ -1,3 +1,5 @@
+import {loadMatchCosmetics} from './cosmetics';
+import {latestDraftCosmeticEmotes,type CosmeticDraftSnapshot} from './draft-cosmetics';
 import {draftSessionDue} from "./draft-due";
 import {DraftReadCache} from "./draft-read-cache";
 import { executeUsageObservedAction as executeAction } from './usage-statistics-observer';
@@ -74,9 +76,9 @@ export class DraftError extends Error {
 }
 const record = (value: unknown) => value as Record<string, unknown>;
 const settingsCache = new DraftReadCache<{enabled:boolean;config:ReturnType<typeof parseDraftConfig>}>(1000);
-// Existing session snapshots are immutable: all normal writes update state only.
-// A future snapshot writer MUST invalidate this cache after committing its write.
-const snapshotCache = new DraftReadCache<DraftSnapshot>(5*60_000,64,16*1024*1024);
+// Cache only the immutable catalog. JOIN cosmetics are projected from the
+// locked row on every full read, so other processes never retain stale loadouts.
+const snapshotCache = new DraftReadCache<CosmeticDraftSnapshot>(5*60_000,64,16*1024*1024);
 export function invalidateDraftSettings(){ settingsCache.clear(); }
 export function clearDraftReadCaches(){settingsCache.clear();snapshotCache.clear();}
 export async function draftSettings() {
@@ -86,13 +88,14 @@ export async function draftSettings() {
     return {enabled:row?.enabled??false,config:parseDraftConfig(row?.config??DEFAULT_DRAFT_CONFIG)};
   });
 }
-async function readDraftSnapshot(tx:Pick<typeof db,"select">,id:string):Promise<DraftSnapshot>{
-  return snapshotCache.read(id,async()=>{
-      const [catalog]=await tx.select({snapshot:draftSessionsTable.snapshot}).from(draftSessionsTable).where(eq(draftSessionsTable.id,id));
+async function readDraftSnapshot(tx:Pick<typeof db,"select">,id:string):Promise<CosmeticDraftSnapshot>{
+  const load=async()=>{
+      const [catalog]=await tx.select({snapshot:sql<CosmeticDraftSnapshot>`${draftSessionsTable.snapshot} - 'cosmetics'`}).from(draftSessionsTable).where(eq(draftSessionsTable.id,id));
       if(!catalog)throw new DraftError("NOT_FOUND","드래프트를 찾을 수 없습니다.",404);
-      const data=catalog.snapshot as unknown as DraftSnapshot;
+      const data=catalog.snapshot as unknown as CosmeticDraftSnapshot;
       return {...data,config:parseDraftConfig(data.config)};
-    });
+    };
+  return snapshotCache.read(id,load);
 }
 export async function draftCatalog(
   config = DEFAULT_DRAFT_CONFIG,
@@ -467,7 +470,9 @@ export async function startDraft(
 ) {
   await enabled();
   const settings = await draftSettings(),
-    snapshot = prepareDraftSnapshot(await draftCatalog(settings.config));
+    snapshot:CosmeticDraftSnapshot = prepareDraftSnapshot(await draftCatalog(settings.config));
+  const loadout=await loadMatchCosmetics(userId);
+  snapshot.cosmetics={PLAYER_ONE:loadout};
   validateDraftPool(snapshot);
   return db.transaction(async (tx) => {
     await tx.execute(
@@ -485,7 +490,7 @@ export async function startDraft(
         409,
       );
     if (matchmaking && mode === "PVP") {
-      const waiting=await tx.select({id:draftSessionsTable.id,state:draftSessionsTable.state,version:draftSessionsTable.version,updatedAt:draftSessionsTable.updatedAt,usageDiagnostic:draftSessionsTable.usageDiagnostic})
+      const waiting=await tx.select({id:draftSessionsTable.id,state:draftSessionsTable.state,version:draftSessionsTable.version,updatedAt:draftSessionsTable.updatedAt,usageDiagnostic:draftSessionsTable.usageDiagnostic,cosmetics:sql<import("@workspace/cosmetics").MatchCosmetics>`${draftSessionsTable.snapshot}->'cosmetics'`})
         .from(draftSessionsTable).where(and(
           sql`${draftSessionsTable.state}->>'phase'='WAITING'`,
           sql`${draftSessionsTable.state}->>'mode'='PVP'`,
@@ -501,9 +506,11 @@ export async function startDraft(
         )
           continue;
         candidate.seats[1] = emptySeat(userId, name);
+        const joinedSnapshot={...await readDraftSnapshot(tx,row.id),cosmetics:row.cosmetics??{}};
+        joinedSnapshot.cosmetics={...joinedSnapshot.cosmetics,PLAYER_TWO:loadout};
         beginDraft(
           candidate,
-          await readDraftSnapshot(tx,row.id),
+          joinedSnapshot,
           Date.now(),
         );
         await tx
@@ -512,6 +519,7 @@ export async function startDraft(
         await tx
           .update(draftSessionsTable)
           .set({
+            snapshot:record(joinedSnapshot),
             state: record(candidate),
             usageDiagnostic:row.usageDiagnostic || diagnostic,
             version: row.version + 1,
@@ -564,13 +572,14 @@ export async function mutateDraft(
   heartbeat = true,
 ) {
   await enabled();
+  const joinedCosmetics=input?.type==="JOIN"?await loadMatchCosmetics(userId):undefined;
   return db.transaction(async (tx) => {
     // Independent rooms no longer serialize all polls/actions on one global lock.
     await tx.execute(
       sql`SELECT pg_advisory_xact_lock(hashtext(${`ko:draft:${id}`}))`,
     );
     const [row] = await tx
-      .select({id:draftSessionsTable.id,state:draftSessionsTable.state,version:draftSessionsTable.version,usageStart:draftSessionsTable.usageStart,usageDiagnostic:draftSessionsTable.usageDiagnostic})
+      .select({id:draftSessionsTable.id,state:draftSessionsTable.state,version:draftSessionsTable.version,usageStart:draftSessionsTable.usageStart,usageDiagnostic:draftSessionsTable.usageDiagnostic,cosmetics:sql<import("@workspace/cosmetics").MatchCosmetics>`${draftSessionsTable.snapshot}->'cosmetics'`})
       .from(draftSessionsTable)
       .where(eq(draftSessionsTable.id, id))
       .for("update");
@@ -597,7 +606,7 @@ export async function mutateDraft(
         "이 드래프트의 참가자가 아닙니다.",
         403,
       );
-    const snapshot=await readDraftSnapshot(tx,id);
+    const snapshot={...await readDraftSnapshot(tx,id),cosmetics:row.cosmetics??{}};
     const now = Date.now(),
       before = JSON.stringify({ ...s, lastSeen: undefined });
     const key = input ? `${userId}:${input.requestId}` : null;
@@ -673,6 +682,7 @@ export async function mutateDraft(
             "참가할 수 없는 드래프트입니다.",
           );
         s.seats[1] = emptySeat(userId, input.name ?? "관리자");
+        if(joinedCosmetics)snapshot.cosmetics={...snapshot.cosmetics,PLAYER_TWO:joinedCosmetics};
         await tx
           .insert(draftParticipantsTable)
           .values({ userId, sessionId: id });
@@ -845,7 +855,7 @@ export async function mutateDraft(
     if (heartbeat && s.phase === "BATTLE" && s.lastSeen) s.lastSeen[seat] = now;
     if (changed)
       await tx.update(draftSessionsTable)
-        .set({state:record(s),version,updatedAt:new Date(),...(!row.usageStart&&!oldBattle&&s.battle?{usageStart:{version:1,diagnostic:row.usageDiagnostic,startedAt:new Date(now).toISOString(),champions:{PLAYER_ONE:s.seats[0].championId!,PLAYER_TWO:s.seats[1].championId!},decks:{PLAYER_ONE:[...s.seats[0].deck],PLAYER_TWO:[...s.seats[1].deck]}}}:{})})
+        .set({...(joinedCosmetics?{snapshot:record(snapshot)}:{}),state:record(s),version,updatedAt:new Date(),...(!row.usageStart&&!oldBattle&&s.battle?{usageStart:{version:1,diagnostic:row.usageDiagnostic,startedAt:new Date(now).toISOString(),champions:{PLAYER_ONE:s.seats[0].championId!,PLAYER_TWO:s.seats[1].championId!},decks:{PLAYER_ONE:[...s.seats[0].deck],PLAYER_TWO:[...s.seats[1].deck]}}}:{})})
         .where(eq(draftSessionsTable.id,id));
     else if(heartbeat&&s.phase==="BATTLE"&&s.lastSeen)
       await tx.update(draftSessionsTable).set({
@@ -935,6 +945,8 @@ export function draftBattleView(r: DraftResult) {
     resolveChampionIntro(first, second, r.snapshot.interactions ?? []),
   );
   return {
+    cosmetics:(r.snapshot as CosmeticDraftSnapshot).cosmetics??{},
+    cosmeticEmotes:latestDraftCosmeticEmotes(s.id),
     recap: s.battle.status === "FINISHED" ? buildMatchRecap(s.battle) : null,
     type: "MATCH_SNAPSHOT",
     matchId: s.id,
@@ -1008,6 +1020,7 @@ export async function pollDraftBattle(userId:string,id:string,knownVersion?:numb
       const lastSeen=[...row.lastSeen];lastSeen[seat]=now;
       await tx.update(draftSessionsTable).set({state:sql`jsonb_set(${state},${`{lastSeen,${seat}}`}::text[],${JSON.stringify(now)}::jsonb)`,updatedAt:new Date()}).where(eq(draftSessionsTable.id,id));
       return {type:"DRAFT_HEARTBEAT" as const,matchId:id,version:row.version,serverTime:now,
+        cosmeticEmotes:latestDraftCosmeticEmotes(id),
         connectionStates:{PLAYER_ONE:lastSeen[0]<now-10000?"DISCONNECTED_GRACE" as const:"CONNECTED" as const,
           PLAYER_TWO:row.opponent&&lastSeen[1]<now-10000?"DISCONNECTED_GRACE" as const:"CONNECTED" as const}};
     });

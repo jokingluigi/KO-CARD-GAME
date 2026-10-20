@@ -1,3 +1,5 @@
+import {sendDraftCosmeticEmote} from '../lib/draft-cosmetics';
+import {CosmeticError} from '../lib/cosmetics';
 import { Router, type IRouter } from "express";
 import { sql, eq } from "drizzle-orm";
 import { db, cardsTable, championsTable, draftSettingsTable } from "@workspace/db";
@@ -30,7 +32,7 @@ router.use(async (req, res, next) => {
       res.status(401).json({ message: "로그인이 필요합니다." });
       return;
     }
-    if (req.baseUrl.endsWith("/admin/draft") && user.role !== "ADMIN") {
+    if (req.baseUrl.toLowerCase().endsWith("/admin/draft") && user.role !== "ADMIN") {
       res.status(403).json({ message: "관리자만 접근할 수 있습니다." });
       return;
     }
@@ -163,7 +165,7 @@ router.put("/settings", async (req, res, next) => {
 });
 router.post("/matchmaking", async (req, res, next) => {
   try {
-    const id = await startDraft(req.authUser!.id, req.authUser!.nickname, "PVP", true, req.baseUrl.endsWith("/admin/draft"));
+    const id = await startDraft(req.authUser!.id, req.authUser!.nickname, "PVP", true, req.baseUrl.toLowerCase().endsWith("/admin/draft"));
     res.json(draftView(await mutateDraft(req.authUser!.id, id)));
   } catch (error) { next(error); }
 });
@@ -176,7 +178,7 @@ router.post("/sessions", async (req, res, next) => {
       req.authUser!.nickname,
       req.body.mode,
       false,
-      req.baseUrl.endsWith("/admin/draft"),
+      req.baseUrl.toLowerCase().endsWith("/admin/draft"),
     );
     res.status(201).json(draftView(await mutateDraft(req.authUser!.id, id)));
   } catch (e) {
@@ -219,6 +221,10 @@ router.get("/sessions/:id/invitation", async (req, res, next) => {
   } catch (e) {
     next(e);
   }
+});
+router.post('/sessions/:id/image-emotes',async(req,res,next)=>{
+ try{res.json({event:await sendDraftCosmeticEmote(req.authUser!.id,String(req.params.id),req.body)});}
+ catch(error){if(error instanceof CosmeticError){res.status(error.status).json({message:error.message});return;}next(error);}
 });
 router.get("/sessions/:id/battle", async (req,res,next)=>{
   try{

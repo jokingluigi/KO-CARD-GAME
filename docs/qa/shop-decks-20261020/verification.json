@@ -1,0 +1,112 @@
+{
+  "createdAt": "2026-10-20T00:26:15.873829+00:00",
+  "baseMain": "5b3e547f820f485699721f6d15d43b65a802d83e",
+  "cosmeticsParent": "64a5840",
+  "branch": "feat/shop-ready-decks",
+  "checks": {
+    "purchase_pglite": {
+      "tests": 22,
+      "passed": 22,
+      "failed": 0,
+      "skipped": 0
+    },
+    "purchase_postgresql17": {
+      "tests": 22,
+      "passed": 22,
+      "failed": 0,
+      "skipped": 0
+    },
+    "engine": {
+      "tests": 2685,
+      "passed": 2685,
+      "failed": 0,
+      "skipped": 0
+    },
+    "cosmetics": {
+      "tests": 14,
+      "passed": 14,
+      "failed": 0,
+      "skipped": 0
+    },
+    "legacy_pack": {
+      "tests": 4,
+      "passed": 4,
+      "failed": 0,
+      "skipped": 0
+    },
+    "startup": {
+      "tests": 3,
+      "passed": 3,
+      "failed": 0,
+      "skipped": 0
+    },
+    "deck_navigation": {
+      "tests": 13,
+      "passed": 13,
+      "failed": 0,
+      "skipped": 0
+    }
+  },
+  "totalExecutions": 2763,
+  "browser": {
+    "results": [
+      {
+        "name": "administrator builds, uploads and persists a real valid 25-card product through the editor",
+        "status": "PASS"
+      },
+      {
+        "name": "shop recipe and existing card detail show exact quantities and champion exclusion",
+        "status": "PASS"
+      },
+      {
+        "name": "mobile purchase deducts once, grants shortages and auto-registers an editable persistent deck",
+        "status": "PASS"
+      },
+      {
+        "name": "mobile layouts at 360, 375, 390 and 412 pixels preserve scroll and usable controls",
+        "status": "PASS"
+      },
+      {
+        "name": "purchased and selected deck enters actual AI intro and battle",
+        "status": "PASS"
+      },
+      {
+        "name": "both authenticated PvP browsers enter with independently purchased ordinary decks",
+        "status": "PASS"
+      }
+    ],
+    "pageErrors": [],
+    "viewports": [
+      [
+        360,
+        740
+      ],
+      [
+        375,
+        812
+      ],
+      [
+        390,
+        844
+      ],
+      [
+        412,
+        915
+      ],
+      [
+        1440,
+        1000
+      ]
+    ],
+    "kind": "Chromium mobile emulation, not a physical smartphone"
+  },
+  "migrationSha256": "235c6aed7a5ff497b02f1a51cd26748c03d5638789292f8f050be896aea9ab06",
+  "productionChanged": false,
+  "notExecuted": [
+    "Physical smartphone",
+    "Production Supabase DB and Storage CORS",
+    "Large concurrent production workload",
+    "Purchased deck specific Tower run",
+    "Purchased deck complete AI/PvP match and rewards"
+  ]
+}

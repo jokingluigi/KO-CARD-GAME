@@ -19,6 +19,9 @@
       "path": "../../lib/effect-registry"
     },
     {
+      "path": "../../lib/cosmetics"
+    },
+    {
       "path": "../../lib/game-engine"
     }
   ]

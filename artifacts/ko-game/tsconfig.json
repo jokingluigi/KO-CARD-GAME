@@ -20,6 +20,9 @@
     },
     {
       "path": "../../lib/effect-registry"
+    },
+    {
+      "path": "../../lib/cosmetics"
     }
   ]
 }
