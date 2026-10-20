@@ -1,0 +1,151 @@
+{
+  "results": [
+    {
+      "name": "360 layout, images, real sizes, theme toggle without state change",
+      "status": "PASS"
+    },
+    {
+      "name": "360 target selection/cancel preserves field geometry and gold",
+      "status": "PASS"
+    },
+    {
+      "name": "360 real ability damages own champion, advances/completes quest and upgrades",
+      "status": "PASS"
+    },
+    {
+      "name": "360 touch drag summon and animation action-lock recovery",
+      "status": "PASS"
+    },
+    {
+      "name": "360 touch field attack, champion attack and canceled attack",
+      "status": "PASS"
+    },
+    {
+      "name": "360 actual targeted spell moves selected opponent into own deck",
+      "status": "PASS"
+    },
+    {
+      "name": "360 destruction effect preserves all four slot indices",
+      "status": "PASS"
+    },
+    {
+      "name": "360 emotes, settings, history, graveyard, card info and hand scroll",
+      "status": "PASS"
+    },
+    {
+      "name": "360 end turn and serialised state restore preserve HUD and four slots",
+      "status": "PASS"
+    },
+    {
+      "name": "375 layout, images, real sizes, theme toggle without state change",
+      "status": "PASS"
+    },
+    {
+      "name": "375 target selection/cancel preserves field geometry and gold",
+      "status": "PASS"
+    },
+    {
+      "name": "375 real ability damages own champion, advances/completes quest and upgrades",
+      "status": "PASS"
+    },
+    {
+      "name": "375 touch drag summon and animation action-lock recovery",
+      "status": "PASS"
+    },
+    {
+      "name": "375 touch field attack, champion attack and canceled attack",
+      "status": "PASS"
+    },
+    {
+      "name": "375 actual targeted spell moves selected opponent into own deck",
+      "status": "PASS"
+    },
+    {
+      "name": "375 destruction effect preserves all four slot indices",
+      "status": "PASS"
+    },
+    {
+      "name": "375 emotes, settings, history, graveyard, card info and hand scroll",
+      "status": "PASS"
+    },
+    {
+      "name": "375 end turn and serialised state restore preserve HUD and four slots",
+      "status": "PASS"
+    },
+    {
+      "name": "390 layout, images, real sizes, theme toggle without state change",
+      "status": "PASS"
+    },
+    {
+      "name": "390 target selection/cancel preserves field geometry and gold",
+      "status": "PASS"
+    },
+    {
+      "name": "390 real ability damages own champion, advances/completes quest and upgrades",
+      "status": "PASS"
+    },
+    {
+      "name": "390 touch drag summon and animation action-lock recovery",
+      "status": "PASS"
+    },
+    {
+      "name": "390 touch field attack, champion attack and canceled attack",
+      "status": "PASS"
+    },
+    {
+      "name": "390 actual targeted spell moves selected opponent into own deck",
+      "status": "PASS"
+    },
+    {
+      "name": "390 destruction effect preserves all four slot indices",
+      "status": "PASS"
+    },
+    {
+      "name": "390 emotes, settings, history, graveyard, card info and hand scroll",
+      "status": "PASS"
+    },
+    {
+      "name": "390 end turn and serialised state restore preserve HUD and four slots",
+      "status": "PASS"
+    },
+    {
+      "name": "412 layout, images, real sizes, theme toggle without state change",
+      "status": "PASS"
+    },
+    {
+      "name": "412 target selection/cancel preserves field geometry and gold",
+      "status": "PASS"
+    },
+    {
+      "name": "412 real ability damages own champion, advances/completes quest and upgrades",
+      "status": "PASS"
+    },
+    {
+      "name": "412 touch drag summon and animation action-lock recovery",
+      "status": "PASS"
+    },
+    {
+      "name": "412 touch field attack, champion attack and canceled attack",
+      "status": "PASS"
+    },
+    {
+      "name": "412 actual targeted spell moves selected opponent into own deck",
+      "status": "PASS"
+    },
+    {
+      "name": "412 destruction effect preserves all four slot indices",
+      "status": "PASS"
+    },
+    {
+      "name": "412 emotes, settings, history, graveyard, card info and hand scroll",
+      "status": "PASS"
+    },
+    {
+      "name": "412 end turn and serialised state restore preserve HUD and four slots",
+      "status": "PASS"
+    }
+  ],
+  "errors": [],
+  "physicalPhone": "NOT_RUN",
+  "productionApiWrites": 0
+}

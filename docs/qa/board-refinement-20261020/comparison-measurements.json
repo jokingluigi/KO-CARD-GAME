@@ -1,0 +1,72 @@
+[
+  {
+    "viewport": [
+      360,
+      740
+    ],
+    "handLiftPx": 8.0,
+    "handSizeUnchanged": true,
+    "mainLayoutUnchanged": true,
+    "questAbilityGapPx": 8,
+    "selectedCardClearance": {
+      "top": 2.7462158203125,
+      "bottom": 15.55999755859375
+    }
+  },
+  {
+    "viewport": [
+      375,
+      812
+    ],
+    "handLiftPx": 8.0,
+    "handSizeUnchanged": true,
+    "mainLayoutUnchanged": true,
+    "questAbilityGapPx": 4,
+    "selectedCardClearance": {
+      "top": 7.53863525390625,
+      "bottom": 31.55999755859375
+    }
+  },
+  {
+    "viewport": [
+      390,
+      844
+    ],
+    "handLiftPx": 8.0,
+    "handSizeUnchanged": true,
+    "mainLayoutUnchanged": true,
+    "questAbilityGapPx": 4,
+    "selectedCardClearance": {
+      "top": 14.58551025390625,
+      "bottom": 31.55999755859375
+    }
+  },
+  {
+    "viewport": [
+      412,
+      915
+    ],
+    "handLiftPx": 8,
+    "handSizeUnchanged": true,
+    "mainLayoutUnchanged": true,
+    "questAbilityGapPx": 10,
+    "selectedCardClearance": {
+      "top": 20.91357421875,
+      "bottom": 29.55999755859375
+    }
+  },
+  {
+    "viewport": [
+      1440,
+      1000
+    ],
+    "handLiftPx": 8.0,
+    "handSizeUnchanged": true,
+    "mainLayoutUnchanged": true,
+    "questAbilityGapPx": 14,
+    "selectedCardClearance": {
+      "top": 5.4000244140625,
+      "bottom": 17
+    }
+  }
+]

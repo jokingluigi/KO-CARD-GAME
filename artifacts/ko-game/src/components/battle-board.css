@@ -108,7 +108,7 @@
   width: var(--board-portrait-w);
   height: var(--board-hud-h);
   max-width: none;
-  border: 2px solid var(--board-gold);
+  border: 1px solid var(--board-gold);
   border-radius: 2px;
   background: var(--board-panel);
   box-shadow: none;
@@ -164,7 +164,7 @@
   min-width: 0;
   padding: 1px 3px;
   text-align: center;
-  border: 1px solid var(--board-muted);
+  border: 1px solid var(--board-gold);
   border-radius: 2px;
   background: var(--board-panel);
 }
@@ -198,7 +198,7 @@
   height: 44px;
   min-height: 44px;
   padding: 4px 8px;
-  border: 1px solid var(--board-muted);
+  border: 1px solid var(--board-gold);
   border-radius: 2px;
   background: var(--board-panel);
   box-shadow: none;
@@ -291,7 +291,7 @@
   aspect-ratio: 70 / 98;
 }
 .ko-board-preview .ko-board-slot:not(.group) {
-  border: 1px solid var(--board-muted);
+  border: 1px solid var(--board-gold);
   border-radius: 3px;
   background: var(--board-surface);
   box-shadow: none;
@@ -303,7 +303,7 @@
   height: 14px;
   left: calc(50% - 7px);
   top: calc(50% - 7px);
-  border: 1px solid var(--board-muted);
+  border: 1px solid var(--board-gold);
   transform: rotate(45deg);
   opacity: 0.4;
   pointer-events: none;
@@ -324,7 +324,7 @@
   min-width: 0;
   padding: 3px;
   gap: 4px;
-  border: 1px solid var(--board-muted);
+  border: 1px solid var(--board-gold);
   border-radius: 2px;
   background: var(--board-panel);
   box-shadow: none;
@@ -439,6 +439,7 @@
   min-width: 100%;
   gap: 10px;
   padding: 0 8px 8px;
+  top: -8px;
   justify-content: flex-start;
 }
 @media (max-height: 760px) and (orientation: portrait) {
@@ -663,9 +664,10 @@ body:has(.ko-board-preview)
   pointer-events: none;
 }
 .ko-board-preview .ko-player-hand {
-  border: 1px solid var(--board-muted);
+  border: 1px solid var(--board-gold);
   border-radius: 4px;
-  background: #121317eb;
+  background: transparent url("./battle-board-assets/black-linen.svg") center /
+    100% 100% no-repeat;
 }
 /* On short phones allow vertical scrolling before reducing a single card.
    Grid gaps expose the cloth hem; the hand renderer retains its original size. */
@@ -685,4 +687,55 @@ body:has(.ko-board-preview)
    this decoration-only element and remain enabled. CLASSIC is unaffected. */
 .ko-game-shell.ko-board-preview .ko-cinematic-background {
   display: none;
+}
+
+/* An opaque backing stays beneath faded/unavailable cards. The original
+   artwork, SVG frame, badges and numeric/text layers remain unchanged. */
+.ko-game-shell.ko-board-preview .ko-board-slot,
+.ko-game-shell.ko-board-preview .ko-card-depth,
+.ko-game-shell.ko-board-preview .ko-board-slot-wrapper,
+.ko-game-shell.ko-board-preview .ko-hand-card,
+.ko-game-shell.ko-board-preview .ko-hand-cards > :has(.ko-hand-card) {
+  background-color: #000;
+}
+/* Both seats share the same portrait box, frame and image-fit contract. */
+.ko-game-shell.ko-board-preview
+  :is(.ko-player-champion, .ko-opponent-champion) {
+  width: var(--board-portrait-w);
+  height: var(--board-hud-h);
+  border: 1px solid var(--board-gold);
+  background: #000;
+  border-radius: 2px;
+  box-shadow: none;
+}
+.ko-game-shell.ko-board-preview .ko-champion-portrait-art img {
+  object-fit: contain;
+}
+
+/* The ability has a 44px hit box. Give its grid row that actual height,
+   rather than letting it extend upward into the quest panel. */
+.ko-game-shell.ko-board-preview .ko-player-info {
+  grid-template-rows: 44px minmax(0, 1fr) 44px;
+}
+.ko-game-shell.ko-board-preview :is(.ko-player-quest, .ko-opponent-quest) > div,
+.ko-game-shell.ko-board-preview .ko-champion-ability,
+.ko-game-shell.ko-board-preview .ko-game-controls > button {
+  border: 1px solid var(--board-gold);
+  border-radius: 2px;
+}
+/* Keep the original selected-card lift/scale, but reserve clearance inside
+   the horizontal scroll clip on short phones and desktop. Other cards stay put. */
+.ko-game-shell.ko-board-preview .ko-hand-cards > :has(.ko-hand-card--selected) {
+  top: 14px;
+}
+/* The legacy selectable-slot rule is more specific than the idle rule.
+   Keep every state opaque; show summon availability with a line, not a wash. */
+.ko-game-shell.ko-board-preview .ko-board-slot:not(.group) {
+  background: #000;
+  border: 1px solid var(--board-gold);
+  animation: none;
+}
+.ko-game-shell.ko-board-preview .ko-board-slot:not(.group).cursor-pointer {
+  outline: 1px dashed var(--board-bright);
+  outline-offset: -4px;
 }

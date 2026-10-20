@@ -191,6 +191,15 @@ try {
             ).targetingState?.active,
         );
         assert.equal((await geometry()).field.h, g.field.h);
+        assert.ok(
+          await page.locator(".ko-board-slot-wrapper").evaluateAll((es) =>
+            es.every((e) => {
+              const c = getComputedStyle(e);
+              return c.backgroundColor === "rgb(0, 0, 0)" && c.opacity === "1";
+            }),
+          ),
+          "Opaque black backing survives targeting dimming",
+        );
         await page.locator(".ko-mobile-target-cancel").click();
         await page.waitForFunction(
           () =>
@@ -264,6 +273,11 @@ try {
               busy: document.querySelector("[data-testid=preview-busy]")
                 .textContent,
               disabled: document.querySelector(".ko-turn-end").disabled,
+              animationBackings: [
+                ...document.querySelectorAll(
+                  ".card-play-animation .ko-card-depth",
+                ),
+              ].map((e) => getComputedStyle(e).backgroundColor),
             }),
           ).observe(document.querySelector("[data-testid=preview-busy]"), {
             childList: true,
@@ -290,6 +304,16 @@ try {
           ),
         );
         await idle();
+        assert.ok(
+          await page.evaluate(() =>
+            window.__boardBusy.some(
+              (x) =>
+                x.animationBackings.length > 0 &&
+                x.animationBackings.every((c) => c === "rgb(0, 0, 0)"),
+            ),
+          ),
+          "Animated card frame gaps also have a black backing",
+        );
         assert.ok(await page.locator(".ko-turn-end").isEnabled());
         assert.equal((await state()).players[0].hand.length, 0);
       },
@@ -462,6 +486,26 @@ try {
             ).activePlayerId === "player-2",
         );
         assert.ok(await page.locator(".ko-turn-end").isDisabled());
+        await page.waitForFunction(
+          () =>
+            getComputedStyle(document.querySelector(".ko-turn-end"))
+              .backgroundColor === "rgb(109, 91, 60)",
+          undefined,
+          { timeout: 2000 },
+        );
+        assert.ok(
+          await page
+            .locator(".ko-hand-cards > :has(.ko-hand-card)")
+            .evaluateAll((es) =>
+              es.every((e) => {
+                const c = getComputedStyle(e);
+                return (
+                  c.backgroundColor === "rgb(0, 0, 0)" && c.opacity === "1"
+                );
+              }),
+            ),
+          "Unavailable hand cards retain an opaque backing",
+        );
         const saved = await state();
         await page.evaluate(
           (s) =>

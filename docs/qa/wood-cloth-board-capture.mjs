@@ -7,7 +7,8 @@ import { readFile, mkdir, writeFile } from "node:fs/promises";
 const exec = promisify(execFile),
   origin = process.env.KO_BOARD_ORIGIN ?? "http://127.0.0.1:5186";
 assert.ok(["localhost", "127.0.0.1"].includes(new URL(origin).hostname));
-const out = "qa-results/wood-cloth-board";
+const out =
+  process.env.KO_BOARD_CAPTURE_OUTPUT ?? "qa-results/wood-cloth-board";
 await mkdir(out, { recursive: true });
 const browser = await chromium.launch({
   executablePath: process.env.KO_QA_CHROMIUM_EXECUTABLE ?? "/usr/bin/chromium",
@@ -122,6 +123,45 @@ try {
             document.querySelector(".ko-cinematic-background"),
           ).display,
           mats,
+          portraitFrames: [".ko-player-champion", ".ko-opponent-champion"].map(
+            (sel) => {
+              const e = document.querySelector(sel),
+                c = getComputedStyle(e),
+                r = e.getBoundingClientRect();
+              return {
+                width: r.width,
+                height: r.height,
+                borders: [
+                  c.borderTop,
+                  c.borderRight,
+                  c.borderBottom,
+                  c.borderLeft,
+                ],
+              };
+            },
+          ),
+          blackBackings: [
+            ...document.querySelectorAll(
+              ".ko-board-slot,.ko-board-slot-wrapper,.ko-hand-card,.ko-hand-cards > :has(.ko-hand-card)",
+            ),
+          ].map((e) => getComputedStyle(e).backgroundColor),
+          handTrackTop: getComputedStyle(
+            document.querySelector(".ko-hand-cards"),
+          ).top,
+          questAbilityGap:
+            document
+              .querySelector(".ko-champion-ability")
+              .getBoundingClientRect().top -
+            document.querySelector(".ko-player-quest").getBoundingClientRect()
+              .bottom,
+          panelBorders: [
+            ...document.querySelectorAll(
+              ".ko-player-quest > div,.ko-opponent-quest > div,.ko-champion-ability,.ko-player-zones > *, .ko-opponent-zones > *,.ko-player-stats > div,.ko-opponent-stats > div,.ko-game-controls,.ko-player-hand",
+            ),
+          ].map((e) => {
+            const c = getComputedStyle(e);
+            return [c.borderTop, c.borderRight, c.borderBottom, c.borderLeft];
+          }),
         };
       });
       assert.equal(x.scrollWidth, w);
@@ -129,6 +169,28 @@ try {
       assert.ok(x.images.every((i) => i.loaded && i.fit === "contain"));
       if (theme === "new") {
         assert.equal(x.oldVeil, "none");
+        assert.deepEqual(
+          x.portraitFrames[0],
+          x.portraitFrames[1],
+          "Seat portrait boxes and all four borders match",
+        );
+        assert.ok(
+          x.portraitFrames[0].borders.every(
+            (b) => b === "1px solid rgb(185, 154, 96)",
+          ),
+        );
+        assert.ok(
+          x.blackBackings.every((c) => c === "rgb(0, 0, 0)"),
+          "Opaque black under every card, including frame gaps",
+        );
+        assert.ok(
+          x.panelBorders.every((bs) =>
+            bs.every((b) => b === "1px solid rgb(185, 154, 96)"),
+          ),
+          "Panels have matching matte gold borders",
+        );
+        assert.equal(x.handTrackTop, "-8px");
+        assert.ok(x.questAbilityGap >= 4, "Quest and ability do not overlap");
         assert.equal(x.oldAmbience, "none");
         assert.ok(x.wood.includes("svg"));
         assert.ok(
@@ -145,6 +207,43 @@ try {
         path: `${out}/${theme}-${w}x${h}.png`,
         fullPage: true,
       });
+      if (theme === "new") {
+        await page.locator(".ko-hand-card").first().click();
+        await page.waitForTimeout(300);
+        const clearance = await page.evaluate(() => {
+          const card = document
+              .querySelector(".ko-hand-card--selected")
+              .getBoundingClientRect(),
+            mat = document
+              .querySelector(".ko-player-hand")
+              .getBoundingClientRect();
+          return { top: card.top - mat.top, bottom: mat.bottom - card.bottom };
+        });
+        assert.ok(
+          clearance.top >= 0 && clearance.bottom >= 0,
+          "Selected hand card stays inside the scroll clip",
+        );
+        results.at(-1).selectedCardClearance = clearance;
+        assert.ok(
+          await page.locator(".ko-board-slot:not(.group)").evaluateAll((es) =>
+            es.every((e) => {
+              const c = getComputedStyle(e);
+              return (
+                c.backgroundColor === "rgb(0, 0, 0)" &&
+                c.opacity === "1" &&
+                c.borderTopWidth === "1px"
+              );
+            }),
+          ),
+          "Selectable empty slots remain opaque black behind their targeting outline",
+        );
+        if (w === 390)
+          await page.screenshot({
+            path: out + "/selected-hand-390x844.png",
+            fullPage: true,
+          });
+        await open("new");
+      }
       if (w === 390 && theme === "new") {
         await page.locator(".ko-player-champion").click();
         await page.getByRole("menu", { name: "챔피언 감정표현" }).waitFor();

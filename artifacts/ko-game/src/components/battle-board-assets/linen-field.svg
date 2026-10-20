@@ -1,10 +1,11 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="720" height="280" viewBox="0 0 720 280" preserveAspectRatio="none">
-<!-- Original transparent linen mat. Flat centre, irregular hem, folds confined to the margin. -->
-<path fill="#201511" opacity=".55" d="m10 16 31 3 120-6 194 3 185-4 116 5 51-5-2 37 8 59-5 69 7 76-19 18-149-5-181 6-160-3-136 4-58-7-9-25 6-74-6-63 6-56z"/>
-<path fill="#d8c2a1" stroke="#987b62" stroke-width="1.5" d="m8 8 33 6 120-7 194 4 185-5 116 5 50-5-5 38 9 60-5 69 8 76-18 17-149-5-181 6-160-3-136 4-58-7-7-25 6-73-6-63 7-55z"/>
-<path fill="#e7d5b9" d="m23 22 126-8 205 5 188-5 146 5-6 26 8 64-5 64 9 66-26 10-178-2-128 9-175-2-154 6-11-27 4-62-4-64 8-47z"/>
-<path fill="#af9478" d="m8 8 33 6-18 8-6 29-2-26zm698-2-5 38-11-13-2-12-35-8zm-4 194 11 49-18 17-40-5 39-22zM4 236l7 25 58 7-36-12-9-23zM41 14l120-7-35 10-103 5zm159 250 160 3 175-8-63-4-110 9-117-5z"/>
-<path fill="#d8c2a1" d="m23 22 32 6-37 33 4-27zm665-3-19 27 22-9 4 24 6-17zm6 220-36-4 15 14-72 5 94 6zM24 233l34-5-25 28 72 4-72-4z"/>
-<g fill="none" stroke="#987b62" stroke-linecap="round" opacity=".55"><path d="m9 10 14 12 32 6m-38 23 20-12m663-29-12 9-19 27m32-2-10-7m21 209-18-7-36-4m37 29-22-15M11 257l22-1 25-28m-25 28 72 4" stroke-width="2"/><path d="m58 18 87-5m42 2 105 1m86 0 150-3m35 2 75 1M66 262l117-3m362-2 95 1" stroke-width="1" opacity=".45"/></g>
-<g fill="none" stroke="#af9478" opacity=".18" stroke-width=".7"><path d="M49 33h618M46 38h624M46 243h595M47 247h541M30 65v142m5-146v151m650-155v143m5-139v139"/></g>
-</svg>
+<!-- Original linen: quiet woven fibres, a flat playing surface and soft edge folds. -->
+<defs><path id="hem" d="M9 11Q28 17 49 12T130 10Q225 6 354 12T551 9Q632 15 704 8Q699 32 703 55T707 110Q700 165 709 224L711 249Q698 265 672 262Q594 257 545 262T369 266Q268 260 188 265T49 264Q26 265 12 257L7 237Q15 195 9 152T12 79Q15 40 9 11Z"/><clipPath id="edge"><use href="#hem"/></clipPath><pattern id="fibre" width="12" height="12" patternUnits="userSpaceOnUse"><path d="M0 2h12M3 0v12" fill="none" stroke="#6d5945" stroke-width=".65" opacity=".075"/><path d="M0 8h12M9 0v12" fill="none" stroke="#fff7e9" stroke-width=".6" opacity=".16"/></pattern></defs>
+<use href="#hem" transform="translate(0 4)" fill="#201511" opacity=".45"/>
+<use href="#hem" fill="#d8c2a1" stroke="#987b62" stroke-width="1"/>
+<g clip-path="url(#edge)"><path fill="#e7d5b9" opacity=".55" d="M25 24Q194 13 359 22T691 22L689 242Q514 251 363 251T25 249Q18 135 25 24Z"/>
+<path fill="#af9478" opacity=".65" d="M9 11Q19 27 22 58Q27 38 54 29L91 17Q36 24 9 11ZM704 8Q690 29 685 61Q679 41 657 31L629 18Q676 24 704 8ZM711 249Q686 246 672 222Q684 249 638 255L594 262Q664 260 672 262Q699 265 711 249ZM12 257Q30 244 37 220Q35 247 89 254L124 263Q48 269 12 257Z"/>
+<path fill="#987b62" opacity=".28" d="M11 84Q22 107 18 144T21 197Q14 173 9 152T11 84ZM702 75Q694 104 700 140T702 204Q709 176 705 147T702 75Z"/>
+<path d="M15 18Q36 29 70 20M21 54Q27 37 49 31M696 17Q682 27 672 43M701 251Q676 252 660 238M20 253Q39 247 49 238M65 259Q148 256 197 260M544 258Q605 254 646 257" fill="none" stroke="#987b62" stroke-width="1.2" stroke-linecap="round" opacity=".48"/>
+<use href="#hem" fill="url(#fibre)"/>
+</g></svg>

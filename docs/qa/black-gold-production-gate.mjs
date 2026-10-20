@@ -16,7 +16,7 @@ assert.ok(files.some((f) => f.endsWith("/index.html")));
 for (const f of files) {
   assert.ok(!f.includes("/qa/black-gold"), "QA page excluded");
   assert.ok(
-    !/walnut-table|linen-field/.test(f),
+    !/walnut-table|linen-field|black-linen/.test(f),
     "Development-only textures excluded",
   );
   if (/\.(?:js|css|html)$/.test(f)) {

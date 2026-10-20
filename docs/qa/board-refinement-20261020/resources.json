@@ -1,0 +1,22 @@
+[
+  {
+    "file": "artifacts/ko-game/src/components/battle-board.css",
+    "bytes": 19353,
+    "gzipBytes": 4168
+  },
+  {
+    "file": "artifacts/ko-game/src/components/battle-board-assets/linen-field.svg",
+    "bytes": 1769,
+    "gzipBytes": 923
+  },
+  {
+    "file": "artifacts/ko-game/src/components/battle-board-assets/black-linen.svg",
+    "bytes": 1064,
+    "gzipBytes": 598
+  },
+  {
+    "file": "artifacts/ko-game/src/components/battle-board-assets/walnut-table.svg",
+    "bytes": 5822,
+    "gzipBytes": 1118
+  }
+]
