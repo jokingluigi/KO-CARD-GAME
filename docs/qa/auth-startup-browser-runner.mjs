@@ -1,6 +1,6 @@
 /** Run compiled UI and loopback-only fixtures. No production database connection. */
 import { spawn } from "node:child_process";
-import { mkdir } from "node:fs/promises";
+import { mkdir, readFile } from "node:fs/promises";
 import { createWriteStream } from "node:fs";
 import { resolve, join } from "node:path";
 const root = resolve("."),
@@ -14,6 +14,7 @@ function start(args, env, name) {
     env: { ...process.env, ...env },
     stdio: ["ignore", "pipe", "pipe"],
   });
+  child.qaName = name;
   children.push(child);
   const stream = createWriteStream(join(out, name + ".log"));
   child.stdout.pipe(stream);
@@ -120,6 +121,22 @@ try {
       console.log("PASS " + script);
     }
   }
+} catch (error) {
+  // Checks annotations remain available when GitHub blob log downloads are denied.
+  for (const child of children.slice(-2)) {
+    const detail = await readFile(
+      join(out, child.qaName + ".log"),
+      "utf8",
+    ).catch(() => String(error));
+    const tail = detail.slice(-6000);
+    console.error(child.qaName + "\n" + tail);
+    const escaped = tail
+      .replaceAll("%", "%25")
+      .replaceAll("\r", "%0D")
+      .replaceAll("\n", "%0A");
+    console.log(`::error title=Auth browser ${child.qaName}::${escaped}`);
+  }
+  throw error;
 } finally {
   for (const child of children)
     if (child.exitCode === null) {
