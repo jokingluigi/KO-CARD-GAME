@@ -1,0 +1,132 @@
+{
+  "menus": [
+    {
+      "id": "dashboard",
+      "url": "/admin",
+      "width": 1440
+    },
+    {
+      "id": "shop-decks",
+      "url": "/admin/shop-decks",
+      "width": 1440
+    },
+    {
+      "id": "cosmetics",
+      "url": "/admin/cosmetics",
+      "width": 1440
+    },
+    {
+      "id": "card-statistics",
+      "url": "/admin/card-statistics",
+      "width": 1440
+    },
+    {
+      "id": "champion-statistics",
+      "url": "/admin/champion-statistics",
+      "width": 1440
+    },
+    {
+      "id": "cards",
+      "url": "/admin/cards",
+      "width": 1440
+    },
+    {
+      "id": "tags",
+      "url": "/admin/tags",
+      "width": 1440
+    },
+    {
+      "id": "skins",
+      "url": "/admin/skins",
+      "width": 1440
+    },
+    {
+      "id": "frames",
+      "url": "/admin/card-frames",
+      "width": 1440
+    },
+    {
+      "id": "champions",
+      "url": "/admin/champions",
+      "width": 1440
+    },
+    {
+      "id": "ai-decks",
+      "url": "/admin/ai-decks",
+      "width": 1440
+    },
+    {
+      "id": "tower",
+      "url": "/admin/tower",
+      "width": 1440
+    },
+    {
+      "id": "draft",
+      "url": "/admin/draft",
+      "width": 1440
+    },
+    {
+      "id": "packs",
+      "url": "/admin/packs",
+      "width": 1440
+    },
+    {
+      "id": "shop",
+      "url": "/admin/shop",
+      "width": 1440
+    },
+    {
+      "id": "prism",
+      "url": "/admin/prism",
+      "width": 1440
+    },
+    {
+      "id": "rewards",
+      "url": "/admin/rewards",
+      "width": 1440
+    },
+    {
+      "id": "quests",
+      "url": "/admin/quests",
+      "width": 1440
+    },
+    {
+      "id": "media",
+      "url": "/admin/media",
+      "width": 1440
+    },
+    {
+      "id": "notices",
+      "url": "/admin/notices",
+      "width": 1440
+    },
+    {
+      "id": "users",
+      "url": "/admin/users",
+      "width": 1440
+    },
+    {
+      "id": "test",
+      "url": "/admin/test",
+      "width": 1440
+    },
+    {
+      "id": "tower-test",
+      "url": "/admin/tower-test",
+      "width": 1440
+    },
+    {
+      "id": "system",
+      "url": "/admin/system",
+      "width": 1440
+    }
+  ],
+  "errors": [],
+  "badResponses": [],
+  "back": true,
+  "forward": true,
+  "cardSave": true,
+  "championSave": true,
+  "towerWorkspace": true,
+  "mobileWidth": 390
+}

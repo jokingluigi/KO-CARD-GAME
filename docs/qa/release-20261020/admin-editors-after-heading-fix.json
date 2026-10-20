@@ -1,0 +1,256 @@
+{
+  "mobile": [
+    {
+      "id": "dashboard",
+      "viewport": 390,
+      "width": 390
+    },
+    {
+      "id": "shop-decks",
+      "viewport": 390,
+      "width": 390
+    },
+    {
+      "id": "cosmetics",
+      "viewport": 390,
+      "width": 390
+    },
+    {
+      "id": "card-statistics",
+      "viewport": 390,
+      "width": 390
+    },
+    {
+      "id": "champion-statistics",
+      "viewport": 390,
+      "width": 390
+    },
+    {
+      "id": "cards",
+      "viewport": 390,
+      "width": 390
+    },
+    {
+      "id": "tags",
+      "viewport": 390,
+      "width": 390
+    },
+    {
+      "id": "skins",
+      "viewport": 390,
+      "width": 390
+    },
+    {
+      "id": "frames",
+      "viewport": 390,
+      "width": 390
+    },
+    {
+      "id": "champions",
+      "viewport": 390,
+      "width": 390
+    },
+    {
+      "id": "ai-decks",
+      "viewport": 390,
+      "width": 390
+    },
+    {
+      "id": "tower",
+      "viewport": 390,
+      "width": 390
+    },
+    {
+      "id": "draft",
+      "viewport": 390,
+      "width": 390
+    },
+    {
+      "id": "packs",
+      "viewport": 390,
+      "width": 390
+    },
+    {
+      "id": "shop",
+      "viewport": 390,
+      "width": 390
+    },
+    {
+      "id": "prism",
+      "viewport": 390,
+      "width": 390
+    },
+    {
+      "id": "rewards",
+      "viewport": 390,
+      "width": 390
+    },
+    {
+      "id": "quests",
+      "viewport": 390,
+      "width": 390
+    },
+    {
+      "id": "media",
+      "viewport": 390,
+      "width": 390
+    },
+    {
+      "id": "notices",
+      "viewport": 390,
+      "width": 390
+    },
+    {
+      "id": "users",
+      "viewport": 390,
+      "width": 390
+    },
+    {
+      "id": "test",
+      "viewport": 390,
+      "width": 390
+    },
+    {
+      "id": "tower-test",
+      "viewport": 390,
+      "width": 390
+    },
+    {
+      "id": "system",
+      "viewport": 390,
+      "width": 390
+    },
+    {
+      "id": "dashboard",
+      "viewport": 320,
+      "width": 320
+    },
+    {
+      "id": "shop-decks",
+      "viewport": 320,
+      "width": 320
+    },
+    {
+      "id": "cosmetics",
+      "viewport": 320,
+      "width": 320
+    },
+    {
+      "id": "card-statistics",
+      "viewport": 320,
+      "width": 320
+    },
+    {
+      "id": "champion-statistics",
+      "viewport": 320,
+      "width": 320
+    },
+    {
+      "id": "cards",
+      "viewport": 320,
+      "width": 320
+    },
+    {
+      "id": "tags",
+      "viewport": 320,
+      "width": 320
+    },
+    {
+      "id": "skins",
+      "viewport": 320,
+      "width": 320
+    },
+    {
+      "id": "frames",
+      "viewport": 320,
+      "width": 320
+    },
+    {
+      "id": "champions",
+      "viewport": 320,
+      "width": 320
+    },
+    {
+      "id": "ai-decks",
+      "viewport": 320,
+      "width": 320
+    },
+    {
+      "id": "tower",
+      "viewport": 320,
+      "width": 320
+    },
+    {
+      "id": "draft",
+      "viewport": 320,
+      "width": 320
+    },
+    {
+      "id": "packs",
+      "viewport": 320,
+      "width": 320
+    },
+    {
+      "id": "shop",
+      "viewport": 320,
+      "width": 320
+    },
+    {
+      "id": "prism",
+      "viewport": 320,
+      "width": 320
+    },
+    {
+      "id": "rewards",
+      "viewport": 320,
+      "width": 320
+    },
+    {
+      "id": "quests",
+      "viewport": 320,
+      "width": 320
+    },
+    {
+      "id": "media",
+      "viewport": 320,
+      "width": 320
+    },
+    {
+      "id": "notices",
+      "viewport": 320,
+      "width": 320
+    },
+    {
+      "id": "users",
+      "viewport": 320,
+      "width": 320
+    },
+    {
+      "id": "test",
+      "viewport": 320,
+      "width": 320
+    },
+    {
+      "id": "tower-test",
+      "viewport": 320,
+      "width": 320
+    },
+    {
+      "id": "system",
+      "viewport": 320,
+      "width": 320
+    }
+  ],
+  "operations": [
+    "admin/packs 201",
+    "admin/shop 201",
+    "admin/ai-decks 201",
+    "admin/quests/definitions 200",
+    "server-maintenance 200",
+    "server-maintenance 200",
+    "failed save retains draft",
+    "cancel discard retains modal",
+    "confirm discard closes modal"
+  ],
+  "errors": []
+}

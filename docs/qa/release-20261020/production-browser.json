@@ -1,0 +1,34 @@
+{
+  "mobileEmulation": [
+    390,
+    844
+  ],
+  "results": [
+    {
+      "path": "/admin/cosmetics",
+      "apiStatus": 200,
+      "labelVisible": true,
+      "horizontalOverflow": false
+    },
+    {
+      "path": "/admin/shop-decks",
+      "apiStatus": 200,
+      "labelVisible": true,
+      "horizontalOverflow": false
+    },
+    {
+      "path": "/cosmetics",
+      "apiStatus": 200,
+      "labelVisible": true,
+      "horizontalOverflow": false
+    },
+    {
+      "path": "/shop",
+      "apiStatus": 200,
+      "labelVisible": true,
+      "horizontalOverflow": false
+    }
+  ],
+  "pageErrors": [],
+  "productionWrites": "none; existing authenticated read-only navigation"
+}

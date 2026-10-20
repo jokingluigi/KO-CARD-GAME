@@ -44,5 +44,23 @@
     }
   },
   "typecheckAndBuild": "PASS",
-  "note": "The same scenarios are repeated on native PostgreSQL and PGlite; test counts are executions, not unique cases."
+  "note": "The same scenarios are repeated on native PostgreSQL and PGlite; test counts are executions, not unique cases.",
+  "engine": {
+    "tests": 2685,
+    "pass": 2685,
+    "fail": 0,
+    "skipped": 0
+  },
+  "startup": {
+    "tests": 3,
+    "pass": 3,
+    "fail": 0,
+    "skipped": 0
+  },
+  "tower": {
+    "tests": 11,
+    "pass": 11,
+    "fail": 0,
+    "skipped": 0
+  }
 }
