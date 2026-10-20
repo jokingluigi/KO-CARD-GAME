@@ -520,6 +520,10 @@ class ImageAssetStorage {
   }
 }
 
+export class ShopDeckImageStorage extends ImageAssetStorage {
+  constructor() { super("shop-decks"); }
+}
+
 export class CosmeticImageStorage extends ImageAssetStorage {
   constructor() { super("cosmetics"); }
 }

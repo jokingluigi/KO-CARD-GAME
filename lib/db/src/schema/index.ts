@@ -41,3 +41,5 @@ export * from "./card-tags";
 export * from "./usage-statistics";
 
 export * from './cosmetics';
+
+export * from "./shop-decks";

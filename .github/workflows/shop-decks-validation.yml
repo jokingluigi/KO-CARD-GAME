@@ -1,0 +1,58 @@
+name: Completed deck shop integration
+on:
+  pull_request:
+    paths:
+      - .github/workflows/shop-decks-validation.yml
+      - artifacts/api-server/src/lib/shop-decks.ts
+      - artifacts/api-server/src/routes/shop-decks.ts
+      - artifacts/api-server/src/lib/object-storage.ts
+      - artifacts/api-server/src/lib/startup-schema.ts
+      - artifacts/api-server/src/routes/storage.ts
+      - artifacts/ko-game/src/components/*shop-deck*.tsx
+      - artifacts/ko-game/src/pages/shop.tsx
+      - artifacts/ko-game/src/lib/shop-decks-client.ts
+      - lib/db/src/schema/shop-decks.ts
+      - lib/db/migrations/0054_shop_decks.sql
+      - lib/db/qa/shop-decks.test.ts
+      - docs/qa/shop-decks*browser*.mjs
+permissions:
+  contents: read
+jobs:
+  purchase-and-browser:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_USER: agent
+          POSTGRES_DB: ko_cosmetics_qa
+          POSTGRES_HOST_AUTH_METHOD: trust
+        ports:
+          - 55432:5432
+        options: >-
+          --health-cmd "pg_isready -U agent -d ko_cosmetics_qa"
+          --health-interval 5s --health-timeout 5s --health-retries 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24.19.0'
+      - uses: pnpm/action-setup@v4
+        with:
+          version: '11.19.0'
+      - run: pnpm install --frozen-lockfile --ignore-scripts
+      - name: Isolated HTTP and transactional purchase tests
+        run: node --import ./docs/qa/checkpoints/20261006/qa-loader.mjs --test --test-isolation=none lib/db/qa/shop-decks.test.ts
+      - name: Native PostgreSQL locking, six concurrent requests and failure rollback
+        env:
+          KO_SHOP_DECKS_NATIVE: '1'
+        run: node --import ./docs/qa/checkpoints/20261006/qa-loader.mjs --test --test-isolation=none lib/db/qa/shop-decks.test.ts
+      - name: Browser tooling
+        run: |
+          npm install --no-save --prefix "$RUNNER_TEMP/ko-shop-browser" playwright@1.62.1
+          "$RUNNER_TEMP/ko-shop-browser/node_modules/.bin/playwright" install --with-deps chromium
+      - name: Administrator, shop, deck editor, purchased-deck AI and two-client PvP
+        env:
+          KO_QA_PLAYWRIGHT: ${{ runner.temp }}/ko-shop-browser/node_modules/playwright/index.mjs
+        run: node docs/qa/shop-decks-browser-runner.mjs
