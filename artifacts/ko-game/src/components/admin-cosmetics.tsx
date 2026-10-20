@@ -11,6 +11,7 @@ import {
   type CosmeticCardPreview,
   type CosmeticChampionPreview,
 } from "@/lib/cosmetics-client";
+import {useAdminMutableDraft} from './admin-editor-sections';
 import { CosmeticPreview } from "./cosmetic-preview";
 import "./cosmetics.css";
 const labels: Record<CosmeticType, string> = {
@@ -45,6 +46,7 @@ export function AdminCosmetics() {
     [users, setUsers] = useState<Array<{ id: string; nickname: string }>>([]),
     [user, setUser] = useState<{ id: string; nickname: string } | null>(null),
     [inventory, setInventory] = useState<CosmeticInventory | null>(null);
+  const draft=useAdminMutableDraft(form,form.id);
   const base = "/admin/cosmetics";
   async function load() {
     setData(await cosmeticsRequest<Catalog>(base));
@@ -70,6 +72,7 @@ export function AdminCosmetics() {
         { method: form.id ? "PATCH" : "POST", body: JSON.stringify(form) },
       );
       setForm(result.item);
+      draft.markSaved();
       await load();
       setMessage(
         "저장했어. 대상·유형을 변경하면 해당 아이템의 기존 장착은 해제돼.",
@@ -167,7 +170,7 @@ export function AdminCosmetics() {
             value={query}
             onChange={(e) => setQuery(e.target.value)}
           />
-          <button disabled={busy} onClick={() => setForm(blank())}>
+          <button disabled={busy} onClick={() => {if(draft.confirm()){setForm(blank());draft.markSaved();}}}>
             새 아이템
           </button>
           <div className="grid gap-2 mt-3">
@@ -178,7 +181,7 @@ export function AdminCosmetics() {
                   key={i.id}
                   aria-pressed={i.id === form.id}
                   disabled={busy}
-                  onClick={() => setForm(i)}
+                  onClick={() => {if(draft.confirm())setForm(i);}}
                 >
                   {i.name} · {labels[i.type]}
                   {i.isActive ? "" : " · 비활성"}

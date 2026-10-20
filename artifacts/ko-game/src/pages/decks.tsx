@@ -260,7 +260,7 @@ export default function Decks() {
 
   const checkAuthentication = useCallback(() => {
     const generation = ++authRequestGeneration.current;
-    setAuthStatus("checking");
+    setAuthStatus(previous => previous === "error" ? "error" : "checking");
     setAuthError(null);
     fetchCurrentUser()
       .then((result) => {
@@ -689,7 +689,7 @@ export default function Decks() {
               data-testid="button-retry-decks"
               onClick={() => {
                 setErrorMessage("");
-                setAuthStatus("checking");
+                setAuthStatus(previous => previous === "error" ? "error" : "checking");
                 fetchCurrentUser()
                   .then((result) => {
                     setAuthUser(result.authenticated ? result.user : null);

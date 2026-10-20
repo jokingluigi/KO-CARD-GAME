@@ -40,14 +40,6 @@ export const ADMIN_PAGES = [
     keywords: "분류 연결",
   },
   {
-    id: "skins",
-    group: "cards",
-    path: "/admin/skins",
-    label: "카드 스킨",
-    description: "카드 스킨과 일러스트를 관리합니다.",
-    keywords: "이미지 외형",
-  },
-  {
     id: "frames",
     group: "cards",
     path: "/admin/card-frames",
@@ -178,7 +170,8 @@ export const ADMIN_PAGES = [
 ] as const;
 export type AdminPageId = (typeof ADMIN_PAGES)[number]["id"];
 export function adminPageForPath(path: string) {
-  const clean = path.split(/[?#]/)[0].replace(/\/$/, "");
+  const original = path.split(/[?#]/)[0].replace(/\/$/, "");
+  const clean = original === "/admin/skins" ? "/admin/cosmetics" : original;
   return (
     ADMIN_PAGES.find((p) => p.path === clean) ||
     (clean === "/admin/dashboard" ? ADMIN_PAGES[0] : undefined)
@@ -198,7 +191,7 @@ export function validAdminPageIds(value: unknown): AdminPageId[] {
   return Array.isArray(value)
     ? [
         ...new Set(
-          value.filter(
+          value.map(id => id === "skins" ? "cosmetics" : id).filter(
             (id): id is AdminPageId =>
               typeof id === "string" && ADMIN_PAGES.some((p) => p.id === id),
           ),

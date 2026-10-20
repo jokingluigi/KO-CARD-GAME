@@ -1,0 +1,29 @@
+{
+  "results": [
+    {
+      "width": 390,
+      "mode": "automatic",
+      "passed": true,
+      "authReads": 3
+    },
+    {
+      "width": 390,
+      "mode": "online",
+      "passed": true,
+      "authReads": 3
+    },
+    {
+      "width": 1440,
+      "mode": "automatic",
+      "passed": true,
+      "authReads": 3
+    },
+    {
+      "width": 1440,
+      "mode": "online",
+      "passed": true,
+      "authReads": 3
+    }
+  ],
+  "errors": []
+}

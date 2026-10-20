@@ -49,6 +49,7 @@ test('a late guest response from before login is replaced by current authenticat
   let release: (response:Response) => void = () => {}; let reads = 0;
   globalThis.fetch = async (path, init) => {
     assert.equal(init?.cache, 'no-store');
+    if (String(path).endsWith('/healthz')) return new Response(JSON.stringify({status:'ok'}));
     if (String(path).endsWith('/login')) return new Response(JSON.stringify({authenticated:true,user:account}));
     if (++reads === 1) return new Promise(resolve => {release=resolve;});
     return new Response(JSON.stringify({authenticated:true,user:account}));
@@ -90,4 +91,44 @@ test('logout invalidates the navigation cache', async () => {
   await logout();
   globalThis.fetch = async () => new Response(JSON.stringify({ authenticated: false, user: null }));
   assert.equal((await fetchCurrentUser()).authenticated, false);
+});
+
+test('a pending server wake never sends credentials; readiness submits exactly once',async()=>{
+ let release!:(value:Response)=>void;const calls:string[]=[],stages:string[]=[];
+ globalThis.fetch=async(path,init)=>{calls.push(String(path));if(String(path).endsWith('/healthz')){assert.equal(init?.credentials,'omit');assert.equal(init?.body,undefined);return new Promise(resolve=>release=resolve);}return new Response(JSON.stringify({authenticated:true,user:account}));};
+ const login=submitAuth('login',{email:account.email,password:'test-only-password'},{wakeTimeoutMs:1000,onStage:stage=>stages.push(stage)});
+ assert.deepEqual(calls,['/api/healthz']);
+ release(new Response(JSON.stringify({status:'ok'})));
+ assert.equal((await login).id,account.id);
+ assert.deepEqual(calls,['/api/healthz','/api/auth/login']);assert.deepEqual(stages,['connecting','submitting']);
+});
+test('temporary gateway error retries only health reads, never the login POST',async()=>{
+ let health=0,posts=0;globalThis.fetch=async(path)=>{
+  if(String(path).endsWith('/healthz'))return ++health===1?new Response('warming',{status:503}):new Response(JSON.stringify({status:'ok'}));
+  posts++;return new Response(JSON.stringify({authenticated:true,user:account}));
+ };
+ assert.equal((await submitAuth('login',{email:account.email,password:'test-only-password'},{wakeTimeoutMs:2000})).id,account.id);
+ assert.equal(health,2);assert.equal(posts,1);
+});
+test('unavailable server times out without posting a password',async()=>{
+ let posts=0;globalThis.fetch=async(path,init)=>{
+  if(!String(path).endsWith('/healthz')){posts++;throw Error('password must not be posted');}
+  return new Promise((_resolve,reject)=>init?.signal?.addEventListener('abort',()=>reject(new DOMException('aborted','AbortError'))));
+ };
+ await assert.rejects(submitAuth('login',{email:account.email,password:'test-only-password'},{wakeTimeoutMs:5}),AuthRequestError);assert.equal(posts,0);
+});
+test('leaving the form while waking cancels the eventual credential submission',async()=>{
+ const controller=new AbortController();let posts=0;
+ globalThis.fetch=async(path,init)=>{
+  if(!String(path).endsWith('/healthz')){posts++;throw Error('unexpected credentials');}
+  return new Promise((_resolve,reject)=>init?.signal?.addEventListener('abort',()=>reject(new DOMException('aborted','AbortError'))));
+ };
+ const pending=submitAuth('login',{email:account.email,password:'test-only-password'},{signal:controller.signal});controller.abort();await assert.rejects(pending);assert.equal(posts,0);
+});
+test('a login POST failure is reported without automatic credential replay',async()=>{
+ let posts=0;globalThis.fetch=async(path)=>{
+  if(String(path).endsWith('/healthz'))return new Response(JSON.stringify({status:'ok'}));
+  posts++;throw new TypeError('connection lost after submit');
+ };
+ await assert.rejects(submitAuth('login',{email:account.email,password:'test-only-password'}),AuthRequestError);assert.equal(posts,1);
 });

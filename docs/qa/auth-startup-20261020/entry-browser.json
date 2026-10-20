@@ -1,0 +1,103 @@
+{
+  "results": [
+    {
+      "name": "desktop",
+      "mode": "pending",
+      "requests": 1,
+      "checks": 1,
+      "flashes": 0
+    },
+    {
+      "name": "desktop",
+      "mode": "failed-status",
+      "requests": 1,
+      "checks": 2,
+      "flashes": 0
+    },
+    {
+      "name": "desktop",
+      "mode": "maintenance",
+      "requests": 1,
+      "checks": 1,
+      "flashes": 0
+    },
+    {
+      "name": "desktop",
+      "mode": "admin",
+      "requests": 1,
+      "checks": 1,
+      "flashes": 0
+    },
+    {
+      "name": "desktop",
+      "mode": "login-race",
+      "requests": 1,
+      "checks": 1,
+      "flashes": 0
+    },
+    {
+      "name": "desktop",
+      "mode": "restored-session",
+      "requests": 1,
+      "checks": 1,
+      "flashes": 0
+    },
+    {
+      "name": "desktop",
+      "mode": "login-timeout",
+      "requests": 1,
+      "checks": 5,
+      "flashes": 0
+    },
+    {
+      "name": "mobile",
+      "mode": "pending",
+      "requests": 1,
+      "checks": 1,
+      "flashes": 0
+    },
+    {
+      "name": "mobile",
+      "mode": "failed-status",
+      "requests": 1,
+      "checks": 2,
+      "flashes": 0
+    },
+    {
+      "name": "mobile",
+      "mode": "maintenance",
+      "requests": 1,
+      "checks": 1,
+      "flashes": 0
+    },
+    {
+      "name": "mobile",
+      "mode": "admin",
+      "requests": 1,
+      "checks": 1,
+      "flashes": 0
+    },
+    {
+      "name": "mobile",
+      "mode": "login-race",
+      "requests": 1,
+      "checks": 1,
+      "flashes": 0
+    },
+    {
+      "name": "mobile",
+      "mode": "restored-session",
+      "requests": 1,
+      "checks": 1,
+      "flashes": 0
+    },
+    {
+      "name": "mobile",
+      "mode": "login-timeout",
+      "requests": 1,
+      "checks": 5,
+      "flashes": 0
+    }
+  ],
+  "failures": []
+}

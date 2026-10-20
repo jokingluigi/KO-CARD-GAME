@@ -38,3 +38,11 @@ test("saved navigation preferences reject stale keys and duplicates", () => {
   assert.deepEqual(validAdminPageIds({ id: "cards" }), []);
   assert.equal(validAdminPageIds(ADMIN_PAGES.map((p) => p.id)).length, 10);
 });
+test('one cosmetic menu retains legacy skin URLs and saved navigation',()=>{
+ assert.equal(ADMIN_PAGES.filter(p=>p.id==='cosmetics').length,1);
+ assert.equal(ADMIN_PAGES.some(p=>String(p.id)==='skins'),false);
+ assert.equal(adminPageForPath('/admin/skins')?.id,'cosmetics');
+ assert.equal(adminPageForPath('/admin/skins/?q=old')?.id,'cosmetics');
+ assert.deepEqual(validAdminPageIds(['skins','cosmetics','cards']),['cosmetics','cards']);
+ assert.deepEqual(searchAdminPages('스킨').map(p=>p.id),['cosmetics']);
+});

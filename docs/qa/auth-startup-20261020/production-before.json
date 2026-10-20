@@ -1,0 +1,22 @@
+{
+  "phase": "pre-auth",
+  "checkedAt": "2026-10-20T06:57:10Z",
+  "checks": {
+    "/healthz": {
+      "status": 200,
+      "seconds": 22.563
+    },
+    "/admin/cards": {
+      "status": 200,
+      "seconds": 0.378,
+      "count": 163,
+      "sha256": "ba099a0d71983a7993334b8a0ed69489943cf5e6ba695715c5edfe10045a6cfc"
+    },
+    "/admin/champions": {
+      "status": 200,
+      "seconds": 0.332,
+      "count": 11,
+      "sha256": "ec58507e32721de7adad730af1f901116e31e89b15bd92aaeef5fcbdf5a0e766"
+    }
+  }
+}

@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 const {chromium}=await import(process.env.KO_QA_PLAYWRIGHT??'playwright');
-const browser=await chromium.launch({executablePath:process.env.KO_QA_CHROME_EXECUTABLE??'/usr/bin/chromium',headless:true});
+const browser=await chromium.launch({...(process.env.KO_QA_CHROME_EXECUTABLE?{executablePath:process.env.KO_QA_CHROME_EXECUTABLE}:{channel:process.env.KO_QA_CHROME_CHANNEL??'chromium'}),headless:true});
 const user={id:'recovery-qa',email:'recovery@example.invalid',nickname:'RECOVERY_QA',role:'ADMIN',currency:0,currencyBalance:0,prismBalance:0,championPrismBalance:0,isTestAccount:false};
 const results=[],errors=[];
 try {
@@ -16,11 +16,12 @@ try {
    return route.fulfill({json:{enabled:false,allowed:true,message:'',cards:[],champions:[],packs:[],packDefinitions:[],tags:[],seasons:[],relics:[],metadata:[],starters:[],presets:[],characters:[],scenes:[],stats:{}}});
   });
   await page.goto((process.env.KO_QA_ORIGIN??'http://127.0.0.1:5173')+'/admin');
-  await page.getByRole('heading',{name:'인증 서버에 연결할 수 없습니다',exact:true}).waitFor({timeout:10000});
+  await page.getByRole('heading',{name:'로그인 연결이 지연되고 있어',exact:true}).waitFor({timeout:10000});
+  assert.equal(await page.getByRole('link',{name:'로그인 화면으로'}).getAttribute('href'),'/');
   const failedReads=authReads;available=true;
   if(mode==='online')await page.evaluate(()=>window.dispatchEvent(new Event('online')));
   await page.getByRole('heading',{name:'운영 개요',exact:true}).waitFor({timeout:12000});
-  assert.equal(await page.getByRole('heading',{name:'인증 서버에 연결할 수 없습니다',exact:true}).count(),0);
+  assert.equal(await page.getByRole('heading',{name:'로그인 연결이 지연되고 있어',exact:true}).count(),0);
   assert.equal(authReads,failedReads+1,'restore through one fresh read; preserve the existing session without logging in');
   results.push({width,mode,passed:true,authReads});await context.close();
  }
