@@ -62,12 +62,14 @@ test('a late guest response from before login is replaced by current authenticat
 });
 
 test('pending startup authentication obeys the caller deadline instead of blocking for a minute', async () => {
+  let release!: (response: Response) => void;
   globalThis.fetch = async (path, init) => String(path).endsWith('/me')
-    ? new Promise((_resolve, reject) => init?.signal?.addEventListener('abort', () => reject(new DOMException('aborted', 'AbortError'))))
+    ? new Promise((resolve, reject) => { release = resolve; init?.signal?.addEventListener('abort', () => reject(new DOMException('aborted', 'AbortError'))); })
     : new Response(JSON.stringify({ enabled: false, allowed: true, message: '' }));
   startServerConnection();
   await requestServerStatus();
-  await assert.rejects(fetchCurrentUser({ timeoutMs: 5 }), AuthRequestError);
+  try { await assert.rejects(fetchCurrentUser({ timeoutMs: 5 }), AuthRequestError); }
+  finally { release(new Response(JSON.stringify({ authenticated: false, user: null }))); }
 });
 
 test('parallel session restores share one request; a network failure does not cache logout', async () => {

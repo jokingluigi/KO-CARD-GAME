@@ -1,0 +1,34 @@
+[
+  {
+    "host": "https://ko-card-game-vr69.onrender.com",
+    "path": "/api/healthz",
+    "status": 200,
+    "seconds": 0.378,
+    "authenticated": null,
+    "healthy": "ok"
+  },
+  {
+    "host": "https://ko-card-game-vr69.onrender.com",
+    "path": "/api/auth/me",
+    "status": 200,
+    "seconds": 0.35,
+    "authenticated": true,
+    "healthy": null
+  },
+  {
+    "host": "https://ko-card-game.onrender.com",
+    "path": "/api/healthz",
+    "status": 200,
+    "seconds": 0.757,
+    "authenticated": null,
+    "healthy": "ok"
+  },
+  {
+    "host": "https://ko-card-game.onrender.com",
+    "path": "/api/auth/me",
+    "status": 200,
+    "seconds": 0.289,
+    "authenticated": true,
+    "healthy": null
+  }
+]

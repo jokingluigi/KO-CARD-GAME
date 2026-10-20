@@ -10,7 +10,7 @@
   }
   function request(path) {
     const controller = new AbortController();
-    const timer = setTimeout(() => controller.abort(), path === 'auth/me' ? 8000 : 60000);
+    const timer = setTimeout(() => controller.abort(), 60000);
     const entry = { request: null, expiresAt: Infinity };
     entry.request = fetch(new URL(path, api), {
       credentials: 'include', cache: 'no-store', signal: controller.signal,
