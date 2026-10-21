@@ -2602,6 +2602,11 @@
 @keyframes ko-cracks { 0%, 30% { opacity: 0; } 45%, 75% { opacity: 1; } 100% { opacity: 0; } }
 @media (prefers-reduced-motion: reduce) { .champion-spoken-line, .legendary-entrance__focus, .legendary-entrance__ring, .legendary-entrance__title, .champion-defeat-cinematic__portrait, .champion-defeat-cinematic__fracture, .champion-defeat-cinematic__ko { animation-duration: .01ms; } }
 
+/* Reduced motion must keep spoken text visible until its normal dismiss timer. */
+@media (prefers-reduced-motion: reduce) {
+  .champion-spoken-line { animation: none; }
+}
+
 /* Card information is reachable by a small corner button on pointer and touch screens. */
 .ko-hand-inspect-button, .ko-board-inspect-button {
   display: flex;

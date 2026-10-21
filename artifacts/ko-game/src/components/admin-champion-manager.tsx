@@ -1023,6 +1023,10 @@ export function AdminChampionManager({ onUnauthorized }: { onUnauthorized: () =>
          </div></>,
 <><label>기본 Intro 대사 1 (최대 80자)<input maxLength={80} className={input} value={form.introLineOne ?? ""} onChange={e=>update("introLineOne",e.target.value || null)}/></label>
 <label>기본 Intro 대사 2 (최대 80자)<input maxLength={80} className={input} value={form.introLineTwo ?? ""} onChange={e=>update("introLineTwo",e.target.value || null)}/></label>
+<label className="md:col-span-2">퀘스트 클리어 시 대사
+  <input aria-label="퀘스트 클리어 시 대사" data-testid="champion-quest-complete-line" className={input} maxLength={120} value={form.presentationLines?.QUEST_COMPLETE ?? ""} onChange={event => update("presentationLines", { ...form.presentationLines, QUEST_COMPLETE: event.target.value })} placeholder="선택 사항 · 최대 120자" />
+  <span className="mt-1 block text-xs text-neutral-400">퀘스트를 완료하는 순간 표시됩니다. 빈칸이면 표시하지 않으며, 완료 후 감정표현 대사와 별도로 설정합니다.</span>
+</label>
 <div className="md:col-span-2 grid gap-3 lg:grid-cols-2">
           {(["BEFORE_QUEST", "AFTER_QUEST"] as const).map((phase) => (
             <section key={phase} className="rounded-lg border border-amber-800/60 bg-neutral-900/70 p-3">

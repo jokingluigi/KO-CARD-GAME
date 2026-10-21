@@ -1,0 +1,63 @@
+{
+  "results": [
+    {
+      "width": 360,
+      "reducedMotion": true,
+      "status": "PASS",
+      "checks": [
+        "real completion",
+        "completion over summon speech",
+        "snapshot retry no replay",
+        "opponent speech",
+        "blank optional",
+        "same-action defeat suppression",
+        "later defeat hides speech"
+      ]
+    },
+    {
+      "width": 390,
+      "reducedMotion": true,
+      "status": "PASS",
+      "checks": [
+        "real completion",
+        "completion over summon speech",
+        "snapshot retry no replay",
+        "opponent speech",
+        "blank optional",
+        "same-action defeat suppression",
+        "later defeat hides speech"
+      ]
+    },
+    {
+      "width": 1440,
+      "reducedMotion": true,
+      "status": "PASS",
+      "checks": [
+        "real completion",
+        "completion over summon speech",
+        "snapshot retry no replay",
+        "opponent speech",
+        "blank optional",
+        "same-action defeat suppression",
+        "later defeat hides speech"
+      ]
+    },
+    {
+      "width": 390,
+      "reducedMotion": false,
+      "status": "PASS",
+      "checks": [
+        "real completion",
+        "completion over summon speech",
+        "snapshot retry no replay",
+        "opponent speech",
+        "blank optional",
+        "same-action defeat suppression",
+        "later defeat hides speech"
+      ]
+    }
+  ],
+  "errors": [],
+  "physicalPhone": "NOT_RUN",
+  "productionWrites": false
+}

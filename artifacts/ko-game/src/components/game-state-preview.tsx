@@ -207,7 +207,7 @@ export function GameStatePreview({
   React.useEffect(() => {
     audioManager.preloadAttackSounds(['1-2', '3-5', '6-9', '10-plus'].map((tier) => `${import.meta.env.BASE_URL}sfx/combat-hit-${tier}.wav?v=1`).concat(`${import.meta.env.BASE_URL}sfx/combat-finisher.wav?v=1`));
   }, []);
-  const [spokenLine, setSpokenLine] = React.useState<{ text: string; playerId: string; speaker: string; id: number } | null>(null);
+  const [spokenLine, setSpokenLine] = React.useState<{ text: string; playerId: string; speaker: string; id: number; questCompletion?: boolean; gameId?: string } | null>(null);
   const spokenTimerRef = React.useRef<number | null>(null);
   React.useEffect(() => () => { if (spokenTimerRef.current !== null) window.clearTimeout(spokenTimerRef.current); }, []);
   const [historyOpen, setHistoryOpen] = React.useState(false);
@@ -441,6 +441,16 @@ export function GameStatePreview({
         if (spokenTimerRef.current !== null) window.clearTimeout(spokenTimerRef.current);
         spokenTimerRef.current = window.setTimeout(() => setSpokenLine(null), 2600);
       }
+    }
+    // Completion speech takes precedence over token/summon dialogue in the same
+    // reward batch. Event-key tracking above/below prevents replay on reconnect.
+    const completionEvent = questPresentationAllowed ? newEvents.find(event => event.type === 'CHAMPION_QUEST_COMPLETED' && event.playerId) : undefined;
+    const completionOwner = completionEvent ? state.players.find(player => player.id === completionEvent.playerId) : undefined;
+    const completionText = completionOwner?.champion?.presentationLines?.QUEST_COMPLETE;
+    if (typeof completionText === 'string' && completionText.trim() && completionOwner) {
+      setSpokenLine({text:completionText.trim(),playerId:completionOwner.id,speaker:completionOwner.champion?.name ?? '챔피언',id:Date.now(),questCompletion:true,gameId:state.gameId});
+      if (spokenTimerRef.current !== null) window.clearTimeout(spokenTimerRef.current);
+      spokenTimerRef.current = window.setTimeout(() => setSpokenLine(null),2600);
     }
     const newEventKeys = newEventEntries.map(({ key }) => key);
     if (state.status === "FINISHED" && state.loserId &&
@@ -1692,7 +1702,7 @@ export function GameStatePreview({
       {effectFinisher && !attackAnimation && (
         <div className="effect-finisher" aria-hidden="true"><div className="attack-animation__finisher-slash" /><span>K.O.!</span></div>
       )}
-      {spokenLine && <div key={spokenLine.id} role="status" className={`champion-spoken-line ${spokenLine.playerId === me.id ? 'champion-spoken-line--mine' : 'champion-spoken-line--theirs'}`}>
+      {spokenLine && (!spokenLine.questCompletion || (questPresentationAllowed && spokenLine.gameId === state.gameId)) && <div key={spokenLine.id} role="status" className={`champion-spoken-line ${spokenLine.playerId === me.id ? 'champion-spoken-line--mine' : 'champion-spoken-line--theirs'}`}>
         <span className="block text-[10px] font-bold text-amber-300">{spokenLine.speaker}</span>
         <span>{spokenLine.text}</span>
       </div>}
