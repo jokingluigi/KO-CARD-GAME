@@ -36,6 +36,9 @@ export function AdminPrismManager({ onUnauthorized }: { onUnauthorized: () => vo
   });
   const [userId, setUserId] = useState("");
   const [grantAmount, setGrantAmount] = useState("");
+  const [grantKind, setGrantKind] = useState<"CARD" | "CHAMPION">("CARD");
+  const grantRequestRef = useRef<{signature:string;id:string} | null>(null);
+  const grantBusyRef = useRef(false);
   const [revokeAmount, setRevokeAmount] = useState("");
   const [revokeReason, setRevokeReason] = useState("");
   const [revokeKind, setRevokeKind] = useState<"CARD" | "CHAMPION">("CARD");
@@ -120,20 +123,21 @@ export function AdminPrismManager({ onUnauthorized }: { onUnauthorized: () => vo
   }
 
   async function grant() {
-    const amount = grantAmount.trim() === "" ? Number.NaN : Number(grantAmount);
-    if (!userId) { setMessage("프리즘을 지급할 사용자를 선택해 주세요."); return; }
-    setGranting(true);
-    setMessage("");
+    if (grantBusyRef.current) return;
+    const amount = Number(grantAmount);
+    if (!userId || !Number.isSafeInteger(amount) || amount < 1 || amount > 1_000_000) {
+      setMessage("사용자와 1~1,000,000 사이의 정수 지급량을 확인해 주세요."); return;
+    }
+    const signature=JSON.stringify({userId,amount,kind:grantKind});
+    if (grantRequestRef.current?.signature !== signature) grantRequestRef.current={signature,id:crypto.randomUUID()};
+    grantBusyRef.current=true;setGranting(true);setMessage("");
     try {
-      await request("/grant", { method: "POST", body: JSON.stringify({ userId, amount }) });
-      setGrantAmount("");
-      await load();
-      setMessage("프리즘을 지급했습니다.");
+      const result=await request<{alreadyGranted?:boolean}>("/grant", {method:"POST",body:JSON.stringify({userId,amount,kind:grantKind,requestId:grantRequestRef.current.id})});
+      grantRequestRef.current=null;setGrantAmount("");await load();
+      setMessage(`${grantKind === "CHAMPION" ? "챔피언" : "일반 카드"} 프리즘 ${amount.toLocaleString()}개를 ${result.alreadyGranted ? "이미 지급한 요청으로 확인했습니다" : "지급했습니다"}.`);
     } catch (error) {
       setMessage(error instanceof Error ? error.message : "프리즘을 지급하지 못했습니다.");
-    } finally {
-      setGranting(false);
-    }
+    } finally {grantBusyRef.current=false;setGranting(false);}
   }
 
   async function revoke() {
@@ -153,12 +157,12 @@ export function AdminPrismManager({ onUnauthorized }: { onUnauthorized: () => vo
 
   return (
     <div className="space-y-6">
+      {message && <p role="status" className="mb-4 rounded border border-amber-800/50 bg-amber-950/20 px-3 py-2 text-sm text-amber-200">{message}</p>}
       <AdminEditorSections panels={[{"id":"admin-prism-manager-0","label":"카드 제작 · 분해"},{"id":"admin-prism-manager-1","label":"챔피언 제작"},{"id":"admin-prism-manager-2","label":"프리즘 지급"},{"id":"admin-prism-manager-3","label":"프리즘 회수"}]}>{[<><section className="rounded-xl border border-neutral-800 bg-black/40 p-5 sm:p-7">
         <div className="mb-5 flex items-start gap-3">
           <Sparkles className="mt-1 h-5 w-5 text-amber-400" />
           <div><p className="font-display text-xs font-bold tracking-[0.25em] text-primary">PRISM ECONOMY</p><h2 className="mt-2 text-xl font-black">카드 제작 설정</h2><p className="mt-2 text-sm text-neutral-500">제작과 분해 값이 설정되지 않았거나 유효하지 않으면 사용자 기능은 안전하게 비활성화됩니다.</p></div>
         </div>
-        {message && <p role="status" className="mb-4 rounded border border-amber-800/50 bg-amber-950/20 px-3 py-2 text-sm text-amber-200">{message}</p>}
         <div className="grid gap-4 lg:grid-cols-2">
           {(["NORMAL", "EPIC", "LEGENDARY"] as Rarity[]).map((rarity) => {
             const setting = settings.find((item) => item.rarity === rarity);
@@ -191,18 +195,19 @@ export function AdminPrismManager({ onUnauthorized }: { onUnauthorized: () => vo
       </section></>,
 <><section className="rounded-xl border border-neutral-800 bg-black/40 p-5 sm:p-7">
         <h2 className="text-xl font-black">사용자 프리즘 지급</h2>
-        <p className="mt-2 text-sm text-neutral-500">관리자 테스트용 지급이며, 모든 지급은 프리즘 변동 로그에 기록됩니다.</p>
-        <div className="mt-5 grid gap-3 sm:grid-cols-[minmax(0,1fr)_160px_auto]">
-          <select value={userId} onChange={(event) => setUserId(event.target.value)} className="rounded border border-neutral-700 bg-neutral-900 px-3 py-2.5 text-sm"><option value="">사용자 선택</option>{users.map((user) => <option key={user.id} value={user.id}>{user.nickname} · {user.email} · ◆ {user.prismBalance.toLocaleString()}</option>)}</select>
-          <input type="number" min="1" max="1000000" step="1" value={grantAmount} onChange={(event) => setGrantAmount(event.target.value)} placeholder="지급량" className="rounded border border-neutral-700 bg-neutral-900 px-3 py-2.5 text-sm" />
-          <button type="button" disabled={granting} onClick={() => void grant()} className="rounded bg-amber-400 px-4 py-2.5 text-sm font-black text-black disabled:opacity-50">{granting ? "지급 중..." : "프리즘 지급"}</button>
+        <p className="mt-2 text-sm text-neutral-500">일반 카드 프리즘과 챔피언 프리즘을 선택하여 지급합니다. 지급 내역은 각 프리즘 변동 로그에 기록됩니다.</p>
+        <div className="mt-5 grid gap-3 sm:grid-cols-2">
+          <select aria-label="프리즘 지급 대상" disabled={granting} value={userId} onChange={(event) => setUserId(event.target.value)} className="min-h-11 min-w-0 rounded border border-neutral-700 bg-neutral-900 px-3 py-2.5 text-base"><option value="">사용자 선택</option>{users.map((user) => <option key={user.id} value={user.id}>{user.nickname} · {user.email} · 일반 ◆ {user.prismBalance.toLocaleString()} · 챔피언 ◈ {(user.championPrismBalance ?? 0).toLocaleString()}</option>)}</select>
+          <select aria-label="지급 프리즘 종류" disabled={granting} value={grantKind} onChange={event=>setGrantKind(event.target.value as "CARD"|"CHAMPION")} className="min-h-11 min-w-0 rounded border border-neutral-700 bg-neutral-900 px-3 py-2.5 text-base"><option value="CARD">일반 카드 프리즘</option><option value="CHAMPION">챔피언 프리즘</option></select>
+          <input aria-label="프리즘 지급량" disabled={granting} type="number" min="1" max="1000000" step="1" value={grantAmount} onChange={(event) => setGrantAmount(event.target.value)} placeholder="지급량" className="min-h-11 min-w-0 rounded border border-neutral-700 bg-neutral-900 px-3 py-2.5 text-base" />
+          <button type="button" disabled={granting} onClick={() => void grant()} className="rounded bg-amber-400 px-4 py-2.5 text-sm font-black text-black disabled:opacity-50">{granting ? "지급 중..." : grantKind === "CHAMPION" ? "챔피언 프리즘 지급" : "일반 카드 프리즘 지급"}</button>
         </div>
       </section></>,
 <><section className="rounded-xl border border-red-900/50 bg-black/40 p-5 sm:p-7">
         <h2 className="text-xl font-black">사용자 프리즘 회수</h2>
         <p className="mt-2 text-sm text-neutral-500">대상 계정과 회수량을 확인하세요. 회수 내역과 사유가 기록됩니다.</p>
         <div className="mt-4 grid gap-3 sm:grid-cols-2">
-          <select aria-label="프리즘 회수 대상" value={userId} onChange={e=>setUserId(e.target.value)} className="min-w-0 rounded border bg-neutral-900 p-3 text-base"><option value="">사용자 선택</option>{users.map(user=><option key={user.id} value={user.id}>{user.nickname} · 일반 ◆ {user.prismBalance.toLocaleString()} · 챔피언 ◈ {(user.championPrismBalance ?? 0).toLocaleString()}</option>)}</select>
+          <select aria-label="프리즘 회수 대상" value={userId} onChange={e=>setUserId(e.target.value)} className="min-w-0 rounded border bg-neutral-900 p-3 text-base"><option value="">사용자 선택</option>{users.map(user=><option key={user.id} value={user.id}>{user.nickname} · {user.email} · 일반 ◆ {user.prismBalance.toLocaleString()} · 챔피언 ◈ {(user.championPrismBalance ?? 0).toLocaleString()}</option>)}</select>
           <select aria-label="회수 프리즘 종류" value={revokeKind} onChange={e=>setRevokeKind(e.target.value as "CARD"|"CHAMPION")} className="rounded border bg-neutral-900 p-3 text-base"><option value="CARD">일반 카드 프리즘</option><option value="CHAMPION">챔피언 프리즘</option></select>
           <input aria-label="프리즘 회수량" type="number" min="1" max="1000000" step="1" value={revokeAmount} onChange={e=>setRevokeAmount(e.target.value)} placeholder="회수량" className="min-w-0 rounded border bg-neutral-900 p-3 text-base" />
           <input aria-label="프리즘 회수 사유" maxLength={300} value={revokeReason} onChange={e=>setRevokeReason(e.target.value)} placeholder="회수 사유" className="min-w-0 rounded border bg-neutral-900 p-3 text-base" />
