@@ -3,7 +3,7 @@ const {chromium}=await import(process.env.KO_QA_PLAYWRIGHT??'playwright');
 const browser=await chromium.launch({headless:true,...(process.env.KO_QA_CHROME_CHANNEL==='chromium'?{}:{channel:'chrome'})});
 const results=[],errors=[];
 try {
-  for(const [width,height] of [[1440,900],[1366,768],[1280,720],[1024,600]]) {
+  for(const [width,height] of [[1920,1080],[1440,900],[1366,768],[1280,720],[1024,600]]) {
     const page=await browser.newPage({viewport:{width,height}});
     page.on('pageerror',e=>errors.push(e.message));
     await page.goto((process.env.KO_QA_ORIGIN??'http://127.0.0.1:5173')+'/qa/champion-features.html');
@@ -26,18 +26,20 @@ try {
       });
       assert.ok(geometry.bottom<=height+1,JSON.stringify(geometry));
       assert.ok(geometry.cardBottom<=geometry.bottom,JSON.stringify(geometry));
+      const visible=await hand.evaluate(h=>{const r=h.getBoundingClientRect();return [...h.querySelectorAll('.ko-hand-card')].every(c=>{const b=c.getBoundingClientRect();return b.top>=r.top&&b.bottom<=r.bottom;});});assert.ok(visible,'idle card top and bottom must fit inside hand clip');
       assert.notEqual(geometry.overflow,'hidden');
       assert.notEqual(geometry.bar,'none');
       if(count===10){assert.ok(await hand.evaluate(e=>e.scrollWidth>e.clientWidth));await hand.evaluate(e=>e.scrollLeft=0);await hand.focus();await page.keyboard.press('ArrowRight');await page.waitForTimeout(300);assert.ok(await hand.evaluate(e=>e.scrollLeft>0),'keyboard must scroll the hand');}
       for(const index of [...new Set([0,Math.floor(count/2),count-1])]) {
         const card=hand.getByRole('button',{name:'PC 주문',exact:true}).nth(index);
-        await card.scrollIntoViewIfNeeded();await card.click();
+        await card.scrollIntoViewIfNeeded();await card.hover();await page.waitForTimeout(200);assert.ok(await card.evaluate(c=>{const r=c.getBoundingClientRect(),h=c.closest('.ko-player-hand').getBoundingClientRect();return r.top>=h.top&&r.bottom<=h.bottom;}),'hovered card must remain fully visible');await card.click({position:{x:12,y:(await card.boundingBox()).height-16}});
+        const selectedInside=await card.evaluate(c=>{const r=c.getBoundingClientRect(),h=c.closest('.ko-player-hand').getBoundingClientRect();return r.top>=h.top&&r.bottom<=h.bottom;});if(!selectedInside)console.log({width,height,count,index,geometry:await card.evaluate(c=>({card:c.getBoundingClientRect().toJSON(),hand:c.closest('.ko-player-hand').getBoundingClientRect().toJSON(),transform:getComputedStyle(c).transform}))});assert.ok(selectedInside,'selected card must remain fully visible');
         const use=page.getByRole('button',{name:'사용',exact:true});
         await use.scrollIntoViewIfNeeded();
         assert.ok(await use.isVisible());
         const hit=await use.evaluate(e=>{const r=e.getBoundingClientRect();return document.elementFromPoint(r.x+r.width/2,r.y+r.height/2)?.closest('button')===e;});
         if(!hit){console.log(await use.evaluate(e=>{const r=e.getBoundingClientRect();return {rect:r.toJSON(),hit:document.elementFromPoint(r.x+r.width/2,r.y+r.height/2)?.outerHTML.slice(0,600),hand:document.querySelector('.ko-player-hand').getBoundingClientRect().toJSON()};}));await page.screenshot({path:'../desktop-hand-failure.png'});}assert.ok(hit,'use button must not be clipped or covered');
-        await card.click();
+        await card.click({position:{x:12,y:(await card.boundingBox()).height-16}});
       }
       const last=hand.getByRole('button',{name:'PC 주문',exact:true}).last();
       await last.scrollIntoViewIfNeeded();await last.click();

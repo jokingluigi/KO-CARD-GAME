@@ -672,7 +672,12 @@ export function attack(
     attackSurvivedResolved, attackingPlayerId, attackerInstanceId,
   );
   const listenersResolved = resolveBoardListeners(
-    selfAttackResolved, attackingPlayerId, 'OTHER_ALLY_ATTACK', { attackerInstanceId },
+    selfAttackResolved, attackingPlayerId, 'OTHER_ALLY_ATTACK', {
+      attackerInstanceId,
+      // Combo effects can settle lethal combat damage before the final death pass.
+      // Keep its original cause so retirement rewards belong to the actual attacker.
+      sourceContext: attackerAttribution,
+    },
   );
   const damageListenersResolved = resolveRegisteredRuleListeners(
     { ...listenersResolved, preventedDamageTargetIds: undefined },

@@ -1,0 +1,23 @@
+✔ Hilbil recovers fully after prior healing with 카산드라, maximum HP 4 (10.646152ms)
+✔ Hilbil recovers fully after prior healing with 카산드라, maximum HP 20 (1.503525ms)
+✔ Hilbil recovers fully after prior healing with 위마리(각성), maximum HP 4 (1.179918ms)
+✔ Hilbil recovers fully after prior healing with 위마리(각성), maximum HP 20 (1.073998ms)
+✔ Hilbil recovers fully after prior healing with 헬퍼, maximum HP 4 (1.123844ms)
+✔ Hilbil recovers fully after prior healing with 헬퍼, maximum HP 20 (0.892625ms)
+✔ Hilbil recovers fully after prior healing with 카스토, maximum HP 4 (0.843231ms)
+✔ Hilbil recovers fully after prior healing with 카스토, maximum HP 20 (1.02209ms)
+✔ Hilbil survives real healing turn effects and regeneration before its next combat: 카산드라 (3.404661ms)
+✔ Hilbil survives real healing turn effects and regeneration before its next combat: 위마리(각성) (1.866954ms)
+✔ external healing preserves Hilbil ability, but a nonlethal hit does not count as retiring an opponent (0.65045ms)
+✔ reported normal Wimari combo preserves Hilbil's combat retirement and fully heals its increased maximum 4 (2.769533ms)
+✔ reported normal Wimari combo preserves Hilbil's combat retirement and fully heals its increased maximum 20 (0.926616ms)
+✔ Wimari combo on a nonlethal attack increases health once without granting Hilbil a kill heal (0.659834ms)
+✔ two Hilbils with Wimari only heal the actual attacker who retired the enemy (0.951955ms)
+ℹ tests 15
+ℹ suites 0
+ℹ pass 15
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 1091.340225

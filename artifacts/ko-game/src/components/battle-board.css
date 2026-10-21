@@ -787,3 +787,28 @@ body:has(.ko-board-preview)
   top: 36px;
   min-height: 44px;
 }
+
+/* Desktop hand cards are taller than the old fixed 220px tray. Let their row
+   determine its height and reserve room for the existing hover/selection lift. */
+@media (min-width: 769px) {
+  .ko-game-shell.ko-board-preview .ko-game-stage {
+    grid-template-rows: 16px var(--board-hud-h) auto 52px auto var(--board-hud-h) minmax(var(--board-hand-h), max-content);
+  }
+  .ko-game-shell.ko-board-preview .ko-player-hand {
+    height: auto;
+    min-height: var(--board-hand-h);
+    align-items: flex-start;
+    padding-top: 64px;
+  }
+  .ko-game-shell.ko-board-preview .ko-hand-cards {
+    top: 0;
+  }
+}
+@media (min-width: 769px) and (max-width: 1100px) and (orientation: landscape) {
+  /* Legacy landscape uses a complete transform. Do not also apply the
+     component's Tailwind translate/scale properties on top of that transform. */
+  .ko-game-shell.ko-board-preview .ko-hand-card--selected {
+    translate: none;
+    scale: 1;
+  }
+}

@@ -53,7 +53,6 @@ export default function Online() {
       {() => <OnlineShell
         eyebrow="ONLINE BATTLE"
         title="실제 상대와 겨루는 링"
-        titleStatus={<SitePresenceLight />}
         description="빠르게 상대를 찾거나, 친구와 방 코드를 공유하세요. 전투의 모든 판정은 서버가 담당합니다."
         backHref={ONLINE_MODE_SELECT_BACK_ROUTE}
       >
@@ -84,6 +83,7 @@ export default function Online() {
         <div className="grid gap-4 lg:grid-cols-2">
           <ModeCard
             title="빠른 대전"
+            titleStatus={<SitePresenceLight />}
             description="유효한 덱을 고르고 FIFO 대기열에서 가장 오래 기다린 상대와 만납니다."
             icon="quick"
             testId="button-online-quick"
