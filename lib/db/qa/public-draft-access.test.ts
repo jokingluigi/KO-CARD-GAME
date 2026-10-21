@@ -235,3 +235,35 @@ test('catalog audit is admin-only, bounded and does not advance an expired draft
   assert.equal('state' in body, false);
   assert.equal('userId' in body, false);
 });
+
+test('administrator grants champion/card prisms atomically with retry deduplication and isolated balances', async () => {
+  await database.update(schema.usersTable).set({prismBalance:400,championPrismBalance:100}).where(eq(schema.usersTable.id,'other'));
+  const path='/api/admin/prism/grant',payload={userId:'other',kind:'CHAMPION',amount:75,requestId:'grant-champion-qa-1'};
+  assert.equal((await request(path,undefined,'POST',payload)).status,401);
+  assert.equal((await request(path,'user','POST',payload)).status,403);
+  for(const amount of [0,-1,1.5,'5',1000001])assert.equal((await request(path,'admin','POST',{...payload,amount})).status,400);
+  assert.equal((await request(path,'admin','POST',{...payload,requestId:undefined})).status,400);
+  assert.equal((await request(path,'admin','POST',{...payload,kind:'INVALID'})).status,400);
+  const results=await Promise.all(Array.from({length:3},()=>request(path,'admin','POST',payload)));
+  for(const r of results)assert.equal(r.status,200,JSON.stringify(await r.clone().json()));
+  const bodies=await Promise.all(results.map(r=>r.json()));assert.equal(bodies.filter(b=>!b.alreadyGranted).length,1);
+  let [user]=await database.select().from(schema.usersTable).where(eq(schema.usersTable.id,'other'));assert.equal(user.championPrismBalance,175);assert.equal(user.prismBalance,400);
+  const receipts=await database.select().from(schema.championPrismTransactionsTable).where(eq(schema.championPrismTransactionsTable.id,'admin-grant-'+payload.requestId));assert.equal(receipts.length,1);assert.equal(receipts[0].balanceAfter,175);assert.equal(JSON.parse(receipts[0].metadata!).grantedBy,'admin');
+  for(const change of [{amount:76},{kind:'CARD'},{userId:'user'}])assert.equal((await request(path,'admin','POST',{...payload,...change})).status,409);
+  assert.equal((await request(path,'admin','POST',{userId:'other',amount:20})).status,200);
+  const card={userId:'other',kind:'CARD',amount:13,requestId:'grant-normal-qa-1'};
+  assert.equal((await request(path,'admin','POST',card)).status,200);assert.equal((await request(path,'admin','POST',card)).status,200);
+  [user]=await database.select().from(schema.usersTable).where(eq(schema.usersTable.id,'other'));assert.equal(user.prismBalance,433);assert.equal(user.championPrismBalance,175);
+  assert.equal((await request(path,'admin','POST',{...payload,userId:'missing',requestId:'grant-missing-qa'})).status,404);
+  await database.update(schema.usersTable).set({championPrismBalance:2147483647}).where(eq(schema.usersTable.id,'other'));
+  assert.equal((await request(path,'admin','POST',{...payload,amount:1,requestId:'grant-overflow-qa'})).status,409);
+  await database.update(schema.usersTable).set({championPrismBalance:175}).where(eq(schema.usersTable.id,'other'));
+  await pg.exec("ALTER TABLE champion_prism_transactions ADD CONSTRAINT qa_grant_failure CHECK (id <> 'admin-grant-grant-failure-qa')");
+  const failed={...payload,amount:1,requestId:'grant-failure-qa'};
+  assert.equal((await request(path,'admin','POST',failed)).status,500);
+  [user]=await database.select().from(schema.usersTable).where(eq(schema.usersTable.id,'other'));assert.equal(user.championPrismBalance,175);
+  assert.equal((await database.select().from(schema.championPrismTransactionsTable).where(eq(schema.championPrismTransactionsTable.id,'admin-grant-'+failed.requestId))).length,0);
+  await pg.exec('ALTER TABLE champion_prism_transactions DROP CONSTRAINT qa_grant_failure');
+  assert.equal((await request(path,'admin','POST',failed)).status,200);
+  [user]=await database.select().from(schema.usersTable).where(eq(schema.usersTable.id,'other'));assert.equal(user.championPrismBalance,176);
+});

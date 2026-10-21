@@ -104,36 +104,49 @@ router.put("/settings/:rarity", async (request, response): Promise<void> => {
 
 router.post("/grant", async (request, response): Promise<void> => {
   if (!requireAdmin(request, response)) return;
-  const userId = typeof request.body?.userId === "string" ? request.body.userId : "";
-  const amount = request.body?.amount;
-  if (!userId || !isValidPrismValue(amount) || amount < 1 || amount > 1_000_000) {
-    response.status(400).json({ message: "사용자와 1~1,000,000 사이의 프리즘 지급량을 확인해 주세요." });
-    return;
+  const { userId, amount, requestId } = request.body ?? {};
+  const kind = request.body?.kind ?? "CARD";
+  if (typeof userId !== "string" || !userId || !isValidPrismValue(amount) || amount < 1 || amount > 1_000_000 ||
+      !["CARD", "CHAMPION"].includes(kind) ||
+      (requestId !== undefined && (typeof requestId !== "string" || !/^[a-zA-Z0-9-]{8,80}$/.test(requestId))) ||
+      (kind === "CHAMPION" && requestId === undefined)) {
+    response.status(400).json({ message: "사용자, 프리즘 종류, 지급량(1~1,000,000)과 요청 ID를 확인해 주세요." }); return;
   }
-  const result = await db.transaction(async (tx) => {
-    const [user] = await tx.update(usersTable)
-      .set({
-        prismBalance: sql`${usersTable.prismBalance} + ${amount}`,
-        updatedAt: new Date(),
-      })
-      .where(eq(usersTable.id, userId))
-      .returning({ id: usersTable.id, prismBalance: usersTable.prismBalance });
-    if (!user) return null;
-    await tx.insert(prismTransactionsTable).values({
-      id: randomUUID(),
-      userId,
-      type: "ADMIN_GRANT",
-      amount,
-      balanceAfter: user.prismBalance,
-      metadata: JSON.stringify({ grantedBy: request.authUser!.id }),
+  const table = kind === "CHAMPION" ? championPrismTransactionsTable : prismTransactionsTable;
+  const balance = kind === "CHAMPION" ? usersTable.championPrismBalance : usersTable.prismBalance;
+  const balanceKey = kind === "CHAMPION" ? "championPrismBalance" : "prismBalance";
+  // Legacy CARD callers may omit an ID. The UI always supplies one and keeps it on retry.
+  const id = `admin-grant-${requestId ?? randomUUID()}`;
+  class GrantError extends Error { constructor(public status: number, message: string) {super(message);} }
+  try {
+    const result = await db.transaction(async tx => {
+      await tx.execute(sql`SELECT pg_advisory_xact_lock(hashtext(${id}))`);
+      const [user] = await tx.select({id:usersTable.id,prismBalance:usersTable.prismBalance,championPrismBalance:usersTable.championPrismBalance})
+        .from(usersTable).where(eq(usersTable.id,userId)).for("update");
+      if (!user) throw new GrantError(404,"사용자를 찾을 수 없습니다.");
+      const [normal] = await tx.select().from(prismTransactionsTable).where(eq(prismTransactionsTable.id,id));
+      const [champion] = await tx.select().from(championPrismTransactionsTable).where(eq(championPrismTransactionsTable.id,id));
+      const previous = normal ?? champion;
+      if (previous) {
+        const metadata = JSON.parse(previous.metadata ?? "{}");
+        if (previous.userId !== userId || previous.type !== "ADMIN_GRANT" || previous.amount !== amount ||
+            metadata.kind !== kind || metadata.grantedBy !== request.authUser!.id)
+          throw new GrantError(409,"다른 지급 요청에 사용된 ID입니다.");
+        return {user,alreadyGranted:true};
+      }
+      const [updated] = await tx.update(usersTable).set({[balanceKey]:sql`${balance} + ${amount}`,updatedAt:new Date()})
+        .where(and(eq(usersTable.id,userId),sql`${balance} <= ${2147483647-amount}`))
+        .returning({id:usersTable.id,prismBalance:usersTable.prismBalance,championPrismBalance:usersTable.championPrismBalance});
+      if (!updated) throw new GrantError(409,"프리즘 잔액 한도를 초과합니다.");
+      await tx.insert(table).values({id,userId,type:"ADMIN_GRANT",amount,balanceAfter:updated[balanceKey],
+        metadata:JSON.stringify({grantedBy:request.authUser!.id,kind,requestId:requestId ?? null})});
+      return {user:updated,alreadyGranted:false};
     });
-    return user;
-  });
-  if (!result) {
-    response.status(404).json({ message: "사용자를 찾을 수 없습니다." });
-    return;
+    response.json(result);
+  } catch(error) {
+    if (error instanceof GrantError) {response.status(error.status).json({message:error.message});return;}
+    throw error;
   }
-  response.json({ user: result });
 });
 
 router.post("/revoke", async (request, response): Promise<void> => {

@@ -1,0 +1,116 @@
+{
+  "verifiedAt": "2026-10-21T16:03:38.725237+00:00",
+  "prs": [
+    76
+  ],
+  "commit": "48887286dd8fa9c7e4cb7d2688e32aac75f10720",
+  "services": [
+    {
+      "service": "srv-damlm4gu01pc73ao3mb0",
+      "deploy": "dep-dbce3t9srm7s738govr0",
+      "status": "live",
+      "commit": "48887286dd8fa9c7e4cb7d2688e32aac75f10720"
+    },
+    {
+      "service": "srv-daml9kqd0e5s73fsnjs0",
+      "deploy": "dep-dbce3tjbc2fs73c5mrog",
+      "status": "live",
+      "commit": "48887286dd8fa9c7e4cb7d2688e32aac75f10720"
+    }
+  ],
+  "assets": [
+    {
+      "path": "/assets/draft-C1FR-HT2.js",
+      "status": 200,
+      "bytes": 923,
+      "sha256": "6f5e095164629f67d5016528c13412906e77e3fc1b3944df156f78f433fed96e",
+      "matchesTestedBuild": true
+    },
+    {
+      "path": "/assets/online-match-DvHSpUdS.js",
+      "status": 200,
+      "bytes": 25251,
+      "sha256": "05766984f72ff4b9e8babde1aef5b7a6868c06ce6944a312c1f43fb9d098f083",
+      "matchesTestedBuild": true
+    },
+    {
+      "path": "/assets/online-match-intro-DC8ZJl7U.css",
+      "status": 200,
+      "bytes": 12010,
+      "sha256": "9c1e5f1e67255576171f66d0331da1d8698c8b3b86bc40f4f638dc1704170bcc",
+      "matchesTestedBuild": true
+    },
+    {
+      "path": "/assets/admin-champion-manager-B-Zf-OOm.js",
+      "status": 200,
+      "bytes": 59675,
+      "sha256": "24aba48618d52070700b7ebeeae82cd80886cd00002b73834648503865c2b90c",
+      "matchesTestedBuild": true
+    },
+    {
+      "path": "/assets/match-result-overlay-D5t0N496.js",
+      "status": 200,
+      "bytes": 174720,
+      "sha256": "6d900872f6406b1cf4c850572749f21ab9d508b434b50aa1d6376c0626f51da5",
+      "matchesTestedBuild": true
+    },
+    {
+      "path": "/assets/index-BG-CeayV.css",
+      "status": 200,
+      "bytes": 274411,
+      "sha256": "484044d4af84c9eb58bd73b352d922a5db4d7ac6f35d56ac9372a3945bafd3ad",
+      "matchesTestedBuild": true
+    },
+    {
+      "path": "/assets/draft-client-CwrOwPLy.js",
+      "status": 200,
+      "bytes": 5425,
+      "sha256": "188f9d3f1d3c79d055714bbdbee546efbbd653840fb64f69e3991c7bd68a0283",
+      "matchesTestedBuild": true
+    },
+    {
+      "path": "/assets/online-match-intro-BeOudFOQ.js",
+      "status": 200,
+      "bytes": 4590,
+      "sha256": "a73a5c8ca4a1109cb82e230b8783a42ce66b368899a95d041eeb4693cb4bae3d",
+      "matchesTestedBuild": true
+    },
+    {
+      "path": "/assets/home-CFkeZtuO.js",
+      "status": 200,
+      "bytes": 68598,
+      "sha256": "fe1b28145385a8b3e84e3fa7a79e5790fca36d3df2114c898a97b64becb68195",
+      "matchesTestedBuild": true
+    },
+    {
+      "path": "/assets/index-Dj9N1H44.js",
+      "status": 200,
+      "bytes": 372308,
+      "sha256": "062d86f13db108b588958a214206acf3141629d378c6bdeeb395cda103da0765",
+      "matchesTestedBuild": true
+    },
+    {
+      "path": "/assets/match-result-overlay-CqxMLPWF.css",
+      "status": 200,
+      "bytes": 32403,
+      "sha256": "8dd59a2676e411baf16fa09c13d65bb1384efe4190858d05153cc67b32346749",
+      "matchesTestedBuild": true
+    }
+  ],
+  "health": [
+    {
+      "origin": "https://ko-card-game-vr69.onrender.com",
+      "status": 200,
+      "response": "ok"
+    },
+    {
+      "origin": "https://ko-card-game.onrender.com",
+      "status": 200,
+      "response": "ok"
+    }
+  ],
+  "databaseMigration": false,
+  "productionTestWrites": false,
+  "liveProductionTwoAccountGameplay": "NOT_RUN",
+  "validationReport": "docs/qa/champion-quest-dialogue-20261021/README.md"
+}
