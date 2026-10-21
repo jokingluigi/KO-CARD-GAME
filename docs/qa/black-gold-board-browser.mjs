@@ -150,11 +150,19 @@ try {
           const stats = await page.locator(`.ko-${side}-stats`).boundingBox();
           const zones = await page.locator(`.ko-${side}-zones`).boundingBox();
           assert.ok(stats.y + stats.height <= zones.y, 'HP/gold appear above deck/graveyard without overlap');
+          const resources = await page.locator(`.ko-${side}-stats > div`).all();
+          const deck = await page.locator(`.ko-${side}-zones > div`).boundingBox();
+          const hp = await resources[1].boundingBox(), gold = await resources[0].boundingBox();
+          assert.equal(hp.height, 44);
+          assert.equal(gold.height, 44);
+          assert.ok(hp.y < gold.y, 'HP occupies the first large panel, gold the second');
+          assert.ok(hp.width > deck.width * 1.8, 'resources use full-width panels; deck/graveyard share the small row');
+          assert.equal(await resources[1].locator('.font-display').evaluate(e => getComputedStyle(e).fontSize), '22px');
         }
         assert.ok(g.portrait.w >= 93);
         for (const n of await page
           .locator(
-            ".ko-game-controls > button:visible,.ko-champion-ability,.ko-player-zones button,.cosmetic-emote-tools > button,.ko-board-inspect-button:visible,.ko-hand-inspect-button:visible",
+            ".ko-game-controls > button:visible,.ko-champion-ability,.cosmetic-emote-tools > button,.ko-board-inspect-button:visible,.ko-hand-inspect-button:visible",
           )
           .all()) {
           assert.ok((await n.boundingBox()).height >= 44);
@@ -456,7 +464,19 @@ try {
           .click();
         await page.getByRole("button", { name: "경기 로그 열기" }).click();
         await page.getByRole("button", { name: "경기 로그 닫기" }).click();
-        await page.locator(".ko-player-zones button").click();
+        const graveButton = page.locator('.ko-player-zones button');
+        await graveButton.scrollIntoViewIfNeeded();
+        await page.waitForFunction(() => {
+          const e = document.querySelector('.ko-player-zones button'), r = e.getBoundingClientRect();
+          return document.elementFromPoint(r.x + r.width / 2, r.y - 4)?.closest('button') === e;
+        });
+        const hit = await graveButton.evaluate(e => {
+          const r = e.getBoundingClientRect(), p = getComputedStyle(e, '::after');
+          const x = r.x + r.width / 2, y = r.y - 4;
+          return { x, y, height: r.height - parseFloat(p.top) - parseFloat(p.bottom), reachable: document.elementFromPoint(x,y)?.closest('button') === e };
+        });
+        assert.ok(hit.height >= 44 && hit.reachable, 'small visual graveyard panel retains a real 44px touch target: ' + JSON.stringify(hit));
+        await page.touchscreen.tap(hit.x, hit.y);
         const graveyard = page.getByRole("dialog", { name: "내 묘지", exact: true });
         const graveCards = graveyard.locator('[data-testid="graveyard-cards"] .ko-card-depth');
         assert.equal(await graveCards.count(), (await state()).players[0].graveyard.length);
