@@ -192,7 +192,7 @@ try {
         assert.equal(x.handTrackTop, "-8px");
         assert.ok(x.questAbilityGap >= 4, "Quest and ability do not overlap");
         assert.equal(x.oldAmbience, "none");
-        assert.ok(x.wood.includes("svg"));
+        assert.ok(/(?:svg|webp)/.test(x.wood));
         assert.ok(
           x.mats.every(
             (m) =>

@@ -9,8 +9,9 @@
   --board-portrait-w: 105px;
   --board-hud-h: 140px;
   --board-hand-h: clamp(140px, 22dvh, 190px);
-  background: var(--board-bg) url("./battle-board-assets/walnut-table.svg")
-    center top / 960px 480px repeat;
+  background: var(--board-bg)
+    url("./battle-board-assets/walnut-material-portrait.webp") center top /
+    cover no-repeat;
   color: #f0e8d8;
   width: 100%;
   min-width: 0;
@@ -39,8 +40,9 @@
   background: transparent;
 }
 .ko-board-preview .ko-cinematic-background {
-  background: var(--board-bg) url("./battle-board-assets/walnut-table.svg")
-    center top / 960px 480px repeat;
+  background: var(--board-bg)
+    url("./battle-board-assets/walnut-material-portrait.webp") center top /
+    cover no-repeat;
 }
 .ko-board-preview .ko-cinematic-background > div:last-child {
   background: none;
@@ -476,6 +478,7 @@
     --board-portrait-w: 120px;
     --board-hud-h: 160px;
     --board-hand-h: 220px;
+    background-image: url("./battle-board-assets/walnut-material-wide.webp");
   }
   .ko-board-preview .ko-game-stage {
     max-width: 1024px;

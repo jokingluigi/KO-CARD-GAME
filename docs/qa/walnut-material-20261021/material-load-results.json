@@ -1,0 +1,32 @@
+[
+  {
+    "viewport": [
+      390,
+      844
+    ],
+    "devicePixelRatio": 2,
+    "scale": 1,
+    "repeat": "no-repeat",
+    "size": "cover",
+    "position": "50% 0%",
+    "source": "walnut-material-portrait.webp",
+    "naturalWidth": 948,
+    "naturalHeight": 1660,
+    "woodRequests": 1
+  },
+  {
+    "viewport": [
+      1440,
+      1000
+    ],
+    "devicePixelRatio": 1,
+    "scale": 1,
+    "repeat": "no-repeat",
+    "size": "cover",
+    "position": "50% 0%",
+    "source": "walnut-material-wide.webp",
+    "naturalWidth": 1659,
+    "naturalHeight": 948,
+    "woodRequests": 1
+  }
+]
