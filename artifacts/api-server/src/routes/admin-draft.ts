@@ -1,14 +1,16 @@
 import {sendDraftCosmeticEmote} from '../lib/draft-cosmetics';
 import {CosmeticError} from '../lib/cosmetics';
 import { Router, type IRouter } from "express";
-import { sql, eq } from "drizzle-orm";
-import { db, cardsTable, championsTable, draftSettingsTable } from "@workspace/db";
+import { sql, eq, inArray } from "drizzle-orm";
+import { db, cardsTable, championsTable, draftSettingsTable, draftSessionsTable } from "@workspace/db";
 import {
   parseDraftConfig,
   DEFAULT_DRAFT_CONFIG,
   validateDraftPool,
   selectableCards,
   selectableChampions,
+  cardRecordToDefinition,
+  type CardDefinition,
 } from "@workspace/game-engine";
 import { getAuthenticatedUser } from "../lib/auth";
 import {
@@ -184,6 +186,31 @@ router.post("/sessions", async (req, res, next) => {
   } catch (e) {
     next(e);
   }
+});
+// Explicit admin diagnosis only: never tick a match, heartbeat, lock or rewrite its snapshot.
+router.get("/sessions/:id/catalog-audit", async (req, res, next) => {
+  try {
+    if (req.authUser?.role !== "ADMIN") { res.status(403).json({ message: "관리자만 접근할 수 있습니다." }); return; }
+    const ids = typeof req.query.cardIds === "string" ? [...new Set(req.query.cardIds.split(","))] : [];
+    if (!ids.length || ids.length > 10 || ids.some(id => !id || id.length > 128)) {
+      res.status(400).json({ message: "조회할 카드 ID를 1~10개 지정해 주세요." }); return;
+    }
+    const [session] = await db.select({ createdAt: draftSessionsTable.createdAt, version: draftSessionsTable.version,
+      phase: sql<string>`${draftSessionsTable.state}->>'phase'`,
+      cards: sql<CardDefinition[]>`coalesce((select jsonb_agg(card) from jsonb_array_elements(${draftSessionsTable.snapshot}->'cards') card where card->>'id' in (${sql.join(ids.map(id => sql`${id}`), sql`, `)})), '[]'::jsonb)`,
+    }).from(draftSessionsTable).where(eq(draftSessionsTable.id, String(req.params.id))).limit(1);
+    if (!session) throw new DraftError("NOT_FOUND", "드래프트를 찾을 수 없습니다.", 404);
+    const current = await db.select().from(cardsTable).where(inArray(cardsTable.id, ids));
+    res.json({ createdAt: session.createdAt, version: session.version, phase: session.phase,
+      cards: ids.map(id => {
+        const record = current.find(card => card.id === id);
+        const definition = record ? cardRecordToDefinition({ ...record, createdAt: record.createdAt.toISOString(), updatedAt: record.updatedAt.toISOString() } as unknown as Parameters<typeof cardRecordToDefinition>[0]) : null;
+        const snapshot = session.cards.find(card => card.id === id) ?? null;
+        const describe = (card: CardDefinition | null) => card && ({ name: card.name, rulesText: card.rulesText, abilities: card.abilities, cost: card.cost, attack: card.attack, health: card.health });
+        return { id, snapshot: describe(snapshot), current: describe(definition) };
+      }),
+    });
+  } catch (error) { next(error); }
 });
 router.get("/sessions/:id", async (req, res, next) => {
   try {

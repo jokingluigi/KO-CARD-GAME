@@ -18,7 +18,7 @@ type Props = {
     slot: BoardSlot,
     geometry: { source: CardAnimationRect; target: CardAnimationRect },
   ) => void;
-  spell: (id: string, source: CardAnimationRect) => void;
+  spell: (id: string, source: CardAnimationRect, drop: {x:number;y:number}) => void;
 };
 /** Local pointer presentation only. Drop calls the same validated actions as tap. */
 export function BattleCardDrag(props: Props) {
@@ -107,10 +107,11 @@ export function BattleCardDrag(props: Props) {
       if (!latest.current.enabled || e.button !== 0 || !e.isPrimary || gesture)
         return;
       const target = e.target as Element;
-      if (target.closest("button,[data-touch-inspect-trigger],a,input,select"))
+      const useButton = target.closest<HTMLElement>('[data-hand-drag-card-id]');
+      if (!useButton && target.closest("button,[data-touch-inspect-trigger],a,input,select"))
         return;
-      const entry = Array.from(latest.current.hand.current).find(([, n]) =>
-        n.contains(target),
+      const entry = Array.from(latest.current.hand.current).find(([id, n]) =>
+        useButton ? id === useButton.dataset.handDragCardId : n.contains(target),
       );
       if (!entry || allowed(entry[0]).length === 0) return;
       const [id, node] = entry,
@@ -238,26 +239,17 @@ export function BattleCardDrag(props: Props) {
         p.summon(slot as BoardSlot, geometry);
         return;
       }
-      // The board-area wrapper is display:contents on the reviewed board and
-      // has no rectangle. Use its actual field rows, scoped to this match.
-      const fields = Array.from(g.node.closest('.ko-game-shell')?.querySelectorAll(
-        '.ko-opponent-board-row,.ko-player-board-row',
-      ) ?? []).map(node => node.getBoundingClientRect()).filter(r => r.width > 0 && r.height > 0);
-      const field = fields.length ? {
-        left: Math.min(...fields.map(r => r.left)), right: Math.max(...fields.map(r => r.right)),
-        top: Math.min(...fields.map(r => r.top)), bottom: Math.max(...fields.map(r => r.bottom)),
-      } : null;
-      if (
-        p.enabled &&
-        actions.some((a) => a.type === "PLAY_TECHNIQUE") &&
-        field &&
-        e.clientX >= field.left &&
-        e.clientX <= field.right &&
-        e.clientY >= field.top &&
-        e.clientY <= field.bottom
-      ) {
+      // Display:contents has no box. Accept actual fields and both champion
+      // portraits, including a spell dropped directly onto a champion.
+      const castArea = Array.from(g.node.closest('.ko-game-shell')?.querySelectorAll(
+        '.ko-opponent-board-row,.ko-player-board-row,.ko-opponent-champion,.ko-player-champion',
+      ) ?? []).some(node => {
+        const r=node.getBoundingClientRect();
+        return r.width>0&&r.height>0&&e.clientX>=r.left&&e.clientX<=r.right&&e.clientY>=r.top&&e.clientY<=r.bottom;
+      });
+      if (p.enabled && actions.some(a=>a.type==='PLAY_TECHNIQUE') && castArea) {
         clean();
-        p.spell(g.id, source);
+        p.spell(g.id, source, {x:e.clientX,y:e.clientY});
         return;
       }
       cancel();

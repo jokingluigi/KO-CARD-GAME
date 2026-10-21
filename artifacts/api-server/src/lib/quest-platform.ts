@@ -7,14 +7,14 @@ export type QuestMode = typeof QUEST_MODES[number];
 export type QuestReward = { rewardType: string; rewardAmount: number; rewardTargetId: string | null };
 export type QuestPlatform = {
  questType: "DAILY" | "SEASON"; version: number; seasonId: string | null;
- archived: boolean; weight: number; modes: QuestMode[]; rarity: string | null;
+ deletedAt: string | null; archived: boolean; weight: number; modes: QuestMode[]; rarity: string | null;
  result: "ANY" | "WIN" | "LOSS"; activationAt: string | null; rewards: QuestReward[];
 };
 export const QUEST_OBJECTIVES = ["PLAY_MATCH", "WIN_MATCH", "LOSS_MATCH", "CARD_PLAYED", "TECHNIQUE_PLAYED", "WRESTLER_PLAYED", "CARD_RETIRED", "CARD_DESTROYED", "DAMAGE_DEALT", "CHAMPION_ABILITY_USED", "FUSION", "ATTACK_DECLARED"];
 export function readPlatform(record: { platform?: unknown; rewardType: string; rewardAmount: number; rewardTargetId?: string | null }): QuestPlatform {
  const p = record.platform as Partial<QuestPlatform> | null | undefined;
  return { questType: p?.questType ?? "DAILY", version: p?.version ?? 1, seasonId: p?.seasonId ?? null,
- archived: p?.archived ?? false, weight: p?.weight ?? 100, modes: p?.modes ?? [...QUEST_MODES],
+ deletedAt: p?.deletedAt ?? null, archived: p?.archived ?? false, weight: p?.weight ?? 100, modes: p?.modes ?? [...QUEST_MODES],
  rarity: p?.rarity ?? null, result: p?.result ?? "ANY", activationAt: p?.activationAt ?? null,
  rewards: p?.rewards ?? [{ rewardType: record.rewardType, rewardAmount: record.rewardAmount, rewardTargetId: record.rewardTargetId ?? null }] };
 }
@@ -30,7 +30,7 @@ export function validatePlatform(input: Record<string, unknown>, previousVersion
  (p.rarity != null && !["NORMAL", "EPIC", "LEGENDARY", "CHAMPION"].includes(p.rarity)) ||
  (p.result != null && !["ANY", "WIN", "LOSS"].includes(p.result)) ||
  (p.activationAt != null && !Number.isFinite(Date.parse(p.activationAt)))) return null;
- return { questType, version: previousVersion + 1, seasonId: questType === "SEASON" ? p.seasonId! : null,
+ return { questType, deletedAt: null, version: previousVersion + 1, seasonId: questType === "SEASON" ? p.seasonId! : null,
  modes: [...new Set(modes)], weight, archived: p.archived === true, rarity: p.rarity ?? null,
  result: p.result ?? "ANY", activationAt: p.activationAt ?? null, rewards };
 }

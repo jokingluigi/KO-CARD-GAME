@@ -1,0 +1,13 @@
+{
+  "results": [
+    "deck ownership/rarity/tag/cost filters combine with type/search, including cost 7, reset and fit five widths PASS",
+    "collection uses existing authorized catalog for owned/unowned, combines all four filters and search, fits five widths PASS",
+    "real game actions -> 1/2/3 daily completions -> separate claim and reload persisted once PASS",
+    "third/fourth/last card reveal only themselves; repeat tap does not reveal others; explicit reveal-all still works PASS",
+    "actual admin config save/reload and confirmed quest delete/reload PASS",
+    "admin bonus/delete UI fits four mobile and desktop widths PASS"
+  ],
+  "errors": [],
+  "physicalPhone": "NOT_RUN",
+  "productionRequests": 0
+}

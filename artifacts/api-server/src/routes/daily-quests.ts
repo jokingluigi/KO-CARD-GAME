@@ -1,3 +1,4 @@
+import {dailyCompletionBonus,claimDailyCompletionBonus} from "../lib/daily-completion-bonus";
 import {saveAIQuestStart,storedAIQuestMatch} from '../lib/ai-quest-match-storage';
 import { ensureDraftParticipationQuest } from "../lib/draft-participation-quest";
 import { and, asc, eq } from "drizzle-orm";
@@ -9,7 +10,7 @@ import { isTestAccountUser } from "../lib/test-account";
 import { completeAIMatchQuestProgress } from "../lib/ai-match-quest-service";
 import {
   claimDailyQuest,
-  ensureDailyQuestAssignments, ensureAllQuestAssignments, questSettings,
+  ensureDailyQuestAssignments, ensureAllQuestAssignments, questSettings, dailyDate,
   publicDailyQuest,
 } from "../lib/daily-quest-service";
 
@@ -34,7 +35,8 @@ router.get("/", async (request, response): Promise<void> => {
   response.setHeader("Cache-Control", "no-store");
   const draftQuest = await ensureDraftParticipationQuest(request.authUser!.id);
   const [settings,seasons] = await Promise.all([questSettings(),db.select().from(questSeasonsTable)]);
-  response.json({ assignments: [...assignments, draftQuest].map(publicDailyQuest), timezone:settings.timezone, seasons:seasons.map(({id,name,endsAt})=>({id,name,endsAt})) });
+  const completionBonus=await dailyCompletionBonus(request.authUser!.id,assignments,dailyDate(new Date(),settings.timezone));
+  response.json({ completionBonus, assignments: [...assignments, draftQuest].map(publicDailyQuest), timezone:settings.timezone, seasons:seasons.map(({id,name,endsAt})=>({id,name,endsAt})) });
 });
 
 // Recover a committed credit grant when the result response was lost.
@@ -81,6 +83,11 @@ router.post("/ai-match-progress", async (request, response): Promise<void> => {
       message: error instanceof Error ? error.message : "AI 경기 Quest 진행을 저장할 수 없습니다.",
     });
   }
+});
+
+router.post("/completion-bonus/claim",async(request,response):Promise<void>=>{
+ try{response.json(await claimDailyCompletionBonus(request.authUser!.id));}
+ catch(error){response.status(422).json({message:error instanceof Error?error.message:"추가 보상을 받을 수 없습니다."});}
 });
 
 router.post("/:id/claim", async (request, response): Promise<void> => {

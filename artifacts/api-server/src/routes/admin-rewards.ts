@@ -42,7 +42,7 @@ router.get("/", async (request, response): Promise<void> => {
     db.select().from(dailyQuestDefinitionsTable).orderBy(asc(dailyQuestDefinitionsTable.createdAt), asc(dailyQuestDefinitionsTable.id)),
     db.select().from(attendanceRewardDefinitionsTable).orderBy(asc(attendanceRewardDefinitionsTable.dayIndex)),
   ]);
-  response.json({ settings, dailyQuests, attendance, rewardType: REWARD_TYPE, rewardTypes: REWARD_TYPES, objectiveTypes: DAILY_QUEST_OBJECTIVES });
+  response.json({ settings, dailyQuests:dailyQuests.filter(d=>!readPlatform(d).deletedAt), attendance, rewardType: REWARD_TYPE, rewardTypes: REWARD_TYPES, objectiveTypes: DAILY_QUEST_OBJECTIVES });
 });
 
 router.patch("/match", async (request, response): Promise<void> => {
@@ -100,6 +100,7 @@ router.patch("/daily-quests/:id", async (request, response): Promise<void> => {
   }
   const {definition,updatedAssignments}=await db.transaction(async tx=>{
     const [previous]=await tx.select().from(dailyQuestDefinitionsTable).where(eq(dailyQuestDefinitionsTable.id,request.params.id)).for("update");
+    if(previous && readPlatform(previous).deletedAt)return {definition:null,updatedAssignments:0};
     input.platform.version=previous ? readPlatform(previous).version+1 : 1;
     const [definition]=await tx.update(dailyQuestDefinitionsTable).set({...input,updatedAt:new Date()}).where(eq(dailyQuestDefinitionsTable.id,request.params.id)).returning();
     let updatedAssignments=0;
