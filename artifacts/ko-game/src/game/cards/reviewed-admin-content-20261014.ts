@@ -3,7 +3,7 @@ import type { PublishedCardRecord } from './published-cards';
 
 // Literal, reviewed administrator revisions. No runtime language interpretation.
 // User clarifications: effect summons skip entry effects; Blood Donor hits own champion.
-const bindings: Record<string, {text: string; abilities: CardAbility[]; keywords?:CardKeyword[]}> = {
+const bindings: Record<string, {text: string; textAliases?: string[]; abilities: CardAbility[]; keywords?:CardKeyword[]}> = {
   // Administrator revision 14, verified by authenticated read on 2026-10-15.
   "b723c7e6-c668-4afb-b77d-da0d16f16c31": {
   "text": "등장:상대 필드에 있는 선수 카드들 중 무작위로 한장을 파괴합니다.",
@@ -76,43 +76,17 @@ const bindings: Record<string, {text: string; abilities: CardAbility[]; keywords
     ]
   },
   "5d568663-55e8-4ad9-88b3-3afadae538d0": {
-    "text": "등장: 상대 선수 1장의 공격력을 2 감소시키고, 이 카드의 공격력을 3 증가시킵니다.",
-    "abilities": [
-      {
-        "trigger": "ENTER_FIELD",
-        "effects": [
-          {
-            "type": "STRUCTURED",
-            "action": "MODIFY_STAT",
-            "target": {
-              "zone": "BOARD",
-              "owner": "ENEMY",
-              "cardType": "WRESTLER",
-              "selection": "PLAYER_CHOICE",
-              "count": 1
-            },
-            "values": {
-              "stat": "ATTACK",
-              "amount": -2
-            }
-          },
-          {
-            "type": "STRUCTURED",
-            "action": "BUFF",
-            "target": {
-              "zone": "BOARD",
-              "owner": "SELF",
-              "selection": "SELF",
-              "count": 1
-            },
-            "values": {
-              "attack": 3,
-              "health": 0
-            }
-          }
-        ]
-      }
-    ]
+    text: "등장: 상대 선수 1장의 공격력을 최대 2 감소시키고, 실제로 감소시킨 만큼 이 카드의 공격력을 증가시킵니다.",
+    // Keep already-published records usable while their wording is synchronized.
+    textAliases: ["등장: 상대 선수 1장의 공격력을 2 감소시키고, 이 카드의 공격력을 3 증가시킵니다."],
+    abilities: [{
+      trigger: 'ENTER_FIELD',
+      effects: [{
+        type: 'STRUCTURED', action: 'MODIFY_STAT',
+        target: {zone: 'BOARD', owner: 'ENEMY', cardType: 'WRESTLER', selection: 'PLAYER_CHOICE', count: 1},
+        values: {stat: 'ATTACK', drainAttackAmount: 2},
+      }],
+    }],
   },
   "595fe36e-03fb-4f31-aaa3-904c999030aa": {
     "text": "턴 종료:아군 챔피언에게 2 데미지를 주고 아군 필드에 있는 무작위 선수 카드 한장에게 공격력을 2 증가시킵니다.",
@@ -2157,7 +2131,7 @@ const bindings: Record<string, {text: string; abilities: CardAbility[]; keywords
 };
 export function reviewedCurrentAdminAbilities(card: PublishedCardRecord): CardAbility[] | null {
   const entry = bindings[card.id];
-  return !card.effectId && entry && entry.text.replace(/\s+/gu, '') === card.text.replace(/\s+/gu, '')
+  return !card.effectId && entry && [entry.text, ...(entry.textAliases ?? [])].some(text => text.replace(/\s+/gu, '') === card.text.replace(/\s+/gu, ''))
     ? structuredClone(entry.abilities) : null;
 }
 
