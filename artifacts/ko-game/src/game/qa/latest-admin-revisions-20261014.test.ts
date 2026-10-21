@@ -40,7 +40,31 @@ const ally=(state:GameState)=>state.players[0].board.find(c=>c?.instanceId==='al
 for(const [name,attack,health] of [['대장장이',1,0],['약초꾼',0,2],['미숙한 연금술사',1,1]] as const) {
  test(`current ${name}: actual hand play, exact ally buff and unrelated enemy preserved`,()=>{const {state}=setup(name);if(name==='미숙한 연금술사')state.players[0].board[1]=null;const n=play(state,'ally');const target=name==='미숙한 연금술사'?source(n):ally(n);const base=name==='미숙한 연금술사'?definitions.find(d=>d.name===name)!:unit;assert.deepEqual([target.currentAttack,target.maxHealth],[base.attack+attack,base.health+health]);assert.equal(n.players[1].board[0]!.currentAttack,5);});
 }
-test('current MPG steals no extra: enemy -2, source +3 after actual play',()=>{const {state,definition}=setup('MPG');const n=play(state);assert.equal(n.players[1].board[0]!.currentAttack,3);assert.equal(source(n).currentAttack,definition.attack+3);});
+for (const wording of ['legacy', 'corrected'] as const) for (const attack of [0, 1, 2, 5]) {
+ test(`MPG ${wording} wording: actual hand play absorbs only available attack ${attack}`, () => {
+  const {state} = setup('MPG');
+  const record = records.find(c => c.name === 'MPG')!;
+  const definition = cardRecordToDefinition({...record, text: wording === 'legacy' ? record.text : '등장: 상대 선수 1장의 공격력을 최대 2 감소시키고, 실제로 감소시킨 만큼 이 카드의 공격력을 증가시킵니다.'});
+  state.cardPool = state.cardPool!.map(c => c.id === definition.id ? definition : c);
+  state.players[0].hand = [generateCardInstance(definition, {instanceId:'source'})];
+  state.players[1].board[0]!.currentAttack = attack;
+  const n = play(state);
+  assert.equal(n.players[1].board[0]!.currentAttack, Math.max(0, attack - 2));
+  assert.equal(source(n).currentAttack, definition.attack + Math.min(2, attack));
+  assert.equal(ally(n).currentAttack, unit.attack);
+  assert.equal(n.targetingState?.active ?? false, false);
+  assert.equal(end(n).activePlayerId, 'player-2');
+ });
+}
+
+test('MPG with no opposing wrestler gains no attack and leaves the turn usable', () => {
+ const {state, definition} = setup('MPG');
+ state.players[1].board = [null, null, null, null];
+ const n = play(state);
+ assert.equal(source(n).currentAttack, definition.attack);
+ assert.equal(n.targetingState?.active ?? false, false);
+ assert.equal(end(n).activePlayerId, 'player-2');
+});
 for(const [name,damage,bonus] of [['광기의 헌혈 조무사',3,1],['배은망덕한 용병',2,0],['고통 연주자',2,0]] as const) test(`current ${name}: own champion damage ${damage}, next-turn bonus ${bonus}`,()=>{let {state}=setup(name);state.players[0].board[1]=null;state=play(state);if(name==='고통 연주자')state=end(state);assert.equal(state.players[0].health,25-damage);assert.equal(state.players[1].health,25);if(bonus)assert.equal(state.players[0].nextTurnGoldBonus,bonus);});
 test('effect-summoned Ninja never retriggers entry; one child even with empty slots',()=>{const {state}=setup('닌자');state.players[0].board[1]=null;const n=play(state);assert.equal(n.players[0].board.filter(Boolean).length,2);assert.equal(n.events.filter(e=>e.type==='ENTER_FIELD').length,2);assert.equal(n.targetingState?.active??false,false);});
 test('effect-summoned Ninja with full field does not overfill or block the turn',()=>{const {state}=setup('닌자');state.players[0].board[2]={...generateCardInstance(unit,{instanceId:'two'}),boardSlot:2};state.players[0].board[3]={...generateCardInstance(unit,{instanceId:'three'}),boardSlot:3};const n=play(state);assert.equal(n.players[0].board.filter(Boolean).length,4);assert.equal(end(n).activePlayerId,'player-2');});
