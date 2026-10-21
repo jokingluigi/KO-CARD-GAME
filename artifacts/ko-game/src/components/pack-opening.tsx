@@ -38,11 +38,11 @@ function playRevealMusic(reward: PackReward) {
 }
 
 export function PackOpening({ packName, rewards, packCount = 1, perPackRewards, notice, preview = false, onClose, onRepeat, onRegenerate }: PackOpeningProps) {
-  const [revealed, setRevealed] = useState(-1);
+  const [revealed, setRevealed] = useState<number[]>([]);
   const [detailsExpanded, setDetailsExpanded] = useState(false);
   const [specialQueue, setSpecialQueue] = useState<number[]>([]);
   const lastRewardsRef = useRef<PackReward[]>(rewards);
-  const announcedThroughRef = useRef(-1);
+  const announcedIndexesRef = useRef(new Set<number>());
   const bulkAnnouncedRef = useRef(false);
   const rewardsResetPendingRef = useRef(false);
   const aggregatedRewards = aggregatePackRewards(rewards);
@@ -52,10 +52,10 @@ export function PackOpening({ packName, rewards, packCount = 1, perPackRewards, 
     if (lastRewardsRef.current !== rewards) {
       lastRewardsRef.current = rewards;
       audioManager.stopPackRevealMusic();
-      setRevealed(-1);
+      setRevealed([]);
       setDetailsExpanded(false);
       setSpecialQueue([]);
-      announcedThroughRef.current = -1;
+      announcedIndexesRef.current = new Set();
       bulkAnnouncedRef.current = false;
       rewardsResetPendingRef.current = true;
     }
@@ -73,15 +73,13 @@ export function PackOpening({ packName, rewards, packCount = 1, perPackRewards, 
       if (specials.length) setSpecialQueue(specials);
       bulkAnnouncedRef.current = true;
     }
-    if (revealed <= announcedThroughRef.current) return;
     if (!isBulkResult) {
-      const specials = rewards.flatMap((reward, index) =>
-        index > announcedThroughRef.current && index <= revealed &&
-        (reward.rewardType === "LEGENDARY_CARD" || reward.rewardType === "CHAMPION_UNLOCK") ? [index] : [],
-      );
-      if (specials.length) setSpecialQueue((current) => [...current, ...specials]);
+      const newlyRevealed = revealed.filter(index => !announcedIndexesRef.current.has(index));
+      for (const index of newlyRevealed) announcedIndexesRef.current.add(index);
+      const specials = newlyRevealed.filter(index =>
+        rewards[index]?.rewardType === "LEGENDARY_CARD" || rewards[index]?.rewardType === "CHAMPION_UNLOCK");
+      if (specials.length) setSpecialQueue(current => [...current, ...specials]);
     }
-    announcedThroughRef.current = revealed;
   }, [isBulkResult, revealed, rewards]);
 
   const specialReward = specialQueue.length ? rewards[specialQueue[0]] : undefined;
@@ -98,13 +96,13 @@ export function PackOpening({ packName, rewards, packCount = 1, perPackRewards, 
     audioManager.stopPackRevealMusic();
   }, []);
 
-  const allRevealed = rewards.length === 0 || revealed >= rewards.length - 1;
+  const allRevealed = revealed.length >= rewards.length;
   const revealAll = () => {
     // Do not queue a series of entrance scenes when the player skips ahead.
-    announcedThroughRef.current = rewards.length - 1;
+    announcedIndexesRef.current = new Set(rewards.map((_, index) => index));
     setSpecialQueue([]);
     audioManager.stopPackRevealMusic();
-    setRevealed(rewards.length - 1);
+    setRevealed(rewards.map((_, index) => index));
   };
 
   return (
@@ -116,7 +114,7 @@ export function PackOpening({ packName, rewards, packCount = 1, perPackRewards, 
           {isBulkResult ? (
             <p data-testid="text-bulk-open-summary" className="mt-2 text-sm text-neutral-300">{packCount}개 팩 개봉 완료 · 보상 {rewards.length}개</p>
           ) : <p className="mt-2 text-sm text-neutral-500">
-            {revealed < 0 ? "카드를 눌러 한 장씩 공개하세요." : `${Math.min(revealed + 1, rewards.length)} / ${rewards.length} 공개`}
+            {revealed.length === 0 ? "카드를 눌러 한 장씩 공개하세요." : `${revealed.length} / ${rewards.length} 공개`}
           </p>}
         </div>
         {isBulkResult && (
@@ -157,7 +155,7 @@ export function PackOpening({ packName, rewards, packCount = 1, perPackRewards, 
         )}
         {(!isBulkResult || detailsExpanded) && <div className="mt-8 grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-5">
           {rewards.map((reward, index) => {
-            const isRevealed = revealed >= index;
+            const isRevealed = revealed.includes(index);
             const card = reward.card;
             const champion = reward.champion;
             const skin = reward.skin;
@@ -166,7 +164,7 @@ export function PackOpening({ packName, rewards, packCount = 1, perPackRewards, 
               <button
                 type="button"
                 key={`${reward.rewardType}-${reward.cardDefinitionId ?? reward.championDefinitionId ?? reward.skinDefinitionId ?? index}-${index}`}
-                onClick={() => setRevealed((current) => Math.max(current, index))}
+                onClick={() => setRevealed(current => current.includes(index) ? current : [...current, index])}
                 data-testid={`button-reveal-reward-${index}`}
                 className={`min-w-0 text-left transition-transform ${!isRevealed ? "hover:-translate-y-1" : ""}`}
                 aria-label={isRevealed ? rewardTitle(reward) : "보상 공개"}

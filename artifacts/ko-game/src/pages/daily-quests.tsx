@@ -1,9 +1,11 @@
 import { useEffect, useState } from "react";
 import { ArrowLeft, CheckCircle2, ListChecks } from "lucide-react";
 import { useLocation } from "wouter";
-import { fetchDailyQuests, claimDailyQuest, fetchRewardCatalogs, type DailyQuest, type RewardCatalogChampion, type RewardCatalogCard, type RewardCatalogPack } from "@/lib/rewards-client";
+import { fetchDailyQuests, claimDailyQuest, claimDailyCompletionBonus, type DailyCompletionBonus, fetchRewardCatalogs, type DailyQuest, type RewardCatalogChampion, type RewardCatalogCard, type RewardCatalogPack } from "@/lib/rewards-client";
 import { ROUTES } from "@/lib/routes";
 import { CollectionActionAnimation, type CollectionActionScene } from "@/components/collection-action-animation";
+
+type RewardSummary=Pick<DailyQuest,"rewardType"|"rewardAmount"|"rewardTargetId"|"platform">;
 
 function objectiveLabel(objective: string) {
   return ({
@@ -22,6 +24,7 @@ export default function DailyQuestsPage() {
   const [tab,setTab] = useState<"DAILY"|"SEASON">("DAILY");
   const [seasons,setSeasons] = useState<Array<{id:string;name:string;endsAt:string}>>([]);
   const [timezone,setTimezone] = useState("Asia/Seoul");
+  const [completionBonus,setCompletionBonus]=useState<DailyCompletionBonus|null>(null);
   const [quests, setQuests] = useState<DailyQuest[]>([]);
   const [loading, setLoading] = useState(true);
   const [busyId, setBusyId] = useState<string | null>(null);
@@ -35,7 +38,7 @@ export default function DailyQuestsPage() {
       // Reward artwork must not block progress or claiming.
       void fetchRewardCatalogs().then(setCatalog).catch(() => {});
       const result = await fetchDailyQuests();
-      setQuests(result.assignments);
+      setQuests(result.assignments);setCompletionBonus(result.completionBonus??null);
       setSeasons(result.seasons??[]);setTimezone(result.timezone??"Asia/Seoul");
     } catch (error) {
       setMessage(error instanceof Error ? error.message : "일일 퀘스트를 불러오지 못했습니다.");
@@ -78,7 +81,18 @@ export default function DailyQuestsPage() {
     }
   }
 
-  function rewardLabel(quest: DailyQuest): string {
+  async function claimBonus(){
+    if(completionBonus?.status!=="COMPLETED"||busyId)return;
+    setBusyId("completion-bonus");
+    try{
+      const result=await claimDailyCompletionBonus();setCompletionBonus(result.bonus);
+      setMessage(result.alreadyClaimed?"이미 받은 보상입니다.":rewardLabel(result.bonus));
+      if(!result.alreadyClaimed)setRewardScene({id:Date.now(),kind:"REWARD",name:rewardLabel(result.bonus)});
+    }catch(error){setMessage(error instanceof Error?error.message:"추가 보상을 받을 수 없습니다.");}
+    finally{setBusyId(null);}
+  }
+
+  function rewardLabel(quest: RewardSummary): string {
     if ((quest.platform?.rewards.length??0)>1) return quest.platform!.rewards.map(r=>rewardLabel({...quest,...r,platform:undefined})).join(" + ");
     if (quest.rewardType === "CARD") return `카드 ${catalog.cards.find((card) => card.id === quest.rewardTargetId)?.name ?? "보상 카드"} ×${quest.rewardAmount}을 받았습니다.`;
     if (quest.rewardType === "CHAMPION") return `챔피언 ${catalog.champions.find(c=>c.id===quest.rewardTargetId)?.name ?? "보상 챔피언"}을 받았습니다.`;
@@ -86,7 +100,7 @@ export default function DailyQuestsPage() {
     return `${quest.rewardAmount.toLocaleString()} 크레딧을 받았습니다.`;
   }
 
-  function rewardDisplay(quest: DailyQuest): React.ReactNode {
+  function rewardDisplay(quest: RewardSummary): React.ReactNode {
     if ((quest.platform?.rewards.length??0)>1) return <span className="flex flex-col gap-2">{quest.platform!.rewards.map((r,i)=><span key={i}>{rewardDisplay({...quest,...r,platform:undefined})}</span>)}</span>;
     if (quest.rewardType === "CARD" || quest.rewardType === "CHAMPION" || quest.rewardType === "PACK") {
       const item = quest.rewardType === "CARD"
@@ -120,6 +134,12 @@ export default function DailyQuestsPage() {
         {message && <p role="status" className="mb-5 rounded border border-amber-800/50 bg-amber-950/20 px-4 py-3 text-sm text-amber-200">{message}</p>}
         <nav className="mb-5 flex gap-3" aria-label="퀘스트 종류">{(["DAILY","SEASON"] as const).map(t=><button key={t} onClick={()=>setTab(t)} className={"min-h-11 border px-4 py-2 font-bold "+(tab===t?"border-amber-500 bg-amber-400 text-black":"border-neutral-700 text-neutral-300")}>{t==="DAILY"?"일일 퀘스트":"시즌 퀘스트"}</button>)}</nav>
         <p className="mb-4 text-xs text-neutral-400">일일 초기화: {timezone} 00:00 · 시즌 진행도는 날짜가 바뀌어도 유지됩니다.</p>
+        {tab==="DAILY"&&!loading&&completionBonus&&(completionBonus.enabled||completionBonus.status==="CLAIMED")&&<section aria-label="일일 퀘스트 3개 완료 보상" className="mb-5 space-y-3 border border-amber-700 bg-black/40 p-5">
+          <div className="flex flex-wrap items-center justify-between gap-3"><h2 className="font-black text-amber-200">일일 퀘스트 3개 완료 보상</h2><span>{completionBonus.progress} / {completionBonus.targetValue}</span></div>
+          <p className="text-xs text-neutral-400">{completionBonus.date} · 개별 보상 수령과 무관하게 일일 퀘스트 3개 달성 · 하루 1회</p>
+          <progress className="w-full accent-amber-400" value={completionBonus.progress} max={completionBonus.targetValue}/>
+          <div className="flex flex-wrap items-center justify-between gap-3"><span className="text-sm font-bold text-amber-200">{rewardDisplay(completionBonus)}</span><button type="button" data-testid="button-claim-daily-completion-bonus" disabled={completionBonus.status!=="COMPLETED"||Boolean(busyId)} onClick={()=>void claimBonus()} className="min-h-11 rounded bg-amber-400 px-4 py-2 font-bold text-black disabled:opacity-40">{completionBonus.status==="CLAIMED"?"수령 완료":completionBonus.status==="COMPLETED"?"추가 보상 받기":"진행 중"}</button></div>
+        </section>}
         {loading ? <p className="rounded border border-neutral-800 p-8 text-center text-neutral-500">퀘스트를 불러오는 중...</p> : quests.length === 0 ? <p className="rounded border border-dashed border-neutral-800 p-8 text-center text-neutral-500">활성화된 일일 퀘스트가 없습니다.</p> : (
           <div className="grid gap-4 md:grid-cols-3">
             {quests.filter(q=>(q.platform?.questType??"DAILY")===tab).map((quest) => {

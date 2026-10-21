@@ -102,7 +102,7 @@ export async function ensureDailyQuestAssignments(
   const definitions = await executor.select().from(dailyQuestDefinitionsTable)
     .where(eq(dailyQuestDefinitionsTable.enabled, true))
     .orderBy(asc(dailyQuestDefinitionsTable.createdAt), asc(dailyQuestDefinitionsTable.id));
-  const selected = selectDailyQuestDefinitions(definitions.filter(definition => { const p = readPlatform(definition); return p.questType === "DAILY" && !p.archived && (!p.activationAt || Date.parse(p.activationAt) <= Date.now()) && !existing.some(assignment => assignment.definitionId === definition.id); }), userId, assignmentDate, availableSlots.length).slice(0, availableSlots.length);
+  const selected = selectDailyQuestDefinitions(definitions.filter(definition => { const p = readPlatform(definition); return p.questType === "DAILY" && !p.deletedAt && !p.archived && (!p.activationAt || Date.parse(p.activationAt) <= Date.now()) && !existing.some(assignment => assignment.definitionId === definition.id); }), userId, assignmentDate, availableSlots.length).slice(0, availableSlots.length);
   if (selected.length > 0) {
     await executor.insert(dailyQuestAssignmentsTable)
       .values(selected.map((definition, slot) => {
@@ -150,6 +150,8 @@ export async function processMatchEventsForDailyQuests(
  const outcome = state.status === "FINISHED" ? (state.winnerId === playerId ? "WIN" : "LOSS") : null;
  for (const assignment of assignments) {
   const definition = definitions.find(d=>d.id===assignment.definitionId);
+  // Deletion excludes future assignments without rewriting the original
+  // enabled/archive policy for snapshots that were already assigned.
   if (!definition?.enabled || readPlatform(definition).archived || ["CLAIMED","COMPLETED"].includes(assignment.status)) continue;
   // Result-filtered events are evaluated only at settlement, including all earlier events.
   const first = readPlatform(assignment).result !== "ANY" ? 0 : eventStart;
@@ -217,7 +219,7 @@ export async function ensureSeasonQuestAssignments(userId: string, executor: Rew
   const period="SEASON:"+season.id;
   const existing=await executor.select().from(dailyQuestAssignmentsTable).where(and(eq(dailyQuestAssignmentsTable.userId,userId),eq(dailyQuestAssignmentsTable.assignmentDate,period)));
   let slot=Math.max(-1,...existing.map(a=>a.slot))+1;
-  for (const d of definitions.filter(d=>{const p=readPlatform(d);return d.enabled && !p.archived && p.questType==="SEASON" && p.seasonId===season.id && (!p.activationAt || new Date(p.activationAt)<=now) && !existing.some(a=>a.definitionId===d.id);})) {
+  for (const d of definitions.filter(d=>{const p=readPlatform(d);return d.enabled && !p.deletedAt && !p.archived && p.questType==="SEASON" && p.seasonId===season.id && (!p.activationAt || new Date(p.activationAt)<=now) && !existing.some(a=>a.definitionId===d.id);})) {
    const {id,createdAt,updatedAt,enabled,...snapshot}=d;
    await executor.insert(dailyQuestAssignmentsTable).values({...snapshot,id:randomUUID(),userId,definitionId:id,assignmentDate:period,slot:slot++,platform:readPlatform(d)}).onConflictDoNothing();
   }

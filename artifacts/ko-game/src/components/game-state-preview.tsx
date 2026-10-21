@@ -278,6 +278,7 @@ export function GameStatePreview({
   const opponentHandRef = React.useRef<HTMLDivElement | null>(null);
   const championRef = React.useRef<HTMLDivElement | null>(null);
   const playerChampionRef = React.useRef<HTMLDivElement | null>(null);
+  const spellDropTargetRef=React.useRef<{cardId:string;targetId:string;gameId:string;turn:number;createdAt:number}|null>(null);
   const [generatedPlayAnimations, setGeneratedPlayAnimations] = React.useState<CardPlayAnimationState[]>([]);
   const [cardLeaveAnimations, setCardLeaveAnimations] = React.useState<CardLeaveAnimationState[]>([]);
   const [destroyBursts, setDestroyBursts] = React.useState<Array<{ id: string; left: number; top: number; width: number; height: number }>>([]);
@@ -727,6 +728,18 @@ export function GameStatePreview({
 
   const me = state.players[0];
   const opp = state.players[1];
+  React.useEffect(()=>{
+    const pending=spellDropTargetRef.current;if(!pending)return;
+    const targeting=state.targetingState;
+    if(pending.gameId!==state.gameId||pending.turn!==state.turn||state.status!=="IN_PROGRESS"||performance.now()-pending.createdAt>5000||playError){spellDropTargetRef.current=null;return;}
+    if(targeting?.active){
+      spellDropTargetRef.current=null;
+      const action=targeting.pendingAction;
+      const matches=targeting.sourceInstanceId===pending.cardId || action?.type==="PLAY_TECHNIQUE"&&action.cardInstanceId===pending.cardId;
+      if(matches&&targeting.playerId===state.players[0].id&&targeting.validTargetIds.includes(pending.targetId))onEffectTarget(pending.targetId);
+    }else if(!state.players[0].hand.some(c=>c.instanceId===pending.cardId))spellDropTargetRef.current=null;
+  },[state,onEffectTarget,playError]);
+
   const effectTargeting = state.targetingState?.active;
   const validEffectTargetIds = new Set(state.targetingState?.playerId === me.id ? state.targetingState.validTargetIds : []);
   const selectedEffectTargetIds = new Set(state.targetingState?.selectedTargetIds ?? []);
@@ -919,7 +932,16 @@ export function GameStatePreview({
     );
   }
 
+  function handleDragTechnique(cardInstanceId:string,source:CardAnimationRect,point:{x:number;y:number}){
+    const contains=(node:HTMLElement|null|undefined)=>{if(!node)return false;const r=node.getBoundingClientRect();return point.x>=r.left&&point.x<=r.right&&point.y>=r.top&&point.y<=r.bottom;};
+    const targetId=Array.from(boardCardRefs.current).find(([,node])=>contains(node))?.[0]
+      ?? (contains(championRef.current)?opp.id:contains(playerChampionRef.current)?me.id:undefined);
+    spellDropTargetRef.current=targetId?{cardId:cardInstanceId,targetId,gameId:state.gameId,turn:state.turn,createdAt:performance.now()}:null;
+    onUseTechnique(cardInstanceId,source);
+  }
+
   function handleUseTechnique(cardInstanceId: string) {
+    spellDropTargetRef.current=null;
     const sourceElement = handCardRefs.current.get(cardInstanceId);
     if (!sourceElement) return;
     onUseTechnique(cardInstanceId, rectSnapshot(sourceElement.getBoundingClientRect()));
@@ -944,7 +966,7 @@ export function GameStatePreview({
   return (
     <BattleCosmeticsContext.Provider value={cosmetics}><RenderCardCatalog.Provider value={getCardDefinition}><CinematicProvider key={state.gameId} allowQuestCompletion={questPresentationAllowed}><AltInspectProvider>
      <div className={`ko-game-shell ${blackGold ? `ko-board-preview${backgroundAssetUrl || selectedBackground ? " ko-board-preview--scenic" : ""}` : ""} flex min-h-[100dvh] w-full flex-col overflow-x-hidden overflow-y-auto bg-neutral-950 font-sans text-neutral-100 selection:bg-primary selection:text-black md:overflow-hidden ${me.champion?.questCompleted && questPresentationAllowed ? 'ko-quest-awakened--mine' : ''} ${opp.champion?.questCompleted && questPresentationAllowed ? 'ko-quest-awakened--theirs' : ''}`}>
-      <BattleCardDrag state={state} enabled={isMyTurn && state.status === 'IN_PROGRESS' && !introActive && !effectTargeting && !settingsOpen && !playAnimation && !attackAnimation && canEndTurn} selectedCardId={selectedCardId} hand={handCardRefs} slots={boardSlotRefs} select={onSelectCard} cancel={id=>{if(selectedCardId===id)onSelectCard(id);}} summon={onSelectSlot} spell={onUseTechnique} />
+      <BattleCardDrag state={state} enabled={isMyTurn && state.status === 'IN_PROGRESS' && !introActive && !effectTargeting && !settingsOpen && !playAnimation && !attackAnimation && canEndTurn} selectedCardId={selectedCardId} hand={handCardRefs} slots={boardSlotRefs} select={onSelectCard} cancel={id=>{if(selectedCardId===id)onSelectCard(id);}} summon={onSelectSlot} spell={handleDragTechnique} />
       <BattleAttackDrag state={state} enabled={isMyTurn && state.status === 'IN_PROGRESS' && !introActive && !effectTargeting && !settingsOpen && !playAnimation && !attackAnimation && canEndTurn} selectedAttackerId={selectedAttackerId} cards={boardCardRefs} champion={championRef} select={onSelectAttacker} attackCard={onAttackWrestler} attackChampion={onAttackPlayer} />
       {selectedAttackerId && !effectTargeting && !attackAnimation && <AttackAim source={boardCardRefs.current.get(selectedAttackerId)??null} targets={boardCardRefs} champion={championRef.current} championId={opp.id} valid={legalAttackTargets} />}
       <CardRevealPresentation state={state} />
@@ -1785,6 +1807,7 @@ function HandCard({
         type="button"
         onPointerDown={(event) => event.stopPropagation()}
         onPointerUp={(event) => event.stopPropagation()}
+        data-hand-drag-card-id={card.instanceId}
         className="ko-technique-use-button absolute left-1/2 top-9 z-[130] touch-manipulation min-h-11 min-w-[56px] md:min-h-0 -translate-x-1/2 whitespace-nowrap rounded border border-primary bg-primary px-3 py-1 text-[10px] font-black text-black shadow-[0_0_14px_rgba(234,179,8,0.5)] hover:bg-yellow-300 md:-top-11 md:px-4 md:py-1.5 md:text-xs"
         onClick={(event) => {
           event.stopPropagation();

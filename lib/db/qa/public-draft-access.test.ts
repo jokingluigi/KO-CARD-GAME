@@ -169,3 +169,69 @@ test('prism revoke is admin-only, validated, atomic, logged and idempotent for b
  assert.deepEqual(competing.map(r=>r.status).sort(),[200,409]);
  const [after] = await database.select().from(schema.usersTable).where(eq(schema.usersTable.id,'other'));assert.equal(after!.prismBalance,50);
 });
+
+test('fresh draft selection, persisted battle and reconnect resources retain current Lord, Bodva and War Thunder text and abilities', async () => {
+  const catalog = JSON.parse(await readFile('docs/qa/snapshots/20261021-admin/cards.json', 'utf8'));
+  const records = (Array.isArray(catalog) ? catalog : catalog.cards).filter((c: any) => ['로드', '보드바', '워썬더'].includes(c.name));
+  assert.equal(records.length, 3);
+  for (const c of records) {
+    await database.insert(schema.cardsTable).values({ ...c, status: 'PUBLISHED', createdAt: new Date(c.createdAt), updatedAt: new Date(c.updatedAt) });
+  }
+  const { cardRecordToDefinition } = await import('../../../artifacts/ko-game/src/game/cards/published-cards');
+  const expected = records.map((c: any) => cardRecordToDefinition({ ...c, status: 'PUBLISHED' }));
+  const check = (cards: any[]) => {
+    for (const definition of expected) {
+      const actual = cards.find(c => c.id === definition.id);
+      assert.ok(actual, definition.name);
+      assert.equal(actual.rulesText, definition.rulesText, definition.name);
+      assert.deepEqual(actual.abilities, definition.abilities, definition.name);
+    }
+  };
+  assert.equal((await request('/api/draft/settings', 'admin', 'PUT', { enabled: true })).status, 200);
+  const started = await request('/api/draft/sessions', 'admin', 'POST', { mode: 'AI' });
+  assert.equal(started.status, 201, JSON.stringify(await started.clone().json()));
+  let view = await started.json();
+  check(view.cards);
+  for (let index = 0; !view.own.championId || view.own.deck.length < 25 || view.own.mutationEvent; index++) {
+    assert.ok(index < 45);
+    const response = await request(`/api/draft/sessions/${view.id}/commands`, 'admin', 'POST', { version: view.version, requestId: `current-catalog-${index}`, type: view.own.mutationEvent ? 'MUTATION_SKIP' : 'PICK', pickId: view.own.offers[0] });
+    assert.equal(response.status, 200, JSON.stringify(await response.clone().json()));
+    view = await response.json();
+    check(view.cards);
+  }
+  const ready = await request(`/api/draft/sessions/${view.id}/commands`, 'admin', 'POST', { version: view.version, requestId: 'current-catalog-ready', type: 'READY' });
+  assert.equal(ready.status, 200);
+  assert.equal((await ready.json()).phase, 'BATTLE');
+  const battle = await request(`/api/draft/sessions/${view.id}/battle`, 'admin');
+  assert.equal(battle.status, 200);
+  check((await battle.json()).state.cardPool);
+  const resources = await request(`/api/draft/sessions/${view.id}/resources`, 'admin');
+  assert.equal(resources.status, 200);
+  check((await resources.json()).cards);
+  assert.equal((await request(`/api/draft/sessions/${view.id}/resources`, 'other')).status, 403);
+});
+
+
+test('catalog audit is admin-only, bounded and does not advance an expired draft or write state', async () => {
+  const rows = await database.select().from(schema.draftSessionsTable);
+  const row = rows.find(row => (row.snapshot as any).cards.some((card: any) => card.id === 'latest-wrestler-8'))!;
+  assert.ok(row);
+  const query = '?cardIds=latest-wrestler-8,888a12bd-e1e2-41b3-9f22-abbc36af8544,39dfe786-e95b-417b-94d1-edc2cdf3880e';
+  const path = `/api/draft/sessions/${row.id}/catalog-audit`;
+  assert.equal((await request(path + query)).status, 401);
+  assert.equal((await request(path + query, 'user')).status, 403);
+  assert.equal((await request(path, 'admin')).status, 400);
+  assert.equal((await request(path + '?cardIds=' + Array.from({ length: 11 }, (_, i) => 'id-' + i).join(','), 'admin')).status, 400);
+  const expired = { ...(row.state as any), turnDeadline: 1, lastSeen: [1, 1] };
+  await database.update(schema.draftSessionsTable).set({ state: expired }).where(eq(schema.draftSessionsTable.id, row.id));
+  const [before] = await database.select().from(schema.draftSessionsTable).where(eq(schema.draftSessionsTable.id, row.id));
+  const response = await request(path + query, 'admin');
+  assert.equal(response.status, 200, JSON.stringify(await response.clone().json()));
+  const body = await response.json();
+  assert.equal(body.cards.length, 3);
+  for (const card of body.cards) assert.deepEqual(card.snapshot, card.current);
+  const [after] = await database.select().from(schema.draftSessionsTable).where(eq(schema.draftSessionsTable.id, row.id));
+  assert.deepEqual(after, before);
+  assert.equal('state' in body, false);
+  assert.equal('userId' in body, false);
+});

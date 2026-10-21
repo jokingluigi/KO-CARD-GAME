@@ -1,0 +1,36 @@
+{
+  "results": [
+    {
+      "width": 360,
+      "height": 740,
+      "touch": true,
+      "status": "PASS"
+    },
+    {
+      "width": 375,
+      "height": 812,
+      "touch": true,
+      "status": "PASS"
+    },
+    {
+      "width": 390,
+      "height": 844,
+      "touch": true,
+      "status": "PASS"
+    },
+    {
+      "width": 412,
+      "height": 915,
+      "touch": true,
+      "status": "PASS"
+    },
+    {
+      "width": 1440,
+      "height": 900,
+      "touch": false,
+      "status": "PASS"
+    }
+  ],
+  "physicalPhone": "NOT_RUN",
+  "productionRequests": 0
+}

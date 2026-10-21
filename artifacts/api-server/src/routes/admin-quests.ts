@@ -1,8 +1,9 @@
+import {dailyCompletionReward,validateDailyCompletionReward,DAILY_COMPLETION_BONUS_KEY} from "../lib/daily-completion-bonus";
 
 import { Router } from "express";
 import { asc, eq, sql } from "drizzle-orm";
 import { randomUUID } from "node:crypto";
-import { db, dailyQuestDefinitionsTable, questSeasonsTable, questPlatformSettingsTable, questAdminAuditTable } from "@workspace/db";
+import { db, dailyQuestDefinitionsTable, questSeasonsTable, questPlatformSettingsTable, questAdminAuditTable, rewardSettingsTable } from "@workspace/db";
 import { getAuthenticatedUser } from "../lib/auth";
 import { validateDailyQuestInput } from "../lib/daily-quest-service";
 import { validateRewardTarget, type RewardExecutor } from "../lib/reward-service";
@@ -19,11 +20,21 @@ async function audit(tx: RewardExecutor, adminId: string, action: string, entity
  await tx.insert(questAdminAuditTable).values({id:randomUUID(),adminId,action,entityId,configuration});
 }
 router.get("/",async (_req,res) => {
- const [definitions,seasons,settings,audits] = await Promise.all([
+ const [definitions,seasons,settings,audits,dailyCompletionBonus] = await Promise.all([
  db.select().from(dailyQuestDefinitionsTable).orderBy(asc(dailyQuestDefinitionsTable.createdAt)),
  db.select().from(questSeasonsTable), db.select().from(questPlatformSettingsTable),
- db.select().from(questAdminAuditTable).orderBy(sql`created_at DESC`).limit(50)]);
- res.json({definitions:definitions.map(d=>({...d,platform:readPlatform(d)})),seasons,settings:settings[0],audits,objectives:QUEST_OBJECTIVES,modes:QUEST_MODES});
+ db.select().from(questAdminAuditTable).orderBy(sql`created_at DESC`).limit(50),dailyCompletionReward()]);
+ res.json({definitions:definitions.filter(d=>!readPlatform(d).deletedAt).map(d=>({...d,platform:readPlatform(d)})),seasons,settings:settings[0],audits,dailyCompletionBonus,objectives:QUEST_OBJECTIVES,modes:QUEST_MODES});
+});
+router.put("/completion-bonus",async (req,res)=>{
+ const input=validateDailyCompletionReward(req.body);
+ if(!input||!await validateRewardTarget(input.rewardType,input.rewardTargetId)){res.status(400).json({message:"일일 3개 완료 보상의 종류·대상·수량을 확인해 주세요."});return;}
+ await db.transaction(async tx=>{
+  const {rewardAmount,...configuration}=input;
+  await tx.insert(rewardSettingsTable).values({key:DAILY_COMPLETION_BONUS_KEY,...configuration,amount:rewardAmount}).onConflictDoUpdate({target:rewardSettingsTable.key,set:{...configuration,amount:rewardAmount,updatedAt:new Date()}});
+  await audit(tx,req.authUser!.id,"DAILY_COMPLETION_BONUS_UPDATED",DAILY_COMPLETION_BONUS_KEY,input);
+ });
+ res.json({saved:true,dailyCompletionBonus:input});
 });
 router.put("/settings",async (req,res) => {
  const {dailyCount,timezone} = req.body ?? {};
@@ -57,6 +68,7 @@ router.post("/definitions", async (req,res) => {
  const definition = await db.transaction(async tx=>{
  const [previous] = requestedId ? await tx.select().from(dailyQuestDefinitionsTable).where(eq(dailyQuestDefinitionsTable.id,id)).for("update") : [];
  if (requestedId && !previous) return null;
+ if (previous && readPlatform(previous).deletedAt) return null;
  input.platform.version = previous ? readPlatform(previous).version + 1 : 1;
  const [row] = previous ? await tx.update(dailyQuestDefinitionsTable).set({...input,updatedAt:new Date()}).where(eq(dailyQuestDefinitionsTable.id,id)).returning() : await tx.insert(dailyQuestDefinitionsTable).values({id,...input}).returning();
  await audit(tx,req.authUser!.id,previous ? "QUEST_UPDATED" : "QUEST_CREATED",id,row);
@@ -64,6 +76,20 @@ router.post("/definitions", async (req,res) => {
  });
  if (!definition) {res.status(404).json({message:"퀘스트를 찾을 수 없습니다."});return;}
  res.json({definition});
+});
+router.delete("/definitions/:id", async (req,res) => {
+ const id=String(req.params.id);
+ const deleted=await db.transaction(async tx=>{
+  const [previous]=await tx.select().from(dailyQuestDefinitionsTable).where(eq(dailyQuestDefinitionsTable.id,id)).for("update");
+  if(!previous)return null;
+  const platform=readPlatform(previous);
+  if(platform.deletedAt)return {alreadyDeleted:true};
+  await tx.update(dailyQuestDefinitionsTable).set({platform:{...platform,deletedAt:new Date().toISOString(),version:platform.version+1},updatedAt:new Date()}).where(eq(dailyQuestDefinitionsTable.id,id));
+  await audit(tx,req.authUser!.id,"QUEST_DELETED",id,previous);
+  return {alreadyDeleted:false};
+ });
+ if(!deleted){res.status(404).json({message:"퀘스트를 찾을 수 없습니다."});return;}
+ res.json({deleted:true,...deleted});
 });
 router.post("/diagnostic",async (req,res) => {
  const {mode,objectiveType,cardType,rarity,result,amount} = req.body ?? {};
@@ -73,6 +99,6 @@ router.post("/diagnostic",async (req,res) => {
  reason:["PLAY_MATCH","WIN_MATCH","LOSS_MATCH"].includes(objectiveType) ? "QUEST_MATCH_FINISHED" : undefined} as GameEvent;
  const definitions = await db.select().from(dailyQuestDefinitionsTable);
  res.json({readOnly:true,results:definitions.map(d=>({id:d.id,title:d.title,
- ...(!d.enabled || readPlatform(d).archived ? {increment:0,reason:"비활성화 또는 보관됨"} : questDiagnostic(d,event,"diagnostic-player",mode as QuestMode,result ?? null,rarity ?? null))}))});
+ ...(!d.enabled || readPlatform(d).deletedAt || readPlatform(d).archived ? {increment:0,reason:"비활성화 또는 보관됨"} : questDiagnostic(d,event,"diagnostic-player",mode as QuestMode,result ?? null,rarity ?? null))}))});
 });
 export default router;

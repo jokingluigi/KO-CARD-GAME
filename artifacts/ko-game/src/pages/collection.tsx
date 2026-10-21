@@ -1,3 +1,4 @@
+import { CardCatalogFilters, EMPTY_CATALOG_FILTERS, matchesCatalogFilters } from "@/components/card-catalog-filters";
 import { useEffect, useMemo, useState, type KeyboardEvent } from "react";
 import { ArrowLeft, BookOpen, ChevronDown, Hammer, Search, Shield, Sparkles, Swords, Star, X } from "lucide-react";
 import { CardRenderer } from "@/components/card-renderer";
@@ -19,7 +20,6 @@ import { maxCardCopies } from "@workspace/game-engine/rules";
 
 type CollectionTab = "cards" | "crafting" | "champions";
 type CardTypeFilter = "ALL" | "WRESTLER" | "TECHNIQUE";
-type RarityFilter = "ALL" | "NORMAL" | "EPIC" | "LEGENDARY";
 type CardSort = "COST" | "NAME" | "RARITY";
 type CollectionLoadState = "loading" | "ready" | "error";
 
@@ -124,7 +124,8 @@ export default function CollectionPage() {
   const [tab, setTab] = useState<CollectionTab>("cards");
   const [search, setSearch] = useState("");
   const [cardType, setCardType] = useState<CardTypeFilter>("ALL");
-  const [rarity, setRarity] = useState<RarityFilter>("ALL");
+  const [catalogFilters, setCatalogFilters] = useState(EMPTY_CATALOG_FILTERS);
+  const catalogCards = useMemo(() => [...new Map([...(collection?.craftableCards ?? []), ...(collection?.cards ?? [])].map(card => [card.id, card])).values()], [collection]);
   const [sort, setSort] = useState<CardSort>("COST");
   const [favorites, setFavorites] = useState<string[]>(() => {
     try { const value = JSON.parse(window.localStorage.getItem('ko-card-favorites') ?? '[]'); return Array.isArray(value) ? value.filter((id): id is string => typeof id === 'string') : []; }
@@ -184,10 +185,10 @@ export default function CollectionPage() {
 
   const filteredCards = useMemo(() => {
     const normalizedSearch = search.trim().toLocaleLowerCase();
-    return [...(collection?.cards ?? [])]
+    return [...catalogCards]
       .filter((card) => {
         if (cardType !== "ALL" && card.cardType !== cardType) return false;
-        if (rarity !== "ALL" && card.rarity !== rarity) return false;
+        if (!matchesCatalogFilters(card, catalogFilters)) return false;
         if (favoritesOnly && !favorites.includes(card.id)) return false;
         return !normalizedSearch || card.name.toLocaleLowerCase().includes(normalizedSearch);
       })
@@ -196,14 +197,14 @@ export default function CollectionPage() {
         if (sort === "RARITY") return (["NORMAL", "EPIC", "LEGENDARY"].indexOf(left.rarity) - ["NORMAL", "EPIC", "LEGENDARY"].indexOf(right.rarity)) || left.name.localeCompare(right.name, "ko");
         return left.cost - right.cost || left.name.localeCompare(right.name, "ko");
       });
-  }, [cardType, collection?.cards, rarity, search, sort, favorites, favoritesOnly]);
+  }, [cardType, catalogCards, catalogFilters, search, sort, favorites, favoritesOnly]);
 
   const filteredCraftableCards = useMemo(() => {
     const normalizedSearch = search.trim().toLocaleLowerCase();
     return [...(collection?.craftableCards ?? [])]
       .filter((card) => {
         if (cardType !== "ALL" && card.cardType !== cardType) return false;
-        if (rarity !== "ALL" && card.rarity !== rarity) return false;
+        if (!matchesCatalogFilters(card, catalogFilters)) return false;
         if (favoritesOnly && !favorites.includes(card.id)) return false;
         return !normalizedSearch || card.name.toLocaleLowerCase().includes(normalizedSearch);
       })
@@ -212,7 +213,7 @@ export default function CollectionPage() {
         if (sort === "RARITY") return (["NORMAL", "EPIC", "LEGENDARY"].indexOf(left.rarity) - ["NORMAL", "EPIC", "LEGENDARY"].indexOf(right.rarity)) || left.name.localeCompare(right.name, "ko");
         return left.cost - right.cost || left.name.localeCompare(right.name, "ko");
       });
-  }, [cardType, collection?.craftableCards, rarity, search, sort, favorites, favoritesOnly]);
+  }, [cardType, collection?.craftableCards, catalogFilters, search, sort, favorites, favoritesOnly]);
 
   const champions = collection?.champions ?? [];
   const selectedSetting = selectedCard
@@ -377,16 +378,17 @@ export default function CollectionPage() {
                   {search && <button type="button" aria-label="검색어 지우기" onClick={() => setSearch("")} className="absolute right-2 top-1/2 -translate-y-1/2 text-neutral-500 hover:text-white"><X className="h-4 w-4" /></button>}
                 </label>
                 <FilterSelect label="카드 종류" value={cardType} onChange={(value) => setCardType(value as CardTypeFilter)} options={[["ALL", "전체 종류"], ["WRESTLER", "선수"], ["TECHNIQUE", "기술"]]} />
-                <FilterSelect label="희귀도" value={rarity} onChange={(value) => setRarity(value as RarityFilter)} options={[["ALL", "전체 희귀도"], ["NORMAL", "NORMAL"], ["EPIC", "EPIC"], ["LEGENDARY", "LEGENDARY"]]} />
+
                 <FilterSelect label="정렬" value={sort} onChange={(value) => setSort(value as CardSort)} options={[["COST", "비용"], ["NAME", "이름"], ["RARITY", "희귀도"]]} />
               </div>
+              <CardCatalogFilters cards={catalogCards} value={catalogFilters} onChange={setCatalogFilters} />
               <button type="button" aria-pressed={favoritesOnly} onClick={() => setFavoritesOnly((value) => !value)}
                 className={`mt-3 inline-flex items-center gap-1.5 rounded border px-3 py-2 text-xs font-bold ${favoritesOnly ? 'border-amber-400 bg-amber-950/50 text-amber-200' : 'border-neutral-700 text-neutral-300'}`}>
                 <Star className={`h-3.5 w-3.5 ${favoritesOnly ? 'fill-amber-400' : ''}`} /> 즐겨찾기만
               </button>
                <p className="mt-3 text-xs text-neutral-500">
                  <span className="font-bold text-neutral-300">{tab === "cards" ? filteredCards.length : filteredCraftableCards.length}</span>
-                 {tab === "cards" ? "장의 카드 · 소유 카드만 표시" : "장의 카드 · PUBLISHED NORMAL/EPIC/LEGENDARY만 표시"}
+                 {tab === "cards" ? "장의 카드 · 공개 카드 및 소유 카드" : "장의 카드 · PUBLISHED NORMAL/EPIC/LEGENDARY만 표시"}
                </p>
             </section>
 

@@ -85,7 +85,13 @@ export type RewardAdminData = {
   objectiveTypes: string[];
 };
 
-export const fetchDailyQuests = () => request<{ assignments: DailyQuest[]; seasons?: Array<{id:string;name:string;endsAt:string}>; timezone?:string }>("/daily-quests");
+export type DailyCompletionBonus = {
+ date:string;targetValue:number;progress:number;enabled:boolean;
+ rewardType:string;rewardAmount:number;rewardTargetId:string|null;
+ status:"DISABLED"|"IN_PROGRESS"|"COMPLETED"|"CLAIMED";claimedAt:string|null;
+};
+export const claimDailyCompletionBonus=()=>request<{bonus:DailyCompletionBonus;reward:unknown;alreadyClaimed:boolean}>("/daily-quests/completion-bonus/claim",{method:"POST"});
+export const fetchDailyQuests = () => request<{ assignments: DailyQuest[]; completionBonus?:DailyCompletionBonus; seasons?: Array<{id:string;name:string;endsAt:string}>; timezone?:string }>("/daily-quests");
 export const completeAIMatchQuestProgress = (body: AIMatchQuestProgressInput) =>
   submitWithReceipt(
     () => request<{ completed: boolean; message?: string; reward: { amount: number; sourceType: string } | null }>("/daily-quests/ai-match-progress", { method: "POST", body: JSON.stringify(body) }),

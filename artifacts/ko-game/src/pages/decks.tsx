@@ -1,3 +1,4 @@
+import { CardCatalogFilters, EMPTY_CATALOG_FILTERS, matchesCatalogFilters } from "@/components/card-catalog-filters";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { AlertTriangle, ArrowLeft, Check, CirclePlus, Hammer, Minus, Plus, RefreshCw, Search, Shield, Star, Trash2 } from "lucide-react";
 import { Link } from "wouter";
@@ -241,6 +242,7 @@ export default function Decks() {
   const [search, setSearch] = useState("");
   const [filter, setFilter] = useState<CardFilter>("ALL");
   const [favoritesOnly, setFavoritesOnly] = useState(false);
+  const [catalogFilters, setCatalogFilters] = useState(EMPTY_CATALOG_FILTERS);
   const [favorites] = useState<string[]>(() => {
     try { const value = JSON.parse(window.localStorage.getItem('ko-card-favorites') ?? '[]'); return Array.isArray(value) ? value.filter((id): id is string => typeof id === 'string') : []; }
     catch { return []; }
@@ -438,11 +440,12 @@ export default function Decks() {
     const normalizedSearch = search.trim().toLocaleLowerCase();
     return options.cards.filter((card) => {
       if ((card.status !== "PUBLISHED" && !(card.status === "DRAFT" && (authUser?.role === "ADMIN" || (card.quantity ?? 0) > 0))) || card.isToken || card.isChampionToken) return false;
+      if (!matchesCatalogFilters(card, catalogFilters)) return false;
       if (filter !== "ALL" && card.cardType !== filter) return false;
       if (favoritesOnly && !favorites.includes(card.id)) return false;
       return !normalizedSearch || card.name.toLocaleLowerCase().includes(normalizedSearch);
     });
-  }, [filter, options.cards, search, favorites, favoritesOnly]);
+  }, [filter, options.cards, search, favorites, favoritesOnly, catalogFilters, authUser?.role]);
   const selectedRows = useMemo(() => {
     const rows = Array.from(counts.entries()).map(([id, count]) => ({
       id,
@@ -792,6 +795,7 @@ export default function Decks() {
                   data-testid="input-card-search"
                 />
               </label>
+              <CardCatalogFilters cards={options.cards} value={catalogFilters} onChange={setCatalogFilters} />
               <div className="ko-decks__filters" role="group" aria-label="카드 유형 필터">
                 {(["ALL", "WRESTLER", "TECHNIQUE"] as CardFilter[]).map((item) => (
                   <button
