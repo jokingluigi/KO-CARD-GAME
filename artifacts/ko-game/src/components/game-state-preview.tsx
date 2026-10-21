@@ -1,3 +1,4 @@
+import "./battle-board.css";
 import {optionalCosmetics} from '@/lib/cosmetics-client';
 import {cosmeticImage} from '@workspace/cosmetics';
 import {BattleCosmeticsContext,CosmeticBack,CosmeticEmoteTools,CosmeticEmoteOverlay,useHideCosmeticEmotes} from './cosmetic-battle';
@@ -73,8 +74,7 @@ import { getCardRuntimeRulesText, getVisibleCardKeywords } from '../lib/card-dis
 import { getActiveCardKeywords } from '../game/cards/granted-text';
 import { CHAMPION_EMOTES, CHAMPION_EMOTE_LABELS, championVoiceLine, type ChampionEmote } from '../game/champions/types';
 
-// The optional theme is compiled out of production and has no URL or account switch.
-if (import.meta.env.DEV) void import("./battle-board.css");
+// CLASSIC is retained for isolated visual comparisons; production uses the reviewed board.
 
 interface GameStatePreviewProps {
   boardTheme?: "BLACK_GOLD" | "CLASSIC";
@@ -185,10 +185,9 @@ export function GameStatePreview({
   onReturnToAdmin,
   onReturnToMainMenu,
 }: GameStatePreviewProps) {
-  let blackGold = import.meta.env.DEV && boardTheme === "BLACK_GOLD";
-  if (import.meta.env.DEV && boardTheme === undefined) {
-    try { blackGold = sessionStorage.getItem("ko-dev-black-gold-board") === "1"; } catch { /* Storage-disabled browsers keep the original board. */ }
-  }
+  // The reviewed board is the default in every battle mode. CLASSIC remains
+  // available to the isolated comparison scene without relying on browser storage.
+  const blackGold = boardTheme !== "CLASSIC";
   const getCardDefinition=React.useCallback((id:string)=>state.cardPool?.find(c=>c.id===id)??defaultCardDefinition(id),[state.cardPool]);
   const [hideImageEmotes,setHideImageEmotes]=useHideCosmeticEmotes();
   const [localCosmetics,setLocalCosmetics]=React.useState<MatchCosmetics>({});

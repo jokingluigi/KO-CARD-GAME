@@ -10,6 +10,7 @@ const root = resolve("."),
 await mkdir(out, { recursive: true });
 const temp = await mkdtemp(join(tmpdir(), "ko-cosmetics-"));
 const draft = process.env.KO_COSMETICS_DRAFT === "1";
+const production = process.env.KO_COSMETICS_PRODUCTION_BUILD === "1";
 const prefix = draft ? "draft-" : "";
 const fixturePort = Number(process.env.KO_COSMETICS_FIXTURE_PORT ?? 5187),
   frontendPort = Number(
@@ -86,18 +87,19 @@ try {
   const config = join(temp, "vite.config.mts");
   await writeFile(
     config,
-    `import {mergeConfig} from ${JSON.stringify(pathToFileURL(resolve("artifacts/ko-game/node_modules/vite/dist/node/index.js")).href)};\nimport base from ${JSON.stringify(pathToFileURL(resolve("artifacts/ko-game/vite.config.ts")).href)};\nexport default mergeConfig(base,{cacheDir:${JSON.stringify(join(temp, "cache"))},server:{port:${frontendPort},host:'127.0.0.1',proxy:{'/api':{target:${JSON.stringify(fixtureData.origin)},ws:true}}}});\n`,
+    `import {mergeConfig} from ${JSON.stringify(pathToFileURL(resolve("artifacts/ko-game/node_modules/vite/dist/node/index.js")).href)};\nimport base from ${JSON.stringify(pathToFileURL(resolve("artifacts/ko-game/vite.config.ts")).href)};\nexport default mergeConfig(base,{cacheDir:${JSON.stringify(join(temp, "cache"))},server:{port:${frontendPort},host:'127.0.0.1',proxy:{'/api':{target:${JSON.stringify(fixtureData.origin)},ws:true}}},preview:{port:${frontendPort},host:'127.0.0.1',proxy:{'/api':{target:${JSON.stringify(fixtureData.origin)},ws:true}}}});\n`,
   );
   const vite = start(
     [
       resolve("artifacts/ko-game/node_modules/vite/bin/vite.js"),
+      ...(production ? ["preview"] : []),
       "--config",
       config,
     ],
     { PORT: String(frontendPort), BASE_PATH: "/" },
     prefix + "vite.log",
   );
-  await ready(vite, "ready in");
+  await ready(vite, production ? "Local:" : "ready in");
   const run = start(
     [
       resolve(

@@ -1,4 +1,4 @@
-/* Development-only opt-in skin. Never imported by the production bundle. */
+/* Approved shared battle board. CLASSIC comparisons omit the scoped class. */
 .ko-game-shell.ko-board-preview {
   --board-bg: #38231b;
   --board-surface: #121317;

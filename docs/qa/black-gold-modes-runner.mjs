@@ -120,7 +120,13 @@ try {
       `await task();
         for(const c of browser.contexts())for(const p of c.pages())
           if(await p.locator(".ko-game-shell").count())
-            assert.equal(await p.locator(".ko-board-preview").count(),1,"development theme active on actual battle");`,
+            {
+              assert.equal(await p.locator(".ko-board-preview").count(),1,"reviewed board active on actual battle");
+              const layout=await p.evaluate(()=>({width:innerWidth,scroll:document.documentElement.scrollWidth,portraits:[...document.querySelectorAll('.ko-player-champion,.ko-opponent-champion')].map(e=>{const r=e.getBoundingClientRect();return {center:r.x+r.width/2,w:r.width,h:r.height}})}));
+              assert.equal(layout.scroll,layout.width);
+              assert.ok(layout.portraits.every(r=>Math.abs(r.center-layout.width/2)<1));
+              if(process.env.KO_COSMETICS_PRODUCTION_BUILD==='1')assert.ok(await p.locator('script[type=module][src^="/assets/"]').count(),"actual built production entry");
+            }`,
     );
     // Assert the opt-in on actual matched battle boards as well as existing protocol assertions.
     browser = browser.replaceAll(
