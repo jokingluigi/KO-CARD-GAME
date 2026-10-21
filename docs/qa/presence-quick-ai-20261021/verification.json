@@ -67,5 +67,10 @@
   "startupCombinedUnit": {
     "pass": 30,
     "fail": 0
+  },
+  "historicalInspectorBrowser": {
+    "viewportsPassed": 4,
+    "productionCodeChanged": false,
+    "fix": "Hover intended card before toggling Alt inspector; do not hover through an already open popup."
   }
 }
