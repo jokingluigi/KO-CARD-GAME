@@ -14,7 +14,8 @@ The earlier PR #65 CI failure was separately traced through GitHub check annotat
 
 ## Completed validation
 
-- Workspace typecheck and frontend/API build: PASS.
+- Workspace typecheck, QA TypeScript check and frontend/API build: PASS.
+- Repository current-card engine gate: 2,687 PASS, zero failures/skips within the selected runner. Its existing four historical/live-only catalog suites remain excluded. The included 100 AI matches completed with 100 success, zero failure/timeout/interruption, using the dated 2026-10-07 public fixture (not current production content).
 - Focused replay, AI scheduler, combat, champion and animation tests: 66 PASS.
 - Isolated authenticated quest platform HTTP tests: 7 PASS, 1 optional browser-profile case SKIPPED (not enabled); duplicate completion/claims and user separation verified.
 - Isolated PGlite HTTP/WebSocket mode suites: PvP/cosmetics 14, Draft 18, Tower 11 PASS.
