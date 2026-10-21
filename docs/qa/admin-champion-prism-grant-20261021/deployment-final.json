@@ -1,0 +1,110 @@
+{
+  "verifiedAt": "2026-10-21T16:15:42.112640+00:00",
+  "prs": [
+    76,
+    77
+  ],
+  "commit": "f3606a957a1afb3f2a7b1c299663c41f80a354a6",
+  "services": [
+    {
+      "service": "srv-damlm4gu01pc73ao3mb0",
+      "deploy": "dep-dbce8uks728c73esmg1g",
+      "status": "live",
+      "commit": "f3606a957a1afb3f2a7b1c299663c41f80a354a6"
+    },
+    {
+      "service": "srv-daml9kqd0e5s73fsnjs0",
+      "deploy": "dep-dbce8utg1s2s739ugrh0",
+      "status": "live",
+      "commit": "f3606a957a1afb3f2a7b1c299663c41f80a354a6"
+    }
+  ],
+  "assets": [
+    {
+      "path": "/assets/online-match-BrLdenmG.js",
+      "status": 200,
+      "bytes": 25251,
+      "sha256": "02df4e065f7377e8ee3cbe38cc05f5e7f5058c98d033cf102a22cc9cb4dc3ebd",
+      "matchesTestedBuild": true
+    },
+    {
+      "path": "/assets/online-match-intro-DC8ZJl7U.css",
+      "status": 200,
+      "bytes": 12010,
+      "sha256": "9c1e5f1e67255576171f66d0331da1d8698c8b3b86bc40f4f638dc1704170bcc",
+      "matchesTestedBuild": true
+    },
+    {
+      "path": "/assets/index-CRarzmd9.js",
+      "status": 200,
+      "bytes": 372308,
+      "sha256": "7565a7dce7988578d642a954344a2198de8c968f85430989436c61c2a86b225d",
+      "matchesTestedBuild": true
+    },
+    {
+      "path": "/assets/online-match-intro-CWz-Koib.js",
+      "status": 200,
+      "bytes": 4590,
+      "sha256": "f25899931e09ca5869ac7bb1c24738adf551f9720290f766ab53d8b6781228c2",
+      "matchesTestedBuild": true
+    },
+    {
+      "path": "/assets/index-BG-CeayV.css",
+      "status": 200,
+      "bytes": 274411,
+      "sha256": "484044d4af84c9eb58bd73b352d922a5db4d7ac6f35d56ac9372a3945bafd3ad",
+      "matchesTestedBuild": true
+    },
+    {
+      "path": "/assets/admin-prism-manager-BDC3v8Ga.js",
+      "status": 200,
+      "bytes": 13618,
+      "sha256": "8dcfa20bce6729cb0dfac4f4d560fad4bf746b94d37afb12e7e3c021437fea9b",
+      "matchesTestedBuild": true
+    },
+    {
+      "path": "/assets/match-result-overlay-r1MVloBd.js",
+      "status": 200,
+      "bytes": 174720,
+      "sha256": "250ff8a1951f88407433e77a6434f61694a05ab328f9f8d5d6c692d042434d38",
+      "matchesTestedBuild": true
+    },
+    {
+      "path": "/assets/home-B7tKibvc.js",
+      "status": 200,
+      "bytes": 68598,
+      "sha256": "fe9d19572c1682849a821e22c514f00c2463baa3a488901a78e079602bd98ae6",
+      "matchesTestedBuild": true
+    },
+    {
+      "path": "/assets/match-result-overlay-CqxMLPWF.css",
+      "status": 200,
+      "bytes": 32403,
+      "sha256": "8dd59a2676e411baf16fa09c13d65bb1384efe4190858d05153cc67b32346749",
+      "matchesTestedBuild": true
+    },
+    {
+      "path": "/assets/admin-champion-manager-BgLbNQsV.js",
+      "status": 200,
+      "bytes": 59675,
+      "sha256": "2198496993df11ad8b5ab0aa2e8e6d8f90be4c532422715f09def690f565611a",
+      "matchesTestedBuild": true
+    }
+  ],
+  "health": [
+    {
+      "origin": "https://ko-card-game-vr69.onrender.com",
+      "status": 200,
+      "response": "ok"
+    },
+    {
+      "origin": "https://ko-card-game.onrender.com",
+      "status": 200,
+      "response": "ok"
+    }
+  ],
+  "databaseMigration": false,
+  "productionTestWrites": false,
+  "liveProductionTwoAccountGameplay": "NOT_RUN",
+  "validationReport": "docs/qa/admin-champion-prism-grant-20261021/README.md"
+}
