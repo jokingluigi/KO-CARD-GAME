@@ -780,3 +780,10 @@ body:has(.ko-board-preview)
   top: 36px;
   min-height: 44px;
 }
+
+/* Horizontal hand scrolling clips content outside its vertical bounds. Keep
+   the selected spell's use action within the hand rather than above it. */
+.ko-board-preview .ko-technique-use-button {
+  top: 36px;
+  min-height: 44px;
+}

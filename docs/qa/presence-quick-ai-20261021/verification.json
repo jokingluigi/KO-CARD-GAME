@@ -98,6 +98,11 @@
     "currentContent": "PASS: four viewports, real card/spell/champion UI",
     "fusion": "PASS: cancellation/restoration/stats/draw/vanish",
     "lunaActive": "PASS: 1440/390/320 hit tests and actual transform",
-    "machineFusion": "PASS: 1440/390/320 actual engine and render"
+    "machineFusion": "PASS: 1440/390/320 actual engine and render",
+    "desktopHand": "PASS: 4 resolutions x 1/6/10 cards, first/middle/last selection and actual spell use",
+    "mobileInput": "PASS: 390/320, removal without inspector, 10-card spell hand, viewport/emotes",
+    "tagManager": "PASS: desktop/mobile/small management and layout",
+    "dailyQuests": "PASS: admin presets, actual AI start/result/retry and catalog-failure claim recovery",
+    "adminSessionMusic": "PASS: fast/pending/guest administrator sessions and result music settings"
   }
 }
