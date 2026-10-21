@@ -148,7 +148,7 @@ try {
         "menu checks are read-only",
       );
       const path = new URL(route.request().url()).pathname;
-      if (path === "/api/auth/me")
+      if (path === "/api/auth/me" || path === "/api/admin/session")
         return route.fulfill({ json: { authenticated: true, user: account } });
       if (path === "/api/admin/card-skins")
         return route.fulfill({
