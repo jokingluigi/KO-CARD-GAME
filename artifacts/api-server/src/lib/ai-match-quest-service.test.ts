@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import { createInitialGameState, startGame, executeAction, getLegalActions, chooseBestAction, type GameAction } from "@workspace/game-engine";
+import { createInitialGameState, startGame, executeAction, getLegalActions, chooseBestAction, type GameAction, type CardDefinition } from "@workspace/game-engine";
 import { runAITurn } from "../../../ko-game/src/game/actions/ai-turn-scheduler";
 import { replayAIMatch } from "./ai-match-quest-service";
 import { canonicalCardCatalog, cardRecordToDefinition } from '@workspace/game-engine';
@@ -24,6 +24,41 @@ test('random card effects replay identically despite reversed database catalog o
 function startedEmptyMatch() {
   return startGame(createInitialGameState());
 }
+
+test('human emote during AI thinking preserves generated attacker IDs in the server replay', async () => {
+  const token: CardDefinition = { id: 'replay-rush-token', name: 'Rush token', cost: 0, attack: 2, health: 2, rulesText: '', keywords: ['RUSH'], abilities: [], isToken: false, isChampionToken: false };
+  const summoner: CardDefinition = { ...token, id: 'replay-summoner', name: 'Summoner', attack: 0, keywords: [], abilities: [{ trigger: 'ENTER_FIELD', effects: [{ type: 'STRUCTURED', action: 'SUMMON', target: { zone: 'BOARD', owner: 'SELF', selection: 'RANDOM', count: 1, filter: { excludeSource: true } } }] }] };
+  const initial = startedEmptyMatch();
+  initial.activePlayerId = 'player-2';
+  initial.cardPool = [summoner, token];
+  initial.randomSeed = 19;
+  for (const p of initial.players) { p.mulliganUsed = true; p.board = [null, null, null, null]; p.deck = []; p.hand = []; p.personalTurn = 3; p.currentGold = 0; }
+  initial.players[1]!.hand = [generateCardInstance(summoner, { instanceId: 'summoner-in-hand' })];
+  const transcript: Array<GameAction & { actor?: 'AI' }> = [];
+  let current = structuredClone(initial), injected = false;
+  await runAITurn(current, 'player-2', {
+    getState: () => current,
+    onState: state => { current = state; },
+    onAction: action => transcript.push({ ...action, actor: 'AI' }),
+    waitForPresentationIdle: async () => {}, isCancelled: () => false, actionDelayMs: 1,
+    wait: async ms => {
+      if (!ms || injected) return;
+      injected = true;
+      const emote: GameAction = { type: 'EMOTE', playerId: 'player-1', emote: 'HELLO' };
+      const result = executeAction(current, emote); assert.ok(result.success);
+      current = result.state; transcript.push(emote);
+    },
+  });
+  assert.ok(injected);
+  assert.ok(transcript.some(action => action.type === 'ATTACK' && action.attackerInstanceId.startsWith('summoner-in-hand:')));
+  const surrender: GameAction = { type: 'SURRENDER', playerId: 'player-1' };
+  transcript.push(surrender);
+  const expected = executeAction(current, surrender); assert.ok(expected.success);
+  const replayed = replayAIMatch(initial, transcript, 'player-1', 'player-2');
+  assert.deepEqual(replayed.events, expected.state.events);
+  assert.deepEqual(replayed.players, expected.state.players);
+  assert.throws(() => replayAIMatch(initial, [{ type: 'ATTACK', actor: 'AI', attackerInstanceId: 'forged-card', target: { type: 'PLAYER', playerId: 'player-1' } }], 'player-1', 'player-2'), /공격할 수 없는 선수/);
+});
 
 test('legal recorded AI turn ending is not rejected for differing from a new AI decision',()=>{
  const started=startedEmptyMatch();const userId=started.players[0]!.id, aiId=started.players[1]!.id;

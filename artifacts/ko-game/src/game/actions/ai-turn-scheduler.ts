@@ -27,6 +27,8 @@ export interface AITurnSchedulerOptions {
   waitForPresentationIdle: () => Promise<void>;
   isCancelled: () => boolean;
   onState: (state: GameState) => void;
+  /** Read the committed state again after an asynchronous presentation pause. */
+  getState?: () => GameState;
   onAction?: (action: GameAction) => void;
   difficulty?: AIDifficulty;
   actionDelayMs?: number;
@@ -46,6 +48,10 @@ export async function runAITurn(
   let workingState = initialState;
   const delay = options.actionDelayMs ?? AI_ACTION_DELAY_MS;
   const maxDecisions = options.maxDecisions ?? AI_MAX_DECISIONS_PER_TURN;
+  const refresh = () => { workingState = options.getState?.() ?? workingState; };
+  const ownsDecision = () => workingState.gameId === initialState.gameId &&
+    workingState.status === 'IN_PROGRESS' &&
+    (workingState.targetingState?.active ? workingState.targetingState.playerId === playerId : workingState.activePlayerId === playerId);
   if (workingState.targetingState?.active && workingState.targetingState.validTargetIds.length === 0) return workingState;
 
   const greet = workingState.targetingState?.active ? null : situationalAiEmote(workingState, playerId, workingState.events.length);
@@ -55,10 +61,10 @@ export async function runAITurn(
   }
 
   for (let decision = 0; decision < maxDecisions; decision += 1) {
+    refresh();
     if (
       options.isCancelled() ||
-      workingState.status !== 'IN_PROGRESS' ||
-      (workingState.targetingState?.active ? workingState.targetingState.playerId !== playerId : workingState.activePlayerId !== playerId)
+      !ownsDecision()
     ) {
       break;
     }
@@ -76,11 +82,18 @@ export async function runAITurn(
       return workingState;
     }
 
-    const action = chooseBestAction(workingState, legalActions, playerId, options.difficulty);
     await options.wait(0);
     await options.waitForPresentationIdle();
     await options.wait(delay);
     if (options.isCancelled()) break;
+    // A human emote, surrender or timeout can commit while the AI waits.
+    // Never overwrite that state with the pre-pause copy: generation IDs and
+    // replay depend on the complete, ordered event history.
+    refresh();
+    if (!ownsDecision()) break;
+    const currentActions = getLegalActions(workingState, playerId);
+    if (!currentActions.length) break;
+    const action = chooseBestAction(workingState, currentActions, playerId, options.difficulty);
 
     const eventStart = workingState.events.length;
     const result = executeAction(workingState, action);
@@ -98,15 +111,16 @@ export async function runAITurn(
     if (workingState.status === 'FINISHED') return workingState;
   }
 
+  refresh();
   if (
     !options.isCancelled() &&
-    workingState.status === 'IN_PROGRESS' &&
-    workingState.activePlayerId === playerId &&
+    ownsDecision() &&
     !workingState.targetingState?.active
   ) {
     await options.waitForPresentationIdle();
     await options.wait(delay);
-    if (!options.isCancelled()) {
+    refresh();
+    if (!options.isCancelled() && ownsDecision() && !workingState.targetingState?.active) {
       const ended = executeAction(workingState, { type: 'END_TURN', playerId });
       if (ended.success) {
         workingState = ended.state;

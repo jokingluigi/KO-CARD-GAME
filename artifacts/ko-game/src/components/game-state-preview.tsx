@@ -2043,7 +2043,7 @@ function GraveyardModal({
           <button
             type="button"
             onClick={onClose}
-            className="rounded border border-neutral-700 px-3 py-1.5 text-xs font-bold text-neutral-300 hover:bg-neutral-800"
+            className="min-h-11 rounded border border-neutral-700 px-3 py-1.5 text-xs font-bold text-neutral-300 hover:bg-neutral-800"
           >
             닫기
           </button>
@@ -2051,30 +2051,43 @@ function GraveyardModal({
         {player.graveyard.length === 0 ? (
            <div className="py-12 text-center text-sm text-neutral-500">묘지가 비어 있습니다.</div>
         ) : (
-          <div className="grid max-h-[62dvh] grid-cols-2 gap-3 overflow-y-auto pr-1 sm:grid-cols-3 md:grid-cols-4">
+          <div data-testid="graveyard-cards" className="grid max-h-[62dvh] grid-cols-2 items-start gap-4 overflow-y-auto p-2 sm:grid-cols-3 md:grid-cols-4">
             {player.graveyard
               .slice()
               .reverse()
               .map((card) => {
                 const definition = getCardDefinition(card.definitionId);
                 return (
-                  <Inspectable key={card.instanceId} content={<CardInspectContent cosmeticOwnerId={player.id} card={card} definition={getCardDefinition(card.definitionId)} />}>
-                    <div
+                  <Inspectable key={card.instanceId} touchInspectTriggerOnly={Boolean(onSelect)} className="relative min-w-0" content={<CardInspectContent cosmeticOwnerId={player.id} card={card} definition={definition} />}>
+                    <CardRenderer
+                      cardId={card.definitionId}
+                      cosmeticOwnerId={!card.isToken && !card.isChampionToken ? player.id : undefined}
+                      name={definition?.name ?? '알 수 없는 카드'}
+                      cardType={card.cardType}
+                      cost={card.currentCost}
+                      attack={card.currentAttack}
+                      health={card.currentHealth}
+                      rulesText={getCardRuntimeRulesText(card, definition?.rulesText ?? '효과 없음')}
+                      imageUrl={definition?.imageUrl}
+                      rarity={definition?.rarity}
+                      imageDisplaySettings={definition}
+                      runtimeKeywords={getActiveCardKeywords(card)}
+                      keywordConfig={{ ...definition?.effectConfig, armor: card.grantedText?.armor ?? card.armor }}
+                      isSilenced={card.isSilenced}
+                      isStunned={card.isStunned}
+                      isAbilityDisabled={card.isAbilityDisabled}
+                      dodgeCharges={card.dodgeCharges ?? (card.dodgeAvailable ? 1 : 0)}
+                      countdownTurns={card.grantedText?.countdownTurns ?? card.countdownTurns}
+                      countdownRemaining={card.countdownRemaining}
+                      countdownResolved={card.countdownResolved}
+                      isChampionToken={card.isChampionToken}
+                      size="board"
+                      className="w-full cursor-pointer bg-black"
                       tabIndex={0}
-                      role={onSelect ? 'button' : undefined}
                       onClick={onSelect ? () => onSelect(card.instanceId) : undefined}
-                      onKeyDown={onSelect ? event => { if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); onSelect(card.instanceId); } } : undefined}
-                      className="flex min-h-28 cursor-pointer flex-col justify-between rounded border border-neutral-700 bg-neutral-900 p-2 text-left transition-colors hover:border-primary"
-                    >
-                      <div className="text-[9px] text-neutral-500">{onSelect ? '무덤 선수 · 선택하여 덱으로 복귀' : '리타이어/파괴 카드'}</div>
-                      <div className="text-xs font-black text-neutral-100">
-                        {definition?.name ?? '알 수 없는 카드'}
-                      </div>
-                      {card.cardType === 'WRESTLER' && <div className="flex justify-between font-display text-xs">
-                        <span className="text-primary">{card.currentAttack}</span>
-                        <span className="text-red-300">{card.currentHealth}</span>
-                      </div>}
-                    </div>
+                    />
+                    {onSelect && <p className="mt-2 text-center text-xs text-primary">선택하여 덱으로 복귀</p>}
+                    <button type="button" data-touch-inspect-trigger aria-label={`${definition?.name ?? '카드'} 상세정보`} className="absolute right-0 top-0 flex min-h-11 min-w-11 items-center justify-center text-lg text-amber-200" onClick={event => event.stopPropagation()}>ⓘ</button>
                   </Inspectable>
                 );
               })}
