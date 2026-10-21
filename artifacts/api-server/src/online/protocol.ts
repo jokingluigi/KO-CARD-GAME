@@ -63,6 +63,7 @@ export type OnlinePublicPlayerMetadata = {
 };
 
 export type LobbyServerMessage =
+  | { type: 'QUICK_AI_MATCH_FOUND'; matchId: string }
   | { type: "QUICK_QUEUE_JOINED"; deck: LobbyDeckSummary }
   | { type: "QUICK_QUEUE_LEFT"; reason?: string }
   | { type: "MATCH_FOUND"; matchId: string; opponent: LobbyOpponent }
@@ -75,6 +76,7 @@ export type LobbyServerMessage =
   | { type: "LOBBY_ERROR"; code: string; message: string };
 
 export type OnlineServerMessage =
+  | { type: 'SITE_PRESENCE'; otherUsersOnline: boolean }
   | ImageEmoteEvent
   | {
       type: "MATCH_SNAPSHOT";

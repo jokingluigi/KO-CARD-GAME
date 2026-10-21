@@ -27,7 +27,7 @@ export function enterField(
     throw new Error(`플레이어를 찾을 수 없습니다: ${playerId}`);
   }
 
-  const merged = mergeZombie(state, playerId, card);
+  const merged = entryCause==='PLAY_FROM_HAND'&&source.type==='PLAYER' ? undefined : mergeZombie(state, playerId, card);
   if (merged) return merged;
 
   if (player.board[boardSlot] !== null) {

@@ -36,6 +36,15 @@ export function refreshPersistentFieldGrants(state: GameState): GameState {
 
 export function bonusGoldInterceptors(state: GameState, recipientId: string) {
  return state.players.filter(player=>player.id!==recipientId).flatMap(player=>player.board.flatMap(card=>
-  card && card.currentHealth>0 && !card.isAbilityDisabled && getActiveCardAbilities(card).some(ability=>'interceptOpponentTurnBonusGold' in ability && ability.interceptOpponentTurnBonusGold)
-   ? [{playerId:player.id,cardInstanceId:card.instanceId}] : []));
+  card && card.currentHealth>0 && !card.isAbilityDisabled && getActiveCardAbilities(card).some(ability=>('interceptOpponentTurnBonusGold' in ability && ability.interceptOpponentTurnBonusGold)||('stealOpponentBonusGold' in ability && ability.stealOpponentBonusGold))
+   ? [{playerId:player.id,cardInstanceId:card.instanceId,steal:getActiveCardAbilities(card).some(a=>'stealOpponentBonusGold' in a&&a.stealOpponentBonusGold)}] : []));
+}
+
+/** A grant is intercepted once even if several copies see it. Reservations never recurse. */
+export function interceptImmediateBonusGold(state:GameState,recipientId:string,amount:number):GameState|undefined {
+ if(amount<=0)return undefined;
+ const stealers=bonusGoldInterceptors(state,recipientId).filter(i=>i.steal);
+ if(!stealers.length)return undefined;
+ const owner=stealers[0]!.playerId;
+ return {...state,players:state.players.map(p=>p.id===owner?{...p,nextTurnGoldBonus:p.nextTurnGoldBonus+amount}:p),events:[...state.events,{type:'GOLD_CHANGED',playerId:recipientId,source:{type:'CARD',cardInstanceId:stealers[0]!.cardInstanceId},target:{type:'PLAYER',playerId:recipientId},reason:'BONUS_GOLD_INTERCEPTED',amount:0}]};
 }

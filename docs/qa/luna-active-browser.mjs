@@ -22,7 +22,7 @@ try{for(const width of [1440,390,320]){
  const active=page.getByRole('button',{name:'액티브',exact:true}).first();await active.waitFor();assert.equal(await active.isDisabled(),true);assert.match(await active.getAttribute('title'),/다음 자기 턴/);results.push(width+':summoning turn button visible and disabled:PASS');
  await page.evaluate(()=>{const {state:s,defs}=window.__lunaQA;for(const c of s.players[0].board)c.enteredThisTurn=false;window.dispatchEvent(new CustomEvent('ko-qa-load-state',{detail:{state:structuredClone(s),definitions:defs}}));});
  await page.waitForFunction(()=>[...document.querySelectorAll('button')].some(b=>b.textContent.trim()==='액티브'&&!b.disabled));
- if(width<500){const hit=await active.boundingBox();assert.ok(hit.height>=44);assert.ok(await active.evaluate(el=>{const r=el.getBoundingClientRect(),target=document.elementFromPoint(r.x+r.width/2,r.y+r.height/2);return target===el||el.contains(target);}));}
+ {const hit=await active.boundingBox();assert.ok(hit.height>=44);assert.ok(await active.evaluate(el=>{const r=el.getBoundingClientRect(),target=document.elementFromPoint(r.x+r.width/2,r.y+r.height/2);return target===el||el.contains(target);}));}
  if(width<500)await active.tap();else await active.click();await page.getByRole('button',{name:'다이아몬드 군주 루나(캐논)',exact:true}).first().waitFor();assert.match(await page.getByTestId('state-check').innerText(),/UNCHANGED/);results.push(width+':usable active button transforms real card through engine:PASS');
  assert.equal(await page.getByRole('button',{name:'액티브',exact:true}).count(),3);
  await context.close();

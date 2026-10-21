@@ -37,6 +37,8 @@ try {
     page.on("pageerror", (e) => errors.push(e.message));
     await page.route("**/api/**", async (route) => {
       const path = new URL(route.request().url()).pathname;
+ // Presence transport is independently tested; its stateless ticket is not a data write.
+ if(new URL(route.request().url()).pathname==='/api/online-matches/ws-ticket')return route.fulfill({status:503,json:{message:'Presence unavailable in this isolated UI fixture'}});
       if (route.request().method() !== "GET") writes.push(path);
       if (path === "/api/auth/me") {
         if (loggedIn)
@@ -142,6 +144,7 @@ try {
       page = await context.newPage();
     page.on("pageerror", (e) => errors.push(e.message));
     await page.route("**/api/**", (route) => {
+      if(new URL(route.request().url()).pathname==="/api/online-matches/ws-ticket")return route.fulfill({status:503,json:{}});
       assert.equal(
         route.request().method(),
         "GET",

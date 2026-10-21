@@ -212,8 +212,17 @@ function rememberAuth(
     result.authenticated && result.user
       ? { response: result, expiresAt: Date.now() + 30_000 }
       : null;
+  publishSession(result);
   return result;
 }
+
+export const SESSION_CHANGED_EVENT = 'ko-session-changed';
+function publishSession(response: AuthResponse, broadcast = false) {
+  if (typeof window === 'undefined') return;
+  window.dispatchEvent(new CustomEvent(SESSION_CHANGED_EVENT, {detail:response}));
+  if (broadcast) try { window.localStorage.setItem('ko-session-change', JSON.stringify({at:Date.now(),loggedIn:response.authenticated})); } catch { /* storage can be disabled */ }
+}
+export function refreshCurrentUser() { invalidateAuth(); return fetchCurrentUser(); }
 
 export async function logout(): Promise<void> {
   invalidateAuth();
@@ -221,6 +230,7 @@ export async function logout(): Promise<void> {
     method: "POST",
     credentials: "include",
   });
+  publishSession({authenticated:false,user:null}, true);
 }
 
 export async function changeNickname(nickname: string): Promise<AuthUser> {
@@ -239,6 +249,7 @@ export async function changeNickname(nickname: string): Promise<AuthUser> {
   const body = (await response.json()) as AuthResponse;
   if (!body.user)
     throw new AuthRequestError("로그인 상태를 확인하지 못했습니다.");
+  publishSession(body);
   return body.user;
 }
 
@@ -292,6 +303,7 @@ export async function submitAuth(
   }
   invalidateAuth();
   confirmedAuth = { response: body, expiresAt: Date.now() + 30_000 };
+  publishSession(body, true);
   return body.user;
 }
 
@@ -320,5 +332,6 @@ export async function submitTestAuth(
   if (!body.authenticated || !body.user) {
     throw new Error("개발용 테스트 로그인 상태를 확인하지 못했습니다.");
   }
+  publishSession(body);
   return body.user;
 }

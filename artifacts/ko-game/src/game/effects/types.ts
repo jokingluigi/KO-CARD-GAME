@@ -114,6 +114,7 @@ export type CardAbility =
           cannotAttackChampionWhileEnemyBoardOccupied?: boolean;
           persistentFieldGrants?: { armorTag?: string; regenNameContains?: string };
           interceptOpponentTurnBonusGold?: boolean;
+          stealOpponentBonusGold?: boolean;
       effects: CardEffect[];
       oncePerTurn?: boolean;
       condition?: AbilityCondition;

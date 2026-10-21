@@ -36,6 +36,7 @@ function applyChampionEffect(
     );
   }
   if (effect.type === 'GAIN_GOLD') {
+    const intercepted=interceptImmediateBonusGold(state,playerId,effect.amount);if(intercepted)return intercepted;
     return {
       ...state,
       players: state.players.map((player) =>
@@ -291,3 +292,4 @@ export function resolveChampionGameStartAbility(state: GameState, playerId: stri
     maxTargets: 0, mandatory: true, cancelable: false, triggerContext: { sourceContext },
   } }) : resolved;
 }
+import {interceptImmediateBonusGold} from './reviewed-field-rules';

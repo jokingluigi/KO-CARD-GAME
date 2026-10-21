@@ -71,13 +71,13 @@ function ability(id: string, name: string, cost: number, description: string, co
 export function championRecordToDefinition(record: PublishedChampionRecord): ChampionDefinition {
   // Exact administrator revision, explicitly implemented rather than parsed at runtime.
   if (record.id === 'f7b087d8-3148-43d5-a634-a81d15c81721' &&
-      record.abilityText === '상대 선수 카드에게 1 데미지를 줍니다. 이 데미지로 상대 선수 카드가 리타이어 할 시 리타이어가 아니라 파괴시킵니다.' &&
+      ['상대 선수 카드에게 1 데미지를 줍니다. 이 데미지로 상대 선수 카드가 리타이어 할 시 리타이어가 아니라 파괴시킵니다.','선수 카드에게 1 데미지를 줍니다. 이 데미지로 선수 카드가 리타이어 할 시 리타이어가 아니라 파괴시킵니다.'].includes(record.abilityText) &&
       record.upgradedAbilityText === '상대 선수 카드에게 2 데미지를 줍니다. 이 데미지로 상대 선수 카드가 리타이어 할 시 리타이어가 아니라 파괴시킵니다.' &&
       record.questText === '선수 카드를 10번 파괴시킵니다.' &&
       !record.abilityEffects?.effects?.length && !record.abilityEffects?.scripts?.length &&
       !record.upgradedAbilityEffects?.effects?.length && !record.upgradedAbilityEffects?.scripts?.length) {
-    const damage=(amount:number)=>({effects:[{action:'DAMAGE',target:{zone:'BOARD',owner:'ENEMY',cardType:'WRESTLER',selection:'PLAYER_CHOICE',count:1},values:{amount,destroyOnLethal:true}}]});
-    record={...record,abilityEffects:damage(1),upgradedAbilityEffects:damage(2),
+    const damage=(amount:number,owner='ENEMY')=>({effects:[{action:'DAMAGE',target:{zone:'BOARD',owner,cardType:'WRESTLER',selection:'PLAYER_CHOICE',count:1},values:{amount,destroyOnLethal:true}}]});
+    record={...record,abilityEffects:damage(1,record.abilityText.startsWith('상대')?'ENEMY':'ALL'),upgradedAbilityEffects:damage(2),
       questCondition:record.questCondition ?? {event:'CARD_DESTROYED',cardType:'WRESTLER',progress:1,required:10,strictEventCount:true}};
   }
 

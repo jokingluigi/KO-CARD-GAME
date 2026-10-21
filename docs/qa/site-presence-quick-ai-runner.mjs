@@ -1,0 +1,10 @@
+/** Fully local production UI + PGlite HTTP/WS runner. No production services. */
+import {spawn} from 'node:child_process';import {createWriteStream} from 'node:fs';import {mkdir} from 'node:fs/promises';import {resolve} from 'node:path';
+const out='qa-results/site-presence-quick-ai';await mkdir(out,{recursive:true});const children=[];
+function start(command,args,env,name){const child=spawn(command,args,{cwd:resolve('.'),env:{...process.env,...env},stdio:['ignore','pipe','pipe']});children.push(child);const log=createWriteStream(`${out}/${name}.log`);child.stdout.pipe(log);child.stderr.pipe(log);return child;}
+function ready(child,needle,timeout=90000){return new Promise((yes,no)=>{const timer=setTimeout(()=>no(Error('Readiness timeout: '+needle)),timeout);let output='';const data=b=>{output=(output+String(b)).slice(-12000).replace(/\x1b\[[0-?]*[ -/]*[@-~]/g,'');if(output.includes(needle)){clearTimeout(timer);yes();}};child.stdout.on('data',data);child.stderr.on('data',data);child.once('error',no);child.once('exit',code=>{clearTimeout(timer);no(Error('Early exit '+code));});});}
+try{
+ const fixture=start(process.execPath,['--import','./docs/qa/checkpoints/20261006/qa-loader.mjs','--test','--test-isolation=none','lib/db/qa/site-presence-quick-ai.test.ts'],{KO_QUICK_BROWSER_MODE:'1',KO_QUICK_FIXTURE_PORT:'5303'},'browser-fixture');await ready(fixture,'QUICK_AI_BROWSER_READY');
+ const frontend=start('pnpm',['--filter','@workspace/ko-game','exec','vite','preview','--config','vite.config.ts','--port','5279','--host','127.0.0.1','--strictPort'],{PORT:'5279',BASE_PATH:'/'},'preview');await ready(frontend,'Local:');
+ const browser=start(process.execPath,['docs/qa/site-presence-quick-ai-browser.mjs'],{KO_QUICK_QA_ORIGIN:'http://127.0.0.1:5279'},'browser');const status=await new Promise((yes,no)=>{browser.once('error',no);browser.once('exit',yes);});if(status!==0)throw Error('Presence/quick AI browser failed: '+status);console.log('PASS compiled site presence, 30-second AI handoff and battle result browser');
+}finally{for(const child of children)if(child.exitCode===null)child.kill('SIGTERM');}

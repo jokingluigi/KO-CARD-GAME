@@ -1,4 +1,6 @@
 import { randomBytes, randomUUID } from "node:crypto";
+import {activeQuickAI,prepareQuickAI,releaseDisconnectedQuickAI} from '../lib/quick-ai-match';
+import {sitePresence} from './site-presence';
 import {
   startOnlineMatch,
   userHasActiveMatch,
@@ -27,6 +29,7 @@ type QueueEntry = {
   deckId: string;
   connection: LobbyConnection;
   joinedAt: number;
+  timer?: ReturnType<typeof setTimeout>;
 };
 
 type RoomMember = {
@@ -126,6 +129,9 @@ function clearRoom(room: PrivateRoom): void {
 }
 
 async function ensureCanEnter(connection: LobbyConnection): Promise<boolean> {
+  if (await activeQuickAI(connection.userId)) {
+    error(connection,'ALREADY_IN_MATCH','진행 중인 대전이 있습니다. 빠른 대전에서 복귀할 수 있습니다.');return false;
+  }
   const current = presence.get(connection.userId);
   if (current && current !== "IDLE" && current !== "ACTIVE_MATCH") {
     const code = current === "QUICK_QUEUE" ? "ALREADY_IN_QUEUE"
@@ -177,6 +183,7 @@ async function pairQuickQueue(): Promise<void> {
 
     const firstDeck = await validateOnlineDeck(first.userId, first.deckId);
     if (!firstDeck.isValid) {
+      clearTimeout(first.timer);
       quickQueue.delete(first.userId);
       presence.set(first.userId, "IDLE");
       error(first.connection, "INVALID_DECK", firstDeck.invalidReasons.join(" ") || "선택한 덱을 사용할 수 없습니다.");
@@ -184,12 +191,14 @@ async function pairQuickQueue(): Promise<void> {
     }
     const secondDeck = await validateOnlineDeck(second.userId, second.deckId);
     if (!secondDeck.isValid) {
+      clearTimeout(second.timer);
       quickQueue.delete(second.userId);
       presence.set(second.userId, "IDLE");
       error(second.connection, "INVALID_DECK", secondDeck.invalidReasons.join(" ") || "선택한 덱을 사용할 수 없습니다.");
       continue;
     }
 
+    clearTimeout(first.timer); clearTimeout(second.timer);
     quickQueue.delete(first.userId);
     quickQueue.delete(second.userId);
     presence.set(first.userId, "MATCH_STARTING");
@@ -229,8 +238,11 @@ async function pairQuickQueue(): Promise<void> {
 
 export async function joinQuickQueue(connection: LobbyConnection, deckId: string): Promise<void> {
   await withLobbyLock(async () => {
+    const activeAI=await activeQuickAI(connection.userId);
+    if(activeAI){send(connection,{type:'QUICK_AI_MATCH_FOUND',matchId:activeAI});return;}
     const existing = quickQueue.get(connection.userId);
     if (existing) {
+      existing.connection=connection;
       const deck = await validateOnlineDeck(connection.userId, existing.deckId);
       send(connection, {
         type: "QUICK_QUEUE_JOINED",
@@ -248,12 +260,25 @@ export async function joinQuickQueue(connection: LobbyConnection, deckId: string
       return;
     }
     if (!(await validateDeck(connection, deckId))) return;
-    quickQueue.set(connection.userId, {
+    const entry: QueueEntry = {
       userId: connection.userId,
       deckId,
       connection,
       joinedAt: Date.now(),
-    });
+    };
+    const expire=()=>{
+      void withLobbyLock(async()=>{
+        if(quickQueue.get(entry.userId)!==entry)return;
+        // The server clock and the same serialized lobby lock decide PvP OR AI.
+        const remaining=30_000-(Date.now()-entry.joinedAt);
+        if(remaining>0){entry.timer=setTimeout(expire,remaining);entry.timer.unref();return;}
+        quickQueue.delete(entry.userId);presence.set(entry.userId,'MATCH_STARTING');
+        try {const matchId=await prepareQuickAI(entry.userId,entry.deckId);presence.set(entry.userId,'IDLE');send(entry.connection,{type:'QUICK_AI_MATCH_FOUND',matchId});}
+        catch(e){presence.set(entry.userId,'IDLE');error(entry.connection,'MATCH_CREATION_FAILED',e instanceof Error?e.message:'대전을 준비하지 못했습니다.');}
+      }).catch(e=>logger.error({err:e},'Quick queue deadline failed'));
+    };
+    entry.timer=setTimeout(expire,30_000);entry.timer.unref();
+    quickQueue.set(connection.userId,entry);
     presence.set(connection.userId, "QUICK_QUEUE");
     await pairQuickQueue();
     if (quickQueue.has(connection.userId)) {
@@ -274,6 +299,7 @@ export async function leaveQuickQueue(connection: LobbyConnection): Promise<void
   await withLobbyLock(async () => {
     const entry = quickQueue.get(connection.userId);
     if (!entry || entry.connection !== connection) return;
+    clearTimeout(entry.timer);
     quickQueue.delete(connection.userId);
     presence.set(connection.userId, "IDLE");
     send(connection, { type: "QUICK_QUEUE_LEFT" });
@@ -439,9 +465,13 @@ async function expirePrivateRoom(roomId: string): Promise<void> {
 }
 
 export async function detachLobbyConnection(connection: LobbyConnection): Promise<void> {
+  const cleanup=setTimeout(()=>{
+    if(!sitePresence.hasUser(connection.userId))void withLobbyLock(()=>releaseDisconnectedQuickAI(connection.userId)).catch(e=>logger.error({err:e},'Quick AI disconnect cleanup failed'));
+  },5000);cleanup.unref();
   await withLobbyLock(async () => {
     const entry = quickQueue.get(connection.userId);
     if (entry?.connection === connection) {
+      clearTimeout(entry.timer);
       quickQueue.delete(connection.userId);
       presence.set(connection.userId, "IDLE");
     }

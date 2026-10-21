@@ -11,8 +11,10 @@ try {
   await page.route('https://fonts.**',route=>route.abort());
   await page.route('**/api/**',route=>{
    const path=new URL(route.request().url()).pathname;
+ // Presence transport is independently tested; its stateless ticket is not a data write.
+ if(new URL(route.request().url()).pathname==='/api/online-matches/ws-ticket')return route.fulfill({status:503,json:{message:'Presence unavailable in this isolated UI fixture'}});
    assert.equal(route.request().method(),'GET','session recovery must not submit a login or other write');
-   if(path.endsWith('/auth/me')){authReads++;return available?route.fulfill({json:{authenticated:true,user}}):route.fulfill({status:503,json:{message:'temporary upstream failure'}});}
+   if(path.endsWith('/auth/me')||path.endsWith('/admin/session')){authReads++;return available?route.fulfill({json:{authenticated:true,user}}):route.fulfill({status:503,json:{message:'temporary upstream failure'}});}
    return route.fulfill({json:{enabled:false,allowed:true,message:'',cards:[],champions:[],packs:[],packDefinitions:[],tags:[],seasons:[],relics:[],metadata:[],starters:[],presets:[],characters:[],scenes:[],stats:{}}});
   });
   await page.goto((process.env.KO_QA_ORIGIN??'http://127.0.0.1:5173')+'/admin');

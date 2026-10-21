@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 import { readFile } from 'node:fs/promises';
 import { runInNewContext } from 'node:vm';
-import { fetchCurrentUser } from './auth-client';
+import { fetchCurrentUser, SESSION_CHANGED_EVENT } from './auth-client';
 import { invalidateStartupAuth, requestServerStatus, startServerConnection } from './startup-client';
 
 const originalFetch = globalThis.fetch;
@@ -87,7 +87,9 @@ test('failed status checks release the single-flight request for a safe retry', 
 
 test('separate HTML script connects before the game module and is adopted without duplicate fetches', async () => {
   const calls: string[] = [];
-  const pageWindow: any = {};
+  const pageWindow: any = new EventTarget();
+  const sessions: unknown[] = [];
+  pageWindow.addEventListener(SESSION_CHANGED_EVENT, (event: CustomEvent) => sessions.push(event.detail));
   const fetcher = async (path: URL) => {
     calls.push(path.href);
     return json(path.pathname.endsWith('/me') ? guest : status);
@@ -109,6 +111,7 @@ test('separate HTML script connects before the game module and is adopted withou
     assert.deepEqual(await gate, status);
     assert.deepEqual(await manualRetry, status);
     assert.deepEqual(await fetchCurrentUser(), guest);
+    assert.deepEqual(sessions, [guest]);
   } finally {
     if (originalWindow) Object.defineProperty(runtime, 'window', originalWindow);
     else Reflect.deleteProperty(runtime, 'window');

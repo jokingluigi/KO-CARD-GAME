@@ -13,6 +13,7 @@ try{
   let reads=0,writes=0;const errors=[];
   page.on('pageerror',e=>errors.push(e.message));
   await page.route('**/api/**',async route=>{
+   if(new URL(route.request().url()).pathname==='/api/online-matches/ws-ticket')return route.fulfill({status:503,json:{}});
    if(route.request().method()!=='GET'){writes++;return route.fulfill({status:500,json:{}});}
    const path=new URL(route.request().url()).pathname;
    if(path==='/api/auth/me'){

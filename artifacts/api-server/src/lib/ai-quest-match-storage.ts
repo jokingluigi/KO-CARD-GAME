@@ -33,6 +33,7 @@ export async function saveAIQuestStart(
   state: GameState,
   difficulty: string,
   startingDeck?: string[],
+  quickQueue?: Record<string, unknown>,
 ) {
   const existing = await storedAIQuestMatch(input);
   if (existing)
@@ -55,7 +56,7 @@ export async function saveAIQuestStart(
         aiDeckId: input.aiDeckId,
         difficulty,
         initialState: state as unknown as Record<string, unknown>,
-        usageStart: {version:1,startedAt:new Date().toISOString(),champions:{[state.players[0]!.id]:state.players[0]!.champion!.id},decks:{[state.players[0]!.id]:startingDeck??null}},
+        usageStart: {version:1,startedAt:new Date().toISOString(),champions:{[state.players[0]!.id]:state.players[0]!.champion!.id},decks:{[state.players[0]!.id]:startingDeck??null},...(quickQueue?{quickQueue}: {})},
         questDate,
       })
       .onConflictDoNothing();

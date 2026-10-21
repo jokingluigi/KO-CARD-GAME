@@ -19,6 +19,8 @@ for(const [width,height,touch]of[[390,844,true],[320,740,true],[430,932,true],[1
  let deck={id:'deck-controls',name:'검증 덱',championDefinitionId:champions[0].id,cardDefinitionIds:[...ids],champion:champions[0],cards:ids.map(id=>cards.find(c=>c.id===id)),isValid:true,isSelected:true,missingCardDefinitionIds:[],invalidReasons:[],validationReasons:[]};
  await page.route('**/api/**',async route=>{
   const r=route.request(),p=new URL(r.url()).pathname;let json={};
+ // Presence transport is independently tested; its stateless ticket is not a data write.
+ if(new URL(route.request().url()).pathname==='/api/online-matches/ws-ticket')return route.fulfill({status:503,json:{message:'Presence unavailable in this isolated UI fixture'}});
   if(r.method()!=='GET'){writes.push({path:p,method:r.method(),body:r.postDataJSON()});assert.equal(p,'/api/decks/deck-controls');assert.equal(r.method(),'PATCH');deck={...deck,...r.postDataJSON()};json={deck};}
   else if(p.endsWith('/auth/me'))json={authenticated:true,user};
   else if(p.endsWith('/server-status'))json={enabled:false,allowed:true};

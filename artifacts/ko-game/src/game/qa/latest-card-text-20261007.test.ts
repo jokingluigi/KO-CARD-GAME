@@ -1,4 +1,4 @@
-// Zombie wording explicitly revised by owner on 2026-10-21; historical fixtures remain unchanged.
+// Historical snapshot text is preserved; current revisions are tested separately.
 import { silenceCard } from '../engine/card-status';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
@@ -39,7 +39,7 @@ const buff=(s:GameState,c:CardInstance,attack=0,health=0)=>applyEffect(s,'player
 const retire=(s:GameState,c:CardInstance,owner='player-1')=>applyEffect(s,owner,c,{type:'STRUCTURED',action:'RETIRE',target:{zone:'BOARD',owner:'SELF',selection:'SELF',count:1}});
 
 
-test('all 85 latest records retain administrator text and base cost/attack/health',()=>{assert.equal(records.length,85);for(const r of records){const d=def(r.name);assert.deepEqual([d.cost,d.attack,d.health],[r.cost,r.attack,r.health],r.name);assert.equal(d.rulesText,r.name === "좀비" ? r.text.replace("다른 아군 또는 상대 선수가", "다른 아군 선수가") : r.text,r.name);}});
+test('all 85 latest records retain administrator text and base cost/attack/health',()=>{assert.equal(records.length,85);for(const r of records){const d=def(r.name);assert.deepEqual([d.cost,d.attack,d.health],[r.cost,r.attack,r.health],r.name);assert.equal(d.rulesText,r.text,r.name);}});
 for(const r of records.filter(r=>r.cardType==='WRESTLER'))test('latest hand play and state restore: '+r.name,()=>{const s=setup();onBoard(s,'리버덩크',0,1);s.players[0].graveyard=[instance('리버덩크','grave')];const n=play(s,r.name,1);assert.ok(n.events.some(e=>e.type==='CARD_PLAYED'));assert.equal(JSON.stringify(JSON.parse(JSON.stringify(n))),JSON.stringify(n));});
 test('base-cost six still qualifies after discount; inflated cheaper card does not',()=>{const s=setup();s.players[0].hand=[instance('디 오리진','six',{currentCost:4}),instance('로드','three',{currentCost:7})];s.players[0].deck=[instance('디 오리진','deck')];const n=play(s,'도금구슬 마스터');assert.equal(n.players[0].hand[0].currentCost,3);assert.equal(n.players[0].hand[1].currentCost,7);assert.equal(n.players[0].deck[0].currentCost,6);});
 test('Calavera revives eligible wrestler and grants taunt to that instance only',()=>{const s=setup();s.players[0].graveyard=[instance('리버덩크','grave')];onBoard(s,'로드',2);const n=play(s,'라 칼라베라');const revived=n.players[0].board.find(c=>c?.instanceId==='grave');assert.ok(revived?.keywords.includes('TAUNT'));assert.ok(!n.players[0].board[2]?.keywords.includes('TAUNT'));});

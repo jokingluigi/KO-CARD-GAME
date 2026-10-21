@@ -773,3 +773,10 @@ body:has(.ko-board-preview)
   outline: 1px dashed var(--board-bright);
   outline-offset: -4px;
 }
+
+/* The centered turn bar occupies the space above the player's field. Keep
+   active-card controls inside their card instead of underneath that bar. */
+.ko-board-preview .ko-card-active-button {
+  top: 36px;
+  min-height: 44px;
+}

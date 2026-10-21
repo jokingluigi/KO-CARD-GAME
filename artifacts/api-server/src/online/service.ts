@@ -841,6 +841,7 @@ export async function validateOnlineDeck(
 }
 
 export async function userHasActiveMatch(userId: string): Promise<boolean> {
+  if(await activeQuickAI(userId))return true;
   const record = await getActiveMatchForUser(userId);
   return Boolean(record);
 }
@@ -1523,3 +1524,4 @@ export function sendImageEmote(runtime:OnlineMatchRuntime,userId:string,requestI
  for(const connection of runtime.connections)connection.send(event);
  return true;
 }
+import {activeQuickAI} from '../lib/quick-ai-match';

@@ -16,6 +16,8 @@ async function fixture({width=390,height=844,loggedIn=true,owns=true}={}){
  page.on('pageerror',e=>errors.push(e.message));
  await ctx.route('**/*',async route=>{const r=route.request(),url=new URL(r.url());if(!['127.0.0.1','localhost'].includes(url.hostname))return route.abort();if(!url.pathname.includes('/api/'))return route.continue();
  const p=url.pathname;let json={};
+ // Presence transport is independently tested; its stateless ticket is not a data write.
+ if(new URL(route.request().url()).pathname==='/api/online-matches/ws-ticket')return route.fulfill({status:503,json:{message:'Presence unavailable in this isolated UI fixture'}});
  if(r.method()!=='GET'){
   writes.push({path:p,method:r.method(),body:r.postDataJSON()});
   if(p==='/api/auth/login'){authenticated=true;json={authenticated:true,user};}

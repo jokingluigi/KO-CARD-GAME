@@ -1,4 +1,5 @@
 import {ServerMaintenanceGate} from '@/components/server-maintenance';
+import {SitePresenceBridge} from '@/components/site-presence';
 import { type ReactNode, useEffect, lazy, Suspense } from 'react';
 import { AuthLoading } from '@/components/auth-page';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
@@ -39,6 +40,7 @@ const queryClient = new QueryClient();
 function Router() {
   return (
     <RoutedErrorBoundary>
+      <SitePresenceBridge />
       <Suspense fallback={<AuthLoading />}><Switch>
         <Route path="/admin/:section?" component={Admin} />
         <Route path="/admin/draft/match/:matchId">{() => <OnlineMatch draft />}</Route>
