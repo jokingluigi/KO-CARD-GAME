@@ -156,7 +156,7 @@ export default function Tower() {
       onUseActive={cardInstanceId => action({ type: 'BEGIN_TARGETED_ACTION', playerId: 'player-1', action: { type: 'USE_ACTIVE', cardInstanceId } })} onUseChampionAbility={() => action({ type: 'BEGIN_TARGETED_ACTION', playerId: 'player-1', action: { type: 'USE_CHAMPION_ABILITY' } })}
       onCancelEffectTargeting={() => action({ type: 'CANCEL_EFFECT_TARGET', playerId: 'player-1' })} onEffectTarget={targetId => action({ type: view.battle!.targetingState?.phase === 'PRE_COMMIT' ? 'CONFIRM_PRECOMMIT_TARGET' : 'SELECT_EFFECT_TARGET', playerId: 'player-1', targetId })}
       onPresentationBusyChange={setPresentationBusy} onReturnToMainMenu={() => navigate('/')} />
-    {resultVisible && settlement && <MatchResultOverlay state={view.battle} continueLabel={view.battle.winnerId===view.battle.players[0]?.id ? "타워 보상으로" : "도전 결과 보기"} onReturnToMainMenu={continueAfterResult} />}
+    {resultVisible && settlement && <MatchResultOverlay state={view.battle} mediaCatalog={media} continueLabel={view.battle.winnerId===view.battle.players[0]?.id ? "타워 보상으로" : "도전 결과 보기"} onReturnToMainMenu={continueAfterResult} />}
   </>;
   const scene = view.scenes?.find(s => s.id === run?.encounter.sceneId);
   return <main className="ko-tower min-h-dvh min-w-0 bg-neutral-950 px-4 pb-[max(2rem,env(safe-area-inset-bottom))] pt-[max(1rem,env(safe-area-inset-top))] text-white">

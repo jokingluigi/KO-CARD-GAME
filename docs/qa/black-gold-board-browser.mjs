@@ -338,6 +338,10 @@ try {
       async () => {
         await load();
         let before = await state();
+        assert.equal(await page.getByText('공격 가능', {exact:true}).count(), 0, 'artwork has no attack-ready text badge');
+        assert.equal(await page.locator('.ko-opponent-board-row .ko-attack-ready').count(), 0);
+        assert.ok(await page.locator('.ko-player-board-row .ko-attack-ready').count() > 0);
+        assert.notEqual(await page.locator('.ko-player-board-row .ko-attack-ready').first().evaluate(e => getComputedStyle(e).boxShadow), 'none');
         await drag(
           page.locator(".ko-player-board-row .ko-board-slot").nth(1),
           page.locator(".ko-opponent-board-row .ko-board-slot").nth(1),
@@ -357,6 +361,7 @@ try {
             before.players[1].board[1].currentHealth,
         );
         await idle();
+        assert.equal(await page.locator('.ko-player-board-row .ko-board-slot').nth(1).evaluate(e => e.classList.contains('ko-attack-ready')), false);
         await load("champion");
         before = await state();
         await drag(
@@ -381,6 +386,22 @@ try {
         assert.deepEqual(await state(), before);
       },
     );
+    await check(width + ' targeted spell touch drag, cancellation and normal engine target resolution', async () => {
+      await load('spell');
+      const before = await state();
+      await drag(page.locator('.ko-hand-card').first(), page.locator('.ko-player-board-row .ko-board-slot').nth(2), true);
+      await page.locator('.ko-card-drag-ghost').waitFor({state:'detached'});
+      assert.deepEqual(await state(), before, 'canceled touch drag consumes nothing');
+      await drag(page.locator('.ko-hand-card').first(), page.locator('.ko-player-board-row .ko-board-slot').nth(2));
+      await page.waitForFunction(() => !!document.querySelector('.ko-opponent-board-row [data-card-highlight="target"]'));
+      assert.equal((await state()).players[0].hand.length, 1, 'target selection is not a successful play');
+      const victim = before.players[1].board[0].instanceId;
+      await page.locator('.ko-opponent-board-row .ko-board-slot').first().click({position:{x:20,y:75}});
+      await page.waitForFunction(id => JSON.parse(document.querySelector('[data-testid=state-json]').textContent).players[0].deck.some(c=>c.instanceId===id),victim);
+      await idle();
+      assert.equal((await state()).players[0].hand.length, 0);
+      assert.equal((await state()).players[1].board[0], null);
+    });
     await check(
       width + " actual targeted spell moves selected opponent into own deck",
       async () => {

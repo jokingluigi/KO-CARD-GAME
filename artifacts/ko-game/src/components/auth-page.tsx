@@ -19,9 +19,11 @@ export function AuthLoading() {
 
 export function AuthRecovery({
   onRetry,
+  onAuthenticated,
 }: {
   message?: string;
   onRetry: () => void;
+  onAuthenticated?: (user: AuthUser) => void;
 }) {
   const retryRef = useRef(onRetry);
   retryRef.current = onRetry;
@@ -53,7 +55,7 @@ export function AuthRecovery({
     <AuthPage
       recoveryMessage="서버 응답을 기다리고 있어. 기존 로그인은 자동으로 다시 확인하고, 아래에서 직접 로그인할 수도 있어."
       onRetry={onRetry}
-      onAuthenticated={() => retryRef.current()}
+      onAuthenticated={(user) => onAuthenticated ? onAuthenticated(user) : retryRef.current()}
     />
   );
 }

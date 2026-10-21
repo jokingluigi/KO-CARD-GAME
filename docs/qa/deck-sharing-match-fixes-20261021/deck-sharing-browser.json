@@ -1,0 +1,13 @@
+{
+  "results": [
+    "360x740: share/link/preview/new-deck/zero-sharing-writes PASS",
+    "375x812: share/link/preview/new-deck/zero-sharing-writes PASS",
+    "390x844: share/link/preview/new-deck/zero-sharing-writes PASS",
+    "412x915: share/link/preview/new-deck/zero-sharing-writes PASS",
+    "1440x900: share/link/preview/new-deck/zero-sharing-writes PASS",
+    "unowned cards/champion previewed; save blocked PASS",
+    "login preserves share link and imports identical independent deck PASS",
+    "corrupted link cannot save PASS"
+  ],
+  "errors": []
+}

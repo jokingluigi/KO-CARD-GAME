@@ -4,7 +4,8 @@ export type AttackSoundLevel =
   | "HEAVY_ATTACK"
   | "VERY_HEAVY_ATTACK";
 
-export type GameMediaType = "BACKGROUND" | "BGM" | AttackSoundLevel;
+export type ResultMusicType = 'VICTORY_BGM' | 'DEFEAT_BGM';
+export type GameMediaType = "BACKGROUND" | "BGM" | AttackSoundLevel | ResultMusicType;
 
 export type GameMediaItem = {
   id: string;
@@ -20,6 +21,7 @@ export type GameMediaCatalog = {
   backgrounds: GameMediaItem[];
   bgms: GameMediaItem[];
   attackSounds: Partial<Record<AttackSoundLevel, GameMediaItem>>;
+  resultMusic?: Partial<Record<ResultMusicType, GameMediaItem>>;
 };
 
 export const emptyGameMediaCatalog: GameMediaCatalog = {
@@ -44,9 +46,10 @@ export async function fetchGameMedia(): Promise<GameMediaCatalog> {
       media
         .filter((item): item is GameMediaItem & { mediaType: AttackSoundLevel } =>
           item.mediaType !== "BACKGROUND" &&
-          item.mediaType !== "BGM",
+          item.mediaType !== "BGM" && item.mediaType !== 'VICTORY_BGM' && item.mediaType !== 'DEFEAT_BGM',
         )
         .map((item) => [item.mediaType, item]),
     ),
+    resultMusic: Object.fromEntries(media.filter(item => item.mediaType === 'VICTORY_BGM' || item.mediaType === 'DEFEAT_BGM').map(item => [item.mediaType, item])),
   };
 }

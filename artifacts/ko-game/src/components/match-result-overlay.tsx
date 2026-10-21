@@ -5,6 +5,7 @@ import { getCardDefinition, type GameState } from "@/game";
 import { matchEndReason, matchSummary } from '@/lib/match-summary';
 import { championVoiceLine } from '@/game/champions/types';
 import { audioManager } from '@/audio/audio-manager';
+import type { GameMediaCatalog } from '@/game/media';
 import './cinematic-presentation.css';
 import { prefersReducedMotion } from './presentation-config';
 
@@ -18,10 +19,12 @@ export function MatchResultOverlay({
   questError,
   onRetryQuest,
   recap,
+  mediaCatalog,
   continueLabel = "메인 화면으로",
 }: {
   continueLabel?: string;
   recap?: MatchRecap | null;
+  mediaCatalog?: GameMediaCatalog;
   state: GameState;
   onReturnToMainMenu: () => void;
   reward?: { amount: number; sourceType: string } | null;
@@ -34,6 +37,13 @@ export function MatchResultOverlay({
   const player = state.players[0];
   const isVictory = state.winnerId === player?.id;
   const isDefeat = state.loserId === player?.id;
+  const resultMusic = mediaCatalog?.resultMusic?.[isVictory ? 'VICTORY_BGM' : 'DEFEAT_BGM'];
+  useEffect(() => {
+    if (state.status !== 'FINISHED' || (!isVictory && !isDefeat) || !resultMusic) return;
+    // Run after the parents' normal battle-audio shutdown effects.
+    const timer = window.setTimeout(() => audioManager.playResultMusic(resultMusic.assetUrl, resultMusic.volume), 0);
+    return () => { window.clearTimeout(timer); audioManager.stopResultMusic(); };
+  }, [state.gameId, state.status, isVictory, isDefeat, resultMusic?.id, resultMusic?.assetUrl, resultMusic?.volume]);
   const title = isVictory ? "승리" : isDefeat ? "패배" : "매치 종료";
   const subtitle = isVictory ? "VICTORY" : isDefeat ? "DEFEAT" : "MATCH COMPLETE";
   const reason = matchEndReason(state, player?.id ?? "");

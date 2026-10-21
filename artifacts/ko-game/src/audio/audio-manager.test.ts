@@ -671,3 +671,31 @@ test("blocked legendary entrance retries the same media on the next user gesture
     Object.defineProperty(globalThis, 'window', {configurable:true,value:previousWindow});
   }
 });
+
+test('result music plays once, survives battle shutdown and preserves BGM mute; unlock never restarts a completed track', () => {
+  withFakeAudio(() => {
+    audioManager.stopGameAudio(); audioManager.setBgmMuted(false); audioManager.setMusicContext('BATTLE');
+    audioManager.playResultMusic('/victory-qa.mp3',70);
+    const music=(audioManager as unknown as {bgm:{audio:FakeAudio;scope:string;finished?:boolean}}).bgm;
+    assert.equal(music.scope,'RESULT');assert.equal(music.audio.url,'/victory-qa.mp3');assert.equal(music.audio.loop,false);assert.equal(music.audio.paused,false);
+    audioManager.stopBattleAudio();audioManager.playMatchBgm('/old-match-qa.mp3',100);
+    assert.strictEqual((audioManager as unknown as {bgm:unknown}).bgm,music);
+    audioManager.setBgmMuted(true);assert.equal(music.audio.volume,0);
+    audioManager.setBgmMuted(false);
+    music.audio.paused=true;music.audio.emit('ended');audioManager.unlockAudio();
+    assert.equal(music.finished,true);assert.equal(music.audio.paused,true);
+    audioManager.stopResultMusic();assert.equal((audioManager as unknown as {bgm:unknown}).bgm,null);
+    audioManager.setMusicContext('NON_BATTLE');
+  });
+});
+test('result music stops at the menu boundary; old result cleanup does not stop new menu music', () => {
+  withFakeAudio(() => {
+    audioManager.stopGameAudio();audioManager.setMusicContext('BATTLE');audioManager.playResultMusic('/defeat-qa.mp3',55);
+    const old=(audioManager as unknown as {bgm:{audio:FakeAudio}}).bgm;
+    audioManager.setMusicContext('NON_BATTLE');assert.equal(old.audio.paused,true);
+    audioManager.playBgm('/menu-qa.mp3',60);
+    const menu=(audioManager as unknown as {bgm:{audio:FakeAudio}}).bgm;
+    audioManager.stopResultMusic();assert.strictEqual((audioManager as unknown as {bgm:unknown}).bgm,menu);
+    audioManager.stopGameAudio();
+  });
+});

@@ -722,6 +722,9 @@ body:has(.ko-board-preview)
 
 /* An opaque backing stays beneath faded/unavailable cards. The original
    artwork, SVG frame, badges and numeric/text layers remain unchanged. */
+.ko-game-shell.ko-board-preview .ko-board-slot.ko-attack-ready:not([data-card-highlight="selected"]):not([data-card-highlight="target"]) {
+  box-shadow: 0 0 0 1px #d9bb7b99, 0 0 7px #d9bb7b66;
+}
 .ko-game-shell.ko-board-preview .ko-board-slot,
 .ko-game-shell.ko-board-preview .ko-card-depth,
 .ko-game-shell.ko-board-preview .ko-board-slot-wrapper,

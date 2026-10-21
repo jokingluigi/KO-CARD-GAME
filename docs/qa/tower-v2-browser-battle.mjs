@@ -46,9 +46,7 @@ try {
     .getByRole("button", { name: "1구역에 카드 배치", exact: true })
     .click();
   await page.waitForFunction(() =>
-    document
-      .querySelector(".ko-player-board-row")
-      ?.textContent?.includes("공격 가능"),
+    document.querySelector(".ko-player-board-row .ko-board-slot.ko-attack-ready") !== null,
   );
   await page.locator(".ko-player-board-row .ko-board-slot").first().click();
   console.log(

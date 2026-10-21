@@ -238,9 +238,15 @@ export function BattleCardDrag(props: Props) {
         p.summon(slot as BoardSlot, geometry);
         return;
       }
-      const field = document
-        .querySelector(".ko-board-area")
-        ?.getBoundingClientRect();
+      // The board-area wrapper is display:contents on the reviewed board and
+      // has no rectangle. Use its actual field rows, scoped to this match.
+      const fields = Array.from(g.node.closest('.ko-game-shell')?.querySelectorAll(
+        '.ko-opponent-board-row,.ko-player-board-row',
+      ) ?? []).map(node => node.getBoundingClientRect()).filter(r => r.width > 0 && r.height > 0);
+      const field = fields.length ? {
+        left: Math.min(...fields.map(r => r.left)), right: Math.max(...fields.map(r => r.right)),
+        top: Math.min(...fields.map(r => r.top)), bottom: Math.max(...fields.map(r => r.bottom)),
+      } : null;
       if (
         p.enabled &&
         actions.some((a) => a.type === "PLAY_TECHNIQUE") &&
