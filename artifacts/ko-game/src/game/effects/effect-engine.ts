@@ -7,7 +7,7 @@ import { resumeCountdownTurnStart } from '../engine/countdown';
 import { newCardTargetAllowed } from '../cards/new-card-effects';
 import { hasNewCardRule, healNewCardAware, silenceDamageReduction, madokawaIncomingBonus, healingTurn } from '../engine/new-card-rules';
 import { fallbackZombieToken } from '../engine/zombie-token';
-import { existingZombie, isZombieToken, mergeZombie, normalizeZombieDefinition, ZOMBIE_RULES } from '../engine/zombie-token';
+import { existingZombie, isZombieToken, mergeZombie, normalizeZombieDefinition } from '../engine/zombie-token';
 import { keywordDamage, hasEntryDefense, isEntryDefenseTargetProtected } from '../engine/keyword-rules';
 import type { CardDefinition, CardInstance, CardStatHistoryEntry } from '../cards/types';
 import { matchesCardTagFilter } from '../cards/tags';
@@ -2284,7 +2284,7 @@ function applyEffectInternal(
       return applyEffect(state, playerId, sourceCard, { type: 'GAIN_GOLD', amount }, undefined, triggerContext);
     }
     if (effect.action === 'ADD_NEXT_TURN_GOLD') {
-      return { ...state, players: state.players.map((player) => player.id === playerId ? { ...player, nextTurnGoldBonus: player.nextTurnGoldBonus + amount } : player) };
+      return { ...state, players: state.players.map((player) => (effect.target?.owner==='ALL'||effect.target?.owner==='ENEMY'?effect.target.owner==='ALL'||player.id!==playerId:player.id===playerId) ? { ...player, nextTurnGoldBonus: player.nextTurnGoldBonus + amount } : player) };
     }
     if (effect.action === 'QUEUE_EFFECT') {
       const queuedEffect = effect.values?.queuedEffect;
@@ -3499,6 +3499,7 @@ function applyEffectInternal(
     );
   }
   if (effect.type === 'GAIN_GOLD') {
+     const intercepted=interceptImmediateBonusGold(state,playerId,effect.amount);if(intercepted)return intercepted;
      const updatedState: GameState = {
       ...state,
       players: state.players.map((player) =>
@@ -4112,3 +4113,4 @@ export function resolveBoardDestructionListeners(state:GameState,eventIndex:numb
  }
  return next;
 }
+import {interceptImmediateBonusGold} from '../engine/reviewed-field-rules';

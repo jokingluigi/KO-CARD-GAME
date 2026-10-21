@@ -1,0 +1,14 @@
+{
+  "generatedAt": "2026-10-21T05:55:18.746218+00:00",
+  "source": "https://ko-card-game-vr69.onrender.com/api/admin",
+  "files": {
+    "cards": {
+      "count": 163,
+      "sha256": "a6fec2788a9daafdefd3a3ccc4369d93b2429e0aa003963ab07df0cbe6ba6865"
+    },
+    "champions": {
+      "count": 11,
+      "sha256": "95d64ccb009914036b16e76c5cbca317993a6cf6c9f3fff2f2246c17d58f6a12"
+    }
+  }
+}

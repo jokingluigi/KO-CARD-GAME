@@ -20,11 +20,13 @@ export function MatchResultOverlay({
   onRetryQuest,
   recap,
   mediaCatalog,
+  opponentNickname,
   continueLabel = "메인 화면으로",
 }: {
   continueLabel?: string;
   recap?: MatchRecap | null;
   mediaCatalog?: GameMediaCatalog;
+  opponentNickname?: string;
   state: GameState;
   onReturnToMainMenu: () => void;
   reward?: { amount: number; sourceType: string } | null;
@@ -118,7 +120,7 @@ export function MatchResultOverlay({
             <div className="mt-3 grid grid-cols-[minmax(0,1fr)_auto_auto] items-center gap-x-3 gap-y-2 text-xs sm:text-sm">
               <span className="text-neutral-400">기록</span>
               <span className="text-center font-bold text-blue-200">나</span>
-              <span className="text-center font-bold text-red-200">상대</span>
+              <span className="break-words text-center font-bold text-red-200">{opponentNickname || '상대'}</span>
               <span className="border-t border-white/10 pt-2">사용한 카드</span>
               <span className="border-t border-white/10 pt-2 text-center font-bold">{ownSummary.cardsPlayed}</span>
               <span className="border-t border-white/10 pt-2 text-center font-bold">{opponentSummary.cardsPlayed}</span>

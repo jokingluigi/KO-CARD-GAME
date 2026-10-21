@@ -1,4 +1,5 @@
 import { reviewedOctober19Abilities } from './reviewed-admin-content-20261019';
+import {reviewedOctober21Abilities} from './reviewed-admin-content-20261021';
 import { reviewedLatestAdminAbilities } from './reviewed-admin-content-20261015';
 import { reviewedCurrentAdminAbilities, reviewedCurrentAdminKeywords } from './reviewed-admin-content-20261014';
 import { reviewedContentAbilities } from './reviewed-content-20261012';
@@ -9,7 +10,6 @@ import { createAwakeningCards } from '../champions/awakening-definitions';
 import { lunaSelfSilenceRecord } from './luna';
 import { lifeExchangeConfig, LIFE_EXCHANGE_OLD_TEXT, LIFE_EXCHANGE_RULES_TEXT } from './life-exchange';
 import { newCardImplementation } from './new-card-effects';
-import { ZOMBIE_RULES } from '../engine/zombie-token';
 import type { CardAbility, CardEffect } from "../effects/types";
 import type { CardDefinition, CardRarity } from "./types";
 import { normalizeCardRarityForType } from "./types";
@@ -259,7 +259,7 @@ export function cardRecordToDefinition(card: PublishedCardRecord): CardDefinitio
       effect.action === 'DESTROY' && effect.trigger === 'ENTER_FIELD' && effect.target && typeof effect.target === 'object'
         ? { ...effect, target: { ...effect.target, randomScope: 'FULL' } } : effect) } };
   }
-  if (card.isToken && card.name.trim() === '좀비') card = { ...card, cost: 1, attack: 1, health: 1, text: ZOMBIE_RULES, keywords: [], effectId: 'STRUCTURED_EFFECTS_V1', effectConfig: { effects: [] } };
+  if (card.isToken && card.name.trim() === '좀비') card = { ...card, cost: 1, attack: 1, health: 1, keywords: [], effectId: 'STRUCTURED_EFFECTS_V1', effectConfig: { effects: [] } };
   const zombieAbsorption = /필드에\s*있는\s*['‘]?좀비['’]?\s*중[^.!?]*가장\s*수치의\s*합/.test(card.text) &&
     /좀비['’]?가\s*없다면[^.!?]*2\s*\/\s*2/.test(card.text);
   // Older published snapshots stored only an entrance-time attack gain for a
@@ -327,7 +327,7 @@ export function cardRecordToDefinition(card: PublishedCardRecord): CardDefinitio
       keywords: reviewedCurrentAdminKeywords(card) ?? repairedLegacyCardKeywords(card),
        tags: Array.isArray(card.tags) ? [...card.tags] : [],
       ...(implementation ? {contentRule: implementation.rule} : {}),
-      abilities: (reviewedCurrent ?? reviewedAdmin ?? reviewedContentAbilities(card) ?? textCardAbilities(card) ?? implementation?.abilities ?? repairedLegacyCardAbilities(card) ?? (zombieAbsorption
+      abilities: (reviewedOctober21Abilities(card) ?? reviewedCurrent ?? reviewedAdmin ?? reviewedContentAbilities(card) ?? textCardAbilities(card) ?? implementation?.abilities ?? repairedLegacyCardAbilities(card) ?? (zombieAbsorption
         ? [{ trigger: 'ENTER_FIELD' as const, effects: [{ type: 'STRUCTURED' as const,
             action: 'COPY_BEST_STATS' as const,
             target: { zone: 'BOARD' as const, owner: 'SELF' as const, cardType: 'WRESTLER' as const,

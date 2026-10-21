@@ -128,3 +128,4 @@ export * from './tower/types-v2';
 export * from './tower/v2';
 
 export * from './tower/effects';
+export {selectAIOpponentDeck} from './ai-deck-selection';

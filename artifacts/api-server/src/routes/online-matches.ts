@@ -1,4 +1,5 @@
 import { Router, type Request, type Response } from "express";
+import {readQuickAI,releaseQuickAI} from '../lib/quick-ai-match';
 import { and, eq, inArray } from "drizzle-orm";
 import { db, onlineMatchesTable, rewardGrantsTable, rewardSettingsTable } from "@workspace/db";
 import { getAuthenticatedUser } from "../lib/auth";
@@ -26,6 +27,18 @@ import {
 } from "../online/websocket-ticket";
 
 const router = Router();
+
+router.get('/quick-ai/:matchId',async(request,response)=>{
+  const user=await requireUser(request,response);if(!user)return;
+  const result=await readQuickAI(user.id,String(request.params.matchId));
+  response.setHeader('Cache-Control','no-store');
+  if(!result){response.status(404).json({message:'대전 준비 기록을 찾을 수 없습니다. 온라인 화면에서 다시 시작해주세요.'});return;}
+  response.json(result);
+});
+router.post('/quick-ai/:matchId/release',async(request,response)=>{
+  const user=await requireUser(request,response);if(!user)return;
+  await releaseQuickAI(user.id,String(request.params.matchId));response.json({released:true});
+});
 
 async function requireUser(request: Request, response: Response) {
   const user = request.authUser ?? await getAuthenticatedUser(request);

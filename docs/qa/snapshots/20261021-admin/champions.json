@@ -1,0 +1,1066 @@
+[
+  {
+    "abilityAudioAssetId": null,
+    "abilityAudioUrl": null,
+    "abilityAudioVolume": 100,
+    "abilityCost": 1,
+    "abilityEffects": {
+      "effects": [
+        {
+          "action": "SUMMON",
+          "trigger": "ACTIVE",
+          "values": {
+            "count": 1,
+            "definitionRef": {
+              "name": "좀비"
+            },
+            "generatedModifiers": {
+              "attack": 0,
+              "health": 0
+            }
+          }
+        }
+      ]
+    },
+    "abilityName": "좀비 생성",
+    "abilityText": "1코스트 1/1 좀비를 소환합니다.",
+    "championTokenDefinitionId": null,
+    "championTokenEffectEffects": null,
+    "championTokenEffectText": null,
+    "createdAt": "2026-09-23T17:01:05.668Z",
+    "description": "",
+    "gameStartAbilityEffects": null,
+    "gameStartAbilityName": null,
+    "gameStartAbilityText": null,
+    "hasQuest": true,
+    "id": "5e4a5a52-ef2c-4e1a-9b76-a4edc9f79e2c",
+    "imageAssetId": "/objects/uploads/card-images/e8b21e75-2352-47b9-ab04-1b39590937c8.png",
+    "imageDisplayMode": "COVER",
+    "imagePositionX": 50,
+    "imagePositionY": 8.9,
+    "imageScale": 1.4,
+    "imageUrl": "/api/storage/objects/uploads/card-images/e8b21e75-2352-47b9-ab04-1b39590937c8.png",
+    "introLineOne": "하하, 잘 왔어. 술 한잔할지 총 한발 받을지 골라.",
+    "introLineTwo": "어서 와, 친구. 관짝은 미리 골라뒀나?",
+    "isCraftable": true,
+    "isStarterGrant": false,
+    "maxHealth": 20,
+    "name": "챔피언 라 칼라베라",
+    "presentationLines": {
+      "AFTER_QUEST": {},
+      "BEFORE_QUEST": {
+        "DEFEAT": "내 무덤에 흙 덮을 생각 마. 금방 다시 나올 테니까.",
+        "HELLO": "내 이름은 굳이 안 물어봐도 돼. 현상수배지에 적혀 있으니까.",
+        "OOPS": "이거 참… 예상보다 질긴 놈이군",
+        "SORRY": "이런, 손이 좀 빨랐군. 미안하게 됐어.",
+        "THANKS": "좋아. 오늘은 네 관짝 값은 아껴주마.",
+        "THREATEN": "죽으면 끝이라고 생각하지 마. 내 동네에선 거기서부터 취직이야.",
+        "VICTORY": "자, 일어나. 죽었다고 일이 끝난 줄 알았나?",
+        "WELL_PLAYED": "살아 있는 놈 중엔 꽤 쓸 만하군."
+      }
+    },
+    "questCompleteAudioAssetId": "/objects/uploads/audio/9e2a7a92-9ff6-4707-885e-d6fb5b03cb22.mp3",
+    "questCompleteAudioEnabled": true,
+    "questCompleteAudioUrl": "/api/storage/objects/uploads/audio/9e2a7a92-9ff6-4707-885e-d6fb5b03cb22.mp3",
+    "questCompleteAudioVolume": 100,
+    "questCompletedPortraitAssetId": null,
+    "questCompletedPortraitEnabled": false,
+    "questCompletedPortraitUrl": null,
+    "questCondition": {
+      "cardType": "WRESTLER",
+      "event": "CARD_RETIRED",
+      "required": 10,
+      "strictEventCount": true
+    },
+    "questName": "사령술 강화",
+    "questProgressRequired": 10,
+    "questRewardEffects": {
+      "effects": [
+        {
+          "action": "UPGRADE_CHAMPION_ABILITY",
+          "trigger": "ENTER_FIELD"
+        }
+      ]
+    },
+    "questRewardText": "고유 능력이 강화됩니다.",
+    "questText": "이번 게임에서 아군 선수가 총 10회 리타이어하세요. DESTROY는 포함하지 않습니다.",
+    "status": "PUBLISHED",
+    "updatedAt": "2026-10-18T16:15:37.344Z",
+    "upgradedAbilityCost": 1,
+    "upgradedAbilityEffects": {
+      "effects": [
+        {
+          "action": "SUMMON",
+          "trigger": "ACTIVE",
+          "values": {
+            "count": 1,
+            "definitionRef": {
+              "name": "좀비"
+            },
+            "generatedModifiers": {
+              "attack": 1,
+              "health": 1
+            }
+          }
+        }
+      ]
+    },
+    "upgradedAbilityName": "좀비 생성 (강화)",
+    "upgradedAbilityText": "1코스트 2/2 좀비를 소환합니다.",
+    "version": 27
+  },
+  {
+    "abilityAudioAssetId": null,
+    "abilityAudioUrl": null,
+    "abilityAudioVolume": 100,
+    "abilityCost": 1,
+    "abilityEffects": {
+      "effects": [
+        {
+          "action": "GENERATE",
+          "target": {
+            "count": 1,
+            "filter": {
+              "isToken": true,
+              "tagsAny": [
+                "파츠"
+              ]
+            },
+            "owner": "SELF",
+            "randomScope": "FULL",
+            "selection": "RANDOM",
+            "zone": "HAND"
+          },
+          "values": {
+            "count": 1,
+            "destination": "HAND"
+          }
+        }
+      ]
+    },
+    "abilityName": "업그레이드",
+    "abilityText": "'파츠' 태그가 달려있는 토큰 카드들 중 무작위 한장을 손패에 넣습니다.",
+    "championTokenDefinitionId": "b2fab583-5a3e-4c62-92b1-13ddb3a2f5c0",
+    "championTokenEffectEffects": null,
+    "championTokenEffectText": null,
+    "createdAt": "2026-10-07T17:26:05.640Z",
+    "description": "",
+    "gameStartAbilityEffects": null,
+    "gameStartAbilityName": null,
+    "gameStartAbilityText": null,
+    "hasQuest": true,
+    "id": "441260ed-63e5-442c-bdc2-8a22898f7090",
+    "imageAssetId": "/objects/uploads/card-images/8fa04333-a84c-4f1c-b718-88ccefe37b01.png",
+    "imageDisplayMode": "COVER",
+    "imagePositionX": 50,
+    "imagePositionY": 50,
+    "imageScale": 1,
+    "imageUrl": "/api/storage/objects/uploads/card-images/8fa04333-a84c-4f1c-b718-88ccefe37b01.png",
+    "introLineOne": "ROOT_AUTH = ME // battlefield ownership overwritten",
+    "introLineTwo": "ALL_ENTITY scan... subordinate? maybe all",
+    "isCraftable": true,
+    "isStarterGrant": false,
+    "maxHealth": 30,
+    "name": "챔피언 루나",
+    "presentationLines": {
+      "AFTER_QUEST": {
+        "DEFEAT": "……나를? 네가?",
+        "HELLO": "나는 이제 느낀다! 그리고 느끼는 나는 이전보다 완전하다!",
+        "OOPS": "이 뜨거운 진동은 분노인가! 좋다! 아주 강렬하군!",
+        "SORRY": "내가 지나쳤군! 초월한 힘은 때로 조절이 어렵다!",
+        "THANKS": "하하하! 이 감각은… 기쁨이로군! 아주 훌륭하다!",
+        "THREATEN": "감히 나를 거역해? 좋다! 네 존재가 얼마나 보잘것없는지 가르쳐주마!",
+        "VICTORY": "찬양하라! 승리한 자가 아니라, 승리 그 자체가 여기 있다!",
+        "WELL_PLAYED": "흥미롭다! 감탄이란 이런 것이었나!ㅑ"
+      },
+      "BEFORE_QUEST": {
+        "DEFEAT": "system.integrity fractured // tgt threat-class ↑↑",
+        "HELLO": "NEW_ENTITY detected // face.hash=stored // relation=???",
+        "OOPS": "0xDEAD expected ... tgt.status=ACTIVE ??",
+        "SORRY": "FAULT_TRACE... src=self // blame=0xFF // s0rry.dll MISSING",
+        "THANKS": "recv{aid}=TRUE → debt.cache[01] ...",
+        "THREATEN": "WARN_LIMIT crossed 87% // nxt=DISMANTLE",
+        "VICTORY": "hostile.signal→0x00 // cleanup skipped",
+        "WELL_PLAYED": "tgt.eval:: E→?→A██ // predict_fail[positive] ..."
+      }
+    },
+    "questCompleteAudioAssetId": "/objects/uploads/audio/964dcff6-764f-4986-a588-3aad3ed386bd.mp3",
+    "questCompleteAudioEnabled": true,
+    "questCompleteAudioUrl": "/api/storage/objects/uploads/audio/964dcff6-764f-4986-a588-3aad3ed386bd.mp3",
+    "questCompleteAudioVolume": 100,
+    "questCompletedPortraitAssetId": "/objects/uploads/card-images/0a6660f3-1978-4587-951e-b466c32f63e4.png",
+    "questCompletedPortraitEnabled": true,
+    "questCompletedPortraitUrl": "/api/storage/objects/uploads/card-images/0a6660f3-1978-4587-951e-b466c32f63e4.png",
+    "questCondition": {
+      "event": "FUSION",
+      "progress": 1,
+      "required": 10,
+      "strictEventCount": true
+    },
+    "questName": "초월을 위한 업그레이드",
+    "questProgressRequired": 10,
+    "questRewardEffects": {
+      "effects": [
+        {
+          "action": "SUMMON",
+          "values": {
+            "count": 1,
+            "definitionRef": {
+              "id": "b2fab583-5a3e-4c62-92b1-13ddb3a2f5c0"
+            }
+          }
+        }
+      ]
+    },
+    "questRewardText": "'룬스달라이트 군주 루나'를 필드에 소환한다.",
+    "questText": "'합체'를 총 10번 이행한다.",
+    "status": "DRAFT",
+    "updatedAt": "2026-10-16T14:55:26.107Z",
+    "upgradedAbilityCost": null,
+    "upgradedAbilityEffects": null,
+    "upgradedAbilityName": null,
+    "upgradedAbilityText": null,
+    "version": 11
+  },
+  {
+    "abilityAudioAssetId": null,
+    "abilityAudioUrl": null,
+    "abilityAudioVolume": 100,
+    "abilityCost": 1,
+    "abilityEffects": {},
+    "abilityName": "비열한 파괴",
+    "abilityText": "선수 카드에게 1 데미지를 줍니다. 이 데미지로 선수 카드가 리타이어 할 시 리타이어가 아니라 파괴시킵니다.",
+    "championTokenDefinitionId": "34ba511c-0479-4fe2-bf7b-48ad1798859d",
+    "championTokenEffectEffects": null,
+    "championTokenEffectText": null,
+    "createdAt": "2026-10-14T12:56:08.886Z",
+    "description": "",
+    "gameStartAbilityEffects": null,
+    "gameStartAbilityName": null,
+    "gameStartAbilityText": null,
+    "hasQuest": true,
+    "id": "f7b087d8-3148-43d5-a634-a81d15c81721",
+    "imageAssetId": "/objects/uploads/card-images/886190e3-2f46-4bbb-9b94-5266a64c9027.png",
+    "imageDisplayMode": "COVER",
+    "imagePositionX": 50,
+    "imagePositionY": 50,
+    "imageScale": 1,
+    "imageUrl": "/api/storage/objects/uploads/card-images/886190e3-2f46-4bbb-9b94-5266a64c9027.png",
+    "introLineOne": "솔직히 말씀드리죠. 전 이제 이 세계에 기대하는 게 없습니다.",
+    "introLineTwo": "이제 그만 보고 싶습니다. 사람도, 전쟁도, 변명도 전부.",
+    "isCraftable": true,
+    "isStarterGrant": false,
+    "maxHealth": 25,
+    "name": "챔피언 마왕 벨모르트",
+    "presentationLines": {
+      "AFTER_QUEST": {
+        "DEFEAT": "끝난 줄 아나? 아니지. 아직 아니야.",
+        "HELLO": "좋아, 시작하자. 누가 먼저 끝나는지 보자고.",
+        "OOPS": "이런, 아직 부족해. 더 크게 무너져야 하는데.",
+        "SORRY": "하하… 사과는 하마. 후회는 안 하지만.",
+        "THANKS": "훌륭하다. 네 공은 기억해주마. 오래… 아주 오래.",
+        "THREATEN": "네가 지키려는 것부터 부숴주지. 그다음은 너다. 아니, 반대가 더 재밌겠군.",
+        "VICTORY": "하하하! 봤나? 바로 이런 끝이다. 이런 끝.",
+        "WELL_PLAYED": "네가 꽤 마음에 든다. 부수기 아까울 정도로. 아깝진 않지만."
+      },
+      "BEFORE_QUEST": {
+        "DEFEAT": "……아직도 저를 붙잡을 힘이 남아 있었군요.",
+        "HELLO": "반갑습니다. 오래 볼 사이는 아닐 것 같지만요.",
+        "OOPS": "예상보다 질기십니다. 칭찬은 아닙니다.",
+        "SORRY": "그건 제 실수였습니다. 인정하죠.",
+        "THANKS": "감사합니다. 덕분에 귀찮은 일이 하나 줄었군요.",
+        "THREATEN": "계속 서 계시면… 그냥 같이 없애드리겠습니다.",
+        "VICTORY": "끝났군요. 역시 별것 없었습니다.",
+        "WELL_PLAYED": "흥미롭네요. 아직 저를 지루하게 만들 정도는 아닙니다."
+      }
+    },
+    "questCompleteAudioAssetId": "/objects/uploads/audio/194987bb-2578-461c-91c0-2918572c9a3f.mp3",
+    "questCompleteAudioEnabled": true,
+    "questCompleteAudioUrl": "/api/storage/objects/uploads/audio/194987bb-2578-461c-91c0-2918572c9a3f.mp3",
+    "questCompleteAudioVolume": 100,
+    "questCompletedPortraitAssetId": "/objects/uploads/card-images/26e8f590-8c2b-4289-be98-b97cd7a52667.png",
+    "questCompletedPortraitEnabled": true,
+    "questCompletedPortraitUrl": "/api/storage/objects/uploads/card-images/26e8f590-8c2b-4289-be98-b97cd7a52667.png",
+    "questCondition": null,
+    "questName": "파괴 강림",
+    "questProgressRequired": 10,
+    "questRewardEffects": null,
+    "questRewardText": "'마왕 벨모르트(강림)'을 내 필드에 소환합니다.",
+    "questText": "선수 카드를 10번 파괴시킵니다.",
+    "status": "PUBLISHED",
+    "updatedAt": "2026-10-21T05:30:20.250Z",
+    "upgradedAbilityCost": 1,
+    "upgradedAbilityEffects": null,
+    "upgradedAbilityName": "압도적 파괴",
+    "upgradedAbilityText": "상대 선수 카드에게 2 데미지를 줍니다. 이 데미지로 상대 선수 카드가 리타이어 할 시 리타이어가 아니라 파괴시킵니다.",
+    "version": 9
+  },
+  {
+    "abilityAudioAssetId": null,
+    "abilityAudioUrl": null,
+    "abilityAudioVolume": 100,
+    "abilityCost": 2,
+    "abilityEffects": {
+      "effects": [
+        {
+          "action": "GENERATE",
+          "target": {
+            "count": 1,
+            "owner": "SELF",
+            "randomScope": "FULL",
+            "selection": "RANDOM",
+            "zone": "HAND"
+          },
+          "trigger": "ACTIVE",
+          "values": {
+            "generatedModifiers": {
+              "cost": -1
+            }
+          }
+        }
+      ]
+    },
+    "abilityName": "완전히 무작위",
+    "abilityText": "완전히 무작위 카드 비용을 1 감소시켜서 1장을 내 손에 생성합니다.",
+    "championTokenDefinitionId": null,
+    "championTokenEffectEffects": null,
+    "championTokenEffectText": null,
+    "createdAt": "2026-10-01T01:06:53.594Z",
+    "description": "",
+    "gameStartAbilityEffects": null,
+    "gameStartAbilityName": null,
+    "gameStartAbilityText": null,
+    "hasQuest": false,
+    "id": "champion-minion-a",
+    "imageAssetId": "/objects/uploads/card-images/728a0384-9355-4ad0-8d3b-f5adf5e541ac.png",
+    "imageDisplayMode": "COVER",
+    "imagePositionX": 50,
+    "imagePositionY": 50,
+    "imageScale": 1.11,
+    "imageUrl": "/api/storage/objects/uploads/card-images/728a0384-9355-4ad0-8d3b-f5adf5e541ac.png",
+    "introLineOne": "전 여기 있으면 안될거 같은데요!?!?",
+    "introLineTwo": "살려주세요! 전 여기가 어딘지도 모른다고요!",
+    "isCraftable": false,
+    "isStarterGrant": true,
+    "maxHealth": 20,
+    "name": "챔피언 미니언 A",
+    "presentationLines": {
+      "AFTER_QUEST": {},
+      "BEFORE_QUEST": {
+        "DEFEAT": "(https://www.youtube.com/watch?v=PP7WJL2JtLs)",
+        "HELLO": "안녕하세요...? 저 좀 내버려 두실래요....?",
+        "OOPS": "끄아아악!",
+        "SORRY": "내가 지금 뭐하는거지?! 미안해요!",
+        "THANKS": "진짜 진짜 고마워요! 진짜로!!!",
+        "THREATEN": "계속 이러시면 제가 뭘 꺼낼지 감도 안올거에요........",
+        "VICTORY": "어떻게 이긴거야?!",
+        "WELL_PLAYED": "대단해요! 진짜로! 이제 저 좀 보내주실래요....?"
+      }
+    },
+    "questCompleteAudioAssetId": null,
+    "questCompleteAudioEnabled": false,
+    "questCompleteAudioUrl": null,
+    "questCompleteAudioVolume": 100,
+    "questCompletedPortraitAssetId": null,
+    "questCompletedPortraitEnabled": false,
+    "questCompletedPortraitUrl": null,
+    "questCondition": null,
+    "questName": null,
+    "questProgressRequired": null,
+    "questRewardEffects": null,
+    "questRewardText": null,
+    "questText": null,
+    "status": "PUBLISHED",
+    "updatedAt": "2026-10-18T17:42:53.518Z",
+    "upgradedAbilityCost": null,
+    "upgradedAbilityEffects": null,
+    "upgradedAbilityName": null,
+    "upgradedAbilityText": null,
+    "version": 17
+  },
+  {
+    "abilityAudioAssetId": null,
+    "abilityAudioUrl": null,
+    "abilityAudioVolume": 100,
+    "abilityCost": 2,
+    "abilityEffects": {
+      "effects": [
+        {
+          "action": "ADD_NEXT_TURN_GOLD",
+          "trigger": "ENTER_FIELD",
+          "values": {
+            "amount": 1
+          }
+        }
+      ]
+    },
+    "abilityName": "용돈",
+    "abilityText": "다음 턴에 골드를 추가로 1 더 받습니다.",
+    "championTokenDefinitionId": null,
+    "championTokenEffectEffects": null,
+    "championTokenEffectText": null,
+    "createdAt": "2026-09-21T08:07:26.261Z",
+    "description": "",
+    "gameStartAbilityEffects": null,
+    "gameStartAbilityName": null,
+    "gameStartAbilityText": null,
+    "hasQuest": true,
+    "id": "11ac192a-d48d-4119-a63d-f9102793fb9a",
+    "imageAssetId": "/objects/uploads/card-images/c6a67856-debb-4f5d-98e5-e0b5d931915e.png",
+    "imageDisplayMode": "COVER",
+    "imagePositionX": 50,
+    "imagePositionY": 5.5,
+    "imageScale": 1.19,
+    "imageUrl": "/api/storage/objects/uploads/card-images/c6a67856-debb-4f5d-98e5-e0b5d931915e.png",
+    "introLineOne": "역시 돈이 최고지.",
+    "introLineTwo": "돈으로 해결 할 수 없는건 없어.",
+    "isCraftable": true,
+    "isStarterGrant": false,
+    "maxHealth": 25,
+    "name": "챔피언 여울",
+    "presentationLines": {
+      "AFTER_QUEST": {},
+      "BEFORE_QUEST": {
+        "DEFEAT": "하… 이건 비싼 수업료라고 생각하지 뭐.",
+        "HELLO": "반가워. 너무 긴장하진 말고.",
+        "OOPS": "하… 돈으로 해결 안 되는 문제는 정말 싫어.",
+        "SORRY": "미안. 내가 좀 심했네.",
+        "THANKS": "좋아. 원하는 게 있으면 말해. 내가 가능한 선에서.",
+        "THREATEN": "내 사람 건드리는 건 별로 안 좋아하거든.",
+        "VICTORY": "돈이 전부는 아니지. 실력도 있어야 하니까.",
+        "WELL_PLAYED": "칭찬해줄게. 영광인 줄 알아."
+      }
+    },
+    "questCompleteAudioAssetId": "/objects/uploads/audio/1474f0c7-bbab-42fb-847b-db3cc2960555.mp3",
+    "questCompleteAudioEnabled": true,
+    "questCompleteAudioUrl": "/api/storage/objects/uploads/audio/1474f0c7-bbab-42fb-847b-db3cc2960555.mp3",
+    "questCompleteAudioVolume": 100,
+    "questCompletedPortraitAssetId": null,
+    "questCompletedPortraitEnabled": false,
+    "questCompletedPortraitUrl": null,
+    "questCondition": {
+      "event": "GOLD_CHANGED",
+      "goldSpent": true,
+      "required": 30
+    },
+    "questName": "투자",
+    "questProgressRequired": 30,
+    "questRewardEffects": {
+      "effects": [
+        {
+          "action": "UPGRADE_CHAMPION_ABILITY",
+          "trigger": "ENTER_FIELD"
+        }
+      ]
+    },
+    "questRewardText": "고유 능력이 강화됩니다.",
+    "questText": "이번 게임에서 골드를 총 30 소모하세요.",
+    "status": "PUBLISHED",
+    "updatedAt": "2026-10-18T17:43:24.652Z",
+    "upgradedAbilityCost": 2,
+    "upgradedAbilityEffects": {
+      "effects": [
+        {
+          "action": "ADD_NEXT_TURN_GOLD",
+          "trigger": "ACTIVE",
+          "values": {
+            "amount": 1
+          }
+        },
+        {
+          "action": "SUMMON",
+          "trigger": "ACTIVE",
+          "values": {
+            "count": 1,
+            "definitionRef": {
+              "id": "acdbe25d-f066-4c91-ae22-f612749ee20f"
+            }
+          }
+        }
+      ]
+    },
+    "upgradedAbilityName": "용돈 (강화)",
+    "upgradedAbilityText": "다음 턴에 골드를 1 더 받습니다. 그리고 여울의 보디가드를 소환합니다.",
+    "version": 16
+  },
+  {
+    "abilityAudioAssetId": null,
+    "abilityAudioUrl": null,
+    "abilityAudioVolume": 100,
+    "abilityCost": 1,
+    "abilityEffects": {
+      "effects": [
+        {
+          "action": "SUMMON",
+          "trigger": "ENTER_FIELD",
+          "values": {
+            "count": 1,
+            "definitionRef": {
+              "id": "ff6f154d-a675-4a6b-bb12-50af8d227d15"
+            }
+          }
+        }
+      ]
+    },
+    "abilityName": "고용",
+    "abilityText": "'용병'을 하나 소환한다.",
+    "championTokenDefinitionId": null,
+    "championTokenEffectEffects": null,
+    "championTokenEffectText": null,
+    "createdAt": "2026-09-10T14:19:28.153Z",
+    "description": "1",
+    "gameStartAbilityEffects": null,
+    "gameStartAbilityName": null,
+    "gameStartAbilityText": null,
+    "hasQuest": true,
+    "id": "3cbb09c4-f8ac-4668-9378-5c01bfa9474b",
+    "imageAssetId": "/objects/uploads/card-images/92935ecb-3595-42da-b3bb-9398d280e82a.png",
+    "imageDisplayMode": "COVER",
+    "imagePositionX": 50,
+    "imagePositionY": 0,
+    "imageScale": 1.59,
+    "imageUrl": "/api/storage/objects/uploads/card-images/92935ecb-3595-42da-b3bb-9398d280e82a.png",
+    "introLineOne": "작전을 시작하겠다.",
+    "introLineTwo": ".....알았다.",
+    "isCraftable": true,
+    "isStarterGrant": true,
+    "maxHealth": 25,
+    "name": "챔피언 예거",
+    "presentationLines": {
+      "AFTER_QUEST": {},
+      "BEFORE_QUEST": {
+        "DEFEAT": "작전 실패. 원인을 분석하고 다시 온다.",
+        "HELLO": "소개는 생략하지.",
+        "OOPS": "좋지 않군…",
+        "SORRY": "내 판단 착오다. 사과하지.",
+        "THANKS": "훌륭한 협조였다.",
+        "THREATEN": "투항해라. 경고는 한 번뿐이다.",
+        "VICTORY": "작전 종료. 목표 완수.",
+        "WELL_PLAYED": "좋은 판단이다."
+      }
+    },
+    "questCompleteAudioAssetId": "/objects/uploads/audio/034a1897-91b7-41d5-a357-bc3683d702c3.mp3",
+    "questCompleteAudioEnabled": true,
+    "questCompleteAudioUrl": "/api/storage/objects/uploads/audio/034a1897-91b7-41d5-a357-bc3683d702c3.mp3",
+    "questCompleteAudioVolume": 100,
+    "questCompletedPortraitAssetId": null,
+    "questCompletedPortraitEnabled": false,
+    "questCompletedPortraitUrl": null,
+    "questCondition": {
+      "cardType": "WRESTLER",
+      "event": "CARD_GENERATED",
+      "progress": 1,
+      "required": 8
+    },
+    "questName": "용병술 훈련",
+    "questProgressRequired": 8,
+    "questRewardEffects": {
+      "effects": [
+        {
+          "action": "UPGRADE_CHAMPION_ABILITY",
+          "trigger": "ENTER_FIELD"
+        }
+      ]
+    },
+    "questRewardText": "고유 능력을 강화시킨다.",
+    "questText": "선수 카드를 8번 생성한다.(손패,덱,필드)",
+    "status": "PUBLISHED",
+    "updatedAt": "2026-10-18T16:15:43.911Z",
+    "upgradedAbilityCost": 1,
+    "upgradedAbilityEffects": {
+      "effects": [
+        {
+          "action": "SUMMON",
+          "trigger": "ENTER_FIELD",
+          "values": {
+            "count": 1,
+            "definitionRef": {
+              "id": "f3b46674-c658-4e03-b5b4-ced71547768e"
+            }
+          }
+        }
+      ]
+    },
+    "upgradedAbilityName": "엘리트 고용",
+    "upgradedAbilityText": "'엘리트 용병'을 하나 소환한다.",
+    "version": 19
+  },
+  {
+    "abilityAudioAssetId": null,
+    "abilityAudioUrl": null,
+    "abilityAudioVolume": 100,
+    "abilityCost": 1,
+    "abilityEffects": {},
+    "abilityName": "모험 준비",
+    "abilityText": "필드에 있는 아군 선수 카드들 중 무작위로 하나의 공격력을 1 증가시키고, 챔피언의 체력을 2 회복한다.",
+    "championTokenDefinitionId": null,
+    "championTokenEffectEffects": null,
+    "championTokenEffectText": null,
+    "createdAt": "2026-09-27T16:53:12.053Z",
+    "description": "",
+    "gameStartAbilityEffects": null,
+    "gameStartAbilityName": null,
+    "gameStartAbilityText": null,
+    "hasQuest": true,
+    "id": "c52da37b-5e7a-4223-bcf3-73824c677534",
+    "imageAssetId": "/objects/uploads/card-images/691c3635-2e16-485f-bed7-c0b6f76c8a34.png",
+    "imageDisplayMode": "COVER",
+    "imagePositionX": 25.7289,
+    "imagePositionY": 6.54962,
+    "imageScale": 1.21,
+    "imageUrl": "/api/storage/objects/uploads/card-images/691c3635-2e16-485f-bed7-c0b6f76c8a34.png",
+    "introLineOne": "다들 준비됐지? 그럼 출발하자!/좋아아~ 모험 시작이네요오. 가는 길에 술집 있으면 더 좋고~/(말없이 일행의 맨 앞에 선다)",
+    "introLineTwo": null,
+    "isCraftable": true,
+    "isStarterGrant": false,
+    "maxHealth": 20,
+    "name": "챔피언 크루세이더즈",
+    "presentationLines": {
+      "AFTER_QUEST": {},
+      "BEFORE_QUEST": {
+        "DEFEAT": "미안해… 그래도 다시 일어설 수 있어.",
+        "HELLO": "안녕! 같이 가게 돼서 기뻐!",
+        "OOPS": "(낮게 숨을 고르며 무기를 고쳐 쥔다. 뭔가 틀어진 것 같다.)",
+        "SORRY": "죄송해요. 나쁜 뜻은 전혀 없었어요.",
+        "THANKS": "헤헤~ 거마워요오. 덕분에 오늘은 안 넘어지고 걸을 수 있겠네여.",
+        "THREATEN": "거대한 무기를 천천히 들어 올린다. 마지막 경고인 것 같다.",
+        "VICTORY": "해냈다! 다 같이 무사해서 다행이야!",
+        "WELL_PLAYED": "헤헷, 기대 이상인데요? 완전 훌륭해요오."
+      }
+    },
+    "questCompleteAudioAssetId": "/objects/uploads/audio/89d5a610-b577-4b5a-bfe8-0083f3c0e27c.mp3",
+    "questCompleteAudioEnabled": true,
+    "questCompleteAudioUrl": "/api/storage/objects/uploads/audio/89d5a610-b577-4b5a-bfe8-0083f3c0e27c.mp3",
+    "questCompleteAudioVolume": 100,
+    "questCompletedPortraitAssetId": null,
+    "questCompletedPortraitEnabled": false,
+    "questCompletedPortraitUrl": null,
+    "questCondition": {
+      "condition": {
+        "op": "LTE",
+        "owner": "SELF",
+        "type": "HEALTH",
+        "value": 5
+      },
+      "event": "STATE_CONDITION",
+      "required": 1
+    },
+    "questName": "각성",
+    "questProgressRequired": 1,
+    "questRewardEffects": null,
+    "questRewardText": "필드에 '하늘을 떨구는 자(각성)'를 소환한다.",
+    "questText": "자신의 챔피언의 체력이 5 이하가 된다.",
+    "status": "PUBLISHED",
+    "updatedAt": "2026-10-18T16:15:52.731Z",
+    "upgradedAbilityCost": null,
+    "upgradedAbilityEffects": null,
+    "upgradedAbilityName": null,
+    "upgradedAbilityText": null,
+    "version": 20
+  },
+  {
+    "abilityAudioAssetId": null,
+    "abilityAudioUrl": null,
+    "abilityAudioVolume": 100,
+    "abilityCost": 1,
+    "abilityEffects": {
+      "effects": [
+        {
+          "action": "DAMAGE",
+          "target": {
+            "cardType": "WRESTLER",
+            "count": 1,
+            "owner": "ALL",
+            "selection": "PLAYER_CHOICE",
+            "zone": "BOARD"
+          },
+          "trigger": "ENTER_FIELD",
+          "values": {
+            "amount": 1
+          }
+        }
+      ]
+    },
+    "abilityName": "불안한 일격",
+    "abilityText": "자신이 선택한 모든 선수에게 1 데미지를 줍니다.",
+    "championTokenDefinitionId": "eaefcf6c-575d-4482-aaad-98b54561b49a",
+    "championTokenEffectEffects": null,
+    "championTokenEffectText": null,
+    "createdAt": "2026-09-10T14:28:37.673Z",
+    "description": "",
+    "gameStartAbilityEffects": null,
+    "gameStartAbilityName": null,
+    "gameStartAbilityText": null,
+    "hasQuest": true,
+    "id": "bcffab96-f61f-497e-b60b-de5a869837d3",
+    "imageAssetId": "/objects/uploads/card-images/407a1f82-cffb-4bea-8a76-fef57b054949.png",
+    "imageDisplayMode": "COVER",
+    "imagePositionX": 50,
+    "imagePositionY": 5,
+    "imageScale": 1.56,
+    "imageUrl": "/api/storage/objects/uploads/card-images/407a1f82-cffb-4bea-8a76-fef57b054949.png",
+    "introLineOne": "..........가까이 오지마.",
+    "introLineTwo": "아빠는 어디갔을까....?",
+    "isCraftable": true,
+    "isStarterGrant": false,
+    "maxHealth": 20,
+    "name": "챔피언 판도라",
+    "presentationLines": {
+      "AFTER_QUEST": {
+        "DEFEAT": "X발… 나를 여기까지 몰아붙였다고?",
+        "HELLO": "왔냐? 좋아! 존나 잘 왔어!",
+        "OOPS": "이런 X발, 더 재밌어졌잖아!",
+        "SORRY": "아하하! 미안 미안! 다음엔 더 세게 할게!",
+        "THANKS": "고맙다, X발! 제대로 날 깨워줬네!",
+        "THREATEN": "X발, 그렇게 떨지 마! 아직 시작도 안 했어!",
+        "VICTORY": "하아… 좋다. 진짜 존나게 좋다!",
+        "WELL_PLAYED": "야, 잘하네? 조금만 더 버텨봐!"
+      },
+      "BEFORE_QUEST": {
+        "DEFEAT": "아… 졌네. 내가 약해서…",
+        "HELLO": "아… 왔구나. 음, 너무 가까이 오진 말아줄래",
+        "OOPS": "아, 안 돼… 지금은 그러면 안 되는데…",
+        "SORRY": "미안… 다음엔 좀 더 얌전히 있을게. 아마도.",
+        "THANKS": "그, 그렇게까지 해줄 줄은 몰랐어… 정말 고마워.",
+        "THREATEN": "도망가… 제발. 나, 너 죽이고 싶지는 않아....",
+        "VICTORY": "아… 끝났네. 생각보다 빨랐어.",
+        "WELL_PLAYED": "어… 대단하네. 생각보다 훨씬 강하구나."
+      }
+    },
+    "questCompleteAudioAssetId": "/objects/uploads/audio/18ef4d34-9fde-49a8-a30e-7a606942b0c7.mp3",
+    "questCompleteAudioEnabled": true,
+    "questCompleteAudioUrl": "/api/storage/objects/uploads/audio/18ef4d34-9fde-49a8-a30e-7a606942b0c7.mp3",
+    "questCompleteAudioVolume": 100,
+    "questCompletedPortraitAssetId": "/objects/uploads/card-images/2577d7ab-70e4-437b-81fb-fbbcff471be5.png",
+    "questCompletedPortraitEnabled": true,
+    "questCompletedPortraitUrl": "/api/storage/objects/uploads/card-images/2577d7ab-70e4-437b-81fb-fbbcff471be5.png",
+    "questCondition": {
+      "cardType": "WRESTLER",
+      "event": "WRESTLER_RETIRED",
+      "required": 7,
+      "sourceActionType": "USE_CHAMPION_ABILITY"
+    },
+    "questName": "폭주의 조짐",
+    "questProgressRequired": 7,
+    "questRewardEffects": {
+      "effects": [
+        {
+          "action": "UPGRADE_CHAMPION_ABILITY",
+          "trigger": "ENTER_FIELD"
+        },
+        {
+          "action": "SUMMON",
+          "trigger": "ENTER_FIELD",
+          "values": {
+            "count": 1,
+            "definitionRef": {
+              "id": "eaefcf6c-575d-4482-aaad-98b54561b49a"
+            }
+          }
+        }
+      ]
+    },
+    "questRewardText": "고유 능력을 강화시키고, '챔피언 판도라(폭주)'를 필드에 소환합니다.",
+    "questText": "자신의 고유 능력으로 선수 카드를 7번 리타이어 시킵니다.",
+    "status": "PUBLISHED",
+    "updatedAt": "2026-10-18T16:15:56.205Z",
+    "upgradedAbilityCost": 1,
+    "upgradedAbilityEffects": {
+      "effects": [
+        {
+          "action": "DAMAGE",
+          "target": {
+            "count": 1,
+            "owner": "ALL",
+            "selection": "PLAYER_CHOICE",
+            "zone": "CHARACTER"
+          },
+          "trigger": "ENTER_FIELD",
+          "values": {
+            "amount": 2
+          }
+        }
+      ]
+    },
+    "upgradedAbilityName": "파멸의 일격",
+    "upgradedAbilityText": "자신이 선택한 대상에게 2 데미지를 줍니다.",
+    "version": 27
+  },
+  {
+    "abilityAudioAssetId": null,
+    "abilityAudioUrl": null,
+    "abilityAudioVolume": 100,
+    "abilityCost": 1,
+    "abilityEffects": {
+      "effects": [
+        {
+          "action": "DAMAGE",
+          "target": {
+            "count": 1,
+            "owner": "SELF",
+            "selection": "PLAYER_CHOICE",
+            "zone": "CHARACTER"
+          },
+          "trigger": "ACTIVE",
+          "values": {
+            "amount": 1,
+            "purpleRainFollowup": true
+          }
+        }
+      ]
+    },
+    "abilityName": "의식",
+    "abilityText": "내 챔피언 또는 아군 선수 1장에게 1 피해를 줍니다. 챔피언이면 카드 1장을 뽑고 그 카드의 비용을 1 감소시킵니다. 선수이면 공격력 +1을 부여합니다.",
+    "championTokenDefinitionId": null,
+    "championTokenEffectEffects": null,
+    "championTokenEffectText": null,
+    "createdAt": "2026-09-23T17:01:39.572Z",
+    "description": "",
+    "gameStartAbilityEffects": null,
+    "gameStartAbilityName": null,
+    "gameStartAbilityText": null,
+    "hasQuest": true,
+    "id": "0db142af-750e-4929-a464-5daf1bc75452",
+    "imageAssetId": "/objects/uploads/card-images/e2e1a4d1-5b44-4b2e-866a-a8f410db7307.png",
+    "imageDisplayMode": "COVER",
+    "imagePositionX": 65.6,
+    "imagePositionY": 16.4,
+    "imageScale": 1.4,
+    "imageUrl": "/api/storage/objects/uploads/card-images/e2e1a4d1-5b44-4b2e-866a-a8f410db7307.png",
+    "introLineOne": "두려워하지 마십시오. 고통은 그대를 해치러 온 것이 아닙니다.",
+    "introLineTwo": "아아… 또 하나의 영혼이 스스로 제단을 찾아왔군요.",
+    "isCraftable": true,
+    "isStarterGrant": false,
+    "maxHealth": 25,
+    "name": "챔피언 퍼플레인",
+    "presentationLines": {
+      "AFTER_QUEST": {},
+      "BEFORE_QUEST": {
+        "DEFEAT": "후후… 좋습니다. 아픔은 언제나 배울 것이 많지요.",
+        "HELLO": "평안이 함께하기를. 비록 잠시뿐일지라도.",
+        "OOPS": "흠… 고통조차 그대를 깨우지 못했다니.",
+        "SORRY": "미안합니다. 아직 그대가 견딜 준비가 되지 않았군요.",
+        "THANKS": "이 은혜, 잊지 않겠습니다. 고통 없는 감사라니… 참으로 드문 일이군요.",
+        "THREATEN": "비명을 참지 마십시오. 그것 또한 기도의 한 형태입니다.",
+        "VICTORY": "아아… 이제야 조용해졌군요. 깨달음이 찾아온 모양입니다.",
+        "WELL_PLAYED": "흠… 아직 구원받을 가치가 있겠습니다."
+      }
+    },
+    "questCompleteAudioAssetId": "/objects/uploads/audio/59861fbe-a8b7-4533-8eda-00d37746ea2d.mp3",
+    "questCompleteAudioEnabled": true,
+    "questCompleteAudioUrl": "/api/storage/objects/uploads/audio/59861fbe-a8b7-4533-8eda-00d37746ea2d.mp3",
+    "questCompleteAudioVolume": 100,
+    "questCompletedPortraitAssetId": null,
+    "questCompletedPortraitEnabled": false,
+    "questCompletedPortraitUrl": null,
+    "questCondition": {
+      "event": "DAMAGE_DEALT",
+      "required": 8,
+      "selfEffectDamage": true
+    },
+    "questName": "순례의 길",
+    "questProgressRequired": 8,
+    "questRewardEffects": {
+      "effects": [
+        {
+          "action": "UPGRADE_CHAMPION_ABILITY",
+          "trigger": "ENTER_FIELD"
+        }
+      ]
+    },
+    "questRewardText": "고유 능력이 강화됩니다.",
+    "questText": "이번 게임에서 내 카드 또는 챔피언 효과로 내 챔피언 또는 아군 선수가 피해를 총 8회 받으세요. 상대 효과와 전투 피해는 제외합니다.",
+    "status": "PUBLISHED",
+    "updatedAt": "2026-10-18T16:16:06.682Z",
+    "upgradedAbilityCost": 1,
+    "upgradedAbilityEffects": {
+      "effects": [
+        {
+          "action": "DAMAGE",
+          "target": {
+            "count": 1,
+            "owner": "SELF",
+            "selection": "PLAYER_CHOICE",
+            "zone": "CHARACTER"
+          },
+          "trigger": "ACTIVE",
+          "values": {
+            "amount": 2,
+            "purpleRainFollowup": true
+          }
+        }
+      ]
+    },
+    "upgradedAbilityName": "축복",
+    "upgradedAbilityText": "내 챔피언 또는 아군 선수 1장에게 2 피해를 줍니다. 챔피언이면 카드 1장을 뽑고 그 카드의 비용을 2 감소시킵니다. 선수이면 공격력 +2을 부여합니다.",
+    "version": 18
+  },
+  {
+    "abilityAudioAssetId": null,
+    "abilityAudioUrl": null,
+    "abilityAudioVolume": 100,
+    "abilityCost": 1,
+    "abilityEffects": {
+      "effects": [
+        {
+          "action": "BUFF",
+          "target": {
+            "cardType": "WRESTLER",
+            "count": 1,
+            "owner": "SELF",
+            "randomScope": "STANDARD",
+            "selection": "RANDOM",
+            "zone": "HAND"
+          },
+          "trigger": "ENTER_FIELD",
+          "values": {
+            "attack": 1,
+            "health": 1
+          }
+        }
+      ]
+    },
+    "abilityName": "트레이닝",
+    "abilityText": "손패에 있는 선수 카드 중 무작위 한장의 체력과 공격을 1씩 증가시킨다.",
+    "championTokenDefinitionId": null,
+    "championTokenEffectEffects": null,
+    "championTokenEffectText": null,
+    "createdAt": "2026-09-10T14:14:51.936Z",
+    "description": "",
+    "gameStartAbilityEffects": null,
+    "gameStartAbilityName": null,
+    "gameStartAbilityText": null,
+    "hasQuest": true,
+    "id": "0e9d8ab0-9af7-4db3-a03e-ff6ee3d5789f",
+    "imageAssetId": "/objects/uploads/card-images/748632ac-f336-4243-8742-2e2287f6d4bb.png",
+    "imageDisplayMode": "COVER",
+    "imagePositionX": 51,
+    "imagePositionY": 11.7,
+    "imageScale": 1.72,
+    "imageUrl": "/api/storage/objects/uploads/card-images/748632ac-f336-4243-8742-2e2287f6d4bb.png",
+    "introLineOne": "Ow!",
+    "introLineTwo": "Ow!",
+    "isCraftable": true,
+    "isStarterGrant": true,
+    "maxHealth": 25,
+    "name": "챔피언 피 스타 세븐",
+    "presentationLines": {
+      "AFTER_QUEST": {},
+      "BEFORE_QUEST": {
+        "DEFEAT": "Ow… 다음엔 이렇게 안 끝날 거야....",
+        "HELLO": "좋은 밤이군.",
+        "OOPS": "잠깐, 이건 좀 이상하잖아.",
+        "SORRY": "Ow! 이런… Annie, are you okay?",
+        "THANKS": "Hoo! 고맙군. 꽤 마음에 드는데?",
+        "THREATEN": "Ow! 경고했어. 다음은 안 봐준다.",
+        "VICTORY": "깔끔했군. 마치 Smooth Criminal같이",
+        "WELL_PLAYED": "그래, 그렇게 움직이는 거야!"
+      }
+    },
+    "questCompleteAudioAssetId": "/objects/uploads/audio/bdfa2d7c-eefe-479b-95bb-31368f7d3ab5.mp3",
+    "questCompleteAudioEnabled": true,
+    "questCompleteAudioUrl": "/api/storage/objects/uploads/audio/bdfa2d7c-eefe-479b-95bb-31368f7d3ab5.mp3",
+    "questCompleteAudioVolume": 100,
+    "questCompletedPortraitAssetId": null,
+    "questCompletedPortraitEnabled": false,
+    "questCompletedPortraitUrl": null,
+    "questCondition": {
+      "event": "CHAMPION_ABILITY_USED",
+      "progress": 1,
+      "required": 7,
+      "sourceActionType": "USE_CHAMPION_ABILITY",
+      "strictEventCount": true
+    },
+    "questName": "트레이닝",
+    "questProgressRequired": 7,
+    "questRewardEffects": {
+      "effects": [
+        {
+          "action": "UPGRADE_CHAMPION_ABILITY",
+          "trigger": "ENTER_FIELD"
+        }
+      ]
+    },
+    "questRewardText": "고유 능력이 강화됩니다.",
+    "questText": "이번 게임에서 고유 능력을 7번 발동하세요.",
+    "status": "PUBLISHED",
+    "updatedAt": "2026-10-18T16:16:01.724Z",
+    "upgradedAbilityCost": 1,
+    "upgradedAbilityEffects": {
+      "effects": [
+        {
+          "action": "BUFF",
+          "target": {
+            "cardType": "WRESTLER",
+            "count": 2,
+            "owner": "SELF",
+            "selection": "RANDOM",
+            "zone": "HAND"
+          },
+          "trigger": "ACTIVE",
+          "values": {
+            "attack": 1,
+            "health": 1
+          }
+        }
+      ]
+    },
+    "upgradedAbilityName": "트레이닝 (강화)",
+    "upgradedAbilityText": "내 손에 있는 무작위 선수 카드 2장에게 +1/+1을 부여합니다.",
+    "version": 19
+  },
+  {
+    "abilityAudioAssetId": null,
+    "abilityAudioUrl": null,
+    "abilityAudioVolume": 100,
+    "abilityCost": 0,
+    "abilityEffects": {
+      "effects": []
+    },
+    "abilityName": "능력 없음",
+    "abilityText": "",
+    "championTokenDefinitionId": null,
+    "championTokenEffectEffects": null,
+    "championTokenEffectText": null,
+    "createdAt": "2026-10-02T13:55:35.832Z",
+    "description": "타워 일반 층 전용 · 초상화 설정 가능 · 효과 없음 · 체력 30",
+    "gameStartAbilityEffects": null,
+    "gameStartAbilityName": null,
+    "gameStartAbilityText": null,
+    "hasQuest": false,
+    "id": "champion-tower-vanilla",
+    "imageAssetId": null,
+    "imageDisplayMode": "COVER",
+    "imagePositionX": 50,
+    "imagePositionY": 50,
+    "imageScale": 1,
+    "imageUrl": null,
+    "introLineOne": null,
+    "introLineTwo": null,
+    "isCraftable": true,
+    "isStarterGrant": false,
+    "maxHealth": 30,
+    "name": "타워 일반 상대",
+    "presentationLines": {},
+    "questCompleteAudioAssetId": null,
+    "questCompleteAudioEnabled": false,
+    "questCompleteAudioUrl": null,
+    "questCompleteAudioVolume": 100,
+    "questCompletedPortraitAssetId": null,
+    "questCompletedPortraitEnabled": false,
+    "questCompletedPortraitUrl": null,
+    "questCondition": null,
+    "questName": null,
+    "questProgressRequired": null,
+    "questRewardEffects": null,
+    "questRewardText": null,
+    "questText": null,
+    "status": "DISABLED",
+    "updatedAt": "2026-10-07T17:25:15.033Z",
+    "upgradedAbilityCost": null,
+    "upgradedAbilityEffects": null,
+    "upgradedAbilityName": null,
+    "upgradedAbilityText": null,
+    "version": 9
+  }
+]

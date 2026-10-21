@@ -1,0 +1,67 @@
+{
+  "verifiedAt": "2026-10-21T09:36:02.377724+00:00",
+  "build": "PASS: workspace typecheck + frontend/API build",
+  "engine": {
+    "pass": 2695,
+    "fail": 0,
+    "skip": 0,
+    "historicalCatalogSuitesExcludedByExistingRunner": 4
+  },
+  "latestAdministratorSnapshotAISimulations": {
+    "games": 100,
+    "testCases": 2,
+    "pass": 2,
+    "fail": 0
+  },
+  "presenceUnit": {
+    "pass": 3,
+    "fail": 0
+  },
+  "authAndAISelectorUnit": {
+    "pass": 13,
+    "fail": 0
+  },
+  "realHTTPWebSocket": {
+    "pass": 3,
+    "fail": 0,
+    "healthyPresenceSQL": 0,
+    "nativeHeartbeatSQL": 0
+  },
+  "compiledBrowser": {
+    "results": [
+      "alone red/self excluded PASS",
+      "duplicate own tab remains red PASS",
+      "other user anywhere on site green; duplicate-tab logout returns red PASS",
+      "reconnect restores self-excluded presence PASS",
+      "5 mobile/desktop title layouts PASS",
+      "failed live transport shows gray PASS",
+      "real server 30s -> existing AI VS -> battle -> result keeps selected deck name PASS"
+    ],
+    "errors": [],
+    "physicalPhone": "NOT_RUN",
+    "productionRequests": 0
+  },
+  "regressions": {
+    "deckSharing": {
+      "groupsPassed": 8
+    },
+    "authStartup": {
+      "groupsPassed": 4
+    },
+    "mobileDeckControls": {
+      "viewportsPassed": 4
+    },
+    "twoAccountPvP": {
+      "groupsPassed": 8
+    },
+    "draft": {
+      "groupsPassed": 4
+    },
+    "tower": "PASS: real mobile KO/result/reward/deck swap"
+  },
+  "physicalPhone": "NOT_RUN",
+  "productionTwoAccountBattle": "NOT_RUN",
+  "databaseMigration": false,
+  "productionTestWrites": false,
+  "snapshotRecheck": "2026-10-21T06:27:47Z: hashes identical to initial snapshot"
+}

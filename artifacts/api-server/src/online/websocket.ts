@@ -1,4 +1,5 @@
 import {sendImageEmote} from './service';
+import {sitePresence} from './site-presence';
 import {readMaintenance,maintenanceAllows} from '../lib/maintenance';
 import type { IncomingMessage, Server as HttpServer } from "node:http";
 import type { Duplex } from "node:stream";
@@ -74,6 +75,20 @@ function runWebSocketBackgroundTask(
 
 export function attachOnlineMatchWebSocket(server: HttpServer): void {
   const webSockets = new WebSocketServer({ noServer: true });
+  const alive = new WeakSet<WebSocket>();
+  webSockets.on('connection', socket => {
+    alive.add(socket);
+    socket.on('pong', () => alive.add(socket));
+  });
+  // Native ping/pong never enters the game-message/DB authorization path.
+  const heartbeat = setInterval(() => {
+    for (const socket of webSockets.clients) {
+      if (!alive.has(socket)) { socket.terminate(); continue; }
+      alive.delete(socket); socket.ping();
+    }
+  }, 30_000);
+  heartbeat.unref();
+  server.once('close', () => { clearInterval(heartbeat); for (const socket of webSockets.clients) socket.terminate(); webSockets.close(); });
 
   server.on("upgrade", (request, socket, head) => {
     const url = new URL(request.url ?? "/", `http://${request.headers.host ?? "localhost"}`);
@@ -86,6 +101,7 @@ export function attachOnlineMatchWebSocket(server: HttpServer): void {
         return;
       }
       webSockets.handleUpgrade(request, socket, head, (webSocket) => {
+        webSockets.emit('connection', webSocket, request);
         handleConnection(webSocket, user);
       });
     }, undefined, () => rejectUpgrade(socket, "500 Internal Server Error"));
@@ -105,6 +121,7 @@ async function authenticateUpgrade(request: IncomingMessage): Promise<PublicUser
 }
 
 function handleConnection(socket: WebSocket, user: PublicUser): void {
+  const removePresence = sitePresence.add(user.id, {send: online => send(socket, {type:'SITE_PRESENCE',otherUsersOnline:online})});
   let subscribedRuntime: OnlineMatchRuntime | null = null;
   const connection = {
     userId: user.id,
@@ -113,6 +130,7 @@ function handleConnection(socket: WebSocket, user: PublicUser): void {
   } satisfies OnlineMatchConnection & { nickname: string };
 
   const detach = () => {
+    removePresence();
     if (subscribedRuntime) {
       const runtime = subscribedRuntime;
       runWebSocketBackgroundTask(

@@ -1,4 +1,5 @@
 import { LoaderCircle, Shield } from "lucide-react";
+import {SitePresenceLight} from '@/components/site-presence';
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useLocation } from "wouter";
 import { ModeCard, OnlineAuthGate, OnlineShell } from "@/components/online-lobby-ui";
@@ -52,6 +53,7 @@ export default function Online() {
       {() => <OnlineShell
         eyebrow="ONLINE BATTLE"
         title="실제 상대와 겨루는 링"
+        titleStatus={<SitePresenceLight />}
         description="빠르게 상대를 찾거나, 친구와 방 코드를 공유하세요. 전투의 모든 판정은 서버가 담당합니다."
         backHref={ONLINE_MODE_SELECT_BACK_ROUTE}
       >

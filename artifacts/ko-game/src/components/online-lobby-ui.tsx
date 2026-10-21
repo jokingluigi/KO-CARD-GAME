@@ -47,6 +47,7 @@ export function OnlineShell({
   children,
   backHref = ROUTES.ONLINE,
   status,
+  titleStatus,
 }: {
   eyebrow: string;
   title: string;
@@ -54,6 +55,7 @@ export function OnlineShell({
   children: ReactNode;
   backHref?: string;
   status?: ReactNode;
+  titleStatus?: ReactNode;
 }) {
   const [, navigate] = useLocation();
   return (
@@ -77,7 +79,7 @@ export function OnlineShell({
         </header>
         <section className="mt-12 max-w-2xl sm:mt-16">
           <p className="font-display text-xs font-bold tracking-[0.34em] text-amber-500">{eyebrow}</p>
-          <h1 className="mt-3 font-display text-5xl font-black tracking-tight text-white sm:text-7xl">{title}</h1>
+          <h1 className="mt-3 flex items-center gap-3 font-display text-5xl font-black tracking-tight text-white sm:text-7xl"><span className="min-w-0">{title}</span>{titleStatus}</h1>
           <p className="mt-5 max-w-xl text-sm leading-7 text-neutral-400 sm:text-base">{description}</p>
         </section>
         <div className="mt-10 flex-1 pb-8 sm:mt-14">{children}</div>

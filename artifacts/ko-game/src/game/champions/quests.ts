@@ -132,10 +132,12 @@ function processChampionQuestEventPass(
       quest.requiredProgress,
     );
     const questCompleted = questProgress >= quest.requiredProgress;
-    const rewardGold =
+    let rewardGold =
       questCompleted && quest.reward.type === 'GAIN_GOLD'
         ? quest.reward.amount
         : 0;
+    const intercepted=interceptImmediateBonusGold(resolvedState,originalPlayer.id,rewardGold);
+    if(intercepted){resolvedState=intercepted;rewardGold=0;}
     const questEvents: GameEvent[] = [
       {
         type: 'CHAMPION_QUEST_PROGRESS',
@@ -282,3 +284,4 @@ export function processChampionQuestEvents(previousState: GameState, nextState: 
   }
   return resolved;
 }
+import {interceptImmediateBonusGold} from '../engine/reviewed-field-rules';

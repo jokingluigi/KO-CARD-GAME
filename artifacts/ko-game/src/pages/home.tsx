@@ -1,4 +1,5 @@
 import {optionalCosmetics} from '@/lib/cosmetics-client';
+import {fetchQuickAI,releaseQuickAI} from '@/lib/quick-ai-client';
 import {cosmeticImage,type MatchCosmetics} from '@workspace/cosmetics';
 import { canPresentBattleQuest } from '@/components/quest-presentation-policy';
 import { completeMinionACatalog } from '../game/champions/minion-a';
@@ -137,6 +138,7 @@ export default function Home({ initialAuthUser }: { initialAuthUser?: AuthUser }
   const searchParams = new URLSearchParams(window.location.search);
   const isTowerSandbox = searchParams.get('source') === 'admin' && searchParams.get('towerTest') === '1';
   const isAiMatch = window.location.pathname.endsWith('/ai-match') || isTowerSandbox;
+  const quickMatchId = isAiMatch ? searchParams.get('quickMatch') : null;
   const testCardId = searchParams.get('testCardId');
   const testChampionId = searchParams.get('testChampionId');
   const isAdminSource = searchParams.get('source') === 'admin';
@@ -380,7 +382,7 @@ export default function Home({ initialAuthUser }: { initialAuthUser?: AuthUser }
       }).catch(error => { if (!cancelled) { setPlayError(error instanceof Error ? error.message : '타워 테스트를 시작하지 못했습니다.'); setMatchReady(false); } });
       return () => { cancelled = true; };
     }
-    if (isAiMatch) {
+    if (isAiMatch && !quickMatchId) {
       setMatchReady(false);
       setAiMatchStarted(false);
       setAiDecks(null);
@@ -600,7 +602,29 @@ export default function Home({ initialAuthUser }: { initialAuthUser?: AuthUser }
     return () => {
       cancelled = true;
     };
-  }, [authStatus, authUser?.role, isAdminSource, isAiMatch, isTowerSandbox, testCardId, testChampionId]);
+  }, [authStatus, authUser?.role, isAdminSource, isAiMatch, quickMatchId, isTowerSandbox, testCardId, testChampionId]);
+
+  useEffect(()=>{
+    if(!quickMatchId||authStatus!=='authenticated'||!authUser)return;
+    const controller=new AbortController();let loaded=false;
+    setMatchReady(false);setPlayError(null);
+    void Promise.all([fetchQuickAI(quickMatchId,controller.signal),fetchGameMedia(),optionalCosmetics()]).then(([handoff,media,loadout])=>{
+      if(controller.signal.aborted)return;
+      const random=createDeterministicRandom(handoff.matchId);
+      const next={...handoff.state,backgroundId:media.backgrounds[Math.floor(random()*media.backgrounds.length)]?.id??null,bgmId:media.bgms[Math.floor(random()*media.bgms.length)]?.id??null};
+      aiMatchQuestContextRef.current={deckId:handoff.deckId,aiDeckId:handoff.aiDeckId,difficulty:handoff.difficulty,matchId:handoff.matchId};
+      aiMatchActionsRef.current=[];submittedAIMatchRef.current=null;
+      setAiRewardStatus('pending');setAiRewardError(null);setAiQuestError(null);
+      setRuntimeCardDefinitions(next.cardPool??[]);setAiCosmetics({[next.players[0].id]:loadout});
+      const startedAt=Date.now();
+      setAiOpening(createAiMatchOpening(next.gameId,authUser.nickname,handoff.opponentName,{...handoff.selfChampion,originalPortraitUrl:handoff.selfChampion.imageUrl,imageUrl:cosmeticImage(loadout,'CHAMPION_SKIN',next.players[0].champion!.id,'intro',handoff.selfChampion.imageUrl)},handoff.opponentChampion,startedAt));
+      setAiOpeningNow(startedAt);setAiOpeningSkipped(false);
+      latestGameStateRef.current=next;setGameState(next);setMediaCatalog(media);
+      setSelectedCardId(null);setSelectedAttackerId(null);setAiMatchStarted(true);setMatchReady(true);loaded=true;
+    }).catch(error=>{if(!controller.signal.aborted)setPlayError(error instanceof Error?error.message:'대전을 준비하지 못했습니다.');});
+    return()=>{controller.abort();if(loaded)void releaseQuickAI(quickMatchId);};
+  },[quickMatchId,authStatus,authUser?.id]);
+  useEffect(()=>{if(quickMatchId&&gameState.status==='FINISHED')void releaseQuickAI(quickMatchId);},[quickMatchId,gameState.status]);
 
   const [aiCosmetics,setAiCosmetics]=useState<MatchCosmetics|undefined>(undefined);
   async function startAiMatch(deckId: string) {
@@ -1485,7 +1509,7 @@ export default function Home({ initialAuthUser }: { initialAuthUser?: AuthUser }
     );
   }
 
-  if (isAiMatch && !isTowerSandbox && !aiMatchStarted) {
+  if (isAiMatch && !quickMatchId && !isTowerSandbox && !aiMatchStarted) {
     return (
       <AiMatchSetup
         decks={aiDecks}
@@ -1511,7 +1535,7 @@ export default function Home({ initialAuthUser }: { initialAuthUser?: AuthUser }
             <button
               type="button"
               onClick={() => {
-                if (isTowerSandbox) { window.location.reload(); return; }
+                if (isTowerSandbox || quickMatchId) { window.location.reload(); return; }
                 setPlayError(null);
                 setMatchReady(false);
                 navigate(isAiMatch ? `${ROUTES.AI_MATCH}${window.location.search}` : ROUTES.MAIN_MENU);
@@ -1563,6 +1587,8 @@ export default function Home({ initialAuthUser }: { initialAuthUser?: AuthUser }
       } catch {throw new Error('테스트 덱으로 경기를 시작하지 못했습니다. 다시 시도해 주세요.');}
     }}/>}
     <GameStatePreview cosmetics={isAiMatch?aiCosmetics:undefined} localImageEmotes
+      playerNickname={isAiMatch?authUser?.nickname:undefined}
+      opponentNickname={isAiMatch?aiOpening?.opponent.displayName:undefined}
       key={`game:${gameState.gameId}`}
       state={gameState}
       selectedCardId={selectedCardId}
@@ -1619,6 +1645,7 @@ export default function Home({ initialAuthUser }: { initialAuthUser?: AuthUser }
     />
      {matchResultVisible && (
        <MatchResultOverlay
+         opponentNickname={isAiMatch?aiOpening?.opponent.displayName:undefined}
          state={gameState}
          mediaCatalog={mediaCatalog}
          reward={isAiMatch ? aiMatchReward : null}

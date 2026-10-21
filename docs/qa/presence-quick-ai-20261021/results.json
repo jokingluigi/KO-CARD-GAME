@@ -1,0 +1,14 @@
+{
+  "results": [
+    "alone red/self excluded PASS",
+    "duplicate own tab remains red PASS",
+    "other user anywhere on site green; duplicate-tab logout returns red PASS",
+    "reconnect restores self-excluded presence PASS",
+    "5 mobile/desktop title layouts PASS",
+    "failed live transport shows gray PASS",
+    "real server 30s -> existing AI VS -> battle -> result keeps selected deck name PASS"
+  ],
+  "errors": [],
+  "physicalPhone": "NOT_RUN",
+  "productionRequests": 0
+}

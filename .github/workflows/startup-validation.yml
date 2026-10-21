@@ -106,6 +106,10 @@ jobs:
           node --import ./docs/qa/checkpoints/20261006/qa-loader.mjs --test --test-isolation=none
           artifacts/ko-game/src/lib/deck-share-code.test.ts
           artifacts/ko-game/src/lib/admin-session-client.test.ts
+      - name: Site-wide presence and atomic 30-second quick AI handoff
+        run: |
+          node --import ./docs/qa/checkpoints/20261006/qa-loader.mjs --test --test-isolation=none artifacts/api-server/src/online/site-presence.test.ts
+          node --import ./docs/qa/checkpoints/20261006/qa-loader.mjs --test --test-isolation=none lib/db/qa/site-presence-quick-ai.test.ts
       - name: Deck import ownership and result music HTTP persistence
         run: |
           node --import ./docs/qa/checkpoints/20261006/qa-loader.mjs --test --test-isolation=none lib/db/qa/deck-sharing-http.test.ts
@@ -187,7 +191,7 @@ jobs:
 
       - name: Latest administrator content snapshot AI matches
         env:
-          KO_QA_ADMIN_SNAPSHOT_DIR: docs/qa/snapshots/20261019-admin
+          KO_QA_ADMIN_SNAPSHOT_DIR: docs/qa/snapshots/20261021-admin
           KO_QA_ADMIN_AI_REPORT: qa-results/latest-wrestler-revisions-ai-100.md
         run: |
           node --import ./docs/qa/checkpoints/20261006/qa-loader.mjs --test --test-isolation=none artifacts/ko-game/src/game/qa/latest-admin-ai-20261013.test.ts
@@ -209,6 +213,11 @@ jobs:
             sleep 1
           done
           KO_QA_PLAYWRIGHT="$RUNNER_TEMP/ko-entry-qa/node_modules/playwright/index.mjs" node docs/qa/entry-browser.mjs
+
+      - name: Compiled presence, cross-tab logout and quick AI browser
+        env:
+          KO_QA_PLAYWRIGHT: ${{ runner.temp }}/ko-entry-qa/node_modules/playwright/index.mjs
+        run: node docs/qa/site-presence-quick-ai-runner.mjs
 
       - name: Cosmetics two-account PvP, AI and mobile browser checks
         env:

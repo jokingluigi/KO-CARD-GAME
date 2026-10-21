@@ -13,6 +13,7 @@ import {
   getLegalActions,
   startGame,
   situationalAiEmote,
+  selectAIOpponentDeck,
   type GameState,
 } from "@workspace/game-engine";
 import { loadUserDeck, resolveDeck } from "../routes/decks";
@@ -206,16 +207,7 @@ export async function completeAIMatchQuestProgress(input: {
       deck.cards.every((card) => card.status !== "DISABLED") &&
       deck.isValid,
     );
-  const eligibleAIDecks = availableAIDecks
-    .filter((deck) => deck.enabled && deck.championDefinitionId)
-    .sort((left, right) =>
-      left.displayOrder - right.displayOrder ||
-      left.name.localeCompare(right.name, "ko") ||
-      left.id.localeCompare(right.id),
-    );
-  const expectedAIDeck = eligibleAIDecks[
-    Math.floor(createDeterministicRandom(input.matchId)() * eligibleAIDecks.length)
-  ];
+  const expectedAIDeck = selectAIOpponentDeck(availableAIDecks, input.matchId);
   const aiDeck = availableAIDecks.find((deck) => deck.id === input.aiDeckId);
   if (!expectedAIDeck || expectedAIDeck.id !== aiDeck?.id) {
     throw new Error("이 AI 경기에서 선택할 수 없는 AI 덱입니다.");

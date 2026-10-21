@@ -65,6 +65,10 @@ function QuickMatchPage() {
           : "";
         navigate(`${ROUTES.ONLINE_MATCH}/${encodeURIComponent(message.matchId)}${opponent}`);
       }
+      if (message.type === 'QUICK_AI_MATCH_FOUND') {
+        matchFoundRef.current=true;joinRequestedRef.current=false;
+        navigate(`${ROUTES.AI_MATCH}?quickMatch=${encodeURIComponent(message.matchId)}`);
+      }
       if (message.type === "LOBBY_ERROR" || message.type === "ERROR") {
         joinRequestedRef.current = false;
         setError(message.message);

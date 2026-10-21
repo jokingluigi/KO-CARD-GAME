@@ -13,6 +13,7 @@ export type LobbyRoomMember = LobbyDeckSummary & { userId: string; nickname: str
 export type LobbyRoomState = { roomId: string; roomCode: string; host: LobbyRoomMember; guest: LobbyRoomMember | null; youAreHost: boolean };
 
 export type OnlineLobbyMessage =
+  | { type: 'QUICK_AI_MATCH_FOUND'; matchId: string }
   | { type: "QUICK_QUEUE_JOINED"; deck: LobbyDeckSummary }
   | { type: "QUICK_QUEUE_LEFT"; reason?: string }
   | { type: "MATCH_FOUND"; matchId: string; opponent?: LobbyOpponentSummary }
@@ -50,7 +51,7 @@ export type OnlineMatchMessage =
   | ({ type: "MATCH_ENDED" | "RESYNC_REQUIRED" } & MatchPayload)
   | { type: "MATCH_CONNECTION_STATUS"; matchId: string; playerId: "PLAYER_ONE" | "PLAYER_TWO"; status: "CONNECTED" | "DISCONNECTED_GRACE" | "FORFEITED"; reconnectDeadlineAt: number | null; serverTime: number }
   | { type: "SESSION_REPLACED"; matchId: string; message: string };
-export type OnlineServerMessage = OnlineLobbyMessage | OnlineMatchMessage;
+export type OnlineServerMessage = OnlineLobbyMessage | OnlineMatchMessage | {type:'SITE_PRESENCE';otherUsersOnline:boolean};
 
 export type OnlineLobbyClientMessage =
  | {type:"IMAGE_EMOTE";matchId:string;requestId:string;slot:number}
@@ -126,6 +127,15 @@ class OnlineLobbyClient {
   private openingSocket = false;
   private socketGeneration = 0;
   private offlineNoticeSent = false;
+  private sitePresence: boolean | null = null;
+  private readonly presenceListeners = new Set<(others: boolean | null) => void>();
+  onSitePresence(listener: (others: boolean | null) => void) {
+    this.presenceListeners.add(listener); listener(this.sitePresence);
+    return () => { this.presenceListeners.delete(listener); };
+  }
+  private updatePresence(value: boolean | null) {
+    this.sitePresence = value; this.presenceListeners.forEach(listener => listener(value));
+  }
 
   get state() {
     return this.connectionState;
@@ -228,6 +238,10 @@ class OnlineLobbyClient {
       try {
         const message = JSON.parse(String(event.data)) as OnlineServerMessage;
         if (message && typeof message.type === "string") {
+          if (message.type === 'SITE_PRESENCE') {
+            if (typeof message.otherUsersOnline === 'boolean') this.updatePresence(message.otherUsersOnline);
+            return;
+          }
           if (["MATCH_SNAPSHOT", "MATCH_CONNECTION_STATUS", "ERROR", "SESSION_REPLACED"].includes(message.type)) {
             this.trace("match-message", {
               type: message.type,
@@ -290,6 +304,7 @@ class OnlineLobbyClient {
     this.socket.send(JSON.stringify(message)); return true;
   }
   private setConnectionState(state: OnlineLobbyConnectionState) {
+    if (state !== 'open') this.updatePresence(null);
     if (this.connectionState !== state) this.trace("connection-state-change", { from: this.connectionState, to: state });
     this.connectionState = state; this.connectionListeners.forEach((listener) => listener(state));
   }
