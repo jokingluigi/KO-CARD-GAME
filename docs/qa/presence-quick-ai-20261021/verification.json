@@ -63,5 +63,9 @@
   "productionTwoAccountBattle": "NOT_RUN",
   "databaseMigration": false,
   "productionTestWrites": false,
-  "snapshotRecheck": "2026-10-21T06:27:47.128202+00:00: identical hashes"
+  "snapshotRecheck": "2026-10-21T09:38:33.036188+00:00: identical hashes",
+  "startupCombinedUnit": {
+    "pass": 30,
+    "fail": 0
+  }
 }
