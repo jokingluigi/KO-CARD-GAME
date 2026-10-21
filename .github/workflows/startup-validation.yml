@@ -172,6 +172,9 @@ jobs:
           node --import ./docs/qa/checkpoints/20261006/qa-loader.mjs --test --test-isolation=none
           lib/db/qa/tag-management-http.test.ts artifacts/api-server/src/lib/card-tags.test.ts
 
+      - name: Card publication transitions and administrator authorization
+        run: node --import ./docs/qa/checkpoints/20261006/qa-loader.mjs --test --test-isolation=none lib/db/qa/card-publication-http.test.ts
+
       - name: Seeded rare draft eligibility and HTTP regressions
         run: |
           node --import ./docs/qa/checkpoints/20261006/qa-loader.mjs --test --test-isolation=none lib/game-engine/src/draft/domain.test.ts lib/game-engine/src/draft/mutations.test.ts

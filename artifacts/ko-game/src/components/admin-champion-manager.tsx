@@ -22,6 +22,7 @@ import { CHAMPION_EMOTES, CHAMPION_EMOTE_LABELS, type ChampionPresentationLines,
 
 const adminApiBase = `${import.meta.env.BASE_URL.replace(/\/$/, "")}/api/admin`;
 type Status = "DRAFT" | "PUBLISHED" | "DISABLED";
+const STATUS_LABELS: Record<Status, string> = { DRAFT: "미공개", PUBLISHED: "공개", DISABLED: "비활성화" };
 type TokenCard = {
   id: string;
   name: string;
@@ -486,7 +487,7 @@ export function AdminChampionManager({ onUnauthorized }: { onUnauthorized: () =>
       if (response.status === 409) throw new Error(`충돌: ${await classifiedMessage(response)}`);
       if (response.status >= 500) throw new Error("서버 오류로 저장하지 못했습니다. 잠시 후 다시 시도해 주세요.");
       if (!response.ok) throw new Error(await classifiedMessage(response));
-      setMessageText(editing ? "챔피언을 수정했습니다." : "새 챔피언을 DRAFT로 저장했습니다.");
+      setMessageText(editing ? "챔피언을 수정했습니다." : "새 챔피언을 미공개로 저장했습니다.");
       setOpen(false);
       await load();
       await loadIntroInteractions();
@@ -744,7 +745,7 @@ export function AdminChampionManager({ onUnauthorized }: { onUnauthorized: () =>
     <div className="mb-5 flex items-end justify-between">
       <div><div className="text-[10px] font-bold tracking-[.2em] text-neutral-600">CONTENT MANAGEMENT</div>
         <h2 className="mt-1 text-xl font-black">챔피언 관리</h2>
-        <p className="mt-1 text-xs text-neutral-500">새 챔피언은 DRAFT로 저장되며 기본 최대 체력은 20입니다.</p></div>
+        <p className="mt-1 text-xs text-neutral-500">새 챔피언은 미공개로 저장되며 기본 최대 체력은 20입니다.</p></div>
       <button onClick={() => editor()} className="flex gap-2 rounded bg-primary px-4 py-2.5 text-sm font-black text-black"><Plus className="h-4 w-4"/> 새 챔피언</button>
     </div>
      <AdminUnifiedEffectPrompt onUnauthorized={onUnauthorized} />
@@ -765,7 +766,7 @@ export function AdminChampionManager({ onUnauthorized }: { onUnauthorized: () =>
       </section>
     )}
     <div className="mb-4 flex gap-2"><label className="flex flex-1 items-center gap-2 rounded border border-neutral-800 px-3"><Search className="h-4 w-4"/><input value={search} onChange={(e)=>setSearch(e.target.value)} className="w-full bg-transparent py-2 outline-none" placeholder="챔피언 검색"/></label>
-      <select value={status} onChange={(e)=>setStatus(e.target.value)} className={input}><option value="">모든 상태</option><option value="DRAFT">비공개 (DRAFT)</option><option>PUBLISHED</option><option>DISABLED</option></select></div>
+      <select value={status} onChange={(e)=>setStatus(e.target.value)} className={input}><option value="">모든 상태</option><option value="DRAFT">미공개</option><option value="PUBLISHED">공개</option><option value="DISABLED">비활성화</option></select></div>
      <div className="grid gap-3 md:grid-cols-2">{champions.slice(listPage*20,(listPage+1)*20).map((champion)=><article key={champion.id} className="rounded-lg border border-neutral-800 bg-neutral-950 p-4">
       <div className="flex gap-4">{champion.imageUrl ? (
         <CardArtwork
@@ -778,8 +779,8 @@ export function AdminChampionManager({ onUnauthorized }: { onUnauthorized: () =>
           imagePositionY={champion.imagePositionY}
         />
       ) : <div className="h-24 w-20 rounded bg-neutral-900"/>}
-        <div><div className="text-xs text-primary">{champion.status} · v{champion.version}</div><h3 className="text-lg font-black">{champion.name}</h3><p className="text-xs text-neutral-400">HP {champion.maxHealth} · {champion.abilityCost}G</p><p className="mt-1 text-sm">{champion.abilityName}</p>{champion.hasQuest && <p className="mt-1 text-xs text-amber-300">Quest: {champion.questName} (0/{champion.questProgressRequired})</p>}</div></div>
-       <div className="mt-3 flex flex-wrap gap-2 text-xs"><button type="button" onClick={()=>editor(champion)} className="rounded border px-2 py-1"><FilePenLine className="mr-1 inline h-3 w-3"/>수정</button><button type="button" onClick={()=>void mutate(champion.id,"duplicate")} className="rounded border px-2 py-1"><Copy className="mr-1 inline h-3 w-3"/>복제</button><button type="button" disabled={busy} onClick={()=>void deleteChampion(champion)} data-testid={`button-delete-champion-${champion.id}`} className="rounded border border-red-900 px-2 py-1 text-red-400 disabled:opacity-40"><Trash2 className="mr-1 inline h-3 w-3"/>삭제</button><button type="button" disabled={draftSelectionBusy || excludedDraftChampionIds === null} aria-pressed={excludedDraftChampionIds?.includes(champion.id) ?? false} title="새 드래프트의 챔피언 선택에서만 제외합니다." onClick={()=>void toggleDraftSelection(champion)} data-testid={"button-draft-champion-selection-" + champion.id} className="rounded border border-amber-800 px-2 py-1 text-amber-300 disabled:opacity-40">{excludedDraftChampionIds?.includes(champion.id) ? "드래프트 선택에 다시 표시" : "드래프트 선택에서 숨기기"}</button>{champion.status!=="PUBLISHED"&&<button type="button" onClick={()=>void mutate(champion.id,"status",{status:"PUBLISHED"})} className="rounded border border-emerald-800 px-2 py-1 text-emerald-400"><CheckCircle2 className="mr-1 inline h-3 w-3"/>공개</button>}{champion.status!=="DRAFT"&&<button type="button" disabled={busy} onClick={()=>void mutate(champion.id,"status",{status:"DRAFT"})} data-testid={"button-private-champion-" + champion.id} className="rounded border border-neutral-600 px-2 py-1 text-neutral-200 disabled:opacity-40">비공개</button>}{champion.status!=="DISABLED"&&<button type="button" onClick={()=>void mutate(champion.id,"status",{status:"DISABLED"})} className="rounded border border-red-900 px-2 py-1 text-red-400"><Ban className="mr-1 inline h-3 w-3"/>비활성화</button>}</div>
+        <div><div className="text-xs text-primary">{STATUS_LABELS[champion.status]} · v{champion.version}</div><h3 className="text-lg font-black">{champion.name}</h3><p className="text-xs text-neutral-400">HP {champion.maxHealth} · {champion.abilityCost}G</p><p className="mt-1 text-sm">{champion.abilityName}</p>{champion.hasQuest && <p className="mt-1 text-xs text-amber-300">Quest: {champion.questName} (0/{champion.questProgressRequired})</p>}</div></div>
+       <div className="mt-3 flex flex-wrap gap-2 text-xs"><button type="button" onClick={()=>editor(champion)} className="rounded border px-2 py-1"><FilePenLine className="mr-1 inline h-3 w-3"/>수정</button><button type="button" onClick={()=>void mutate(champion.id,"duplicate")} className="rounded border px-2 py-1"><Copy className="mr-1 inline h-3 w-3"/>복제</button><button type="button" disabled={busy} onClick={()=>void deleteChampion(champion)} data-testid={`button-delete-champion-${champion.id}`} className="rounded border border-red-900 px-2 py-1 text-red-400 disabled:opacity-40"><Trash2 className="mr-1 inline h-3 w-3"/>삭제</button><button type="button" disabled={draftSelectionBusy || excludedDraftChampionIds === null} aria-pressed={excludedDraftChampionIds?.includes(champion.id) ?? false} title="새 드래프트의 챔피언 선택에서만 제외합니다." onClick={()=>void toggleDraftSelection(champion)} data-testid={"button-draft-champion-selection-" + champion.id} className="rounded border border-amber-800 px-2 py-1 text-amber-300 disabled:opacity-40">{excludedDraftChampionIds?.includes(champion.id) ? "드래프트 선택에 다시 표시" : "드래프트 선택에서 숨기기"}</button>{champion.status!=="PUBLISHED"&&<button type="button" onClick={()=>void mutate(champion.id,"status",{status:"PUBLISHED"})} className="rounded border border-emerald-800 px-2 py-1 text-emerald-400"><CheckCircle2 className="mr-1 inline h-3 w-3"/>공개</button>}{champion.status!=="DRAFT"&&<button type="button" disabled={busy} onClick={()=>void mutate(champion.id,"status",{status:"DRAFT"})} data-testid={"button-private-champion-" + champion.id} className="rounded border border-neutral-600 px-2 py-1 text-neutral-200 disabled:opacity-40">미공개</button>}{champion.status!=="DISABLED"&&<button type="button" onClick={()=>void mutate(champion.id,"status",{status:"DISABLED"})} className="rounded border border-red-900 px-2 py-1 text-red-400"><Ban className="mr-1 inline h-3 w-3"/>비활성화</button>}</div>
     </article>)}</div>
 <div className="admin-pagination"><button disabled={!listPage} onClick={()=>setListPage(p=>p-1)}>이전</button><span>{listPage+1} / {Math.max(1,Math.ceil(champions.length/20))} · {champions.length}명</span><button disabled={(listPage+1)*20>=champions.length} onClick={()=>setListPage(p=>p+1)}>다음</button></div>
     {open && <div className="fixed inset-0 z-50 overflow-y-auto bg-black/80 p-5"><div className="admin-editor-dialog mx-auto max-w-4xl rounded-lg border border-neutral-700 bg-neutral-950 p-5">
@@ -1206,7 +1207,7 @@ export function AdminChampionManager({ onUnauthorized }: { onUnauthorized: () =>
            onClick={()=>void save()}
            className="rounded bg-primary px-5 py-2.5 font-black text-black disabled:cursor-not-allowed disabled:opacity-50"
          >
-           {basicPortraitUploading || portraitUploading ? "이미지 업로드 중..." : "DRAFT 저장"}
+           {basicPortraitUploading || portraitUploading ? "이미지 업로드 중..." : editing ? "수정 저장" : "미공개로 생성"}
          </button>
        </div>
     </div></div>}
