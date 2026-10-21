@@ -1,0 +1,15 @@
+{
+  "results": [
+    "actual UI -> HTTP -> DB -> reload DRAFT PASS",
+    "actual UI -> HTTP -> DB -> reload PUBLISHED PASS",
+    "actual UI -> HTTP -> DB -> reload DISABLED PASS",
+    "actual UI -> HTTP -> DB -> reload DRAFT PASS",
+    "three status filters match persisted state PASS",
+    "reference conflict remains visible and card stays published PASS",
+    "four mobile and desktop widths have no horizontal overflow PASS",
+    "champion consistent unpublished label and persisted existing state PASS"
+  ],
+  "errors": [],
+  "physicalPhone": "NOT_RUN",
+  "productionRequests": 0
+}

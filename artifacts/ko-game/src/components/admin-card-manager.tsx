@@ -9,6 +9,7 @@ import {
   Ban,
   CheckCircle2,
   Copy,
+  EyeOff,
   FilePenLine,
   ImagePlus,
   Maximize2,
@@ -169,8 +170,8 @@ const KEYWORD_LABELS: Record<CardKeyword, string> = {
 
 function statusLabel(status: CardStatus) {
   if (status === "PUBLISHED") return "공개";
-  if (status === "DISABLED") return "비활성";
-  return "초안";
+  if (status === "DISABLED") return "비활성화";
+  return "미공개";
 }
 
 function statusClass(status: CardStatus) {
@@ -613,7 +614,7 @@ export function AdminCardManager({
         return;
       }
       if (!response.ok) throw new Error(await responseMessage(response));
-      setMessage(editingCard ? "카드를 수정했습니다." : "새 카드를 DRAFT로 생성했습니다.");
+      setMessage(editingCard ? "카드를 수정했습니다." : "새 카드를 미공개로 생성했습니다.");
       clearLocalPreview();
       setIsFormOpen(false);
       setAuditResults(null);
@@ -721,7 +722,7 @@ export function AdminCardManager({
       form.setValue("effectId", "STRUCTURED_EFFECTS_V1", { shouldDirty: true });
       form.setValue("effectConfig", JSON.stringify(mergeGeneratedEffectDraft(form.getValues("effectId"), form.getValues("effectConfig"), {effectId:"STRUCTURED_EFFECTS_V1",effects:analysis.effects,scripts:[],effectConfig:{countdownTurns:analysis.countdownTurns}}, "replace").effectConfig, null, 2), { shouldDirty: true });
     }
-    setMessage("분석 결과를 적용했습니다. 카드 저장을 눌러 DRAFT에 저장하세요.");
+    setMessage("분석 결과를 적용했습니다. 카드 저장을 눌러 변경 사항을 저장하세요.");
   }
 
   function applyAiDraft(
@@ -749,8 +750,8 @@ export function AdminCardManager({
       ])], { shouldDirty: true });
     }
      setMessage(mode === "append"
-       ? "컴파일된 게임 규칙을 기존 효과 뒤에 추가했습니다. 카드 저장을 눌러 DRAFT에 저장하세요."
-       : "컴파일된 게임 규칙을 현재 효과에 적용했습니다. 카드 저장을 눌러 DRAFT에 저장하세요.");
+       ? "컴파일된 게임 규칙을 기존 효과 뒤에 추가했습니다. 카드 저장을 눌러 변경 사항을 저장하세요."
+       : "컴파일된 게임 규칙을 현재 효과에 적용했습니다. 카드 저장을 눌러 변경 사항을 저장하세요.");
     setError("");
   }
 
@@ -797,7 +798,7 @@ export function AdminCardManager({
       setEditingCard(body.card); setCreatedMechanicRequest(body.mechanicRequest);
       form.setValue("keywords", body.card.keywords); form.setValue("text", body.card.text); form.setValue("effectId", "STRUCTURED_EFFECTS_V1"); form.setValue("effectConfig", JSON.stringify(body.card.effectConfig, null, 2));
       setMechanicRequests((current) => current.map((item) => item.id === body.mechanicRequest.id ? body.mechanicRequest : item));
-      setMessage("카드 효과를 DRAFT에 적용하고 메커니즘 요청을 완료했습니다.");
+      setMessage("카드 효과를 미공개 카드에 적용하고 메커니즘 요청을 완료했습니다.");
       setAuditResults(null); setAuditFilter("");
       await loadCards();
     } catch (applyError) { setError(applyError instanceof Error ? applyError.message : "카드 효과를 적용하지 못했습니다."); }
@@ -987,7 +988,7 @@ export function AdminCardManager({
         <div>
           <div className="text-[10px] font-bold tracking-[0.2em] text-neutral-600">CONTENT MANAGEMENT</div>
           <h2 className="mt-1 text-xl font-black">카드 관리</h2>
-          <p className="mt-1 text-xs text-neutral-500">새 카드는 DRAFT로 저장되며 PUBLISHED 카드만 신규 게임에 반영됩니다.</p>
+          <p className="mt-1 text-xs text-neutral-500">새 카드는 미공개로 저장됩니다. 공개는 일반 배포, 미공개는 일반 배포 제외, 비활성화는 일반 사용 중지 상태입니다.</p>
         </div>
         <div className="flex gap-2">
           <button type="button" onClick={() => setIsLibraryOpen((open) => !open)} data-testid="button-toggle-effect-library" className="rounded border border-primary px-4 py-2.5 text-sm font-black text-primary hover:bg-primary/10">Effect Library</button>
@@ -1058,9 +1059,9 @@ export function AdminCardManager({
         </select>
         <select value={status} onChange={(event) => setStatus(event.target.value)} data-testid="select-card-status" className="rounded border border-neutral-700 bg-neutral-900 px-3 py-2 text-sm">
           <option value="">모든 상태</option>
-          <option value="DRAFT">DRAFT</option>
-          <option value="PUBLISHED">PUBLISHED</option>
-          <option value="DISABLED">DISABLED</option>
+          <option value="DRAFT">미공개</option>
+          <option value="PUBLISHED">공개</option>
+          <option value="DISABLED">비활성화</option>
         </select>
       </div>
 
@@ -1132,7 +1133,7 @@ export function AdminCardManager({
                   {(card.isToken || card.isChampionToken) && <p className="mt-1 text-[10px] font-bold text-primary">{card.isChampionToken ? "챔피언 토큰" : "토큰"}</p>}
                   {actionErrorCardId === card.id && error && <p role="alert" className="mt-2 whitespace-pre-line rounded border border-red-900 bg-red-950/50 p-2 text-xs text-red-200">{error}</p>}
                 </div>
-                <div className="admin-card-actions mt-3" onClick={(event) => event.stopPropagation()}><details><summary>관리 작업</summary><div className="flex flex-wrap gap-2"><button type="button" disabled={busyId !== null || isLoading || excludedDraftCardIds === null} aria-pressed={excludedDraftCardIds?.includes(card.id) ?? false} title="새 드래프트의 카드 선택 후보에서만 제외합니다. 기존 경기와 카드 생성 효과에는 영향을 주지 않습니다." onClick={() => void toggleDraftSelection(card)} data-testid={`button-draft-selection-${card.id}`} className="rounded border border-amber-800 px-2 py-1.5 text-[10px] font-bold text-amber-300 disabled:opacity-40">{excludedDraftCardIds?.includes(card.id) ? "드래프트 선택에 다시 표시" : "드래프트 선택에서 숨기기"}</button><button type="button" onClick={() => openEdit(card)} data-testid={`button-edit-card-${card.id}`} className="flex items-center gap-1 rounded border border-neutral-700 px-2 py-1.5 text-[10px] font-bold hover:border-primary hover:text-primary"><FilePenLine className="h-3 w-3" /> 수정</button><button type="button" onClick={() => navigate(`${ROUTES.MAIN_MENU}?source=admin&testCardId=${encodeURIComponent(card.id)}`)} data-testid={`button-test-card-${card.id}`} className="rounded border border-sky-700 px-2 py-1.5 text-[10px] font-bold text-sky-300">테스트 게임</button><button type="button" disabled={busyId === card.id} onClick={() => mutateCard(`/cards/${card.id}/duplicate`, `${card.name} Copy를 생성했습니다.`, card.id)} data-testid={`button-duplicate-card-${card.id}`} className="flex items-center gap-1 rounded border border-neutral-700 px-2 py-1.5 text-[10px] font-bold hover:border-primary hover:text-primary disabled:opacity-40"><Copy className="h-3 w-3" /> 복제</button><button type="button" disabled={busyId === card.id} onClick={() => void deleteCard(card)} data-testid={`button-delete-card-${card.id}`} className="flex items-center gap-1 rounded border border-red-900 px-2 py-1.5 text-[10px] font-bold text-red-400 hover:bg-red-950 disabled:opacity-40"><Trash2 className="h-3 w-3" /> 삭제</button>{card.status !== "PUBLISHED" && <button type="button" disabled={busyId === card.id} onClick={() => mutateCard(`/cards/${card.id}/status`, "카드를 공개했습니다.", card.id, { status: "PUBLISHED" })} data-testid={`button-publish-card-${card.id}`} className="flex items-center gap-1 rounded border border-emerald-800 px-2 py-1.5 text-[10px] font-bold text-emerald-400 hover:bg-emerald-950 disabled:opacity-40"><CheckCircle2 className="h-3 w-3" /> 공개</button>}{card.status !== "DISABLED" && <button type="button" disabled={busyId === card.id} onClick={() => mutateCard(`/cards/${card.id}/status`, "카드를 비활성화했습니다.", card.id, { status: "DISABLED" })} data-testid={`button-disable-card-${card.id}`} className="flex items-center gap-1 rounded border border-red-900 px-2 py-1.5 text-[10px] font-bold text-red-400 hover:bg-red-950 disabled:opacity-40"><Ban className="h-3 w-3" /> 비활성화</button>}</div></details></div>
+                <div className="admin-card-actions mt-3" onClick={(event) => event.stopPropagation()}><details><summary>관리 작업</summary><div className="flex flex-wrap gap-2"><button type="button" disabled={busyId !== null || isLoading || excludedDraftCardIds === null} aria-pressed={excludedDraftCardIds?.includes(card.id) ?? false} title="새 드래프트의 카드 선택 후보에서만 제외합니다. 기존 경기와 카드 생성 효과에는 영향을 주지 않습니다." onClick={() => void toggleDraftSelection(card)} data-testid={`button-draft-selection-${card.id}`} className="rounded border border-amber-800 px-2 py-1.5 text-[10px] font-bold text-amber-300 disabled:opacity-40">{excludedDraftCardIds?.includes(card.id) ? "드래프트 선택에 다시 표시" : "드래프트 선택에서 숨기기"}</button><button type="button" onClick={() => openEdit(card)} data-testid={`button-edit-card-${card.id}`} className="flex items-center gap-1 rounded border border-neutral-700 px-2 py-1.5 text-[10px] font-bold hover:border-primary hover:text-primary"><FilePenLine className="h-3 w-3" /> 수정</button><button type="button" onClick={() => navigate(`${ROUTES.MAIN_MENU}?source=admin&testCardId=${encodeURIComponent(card.id)}`)} data-testid={`button-test-card-${card.id}`} className="rounded border border-sky-700 px-2 py-1.5 text-[10px] font-bold text-sky-300">테스트 게임</button><button type="button" disabled={busyId === card.id} onClick={() => mutateCard(`/cards/${card.id}/duplicate`, `${card.name} Copy를 생성했습니다.`, card.id)} data-testid={`button-duplicate-card-${card.id}`} className="flex items-center gap-1 rounded border border-neutral-700 px-2 py-1.5 text-[10px] font-bold hover:border-primary hover:text-primary disabled:opacity-40"><Copy className="h-3 w-3" /> 복제</button><button type="button" disabled={busyId === card.id} onClick={() => void deleteCard(card)} data-testid={`button-delete-card-${card.id}`} className="flex items-center gap-1 rounded border border-red-900 px-2 py-1.5 text-[10px] font-bold text-red-400 hover:bg-red-950 disabled:opacity-40"><Trash2 className="h-3 w-3" /> 삭제</button>{card.status !== "PUBLISHED" && <button type="button" disabled={busyId === card.id} onClick={() => mutateCard(`/cards/${card.id}/status`, "카드를 공개했습니다.", card.id, { status: "PUBLISHED" })} data-testid={`button-publish-card-${card.id}`} className="flex items-center gap-1 rounded border border-emerald-800 px-2 py-1.5 text-[10px] font-bold text-emerald-400 hover:bg-emerald-950 disabled:opacity-40"><CheckCircle2 className="h-3 w-3" /> 공개</button>}{card.status !== "DRAFT" && <button type="button" disabled={busyId === card.id} onClick={() => mutateCard(`/cards/${card.id}/status`, "카드를 미공개로 전환했습니다.", card.id, { status: "DRAFT" })} data-testid={`button-unpublish-card-${card.id}`} title="일반 배포에서 제외합니다. 기존 보유 및 완전 무작위 효과의 처리 정책은 유지됩니다." className="flex items-center gap-1 rounded border border-amber-800 px-2 py-1.5 text-[10px] font-bold text-amber-300 hover:bg-amber-950 disabled:opacity-40"><EyeOff className="h-3 w-3" /> 미공개</button>}{card.status !== "DISABLED" && <button type="button" disabled={busyId === card.id} onClick={() => mutateCard(`/cards/${card.id}/status`, "카드를 비활성화했습니다.", card.id, { status: "DISABLED" })} data-testid={`button-disable-card-${card.id}`} className="flex items-center gap-1 rounded border border-red-900 px-2 py-1.5 text-[10px] font-bold text-red-400 hover:bg-red-950 disabled:opacity-40"><Ban className="h-3 w-3" /> 비활성화</button>}</div></details></div>
               </article>
             ))}
           </div>}
@@ -1147,7 +1148,7 @@ export function AdminCardManager({
             <div className="mb-5 flex items-center justify-between">
               <div>
                 <h3 className="text-lg font-black">{editingCard ? "카드 수정" : "새 카드 추가"}</h3>
-                <p className="mt-1 text-xs text-neutral-500">{editingCard ? `저장하면 v${editingCard.version + 1}로 증가합니다.` : "새 카드는 DRAFT 상태로 생성됩니다."}</p>
+                <p className="mt-1 text-xs text-neutral-500">{editingCard ? `저장하면 v${editingCard.version + 1}로 증가합니다.` : "새 카드는 미공개 상태로 생성됩니다."}</p>
               </div>
                <button type="button" onClick={closeForm} data-testid="button-close-card-form" className="rounded p-2 text-neutral-500 hover:bg-neutral-800 hover:text-white"><X className="h-5 w-5" /></button>
             </div>
@@ -1353,7 +1354,7 @@ export function AdminCardManager({
               <div className="admin-editor-footer flex justify-end gap-2 border-t border-neutral-800 pt-4 md:col-span-2">
                   {editingCard && <button type="button" onClick={() => navigate(`${ROUTES.MAIN_MENU}?source=admin&testCardId=${encodeURIComponent(editingCard.id)}`)} className="rounded border border-sky-700 px-4 py-2 text-sm font-bold text-sky-300" data-testid="button-test-card">테스트 게임에서 확인</button>}
                  <button type="button" onClick={closeForm} className="rounded border border-neutral-700 px-4 py-2 text-sm font-bold" data-testid="button-cancel-card">취소</button>
-                 <button type="submit" disabled={busyId !== null || isUploadingImage} className="rounded bg-primary px-5 py-2 text-sm font-black text-black disabled:opacity-40" data-testid="button-save-card">{editingCard ? "수정 저장" : "DRAFT로 생성"}</button>
+                 <button type="submit" disabled={busyId !== null || isUploadingImage} className="rounded bg-primary px-5 py-2 text-sm font-black text-black disabled:opacity-40" data-testid="button-save-card">{editingCard ? "수정 저장" : "미공개로 생성"}</button>
               </div>
             </form>
              <aside className="lg:sticky lg:top-0 lg:self-start">
