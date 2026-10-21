@@ -36,7 +36,7 @@ router.get("/", async (request, response): Promise<void> => {
   const draftQuest = await ensureDraftParticipationQuest(request.authUser!.id);
   const [settings,seasons] = await Promise.all([questSettings(),db.select().from(questSeasonsTable)]);
   const completionBonus=await dailyCompletionBonus(request.authUser!.id,assignments,dailyDate(new Date(),settings.timezone));
-  response.json({ completionBonus, assignments: [...assignments, draftQuest].map(publicDailyQuest), timezone:settings.timezone, seasons:seasons.map(({id,name,endsAt})=>({id,name,endsAt})) });
+  response.json({ completionBonus, assignments: [...assignments, ...(draftQuest ? [draftQuest] : [])].map(publicDailyQuest), timezone:settings.timezone, seasons:seasons.map(({id,name,endsAt})=>({id,name,endsAt})) });
 });
 
 // Recover a committed credit grant when the result response was lost.

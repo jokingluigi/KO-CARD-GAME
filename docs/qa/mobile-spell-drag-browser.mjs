@@ -1,5 +1,5 @@
 /** Genuine CDP touch gestures through the actual shared board and engine. */
-import assert from 'node:assert/strict';import {mkdir,writeFile} from 'node:fs/promises';import {chromium} from './black-gold-playwright.mjs';
+import assert from 'node:assert/strict';import {mkdir,writeFile} from 'node:fs/promises';const {chromium}=await import(process.env.KO_QA_PLAYWRIGHT??new URL('./black-gold-playwright.mjs',import.meta.url).href);
 const browser=await chromium.launch({headless:true}),results=[];await mkdir('qa-results/mobile-spell-drag',{recursive:true});
 try{for(const [width,height,touch]of[[360,740,true],[375,812,true],[390,844,true],[412,915,true],[1440,900,false]]){
  const c=await browser.newContext({viewport:{width,height},hasTouch:touch,isMobile:touch,reducedMotion:'reduce'});const p=await c.newPage(),errors=[];p.on('pageerror',e=>errors.push(e.message));await p.route('**/api/**',r=>r.fulfill({json:{cards:[],champions:[],frames:[]}}));await p.goto((process.env.KO_QA_ORIGIN??'http://127.0.0.1:5186')+'/qa/champion-features.html');await p.getByTestId('board-check').waitFor();await p.getByTestId('board-check').evaluate(e=>e.parentElement.style.display='none');const cd=touch?await c.newCDPSession(p):null;

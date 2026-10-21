@@ -1,0 +1,240 @@
+{
+  "verifiedAt": "2026-10-21T15:47:50.634894+00:00",
+  "adminSession": "PASS",
+  "dailyCompletionBonus": {
+    "enabled": false,
+    "rewardType": "CURRENCY",
+    "rewardAmount": 200,
+    "rewardTargetId": null
+  },
+  "visibleQuestCount": 11,
+  "cardChampionWrites": false,
+  "productionTestWrites": false,
+  "productionMatchAdvanced": false,
+  "draftAudit": {
+    "createdAt": "2026-10-15T10:33:32.726Z",
+    "version": 15,
+    "phase": "DRAFT",
+    "cards": [
+      {
+        "id": "latest-wrestler-8",
+        "snapshot": {
+          "name": "로드",
+          "rulesText": "등장:내 필드에 있는 선수 카드 1장을 덱으로 보냅니다. 그자리에 보낸 선수 카드보다 코스트가 낮은 무작위 선수 카드 1장을 소환합니다.",
+          "abilities": [
+            {
+              "effects": [
+                {
+                  "type": "STRUCTURED",
+                  "action": "MOVE_TO_DECK",
+                  "target": {
+                    "zone": "BOARD",
+                    "count": 1,
+                    "owner": "SELF",
+                    "cardType": "WRESTLER",
+                    "selection": "PLAYER_CHOICE"
+                  },
+                  "values": {
+                    "replacementLowerCostSummon": true
+                  }
+                }
+              ],
+              "trigger": "ENTER_FIELD"
+            }
+          ],
+          "cost": 3,
+          "attack": 2,
+          "health": 3
+        },
+        "current": {
+          "name": "로드",
+          "rulesText": "등장:내 필드에 있는 선수 카드 1장을 덱으로 보냅니다. 그자리에 보낸 선수 카드보다 코스트가 낮은 무작위 선수 카드 1장을 소환합니다.",
+          "abilities": [
+            {
+              "trigger": "ENTER_FIELD",
+              "effects": [
+                {
+                  "type": "STRUCTURED",
+                  "action": "MOVE_TO_DECK",
+                  "target": {
+                    "zone": "BOARD",
+                    "owner": "SELF",
+                    "cardType": "WRESTLER",
+                    "selection": "PLAYER_CHOICE",
+                    "count": 1
+                  },
+                  "values": {
+                    "replacementLowerCostSummon": true
+                  }
+                }
+              ]
+            }
+          ],
+          "cost": 3,
+          "attack": 2,
+          "health": 3
+        },
+        "sameText": true,
+        "sameAbilities": true
+      },
+      {
+        "id": "888a12bd-e1e2-41b3-9f22-abbc36af8544",
+        "snapshot": {
+          "name": "보드바",
+          "rulesText": "등장:상대방의 손패에 있는 선수 카드들 중 한장을 상대 필드에 소환합니다.",
+          "abilities": [
+            {
+              "effects": [
+                {
+                  "type": "STRUCTURED",
+                  "action": "SUMMON_FROM_HAND",
+                  "target": {
+                    "zone": "HAND",
+                    "count": 1,
+                    "owner": "ENEMY",
+                    "cardType": "WRESTLER",
+                    "selection": "RANDOM"
+                  }
+                }
+              ],
+              "trigger": "ENTER_FIELD"
+            }
+          ],
+          "cost": 3,
+          "attack": 4,
+          "health": 5
+        },
+        "current": {
+          "name": "보드바",
+          "rulesText": "등장:상대방의 손패에 있는 선수 카드들 중 한장을 상대 필드에 소환합니다.",
+          "abilities": [
+            {
+              "trigger": "ENTER_FIELD",
+              "effects": [
+                {
+                  "type": "STRUCTURED",
+                  "action": "SUMMON_FROM_HAND",
+                  "target": {
+                    "zone": "HAND",
+                    "owner": "ENEMY",
+                    "cardType": "WRESTLER",
+                    "selection": "RANDOM",
+                    "count": 1
+                  }
+                }
+              ]
+            }
+          ],
+          "cost": 3,
+          "attack": 4,
+          "health": 5
+        },
+        "sameText": true,
+        "sameAbilities": true
+      },
+      {
+        "id": "39dfe786-e95b-417b-94d1-edc2cdf3880e",
+        "snapshot": {
+          "name": "워썬더",
+          "rulesText": "등장:무작위 선수 카드 1장을 내 손패에 추가합니다.\n선수 카드가 내 덱을 제외하고 다른 곳에서 내 손패로 보내지거나 새로 생성 될 때마다 공격력을 1 얻습니다.",
+          "abilities": [
+            {
+              "effects": [
+                {
+                  "type": "STRUCTURED",
+                  "action": "GENERATE",
+                  "target": {
+                    "zone": "HAND",
+                    "count": 1,
+                    "owner": "SELF",
+                    "cardType": "WRESTLER",
+                    "selection": "RANDOM",
+                    "randomScope": "STANDARD"
+                  },
+                  "values": {
+                    "count": 1,
+                    "destination": "HAND"
+                  }
+                }
+              ],
+              "trigger": "ENTER_FIELD"
+            },
+            {
+              "effects": [
+                {
+                  "type": "STRUCTURED",
+                  "action": "BUFF",
+                  "target": {
+                    "zone": "BOARD",
+                    "count": 1,
+                    "owner": "SELF",
+                    "selection": "SELF"
+                  },
+                  "values": {
+                    "attack": 1,
+                    "health": 0
+                  }
+                }
+              ],
+              "trigger": "HAND_WRESTLER_ADDED"
+            }
+          ],
+          "cost": 3,
+          "attack": 1,
+          "health": 5
+        },
+        "current": {
+          "name": "워썬더",
+          "rulesText": "등장:무작위 선수 카드 1장을 내 손패에 추가합니다.\n선수 카드가 내 덱을 제외하고 다른 곳에서 내 손패로 보내지거나 새로 생성 될 때마다 공격력을 1 얻습니다.",
+          "abilities": [
+            {
+              "trigger": "ENTER_FIELD",
+              "effects": [
+                {
+                  "type": "STRUCTURED",
+                  "action": "GENERATE",
+                  "target": {
+                    "zone": "HAND",
+                    "owner": "SELF",
+                    "selection": "RANDOM",
+                    "randomScope": "STANDARD",
+                    "count": 1,
+                    "cardType": "WRESTLER"
+                  },
+                  "values": {
+                    "count": 1,
+                    "destination": "HAND"
+                  }
+                }
+              ]
+            },
+            {
+              "trigger": "HAND_WRESTLER_ADDED",
+              "effects": [
+                {
+                  "type": "STRUCTURED",
+                  "action": "BUFF",
+                  "target": {
+                    "zone": "BOARD",
+                    "owner": "SELF",
+                    "selection": "SELF",
+                    "count": 1
+                  },
+                  "values": {
+                    "attack": 1,
+                    "health": 0
+                  }
+                }
+              ]
+            }
+          ],
+          "cost": 3,
+          "attack": 1,
+          "health": 5
+        },
+        "sameText": true,
+        "sameAbilities": true
+      }
+    ]
+  }
+}

@@ -157,9 +157,6 @@ jobs:
           DATABASE_URL: postgresql://unused:unused@127.0.0.1:1/unused
         run: node --import ./docs/qa/checkpoints/20261006/qa-loader.mjs --test --test-isolation=none lib/db/qa/quest-platform-http.test.ts
 
-      - name: Quest deletion, daily completion bonus and inventory UI regressions
-        run: node docs/qa/quest-completion-features-runner.mjs
-
       - name: Champion reward replacement, start abilities and wrestler exit dialogue
         env:
           DATABASE_URL: postgresql://unused:unused@127.0.0.1:1/unused
@@ -219,6 +216,11 @@ jobs:
             sleep 1
           done
           KO_QA_PLAYWRIGHT="$RUNNER_TEMP/ko-entry-qa/node_modules/playwright/index.mjs" node docs/qa/entry-browser.mjs
+
+      - name: Quest deletion, daily completion bonus and inventory UI regressions
+        env:
+          KO_QA_PLAYWRIGHT: ${{ runner.temp }}/ko-entry-qa/node_modules/playwright/index.mjs
+        run: node docs/qa/quest-completion-features-runner.mjs
 
       - name: Compiled presence, cross-tab logout and quick AI browser
         env:
