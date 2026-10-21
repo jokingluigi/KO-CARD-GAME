@@ -1,0 +1,33 @@
+name: Quest and inventory browser integration
+on:
+  pull_request:
+    paths:
+      - .github/workflows/inventory-browser-validation.yml
+      - docs/qa/quest-completion-features*.mjs
+      - lib/db/qa/quest-completion-features.test.ts
+      - artifacts/ko-game/src/components/admin-prism-manager.tsx
+      - artifacts/api-server/src/routes/admin-prism.ts
+permissions:
+  contents: read
+jobs:
+  inventory-browser:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - uses: pnpm/action-setup@v4
+        with:
+          version: '11.19.0'
+      - run: pnpm install --frozen-lockfile --ignore-scripts
+      - run: pnpm run build
+      - name: Browser tooling
+        run: |
+          npm install --no-save --prefix "$RUNNER_TEMP/ko-inventory-browser" playwright@1.62.1
+          "$RUNNER_TEMP/ko-inventory-browser/node_modules/.bin/playwright" install --with-deps chromium
+      - name: Actual local database and compiled UI
+        env:
+          KO_QA_PLAYWRIGHT: ${{ runner.temp }}/ko-inventory-browser/node_modules/playwright/index.mjs
+        run: node docs/qa/quest-completion-features-runner.mjs

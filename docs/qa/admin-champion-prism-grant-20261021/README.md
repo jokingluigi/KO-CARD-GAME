@@ -21,3 +21,9 @@ Grant/revoke result messages previously lived inside the first hidden pricing ta
 Each successful grant updates one existing wallet and inserts one existing ledger row. Additional request-ID/account/receipt reads and locks run only on administrator grant actions; no polling or gameplay queries are added. Production confirmation checks service commits, static asset hashes, health and read-only admin access. It does not give currency to operating accounts.
 
 The earlier champion quest-completion dialogue feature is already deployed on both services at `48887286dd8fa9c7e4cb7d2688e32aac75f10720`, with all 11 checked asset hashes and read-only administrator access verified. Its deployment and admin receipts are included here. The administrator supplies each champion's actual dialogue; no production text was populated automatically.
+
+## Final production verification and CI launcher fix
+
+Both Render services are live at `f3606a957a1afb3f2a7b1c299663c41f80a354a6`; all ten selected tested asset hashes, both health endpoints and read-only administrator prism access passed. No production prism grant/revoke or schema migration was performed. See the deployment and administrator receipts.
+
+The larger GitHub job failed before launching this browser suite: colored Vite output contains ANSI codes between `Local` and `:`, so the raw readiness search timed out despite the preview running. Strip ANSI sequences for readiness matching and expose root/child logs through Checks annotations. The local runner was exercised with actual ANSI output (`CI=true`, `FORCE_COLOR=1`, `NO_COLOR` unset), retaining the full DB/UI assertions. A focused CI job verifies the same launcher without the unrelated complete combat suite. Full workflow status is tracked independently; no failed run is reported as passing.
