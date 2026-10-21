@@ -1,3 +1,4 @@
+import { readPlatform } from "./quest-platform";
 import { randomUUID } from "node:crypto";
 import { and, eq, sql } from "drizzle-orm";
 import { dailyQuestDefinitionsTable, dailyQuestAssignmentsTable, dailyQuestProgressEventsTable, db } from "@workspace/db";
@@ -9,7 +10,15 @@ const definition = {
 };
 // Persistent assignment uses the existing quest/claim/reward schema, outside daily random slots.
 export async function ensureDraftParticipationQuest(userId: string, executor: RewardExecutor = db) {
- await executor.insert(dailyQuestDefinitionsTable).values(definition).onConflictDoNothing();
+ let [stored] = await executor.select().from(dailyQuestDefinitionsTable).where(eq(dailyQuestDefinitionsTable.id,definition.id));
+ if (!stored) {
+  await executor.insert(dailyQuestDefinitionsTable).values(definition).onConflictDoNothing();
+  [stored] = await executor.select().from(dailyQuestDefinitionsTable).where(eq(dailyQuestDefinitionsTable.id,definition.id));
+ }
+ if (stored && readPlatform(stored).deletedAt) {
+  const [existing] = await executor.select().from(dailyQuestAssignmentsTable).where(and(eq(dailyQuestAssignmentsTable.userId,userId),eq(dailyQuestAssignmentsTable.definitionId,definition.id),eq(dailyQuestAssignmentsTable.assignmentDate,"LIFETIME")));
+  return existing ?? null;
+ }
  await executor.insert(dailyQuestAssignmentsTable).values({
   id: randomUUID(), userId, definitionId: definition.id, assignmentDate: "LIFETIME", slot: 0,
   title: definition.title, description: definition.description, objectiveType: definition.objectiveType,
@@ -20,7 +29,7 @@ export async function ensureDraftParticipationQuest(userId: string, executor: Re
 }
 export async function recordCompletedDraft(userId: string, matchId: string, executor: RewardExecutor) {
  const assignment = await ensureDraftParticipationQuest(userId,executor);
- if (assignment.status === "CLAIMED" || assignment.status === "COMPLETED") return;
+ if (!assignment || assignment.status === "CLAIMED" || assignment.status === "COMPLETED") return;
  const [event] = await executor.insert(dailyQuestProgressEventsTable).values({id:randomUUID(),assignmentId:assignment.id,occurrenceKey:`${assignment.id}:${matchId}:DRAFT_FINISHED`,increment:1})
   .onConflictDoNothing({target:dailyQuestProgressEventsTable.occurrenceKey}).returning({id:dailyQuestProgressEventsTable.id});
  if (!event) return;

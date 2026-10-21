@@ -113,3 +113,17 @@ after(async()=>{
  }
  await new Promise<void>(resolve=>server.close(()=>resolve()));await pg.close();await pool.end();
 });
+
+
+test('deleted built-in lifetime draft quest is not assigned again; existing history stays usable',async()=>{
+ const {ensureDraftParticipationQuest,recordCompletedDraft,DRAFT_PARTICIPATION_QUEST_ID}=await import('../../../artifacts/api-server/src/lib/draft-participation-quest');
+ const existing=await ensureDraftParticipationQuest('user',database as any);assert.ok(existing);
+ await database.insert(schema.usersTable).values({id:'lifetime-new',email:'lifetime-new@quest-features.invalid',nickname:'격리 신규',passwordHash:await hashPassword(password),role:'USER'});
+ const removed=await request('/admin/quests/definitions/'+DRAFT_PARTICIPATION_QUEST_ID,'admin','DELETE');assert.equal(removed.status,200);
+ assert.equal(await ensureDraftParticipationQuest('lifetime-new',database as any),null);
+ await recordCompletedDraft('lifetime-new','new-after-delete',database as any);
+ const rows=await database.select().from(schema.dailyQuestAssignmentsTable).where(eq(schema.dailyQuestAssignmentsTable.userId,'lifetime-new'));assert.equal(rows.length,0);
+ assert.deepEqual(await ensureDraftParticipationQuest('user',database as any),existing);
+ await recordCompletedDraft('user','existing-after-delete',database as any);
+ assert.equal((await ensureDraftParticipationQuest('user',database as any))!.progress,existing.progress+1);
+});

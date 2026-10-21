@@ -1,0 +1,165 @@
+{
+  "verifiedAt": "2026-10-21T15:48:46.323236+00:00",
+  "prs": [
+    73
+  ],
+  "commit": "780fbab79afcedd560adfa00ef04cb15de607ae4",
+  "services": [
+    {
+      "service": "srv-damlm4gu01pc73ao3mb0",
+      "deploy": "dep-dbcdsbtg1s2s739t2msg",
+      "status": "live",
+      "commit": "780fbab79afcedd560adfa00ef04cb15de607ae4"
+    },
+    {
+      "service": "srv-daml9kqd0e5s73fsnjs0",
+      "deploy": "dep-dbcdsc61egvs73abjqi0",
+      "status": "live",
+      "commit": "780fbab79afcedd560adfa00ef04cb15de607ae4"
+    }
+  ],
+  "assets": [
+    {
+      "path": "/assets/collection-action-animation-CCYP8O7c.js",
+      "status": 200,
+      "bytes": 2021,
+      "sha256": "61cd9ff7945836ee44b25e52bebce64160d1a46b4528b06218113426c76d7cf0",
+      "matchesTestedBuild": true
+    },
+    {
+      "path": "/assets/decks-DJGC2FM9.js",
+      "status": 200,
+      "bytes": 48836,
+      "sha256": "9e103e3c120f2381c7e3749bd87147446a49a080a85d7ef7888d1c2a2b0131d9",
+      "matchesTestedBuild": true
+    },
+    {
+      "path": "/assets/daily-quests-C2h53iKO.js",
+      "status": 200,
+      "bytes": 9755,
+      "sha256": "7056307f84f2a5a2a1065121a90681320bbdc4f71b472cccca9fcd7155d20788",
+      "matchesTestedBuild": true
+    },
+    {
+      "path": "/assets/pack-opening-CJLY6E7j.js",
+      "status": 200,
+      "bytes": 10804,
+      "sha256": "15c1b05f822d0174b34871890f5482ba768de768a1daa53f8b770fc9b5d3008b",
+      "matchesTestedBuild": true
+    },
+    {
+      "path": "/assets/draft-BArt6h2K.js",
+      "status": 200,
+      "bytes": 923,
+      "sha256": "b5061b13c1d47397b54017c32b73e8d40a02e5b3dff8afcb2d0e12868f16c6df",
+      "matchesTestedBuild": true
+    },
+    {
+      "path": "/assets/online-match-intro-DC8ZJl7U.css",
+      "status": 200,
+      "bytes": 12010,
+      "sha256": "9c1e5f1e67255576171f66d0331da1d8698c8b3b86bc40f4f638dc1704170bcc",
+      "matchesTestedBuild": true
+    },
+    {
+      "path": "/assets/admin-draft-manager-BbGWVgRd.js",
+      "status": 200,
+      "bytes": 22212,
+      "sha256": "76a70f0f98b9748fa56589945beb2477fa9cef479bd91038a9ce1b1e837661c5",
+      "matchesTestedBuild": true
+    },
+    {
+      "path": "/assets/card-catalog-filters-9n4B-JFi.js",
+      "status": 200,
+      "bytes": 1596,
+      "sha256": "5e1eea2c618d80c50d5b3e43b4948a74cb53cef4316169733f3205407a7c8265",
+      "matchesTestedBuild": true
+    },
+    {
+      "path": "/assets/collection-6sFyTj13.js",
+      "status": 200,
+      "bytes": 25779,
+      "sha256": "070c417953b3cd567173a0d82ded80e24c3d90694258deb839e0e02503d234aa",
+      "matchesTestedBuild": true
+    },
+    {
+      "path": "/assets/decks-client-DSVkFit7.js",
+      "status": 200,
+      "bytes": 776,
+      "sha256": "96b395be309c469e4b85b66ffdd74eedbe353030bf3332be333d12a22ea6f803",
+      "matchesTestedBuild": true
+    },
+    {
+      "path": "/assets/rewards-client-BeoAFJeQ.js",
+      "status": 200,
+      "bytes": 1619,
+      "sha256": "5c6a730b8a6fc62372c46339a63eb6bf335aba6c11c72ea591842667818f05d2",
+      "matchesTestedBuild": true
+    },
+    {
+      "path": "/assets/draft-client-CwrOwPLy.js",
+      "status": 200,
+      "bytes": 5425,
+      "sha256": "188f9d3f1d3c79d055714bbdbee546efbbd653840fb64f69e3991c7bd68a0283",
+      "matchesTestedBuild": true
+    },
+    {
+      "path": "/assets/collection-client-DWTuTxho.js",
+      "status": 200,
+      "bytes": 2898,
+      "sha256": "e1805528213fad246d89499f5e9af89707cb9c34c13e3ff2379ef079a62fa84c",
+      "matchesTestedBuild": true
+    },
+    {
+      "path": "/assets/online-match-intro-D0Jj5950.js",
+      "status": 200,
+      "bytes": 4590,
+      "sha256": "4828e917c204d7a87c7cbc1914e1f3e91085d80192b0d5b7cc8d37ab03b1204b",
+      "matchesTestedBuild": true
+    },
+    {
+      "path": "/assets/index-D3SyJGR7.css",
+      "status": 200,
+      "bytes": 274374,
+      "sha256": "120b38e897d4853560965b09e3b72281ced09b5717f095f1bcd7ec4b17bcde14",
+      "matchesTestedBuild": true
+    },
+    {
+      "path": "/assets/admin-quest-manager-DvOgNRCg.js",
+      "status": 200,
+      "bytes": 19251,
+      "sha256": "fb26b657b91fa26f902d1ff8103c9cccad7002bc26ef98754f62c18c00a4142f",
+      "matchesTestedBuild": true
+    },
+    {
+      "path": "/assets/online-match-wyWY5UH3.js",
+      "status": 200,
+      "bytes": 25251,
+      "sha256": "0495934645b479201f78d4260311cc9d035d745ea9714c632cbbce8828481117",
+      "matchesTestedBuild": true
+    },
+    {
+      "path": "/assets/index-CBOUze7P.js",
+      "status": 200,
+      "bytes": 372308,
+      "sha256": "5313453a42efa9241aaacd820ebcb2ba67b3a56af19b1fa2e665ab8a983224fb",
+      "matchesTestedBuild": true
+    }
+  ],
+  "health": [
+    {
+      "origin": "https://ko-card-game-vr69.onrender.com",
+      "status": 200,
+      "response": "ok"
+    },
+    {
+      "origin": "https://ko-card-game.onrender.com",
+      "status": 200,
+      "response": "ok"
+    }
+  ],
+  "databaseMigration": false,
+  "productionTestWrites": false,
+  "liveProductionTwoAccountGameplay": "NOT_RUN",
+  "validationReport": "docs/qa/quests-packs-filters-spells-20261021/README.md"
+}
