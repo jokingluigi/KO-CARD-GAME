@@ -63,5 +63,5 @@
   "productionTwoAccountBattle": "NOT_RUN",
   "databaseMigration": false,
   "productionTestWrites": false,
-  "snapshotRecheck": "2026-10-21T06:27:47Z: hashes identical to initial snapshot"
+  "snapshotRecheck": "2026-10-21T06:27:47.128202+00:00: identical hashes"
 }
