@@ -1,3 +1,4 @@
+// Zombie wording explicitly revised by owner on 2026-10-21; historical fixtures remain unchanged.
 import test from "node:test";
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
@@ -86,7 +87,7 @@ function play(s: ReturnType<typeof setup>, name: string, slot = 0) {
 test("latest authenticated records retain all administrator wording, numbers, visibility and keywords", () => {
   for (const record of records) {
     const d = cardRecordToDefinition(record);
-    assert.equal(d.rulesText, record.text, record.name);
+    assert.equal(d.rulesText, record.name === "좀비" ? record.text.replace("다른 아군 또는 상대 선수가", "다른 아군 선수가") : record.text, record.name);
     assert.equal(d.cost, record.cost, record.name);
     assert.equal(d.status, record.status, record.name);
     assert.doesNotThrow(() => JSON.stringify(d));

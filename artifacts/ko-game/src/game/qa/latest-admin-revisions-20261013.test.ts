@@ -317,8 +317,8 @@ test("Zombie Dehun generation merges into an existing zombie even when allied fi
     1,
   );
   assert.ok(
-    state.players[0].board[1]!.currentAttack >= 3,
-    "existing zombie receives retirement growth and merged summon stats",
+    state.players[0].board[1]!.currentAttack === 2,
+    "enemy retirement does not grow allied zombie; generated 1/1 merges once",
   );
   assert.equal(state.players[0].hand.length, 0);
 });

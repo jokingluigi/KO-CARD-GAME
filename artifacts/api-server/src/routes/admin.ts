@@ -111,6 +111,8 @@ const IMAGE_DISPLAY_MODES = ["COVER", "CONTAIN", "CUSTOM"] as const;
 const GAME_MEDIA_TYPES = [
   "BACKGROUND",
   "BGM",
+  'VICTORY_BGM',
+  'DEFEAT_BGM',
   "LIGHT_ATTACK",
   "NORMAL_ATTACK",
   "HEAVY_ATTACK",
@@ -2156,7 +2158,7 @@ router.post("/login", (request, response) => {
 });
 
 router.get("/session", async (request, response) => {
-  const user = await getAuthenticatedUser(request);
+  const user = request.authUser ?? await getAuthenticatedUser(request);
   if (!user || user.role !== "ADMIN") {
     response.json({ authenticated: false, user: null });
     return;
@@ -2519,7 +2521,7 @@ function gameMediaConfig(mediaType: (typeof GAME_MEDIA_TYPES)[number]) {
         types: GAME_BACKGROUND_TYPES,
         maxSize: MAX_CARD_IMAGE_SIZE,
       }
-    : mediaType === "BGM"
+    : mediaType === "BGM" || mediaType === 'VICTORY_BGM' || mediaType === 'DEFEAT_BGM'
       ? {
           prefix: "/objects/uploads/game-bgm/",
           storage: gameBgmStorage,
@@ -2666,6 +2668,10 @@ router.post("/game-media", async (request, response): Promise<void> => {
     return;
   }
   const [media] = await db.transaction(async (tx) => {
+    if (gameEnabled && (mediaType === 'VICTORY_BGM' || mediaType === 'DEFEAT_BGM')) {
+      await tx.execute(sql`SELECT pg_advisory_xact_lock(hashtext(${'result-music:' + mediaType}))`);
+      await tx.update(gameMediaTable).set({ gameEnabled: false, enabled: false, updatedAt: new Date() }).where(eq(gameMediaTable.mediaType, mediaType));
+    }
     if (titleEnabled) {
       await tx.update(gameMediaTable)
         .set({ titleEnabled: false, mainEnabled: false, updatedAt: new Date() })
@@ -2720,6 +2726,10 @@ router.patch("/game-media/:id", async (request, response): Promise<void> => {
     return;
   }
   const [media] = await db.transaction(async (tx) => {
+    if (gameEnabled && (existing.mediaType === 'VICTORY_BGM' || existing.mediaType === 'DEFEAT_BGM')) {
+      await tx.execute(sql`SELECT pg_advisory_xact_lock(hashtext(${'result-music:' + existing.mediaType}))`);
+      await tx.update(gameMediaTable).set({ gameEnabled: false, enabled: false, updatedAt: new Date() }).where(eq(gameMediaTable.mediaType, existing.mediaType));
+    }
     if (titleEnabled) {
       await tx.update(gameMediaTable)
         .set({ titleEnabled: false, mainEnabled: false, updatedAt: new Date() })

@@ -150,11 +150,19 @@ try {
           const stats = await page.locator(`.ko-${side}-stats`).boundingBox();
           const zones = await page.locator(`.ko-${side}-zones`).boundingBox();
           assert.ok(stats.y + stats.height <= zones.y, 'HP/gold appear above deck/graveyard without overlap');
+          const resources = await page.locator(`.ko-${side}-stats > div`).all();
+          const deck = await page.locator(`.ko-${side}-zones > div`).boundingBox();
+          const hp = await resources[1].boundingBox(), gold = await resources[0].boundingBox();
+          assert.equal(hp.height, 44);
+          assert.equal(gold.height, 44);
+          assert.ok(hp.y < gold.y, 'HP occupies the first large panel, gold the second');
+          assert.ok(hp.width > deck.width * 1.8, 'resources use full-width panels; deck/graveyard share the small row');
+          assert.equal(await resources[1].locator('.font-display').evaluate(e => getComputedStyle(e).fontSize), '22px');
         }
         assert.ok(g.portrait.w >= 93);
         for (const n of await page
           .locator(
-            ".ko-game-controls > button:visible,.ko-champion-ability,.ko-player-zones button,.cosmetic-emote-tools > button,.ko-board-inspect-button:visible,.ko-hand-inspect-button:visible",
+            ".ko-game-controls > button:visible,.ko-champion-ability,.cosmetic-emote-tools > button,.ko-board-inspect-button:visible,.ko-hand-inspect-button:visible",
           )
           .all()) {
           assert.ok((await n.boundingBox()).height >= 44);
@@ -330,6 +338,10 @@ try {
       async () => {
         await load();
         let before = await state();
+        assert.equal(await page.getByText('공격 가능', {exact:true}).count(), 0, 'artwork has no attack-ready text badge');
+        assert.equal(await page.locator('.ko-opponent-board-row .ko-attack-ready').count(), 0);
+        assert.ok(await page.locator('.ko-player-board-row .ko-attack-ready').count() > 0);
+        assert.notEqual(await page.locator('.ko-player-board-row .ko-attack-ready').first().evaluate(e => getComputedStyle(e).boxShadow), 'none');
         await drag(
           page.locator(".ko-player-board-row .ko-board-slot").nth(1),
           page.locator(".ko-opponent-board-row .ko-board-slot").nth(1),
@@ -349,6 +361,7 @@ try {
             before.players[1].board[1].currentHealth,
         );
         await idle();
+        assert.equal(await page.locator('.ko-player-board-row .ko-board-slot').nth(1).evaluate(e => e.classList.contains('ko-attack-ready')), false);
         await load("champion");
         before = await state();
         await drag(
@@ -373,6 +386,22 @@ try {
         assert.deepEqual(await state(), before);
       },
     );
+    await check(width + ' targeted spell touch drag, cancellation and normal engine target resolution', async () => {
+      await load('spell');
+      const before = await state();
+      await drag(page.locator('.ko-hand-card').first(), page.locator('.ko-player-board-row .ko-board-slot').nth(2), true);
+      await page.locator('.ko-card-drag-ghost').waitFor({state:'detached'});
+      assert.deepEqual(await state(), before, 'canceled touch drag consumes nothing');
+      await drag(page.locator('.ko-hand-card').first(), page.locator('.ko-player-board-row .ko-board-slot').nth(2));
+      await page.waitForFunction(() => !!document.querySelector('.ko-opponent-board-row [data-card-highlight="target"]'));
+      assert.equal((await state()).players[0].hand.length, 1, 'target selection is not a successful play');
+      const victim = before.players[1].board[0].instanceId;
+      await page.locator('.ko-opponent-board-row .ko-board-slot').first().click({position:{x:20,y:75}});
+      await page.waitForFunction(id => JSON.parse(document.querySelector('[data-testid=state-json]').textContent).players[0].deck.some(c=>c.instanceId===id),victim);
+      await idle();
+      assert.equal((await state()).players[0].hand.length, 0);
+      assert.equal((await state()).players[1].board[0], null);
+    });
     await check(
       width + " actual targeted spell moves selected opponent into own deck",
       async () => {
@@ -456,7 +485,19 @@ try {
           .click();
         await page.getByRole("button", { name: "경기 로그 열기" }).click();
         await page.getByRole("button", { name: "경기 로그 닫기" }).click();
-        await page.locator(".ko-player-zones button").click();
+        const graveButton = page.locator('.ko-player-zones button');
+        await graveButton.scrollIntoViewIfNeeded();
+        await page.waitForFunction(() => {
+          const e = document.querySelector('.ko-player-zones button'), r = e.getBoundingClientRect();
+          return document.elementFromPoint(r.x + r.width / 2, r.y - 4)?.closest('button') === e;
+        });
+        const hit = await graveButton.evaluate(e => {
+          const r = e.getBoundingClientRect(), p = getComputedStyle(e, '::after');
+          const x = r.x + r.width / 2, y = r.y - 4;
+          return { x, y, height: r.height - parseFloat(p.top) - parseFloat(p.bottom), reachable: document.elementFromPoint(x,y)?.closest('button') === e };
+        });
+        assert.ok(hit.height >= 44 && hit.reachable, 'small visual graveyard panel retains a real 44px touch target: ' + JSON.stringify(hit));
+        await page.touchscreen.tap(hit.x, hit.y);
         const graveyard = page.getByRole("dialog", { name: "내 묘지", exact: true });
         const graveCards = graveyard.locator('[data-testid="graveyard-cards"] .ko-card-depth');
         assert.equal(await graveCards.count(), (await state()).players[0].graveyard.length);

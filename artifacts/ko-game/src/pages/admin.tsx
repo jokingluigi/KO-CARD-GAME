@@ -10,7 +10,8 @@ import {
 } from "react";
 import { useLocation } from "wouter";
 import { ShieldCheck } from "lucide-react";
-import { fetchCurrentUser, logout } from "@/lib/auth-client";
+import { logout, type AuthUser } from "@/lib/auth-client";
+import { fetchAdminSession } from '@/lib/admin-session-client';
 import { AuthRecovery } from "@/components/auth-page";
 import { ROUTES } from "@/lib/routes";
 import { AdminLayout } from "@/components/admin-layout";
@@ -112,12 +113,17 @@ export default function Admin() {
     [status, setStatus] = useState<AdminStatus>("checking"),
     [authError, setAuthError] = useState<string | null>(null),
     authRequestGeneration = useRef(0);
+  const sessionRequest = useRef<AbortController | null>(null);
+  const [slowSession, setSlowSession] = useState(false);
   const onUnauthorized = useCallback(() => setStatus("forbidden"), []);
   const checkAuthentication = useCallback(() => {
+    if (sessionRequest.current) return;
+    const controller = new AbortController();
+    sessionRequest.current = controller;
     const generation = ++authRequestGeneration.current;
     setStatus(previous => previous === "error" ? "error" : "checking");
     setAuthError(null);
-    fetchCurrentUser()
+    fetchAdminSession(controller.signal)
       .then((result) => {
         if (generation !== authRequestGeneration.current) return;
         setStatus(
@@ -134,13 +140,23 @@ export default function Admin() {
             : "인증 상태를 확인하지 못했습니다.",
         );
         setStatus("error");
+      }).finally(() => {
+        if (sessionRequest.current === controller) sessionRequest.current = null;
       });
   }, []);
+
+  useEffect(() => {
+    if (status !== 'checking') { setSlowSession(false); return; }
+    const timer = window.setTimeout(() => setSlowSession(true), 1_500);
+    return () => window.clearTimeout(timer);
+  }, [status]);
 
   useEffect(() => {
     checkAuthentication();
     return () => {
       authRequestGeneration.current += 1;
+      sessionRequest.current?.abort();
+      sessionRequest.current = null;
     };
   }, [checkAuthentication]);
 
@@ -149,7 +165,7 @@ export default function Admin() {
     navigate(ROUTES.MAIN_MENU);
   }
 
-  if (status === "checking") {
+  if (status === "checking" && !slowSession) {
     return (
       <main className="flex min-h-screen items-center justify-center bg-neutral-950 text-sm text-neutral-500">
         관리자 세션 확인 중...
@@ -157,11 +173,17 @@ export default function Admin() {
     );
   }
 
-  if (status === "error") {
+  if (status === "error" || (status === 'checking' && slowSession)) {
     return (
       <AuthRecovery
         message={authError ?? undefined}
         onRetry={checkAuthentication}
+        onAuthenticated={(user: AuthUser) => {
+          authRequestGeneration.current += 1;
+          sessionRequest.current?.abort();
+          sessionRequest.current = null;
+          setStatus(user.role === 'ADMIN' ? 'authenticated' : 'forbidden');
+        }}
       />
     );
   }

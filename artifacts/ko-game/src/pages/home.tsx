@@ -1620,6 +1620,7 @@ export default function Home({ initialAuthUser }: { initialAuthUser?: AuthUser }
      {matchResultVisible && (
        <MatchResultOverlay
          state={gameState}
+         mediaCatalog={mediaCatalog}
          reward={isAiMatch ? aiMatchReward : null}
          rewardStatus={isAiMatch ? aiRewardStatus : undefined}
          rewardError={isAiMatch ? aiRewardError : undefined}

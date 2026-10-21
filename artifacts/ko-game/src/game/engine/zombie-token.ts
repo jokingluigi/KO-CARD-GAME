@@ -1,7 +1,7 @@
 import type { CardDefinition, CardInstance } from '../cards/types';
 import type { GameState } from '../types/game-state';
 
-export const ZOMBIE_RULES = '아군 필드에는 좀비를 1장만 둘 수 있습니다. 이미 아군 좀비가 있다면 새 좀비를 소환하지 않고 소환될 좀비의 능력치만큼 기존 좀비에게 부여합니다. 필드에 있는 동안 다른 아군 또는 상대 선수가 리타이어할 때마다 +1/+1을 얻습니다.';
+export const ZOMBIE_RULES = '아군 필드에는 좀비를 1장만 둘 수 있습니다. 이미 아군 좀비가 있다면 새 좀비를 소환하지 않고 소환될 좀비의 능력치만큼 기존 좀비에게 부여합니다. 필드에 있는 동안 다른 아군 선수가 리타이어할 때마다 +1/+1을 얻습니다.';
 export function isZombieToken(state: GameState, card: CardInstance): boolean {
   return card.isToken && (card.definitionId === 'ko-fallback-zombie-token' ||
     [...(state.cardPool ?? []), ...(state.minionACardPool ?? [])].some(d => d.id === card.definitionId && d.name.trim() === '좀비'));

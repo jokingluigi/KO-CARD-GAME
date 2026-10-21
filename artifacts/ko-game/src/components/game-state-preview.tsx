@@ -1860,6 +1860,7 @@ function BoardSlot({
     }
   } else {
     containerClass += "group ";
+    if (!isOpponent && attackReady && !animating) containerClass += "ko-attack-ready ";
     if (selected) {
       containerClass += "-translate-y-2 md:-translate-y-4 z-20 cursor-pointer";
     } else if (targetable) {
@@ -1944,7 +1945,7 @@ function BoardSlot({
          overlay={
            <>
              <div className="absolute inset-0 bg-gradient-to-t from-black/55 to-transparent" />
-             {(targetable || attackReady) && !animating && <span className={`pointer-events-none absolute left-1/2 top-[28%] z-30 -translate-x-1/2 whitespace-nowrap rounded border px-1 py-0.5 text-[7px] font-black shadow-lg md:text-[9px] ${targetable ? 'border-amber-300 bg-amber-950/95 text-amber-100' : 'border-sky-300 bg-sky-950/95 text-sky-100'}`}>
+             {targetable && !animating && <span className="pointer-events-none absolute left-1/2 top-[28%] z-30 -translate-x-1/2 whitespace-nowrap rounded border border-amber-300 bg-amber-950/95 px-1 py-0.5 text-[7px] font-black text-amber-100 shadow-lg md:text-[9px]">
                {targetable ? targetingActive ? '효과 대상' : '공격 대상' : '공격 가능'}
              </span>}
              {isDead && (

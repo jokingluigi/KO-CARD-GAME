@@ -17,12 +17,14 @@ type AudioRequest = {
   kind: TemporaryAudioKind;
 };
 
+type MusicScope = "NON_BATTLE" | "BATTLE" | "RESULT";
 type MusicAudio = {
   audio: HTMLAudioElement;
   url: string;
   volume: number;
-  scope: "NON_BATTLE" | "BATTLE";
+  scope: MusicScope;
   failedToLoad: boolean;
+  finished?: boolean;
   fadeTimerId: number | null;
 };
 
@@ -57,7 +59,7 @@ class AudioManager {
   private pendingBaseMusic: {
     url: string;
     volume: number;
-    scope: "NON_BATTLE" | "BATTLE";
+    scope: MusicScope;
   } | null = null;
   private baseTransitionId = 0;
   private bgmMuted = false;
@@ -152,7 +154,22 @@ class AudioManager {
 
   /** Plays the match-selected base while the route is in a battle context. */
   playMatchBgm(url: string, volume: number) {
+    if (this.bgm?.scope === "RESULT" || this.pendingBaseMusic?.scope === "RESULT") return;
     this.setBaseMusic(url, volume, "BATTLE");
+  }
+
+  playResultMusic(url: string, volume: number) {
+    this.stopBattleAudio();
+    this.setBaseMusic(url, volume, "RESULT");
+  }
+
+  stopResultMusic() {
+    if (this.pendingBaseMusic?.scope === "RESULT") this.pendingBaseMusic = null;
+    if (this.bgm?.scope === "RESULT") this.stopBaseMusic();
+  }
+
+  private musicScopeAllowed(scope: MusicScope) {
+    return scope === this.musicContext || (scope === "RESULT" && this.musicContext === "BATTLE");
   }
 
   previewBgm(url: string, volume: number) {
@@ -291,7 +308,7 @@ class AudioManager {
       this.stopGameAudio();
       return;
     }
-    if (this.bgm && this.bgm.scope !== context) {
+    if (this.bgm && !this.musicScopeAllowed(this.bgm.scope)) {
       this.bgm?.audio.pause();
       return;
     }
@@ -339,13 +356,15 @@ class AudioManager {
   private setBaseMusic(
     url: string,
     volume: number,
-    scope: "NON_BATTLE" | "BATTLE",
+    scope: MusicScope,
   ) {
     if (this.musicContext === "SILENT" || !hasBrowserAudio() || !url) return;
     if (this.bgm?.url === url) {
+      if (this.bgm.scope !== scope) this.bgm.finished = false;
+      this.bgm.audio.loop = scope !== "RESULT";
       this.bgm.volume = volume;
       this.bgm.scope = scope;
-      if (this.musicContext !== scope) {
+      if (!this.musicScopeAllowed(scope)) {
         this.bgm.audio.pause();
         return;
       }
@@ -404,7 +423,7 @@ class AudioManager {
     try {
       const audio = new Audio(request.url);
       audio.preload = "auto";
-      audio.loop = true;
+      audio.loop = request.scope !== "RESULT";
       audio.muted = this.bgmMuted;
       audio.volume = 0;
       const music: MusicAudio = {
@@ -415,6 +434,7 @@ class AudioManager {
         failedToLoad: false,
         fadeTimerId: null,
       };
+      audio.addEventListener("ended", () => { if (music.scope === "RESULT") music.finished = true; });
       this.bgm = music;
       audio.addEventListener("error", () => {
         if (this.bgm?.audio !== audio) return;
@@ -646,8 +666,8 @@ class AudioManager {
     if (
       !this.bgm ||
       this.bgmMuted ||
-      this.musicContext !== this.bgm.scope ||
-      this.bgm.failedToLoad ||
+      !this.musicScopeAllowed(this.bgm.scope) ||
+      this.bgm.failedToLoad || this.bgm.finished ||
       Boolean(this.bgm.audio.error) ||
       this.current
     ) return;
@@ -658,9 +678,9 @@ class AudioManager {
   private startMusicFadeIn(music: MusicAudio) {
     if (
       !this.bgm ||
-      this.bgm.audio !== music.audio ||
+      this.bgm.audio !== music.audio || music.finished ||
       this.bgmMuted ||
-      this.musicContext !== music.scope ||
+      !this.musicScopeAllowed(music.scope) ||
       this.current
     ) return;
     if (music.fadeTimerId !== null) window.clearInterval(music.fadeTimerId);

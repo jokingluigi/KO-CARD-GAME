@@ -742,12 +742,12 @@ test("current Pandora champion token quest deployment destroys target and absorb
   });
   assert.equal(n.players[0].board[0]?.currentAttack, 13);
 });
-test("current Zombie grows on other retirements, merges summons, and ignores destroy", () => {
+test("current Zombie grows on allied retirements and ignores destruction", () => {
   for (const mode of ["RETIRE", "DESTROY"] as const) {
     const s = setup();
     onBoard(s, "좀비");
-    const c = onBoard(s, "리버덩크", 1, 1);
-    const n = applyEffect(s, "player-2", c, {
+    const c = onBoard(s, "리버덩크", 1, 0);
+    const n = applyEffect(s, "player-1", c, {
       type: "STRUCTURED",
       action: mode,
       target: { zone: "BOARD", owner: "SELF", selection: "SELF", count: 1 },
@@ -916,18 +916,19 @@ test("zone reset: retirement clears buffs and graveyard rejects later stat buffs
   assert.deepEqual([g.currentAttack, g.currentHealth, g.maxHealth], [2, 3, 3]);
 });
 
-test("zombie grows from allied and enemy RETIRE, never DESTROY", () => {
+test("zombie grows only from another allied RETIRE, never enemy RETIRE or DESTROY", () => {
   for (const owner of [0, 1])
     for (const mode of ["RETIRE", "DESTROY"] as const) {
       const s = setup();
       onBoard(s, "좀비", 0, 0);
+      onBoard(s, "좀비", 0, 1);
       const victim = onBoard(s, "리버덩크", 1, owner);
       const n = applyEffect(s, s.players[owner].id, victim, {
         type: "STRUCTURED",
         action: mode,
         target: { zone: "BOARD", owner: "SELF", selection: "SELF", count: 1 },
       });
-      const expected = mode === "RETIRE" ? 2 : 1;
+      const expected = mode === "RETIRE" && owner === 0 ? 2 : 1;
       assert.deepEqual(
         [
           n.players[0].board[0]?.currentAttack,
@@ -935,6 +936,8 @@ test("zombie grows from allied and enemy RETIRE, never DESTROY", () => {
         ],
         [expected, expected],
       );
+      const enemyExpected = mode === "RETIRE" && owner === 1 ? 2 : 1;
+      assert.deepEqual([n.players[1].board[0]?.currentAttack, n.players[1].board[0]?.maxHealth], [enemyExpected, enemyExpected]);
     }
 });
 

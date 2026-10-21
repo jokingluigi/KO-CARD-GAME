@@ -1066,7 +1066,7 @@ function OnlineMatchPage({ draft = false }: { draft?: boolean }) {
         onReturnToMainMenu={() => navigate(returnRoute)}
       />
       {matchResultVisible && (
-        <MatchResultOverlay state={state} recap={recap} reward={matchReward} rewardStatus={rewardStatus} rewardError={rewardError}
+        <MatchResultOverlay state={state} mediaCatalog={mediaCatalog} recap={recap} reward={matchReward} rewardStatus={rewardStatus} rewardError={rewardError}
           onRetryReward={() => setRewardRetry((count) => count + 1)} onReturnToMainMenu={() => navigate(returnRoute)} />
       )}
     </>

@@ -101,6 +101,15 @@ jobs:
       - run: pnpm run build
       - name: Cosmetics ownership, storage, authoritative PvP and recovery integration
         run: node --import ./docs/qa/checkpoints/20261006/qa-loader.mjs --test --test-isolation=none lib/db/qa/cosmetics.test.ts
+      - name: Independent deck codes and bounded administrator sessions
+        run: >-
+          node --import ./docs/qa/checkpoints/20261006/qa-loader.mjs --test --test-isolation=none
+          artifacts/ko-game/src/lib/deck-share-code.test.ts
+          artifacts/ko-game/src/lib/admin-session-client.test.ts
+      - name: Deck import ownership and result music HTTP persistence
+        run: |
+          node --import ./docs/qa/checkpoints/20261006/qa-loader.mjs --test --test-isolation=none lib/db/qa/deck-sharing-http.test.ts
+          node --import ./docs/qa/checkpoints/20261006/qa-loader.mjs --test --test-isolation=none lib/db/qa/result-music-http.test.ts
       - name: Startup, auth, quest and database regressions
         env:
           DATABASE_URL: postgresql://unused:unused@127.0.0.1:1/unused
@@ -261,6 +270,8 @@ jobs:
           run_browser docs/qa/latest-wrestler-revisions-browser.mjs
           run_browser docs/qa/field-attack-drag-browser.mjs
           run_browser docs/qa/mobile-deck-controls-browser.mjs
+          run_browser docs/qa/deck-sharing-browser.mjs
+          run_browser docs/qa/admin-session-music-browser.mjs
           run_browser docs/qa/daily-quests-browser.mjs
           run_browser docs/qa/champion-features-browser.mjs
           run_browser docs/qa/current-content-browser-20261012.mjs

@@ -7,6 +7,9 @@ import { CardRenderer } from "@/components/card-renderer";
 import { CardArtwork } from "@/components/card-artwork";
 import { CollectionActionAnimation, type CollectionActionScene } from "@/components/collection-action-animation";
 import { CardDetailDialog } from "@/components/card-detail-dialog";
+import { DeckShareDialog } from "@/components/deck-share-dialog";
+import { createDeckSnapshot } from "@/lib/deck-share-validation";
+import type { SharedDeck } from "@/lib/deck-share-code";
 import {
   Dialog,
   DialogContent,
@@ -248,6 +251,22 @@ export default function Decks() {
   const [statusMessage, setStatusMessage] = useState("");
   const [championPickerOpen, setChampionPickerOpen] = useState(false);
   const [detailCard, setDetailCard] = useState<DeckCard | null>(null);
+  const [shareMode, setShareMode] = useState<'share' | 'import' | null>(null);
+  const [shareSnapshot, setShareSnapshot] = useState<SharedDeck | null>(null);
+  const [importCode, setImportCode] = useState('');
+  useEffect(() => {
+    const openLink = () => {
+      const code = new URLSearchParams(window.location.hash.slice(1)).get('deck');
+      if (code) { setImportCode(code); setShareMode('import'); }
+    };
+    openLink();
+    window.addEventListener('hashchange', openLink);
+    return () => window.removeEventListener('hashchange', openLink);
+  }, []);
+  function closeShare() {
+    setShareMode(null); setImportCode('');
+    if (new URLSearchParams(window.location.hash.slice(1)).has('deck')) window.history.replaceState(null, '', window.location.pathname + window.location.search);
+  }
   const [craftTarget, setCraftTarget] = useState<DeckCard | null>(null);
   const [craftCollection, setCraftCollection] = useState<Collection | null>(null);
   const [craftLoading, setCraftLoading] = useState(false);
@@ -709,6 +728,7 @@ export default function Decks() {
 
         <div className="ko-decks__columns">
           <aside className="ko-decks__rail" aria-label="덱 목록">
+            <button type="button" className="ko-decks__secondary-action min-h-11 mb-3 w-full" data-testid="button-import-deck" disabled={isLoading} onClick={() => { setImportCode(''); setShareMode('import'); }}>덱 가져오기</button>
             <div className="flex items-center justify-between gap-2">
               <p className="ko-decks__section-label">Your plans</p>
               <button type="button" className="ko-decks__mini-button" data-testid="button-create-deck" onClick={createDraft}>
@@ -1006,6 +1026,12 @@ export default function Decks() {
               )}
             </div>
             <div className="ko-decks__editor-actions">
+              <button type="button" className="ko-decks__secondary-action" data-testid="button-share-deck" disabled={isLoading || isMutating} onClick={() => {
+                try { setShareSnapshot(createDeckSnapshot(deckName, selectedChampion ?? undefined, cardIds, cardById)); setShareMode('share'); setErrorMessage(''); }
+                catch (error) { setErrorMessage(error instanceof Error ? error.message : '덱을 공유하지 못했습니다.'); }
+              }}>덱 공유</button>
+            </div>
+            <div className="ko-decks__editor-actions">
               <button type="button" className="ko-decks__primary-action" data-testid="button-save-deck" disabled={isMutating} onClick={handleSave}>
                 <Check className="h-4 w-4" aria-hidden="true" />
                 {isMutating ? "처리 중..." : "전략 저장"}
@@ -1028,6 +1054,9 @@ export default function Decks() {
         open={Boolean(detailCard)}
         onOpenChange={(open) => { if (!open) setDetailCard(null); }}
       />
+      <DeckShareDialog mode={isLoading ? null : shareMode} snapshot={shareSnapshot} initialCode={importCode} options={options} onClose={closeShare} onImported={deck => {
+        setDecks(current => replaceDeck(current, deck)); openDeck(deck); setEditorCollapsed(false); closeShare(); setStatusMessage('공유 덱을 새 전략으로 추가했습니다.');
+      }} />
       <Dialog
         open={Boolean(craftTarget)}
         onOpenChange={closeCraftFlow}
