@@ -1,0 +1,88 @@
+✔ Hilbil recovers fully after prior healing with 카산드라, maximum HP 4 (10.867014ms)
+✔ Hilbil recovers fully after prior healing with 카산드라, maximum HP 20 (1.346879ms)
+✔ Hilbil recovers fully after prior healing with 위마리(각성), maximum HP 4 (1.180018ms)
+✔ Hilbil recovers fully after prior healing with 위마리(각성), maximum HP 20 (0.985245ms)
+✔ Hilbil recovers fully after prior healing with 헬퍼, maximum HP 4 (0.992295ms)
+✔ Hilbil recovers fully after prior healing with 헬퍼, maximum HP 20 (0.88274ms)
+✔ Hilbil recovers fully after prior healing with 카스토, maximum HP 4 (0.946006ms)
+✔ Hilbil recovers fully after prior healing with 카스토, maximum HP 20 (0.842309ms)
+✔ Hilbil survives real healing turn effects and regeneration before its next combat: 카산드라 (3.329367ms)
+✔ Hilbil survives real healing turn effects and regeneration before its next combat: 위마리(각성) (1.551708ms)
+✔ external healing preserves Hilbil ability, but a nonlethal hit does not count as retiring an opponent (0.640485ms)
+✖ reported normal Wimari combo preserves Hilbil's combat retirement and fully heals its increased maximum 4 (3.433273ms)
+✖ reported normal Wimari combo preserves Hilbil's combat retirement and fully heals its increased maximum 20 (0.932265ms)
+✔ Wimari combo on a nonlethal attack increases health once without granting Hilbil a kill heal (0.78999ms)
+✖ two Hilbils with Wimari only heal the actual attacker who retired the enemy (1.196603ms)
+ℹ tests 15
+ℹ suites 0
+ℹ pass 12
+ℹ fail 3
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 1138.620482
+
+✖ failing tests:
+
+test at artifacts/ko-game/src/game/qa/hilbil-healing-interactions-20261021.test.ts:60:5
+✖ reported normal Wimari combo preserves Hilbil's combat retirement and fully heals its increased maximum 4 (3.433273ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:
+  
+  2 !== 5
+  
+      at TestContext.<anonymous> (file:///workspace/KO-CARD-GAME/artifacts/ko-game/src/game/qa/hilbil-healing-interactions-20261021.test.ts:68:16)
+      at Test.runInAsyncScope (node:async_hooks:227:14)
+      at Test.run (node:internal/test_runner/test:1382:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:960:18)
+      at Test.postRun (node:internal/test_runner/test:1522:19)
+      at Test.run (node:internal/test_runner/test:1447:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:960:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: 2,
+    expected: 5,
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at artifacts/ko-game/src/game/qa/hilbil-healing-interactions-20261021.test.ts:60:5
+✖ reported normal Wimari combo preserves Hilbil's combat retirement and fully heals its increased maximum 20 (0.932265ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:
+  
+  2 !== 21
+  
+      at TestContext.<anonymous> (file:///workspace/KO-CARD-GAME/artifacts/ko-game/src/game/qa/hilbil-healing-interactions-20261021.test.ts:68:16)
+      at Test.runInAsyncScope (node:async_hooks:227:14)
+      at Test.run (node:internal/test_runner/test:1382:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:960:18)
+      at Test.postRun (node:internal/test_runner/test:1522:19)
+      at Test.run (node:internal/test_runner/test:1447:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:960:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: 2,
+    expected: 21,
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at artifacts/ko-game/src/game/qa/hilbil-healing-interactions-20261021.test.ts:81:1
+✖ two Hilbils with Wimari only heal the actual attacker who retired the enemy (1.196603ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:
+  
+  2 !== 21
+  
+      at TestContext.<anonymous> (file:///workspace/KO-CARD-GAME/artifacts/ko-game/src/game/qa/hilbil-healing-interactions-20261021.test.ts:85:12)
+      at Test.runInAsyncScope (node:async_hooks:227:14)
+      at Test.run (node:internal/test_runner/test:1382:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:960:18)
+      at Test.postRun (node:internal/test_runner/test:1522:19)
+      at Test.run (node:internal/test_runner/test:1447:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:960:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: 2,
+    expected: 21,
+    operator: 'strictEqual',
+    diff: 'simple'
+  }

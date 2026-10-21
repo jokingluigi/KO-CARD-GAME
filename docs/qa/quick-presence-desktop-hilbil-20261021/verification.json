@@ -1,0 +1,61 @@
+{
+  "engine": {
+    "pass": 2710,
+    "fail": 0,
+    "historicalCatalogSuitesExcluded": 4
+  },
+  "hilbil": {
+    "before": {
+      "pass": 12,
+      "fail": 3
+    },
+    "after": {
+      "pass": 15,
+      "fail": 0
+    }
+  },
+  "desktop": {
+    "results": [
+      "1920x1080: 1 cards, first/middle/last selection and last spell use: PASS",
+      "1920x1080: 6 cards, first/middle/last selection and last spell use: PASS",
+      "1920x1080: 10 cards, first/middle/last selection and last spell use: PASS",
+      "1440x900: 1 cards, first/middle/last selection and last spell use: PASS",
+      "1440x900: 6 cards, first/middle/last selection and last spell use: PASS",
+      "1440x900: 10 cards, first/middle/last selection and last spell use: PASS",
+      "1366x768: 1 cards, first/middle/last selection and last spell use: PASS",
+      "1366x768: 6 cards, first/middle/last selection and last spell use: PASS",
+      "1366x768: 10 cards, first/middle/last selection and last spell use: PASS",
+      "1280x720: 1 cards, first/middle/last selection and last spell use: PASS",
+      "1280x720: 6 cards, first/middle/last selection and last spell use: PASS",
+      "1280x720: 10 cards, first/middle/last selection and last spell use: PASS",
+      "1024x600: 1 cards, first/middle/last selection and last spell use: PASS",
+      "1024x600: 6 cards, first/middle/last selection and last spell use: PASS",
+      "1024x600: 10 cards, first/middle/last selection and last spell use: PASS"
+    ],
+    "errors": []
+  },
+  "presence": {
+    "results": [
+      "alone red/self excluded PASS",
+      "duplicate own tab remains red PASS",
+      "other user anywhere on site green; duplicate-tab logout returns red PASS",
+      "reconnect restores self-excluded presence PASS",
+      "5 mobile/desktop title layouts PASS",
+      "failed live transport shows gray PASS",
+      "real server 30s -> existing AI VS -> battle -> result keeps selected deck name PASS"
+    ],
+    "errors": [],
+    "physicalPhone": "NOT_RUN",
+    "productionRequests": 0
+  },
+  "build": "PASS: workspace typecheck, Vite and API build",
+  "modes": {
+    "pvp": "PASS: two authenticated browsers, frozen cosmetics, emotes, reload",
+    "draft": "PASS: both seats, emotes, reload and mobile",
+    "tower": "PASS: mobile KO, result, reward and 25-card swap"
+  },
+  "physicalPhone": "NOT_RUN",
+  "productionTwoAccountGameplay": "NOT_RUN",
+  "migration": false,
+  "cardChampionDataWrites": false
+}

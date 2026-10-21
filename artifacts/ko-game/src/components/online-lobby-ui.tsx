@@ -252,12 +252,14 @@ export function SelectedDeckStamp({ deck }: { deck: Deck | undefined }) {
 
 export function ModeCard({
   title,
+  titleStatus,
   description,
   icon,
   onClick,
   testId,
 }: {
   title: string;
+  titleStatus?: ReactNode;
   description: string;
   icon: "quick" | "friendly";
   onClick: () => void;
@@ -276,7 +278,7 @@ export function ModeCard({
         </div>
         <Swords className="h-5 w-5 text-neutral-700 transition-colors group-hover:text-amber-500" aria-hidden="true" />
       </div>
-      <h2 className="mt-12 text-2xl font-black text-white">{title}</h2>
+      <h2 className="mt-12 flex items-center gap-3 text-2xl font-black text-white"><span>{title}</span>{titleStatus}</h2>
       <p className="mt-3 max-w-sm text-sm leading-6 text-neutral-400">{description}</p>
       <span className="mt-7 block text-xs font-black tracking-[0.18em] text-amber-400">ENTER LOBBY →</span>
     </button>
