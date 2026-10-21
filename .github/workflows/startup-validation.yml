@@ -254,6 +254,7 @@ jobs:
           run_browser docs/qa/cinematic-browser.mjs
           run_browser docs/qa/presentation-master-browser.mjs
           KO_QA_NO_REMOTE_ART=1 run_browser docs/qa/art-direction-browser.mjs
+          run_browser docs/qa/ai-replay-race-browser.mjs
           KO_QA_COMPILED_CSS=1 run_browser docs/qa/mobile-history-browser.mjs
           KO_QA_COMPILED_CSS=1 run_browser docs/qa/mobile-portrait-battle-browser.mjs
           run_browser docs/qa/battle-card-info-portraits-browser.mjs

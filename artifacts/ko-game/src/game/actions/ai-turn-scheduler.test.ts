@@ -136,3 +136,29 @@ test('AI never auto-ends while an unresolved target selection is pending', async
   assert.equal(states.length, 0);
   assert.deepEqual(waits, []);
 });
+
+for (const interruptedBy of ['END_TURN', 'SURRENDER'] as const) {
+  test(`AI does not overwrite an externally committed ${interruptedBy} during its wait`, async () => {
+    const { executeAction } = await import('./engine-actions');
+    const initial = aiOnlyTurn();
+    let current = initial, interrupted = false;
+    const actions: string[] = [];
+    const result = await runAITurn(initial, 'player-2', {
+      getState: () => current,
+      onState: next => { current = next; },
+      onAction: action => actions.push(action.type),
+      isCancelled: () => false, waitForPresentationIdle: async () => {}, actionDelayMs: 1,
+      wait: async ms => {
+        if (!ms || interrupted) return;
+        interrupted = true;
+        const result = executeAction(current, { type: interruptedBy, playerId: interruptedBy === 'SURRENDER' ? 'player-1' : 'player-2' });
+        assert.ok(result.success); current = result.state;
+      },
+    });
+    assert.ok(interrupted);
+    assert.strictEqual(result, current);
+    assert.deepEqual(actions, []);
+    assert.equal(result.status, interruptedBy === 'SURRENDER' ? 'FINISHED' : 'IN_PROGRESS');
+    if (interruptedBy === 'END_TURN') assert.equal(result.activePlayerId, 'player-1');
+  });
+}

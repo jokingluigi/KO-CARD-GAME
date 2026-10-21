@@ -19,8 +19,26 @@ for(const [name,width,height] of [['desktop',1440,900],['mobile',390,844],['smal
  });
  const paths=[['menu','/'],['modes','/online'],['setup','/ai-match'],['decks','/decks'],['collection','/collection'],['tower','/tower'],['battle','/qa/art-direction.html'],['awakened','/qa/art-direction.html?view=awakened'],['mulligan','/qa/art-direction.html?view=mulligan'],['result','/qa/art-direction.html?view=result']];
  for(const [view,path] of paths){await page.goto((process.env.KO_QA_ORIGIN??'http://127.0.0.1:5173')+path,{waitUntil:'domcontentloaded'});await page.waitForTimeout(1400);if(view==='decks')await page.getByTestId('text-page-title').waitFor();if(['battle','awakened','mulligan','result'].includes(view))await page.getByTestId('visual-state').waitFor();if(process.env.KO_QA_NO_REMOTE_ART!=='1')await page.waitForFunction(()=>[...document.images].filter(i=>{const r=i.getBoundingClientRect();return r.top<innerHeight&&r.bottom>0}).every(i=>i.complete&&i.naturalWidth>0),{},{timeout:15000});await page.screenshot({path:output+'/'+name+'-'+view+'.png',fullPage:!(['decks','collection'].includes(view))});const metrics=await page.evaluate(()=>({overflow:document.documentElement.scrollWidth>innerWidth+1,h1:document.querySelector('h1')?.textContent,buttons:document.querySelectorAll('button').length,cardImages:document.querySelectorAll('[data-rarity]').length}));if(metrics.overflow)failures.push(name+'/'+view+': horizontal overflow');if(view==='battle'||view==='awakened'){
-const theme=await page.locator('.ko-game-shell').evaluate(e=>({ground:getComputedStyle(e).backgroundColor,primary:getComputedStyle(e).getPropertyValue('--primary').trim(),art:[...e.querySelectorAll('.ko-cinematic-background>div')].every(n=>getComputedStyle(n).display==='none')}));assert.equal(theme.ground,'rgb(0, 0, 0)','battle background must stay pure black');assert.equal(theme.primary,'43 58% 62%','black/gold primary');assert.equal(theme.art,true,'battle background art must not replace black');
- const bounds=await page.locator('.ko-board-area').boundingBox();for(const slot of await page.locator('.ko-board-slot').all()){const r=await slot.boundingBox();if(r&&bounds&&(r.y<bounds.y-1||r.y+r.height>bounds.y+bounds.height+1))failures.push(name+': cropped board card');}
+// The reviewed production board replaces the former pure-black ground.
+const theme=await page.locator('.ko-game-shell').evaluate(e=>({
+ ground:getComputedStyle(e).backgroundColor,
+ wood:getComputedStyle(e).backgroundImage,
+ primary:getComputedStyle(e).getPropertyValue('--primary').trim(),
+ oldAmbience:getComputedStyle(e.querySelector('.ko-cinematic-background')).display,
+ cardBackings:[...e.querySelectorAll('.ko-board-slot,.ko-board-slot-wrapper,.ko-hand-card')].map(n=>getComputedStyle(n).backgroundColor),
+}));
+assert.equal(theme.ground,'rgb(56, 35, 27)','reviewed dark walnut base');
+assert.match(theme.wood,/walnut-material-(portrait|wide).*\.webp/,'actual walnut material must load');
+assert.equal(theme.primary,'43 58% 62%','black/gold primary');
+assert.equal(theme.oldAmbience,'none','legacy background must not cover the table');
+assert.ok(theme.cardBackings.length>0&&theme.cardBackings.every(c=>c==='rgb(0, 0, 0)'),'card frame interiors remain opaque black');
+for(const row of await page.locator('.ko-player-board-row,.ko-opponent-board-row').all()){
+ const bounds=await row.boundingBox();
+ for(const slot of await row.locator('.ko-board-slot').all()){
+  const r=await slot.boundingBox();
+  if(r&&bounds&&(r.y<bounds.y-1||r.y+r.height>bounds.y+bounds.height+1))failures.push(name+': cropped board card');
+ }
+}
  assert.equal(await page.locator('.ko-game-stage').evaluate(e=>getComputedStyle(e).backgroundImage),'none','awakened field must not acquire a gradient');const before=await page.getByTestId('visual-state').textContent();await page.locator('.ko-hand-card').first().click();assert.equal(await page.getByTestId('visual-state').textContent(),before,'selection changed game state');
  }if(view==='decks'){await page.getByTestId('input-card-search').fill('NO_SUCH_CARD_VISUAL_QA');await page.getByTestId('empty-card-results').waitFor();await page.getByTestId('input-card-search').fill('');await page.getByTestId('grid-card-collection').waitFor();await page.getByTestId('button-open-deck-visual-deck').click();}
  if(view==='collection'){const search=page.locator('input[placeholder]').first();await search.fill('NO_SUCH_CARD_VISUAL_QA');assert.equal(await page.locator('.ko-collection-item').count(),0);await search.fill('');await page.locator('.ko-collection-item').first().waitFor();await page.locator('.ko-collection-item').first().click();await page.getByRole('dialog').first().waitFor();await page.keyboard.press('Escape');await page.getByRole('dialog').first().waitFor({state:'hidden'});}

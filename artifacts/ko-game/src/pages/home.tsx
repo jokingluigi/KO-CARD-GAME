@@ -736,7 +736,8 @@ export default function Home({ initialAuthUser }: { initialAuthUser?: AuthUser }
       waitForPresentationIdle,
       isCancelled: () => cancelled || aiSchedulerGenerationRef.current !== schedulerGeneration,
       onAction: (action) => { aiMatchActionsRef.current.push({ ...action, actor: 'AI' }); },
-      onState: setGameState,
+      getState: () => latestGameStateRef.current,
+      onState: (state) => { latestGameStateRef.current = state; setGameState(state); },
     }).finally(() => {
       if (aiSchedulerGenerationRef.current === schedulerGeneration) {
         aiActionRunningRef.current = false;
@@ -938,6 +939,7 @@ export default function Home({ initialAuthUser }: { initialAuthUser?: AuthUser }
     const result = executeAction(current, action);
     if (!result.success) { setPlayError(result.message); return; }
     if (isAiMatch) recordHumanAIMatchAction(action);
+    latestGameStateRef.current = result.state;
     setGameState(result.state);
     setSelectedCardId(null);
     setPlayError(null);
@@ -958,9 +960,14 @@ export default function Home({ initialAuthUser }: { initialAuthUser?: AuthUser }
     }
     if (actingPlayerId === currentState.players[0]?.id) {
       recordHumanAIMatchAction({ type: 'END_TURN', playerId: actingPlayerId });
+    } else if (isAiMatch && aiMatchStarted) {
+      // A timeout is a committed AI action too; otherwise result replay misses
+      // an entire turn transition. The scheduler observes it via getState.
+      aiMatchActionsRef.current.push({ type: 'END_TURN', playerId: actingPlayerId, actor: 'AI' });
     }
 
     if (isAiMatch && aiMatchStarted) {
+      latestGameStateRef.current = result.state;
       if (!isTimeout) {
         timeoutHandledTurnRef.current = turnKey;
       }
@@ -1012,6 +1019,7 @@ export default function Home({ initialAuthUser }: { initialAuthUser?: AuthUser }
     }
     recordHumanAIMatchAction({ type: 'SURRENDER', playerId: gameState.players[0].id });
 
+    latestGameStateRef.current = result.state;
     setGameState(result.state);
     setSelectedCardId(null);
     setSelectedAttackerId(null);
@@ -1583,6 +1591,7 @@ export default function Home({ initialAuthUser }: { initialAuthUser?: AuthUser }
         const result = executeAction(current, action);
         if (result.success) {
           recordHumanAIMatchAction(action);
+          latestGameStateRef.current = result.state;
           setGameState(result.state);
         }
       }}

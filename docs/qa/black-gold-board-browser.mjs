@@ -99,6 +99,8 @@ try {
               { instanceId: "destroy-local" },
             ),
           ];
+        if (mode === "revive")
+          s.players[0].hand = [generateCardInstance(definitions.find(c => c.name === '복귀'), { instanceId: 'revive-local' })];
         if (mode === "champion") s.players[1].board = [null, null, null, null];
         if (mode === "quest") s.players[0].champion.questProgress = 7;
         if (mode === "many")
@@ -143,6 +145,11 @@ try {
         for (const r of [g.portrait, g.enemy]) {
           assert.ok(Math.abs(r.x + r.w / 2 - width / 2) < 1);
           assert.ok(r.h > r.w);
+        }
+        for (const side of ['player', 'opponent']) {
+          const stats = await page.locator(`.ko-${side}-stats`).boundingBox();
+          const zones = await page.locator(`.ko-${side}-zones`).boundingBox();
+          assert.ok(stats.y + stats.height <= zones.y, 'HP/gold appear above deck/graveyard without overlap');
         }
         assert.ok(g.portrait.w >= 93);
         for (const n of await page
@@ -413,6 +420,20 @@ try {
         await idle();
       },
     );
+    await check(width + ' graveyard card return selection uses real card and preserves target action', async () => {
+      await load('revive');
+      const before = await state(), id = before.players[0].graveyard[0].instanceId;
+      await page.locator('.ko-hand-card').click();
+      await page.getByRole('button', { name: '사용', exact: true }).click();
+      const modal = page.getByRole('dialog', { name: '내 묘지', exact: true });
+      await modal.waitFor();
+      await modal.locator('[data-testid="graveyard-cards"] .ko-card-depth').first().click({position:{x:30,y:90}});
+      await page.waitForFunction(id => !JSON.parse(document.querySelector('[data-testid="state-json"]').textContent).players[0].graveyard.some(c => c.instanceId === id), id);
+      const after = await state();
+      assert.equal(after.players[0].deck.length, before.players[0].deck.length + 1);
+      assert.equal(await page.locator('.ko-touch-inspector').count(), 0, 'return selection does not open blocking card info');
+      await idle();
+    });
     await check(
       width +
         " emotes, settings, history, graveyard, card info and hand scroll",
@@ -436,6 +457,15 @@ try {
         await page.getByRole("button", { name: "경기 로그 열기" }).click();
         await page.getByRole("button", { name: "경기 로그 닫기" }).click();
         await page.locator(".ko-player-zones button").click();
+        const graveyard = page.getByRole("dialog", { name: "내 묘지", exact: true });
+        const graveCards = graveyard.locator('[data-testid="graveyard-cards"] .ko-card-depth');
+        assert.equal(await graveCards.count(), (await state()).players[0].graveyard.length);
+        assert.ok(await graveCards.first().locator('.ko-card-frame').count(), 'graveyard uses the actual framed card renderer');
+        assert.ok(await graveCards.first().locator('img').count(), 'graveyard includes card artwork');
+        await graveyard.getByRole('button', { name: /상세정보/ }).first().click();
+        await page.locator('.ko-touch-inspector').waitFor();
+        await page.locator('.ko-touch-inspector-close').click();
+        if (width === 390) await page.screenshot({ path: out + '/graveyard-390x844.png' });
         await page
           .getByRole("dialog", { name: "내 묘지", exact: true })
           .getByRole("button", { name: "닫기", exact: true })
