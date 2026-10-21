@@ -10,6 +10,7 @@ on:
       - artifacts/ko-game/src/components/admin-layout.tsx
       - artifacts/ko-game/src/pages/admin.tsx
       - artifacts/ko-game/src/pages/decks.tsx
+      - docs/qa/admin-console*browser.mjs
       - docs/qa/auth*browser*.mjs
       - docs/qa/entry-browser.mjs
       - .github/workflows/auth-startup-validation.yml

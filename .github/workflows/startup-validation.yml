@@ -29,6 +29,10 @@ on:
       - artifacts/ko-game/src/pages/home.tsx
       - artifacts/ko-game/src/components/match-result-overlay.tsx
       - artifacts/ko-game/src/index.css
+      - docs/qa/champion-features-browser.mjs
+      - docs/qa/admin-console*browser.mjs
+      - docs/qa/mobile-spell-drag-browser.mjs
+      - docs/qa/quest-completion-features*.mjs
       - docs/qa/daily-quests-browser.mjs
       - artifacts/api-server/src/lib/daily-quest-service*
       - artifacts/api-server/src/lib/ai-quest-match-storage.ts

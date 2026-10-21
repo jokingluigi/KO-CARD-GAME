@@ -40,3 +40,9 @@ Production verification must check both Render commit IDs, tested static asset h
 PR #73 deployed to both Render services at `780fbab79afcedd560adfa00ef04cb15de607ae4`. Read-only administrator verification passed and the daily bonus remains disabled. The registered administrator account's active draft was created **2026-10-15 10:33 UTC**, is in the drafting phase, and its stored text and ability definitions for all three reported cards equal the current administrator catalog. No timers or match state were advanced by this audit. This may differ from the user's newly reported session; no cause is asserted from this account alone. The exact discrepant wording/action remains requested.
 
 A follow-up also ensures the new browser checks run after Playwright installation in CI and accept the CI-supplied module instead of relying on the cloud machine's local Chromium path. Local compiled browser and five-viewport touch checks were rerun successfully. GitHub full-workflow status is tracked separately; local passes do not claim a completed CI run.
+
+## Final deployment and CI label maintenance
+
+PR #74 is live on both Render services at `5163158bfdeb47f51f341a908299cd62a632dcd2`. The tested assets and health checks match; the server remains free-tier and no migration was applied.
+
+PR #73's GitHub draft traffic check passed; startup CI exposed the browser-installation ordering addressed in #74. Another existing CI script still looked for the obsolete `DRAFT 저장` button after the champion editor had changed to `수정 저장` / `미공개로 생성`. Update those two selectors to the actual save actions without weakening save assertions, and ensure the relevant QA script paths trigger their workflows. Actual champion browser checks and compiled admin menu navigation/save checks pass locally with the corrected selectors. Full GitHub runs are not claimed as passed while pending. These follow-up files change QA only.

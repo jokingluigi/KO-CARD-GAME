@@ -117,9 +117,9 @@ try {
     .getByRole("tab", { name: "고유 · 시작 능력", exact: true })
     .click();
   await page.getByRole("tab", { name: "기본 정보", exact: true }).click();
-  await page.getByRole("button", { name: "DRAFT 저장", exact: true }).click();
+  await page.getByRole("button", { name: "수정 저장", exact: true }).click();
   await page
-    .getByRole("button", { name: "DRAFT 저장", exact: true })
+    .getByRole("button", { name: "수정 저장", exact: true })
     .waitFor({ state: "hidden" });
   report.championSave = true;
   await page.goto(
