@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="720" height="280" viewBox="0 0 720 280" preserveAspectRatio="none">
+<!-- Original linen: quiet woven fibres, a flat playing surface and soft edge folds. -->
+<defs><path id="hem" d="M9 11Q28 17 49 12T130 10Q225 6 354 12T551 9Q632 15 704 8Q699 32 703 55T707 110Q700 165 709 224L711 249Q698 265 672 262Q594 257 545 262T369 266Q268 260 188 265T49 264Q26 265 12 257L7 237Q15 195 9 152T12 79Q15 40 9 11Z"/><clipPath id="edge"><use href="#hem"/></clipPath><pattern id="fibre" width="12" height="12" patternUnits="userSpaceOnUse"><path d="M0 2h12M3 0v12" fill="none" stroke="#6d5945" stroke-width=".65" opacity=".075"/><path d="M0 8h12M9 0v12" fill="none" stroke="#fff7e9" stroke-width=".6" opacity=".16"/></pattern></defs>
+<use href="#hem" transform="translate(0 4)" fill="#201511" opacity=".45"/>
+<use href="#hem" fill="#d8c2a1" stroke="#987b62" stroke-width="1"/>
+<g clip-path="url(#edge)"><path fill="#e7d5b9" opacity=".55" d="M25 24Q194 13 359 22T691 22L689 242Q514 251 363 251T25 249Q18 135 25 24Z"/>
+<path fill="#af9478" opacity=".65" d="M9 11Q19 27 22 58Q27 38 54 29L91 17Q36 24 9 11ZM704 8Q690 29 685 61Q679 41 657 31L629 18Q676 24 704 8ZM711 249Q686 246 672 222Q684 249 638 255L594 262Q664 260 672 262Q699 265 711 249ZM12 257Q30 244 37 220Q35 247 89 254L124 263Q48 269 12 257Z"/>
+<path fill="#987b62" opacity=".28" d="M11 84Q22 107 18 144T21 197Q14 173 9 152T11 84ZM702 75Q694 104 700 140T702 204Q709 176 705 147T702 75Z"/>
+<path d="M15 18Q36 29 70 20M21 54Q27 37 49 31M696 17Q682 27 672 43M701 251Q676 252 660 238M20 253Q39 247 49 238M65 259Q148 256 197 260M544 258Q605 254 646 257" fill="none" stroke="#987b62" stroke-width="1.2" stroke-linecap="round" opacity=".48"/>
+<use href="#hem" fill="url(#fibre)"/>
+</g></svg>

@@ -1,0 +1,2146 @@
+{
+  "results": [
+    {
+      "viewport": [
+        360,
+        740
+      ],
+      "theme": "new",
+      "width": 360,
+      "height": 740,
+      "scrollWidth": 360,
+      "scrollHeight": 775,
+      "scale": 1,
+      "portrait": {
+        "x": 133.5,
+        "y": 484.375,
+        "w": 93,
+        "h": 124
+      },
+      "enemy": {
+        "x": 133.5,
+        "y": 28,
+        "w": 93,
+        "h": 124
+      },
+      "card": {
+        "x": 8,
+        "y": 162,
+        "w": 83,
+        "h": 116.1875
+      },
+      "hand": {
+        "x": 8,
+        "y": 626.375,
+        "w": 344,
+        "h": 146.796875
+      },
+      "handCard": {
+        "x": 17,
+        "y": 641.375,
+        "w": 84.84375,
+        "h": 118.796875
+      },
+      "controls": {
+        "x": 8,
+        "y": 288.1875,
+        "w": 344,
+        "h": 52
+      },
+      "ability": {
+        "x": 232.5,
+        "y": 572.375,
+        "w": 119.5,
+        "h": 44
+      },
+      "images": [
+        {
+          "loaded": true,
+          "fit": "contain"
+        },
+        {
+          "loaded": true,
+          "fit": "contain"
+        }
+      ],
+      "slots": 8,
+      "wood": "url(\"http://127.0.0.1:5186/src/components/battle-board-assets/walnut-table.svg?t=1792539979253\")",
+      "oldVeil": "none",
+      "oldAmbience": "none",
+      "mats": [
+        {
+          "image": "url(\"data:image/svg+xml,%3csvg%20xmlns='http://www.w3.org/2000/svg'%20width='720'%20height='280'%20viewBox='0%200%20720%20280'%20preserveAspectRatio='none'%3e%3c!--%20Original%20linen:%20quiet%20woven%20fibres,%20a%20flat%20playing%20surface%20and%20soft%20edge%20folds.%20--%3e%3cdefs%3e%3cpath%20id='hem'%20d='M9%2011Q28%2017%2049%2012T130%2010Q225%206%20354%2012T551%209Q632%2015%20704%208Q699%2032%20703%2055T707%20110Q700%20165%20709%20224L711%20249Q698%20265%20672%20262Q594%20257%20545%20262T369%20266Q268%20260%20188%20265T49%20264Q26%20265%2012%20257L7%20237Q15%20195%209%20152T12%2079Q15%2040%209%2011Z'/%3e%3cclipPath%20id='edge'%3e%3cuse%20href='%23hem'/%3e%3c/clipPath%3e%3cpattern%20id='fibre'%20width='12'%20height='12'%20patternUnits='userSpaceOnUse'%3e%3cpath%20d='M0%202h12M3%200v12'%20fill='none'%20stroke='%236d5945'%20stroke-width='.65'%20opacity='.075'/%3e%3cpath%20d='M0%208h12M9%200v12'%20fill='none'%20stroke='%23fff7e9'%20stroke-width='.6'%20opacity='.16'/%3e%3c/pattern%3e%3c/defs%3e%3cuse%20href='%23hem'%20transform='translate(0%204)'%20fill='%23201511'%20opacity='.45'/%3e%3cuse%20href='%23hem'%20fill='%23d8c2a1'%20stroke='%23987b62'%20stroke-width='1'/%3e%3cg%20clip-path='url(%23edge)'%3e%3cpath%20fill='%23e7d5b9'%20opacity='.55'%20d='M25%2024Q194%2013%20359%2022T691%2022L689%20242Q514%20251%20363%20251T25%20249Q18%20135%2025%2024Z'/%3e%3cpath%20fill='%23af9478'%20opacity='.65'%20d='M9%2011Q19%2027%2022%2058Q27%2038%2054%2029L91%2017Q36%2024%209%2011ZM704%208Q690%2029%20685%2061Q679%2041%20657%2031L629%2018Q676%2024%20704%208ZM711%20249Q686%20246%20672%20222Q684%20249%20638%20255L594%20262Q664%20260%20672%20262Q699%20265%20711%20249ZM12%20257Q30%20244%2037%20220Q35%20247%2089%20254L124%20263Q48%20269%2012%20257Z'/%3e%3cpath%20fill='%23987b62'%20opacity='.28'%20d='M11%2084Q22%20107%2018%20144T21%20197Q14%20173%209%20152T11%2084ZM702%2075Q694%20104%20700%20140T702%20204Q709%20176%20705%20147T702%2075Z'/%3e%3cpath%20d='M15%2018Q36%2029%2070%2020M21%2054Q27%2037%2049%2031M696%2017Q682%2027%20672%2043M701%20251Q676%20252%20660%20238M20%20253Q39%20247%2049%20238M65%20259Q148%20256%20197%20260M544%20258Q605%20254%20646%20257'%20fill='none'%20stroke='%23987b62'%20stroke-width='1.2'%20stroke-linecap='round'%20opacity='.48'/%3e%3cuse%20href='%23hem'%20fill='url(%23fibre)'/%3e%3c/g%3e%3c/svg%3e\")",
+          "pointerEvents": "none",
+          "content": "\"\""
+        },
+        {
+          "image": "url(\"data:image/svg+xml,%3csvg%20xmlns='http://www.w3.org/2000/svg'%20width='720'%20height='280'%20viewBox='0%200%20720%20280'%20preserveAspectRatio='none'%3e%3c!--%20Original%20linen:%20quiet%20woven%20fibres,%20a%20flat%20playing%20surface%20and%20soft%20edge%20folds.%20--%3e%3cdefs%3e%3cpath%20id='hem'%20d='M9%2011Q28%2017%2049%2012T130%2010Q225%206%20354%2012T551%209Q632%2015%20704%208Q699%2032%20703%2055T707%20110Q700%20165%20709%20224L711%20249Q698%20265%20672%20262Q594%20257%20545%20262T369%20266Q268%20260%20188%20265T49%20264Q26%20265%2012%20257L7%20237Q15%20195%209%20152T12%2079Q15%2040%209%2011Z'/%3e%3cclipPath%20id='edge'%3e%3cuse%20href='%23hem'/%3e%3c/clipPath%3e%3cpattern%20id='fibre'%20width='12'%20height='12'%20patternUnits='userSpaceOnUse'%3e%3cpath%20d='M0%202h12M3%200v12'%20fill='none'%20stroke='%236d5945'%20stroke-width='.65'%20opacity='.075'/%3e%3cpath%20d='M0%208h12M9%200v12'%20fill='none'%20stroke='%23fff7e9'%20stroke-width='.6'%20opacity='.16'/%3e%3c/pattern%3e%3c/defs%3e%3cuse%20href='%23hem'%20transform='translate(0%204)'%20fill='%23201511'%20opacity='.45'/%3e%3cuse%20href='%23hem'%20fill='%23d8c2a1'%20stroke='%23987b62'%20stroke-width='1'/%3e%3cg%20clip-path='url(%23edge)'%3e%3cpath%20fill='%23e7d5b9'%20opacity='.55'%20d='M25%2024Q194%2013%20359%2022T691%2022L689%20242Q514%20251%20363%20251T25%20249Q18%20135%2025%2024Z'/%3e%3cpath%20fill='%23af9478'%20opacity='.65'%20d='M9%2011Q19%2027%2022%2058Q27%2038%2054%2029L91%2017Q36%2024%209%2011ZM704%208Q690%2029%20685%2061Q679%2041%20657%2031L629%2018Q676%2024%20704%208ZM711%20249Q686%20246%20672%20222Q684%20249%20638%20255L594%20262Q664%20260%20672%20262Q699%20265%20711%20249ZM12%20257Q30%20244%2037%20220Q35%20247%2089%20254L124%20263Q48%20269%2012%20257Z'/%3e%3cpath%20fill='%23987b62'%20opacity='.28'%20d='M11%2084Q22%20107%2018%20144T21%20197Q14%20173%209%20152T11%2084ZM702%2075Q694%20104%20700%20140T702%20204Q709%20176%20705%20147T702%2075Z'/%3e%3cpath%20d='M15%2018Q36%2029%2070%2020M21%2054Q27%2037%2049%2031M696%2017Q682%2027%20672%2043M701%20251Q676%20252%20660%20238M20%20253Q39%20247%2049%20238M65%20259Q148%20256%20197%20260M544%20258Q605%20254%20646%20257'%20fill='none'%20stroke='%23987b62'%20stroke-width='1.2'%20stroke-linecap='round'%20opacity='.48'/%3e%3cuse%20href='%23hem'%20fill='url(%23fibre)'/%3e%3c/g%3e%3c/svg%3e\")",
+          "pointerEvents": "none",
+          "content": "\"\""
+        }
+      ],
+      "portraitFrames": [
+        {
+          "width": 93,
+          "height": 124,
+          "borders": [
+            "1px solid rgb(185, 154, 96)",
+            "1px solid rgb(185, 154, 96)",
+            "1px solid rgb(185, 154, 96)",
+            "1px solid rgb(185, 154, 96)"
+          ]
+        },
+        {
+          "width": 93,
+          "height": 124,
+          "borders": [
+            "1px solid rgb(185, 154, 96)",
+            "1px solid rgb(185, 154, 96)",
+            "1px solid rgb(185, 154, 96)",
+            "1px solid rgb(185, 154, 96)"
+          ]
+        }
+      ],
+      "blackBackings": [
+        "rgb(0, 0, 0)",
+        "rgb(0, 0, 0)",
+        "rgb(0, 0, 0)",
+        "rgb(0, 0, 0)",
+        "rgb(0, 0, 0)",
+        "rgb(0, 0, 0)",
+        "rgb(0, 0, 0)",
+        "rgb(0, 0, 0)",
+        "rgb(0, 0, 0)",
+        "rgb(0, 0, 0)",
+        "rgb(0, 0, 0)",
+        "rgb(0, 0, 0)",
+        "rgb(0, 0, 0)",
+        "rgb(0, 0, 0)",
+        "rgb(0, 0, 0)",
+        "rgb(0, 0, 0)",
+        "rgb(0, 0, 0)",
+        "rgb(0, 0, 0)",
+        "rgb(0, 0, 0)",
+        "rgb(0, 0, 0)",
+        "rgb(0, 0, 0)",
+        "rgb(0, 0, 0)",
+        "rgb(0, 0, 0)",
+        "rgb(0, 0, 0)",
+        "rgb(0, 0, 0)",
+        "rgb(0, 0, 0)"
+      ],
+      "handTrackTop": "-8px",
+      "questAbilityGap": 8,
+      "panelBorders": [
+        [
+          "1px solid rgb(185, 154, 96)",
+          "1px solid rgb(185, 154, 96)",
+          "1px solid rgb(185, 154, 96)",
+          "1px solid rgb(185, 154, 96)"
+        ],
+        [
+          "1px solid rgb(185, 154, 96)",
+          "1px solid rgb(185, 154, 96)",
+          "1px solid rgb(185, 154, 96)",
+          "1px solid rgb(185, 154, 96)"
+        ],
+        [
+          "1px solid rgb(185, 154, 96)",
+          "1px solid rgb(185, 154, 96)",
+          "1px solid rgb(185, 154, 96)",
+          "1px solid rgb(185, 154, 96)"
+        ],
+        [
+          "1px solid rgb(185, 154, 96)",
+          "1px solid rgb(185, 154, 96)",
+          "1px solid rgb(185, 154, 96)",
+          "1px solid rgb(185, 154, 96)"
+        ],
+        [
+          "1px solid rgb(185, 154, 96)",
+          "1px solid rgb(185, 154, 96)",
+          "1px solid rgb(185, 154, 96)",
+          "1px solid rgb(185, 154, 96)"
+        ],
+        [
+          "1px solid rgb(185, 154, 96)",
+          "1px solid rgb(185, 154, 96)",
+          "1px solid rgb(185, 154, 96)",
+          "1px solid rgb(185, 154, 96)"
+        ],
+        [
+          "1px solid rgb(185, 154, 96)",
+          "1px solid rgb(185, 154, 96)",
+          "1px solid rgb(185, 154, 96)",
+          "1px solid rgb(185, 154, 96)"
+        ],
+        [
+          "1px solid rgb(185, 154, 96)",
+          "1px solid rgb(185, 154, 96)",
+          "1px solid rgb(185, 154, 96)",
+          "1px solid rgb(185, 154, 96)"
+        ],
+        [
+          "1px solid rgb(185, 154, 96)",
+          "1px solid rgb(185, 154, 96)",
+          "1px solid rgb(185, 154, 96)",
+          "1px solid rgb(185, 154, 96)"
+        ],
+        [
+          "1px solid rgb(185, 154, 96)",
+          "1px solid rgb(185, 154, 96)",
+          "1px solid rgb(185, 154, 96)",
+          "1px solid rgb(185, 154, 96)"
+        ],
+        [
+          "1px solid rgb(185, 154, 96)",
+          "1px solid rgb(185, 154, 96)",
+          "1px solid rgb(185, 154, 96)",
+          "1px solid rgb(185, 154, 96)"
+        ],
+        [
+          "1px solid rgb(185, 154, 96)",
+          "1px solid rgb(185, 154, 96)",
+          "1px solid rgb(185, 154, 96)",
+          "1px solid rgb(185, 154, 96)"
+        ],
+        [
+          "1px solid rgb(185, 154, 96)",
+          "1px solid rgb(185, 154, 96)",
+          "1px solid rgb(185, 154, 96)",
+          "1px solid rgb(185, 154, 96)"
+        ]
+      ],
+      "selectedCardClearance": {
+        "top": 2.7462158203125,
+        "bottom": 15.55999755859375
+      }
+    },
+    {
+      "viewport": [
+        360,
+        740
+      ],
+      "theme": "classic",
+      "width": 360,
+      "height": 740,
+      "scrollWidth": 360,
+      "scrollHeight": 740,
+      "scale": 1,
+      "portrait": {
+        "x": 8,
+        "y": 475.203125,
+        "w": 80,
+        "h": 88
+      },
+      "enemy": {
+        "x": 8,
+        "y": 30,
+        "w": 80,
+        "h": 88
+      },
+      "card": {
+        "x": 34.859375,
+        "y": 128.109375,
+        "w": 69.5625,
+        "h": 97.375
+      },
+      "hand": {
+        "x": 8,
+        "y": 569.203125,
+        "w": 344,
+        "h": 162.796875
+      },
+      "handCard": {
+        "x": 16,
+        "y": 593.203125,
+        "w": 84.84375,
+        "h": 118.796875
+      },
+      "controls": {
+        "x": 8,
+        "y": 269.59375,
+        "w": 344,
+        "h": 54
+      },
+      "ability": {
+        "x": 226,
+        "y": 519.203125,
+        "w": 126,
+        "h": 44
+      },
+      "images": [
+        {
+          "loaded": true,
+          "fit": "contain"
+        },
+        {
+          "loaded": true,
+          "fit": "contain"
+        }
+      ],
+      "slots": 8,
+      "wood": "none",
+      "oldVeil": "\"\"",
+      "oldAmbience": "block",
+      "mats": [
+        {
+          "image": "none",
+          "pointerEvents": "auto",
+          "content": "none"
+        },
+        {
+          "image": "none",
+          "pointerEvents": "auto",
+          "content": "none"
+        }
+      ],
+      "portraitFrames": [
+        {
+          "width": 80,
+          "height": 88,
+          "borders": [
+            "0px none rgb(229, 217, 186)",
+            "0px none rgb(229, 217, 186)",
+            "0px none rgb(229, 217, 186)",
+            "2px solid rgb(182, 142, 61)"
+          ]
+        },
+        {
+          "width": 80,
+          "height": 88,
+          "borders": [
+            "1px solid rgb(124, 104, 66)",
+            "1px solid rgb(124, 104, 66)",
+            "3px solid rgb(167, 108, 94)",
+            "1px solid rgb(124, 104, 66)"
+          ]
+        }
+      ],
+      "blackBackings": [
+        "rgba(0, 0, 0, 0)",
+        "rgba(0, 0, 0, 0)",
+        "rgba(0, 0, 0, 0)",
+        "rgba(0, 0, 0, 0)",
+        "rgba(21, 23, 18, 0.376)",
+        "rgba(21, 23, 18, 0.376)",
+        "rgba(0, 0, 0, 0)",
+        "rgba(0, 0, 0, 0)",
+        "rgba(0, 0, 0, 0)",
+        "rgba(0, 0, 0, 0)",
+        "rgba(21, 23, 18, 0.376)",
+        "rgba(21, 23, 18, 0.376)",
+        "rgba(0, 0, 0, 0)",
+        "rgba(0, 0, 0, 0)",
+        "rgba(0, 0, 0, 0)",
+        "rgba(0, 0, 0, 0)",
+        "rgba(0, 0, 0, 0)",
+        "rgba(0, 0, 0, 0)",
+        "rgba(0, 0, 0, 0)",
+        "rgba(0, 0, 0, 0)",
+        "rgba(0, 0, 0, 0)",
+        "rgba(0, 0, 0, 0)",
+        "rgba(0, 0, 0, 0)",
+        "rgba(0, 0, 0, 0)",
+        "rgba(0, 0, 0, 0)",
+        "rgba(0, 0, 0, 0)"
+      ],
+      "handTrackTop": "0px",
+      "questAbilityGap": 7.9375,
+      "panelBorders": [
+        [
+          "0px none rgb(236, 232, 223)",
+          "0px none rgb(236, 232, 223)",
+          "0px none rgb(236, 232, 223)",
+          "2px solid rgb(161, 137, 84)"
+        ],
+        [
+          "0px none rgb(236, 232, 223)",
+          "0px none rgb(236, 232, 223)",
+          "0px none rgb(236, 232, 223)",
+          "2px solid rgb(161, 137, 84)"
+        ],
+        [
+          "1px solid oklch(0.381 0.176 304.987)",
+          "1px solid oklch(0.381 0.176 304.987)",
+          "1px solid oklch(0.381 0.176 304.987)",
+          "1px solid oklch(0.381 0.176 304.987)"
+        ],
+        [
+          "1px solid oklch(0.439 0 none)",
+          "1px solid oklch(0.439 0 none)",
+          "1px solid oklch(0.439 0 none)",
+          "1px solid oklch(0.439 0 none)"
+        ],
+        [
+          "1px solid rgb(139, 115, 63)",
+          "1px solid rgb(139, 115, 63)",
+          "1px solid rgb(139, 115, 63)",
+          "1px solid rgb(139, 115, 63)"
+        ],
+        [
+          "1px solid rgb(99, 80, 45)",
+          "1px solid rgb(99, 80, 45)",
+          "1px solid rgb(99, 80, 45)",
+          "1px solid rgb(99, 80, 45)"
+        ],
+        [
+          "1px solid oklch(0.439 0 none)",
+          "1px solid oklch(0.439 0 none)",
+          "1px solid oklch(0.439 0 none)",
+          "1px solid oklch(0.439 0 none)"
+        ],
+        [
+          "1px solid rgb(139, 115, 63)",
+          "1px solid rgb(139, 115, 63)",
+          "1px solid rgb(139, 115, 63)",
+          "1px solid rgb(139, 115, 63)"
+        ],
+        [
+          "0px none rgb(236, 232, 223)",
+          "0px none rgb(236, 232, 223)",
+          "0px none rgb(236, 232, 223)",
+          "2px solid rgb(161, 137, 84)"
+        ],
+        [
+          "0px none rgb(236, 232, 223)",
+          "0px none rgb(236, 232, 223)",
+          "0px none rgb(236, 232, 223)",
+          "2px solid rgb(161, 137, 84)"
+        ],
+        [
+          "0px none rgb(229, 217, 186)",
+          "0px none rgb(229, 217, 186)",
+          "0px none rgb(229, 217, 186)",
+          "2px solid rgb(182, 142, 61)"
+        ],
+        [
+          "1px solid rgb(182, 142, 61)",
+          "1px solid rgb(182, 142, 61)",
+          "1px solid rgb(182, 142, 61)",
+          "1px solid rgb(182, 142, 61)"
+        ],
+        [
+          "0px solid rgb(46, 46, 56)",
+          "0px solid rgb(46, 46, 56)",
+          "0px solid rgb(46, 46, 56)",
+          "0px solid rgb(46, 46, 56)"
+        ]
+      ]
+    },
+    {
+      "viewport": [
+        375,
+        812
+      ],
+      "theme": "new",
+      "width": 375,
+      "height": 812,
+      "scrollWidth": 375,
+      "scrollHeight": 838,
+      "scale": 1,
+      "portrait": {
+        "x": 135,
+        "y": 504.875,
+        "w": 105,
+        "h": 140
+      },
+      "enemy": {
+        "x": 135,
+        "y": 30,
+        "w": 105,
+        "h": 140
+      },
+      "card": {
+        "x": 8,
+        "y": 180,
+        "w": 86.75,
+        "h": 121.4375
+      },
+      "hand": {
+        "x": 8,
+        "y": 654.875,
+        "w": 359,
+        "h": 178.625
+      },
+      "handCard": {
+        "x": 17,
+        "y": 675.5,
+        "w": 92,
+        "h": 129
+      },
+      "controls": {
+        "x": 8,
+        "y": 311.4375,
+        "w": 359,
+        "h": 52
+      },
+      "ability": {
+        "x": 248,
+        "y": 600.875,
+        "w": 119,
+        "h": 44
+      },
+      "images": [
+        {
+          "loaded": true,
+          "fit": "contain"
+        },
+        {
+          "loaded": true,
+          "fit": "contain"
+        }
+      ],
+      "slots": 8,
+      "wood": "url(\"http://127.0.0.1:5186/src/components/battle-board-assets/walnut-table.svg?t=1792539979253\")",
+      "oldVeil": "none",
+      "oldAmbience": "none",
+      "mats": [
+        {
+          "image": "url(\"data:image/svg+xml,%3csvg%20xmlns='http://www.w3.org/2000/svg'%20width='720'%20height='280'%20viewBox='0%200%20720%20280'%20preserveAspectRatio='none'%3e%3c!--%20Original%20linen:%20quiet%20woven%20fibres,%20a%20flat%20playing%20surface%20and%20soft%20edge%20folds.%20--%3e%3cdefs%3e%3cpath%20id='hem'%20d='M9%2011Q28%2017%2049%2012T130%2010Q225%206%20354%2012T551%209Q632%2015%20704%208Q699%2032%20703%2055T707%20110Q700%20165%20709%20224L711%20249Q698%20265%20672%20262Q594%20257%20545%20262T369%20266Q268%20260%20188%20265T49%20264Q26%20265%2012%20257L7%20237Q15%20195%209%20152T12%2079Q15%2040%209%2011Z'/%3e%3cclipPath%20id='edge'%3e%3cuse%20href='%23hem'/%3e%3c/clipPath%3e%3cpattern%20id='fibre'%20width='12'%20height='12'%20patternUnits='userSpaceOnUse'%3e%3cpath%20d='M0%202h12M3%200v12'%20fill='none'%20stroke='%236d5945'%20stroke-width='.65'%20opacity='.075'/%3e%3cpath%20d='M0%208h12M9%200v12'%20fill='none'%20stroke='%23fff7e9'%20stroke-width='.6'%20opacity='.16'/%3e%3c/pattern%3e%3c/defs%3e%3cuse%20href='%23hem'%20transform='translate(0%204)'%20fill='%23201511'%20opacity='.45'/%3e%3cuse%20href='%23hem'%20fill='%23d8c2a1'%20stroke='%23987b62'%20stroke-width='1'/%3e%3cg%20clip-path='url(%23edge)'%3e%3cpath%20fill='%23e7d5b9'%20opacity='.55'%20d='M25%2024Q194%2013%20359%2022T691%2022L689%20242Q514%20251%20363%20251T25%20249Q18%20135%2025%2024Z'/%3e%3cpath%20fill='%23af9478'%20opacity='.65'%20d='M9%2011Q19%2027%2022%2058Q27%2038%2054%2029L91%2017Q36%2024%209%2011ZM704%208Q690%2029%20685%2061Q679%2041%20657%2031L629%2018Q676%2024%20704%208ZM711%20249Q686%20246%20672%20222Q684%20249%20638%20255L594%20262Q664%20260%20672%20262Q699%20265%20711%20249ZM12%20257Q30%20244%2037%20220Q35%20247%2089%20254L124%20263Q48%20269%2012%20257Z'/%3e%3cpath%20fill='%23987b62'%20opacity='.28'%20d='M11%2084Q22%20107%2018%20144T21%20197Q14%20173%209%20152T11%2084ZM702%2075Q694%20104%20700%20140T702%20204Q709%20176%20705%20147T702%2075Z'/%3e%3cpath%20d='M15%2018Q36%2029%2070%2020M21%2054Q27%2037%2049%2031M696%2017Q682%2027%20672%2043M701%20251Q676%20252%20660%20238M20%20253Q39%20247%2049%20238M65%20259Q148%20256%20197%20260M544%20258Q605%20254%20646%20257'%20fill='none'%20stroke='%23987b62'%20stroke-width='1.2'%20stroke-linecap='round'%20opacity='.48'/%3e%3cuse%20href='%23hem'%20fill='url(%23fibre)'/%3e%3c/g%3e%3c/svg%3e\")",
+          "pointerEvents": "none",
+          "content": "\"\""
+        },
+        {
+          "image": "url(\"data:image/svg+xml,%3csvg%20xmlns='http://www.w3.org/2000/svg'%20width='720'%20height='280'%20viewBox='0%200%20720%20280'%20preserveAspectRatio='none'%3e%3c!--%20Original%20linen:%20quiet%20woven%20fibres,%20a%20flat%20playing%20surface%20and%20soft%20edge%20folds.%20--%3e%3cdefs%3e%3cpath%20id='hem'%20d='M9%2011Q28%2017%2049%2012T130%2010Q225%206%20354%2012T551%209Q632%2015%20704%208Q699%2032%20703%2055T707%20110Q700%20165%20709%20224L711%20249Q698%20265%20672%20262Q594%20257%20545%20262T369%20266Q268%20260%20188%20265T49%20264Q26%20265%2012%20257L7%20237Q15%20195%209%20152T12%2079Q15%2040%209%2011Z'/%3e%3cclipPath%20id='edge'%3e%3cuse%20href='%23hem'/%3e%3c/clipPath%3e%3cpattern%20id='fibre'%20width='12'%20height='12'%20patternUnits='userSpaceOnUse'%3e%3cpath%20d='M0%202h12M3%200v12'%20fill='none'%20stroke='%236d5945'%20stroke-width='.65'%20opacity='.075'/%3e%3cpath%20d='M0%208h12M9%200v12'%20fill='none'%20stroke='%23fff7e9'%20stroke-width='.6'%20opacity='.16'/%3e%3c/pattern%3e%3c/defs%3e%3cuse%20href='%23hem'%20transform='translate(0%204)'%20fill='%23201511'%20opacity='.45'/%3e%3cuse%20href='%23hem'%20fill='%23d8c2a1'%20stroke='%23987b62'%20stroke-width='1'/%3e%3cg%20clip-path='url(%23edge)'%3e%3cpath%20fill='%23e7d5b9'%20opacity='.55'%20d='M25%2024Q194%2013%20359%2022T691%2022L689%20242Q514%20251%20363%20251T25%20249Q18%20135%2025%2024Z'/%3e%3cpath%20fill='%23af9478'%20opacity='.65'%20d='M9%2011Q19%2027%2022%2058Q27%2038%2054%2029L91%2017Q36%2024%209%2011ZM704%208Q690%2029%20685%2061Q679%2041%20657%2031L629%2018Q676%2024%20704%208ZM711%20249Q686%20246%20672%20222Q684%20249%20638%20255L594%20262Q664%20260%20672%20262Q699%20265%20711%20249ZM12%20257Q30%20244%2037%20220Q35%20247%2089%20254L124%20263Q48%20269%2012%20257Z'/%3e%3cpath%20fill='%23987b62'%20opacity='.28'%20d='M11%2084Q22%20107%2018%20144T21%20197Q14%20173%209%20152T11%2084ZM702%2075Q694%20104%20700%20140T702%20204Q709%20176%20705%20147T702%2075Z'/%3e%3cpath%20d='M15%2018Q36%2029%2070%2020M21%2054Q27%2037%2049%2031M696%2017Q682%2027%20672%2043M701%20251Q676%20252%20660%20238M20%20253Q39%20247%2049%20238M65%20259Q148%20256%20197%20260M544%20258Q605%20254%20646%20257'%20fill='none'%20stroke='%23987b62'%20stroke-width='1.2'%20stroke-linecap='round'%20opacity='.48'/%3e%3cuse%20href='%23hem'%20fill='url(%23fibre)'/%3e%3c/g%3e%3c/svg%3e\")",
+          "pointerEvents": "none",
+          "content": "\"\""
+        }
+      ],
+      "portraitFrames": [
+        {
+          "width": 105,
+          "height": 140,
+          "borders": [
+            "1px solid rgb(185, 154, 96)",
+            "1px solid rgb(185, 154, 96)",
+            "1px solid rgb(185, 154, 96)",
+            "1px solid rgb(185, 154, 96)"
+          ]
+        },
+        {
+          "width": 105,
+          "height": 140,
+          "borders": [
+            "1px solid rgb(185, 154, 96)",
+            "1px solid rgb(185, 154, 96)",
+            "1px solid rgb(185, 154, 96)",
+            "1px solid rgb(185, 154, 96)"
+          ]
+        }
+      ],
+      "blackBackings": [
+        "rgb(0, 0, 0)",
+        "rgb(0, 0, 0)",
+        "rgb(0, 0, 0)",
+        "rgb(0, 0, 0)",
+        "rgb(0, 0, 0)",
+        "rgb(0, 0, 0)",
+        "rgb(0, 0, 0)",
+        "rgb(0, 0, 0)",
+        "rgb(0, 0, 0)",
+        "rgb(0, 0, 0)",
+        "rgb(0, 0, 0)",
+        "rgb(0, 0, 0)",
+        "rgb(0, 0, 0)",
+        "rgb(0, 0, 0)",
+        "rgb(0, 0, 0)",
+        "rgb(0, 0, 0)",
+        "rgb(0, 0, 0)",
+        "rgb(0, 0, 0)",
+        "rgb(0, 0, 0)",
+        "rgb(0, 0, 0)",
+        "rgb(0, 0, 0)",
+        "rgb(0, 0, 0)",
+        "rgb(0, 0, 0)",
+        "rgb(0, 0, 0)",
+        "rgb(0, 0, 0)",
+        "rgb(0, 0, 0)"
+      ],
+      "handTrackTop": "-8px",
+      "questAbilityGap": 4,
+      "panelBorders": [
+        [
+          "1px solid rgb(185, 154, 96)",
+          "1px solid rgb(185, 154, 96)",
+          "1px solid rgb(185, 154, 96)",
+          "1px solid rgb(185, 154, 96)"
+        ],
+        [
+          "1px solid rgb(185, 154, 96)",
+          "1px solid rgb(185, 154, 96)",
+          "1px solid rgb(185, 154, 96)",
+          "1px solid rgb(185, 154, 96)"
+        ],
+        [
+          "1px solid rgb(185, 154, 96)",
+          "1px solid rgb(185, 154, 96)",
+          "1px solid rgb(185, 154, 96)",
+          "1px solid rgb(185, 154, 96)"
+        ],
+        [
+          "1px solid rgb(185, 154, 96)",
+          "1px solid rgb(185, 154, 96)",
+          "1px solid rgb(185, 154, 96)",
+          "1px solid rgb(185, 154, 96)"
+        ],
+        [
+          "1px solid rgb(185, 154, 96)",
+          "1px solid rgb(185, 154, 96)",
+          "1px solid rgb(185, 154, 96)",
+          "1px solid rgb(185, 154, 96)"
+        ],
+        [
+          "1px solid rgb(185, 154, 96)",
+          "1px solid rgb(185, 154, 96)",
+          "1px solid rgb(185, 154, 96)",
+          "1px solid rgb(185, 154, 96)"
+        ],
+        [
+          "1px solid rgb(185, 154, 96)",
+          "1px solid rgb(185, 154, 96)",
+          "1px solid rgb(185, 154, 96)",
+          "1px solid rgb(185, 154, 96)"
+        ],
+        [
+          "1px solid rgb(185, 154, 96)",
+          "1px solid rgb(185, 154, 96)",
+          "1px solid rgb(185, 154, 96)",
+          "1px solid rgb(185, 154, 96)"
+        ],
+        [
+          "1px solid rgb(185, 154, 96)",
+          "1px solid rgb(185, 154, 96)",
+          "1px solid rgb(185, 154, 96)",
+          "1px solid rgb(185, 154, 96)"
+        ],
+        [
+          "1px solid rgb(185, 154, 96)",
+          "1px solid rgb(185, 154, 96)",
+          "1px solid rgb(185, 154, 96)",
+          "1px solid rgb(185, 154, 96)"
+        ],
+        [
+          "1px solid rgb(185, 154, 96)",
+          "1px solid rgb(185, 154, 96)",
+          "1px solid rgb(185, 154, 96)",
+          "1px solid rgb(185, 154, 96)"
+        ],
+        [
+          "1px solid rgb(185, 154, 96)",
+          "1px solid rgb(185, 154, 96)",
+          "1px solid rgb(185, 154, 96)",
+          "1px solid rgb(185, 154, 96)"
+        ],
+        [
+          "1px solid rgb(185, 154, 96)",
+          "1px solid rgb(185, 154, 96)",
+          "1px solid rgb(185, 154, 96)",
+          "1px solid rgb(185, 154, 96)"
+        ]
+      ],
+      "selectedCardClearance": {
+        "top": 7.53863525390625,
+        "bottom": 31.55999755859375
+      }
+    },
+    {
+      "viewport": [
+        375,
+        812
+      ],
+      "theme": "classic",
+      "width": 375,
+      "height": 812,
+      "scrollWidth": 375,
+      "scrollHeight": 812,
+      "scale": 1,
+      "portrait": {
+        "x": 8,
+        "y": 531.375,
+        "w": 80,
+        "h": 88
+      },
+      "enemy": {
+        "x": 8,
+        "y": 30,
+        "w": 80,
+        "h": 88
+      },
+      "card": {
+        "x": 8,
+        "y": 130.125,
+        "w": 86.75,
+        "h": 121.4375
+      },
+      "hand": {
+        "x": 8,
+        "y": 625.375,
+        "w": 359,
+        "h": 178.625
+      },
+      "handCard": {
+        "x": 16,
+        "y": 655,
+        "w": 92,
+        "h": 129
+      },
+      "controls": {
+        "x": 8,
+        "y": 297.6875,
+        "w": 359,
+        "h": 54
+      },
+      "ability": {
+        "x": 233.5,
+        "y": 575.375,
+        "w": 133.5,
+        "h": 44
+      },
+      "images": [
+        {
+          "loaded": true,
+          "fit": "contain"
+        },
+        {
+          "loaded": true,
+          "fit": "contain"
+        }
+      ],
+      "slots": 8,
+      "wood": "none",
+      "oldVeil": "\"\"",
+      "oldAmbience": "block",
+      "mats": [
+        {
+          "image": "none",
+          "pointerEvents": "auto",
+          "content": "none"
+        },
+        {
+          "image": "none",
+          "pointerEvents": "auto",
+          "content": "none"
+        }
+      ],
+      "portraitFrames": [
+        {
+          "width": 80,
+          "height": 88,
+          "borders": [
+            "0px none rgb(229, 217, 186)",
+            "0px none rgb(229, 217, 186)",
+            "0px none rgb(229, 217, 186)",
+            "2px solid rgb(182, 142, 61)"
+          ]
+        },
+        {
+          "width": 80,
+          "height": 88,
+          "borders": [
+            "1px solid rgb(124, 104, 66)",
+            "1px solid rgb(124, 104, 66)",
+            "3px solid rgb(167, 108, 94)",
+            "1px solid rgb(124, 104, 66)"
+          ]
+        }
+      ],
+      "blackBackings": [
+        "rgba(0, 0, 0, 0)",
+        "rgba(0, 0, 0, 0)",
+        "rgba(0, 0, 0, 0)",
+        "rgba(0, 0, 0, 0)",
+        "rgba(21, 23, 18, 0.376)",
+        "rgba(21, 23, 18, 0.376)",
+        "rgba(0, 0, 0, 0)",
+        "rgba(0, 0, 0, 0)",
+        "rgba(0, 0, 0, 0)",
+        "rgba(0, 0, 0, 0)",
+        "rgba(21, 23, 18, 0.376)",
+        "rgba(21, 23, 18, 0.376)",
+        "rgba(0, 0, 0, 0)",
+        "rgba(0, 0, 0, 0)",
+        "rgba(0, 0, 0, 0)",
+        "rgba(0, 0, 0, 0)",
+        "rgba(0, 0, 0, 0)",
+        "rgba(0, 0, 0, 0)",
+        "rgba(0, 0, 0, 0)",
+        "rgba(0, 0, 0, 0)",
+        "rgba(0, 0, 0, 0)",
+        "rgba(0, 0, 0, 0)",
+        "rgba(0, 0, 0, 0)",
+        "rgba(0, 0, 0, 0)",
+        "rgba(0, 0, 0, 0)",
+        "rgba(0, 0, 0, 0)"
+      ],
+      "handTrackTop": "0px",
+      "questAbilityGap": 7.9375,
+      "panelBorders": [
+        [
+          "0px none rgb(236, 232, 223)",
+          "0px none rgb(236, 232, 223)",
+          "0px none rgb(236, 232, 223)",
+          "2px solid rgb(161, 137, 84)"
+        ],
+        [
+          "0px none rgb(236, 232, 223)",
+          "0px none rgb(236, 232, 223)",
+          "0px none rgb(236, 232, 223)",
+          "2px solid rgb(161, 137, 84)"
+        ],
+        [
+          "1px solid oklch(0.381 0.176 304.987)",
+          "1px solid oklch(0.381 0.176 304.987)",
+          "1px solid oklch(0.381 0.176 304.987)",
+          "1px solid oklch(0.381 0.176 304.987)"
+        ],
+        [
+          "1px solid oklch(0.439 0 none)",
+          "1px solid oklch(0.439 0 none)",
+          "1px solid oklch(0.439 0 none)",
+          "1px solid oklch(0.439 0 none)"
+        ],
+        [
+          "1px solid rgb(139, 115, 63)",
+          "1px solid rgb(139, 115, 63)",
+          "1px solid rgb(139, 115, 63)",
+          "1px solid rgb(139, 115, 63)"
+        ],
+        [
+          "1px solid rgb(99, 80, 45)",
+          "1px solid rgb(99, 80, 45)",
+          "1px solid rgb(99, 80, 45)",
+          "1px solid rgb(99, 80, 45)"
+        ],
+        [
+          "1px solid oklch(0.439 0 none)",
+          "1px solid oklch(0.439 0 none)",
+          "1px solid oklch(0.439 0 none)",
+          "1px solid oklch(0.439 0 none)"
+        ],
+        [
+          "1px solid rgb(139, 115, 63)",
+          "1px solid rgb(139, 115, 63)",
+          "1px solid rgb(139, 115, 63)",
+          "1px solid rgb(139, 115, 63)"
+        ],
+        [
+          "0px none rgb(236, 232, 223)",
+          "0px none rgb(236, 232, 223)",
+          "0px none rgb(236, 232, 223)",
+          "2px solid rgb(161, 137, 84)"
+        ],
+        [
+          "0px none rgb(236, 232, 223)",
+          "0px none rgb(236, 232, 223)",
+          "0px none rgb(236, 232, 223)",
+          "2px solid rgb(161, 137, 84)"
+        ],
+        [
+          "0px none rgb(229, 217, 186)",
+          "0px none rgb(229, 217, 186)",
+          "0px none rgb(229, 217, 186)",
+          "2px solid rgb(182, 142, 61)"
+        ],
+        [
+          "1px solid rgb(182, 142, 61)",
+          "1px solid rgb(182, 142, 61)",
+          "1px solid rgb(182, 142, 61)",
+          "1px solid rgb(182, 142, 61)"
+        ],
+        [
+          "0px solid rgb(46, 46, 56)",
+          "0px solid rgb(46, 46, 56)",
+          "0px solid rgb(46, 46, 56)",
+          "0px solid rgb(46, 46, 56)"
+        ]
+      ]
+    },
+    {
+      "viewport": [
+        390,
+        844
+      ],
+      "theme": "new",
+      "width": 390,
+      "height": 844,
+      "scrollWidth": 390,
+      "scrollHeight": 855,
+      "scale": 1,
+      "portrait": {
+        "x": 142.5,
+        "y": 515.375,
+        "w": 105,
+        "h": 140
+      },
+      "enemy": {
+        "x": 142.5,
+        "y": 30,
+        "w": 105,
+        "h": 140
+      },
+      "card": {
+        "x": 8,
+        "y": 180,
+        "w": 90.5,
+        "h": 126.6875
+      },
+      "hand": {
+        "x": 8,
+        "y": 665.375,
+        "w": 374,
+        "h": 185.671875
+      },
+      "handCard": {
+        "x": 17,
+        "y": 693.046875,
+        "w": 92,
+        "h": 129
+      },
+      "controls": {
+        "x": 8,
+        "y": 316.6875,
+        "w": 374,
+        "h": 52
+      },
+      "ability": {
+        "x": 255.5,
+        "y": 611.375,
+        "w": 126.5,
+        "h": 44
+      },
+      "images": [
+        {
+          "loaded": true,
+          "fit": "contain"
+        },
+        {
+          "loaded": true,
+          "fit": "contain"
+        }
+      ],
+      "slots": 8,
+      "wood": "url(\"http://127.0.0.1:5186/src/components/battle-board-assets/walnut-table.svg?t=1792539979253\")",
+      "oldVeil": "none",
+      "oldAmbience": "none",
+      "mats": [
+        {
+          "image": "url(\"data:image/svg+xml,%3csvg%20xmlns='http://www.w3.org/2000/svg'%20width='720'%20height='280'%20viewBox='0%200%20720%20280'%20preserveAspectRatio='none'%3e%3c!--%20Original%20linen:%20quiet%20woven%20fibres,%20a%20flat%20playing%20surface%20and%20soft%20edge%20folds.%20--%3e%3cdefs%3e%3cpath%20id='hem'%20d='M9%2011Q28%2017%2049%2012T130%2010Q225%206%20354%2012T551%209Q632%2015%20704%208Q699%2032%20703%2055T707%20110Q700%20165%20709%20224L711%20249Q698%20265%20672%20262Q594%20257%20545%20262T369%20266Q268%20260%20188%20265T49%20264Q26%20265%2012%20257L7%20237Q15%20195%209%20152T12%2079Q15%2040%209%2011Z'/%3e%3cclipPath%20id='edge'%3e%3cuse%20href='%23hem'/%3e%3c/clipPath%3e%3cpattern%20id='fibre'%20width='12'%20height='12'%20patternUnits='userSpaceOnUse'%3e%3cpath%20d='M0%202h12M3%200v12'%20fill='none'%20stroke='%236d5945'%20stroke-width='.65'%20opacity='.075'/%3e%3cpath%20d='M0%208h12M9%200v12'%20fill='none'%20stroke='%23fff7e9'%20stroke-width='.6'%20opacity='.16'/%3e%3c/pattern%3e%3c/defs%3e%3cuse%20href='%23hem'%20transform='translate(0%204)'%20fill='%23201511'%20opacity='.45'/%3e%3cuse%20href='%23hem'%20fill='%23d8c2a1'%20stroke='%23987b62'%20stroke-width='1'/%3e%3cg%20clip-path='url(%23edge)'%3e%3cpath%20fill='%23e7d5b9'%20opacity='.55'%20d='M25%2024Q194%2013%20359%2022T691%2022L689%20242Q514%20251%20363%20251T25%20249Q18%20135%2025%2024Z'/%3e%3cpath%20fill='%23af9478'%20opacity='.65'%20d='M9%2011Q19%2027%2022%2058Q27%2038%2054%2029L91%2017Q36%2024%209%2011ZM704%208Q690%2029%20685%2061Q679%2041%20657%2031L629%2018Q676%2024%20704%208ZM711%20249Q686%20246%20672%20222Q684%20249%20638%20255L594%20262Q664%20260%20672%20262Q699%20265%20711%20249ZM12%20257Q30%20244%2037%20220Q35%20247%2089%20254L124%20263Q48%20269%2012%20257Z'/%3e%3cpath%20fill='%23987b62'%20opacity='.28'%20d='M11%2084Q22%20107%2018%20144T21%20197Q14%20173%209%20152T11%2084ZM702%2075Q694%20104%20700%20140T702%20204Q709%20176%20705%20147T702%2075Z'/%3e%3cpath%20d='M15%2018Q36%2029%2070%2020M21%2054Q27%2037%2049%2031M696%2017Q682%2027%20672%2043M701%20251Q676%20252%20660%20238M20%20253Q39%20247%2049%20238M65%20259Q148%20256%20197%20260M544%20258Q605%20254%20646%20257'%20fill='none'%20stroke='%23987b62'%20stroke-width='1.2'%20stroke-linecap='round'%20opacity='.48'/%3e%3cuse%20href='%23hem'%20fill='url(%23fibre)'/%3e%3c/g%3e%3c/svg%3e\")",
+          "pointerEvents": "none",
+          "content": "\"\""
+        },
+        {
+          "image": "url(\"data:image/svg+xml,%3csvg%20xmlns='http://www.w3.org/2000/svg'%20width='720'%20height='280'%20viewBox='0%200%20720%20280'%20preserveAspectRatio='none'%3e%3c!--%20Original%20linen:%20quiet%20woven%20fibres,%20a%20flat%20playing%20surface%20and%20soft%20edge%20folds.%20--%3e%3cdefs%3e%3cpath%20id='hem'%20d='M9%2011Q28%2017%2049%2012T130%2010Q225%206%20354%2012T551%209Q632%2015%20704%208Q699%2032%20703%2055T707%20110Q700%20165%20709%20224L711%20249Q698%20265%20672%20262Q594%20257%20545%20262T369%20266Q268%20260%20188%20265T49%20264Q26%20265%2012%20257L7%20237Q15%20195%209%20152T12%2079Q15%2040%209%2011Z'/%3e%3cclipPath%20id='edge'%3e%3cuse%20href='%23hem'/%3e%3c/clipPath%3e%3cpattern%20id='fibre'%20width='12'%20height='12'%20patternUnits='userSpaceOnUse'%3e%3cpath%20d='M0%202h12M3%200v12'%20fill='none'%20stroke='%236d5945'%20stroke-width='.65'%20opacity='.075'/%3e%3cpath%20d='M0%208h12M9%200v12'%20fill='none'%20stroke='%23fff7e9'%20stroke-width='.6'%20opacity='.16'/%3e%3c/pattern%3e%3c/defs%3e%3cuse%20href='%23hem'%20transform='translate(0%204)'%20fill='%23201511'%20opacity='.45'/%3e%3cuse%20href='%23hem'%20fill='%23d8c2a1'%20stroke='%23987b62'%20stroke-width='1'/%3e%3cg%20clip-path='url(%23edge)'%3e%3cpath%20fill='%23e7d5b9'%20opacity='.55'%20d='M25%2024Q194%2013%20359%2022T691%2022L689%20242Q514%20251%20363%20251T25%20249Q18%20135%2025%2024Z'/%3e%3cpath%20fill='%23af9478'%20opacity='.65'%20d='M9%2011Q19%2027%2022%2058Q27%2038%2054%2029L91%2017Q36%2024%209%2011ZM704%208Q690%2029%20685%2061Q679%2041%20657%2031L629%2018Q676%2024%20704%208ZM711%20249Q686%20246%20672%20222Q684%20249%20638%20255L594%20262Q664%20260%20672%20262Q699%20265%20711%20249ZM12%20257Q30%20244%2037%20220Q35%20247%2089%20254L124%20263Q48%20269%2012%20257Z'/%3e%3cpath%20fill='%23987b62'%20opacity='.28'%20d='M11%2084Q22%20107%2018%20144T21%20197Q14%20173%209%20152T11%2084ZM702%2075Q694%20104%20700%20140T702%20204Q709%20176%20705%20147T702%2075Z'/%3e%3cpath%20d='M15%2018Q36%2029%2070%2020M21%2054Q27%2037%2049%2031M696%2017Q682%2027%20672%2043M701%20251Q676%20252%20660%20238M20%20253Q39%20247%2049%20238M65%20259Q148%20256%20197%20260M544%20258Q605%20254%20646%20257'%20fill='none'%20stroke='%23987b62'%20stroke-width='1.2'%20stroke-linecap='round'%20opacity='.48'/%3e%3cuse%20href='%23hem'%20fill='url(%23fibre)'/%3e%3c/g%3e%3c/svg%3e\")",
+          "pointerEvents": "none",
+          "content": "\"\""
+        }
+      ],
+      "portraitFrames": [
+        {
+          "width": 105,
+          "height": 140,
+          "borders": [
+            "1px solid rgb(185, 154, 96)",
+            "1px solid rgb(185, 154, 96)",
+            "1px solid rgb(185, 154, 96)",
+            "1px solid rgb(185, 154, 96)"
+          ]
+        },
+        {
+          "width": 105,
+          "height": 140,
+          "borders": [
+            "1px solid rgb(185, 154, 96)",
+            "1px solid rgb(185, 154, 96)",
+            "1px solid rgb(185, 154, 96)",
+            "1px solid rgb(185, 154, 96)"
+          ]
+        }
+      ],
+      "blackBackings": [
+        "rgb(0, 0, 0)",
+        "rgb(0, 0, 0)",
+        "rgb(0, 0, 0)",
+        "rgb(0, 0, 0)",
+        "rgb(0, 0, 0)",
+        "rgb(0, 0, 0)",
+        "rgb(0, 0, 0)",
+        "rgb(0, 0, 0)",
+        "rgb(0, 0, 0)",
+        "rgb(0, 0, 0)",
+        "rgb(0, 0, 0)",
+        "rgb(0, 0, 0)",
+        "rgb(0, 0, 0)",
+        "rgb(0, 0, 0)",
+        "rgb(0, 0, 0)",
+        "rgb(0, 0, 0)",
+        "rgb(0, 0, 0)",
+        "rgb(0, 0, 0)",
+        "rgb(0, 0, 0)",
+        "rgb(0, 0, 0)",
+        "rgb(0, 0, 0)",
+        "rgb(0, 0, 0)",
+        "rgb(0, 0, 0)",
+        "rgb(0, 0, 0)",
+        "rgb(0, 0, 0)",
+        "rgb(0, 0, 0)"
+      ],
+      "handTrackTop": "-8px",
+      "questAbilityGap": 4,
+      "panelBorders": [
+        [
+          "1px solid rgb(185, 154, 96)",
+          "1px solid rgb(185, 154, 96)",
+          "1px solid rgb(185, 154, 96)",
+          "1px solid rgb(185, 154, 96)"
+        ],
+        [
+          "1px solid rgb(185, 154, 96)",
+          "1px solid rgb(185, 154, 96)",
+          "1px solid rgb(185, 154, 96)",
+          "1px solid rgb(185, 154, 96)"
+        ],
+        [
+          "1px solid rgb(185, 154, 96)",
+          "1px solid rgb(185, 154, 96)",
+          "1px solid rgb(185, 154, 96)",
+          "1px solid rgb(185, 154, 96)"
+        ],
+        [
+          "1px solid rgb(185, 154, 96)",
+          "1px solid rgb(185, 154, 96)",
+          "1px solid rgb(185, 154, 96)",
+          "1px solid rgb(185, 154, 96)"
+        ],
+        [
+          "1px solid rgb(185, 154, 96)",
+          "1px solid rgb(185, 154, 96)",
+          "1px solid rgb(185, 154, 96)",
+          "1px solid rgb(185, 154, 96)"
+        ],
+        [
+          "1px solid rgb(185, 154, 96)",
+          "1px solid rgb(185, 154, 96)",
+          "1px solid rgb(185, 154, 96)",
+          "1px solid rgb(185, 154, 96)"
+        ],
+        [
+          "1px solid rgb(185, 154, 96)",
+          "1px solid rgb(185, 154, 96)",
+          "1px solid rgb(185, 154, 96)",
+          "1px solid rgb(185, 154, 96)"
+        ],
+        [
+          "1px solid rgb(185, 154, 96)",
+          "1px solid rgb(185, 154, 96)",
+          "1px solid rgb(185, 154, 96)",
+          "1px solid rgb(185, 154, 96)"
+        ],
+        [
+          "1px solid rgb(185, 154, 96)",
+          "1px solid rgb(185, 154, 96)",
+          "1px solid rgb(185, 154, 96)",
+          "1px solid rgb(185, 154, 96)"
+        ],
+        [
+          "1px solid rgb(185, 154, 96)",
+          "1px solid rgb(185, 154, 96)",
+          "1px solid rgb(185, 154, 96)",
+          "1px solid rgb(185, 154, 96)"
+        ],
+        [
+          "1px solid rgb(185, 154, 96)",
+          "1px solid rgb(185, 154, 96)",
+          "1px solid rgb(185, 154, 96)",
+          "1px solid rgb(185, 154, 96)"
+        ],
+        [
+          "1px solid rgb(185, 154, 96)",
+          "1px solid rgb(185, 154, 96)",
+          "1px solid rgb(185, 154, 96)",
+          "1px solid rgb(185, 154, 96)"
+        ],
+        [
+          "1px solid rgb(185, 154, 96)",
+          "1px solid rgb(185, 154, 96)",
+          "1px solid rgb(185, 154, 96)",
+          "1px solid rgb(185, 154, 96)"
+        ]
+      ],
+      "selectedCardClearance": {
+        "top": 14.58551025390625,
+        "bottom": 31.55999755859375
+      }
+    },
+    {
+      "viewport": [
+        390,
+        844
+      ],
+      "theme": "classic",
+      "width": 390,
+      "height": 844,
+      "scrollWidth": 390,
+      "scrollHeight": 844,
+      "scale": 1,
+      "portrait": {
+        "x": 8,
+        "y": 556.328125,
+        "w": 80,
+        "h": 88
+      },
+      "enemy": {
+        "x": 8,
+        "y": 30,
+        "w": 80,
+        "h": 88
+      },
+      "card": {
+        "x": 8,
+        "y": 133.734375,
+        "w": 90.5,
+        "h": 126.6875
+      },
+      "hand": {
+        "x": 8,
+        "y": 650.328125,
+        "w": 374,
+        "h": 185.671875
+      },
+      "handCard": {
+        "x": 16,
+        "y": 687,
+        "w": 92,
+        "h": 129
+      },
+      "controls": {
+        "x": 8,
+        "y": 310.15625,
+        "w": 374,
+        "h": 54
+      },
+      "ability": {
+        "x": 241,
+        "y": 600.328125,
+        "w": 141,
+        "h": 44
+      },
+      "images": [
+        {
+          "loaded": true,
+          "fit": "contain"
+        },
+        {
+          "loaded": true,
+          "fit": "contain"
+        }
+      ],
+      "slots": 8,
+      "wood": "none",
+      "oldVeil": "\"\"",
+      "oldAmbience": "block",
+      "mats": [
+        {
+          "image": "none",
+          "pointerEvents": "auto",
+          "content": "none"
+        },
+        {
+          "image": "none",
+          "pointerEvents": "auto",
+          "content": "none"
+        }
+      ],
+      "portraitFrames": [
+        {
+          "width": 80,
+          "height": 88,
+          "borders": [
+            "0px none rgb(229, 217, 186)",
+            "0px none rgb(229, 217, 186)",
+            "0px none rgb(229, 217, 186)",
+            "2px solid rgb(182, 142, 61)"
+          ]
+        },
+        {
+          "width": 80,
+          "height": 88,
+          "borders": [
+            "1px solid rgb(124, 104, 66)",
+            "1px solid rgb(124, 104, 66)",
+            "3px solid rgb(167, 108, 94)",
+            "1px solid rgb(124, 104, 66)"
+          ]
+        }
+      ],
+      "blackBackings": [
+        "rgba(0, 0, 0, 0)",
+        "rgba(0, 0, 0, 0)",
+        "rgba(0, 0, 0, 0)",
+        "rgba(0, 0, 0, 0)",
+        "rgba(21, 23, 18, 0.376)",
+        "rgba(21, 23, 18, 0.376)",
+        "rgba(0, 0, 0, 0)",
+        "rgba(0, 0, 0, 0)",
+        "rgba(0, 0, 0, 0)",
+        "rgba(0, 0, 0, 0)",
+        "rgba(21, 23, 18, 0.376)",
+        "rgba(21, 23, 18, 0.376)",
+        "rgba(0, 0, 0, 0)",
+        "rgba(0, 0, 0, 0)",
+        "rgba(0, 0, 0, 0)",
+        "rgba(0, 0, 0, 0)",
+        "rgba(0, 0, 0, 0)",
+        "rgba(0, 0, 0, 0)",
+        "rgba(0, 0, 0, 0)",
+        "rgba(0, 0, 0, 0)",
+        "rgba(0, 0, 0, 0)",
+        "rgba(0, 0, 0, 0)",
+        "rgba(0, 0, 0, 0)",
+        "rgba(0, 0, 0, 0)",
+        "rgba(0, 0, 0, 0)",
+        "rgba(0, 0, 0, 0)"
+      ],
+      "handTrackTop": "0px",
+      "questAbilityGap": 7.9375,
+      "panelBorders": [
+        [
+          "0px none rgb(236, 232, 223)",
+          "0px none rgb(236, 232, 223)",
+          "0px none rgb(236, 232, 223)",
+          "2px solid rgb(161, 137, 84)"
+        ],
+        [
+          "0px none rgb(236, 232, 223)",
+          "0px none rgb(236, 232, 223)",
+          "0px none rgb(236, 232, 223)",
+          "2px solid rgb(161, 137, 84)"
+        ],
+        [
+          "1px solid oklch(0.381 0.176 304.987)",
+          "1px solid oklch(0.381 0.176 304.987)",
+          "1px solid oklch(0.381 0.176 304.987)",
+          "1px solid oklch(0.381 0.176 304.987)"
+        ],
+        [
+          "1px solid oklch(0.439 0 none)",
+          "1px solid oklch(0.439 0 none)",
+          "1px solid oklch(0.439 0 none)",
+          "1px solid oklch(0.439 0 none)"
+        ],
+        [
+          "1px solid rgb(139, 115, 63)",
+          "1px solid rgb(139, 115, 63)",
+          "1px solid rgb(139, 115, 63)",
+          "1px solid rgb(139, 115, 63)"
+        ],
+        [
+          "1px solid rgb(99, 80, 45)",
+          "1px solid rgb(99, 80, 45)",
+          "1px solid rgb(99, 80, 45)",
+          "1px solid rgb(99, 80, 45)"
+        ],
+        [
+          "1px solid oklch(0.439 0 none)",
+          "1px solid oklch(0.439 0 none)",
+          "1px solid oklch(0.439 0 none)",
+          "1px solid oklch(0.439 0 none)"
+        ],
+        [
+          "1px solid rgb(139, 115, 63)",
+          "1px solid rgb(139, 115, 63)",
+          "1px solid rgb(139, 115, 63)",
+          "1px solid rgb(139, 115, 63)"
+        ],
+        [
+          "0px none rgb(236, 232, 223)",
+          "0px none rgb(236, 232, 223)",
+          "0px none rgb(236, 232, 223)",
+          "2px solid rgb(161, 137, 84)"
+        ],
+        [
+          "0px none rgb(236, 232, 223)",
+          "0px none rgb(236, 232, 223)",
+          "0px none rgb(236, 232, 223)",
+          "2px solid rgb(161, 137, 84)"
+        ],
+        [
+          "0px none rgb(229, 217, 186)",
+          "0px none rgb(229, 217, 186)",
+          "0px none rgb(229, 217, 186)",
+          "2px solid rgb(182, 142, 61)"
+        ],
+        [
+          "1px solid rgb(182, 142, 61)",
+          "1px solid rgb(182, 142, 61)",
+          "1px solid rgb(182, 142, 61)",
+          "1px solid rgb(182, 142, 61)"
+        ],
+        [
+          "0px solid rgb(46, 46, 56)",
+          "0px solid rgb(46, 46, 56)",
+          "0px solid rgb(46, 46, 56)",
+          "0px solid rgb(46, 46, 56)"
+        ]
+      ]
+    },
+    {
+      "viewport": [
+        412,
+        915
+      ],
+      "theme": "new",
+      "width": 412,
+      "height": 915,
+      "scrollWidth": 412,
+      "scrollHeight": 915,
+      "scale": 1,
+      "portrait": {
+        "x": 149,
+        "y": 559,
+        "w": 114,
+        "h": 152
+      },
+      "enemy": {
+        "x": 149,
+        "y": 30,
+        "w": 114,
+        "h": 152
+      },
+      "card": {
+        "x": 8,
+        "y": 196.046875,
+        "w": 96,
+        "h": 134.390625
+      },
+      "hand": {
+        "x": 8,
+        "y": 721,
+        "w": 396,
+        "h": 190
+      },
+      "handCard": {
+        "x": 17,
+        "y": 753,
+        "w": 92,
+        "h": 129
+      },
+      "controls": {
+        "x": 8,
+        "y": 344.5,
+        "w": 396,
+        "h": 52
+      },
+      "ability": {
+        "x": 271,
+        "y": 667,
+        "w": 133,
+        "h": 44
+      },
+      "images": [
+        {
+          "loaded": true,
+          "fit": "contain"
+        },
+        {
+          "loaded": true,
+          "fit": "contain"
+        }
+      ],
+      "slots": 8,
+      "wood": "url(\"http://127.0.0.1:5186/src/components/battle-board-assets/walnut-table.svg?t=1792539979253\")",
+      "oldVeil": "none",
+      "oldAmbience": "none",
+      "mats": [
+        {
+          "image": "url(\"data:image/svg+xml,%3csvg%20xmlns='http://www.w3.org/2000/svg'%20width='720'%20height='280'%20viewBox='0%200%20720%20280'%20preserveAspectRatio='none'%3e%3c!--%20Original%20linen:%20quiet%20woven%20fibres,%20a%20flat%20playing%20surface%20and%20soft%20edge%20folds.%20--%3e%3cdefs%3e%3cpath%20id='hem'%20d='M9%2011Q28%2017%2049%2012T130%2010Q225%206%20354%2012T551%209Q632%2015%20704%208Q699%2032%20703%2055T707%20110Q700%20165%20709%20224L711%20249Q698%20265%20672%20262Q594%20257%20545%20262T369%20266Q268%20260%20188%20265T49%20264Q26%20265%2012%20257L7%20237Q15%20195%209%20152T12%2079Q15%2040%209%2011Z'/%3e%3cclipPath%20id='edge'%3e%3cuse%20href='%23hem'/%3e%3c/clipPath%3e%3cpattern%20id='fibre'%20width='12'%20height='12'%20patternUnits='userSpaceOnUse'%3e%3cpath%20d='M0%202h12M3%200v12'%20fill='none'%20stroke='%236d5945'%20stroke-width='.65'%20opacity='.075'/%3e%3cpath%20d='M0%208h12M9%200v12'%20fill='none'%20stroke='%23fff7e9'%20stroke-width='.6'%20opacity='.16'/%3e%3c/pattern%3e%3c/defs%3e%3cuse%20href='%23hem'%20transform='translate(0%204)'%20fill='%23201511'%20opacity='.45'/%3e%3cuse%20href='%23hem'%20fill='%23d8c2a1'%20stroke='%23987b62'%20stroke-width='1'/%3e%3cg%20clip-path='url(%23edge)'%3e%3cpath%20fill='%23e7d5b9'%20opacity='.55'%20d='M25%2024Q194%2013%20359%2022T691%2022L689%20242Q514%20251%20363%20251T25%20249Q18%20135%2025%2024Z'/%3e%3cpath%20fill='%23af9478'%20opacity='.65'%20d='M9%2011Q19%2027%2022%2058Q27%2038%2054%2029L91%2017Q36%2024%209%2011ZM704%208Q690%2029%20685%2061Q679%2041%20657%2031L629%2018Q676%2024%20704%208ZM711%20249Q686%20246%20672%20222Q684%20249%20638%20255L594%20262Q664%20260%20672%20262Q699%20265%20711%20249ZM12%20257Q30%20244%2037%20220Q35%20247%2089%20254L124%20263Q48%20269%2012%20257Z'/%3e%3cpath%20fill='%23987b62'%20opacity='.28'%20d='M11%2084Q22%20107%2018%20144T21%20197Q14%20173%209%20152T11%2084ZM702%2075Q694%20104%20700%20140T702%20204Q709%20176%20705%20147T702%2075Z'/%3e%3cpath%20d='M15%2018Q36%2029%2070%2020M21%2054Q27%2037%2049%2031M696%2017Q682%2027%20672%2043M701%20251Q676%20252%20660%20238M20%20253Q39%20247%2049%20238M65%20259Q148%20256%20197%20260M544%20258Q605%20254%20646%20257'%20fill='none'%20stroke='%23987b62'%20stroke-width='1.2'%20stroke-linecap='round'%20opacity='.48'/%3e%3cuse%20href='%23hem'%20fill='url(%23fibre)'/%3e%3c/g%3e%3c/svg%3e\")",
+          "pointerEvents": "none",
+          "content": "\"\""
+        },
+        {
+          "image": "url(\"data:image/svg+xml,%3csvg%20xmlns='http://www.w3.org/2000/svg'%20width='720'%20height='280'%20viewBox='0%200%20720%20280'%20preserveAspectRatio='none'%3e%3c!--%20Original%20linen:%20quiet%20woven%20fibres,%20a%20flat%20playing%20surface%20and%20soft%20edge%20folds.%20--%3e%3cdefs%3e%3cpath%20id='hem'%20d='M9%2011Q28%2017%2049%2012T130%2010Q225%206%20354%2012T551%209Q632%2015%20704%208Q699%2032%20703%2055T707%20110Q700%20165%20709%20224L711%20249Q698%20265%20672%20262Q594%20257%20545%20262T369%20266Q268%20260%20188%20265T49%20264Q26%20265%2012%20257L7%20237Q15%20195%209%20152T12%2079Q15%2040%209%2011Z'/%3e%3cclipPath%20id='edge'%3e%3cuse%20href='%23hem'/%3e%3c/clipPath%3e%3cpattern%20id='fibre'%20width='12'%20height='12'%20patternUnits='userSpaceOnUse'%3e%3cpath%20d='M0%202h12M3%200v12'%20fill='none'%20stroke='%236d5945'%20stroke-width='.65'%20opacity='.075'/%3e%3cpath%20d='M0%208h12M9%200v12'%20fill='none'%20stroke='%23fff7e9'%20stroke-width='.6'%20opacity='.16'/%3e%3c/pattern%3e%3c/defs%3e%3cuse%20href='%23hem'%20transform='translate(0%204)'%20fill='%23201511'%20opacity='.45'/%3e%3cuse%20href='%23hem'%20fill='%23d8c2a1'%20stroke='%23987b62'%20stroke-width='1'/%3e%3cg%20clip-path='url(%23edge)'%3e%3cpath%20fill='%23e7d5b9'%20opacity='.55'%20d='M25%2024Q194%2013%20359%2022T691%2022L689%20242Q514%20251%20363%20251T25%20249Q18%20135%2025%2024Z'/%3e%3cpath%20fill='%23af9478'%20opacity='.65'%20d='M9%2011Q19%2027%2022%2058Q27%2038%2054%2029L91%2017Q36%2024%209%2011ZM704%208Q690%2029%20685%2061Q679%2041%20657%2031L629%2018Q676%2024%20704%208ZM711%20249Q686%20246%20672%20222Q684%20249%20638%20255L594%20262Q664%20260%20672%20262Q699%20265%20711%20249ZM12%20257Q30%20244%2037%20220Q35%20247%2089%20254L124%20263Q48%20269%2012%20257Z'/%3e%3cpath%20fill='%23987b62'%20opacity='.28'%20d='M11%2084Q22%20107%2018%20144T21%20197Q14%20173%209%20152T11%2084ZM702%2075Q694%20104%20700%20140T702%20204Q709%20176%20705%20147T702%2075Z'/%3e%3cpath%20d='M15%2018Q36%2029%2070%2020M21%2054Q27%2037%2049%2031M696%2017Q682%2027%20672%2043M701%20251Q676%20252%20660%20238M20%20253Q39%20247%2049%20238M65%20259Q148%20256%20197%20260M544%20258Q605%20254%20646%20257'%20fill='none'%20stroke='%23987b62'%20stroke-width='1.2'%20stroke-linecap='round'%20opacity='.48'/%3e%3cuse%20href='%23hem'%20fill='url(%23fibre)'/%3e%3c/g%3e%3c/svg%3e\")",
+          "pointerEvents": "none",
+          "content": "\"\""
+        }
+      ],
+      "portraitFrames": [
+        {
+          "width": 114,
+          "height": 152,
+          "borders": [
+            "1px solid rgb(185, 154, 96)",
+            "1px solid rgb(185, 154, 96)",
+            "1px solid rgb(185, 154, 96)",
+            "1px solid rgb(185, 154, 96)"
+          ]
+        },
+        {
+          "width": 114,
+          "height": 152,
+          "borders": [
+            "1px solid rgb(185, 154, 96)",
+            "1px solid rgb(185, 154, 96)",
+            "1px solid rgb(185, 154, 96)",
+            "1px solid rgb(185, 154, 96)"
+          ]
+        }
+      ],
+      "blackBackings": [
+        "rgb(0, 0, 0)",
+        "rgb(0, 0, 0)",
+        "rgb(0, 0, 0)",
+        "rgb(0, 0, 0)",
+        "rgb(0, 0, 0)",
+        "rgb(0, 0, 0)",
+        "rgb(0, 0, 0)",
+        "rgb(0, 0, 0)",
+        "rgb(0, 0, 0)",
+        "rgb(0, 0, 0)",
+        "rgb(0, 0, 0)",
+        "rgb(0, 0, 0)",
+        "rgb(0, 0, 0)",
+        "rgb(0, 0, 0)",
+        "rgb(0, 0, 0)",
+        "rgb(0, 0, 0)",
+        "rgb(0, 0, 0)",
+        "rgb(0, 0, 0)",
+        "rgb(0, 0, 0)",
+        "rgb(0, 0, 0)",
+        "rgb(0, 0, 0)",
+        "rgb(0, 0, 0)",
+        "rgb(0, 0, 0)",
+        "rgb(0, 0, 0)",
+        "rgb(0, 0, 0)",
+        "rgb(0, 0, 0)"
+      ],
+      "handTrackTop": "-8px",
+      "questAbilityGap": 10,
+      "panelBorders": [
+        [
+          "1px solid rgb(185, 154, 96)",
+          "1px solid rgb(185, 154, 96)",
+          "1px solid rgb(185, 154, 96)",
+          "1px solid rgb(185, 154, 96)"
+        ],
+        [
+          "1px solid rgb(185, 154, 96)",
+          "1px solid rgb(185, 154, 96)",
+          "1px solid rgb(185, 154, 96)",
+          "1px solid rgb(185, 154, 96)"
+        ],
+        [
+          "1px solid rgb(185, 154, 96)",
+          "1px solid rgb(185, 154, 96)",
+          "1px solid rgb(185, 154, 96)",
+          "1px solid rgb(185, 154, 96)"
+        ],
+        [
+          "1px solid rgb(185, 154, 96)",
+          "1px solid rgb(185, 154, 96)",
+          "1px solid rgb(185, 154, 96)",
+          "1px solid rgb(185, 154, 96)"
+        ],
+        [
+          "1px solid rgb(185, 154, 96)",
+          "1px solid rgb(185, 154, 96)",
+          "1px solid rgb(185, 154, 96)",
+          "1px solid rgb(185, 154, 96)"
+        ],
+        [
+          "1px solid rgb(185, 154, 96)",
+          "1px solid rgb(185, 154, 96)",
+          "1px solid rgb(185, 154, 96)",
+          "1px solid rgb(185, 154, 96)"
+        ],
+        [
+          "1px solid rgb(185, 154, 96)",
+          "1px solid rgb(185, 154, 96)",
+          "1px solid rgb(185, 154, 96)",
+          "1px solid rgb(185, 154, 96)"
+        ],
+        [
+          "1px solid rgb(185, 154, 96)",
+          "1px solid rgb(185, 154, 96)",
+          "1px solid rgb(185, 154, 96)",
+          "1px solid rgb(185, 154, 96)"
+        ],
+        [
+          "1px solid rgb(185, 154, 96)",
+          "1px solid rgb(185, 154, 96)",
+          "1px solid rgb(185, 154, 96)",
+          "1px solid rgb(185, 154, 96)"
+        ],
+        [
+          "1px solid rgb(185, 154, 96)",
+          "1px solid rgb(185, 154, 96)",
+          "1px solid rgb(185, 154, 96)",
+          "1px solid rgb(185, 154, 96)"
+        ],
+        [
+          "1px solid rgb(185, 154, 96)",
+          "1px solid rgb(185, 154, 96)",
+          "1px solid rgb(185, 154, 96)",
+          "1px solid rgb(185, 154, 96)"
+        ],
+        [
+          "1px solid rgb(185, 154, 96)",
+          "1px solid rgb(185, 154, 96)",
+          "1px solid rgb(185, 154, 96)",
+          "1px solid rgb(185, 154, 96)"
+        ],
+        [
+          "1px solid rgb(185, 154, 96)",
+          "1px solid rgb(185, 154, 96)",
+          "1px solid rgb(185, 154, 96)",
+          "1px solid rgb(185, 154, 96)"
+        ]
+      ],
+      "selectedCardClearance": {
+        "top": 20.91357421875,
+        "bottom": 29.55999755859375
+      }
+    },
+    {
+      "viewport": [
+        412,
+        915
+      ],
+      "theme": "classic",
+      "width": 412,
+      "height": 915,
+      "scrollWidth": 412,
+      "scrollHeight": 915,
+      "scale": 1,
+      "portrait": {
+        "x": 8,
+        "y": 623,
+        "w": 80,
+        "h": 88
+      },
+      "enemy": {
+        "x": 8,
+        "y": 30,
+        "w": 80,
+        "h": 88
+      },
+      "card": {
+        "x": 8,
+        "y": 146.546875,
+        "w": 96,
+        "h": 134.390625
+      },
+      "hand": {
+        "x": 8,
+        "y": 717,
+        "w": 396,
+        "h": 190
+      },
+      "handCard": {
+        "x": 16,
+        "y": 758,
+        "w": 92,
+        "h": 129
+      },
+      "controls": {
+        "x": 8,
+        "y": 343.5,
+        "w": 396,
+        "h": 54
+      },
+      "ability": {
+        "x": 252,
+        "y": 667,
+        "w": 152,
+        "h": 44
+      },
+      "images": [
+        {
+          "loaded": true,
+          "fit": "contain"
+        },
+        {
+          "loaded": true,
+          "fit": "contain"
+        }
+      ],
+      "slots": 8,
+      "wood": "none",
+      "oldVeil": "\"\"",
+      "oldAmbience": "block",
+      "mats": [
+        {
+          "image": "none",
+          "pointerEvents": "auto",
+          "content": "none"
+        },
+        {
+          "image": "none",
+          "pointerEvents": "auto",
+          "content": "none"
+        }
+      ],
+      "portraitFrames": [
+        {
+          "width": 80,
+          "height": 88,
+          "borders": [
+            "0px none rgb(229, 217, 186)",
+            "0px none rgb(229, 217, 186)",
+            "0px none rgb(229, 217, 186)",
+            "2px solid rgb(182, 142, 61)"
+          ]
+        },
+        {
+          "width": 80,
+          "height": 88,
+          "borders": [
+            "1px solid rgb(124, 104, 66)",
+            "1px solid rgb(124, 104, 66)",
+            "3px solid rgb(167, 108, 94)",
+            "1px solid rgb(124, 104, 66)"
+          ]
+        }
+      ],
+      "blackBackings": [
+        "rgba(0, 0, 0, 0)",
+        "rgba(0, 0, 0, 0)",
+        "rgba(0, 0, 0, 0)",
+        "rgba(0, 0, 0, 0)",
+        "rgba(21, 23, 18, 0.376)",
+        "rgba(21, 23, 18, 0.376)",
+        "rgba(0, 0, 0, 0)",
+        "rgba(0, 0, 0, 0)",
+        "rgba(0, 0, 0, 0)",
+        "rgba(0, 0, 0, 0)",
+        "rgba(21, 23, 18, 0.376)",
+        "rgba(21, 23, 18, 0.376)",
+        "rgba(0, 0, 0, 0)",
+        "rgba(0, 0, 0, 0)",
+        "rgba(0, 0, 0, 0)",
+        "rgba(0, 0, 0, 0)",
+        "rgba(0, 0, 0, 0)",
+        "rgba(0, 0, 0, 0)",
+        "rgba(0, 0, 0, 0)",
+        "rgba(0, 0, 0, 0)",
+        "rgba(0, 0, 0, 0)",
+        "rgba(0, 0, 0, 0)",
+        "rgba(0, 0, 0, 0)",
+        "rgba(0, 0, 0, 0)",
+        "rgba(0, 0, 0, 0)",
+        "rgba(0, 0, 0, 0)"
+      ],
+      "handTrackTop": "0px",
+      "questAbilityGap": 7.9375,
+      "panelBorders": [
+        [
+          "0px none rgb(236, 232, 223)",
+          "0px none rgb(236, 232, 223)",
+          "0px none rgb(236, 232, 223)",
+          "2px solid rgb(161, 137, 84)"
+        ],
+        [
+          "0px none rgb(236, 232, 223)",
+          "0px none rgb(236, 232, 223)",
+          "0px none rgb(236, 232, 223)",
+          "2px solid rgb(161, 137, 84)"
+        ],
+        [
+          "1px solid oklch(0.381 0.176 304.987)",
+          "1px solid oklch(0.381 0.176 304.987)",
+          "1px solid oklch(0.381 0.176 304.987)",
+          "1px solid oklch(0.381 0.176 304.987)"
+        ],
+        [
+          "1px solid oklch(0.439 0 none)",
+          "1px solid oklch(0.439 0 none)",
+          "1px solid oklch(0.439 0 none)",
+          "1px solid oklch(0.439 0 none)"
+        ],
+        [
+          "1px solid rgb(139, 115, 63)",
+          "1px solid rgb(139, 115, 63)",
+          "1px solid rgb(139, 115, 63)",
+          "1px solid rgb(139, 115, 63)"
+        ],
+        [
+          "1px solid rgb(99, 80, 45)",
+          "1px solid rgb(99, 80, 45)",
+          "1px solid rgb(99, 80, 45)",
+          "1px solid rgb(99, 80, 45)"
+        ],
+        [
+          "1px solid oklch(0.439 0 none)",
+          "1px solid oklch(0.439 0 none)",
+          "1px solid oklch(0.439 0 none)",
+          "1px solid oklch(0.439 0 none)"
+        ],
+        [
+          "1px solid rgb(139, 115, 63)",
+          "1px solid rgb(139, 115, 63)",
+          "1px solid rgb(139, 115, 63)",
+          "1px solid rgb(139, 115, 63)"
+        ],
+        [
+          "0px none rgb(236, 232, 223)",
+          "0px none rgb(236, 232, 223)",
+          "0px none rgb(236, 232, 223)",
+          "2px solid rgb(161, 137, 84)"
+        ],
+        [
+          "0px none rgb(236, 232, 223)",
+          "0px none rgb(236, 232, 223)",
+          "0px none rgb(236, 232, 223)",
+          "2px solid rgb(161, 137, 84)"
+        ],
+        [
+          "0px none rgb(229, 217, 186)",
+          "0px none rgb(229, 217, 186)",
+          "0px none rgb(229, 217, 186)",
+          "2px solid rgb(182, 142, 61)"
+        ],
+        [
+          "1px solid rgb(182, 142, 61)",
+          "1px solid rgb(182, 142, 61)",
+          "1px solid rgb(182, 142, 61)",
+          "1px solid rgb(182, 142, 61)"
+        ],
+        [
+          "0px solid rgb(46, 46, 56)",
+          "0px solid rgb(46, 46, 56)",
+          "0px solid rgb(46, 46, 56)",
+          "0px solid rgb(46, 46, 56)"
+        ]
+      ]
+    },
+    {
+      "viewport": [
+        1440,
+        1000
+      ],
+      "theme": "new",
+      "width": 1440,
+      "height": 1000,
+      "scrollWidth": 1440,
+      "scrollHeight": 1184,
+      "scale": 1,
+      "portrait": {
+        "x": 660,
+        "y": 790.1875,
+        "w": 120,
+        "h": 160
+      },
+      "enemy": {
+        "x": 660,
+        "y": 30,
+        "w": 120,
+        "h": 160
+      },
+      "card": {
+        "x": 333,
+        "y": 200,
+        "w": 181.5,
+        "h": 254.09375
+      },
+      "hand": {
+        "x": 216,
+        "y": 960.1875,
+        "w": 1008,
+        "h": 220
+      },
+      "handCard": {
+        "x": 225,
+        "y": 961.1875,
+        "w": 132,
+        "h": 190
+      },
+      "controls": {
+        "x": 216,
+        "y": 464.09375,
+        "w": 1008,
+        "h": 52
+      },
+      "ability": {
+        "x": 788,
+        "y": 906.1875,
+        "w": 212,
+        "h": 44
+      },
+      "images": [
+        {
+          "loaded": true,
+          "fit": "contain"
+        },
+        {
+          "loaded": true,
+          "fit": "contain"
+        }
+      ],
+      "slots": 8,
+      "wood": "url(\"http://127.0.0.1:5186/src/components/battle-board-assets/walnut-table.svg?t=1792539979253\")",
+      "oldVeil": "none",
+      "oldAmbience": "none",
+      "mats": [
+        {
+          "image": "url(\"data:image/svg+xml,%3csvg%20xmlns='http://www.w3.org/2000/svg'%20width='720'%20height='280'%20viewBox='0%200%20720%20280'%20preserveAspectRatio='none'%3e%3c!--%20Original%20linen:%20quiet%20woven%20fibres,%20a%20flat%20playing%20surface%20and%20soft%20edge%20folds.%20--%3e%3cdefs%3e%3cpath%20id='hem'%20d='M9%2011Q28%2017%2049%2012T130%2010Q225%206%20354%2012T551%209Q632%2015%20704%208Q699%2032%20703%2055T707%20110Q700%20165%20709%20224L711%20249Q698%20265%20672%20262Q594%20257%20545%20262T369%20266Q268%20260%20188%20265T49%20264Q26%20265%2012%20257L7%20237Q15%20195%209%20152T12%2079Q15%2040%209%2011Z'/%3e%3cclipPath%20id='edge'%3e%3cuse%20href='%23hem'/%3e%3c/clipPath%3e%3cpattern%20id='fibre'%20width='12'%20height='12'%20patternUnits='userSpaceOnUse'%3e%3cpath%20d='M0%202h12M3%200v12'%20fill='none'%20stroke='%236d5945'%20stroke-width='.65'%20opacity='.075'/%3e%3cpath%20d='M0%208h12M9%200v12'%20fill='none'%20stroke='%23fff7e9'%20stroke-width='.6'%20opacity='.16'/%3e%3c/pattern%3e%3c/defs%3e%3cuse%20href='%23hem'%20transform='translate(0%204)'%20fill='%23201511'%20opacity='.45'/%3e%3cuse%20href='%23hem'%20fill='%23d8c2a1'%20stroke='%23987b62'%20stroke-width='1'/%3e%3cg%20clip-path='url(%23edge)'%3e%3cpath%20fill='%23e7d5b9'%20opacity='.55'%20d='M25%2024Q194%2013%20359%2022T691%2022L689%20242Q514%20251%20363%20251T25%20249Q18%20135%2025%2024Z'/%3e%3cpath%20fill='%23af9478'%20opacity='.65'%20d='M9%2011Q19%2027%2022%2058Q27%2038%2054%2029L91%2017Q36%2024%209%2011ZM704%208Q690%2029%20685%2061Q679%2041%20657%2031L629%2018Q676%2024%20704%208ZM711%20249Q686%20246%20672%20222Q684%20249%20638%20255L594%20262Q664%20260%20672%20262Q699%20265%20711%20249ZM12%20257Q30%20244%2037%20220Q35%20247%2089%20254L124%20263Q48%20269%2012%20257Z'/%3e%3cpath%20fill='%23987b62'%20opacity='.28'%20d='M11%2084Q22%20107%2018%20144T21%20197Q14%20173%209%20152T11%2084ZM702%2075Q694%20104%20700%20140T702%20204Q709%20176%20705%20147T702%2075Z'/%3e%3cpath%20d='M15%2018Q36%2029%2070%2020M21%2054Q27%2037%2049%2031M696%2017Q682%2027%20672%2043M701%20251Q676%20252%20660%20238M20%20253Q39%20247%2049%20238M65%20259Q148%20256%20197%20260M544%20258Q605%20254%20646%20257'%20fill='none'%20stroke='%23987b62'%20stroke-width='1.2'%20stroke-linecap='round'%20opacity='.48'/%3e%3cuse%20href='%23hem'%20fill='url(%23fibre)'/%3e%3c/g%3e%3c/svg%3e\")",
+          "pointerEvents": "none",
+          "content": "\"\""
+        },
+        {
+          "image": "url(\"data:image/svg+xml,%3csvg%20xmlns='http://www.w3.org/2000/svg'%20width='720'%20height='280'%20viewBox='0%200%20720%20280'%20preserveAspectRatio='none'%3e%3c!--%20Original%20linen:%20quiet%20woven%20fibres,%20a%20flat%20playing%20surface%20and%20soft%20edge%20folds.%20--%3e%3cdefs%3e%3cpath%20id='hem'%20d='M9%2011Q28%2017%2049%2012T130%2010Q225%206%20354%2012T551%209Q632%2015%20704%208Q699%2032%20703%2055T707%20110Q700%20165%20709%20224L711%20249Q698%20265%20672%20262Q594%20257%20545%20262T369%20266Q268%20260%20188%20265T49%20264Q26%20265%2012%20257L7%20237Q15%20195%209%20152T12%2079Q15%2040%209%2011Z'/%3e%3cclipPath%20id='edge'%3e%3cuse%20href='%23hem'/%3e%3c/clipPath%3e%3cpattern%20id='fibre'%20width='12'%20height='12'%20patternUnits='userSpaceOnUse'%3e%3cpath%20d='M0%202h12M3%200v12'%20fill='none'%20stroke='%236d5945'%20stroke-width='.65'%20opacity='.075'/%3e%3cpath%20d='M0%208h12M9%200v12'%20fill='none'%20stroke='%23fff7e9'%20stroke-width='.6'%20opacity='.16'/%3e%3c/pattern%3e%3c/defs%3e%3cuse%20href='%23hem'%20transform='translate(0%204)'%20fill='%23201511'%20opacity='.45'/%3e%3cuse%20href='%23hem'%20fill='%23d8c2a1'%20stroke='%23987b62'%20stroke-width='1'/%3e%3cg%20clip-path='url(%23edge)'%3e%3cpath%20fill='%23e7d5b9'%20opacity='.55'%20d='M25%2024Q194%2013%20359%2022T691%2022L689%20242Q514%20251%20363%20251T25%20249Q18%20135%2025%2024Z'/%3e%3cpath%20fill='%23af9478'%20opacity='.65'%20d='M9%2011Q19%2027%2022%2058Q27%2038%2054%2029L91%2017Q36%2024%209%2011ZM704%208Q690%2029%20685%2061Q679%2041%20657%2031L629%2018Q676%2024%20704%208ZM711%20249Q686%20246%20672%20222Q684%20249%20638%20255L594%20262Q664%20260%20672%20262Q699%20265%20711%20249ZM12%20257Q30%20244%2037%20220Q35%20247%2089%20254L124%20263Q48%20269%2012%20257Z'/%3e%3cpath%20fill='%23987b62'%20opacity='.28'%20d='M11%2084Q22%20107%2018%20144T21%20197Q14%20173%209%20152T11%2084ZM702%2075Q694%20104%20700%20140T702%20204Q709%20176%20705%20147T702%2075Z'/%3e%3cpath%20d='M15%2018Q36%2029%2070%2020M21%2054Q27%2037%2049%2031M696%2017Q682%2027%20672%2043M701%20251Q676%20252%20660%20238M20%20253Q39%20247%2049%20238M65%20259Q148%20256%20197%20260M544%20258Q605%20254%20646%20257'%20fill='none'%20stroke='%23987b62'%20stroke-width='1.2'%20stroke-linecap='round'%20opacity='.48'/%3e%3cuse%20href='%23hem'%20fill='url(%23fibre)'/%3e%3c/g%3e%3c/svg%3e\")",
+          "pointerEvents": "none",
+          "content": "\"\""
+        }
+      ],
+      "portraitFrames": [
+        {
+          "width": 120,
+          "height": 160,
+          "borders": [
+            "1px solid rgb(185, 154, 96)",
+            "1px solid rgb(185, 154, 96)",
+            "1px solid rgb(185, 154, 96)",
+            "1px solid rgb(185, 154, 96)"
+          ]
+        },
+        {
+          "width": 120,
+          "height": 160,
+          "borders": [
+            "1px solid rgb(185, 154, 96)",
+            "1px solid rgb(185, 154, 96)",
+            "1px solid rgb(185, 154, 96)",
+            "1px solid rgb(185, 154, 96)"
+          ]
+        }
+      ],
+      "blackBackings": [
+        "rgb(0, 0, 0)",
+        "rgb(0, 0, 0)",
+        "rgb(0, 0, 0)",
+        "rgb(0, 0, 0)",
+        "rgb(0, 0, 0)",
+        "rgb(0, 0, 0)",
+        "rgb(0, 0, 0)",
+        "rgb(0, 0, 0)",
+        "rgb(0, 0, 0)",
+        "rgb(0, 0, 0)",
+        "rgb(0, 0, 0)",
+        "rgb(0, 0, 0)",
+        "rgb(0, 0, 0)",
+        "rgb(0, 0, 0)",
+        "rgb(0, 0, 0)",
+        "rgb(0, 0, 0)",
+        "rgb(0, 0, 0)",
+        "rgb(0, 0, 0)",
+        "rgb(0, 0, 0)",
+        "rgb(0, 0, 0)",
+        "rgb(0, 0, 0)",
+        "rgb(0, 0, 0)",
+        "rgb(0, 0, 0)",
+        "rgb(0, 0, 0)",
+        "rgb(0, 0, 0)",
+        "rgb(0, 0, 0)"
+      ],
+      "handTrackTop": "-8px",
+      "questAbilityGap": 14,
+      "panelBorders": [
+        [
+          "1px solid rgb(185, 154, 96)",
+          "1px solid rgb(185, 154, 96)",
+          "1px solid rgb(185, 154, 96)",
+          "1px solid rgb(185, 154, 96)"
+        ],
+        [
+          "1px solid rgb(185, 154, 96)",
+          "1px solid rgb(185, 154, 96)",
+          "1px solid rgb(185, 154, 96)",
+          "1px solid rgb(185, 154, 96)"
+        ],
+        [
+          "1px solid rgb(185, 154, 96)",
+          "1px solid rgb(185, 154, 96)",
+          "1px solid rgb(185, 154, 96)",
+          "1px solid rgb(185, 154, 96)"
+        ],
+        [
+          "1px solid rgb(185, 154, 96)",
+          "1px solid rgb(185, 154, 96)",
+          "1px solid rgb(185, 154, 96)",
+          "1px solid rgb(185, 154, 96)"
+        ],
+        [
+          "1px solid rgb(185, 154, 96)",
+          "1px solid rgb(185, 154, 96)",
+          "1px solid rgb(185, 154, 96)",
+          "1px solid rgb(185, 154, 96)"
+        ],
+        [
+          "1px solid rgb(185, 154, 96)",
+          "1px solid rgb(185, 154, 96)",
+          "1px solid rgb(185, 154, 96)",
+          "1px solid rgb(185, 154, 96)"
+        ],
+        [
+          "1px solid rgb(185, 154, 96)",
+          "1px solid rgb(185, 154, 96)",
+          "1px solid rgb(185, 154, 96)",
+          "1px solid rgb(185, 154, 96)"
+        ],
+        [
+          "1px solid rgb(185, 154, 96)",
+          "1px solid rgb(185, 154, 96)",
+          "1px solid rgb(185, 154, 96)",
+          "1px solid rgb(185, 154, 96)"
+        ],
+        [
+          "1px solid rgb(185, 154, 96)",
+          "1px solid rgb(185, 154, 96)",
+          "1px solid rgb(185, 154, 96)",
+          "1px solid rgb(185, 154, 96)"
+        ],
+        [
+          "1px solid rgb(185, 154, 96)",
+          "1px solid rgb(185, 154, 96)",
+          "1px solid rgb(185, 154, 96)",
+          "1px solid rgb(185, 154, 96)"
+        ],
+        [
+          "1px solid rgb(185, 154, 96)",
+          "1px solid rgb(185, 154, 96)",
+          "1px solid rgb(185, 154, 96)",
+          "1px solid rgb(185, 154, 96)"
+        ],
+        [
+          "1px solid rgb(185, 154, 96)",
+          "1px solid rgb(185, 154, 96)",
+          "1px solid rgb(185, 154, 96)",
+          "1px solid rgb(185, 154, 96)"
+        ],
+        [
+          "1px solid rgb(185, 154, 96)",
+          "1px solid rgb(185, 154, 96)",
+          "1px solid rgb(185, 154, 96)",
+          "1px solid rgb(185, 154, 96)"
+        ]
+      ],
+      "selectedCardClearance": {
+        "top": 5.4000244140625,
+        "bottom": 17
+      }
+    },
+    {
+      "viewport": [
+        1440,
+        1000
+      ],
+      "theme": "classic",
+      "width": 1440,
+      "height": 1000,
+      "scrollWidth": 1440,
+      "scrollHeight": 1147,
+      "scale": 1,
+      "portrait": {
+        "x": 176,
+        "y": 889.1875,
+        "w": 112,
+        "h": 160
+      },
+      "enemy": {
+        "x": 912,
+        "y": 46,
+        "w": 112,
+        "h": 160
+      },
+      "card": {
+        "x": 218,
+        "y": 253,
+        "w": 181.5,
+        "h": 254.09375
+      },
+      "hand": {
+        "x": 400,
+        "y": 785.1875,
+        "w": 712,
+        "h": 347
+      },
+      "handCard": {
+        "x": 412,
+        "y": 926.1875,
+        "w": 132,
+        "h": 190
+      },
+      "controls": {
+        "x": 1296,
+        "y": 386.5,
+        "w": 128,
+        "h": 227
+      },
+      "ability": {
+        "x": 176,
+        "y": 1096.1875,
+        "w": 224,
+        "h": 36
+      },
+      "images": [
+        {
+          "loaded": true,
+          "fit": "contain"
+        },
+        {
+          "loaded": true,
+          "fit": "contain"
+        }
+      ],
+      "slots": 8,
+      "wood": "none",
+      "oldVeil": "\"\"",
+      "oldAmbience": "block",
+      "mats": [
+        {
+          "image": "none",
+          "pointerEvents": "auto",
+          "content": "none"
+        },
+        {
+          "image": "none",
+          "pointerEvents": "auto",
+          "content": "none"
+        }
+      ],
+      "portraitFrames": [
+        {
+          "width": 112,
+          "height": 160,
+          "borders": [
+            "0px none rgb(229, 217, 186)",
+            "0px none rgb(229, 217, 186)",
+            "0px none rgb(229, 217, 186)",
+            "2px solid rgb(182, 142, 61)"
+          ]
+        },
+        {
+          "width": 112,
+          "height": 160,
+          "borders": [
+            "1px solid rgb(124, 104, 66)",
+            "1px solid rgb(124, 104, 66)",
+            "3px solid rgb(167, 108, 94)",
+            "1px solid rgb(124, 104, 66)"
+          ]
+        }
+      ],
+      "blackBackings": [
+        "rgba(0, 0, 0, 0)",
+        "rgba(0, 0, 0, 0)",
+        "rgba(0, 0, 0, 0)",
+        "rgba(0, 0, 0, 0)",
+        "rgba(21, 23, 18, 0.376)",
+        "rgba(21, 23, 18, 0.376)",
+        "rgba(0, 0, 0, 0)",
+        "rgba(0, 0, 0, 0)",
+        "rgba(0, 0, 0, 0)",
+        "rgba(0, 0, 0, 0)",
+        "rgba(21, 23, 18, 0.376)",
+        "rgba(21, 23, 18, 0.376)",
+        "rgba(0, 0, 0, 0)",
+        "rgba(0, 0, 0, 0)",
+        "rgba(0, 0, 0, 0)",
+        "rgba(0, 0, 0, 0)",
+        "rgba(0, 0, 0, 0)",
+        "rgba(0, 0, 0, 0)",
+        "rgba(0, 0, 0, 0)",
+        "rgba(0, 0, 0, 0)",
+        "rgba(0, 0, 0, 0)",
+        "rgba(0, 0, 0, 0)",
+        "rgba(0, 0, 0, 0)",
+        "rgba(0, 0, 0, 0)",
+        "rgba(0, 0, 0, 0)",
+        "rgba(0, 0, 0, 0)"
+      ],
+      "handTrackTop": "0px",
+      "questAbilityGap": 8,
+      "panelBorders": [
+        [
+          "0px none rgb(236, 232, 223)",
+          "0px none rgb(236, 232, 223)",
+          "0px none rgb(236, 232, 223)",
+          "2px solid rgb(161, 137, 84)"
+        ],
+        [
+          "0px none rgb(236, 232, 223)",
+          "0px none rgb(236, 232, 223)",
+          "0px none rgb(236, 232, 223)",
+          "2px solid rgb(161, 137, 84)"
+        ],
+        [
+          "1px solid oklch(0.381 0.176 304.987)",
+          "1px solid oklch(0.381 0.176 304.987)",
+          "1px solid oklch(0.381 0.176 304.987)",
+          "1px solid oklch(0.381 0.176 304.987)"
+        ],
+        [
+          "2px solid oklch(0.439 0 none)",
+          "2px solid oklch(0.439 0 none)",
+          "2px solid oklch(0.439 0 none)",
+          "2px solid oklch(0.439 0 none)"
+        ],
+        [
+          "2px solid rgb(139, 115, 63)",
+          "2px solid rgb(139, 115, 63)",
+          "2px solid rgb(139, 115, 63)",
+          "2px solid rgb(139, 115, 63)"
+        ],
+        [
+          "1px solid rgb(99, 80, 45)",
+          "1px solid rgb(99, 80, 45)",
+          "1px solid rgb(99, 80, 45)",
+          "1px solid rgb(99, 80, 45)"
+        ],
+        [
+          "2px solid oklch(0.439 0 none)",
+          "2px solid oklch(0.439 0 none)",
+          "2px solid oklch(0.439 0 none)",
+          "2px solid oklch(0.439 0 none)"
+        ],
+        [
+          "2px solid rgb(139, 115, 63)",
+          "2px solid rgb(139, 115, 63)",
+          "2px solid rgb(139, 115, 63)",
+          "2px solid rgb(139, 115, 63)"
+        ],
+        [
+          "0px none rgb(236, 232, 223)",
+          "0px none rgb(236, 232, 223)",
+          "0px none rgb(236, 232, 223)",
+          "2px solid rgb(161, 137, 84)"
+        ],
+        [
+          "0px none rgb(236, 232, 223)",
+          "0px none rgb(236, 232, 223)",
+          "0px none rgb(236, 232, 223)",
+          "2px solid rgb(161, 137, 84)"
+        ],
+        [
+          "0px none rgb(229, 217, 186)",
+          "0px none rgb(229, 217, 186)",
+          "0px none rgb(229, 217, 186)",
+          "2px solid rgb(182, 142, 61)"
+        ],
+        [
+          "1px solid rgb(182, 142, 61)",
+          "1px solid rgb(182, 142, 61)",
+          "1px solid rgb(182, 142, 61)",
+          "1px solid rgb(182, 142, 61)"
+        ],
+        [
+          "0px solid rgb(46, 46, 56)",
+          "0px solid rgb(46, 46, 56)",
+          "0px solid rgb(46, 46, 56)",
+          "0px solid rgb(46, 46, 56)"
+        ]
+      ]
+    }
+  ],
+  "errors": [],
+  "missingArt": []
+}

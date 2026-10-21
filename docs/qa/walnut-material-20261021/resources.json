@@ -1,0 +1,12 @@
+[
+  {
+    "file": "artifacts/ko-game/src/components/battle-board-assets/walnut-material-wide.webp",
+    "bytes": 133448,
+    "sha256": "60ac16bc03ec42b8c8f454787ab1c07218fec22de91632509093f7ae4af0124c"
+  },
+  {
+    "file": "artifacts/ko-game/src/components/battle-board-assets/walnut-material-portrait.webp",
+    "bytes": 104382,
+    "sha256": "b5a25dbe0b56f248714d890e20272229b4504afc67491d6e7b61f5dc11abd46a"
+  }
+]

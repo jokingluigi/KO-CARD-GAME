@@ -1,0 +1,744 @@
+/* Approved shared battle board. CLASSIC comparisons omit the scoped class. */
+.ko-game-shell.ko-board-preview {
+  --board-bg: #38231b;
+  --board-surface: #121317;
+  --board-panel: #121317;
+  --board-gold: #b99a60;
+  --board-bright: #d9bb7b;
+  --board-muted: #6d5b3c;
+  --board-portrait-w: 105px;
+  --board-hud-h: 140px;
+  --board-hand-h: clamp(140px, 22dvh, 190px);
+  background: var(--board-bg)
+    url("./battle-board-assets/walnut-material-portrait.webp") center top /
+    cover no-repeat;
+  color: #f0e8d8;
+  width: 100%;
+  min-width: 0;
+  height: auto;
+  min-height: 100dvh;
+  overflow-x: clip;
+  overflow-y: auto;
+  padding: env(safe-area-inset-top) 0 env(safe-area-inset-bottom);
+}
+.ko-board-preview .ko-game-stage {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  grid-template-rows:
+    16px var(--board-hud-h) auto 52px auto var(--board-hud-h)
+    var(--board-hand-h);
+  gap: 10px;
+  width: 100%;
+  min-width: 0;
+  max-width: 1024px;
+  height: auto;
+  min-height: calc(
+    100dvh - env(safe-area-inset-top) - env(safe-area-inset-bottom)
+  );
+  padding: 4px 8px;
+  overflow: visible;
+  background: transparent;
+}
+.ko-board-preview .ko-cinematic-background {
+  background: var(--board-bg)
+    url("./battle-board-assets/walnut-material-portrait.webp") center top /
+    cover no-repeat;
+}
+.ko-board-preview .ko-cinematic-background > div:last-child {
+  background: none;
+}
+/* Existing Tower/media assets remain in their own cinematic layer. */
+.ko-board-preview .ko-opponent-header,
+.ko-board-preview .ko-board-area,
+.ko-board-preview .ko-player-footer {
+  display: contents;
+}
+.ko-board-preview .ko-opponent-hand {
+  grid-row: 1;
+  position: relative;
+  inset: auto;
+  transform: none;
+  translate: none;
+  width: 100%;
+  max-width: none;
+  height: 16px;
+  min-height: 0;
+  padding: 0;
+  justify-content: center;
+  overflow: hidden;
+}
+.ko-board-preview .ko-opponent-hand > div {
+  width: 12px;
+  height: 16px;
+  border-width: 1px;
+  transform: none;
+}
+.ko-board-preview .ko-opponent-hud,
+.ko-board-preview .ko-player-info {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) var(--board-portrait-w) minmax(0, 1fr);
+  grid-template-rows: 44px minmax(0, 1fr) 32px;
+  gap: 4px 8px;
+  width: 100%;
+  max-width: 560px;
+  height: var(--board-hud-h);
+  min-height: 0;
+  margin: 0 auto;
+  padding: 0;
+  align-items: stretch;
+  border: 0;
+}
+.ko-board-preview .ko-opponent-hud {
+  grid-row: 2;
+}
+.ko-board-preview .ko-player-info {
+  grid-row: 6;
+}
+.ko-board-preview .ko-champion-core {
+  display: contents;
+}
+.ko-board-preview .ko-opponent-champion,
+.ko-board-preview .ko-champion-core > .relative {
+  grid-column: 2;
+  grid-row: 1 / -1;
+  align-self: center;
+  width: var(--board-portrait-w);
+  height: var(--board-hud-h);
+}
+.ko-board-preview .ko-player-champion,
+.ko-board-preview .ko-opponent-champion {
+  width: var(--board-portrait-w);
+  height: var(--board-hud-h);
+  max-width: none;
+  border: 1px solid var(--board-gold);
+  border-radius: 2px;
+  background: var(--board-panel);
+  box-shadow: none;
+  overflow: visible;
+}
+.ko-board-preview .ko-champion-portrait-art {
+  overflow: hidden;
+  border-radius: 0;
+}
+.ko-board-preview .ko-champion-portrait-art img {
+  inset: 3px;
+  width: calc(100% - 6px);
+  height: calc(100% - 6px);
+}
+.ko-board-preview .ko-champion-heading {
+  grid-column: 3;
+  grid-row: 1;
+  display: flex;
+  align-items: center;
+  width: 100%;
+  max-width: none;
+  min-width: 0;
+  margin: 0;
+  font-size: 10px;
+  line-height: 14px;
+  white-space: normal;
+  text-align: left;
+}
+.ko-board-preview .ko-champion-heading > span:first-child {
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+.ko-board-preview .ko-champion-heading .cosmetic-emote-tools {
+  flex-shrink: 0;
+}
+.ko-board-preview .cosmetic-emote-tools > button {
+  min-width: 44px;
+  min-height: 44px;
+}
+.ko-board-preview .ko-player-stats,
+.ko-board-preview .ko-opponent-stats {
+  grid-column: 1;
+  grid-row: 3;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  width: 100%;
+  height: 32px;
+  gap: 4px;
+  align-self: end;
+}
+.ko-board-preview .ko-player-stats > div,
+.ko-board-preview .ko-opponent-stats > div {
+  min-width: 0;
+  padding: 1px 3px;
+  text-align: center;
+  border: 1px solid var(--board-gold);
+  border-radius: 2px;
+  background: var(--board-panel);
+}
+.ko-board-preview .ko-player-stats .font-display,
+.ko-board-preview .ko-opponent-stats .font-display {
+  font-size: 13px;
+  line-height: 16px;
+  white-space: nowrap;
+}
+.ko-board-preview .ko-zone-stack {
+  grid-column: 1;
+  grid-row: 1 / 3;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  width: 100%;
+  height: 92px;
+  margin: 0;
+  align-self: start;
+  justify-self: stretch;
+}
+.ko-board-preview .ko-zone-stack > div,
+.ko-board-preview .ko-zone-stack > button {
+  position: relative;
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+  width: 100%;
+  height: 44px;
+  min-height: 44px;
+  padding: 4px 8px;
+  border: 1px solid var(--board-gold);
+  border-radius: 2px;
+  background: var(--board-panel);
+  box-shadow: none;
+}
+.ko-board-preview .ko-zone-stack .ko-deck-label {
+  display: inline;
+}
+.ko-board-preview .ko-zone-stack > div > div:not(.cosmetic-card-back) {
+  display: none;
+}
+.ko-board-preview .ko-zone-stack span {
+  position: relative;
+  width: auto;
+  margin: 0;
+  padding: 0;
+  background: transparent;
+  font-size: 12px;
+  line-height: 16px;
+}
+.ko-board-preview .ko-zone-stack .cosmetic-card-back {
+  opacity: 0.24;
+}
+.ko-board-preview .ko-player-quest,
+.ko-board-preview .ko-opponent-quest {
+  grid-column: 3;
+  grid-row: 2;
+  width: 100%;
+  max-width: none;
+  min-width: 0;
+  align-self: center;
+}
+.ko-board-preview .ko-player-quest > div,
+.ko-board-preview .ko-opponent-quest > div {
+  padding: 4px;
+  font-size: 10px;
+  line-height: 14px;
+}
+.ko-board-preview .ko-player-ability {
+  grid-column: 3;
+  grid-row: 3;
+  align-self: end;
+  min-width: 0;
+}
+.ko-board-preview .ko-champion-ability {
+  min-height: 44px;
+  padding: 3px;
+  font-size: 10px;
+  line-height: 14px;
+  letter-spacing: 0;
+  border-radius: 2px;
+  box-shadow: none;
+  white-space: normal;
+}
+.ko-board-preview .ko-opponent-board-row,
+.ko-board-preview .ko-player-board-row {
+  display: flex;
+  flex-direction: row;
+  justify-content: center;
+  align-items: center;
+  width: 100%;
+  height: auto;
+  min-height: 0;
+  gap: 0;
+}
+.ko-board-preview .ko-opponent-board-row {
+  grid-row: 3;
+}
+.ko-board-preview .ko-player-board-row {
+  grid-row: 5;
+}
+.ko-board-preview .ko-board-cards {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 4px;
+  width: 100%;
+  max-width: 476px;
+  height: auto;
+  aspect-ratio: auto;
+  min-width: 0;
+  margin: 0 auto;
+  align-items: center;
+}
+.ko-board-preview .ko-board-slot-wrapper {
+  width: 100%;
+  min-width: 0;
+}
+.ko-board-preview .ko-board-slot {
+  width: 100% !important;
+  height: auto !important;
+  aspect-ratio: 70 / 98;
+}
+.ko-board-preview .ko-board-slot:not(.group) {
+  border: 1px solid var(--board-gold);
+  border-radius: 3px;
+  background: var(--board-surface);
+  box-shadow: none;
+}
+.ko-board-preview .ko-board-slot:not(.group)::before {
+  content: "";
+  position: absolute;
+  width: 14px;
+  height: 14px;
+  left: calc(50% - 7px);
+  top: calc(50% - 7px);
+  border: 1px solid var(--board-gold);
+  transform: rotate(45deg);
+  opacity: 0.4;
+  pointer-events: none;
+}
+.ko-board-preview .ko-board-slot[data-drag-valid="true"] {
+  border-color: var(--board-bright);
+}
+.ko-board-preview .ko-game-controls {
+  grid-row: 4;
+  display: grid;
+  grid-template-columns: 44px 44px minmax(0, 1fr) 82px;
+  position: relative;
+  inset: auto;
+  transform: none;
+  translate: none;
+  width: 100%;
+  height: 52px;
+  min-width: 0;
+  padding: 3px;
+  gap: 4px;
+  border: 1px solid var(--board-gold);
+  border-radius: 2px;
+  background: var(--board-panel);
+  box-shadow: none;
+  backdrop-filter: none;
+}
+.ko-board-preview .ko-game-controls > button {
+  min-height: 44px;
+  padding: 3px;
+  font-size: 11px;
+}
+.ko-board-preview .ko-game-controls > button:first-child {
+  grid-column: 1;
+  grid-row: 1;
+}
+.ko-board-preview .ko-battle-log-button {
+  display: block;
+  grid-column: 2;
+  grid-row: 1;
+}
+.ko-board-preview .ko-game-controls > .flex {
+  grid-column: 3;
+  grid-row: 1;
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  min-width: 0;
+  border: 0;
+  padding: 0;
+}
+.ko-board-preview .ko-game-controls > .flex > div {
+  min-width: 0;
+  padding: 0;
+}
+.ko-board-preview .ko-game-controls [data-testid="match-turn-number"] {
+  font-size: 11px;
+  line-height: 14px;
+}
+.ko-board-preview .ko-game-controls > .flex .text-xs {
+  font-size: 10px;
+}
+.ko-board-preview .ko-game-controls .ko-turn-end {
+  grid-column: 4;
+  grid-row: 1;
+  background: var(--board-bright);
+  color: var(--board-panel);
+  box-shadow: none;
+  border: 1px solid var(--board-gold);
+}
+.ko-board-preview .ko-game-controls .ko-turn-end:disabled {
+  background: var(--board-muted);
+  color: #c5baa4;
+}
+.ko-board-preview .ko-effect-target-controls {
+  display: none;
+}
+.ko-board-preview .ko-mobile-target-cancel {
+  display: block;
+  grid-column: 1;
+  grid-row: 1;
+}
+.ko-board-preview
+  .ko-game-controls:has(.ko-mobile-target-cancel)
+  > button:first-child {
+  visibility: hidden;
+  pointer-events: none;
+}
+.ko-board-preview .ko-board-area > [role="status"] {
+  position: relative;
+  inset: auto;
+  grid-column: 1;
+  grid-row: 4;
+  align-self: end;
+  translate: 0 100%;
+  transform: none;
+  z-index: 130;
+  width: 100%;
+  max-width: 100%;
+  margin: 0;
+  padding: 2px 4px;
+  font-size: 10px;
+  line-height: 14px;
+  pointer-events: none;
+}
+.ko-board-preview .ko-game-controls > .absolute,
+.ko-board-preview .ko-game-controls > [role="status"] {
+  position: absolute;
+  inset: calc(100% + 2px) 0 auto;
+  z-index: 140;
+  width: 100%;
+  margin: 0;
+  padding: 4px;
+  grid-column: auto;
+  font-size: 11px;
+  line-height: 14px;
+}
+.ko-board-preview .ko-player-hand {
+  grid-row: 7;
+  width: 100%;
+  height: var(--board-hand-h);
+  min-height: 0;
+  padding: 20px 0 12px;
+  overflow-x: auto;
+  overflow-y: hidden;
+  border-top: 1px solid var(--board-muted);
+  background: var(--board-panel);
+  scrollbar-width: thin;
+}
+.ko-board-preview .ko-hand-cards {
+  width: max-content;
+  min-width: 100%;
+  gap: 10px;
+  padding: 0 8px 8px;
+  top: -8px;
+  justify-content: flex-start;
+}
+@media (max-height: 760px) and (orientation: portrait) {
+  .ko-game-shell.ko-board-preview {
+    --board-portrait-w: 93px;
+    --board-hud-h: 124px;
+  }
+  .ko-board-preview .ko-opponent-hud,
+  .ko-board-preview .ko-player-info {
+    grid-template-rows: 28px minmax(0, 1fr) 28px;
+    gap: 4px 6px;
+  }
+  .ko-board-preview .ko-champion-heading {
+    font-size: 9px;
+    line-height: 12px;
+  }
+  .ko-board-preview .cosmetic-emote-tools > button {
+    min-width: 44px;
+    min-height: 44px;
+  }
+  .ko-board-preview .ko-player-stats,
+  .ko-board-preview .ko-opponent-stats {
+    height: 28px;
+  }
+}
+@media (min-height: 880px) and (orientation: portrait) {
+  .ko-game-shell.ko-board-preview {
+    --board-portrait-w: 114px;
+    --board-hud-h: 152px;
+  }
+}
+@media (min-width: 769px) {
+  .ko-game-shell.ko-board-preview {
+    --board-portrait-w: 120px;
+    --board-hud-h: 160px;
+    --board-hand-h: 220px;
+    background-image: url("./battle-board-assets/walnut-material-wide.webp");
+  }
+  .ko-board-preview .ko-game-stage {
+    max-width: 1024px;
+  }
+}
+/* One continuous table extends from the opponent HUD to the hand tray. */
+.ko-board-preview .ko-game-stage {
+  background-color: transparent;
+}
+.ko-board-preview .ko-opponent-board-row,
+.ko-board-preview .ko-player-board-row {
+  background-color: transparent;
+}
+.ko-board-preview
+  .ko-game-controls
+  > button:first-child:not(.ko-mobile-target-cancel) {
+  font-size: 0;
+}
+.ko-board-preview
+  .ko-game-controls
+  > button:first-child:not(.ko-mobile-target-cancel)::before {
+  content: "⚙";
+  font-size: 20px;
+  pointer-events: none;
+}
+@media (max-height: 760px) and (orientation: portrait) {
+  .ko-board-preview .ko-game-stage {
+    padding-block: 2px;
+  }
+}
+.ko-board-preview.ko-board-preview--scenic .ko-game-stage {
+  background-color: transparent;
+}
+@media (min-width: 769px) {
+  .ko-board-preview .ko-board-cards {
+    max-width: 774px;
+    gap: 16px;
+  }
+}
+/* Connection metadata must not cover the newly centred opponent portrait. */
+body:has(.ko-board-preview)
+  div:has(> [data-testid="status-online-match-connection"]) {
+  left: 8px;
+  right: auto;
+  top: 4px;
+  max-width: calc(50vw - 24px);
+  height: 14px;
+  padding: 0;
+  gap: 4px;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  transform: none;
+  translate: none;
+  box-shadow: none;
+  font-size: 8px;
+  line-height: 10px;
+}
+body:has(.ko-board-preview)
+  div:has(> [data-testid="status-online-match-connection"])
+  > span:not([data-testid="status-online-match-connection"]):not(
+    [data-testid="text-online-turn-timer"]
+  ) {
+  display: none;
+}
+/* Status overlays share the centre row; auto placement must never create a second board column. */
+.ko-board-preview .ko-opponent-hand,
+.ko-board-preview .ko-opponent-hud,
+.ko-board-preview .ko-opponent-board-row,
+.ko-board-preview .ko-game-controls,
+.ko-board-preview .ko-player-board-row,
+.ko-board-preview .ko-player-info,
+.ko-board-preview .ko-player-hand {
+  grid-column: 1;
+}
+.ko-board-preview .ko-board-slot:not(.group)::before {
+  width: 6px;
+  height: 6px;
+  left: calc(50% - 3px);
+  top: 6px;
+}
+/* Expand the info hit box, not the card frame or the visible icon. */
+.ko-board-preview .ko-hand-inspect-button,
+.ko-board-preview .ko-board-inspect-button {
+  width: 44px;
+  height: 44px;
+  min-width: 44px;
+  min-height: 44px;
+  top: 0;
+  right: 0;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  color: transparent;
+}
+.ko-board-preview .ko-hand-inspect-button::before,
+.ko-board-preview .ko-board-inspect-button::before {
+  content: "ⓘ";
+  position: absolute;
+  top: 2px;
+  right: 2px;
+  width: 19px;
+  height: 19px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid #fbbf24;
+  border-radius: 50%;
+  background: #0a0a0ae8;
+  color: #fde68a;
+  font-size: 11px;
+  pointer-events: none;
+}
+.ko-board-preview .ko-player-quest > div,
+.ko-board-preview .ko-opponent-quest > div {
+  min-height: 44px;
+}
+@media (max-height: 760px) and (orientation: portrait) {
+  .ko-board-preview .ko-game-stage {
+    grid-template-rows: 16px var(--board-hud-h) auto 52px auto 140px calc(
+        var(--board-hand-h) - 16px
+      );
+  }
+  .ko-board-preview .ko-player-info {
+    height: 140px;
+    grid-template-rows: 44px minmax(0, 1fr) 32px;
+  }
+  .ko-board-preview .ko-player-stats {
+    height: 32px;
+  }
+  .ko-board-preview .ko-player-hand {
+    height: calc(var(--board-hand-h) - 16px);
+    padding-bottom: 4px;
+  }
+  .ko-board-preview .ko-hand-cards {
+    padding-bottom: 0;
+  }
+  .ko-board-preview .ko-player-quest {
+    align-self: start;
+  }
+}
+
+/* The mats are separate, non-interactive decoration. They extend outside the
+   grid instead of consuming card width or changing drag/drop geometry. */
+.ko-board-preview .ko-opponent-board-row,
+.ko-board-preview .ko-player-board-row {
+  position: relative;
+  isolation: isolate;
+}
+.ko-board-preview .ko-opponent-board-row::before,
+.ko-board-preview .ko-player-board-row::before {
+  content: "";
+  position: absolute;
+  inset: -8px -7px;
+  z-index: -1;
+  background: url("./battle-board-assets/linen-field.svg") center / 100% 100%
+    no-repeat;
+  pointer-events: none;
+}
+.ko-board-preview .ko-player-board-row::before {
+  transform: scaleX(-1);
+}
+.ko-board-preview .ko-board-slot:not(.group) {
+  border-color: var(--board-gold);
+  background: var(--board-panel);
+  box-shadow: 0 2px 0 #24171355;
+}
+.ko-board-preview .ko-board-slot:not(.group)::before {
+  width: 14px;
+  height: 14px;
+  left: calc(50% - 7px);
+  top: calc(50% - 7px);
+  opacity: 0.3;
+}
+.ko-board-preview .ko-board-slot:not(.group)::after {
+  content: "";
+  position: absolute;
+  inset: 4px;
+  background:
+    linear-gradient(var(--board-gold), var(--board-gold)) left top / 6px 1px,
+    linear-gradient(var(--board-gold), var(--board-gold)) left top / 1px 6px,
+    linear-gradient(var(--board-gold), var(--board-gold)) right bottom / 6px 1px,
+    linear-gradient(var(--board-gold), var(--board-gold)) right bottom / 1px 6px;
+  background-repeat: no-repeat;
+  pointer-events: none;
+}
+.ko-board-preview .ko-player-hand {
+  border: 1px solid var(--board-gold);
+  border-radius: 4px;
+  background: transparent url("./battle-board-assets/black-linen.svg") center /
+    100% 100% no-repeat;
+}
+/* On short phones allow vertical scrolling before reducing a single card.
+   Grid gaps expose the cloth hem; the hand renderer retains its original size. */
+@media (max-height: 760px) and (orientation: portrait) {
+  .ko-board-preview .ko-game-stage {
+    row-gap: 10px;
+  }
+}
+/* premium-presentation.css paints an absolute black ::before on the old
+   board-area. display:contents makes that decoration cover the new grid.
+   Remove its generated box rather than stacking another surface over it. */
+.ko-game-shell.ko-board-preview .ko-board-area::before {
+  content: none;
+  display: none;
+}
+/* The new board replaces the old ambience image/veil; animations live outside
+   this decoration-only element and remain enabled. CLASSIC is unaffected. */
+.ko-game-shell.ko-board-preview .ko-cinematic-background {
+  display: none;
+}
+
+/* An opaque backing stays beneath faded/unavailable cards. The original
+   artwork, SVG frame, badges and numeric/text layers remain unchanged. */
+.ko-game-shell.ko-board-preview .ko-board-slot,
+.ko-game-shell.ko-board-preview .ko-card-depth,
+.ko-game-shell.ko-board-preview .ko-board-slot-wrapper,
+.ko-game-shell.ko-board-preview .ko-hand-card,
+.ko-game-shell.ko-board-preview .ko-hand-cards > :has(.ko-hand-card) {
+  background-color: #000;
+}
+/* Both seats share the same portrait box, frame and image-fit contract. */
+.ko-game-shell.ko-board-preview
+  :is(.ko-player-champion, .ko-opponent-champion) {
+  width: var(--board-portrait-w);
+  height: var(--board-hud-h);
+  border: 1px solid var(--board-gold);
+  background: #000;
+  border-radius: 2px;
+  box-shadow: none;
+}
+.ko-game-shell.ko-board-preview .ko-champion-portrait-art img {
+  object-fit: contain;
+}
+
+/* The ability has a 44px hit box. Give its grid row that actual height,
+   rather than letting it extend upward into the quest panel. */
+.ko-game-shell.ko-board-preview .ko-player-info {
+  grid-template-rows: 44px minmax(0, 1fr) 44px;
+}
+.ko-game-shell.ko-board-preview :is(.ko-player-quest, .ko-opponent-quest) > div,
+.ko-game-shell.ko-board-preview .ko-champion-ability,
+.ko-game-shell.ko-board-preview .ko-game-controls > button {
+  border: 1px solid var(--board-gold);
+  border-radius: 2px;
+}
+/* Keep the original selected-card lift/scale, but reserve clearance inside
+   the horizontal scroll clip on short phones and desktop. Other cards stay put. */
+.ko-game-shell.ko-board-preview .ko-hand-cards > :has(.ko-hand-card--selected) {
+  top: 14px;
+}
+/* The legacy selectable-slot rule is more specific than the idle rule.
+   Keep every state opaque; show summon availability with a line, not a wash. */
+.ko-game-shell.ko-board-preview .ko-board-slot:not(.group) {
+  background: #000;
+  border: 1px solid var(--board-gold);
+  animation: none;
+}
+.ko-game-shell.ko-board-preview .ko-board-slot:not(.group).cursor-pointer {
+  outline: 1px dashed var(--board-bright);
+  outline-offset: -4px;
+}

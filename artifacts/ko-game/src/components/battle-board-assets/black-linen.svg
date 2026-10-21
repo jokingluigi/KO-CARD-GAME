@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="720" height="240" viewBox="0 0 720 240" preserveAspectRatio="none">
+<!-- Original matte black hand mat, low contrast fibres and soft folded margins. -->
+<defs><path id="hem" d="M4 8Q93 4 180 8T360 6Q530 10 714 6L716 232Q550 235 360 232T5 234Q9 135 4 8Z"/><pattern id="weave" width="6" height="6" patternUnits="userSpaceOnUse"><path d="M0 1h2m2 0h2M1 0v2m0 2v2" fill="none" stroke="#b2a99a" stroke-width=".45" opacity=".04"/><path d="M0 4h2m2 0h2M4 0v2m0 2v2" fill="none" stroke="#000" stroke-width=".45" opacity=".13"/></pattern></defs>
+<use href="#hem" fill="#101113"/>
+<path fill="#202124" d="M8 12Q119 6 238 13T490 12Q613 8 711 10L708 20Q604 13 487 20T239 20Q105 14 13 23ZM8 223Q120 232 231 225T497 228Q619 232 711 224L713 232Q599 237 495 234T232 232Q96 237 7 233Z" opacity=".8"/>
+<path d="M16 18Q30 32 25 59M702 16Q687 39 696 72M17 218Q31 210 35 198M701 222Q684 208 686 194" fill="none" stroke="#38383b" stroke-opacity=".5" stroke-width="1.2" stroke-linecap="round"/>
+<use href="#hem" fill="url(#weave)"/>
+</svg>

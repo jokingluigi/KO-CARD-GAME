@@ -1,0 +1,51 @@
+{
+  "baseline": "7d17b87",
+  "branch": "feat/wood-cloth-battle-board-preview",
+  "verifiedAt": "2026-10-20T23:55:54.025618+00:00",
+  "finalTests": {
+    "enginePresentationUnit": {
+      "pass": 60,
+      "fail": 0
+    },
+    "isolatedServers": {
+      "pvp": 14,
+      "draft": 18,
+      "tower": 11,
+      "fail": 0,
+      "cancelled": 0
+    },
+    "browserGroups": {
+      "board": 36,
+      "pvpAI": 8,
+      "draft": 4,
+      "tower": 1,
+      "attackDrag": 4,
+      "targetLayout": 4,
+      "fail": 0
+    },
+    "visual": {
+      "comparisonRenders": 10,
+      "selectedCardClearanceViewports": 5,
+      "errors": 0,
+      "missingArtwork": 0
+    },
+    "appTypes": "PASS",
+    "qaTypes": "PASS",
+    "viteBuild": "PASS",
+    "productionPreviewExclusion": "PASS"
+  },
+  "firstAttempts": {
+    "draftServer": {
+      "pass": 6,
+      "cancelled": 12,
+      "reason": "Node event loop resolved with pending Promise; separated rerun passed 18 server and 4 browser groups; root cause not established"
+    },
+    "disabledColorAssertion": "Read intermediate CSS transition colour; wait for transition completion, then reran successfully"
+  },
+  "productionDeployment": false,
+  "productionDatabaseAccess": false,
+  "engineServerChanges": false,
+  "physicalPhoneSafari": "NOT_RUN",
+  "timerExpiry": "NOT_RUN",
+  "allCardEffects": "NOT_RUN"
+}

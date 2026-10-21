@@ -1,0 +1,102 @@
+[
+  {
+    "viewport": [
+      360,
+      740
+    ],
+    "unchanged": [
+      "portrait",
+      "enemy",
+      "card",
+      "hand",
+      "handCard",
+      "controls",
+      "ability",
+      "mats",
+      "portraitFrames",
+      "panelBorders",
+      "blackBackings"
+    ],
+    "horizontalOverflow": false
+  },
+  {
+    "viewport": [
+      375,
+      812
+    ],
+    "unchanged": [
+      "portrait",
+      "enemy",
+      "card",
+      "hand",
+      "handCard",
+      "controls",
+      "ability",
+      "mats",
+      "portraitFrames",
+      "panelBorders",
+      "blackBackings"
+    ],
+    "horizontalOverflow": false
+  },
+  {
+    "viewport": [
+      390,
+      844
+    ],
+    "unchanged": [
+      "portrait",
+      "enemy",
+      "card",
+      "hand",
+      "handCard",
+      "controls",
+      "ability",
+      "mats",
+      "portraitFrames",
+      "panelBorders",
+      "blackBackings"
+    ],
+    "horizontalOverflow": false
+  },
+  {
+    "viewport": [
+      412,
+      915
+    ],
+    "unchanged": [
+      "portrait",
+      "enemy",
+      "card",
+      "hand",
+      "handCard",
+      "controls",
+      "ability",
+      "mats",
+      "portraitFrames",
+      "panelBorders",
+      "blackBackings"
+    ],
+    "horizontalOverflow": false
+  },
+  {
+    "viewport": [
+      1440,
+      1000
+    ],
+    "unchanged": [
+      "portrait",
+      "enemy",
+      "card",
+      "hand",
+      "handCard",
+      "controls",
+      "ability",
+      "mats",
+      "portraitFrames",
+      "panelBorders",
+      "blackBackings"
+    ],
+    "horizontalOverflow": false
+  }
+]

@@ -1,0 +1,38 @@
+{
+  "kind": "Chromium mobile emulation, not a physical phone",
+  "results": [
+    {
+      "name": "actual administrator cosmetics catalog, editor and account search",
+      "status": "PASS"
+    },
+    {
+      "name": "player actual skin preview, equip/default/reload persistence and four emote slots",
+      "status": "PASS"
+    },
+    {
+      "name": "two real authenticated browser sessions receive identical frozen PvP skins and opaque backs",
+      "status": "PASS"
+    },
+    {
+      "name": "A image emote appears on both actual PvP screens, then expires; B hide preference works",
+      "status": "PASS"
+    },
+    {
+      "name": "B image emote reaches A and client reload restores existing battle and both loadouts",
+      "status": "PASS"
+    },
+    {
+      "name": "mobile cosmetics/admin viewports have no horizontal overflow and usable touch targets",
+      "status": "PASS"
+    },
+    {
+      "name": "missing skin download falls back to original champion/card images and default back without blocking match",
+      "status": "PASS"
+    },
+    {
+      "name": "actual AI setup/start displays frozen equipped champion/back and locally usable image emotes",
+      "status": "PASS"
+    }
+  ],
+  "pageErrors": []
+}
