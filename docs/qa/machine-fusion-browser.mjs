@@ -4,7 +4,7 @@ const browser=await chromium.launch({headless:true,...(process.env.KO_QA_CHROME_
 try {for(const width of [1440,390,320]){
 const context=await browser.newContext({viewport:{width,height:844},isMobile:width<500,hasTouch:width<500}),page=await context.newPage();
 page.on('pageerror',e=>errors.push(e.message));await page.route('**/api/**',r=>r.fulfill({json:{cards:[],champions:[]}}));
-await page.goto('http://127.0.0.1:5173/qa/champion-features.html');await page.getByTestId('board-check').waitFor();
+await page.goto((process.env.KO_QA_ORIGIN??'http://127.0.0.1:5173')+'/qa/champion-features.html');await page.getByTestId('board-check').waitFor();
 const result=await page.evaluate(async()=>{
 const {cardRecordToDefinition}=await import('/src/game/cards/published-cards.ts');
 const {createInitialGameState,generateCardInstance}=await import('/src/game/index.ts');

@@ -20,8 +20,10 @@ for(const [name,width,height] of [['desktop',1440,900],['mobile',390,844],['smal
  for(const mode of ['reward','reward-full']){
   await activate(page.getByTestId(mode));
   const rewardPrompt=page.getByText(/퀘스트 토큰 소환:/);await rewardPrompt.waitFor({state:'attached'});
-  // Portrait targeting hides this extra grid row to preserve field size.
-  assert.equal(await rewardPrompt.isVisible(),width>=500);
+  // The deployed wood board hides this duplicate hint row at every width.
+  // Mandatory highlighted field selection and replacement results are still checked below.
+  const woodBoard=await page.locator('.ko-board-preview').count()>0;
+  assert.equal(await rewardPrompt.isVisible(),width>=500&&!woodBoard);
   // The actual mandatory selection and resulting token placement are checked below.
   assert.equal(await page.getByRole('button',{name:'취소',exact:true}).count(),0);
   await activate(page.getByTestId('restore'));

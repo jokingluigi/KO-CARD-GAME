@@ -1,5 +1,5 @@
 {
-  "verifiedAt": "2026-10-21T09:36:02.377724+00:00",
+  "verifiedAt": "2026-10-21T10:10:28.819736+00:00",
   "build": "PASS: workspace typecheck + frontend/API build",
   "engine": {
     "pass": 2695,
@@ -72,5 +72,32 @@
     "viewportsPassed": 4,
     "productionCodeChanged": false,
     "fix": "Hover intended card before toggling Alt inspector; do not hover through an already open popup."
+  },
+  "fieldAttackDragBrowser": {
+    "viewportsPassed": 4
+  },
+  "championFeaturesBrowser": {
+    "failures": 0,
+    "viewports": [
+      {
+        "width": 1440,
+        "height": 900
+      },
+      {
+        "width": 390,
+        "height": 844
+      },
+      {
+        "width": 320,
+        "height": 568
+      }
+    ],
+    "legacyHintExpectationUpdatedToDeployedBoard": true
+  },
+  "additionalBrowser": {
+    "currentContent": "PASS: four viewports, real card/spell/champion UI",
+    "fusion": "PASS: cancellation/restoration/stats/draw/vanish",
+    "lunaActive": "PASS: 1440/390/320 hit tests and actual transform",
+    "machineFusion": "PASS: 1440/390/320 actual engine and render"
   }
 }
