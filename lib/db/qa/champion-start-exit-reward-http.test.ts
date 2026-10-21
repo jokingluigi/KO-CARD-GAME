@@ -191,3 +191,13 @@ test('authoritative fusion accepts duplicate packets exactly once and restores t
  const snapshot=JSON.stringify(runtime.state);cleanupMatchRuntime(matchId);runtime=await getRuntime(matchId);assert.ok(runtime);assert.deepEqual(runtime.state,JSON.parse(snapshot));
  }finally{const runtime=await getRuntime(matchId);if(runtime){await runtime.queue;runtime.state={...runtime.state,status:'FINISHED'};cleanupMatchRuntime(matchId);}}
 });
+
+
+test('quest completion dialogue roundtrips through admin JSON and battle definition without replacing emote lines',async()=>{
+ const lines={QUEST_COMPLETE:'나의 맹세가 이루어졌다!',BEFORE_QUEST:{HELLO:'안녕'},AFTER_QUEST:{HELLO:'다시 인사하지'}};
+ const saved=await request('/admin/champions/'+id,'PATCH',{...championInput,version:record.version,presentationLines:lines});assert.equal(saved.status,200,JSON.stringify(saved.body));record=saved.body.champion;
+ assert.deepEqual(record.presentationLines,lines);assert.deepEqual(championRecordToDefinition(record).presentationLines,lines);
+ const fetched=await request('/admin/champions');assert.deepEqual(fetched.body.champions.find((c:any)=>c.id===id).presentationLines,lines);
+ for(const invalid of ['x'.repeat(121),42,'<script>bad</script>'])assert.equal((await request('/admin/champions/'+id,'PATCH',{version:record.version,presentationLines:{...lines,QUEST_COMPLETE:invalid}})).status,400);
+ const cleared=await request('/admin/champions/'+id,'PATCH',{version:record.version,presentationLines:{...lines,QUEST_COMPLETE:''}});assert.equal(cleared.status,200);assert.equal(cleared.body.champion.presentationLines.QUEST_COMPLETE,'');assert.deepEqual(cleared.body.champion.presentationLines.AFTER_QUEST,lines.AFTER_QUEST);
+});

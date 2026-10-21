@@ -126,6 +126,8 @@ export const CHAMPION_EMOTE_LABELS: Record<ChampionEmote, string> = {
 };
 export type ChampionVoiceLines = Partial<Record<ChampionEmote | 'VICTORY' | 'DEFEAT', string>>;
 export type ChampionPresentationLines = {
+  /** Spoken once at the quest completion event, distinct from post-quest emotes. */
+  QUEST_COMPLETE?: string;
   BEFORE_QUEST?: ChampionVoiceLines;
   AFTER_QUEST?: ChampionVoiceLines;
   MATCHUPS?: Record<string, {

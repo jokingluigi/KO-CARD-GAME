@@ -197,6 +197,8 @@ function parseChampionInput(value: unknown, existing: Record<string, unknown> = 
   result.isCraftable = input.isCraftable !== false;
   result.imageDisplayMode = IMAGE_DISPLAY_MODES.includes(input.imageDisplayMode as (typeof IMAGE_DISPLAY_MODES)[number]) ? input.imageDisplayMode : 'COVER';
   for (const key of ['abilityEffects','gameStartAbilityEffects','questCondition','questRewardEffects','upgradedAbilityEffects','presentationLines']) result[key] = input[key] ?? (key === 'abilityEffects' || key === 'presentationLines' ? {} : null);
+  const completionLine = (result.presentationLines as Record<string, unknown> | null)?.QUEST_COMPLETE;
+  if (completionLine !== undefined && (typeof completionLine !== 'string' || completionLine.length > 120 || /<[^>]*>/.test(completionLine))) return null;
   if (result.questProgressRequired == null && result.questCondition && typeof result.questCondition === 'object') {
     const required = (result.questCondition as Record<string, unknown>).required;
     if (typeof required === 'number' && Number.isInteger(required) && required >= -2147483648 && required <= 2147483647) result.questProgressRequired = required;
