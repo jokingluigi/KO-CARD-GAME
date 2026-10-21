@@ -5,6 +5,8 @@ await import('./checkpoints/20261006/qa-loader.mjs');
 const { chromium } = await import(process.env.KO_QA_PLAYWRIGHT ?? 'playwright');
 const { createInitialGameState, startGame } = await import('../../lib/game-engine/src/index.ts');
 const { generateCardInstance } = await import('../../artifacts/ko-game/src/game/cards/generation.ts');
+// Replay is pure; imported service dependencies must never select a real DB.
+process.env.DATABASE_URL = 'postgresql://unused:unused@127.0.0.1:1/unused';
 const { replayAIMatch } = await import('../../artifacts/api-server/src/lib/ai-match-quest-service.ts');
 const origin = process.env.KO_QA_ORIGIN ?? 'http://127.0.0.1:5186';
 assert.ok(['127.0.0.1', 'localhost'].includes(new URL(origin).hostname));
