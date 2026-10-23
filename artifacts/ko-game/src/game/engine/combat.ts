@@ -177,11 +177,13 @@ function resolveSelfAttackTrigger(
   state: GameState,
   playerId: string,
   attackerInstanceId: CardInstanceId,
+  sourceContext?: EventAttribution,
 ): GameState {
   const attacker = findBoardCard(state, playerId, attackerInstanceId)?.card;
   return attacker
     ? resolveTriggeredAbilities(state, playerId, attacker, 'SELF_ATTACK', {
         attackerInstanceId,
+        sourceContext,
       })
     : state;
 }
@@ -642,10 +644,23 @@ export function attack(
 
   const recordedCombat = piercingAttack ? { ...damagedState, events: damagedState.events.filter((event, index) => index < preDamageState.events.length || event.type !== 'ATTACK_DECLARED') } : damagedState;
   let afterNewDamage = prepareAwakeningCounter(recordedCombat, target.playerId, defenderPreparedCard, combatEventId);
+  // Share the combat root with every automatic reaction. Keep the reacting
+  // card as its own effect's actor; death resolution recovers the actual hit
+  // from DAMAGE_DEALT events within this root, including counterattacks.
+  const reactionAttribution = (ownerId: string, card: CardInstance): EventAttribution => ({
+    sourcePlayerId: ownerId,
+    sourceActionType: 'CARD_EFFECT',
+    sourceEffectId: card.definitionId,
+    rootSourceEventId: combatEventId,
+  });
   for (const [ownerId, before] of [[attackingPlayerId,attackerPrepared],[target.playerId,defenderPreparedCard]] as const) {
     const current=findBoardCard(afterNewDamage,ownerId,before.instanceId)?.card;
     if (current && current.currentHealth<before.currentHealth) {
-      afterNewDamage=resolveTriggeredAbilities(afterNewDamage,ownerId,current,'SELF_DAMAGED',{healthBefore:before.currentHealth,healthAfter:current.currentHealth});
+      afterNewDamage=resolveTriggeredAbilities(afterNewDamage,ownerId,current,'SELF_DAMAGED',{
+        healthBefore:before.currentHealth,healthAfter:current.currentHealth,
+        // A damage reaction may settle deaths before the final combat pass.
+        sourceContext: reactionAttribution(ownerId, current),
+      });
       if(afterNewDamage.targetingState?.active) afterNewDamage=resolvePendingEffects(afterNewDamage);
     }
   }
@@ -654,22 +669,24 @@ export function attack(
     target.playerId,
     defenderPreparedCard,
     'FIRST_ATTACKED',
-    { attackerInstanceId },
+    { attackerInstanceId, sourceContext: reactionAttribution(target.playerId, defenderPreparedCard) },
   );
   const exactZeroResolved = defenderDodges || preventedAttackerDamage || defenderPreparedCard.currentHealth - attackerDamage !== 0
     ? firstAttackedResolved
     : resolveTriggeredAbilities(firstAttackedResolved, attackingPlayerId, attacker, 'EXACT_ZERO_DAMAGE', {
       damagedTargetInstanceId: defender.instanceId, healthBefore: defender.currentHealth, healthAfter: 0,
+      sourceContext: reactionAttribution(attackingPlayerId, attacker),
     });
   const attackerAfterDamage = findBoardCard(exactZeroResolved, attackingPlayerId, attackerInstanceId)?.card;
   const attackSurvivedResolved = attackerAfterDamage && attackerAfterDamage.currentHealth > 0
     ? resolveTriggeredAbilities(exactZeroResolved, attackingPlayerId, attackerAfterDamage, 'ATTACK_SURVIVED', {
       attackerInstanceId,
       damagedTargetInstanceId: defender.instanceId,
+      sourceContext: reactionAttribution(attackingPlayerId, attackerAfterDamage),
     })
     : exactZeroResolved;
   const selfAttackResolved = resolveSelfAttackTrigger(
-    attackSurvivedResolved, attackingPlayerId, attackerInstanceId,
+    attackSurvivedResolved, attackingPlayerId, attackerInstanceId, reactionAttribution(attackingPlayerId, attackerPrepared),
   );
   const listenersResolved = resolveBoardListeners(
     selfAttackResolved, attackingPlayerId, 'OTHER_ALLY_ATTACK', {
