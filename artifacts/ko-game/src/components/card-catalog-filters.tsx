@@ -17,12 +17,12 @@ export function CardCatalogFilters({ cards, value, onChange }: { cards: CatalogC
     ['tag', '태그', [['ALL','전체 태그'], ...tags.map(tag => [tag,tag] as [string,string])]],
     ['cost', '코스트', [['ALL','전체 코스트'], ...costs.map(cost => [String(cost),String(cost)] as [string,string])]],
   ];
-  return <div className="grid min-w-0 grid-cols-2 gap-2 sm:grid-cols-4" role="group" aria-label="카드 분류">
+  return <div className="ko-catalog-filters grid min-w-0 grid-cols-2 gap-2 sm:grid-cols-4" role="group" aria-label="카드 분류">
     {controls.map(([key,label,options]) => <label key={key} className="min-w-0 text-xs text-neutral-300">{label}
       <select aria-label={label} value={value[key]} onChange={event => onChange({ ...value, [key]: event.target.value })} className="mt-1 block min-h-11 w-full min-w-0 rounded border border-neutral-700 bg-neutral-950 px-2 text-base text-white">
         {options.map(([id,text]) => <option key={id} value={id}>{text}</option>)}
       </select>
     </label>)}
-    <button type="button" onClick={() => onChange({ ...EMPTY_CATALOG_FILTERS })} className="min-h-11 rounded border border-neutral-700 px-3 text-sm text-neutral-300">분류 초기화</button>
+    <button type="button" disabled={Object.entries(EMPTY_CATALOG_FILTERS).every(([key, initial]) => value[key as keyof CatalogFilters] === initial)} onClick={() => onChange({ ...EMPTY_CATALOG_FILTERS })} className="min-h-11 rounded border border-neutral-700 px-3 text-sm text-neutral-300 disabled:opacity-50 disabled:cursor-not-allowed">분류 초기화</button>
   </div>;
 }

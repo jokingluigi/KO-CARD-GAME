@@ -1,0 +1,15 @@
+{
+  "build": "PASS",
+  "inventory": "7 groups PASS",
+  "shop": "PASS after local port override",
+  "online": "PASS after clean retry",
+  "tower": "PASS",
+  "pvp_cosmetics": "PASS",
+  "draft": "PASS",
+  "mobile_spell_drag": "5 viewports PASS",
+  "desktop_hand": "5 widths, 1/6/10 cards PASS",
+  "physical_phone": "NOT_RUN",
+  "user_study": "NOT_RUN",
+  "production_access": false,
+  "deployment": false
+}
