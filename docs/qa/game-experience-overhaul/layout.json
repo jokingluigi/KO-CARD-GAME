@@ -1,0 +1,569 @@
+[
+  {
+    "route": "/",
+    "width": 360,
+    "height": 740,
+    "overflow": false,
+    "heading": [
+      "KO"
+    ]
+  },
+  {
+    "route": "/",
+    "width": 375,
+    "height": 812,
+    "overflow": false,
+    "heading": [
+      "KO"
+    ]
+  },
+  {
+    "route": "/",
+    "width": 390,
+    "height": 844,
+    "overflow": false,
+    "heading": [
+      "KO"
+    ]
+  },
+  {
+    "route": "/",
+    "width": 412,
+    "height": 915,
+    "overflow": false,
+    "heading": [
+      "KO"
+    ]
+  },
+  {
+    "route": "/",
+    "width": 768,
+    "height": 1024,
+    "overflow": false,
+    "heading": [
+      "KO"
+    ]
+  },
+  {
+    "route": "/",
+    "width": 1024,
+    "height": 768,
+    "overflow": false,
+    "heading": [
+      "KO"
+    ]
+  },
+  {
+    "route": "/",
+    "width": 1440,
+    "height": 900,
+    "overflow": false,
+    "heading": [
+      "KO"
+    ]
+  },
+  {
+    "route": "/decks",
+    "width": 360,
+    "height": 740,
+    "overflow": false,
+    "heading": [
+      "덱 편집"
+    ]
+  },
+  {
+    "route": "/decks",
+    "width": 375,
+    "height": 812,
+    "overflow": false,
+    "heading": [
+      "덱 편집"
+    ]
+  },
+  {
+    "route": "/decks",
+    "width": 390,
+    "height": 844,
+    "overflow": false,
+    "heading": [
+      "덱 편집"
+    ]
+  },
+  {
+    "route": "/decks",
+    "width": 412,
+    "height": 915,
+    "overflow": false,
+    "heading": [
+      "덱 편집"
+    ]
+  },
+  {
+    "route": "/decks",
+    "width": 768,
+    "height": 1024,
+    "overflow": false,
+    "heading": [
+      "덱 편집"
+    ]
+  },
+  {
+    "route": "/decks",
+    "width": 1024,
+    "height": 768,
+    "overflow": false,
+    "heading": [
+      "덱 편집"
+    ]
+  },
+  {
+    "route": "/decks",
+    "width": 1440,
+    "height": 900,
+    "overflow": false,
+    "heading": [
+      "덱 편집"
+    ]
+  },
+  {
+    "route": "/collection",
+    "width": 360,
+    "height": 740,
+    "overflow": false,
+    "heading": [
+      "내 컬렉션"
+    ]
+  },
+  {
+    "route": "/collection",
+    "width": 375,
+    "height": 812,
+    "overflow": false,
+    "heading": [
+      "내 컬렉션"
+    ]
+  },
+  {
+    "route": "/collection",
+    "width": 390,
+    "height": 844,
+    "overflow": false,
+    "heading": [
+      "내 컬렉션"
+    ]
+  },
+  {
+    "route": "/collection",
+    "width": 412,
+    "height": 915,
+    "overflow": false,
+    "heading": [
+      "내 컬렉션"
+    ]
+  },
+  {
+    "route": "/collection",
+    "width": 768,
+    "height": 1024,
+    "overflow": false,
+    "heading": [
+      "내 컬렉션"
+    ]
+  },
+  {
+    "route": "/collection",
+    "width": 1024,
+    "height": 768,
+    "overflow": false,
+    "heading": [
+      "내 컬렉션"
+    ]
+  },
+  {
+    "route": "/collection",
+    "width": 1440,
+    "height": 900,
+    "overflow": false,
+    "heading": [
+      "내 컬렉션"
+    ]
+  },
+  {
+    "route": "/shop",
+    "width": 360,
+    "height": 740,
+    "overflow": false,
+    "heading": [
+      "상점"
+    ]
+  },
+  {
+    "route": "/shop",
+    "width": 375,
+    "height": 812,
+    "overflow": false,
+    "heading": [
+      "상점"
+    ]
+  },
+  {
+    "route": "/shop",
+    "width": 390,
+    "height": 844,
+    "overflow": false,
+    "heading": [
+      "상점"
+    ]
+  },
+  {
+    "route": "/shop",
+    "width": 412,
+    "height": 915,
+    "overflow": false,
+    "heading": [
+      "상점"
+    ]
+  },
+  {
+    "route": "/shop",
+    "width": 768,
+    "height": 1024,
+    "overflow": false,
+    "heading": [
+      "상점"
+    ]
+  },
+  {
+    "route": "/shop",
+    "width": 1024,
+    "height": 768,
+    "overflow": false,
+    "heading": [
+      "상점"
+    ]
+  },
+  {
+    "route": "/shop",
+    "width": 1440,
+    "height": 900,
+    "overflow": false,
+    "heading": [
+      "상점"
+    ]
+  },
+  {
+    "route": "/daily-quests",
+    "width": 360,
+    "height": 740,
+    "overflow": false,
+    "heading": [
+      "퀘스트"
+    ]
+  },
+  {
+    "route": "/daily-quests",
+    "width": 375,
+    "height": 812,
+    "overflow": false,
+    "heading": [
+      "퀘스트"
+    ]
+  },
+  {
+    "route": "/daily-quests",
+    "width": 390,
+    "height": 844,
+    "overflow": false,
+    "heading": [
+      "퀘스트"
+    ]
+  },
+  {
+    "route": "/daily-quests",
+    "width": 412,
+    "height": 915,
+    "overflow": false,
+    "heading": [
+      "퀘스트"
+    ]
+  },
+  {
+    "route": "/daily-quests",
+    "width": 768,
+    "height": 1024,
+    "overflow": false,
+    "heading": [
+      "퀘스트"
+    ]
+  },
+  {
+    "route": "/daily-quests",
+    "width": 1024,
+    "height": 768,
+    "overflow": false,
+    "heading": [
+      "퀘스트"
+    ]
+  },
+  {
+    "route": "/daily-quests",
+    "width": 1440,
+    "height": 900,
+    "overflow": false,
+    "heading": [
+      "퀘스트"
+    ]
+  },
+  {
+    "route": "/attendance",
+    "width": 360,
+    "height": 740,
+    "overflow": false,
+    "heading": [
+      "출석 보드"
+    ]
+  },
+  {
+    "route": "/attendance",
+    "width": 375,
+    "height": 812,
+    "overflow": false,
+    "heading": [
+      "출석 보드"
+    ]
+  },
+  {
+    "route": "/attendance",
+    "width": 390,
+    "height": 844,
+    "overflow": false,
+    "heading": [
+      "출석 보드"
+    ]
+  },
+  {
+    "route": "/attendance",
+    "width": 412,
+    "height": 915,
+    "overflow": false,
+    "heading": [
+      "출석 보드"
+    ]
+  },
+  {
+    "route": "/attendance",
+    "width": 768,
+    "height": 1024,
+    "overflow": false,
+    "heading": [
+      "출석 보드"
+    ]
+  },
+  {
+    "route": "/attendance",
+    "width": 1024,
+    "height": 768,
+    "overflow": false,
+    "heading": [
+      "출석 보드"
+    ]
+  },
+  {
+    "route": "/attendance",
+    "width": 1440,
+    "height": 900,
+    "overflow": false,
+    "heading": [
+      "출석 보드"
+    ]
+  },
+  {
+    "route": "/cosmetics",
+    "width": 360,
+    "height": 740,
+    "overflow": false,
+    "heading": [
+      "꾸미기"
+    ]
+  },
+  {
+    "route": "/cosmetics",
+    "width": 375,
+    "height": 812,
+    "overflow": false,
+    "heading": [
+      "꾸미기"
+    ]
+  },
+  {
+    "route": "/cosmetics",
+    "width": 390,
+    "height": 844,
+    "overflow": false,
+    "heading": [
+      "꾸미기"
+    ]
+  },
+  {
+    "route": "/cosmetics",
+    "width": 412,
+    "height": 915,
+    "overflow": false,
+    "heading": [
+      "꾸미기"
+    ]
+  },
+  {
+    "route": "/cosmetics",
+    "width": 768,
+    "height": 1024,
+    "overflow": false,
+    "heading": [
+      "꾸미기"
+    ]
+  },
+  {
+    "route": "/cosmetics",
+    "width": 1024,
+    "height": 768,
+    "overflow": false,
+    "heading": [
+      "꾸미기"
+    ]
+  },
+  {
+    "route": "/cosmetics",
+    "width": 1440,
+    "height": 900,
+    "overflow": false,
+    "heading": [
+      "꾸미기"
+    ]
+  },
+  {
+    "route": "/online",
+    "width": 360,
+    "height": 740,
+    "overflow": false,
+    "heading": [
+      "실제 상대와 겨루는 링"
+    ]
+  },
+  {
+    "route": "/online",
+    "width": 375,
+    "height": 812,
+    "overflow": false,
+    "heading": [
+      "실제 상대와 겨루는 링"
+    ]
+  },
+  {
+    "route": "/online",
+    "width": 390,
+    "height": 844,
+    "overflow": false,
+    "heading": [
+      "실제 상대와 겨루는 링"
+    ]
+  },
+  {
+    "route": "/online",
+    "width": 412,
+    "height": 915,
+    "overflow": false,
+    "heading": [
+      "실제 상대와 겨루는 링"
+    ]
+  },
+  {
+    "route": "/online",
+    "width": 768,
+    "height": 1024,
+    "overflow": false,
+    "heading": [
+      "실제 상대와 겨루는 링"
+    ]
+  },
+  {
+    "route": "/online",
+    "width": 1024,
+    "height": 768,
+    "overflow": false,
+    "heading": [
+      "실제 상대와 겨루는 링"
+    ]
+  },
+  {
+    "route": "/online",
+    "width": 1440,
+    "height": 900,
+    "overflow": false,
+    "heading": [
+      "실제 상대와 겨루는 링"
+    ]
+  },
+  {
+    "route": "/unavailable-review-page",
+    "width": 360,
+    "height": 740,
+    "overflow": false,
+    "heading": [
+      "이 화면을 찾을 수 없어요"
+    ]
+  },
+  {
+    "route": "/unavailable-review-page",
+    "width": 375,
+    "height": 812,
+    "overflow": false,
+    "heading": [
+      "이 화면을 찾을 수 없어요"
+    ]
+  },
+  {
+    "route": "/unavailable-review-page",
+    "width": 390,
+    "height": 844,
+    "overflow": false,
+    "heading": [
+      "이 화면을 찾을 수 없어요"
+    ]
+  },
+  {
+    "route": "/unavailable-review-page",
+    "width": 412,
+    "height": 915,
+    "overflow": false,
+    "heading": [
+      "이 화면을 찾을 수 없어요"
+    ]
+  },
+  {
+    "route": "/unavailable-review-page",
+    "width": 768,
+    "height": 1024,
+    "overflow": false,
+    "heading": [
+      "이 화면을 찾을 수 없어요"
+    ]
+  },
+  {
+    "route": "/unavailable-review-page",
+    "width": 1024,
+    "height": 768,
+    "overflow": false,
+    "heading": [
+      "이 화면을 찾을 수 없어요"
+    ]
+  },
+  {
+    "route": "/unavailable-review-page",
+    "width": 1440,
+    "height": 900,
+    "overflow": false,
+    "heading": [
+      "이 화면을 찾을 수 없어요"
+    ]
+  }
+]

@@ -80,7 +80,7 @@ export default function ShopPage() {
   }
 
   return (
-    <main className="ko-page-enter min-h-screen bg-neutral-950 px-5 py-7 text-neutral-100 sm:px-8">
+    <main className="ko-experience-page ko-page-enter min-h-screen bg-neutral-950 px-5 py-7 text-neutral-100 sm:px-8">
       <div className="mx-auto max-w-6xl">
         <div className="mb-7 flex items-center justify-between gap-4">
            <button type="button" onClick={() => navigate(ROUTES.MAIN_MENU)} className="flex items-center gap-2 text-sm font-bold text-neutral-400 hover:text-white">

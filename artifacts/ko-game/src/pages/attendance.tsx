@@ -70,7 +70,7 @@ export default function AttendancePage() {
   }
 
   return (
-    <main className="ko-page-enter min-h-screen bg-neutral-950 px-4 py-6 text-neutral-100 sm:px-8 sm:py-8">
+    <main className="ko-experience-page ko-page-enter min-h-screen bg-neutral-950 px-4 py-6 text-neutral-100 sm:px-8 sm:py-8">
       <div className="mx-auto max-w-4xl">
         <button type="button" onClick={() => navigate(ROUTES.MAIN_MENU)} className="mb-6 flex items-center gap-2 text-sm font-bold text-neutral-400 hover:text-white"><ArrowLeft className="h-4 w-4" /> 메인 메뉴</button>
         <header className="mb-6 flex items-end justify-between gap-4 border-b border-neutral-800 pb-5"><div><p className="font-display text-xs font-bold tracking-[0.25em] text-primary">ATTENDANCE BOARD</p><h1 className="mt-2 text-3xl font-black">출석 보드</h1><p className="mt-2 text-sm text-neutral-500">오늘: {data?.today ?? "—"}</p></div><CalendarCheck2 className="h-9 w-9 text-amber-400" /></header>

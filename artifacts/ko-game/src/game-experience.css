@@ -1,0 +1,116 @@
+/* Frontend presentation only. Battle descendants deliberately excluded. */
+:root {
+  --ko-surface: #121317;
+  --ko-surface-raised: #1c1d21;
+  --ko-line: #66563a;
+  --ko-gold: #d9bb7b;
+  --ko-copy: #f0e8d8;
+  --ko-secondary: #b4ada0;
+  --ko-ui-fast: 120ms;
+  --ko-ui-enter: 180ms;
+}
+.ko-game-navigation {
+  display: flex; justify-content: center; gap: 4px;
+  padding: 6px max(8px, env(safe-area-inset-right)) 6px max(8px, env(safe-area-inset-left));
+  background: var(--ko-surface); border-bottom: 1px solid var(--ko-line);
+}
+.ko-game-navigation a {
+  display: flex; align-items: center; justify-content: center; gap: 8px;
+  min-height: 48px; padding: 8px 20px; color: var(--ko-secondary);
+  border-bottom: 2px solid transparent; text-decoration: none;
+}
+.ko-game-navigation a[aria-current='page'] { color: var(--ko-gold); border-bottom-color: var(--ko-gold); background: #242119; }
+.ko-game-navigation a:hover { color: var(--ko-copy); background: #242119; }
+.ko-game-navigation a:focus-visible,
+.ko-workspace-nav a:focus-visible,
+.ko-experience-action:focus-visible { outline: 2px solid var(--ko-gold); outline-offset: -3px; }
+.ko-main-menu__groups { display: grid; gap: 24px; }
+.ko-main-menu__group > h2 { color: var(--ko-gold); font-size: 14px; margin-bottom: 10px; letter-spacing: .04em; }
+.ko-main-menu__group .ko-main-menu__grid { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 8px; }
+.ko-main-menu__group .ko-main-menu__item { min-height: 76px; padding: 12px; border: 1px solid #66563a; border-radius: 2px; background: #121317eb; }
+.ko-main-menu__group .ko-main-menu__item[data-menu-tier='battle'] { min-height: 96px; }
+.ko-main-menu__group .ko-main-menu__item .ko-main-menu__copy > span { line-height: 1.4; }
+.ko-main-menu__group .ko-main-menu__item[data-menu-tier='utility'] .ko-main-menu__icon { display: block; }
+.ko-main-menu__group .ko-main-menu__item[data-menu-index='1'][data-menu-tier='battle'] { background: #d5b766; color: #121317; }
+.ko-main-menu__group .ko-main-menu__item[data-menu-index='1'][data-menu-tier='battle'] span { color: #121317; }
+.ko-main-menu button { min-height: 44px; }
+.ko-main-menu__user { row-gap: 8px; }
+.ko-lobby-heading { margin-top: 28px; max-width: 48rem; }
+.ko-lobby-heading h1 { font-size: clamp(28px,4vw,48px); line-height: 1.25; }
+.ko-lobby-heading > p:last-child { margin-top: 12px; line-height: 1.65; }
+.ko-lobby-content { margin-top: 28px; flex: 1; padding-bottom: 24px; }
+.ko-mode-choice { padding: 24px; border-radius: 2px; }
+.ko-mode-choice__title { margin-top: 24px; }
+.ko-online-shell .ko-online-action { min-height: 44px; }
+.ko-experience-action { display: inline-flex; min-height: 44px; align-items: center; justify-content: center; margin: 16px 8px 0; padding: 10px 16px; border: 1px solid var(--ko-line); color: var(--ko-gold); }
+.ko-workspace-nav { display: flex; gap: 8px; margin-top: 16px; }
+.ko-workspace-nav a { display:flex; align-items:center; justify-content:center; min-height:44px; padding:8px 16px; border:1px solid var(--ko-line); color:var(--ko-gold); }
+#deck-list, #deck-library, #deck-workspace { scroll-margin-top: 16px; }
+.ko-decks__compact-row { min-height:44px; }
+.ko-decks__compact-remove { min-width:44px; min-height:44px; }
+.ko-decks__collapse-button { min-height:44px; white-space:normal; }
+.ko-catalog-filters { padding-top: 12px; border-top: 1px solid #35322a; margin-top:12px; }
+.ko-filter-summary { grid-column:1/-1; display:flex; flex-wrap:wrap; gap:8px; }
+.ko-filter-summary button { min-height:44px; padding:8px 12px; border:1px solid var(--ko-line); color:var(--ko-gold); background:#242119; }
+.ko-collection > div > header { flex-wrap:wrap; align-items:start; }
+.ko-collection-item button { min-width:44px; min-height:44px; }
+.ko-experience-page { color:var(--ko-copy); }
+.ko-experience-page > div > header { align-items:start; flex-wrap:wrap; gap:16px; }
+.ko-experience-page :is(button, a:not([href^='#'])) { min-height:44px; }
+.ko-experience-page :is(button,input,select):focus-visible { outline:2px solid var(--ko-gold); outline-offset:3px; }
+.ko-experience-page :is(button,input,select) { transition:background-color var(--ko-ui-fast),border-color var(--ko-ui-fast),color var(--ko-ui-fast); }
+.ko-experience-page button:disabled { cursor:not-allowed; }
+.ko-experience-page button:active:not(:disabled) { filter:brightness(.9); }
+.ko-experience-page nav[aria-label] { flex-wrap:wrap; }
+.ko-quest-summary { display:flex; flex-wrap:wrap; gap:12px 24px; margin-bottom:20px; padding:16px; border-left:2px solid var(--ko-gold); background:var(--ko-surface); }
+.ko-quest-summary strong { display:block; font-size:24px; color:var(--ko-gold); font-variant-numeric:tabular-nums; }
+.ko-quest-summary span { color:var(--ko-secondary); font-size:13px; }
+.ko-game-dialog { border-color:var(--ko-line); border-radius:3px; }
+.ko-game-dialog [data-ko-dialog-header] { padding-right:40px; text-align:left; }
+.ko-game-dialog-close { min-width:44px; min-height:44px; display:flex; align-items:center; justify-content:center; }
+.ko-state-panel { width:min(100% - 32px,480px); margin:auto; padding:32px; border:1px solid var(--ko-line); background:var(--ko-surface); }
+.ko-state-panel h1 { font-size:28px; color:var(--ko-copy); margin:12px 0; }
+.ko-state-panel p { color:var(--ko-secondary); line-height:1.7; }
+@media (min-width:821px) and (max-width:1199px) {
+  .ko-decks .ko-decks__columns { grid-template-columns:minmax(0,1fr) minmax(300px,.8fr); }
+  .ko-decks__rail { grid-column:1/-1; position:static; }
+  .ko-decks__deck-list { display:flex; overflow-x:auto; gap:8px; }
+  .ko-decks__deck-item { min-width:180px; }
+}
+@media (max-width:820px) {
+  .ko-decks__editor { position:static; box-shadow:none; }
+  .ko-workspace-nav { position:sticky; top:0; z-index:41; background:var(--ko-surface); padding:6px 0; }
+  .ko-workspace-nav a { flex:1; padding:8px 4px; font-size:13px; }
+  #deck-list, #deck-library, #deck-workspace { scroll-margin-top:64px; }
+  .ko-decks__editor-scroll { max-height:none; overflow:visible; }
+  .ko-decks__editor-actions { flex-wrap:wrap; }
+}
+@media (max-width:520px) {
+  .ko-game-navigation a { flex:1; min-width:0; padding:6px 2px; font-size:12px; flex-direction:column; gap:3px; }
+  .ko-main-menu__groups { gap:20px; }
+  .ko-main-menu__group .ko-main-menu__item { padding:10px; }
+  .ko-lobby-heading { margin-top:20px; }
+  .ko-mode-choice { padding:18px; }
+  .ko-mode-choice__title { margin-top:16px; }
+  .ko-game-dialog { max-width:calc(100vw - 24px); max-height:calc(100dvh - 32px); }
+}
+@media (prefers-reduced-motion:reduce) {
+  .ko-game-dialog, .ko-page-enter, .ko-game-navigation a, .ko-experience-page button { animation:none !important; transition:none !important; }
+}
+.ko-prep-actions { position:sticky; bottom:0; padding:16px 0 max(16px,env(safe-area-inset-bottom)); background:#121317; border-top:1px solid var(--ko-line); }
+.ko-prep-screen > section { justify-content:flex-start; }
+.ko-tower > div { max-width:1100px; }
+.ko-tower > div > section { padding:20px; border:1px solid #443c2d; background:var(--ko-surface); }
+.ko-tower h2,.ko-tower h3 { color:var(--ko-gold); }
+.ko-loading-screen { display:flex; min-height:70dvh; align-items:center; padding:24px 0; background:#080808; }
+.ko-loading-track { height:3px; margin-top:24px; background:#373126; overflow:hidden; }
+.ko-loading-track::after { content:""; display:block; height:100%; width:35%; background:var(--ko-gold); animation:ko-loading-pass 1.2s ease-in-out infinite alternate; }
+@keyframes ko-loading-pass { from {transform:translateX(0)} to {transform:translateX(185%)} }
+@media (prefers-reduced-motion:reduce) { .ko-loading-track::after { animation:none; } }
+
+@media (min-width:1200px) { .ko-decks .ko-decks__columns { grid-template-columns:180px minmax(420px,1fr) minmax(340px,.8fr); gap:24px; } }
+/* Search and four independent filters must never compete in one flex row. */
+.ko-decks .ko-decks__toolbar { display:grid; grid-template-columns:minmax(0,1fr) auto; align-items:start; gap:12px 8px; }
+.ko-decks__toolbar > .ko-decks__search,
+.ko-decks__toolbar > .ko-catalog-filters { grid-column:1/-1; width:100%; min-width:0; }
+.ko-decks__toolbar > .ko-decks__filters { margin-top:0; }

@@ -77,12 +77,12 @@ export function OnlineShell({
             {status}
           </div>
         </header>
-        <section className="mt-12 max-w-2xl sm:mt-16">
+        <section className="ko-lobby-heading">
           <p className="font-display text-xs font-bold tracking-[0.34em] text-amber-500">{eyebrow}</p>
           <h1 className="mt-3 flex items-center gap-3 font-display text-5xl font-black tracking-tight text-white sm:text-7xl"><span className="min-w-0">{title}</span>{titleStatus}</h1>
           <p className="mt-5 max-w-xl text-sm leading-7 text-neutral-400 sm:text-base">{description}</p>
         </section>
-        <div className="mt-10 flex-1 pb-8 sm:mt-14">{children}</div>
+        <div className="ko-lobby-content">{children}</div>
         <footer className="border-t border-neutral-900 py-5 text-[0.65rem] font-bold tracking-[0.12em] text-neutral-600">
           KO CARD GAME / ONLINE BATTLE
         </footer>
@@ -178,8 +178,8 @@ export function DeckPicker({
     <section aria-label="온라인 덱 선택" className="space-y-4">
       <div className="flex items-end justify-between gap-4">
         <div>
-          <p className="font-display text-xs font-black tracking-[0.2em] text-amber-400">01 / CHOOSE YOUR DECK</p>
-          <h2 className="mt-2 text-xl font-black text-white">유효한 덱만 온라인 대전에 사용할 수 있습니다</h2>
+          <p className="font-display text-xs font-black tracking-[0.2em] text-amber-400">01 / 덱 선택</p>
+          <h2 className="mt-2 text-xl font-black text-white">대전에 사용할 덱을 선택하세요</h2>
         </div>
         <span className="text-right text-[0.68rem] font-bold text-neutral-500" data-testid="text-valid-deck-count">
            {validDecks.length}개 사용 가능
@@ -188,6 +188,7 @@ export function DeckPicker({
       {decks.length === 0 ? (
         <div className="rounded-lg border border-dashed border-neutral-700 bg-black/20 p-8 text-center text-sm text-neutral-500" data-testid="status-online-empty-decks">
           온라인 대전에 사용할 덱이 없습니다. 덱 편집에서 챔피언과 카드를 준비해 주세요.
+          <a href="/decks" className="ko-experience-action">덱 만들러 가기 →</a>
         </div>
       ) : (
         <div className="grid gap-3 md:grid-cols-2">
@@ -199,6 +200,7 @@ export function DeckPicker({
                 key={deck.id}
                 type="button"
                 data-testid={`button-online-deck-${deck.id}`}
+                aria-pressed={selected}
                 disabled={!valid}
                 onClick={() => onSelect(deck.id)}
                 className={`ko-online-action group rounded-lg border p-5 text-left ${
@@ -243,7 +245,7 @@ export function SelectedDeckStamp({ deck }: { deck: Deck | undefined }) {
       <Shield className="h-4 w-4 text-amber-400" aria-hidden="true" />
       <div className="min-w-0">
         <p className="truncate text-sm font-black text-white">{deck.name}</p>
-         <p className="truncate text-[0.68rem] font-bold text-neutral-500">{deck.champion?.name ?? "챔피언 없음"} · 서버 최종 확인</p>
+         <p className="truncate text-[0.68rem] font-bold text-neutral-500">{deck.champion?.name ?? "챔피언 없음"} · 대전 준비</p>
       </div>
       <Check className="ml-auto h-4 w-4 text-emerald-400" aria-hidden="true" />
     </div>
@@ -270,7 +272,7 @@ export function ModeCard({
       type="button"
       data-testid={testId}
       onClick={onClick}
-      className="ko-online-panel ko-online-action group rounded-xl p-6 text-left sm:p-8"
+      className="ko-mode-choice ko-online-panel ko-online-action group text-left"
     >
       <div className="flex items-start justify-between">
         <div className="rounded border border-amber-500/25 bg-amber-400/[0.06] p-3 text-amber-400">
@@ -278,9 +280,9 @@ export function ModeCard({
         </div>
         <Swords className="h-5 w-5 text-neutral-700 transition-colors group-hover:text-amber-500" aria-hidden="true" />
       </div>
-      <h2 className="mt-12 flex items-center gap-3 text-2xl font-black text-white"><span>{title}</span>{titleStatus}</h2>
+      <h2 className="ko-mode-choice__title flex items-center gap-3 text-2xl text-white"><span>{title}</span>{titleStatus}</h2>
       <p className="mt-3 max-w-sm text-sm leading-6 text-neutral-400">{description}</p>
-      <span className="mt-7 block text-xs font-black tracking-[0.18em] text-amber-400">ENTER LOBBY →</span>
+      <span className="mt-7 block text-xs font-black tracking-[0.18em] text-amber-400">{icon === "quick" ? "덱 선택하고 대전 찾기 →" : "방 만들기 / 코드 입력 →"}</span>
     </button>
   );
 }

@@ -26,12 +26,12 @@ export function AiMatchSetup({ decks, aiDecks, error, onStart, onBack, starting 
   }
 
   return (
-    <main className="ko-prep-screen min-h-screen bg-[#080808] px-5 py-10 text-white sm:px-8">
+    <main className="ko-experience-page ko-prep-screen min-h-screen bg-[#080808] px-5 py-10 text-white sm:px-8">
       <section className="mx-auto flex min-h-[calc(100vh-5rem)] w-full max-w-6xl flex-col justify-center">
         <div className="mb-8 text-center">
           <p className="font-display text-xs font-black tracking-[0.45em] text-amber-400">KO · AI MATCH</p>
           <h1 className="mt-4 text-3xl font-black sm:text-4xl">AI 상대와 매치 시작</h1>
-          <p className="mx-auto mt-3 max-w-xl text-sm leading-6 text-neutral-400">내 덱을 선택하면 활성화된 AI 덱 중 하나가 새 매치마다 무작위로 선택되고, 매치 동안 고정됩니다.</p>
+          <p className="mx-auto mt-3 max-w-xl text-sm leading-6 text-neutral-400">준비한 덱으로 연습하세요. 상대는 시작할 때 무작위로 결정됩니다.</p>
         </div>
 
         {error && <div className="mx-auto mb-5 flex w-full max-w-3xl items-center gap-3 rounded-lg border border-red-900/70 bg-red-950/30 px-4 py-3 text-sm text-red-200"><ShieldAlert className="h-5 w-5 shrink-0" aria-hidden="true" /><span>{error}</span></div>}
@@ -48,14 +48,14 @@ export function AiMatchSetup({ decks, aiDecks, error, onStart, onBack, starting 
               <section>
                 <div className="mb-3 flex items-center justify-between"><h2 className="text-sm font-black tracking-wider text-neutral-300">1. 내 덱</h2><span className="text-xs text-neutral-500">{selectedDeckId ? "선택됨" : "선택 필요"}</span></div>
                 <div className="grid gap-3">
-                   {validDecks.map((deck) => <button key={deck.id} type="button" onClick={() => setSelectedDeckId(deck.id)} className={`rounded-xl border p-4 text-left transition ${selectedDeckId === deck.id ? "border-amber-400 bg-amber-950/30" : "border-neutral-800 bg-neutral-950 hover:border-neutral-600"}`}><div className="flex items-start justify-between gap-4"><div><p className="font-black">{deck.name}</p><p className="mt-1 text-xs font-bold text-neutral-500">{deck.cards.length}장 · {deck.champion?.name ?? "챔피언 없음"}</p></div>{selectedDeckId === deck.id && <CheckCircle2 className="h-5 w-5 text-emerald-300" />}</div></button>)}
+                   {validDecks.map((deck) => <button key={deck.id} type="button" aria-pressed={selectedDeckId === deck.id} onClick={() => setSelectedDeckId(deck.id)} className={`rounded-xl border p-4 text-left transition ${selectedDeckId === deck.id ? "border-amber-400 bg-amber-950/30" : "border-neutral-800 bg-neutral-950 hover:border-neutral-600"}`}><div className="flex items-start justify-between gap-4"><div><p className="font-black">{deck.name}</p><p className="mt-1 text-xs font-bold text-neutral-500">{deck.cards.length}장 · {deck.champion?.name ?? "챔피언 없음"}</p></div>{selectedDeckId === deck.id && <CheckCircle2 className="h-5 w-5 text-emerald-300" />}</div></button>)}
                 </div>
               </section>
               <section className="rounded-xl border border-neutral-800 bg-neutral-950 p-5">
                 <div className="flex items-center gap-3"><Dices className="h-5 w-5 text-amber-300" /><div><h2 className="text-sm font-black tracking-wider text-neutral-300">2. AI 상대</h2><p className="mt-2 text-sm leading-6 text-neutral-400">활성화된 AI 덱 {validAIDecks.length}개 중 하나를 매치 생성 시 자동 선택합니다. 상대 덱은 시작 후 바뀌지 않습니다.</p></div></div>
               </section>
             </div>
-            <div className="mt-7 flex flex-wrap justify-center gap-3"><button type="button" onClick={onBack} className="rounded-lg border border-neutral-700 px-5 py-3 text-sm font-black text-neutral-300 hover:border-neutral-500">메인 메뉴</button><button type="button" disabled={!selectedDeckId || starting} onClick={start} className="flex items-center gap-2 rounded-lg bg-amber-400 px-6 py-3 text-sm font-black text-black hover:bg-amber-300 disabled:cursor-not-allowed disabled:opacity-40"><Bot className="h-4 w-4" /> {starting ? "경기 준비 중…" : "매치 시작"} <ArrowRight className="h-4 w-4" /></button></div>
+            <div className="ko-prep-actions mt-7 flex flex-wrap justify-center gap-3"><button type="button" onClick={onBack} className="rounded-lg border border-neutral-700 px-5 py-3 text-sm font-black text-neutral-300 hover:border-neutral-500">메인 메뉴</button><button type="button" disabled={!selectedDeckId || starting} onClick={start} className="flex items-center gap-2 rounded-lg bg-amber-400 px-6 py-3 text-sm font-black text-black hover:bg-amber-300 disabled:cursor-not-allowed disabled:opacity-40"><Bot className="h-4 w-4" /> {starting ? "경기 준비 중…" : "매치 시작"} <ArrowRight className="h-4 w-4" /></button></div>
           </>
         )}
       </section>

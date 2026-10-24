@@ -1,0 +1,56 @@
+[
+  {
+    "width": 360,
+    "height": 740,
+    "attackSelectionCancel": true,
+    "endTurnContinue": true,
+    "settings": true,
+    "cardSizeStable": true,
+    "noFieldOverlap": true
+  },
+  {
+    "width": 375,
+    "height": 812,
+    "attackSelectionCancel": true,
+    "endTurnContinue": true,
+    "settings": true,
+    "cardSizeStable": true,
+    "noFieldOverlap": true
+  },
+  {
+    "width": 390,
+    "height": 844,
+    "attackSelectionCancel": true,
+    "endTurnContinue": true,
+    "settings": true,
+    "cardSizeStable": true,
+    "noFieldOverlap": true
+  },
+  {
+    "width": 412,
+    "height": 915,
+    "attackSelectionCancel": true,
+    "endTurnContinue": true,
+    "settings": true,
+    "cardSizeStable": true,
+    "noFieldOverlap": true
+  },
+  {
+    "width": 768,
+    "height": 1024,
+    "attackSelectionCancel": true,
+    "endTurnContinue": true,
+    "settings": true,
+    "cardSizeStable": true,
+    "noFieldOverlap": true
+  },
+  {
+    "width": 1440,
+    "height": 900,
+    "attackSelectionCancel": true,
+    "endTurnContinue": true,
+    "settings": true,
+    "cardSizeStable": true,
+    "noFieldOverlap": true
+  }
+]

@@ -23,6 +23,7 @@ export function CardCatalogFilters({ cards, value, onChange }: { cards: CatalogC
         {options.map(([id,text]) => <option key={id} value={id}>{text}</option>)}
       </select>
     </label>)}
+    <div className="ko-filter-summary" aria-label="적용 중인 분류">{controls.filter(([key]) => value[key] !== "ALL").map(([key,label,options]) => <button key={key} type="button" aria-label={`${label} 필터 해제`} onClick={() => onChange({ ...value, [key]: "ALL" })}>{label}: {options.find(([id]) => id === value[key])?.[1]} ×</button>)}</div>
     <button type="button" disabled={Object.entries(EMPTY_CATALOG_FILTERS).every(([key, initial]) => value[key as keyof CatalogFilters] === initial)} onClick={() => onChange({ ...EMPTY_CATALOG_FILTERS })} className="min-h-11 rounded border border-neutral-700 px-3 text-sm text-neutral-300 disabled:opacity-50 disabled:cursor-not-allowed">분류 초기화</button>
   </div>;
 }

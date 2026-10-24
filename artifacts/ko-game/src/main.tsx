@@ -1,6 +1,7 @@
 // Load the base cascade before lazily loaded battle component styles.
 import './index.css';
 import './battle-presentation.css';
+import './game-experience.css';
 
 import { createRoot } from 'react-dom/client';
 

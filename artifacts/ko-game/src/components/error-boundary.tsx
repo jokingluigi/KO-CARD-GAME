@@ -37,14 +37,13 @@ function toError(value: unknown): Error {
 
 function DefaultFallback({ error, resetError }: ErrorFallbackProps) {
   return (
-    <div className="min-h-screen w-full flex items-center justify-center bg-gray-50 p-6">
-      <div className="max-w-lg w-full text-center">
-        <h1 className="text-xl font-semibold text-gray-900">
-          Something went wrong
+    <div className="min-h-screen w-full flex items-center justify-center bg-neutral-950 p-6">
+      <div className="ko-state-panel text-center">
+        <h1 className="text-xl text-amber-100">
+          화면을 표시하지 못했어요
         </h1>
-        <p className="mt-2 text-sm text-gray-600">
-          This part of the app hit an error. The rest of the app is still
-          running.
+        <p className="mt-2 text-sm text-neutral-300">
+          다시 시도해 주세요. 문제가 반복되면 발생한 모드와 직전 행동을 알려주세요.
         </p>
         {/* Dev only: messages can carry API responses and other internals. */}
         {import.meta.env.DEV ? (
@@ -55,9 +54,9 @@ function DefaultFallback({ error, resetError }: ErrorFallbackProps) {
         <button
           type="button"
           onClick={resetError}
-          className="mt-4 rounded bg-gray-900 px-4 py-2 text-sm text-white hover:bg-gray-700"
+          className="ko-experience-action"
         >
-          Try again
+          다시 시도
         </button>
       </div>
     </div>
