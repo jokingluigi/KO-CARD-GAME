@@ -64,11 +64,11 @@ for (const opponent of ['블랙 아웃', '좀비 벨로나', '뒷정리맨'])
    });
 
 for(const opponent of ['블랙 아웃','좀비 벨로나','뒷정리맨'])
- test(`Hilbil counterattack kill heals with Wimari present against ${opponent}`,()=>{
+ test(`Balance rule: Hilbil counterattack kill no longer heals against ${opponent}`,()=>{
   const s=setup('위마리',20);s.activePlayerId='player-2';
   s.players[1].board[0]={...generateCardInstance(definition(opponent),{instanceId:'enemy'}),currentAttack:1,currentHealth:1,boardSlot:0,enteredThisTurn:false};
   const n=action(s,{type:'ATTACK',playerId:'player-2',attackerInstanceId:'enemy',target:{type:'WRESTLER',playerId:'player-1',cardInstanceId:'hilbil'}});
-  assert.equal(n.players[0].board[0]!.currentHealth,20);
+  assert.equal(n.players[0].board[0]!.currentHealth,1);
   assert.equal(n.players[0].board[0]!.maxHealth,20); // Wimari only combos on an allied attack.
   assert.equal(n.players[0].health,20);
   assert.deepEqual(n.events.find(e=>e.type==='CARD_RETIRED'&&e.cardInstanceId==='enemy')!.source,{type:'CARD',cardInstanceId:'hilbil'});

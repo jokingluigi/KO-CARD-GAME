@@ -1,0 +1,122 @@
+[
+  {
+    "id": "5e4a5a52-ef2c-4e1a-9b76-a4edc9f79e2c",
+    "name": "챔피언 라 칼라베라",
+    "new": false,
+    "changes": {
+      "questCondition": {
+        "before": {
+          "cardType": "WRESTLER",
+          "event": "CARD_RETIRED",
+          "required": 10,
+          "strictEventCount": true
+        },
+        "after": {
+          "event": "CARD_RETIRED",
+          "cardType": "WRESTLER",
+          "required": 15,
+          "strictEventCount": true
+        }
+      },
+      "questProgressRequired": {
+        "before": 10,
+        "after": 15
+      }
+    }
+  },
+  {
+    "id": "441260ed-63e5-442c-bdc2-8a22898f7090",
+    "name": "챔피언 루나",
+    "new": false,
+    "changes": {
+      "maxHealth": {
+        "before": 30,
+        "after": 25
+      }
+    }
+  },
+  {
+    "id": "champion-minion-a",
+    "name": "챔피언 미니언 A",
+    "new": false,
+    "changes": {
+      "abilityCost": {
+        "before": 2,
+        "after": 1
+      }
+    }
+  },
+  {
+    "id": "3cbb09c4-f8ac-4668-9378-5c01bfa9474b",
+    "name": "챔피언 예거",
+    "new": false,
+    "changes": {
+      "questCondition": {
+        "before": {
+          "cardType": "WRESTLER",
+          "event": "CARD_GENERATED",
+          "progress": 1,
+          "required": 8
+        },
+        "after": {
+          "event": "CARD_GENERATED",
+          "cardType": "WRESTLER",
+          "progress": 1,
+          "required": 10
+        }
+      },
+      "questProgressRequired": {
+        "before": 8,
+        "after": 10
+      }
+    }
+  },
+  {
+    "id": "bcffab96-f61f-497e-b60b-de5a869837d3",
+    "name": "챔피언 판도라",
+    "new": false,
+    "changes": {
+      "questCondition": {
+        "before": {
+          "cardType": "WRESTLER",
+          "event": "WRESTLER_RETIRED",
+          "required": 7,
+          "sourceActionType": "USE_CHAMPION_ABILITY"
+        },
+        "after": {
+          "event": "WRESTLER_RETIRED",
+          "cardType": "WRESTLER",
+          "required": 5,
+          "sourceActionType": "USE_CHAMPION_ABILITY"
+        }
+      },
+      "questProgressRequired": {
+        "before": 7,
+        "after": 5
+      }
+    }
+  },
+  {
+    "id": "0db142af-750e-4929-a464-5daf1bc75452",
+    "name": "챔피언 퍼플레인",
+    "new": false,
+    "changes": {
+      "questCondition": {
+        "before": {
+          "event": "DAMAGE_DEALT",
+          "required": 8,
+          "selfEffectDamage": true
+        },
+        "after": {
+          "event": "DAMAGE_DEALT",
+          "required": 10,
+          "selfEffectDamage": true
+        }
+      },
+      "questProgressRequired": {
+        "before": 8,
+        "after": 10
+      }
+    }
+  }
+]

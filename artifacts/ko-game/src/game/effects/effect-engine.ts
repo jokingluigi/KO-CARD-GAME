@@ -1,3 +1,4 @@
+import {isCounterattackRetirement,isCounterattackDamage} from '../events/retirement-rules';
 import { refreshPersistentFieldGrants } from '../engine/reviewed-field-rules';
 import { fusionTargets, queueForcedFusion, commitFusion, resumeFusion, vanishCard, hasCommittedFusion } from '../engine/fusion';
 import { startCountdown, clearCountdown } from '../cards/countdown';
@@ -7,7 +8,7 @@ import { resumeCountdownTurnStart } from '../engine/countdown';
 import { newCardTargetAllowed } from '../cards/new-card-effects';
 import { hasNewCardRule, healNewCardAware, silenceDamageReduction, madokawaIncomingBonus, healingTurn } from '../engine/new-card-rules';
 import { fallbackZombieToken } from '../engine/zombie-token';
-import { existingZombie, isZombieToken, mergeZombie, normalizeZombieDefinition } from '../engine/zombie-token';
+import { existingZombie, isZombieToken, zombieRetirementGrowthLimit, mergeZombie, normalizeZombieDefinition } from '../engine/zombie-token';
 import { keywordDamage, hasEntryDefense, isEntryDefenseTargetProtected } from '../engine/keyword-rules';
 import type { CardDefinition, CardInstance, CardStatHistoryEntry } from '../cards/types';
 import { matchesCardTagFilter } from '../cards/tags';
@@ -709,6 +710,7 @@ export function resolveRegisteredRuleListeners(
   const eventIndex = eventIndexOverride ?? (damageEventIndex >= 0 ? damageEventIndex : Math.max(0, state.events.length - 1));
   const triggeringEvent = state.events[eventIndex];
   const isCausalRemoval = trigger === 'SOURCE_CAUSED_TARGET_REMOVAL';
+  if(isCausalRemoval && isCounterattackRetirement(state,eventIndex))return state;
   const removalTargetId = triggeringEvent?.target?.type === 'CARD'
     ? triggeringEvent.target.cardInstanceId
     : triggeringEvent?.cardInstanceId;
@@ -3917,14 +3919,25 @@ export function resolveCardRetiredListeners(
   const relicEventIndex = removalEventIndex(state, 'CARD_RETIRED', retiredCard.instanceId);
   const growthKey = `zombie-growth:${relicEventIndex}:${retiredCard.instanceId}`;
   if (relicEventIndex >= 0 && retiredCard.cardType === 'WRESTLER' && !state.zombieGrowthEventKeys?.includes(growthKey)) {
+    const growth = state.zombieGrowthThisTurn?.turn === state.turn
+      ? {...state.zombieGrowthThisTurn, counts:{...state.zombieGrowthThisTurn.counts}}
+      : {turn:state.turn,counts:{} as Record<string,number>};
+    let recordedGrowth = false;
     state = { ...state, zombieGrowthEventKeys: [...(state.zombieGrowthEventKeys ?? []), growthKey],
-      players: state.players.map(p => ({ ...p, board: p.board.map(card =>
-        p.id === playerId && card && card.instanceId !== retiredCard.instanceId && card.currentHealth > 0 && !card.isSilenced && isZombieToken(state, card) &&
-        !state.events.slice(relicEventIndex + 1).some(e => e.type === 'ENTER_FIELD' && e.cardInstanceId === card.instanceId)
-          ? { ...card, currentAttack: card.currentAttack + 1, currentHealth: card.currentHealth + 1, maxHealth: card.maxHealth + 1 }
-          : card) as typeof p.board })) };
+      players: state.players.map(p => ({ ...p, board: p.board.map(card => {
+        if(p.id !== playerId || !card || card.instanceId === retiredCard.instanceId || card.currentHealth <= 0 || card.isSilenced || card.isAbilityDisabled || !isZombieToken(state,card) ||
+           state.events.slice(relicEventIndex + 1).some(e=>e.type==='ENTER_FIELD' && e.cardInstanceId===card.instanceId))return card;
+        const limit=zombieRetirementGrowthLimit(state,card);
+        if(limit !== undefined){
+          const used=growth.counts[card.instanceId] ?? 0;
+          if(used >= limit)return card;
+          growth.counts[card.instanceId]=used+1;recordedGrowth=true;
+        }
+        return {...card,currentAttack:card.currentAttack+1,currentHealth:card.currentHealth+1,maxHealth:card.maxHealth+1};
+      }) as typeof p.board })) };
+    if(recordedGrowth)state={...state,zombieGrowthThisTurn:growth};
   }
-  if (relicEventIndex >= 0) {
+  if (relicEventIndex >= 0 && !isCounterattackRetirement(state,relicEventIndex)) {
     const event=state.events[relicEventIndex]!;
     const sourceId=event.source?.type==='CARD'?event.source.cardInstanceId:undefined;
     const owner=state.players.find(p=>p.id!==playerId && p.board.some(c=>c?.instanceId===sourceId && hasNewCardRule(c,'힐빌')));
@@ -3934,7 +3947,7 @@ export function resolveCardRetiredListeners(
     }
   }
   if (relicEventIndex >= 0) state = resolveTowerRemoval(state, state.events[relicEventIndex]!, relicEventIndex);
-  if(relicEventIndex>=0){
+  if(relicEventIndex>=0 && !isCounterattackRetirement(state,relicEventIndex)){
     const event=state.events[relicEventIndex]!;
     const sourceId=event.source?.type==='CARD'?event.source.cardInstanceId:undefined;
     const killerOwner=state.players.find(p=>p.id!==playerId && p.board.some(c=>c?.instanceId===sourceId));
@@ -4090,7 +4103,8 @@ function replaceRetirement(state:GameState,ownerId:string,victim:CardInstance,so
    if(!source||source.isAbilityDisabled)continue;
    const replacement=getActiveCardAbilities(source).find(ability=>ability.trigger==='ANY_BEFORE_RETIRE' &&
      (!('retirementReplacementScope' in ability) || ability.retirementReplacementScope!=='SOURCE_CAUSED_ENEMY' ||
-      (causalSourceInstanceId===source.instanceId && sourceOwner.id!==ownerId)));
+      (causalSourceInstanceId===source.instanceId && sourceOwner.id!==ownerId &&
+       !isCounterattackDamage(state,victim.instanceId,causalSourceInstanceId,sourceContext))));
    if(!replacement)continue;
    const attribution:EventAttribution={...sourceContext,sourcePlayerId:sourceOwner.id,sourceActionType:'CARD_EFFECT',sourceEffectId:source.definitionId};
    const result=destroyCard(state,ownerId,victim.instanceId,{sourcePlayerId:sourceOwner.id,sourceInstanceId:source.instanceId,sourceContext:attribution});
