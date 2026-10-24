@@ -1,0 +1,54 @@
+{
+  "results": [
+    {
+      "width": 360,
+      "height": 740,
+      "keyboardFocus": true,
+      "settingsToggle": true,
+      "stableGeometry": true,
+      "overflow": false
+    },
+    {
+      "width": 375,
+      "height": 812,
+      "keyboardFocus": true,
+      "settingsToggle": true,
+      "stableGeometry": true,
+      "overflow": false
+    },
+    {
+      "width": 390,
+      "height": 844,
+      "keyboardFocus": true,
+      "settingsToggle": true,
+      "stableGeometry": true,
+      "overflow": false
+    },
+    {
+      "width": 412,
+      "height": 915,
+      "keyboardFocus": true,
+      "settingsToggle": true,
+      "stableGeometry": true,
+      "overflow": false
+    },
+    {
+      "width": 844,
+      "height": 390,
+      "keyboardFocus": true,
+      "settingsToggle": true,
+      "stableGeometry": true,
+      "overflow": false
+    },
+    {
+      "width": 1440,
+      "height": 900,
+      "keyboardFocus": true,
+      "settingsToggle": true,
+      "stableGeometry": true,
+      "overflow": false
+    }
+  ],
+  "errors": [],
+  "physicalPhone": "NOT_RUN"
+}

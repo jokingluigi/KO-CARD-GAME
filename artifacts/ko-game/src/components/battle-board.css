@@ -832,3 +832,11 @@ body:has(.ko-board-preview)
 .ko-board-preview [data-testid="match-turn-number"] {
   font-variant-numeric: tabular-nums;
 }
+.ko-board-preview .ko-settings-dialog [aria-label="설정 닫기"] {
+  min-width: 44px;
+  min-height: 44px;
+}
+.ko-board-preview .ko-settings-dialog button:focus-visible {
+  outline: 2px solid var(--board-bright);
+  outline-offset: 2px;
+}

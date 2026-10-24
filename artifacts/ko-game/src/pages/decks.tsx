@@ -802,6 +802,7 @@ export default function Decks() {
                     key={item}
                     type="button"
                     className={`ko-decks__filter ${filter === item ? "ko-decks__filter--active" : ""}`}
+                    aria-pressed={filter === item}
                     data-testid={`button-filter-${item.toLowerCase()}`}
                     onClick={() => setFilter(item)}
                   >

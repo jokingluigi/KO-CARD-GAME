@@ -2717,3 +2717,19 @@
 }
 
 @import './mobile-battle.css';
+
+/* Catalog controls: touch targets without resizing the card grid. */
+.ko-decks__filters { flex-wrap: wrap; }
+.ko-decks__filter, .ko-decks__mini-button {
+  min-height: 44px;
+  min-width: 44px;
+  justify-content: center;
+}
+.ko-decks__filter--active { text-decoration: underline; text-underline-offset: 4px; }
+.ko-decks__filter:focus-visible, .ko-decks__mini-button:focus-visible,
+.ko-catalog-filters select:focus-visible, .ko-catalog-filters button:focus-visible {
+  outline: 2px solid #d9bb7b;
+  outline-offset: 2px;
+}
+.ko-decks__search:focus-within { border-bottom-color: #d9bb7b; }
+.ko-decks__search input { min-height: 28px; }
