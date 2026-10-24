@@ -691,9 +691,9 @@ export default function Decks() {
         <header className="ko-decks__topline">
           <div>
             <p className="ko-decks__eyebrow">Preparation room / {authUser?.nickname}</p>
-            <h1 className="ko-decks__title" data-testid="text-page-title">DECK EDITOR</h1>
+            <h1 className="ko-decks__title" data-testid="text-page-title">덱 편집</h1>
             <p className="ko-decks__subtitle">
-              링에 오르기 전, 한 장씩 작전을 고릅니다. 반복은 허용됩니다. 좋은 한 수를 여러 번 준비하세요.
+              챔피언과 카드 25장을 준비하세요. 저장한 덱은 대전에서 선택할 수 있어요.
             </p>
           </div>
           <Link href="/" className="ko-decks__back" data-testid="link-main-menu">
@@ -729,11 +729,14 @@ export default function Decks() {
           </div>
         )}
 
+        <nav className="ko-workspace-nav" aria-label="덱 편집 작업 이동">
+          <a href="#deck-list">내 덱</a><a href="#deck-library">카드 찾기</a><a href="#deck-workspace" onClick={() => setEditorCollapsed(false)}>현재 덱 · {cardIds.length}/25</a>
+        </nav>
         <div className="ko-decks__columns">
-          <aside className="ko-decks__rail" aria-label="덱 목록">
+          <aside id="deck-list" className="ko-decks__rail" aria-label="덱 목록">
             <button type="button" className="ko-decks__secondary-action min-h-11 mb-3 w-full" data-testid="button-import-deck" disabled={isLoading} onClick={() => { setImportCode(''); setShareMode('import'); }}>덱 가져오기</button>
             <div className="flex items-center justify-between gap-2">
-              <p className="ko-decks__section-label">Your plans</p>
+              <p className="ko-decks__section-label">내 덱</p>
               <button type="button" className="ko-decks__mini-button" data-testid="button-create-deck" onClick={createDraft}>
                 <CirclePlus className="h-3.5 w-3.5" aria-hidden="true" />
                 새 덱
@@ -771,10 +774,10 @@ export default function Decks() {
             </div>
           </aside>
 
-          <section className="ko-decks__library" aria-label="카드 컬렉션">
+          <section id="deck-library" className="ko-decks__library" aria-label="카드 컬렉션">
             <div className="flex items-end justify-between gap-4">
               <div>
-                <p className="ko-decks__section-label">Published collection</p>
+                <p className="ko-decks__section-label">카드 목록</p>
                 <h2 className="mt-1 font-display text-2xl font-bold tracking-tight text-[#e8e0d4]" data-testid="text-collection-title">
                   CARD LOCKER
                 </h2>
@@ -852,11 +855,11 @@ export default function Decks() {
             )}
           </section>
 
-          <section className={`ko-decks__editor ${editorCollapsed ? 'ko-decks__editor--collapsed' : ''}`} aria-label="현재 덱 편집기">
+          <section id="deck-workspace" className={`ko-decks__editor ${editorCollapsed ? 'ko-decks__editor--collapsed' : ''}`} aria-label="현재 덱 편집기">
             <div className="ko-decks__editor-head">
               <div className="flex items-start justify-between gap-3">
                 <div className="min-w-0 flex-1">
-                  <p className="ko-decks__section-label">Fight plan</p>
+                  <p className="ko-decks__section-label">현재 편집 중</p>
                   <label className="sr-only" htmlFor="deck-name">덱 이름</label>
                   <input
                     id="deck-name"
@@ -877,7 +880,7 @@ export default function Decks() {
             </div>
             <div className="ko-decks__editor-scroll">
               <div className="flex items-center justify-between gap-3">
-                <p className="ko-decks__section-label">Champion</p>
+                <p className="ko-decks__section-label">챔피언</p>
                 <button
                   type="button"
                   className="rounded border border-[#554a3a] px-3 py-1 text-xs font-bold text-[#cdbb94] transition hover:border-[#d9b04b] hover:text-[#f1d47a]"
@@ -950,7 +953,7 @@ export default function Decks() {
               )}
 
               <div className="mt-5 flex flex-wrap items-center justify-between gap-3">
-                <p className="ko-decks__section-label">Cards in plan</p>
+                <p className="ko-decks__section-label">덱에 넣은 카드</p>
                   <span className="text-[0.62rem] font-bold text-[#706b65]">노멀 동일 {maxCardCopies("NORMAL")}장 · 에픽 동일 {maxCardCopies("EPIC")}장 · 레전더리 카드별 1장 / 총 {MAX_LEGENDARY_CARDS}장</span>
               </div>
               {selectedRows.length === 0 ? (

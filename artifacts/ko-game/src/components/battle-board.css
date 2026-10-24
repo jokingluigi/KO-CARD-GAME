@@ -25,7 +25,7 @@
   display: grid;
   grid-template-columns: minmax(0, 1fr);
   grid-template-rows:
-    16px var(--board-hud-h) auto 52px auto var(--board-hud-h)
+    16px var(--board-hud-h) auto 100px auto var(--board-hud-h)
     var(--board-hand-h);
   gap: 10px;
   width: 100%;
@@ -627,7 +627,7 @@ body:has(.ko-board-preview)
 }
 @media (max-height: 760px) and (orientation: portrait) {
   .ko-board-preview .ko-game-stage {
-    grid-template-rows: 16px var(--board-hud-h) auto 52px auto 140px calc(
+    grid-template-rows: 16px var(--board-hud-h) auto 100px auto 140px calc(
         var(--board-hand-h) - 16px
       );
   }
@@ -792,7 +792,7 @@ body:has(.ko-board-preview)
    determine its height and reserve room for the existing hover/selection lift. */
 @media (min-width: 769px) {
   .ko-game-shell.ko-board-preview .ko-game-stage {
-    grid-template-rows: 16px var(--board-hud-h) auto 52px auto var(--board-hud-h) minmax(var(--board-hand-h), max-content);
+    grid-template-rows: 16px var(--board-hud-h) auto 100px auto var(--board-hud-h) minmax(var(--board-hand-h), max-content);
   }
   .ko-game-shell.ko-board-preview .ko-player-hand {
     height: auto;
@@ -840,3 +840,33 @@ body:has(.ko-board-preview)
   outline: 2px solid var(--board-bright);
   outline-offset: 2px;
 }
+
+/* A reserved command row keeps instructions/errors off the field and leaves
+   the settings button available during targeting. No card geometry is scaled. */
+.ko-game-shell.ko-board-preview .ko-game-controls {
+  height:100px;
+  grid-template-rows:44px 44px;
+}
+.ko-board-preview .ko-battle-command {
+  grid-column:1 / -1; grid-row:2;
+  display:flex; align-items:center; gap:8px; min-width:0;
+  border-top:1px solid #443c2d;
+}
+.ko-board-preview .ko-battle-command p {
+  flex:1; min-width:0; max-height:42px; overflow-y:auto;
+  padding:2px 5px; font-size:11px; line-height:15px; color:#ded5c1;
+}
+.ko-board-preview .ko-battle-command p.text-red-200 { color:#fecaca; }
+.ko-board-preview .ko-battle-command button {
+  flex-shrink:0; min-height:44px; padding:6px 10px;
+  border:1px solid var(--board-gold); color:var(--board-bright); font-size:12px;
+}
+.ko-board-preview .ko-champion-heading { font-size:11px; line-height:15px; }
+.ko-board-preview :is(.ko-player-stats,.ko-opponent-stats) > div > div:first-child { color:#c8bdab; font-size:10px; line-height:12px; }
+.ko-board-preview :is(.ko-player-stats,.ko-opponent-stats) .font-display { font-variant-numeric:tabular-nums; }
+.ko-board-preview .ko-champion-ability .ko-ability-label { display:block; font-size:12px; line-height:16px; }
+.ko-board-preview .ko-champion-ability .ko-ability-cost { display:block; font-size:10px; line-height:14px; }
+.ko-board-preview .ko-champion-ability:enabled { border-color:var(--board-bright); background:#30291c; color:#f0dfb3; }
+.ko-board-preview .ko-champion-ability:disabled { color:#a39c8f; background:#191919; }
+.ko-board-preview .ko-game-controls [data-testid="match-turn-number"] { font-size:12px; line-height:16px; }
+.ko-board-preview .ko-game-controls > .flex .text-xs { font-size:12px; }

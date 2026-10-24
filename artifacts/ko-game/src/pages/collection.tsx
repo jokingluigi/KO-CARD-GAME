@@ -317,7 +317,7 @@ export default function CollectionPage() {
   }
 
   return (
-    <main className="ko-collection ko-page-enter min-h-screen bg-neutral-950 px-4 py-6 text-neutral-100 sm:px-8 sm:py-8">
+    <main className="ko-experience-page ko-collection ko-page-enter min-h-screen bg-neutral-950 px-4 py-6 text-neutral-100 sm:px-8 sm:py-8">
       <div className="mx-auto max-w-6xl">
         <div className="mb-6 flex items-center justify-between gap-3">
           <button type="button" onClick={() => navigate(ROUTES.MAIN_MENU)} className="flex items-center gap-2 text-sm font-bold text-neutral-400 hover:text-white">

@@ -149,7 +149,7 @@ body .ko-game-shell{background:#000000}
 .ko-cinematic.ko-cinematic--big_spell .ko-cinematic__spell-seal{display:none}
 .ko-cinematic.ko-cinematic--champion .ko-cinematic__panel{border-left:8px solid #d0c5a6;clip-path:polygon(0 0,100% 0,97% 100%,0 100%)}
 .ko-cinematic.ko-cinematic--legendary .ko-cinematic__panel{border-block-color:#c8ad6b}
-@media(min-width:1024px){.ko-game-shell .ko-game-stage{max-width:1120px}.ko-decks .ko-decks__columns{grid-template-columns:180px minmax(420px,1fr) minmax(340px,.8fr);gap:24px}}
+@media(min-width:1024px){.ko-game-shell .ko-game-stage{max-width:1120px}}
 @media(max-width:767px){
  body .ko-main-menu{padding:88px 20px 32px}.ko-main-menu .ko-main-menu__content{max-width:none;min-height:calc(100dvh - 120px)}.ko-main-menu .ko-main-menu__shade{background:#000000d9}.ko-main-menu .ko-main-menu__art{background-position:62% center;opacity:.9}.ko-main-menu .ko-main-menu__logo{font-size:100px}.ko-main-menu .ko-main-menu__grid{gap:0 16px}.ko-main-menu .ko-main-menu__item[data-menu-tier=battle]{flex-direction:column;align-items:flex-start;min-height:126px;padding:16px}.ko-main-menu .ko-main-menu__item[data-menu-tier=battle] .ko-main-menu__copy>span:first-child{font-size:20px}.ko-main-menu .ko-main-menu__item[data-menu-tier=utility]{min-height:76px;padding-block:12px}.ko-main-menu .ko-main-menu__user{gap:6px 12px;font-size:11px}
  .ko-online-shell section:has(>h1){margin-top:40px}.ko-online-shell h1{font-size:32px;line-height:1.25}.ko-online-shell .ko-online-panel{padding:24px}.ko-online-shell .ko-online-panel>div{margin-bottom:24px}

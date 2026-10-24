@@ -123,7 +123,7 @@ export default function DailyQuestsPage() {
   }
 
   return (
-    <main className="ko-page-enter min-h-screen bg-neutral-950 px-4 py-6 text-neutral-100 sm:px-8 sm:py-8">
+    <main className="ko-experience-page ko-page-enter min-h-screen bg-neutral-950 px-4 py-6 text-neutral-100 sm:px-8 sm:py-8">
       <div className="mx-auto max-w-4xl">
         <button type="button" onClick={() => navigate(ROUTES.MAIN_MENU)} className="mb-6 flex items-center gap-2 text-sm font-bold text-neutral-400 hover:text-white"><ArrowLeft className="h-4 w-4" /> 메인 메뉴</button>
         <header className="mb-6 border-b border-neutral-800 pb-5">
@@ -131,6 +131,7 @@ export default function DailyQuestsPage() {
           <h1 className="mt-2 text-3xl font-black">퀘스트</h1>
           <p className="mt-2 text-sm text-neutral-500">일일 퀘스트는 하루 동안 고정됩니다. 드래프트 도전자 진행도는 날짜가 바뀌어도 유지됩니다.</p>
         </header>
+        {!loading && <section className="ko-quest-summary" aria-label="퀘스트 현황"><div><strong>{quests.filter(q => (q.platform?.questType ?? "DAILY") === tab && q.status === "COMPLETED").length}</strong><span>받을 수 있는 보상</span></div><div><strong>{quests.filter(q => (q.platform?.questType ?? "DAILY") === tab && q.status === "CLAIMED").length}</strong><span>수령 완료</span></div></section>}
         {message && <p role="status" className="mb-5 rounded border border-amber-800/50 bg-amber-950/20 px-4 py-3 text-sm text-amber-200">{message}</p>}
         <nav className="mb-5 flex gap-3" aria-label="퀘스트 종류">{(["DAILY","SEASON"] as const).map(t=><button key={t} onClick={()=>setTab(t)} className={"min-h-11 border px-4 py-2 font-bold "+(tab===t?"border-amber-500 bg-amber-400 text-black":"border-neutral-700 text-neutral-300")}>{t==="DAILY"?"일일 퀘스트":"시즌 퀘스트"}</button>)}</nav>
         <p className="mb-4 text-xs text-neutral-400">일일 초기화: {timezone} 00:00 · 시즌 진행도는 날짜가 바뀌어도 유지됩니다.</p>
@@ -140,7 +141,7 @@ export default function DailyQuestsPage() {
           <progress className="w-full accent-amber-400" value={completionBonus.progress} max={completionBonus.targetValue}/>
           <div className="flex flex-wrap items-center justify-between gap-3"><span className="text-sm font-bold text-amber-200">{rewardDisplay(completionBonus)}</span><button type="button" data-testid="button-claim-daily-completion-bonus" disabled={completionBonus.status!=="COMPLETED"||Boolean(busyId)} onClick={()=>void claimBonus()} className="min-h-11 rounded bg-amber-400 px-4 py-2 font-bold text-black disabled:opacity-40">{completionBonus.status==="CLAIMED"?"수령 완료":completionBonus.status==="COMPLETED"?"추가 보상 받기":"진행 중"}</button></div>
         </section>}
-        {loading ? <p className="rounded border border-neutral-800 p-8 text-center text-neutral-500">퀘스트를 불러오는 중...</p> : quests.length === 0 ? <p className="rounded border border-dashed border-neutral-800 p-8 text-center text-neutral-500">활성화된 일일 퀘스트가 없습니다.</p> : (
+        {loading ? <p className="rounded border border-neutral-800 p-8 text-center text-neutral-500">퀘스트를 불러오는 중...</p> : quests.filter(q=>(q.platform?.questType??"DAILY")===tab).length === 0 ? <p className="rounded border border-dashed border-neutral-800 p-8 text-center text-neutral-500">이 분류에 진행 중인 퀘스트가 없습니다.</p> : (
           <div className="grid gap-4 md:grid-cols-3">
             {quests.filter(q=>(q.platform?.questType??"DAILY")===tab).map((quest) => {
               const percent = Math.min(100, Math.round((quest.progress / quest.targetValue) * 100));

@@ -53,7 +53,7 @@ export default function Online() {
       {() => <OnlineShell
         eyebrow="ONLINE BATTLE"
         title="실제 상대와 겨루는 링"
-        description="빠르게 상대를 찾거나, 친구와 방 코드를 공유하세요. 전투의 모든 판정은 서버가 담당합니다."
+        description="빠른 대전으로 상대를 찾거나, 방 코드로 친구를 초대하세요."
         backHref={ONLINE_MODE_SELECT_BACK_ROUTE}
       >
         {checkingActiveMatch ? (
@@ -84,7 +84,7 @@ export default function Online() {
           <ModeCard
             title="빠른 대전"
             titleStatus={<SitePresenceLight />}
-            description="유효한 덱을 고르고 FIFO 대기열에서 가장 오래 기다린 상대와 만납니다."
+            description="사용할 덱을 선택하고 대기 중인 상대와 대결하세요."
             icon="quick"
             testId="button-online-quick"
             onClick={() => navigate(ROUTES.ONLINE_QUICK)}
@@ -99,7 +99,7 @@ export default function Online() {
         </div>
         <div className="mt-8 flex items-center gap-3 text-xs font-bold text-neutral-500" data-testid="text-online-safety-note">
           <Shield className="h-4 w-4 text-amber-500" aria-hidden="true" />
-          덱 유효성은 입장 직전에 서버에서 다시 확인합니다.
+          덱 준비가 필요하다면 상단의 덱 편집에서 구성할 수 있어요.
         </div>
       </OnlineShell>}
     </OnlineAuthGate>

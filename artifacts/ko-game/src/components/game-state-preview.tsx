@@ -1119,7 +1119,7 @@ export function GameStatePreview({
 
          {/* BOARDS AREA */}
           <div className="ko-board-area relative flex min-h-0 flex-1 flex-col items-center justify-center gap-4 py-2 md:gap-6 md:py-4">
-            {effectTargeting && <div role="status" className="pointer-events-none absolute left-1/2 top-0 z-[115] max-w-[74vw] -translate-x-1/2 rounded border border-amber-400/70 bg-black/90 px-3 py-1 text-center text-[11px] font-bold text-amber-100 shadow-lg md:text-sm">
+            {!blackGold && effectTargeting && <div role="status" className="pointer-events-none absolute left-1/2 top-0 z-[115] max-w-[74vw] -translate-x-1/2 rounded border border-amber-400/70 bg-black/90 px-3 py-1 text-center text-[11px] font-bold text-amber-100 shadow-lg md:text-sm">
               {state.targetingState?.fusion?.stage === 'CHOOSE' ? '합체할 다른 아군 선수 1장을 선택하세요.' : state.targetingState?.championRewardReplacement ? '토큰 소환: 돌려보낼 아군 선수 1장을 선택하세요.' : <>{state.targetingState?.pendingAction?.type === 'USE_CHAMPION_ABILITY' ? me.champion?.name : state.cardPool?.find((card) => card.id === state.targetingState?.sourceCard?.definitionId)?.name ?? getCardDefinition(state.targetingState?.sourceCard?.definitionId ?? '')?.name ?? '선수'} 효과의 대상을 선택하세요</>}
             </div>}
 
@@ -1193,7 +1193,7 @@ export function GameStatePreview({
                  {!state.targetingState!.championRewardReplacement && (!hasCommittedFusion(state.targetingState) || state.targetingState!.cancelable) && <button type="button" onClick={onCancelEffectTargeting} className="mt-1 block w-full rounded border border-amber-600 px-1 py-0.5 text-[9px]">취소</button>}
                </div>
              )}
-             {effectTargeting && !state.targetingState!.championRewardReplacement && (!hasCommittedFusion(state.targetingState) || state.targetingState!.cancelable) && (
+             {!blackGold && effectTargeting && !state.targetingState!.championRewardReplacement && (!hasCommittedFusion(state.targetingState) || state.targetingState!.cancelable) && (
                <button type="button" onClick={onCancelEffectTargeting} className="ko-mobile-target-cancel hidden rounded border border-amber-600 text-amber-200">취소</button>
              )}
              <div className="flex items-center justify-between gap-2 border-b border-neutral-800 pb-2 md:flex-col md:items-stretch">
@@ -1234,16 +1234,16 @@ export function GameStatePreview({
             >
               {confirmEndTurn ? '그래도 종료' : '턴 종료'}
             </button>
-            {confirmEndTurn && <div role="status" className="rounded border border-amber-700 bg-black/90 p-2 text-[10px] text-amber-200">
+            {!blackGold && confirmEndTurn && <div role="status" className="rounded border border-amber-700 bg-black/90 p-2 text-[10px] text-amber-200">
               공격이나 능력 사용이 남아 있어요.
               <button type="button" className="mt-1 block font-bold underline" onClick={() => setConfirmEndTurn(false)}>계속 플레이</button>
             </div>}
-            {playError && (
+            {!blackGold && playError && (
               <div className="absolute right-0 top-full mt-2 w-44 rounded border border-red-500 bg-red-950/95 px-3 py-2 text-[10px] font-bold text-red-200 shadow-xl">
                 {playError}
               </div>
             )}
-              {attackHint && (
+              {!blackGold && attackHint && (
                 <div
                   className="absolute right-0 top-full mt-2 w-44 rounded border border-blue-500/70 bg-blue-950/95 px-3 py-2 text-[10px] font-bold text-blue-100 shadow-xl"
                   role="status"
@@ -1251,6 +1251,22 @@ export function GameStatePreview({
                   {attackHint}
                 </div>
               )}
+            {blackGold && <div className="ko-battle-command" data-testid="battle-command-strip">
+              <p role="status" aria-live="polite" className={playError ? 'text-red-200' : ''}>
+                {playError || attackHint || (confirmEndTurn ? '아직 공격이나 능력 사용이 남아 있어요.'
+                  : effectTargeting ? state.targetingState?.fusion?.stage === 'CHOOSE' ? '합체할 다른 아군 선수를 선택하세요.'
+                    : state.targetingState?.championRewardReplacement ? '돌려보낼 아군 선수를 선택하세요. 손패가 가득 차면 덱 위로 보냅니다.'
+                    : `강조된 대상을 선택하세요 · ${state.targetingState?.selectedTargetIds.length ?? 0}/${state.targetingState?.minTargets ?? 1}`
+                  : !isMyTurn ? '상대가 행동하고 있어요.'
+                  : selectedAttackerId ? '상대 선수나 챔피언을 선택해 공격하세요.'
+                  : selectedHandCard ? selectedHandCard.cardType === 'TECHNIQUE' ? '주문을 사용하거나 대상에게 드래그하세요.' : '빈 슬롯을 선택하거나 드래그해 소환하세요.'
+                  : '손패를 내거나 필드의 선수로 공격하세요.')}
+              </p>
+              {confirmEndTurn ? <button type="button" onClick={() => setConfirmEndTurn(false)}>계속 플레이</button>
+                : effectTargeting ? !state.targetingState!.championRewardReplacement && (!hasCommittedFusion(state.targetingState) || state.targetingState!.cancelable) && <button type="button" onClick={onCancelEffectTargeting}>선택 취소</button>
+                : selectedCardId ? <button type="button" onClick={() => onSelectCard(selectedCardId)}>선택 취소</button>
+                : selectedAttackerId ? <button type="button" onClick={() => onSelectAttacker(selectedAttackerId)}>선택 취소</button> : null}
+            </div>}
           </aside>
              {/* My Board + Zones */}
               <div className="ko-player-board-row flex w-full items-center justify-center gap-2 md:gap-4">
@@ -1616,7 +1632,7 @@ export function GameStatePreview({
                        : 'cursor-not-allowed border-neutral-800 bg-neutral-900 text-neutral-600'
                      }`}
                    >
-                     {me.champion.questCompleted && me.champion.upgradedAbility ? '강화 능력' : '챔피언 능력'} (비용 {me.champion.abilityCost} 골드)
+                     <span className="ko-ability-label">{me.champion.questCompleted && me.champion.upgradedAbility ? '강화 능력' : '챔피언 능력'}</span> <span className="ko-ability-cost">(비용 {me.champion.abilityCost} 골드)</span>
                    </button>
                  </Inspectable>
                )}

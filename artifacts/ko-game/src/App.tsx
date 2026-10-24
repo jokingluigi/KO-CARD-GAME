@@ -1,7 +1,8 @@
+import { GameNavigation } from '@/components/game-navigation';
 import {ServerMaintenanceGate} from '@/components/server-maintenance';
 import {SitePresenceBridge} from '@/components/site-presence';
 import { type ReactNode, useEffect, lazy, Suspense } from 'react';
-import { AuthLoading } from '@/components/auth-page';
+import { GameLoading } from '@/components/game-loading';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { ErrorBoundary } from '@/components/error-boundary';
 import { Toaster } from '@/components/ui/toaster';
@@ -41,7 +42,8 @@ function Router() {
   return (
     <RoutedErrorBoundary>
       <SitePresenceBridge />
-      <Suspense fallback={<AuthLoading />}><Switch>
+      <GameNavigation />
+      <Suspense fallback={<GameLoading />}><Switch>
         <Route path="/admin/:section?" component={Admin} />
         <Route path="/admin/draft/match/:matchId">{() => <OnlineMatch draft />}</Route>
         <Route path="/cosmetics" component={Cosmetics}/>
