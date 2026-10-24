@@ -41,6 +41,8 @@ export type EventSubject =
 export interface EventAttribution {
   sourcePlayerId: string;
   sourceActionType: string;
+  /** Basic combat hit role; effect damage does not set this. */
+  combatRole?: 'ATTACKER' | 'DEFENDER';
   sourceChampionDefinitionId?: string;
   sourceChampionInstanceId?: string;
   sourceAbilityId?: string;

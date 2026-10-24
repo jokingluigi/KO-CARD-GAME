@@ -558,6 +558,7 @@ export function attack(
     sourcePlayerId: attackingPlayerId,
     sourceActionType: 'ATTACK',
     sourceEffectId: attackerPrepared.definitionId,
+    combatRole: 'ATTACKER',
     rootSourceEventId: combatEventId,
     causationId: `${combatEventId}:${attackerInstanceId}`,
   };
@@ -565,6 +566,7 @@ export function attack(
     sourcePlayerId: target.playerId,
     sourceActionType: 'ATTACK',
     sourceEffectId: defenderPreparedCard.definitionId,
+    combatRole: 'DEFENDER',
     rootSourceEventId: combatEventId,
     causationId: `${combatEventId}:${defenderPreparedCard.instanceId}`,
   };

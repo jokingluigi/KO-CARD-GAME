@@ -1,3 +1,4 @@
+import {reviewedOctober24Abilities} from './reviewed-admin-content-20261024';
 import { reviewedOctober19Abilities } from './reviewed-admin-content-20261019';
 import {reviewedOctober21Abilities} from './reviewed-admin-content-20261021';
 import { reviewedLatestAdminAbilities } from './reviewed-admin-content-20261015';
@@ -327,7 +328,7 @@ export function cardRecordToDefinition(card: PublishedCardRecord): CardDefinitio
       keywords: reviewedCurrentAdminKeywords(card) ?? repairedLegacyCardKeywords(card),
        tags: Array.isArray(card.tags) ? [...card.tags] : [],
       ...(implementation ? {contentRule: implementation.rule} : {}),
-      abilities: (reviewedOctober21Abilities(card) ?? reviewedCurrent ?? reviewedAdmin ?? reviewedContentAbilities(card) ?? textCardAbilities(card) ?? implementation?.abilities ?? repairedLegacyCardAbilities(card) ?? (zombieAbsorption
+      abilities: (reviewedOctober24Abilities(card) ?? reviewedOctober21Abilities(card) ?? reviewedCurrent ?? reviewedAdmin ?? reviewedContentAbilities(card) ?? textCardAbilities(card) ?? implementation?.abilities ?? repairedLegacyCardAbilities(card) ?? (zombieAbsorption
         ? [{ trigger: 'ENTER_FIELD' as const, effects: [{ type: 'STRUCTURED' as const,
             action: 'COPY_BEST_STATS' as const,
             target: { zone: 'BOARD' as const, owner: 'SELF' as const, cardType: 'WRESTLER' as const,

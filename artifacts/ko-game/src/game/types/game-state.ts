@@ -80,6 +80,8 @@ export interface GameState {
   overhealByTurn?: Record<string, number>;
   ownTurnHealing?: Record<string, {champion?: boolean; wrestler?: boolean}>;
   zombieGrowthEventKeys?: string[];
+  /** Per-instance retirement growth; lazy turn reset, persisted with the battle. */
+  zombieGrowthThisTurn?: {turn: number; counts: Record<string, number>};
   /** Absent in all existing modes; only a Tower battle may carry relic rules. */
   tower?: TowerBattleContext;
   gameId: string;

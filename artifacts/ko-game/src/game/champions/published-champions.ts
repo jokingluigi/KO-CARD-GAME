@@ -1,3 +1,4 @@
+import {reviewedOctober24Champion} from './balance-patch-20261024';
 import { isAutomaticChampionStartConfig } from '../../../../../lib/game-engine/src/champion-game-start';
 import { validChampionQuestCondition } from '../../../../../lib/game-engine/src/champion-quest-conditions';
 import { validAwakeningQuestConfig, validAwakeningHealthCondition } from './awakening-types';
@@ -69,6 +70,7 @@ function ability(id: string, name: string, cost: number, description: string, co
 }
 
 export function championRecordToDefinition(record: PublishedChampionRecord): ChampionDefinition {
+  record = reviewedOctober24Champion(record);
   // Exact administrator revision, explicitly implemented rather than parsed at runtime.
   if (record.id === 'f7b087d8-3148-43d5-a634-a81d15c81721' &&
       ['상대 선수 카드에게 1 데미지를 줍니다. 이 데미지로 상대 선수 카드가 리타이어 할 시 리타이어가 아니라 파괴시킵니다.','선수 카드에게 1 데미지를 줍니다. 이 데미지로 선수 카드가 리타이어 할 시 리타이어가 아니라 파괴시킵니다.'].includes(record.abilityText) &&
@@ -186,7 +188,7 @@ export function championRecordToDefinition(record: PublishedChampionRecord): Cha
       rewardText: '고유 능력이 강화됩니다.', trackedEvent: 'DAMAGE_DEALT', selfEffectDamage: true,
       requiredProgress: 8, reward: { type: 'UPGRADE_ABILITY' } };
   }
-  if (!definition.quest?.awakening && record.questProgressRequired !== 10 && /^(?:챔피언)?라칼라베라$/u.test(record.name.replace(/\s+/gu, ''))) {
+  if (!definition.quest?.awakening && (record.questCondition?.event !== 'CARD_RETIRED' || !record.questCondition?.strictEventCount) && /^(?:챔피언)?라칼라베라$/u.test(record.name.replace(/\s+/gu, ''))) {
     const summon = (amount: number, upgraded: boolean): ChampionAbility => ({
       id: `${record.id}-ability${upgraded ? '-upgraded' : ''}`,
       name: (upgraded ? record.upgradedAbilityName : record.abilityName) || '좀비 소환',

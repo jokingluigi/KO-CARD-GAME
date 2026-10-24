@@ -1,0 +1,133 @@
+[
+  {
+    "id": "5d568663-55e8-4ad9-88b3-3afadae538d0",
+    "name": "MPG",
+    "new": false,
+    "changes": {
+      "text": {
+        "before": "등장: 상대 선수 1장의 공격력을 2 감소시키고, 이 카드의 공격력을 3 증가시킵니다.",
+        "after": "등장: 상대 선수 1장의 공격력을 최대 2 감소시키고, 실제로 감소시킨 만큼 이 카드의 공격력을 증가시킵니다."
+      }
+    }
+  },
+  {
+    "id": "1e0bbdb3-9304-46b0-81b8-d30bb9954fc3",
+    "name": "RM우디르",
+    "new": false,
+    "changes": {
+      "attack": {
+        "before": 2,
+        "after": 3
+      },
+      "health": {
+        "before": 2,
+        "after": 3
+      }
+    }
+  },
+  {
+    "id": "b101e673-1313-4e47-8782-5dce5d385080",
+    "name": "다이아몬드 군주 루나",
+    "new": false,
+    "changes": {
+      "status": {
+        "before": "DISABLED",
+        "after": "DRAFT"
+      }
+    }
+  },
+  {
+    "id": "a0747e19-6b8f-4ddf-b2b0-b0feda771189",
+    "name": "다이아몬드 군주 루나(반파)",
+    "new": false,
+    "changes": {
+      "status": {
+        "before": "DISABLED",
+        "after": "DRAFT"
+      }
+    }
+  },
+  {
+    "id": "f10b5c7d-4bc2-4c02-b3f9-2ae25f60af7e",
+    "name": "다이아몬드 군주 루나(캐논)",
+    "new": false,
+    "changes": {
+      "status": {
+        "before": "DISABLED",
+        "after": "DRAFT"
+      }
+    }
+  },
+  {
+    "id": "4e28e957-1148-44c3-8f8b-b6fe8f40e3a9",
+    "name": "루이나",
+    "new": false,
+    "changes": {
+      "status": {
+        "before": "DISABLED",
+        "after": "PUBLISHED"
+      }
+    }
+  },
+  {
+    "id": "b2fab583-5a3e-4c62-92b1-13ddb3a2f5c0",
+    "name": "룬스달라이트 군주 루나",
+    "new": false,
+    "changes": {
+      "status": {
+        "before": "PUBLISHED",
+        "after": "DRAFT"
+      }
+    }
+  },
+  {
+    "id": "ba3107e0-99ad-45af-a651-12c44926c261",
+    "name": "밀크 메이드",
+    "new": false,
+    "changes": {
+      "text": {
+        "before": "이 카드는 직접 타격당할때 상대의 공격력을 먼저 1 깍고 타격을 당합니다.",
+        "after": "퇴장:아군 선수 카드와 아군 챔피언의 체력을 2 증가시킵니다."
+      },
+      "attack": {
+        "before": 3,
+        "after": 2
+      }
+    }
+  },
+  {
+    "id": "66143efe-2eec-450a-8570-9a4c4d92330e",
+    "name": "좀비",
+    "new": false,
+    "changes": {
+      "text": {
+        "before": "좀비를 손에서 내는 것이 아니라 효과로 소환할때 이미 아군 좀비가 있다면 새 좀비를 소환하지 않고 소환 될 좀비의 능력치만큼 기존 좀비에게 부여합니다. 필드에 있는 동안 다른 아군 선수가 리타이어할 때마다 +1/+1을 얻습니다.",
+        "after": "좀비를 손에서 내는 것이 아니라 효과로 소환할때 이미 아군 좀비가 있다면 새 좀비를 소환하지 않고 소환 될 좀비의 능력치만큼 기존 좀비에게 부여합니다. 필드에 있는 동안 다른 아군 선수가 리타이어할 때마다 +1/+1을 얻습니다.(한턴에 효과 최대 2번까지만 발동)"
+      }
+    }
+  },
+  {
+    "id": "20251372-b1a0-485e-9158-d82bf05f7371",
+    "name": "좀비 벨로나",
+    "new": false,
+    "changes": {
+      "health": {
+        "before": 4,
+        "after": 3
+      }
+    }
+  },
+  {
+    "id": "latest-wrestler-2",
+    "name": "황소할배",
+    "new": false,
+    "changes": {
+      "keywords": {
+        "before": [
+          "ARMOR"
+        ],
+        "after": []
+      }
+    }
+  }
+]
