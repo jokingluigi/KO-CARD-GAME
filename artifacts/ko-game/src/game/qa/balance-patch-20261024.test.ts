@@ -253,3 +253,21 @@ test('Milk Maid with no surviving allied wrestlers still grants champion health;
  assert.equal(s.players[0].board.filter(Boolean).length,0);
  assert.equal(s.players[0].health,hp+2);assert.equal(s.players[0].graveyard.filter(c=>c.instanceId==='source'||c.instanceId==='dying-ally').length,2);
 });
+
+for(const mode of ['ATTACK','COUNTERATTACK','EFFECT'] as const)
+ test(`Karzael Messenger ${mode}: ${mode==='COUNTERATTACK'?'normal retirement without destruction/growth':'personal destruction replacement remains active'}`,()=>{
+  let s=setup();s.players[0].board[1]={...generateCardInstance(unit,{instanceId:'host'}),currentHealth:20,maxHealth:20,boardSlot:1,enteredThisTurn:false};
+  s=play(s,'카르자엘, 파괴의 천사');assert.ok(s.players[0].board[1]!.grantedText);
+  s.players[1].board[0]={...generateCardInstance(unit,{instanceId:'enemy'}),currentAttack:1,currentHealth:1,boardSlot:0,enteredThisTurn:false};
+  const before=s.players[0].board[1]!;
+  if(mode==='ATTACK')s=action(s,{type:'ATTACK',playerId:'player-1',attackerInstanceId:'host',target:{type:'WRESTLER',playerId:'player-2',cardInstanceId:'enemy'}});
+  else if(mode==='COUNTERATTACK'){
+   s=action(s,{type:'END_TURN',playerId:'player-1'});s=action(s,{type:'ATTACK',playerId:'player-2',attackerInstanceId:'enemy',target:{type:'WRESTLER',playerId:'player-1',cardInstanceId:'host'}});
+  }else s=applyEffect(s,'player-1',s.players[0].board[1]!,{type:'STRUCTURED',action:'DAMAGE',target:{zone:'BOARD',owner:'ENEMY',selection:'PLAYER_CHOICE',count:1},values:{amount:10}},['enemy']);
+  const destruction=mode!=='COUNTERATTACK';
+  assert.equal(s.events.filter(e=>e.type==='CARD_DESTROYED'&&e.cardInstanceId==='enemy').length,destruction?1:0);
+  assert.equal(s.events.filter(e=>e.type==='CARD_RETIRED'&&e.cardInstanceId==='enemy').length,destruction?0:1);
+  assert.equal(s.players[1].graveyard.some(c=>c.instanceId==='enemy'),!destruction);
+  assert.equal(s.players[0].board[1]!.currentAttack,before.currentAttack+(destruction?1:0));
+  assert.equal(s.players[0].board[1]!.maxHealth,before.maxHealth+(destruction?1:0));
+ });

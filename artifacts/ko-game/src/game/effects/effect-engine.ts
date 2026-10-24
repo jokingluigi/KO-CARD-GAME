@@ -1,4 +1,4 @@
-import {isCounterattackRetirement} from '../events/retirement-rules';
+import {isCounterattackRetirement,isCounterattackDamage} from '../events/retirement-rules';
 import { refreshPersistentFieldGrants } from '../engine/reviewed-field-rules';
 import { fusionTargets, queueForcedFusion, commitFusion, resumeFusion, vanishCard, hasCommittedFusion } from '../engine/fusion';
 import { startCountdown, clearCountdown } from '../cards/countdown';
@@ -4103,7 +4103,8 @@ function replaceRetirement(state:GameState,ownerId:string,victim:CardInstance,so
    if(!source||source.isAbilityDisabled)continue;
    const replacement=getActiveCardAbilities(source).find(ability=>ability.trigger==='ANY_BEFORE_RETIRE' &&
      (!('retirementReplacementScope' in ability) || ability.retirementReplacementScope!=='SOURCE_CAUSED_ENEMY' ||
-      (causalSourceInstanceId===source.instanceId && sourceOwner.id!==ownerId)));
+      (causalSourceInstanceId===source.instanceId && sourceOwner.id!==ownerId &&
+       !isCounterattackDamage(state,victim.instanceId,causalSourceInstanceId,sourceContext))));
    if(!replacement)continue;
    const attribution:EventAttribution={...sourceContext,sourcePlayerId:sourceOwner.id,sourceActionType:'CARD_EFFECT',sourceEffectId:source.definitionId};
    const result=destroyCard(state,ownerId,victim.instanceId,{sourcePlayerId:sourceOwner.id,sourceInstanceId:source.instanceId,sourceContext:attribution});
