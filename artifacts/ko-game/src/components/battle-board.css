@@ -812,3 +812,23 @@ body:has(.ko-board-preview)
     scale: 1;
   }
 }
+
+/* Interaction polish: preserve geometry and all existing targeting states. */
+.ko-board-preview .ko-game-controls button:focus-visible,
+.ko-board-preview .ko-champion-ability:focus-visible,
+.ko-board-preview .cosmetic-emote-tools > button:focus-visible {
+  outline: 2px solid var(--board-bright);
+  outline-offset: 2px;
+}
+.ko-board-preview .ko-game-controls button:disabled,
+.ko-board-preview .ko-champion-ability:disabled {
+  cursor: not-allowed;
+}
+.ko-board-preview .ko-game-controls button:enabled:active,
+.ko-board-preview .ko-champion-ability:enabled:active,
+.ko-board-preview .cosmetic-emote-tools > button:enabled:active {
+  filter: brightness(.88);
+}
+.ko-board-preview [data-testid="match-turn-number"] {
+  font-variant-numeric: tabular-nums;
+}
