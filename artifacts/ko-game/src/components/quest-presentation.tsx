@@ -1,3 +1,4 @@
+import { questOwner, questPortrait } from './quest-media';
 import { useEffect, useRef, useState } from "react";
 import { useCinematicAvailable, useCinematicEvent } from './cinematic-layer';
 import { BattleVfx } from './battle-vfx';
@@ -36,7 +37,7 @@ function ActiveQuestPresentation({
   const reduced=prefersReducedMotion();
   const bannerDuration=reduced?180:QUEST_BANNER_DURATION_MS;
   const rewardDuration=reduced?900:QUEST_REWARD_DURATION_MS;
-  const owner = state.players.find((player) => player.id === cue.playerId || player.champion?.id === cue.championId);
+  const owner = questOwner(state, cue.playerId, cue.championId);
   const champion = owner?.champion;
   const reward = champion?.quest?.reward;
   const tokenId = reward?.type === "DIRECT_DEPLOY_CHAMPION_TOKEN"
@@ -57,7 +58,7 @@ function ActiveQuestPresentation({
   }, [cue.id,bannerDuration,rewardDuration]);
 
   const managed=useCinematicAvailable();
-  useCinematicEvent({id:cue.id,kind:'AWAKENING',questCompletion:true,title:champion?.name??'Champion',subtitle:'QUEST COMPLETE · AWAKENING',art:champion?.questCompletedPortraitEnabled&&champion.questCompletedPortraitUrl?champion.questCompletedPortraitUrl:champion?.imageUrl,duration:bannerDuration});
+  useCinematicEvent({id:cue.id,kind:'AWAKENING',questCompletion:true,title:champion?.name??'Champion',subtitle:'QUEST COMPLETE · AWAKENING',art:questPortrait(champion),duration:bannerDuration});
   if(managed && phase==='BANNER')return <div className="quest-presentation" aria-hidden="true"/>;
   return (
     <div className="quest-presentation fixed inset-0 z-[360] flex items-center justify-center bg-black/25 px-4 pointer-events-none">

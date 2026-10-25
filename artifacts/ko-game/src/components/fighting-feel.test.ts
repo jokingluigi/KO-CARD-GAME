@@ -34,7 +34,11 @@ test("contact, joint hitstop and directional recovery use one finite clock", () 
 });
 test("prevented damage is not amplified by printed attack and preferences tolerate invalid storage", () => {
   assert.equal(combatTimeline(99, 0).release, combatTimeline(99, 0).impact);
-  assert.deepEqual(combatTimeline(99, 1), combatTimeline(1, 1));
+  const mitigated = combatTimeline(99, 1), ordinary = combatTimeline(1, 1);
+  // Printed attack may add up to 15ms of anticipation, but never upgrades the hit.
+  assert.equal(mitigated.duration, ordinary.duration);
+  assert.equal(mitigated.release - mitigated.impact, ordinary.release - ordinary.impact);
+  assert.ok(mitigated.impact >= ordinary.impact && mitigated.impact <= ordinary.impact + 15);
   assert.equal(parseCombatPreferences(null).intensity, "STRONG");
   assert.equal(parseCombatPreferences("invalid").quality, "HIGH");
   assert.equal(parseCombatPreferences("null").reducedMotion, false);

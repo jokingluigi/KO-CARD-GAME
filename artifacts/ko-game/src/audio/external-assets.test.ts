@@ -14,7 +14,7 @@ test('bundled external assets exist and match pinned provenance hashes',()=>{
  }
 });
 test('default cues use existing external files while admin uploads stay unchanged',()=>{
- for(const name of ['combat-movement','combat-hit-1-2','combat-hit-3-5','combat-hit-6-9','combat-hit-10-plus','combat-finisher','impact-light','impact-normal','impact-heavy','impact-finisher','summon-bass-heavy','summon-bass-massive','champion-glass-shatter']){
+ for(const name of ['combat-movement','combat-hit-1-2','combat-hit-3-5','combat-hit-6-9','combat-hit-10-plus','combat-finisher','impact-light','impact-normal','impact-heavy','impact-very-heavy','impact-finisher','summon-bass-heavy','summon-bass-massive','champion-glass-shatter']){
   const resolved=externalSound('/game/sfx/'+name+'.wav?v=1');
   assert.ok(resolved.startsWith('/game/vendor/kenney/'));
   assert.ok(existsSync(new URL('../../public/'+resolved.slice('/game/'.length),import.meta.url)));
