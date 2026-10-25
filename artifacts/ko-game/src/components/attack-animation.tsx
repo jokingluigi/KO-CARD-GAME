@@ -10,7 +10,7 @@ import { getCardRuntimeRulesText } from "../lib/card-display-state";
 import type { AttackAnimationState } from "./attack-animation-utils";
 import { readCombatPreferences } from './combat-preferences';
 import { combatTimeline, attackFrames, targetReactionFrames, attackBurstKind } from './battle-vfx-model';
-import { BattleVfx, preloadExternalVfx } from './battle-vfx';
+import { BattleVfx, preloadExternalVfx, useContactVfx } from './battle-vfx';
 import { audioManager } from '../audio/audio-manager';
 import { prefersReducedMotion } from "./presentation-config";
 
@@ -25,6 +25,7 @@ export function AttackAnimation({
   onComplete: () => void;
   hapticsEnabled?: boolean;
 }) {
+  const contactVfx=useContactVfx(),contactVfxRef=useRef(contactVfx);contactVfxRef.current=contactVfx;
   const screen=useScreenImpact(),screenRef=useRef(screen);screenRef.current=screen;
   const impactedRef = useRef(false);
   const completedRef = useRef(false);
@@ -78,6 +79,7 @@ export function AttackAnimation({
       if (impactedRef.current) return;
       impactedRef.current = true;
       setImpacted(true);
+      if(animation.damage>0)contactVfxRef.current?.({id:animation.soundKey,left:contactX,top:contactY,strength:animation.damage,direction:{x:dx,y:dy}});
       if(phaseRef.current)phaseRef.current.dataset.attackPhase='HITSTOP';
       if(hapticsRef.current && animation.damage>0 && !reduced && window.matchMedia?.('(pointer: coarse)').matches && typeof navigator.vibrate==='function') {
         navigator.vibrate(animation.finishingBlow?70:animation.damage>=10?55:animation.damage>=6?35:12);
@@ -85,7 +87,6 @@ export function AttackAnimation({
       // Base hit playback clears old overlays; start the new bass layer afterwards.
       onImpactRef.current();
       if (!document.hidden) screenRef.current.request({id:'attack-impact:'+animation.soundKey,profile:damageImpact(animation.damage,Boolean(animation.finishingBlow)),x:contactX,y:contactY,direction:{x:dx,y:dy}});
-      if(animation.damage>=6&&!document.hidden)audioManager.playImpactOverlay(import.meta.env.BASE_URL+'sfx/summon-bass-'+(animation.finishingBlow?'massive':'heavy')+'.wav',animation.finishingBlow?48:32,8);
     };
     const release = () => {
       if(releasedOnce)return; releasedOnce=true; setReleased(true);
@@ -201,7 +202,7 @@ export function AttackAnimation({
       {impacted && <>
 
 
-        {impacted && <BattleVfx kind={attackBurstKind(animation)} left={contactX} top={contactY} direction={{x:dx,y:dy}}
+        {impacted && (!contactVfx || animation.damage<=0) && <BattleVfx kind={attackBurstKind(animation)} left={contactX} top={contactY} direction={{x:dx,y:dy}}
           strength={animation.damage} seed={animation.soundKey} duration={Math.min(500,duration-timeline.impact)} />}
         {impacted && animation.damage>=3 && <img src={import.meta.env.BASE_URL+"vendor/kenney/particle/circle_03.png"} alt="" className="attack-animation__shockwave" />}
         <img src={import.meta.env.BASE_URL+"vendor/kenney/particle/spark_01.png"} alt="" className="attack-animation__impact-flash" />

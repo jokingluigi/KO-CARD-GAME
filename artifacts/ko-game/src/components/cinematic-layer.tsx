@@ -1,3 +1,4 @@
+import {BattleVfxDirector} from './battle-vfx';
 import {getCardDefinition,type GameState} from '@/game';
 import type {PresentationCue} from './presentation-feedback';
 import React,{createContext,useCallback,useContext,useEffect,useRef,useState,type CSSProperties,type ReactNode} from 'react';
@@ -62,8 +63,8 @@ export function CinematicProvider({children,speed='NORMAL',allowQuestCompletion=
   const fallback=window.setTimeout(finish,event.duration+80);
   return()=>{clearTimeout(fallback);if(special!==null)clearTimeout(special);motions.forEach(m=>m.cancel());};
  },[event?.id]);
- return <ScreenImpactContext.Provider value={screen.api}><CinematicContext.Provider value={request}><div ref={container} style={{display:'contents'}}>{children}</div>
- {event&&createPortal(<CinematicScene key={event.id} event={event} />,document.body)}{screen.impact&&createPortal(<ScreenImpactScene key={screen.impact.id} impact={screen.impact}/>,document.body)}</CinematicContext.Provider></ScreenImpactContext.Provider>;
+ return <BattleVfxDirector><ScreenImpactContext.Provider value={screen.api}><CinematicContext.Provider value={request}><div ref={container} style={{display:'contents'}}>{children}</div>
+ {event&&createPortal(<CinematicScene key={event.id} event={event} />,document.body)}{screen.impact&&createPortal(<ScreenImpactScene key={screen.impact.id} impact={screen.impact}/>,document.body)}</CinematicContext.Provider></ScreenImpactContext.Provider></BattleVfxDirector>;
 }
 export function CinematicScene({event}:{event:CinematicEvent}){
  const major=!['ATTACK','SUMMON'].includes(event.kind),level=cameraLevel(event);

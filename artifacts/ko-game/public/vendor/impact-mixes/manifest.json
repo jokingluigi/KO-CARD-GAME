@@ -1,0 +1,30 @@
+[
+  {
+    "file": "contact-heavy.wav",
+    "sha256": "b8ff2b57f4f984408591ed862fcd8557cb1fa1dcf46482f93a93f7485d3cc8be",
+    "bytes": 24206,
+    "sourceFiles": [
+      "impact/impact_punch_heavy_000.ogg",
+      "impact/impact_wood_heavy_000.ogg",
+      "scifi/low_frequency_explosion_000.ogg"
+    ],
+    "sourceManifest": "../kenney/manifest.json",
+    "license": "CC0-1.0",
+    "adaptation": "Layered external recordings with gain, peak limiting, fade and trim; no synthesis; reduced decoded gain and lossless PCM delivery to avoid Vorbis overshoot",
+    "decodedPeakDbFS": -8.54
+  },
+  {
+    "file": "contact-massive.wav",
+    "sha256": "cd73c5f5c599963c1ebb88d057aae51dab1239250bdd7e14fb4376593d80b3bd",
+    "bytes": 30820,
+    "sourceFiles": [
+      "impact/impact_punch_heavy_001.ogg",
+      "impact/impact_glass_heavy_000.ogg",
+      "scifi/explosion_crunch_000.ogg"
+    ],
+    "sourceManifest": "../kenney/manifest.json",
+    "license": "CC0-1.0",
+    "adaptation": "Layered external recordings with gain, peak limiting, fade and trim; no synthesis; reduced decoded gain and lossless PCM delivery to avoid Vorbis overshoot",
+    "decodedPeakDbFS": -8.38
+  }
+]

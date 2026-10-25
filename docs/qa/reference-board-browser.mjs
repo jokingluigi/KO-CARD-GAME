@@ -2,10 +2,10 @@ import {chromium} from './black-gold-playwright.mjs';
 import {readFile,mkdir} from 'node:fs/promises';
 import {createHash} from 'node:crypto';
 import assert from 'node:assert/strict';
-const out='qa-results/reference-board';await mkdir(out,{recursive:true});
+const out=process.env.KO_REFERENCE_OUTPUT??'qa-results/reference-board';await mkdir(out,{recursive:true});
 const browser=await chromium.launch({headless:true,args:['--autoplay-policy=no-user-gesture-required']});
 try{
- for(const [w,h] of [[390,844],[360,740],[1440,900]]){
+ for(const [w,h] of [[390,844],[360,740],[375,812],[412,915],[1440,900]]){
   const context=await browser.newContext({viewport:{width:w,height:h},recordVideo:{dir:out,size:{width:w,height:h}}});
   const page=await context.newPage();const errors=[];page.on('pageerror',e=>{errors.push(e.message);console.error(e.message);});
   await page.route('**/api/**',async route=>{
@@ -46,8 +46,10 @@ try{
     await page.mouse.click(rect.x+20,rect.y+65);
    }
    await page.locator('.attack-animation').waitFor();
+   if(damage>=6)await page.waitForFunction(()=>document.querySelector('.attack-animation')?.dataset.attackPhase==='HITSTOP',null,{polling:'raf'});
    await page.screenshot({path:`${out}/contact-${w}-${damage}.png`});
    await page.locator('.attack-animation').waitFor({state:'detached'});
+   await page.screenshot({path:`${out}/recovery-${w}-${damage}.png`});
    const after=JSON.parse(await page.getByTestId('state-json').textContent());
    assert.equal(after.players[1].board[0].currentHealth,before.players[1].board[0].currentHealth-damage);
    assert.equal(await page.locator('[data-cinematic-kind="ATTACK"]').count(),0);
