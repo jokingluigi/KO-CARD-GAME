@@ -31,19 +31,21 @@ try{
    window.audioCapture={recorder,chunks};
   });
   for(const damage of (process.env.KO_REFERENCE_LONG==='1'?[1,3,6,12,2,6,12,3,6,12,1,6,12,3,6,12]:[2,6,12])){
-   await page.evaluate(async damage=>{
+   await page.evaluate(async ({damage,critical})=>{
     const {boardFixture,definitions}=await import('/qa/black-gold-fixture.ts');
     const {generateCardInstance}=await import('/src/game/index.ts');const s=boardFixture();
+    if(critical)s.players[0].health=5;
     const plain=definitions.find(c=>c.name==='리버덩크'),other=definitions.find(c=>c.name==='보드바');
     for(const [i,p] of s.players.entries()){
      p.board=[{...generateCardInstance(i?other:plain,{instanceId:'reference-'+i}),boardSlot:0,enteredThisTurn:false,attacksUsedThisTurn:0,currentAttack:i?1:damage,currentHealth:25,maxHealth:25},null,null,null];
      p.hand=[generateCardInstance(plain,{instanceId:"reference-hand-0"}),generateCardInstance(other,{instanceId:"reference-hand-1"})];
     }
     window.dispatchEvent(new CustomEvent('ko-qa-load-state',{detail:{state:s,definitions}}));
-   },damage);
+   },{damage,critical:process.env.KO_REFERENCE_CRITICAL==='1'});
    await page.waitForTimeout(700);
    const images=await page.locator('.ko-player-board-row .ko-board-slot img').evaluateAll(es=>es.filter(e=>e.naturalWidth>0).length);assert.ok(images>0,'real card artwork unavailable');
    const before=JSON.parse(await page.getByTestId('state-json').textContent());
+   if(process.env.KO_REFERENCE_CRITICAL==='1'){assert.equal(await page.locator('.ko-game-stage').getAttribute('data-critical'),'true');assert.ok(['none','normal'].includes(await page.locator('.ko-game-stage').evaluate(e=>getComputedStyle(e,'::before').content)));}
    await page.evaluate(()=>{
     const stage=document.querySelector('.ko-game-stage'),anchor=document.querySelector('.ko-game-controls');
     window.cameraMeasurement={baseWidth:stage.getBoundingClientRect().width,samples:[]};

@@ -443,9 +443,9 @@
 @media(hover:hover) { .ko-game-stage button:not(:disabled):hover { filter:brightness(1.08); } }
 .ko-game-stage[data-targeting="true"] [data-targetable="true"] { outline:2px solid #ffd787; outline-offset:2px; }
 .ko-game-stage[data-targeting="true"] [data-targetable="false"] { opacity:.83; }
-.ko-game-stage[data-critical="true"]::before {
-  content:"";pointer-events:none;position:absolute;inset:65% 0 0;z-index:0;
-  background:linear-gradient(transparent,#27061144);
+.ko-game-stage[data-critical="true"] .ko-player-stats > div:last-child {
+  outline: 1px solid #c65b50;
+  outline-offset: -2px;
 }
 .ko-game-stage { isolation:isolate; }
 .attack-screen-shake--very_light { --shake-px:.5px; }

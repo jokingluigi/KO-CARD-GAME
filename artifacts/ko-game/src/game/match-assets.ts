@@ -21,3 +21,14 @@ export function preloadMatchAssets(
     preload(champion.imageUrl);
   }
 }
+
+/** Bound the visual wait without holding a match indefinitely on a broken download. */
+export async function prepareIntroPortraits(urls:readonly (string|null|undefined)[],timeoutMs=8000):Promise<void> {
+ if(typeof Image==='undefined')return;
+ await Promise.all([...new Set(urls.filter((url):url is string=>Boolean(url)))].map(url=>new Promise<void>(resolve=>{
+  const image=new Image();let done=false;
+  const finish=()=>{if(done)return;done=true;clearTimeout(timer);image.onload=null;image.onerror=null;resolve();};
+  const timer=setTimeout(finish,timeoutMs);image.onload=finish;image.onerror=finish;image.src=url;
+  if(image.complete&&image.naturalWidth)finish();
+ })));
+}
