@@ -1,6 +1,8 @@
 import type { MatchIntroPlayer } from "../components/online-match-intro";
 import type { ChampionDefinition } from "../game/champions/types";
 
+export type MatchIntroDialogue = {playerOneLine:string|null;playerTwoLine:string|null;firstSpeaker:"PLAYER_ONE"|"PLAYER_TWO"|null};
+
 export const MATCH_OPENING_DURATION_MS = 4500;
 
 type IntroChampion = Pick<ChampionDefinition, "name" | "imageUrl" | "introLineOne"> & {originalPortraitUrl?:string|null};
@@ -21,9 +23,10 @@ export function createAiMatchOpening(
   playerChampion: IntroChampion,
   opponentChampion: IntroChampion,
   startedAt: number,
+  dialogue?: MatchIntroDialogue,
 ): AiMatchOpening {
-  const selfLine = playerChampion.introLineOne?.trim() || null;
-  const opponentLine = opponentChampion.introLineOne?.trim() || null;
+  const selfLine = dialogue ? dialogue.playerOneLine : playerChampion.introLineOne?.trim() || null;
+  const opponentLine = dialogue ? dialogue.playerTwoLine : opponentChampion.introLineOne?.trim() || null;
   return {
     gameId,
     startedAt,
@@ -41,7 +44,7 @@ export function createAiMatchOpening(
       portraitUrl: opponentChampion.imageUrl ?? null,
       dialogueLine: opponentLine,
     },
-    firstSpeaker: selfLine ? "self" : opponentLine ? "opponent" : null,
+    firstSpeaker: dialogue ? (dialogue.firstSpeaker === "PLAYER_ONE" ? "self" : dialogue.firstSpeaker === "PLAYER_TWO" ? "opponent" : null) : selfLine ? "self" : opponentLine ? "opponent" : null,
   };
 }
 

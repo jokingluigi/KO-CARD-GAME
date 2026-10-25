@@ -41,11 +41,13 @@ function getInitials(name: string) {
 }
 
 function Portrait({ player, side }: PortraitProps) {
-  const [portraitFailed, setPortraitFailed] = useState(false);
+  const [failedUrls, setFailedUrls] = useState<string[]>([]);
+  const portraitUrl = [player.portraitUrl, player.originalPortraitUrl]
+    .find((url): url is string => Boolean(url) && !failedUrls.includes(url!));
 
   useEffect(() => {
-    setPortraitFailed(false);
-  }, [player.portraitUrl]);
+    setFailedUrls([]);
+  }, [player.portraitUrl, player.originalPortraitUrl]);
 
   return (
     <div className={styles.portraitWrap} data-testid={`portrait-${side}`}>
@@ -53,13 +55,14 @@ function Portrait({ player, side }: PortraitProps) {
         <span className={styles.portraitFallback} aria-hidden="true">
           {getInitials(player.championName)}
         </span>
-        {(player.portraitUrl && (!portraitFailed||player.originalPortraitUrl)) ? (
+        {portraitUrl ? (
           <img
             className={styles.portraitImage}
-            src={portraitFailed?player.originalPortraitUrl??player.portraitUrl:player.portraitUrl}
+            key={portraitUrl}
+            src={portraitUrl}
             alt={`${player.championName} portrait`}
             data-testid={`img-champion-portrait-${side}`}
-            onError={() => setPortraitFailed(true)}
+            onError={() => setFailedUrls((urls) => urls.includes(portraitUrl) ? urls : [...urls, portraitUrl])}
           />
         ) : null}
       </div>

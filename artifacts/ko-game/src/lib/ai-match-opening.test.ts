@@ -52,3 +52,29 @@ test("speaker falls back to the AI only when the player has no intro line", () =
   assert.equal(opening.firstSpeaker, "opponent");
   assert.equal(opening.self.dialogueLine, null);
 });
+test('server pair dialogue overrides defaults and preserves opponent-first ordering', () => {
+ const opening=createAiMatchOpening('pair','P','AI',playerChampion,aiChampion,0,{playerOneLine:'Pair P',playerTwoLine:'Pair AI',firstSpeaker:'PLAYER_TWO'});
+ assert.equal(opening.self.dialogueLine,'Pair P');
+ assert.equal(opening.opponent.dialogueLine,'Pair AI');
+ assert.equal(opening.firstSpeaker,'opponent');
+ assert.equal(opening.self.portraitUrl,'/player.png');
+ assert.equal(opening.opponent.portraitUrl,'/ai.png');
+});
+test('an intentionally empty published pair line does not leak the default line',()=>{
+ const opening=createAiMatchOpening('pair','P','AI',playerChampion,aiChampion,0,{playerOneLine:null,playerTwoLine:'Pair AI',firstSpeaker:'PLAYER_TWO'});
+ assert.equal(opening.self.dialogueLine,null);
+ assert.equal(opening.opponent.dialogueLine,'Pair AI');
+});
+
+test('published PvP resolver output reaches AI opening unchanged for either seat order', async()=>{
+ const {resolveChampionIntro,mapIntroToSeats}=await import('../../../api-server/src/online/intro');
+ const first={...playerChampion,id:'a'},second={...aiChampion,id:'b'};
+ const relations=[{championOneId:'a',championTwoId:'b',lineOne:'A special',lineTwo:'B special',firstSpeaker:'TWO',status:'PUBLISHED'}];
+ for(const [p,o] of [[first,second],[second,first]]) {
+  const mapped=mapIntroToSeats(p.id,o.id,resolveChampionIntro(p as any,o as any,relations));
+  const opening=createAiMatchOpening('pair','P','AI',p,o,0,mapped);
+  assert.equal(opening.self.dialogueLine,p.id==='a'?'A special':'B special');
+  assert.equal(opening.opponent.dialogueLine,o.id==='a'?'A special':'B special');
+  assert.equal(opening.firstSpeaker,p.id==='b'?'self':'opponent');
+ }
+});
