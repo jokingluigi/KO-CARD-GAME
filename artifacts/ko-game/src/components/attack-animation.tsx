@@ -1,3 +1,4 @@
+import {createPortal} from 'react-dom';
 import {combatContact} from './combat-contact';
 import { useEffect, useRef, useState } from "react";
 import type { CSSProperties } from "react";
@@ -147,7 +148,7 @@ export function AttackAnimation({
   const impactClass = `attack-animation--${animation.damage>=10?'very_heavy':animation.damage>=6?'heavy':animation.damage>=3?'normal':'light'}`;
   const rarity = definition?.rarity ?? "NORMAL";
 
-  return (
+  return createPortal(
     <div
       aria-hidden="true"
       ref={phaseRef} data-attack-phase="ANTICIPATION" data-hitstop-ms={timeline.release-timeline.impact}
@@ -207,6 +208,6 @@ export function AttackAnimation({
         {impacted && animation.damage>=3 && <img src={import.meta.env.BASE_URL+"vendor/kenney/particle/circle_03.png"} alt="" className="attack-animation__shockwave" />}
         <img src={import.meta.env.BASE_URL+"vendor/kenney/particle/spark_01.png"} alt="" className="attack-animation__impact-flash" />
       </>}
-    </div>
+    </div>, document.body
   );
 }

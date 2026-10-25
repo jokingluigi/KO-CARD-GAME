@@ -1,6 +1,6 @@
 import {audioManager} from '../src/audio/audio-manager';
 import {combatHitSound} from '../src/audio/combat-hit-sound';
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { createRoot } from "react-dom/client";
 import "../src/index.css";
 import "../src/battle-presentation.css";
@@ -29,6 +29,7 @@ function Scene() {
     [error, setError] = useState<string | null>(null),
     [busy, setBusy] = useState(false);
   const [play, setPlay] = useState<CardPlayAnimationState | null>(null);
+  const attackSequence=useRef(0);
   const [attacks, setAttacks] = useState<AttackAnimationState[]>([]),
     [impact, setImpact] = useState(false);
   const [theme, setTheme] = useState(
@@ -102,7 +103,7 @@ function Scene() {
           damage,
           impactLevel: attackImpactLevel(unit.currentAttack),
           damageImpactLevel: attackDamageImpactLevel(damage),
-          soundKey: "preview-" + r.state.events.length,
+          soundKey: "preview-" + (++attackSequence.current) + ":" + r.state.events.length,
         },
       ]);
     }

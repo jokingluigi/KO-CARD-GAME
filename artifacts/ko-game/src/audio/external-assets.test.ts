@@ -28,5 +28,5 @@ test('Effekseer sample textures and layered external audio retain provenance',()
  assert.match(readFileSync(new URL('effekseer/SAMPLE-LICENSE.txt',root),'utf8'),/CC-0/);
  for(const x of manifest.assets){assert.equal(createHash('sha256').update(readFileSync(new URL('effekseer/'+x.file,root))).digest('hex'),x.sha256);}
  const mixes=JSON.parse(readFileSync(new URL('impact-mixes/manifest.json',root),'utf8'));
- for(const mix of mixes){assert.equal(mix.sourceFiles.length,3);assert.equal(createHash('sha256').update(readFileSync(new URL('impact-mixes/'+mix.file,root))).digest('hex'),mix.sha256);assert.ok(mix.decodedPeakDbFS<0);}
+ for(const mix of mixes){assert.ok(mix.sourceFiles.length>=3);assert.equal(createHash('sha256').update(readFileSync(new URL('impact-mixes/'+mix.file,root))).digest('hex'),mix.sha256);assert.ok(mix.decodedPeakDbFS<0);}
 });

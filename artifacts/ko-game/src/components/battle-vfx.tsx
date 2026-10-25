@@ -98,5 +98,5 @@ export function BattleVfxDirector({children}:{children:ReactNode}) {
   window.addEventListener('resize',clear);document.addEventListener('visibilitychange',hidden);window.addEventListener('ko-combat-preferences',clear);
   return()=>{for(const timer of timers.current.values())clearTimeout(timer);timers.current.clear();window.removeEventListener('resize',clear);document.removeEventListener('visibilitychange',hidden);window.removeEventListener('ko-combat-preferences',clear);};
  },[]);
- return <ContactContext.Provider value={request}>{children}{effects.map(e=>createPortal(<BattleVfx key={e.id} kind="IMPACT" seed={e.id} left={e.left} top={e.top} strength={e.strength} direction={e.direction} duration={640}/>,document.body))}</ContactContext.Provider>;
+ return <ContactContext.Provider value={request}>{children}{createPortal(<div className="ko-contact-camera" style={{position:"fixed",inset:0,zIndex:235,pointerEvents:"none"}}>{effects.map(e=><BattleVfx key={e.id} kind="IMPACT" seed={e.id} left={e.left} top={e.top} strength={e.strength} direction={e.direction} duration={640}/>)}</div>,document.body)}</ContactContext.Provider>;
 }

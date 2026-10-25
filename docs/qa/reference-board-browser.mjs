@@ -16,6 +16,8 @@ try{
    }
    return route.fulfill({json:{frames:[],items:[],cards:[]}});
   });
+  await page.addInitScript(()=>{const animate=Element.prototype.animate;Element.prototype.animate=function(...args){try{return animate.apply(this,args);}catch(e){console.error('ANIMATION',e.message,JSON.stringify(args[0]));throw e;}};});
+  page.on('console',m=>{if(m.type()==='error')console.error(m.text());});
   await page.goto('http://127.0.0.1:5186/qa/black-gold-board.html');
   await page.locator('.ko-game-shell').waitFor();
   await page.evaluate(()=>document.querySelector('[data-preview-tools]')?.setAttribute('style','display:none'));
@@ -24,7 +26,9 @@ try{
    const sources=new WeakMap();const play=HTMLMediaElement.prototype.play;
    HTMLMediaElement.prototype.play=function(){if(!sources.has(this)){const source=ctx.createMediaElementSource(this);source.connect(dest);source.connect(ctx.destination);sources.set(this,source);}return play.call(this);};
    const chunks=[];const recorder=new MediaRecorder(dest.stream,{mimeType:'audio/webm;codecs=opus'});
-   recorder.ondataavailable=e=>chunks.push(e.data);recorder.start();window.audioCapture={recorder,chunks};
+   recorder.ondataavailable=e=>chunks.push(e.data);recorder.start();
+   const marker=document.createElement('div');marker.style.cssText='position:fixed;left:0;top:0;width:12px;height:12px;background:rgb(0,255,0);z-index:2147483647;pointer-events:none';document.body.append(marker);setTimeout(()=>marker.remove(),200);
+   window.audioCapture={recorder,chunks};
   });
   for(const damage of [2,6,12]){
    await page.evaluate(async damage=>{
@@ -46,7 +50,17 @@ try{
     await page.mouse.click(rect.x+20,rect.y+65);
    }
    await page.locator('.attack-animation').waitFor();
-   if(damage>=6)await page.waitForFunction(()=>document.querySelector('.attack-animation')?.dataset.attackPhase==='HITSTOP',null,{polling:'raf'});
+   if(damage>=6){
+    await page.waitForFunction(()=>document.querySelector('.attack-animation')?.dataset.attackPhase==='HITSTOP',null,{polling:'raf'});
+    const camera=await page.evaluate(()=>{
+     const frames=selector=>document.querySelector(selector)?.getAnimations().flatMap(a=>a.effect?.getKeyframes()??[]).map(f=>Number(f.scale??1))??[];
+     return {stage:frames('.ko-game-stage'),actor:frames('.attack-animation'),vfx:frames('.ko-contact-camera'),data:{...document.querySelector('.ko-game-stage').dataset},preferences:localStorage.getItem('ko-match-screen-shake')};
+    });
+    console.log('camera',w,damage,JSON.stringify(camera));
+    assert.ok(camera.stage.some(s=>s>1.05),'missing board punch-in');
+    assert.ok(camera.actor.some(s=>s>1.05),'attack clone must share camera zoom');
+    assert.ok(camera.vfx.some(s=>s>1.05),'contact art must share camera zoom');
+   }
    await page.screenshot({path:`${out}/contact-${w}-${damage}.png`});
    await page.locator('.attack-animation').waitFor({state:'detached'});
    await page.screenshot({path:`${out}/recovery-${w}-${damage}.png`});

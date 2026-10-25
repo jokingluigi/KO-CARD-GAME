@@ -1,5 +1,5 @@
 import {createContext,useCallback,useContext,useEffect,useRef,useState,type CSSProperties,type RefObject} from 'react';
-import {effectiveImpact,impactFrames,impactRank,parseShakeMode,SHAKE_STORAGE_KEY,type ScreenImpact,type ShakeMode} from './screen-impact-policy';
+import {effectiveImpact,combatCameraFrames,impactFrames,impactRank,parseShakeMode,SHAKE_STORAGE_KEY,type ScreenImpact,type ShakeMode} from './screen-impact-policy';
 import {readCombatPreferences,impactMultiplier} from './combat-preferences';
 import {prefersReducedMotion} from './presentation-config';
 type ImpactApi={request:(impact:ScreenImpact)=>boolean;mode:ShakeMode;setMode:(mode:ShakeMode)=>void;isActive:()=>boolean};
@@ -39,7 +39,12 @@ export function useScreenImpactManager(container:RefObject<HTMLDivElement|null>,
   if(stage){stage.dataset.screenImpactTier=profile.tier;stage.dataset.screenImpactAmplitude=String(profile.amplitude);stage.dataset.screenImpactStarted=String(performance.now());}
   if(profile.amplitude>0){
    cancelCamera();
-   for(const node of Array.from(container.current?.querySelectorAll<HTMLElement>('.ko-opponent-board-row,.ko-player-board-row')??[])) animate(node,impactFrames(profile,event.direction,event.radial),profile.duration);
+   const cameraNodes=[stage,...Array.from(document.querySelectorAll<HTMLElement>('.attack-animation,.ko-contact-camera'))].filter((node):node is HTMLElement=>Boolean(node));
+   for(const node of cameraNodes){
+    const rect=node.getBoundingClientRect();
+    const frames=combatCameraFrames(profile,event.direction).map(frame=>({...frame,transformOrigin:`${event.x-rect.left}px ${event.y-rect.top}px`}));
+    animate(node,frames,profile.duration);
+   }
    animate(background,impactFrames({...profile,amplitude:profile.amplitude*.3,rotation:profile.rotation*.25},event.direction,event.radial),profile.duration);
    if(event.nearby){
     const cards=container.current?.querySelectorAll<HTMLElement>('.ko-board-slot-wrapper [data-rarity]')??[];
