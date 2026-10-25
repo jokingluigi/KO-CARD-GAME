@@ -84,8 +84,8 @@ try {
           action + ": target moved during hold",
         );
         assert.ok(
-          held.every((s) => !s.shock),
-          action + ": explosion before release",
+          held.some((s) => s.shock),
+          action + ": missing contact shock during hitstop",
         );
         assert.ok(samples.some((s) => s.phase === "REACTION" && s.shock));
       } else assert.equal(samples[0].stop, 0);
