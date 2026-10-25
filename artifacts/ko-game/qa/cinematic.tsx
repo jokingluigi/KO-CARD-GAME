@@ -4,6 +4,7 @@ import { createRoot } from "react-dom/client";
 import "../src/index.css";
 import "../src/battle-presentation.css";
 import { CinematicProvider } from '../src/components/cinematic-layer';
+import { audioManager } from "../src/audio/audio-manager";
 import { AttackAnimation } from "../src/components/attack-animation";
 import { CardPlayAnimation } from "../src/components/card-play-animation";
 import { CardLeaveAnimation } from "../src/components/card-leave-animation";
@@ -197,7 +198,10 @@ function Scene() {
             damageImpactLevel: kind === "blocked" ? "NONE" : "VERY_HEAVY",
             soundKey: `qa-${counter}`,
           }}
-          onImpact={() => setImpact((n) => n + 1)}
+          onImpact={() => {
+            audioManager.playAttack(import.meta.env.BASE_URL + "sfx/" + (kind === "finisher" ? "combat-finisher.wav" : "combat-hit-6-9.wav"), 65);
+            setImpact((n) => n + 1);
+          }}
           onComplete={finish}
         />
       )}
