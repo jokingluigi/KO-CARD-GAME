@@ -17,6 +17,7 @@ function texture(name:string) {
  if(!image){image=new Image();image.src=url;cache.set(url,image);}
  return image;
 }
+export function preloadExternalVfx() { for(const name of new Set(Object.values(assets).flat()))texture(name); }
 /** External Kenney CC0 textures. Canvas only positions/animates the supplied art. */
 export function BattleVfx({kind,left,top,strength=3,seed,delay=0,duration=580,direction}:{kind:BattleVfxKind;left:number;top:number;strength?:number;seed:string;delay?:number;duration?:number;direction?:{x:number;y:number}}) {
  const ref=useRef<HTMLCanvasElement>(null);
@@ -39,10 +40,25 @@ export function BattleVfx({kind,left,top,strength=3,seed,delay=0,duration=580,di
     ctx.save();ctx.translate(x,y);ctx.rotate(rotation);ctx.globalAlpha=Math.max(0,alpha);
     ctx.drawImage(image,-w/2,-w/2,w,w);ctx.restore();
    };
+   if(kind==='IMPACT') {
+    // A short bright contact, then an expanding, settling cloud of authored smoke art.
+    stamp(images[0],size/2,size/2,(55+55*t)*force,axis,Math.max(0,1-t/.2));
+    const clouds=particles.slice(0,Math.min(7,particles.length));
+    for(const [i,p] of clouds.entries()) {
+     const a=p.angle,reach=(12+40*t)*force;
+     stamp(images[1],size/2+Math.cos(a)*reach,size/2+Math.sin(a)*reach*.6+18*t*t,
+       (48+90*t)*force,p.angle+p.spin*t*.1,Math.sin(Math.min(1,t*5)*Math.PI/2)*Math.pow(1-t,1.4)*.42);
+    }
+    for(const p of particles.slice(clouds.length)){
+     const a=axis+(p.angle-Math.PI)*.8,d=p.speed*(1-Math.pow(1-t,3))*force;
+     stamp(images[2],size/2+Math.cos(a)*d,size/2+Math.sin(a)*d+45*t*t,(7+p.size*4)*force,p.spin*t,Math.pow(1-t,2));
+    }
+    frame=requestAnimationFrame(draw);return;
+   }
    // Contact burst, shield, spell or reward centre uses the authored texture itself.
    stamp(images[0],size/2,size/2,(38+110*t)*force,axis,Math.pow(1-t,3));
    for(const [i,p] of particles.entries()){
-    const angle=kind==='IMPACT'?axis+(p.angle-Math.PI)*.85:p.angle;
+    const angle=p.angle;
     const travel=p.speed*(1-Math.pow(1-t,3))*force;
     const lift=kind==='HEAL'||kind==='GOLD';
     const x=size/2+Math.cos(angle)*travel;

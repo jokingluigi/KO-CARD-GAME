@@ -1,3 +1,5 @@
+import {audioManager} from '../src/audio/audio-manager';
+import {combatHitSound} from '../src/audio/combat-hit-sound';
 import React, { useState, useEffect } from "react";
 import { createRoot } from "react-dom/client";
 import "../src/index.css";
@@ -213,7 +215,7 @@ function Scene() {
         attackAnimation={attacks[0] ?? null}
         attackImpactTriggered={impact}
         onOpponentAttackPresentation={(a) => setAttacks((q) => [...q, a])}
-        onAttackImpact={() => setImpact(true)}
+        onAttackImpact={() => {setImpact(true);const a=attacks[0];if(a){const sound=combatHitSound(a.damage,a.finishingBlow);if(sound)audioManager.playAttack(sound,86);}}}
         onAttackAnimationComplete={() => {
           setAttacks((q) => q.slice(1));
           setImpact(false);

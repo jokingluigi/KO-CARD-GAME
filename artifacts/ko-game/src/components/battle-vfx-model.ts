@@ -102,7 +102,7 @@ export function vfxParticles(seed: string, count: number) {
 
 /** Target compression shares the attack clock: contact and hold precede directional recoil. */
 export function targetReactionFrames(dx:number,dy:number,damage:number,timeline:ReturnType<typeof combatTimeline>,reduced=false):Keyframe[] {
- const length=Math.hypot(dx,dy)||1, amount=reduced?0:damage<=0?2:damage>=10?18:damage>=6?12:damage>=3?7:3;
+ const length=Math.hypot(dx,dy)||1, amount=reduced?0:damage<=0?2:damage>=10?28:damage>=6?20:damage>=3?10:4;
  const x=dx/length*amount,y=dy/length*amount,tilt=reduced?0:Math.sign(dx||1)*Math.min(4,amount/4);
  const pose=(travel:number,scale:number,angle=0)=>({transform:`translate3d(${x*travel}px,${y*travel}px,0) scale(${scale}) rotate(${angle}deg)`});
  const contact=timeline.impact/timeline.duration,release=timeline.release/timeline.duration;
