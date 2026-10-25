@@ -45,7 +45,6 @@ import type { EnterFieldEvent } from '@/game/events/types';
 import {
   attackDamageImpactLevel,
   attackImpactLevel,
-  attackAnimationDuration,
 } from './attack-animation-utils';
 import {
   AltInspectProvider,
@@ -995,16 +994,7 @@ export function GameStatePreview({
         <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,_rgba(26,26,36,0.08)_0%,_rgba(5,5,5,0.18)_100%)]" />
       </div>
 
-      <div data-active-side={isMyTurn ? "player" : "opponent"} data-targeting={Boolean(effectTargeting || selectedAttackerId)} data-critical={me.health > 0 && me.health <= 5} className={`ko-game-stage relative mx-auto flex min-h-[100dvh] w-full max-w-5xl flex-1 flex-col justify-between pb-0 pt-2 md:h-[100dvh] md:min-h-0 md:pt-4 ${
-        attackAnimation?.finishingBlow
-          ? "attack-finisher-zoom"
-          : effectFinisher
-            ? "effect-finisher-zoom"
-          : ""
-      }`} style={attackAnimation?.finishingBlow ? {
-        "--finisher-duration": `${attackAnimationDuration(attackAnimation.currentAttack) + 350}ms`,
-        transformOrigin: `${Math.max(0, attackAnimation.geometry.target.left + attackAnimation.geometry.target.width / 2 - Math.max(0, (window.innerWidth - 1024) / 2))}px ${attackAnimation.geometry.target.top + attackAnimation.geometry.target.height / 2}px`,
-      } as React.CSSProperties : {
+      <div data-active-side={isMyTurn ? "player" : "opponent"} data-targeting={Boolean(effectTargeting || selectedAttackerId)} data-critical={me.health > 0 && me.health <= 5} className={`ko-game-stage relative mx-auto flex min-h-[100dvh] w-full max-w-5xl flex-1 flex-col justify-between pb-0 pt-2 md:h-[100dvh] md:min-h-0 md:pt-4 `} style={{
         '--shake-direction': attackAnimation?.geometry
           ? Math.sign(attackAnimation.geometry.target.left - attackAnimation.geometry.source.left) || 1
           : 1,

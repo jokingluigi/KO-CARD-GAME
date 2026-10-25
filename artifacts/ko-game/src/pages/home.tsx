@@ -1,3 +1,4 @@
+import {prepareIntroPortraits} from '@/game/match-assets';
 import {optionalCosmetics} from '@/lib/cosmetics-client';
 import {fetchQuickAI,releaseQuickAI} from '@/lib/quick-ai-client';
 import {cosmeticImage,type MatchCosmetics} from '@workspace/cosmetics';
@@ -403,7 +404,7 @@ export default function Home({ initialAuthUser }: { initialAuthUser?: AuthUser }
         setAiMatchData({ definitions: mergedDefinitions, champions: mergedChampions, media, minionACardPool });
         setMediaCatalog(media);
         setRuntimeCardDefinitions([...minionACardPool, ...mergedDefinitions]);
-        preloadMatchAssets(mergedDefinitions, mergedChampions);
+        // Only warm the selected pair at match start, not every champion portrait.
         setPlayError(null);
       }).catch((reason) => {
         if (cancelled) return;
@@ -608,7 +609,7 @@ export default function Home({ initialAuthUser }: { initialAuthUser?: AuthUser }
     if(!quickMatchId||authStatus!=='authenticated'||!authUser)return;
     const controller=new AbortController();let loaded=false;
     setMatchReady(false);setPlayError(null);
-    void Promise.all([fetchQuickAI(quickMatchId,controller.signal),fetchGameMedia(),optionalCosmetics()]).then(([handoff,media,loadout])=>{
+    void Promise.all([fetchQuickAI(quickMatchId,controller.signal),fetchGameMedia(),optionalCosmetics()]).then(async ([handoff,media,loadout])=>{
       if(controller.signal.aborted)return;
       const random=createDeterministicRandom(handoff.matchId);
       const next={...handoff.state,backgroundId:media.backgrounds[Math.floor(random()*media.backgrounds.length)]?.id??null,bgmId:media.bgms[Math.floor(random()*media.bgms.length)]?.id??null};
@@ -616,6 +617,8 @@ export default function Home({ initialAuthUser }: { initialAuthUser?: AuthUser }
       aiMatchActionsRef.current=[];submittedAIMatchRef.current=null;
       setAiRewardStatus('pending');setAiRewardError(null);setAiQuestError(null);
       setRuntimeCardDefinitions(next.cardPool??[]);setAiCosmetics({[next.players[0].id]:loadout});
+      await prepareIntroPortraits([cosmeticImage(loadout,'CHAMPION_SKIN',next.players[0].champion!.id,'intro',handoff.selfChampion.imageUrl),handoff.opponentChampion.imageUrl]);
+      if(controller.signal.aborted)return;
       const startedAt=Date.now();
       setAiOpening(createAiMatchOpening(next.gameId,authUser.nickname,handoff.opponentName,{...handoff.selfChampion,originalPortraitUrl:handoff.selfChampion.imageUrl,imageUrl:cosmeticImage(loadout,'CHAMPION_SKIN',next.players[0].champion!.id,'intro',handoff.selfChampion.imageUrl)},handoff.opponentChampion,startedAt,handoff.intro));
       setAiOpeningNow(startedAt);setAiOpeningSkipped(false);
@@ -692,6 +695,7 @@ export default function Home({ initialAuthUser }: { initialAuthUser?: AuthUser }
     let resolvedOpeningDialogue: import("@/lib/ai-match-opening").MatchIntroDialogue | undefined;
     try {
       const prepared=await prepareAIMatchQuest({deckId:deck.id,aiDeckId:aiDeck.id,matchId});
+      await prepareIntroPortraits([userChampion.imageUrl,aiChampion.imageUrl]);
       resolvedOpeningDialogue=prepared.intro;
       nextState={...prepared.state,backgroundId:nextState.backgroundId,bgmId:nextState.bgmId};
       setRuntimeCardDefinitions(nextState.cardPool??matchDefinitions);
@@ -711,6 +715,7 @@ export default function Home({ initialAuthUser }: { initialAuthUser?: AuthUser }
     setAiQuestError(null);
     const frozenLoadout=await optionalCosmetics();
     setAiCosmetics({[nextState.players[0].id]:frozenLoadout});
+    await prepareIntroPortraits([cosmeticImage(frozenLoadout,"CHAMPION_SKIN",userChampion.id,"intro",userChampion.imageUrl),aiChampion.imageUrl]);
     const openingStartedAt = Date.now();
     setAiOpening(createAiMatchOpening(
       nextState.gameId,
