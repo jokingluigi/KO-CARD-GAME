@@ -1,5 +1,5 @@
 import type {GameState} from '@/game';
-export type QuickAiHandoff={matchId:string;deckId:string;aiDeckId:string;difficulty:'NORMAL'|'HARD'|'BOSS';state:GameState;opponentName:string;selfChampion:{name:string;imageUrl:string|null;introLineOne:string|null};opponentChampion:{name:string;imageUrl:string|null;introLineOne:string|null}};
+export type QuickAiHandoff={intro?:import("./ai-match-opening").MatchIntroDialogue;matchId:string;deckId:string;aiDeckId:string;difficulty:'NORMAL'|'HARD'|'BOSS';state:GameState;opponentName:string;selfChampion:{name:string;imageUrl:string|null;introLineOne:string|null};opponentChampion:{name:string;imageUrl:string|null;introLineOne:string|null}};
 const base=`${import.meta.env.BASE_URL.replace(/\/$/,'')}/api/online-matches/quick-ai`;
 export async function fetchQuickAI(id:string,signal:AbortSignal):Promise<QuickAiHandoff>{
  const response=await fetch(`${base}/${encodeURIComponent(id)}`,{credentials:'include',cache:'no-store',signal:AbortSignal.any([signal,AbortSignal.timeout(15_000)])});

@@ -124,4 +124,4 @@ export const fetchOnlineMatchRewards = (matchId: string) => request<{
   grants: Array<{ sourceType: string; amount: number; rewardType: string; balanceAfter: number; createdAt: string }>;
 }>(`/online-matches/${encodeURIComponent(matchId)}/rewards`);
 
-export const prepareAIMatchQuest = (body:{deckId:string;aiDeckId:string;matchId:string}) => request<{state:GameState;difficulty:'NORMAL'|'HARD'|'BOSS'}>('/daily-quests/ai-match-start',{method:'POST',body:JSON.stringify(body),signal:AbortSignal.timeout(15000)});
+export const prepareAIMatchQuest = (body:{deckId:string;aiDeckId:string;matchId:string}) => request<{state:GameState;difficulty:'NORMAL'|'HARD'|'BOSS';intro?:import('./ai-match-opening').MatchIntroDialogue}>('/daily-quests/ai-match-start',{method:'POST',body:JSON.stringify(body),signal:AbortSignal.timeout(15000)});

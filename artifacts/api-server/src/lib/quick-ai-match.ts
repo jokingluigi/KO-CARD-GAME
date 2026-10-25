@@ -27,7 +27,7 @@ export async function prepareQuickAI(userId:string,deckId:string) {
   const prepared=await completeAIMatchQuestProgress({...identity,isTestAccount:isTestAccountUser(user),outcome:'LOSS',actions:[],prepareOnly:true});
   const [champion]=await db.select().from(championsTable).where(eq(championsTable.id,prepared.state.players[0]!.champion!.id)).limit(1);
   const intro=(c:typeof champion|typeof ai.champion)=>({name:c?.name??'',imageUrl:c?.imageUrl??null,introLineOne:c?.introLineOne??null});
-  await saveAIQuestStart(identity,prepared.state,prepared.difficulty,prepared.startingDeck,{active:true,opponentName:ai.name,selfChampion:intro(champion),opponentChampion:intro(ai.champion)});
+  await saveAIQuestStart(identity,prepared.state,prepared.difficulty,prepared.startingDeck,{active:true,opponentName:ai.name,selfChampion:intro(champion),opponentChampion:intro(ai.champion),intro:prepared.intro});
   liveUsers.add(userId);
   return matchId;
 }
@@ -35,7 +35,7 @@ export async function readQuickAI(userId:string,matchId:string) {
   const [row]=await db.select().from(aiQuestMatchesTable).where(and(eq(aiQuestMatchesTable.id,matchId),eq(aiQuestMatchesTable.userId,userId))).limit(1);
   const metadata=row?.usageStart?.quickQueue as Record<string,unknown>|undefined;
   if(!row||!metadata||row.processedAt)return null;
-  return {matchId:row.id,deckId:row.deckId,aiDeckId:row.aiDeckId,difficulty:row.difficulty,state:row.initialState,opponentName:metadata.opponentName,selfChampion:metadata.selfChampion,opponentChampion:metadata.opponentChampion};
+  return {matchId:row.id,deckId:row.deckId,aiDeckId:row.aiDeckId,difficulty:row.difficulty,state:row.initialState,opponentName:metadata.opponentName,selfChampion:metadata.selfChampion,opponentChampion:metadata.opponentChampion,intro:metadata.intro};
 }
 export async function releaseQuickAI(userId:string,matchId?:string) {
   const rows=await db.update(aiQuestMatchesTable).set({usageStart:sql`jsonb_set(${aiQuestMatchesTable.usageStart}, '{quickQueue,active}', 'false'::jsonb)`})

@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
-import {mkdir} from 'node:fs/promises';
+import {mkdir,readFile} from 'node:fs/promises';
 import {chromium} from './black-gold-playwright.mjs';
+const art=process.env.KO_INTRO_ART?await readFile(process.env.KO_INTRO_ART):null;
 const browser=await chromium.launch({headless:true});
 await mkdir('qa-results/intro-regression',{recursive:true});
 try {
@@ -8,7 +9,7 @@ try {
   const page=await browser.newPage({viewport:{width,height}});
   await page.route('**/broken.png',r=>r.fulfill({status:404,body:''}));
   await page.route('**/also-broken.png',r=>r.fulfill({status:404,body:''}));
-  await page.route('**/original.svg',r=>r.fulfill({contentType:'image/svg+xml',body:'<svg xmlns="http://www.w3.org/2000/svg" width="100" height="150"><rect width="100" height="150" fill="gold"/></svg>'}));
+  await page.route('**/original.svg',r=>r.fulfill({contentType:art?'image/png':'image/svg+xml',body:art??'<svg xmlns="http://www.w3.org/2000/svg" width="100" height="150"><rect width="100" height="150" fill="gold"/></svg>'}));
   await page.goto('http://127.0.0.1:5186/qa/intro-regression.html');
   await page.waitForTimeout(450);
   await page.screenshot({path:`qa-results/intro-regression/before-${width}.png`});

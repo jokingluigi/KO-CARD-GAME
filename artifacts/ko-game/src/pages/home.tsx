@@ -617,7 +617,7 @@ export default function Home({ initialAuthUser }: { initialAuthUser?: AuthUser }
       setAiRewardStatus('pending');setAiRewardError(null);setAiQuestError(null);
       setRuntimeCardDefinitions(next.cardPool??[]);setAiCosmetics({[next.players[0].id]:loadout});
       const startedAt=Date.now();
-      setAiOpening(createAiMatchOpening(next.gameId,authUser.nickname,handoff.opponentName,{...handoff.selfChampion,originalPortraitUrl:handoff.selfChampion.imageUrl,imageUrl:cosmeticImage(loadout,'CHAMPION_SKIN',next.players[0].champion!.id,'intro',handoff.selfChampion.imageUrl)},handoff.opponentChampion,startedAt));
+      setAiOpening(createAiMatchOpening(next.gameId,authUser.nickname,handoff.opponentName,{...handoff.selfChampion,originalPortraitUrl:handoff.selfChampion.imageUrl,imageUrl:cosmeticImage(loadout,'CHAMPION_SKIN',next.players[0].champion!.id,'intro',handoff.selfChampion.imageUrl)},handoff.opponentChampion,startedAt,handoff.intro));
       setAiOpeningNow(startedAt);setAiOpeningSkipped(false);
       latestGameStateRef.current=next;setGameState(next);setMediaCatalog(media);
       setSelectedCardId(null);setSelectedAttackerId(null);setAiMatchStarted(true);setMatchReady(true);loaded=true;
@@ -689,8 +689,10 @@ export default function Home({ initialAuthUser }: { initialAuthUser?: AuthUser }
     );
     aiMatchStartingRef.current=true;
     setAiStarting(true);
+    let resolvedOpeningDialogue: import("@/lib/ai-match-opening").MatchIntroDialogue | undefined;
     try {
       const prepared=await prepareAIMatchQuest({deckId:deck.id,aiDeckId:aiDeck.id,matchId});
+      resolvedOpeningDialogue=prepared.intro;
       nextState={...prepared.state,backgroundId:nextState.backgroundId,bgmId:nextState.bgmId};
       setRuntimeCardDefinitions(nextState.cardPool??matchDefinitions);
     }catch(error){setPlayError(error instanceof Error?error.message:'Could not start AI match');return;}
@@ -717,6 +719,7 @@ export default function Home({ initialAuthUser }: { initialAuthUser?: AuthUser }
       {...userChampion,originalPortraitUrl:userChampion.imageUrl,imageUrl:cosmeticImage(frozenLoadout,"CHAMPION_SKIN",userChampion.id,"intro",userChampion.imageUrl)},
       aiChampion,
       openingStartedAt,
+      resolvedOpeningDialogue,
     ));
     setAiOpeningNow(openingStartedAt);
     setAiOpeningSkipped(false);

@@ -1,3 +1,4 @@
+import {loadAiMatchIntro} from './ai-match-intro';
 import { executeUsageObservedAction as executeAction } from './usage-statistics-observer';
 import {processStoredAIQuestMatch} from './ai-quest-match-storage';
 import { db, cardsTable, championsTable, rewardSettingsTable } from "@workspace/db";
@@ -158,7 +159,7 @@ export function replayAIMatch(
 }
 
 type AIQuestInput = {userId:string;isTestAccount:boolean;deckId:string;aiDeckId:string;matchId:string;outcome:'WIN'|'LOSS';actions:unknown[]};
-type AIQuestStart = {state:GameState;difficulty:'NORMAL'|'HARD'|'BOSS';startingDeck:string[]};
+type AIQuestStart = {state:GameState;difficulty:'NORMAL'|'HARD'|'BOSS';startingDeck:string[];intro:Awaited<ReturnType<typeof loadAiMatchIntro>>};
 export function completeAIMatchQuestProgress(input:AIQuestInput & {prepareOnly:true}):Promise<AIQuestStart>;
 export function completeAIMatchQuestProgress(input:AIQuestInput):Promise<{reward:RewardGrantResult|null;completed:boolean;message?:string}>;
 export async function completeAIMatchQuestProgress(input: {
@@ -269,7 +270,7 @@ export async function completeAIMatchQuestProgress(input: {
     { gameId: input.matchId, randomSeed: seedForMatchId(input.matchId), minionACardPool: completeMinionACatalog(cardRecords) },
   );
   const startedState = startGame(initialState, createDeterministicRandom(input.matchId), undefined, { flexibleDeckPlayerId: 'player-2' });
-  if(input.prepareOnly) return {state:startedState,startingDeck:[...userDeck.cardDefinitionIds],difficulty:aiDeck.difficulty === 'HARD' || aiDeck.difficulty === 'BOSS' ? aiDeck.difficulty : 'NORMAL'};
+  if(input.prepareOnly) return {intro:await loadAiMatchIntro(userChampion,aiChampion),state:startedState,startingDeck:[...userDeck.cardDefinitionIds],difficulty:aiDeck.difficulty === 'HARD' || aiDeck.difficulty === 'BOSS' ? aiDeck.difficulty : 'NORMAL'};
   const userPlayerId = startedState.players[0]?.id;
   const aiPlayerId = startedState.players[1]?.id;
   if (!userPlayerId || !aiPlayerId) throw new Error("경기 참가자 데이터를 만들 수 없습니다.");
