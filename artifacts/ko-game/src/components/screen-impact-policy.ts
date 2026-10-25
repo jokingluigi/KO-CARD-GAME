@@ -20,7 +20,7 @@ export function summonImpact(cost:number,rarity:string='NORMAL'):ImpactProfile {
 export function damageImpact(damage:number,lethal=false):ImpactProfile {
  const tier:ImpactTier=damage<=0?'NONE':lethal?'FINISHER':damage>=10?'MASSIVE':damage>=6?'HEAVY':damage>=3?'MEDIUM':'LIGHT';
  const i=IMPACT_TIERS.indexOf(tier);
- return {tier,amplitude:[0,4,8,15,21,22][i]!,duration:[0,160,230,330,370,410][i]!,rotation:[0,0,0,.3,.5,.7][i]!,aftershock:i>=4,wave:[0,1.5,2,3.5,5,6][i]!,bass:null,rarity:'NORMAL'};
+ return {tier,amplitude:[0,6,11,19,22,22][i]!,duration:[0,160,230,330,370,410][i]!,rotation:[0,0,0,.3,.5,.7][i]!,aftershock:i>=4,wave:[0,1.5,2,3.5,5,6][i]!,bass:null,rarity:'NORMAL'};
 }
 export function specialImpact(kind:'AWAKENING'|'BOSS'|'HIDDEN_BOSS'):ImpactProfile {
  return {...damageImpact(kind==='AWAKENING'?10:18,kind!=='AWAKENING'),rarity:'CHAMPION',amplitude:kind==='AWAKENING'?15:20};
@@ -60,9 +60,9 @@ export function hasBoardWideImpact(value:unknown,depth=0):boolean {
 
 /** A contact punch-in followed by a directional kick and rapidly decaying recoil. */
 export function combatCameraFrames(profile:ImpactProfile,direction={x:0,y:1},reduced=false):Keyframe[] {
- const rank=impactRank(profile),zoom=profile.amplitude<=0?0:[0,.045,.09,.20,.26,.30][rank]!*(reduced?.5:1);
+ const rank=impactRank(profile),zoom=profile.amplitude<=0?0:[0,.075,.14,.26,.34,.38][rank]!*(reduced?.5:1);
  const length=Math.hypot(direction.x,direction.y)||1,dx=direction.x/length,dy=direction.y/length;
- const a=Math.min(44,profile.amplitude*2);
+ const a=Math.min(58,profile.amplitude*2.6);
  const pose=(travel:number,lateral:number,scale:number,angle:number)=>({
   translate:`${((dx*travel-dy*lateral)*a).toFixed(3)}px ${((dy*travel+dx*lateral)*a).toFixed(3)}px`,
   scale:String(1+zoom*scale),rotate:`${(profile.rotation*angle).toFixed(3)}deg`,

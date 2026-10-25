@@ -699,3 +699,23 @@ test('result music stops at the menu boundary; old result cleanup does not stop 
     audioManager.stopGameAudio();
   });
 });
+
+test("repeated quest snapshots do not restart the pending music crossfade", () => {
+  withFakeAudio(advance => {
+    audioManager.setMusicContext("BATTLE");
+    audioManager.playMatchBgm("/battle.mp3", 80);
+    audioManager.playQuestComplete("/awakening.mp3", 75);
+    for(let i=0;i<12;i++) { advance(100); audioManager.playQuestComplete("/awakening.mp3", 75); }
+    const manager=audioManager as unknown as {bgm:{url:string;audio:FakeAudio}|null};
+    assert.equal(manager.bgm?.url,"/awakening.mp3");
+    assert.equal(manager.bgm?.audio.paused,false);
+  });
+});
+
+test("Legendary entrance gain is trimmed 15 percent independently of ordinary entrances", () => {
+  withFakeAudio(() => {
+    audioManager.playLegendaryEntrance("/legendary-gain.mp3", 100);
+    const manager=audioManager as unknown as {current:{request:{volume:number}}|null};
+    assert.equal(manager.current?.request.volume,85);
+  });
+});

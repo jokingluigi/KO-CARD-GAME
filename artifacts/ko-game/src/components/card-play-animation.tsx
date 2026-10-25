@@ -115,8 +115,8 @@ export function CardPlayAnimation({
       if(!accepted&&screenRef.current.isActive())return;
       const file=impactRank(profile)>=4?'very-heavy':impactRank(profile)>=3?'heavy':impactRank(profile)>=2?'normal':'light';
       const priority=profile.rarity==='CHAMPION'?8:profile.rarity==='LEGENDARY'?7:impactRank(profile)>=3?6:4;
-      audioManager.playImpactOverlay(`${import.meta.env.BASE_URL}sfx/impact-${file}.wav`,impactRank(profile)>=3?65:36,priority);
-      if(profile.bass)audioManager.playImpactOverlay(`${import.meta.env.BASE_URL}sfx/summon-bass-${profile.bass}.wav`,profile.rarity==='CHAMPION'?78:profile.rarity==='LEGENDARY'?70:60,priority);
+      audioManager.playImpactOverlay(`${import.meta.env.BASE_URL}sfx/impact-${file}.wav`,profile.rarity==='LEGENDARY'?54:impactRank(profile)>=3?65:36,priority);
+      if(profile.bass)audioManager.playImpactOverlay(`${import.meta.env.BASE_URL}sfx/summon-bass-${profile.bass}.wav`,profile.rarity==='CHAMPION'?78:profile.rarity==='LEGENDARY'?58:60,priority);
       if(impactRank(profile)>=3)audioManager.duckForPresentation(.55,profile.duration+100);
       if(hapticsEnabled&&!reduced&&window.matchMedia('(pointer: coarse)').matches&&typeof navigator.vibrate==='function'&&(impactCost>=5||profile.rarity==='LEGENDARY'||profile.rarity==='CHAMPION'))navigator.vibrate(impactRank(profile)>=4?55:30);
     };

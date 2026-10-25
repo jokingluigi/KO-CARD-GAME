@@ -117,6 +117,12 @@ function processChampionQuestEventPass(
       championQuestProcessedEventIdentitiesByPlayer: processedIdentitiesByPlayer,
     };
 
+    // Surviving at low HP awakens Crusaders; a lethal hit is defeat, not completion.
+    const condition = quest?.condition;
+    const survivalQuest = quest?.awakening || (condition?.type === 'HEALTH' &&
+      condition.owner === 'SELF' && condition.value > 0 && ['LTE', 'LT'].includes(condition.op));
+    if (survivalQuest && originalPlayer.health <= 0) continue;
+
     const conditionResult = champion && quest?.condition && !champion.questCompleted
       ? evaluateChampionQuestCondition(quest.condition, resolvedState, originalPlayer.id, newEvents, champion.questConditionCounts) : undefined;
     if (conditionResult) resolvedState = { ...resolvedState, players: resolvedState.players.map(p => p.id === originalPlayer.id && p.champion ? { ...p, champion: { ...p.champion, questConditionCounts: conditionResult.counts } } : p) };

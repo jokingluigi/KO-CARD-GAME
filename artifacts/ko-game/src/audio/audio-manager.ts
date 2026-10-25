@@ -91,7 +91,7 @@ class AudioManager {
     this.queue = [];
     this.stopTemporary(false);
     this.startTemporary(
-      { url, volume, kind: "LEGENDARY_ENTRANCE" },
+      { url, volume: volume * .85, kind: "LEGENDARY_ENTRANCE" },
       {
         durationMs: (LEGENDARY_ENTRANCE_DURATION + LEGENDARY_ENTRANCE_FADE_OUT) * 1000,
         fadeOutMs: LEGENDARY_ENTRANCE_FADE_OUT * 1000,
@@ -382,6 +382,11 @@ class AudioManager {
       return;
     }
 
+    // Frequent battle snapshots must not restart the same crossfade indefinitely.
+    if (this.pendingBaseMusic?.url === url && this.pendingBaseMusic.scope === scope) {
+      this.pendingBaseMusic.volume = volume;
+      return;
+    }
     const previous = this.bgm;
     this.pendingBaseMusic = { url, volume, scope };
     const transitionId = ++this.baseTransitionId;

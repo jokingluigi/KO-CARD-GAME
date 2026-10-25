@@ -1,3 +1,4 @@
+import { questMusic } from '@/components/quest-media';
 import { MatchResultOverlay } from '@/components/match-result-overlay';
 import {describeTowerEffect} from '../../../../lib/game-engine/src/tower/effects';
 import { towerMusicFor } from '@/lib/tower-music';
@@ -65,10 +66,12 @@ export default function Tower() {
   useEffect(() => {
     const scene = view.scenes?.find(item => item.id === run?.encounter.sceneId);
     const lineTrack=run?.phase==='DIALOGUE'?scene?.lines[run.dialogueIndex]?.music:undefined;
-    const track = lineTrack??(run?.phase==='BATTLE'&&run.encounter.music?run.encounter.music:towerMusicFor(run?.phase, run?.encounter.bossSlot, view.music, scene));
-    if (track) audioManager.playMatchBgm(track.assetUrl, track.volume);
+    const completedMusic = run?.phase === 'BATTLE' ? questMusic(view.battle) : null;
+    const track = completedMusic??lineTrack??(run?.phase==='BATTLE'&&run.encounter.music?run.encounter.music:towerMusicFor(run?.phase, run?.encounter.bossSlot, view.music, scene));
+    if (completedMusic) audioManager.playQuestComplete(completedMusic.assetUrl, completedMusic.volume);
+    else if (track) audioManager.playMatchBgm(track.assetUrl, track.volume);
     else audioManager.stopBgm();
-  }, [run?.phase, run?.encounter.bossSlot, run?.encounter.sceneId, view.music, view.scenes,run?.encounter.music,run?.dialogueIndex]);
+  }, [run?.phase, run?.encounter.bossSlot, run?.encounter.sceneId, view.music, view.scenes,run?.encounter.music,run?.dialogueIndex,view.battle]);
   useEffect(() => { audioManager.setBgmMuted(bgmMuted); audioManager.setBgmVolume(bgmVolume); }, [bgmMuted, bgmVolume]);
   useEffect(() => () => audioManager.stopGameAudio(), []);
 

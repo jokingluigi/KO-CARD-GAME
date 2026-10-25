@@ -62,7 +62,7 @@ export function PresentationFeedback({
     completedRef.current = false;
     if(cue.kind==='DAMAGE'&&!cue.combat)screenRef.current.request({id:'effect-impact:'+cue.id,profile:damageImpact(cue.value??0,lethal),x:cue.left,y:cue.top,radial:true});
     if(startedCueRef.current!==cue.id){startedCueRef.current=cue.id;
-      const sound:Partial<Record<PresentationCue['kind'],string>>={ARMOR:'impact/impact_metal_medium_000.ogg',BLOCK:'scifi/force_field_000.ogg',HEAL:'interface/confirmation_001.wav',DESTROY:'impact/impact_glass_heavy_000.ogg',RETIRE:'impact/impact_soft_heavy_000.ogg',REMOVE:'interface/minimize_001.wav',EFFECT:'interface/maximize_001.wav',QUEST_COMPLETE:'interface/confirmation_001.wav',GOLD:'rpg/handle_coins.ogg'};
+      const sound:Partial<Record<PresentationCue['kind'],string>>={ARMOR:'impact/impact_metal_medium_000.ogg',BLOCK:'impact/impact_metal_medium_000.ogg',DESTROY:'impact/impact_glass_heavy_000.ogg',RETIRE:'impact/impact_soft_heavy_000.ogg',GOLD:'rpg/handle_coins.ogg'};
       if(sound[cue.kind])audioManager.playImpactOverlay(import.meta.env.BASE_URL+'vendor/kenney/'+sound[cue.kind],40,4);
       onStartRef.current?.(cue);
     }

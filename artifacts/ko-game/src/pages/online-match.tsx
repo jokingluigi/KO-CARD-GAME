@@ -1,3 +1,4 @@
+import { questMusic as selectQuestMusic } from '@/components/quest-media';
 import {cosmeticImage,type MatchCosmetics,type ImageEmoteEvent} from '@workspace/cosmetics';
 import { canPresentBattleQuest } from '@/components/quest-presentation-policy';
 import { advanceOnlineEventSequence } from '@/lib/online-event-sequence';
@@ -492,11 +493,7 @@ function OnlineMatchPage({ draft = false }: { draft?: boolean }) {
       activeBgmKeyRef.current = null;
       return;
     }
-    const champion = state?.players.map((player) => player.champion)
-      .find((candidate) => candidate?.id === state.latestQuestCompletedChampionId);
-    const questMusic = champion?.questCompleted && champion.questCompleteAudioEnabled && champion.questCompleteAudioUrl
-      ? { assetUrl: champion.questCompleteAudioUrl, volume: champion.questCompleteAudioVolume ?? 100 }
-      : null;
+    const questMusic = selectQuestMusic(state);
     const bgm = state ? mediaCatalog.bgms.find((item) => item.id === state.bgmId) : undefined;
     const selected = questMusic ?? bgm;
     if (!selected) {

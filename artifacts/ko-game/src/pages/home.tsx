@@ -1,8 +1,8 @@
+import { questMusic } from '@/components/quest-media';
 import {prepareIntroPortraits} from '@/game/match-assets';
 import {optionalCosmetics} from '@/lib/cosmetics-client';
 import {fetchQuickAI,releaseQuickAI} from '@/lib/quick-ai-client';
 import {cosmeticImage,type MatchCosmetics} from '@workspace/cosmetics';
-import { canPresentBattleQuest } from '@/components/quest-presentation-policy';
 import { completeMinionACatalog } from '../game/champions/minion-a';
 import {startAdminTestDeckGame} from '@/lib/admin-test-deck';
 import {AdminTestDeck} from '@/components/admin-test-deck';
@@ -833,10 +833,9 @@ export default function Home({ initialAuthUser }: { initialAuthUser?: AuthUser }
       audioManager.stopBattleAudio();
       return;
     }
-    const champion = gameState.players.map((player) => player.champion)
-      .find((candidate) => candidate?.id === gameState.latestQuestCompletedChampionId);
-    if (canPresentBattleQuest(gameState) && champion?.questCompleted && champion.questCompleteAudioEnabled && champion.questCompleteAudioUrl) {
-      audioManager.playQuestComplete(champion.questCompleteAudioUrl, champion.questCompleteAudioVolume ?? 100);
+    const completedMusic = questMusic(gameState);
+    if (completedMusic) {
+      audioManager.playQuestComplete(completedMusic.assetUrl, completedMusic.volume);
     } else {
       const bgm = mediaCatalog.bgms.find((item) => item.id === gameState.bgmId);
       if (bgm) {

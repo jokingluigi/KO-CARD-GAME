@@ -28,5 +28,19 @@
     "license": "CC0-1.0",
     "adaptation": "External recorded punch/surface/crunch/low-frequency layers, EQ, fade, lossless peak normalization; no synthesis",
     "decodedPeakDbFS": -3.35
+  },
+  {
+    "file": "contact-light.wav",
+    "sha256": "ca1723b7c227d333b49b4b759cd45c757f04855eb6568ca5153b4f0e6d7b502f",
+    "bytes": 13274,
+    "sourceFiles": [
+      "impact/impact_punch_heavy_001.ogg",
+      "impact/impact_wood_heavy_000.ogg",
+      "impact/impact_punch_medium_000.ogg"
+    ],
+    "sourceManifest": "../kenney/manifest.json",
+    "license": "CC0-1.0",
+    "adaptation": "External recorded punch and surface layers, shortened body, fade and peak normalization; no synthesis",
+    "decodedPeakDbFS": -3.35
   }
 ]

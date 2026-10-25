@@ -1,3 +1,4 @@
+import { questPortrait } from './quest-media';
 import "./battle-board.css";
 import {optionalCosmetics} from '@/lib/cosmetics-client';
 import {cosmeticImage} from '@workspace/cosmetics';
@@ -796,19 +797,20 @@ export function GameStatePreview({
   const selectedBackground = mediaCatalog.backgrounds.find(
     (item) => item.id === state.backgroundId,
   );
-  const originalOpponentPortrait = opp.champion?.questCompleted &&
-    opp.champion.questCompletedPortraitEnabled &&
-    opp.champion.questCompletedPortraitUrl
-    ? opp.champion.questCompletedPortraitUrl
-    : opp.champion?.imageUrl;
-  const originalPlayerPortrait = me.champion?.questCompleted &&
-    me.champion.questCompletedPortraitEnabled &&
-    me.champion.questCompletedPortraitUrl
-    ? me.champion.questCompletedPortraitUrl
-    : me.champion?.imageUrl;
+  const originalOpponentPortrait = questPortrait(opp.champion);
+  const originalPlayerPortrait = questPortrait(me.champion);
 
   const opponentChampionPortrait=cosmeticImage(cosmetics[opp.id],'CHAMPION_SKIN',opp.champion?.id??'',opp.champion?.questCompleted?'awakened':'portrait',originalOpponentPortrait);
   const playerChampionPortrait=cosmeticImage(cosmetics[me.id],'CHAMPION_SKIN',me.champion?.id??'',me.champion?.questCompleted?'awakened':'portrait',originalPlayerPortrait);
+
+  // Warm only the two equipped awakening images; do not fetch the full catalog.
+  React.useEffect(() => {
+    for (const url of [me.champion?.questCompletedPortraitEnabled ? me.champion.questCompletedPortraitUrl : null,
+      opp.champion?.questCompletedPortraitEnabled ? opp.champion.questCompletedPortraitUrl : null]) {
+      if (url) { const image = new Image(); image.decoding = 'async'; image.src = url; }
+    }
+  }, [me.champion?.questCompletedPortraitEnabled, me.champion?.questCompletedPortraitUrl,
+    opp.champion?.questCompletedPortraitEnabled, opp.champion?.questCompletedPortraitUrl]);
 
   function closeSettings() {
     setSettingsOpen(false);

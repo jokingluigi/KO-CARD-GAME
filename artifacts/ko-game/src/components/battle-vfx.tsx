@@ -18,6 +18,23 @@ function texture(name:string) {
  if(!image){image=new Image();image.src=url;cache.set(url,image);}
  return image;
 }
+// Effekseer's contact texture is RGB additive art, unlike the RGBA smoke.
+// Convert its black matte to emission alpha once, never once per animation frame.
+const additiveCache = new WeakMap<HTMLImageElement, HTMLCanvasElement>();
+function contactTexture(image: HTMLImageElement): CanvasImageSource {
+ if (!image.src.endsWith('/HitEffect01_Yellow.png')) return image;
+ const cached = additiveCache.get(image); if (cached) return cached;
+ const canvas = document.createElement('canvas'); canvas.width=image.naturalWidth; canvas.height=image.naturalHeight;
+ const context = canvas.getContext('2d'); if (!context) return image;
+ context.drawImage(image,0,0);
+ const pixels = context.getImageData(0,0,canvas.width,canvas.height);
+ for (let i=0;i<pixels.data.length;i+=4) {
+  const alpha=Math.max(pixels.data[i],pixels.data[i+1],pixels.data[i+2]);
+  pixels.data[i+3]=alpha;
+  if (alpha) for(let c=0;c<3;c++) pixels.data[i+c]=Math.round(pixels.data[i+c]*255/alpha);
+ }
+ context.putImageData(pixels,0,0); additiveCache.set(image,canvas); return canvas;
+}
 export function preloadExternalVfx() { for(const name of new Set(Object.values(assets).flat()))texture(name); }
 /** External Kenney CC0 textures. Canvas only positions/animates the supplied art. */
 export function BattleVfx({kind,left,top,strength=3,seed,delay=0,duration=580,direction}:{kind:BattleVfxKind;left:number;top:number;strength?:number;seed:string;delay?:number;duration?:number;direction?:{x:number;y:number}}) {
@@ -41,7 +58,7 @@ export function BattleVfx({kind,left,top,strength=3,seed,delay=0,duration=580,di
     ctx.save();ctx.translate(x,y);ctx.rotate(rotation);ctx.globalAlpha=Math.max(0,alpha);
     if(image.src.endsWith('/Smoke.png'))ctx.filter='sepia(1) saturate(.55) brightness(.72)';
     if(image.src.endsWith('/HitEffect01_Yellow.png'))ctx.filter='brightness(3)';
-    ctx.drawImage(image,-w/2,-w/2,w,w);ctx.restore();
+    ctx.drawImage(contactTexture(image),-w/2,-w/2,w,w);ctx.restore();
    };
    if(kind==='IMPACT') {
     // A short bright contact, then an expanding, settling cloud of authored smoke art.
