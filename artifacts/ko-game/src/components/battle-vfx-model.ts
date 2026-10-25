@@ -1,6 +1,6 @@
 import type { AttackAnimationState } from "./attack-animation-utils";
 import { readCombatPreferences } from './combat-preferences';
-import { damageHitStop } from './presentation-policy';
+import { combatImpactProfile } from './combat-impact-profile';
 
 export type BattleVfxKind =
   "IMPACT" | "BLOCK" | "HEAL" | "MAGIC" | "GOLD" | "DESTROY" | "RETIRE";
@@ -13,9 +13,8 @@ export function combatTimeline(
   reduced = false,
 ) {
   if (reduced) return { duration: 140, impact: 70, release: 70 };
-  const duration=finisher?760:damage>=6?560:damage>=3?520:480;
-  const impact=finisher?300:damage>=6?220:damage>=3?210:200;
-  return {duration,impact,release:impact+(finisher?165:damageHitStop(damage))};
+  const p = combatImpactProfile(attack, damage, finisher);
+  return {duration:p.duration,impact:p.contact,release:p.contact+p.hitstop};
 }
 
 export function attackFrames(
@@ -31,6 +30,8 @@ export function attackFrames(
       { opacity: 0, transform: "scale(1)" },
     ];
   const tilt = Math.max(-8, Math.min(8, dx / 70));
+  const distance = Math.hypot(dx, dy) || 1;
+  const pullback = Math.min(20, distance * .06);
   const pose = (x: number, y: number, scale: number, angle = 0) =>
     `translate3d(${x}px,${y}px,0) scale(${scale}) rotate(${angle}deg)`;
   return [
@@ -38,7 +39,7 @@ export function attackFrames(
     { offset: 0.1, opacity: 1, transform: pose(0, 0, 1.03) },
     {
       offset: (timeline.duration >= 700 ? 200 : 100) / timeline.duration,
-      transform: pose(-dx * 0.06, -dy * 0.06, 1.08, -tilt),
+      transform: pose(-dx / distance * pullback, -dy / distance * pullback, 1.08, -tilt),
       easing: "cubic-bezier(.7,0,.95,.65)",
     },
     {

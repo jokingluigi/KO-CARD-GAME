@@ -3,13 +3,25 @@ import { writeFile, mkdir } from "node:fs/promises";
 const { chromium } = await import(process.env.KO_QA_PLAYWRIGHT ?? "playwright");
 const browser = await chromium.launch({ channel: "chrome", headless: true });
 const results = [];
+await mkdir("qa-results/fighting/videos", { recursive: true });
 try {
   for (const [width, height] of [
+    [360, 740],
+    [375, 812],
     [390, 844],
+    [412, 915],
+    [768, 1024],
     [1440, 900],
   ]) {
-    const page = await browser.newPage({ viewport: { width, height } });
+    const page = await browser.newPage({ viewport: { width, height }, recordVideo: { dir: "qa-results/fighting/videos", size: {width, height} } });
     const errors = [];
+    await page.addInitScript(() => {
+      window.__qaAudio = [];
+      const play = HTMLMediaElement.prototype.play;
+      const pause = HTMLMediaElement.prototype.pause;
+      HTMLMediaElement.prototype.play = function () { window.__qaAudio.push({type:"play",src:this.src,time:performance.now()}); return play.call(this); };
+      HTMLMediaElement.prototype.pause = function () { window.__qaAudio.push({type:"pause",src:this.src,time:performance.now()}); return pause.call(this); };
+    });
     page.on("pageerror", (e) => errors.push(e.message));
     await page.route("**/api/card-frames", (r) =>
       r.fulfill({ json: { frames: [] } }),
@@ -20,6 +32,7 @@ try {
     );
     await page.getByTestId("attack").waitFor();
     for (const action of ["attack", "blocked", "finisher"]) {
+      await page.evaluate(() => { window.__qaAudio = []; });
       const samples = await page.evaluate(
         (action) =>
           new Promise((resolve) => {
@@ -41,6 +54,7 @@ try {
                   time: Number(motion?.currentTime ?? 0),
                   targetTime: Number(targetMotion?.currentTime ?? 0),
                   frames: motion?.effect?.getKeyframes(),
+                  duration: motion?.effect?.getTiming().duration,
                   a: getComputedStyle(a).transform,
                   t: getComputedStyle(t).transform,
                   shock: !!root.querySelector(".attack-animation__shockwave"),
@@ -55,13 +69,20 @@ try {
         action,
       );
       assert.ok(samples.length > 5);
+      const audio = await page.evaluate(() => window.__qaAudio);
+      if (action === "attack") {
+        const bass = audio.findIndex(e => e.type === "play" && e.src.endsWith("summon-bass-heavy.wav"));
+        const base = audio.findIndex(e => e.type === "play" && e.src.endsWith("combat-hit-6-9.wav"));
+        assert.ok(base >= 0 && bass > base, "base hit must precede its bass layer");
+        assert.ok(!audio.slice(bass + 1).some(e => e.type === "pause" && e.src.endsWith("summon-bass-heavy.wav")), "new bass was cut off");
+      }
       const frames = samples.find((s) => s.frames)?.frames;
       const offsets = frames
         ?.slice(3, 5)
         .map(
           (f) =>
             f.offset *
-            (action === "finisher" ? 760 : action === "attack" ? 560 : 480),
+            samples.find((s) => s.duration)?.duration,
         );
       const held = samples.filter(
         (s) => offsets && s.time > offsets[0] + 5 && s.time < offsets[1] - 5,
@@ -84,8 +105,8 @@ try {
           action + ": target moved during hold",
         );
         assert.ok(
-          held.every((s) => !s.shock),
-          action + ": explosion before release",
+          held.some((s) => s.shock),
+          action + ": missing contact shock during hitstop",
         );
         assert.ok(samples.some((s) => s.phase === "REACTION" && s.shock));
       } else assert.equal(samples[0].stop, 0);
@@ -128,7 +149,9 @@ try {
       animationApiFailureRecovery: true,
       callbacksExactlyOnce: true,
     });
-    await page.close();
+    const video = page.video();
+    await page.context().close();
+    if (video) await video.saveAs(`qa-results/fighting/videos/impact-${width}x${height}.webm`);
   }
   await mkdir("qa-results/fighting", { recursive: true });
   await writeFile(

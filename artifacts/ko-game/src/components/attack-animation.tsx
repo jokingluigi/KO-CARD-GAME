@@ -81,13 +81,15 @@ export function AttackAnimation({
       if(hapticsRef.current && animation.damage>0 && !reduced && window.matchMedia?.('(pointer: coarse)').matches && typeof navigator.vibrate==='function') {
         navigator.vibrate(animation.finishingBlow?70:animation.damage>=10?55:animation.damage>=6?35:12);
       }
+      // Base hit playback clears old overlays; start the new bass layer afterwards.
       onImpactRef.current();
+      if (!document.hidden) screenRef.current.request({id:'attack-impact:'+animation.soundKey,profile:damageImpact(animation.damage,Boolean(animation.finishingBlow)),x:target.left+target.width/2,y:target.top+target.height/2,direction:{x:dx,y:dy}});
+      if(animation.damage>=6&&!document.hidden)audioManager.playImpactOverlay(import.meta.env.BASE_URL+'sfx/summon-bass-'+(animation.finishingBlow?'massive':'heavy')+'.wav',animation.finishingBlow?48:32,8);
     };
     const release = () => {
       if(releasedOnce)return; releasedOnce=true; setReleased(true);
       if(phaseRef.current)phaseRef.current.dataset.attackPhase='REACTION';
-      screenRef.current.request({id:'attack-impact:'+animation.soundKey,profile:damageImpact(animation.damage,Boolean(animation.finishingBlow)),x:target.left+target.width/2,y:target.top+target.height/2,direction:{x:dx,y:dy}});
-      if(animation.damage>=6&&!document.hidden)audioManager.playImpactOverlay(import.meta.env.BASE_URL+'sfx/summon-bass-'+(animation.finishingBlow?'massive':'heavy')+'.wav',animation.finishingBlow?48:32,8);
+
     };
     const complete = () => {
       if (completedRef.current) return;
@@ -190,9 +192,9 @@ export function AttackAnimation({
       {impacted && <>
         {!reduced && animation.damage>=6 && <div className={`ko-impact-frame ${animation.finishingBlow?'ko-impact-frame--finisher':''}`} />}
 
-        {released && <BattleVfx kind={attackBurstKind(animation)} left={target.left+target.width/2} top={target.top+target.height/2}
+        {impacted && <BattleVfx kind={attackBurstKind(animation)} left={target.left+target.width/2} top={target.top+target.height/2}
           strength={animation.damage} seed={animation.soundKey} duration={Math.min(500,duration-timeline.release)} />}
-        {released && animation.damage>=3 && <div className="attack-animation__shockwave" />}
+        {impacted && animation.damage>=3 && <div className="attack-animation__shockwave" />}
         <div className="attack-animation__impact-flash" />
       </>}
     </div>
