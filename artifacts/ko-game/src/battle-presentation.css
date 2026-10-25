@@ -28,6 +28,11 @@
   .attack-animation__target {
   animation: none; /* Directional WAAPI recoil shares the attack hit-stop clock. */
 }
+.attack-animation--cinematic .attack-animation__impact-flash,
+.attack-animation--cinematic .attack-animation__shockwave {
+  left: var(--attack-contact-x);
+  top: var(--attack-contact-y);
+}
 .attack-animation--cinematic .attack-animation__impact-flash {
   animation: ko-cinematic-flash 220ms ease-out both;
 }

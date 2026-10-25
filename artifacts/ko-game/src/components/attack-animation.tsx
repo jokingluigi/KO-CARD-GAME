@@ -1,3 +1,4 @@
+import {combatContact} from './combat-contact';
 import { useEffect, useRef, useState } from "react";
 import type { CSSProperties } from "react";
 import {useScreenImpact} from './screen-impact';
@@ -47,13 +48,14 @@ export function AttackAnimation({
   const reduced = prefersReducedMotion();
   const timeline = combatTimeline(animation.currentAttack,animation.damage,animation.finishingBlow,reduced);
   const {duration,impact:impactDelay} = timeline;
-  const dx = target.left + target.width / 2 - (source.left + source.width / 2);
-  const dy = target.top + target.height / 2 - (source.top + source.height / 2);
+  const {dx,dy,x:contactX,y:contactY} = combatContact(source,target);
   const style = {
     "--attack-source-x": `${source.left}px`,
     "--attack-source-y": `${source.top}px`,
     "--attack-source-width": `${source.width}px`,
     "--attack-source-height": `${source.height}px`,
+    "--attack-contact-x": `${contactX}px`,
+    "--attack-contact-y": `${contactY}px`,
     "--attack-dx": `${dx}px`,
     "--attack-dy": `${dy}px`,
     "--attack-duration": `${duration}ms`,
@@ -83,7 +85,7 @@ export function AttackAnimation({
       }
       // Base hit playback clears old overlays; start the new bass layer afterwards.
       onImpactRef.current();
-      if (!document.hidden) screenRef.current.request({id:'attack-impact:'+animation.soundKey,profile:damageImpact(animation.damage,Boolean(animation.finishingBlow)),x:target.left+target.width/2,y:target.top+target.height/2,direction:{x:dx,y:dy}});
+      if (!document.hidden) screenRef.current.request({id:'attack-impact:'+animation.soundKey,profile:damageImpact(animation.damage,Boolean(animation.finishingBlow)),x:contactX,y:contactY,direction:{x:dx,y:dy}});
       if(animation.damage>=6&&!document.hidden)audioManager.playImpactOverlay(import.meta.env.BASE_URL+'sfx/summon-bass-'+(animation.finishingBlow?'massive':'heavy')+'.wav',animation.finishingBlow?48:32,8);
     };
     const release = () => {
@@ -104,9 +106,14 @@ export function AttackAnimation({
     const targetMotion=animate(targetRef.current,targetReactionFrames(dx,dy,animation.damage,timeline,reduced));
     const origin=performance.now();
     let frame=0;
+    let movementPlayed=false;
     const tick=(now:number)=>{
       // Read the same animation clock used by the moving card, including hit stop.
       const time=Number(motion?.currentTime ?? now-origin);
+      if(!movementPlayed && time>=100 && time<impactDelay && !reduced && !document.hidden) {
+        movementPlayed=true;
+        audioManager.playImpactOverlay(import.meta.env.BASE_URL+"sfx/combat-movement.wav", 20, 4);
+      }
       if(time>=impactDelay) impact();
       else if(phaseRef.current)phaseRef.current.dataset.attackPhase=time<100?'ANTICIPATION':'ACCELERATION';
       if(time>=timeline.release)release();
@@ -129,7 +136,7 @@ export function AttackAnimation({
       window.removeEventListener('ko-combat-preferences',complete);
       window.clearTimeout(completeTimer);
     };
-  }, [animation.soundKey,duration,impactDelay,timeline.release,dx,dy,reduced]);
+  }, [animation.soundKey,duration,impactDelay,timeline.release,dx,dy,contactX,contactY,reduced]);
 
   const impactClass = `attack-animation--${animation.damage>=10?'very_heavy':animation.damage>=6?'heavy':animation.damage>=3?'normal':'light'}`;
   const rarity = definition?.rarity ?? "NORMAL";
@@ -192,8 +199,8 @@ export function AttackAnimation({
       {impacted && <>
         {!reduced && animation.damage>=6 && <div className={`ko-impact-frame ${animation.finishingBlow?'ko-impact-frame--finisher':''}`} />}
 
-        {impacted && <BattleVfx kind={attackBurstKind(animation)} left={target.left+target.width/2} top={target.top+target.height/2}
-          strength={animation.damage} seed={animation.soundKey} duration={Math.min(500,duration-timeline.release)} />}
+        {impacted && <BattleVfx kind={attackBurstKind(animation)} left={contactX} top={contactY} direction={{x:dx,y:dy}}
+          strength={animation.damage} seed={animation.soundKey} duration={Math.min(500,duration-timeline.impact)} />}
         {impacted && animation.damage>=3 && <div className="attack-animation__shockwave" />}
         <div className="attack-animation__impact-flash" />
       </>}

@@ -55,21 +55,16 @@ export function useHandMotion(elements:RefObject<ReadonlyMap<string,HTMLElement>
 }
 
 export function MotionNumber({value,className='',format=(n:number)=>String(n)}:{value:number;className?:string;format?:(n:number)=>string|number}) {
- const [display,setDisplay]=useState(value);const current=useRef(value);
+ const previous=useRef(value);
  const element=useRef<HTMLSpanElement>(null);
  useLayoutEffect(()=>{
-  const from=current.current;
-  if(from===value)return;
-  if(prefersReducedMotion()||!Number.isFinite(value)||!Number.isFinite(from)){current.current=value;setDisplay(value);return;}
-  let frame=0;let animation:Animation|undefined;const origin=performance.now();
-  const tick=(now:number)=>{
-   const t=Math.min(1,(now-origin)/260),next=Math.round(from+(value-from)*(1-Math.pow(1-t,3)));
-   current.current=next;setDisplay(next);
-   if(t<1)frame=requestAnimationFrame(tick);
-   else{current.current=value;setDisplay(value);animation=animatePresentation(element.current,[{scale:'.94'},{scale:'1.1',offset:.4},{scale:'1'}],{duration:140,easing:MOTION_EASING.recovery});}
-  };
-  frame=requestAnimationFrame(tick);
-  return()=>{cancelAnimationFrame(frame);animation?.cancel();};
+  const changed=previous.current!==value;previous.current=value;
+  if(!changed||prefersReducedMotion()||!Number.isFinite(value))return;
+  const animation=animatePresentation(element.current,
+   [{scale:'1'},{scale:'1.08',offset:.3},{scale:'1'}],
+   {duration:180,easing:MOTION_EASING.recovery});
+  return()=>animation?.cancel();
  },[value]);
- return <span ref={element} className={className} data-value={value} aria-label={String(format(value))}>{format(display)}</span>;
+ // Always display authoritative health/resources; never invent intermediate combat values.
+ return <span ref={element} className={className} data-value={value} aria-label={String(format(value))}>{format(value)}</span>;
 }

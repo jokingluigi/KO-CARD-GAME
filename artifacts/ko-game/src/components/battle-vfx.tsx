@@ -25,6 +25,7 @@ export function BattleVfx({
   seed,
   delay = 0,
   duration = 580,
+  direction,
 }: {
   kind: BattleVfxKind;
   left: number;
@@ -33,6 +34,7 @@ export function BattleVfx({
   seed: string;
   delay?: number;
   duration?: number;
+  direction?: {x:number;y:number};
 }) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   useEffect(() => {
@@ -66,6 +68,28 @@ export function BattleVfx({
       const t = Math.min(1, elapsed / duration);
       context.clearRect(0, 0, budget.size, budget.size);
       if (t >= 1 || document.hidden) return;
+      if (kind === "IMPACT") {
+        const axis = Math.atan2(direction?.y ?? 0, direction?.x ?? 1);
+        const force = Math.min(1.5, .5 + strength / 10);
+        context.globalCompositeOperation = "source-over";
+        // A few matte dust lobes and directional chips, not a persistent screen wash.
+        for (const [i,p] of particles.entries()) {
+          const angle = axis + (p.angle - Math.PI) * .7;
+          const distance = p.speed * (1-Math.pow(1-t,3)) * force;
+          const x = center + Math.cos(angle)*distance;
+          const y = center + Math.sin(angle)*distance + 28*t*t;
+          context.globalAlpha = Math.pow(1-t,2) * (i%3===0?.32:.85);
+          context.fillStyle = i%3===0?'#b9a181':'#ead4ad';
+          context.save();context.translate(x,y);context.rotate(p.angle+p.spin*t);
+          if(i%3===0) {context.beginPath();context.ellipse(0,0,(8+18*t)*force,(5+11*t)*force,0,0,Math.PI*2);context.fill();}
+          else {context.beginPath();context.moveTo(-p.size*2,-p.size);context.lineTo(p.size*2,0);context.lineTo(0,p.size*2);context.closePath();context.fill();}
+          context.restore();
+        }
+        if(t<.2){context.globalAlpha=(1-t/.2)*.85;context.fillStyle=light;context.beginPath();
+          for(let i=0;i<16;i++){const a=i*Math.PI/8;const r=(i%2?8:28)*force;const x=center+Math.cos(a)*r,y=center+Math.sin(a)*r;i?context.lineTo(x,y):context.moveTo(x,y);}
+          context.closePath();context.fill();}
+        frame=requestAnimationFrame(draw);return;
+      }
       const lift = kind === "HEAL" || kind === "GOLD";
       context.globalCompositeOperation = "lighter";
       const radius =
@@ -156,7 +180,7 @@ export function BattleVfx({
       cancelAnimationFrame(frame);
       context.clearRect(0, 0, budget.size, budget.size);
     };
-  }, [kind, left, top, strength, seed, delay, duration]);
+  }, [kind, left, top, strength, seed, delay, duration, direction?.x, direction?.y]);
   return (
     <canvas
       ref={canvasRef}
