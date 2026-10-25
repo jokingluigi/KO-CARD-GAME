@@ -42,7 +42,7 @@ export function useScreenImpactManager(container:RefObject<HTMLDivElement|null>,
    const cameraNodes=[stage,...Array.from(document.querySelectorAll<HTMLElement>('.attack-animation,.ko-contact-camera'))].filter((node):node is HTMLElement=>Boolean(node));
    for(const node of cameraNodes){
     const rect=node.getBoundingClientRect();
-    const frames=combatCameraFrames(profile,event.direction).map(frame=>({...frame,transformOrigin:`${event.x-rect.left}px ${event.y-rect.top}px`}));
+    const frames=combatCameraFrames(profile,event.direction,modeRef.current==='REDUCED').map(frame=>({...frame,transformOrigin:`${event.x-rect.left}px ${event.y-rect.top}px`}));
     animate(node,frames,profile.duration);
    }
    animate(background,impactFrames({...profile,amplitude:profile.amplitude*.3,rotation:profile.rotation*.25},event.direction,event.radial),profile.duration);

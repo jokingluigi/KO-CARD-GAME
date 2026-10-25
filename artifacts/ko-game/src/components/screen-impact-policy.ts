@@ -20,7 +20,7 @@ export function summonImpact(cost:number,rarity:string='NORMAL'):ImpactProfile {
 export function damageImpact(damage:number,lethal=false):ImpactProfile {
  const tier:ImpactTier=damage<=0?'NONE':lethal?'FINISHER':damage>=10?'MASSIVE':damage>=6?'HEAVY':damage>=3?'MEDIUM':'LIGHT';
  const i=IMPACT_TIERS.indexOf(tier);
- return {tier,amplitude:[0,4,8,15,21,22][i]!,duration:[0,110,170,260,330,390][i]!,rotation:[0,0,0,.3,.5,.7][i]!,aftershock:i>=4,wave:[0,1.5,2,3.5,5,6][i]!,bass:null,rarity:'NORMAL'};
+ return {tier,amplitude:[0,4,8,15,21,22][i]!,duration:[0,160,230,330,370,410][i]!,rotation:[0,0,0,.3,.5,.7][i]!,aftershock:i>=4,wave:[0,1.5,2,3.5,5,6][i]!,bass:null,rarity:'NORMAL'};
 }
 export function specialImpact(kind:'AWAKENING'|'BOSS'|'HIDDEN_BOSS'):ImpactProfile {
  return {...damageImpact(kind==='AWAKENING'?10:18,kind!=='AWAKENING'),rarity:'CHAMPION',amplitude:kind==='AWAKENING'?15:20};
@@ -59,16 +59,17 @@ export function hasBoardWideImpact(value:unknown,depth=0):boolean {
 }
 
 /** A contact punch-in followed by a directional kick and rapidly decaying recoil. */
-export function combatCameraFrames(profile:ImpactProfile,direction={x:0,y:1}):Keyframe[] {
- const rank=impactRank(profile),zoom=profile.amplitude<=0?0:[0,.012,.025,.055,.085,.11][rank]!;
+export function combatCameraFrames(profile:ImpactProfile,direction={x:0,y:1},reduced=false):Keyframe[] {
+ const rank=impactRank(profile),zoom=profile.amplitude<=0?0:[0,.025,.06,.14,.20,.24][rank]!*(reduced?.5:1);
  const length=Math.hypot(direction.x,direction.y)||1,dx=direction.x/length,dy=direction.y/length;
- const a=profile.amplitude;
+ const a=Math.min(32,profile.amplitude*1.5);
  const pose=(travel:number,lateral:number,scale:number,angle:number)=>({
   translate:`${((dx*travel-dy*lateral)*a).toFixed(3)}px ${((dy*travel+dx*lateral)*a).toFixed(3)}px`,
   scale:String(1+zoom*scale),rotate:`${(profile.rotation*angle).toFixed(3)}deg`,
  });
- return [{offset:0,...pose(0,0,0,0)},{offset:.045,...pose(1,0,1,.6)},
- {offset:.14,...pose(-.7,.12,.85,-1)},{offset:.25,...pose(.42,-.18,.55,.55)},
- {offset:.4,...pose(-.22,.08,.3,-.32)},{offset:.6,...pose(.09,-.04,.1,.12)},
+ return [{offset:0,...pose(0,0,0,0)},{offset:.04,...pose(1,0,1,.8)},
+ {offset:.20,...pose(1,0,1,.8)},{offset:.32,...pose(-.75,.16,1,-1)},
+ {offset:.42,...pose(-.75,.16,.9,-1)},{offset:.55,...pose(.5,-.25,.6,.7)},
+ {offset:.68,...pose(-.3,.12,.3,-.4)},{offset:.85,...pose(.1,-.04,.08,.15)},
  {offset:1,...pose(0,0,0,0)}];
 }

@@ -87,7 +87,10 @@ export function AttackAnimation({
       }
       // Base hit playback clears old overlays; start the new bass layer afterwards.
       onImpactRef.current();
-      if (!document.hidden) screenRef.current.request({id:'attack-impact:'+animation.soundKey,profile:damageImpact(animation.damage,Boolean(animation.finishingBlow)),x:contactX,y:contactY,direction:{x:dx,y:dy}});
+      if (!document.hidden) {
+        const profile=damageImpact(animation.damage,Boolean(animation.finishingBlow));
+        screenRef.current.request({id:'attack-impact:'+animation.soundKey,profile:{...profile,duration:Math.min(profile.duration,duration-impactDelay-16)},x:contactX,y:contactY,direction:{x:dx,y:dy}});
+      }
     };
     const release = () => {
       if(releasedOnce)return; releasedOnce=true; setReleased(true);

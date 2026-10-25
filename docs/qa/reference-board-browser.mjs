@@ -5,7 +5,7 @@ import assert from 'node:assert/strict';
 const out=process.env.KO_REFERENCE_OUTPUT??'qa-results/reference-board';await mkdir(out,{recursive:true});
 const browser=await chromium.launch({headless:true,args:['--autoplay-policy=no-user-gesture-required']});
 try{
- for(const [w,h] of [[390,844],[360,740],[375,812],[412,915],[1440,900]]){
+ for(const [w,h] of (process.env.KO_REFERENCE_HD==='1'?[[1440,1080]]:[[390,844],[360,740],[375,812],[412,915],[1440,900]])){
   const context=await browser.newContext({viewport:{width:w,height:h},recordVideo:{dir:out,size:{width:w,height:h}}});
   const page=await context.newPage();const errors=[];page.on('pageerror',e=>{errors.push(e.message);console.error(e.message);});
   await page.route('**/api/**',async route=>{
@@ -30,7 +30,7 @@ try{
    const marker=document.createElement('div');marker.style.cssText='position:fixed;left:0;top:0;width:12px;height:12px;background:rgb(0,255,0);z-index:2147483647;pointer-events:none';document.body.append(marker);setTimeout(()=>marker.remove(),200);
    window.audioCapture={recorder,chunks};
   });
-  for(const damage of [2,6,12]){
+  for(const damage of (process.env.KO_REFERENCE_LONG==='1'?[1,3,6,12,2,6,12,3,6,12,1,6,12,3,6,12]:[2,6,12])){
    await page.evaluate(async damage=>{
     const {boardFixture,definitions}=await import('/qa/black-gold-fixture.ts');
     const {generateCardInstance}=await import('/src/game/index.ts');const s=boardFixture();
@@ -44,6 +44,12 @@ try{
    await page.waitForTimeout(700);
    const images=await page.locator('.ko-player-board-row .ko-board-slot img').evaluateAll(es=>es.filter(e=>e.naturalWidth>0).length);assert.ok(images>0,'real card artwork unavailable');
    const before=JSON.parse(await page.getByTestId('state-json').textContent());
+   await page.evaluate(()=>{
+    const stage=document.querySelector('.ko-game-stage'),anchor=document.querySelector('.ko-game-controls');
+    window.cameraMeasurement={baseWidth:stage.getBoundingClientRect().width,samples:[]};
+    let running=true;window.stopCameraMeasurement=()=>{running=false;};
+    const tick=()=>{const r=stage.getBoundingClientRect(),a=anchor.getBoundingClientRect();window.cameraMeasurement.samples.push({time:performance.now(),width:r.width,x:a.x,y:a.y,scale:getComputedStyle(stage).scale,translation:getComputedStyle(stage).translate,phase:document.querySelector('.attack-animation')?.dataset.attackPhase});if(running)requestAnimationFrame(tick);};requestAnimationFrame(tick);
+   });
    await page.evaluate(()=>window.scrollTo(0,0));
    for(const side of ['player','opponent']){
     const rect=await page.locator('.ko-'+side+'-board-row .ko-board-slot').first().boundingBox();
@@ -61,9 +67,17 @@ try{
     assert.ok(camera.actor.some(s=>s>1.05),'attack clone must share camera zoom');
     assert.ok(camera.vfx.some(s=>s>1.05),'contact art must share camera zoom');
    }
-   await page.screenshot({path:`${out}/contact-${w}-${damage}.png`});
+   if(process.env.KO_REFERENCE_SCREENSHOTS==='1')await page.screenshot({path:`${out}/contact-${w}-${damage}.png`});
    await page.locator('.attack-animation').waitFor({state:'detached'});
-   await page.screenshot({path:`${out}/recovery-${w}-${damage}.png`});
+   const measurement=await page.evaluate(()=>{window.stopCameraMeasurement();return window.cameraMeasurement;});
+   await (await import('node:fs/promises')).writeFile(`${out}/measured-camera-${w}-${damage}.json`,JSON.stringify(measurement,null,2));
+   if(damage>=6){
+    const magnified=measurement.samples.filter(s=>s.width/measurement.baseWidth>1.03);
+    assert.ok(Math.max(...measurement.samples.map(s=>s.width))/measurement.baseWidth>(damage>=10?1.17:1.11),'rendered zoom is too small');
+    assert.ok(magnified.at(-1).time-magnified[0].time>=100,'zoom is visible for less than100ms');
+    assert.ok(Math.max(...measurement.samples.map(s=>Math.hypot(...s.translation.split(' ').map(v=>parseFloat(v)||0))))>=8,'rendered camera kick is too small');
+   }
+   if(process.env.KO_REFERENCE_SCREENSHOTS==='1')await page.screenshot({path:`${out}/recovery-${w}-${damage}.png`});
    const after=JSON.parse(await page.getByTestId('state-json').textContent());
    assert.equal(after.players[1].board[0].currentHealth,before.players[1].board[0].currentHealth-damage);
    assert.equal(await page.locator('[data-cinematic-kind="ATTACK"]').count(),0);
