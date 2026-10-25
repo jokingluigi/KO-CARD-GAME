@@ -100,10 +100,20 @@ function GlobalAudioBridge() {
 
   useEffect(() => {
     const unlock = () => audioManager.unlockAudio();
+    let lastFeedback=0;
+    const feedback=(event:MouseEvent)=>{
+      if(event.defaultPrevented||window.location.pathname.startsWith('/admin'))return;
+      const target=event.target instanceof Element?event.target.closest('button,a[href],[role="button"]'):null;
+      if(!target||target.hasAttribute('disabled')||target.getAttribute('aria-disabled')==='true'||target.closest('.ko-game-shell'))return;
+      if(performance.now()-lastFeedback<100)return;lastFeedback=performance.now();
+      audioManager.playImpactOverlay(import.meta.env.BASE_URL+'vendor/kenney/interface/click_001.wav',20,2);
+    };
+    window.addEventListener('click',feedback);
     window.addEventListener('pointerdown', unlock, { passive: true });
     window.addEventListener('keydown', unlock);
     window.addEventListener('touchend', unlock, { passive: true });
     return () => {
+      window.removeEventListener('click',feedback);
       window.removeEventListener('pointerdown', unlock);
       window.removeEventListener('keydown', unlock);
       window.removeEventListener('touchend', unlock);

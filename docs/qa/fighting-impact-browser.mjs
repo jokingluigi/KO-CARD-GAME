@@ -69,12 +69,10 @@ try {
         action,
       );
       assert.ok(samples.length > 5);
+      if(action === "attack") assert.ok(await page.locator('[data-external-vfx="IMPACT"]').count()>0,"dust must outlive card recovery");
       const audio = await page.evaluate(() => window.__qaAudio);
       if (action === "attack") {
-        const bass = audio.findIndex(e => e.type === "play" && e.src.endsWith("summon-bass-heavy.wav"));
-        const base = audio.findIndex(e => e.type === "play" && e.src.endsWith("combat-hit-6-9.wav"));
-        assert.ok(base >= 0 && bass > base, "base hit must precede its bass layer");
-        assert.ok(!audio.slice(bass + 1).some(e => e.type === "pause" && e.src.endsWith("summon-bass-heavy.wav")), "new bass was cut off");
+        assert.equal(audio.filter(e=>e.type==='play'&&e.src.endsWith('contact-heavy.wav')).length,1,'one contact file must carry transient/body/bass together');
       }
       const frames = samples.find((s) => s.frames)?.frames;
       const offsets = frames

@@ -1,3 +1,4 @@
+import {audioManager} from '../audio/audio-manager';
 import {useScreenImpact} from './screen-impact';
 import {damageImpact} from './screen-impact-policy';
 import { useEffect, useRef } from "react";
@@ -60,7 +61,11 @@ export function PresentationFeedback({
   useEffect(() => {
     completedRef.current = false;
     if(cue.kind==='DAMAGE'&&!cue.combat)screenRef.current.request({id:'effect-impact:'+cue.id,profile:damageImpact(cue.value??0,lethal),x:cue.left,y:cue.top,radial:true});
-    if(startedCueRef.current!==cue.id){startedCueRef.current=cue.id;onStartRef.current?.(cue);}
+    if(startedCueRef.current!==cue.id){startedCueRef.current=cue.id;
+      const sound:Partial<Record<PresentationCue['kind'],string>>={ARMOR:'impact/impact_metal_medium_000.ogg',BLOCK:'scifi/force_field_000.ogg',HEAL:'interface/confirmation_001.wav',DESTROY:'impact/impact_glass_heavy_000.ogg',RETIRE:'impact/impact_soft_heavy_000.ogg',REMOVE:'interface/minimize_001.wav',EFFECT:'interface/maximize_001.wav',QUEST_COMPLETE:'interface/confirmation_001.wav',GOLD:'rpg/handle_coins.ogg'};
+      if(sound[cue.kind])audioManager.playImpactOverlay(import.meta.env.BASE_URL+'vendor/kenney/'+sound[cue.kind],40,4);
+      onStartRef.current?.(cue);
+    }
     const timeoutId = window.setTimeout(() => {
       if (completedRef.current) return;
       completedRef.current = true;
@@ -79,8 +84,8 @@ export function PresentationFeedback({
 
   return (
     <>
-    {(cue.kind==='DAMAGE'&&!cue.combat || cue.kind==='DESTROY' || cue.kind==='BLOCK') &&
-      <BattleVfx kind={cue.kind==='DAMAGE'?'IMPACT':cue.kind==='BLOCK'?'BLOCK':'DESTROY'}
+    {(cue.kind==='DAMAGE'&&!cue.combat || ['DESTROY','BLOCK','ARMOR','HEAL','REMOVE','RETIRE','GOLD'].includes(cue.kind)) &&
+      <BattleVfx kind={cue.kind==='DAMAGE'?'IMPACT':cue.kind==='BLOCK'||cue.kind==='ARMOR'?'BLOCK':cue.kind==='HEAL'?'HEAL':cue.kind==='REMOVE'?'MAGIC':cue.kind==='RETIRE'?'RETIRE':cue.kind==='GOLD'?'GOLD':'DESTROY'}
         left={cue.left} top={cue.top} strength={Math.abs(cue.value??3)} seed={cue.id} duration={cue.duration} />}
     <div
       aria-hidden="true"

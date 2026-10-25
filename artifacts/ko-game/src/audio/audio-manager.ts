@@ -1,3 +1,4 @@
+import {externalSound} from './external-assets';
 import type { MusicContext } from './music-route';
 import { acceptsSound } from '../components/presentation-policy';
 
@@ -188,7 +189,8 @@ class AudioManager {
     this.soundPriority = priority; this.soundUntil = Date.now() + (priority === 9 ? 650 : 180);
     this.duckBgmForImpact(url.includes('combat-finisher') ? 0.28 : 0.66, url.includes('combat-finisher') ? 650 : 270);
     try {
-      const audio = this.cachedAttackAudio.get(url) ?? new Audio(url);
+      const assetUrl=externalSound(url);
+      const audio = this.cachedAttackAudio.get(assetUrl) ?? new Audio(assetUrl);
       audio.currentTime = 0;
       audio.preload = "auto";
       this.attackBaseVolume = volume;
@@ -208,7 +210,8 @@ class AudioManager {
 
   preloadAttackSounds(urls: string[]) {
     if (!hasBrowserAudio()) return;
-    for (const url of urls) {
+    for (const requestedUrl of urls) {
+      const url=externalSound(requestedUrl);
       if (this.cachedAttackAudio.has(url)) continue;
       const audio = new Audio(url);
       audio.preload = 'auto';
@@ -225,7 +228,7 @@ class AudioManager {
   playImpactOverlay(url: string, volume: number, priority = 4) {
     if (!hasBrowserAudio() || !url || !acceptsSound(this.soundPriority, this.soundUntil, priority, Date.now())) return;
     if (this.overlays.size >= 4) { const oldest = this.overlays.values().next().value; oldest?.pause(); if (oldest) this.overlays.delete(oldest); }
-    const audio = new Audio(url);
+    const audio = new Audio(externalSound(url));
     this.overlays.add(audio);
     const release = () => this.overlays.delete(audio);
     audio.addEventListener('ended', release, { once: true });

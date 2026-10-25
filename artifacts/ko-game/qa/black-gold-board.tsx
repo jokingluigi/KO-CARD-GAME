@@ -1,4 +1,6 @@
-import React, { useState, useEffect } from "react";
+import {audioManager} from '../src/audio/audio-manager';
+import {combatHitSound} from '../src/audio/combat-hit-sound';
+import React, { useState, useEffect, useRef } from "react";
 import { createRoot } from "react-dom/client";
 import "../src/index.css";
 import "../src/battle-presentation.css";
@@ -27,6 +29,7 @@ function Scene() {
     [error, setError] = useState<string | null>(null),
     [busy, setBusy] = useState(false);
   const [play, setPlay] = useState<CardPlayAnimationState | null>(null);
+  const attackSequence=useRef(0);
   const [attacks, setAttacks] = useState<AttackAnimationState[]>([]),
     [impact, setImpact] = useState(false);
   const [theme, setTheme] = useState(
@@ -100,7 +103,7 @@ function Scene() {
           damage,
           impactLevel: attackImpactLevel(unit.currentAttack),
           damageImpactLevel: attackDamageImpactLevel(damage),
-          soundKey: "preview-" + r.state.events.length,
+          soundKey: "preview-" + (++attackSequence.current) + ":" + r.state.events.length,
         },
       ]);
     }
@@ -213,7 +216,7 @@ function Scene() {
         attackAnimation={attacks[0] ?? null}
         attackImpactTriggered={impact}
         onOpponentAttackPresentation={(a) => setAttacks((q) => [...q, a])}
-        onAttackImpact={() => setImpact(true)}
+        onAttackImpact={() => {setImpact(true);const a=attacks[0];if(a){const sound=combatHitSound(a.damage,a.finishingBlow);if(sound)audioManager.playAttack(sound,86);}}}
         onAttackAnimationComplete={() => {
           setAttacks((q) => q.slice(1));
           setImpact(false);

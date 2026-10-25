@@ -1,0 +1,32 @@
+[
+  {
+    "file": "contact-heavy.wav",
+    "sha256": "29601eacf4e5a9ba97dc13fbdce3c1b9f4d7bd445a9b9fe5e1fa209712f49842",
+    "bytes": 19890,
+    "sourceFiles": [
+      "impact/impact_punch_heavy_000.ogg",
+      "impact/impact_wood_heavy_000.ogg",
+      "scifi/explosion_crunch_000.ogg",
+      "scifi/low_frequency_explosion_000.ogg"
+    ],
+    "sourceManifest": "../kenney/manifest.json",
+    "license": "CC0-1.0",
+    "adaptation": "External recorded punch/surface/crunch/low-frequency layers, EQ, fade, lossless peak normalization; no synthesis",
+    "decodedPeakDbFS": -3.35
+  },
+  {
+    "file": "contact-massive.wav",
+    "sha256": "d9d01dcbe8c48cdd6b4f91c06ed21ecc7405adccf32492b09797c8882f4807e7",
+    "bytes": 26504,
+    "sourceFiles": [
+      "impact/impact_punch_heavy_001.ogg",
+      "impact/impact_glass_heavy_000.ogg",
+      "scifi/explosion_crunch_000.ogg",
+      "scifi/low_frequency_explosion_000.ogg"
+    ],
+    "sourceManifest": "../kenney/manifest.json",
+    "license": "CC0-1.0",
+    "adaptation": "External recorded punch/surface/crunch/low-frequency layers, EQ, fade, lossless peak normalization; no synthesis",
+    "decodedPeakDbFS": -3.35
+  }
+]

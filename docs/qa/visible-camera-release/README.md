@@ -1,0 +1,9 @@
+# Visible camera release
+
+Previous rendered-camera measurement: heavy width >3% enlargement lasted only about2 sampled frames; massive about4. Peak-only tests were insufficient. New profile uses14% heavy and20% massive design zoom, a held initial directional kick/reverse, then decay. Amplitude is bounded32px; Reduced halves zoom and shake, Off/OS reduced-motion disables it. Attack camera duration is capped to finish at least16ms before attack-animation end; no gameplay clock or rules changed.
+
+QA now samples actual DOM bounds and computed camera translation via RAF rather than only reading declared keyframes. It asserts heavy >11%/massive >17% rendered width change, >100ms enlargement interval and at least8px observed camera translation. Long HD recording initially failed the exposure assertion because RAF samples had a163ms gap around simultaneous screenshots. Per-attack PNG capture is now opt-in, to avoid screenshot readback stalling the recording being measured. The failed attempts are retained in local logs; they are not reported as passed.
+
+Rendered mobile measurements before held-kick tuning: heavy1.148 width ratio/198ms and massive1.222/250ms. Final release-browser log records all viewports/attacks and is the verification source.52 automatic tests and production build passed. Whole-project reference parity and physical-device60fps remain unverified.
+
+Release contains the full feature branch: physical contact geometry, external licensed Kenney/Effekseer art, recorded-sound mixes, persistent dust, shared camera and immediate resource number feedback. No Production DB migration or card/champion/rule modifications. The earlier self-generated movement WAV is removed in final tree. External asset provenance/license manifests ship in public/vendor. No claim that the unrelated reported intro/blue-background bugs were fully resolved by this release.

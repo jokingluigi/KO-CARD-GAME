@@ -1,0 +1,335 @@
+[
+  {
+    "file": "particle/spark_01.png",
+    "url": "https://raw.githubusercontent.com/Calinou/kenney-particle-pack/ab7086639ee73be31abd87feb21bf1402d4e8144/addons/kenney_particle_pack/spark_01.png",
+    "sha256": "ca5e7eac772d5af176f0d45be34f416908859bf28697c31f3ec7f34609919f53",
+    "bytes": 89628,
+    "license": "CC0-1.0",
+    "author": "Kenney",
+    "revision": "ab7086639ee73be31abd87feb21bf1402d4e8144"
+  },
+  {
+    "file": "particle/spark_04.png",
+    "url": "https://raw.githubusercontent.com/Calinou/kenney-particle-pack/ab7086639ee73be31abd87feb21bf1402d4e8144/addons/kenney_particle_pack/spark_04.png",
+    "sha256": "e3fac37e94127b3b5fcfaaf91eca8c157dc32d08a760e8c9df35dc5fcf017407",
+    "bytes": 78726,
+    "license": "CC0-1.0",
+    "author": "Kenney",
+    "revision": "ab7086639ee73be31abd87feb21bf1402d4e8144"
+  },
+  {
+    "file": "particle/smoke_01.png",
+    "url": "https://raw.githubusercontent.com/Calinou/kenney-particle-pack/ab7086639ee73be31abd87feb21bf1402d4e8144/addons/kenney_particle_pack/smoke_01.png",
+    "sha256": "89df665bb2e9a021edad2a9077d2651c44e6c6cd28f3fd38f800c41a5febd2a2",
+    "bytes": 91637,
+    "license": "CC0-1.0",
+    "author": "Kenney",
+    "revision": "ab7086639ee73be31abd87feb21bf1402d4e8144"
+  },
+  {
+    "file": "particle/smoke_04.png",
+    "url": "https://raw.githubusercontent.com/Calinou/kenney-particle-pack/ab7086639ee73be31abd87feb21bf1402d4e8144/addons/kenney_particle_pack/smoke_04.png",
+    "sha256": "be2579db131de274567e0e1b5a2e81f9790205f0e68a3c1a038d130a7b24e092",
+    "bytes": 92360,
+    "license": "CC0-1.0",
+    "author": "Kenney",
+    "revision": "ab7086639ee73be31abd87feb21bf1402d4e8144"
+  },
+  {
+    "file": "particle/smoke_07.png",
+    "url": "https://raw.githubusercontent.com/Calinou/kenney-particle-pack/ab7086639ee73be31abd87feb21bf1402d4e8144/addons/kenney_particle_pack/smoke_07.png",
+    "sha256": "b18497db9e6acfa194bace6d417e7e2d480df3b54d6d5c9b3e07fabc6398345a",
+    "bytes": 74367,
+    "license": "CC0-1.0",
+    "author": "Kenney",
+    "revision": "ab7086639ee73be31abd87feb21bf1402d4e8144"
+  },
+  {
+    "file": "particle/dirt_01.png",
+    "url": "https://raw.githubusercontent.com/Calinou/kenney-particle-pack/ab7086639ee73be31abd87feb21bf1402d4e8144/addons/kenney_particle_pack/dirt_01.png",
+    "sha256": "5dc794d1cde78d48b92b538f3fb4eedc47edefb636724df00d9815c15b4dc987",
+    "bytes": 46129,
+    "license": "CC0-1.0",
+    "author": "Kenney",
+    "revision": "ab7086639ee73be31abd87feb21bf1402d4e8144"
+  },
+  {
+    "file": "particle/magic_01.png",
+    "url": "https://raw.githubusercontent.com/Calinou/kenney-particle-pack/ab7086639ee73be31abd87feb21bf1402d4e8144/addons/kenney_particle_pack/magic_01.png",
+    "sha256": "4530b084d541351c779aac12877e831a398f7e4575126fa2a26c5eb2c47ca37b",
+    "bytes": 77122,
+    "license": "CC0-1.0",
+    "author": "Kenney",
+    "revision": "ab7086639ee73be31abd87feb21bf1402d4e8144"
+  },
+  {
+    "file": "particle/magic_03.png",
+    "url": "https://raw.githubusercontent.com/Calinou/kenney-particle-pack/ab7086639ee73be31abd87feb21bf1402d4e8144/addons/kenney_particle_pack/magic_03.png",
+    "sha256": "b4702e45c034d9ca22a9c45c051105502ac51e26523740782fd8fd77ebea4b83",
+    "bytes": 55275,
+    "license": "CC0-1.0",
+    "author": "Kenney",
+    "revision": "ab7086639ee73be31abd87feb21bf1402d4e8144"
+  },
+  {
+    "file": "particle/star_01.png",
+    "url": "https://raw.githubusercontent.com/Calinou/kenney-particle-pack/ab7086639ee73be31abd87feb21bf1402d4e8144/addons/kenney_particle_pack/star_01.png",
+    "sha256": "4cd179dbc319bfbe13a685abc6f3f4e8e668f4e1aff828bd86baddf0d20c72a7",
+    "bytes": 39485,
+    "license": "CC0-1.0",
+    "author": "Kenney",
+    "revision": "ab7086639ee73be31abd87feb21bf1402d4e8144"
+  },
+  {
+    "file": "particle/slash_01.png",
+    "url": "https://raw.githubusercontent.com/Calinou/kenney-particle-pack/ab7086639ee73be31abd87feb21bf1402d4e8144/addons/kenney_particle_pack/slash_01.png",
+    "sha256": "ebe034d985eff38bcc5191317aa117997eb0e2ebf5a2988395dea056e0d84a5f",
+    "bytes": 23710,
+    "license": "CC0-1.0",
+    "author": "Kenney",
+    "revision": "ab7086639ee73be31abd87feb21bf1402d4e8144"
+  },
+  {
+    "file": "particle/light_01.png",
+    "url": "https://raw.githubusercontent.com/Calinou/kenney-particle-pack/ab7086639ee73be31abd87feb21bf1402d4e8144/addons/kenney_particle_pack/light_01.png",
+    "sha256": "e15db5a8ccea012f4df82689f1a829bdaac04fd8a3066a723f157e0b01ffbf0a",
+    "bytes": 86592,
+    "license": "CC0-1.0",
+    "author": "Kenney",
+    "revision": "ab7086639ee73be31abd87feb21bf1402d4e8144"
+  },
+  {
+    "file": "particle/circle_03.png",
+    "url": "https://raw.githubusercontent.com/Calinou/kenney-particle-pack/ab7086639ee73be31abd87feb21bf1402d4e8144/addons/kenney_particle_pack/circle_03.png",
+    "sha256": "5c0d9704ed222df863a6a8602dca952ffcd04421136ea439a0be2f257ebb8c73",
+    "bytes": 69716,
+    "license": "CC0-1.0",
+    "author": "Kenney",
+    "revision": "ab7086639ee73be31abd87feb21bf1402d4e8144"
+  },
+  {
+    "file": "impact/impact_punch_medium_000.ogg",
+    "url": "https://raw.githubusercontent.com/Boyquotes/kenney-impact-sounds-for-godot/999dd1684873f8b020a3aa5b26e713da21688924/addons/kenney%20impact%20sounds/impact_punch_medium_000.ogg",
+    "sha256": "486988aa2d6440ffc4c62a0e8ccf3c23673ba84424bd4723378d451b7255eb5c",
+    "bytes": 8800,
+    "license": "CC0-1.0",
+    "author": "Kenney",
+    "revision": "999dd1684873f8b020a3aa5b26e713da21688924"
+  },
+  {
+    "file": "impact/impact_punch_medium_001.ogg",
+    "url": "https://raw.githubusercontent.com/Boyquotes/kenney-impact-sounds-for-godot/999dd1684873f8b020a3aa5b26e713da21688924/addons/kenney%20impact%20sounds/impact_punch_medium_001.ogg",
+    "sha256": "e71d23abcc3f10d9d6bc9615b2a431fff70b12333a5fcdd9964457564ace4349",
+    "bytes": 8701,
+    "license": "CC0-1.0",
+    "author": "Kenney",
+    "revision": "999dd1684873f8b020a3aa5b26e713da21688924"
+  },
+  {
+    "file": "impact/impact_punch_heavy_000.ogg",
+    "url": "https://raw.githubusercontent.com/Boyquotes/kenney-impact-sounds-for-godot/999dd1684873f8b020a3aa5b26e713da21688924/addons/kenney%20impact%20sounds/impact_punch_heavy_000.ogg",
+    "sha256": "b33a8f14068aec24ec69ba85e5e87fdc41228975f6a1a3e44a6e7d6fc3d9f8d8",
+    "bytes": 11617,
+    "license": "CC0-1.0",
+    "author": "Kenney",
+    "revision": "999dd1684873f8b020a3aa5b26e713da21688924"
+  },
+  {
+    "file": "impact/impact_punch_heavy_001.ogg",
+    "url": "https://raw.githubusercontent.com/Boyquotes/kenney-impact-sounds-for-godot/999dd1684873f8b020a3aa5b26e713da21688924/addons/kenney%20impact%20sounds/impact_punch_heavy_001.ogg",
+    "sha256": "f92f5cb6ba4ff2766497292ffd90865654317eeca976f5652e0708dbdcdc0dd9",
+    "bytes": 10861,
+    "license": "CC0-1.0",
+    "author": "Kenney",
+    "revision": "999dd1684873f8b020a3aa5b26e713da21688924"
+  },
+  {
+    "file": "impact/impact_metal_medium_000.ogg",
+    "url": "https://raw.githubusercontent.com/Boyquotes/kenney-impact-sounds-for-godot/999dd1684873f8b020a3aa5b26e713da21688924/addons/kenney%20impact%20sounds/impact_metal_medium_000.ogg",
+    "sha256": "a96f879fec0864a8938e0c745b6996a6c5679c16a234ce31a01cc995e8401003",
+    "bytes": 7117,
+    "license": "CC0-1.0",
+    "author": "Kenney",
+    "revision": "999dd1684873f8b020a3aa5b26e713da21688924"
+  },
+  {
+    "file": "impact/impact_glass_heavy_000.ogg",
+    "url": "https://raw.githubusercontent.com/Boyquotes/kenney-impact-sounds-for-godot/999dd1684873f8b020a3aa5b26e713da21688924/addons/kenney%20impact%20sounds/impact_glass_heavy_000.ogg",
+    "sha256": "b44b39a940e8948e74b9bd3776bff980df43cf220abdaf0d467dc4c43c0244a5",
+    "bytes": 7403,
+    "license": "CC0-1.0",
+    "author": "Kenney",
+    "revision": "999dd1684873f8b020a3aa5b26e713da21688924"
+  },
+  {
+    "file": "impact/impact_soft_heavy_000.ogg",
+    "url": "https://raw.githubusercontent.com/Boyquotes/kenney-impact-sounds-for-godot/999dd1684873f8b020a3aa5b26e713da21688924/addons/kenney%20impact%20sounds/impact_soft_heavy_000.ogg",
+    "sha256": "49e7ca88743fca974bb8676ea138b751cfd8f9033b5e7af8736c2a215d6edbc1",
+    "bytes": 6570,
+    "license": "CC0-1.0",
+    "author": "Kenney",
+    "revision": "999dd1684873f8b020a3aa5b26e713da21688924"
+  },
+  {
+    "file": "impact/impact_generic_light_000.ogg",
+    "url": "https://raw.githubusercontent.com/Boyquotes/kenney-impact-sounds-for-godot/999dd1684873f8b020a3aa5b26e713da21688924/addons/kenney%20impact%20sounds/impact_generic_light_000.ogg",
+    "sha256": "f0e982611e97512fee5f777986b67e8b435434b601f94992ec044f7e89fb5acb",
+    "bytes": 5827,
+    "license": "CC0-1.0",
+    "author": "Kenney",
+    "revision": "999dd1684873f8b020a3aa5b26e713da21688924"
+  },
+  {
+    "file": "impact/impact_wood_heavy_000.ogg",
+    "url": "https://raw.githubusercontent.com/Boyquotes/kenney-impact-sounds-for-godot/999dd1684873f8b020a3aa5b26e713da21688924/addons/kenney%20impact%20sounds/impact_wood_heavy_000.ogg",
+    "sha256": "15ff82332f342c30e469215539e1cc57e11b221aa2cf7e11e811d313a9927f3d",
+    "bytes": 6233,
+    "license": "CC0-1.0",
+    "author": "Kenney",
+    "revision": "999dd1684873f8b020a3aa5b26e713da21688924"
+  },
+  {
+    "file": "interface/click_001.wav",
+    "url": "https://raw.githubusercontent.com/Calinou/kenney-interface-sounds/4596a49eaf5a533948d49a47467f606bcdea70ff/addons/kenney_interface_sounds/click_001.wav",
+    "sha256": "ea67c9d78750e5a356bf53ef8c2063b52cc3ccdae6ae8afeec87f97f79ae692d",
+    "bytes": 10190,
+    "license": "CC0-1.0",
+    "author": "Kenney",
+    "revision": "4596a49eaf5a533948d49a47467f606bcdea70ff"
+  },
+  {
+    "file": "interface/confirmation_001.wav",
+    "url": "https://raw.githubusercontent.com/Calinou/kenney-interface-sounds/4596a49eaf5a533948d49a47467f606bcdea70ff/addons/kenney_interface_sounds/confirmation_001.wav",
+    "sha256": "f9d0ef5a5c740c2ac250ac3876db9e4340669044a5bf78ae09192918db3e2ebc",
+    "bytes": 26062,
+    "license": "CC0-1.0",
+    "author": "Kenney",
+    "revision": "4596a49eaf5a533948d49a47467f606bcdea70ff"
+  },
+  {
+    "file": "interface/error_001.wav",
+    "url": "https://raw.githubusercontent.com/Calinou/kenney-interface-sounds/4596a49eaf5a533948d49a47467f606bcdea70ff/addons/kenney_interface_sounds/error_001.wav",
+    "sha256": "d77546b0baa89f37eca6b86f59b54a654ce5afe3d5a73492d0963168cc4ab5bf",
+    "bytes": 30542,
+    "license": "CC0-1.0",
+    "author": "Kenney",
+    "revision": "4596a49eaf5a533948d49a47467f606bcdea70ff"
+  },
+  {
+    "file": "interface/maximize_001.wav",
+    "url": "https://raw.githubusercontent.com/Calinou/kenney-interface-sounds/4596a49eaf5a533948d49a47467f606bcdea70ff/addons/kenney_interface_sounds/maximize_001.wav",
+    "sha256": "c49992256551200a65d77cbdaf9cb691c8a698aaca0a37b56d6be03fef58aa77",
+    "bytes": 23118,
+    "license": "CC0-1.0",
+    "author": "Kenney",
+    "revision": "4596a49eaf5a533948d49a47467f606bcdea70ff"
+  },
+  {
+    "file": "interface/minimize_001.wav",
+    "url": "https://raw.githubusercontent.com/Calinou/kenney-interface-sounds/4596a49eaf5a533948d49a47467f606bcdea70ff/addons/kenney_interface_sounds/minimize_001.wav",
+    "sha256": "2b28be6ccfda4e06df7afa6fd1c25912122cd3cf1161ca91a8a3e9904f4362ae",
+    "bytes": 24014,
+    "license": "CC0-1.0",
+    "author": "Kenney",
+    "revision": "4596a49eaf5a533948d49a47467f606bcdea70ff"
+  },
+  {
+    "file": "interface/drop_001.wav",
+    "url": "https://raw.githubusercontent.com/Calinou/kenney-interface-sounds/4596a49eaf5a533948d49a47467f606bcdea70ff/addons/kenney_interface_sounds/drop_001.wav",
+    "sha256": "0aa0b07692c5d37177f078c39d246d12f2685b553ed06887671797737e5cd432",
+    "bytes": 23374,
+    "license": "CC0-1.0",
+    "author": "Kenney",
+    "revision": "4596a49eaf5a533948d49a47467f606bcdea70ff"
+  },
+  {
+    "file": "interface/scratch_001.wav",
+    "url": "https://raw.githubusercontent.com/Calinou/kenney-interface-sounds/4596a49eaf5a533948d49a47467f606bcdea70ff/addons/kenney_interface_sounds/scratch_001.wav",
+    "sha256": "8db53f023af3410573861dc7b434a052965b6282573b999af17e31d23557d7d2",
+    "bytes": 14286,
+    "license": "CC0-1.0",
+    "author": "Kenney",
+    "revision": "4596a49eaf5a533948d49a47467f606bcdea70ff"
+  },
+  {
+    "file": "interface/bong_001.wav",
+    "url": "https://raw.githubusercontent.com/Calinou/kenney-interface-sounds/4596a49eaf5a533948d49a47467f606bcdea70ff/addons/kenney_interface_sounds/bong_001.wav",
+    "sha256": "f5d5f83b13edc5321352c2ba57972d1400151e3f27f1c18fcda07d261358511a",
+    "bytes": 11726,
+    "license": "CC0-1.0",
+    "author": "Kenney",
+    "revision": "4596a49eaf5a533948d49a47467f606bcdea70ff"
+  },
+  {
+    "file": "particle/scratch_01.png",
+    "url": "https://raw.githubusercontent.com/Calinou/kenney-particle-pack/ab7086639ee73be31abd87feb21bf1402d4e8144/addons/kenney_particle_pack/scratch_01.png",
+    "sha256": "8ef43e57056e4d5dcf10739806cc43bb9cd14221c997c79b6c1680c5a1838443",
+    "bytes": 61785,
+    "license": "CC0-1.0",
+    "author": "Kenney",
+    "revision": "ab7086639ee73be31abd87feb21bf1402d4e8144"
+  },
+  {
+    "file": "interface/glass_001.wav",
+    "url": "https://raw.githubusercontent.com/Calinou/kenney-interface-sounds/4596a49eaf5a533948d49a47467f606bcdea70ff/addons/kenney_interface_sounds/glass_001.wav",
+    "sha256": "39182b395a30b34e18cbcf842922552b23da5b010a52b7777557e02a405f083e",
+    "bytes": 25806,
+    "license": "CC0-1.0",
+    "author": "Kenney",
+    "revision": "4596a49eaf5a533948d49a47467f606bcdea70ff"
+  },
+  {
+    "file": "rpg/knife_slice.ogg",
+    "url": "https://raw.githubusercontent.com/Boyquotes/kenney-rpg-audio-for-godot/22eb79bb843bbcadcaa6ed119353a33265ffad11/addons/kenney%20rpg%20audio/knife_slice.ogg",
+    "bytes": 15532,
+    "sha256": "4cd96dc630bed9840c15f1dd2306da2cc56a4da26a5d3f1a03c5a7265ac5e54f",
+    "license": "CC0-1.0",
+    "author": "Kenney",
+    "revision": "22eb79bb843bbcadcaa6ed119353a33265ffad11"
+  },
+  {
+    "file": "rpg/cloth_1.ogg",
+    "url": "https://raw.githubusercontent.com/Boyquotes/kenney-rpg-audio-for-godot/22eb79bb843bbcadcaa6ed119353a33265ffad11/addons/kenney%20rpg%20audio/cloth_1.ogg",
+    "bytes": 16508,
+    "sha256": "ddb93a3671233f95da0e0b10367f082f7eb42fa6caaddcf776410aa8833c747d",
+    "license": "CC0-1.0",
+    "author": "Kenney",
+    "revision": "22eb79bb843bbcadcaa6ed119353a33265ffad11"
+  },
+  {
+    "file": "rpg/handle_coins.ogg",
+    "url": "https://raw.githubusercontent.com/Boyquotes/kenney-rpg-audio-for-godot/22eb79bb843bbcadcaa6ed119353a33265ffad11/addons/kenney%20rpg%20audio/handle_coins.ogg",
+    "bytes": 25394,
+    "sha256": "8a91f969e932df709df80ee124d86a51389eed9b67f22e5e716bc2bbf60d8dab",
+    "license": "CC0-1.0",
+    "author": "Kenney",
+    "revision": "22eb79bb843bbcadcaa6ed119353a33265ffad11"
+  },
+  {
+    "file": "scifi/low_frequency_explosion_000.ogg",
+    "url": "https://raw.githubusercontent.com/Boyquotes/kenney-sci-fi-sounds-for-godot/c094967fe930c57ddb376f67c75f8aa0296690b7/addons/kenney%20sci-fi%20sounds/low_frequency_explosion_000.ogg",
+    "bytes": 14317,
+    "sha256": "3cb48d86dab63140cfb9aaeea4d4a6846abaca5831d157d8adbec0490da26343",
+    "license": "CC0-1.0",
+    "author": "Kenney",
+    "revision": "c094967fe930c57ddb376f67c75f8aa0296690b7"
+  },
+  {
+    "file": "scifi/explosion_crunch_000.ogg",
+    "url": "https://raw.githubusercontent.com/Boyquotes/kenney-sci-fi-sounds-for-godot/c094967fe930c57ddb376f67c75f8aa0296690b7/addons/kenney%20sci-fi%20sounds/explosion_crunch_000.ogg",
+    "bytes": 28274,
+    "sha256": "4b597d658d0ae101f0a030fbeea5fc3a4292ab85f017470a8254a8e7959cbd69",
+    "license": "CC0-1.0",
+    "author": "Kenney",
+    "revision": "c094967fe930c57ddb376f67c75f8aa0296690b7"
+  },
+  {
+    "file": "scifi/force_field_000.ogg",
+    "url": "https://raw.githubusercontent.com/Boyquotes/kenney-sci-fi-sounds-for-godot/c094967fe930c57ddb376f67c75f8aa0296690b7/addons/kenney%20sci-fi%20sounds/force_field_000.ogg",
+    "bytes": 25672,
+    "sha256": "c2916f2a062c8ddd1aca2826d134fe90847037db31342726ffb0f9097afe339c",
+    "license": "CC0-1.0",
+    "author": "Kenney",
+    "revision": "c094967fe930c57ddb376f67c75f8aa0296690b7"
+  }
+]

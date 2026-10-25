@@ -1,0 +1,19 @@
+{
+  "licenseSource": "https://raw.githubusercontent.com/effekseer/Effekseer/212776d421aac07d3f4a08f82ee42c696e3ba3b5/docs/readme_sample.txt",
+  "assets": [
+    {
+      "file": "Smoke.png",
+      "url": "https://raw.githubusercontent.com/effekseer/effekseer.github.io/c7cf8c7849c9536dda46f8493eb5c7b457cc896c/Help_Tool/Sample/09_01_Sample/Texture/Smoke.png",
+      "bytes": 154606,
+      "sha256": "13aac95d756a5c5e24df2b8368a6031260913b51b1fa2cec6b847775b91d9023",
+      "license": "CC0-1.0"
+    },
+    {
+      "file": "HitEffect01_Yellow.png",
+      "url": "https://raw.githubusercontent.com/effekseer/effekseer.github.io/c7cf8c7849c9536dda46f8493eb5c7b457cc896c/Help_Tool/Sample/09_01_Sample/Texture/HitEffect01_Yellow.png",
+      "bytes": 28759,
+      "sha256": "45cd1d72cc41ff00685bacee750a3471e75d309c96f58e9f7eb1bbfaa0bff9e3",
+      "license": "CC0-1.0"
+    }
+  ]
+}

@@ -28,6 +28,11 @@
   .attack-animation__target {
   animation: none; /* Directional WAAPI recoil shares the attack hit-stop clock. */
 }
+.attack-animation--cinematic .attack-animation__impact-flash,
+.attack-animation--cinematic .attack-animation__shockwave {
+  left: var(--attack-contact-x);
+  top: var(--attack-contact-y);
+}
 .attack-animation--cinematic .attack-animation__impact-flash {
   animation: ko-cinematic-flash 220ms ease-out both;
 }
@@ -503,3 +508,6 @@
 /* Field attack gestures must retain their pointer on touch screens. */
 .ko-player-board-row .ko-board-slot { touch-action:none; }
 [data-attack-drag-hover="true"] { outline:2px solid #e8c367; outline-offset:2px; }
+
+/* External authored contact art replaces the old procedural ring/gradient. */
+.attack-animation--cinematic :is(.attack-animation__impact-flash,.attack-animation__shockwave) { background:none; border:0; box-shadow:none; object-fit:contain; }

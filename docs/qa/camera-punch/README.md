@@ -1,0 +1,11 @@
+# Camera punch and contact sound revision
+
+The previous comparison shook individual rows and lacked a meaningful contact zoom. A shared camera profile now applies to stage, portal attack actor and persistent VFX camera. Camera origin is the captured contact point in each layer's local coordinates; actor portal avoids inheriting the stage transform twice. Heavy zoom peaks1.055, massive1.085, finisher1.11. Directional kick/reverse/decay returns to identity. Heavy amplitude15px before viewport reduction, massive21px, finisher22px; reduced motion/Off disable camera movement and zoom. Existing input/presentation lock, combat state and timers unchanged.
+
+Audio files now layer four existing external Kenney CC0 recordings (punch, surface/glass, crunch, low-frequency), with EQ, fade and lossless normalization to0.68 peak (~-3.35dBFS). No sound synthesis. Files/source hashes in vendor/impact-mixes/manifest.json. No claimed listening parity with the reference.
+
+QA exposed a preview bug: reloaded scenes reused preview-event-count sound keys, so screen-impact deduplication suppressed later preview impacts. The fixture now uses a monotonic attack sequence. Production IDs already include event indices. First zoom assertions correctly failed before this correction; after correction all five viewports and15 real-engine attacks passed, with stage/actor/VFX keyframes each checked for matching punch-in.52 policy/audio/geometry tests passed and production build passed. Actual device performance, target selection during camera, full mode regression for this revision unverified.
+
+The old exported video/audio had uncalibrated file-start alignment. New capture displays a200ms green synchronization marker at recorder start. Export detects its first frame at25fps, then trims video/audio equally after the marker. New output: /workspace/outputs/KO-camera-impact-v2.mp4. Alignment is approximately one capture frame, not hardware output-latency calibration. Marker is trimmed before gameplay; no reference-game sound/art copied. Raw evidence: qa-results/camera-sync-final/alignment.json. Five viewports360×740,375×812,390×844,412×915,1440×900.
+
+No deployment, main merge or Production DB mutation. No claim of100% matching the reference or overall project completion.
