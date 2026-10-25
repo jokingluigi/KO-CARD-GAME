@@ -508,3 +508,6 @@
 /* Field attack gestures must retain their pointer on touch screens. */
 .ko-player-board-row .ko-board-slot { touch-action:none; }
 [data-attack-drag-hover="true"] { outline:2px solid #e8c367; outline-offset:2px; }
+
+/* External authored contact art replaces the old procedural ring/gradient. */
+.attack-animation--cinematic :is(.attack-animation__impact-flash,.attack-animation__shockwave) { background:none; border:0; box-shadow:none; object-fit:contain; }

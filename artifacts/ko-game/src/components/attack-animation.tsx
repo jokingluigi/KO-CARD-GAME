@@ -197,12 +197,12 @@ export function AttackAnimation({
         />
       </div>
       {impacted && <>
-        {!reduced && animation.damage>=6 && <div className={`ko-impact-frame ${animation.finishingBlow?'ko-impact-frame--finisher':''}`} />}
+
 
         {impacted && <BattleVfx kind={attackBurstKind(animation)} left={contactX} top={contactY} direction={{x:dx,y:dy}}
           strength={animation.damage} seed={animation.soundKey} duration={Math.min(500,duration-timeline.impact)} />}
-        {impacted && animation.damage>=3 && <div className="attack-animation__shockwave" />}
-        <div className="attack-animation__impact-flash" />
+        {impacted && animation.damage>=3 && <img src={import.meta.env.BASE_URL+"vendor/kenney/particle/circle_03.png"} alt="" className="attack-animation__shockwave" />}
+        <img src={import.meta.env.BASE_URL+"vendor/kenney/particle/spark_01.png"} alt="" className="attack-animation__impact-flash" />
       </>}
     </div>
   );

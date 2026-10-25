@@ -71,10 +71,10 @@ try {
       assert.ok(samples.length > 5);
       const audio = await page.evaluate(() => window.__qaAudio);
       if (action === "attack") {
-        const bass = audio.findIndex(e => e.type === "play" && e.src.endsWith("summon-bass-heavy.wav"));
-        const base = audio.findIndex(e => e.type === "play" && e.src.endsWith("combat-hit-6-9.wav"));
+        const bass = audio.findIndex(e => e.type === "play" && e.src.endsWith("low_frequency_explosion_000.ogg"));
+        const base = audio.findIndex(e => e.type === "play" && e.src.endsWith("impact_punch_heavy_000.ogg"));
         assert.ok(base >= 0 && bass > base, "base hit must precede its bass layer");
-        assert.ok(!audio.slice(bass + 1).some(e => e.type === "pause" && e.src.endsWith("summon-bass-heavy.wav")), "new bass was cut off");
+        assert.ok(!audio.slice(bass + 1).some(e => e.type === "pause" && e.src.endsWith("low_frequency_explosion_000.ogg")), "new bass was cut off");
       }
       const frames = samples.find((s) => s.frames)?.frames;
       const offsets = frames
