@@ -33,6 +33,7 @@ Physical Android/iOS hardware was not tested. Token-specific gameplay in AI, tow
 
 ## Changed files
 
+- `artifacts/api-server/src/routes/daily-quests.ts`
 - `artifacts/api-server/src/lib/cosmetics.ts`
 - `artifacts/api-server/src/lib/pack-details.ts`
 - `artifacts/api-server/src/lib/pack-opening-service.ts`
@@ -61,3 +62,7 @@ Physical Android/iOS hardware was not tested. Token-specific gameplay in AI, tow
 - `artifacts/api-server/src/lib/skin-original-grant.ts`
 - `docs/qa/champion-skin-set-browser.mjs`
 - `docs/qa/20261026-champion-token-skin-sets.md`
+
+## CI regression discovered before release
+
+The wider startup suite exposed an already-existing discrepancy: the initial AI-start response included `intro`, but resuming the same saved match omitted it. The existing unmodified retry/saved-deck test failed. The resumed response now resolves the same champion-pair presentation using the saved state; match state, permissions, validation and reward rules remain unchanged. This is confined to the missing presentation response field in `routes/daily-quests.ts`. All 411 tests in that full startup/auth/quest/database regression group passed after this fix; the production build also passed again.

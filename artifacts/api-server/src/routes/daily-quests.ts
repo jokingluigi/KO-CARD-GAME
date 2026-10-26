@@ -1,3 +1,5 @@
+import {loadAiMatchIntro} from "../lib/ai-match-intro";
+import type {GameState} from "@workspace/game-engine";
 import {dailyCompletionBonus,claimDailyCompletionBonus} from "../lib/daily-completion-bonus";
 import {saveAIQuestStart,storedAIQuestMatch} from '../lib/ai-quest-match-storage';
 import { ensureDraftParticipationQuest } from "../lib/draft-participation-quest";
@@ -58,7 +60,12 @@ router.post('/ai-match-start',async(request,response):Promise<void>=>{
  const identity={userId:request.authUser!.id,deckId,aiDeckId,matchId};
  try {
   const existing=await storedAIQuestMatch(identity);
-  if(existing){response.json({state:existing.initialState,difficulty:existing.difficulty});return;}
+  if(existing){
+   const state=existing.initialState as unknown as GameState;
+   const first=state.players[0]?.champion,second=state.players[1]?.champion;
+   const intro=first&&second?await loadAiMatchIntro(first,second):{playerOneLine:null,playerTwoLine:null,firstSpeaker:null};
+   response.json({state,difficulty:existing.difficulty,intro});return;
+  }
   const prepared=await completeAIMatchQuestProgress({...identity,isTestAccount:isTestAccountUser(request.authUser!),outcome:'LOSS',actions:[],prepareOnly:true});
   response.json({...await saveAIQuestStart(identity,prepared.state,prepared.difficulty,prepared.startingDeck),intro:prepared.intro});
  }catch(error){response.status(422).json({message:error instanceof Error?error.message:'Could not prepare AI match'});}
