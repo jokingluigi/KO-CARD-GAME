@@ -47,6 +47,12 @@ export function skinKey(type: CosmeticType, targetId: string | null) {
     ? "back"
     : `${type === "CHAMPION_SKIN" ? "champion" : "card"}:${targetId}`;
 }
+/** One champion image is shared by collection, battle HUD and VS intro.
+ * Legacy slot-only records remain usable without a database rewrite.
+ */
+export function championSkinArtwork(assets: CosmeticAssets | null | undefined) {
+  return assets?.art || assets?.portrait || assets?.intro;
+}
 export function cosmeticImage(
   loadout: CosmeticLoadout | undefined,
   type: "CHAMPION_SKIN" | "CARD_SKIN",
@@ -68,10 +74,14 @@ export function cosmeticImage(
       }
     }
   }
-  // Each optional champion display slot falls back independently, never to an unrelated slot.
-  return item?.type === type && item.targetId === id
-    ? item.imageAssets?.[context] || original
-    : original;
+  if (item?.type !== type || item.targetId !== id) return original;
+  if (
+    type === "CHAMPION_SKIN" &&
+    ["art", "portrait", "intro"].includes(context)
+  )
+    return championSkinArtwork(item.imageAssets) || original;
+  // Awakening and token art are distinct; never substitute the regular portrait here.
+  return item.imageAssets?.[context] || original;
 }
 export function validImageUrl(value: unknown): value is string {
   if (typeof value !== "string" || value.length > 2048) return false;

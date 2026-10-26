@@ -1,3 +1,4 @@
+import { AdminDeletionError, deleteTowerCatalog, towerCatalogWriteLock, type TowerCatalogKind } from "../lib/admin-content-deletion";
 import {randomUUID} from 'node:crypto';
 import { sanitizeGameStateForViewer } from '../online/sanitizer';
 import { executeTowerPlayerAction } from '../lib/tower-battle-actions';
@@ -80,6 +81,7 @@ router.put('/seasons/:id', async (request, response, next) => {
     if (typeof request.body?.active !== 'boolean') throw new TowerRuleError('INVALID_CONFIG', '시즌 활성 여부를 확인해 주세요.');
     await db.transaction(async tx => {
       // Serialize concurrent activation; exactly one season may be active.
+      await tx.execute(towerCatalogWriteLock);
       await tx.execute(sql`SELECT pg_advisory_xact_lock(hashtext('tower:season-config'))`);
       if (request.body.active) await tx.update(towerSeasonsTable).set({ active: false, updatedAt: new Date() }).where(eq(towerSeasonsTable.active, true));
       await tx.insert(towerSeasonsTable).values({ id: data.id, name: data.name, active: request.body.active, data: data as unknown as Record<string, unknown> })
@@ -92,7 +94,7 @@ for (const kind of Object.keys(tables) as Array<keyof typeof tables>) router.put
   try {
     const data = parsers[kind]({ ...request.body?.data, id: String(request.params.id) });
     const table = tables[kind];
-    await db.insert(table).values({ id: data.id, data: data as unknown as Record<string, unknown> }).onConflictDoUpdate({ target: table.id, set: { data: data as unknown as Record<string, unknown>, updatedAt: new Date() } });
+    await db.transaction(async tx => { await tx.execute(towerCatalogWriteLock); await tx.insert(table).values({ id: data.id, data: data as unknown as Record<string, unknown> }).onConflictDoUpdate({ target: table.id, set: { data: data as unknown as Record<string, unknown>, updatedAt: new Date() } }); });
     response.json({ data });
   } catch (error) { next(error); }
 });
@@ -101,11 +103,23 @@ router.put('/metadata/:kind/:id', async (request, response, next) => {
     const kind = String(request.params.kind);
     if (kind !== 'CARD' && kind !== 'CHAMPION') throw new TowerRuleError('INVALID_CONFIG', '메타데이터 종류를 확인해 주세요.');
     const data = parseMetadata(request.body?.data); const id = String(request.params.id);
-    const [existing] = await db.select().from(towerMetadataTable).where(eq(towerMetadataTable.id, id));
-    if (existing && existing.kind !== kind) throw new TowerRuleError('INVALID_CONFIG', '다른 종류와 ID가 중복됩니다.');
-    await db.insert(towerMetadataTable).values({ id, kind, data }).onConflictDoUpdate({ target: towerMetadataTable.id, set: { data } });
+    await db.transaction(async tx => {
+      await tx.execute(towerCatalogWriteLock);
+      const [existing] = await tx.select().from(towerMetadataTable).where(eq(towerMetadataTable.id, id));
+      if (existing && existing.kind !== kind) throw new TowerRuleError('INVALID_CONFIG', '다른 종류와 ID가 중복됩니다.');
+      await tx.insert(towerMetadataTable).values({ id, kind, data }).onConflictDoUpdate({ target: towerMetadataTable.id, set: { data } });
+    });
     response.json({ data });
   } catch (error) { next(error); }
+});
+for (const kind of ["seasons", ...Object.keys(tables)] as TowerCatalogKind[]) router.delete(`/${kind}/:id`, async (req, res, next) => {
+  try { await deleteTowerCatalog(kind, String(req.params.id)); res.json({ deleted: true, id: req.params.id }); }
+  catch (error) { if (error instanceof AdminDeletionError) { res.status(error.status).json({ message: error.message }); return; } next(error); }
+});
+router.delete("/metadata/:kind/:id", async (req, res, next) => {
+  if (!["CARD", "CHAMPION"].includes(String(req.params.kind))) { res.status(400).json({ message: "메타데이터 종류를 확인해 주세요." }); return; }
+  try { await deleteTowerCatalog("metadata", String(req.params.id), String(req.params.kind)); res.json({ deleted: true, id: req.params.id }); }
+  catch (error) { if (error instanceof AdminDeletionError) { res.status(error.status).json({ message: error.message }); return; } next(error); }
 });
 router.post('/validate', async (_request, response, next) => {
   try { const snapshot = await loadTowerSnapshot(db,typeof _request.body?.towerId==='string'?_request.body.towerId:undefined,true); response.json({ valid: true, season: snapshot.catalog.season.name }); }
@@ -116,6 +130,7 @@ router.post('/v2/:id/publish',async(request,response,next)=>{try{
  const id=String(request.params.id);const snapshot=await loadTowerSnapshot(db,id,true);
  if(!snapshot.catalog.season.v2)throw new TowerRuleError('INVALID_CONFIG','V2 타워를 선택하세요.');
  const published=await db.transaction(async tx=>{
+  await tx.execute(towerCatalogWriteLock);
   await tx.execute(sql`SELECT pg_advisory_xact_lock(hashtext(${'tower:publish:'+id}))`);
   const [row]=await tx.select().from(towerSeasonsTable).where(eq(towerSeasonsTable.id,id)).for('update');
   if(!row||JSON.stringify(parseSeason(row.data))!==JSON.stringify(snapshot.catalog.season))throw new TowerRuleError('STALE_CONFIG','설정이 변경됐습니다. 다시 검증하고 공개하세요.');

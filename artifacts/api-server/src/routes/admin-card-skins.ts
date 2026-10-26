@@ -1,7 +1,7 @@
 import { and, asc, eq, sql } from "drizzle-orm";
 import { randomUUID } from "node:crypto";
 import { Router, type IRouter, type Request, type Response } from "express";
-import { cardSkinDefinitionsTable, cardsTable, db } from "@workspace/db";
+import { cardSkinDefinitionsTable, cardsTable, packDefinitionsTable, db } from "@workspace/db";
 import { getAuthenticatedUser } from "../lib/auth";
 
 const router: IRouter = Router();
@@ -97,8 +97,17 @@ router.post("/:id/status", async (request, response) => {
 
 router.delete("/:id", async (request, response) => {
   if (!requireAdmin(request, response)) return;
-  const [skin] = await db.delete(cardSkinDefinitionsTable).where(eq(cardSkinDefinitionsTable.id, request.params.id)).returning();
-  if (!skin) { response.status(404).json({ message: "Skin을 찾을 수 없습니다." }); return; }
+  const result = await db.transaction(async tx => {
+    await tx.execute(sql`SELECT pg_advisory_xact_lock(hashtext('ko-cosmetics-write-v1'))`);
+    const [skin] = await tx.select().from(cardSkinDefinitionsTable).where(eq(cardSkinDefinitionsTable.id, String(request.params.id))).for("update");
+    if (!skin) return { missing: true };
+    const packs = await tx.select({ name: packDefinitionsTable.name }).from(packDefinitionsTable).where(and(sql`${skin.id} = ANY(${packDefinitionsTable.skinPool})`, sql`${packDefinitionsTable.deletedAt} IS NULL`));
+    if (packs.length) return { packs: packs.map(pack => pack.name) };
+    await tx.delete(cardSkinDefinitionsTable).where(eq(cardSkinDefinitionsTable.id, skin.id));
+    return { deleted: true };
+  });
+  if (result.missing) { response.status(404).json({ message: "Skin을 찾을 수 없습니다." }); return; }
+  if (result.packs) { response.status(409).json({ message: `다음 팩의 스킨 풀에서 먼저 제거해 주세요: ${result.packs.join(", ")}` }); return; }
   response.status(204).end();
 });
 

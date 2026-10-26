@@ -1109,6 +1109,7 @@ export function AdminTowerV2({
           >
             초안 저장
           </button>
+          {rows.some(row => row.id === draft.id) && <button className={input+" border-red-800 text-red-300"} disabled={busy} onClick={() => { if (window.confirm(`“${draft.name}” 타워 초안을 삭제할까요? 공개 버전이나 도전 기록이 있으면 삭제가 차단됩니다.`)) void work(async () => { await request("/tower/seasons/"+encodeURIComponent(draft.id), undefined, "DELETE"); setDraft(null); setVersions([]); setMessage("타워 초안을 삭제했습니다."); }); }}>타워 초안 삭제</button>}
         </>
       )}
       {message && (

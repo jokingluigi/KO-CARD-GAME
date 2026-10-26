@@ -1,6 +1,6 @@
 import { Router, type IRouter } from "express";
 import { randomUUID } from "node:crypto";
-import { and, eq, asc, ilike, or, inArray } from "drizzle-orm";
+import { and, eq, asc, ilike, or, inArray, sql } from "drizzle-orm";
 import {
   db,
   cosmeticItemsTable as items,
@@ -10,6 +10,7 @@ import {
   usersTable,
   cardsTable,
   championsTable,
+  packDefinitionsTable,
 } from "@workspace/db";
 import { getAuthenticatedUser } from "../lib/auth";
 import {
@@ -246,6 +247,23 @@ router.patch("/admin/cosmetics/items/:id", async (req, res) => {
     return updated;
   });
   res.json({ item });
+});
+router.delete("/admin/cosmetics/items/:id", async (req, res) => {
+  const id = String(req.params.id);
+  await db.transaction(async tx => {
+    await tx.execute(cosmeticsWriteLock);
+    const [item] = await tx.select().from(items).where(eq(items.id, id)).for("update");
+    if (!item) throw new CosmeticError(404, "아이템을 찾을 수 없습니다.");
+    const packs = await tx.select({ name: packDefinitionsTable.name }).from(packDefinitionsTable)
+      .where(and(sql`${id} = ANY(${packDefinitionsTable.skinPool})`, sql`${packDefinitionsTable.deletedAt} IS NULL`));
+    if (packs.length) throw new CosmeticError(409, `다음 팩의 스킨 풀에서 먼저 제거해 주세요: ${packs.map(pack => pack.name).join(", ")}`);
+    await tx.delete(equips).where(eq(equips.cosmeticId, id));
+    await tx.delete(owned).where(eq(owned.cosmeticId, id));
+    await tx.delete(items).where(eq(items.id, id));
+    await tx.insert(audit).values({ id: randomUUID(), actorId: req.authUser!.id, cosmeticId: id, action: "DELETE" });
+  });
+  // Image files and frozen match/pack receipts are retained for existing games/history.
+  res.json({ deleted: true, id });
 });
 router.get("/admin/cosmetics/users", async (req, res) => {
   const q = typeof req.query.q === "string" ? req.query.q.trim() : "";

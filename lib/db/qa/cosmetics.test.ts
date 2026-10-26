@@ -921,6 +921,112 @@ test("all administrator accounts unlock current/new skins; users and non-skin it
   assert.ok(!(await database.select().from(schema.userCosmeticsTable).where(eq(schema.userCosmeticsTable.userId, "second-admin"))).some(row => row.cosmeticId === skin.id));
 });
 
+test("administrator notice deletion removes public content and rejects user/anonymous requests", async () => {
+  const created = await api("/admin/notices", "admin", "POST", { title: "삭제 검증 공지", body: "관리자 삭제 테스트", displayOrder: 0, enabled: true });
+  assert.equal(created.status, 201, JSON.stringify(created.body));
+  const id = created.body.notice.id;
+  assert.ok((await api("/notices", "player-a")).body.notices.some((notice: any) => notice.id === id));
+  assert.equal((await api("/admin/notices/" + id, "player-a", "DELETE")).status, 403);
+  assert.equal((await api("/admin/notices/" + id, "anonymous", "DELETE")).status, 401);
+  assert.equal((await api("/admin/notices/" + id, "admin", "DELETE")).status, 200);
+  assert.ok(!(await api("/notices", "player-a")).body.notices.some((notice: any) => notice.id === id));
+  assert.equal((await api("/admin/notices/" + id, "admin", "DELETE")).status, 404);
+});
+
+test("cosmetic deletion guards packs, clears ownership/equipment atomically and retains history/images", async () => {
+  await database.insert(schema.usersTable).values({ id: "delete-user", email: "delete@cosmetics.invalid", nickname: "Delete fixture", passwordHash: hash });
+  const created = await api(prefix + "/items", "admin", "POST", { ...registered.CHAMPION_SKIN, name: "삭제 검증 스킨" });
+  assert.equal(created.status, 201);
+  const item = created.body.item;
+  await api(prefix + "/users/delete-user/grants", "admin", "POST", { cosmeticId: item.id, action: "GRANT" });
+  await equipCosmetic("delete-user", "champion:cosmetic-hero", item.id);
+  const frozen = structuredClone(await loadCosmetics("delete-user"));
+  const url = prefix + "/items/" + item.id;
+  assert.equal((await api(url, "player-a", "DELETE")).status, 403);
+  assert.equal((await api(url, "anonymous", "DELETE")).status, 401);
+  await database.insert(schema.packDefinitionsTable).values({ id: "delete-ref-pack", name: "삭제 참조 팩", skinPool: [item.id], skinChance: 100, championRate: 100, normalRate: 0, legendaryRate: 0, championPool: ["cosmetic-hero"], status: "PUBLISHED" });
+  const blocked = await api(url, "admin", "DELETE");
+  assert.equal(blocked.status, 409); assert.match(blocked.body.message, /삭제 참조 팩/);
+  assert.equal((await loadCosmetics("delete-user")).skins["champion:cosmetic-hero"]?.id, item.id);
+  await api("/admin/packs/delete-ref-pack", "admin", "DELETE");
+  assert.equal((await api(url, "admin", "DELETE")).status, 200);
+  assert.equal((await loadCosmetics("delete-user")).skins["champion:cosmetic-hero"], undefined);
+  assert.equal((await database.select().from(schema.userCosmeticsTable).where(eq(schema.userCosmeticsTable.cosmeticId, item.id))).length, 0);
+  assert.equal((await database.select().from(schema.equippedCosmeticsTable).where(eq(schema.equippedCosmeticsTable.cosmeticId, item.id))).length, 0);
+  assert.equal(frozen.skins["champion:cosmetic-hero"]!.imageAssets.art, uploaded);
+  assert.equal((await fetch(origin + item.imageAssets.art)).status, 200);
+  assert.equal((await database.select().from(schema.cosmeticAuditTable).where(and(eq(schema.cosmeticAuditTable.cosmeticId, item.id), eq(schema.cosmeticAuditTable.action, "DELETE")))).length, 1);
+  assert.equal((await api(url, "admin", "DELETE")).status, 404);
+  const [packTemplate] = await database.select().from(schema.packDefinitionsTable).where(eq(schema.packDefinitionsTable.id, "set-pack"));
+  assert.equal((await api("/admin/packs", "admin", "POST", { ...packTemplate, name: "삭제 스킨 재참조 거부", skinPool: [item.id] })).status, 422);
+  await api("/cosmetics", "admin");
+  assert.ok(!(await api(prefix)).body.items.some((candidate: any) => candidate.id === item.id));
+  for (const type of ["CARD_BACK", "IMAGE_EMOTE"]) {
+    const extra = await api(prefix + "/items", "admin", "POST", { ...registered[type], name: "삭제 추가 " + type });
+    assert.equal(extra.status, 201);
+    assert.equal((await api(prefix + "/items/" + extra.body.item.id, "admin", "DELETE")).status, 200);
+  }
+  // Existing pack-card skin deletion gets the same reference guard.
+  await database.insert(schema.cardSkinDefinitionsTable).values({ id: "delete-legacy-skin", cardDefinitionId: cards[0]!.id, name: "삭제 기존 스킨", status: "PUBLISHED" });
+  await database.insert(schema.packDefinitionsTable).values({ id: "delete-legacy-pack", name: "기존 참조 팩", skinPool: ["delete-legacy-skin"], skinChance: 100 });
+  const legacyUrl = origin + "/api/admin/card-skins/delete-legacy-skin";
+  assert.equal((await fetch(legacyUrl, { method: "DELETE", headers: { cookie: cookies.admin! } })).status, 409);
+  await api("/admin/packs/delete-legacy-pack", "admin", "DELETE");
+  assert.equal((await fetch(legacyUrl, { method: "DELETE", headers: { cookie: cookies.admin! } })).status, 204);
+});
+
+test("admin-added deck products and quest seasons delete safely without erasing purchase/quest history", async () => {
+  await database.insert(schema.shopDecksTable).values({ id: "delete-product", name: "삭제 덱 상품", price: 0, cardDefinitionIds: [] });
+  assert.equal((await api("/admin/shop-decks/delete-product", "player-a", "DELETE")).status, 403);
+  assert.equal((await api("/admin/shop-decks/delete-product", "admin", "DELETE")).status, 200);
+  assert.equal((await api("/admin/shop-decks/delete-product", "admin", "DELETE")).status, 404);
+  await database.insert(schema.shopDecksTable).values({ id: "sold-product", name: "판매된 덱 상품", price: 1, cardDefinitionIds: deck });
+  await database.insert(schema.shopDeckPurchasesTable).values({ id: "retained-purchase", userId: "player-a", productId: "sold-product", deckId: "deck-player-a", price: 1, receipt: { name: "판매된 덱 상품", cardDefinitionIds: deck, championDefinitionId: "cosmetic-hero", includedChampionId: null, grantedCards: {}, balanceAfter: 0 } });
+  assert.equal((await api("/admin/shop-decks/sold-product", "admin", "DELETE")).status, 409);
+  assert.equal((await database.select().from(schema.shopDeckPurchasesTable).where(eq(schema.shopDeckPurchasesTable.id, "retained-purchase"))).length, 1);
+  assert.equal((await database.select().from(schema.decksTable).where(eq(schema.decksTable.id, "deck-player-a"))).length, 1);
+  for (const id of ["empty-quest-season", "used-quest-season"]) {
+    const response = await api("/admin/quests/seasons", "admin", "POST", { id, name: id, startsAt: "2099-01-01T00:00:00Z", endsAt: "2099-02-01T00:00:00Z", status: "DISABLED" });
+    assert.equal(response.status, 200, JSON.stringify(response.body));
+  }
+  assert.equal((await api("/admin/quests/seasons/empty-quest-season", "player-a", "DELETE")).status, 403);
+  assert.equal((await api("/admin/quests/seasons/empty-quest-season", "admin", "DELETE")).status, 200);
+  await database.insert(schema.dailyQuestDefinitionsTable).values({ id: "season-linked-quest", title: "연결 퀘스트", description: "", objectiveType: "PLAY_MATCH", targetValue: 1, rewardAmount: 1, enabled: false, platform: { questType: "SEASON", seasonId: "used-quest-season" } });
+  assert.equal((await api("/admin/quests/seasons/used-quest-season", "admin", "DELETE")).status, 409);
+  await database.insert(schema.dailyQuestAssignmentsTable).values({ id: "retained-assignment", userId: "delete-user", definitionId: "season-linked-quest", assignmentDate: "2099-01-01", slot: 0, title: "연결 퀘스트", description: "", objectiveType: "PLAY_MATCH", targetValue: 1, rewardType: "CURRENCY", rewardAmount: 1, platform: { questType: "SEASON", seasonId: "used-quest-season" } });
+  await api("/admin/quests/definitions/season-linked-quest", "admin", "DELETE");
+  assert.equal((await api("/admin/quests/seasons/used-quest-season", "admin", "DELETE")).status, 409);
+  assert.equal((await database.select().from(schema.dailyQuestAssignmentsTable).where(eq(schema.dailyQuestAssignmentsTable.id, "retained-assignment"))).length, 1);
+});
+
+test("tower catalog deletion supports every editable resource and protects dependencies/published runs", async () => {
+  const resources = { starters: schema.towerStartersTable, presets: schema.towerPresetsTable, relics: schema.towerRelicsTable, characters: schema.towerCharactersTable, scenes: schema.towerScenesTable };
+  for (const [kind, table] of Object.entries(resources)) {
+    const id = "delete-tower-" + kind;
+    await database.insert(table).values({ id, data: { id, name: id } });
+    assert.equal((await api("/admin/tower/" + kind + "/" + id, "player-a", "DELETE")).status, 403);
+    assert.equal((await api("/admin/tower/" + kind + "/" + id, "admin", "DELETE")).status, 200);
+    assert.equal((await api("/admin/tower/" + kind + "/" + id, "admin", "DELETE")).status, 404);
+  }
+  await database.insert(schema.towerMetadataTable).values({ id: cards[0]!.id, kind: "CARD", data: { synergyTags: ["삭제 테스트"] } });
+  assert.equal((await api("/admin/tower/metadata/CHAMPION/" + cards[0]!.id, "admin", "DELETE")).status, 404);
+  assert.equal((await api("/admin/tower/metadata/CARD/" + cards[0]!.id, "admin", "DELETE")).status, 200);
+  assert.equal((await database.select().from(schema.cardsTable).where(eq(schema.cardsTable.id, cards[0]!.id))).length, 1);
+  await database.insert(schema.towerRelicsTable).values({ id: "referenced-relic", data: { id: "referenced-relic", name: "연결 유물" } });
+  await database.insert(schema.towerPresetsTable).values({ id: "dependent-preset", data: { id: "dependent-preset", name: "참조 덱", unlockCondition: { type: "ALL", conditions: [{ type: "RELIC", id: "referenced-relic" }] } } });
+  const blocked = await api("/admin/tower/relics/referenced-relic", "admin", "DELETE");
+  assert.equal(blocked.status, 409); assert.match(blocked.body.message, /참조 덱/);
+  assert.equal((await api("/admin/tower/presets/dependent-preset", "admin", "DELETE")).status, 200);
+  assert.equal((await api("/admin/tower/relics/referenced-relic", "admin", "DELETE")).status, 200);
+  for (const id of ["delete-tower-season", "protected-tower-season"]) await database.insert(schema.towerSeasonsTable).values({ id, name: id, active: false, data: { id, name: id } });
+  assert.equal((await api("/admin/tower/seasons/delete-tower-season", "admin", "DELETE")).status, 200);
+  await database.insert(schema.towerVersionsTable).values({ id: "retained-version", towerId: "protected-tower-season", version: 1, snapshot: {}, publishedBy: "admin" });
+  await database.insert(schema.towerRunsTable).values({ id: "retained-run", userId: "player-a", seasonId: "protected-tower-season", state: {}, snapshot: {} });
+  assert.equal((await api("/admin/tower/seasons/protected-tower-season", "admin", "DELETE")).status, 409);
+  assert.equal((await database.select().from(schema.towerVersionsTable).where(eq(schema.towerVersionsTable.id, "retained-version"))).length, 1);
+  assert.equal((await database.select().from(schema.towerRunsTable).where(eq(schema.towerRunsTable.id, "retained-run"))).length, 1);
+});
+
 after(async () => {
   if (process.env.KO_COSMETICS_BROWSER_MODE === "1") {
     // Restore deck quantities after the missing-original acquisition tests.

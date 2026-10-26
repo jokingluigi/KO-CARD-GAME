@@ -1,7 +1,7 @@
 import {useAdminDraftGuard} from './admin-editor-sections';
 import {useAdminList,AdminListControls} from './admin-list-controls';
 import {AdminEditorSections} from './admin-editor-sections';
-import { Megaphone, Power, Save, Send } from "lucide-react";
+import { Megaphone, Power, Save, Send, Trash2 } from "lucide-react";
 import { useEffect, useState } from "react";
 
 type NoticeRecord = {
@@ -36,6 +36,7 @@ export function AdminNoticesManager({ onUnauthorized }: Props) {
   const [enabled, setEnabled] = useState(true);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [deleting, setDeleting] = useState<string | null>(null);
   const [message, setMessage] = useState("");
   const [errorMessage, setErrorMessage] = useState("");
 
@@ -96,6 +97,18 @@ export function AdminNoticesManager({ onUnauthorized }: Props) {
     }
   }
 
+  async function deleteNotice(notice: NoticeRecord) {
+    if (!window.confirm(`“${notice.title}” 공지를 삭제할까요?\n메인 화면에서도 제거되며 되돌릴 수 없습니다.`)) return;
+    setDeleting(notice.id); setMessage(""); setErrorMessage("");
+    try {
+      const response = await fetch(`${apiBase}/${encodeURIComponent(notice.id)}`, { method: "DELETE", credentials: "include" });
+      if (response.status === 401 || response.status === 403) { onUnauthorized(); return; }
+      if (!response.ok) throw new Error(await readMessage(response));
+      setNotices(current => current.filter(item => item.id !== notice.id));
+      setMessage("공지를 삭제했습니다.");
+    } catch (error) { setErrorMessage(error instanceof Error ? error.message : "공지를 삭제하지 못했습니다."); }
+    finally { setDeleting(null); }
+  }
   async function updateNotice(notice: NoticeRecord) {
     setMessage("");
     setErrorMessage("");
@@ -127,7 +140,7 @@ return (
         <p className="mt-2 text-sm text-neutral-500">활성 공지만 일반 사용자 메인 화면에 표시됩니다. 내용은 안전한 일반 텍스트로 렌더링됩니다.</p>
       </div>
 {(message || errorMessage) && (
-        <div className={`rounded border px-3 py-2 text-xs font-bold ${errorMessage ? "border-red-900 bg-red-950/50 text-red-300" : "border-emerald-900 bg-emerald-950/40 text-emerald-300"}`}>
+        <div role={errorMessage ? "alert" : "status"} className={`rounded border px-3 py-2 text-xs font-bold ${errorMessage ? "border-red-900 bg-red-950/50 text-red-300" : "border-emerald-900 bg-emerald-950/40 text-emerald-300"}`}>
           {errorMessage || message}
         </div>
       )}
@@ -138,8 +151,9 @@ return (
         ) : notices.length === 0 ? (
           <p className="rounded border border-dashed border-neutral-800 px-3 py-8 text-center text-xs text-neutral-600">등록된 공지가 없습니다.</p>
         ) : listing.records.map((notice) => (
-          <article key={notice.id} className="space-y-3 rounded-lg border border-neutral-800 bg-black/30 p-4">
+          <article key={notice.id} data-notice-id={notice.id} className="space-y-3 rounded-lg border border-neutral-800 bg-black/30 p-4">
             <input
+              aria-label="공지 제목"
               value={notice.title}
               onChange={(event) => setNotices((current) => current.map((item) => item.id === notice.id ? { ...item, title: event.target.value } : item))}
               className="w-full rounded border border-neutral-700 bg-neutral-950 px-3 py-2 text-sm font-black outline-none focus:border-primary"
@@ -168,9 +182,10 @@ return (
                 />
                 <Power className="h-3.5 w-3.5" /> 활성
               </label>
-              <button type="button" onClick={() => void updateNotice(notice)} className="ml-auto flex items-center gap-2 rounded border border-primary/60 px-3 py-2 text-xs font-black text-primary hover:bg-primary/10">
+              <button type="button" disabled={saving || deleting !== null} onClick={() => void updateNotice(notice)} className="ml-auto flex items-center gap-2 rounded border border-primary/60 px-3 py-2 text-xs font-black text-primary hover:bg-primary/10">
                 <Save className="h-4 w-4" /> 저장
               </button>
+              <button type="button" disabled={saving || deleting !== null} onClick={() => void deleteNotice(notice)} className="flex min-h-11 items-center gap-2 rounded border border-red-800 px-3 py-2 text-xs text-red-300 disabled:opacity-50"><Trash2 className="h-4 w-4" />{deleting === notice.id ? "삭제 중…" : "삭제"}</button>
             </div>
           </article>
         ))}
