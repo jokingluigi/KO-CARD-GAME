@@ -177,7 +177,7 @@
 .portraitImage {
   z-index: 1;
   display: block;
-  object-fit: cover;
+  object-fit: contain;
   object-position: center;
   filter: saturate(0.86) contrast(1.08);
 }
@@ -623,3 +623,5 @@
 .portraitFrame{box-shadow:0 12px 20px #0007;transform:perspective(900px) rotateY(3deg)}
 @keyframes comicReveal{0%{transform:translateX(-100%);opacity:.8}45%{transform:translateX(0);opacity:.5}100%{transform:translateX(100%);opacity:0}}
 @media(prefers-reduced-motion:reduce){.overlay::after{animation:none;display:none}.portraitFrame{transform:none}}
+
+.portraitFallback small{font-size:12px;letter-spacing:0;line-height:1.6;text-align:center;padding:12px;}

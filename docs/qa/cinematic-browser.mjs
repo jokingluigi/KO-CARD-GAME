@@ -127,7 +127,7 @@ for (const [name, width, height, reduced] of [
   await page.getByRole('alert').waitFor();
   await page.getByTestId('button-return-to-main-menu').click();
   await page.getByTestId("defeat").click();
-  await page.locator(".champion-defeat-cinematic").waitFor();
+  if(await page.locator(".champion-defeat-cinematic").count()) failures.push(`${name}:detached champion defeat scene returned`);
   await page.getByTestId("button-return-to-main-menu").waitFor({timeout:4000});
   await page.getByTestId("button-return-to-main-menu").click();
   const beforeFinish=await page.getByTestId("counts").textContent();

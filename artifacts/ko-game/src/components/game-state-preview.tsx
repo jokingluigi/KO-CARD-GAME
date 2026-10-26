@@ -1,3 +1,4 @@
+import { ChampionDefeatBurst } from './champion-defeat-burst';
 import { questPortrait } from './quest-media';
 import "./battle-board.css";
 import {optionalCosmetics} from '@/lib/cosmetics-client';
@@ -205,7 +206,7 @@ export function GameStatePreview({
   const [settingsOpen, setSettingsOpen] = React.useState(false);
   const [emoteOpen, setEmoteOpen] = React.useState(false);
   React.useEffect(() => {
-    audioManager.preloadAttackSounds(['1-2', '3-5', '6-9', '10-plus'].map((tier) => `${import.meta.env.BASE_URL}sfx/combat-hit-${tier}.wav?v=1`).concat(`${import.meta.env.BASE_URL}sfx/combat-finisher.wav?v=1`));
+    audioManager.preloadAttackSounds(['1-2', '3-5', '6-9', '10-plus'].map((tier) => `${import.meta.env.BASE_URL}sfx/combat-hit-${tier}.wav?v=1`).concat(`${import.meta.env.BASE_URL}sfx/combat-finisher.wav?v=1`,`${import.meta.env.BASE_URL}sfx/champion-glass-shatter.wav`));
   }, []);
   const [spokenLine, setSpokenLine] = React.useState<{ text: string; playerId: string; speaker: string; id: number; questCompletion?: boolean; gameId?: string } | null>(null);
   const spokenTimerRef = React.useRef<number | null>(null);
@@ -297,6 +298,17 @@ export function GameStatePreview({
   const [pendingEffectFinisher, setPendingEffectFinisher] = React.useState(false);
   const [effectFinisher, setEffectFinisher] = React.useState(false);
   const effectFinisherTimerRef = React.useRef<number | null>(null);
+  const [defeatPhase,setDefeatPhase]=React.useState<'NONE'|'WAITING'|'PLAYING'|'DONE'>('NONE');
+  const previousMatch=React.useRef({id:state.gameId,status:state.status});
+  React.useEffect(()=>{
+    const previous=previousMatch.current;previousMatch.current={id:state.gameId,status:state.status};
+    if(state.status!=='FINISHED'||previous.id!==state.gameId){setDefeatPhase('NONE');return;}
+    if(previous.status!=='FINISHED'&&state.players.some(p=>p.id===state.loserId&&p.health<=0))setDefeatPhase('WAITING');
+  },[state.gameId,state.status,state.loserId]);
+  React.useEffect(()=>{
+    if(defeatPhase==='WAITING'&&!playAnimation&&!attackAnimation&&!generatedPlayAnimations.length&&!cardLeaveAnimations.length&&!presentationQueue.length&&!pendingEffectFinisher&&!effectFinisher)setDefeatPhase('PLAYING');
+  },[defeatPhase,playAnimation,attackAnimation,generatedPlayAnimations.length,cardLeaveAnimations.length,presentationQueue.length,pendingEffectFinisher,effectFinisher]);
+
   const processedEventCountRef = React.useRef<number | null>(null);
   const processedEventKeysRef = React.useRef(new Set<string>());
   const presentedQuestCompletionsRef = React.useRef(new Set<string>());
@@ -338,7 +350,7 @@ export function GameStatePreview({
       cardLeaveAnimations.length ||
       presentationBlocksActions(presentationQueue) ||
       pendingEffectFinisher ||
-      effectFinisher,
+      effectFinisher || defeatPhase==='WAITING' || defeatPhase==='PLAYING',
     ));
   }, [
     attackAnimation,
@@ -349,6 +361,7 @@ export function GameStatePreview({
     presentationQueue,
     pendingEffectFinisher,
     effectFinisher,
+    defeatPhase,
   ]);
 
   React.useEffect(() => {
@@ -1707,6 +1720,9 @@ export function GameStatePreview({
           onComplete={onAttackAnimationComplete}
         />
       )}
+      {(defeatPhase==='PLAYING'||defeatPhase==='DONE') && <ChampionDefeatBurst
+        id={state.gameId+':'+state.loserId} anchor={state.loserId===me.id?playerChampionRef:championRef}
+        onComplete={()=>setDefeatPhase('DONE')} />}
       {effectFinisher && !attackAnimation && (
         <div className="effect-finisher" aria-hidden="true"><div className="attack-animation__finisher-slash" /><span>K.O.!</span></div>
       )}
