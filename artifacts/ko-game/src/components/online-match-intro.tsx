@@ -64,6 +64,10 @@ function Portrait({ player, side }: PortraitProps) {
             fetchPriority="high"
           />
         ) : null}
+        <svg className={styles.portraitOutline} viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true">
+          <path d="M0 0H7L0 7ZM93 0H100V7ZM100 93V100H93ZM7 100H0V93Z" />
+          <polygon points="7,0 93,0 100,7 100,93 93,100 7,100 0,93 0,7" />
+        </svg>
       </div>
     </div>
   );
