@@ -5,8 +5,8 @@ import {prefersReducedMotion} from './presentation-config';
 import './champion-defeat-burst.css';
 
 /** Fragments are clipped from the actual equipped HUD image, never an enlarged duplicate scene. */
-export function ChampionDefeatBurst({anchor,id,onComplete}:{anchor:RefObject<HTMLDivElement|null>;id:string;onComplete:()=>void}) {
- const root=useRef<HTMLDivElement>(null),complete=useRef(onComplete);complete.current=onComplete;
+export function ChampionDefeatBurst({anchor,id,onComplete,onBurst}:{anchor:RefObject<HTMLDivElement|null>;id:string;onComplete:()=>void;onBurst?:()=>void}) {
+ const root=useRef<HTMLDivElement>(null),complete=useRef(onComplete),fracture=useRef(onBurst);complete.current=onComplete;fracture.current=onBurst;
  useLayoutEffect(()=>{
   const target=anchor.current,container=root.current;
   if(!target||!container){complete.current();return;}
@@ -23,7 +23,7 @@ export function ChampionDefeatBurst({anchor,id,onComplete}:{anchor:RefObject<HTM
   container.dataset.phase='crack';
   const motions:Animation[]=[];
   const burst=window.setTimeout(()=>{
-   target.style.visibility='hidden';container.dataset.phase='burst';
+   target.style.visibility='hidden';container.dataset.phase='burst';fracture.current?.();
    if(!document.hidden) audioManager.playImpactOverlay(import.meta.env.BASE_URL+'sfx/champion-glass-shatter.wav',85,9);
    for(const [i,fragment] of fragments.entries()){
     const column=Math.floor(i/2)%4,row=Math.floor(i/8),angle=Math.atan2(row-2+(i%2?.3:-.3),column-1.5)+((i*17)%9-4)*.06;

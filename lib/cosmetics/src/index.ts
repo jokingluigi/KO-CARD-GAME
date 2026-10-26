@@ -18,6 +18,8 @@ export type CosmeticItem = {
   imageAssets: CosmeticAssets;
   isActive: boolean;
   sortOrder: number;
+  legacySkinId?: string;
+  publicationStatus?: "DRAFT" | "PUBLISHED" | "DISABLED";
 };
 export type CosmeticLoadout = {
   version: 1;

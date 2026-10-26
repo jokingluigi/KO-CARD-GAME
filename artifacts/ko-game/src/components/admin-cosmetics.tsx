@@ -17,7 +17,7 @@ import { CosmeticPreview } from "./cosmetic-preview";
 import "./cosmetics.css";
 const labels: Record<CosmeticType, string> = {
   CHAMPION_SKIN: "챔피언 스킨",
-  CARD_SKIN: "선수 카드 스킨",
+  CARD_SKIN: "카드 스킨",
   CARD_BACK: "카드 뒷면",
   IMAGE_EMOTE: "이미지 이모티콘",
 };
@@ -42,6 +42,7 @@ export function AdminCosmetics() {
     [message, setMessage] = useState(""),
     [busy, setBusy] = useState(false),
     [query, setQuery] = useState(""),
+    [typeFilter, setTypeFilter] = useState<CosmeticType | "ALL">("ALL"),
     [targetQuery, setTargetQuery] = useState(""),
     [userQuery, setUserQuery] = useState(""),
     [users, setUsers] = useState<Array<{ id: string; nickname: string }>>([]),
@@ -184,10 +185,14 @@ export function AdminCosmetics() {
   return (
     <section className="cosmetics">
       <p>
-        원본 카드·챔피언과 기존 팩용 스킨은 변경하지 않아. 비활성 아이템은 새
-        장착·지급에서 제외되고 소유 기록은 유지돼.
+        카드팩 스킨·챔피언 스킨·카드 뒷면·이모티콘을 한곳에서 관리해. 기존
+        카드팩과 보유 기록은 유지돼. 비활성 아이템은 새 장착·지급에서 제외돼.
       </p>
-      {message && <p role="status" className="break-words">{message}</p>}
+      {message && (
+        <p role="status" className="break-words">
+          {message}
+        </p>
+      )}
       {!data && !message && <p role="status">불러오는 중…</p>}
       <div className="cosmetics-editor">
         <aside>
@@ -197,6 +202,18 @@ export function AdminCosmetics() {
             value={query}
             onChange={(e) => setQuery(e.target.value)}
           />
+          <select
+            aria-label="꾸미기 유형 필터"
+            value={typeFilter}
+            onChange={(e) => setTypeFilter(e.target.value as typeof typeFilter)}
+          >
+            <option value="ALL">모든 꾸미기</option>
+            {COSMETIC_TYPES.map((type) => (
+              <option key={type} value={type}>
+                {labels[type]}
+              </option>
+            ))}
+          </select>
           <button
             disabled={busy}
             onClick={() => {
@@ -210,7 +227,11 @@ export function AdminCosmetics() {
           </button>
           <div className="grid gap-2 mt-3">
             {data?.items
-              .filter((i) => i.name.includes(query))
+              .filter(
+                (i) =>
+                  i.name.includes(query) &&
+                  (typeFilter === "ALL" || i.type === typeFilter),
+              )
               .map((i) => (
                 <button
                   key={i.id}
@@ -221,7 +242,11 @@ export function AdminCosmetics() {
                   }}
                 >
                   {i.name} · {labels[i.type]}
-                  {i.isActive ? "" : " · 비활성"}
+                  {i.publicationStatus === "DRAFT"
+                    ? " · 미공개"
+                    : i.isActive
+                      ? ""
+                      : " · 비활성"}
                 </button>
               ))}
           </div>
@@ -240,6 +265,7 @@ export function AdminCosmetics() {
             유형
             <select
               aria-label="아이템 유형"
+              disabled={!!form.legacySkinId}
               value={form.type}
               onChange={(e) =>
                 setForm({
@@ -319,14 +345,41 @@ export function AdminCosmetics() {
               }
             />
           </label>
-          <label className="!flex">
-            <input
-              type="checkbox"
-              checked={form.isActive}
-              onChange={(e) => setForm({ ...form, isActive: e.target.checked })}
-            />
-            활성화
-          </label>
+          {form.legacySkinId ? (
+            <label>
+              공개 상태
+              <select
+                aria-label="스킨 공개 상태"
+                value={form.publicationStatus}
+                onChange={(e) =>
+                  setForm({
+                    ...form,
+                    publicationStatus: e.target
+                      .value as CosmeticItem["publicationStatus"],
+                    isActive: e.target.value === "PUBLISHED",
+                  })
+                }
+              >
+                <option value="DRAFT">미공개</option>
+                <option value="PUBLISHED">공개</option>
+                <option value="DISABLED">비활성화</option>
+              </select>
+              <span className="text-sm text-neutral-400">
+                카드팩 스킨 · 기존 팩 연결과 보유 기록을 함께 관리해.
+              </span>
+            </label>
+          ) : (
+            <label className="!flex">
+              <input
+                type="checkbox"
+                checked={form.isActive}
+                onChange={(e) =>
+                  setForm({ ...form, isActive: e.target.checked })
+                }
+              />
+              활성화
+            </label>
+          )}
           {form.type === "CHAMPION_SKIN" && (
             <p className="text-sm text-amber-200">
               챔피언 일러스트 한 장을 등록하면 기본 표시·전투 초상화·VS 인트로에
@@ -462,7 +515,11 @@ export function AdminCosmetics() {
           </h2>
           <div className="cosmetics-grid">
             {data?.items
-              .filter((i) => i.name.includes(query))
+              .filter(
+                (i) =>
+                  i.name.includes(query) &&
+                  (typeFilter === "ALL" || i.type === typeFilter),
+              )
               .map((item) => {
                 const has = inventory?.owned.some((o) => o.item.id === item.id);
                 return (
