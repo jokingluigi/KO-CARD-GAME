@@ -1,3 +1,5 @@
+import {ChampionSpeechBubble} from "./champion-speech-bubble";
+import {WrestlerDialogue,type WrestlerSpeech} from "./wrestler-dialogue";
 import { ChampionKoDialogue } from "./champion-ko-dialogue";
 import { koChampionLines, type KoChampionLine } from "./champion-ko-lines";
 import { ChampionDefeatBurst } from './champion-defeat-burst';
@@ -211,6 +213,11 @@ export function GameStatePreview({
     audioManager.preloadAttackSounds(['1-2', '3-5', '6-9', '10-plus'].map((tier) => `${import.meta.env.BASE_URL}sfx/combat-hit-${tier}.wav?v=1`).concat(`${import.meta.env.BASE_URL}sfx/combat-finisher.wav?v=1`,`${import.meta.env.BASE_URL}sfx/champion-glass-shatter.wav`));
   }, []);
   const [spokenLine, setSpokenLine] = React.useState<{ text: string; playerId: string; speaker: string; id: number; questCompletion?: boolean; gameId?: string } | null>(null);
+  const [wrestlerSpeech,setWrestlerSpeech]=React.useState<WrestlerSpeech[]>([]);
+  const markSpeechLanding=React.useCallback((instanceId:string)=>setWrestlerSpeech(lines=>{
+    const index=lines.findIndex(line=>line.instanceId===instanceId&&!line.ready);
+    return index<0?lines:lines.map((line,i)=>i===index?{...line,ready:true}:line);
+  }),[]);
   const spokenTimerRef = React.useRef<number | null>(null);
   React.useEffect(() => () => { if (spokenTimerRef.current !== null) window.clearTimeout(spokenTimerRef.current); }, []);
   const [historyOpen, setHistoryOpen] = React.useState(false);
@@ -315,6 +322,12 @@ export function GameStatePreview({
   },[defeatPhase,playAnimation,attackAnimation,generatedPlayAnimations.length,cardLeaveAnimations.length,presentationQueue.length,pendingEffectFinisher,effectFinisher]);
 
   const processedEventCountRef = React.useRef<number | null>(null);
+  React.useEffect(()=>{setSpokenLine(null);setWrestlerSpeech([]);if(spokenTimerRef.current!==null)window.clearTimeout(spokenTimerRef.current);processedEventCountRef.current=null;},[state.gameId]);
+  React.useEffect(()=>{
+    if(state.status==='FINISHED'){setWrestlerSpeech([]);return;}
+    if(wrestlerSpeech[0]&&!wrestlerSpeech[0].ready&&!playAnimation&&!generatedPlayAnimations.length)markSpeechLanding(wrestlerSpeech[0].instanceId);
+  },[state.status,wrestlerSpeech[0]?.id,wrestlerSpeech[0]?.ready,playAnimation,generatedPlayAnimations.length,markSpeechLanding]);
+
   const processedEventKeysRef = React.useRef(new Set<string>());
   const presentedQuestCompletionsRef = React.useRef(new Set<string>());
   const questPresentationAllowed = canPresentBattleQuest(state);
@@ -406,6 +419,8 @@ export function GameStatePreview({
       previousCardStatsRef.current = currentCardStats;
       previousCardsRef.current = currentCards(state);
       if (eventLogReset) {
+        setSpokenLine(null);setWrestlerSpeech([]);
+        if(spokenTimerRef.current!==null)window.clearTimeout(spokenTimerRef.current);
         setGeneratedPlayAnimations([]);
         setCardLeaveAnimations([]);
         setDestroyBursts([]);
@@ -439,6 +454,7 @@ export function GameStatePreview({
         opponent }];
     });
     if (flights.length) setDrawFlights(current=>[...current,...flights].slice(-12));
+    const incomingSpeech:WrestlerSpeech[]=[];
     for (const event of newEvents) {
       let line: string | null = null;
       let speaker = state.players.find((player) => player.id === event.playerId)?.champion?.name ?? '챔피언';
@@ -454,13 +470,18 @@ export function GameStatePreview({
         }
       }
       const wrestlerLine = wrestlerEventLine(event, state.cardPool ?? [], previousCardsRef.current, currentCards(state));
-      if (wrestlerLine) { line = wrestlerLine.text; speaker = wrestlerLine.speaker; }
+      if (wrestlerLine && event.playerId && event.cardInstanceId && state.status!=='FINISHED') {
+        const instance=currentCards(state).get(event.cardInstanceId)??previousCardsRef.current.get(event.cardInstanceId);
+        const definitionId=event.cardDefinitionId??instance?.definitionId;
+        if(definitionId)incomingSpeech.push({id:newEventEntries.find(entry=>entry.event===event)!.key,text:wrestlerLine.text,speaker:wrestlerLine.speaker,playerId:event.playerId,instanceId:event.cardInstanceId,definitionId,phase:event.type as WrestlerSpeech['phase'],ready:event.type!=='ENTER_FIELD'});
+      }
       if (line && event.playerId) {
         setSpokenLine({ text: line, playerId: event.playerId, speaker, id: Date.now() });
         if (spokenTimerRef.current !== null) window.clearTimeout(spokenTimerRef.current);
         spokenTimerRef.current = window.setTimeout(() => setSpokenLine(null), 2600);
       }
     }
+    if(incomingSpeech.length)setWrestlerSpeech(current=>[...current,...incomingSpeech].slice(0,8));
     // Completion speech takes precedence over token/summon dialogue in the same
     // reward batch. Event-key tracking above/below prevents replay on reconnect.
     const completionEvent = questPresentationAllowed ? newEvents.find(event => event.type === 'CHAMPION_QUEST_COMPLETED' && event.playerId) : undefined;
@@ -822,6 +843,8 @@ export function GameStatePreview({
   const opponentChampionPortrait=cosmeticImage(cosmetics[opp.id],'CHAMPION_SKIN',opp.champion?.id??'',opp.champion?.questCompleted?'awakened':'portrait',originalOpponentPortrait);
   const playerChampionPortrait=cosmeticImage(cosmetics[me.id],'CHAMPION_SKIN',me.champion?.id??'',me.champion?.questCompleted?'awakened':'portrait',originalPlayerPortrait);
 
+  const visibleWrestlerSpeech=wrestlerSpeech[0]?.ready && !koSpeechActive && state.status!=='FINISHED' && !playError && !attackHint && !effectTargeting && !selectedCardId && !selectedAttackerId && !confirmEndTurn && !introActive ? wrestlerSpeech[0] : null;
+  const wrestlerDialogue=visibleWrestlerSpeech ? <WrestlerDialogue key={visibleWrestlerSpeech.id} speech={visibleWrestlerSpeech} definition={getCardDefinition(visibleWrestlerSpeech.definitionId)} cosmetics={cosmetics} selfId={me.id} onComplete={()=>setWrestlerSpeech(lines=>lines.filter(line=>line.id!==visibleWrestlerSpeech.id))} /> : null;
   // Warm only the two equipped awakening images; do not fetch the full catalog.
   React.useEffect(() => {
     for (const url of [me.champion?.questCompletedPortraitEnabled ? me.champion.questCompletedPortraitUrl : null,
@@ -1264,7 +1287,7 @@ export function GameStatePreview({
                 </div>
               )}
             {blackGold && <div className="ko-battle-command" data-testid="battle-command-strip">
-              <p role="status" aria-live="polite" className={playError ? 'text-red-200' : ''}>
+              {wrestlerDialogue || <p role="status" aria-live="polite" className={playError ? 'text-red-200' : ''}>
                 {playError || attackHint || (confirmEndTurn ? '아직 공격이나 능력 사용이 남아 있어요.'
                   : effectTargeting ? state.targetingState?.fusion?.stage === 'CHOOSE' ? '합체할 다른 아군 선수를 선택하세요.'
                     : state.targetingState?.championRewardReplacement ? '돌려보낼 아군 선수를 선택하세요. 손패가 가득 차면 덱 위로 보냅니다.'
@@ -1273,7 +1296,7 @@ export function GameStatePreview({
                   : selectedAttackerId ? '상대 선수나 챔피언을 선택해 공격하세요.'
                   : selectedHandCard ? selectedHandCard.cardType === 'TECHNIQUE' ? '주문을 사용하거나 대상에게 드래그하세요.' : '빈 슬롯을 선택하거나 드래그해 소환하세요.'
                   : '손패를 내거나 필드의 선수로 공격하세요.')}
-              </p>
+              </p>}
               {confirmEndTurn ? <button type="button" onClick={() => setConfirmEndTurn(false)}>계속 플레이</button>
                 : effectTargeting ? !state.targetingState!.championRewardReplacement && (!hasCommittedFusion(state.targetingState) || state.targetingState!.cancelable) && <button type="button" onClick={onCancelEffectTargeting}>선택 취소</button>
                 : selectedCardId ? <button type="button" onClick={() => onSelectCard(selectedCardId)}>선택 취소</button>
@@ -1690,6 +1713,7 @@ export function GameStatePreview({
         <CardPlayAnimation
           animation={playAnimation.playerId?playAnimation:{...playAnimation,playerId:me.id}}
           hapticsEnabled={hapticsEnabled}
+          onLand={markSpeechLanding}
           onComplete={onPlayAnimationComplete}
           viewerPlayerId={me.id}
         />
@@ -1700,6 +1724,7 @@ export function GameStatePreview({
           animation={generatedPlayAnimations[0]}
           hapticsEnabled={hapticsEnabled}
           viewerPlayerId={me.id}
+          onLand={markSpeechLanding}
           onComplete={() => {
             const completed = generatedPlayAnimations[0];
             setGeneratedPlayAnimations((current) => current.slice(1).filter((entry) => entry.card.instanceId !== completed.card.instanceId || entry.kind !== completed.kind));
@@ -1743,10 +1768,10 @@ export function GameStatePreview({
       {effectFinisher && !attackAnimation && (
         <div className="effect-finisher" aria-hidden="true"><div className="attack-animation__finisher-slash" /><span>K.O.!</span></div>
       )}
-      {spokenLine && !koSpeechActive && (!spokenLine.questCompletion || (questPresentationAllowed && spokenLine.gameId === state.gameId)) && <div key={spokenLine.id} role="status" className={`champion-spoken-line ${spokenLine.playerId === me.id ? 'champion-spoken-line--mine' : 'champion-spoken-line--theirs'}`}>
-        <span className="block text-[10px] font-bold text-amber-300">{spokenLine.speaker}</span>
-        <span>{spokenLine.text}</span>
-      </div>}
+      {!blackGold && wrestlerDialogue && <div className="ko-wrestler-dialogue-classic">{wrestlerDialogue}</div>}
+      {spokenLine && state.status!=="FINISHED" && !koSpeechActive && !introActive && !effectTargeting && !selectedCardId && !selectedAttackerId && !settingsOpen && !historyOpen && !emoteOpen && (!spokenLine.questCompletion || (questPresentationAllowed && spokenLine.gameId === state.gameId)) && <React.Fragment>
+        <ChampionSpeechBubble key={spokenLine.id} anchor={spokenLine.playerId===me.id?playerChampionRef:championRef} playerId={spokenLine.playerId} speaker={spokenLine.speaker} text={spokenLine.text} quest={spokenLine.questCompletion} label={spokenLine.questCompletion?'퀘스트 완료 / 챔피언':'챔피언'} />
+      </React.Fragment>}
       {presentationQueue[0] &&
         (presentationQueue[0].kind !== 'QUEST_COMPLETE' || questPresentationAllowed) &&
         !introActive &&

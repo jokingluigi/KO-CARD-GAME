@@ -69,7 +69,7 @@ try{
    for(const text of expected)await dialogue.getByText(text,{exact:true}).waitFor();
    assert.equal(await page.getByTestId('preview-busy').textContent(),'true');
    const bounds=await dialogue.locator('[data-ko-speaker]').evaluateAll(nodes=>nodes.map(node=>{const r=node.getBoundingClientRect();return {x:r.x,y:r.y,right:r.right,bottom:r.bottom};}));
-   assert.ok(bounds.every(r=>r.x>=0&&r.y>=0&&r.right<=width&&r.bottom<=height));
+   assert.ok(bounds.every(r=>r.x>=0&&r.y>=0&&r.right<=width&&r.bottom<=height),JSON.stringify(bounds));
    assert.ok(bounds[0].bottom<=bounds[1].y||bounds[1].bottom<=bounds[0].y||bounds[0].right<=bounds[1].x||bounds[1].right<=bounds[0].x,'dialogue bubbles must not overlap');
    const box=e=>{const r=e.getBoundingClientRect();return {x:r.x,y:r.y,width:r.width,height:r.height};};
    const a=await target.evaluate(box),b=await burst.evaluate(box);

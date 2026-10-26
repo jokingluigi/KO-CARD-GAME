@@ -1,0 +1,224 @@
+/* Champion bubbles belong to a HUD; wrestler ribbons belong to the command rail. */
+.ko-champion-speech {
+  position: fixed;
+  z-index: 276;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  padding: 8px 10px;
+  background: #121317f5;
+  border: 1px solid #b99a60;
+  border-left: 3px solid #d9bb7b;
+  color: #f0e8d8;
+  pointer-events: none;
+  animation: ko-champion-say 180ms ease-out both;
+  box-shadow: 0 3px 9px #0007;
+}
+.ko-champion-speech::before {
+  content: "";
+  position: absolute;
+  left: -7px;
+  top: 18px;
+  width: 9px;
+  height: 9px;
+  background: #121317;
+  border-left: 1px solid #d9bb7b;
+  border-bottom: 1px solid #d9bb7b;
+  transform: rotate(45deg);
+}
+.ko-champion-speech__header {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+  flex-wrap: wrap;
+  min-width: 0;
+  margin-bottom: 4px;
+  line-height: 1.25;
+}
+.ko-champion-speech__header > span {
+  color: #b99a60;
+  font-size: 8px;
+  letter-spacing: 0.04em;
+  flex-shrink: 0;
+}
+.ko-champion-speech__header > strong {
+  font-size: 10px;
+  color: #d9bb7b;
+  overflow-wrap: anywhere;
+}
+.ko-champion-speech__text {
+  min-height: 0;
+  overflow: auto;
+  overscroll-behavior: contain;
+  pointer-events: auto;
+  font-size: 11px;
+  line-height: 1.45;
+  overflow-wrap: anywhere;
+  scrollbar-width: thin;
+}
+.ko-champion-speaking-frame {
+  position: fixed;
+  z-index: 224;
+  pointer-events: none;
+  border: 1px solid #d9bb7b;
+  animation: ko-champion-speaking 500ms ease-out both;
+}
+.ko-champion-speech--quest {
+  border-left-width: 4px;
+  background: #211b12f5;
+}
+.ko-champion-speaking-frame--quest {
+  border-width: 2px;
+}
+.ko-battle-command:has(.ko-wrestler-cutin) {
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+}
+.ko-wrestler-cutin {
+  height: 42px;
+  min-width: 0;
+  width: 100%;
+  display: flex;
+  gap: 9px;
+  align-items: stretch;
+  pointer-events: none;
+  color: #f0e8d8;
+  background: #17181c;
+  border-left: 2px solid #6d5b3c;
+  animation: ko-wrestler-say 170ms cubic-bezier(0.12, 0.75, 0.25, 1) both;
+  overflow: hidden;
+}
+.ko-wrestler-cutin--legendary {
+  border-left: 4px solid #d9bb7b;
+  background: #211c14;
+}
+.ko-wrestler-cutin__art {
+  flex: 0 0 48px;
+  width: 48px;
+  background: #08090b;
+  position: relative;
+  clip-path: polygon(0 0, 100% 0, 86% 100%, 0 100%);
+}
+.ko-wrestler-cutin__body {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  min-width: 0;
+  flex: 1;
+  padding: 2px 6px 2px 0;
+}
+.ko-wrestler-cutin__header {
+  display: flex;
+  gap: 6px;
+  align-items: baseline;
+  line-height: 12px;
+  min-width: 0;
+}
+.ko-wrestler-cutin__header strong {
+  font-size: 10px;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  color: #d9bb7b;
+}
+.ko-wrestler-cutin__header span {
+  font-size: 7px;
+  color: #b99a60;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+.ko-wrestler-cutin__text {
+  font-size: 10px;
+  line-height: 12px;
+  overflow: auto;
+  overscroll-behavior: contain;
+  min-height: 0;
+  pointer-events: auto;
+  scrollbar-width: thin;
+  overflow-wrap: anywhere;
+}
+.ko-wrestler-dialogue-classic {
+  position: fixed;
+  bottom: 12px;
+  left: 12px;
+  right: 12px;
+  z-index: 225;
+  pointer-events: none;
+}
+@media (min-width: 769px) {
+  .ko-champion-speech {
+    padding: 10px 12px;
+  }
+  .ko-champion-speech__header strong {
+    font-size: 12px;
+  }
+  .ko-champion-speech__text {
+    font-size: 12px;
+  }
+  .ko-wrestler-cutin__art {
+    flex-basis: 64px;
+    width: 64px;
+  }
+  .ko-wrestler-cutin__header strong {
+    font-size: 12px;
+  }
+  .ko-wrestler-cutin__header span {
+    font-size: 9px;
+  }
+  .ko-wrestler-cutin__text {
+    font-size: 12px;
+    line-height: 15px;
+  }
+}
+@keyframes ko-champion-say {
+  from {
+    opacity: 0;
+    transform: translateX(-5px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+@keyframes ko-wrestler-say {
+  from {
+    opacity: 0;
+    transform: translateX(-18px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+@keyframes ko-champion-speaking {
+  0% {
+    opacity: 0;
+  }
+  25% {
+    opacity: 0.9;
+  }
+  100% {
+    opacity: 0;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .ko-champion-speech,
+  .ko-wrestler-cutin {
+    animation: none;
+  }
+  .ko-champion-speaking-frame {
+    display: none;
+  }
+}
+
+.ko-champion-speech[data-compact="true"] {
+  padding: 6px 8px;
+}
+.ko-champion-speech[data-compact="true"] .ko-champion-speech__text {
+  font-size: 10px;
+  line-height: 1.35;
+}
+.ko-champion-speech[data-compact="true"] .ko-champion-speech__header {
+  margin-bottom: 3px;
+}
