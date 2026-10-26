@@ -1134,6 +1134,53 @@ after(async () => {
   await pg.close();
 });
 
+test("unified catalog preserves pack IDs/owners and supports legacy edit, grant, equip, revoke and guarded delete", async () => {
+  const id = "unified-old-pack-skin", cosmeticId = "pack-skin:"+id;
+  await database.insert(schema.cardSkinDefinitionsTable).values({id,cardDefinitionId:cards[0]!.id,name:"통합 이전 스킨",status:"PUBLISHED",imageUrl:uploaded});
+  await database.insert(schema.userCardSkinCollectionsTable).values({userId:"player-b",skinDefinitionId:id});
+  const catalog = (await api(prefix)).body.items;
+  const item = catalog.find((i:any)=>i.id===cosmeticId);
+  assert.equal(item.legacySkinId,id);
+  assert.equal(catalog.filter((i:any)=>i.legacySkinId===id).length,1);
+  // Existing pack ownership becomes a normal equippable skin, once, without granting originals.
+  for(let n=0;n<2;n++) {
+    const inventory = (await api("/cosmetics","player-b")).body.owned;
+    assert.equal(inventory.filter((o:any)=>o.item.id===cosmeticId).length,1);
+  }
+  assert.equal((await api("/cosmetics/equipment","player-a","PUT",{slot:"card:"+cards[0]!.id,cosmeticId})).status,403);
+  assert.equal((await api("/cosmetics/equipment","player-b","PUT",{slot:"card:"+cards[0]!.id,cosmeticId})).status,200);
+  assert.equal(cosmeticImage(await loadCosmetics("player-b"),"CARD_SKIN",cards[0]!.id,"art","base"),uploaded);
+  const edited=await api(prefix+"/items/"+cosmeticId,"admin","PATCH",{...item,name:"통합 수정 스킨",sortOrder:17});
+  assert.equal(edited.status,200,JSON.stringify(edited.body));
+  assert.equal(edited.body.item.sortOrder,17);
+  assert.equal((await database.select().from(schema.cardSkinDefinitionsTable).where(eq(schema.cardSkinDefinitionsTable.id,id)))[0]!.name,"통합 수정 스킨");
+  assert.equal((await api(prefix)).body.items.filter((i:any)=>i.id===cosmeticId).length,1);
+  assert.equal((await api(prefix)).body.items.find((i:any)=>i.id===cosmeticId).sortOrder,17);
+  // Historical API remains compatible and updates the same equipped presentation.
+  assert.equal((await api("/admin/card-skins/"+id+"/status","admin","POST",{status:"DISABLED"})).status,200);
+  assert.equal((await loadCosmetics("player-b")).skins["card:"+cards[0]!.id],undefined);
+  assert.equal((await api("/cosmetics/equipment","player-b","PUT",{slot:"card:"+cards[0]!.id,cosmeticId})).status,403);
+  assert.equal((await api(prefix+"/items/"+cosmeticId,"admin","PATCH",{...item,isActive:false,publicationStatus:"DRAFT"})).status,200);
+  assert.equal((await api(prefix)).body.items.find((i:any)=>i.id===cosmeticId).publicationStatus,"DRAFT");
+  assert.equal((await api(prefix+"/items/"+cosmeticId,"admin","PATCH",item)).status,200);
+  assert.equal((await api(prefix+"/users/player-a/grants","admin","POST",{cosmeticId,action:"GRANT"})).status,200);
+  assert.equal((await api(prefix+"/users/player-a/grants","admin","POST",{cosmeticId,action:"REVOKE"})).status,200);
+  assert.ok(!(await api("/cosmetics","player-a")).body.owned.some((o:any)=>o.item.id===cosmeticId));
+  const options=(await api("/admin/packs/options")).body.skins;
+  assert.equal(options.filter((i:any)=>i.id===id).length,1);
+  assert.ok(!options.some((i:any)=>i.id===cosmeticId));
+  // New card skins created in the unified editor remain available to the existing pack editor.
+  assert.ok(registered.CARD_SKIN.legacySkinId);
+  assert.ok(options.some((i:any)=>i.id===registered.CARD_SKIN.legacySkinId));
+  await database.insert(schema.packDefinitionsTable).values({id:"unified-protected-pack",name:"통합 보호 팩",skinPool:[id]});
+  assert.equal((await api(prefix+"/items/"+cosmeticId,"admin","DELETE")).status,409);
+  await database.delete(schema.packDefinitionsTable).where(eq(schema.packDefinitionsTable.id,"unified-protected-pack"));
+  assert.equal((await api(prefix+"/items/"+cosmeticId,"admin","DELETE")).status,200);
+  assert.equal((await database.select().from(schema.cardSkinDefinitionsTable).where(eq(schema.cardSkinDefinitionsTable.id,id))).length,0);
+  assert.equal((await database.select().from(schema.cosmeticItemsTable).where(eq(schema.cosmeticItemsTable.id,cosmeticId))).length,0);
+  assert.ok(!(await api("/cosmetics","player-b")).body.owned.some((o:any)=>o.item.id===cosmeticId));
+});
+
 test("image emote throttling has no per-turn quota and replaces the previous image per player",async()=>{
  const {CosmeticEmoteChannel}=await import('../../../artifacts/api-server/src/lib/cosmetic-emotes');
  const channel=new CosmeticEmoteChannel(),loadout=await loadCosmetics('player-a');

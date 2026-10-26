@@ -3,7 +3,6 @@ import { MatchRecapPanel } from './match-recap-panel';
 import { useEffect } from 'react';
 import { getCardDefinition, type GameState } from "@/game";
 import { matchEndReason, matchSummary } from '@/lib/match-summary';
-import { championVoiceLine } from '@/game/champions/types';
 import { audioManager } from '@/audio/audio-manager';
 import type { GameMediaCatalog } from '@/game/media';
 import './cinematic-presentation.css';
@@ -51,7 +50,6 @@ export function MatchResultOverlay({
   const reason = matchEndReason(state, player?.id ?? "");
   const [ownSummary, opponentSummary] = matchSummary(state);
   const winner = state.players.find((candidate) => candidate.id === state.winnerId);
-  const loser = state.players.find((candidate) => candidate.id === state.loserId);
   const resolvedRecap = recap ?? buildMatchRecap(state);
   const finisher = resolvedRecap.highlights.find(h => h.kind === 'FINISHER');
   const finishingHit = finisher ? state.events[finisher.eventIndex] : [...state.events].reverse().find(event => event.type === "DAMAGE_DEALT" && event.target?.type === "PLAYER" && event.target.playerId === state.loserId && event.reason !== "FATIGUE");
@@ -62,8 +60,6 @@ export function MatchResultOverlay({
     : null;
   const finishingName = finishingCard &&
     (state.cardPool?.find((card) => card.id === finishingCard.definitionId) ?? getCardDefinition(finishingCard.definitionId))?.name;
-  const winnerLine = winner && championVoiceLine(winner.champion?.presentationLines, Boolean(winner.champion?.questCompleted), 'VICTORY', loser?.champion?.id);
-  const loserLine = loser && championVoiceLine(loser.champion?.presentationLines, Boolean(loser.champion?.questCompleted), 'DEFEAT', winner?.champion?.id);
   const accentClass = isVictory
     ? "border-amber-300/70 bg-amber-950/80 text-amber-100 shadow-[0_0_70px_rgba(234,179,8,0.28)]"
     : isDefeat
@@ -88,8 +84,6 @@ export function MatchResultOverlay({
         {finishingHit && <p className="mt-3 text-sm font-black text-amber-200">
           마지막 일격 · {finisher?.sourceName ?? finishingName ?? winner?.champion?.name ?? '효과'} · {finishingHit.amount ?? 0} 피해
         </p>}
-        {winnerLine && <p className="mt-4 text-base font-bold text-amber-200">{winner?.champion?.name}: “{winnerLine}”</p>}
-        {loserLine && <p className="mt-2 text-sm text-neutral-300">{loser?.champion?.name}: “{loserLine}”</p>}
         {ownSummary && opponentSummary && (
           <section className="mt-6 rounded-xl border border-white/15 bg-black/35 p-4 text-left" aria-label="경기 기록">
             <h2 className="text-xs font-black tracking-widest text-amber-200">이번 경기 기록</h2>

@@ -4,6 +4,7 @@ import {
   type CosmeticLoadout,
 } from "@workspace/cosmetics";
 export type CosmeticCardPreview = {
+  cardType?: "WRESTLER" | "TECHNIQUE";
   id: string;
   name: string;
   cost: number;

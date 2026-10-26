@@ -171,7 +171,7 @@ try {
       await a.page.reload();
       await a.page.getByText("장착 중", { exact: true }).waitFor();
       await a.page
-        .getByRole("button", { name: "선수 카드 스킨", exact: true })
+        .getByRole("button", { name: "카드 스킨", exact: true })
         .click();
       await a.page.locator(".ko-card-depth").first().waitFor();
       await shot(a.page, "player-card-preview-mobile");

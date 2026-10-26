@@ -32,7 +32,7 @@ export function CosmeticPreview({
     return (
       <CardRenderer
         name={card.name}
-        cardType="WRESTLER"
+        cardType={card.cardType ?? "WRESTLER"}
         cost={card.cost}
         attack={card.attack}
         health={card.health}

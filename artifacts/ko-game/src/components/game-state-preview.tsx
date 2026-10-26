@@ -1,3 +1,5 @@
+import { ChampionKoDialogue } from "./champion-ko-dialogue";
+import { koChampionLines, type KoChampionLine } from "./champion-ko-lines";
 import { ChampionDefeatBurst } from './champion-defeat-burst';
 import { questPortrait } from './quest-media';
 import "./battle-board.css";
@@ -298,6 +300,9 @@ export function GameStatePreview({
   const [pendingEffectFinisher, setPendingEffectFinisher] = React.useState(false);
   const [effectFinisher, setEffectFinisher] = React.useState(false);
   const effectFinisherTimerRef = React.useRef<number | null>(null);
+  const [koSpeech, setKoSpeech] = React.useState<{ gameId: string; lines: KoChampionLine[] } | null>(null);
+  React.useEffect(() => setKoSpeech(null), [state.gameId]);
+  const koSpeechActive = koSpeech?.gameId === state.gameId;
   const [defeatPhase,setDefeatPhase]=React.useState<'NONE'|'WAITING'|'PLAYING'|'DONE'>('NONE');
   const previousMatch=React.useRef({id:state.gameId,status:state.status});
   React.useEffect(()=>{
@@ -350,7 +355,7 @@ export function GameStatePreview({
       cardLeaveAnimations.length ||
       presentationBlocksActions(presentationQueue) ||
       pendingEffectFinisher ||
-      effectFinisher || defeatPhase==='WAITING' || defeatPhase==='PLAYING',
+      effectFinisher || defeatPhase==='WAITING' || defeatPhase==='PLAYING' || koSpeechActive,
     ));
   }, [
     attackAnimation,
@@ -362,6 +367,7 @@ export function GameStatePreview({
     pendingEffectFinisher,
     effectFinisher,
     defeatPhase,
+    koSpeechActive,
   ]);
 
   React.useEffect(() => {
@@ -1722,11 +1728,20 @@ export function GameStatePreview({
       )}
       {(defeatPhase==='PLAYING'||defeatPhase==='DONE') && <ChampionDefeatBurst
         id={state.gameId+':'+state.loserId} anchor={state.loserId===me.id?playerChampionRef:championRef}
+        onBurst={() => {
+          const lines = koChampionLines(state);
+          if (!lines.length) return;
+          setSpokenLine(null);
+          if (spokenTimerRef.current !== null) window.clearTimeout(spokenTimerRef.current);
+          setKoSpeech({ gameId: state.gameId, lines });
+        }}
         onComplete={()=>setDefeatPhase('DONE')} />}
+      {koSpeechActive && <ChampionKoDialogue key={koSpeech.gameId} id={koSpeech.gameId} lines={koSpeech.lines} selfId={me.id}
+        selfAnchor={playerChampionRef} opponentAnchor={championRef} onComplete={()=>setKoSpeech(null)} />}
       {effectFinisher && !attackAnimation && (
         <div className="effect-finisher" aria-hidden="true"><div className="attack-animation__finisher-slash" /><span>K.O.!</span></div>
       )}
-      {spokenLine && (!spokenLine.questCompletion || (questPresentationAllowed && spokenLine.gameId === state.gameId)) && <div key={spokenLine.id} role="status" className={`champion-spoken-line ${spokenLine.playerId === me.id ? 'champion-spoken-line--mine' : 'champion-spoken-line--theirs'}`}>
+      {spokenLine && !koSpeechActive && (!spokenLine.questCompletion || (questPresentationAllowed && spokenLine.gameId === state.gameId)) && <div key={spokenLine.id} role="status" className={`champion-spoken-line ${spokenLine.playerId === me.id ? 'champion-spoken-line--mine' : 'champion-spoken-line--theirs'}`}>
         <span className="block text-[10px] font-bold text-amber-300">{spokenLine.speaker}</span>
         <span>{spokenLine.text}</span>
       </div>}

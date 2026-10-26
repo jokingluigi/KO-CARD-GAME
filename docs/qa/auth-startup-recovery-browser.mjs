@@ -153,6 +153,10 @@ try {
       const path = new URL(route.request().url()).pathname;
       if (path === "/api/auth/me" || path === "/api/admin/session")
         return route.fulfill({ json: { authenticated: true, user: account } });
+      if(path === "/api/admin/cosmetics")return route.fulfill({json:{
+        items:[{id:"pack-skin:legacy-skin",legacySkinId:"legacy-skin",publicationStatus:"DRAFT",type:"CARD_SKIN",targetId:"old-card",name:"보존된 팩 스킨",description:"",imageAssets:{},isActive:false,sortOrder:0}],
+        cards:[{id:"old-card",name:"기존 선수",cardType:"WRESTLER",cost:1,attack:1,health:1,text:"",rarity:"NORMAL"}],champions:[],
+      }});
       if (path === "/api/admin/card-skins")
         return route.fulfill({
           json: {
@@ -201,29 +205,19 @@ try {
     await page
       .getByLabel("아이템 이름", { exact: true })
       .fill("저장하지 않은 꾸미기");
-    page.once("dialog", (d) => d.dismiss());
-    await page
-      .getByRole("button", { name: "기존 카드팩 스킨", exact: true })
-      .click();
-    await page.waitForURL("**/admin/cosmetics");
-    assert.equal(
-      await page.getByLabel("아이템 이름", { exact: true }).inputValue(),
-      "저장하지 않은 꾸미기",
-    );
-    page.once("dialog", (d) => d.accept());
-    await page
-      .getByRole("button", { name: "기존 카드팩 스킨", exact: true })
-      .click();
-    await page.getByText("보존된 팩 스킨", { exact: true }).waitFor();
+    assert.equal(await page.getByRole("button", {name:"기존 카드팩 스킨",exact:true}).count(),0);
+    const legacyItem=page.getByRole("button",{name:/보존된 팩 스킨 · 카드 스킨/});
+    page.once("dialog",d=>d.dismiss());
+    await legacyItem.click();
+    assert.equal(await page.getByLabel("아이템 이름",{exact:true}).inputValue(),"저장하지 않은 꾸미기");
+    page.once("dialog",d=>d.accept());
+    await legacyItem.click();
+    await page.getByLabel("스킨 공개 상태").waitFor();
+    assert.equal(await page.getByLabel("아이템 이름",{exact:true}).inputValue(),"보존된 팩 스킨");
     await page.reload();
-    await page
-      .getByRole("heading", { name: "꾸미기 관리", exact: true, level: 1 })
-      .waitFor();
-    await page.getByText("보존된 팩 스킨", { exact: true }).waitFor();
-    await page
-      .getByRole("button", { name: "스킨·이모티콘 · 지급·장착", exact: true })
-      .click();
-    await page.getByLabel("아이템 이름", { exact: true }).waitFor();
+    await page.getByRole("heading",{name:"꾸미기 관리",exact:true,level:1}).waitFor();
+    await legacyItem.waitFor();
+    await page.getByLabel("아이템 이름",{exact:true}).waitFor();
     assert.equal(
       await page.evaluate(
         () => document.documentElement.scrollWidth > innerWidth,

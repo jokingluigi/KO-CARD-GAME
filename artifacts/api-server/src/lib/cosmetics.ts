@@ -1,3 +1,4 @@
+import { hydrateLegacySkins } from "./legacy-skin-cosmetics";
 import { ensureAdminSkins } from "./admin-skin-access";
 import { logger } from "./logger";
 import { and, eq, asc, sql } from "drizzle-orm";
@@ -91,6 +92,7 @@ export async function loadCosmetics(userId: string): Promise<CosmeticLoadout> {
 }
 export async function listOwnedCosmetics(userId: string) {
   await ensureAdminSkins(userId);
+  await hydrateLegacySkins(userId);
   return db
     .select({ item: items, acquiredAt: owned.acquiredAt })
     .from(owned)
@@ -106,6 +108,7 @@ export async function equipCosmetic(
   if (!/^(back|emote:[1-4]|(?:card|champion):.{1,256})$/.test(slot))
     throw new CosmeticError(400, "장착 슬롯이 올바르지 않습니다.");
   await ensureAdminSkins(userId);
+  await hydrateLegacySkins(userId);
   await db.transaction(async (tx) => {
     await tx.execute(cosmeticsWriteLock);
     if (cosmeticId) {
@@ -172,14 +175,14 @@ export async function validateCosmeticTarget(
       .where(
         and(
           eq(cardsTable.id, targetId ?? ""),
-          eq(cardsTable.cardType, "WRESTLER"),
+          sql`${cardsTable.cardType} IN ('WRESTLER','TECHNIQUE')`,
           eq(cardsTable.isToken, false),
           eq(cardsTable.isChampionToken, false),
         ),
       )
       .limit(1);
     if (!target)
-      throw new CosmeticError(422, "토큰이 아닌 선수 카드를 선택해 주세요.");
+      throw new CosmeticError(422, "토큰이 아닌 일반 카드를 선택해 주세요.");
   } else if (targetId !== null)
     throw new CosmeticError(422, "이 유형에는 적용 대상이 없습니다.");
 }

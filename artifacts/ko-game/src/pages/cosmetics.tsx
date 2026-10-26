@@ -4,7 +4,7 @@ import {COSMETIC_TYPES,skinKey,type CosmeticType,type CosmeticItem} from '@works
 import {fetchCosmetics,equipCosmetic,type CosmeticInventory} from '@/lib/cosmetics-client';
 import {CosmeticPreview} from '@/components/cosmetic-preview';
 import '@/components/cosmetics.css';
-export const cosmeticLabels:Record<CosmeticType,string>={CHAMPION_SKIN:'챔피언 스킨',CARD_SKIN:'선수 카드 스킨',CARD_BACK:'카드 뒷면',IMAGE_EMOTE:'이모티콘'};
+export const cosmeticLabels:Record<CosmeticType,string>={CHAMPION_SKIN:'챔피언 스킨',CARD_SKIN:'카드 스킨',CARD_BACK:'카드 뒷면',IMAGE_EMOTE:'이모티콘'};
 export default function Cosmetics(){
  const [,navigate]=useLocation();const [data,setData]=useState<CosmeticInventory|null>(null),[type,setType]=useState<CosmeticType>('CHAMPION_SKIN'),[slot,setSlot]=useState(1),[busy,setBusy]=useState(false),[error,setError]=useState(''),[query,setQuery]=useState('');
  async function load(){setError('');try{setData(await fetchCosmetics());}catch(e){setError((e as Error).message);}}

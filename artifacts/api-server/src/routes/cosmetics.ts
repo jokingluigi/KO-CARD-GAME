@@ -1,3 +1,12 @@
+import {
+  legacySkinItem,
+  legacySkinId,
+  syncLegacySkin,
+  grantLegacySkin,
+  revokeLegacySkin,
+  deleteLegacySkin,
+} from "../lib/legacy-skin-cosmetics";
+import { AdminDeletionError } from "../lib/admin-content-deletion";
 import { Router, type IRouter } from "express";
 import { randomUUID } from "node:crypto";
 import { and, eq, asc, ilike, or, inArray, sql } from "drizzle-orm";
@@ -9,6 +18,7 @@ import {
   cosmeticAuditTable as audit,
   usersTable,
   cardsTable,
+  cardSkinDefinitionsTable,
   championsTable,
   packDefinitionsTable,
 } from "@workspace/db";
@@ -92,24 +102,40 @@ router.use("/admin/cosmetics", (req, res, next) => {
   next();
 });
 router.get("/admin/cosmetics", async (_req, res) => {
-  const [catalog, cards, champions] = await Promise.all([
+  const [catalog, cards, champions, legacy] = await Promise.all([
     db.select().from(items).orderBy(asc(items.sortOrder), asc(items.name)),
     db
       .select()
       .from(cardsTable)
       .where(
         and(
-          eq(cardsTable.cardType, "WRESTLER"),
+          inArray(cardsTable.cardType, ["WRESTLER", "TECHNIQUE"]),
           eq(cardsTable.isToken, false),
           eq(cardsTable.isChampionToken, false),
         ),
       )
       .orderBy(asc(cardsTable.name)),
     db.select().from(championsTable).orderBy(asc(championsTable.name)),
+    db
+      .select()
+      .from(cardSkinDefinitionsTable)
+      .orderBy(asc(cardSkinDefinitionsTable.name)),
   ]);
-  res.json({ items: catalog, cards, champions });
+  res.json({
+    items: [
+      ...catalog.filter((item) => !legacySkinId(item.id)),
+      ...legacy.map((skin) => ({
+        ...legacySkinItem(skin),
+        sortOrder:
+          catalog.find((item) => item.id === `pack-skin:${skin.id}`)
+            ?.sortOrder ?? 0,
+      })),
+    ],
+    cards,
+    champions,
+  });
 });
-function parseItem(body: unknown) {
+function parseItem(body: unknown, legacy = false) {
   if (!body || typeof body !== "object" || Array.isArray(body))
     throw new CosmeticError(400, "입력값을 확인해 주세요.");
   const b = body as Record<string, unknown>;
@@ -135,15 +161,16 @@ function parseItem(body: unknown) {
   const imageAssets: Record<string, string> = {};
   for (const [key, url] of Object.entries(assets)) {
     if (
-      (!["art", "portrait", "intro", "awakened"].includes(key) && !/^token:[a-zA-Z0-9_-]{1,256}$/.test(key)) ||
+      (!["art", "portrait", "intro", "awakened"].includes(key) &&
+        !/^token:[a-zA-Z0-9_-]{1,256}$/.test(key)) ||
       !validImageUrl(url)
     )
       throw new CosmeticError(400, "이미지 주소가 올바르지 않습니다.");
     imageAssets[key] = url;
   }
   if (
-    !Object.keys(imageAssets).length ||
-    (b.type !== "CHAMPION_SKIN" && !imageAssets.art)
+    (!Object.keys(imageAssets).length && !legacy) ||
+    (b.type !== "CHAMPION_SKIN" && !imageAssets.art && !legacy)
   )
     throw new CosmeticError(400, "기본 이미지를 등록해 주세요.");
   if (
@@ -162,14 +189,38 @@ function parseItem(body: unknown) {
   };
 }
 async function validateTokenAssets(input: ReturnType<typeof parseItem>) {
-  const tokenKeys = Object.keys(input.imageAssets).filter(key => key.startsWith("token:"));
+  const tokenKeys = Object.keys(input.imageAssets).filter((key) =>
+    key.startsWith("token:"),
+  );
   if (!tokenKeys.length) return;
-  if (input.type !== "CHAMPION_SKIN") throw new CosmeticError(422, "챔피언 스킨에만 토큰 외형을 연결할 수 있습니다.");
-  const [row] = await db.select({ tokenId: championsTable.championTokenDefinitionId })
-    .from(championsTable).innerJoin(cardsTable, eq(cardsTable.id, championsTable.championTokenDefinitionId))
-    .where(and(eq(championsTable.id, input.targetId ?? ""), eq(cardsTable.isChampionToken, true))).limit(1);
-  if (!row?.tokenId || tokenKeys.length !== 1 || tokenKeys[0] !== `token:${row.tokenId}`)
-    throw new CosmeticError(422, "선택한 챔피언에 연결된 챔피언 토큰만 등록할 수 있습니다.");
+  if (input.type !== "CHAMPION_SKIN")
+    throw new CosmeticError(
+      422,
+      "챔피언 스킨에만 토큰 외형을 연결할 수 있습니다.",
+    );
+  const [row] = await db
+    .select({ tokenId: championsTable.championTokenDefinitionId })
+    .from(championsTable)
+    .innerJoin(
+      cardsTable,
+      eq(cardsTable.id, championsTable.championTokenDefinitionId),
+    )
+    .where(
+      and(
+        eq(championsTable.id, input.targetId ?? ""),
+        eq(cardsTable.isChampionToken, true),
+      ),
+    )
+    .limit(1);
+  if (
+    !row?.tokenId ||
+    tokenKeys.length !== 1 ||
+    tokenKeys[0] !== `token:${row.tokenId}`
+  )
+    throw new CosmeticError(
+      422,
+      "선택한 챔피언에 연결된 챔피언 토큰만 등록할 수 있습니다.",
+    );
 }
 async function verifyCatalogAssets(
   assets: Record<string, string>,
@@ -207,6 +258,31 @@ router.post("/admin/cosmetics/items", async (req, res) => {
   await validateTokenAssets(input);
   await validateCosmeticTarget(input.type, input.targetId);
   await verifyCatalogAssets(input.imageAssets);
+  // A new card skin uses the original pack catalog, so the same item can be
+  // selected by existing pack settings and equipped through the unified catalog.
+  if (input.type === "CARD_SKIN") {
+    const item = await db.transaction(async (tx) => {
+      await tx.execute(cosmeticsWriteLock);
+      const id = randomUUID();
+      await tx.insert(cardSkinDefinitionsTable).values({
+        id,
+        cardDefinitionId: input.targetId!,
+        name: input.name,
+        description: input.description,
+        imageUrl: input.imageAssets.art!,
+        status: input.isActive ? "PUBLISHED" : "DRAFT",
+        version: 1,
+      });
+      const normalized = await syncLegacySkin(id, tx);
+      await tx
+        .update(items)
+        .set({ sortOrder: input.sortOrder })
+        .where(eq(items.id, normalized.id));
+      return { ...normalized, sortOrder: input.sortOrder };
+    });
+    res.status(201).json({ item });
+    return;
+  }
   const [item] = await db
     .insert(items)
     .values({ id: randomUUID(), ...input })
@@ -214,7 +290,64 @@ router.post("/admin/cosmetics/items", async (req, res) => {
   res.status(201).json({ item });
 });
 router.patch("/admin/cosmetics/items/:id", async (req, res) => {
-  const input = parseItem(req.body);
+  const legacyId = legacySkinId(String(req.params.id));
+  const input = parseItem(req.body, !!legacyId);
+  if (legacyId) {
+    if (input.type !== "CARD_SKIN" || !input.targetId)
+      throw new CosmeticError(
+        422,
+        "카드팩 스킨은 카드 스킨 유형을 유지해야 합니다.",
+      );
+    await validateCosmeticTarget(input.type, input.targetId);
+    const [previous] = await db
+      .select()
+      .from(cardSkinDefinitionsTable)
+      .where(eq(cardSkinDefinitionsTable.id, legacyId));
+    if (!previous) throw new CosmeticError(404, "스킨을 찾을 수 없습니다.");
+    await verifyCatalogAssets(
+      input.imageAssets,
+      new Set(previous.imageUrl ? [previous.imageUrl] : []),
+    );
+    const requestedStatus = req.body.publicationStatus;
+    if (
+      requestedStatus !== undefined &&
+      !["DRAFT", "PUBLISHED", "DISABLED"].includes(requestedStatus)
+    )
+      throw new CosmeticError(400, "스킨 공개 상태를 확인해 주세요.");
+    const status = input.isActive
+      ? "PUBLISHED"
+      : requestedStatus === "DRAFT" ||
+          (!requestedStatus && previous.status === "DRAFT")
+        ? "DRAFT"
+        : "DISABLED";
+    if (!["DRAFT", "PUBLISHED", "DISABLED"].includes(status))
+      throw new CosmeticError(400, "스킨 공개 상태를 확인해 주세요.");
+    const item = await db.transaction(async (tx) => {
+      await tx.execute(cosmeticsWriteLock);
+      const [updated] = await tx
+        .update(cardSkinDefinitionsTable)
+        .set({
+          name: input.name,
+          description: input.description,
+          cardDefinitionId: input.targetId!,
+          imageUrl: input.imageAssets.art ?? null,
+          status,
+          version: sql`${cardSkinDefinitionsTable.version}+1`,
+          updatedAt: new Date(),
+        })
+        .where(eq(cardSkinDefinitionsTable.id, legacyId))
+        .returning();
+      if (!updated) throw new CosmeticError(404, "스킨을 찾을 수 없습니다.");
+      const normalized = await syncLegacySkin(legacyId, tx);
+      await tx
+        .update(items)
+        .set({ sortOrder: input.sortOrder })
+        .where(eq(items.id, normalized.id));
+      return { ...normalized, sortOrder: input.sortOrder };
+    });
+    res.json({ item });
+    return;
+  }
   await validateTokenAssets(input);
   const [previous] = await db
     .select()
@@ -250,17 +383,43 @@ router.patch("/admin/cosmetics/items/:id", async (req, res) => {
 });
 router.delete("/admin/cosmetics/items/:id", async (req, res) => {
   const id = String(req.params.id);
-  await db.transaction(async tx => {
+  const legacyId = legacySkinId(id);
+  if (legacyId) {
+    await deleteLegacySkin(legacyId, req.authUser!.id);
+    res.json({ deleted: true, id });
+    return;
+  }
+  await db.transaction(async (tx) => {
     await tx.execute(cosmeticsWriteLock);
-    const [item] = await tx.select().from(items).where(eq(items.id, id)).for("update");
+    const [item] = await tx
+      .select()
+      .from(items)
+      .where(eq(items.id, id))
+      .for("update");
     if (!item) throw new CosmeticError(404, "아이템을 찾을 수 없습니다.");
-    const packs = await tx.select({ name: packDefinitionsTable.name }).from(packDefinitionsTable)
-      .where(and(sql`${id} = ANY(${packDefinitionsTable.skinPool})`, sql`${packDefinitionsTable.deletedAt} IS NULL`));
-    if (packs.length) throw new CosmeticError(409, `다음 팩의 스킨 풀에서 먼저 제거해 주세요: ${packs.map(pack => pack.name).join(", ")}`);
+    const packs = await tx
+      .select({ name: packDefinitionsTable.name })
+      .from(packDefinitionsTable)
+      .where(
+        and(
+          sql`${id} = ANY(${packDefinitionsTable.skinPool})`,
+          sql`${packDefinitionsTable.deletedAt} IS NULL`,
+        ),
+      );
+    if (packs.length)
+      throw new CosmeticError(
+        409,
+        `다음 팩의 스킨 풀에서 먼저 제거해 주세요: ${packs.map((pack) => pack.name).join(", ")}`,
+      );
     await tx.delete(equips).where(eq(equips.cosmeticId, id));
     await tx.delete(owned).where(eq(owned.cosmeticId, id));
     await tx.delete(items).where(eq(items.id, id));
-    await tx.insert(audit).values({ id: randomUUID(), actorId: req.authUser!.id, cosmeticId: id, action: "DELETE" });
+    await tx.insert(audit).values({
+      id: randomUUID(),
+      actorId: req.authUser!.id,
+      cosmeticId: id,
+      action: "DELETE",
+    });
   });
   // Image files and frozen match/pack receipts are retained for existing games/history.
   res.json({ deleted: true, id });
@@ -296,27 +455,40 @@ router.post("/admin/cosmetics/users/:id/grants", async (req, res) => {
       .select({ id: usersTable.id, role: usersTable.role })
       .from(usersTable)
       .where(eq(usersTable.id, req.params.id));
+    const legacyId = legacySkinId(cosmeticId);
+    if (legacyId) await syncLegacySkin(legacyId, tx);
     const [item] = await tx
       .select()
       .from(items)
       .where(eq(items.id, cosmeticId));
     if (!user || !item)
       throw new CosmeticError(404, "계정 또는 아이템을 찾을 수 없습니다.");
-    if (action === "REVOKE" && user.role === "ADMIN" && item.isActive && ["CHAMPION_SKIN", "CARD_SKIN"].includes(item.type))
-      throw new CosmeticError(422, "관리자 계정은 모든 활성 스킨이 자동 해금되어 개별 회수할 수 없습니다.");
+    if (
+      action === "REVOKE" &&
+      user.role === "ADMIN" &&
+      item.isActive &&
+      ["CHAMPION_SKIN", "CARD_SKIN"].includes(item.type)
+    )
+      throw new CosmeticError(
+        422,
+        "관리자 계정은 모든 활성 스킨이 자동 해금되어 개별 회수할 수 없습니다.",
+      );
     if (action === "GRANT") {
       if (!item.isActive)
         throw new CosmeticError(422, "비활성 아이템은 지급할 수 없습니다.");
+      if (legacyId) await grantLegacySkin(user.id, legacyId, tx);
       await tx
         .insert(owned)
         .values({ userId: user.id, cosmeticId })
         .onConflictDoNothing();
-    } else
+    } else {
+      if (legacyId) await revokeLegacySkin(user.id, legacyId, tx);
       await tx
         .delete(owned)
         .where(
           and(eq(owned.userId, user.id), eq(owned.cosmeticId, cosmeticId)),
         );
+    }
     await tx.insert(audit).values({
       id: randomUUID(),
       actorId: req.authUser!.id,
@@ -367,7 +539,7 @@ router.use(
     res: import("express").Response,
     next: import("express").NextFunction,
   ) => {
-    if (error instanceof CosmeticError) {
+    if (error instanceof CosmeticError || error instanceof AdminDeletionError) {
       res.status(error.status).json({ message: error.message });
       return;
     }
